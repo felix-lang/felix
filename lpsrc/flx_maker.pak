@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.39  2006/04/08 05:22:51  skaller
+Extra space needed after cflag
+
 Revision 1.38  2006/03/30 01:59:29  skaller
 Add C prinf formatting stuff
 
@@ -1208,7 +1211,7 @@ def build_test(testfile):
     print "flx_pkgconfig failed! Args=",cmd
     raise MakeError
 
-  cflags = string.strip(cflags[0])
+  cflags = string.strip(cflags[0])+" "
   #print 'Compiling generated code of ',testfile
   try:
     if SUPPORT_DYNAMIC_LOADING:
