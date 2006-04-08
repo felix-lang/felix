@@ -1,5 +1,9 @@
 @head(1,'pthread')
 $Log$
+Revision 1.16  2006/04/08 08:18:34  rfistman
+fixed up flx_listener, working on portable regression test for tcp
+bug still at large in nocygwin flx_accept - hope it's portable!
+
 Revision 1.15  2006/03/15 10:22:59  rfistman
 fixing 64bit cl build
 
@@ -72,7 +76,7 @@ Requires: flx
 
 PTHREADRTL_INTERFACES = [
  'pthread/pthread_thread.hpp',        # portable
- 'pthread/pthread_win_posix_condv_emul.hpp',         # win32 and posiz
+ 'pthread/pthread_win_posix_condv_emul.hpp',         # win32 and posix
  'pthread/pthread_mutex.hpp',         # portable
  'pthread/pthread_counter.hpp',       # portable
  'pthread/pthread_condv.hpp',         # portable

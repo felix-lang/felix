@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.18  2006/04/08 08:18:34  rfistman
+fixed up flx_listener, working on portable regression test for tcp
+bug still at large in nocygwin flx_accept - hope it's portable!
+
 Revision 1.17  2006/04/08 03:53:44  skaller
 Detect vsnprintf.. some Windows don't provide it even though
 MSDN says it is available. The MS variation when available
@@ -1785,7 +1789,8 @@ iocp_demuxer::iocp_demuxer()
 
 iocp_demuxer::~iocp_demuxer()
 {
-fprintf(stderr, "~iocp\n");
+  fprintf(stderr, "~iocp (%p)\n", iocp);
+
   if(NULL != iocp && !CloseHandle(iocp))
   {
     DWORD err = GetLastError();

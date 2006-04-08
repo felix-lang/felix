@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.13  2006/04/08 08:18:34  rfistman
+fixed up flx_listener, working on portable regression test for tcp
+bug still at large in nocygwin flx_accept - hope it's portable!
+
 Revision 1.12  2006/03/29 23:18:13  rfistman
 WIP: flx_stream (i.e. portable) version of accept/create listener
 
@@ -1907,38 +1911,33 @@ union flx_stream =
 
 // MISSING CASES: strstreams  -- strings as streams
 // FILE* streams, C++ iostreams as streams. kind of messy ..
+// windows named pipes (may or may not work with the WFD file io)
+// try it out.
 
 ;
 
 #if POSIX
 
-// make a union... ? I'd prefer a type rename - int on posix, SOCKET on win.
+typedef flx_listener = int;  // unix socket
 
-// type flx_listener = "int";	// unix socket
-// typedef flx_listener = flx_stream;
-// #define flx_listener flx_stream
-
-proc mk_flx_listener(l: &flx_stream, port: &int, qlen: int)
+proc mk_flx_listener(l: &flx_listener, port: &int, qlen: int)
 {
   // error checking?
   var listener: int <- mk_listener(*port, qlen);
-  *l = USOCK listener;
+  *l = listener;
 }
 
-proc flx_accept(l: flx_stream, ss: &flx_stream)
+proc flx_accept(l: flx_listener, ss: &flx_stream)
 {
   var s: int;
-  // accept (&s, l);  // async!
-  // *ss = USOCK s;
 
-  match l with
-  | USOCK ?lfd => { accept(&s, lfd); *ss = USOCK s; }
-  endmatch; 
+  accept(&s, l);  // success or not? error checking
+  *ss = USOCK s;
 }
 
 #elif WIN32
 
-// type flx_listener = "SOCKET";
+typedef flx_listener = SOCKET;
 
 proc mk_flx_listener(l: &flx_listener, port: &int, qlen: int)
 {
@@ -1955,9 +1954,12 @@ proc flx_accept(l: flx_listener, ss: &flx_stream)
   // for async accept on win32 you create the accept socket yourself
   mk_socket(&s);  // error check?
 
-  // could do something with success flag
-  Accept(&success, listener, s);
+  fprint (cout, "flx_accept calls AcceptEx\n");
+  Accept(&success, l, s);
   *ss = WSOCK s;
+
+  // err
+  if success then {} else {fprint (cout, "Accept failed! num?\n"); } endif;
 }
 
 #endif
@@ -2064,7 +2066,7 @@ proc flx_connect_win32(strm: &flx_stream, addr: charp, port: int)
     var s: SOCKET;
     Connect( &s, addr, port );
     // nice error handling
-    *strm = to_stream s;
+    *strm = WSOCK s;
 }
 #endif
 
@@ -2170,8 +2172,10 @@ proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
 
 @head(1,"Felix Async IO tests")
 
-@h = tangler("test/posix_t0.flx")
+@h = tangler("test/rt_faio_01.flx")
 @select(h)
+// portable flx sockets test (rt = regression test)
+
 // not sure what to call this to get it called.
 // it's not posix, it's portable (or should be)
 #import <flx.flxh>
@@ -2179,19 +2183,38 @@ include "flx_stream";
 open Flx_stream;
 
 print "flx tcp stream test\n";
+System::exit 0;  // Work in progress
 
-var listener: flx_stream;
-// var port = 0;  // you choose
-var port = 1024;
+var listener: flx_listener;
+var port = 0;  // you choose
+// var port = 1024;
 
+// check errors. how is that done?
 mk_flx_listener(&listener, &port, 1);
 // print "Got port: "; print port; endl;
 // print "accepting\n";
 
-// var s: flx_stream;
-// flx_accept(listener, &s);
+print "spawning connector\n";
+// not printing in thread to make output deterministic.
+// note that the connect shouldn't fail (immediately) because the
+// listener exists - it just hasn't called accept yet.
+spawn_fthread
+{
+  {
+    // print "Connector dude\n";  // get rid of, hard to test
+    var c: flx_stream;
+    flx_connect(&c, c"127.0.0.1", port); // connect to localhost
 
-// print "got connection\n";
+    // write a line
+  };
+};
+
+var s: flx_stream;
+flx_accept(listener, &s);
+
+print "got connection\n";
+// read a line
+
 
 @h = tangler("test/posix_t1.flx")
 @select(h)
@@ -2313,7 +2336,7 @@ if success then {
 #import <flx.flxh>
 print 1; endl;
 
-@h = tangler("test/posix_t0.expect","data")
+@h = tangler("test/rt_faio_01.expect","data")
 @select(h)
 flx tcp stream test
 @h = tangler("test/posix_t1.expect","data")
@@ -2337,3 +2360,16 @@ successful accept!
 @select(h)
 1
 @doc()
+
+@h = tangler("simpleline_server.flx")
+@select(h)
+// don't know where this should go?
+#import <flx.flxh>
+include "flx_stream";
+open Flx_stream;
+
+print "some sort of server process\n";
+
+// make this the client as well. check args and do stuff.
+// print a file? read a line. how to do that with flx_stream?
+
