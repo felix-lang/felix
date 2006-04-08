@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.40  2006/04/08 08:03:15  skaller
+Make 'flx.bat' work on Windows (new flx_pkgconfig stuff)
+
 Revision 1.39  2006/04/08 05:22:51  skaller
 Extra space needed after cflag
 
@@ -3492,20 +3495,31 @@ GOTO DOARGS
 "%FID%\BIN\FLXG" -I"%FID%\LIB" %1 >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 if %STATIC% EQU 0 (
-cl /nologo /MD /c /EHs /w  /I"%FID%\RTL" %1.cpp /Fo%1.obj >"%1.LOG"
+%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:cflags @%1.resh >%1_cflags.txt
 if ERRORLEVEL 1 GOTO ERROR
-cl /nologo /MT /LD %1.obj /Fe%1.dll /link /LIBPATH:"%FID%\BIN" /DEFAULTLIB:libflx_dynamic >"%1.LOG"
+cl /nologo /MD /c /EHs /w  /I"%FID%\RTL" @%1_cflags.txt %1.cpp /Fo%1.obj >"%1.LOG"
+if ERRORLEVEL 1 GOTO ERROR
+%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:provides_dlib --field:requires_dlibs @%1.resh >%1_linkflags.txt
+if ERRORLEVEL 1 GOTO ERROR
+link /dll %1.obj /OUT:%1.dll @%1_linkflags.txt /LIBPATH:"%FID%\BIN" /DEFAULTLIB:libflx_dynamic >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 del %1.exp
 del %1.lib
+del %_cflags.txt
+del %_linkflags.txt
 IF %RUNIT% EQU 1 (
 "%FID%\bin\flx_run" %1 %2 %3 %4 %5 %6 %7 %8 %9  
 )
 ) else (
-cl /nologo /MT /c /EHs /w  /I"%FID%\RTL" /DFLX_STATIC_LINK %1.cpp /Fo%1.obj >"%1.LOG"
+%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:cflags @%1.resh >%1_cflags.txt
 if ERRORLEVEL 1 GOTO ERROR
-cl /nologo /MT "%FID%\rtl\flx_run_static.obj" %1.obj /Fe%1.exe /link /LIBPATH:"%FID%\RTL" /DEFAULTLIB:libflx_static >"%1.LOG"
+cl /nologo /MT /c /EHs /w  /I"%FID%\RTL" /DFLX_STATIC_LINK @%1_cflags.txt %1.cpp /Fo%1.obj >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
+%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:provides_slib --field:requires_slibs @%1.resh >%1_linkflags.txt
+link "%FID%\rtl\flx_run_static.obj" %1.obj /OUT:%1.exe @%1_linkflags.txt /LIBPATH:"%FID%\RTL" /DEFAULTLIB:libflx_async_static /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_pthread_static /DEFAULTLIB:libflx_static >"%1.LOG"
+if ERRORLEVEL 1 GOTO ERROR
+del %_cflags.txt
+del %_linkflags.txt
 %1 %2 %3 %4 %5 %6 %7 %8 %9
 )
 GOTO FINISHED
