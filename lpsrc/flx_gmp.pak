@@ -80,7 +80,6 @@ module Gmp
 {
   requires gmpxx_h;
   requires package "gmpxx";
-  requires package "gmp";
   type mpz='mpz_class';
   type mpq='mpq_class';
   type mpf='mpf_class';
