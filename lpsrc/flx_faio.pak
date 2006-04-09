@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.14  2006/04/09 05:14:53  rfistman
+fixed windows async io bindings - they haven't been compileable for a while,
+which shows how many tests we don't have.
+
 Revision 1.13  2006/04/08 08:18:34  rfistman
 fixed up flx_listener, working on portable regression test for tcp
 bug still at large in nocygwin flx_accept - hope it's portable!
@@ -1819,22 +1823,29 @@ proc ReuseSocket(s: SOCKET)
 }
 
 type wsa_socketio = "flx::faio::wsa_socketio";
-fun mk_wsa_socketio: SOCKET*address*int*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
-fun get_pb[t]: t -> sel_param_ptr = '&$1.pb';
+fun mk_wsa_socketio: SOCKET*sel_param_ptr*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
 
 proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
 {   
-    var rev = mk_wsa_socketio(s, buf, *len, true);  // reading
+    var pb: sel_param;
+    init_pb(pb, buf, *len);
+    var ppb: sel_param_ptr = to_ptr pb;
+
+    var rev = mk_wsa_socketio(s, ppb, true);  // reading
     faio_req$ &rev;
 // we do have a success flag
-    calc_eof(rev.pb, len, eof);
+    calc_eof(ppb, len, eof);
 }
 
 proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
 {   
-    var rev = mk_wsa_socketio(s, buf, *len, false); // writing
+    var pb: sel_param;
+    init_pb(pb, buf, *len);
+    var ppb: sel_param_ptr = to_ptr pb;
+
+    var rev = mk_wsa_socketio(s, ppb, false); // writing
     faio_req$ &rev;
-    calc_eof(rev.pb, len, eof);
+    calc_eof(ppb, len, eof);
 }
 
 type winfile_io = "flx::faio::winfile_io";
@@ -1842,6 +1853,7 @@ type winfile_io = "flx::faio::winfile_io";
 fun mk_winfile_io: WFILE*address*int*bool->winfile_io = 'flx::faio::winfile_io($a)';
 
 // no offset - just for streams now. write probably doesn't work
+fun get_pb: winfile_io -> sel_param_ptr = '&$1.pb';
 
 proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
 {   
