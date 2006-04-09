@@ -1,6 +1,12 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.16  2006/04/09 17:36:56  idadesub
+added ctor type constructors for most of the builtin types. I also replaced
+the chr/wchr/uchr functions with the typename for char/wchar/uchar. I think
+I found all the usages of those functions, but it's possible I missed one
+or two.
+
 Revision 1.15  2006/04/09 06:18:14  rfistman
 beefed up flx_stream test.
 
@@ -2219,7 +2225,7 @@ proc get_line(strm: flx_stream, s: &string)
      flx_read(strm, &len, ac, &eof);
 
      // that's not working
-     if eof or c == chr '\n' then
+     if eof or c == char '\n' then
      {
        // print "OUTTAHEWR\n";
        finished = true;

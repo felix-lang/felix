@@ -192,14 +192,14 @@ fun str: list[string] -> string =
 //print$ "Fields   = " + str fields; endl;
 //print$ "Packages = " + str pkgs; endl;
 
-val dirs=split(path, chr ':');
+val dirs=split(path, char ':');
 
 //print$ "Path = " + str dirs; endl;
 
 var result = Empty[string];
 
 fun get_field(line:string):string * string => 
-    match find (line,chr ':') with
+    match find (line,char ':') with
     | None => "","" 
     | Some ?n => 
         trim line.[to n],
