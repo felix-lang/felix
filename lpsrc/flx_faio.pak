@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.15  2006/04/09 06:18:14  rfistman
+beefed up flx_stream test.
+
 Revision 1.14  2006/04/09 05:14:53  rfistman
 fixed windows async io bindings - they haven't been compileable for a while,
 which shows how many tests we don't have.
@@ -1966,7 +1969,7 @@ proc flx_accept(l: flx_listener, ss: &flx_stream)
   // for async accept on win32 you create the accept socket yourself
   mk_socket(&s);  // error check?
 
-  fprint (cout, "flx_accept calls AcceptEx\n");
+  // fprint (cout, "flx_accept calls AcceptEx\n");
   Accept(&success, l, s);
   *ss = WSOCK s;
 
@@ -2194,8 +2197,62 @@ proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
 include "flx_stream";
 open Flx_stream;
 
+// write_line's actually harder than this...
+// I used to have trouble with the string's memory, just floating away...
+
+// currently ignoring how string was terminated
+// but you'd like to get a bool result for when you've
+// hit eof. also isn't portable wrt linefeeds. crashes when
+// run from cygwin. that's a bummer.
+proc get_line(strm: flx_stream, s: &string)
+{
+  var c: char;
+  val ac = C_hack::address_of(c);
+  var str: string;
+  var finished = false;
+
+   while{not finished}
+   {
+     var len = 1;
+     var eof: bool;
+
+     flx_read(strm, &len, ac, &eof);
+
+     // that's not working
+     if eof or c == chr '\n' then
+     {
+       // print "OUTTAHEWR\n";
+       finished = true;
+     }
+     else
+     {
+       // print "got something: "; print c; endl;
+       str += c;
+       // print "str is now: "; print str; endl;
+     } endif;
+
+  };
+
+  *s = str;  // pass back result
+  
+}
+
+fun str_addr: string -> address = "(void*)$1.c_str()";
+
+proc write_string(strm: flx_stream, s: string)
+{
+// I have to write a copy, else I get bad/stale memory for the string.
+// is this something to do with inlining?
+var bugger = s;
+// print "writing "; print bugger; endl;
+  var slen = len (bugger);
+  var addr = str_addr(bugger);  // hope this string memory doesn't move on me
+  var eof: bool;
+  // print "write_line len: "; print slen; endl;
+  flx_write(strm, &slen, addr, &eof);
+}
 print "flx tcp stream test\n";
-System::exit 0;  // Work in progress
+// System::exit 0;  // Work in progress
 
 var listener: flx_listener;
 var port = 0;  // you choose
@@ -2216,6 +2273,11 @@ spawn_fthread
     // print "Connector dude\n";  // get rid of, hard to test
     var c: flx_stream;
     flx_connect(&c, c"127.0.0.1", port); // connect to localhost
+    var str: string;
+
+    get_line(c, &str);
+    print "connector got "; print str; endl;
+    write_string(c, "thanks\n");         // newline important
 
     // write a line
   };
@@ -2225,6 +2287,13 @@ var s: flx_stream;
 flx_accept(listener, &s);
 
 print "got connection\n";
+write_string(s, "server says hi\n");     // newline important here
+
+var str: string;
+get_line(s, &str);
+
+print "server got "; print str; endl;
+
 // read a line
 
 
@@ -2351,6 +2420,10 @@ print 1; endl;
 @h = tangler("test/rt_faio_01.expect","data")
 @select(h)
 flx tcp stream test
+spawning connector
+got connection
+connector got server says hi
+server got thanks
 @h = tangler("test/posix_t1.expect","data")
 @select(h)
 felix posix accept/connect test
