@@ -107,6 +107,13 @@ args = rev args;
 
 fun is_prefix_of(p:string,w:string)=> p == w.[to len p];
 
+fun xfind(flags: string, c: string) =>
+ match find(flags, c) with
+ | None => false
+ | Some _ => true
+ endmatch
+;
+
 proc parse_args(args:list[string]) 
 {
   match args with
@@ -129,13 +136,13 @@ proc parse_args(args:list[string])
 
       elif "-" == arg.[0 to 1] and "-" != arg.[1 to 2] do
         flags := arg.[1 to];
-        if find(flags,chr "r") != npos do
+        if xfind(flags, "r") do
           recfields = append_unique streq recfields "Requires";
         done;
 
-        if find(flags,"h") != npos do hide = true; done;
-        if find(flags,"b") != npos do backwards = true; done;
-        if find(flags,"l") != npos do dolist = true; done;
+        if xfind(flags,"h") do hide = true; done;
+        if xfind(flags,"b") do backwards = true; done;
+        if xfind(flags,"l") do dolist = true; done;
 
       elif "--rec" == arg.[0 to 5] do
         var fld = arg.[6 to];
@@ -191,18 +198,14 @@ val dirs=split(path, chr ':');
 
 var result = Empty[string];
 
-fun get_field(line:string):string * string = 
-{
-  var n = find (line,chr ':');
-  return
-    if n != npos then
+fun get_field(line:string):string * string => 
+    match find (line,chr ':') with
+    | None => "","" 
+    | Some ?n => 
         trim line.[to n],
         trim line.[n+1 to]
-    else
-      "",""
-    endif
+    endmatch
   ;
-}
 
 proc add_val(v:string){ 
  result = insert_unique streq result v;
