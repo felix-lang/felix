@@ -1,5 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.17  2006/04/15 04:20:05  rfistman
+fixed bug in sleep queue in which an empty stack could be popped
+thanks to a spurious condition var wakeup. condition var predicates
+must be rechecked!
+
 Revision 1.16  2006/04/08 08:18:34  rfistman
 fixed up flx_listener, working on portable regression test for tcp
 bug still at large in nocygwin flx_accept - hope it's portable!
@@ -1191,11 +1196,12 @@ void*
 sleep_queue_t::dequeue()
 {
   flx_mutex_locker_t   l(member_lock);
-  if(ELTQ->empty())
+  while(ELTQ->empty())  // guard against spurious wakeups!
   {
     //fprintf(stderr,"Q%p: Waiting for non empty queue\n",this);
     not_empty_cond.wait(&member_lock);
   }
+
   void *elt = ELTQ->front();
   //fprintf(stderr,"Q%p: Dequeue %p\n",this,elt);
   ELTQ->pop();
