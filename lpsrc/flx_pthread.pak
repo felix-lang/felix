@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.18  2006/04/16 04:49:10  skaller
+Maybe fixed monitor to allow for spurious condition variable wait exits.
+
 Revision 1.17  2006/04/15 04:20:05  rfistman
 fixed bug in sleep queue in which an empty stack could be popped
 thanks to a spurious condition var wakeup. condition var predicates
@@ -1047,8 +1050,9 @@ class PTHREAD_EXTERN monitor_t {
   flx_mutex_t rm; 
   flx_mutex_t wm; 
   int ready;
+  int dataput;
+  int datagot;
   flx_condv_t ack;
-  flx_condv_t data_put;
   void *data;
 public:
   monitor_t();
@@ -1073,16 +1077,31 @@ namespace flx { namespace pthread {
 monitor_t::monitor_t() : ready(0)  {}
 monitor_t::~monitor_t() { }
 
+static void handshake_pos(int &a, flx_condv_t &c, flx_mutex_t &m)
+{
+  ++a;
+  if(a != 0) do { c.wait(&m); } while (a != 0);
+  else c.signal();
+  assert(a == 0);
+}
+
+static void handshake_neg(int &a, flx_condv_t &c, flx_mutex_t &m)
+{
+  --a;
+  if(a != 0) do { c.wait(&m); } while (a != 0);
+  else c.signal();
+  assert(a == 0);
+}
+
 void
 monitor_t::enqueue(void* elt)
 {
   flx_mutex_locker_t   wl(wm); // exclude other writers
   flx_mutex_locker_t   l(m);
-  if(++ready)                  // we got in first
-    ack.wait(&m);              // wait for a reader
+  handshake_pos(ready, ack, m);
   data = elt;
-  data_put.signal();
-  ack.wait(&m);
+  handshake_pos(dataput, ack, m);
+  handshake_pos(datagot, ack, m);
 }
 
 void*
@@ -1090,11 +1109,10 @@ monitor_t::dequeue()
 {
   flx_mutex_locker_t   rl(rm); // exclude other readers
   flx_mutex_locker_t   l(m);
-  if(!--ready)                 // writer got in first and is ready
-    ack.signal();              // signal we're read to read
-  data_put.wait(&m);           // wait for the writer to store the data
+  handshake_neg(ready, ack, m);
+  handshake_neg(dataput, ack, m);
   void *d = data;              // get the data
-  ack.signal();                // tell the writer we have it
+  handshake_neg(datagot, ack, m);
   return d;
 }
 
@@ -1181,7 +1199,7 @@ sleep_queue_t::enqueue(void* elt)
 {
   //fprintf(stderr,"Q%p: Enqueue %p\n",this,elt);
   flx_mutex_locker_t   l(member_lock);
-  if(ELTQ->size() >= bound)
+  while(ELTQ->size() >= bound) // guard against spurious wakeups!
   {
     //fprintf(stderr,"Q%p: Queue is full, waiting\n",this);
     not_full_cond.wait(&member_lock);
