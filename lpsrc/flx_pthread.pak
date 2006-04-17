@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.20  2006/04/17 08:20:26  skaller
+needs assert.h
+
 Revision 1.19  2006/04/17 07:19:59  skaller
 Make monitor slightly more efficient
 
@@ -1071,6 +1074,7 @@ public:
 #include "pthread_monitor.hpp"
 #include <queue>        // stl to the bloated rescue
 #include <string.h>       // strerror
+#include <assert.h>
 
 using namespace std;
 
