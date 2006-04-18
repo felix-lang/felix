@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.21  2006/04/18 05:25:45  skaller
+Rewrite sleep queue.
+
 Revision 1.20  2006/04/17 08:20:26  skaller
 needs assert.h
 
@@ -1158,17 +1161,17 @@ namespace flx { namespace pthread {
 // ********************************************************
 
 class PTHREAD_EXTERN sleep_queue_t {
-  flx_mutex_t member_lock; 
-  flx_condv_t not_empty_cond; 
-  flx_condv_t not_full_cond; 
+  flx_condv_t size_changed; 
   void *lame_opaque;  
   size_t bound;
 public:
+  flx_mutex_t member_lock; 
   sleep_queue_t(size_t);
   ~sleep_queue_t();
   void enqueue(void*);
   void* dequeue();
   void resize(size_t);
+  void wait_until_empty();
 };
 
 }} // namespace pthread, flx
@@ -1199,20 +1202,20 @@ sleep_queue_t::~sleep_queue_t()
   delete ELTQ;
 }
 
+void sleep_queue_t::wait_until_empty() { 
+  flx_mutex_locker_t   l(member_lock);
+  while(!ELTQ->empty())
+    size_changed.wait(&member_lock);
+}
+
 void
 sleep_queue_t::enqueue(void* elt)
 {
-  //fprintf(stderr,"Q%p: Enqueue %p\n",this,elt);
   flx_mutex_locker_t   l(member_lock);
   while(ELTQ->size() >= bound) // guard against spurious wakeups!
-  {
-    //fprintf(stderr,"Q%p: Queue is full, waiting\n",this);
-    not_full_cond.wait(&member_lock);
-  }
-  //fprintf(stderr,"Q%p: Queue has space\n",this);
+    size_changed.wait(&member_lock);
   ELTQ->push(elt);
-  //fprintf(stderr,"Q%p: Signal not empty\n",this);
-  not_empty_cond.signal(); // cannot return an error
+  size_changed.broadcast(); // cannot return an error
 }
 
 void*
@@ -1220,20 +1223,10 @@ sleep_queue_t::dequeue()
 {
   flx_mutex_locker_t   l(member_lock);
   while(ELTQ->empty())  // guard against spurious wakeups!
-  {
-    //fprintf(stderr,"Q%p: Waiting for non empty queue\n",this);
-    not_empty_cond.wait(&member_lock);
-  }
-
+    size_changed.wait(&member_lock);
   void *elt = ELTQ->front();
-  //fprintf(stderr,"Q%p: Dequeue %p\n",this,elt);
   ELTQ->pop();
-  if(ELTQ->size() < bound)
-  {
-    //fprintf(stderr,"Q%p: Signalling not full\n",this);
-    not_full_cond.signal();
-  }
-  //fprintf(stderr,"Q%p: Dequeued, returning %p\n",this,elt);
+  size_changed.broadcast();
   return elt;
 }
 
@@ -1243,8 +1236,7 @@ sleep_queue_t::resize(size_t n)
   flx_mutex_locker_t   l(member_lock);
   bound = n;
   // get things rolling again
-  if(!ELTQ->empty()) not_empty_cond.signal();
-  if(ELTQ->size()<bound) not_full_cond.signal();
+  size_changed.broadcast();
 }
 
 }}
@@ -1339,9 +1331,8 @@ worker_fifo::stop_worker_thread()
 
 worker_fifo::~worker_fifo()
 {
-  while(nthreads>1)stop_worker_thread();
-  fifo.resize(1);       // force wait for last thread to exit
-  stop_worker_thread(); // cannot exit until the queue is empty
+  while(nthreads>0)stop_worker_thread();
+  fifo.wait_until_empty();
 }
 
 // io thread entry point, passed this
