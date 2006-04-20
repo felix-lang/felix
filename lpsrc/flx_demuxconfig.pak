@@ -39,6 +39,7 @@ DEMUXRTL_INTERFACES = [
  'demux/demux_evtport_demuxer.hpp',# solaris (9 onwards?)
  'demux/demux_epoll_demuxer.hpp',# linux (>= 2.6)
  'demux/demux_sockety.hpp',       # posix
+ 'demux/demux_self_piper.hpp',    # posix
  'demux/demux_ts_select_demuxer.hpp',
 ]
 
@@ -51,6 +52,7 @@ POSIX_DEMUX_CPPS = [
   "demux/demux_select_demuxer",     # all posix
   "demux/demux_posix_timer_queue",  # posix
   "demux/demux_sockety",            # posix
+  "demux/demux_self_piper",         # posix
   "demux/demux_pfileio",            # posix
   'demux/demux_ts_select_demuxer',
 ]

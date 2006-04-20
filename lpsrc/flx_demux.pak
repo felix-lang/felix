@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.19  2006/04/20 01:57:17  rfistman
+factored out self_piper class. will be used in kqueue_demuxer and an
+eventual epoll demuxer.
+
 Revision 1.18  2006/04/08 08:18:34  rfistman
 fixed up flx_listener, working on portable regression test for tcp
 bug still at large in nocygwin flx_accept - hope it's portable!
@@ -651,39 +655,23 @@ public:
 #define __TS_SELECT_DEMUXER__
 
 #include "demux_select_demuxer.hpp"
+#include "demux_self_piper.hpp"
 #include "pthread_mutex.hpp"
 
 namespace flx { namespace demux {
 
 // thread safe version of select demuxer
 
-// there's no standard posix_socketio_wakeup, could be handy. could also
-// perhaps use it here?
-class DEMUX_EXTERN selfpipe_wakeup : public socket_wakeup {
-public:
-  virtual void wakeup(posix_demuxer& demux);
-};
-
-class DEMUX_EXTERN auto_fd {
-public:
-  int fd;
-
-  auto_fd();
-  ~auto_fd();
-};
-
 class DEMUX_EXTERN ts_select_demuxer : public posix_demuxer {
   flx::pthread::flx_mutex_t      ham_fist;   
   select_demuxer  demux;
 
-  // self pipe trick!!! fd[0] = read end, fd[1] = write end.
-  auto_fd     fds[2];
-  selfpipe_wakeup spw;
+  // self pipe trick for waking waiting thread when we like.
+  self_piper sp;
 protected:
     virtual void    get_evts(bool poll);
 public:
   ts_select_demuxer();
-  virtual ~ts_select_demuxer();
 
   virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
 };
@@ -3410,50 +3398,11 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 using namespace flx::pthread;
 namespace flx { namespace demux {
 
-auto_fd::auto_fd()
-{
-  fd = -1;    // invalid
-}
-
-auto_fd::~auto_fd()
-{
-  if(-1 == fd) return;
-
-  if(close(fd) == -1)
-    perror("auto fd close");
-}
-
 ts_select_demuxer::ts_select_demuxer()
 {
   // fprintf(stderr, "creating pipe for self-pipe trick\n");
-
-  int     self_pipe_fds[2];
-  if(pipe(self_pipe_fds) == -1)
-  {
-    perror("ts_select_demuxer::self_pipe");
-    throw -1;
-  }
-
-  // fprintf(stderr, "got two fds: %i, %i\n",
-  //  self_pipe_fds[0], self_pipe_fds[1]);
-
-  fds[0].fd = self_pipe_fds[0];
-  fds[1].fd = self_pipe_fds[1];
-
-  // make a close obj or something.
-  spw.s = self_pipe_fds[0]; // setup wakeup for read end of pipe
-
-  if(demux.add_socket_wakeup(&spw, PDEMUX_READ) == -1)  // no wakeup!?!
-  {
-    fprintf(stderr,"No socket wakeup?\n");
-    throw -1;                 // that makes me angry!!!
-  }
-}
-
-ts_select_demuxer::~ts_select_demuxer()
-{
-// is that even our job? how do we wait?
-// fprintf(stderr, "could wake here to do clean take down...\n"); 
+  // install self pipe trick
+  sp.install(&demux);
 }
 
 void
@@ -3485,10 +3434,6 @@ ts_select_demuxer::get_evts(bool poll)
 int
 ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
-  // not a solution - there will still be race conditions... this s
-  // could go stale...
-  int s = sv->s;    // keep a copy so we don't introduce race conditions
-
   // fprintf(stderr, "ts_select::add: %p->%i (%s), %x\n",
   //  sv, s, (s == self_pipe_fds[0]) ? "self pipe" : "socket", flags);
   flx::pthread::flx_mutex_locker_t locker(ham_fist);
@@ -3496,48 +3441,14 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
   int res = demux.add_socket_wakeup(sv, flags);
   // I wouldn't touch the sv after this.
 
-  // lets wake the select demuxer by writing to our end of the pipe
-  // lets also not add redundant select wakes for our own selfpipe, as
-  // we know it's adding whilst not in select. Is that clear?
-  if(s != fds[0].fd)
-  {
-    // fprintf(stderr, "waking select with write (blocking?)\n");
-
-    char  b = 1;
-    ssize_t nbytes;
-    // is this blocking? I guess it has to be...
-    nbytes = write(fds[1].fd, &b, 1);   // wake up, jeff!
-
-    if(-1 == nbytes) perror("self-pipe write");
-    assert(1 == nbytes);
-  }
+  // we have a new socket, so wake the wait thread
+  if(-1 != res) sp.wake();
 
   return res;
 
 // we need to wake a blocking get_evts call here else we'll have bad
 // performance or even a lockup. the question is do we need to do it under
 // the tutelage of the lock?
-}
-
-void
-selfpipe_wakeup::wakeup(posix_demuxer& demux)
-{
-  // fprintf(stderr, "selfpipe wakeup: read the pending byte and re-arm\n");
-
-  ssize_t         nbytes;
-  char      b;
-
-    // if this were read then this fn would work with non-sockets
-    nbytes = read(s, &b, 1);
-
-  if(nbytes == -1) perror("recv");
-
-  // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
-  assert(nbytes == 1 && b == 1);
-
-  // add self back!
-  int res = demux.add_socket_wakeup(this, PDEMUX_READ);
-  assert(-1 != res);
 }
 
 }}
@@ -3570,6 +3481,147 @@ int get_socket_error(int s, int* socket_err);
 }} // namespace demux, flx
 #endif
 
+@h=tangler('demux/demux_self_piper.hpp')
+@select(h)
+
+#ifndef __DEMUX_SELF_PIPER__
+#define __DEMUX_SELF_PIPER__
+
+#include <flx_demux_config.hpp>
+#include "demux_posix_demuxer.hpp"
+
+namespace flx { namespace demux {
+
+// there's no standard posix_socketio_wakeup, could be handy. could also
+// perhaps use it here? this is a pipe, not a socket. not sure if recv nor
+// send work on it, besides want to read an unlimited amount of redundant
+// data.
+class DEMUX_EXTERN selfpipe_wakeup : public socket_wakeup {
+public:
+    virtual void wakeup(posix_demuxer& demux);
+};
+
+class DEMUX_EXTERN auto_fd {
+public:
+    int fd;
+
+    auto_fd();
+    ~auto_fd();
+};
+
+class DEMUX_EXTERN self_piper {
+    // self pipe trick!!! fd[0] = read end, fd[1] = write end.
+    auto_fd         fds[2];
+    selfpipe_wakeup spw;
+
+public:
+    self_piper();
+    void install(posix_demuxer* demux);
+    void wake();
+};
+
+}} // namespace demux, flx
+
+#endif
+@h=tangler('demux/demux_self_piper.cpp')
+@select(h)
+
+#include "demux_self_piper.hpp"
+#include <stdio.h>              // printf, perror
+#include <unistd.h>             // pipe for self-pipe trick.
+#include <assert.h>
+
+namespace flx { namespace demux {
+
+auto_fd::auto_fd()
+{
+    fd = -1;        // invalid
+}
+
+auto_fd::~auto_fd()
+{
+    if(-1 == fd) return;
+
+    if(close(fd) == -1)
+        perror("auto fd close");
+}
 
 
+self_piper::self_piper()
+{
+    // fprintf(stderr, "creating pipe for self-pipe trick\n");
+
+    int         self_pipe_fds[2];
+    if(pipe(self_pipe_fds) == -1)
+    {
+        perror("ts_select_demuxer::self_pipe");
+        throw -1;
+    }
+
+    // fprintf(stderr, "self pipe fds: read: %i, write: %i\n",
+    //  self_pipe_fds[0], self_pipe_fds[1]);
+
+    fds[0].fd = self_pipe_fds[0];
+    fds[1].fd = self_pipe_fds[1];
+
+    spw.s = self_pipe_fds[0];   // setup wakeup for read end of pipe
+}
+
+void
+self_piper::install(posix_demuxer* demux)
+{
+    int res = demux->add_socket_wakeup(&spw, PDEMUX_READ);
+    assert(-1 != res);
+}
+
+
+// wake the demuxer referenced in install
+void
+self_piper::wake()
+{
+    // fprintf(stderr, "waking select with write (blocking?)\n");
+
+    char    b = 1;
+    ssize_t nbytes;
+    // is this blocking? I guess it has to be...
+    nbytes = write(fds[1].fd, &b, 1);       // wake up, jeff!
+
+    if(-1 == nbytes) perror("self-pipe write");
+    assert(1 == nbytes);
+}
+
+// currently setup to not see the self piper
+/*
+void
+self_piper::inspect(int s)
+{   
+    // lets wake the demuxer by writing to our end of the pipe
+    // lets also not add redundant select wakes for our own selfpipe, as
+    // we know it's adding whilst not in select. Is that clear?
+    if(s != fds[0].fd) wake();
+}
+*/
+
+void
+selfpipe_wakeup::wakeup(posix_demuxer& demux)
+{   
+    // fprintf(stderr, "selfpipe wakeup: read the pending byte and re-arm\n");
+    
+    ssize_t         nbytes;
+    char            b;
+    
+    // if this were read then this fn would work with non-sockets
+    nbytes = read(s, &b, 1);
+    
+    if(nbytes == -1) perror("recv");
+    
+    // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
+    assert(nbytes == 1 && b == 1);
+    
+    // add self back!
+    int res = demux.add_socket_wakeup(this, PDEMUX_READ);
+    assert(-1 != res);
+}
+
+} }
 
