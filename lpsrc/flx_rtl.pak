@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.32  2006/04/22 07:43:37  rfistman
+taking down kqueue event source was blocking on osx 10.4.
+fixed now, but not perfect yet. similar problems exist with other sources,
+giving undefined behaviour (I believe) on takedown. watch this space.
+
 Revision 1.31  2006/04/08 03:53:44  skaller
 Detect vsnprintf.. some Windows don't provide it even though
 MSDN says it is available. The MS variation when available
@@ -2511,7 +2516,9 @@ public:
    proto_async(int n0, int n1, int m1, int n2, int m2) : 
      async_active(n0), driver(async_active,n1,m1,n2,m2) 
    {
-     // start waiting thread
+     // start waiting thread. note that we only have ONE waiting thread.
+     // that's currently important for clean takedowns, at least for the
+     // kqueue demuxer. see its destructor comments for more info.
 #if _WIN32
      // cast callback to itself. go figure.
      if(ethread.init((LPTHREAD_START_ROUTINE)pthread_thread, &demux) == -1) throw -1;
@@ -2539,10 +2546,11 @@ proto_async::pthread_thread(void* udat)
 {
     demuxer*    d = (demuxer*)udat;
 
-    while(1)                // cancellation? what's that?
+    while(!(d->get_quit_flag())) // allow cancellation
     {
         d->wait();          // this does it
     }
+fprintf(stderr, "proto_async was asked to quit...\n");
     return 0;
 }
 

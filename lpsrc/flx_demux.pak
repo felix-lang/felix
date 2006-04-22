@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.20  2006/04/22 07:43:37  rfistman
+taking down kqueue event source was blocking on osx 10.4.
+fixed now, but not perfect yet. similar problems exist with other sources,
+giving undefined behaviour (I believe) on takedown. watch this space.
+
 Revision 1.19  2006/04/20 01:57:17  rfistman
 factored out self_piper class. will be used in kqueue_demuxer and an
 eventual epoll demuxer.
@@ -246,11 +251,19 @@ protected:
   // FACTOR. Give poll a greedy interface
   virtual void  get_evts(bool poll) = 0;
 
+  bool quit_flag; // for clean takedown
 public:
+  demuxer() : quit_flag(false) {}
   virtual ~demuxer() {}
 
   void wait() { get_evts(false); }
   void poll() { get_evts(true); }
+
+  // ask users of demuxer to exit. not guarded. be sure to either set & get
+  // this flag from only one thread (with a wait/wakeup callback - see
+  // self_piper) or by using a memory barrier.
+  bool get_quit_flag() { return quit_flag; }
+  void set_quit_flag(bool f) { quit_flag = f; }
 };
 }} // namespace demux, flx
 #endif  /* __DEMUXER__ */
@@ -2647,6 +2660,7 @@ public:
 // try EV_EOF to pick up eofs, useful for async file io.
 
 #include "demux_kqueue_demuxer.hpp"
+#include "demux_self_piper.hpp"
 
 #include <stdio.h>      // perror
 #include <unistd.h>     // close
@@ -2673,6 +2687,27 @@ kqueue_demuxer::kqueue_demuxer()
 
 kqueue_demuxer::~kqueue_demuxer()
 {
+  // calling close on a kq while a thread is waiting in kevent causes close
+  // to block! this happens on 10.4. Hard to say on 10.3 as close simply
+  // fails there. we need to wake the waiting thread, so we'll use that
+  // handy self pipe waker. Luckily, kqueues are responsive to new fds,
+  // otherwise we'd need the self pipe waker to be there from the start 
+
+fprintf(stderr, "trying to nicely take down kqueue\n");
+  // we don't want exceptions being thrown in a destructor
+  try {
+    // this will wake the thread (there should only be one atm), however
+    // that's just another race between kevent and close. really need to
+    // extend self piper to set a quit flag. we have to currently assume
+    // that there is only event collecting thread.
+    self_piper sp;
+    // clean this up
+    sp.install(this, true);  // install WITH QUIT FLAG
+    sp.wake();
+  } catch(...) {
+    fprintf(stderr, "error waking kqueue with self pipe trick\n");
+  }
+
   //if(syscall(SYS_close, kq) == -1)
   // I don't seem to be able to close a kq. can't fstat it either
   if(-1 != kq && close(kq) == -1)
@@ -3498,6 +3533,8 @@ namespace flx { namespace demux {
 // data.
 class DEMUX_EXTERN selfpipe_wakeup : public socket_wakeup {
 public:
+    bool request_quit;
+
     virtual void wakeup(posix_demuxer& demux);
 };
 
@@ -3516,7 +3553,7 @@ class DEMUX_EXTERN self_piper {
 
 public:
     self_piper();
-    void install(posix_demuxer* demux);
+    void install(posix_demuxer* demux, bool request_quit = false);
     void wake();
 };
 
@@ -3565,11 +3602,19 @@ self_piper::self_piper()
     fds[1].fd = self_pipe_fds[1];
 
     spw.s = self_pipe_fds[0];   // setup wakeup for read end of pipe
+
+    // this is a tiny bit ugly. I've added a flag to self_piper that causes
+    // its wakeup callback to set the demuxer's quit flag. I've arranged this
+    // so that the thread that sets the flag (the wakeup callback) and the
+    // the thread that checks it (the demux wait thread) are the same.
+    // Precarious!
+    spw.request_quit = false;
 }
 
 void
-self_piper::install(posix_demuxer* demux)
+self_piper::install(posix_demuxer* demux, bool request_quit)
 {
+    spw.request_quit = request_quit;
     int res = demux->add_socket_wakeup(&spw, PDEMUX_READ);
     assert(-1 != res);
 }
@@ -3606,6 +3651,10 @@ void
 selfpipe_wakeup::wakeup(posix_demuxer& demux)
 {   
     // fprintf(stderr, "selfpipe wakeup: read the pending byte and re-arm\n");
+
+    // hack! check flag and set demux quit flag
+    // flag visible to the wait thread.
+    if(request_quit) demux.set_quit_flag(true);
     
     ssize_t         nbytes;
     char            b;
