@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.19  2006/04/23 06:09:15  rfistman
+fixed bug in async win32 ReadFile/WriteFile code - wasn't handling
+ERROR_IO_PENDING properly. Was also not opening files with FILE_FLAG_OVERLAPPED
+added actual io to windows named pipe example
+
 Revision 1.18  2006/04/23 05:06:17  rfistman
 added win32 named pipe example (only connects/accepts atm), still needs to
  call ReadFile/WriteFile and be moved into demux/faio
@@ -1400,7 +1405,7 @@ void
 winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
   LPOVERLAPPED olp, int err)
 {
-  fprintf(stderr,"winfile_io wakeup, nb: %li, err: %i\n", nbytes, err );
+  // fprintf(stderr,"winfile_io wakeup, nb: %li, err: %i\n", nbytes, err );
 
   // fprintf(stderr,"THIS WAKEUP SHOULD BE THE SAME AS SEND/RECV make it so\n");
   // actually, I don't think it should be. the SOCKET stuff goes around
@@ -1816,7 +1821,13 @@ fun eq : WFILE*WFILE -> bool = '($1 == $2)';
 // notice that it's opened for SHARED reading
 proc OpenFile: lvalue[WFILE]*string =
   '$1 = CreateFile($2.c_str(), FILE_READ_DATA, FILE_SHARE_READ, NULL,\
-    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);';
+    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);';
+
+// basically for windows named pipes
+proc OpenFileDuplex: lvalue[WFILE]*string =
+  '$1 = CreateFile($2.c_str(), FILE_READ_DATA | FILE_WRITE_DATA,\
+     FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,\
+     FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);';
 
 // error handling?
 proc CloseFile: WFILE = 'CloseHandle($1);';
@@ -2611,18 +2622,50 @@ public:
 };
 """;
 
+proc getbyte(f: WFILE, outc: &char)
+{
+  var c: char;
+  val ac = C_hack::address_of(c);
+  var len = 1;
+  var eof: bool;
+
+  ReadFile(f, &len, ac, &eof);
+  *outc = c;
+}
+
+proc putbyte(f: WFILE, c: char)
+{
+  var copyc = c;
+  val ac = C_hack::address_of(copyc);
+  var len = 1;
+  var eof: bool;
+
+  WriteFile(f, &len, ac, &eof);
+}
+
 // spawn a connect fthread after having created the named pipe
 
 // I'm not yet "accepting", but hopefully I can spawn a client here
 spawn_fthread {
   // print "Gudday, client thread, trying to open PIPE\n";
-  var p: WFILE <- OpenFile(pname);
+  // var p: WFILE <- OpenFile(pname);
+  // having trouble getting io...
+  var p: WFILE <- OpenFileDuplex(pname);
 
   // print "Client thread returned from OpenFile\n";
 
   if p == INVALID_HANDLE_VALUE then
   { print "BUGGER: client couldn't open pipe: "; print (GetLastError()); endl; }
   else { print "client opened pipe\n"; } endif;
+
+  // HUM need to associate.
+  print "associating client\n";
+  associate_with_iocp(HACK_TO_SOCKET(p));
+
+  var c: char;
+  getbyte(p, &c);
+  print "client got "; print c; endl;
+  putbyte(p, char 'b');
 };
 
 type np_request = 'connect_namedpipe';
@@ -2632,6 +2675,11 @@ var npr = mk_np_request(pipe);
 Faio::faio_req$ &npr;
 
 print "poot! got connection (maybe)\n";
+print "server trying to put byte\n";
+putbyte(pipe, char 'a');
+var c: char;
+getbyte(pipe, &c);
+print "server got "; print c; endl;
 
 @h = tangler("test/rt_faio_01.expect","data")
 @select(h)
@@ -2662,7 +2710,11 @@ successful accept!
 Creating named pipe \\.\pipe\flx_pipe
 whoo!
 client opened pipe
+associating client
 poot! got connection (maybe)
+server trying to put byte
+client got a
+server got b
 @doc()
 
 @h = tangler("simpleline_server.flx")

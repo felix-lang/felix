@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.21  2006/04/23 06:09:15  rfistman
+fixed bug in async win32 ReadFile/WriteFile code - wasn't handling
+ERROR_IO_PENDING properly. Was also not opening files with FILE_FLAG_OVERLAPPED
+added actual io to windows named pipe example
+
 Revision 1.20  2006/04/22 07:43:37  rfistman
 taking down kqueue event source was blocking on osx 10.4.
 fixed now, but not perfect yet. similar problems exist with other sources,
@@ -2504,7 +2509,7 @@ winfileio_control_block::winfileio_control_block(HANDLE f, void* buf, int len, b
 bool
 winfileio_control_block::start_overlapped()
 {
-  fprintf(stderr,"trying out some read/write file\n");
+  // fprintf(stderr,"winfileio_cb::start_overlapped: reading=%i\n", reading);
   clear_overlapped();
 
   // DWORD  imm_bytes;
@@ -2522,12 +2527,24 @@ winfileio_control_block::start_overlapped()
 
   if(!success)
   {
-// this is probably going to be IOPENDING
-    fprintf(stderr,"%sFile failed! (%li)\n", (reading) ? "Read" : "Write",
-      GetLastError());
-    fprintf(stderr,"do I still get completion packet???\n");
+    int err = GetLastError();
+
+    // I'm getting this for unfinished
+    if(ERROR_IO_PENDING == err)
+    {
+       return false;  // sleep on
+    }
+    else
+    {
+       fprintf(stderr,"%sFile failed! (%li)\n", (reading) ? "Read" : "Write",
+         err);
+       return true;      // ask for wakeup
+    }
+
+    // fprintf(stderr,"%sFile failed! (%li)\n", (reading) ? "Read" : "Write",
+    //  GetLastError());
+    // fprintf(stderr,"do I still get completion packet???\n");
     // assume not
-    return true;      // ask for wakeup
   }
 
   return false;       // sleep on
