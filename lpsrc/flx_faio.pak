@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.21  2006/04/23 06:38:54  rfistman
+fixed annoying "NULL is not a pointer" warning
+
 Revision 1.20  2006/04/23 06:32:27  rfistman
 named pipe and flx_socket tests now actually close their pipes & sockets
 when finished with them. this might explain some of the "resource temporarily
@@ -2593,7 +2596,7 @@ public:
          case ERROR_PIPE_CONNECTED: // got a connection already
            fprintf(stderr, "ALREADY GOT CONNECTION\\n");
            // do fake wakeup here for great greatness. eats user cookie.
-           iocp_op_finished(0, NULL, &ol, 0);
+           iocp_op_finished(0, 0, &ol, NO_ERROR);
            return true;  // async finished
          break;
 
