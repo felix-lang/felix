@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.20  2006/04/23 06:32:27  rfistman
+named pipe and flx_socket tests now actually close their pipes & sockets
+when finished with them. this might explain some of the "resource temporarily
+ unavilable"s that I get in windows.
+
 Revision 1.19  2006/04/23 06:09:15  rfistman
 fixed bug in async win32 ReadFile/WriteFile code - wasn't handling
 ERROR_IO_PENDING properly. Was also not opening files with FILE_FLAG_OVERLAPPED
@@ -1829,8 +1834,11 @@ proc OpenFileDuplex: lvalue[WFILE]*string =
      FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,\
      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);';
 
+proc CloseFile: WFILE = 'if(!CloseHandle($1))\
+  fprintf(stderr, "CloseHandle(WFILE) failed: %i\\n", GetLastError());';
+
 // error handling?
-proc CloseFile: WFILE = 'CloseHandle($1);';
+// proc CloseFile: WFILE = 'CloseHandle($1);';
 
 fun mk_transmit_file : SOCKET*WFILE -> wasync_transmit_file
     = 'flx::faio::wasync_transmit_file($a)';
@@ -2372,12 +2380,13 @@ spawn_fthread
     print "connector got "; print str; endl;
     write_string(c, "thanks\n");         // newline important
 
-    // write a line
+    flx_close(c);  // finished with this
   };
 };
 
 var s: flx_socket;
 flx_accept(listener, &s);
+flx_close(listener);  // not needed anymore
 
 print "got connection\n";
 write_string(s, "server says hi\n");     // newline important here
@@ -2386,7 +2395,7 @@ var str: string;
 get_line(s, &str);
 
 print "server got "; print str; endl;
-
+flx_close(s);
 
 @h = tangler("test/posix_t1.flx")
 @select(h)
@@ -2666,6 +2675,7 @@ spawn_fthread {
   getbyte(p, &c);
   print "client got "; print c; endl;
   putbyte(p, char 'b');
+  CloseFile(p);
 };
 
 type np_request = 'connect_namedpipe';
@@ -2680,6 +2690,7 @@ putbyte(pipe, char 'a');
 var c: char;
 getbyte(pipe, &c);
 print "server got "; print c; endl;
+CloseFile(pipe);
 
 @h = tangler("test/rt_faio_01.expect","data")
 @select(h)
