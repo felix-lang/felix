@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.17  2006/04/23 01:37:32  rfistman
+added flx_socket + flx_socket.flx. socket now not a stream, but can be
+converted into one if need be. converted rt_faio_01 to work with this.
+
 Revision 1.16  2006/04/09 17:36:56  idadesub
 added ctor type constructors for most of the builtin types. I also replaced
 the chr/wchr/uchr functions with the typename for char/wchar/uchar. I think
@@ -1937,54 +1941,6 @@ union flx_stream =
 
 ;
 
-#if POSIX
-
-typedef flx_listener = int;  // unix socket
-
-proc mk_flx_listener(l: &flx_listener, port: &int, qlen: int)
-{
-  // error checking?
-  var listener: int <- mk_listener(*port, qlen);
-  *l = listener;
-}
-
-proc flx_accept(l: flx_listener, ss: &flx_stream)
-{
-  var s: int;
-
-  accept(&s, l);  // success or not? error checking
-  *ss = USOCK s;
-}
-
-#elif WIN32
-
-typedef flx_listener = SOCKET;
-
-proc mk_flx_listener(l: &flx_listener, port: &int, qlen: int)
-{
-  // error checking?
-  var listener: SOCKET;
-  mk_listener(&listener, port, qlen);
-  *l = listener;
-}
-
-proc flx_accept(l: flx_listener, ss: &flx_stream)
-{
-  var s: SOCKET;
-  var success: bool;
-  // for async accept on win32 you create the accept socket yourself
-  mk_socket(&s);  // error check?
-
-  // fprint (cout, "flx_accept calls AcceptEx\n");
-  Accept(&success, l, s);
-  *ss = WSOCK s;
-
-  // err
-  if success then {} else {fprint (cout, "Accept failed! num?\n"); } endif;
-}
-
-#endif
-
 // will be ambiguous for file fd, will need name. do I even need these
 // when the conversion is unambiguous?
 
@@ -2080,36 +2036,6 @@ proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
 }
 
 
-//#if WIN32 or CYGWIN
-#if WIN32
-proc flx_connect_win32(strm: &flx_stream, addr: charp, port: int)
-{   
-    var s: SOCKET;
-    Connect( &s, addr, port );
-    // nice error handling
-    *strm = WSOCK s;
-}
-#endif
-
-#if POSIX
-proc flx_connect_posix(strm: &flx_stream, addr: charp, port: int)
-{   
-    var s: int;
-    connect( &s, addr, port );
-    // nice error handling
-    *strm = USOCK s;
-}
-#endif
-
-// unified name, ipv4, cygwin gets posix (?)
-proc flx_connect(strm: &flx_stream, addr: charp, port: int)
-{
-#if WIN32
-    flx_connect_win32(strm, addr, port);
-#else
-    flx_connect_posix(strm, addr, port);
-#endif
-}
 
 // fun things that probably need renaming
 proc cat(infd: flx_stream, outfd: flx_stream, buf: address, bufsize: int) {
@@ -2187,9 +2113,148 @@ proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
     free buf;
 }
 
+} // module Flx_stream
 
-} // module Flx_Stream
+@h = tangler("lib/flx_socket.flx")
+@select(h)
 
+include "flx_faio";
+#import <flx_platform.flxh>
+
+#if POSIX
+include "flx_faio_posix";
+open Faio_posix;
+#endif
+
+#if WIN32
+include "flx_faio_win32";
+open Faio_win32;
+#endif
+
+// for the flx_socket_to_stream function
+include "flx_stream";
+open Flx_stream;
+
+module Flx_socket {
+
+#if POSIX
+
+typedef flx_listener = int;  // unix socket
+typedef flx_socket = int;
+
+fun flx_socket_to_stream(s: flx_socket) : flx_stream => USOCK s;
+
+proc mk_flx_listener(l: &flx_listener, port: &int, qlen: int)
+{
+  // error checking?
+  var listener: int <- mk_listener(*port, qlen);
+  *l = listener;
+}
+
+proc flx_accept(l: flx_listener, s: &flx_socket)
+{
+  accept(s, l);  // success or not? error checking
+}
+
+#elif WIN32
+
+typedef flx_listener = SOCKET;
+typedef flx_socket = SOCKET;
+
+fun flx_socket_to_stream(s: flx_socket) : flx_stream => WSOCK s;
+
+proc mk_flx_listener(l: &flx_listener, port: &int, qlen: int)
+{
+  // error checking?
+  var listener: SOCKET;
+  mk_listener(&listener, port, qlen);
+  *l = listener;
+}
+
+proc flx_accept(l: flx_listener, s: &flx_socket)
+{
+  var success: bool;
+  // for async accept on win32 you create the accept socket yourself
+  mk_socket(s);  // error check?
+
+  // fprint (cout, "flx_accept calls AcceptEx\n");
+  Accept(&success, l, *s);
+
+  // err
+  if success then {} else {fprint (cout, "Accept failed! num?\n"); } endif;
+}
+
+#endif
+
+proc flx_read(s: flx_socket, len: &int, buf: address, eof: &bool)
+{
+#if POSIX
+  async_read(s, len, buf, eof);
+#elif WIN32
+  WSARecv(s, len, buf, eof); 
+#endif
+}
+
+proc flx_write(s: flx_socket, len: &int, buf: address, eof: &bool)
+{   
+#if POSIX
+  async_write(s, len, buf, eof);
+#elif WIN32
+  WSASend(s, len, buf, eof);
+#endif
+}
+
+// this should work without the conditional compilation
+proc flx_shutdown(s: flx_socket, how: int)
+{
+#if POSIX
+  shutdown(s, how);
+#elif WIN32
+  shutdown(s, how);
+#endif
+}
+
+proc flx_close(s: flx_socket)
+{
+#if POSIX
+  close(s);    // error check?
+#elif WIN32
+  closesocket(s);
+#endif    
+}
+
+//#if WIN32 or CYGWIN
+#if WIN32
+proc flx_connect_win32(strm: &flx_socket, addr: charp, port: int)
+{   
+    var s: SOCKET;
+    Connect( &s, addr, port );
+    // nice error handling
+    *strm = s;
+}
+#endif
+
+#if POSIX
+proc flx_connect_posix(strm: &flx_socket, addr: charp, port: int)
+{   
+    var s: int;
+    connect( &s, addr, port );
+    // nice error handling
+    *strm = s;
+}
+#endif
+
+// unified name, ipv4, cygwin gets posix (?)
+proc flx_connect(s: &flx_socket, addr: charp, port: int)
+{
+#if WIN32
+    flx_connect_win32(s, addr, port);
+#else
+    flx_connect_posix(s, addr, port);
+#endif
+}
+
+} // module Flx_socket
 
 @head(1,"Felix Async IO tests")
 
@@ -2197,11 +2262,9 @@ proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
 @select(h)
 // portable flx sockets test (rt = regression test)
 
-// not sure what to call this to get it called.
-// it's not posix, it's portable (or should be)
 #import <flx.flxh>
-include "flx_stream";
-open Flx_stream;
+include "flx_socket";
+open Flx_socket;
 
 // write_line's actually harder than this...
 // I used to have trouble with the string's memory, just floating away...
@@ -2210,7 +2273,7 @@ open Flx_stream;
 // but you'd like to get a bool result for when you've
 // hit eof. also isn't portable wrt linefeeds. crashes when
 // run from cygwin. that's a bummer.
-proc get_line(strm: flx_stream, s: &string)
+proc get_line(strm: flx_socket, s: &string)
 {
   var c: char;
   val ac = C_hack::address_of(c);
@@ -2245,7 +2308,7 @@ proc get_line(strm: flx_stream, s: &string)
 
 fun str_addr: string -> address = "(void*)$1.c_str()";
 
-proc write_string(strm: flx_stream, s: string)
+proc write_string(strm: flx_socket, s: string)
 {
 // I have to write a copy, else I get bad/stale memory for the string.
 // is this something to do with inlining?
@@ -2277,7 +2340,7 @@ spawn_fthread
 {
   {
     // print "Connector dude\n";  // get rid of, hard to test
-    var c: flx_stream;
+    var c: flx_socket;
     flx_connect(&c, c"127.0.0.1", port); // connect to localhost
     var str: string;
 
@@ -2289,7 +2352,7 @@ spawn_fthread
   };
 };
 
-var s: flx_stream;
+var s: flx_socket;
 flx_accept(listener, &s);
 
 print "got connection\n";
@@ -2299,8 +2362,6 @@ var str: string;
 get_line(s, &str);
 
 print "server got "; print str; endl;
-
-// read a line
 
 
 @h = tangler("test/posix_t1.flx")
