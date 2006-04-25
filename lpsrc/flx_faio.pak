@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.23  2006/04/25 07:40:16  rfistman
+flx web server now does some basic get line/url parsing, still needs to
+open actual files and send them down the wire.
+
 Revision 1.22  2006/04/25 01:22:30  rfistman
 moved the socket getline stuff (temporarily) into Flx_socket.
 added a demo felix webserver (test/demo_webserver.flx). currently serves only
@@ -2756,6 +2760,42 @@ print "some sort of server process\n";
 include "flx_socket";
 open Flx_socket;
 
+header = """
+string
+getline_to_url(const string& get)
+{
+    unsigned int pos = get.substr(4).find(' ');
+
+    if(pos == string::npos) return "";
+
+    return get.substr(4, pos);
+}
+
+// split url into base and file name http://foo.com/file.html
+// -> http://foo.com + file.html. failure returns nothing.
+bool
+split_url(const string& url, string& base, string& file)
+{
+    // assume http:// prefixed
+    unsigned int pos = url.substr(7).find('/');
+
+    if(string::npos == pos)  return false;       // all bad
+
+    base = url.substr(0, pos+7);
+    file = url.substr(pos+7+1);
+    return true;            // all good
+}
+
+bool
+split_getline(const string& get, string& base, string& file)
+{
+    return split_url(getline_to_url(get), base, file);
+}
+""";
+
+proc parse_get_line: string*lvalue[bool]*lvalue[string]*lvalue[string]
+ = '$2 = split_getline($1, $3, $4);';
+
 // TODO: fill in that length field, stream back the requested jpeg,
 // get port from argv.
 // took out the Content-Length: 604. line. wasn't right anyway. still
@@ -2799,6 +2839,13 @@ val html_footer = """
 </html>
 """;
 
+proc serve_file(fname: string, s: flx_socket)
+{
+  // if empty string, serve index.html
+  // set mime type depending on extension...
+  // serve a "not found page" for that case (check for recursion)
+  print "serve file: "; print fname; endl;
+}
 
 val webby_port = 1234;
 
@@ -2813,20 +2860,37 @@ mk_flx_listener(&listener, &p, 1);
 forever {
   var s: flx_socket;
   flx_accept(listener, &s);  // blocking
+  print "got connection (or something)\n";  // error check here
+
+// should spawn fthread here to allow for more io overlap
 
   var line: string;
   get_line(s, &line);  // should be the GET line.
 
-  print "got line: "; print line; endl;
+  // print "got line: "; print line; endl;
 
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
-  // PARSE URL HERE
+  var succ: bool;
+  var base: string;
+  var file: string;
+
+  parse_get_line(line, succ, base, file);
+  // print "succ="; print succ; endl;
+
+  if succ then {
+    print "well formed get...\n";
+    print "base="; print base; endl;
+    print "file="; print file; endl;
+
+    serve_file(file, s);
+  } else {
+    print "BAD get line: "; print line; endl;
+  } endif;
 
   // or pretend I know it already (p.s. I DON'T know html)
   write_string(s, html_header + html_page + ((("x"*60 )+"<br>")*100) + html_footer);
   
-  print "got connection (or something)\n";
   flx_close(s);
 
 };
