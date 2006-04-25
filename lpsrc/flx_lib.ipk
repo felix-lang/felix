@@ -648,22 +648,12 @@ publish "option type"
 publish "Universal type 'x as x'"
   typedef any = any;
 
-publish "Array type"
-  typedef array[t,n] = t ^ n;
-
 publish "Lvalue hack"
   typedef lvalue[t] = lval t;
 
 publish "Deref hack"
   inline fun deref[t](p:&t):lval t => _deref p;
-  
-publish "Array access: works on LHS of assignment too"
-fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
-fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
-
-publish "Explicit array store function"
-proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.get_data()))[$2]=$3;";
-
+ 
 @def gen_uint(t):
   for opname,op in [
     ("bxor","^"),
@@ -1899,7 +1889,18 @@ module Assoc_list
 @#------------- Array -------------------
 publish "Array manipulation"
 
-module Array {
+module Array 
+{
+  publish "Array type"
+  typedef array[t,n] = t ^ n;
+
+  publish "Array access: works on LHS of assignment too"
+  fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
+  fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
+
+  publish "Explicit array store function"
+  proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.get_data()))[$2]=$3;";
+
   fun len[T, N] (x:array[T, N]): int => Typing::memcount[N];
 
   fun map[T, N, U] (_f:T->U) (x:array[T, N]): array[U, N] = {
@@ -2054,6 +2055,7 @@ open Int;
 open Double;
 open Char;
 open String;
+open Array;
 open Stdout;
 open Arith_casts;
 open Control;
