@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.22  2006/04/25 01:22:30  rfistman
+moved the socket getline stuff (temporarily) into Flx_socket.
+added a demo felix webserver (test/demo_webserver.flx). currently serves only
+a static file and does not yet parse the GET line.
+
 Revision 1.21  2006/04/23 06:38:54  rfistman
 fixed annoying "NULL is not a pointer" warning
 
@@ -2289,17 +2294,7 @@ proc flx_connect(s: &flx_socket, addr: charp, port: int)
 #endif
 }
 
-} // module Flx_socket
-
-@head(1,"Felix Async IO tests")
-
-@h = tangler("test/rt_faio_01.flx")
-@select(h)
-// portable flx sockets test (rt = regression test)
-
-#import <flx.flxh>
-include "flx_socket";
-open Flx_socket;
+/// TEMPORARILY PUTTING THIS CRUFTY READ/PUT LINE CODE HERE
 
 // write_line's actually harder than this...
 // I used to have trouble with the string's memory, just floating away...
@@ -2355,6 +2350,18 @@ var bugger = s;
   // print "write_line len: "; print slen; endl;
   flx_write(strm, &slen, addr, &eof);
 }
+} // module Flx_socket
+
+@head(1,"Felix Async IO tests")
+
+@h = tangler("test/rt_faio_01.flx")
+@select(h)
+// portable flx sockets test (rt = regression test)
+
+#import <flx.flxh>
+include "flx_socket";
+open Flx_socket;
+
 print "flx tcp stream test\n";
 // System::exit 0;  // Work in progress
 
@@ -2742,4 +2749,88 @@ print "some sort of server process\n";
 
 // make this the client as well. check args and do stuff.
 // print a file? read a line. how to do that with flx_stream?
+
+@h = tangler("test/demo_webserver.flx")
+@select(h)
+#import <flx.flxh>
+include "flx_socket";
+open Flx_socket;
+
+// TODO: fill in that length field, stream back the requested jpeg,
+// get port from argv.
+// took out the Content-Length: 604. line. wasn't right anyway. still
+// works with firefox that goes up to EOF.
+// what's ETag?
+val html_header = """
+HTTP/1.1 200 OK
+Date: Tue, 25 Apr 2006 00:16:12 GMT
+Server: felix web server
+Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT
+ETag: "6d8029-25c-43e10339"
+Accept-Ranges: bytes
+Connection: close
+Content-Type: text/html
+""";
+
+val html_page = """
+<html>
+<head>
+<title>Felix!!!</title>
+</head>
+
+<body bgcolor="#00F000">
+
+This is a static page served by the felix web server.
+For more info see the <a href=http://felix.sf.net>felix</a> website.
+
+
+<table width="100%" height="100%" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+     <td align="center" valign="middle">
+        <img src="./felix.jpg">
+     </td>
+  </tr>
+</table>
+""";
+
+val html_footer = """
+</body>
+
+</html>
+""";
+
+
+val webby_port = 1234;
+
+print "FLX WEB!!! listening on port "; print webby_port; endl;
+
+// up the queue len for stress testing
+var p = webby_port;
+var listener: flx_listener;
+mk_flx_listener(&listener, &p, 1);
+
+
+forever {
+  var s: flx_socket;
+  flx_accept(listener, &s);  // blocking
+
+  var line: string;
+  get_line(s, &line);  // should be the GET line.
+
+  print "got line: "; print line; endl;
+
+  // now I need to parse the GET line, get a file name out of its url
+  // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
+  // PARSE URL HERE
+
+  // or pretend I know it already (p.s. I DON'T know html)
+  write_string(s, html_header + html_page + ((("x"*60 )+"<br>")*100) + html_footer);
+  
+  print "got connection (or something)\n";
+  flx_close(s);
+
+};
+
+flx_close(listener);
+
 
