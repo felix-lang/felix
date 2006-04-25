@@ -1001,10 +1001,10 @@ let gen_exe filename syms
     (* FIX THIS TO PUT SOURCE REFERENCE IN *)
     | `BEXE_halt (sr,s) -> 
        "      // halt " ^ s ^ "\n" ^
-       "      throw flx::rtl::flx_exec_failure(\n" ^
+       "      throw flx::rtl::flx_exec_failure_t(\n" ^
        "        \"" ^ Flx_srcref.short_string_of_src sr ^ "\",\n" ^
        "        \"halt\",\n" ^
-       "        \"" ^ s ^ "\",\n" ^
+       "        \"" ^ s ^ "\"\n" ^
        "      );\n"
 
     | `BEXE_goto (sr,s) -> 
