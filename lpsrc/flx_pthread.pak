@@ -1,5 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.22  2006/04/25 10:38:42  rfistman
+added solaris libs (-lrt for semaphores, -lnsl, -lsocket) missing from some
+pkgs and added -lnsl -lsocket to flx_pkgconfig bootstrap, added missing
+namespace to evtport demuxer
+
 Revision 1.21  2006/04/18 05:25:45  skaller
 Rewrite sleep queue.
 
@@ -147,6 +152,7 @@ if BSD or MACOSX:
 
 if SOLARIS:
   PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
+  EXTRA_SYS_LIBS = "-lrt " # man sem_wait
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES

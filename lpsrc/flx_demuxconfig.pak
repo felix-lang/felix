@@ -99,7 +99,7 @@ if HAVE_KQUEUE_DEMUXER:
 
 if SOLARIS:
   DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
-  EXTRA_SYS_LIBS = "-lsocket -lnsl"
+  EXTRA_SYS_LIBS = "-lsocket -lnsl "
 
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES

@@ -24,6 +24,8 @@ if WIN32:
     FLXFLAGS = "/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock "
   else:
     FLXFLAGS = "-lws2_32 -lmswsock "
+elif SOLARIS:
+  FLXFLAGS = "-lsocket -lnsl " # uses async hooker->faio->demux->sockets
     
 DRLIBS = ['libflx_async','libfaio','libdemux','libflx_pthread','libflx']
 

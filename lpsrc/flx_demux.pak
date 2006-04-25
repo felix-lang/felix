@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.22  2006/04/25 10:38:42  rfistman
+added solaris libs (-lrt for semaphores, -lnsl, -lsocket) missing from some
+pkgs and added -lnsl -lsocket to flx_pkgconfig bootstrap, added missing
+namespace to evtport demuxer
+
 Revision 1.21  2006/04/23 06:09:15  rfistman
 fixed bug in async win32 ReadFile/WriteFile code - wasn't handling
 ERROR_IO_PENDING properly. Was also not opening files with FILE_FLAG_OVERLAPPED
@@ -318,6 +323,8 @@ public:
 
 #include "demux_posix_demuxer.hpp"
 
+namespace flx { namespace demux {
+
 // Event ports are oneshot by default (I don't know if you can change that).
 // Events are tracked only by fd and not fd*event, so you cannot add
 // separate wakeups for read and write with the same fd and hope for it to
@@ -351,7 +358,6 @@ public:
 
   virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
 };
-
 
 }} // namespace demux, flx
 #endif
@@ -1489,7 +1495,8 @@ epoll_demuxer::get_evts(bool poll)
 #include <unistd.h> // close
 #include <assert.h>
 
-using namespace flx::pthread;
+// using namespace flx::pthread;
+
 namespace flx { namespace demux {
 
 // header files for this stuff?
