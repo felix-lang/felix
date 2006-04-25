@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.177  2006/04/25 09:28:32  rfistman
+added "solaris" back to list of known models. solaris build now configures
+
 Revision 1.176  2006/04/08 03:53:44  skaller
 Detect vsnprintf.. some Windows don't provide it even though
 MSDN says it is available. The MS variation when available
@@ -1138,7 +1141,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
       COMPILE_DYNAMIC_FLX = opt.PIC + "-bundle -c " "-fno-common "
       LINK_DYNAMIC_FLX = "-bundle "
 
-    elif opt.model=="posix" or opt.model=="linux":
+    elif opt.model=="posix" or opt.model=="linux" or opt.model == "solaris":
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
       opt.EXT_SHLIB = ".so"
