@@ -1979,18 +1979,7 @@ module Array {
     forall i in 0 upto len(x) - 1 do
       if eq(x.[i], e) do
         return true;
-    done;
-    done;
-
-    return false;
-  }
-
-  fun mem[T, N] (eq:T*T->bool) (e:T) (x:array[T, N]): bool = {
-    var i : int;
-    forall i in 0 upto len(x) - 1 do
-      if eq(e, x.[i]) do
-        return true;
-    done;
+      done;
     done;
 
     return false;
@@ -2001,7 +1990,7 @@ module Array {
     forall i in 0 upto len(x) - 1 do
       if eq(x.[i]) do
         return true;
-    done;
+      done;
     done;
 
     return false;
@@ -2012,18 +2001,7 @@ module Array {
     forall i in 0 upto len(x) - 1 do
       if eq(x.[i], e) do
         return Some x.[i];
-    done;
-    done;
-
-    return None[T];
-  }
-
-  fun find[T, N] (eq:T*T->bool) (e:T) (x:array[T, N]): opt[T] = {
-    var i : int;
-    forall i in 0 upto len(x) - 1 do
-      if eq(e, x.[i]) do
-        return Some x.[i];
-    done;
+      done;
     done;
 
     return None[T];
