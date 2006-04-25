@@ -393,7 +393,7 @@ let consider syms bt i ts signs call_sr =
           with Not_found -> None
         in
         match maybe_extra_mgu with
-        | None -> print_endline "COULDN'T RESOLVE EQUATIONS"
+        | None -> () )(* print_endline "COULDN'T RESOLVE EQUATIONS" *)
         | Some extra_mgu -> 
            (*
            print_endline ("Resolved equations with mgu:\n  " ^
