@@ -1896,6 +1896,152 @@ module Assoc_list
   typedef assoc_list[A,B] = List::list[(A,B)];
 }
 
+@#------------- Array -------------------
+publish "Array manipulation"
+
+module Array {
+  fun len[T, N] (x:array[T, N]): int => Typing::memcount[N];
+
+  fun map[T, N, U] (_f:T->U) (x:array[T, N]): array[U, N] = {
+    var o : array[U, N];
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      o.[i] = _f x.[i];
+    done;
+
+    return o;
+  };
+
+  fun rev[T, N] (x:array[T, N]): array[T, N] = {
+    var o : array[T, N];
+    var i : int;
+
+    val length = len x;
+
+    forall i in 0 upto length - 1 do
+      o.[length - 1 - i] = x.[i];
+    done;
+
+    return o;  
+  }
+
+  proc iter[T, N] (_f:T->void) (x:array[T, N]) {
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      _f x.[i];
+    done;
+  }
+
+  fun fold_left[T, N, U] (_f:U->T->U) (init:U) (x:array[T, N]): U = {
+    var o = init;
+    var i : int;
+
+    forall i in len(x) - 1 downto 0 do 
+      o = _f o x.[i];
+    done;
+
+    return o;
+  }
+
+  fun fold_right[T, N, U] (_f:T->U->U) (x:array[T, N]) (init:U): U = {
+    var o = init;
+    var i : int;
+    val length = len x;
+
+    forall i in 0 upto len(x) - 1 do 
+      o = _f x.[i] o;
+    done;
+
+    return o;
+  }
+
+  /*
+  fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
+    var o = array[T, N + M];
+    val i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      o.[i] = x.[i];
+    done;
+
+    val j : int;
+
+    forall k in 0 upto len(y) - 1 do
+      o.[i + j] = y.[i];
+    done;
+
+    return o;
+  }
+  */
+
+  fun mem[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): bool = {
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      if eq(x.[i], e) do
+        return true;
+    done;
+    done;
+
+    return false;
+  }
+
+  fun mem[T, N] (eq:T*T->bool) (e:T) (x:array[T, N]): bool = {
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      if eq(e, x.[i]) do
+        return true;
+    done;
+    done;
+
+    return false;
+  }
+
+  fun mem[T, N] (eq:T->bool) (x:array[T, N]): bool = {
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      if eq(x.[i]) do
+        return true;
+    done;
+    done;
+
+    return false;
+  }
+
+  fun find[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      if eq(x.[i], e) do
+        return Some x.[i];
+    done;
+    done;
+
+    return None[T];
+  }
+
+  fun find[T, N] (eq:T*T->bool) (e:T) (x:array[T, N]): opt[T] = {
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      if eq(e, x.[i]) do
+        return Some x.[i];
+    done;
+    done;
+
+    return None[T];
+  }
+
+  fun find[T, N] (eq:T->bool) (x:array[T, N]): opt[T] = {
+    var i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      if eq(x.[i]) do
+        return Some x.[i];
+    done;
+    done;
+
+    return None[T];
+  }
+}
+
 @#------------- Lexer -------------------
 // This module provides functions to 
 // use in conjunction with the reglex construction
