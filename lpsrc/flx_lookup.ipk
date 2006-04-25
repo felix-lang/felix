@@ -1285,6 +1285,7 @@ and bind_type'
     | `BTYP_sum (`BTYP_sum a :: t) -> `BTYP_sum (fold_left (fun acc b -> 
       match b with 
       | `BTYP_sum b -> acc @ b 
+      | `BTYP_void -> acc 
       | _ -> clierr sr "Sum of sums required"
       ) a t)
 
@@ -1292,6 +1293,7 @@ and bind_type'
       match b with 
       | `BTYP_unitsum b -> acc + b 
       | `BTYP_tuple [] -> acc + 1
+      | `BTYP_void -> acc
       | _ -> clierr sr "Sum of unitsums required"
       ) a t)
 
@@ -1299,6 +1301,7 @@ and bind_type'
       match b with 
       | `BTYP_unitsum b -> acc + b 
       | `BTYP_tuple [] -> acc + 1
+      | `BTYP_void -> acc 
       | _ -> clierr sr "Sum of unitsums required"
       ) 1 t)
 
@@ -2673,7 +2676,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       *)
  
     | `SYMDEF_abs _ 
-    | `SYMDEF_cclass _ ->
+    | `SYMDEF_cclass _ 
+    | `SYMDEF_union _ ->
       (* recursively lookup using "_ctor_" ^ name :
          WARNING: we might find a constructor with the
          right name for a different cclass than this one,
