@@ -1278,6 +1278,33 @@ and bind_type'
       *)
       `BTYP_typefun (bparams, bt r, bbody)
 
+  | `TYP_apply (`AST_name (_,"_flatten",[]),t2) ->
+    let t2 = bt t2 in
+    begin match t2 with
+    | `BTYP_unitsum a -> t2
+    | `BTYP_sum (`BTYP_sum a :: t) -> `BTYP_sum (fold_left (fun acc b -> 
+      match b with 
+      | `BTYP_sum b -> acc @ b 
+      | _ -> clierr sr "Sum of sums required"
+      ) a t)
+
+    | `BTYP_sum (`BTYP_unitsum a :: t) -> `BTYP_unitsum (fold_left (fun acc b -> 
+      match b with 
+      | `BTYP_unitsum b -> acc + b 
+      | `BTYP_tuple [] -> acc + 1
+      | _ -> clierr sr "Sum of unitsums required"
+      ) a t)
+
+    | `BTYP_sum (`BTYP_tuple []  :: t) -> `BTYP_unitsum (fold_left (fun acc b -> 
+      match b with 
+      | `BTYP_unitsum b -> acc + b 
+      | `BTYP_tuple [] -> acc + 1
+      | _ -> clierr sr "Sum of unitsums required"
+      ) 1 t)
+
+    | _ -> clierr sr ("Cannot flatten type " ^ sbt syms.dfns t2)
+    end
+ 
   | `TYP_apply(#qualified_name_t as qn, t2) ->
      let t2 = bt t2 in
      (*
@@ -1339,6 +1366,7 @@ and bind_type'
      *)
      t
 
+   
   | `TYP_apply (t1,t2) ->
     let t1 = bt t1 in
     let t2 = bt t2 in
