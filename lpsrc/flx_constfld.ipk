@@ -231,6 +231,9 @@ let const_fold' e sr name arg =
         int_of_big_int y 
       with _ -> clierr sr "String repeat count too large"
     in
+    if String.length x = 1 then
+      `AST_literal (sr,`AST_string (String.make y x.[0]))
+    else
     let s = Buffer.create (String.length x * y) in
     for i = 1 to y do
       Buffer.add_string s x
