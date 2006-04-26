@@ -2603,6 +2603,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   | NonFunctionEntry (index) ->
     begin match get_data syms.dfns index with
     {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
+    (*
+    print_endline ("FOUND " ^ id);
+    *)
     begin match entry with
     | `SYMDEF_inherit _ -> 
       clierr sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
@@ -2683,6 +2686,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
          right name for a different cclass than this one,
          it isn't clear this is wrong though.
       *)
+      (*
+      print_endline "mapping type name to _ctor_type";
+      *)
       lookup_name_in_table_dirs_with_sig (table, dirs) 
       syms env rs sra srn ("_ctor_" ^ name) ts t2 
     
@@ -2706,6 +2712,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     end
 
   | FunctionEntry fs ->
+    (*
+    print_endline ("Found function set size " ^ si (length fs));
+    *)
     let ro = 
       resolve_overload'
       syms rs sra fs name t2 ts
@@ -2727,6 +2736,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           Some tb 
 
       | None ->
+        (*
+        print_endline "Can't overload: Trying opens";
+        *)
         let opens : entry_set_t list = 
           concat
           (
@@ -2739,15 +2751,35 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             dirs
           )
         in
-          (*
-          print_endline (si (length opens) ^ " OPENS BUILT for " ^ name);
-          *)
-          let fs:entry_kind_t list = 
-            match opens with 
-            | [NonFunctionEntry i] -> [i]
-            | [FunctionEntry ii] -> ii
-            | _ -> merge_functions opens name 
-          in
+        (*
+        print_endline (si (length opens) ^ " OPENS BUILT for " ^ name);
+        *)
+        match opens with 
+        | [NonFunctionEntry i] when 
+          (
+              match get_data syms.dfns i with
+              {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
+              (*
+              print_endline ("FOUND " ^ id);
+              *)
+              match entry with
+              | `SYMDEF_abs _ 
+              | `SYMDEF_cclass _ 
+              | `SYMDEF_union _ -> true
+              | _ -> false
+           ) ->
+             (*
+             print_endline "mapping type name to _ctor_type2";
+             *)
+             lookup_name_in_table_dirs_with_sig (table, dirs) 
+             syms env rs sra srn ("_ctor_" ^ name) ts t2 
+        | _ -> 
+        let fs = 
+          match opens with
+          | [NonFunctionEntry i] -> [i]
+          | [FunctionEntry ii] -> ii
+          | _ -> merge_functions opens name 
+        in
           let ro = 
             resolve_overload'
             syms rs sra fs name t2 ts
