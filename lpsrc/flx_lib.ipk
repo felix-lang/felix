@@ -1681,6 +1681,17 @@ module List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
+  fun _ctor_list[T, N] (x:Array::array[T, N]) = {
+    var o = Empty[T];
+    var i : int;
+
+    forall i in Array::len(x) - 1 downto 0 do
+      o = add(x.[i], o);
+    done;
+
+    return o;
+  }
+
   fun len[T] : list[T] -> int =
     | Empty => 0
     | Cons (_,?t) => 1 + len t
@@ -1956,9 +1967,9 @@ module Array
     return o;
   }
 
-  /*
-  fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
-    var o = array[T, N + M];
+/*
+  fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, _flatten(N + M)] = {
+    var o = array[T, _flatten(N + M)];
     val i : int;
 
     forall i in 0 upto len(x) - 1 do
@@ -1973,7 +1984,7 @@ module Array
 
     return o;
   }
-  */
+*/
 
   fun mem[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): bool = {
     var i : int;
