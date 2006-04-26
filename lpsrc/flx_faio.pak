@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.24  2006/04/26 10:38:52  rfistman
+demo web server now serving up text web pages. not right yet with binary
+stuff tho.
+
 Revision 1.23  2006/04/25 07:40:16  rfistman
 flx web server now does some basic get line/url parsing, still needs to
 open actual files and send them down the wire.
@@ -2845,6 +2849,14 @@ proc serve_file(fname: string, s: flx_socket)
   // set mime type depending on extension...
   // serve a "not found page" for that case (check for recursion)
   print "serve file: "; print fname; endl;
+
+  // this isn't right, don't want the contents parsed as text, want them
+  // sent faithfully over the wire. of course doesn't work for jpegs and other
+  // binary formats.
+  var contents = Text_file::load(fname);
+  // print "loaded: "; print contents; endl;
+  print "contents len="; print (len contents); endl;
+  write_string(s, html_header + contents);
 }
 
 val webby_port = 1234;
@@ -2889,7 +2901,7 @@ forever {
   } endif;
 
   // or pretend I know it already (p.s. I DON'T know html)
-  write_string(s, html_header + html_page + ((("x"*60 )+"<br>")*100) + html_footer);
+  //write_string(s, html_header + html_page + ((("x"*60 )+"<br>")*100) + html_footer);
   
   flx_close(s);
 
