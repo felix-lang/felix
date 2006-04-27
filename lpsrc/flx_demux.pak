@@ -1,5 +1,12 @@
 @head(1,'demux')
 $Log$
+Revision 1.23  2006/04/27 00:53:03  rfistman
+added demux_quitter to take down kqueue nicely. a simple quitting selfpipe
+trick was not enough as the kqueue could exit before the selfpipe's callback
+had finished. we now have to two ways to get attention on a (for now posix)
+demuxer: selfpiper + demux_quitter. quitter will come in handy for other
+demuxer whose quit boundary conditions are a little hazy.
+
 Revision 1.22  2006/04/25 10:38:42  rfistman
 added solaris libs (-lrt for semaphores, -lnsl, -lsocket) missing from some
 pkgs and added -lnsl -lsocket to flx_pkgconfig bootstrap, added missing
@@ -978,7 +985,8 @@ posix_timer_queue::thread_start(void* udat)
 bool
 posix_timer_queue::thread_loop_body()
 {
-    flx::pthread::flx_mutex_locker_t    locker(lock);    // lock on. lock off when waiting on condition
+    // lock on. lock off when waiting on condition
+    flx::pthread::flx_mutex_locker_t    locker(lock);
 
     int        res;
 
@@ -2717,17 +2725,18 @@ kqueue_demuxer::~kqueue_demuxer()
   // handy self pipe waker. Luckily, kqueues are responsive to new fds,
   // otherwise we'd need the self pipe waker to be there from the start 
 
-fprintf(stderr, "trying to nicely take down kqueue\n");
   // we don't want exceptions being thrown in a destructor
   try {
+    // NEW and IMPROVED!!! demux quitter which sets demux quit flag
+    // via self pipe trick then waits for self pipe/quitting callback
+    // to finish. no fear of quitter being destructed early!
+
     // this will wake the thread (there should only be one atm), however
     // that's just another race between kevent and close. really need to
     // extend self piper to set a quit flag. we have to currently assume
     // that there is only event collecting thread.
-    self_piper sp;
-    // clean this up
-    sp.install(this, true);  // install WITH QUIT FLAG
-    sp.wake();
+    demux_quitter quitter;
+    quitter.quit(this);
   } catch(...) {
     fprintf(stderr, "error waking kqueue with self pipe trick\n");
   }
@@ -2871,6 +2880,7 @@ kqueue_demuxer::get_evts(bool poll)
   // timeout.tv_nsec = 0; // 10^9 nanoseconds per second
 
   nevts = kevent(kq, NULL, 0, &ev, 1, tptr);  // wait or poll
+
   if(nevts <= 0)
   {
     // error, else timeout & return to allow cancel
@@ -3548,6 +3558,8 @@ int get_socket_error(int s, int* socket_err);
 
 #include <flx_demux_config.hpp>
 #include "demux_posix_demuxer.hpp"
+#include "pthread_mutex.hpp"  // mutexes for quitter class
+#include "pthread_condv.hpp"  // condition var for same
 
 namespace flx { namespace demux {
 
@@ -3557,9 +3569,21 @@ namespace flx { namespace demux {
 // data.
 class DEMUX_EXTERN selfpipe_wakeup : public socket_wakeup {
 public:
-    bool request_quit;
-
     virtual void wakeup(posix_demuxer& demux);
+};
+
+// for asking demuxer (posix?) to quit and then waiting on it to do so
+// derived from selfpipe_wakeup because we still have to read that
+// byte, dammit.
+class DEMUX_EXTERN quitter_wakeup : public selfpipe_wakeup {
+  flx::pthread::flx_mutex_t cv_lock;       // to work with the condition var
+  flx::pthread::flx_condv_t finished_cond; 
+  bool finished;   // might seem redundant, but that's how CVs work.
+
+public:
+  quitter_wakeup();
+  void wait_finish();
+  virtual void wakeup(posix_demuxer& demux);
 };
 
 class DEMUX_EXTERN auto_fd {
@@ -3570,15 +3594,34 @@ public:
     ~auto_fd();
 };
 
+// make portable here? make part of the wakeup obj?
+class DEMUX_EXTERN pipe_pair {
+  // self pipe trick!!! fd[0] = read end, fd[1] = write end.
+  auto_fd         fds[2];
+public:
+  pipe_pair();
+  // void read_byte(); // done for us by wakeup obj.
+  void write_byte();
+  int get_read_end();
+};
+
+// wakes a demuxer, for when you want some kind of attention
 class DEMUX_EXTERN self_piper {
-    // self pipe trick!!! fd[0] = read end, fd[1] = write end.
-    auto_fd         fds[2];
+    pipe_pair       pp;
     selfpipe_wakeup spw;
 
 public:
-    self_piper();
-    void install(posix_demuxer* demux, bool request_quit = false);
+    // self_piper();
+    void install(posix_demuxer* demux);
     void wake();
+};
+
+// quits a demuxer (posix only atm)
+class DEMUX_EXTERN demux_quitter {
+  pipe_pair      pp;
+  quitter_wakeup qw;
+public:
+  void quit(posix_demuxer* demux); // blocks until demuxer responds
 };
 
 }} // namespace demux, flx
@@ -3607,38 +3650,11 @@ auto_fd::~auto_fd()
         perror("auto fd close");
 }
 
-
-self_piper::self_piper()
-{
-    // fprintf(stderr, "creating pipe for self-pipe trick\n");
-
-    int         self_pipe_fds[2];
-    if(pipe(self_pipe_fds) == -1)
-    {
-        perror("ts_select_demuxer::self_pipe");
-        throw -1;
-    }
-
-    // fprintf(stderr, "self pipe fds: read: %i, write: %i\n",
-    //  self_pipe_fds[0], self_pipe_fds[1]);
-
-    fds[0].fd = self_pipe_fds[0];
-    fds[1].fd = self_pipe_fds[1];
-
-    spw.s = self_pipe_fds[0];   // setup wakeup for read end of pipe
-
-    // this is a tiny bit ugly. I've added a flag to self_piper that causes
-    // its wakeup callback to set the demuxer's quit flag. I've arranged this
-    // so that the thread that sets the flag (the wakeup callback) and the
-    // the thread that checks it (the demux wait thread) are the same.
-    // Precarious!
-    spw.request_quit = false;
-}
-
 void
-self_piper::install(posix_demuxer* demux, bool request_quit)
+self_piper::install(posix_demuxer* demux)
 {
-    spw.request_quit = request_quit;
+    fprintf(stderr, "installing self piper\n");
+    spw.s = pp.get_read_end();
     int res = demux->add_socket_wakeup(&spw, PDEMUX_READ);
     assert(-1 != res);
 }
@@ -3648,15 +3664,8 @@ self_piper::install(posix_demuxer* demux, bool request_quit)
 void
 self_piper::wake()
 {
-    // fprintf(stderr, "waking select with write (blocking?)\n");
-
-    char    b = 1;
-    ssize_t nbytes;
-    // is this blocking? I guess it has to be...
-    nbytes = write(fds[1].fd, &b, 1);       // wake up, jeff!
-
-    if(-1 == nbytes) perror("self-pipe write");
-    assert(1 == nbytes);
+    // fprintf(stderr, "self_piper::wake\n");
+    pp.write_byte();
 }
 
 // currently setup to not see the self piper
@@ -3675,25 +3684,133 @@ void
 selfpipe_wakeup::wakeup(posix_demuxer& demux)
 {   
     // fprintf(stderr, "selfpipe wakeup: read the pending byte and re-arm\n");
-
-    // hack! check flag and set demux quit flag
-    // flag visible to the wait thread.
-    if(request_quit) demux.set_quit_flag(true);
-    
+    // not using the pipe pair because it doesn't know that it's part of
+    // one. not to worry.
     ssize_t         nbytes;
     char            b;
     
     // if this were read then this fn would work with non-sockets
+    // EH? It IS read.
     nbytes = read(s, &b, 1);
     
-    if(nbytes == -1) perror("recv");
+    if(nbytes == -1) perror("read");
     
     // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
     assert(nbytes == 1 && b == 1);
     
-    // add self back!
+    // add self back! this happens even when we're quitting, but that
+    // doesn't seem to matter.
+    // fprintf(stderr, "selfpiper rearming\n");
     int res = demux.add_socket_wakeup(this, PDEMUX_READ);
     assert(-1 != res);
+}
+
+pipe_pair::pipe_pair()
+{
+  // fprintf(stderr, "creating pipe for self-pipe trick\n");
+
+  int         self_pipe_fds[2];
+  if(pipe(self_pipe_fds) == -1)
+  {
+      perror("ts_select_demuxer::self_pipe");
+      throw -1;
+  }
+
+  // fprintf(stderr, "self pipe fds: read: %i, write: %i\n",
+  //  self_pipe_fds[0], self_pipe_fds[1]);
+
+  fds[0].fd = self_pipe_fds[0];
+  fds[1].fd = self_pipe_fds[1];
+}
+
+// never gets called.
+/*
+void
+pipe_pair::read_byte()
+{
+  ssize_t         nbytes;
+  char            b;
+    
+  // if this were read then this fn would work with non-sockets
+  // EH? It IS read.
+  nbytes = read(fds[0].fd, &b, 1);  // read end of the pipe
+    
+  if(nbytes == -1) perror("read");
+    
+  // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
+  assert(nbytes == 1 && b == 1);
+}
+*/
+
+void
+pipe_pair::write_byte()
+{
+    char    b = 1;
+    ssize_t nbytes;
+    // is this blocking? I guess it has to be...
+    nbytes = write(fds[1].fd, &b, 1);       // wake up, jeff!
+
+    // fprintf(stderr, "self_piper::wake write returned: %i\n", nbytes);
+
+    if(-1 == nbytes) perror("pipe_pair::write_byte");
+    assert(1 == nbytes);
+}
+
+int
+pipe_pair::get_read_end()
+{
+  return fds[0].fd;
+}
+
+quitter_wakeup::quitter_wakeup()
+  : finished(false)
+{
+  // nothing
+}
+
+void
+quitter_wakeup::wait_finish()
+{
+  flx::pthread::flx_mutex_locker_t    locker(cv_lock);
+
+  // wait for the wakeup to say it's finished
+  while(!finished)
+  {
+    finished_cond.wait(&cv_lock);
+  }
+}
+
+void
+quitter_wakeup::wakeup(posix_demuxer& demux)
+{
+  // fprintf(stderr, "quitter woke up\n");
+  // call parent class to eat the selfpipe byte
+  // this actually reinstalls wakeup, which we might not want to do.
+  selfpipe_wakeup::wakeup(demux);
+
+  // fprintf(stderr, "setting demux quit flag\n");
+  // demux thread, which is running this code now, should not re-enter
+  // the demux wait thanks to this flag. because the same thread that
+  // sets the flag reads the flag, we shouldn't need synchronisation
+  demux.set_quit_flag(true);
+
+  // fprintf(stderr, "quitter ate byte, signalling condition var\n");
+  finished = true;
+  finished_cond.signal();
+  // do absolutely NOTHING here as we may have already been destructed. boom.
+}
+
+void
+demux_quitter::quit(posix_demuxer* demux)
+{
+   // fprintf(stderr, "trying to quit demuxer...\n");
+   qw.s = pp.get_read_end();
+   int res = demux->add_socket_wakeup(&qw, PDEMUX_READ);
+   assert(-1 != res);
+   // write a byte to wake up demuxer. callback sets quit flag.
+   pp.write_byte(); 
+   // wait for callback to then set the cond variable we wait on
+   qw.wait_finish();
 }
 
 } }
