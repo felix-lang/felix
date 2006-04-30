@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.24  2006/04/30 02:09:37  rfistman
+got rid of suckitnsee kqueue config (too complicated with pthread use)
+added a quitter to ts_select_demuxer to fix crash
+fixed string exception in demo web server caused by POSTs
+
 Revision 1.23  2006/04/27 00:53:03  rfistman
 added demux_quitter to take down kqueue nicely. a simple quitting selfpipe
 trick was not enough as the kqueue could exit before the selfpipe's callback
@@ -689,6 +694,8 @@ public:
 #include "demux_self_piper.hpp"
 #include "pthread_mutex.hpp"
 
+#include <stdio.h>// for HACK
+
 namespace flx { namespace demux {
 
 // thread safe version of select demuxer
@@ -703,6 +710,7 @@ protected:
     virtual void    get_evts(bool poll);
 public:
   ts_select_demuxer();
+  ~ts_select_demuxer();
 
   virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
 };
@@ -2735,10 +2743,11 @@ kqueue_demuxer::~kqueue_demuxer()
     // that's just another race between kevent and close. really need to
     // extend self piper to set a quit flag. we have to currently assume
     // that there is only event collecting thread.
+    fprintf(stderr, "taking down kqueue with quitter (QUITTER!)\n");
     demux_quitter quitter;
     quitter.quit(this);
   } catch(...) {
-    fprintf(stderr, "error waking kqueue with self pipe trick\n");
+    fprintf(stderr, "error waking kqueue with self pipe quitter\n");
   }
 
   //if(syscall(SYS_close, kq) == -1)
@@ -3054,7 +3063,6 @@ posix_demuxer::socket_recv(int s, sel_param* pb)
 {
   // why do I have the zero buffer size?
   assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
-
   ssize_t     nbytes;
   
   // if this were read then this fn would work with non-sockets
@@ -3460,6 +3468,8 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 @h=tangler('demux/demux_ts_select_demuxer.cpp')
 @select(h)
 #include "demux_ts_select_demuxer.hpp"
+#include "demux_self_piper.hpp"  // for quitting
+
 #include <stdio.h>
 #include <unistd.h>       // pipe for self-pipe trick.
 #include <assert.h>
@@ -3472,6 +3482,29 @@ ts_select_demuxer::ts_select_demuxer()
   // fprintf(stderr, "creating pipe for self-pipe trick\n");
   // install self pipe trick
   sp.install(&demux);
+}
+
+ts_select_demuxer::~ts_select_demuxer()
+{
+  fprintf(stderr, "ts_sel DTOR with QUITTER!!!\n");
+  // wake up and quit the coffee xxx
+  // we don't want exceptions being thrown in a destructor
+  try {
+    // NEW and IMPROVED!!! demux quitter which sets demux quit flag
+    // via self pipe trick then waits for self pipe/quitting callback
+    // to finish. no fear of quitter being destructed early!
+
+    // this will wake the thread (there should only be one atm), however
+    // that's just another race between kevent and close. really need to
+    // extend self piper to set a quit flag. we have to currently assume
+    // that there is only event collecting thread.
+    fprintf(stderr, "taking down ts_select_demuxer with quitter (QUITTER!)\n");
+    demux_quitter quitter;
+    quitter.quit(this);
+  } catch(...) {
+    fprintf(stderr, "error waking ts_select with self pipe quitter\n");
+  }
+
 }
 
 void
@@ -3783,18 +3816,18 @@ quitter_wakeup::wait_finish()
 void
 quitter_wakeup::wakeup(posix_demuxer& demux)
 {
-  // fprintf(stderr, "quitter woke up\n");
+  fprintf(stderr, "quitter woke up\n");
   // call parent class to eat the selfpipe byte
   // this actually reinstalls wakeup, which we might not want to do.
   selfpipe_wakeup::wakeup(demux);
 
-  // fprintf(stderr, "setting demux quit flag\n");
+  fprintf(stderr, "setting demux quit flag\n");
   // demux thread, which is running this code now, should not re-enter
   // the demux wait thanks to this flag. because the same thread that
   // sets the flag reads the flag, we shouldn't need synchronisation
   demux.set_quit_flag(true);
 
-  // fprintf(stderr, "quitter ate byte, signalling condition var\n");
+  fprintf(stderr, "quitter ate byte, signalling condition var\n");
   finished = true;
   finished_cond.signal();
   // do absolutely NOTHING here as we may have already been destructed. boom.

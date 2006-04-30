@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.25  2006/04/30 02:09:37  rfistman
+got rid of suckitnsee kqueue config (too complicated with pthread use)
+added a quitter to ts_select_demuxer to fix crash
+fixed string exception in demo web server caused by POSTs
+
 Revision 1.24  2006/04/26 10:38:52  rfistman
 demo web server now serving up text web pages. not right yet with binary
 stuff tho.
@@ -2780,6 +2785,8 @@ getline_to_url(const string& get)
 bool
 split_url(const string& url, string& base, string& file)
 {
+    if(url.length() <= 7) return false; // all bad
+
     // assume http:// prefixed
     unsigned int pos = url.substr(7).find('/');
 

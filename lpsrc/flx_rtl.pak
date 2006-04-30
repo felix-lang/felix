@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.33  2006/04/30 02:09:37  rfistman
+got rid of suckitnsee kqueue config (too complicated with pthread use)
+added a quitter to ts_select_demuxer to fix crash
+fixed string exception in demo web server caused by POSTs
+
 Revision 1.32  2006/04/22 07:43:37  rfistman
 taking down kqueue event source was blocking on osx 10.4.
 fixed now, but not perfect yet. similar problems exist with other sources,
@@ -2476,8 +2481,8 @@ public:
 
 #include "faio_asyncio.hpp"
 
-async_hooker::~async_hooker(){ fprintf(stderr,"Deleted sync_hooker\n"); }
-async_hooker_impl::~async_hooker_impl(){ fprintf(stderr,"Deleted sync_hooker_impl\n"); }
+async_hooker::~async_hooker(){ fprintf(stderr,"Deleted async_hooker\n"); }
+async_hooker_impl::~async_hooker_impl(){ fprintf(stderr,"Deleted async_hooker_impl\n"); }
 
 bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 {
@@ -2527,7 +2532,7 @@ public:
 #endif
    }
 
-  ~proto_async(){ fprintf(stderr,"Deleted proto async\n"); }
+  ~proto_async(){ fprintf(stderr,"Deleting proto async\n"); }
   flx_drv *get_driver() { return &driver; }
   demuxer *get_demuxer(){ return &demux; }
   fthread_t* dequeue() 

@@ -12,6 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.178  2006/04/30 02:09:37  rfistman
+got rid of suckitnsee kqueue config (too complicated with pthread use)
+added a quitter to ts_select_demuxer to fix crash
+fixed string exception in demo web server caused by POSTs
+
 Revision 1.177  2006/04/25 09:28:32  rfistman
 added "solaris" back to list of known models. solaris build now configures
 
@@ -140,16 +145,6 @@ then
   echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
   exit 1
 fi
-
-# need demux to be unpacked before running config
-# DAMN - demux is accessing the config stuff which isn't ready at this point
-python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_demux.pak
-if [ $? != 0 ]
-then
-  echo "ERROR EXTRACTING DEMUX LIBRARY"
-  exit 1
-fi
-
 
 python -O script/make_config.py --quiet --prefix=${PREFIX} --lparchive=$FLX_LPARCHIVE ${ARGS}
 python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
@@ -442,6 +437,18 @@ int check(char const*fmt,...)
 
 int main(int,char*argv[]) { 
   return check("%s","XXX"); // 0 means pass
+}
+
+@h = tangler("tmp/kqt.cxx",'c++')
+@select(h)
+#include <sys/types.h>      // from the kqueue manpage
+#include <sys/event.h>      // kernel events
+#include <sys/time.h>       // timespec (kevent timeout)
+
+int
+main(int,char**) {
+  int kq = kqueue();
+  return (-1 == kq) ? 1 : 0;
 }
 
 
@@ -1300,11 +1307,15 @@ class gxx(flxbuild.compiler_class.compiler_base):
     # required me to remove the flx_demux.pak's dependence on the config
     # directory (not created at configure time). also had to create a fake
     # flx_rtl_config.h in tmp/
+
+    # now that kqueue demuxer uses condition vars and locks for a clean
+    # takedown using this method of config is a nightmare before config
+    # because the pthread pak file depends on the config results. for now
+    # I've replaced the whole lot with a simple kqueue+main programme.
     try: 
-      # basically a un*x test, but doing portable path separators, just in case
-      # Duh, of course I'm using gcc switches. too bad.
-      cmd = opt.CXX+" -Itmp -c demux"+os.sep+"demux_kqueue_demuxer.cpp -o tmp"
-      cmd += os.sep+"kq.o"
+      # basically a un*x test, note the non portable path separators and
+      # gcc style switches
+      cmd = opt.CXX+" tmp/kqt.cxx -o tmp/kqt"
       print "CMD IS " + cmd
       shell(cmd)
       opt.HAVE_KQUEUE_DEMUXER=1
