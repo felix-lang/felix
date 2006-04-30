@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.26  2006/04/30 07:53:23  rfistman
+web server now serves html files and gifs (on windows at least - the
+file -> socket stuff isn't set up so well on posix. it should be hooked
+into the async file io thread)
+
 Revision 1.25  2006/04/30 02:09:37  rfistman
 got rid of suckitnsee kqueue config (too complicated with pthread use)
 added a quitter to ts_select_demuxer to fix crash
@@ -2766,6 +2771,8 @@ print "some sort of server process\n";
 @h = tangler("test/demo_webserver.flx")
 @select(h)
 #import <flx.flxh>
+#import <flx_platform.flxh>
+
 include "flx_socket";
 open Flx_socket;
 
@@ -2773,6 +2780,8 @@ header = """
 string
 getline_to_url(const string& get)
 {
+    if(get.length() < 4) return "";
+
     unsigned int pos = get.substr(4).find(' ');
 
     if(pos == string::npos) return "";
@@ -2807,6 +2816,8 @@ split_getline(const string& get, string& base, string& file)
 proc parse_get_line: string*lvalue[bool]*lvalue[string]*lvalue[string]
  = '$2 = split_getline($1, $3, $4);';
 
+fun substr: string*int -> string = "$1.substr($2)";
+
 // TODO: fill in that length field, stream back the requested jpeg,
 // get port from argv.
 // took out the Content-Length: 604. line. wasn't right anyway. still
@@ -2821,34 +2832,38 @@ ETag: "6d8029-25c-43e10339"
 Accept-Ranges: bytes
 Connection: close
 Content-Type: text/html
+
 """;
 
-val html_page = """
-<html>
-<head>
-<title>Felix!!!</title>
-</head>
+// deleted Content-Length: 1414
+val gif_header = """
+HTTP/1.1 200 OK\r
+Date: Sun, 30 Apr 2006 07:14:50 GMT\r
+Server: felix web server\r
+Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
+ETag: "7f004d-586-41aa2013"\r
+Accept-Ranges: bytes\r
+Connection: close\r
+Content-Type: image/gif\r
 
-<body bgcolor="#00F000">
-
-This is a static page served by the felix web server.
-For more info see the <a href=http://felix.sf.net>felix</a> website.
-
-
-<table width="100%" height="100%" border="0" cellspacing="0" cellpadding="0">
-  <tr>
-     <td align="center" valign="middle">
-        <img src="./felix.jpg">
-     </td>
-  </tr>
-</table>
 """;
 
-val html_footer = """
-</body>
+proc substitute(s: string, a: char, b: char, res: &string)
+{
+  var s2: string;
+  var slen = len s;
+  var i: int;
 
-</html>
-""";
+  for_each{i=0;}{i<slen}{i++;}
+  {
+     if s.[i] == a then
+     { s2 += b; } else
+     { s2 += s.[i]; } endif;
+
+  };
+
+  *res = s2;
+}
 
 proc serve_file(fname: string, s: flx_socket)
 {
@@ -2860,10 +2875,50 @@ proc serve_file(fname: string, s: flx_socket)
   // this isn't right, don't want the contents parsed as text, want them
   // sent faithfully over the wire. of course doesn't work for jpegs and other
   // binary formats.
+
+  var suffix: string;
+  var dotpos = stl_rfind(fname, char ".");
+  // print "dotpos = "; print dotpos; endl;
+  if stl_npos != dotpos then { suffix = substr(fname, dotpos+1); }
+  else {} endif;
+
+  print "suffix is "; print suffix; endl;
+
+#if WIN32
+  var wname: string;
+
+  // quick 'n' dirty unix -> dos style pathnames
+  substitute(fname, char '/', char '\\', &wname);
+  print "mapped "; print fname; print " -> "; print wname; endl;
+  // send header
+  // TransmitFile
+  var wf: WFILE <- OpenFile(wname);
+
+  if wf == INVALID_HANDLE_VALUE then
+  {
+    print "BUGGER: OpenFile failed: "; print (GetLastError()); endl;
+  } else {
+    print "opened "; print wname; endl;
+
+    // mime type mapping from suffix. make better here.
+    if("gif" == suffix) then { write_string(s, gif_header); }
+    else { write_string(s, html_header); } endif;
+
+    print "Transmitting file!\n";
+    TransmitFile(s, wf);
+
+    // send footer
+    CloseFile(wf);
+  } endif;
+
+  
+#elif POSIX
   var contents = Text_file::load(fname);
   // print "loaded: "; print contents; endl;
   print "contents len="; print (len contents); endl;
   write_string(s, html_header + contents);
+
+#endif
 }
 
 val webby_port = 1234;
@@ -2873,7 +2928,7 @@ print "FLX WEB!!! listening on port "; print webby_port; endl;
 // up the queue len for stress testing
 var p = webby_port;
 var listener: flx_listener;
-mk_flx_listener(&listener, &p, 1);
+mk_flx_listener(&listener, &p, 10);
 
 
 forever {
@@ -2881,6 +2936,8 @@ forever {
   flx_accept(listener, &s);  // blocking
   print "got connection (or something)\n";  // error check here
 
+  // hmm - spawning an fthread is blocking the web server. don't know why
+  //spawn_fthread {
 // should spawn fthread here to allow for more io overlap
 
   var line: string;
@@ -2907,10 +2964,9 @@ forever {
     print "BAD get line: "; print line; endl;
   } endif;
 
-  // or pretend I know it already (p.s. I DON'T know html)
-  //write_string(s, html_header + html_page + ((("x"*60 )+"<br>")*100) + html_footer);
-  
   flx_close(s);
+
+  //};
 
 };
 
