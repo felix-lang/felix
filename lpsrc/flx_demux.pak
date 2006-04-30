@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.25  2006/04/30 05:56:29  rfistman
+minimal change to test commit emails
+
 Revision 1.24  2006/04/30 02:09:37  rfistman
 got rid of suckitnsee kqueue config (too complicated with pthread use)
 added a quitter to ts_select_demuxer to fix crash
@@ -2743,7 +2746,7 @@ kqueue_demuxer::~kqueue_demuxer()
     // that's just another race between kevent and close. really need to
     // extend self piper to set a quit flag. we have to currently assume
     // that there is only event collecting thread.
-    fprintf(stderr, "taking down kqueue with quitter (QUITTER!)\n");
+    // fprintf(stderr, "taking down kqueue with quitter (QUITTER!)\n");
     demux_quitter quitter;
     quitter.quit(this);
   } catch(...) {
