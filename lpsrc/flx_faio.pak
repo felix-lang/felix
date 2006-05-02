@@ -1,7 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.27  2006/05/02 11:51:08  rfistman
+added async posix file read to demo webserver.
+
 Revision 1.26  2006/04/30 07:53:23  rfistman
+
 web server now serves html files and gifs (on windows at least - the
 file -> socket stuff isn't set up so well on posix. it should be hooked
 into the async file io thread)
@@ -1480,7 +1484,7 @@ proc get_thread(thread: ptr[fthread]) {
     svc (svc_get_fthread thread );
 }
 
-//header stdlib_h = '#include <stdlib.h>';            // malloc, free
+header stdlib_h = '#include <stdlib.h>';            // malloc, free
     
 // be careful of this being optimized away 
 //JS: why? it isn't used .. and its in C_hack anyhow :)
@@ -2773,6 +2777,13 @@ print "some sort of server process\n";
 #import <flx.flxh>
 #import <flx_platform.flxh>
 
+#if POSIX
+//include "flx_faio_posix";  // aio_ropen
+//open Faio_posix;
+fun str_to_charp: string->charp = "$1.c_str()";
+#endif
+
+
 include "flx_socket";
 open Flx_socket;
 
@@ -2910,13 +2921,34 @@ proc serve_file(fname: string, s: flx_socket)
     // send footer
     CloseFile(wf);
   } endif;
-
-  
 #elif POSIX
-  var contents = Text_file::load(fname);
+  // this fn sets the O_NONBLOCK flag which is completely unnecessary
+  // as flx_read goes via the preading worker fifo. don't know if
+  // O_NONBLOCK even works on actual files.
+  var fd = aio_ropen(str_to_charp(fname));
+
+  if fd == -1 then 
+  {
+    print "BUGGER, posix open failed\n";
+  } else {
+    print "got fd="; print fd; endl;
+
+    // mime type mapping from suffix. make better here.
+    // factor out
+    if("gif" == suffix) then { write_string(s, gif_header); }
+    else { write_string(s, html_header); } endif;
+
+    var from_strm: flx_stream = UFD fd;
+    var to_strm: flx_stream = USOCK s;
+    cat(from_strm, to_strm);
+
+    flx_close(from_strm); // this'll know how to close a unix fd
+  } endif;
+
+  // var contents = Text_file::load(fname);
   // print "loaded: "; print contents; endl;
-  print "contents len="; print (len contents); endl;
-  write_string(s, html_header + contents);
+  // print "contents len="; print (len contents); endl;
+  // write_string(s, html_header + contents);
 
 #endif
 }
