@@ -686,6 +686,45 @@ var x: double ^ 42;
 f x;
 f2 x;
 
+@select(tangler('test/rt26.flx'))
+#import <flx.flxh>
+
+open List;
+
+fun _ctor_list[T, N] (x:array[T, N]) = {
+  var o = Empty[T];
+  var i : int;
+
+  forall i in Array::len(x) - 1 downto 0 do
+    o = add(x.[i], o);
+  done;
+
+  return o;
+}
+
+proc foo (x:int) {
+  print x;
+  endl;
+}
+
+var x = [|1,2,3|];
+var y = list(x);
+var z = list(4,5,6);
+
+Array::iter[int, 3] (the foo) x;
+iter (the foo) y;
+iter (the foo) z;
+
+@select(tangler("test/rt26.expect","data"))
+1
+2
+3
+1
+2
+3
+4
+5
+6
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>
