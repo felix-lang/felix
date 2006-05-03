@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.41  2006/05/03 08:38:54  idadesub
+generating more documents.
+moved a couple of the rtl felix-specific projects into the flx_ namespace
+in order to keep things separate from the docs for other non-felix projects
+
 Revision 1.40  2006/04/08 08:03:15  skaller
 Make 'flx.bat' work on Windows (new flx_pkgconfig stuff)
 
@@ -832,6 +837,8 @@ pkg_requires = [
 @select(h)
 iscr_source = ['lpsrc/flx_maker.pak']
 
+weaver_directory = 'doc/flx/flx_maker/'
+
 @h = tangler('spkgs/flxcc.py')
 @select(h)
 FLXCC_EXES = [ 'src/flxcc', ]
@@ -839,6 +846,7 @@ caml_exes = FLXCC_EXES
 caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
 pkg_requires = ['cil']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
+weaver_directory = 'doc/flx/flx_flxcc/'
 
 @h = tangler('spkgs/flx_compiler.py')
 @select(h)
@@ -956,6 +964,7 @@ caml_require_libs = ['nums','unix','misclib','flxlib']
 pkg_requires = ['misc']
 caml_provide_lib = 'flxlib'
 iscr_source = ["lpsrc/flx.pak"]
+weaver_directory = 'doc/flx/flx_compiler/'
 
 @h = tangler('spkgs/ocs.py')
 @select(h)

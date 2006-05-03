@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.28  2006/05/03 08:38:54  idadesub
+generating more documents.
+moved a couple of the rtl felix-specific projects into the flx_ namespace
+in order to keep things separate from the docs for other non-felix projects
+
 Revision 1.27  2006/05/02 11:51:08  rfistman
 added async posix file read to demo webserver.
 
@@ -300,7 +305,7 @@ lib_requires = ['libdemux','libflx_pthread','libflx']
 unit_tests = EXTRA_TEST_GLOBS
 iscr_source = ["lpsrc/flx_faio.pak"]
 build_macro = "FAIO"
-weaver_directory = 'doc/rtl/faio/'
+weaver_directory = 'doc/rtl/flx_faio/'
 
 @h=tangler('rtl/flx_faio_config.hpp')
 @select(h)

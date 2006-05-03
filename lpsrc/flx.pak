@@ -23,13 +23,16 @@ C/C++ programmers, together with control inversion.
 
 @head(1,'The tutorial')
 The tutorial is found at
-@cite_url('../tut/doc/en_flx_tutorial_top.html')
+@cite_url('../../tutorial/introduction/en_flx_tutorial_top.html')
 @p()
 The macro processor now has a separate tutorial at
-@cite_url('../tut/doc/en_flx_tut_macro_top.html')
+@cite_url('../../tutorial/macros/en_flx_tut_macro_top.html')
 @p()
 The binding and embedding system now has a separate tutorial at
-@cite_url('../tut/doc/en_flx_tut_bind_top.html')
+@cite_url('../../tutorial/embedding/en_flx_tut_bind_top.html')
+@p()
+The c and c++ migration now has a separate tutorial at
+@cite_url('../../tutorial/migration/en_flx_tut_migrate_top.html')
 
 @head(1,'The Felix Compiler')
 Basic phase diagram:

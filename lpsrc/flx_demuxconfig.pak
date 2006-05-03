@@ -113,7 +113,7 @@ iscr_source = [
   "lpsrc/flx_demuxconfig.pak",
   ]
 build_macro = "DEMUX"
-weaver_directory = 'doc/rtl/demux/'
+weaver_directory = 'doc/rtl/flx_demux/'
 
 @h=tangler('demux/demux_sockety.cpp')
 @select(h)

@@ -1,5 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.23  2006/05/03 08:38:54  idadesub
+generating more documents.
+moved a couple of the rtl felix-specific projects into the flx_ namespace
+in order to keep things separate from the docs for other non-felix projects
+
 Revision 1.22  2006/04/25 10:38:42  rfistman
 added solaris libs (-lrt for semaphores, -lnsl, -lsocket) missing from some
 pkgs and added -lnsl -lsocket to flx_pkgconfig bootstrap, added missing
@@ -163,7 +168,7 @@ sflags = EXTRA_SYS_LIBS
 pkg_requires = ['flx_rtl']
 iscr_source = ["lpsrc/flx_pthread.pak"]
 build_macro = "PTHREAD"
-weaver_directory = 'doc/rtl/pthread/'
+weaver_directory = 'doc/rtl/flx_pthread/'
 
 @h=tangler('rtl/flx_pthread_config.hpp')
 @select(h)
