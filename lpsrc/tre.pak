@@ -1,3 +1,5 @@
+@execfile('config/config.py')
+
 @head(1,'tre')
 @h = tangler('spkgs/tre.py')
 @select(h)
@@ -69,7 +71,10 @@ requires slibs: -lintl
 
 /* Define to 1 if translation of program messages to the user's native
    language is requested. */
-#define ENABLE_NLS 1
+@if MACOSX:
+  tangle('#define ENABLE_NLS 0')
+ else:
+  tangle('#define ENABLE_NLS 1')
 
 /* Define to 1 if you have `alloca', as a function or macro. */
 #define HAVE_ALLOCA 1
