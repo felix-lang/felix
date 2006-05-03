@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.29  2006/05/03 11:07:51  rfistman
+added some url stuff to handle wget requests
+now spawning fthreads for each connection (works in windows?)
+
 Revision 1.28  2006/05/03 08:38:54  idadesub
 generating more documents.
 moved a couple of the rtl felix-specific projects into the flx_ namespace
@@ -1651,7 +1655,7 @@ proc shutdown: int*int = 'shutdown($a);' requires sys_socket_h;
 
 // this too can be optimised away to nothing
 // mucking around with pushing file fd through the async socket code
-fun aio_ropen: charp -> int = 'open($1, O_RDONLY | O_NONBLOCK, 0)'
+fun aio_ropen: string -> int = 'open($1.c_str(), O_RDONLY | O_NONBLOCK, 0)'
     requires fcntl_h;
 
 // blocking, read only
@@ -2785,7 +2789,6 @@ print "some sort of server process\n";
 #if POSIX
 //include "flx_faio_posix";  // aio_ropen
 //open Faio_posix;
-fun str_to_charp: string->charp = "$1.c_str()";
 #endif
 
 
@@ -2796,6 +2799,7 @@ header = """
 string
 getline_to_url(const string& get)
 {
+    // chomp off "GET " (should check it)
     if(get.length() < 4) return "";
 
     unsigned int pos = get.substr(4).find(' ');
@@ -2808,17 +2812,21 @@ getline_to_url(const string& get)
 // split url into base and file name http://foo.com/file.html
 // -> http://foo.com + file.html. failure returns nothing.
 bool
-split_url(const string& url, string& base, string& file)
+split_url(const string& inurl, string& base, string& file)
 {
-    if(url.length() <= 7) return false; // all bad
+    // munch leading http:// if present
+    string url;
+    if(inurl.length() >= 7 && inurl.substr(0, 7) == "http://")
+      url = inurl.substr(7);
+    else
+      url = inurl; 
 
-    // assume http:// prefixed
-    unsigned int pos = url.substr(7).find('/');
+    unsigned int pos = url.find('/');
 
     if(string::npos == pos)  return false;       // all bad
 
-    base = url.substr(0, pos+7);
-    file = url.substr(pos+7+1);
+    base = url.substr(0, pos);
+    file = url.substr(pos+1);
     return true;            // all good
 }
 
@@ -2881,9 +2889,15 @@ proc substitute(s: string, a: char, b: char, res: &string)
   *res = s2;
 }
 
-proc serve_file(fname: string, s: flx_socket)
+proc serve_file(infname: string, s: flx_socket)
 {
+  var fname: string;
+
   // if empty string, serve index.html
+  // not quite right - needs to handle directories too, so
+  // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
+  if "" == infname then { fname = "index.html"; }else{ fname = infname;}endif;
+
   // set mime type depending on extension...
   // serve a "not found page" for that case (check for recursion)
   print "serve file: "; print fname; endl;
@@ -2930,7 +2944,7 @@ proc serve_file(fname: string, s: flx_socket)
   // this fn sets the O_NONBLOCK flag which is completely unnecessary
   // as flx_read goes via the preading worker fifo. don't know if
   // O_NONBLOCK even works on actual files.
-  var fd = aio_ropen(str_to_charp(fname));
+  var fd = aio_ropen(fname);
 
   if fd == -1 then 
   {
@@ -2974,13 +2988,19 @@ forever {
   print "got connection (or something)\n";  // error check here
 
   // hmm - spawning an fthread is blocking the web server. don't know why
-  //spawn_fthread {
+  print "spawning fthread to handle connection\n";
+  spawn_fthread {
 // should spawn fthread here to allow for more io overlap
 
   var line: string;
   get_line(s, &line);  // should be the GET line.
 
-  // print "got line: "; print line; endl;
+  val poo = 
+  if "GET " == line.[0 to 4] then line.[4 to ] else "" endif;
+  print ("poo="poo); endl;
+
+//print ("blah " line.[0 to 4]); endl;
+  print "got line: "; print line; endl;
 
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
@@ -3003,7 +3023,7 @@ forever {
 
   flx_close(s);
 
-  //};
+  };
 
 };
 
