@@ -34,11 +34,15 @@ cpp_cpps = TRE_CPPS
 iscr_source = ['lpsrc/tre.pak']
 weaver_directory = 'doc/rtl/tre/'
 build_macro = "TRE"
+sflags = '-lintl'
+dflags = '-lintl'
 
 @h = tangler('config/tre.fpc')
 @select(h)
 provides_dlib: -ltre
 provides_slib: -ltre
+requires_dlibs: -lintl
+requires slibs: -lintl
 
 @h=tangler('rtl/flx_target_tre_config.hpp')
 @select(h)
