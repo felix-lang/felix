@@ -3080,11 +3080,56 @@ val parse_string :
 @head(1,'Parser test harness')
 @h = tangler('src/flxp.ml')
 @select(h)
-let filename = Sys.argv.(1) ^ ".flx";;
-print_endline ("Parsing " ^ filename);;
-let _,parse_tree = Flx_parse_ctrl.parse_file filename "" [] Flx_macro.expand_expression;;
-print_endline (Flx_print.string_of_compilation_unit parse_tree);;
-print_endline "PARSE OK";;
-flush stdout
+open Flx_mtypes2
+open Flx_flxopt
+open Flx_getopt
+;;
 
+let run() =
+  let raw_options = parse_options Sys.argv in
+  let compiler_options = get_felix_options raw_options in
+  if compiler_options.print_flag then begin
+    print_string "//Include directories = ";
+    List.iter (fun d -> print_string (d ^ " "))
+    compiler_options.include_dirs;
+    print_endline ""
+  end
+  ;
+
+  let filename = 
+    match get_key_value raw_options "" with
+    | Some s -> s
+    | None -> exit 0
+  in
+  let filebase = filename in
+  let input_file_name = filebase ^ ".flx" in
+
+  if compiler_options.print_flag then begin
+    print_endline "---------------------------------------";
+    print_endline ("Parsing " ^ input_file_name);
+    print_endline "---------------------------------------";
+  end
+  ;
+
+  let _,parse_tree = 
+    Flx_parse_ctrl.parse_file 
+    input_file_name 
+    (Filename.dirname input_file_name)
+    compiler_options.include_dirs
+    Flx_macro.expand_expression
+  in
+    print_endline (Flx_print.string_of_compilation_unit parse_tree);
+
+  if compiler_options.print_flag then begin
+    print_endline "---------------------------------------";
+    print_endline "PARSE OK";
+    print_endline "---------------------------------------";
+  end
+  ;
+
+  flush stdout;
+
+in
+  run()
+;;
 
