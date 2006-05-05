@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.35  2006/05/05 06:01:02  skaller
+Add handler to flx_run for C++ standard exceptions.
+
 Revision 1.34  2006/05/03 08:38:54  idadesub
 generating more documents.
 moved a couple of the rtl felix-specific projects into the flx_ namespace
@@ -2651,6 +2654,12 @@ struct doflx_data
    : debug_driver(d), gcp(g), active(a), thread_counter(tc) {}
 };
 
+int std_exception_handler (std::exception *e)
+{
+  fprintf(stderr,"C++ STANDARD EXCEPTION %s\n",e->what());
+  return 4;
+}
+
 int flx_exception_handler (flx_exception_t *e)
 {
   if (flx_link_failure_t *x = dynamic_cast<flx_link_failure_t*>(e))
@@ -2701,7 +2710,7 @@ int flx_exception_handler (flx_exception_t *e)
   else
   {
     fprintf(stderr,"Unknown EXCEPTION!\n");
-    return 4;
+    return 5;
   }
 }
 
@@ -2824,6 +2833,7 @@ doflx (void *data) {
   cleanup:;
   }
   catch (flx_exception_t &x) { flx_exception_handler (&x); }
+  catch (std::exception &x) { std_exception_handler (&x); }
   catch (...) { fprintf(stderr,"Unknown exception in thread!\n"); }
 
   try
