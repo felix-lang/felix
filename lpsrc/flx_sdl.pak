@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.14  2006/05/06 20:05:46  idadesub
+made sure to load the sdl config in sdl_driver
+
 Revision 1.13  2006/03/25 01:27:31  skaller
 Add more stuff to gmp library binding. Start phasing config.
 
@@ -282,7 +285,7 @@ pkg_requires = ['glu']
 
 @h = tangler('spkgs/sdl_drivers.py')
 @select(h)
-
+execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
   DRIVERS = [
     ('rtl/flx_sdl_run','bin/flx_sdl_run'),
