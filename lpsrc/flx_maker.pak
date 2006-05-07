@@ -6,6 +6,12 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.43  2006/05/07 03:05:17  idadesub
+added -v/--verbose/-q/--quiet cmdline options instead of quiet being in
+the plugin options list
+made help plugin exit so everything isn't automatically built
+added -D definitions to maker in order to replicate previous interface
+
 Revision 1.42  2006/05/07 02:21:34  idadesub
 swapping option parsing with using getopt (which is backwards compatible
 with 1.5). This is the first step towards making the maker script have
@@ -1164,7 +1170,7 @@ def build_host_tools():
     if CPPS:
       print "HOST C++ COMPILING "+pkg
       for x in CPPS:
-        if not "quiet" in options: print 'Compiling host '+pkg+' object',x
+        if verbose: print 'Compiling host '+pkg+' object',x
         dir,base = string.split(x,'/')
         HOST_CXX.compile_static_rtl(
           xqt,
@@ -1179,7 +1185,7 @@ def build_host_tools():
       HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
       for x in CPPS: 
         f = x+"_static"+EXT_OBJ
-        if not "quiet" in options: print "Removing",f
+        if verbose: print "Removing",f
         deletefile(f) # delete the .o files
 
     for src,bin in EXES:
@@ -1398,7 +1404,7 @@ def build_target_rtl_dynamic():
   if CPPS:
     print " ++ "+pkg+" RTL (dynamic)"
     for x in CPPS:
-      if not "quiet" in options: print 'Compiling rtl object',x
+      if verbose: print 'Compiling rtl object',x
       dir,base = string.split(x,'/')
       TARGET_CXX.compile_shared_rtl(
         xqt,
@@ -1427,7 +1433,7 @@ def build_target_rtl_dynamic():
       DFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
     for x in CPPS: 
       f = x+"_dynamic"+EXT_OBJ
-      if not "quiet" in options: print "Removing",f
+      if verbose: print "Removing",f
       deletefile(f) # delete the .o files
 
 
@@ -1438,7 +1444,7 @@ def build_target_rtl_static():
   if CPPS:
     print " ++ "+pkg+" RTL (static)"
     for x in CPPS:
-      if not "quiet" in options: print 'Compiling rtl object',x
+      if verbose: print 'Compiling rtl object',x
       dir,base = string.split(x,'/')
       TARGET_CXX.compile_static_rtl(
         xqt,dir,base,
@@ -1458,7 +1464,7 @@ def build_target_rtl_static():
       "rtl/"+lib+"_static")
     for x in CPPS: 
       f = x+"_static"+EXT_OBJ
-      if not "quiet" in options: print "Removing",f
+      if verbose: print "Removing",f
       deletefile(f) # delete the .o files
 
 
@@ -1469,7 +1475,7 @@ def build_felix_static_drivers():
   if len(DRIVERS)>0:
     print "COMPILING DRIVERS (static)"
     for i,j in DRIVERS:
-      if not "quiet" in options: print 'static Compiling driver object',i
+      if verbose: print 'static Compiling driver object',i
       dir,base = string.split(i,'/')
       TARGET_CXX.compile_static_main(
         xqt,dir,base,dir,
@@ -1489,7 +1495,7 @@ def build_felix_dynamic_drivers():
     for lib in LIBS:
       libs.append(lib+"_dynamic")
     for i,j in DRIVERS:
-      if not "quiet" in options: print 'dynamic Compiling driver object',i
+      if verbose: print 'dynamic Compiling driver object',i
       dir,base = string.split(i,'/')
       TARGET_CXX.compile_shared_main(
         xqt,dir,base,dir,
@@ -1632,8 +1638,8 @@ if not globals().get("link_model_env",None):
   CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
 
   CCMACS=""
-  for i in options:
-    if i[0:2]=="-D": CCMACS=CCMACS+i+" "
+  for i in macros:
+    CCMACS=CCMACS+'-D'+i+" "
 
   if CCMACS:
     CCOBJ_STATIC_RTL = CCOBJ_STATIC_RTL + CCMACS
@@ -1813,7 +1819,7 @@ def run(x):
     raise MakeError
 
 def xqt(x):
-  if "quiet" not in options: print x
+  if verbose: print x
   flush()
 
   try:
@@ -1822,10 +1828,10 @@ def xqt(x):
     raise MakeError
 
   if result: 
-    if "quiet" in options: print x
+    if not verbose: print x
     print "  .. ERROR CODE",hex(result)
   if output: 
-    if result or "quiet" not in options:
+    if result or verbose:
       print string.join(output,"")
   flush()
 
@@ -1834,11 +1840,11 @@ def xqt(x):
 
 # quiet execution
 def xqtq(x):
-  if "quiet" not in options: print x
+  if verbose: print x
   flush()
   result,output = get_stdouterr(x)
   if result: 
-    if "quiet" in options: print x
+    if not verbose: print x
     print "  .. ERROR CODE",hex(result)
     raise MakeError
 
@@ -1858,7 +1864,7 @@ def exqt(x): xqt(ENV+x)
 # used for a grep which is supposed to fail
 def nxqt(x):
   x = ENV+x
-  if "quiet" not in options: print x
+  if verbose: print x
   flush()
   result,output = get_stdouterr(x)
   if not result:
@@ -2169,6 +2175,8 @@ def plugin():
   print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
   print "doc - build all user documentation"
 
+  sys.exit(1)
+
 @select(tangler('mkplugins/test.py'))
 def plugin():
   global pkg,pkgdict
@@ -2252,31 +2260,44 @@ FLXFLAGS = ""
 all_phases = ["build","host","target","run"]
 phases = []
 try:
-  opts, args = getopt.getopt(sys.argv[1:], 'h', ['help', 'phase=', 'pkg=', 'model='])
+  opts, args = getopt.getopt(sys.argv[1:], 'hvqD:', 
+      ['help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive='])
 except getopt.error, e:
   print >> sys.stderr, e
-  raise MakeError
+  sys.exit(1)
 
+verbose = 1
 packages = []
 models = []
 options = args
+macros = []
 
 for o, a in opts:
   if o in ['-h', '--help']:
     print """\
-usage: mk [options] [commands]
+usage: mk [options] [plugins]
 
 flags:
-  -h, --help  print this help message
-  --phase     run only this phase of the build %s
-  --pkg       build only these packages
-  --model     build only these models
+  -h, --help      print this help message
+  -v, --verbose   print out extra debugging info
+  -q, --quiet     do not print out extra debugging info
+  -Dmacro[=defn]  define a macro
+  --phase         run only this phase of the build %s
+  --pkg           build only these packages
+  --model         build only these models
+  --lparchive     use an alternative lpsrc directory
 
-commands:
-  run a custom command. run "mk help" to get a list of commands to run
+plugins:
+  run a custom plugin. run "mk help" to get a list of plugins to run
 
 """ % (all_phases)
     sys.exit(0)
+  elif o in ['-v', '--verbose']:
+    verbose += 1
+  elif o in ['-q', '--quiet']:
+    verbose = 0
+  elif o in ['-D']:
+    macros.append(a)
   elif o in ['--phase']:
     if a == '*':
       phases = all_phases
@@ -2290,6 +2311,11 @@ commands:
   elif o in ['--model']:
     if a not in models:
       models.append(a)
+  elif o in ['--lparchive']:
+    FLX_LPARCHIVE = a
+  else:
+    print >> sys.stderr, 'unknown option:', o, a
+    sys.exit(1)
 
 host_packages = packages
 target_packages = packages
@@ -2331,15 +2357,12 @@ if "build" in options:
 if "test" in options: 
     if "run" not in phases: phases.append("run")
 
-if "silent" in options: 
-  options.append("quiet")
+# leaving for backwards compatibility
+if "silent" in options or "quiet" in options: 
+  verbose = 0
 
-if options:
+if verbose and options:
   print "OPTIONS: ", options
-
-for k in options:
-  if "--lparchive=" == k[:12]:
-    FLX_LPARCHIVE=k[12:]
 
 if not phases:
   phases = all_phases
