@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.44  2006/05/07 03:16:13  idadesub
+move the config loading until after the initial parsing of the arguments
+so that ./mk -h doesn't have any extraneous output
+
 Revision 1.43  2006/05/07 03:05:17  idadesub
 added -v/--verbose/-q/--quiet cmdline options instead of quiet being in
 the plugin options list
@@ -2236,23 +2240,6 @@ if '' not in sys.path: sys.path=['']+sys.path
 import flxbuild
 from flxbuild.flxutil import *
 
-try:
-  execfile("config"+os.sep+"config.py")
-except:
-  xt,xv,tb = sys.exc_info()
-  print "ERROR IN config/config.py"
-  traceback.print_exception(xt,xv,tb)
-  print "You must either"
-  print "(a) edit config/config.py and fix the error, or,"
-  print "(b) i) delete it, and,"
-  print "    ii) run 'python script/make_config.py'"
-  print "       again to reset it:"
-  print "       this is done automatically by 'make boot'"
-  sys.exit(1)
-
-execfile("cpkgs"+os.sep+"build"+os.sep+"interscript.py")
-FLXFLAGS = ""
-
 # ------------------------------------------------
 # PROCESS COMMAND LINE OPTIONS
 # ------------------------------------------------
@@ -2271,6 +2258,7 @@ packages = []
 models = []
 options = args
 macros = []
+lparchive = None
 
 for o, a in opts:
   if o in ['-h', '--help']:
@@ -2289,8 +2277,7 @@ flags:
 
 plugins:
   run a custom plugin. run "mk help" to get a list of plugins to run
-
-""" % (all_phases)
+  """ % (all_phases)
     sys.exit(0)
   elif o in ['-v', '--verbose']:
     verbose += 1
@@ -2312,7 +2299,7 @@ plugins:
     if a not in models:
       models.append(a)
   elif o in ['--lparchive']:
-    FLX_LPARCHIVE = a
+    lparchive = a
   else:
     print >> sys.stderr, 'unknown option:', o, a
     sys.exit(1)
@@ -2320,6 +2307,30 @@ plugins:
 host_packages = packages
 target_packages = packages
 run_packages = packages
+
+# ------------------------------------------------
+# Load the initial config
+# ------------------------------------------------
+
+try:
+  execfile("config"+os.sep+"config.py")
+except:
+  xt,xv,tb = sys.exc_info()
+  print "ERROR IN config/config.py"
+  traceback.print_exception(xt,xv,tb)
+  print "You must either"
+  print "(a) edit config/config.py and fix the error, or,"
+  print "(b) i) delete it, and,"
+  print "    ii) run 'python script/make_config.py'"
+  print "       again to reset it:"
+  print "       this is done automatically by 'make boot'"
+  sys.exit(1)
+
+execfile("cpkgs"+os.sep+"build"+os.sep+"interscript.py")
+FLXFLAGS = ""
+
+if lparchive is not None:
+  FLX_LPARCHIVE = lparchive
 
 # if the user didn't say which phases to run
 # then run all the phases that use the host model
