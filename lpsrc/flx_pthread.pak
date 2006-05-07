@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.25  2006/05/07 08:08:04  idadesub
+actually, this test cannot be checked yet, as it's non-deterministic
+
 Revision 1.24  2006/05/07 07:19:38  idadesub
 adding expected output for test
 
@@ -1476,26 +1479,3 @@ proc flx_main
 }
 
 export proc flx_main of (1) as "flx_main";
-
-@head(1,'Expected outputs')
-Move these up next to the tests!
-@head(2,'test/nd101.expect')
-@select(tangler('test/nd101.expect'))
-Pthread spawning test
-Running main
-Spawned
-Thread 1
-Thread 2
-Thread 3
-Thread 4
-Thread 5
-Thread 6
-Thread 7
-joined 1
-joined 2
-joined 3
-joined 4
-joined 5
-joined 6
-joined 7
-Joined all
