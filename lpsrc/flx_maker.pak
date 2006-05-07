@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.42  2006/05/07 02:21:34  idadesub
+swapping option parsing with using getopt (which is backwards compatible
+with 1.5). This is the first step towards making the maker script have
+a more standard gnu-ish interface
+
 Revision 1.41  2006/05/03 08:38:54  idadesub
 generating more documents.
 moved a couple of the rtl felix-specific projects into the flx_ namespace
@@ -2209,6 +2214,7 @@ def plugin():
 @tangle("FLX_MAKER_CVS_ID='"+FLX_MAKER_CVS_ID+"'")
 import os
 import os.path
+import getopt
 import glob
 import stat
 import string
@@ -2245,26 +2251,46 @@ FLXFLAGS = ""
 
 all_phases = ["build","host","target","run"]
 phases = []
-options = sys.argv[1:]
+try:
+  opts, args = getopt.getopt(sys.argv[1:], 'h', ['help', 'phase=', 'pkg=', 'model='])
+except getopt.error, e:
+  print >> sys.stderr, e
+  raise MakeError
 
 packages = []
 models = []
-for k in options:
-  if '--phase' == k[:7]:  # Windows doesn't like = so allow any sep 
-    phase = k[8:]
-    if phase=='*': 
+options = args
+
+for o, a in opts:
+  if o in ['-h', '--help']:
+    print """\
+usage: mk [options] [commands]
+
+flags:
+  -h, --help  print this help message
+  --phase     run only this phase of the build %s
+  --pkg       build only these packages
+  --model     build only these models
+
+commands:
+  run a custom command. run "mk help" to get a list of commands to run
+
+""" % (all_phases)
+    sys.exit(0)
+  elif o in ['--phase']:
+    if a == '*':
       phases = all_phases
-    elif not phase in all_phases:
-      print "Unknown phase"
+    elif phase not in all_phases:
+      print >> sys.stderr, 'unknown phase:', phase
       raise MakeError
-    elif phase not in phases:
-      phases.append(phase)
-  if '--pkg' == k[:5]:  # Windows doesn't like = so allow any sep 
-    packages.append(k[6:])
-  if '--model' == k[:7]:  # Windows doesn't like = so allow any sep 
-    model = k[8:]
-    if model not in models:
-      models.append(model)
+    elif a not in phases:
+      phases.append(a)
+  elif o in ['--pkg']:
+    packages.append(a)
+  elif o in ['--model']:
+    if a not in models:
+      models.append(a)
+
 host_packages = packages
 target_packages = packages
 run_packages = packages
@@ -2390,6 +2416,9 @@ try:
   for k in options:
     if k in plugins:
       plugins[k]()
+    else:
+      print "unknown option:", k
+      raise MakeError
 
   # execute scheduled operations in priority order
   schedule_table.sort()
