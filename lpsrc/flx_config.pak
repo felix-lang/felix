@@ -12,6 +12,17 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.179  2006/05/07 08:11:17  idadesub
+cleaned up the maker script and surrounding make scripts
+made the flx_maker.pak completely cross platform regards to the paths. there
+were a couple missed the last time this occurred.
+replaced some common path operations with the python standard ops
+(1.5 compatible)
+replaced +os.sep+ with os.path.join calls, as it makes it a little more obvious
+(to me) what exactly is going on.
+this builds on my machine from a virgin build, so hopefully these changes won't
+break anyone else's build
+
 Revision 1.178  2006/04/30 02:09:37  rfistman
 got rid of suckitnsee kqueue config (too complicated with pthread use)
 added a quitter to ts_select_demuxer to fix crash
@@ -2064,6 +2075,10 @@ def oldest_filetime(fs):
     if x == 0: raise MakeError # missing files not allowed
     m = max(m,x) 
   return m
+
+def fmtime(t):
+    s = "%04d %02d %02d %02d %02d %02d" % (time.localtime(t)[:6])
+    return s
 
 def append_unique(s,x):
   if x not in s: return s+[x]
