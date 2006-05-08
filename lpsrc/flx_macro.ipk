@@ -963,6 +963,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
         ctack (`AST_assert (sr,e))
     end
 
+  (*
   | `AST_whilst (sr, e , sts) -> 
     let e = me e in
     let n = !seq in incr seq;
@@ -1008,7 +1009,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ctack (`AST_goto (sr,start));
       ctack (`AST_label(sr,fin))
     end
-
+  *)
 
   | `AST_ifnotgoto (sr, e, id) -> 
     let e = me e in

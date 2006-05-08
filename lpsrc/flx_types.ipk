@@ -666,8 +666,10 @@ and statement_t =
  
   (* control structures: primitives *)
   | `AST_label of range_srcref * id_t
+  (*
   | `AST_whilst of range_srcref * expr_t * statement_t list
   | `AST_until of range_srcref * expr_t * statement_t list
+  *)
   | `AST_goto of range_srcref * id_t 
   | `AST_ifgoto of range_srcref * expr_t *id_t
   | `AST_ifreturn of range_srcref * expr_t
@@ -1900,8 +1902,10 @@ let src_of_stmt e = match e with
   | `AST_ifgoto (s,_,_)
   | `AST_ifreturn (s,_)
   | `AST_ifdo (s,_,_,_)
+  (*
   | `AST_whilst (s,_,_)
   | `AST_until (s,_,_)
+  *)
   | `AST_ifnotgoto (s,_,_)
   | `AST_abs_decl (s,_,_, _,_,_) 
   | `AST_ctypes (s,_,_,_) 
@@ -3487,6 +3491,7 @@ and string_of_statement level s =
     spaces level ^
     "if("^string_of_expr e^")goto " ^ lab ^ ";"
 
+  (*
   | `AST_whilst (_,e,sts) ->
     spaces level ^
     "whilst "^string_of_expr e^" do\n" ^ 
@@ -3498,7 +3503,8 @@ and string_of_statement level s =
     "until "^string_of_expr e^" do\n" ^ 
     catmap "\n" (string_of_statement (level+1)) sts ^
     spaces level ^ "done;"
- 
+   *)
+
   | `AST_ifreturn (_,e) ->
     spaces level ^
     "if("^string_of_expr e^")return;" 

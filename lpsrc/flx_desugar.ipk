@@ -1323,8 +1323,10 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   *)
   | `AST_stmt_macro _ 
   | `AST_macro_block _ 
+  (*
   | `AST_until _ 
   | `AST_whilst _
+  *)
   | `AST_macro_ifor _
   | `AST_macro_vfor _
     -> assert false
