@@ -6,8 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
-Revision 1.47  2006/05/08 06:38:55  idadesub
-fixed typo where used a name that didn't exist
+Revision 1.48  2006/05/08 07:27:08  idadesub
+initial work towards making plugins based off of a class hierarchy. this
+was done in order to add more metadata to the plugins in a cleaner fashion
+added help documentation to automatically pull info on all of the installed
+plugins
 
 Revision 1.46  2006/05/08 00:24:09  idadesub
 missed one path
@@ -1036,7 +1039,11 @@ python script/maker $1 $2 $3 $4 $5 $6 $7 $8 $9
 @select(h)
 python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
 @select(tangler(os.path.join('mkplugins', 'man.py')))
-def plugin():    
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'man', 'make the man pages')
+    
+  def __call__(self):    
     print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
     MAN_PAGES = []
@@ -1060,7 +1067,11 @@ def plugin():
     except:pass
   
 @select(tangler(os.path.join('mkplugins', 'impldoc.py')))
-def plugin():    
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'impldoc', 'make the ocaml compiler documentation')
+    
+  def __call__(self):    
     print "GENERATING OCAMLDOCS"
     erasedir('impldoc')
     os.mkdir('impldoc')
@@ -1072,7 +1083,11 @@ def plugin():
      pass # well ocamldoc is full of bugs ..
 
 @select(tangler(os.path.join('mkplugins', 'rtldoc.py')))
-def plugin():    
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'rtldoc', 'make the runtime language documentation')
+    
+  def __call__(self):    
     print "GENERATING RTLDOCS"
     erasedir('rtldoc')
     os.mkdir('rtldoc')
@@ -1082,242 +1097,266 @@ def plugin():
       pass
 
 @select(tangler(os.path.join('mkplugins', 'copy_mli2ml.py')))
-def copy_mli2ml(MLIS):
-  print "Copying MLIS="+repr(MLIS)
-  for f in MLIS:
-    f = string.replace(f,"/",os.sep)
-    src = f+'.mli'
-    dst = f+'.ml'
-    if filetime(src) >= filetime (dst):
-      print("filecopy "+src+" -> "+dst)
-      filecopy(src,dst)
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'copy_mli2ml')
+
+  def __call__(self, MLIS):
+    print "Copying MLIS="+repr(MLIS)
+    for f in MLIS:
+      f = string.replace(f,"/",os.sep)
+      src = f+'.mli'
+      dst = f+'.ml'
+      if filetime(src) >= filetime (dst):
+        print("filecopy "+src+" -> "+dst)
+        filecopy(src,dst)
 
 @select(tangler(os.path.join('mkplugins', 'copy_hpp2rtl.py')))
-def copy_hpp2rtl(HPPS):
-  for f in HPPS:
-    dst = os.path.join('rtl', os.path.basename(f))
-    src = string.replace(f,"/",os.sep)
-    if filetime(src) >= filetime (dst):
-      print("filecopy "+src+" -> "+dst)
-      filecopy(src,dst)
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'copy_hpp2rtl')
+
+  def __call__(self, HPPS):
+    for f in HPPS:
+      dst = os.path.join('rtl', os.path.basename(f))
+      src = string.replace(f,"/",os.sep)
+      if filetime(src) >= filetime (dst):
+        print("filecopy "+src+" -> "+dst)
+        filecopy(src,dst)
 
 @select(tangler(os.path.join('mkplugins', 'ocamlit.py')))
 #ocaml compilation
-def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force):
-  # STEP 2: Generate lexers
-  for lex in LEXS:
-    file = string.replace(lex,'/',os.sep)
-    if not force:
-      if filetime(file+'.mll') >= filetime(file+'.ml'): force = 1
-    if force: xqt(OCAMLLEX + file + '.mll')
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'ocamlit')
+    
+  def __call__(self, LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force):
+    # STEP 2: Generate lexers
+    for lex in LEXS:
+      file = string.replace(lex,'/',os.sep)
+      if not force:
+        if filetime(file+'.mll') >= filetime(file+'.ml'): force = 1
+      if force: xqt(OCAMLLEX + file + '.mll')
 
-  # STEP 3: Generate parsers
-  for parse in PARSES:
-    file = string.replace(parse,'/',os.sep)
-    if not force:
-      if filetime(file+'.mly') >= filetime(file+'.ml'): force = 1
-    if force:
-      xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-      nxqt(GREP+" conflict " + file + ".output")
+    # STEP 3: Generate parsers
+    for parse in PARSES:
+      file = string.replace(parse,'/',os.sep)
+      if not force:
+        if filetime(file+'.mly') >= filetime(file+'.ml'): force = 1
+      if force:
+        xqt(OCAMLYACC+ ' -v '+ file + '.mly')
+        nxqt(GREP+" conflict " + file + ".output")
 
-  # STEP 4: Compile ocaml interfaces
-  for interface in INTERFACES:
-    file = string.replace(interface,'/',os.sep)
-    if not force:
-      if filetime(file+'.mli') >= filetime(file+'.cmi'): force = 1
-    if force:
-      xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
+    # STEP 4: Compile ocaml interfaces
+    for interface in INTERFACES:
+      file = string.replace(interface,'/',os.sep)
+      if not force:
+        if filetime(file+'.mli') >= filetime(file+'.cmi'): force = 1
+      if force:
+        xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
 
-  # STEP 5: Compile ocaml implementations
-  for implementation in IMPLEMENTATIONS + EXES:
-    file = string.replace(implementation,'/',os.sep)
-    if not force:
-      if filetime(file+'.ml') >= filetime(file+OCAML_OBJECT_EXTENSION): 
-        force = 1
-    if force:
-      xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
-  return force
+    # STEP 5: Compile ocaml implementations
+    for implementation in IMPLEMENTATIONS + EXES:
+      file = string.replace(implementation,'/',os.sep)
+      if not force:
+        if filetime(file+'.ml') >= filetime(file+OCAML_OBJECT_EXTENSION): 
+          force = 1
+      if force:
+        xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
+    return force
 
 @select(tangler(os.path.join('mkplugins', 'build_ocamls.py')))
-def build_ocamls(force):        
-  LEXS = pkgdict.get("caml_lexes",[])
-  PARSES = pkgdict.get("caml_parses",[])
-  INTERFACES = pkgdict.get("caml_interfaces",[])
-  IMPLEMENTATIONS = pkgdict.get("caml_implementations",[])
-  EXES = pkgdict.get("caml_exes",[])
-  OLIBRARIES = pkgdict.get("caml_require_libs",[])
-  if (len(LEXS)+
-    len(PARSES)+
-    len(INTERFACES)+
-    len(IMPLEMENTATIONS)+
-    len(EXES)+
-    len(OLIBRARIES)> 0):
-    print "CAML COMPILING "+pkg
-    force = ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force)
-
-    if force:
-      # STEP 6: Build Ocaml Library
-      if IMPLEMENTATIONS != []:
-        lib = pkgdict.get('caml_provide_lib',pkg+"lib")
-        print "CAML CREATING LIBRARY ",lib
-        object_library_name = os.path.join("src", lib + OCAML_LIB_EXTENSION)
-        linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
-        library_filetime = filetime(object_library_name)
-        for implementation in IMPLEMENTATIONS:
-          linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
-        xqt(linkstring)
-
-      if EXES:
-        print "CAML LINKING EXECUTABLES"
-        x = ''
-        for library in OLIBRARIES:
-          x = x + ' ' + library + OCAML_LIB_EXTENSION
-
-        # finally, mainline *.cmx or cma files to link to executables
-        for exe in EXES:
-          dst = os.path.join("bin", os.path.basename(exe))
-          xqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
-              x + ' src/flx_version_hook.ml ' + exe + \
-              OCAML_OBJECT_EXTENSION)
-  return force
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'build_ocamls')
+   
+  def __call__(self, force):
+    LEXS = pkgdict.get("caml_lexes",[])
+    PARSES = pkgdict.get("caml_parses",[])
+    INTERFACES = pkgdict.get("caml_interfaces",[])
+    IMPLEMENTATIONS = pkgdict.get("caml_implementations",[])
+    EXES = pkgdict.get("caml_exes",[])
+    OLIBRARIES = pkgdict.get("caml_require_libs",[])
+    if (len(LEXS)+
+      len(PARSES)+
+      len(INTERFACES)+
+      len(IMPLEMENTATIONS)+
+      len(EXES)+
+      len(OLIBRARIES)> 0):
+      print "CAML COMPILING "+pkg
+      force = plugins['ocamlit'](LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force)
+  
+      if force:
+        # STEP 6: Build Ocaml Library
+        if IMPLEMENTATIONS != []:
+          lib = pkgdict.get('caml_provide_lib',pkg+"lib")
+          print "CAML CREATING LIBRARY ",lib
+          object_library_name = os.path.join("src", lib + OCAML_LIB_EXTENSION)
+          linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
+          library_filetime = filetime(object_library_name)
+          for implementation in IMPLEMENTATIONS:
+            linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
+          xqt(linkstring)
+  
+        if EXES:
+          print "CAML LINKING EXECUTABLES"
+          x = ''
+          for library in OLIBRARIES:
+            x = x + ' ' + library + OCAML_LIB_EXTENSION
+  
+          # finally, mainline *.cmx or cma files to link to executables
+          for exe in EXES:
+            dst = os.path.join("bin", os.path.basename(exe))
+            xqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
+                x + ' src/flx_version_hook.ml ' + exe + \
+                OCAML_OBJECT_EXTENSION)
+    return force
 
 @select(tangler(os.path.join('mkplugins', 'build_host_tools.py')))
-def build_host_tools():        
-  CPPS = pkgdict.get("host_cpp_cpps",[])
-  EXES = pkgdict.get("host_exes",[])
-  LIBS = pkgdict.get("host_exes_require_libs",[])
-  if len(CPPS)+len(EXES)+len(LIBS)>0:
-    print "BUILDING HOST TOOLS"
-    if CPPS:
-      print "HOST C++ COMPILING "+pkg
-      for x in CPPS:
-        if verbose: print 'Compiling host '+pkg+' object',x
-        dir,base = os.path.split(x)
-        HOST_CXX.compile_static_rtl(
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'build_host_tools')
+    
+  def __call__(self):
+    CPPS = pkgdict.get("host_cpp_cpps",[])
+    EXES = pkgdict.get("host_exes",[])
+    LIBS = pkgdict.get("host_exes_require_libs",[])
+    if len(CPPS)+len(EXES)+len(LIBS)>0:
+      print "BUILDING HOST TOOLS"
+      if CPPS:
+        print "HOST C++ COMPILING "+pkg
+        for x in CPPS:
+          if verbose: print 'Compiling host '+pkg+' object',x
+          dir,base = os.path.split(x)
+          HOST_CXX.compile_static_rtl(
+            xqt,
+            dir,
+            base,
+            dir,
+            include_path=["rtl","elk"],
+            macros=["FLX_STATIC_LINK"])
+        objs=[]
+        for x in CPPS:
+          objs.append(x+'_static')
+        HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
+        for x in CPPS: 
+          f = x+"_static"+EXT_OBJ
+          if verbose: print "Removing",f
+          deletefile(f) # delete the .o files
+
+      for src,bin in EXES:
+        dir,base = os.path.split(src)
+        HOST_CXX.compile_static_main(
           xqt,
           dir,
           base,
           dir,
           include_path=["rtl","elk"],
-          macros=["FLX_STATIC_LINK"])
-      objs=[]
-      for x in CPPS:
-        objs.append(x+'_static')
-      HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
-      for x in CPPS: 
-        f = x+"_static"+EXT_OBJ
-        if verbose: print "Removing",f
-        deletefile(f) # delete the .o files
-
-    for src,bin in EXES:
-      dir,base = os.path.split(src)
-      HOST_CXX.compile_static_main(
-        xqt,
-        dir,
-        base,
-        dir,
-        include_path=["rtl","elk"],
-        macros=["FLX_STATIC_LINK"],
-        CFLAGS=CFLAGS)
-      HOST_CXX.link_static_program(
-        xqt,
-        [src+"_static"],
-        bin,
-        lib_path=[dir],
-        libs=["lib"+pkg+"_host_static"],
-        SFLAGS=SFLAGS)
+          macros=["FLX_STATIC_LINK"],
+          CFLAGS=CFLAGS)
+        HOST_CXX.link_static_program(
+          xqt,
+          [src+"_static"],
+          bin,
+          lib_path=[dir],
+          libs=["lib"+pkg+"_host_static"],
+          SFLAGS=SFLAGS)
 
 
 @select(tangler(os.path.join('mkplugins', 'build_testfile.py')))
-def build_test(testfile):        
-  optimise= "optimise_c" in options
-  mode = "std"
-  if optimise: mode = "Optimised"
-  print "------------------------------------------------"
-  print 'TRANSLATING',testfile
-  basename = os.path.splitext(testfile)[0]
-  cppfilename = basename + ".cpp"
-  resfilename = basename + ".resh"
-  indir,infile = os.path.split(basename)
-  try:
-    flxg('-Ilib ' +FLXFLAGS + basename,basename)
-  except MakeError:
-    print 'TESTFILE -- ERROR!',basename
-    erasefile(basename+'.cpp')
-    erasefile(basename+'.hpp')
-    raise MakeError
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'build_test')
 
-  cmd = os.path.join(
-      "bin", 
-      "flx_pkgconfig --path=config --field=cflags @"+resfilename)
-  result,cflags= get_stdout(cmd)
-  if result: 
-    print "flx_pkgconfig failed! Args=",cmd
-    raise MakeError
-
-  cflags = string.strip(cflags[0])+" "
-  #print 'Compiling generated code of ',testfile
-  try:
-    if SUPPORT_DYNAMIC_LOADING:
-      print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (dynamic)"
-      TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,
-        include_path=["rtl"],
-        optimise=optimise,
-        CFLAGS=CFLAGS+" "+cflags)
-
-      cmd = os.path.join(
-          "bin", 
-          "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
-      result,dlibs= get_stdout(cmd)
-      if result: 
-        print "flx_pkgconfig failed! Args=",cmd
-        raise MakeError
-      dlibs = string.strip(dlibs[0])
-
-      TARGET_CXX.link_felix_dll(
-        xqt,[basename+"_dynamic"],
-        basename,
-        lib_path=[SHLIB_DIR],
-        DFLAGS=DFLAGS+dlibs)
-
-    if SUPPORT_STATIC_LINKAGE:
-      print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (static)"
-      TARGET_CXX.compile_felix_static(
-        xqt,
-        indir,
-        infile,
-        indir,
-        include_path=["rtl"],
-        optimise=optimise,
-        macros=["FLX_STATIC_LINK"],
-        CFLAGS=CFLAGS+" "+cflags)
-
-      cmd = os.path.join(
-          "bin",
-          "flx_pkgconfig -r --keeprightmost --path=config "
-          "--field=provides_slib --field=requires_slibs flx_run @"+resfilename)
-      result,slibs= get_stdout(cmd)
-      if result: 
-        print "flx_pkgconfig failed! Args=",cmd
-        raise MakeError
-      slibs = string.strip(slibs[0])
-
-      TARGET_CXX.link_static_program(
-        xqt,
-        ["rtl/flx_run_static",basename+"_static"],
-        basename,
-        lib_path=["rtl"],
-        libs=[],
-        SFLAGS=SFLAGS+slibs)
-    #print 'TESTFILE -- OK!',basename
-  except MakeError:
-    print 'TESTFILE -- ERROR!',basename
-    erasefile(basename+EXT_SHLIB)
-    erasefile(basename+EXT_EXE)
-    raise MakeError
-
-  return basename
-
+  def __call__(self, testfile):        
+    optimise= "optimise_c" in options
+    mode = "std"
+    if optimise: mode = "Optimised"
+    print "------------------------------------------------"
+    print 'TRANSLATING',testfile
+    basename = os.path.splitext(testfile)[0]
+    cppfilename = basename + ".cpp"
+    resfilename = basename + ".resh"
+    indir,infile = os.path.split(basename)
+    try:
+      flxg('-Ilib ' +FLXFLAGS + basename,basename)
+    except MakeError:
+      print 'TESTFILE -- ERROR!',basename
+      erasefile(basename+'.cpp')
+      erasefile(basename+'.hpp')
+      raise MakeError
+  
+    cmd = os.path.join(
+        "bin", 
+        "flx_pkgconfig --path=config --field=cflags @"+resfilename)
+    result,cflags= get_stdout(cmd)
+    if result: 
+      print "flx_pkgconfig failed! Args=",cmd
+      raise MakeError
+  
+    cflags = string.strip(cflags[0])+" "
+    #print 'Compiling generated code of ',testfile
+    try:
+      if SUPPORT_DYNAMIC_LOADING:
+        print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (dynamic)"
+        TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,
+          include_path=["rtl"],
+          optimise=optimise,
+          CFLAGS=CFLAGS+" "+cflags)
+  
+        cmd = os.path.join(
+            "bin", 
+            "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
+        result,dlibs= get_stdout(cmd)
+        if result: 
+          print "flx_pkgconfig failed! Args=",cmd
+          raise MakeError
+        dlibs = string.strip(dlibs[0])
+  
+        TARGET_CXX.link_felix_dll(
+          xqt,[basename+"_dynamic"],
+          basename,
+          lib_path=[SHLIB_DIR],
+          DFLAGS=DFLAGS+dlibs)
+  
+      if SUPPORT_STATIC_LINKAGE:
+        print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (static)"
+        TARGET_CXX.compile_felix_static(
+          xqt,
+          indir,
+          infile,
+          indir,
+          include_path=["rtl"],
+          optimise=optimise,
+          macros=["FLX_STATIC_LINK"],
+          CFLAGS=CFLAGS+" "+cflags)
+  
+        cmd = os.path.join(
+            "bin",
+            "flx_pkgconfig -r --keeprightmost --path=config "
+            "--field=provides_slib --field=requires_slibs flx_run @"+resfilename)
+        result,slibs= get_stdout(cmd)
+        if result: 
+          print "flx_pkgconfig failed! Args=",cmd
+          raise MakeError
+        slibs = string.strip(slibs[0])
+  
+        TARGET_CXX.link_static_program(
+          xqt,
+          ["rtl/flx_run_static",basename+"_static"],
+          basename,
+          lib_path=["rtl"],
+          libs=[],
+          SFLAGS=SFLAGS+slibs)
+      #print 'TESTFILE -- OK!',basename
+    except MakeError:
+      print 'TESTFILE -- ERROR!',basename
+      erasefile(basename+EXT_SHLIB)
+      erasefile(basename+EXT_EXE)
+      raise MakeError
+  
+    return basename
+  
 
 @select(tangler(os.path.join('mkplugins', 'diff_env.py')))
 if os.name == 'nt': # build system is Windows Python
@@ -1332,127 +1371,151 @@ else:
 
 
 @select(tangler(os.path.join('mkplugins', 'build.py')))
-if "extract" in options or "force_extract" in options: 
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'build', 'build the source')
+ 
+    if "extract" in options or "force_extract" in options: 
+      if "build" not in phases: phases.append("build")
+
+  def __call__(self):
+    global phases 
+
     if "build" not in phases: phases.append("build")
-
-def plugin():
-  global phases 
-
-  if "build" not in phases: phases.append("build")
-  if "host" not in phases: phases.append("host")
-  if "target" not in phases: phases.append("target")
+    if "host" not in phases: phases.append("host")
+    if "target" not in phases: phases.append("target")
 
 
 @select(tangler(os.path.join('mkplugins', 'extract.py')))
 # Extract sources
-def plugin():
-  paks = glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.pak"))
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'extract', 'extract sources')
+ 
+  def __call__(self):
+    paks = glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.pak"))
 
-  if "force_extract" not in options:
-    print "OPTIMISED SOURCE EXTRACT (use force_extract to disable optimisation)"
-  else:
-    print "FORCE EXTRACTING SOURCES"
+    if "force_extract" not in options:
+      print "OPTIMISED SOURCE EXTRACT (use force_extract to disable optimisation)"
+    else:
+      print "FORCE EXTRACTING SOURCES"
+      for p in paks:
+        cache = p + ".cache"
+        if os.path.exists(cache):
+          os.remove(cache)
+
     for p in paks:
-      cache = p + ".cache"
-      if os.path.exists(cache):
-        os.remove(cache)
-
-  for p in paks:
-    print "EXTRACTING",p,"from",FLX_LPARCHIVE
-    runISCR(p)
-  filecopy(
-      os.path.join('doc', 'interscript.css'),
-      os.path.join('speed', 'interscript.css'))
+      print "EXTRACTING",p,"from",FLX_LPARCHIVE
+      runISCR(p)
+    filecopy(
+        os.path.join('doc', 'interscript.css'),
+        os.path.join('speed', 'interscript.css'))
 
 
 @select(tangler(os.path.join('mkplugins', 'force_extract.py')))
-def plugin():
-  plugins['extract']()
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'force_extract', 'force extract sources')
+ 
+  def __call__(self):
+    plugins['extract']()
 
 
 @select(tangler(os.path.join('mkplugins', 'virgin.py')))
 #cleans everything
-def plugin():
-  for d in [ \
-      "tmp",
-      "rtl",
-      os.path.join("lib", "GL"), 
-      os.path.join("lib", "SDL"), 
-      "lib", 
-      "bin",
-      "elk",
-      "src",
-      "lib",
-      "doc",
-      os.path.join("man", "man1"),
-      "man",
-      "impldoc",
-      "htmlman",
-      "meta",
-      os.path.join("tools", "lua"), 
-      "tools",
-      "faio",
-      "demux",
-      os.path.join("tut", "examples"),
-      "tut",
-      os.path.join("bagley", "data"),
-      os.path.join("bagley", "felix"),
-      "bagley",
-      "test",
-      "pkg",
-      "mkplugin",
-      "flxbuild",
-      os.path.join("meta", "godi"), 
-      os.path.join("meta", "godiva"), 
-      "meta",
-      os.path.join("misc", "vim"),
-      os.path.join("misc", "lua"),
-      os.path.join("misc", "jedit"),
-      "misc",
-      "www"
-      ]:
-    for f in glob.glob(os.path.join(d, "*")):
-      print "Del",f
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'virgin', 'clean and remove all the sources')
+ 
+  def __call__(self):
+    for d in [ \
+        "tmp",
+        "rtl",
+        os.path.join("lib", "GL"), 
+        os.path.join("lib", "SDL"), 
+        "lib", 
+        "bin",
+        "elk",
+        "src",
+        "lib",
+        "doc",
+        os.path.join("man", "man1"),
+        "man",
+        "impldoc",
+        "htmlman",
+        "meta",
+        os.path.join("tools", "lua"), 
+        "tools",
+        "faio",
+        "demux",
+        os.path.join("tut", "examples"),
+        "tut",
+        os.path.join("bagley", "data"),
+        os.path.join("bagley", "felix"),
+        "bagley",
+        "test",
+        "pkg",
+        "mkplugin",
+        "flxbuild",
+        os.path.join("meta", "godi"), 
+        os.path.join("meta", "godiva"), 
+        "meta",
+        os.path.join("misc", "vim"),
+        os.path.join("misc", "lua"),
+        os.path.join("misc", "jedit"),
+        "misc",
+        "www"
+        ]:
+      for f in glob.glob(os.path.join(d, "*")):
+        print "Del",f
+        erasefile(f)
+      try: 
+        if os.path.exists(d):
+          os.rmdir(d)
+          print "Rmdir",d
+      except: 
+        print "FAILED Rmdir",d
+    for f in glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.cache")):
       erasefile(f)
-    try: 
-      if os.path.exists(d):
-        os.rmdir(d)
-        print "Rmdir",d
-    except: 
-      print "FAILED Rmdir",d
-  for f in glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.cache")):
-    erasefile(f)
-  runISCR(os.path.join(FLX_LPARCHIVE, 'lpsrc', 'flx_config.pak'),1)
-  sys.exit(0)
+    runISCR(os.path.join(FLX_LPARCHIVE, 'lpsrc', 'flx_config.pak'),1)
+    sys.exit(0)
   
 @select(tangler(os.path.join('mkplugins', 'clean.py')))
 # cleans products, but not extracted sources
-def plugin():
-  for d in glob.glob(os.path.join("pkg-stamps", "*")):
-    erasefile(d)
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'clean', 'remove generated C++ and binaries from test locations')
+ 
+  def __call__(self):
+    for d in glob.glob(os.path.join("pkg-stamps", "*")):
+      erasefile(d)
 
-  for d in [ 
-    os.path.join("tut", "examples"),
-    os.path.join("bagley", "felix"),
-    "src","elk","demux","faio","lib","lpsrc","rtl","bin","test",
-    ]:
-    for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
-      "*.par","*.output","*.o","*.obj",
-      "*.exp","*.lib",'*.resh','*.par',
-      "*.cache","*.a","*.exp","*.exe",
-      "*.cmi","*.cmx","*.cmxa",
+    for d in [ 
+      os.path.join("tut", "examples"),
+      os.path.join("bagley", "felix"),
+      "src","elk","demux","faio","lib","lpsrc","rtl","bin","test",
       ]:
-      for f in glob.glob(os.path.join(d, e)):
-        erasefile(f)
+      for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
+        "*.par","*.output","*.o","*.obj",
+        "*.exp","*.lib",'*.resh','*.par',
+        "*.cache","*.a","*.exp","*.exe",
+        "*.cmi","*.cmx","*.cmxa",
+        ]:
+        for f in glob.glob(os.path.join(d, e)):
+          erasefile(f)
 
-  for f in glob.glob(os.path.join("lib", "*.par")):
-    erasefile(f)
+    for f in glob.glob(os.path.join("lib", "*.par")):
+      erasefile(f)
 
-  for f in glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.cache")):
-    erasefile(f)
+    for f in glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.cache")):
+      erasefile(f)
 
 @select(tangler(os.path.join('mkplugins', 'mkdoc.py')))
-def mkdoc():
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'mkdoc')
+
+  def __call__(self):
     weaver_directory = pkgdict.get("weaver_directory","")
     iscr_source = pkgdict.get("iscr_source",[])
     if iscr_source and weaver_directory:
@@ -1659,29 +1722,33 @@ SPECIAL_TESTS = [
   (os.path.join('test', 'flx_perf_drv1'), os.path.join('test', 'flx_perf_lib1.flx'),'1000'),
 ]
 
-def plugin():
-  for driver,testfile,moreargs in SPECIAL_TESTS:
-    test_basename = os.path.splitext(testfile)[0]
-    drv_basename = os.path.splitext(driver)[0]
-    if SUPPORT_DYNAMIC_LOADING:
-      testscript = "time "+drv_basename+ " "+test_basename+EXT_SHLIB+" " + moreargs
-      print '(dynamic link) Executing ',testscript
-      try:
-        run(testscript)
-        #print 'TESTFILE -- OK!',testscript
-      except MakeError:
-        print 'TESTFILE -- ERROR!',testscript
-        raise MakeError
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'performance', 'make performance tests')
 
-    if SUPPORT_STATIC_LINKAGE:
-      testscript = "time "+test_basename+EXT_EXE+" " + moreargs
-      print '(static link) Executing ',testscript
-      try:
-        run(testscript)
-        #print 'TESTFILE -- OK!',testscript
-      except MakeError:
-        print 'TESTFILE -- ERROR!',testscript
-        raise MakeError
+  def __call__(self):
+    for driver,testfile,moreargs in SPECIAL_TESTS:
+      test_basename = os.path.splitext(testfile)[0]
+      drv_basename = os.path.splitext(driver)[0]
+      if SUPPORT_DYNAMIC_LOADING:
+        testscript = "time "+drv_basename+ " "+test_basename+EXT_SHLIB+" " + moreargs
+        print '(dynamic link) Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
+
+      if SUPPORT_STATIC_LINKAGE:
+        testscript = "time "+test_basename+EXT_EXE+" " + moreargs
+        print '(static link) Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
 
 @select(tangler(os.path.join('mkplugins', 'ocaml_env.py')))
 if not globals().get("ocaml_env",None):
@@ -1737,170 +1804,186 @@ if not globals().get("link_model_env",None):
 
 
 @select(tangler(os.path.join('mkplugins', 'run_host_tests.py')))
-def run_host_tests():    
-  optimise= "optimise_c" in options
-  mode = "std"
-  if optimise: mode = "Optimised"
-  bad_tests = pkgdict.get("failure_tests",[])
-  if len(bad_tests)>0:
-    print
-    print "***** TESTING PACKAGE "+pkg+" ************"
-    print
-    for testfile in bad_tests:
-      #print 'Running Felix code generator on ',testfile
-      basename = os.path.splitext(testfile)[0]
-      cppfilename = basename + ".cpp"
-      try:
-        xqtq(os.path.join(
-          'bin', 
-          'flxg -e -Ilib ' + basename))
-        #print 'TESTFILE -- failed as expected',basename
-        erasefile(basename+'.cpp')
-        erasefile(basename+'.hpp')
-      except MakeError:
-        print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-        erasefile(basename+'.cpp')
-        erasefile(basename+'.hpp')
-        raise MakeError
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'run_host_tests', 'run host tests')
+  
+  def __call__(self):    
+    optimise= "optimise_c" in options
+    mode = "std"
+    if optimise: mode = "Optimised"
+    bad_tests = pkgdict.get("failure_tests",[])
+    if len(bad_tests)>0:
+      print
+      print "***** TESTING PACKAGE "+pkg+" ************"
+      print
+      for testfile in bad_tests:
+        #print 'Running Felix code generator on ',testfile
+        basename = os.path.splitext(testfile)[0]
+        cppfilename = basename + ".cpp"
+        try:
+          xqtq(os.path.join(
+            'bin', 
+            'flxg -e -Ilib ' + basename))
+          #print 'TESTFILE -- failed as expected',basename
+          erasefile(basename+'.cpp')
+          erasefile(basename+'.hpp')
+        except MakeError:
+          print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
+          erasefile(basename+'.cpp')
+          erasefile(basename+'.hpp')
+          raise MakeError
 
 @select(tangler(os.path.join('mkplugins', 'run_unit_tests.py')))
-def run_unit_tests():    
-  optimise= "optimise_c" in options
-  mode = "std"
-  if optimise: mode = "Optimised"
-  unit_tests = pkgdict.get("unit_tests",[])
-  if len(unit_tests)>0:
-    print
-    print "***** TESTING PACKAGE "+pkg+" ************"
-    print
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'run_unit_tests', 'run unit tests')
+  
+  def __call__(self):    
+    optimise= "optimise_c" in options
+    mode = "std"
+    if optimise: mode = "Optimised"
+    unit_tests = pkgdict.get("unit_tests",[])
+    if len(unit_tests)>0:
+      print
+      print "***** TESTING PACKAGE "+pkg+" ************"
+      print
 
-    flx_run = os.path.join('bin', 'flx_run')
+      flx_run = os.path.join('bin', 'flx_run')
 
-    for testfile in unit_tests:
-      # run the tests
-      basename = build_test(testfile)
-      path = os.path.join(os.curdir, basename)
+      for testfile in unit_tests:
+        # run the tests
+        basename = plugins['build_test'](testfile)
+        path = os.path.join(os.curdir, basename)
 
-      pattern = '%s%%s > %s.output && %s %s.expect %s.output' % \
-          (path, basename, DIFF, basename, basename)
+        pattern = '%s%%s > %s.output && %s %s.expect %s.output' % \
+            (path, basename, DIFF, basename, basename)
 
-      if SUPPORT_DYNAMIC_LOADING:
-        testscript = flx_run + ' ' + pattern % EXT_SHLIB
+        if SUPPORT_DYNAMIC_LOADING:
+          testscript = flx_run + ' ' + pattern % EXT_SHLIB
 
-        #print 'Executing ',testscript
-        try:
-          run(testscript)
-          #print 'TESTFILE -- OK!',testscript
-        except MakeError:
-          print 'TESTFILE -- ERROR!',testscript
-          raise MakeError
+          #print 'Executing ',testscript
+          try:
+            run(testscript)
+            #print 'TESTFILE -- OK!',testscript
+          except MakeError:
+            print 'TESTFILE -- ERROR!',testscript
+            raise MakeError
 
-      if SUPPORT_STATIC_LINKAGE:
-        testscript = pattern % EXT_EXE
+        if SUPPORT_STATIC_LINKAGE:
+          testscript = pattern % EXT_EXE
 
-        #print 'Executing ',testscript
-        try:
-          run(testscript)
-          #print 'TESTFILE -- OK!',testscript
-        except MakeError:
-          print 'TESTFILE -- ERROR!',testscript
-          raise MakeError
+          #print 'Executing ',testscript
+          try:
+            run(testscript)
+            #print 'TESTFILE -- OK!',testscript
+          except MakeError:
+            print 'TESTFILE -- ERROR!',testscript
+            raise MakeError
 
 
 @select(tangler(os.path.join('mkplugins', 'run_completion_tests.py')))
 # these tests are units tests with non-deterministic results
-def run_completion_tests():    
-  optimise= "optimise_c" in options
-  mode = "std"
-  if optimise: mode = "Optimised"
-  completion_tests = pkgdict.get("completion_tests",[])
-  if len(completion_tests)>0:
-    print
-    print "***** TESTING PACKAGE "+pkg+" ************"
-    print
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'run_completion_tests')
 
-    flx_run = os.path.join('bin', 'flx_run')
-
-    for testfile in completion_tests:
-      # run the tests
-      basename = build_test(testfile)
-      path = os.path.join(os.curdir, basename)
-
-      if SUPPORT_DYNAMIC_LOADING:
-        testscript = flx_run + ' ' + path + EXT_SHLIB
-
-        #print 'Executing ',testscript
-        try:
-          run(testscript)
-          #print 'TESTFILE -- OK!',testscript
-        except MakeError:
-          print 'TESTFILE -- ERROR!',testscript
-          raise MakeError
-
-      if SUPPORT_STATIC_LINKAGE:
-        testscript = path + EXT_EXE
-
-        #print 'Executing ',testscript
-        try:
-          run(testscript)
-          #print 'TESTFILE -- OK!',testscript
-        except MakeError:
-          print 'TESTFILE -- ERROR!',testscript
-          raise MakeError
-
+  def __call__(self):    
+    optimise= "optimise_c" in options
+    mode = "std"
+    if optimise: mode = "Optimised"
+    completion_tests = pkgdict.get("completion_tests",[])
+    if len(completion_tests)>0:
+      print
+      print "***** TESTING PACKAGE "+pkg+" ************"
+      print
+  
+      flx_run = os.path.join('bin', 'flx_run')
+  
+      for testfile in completion_tests:
+        # run the tests
+        basename = plugins['build_test'](testfile)
+        path = os.path.join(os.curdir, basename)
+  
+        if SUPPORT_DYNAMIC_LOADING:
+          testscript = flx_run + ' ' + path + EXT_SHLIB
+  
+          #print 'Executing ',testscript
+          try:
+            run(testscript)
+            #print 'TESTFILE -- OK!',testscript
+          except MakeError:
+            print 'TESTFILE -- ERROR!',testscript
+            raise MakeError
+  
+        if SUPPORT_STATIC_LINKAGE:
+          testscript = path + EXT_EXE
+  
+          #print 'Executing ',testscript
+          try:
+            run(testscript)
+            #print 'TESTFILE -- OK!',testscript
+          except MakeError:
+            print 'TESTFILE -- ERROR!',testscript
+            raise MakeError
+  
 
 @select(tangler(os.path.join('mkplugins', 'run_demos.py')))
-def run_demos():    
-  optimise= "optimise_c" in options
-  mode = "std"
-  if optimise: mode = "Optimised"
-  demos = pkgdict.get("demos",[])
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'run_demos')
 
-
-  if len(demos)>0:
-    print "RUNNING DEMOS"
-    flx_pkgconfig = os.path.join("bin", "flx_pkgconfig")
-    for testfile in demos:
-      basename = build_test(testfile)
-      path = os.path.join(os.curdir, basename)
-
-    # subroutine candidate
-      cmd = "%s --path=config --field=flx_requires_driver @%s" % ( 
-          flx_pkgconfig, 
-          path + '.resh')
-
-      result,requires_driver= get_stdout(cmd)
-      if result: 
-        print "flx_pkgconfig failed! Args=",cmd
-        raise MakeError
-
-      if SUPPORT_DYNAMIC_LOADING:
-        requires_driver = string.strip(requires_driver[0])
+  def __call__(self):    
+    optimise= "optimise_c" in options
+    mode = "std"
+    if optimise: mode = "Optimised"
+    demos = pkgdict.get("demos",[])
   
-        if not requires_driver:
-          requires_driver="flx_run"
-
-        requires_driver = os.path.join('bin', requires_driver)
-
-        testscript = requires_driver + " " + path + EXT_SHLIB
-        #print 'Executing ',testscript
-        try:
-          run(testscript)
-          #print 'TESTFILE -- OK!',testscript
-        except MakeError:
-          print 'TESTFILE -- ERROR!',testscript
+  
+    if len(demos)>0:
+      print "RUNNING DEMOS"
+      flx_pkgconfig = os.path.join("bin", "flx_pkgconfig")
+      for testfile in demos:
+        basename = plugins['build_test'](testfile)
+        path = os.path.join(os.curdir, basename)
+  
+      # subroutine candidate
+        cmd = "%s --path=config --field=flx_requires_driver @%s" % ( 
+            flx_pkgconfig, 
+            path + '.resh')
+  
+        result,requires_driver= get_stdout(cmd)
+        if result: 
+          print "flx_pkgconfig failed! Args=",cmd
           raise MakeError
-
-      if SUPPORT_STATIC_LINKAGE:
-        testscript = path + EXT_EXE
-        #print 'Executing ',testscript
-        try:
-          run(testscript)
-          #print 'TESTFILE -- OK!',testscript
-        except MakeError:
-          print 'TESTFILE -- ERROR!',testscript
-          raise MakeError
-
+  
+        if SUPPORT_DYNAMIC_LOADING:
+          requires_driver = string.strip(requires_driver[0])
+    
+          if not requires_driver:
+            requires_driver="flx_run"
+  
+          requires_driver = os.path.join('bin', requires_driver)
+  
+          testscript = requires_driver + " " + path + EXT_SHLIB
+          #print 'Executing ',testscript
+          try:
+            run(testscript)
+            #print 'TESTFILE -- OK!',testscript
+          except MakeError:
+            print 'TESTFILE -- ERROR!',testscript
+            raise MakeError
+  
+        if SUPPORT_STATIC_LINKAGE:
+          testscript = path + EXT_EXE
+          #print 'Executing ',testscript
+          try:
+            run(testscript)
+            #print 'TESTFILE -- OK!',testscript
+          except MakeError:
+            print 'TESTFILE -- ERROR!',testscript
+            raise MakeError
+  
 @select(tangler(os.path.join('mkplugins', 'xqt.py')))
 get_stdouterr = get_stdout
 
@@ -2037,6 +2120,8 @@ def mk_manifests():
        print "Changed pak",pkg,"REBUILDING MANIFEST"
        make_manifest(pkg)
 
+mk_manifests()
+
 def get_latest_src_time(pkgdict):
   output_iscrs = []
   for iscr in pkgdict.get("iscr_source",[]):
@@ -2047,159 +2132,166 @@ def get_latest_src_time(pkgdict):
 
   return newest_filetime(output_iscrs)
 
-def cal_pkgs():
-  global pkgd
-  global host_packages,target_packages,run_packages
-  global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'cal_pkgs',
+        priority=10)
 
-  for pkg in pkgd.keys():
-    pkgdict = pkgd[pkg]
-
-    latest_src_time = get_latest_src_time(pkgdict)
-    if latest_src_time == 0:
-      print "Pak %-20s (virtual)" % pkg
-    else:
-      src_time_s = fmtime(latest_src_time)
-      print "Pak %-20s changed: %s" % (pkg,src_time_s)
-
-    host_stamp=os.path.join("pkg-stamps", pkg+".host")
-    latest_host_build_time = filetime(host_stamp)
-    if latest_host_build_time == 0:
-      print "  ** Host UNBUILT"
-      if pkg not in host_packages: host_packages.append(pkg)
-    else:
-      if latest_host_build_time < latest_src_time:
-        print "  ** Host build:",fmtime(latest_host_build_time)
-        print "  ** REQUIRES REBUILD due to changed sources"
+  def __call__(self):
+    global pkgd
+    global host_packages,target_packages,run_packages
+    global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
+  
+    for pkg in pkgd.keys():
+      pkgdict = pkgd[pkg]
+  
+      latest_src_time = get_latest_src_time(pkgdict)
+      if latest_src_time == 0:
+        print "Pak %-20s (virtual)" % pkg
+      else:
+        src_time_s = fmtime(latest_src_time)
+        print "Pak %-20s changed: %s" % (pkg,src_time_s)
+  
+      host_stamp=os.path.join("pkg-stamps", pkg+".host")
+      latest_host_build_time = filetime(host_stamp)
+      if latest_host_build_time == 0:
+        print "  ** Host UNBUILT"
         if pkg not in host_packages: host_packages.append(pkg)
-
-    target_stamp=os.path.join("pkg-stamps", pkg+".target")
-    latest_target_build_time = filetime(target_stamp)
-    if latest_target_build_time == 0:
-      print "  ** Target UNBUILT"
-      if pkg not in target_packages: target_packages.append(pkg)
-    else:
-      if latest_target_build_time < latest_src_time:
-        print "  ** Target build:",fmtime(latest_target_build_time)
-        print "  ** REQUIRES REBUILD due to changed sources"
+      else:
+        if latest_host_build_time < latest_src_time:
+          print "  ** Host build:",fmtime(latest_host_build_time)
+          print "  ** REQUIRES REBUILD due to changed sources"
+          if pkg not in host_packages: host_packages.append(pkg)
+  
+      target_stamp=os.path.join("pkg-stamps", pkg+".target")
+      latest_target_build_time = filetime(target_stamp)
+      if latest_target_build_time == 0:
+        print "  ** Target UNBUILT"
         if pkg not in target_packages: target_packages.append(pkg)
-
-    run_stamp=os.path.join("pkg-stamps", pkg+".run")
-    latest_run_build_time = filetime(run_stamp)
-    if latest_run_build_time == 0:
-      print "  ** Run UNBUILT"
-      if pkg not in run_packages: run_packages.append(pkg)
-    else:
-      if latest_run_build_time < latest_src_time:
-        print "  ** Run build:",fmtime(latest_run_build_time)
-        print "  ** REQUIRES REBUILD due to changed sources"
+      else:
+        if latest_target_build_time < latest_src_time:
+          print "  ** Target build:",fmtime(latest_target_build_time)
+          print "  ** REQUIRES REBUILD due to changed sources"
+          if pkg not in target_packages: target_packages.append(pkg)
+  
+      run_stamp=os.path.join("pkg-stamps", pkg+".run")
+      latest_run_build_time = filetime(run_stamp)
+      if latest_run_build_time == 0:
+        print "  ** Run UNBUILT"
         if pkg not in run_packages: run_packages.append(pkg)
-
-  # doesn't work so well if both deps and reqs specified!
-  # would work better, if reqs was already reduced to
-  # what actually needed o be rebuilt
-
-  if "deps" in options:
-    host_packages = closure(pkgdeps,host_packages)
-    target_packages = closure(pkgdeps,target_packages)
-    run_packages = closure(pkgdeps,run_packages)
-
-  if "reqs" in options:
-    host_packages = closure(pkgreqs,host_packages)
-    target_packages = closure(pkgreqs,target_packages)
-    run_packages = closure(pkgreqs,run_packages)
-
-  host_selected_pkgs = filter(lambda x: x in host_packages,pkgs)
-  target_selected_pkgs = filter(lambda x: x in target_packages,pkgs)
-  run_selected_pkgs = filter(lambda x: x in run_packages,pkgs)
-
-  if "all" in options: 
-     host_selected_pkgs = pkgs
-     target_selected_pkgs = pkgs
-     run_selected_pkgs = pkgs
-
-  #print "AVAILABLE SOURCES",paks
-  print "Host SELECTED PACKAGES ARE ",host_selected_pkgs
-  print "Target SELECTED PACKAGES ARE ",target_selected_pkgs
-  print "Run SELECTED PACKAGES ARE ",target_selected_pkgs
-  print "SELECTED PHASES ARE   ",phases
-  print "Build model  ",build_model
-  print "Host model   ",host_model
-  print "Target model ",target_model
-  print "Run model    ",run_model
-
-mk_manifests()
-schedule(10,cal_pkgs)
+      else:
+        if latest_run_build_time < latest_src_time:
+          print "  ** Run build:",fmtime(latest_run_build_time)
+          print "  ** REQUIRES REBUILD due to changed sources"
+          if pkg not in run_packages: run_packages.append(pkg)
+  
+    # doesn't work so well if both deps and reqs specified!
+    # would work better, if reqs was already reduced to
+    # what actually needed o be rebuilt
+  
+    if "deps" in options:
+      host_packages = closure(pkgdeps,host_packages)
+      target_packages = closure(pkgdeps,target_packages)
+      run_packages = closure(pkgdeps,run_packages)
+  
+    if "reqs" in options:
+      host_packages = closure(pkgreqs,host_packages)
+      target_packages = closure(pkgreqs,target_packages)
+      run_packages = closure(pkgreqs,run_packages)
+  
+    host_selected_pkgs = filter(lambda x: x in host_packages,pkgs)
+    target_selected_pkgs = filter(lambda x: x in target_packages,pkgs)
+    run_selected_pkgs = filter(lambda x: x in run_packages,pkgs)
+  
+    if "all" in options: 
+       host_selected_pkgs = pkgs
+       target_selected_pkgs = pkgs
+       run_selected_pkgs = pkgs
+  
+    #print "AVAILABLE SOURCES",paks
+    print "Host SELECTED PACKAGES ARE ",host_selected_pkgs
+    print "Target SELECTED PACKAGES ARE ",target_selected_pkgs
+    print "Run SELECTED PACKAGES ARE ",target_selected_pkgs
+    print "SELECTED PHASES ARE   ",phases
+    print "Build model  ",build_model
+    print "Host model   ",host_model
+    print "Target model ",target_model
+    print "Run model    ",run_model
 
 @select(tangler(os.path.join('mkplugins', 'make.py')))
-def compile_check():
-  global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
-  global pkgd,phases,pkgdict,pkg
-  mkdirs("pkg-stamps")
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'compile_check', 
+            help='check if any packages need rebuilding',
+            priority=50)
 
-  if "host" in phases:
-    ocaml_sequencer = "force" in options
-    for pkg in host_selected_pkgs:
-      pkgdict = pkgd[pkg]
-      print "***** Host MAKING PACKAGE "+pkg+" ************"
+  def __call__(self):
+    global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
+    global pkgd,phases,pkgdict,pkg
+    mkdirs("pkg-stamps")
 
-      stamp=os.path.join("pkg-stamps", pkg+".host")
-      erasefile(stamp)
-      srcs = pkgdict.get("iscr_source",[])      
-      for src in srcs:
-        src = unix2native(src)
-        print "REExtracting",pkg,"from",src
-        runISCR(os.path.join(FLX_LPARCHIVE, src))
+    if "host" in phases:
+      ocaml_sequencer = "force" in options
+      for pkg in host_selected_pkgs:
+        pkgdict = pkgd[pkg]
+        print "***** Host MAKING PACKAGE "+pkg+" ************"
 
-      MLIS = pkgdict.get("caml_raw_interfaces",[])
-      copy_mli2ml(MLIS)
-      HPPS = pkgdict.get("rtl_interfaces",[])
-      copy_hpp2rtl(HPPS)
+        stamp=os.path.join("pkg-stamps", pkg+".host")
+        erasefile(stamp)
+        srcs = pkgdict.get("iscr_source",[])      
+        for src in srcs:
+          src = unix2native(src)
+          print "REExtracting",pkg,"from",src
+          runISCR(os.path.join(FLX_LPARCHIVE, src))
 
-      ocaml_sequencer = build_ocamls(ocaml_sequencer)
+        MLIS = pkgdict.get("caml_raw_interfaces",[])
+        HPPS = pkgdict.get("rtl_interfaces",[])
 
-      build_host_tools()
+        plugins['copy_mli2ml'](MLIS)
+        plugins['copy_hpp2rtl'](HPPS)
 
-      enstamp(stamp)
+        ocaml_sequencer = plugins['build_ocamls'](ocaml_sequencer)
 
-  if "target" in phases:
-    for pkg in target_selected_pkgs:
-      pkgdict = pkgd[pkg]
-      print "***** Target MAKING PACKAGE "+pkg+" ************"
+        plugins['build_host_tools']()
 
-      stamp=os.path.join("pkg-stamps", pkg+".target")
-      erasefile(stamp)
-      if SUPPORT_DYNAMIC_LOADING:
-        build_target_rtl_dynamic()
+        enstamp(stamp)
 
-      if SUPPORT_STATIC_LINKAGE:
-        build_target_rtl_static()
+    if "target" in phases:
+      for pkg in target_selected_pkgs:
+        pkgdict = pkgd[pkg]
+        print "***** Target MAKING PACKAGE "+pkg+" ************"
+
+        stamp=os.path.join("pkg-stamps", pkg+".target")
+        erasefile(stamp)
+        if SUPPORT_DYNAMIC_LOADING:
+          build_target_rtl_dynamic()
+  
+        if SUPPORT_STATIC_LINKAGE:
+          build_target_rtl_static()
       
-      if SUPPORT_DYNAMIC_LOADING:
-        build_felix_dynamic_drivers()
+        if SUPPORT_DYNAMIC_LOADING:
+          build_felix_dynamic_drivers()
 
-      if SUPPORT_STATIC_LINKAGE:
-        build_felix_static_drivers()
+        if SUPPORT_STATIC_LINKAGE:
+          build_felix_static_drivers()
+  
+        build_target_cpp_tools()
+        build_target_felix_tools()
 
-      build_target_cpp_tools()
-      build_target_felix_tools()
+        plugins['run_host_tests']()
 
-      run_host_tests()
+        enstamp(stamp)
 
-      enstamp(stamp)
+    if "run" in phases:
+      for pkg in run_selected_pkgs:
+        pkgdict = pkgd[pkg]
+        print "***** Run MAKING PACKAGE "+pkg+" ************"
 
-  if "run" in phases:
-    for pkg in run_selected_pkgs:
-      pkgdict = pkgd[pkg]
-      print "***** Run MAKING PACKAGE "+pkg+" ************"
-
-      stamp=os.path.join("pkg-stamps", pkg+".run")
-      erasefile(stamp)
-      run_unit_tests()
-      run_completion_tests()
-      enstamp(stamp)
-
-schedule(50,compile_check)
+        stamp=os.path.join("pkg-stamps", pkg+".run")
+        erasefile(stamp)
+        plugins['run_unit_tests']()
+        plugins['run_completion_tests']()
+        enstamp(stamp)
  
 @select(tangler(os.path.join('mkplugins', 'pkg_loader.py')))
 # LOAD PACKAGES
@@ -2260,65 +2352,94 @@ if "help" in options:
     print "  ",k,pkgdeps[k]
 
 
-@select(tangler(os.path.join('mkplugins', 'help.py')))
-# lame .. fix!
-def plugin():
-  print "extract - extract sources"
-  print "compiler - build compiler"
-  print "bytecode - build bytecode version of compiler"
-  print "profile - build profiling version of compiler"
-  print "drivers - build drivers"
-  print "regression - run regression tests"
-  print "performance - run performance tests"
-  print "bagley - run bagley shootout performance tests"
-  print "tutorial - run tutorial examples"
-  print "tests- regression and tutorial combined"
-  print "clean - remove generated C++ and binaries from test locations"
-  print "debug - build debugging versions of targets"
-  print "optimise_c - build high performance versions of c++ targets"
-  print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
-  print "doc - build all user documentation"
+@select(tangler(os.path.join('flxbuild', 'pluginutil.py')))
+class Plugin:
+  def __init__(self, name, help=None, priority=None):
+    self.name = name
+    if help is None:
+      self.help = ''
+    else:
+      self.help = help
+    self.priority=priority
 
-  sys.exit(1)
+  def __call__(self):
+    raise NotImplemented
+
+
+@select(tangler(os.path.join('mkplugins', 'help.py')))
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'help', 'print this help message')
+
+  def __call__(self):
+    items = []
+    max_len = 0
+    for name, plugin in plugins.items():
+      if plugin.help:
+        max_len = max(max_len, len(name))
+        items.append((name, plugin.help))
+
+    items.sort()
+
+    for name, help in items:
+      print '%s %s' % (string.ljust(name, max_len), help)
+    
+    sys.exit(0)
 
 @select(tangler(os.path.join('mkplugins', 'test.py')))
-if "test" in options: 
-    if "run" not in phases: phases.append("run")
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'test', 'regression and tutorial combined')
 
-def plugin():
-  global pkg,pkgdict
-  print "##### TEST ALL PACKAGES ##################"
-  for pkg in pkgs:
-    pkgdict = pkgd[pkg]
-    print "***** TEST PACKAGE "+pkg+" ************"
-    run_unit_tests()
-    run_completion_tests()
+    if "test" in options: 
+      if "run" not in phases: phases.append("run")
+
+  def __call__(self):
+    global pkg,pkgdict
+    print "##### TEST ALL PACKAGES ##################"
+    for pkg in pkgs:
+      pkgdict = pkgd[pkg]
+      print "***** TEST PACKAGE "+pkg+" ************"
+      run_unit_tests()
+      plugins['run_completion_tests']()
 
 @select(tangler(os.path.join('mkplugins', 'doc.py')))
-def plugin():
-  global pkg,pkgdict
-  print "##### DOCUMENT ALL PACKAGES ##################"
-  for pkg in pkgs:
-    pkgdict = pkgd[pkg]
-    print "***** DOCUMENT PACKAGE "+pkg+" ************"
-    mkdoc()
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'doc', 'build all user documentation')
+
+  def __call__(self):
+    global pkg,pkgdict
+    print "##### DOCUMENT ALL PACKAGES ##################"
+    for pkg in pkgs:
+      pkgdict = pkgd[pkg]
+      print "***** DOCUMENT PACKAGE "+pkg+" ************"
+      plugins['mkdoc']()
 
 
 @select(tangler(os.path.join('mkplugins', 'demo.py')))
-def plugin():
-  global pkg,pkgdict
-  print "##### DEMONSTRATE ALL PACKAGES ##################"
-  for pkg in pkgs:
-    pkgdict = pkgd[pkg]
-    print "***** DEMO PACKAGE "+pkg+" ************"
-    run_demos()
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'demo', 'build and run the demos')
+    
+  def __call__(self):
+    global pkg,pkgdict
+    print "##### DEMONSTRATE ALL PACKAGES ##################"
+    for pkg in pkgs:
+      pkgdict = pkgd[pkg]
+      print "***** DEMO PACKAGE "+pkg+" ************"
+      plugins['run_demos']()
 
 @select(tangler(os.path.join('mkplugins', 'grammar.py')))
-def plugin():
-  os.system("env PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
-  os.system('env PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
-  os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
-  os.system('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'grammar', 'make the grammar')
+
+  def __call__(self):
+    os.system("env PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
+    os.system('env PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
+    os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
+    os.system('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 
 @h = tangler(os.path.join('script', 'maker'),'python')
 @select(h)
@@ -2342,6 +2463,7 @@ this = globals()
 if '' not in sys.path: sys.path=['']+sys.path
 import flxbuild
 from flxbuild.flxutil import *
+from flxbuild.pluginutil import Plugin
 
 # ------------------------------------------------
 # PROCESS COMMAND LINE OPTIONS
@@ -2477,26 +2599,28 @@ else:
 # -------------------------------------------------
 # LOAD PLUGINS
 
-schedule_table = []
-def schedule(pri,f):
-  print "Scheduling",f.__name__," priority",pri
-  schedule_table.append((pri,f))
-
 plugins = {}
+schedule_table = []
+def schedule(plugin):
+  if plugin.priority is None:
+    return
+        
+  print "Scheduling",plugin.name," priority",plugin.priority
+  schedule_table.append((plugin.priority, plugin))
+
 for f in glob.glob(os.path.join("mkplugins", "*.py")):
-  base=os.path.basename(os.path.splitext(f)[0])
-  try: del plugin
-  except: pass
+  base = os.path.basename(os.path.splitext(f)[0])
+
   try:
     execfile(f)
-    if "plugin" in globals():
-      plugins[base]=plugin
+    if "PLUGIN" in globals():
+      plugin = PLUGIN()
+      schedule(plugin)
+      plugins[plugin.name] = plugin
+      del PLUGIN
   except:
     print "Failed to install plugin",f
     raise
-    # sys.exit(1)
-
-print "PLUGIN FEATURES",plugins.keys()
 
 # END IMPLEMENTOR CONFIGURABLE SECTION
 # -------------------------------------------------
