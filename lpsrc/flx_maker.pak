@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.46  2006/05/08 00:24:09  idadesub
+missed one path
+
 Revision 1.45  2006/05/07 08:11:17  idadesub
 cleaned up the maker script and surrounding make scripts
 made the flx_maker.pak completely cross platform regards to the paths. there
@@ -2314,7 +2317,7 @@ def plugin():
   os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
   os.system('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 
-@h = tangler('script/maker','python')
+@h = tangler(os.path.join('script', 'maker'),'python')
 @select(h)
 #!/usr/bin/env python
 ###############################################################
