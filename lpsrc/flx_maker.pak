@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.47  2006/05/08 06:38:55  idadesub
+fixed typo where used a name that didn't exist
+
 Revision 1.46  2006/05/08 00:24:09  idadesub
 missed one path
 
@@ -2388,7 +2391,7 @@ plugins:
   elif o in ['--phase']:
     if a == '*':
       phases = all_phases
-    elif phase not in all_phases:
+    elif a not in all_phases:
       print >> sys.stderr, 'unknown phase:', phase
       raise MakeError
     elif a not in phases:
