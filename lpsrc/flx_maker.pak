@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.49  2006/05/12 22:45:33  idadesub
+fixed typo that caused a build error
+
 Revision 1.48  2006/05/08 07:27:08  idadesub
 initial work towards making plugins based off of a class hierarchy. this
 was done in order to add more metadata to the plugins in a cleaner fashion
@@ -2400,7 +2403,7 @@ class PLUGIN(Plugin):
     for pkg in pkgs:
       pkgdict = pkgd[pkg]
       print "***** TEST PACKAGE "+pkg+" ************"
-      run_unit_tests()
+      plugins['run_unit_tests']()
       plugins['run_completion_tests']()
 
 @select(tangler(os.path.join('mkplugins', 'doc.py')))
