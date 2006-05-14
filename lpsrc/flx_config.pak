@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.180  2006/05/14 09:22:20  idadesub
+switched make_config.py to use getopt instead of manually parsing the
+arguments
+
 Revision 1.179  2006/05/07 08:11:17  idadesub
 cleaned up the maker script and surrounding make scripts
 made the flx_maker.pak completely cross platform regards to the paths. there
@@ -2167,10 +2171,6 @@ def file_exists(f):
     return 1
   except: return 0
 
-def has_prefix(prefix,v):
-  n = len (prefix)
-  return prefix == v[:n]
-
 class MakeError: pass
   
 @select(tangler("cpkgs/target/libgc.py"))
@@ -2325,6 +2325,7 @@ import traceback
 import string
 import time
 import glob
+import getopt
 import signal # try to force ctrl-C to this process 
 this = globals()
 
@@ -2512,68 +2513,103 @@ ALL_PHASES=["build","host","target","run"]
 
 PHASES = []
 
-i = 1
-while(i < len (sys.argv)):
-  arg = sys.argv[i]
-  if arg == "--quiet":
-    quiet = 1
-  elif arg == "--force":
+try:
+  opts, args = getopt.getopt(sys.argv[1:], 'hvq', 
+      ['help', 'verbose', 'quiet', 'force', 'refresh', 'upgrade', 
+      'prefix=', 'set-int=', 'set-string=', 'build=', 'host=', 'run=',
+      'buildcc=', 'hostcc=', 'targetcc=', 'boot=', 'save-config=', 
+      'load-config=', 'lparchive=', 'phase='])
+      #'set-int', 
+except getopt.error, e:
+  print >> sys.stderr, e
+  sys.exit(1)
+
+for o, a in opts:
+  if o in ['-h', '--help']:
+    print """\
+usage: configure [options]
+
+flags:
+  -h, --help      print this help message
+  -v, --verbose   print out extra debugging info
+  -q, --quiet     do not print out extra debugging info
+
+  --force
+  --refresh
+  --upgrade
+  --prefix
+  --set-int
+  --set-string
+  --build
+  --host
+  --target
+  --run
+  --buildcc
+  --hostcc
+  --targetcc
+  --boot
+  --save-config
+  --load-config
+  --lparchive
+  --phase
+"""
+    sys.exit(0)
+  elif o in ['-v', '--verbose']:
+    verbose += 1
+  elif o in ['-q', '--quiet']:
+    verbose = 0
+  elif o in ['--force']:
     force = 1
-  elif arg == "--refresh":
+  elif o in ['--refresh']:
     refresh = 1
-  elif arg == "--upgrade":
+  elif o in ['--upgrade']:
     upgrade = 1
-  elif has_prefix("--prefix=", arg):
-    maybe_prefix=arg[9:]
-    if maybe_prefix !=  '': 
-      PREFIX=maybe_prefix
-  elif has_prefix("--set-int-",arg):
-    x=arg[10:]
-    i = string.index(x,'=')
-    v = x[:i]
-    a = x[i+1:]
-    overrides[v]=eval(a)
-  elif has_prefix("--set-string-",arg):
-    x=arg[13:]
-    i = string.index(x,'=')
-    v = x[:i]
-    a = x[i+1:]
-    overrides[v]=a
-  elif has_prefix("--build=",arg):
-    build_model=check_model(arg[8:])
-  elif has_prefix("--host=",arg):
-    print "Specified host model:",host_model
-    host_model=check_model(arg[7:])
-  elif has_prefix("--target=",arg):
-    target_model=check_model(arg[9:])
-    print "Specified target model",target_model
-  elif has_prefix("--run=",arg):
-    run_model=check_model(arg[9:])
-    print "Specified run model",run_model
-  elif has_prefix("--buildcc=",arg):
-    BUILDCC = arg[10:]
-  elif has_prefix("--hostcc=",arg):
-    HOSTCC = arg[9:]
-  elif has_prefix("--targetcc=",arg):
-    TARGETCC = arg[11:]
-  elif has_prefix("--boot=",arg):
-    BOOTFILE=arg[7:]
-  elif has_prefix("--save-config=",arg):
-    SAVE_CONFIG=arg[14:]
-  elif has_prefix("--load-config=",arg):
-    LOAD_CONFIG=arg[14:]
-  elif has_prefix("--lparchive=",arg):
-    FLX_LPARCHIVE=arg[12:]
-  elif has_prefix("--phase=",arg):
-    phase=arg[8:]
-    if phase not in ALL_PHASES:
-      print "UNKNOWN PHASE",phase,"not in",ALL_PHASES
+  elif o in ['--prefix']:
+    PREFIX = a
+  elif o in ['--set-int']:
+    v, a = string.split(a, '=', 1)
+    overrides[v] = int(a)
+  elif o in ['--set-string']:
+    v, a = string.split(a, '=', 1)
+    overrides[v] = a
+  elif o in ['--build']:
+    print "Specified build model", a
+    build_model = check_model(a)
+  elif o in ['--host']:
+    print "Specified host model:", a
+    host_model = check_model(a)
+  elif o in ['--target']:
+    print "Specified target model:", a
+    target_model = check_model(a)
+  elif o in ['--run']:
+    print "Specified run model", a
+    run_model = check_model(a)
+  elif o in ['--buildcc']:
+    BUILDCC = a
+  elif o in ['--hostcc']:
+    HOSTCC = a
+  elif o in ['--targetcc']:
+    TARGETCC = a
+  elif o in ['--boot']:
+    BOOTFILE = a
+  elif o in ['--save-config']:
+    SAVE_CONFIG = a
+  elif o in ['--load-config']:
+    LOAD_CONFIG = a
+  elif o in ['--lparchive']:
+    FLX_LPARCHIVE = a
+  elif o in ['--phase']:
+    if a not in ALL_PHASES:
+      print "UNKNOWN PHASE",a,"not in",ALL_PHASES
       sys.exit(1)
-    if phase not in PHASES: PHASES.append(phase)
+    if a not in PHASES: PHASES.append(a)
   else:
-    print "UNKNOWN CONFIGURE OPTION",arg
+    print "UNKNOWN CONFIGURE OPTION", o, a
     sys.exit(1)
-  i = i + 1
+
+if args:
+  print "UNKNOWN CONFIGURE ARGS", args
+  sys.exit(1)
 
 if PHASES == []: PHASES = ALL_PHASES
 
