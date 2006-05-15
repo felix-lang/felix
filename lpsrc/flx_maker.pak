@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.51  2006/05/15 04:12:42  skaller
+More fixed on filenames for tanglers.
+
 Revision 1.50  2006/05/15 04:00:49  skaller
 Revert tangler filenames back to the required Unix format.
 
@@ -663,7 +666,7 @@ Revision 1.117  2005/07/28 22:11:09  skaller
 Get log to work ..
 
 
-@h = tangler('script/fcount.py'),'python'))
+@h = tangler('script/fcount.py','python')
 @select(h)
 import glob
 import os
@@ -711,7 +714,7 @@ f = open(filename,"w")
 f.write("dict="+repr(dict))
 f.close()
 
-@h = tangler('script/pfcount.py'),'python'))
+@h = tangler('script/pfcount.py','python')
 @select(h)
 import glob
 import os
@@ -790,7 +793,7 @@ for k in sys.argv[1:]:
     f.close()
 
 
-@h = tangler('spkgs/misc.py')))
+@h = tangler('spkgs/misc.py')
 @select(h)
 # files containing ocamllex sources
 MISC_LEXS = []
@@ -811,7 +814,7 @@ caml_interfaces = MISC_INTERFACES
 caml_implementations = MISC_IMPLEMENTATIONS
 
 
-@h = tangler('spkgs/cil.py')))
+@h = tangler('spkgs/cil.py')
 @select(h)
 CIL_LEXS = [ 'src/flx_cil_clexer', 'src/flx_cil_formatlex', ]
 CIL_PARSES = [ 'src/flx_cil_cparser', 'src/flx_cil_formatparse', ]
@@ -865,7 +868,7 @@ caml_require_libs = ['nums','unix','misclib','cillib']
 pkg_requires = ['misc']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 
-@h = tangler('spkgs/tutorial.py')))
+@h = tangler('spkgs/tutorial.py')
 @select(h)
 pkg_requires = [
   'flx_tutorial',
@@ -874,13 +877,13 @@ pkg_requires = [
   'flx_tut_migrate'
   ]
 
-@h = tangler('spkgs/flx_maker.py')))
+@h = tangler('spkgs/flx_maker.py')
 @select(h)
 iscr_source = ['lpsrc/flx_maker.pak']
 
 weaver_directory = 'doc/flx/flx_maker/'
 
-@h = tangler('spkgs/flxcc.py')))
+@h = tangler('spkgs/flxcc.py')
 @select(h)
 FLXCC_EXES = [ 'src/flxcc', ]
 caml_exes = FLXCC_EXES
@@ -889,7 +892,7 @@ pkg_requires = ['cil']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 weaver_directory = 'doc/flx/flx_flxcc/'
 
-@h = tangler('spkgs/flx_compiler.py')))
+@h = tangler('spkgs/flx_compiler.py')
 @select(h)
 FLX_LEXS = [ 'src/flx_lex' ]
 FLX_PARSES = [ 'src/flx_parse' ]
@@ -1007,7 +1010,7 @@ caml_provide_lib = 'flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
 
-@h = tangler('spkgs/ocs.py')))
+@h = tangler('spkgs/ocs.py')
 @select(h)
 OCS_MODULES = [
   'ocs_vartable', 
@@ -1044,7 +1047,7 @@ python script/maker $1 $2 $3 $4 $5 $6 $7 $8 $9
 @h = tangler('mk.bat','data')
 @select(h)
 python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
-@select(tangler('mkplugins/man.py'))))
+@select(tangler('mkplugins/man.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'man', 'make the man pages')
@@ -1072,7 +1075,7 @@ class PLUGIN(Plugin):
         )
     except:pass
   
-@select(tangler('mkplugins/impldoc.py'))))
+@select(tangler('mkplugins/impldoc.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'impldoc', 'make the ocaml compiler documentation')
@@ -1088,7 +1091,7 @@ class PLUGIN(Plugin):
     except: 
      pass # well ocamldoc is full of bugs ..
 
-@select(tangler('mkplugins/rtldoc.py'))))
+@select(tangler('mkplugins/rtldoc.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'rtldoc', 'make the runtime language documentation')
@@ -1102,7 +1105,7 @@ class PLUGIN(Plugin):
     except:
       pass
 
-@select(tangler('mkplugins/copy_mli2ml.py'))))
+@select(tangler('mkplugins/copy_mli2ml.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'copy_mli2ml')
@@ -1117,7 +1120,7 @@ class PLUGIN(Plugin):
         print("filecopy "+src+" -> "+dst)
         filecopy(src,dst)
 
-@select(tangler('mkplugins/copy_hpp2rtl.py'))))
+@select(tangler('mkplugins/copy_hpp2rtl.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'copy_hpp2rtl')
@@ -1130,7 +1133,7 @@ class PLUGIN(Plugin):
         print("filecopy "+src+" -> "+dst)
         filecopy(src,dst)
 
-@select(tangler('mkplugins/ocamlit.py'))))
+@select(tangler('mkplugins/ocamlit.py'))
 #ocaml compilation
 class PLUGIN(Plugin):
   def __init__(self):
@@ -1171,7 +1174,7 @@ class PLUGIN(Plugin):
         xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
     return force
 
-@select(tangler('mkplugins/build_ocamls.py'))))
+@select(tangler('mkplugins/build_ocamls.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_ocamls')
@@ -1218,7 +1221,7 @@ class PLUGIN(Plugin):
                 OCAML_OBJECT_EXTENSION)
     return force
 
-@select(tangler('mkplugins/build_host_tools.py'))))
+@select(tangler('mkplugins/build_host_tools.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_host_tools')
@@ -1269,7 +1272,7 @@ class PLUGIN(Plugin):
           SFLAGS=SFLAGS)
 
 
-@select(tangler('mkplugins/build_testfile.py'))))
+@select(tangler('mkplugins/build_testfile.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_test')
@@ -1364,7 +1367,7 @@ class PLUGIN(Plugin):
     return basename
   
 
-@select(tangler('mkplugins/diff_env.py'))))
+@select(tangler('mkplugins/diff_env.py'))
 if os.name == 'nt': # build system is Windows Python
   DIFF = "FC /L /W"
   GREP = "#grep"
@@ -1376,7 +1379,7 @@ else:
   GREP = "grep"
 
 
-@select(tangler('mkplugins/build.py'))))
+@select(tangler('mkplugins/build.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build', 'build the source')
@@ -1392,7 +1395,7 @@ class PLUGIN(Plugin):
     if "target" not in phases: phases.append("target")
 
 
-@select(tangler('mkplugins/extract.py'))))
+@select(tangler('mkplugins/extract.py'))
 # Extract sources
 class PLUGIN(Plugin):
   def __init__(self):
@@ -1418,7 +1421,7 @@ class PLUGIN(Plugin):
         os.path.join('speed', 'interscript.css'))
 
 
-@select(tangler('mkplugins/force_extract.py'))))
+@select(tangler('mkplugins/force_extract.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'force_extract', 'force extract sources')
@@ -1427,7 +1430,7 @@ class PLUGIN(Plugin):
     plugins['extract']()
 
 
-@select(tangler('mkplugins/virgin.py'))))
+@select(tangler('mkplugins/virgin.py'))
 #cleans everything
 class PLUGIN(Plugin):
   def __init__(self):
@@ -1486,7 +1489,7 @@ class PLUGIN(Plugin):
     runISCR(os.path.join(FLX_LPARCHIVE, 'lpsrc', 'flx_config.pak'),1)
     sys.exit(0)
   
-@select(tangler('mkplugins/clean.py'))))
+@select(tangler('mkplugins/clean.py'))
 # cleans products, but not extracted sources
 class PLUGIN(Plugin):
   def __init__(self):
@@ -1516,7 +1519,7 @@ class PLUGIN(Plugin):
     for f in glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.cache")):
       erasefile(f)
 
-@select(tangler('mkplugins/mkdoc.py'))))
+@select(tangler('mkplugins/mkdoc.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'mkdoc')
@@ -1536,7 +1539,7 @@ class PLUGIN(Plugin):
             '--language=en --weaver=web --weaver=latex '
             '--passes=2 --weaver-directory=%s %s' % (weaver_directory, srcdir))
 
-@select(tangler('mkplugins/cflags.py'))))
+@select(tangler('mkplugins/cflags.py'))
 # GLOBAL COMPILATION FLAGS
 
 # C++ STUFFS
@@ -1548,7 +1551,7 @@ EXTRA_LIBS = []
 # OCAML STUFFS
 OCAML_INCLUDES = ""
 
-@select(tangler('mkplugins/build_target_rtl_dynamic.py'))))
+@select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 def build_target_rtl_dynamic():
   CPPS = pkgdict.get("cpp_cpps",[])
   BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
@@ -1590,7 +1593,7 @@ def build_target_rtl_dynamic():
       deletefile(f) # delete the .o files
 
 
-@select(tangler('mkplugins/build_target_rtl_static.py'))))
+@select(tangler('mkplugins/build_target_rtl_static.py'))
 def build_target_rtl_static():
   CPPS = pkgdict.get("cpp_cpps",[])
   EXTRA_CFLAGS = pkgdict.get("cflags","")
@@ -1622,7 +1625,7 @@ def build_target_rtl_static():
       deletefile(f) # delete the .o files
 
 
-@select(tangler('mkplugins/build_felix_static_drivers.py'))))
+@select(tangler('mkplugins/build_felix_static_drivers.py'))
 def build_felix_static_drivers():
   DRIVERS = pkgdict.get("drivers",[])
   cflags = pkgdict.get("cflags","")
@@ -1637,7 +1640,7 @@ def build_felix_static_drivers():
         macros=["FLX_STATIC_LINK"],
         optimise=1,CFLAGS=CFLAGS+cflags)
 
-@select(tangler('mkplugins/build_felix_dynamic_drivers.py'))))
+@select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
 def build_felix_dynamic_drivers():
   DRIVERS = pkgdict.get("drivers",[])
   cflags = pkgdict.get("cflags","")
@@ -1665,7 +1668,7 @@ def build_felix_dynamic_drivers():
         DFLAGS=DFLAGS+dflags)
       deletefile(i+"_dynamic"+EXT_OBJ)
 
-@select(tangler('mkplugins/build_target_cpp_tools.py'))))
+@select(tangler('mkplugins/build_target_cpp_tools.py'))
 def build_target_cpp_tools():
   EXES = pkgdict.get("exes",[])
   esflags = pkgdict.get("exes_require_linkflags","")
@@ -1693,7 +1696,7 @@ def build_target_cpp_tools():
         SFLAGS=SFLAGS+esflags)
       deletefile(src+"_static"+EXT_OBJ)
 
-@select(tangler('mkplugins/build_target_felix_tools.py'))))
+@select(tangler('mkplugins/build_target_felix_tools.py'))
 # TARGET TOOLS : FELIX
 def build_target_felix_tools():
   FLXS = pkgdict.get("felix_tools",[])
@@ -1722,7 +1725,7 @@ def build_target_felix_tools():
         libs=libs,
         SFLAGS=SFLAGS+fsflags)
 
-@select(tangler('mkplugins/performance.py'))))
+@select(tangler('mkplugins/performance.py'))
 SPECIAL_TESTS = [
   (os.path.join('bin', 'flx_run'), os.path.join('test', 'flx_run_lib1.flx'),''),
   (os.path.join('test', 'flx_perf_drv1'), os.path.join('test', 'flx_perf_lib1.flx'),'1000'),
@@ -1756,7 +1759,7 @@ class PLUGIN(Plugin):
           print 'TESTFILE -- ERROR!',testscript
           raise MakeError
 
-@select(tangler('mkplugins/ocaml_env.py'))))
+@select(tangler('mkplugins/ocaml_env.py'))
 if not globals().get("ocaml_env",None):
   ocaml_env = 1
 
@@ -1788,7 +1791,7 @@ if not globals().get("ocaml_env",None):
     OCAML_OBJECT_EXTENSION = '.cmo'
     OCAML_LIB_EXTENSION = '.cma'
 
-@select(tangler('mkplugins/link_model_env.py'))))
+@select(tangler('mkplugins/link_model_env.py'))
 if not globals().get("link_model_env",None):
   link_model_env = 1
 
@@ -1809,7 +1812,7 @@ if not globals().get("link_model_env",None):
     CCOBJ_DYNAMIC_FLX = CCOBJ_DYNAMIC_FLX + CCMACS
 
 
-@select(tangler('mkplugins/run_host_tests.py'))))
+@select(tangler('mkplugins/run_host_tests.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_host_tests', 'run host tests')
@@ -1840,7 +1843,7 @@ class PLUGIN(Plugin):
           erasefile(basename+'.hpp')
           raise MakeError
 
-@select(tangler('mkplugins/run_unit_tests.py'))))
+@select(tangler('mkplugins/run_unit_tests.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_unit_tests', 'run unit tests')
@@ -1888,7 +1891,7 @@ class PLUGIN(Plugin):
             raise MakeError
 
 
-@select(tangler('mkplugins/run_completion_tests.py'))))
+@select(tangler('mkplugins/run_completion_tests.py'))
 # these tests are units tests with non-deterministic results
 class PLUGIN(Plugin):
   def __init__(self):
@@ -1934,7 +1937,7 @@ class PLUGIN(Plugin):
             raise MakeError
   
 
-@select(tangler('mkplugins/run_demos.py'))))
+@select(tangler('mkplugins/run_demos.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_demos')
@@ -1990,7 +1993,7 @@ class PLUGIN(Plugin):
             print 'TESTFILE -- ERROR!',testscript
             raise MakeError
   
-@select(tangler('mkplugins/xqt.py'))))
+@select(tangler('mkplugins/xqt.py'))
 get_stdouterr = get_stdout
 
 def flush():
@@ -2081,7 +2084,7 @@ def runISCR(a,force=0):
     exqt(ISCR + '--break-on-error ' + a)
 
 
-@select(tangler('mkplugins/manifest.py'))))
+@select(tangler('mkplugins/manifest.py'))
 manifest_src_re = re.compile(r"CREATING .* NAMED FILE SOURCE (.*) \[")
 
 def make_manifest(pkg):
@@ -2224,7 +2227,7 @@ class PLUGIN(Plugin):
     print "Target model ",target_model
     print "Run model    ",run_model
 
-@select(tangler('mkplugins/make.py'))))
+@select(tangler('mkplugins/make.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'compile_check', 
@@ -2299,7 +2302,7 @@ class PLUGIN(Plugin):
         plugins['run_completion_tests']()
         enstamp(stamp)
  
-@select(tangler('mkplugins/pkg_loader.py'))))
+@select(tangler('mkplugins/pkg_loader.py'))
 # LOAD PACKAGES
 raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
 unsorted_pkgs = []
@@ -2358,7 +2361,7 @@ if "help" in options:
     print "  ",k,pkgdeps[k]
 
 
-@select(tangler('flxbuild/pluginutil.py'))))
+@select(tangler('flxbuild/pluginutil.py'))
 class Plugin:
   def __init__(self, name, help=None, priority=None):
     self.name = name
@@ -2372,7 +2375,7 @@ class Plugin:
     raise NotImplemented
 
 
-@select(tangler('mkplugins/help.py'))))
+@select(tangler('mkplugins/help.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'help', 'print this help message')
@@ -2392,7 +2395,7 @@ class PLUGIN(Plugin):
     
     sys.exit(0)
 
-@select(tangler('mkplugins/test.py'))))
+@select(tangler('mkplugins/test.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'test', 'regression and tutorial combined')
@@ -2409,7 +2412,7 @@ class PLUGIN(Plugin):
       plugins['run_unit_tests']()
       plugins['run_completion_tests']()
 
-@select(tangler('mkplugins/doc.py'))))
+@select(tangler('mkplugins/doc.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'doc', 'build all user documentation')
@@ -2423,7 +2426,7 @@ class PLUGIN(Plugin):
       plugins['mkdoc']()
 
 
-@select(tangler('mkplugins/demo.py'))))
+@select(tangler('mkplugins/demo.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'demo', 'build and run the demos')
@@ -2436,7 +2439,7 @@ class PLUGIN(Plugin):
       print "***** DEMO PACKAGE "+pkg+" ************"
       plugins['run_demos']()
 
-@select(tangler('mkplugins/grammar.py'))))
+@select(tangler('mkplugins/grammar.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'grammar', 'make the grammar')
@@ -2447,7 +2450,7 @@ class PLUGIN(Plugin):
     os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
     os.system('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 
-@h = tangler('script/maker'),'python'))
+@h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
 ###############################################################
