@@ -1,5 +1,11 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.36  2006/05/17 04:33:46  skaller
+For dynamic linkage, flx_run is no longer linked against
+flx_async. Instead, it is loaded on demand. At this stage,
+static links still need to be linked against it (to be fixed
+soon). At this point only tested on Linux.
+
 Revision 1.35  2006/05/05 06:01:02  skaller
 Add handler to flx_run for C++ standard exceptions.
 
@@ -312,6 +318,7 @@ RTL_CPPS = [
   "rtl/flx_rtl",
   "rtl/flx_dynlink",
   "rtl/flx_sync",
+  "rtl/flx_eh",
   "rtl/flx_i18n",
   "rtl/flx_ioutil",
   "rtl/flx_strutil",
@@ -1741,41 +1748,46 @@ or even constants which require dynamic initialisation.
 #include <string>
 using namespace std;
 
-// define the type of a library handle: needed even for static linkage
-//#if defined(_WIN32) || defined(__CYGWIN__)
+// define dynamic library loader stuff, even for static linkage
 #if defined(_WIN32) 
-#include <windows.h>
-typedef HMODULE LIBHANDLE;
+  #include <windows.h>
+  typedef HMODULE LIBHANDLE;
+  #define FLX_SET_NOLIBRARY(lib) lib=NULL
+  #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
+  #define FLX_LIB_EXTENSION ".DLL"
+  #define FLX_DLSYM(x,y) (void*)GetProcAddress(x,#y) 
+  #define FLX_SDLSYM(x,y) (void*)GetProcAddress(x,y) 
+#elif defined(MACOSX_NODLCOMPAT)
+  #include <mach-o/dyld.h>
+  typedef NSModule LIBHANDLE;
+  #define FLX_SET_NOLIBRARY(lib) lib=NULL
+  #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
+  #define FLX_LIB_EXTENSION ".dylib"
+  #define FLX_DLSYM(x, y) flx::rtl::getmachosym(x,"_"#y)
+  #define FLX_SDLSYM(x, y) flx::rtl::getmachosym(x,(string("_")+string(y)).data())
 #else
-  #ifdef MACOSX_NODLCOMPAT
-     #include <mach-o/dyld.h>
-     typedef NSModule LIBHANDLE;
-   #else
-     typedef void *LIBHANDLE;
-   #endif
+  // UNIX, recent OSX
+  typedef void *LIBHANDLE;
+  #define FLX_SET_NOLIBRARY(lib) lib=NULL
+  #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
+  #if defined(__CYGWIN__)  
+    #define FLX_LIB_EXTENSION ".dll"
+  #else
+    #define FLX_LIB_EXTENSION ".so"
+  #endif
+  #include <dlfcn.h>
+  #define FLX_DLSYM(x,y) dlsym(x,#y)
+  #define FLX_SDLSYM(x,y) dlsym(x,y)
 #endif
 
 #ifndef FLX_STATIC_LINK
-//#if defined(_WIN32) || defined(__CYGWIN__)
-#if defined(_WIN32) 
-#define DLSYM(x,y) (void*)GetProcAddress(x,#y) 
-#define SDLSYM(x,y) (void*)GetProcAddress(x,y) 
+  #define DLSYM(x,y) FLX_DLSYM(x,y)
+  #define SDLSYM(x,y) FLX_SDLSYM(x,y)
 #else
-  #ifdef MACOSX_NODLCOMPAT
-    //#include <mach-o/dyld.h>
-    #define DLSYM(x, y) flx::rtl::getmachosym(x,"_"#y)
-    #define SDLSYM(x, y) flx::rtl::getmachosym(x,(string("_")+string(y)).data())
-  #else
-    #include <dlfcn.h>
-    #define DLSYM(x,y) dlsym(x,#y)
-    #define SDLSYM(x,y) dlsym(x,y)
-  #endif
+  #define DLSYM(x,y) (void*)&y
+  #define SDLSYM(x,y) (throw flx::rtl::link_failure_t("<static link>",y,"dlsym with static link requires name not string")
 #endif
 
-#else
-#define DLSYM(x,y) (void*)&y
-#define SDLSYM(x,y) (throw flx::rtl::link_failure_t("<static link>",y,"dlsym with static link requires name not string")
-#endif
 // Utilities to make dynamic linkage and
 // initialisation of Felix modules easier
 //
@@ -1810,13 +1822,19 @@ struct RTL_EXTERN flx_libinit_t;
 
 /// Dynamic linkage failure.
 
-struct RTL_EXTERN flx_link_failure_t {
+struct RTL_EXTERN flx_link_failure_t : flx_exception_t {
   string filename;
   string operation;
   string what;
   flx_link_failure_t(string f, string o, string w);
   virtual ~flx_link_failure_t();
 };
+
+RTL_EXTERN LIBHANDLE
+flx_load_library(char const *fname);
+
+RTL_EXTERN LIBHANDLE
+flx_load_module(char const *fname);
 
 /// frame creators.
 
@@ -1922,6 +1940,9 @@ void* getmachosym(LIBHANDLE, const char*);
 @h = tangler("rtl/flx_dynlink.cpp")
 @select(h)
 #include "flx_dynlink.hpp"
+#include <cstring>
+#include <cstdlib>
+
 #ifdef FLX_STATIC_LINK
 extern "C" void *create_thread_frame;
 extern "C" void *flx_start;
@@ -1963,16 +1984,18 @@ flx_dynlink_t::flx_dynlink_t() :
   refcnt(0)
 {}
 
-
-void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
+LIBHANDLE
+flx_load_library(char const *filename)
 {
-  filename=fname;
+  LIBHANDLE library;
+  FLX_SET_NOLIBRARY(library);
+
 #ifndef FLX_STATIC_LINK
 //#if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(_WIN32) 
   SetErrorMode(SEM_NOOPENFILEERRORBOX);  // stop windows showing err dialogues
   library = LoadLibrary(fname);
-  if(!library) 
+  if(FLX_CHECK_NOLIBRARY(library)) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
 #else
   #ifdef MACOSX_NODLCOMPAT
@@ -1996,17 +2019,35 @@ void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
     NSDestroyObjectFileImage(bndl_img);
 
     // more info can be gleaned about link errors from NSLinkEditError
-    if(!library)
+    if(FLX_CHECK_NOLIBRARY(library))
       throw flx_link_failure_t(filename, "NSLinkModule", "failed to link");
 
   #else
-  library = dlopen(fname,RTLD_NOW);
-  if(!library) 
-    throw flx_link_failure_t(filename,"dlopen",dlerror());
+    library = dlopen(filename,RTLD_NOW);
+    if(FLX_CHECK_NOLIBRARY(library))
+      throw flx_link_failure_t(filename,"dlopen",dlerror());
   #endif
 #endif
 #endif
+  return library;
+}
 
+LIBHANDLE
+flx_load_module(char const *fname)
+{
+  int n = std::strlen(fname)+strlen(FLX_LIB_EXTENSION)+1;
+  char *f = (char*)std::malloc(n);
+  std::strcpy(f,fname);
+  std::strcat(f,FLX_LIB_EXTENSION);
+  LIBHANDLE lib = flx_load_library(f);
+  std::free(f);
+  return lib;
+}
+
+void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
+{
+  filename=fname;
+  library = flx_load_library(fname);
   //fprintf(stderr,"File %s dlopened at %p ok\n",fname,library);
 
   thread_frame_creator = (thread_frame_creator_t)
@@ -2424,6 +2465,7 @@ shared library name are not passed.
 #define ASYNC_EXTERN FLX_IMPORT
 #endif
 
+// GLOBAL NAMESPACE!
 
 class ASYNC_EXTERN async_hooker {
 public:
@@ -2432,14 +2474,28 @@ public:
   virtual ~async_hooker();
 };
 
-ASYNC_EXTERN async_hooker *
-create_async_hooker(
+typedef 
+async_hooker *
+create_async_hooker_t
+(
   int n0,   // bound on resumable thread queue
   int n1,   // bound on general input job queue
   int m1,   // number of threads in job pool
   int n2,   // bound on async fileio job queue
   int m2    // number of threads doing async fileio
 );
+
+extern "C" {
+ASYNC_EXTERN async_hooker *
+create_async_hooker
+(
+  int n0,   // bound on resumable thread queue
+  int n1,   // bound on general input job queue
+  int m1,   // number of threads in job pool
+  int n2,   // bound on async fileio job queue
+  int m2    // number of threads doing async fileio
+);
+}
 
 #endif
 
@@ -2572,67 +2628,29 @@ async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
   return new proto_async(n0,n1,m1,n2,m2);
 }
 
-@h = tangler('rtl/flx_run.cxx','cpp')
+@h = tangler('rtl/flx_eh.hpp')
 @select(h)
-#include <cstdlib>
-#include <stdio.h>
-#include <vector>
-#include <list>
-#include <map>
-#include <cstring>
-#include <cassert>
-
-#include <string>
-//#include <unistd.h>
+#ifndef __FLX_EH__
+#define __FLX_EH__
 #include "flx_rtl.hpp"
 
-#include "flx_async.hpp"
+namespace flx { namespace rtl {
+void print_loc(FILE *ef,flx::rtl::flx_range_srcref_t x,char *cf, int cl);
+int std_exception_handler (std::exception *e);
+int flx_exception_handler (flx::rtl::flx_exception_t *e);
+}}
 
-#include "flx_ts_collector.hpp"
+#endif
+
+@h = tangler('rtl/flx_eh.cpp')
+@select(h)
+#include <stdio.h>
+#include "flx_rtl.hpp"
 #include "flx_dynlink.hpp"
-#include "flx_sync.hpp"
-#include "pthread_thread.hpp"
-#include "pthread_counter.hpp"
-
-using namespace std;
+#include "flx_eh.hpp"
 using namespace flx::rtl;
-using namespace flx::pthread;
-using namespace flx::run;
 
-#ifdef HAVE_GXX_X86
-register void *sp __asm__("esp");
-#else
-#ifdef HAVE_GXX_X86_64
-register void *sp __asm__("rsp");
-#else
-static void *sp = 0;
-#endif
-#endif
-
-#ifdef _WIN32
-  #include "demux_iocp_demuxer.hpp"
-  // needed to perform win socket io (calls WSAInit). Must happen
-  // before iocp_demuxer is instantiated and (I assume) happen
-  // only once.
-  // JS: No, it can be called any number of times, provided
-  // the destructor WSACleanup is called same number of times
-  // Use of this RAII object ensures WSAinit/Cleanup calls balance.
-  // RF: Still has to happen before any socket calls. Putting it in
-  // the async object which is created on command is already too late.
-  // If that's a problem then any socket creation calls would have to
-  // gratuitously make async calls.
-  flx::demux::winsock_initer wsinit;
-#endif
-
-
-int do_final_cleanup(
-  bool debug_driver, 
-  gc_profile_t *gcp,
-  flx_dynlink_t *library,
-  flx_libinit_t *instance
-);
-
-void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
+void flx::rtl::print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
 {
   fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
     x.filename,
@@ -2644,23 +2662,14 @@ void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
   fprintf(ef,"C++ location  : %s %d\n", cf, cl);
 }
 
-struct doflx_data 
-{
-  bool debug_driver;
-  gc_profile_t *gcp;
-  std::list<fthread_t*> *active;
-  flx_ts_counter_t *thread_counter;
-  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a, flx_ts_counter_t *tc)
-   : debug_driver(d), gcp(g), active(a), thread_counter(tc) {}
-};
 
-int std_exception_handler (std::exception *e)
+int flx::rtl::std_exception_handler (std::exception *e)
 {
   fprintf(stderr,"C++ STANDARD EXCEPTION %s\n",e->what());
   return 4;
 }
 
-int flx_exception_handler (flx_exception_t *e)
+int flx::rtl::flx_exception_handler (flx_exception_t *e)
 {
   if (flx_link_failure_t *x = dynamic_cast<flx_link_failure_t*>(e))
   {
@@ -2714,6 +2723,79 @@ int flx_exception_handler (flx_exception_t *e)
   }
 }
 
+@h = tangler('rtl/flx_run.cxx','cpp')
+@select(h)
+#include <cstdlib>
+#include <stdio.h>
+#include <vector>
+#include <list>
+#include <map>
+#include <cstring>
+#include <cassert>
+
+#include <string>
+//#include <unistd.h>
+#include "flx_rtl.hpp"
+
+#include "flx_async.hpp"
+
+#include "flx_ts_collector.hpp"
+#include "flx_dynlink.hpp"
+#include "flx_sync.hpp"
+#include "pthread_thread.hpp"
+#include "pthread_counter.hpp"
+#include "flx_eh.hpp"
+
+using namespace std;
+using namespace flx::rtl;
+using namespace flx::pthread;
+using namespace flx::run;
+
+#ifdef HAVE_GXX_X86
+register void *sp __asm__("esp");
+#else
+#ifdef HAVE_GXX_X86_64
+register void *sp __asm__("rsp");
+#else
+static void *sp = 0;
+#endif
+#endif
+
+#ifdef _WIN32
+  #include "demux_iocp_demuxer.hpp"
+  // needed to perform win socket io (calls WSAInit). Must happen
+  // before iocp_demuxer is instantiated and (I assume) happen
+  // only once.
+  // JS: No, it can be called any number of times, provided
+  // the destructor WSACleanup is called same number of times
+  // Use of this RAII object ensures WSAinit/Cleanup calls balance.
+  // RF: Still has to happen before any socket calls. Putting it in
+  // the async object which is created on command is already too late.
+  // If that's a problem then any socket creation calls would have to
+  // gratuitously make async calls.
+  flx::demux::winsock_initer wsinit;
+#endif
+
+
+int do_final_cleanup(
+  bool debug_driver, 
+  gc_profile_t *gcp,
+  flx_dynlink_t *library,
+  flx_libinit_t *instance
+);
+
+struct doflx_data 
+{
+  bool debug_driver;
+  gc_profile_t *gcp;
+  std::list<fthread_t*> *active;
+  flx_ts_counter_t *thread_counter;
+  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a, flx_ts_counter_t *tc)
+   : debug_driver(d), gcp(g), active(a), thread_counter(tc) {}
+};
+
+static
+create_async_hooker_t *ptr_create_async_hooker = NULL;
 
 #ifdef _WIN32
 DWORD
@@ -2780,14 +2862,50 @@ doflx (void *data) {
       {
         if(debug_driver)
           fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
-        if( !async ) async = create_async_hooker(
+        if( !async )
+        {
+          if (ptr_create_async_hooker == NULL)
+          {
+#ifdef FLX_STATIC_LINK          
+             ptr_create_async_hooker = create_async_hooker;
+#else             
+             LIBHANDLE async_lib = flx_load_module("libflx_async_dynamic");
+             if (async_lib == NULL)
+             {
+               fprintf(stderr,"Unable to find module 'libflx_async_dynamic'\n");
+               exit(1);
+             }
+             // debug only ..
+             else { 
+               fprintf(stderr, "module 'libflx_async_dynamic' loaded!\n"); 
+             }
+             ptr_create_async_hooker = (create_async_hooker_t*)
+               DLSYM(async_lib,create_async_hooker)
+             ;
+             if (ptr_create_async_hooker == NULL)
+             {
+               fprintf(stderr,"Unable to find symbol 'create_async_hooker' in module 'libflx_async_dynamic'\n");
+               exit(1);
+             }
+             // debug only
+             else {
+               fprintf(stderr, "found 'create_async_hooker'!\n"); 
+             }
+#endif          
+          }
+          if (ptr_create_async_hooker == NULL)
+          {
+            fprintf(stderr,"Unable to initialise async I/O system: terminating\n");
+            exit(1);
+          }
+          async = (*ptr_create_async_hooker)(
             20000, // bound on resumable thread queue
             50,    // bound on general input job queue
             2,     // number of threads in job pool
             50,    // bound on async fileio job queue
             1      // number of threads doing async fileio
-         );
-
+          );
+        }
         ++async_count;
         void *dreq =  (((_ref_*)(ss.request->data))->get_data());
 
