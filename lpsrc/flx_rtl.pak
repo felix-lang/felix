@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.37  2006/05/18 03:23:41  skaller
+update drivers with hack. Known to be bugged, sorry,
+but without these updates the system won't build at all.
+Static linked programs using async will not work.
+
 Revision 1.36  2006/05/17 04:33:46  skaller
 For dynamic linkage, flx_run is no longer linked against
 flx_async. Instead, it is loaded on demand. At this stage,
@@ -335,22 +340,20 @@ weaver_directory = 'doc/rtl/flx_rtl/'
 @select(h)
 
 DRIVERS = [
-  ('rtl/flx_run','bin/flx_run'),
-  ('test/flx_perf_drv1','test/flx_perf_drv1'),
-  ('test/micky_mouse','bin/micky_mouse'),
+  ('rtl/flx_run','bin/flx_run',[]),
+  ('rtl/flx_run','bin/flx_arun',['DFLX_SUPPORT_ASYNC']),
+  ('test/flx_perf_drv1','test/flx_perf_drv1',[]),
+  ('test/micky_mouse','bin/micky_mouse',[]),
 ]
 
 DRLIBS = [
-  'libflx_async',
-  'libfaio',
-  'libdemux',
   'libflx_pthread',
   'libflx'
   ]
 
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
-pkg_requires = ['flx_async','flx_rtl','flx_pthread']
+pkg_requires = ['flx_rtl','flx_pthread']
 iscr_source = ['lpsrc/flx_rtl.pak']
 weaver_directory = 'doc/rtl/flx_drivers/'
 
@@ -2867,7 +2870,11 @@ doflx (void *data) {
           if (ptr_create_async_hooker == NULL)
           {
 #ifdef FLX_STATIC_LINK          
+  #ifdef FLX_SUPPORT_ASYNC             
              ptr_create_async_hooker = create_async_hooker;
+  #else
+             ptr_create_async_hooker = 0;
+  #endif
 #else             
              LIBHANDLE async_lib = flx_load_module("libflx_async_dynamic");
              if (async_lib == NULL)
