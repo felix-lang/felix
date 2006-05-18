@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.52  2006/05/18 03:11:32  skaller
+Fix major bug in build script which caused everything to
+get built even if it was up to date.
+
 Revision 1.51  2006/05/15 04:12:42  skaller
 More fixed on filenames for tanglers.
 
@@ -1631,13 +1635,13 @@ def build_felix_static_drivers():
   cflags = pkgdict.get("cflags","")
   if len(DRIVERS)>0:
     print "COMPILING DRIVERS (static)"
-    for i,j in DRIVERS:
+    for i,j,k in DRIVERS:
       if verbose: print 'static Compiling driver object',i
       dir,base = os.path.split(i)
       TARGET_CXX.compile_static_main(
         xqt,dir,base,dir,
         include_path=["rtl"],
-        macros=["FLX_STATIC_LINK"],
+        macros=["FLX_STATIC_LINK"]+k,
         optimise=1,CFLAGS=CFLAGS+cflags)
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
@@ -1651,22 +1655,26 @@ def build_felix_dynamic_drivers():
     libs = []
     for lib in LIBS:
       libs.append(lib+"_dynamic")
-    for i,j in DRIVERS:
-      if verbose: print 'dynamic Compiling driver object',i
-      dir,base = os.path.split(i)
-      TARGET_CXX.compile_shared_main(
-        xqt,dir,base,dir,
-        include_path=["rtl"],
-        optimise=1,
-        CFLAGS=CFLAGS+cflags)
-      TARGET_CXX.link_dynamic_program(
-        xqt,
-        [i+"_dynamic"],
-        j,
-        lib_path=[SHLIB_DIR],
-        libs=libs,
-        DFLAGS=DFLAGS+dflags)
-      deletefile(i+"_dynamic"+EXT_OBJ)
+    for i,j,k in DRIVERS:
+      # this is a gross HACK! Don't make dynamic versions
+      # of drivers with extra macros, they're for static
+      # link of driver without async support
+      if k == []:
+        if verbose: print 'dynamic Compiling driver object',i
+        dir,base = os.path.split(i)
+        TARGET_CXX.compile_shared_main(
+          xqt,dir,base,dir,
+          include_path=["rtl"],
+          optimise=1,
+          CFLAGS=CFLAGS+cflags)
+        TARGET_CXX.link_dynamic_program(
+          xqt,
+          [i+"_dynamic"],
+          j,
+          lib_path=[SHLIB_DIR],
+          libs=libs,
+          DFLAGS=DFLAGS+dflags)
+        deletefile(i+"_dynamic"+EXT_OBJ)
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 def build_target_cpp_tools():
@@ -2150,7 +2158,7 @@ class PLUGIN(Plugin):
     global pkgd
     global host_packages,target_packages,run_packages
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
-  
+
     for pkg in pkgd.keys():
       pkgdict = pkgd[pkg]
   
@@ -2213,6 +2221,7 @@ class PLUGIN(Plugin):
     run_selected_pkgs = filter(lambda x: x in run_packages,pkgs)
   
     if "all" in options: 
+       print "SELECTING ALL PACKAGES"
        host_selected_pkgs = pkgs
        target_selected_pkgs = pkgs
        run_selected_pkgs = pkgs
@@ -2493,10 +2502,7 @@ models = []
 options = args
 macros = []
 lparchive = None
-
-for o, a in opts:
-  if o in ['-h', '--help']:
-    print """\
+help_string = """\
 usage: mk [options] [plugins]
 
 flags:
@@ -2511,7 +2517,11 @@ flags:
 
 plugins:
   run a custom plugin. run "mk help" to get a list of plugins to run
-  """ % (all_phases)
+  """ 
+
+for o, a in opts:
+  if o in ['-h', '--help']:
+    print help_string % (all_phases)
     sys.exit(0)
   elif o in ['-v', '--verbose']:
     verbose += 1
@@ -2538,9 +2548,11 @@ plugins:
     print >> sys.stderr, 'unknown option:', o, a
     sys.exit(1)
 
-host_packages = packages
-target_packages = packages
-run_packages = packages
+host_packages = list(packages)
+target_packages = list(packages)
+run_packages = list(packages)
+
+print "USER SELECTED PACKAGES",packages
 
 # ------------------------------------------------
 # Load the initial config
