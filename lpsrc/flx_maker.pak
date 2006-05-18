@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.53  2006/05/18 04:28:10  idadesub
+commented out the options checking so that arbitrary options can be run
+
 Revision 1.52  2006/05/18 03:11:32  skaller
 Fix major bug in build script which caused everything to
 get built even if it was up to date.
@@ -2661,9 +2664,10 @@ try:
   for k in options:
     if k in plugins:
       plugins[k]()
-    else:
-      print "unknown option:", k
-      raise MakeError
+    # FIXME: commented out to allow arbitrary options
+    #else:
+    #  print "unknown option:", k
+    #  raise MakeError
 
   # execute scheduled operations in priority order
   schedule_table.sort()
