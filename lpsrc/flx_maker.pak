@@ -6,6 +6,13 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.54  2006/05/18 08:59:57  skaller
+Fixed make script so static link tests work. It's a hack,
+static link now requires async to work (the version that
+doesn't is clobbered .. the make system provides no
+way to named the object file different from the input
+source file).
+
 Revision 1.53  2006/05/18 04:28:10  idadesub
 commented out the options checking so that arbitrary options can be run
 
@@ -1638,14 +1645,15 @@ def build_felix_static_drivers():
   cflags = pkgdict.get("cflags","")
   if len(DRIVERS)>0:
     print "COMPILING DRIVERS (static)"
-    for i,j,k in DRIVERS:
-      if verbose: print 'static Compiling driver object',i
-      dir,base = os.path.split(i)
-      TARGET_CXX.compile_static_main(
-        xqt,dir,base,dir,
-        include_path=["rtl"],
-        macros=["FLX_STATIC_LINK"]+k,
-        optimise=1,CFLAGS=CFLAGS+cflags)
+    for mode,i,j,k in DRIVERS:
+      if mode=='static':
+        if verbose: print 'static Compiling driver object',i
+        dir,base = os.path.split(i)
+        TARGET_CXX.compile_static_main(
+          xqt,dir,base,dir,
+          include_path=["rtl"],
+          macros=["FLX_STATIC_LINK"]+k,
+          optimise=1,CFLAGS=CFLAGS+cflags)
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
 def build_felix_dynamic_drivers():
@@ -1658,17 +1666,18 @@ def build_felix_dynamic_drivers():
     libs = []
     for lib in LIBS:
       libs.append(lib+"_dynamic")
-    for i,j,k in DRIVERS:
+    for mode,i,j,k in DRIVERS:
       # this is a gross HACK! Don't make dynamic versions
       # of drivers with extra macros, they're for static
       # link of driver without async support
-      if k == []:
+      if mode=='dynamic':
         if verbose: print 'dynamic Compiling driver object',i
         dir,base = os.path.split(i)
         TARGET_CXX.compile_shared_main(
           xqt,dir,base,dir,
           include_path=["rtl"],
           optimise=1,
+          macros=k,
           CFLAGS=CFLAGS+cflags)
         TARGET_CXX.link_dynamic_program(
           xqt,

@@ -1,6 +1,13 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.16  2006/05/18 08:59:57  skaller
+Fixed make script so static link tests work. It's a hack,
+static link now requires async to work (the version that
+doesn't is clobbered .. the make system provides no
+way to named the object file different from the input
+source file).
+
 Revision 1.15  2006/05/18 03:23:41  skaller
 update drivers with hack. Known to be bugged, sorry,
 but without these updates the system won't build at all.
@@ -293,7 +300,8 @@ pkg_requires = ['glu']
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
   DRIVERS = [
-    ('rtl/flx_sdl_run','bin/flx_sdl_run',[]),
+    ('static','rtl/flx_sdl_run','bin/flx_sdl_run',[]),
+    ('dynamic','rtl/flx_sdl_run','bin/flx_sdl_run',[]),
   ]
   DRLIBS = [
    'libsdl',
