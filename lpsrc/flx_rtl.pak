@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.38  2006/05/18 05:10:10  rfistman
+fixed mac dylib extension thing
+
 Revision 1.37  2006/05/18 03:23:41  skaller
 update drivers with hack. Known to be bugged, sorry,
 but without these updates the system won't build at all.
@@ -1775,6 +1778,8 @@ using namespace std;
   #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
   #if defined(__CYGWIN__)  
     #define FLX_LIB_EXTENSION ".dll"
+  #elif defined(MACOSX)
+    #define FLX_LIB_EXTENSION ".dylib"
   #else
     #define FLX_LIB_EXTENSION ".so"
   #endif
