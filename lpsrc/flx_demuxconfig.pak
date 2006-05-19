@@ -21,6 +21,7 @@ Version: $Id$
    tangle("provides_slib: -ldemux_static")
 
 Requires: flx_pthread flx
+flx_requires_driver: flx_arun
 
 @h = tangler('spkgs/demux.py')
 @select(h)

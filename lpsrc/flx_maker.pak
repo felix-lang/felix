@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.56  2006/05/19 08:54:25  skaller
+Scripts should now all work without dependence on async.
+
 Revision 1.55  2006/05/19 06:55:45  idadesub
 slight change to pass all specified arguments from mk to script/maker
 
@@ -1360,16 +1363,33 @@ class PLUGIN(Plugin):
         cmd = os.path.join(
             "bin",
             "flx_pkgconfig -r --keeprightmost --path=config "
-            "--field=provides_slib --field=requires_slibs flx_run @"+resfilename)
+            "--field=flx_requires_driver @"+resfilename)
+        result,driver= get_stdout(cmd)
+        if result: 
+          print "flx_pkgconfig failed! Args=",cmd
+          raise MakeError
+        driver = string.strip(driver[0])
+        if driver == '': driver = 'flx_run'
+
+        cmd = os.path.join(
+            "bin",
+            "flx_pkgconfig -r --keeprightmost --path=config "
+            "--field=provides_slib --field=requires_slibs "+driver+" @"+resfilename)
+        #print "SLIBS cmd=",cmd
         result,slibs= get_stdout(cmd)
         if result: 
           print "flx_pkgconfig failed! Args=",cmd
           raise MakeError
         slibs = string.strip(slibs[0])
+        #print "slibs=",slibs
+
+        driver = driver + "_static"
+        driver = os.path.join("rtl",driver)
   
+        #print 'static driver =',driver
         TARGET_CXX.link_static_program(
           xqt,
-          ["rtl/flx_run_static",basename+"_static"],
+          [driver,basename+"_static"],
           basename,
           lib_path=["rtl"],
           libs=[],
@@ -1892,7 +1912,22 @@ class PLUGIN(Plugin):
             (path, basename, DIFF, basename, basename)
 
         if SUPPORT_DYNAMIC_LOADING:
-          testscript = flx_run + ' ' + pattern % EXT_SHLIB
+          basename = os.path.splitext(testfile)[0]
+          resfilename = basename + ".resh"
+          cmd = (os.path.join( "bin", "flx_pkgconfig") +
+            " --path=config --field=flx_requires_driver --rec @"+
+            resfilename)
+          #print "flx_pkgconfig command=",cmd
+          result,driver= get_stdout(cmd)
+          if result: 
+            print "flx_pkgconfig failed! Args=",cmd
+            raise MakeError
+        
+          driver = string.strip(driver[0])
+          if driver =='': driver = "flx_run"
+          driver = os.path.join("bin",driver)
+          #print "Driver:",driver
+          testscript = driver + ' ' + pattern % EXT_SHLIB
 
           #print 'Executing ',testscript
           try:

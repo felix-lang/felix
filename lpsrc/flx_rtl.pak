@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.40  2006/05/19 08:54:25  skaller
+Scripts should now all work without dependence on async.
+
 Revision 1.39  2006/05/18 08:59:57  skaller
 Fixed make script so static link tests work. It's a hack,
 static link now requires async to work (the version that
@@ -350,12 +353,11 @@ weaver_directory = 'doc/rtl/flx_rtl/'
 @select(h)
 
 DRIVERS = [
-  ('static','rtl/flx_run','rtl/flx_run',[]),
+  ('static','rtl/flx_run','',[]),
   ('dynamic','rtl/flx_run','bin/flx_run',[]),
-  ('static','rtl/flx_run','rtl/flx_arun',['FLX_SUPPORT_ASYNC']),
+  ('static','test/flx_perf_drv1','',[]),
   ('dynamic','test/flx_perf_drv1','test/flx_perf_drv1',[]),
-  ('static','test/flx_perf_drv1','test/flx_perf_drv1',[]),
-  ('static','test/micky_mouse','bin/micky_mouse',[]),
+  ('static','test/micky_mouse','',[]),
   ('dynamic','test/micky_mouse','bin/micky_mouse',[]),
 ]
 
@@ -367,6 +369,28 @@ DRLIBS = [
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_rtl','flx_pthread']
+iscr_source = ['lpsrc/flx_rtl.pak']
+weaver_directory = 'doc/rtl/flx_drivers/'
+
+@h = tangler('spkgs/flx_async_drivers.py')
+@select(h)
+
+DRIVERS = [
+  ('static','rtl/flx_arun','',[]),
+  ('dynamic','rtl/flx_arun','bin/flx_arun',[]),
+]
+
+DRLIBS = [
+  'libflx_async',
+  'libfaio',
+  'libdemux',
+  'libflx_pthread',
+  'libflx'
+  ]
+
+drivers = DRIVERS
+drivers_require_libs = DRLIBS
+pkg_requires = ['flx_rtl','flx_pthread','flx_async','demux','faio']
 iscr_source = ['lpsrc/flx_rtl.pak']
 weaver_directory = 'doc/rtl/flx_drivers/'
 
@@ -382,12 +406,19 @@ Version: $Id$
    tangle("provides_dlib: -lflx_dynamic")
    tangle("provides_slib: -lflx_static")
 
+@h = tangler('config/flx_arun.fpc')
+@select(h)
+Name: flx_arun
+Description: Felix standard driver, async support
+Version: $Id$
+Requires: flx_async faio demux flx_pthread flx
+
 @h = tangler('config/flx_run.fpc')
 @select(h)
 Name: flx_run
-Description: Felix standard driver
+Description: Felix standard driver, no async support
 Version: $Id$
-Requires: flx_async faio demux flx_pthread flx
+Requires: flx_pthread flx
 
 @h = tangler('config/flx_async.fpc')
 @select(h)
@@ -2741,7 +2772,7 @@ int flx::rtl::flx_exception_handler (flx_exception_t *e)
   }
 }
 
-@h = tangler('rtl/flx_run.cxx','cpp')
+@h = tangler('rtl/flx_run.include','cpp')
 @select(h)
 #include <cstdlib>
 #include <stdio.h>
@@ -2884,13 +2915,11 @@ doflx (void *data) {
         {
           if (ptr_create_async_hooker == NULL)
           {
-#ifdef FLX_STATIC_LINK          
-  #ifdef FLX_SUPPORT_ASYNC             
-             ptr_create_async_hooker = create_async_hooker;
-  #else
+#ifndef FLX_SUPPORT_ASYNC             
              ptr_create_async_hooker = 0;
-  #endif
-#else             
+#else
+             ptr_create_async_hooker = create_async_hooker;
+  #ifndef FLX_STATIC_LINK          
              LIBHANDLE async_lib = flx_load_module("libflx_async_dynamic");
              if (async_lib == NULL)
              {
@@ -2913,7 +2942,8 @@ doflx (void *data) {
              else {
                fprintf(stderr, "found 'create_async_hooker'!\n"); 
              }
-#endif          
+  #endif          
+#endif
           }
           if (ptr_create_async_hooker == NULL)
           {
@@ -3321,6 +3351,15 @@ int main(int argc, char** argv)
   if(debug)fprintf(stderr,"flx_run driver ends OK\n");
   return 0;
 }
+
+@h = tangler('rtl/flx_run.cxx','cpp')
+@select(h)
+#include "flx_run.include"
+
+@h = tangler('rtl/flx_arun.cxx','cpp')
+@select(h)
+#define FLX_SUPPORT_ASYNC
+#include "flx_run.include"
 
 @h = tangler('rtl/flx_main.cpp','cpp')
 @select(h)
