@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.55  2006/05/19 06:55:45  idadesub
+slight change to pass all specified arguments from mk to script/maker
+
 Revision 1.54  2006/05/18 08:59:57  skaller
 Fixed make script so static link tests work. It's a hack,
 static link now requires async to work (the version that
@@ -1056,7 +1059,7 @@ OCS_MODULES = [
 
 @h = tangler('mk','data')
 @select(h)
-python script/maker $1 $2 $3 $4 $5 $6 $7 $8 $9
+python script/maker $*
 @os.system("chmod u+x mk")
 @h = tangler('mk.bat','data')
 @select(h)
