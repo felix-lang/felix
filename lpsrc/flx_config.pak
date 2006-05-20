@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.182  2006/05/20 23:27:48  idadesub
+make sure we're converting to a string first
+
 Revision 1.181  2006/05/20 23:11:56  idadesub
 turns out that "print >> sys.stderr" is python 2.0+ behavior :( rolling back
 to python 1.5 compatible code
@@ -2525,7 +2528,7 @@ try:
       'load-config=', 'lparchive=', 'phase='])
       #'set-int', 
 except getopt.error, e:
-  sys.stderr.write(e + '\n')
+  sys.stderr.write(str(e) + '\n')
   sys.exit(1)
 
 for o, a in opts:
