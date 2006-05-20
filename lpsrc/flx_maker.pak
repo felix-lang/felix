@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.57  2006/05/20 23:11:56  idadesub
+turns out that "print >> sys.stderr" is python 2.0+ behavior :( rolling back
+to python 1.5 compatible code
+
 Revision 1.56  2006/05/19 08:54:25  skaller
 Scripts should now all work without dependence on async.
 
@@ -2543,7 +2547,7 @@ try:
   opts, args = getopt.getopt(sys.argv[1:], 'hvqD:', 
       ['help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive='])
 except getopt.error, e:
-  print >> sys.stderr, e
+  sys.stderr.write(e + '\n')
   sys.exit(1)
 
 verbose = 1
@@ -2583,7 +2587,7 @@ for o, a in opts:
     if a == '*':
       phases = all_phases
     elif a not in all_phases:
-      print >> sys.stderr, 'unknown phase:', phase
+      sys.stderr.write('unknown phase:' + phase + '\n')
       raise MakeError
     elif a not in phases:
       phases.append(a)
@@ -2595,7 +2599,7 @@ for o, a in opts:
   elif o in ['--lparchive']:
     lparchive = a
   else:
-    print >> sys.stderr, 'unknown option:', o, a
+    sys.stderr.write('unknown option:' + o + + ' ' + a + '\n')
     sys.exit(1)
 
 host_packages = list(packages)
