@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.41  2006/05/20 15:38:09  rfistman
+fixed win32 typo
+
 Revision 1.40  2006/05/19 08:54:25  skaller
 Scripts should now all work without dependence on async.
 
@@ -2043,7 +2046,7 @@ flx_load_library(char const *filename)
 //#if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(_WIN32) 
   SetErrorMode(SEM_NOOPENFILEERRORBOX);  // stop windows showing err dialogues
-  library = LoadLibrary(fname);
+  library = LoadLibrary(filename);
   if(FLX_CHECK_NOLIBRARY(library)) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
 #else
