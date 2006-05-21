@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.17  2006/05/21 13:59:39  skaller
+Basic TRE package now built in core, including unit tests.
+
 Revision 1.16  2006/05/18 08:59:57  skaller
 Fixed make script so static link tests work. It's a hack,
 static link now requires async to work (the version that
@@ -251,10 +254,11 @@ except:
   cload(globals(),"sdl")
 
 
-@h=tangler('rtl/flx_sdl_run.cxx')
+@h=tangler('rtl/flx_sdl_arun.cxx')
 @select(h)
 #include "SDL.h"
-#include "flx_run.cxx"
+#define FLX_SUPPORT_ASYNC
+#include "flx_run.cpp"
 
 @h = tangler('spkgs/sdl.py')
 @select(h)

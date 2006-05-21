@@ -28,27 +28,138 @@ TRE_CPPS = [
   'tre/tre_match-parallel',
   'tre/tre_mem',
   'tre/tre_parse',
-  'tre/tre_stack',
-  'tre/tre_xmalloc',
+  'tre/tre_stack'
   ]
 
 cpp_cpps = TRE_CPPS
 iscr_source = ['lpsrc/tre.pak']
 weaver_directory = 'doc/rtl/tre/'
 build_macro = "TRE"
-if CYGWIN:
-  sflags = '-lintl'
-  dflags = '-lintl'
+unit_tests = glob.glob("test" + os.sep + "tre*.flx")
 
 @h = tangler('config/tre.fpc')
 @select(h)
-provides_dlib: -ltre
-provides_slib: -ltre
-@if CYGWIN:
-  tangle('requires_dlibs: -lintl')
-  tangle('requires slibs: -lintl')
-  
+provides_dlib: -ltre_dynamic
+provides_slib: -ltre_static
 
+@h=tangler('lib/tre.flx')
+@select(h)
+#import <flx.flxh>
+
+module Tre 
+{
+  open C_hack;
+  requires package 'tre';
+  header '#include "tre_regex.hpp"';
+  type tre_regex_t = "regex_t";
+
+  const tre_version: string = "tre_version()";
+  
+  private fun _tre_regcomp: ptr[tre_regex_t] * string  -> int =
+    "regncomp($1,$2.data(),$2.size(),REG_EXTENDED)"
+  ;
+  
+  fun tre_regcomp (x:string): opt[tre_regex_t] = {
+    var cr: tre_regex_t;
+    var res = _tre_regcomp(addr cr, x);
+    return 
+      if res == 0 then Some cr else None[tre_regex_t] endif
+    ;
+  }
+
+  fun nsub: ptr[tre_regex_t] -> int = "$1->re_nsub+1";
+  
+  ctypes regoff_t;
+  cstruct regmatch_t {
+    rm_so: regoff_t;
+    rm_eo: regoff_t;
+  }
+  
+  fun add: ptr[char] * regoff_t -> ptr[char] = "$1+$2";
+  fun sub: regoff_t * regoff_t -> int = "(int)($1-$2)";
+  fun _ctor_int : regoff_t -> int = "int($1)";
+
+  private fun _tre_regexec: 
+    ptr[tre_regex_t] *     // the compiled regex
+    string *               // string to search
+    int *                  // number of matches to return
+    ptr[regmatch_t]        // array to hold matches
+    -> int
+  =
+    "regnexec($1,$2.data(),$2.size(),$3,$4,0);"
+  ;
+  
+  fun tre_regexec (re_in: tre_regex_t) (x:string): int * int * ptr[regmatch_t] =
+  {
+    var re = re_in;
+    val nmatches = nsub$ addr re;
+    var matches = Carray::array_alloc[regmatch_t] nmatches;
+    var res = _tre_regexec(addr re, x, nmatches, matches);
+    return res,nmatches,matches;
+  }
+}
+
+@h=tangler('test/tre_01.flx')
+@select(h)
+#import <flx.flxh>
+include "tre.flx";
+open Tre;
+open C_hack;
+open Carray;
+
+print$ "Using tre " tre_version; endl;
+
+var r = tre_regcomp("(a|b)*abb");
+print "Done tre compile"; endl;
+
+print 
+  match r with
+  | Some _ => "Compiled"
+  | None => "failed" 
+  endmatch
+;
+endl;
+
+
+var re : tre_regex_t = 
+  match r with 
+  | Some ?re => re 
+  | None => re // HACK!
+  endmatch
+;  
+
+var s = "aabbabababb";
+res,n,a := tre_regexec re s;
+print "Result = "; print res; endl;
+print "nmatches = "; print n; endl;
+
+var i : int;
+for_each { i=0; } { i<n } { ++i; }
+  {
+    if int(a.[i].rm_so) == -1 do
+      print i; print " -> nomatch\n";
+    else 
+      print i; print "-> match '";
+      start := int(a.[i].rm_so);
+      finish := int(a.[i].rm_eo);
+      print s.[start to finish];
+      print "'"; endl;
+    done;
+  }
+;
+
+print "Finished"; endl;
+
+@h=tangler('test/tre_01.expect')
+@select(h)
+Using tre TRE 0.7.2 (GPL)
+Done tre compile
+Compiled
+Result = 0
+nmatches = 2
+0-> match 'aabbabababb'
+1-> match 'b'
+Finished
 @h=tangler('rtl/flx_target_tre_config.hpp')
 @select(h)
 #ifndef __FLX_TARGET_TRE_CONFIG_GUARD__
@@ -80,33 +191,33 @@ provides_slib: -ltre
   tangle('#define ENABLE_NLS 1')
 
 /* Define to 1 if you have `alloca', as a function or macro. */
-#define HAVE_ALLOCA 1
+//#define HAVE_ALLOCA 1
 
 /* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
    */
-#define HAVE_ALLOCA_H 1
+//#define HAVE_ALLOCA_H 1
 
 /* Define if the GNU dcgettext() function is already present or preinstalled.
    */
-#define HAVE_DCGETTEXT 1
+//#define HAVE_DCGETTEXT 1
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H 1
+//#define HAVE_DLFCN_H 1
 
 /* Define to 1 if you have the <getopt.h> header file. */
-#define HAVE_GETOPT_H 1
+//#define HAVE_GETOPT_H 1
 
 /* Define to 1 if you have the `getopt_long' function. */
-#define HAVE_GETOPT_LONG 1
+//#define HAVE_GETOPT_LONG 1
 
 /* Define if the GNU gettext() function is already present or preinstalled. */
-#define HAVE_GETTEXT 1
+//#define HAVE_GETTEXT 1
 
 /* Define if you have the iconv() function. */
 /* #undef HAVE_ICONV */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-#define HAVE_INTTYPES_H 1
+//#define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `isascii' function. */
 #define HAVE_ISASCII 1
@@ -118,31 +229,31 @@ provides_slib: -ltre
 /* #undef HAVE_ISWASCII */
 
 /* Define to 1 if you have the `iswblank' function or macro. */
-#define HAVE_ISWBLANK 1
+//#define HAVE_ISWBLANK 1
 
 /* Define to 1 if you have the `iswctype' function or macro. */
-#define HAVE_ISWCTYPE 1
+//#define HAVE_ISWCTYPE 1
 
 /* Define to 1 if you have the `iswlower' function or macro. */
-#define HAVE_ISWLOWER 1
+//#define HAVE_ISWLOWER 1
 
 /* Define to 1 if you have the `iswupper' function or macro. */
-#define HAVE_ISWUPPER 1
+//#define HAVE_ISWUPPER 1
 
 /* Define to 1 if you have the <libutf8.h> header file. */
 /* #undef HAVE_LIBUTF8_H */
 
 /* Define to 1 if you have the `mbrtowc' function or macro. */
-#define HAVE_MBRTOWC 1
+//#define HAVE_MBRTOWC 1
 
 /* Define to 1 if the system has the type `mbstate_t'. */
-#define HAVE_MBSTATE_T 1
+//#define HAVE_MBSTATE_T 1
 
 /* Define to 1 if you have the `mbtowc' function or macro. */
 /* #undef HAVE_MBTOWC */
 
 /* Define to 1 if you have the <memory.h> header file. */
-#define HAVE_MEMORY_H 1
+//#define HAVE_MEMORY_H 1
 
 /* Define to 1 if you have the <regex.h> header file. */
 /* #undef HAVE_REGEX_H */
@@ -151,64 +262,64 @@ provides_slib: -ltre
 /* #undef HAVE_REG_ERRCODE_T */
 
 /* Define to 1 if you have the <stdint.h> header file. */
-#define HAVE_STDINT_H 1
+//#define HAVE_STDINT_H 1
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the <strings.h> header file. */
-#define HAVE_STRINGS_H 1
+//#define HAVE_STRINGS_H 1
 
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
-#define HAVE_SYS_STAT_H 1
+//#define HAVE_SYS_STAT_H 1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
+//#define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the `towlower' function or macro. */
-#define HAVE_TOWLOWER 1
+//#define HAVE_TOWLOWER 1
 
 /* Define to 1 if you have the `towupper' function or macro. */
-#define HAVE_TOWUPPER 1
+//#define HAVE_TOWUPPER 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H 1
+//#define HAVE_UNISTD_H 1
 
 /* Define to 1 if you have the <wchar.h> header file. */
-#define HAVE_WCHAR_H 1
+//#define HAVE_WCHAR_H 1
 
 /* Define to 1 if the system has the type `wchar_t'. */
-#define HAVE_WCHAR_T 1
+//#define HAVE_WCHAR_T 1
 
 /* Define to 1 if you have the `wcschr' function or macro. */
-#define HAVE_WCSCHR 1
+//#define HAVE_WCSCHR 1
 
 /* Define to 1 if you have the `wcscpy' function or macro. */
-#define HAVE_WCSCPY 1
+//#define HAVE_WCSCPY 1
 
 /* Define to 1 if you have the `wcslen' function or macro. */
-#define HAVE_WCSLEN 1
+//#define HAVE_WCSLEN 1
 
 /* Define to 1 if you have the `wcsncpy' function or macro. */
-#define HAVE_WCSNCPY 1
+//#define HAVE_WCSNCPY 1
 
 /* Define to 1 if you have the `wcsrtombs' function or macro. */
-#define HAVE_WCSRTOMBS 1
+//#define HAVE_WCSRTOMBS 1
 
 /* Define to 1 if you have the `wcstombs' function or macro. */
 /* #undef HAVE_WCSTOMBS */
 
 /* Define to 1 if you have the `wctype' function or macro. */
-#define HAVE_WCTYPE 1
+//#define HAVE_WCTYPE 1
 
 /* Define to 1 if you have the <wctype.h> header file. */
-#define HAVE_WCTYPE_H 1
+//#define HAVE_WCTYPE_H 1
 
 /* Define to 1 if the system has the type `wint_t'. */
-#define HAVE_WINT_T 1
+//#define HAVE_WINT_T 1
 
 /* Define if you want to disable debug assertions. */
 #define NDEBUG 1
@@ -249,7 +360,7 @@ provides_slib: -ltre
 /* #undef TRE_DEBUG */
 
 /* Define to enable multibyte character set support. */
-#define TRE_MULTIBYTE 1
+#define TRE_MULTIBYTE 0
 
 /* Define to a field in the regex_t struct where TRE should store a pointer to
    the internal tre_tnfa_t structure */
@@ -260,7 +371,7 @@ provides_slib: -ltre
 
 /* Define if you want TRE to use alloca() instead of malloc() when allocating
    memory needed for regexec operations. */
-#define TRE_USE_ALLOCA 1
+//#define TRE_USE_ALLOCA 1
 
 /* Define to include the system regex.h from TRE regex.h */
 /* #undef TRE_USE_SYSTEM_REGEX_H */
@@ -278,7 +389,7 @@ provides_slib: -ltre
 #define TRE_VERSION_3 2
 
 /* Define to enable wide character (wchar_t) support. */
-#define TRE_WCHAR 1
+//#define TRE_WCHAR 1
 
 /* Version number of package */
 #define VERSION "0.7.2"
@@ -296,7 +407,7 @@ provides_slib: -ltre
 /* #undef _FILE_OFFSET_BITS */
 
 /* Define to enable GNU extensions in glibc */
-#define _GNU_SOURCE 1
+//#define _GNU_SOURCE 1
 
 /* Define for large files, on AIX-style hosts. */
 /* #undef _LARGE_FILES */
@@ -491,7 +602,7 @@ regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
   ret = tre_compile(preg, wregex, wlen, cflags);
   xfree(wregex);
 #else /* !TRE_WCHAR */
-  ret = tre_compile(preg, regex, n, cflags);
+  ret = tre_compile(preg, (const tre_char_t*)regex, n, cflags);
 #endif /* !TRE_WCHAR */
 
   return ret;
@@ -4010,13 +4121,13 @@ typedef struct {
 #define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <wchar.h> header file. */
-#define HAVE_WCHAR_H 1
+#define HAVE_WCHAR_H 0
 
 /* Define if you want to enable approximate matching functionality. */
 #define TRE_APPROX 1
 
 /* Define to enable multibyte character set support. */
-#define TRE_MULTIBYTE 1
+#define TRE_MULTIBYTE 0
 
 /* Define to the absolute path to the system regex.h */
 /* #undef TRE_SYSTEM_REGEX_H_PATH */
@@ -4025,7 +4136,7 @@ typedef struct {
 /* #undef TRE_USE_SYSTEM_REGEX_H */
 
 /* Define to enable wide character (wchar_t) support. */
-#define TRE_WCHAR 1
+//#define TRE_WCHAR 0
 
 /* TRE version string. */
 #define TRE_VERSION "0.7.2"
@@ -4743,7 +4854,7 @@ tre_tnfa_run_approx(const tre_tnfa_t *tnfa, const void *string, int len,
 #ifdef TRE_USE_ALLOCA
     buf = (unsigned char*)alloca(total_bytes);
 #else /* !TRE_USE_ALLOCA */
-    buf = xmalloc(total_bytes);
+    buf = (unsigned char*)xmalloc(total_bytes);
 #endif /* !TRE_USE_ALLOCA */
     if (!buf)
       return REG_ESPACE;
@@ -5567,19 +5678,19 @@ tre_tnfa_run_backtrack(const tre_tnfa_t *tnfa, const void *string,
   pmatch = (regmatch_t*)alloca(sizeof(*pmatch) * tnfa->num_submatches);
   states_seen = (int*)alloca(sizeof(*states_seen) * tnfa->num_states);
 #else /* !TRE_USE_ALLOCA */
-  tags = xmalloc(sizeof(*tags) * tnfa->num_tags);
+  tags = (int*)xmalloc(sizeof(*tags) * tnfa->num_tags);
   if (!tags)
     {
       ret = REG_ESPACE;
       goto error_exit;
     }
-  pmatch = xmalloc(sizeof(*pmatch) * tnfa->num_submatches);
+  pmatch = (regmatch_t*)xmalloc(sizeof(*pmatch) * tnfa->num_submatches);
   if (!pmatch)
     {
       ret = REG_ESPACE;
       goto error_exit;
     }
-  states_seen = xmalloc(sizeof(*states_seen) * tnfa->num_states);
+  states_seen = (int*)xmalloc(sizeof(*states_seen) * tnfa->num_states);
   if (!states_seen)
     {
       ret = REG_ESPACE;
@@ -6131,7 +6242,7 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
 #ifdef TRE_USE_ALLOCA
     buf = (char*)alloca(total_bytes);
 #else /* !TRE_USE_ALLOCA */
-    buf = xmalloc(total_bytes);
+    buf = (char*)xmalloc(total_bytes);
 #endif /* !TRE_USE_ALLOCA */
     if (buf == NULL)
       return REG_ESPACE;
@@ -7040,7 +7151,7 @@ tre_expand_macro(const tre_char_t *regex, const tre_char_t *regex_end,
         match = wcsncmp(tmp_wcs, regex, strlen(tre_macros[i]));
       }
 #else /* !TRE_WCHAR */
-      match = strncmp(tre_macros[i], regex, strlen(tre_macros[i]));
+      match = strncmp(tre_macros[i], (const char*)regex, strlen(tre_macros[i]));
 #endif /* !TRE_WCHAR */
       if (match == 0)
         {
@@ -7295,7 +7406,7 @@ tre_parse_bracket_items(tre_parse_ctx_t *ctx, int negate,
 #endif /* defined HAVE_WCSTOMBS */
                   }
 #else /* !TRE_WCHAR */
-                  strncpy(tmp_str, re + 2, len);
+                  strncpy(tmp_str, (const char*)re + 2, len);
 #endif /* !TRE_WCHAR */
                   tmp_str[len] = '\0';
                   DPRINT(("  klass name: %s\n", tmp_str));
@@ -8310,7 +8421,7 @@ tre_parse(tre_parse_ctx_t *ctx)
                     tre_parse_ctx_t subctx;
                     memcpy(&subctx, ctx, sizeof(subctx));
                     subctx.re = buf;
-                    subctx.len = tre_strlen(buf);
+                    subctx.len = tre_strlen((const char*)buf);
                     subctx.nofirstsub = 1;
                     status = tre_parse(&subctx);
                     if (status != REG_OK)
