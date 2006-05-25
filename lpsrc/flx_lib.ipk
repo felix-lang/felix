@@ -1,4 +1,11 @@
+@execfile('config'+os.sep+'flx_data.py')
 @head(1,'Felix Standard Library')
+@head(2,"Change Log")
+$Log$
+Revision 1.162  2006/05/25 17:29:41  skaller
+Misc
+
+@head(2,"Code")
 Support table.
 @begin_table("filebase","language","namespace","function")
 @table_row("rtl/flx_i18n","C++","flx::rtl::i18n","utf8 codec support")

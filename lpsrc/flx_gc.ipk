@@ -315,8 +315,9 @@ of object an memory block hold, and reset the
 length of an array, respectively.
 
 @select(h)
-RTL_EXTERN void flx_reset_shape(void *memory, gc_shape_t &);
-RTL_EXTERN void flx_reset_count(void *memory, unsigned long); 
+RTL_EXTERN void reset_shape(void *memory, gc_shape_t &);
+RTL_EXTERN void reset_count(void *memory, unsigned long); 
+RTL_EXTERN unsigned long get_count(void *memory, unsigned long); 
 
 }}} // end namespaces
 
@@ -487,6 +488,12 @@ void reset_count(void *memory, unsigned long n)
 {
   assert(memory);
   CLIENT_TO_FRAME(memory)->n_objects = n;
+}
+
+unsigned long get_count(void *memory)
+{
+  assert(memory);
+  return CLIENT_TO_FRAME(memory)->n_objects;
 }
 
 collector_t::collector_t() : debug(false) {}
