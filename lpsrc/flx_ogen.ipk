@@ -388,7 +388,9 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       try Hashtbl.find bbdfns index 
       with Not_found -> failwith ("[gen_offset_tables] can't find index " ^ si index)
     in 
+    (*
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.dfns) ts ^"]");
+    *)
     match entry with
     | `BBDCL_function (props,vs,ps, ret,_) -> 
       if mem `Heap_closure props then
