@@ -220,7 +220,8 @@ Finished
 #define HAVE_ISASCII 1
 
 /* Define to 1 if you have the `isblank' function. */
-#define HAVE_ISBLANK 1
+/* RF: had to comment this out to get cl.exe version working */
+/* #define HAVE_ISBLANK 1 */
 
 /* Define to 1 if you have the `iswascii' function or macro. */
 /* #undef HAVE_ISWASCII */

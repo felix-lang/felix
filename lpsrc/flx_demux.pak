@@ -1,5 +1,11 @@
 @head(1,'demux')
 $Log$
+Revision 1.26  2006/05/30 18:53:22  rfistman
+fixed exception handler linkage on win32
+flx_rtl_config now stops Windows.h on VS toolchain including winsock vers 1
+disabled HAVE_ISBLANK in tre config file to unbreak win32 build
+removed async bootstrapping from pkg_config as it's no longer needed
+
 Revision 1.25  2006/04/30 05:56:29  rfistman
 minimal change to test commit emails
 
@@ -225,12 +231,12 @@ Revision 1.20  2006/01/09 16:32:03  skaller
 Integrate SDL tests, provide initial SDL event demux.
 
 
-@h=tangler('tmp/flx_demux_config.hpp')
-@select(h)
-// This is a fake flx_demux_config.h to be used at config time, before
-// the rtl proper exists. It contains just enough info to compile
-// a few of the demuxers.
-#define DEMUX_EXTERN
+#@h=tangler('tmp/flx_demux_config.hpp')
+#@select(h)
+#// This is a fake flx_demux_config.h to be used at config time, before
+#// the rtl proper exists. It contains just enough info to compile
+#// a few of the demuxers.
+##define DEMUX_EXTERN
 
 @h=tangler('rtl/flx_demux_config.hpp')
 @select(h)
@@ -383,7 +389,11 @@ public:
 #define __IOCP_DEMUXER__
 
 #include <flx_demux_config.hpp>
-#include <Windows.h>
+//#include <Windows.h>
+// be specific - flx_rtl_config.h now jigs it so that windows.h  does not
+// include winsock version 1 headers by default. this was making the order
+// of inclusion of windows.h and winsock2.h significant with cl.exe.
+#include <WinSock2.h>
 
 #include "demux_demuxer.hpp"
 #include "pthread_sleep_queue.hpp"
@@ -3565,7 +3575,8 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 #include <flx_demux_config.hpp>
 namespace flx { namespace demux {
 
-// Shouldn't this all be DEMUX_EXTERN?
+// Shouldn't this all be DEMUX_EXTERN? eh, doesn't happen on win32
+// we'll probably live.
 int create_listener_socket(int* io_port, int q_len);
 int create_async_listener(int* io_port, int q_len);
 int nice_accept(int listener, int* err);

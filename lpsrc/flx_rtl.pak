@@ -1,5 +1,11 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.42  2006/05/30 18:53:22  rfistman
+fixed exception handler linkage on win32
+flx_rtl_config now stops Windows.h on VS toolchain including winsock vers 1
+disabled HAVE_ISBLANK in tre config file to unbreak win32 build
+removed async bootstrapping from pkg_config as it's no longer needed
+
 Revision 1.41  2006/05/20 15:38:09  rfistman
 fixed win32 typo
 
@@ -556,6 +562,9 @@ T &reinterpret(U const &x) {
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x500
+// vs windows.h just LOVES to include winsock version 1 headers by default.
+// that's bad for everyone, so quit it.
+#define _WINSOCKAPI_
 #endif
 
 @if HAVE_VSNPRINTF:
@@ -2684,12 +2693,13 @@ async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
 @select(h)
 #ifndef __FLX_EH__
 #define __FLX_EH__
+#include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
 
 namespace flx { namespace rtl {
-void print_loc(FILE *ef,flx::rtl::flx_range_srcref_t x,char *cf, int cl);
-int std_exception_handler (std::exception *e);
-int flx_exception_handler (flx::rtl::flx_exception_t *e);
+void RTL_EXTERN print_loc(FILE *ef,flx::rtl::flx_range_srcref_t x,char *cf, int cl);
+int RTL_EXTERN std_exception_handler (std::exception *e);
+int RTL_EXTERN flx_exception_handler (flx::rtl::flx_exception_t *e);
 }}
 
 #endif
@@ -2813,7 +2823,9 @@ static void *sp = 0;
 #endif
 #endif
 
-#ifdef _WIN32
+// non async drivers aren't don't depend on faio<-demux<-winsock
+// and so aren't linked with mswsock and ws2_32
+#if defined(_WIN32) && defined(FLX_SUPPORT_ASYNC)
   #include "demux_iocp_demuxer.hpp"
   // needed to perform win socket io (calls WSAInit). Must happen
   // before iocp_demuxer is instantiated and (I assume) happen
