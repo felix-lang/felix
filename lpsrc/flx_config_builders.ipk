@@ -1,7 +1,6 @@
 @h = tangler("flxbuild/compiler_base.py")
 @select (h)
 import flxbuild
-from flxbuild.flxutil import *  # get_stdout
 import os
 import sys
 import string
@@ -36,7 +35,7 @@ import os
 import sys
 import string
 
-from flxbuild.flxutil import *  # get_stdout
+from flxbuild.flxutil import MakeError
 from flxbuild.compiler_base import compiler_base
 
 class cxx_base(compiler_base):
@@ -284,7 +283,7 @@ class cxx_base(compiler_base):
   def detect_bsd(self,shell):
     return self.check_macro_defined(shell,"BSD")
 
-  def detect_solaris(self,shell):
+  def detect_solaris(self,shell,get_stdout):
     # can't find a symbol for solaris...
     # return self.check_macro_defined(shell,"__SOLARIS__")
     result,output = get_stdout("uname")  # print SunOS on solaris
@@ -298,11 +297,11 @@ class cxx_base(compiler_base):
 
   # only allows 4 models: cygwin, osx, win32 and posix
   # nocygwin = mingw = win32
-  def detect_model(self,shell):
+  def detect_model(self,shell,get_stdout):
     opt = self.options
     opt.MACOSX = self.detect_osx(shell)
     opt.BSD = self.detect_bsd(shell)
-    opt.SOLARIS = self.detect_solaris(shell)
+    opt.SOLARIS = self.detect_solaris(shell, get_stdout)
     opt.LINUX= self.detect_linux(shell)
     opt.WIN32 = self.detect_win32(shell)
     opt.WIN64 = self.detect_win64(shell)
@@ -337,7 +336,6 @@ import os
 import sys
 import flxbuild
 from flxbuild.cxx_base import cxx_base
-from flxbuild.flxutil import *  # get_stdout
 
 class gxx(cxx_base):
   def set_options(self,
@@ -499,7 +497,7 @@ class gxx(cxx_base):
     except:
       opt.HAVE_STL_GNU_CXX = 0
 
-    self.detect_model(shell)
+    self.detect_model(shell,get_stdout)
     print "MODEL =",opt.model
 
     if opt.model=="cygwin":
@@ -1070,7 +1068,7 @@ class msvcxx(cxx_base):
     self.detect_msvcxx_language_extensions(shell)
 
     self.detect_msvcxx_flags(shell)
-    self.detect_model(shell)
+    self.detect_model(shell,get_stdout)
     if opt.model == "detect": opt.model = "win32" 
 
     print "MODEL =",opt.model
