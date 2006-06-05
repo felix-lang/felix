@@ -1,0 +1,1797 @@
+@h = tangler("flxbuild/object_class.py")
+@select (h)
+class object:pass
+
+@h = tangler("flxbuild/compiler_class.py")
+@select (h)
+import flxbuild
+import flxbuild.object_class
+from flxbuild.flxutil import *  # get_stdout
+import os
+import sys
+import string
+
+class compiler_base:
+  def __init__(self):
+    self.options = flxbuild.object_class.object()
+
+  def eval_tmp_program(self,shell,get_stdout,pname):
+    self.compile_static_main(shell,"tmp",pname,"tmp")
+    self.link_static_program(shell,["tmp"+os.sep+pname+"_static"],"tmp"+os.sep+pname+self.options.EXT_EXE,[],[])
+    result,lines= get_stdout("tmp"+os.sep+pname+self.options.EXT_EXE)
+    return result,lines
+
+  def eval_string_program(self,shell,get_stdout,data):
+    fn = "tmp"+os.sep+"tmp.cxx"
+    f = open(fn,"w")
+    f.write(data)
+    f.close()
+    return eval_tmp_program(shell,get_stdout,"tmp")
+
+  def check_macro_defined(self,shell,mac):
+    fn = "tmp"+os.sep+"mchk.cxx"
+    f = open(fn,"w")
+    f.write("#ifndef "+mac+"\n")
+    f.write("#error "+mac+"\n")
+    f.write("#endif\n")
+    f.write("int main() { return 0; }\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","mchk","tmp",optimise=0)
+      print "#defined",mac
+      return 1
+    except:
+      print "NOT defined",mac
+      return 0
+
+  def check_macro_defined_in_header(self,shell,file,mac,optimise=0):
+    fn = "tmp"+os.sep+"mchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <"+file+">\n")
+    f.write("#ifndef "+mac+"\n")
+    f.write("#error "+mac+"\n")
+    f.write("#endif\n")
+    f.write("int main() { return 0; }\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","mchk","tmp")
+      print "#defined",mac,"in","#include <"+file+">"
+      return 1
+    except:
+      print "NOT defined",mac,"in","#include <"+file+">"
+      return 0
+
+  def check_header_exists(self,shell,name):
+    fn = "tmp"+os.sep+"hchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <"+name+">\n")
+    f.write("int main() { return 0; }\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","hchk","tmp")
+      print "#include <"+name+">"
+      return 1
+    except:
+      print "NO HEADER <"+name+">"
+      return 0
+
+  # the typedef defines alias 't' for the type
+  def get_type_data(self,shell,get_stdout,typedef,header=None):
+    fn = "tmp"+os.sep+"tchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <stddef.h>\n")
+    f.write("#include <stdio.h>\n")
+    if header:
+      f.write("#include <"+header+">\n")
+    f.write(typedef+"\n");
+    f.write("struct TEST {\n");
+    f.write("  char c;\n");
+    f.write("  t mem;\n");
+    f.write("};\n");
+    f.write("int main() { \n")
+    f.write('  printf("%d\\n",int(sizeof(t)));')
+    f.write('  printf("%d\\n",int(offsetof(TEST,mem)));')
+    f.write("  return 0;\n")
+    f.write("}\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","tchk","tmp")
+      self.link_static_program(shell,["tmp"+os.sep+"tchk_static"],"tmp"+os.sep+"tchk"+self.options.EXT_EXE,[],[])
+      result,lines= get_stdout("tmp"+os.sep+"tchk"+self.options.EXT_EXE)
+      if not result: # got a result
+        size = int(lines[0])
+        align = int(lines[1])
+        print typedef,"size",size,"align",align
+        return size,align
+      else:
+        raise MakeError
+    except MakeError:
+      print "NO TYPE",typedef,
+      if header: print "in <"+header+">"
+      else: print
+      return None,None
+
+  def find_type(self,shell,get_stdout,e,header=None):
+    fn = "tmp"+os.sep+"tchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <stddef.h>\n")
+    f.write("#include <stdlib.h>\n")
+    f.write("#include <stdio.h>\n")
+    if header:
+      f.write("#include <"+header+">\n")
+    f.write('char *f(char){return "char";}\n')
+    f.write('char *f(signed char){return "signed char";}\n')
+    f.write('char *f(unsigned char){return "unsigned char";}\n')
+    f.write('char *f(short){return "short";}\n')
+    f.write('char *f(unsigned short){return "unsigned short";}\n')
+    f.write('char *f(int){return "int";}\n')
+    f.write('char *f(unsigned int){return "unsigned int";}\n')
+    f.write('char *f(long){return "long";}\n')
+    f.write('char *f(unsigned long){return "unsigned long";}\n')
+    f.write('char *f(long long){return "long long";}\n')
+    f.write('char *f(unsigned long long){return "unsigned long long";}\n')
+    f.write('int main(){\n');
+    f.write('printf("%s\\n",f('+e+'));\n')
+    f.write("  return 0;\n")
+    f.write("}\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","tchk","tmp")
+      self.link_static_program(shell,["tmp"+os.sep+"tchk_static"],"tmp"+os.sep+"tchk"+self.options.EXT_EXE,[],[])
+      result,lines= get_stdout("tmp"+os.sep+"tchk"+self.options.EXT_EXE)
+      if not result: # got a result
+        alias = string.strip(lines[0]) # remove \n (and \r on windows)
+        print e, "has type",alias
+        return alias
+      else:
+        raise MakeError
+    except MakeError:
+      print "EXPRESSION NOT SUPPORTED:",e
+      return None
+
+  def get_c_type_data(self,shell,get_stdout):
+    opt = self.options
+    # find if we have stdint.h
+    opt.HAVE_STDINT = self.check_header_exists(shell,"stdint.h")
+   
+    std_dtypes = [
+      ('CBOOL','_Bool',None),
+      ('BOOL','bool',None),
+      ('CHAR','char',None),
+      ('SHORT','short',None),
+      ('INT','int',None),
+      ('LONG','long',None),
+      ('LONGLONG','long long',None),
+      ('ENUM','typedef enum enum_t {tag} t;',None),
+      ('FLOAT','float',None),
+      ('DOUBLE','double',None),
+      ('LONGDOUBLE','long double',None),
+      ('VOIDP','void *',None),
+      ('FUNCP','typedef void (*t)(void);',None),
+      ('WCHAR','wchar_t','stddef.h'),
+      ('PTRDIFF','ptrdiff_t','stddef.h'),
+      ('SIZE','size_t','stddef.h'),
+      ('COMPLEX','float _Complex',None),
+      ('DOUBLECOMPLEX','double _Complex',None),
+      ('LONGDOUBLECOMPLEX','long double _Complex',None),
+      ('IMAGINARY','float _Imaginary',None),
+      ('DOUBLEIMAGINARY','double _Imaginary',None),
+      ('LONGDOUBLEIMAGINARY','long double _Imaginary',None),
+      ('INT8','uint8_t','stdint.h'),
+      ('INT16','uint16_t','stdint.h'),
+      ('INT32','uint32_t','stdint.h'),
+      ('INT64','uint64_t','stdint.h'),
+      ('UINT8','uint8_t','stdint.h'),
+      ('UINT16','uint16_t','stdint.h'),
+      ('UINT32','uint32_t','stdint.h'),
+      ('UINT64','uint64_t','stdint.h'),
+    ]
+
+    for m,t,f in std_dtypes:
+      if "typedef" != t[:7]: t = "typedef " + t + " t;"
+      size,align = self.get_type_data(shell,get_stdout,t,header=f)
+      if size == None:
+        opt.__dict__['HAVE_'+m]=0
+      else:
+        opt.__dict__['HAVE_'+m]=1
+        opt.__dict__['SIZEOF_'+m]=size
+        opt.__dict__['ALIGNOF_'+m]=align
+
+    for t in ['ptrdiff_t','size_t']:
+      alias=self.find_type(shell,get_stdout,"("+t+")0",None)
+      if alias:
+        opt.__dict__['ALIAS_'+t]=alias
+
+    for t in [
+      'int8_t','uint8_t',
+      'int16_t','uint16_t',
+      'int32_t','uint32_t',
+      'int64_t','uint64_t']:
+      header=None
+      if opt.HAVE_STDINT == 1: header = 'stdint.h'
+      alias=self.find_type(shell,get_stdout,"("+t+")0",header)
+      if alias:
+        opt.__dict__['ALIAS_'+t]=alias
+
+    native_types = [
+      'int','long','long long',
+      'unsigned int', 
+      'unsigned long','unsigned long long'
+      ]
+      
+    opt.__dict__["arith_conv"] = {}
+    for t1 in native_types:
+      for t2 in native_types:
+        alias=self.find_type(shell,get_stdout,"("+t1+")0+("+t2+")0",None)
+        opt.arith_conv[(t1,t2)]=alias
+
+    try:
+      res,lines = self.eval_tmp_program(shell,get_stdout,"vsnprintf")
+      if res: 
+        opt.HAVE_VSNPRINTF=0
+      else:
+        opt.HAVE_VSNPRINTF=1
+    except:
+      opt.HAVE_VSNPRINTF=0
+    if opt.HAVE_VSNPRINTF:
+      print "vsnprintf() supported"
+    else:
+      print "vsnprintf() NOT supported"
+
+  def detect_win32(self,shell):
+    return self.check_macro_defined(shell,"_WIN32")
+
+  def detect_win64(self,shell):
+    return self.check_macro_defined(shell,"_WIN64")
+
+  def detect_posix(self,shell):
+    if self.check_macro_defined(shell,"_WIN32"):
+      return 0
+    else:
+      return 1
+
+  def detect_cygwin(self,shell):
+    return self.check_macro_defined(shell,"__CYGWIN__")
+
+  def detect_osx(self,shell):
+    return self.check_macro_defined(shell,"__APPLE__")
+
+  def detect_bsd(self,shell):
+    return self.check_macro_defined(shell,"BSD")
+
+  def detect_solaris(self,shell):
+    # can't find a symbol for solaris...
+    # return self.check_macro_defined(shell,"__SOLARIS__")
+    result,output = get_stdout("uname")  # print SunOS on solaris
+    if not result and output[0] == "SunOS\n":
+      return 1
+    else:
+      return 0
+
+  def detect_linux(self,shell):
+    return self.check_macro_defined(shell,"__linux__")
+
+  # only allows 4 models: cygwin, osx, win32 and posix
+  # nocygwin = mingw = win32
+  def detect_model(self,shell):
+    opt = self.options
+    opt.MACOSX = self.detect_osx(shell)
+    opt.BSD = self.detect_bsd(shell)
+    opt.SOLARIS = self.detect_solaris(shell)
+    opt.LINUX= self.detect_linux(shell)
+    opt.WIN32 = self.detect_win32(shell)
+    opt.WIN64 = self.detect_win64(shell)
+    opt.CYGWIN = self.detect_cygwin(shell)
+    opt.POSIX = self.detect_posix(shell)
+
+    sum = opt.MACOSX + opt.WIN32 + opt.CYGWIN
+    if sum > 1:
+      print "INCOMPATIBLE MODELS DETECTED"
+      print "MACOSX",opt.MACOSX
+      print "CYGWIN",opt.CYGWIN
+      print "WIN32",opt.WIN32
+    else:
+     if opt.model == "detect":
+       if opt.CYGWIN: opt.model = "cygwin"
+       if opt.MACOSX: opt.model = "osx"
+       if opt.WIN32: opt.model = "win32"
+       if opt.WIN64: opt.model = "win64"
+       if opt.SOLARIS: opt.model = "solaris"
+       if opt.LINUX: opt.model = "linux"
+       if opt.BSD: opt.model = "bsd"
+       if opt.model == "detect": opt.model = "posix"
+    if opt.model in ["mingw","nocygwin"]: opt.model = "win32"
+    if opt.model in ["posix"] and opt.CYGWIN: opt.model = "cygwin"
+    assert opt.model in ["cygwin","osx","win32","win64","posix","bsd","solaris"]
+
+
+@h = tangler("flxbuild/gxx_class.py")
+@select (h)
+import string
+import os
+import sys
+import flxbuild
+import flxbuild.object_class
+import flxbuild.compiler_class
+from flxbuild.flxutil import *  # get_stdout
+
+class gxx(flxbuild.compiler_class.compiler_base):
+
+  def __init__(self):
+    flxbuild.compiler_class.compiler_base.__init__(self)
+    
+  # these options are model dependent and have to
+  # be supplied by the client
+
+  def set_options(self,
+    CXX="g++",
+    AR="ar -rc",
+    RANLIB="ranlib",
+    STRIP="strip",
+    build="posix",
+    model="detect",
+    flags= "",
+    use="generic"
+    ):
+    opt = self.options
+    opt.model = model
+    if not CXX: CXX="g++"
+    if model == "nocygwin": 
+      opt.CXX = CXX + " -mno-cygwin "
+      opt.EXT_OBJ = ".obj" # temporary hack
+    else:
+      opt.EXT_OBJ = ".o" # temporary hack
+      opt.CXX = CXX+" "
+    print "CXX=",opt.CXX
+    opt.AR = AR +" "
+    opt.RANLIB = RANLIB +" "
+    opt.STRIP = STRIP +" "
+    opt.flags = flags
+    opt.use = use
+    opt.SPEC_OBJ_FILENAME = "-o "
+    opt.SPEC_EXE_FILENAME = "-o "
+    opt.DEBUG_FLAGS = "-g "
+    opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
+
+  def detect_gxx_language_extensions(self,shell):
+    opt = self.options
+    CXX = opt.CXX
+    # find if we have g++ on 32 bit x86 platform with named registers
+    try:
+      shell(CXX +"-w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_check")
+      shell("tmp"+os.sep+"x86_check")
+      opt.HAVE_GXX_X86 = 1
+      print "g++ x86 support detected"
+    except:
+      opt.HAVE_GXX_X86 = 0
+
+    # find if we have g++ on 32 bit x86 platform with named registers
+    try:
+      shell(CXX +"-w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_64_check")
+      shell("tmp"+os.sep+"x86_64_check")
+      opt.HAVE_GXX_X86_64 = 1
+      print "g++ x86 support detected"
+    except:
+      opt.HAVE_GXX_X86_64 = 0
+    
+    # X86_64 dominates X86
+    if opt.HAVE_GXX_X86 and opt.HAVE_GXX_X86_64:
+      opt.HAVE_GXX_X86 = 0
+
+    if opt.HAVE_GXX_X86:
+      opt.USE_REGPARM3=1
+      print "regparm3 supported"
+    else:
+      opt.USE_REGPARM3=0
+
+    # find if we have g++ supporting computed jumps
+    try:
+      shell(CXX+" tmp"+os.sep+"cgoto.cxx -o tmp"+os.sep+"cgoto")
+      shell("tmp"+os.sep+"cgoto")
+      opt.HAVE_CGOTO = 1
+      print "Computed goto supported"
+    except:
+      opt.HAVE_CGOTO = 0
+
+    # find if we have g++ supporting computed jumps and asm labels
+    try:
+      shell(CXX+"tmp"+os.sep+"asm_labels.cxx -o tmp"+os.sep+"asm_labels")
+      shell("tmp"+os.sep+"asm_labels")
+      opt.HAVE_ASM_LABELS = 1
+      print "Asm labels supported"
+    except:
+      opt.HAVE_ASM_LABELS = 0
+
+    # find if we have static const init in class
+    # [not so much an extension as a bug if we don't]
+    try:
+      shell(opt.CXX+" -w -c tmp"+os.sep+"check_inclass.cxx -o tmp"+os.sep+"dummy.o")
+      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=1
+      print "Inclass member initialisation supported"
+    except:
+      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=0
+      print "Inclass member initialisation NOT supported"
+
+
+  def detect_gxx_flags(self,shell):
+    opt = self.options
+    CXX = opt.CXX
+    # find if we have g++ with -Wno-invalid-offsetof
+    try:
+      shell(CXX+"-Wno-invalid-offsetof tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+      opt.NO_INVALID_OFFSETOF_WARNING="-Wall -Wno-invalid-offsetof "
+      print "-Wno-invalid-offsetof supported"
+    except:
+      opt.NO_INVALID_OFFSETOF_WARNING = "-w "
+
+    # find if we have g++ with -Wfatal-errors
+    try:
+      shell(CXX+"-Wfatal-errors tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+      opt.NO_INVALID_OFFSETOF_WARNING=opt.NO_INVALID_OFFSETOF_WARNING+"-Wfatal-errors "
+      print "-Wfatal-errors supported"
+    except:
+      pass
+
+    # find if we can use -fPIC without a warning
+    # if a warning is generated it will say something like 
+    # 'all code is relocatable on this platform' 
+    # so we make that into an error, detect it, and say -fPIC only
+    # if it would not generate this warning
+    try:
+      shell(CXX+"-Werror -fPIC tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+      opt.PIC = "-fPIC "
+      print "-fPIC supported"
+    except:
+      opt.PIC = ""
+      print "All code is position independent"
+
+  def check_options(self,shell,get_stdout):
+    opt = self.options
+    CXX = opt.CXX
+
+    # check we have g++
+    shell(CXX+"-w -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+    self.detect_gxx_language_extensions(shell)
+
+    # see if we have strip: it isn't considered essential
+    if opt.STRIP:
+      shell(opt.STRIP + "tmp"+os.sep+"dummy.o")
+    else:
+      opt.STRIP="#strip "
+
+    # see if we have ar
+    shell(opt.AR+"tmp"+os.sep+"dummy.a tmp"+os.sep+"dummy.o")
+
+    # see if we have ranlib, it isn't considered essential
+    # (a totally brain dead Unix idea: AR should do this)
+    try:
+      shell(opt.RANLIB + "tmp"+os.sep+"dummy.a")
+    except:
+      opt.RANLIB="#ranlib "
+
+    self.detect_gxx_flags(shell)
+    # find if we have g++ supported ext/ with STL extensions
+    try:
+      shell(CXX+"tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
+      shell("tmp"+os.sep+"gxx_hash")
+      opt.HAVE_STL_GNU_CXX = 1
+      print "Gnu ext/ templates supported"
+    except:
+      opt.HAVE_STL_GNU_CXX = 0
+
+    self.detect_model(shell)
+    print "MODEL =",opt.model
+
+    if opt.model=="cygwin":
+      opt.EXT_LIB = ".a"
+      opt.EXT_EXE= ".exe"
+      opt.EXT_SHLIB = ".dll"
+      opt.EXT_DYLIB = opt.EXT_SHLIB 
+      opt.EXT_OBJ = ".o"
+      opt.SHLIB_DIR="bin"
+      
+      COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      LINK_DYNAMIC_RTL = "-shared  "
+
+      
+      COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = ""
+      
+      COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
+      LINK_DYNAMIC_FLX = opt.PIC+"-shared "
+
+    elif opt.model in ["win32","win64"]:
+      opt.EXT_LIB = ".a"
+      opt.EXT_EXE= ".exe"
+      opt.EXT_SHLIB = ".dll"
+      opt.EXT_DYLIB = opt.EXT_SHLIB 
+      opt.EXT_OBJ = ".obj"
+      opt.SHLIB_DIR="bin"
+      
+      COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      LINK_DYNAMIC_RTL = "-shared "
+      
+      COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = " "
+      
+      COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
+      LINK_DYNAMIC_FLX = opt.PIC+"-shared "
+
+    elif opt.model=="osx":
+      # flags for rtl & flx executable compilation & linking taken from
+      # http://fink.sourceforge.net/doc/porting/shared.php with many thanks
+      opt.EXT_LIB = ".a"
+      opt.EXT_EXE= ""
+      opt.EXT_SHLIB = ".so"     # differentiated now because osx treats dylibs
+      opt.EXT_DYLIB = ".dylib"  # and plugin-type libraries.
+      opt.EXT_OBJ = ".o"
+      opt.SHLIB_DIR="rtl"
+
+      opt.PIC = ""		# darwin code is by default position independent
+      
+      #COMPILE_DYNAMIC_RTL = opt.PIC + "-bundle -c "
+      COMPILE_DYNAMIC_RTL = opt.PIC + "-c " + "-fno-common "
+      # make a dynamic library (not loadable via APIs like dlcompat)
+      LINK_DYNAMIC_RTL = "-dynamiclib "
+      
+      COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = ""
+      
+      COMPILE_DYNAMIC_FLX = opt.PIC + "-bundle -c " "-fno-common "
+      LINK_DYNAMIC_FLX = "-bundle "
+
+    elif opt.model=="posix" or opt.model=="linux" or opt.model == "solaris":
+      opt.EXT_LIB = ".a"
+      opt.EXT_EXE= ""
+      opt.EXT_SHLIB = ".so"
+      opt.EXT_DYLIB = opt.EXT_SHLIB
+      opt.EXT_OBJ = ".o"
+      opt.SHLIB_DIR="rtl"
+      
+      COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      LINK_DYNAMIC_RTL = "-shared "
+      
+      COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = ""
+
+      COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
+      LINK_DYNAMIC_FLX = "-shared "
+    else:
+      print "UNKNOWN MODEL",opt.model
+      sys.exit(1)
+
+    opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
+    opt.CCLINK_DYNAMIC_FLX = CXX + LINK_DYNAMIC_FLX
+
+    opt.CCOBJ_DYNAMIC_RTL = CXX + COMPILE_DYNAMIC_RTL
+    opt.CCLINK_DYNAMIC_RTL = CXX + LINK_DYNAMIC_RTL
+
+    opt.CCOBJ_DYNAMIC_MAIN = CXX + COMPILE_DYNAMIC_MAIN
+    opt.CCLINK_DYNAMIC_MAIN = CXX + LINK_DYNAMIC_MAIN
+
+    opt.CCOBJ_STATIC_FLX = CXX + "-c "
+    opt.CCOBJ_STATIC_RTL = CXX + "-c "
+    opt.CCOBJ_STATIC_MAIN = CXX + "-c "
+
+    opt.CCOBJ_DYNAMIC_RTL=opt.CCOBJ_DYNAMIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_DYNAMIC_FLX=opt.CCOBJ_DYNAMIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_RTL=opt.CCOBJ_STATIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_FLX=opt.CCOBJ_STATIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCLINK_STATIC = CXX
+
+    #check if we can get dlopen to work without -ldl (BSD, Cygwin don't need)
+    opt.SUPPORT_DYNAMIC_LOADING = 0
+    opt.HAVE_DLOPEN = 0
+    opt.HAVE_LOADLIBRARY = 0
+    opt.DLLIB=""
+    if opt.model in ["win32","win64"]:
+    # check if can get LoadLibrary to work
+      try:
+        shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.cxx -o tmp"+os.sep+"win32_dummy_lib.o")
+        shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.cxx -o tmp"+os.sep+"win32_dummy_main.o")
+        shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.o -o tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
+        shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.o -o tmp"+os.sep+"dlmain")
+        shell("tmp"+os.sep+"dlmain tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
+        opt.SUPPORT_DYNAMIC_LOADING = 1
+        opt.HAVE_LOADLIBRARY = 1
+        print "Dynamic Loading Supported (with LoadLibrary)"
+      except:
+        pass
+    else:
+      try:
+        shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
+        shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
+        shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
+        shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+        shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
+        opt.SUPPORT_DYNAMIC_LOADING = 1
+        opt.HAVE_DLOPEN = 1
+      except:
+        try: # nope, try with -ldl
+          shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain -ldl")
+          shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
+          opt.HAVE_DLOPEN = 1
+          opt.SUPPORT_DYNAMIC_LOADING = 1
+          opt.DLLIB="dl"
+          print "Dynamic Loading Supported (with -ldl)"
+        except:
+          if opt.model == "osx":
+            opt.SUPPORT_DYNAMIC_LOADING = 1  # pre 10.3, we do our own dlopen
+
+
+    if not opt.SUPPORT_DYNAMIC_LOADING:
+      print "DYNAMIC LOADING NOT SUPPORTED"
+      print "Temporarily this is mandatory [during config debugging]"
+      sys.exit(1)
+    
+    # find out how to do pthreads
+    try:
+      shell(opt.CXX+" -w -c tmp"+os.sep+"pthreads.cxx -o tmp"+os.sep+"pthreads.o")
+      opt.HAVE_PTHREADS=1
+    except:
+      opt.HAVE_PTHREADS=0
+
+    opt.PTHREAD_SWITCH=None
+    if opt.HAVE_PTHREADS:
+      for i in [' ','-lpthread ','-pthread ','-pthreads ']:
+        try:
+          shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads "+i)
+          opt.PTHREAD_SWITCH=i
+          break
+        except:
+          pass
+
+    if opt.HAVE_PTHREADS and opt.PTHREAD_SWITCH == None:
+      print "FATAL: Cannot find how to link pthreads"
+      sys.exit(1)
+
+    if opt.HAVE_PTHREADS:
+      print "Posix Threads supported with "+opt.PTHREAD_SWITCH
+    else:
+      print "Posix Threads not supported"
+
+    # find if we have BSD isnan in <cmath> (NAUGHTY!)
+    try:
+      shell(opt.CXX+" -w -c tmp"+os.sep+"dummy_nan.cxx -o tmp"+os.sep+"dummy_nan.o")
+      opt.HAVE_ISNAN_IN_CMATH=1
+      print "Isnan found in <cmath>"
+    except:
+      opt.HAVE_ISNAN_IN_CMATH=0
+
+    # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
+    try:
+      shell(opt.CXX+" -w -c tmp"+os.sep+"dummy_nan2.cxx -o tmp"+os.sep+"dummy_nan2.o")
+      opt.HAVE_ISNAN_IN_IEEEFP=1
+      print "Isnan found in <ieeefp.h>"
+    except:
+      opt.HAVE_ISNAN_IN_IEEEFP=0
+
+    if opt.HAVE_ISNAN_IN_CMATH or opt.HAVE_ISNAN_IN_IEEEFP:
+      print "Isnan supported"
+    else:
+      print "Isnan NOT supported"
+
+    self.get_c_type_data(shell,get_stdout)
+
+    try:
+      shell(opt.CXX+" -w tmp"+os.sep+"have_socklen_t.cxx -o tmp"+os.sep+"dummy")
+      opt.FLX_SOCKLEN_T="socklen_t"
+    except:
+      try:
+        shell(opt.CXX+" -w tmp"+os.sep+"socklen_t_is_uint.cxx -o tmp"+os.sep+"dummy")
+        opt.FLX_SOCKLEN_T="unsigned int"
+      except:
+        try:
+          shell(opt.CXX+" -w tmp"+os.sep+"socklen_t_is_int.cxx -o tmp"+os.sep+"dummy")
+          opt.FLX_SOCKLEN_T="int"
+        except:
+          opt.FLX_SOCKLEN_T = "int"
+    print "socken_t=",opt.FLX_SOCKLEN_T
+
+    # would like to know if we have SDL_opengl. that's done by compiling
+    # and running sdl_opengl.cxx Needs can be compiled like 
+    # g++ `sdl-config --cflags` sdl_opengl.cxx `sdl-config --libs`
+    # but how is that done portably? Does win32 even have sdl-config?
+
+    # see what sort of demuxers we support. right now just testing for 
+    # kqueues, to unbreak the osx 10.2.8 build. I need demux to be extracted
+    # by this point, so I've added a line to configure to do that. That
+    # required me to remove the flx_demux.pak's dependence on the config
+    # directory (not created at configure time). also had to create a fake
+    # flx_rtl_config.h in tmp/
+
+    # now that kqueue demuxer uses condition vars and locks for a clean
+    # takedown using this method of config is a nightmare before config
+    # because the pthread pak file depends on the config results. for now
+    # I've replaced the whole lot with a simple kqueue+main programme.
+    try: 
+      # basically a un*x test, note the non portable path separators and
+      # gcc style switches
+      cmd = opt.CXX+" tmp/kqt.cxx -o tmp/kqt"
+      print "CMD IS " + cmd
+      shell(cmd)
+      opt.HAVE_KQUEUE_DEMUXER=1
+    except:
+      opt.HAVE_KQUEUE_DEMUXER=0
+
+    print "HAVE_KQUEUE_DEMUXER=",opt.HAVE_KQUEUE_DEMUXER
+
+    # find misc info about basic types
+    try:
+      shell(opt.CXX+" -w tmp"+os.sep+"intsizes.cxx -o tmp"+os.sep+"intsizes")
+      # THIS CALL CANNOT USE THE SHELL BECAUSE IT REDIRECTS OUTPUT
+      os.system("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
+      f = open("tmp"+os.sep+"intsizes.py")
+      exec f in opt.__dict__
+      f.close()
+    except:
+      print "FATAL: can't determine sizes of ints"
+      sys.exit(1)
+
+    if opt.CHAR_IS_UNSIGNED:
+      print "char is unsigned"
+    else:
+      print "char is signed"
+
+    if opt.BIG_ENDIAN: print "Big Endian byte order detected"
+    if opt.LITTLE_ENDIAN: print "Little Endian byte order detected"
+
+    #calculate alignment tables
+    vbls = [
+      ("ALIGNOF_BOOL","bool"),
+      ("ALIGNOF_SHORT","short"),
+      ("ALIGNOF_INT","int"),
+      ("ALIGNOF_LONG","long"),
+      ("ALIGNOF_LONGLONG","long long"),
+      
+      ("ALIGNOF_FLOAT","float"),
+      ("ALIGNOF_DOUBLE","double"),
+      ("ALIGNOF_LONGDOUBLE","long double"),
+
+      ("ALIGNOF_WCHAR","wchar_t"),
+      ("ALIGNOF_VOIDP","void*"),
+      ]
+
+    opt.MAX_ALIGN = 1
+    opt.flx_aligns = {}
+    for k,t in vbls:
+      try:
+        v = opt.__dict__[k]
+        opt.flx_aligns[v]=t
+        if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
+      except KeyError: pass
+    opt.flx_aligns[1]="char"
+
+  def report_config(self):
+    opt = self.options
+    print "**********************************************"
+    print "g++",opt.use,"configuration"
+    print "**********************************************"
+    print "model=",opt.model
+    print "static library tool #1                  : " + opt.AR
+    print "static library tool #2                  : " + opt.RANLIB
+    print
+    print "Command to compile static Felix rtl     : " + opt.CCOBJ_STATIC_RTL
+    print "Command to compile shared Felix rtl     : " + opt.CCOBJ_DYNAMIC_RTL
+    print "Command to link shared Felix rtl        : " + opt.CCLINK_DYNAMIC_RTL
+    print
+    print "Command to compile static Felix driver  : " + opt.CCOBJ_STATIC_MAIN
+    print "Command to compile dynamic Felix driver : " + opt.CCOBJ_DYNAMIC_MAIN
+    print "Command to link dynamic Felix driver    : " + opt.CCLINK_DYNAMIC_MAIN
+
+    print "Command to compile static Felix object  : " + opt.CCOBJ_STATIC_FLX
+    print "Command to compile loadable Felix object: " + opt.CCOBJ_DYNAMIC_FLX
+    print "Command to link loadable Felix object   : " + opt.CCLINK_DYNAMIC_FLX
+    print
+
+    print "Extension for object file               : " + opt.EXT_OBJ
+    print "Extension for static archive            : " + opt.EXT_LIB
+    print "Extension for loadable RTL              : " + opt.EXT_DYLIB
+    print "Extension for flx modules               : " + opt.EXT_SHLIB
+    print "Extension for executable                : " + opt.EXT_EXE
+    print "RTL in directory                        : " + opt.SHLIB_DIR
+
+    print
+    if opt.SUPPORT_DYNAMIC_LOADING:
+      if opt.HAVE_DLOPEN:
+        if opt.DLLIB:
+          print "Dynamic Loading Supported               : with dlopen() in -l"+opt.DLLIB
+        else:
+          print "Dynamic Loading Supported               : with dlopen() [native]"
+      if opt.HAVE_LOADLIBRARY:
+          print "Dynamic Loading Supported               : with LoadLibrary"
+    else:
+      print "Dynamic Loading                         : NOT SUPPORTED"
+    print
+    if opt.HAVE_ISNAN_IN_CMATH:
+      print "NaN Support in                          : <cmath>"
+    if opt.HAVE_ISNAN_IN_IEEEFP:
+      print "NaN Support in                          : <ifpeee.h>"
+    if not opt.HAVE_ISNAN_IN_IEEEFP and not opt.HAVE_ISNAN_IN_CMATH:
+      print "NaN                                     : NOT SUPPORTED"
+    print "**********************************************"
+
+
+  def save_options(self, filename):
+    f = open(filename,"w")
+    ks = self.options.__dict__.keys()
+    ks.sort()
+    for k in ks:
+      if k[0] != '_': # do not save __builtins__
+        v = self.options.__dict__[k]
+        f.write(k+'='+repr(v)+"\n")
+    f.close()
+
+  def load_options(self,filename):
+    f = open(filename)
+    exec f in self.options.__dict__
+    f.close()
+
+  # compile a file to an object suitable for inclusion in a shared 
+  # library version of RTL
+  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
+    opt = self.options
+    # compile for a dll: position independent code etc
+    cmd = opt.CCOBJ_DYNAMIC_RTL
+    if flags: cmd = cmd + flags + " "
+
+    # debug symbols
+    if debug: cmd = cmd + "-g "
+
+    # optimisation
+    if optimise: cmd = cmd + opt.OPTIMISE
+
+    # include path
+    for i in include_path: cmd = cmd +"-I"+i+" "
+
+    # output file
+    cmd = cmd + "-o "
+    if outdir: cmd = cmd + outdir + os.sep
+    cmd = cmd + basename + "_dynamic"+opt.EXT_OBJ+" "
+
+    # macros
+    for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
+    cmd = cmd + CFLAGS + " "
+
+    #input file
+    if  indir: cmd = cmd + indir + os.sep
+    cmd = cmd + basename
+    cmd = cmd + src_ext
+
+    # compile it
+    shell(cmd)
+
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+
+  # compile a file to an object suitable for inclusion in a static link 
+  # version of the RTL 
+  def compile_static_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
+    opt = self.options
+    # compile for a dll: position independent code etc
+    cmd = opt.__dict__.get("CCOBJ_STATIC_RTL",opt.CXX+" -c ")
+    if flags: cmd = cmd + flags + " "
+
+    # debug symbols
+    if debug: cmd = cmd + "-g "
+
+    # optimisation
+    if optimise: cmd = cmd + opt.OPTIMISE+ " "
+
+    # include path
+    for i in include_path: cmd = cmd +"-I"+i+" "
+
+    # output file
+    cmd = cmd + "-o "
+    if outdir: cmd = cmd + outdir + os.sep
+    cmd = cmd + basename + "_static"+opt.EXT_OBJ+" "
+
+    #macros
+    for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
+
+    cmd = cmd + CFLAGS + " "
+
+    #input file
+    if  indir: cmd = cmd + indir + os.sep
+    cmd = cmd + basename
+    cmd = cmd + src_ext
+
+    # compile it
+    shell(cmd)
+
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+
+  def link_static_archive(self,shell,objects,archive):
+    opt = self.options
+    cmd = opt.AR +" "+ archive + opt.EXT_LIB+" " 
+    for i in objects: cmd = cmd + i + opt.EXT_OBJ + " "
+    shell(cmd)
+    if opt.RANLIB:
+      shell(opt.RANLIB+" "+archive+opt.EXT_LIB)
+  
+  def link_static_program(self,shell,objects,outfile,lib_path,libs,SFLAGS=""):
+    opt = self.options
+    cmd = opt.CCLINK_STATIC
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
+    cmd = cmd + "-o " +outfile + " "
+    for i in lib_path: cmd = cmd + "-L"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + SFLAGS
+    shell(cmd)
+    
+  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[],DFLAGS=""):
+    opt = self.options
+    cmd = opt.CCLINK_DYNAMIC_RTL
+    cmd = cmd + "-o " +outfile + opt.EXT_DYLIB + " "
+    #if opt.CYGWIN:
+    #  cmd = cmd + "-Wl,--out-implib="+outfile+".dll.a "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
+    for i in lib_path: cmd = cmd + "-L"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
+    if opt.DLLIB:
+      cmd = cmd + "-l"+opt.DLLIB+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + DFLAGS
+    shell(cmd)
+
+  def link_felix_dll(self,shell,objects,outfile,lib_path=[],libs=[],DFLAGS=""):
+    opt = self.options
+    cmd = opt.CCLINK_DYNAMIC_FLX
+    cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
+    for i in lib_path: cmd = cmd + "-L"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
+    if opt.DLLIB:
+      cmd = cmd + "-l"+opt.DLLIB+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + DFLAGS
+    shell(cmd)
+    
+  def link_dynamic_program(self,shell,objects,outfile,lib_path,libs,DFLAGS=""):
+    opt = self.options
+    cmd = opt.CCLINK_DYNAMIC_MAIN
+    cmd = cmd + "-o " +outfile + " "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ+" "
+    for i in lib_path: cmd = cmd + "-L"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
+    if opt.DLLIB:
+      cmd = cmd + "-l"+opt.DLLIB+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + DFLAGS
+    shell(cmd)
+
+@h = tangler("flxbuild/msvcxx_class.py")
+@select (h)
+import string
+import os
+import sys
+import flxbuild
+import flxbuild.compiler_class
+
+class msvcxx(flxbuild.compiler_class.compiler_base):
+
+  def __init__(self):
+    flxbuild.compiler_class.compiler_base.__init__(self)
+
+  # these options are model dependent and have to
+  # be supplied by the client
+
+  def set_options(self,
+    CXX="cl",
+    LIB="lib",
+    build="posix",
+    model="detect",
+    flags= "",
+    use="generic"
+    ):
+    opt = self.options
+    opt.model = model
+    if not CXX: CXX="cl"
+    opt.CXX = CXX+" "
+    opt.AR = LIB+" "
+    opt.RANLIB = "#"
+    opt.flags = flags
+    opt.use = use
+    opt.SUPPORT_DYNAMIC_LOADING=1
+    opt.SPEC_OBJ_FILENAME = "/Fo"
+    opt.SPEC_EXE_FILENAME = "/Fe"
+    opt.DEBUG_FLAGS = "/g "
+    opt.OPTIMISE = "/Ox /DNDEBUG "
+
+  def detect_msvcxx_language_extensions(self,shell):
+    opt = self.options
+    CXX = opt.CXX
+    opt.HAVE_GXX_X86 = 0
+    opt.HAVE_GXX_X86_64 = 0
+    opt.USE_REGPARM3=0
+    opt.HAVE_CGOTO = 0
+    opt.HAVE_ASM_LABELS = 0
+    opt.HAVE_STL_GNU_CXX = 0
+
+    # find if we have static const init in class
+    # [not so much an extension as a bug if we don't]
+    try:
+      shell(opt.CXX+" /w /c tmp"+os.sep+"check_inclass.cxx /Fotmp"+os.sep+"dummy.o")
+      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=1
+      print "Inclass member initialisation supported"
+    except:
+      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=0
+      print "Inclass member initialisation NOT supported"
+
+
+  def detect_msvcxx_flags(self,shell):
+    opt = self.options
+    CXX = opt.CXX
+    opt.NO_INVALID_OFFSETOF_WARNING="/w "
+
+  def check_options(self,shell,get_stdout):
+    opt = self.options
+    CXX = opt.CXX
+
+    # check we have g++
+    shell(CXX+"/w /c tmp"+os.sep+"dummy.cxx /Fotmp"+os.sep+"dummy.o")
+    self.detect_msvcxx_language_extensions(shell)
+
+    self.detect_msvcxx_flags(shell)
+    self.detect_model(shell)
+    if opt.model == "detect": opt.model = "win32" 
+
+    print "MODEL =",opt.model
+    opt.EXT_LIB = ".lib"
+    opt.EXT_EXE= ".exe"
+    opt.EXT_SHLIB = ".dll"
+    opt.EXT_DYLIB = opt.EXT_SHLIB
+    opt.EXT_OBJ = ".obj"
+    opt.EXT_SRC_MAIN = ".cxx"
+    opt.EXT_SRC_LIB = ".cpp"
+
+    COMPILE_DYNAMIC_RTL = "/nologo /MD /c /EHs "
+    LINK_DYNAMIC_RTL = "/nologo /MD /LD "
+      
+    COMPILE_DYNAMIC_MAIN = "/nologo /MT /c /EHs "
+    LINK_DYNAMIC_MAIN = "/nologo /MT "
+
+    COMPILE_DYNAMIC_FLX = "/nologo /MD /c /EHs "
+    LINK_DYNAMIC_FLX = "/nologo /MD /LD "
+
+    opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
+    opt.CCLINK_DYNAMIC_FLX = CXX + LINK_DYNAMIC_FLX
+
+    opt.CCOBJ_DYNAMIC_RTL = CXX + COMPILE_DYNAMIC_RTL
+    opt.CCLINK_DYNAMIC_RTL = CXX + LINK_DYNAMIC_RTL
+
+    opt.CCOBJ_DYNAMIC_MAIN = CXX + COMPILE_DYNAMIC_MAIN
+    opt.CCLINK_DYNAMIC_MAIN = CXX + LINK_DYNAMIC_MAIN
+
+    opt.CCOBJ_STATIC_FLX = CXX + "/nologo /MT /EHs /c "
+    opt.CCOBJ_STATIC_RTL = CXX + "/nologo /MT /EHs /c "
+    opt.CCOBJ_STATIC_MAIN = CXX + "/nologo /MT /EHs /c "
+
+    opt.CCOBJ_DYNAMIC_RTL=opt.CCOBJ_DYNAMIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_DYNAMIC_FLX=opt.CCOBJ_DYNAMIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_RTL=opt.CCOBJ_STATIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_FLX=opt.CCOBJ_STATIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCLINK_STATIC = CXX + "/nologo /MT "
+
+    opt.HAVE_DLOPEN = 0
+    opt.DLLIB=""
+
+    # where to put the rtl: Cygwin requires the dll be in the PATH
+    opt.SHLIB_DIR="bin"
+    print "rtl located in bin directory"
+
+    # find if we have BSD isnan in <cmath> (NAUGHTY!)
+    try:
+      shell(opt.CXX+" /w /c tmp"+os.sep+"dummy_nan.cxx /o tmp"+os.sep+"dummy_nan.o")
+      opt.HAVE_ISNAN_IN_CMATH=1
+      print "Isnan found in <cmath>"
+    except:
+      opt.HAVE_ISNAN_IN_CMATH=0
+
+    # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
+    try:
+      shell(opt.CXX+" /w /c tmp"+os.sep+"dummy_nan2.cxx /o tmp"+os.sep+"dummy_nan2.o")
+      opt.HAVE_ISNAN_IN_IEEEFP=1
+      print "Isnan found in <ieeefp.h>"
+    except:
+      opt.HAVE_ISNAN_IN_IEEEFP=0
+
+    if opt.HAVE_ISNAN_IN_CMATH or opt.HAVE_ISNAN_IN_IEEEFP:
+      print "Isnan supported"
+    else:
+      print "Isnan NOT supported"
+
+    self.get_c_type_data(shell,get_stdout)
+
+    # find sizes of ints
+    try:
+      shell(opt.CXX+" /ML /w tmp"+os.sep+"intsizes.cxx /Fetmp"+os.sep+"intsizes.exe")
+      # THIS CALL CANNOT USE THE SHELL BECAUSE IT REDIRECTS OUTPUT
+      os.system("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
+      f = open("tmp"+os.sep+"intsizes.py")
+      exec f in opt.__dict__
+      f.close()
+    except:
+      print "FATAL: can't determine sizes of ints"
+      sys.exit(1)
+      
+    #calculate alignment tables
+    vbls = [
+      ("ALIGNOF_CBOOL","_Bool"),
+      ("ALIGNOF_BOOL","bool"),
+      ("ALIGNOF_SHORT","short"),
+      ("ALIGNOF_INT","int"),
+      ("ALIGNOF_LONG","long"),
+      ("ALIGNOF_LONGLONG","long long"),
+      
+      ("ALIGNOF_FLOAT","float"),
+      ("ALIGNOF_DOUBLE","double"),
+      ("ALIGNOF_LONGDOUBLE","long double"),
+
+      ("ALIGNOF_WCHAR","wchar_t"),
+      ("ALIGNOF_VOIDP","void*"),
+      ]
+
+    opt.MAX_ALIGN = 1
+    opt.flx_aligns = {}
+    for k,t in vbls:
+      try:
+        v = opt.__dict__[k]
+        opt.flx_aligns[v]=t
+        if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
+      except KeyError: pass
+    opt.flx_aligns[1]="char"
+
+
+  def report_config(self):
+    opt = self.options
+    print "**********************************************"
+    print "msvc++",opt.use,"configuration"
+    print "**********************************************"
+    print "model=",opt.model
+    print "static library tool #1                  : " + opt.AR
+    print "static library tool #2                  : " + opt.RANLIB
+    print
+    print "Command to compile static Felix rtl     : " + opt.CCOBJ_STATIC_RTL
+    print "Command to compile shared Felix rtl     : " + opt.CCOBJ_DYNAMIC_RTL
+    print "Command to link shared Felix rtl        : " + opt.CCLINK_DYNAMIC_RTL
+    print
+    print "Command to compile static Felix driver  : " + opt.CCOBJ_STATIC_MAIN
+    print "Command to compile dynamic Felix driver : " + opt.CCOBJ_DYNAMIC_MAIN
+    print "Command to link dynamic Felix driver    : " + opt.CCLINK_DYNAMIC_MAIN
+
+    print "Command to compile static Felix object  : " + opt.CCOBJ_STATIC_FLX
+    print "Command to compile loadable Felix object: " + opt.CCOBJ_DYNAMIC_FLX
+    print "Command to link loadable Felix object   : " + opt.CCLINK_DYNAMIC_FLX
+    print
+
+    print "Extension for object file               : " + opt.EXT_OBJ
+    print "Extension for static archive            : " + opt.EXT_LIB
+    print "Extension for loadable RTL              : " + opt.EXT_DYLIB
+    print "Extension for flx modules               : " + opt.EXT_SHLIB
+    print "Extension for executable                : " + opt.EXT_EXE
+    print "RTL in directory                        : " + opt.SHLIB_DIR
+
+    print
+    if opt.SUPPORT_DYNAMIC_LOADING:
+      print "Dynamic Loading Supported               : [Windows native]"
+    else:
+      print "Dynamic Loading                         : NOT SUPPORTED"
+    print
+    if opt.HAVE_ISNAN_IN_CMATH:
+      print "NaN Support in                          : <cmath>"
+    if opt.HAVE_ISNAN_IN_IEEEFP:
+      print "NaN Support in                          : <ifpeee.h>"
+    if not opt.HAVE_ISNAN_IN_IEEEFP and not opt.HAVE_ISNAN_IN_CMATH:
+      print "NaN                                     : NOT SUPPORTED"
+    print "**********************************************"
+
+
+  def save_options(self, filename):
+    f = open(filename,"w")
+    ks = self.options.__dict__.keys()
+    ks.sort()
+    for k in ks:
+      if k[0] != '_': # do not save __builtins__
+        v = self.options.__dict__[k]
+        f.write(k+'='+repr(v)+"\n")
+    f.close()
+
+  def load_options(self,filename):
+    f = open(filename)
+    exec f in self.options.__dict__
+    f.close()
+
+  # compile a file to an object suitable for inclusion in a shared 
+  # library version of RTL
+  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
+    opt = self.options
+    # compile for a dll: position independent code etc
+    cmd = opt.CCOBJ_DYNAMIC_RTL
+    if flags: cmd = cmd + flags + " "
+
+    # debug symbols
+    if debug: cmd = cmd + "/Yd /Zi /RTC "
+
+    # optimisation
+    if optimise: cmd = cmd + opt.OPTIMISE
+
+    # include path
+    for i in include_path: cmd = cmd +"-I"+i+" "
+
+    # output file
+    cmd = cmd + "/Fo"
+    if outdir: cmd = cmd + outdir + os.sep
+    cmd = cmd + basename + "_dynamic"+opt.EXT_OBJ+" "
+
+    # macros
+    for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
+
+    cmd = cmd + CFLAGS
+
+    #input file
+    if  indir: cmd = cmd + indir + os.sep
+    cmd = cmd + basename
+    cmd = cmd + src_ext
+
+    # compile it
+    shell(cmd)
+
+  # compile a file to an object suitable for inclusion in a mainline
+  # which links to shared libraries
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    opt = self.options
+    cmd = opt.CCOBJ_DYNAMIC_MAIN
+    if flags: cmd = cmd + flags + " "
+
+    # debug symbols
+    if debug: cmd = cmd + "/Yd /Zi /RTC "
+
+    # optimisation
+    if optimise: cmd = cmd + opt.OPTIMISE
+
+    # include path
+    for i in include_path: cmd = cmd +"-I"+i+" "
+
+    # output file
+    cmd = cmd + "/Fo"
+    if outdir: cmd = cmd + outdir + os.sep
+    cmd = cmd + basename + "_dynamic"+opt.EXT_OBJ+" "
+
+    # macros
+    for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
+
+    cmd = cmd + CFLAGS
+
+    #input file
+    if  indir: cmd = cmd + indir + os.sep
+    cmd = cmd + basename
+    cmd = cmd + ".cxx"
+
+    # compile it
+    shell(cmd)
+
+
+  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  # compile a file to an object suitable for inclusion in a static link 
+  # version of the RTL 
+  def compile_static_thing(self,shell,indir,basename,src_ext,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    opt = self.options
+    # compile for a dll: position independent code etc
+    cmd = opt.__dict__.get("CCOBJ_STATIC_RTL",opt.CXX+" /c ")
+    if flags: cmd = cmd + flags + " "
+
+    # debug symbols
+    if debug: cmd = cmd + "/Yd "
+
+    # optimisation
+    if optimise: cmd = cmd + opt.OPTIMISE+ " "
+
+    # include path
+    for i in include_path: cmd = cmd +"/I"+i+" "
+
+    # output file
+    cmd = cmd + "/Fo"
+    if outdir: cmd = cmd + outdir + os.sep
+    cmd = cmd + basename + "_static"+opt.__dict__.get("EXT_OBJ",".obj")+" "
+
+    #macros
+    for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
+
+    cmd = cmd + CFLAGS
+    
+    #input file
+    if  indir: cmd = cmd + indir + os.sep
+    cmd = cmd + basename
+    cmd = cmd + src_ext
+
+    # compile it
+    shell(cmd)
+
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+
+
+  def link_static_archive(self,shell,objects,archive):
+    opt = self.options
+    cmd = opt.AR +" /OUT:"+ archive + opt.EXT_LIB+" " 
+    for i in objects: cmd = cmd + i + opt.EXT_OBJ + " "
+    shell(cmd)
+  
+  def link_static_program(self,shell,objects,outfile,lib_path,libs,SFLAGS=""):
+    opt = self.options
+    cmd = opt.CCLINK_STATIC
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
+    cmd = cmd + "/Fe" +outfile + opt.EXT_EXE + " "
+    cmd = cmd + "/link "
+    for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    cmd = cmd + SFLAGS
+    shell(cmd)
+    
+  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[],DFLAGS=""):
+    opt = self.options
+    cmd = opt.CCLINK_DYNAMIC_RTL
+    cmd = cmd + "/Fe" +outfile + opt.EXT_SHLIB + " "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
+    cmd = cmd + "/link "
+    for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    cmd = cmd + DFLAGS
+    shell(cmd)
+  
+  link_felix_dll = link_shared_rtl
+  
+  def link_dynamic_program(self,shell,objects,outfile,lib_path,libs,DFLAGS=""):
+    opt = self.options
+    cmd = opt.CCLINK_DYNAMIC_MAIN
+    cmd = cmd + "/Fe" +outfile  + opt.EXT_EXE + " "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ+" "
+    cmd = cmd + "/link "
+    for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    cmd = cmd + DFLAGS
+    shell(cmd)
+
+@h = tangler("flxbuild/ocaml_class.py")
+@select(h)
+#---------------------------------------------------
+# discover which ocaml compilers are available
+import string
+import os
+
+from flxbuild.flxutil import MakeError
+
+class ocaml:
+  def __init__(self):
+    pass
+
+  def autodetect(self, shell, get_stdout):
+    try: # check if the client bootstrapped the native code compiler
+      shell('ocamlopt.opt')
+      self.OCAMLCC = 'ocamlopt.opt '
+      self.OCAMLLEX = 'ocamllex.opt '
+      self.OCAMLYACC = 'ocamlyacc '
+      self.NATIVE_CODE_COMPILER = 1
+    except MakeError:
+      try: # check if the client has unbootstrapped native code compiler
+        shell('ocamlopt')
+        self.OCAMLCC = 'ocamlopt '
+        self.OCAMLLEX = 'ocamllex '
+        self.OCAMLYACC = 'ocamlyacc '
+        self.NATIVE_CODE_COMPILER = 1
+      except MakeError:
+        self.NATIVE_CODE_COMPILER = 0
+        try: # check if the client has ocaml at all ..
+          shell('ocamlc')
+          self.OCAMLCC = 'ocamlc '
+          self.OCAMLLEX = 'ocamllex '
+          self.OCAMLYACC = 'ocamlyacc '
+          self.OCAMLDOC = 'ocamldoc '
+        except MakeError:
+          print "WARNING: CANT FIND OCAML TOOLS (ocamlc, ocamllex, ocamlyacc)"
+          self.OCAMLCC = '#ocamlc '
+          self.OCAMLLEX = '#ocamllex '
+          self.OCAMLYACC = '#ocamlyacc '
+
+    try: # check if there is a native code version of the bytecode compiler
+      shell('ocamlc.opt')
+      self.OCAMLB = 'ocamlc.opt '
+    except MakeError:
+      try: # check if the client has ocaml at all
+        shell('ocamlc')
+        self.OCAMLB = 'ocamlc '
+      except MakeError:
+        print "WARNING: CANT FIND OCAML TOOL 'ocamlc'"
+        self.OCAMLB = '#ocamlc '
+
+    try:
+      shell('ocamldoc.opt')
+      self.OCAMLDOC = 'ocamldoc.opt '
+    except MakeError:
+      try:
+        shell('ocamldoc')
+        self.OCAMLDOC = 'ocamldoc '
+      except MakeError:
+        print "WARNING: CANT FIND OCAML TOOL 'ocamldoc'"
+        self.OCAMLDOC = '#ocamldoc '
+
+    # set the default ocaml compiler
+    if self.OCAMLCC[0] != '#':
+      self.OCAMLC = self.OCAMLCC
+    else:
+      self.OCAMLC = self.OCAMLB
+
+    self.OCAMLCP = "ocamlcp "
+    # where the ocaml is installed
+    result,x = get_stdout(self.OCAMLC + " -where")
+    if result:
+      print "Woops, Can't run",self.OCAMLC
+      sys.exit(1)
+    self.OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
+
+    result,x = get_stdout(self.OCAMLB + " -v")
+    if result:
+      print "Woops, Can't run",self.OCAMLB
+      sys.exit(1)
+    x=x[0][0:-1]
+    self.OCAMLB_DESCRIPTION,y = string.split(x,",")
+    y = string.strip(y)
+    self.OCAML_VERSION=y
+
+    result,x = get_stdout(self.OCAMLC + " -v")
+    if result:
+      print "Woops, Can't run",self.OCAMLC
+      sys.exit(1)
+    x=x[0][0:-1]
+    self.OCAMLC_DESCRIPTION,y = string.split(x,",")
+    y = string.strip(y)
+    if self.OCAML_VERSION <> y:
+      print "Inconsistent Ocaml tool versions"
+      print "Ocaml: bytecode compiler",self.OCAML_VERSION
+      print "Ocaml: compiler         ",y
+      sys.exit(1)
+    warn=' -w yzex -warn-error FDPSU '
+    try:
+      f = open('tmp'+os.sep+'camldummy.ml','w')
+      try:
+        f.write('print_endline "OK";;\n')
+      finally:
+        f.close()
+    except (IOError, OSError):
+      pass
+    else:
+      result,x = get_stdout(self.OCAMLC + warn+'tmp'+os.sep+'camldummy.ml')
+      if not result:
+        self.OCAMLB = self.OCAMLB + warn
+        self.OCAMLC = self.OCAMLC + warn
+    
+  def report_config(self):
+    print
+    print "OCAML tool configuration"
+    print "************************"
+    print
+    print "Ocaml Version",self.OCAML_VERSION
+    if self.NATIVE_CODE_COMPILER:
+      print "Using Native code Compiler"
+    else:
+      print "Using Bytecode Compiler"
+    print "Lexer generator .............. ",self.OCAMLLEX
+    print "Parser generator ............. ",self.OCAMLYACC
+    print "Bytecode and Interface compiler",self.OCAMLB
+    print "   ",self.OCAMLB_DESCRIPTION
+    print "Compiler ..................... ",self.OCAMLC
+    print "   ",self.OCAMLC_DESCRIPTION
+    print "Profiling Compiler ........... ",self.OCAMLCP
+    print "Document Generator ........... ",self.OCAMLDOC
+    print "C include directory .......... ",self.OCAML_INCLUDE_DIRECTORY
+    print
+   
+  def save_config(self,filename):
+    f = open(filename,"w")
+    f.write("OCAML_VERSION="+repr(self.OCAML_VERSION)+"\n")
+    f.write("NATIVE_CODE_COMPILER="+str(self.NATIVE_CODE_COMPILER)+"\n")
+    f.write("OCAMLLEX="+repr(self.OCAMLLEX)+"\n")
+    f.write("OCAMLYACC="+repr(self.OCAMLYACC)+"\n")
+    f.write("OCAMLB="+repr(self.OCAMLB)+"\n")
+    f.write("OCAMLB_DESCRIPTION="+repr(self.OCAMLB_DESCRIPTION)+"\n")
+    f.write("OCAMLC="+repr(self.OCAMLC)+"\n")
+    f.write("OCAMLC_DESCRIPTION="+repr(self.OCAMLC_DESCRIPTION)+"\n")
+    f.write("OCAMLCP="+repr(self.OCAMLCP)+"\n")
+    f.write("OCAMLDOC="+repr(self.OCAMLDOC)+"\n")
+    f.write("OCAML_INCLUDE_DIRECTORY="+repr(self.OCAML_INCLUDE_DIRECTORY)+"\n")
+    f.close()
+  
+  def load_config(self,filename):
+    f = open(filename)
+    exec f in self.__dict__
+    f.close()
+
+@h = tangler("tmp/dummy.cxx",'c++')
+@select(h)
+int main(int argc, char*argv[]) { return 0; }
+
+@h = tangler("tmp/dummy_lib.cxx",'c++')
+@select(h)
+extern "C" int fred(int,char*[]) { return 0; }
+
+@h = tangler("tmp/dummy_main.cxx",'c++')
+@select(h)
+#include <dlfcn.h>
+#include <stdlib.h>
+
+int main(int,char*argv[]) { 
+   void *lib = dlopen(argv[1],RTLD_NOW);
+   if(!lib) exit(1);
+   void *fred = dlsym(lib,"fred");
+   if(!fred) exit(1);
+   return 0;
+}
+
+@h = tangler("tmp/win32_dummy_lib.cxx",'c++')
+@select(h)
+extern "C" __declspec(dllexport) int fred(int,char*[]) { return 0; }
+
+@h = tangler("tmp/win32_dummy_main.cxx",'c++')
+@select(h)
+#include <windows.h>
+#include <stdlib.h>
+
+int main(int,char*argv[]) { 
+   HMODULE lib = LoadLibrary(argv[1]);
+   if(!lib) exit(1);
+   void *fred = (void*)GetProcAddress(lib,"fred");
+   if(!fred) exit(1);
+   return 0;
+}
+
+@h = tangler("tmp/gxx_x86.cxx",'c++')
+@select(h)
+#include <cstdio>
+register void *sp __asm__ ("esp");
+
+int main(int,char*[]) { 
+   std::printf("Sp = %p\n",sp);
+   return 0;
+}
+
+@h = tangler("tmp/gxx_x86_64.cxx",'c++')
+@select(h)
+#include <cstdio>
+register void *sp __asm__ ("rsp");
+
+int main(int,char*[]) { 
+   std::printf("Sp = %p\n",sp);
+   return 0;
+}
+
+@h = tangler("tmp/gxx_hash.cxx",'c++')
+@select(h)
+#include <iostream>
+
+// we only bother to check the include file exists
+#include <ext/hash_map>
+using namespace __gnu_cxx;
+
+int main(int,char*[]) { 
+   return 0;
+}
+
+@h = tangler("tmp/dummy_nan.cxx",'c++')
+@select(h)
+#include <cmath>
+
+int main(int,char*[]) { 
+  float f = 0.0;
+  std::isnan(f);
+  return 0;
+}
+
+@h = tangler("tmp/dummy_nan2.cxx",'c++')
+@select(h)
+#include <ieeefp.h>
+
+int main(int,char*[]) { 
+  float f = 0.0;
+  isnanf(f);
+  return 0;
+}
+
+@h=tangler("tmp/have_socklen_t.cxx","c++")
+@select(h)
+#include <sys/types.h>
+#include <sys/socket.h>
+extern "C" int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+int main(int, char*[]) { return 0; }
+
+@h=tangler("tmp/socklen_t_is_uint.cxx","c++")
+@select(h)
+#include <sys/types.h>
+#include <sys/socket.h>
+extern "C" int accept(int s, struct sockaddr *addr, unsigned int *addrlen);
+int main(int, char*[]) { return 0; }
+
+@h=tangler("tmp/socklen_t_is_int.cxx","c++")
+@select(h)
+#include <sys/types.h>
+#include <sys/socket.h>
+extern "C" int accept(int s, struct sockaddr *addr, int *addrlen);
+int main(int, char*[]) { return 0; }
+
+@h=tangler("tmp/pthreads.cxx","c++")
+@select(h)
+#include <pthread.h>
+int main(int, char*[]) {
+  pthread_t pt;
+  pthread_cancel(pt);
+  return 0;
+}
+
+@h = tangler("tmp/intsizes.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+enum enum_t {e_tag};
+typedef void (*fp_t)(void);
+
+union endian_t {
+  unsigned long x;
+  unsigned char y[sizeof(unsigned long)];
+} endian;
+
+int main(int,char*[]) { 
+  printf("CHAR_IS_UNSIGNED=%d\n",((char)0xFF)>0?1:0);
+  endian.x = 1ul;
+  printf("LITTLE_ENDIAN=%d\n", endian.y[0]);
+  printf("BIG_ENDIAN=%d\n", endian.y[sizeof(unsigned long)-1]);
+
+  return 0;
+}
+
+@h = tangler("tmp/cgoto.cxx",'c++')
+@select(h)
+int main(int argc, char*argv[]) { 
+  void *label = &&label2;
+  goto *label;
+  label1: 
+    return 1;
+  label2:
+    return 0; 
+}
+
+@h = tangler("tmp/asm_labels.cxx",'c++')
+@select(h)
+int main(int argc, char*argv[]) { 
+  void *label = &&label2;
+  __asm__(".global fred");
+  __asm__("fred:");
+  __asm__(""::"g"(&&label1));
+  goto *label;
+  label1: 
+    return 1;
+  label2:
+    return 0; 
+}
+
+@h = tangler("tmp/check_inclass.cxx",'c++')
+@select(h)
+struct X {
+  static const int i = 1;
+};
+
+int main(int,char*[]) { 
+  return 0;
+}
+
+@h = tangler("tmp/sdl_opengl.cxx",'c++')
+@select(h)
+// for testing whether we have SDL_opengl
+#include <SDL.h>            // overrides main
+#include <SDL_opengl.h>
+
+int
+main(int argc, char** argv)
+{
+    if(SDL_Init(SDL_INIT_VIDEO) == -1
+        || SDL_SetVideoMode(640, 480, 32, SDL_ANYFORMAT | SDL_OPENGL) == NULL)
+    {
+        return 1;       // fail
+    }
+
+    // random gl stuff to make sure we link
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    return 0;           // pass
+}
+
+@h = tangler("tmp/vsnprintf.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stdarg.h>
+
+int check(char const*fmt,...)
+{
+  va_list ap;
+  va_start(ap,fmt);
+  int n = vsnprintf(NULL,0,fmt,ap);
+  va_end(ap);
+  return n!=3;
+}
+
+int main(int,char*argv[]) { 
+  return check("%s","XXX"); // 0 means pass
+}
+
+@h = tangler("tmp/kqt.cxx",'c++')
+@select(h)
+#include <sys/types.h>      // from the kqueue manpage
+#include <sys/event.h>      // kernel events
+#include <sys/time.h>       // timespec (kevent timeout)
+
+int
+main(int,char**) {
+  int kq = kqueue();
+  return (-1 == kq) ? 1 : 0;
+}
+
