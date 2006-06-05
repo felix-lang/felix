@@ -1,11 +1,6 @@
-@h = tangler("flxbuild/object_class.py")
-@select (h)
-class object:pass
-
 @h = tangler("flxbuild/compiler_class.py")
 @select (h)
 import flxbuild
-import flxbuild.object_class
 from flxbuild.flxutil import *  # get_stdout
 import os
 import sys
@@ -13,7 +8,9 @@ import string
 
 class compiler_base:
   def __init__(self):
-    self.options = flxbuild.object_class.object()
+    class Options:
+      pass
+    self.options = Options()
 
   def eval_tmp_program(self,shell,get_stdout,pname):
     self.compile_static_main(shell,"tmp",pname,"tmp")
@@ -219,7 +216,7 @@ class compiler_base:
       'unsigned long','unsigned long long'
       ]
       
-    opt.__dict__["arith_conv"] = {}
+    opt.arith_conv = {}
     for t1 in native_types:
       for t2 in native_types:
         alias=self.find_type(shell,get_stdout,"("+t1+")0+("+t2+")0",None)
@@ -311,7 +308,6 @@ import string
 import os
 import sys
 import flxbuild
-import flxbuild.object_class
 import flxbuild.compiler_class
 from flxbuild.flxutil import *  # get_stdout
 
@@ -932,7 +928,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
     if opt.RANLIB:
       shell(opt.RANLIB+" "+archive+opt.EXT_LIB)
   
-  def link_static_program(self,shell,objects,outfile,lib_path,libs,SFLAGS=""):
+  def link_static_program(self,shell,objects,outfile,lib_path=[],libs=[],SFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_STATIC
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
@@ -1377,7 +1373,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     for i in objects: cmd = cmd + i + opt.EXT_OBJ + " "
     shell(cmd)
   
-  def link_static_program(self,shell,objects,outfile,lib_path,libs,SFLAGS=""):
+  def link_static_program(self,shell,objects,outfile,lib_path=[],libs=[],SFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_STATIC
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
