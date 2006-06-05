@@ -1,4 +1,4 @@
-@h = tangler("flxbuild/compiler_class.py")
+@h = tangler("flxbuild/compiler_base.py")
 @select (h)
 import flxbuild
 from flxbuild.flxutil import *  # get_stdout
@@ -12,6 +12,34 @@ class compiler_base:
       pass
     self.options = Options()
 
+
+  def save_options(self, filename):
+    f = open(filename, "w")
+    ks = self.options.__dict__.keys()
+    ks.sort()
+    for k in ks:
+      if k[0] != '_': # do not save __builtins__
+        v = self.options.__dict__[k]
+        f.write(k+'='+repr(v) + "\n")
+    f.close()
+
+
+  def load_options(self,filename):
+    f = open(filename)
+    exec f in self.options.__dict__
+    f.close()
+
+
+@h = tangler("flxbuild/cxx_base.py")
+@select (h)
+import os
+import sys
+import string
+
+from flxbuild.flxutil import *  # get_stdout
+from flxbuild.compiler_base import compiler_base
+
+class cxx_base(compiler_base):
   def eval_tmp_program(self,shell,get_stdout,pname):
     self.compile_static_main(shell,"tmp",pname,"tmp")
     self.link_static_program(shell,["tmp"+os.sep+pname+"_static"],"tmp"+os.sep+pname+self.options.EXT_EXE,[],[])
@@ -308,27 +336,23 @@ import string
 import os
 import sys
 import flxbuild
-import flxbuild.compiler_class
+from flxbuild.cxx_base import cxx_base
 from flxbuild.flxutil import *  # get_stdout
 
-class gxx(flxbuild.compiler_class.compiler_base):
-
-  def __init__(self):
-    flxbuild.compiler_class.compiler_base.__init__(self)
-    
-  # these options are model dependent and have to
-  # be supplied by the client
-
+class gxx(cxx_base):
   def set_options(self,
-    CXX="g++",
-    AR="ar -rc",
-    RANLIB="ranlib",
-    STRIP="strip",
-    build="posix",
-    model="detect",
-    flags= "",
-    use="generic"
-    ):
+      CXX="g++",
+      AR="ar -rc",
+      RANLIB="ranlib",
+      STRIP="strip",
+      build="posix",
+      model="detect",
+      flags= "",
+      use="generic",
+      ):
+    """these options are model dependent and have to
+    be supplied by the client"""
+
     opt = self.options
     opt.model = model
     if not CXX: CXX="g++"
@@ -808,21 +832,6 @@ class gxx(flxbuild.compiler_class.compiler_base):
     print "**********************************************"
 
 
-  def save_options(self, filename):
-    f = open(filename,"w")
-    ks = self.options.__dict__.keys()
-    ks.sort()
-    for k in ks:
-      if k[0] != '_': # do not save __builtins__
-        v = self.options.__dict__[k]
-        f.write(k+'='+repr(v)+"\n")
-    f.close()
-
-  def load_options(self,filename):
-    f = open(filename)
-    exec f in self.options.__dict__
-    f.close()
-
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
   def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
@@ -998,24 +1007,20 @@ import string
 import os
 import sys
 import flxbuild
-import flxbuild.compiler_class
+from flxbuild.cxx_base import cxx_base
 
-class msvcxx(flxbuild.compiler_class.compiler_base):
-
-  def __init__(self):
-    flxbuild.compiler_class.compiler_base.__init__(self)
-
-  # these options are model dependent and have to
-  # be supplied by the client
-
+class msvcxx(cxx_base):
   def set_options(self,
-    CXX="cl",
-    LIB="lib",
-    build="posix",
-    model="detect",
-    flags= "",
-    use="generic"
-    ):
+      CXX="cl",
+      LIB="lib",
+      build="posix",
+      model="detect",
+      flags= "",
+      use="generic"
+      ):
+    """these options are model dependent and have to
+    be supplied by the client"""
+
     opt = self.options
     opt.model = model
     if not CXX: CXX="cl"
@@ -1219,21 +1224,6 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     print "**********************************************"
 
 
-  def save_options(self, filename):
-    f = open(filename,"w")
-    ks = self.options.__dict__.keys()
-    ks.sort()
-    for k in ks:
-      if k[0] != '_': # do not save __builtins__
-        v = self.options.__dict__[k]
-        f.write(k+'='+repr(v)+"\n")
-    f.close()
-
-  def load_options(self,filename):
-    f = open(filename)
-    exec f in self.options.__dict__
-    f.close()
-
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
   def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
@@ -1416,94 +1406,94 @@ import string
 import os
 
 from flxbuild.flxutil import MakeError
+from flxbuild.compiler_base import compiler_base
 
-class ocaml:
-  def __init__(self):
-    pass
-
+class ocaml(compiler_base):
   def autodetect(self, shell, get_stdout):
+    opt = self.options
+
     try: # check if the client bootstrapped the native code compiler
       shell('ocamlopt.opt')
-      self.OCAMLCC = 'ocamlopt.opt '
-      self.OCAMLLEX = 'ocamllex.opt '
-      self.OCAMLYACC = 'ocamlyacc '
-      self.NATIVE_CODE_COMPILER = 1
+      opt.OCAMLCC = 'ocamlopt.opt '
+      opt.OCAMLLEX = 'ocamllex.opt '
+      opt.OCAMLYACC = 'ocamlyacc '
+      opt.NATIVE_CODE_COMPILER = 1
     except MakeError:
       try: # check if the client has unbootstrapped native code compiler
         shell('ocamlopt')
-        self.OCAMLCC = 'ocamlopt '
-        self.OCAMLLEX = 'ocamllex '
-        self.OCAMLYACC = 'ocamlyacc '
-        self.NATIVE_CODE_COMPILER = 1
+        opt.OCAMLCC = 'ocamlopt '
+        opt.OCAMLLEX = 'ocamllex '
+        opt.OCAMLYACC = 'ocamlyacc '
+        opt.NATIVE_CODE_COMPILER = 1
       except MakeError:
-        self.NATIVE_CODE_COMPILER = 0
+        opt.NATIVE_CODE_COMPILER = 0
         try: # check if the client has ocaml at all ..
           shell('ocamlc')
-          self.OCAMLCC = 'ocamlc '
-          self.OCAMLLEX = 'ocamllex '
-          self.OCAMLYACC = 'ocamlyacc '
-          self.OCAMLDOC = 'ocamldoc '
+          opt.OCAMLCC = 'ocamlc '
+          opt.OCAMLLEX = 'ocamllex '
+          opt.OCAMLYACC = 'ocamlyacc '
+          opt.OCAMLDOC = 'ocamldoc '
         except MakeError:
           print "WARNING: CANT FIND OCAML TOOLS (ocamlc, ocamllex, ocamlyacc)"
-          self.OCAMLCC = '#ocamlc '
-          self.OCAMLLEX = '#ocamllex '
-          self.OCAMLYACC = '#ocamlyacc '
+          opt.OCAMLCC = '#ocamlc '
+          opt.OCAMLLEX = '#ocamllex '
+          opt.OCAMLYACC = '#ocamlyacc '
 
     try: # check if there is a native code version of the bytecode compiler
       shell('ocamlc.opt')
-      self.OCAMLB = 'ocamlc.opt '
+      opt.OCAMLB = 'ocamlc.opt '
     except MakeError:
       try: # check if the client has ocaml at all
         shell('ocamlc')
-        self.OCAMLB = 'ocamlc '
+        opt.OCAMLB = 'ocamlc '
       except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamlc'"
-        self.OCAMLB = '#ocamlc '
+        opt.OCAMLB = '#ocamlc '
 
     try:
       shell('ocamldoc.opt')
-      self.OCAMLDOC = 'ocamldoc.opt '
+      opt.OCAMLDOC = 'ocamldoc.opt '
     except MakeError:
       try:
         shell('ocamldoc')
-        self.OCAMLDOC = 'ocamldoc '
+        opt.OCAMLDOC = 'ocamldoc '
       except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamldoc'"
-        self.OCAMLDOC = '#ocamldoc '
+        opt.OCAMLDOC = '#ocamldoc '
 
     # set the default ocaml compiler
-    if self.OCAMLCC[0] != '#':
-      self.OCAMLC = self.OCAMLCC
+    if opt.OCAMLCC[0] != '#':
+      opt.OCAMLC = opt.OCAMLCC
     else:
-      self.OCAMLC = self.OCAMLB
+      opt.OCAMLC = opt.OCAMLB
 
-    self.OCAMLCP = "ocamlcp "
+    opt.OCAMLCP = "ocamlcp "
     # where the ocaml is installed
-    result,x = get_stdout(self.OCAMLC + " -where")
+    result,x = get_stdout(opt.OCAMLC + " -where")
     if result:
-      print "Woops, Can't run",self.OCAMLC
+      print "Woops, Can't run",opt.OCAMLC
       sys.exit(1)
-    self.OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
+    opt.OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 
-    result,x = get_stdout(self.OCAMLB + " -v")
+    result,x = get_stdout(opt.OCAMLB + " -v")
     if result:
-      print "Woops, Can't run",self.OCAMLB
+      print "Woops, Can't run",opt.OCAMLB
       sys.exit(1)
     x=x[0][0:-1]
-    self.OCAMLB_DESCRIPTION,y = string.split(x,",")
+    opt.OCAMLB_DESCRIPTION,y = string.split(x,",")
     y = string.strip(y)
-    self.OCAML_VERSION=y
+    opt.OCAML_VERSION=y
 
-    result,x = get_stdout(self.OCAMLC + " -v")
+    result,x = get_stdout(opt.OCAMLC + " -v")
     if result:
-      print "Woops, Can't run",self.OCAMLC
+      print "Woops, Can't run",opt.OCAMLC
       sys.exit(1)
     x=x[0][0:-1]
-    self.OCAMLC_DESCRIPTION,y = string.split(x,",")
+    opt.OCAMLC_DESCRIPTION,y = string.split(x,",")
     y = string.strip(y)
-    if self.OCAML_VERSION <> y:
+    if opt.OCAML_VERSION <> y:
       print "Inconsistent Ocaml tool versions"
-      print "Ocaml: bytecode compiler",self.OCAML_VERSION
+      print "Ocaml: bytecode compiler",opt.OCAML_VERSION
       print "Ocaml: compiler         ",y
       sys.exit(1)
     warn=' -w yzex -warn-error FDPSU '
@@ -1516,51 +1506,33 @@ class ocaml:
     except (IOError, OSError):
       pass
     else:
-      result,x = get_stdout(self.OCAMLC + warn+'tmp'+os.sep+'camldummy.ml')
+      result,x = get_stdout(opt.OCAMLC + warn+'tmp'+os.sep+'camldummy.ml')
       if not result:
-        self.OCAMLB = self.OCAMLB + warn
-        self.OCAMLC = self.OCAMLC + warn
+        opt.OCAMLB = opt.OCAMLB + warn
+        opt.OCAMLC = opt.OCAMLC + warn
     
   def report_config(self):
+    opt = self.options
+
     print
     print "OCAML tool configuration"
     print "************************"
     print
-    print "Ocaml Version",self.OCAML_VERSION
-    if self.NATIVE_CODE_COMPILER:
+    print "Ocaml Version",opt.OCAML_VERSION
+    if opt.NATIVE_CODE_COMPILER:
       print "Using Native code Compiler"
     else:
       print "Using Bytecode Compiler"
-    print "Lexer generator .............. ",self.OCAMLLEX
-    print "Parser generator ............. ",self.OCAMLYACC
-    print "Bytecode and Interface compiler",self.OCAMLB
-    print "   ",self.OCAMLB_DESCRIPTION
-    print "Compiler ..................... ",self.OCAMLC
-    print "   ",self.OCAMLC_DESCRIPTION
-    print "Profiling Compiler ........... ",self.OCAMLCP
-    print "Document Generator ........... ",self.OCAMLDOC
-    print "C include directory .......... ",self.OCAML_INCLUDE_DIRECTORY
+    print "Lexer generator .............. ",opt.OCAMLLEX
+    print "Parser generator ............. ",opt.OCAMLYACC
+    print "Bytecode and Interface compiler",opt.OCAMLB
+    print "   ",opt.OCAMLB_DESCRIPTION
+    print "Compiler ..................... ",opt.OCAMLC
+    print "   ",opt.OCAMLC_DESCRIPTION
+    print "Profiling Compiler ........... ",opt.OCAMLCP
+    print "Document Generator ........... ",opt.OCAMLDOC
+    print "C include directory .......... ",opt.OCAML_INCLUDE_DIRECTORY
     print
-   
-  def save_config(self,filename):
-    f = open(filename,"w")
-    f.write("OCAML_VERSION="+repr(self.OCAML_VERSION)+"\n")
-    f.write("NATIVE_CODE_COMPILER="+str(self.NATIVE_CODE_COMPILER)+"\n")
-    f.write("OCAMLLEX="+repr(self.OCAMLLEX)+"\n")
-    f.write("OCAMLYACC="+repr(self.OCAMLYACC)+"\n")
-    f.write("OCAMLB="+repr(self.OCAMLB)+"\n")
-    f.write("OCAMLB_DESCRIPTION="+repr(self.OCAMLB_DESCRIPTION)+"\n")
-    f.write("OCAMLC="+repr(self.OCAMLC)+"\n")
-    f.write("OCAMLC_DESCRIPTION="+repr(self.OCAMLC_DESCRIPTION)+"\n")
-    f.write("OCAMLCP="+repr(self.OCAMLCP)+"\n")
-    f.write("OCAMLDOC="+repr(self.OCAMLDOC)+"\n")
-    f.write("OCAML_INCLUDE_DIRECTORY="+repr(self.OCAML_INCLUDE_DIRECTORY)+"\n")
-    f.close()
-  
-  def load_config(self,filename):
-    f = open(filename)
-    exec f in self.__dict__
-    f.close()
 
 @h = tangler("tmp/dummy.cxx",'c++')
 @select(h)

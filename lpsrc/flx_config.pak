@@ -12,6 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.184  2006/06/05 07:46:01  idadesub
+pulled out the c++ specific code from compiler_base, and moved it into
+cxx_base. then derrived ocaml from compiler_base. Then pulled some common
+functionality into compiler base to reduce redundant code
+
 Revision 1.183  2006/06/05 06:54:52  idadesub
 pulling the config builders into it's own separate .ipk file as it makes
 a nice config subpackage. It'll also make maintaining and upgrading the
@@ -928,7 +933,7 @@ if "host" in PHASES:
   HOST_OCAML = flxbuild.ocaml_class.ocaml()
   HOST_OCAML.autodetect(xqt,get_stdout)
   HOST_OCAML.report_config()
-  HOST_OCAML.save_config("config/ocaml_config.py")
+  HOST_OCAML.save_options("config/ocaml_config.py")
 
 
   #
@@ -995,7 +1000,7 @@ if "host" in PHASES:
     pr(f,"")
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
-    pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
+    pr(f,"HOST_OCAML.load_options("+repr('config'+os.sep+'ocaml_config.py')+")")
     cxx = HOST_CXX.__class__.__name__
     pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
     pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
@@ -1133,7 +1138,7 @@ if "target" in PHASES:
     pr(f,"")
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
-    pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
+    pr(f,"HOST_OCAML.load_options("+repr('config'+os.sep+'ocaml_config.py')+")")
     cxx = HOST_CXX.__class__.__name__
     pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
     pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
