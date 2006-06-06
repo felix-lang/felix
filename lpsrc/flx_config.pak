@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.185  2006/06/06 11:59:08  rfistman
+--target had disappeared from the configure script, put it back.
+still, unknown options should be an error.
+
 Revision 1.184  2006/06/05 07:46:01  idadesub
 pulled out the c++ specific code from compiler_base, and moved it into
 cxx_base. then derrived ocaml from compiler_base. Then pulled some common
@@ -738,7 +742,8 @@ PHASES = []
 try:
   opts, args = getopt.getopt(sys.argv[1:], 'hvq', 
       ['help', 'verbose', 'quiet', 'force', 'refresh', 'upgrade', 
-      'prefix=', 'set-int=', 'set-string=', 'build=', 'host=', 'run=',
+      'prefix=', 'set-int=', 'set-string=', 'build=', 'host=', 'target=',
+      'run=',
       'buildcc=', 'hostcc=', 'targetcc=', 'boot=', 'save-config=', 
       'load-config=', 'lparchive=', 'phase='])
       #'set-int', 
@@ -944,6 +949,8 @@ if "host" in PHASES:
   # Cross compilation of the host tools may prevent any
   # testing of the tools
   #
+
+
 
   if not host_model: 
     host_model=build_model
