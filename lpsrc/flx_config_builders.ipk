@@ -1022,8 +1022,12 @@ class msvcxx(cxx_base):
     opt = self.options
     opt.model = model
     if not CXX: CXX="cl"
-    opt.CXX = CXX+" "
-    opt.AR = LIB+" "
+    # RF: add /GR to generate RTTI information, if this isn't on, we get
+    # access violations when doing dynamic_casts. Of course, these access
+    # violations are thrown as exceptions, which can be caught with
+    # catch(std::exception& e). we also don't want the logo
+    opt.CXX = CXX+" /nologo /GR "
+    opt.AR = LIB+" /nologo "
     opt.RANLIB = "#"
     opt.flags = flags
     opt.use = use
@@ -1057,7 +1061,13 @@ class msvcxx(cxx_base):
   def detect_msvcxx_flags(self,shell):
     opt = self.options
     CXX = opt.CXX
-    opt.NO_INVALID_OFFSETOF_WARNING="/w "
+    # RF: silencing all warnings /w has masked some really insidious bugs
+    # (like dynamic_casts whilst RTTI was disabled). does the offset warning
+    # even apply to vs toolchain? I don't think so, however, there is one
+    # warning, that about missing delete for the custom operator new,
+    # the follow /wd<n> should silence that warning.
+    # opt.NO_INVALID_OFFSETOF_WARNING="/w "
+    opt.NO_INVALID_OFFSETOF_WARNING="/wd4291 "
 
   def check_options(self,shell,get_stdout):
     opt = self.options
@@ -1080,14 +1090,28 @@ class msvcxx(cxx_base):
     opt.EXT_SRC_MAIN = ".cxx"
     opt.EXT_SRC_LIB = ".cpp"
 
-    COMPILE_DYNAMIC_RTL = "/nologo /MD /c /EHs "
-    LINK_DYNAMIC_RTL = "/nologo /MD /LD "
+    # RF: /MT (link with multithreaded clib, LIBCMT.LIB) for static builds
+    # and /MD for dynamic (multithreaded dynamic clib, MSVCRT.LIB).
+    # This last one's important as it means that not only is malloc threadsafe,
+    # but the SAME allocator is shared between the app and its dynamic libs.
+    # Without this, pushing an fthread in flx_run and popping it in
+    # flxdynamic_lib is actually an insidious error. Note that /M* flags are
+    # not just for link time, they seem to need to be passed to the compilation
+    # phase as well. To run with debug versions of clib, try /MDd, /MTd and
+    # /LDd when linking dynamic libs. Phew.
+    # COMPILE_DYNAMIC_RTL = "/MD /c /EHs "
+    # LINK_DYNAMIC_RTL = "/MD /LD "
+    COMPILE_DYNAMIC_RTL = "/MD /c /EHs "
+    LINK_DYNAMIC_RTL = "/MD /LD "
       
-    COMPILE_DYNAMIC_MAIN = "/nologo /MT /c /EHs "
-    LINK_DYNAMIC_MAIN = "/nologo /MT "
+    COMPILE_DYNAMIC_MAIN = "/MD /c /EHs "
+    LINK_DYNAMIC_MAIN = "/MD "
 
-    COMPILE_DYNAMIC_FLX = "/nologo /MD /c /EHs "
-    LINK_DYNAMIC_FLX = "/nologo /MD /LD "
+    # RF: Trying multithreaded cruntime (/MT). see above.
+    # COMPILE_DYNAMIC_FLX = "/MD /c /EHs "
+    # LINK_DYNAMIC_FLX = "/MD /LD "
+    COMPILE_DYNAMIC_FLX = "/MD /c /EHs "
+    LINK_DYNAMIC_FLX = "/MD /LD "
 
     opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
     opt.CCLINK_DYNAMIC_FLX = CXX + LINK_DYNAMIC_FLX
@@ -1098,15 +1122,15 @@ class msvcxx(cxx_base):
     opt.CCOBJ_DYNAMIC_MAIN = CXX + COMPILE_DYNAMIC_MAIN
     opt.CCLINK_DYNAMIC_MAIN = CXX + LINK_DYNAMIC_MAIN
 
-    opt.CCOBJ_STATIC_FLX = CXX + "/nologo /MT /EHs /c "
-    opt.CCOBJ_STATIC_RTL = CXX + "/nologo /MT /EHs /c "
-    opt.CCOBJ_STATIC_MAIN = CXX + "/nologo /MT /EHs /c "
+    opt.CCOBJ_STATIC_FLX = CXX + "/MT /EHs /c "
+    opt.CCOBJ_STATIC_RTL = CXX + "/MT /EHs /c "
+    opt.CCOBJ_STATIC_MAIN = CXX + "/MT /EHs /c "
 
     opt.CCOBJ_DYNAMIC_RTL=opt.CCOBJ_DYNAMIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_DYNAMIC_FLX=opt.CCOBJ_DYNAMIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_STATIC_RTL=opt.CCOBJ_STATIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_STATIC_FLX=opt.CCOBJ_STATIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCLINK_STATIC = CXX + "/nologo /MT "
+    opt.CCLINK_STATIC = CXX + "/MT "
 
     opt.HAVE_DLOPEN = 0
     opt.DLLIB=""
