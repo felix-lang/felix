@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.18  2006/06/09 19:06:14  idadesub
+modified to use flx_arun instead of the non-existing flx_sdl_run
+
 Revision 1.17  2006/05/21 13:59:39  skaller
 Basic TRE package now built in core, including unit tests.
 
@@ -192,7 +195,7 @@ except:
       f.write("cflags: "+SDL_CFLAGS+"\n")
       f.write("requires_dlibs: '"+SDL_LIBS+"'\n")
       f.write("requires_slibs: '"+SDL_STATIC_LIBS+"'\n")
-      f.write("flx_requires_driver: flx_sdl_run\n")
+      f.write("flx_requires_driver: flx_arun\n")
       f.close()
     fname = "config" + os.sep + "gl.fpc"
     if not file_exists(fname):
@@ -253,13 +256,6 @@ except:
   f.close()
   cload(globals(),"sdl")
 
-
-@h=tangler('rtl/flx_sdl_arun.cxx')
-@select(h)
-#include "SDL.h"
-#define FLX_SUPPORT_ASYNC
-#include "flx_run.cpp"
-
 @h = tangler('spkgs/sdl.py')
 @select(h)
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
@@ -304,8 +300,8 @@ pkg_requires = ['glu']
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
   DRIVERS = [
-    ('static','rtl/flx_sdl_run','bin/flx_sdl_run',[]),
-    ('dynamic','rtl/flx_sdl_run','bin/flx_sdl_run',[]),
+    ('static','rtl/flx_arun','bin/flx_arun',[]),
+    ('dynamic','rtl/flx_arun','bin/flx_arun',[]),
   ]
   DRLIBS = [
    'libsdl',
