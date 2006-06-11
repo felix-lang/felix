@@ -667,7 +667,7 @@ namespace gc {
 namespace collector {
 
 static int mcount FLX_UNUSED = 0;
-#ifdef HAVE_GXX_X86
+#ifdef HAVE_GNU_X86
 register void *sp __asm__("esp");
 #else
 // this was getting us unused variable warnings

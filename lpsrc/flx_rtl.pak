@@ -1,5 +1,13 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.43  2006/06/11 19:38:14  idadesub
+added support a c compiler as well
+the builders have been massively refactored to reduce code duplication
+renamed some functions and arguments to be clearer on intent
+eliminated empty "except:" clauses. It's possible I'm not catching all the
+right exceptions though.
+fixed a couple bugs
+
 Revision 1.42  2006/05/30 18:53:22  rfistman
 fixed exception handler linkage on win32
 flx_rtl_config now stops Windows.h on VS toolchain including winsock vers 1
@@ -580,14 +588,14 @@ T &reinterpret(U const &x) {
 @if HAVE_ISNAN_IN_IEEEFP:
   tangle('#define HAVE_ISNAN_IN_IEEEFP')
 
-@if HAVE_GXX:
-  tangle('#define HAVE_GXX')
+@if HAVE_GNU:
+  tangle('#define HAVE_GNU')
 
-@if HAVE_GXX_X86:
-  tangle('#define HAVE_GXX_X86')
+@if HAVE_GNU_X86:
+  tangle('#define HAVE_GNU_X86')
 
-@if HAVE_GXX_X86_64:
-  tangle('#define HAVE_GXX_X86_64')
+@if HAVE_GNU_X86_64:
+  tangle('#define HAVE_GNU_X86_64')
 
 @if HAVE_CGOTO:
   tangle("#define FLX_HAVE_CGOTO")
@@ -643,7 +651,7 @@ T &reinterpret(U const &x) {
 #define MACOSX_NODLCOMPAT
 #endif
 
-#ifdef HAVE_GXX
+#ifdef HAVE_GNU
 #define FLX_ALWAYS_INLINE __attribute__ ((always_inline))
 #define FLX_NOINLINE __attribute__ ((noinline))
 #define FLX_CONST __attribute__ ((const))
@@ -1166,7 +1174,7 @@ static void x##_finaliser(collector_t *, void *p){\
   ((x*)p)->~x();\
 }
 
-#if defined(FLX_USE_REGPARM3) && defined(HAVE_GXX_X86)
+#if defined(FLX_USE_REGPARM3) && defined(HAVE_GNU_X86)
 #define FLX_REGPARM __attribute__((regparm(3)))
 #else
 #define FLX_REGPARM
@@ -2063,7 +2071,7 @@ flx_load_library(char const *filename)
     NSObjectFileImage            bndl_img;
     NSObjectFileImageReturnCode  res;
 
-    res = NSCreateObjectFileImageFromFile(fname, &bndl_img);
+    res = NSCreateObjectFileImageFromFile(filename, &bndl_img);
 
 	if(NSObjectFileImageSuccess != res)
       throw flx_link_failure_t(filename, "NSCreateObjectFileImageFromFile",
@@ -2074,7 +2082,7 @@ flx_load_library(char const *filename)
 
     unsigned long                link_flags;
     link_flags = NSLINKMODULE_OPTION_PRIVATE | NSLINKMODULE_OPTION_RETURN_ON_ERROR;
-    library = NSLinkModule(bndl_img, fname, link_flags);
+    library = NSLinkModule(bndl_img, filename, link_flags);
 
     // even if link failed, we do this
     NSDestroyObjectFileImage(bndl_img);
@@ -2813,10 +2821,10 @@ using namespace flx::rtl;
 using namespace flx::pthread;
 using namespace flx::run;
 
-#ifdef HAVE_GXX_X86
+#ifdef HAVE_GNU_X86
 register void *sp __asm__("esp");
 #else
-#ifdef HAVE_GXX_X86_64
+#ifdef HAVE_GNU_X86_64
 register void *sp __asm__("rsp");
 #else
 static void *sp = 0;
@@ -3297,7 +3305,7 @@ int main(int argc, char** argv)
   if(debug)
     fprintf(stderr,"[FLX_GC_FREQ] call gc every %lu iterations\n",gc_freq);
 
-#ifdef HAVE_GXX
+#ifdef HAVE_GNU
     if(debug)fprintf(stderr, "Compiled by g++\n");
     static void *init_sp = sp;
     static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
@@ -3342,7 +3350,7 @@ int main(int argc, char** argv)
   delete collector;
   delete allocator;
 
-#ifdef HAVE_GXX
+#ifdef HAVE_GNU
     // check the frame pointer isn't corrupted
     static void *fin_sp = sp;
     static void *fin_fframe FLX_UNUSED = __builtin_frame_address(0);

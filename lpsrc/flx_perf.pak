@@ -599,7 +599,8 @@ while time.time() - start_time < max_test_time:
   ix = random.randint(0,nwxlats-1)
   xl,mk,src,test = wxlats[ix]
   descr,fst,lst = tests[test]
-  fst,lst = xlt.setdefault((test,xl),(fst,lst))
+  fst,lst = xlt.get((test,xl), (fst,lst))
+  xlt[(test,xl)] = (fst,lst)
 
   # pick an integer between fst and lst inclusive
   n = random.randint(fst,lst)
@@ -745,10 +746,14 @@ for line in fin:
   elapsed=float(elapsed)
   if pload == kind:
     print hostname,kind,date,time,xl,tst,n,elapsed
-    hostd = hostsd.setdefault(hostname,{})
-    testd = hostd.setdefault(tst,{})
-    xld = testd.setdefault(xl,{})
-    nd = xld.setdefault(n,[])
+    hostd = hostsd.get(hostname,{})
+    hostsd[hostname] = hostd
+    testd = hostd.get(tst,{})
+		hostd[tst] = testd
+    xld = testd.get(xl,{})
+		testd[xl] = xld
+    nd = xld.get(n,[])
+		xld[n] = nd
     nd.append(elapsed)
 fin.close()
 

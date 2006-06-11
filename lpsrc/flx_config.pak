@@ -12,6 +12,14 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.186  2006/06/11 19:38:14  idadesub
+added support a c compiler as well
+the builders have been massively refactored to reduce code duplication
+renamed some functions and arguments to be clearer on intent
+eliminated empty "except:" clauses. It's possible I'm not catching all the
+right exceptions though.
+fixed a couple bugs
+
 Revision 1.185  2006/06/06 11:59:08  rfistman
 --target had disappeared from the configure script, put it back.
 still, unknown options should be an error.
@@ -277,7 +285,7 @@ import time
 def filetime(f):
   try:
     t = os.stat(f)[stat.ST_MTIME]
-  except:
+  except EnvironmentError:
     t = 0
   return t
 
@@ -349,7 +357,7 @@ def invert(d):
 
 def erasefile(f):
   try: os.unlink(f)
-  except: pass
+  except EnvironmentError: pass
 
 def unix2native(f):
   return string.join(string.split(f,"/"),os.sep)
@@ -358,14 +366,14 @@ def deletefile(f):
   erasefile(unix2native(f))
 
 def mkdirs(x):
-  if not os.path.exists(x):
+  if x and not os.path.exists(x):
     os.makedirs(x)
 
 def erasedir(d):
   fs = glob.glob(d+os.sep+"*")
   for f in fs: erasefile(f)
   try: os.rmdir(d)
-  except: pass
+  except EnvironmentError: pass
 
 def filecopy(a,b):
   f = open(a)
@@ -395,9 +403,9 @@ def file_exists(f):
   try:
     os.stat(f)
     return 1
-  except: return 0
+  except EnvironmentError: return 0
 
-class MakeError: pass
+class MakeError(EnvironmentError): pass
   
 @select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
@@ -438,7 +446,7 @@ except:
   try:
     xqt("iscr")
     ISCR="iscr "
-  except:
+  except EnvironmentError:
     ISCR="python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
   print "Storing Interscript configuration"
   f = cwrite("iscr")
@@ -456,7 +464,7 @@ except:
   try:
     xqt("pkg-config --version")
     HAVE_PKGCONFIG=1
-  except:
+  except EnvironmentError:
     HAVE_PKGCONFIG=0
   print "Storing pkgconfig configuration"
   f = cwrite("pkgconfig")
@@ -506,7 +514,7 @@ def pa(f,this,s):
   try:
     x = s + "=" + repr(this[s])
     pr(f,x)
-  except:
+  except (KeyError, EnvironmentError):
     print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
     f.write(s+"= None # EDIT ME!!\n")
 
@@ -514,14 +522,14 @@ def pne(f,s):
   try:
     x = s + "=" + repr(this[s])
     f.write(x+"\n")
-  except:
+  except EnvironmentError:
     print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
     f.write(s+"= None # EDIT ME!!\n")
 
 def gs(x):
   r,o = get_stdout(x)
   try: o = string.strip(o[0])
-  except: pass
+  except EnvironmentError: pass
   return r,o
 
 
@@ -587,7 +595,7 @@ def xxqt(x,print_cmd=0,print_on_error=1):
   if result != 0: 
     if print_on_error:
       print "FAIL:",x
-    raise MakeError
+    raise MakeError(x)
   else: 
     if print_cmd:
       print x
@@ -616,7 +624,7 @@ upgrade = 0
 refresh = 0
 default_prefix='/usr/local'
 
-PREFIX=os.getenv("PREFIX",default=default_prefix)
+PREFIX=os.environ.get("PREFIX",default_prefix)
 if PREFIX:
   print "Default Installation Root from environment: ",PREFIX
 
@@ -676,7 +684,7 @@ try:
   output = string.lower(string.strip(output[0]))
   build_model = archmap[output]
   print "Build platform: " + build_model
-except:
+except EnvironmentError:
   print "uname -s and Python returns unknown OS type, assuming 'detect'"
   build_model = "detect"
 
@@ -721,7 +729,7 @@ run_model = None
 def check_model(m):
   try:
     m = archmap[m]
-  except:
+  except KeyError:
     print "Unknown model '"+m+"' please choose one of:"
     for m in platforms: print " * " + m
     sys.exit(1)
@@ -730,10 +738,19 @@ def check_model(m):
 SAVE_CONFIG=""
 LOAD_CONFIG=""
 BOOTFILE=""
-HOSTCC=""
-TARGETCC=""
-BUILDCC=""
-FLX_LPARCHIVE=os.getenv("FLX_LPARCHIVE",default=os.curdir)
+
+include_paths=None
+lib_paths=None
+
+BUILDCC=None
+HOSTCC=None
+TARGETCC=None
+
+BUILDCXX=None
+HOSTCXX=None
+TARGETCXX=None
+
+FLX_LPARCHIVE=os.environ.get("FLX_LPARCHIVE",os.curdir)
 
 ALL_PHASES=["build","host","target","run"]
 
@@ -742,8 +759,9 @@ PHASES = []
 try:
   opts, args = getopt.getopt(sys.argv[1:], 'hvq', 
       ['help', 'verbose', 'quiet', 'force', 'refresh', 'upgrade', 
-      'prefix=', 'set-int=', 'set-string=', 'build=', 'host=', 'target=',
-      'run=',
+      'prefix=', 'set-int=', 'set-string=', 
+      'include_paths=', 'lib_paths=',
+      'build=', 'host=', 'target=', 'run=',
       'buildcc=', 'hostcc=', 'targetcc=', 'boot=', 'save-config=', 
       'load-config=', 'lparchive=', 'phase='])
       #'set-int', 
@@ -767,6 +785,8 @@ flags:
   --prefix
   --set-int
   --set-string
+  --include_paths
+  --lib_paths
   --build
   --host
   --target
@@ -774,6 +794,9 @@ flags:
   --buildcc
   --hostcc
   --targetcc
+  --buildcxx
+  --hostcxx
+  --targetcxx
   --boot
   --save-config
   --load-config
@@ -782,7 +805,7 @@ flags:
 """
     sys.exit(0)
   elif o in ['-v', '--verbose']:
-    verbose += 1
+    verbose = verbose + 1
   elif o in ['-q', '--quiet']:
     verbose = 0
   elif o in ['--force']:
@@ -799,6 +822,10 @@ flags:
   elif o in ['--set-string']:
     v, a = string.split(a, '=', 1)
     overrides[v] = a
+  elif o in ['--include_paths']:
+    include_paths = a
+  elif o in ['--lib_paths']:
+    lib_paths = a
   elif o in ['--build']:
     print "Specified build model", a
     build_model = check_model(a)
@@ -817,6 +844,12 @@ flags:
     HOSTCC = a
   elif o in ['--targetcc']:
     TARGETCC = a
+  elif o in ['--buildcxx']:
+    BUILDCXX = a
+  elif o in ['--hostcxx']:
+    HOSTCXX = a
+  elif o in ['--targetcxx']:
+    TARGETCXX = a
   elif o in ['--boot']:
     BOOTFILE = a
   elif o in ['--save-config']:
@@ -857,7 +890,9 @@ print "FLX_LPARCHIVE="+FLX_LPARCHIVE
 # Discover C/C++ compilers, linker, and other 'binutils'
 
 import flxbuild.ocaml_class
+import flxbuild.gcc_class
 import flxbuild.gxx_class
+import flxbuild.msvcc_class
 import flxbuild.msvcxx_class
 
 #
@@ -877,10 +912,33 @@ if "build" in PHASES:
   print
 
   if build_model == "win32":
+    BUILD_CC=flxbuild.msvcc_class.msvcc()
     BUILD_CXX=flxbuild.msvcxx_class.msvcxx()
   else:
+    BUILD_CC=flxbuild.gcc_class.gcc()
     BUILD_CXX=flxbuild.gxx_class.gxx()
-  BUILD_CXX.set_options(use="build",model=build_model,build=build_model)
+
+  BUILD_CC.set_options(
+      COM=BUILDCC,
+      include_paths=include_paths,
+      lib_paths=lib_paths,
+      use="build",
+      model=build_model,
+      build=build_model)
+
+  BUILD_CC.check_options(xqt,get_stdout)
+  BUILD_CC.report_config()
+  BUILD_CC.save_options("config/build_cc.py")
+  build_model=BUILD_CC.options.model
+
+  BUILD_CXX.set_options(
+      COM=BUILDCXX,
+      include_paths=include_paths,
+      lib_paths=lib_paths,
+      use="build",
+      model=build_model,
+      build=build_model)
+
   BUILD_CXX.check_options(xqt,get_stdout)
   BUILD_CXX.report_config()
   BUILD_CXX.save_options("config/build_cxx.py")
@@ -904,7 +962,9 @@ if "build" in PHASES:
     pa(f,this,"godi_revision")
     pa(f,this,"debian_revision")
     pr(f,"import flxbuild")
+    pr(f,"import flxbuild.gcc_class")
     pr(f,"import flxbuild.gxx_class")
+    pr(f,"import flxbuild.msvcc_class")
     pr(f,"import flxbuild.msvcxx_class")
     pr(f,'execfile("script/config_support.py")')
 
@@ -914,11 +974,15 @@ if "build" in PHASES:
  
     print "WRITE STEP 2"
    
+    cc = BUILD_CC.__class__.__name__
+    pr(f,"BUILD_CC=flxbuild."+cc+"_class."+cc+"()")
+    pr(f,"BUILD_CC.load_options("+repr('config'+os.sep+'build_cc.py')+")")
+
     cxx = BUILD_CXX.__class__.__name__
     pr(f,"BUILD_CXX=flxbuild."+cxx+"_class."+cxx+"()")
     pr(f,"BUILD_CXX.load_options("+repr('config'+os.sep+'build_cxx.py')+")")
     f.close()
-  except:
+  except EnvironmentError:
     print "Unable to create config"+os.sep+"build_config.py"
     sys.exit(1)
 
@@ -951,7 +1015,6 @@ if "host" in PHASES:
   #
 
 
-
   if not host_model: 
     host_model=build_model
     print "Defaulting host model to build model",host_model
@@ -967,17 +1030,35 @@ if "host" in PHASES:
   print
 
   if host_model in ["win32"]:
+    HOST_CC=flxbuild.msvcc_class.msvcc()
     HOST_CXX=flxbuild.msvcxx_class.msvcxx()
-    HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
-    HOST_CXX.check_options(xqt,get_stdout)
-    HOST_CXX.report_config()
-    HOST_CXX.save_options("config/host_cxx.py")
   else:
+    HOST_CC=flxbuild.gcc_class.gcc()
     HOST_CXX=flxbuild.gxx_class.gxx()
-    HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
-    HOST_CXX.check_options(xqt,get_stdout)
-    HOST_CXX.report_config()
-    HOST_CXX.save_options("config/host_cxx.py")
+
+  HOST_CC.set_options(
+      COM=HOSTCC,
+      include_paths=include_paths,
+      lib_paths=lib_paths,
+      use="host",
+      model=host_model,
+      build=build_model)
+
+  HOST_CC.check_options(xqt,get_stdout)
+  HOST_CC.report_config()
+  HOST_CC.save_options("config/host_cc.py")
+
+  HOST_CXX.set_options(
+      COM=HOSTCXX,
+      include_paths=include_paths,
+      lib_paths=lib_paths,
+      use="host",
+      model=host_model,
+      build=build_model)
+
+  HOST_CXX.check_options(xqt,get_stdout)
+  HOST_CXX.report_config()
+  HOST_CXX.save_options("config/host_cxx.py")
 
   host_model = HOST_CXX.options.model
   try:
@@ -996,6 +1077,8 @@ if "host" in PHASES:
     pa(f,this,"godi_revision")
     pa(f,this,"debian_revision")
     pr(f,"import flxbuild")
+    pr(f,"import flxbuild.gcc_class")
+    pr(f,"import flxbuild.msvcc_class")
     pr(f,"import flxbuild.gxx_class")
     pr(f,"import flxbuild.msvcxx_class")
     pr(f,"import flxbuild.ocaml_class")
@@ -1008,12 +1091,17 @@ if "host" in PHASES:
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
     pr(f,"HOST_OCAML.load_options("+repr('config'+os.sep+'ocaml_config.py')+")")
+
+    cc = HOST_CC.__class__.__name__
+    pr(f,"HOST_CC=flxbuild."+cc+"_class."+cc+"()")
+    pr(f,"HOST_CC.load_options("+repr('config'+os.sep+'host_cc.py')+")")
+
     cxx = HOST_CXX.__class__.__name__
     pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
     pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
     pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
     f.close()
-  except:
+  except EnvironmentError:
     print "Unable to create config"+os.sep+"host_config.py"
     sys.exit(1)
 
@@ -1047,29 +1135,50 @@ if "target" in PHASES:
   print
 
   if target_model in ["win32","win64"]:
+    TARGET_CC=flxbuild.msvcc_class.msvcc()
     TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
-    TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
-    TARGET_CXX.check_options(xqt,get_stdout)
-    TARGET_CXX.report_config()
-    TARGET_CXX.save_options("config/target_cxx.py")
-    FLX_SOCKLEN_T = "int"
-    HAVE_PTHREADS=0
-    PTHREAD_SWITCH=""
-    HAVE_MSVC=1
-    HAVE_GXX=0
-    HAVE_KQUEUE_DEMUXER=0 #windows doesn't have kqueues.
   else:
+    TARGET_CC=flxbuild.gcc_class.gcc()
     TARGET_CXX=flxbuild.gxx_class.gxx()
-    TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
-    TARGET_CXX.check_options(xqt,get_stdout)
-    TARGET_CXX.report_config()
-    TARGET_CXX.save_options("config/target_cxx.py")
+
+  TARGET_CC.set_options(
+      COM=TARGETCC,
+      include_paths=include_paths,
+      lib_paths=lib_paths,
+      use="target",
+      model=target_model,
+      build=build_model)
+
+  TARGET_CC.check_options(xqt,get_stdout)
+  TARGET_CC.report_config()
+  TARGET_CC.save_options("config/target_cc.py")
+
+  TARGET_CXX.set_options(
+      COM=TARGETCXX,
+      include_paths=include_paths,
+      lib_paths=lib_paths,
+      use="target",
+      model=target_model,
+      build=build_model)
+
+  TARGET_CXX.check_options(xqt,get_stdout)
+  TARGET_CXX.report_config()
+  TARGET_CXX.save_options("config/target_cxx.py")
+
+  if target_model in ["win32","win64"]:
+    FLX_SOCKLEN_T = "int"
+    HAVE_PTHREADS = 0
+    PTHREAD_SWITCH = ""
+    HAVE_MSVC = 1
+    HAVE_GNU = 0
+    HAVE_KQUEUE_DEMUXER = 0 #windows doesn't have kqueues.
+  else:
     FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
     HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
     PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
     HAVE_KQUEUE_DEMUXER = TARGET_CXX.options.HAVE_KQUEUE_DEMUXER
-    HAVE_MSVC=0
-    HAVE_GXX=1
+    HAVE_MSVC = 0
+    HAVE_GNU = 1
 
   # target model switches
   CYGWIN = TARGET_CXX.options.CYGWIN
@@ -1113,6 +1222,8 @@ if "target" in PHASES:
     pr(f,"  execfile('config/config_bootstrap.py')")
     pr(f,"except: pass")
     pr(f,"import flxbuild")
+    pr(f,"import flxbuild.gcc_class")
+    pr(f,"import flxbuild.msvcc_class")
     pr(f,"import flxbuild.gxx_class")
     pr(f,"import flxbuild.msvcxx_class")
     pr(f,"import flxbuild.ocaml_class")
@@ -1146,6 +1257,14 @@ if "target" in PHASES:
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
     pr(f,"HOST_OCAML.load_options("+repr('config'+os.sep+'ocaml_config.py')+")")
+
+    cc = HOST_CC.__class__.__name__
+    pr(f,"HOST_CC=flxbuild."+cc+"_class."+cc+"()")
+    pr(f,"HOST_CC.load_options("+repr('config'+os.sep+'host_cc.py')+")")
+    cc = TARGET_CC.__class__.__name__
+    pr(f,"TARGET_CC=flxbuild."+cc+"_class."+cc+"()")
+    pr(f,"TARGET_CC.load_options("+repr('config'+os.sep+'target_cc.py')+")")
+
     cxx = HOST_CXX.__class__.__name__
     pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
     pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
@@ -1153,7 +1272,7 @@ if "target" in PHASES:
     pr(f,"TARGET_CXX=flxbuild."+cxx+"_class."+cxx+"()")
     pr(f,"TARGET_CXX.load_options("+repr('config'+os.sep+'target_cxx.py')+")")
     pr(f,"")
-    pa(f,this,"HAVE_GXX")
+    pa(f,this,"HAVE_GNU")
     pr(f,"FLXCC_CPP='cpp '")
     pa(f,this,"HAVE_MSVC")
     pr(f,"# HACK to get all the target variables into global namespace")
@@ -1163,7 +1282,7 @@ if "target" in PHASES:
     if BOOTFILE:
       print "Copying bootfile :  "+ BOOTFILE
       filecopy(BOOTFILE,"config"+os.sep+"config_bootstrap.py")
-  except:
+  except EnvironmentError:
     print "Unable to create config"+os.sep+"config.py"
     sys.exit(1)
 
@@ -1561,7 +1680,7 @@ else:
        t = sizes[size]
        tmap["int"+str(size)]=t
        tmap["uint"+str(size)]="unsigned " + t
-     except:
+     except KeyError:
        tmap["int"+str(size)]="emul_int"+str(size)
        tmap["uint"+str(size)]="emul_uint"+str(size)
 

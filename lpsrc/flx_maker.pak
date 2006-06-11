@@ -6,7 +6,16 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.60  2006/06/11 19:38:14  idadesub
+added support a c compiler as well
+the builders have been massively refactored to reduce code duplication
+renamed some functions and arguments to be clearer on intent
+eliminated empty "except:" clauses. It's possible I'm not catching all the
+right exceptions though.
+fixed a couple bugs
+
 Revision 1.59  2006/06/09 11:02:12  rfistman
+
 make virgin now removes a few more directories, notably
 the packages and manifests. this fixes incomplete builds
 after doing an update + make virgin
@@ -1264,45 +1273,34 @@ class PLUGIN(Plugin):
     LIBS = pkgdict.get("host_exes_require_libs",[])
     if len(CPPS)+len(EXES)+len(LIBS)>0:
       print "BUILDING HOST TOOLS"
+      pkglib = None
       if CPPS:
-        print "HOST C++ COMPILING "+pkg
-        for x in CPPS:
-          if verbose: print 'Compiling host '+pkg+' object',x
-          dir,base = os.path.split(x)
-          HOST_CXX.compile_static_rtl(
-            xqt,
-            dir,
-            base,
-            dir,
-            include_path=["rtl","elk"],
-            macros=["FLX_STATIC_LINK"])
-        objs=[]
-        for x in CPPS:
-          objs.append(x+'_static')
-        HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
+        print "HOST C++ COMPILING", pkg
+        pkglib = "lib"+pkg+"_host_static"
+
+        HOST_CXX.build_static_rtl(xqt, CPPS, 'hostlib' + os.sep + pkglib,
+              include_paths=["rtl", "elk"],
+              macros=["FLX_STATIC_LINK"],
+              )
+
         for x in CPPS: 
-          f = x+"_static"+EXT_OBJ
-          if verbose: print "Removing",f
-          deletefile(f) # delete the .o files
+          f = x + EXT_STATIC_OBJ
+          if verbose: print "Removing", f
+          deletefile(f) # delete the object files
 
-      for src,bin in EXES:
-        dir,base = os.path.split(src)
-        HOST_CXX.compile_static_main(
-          xqt,
-          dir,
-          base,
-          dir,
-          include_path=["rtl","elk"],
-          macros=["FLX_STATIC_LINK"],
-          CFLAGS=CFLAGS)
-        HOST_CXX.link_static_program(
-          xqt,
-          [src+"_static"],
-          bin,
-          lib_path=[dir],
-          libs=["lib"+pkg+"_host_static"],
-          SFLAGS=SFLAGS)
+      kwds = {\
+          'include_paths': ["rtl", "elk"],
+          'macros': ["FLX_STATIC_LINK"],
+          'CFLAGS': CFLAGS,
+          'LDFLAGS': SFLAGS,
+          }
+         
+      if pkglib:
+        kwds['lib_paths'] = ['hostlib']
+        kwds['libs'] = [pkglib]
 
+      for src, bin in EXES:
+        apply(HOST_CXX.build_static_program, (xqt, src, bin), kwds)
 
 @select(tangler('mkplugins/build_testfile.py'))
 class PLUGIN(Plugin):
@@ -1340,11 +1338,7 @@ class PLUGIN(Plugin):
     try:
       if SUPPORT_DYNAMIC_LOADING:
         print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (dynamic)"
-        TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,
-          include_path=["rtl"],
-          optimise=optimise,
-          CFLAGS=CFLAGS+" "+cflags)
-  
+ 
         cmd = os.path.join(
             "bin", 
             "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
@@ -1352,26 +1346,21 @@ class PLUGIN(Plugin):
         if result: 
           print "flx_pkgconfig failed! Args=",cmd
           raise MakeError
+
         dlibs = string.strip(dlibs[0])
   
-        TARGET_CXX.link_felix_dll(
-          xqt,[basename+"_dynamic"],
-          basename,
-          lib_path=[SHLIB_DIR],
-          DFLAGS=DFLAGS+dlibs)
+        TARGET_CXX.build_shared_dll(
+            xqt,
+            basename,
+            include_paths=["rtl"],
+            optimise=optimise,
+            CFLAGS=CFLAGS+" "+cflags,
+            lib_paths=[SHLIB_DIR],
+            LDFLAGS=DFLAGS+dlibs)
   
       if SUPPORT_STATIC_LINKAGE:
         print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (static)"
-        TARGET_CXX.compile_felix_static(
-          xqt,
-          indir,
-          infile,
-          indir,
-          include_path=["rtl"],
-          optimise=optimise,
-          macros=["FLX_STATIC_LINK"],
-          CFLAGS=CFLAGS+" "+cflags)
-  
+
         cmd = os.path.join(
             "bin",
             "flx_pkgconfig -r --keeprightmost --path=config "
@@ -1395,17 +1384,21 @@ class PLUGIN(Plugin):
         slibs = string.strip(slibs[0])
         #print "slibs=",slibs
 
-        driver = driver + "_static"
+        driver = driver + EXT_STATIC_OBJ
         driver = os.path.join("rtl",driver)
-  
         #print 'static driver =',driver
-        TARGET_CXX.link_static_program(
+
+        TARGET_CXX.build_felix_static(
           xqt,
-          [driver,basename+"_static"],
           basename,
-          lib_path=["rtl"],
+          objects=[driver],
+          include_paths=["rtl"],
+          optimise=optimise,
+          macros=["FLX_STATIC_LINK"],
+          CFLAGS=CFLAGS+" "+cflags,
+          lib_paths=["rtl"],
           libs=[],
-          SFLAGS=SFLAGS+slibs)
+          LDFLAGS=SFLAGS+slibs)
       #print 'TESTFILE -- OK!',basename
     except MakeError:
       print 'TESTFILE -- ERROR!',basename
@@ -1565,7 +1558,7 @@ class PLUGIN(Plugin):
         "*.par","*.output","*.o","*.obj",
         "*.exp","*.lib",'*.resh','*.par',
         "*.cache","*.a","*.exp","*.exe",
-        "*.cmi","*.cmx","*.cmxa",
+        "*.cmo","*.cma","*.cmi","*.cmx","*.cmxa",
         ]:
         for f in glob.glob(os.path.join(d, e)):
           erasefile(f)
@@ -1616,70 +1609,46 @@ def build_target_rtl_dynamic():
   EXTRA_DFLAGS = pkgdict.get("dflags","")
   if CPPS:
     print " ++ "+pkg+" RTL (dynamic)"
-    for x in CPPS:
-      if verbose: print 'Compiling rtl object',x
-      dir,base = os.path.split(x)
-      TARGET_CXX.compile_shared_rtl(
-        xqt,
-        dir,
-        base,
-        dir,
-        include_path=['rtl'],
-        optimise=1,
-        macros=["BUILD_"+BUILD_MACRO],
-        CFLAGS=CFLAGS+EXTRA_CFLAGS)
-
-    # LINK RTL
-    objs=[]
-    for x in CPPS:
-      objs.append(x+'_dynamic')
+    
     flibs = pkgdict.get("lib_requires",[])
     needs_libs = []
     for i in flibs:
       needs_libs.append(i+"_dynamic")
+
     lib = pkgdict.get("provide_lib","lib"+pkg)
-    TARGET_CXX.link_shared_rtl(
-      xqt,objs,
-      os.path.join(SHLIB_DIR, lib+"_dynamic"),
-      lib_path=[SHLIB_DIR],
-      libs=EXTRA_LIBS+needs_libs,
-      DFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
+
+    HOST_CXX.build_shared_rtl(xqt, CPPS, 'rtl'+os.sep+lib+'_dynamic',
+        include_paths=['rtl'],
+        optimise=1,
+        macros=["BUILD_"+BUILD_MACRO],
+        CFLAGS=CFLAGS+EXTRA_CFLAGS,
+        lib_paths=[SHLIB_DIR],
+        libs=EXTRA_LIBS+needs_libs,
+        LDFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
+
     for x in CPPS: 
-      f = x+"_dynamic"+EXT_OBJ
+      f = x + EXT_SHARED_OBJ
       if verbose: print "Removing",f
       deletefile(f) # delete the .o files
-
 
 @select(tangler('mkplugins/build_target_rtl_static.py'))
 def build_target_rtl_static():
   CPPS = pkgdict.get("cpp_cpps",[])
   EXTRA_CFLAGS = pkgdict.get("cflags","")
+  lib = pkgdict.get("provide_lib","lib"+pkg)
   if CPPS:
     print " ++ "+pkg+" RTL (static)"
-    for x in CPPS:
-      if verbose: print 'Compiling rtl object',x
-      dir,base = os.path.split(x)
-      TARGET_CXX.compile_static_rtl(
-        xqt,dir,base,
-        dir,
-        include_path=['rtl'],
+
+    HOST_CXX.build_static_rtl(xqt, CPPS, "rtl"+os.sep+lib+"_static",
+        include_paths=["rtl"],
         macros=["FLX_STATIC_LINK"],
         optimise=1,
         CFLAGS=CFLAGS+EXTRA_CFLAGS)
 
-    objs=[]
-    for x in CPPS:
-      objs.append(x+'_static')
-    lib = pkgdict.get("provide_lib","lib"+pkg)
-    TARGET_CXX.link_static_archive(
-      xqt,
-      objs,
-      os.path.join("rtl", lib+"_static"))
-
     for x in CPPS: 
-      f = x+"_static"+EXT_OBJ
-      if verbose: print "Removing",f
-      deletefile(f) # delete the .o files
+      f = x + EXT_STATIC_OBJ
+      if verbose: print "Removing", f
+      deletefile(f) # delete the object files
 
 
 @select(tangler('mkplugins/build_felix_static_drivers.py'))
@@ -1688,15 +1657,17 @@ def build_felix_static_drivers():
   cflags = pkgdict.get("cflags","")
   if len(DRIVERS)>0:
     print "COMPILING DRIVERS (static)"
-    for mode,i,j,k in DRIVERS:
+
+    for mode, src, bin, macros in DRIVERS:
       if mode=='static':
-        if verbose: print 'static Compiling driver object',i
-        dir,base = os.path.split(i)
+        if verbose: print 'static Compiling driver object', src
         TARGET_CXX.compile_static_main(
-          xqt,dir,base,dir,
-          include_path=["rtl"],
-          macros=["FLX_STATIC_LINK"]+k,
-          optimise=1,CFLAGS=CFLAGS+cflags)
+          xqt,
+          src,
+          include_paths=["rtl"],
+          macros=["FLX_STATIC_LINK"]+macros,
+          optimise=1,
+          CFLAGS=CFLAGS+cflags)
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
 def build_felix_dynamic_drivers():
@@ -1709,27 +1680,27 @@ def build_felix_dynamic_drivers():
     libs = []
     for lib in LIBS:
       libs.append(lib+"_dynamic")
-    for mode,i,j,k in DRIVERS:
+
+    for mode, src, bin, macros in DRIVERS:
       # this is a gross HACK! Don't make dynamic versions
       # of drivers with extra macros, they're for static
       # link of driver without async support
       if mode=='dynamic':
-        if verbose: print 'dynamic Compiling driver object',i
-        dir,base = os.path.split(i)
-        TARGET_CXX.compile_shared_main(
-          xqt,dir,base,dir,
-          include_path=["rtl"],
-          optimise=1,
-          macros=k,
-          CFLAGS=CFLAGS+cflags)
-        TARGET_CXX.link_dynamic_program(
-          xqt,
-          [i+"_dynamic"],
-          j,
-          lib_path=[SHLIB_DIR],
-          libs=libs,
-          DFLAGS=DFLAGS+dflags)
-        deletefile(i+"_dynamic"+EXT_OBJ)
+        if verbose: print 'dynamic Compiling driver object', src
+
+        TARGET_CXX.build_shared_program(
+            xqt,
+            src,
+            bin,
+            include_paths=["rtl"],
+            optimise=1,
+            macros=macros,
+            CFLAGS=CFLAGS+cflags,
+            lib_paths=[SHLIB_DIR],
+            libs=libs,
+            LDFLAGS=DFLAGS+dflags)
+
+        deletefile(i+EXT_SHARED_OBJ)
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 def build_target_cpp_tools():
@@ -1741,23 +1712,20 @@ def build_target_cpp_tools():
     libs = []
     for lib in LIBS: libs.append(lib+"_static")
     for src,bin in EXES:
-      dir,base = os.path.split(src)
-      TARGET_CXX.compile_static_main(
+      dir = os.path.dirname(src)
+      TARGET_CXX.build_static_main(
         xqt,
+        src,
         dir,
-        base,
-        dir,
-        include_path=["rtl"],
-        macros=["FLX_STATIC_LINK"],
-        CFLAGS=CFLAGS)
-      TARGET_CXX.link_static_program(
-        xqt,
-        [src+"_static"],
         bin,
-        lib_path=[dir],
+        include_paths=["rtl"],
+        macros=["FLX_STATIC_LINK"],
+        CFLAGS=CFLAGS,
+        lib_paths=[dir],
         libs=libs,
-        SFLAGS=SFLAGS+esflags)
-      deletefile(src+"_static"+EXT_OBJ)
+        LDFLAGS=SFLAGS+esflags)
+
+      deletefile(src + EXT_STATIC_OBJ)
 
 @select(tangler('mkplugins/build_target_felix_tools.py'))
 # TARGET TOOLS : FELIX
@@ -1770,23 +1738,18 @@ def build_target_felix_tools():
     for lib in LIBS: libs.append(lib+"_static")
     fsflags = pkgdict.get("felix_requires_linkflags","")
     for src,exe in FLXS:
-      dir,base = os.path.split(src)
       flxg("-Ilib "+src,"crap")
-      TARGET_CXX.compile_felix_static(
+      TARGET_CXX.build_felix_static(
         xqt,
-        dir,
-        base,
-        dir,
-        include_path=['rtl'],
-        macros=["FLX_STATIC_LINK"],
-        CFLAGS=CFLAGS)
-      TARGET_CXX.link_static_program(
-        xqt,
-        [os.path.join('rtl', 'flx_run_static'),src+"_static"],
+        src,
         exe,
-        lib_path=['rtl'],
+        objects=['rtl' + os.sep + 'flx_run' + EXT_STATIC_OBJ],
+        include_paths=['rtl'],
+        macros=["FLX_STATIC_LINK"],
+        CFLAGS=CFLAGS,
+        lib_paths=['rtl'],
         libs=libs,
-        SFLAGS=SFLAGS+fsflags)
+        LDFLAGS=SFLAGS+fsflags)
 
 @select(tangler('mkplugins/performance.py'))
 SPECIAL_TESTS = [
@@ -2173,7 +2136,7 @@ def make_manifest(pkg):
   deps = []
   f = open(fname)
   for line in f.readlines():
-    m = re.match(manifest_src_re,line)
+    m = manifest_src_re.match(line)
     if m:
       g = m.group(1)
       print "Source File: "+g
@@ -2594,7 +2557,7 @@ for o, a in opts:
     print help_string % (all_phases)
     sys.exit(0)
   elif o in ['-v', '--verbose']:
-    verbose += 1
+    verbose = verbose + 1
   elif o in ['-q', '--quiet']:
     verbose = 0
   elif o in ['-D']:
@@ -2704,7 +2667,7 @@ for f in glob.glob(os.path.join("mkplugins", "*.py")):
 
   try:
     execfile(f)
-    if "PLUGIN" in globals():
+    if globals().has_key("PLUGIN"):
       plugin = PLUGIN()
       schedule(plugin)
       plugins[plugin.name] = plugin
@@ -3892,7 +3855,7 @@ ENDLOCAL
 @tangle("CYGWIN="+str(CYGWIN))
 @tangle("WIN32="+str(WIN32))
 @tangle("MACOSX="+str(MACOSX))
-@tangle("HAVE_GXX="+str(HAVE_GXX))
+@tangle("HAVE_GNU="+str(HAVE_GNU))
 @tangle("HAVE_MSVC="+str(HAVE_MSVC))
 @tangle('CCOBJ_DLLIB="'+CCOBJ_DYNAMIC_FLX+'"')
 @tangle('CCLINK_DLLIB="'+CCLINK_DYNAMIC_FLX+'"')
@@ -3900,7 +3863,8 @@ ENDLOCAL
 @tangle('CCLINK_STATIC="'+CCLINK_STATIC+'"')
 @tangle('VERSION="'+flx_version+'"')
 @tangle('EXT_LIB="'+EXT_LIB+'"')
-@tangle('EXT_OBJ="'+EXT_OBJ+'"')
+@tangle('EXT_STATIC_OBJ="'+EXT_STATIC_OBJ+'"')
+@tangle('EXT_SHARED_OBJ="'+EXT_SHARED_OBJ+'"')
 @tangle('EXT_EXE="'+EXT_EXE+'"')
 @tangle('EXT_SHLIB="'+EXT_SHLIB+'"')
 @tangle('SPEC_OBJ_FILENAME="'+SPEC_OBJ_FILENAME+'"')

@@ -1,6 +1,14 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.19  2006/06/11 19:38:14  idadesub
+added support a c compiler as well
+the builders have been massively refactored to reduce code duplication
+renamed some functions and arguments to be clearer on intent
+eliminated empty "except:" clauses. It's possible I'm not catching all the
+right exceptions though.
+fixed a couple bugs
+
 Revision 1.18  2006/06/09 19:06:14  idadesub
 modified to use flx_arun instead of the non-existing flx_sdl_run
 
@@ -5674,4 +5682,24 @@ proc Drawing()
   SDL_GL_SwapBuffers( );
 }
 
+@h = tangler("tmp/sdl_opengl.cxx",'c++')
+@select(h)
+// for testing whether we have SDL_opengl
+#include <SDL.h>            // overrides main
+#include <SDL_opengl.h>
 
+int
+main(int argc, char** argv)
+{
+    if(SDL_Init(SDL_INIT_VIDEO) == -1
+        || SDL_SetVideoMode(640, 480, 32, SDL_ANYFORMAT | SDL_OPENGL) == NULL)
+    {
+        return 1;       // fail
+    }
+
+    // random gl stuff to make sure we link
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    return 0;           // pass
+}
