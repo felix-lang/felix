@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.187  2006/06/12 17:15:55  idadesub
+should be catching an IndexError not an EnvironmentError
+
 Revision 1.186  2006/06/11 19:38:14  idadesub
 added support a c compiler as well
 the builders have been massively refactored to reduce code duplication
@@ -529,7 +532,7 @@ def pne(f,s):
 def gs(x):
   r,o = get_stdout(x)
   try: o = string.strip(o[0])
-  except EnvironmentError: pass
+  except IndexError: pass
   return r,o
 
 
