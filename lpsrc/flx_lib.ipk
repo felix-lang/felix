@@ -2,6 +2,9 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.164  2006/06/14 04:35:14  idadesub
+allow for more interesting find/mem testing
+
 Revision 1.163  2006/06/14 03:00:20  skaller
 Change std::exception to std::runtime_error in standard library
 fail functions.
@@ -1834,7 +1837,7 @@ module List
     ;
   }
 
-  fun mem[T] (eq:T * T -> bool) (x:list[T]) (e:T) : bool =>
+  fun mem[T, U] (eq:T * U -> bool) (x:list[T]) (e:U) : bool =>
     match x with 
     | Empty => false
     | Cons (?h,?t) => if eq (h, e) then true else mem eq t e endif
@@ -1848,7 +1851,7 @@ module List
     endmatch
   ;
 
-  fun find[T] (eq:T * T -> bool) (x:list[T]) (e:T) : opt[T] =>
+  fun find[T, U] (eq:T * U -> bool) (x:list[T]) (e:U) : opt[T] =>
     match x with
       | Empty => None[T]
       | Cons (?h,?t) => if eq(h, e) then Some h else find eq t e endif
