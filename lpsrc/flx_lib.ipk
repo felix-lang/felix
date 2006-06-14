@@ -2,6 +2,10 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.163  2006/06/14 03:00:20  skaller
+Change std::exception to std::runtime_error in standard library
+fail functions.
+
 Revision 1.162  2006/05/25 17:29:41  skaller
 Misc
 
@@ -1488,13 +1492,13 @@ module Control
   }
 
   publish 'abnormal termination with message'
-  proc fail:string = 'throw std::exception ($1);';
+  proc fail:string = 'throw std::runtime_error($1);';
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:1->t = 'throw std::exception (""),*(?1*)0';
+  fun fail_fun[t]:1->t = 'throw std::runtime_error(""),*(?1*)0';
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
+  fun fail_fun[t]:string->t = 'throw std::runtime_error($1),*(?1*)0';
 
   publish "Felix procedural continuation type"
   _gc_pointer type cont = "flx::rtl::con_t*";
