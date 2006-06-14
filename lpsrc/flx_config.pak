@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.188  2006/06/14 08:57:30  idadesub
+now will reuse previous builders if we aren't cross compiling, resulting in
+reducing the configure time by 2/3rds
+
 Revision 1.187  2006/06/12 17:15:55  idadesub
 should be catching an IndexError not an EnvironmentError
 
@@ -1047,9 +1051,17 @@ if "host" in PHASES:
       model=host_model,
       build=build_model)
 
-  HOST_CC.check_options(xqt,get_stdout)
-  HOST_CC.report_config()
-  HOST_CC.save_options("config/host_cc.py")
+  # check if we can just copy the build compiler
+  if \
+      HOST_CC.options.COM == BUILD_CC.options.COM and \
+      HOST_CC.options.model == BUILD_CC.options.model and \
+      HOST_CC.options.build == BUILD_CC.options.build:
+    print 'using the BUILD_CC options for the HOST_CC'
+    HOST_CC.load_options("config"+os.sep+"build_cc.py")
+  else:
+    HOST_CC.check_options(xqt,get_stdout)
+    HOST_CC.report_config()
+  HOST_CC.save_options("config"+os.sep+"host_cc.py")
 
   HOST_CXX.set_options(
       COM=HOSTCXX,
@@ -1059,9 +1071,17 @@ if "host" in PHASES:
       model=host_model,
       build=build_model)
 
-  HOST_CXX.check_options(xqt,get_stdout)
-  HOST_CXX.report_config()
-  HOST_CXX.save_options("config/host_cxx.py")
+  # check if we can just copy the build compiler
+  if \
+      HOST_CXX.options.COM == BUILD_CXX.options.COM and \
+      HOST_CXX.options.model == BUILD_CXX.options.model and \
+      HOST_CXX.options.build == BUILD_CXX.options.build:
+    print 'using the BUILD_CXX options for the HOST_CXX'
+    HOST_CXX.load_options("config"+os.sep+"build_cxx.py")
+  else:
+    HOST_CXX.check_options(xqt,get_stdout)
+    HOST_CXX.report_config()
+  HOST_CXX.save_options("config"+os.sep+"host_cxx.py")
 
   host_model = HOST_CXX.options.model
   try:
@@ -1152,9 +1172,23 @@ if "target" in PHASES:
       model=target_model,
       build=build_model)
 
-  TARGET_CC.check_options(xqt,get_stdout)
-  TARGET_CC.report_config()
-  TARGET_CC.save_options("config/target_cc.py")
+  # check if we can just copy the build compiler
+  if \
+      TARGET_CC.options.COM == BUILD_CC.options.COM and \
+      TARGET_CC.options.model == BUILD_CC.options.model and \
+      TARGET_CC.options.build == BUILD_CC.options.build:
+    print 'using the BUILD_CC options for the TARGET_CC'
+    TARGET_CC.load_options("config"+os.sep+"build_cc.py")
+  elif \
+      TARGET_CC.options.COM == HOST_CC.options.COM and \
+      TARGET_CC.options.model == HOST_CC.options.model and \
+      TARGET_CC.options.build == HOST_CC.options.build:
+    print 'using the HOST_CC options for the TARGET_CC'
+    TARGET_CC.load_options("config"+os.sep+"host_cc.py")
+  else:
+    TARGET_CC.check_options(xqt,get_stdout)
+    TARGET_CC.report_config()
+  TARGET_CC.save_options("config"+os.sep+"target_cc.py")
 
   TARGET_CXX.set_options(
       COM=TARGETCXX,
@@ -1164,9 +1198,24 @@ if "target" in PHASES:
       model=target_model,
       build=build_model)
 
-  TARGET_CXX.check_options(xqt,get_stdout)
-  TARGET_CXX.report_config()
-  TARGET_CXX.save_options("config/target_cxx.py")
+  # check if we can just copy the build compiler
+  if \
+      TARGET_CXX.options.COM == BUILD_CXX.options.COM and \
+      TARGET_CXX.options.model == BUILD_CXX.options.model and \
+      TARGET_CXX.options.build == BUILD_CXX.options.build:
+    print 'using the BUILD_CXX options for the TARGET_CXX'
+    TARGET_CXX.load_options("config"+os.sep+"build_cxx.py")
+  elif \
+      TARGET_CXX.options.COM == HOST_CXX.options.COM and \
+      TARGET_CXX.options.model == HOST_CXX.options.model and \
+      TARGET_CXX.options.build == HOST_CXX.options.build:
+    print 'using the HOST_CXX options for the TARGET_CXX'
+    TARGET_CXX.load_options("config"+os.sep+"host_cxx.py")
+     
+  else:
+    TARGET_CXX.check_options(xqt,get_stdout)
+    TARGET_CXX.report_config()
+  TARGET_CXX.save_options("config"+os.sep+"target_cxx.py")
 
   if target_model in ["win32","win64"]:
     FLX_SOCKLEN_T = "int"
