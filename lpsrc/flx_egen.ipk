@@ -842,14 +842,23 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       *)
       let ts = map tsub ts in
       let ct = reduce_type (beta_reduce syms [] (tsubst vs ts ct)) in
-      let ptrmap = shape_of bbdfns tn ct in 
       let _,t = a in
       let t = reduce_type (beta_reduce syms [] (tsubst vs ts t)) in
       begin match t with
       | `BTYP_tuple [] ->
         ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
+
+      (* function types are already pointers .. any use of this
+         should do a clone ..
+      *)
+      | `BTYP_function _ ->
+        ce_atom (
+          "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
+        )
+
       | _ ->
         let ctt = tn ct in
+        let ptrmap = shape_of bbdfns tn ct in 
         ce_atom (
           "_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
           ctt ^"("^ ge a ^"))"

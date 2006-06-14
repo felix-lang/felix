@@ -528,6 +528,8 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     print_endline ("allocable type --> " ^ string_of_btypecode syms.dfns btyp);
     *)
     match unfold syms.dfns btyp with
+    | `BTYP_function _ -> ()
+
     | `BTYP_tuple args ->
       let name = cpp_type_classname syms btyp in
       let offsets = get_offsets syms bbdfns btyp in

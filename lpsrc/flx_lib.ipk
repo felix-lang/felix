@@ -2,6 +2,9 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.165  2006/06/14 14:47:35  skaller
+Make function/procedure pointer which are constructor arguments work.
+
 Revision 1.164  2006/06/14 04:35:14  idadesub
 allow for more interesting find/mem testing
 
@@ -428,6 +431,7 @@ using namespace std;
 header flx_ioutil = '#include "flx_ioutil.hpp"';
 header flx_dynlink = '#include "flx_dynlink.hpp"';
 header flx_i18n = '#include "flx_i18n.hpp"';
+header stdexcept = '#include <stdexcept>';
 
 // note -- this code is templated, we include
 // it in the header file because that's where
@@ -1495,13 +1499,13 @@ module Control
   }
 
   publish 'abnormal termination with message'
-  proc fail:string = 'throw std::runtime_error($1);';
+  proc fail:string = 'throw std::runtime_error($1);' requires stdexcept;
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:1->t = 'throw std::runtime_error(""),*(?1*)0';
+  fun fail_fun[t]:1->t = 'throw std::runtime_error(""),*(?1*)0' requires stdexcept;
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:string->t = 'throw std::runtime_error($1),*(?1*)0';
+  fun fail_fun[t]:string->t = 'throw std::runtime_error($1),*(?1*)0' requires stdexcept;
 
   publish "Felix procedural continuation type"
   _gc_pointer type cont = "flx::rtl::con_t*";
