@@ -542,16 +542,12 @@ int main(int argc, char** argv) {
       ('UCHAR', 'unsigned char'),
       ('CHAR', 'char'),
       ('SHORT', 'short'),
-      ('SSHORT', 'signed short'),
       ('USHORT', 'unsigned short'),
       ('INT', 'int'),
-      ('SINT', 'signed int'),
       ('UINT', 'unsigned int'),
       ('LONG', 'long'), 
-      ('SLONG', 'signed long'),
       ('ULONG', 'unsigned long'),
       ('LONGLONG', 'long long'),
-      ('SLONGLONG', 'signed long long'),
       ('ULONGLONG', 'unsigned long long'),
       ]
 
