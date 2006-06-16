@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.190  2006/06/16 07:29:44  idadesub
+forgot to make sure the right use was being set
+
 Revision 1.189  2006/06/16 05:23:57  idadesub
 removed the boot files so that they can be used to kickstart the build
 
@@ -1054,6 +1057,7 @@ if "host" in PHASES:
       HOST_CC.options.build == BUILD_CC.options.build:
     print 'using the BUILD_CC options for the HOST_CC'
     HOST_CC.load_options("config"+os.sep+"build_cc.py")
+    HOST_CC.options.use = "host"
   else:
     HOST_CC.check_options(xqt,get_stdout)
     HOST_CC.report_config()
@@ -1074,6 +1078,7 @@ if "host" in PHASES:
       HOST_CXX.options.build == BUILD_CXX.options.build:
     print 'using the BUILD_CXX options for the HOST_CXX'
     HOST_CXX.load_options("config"+os.sep+"build_cxx.py")
+    HOST_CXX.options.use = "host"
   else:
     HOST_CXX.check_options(xqt,get_stdout)
     HOST_CXX.report_config()
@@ -1175,6 +1180,7 @@ if "target" in PHASES:
       TARGET_CC.options.build == BUILD_CC.options.build:
     print 'using the BUILD_CC options for the TARGET_CC'
     TARGET_CC.load_options("config"+os.sep+"build_cc.py")
+    TARGET_CC.options.use = "host"
   elif \
       TARGET_CC.options.COM == HOST_CC.options.COM and \
       TARGET_CC.options.model == HOST_CC.options.model and \
@@ -1201,6 +1207,7 @@ if "target" in PHASES:
       TARGET_CXX.options.build == BUILD_CXX.options.build:
     print 'using the BUILD_CXX options for the TARGET_CXX'
     TARGET_CXX.load_options("config"+os.sep+"build_cxx.py")
+    TARGET_CXX.options.use = "host"
   elif \
       TARGET_CXX.options.COM == HOST_CXX.options.COM and \
       TARGET_CXX.options.model == HOST_CXX.options.model and \
