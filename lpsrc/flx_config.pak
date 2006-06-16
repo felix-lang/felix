@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.189  2006/06/16 05:23:57  idadesub
+removed the boot files so that they can be used to kickstart the build
+
 Revision 1.188  2006/06/14 08:57:30  idadesub
 now will reuse previous builders if we aren't cross compiling, resulting in
 reducing the configure time by 2/3rds
@@ -132,13 +135,6 @@ to allow subsequent optimisation of rebuilding.
 
 Revision 1.161  2006/03/08 22:30:49  skaller
 Add requires package "flx_pthread" to module Pthread
-
-@head(1,'boot')
-A shell script to extract the configure script.
-@select(tangler('boot.sh'))
-python interscript/bin/iscr.py lpsrc/flx_config.pak
-@select(tangler('boot.bat'))
-python interscript\bin\iscr.py lpsrc\flx_config.pak
 
 @head(1,'configure')
 A shell script to run the config step.
