@@ -1,11 +1,9 @@
+@execfile('config'+os.sep+'config.py')
 @head(1,'Sourceforge web site top level')
 These HTML pages are manually prepared.
 The output lives in the subdirectory www,
 but the files must be at the top level on the
 sourceforge site to link to everything properly.
-@f = open("VERSION")
-@flx_version = string.strip(f.readline())
-@f.close()
 @select(tangler('www/licence.html','data'))
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
