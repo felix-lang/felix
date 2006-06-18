@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.61  2006/06/18 23:58:53  idadesub
+fix typo in build issue for flx_dynamic_drivers
+modified the pkg_loader to be a full plugin so that if you need to
+extract before you build, mk won't cause problems for you
+
 Revision 1.60  2006/06/11 19:38:14  idadesub
 added support a c compiler as well
 the builders have been massively refactored to reduce code duplication
@@ -1700,7 +1705,7 @@ def build_felix_dynamic_drivers():
             libs=libs,
             LDFLAGS=DFLAGS+dflags)
 
-        deletefile(i+EXT_SHARED_OBJ)
+        deletefile(src + EXT_SHARED_OBJ)
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 def build_target_cpp_tools():
@@ -2345,48 +2350,51 @@ class PLUGIN(Plugin):
         enstamp(stamp)
  
 @select(tangler('mkplugins/pkg_loader.py'))
-# LOAD PACKAGES
-raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
-unsorted_pkgs = []
-for i in raw_pkgs:
-  j = os.path.basename(os.path.splitext(i)[0])
-  unsorted_pkgs.append(j)
+class PLUGIN(Plugin):
+  """LOAD PACKAGES"""
+  def __init__(self):
+    Plugin.__init__(self, 'pkg_loader', 
+        priority=0)
 
-pkgd = {}
-for pkg in unsorted_pkgs:
-  class X:
-    execfile(os.path.join("spkgs", pkg+".py"))
-  d = {}
-  for k in X.__dict__.keys():
-    if k[0] != '_':
-      v = X.__dict__[k]
-      d[k]=v
-  pkgd[pkg]=d
+  def __call__(self):
+    global raw_pkgs, unsorted_pkgs, pkgd, pkgs, pkgreqs, pkgdeps
 
-pkgs = []
-pkgreqs = {}
+    raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
+    unsorted_pkgs = []
+    pkgd = {}
+    pkgs = []
+    pkgreqs = {}
 
-def addpkg_nr(pkg):
-  if pkg not in pkgs:
-    pkgs.append(pkg)
-
-def addpkg_r(pkg):
-  if pkg not in pkgs:
-    if pkg not in pkgd.keys():
-      print "Unknown package",pkg
-      print "Please extract!"
-      sys.exit(1)
-    else:
-      reqs = pkgd[pkg].get('pkg_requires',[])
-      pkgreqs[pkg]=reqs
-      for i in reqs:
-        addpkg_r(i)
-      addpkg_nr(pkg)
-
-for pkg in unsorted_pkgs:
-  addpkg_r(pkg)
-
-pkgdeps = invert(pkgreqs)
+    for i in raw_pkgs:
+      pkg = os.path.basename(os.path.splitext(i)[0])
+      unsorted_pkgs.append(pkg)
+   
+      class X:
+        execfile(os.path.join("spkgs", pkg+".py"))
+      d = {}
+      for k in X.__dict__.keys():
+        if k[0] != '_':
+          v = X.__dict__[k]
+          d[k]=v
+      pkgd[pkg]=d
+       
+    def addpkg_r(pkg):
+      if pkg not in pkgs:
+        if pkg not in pkgd.keys():
+          print "Unknown package",pkg
+          print "Please extract!"
+          sys.exit(1)
+        else:
+          reqs = pkgd[pkg].get('pkg_requires',[])
+          pkgreqs[pkg]=reqs
+          for i in reqs:
+            addpkg_r(i)
+          pkgs.append(pkg)
+    
+    for pkg in unsorted_pkgs:
+      addpkg_r(pkg)
+    
+    pkgdeps = invert(pkgreqs)
 
 # PRINT PACKAGE DEPENDENCY INFORMATION
 if "help" in options:
