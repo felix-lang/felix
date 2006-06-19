@@ -1,6 +1,10 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.20  2006/06/19 03:10:50  idadesub
+making sure that the sdl package is compiled before sdl_driver, as
+sdl_driver needs the libraries the sdl package produces
+
 Revision 1.19  2006/06/11 19:38:14  idadesub
 added support a c compiler as well
 the builders have been massively refactored to reduce code duplication
@@ -322,7 +326,7 @@ if HAVE_SDL:
 
   drivers = DRIVERS
   drivers_require_libs = DRLIBS
-  pkg_requires = ['flx_rtl','flx_async','faio','demux','flx_pthread']
+  pkg_requires = ['flx_rtl','flx_async','faio','demux','flx_pthread','sdl']
   cflags = SDL_CFLAGS
   dflags = SDL_LIBS
   sflags = SDL_STATIC_LIBS
