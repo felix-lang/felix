@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.194  2006/06/19 06:55:31  idadesub
+missed a quote
+
 Revision 1.193  2006/06/19 03:26:32  idadesub
 adding lookups for freebsd, netbsd, and openbsd to the archmap
 
@@ -681,7 +684,7 @@ archmap = {
   "darwin":"osx",
   "freebsd":"bsd",
   "netbsd":"bsd",
-  "openbsd":bsd",
+  "openbsd":"bsd",
   "osx":"osx",
   "detect":"detect"
   }
