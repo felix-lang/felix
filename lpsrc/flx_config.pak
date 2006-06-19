@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.193  2006/06/19 03:26:32  idadesub
+adding lookups for freebsd, netbsd, and openbsd to the archmap
+
 Revision 1.192  2006/06/19 02:07:57  idadesub
 initial support for x86 solaris
 
@@ -676,6 +679,9 @@ archmap = {
   "win32":"win32",
   "win64":"win64",
   "darwin":"osx",
+  "freebsd":"bsd",
+  "netbsd":"bsd",
+  "openbsd":bsd",
   "osx":"osx",
   "detect":"detect"
   }
