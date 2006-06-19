@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.192  2006/06/19 02:07:57  idadesub
+initial support for x86 solaris
+
 Revision 1.191  2006/06/16 17:11:54  idadesub
 minor change to make sure configure is executable
 
@@ -663,7 +666,8 @@ archmap = {
   "posix":"posix",
   "linux":"linux",
   "gnu/linux":"linux",
-  "solaris":"posix",
+  "solaris":"solaris",
+  "sunos":"solaris",
   "cygwin":"cygwin",
   "nocygwin":"nocygwin",
   "mingw":"mingw",

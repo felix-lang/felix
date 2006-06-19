@@ -590,8 +590,10 @@ int main(int argc, char** argv) {
 
 
   def find_alias(self, shell,get_stdout, t1, t2=None, header=''):
-    sizesign = self.get_type_size_sign(shell, get_stdout, t1, t2, header)
-    return self.options.sizesign2type[sizesign]
+    size, sign = self.get_type_size_sign(shell, get_stdout, t1, t2, header)
+    if size is None:
+      return None
+    return self.options.sizesign2type[size, sign]
 
 
   def detect_aliases(self, shell, get_stdout):
@@ -600,7 +602,9 @@ int main(int argc, char** argv) {
 
     for m1, t1 in self.native_int_types:
       for m2, t2 in self.native_int_types:
-        opt.arith_conv[(t1, t2)] = self.find_alias(shell, get_stdout, t1, t2)
+        alias = self.find_alias(shell, get_stdout, t1, t2)
+        if alias is not None:
+          opt.arith_conv[(t1, t2)] = alias
 
     for t in ['ptrdiff_t', 'size_t']:
       alias = self.find_alias(shell, get_stdout, t)
