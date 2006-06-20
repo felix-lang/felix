@@ -12,6 +12,15 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.195  2006/06/20 14:35:56  rfistman
+changed archmap exception catch to all, instead of EnvironmentError,
+ which wasn't being thrown by bad dict lookup which should => detect.
+ still something wrong there, as cygwin is known, shouldn't need to
+ be detected.
+
+fixed optimisation/cut'n'paste error in which TARGET_* stuff got
+  rebaptised as HOST_*
+
 Revision 1.194  2006/06/19 06:55:31  idadesub
 missed a quote
 
@@ -706,7 +715,10 @@ try:
   output = string.lower(string.strip(output[0]))
   build_model = archmap[output]
   print "Build platform: " + build_model
-except EnvironmentError:
+# RF: EnvironmentError was not catching the the failed archmap[] lookup,
+# halting the configure. What's the EnvironmentError stuff for, Erick? 
+# except EnvironmentError:
+except:
   print "uname -s and Python returns unknown OS type, assuming 'detect'"
   build_model = "detect"
 
@@ -1196,7 +1208,7 @@ if "target" in PHASES:
       TARGET_CC.options.build == BUILD_CC.options.build:
     print 'using the BUILD_CC options for the TARGET_CC'
     TARGET_CC.load_options("config"+os.sep+"build_cc.py")
-    TARGET_CC.options.use = "host"
+    TARGET_CC.options.use = "target"
   elif \
       TARGET_CC.options.COM == HOST_CC.options.COM and \
       TARGET_CC.options.model == HOST_CC.options.model and \
@@ -1223,13 +1235,14 @@ if "target" in PHASES:
       TARGET_CXX.options.build == BUILD_CXX.options.build:
     print 'using the BUILD_CXX options for the TARGET_CXX'
     TARGET_CXX.load_options("config"+os.sep+"build_cxx.py")
-    TARGET_CXX.options.use = "host"
+    TARGET_CXX.options.use = "target"
   elif \
       TARGET_CXX.options.COM == HOST_CXX.options.COM and \
       TARGET_CXX.options.model == HOST_CXX.options.model and \
       TARGET_CXX.options.build == HOST_CXX.options.build:
     print 'using the HOST_CXX options for the TARGET_CXX'
     TARGET_CXX.load_options("config"+os.sep+"host_cxx.py")
+    TARGET_CXX.options.use = "target"
      
   else:
     TARGET_CXX.check_options(xqt,get_stdout)
