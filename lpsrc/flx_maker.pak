@@ -6,6 +6,15 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.62  2006/06/20 14:33:16  rfistman
+changed build_target_rtl_dynamic/static to use TARGET configuration
+  instead of HOST.  to test non trivial build configurations on the mac,
+  you can often choose between different g++ versions with --targetcc=gcc2,
+  gcc3, gcc4, etc
+
+changed build_rtl_dynamic to use the config output dir instead of "rtl".
+  this unbreaks all the pc builds, which like their DLLs to be in PATH.
+
 Revision 1.61  2006/06/18 23:58:53  idadesub
 fix typo in build issue for flx_dynamic_drivers
 modified the pkg_loader to be a full plugin so that if you need to
@@ -1622,7 +1631,10 @@ def build_target_rtl_dynamic():
 
     lib = pkgdict.get("provide_lib","lib"+pkg)
 
-    HOST_CXX.build_shared_rtl(xqt, CPPS, 'rtl'+os.sep+lib+'_dynamic',
+    # RF: THIS SHOULD BE TARGET_CXX AND THE OUTPUT DIR SHOULD BE THAT OF
+    # THE TARGET.
+    TARGET_CXX.build_shared_rtl(xqt, CPPS,
+        TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic',
         include_paths=['rtl'],
         optimise=1,
         macros=["BUILD_"+BUILD_MACRO],
@@ -1644,7 +1656,7 @@ def build_target_rtl_static():
   if CPPS:
     print " ++ "+pkg+" RTL (static)"
 
-    HOST_CXX.build_static_rtl(xqt, CPPS, "rtl"+os.sep+lib+"_static",
+    TARGET_CXX.build_static_rtl(xqt, CPPS, "rtl"+os.sep+lib+"_static",
         include_paths=["rtl"],
         macros=["FLX_STATIC_LINK"],
         optimise=1,
