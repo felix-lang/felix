@@ -6,7 +6,13 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.63  2006/06/22 13:32:55  skaller
+Put package loader back into flx_maker as inline code
+to avoid bootstrapping problem.
+
 Revision 1.62  2006/06/20 14:33:16  rfistman
+
+
 changed build_target_rtl_dynamic/static to use TARGET configuration
   instead of HOST.  to test non trivial build configurations on the mac,
   you can often choose between different g++ versions with --targetcc=gcc2,
@@ -2361,67 +2367,6 @@ class PLUGIN(Plugin):
         plugins['run_completion_tests']()
         enstamp(stamp)
  
-@select(tangler('mkplugins/pkg_loader.py'))
-class PLUGIN(Plugin):
-  """LOAD PACKAGES"""
-  def __init__(self):
-    Plugin.__init__(self, 'pkg_loader', 
-        priority=0)
-
-  def __call__(self):
-    global raw_pkgs, unsorted_pkgs, pkgd, pkgs, pkgreqs, pkgdeps
-
-    raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
-    unsorted_pkgs = []
-    pkgd = {}
-    pkgs = []
-    pkgreqs = {}
-
-    for i in raw_pkgs:
-      pkg = os.path.basename(os.path.splitext(i)[0])
-      unsorted_pkgs.append(pkg)
-   
-      class X:
-        execfile(os.path.join("spkgs", pkg+".py"))
-      d = {}
-      for k in X.__dict__.keys():
-        if k[0] != '_':
-          v = X.__dict__[k]
-          d[k]=v
-      pkgd[pkg]=d
-       
-    def addpkg_r(pkg):
-      if pkg not in pkgs:
-        if pkg not in pkgd.keys():
-          print "Unknown package",pkg
-          print "Please extract!"
-          sys.exit(1)
-        else:
-          reqs = pkgd[pkg].get('pkg_requires',[])
-          pkgreqs[pkg]=reqs
-          for i in reqs:
-            addpkg_r(i)
-          pkgs.append(pkg)
-    
-    for pkg in unsorted_pkgs:
-      addpkg_r(pkg)
-    
-    pkgdeps = invert(pkgreqs)
-
-# PRINT PACKAGE DEPENDENCY INFORMATION
-if "help" in options:
-  print "REQS: "
-  ks=pkgreqs.keys()
-  ks.sort()
-  for k in ks:
-    print "  ",k,pkgreqs[k]
-   
-  print "DEPS: "
-  ks = pkgdeps.keys()
-  ks.sort()
-  for k in ks:
-    print "  ",k,pkgdeps[k]
-
 
 @select(tangler('flxbuild/pluginutil.py'))
 class Plugin:
@@ -2669,6 +2614,58 @@ if FLX_LPARCHIVE == os.curdir:
   print "Current Directory"
 else:
   print FLX_LPARCHIVE
+
+raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
+unsorted_pkgs = []
+pkgd = {}
+pkgs = []
+pkgreqs = {}
+
+for i in raw_pkgs:
+  pkg = os.path.basename(os.path.splitext(i)[0])
+  unsorted_pkgs.append(pkg)
+
+  class X:
+    execfile(os.path.join("spkgs", pkg+".py"))
+  d = {}
+  for k in X.__dict__.keys():
+    if k[0] != '_':
+      v = X.__dict__[k]
+      d[k]=v
+  pkgd[pkg]=d
+   
+def addpkg_r(pkg):
+  if pkg not in pkgs:
+    if pkg not in pkgd.keys():
+      print "Unknown package",pkg
+      print "Please extract!"
+      sys.exit(1)
+    else:
+      reqs = pkgd[pkg].get('pkg_requires',[])
+      pkgreqs[pkg]=reqs
+      for i in reqs:
+        addpkg_r(i)
+      pkgs.append(pkg)
+
+for pkg in unsorted_pkgs:
+  addpkg_r(pkg)
+
+pkgdeps = invert(pkgreqs)
+
+# PRINT PACKAGE DEPENDENCY INFORMATION
+if "help" in options:
+  print "REQS: "
+  ks=pkgreqs.keys()
+  ks.sort()
+  for k in ks:
+    print "  ",k,pkgreqs[k]
+   
+  print "DEPS: "
+  ks = pkgdeps.keys()
+  ks.sort()
+  for k in ks:
+    print "  ",k,pkgdeps[k]
+
 
 # -------------------------------------------------
 # LOAD PLUGINS
