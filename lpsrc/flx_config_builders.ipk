@@ -54,6 +54,7 @@ class c_cxx_base(compiler_base):
       ):
     opt = self.options
 
+    # RF: this looks like in most cases it replaces None with None...
     if COM is None:           COM = self.DEFAULT_COM
     if AR is None:            AR = self.DEFAULT_AR
     if RANLIB is None:        RANLIB = self.DEFAULT_RANLIB
@@ -868,10 +869,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_ISNAN_IN_MATH = 1
+      self.options.HAVE_ISNAN_IN_CMATH = 1
       print "Isnan found in <math.h>"
     except EnvironmentError:
-      self.options.HAVE_ISNAN_IN_MATH = 0
+      self.options.HAVE_ISNAN_IN_CMATH = 0
 
     # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
     try:
@@ -1038,6 +1039,7 @@ int main(int argc, char** argv) {
 
 
   def detect_cmath_isnan(self, shell):
+    self.options.HAVE_ISNAN_IN_CMATH = 0
     # find if we have BSD isnan in <cmath> (NAUGHTY!)
     try:
       self.build_string_program(shell, r"""
@@ -1606,7 +1608,19 @@ main(int argc, char** argv) {
     self.detect_computed_gotos(shell, get_stdout)
     self.detect_pthreads(shell, get_stdout)
     self.detect_sockets(shell, get_stdout)
+    # could just replace this with header_exists("sys/event.h") but
+    # it ain't broke.
     self.detect_kqueues(shell, get_stdout)
+    self.options.HAVE_POLL = self.check_header_exists(shell,"poll.h")
+    # RF: no one freak out about that slash, ok? Epoll's not about to
+    # show up in windows or os/2 or PDP/11 or ebcdic or whatever.
+    self.options.HAVE_EPOLL = self.check_header_exists(shell,"sys/epoll.h")
+    # nice one, Sun, no one else would ever call a header file "port.h"
+    self.options.HAVE_EVTPORTS = self.check_header_exists(shell,"port.h")
+    print "HAVE_POLL =", self.options.HAVE_POLL
+    print "HAVE_EPOLL =", self.options.HAVE_EPOLL
+    print "HAVE_EVTPORTS =", self.options.HAVE_EVTPORTS
+
     self.detect_strip(shell, get_stdout)
     self.detect_ar(shell, get_stdout)
 
@@ -1717,8 +1731,8 @@ import flxbuild
 from flxbuild.c_cxx_base import c_cxx_base
 
 class msvc_mixin:
-  DEFAULT_COM = 'cl'
-  DEFAULT_AR = 'lib'
+  DEFAULT_COM = 'cl '
+  DEFAULT_AR = 'lib '
 
   def set_options(self, **kwds):
     """these options are model dependent and have to
@@ -1734,8 +1748,8 @@ class msvc_mixin:
     # catch(std::exception& e). we also don't want the logo
     # OF COURSE now /GR will have no sense if this happens to be a
     # c compiler. let's hope it doesn't error out.
-    opt.COM = COM + "/nologo /GR "
-    opt.AR = LIB + "/nologo "
+    opt.COM = self.DEFAULT_COM + "/nologo /GR "
+    opt.AR = self.DEFAULT_AR + "/nologo "
 
   ########
 
@@ -1755,6 +1769,7 @@ class msvc_mixin:
     opt = self.options
     COM = opt.COM
 
+    opt.RANLIB = "#" # RF: better than none.
     opt.SUPPORT_DYNAMIC_LOADING = 1
     opt.SPEC_COMPILE_OBJ = "/c "
     opt.SPEC_OBJ_FILENAME = "/Fo"
@@ -1796,10 +1811,12 @@ class msvc_mixin:
     # warning, that about missing delete for the custom operator new,
     # the follow /wd<n> should silence that warning.
     # self.options.NO_INVALID_OFFSETOF_WARNING = "/w "
-    opt.NO_INVALID_OFFSETOF_WARNING="/wd4291 "
+    self.options.NO_INVALID_OFFSETOF_WARNING="/wd4291 "
 
 
   def construct_compiler_commands(self, shell, get_stdout):
+    opt = self.options
+    COM = opt.COM
     # RF: /MT (link with multithreaded clib, LIBCMT.LIB) for static builds
     # and /MD for dynamic (multithreaded dynamic clib, MSVCRT.LIB).
     # This last one's important as it means that not only is malloc threadsafe,
@@ -1878,7 +1895,10 @@ from flxbuild.c_base import c_base
 from flxbuild.msvc_mixin import msvc_mixin
 
 class msvcc(msvc_mixin, c_base):
-  DEFAULT_COM = 'cl /TC'
+  # RF: /TC is screwing up the link stage, treating the object file
+  # as a .c file. Taking it away and hoping that cl can figure it out.
+  # DEFAULT_COM = 'cl /TC '
+  DEFAULT_COM = 'cl '
 
   def check_options(self, shell, get_stdout):
     msvc_mixin.check_options(self, shell, get_stdout)
@@ -1890,7 +1910,10 @@ from flxbuild.cxx_base import cxx_base
 from flxbuild.msvc_mixin import msvc_mixin
 
 class msvcxx(msvc_mixin, cxx_base):
-  DEFAULT_COM = 'cl /TP'
+  # RF: this might be a good place to put the RTTI switch zzz
+  # /TP was forcing the link stage to interpret the .obj files as c++.
+  # DEFAULT_COM = 'cl /TP '
+  DEFAULT_COM = 'cl '
 
   def check_options(self, shell, get_stdout):
     msvc_mixin.check_options(self, shell, get_stdout)
