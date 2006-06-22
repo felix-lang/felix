@@ -16,6 +16,9 @@ Version: $Id$
    tangle("requires_dlibs: -lws2_32 -lmswsock")
    tangle("provides_slib: -ldemux_static")
    tangle("requires_slibs: -lws2_32 -lmswsock")
+ elif SOLARIS:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static -lsocket -lnsl")
  else:
    tangle("provides_dlib: -ldemux_dynamic")
    tangle("provides_slib: -ldemux_static")
