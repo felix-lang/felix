@@ -42,6 +42,8 @@ DEMUXRTL_INTERFACES = [
  'demux/demux_sockety.hpp',       # posix
  'demux/demux_self_piper.hpp',    # posix
  'demux/demux_ts_select_demuxer.hpp',
+ 'demux/demux_poll_demuxer.hpp',  # linux, 10.3 (select impl), 10.4 real.
+ 'demux/demux_ts_poll_demuxer.hpp',  # idem
 ]
 
 DEMUX_CPPS = [
@@ -49,22 +51,32 @@ DEMUX_CPPS = [
 ]
 
 POSIX_DEMUX_CPPS = [
-  "demux/demux_posix_demuxer",      # all posix
-  "demux/demux_select_demuxer",     # all posix
+  "demux/demux_posix_demuxer",      # posix
+  "demux/demux_select_demuxer",     # posix
   "demux/demux_posix_timer_queue",  # posix
   "demux/demux_sockety",            # posix
   "demux/demux_self_piper",         # posix
   "demux/demux_pfileio",            # posix
-  'demux/demux_ts_select_demuxer',
+  'demux/demux_ts_select_demuxer',  # posix
+]
+
+POLL_DEMUX_CPPS = [
+   # I've seen poll on linux and osx10.4 systems. 
+   # conditionally compiled and used.
+  'demux/demux_poll_demuxer',       # I've seen this on linux and osx10.4
+  'demux/demux_ts_poll_demuxer',    # ditto
 ]
 
 LINUX_DEMUX_CPPS = [
-  "demux/demux_epoll_demuxer",      # Linux 2.6 +
+  # now conditionally included
+  # "demux/demux_epoll_demuxer",      # Linux 2.6 +
 ]
 
-SOLARIS_DEMUX_CPPS = [
-  "demux/demux_evtport_demuxer",    # solaris
-]
+# SOLARIS_DEMUX_CPPS = [
+  # this needs to be conditionally compiled. it's not available on
+  # all solarises.
+  # "demux/demux_evtport_demuxer",    # solaris
+# ]
 
 WINDOWS_DEMUX_CPPS = [
   "demux/demux_iocp_demuxer",       # windows
@@ -98,8 +110,18 @@ if LINUX:
 if HAVE_KQUEUE_DEMUXER:
   DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_kqueue_demuxer" ]
 
+if HAVE_POLL:
+  DEMUX_CPPS = DEMUX_CPPS + POLL_DEMUX_CPPS
+
+if HAVE_EPOLL:
+  DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_epoll_demuxer" ] # Linux 2.6 +
+
+if HAVE_EVTPORTS:
+  DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_evtport_demuxer"] # solaris 10
+
 if SOLARIS:
-  DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
+  # DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
+  # RF: this might not be necessary anymore. 
   EXTRA_SYS_LIBS = "-lsocket -lnsl "
 
 cpp_cpps = DEMUX_CPPS

@@ -1,6 +1,18 @@
 @head(1,"Developer utility scripts")
 @execfile('config/flx_data.py')
 $Log$
+Revision 1.2  2006/06/22 07:21:30  rfistman
+updated mkdemux.py. hopefully it won't be needed soon, as
+  flx_demux becomes the "main" demux.
+
+added poll ts_poll demuxer.
+
+conditionalised demuxer usage, so linux no longer implies epoll,
+and solaris no longer implies evtports. this means that older
+systems will fall back to select and that we may get the rare
+nice surprise of finding a system that supports an unusual
+demuxer (like osx10.4 with poll) or a linux with kqueues. who knows.
+
 Revision 1.1  2006/02/14 09:02:00  skaller
 Splitup flx_maker.ipk to get rid of some build utilities.
 
@@ -174,7 +186,7 @@ import string
 import os
 import sys
 
-prefix = '/home/skaller/faio/demux/'
+prefix = '/Users/gchilds/UnNeko/walker/demux/'
 
 tre_files = [
   'demuxer.h',
@@ -182,29 +194,29 @@ tre_files = [
   'evtport_demuxer.h',
   'iocp_demuxer.h',
   'kqueue_demuxer.h',
-  'mutexlite.h',
   'pfileio.h',
   'posix_demuxer.h',
-  'posix_queue.h',
   'select_demuxer.h',
-  'sleep_queue.h',
-  'sleep_task.h',
-  'sockety.h',
-  'work_fifo.h',
+  'ts_select_demuxer.h',
+  'timer_queue.h',
+  'posix_timer_queue.h',
+  'posix_timer_queue.cpp',
+  'win_timer_queue.h',
+  'win_timer_queue.cpp',
   'demuxer.cpp',
   'epoll_demuxer.cpp',
   'evtport_demuxer.cpp',
   'iocp_demuxer.cpp',
+  'overlapped.cpp',
+  'overlapped.h',
   'kqueue_demuxer.cpp',
-  'mutexlite.cpp',
   'pfileio.cpp',
   'posix_demuxer.cpp',
-  'posix_queue.cpp',
   'select_demuxer.cpp',
-  'sleep_task.cpp',
-  'unused.cpp',
-  'work_fifo.cpp',
-  'sockety.c',
+  'ts_select_demuxer.cpp',
+  'sockety.h',
+  'self_piper.h',
+  'self_piper.cpp',
   ]
 
 mods = {}

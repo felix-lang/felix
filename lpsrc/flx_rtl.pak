@@ -1,5 +1,17 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.44  2006/06/22 07:21:30  rfistman
+updated mkdemux.py. hopefully it won't be needed soon, as
+  flx_demux becomes the "main" demux.
+
+added poll ts_poll demuxer.
+
+conditionalised demuxer usage, so linux no longer implies epoll,
+and solaris no longer implies evtports. this means that older
+systems will fall back to select and that we may get the rare
+nice surprise of finding a system that supports an unusual
+demuxer (like osx10.4 with poll) or a linux with kqueues. who knows.
+
 Revision 1.43  2006/06/11 19:38:14  idadesub
 added support a c compiler as well
 the builders have been massively refactored to reduce code duplication
@@ -626,6 +638,15 @@ T &reinterpret(U const &x) {
 
 @if HAVE_KQUEUE_DEMUXER:
   tangle("#define HAVE_KQUEUE_DEMUXER")
+
+@if HAVE_POLL:
+  tangle("#define HAVE_POLL")
+
+@if HAVE_EPOLL:
+  tangle("#define HAVE_EPOLL")
+
+@if HAVE_EVTPORTS:
+  tangle("#define HAVE_EVTPORTS")
 
 //
 #if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
@@ -2599,14 +2620,20 @@ public:
  #include "demux_kqueue_demuxer.hpp"
  #include "faio_pdrv.hpp"
  typedef flx::demux::kqueue_demuxer flx_demuxer;
-#elif defined(SOLARIS)
+#elif defined(HAVE_EVTPORTS)
  #include "demux_evtport_demuxer.hpp"
  #include "faio_pdrv.hpp"
  typedef flx::demux::evtport_demuxer flx_demuxer;
-#elif defined(FLX_LINUX)
+#elif defined(HAVE_EPOLL)
  #include "demux_epoll_demuxer.hpp"
  #include "faio_pdrv.hpp"
  typedef flx::demux::epoll_demuxer flx_demuxer;
+#elif defined(HAVE_POLL)
+ // NB!: on osx 10.3 poll exists, but is a poor cousin emulation layer on
+ // top of select. however, 10.3 has kqueues (above), so should be ok...
+ #include "demux_ts_poll_demuxer.hpp"
+ #include "faio_pdrv.hpp"
+ typedef flx::demux::ts_poll_demuxer flx_demuxer;
 #else
  #include "demux_ts_select_demuxer.hpp"
  #include "faio_pdrv.hpp"

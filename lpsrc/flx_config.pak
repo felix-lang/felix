@@ -12,7 +12,21 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.196  2006/06/22 07:21:29  rfistman
+updated mkdemux.py. hopefully it won't be needed soon, as
+  flx_demux becomes the "main" demux.
+
+added poll ts_poll demuxer.
+
+conditionalised demuxer usage, so linux no longer implies epoll,
+and solaris no longer implies evtports. this means that older
+systems will fall back to select and that we may get the rare
+nice surprise of finding a system that supports an unusual
+demuxer (like osx10.4 with poll) or a linux with kqueues. who knows.
+
 Revision 1.195  2006/06/20 14:35:56  rfistman
+
+
 changed archmap exception catch to all, instead of EnvironmentError,
  which wasn't being thrown by bad dict lookup which should => detect.
  still something wrong there, as cygwin is known, shouldn't need to
@@ -1256,11 +1270,20 @@ if "target" in PHASES:
     HAVE_MSVC = 1
     HAVE_GNU = 0
     HAVE_KQUEUE_DEMUXER = 0 #windows doesn't have kqueues.
+    # nor these. does this really need to be said?
+    HAVE_POLL = 0
+    HAVE_EPOLL = 0
+    HAVE_EVTPORTS = 0
   else:
     FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
     HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
     PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
     HAVE_KQUEUE_DEMUXER = TARGET_CXX.options.HAVE_KQUEUE_DEMUXER
+    # EH?
+    HAVE_POLL = TARGET_CXX.options.HAVE_POLL
+    HAVE_EPOLL = TARGET_CXX.options.HAVE_EPOLL
+    HAVE_EVTPORTS = TARGET_CXX.options.HAVE_EVTPORTS
+    
     HAVE_MSVC = 0
     HAVE_GNU = 1
 
@@ -1325,6 +1348,9 @@ if "target" in PHASES:
     pa(f,this,"CYGWIN")
     pa(f,this,"MACOSX")
     pa(f,this,"HAVE_KQUEUE_DEMUXER")
+    pa(f,this,"HAVE_POLL")
+    pa(f,this,"HAVE_EPOLL")
+    pa(f,this,"HAVE_EVTPORTS")
     pa(f,this,"WIN32")
     pa(f,this,"WIN64")
     pa(f,this,"POSIX")
