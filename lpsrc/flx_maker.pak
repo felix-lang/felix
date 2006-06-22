@@ -1,4 +1,4 @@
-@head(2,'Maker')
+@head(1,'Maker')
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
 @execfile(os.path.join('config', 'flx_data.py'))
@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.64  2006/06/22 21:46:23  skaller
+Fix ./mk extract so it always runs at the right time (earliest!)
+
 Revision 1.63  2006/06/22 13:32:55  skaller
 Put package loader back into flx_maker as inline code
 to avoid bootstrapping problem.
@@ -1457,41 +1460,6 @@ class PLUGIN(Plugin):
     if "target" not in phases: phases.append("target")
 
 
-@select(tangler('mkplugins/extract.py'))
-# Extract sources
-class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'extract', 'extract sources')
- 
-  def __call__(self):
-    paks = glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.pak"))
-
-    if "force_extract" not in options:
-      print "OPTIMISED SOURCE EXTRACT (use force_extract to disable optimisation)"
-    else:
-      print "FORCE EXTRACTING SOURCES"
-      for p in paks:
-        cache = p + ".cache"
-        if os.path.exists(cache):
-          os.remove(cache)
-
-    for p in paks:
-      print "EXTRACTING",p,"from",FLX_LPARCHIVE
-      runISCR(p)
-    filecopy(
-        os.path.join('doc', 'interscript.css'),
-        os.path.join('speed', 'interscript.css'))
-
-
-@select(tangler('mkplugins/force_extract.py'))
-class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'force_extract', 'force extract sources')
- 
-  def __call__(self):
-    plugins['extract']()
-
-
 @select(tangler('mkplugins/virgin.py'))
 #cleans everything
 class PLUGIN(Plugin):
@@ -2614,6 +2582,24 @@ if FLX_LPARCHIVE == os.curdir:
   print "Current Directory"
 else:
   print FLX_LPARCHIVE
+
+paks = glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.pak"))
+
+if "force_extract" in options:    
+  print "FORCE EXTRACTING SOURCES: remove caches"
+  for p in paks:
+    cache = p + ".cache"
+    if os.path.exists(cache):
+      os.remove(cache)
+
+if "extract" in options or "force_extract" in options:
+  for p in paks:
+    print "EXTRACTING",p,"from",FLX_LPARCHIVE
+    runISCR(p)
+  # this is a hack
+  filecopy(
+    os.path.join('doc', 'interscript.css'),
+    os.path.join('speed', 'interscript.css'))
 
 raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
 unsorted_pkgs = []
