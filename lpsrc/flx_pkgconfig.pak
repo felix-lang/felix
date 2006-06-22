@@ -30,7 +30,7 @@ FLXFLAGS = ""
 #  FLXFLAGS = "-lsocket -lnsl " # uses async hooker->faio->demux->sockets
     
 # DRLIBS = ['libflx_async','libfaio','libdemux','libflx_pthread','libflx']
-DRLIBS = ['libflx_pthread','libflx']
+DRLIBS = ['libflx_pthread','libflx','libflx_gc']
 
 pkg_requires = ['flx_compiler','flx_drivers']
 felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]

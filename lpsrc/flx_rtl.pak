@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.45  2006/06/22 12:44:25  skaller
+Split gc off into separate library.
+
 Revision 1.44  2006/06/22 07:21:30  rfistman
 updated mkdemux.py. hopefully it won't be needed soon, as
   flx_demux becomes the "main" demux.
@@ -338,7 +341,6 @@ library support directory. The symbols are defined
 in namespace flx::rtl, except as noted.
 
 @execfile('config'+os.sep+'flx_data.py')
-@include_file ('flx_gc.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_lex_lib.ipk')
 
@@ -346,22 +348,20 @@ in namespace flx::rtl, except as noted.
 @h = tangler('spkgs/flx.py')
 @select(h)
 
-pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_pthread','demux','faio']
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio']
 
 @h = tangler('spkgs/flx_async.py')
 @select(h)
 cpp_cpps = ['rtl/flx_async']
 provide_lib = "libflx_async"
-pkg_requires = ['faio','demux','flx_pthread','flx_rtl']
-lib_requires = ['libfaio','libdemux','libflx_pthread','libflx']
+pkg_requires = ['faio','demux','flx_pthread','flx_rtl','flx_gc']
+lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "ASYNC"
 
 @h = tangler('spkgs/flx_rtl.py')
 @select(h)
 RTL_CPPS = [
-  "rtl/flx_gc",
-  "rtl/flx_collector",
   "rtl/flx_rtl",
   "rtl/flx_dynlink",
   "rtl/flx_sync",
@@ -392,12 +392,13 @@ DRIVERS = [
 
 DRLIBS = [
   'libflx_pthread',
-  'libflx'
+  'libflx',
+  'libflx_gc',
   ]
 
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
-pkg_requires = ['flx_rtl','flx_pthread']
+pkg_requires = ['flx_rtl','flx_pthread','flx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
 weaver_directory = 'doc/rtl/flx_drivers/'
 
@@ -414,12 +415,13 @@ DRLIBS = [
   'libfaio',
   'libdemux',
   'libflx_pthread',
-  'libflx'
+  'libflx',
+  'libflx_gc',
   ]
 
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
-pkg_requires = ['flx_rtl','flx_pthread','flx_async','demux','faio']
+pkg_requires = ['flx_gc','flx_rtl','flx_pthread','flx_async','demux','faio']
 iscr_source = ['lpsrc/flx_rtl.pak']
 weaver_directory = 'doc/rtl/flx_drivers/'
 
@@ -440,14 +442,14 @@ Version: $Id$
 Name: flx_arun
 Description: Felix standard driver, async support
 Version: $Id$
-Requires: flx_async faio demux flx_pthread flx
+Requires: flx_async faio demux flx_pthread flx flx_gc
 
 @h = tangler('config/flx_run.fpc')
 @select(h)
 Name: flx_run
 Description: Felix standard driver, no async support
 Version: $Id$
-Requires: flx_pthread flx
+Requires: flx_pthread flx flx_gc
 
 @h = tangler('config/flx_async.fpc')
 @select(h)
@@ -461,7 +463,7 @@ Version: $Id$
    tangle("provides_dlib: -lflx_async_dynamic")
    tangle("provides_slib: -lflx_async_static")
 
-Requires: faio demux flx_pthread flx
+Requires: faio demux flx_pthread flx flx_gc
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)
