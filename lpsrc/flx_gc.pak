@@ -1,4 +1,9 @@
 @head(1,'Garbage collector')
+$Log$
+Revision 1.1  2006/06/22 13:35:25  skaller
+Rename the gc to be a first class standalone package.
+
+@p()
 The Felix garbage collector consists of two components: the collector
 abstraction, and a concrete collector.
 @p()
@@ -35,6 +40,30 @@ the C++ allocator concept; instead, it is a simple wrapper
 around the malloc/free interface. It is provided primarily
 to allow instrumentation of allocations, although it is possible
 to supply a user written allocator.
+
+@execfile('config'+os.sep+'flx_data.py')
+@h = tangler('spkgs/flx_gc.py')
+@select(h)
+cpp_cpps = ['rtl/flx_gc','rtl/flx_collector']
+provide_lib = "libflx_gc"
+pkg_requires = []
+lib_requires = []
+iscr_source = ['lpsrc/flx_gc.pak']
+build_macro = "FLX_GC"
+weaver_directory = 'doc/rtl/flx_gc/'
+
+@h = tangler('config/flx_gc.fpc')
+@select(h)
+Name: flx
+Description: Felix default garbage collector
+Version: $Id$
+@if HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:libflx_gc_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:libflx_gc_static")
+ else:
+   tangle("provides_dlib: -lflx_gc_dynamic")
+   tangle("provides_slib: -lflx_gc_static")
+
 
 @h = tangler('rtl/flx_gc.hpp')
 @select(h)
