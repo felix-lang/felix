@@ -1,5 +1,8 @@
 @head(1,'Garbage collector')
 $Log$
+Revision 1.2  2006/06/24 06:10:30  skaller
+Fix build macro for gc library.
+
 Revision 1.1  2006/06/22 13:35:25  skaller
 Rename the gc to be a first class standalone package.
 
@@ -65,15 +68,25 @@ Version: $Id$
    tangle("provides_slib: -lflx_gc_static")
 
 
+@h=tangler('rtl/flx_gc_config.hpp')
+@select(h)
+#ifndef __FLX_GC_CONFIG_GUARD__
+#define __FLX_GC_CONFIG_GUARD__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_FLX_GC
+#define GC_EXTERN FLX_EXPORT
+#else
+#define GC_EXTERN FLX_IMPORT
+#endif
+#endif
+
 @h = tangler('rtl/flx_gc.hpp')
 @select(h)
 #ifndef FLX_GC
 #define FLX_GC
 
 #include <cstdlib>
-#ifndef FLX_RTL_CONFIG
-#include "flx_rtl_config.hpp"
-#endif
+#include "flx_gc_config.hpp"
 
 // we use an STL set to hold the collection of roots
 #include <set>
@@ -83,10 +96,10 @@ namespace gc {
 namespace generic {
 // Here are the types we refer to:
 
-struct RTL_EXTERN frame_t;      // the type of all collectable objects
-struct RTL_EXTERN gc_shape_t;   // the shape of collectable objects
-struct RTL_EXTERN collector_t;  // the collector itself
-struct RTL_EXTERN allocator_t;  // the collector itself
+struct GC_EXTERN frame_t;      // the type of all collectable objects
+struct GC_EXTERN gc_shape_t;   // the shape of collectable objects
+struct GC_EXTERN collector_t;  // the collector itself
+struct GC_EXTERN allocator_t;  // the collector itself
 
 enum gc_shape_flags_t {
   gc_flags_default    = 0,            //< collectable and mobile
@@ -95,7 +108,7 @@ enum gc_shape_flags_t {
 };
 
 /// Describes runtime object shape.
-struct RTL_EXTERN gc_shape_t
+struct GC_EXTERN gc_shape_t
 {
   gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
   char const *cname;              ///< C++ typename
@@ -176,7 +189,7 @@ And here is the collector abstraction.
 @select(h)
 
 /// Collector abstraction.
-struct RTL_EXTERN collector_t
+struct GC_EXTERN collector_t
 {
   bool debug;
   void set_debug(bool d){debug=d;}
@@ -281,7 +294,7 @@ to the object. Other pointers might exist, and that is normally
 OK provided they're not dereferenced.
 
 @select(h)
-void RTL_EXTERN destroy(void *b);
+void GC_EXTERN destroy(void *b);
 
 @doc()
 The following routines are provided to help
@@ -295,10 +308,10 @@ Each untyped routine has a corresponding
 template to provide a type safe interface.
 
 @select(h)
-void RTL_EXTERN _init_ptr(void **a, void *b);
-void RTL_EXTERN _set_ptr(void **a, void *b);
-void RTL_EXTERN _release_ptr(void **a);
-void RTL_EXTERN _destroy_ptr(void **a);
+void GC_EXTERN _init_ptr(void **a, void *b);
+void GC_EXTERN _set_ptr(void **a, void *b);
+void GC_EXTERN _release_ptr(void **a);
+void GC_EXTERN _destroy_ptr(void **a);
 
 template<class T>
 void init_ptr(T **a, T *b)
@@ -344,9 +357,9 @@ of object an memory block hold, and reset the
 length of an array, respectively.
 
 @select(h)
-RTL_EXTERN void reset_shape(void *memory, gc_shape_t &);
-RTL_EXTERN void reset_count(void *memory, unsigned long); 
-RTL_EXTERN unsigned long get_count(void *memory, unsigned long); 
+GC_EXTERN void reset_shape(void *memory, gc_shape_t &);
+GC_EXTERN void reset_count(void *memory, unsigned long); 
+GC_EXTERN unsigned long get_count(void *memory, unsigned long); 
 
 }}} // end namespaces
 
@@ -361,7 +374,7 @@ compiler on Mac OS.
 
 @select(h)
 /// Allocate collectable object
-RTL_EXTERN void *operator new
+GC_EXTERN void *operator new
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
@@ -369,7 +382,7 @@ RTL_EXTERN void *operator new
 );
 
 /// Allocate collectable array
-RTL_EXTERN void *operator new
+GC_EXTERN void *operator new
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
@@ -570,11 +583,11 @@ namespace gc {
 namespace collector {
 using namespace generic;
 
-struct RTL_EXTERN malloc_free;
-struct RTL_EXTERN flx_collector_t;
+struct GC_EXTERN malloc_free;
+struct GC_EXTERN flx_collector_t;
 
 /// Allocator using malloc and free.
-struct RTL_EXTERN malloc_free : public virtual allocator_t 
+struct GC_EXTERN malloc_free : public virtual allocator_t 
 {
   void *allocate(std::size_t);
   void deallocate(void *, std::size_t);
@@ -582,7 +595,7 @@ struct RTL_EXTERN malloc_free : public virtual allocator_t
 
 
 /// Naive Mark and Sweep Collector.
-struct RTL_EXTERN flx_collector_t : public collector_t
+struct GC_EXTERN flx_collector_t : public collector_t
 {
   flx_collector_t(allocator_t *);
   ~flx_collector_t();
