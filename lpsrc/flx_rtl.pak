@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.46  2006/06/24 11:49:49  skaller
+Fix dependencies on flx_gc for Cygwin.
+
 Revision 1.45  2006/06/22 12:44:25  skaller
 Split gc off into separate library.
 
@@ -374,6 +377,8 @@ RTL_CPPS = [
 
 cpp_cpps = RTL_CPPS
 provide_lib = "libflx"
+lib_requires = ['libflx_gc']
+pkg_requires = ['flx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
 weaver_directory = 'doc/rtl/flx_rtl/'
@@ -399,6 +404,7 @@ DRLIBS = [
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_rtl','flx_pthread','flx_gc']
+lib_requires = ['libdemux','libflx_pthread','libflx']
 iscr_source = ['lpsrc/flx_rtl.pak']
 weaver_directory = 'doc/rtl/flx_drivers/'
 
@@ -436,6 +442,7 @@ Version: $Id$
  else:
    tangle("provides_dlib: -lflx_dynamic")
    tangle("provides_slib: -lflx_static")
+Requires: flx_gc
 
 @h = tangler('config/flx_arun.fpc')
 @select(h)

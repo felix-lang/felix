@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.26  2006/06/24 11:49:49  skaller
+Fix dependencies on flx_gc for Cygwin.
+
 Revision 1.25  2006/05/07 08:08:04  idadesub
 actually, this test cannot be checked yet, as it's non-deterministic
 
@@ -167,8 +170,7 @@ if SOLARIS:
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES
-#lib_requires_linkflags = EXTRA_SYS_LIBS
-lib_requires = ['libflx']
+lib_requires = ['libflx','libflx_gc']
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
 pkg_requires = ['flx_rtl']

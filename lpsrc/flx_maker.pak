@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.65  2006/06/24 11:49:49  skaller
+Fix dependencies on flx_gc for Cygwin.
+
 Revision 1.64  2006/06/22 21:46:23  skaller
 Fix ./mk extract so it always runs at the right time (earliest!)
 
@@ -1364,7 +1367,7 @@ class PLUGIN(Plugin):
  
         cmd = os.path.join(
             "bin", 
-            "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
+            "flx_pkgconfig -r --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
         result,dlibs= get_stdout(cmd)
         if result: 
           print "flx_pkgconfig failed! Args=",cmd
