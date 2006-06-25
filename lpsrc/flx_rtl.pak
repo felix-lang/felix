@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.47  2006/06/25 22:55:09  skaller
+Fix spelling error which caused wrong library name to be built.
+
 Revision 1.46  2006/06/24 11:49:49  skaller
 Fix dependencies on flx_gc for Cygwin.
 
@@ -356,7 +359,7 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','d
 @h = tangler('spkgs/flx_async.py')
 @select(h)
 cpp_cpps = ['rtl/flx_async']
-provide_lib = "libflx_async"
+provides_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl','flx_gc']
 lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
@@ -376,7 +379,7 @@ RTL_CPPS = [
 ]
 
 cpp_cpps = RTL_CPPS
-provide_lib = "libflx"
+provides_lib = "libflx"
 lib_requires = ['libflx_gc']
 pkg_requires = ['flx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
