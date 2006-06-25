@@ -3527,6 +3527,7 @@ try
   close_out hf;
   close_out bf;
   plp "flx";
+  plp "flx_gc";  (* RF: flx apps now need flx_gc. is this the way to do it? *)
   close_out pf;
   close_out rf;
   let code_generation_time = tim() in

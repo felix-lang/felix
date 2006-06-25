@@ -208,6 +208,12 @@ class c_cxx_base(compiler_base):
     cmd = cmd + opt.SPEC_EXE_FILENAME + outfile + EXT_DST + " "
 
     for i in objects:       cmd = cmd + i + " "
+    # RF: this is a hack to make sure that /link come before all link flags
+    # under visual studio. I tried making sure that LDFLAGS had /link first
+    # and moved it to just after the obj files, but that broke the gcc build
+    # as some folk pass the libs in "libs" and others pass them directly
+    # as LDFLAGS args. So much for encapsulation, eh?
+    cmd = cmd + opt.PRE_LINK_FLAGS
     for i in lib_paths:     cmd = cmd + opt.SPEC_LIBPATH + i + " "
     for i in opt.lib_paths: cmd = cmd + opt.SPEC_LIBPATH + i + " "
     for i in libs:          cmd = cmd + opt.SPEC_LIB + i + " "
@@ -1126,6 +1132,10 @@ class gnu_mixin:
     opt.DEBUG_FLAGS = "-g "
     opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
 
+    # RF: a hack to make the VS build work. sort of an "any last words"
+    # argument/hook before link directives.
+    opt.PRE_LINK_FLAGS = ""
+
     c_cxx_base.detect_model(self, shell, get_stdout)
 
     if opt.model in ["cygwin", "win32", "win64"]:
@@ -1769,7 +1779,7 @@ class msvc_mixin:
     opt = self.options
     COM = opt.COM
 
-    opt.RANLIB = "#" # RF: better than none.
+    opt.RANLIB = "@rem nothing" # RF: better than none.
     opt.SUPPORT_DYNAMIC_LOADING = 1
     opt.SPEC_COMPILE_OBJ = "/c "
     opt.SPEC_OBJ_FILENAME = "/Fo"
@@ -1863,7 +1873,10 @@ class msvc_mixin:
   ########
 
   def link_thing(self, *args, **kwds):
-    kwds['LDFLAGS'] = kwds.get('LDFLAGS', '') + ' /link '
+    kwds['LDFLAGS'] = kwds.get('LDFLAGS', '')
+    # RF: hack to get /link before all other link directives,
+    # including the libraries themselves and their paths.
+    self.options.PRE_LINK_FLAGS = '/link '
 
     return apply(c_cxx_base.link_thing, (self,) + args, kwds)
 

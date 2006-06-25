@@ -6,8 +6,38 @@
 
 @head(2,'CVS LOG')
 $Log$
-Revision 1.65  2006/06/24 11:49:49  skaller
-Fix dependencies on flx_gc for Cygwin.
+Revision 1.66  2006/06/25 16:34:02  rfistman
+added PRE_LINK_FLAGS hack to get /link flag in VS toolchain to
+ precede all link directives. Diddling with LDFLAGS didn't work
+ because there are currently two ways to pass library args
+ as names (flx_pthread) via "libs" or as system dependent linker
+ switches (/DEFAULTLIB:libflx_pthread, -lflx_pthread) via LDFLAGS.
+
+flx_gc now inserted by code generator into all .resh files. I don't know
+ if this is the best way to do it, but adding "requires flx_gc" to the
+ libflx package only ensures that it be linked against libflx and not
+ users of lib flx. I don't see how any of this could have actually worked
+ for you guys from a fresh build.
+
+flx_gc.fpc had flx as Name: instead of flx_gc making build order wrong
+
+added dependency on flx_gc, libflx_gc to flx package.
+
+added flx_gc to pkg_requires and libflx_gc to lib_requires in flx_pthread
+  so it would like
+
+/link once again come before all other link arguments. this unbreaks the
+  building of DLLs with the VS toolchain.
+
+changed maker so that it doesn't pass libraries via the linker flags
+  but rather via the libs arg. this was breaking both encapsulation
+  and the VS build.
+
+changed '# ranlib' to '@rem ranlib' for VS build. # isn't a dos comment.
+
+added libflx_gc to bin/flx script. this script is hardcoded and doesn't
+ use the packages! why is is different to the build used in the test
+ phase?
 
 Revision 1.64  2006/06/22 21:46:23  skaller
 Fix ./mk extract so it always runs at the right time (earliest!)
@@ -1367,7 +1397,7 @@ class PLUGIN(Plugin):
  
         cmd = os.path.join(
             "bin", 
-            "flx_pkgconfig -r --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
+            "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
         result,dlibs= get_stdout(cmd)
         if result: 
           print "flx_pkgconfig failed! Args=",cmd
@@ -1606,7 +1636,7 @@ def build_target_rtl_dynamic():
     for i in flibs:
       needs_libs.append(i+"_dynamic")
 
-    lib = pkgdict.get("provide_lib","lib"+pkg)
+    lib = pkgdict.get("provides_lib","lib"+pkg)
 
     # RF: THIS SHOULD BE TARGET_CXX AND THE OUTPUT DIR SHOULD BE THAT OF
     # THE TARGET.
@@ -1629,7 +1659,7 @@ def build_target_rtl_dynamic():
 def build_target_rtl_static():
   CPPS = pkgdict.get("cpp_cpps",[])
   EXTRA_CFLAGS = pkgdict.get("cflags","")
-  lib = pkgdict.get("provide_lib","lib"+pkg)
+  lib = pkgdict.get("provides_lib","lib"+pkg)
   if CPPS:
     print " ++ "+pkg+" RTL (static)"
 
@@ -3878,14 +3908,14 @@ ENDLOCAL
 @tangle('OPTIMISE="'+OPTIMISE+'"')
 @tangle('DEBUG_FLAGS="'+DEBUG_FLAGS+'"')
 @if HAVE_MSVC:
-  tangle("DLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:libflx_dynamic '")
-  tangle("SLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static '")
+  tangle("DLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:libflx_dynamic /DEFAULTLIB:libflx_gc_dynamic'")
+  tangle("SLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static /DEFAULTLIB:libflx_gc_static'")
  elif CYGWIN or WIN32:
-  tangle("DLINK_STRING='-Lbin -lfaio_dynamic -ldemux_dynamic -lflx_dynamic'")
-  tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static'")
+  tangle("DLINK_STRING='-Lbin -lfaio_dynamic -ldemux_dynamic -lflx_dynamic -lflx_gc_dynamic'")
+  tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static -lflx_gc_static'")
  else:
-  tangle("DLINK_STRING='-Lrtl -lfaio_dynamic -ldemux_dynamic -lflx_dynamic'")
-  tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static'")
+  tangle("DLINK_STRING='-Lrtl -lfaio_dynamic -ldemux_dynamic -lflx_dynamic -lflx_gc_dynamic'")
+  tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static -lflx_gc_static'")
 
 @if PTHREAD_SWITCH != None:
   tangle('PTHREAD_SWITCH="'+PTHREAD_SWITCH+'"')

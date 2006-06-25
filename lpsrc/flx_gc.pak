@@ -1,5 +1,38 @@
 @head(1,'Garbage collector')
 $Log$
+Revision 1.3  2006/06/25 16:34:02  rfistman
+added PRE_LINK_FLAGS hack to get /link flag in VS toolchain to
+ precede all link directives. Diddling with LDFLAGS didn't work
+ because there are currently two ways to pass library args
+ as names (flx_pthread) via "libs" or as system dependent linker
+ switches (/DEFAULTLIB:libflx_pthread, -lflx_pthread) via LDFLAGS.
+
+flx_gc now inserted by code generator into all .resh files. I don't know
+ if this is the best way to do it, but adding "requires flx_gc" to the
+ libflx package only ensures that it be linked against libflx and not
+ users of lib flx. I don't see how any of this could have actually worked
+ for you guys from a fresh build.
+
+flx_gc.fpc had flx as Name: instead of flx_gc making build order wrong
+
+added dependency on flx_gc, libflx_gc to flx package.
+
+added flx_gc to pkg_requires and libflx_gc to lib_requires in flx_pthread
+  so it would like
+
+/link once again come before all other link arguments. this unbreaks the
+  building of DLLs with the VS toolchain.
+
+changed maker so that it doesn't pass libraries via the linker flags
+  but rather via the libs arg. this was breaking both encapsulation
+  and the VS build.
+
+changed '# ranlib' to '@rem ranlib' for VS build. # isn't a dos comment.
+
+added libflx_gc to bin/flx script. this script is hardcoded and doesn't
+ use the packages! why is is different to the build used in the test
+ phase?
+
 Revision 1.2  2006/06/24 06:10:30  skaller
 Fix build macro for gc library.
 
@@ -48,7 +81,7 @@ to supply a user written allocator.
 @h = tangler('spkgs/flx_gc.py')
 @select(h)
 cpp_cpps = ['rtl/flx_gc','rtl/flx_collector']
-provide_lib = "libflx_gc"
+provides_lib = "libflx_gc"
 pkg_requires = []
 lib_requires = []
 iscr_source = ['lpsrc/flx_gc.pak']
@@ -57,7 +90,7 @@ weaver_directory = 'doc/rtl/flx_gc/'
 
 @h = tangler('config/flx_gc.fpc')
 @select(h)
-Name: flx
+Name: flx_gc
 Description: Felix default garbage collector
 Version: $Id$
 @if HAVE_MSVC:
