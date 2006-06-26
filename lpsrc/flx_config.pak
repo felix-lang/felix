@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.198  2006/06/26 05:30:39  skaller
+Fiddle with bootup
+
 Revision 1.197  2006/06/23 00:35:16  skaller
 Upgrade release to rc8
 
@@ -242,6 +245,73 @@ then
   echo "ERROR EXTRACTING MAKER PROGRAM"
   exit 1
 fi
+
+@head(1,'boot')
+A shell script to run the config step.
+@select(tangler('configure'))
+export PYTHONPATH=.:$PYTHONPATH
+echo "Booting Felix"
+FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
+PREFIX=$PREFIX
+ARGS=""
+
+grab=1
+while  [ "$grab" -eq 1 ]
+do
+  case x$1 in
+  x--prefix=*)
+     #PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1/'`"
+     PREFIX=${1:9}
+     shift
+  ;;
+
+  x--prefix)
+    shift
+    PREFIX="$1"
+    shift
+  ;;
+
+  x--lparchive=*)
+   FLX_LPARCHIVE=${1:12}
+   shift
+  ;;
+
+  x--lparchive)
+   shift
+   FLX_LPARCHIVE="$1"
+   shift
+  ;;
+
+  x)
+    grab=0
+  ;;
+
+  x*)
+    ARGS="${ARGS} $1"
+    shift
+  ;;
+
+  esac
+done
+
+echo FLX_LPARCHIVE at $FLX_LPARCHIVE
+
+rm $FLX_LPARCHIVE/lpsrc/*.cache
+python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
+if [ $? != 0 ]
+then
+  echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
+  exit 1
+fi
+
+python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
+if [ $? != 0 ]
+then
+  echo "ERROR EXTRACTING MAKER PROGRAM"
+  exit 1
+fi
+
+./mk extract
 
 @select(tangler('tmp/xlators_local.py','python'))
 # reconfigure translator definitions for your

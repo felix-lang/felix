@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.68  2006/06/26 05:30:40  skaller
+Fiddle with bootup
+
 Revision 1.67  2006/06/26 04:28:15  skaller
 Fix tutorial virtual package to refer to the
 separate subtutorial interscript sources, so the tutorial
@@ -1154,6 +1157,7 @@ OCS_MODULES = [
 @select(h)
 python script/maker $*
 @os.system("chmod u+x mk")
+
 @h = tangler('mk.bat','data')
 @select(h)
 python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
@@ -2994,6 +2998,8 @@ We have no idea if it continues copying.
 @tangle('\tln -s . felix-'+flx_version)
 @tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
 @tangle('\t\tfelix-'+flx_version+'/configure \\')
+@tangle('\t\tfelix-'+flx_version+'/mk \\')
+@tangle('\t\tfelix-'+flx_version+'/boot \\')
 @tangle('\t\tfelix-'+flx_version+'/*.bat \\')
 @tangle('\t\tfelix-'+flx_version+'/Makefile \\')
 @tangle('\t\tfelix-'+flx_version+'/README \\')
