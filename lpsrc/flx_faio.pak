@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.30  2006/06/26 10:18:13  rfistman
+fixed a few typos "provide_lib" -> "provides_lib". this was stopping
+ things building in the right order (e.g. libflx being built after
+ the code that needed it).
+
 Revision 1.29  2006/05/03 11:07:51  rfistman
 added some url stuff to handle wget requests
 now spawning fthreads for each connection (works in windows?)
@@ -304,8 +309,8 @@ if POSIX:
 
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
-pkg_requires = ['demux','flx_pthread','flx_rtl']
-lib_requires = ['libdemux','libflx_pthread','libflx']
+pkg_requires = ['demux','flx_pthread', 'flx_rtl'] # flx_rtl for rtl_config.
+lib_requires = ['libdemux','libflx_pthread'] # however lib not required
 unit_tests = EXTRA_TEST_GLOBS
 iscr_source = ["lpsrc/flx_faio.pak"]
 build_macro = "FAIO"

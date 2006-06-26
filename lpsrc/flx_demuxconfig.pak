@@ -23,7 +23,7 @@ Version: $Id$
    tangle("provides_dlib: -ldemux_dynamic")
    tangle("provides_slib: -ldemux_static")
 
-Requires: flx_pthread flx
+Requires: flx_pthread
 flx_requires_driver: flx_arun
 
 @h = tangler('spkgs/demux.py')
@@ -129,8 +129,8 @@ if SOLARIS:
 
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
-pkg_requires = ['flx_pthread']
-lib_requires = ['libflx_pthread','libflx'] 
+pkg_requires = ['flx_pthread', 'flx_rtl'] # flx_rtl for config .hpp
+lib_requires = ['libflx_pthread']  # however libflx not needed
 #lib_requires_linkflags = EXTRA_SYS_LIBS
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS

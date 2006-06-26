@@ -1,5 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.27  2006/06/26 10:18:13  rfistman
+fixed a few typos "provide_lib" -> "provides_lib". this was stopping
+ things building in the right order (e.g. libflx being built after
+ the code that needed it).
+
 Revision 1.26  2006/06/24 11:49:49  skaller
 Fix dependencies on flx_gc for Cygwin.
 
@@ -105,7 +110,7 @@ Version: $Id$
  else:
    tangle("provides_dlib: -lflx_pthread_dynamic")
    tangle("provides_slib: -lflx_pthread_static")
-Requires: flx
+Requires: flx_gc
 
 @h = tangler('spkgs/flx_pthread.py')
 @select(h)
@@ -170,10 +175,10 @@ if SOLARIS:
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES
-lib_requires = ['libflx','libflx_gc']
+lib_requires = ['libflx_gc']
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
-pkg_requires = ['flx_rtl']
+pkg_requires = ['flx_rtl'] # flx_rtl provides flx_rtl_config.hpp
 iscr_source = ["lpsrc/flx_pthread.pak"]
 build_macro = "PTHREAD"
 weaver_directory = 'doc/rtl/flx_pthread/'

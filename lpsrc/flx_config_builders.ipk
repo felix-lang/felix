@@ -1400,7 +1400,6 @@ int main(int argc, char** argv) {
     opt.DLLIB = ""
     if opt.model in ["win32", "win64"]:
       # check if can get LoadLibrary to work
-      print "LOADLIBRARY!!?"
       basename = 'tmp' + os.sep + 'win32_dummy_lib'
       # RF: This can be compiled as both c and c++ these days it seems
       # hence conditional extern "C"
