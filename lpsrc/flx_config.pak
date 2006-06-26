@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.199  2006/06/26 07:23:11  skaller
+Fix bug (new boot script named configure by mistake).
+
 Revision 1.198  2006/06/26 05:30:39  skaller
 Fiddle with bootup
 
@@ -248,7 +251,7 @@ fi
 
 @head(1,'boot')
 A shell script to run the config step.
-@select(tangler('configure'))
+@select(tangler('boot'))
 export PYTHONPATH=.:$PYTHONPATH
 echo "Booting Felix"
 FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
@@ -1873,4 +1876,5 @@ tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
 Just cleaning up script now.
 @try:
    os.system('chmod u+x configure')
+   os.system('chmod u+x boot')
  except:pass
