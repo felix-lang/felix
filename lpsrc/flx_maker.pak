@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.67  2006/06/26 04:28:15  skaller
+Fix tutorial virtual package to refer to the
+separate subtutorial interscript sources, so the tutorial
+text is loaded in a timely fashion.
+
 Revision 1.66  2006/06/25 16:34:02  rfistman
 added PRE_LINK_FLAGS hack to get /link flag in VS toolchain to
  precede all link directives. Diddling with LDFLAGS didn't work
@@ -974,6 +979,14 @@ pkg_requires = [
   'flx_tut_migrate'
   ]
 
+iscr_source = [
+  'lpsrc/flx_tutorial',
+  'lpsrc/flx_tut_macro',
+  'lpsrc/flx_tut_bind',
+  'lpsrc/flx_tut_migrate',
+  'lpsrc/flx_tutorial_index',
+  ]
+  
 @h = tangler('spkgs/flx_maker.py')
 @select(h)
 iscr_source = ['lpsrc/flx_maker.pak']
