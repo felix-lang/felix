@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.69  2006/06/27 04:02:28  skaller
+Modified install process and flx script to comply
+to new installation standard.
+
 Revision 1.68  2006/06/26 05:30:40  skaller
 Fiddle with bootup
 
@@ -2795,10 +2799,7 @@ We have no idea if it continues copying.
 @select(tangler('Makefile','data'))
 @tangle('CONFIG_ARGS=')
 @tangle('PREFIX='+PREFIX)
-@tangle('LIB_DIR=${PREFIX}/lib')
-@tangle('SHLIB_DIR=${PREFIX}/'+SHLIB_DIR)
-@tangle('SHINC_DIR=${PREFIX}/include')
-@tangle('INSTALL_DIR=${PREFIX}/lib/felix')
+@tangle('INSTALL_DIR=${PREFIX}/lib/felix-'+flx_version)
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
 @tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
@@ -3196,44 +3197,21 @@ We have no idea if it continues copying.
 @tangle('\tbin/flxcc config/usr_include.flxcc')
 @tangle('')
 @tangle('install: dummy')
-@tangle('\t#"INSTALL_DIR=${INSTALL_DIR}"')
-@tangle('\t#"EXEC_DIR=${EXEC_DIR}"')
-@tangle('\t#"MAN_DIR=${MAN_DIR}"')
-@tangle('\t#"SHLIB_DIR=${SHLIB_DIR}"')
-@tangle('\t#"LIB_DIR=${LIB_DIR}"')
-@tangle('\t#"SHINC_DIR=${SHINC_DIR}"')
 @tangle('\tinstall -d ${MAN_DIR}')
-@tangle('\tinstall -d ${SHLIB_DIR}')
-@tangle('\tinstall -d ${LIB_DIR}')
-@tangle('\tinstall -d ${SHINC_DIR}')
+@tangle('\tinstall -d ${INSTALL_DIR}/bin')
 @tangle('\tinstall -d ${INSTALL_DIR}/lib')
 @tangle('\tinstall -d ${INSTALL_DIR}/rtl')
 @tangle('\tinstall -d ${INSTALL_DIR}/config')
 @tangle('\tinstall -d ${INSTALL_DIR}/doc')
 @tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
 @tangle('\tfind config -maxdepth 1 -type f -name "*.py" -exec install "{}" ${INSTALL_DIR}/config ";"')
+@tangle('\tfind config -maxdepth 1 -type f -name "*.fpc" -exec install "{}" ${INSTALL_DIR}/config ";"')
 @tangle('\tfind config -maxdepth 1 -type f -name "*.flxcc" -exec install "{}" ${INSTALL_DIR}/config ";"')
-@tangle('\tfind lib -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/lib ";"')
-@tangle('\tfind rtl -maxdepth 1 -type f -name "*.hpp" -exec install "{}" ${SHINC_DIR} ";"')
+@tangle('\tinstall bin/flx ${EXEC_DIR}')
+@tangle('\tfind bin -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/bin ";"')
 @tangle('\tfind rtl -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/rtl ";"')
-@if SUPPORT_STATIC_LINKAGE:
-  tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_static.a')
-  tangle('\tinstall rtl/libflx_static.a ${LIB_DIR}')
-  tangle('\t'+RANLIB+' ${LIB_DIR}/libflx_static.a')
-@if SUPPORT_DYNAMIC_LOADING:
-  if CYGWIN:
-    # static link thunk for bin/cygflx_dynamic.dll
-    #tangle('\tinstall rtl/libflx_dynamic.dll.a ${SHLIB_DIR}')
-    # not used now, dll goes in 'bin'
-    pass
-  elif MACOSX:
-    tangle('\tinstall rtl/libflx_dynamic.dylib ${SHLIB_DIR}')
-  else:
-    tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
+@tangle('\tfind lib -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/lib ";"')
 @tangle('\tfind doc -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/doc ";"')
-@tangle('\tfind impldoc -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/impldoc ";"')
-@tangle('\tfind htmlman -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/htmlman ";"')
-@tangle('\tfind bin -maxdepth 1 -type f -name "*" -exec install "{}" ${EXEC_DIR} ";"')
 @tangle('\tfind man/man1 -maxdepth 1 -type f -name "*" -exec install "{}" ${MAN_DIR}/man1 ";"')
 @tangle('\techo "Stuff in misc has to be installed by hand"')
 @tangle('')
@@ -3906,7 +3884,8 @@ ENDLOCAL
 @select(tangler('bin/flx','data'))
 #!/usr/bin/env bash
 # flx - felix script harness
-
+@tangle("INSTALL_ROOT="+PREFIX+"/lib/felix-"+flx_version)
+@tangle("FLX_INSTALL_DIR=${FLX_INSTALL_DIR:-"+PREFIX+"/lib/felix-"+flx_version+"}")
 @tangle("CYGWIN="+str(CYGWIN))
 @tangle("WIN32="+str(WIN32))
 @tangle("MACOSX="+str(MACOSX))
@@ -3926,16 +3905,6 @@ ENDLOCAL
 @tangle('SPEC_EXE_FILENAME="'+SPEC_EXE_FILENAME+'"')
 @tangle('OPTIMISE="'+OPTIMISE+'"')
 @tangle('DEBUG_FLAGS="'+DEBUG_FLAGS+'"')
-@if HAVE_MSVC:
-  tangle("DLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:libflx_dynamic /DEFAULTLIB:libflx_gc_dynamic'")
-  tangle("SLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static /DEFAULTLIB:libflx_gc_static'")
- elif CYGWIN or WIN32:
-  tangle("DLINK_STRING='-Lbin -lfaio_dynamic -ldemux_dynamic -lflx_dynamic -lflx_gc_dynamic'")
-  tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static -lflx_gc_static'")
- else:
-  tangle("DLINK_STRING='-Lrtl -lfaio_dynamic -ldemux_dynamic -lflx_dynamic -lflx_gc_dynamic'")
-  tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static -lflx_gc_static'")
-
 @if PTHREAD_SWITCH != None:
   tangle('PTHREAD_SWITCH="'+PTHREAD_SWITCH+'"')
  else:
@@ -4091,31 +4060,46 @@ do
   esac
 done
 
-if [ "$TESTMODE" = "1" -a "$ECHO" = "1" ]
+@if HAVE_MSVC:
+  tangle('DLINK_STRING="/link /LIBPATH:${FLX_INSTALL_DIR}\\\\bin "')
+  tangle('SLINK_STRING="/link /LIBPATH:${FLX_INSTALL_DIR}\\\\bin "')
+ elif CYGWIN or WIN32:
+  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/bin "')
+  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
+ else:
+  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
+  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
+
+
+PKGCONFIG=$FLX_INSTALL_DIR/bin/flx_pkgconfig
+
+if [ "$ECHO" = "1" ]
 then
-  echo "TESTMODE: running felix from $FLX_INSTALL_DIR"
+  echo "#FLX_INSTALL_DIR=$FLX_INSTALL_DIR"
+  echo "#PKGCONFIG=$PKGCONFIG"
 fi
 
-if [ "$TESTMODE" = "1" ]
-then
-PKGCONFIG_CFLAGS="bin/flx_pkgconfig --path+=config --field=cflags "
-PKGCONFIG_DLIBS="bin/flx_pkgconfig  --path+=config --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="bin/flx_pkgconfig -r --keeprightmost --path+=config --field=provides_slib --field=requires_slibs "
-PKGCONFIG_DRIVER="bin/flx_pkgconfig --path+=config --field=flx_requires_driver "
-elif [ "x$FLX_INSTALL_DIR" != "x" ]
-then
-PKGCONFIG_CFLAGS="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=$FLX_INSTALL_DIR --field=cflags "
-PKGCONFIG_DLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -path+=$FLX_INSTALL_DIR --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -r --keeprightmost --path+=FLX_INSTALL_DIR --field=field-provides_slib --requires_slibs "
-PKGCONFIG_DRIVER="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=FLX_INSTALL_DIR --field=flx_requires_driver "
-else
-PKGCONFIG_CFLAGS="flx_pkgconfig --field=cflags "
-PKGCONFIG_DLIBS="flx_pkgconfig --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="flx_pkgconfig -r --keeprightmost --field=provides_slib --requires_slibs "
-PKGCONFIG_DRIVER="flx_pkgconfig --field=flx_requires_driver "
-fi
+
+# find external header files
+PKGCONFIG_CFLAGS="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=cflags "
+
+# find external dynload libraries
+PKGCONFIG_DLIBS="$PKGCONFIG -r --path+=$FLX_INSTALL_DIR/config --field=provides_dlib --field=requires_dlibs "
+
+# find external static libraries
+PKGCONFIG_SLIBS="$PKGCONFIG -r --keeprightmost --path+=$FLX_INSTALL_DIR/config --field=provides_slib --field=requires_slibs "
+
+#find driver package required
+PKGCONFIG_DRIVER="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=flx_requires_driver "
 
 # make a list of any *.cpp files (or other g++ options ..)
+
+if [ $STATIC = 0 ]
+then
+  EXT_OBJ=$EXT_DYNAMIC_OBJ
+else
+  EXT_OBJ=$EXT_STATIC_OBJ
+fi
 
 cpps=""
 cppos=""
@@ -4218,36 +4202,44 @@ fi
 shift
 
 function calpackages () {
-  if [ -a "$base.resh" ]
+  # find all include directories
+  INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS @$base.resh))"
+
+  # find the driver package
+  DRIVER_PKG=$($(echo $PKGCONFIG_DRIVER @$base.resh))
+  if [ x$DRIVER_PKG = x ]
   then
-    INCLUDE_DIRS="$INCLUDE_DIRS `$PKGCONFIG_CFLAGS @$base.resh`"
-
-    DRIVER=$($(echo $PKGCONFIG_DRIVER @$base.resh))
-    if [ "x" = "x$DRIVER" ]
-      then
-        DRIVER=flx_run
-    fi
-
-    # no idea how to check for an error!!
-    if [ $STATIC = 0 ]
-    then 
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS $DRIVER @$base.resh))"
-    else
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS $DRIVER @$base.resh))"
-    fi
-  else
-    DRIVER=flx_run
-    if [ $STATIC = 0 ]
-    then 
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS $DRIVER))"
-    else
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS $DRIVER))"
-    fi
+    # default to flx_run if none specified
+    DRIVER_PKG=flx_run
   fi
 
-  # NOTE: TRICK TO STRIP WHITESPACE that flx_pkgconfig might
-  # IS THAT A BUG? Yes, now fixed in flx_pkgconfig
-  # DRIVER=`echo $DRIVER`
+  # find the driver entity
+  if [ $STATIC = 0 ]
+  then
+    # dynamic linkage: the driver executable
+    DRIVER=$FLX_INSTALL_DIR/bin/$DRIVER_PKG$EXT_EXE
+  else
+    # static linkage: the driver object file
+    DRIVER=$FLX_INSTALL_DIR/rtl/$DRIVER_PKG$EXT_STATIC_OBJ
+  fi
+
+  if [ $STATIC = 0 ]
+  then 
+    # dynamic linkage: all the libraries required by the application
+    LINK_STRING="$DLINK_STRING$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS @$base.resh))"
+  else
+    # static linkage: all the libraries required by the application and driver
+    LINK_STRING="$SLINK_STRING$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS $DRIVER_PKG @$base.resh))"
+  fi
+
+  if [ $ECHO = 1 ]
+  then
+    echo "#RESOURCE FILE=$base.resh"
+    echo "#INCLUDE_DIRS=$INCLUDE_DIRS"
+    echo "#DRIVER=$DRIVER"
+    echo "#LINK_STRING=$LINK_STRING"
+  fi
+  
 }
 
 # grab arguments
@@ -4267,71 +4259,27 @@ do
  esac
 done
 
-if [ "x$FLX_INSTALL_DIR" != "x" ]
+INCLUDE_DIR="-I$FLX_INSTALL_DIR/rtl"
+FLXLIB="$FLX_INSTALL_DIR/lib"
+if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
 then
-  INCLUDE_DIR="$FLX_INSTALL_DIR/rtl"
-  FLXLIB="$FLX_INSTALL_DIR/lib"
-  if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
-  then
-    # bash is a heap of crap! The escaped quotes here are
-    # required in case the PATH has a filename with spaces
-    # However this actually fails on Linux!
-    FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
-    FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/"
-  else
-    FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
-    # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-    if [ "$MACOSX" = "1" ]
-    then
-      FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$DYLD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/"
-    else
-      FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/"
-    fi
-  fi
-  FLXRTL="$FLX_INSTALL_DIR/rtl"
-  FLXBIN="$FLX_INSTALL_DIR/bin"
-  FLXAR="$FLX_INSTALL_DIR/rtl"
-  if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
-  then
-    FLXSHLIB="$FLX_INSTALL_DIR/bin"
-  else
-    FLXSHLIB="$FLX_INSTALL_DIR/rtl"
-  fi
-  ELKHOUND="--elkhound=$FLX_INSTALL_DIR/bin/flx_elkhound"
+  # bash is a heap of crap! The escaped quotes here are
+  # required in case the PATH has a filename with spaces
+  # However this actually fails on Linux!
+  FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
+  FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH "
 else
-  # Locate the felix installation
-  prefix=""
-  for dir in `echo "$PATH" | sed 's/:/ /g'`
-  do
-    dir=$dir
-    if [ -x "$dir/flxg" ]
-    then
-      prefix="$dir/flxg"
-      break
-    fi
-  done
-  prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
-  if [ x$prefix = x ]
+  FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
+  # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+  if [ "$MACOSX" = "1" ]
   then
-    echo "Cannot find felix in PATH, use --test=root to set it"
-    exit 1
+    FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$DYLD_LIBRARY_PATH "
   else
-    INCLUDE_DIR="$prefix/lib/felix/rtl"
-    FLXG="$prefix/bin/flxg"
-    FLXRUN="$prefix/bin/"
-    FLXLIB="$prefix/lib/felix/lib"
-    FLXRTL="$prefix/rtl/felix/rtl"
-    FLXBIN="$prefix/bin"
-    FLXAR="$prefix/lib"
-    if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
-    then
-      FLXSHLIB="$prefix/bin"
-    else
-      FLXSHLIB="$prefix/lib"
-    fi
-    ELKHOUND="--elkhound=$prefix/bin/flx_elkhound"
+    FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH "
   fi
 fi
+ELKHOUND="--elkhound=$FLX_INSTALL_DIR/bin/flx_elkhound"
+
 DEBUGSWITCH=""
 if [ "$DEBUG" = "1" ]; then DEBUGSWITCH=" --debug"; fi
 STATIC_ENV=""
@@ -4388,7 +4336,7 @@ then
   then
     calpackages
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $DLINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
@@ -4425,7 +4373,7 @@ else
   then
     calpackages
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_STATIC $base$EXT_OBJ $FLXRTL/${DRIVER}_static$EXT_OBJ $cppos $SLINK_STRING $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH $LINKER_SWITCHES"
+    LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
