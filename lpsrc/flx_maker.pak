@@ -6,6 +6,12 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.71  2006/06/28 08:52:15  idadesub
+changed makefile definitions of PREFIX and etc to that they can be overloaded
+on the command line.
+fixed install of bin/flx
+made the doc and htmlman install into ${PREFIX}/share/felix-$VERSION
+
 Revision 1.70  2006/06/27 13:20:46  skaller
 Modified mk script and Makefile to save transcript of build session
 using the tee command.
@@ -2804,11 +2810,12 @@ We have no idea if it continues copying.
 
 @select(tangler('Makefile','data'))
 @tangle('CONFIG_ARGS=')
-@tangle('PREFIX='+PREFIX)
-@tangle('INSTALL_DIR=${PREFIX}/lib/felix-'+flx_version)
-@tangle('EXEC_DIR=${PREFIX}/bin')
-@tangle('MAN_DIR=${PREFIX}/man')
-@tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
+@tangle('PREFIX?='+PREFIX)
+@tangle('INSTALL_DIR?=${PREFIX}/lib/felix-'+flx_version)
+@tangle('EXEC_DIR?=${PREFIX}/bin')
+@tangle('MAN_DIR?=${PREFIX}/man')
+@tangle('DOC_DIR?=${PREFIX}/share/felix-'+flx_version)
+@tangle('BUILTIN_ISCR?=python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
 @tangle('\t./mk extract ')
@@ -3207,8 +3214,9 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${INSTALL_DIR}/lib')
 @tangle('\tinstall -d ${INSTALL_DIR}/rtl')
 @tangle('\tinstall -d ${INSTALL_DIR}/config')
-@tangle('\tinstall -d ${INSTALL_DIR}/doc')
-@tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
+@tangle('\tinstall -d ${DOC_DIR}/doc')
+@tangle('\tinstall -d ${DOC_DIR}/htmlman')
+@tangle('\tinstall -d ${EXEC_DIR}')
 @tangle('\tfind config -maxdepth 1 -type f -name "*.py" -exec install "{}" ${INSTALL_DIR}/config ";"')
 @tangle('\tfind config -maxdepth 1 -type f -name "*.fpc" -exec install "{}" ${INSTALL_DIR}/config ";"')
 @tangle('\tfind config -maxdepth 1 -type f -name "*.flxcc" -exec install "{}" ${INSTALL_DIR}/config ";"')
@@ -3216,7 +3224,8 @@ We have no idea if it continues copying.
 @tangle('\tfind bin -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/bin ";"')
 @tangle('\tfind rtl -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/rtl ";"')
 @tangle('\tfind lib -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/lib ";"')
-@tangle('\tfind doc -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/doc ";"')
+@tangle('\tfind doc -maxdepth 1 -type f -name "*" -exec install "{}" ${DOC_DIR}/doc ";"')
+@tangle('\tfind htmlman -maxdepth 1 -type f -name "*" -exec install "{}" ${DOC_DIR}/htmlman ";"')
 @tangle('\tfind man/man1 -maxdepth 1 -type f -name "*" -exec install "{}" ${MAN_DIR}/man1 ";"')
 @tangle('\techo "Stuff in misc has to be installed by hand"')
 @tangle('')
