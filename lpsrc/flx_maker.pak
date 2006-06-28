@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.72  2006/06/28 08:59:07  idadesub
+rolling back command line overridding of the prefix, as it currently doesn't
+work. We'd need to pass flx through a filter to replace the standard prefix
+with the specified one
+
 Revision 1.71  2006/06/28 08:52:15  idadesub
 changed makefile definitions of PREFIX and etc to that they can be overloaded
 on the command line.
@@ -2810,12 +2815,12 @@ We have no idea if it continues copying.
 
 @select(tangler('Makefile','data'))
 @tangle('CONFIG_ARGS=')
-@tangle('PREFIX?='+PREFIX)
-@tangle('INSTALL_DIR?=${PREFIX}/lib/felix-'+flx_version)
-@tangle('EXEC_DIR?=${PREFIX}/bin')
-@tangle('MAN_DIR?=${PREFIX}/man')
-@tangle('DOC_DIR?=${PREFIX}/share/felix-'+flx_version)
-@tangle('BUILTIN_ISCR?=python -O interscript/bin/iscr.py --nocache')
+@tangle('PREFIX='+PREFIX)
+@tangle('INSTALL_DIR=${PREFIX}/lib/felix-'+flx_version)
+@tangle('EXEC_DIR=${PREFIX}/bin')
+@tangle('MAN_DIR=${PREFIX}/man')
+@tangle('DOC_DIR=${PREFIX}/share/felix-'+flx_version)
+@tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
 @tangle('\t./mk extract ')
