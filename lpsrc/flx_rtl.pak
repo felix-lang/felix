@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.49  2006/06/28 22:45:23  skaller
+Fix disasterous bug in flx_run_pthread where somehow CVS acquired
+a commented out pointer initialisation.
+
 Revision 1.48  2006/06/28 02:59:24  skaller
 Fix compiler selection for host build to check for win64 as well as win32
 
@@ -3109,7 +3113,7 @@ int run_felix_pthread(
 
   {
     con_t *top = instance->start_proc;
-    fthread_t *ft;// = new (*collector,_fthread_ptr_map) fthread_t(top);
+    fthread_t *ft new (*collector,_fthread_ptr_map) fthread_t(top);
     collector->add_root(ft);
     active->push_front(ft);
   }
