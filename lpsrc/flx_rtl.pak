@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.48  2006/06/28 02:59:24  skaller
+Fix compiler selection for host build to check for win64 as well as win32
+
 Revision 1.47  2006/06/25 22:55:09  skaller
 Fix spelling error which caused wrong library name to be built.
 
@@ -787,14 +790,14 @@ struct RTL_EXTERN unit {};   // unit
 // we provide a shape for C 'int' type as well
 // ********************************************************
 
-extern RTL_EXTERN flx::gc::generic::gc_shape_t schannel_ptr_map;
-extern RTL_EXTERN flx::gc::generic::gc_shape_t _fthread_ptr_map;
-extern RTL_EXTERN flx::gc::generic::gc_shape_t _ref_ptr_map;
-extern RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
-extern RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
-extern RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
-extern RTL_EXTERN flx::gc::generic::gc_shape_t slist_ptr_map;
-extern RTL_EXTERN flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t _fthread_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t schannel_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t _ref_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t _uctor_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t _int_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t unit_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t slist_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
 
 // ********************************************************
 // Standard C++ Exceptions
@@ -3106,7 +3109,7 @@ int run_felix_pthread(
 
   {
     con_t *top = instance->start_proc;
-    fthread_t *ft = new (*collector,_fthread_ptr_map) fthread_t(top);
+    fthread_t *ft;// = new (*collector,_fthread_ptr_map) fthread_t(top);
     collector->add_root(ft);
     active->push_front(ft);
   }

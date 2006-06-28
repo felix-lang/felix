@@ -225,9 +225,9 @@ int main(int argc, char** argv)
     std::list<session_record> active;
     std::map<session_key,fthread_t*> waiting;
 
-    fthread_t *ft = 
-      new(collector,_fthread_ptr_map) 
-      fthread_t(instance.start_proc)
+    fthread_t *ft// = 
+      //new(collector,flx::rtl::_fthread_ptr_map) 
+      //fthread_t(instance.start_proc)
     ;
     
     active.push_front(make_pair(-1,ft));
@@ -305,7 +305,7 @@ int main(int argc, char** argv)
             instance.thread_frame
           )
         ;
-        fthread_t *ft = new(collector,_fthread_ptr_map) fthread_t(top);
+        fthread_t *ft;// = new(collector,flx::rtl::_fthread_ptr_map) fthread_t(top);
         collector.add_root(ft);
         //printf("instance created, continuation=%p\n",top);
         _uctor_ *request = ft->run();

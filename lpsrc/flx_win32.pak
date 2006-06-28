@@ -10,22 +10,22 @@ set PATH=c:\Python24;%PATH%
 set PYTHONPATH=.
 
 @select(tangler("win32config.bat","data"))
-python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_config.pak
 python script\make_config.py --build=win32 --host=win32 --target=win32
-python interscript\bin\iscr.py --nocache lpsrc\flx_maker.pak
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_maker.pak
 
 @select(tangler("win3264config.bat","data"))
-python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_config.pak
 python script\make_config.py --build=win32 --host=win32 --target=win64
-python interscript\bin\iscr.py --nocache lpsrc\flx_maker.pak
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_maker.pak
 
 @select(tangler("win64config.bat","data"))
-python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_config.pak
 python script\make_config.py --build=win32 --host=win64 --target=win64
-python interscript\bin\iscr.py --nocache lpsrc\flx_maker.pak
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_maker.pak
 
 @select(tangler("make.bat","data"))
 python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
 @select(tangler("iscr.bat","data"))
-python interscript\bin\iscr.py %1 %2 %3 %4 %5 %6 %7 %8 %9
+python interscript\bin\iscr.py --break-on-error %1 %2 %3 %4 %5 %6 %7 %8 %9
 

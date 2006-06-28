@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.200  2006/06/28 02:59:24  skaller
+Fix compiler selection for host build to check for win64 as well as win32
+
 Revision 1.199  2006/06/26 07:23:11  skaller
 Fix bug (new boot script named configure by mistake).
 
@@ -1035,7 +1038,7 @@ if "build" in PHASES:
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print
 
-  if build_model == "win32":
+  if build_model in ["win32","win64"]:
     BUILD_CC=flxbuild.msvcc_class.msvcc()
     BUILD_CXX=flxbuild.msvcxx_class.msvcxx()
   else:
@@ -1153,7 +1156,7 @@ if "host" in PHASES:
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print
 
-  if host_model in ["win32"]:
+  if host_model in ["win32","win64"]:
     HOST_CC=flxbuild.msvcc_class.msvcc()
     HOST_CXX=flxbuild.msvcxx_class.msvcxx()
   else:
