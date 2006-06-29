@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.73  2006/06/29 17:16:17  skaller
+Attempt to fix models so nocygwin build make host (only).
+
 Revision 1.72  2006/06/28 08:59:07  idadesub
 rolling back command line overridding of the prefix, as it currently doesn't
 work. We'd need to pass flx through a filter to replace the standard prefix
@@ -2629,16 +2632,19 @@ if lparchive is not None:
 if not phases and not models:
   models = [host_model]
 
-if models:
+for model in models:
   if model == build_model:
     if "build" not in phases: phases.append("build")
 
+for model in models:
   if model == host_model:
     if "host" not in phases: phases.append("host")
 
+for model in models:
   if model == target_model:
     if "target" not in phases: phases.append("target")
 
+for model in models:
   if model == run_model:
     if "run" not in phases: phases.append("run")
 
