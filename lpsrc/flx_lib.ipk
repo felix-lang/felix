@@ -2,6 +2,9 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.166  2006/06/29 06:49:30  idadesub
+looks like we missed a couple "requires flx_strutil"
+
 Revision 1.165  2006/06/14 14:47:35  skaller
 Make function/procedure pointer which are constructor arguments work.
 
@@ -1420,11 +1423,11 @@ module Ustring
   fun subscript: ustring * int -> char = 
     "$1[$2<0??$1.size()+$2 : $2]";
   fun copyfrom: ustring * int -> ustring = 
-    "flx::rtl::strutil::substr($1,$2,$1.size())";
+    "flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
   fun copyto: ustring * int -> ustring = 
-    "flx::rtl::strutil::substr($1,0,$2)";
+    "flx::rtl::strutil::substr($1,0,$2)" requires flx_strutil;
   fun subustring: ustring * int * int -> ustring = 
-    "flx::rtl::strutil::substr($1,$2,$3)";
+    "flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
 
   // comparisons
   gen_cmp ustring;
