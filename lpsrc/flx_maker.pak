@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.74  2006/06/29 17:27:12  idadesub
+fixing bin/flx so that it doesn't have the -I-I bug
+
 Revision 1.73  2006/06/29 17:16:17  skaller
 Attempt to fix models so nocygwin build make host (only).
 
@@ -4285,7 +4288,7 @@ do
 done
 
 INCLUDE_DIR="-I$FLX_INSTALL_DIR/rtl"
-FLXLIB="$FLX_INSTALL_DIR/lib"
+FLXLIB="-I$FLX_INSTALL_DIR/lib"
 if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
 then
   # bash is a heap of crap! The escaped quotes here are
@@ -4353,14 +4356,14 @@ if [ $STATIC = 0 ]
 then
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND -I$FLXLIB $INCLUDE_DIRS $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi
   if [ $? = 0 ]
   then
     calpackages
-    CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    CCMD="$CCOBJ_DLLIB $CCFLAGS $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
@@ -4390,14 +4393,14 @@ then
 else
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND -I$FLXLIB $INCLUDE_DIRS $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi
   if [ $? = 0 ]
   then
     calpackages
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
