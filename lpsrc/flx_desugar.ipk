@@ -401,8 +401,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let ts = Flx_cformat.types_of_cformat_string sr s in
     let ss = Flx_print.string_of_string s in
     let fs = "flx::rtl::strutil::flx_asprintf("^ss^",$a)" in
-    let req = `AST_name (sr,"flx_strutil",[]) in
-    let f = `DCL_fun([],ts,str,`StrTemplate fs,[req],"primary") in
+    let req = `NREQ_atom (`AST_name (sr,"flx_strutil",[])) in
+    let f = `DCL_fun([],ts,str,`StrTemplate fs,req,"primary") in
     let x=`AST_index (sr,id,ix) in
     [
       Dcl (sr,id,Some ix,`Private,[],f);
@@ -851,24 +851,14 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^"["^string_of_vs _vs ^"]");
     *)
     let ts = map (fun (s,_)-> `AST_name (sr,s,[])) parent_vs in
-    let us = `AST_name (sr,"_rqs_" ^ name,ts) in
-    let body = `DCL_insert (`Str "",`Body,[us]) in
+    let us = `NREQ_atom (`AST_name (sr,"_rqs_" ^ name,ts)) in
+    let body = `DCL_insert (`Str "",`Body,us) in
     Dcl (sr,"_rqs_"^n,None,`Public,[],body)
   in
 
   (* rename _root requirements *)
-  let map_reqs sr (reqs : named_reqs_t) : named_reqs_t = 
-    rqname' sr :: reqs
-    (*
-    map 
-    (function 
-      | `AST_name (sr,"_root",[]) -> 
-       print_endline "FOUND ROOT REQUIREMENT?";
-       rqname' sr
-      | x -> x
-    )
-    reqs
-    *)
+  let map_reqs sr (reqs : named_req_expr_t) : named_req_expr_t = 
+    `NREQ_and (`NREQ_atom (rqname' sr), reqs)
   in
 
   (* name literal requirements *)
@@ -877,33 +867,44 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     | "needs_ptf" -> `Requires_ptf
     | x -> clierr sr ("Unknown property " ^ x)
   in
-  let mkreqs sr rqs : property_t list * asm_t list * named_reqs_t =
+  let mkreqs sr (rqs :raw_req_expr_t) : property_t list * asm_t list * named_req_expr_t =
     let ix = None in
-    let rec aux rqs props dcls nrqs =
-      match rqs with 
-      | [] -> props, rev dcls, nrqs
-      | h :: t -> match h with
+    let props = ref [] in
+    let decls = ref [] in
+    let rec aux rqs = match rqs with 
+    | `RREQ_or (a,b) -> `NREQ_or (aux a, aux b)
+    | `RREQ_and (a,b) -> `NREQ_and (aux a, aux b)
+    | `RREQ_true -> `NREQ_true
+    | `RREQ_false -> `NREQ_false
+    | `RREQ_atom x -> match x with
       | `Body_req s ->
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
-        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Body,[])) in
-        aux t props ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Body,`NREQ_true)) in
+        decls := dcl :: !decls;
+        `NREQ_atom (`AST_name (sr,n,parent_ts sr))
 
       | `Header_req s ->
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
-        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Header,[])) in
-        aux t props ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Header,`NREQ_true)) in
+        decls := dcl :: !decls;
+        `NREQ_atom (`AST_name (sr,n,parent_ts sr))
 
       | `Package_req s ->
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
-        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Package,[])) in
-        aux t props ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Package,`NREQ_true)) in
+        decls := dcl :: !decls;
+        `NREQ_atom (`AST_name (sr,n,parent_ts sr))
 
-      | `Named_req n -> aux t props dcls (n::nrqs)
-      | `Property_req s -> aux t (mkprop sr s :: props) dcls nrqs
-    in aux rqs [] [] []
+      | `Named_req n -> `NREQ_atom n
+      | `Property_req s -> 
+        props := mkprop sr s :: !props;
+        `NREQ_true
+    in 
+    let r = aux rqs in
+    !props, !decls, r
   in
 
   (* rename _root headers *)

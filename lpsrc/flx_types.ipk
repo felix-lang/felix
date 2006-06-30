@@ -551,7 +551,7 @@ and type_qual_t = [
 and requirement_t = [
   | `Body_req of c_t
   | `Header_req of c_t
-  | `Named_req of qualified_name_t 
+  | `Named_req of qualified_name_t
   | `Property_req of string
   | `Package_req of c_t
 ]
@@ -561,8 +561,25 @@ and ikind_t = [
   | `Body
   | `Package
 ] 
-and requirements_t = requirement_t list
-and named_reqs_t = qualified_name_t list
+
+and raw_req_expr_t =
+[
+  | `RREQ_atom of requirement_t 
+  | `RREQ_or of raw_req_expr_t * raw_req_expr_t
+  | `RREQ_and of raw_req_expr_t * raw_req_expr_t
+  | `RREQ_true
+  | `RREQ_false
+]
+
+and named_req_expr_t = 
+[
+  | `NREQ_atom of qualified_name_t
+  | `NREQ_or of named_req_expr_t * named_req_expr_t
+  | `NREQ_and of named_req_expr_t * named_req_expr_t
+  | `NREQ_true
+  | `NREQ_false
+]
+
 and prec_t = string
 and glr_term_t = 
 [
@@ -689,13 +706,13 @@ and statement_t =
   | `AST_init of range_srcref * id_t * expr_t
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * c_t * requirements_t
-  | `AST_ctypes of range_srcref * (srcref * id_t) list * type_qual_t list  * requirements_t 
-  | `AST_const_decl of range_srcref * id_t * vs_list_t * typecode_t * c_t * requirements_t
-  | `AST_fun_decl of range_srcref * id_t * vs_list_t * typecode_t list * typecode_t * c_t * requirements_t * prec_t
-  | `AST_callback_decl of range_srcref * id_t * typecode_t list * typecode_t * requirements_t
+  | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * c_t * raw_req_expr_t
+  | `AST_ctypes of range_srcref * (srcref * id_t) list * type_qual_t list  * raw_req_expr_t 
+  | `AST_const_decl of range_srcref * id_t * vs_list_t * typecode_t * c_t * raw_req_expr_t
+  | `AST_fun_decl of range_srcref * id_t * vs_list_t * typecode_t list * typecode_t * c_t * raw_req_expr_t * prec_t
+  | `AST_callback_decl of range_srcref * id_t * typecode_t list * typecode_t * raw_req_expr_t
   (* embedding *)
-  | `AST_insert of range_srcref * id_t * vs_list_t * c_t * ikind_t  * requirements_t
+  | `AST_insert of range_srcref * id_t * vs_list_t * c_t * ikind_t  * raw_req_expr_t
   | `AST_code of range_srcref * c_t
   | `AST_noreturn_code of range_srcref * c_t
 
@@ -804,11 +821,11 @@ type dcl_t =
   | `DCL_class of        asm_t list  
 
   (* binding structures [prolog] *)
-  | `DCL_abs of          type_qual_t list * c_t * named_reqs_t
-  | `DCL_const of        typecode_t * c_t * named_reqs_t
-  | `DCL_fun of          property_t list * typecode_t list * typecode_t * c_t * named_reqs_t * prec_t
-  | `DCL_callback of     property_t list * typecode_t list * typecode_t * named_reqs_t 
-  | `DCL_insert of      c_t * ikind_t * named_reqs_t
+  | `DCL_abs of          type_qual_t list * c_t * named_req_expr_t
+  | `DCL_const of        typecode_t * c_t * named_req_expr_t
+  | `DCL_fun of          property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
+  | `DCL_callback of     property_t list * typecode_t list * typecode_t * named_req_expr_t 
+  | `DCL_insert of      c_t * ikind_t * named_req_expr_t
   | `DCL_regdef of      regexp_t
   | `DCL_regmatch of    (regexp_t * expr_t) list
   | `DCL_reglex of      (regexp_t * expr_t) list
@@ -1050,7 +1067,7 @@ type env_t = (bid_t * id_t * name_map_t * name_map_t list) list
 
 type symbol_definition_t =
   [
-  | `SYMDEF_abs of type_qual_t list * c_t * named_reqs_t
+  | `SYMDEF_abs of type_qual_t list * c_t * named_req_expr_t
   | `SYMDEF_regdef of regexp_t
   | `SYMDEF_regmatch of params_t * (regexp_t * expr_t) list
   | `SYMDEF_reglex of params_t * int * (regexp_t * expr_t) list
@@ -1070,12 +1087,12 @@ type symbol_definition_t =
   | `SYMDEF_const_ctor of int * typecode_t * int
   | `SYMDEF_nonconst_ctor of int * typecode_t * int * typecode_t
 
-  | `SYMDEF_const of typecode_t * c_t * named_reqs_t
+  | `SYMDEF_const of typecode_t * c_t * named_req_expr_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
-  | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_reqs_t * prec_t
-  | `SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_reqs_t
-  | `SYMDEF_insert of c_t  * ikind_t * named_reqs_t
+  | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_req_expr_t * prec_t
+  | `SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
+  | `SYMDEF_insert of c_t  * ikind_t * named_req_expr_t
   | `SYMDEF_union of  (id_t * int *  typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
@@ -3030,21 +3047,36 @@ and string_of_long_code_spec c =
   | `StrTemplate s -> triple_quote ^ s ^ triple_quote
   | `Str s -> "c" ^ triple_quote ^ s ^ triple_quote
 
-and string_of_reqs = function 
-  | [] -> ""
-  | x -> 
-    " requires " ^ catmap ", " 
-    (function 
-      | `Named_req s -> string_of_qualified_name s
-      | `Body_req c -> "body " ^ string_of_code_spec c
-      | `Header_req c -> "header " ^ string_of_code_spec c
-      | `Property_req s -> "property \"" ^ s ^ "\""
-      | `Package_req c -> "package " ^ string_of_code_spec c
-    )
-    x
+and string_of_raw_req = function 
+  | `Named_req s -> string_of_qualified_name s
+  | `Body_req c -> "body " ^ string_of_code_spec c
+  | `Header_req c -> "header " ^ string_of_code_spec c
+  | `Property_req s -> "property \"" ^ s ^ "\""
+  | `Package_req c -> "package " ^ string_of_code_spec c
 
-and string_of_named_reqs = function | [] -> ""
- | x -> " requires " ^ catmap ", " string_of_qualified_name x
+(* fairly lame excess brackets here *)
+and string_of_raw_req_expr = function
+  | `RREQ_atom r -> string_of_raw_req r
+  | `RREQ_and (a,b) -> "(" ^ string_of_raw_req_expr a ^ ") and (" ^ string_of_raw_req_expr b ^")"
+  | `RREQ_or (a,b) -> "(" ^ string_of_raw_req_expr a ^ ") or (" ^ string_of_raw_req_expr b ^")"
+  | `RREQ_true -> "(true)"
+  | `RREQ_false -> "(false)"
+
+(* fairly lame excess brackets here *)
+and string_of_named_req_expr = function
+  | `NREQ_atom r -> string_of_qualified_name r
+  | `NREQ_and (a,b) -> "(" ^ string_of_named_req_expr a ^ ") and (" ^ string_of_named_req_expr b ^")"
+  | `NREQ_or (a,b) -> "(" ^ string_of_named_req_expr a ^ ") or (" ^ string_of_named_req_expr b ^")"
+  | `NREQ_true -> "(true)"
+  | `NREQ_false -> "(false)"
+
+and string_of_raw_reqs x = match x with
+  | `RREQ_true -> "" (* required nothing *)
+  | x -> " requires " ^ string_of_raw_req_expr x
+
+and string_of_named_reqs x = match x with
+  | `NREQ_true -> "" (* requires nothing *)
+  | x -> " requires " ^ string_of_named_req_expr x
 
 and string_of_qual = function 
 | `Incomplete -> "incomplete"
@@ -3220,21 +3252,21 @@ and string_of_statement level s =
   | `AST_ctypes (_,names, quals, reqs) -> spaces level ^ 
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "ctypes " ^ catmap "," snd names ^ 
-    string_of_reqs reqs ^
+    string_of_raw_reqs reqs ^
     ";"
 
   | `AST_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^ 
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ t ^ print_vs vs ^
     " = " ^ string_of_code_spec ct ^ 
-    string_of_reqs reqs ^
+    string_of_raw_reqs reqs ^
     ";"
 
   | `AST_callback_decl (_,name,args,result, reqs) -> spaces level ^ 
     "callback " ^ name ^ ": " ^ 
     (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^ 
-    string_of_reqs reqs ^
+    string_of_raw_reqs reqs ^
     ";"
 
   | `AST_fun_decl (_,name,vs,args, result, code, reqs,prec) ->
@@ -3245,7 +3277,7 @@ and string_of_statement level s =
     (string_of_typecode result) ^ 
     " = " ^ string_of_code_spec code ^ 
     (if prec = "" then "" else ":"^prec^" ")^
-    string_of_reqs reqs ^
+    string_of_raw_reqs reqs ^
     ";"
 
   | `AST_const_decl (_,name,vs,typ, code, reqs) ->
@@ -3253,7 +3285,7 @@ and string_of_statement level s =
      "const " ^ name ^ 
      ": " ^ string_of_typecode typ ^ 
      " = "^string_of_code_spec code^ 
-     string_of_reqs reqs ^
+     string_of_raw_reqs reqs ^
      ";" 
 
   | `AST_insert (_,n,vs,s, ikind, reqs) -> 
@@ -3265,7 +3297,7 @@ and string_of_statement level s =
     )
     ^n^print_vs vs^ 
     "\n" ^ string_of_code_spec s ^ " " ^
-     string_of_reqs reqs ^
+     string_of_raw_reqs reqs ^
     ";\n"
 
   | `AST_code (_,s) -> 

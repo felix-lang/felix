@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.75  2006/06/30 15:08:09  skaller
+Add first order alternation to requirements specifications.
+
 Revision 1.74  2006/06/29 17:27:12  idadesub
 fixing bin/flx so that it doesn't have the -I-I bug
 
@@ -1178,11 +1181,16 @@ OCS_MODULES = [
   'ocs_top', 
 ]
 
+@h = tangler('umk','data')
+@select(h)
+python script/maker $*
+@os.system("chmod u+x umk")
+
 @h = tangler('mk','data')
 @select(h)
 LOGFILE=mk_`date +"%Y-%m-%d-%H%M"`.log
 echo "Saving transcript to $LOGFILE" | tee -a $LOGFILE
-python script/maker $* | tee -a $LOGFILE 2>&1
+./umk | tee -a $LOGFILE 2>&1
 @os.system("chmod u+x mk")
 
 @h = tangler('mk.bat','data')
