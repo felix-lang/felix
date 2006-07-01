@@ -1588,9 +1588,9 @@ main(int argc, char** argv) {
       try:
         shell(opt.STRIP + filename)
       except:
-        opt.STRIP = "#strip "
+        opt.STRIP = "true strip "
     else:
-      opt.STRIP = "#strip "
+      opt.STRIP = "true strip "
 
 
   def detect_ar(self, shell, get_stdout):
@@ -1605,7 +1605,7 @@ main(int argc, char** argv) {
     try:
       shell(opt.RANLIB + "tmp" + os.sep + "dummy.a")
     except EnvironmentError:
-      opt.RANLIB = "#ranlib "
+      opt.RANLIB = "true ranlib "
 
 
   def detect_compiler_options(self, shell, get_stdout):
@@ -1971,9 +1971,9 @@ class ocaml(compiler_base):
           opt.OCAMLDOC = 'ocamldoc '
         except MakeError:
           print "WARNING: CANT FIND OCAML TOOLS (ocamlc, ocamllex, ocamlyacc)"
-          opt.OCAMLCC = '#ocamlc '
-          opt.OCAMLLEX = '#ocamllex '
-          opt.OCAMLYACC = '#ocamlyacc '
+          opt.OCAMLCC = 'false ocamlc '
+          opt.OCAMLLEX = 'false ocamllex '
+          opt.OCAMLYACC = 'false ocamlyacc '
 
     try: # check if there is a native code version of the bytecode compiler
       shell('ocamlc.opt')
@@ -1984,7 +1984,7 @@ class ocaml(compiler_base):
         opt.OCAMLB = 'ocamlc '
       except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamlc'"
-        opt.OCAMLB = '#ocamlc '
+        opt.OCAMLB = 'false ocamlc '
 
     try:
       shell('ocamldoc.opt')
@@ -1995,7 +1995,7 @@ class ocaml(compiler_base):
         opt.OCAMLDOC = 'ocamldoc '
       except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamldoc'"
-        opt.OCAMLDOC = '#ocamldoc '
+        opt.OCAMLDOC = 'false ocamldoc '
 
     # set the default ocaml compiler
     if opt.OCAMLCC[0] != '#':
