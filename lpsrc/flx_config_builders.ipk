@@ -1585,7 +1585,10 @@ main(int argc, char** argv) {
     # see if we have strip: it isn't considered essential
     filename = self.compile_dummy_main(shell)
     if opt.STRIP:
-      shell(opt.STRIP + filename)
+      try:
+        shell(opt.STRIP + filename)
+      except:
+        opt.STRIP = "#strip "
     else:
       opt.STRIP = "#strip "
 
