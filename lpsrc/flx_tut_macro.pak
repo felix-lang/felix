@@ -228,6 +228,23 @@ print mx1; endl; // 101
 };
 print mx1; endl; // 103 [uses assigned value]
 
+@head(3,'Macro variables in requirements')
+Named requirements in requirements clauses are
+macro expanded as expressions: they must be qualified
+names though.
+
+@select(tangler(tdir+'mac123a.flx'))
+#import <flx.flxh>
+header fred = "inline int f(int x){return x;}";
+macro val joe = fred;
+fun f: int -> int = "f($1)" requires joe;
+
+print$ f 2; endl;
+
+@head(2,"tut/examples/mac123a.expect")
+@select(tangler("tut/examples/mac123a.expect","data"))
+2
+@doc()
 
 @head(3,'Macro functions')
 You can also define a macro function.

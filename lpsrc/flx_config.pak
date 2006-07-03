@@ -4,7 +4,7 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '2'
-@flx_version_release = '_rc8'
+@flx_version_release = '_rc9'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.202  2006/07/03 04:23:07  skaller
+Allow macro process to replace into named requirements as
+expressions (the expression must resolve to a qualified name)
+
 Revision 1.201  2006/07/01 04:11:11  skaller
 Add irix and irix64 as python names of posix platforms.
 

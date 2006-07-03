@@ -710,6 +710,19 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   is false, a label at the low level can cause subsequent code to become
   reachble.
 *)
+and rqmap me reqs = 
+  let r req = rqmap me req in
+  match reqs with
+  | `RREQ_or (a,b) -> `RREQ_or (r a, r b)
+  | `RREQ_and (a,b) -> `RREQ_and (r a, r b)
+  | `RREQ_true -> `RREQ_true
+  | `RREQ_false -> `RREQ_false
+  | `RREQ_atom x -> match x with
+  |  `Named_req qn ->
+    let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
+    `RREQ_atom (`Named_req qn)
+  | x -> `RREQ_atom x
+
 and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (st:statement_t):statement_t list = 
   (*
   print_endline ("Subst or expand: " ^ string_of_statement 0 st);
@@ -717,6 +730,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let recurion_limit = recursion_limit - 1 in
   let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
+  let rqmap req = rqmap me req in
   let ms s = recurse recursion_limit local_prefix seq (ref true) macros s in
   let ms' reachable s = recurse recursion_limit local_prefix seq reachable macros s in
   let msp sr ps ss = 
@@ -802,25 +816,25 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     iter 
     (fun (sr,id) -> 
       let sr = slift sr in
-      let st = `AST_abs_decl (sr,id, [], qs, `Str id, reqs) in
+      let st = `AST_abs_decl (sr,id, [], qs, `Str id, rqmap reqs) in
       tack st
     ) 
     ids
 
   | `AST_abs_decl (sr,id,vs,typs,v,rqs) ->  
-    tack (`AST_abs_decl (sr,id,vs,typs,v, rqs))
+    tack (`AST_abs_decl (sr,id,vs,typs,v, rqmap rqs))
 
   | `AST_callback_decl (sr,id,args,ret,rqs) ->  
-    tack (`AST_callback_decl (sr,mi sr id,map (mt sr) args,mt sr ret,rqs))
+    tack (`AST_callback_decl (sr,mi sr id,map (mt sr) args,mt sr ret,rqmap rqs))
 
   | `AST_const_decl (sr, id, vs, t, c, reqs) -> 
-     tack (`AST_const_decl (sr, mi sr id, vs, mt sr t, c, reqs))
+     tack (`AST_const_decl (sr, mi sr id, vs, mt sr t, c, rqmap reqs))
     
   | `AST_fun_decl (sr, id, vs, ts, t, c, reqs,prec) -> 
-    tack (`AST_fun_decl (sr, mi sr id, vs, map (mt sr) ts, mt sr t, c, reqs,prec))
+    tack (`AST_fun_decl (sr, mi sr id, vs, map (mt sr) ts, mt sr t, c, rqmap reqs,prec))
 
   | `AST_insert (sr, n, vs, s, ikind, reqs) ->  
-    tack (`AST_insert (sr,n,vs,s, ikind, reqs))
+    tack (`AST_insert (sr,n,vs,s, ikind, rqmap reqs))
   
     (* 
       NOTE: c code is embedded even  though it isn't
