@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.203  2006/07/03 15:00:04  skaller
+Add -f to rm command in configure script to suppress warning.
+
 Revision 1.202  2006/07/03 04:23:07  skaller
 Allow macro process to replace into named requirements as
 expressions (the expression must resolve to a qualified name)
@@ -243,7 +246,7 @@ done
 
 echo FLX_LPARCHIVE at $FLX_LPARCHIVE
 
-rm $FLX_LPARCHIVE/lpsrc/*.cache
+rm -f $FLX_LPARCHIVE/lpsrc/*.cache
 python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
 if [ $? != 0 ]
 then
@@ -309,7 +312,7 @@ done
 
 echo FLX_LPARCHIVE at $FLX_LPARCHIVE
 
-rm $FLX_LPARCHIVE/lpsrc/*.cache
+rm -f $FLX_LPARCHIVE/lpsrc/*.cache
 python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
 if [ $? != 0 ]
 then
