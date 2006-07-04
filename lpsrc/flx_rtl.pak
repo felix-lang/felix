@@ -1,5 +1,14 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.51  2006/07/04 14:30:42  skaller
+Make svc_collect stop the world whilst collecting,
+to ensure all Felix pthreads have empty machine stacks,
+and don't modify the heap whilst collection is in progress.
+In this mod, auto-collection is entirely disabled.
+Thread check for world stop only when an async I/O request
+or collection request is made. Both these latter conditions
+may be modified in the future.
+
 Revision 1.50  2006/06/28 22:49:41  skaller
 Fixed it again. There was a syntax error. Somehow, the make script
 still proceeded???????
@@ -2428,15 +2437,15 @@ delegate:
   return;
 
 check_collect:  
-  gcp->gc_counter++;
-  if(gcp->gc_counter == gcp->gc_freq)
-  {
-    gcp->gc_counter = 0;
-    gcp->collections++;
-    unsigned long n = collector->collect();
-    if(gcp->compact) collector->compact(true);
-    if(gcp->debug_collections)fprintf(stderr,"collected %ld objects\n",n);
-  }
+  //gcp->gc_counter++;
+  //if(gcp->gc_counter == gcp->gc_freq)
+  //{
+  //  gcp->gc_counter = 0;
+  //  gcp->collections++;
+  //  unsigned long n = collector->collect();
+  //  if(gcp->compact) collector->compact(true);
+  //  if(gcp->debug_collections)fprintf(stderr,"collected %ld objects\n",n);
+  //}
     
   switch(request->variant)
   {
@@ -2515,31 +2524,6 @@ check_collect:
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)fprintf(stderr,"Request to kill fthread %p\n",ftx);
       ftx -> kill();
-    }
-    goto next_request;
-
-    case svc_compact:
-    {
-      // requires fthreads to be immobile
-      if(debug_driver)fprintf(stderr,"svc compact\n");
-      collector->compact(false);
-    }
-    goto next_request;
-
-    case svc_collect:
-    {
-      // requires fthreads to be immobile
-      if(debug_driver)fprintf(stderr,"svc collect\n");
-      collector->collect();
-    }
-    goto next_request;
-
-    case svc_collect_and_compact:
-    {
-      // requires fthreads to be immobile
-      if(debug_driver)fprintf(stderr,"svc collect and compact\n");
-      collector->collect();
-      collector->compact(true);
     }
     goto next_request;
 
@@ -2906,14 +2890,89 @@ int do_final_cleanup(
   flx_libinit_t *instance
 );
 
+class thread_control_t
+{
+    unsigned int thread_counter;
+    bool do_world_stop;
+    flx_condv_t stop_guard;
+    flx_mutex_t stop_mutex;
+public: 
+    thread_control_t () : do_world_stop(false), thread_counter(0) 
+    {
+      //fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
+    }
+
+    int thread_count() {
+      flx_mutex_locker_t m(stop_mutex);
+      return thread_counter;
+    }
+
+    void add_thread() {
+      flx_mutex_locker_t m(stop_mutex);
+      //fprintf(stderr, "Adding thread\n");
+      ++thread_counter; 
+      stop_guard.broadcast();
+    }
+    void remove_thread() { 
+      flx_mutex_locker_t m(stop_mutex);
+      //fprintf(stderr, "Removing thread\n");
+      --thread_counter; 
+      stop_guard.broadcast();
+    }
+
+    // stop the world!
+    bool world_stop() {
+      flx_mutex_locker_t m(stop_mutex);
+      //fprintf(stderr,"Stopping world\n");
+      if (do_world_stop) return false; // race! Someone else beat us
+      do_world_stop = true;
+      --thread_counter;
+      while(thread_counter>0) stop_guard.wait(&stop_mutex);
+      //fprintf(stderr,"World STOPPED\n");
+      return true; // we stopped the world
+    }
+
+    // used by mainline to wait for other threads to die
+    void join_all() 
+    {
+      flx_mutex_locker_t m(stop_mutex);
+      while(do_world_stop || thread_counter>0) stop_guard.wait(&stop_mutex);
+      //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
+    }
+
+    // restart the world
+    void world_start() {
+      flx_mutex_locker_t m(stop_mutex);
+      //fprintf(stderr,"Restarting world\n");
+      ++thread_counter;
+      do_world_stop = false;
+      stop_guard.broadcast();
+    }
+
+   void yield() {
+      flx_mutex_locker_t m(stop_mutex);
+      if (do_world_stop)
+      {
+        //fprintf(stderr,"Yield found world stop!\n");
+        --thread_counter;
+        //fprintf(stderr,"Yield thread count now %d\n",thread_counter);
+        stop_guard.broadcast();
+        while(do_world_stop) stop_guard.wait(&stop_mutex);
+        ++thread_counter;
+        //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
+      }
+   }
+};
+
+
 struct doflx_data 
 {
   bool debug_driver;
   gc_profile_t *gcp;
   std::list<fthread_t*> *active;
-  flx_ts_counter_t *thread_counter;
-  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a, flx_ts_counter_t *tc)
-   : debug_driver(d), gcp(g), active(a), thread_counter(tc) {}
+  thread_control_t *thread_control;
+  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a, thread_control_t *tc)
+   : debug_driver(d), gcp(g), active(a), thread_control(tc) {}
 };
 
 static
@@ -2929,7 +2988,7 @@ doflx (void *data) {
   bool debug_driver = d->debug_driver;
   gc_profile_t *gcp = d-> gcp;
   std::list<fthread_t*> *active = d->active;
-  flx_ts_counter_t *thread_counter=d->thread_counter;
+  thread_control_t *thread_control=d->thread_control;
   delete d;
 
   unsigned long async_count = 0;
@@ -2940,8 +2999,7 @@ doflx (void *data) {
     sync_state_t ss(debug_driver, gcp, active);
 
   process_active:
-    if(debug_driver)
-      fprintf(stderr,"Process active ..");
+    if(debug_driver)fprintf(stderr,"Process active ..");
 
     if(debug_driver)
       fprintf(stderr,"Before running: Sync state is %s/%s\n",
@@ -2954,11 +3012,55 @@ doflx (void *data) {
         get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
 
     if (ss.fs == terminated) goto cleanup;
+
+    //fprintf(stderr, "Thread yielding ..");
+    thread_control->yield();
+    //fprintf(stderr, "..Thread resuming!\n");
+
     if (ss.fs == blocked) goto do_async;
 
     if (ss.fs == delegated) 
     switch (ss.request->variant)
     {
+      case svc_compact:
+      {
+        // requires fthreads to be immobile
+        if(debug_driver)fprintf(stderr,"svc compact\n");
+        gcp->collector->compact(false);
+      }
+      goto process_active;
+
+      case svc_collect:
+      {
+        // requires fthreads to be immobile
+        if(debug_driver)fprintf(stderr,"svc collect\n");
+        if (thread_control->world_stop())
+        {
+          if(debug_driver)fprintf(stderr,"ACTUALLY COLLECTING\n");
+          gcp->collector->collect();
+          thread_control->world_start();
+        }
+        else {
+          if(debug_driver)fprintf(stderr,"RACE: someone else is collecting, just yield\n");
+          thread_control->yield();
+        }
+      }
+      goto process_active;
+
+      case svc_collect_and_compact:
+      {
+        // requires fthreads to be immobile
+        if(debug_driver)fprintf(stderr,"svc collect and compact\n");
+        if (thread_control->world_stop())
+        {
+          gcp->collector->collect();
+          gcp->collector->compact(true);
+          thread_control->world_start();
+        }
+        else thread_control->yield();
+      }
+      goto process_active;
+
       case svc_spawn_pthread:
       {
         fthread_t *ftx = *(fthread_t**)ss.request->data;
@@ -2966,12 +3068,10 @@ doflx (void *data) {
         gcp->collector->add_root(ftx);
         std::list<fthread_t*> *pactive =new std::list<fthread_t*>;
         pactive->push_front(ftx);
-        void *data = new doflx_data(debug_driver, gcp, pactive, thread_counter);
+        void *data = new doflx_data(debug_driver, gcp, pactive, thread_control);
         flx_detached_thread_t dummy;
-        fprintf(stderr,"Starting new pthread, thread counter= %p\n",thread_counter);
-        thread_counter->pre_incr();
-        //++*thread_counter;
-        fprintf(stderr,"pthread counter %p incremented\n",thread_counter);
+        if(debug_driver)fprintf(stderr,"Starting new pthread, thread counter= %ld\n",thread_control->thread_count());
+        thread_control->add_thread();
         dummy.init(
   #ifdef _WIN32
     (LPTHREAD_START_ROUTINE)
@@ -3088,11 +3188,13 @@ doflx (void *data) {
   catch (...) { fprintf(stderr,"Unknown exception deleting async!\n"); }
 
   // if this fails the whole system is corrupted
-  --*thread_counter;
+  thread_control->remove_thread();
   return 0;
 }
 
 // RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
+//
+// CURRENTLY ONLY CALLED ONCE IN MAIN THREAD
 
 int run_felix_pthread(
   bool debug_driver, 
@@ -3123,9 +3225,14 @@ int run_felix_pthread(
   }
 
   {
-    flx_ts_counter_t thread_counter;
-    ++thread_counter;
-    doflx(new doflx_data(debug_driver, gcp, active, &thread_counter)); // deletes active for us!
+    thread_control_t thread_control;
+    thread_control.add_thread();
+    
+    doflx(new doflx_data(debug_driver, gcp, active, &thread_control)); // deletes active for us!
+  
+    if(debug_driver)fprintf(stderr,"MAIN THREAD FINISHED: waiting for other threads\n");
+    thread_control.join_all();
+    if(debug_driver)fprintf(stderr,"ALL THREADS DEAD: mainline cleanup!\n");
 
     if(debug_driver){
       unsigned long uncollected = collector->get_allocation_count();
