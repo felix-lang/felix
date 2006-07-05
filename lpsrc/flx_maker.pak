@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.78  2006/07/05 14:34:21  skaller
+Fix some tests to not repeat.
+
 Revision 1.77  2006/07/05 09:40:34  skaller
 Fix nondeterministic tests to choose correct driver.
 
@@ -1964,7 +1967,7 @@ class PLUGIN(Plugin):
     unit_tests = pkgdict.get("unit_tests",[])
     if len(unit_tests)>0:
       print
-      print "***** TESTING PACKAGE "+pkg+" ************"
+      print "***** UNIT TESTING PACKAGE "+pkg+" ************"
       print
 
       flx_run = os.path.join('bin', 'flx_run')
@@ -2028,9 +2031,9 @@ class PLUGIN(Plugin):
     completion_tests = pkgdict.get("completion_tests",[])
     if len(completion_tests)>0:
       print
-      print "***** TESTING PACKAGE "+pkg+" ************"
+      print "***** COMPLETION (nondet) TESTING PACKAGE "+pkg+" ************"
       print
-  
+      print "PKGDICT=",pkgdict 
       flx_run = os.path.join('bin', 'flx_run')
   
       for testfile in completion_tests:
@@ -3129,15 +3132,12 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/test/*.expect \\')
 @tangle('\t\tfelix-'+flx_version+'/tut/examples/*.flx \\')
 @tangle('\t\tfelix-'+flx_version+'/tut/examples/*.expect \\')
-@tangle('\t\tfelix-'+flx_version+'/tut/doc/*.html \\')
-@tangle('\t\tfelix-'+flx_version+'/tut/doc/*.css \\')
-@tangle('\t\tfelix-'+flx_version+'/tut/doc/*.tex \\')
 @tangle('\t\tfelix-'+flx_version+'/doc/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/doc/*.css \\')
 @tangle('\t\tfelix-'+flx_version+'/doc/*.tex \\')
 @tangle('\t\tfelix-'+flx_version+'/licences/*.txt \\')
 @tangle('\t\tfelix-'+flx_version+'/misc/* \\')
-@tangle('\t\tfelix-'+flx_version+'/htmlman/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/doc/htmlman/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/man/man1/*.1 \\')
 @tangle('\t\tfelix-'+flx_version+'/impldoc/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/www/*.html \\')
@@ -4392,7 +4392,7 @@ then
   if [ $? = 0 ]
   then
     calpackages
-    CCMD="$CCOBJ_DLLIB $CCFLAGS $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
@@ -4429,7 +4429,7 @@ else
   if [ $? = 0 ]
   then
     calpackages
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`

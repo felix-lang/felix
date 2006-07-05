@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.204  2006/07/05 14:34:20  skaller
+Fix some tests to not repeat.
+
 Revision 1.203  2006/07/03 15:00:04  skaller
 Add -f to rm command in configure script to suppress warning.
 
@@ -743,7 +746,6 @@ def xqt(x,print_on_error=0,print_cmd=0,print_output=0):
 # make doc directories to stop 'cp' complaining
 mkdirs("config")
 mkdirs("doc")
-mkdirs("impldoc")
 mkdirs("tut")
 mkdirs("man")
 mkdirs("htmlman")

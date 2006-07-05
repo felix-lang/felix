@@ -5,10 +5,8 @@
 @h = tangler('spkgs/flx_tutorial.py')
 @select(h)
 TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'tut_beg*.flx')
-COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
 
 unit_tests = TESTS
-completion_tests = COMPLETION_TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
 iscr_source = [ 'lpsrc/flx_tutorial.pak' ]
 
