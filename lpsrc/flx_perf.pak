@@ -1,12 +1,17 @@
 @set_title('Performance Measurements')
 
 @select(tangler('mkplugins/speed.py'))
-def plugin():    
-  runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
-  run("python speed/measure.py")
-  run("python speed/panal.py")
-  run("gnuplot speed/mkjpgs.gpl")
-  runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, "speed", "Run comparative tests")
+
+  def __call__(self):    
+    runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
+    run("python speed/measure.py")
+    run("python speed/panal.py")
+    run("gnuplot speed/mkjpgs.gpl")
+    runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 '+
+      '--weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
 
 @select(tangler('spkgs/speed.py'))
 pkg_requires = ["flx"]
@@ -154,14 +159,16 @@ where 'ack' is replaced by the name of the test.
    ''')
 
 @def showdata(fn):
+  begin_displayed_code()
   try:
     f = open(fn)
     data = f.read()
     f.close()
     lines = string.split(data,'\n')
-    for line in lines: tangle(line)
+    for line in lines: weave(line+'\n')
   except:
-    tangle(fn+" not available")
+    weave(fn+" not available\n")
+  end_displayed_code()
 
 
 @head(2,'The Test Machines')
@@ -181,12 +188,10 @@ Ubuntu Breezy Linux distribution.
 Ackermann's function is used to check tail-recursion optimisation
 and is heavily dependent on the number of words stacked per function call.
 
-@#showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64 3400 k8)")
 @showgraph('budgie','ack',"Ackermann's function on Budgie (Amd64x2 3800 k8)")
-
-@begin_displayed_code()
-@showdata("../speed/rankings/budgie/ack.txt")
-@end_displayed_code()
+@showdata("speed/rankings/budgie/ack.txt")
+@showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64 3400 k8)")
+@showdata("speed/rankings/rosella/ack.txt")
 
 @select(tangler('speed/specs/ack.py','data'))
 descr="Ackerman's function"
@@ -273,7 +278,7 @@ Printf.printf "Ack(3,%d): %d\n" n (ack 3 n)
 import System(getArgs)
 
 main = do ~[num] <- getArgs
-	  putStrLn ("Ack(3," ++ num ++ "): " ++ (show (ack 3 (read num))))
+  putStrLn ("Ack(3," ++ num ++ "): " ++ (show (ack 3 (read num))))
 
 ack :: Int -> Int -> Int
 ack 0 n = n+1
@@ -322,12 +327,10 @@ begin
 end Ack_F;
 
 @head(2,'[takfp] Takfp')
-@#showgraph('rosella','takfp',"Takfp on Rosella: amd64 3400 k8")
 @showgraph('budgie','takfp',"Takfp on Budgie: amd64x2 3800 k8")
-
-@begin_displayed_code()
-@showdata("../speed/rankings/budgie/takfp.txt")
-@end_displayed_code()
+@showdata("speed/rankings/budgie/takfp.txt")
+@showgraph('rosella','takfp',"Takfp on Rosella: amd64 3400 k8")
+@showdata("speed/rankings/rosella/takfp.txt")
 
 @select(tangler('speed/specs/takfp.py','data'))
 descr="Taka's function, using floats"
@@ -749,11 +752,11 @@ for line in fin:
     hostd = hostsd.get(hostname,{})
     hostsd[hostname] = hostd
     testd = hostd.get(tst,{})
-		hostd[tst] = testd
+    hostd[tst] = testd
     xld = testd.get(xl,{})
-		testd[xl] = xld
+    testd[xl] = xld
     nd = xld.get(n,[])
-		xld[n] = nd
+    xld[n] = nd
     nd.append(elapsed)
 fin.close()
 
@@ -894,7 +897,7 @@ def mk(k,p):
   return "python script/gnatmaker.py speed/src/ada/%s speed/exes/%s " % (p,k)
 lang="ada"
 
-@select(tangler('speed/xlators/gjc.py','python'))
+@select(tangler('speed/xlators/gcj.py','python'))
 def mk(k,p):
   x = "gcj -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
@@ -991,6 +994,13 @@ lang="ada"
 @select(tangler('speed/xlators/gcj_4_0.py','python'))
 def mk(k,p):
   x = "gcj-4.0  -O3 -fomit-frame-pointer -funroll-loops "
+  x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
+  return x
+lang="java"
+
+@select(tangler('speed/xlators/gcj_4_1.py','python'))
+def mk(k,p):
+  x = "gcj-4.1  -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
   return x
 lang="java"

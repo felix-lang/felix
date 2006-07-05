@@ -1,6 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.28  2006/07/05 07:36:42  skaller
+Fiddles to speed test
+
 Revision 1.27  2006/06/26 10:18:13  rfistman
+
 fixed a few typos "provide_lib" -> "provides_lib". this was stopping
  things building in the right order (e.g. libflx being built after
  the code that needed it).
@@ -1486,3 +1490,38 @@ proc flx_main
 }
 
 export proc flx_main of (1) as "flx_main";
+
+@h=tangler('test/nd102.flx')
+@select(h)
+#import <flx.flxh>
+include "pthread";
+include "flx_faio";
+open String;
+
+print "Garbage collector world stop test"; endl;
+
+proc randprint(n:int)
+{
+  var i = 5;
+  print$ "Start Thread number "+str(n); endl;
+  whilst i > 0 do
+    var d = double_of$ Cstdlib::rand()%10;
+    if d == 0.0 do
+      print "ZERO FOUND -- collecting!"; endl;
+      collect;
+      print "collected!"; endl;
+    done;
+    print$ "Thread "+str n +" Sleep #"+str i+" for "+str d+" sec"; endl;
+    --i;
+    Faio::sleep d;
+  done; 
+  print$ "Finish Thread number "+str(n); endl;
+}
+
+Pthread::spawn_pthread { randprint(1); };
+Pthread::spawn_pthread { randprint(2); };
+Pthread::spawn_pthread { randprint(3); };
+Pthread::spawn_pthread { randprint(4); };
+Pthread::spawn_pthread { randprint(5); };
+
+print "Mainline done!"; endl;
