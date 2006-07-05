@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.77  2006/07/05 09:40:34  skaller
+Fix nondeterministic tests to choose correct driver.
+
 Revision 1.76  2006/07/03 04:23:07  skaller
 Allow macro process to replace into named requirements as
 expressions (the expression must resolve to a qualified name)
@@ -2033,10 +2036,24 @@ class PLUGIN(Plugin):
       for testfile in completion_tests:
         # run the tests
         basename = plugins['build_test'](testfile)
+        resfilename = basename + ".resh"
         path = os.path.join(os.curdir, basename)
-  
+
         if SUPPORT_DYNAMIC_LOADING:
-          testscript = flx_run + ' ' + path + EXT_SHLIB
+          cmd = (os.path.join( "bin", "flx_pkgconfig") +
+            " --path=config --field=flx_requires_driver --rec @"+
+            resfilename)
+          #print "flx_pkgconfig command=",cmd
+          result,driver= get_stdout(cmd)
+          if result: 
+            print "flx_pkgconfig failed! Args=",cmd
+            raise MakeError
+        
+          driver = string.strip(driver[0])
+          if driver =='': driver = "flx_run"
+          driver = os.path.join("bin",driver)
+          #print "Driver:",driver
+          testscript = driver + ' ' + path+ EXT_SHLIB
   
           #print 'Executing ',testscript
           try:

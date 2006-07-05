@@ -1,7 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.31  2006/07/05 09:40:34  skaller
+Fix nondeterministic tests to choose correct driver.
+
 Revision 1.30  2006/06/26 10:18:13  rfistman
+
 fixed a few typos "provide_lib" -> "provides_lib". this was stopping
  things building in the right order (e.g. libflx being built after
  the code that needed it).
@@ -1476,6 +1480,7 @@ winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 module Faio {
 requires package "demux";
 requires package "faio";
+
 open C_hack;
 
 proc faio_req[t](x:&t) {
