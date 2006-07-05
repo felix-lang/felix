@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.205  2006/07/05 20:25:33  skaller
+Tweak speed measurements to use localised list of translators,
+to avoid running too many and messing up the graph.
+
 Revision 1.204  2006/07/05 14:34:20  skaller
 Fix some tests to not repeat.
 
@@ -332,72 +336,15 @@ fi
 
 ./mk extract
 
-@select(tangler('tmp/xlators_local.py','python'))
+@select(tangler('config/xlators_local.py','python'))
 # reconfigure translator definitions for your
 # local system here
-
-@select(tangler('tmp/xlators.py','python'))
-import os
-execfile('speed'+os.sep+'xlators_default.py')
-execfile('config'+os.sep+'xlators_local.py')
-
-# this table defines the actual translators
-# which the performance tester will use
-#
-# comment out the lines you don't want,
-# or add new ones if desired
-#
-# the translators selected by default should be available
-# since they're required to build Felix .. but actually
-# we preselect gcc for C compiler and ocamlopt for ocaml ..
-# 
-# this should really depend on the config for those things
-#
-
-# this is set up for PERSONAL USE
-# this config is NOT suitable for submission to website
-# you must use VERSIONED translators for submissions
-#
-xlators = [
-
-# generic translators
-  ('felix',mk_felix,'felix'),
-  ('gcc',mk_gcc,'c'),
-  ('gccopt',mk_gccopt,'c'),
-  ('ocamlopt',mk_ocamlopt,'ocaml'),
-  ('gnat',mk_gnat,"ada"),
-  ('ghc',mk_ghc,'haskell'),
-  ('gcj',mk_gcj,'java'),
-
-# GNU C and C++ compilers
-#  ('gcc-3.3',mk_gcc_3_3,'c'),
-#  ('gcc-3.3-O3',mk_gcc_3_3_opt,'c'),
-#  ('gcc-4.0',mk_gcc_4_0,'c'),
-#  ('gcc-4.0-O3',mk_gcc_4_0_opt,'c'),
-#  ('g++-3.3',mk_gpp_3_3,'c'),
-#  ('g++-3.3-O3',mk_gpp_3_3_opt,'c'),
-#  ('g++-4_0',mk_gpp_4_0,'c'),
-#  ('g++-4.0-O3',mk_gpp_4_0_opt,'c'),
-
-# GNU Java
-#  ('gcj-4_0',mk_gcj_4_0_opt,'java'),
-
-# GNU Ada
-#  ('gnat-4.0',mk_gnat,"ada"),
-
-# Free Pascal
-#  ('fpc-2.0.0',mk_fpc_2_0_0,"pascal"),
-
-# GNU Pascal
-#  ('gpc-2.1-3.3',mk_gpc_2_1_3_3,"pascal"),
-
-# Glasgow Haskell
-#  ('ghc-6.2.2',mk_ghc_6_2_2,'haskell'),
-#  ('ghc-6.4.1',mk_ghc_6_4_1,'haskell'),
-
-# Inria's Ocaml
-#  ('ocamlopt-3.08_3',mk_ocamlopt_3_08_3,'ocaml'),
-#  ('ocamlc-3.08.3',mk_ocamlc_3_08_3,'ocaml'),
+selected_xlators = [
+  'ocamlopt',
+  'gccopt',
+  'gnat',
+  'gjc',
+  'felix'
 ]
 
 @include_file('flx_config_builders.ipk')
