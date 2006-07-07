@@ -140,7 +140,7 @@ the results as jpg files for our website.  The data can be
 viewed in an interactive graphics console by running
 gnuplot without arguments, then typing
 @begin_displayed_code()
-load "speed/plotters/ack.gpl"
+load "speed/machine/hostname/plotters/ack.gpl"
 @end_displayed_code()
 where 'ack' is replaced by the name of the test.
 
@@ -153,7 +153,7 @@ where 'ack' is replaced by the name of the test.
     '''<P></P><TABLE BORDER=2 ALIGN=center>
    <CAPTION>'''+title+'''</CAPTION>
    <TR><TD>
-   <IMG ALT="'''+title+'''" SRC="images/'''+machine+'/'+test+'''.jpg">
+   <IMG ALT="'''+title+'''" SRC="machine/'''+machine+'''/images/'''+test+'''.jpg">
    </TD></TR></TABLE><P></P>
    ''')
 
@@ -171,6 +171,11 @@ where 'ack' is replaced by the name of the test.
 
 
 @head(2,'The Test Machines')
+@import glob
+@raw_machs = glob.glob("speed/machine/*")
+@machs = []
+@for i in raw_machs: machs.append(i[14:])
+
 @head(3,'Rosella: x86-64')
 This is my main work machine, an AMD64 K8 3200 with 
 1G Ram and an ASUS motherboard running nVidia chipset,
@@ -186,11 +191,9 @@ Ubuntu Breezy Linux distribution.
 @head(2,'[ack] Ackermanns Function')
 Ackermann's function is used to check tail-recursion optimisation
 and is heavily dependent on the number of words stacked per function call.
-
-@showgraph('budgie','ack',"Ackermann's function on Budgie (Amd64x2 3800 k8)")
-@showdata("speed/rankings/budgie/ack.txt")
-@showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64 3400 k8)")
-@showdata("speed/rankings/rosella/ack.txt")
+@for i in machs:
+  showgraph(i,'ack',"Ackermann's function on "+i)
+  showdata("speed/machine/"+i+"/rankings/ack.txt")
 
 @select(tangler('speed/specs/ack.py','data'))
 descr="Ackerman's function"
@@ -326,10 +329,9 @@ begin
 end Ack_F;
 
 @head(2,'[takfp] Takfp')
-@showgraph('budgie','takfp',"Takfp on Budgie: amd64x2 3800 k8")
-@showdata("speed/rankings/budgie/takfp.txt")
-@showgraph('rosella','takfp',"Takfp on Rosella: amd64 3400 k8")
-@showdata("speed/rankings/rosella/takfp.txt")
+@for i in machs:
+  showgraph(i,'ack',"Takfp on "+i)
+  showdata("speed/machine/"+i+"/rankings/takfp.txt")
 
 @select(tangler('speed/specs/takfp.py','data'))
 descr="Taka's function, using floats"
@@ -742,13 +744,20 @@ def mkdir(p):
   os.system('rm -rf ' + p)
   os.mkdir(p)
 
-mkdir("speed/plotters")
-mkdir("speed/images")
+hosts = []
+mkdir("speed/machine")
+def add_host(h):
+  hosts.append(h)
+  mkdir("speed/machine/"+h)
+
+def check_host(h):
+  if h not in hosts: add_host(h)
 
 fin = open("speed/results.dat")
 for line in fin:
   #print line,
   hostname,kind,date,time,xl,tst,n,elapsed = string.split (line)
+  check_host(hostname)
   n = int(n)
   elapsed=float(elapsed)
   if pload == kind:
@@ -770,14 +779,14 @@ fi.write("set terminal jpeg\n")
 
 for h,d in hostsd.iteritems():
   print "host",h
-  root = "speed/plotters/"+h
-  mkdir(root)
-  mkdir("speed/images/"+h)
+  root = 'speed/machine/'+h+'/'
+  mkdir(root+"images/")
+  mkdir(root+"plotters/")
   for t,xd in d.iteritems():
     print "  test",t
     mkdir(root+'/'+t)
     # one gnuplot file for each test
-    fp = open(root+'/'+t+'.gpl','w')
+    fp = open(root+'plotters/'+t+'.gpl','w')
     gx = 'set title "'+hostname+' '+pload+' '+t+'"\n'
     gx = gx + 'set xlabel "N"\n'
     gx = gx + 'set ylabel "secs"\n'
@@ -823,8 +832,8 @@ for h,d in hostsd.iteritems():
     fp.write(gx+'\n')
     fp.close()
 
-    fi.write('set output "speed/images/'+h+'/'+t+'.jpg"\n')
-    fi.write('load "speed/plotters/'+h+'/'+t+'.gpl"\n') 
+    fi.write('set output "'+root+'images/'+t+'.jpg"\n')
+    fi.write('load "'+root+'plotters/'+t+'.gpl"\n') 
 
     keys = summary.keys()
     keys.sort()
@@ -837,11 +846,9 @@ for h,d in hostsd.iteritems():
       print "    %-16s %2d %6.2f" % (xl,-m,a)
       i = i + 1
       if i >= prlimit: break
-    try: os.mkdir('speed/rankings')
+    try: os.mkdir(root+'rankings')
     except: pass
-    try: os.mkdir('speed/rankings/'+h)
-    except: pass
-    rf = open('speed/rankings/'+h+'/'+t+'.txt','w')
+    rf = open(root+'rankings/'+t+'.txt','w')
     prlimit = 10
     i = 0 
     rf.write("Rankings for "+t+'\n')
