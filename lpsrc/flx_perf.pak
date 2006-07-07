@@ -180,7 +180,7 @@ where 'ack' is replaced by the name of the test.
 This is my main work machine, an AMD64 K8 3200 with 
 1G Ram and an ASUS motherboard running nVidia chipset,
 budget price cache memory, 200G SATA drive,
-Ubuntu Breezy Linux distribution.
+Ubuntu Dapper Linux distribution.
 
 @head(3,'Budgie: x86-64x2 (dual core)')
 This is my main work machine, an AMD64x2 K8 3800 with 

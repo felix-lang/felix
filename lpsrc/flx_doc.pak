@@ -1,0 +1,84 @@
+@set_title("Felix documentation")
+@head(1,"FELIX DOCUMENTATION")
+
+Basic Tutorial (interscript):
+@cite_url("tutorial/introduction/en_flx_tutorial_top.html")
+@p()
+Binding and Embeddin (interscript)::
+@cite_url("tutorial/embedding/en_flx_tut_bind_top.html")
+@p()
+
+Preprocessing and macro (interscript)::
+@cite_url("tutorial/macro/en_flx_tut_macro_top.html")
+@p()
+
+Migration from C+ (interscript)::
+@cite_url("tutorial/migration/en_flx_tut_migrate_top.html")
+@p()
+
+Man pages (man2html):
+@cite_url("htmlman/felix_1.html")
+@p()
+
+Run time library (Doxygen):
+@cite_url("rtl/doxygen/html/index.html")
+@p()
+
+Driver source code listing (interscript):
+@cite_url("rtl/flx_drivers/en_flx_rtl_top.html")
+@p()
+
+Driver source code listing (interscript):
+@cite_url("rtl/flx_drivers/en_flx_rtl_top.html")
+@p()
+
+Garbage Collector source code listing (interscript):
+@cite_url("rtl/flx_gc/en_flx_gc_top.html")
+@p()
+
+Run time library source code isting (interscript):
+@cite_url("rtl/flx_rtl/en_flx_rtl_top.html")
+@p()
+
+Pre-emptive threading library Source code isting (interscript):
+@cite_url("rtl/flx_pthread/en_flx_pthread_top.html")
+@p()
+
+Demux library Source code isting (interscript):
+@cite_url("rtl/flx_demux/en_flx_demux_top.html")
+@p()
+
+Felix async I/O library Source code isting (interscript):
+@cite_url("rtl/flx_faio/en_flx_faio_top.html")
+@p()
+
+TRE: Ville Luarikari Tagged Regexp library Source code Listing (interscript):
+@cite_url("rtl/tre/en_tre_top.html")
+@p()
+
+gmpxx: Gnu Multiple Precision (GMP) Binding Source code Listing (interscript):
+@cite_url("rtl/gmpxx/en_gmpxx_top.html")
+@p()
+
+Regression Test Suite listing (interscript):
+@cite_url("test/en_flx_regress_top.html")
+@p()
+
+Felix compiler source code listing (interscript):
+@cite_url("flx/flx_compiler/en_flx_top.html")
+@p()
+
+Felix C library wrapper generator (flxcc) source code listing (interscript):
+@cite_url("flx/flx_flxcc/en_flxcc_top.html")
+@p()
+
+Felix Build system source code listing (interscript):
+@cite_url("flx/flx_maker/en_flx_maker_top.html")
+@p()
+
+
+@select(tangler('spkgs/doc.py'))
+iscr_source = ["lpsrc/flx_doc.pak"]
+weaver_directory = 'doc/'
+
+
