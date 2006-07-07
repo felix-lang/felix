@@ -1,3 +1,9 @@
+@execfile(os.path.join('config','flx_data.py'))
+@h = tangler('spkgs/flx_vim.py')
+@select(h)
+iscr_source = ["lpsrc/flx_vim.pak"]
+
+
 @head(1,"Vim Syntax File")
 @select(tangler("misc/vim/ftdetect/felix.vim",'data'))
 " Felix filetypes

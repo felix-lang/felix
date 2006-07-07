@@ -6,7 +6,11 @@ parsers for Felix, lua, and a few other languages.
 The Felix Felix grammar is partly extracted from the working
 Ocamlyacc grammar actually used to build the compiler.
 
-@execfile('config/flx_data.py')
+@execfile(os.path.join('config','flx_data.py'))
+@h = tangler('spkgs/flx_parser_maker.py')
+@select(h)
+iscr_source = ["lpsrc/flx_parser_maker.pak"]
+
 @h = tangler('script/elk_flx_grgen','python')
 @select(h)
 import string

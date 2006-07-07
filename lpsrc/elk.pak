@@ -141,6 +141,7 @@ rtl_interfaces = ELKRTL_INTERFACES
 cpp_cpps = ELKRTL + SMRTL
 iscr_source = ['lpsrc/sm.pak','lpsrc/ast.pak','lpsrc/elk.pak']
 build_macro = "ELK"
+weaver_directory = "doc/elkhound/"
 
 @h = tangler('config/elk.fpc')
 @select(h)

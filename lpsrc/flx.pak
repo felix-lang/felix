@@ -2,6 +2,126 @@
 @ec = end_displayed_code
 @execfile('config'+os.sep+'config.py')
 @set_title('Felix '+flx_version)
+
+@head(1,'The Felix Compiler')
+@h = tangler('spkgs/flx_compiler.py')
+@select(h)
+FLX_LEXS = [ 'src/flx_lex' ]
+FLX_PARSES = [ 'src/flx_parse' ]
+
+FLX_MODULES = [
+  'src/inria_table'      ,
+  'src/inria_cset'      ,
+  'src/inria_syntax'      ,
+  'src/inria_lexgen'      ,
+  'src/flx_mtypes1'      ,
+  'src/flx_ast'          ,
+  'src/flx_types'        ,
+  'src/flx_ctypes'       ,
+  'src/flx_version'      ,
+  'src/flx_ctype'        ,
+  'src/flx_util'         ,
+  'src/flx_dlst'         ,
+  'src/flx_getopt'       ,
+  'src/flx_mtypes2'      ,
+  'src/flx_srcref'       ,
+  'src/flx_typing'       ,
+  'src/flx_exceptions'   ,
+  'src/flx_string'       ,
+  'src/flx_id'           ,
+  'src/flx_print'        ,
+  'src/flx_maps'         ,
+  'src/flx_typing2'      ,
+  'src/flx_unify'        ,
+  'src/flx_charset'      ,
+  'src/flx_constfld'     , 
+  'src/flx_cexpr'        ,
+  'src/flx_csubst'       , 
+  'src/flx_parse'        ,
+  'src/flx_keywords'     ,
+  'src/flx_prelex'       ,
+  'src/flx_lex1'         ,
+  'src/flx_tok'          ,
+  'src/flx_lexstate'     ,
+  'src/flx_preproc'      ,
+  'src/flx_lex'          ,
+  'src/flx_pretok'       ,
+  'src/flx_parse_ctrl'   ,
+  'src/flx_dfa'          ,
+  'src/flx_pat'          , 
+  'src/flx_macro'        , 
+  'src/flx_cformat'      , 
+  'src/flx_desugar'      , 
+  'src/flx_mbind'        , 
+  'src/flx_symtab'       , 
+  'src/flx_name'         , 
+  'src/flx_treg'         ,
+  'src/flx_beta'         ,
+  'src/flx_tpat'         , 
+  'src/flx_tconstraint'  ,
+  'src/flx_generic'      , 
+  'src/flx_overload'     , 
+  'src/flx_lookup'       , 
+  'src/flx_bexe'         , 
+  'src/flx_bbind'        , 
+  'src/flx_axiom'       , 
+  'src/flx_label'        , 
+  'src/flx_cflow'        , 
+  'src/flx_call'         , 
+  'src/flx_use'          , 
+  'src/flx_child'        , 
+  'src/flx_tailit'       , 
+  'src/flx_inline'       , 
+  'src/flx_stack_calls'  , 
+  'src/flx_mkcls'        , 
+  'src/flx_global'       , 
+  'src/flx_inst'         , 
+  'src/flx_tgen'         , 
+  'src/flx_display'      , 
+  'src/flx_ogen'         , 
+  'src/flx_regen'        ,
+  'src/flx_unravel'      , 
+  'src/flx_pgen'         , 
+  'src/flx_egen'         , 
+  'src/flx_ctorgen'      , 
+  'src/flx_elkgen'       , 
+  'src/flx_gen'          , 
+  'src/flx_flxopt'       , 
+  'src/flx_terminate'    , 
+]
+
+FLX_RAW_INTERFACES = [
+  'src/flx_ast'          ,
+  'src/flx_types'        ,
+  'src/flx_ctypes'       ,
+] 
+
+FLX_INTERFACES = FLX_MODULES
+
+FLX_IMPLEMENTATIONS = FLX_INTERFACES
+
+FLX_EXES = [
+  'src/flxl',
+  'src/flxp',
+  'src/flxm',
+  'src/flxd',
+  'src/flxb',
+  'src/flxg',
+  'src/stub',
+]
+
+caml_lexes = FLX_LEXS
+caml_parses = FLX_PARSES
+caml_interfaces = FLX_INTERFACES
+caml_raw_interfaces = FLX_RAW_INTERFACES
+caml_exes = FLX_EXES
+caml_implementations = FLX_IMPLEMENTATIONS
+caml_require_libs = ['nums','unix','misclib','flxlib']
+pkg_requires = ['misc']
+caml_provide_lib = 'flxlib'
+iscr_source = ["lpsrc/flx.pak"]
+weaver_directory = 'doc/flx/flx_compiler/'
+
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
 ultra lightweight threads. An ultra-lightweight thread
@@ -304,11 +424,5 @@ create a file here for unit tests.
 
 
 @head(2,'Misc')
-@include_file ('flx_man.ipk')
-@include_file ('flx_parser_maker.ipk')
-@include_file ('flx_vim.ipk')
-@include_file ('flx_jedit.ipk')
-@include_file ('flx_highlight.ipk')
 @include_file ('inria_re.ipk')
-@include_file ('flx_doxygen.ipk')
 

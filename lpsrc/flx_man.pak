@@ -1,4 +1,13 @@
+@execfile(os.path.join("config","flx_data.py"))
+@import time
+@now = time.time()
+@gmtime = time.gmtime(now)
+@short_time = time.strftime("%a %d %b %Y",gmtime)
 @head(1,'Man pages')
+@h = tangler('spkgs/flx_man.py')
+@select(h)
+iscr_source = ['lpsrc/flx_man.pak']
+
 @python('//')
 manfoot = r"""
 .SH VERSION

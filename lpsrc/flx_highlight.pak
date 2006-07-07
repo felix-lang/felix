@@ -1,4 +1,8 @@
-@execfile('config/flx_data.py')
+@execfile(os.path.join('config','flx_data.py'))
+@h = tangler('spkgs/flx_highlight.py')
+@select(h)
+iscr_source=['lpsrc/flx_highlight.pak']
+
 @head(1,'Highlight tool language spec')
 Warning: not to be confused with misc/felix.lang, which is xml for gtksourceview.
 @select(tangler('misc/flx.lang','data'))

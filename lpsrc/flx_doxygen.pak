@@ -1,4 +1,8 @@
 @execfile('config'+os.sep+'config.py')
+@h = tangler('spkgs/flx_doxygen.pak')
+@select(h)
+iscr_source=['lpsrc/flx_doxygen.pak']
+
 @select(tangler("misc/doxconf.dox","data"))
 # Doxyfile 1.4.4
 

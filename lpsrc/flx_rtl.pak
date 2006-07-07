@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.52  2006/07/07 22:54:17  skaller
+Make some files which used to be part of the compiler pak but
+actually aren't part of the compiler into separate paks.
+
 Revision 1.51  2006/07/04 14:30:42  skaller
 Make svc_collect stop the world whilst collecting,
 to ensure all Felix pthreads have empty machine stacks,
@@ -429,7 +433,6 @@ drivers_require_libs = DRLIBS
 pkg_requires = ['flx_rtl','flx_pthread','flx_gc']
 lib_requires = ['libdemux','libflx_pthread','libflx']
 iscr_source = ['lpsrc/flx_rtl.pak']
-weaver_directory = 'doc/rtl/flx_drivers/'
 
 @h = tangler('spkgs/flx_async_drivers.py')
 @select(h)
@@ -452,7 +455,6 @@ drivers = DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_gc','flx_rtl','flx_pthread','flx_async','demux','faio']
 iscr_source = ['lpsrc/flx_rtl.pak']
-weaver_directory = 'doc/rtl/flx_drivers/'
 
 @h = tangler('config/flx.fpc')
 @select(h)

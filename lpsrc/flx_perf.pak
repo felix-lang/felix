@@ -12,6 +12,7 @@ class PLUGIN(Plugin):
     run("gnuplot speed/mkjpgs.gpl")
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 '+
       '--weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
+    filecopy2dir(os.path.join('misc', 'interscript.css'),"speed")
 
 @select(tangler('spkgs/speed.py'))
 pkg_requires = ["flx"]

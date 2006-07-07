@@ -1,3 +1,9 @@
+@execfile(os.path.join('config','flx_data.py'))
+@h = tangler('spkgs/flx_jedit.py')
+@select(h)
+iscr_source = ["lpsrc/flx_jedit.pak"]
+
+
 @head(1,'Jedit syntax highlight file')
 Provided by Klas Iversson.
 
