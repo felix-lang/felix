@@ -70,7 +70,7 @@ Elkhound parser (interscript):
 @p()
 
 gmpxx: Gnu Multiple Precision (GMP) Binding Source code Listing (interscript):
-@cite_url("rtl/gmpxx/en_gmp_top.html")
+@cite_url("rtl/gmpxx/en_flx_gmp_top.html")
 @p()
 
 @head(2,"COMPILER SOURCE CODE LISTINGS",nospawn=1)
@@ -79,7 +79,7 @@ Felix compiler source code listing (interscript):
 @p()
 
 Felix C library wrapper generator (flxcc) source code listing (interscript):
-@cite_url("flx/flx_flxcc/en_flxcc_top.html")
+@cite_url("flxcc/en_flx_flxcc_top.html")
 @p()
 
 Felix compiler interface reference (ocamldoc):
