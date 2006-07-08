@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.81  2006/07/08 22:39:11  skaller
+Change the grammar generator from a plugin to a package.
+
 Revision 1.80  2006/07/08 04:38:22  skaller
 More reorganisation to produce consistent docs.
 
@@ -2347,17 +2350,6 @@ class PLUGIN(Plugin):
       pkgdict = pkgd[pkg]
       print "***** DEMO PACKAGE "+pkg+" ************"
       plugins['run_demos']()
-
-@select(tangler('mkplugins/grammar.py'))
-class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'grammar', 'make the grammar')
-
-  def __call__(self):
-    os.system("env PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
-    os.system('env PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
-    os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
-    os.system('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 
 @h = tangler('script/maker','python')
 @select(h)

@@ -29,6 +29,10 @@ Run time library (Doxygen):
 @cite_url("rtl/doxygen/html/index.html")
 @p()
 
+Grammar:
+@cite_url("grammar/en_flx_mkgrammar_top.html")
+@p()
+
 @head(2,"PERFORMANCE COMPARISON",nospawn=1)
 @cite_url("../speed/en_flx_perf_top.html")
 

@@ -1,0 +1,18 @@
+@import os
+@os.system("env PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
+@os.system('env PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
+@os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
+@os.system('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
+@head(1,"Felix Grammar")
+@begin_displayed_code()
+@f = open("misc/flx_parse.grammar")
+@lines = f.readlines()
+@f.close()
+@for line in lines: weave(line)
+@end_displayed_code()
+
+@select(tangler('spkgs/grammar.py'))
+iscr_source = ['lpsrc/flx_mkgrammar.pak']
+weaver_directory = 'doc/grammar/'
+
+
