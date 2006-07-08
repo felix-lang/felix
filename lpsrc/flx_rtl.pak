@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.53  2006/07/08 16:04:32  rfistman
+explicitly ignoring return val of SetErrorMode in flx_rtl.pak
+made configure script appear executable under cygwin/bash/fat32
+removed simpleline_server which didn't do anything
+
 Revision 1.52  2006/07/07 22:54:17  skaller
 Make some files which used to be part of the compiler pak but
 actually aren't part of the compiler into separate paks.
@@ -2117,7 +2122,8 @@ flx_load_library(char const *filename)
 #ifndef FLX_STATIC_LINK
 //#if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(_WIN32) 
-  SetErrorMode(SEM_NOOPENFILEERRORBOX);  // stop windows showing err dialogues
+  // stop windows showing err dialogues, ignoring error code.
+  (void)SetErrorMode(SEM_NOOPENFILEERRORBOX);  
   library = LoadLibrary(filename);
   if(FLX_CHECK_NOLIBRARY(library)) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");

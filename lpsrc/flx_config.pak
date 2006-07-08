@@ -12,6 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.206  2006/07/08 16:04:32  rfistman
+explicitly ignoring return val of SetErrorMode in flx_rtl.pak
+made configure script appear executable under cygwin/bash/fat32
+removed simpleline_server which didn't do anything
+
 Revision 1.205  2006/07/05 20:25:33  skaller
 Tweak speed measurements to use localised list of translators,
 to avoid running too many and messing up the graph.
@@ -206,6 +211,10 @@ Add requires package "flx_pthread" to module Pthread
 @head(1,'configure')
 A shell script to run the config step.
 @select(tangler('configure'))
+#!/bin/sh
+# RF: added above line to make configure script tab
+# completable as exe under cygwin/fat32 fs. chmod
+# does NOT work in this case.
 export PYTHONPATH=.:$PYTHONPATH
 echo "Configuring Felix"
 FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}

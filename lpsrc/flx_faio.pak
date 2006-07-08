@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.32  2006/07/08 16:04:32  rfistman
+explicitly ignoring return val of SetErrorMode in flx_rtl.pak
+made configure script appear executable under cygwin/bash/fat32
+removed simpleline_server which didn't do anything
+
 Revision 1.31  2006/07/05 09:40:34  skaller
 Fix nondeterministic tests to choose correct driver.
 
@@ -2778,18 +2783,6 @@ server trying to put byte
 client got a
 server got b
 @doc()
-
-@h = tangler("simpleline_server.flx")
-@select(h)
-// don't know where this should go?
-#import <flx.flxh>
-include "flx_stream";
-open Flx_stream;
-
-print "some sort of server process\n";
-
-// make this the client as well. check args and do stuff.
-// print a file? read a line. how to do that with flx_stream?
 
 @h = tangler("test/demo_webserver.flx")
 @select(h)
