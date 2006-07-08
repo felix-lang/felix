@@ -1201,12 +1201,29 @@ control-filename
 
 .br
 .B flxg 
-[-v]
-[-Iinclude-dir]
+[-v] [--verbose]
+[-Iinclude-dir] [--include=include_dir]
+[--elkhound=flx_elkhound]
+[--opt] [--optimise]
+[--debug]
+[--with-comments]
+[--mangle_names]
+[--no-check-axioms]
+[--trace]
+[-e]
+[--force]
+[--inline[=[n|none]]] [--noinline]
+[-c] [--compile-only]
+[-h] [--help]
+[-q] [--quiet]
 filebasename
 
 .br
 .B flx_run 
+libname
+
+.br
+.B flx_arun 
 libname
 
 .br
@@ -1218,6 +1235,7 @@ libname
 [\-\-version] [\-\-help] [\-\-test] [\-\-force] [\-\-echo] [\-\-time]
 [\-\-inline] [\-\-static] [\-\-optimise] [\-\-optimize]
 [-c] 
+[--nofelix]
 [ [\-\-pkg=<pkg-config pkg>] 
 [<file>.cpp] 
 [<file>.o] 
@@ -1297,6 +1315,25 @@ then executes the resulting library using flx_run.
 Forces use of the Felix system in the current directory.
 Intended for use testing during development.
 
+.B \-\-test=dir
+.br
+Forces use of the Felix system in the specified directory.
+Intended for use testing an old installed directory,
+or using the development directory when it is not the
+current directory.
+
+.B -c --compile-only
+.br
+Compiles and links executable without running it.
+By default, the program is executed.
+
+.B --nofelix
+.br
+Inhibits execution of the flxg compiler,
+allowing a modified C++ program to be compiled
+and executed. Use in conjunction with -c switch 
+to disable execution as well.
+
 .B \-\-force
 .br
 Forces both Felix and C++ recompilation and linking.
@@ -1313,15 +1350,22 @@ by the flx script.
 
 .B \-\-debug
 .br
+Turns on all manner of debugging.
 Tells the flxg compiler to print extensive
 details of its compilation process to help
-debugging.
+debugging. Also tells the system C++ compiler
+to emit debugging information whilst compiling
+and to generate debug symbols in generated 
+object files. Tells the driver to enable
+debugging too.
 
 .B \-\-inline
 .br
-Enables experimental inlining features. May slow
+Anachronism. Enables inlining, in this version,
+inlining is on by default. May slow
 down Felix compilation significantly. May cause
-significant code bloat.
+significant code bloat. May also reduce code
+size significantly.
 
 .B \-\-optimise \-\-optimize
 .br
@@ -1357,6 +1401,10 @@ being executed).
 
 .B \-\-pkg=<pkg-config pkg>
 .br
+NO EFFECT.
+.br
+USED TO DO THIS:
+.br
 Specifies the particular C library is required.
 This option causes the required flags to be added
 to compilation and link steps to allow #includes
@@ -1374,6 +1422,7 @@ linking Felix to arbitrary C, C++ codes available
 as source, object files, or in an archive.
 
 .B <link opts>
+.B -Dmacro -Llibpath -llib
 .br
 Various options normally recognized by the C/C++ compiler/linker
 harness are passed through to it transparently.
@@ -1405,10 +1454,20 @@ is the wrapper generator for C headers.
 is the documentation generator. It can be used to
 create HTML pages documenting any Felix code files.
 
+.B flx_pkgconfig
+is the resource manager, used by the flx script to find
+external resources. This includes header files needed
+for C++ compilation, libraries which a program needs to be linked
+against, and which driver a program needs to be run by.
 
 .SH DRIVERS
 .B flx_run
-is the standard prgram driver. Its argument
+is the standard prgram driver. 
+
+.B flx_arun
+is the driver which can load the asynchronous I/O system.
+
+Its argument
 is a shared library which is passed to 
 dlopen (note you need to use ./lib.so on
 linux to preempt the stanard search path).
@@ -1423,30 +1482,38 @@ and the driver exists with an error
 diagnostic if the thread tries to read
 any messages.
 
-.B flx_sif
-is like 
-.B flx_run
-except that it reads standard input
-and passes lines to the single instance
-thread. The lines include terminating
-newline character. A zero length line
-is passed at end of file. The message 
-types is 
-.B std::basic_string<char>
-
 .SH FILE EXTENSIONS
 .B *.flx
 .br 
 Felix input files.
 
-.B *.cpp *.hpp
+.B *.hpp *.cpp *.rtti
 .br 
-Generated C++ output files.
+Generated C++ output files for header, body,
+and run time type information, respectively.
+
+.B *.resh
+.b
+generated resource header file
 
 .B *.par
 .br 
 Precompiled header file.
 
+.SH
+.B ENVIRONMENT VARIABLES
+.br
+.B FLX_INSTALL_DIR
+.br
+Pathname of the installation root. Wherever you
+last installed it is hard coded into the flx script.
+This environment variables overrides that hard coding.
+In turn it is overridden by the --test switch.
+.br
+.B FLX_DEBUG
+.br
+If set, tells the Felix driver to emit debugging information
+during execution.
 
 @tangle(manfoot)
 
