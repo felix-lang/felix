@@ -12,7 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.207  2006/07/09 05:19:14  skaller
+Reinstated mkdir of tmp directory.
+
 Revision 1.206  2006/07/08 16:04:32  rfistman
+
 explicitly ignoring return val of SetErrorMode in flx_rtl.pak
 made configure script appear executable under cygwin/bash/fat32
 removed simpleline_server which didn't do anything
@@ -699,12 +703,10 @@ def xqt(x,print_on_error=0,print_cmd=0,print_output=0):
 
 #----------------------------------------
 
-# make doc directories to stop 'cp' complaining
+mkdirs("misc")
+mkdirs("tmp")
 mkdirs("config")
 mkdirs("doc")
-mkdirs("tut")
-mkdirs("man")
-mkdirs("htmlman")
  
 quiet = 0
 force = 0
