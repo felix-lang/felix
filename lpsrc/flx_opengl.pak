@@ -1,5 +1,8 @@
 @head(1,'open GL and extensions')
 $Log$
+Revision 1.3  2006/07/09 17:45:35  skaller
+More listings..
+
 Revision 1.2  2006/02/24 15:40:15  skaller
 Enhance flx_pkgconfig
 
@@ -26,6 +29,21 @@ Fix bug generating offsets for a cstruct. Upgrade tut121b expected
 output to handle new symbol .-> (which is just C's ->, we can't use
 the symbol -> because it means 'function' in the type language and
 has the wrong precedence there) Added opengl binding.
+
+@h = tangler('spkgs/gl.py')
+@select(h)
+iscr_source = ['lpsrc/flx_opengl.pak']
+weaver_directory = "doc/opengl/"
+
+@h = tangler('spkgs/glu.py')
+@select(h)
+#
+pkg_requires = ['gl']
+
+@h = tangler('spkgs/glut.py')
+@select(h)
+#
+pkg_requires = ['glu']
 
 
 @h = tangler("lib/GL/gl_lib.flx")

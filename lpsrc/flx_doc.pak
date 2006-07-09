@@ -37,31 +37,32 @@ Grammar:
 @cite_url("../speed/en_flx_perf_top.html")
 
 @head(2,"RTL SOURCE CODE LISTINGS",nospawn=1)
-Driver and RTL (run time library) source code listing (interscript):
+Driver and RTL (run time library) (interscript):
 @cite_url("rtl/flx_rtl/en_flx_rtl_top.html")
 @p()
 
-Garbage Collector source code listing (interscript):
+Garbage Collector (interscript):
 @cite_url("rtl/flx_gc/en_flx_gc_top.html")
 @p()
 
-Pre-emptive threading library Source code isting (interscript):
+Pre-emptive threading library (interscript):
 @cite_url("rtl/flx_pthread/en_flx_pthread_top.html")
 @p()
 
-Demux library Source code isting (interscript):
+Demux library (interscript):
 @cite_url("rtl/flx_demux/en_flx_demux_top.html")
 @p()
 
-Felix async I/O library Source code isting (interscript):
+Felix async I/O library (interscript):
 @cite_url("rtl/flx_faio/en_flx_faio_top.html")
 @p()
 
-TRE: Ville Luarikari Tagged Regexp library Source code Listing (interscript):
+TRE: Ville Laurikari Tagged Regexp library (interscript):
 @cite_url("rtl/tre/en_tre_top.html")
 @p()
 
-Elkhound: Scott McPeak's Elkhound GLR Parser Source code Listing (interscript):
+@head(3,"Elkhound",nospawn=1)
+Elkhound: Scott McPeak's Elkhound GLR Parser(interscript):
 @p()
 Core utilities:
 @cite_url("elkhound/en_sm_top.html")
@@ -73,9 +74,19 @@ Elkhound parser (interscript):
 @cite_url("elkhound/en_elk_top.html")
 @p()
 
-gmpxx: Gnu Multiple Precision (GMP) Binding Source code Listing (interscript):
+@head(3,"Bindings",nospawn=1)
+gmpxx: Gnu Multiple Precision Arithmetic (GMP) Binding (interscript):
 @cite_url("rtl/gmpxx/en_flx_gmp_top.html")
 @p()
+
+OpenGL Low level Graphics (interscript):
+@cite_url("opengl/en_flx_opengl_top.html")
+@p()
+
+Simple DirectMedia Library (SDL) (interscript):
+@cite_url("sdl/en_flx_sdl_top.html")
+@p()
+
 
 @head(2,"COMPILER SOURCE CODE LISTINGS",nospawn=1)
 Felix compiler source code listing (interscript):
@@ -87,11 +98,11 @@ Felix C library wrapper generator (flxcc) source code listing (interscript):
 @p()
 
 Felix compiler interface reference (ocamldoc):
-@cite_url("../impldoc/index.html")
+@cite_url("impldoc/index.html")
 @p()
 
 
-@head(2,"BUILD SYETEM SOURCE CODE LISTINGS",nospawn=1)
+@head(2,"BUILD SYSTEM SOURCE CODE LISTINGS",nospawn=1)
 Felix Build system source code listing (interscript):
 @cite_url("flx/flx_maker/en_flx_maker_top.html")
 @p()

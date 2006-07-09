@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.82  2006/07/09 17:45:35  skaller
+More listings..
+
 Revision 1.81  2006/07/08 22:39:11  skaller
 Change the grammar generator from a plugin to a package.
 
@@ -1069,12 +1072,12 @@ class PLUGIN(Plugin):
     
   def __call__(self):    
     print "GENERATING OCAMLDOCS"
-    erasedir('impldoc')
-    os.mkdir('impldoc')
+    erasedir('doc/impldoc')
+    os.mkdir('doc/impldoc')
     try:
-      xqt('ocamldoc -I src -d impldoc src/*.mli -html')
-      xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
-      xqt('(cd impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
+      xqt('ocamldoc -I src -d doc/impldoc src/*.mli -html')
+      xqt('ocamldoc -I src -o doc/impldoc/flx_impl.tex src/*.mli -latex')
+      xqt('(cd doc/impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
     except: 
      pass # well ocamldoc is full of bugs ..
 
@@ -2337,6 +2340,11 @@ class PLUGIN(Plugin):
       print "***** DOCUMENT PACKAGE "+pkg+" ************"
       plugins['mkdoc']()
 
+    print "***** OCAMLDOC COMPILER [HACK!] ************"
+    plugins['impldoc']()
+
+    print "***** DOXGEN RTL [HACK!] ************"
+    plugins['rtldoc']()
 
 @select(tangler('mkplugins/demo.py'))
 class PLUGIN(Plugin):

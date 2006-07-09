@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.22  2006/07/09 17:45:35  skaller
+More listings..
+
 Revision 1.21  2006/06/22 12:44:25  skaller
 Split gc off into separate library.
 
@@ -292,23 +295,9 @@ if HAVE_SDL:
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
   demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
 
-  # should be a .pak file ..
-  iscr_source = ['lpsrc/flx_sdl.pak']
-  build_macro = "SDL"
-
-@h = tangler('spkgs/gl.py')
-@select(h)
-#
-
-@h = tangler('spkgs/glu.py')
-@select(h)
-#
-pkg_requires = ['gl']
-
-@h = tangler('spkgs/glut.py')
-@select(h)
-#
-pkg_requires = ['glu']
+iscr_source = ['lpsrc/flx_sdl.pak']
+build_macro = "SDL"
+weaver_directory = "doc/sdl/"
 
 @h = tangler('spkgs/sdl_drivers.py')
 @select(h)
