@@ -402,6 +402,17 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       | `BBDCL_const (_,_,ct,_) -> 
         begin match ct with
         | `Str c
+        | `StrTemplate c when c = "#srcloc" ->
+           let filename, startline, startcol, endline, endcol = sr in
+           ce_atom ("flx::rtl::flx_range_srcref_t(" ^
+             string_of_string filename ^ "," ^
+             si startline ^ "," ^
+             si startcol ^ "," ^
+             si endline ^ "," ^
+             si endcol ^ ")"
+           )
+
+        | `Str c
         | `StrTemplate c when c = "#memcount" ->
           let ts = map (lstrip syms.dfns) ts in
           begin match ts with 

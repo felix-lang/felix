@@ -1,6 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.54  2006/07/10 11:33:47  skaller
+Add source locations in new module Debug.
+
 Revision 1.53  2006/07/08 16:04:32  rfistman
+
 explicitly ignoring return val of SetErrorMode in flx_rtl.pak
 made configure script appear executable under cygwin/bash/fat32
 removed simpleline_server which didn't do anything
@@ -1087,6 +1091,7 @@ struct RTL_EXTERN flx_range_srcref_t {
   int endline;     ///< last line
   int endcol;      ///< last column
   flx_range_srcref_t(char *f,int sl, int sc, int el, int ec);
+  flx_range_srcref_t();
 };
 
 // ********************************************************
@@ -1811,6 +1816,8 @@ flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string
 
 flx_exec_failure_t::~flx_exec_failure_t(){}
 
+flx_range_srcref_t::flx_range_srcref_t() : 
+    filename(""),startline(0),startcol(0),endline(0),endcol(0){}
 flx_range_srcref_t::flx_range_srcref_t(char *f,int sl, int sc, int el, int ec) :
     filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
 

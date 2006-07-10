@@ -2,6 +2,9 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.167  2006/07/10 11:33:47  skaller
+Add source locations in new module Debug.
+
 Revision 1.166  2006/06/29 06:49:30  idadesub
 looks like we missed a couple "requires flx_strutil"
 
@@ -893,6 +896,32 @@ module C_hack
   proc free: address = 'free($1);' requires stdlib_h; 
 }
 
+
+// the internal representation of a Felix source location
+// has to be global to simplify compiler hack
+type flx_location_t = "flx::rtl::flx_range_srcref_t";
+
+module Debug 
+{
+  const FLX_SRCLOC : flx_location_t = "#srcloc";
+  fun filename: flx_location_t -> charp = "$1.filename";
+  fun startline: flx_location_t -> int = "$1.startline";
+  fun startcol: flx_location_t -> int = "$1.startcol";
+  fun endline: flx_location_t -> int = "$1.endline";
+  fun endcol: flx_location_t -> int = "$1.endcol";
+
+  // hack to emit C++ source file locations
+  const CPP_FUNCTION : charp = "__FUNCTION__";
+  const CPP_FILE: charp = "__FILE__";
+  const CPP_LINE: int = "__LINE__";
+
+  // hack to emit C code an expression would generate
+  fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
+  
+  // hack to emit C typename of a Felix type
+  const repr_type[t]:string = '\\"?1\\"';
+}
+
 module Carray
 {
   requires cstdlib;
@@ -1379,6 +1408,8 @@ module String
   proc insert: string * int * string = "$1.insert($2,$3);";
   proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
 
+  proc fprint: ostream * C_hack::ptr[char] = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * C_hack::cptr[char] = "*$1<<$2;" requires iostream;
   proc fprint: ostream * string = "*$1<<$2;" requires iostream;
   fun atoi: string -> int = "std::atoi($1.data())" requires cstdlib;
   fun atol: string -> long = "std::atol($1.data())" requires cstdlib;
@@ -1389,8 +1420,6 @@ module String
   publish "Unsafe extract buffer pointer"
   fun cstr: string -> C_hack::ptr[char] = "$1.data()";
 
-  fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
-  const repr_type[t]:string = '\\"?1\\"';
   fun vsprintf[t]: C_hack::ptr[char] * t -> string = 
     "flx::rtl::strutil::flx_asprintf($1,$T2)" requires flx_strutil
   ;
