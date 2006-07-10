@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.84  2006/07/10 04:12:00  idadesub
+htmlman is now in doc, so we don't need to explicitly install it
+
 Revision 1.83  2006/07/10 04:09:15  idadesub
 quick hack to get "make doc" working. I did this by disabling the broken lua
 parser from being built, and commenting out a copy of the .css files, which
@@ -3099,7 +3102,6 @@ We have no idea if it continues copying.
 @tangle('\tfind rtl -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/rtl ";"')
 @tangle('\tfind lib -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/lib ";"')
 @tangle('\tfind doc -maxdepth 1 -type f -name "*" -exec install "{}" ${DOC_DIR}/doc ";"')
-@tangle('\tfind htmlman -maxdepth 1 -type f -name "*" -exec install "{}" ${DOC_DIR}/htmlman ";"')
 @tangle('\tfind man/man1 -maxdepth 1 -type f -name "*" -exec install "{}" ${MAN_DIR}/man1 ";"')
 @tangle('\techo "Stuff in misc has to be installed by hand"')
 @tangle('')
