@@ -604,7 +604,7 @@ endl;
 
 macro for i in (a,b,c) do 
   var i = 1;
-  print$ String::repr_expr i; print "="; print i; endl;
+  print$ Debug::repr_expr i; print "="; print i; endl;
 done;
 
 @head(3,"Unpacking Tuples")

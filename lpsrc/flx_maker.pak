@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.86  2006/07/10 13:14:25  skaller
+Change one test using repr_expr to new location in Debug module.
+
 Revision 1.85  2006/07/10 07:11:24  skaller
 More docs..
 
@@ -1875,7 +1878,6 @@ class PLUGIN(Plugin):
       print
       print "***** COMPLETION (nondet) TESTING PACKAGE "+pkg+" ************"
       print
-      print "PKGDICT=",pkgdict 
       flx_run = os.path.join('bin', 'flx_run')
   
       for testfile in completion_tests:
