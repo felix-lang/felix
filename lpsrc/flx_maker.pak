@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.85  2006/07/10 07:11:24  skaller
+More docs..
+
 Revision 1.84  2006/07/10 04:12:00  idadesub
 htmlman is now in doc, so we don't need to explicitly install it
 
@@ -3092,7 +3095,6 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${INSTALL_DIR}/rtl')
 @tangle('\tinstall -d ${INSTALL_DIR}/config')
 @tangle('\tinstall -d ${DOC_DIR}/doc')
-@tangle('\tinstall -d ${DOC_DIR}/htmlman')
 @tangle('\tinstall -d ${EXEC_DIR}')
 @tangle('\tfind config -maxdepth 1 -type f -name "*.py" -exec install "{}" ${INSTALL_DIR}/config ";"')
 @tangle('\tfind config -maxdepth 1 -type f -name "*.fpc" -exec install "{}" ${INSTALL_DIR}/config ";"')

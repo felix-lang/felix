@@ -24,8 +24,9 @@ except:
 execfile('cpkgs'+os.sep+'target'+os.sep+'gmpxx.py')
 if HAVE_GMPXX:
   unit_tests = ['test'+os.sep+'flx_gmp_test.flx']
-  iscr_source = ['lpsrc/flx_gmp.pak']
-  weaver_directory = 'doc/rtl/gmpxx/'
+
+iscr_source = ['lpsrc/flx_gmp.pak']
+weaver_directory = 'doc/gmp/'
 
 @h = tangler('config/gmpxx.fpc')
 @select(h)

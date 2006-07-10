@@ -15,8 +15,10 @@ except:
 @select(h)
 execfile("cpkgs"+os.sep+"target"+os.sep+"gsl.py")
 if HAVE_GSL:
-  iscr_source = ['lpsrc/gsl.pak']
-  weaver_directory = 'doc/rtl/gsl/'
+  pass
+
+iscr_source = ['lpsrc/gsl.pak']
+weaver_directory = 'doc/gsl/'
 
 @h = tangler('config/gsl.fpc')
 @select(h)

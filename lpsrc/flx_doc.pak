@@ -75,8 +75,12 @@ Elkhound parser (interscript):
 @p()
 
 @head(3,"Bindings",nospawn=1)
-gmpxx: Gnu Multiple Precision Arithmetic (GMP) Binding (interscript):
-@cite_url("rtl/gmpxx/en_flx_gmp_top.html")
+gmp: Gnu Multiple Precision Arithmetic (GMP) Binding (interscript):
+@cite_url("gmp/en_flx_gmp_top.html")
+@p()
+
+gsl: Gnu Scientific Library (GSL) Binding (interscript):
+@cite_url("gsl/en_gsl_top.html")
 @p()
 
 OpenGL Low level Graphics (interscript):
