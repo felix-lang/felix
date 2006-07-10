@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.83  2006/07/10 04:09:15  idadesub
+quick hack to get "make doc" working. I did this by disabling the broken lua
+parser from being built, and commenting out a copy of the .css files, which
+I don't think is needed any more
+
 Revision 1.82  2006/07/09 17:45:35  skaller
 More listings..
 
@@ -2728,7 +2733,8 @@ We have no idea if it continues copying.
 @tangle('flx_tools:')
 @tangle('\t./mk tools')
 @tangle('')
-@tangle('tools: flx_tools grammar tools/lua_parser')
+@tangle('tools: flx_tools grammar')
+@tangle('#tools: flx_tools grammar tools/lua_parser')
 @tangle('')
 @tangle('#tools: grammar bin/flx_doc tools/lua_parser')
 @tangle('')
@@ -2750,7 +2756,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tutdoc: dummy')
 @tangle('\t./mk doc tutdoc')
-@tangle('\tcp doc/*.css tut/doc >/dev/null 2>&1')
+@tangle('\t#cp doc/*.css tut/doc >/dev/null 2>&1')
 @tangle('')
 @tangle('doc.quiet: grammar tools libdoc')
 @tangle('\t./mk quiet doc man impldoc')
