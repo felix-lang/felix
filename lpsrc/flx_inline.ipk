@@ -1981,7 +1981,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
   ;
   exes
 
-and remove_unused_children syms (uses,child_map,bbdfns) i = (* () *)
+and remove_unused_children syms (uses,child_map,bbdfns) i = () (*
   (* all the descendants of a routine, excluding self *)
   let desc = descendants child_map i in
 
@@ -2016,7 +2016,7 @@ and remove_unused_children syms (uses,child_map,bbdfns) i = (* () *)
     *)
   )
   unused_descendants
-(* *)
+ *)
 
 and check_reductions syms exes =
   let changed = ref true in
