@@ -1499,7 +1499,7 @@ let gen_exe filename syms
 
     | `BEXE_assert (sr,e) ->
        let f,sl,sc,el,ec = sr in
-       let s = "\""^ f ^"\"," ^ 
+       let s = string_of_string f ^"," ^ 
          si sl ^ "," ^ si sc ^ "," ^
          si el ^ "," ^ si ec
        in
@@ -1507,12 +1507,12 @@ let gen_exe filename syms
 
     | `BEXE_assert2 (sr,sr2,e) ->
        let f,sl,sc,el,ec = sr in
-       let s = "\""^ f ^"\"," ^ 
+       let s = string_of_string f ^"," ^ 
          si sl ^ "," ^ si sc ^ "," ^
          si el ^ "," ^ si ec
        in
        let f2,sl2,sc2,el2,ec2 = sr2 in
-       let s2 = "\""^ f2 ^"\"," ^ 
+       let s2 = string_of_string f2 ^"," ^ 
          si sl2 ^ "," ^ si sc2 ^ "," ^
          si el2 ^ "," ^ si ec2
        in
