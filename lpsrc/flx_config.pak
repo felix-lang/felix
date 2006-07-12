@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.209  2006/07/12 07:20:55  idadesub
+fixed so it runs with regular sh
+
 Revision 1.208  2006/07/12 06:13:36  idadesub
 we need to use bash, instead of sh on machines that don't just symlink bash
 to sh
@@ -219,7 +222,7 @@ Add requires package "flx_pthread" to module Pthread
 @head(1,'configure')
 A shell script to run the config step.
 @select(tangler('configure'))
-#!/bin/bash
+#!/bin/sh
 # RF: added above line to make configure script tab
 # completable as exe under cygwin/fat32 fs. chmod
 # does NOT work in this case.
@@ -289,7 +292,8 @@ fi
 @head(1,'boot')
 A shell script to run the config step.
 @select(tangler('boot'))
-export PYTHONPATH=.:$PYTHONPATH
+PYTHONPATH=.:$PYTHONPATH
+export PYTHONPATH
 echo "Booting Felix"
 FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
 PREFIX=$PREFIX
