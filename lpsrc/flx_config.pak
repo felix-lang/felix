@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.208  2006/07/12 06:13:36  idadesub
+we need to use bash, instead of sh on machines that don't just symlink bash
+to sh
+
 Revision 1.207  2006/07/09 05:19:14  skaller
 Reinstated mkdir of tmp directory.
 
@@ -215,7 +219,7 @@ Add requires package "flx_pthread" to module Pthread
 @head(1,'configure')
 A shell script to run the config step.
 @select(tangler('configure'))
-#!/bin/sh
+#!/bin/bash
 # RF: added above line to make configure script tab
 # completable as exe under cygwin/fat32 fs. chmod
 # does NOT work in this case.
@@ -268,7 +272,7 @@ echo FLX_LPARCHIVE at $FLX_LPARCHIVE
 
 rm -f $FLX_LPARCHIVE/lpsrc/*.cache
 python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
-if [ $? != 0 ]
+if [ $? != 0 ];
 then
   echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
   exit 1
@@ -276,7 +280,7 @@ fi
 
 python -O script/make_config.py --quiet --prefix=${PREFIX} --lparchive=$FLX_LPARCHIVE ${ARGS}
 python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
-if [ $? != 0 ]
+if [ $? != 0 ];
 then
   echo "ERROR EXTRACTING MAKER PROGRAM"
   exit 1
