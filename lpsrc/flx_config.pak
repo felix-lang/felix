@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.211  2006/07/13 17:27:38  idadesub
+uses sed to split up --foo=bar type arguments for configure. Also, cleaned
+up how we pass arguments to make_config.py
+
 Revision 1.210  2006/07/12 21:05:22  idadesub
 missed a export call to make it sh compatible
 
@@ -234,45 +238,37 @@ export PYTHONPATH
 echo "Configuring Felix"
 FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
 PREFIX=$PREFIX
-ARGS=""
+ARGS="$*" # save the arguments
 
-grab=1
-while  [ "$grab" -eq 1 ]
-do
-  case x$1 in
-  x--prefix=*)
-     #PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1/'`"
-     PREFIX=${1:9}
-     shift
+while :; do
+  if [ $# -lt 1 ]; then
+    break
+  fi
+
+  case $1 in
+  --prefix=*)
+    PREFIX="`echo \"$1\" | sed 's/^--prefix=\(.*\)/\\1/'`"
   ;;
 
-  x--prefix)
+  --prefix)
     shift
     PREFIX="$1"
+  ;;
+
+  --lparchive=*)
+    FLX_LPARCHIVE="`echo \"$1\" | sed 's/^--lparchive=\(.*\)/\\1/'`"
+  ;;
+
+  --lparchive)
     shift
+    FLX_LPARCHIVE="$1"
   ;;
 
-  x--lparchive=*)
-   FLX_LPARCHIVE=${1:12}
-   shift
+  --)
+    break # respect request to stop parsing args
   ;;
-
-  x--lparchive)
-   shift
-   FLX_LPARCHIVE="$1"
-   shift
-  ;;
-
-  x)
-    grab=0
-  ;;
-
-  x*)
-    ARGS="${ARGS} $1"
-    shift
-  ;;
-
   esac
+  shift
 done
 
 echo FLX_LPARCHIVE at $FLX_LPARCHIVE
@@ -285,7 +281,7 @@ then
   exit 1
 fi
 
-python -O script/make_config.py --quiet --prefix=${PREFIX} --lparchive=$FLX_LPARCHIVE ${ARGS}
+python -O script/make_config.py --quiet ${ARGS}
 python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
 if [ $? != 0 ];
 then
