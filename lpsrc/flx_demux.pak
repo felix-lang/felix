@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.28  2006/07/13 18:22:55  idadesub
+fixes for freebsd. hopefully this won't break any other builds
+
 Revision 1.27  2006/06/22 06:59:28  rfistman
 added poll ts_poll demuxer.
 
@@ -667,7 +670,8 @@ public:
 #include "demux_posix_demuxer.hpp"
 #include <sys/types.h>    // for sys/select.h on osx
 #include <sys/select.h>   // for fd_set
-//#include <sys/time.h>   // GUSI WTF?
+#include <sys/time.h>     // GUSI WTF?
+#include <unistd.h>       // for bsd
 
 // Unlike the other demuxers, this one is NOT thread safe, so wait and
 // add socket wakeup must only be called from the same thread.
