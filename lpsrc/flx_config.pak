@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.212  2006/07/14 09:31:17  idadesub
+we can catch LookupError to catch failed indexing
+
 Revision 1.211  2006/07/13 17:27:38  idadesub
 uses sed to split up --foo=bar type arguments for configure. Also, cleaned
 up how we pass arguments to make_config.py
@@ -790,8 +793,11 @@ try:
   print "Build platform: " + build_model
 # RF: EnvironmentError was not catching the the failed archmap[] lookup,
 # halting the configure. What's the EnvironmentError stuff for, Erick? 
-# except EnvironmentError:
-except:
+# ET: the lookup error is for the get_stdout, which should throw something
+# derived from EnvironmentError, namely IOError, OSError, and MakeError.
+# I just missed catching LookupError (which is a superclass of IndexError and
+# KeyError)
+except (EnvironmentError, LookupError):
   print "uname -s and Python returns unknown OS type, assuming 'detect'"
   build_model = "detect"
 
