@@ -1,5 +1,19 @@
 @head(1,'demux')
 $Log$
+Revision 1.29  2006/07/14 16:00:28  rfistman
+generalised demux quit flag into a condition variable that is picked up and
+  signalled just before the event thread exits. this was yet another race
+  condition in which a quit and destructed demuxer was still in use by
+  its event thread.
+
+made get/set quit flag virtual so that "ts" style demuxers (those that
+ encapsulate a non ts demuxer) report the quit flag properly.
+
+factored kqueue quit into  async_quit for making sure that waiting thread
+ in thread safe demuxers exits before the demuxer destructor completes.
+ affects ts_poll_demuxer, ts_select_demuxer, evtport_demuxer
+ still to do: same for iocp_demuxer.
+
 Revision 1.28  2006/07/13 18:22:55  idadesub
 fixes for freebsd. hopefully this won't break any other builds
 
@@ -284,6 +298,14 @@ typedef struct {
 // read/write flags - they're no longer mutually exclusive
 enum { PDEMUX_READ = 1, PDEMUX_WRITE = 2 };
 
+// base class/hook for implementing thread safe multithreaded demux quit
+// not that useful for single threaded implementations.
+class DEMUX_EXTERN demux_quit_flag
+{
+public:
+  virtual void signal_finish() = 0;
+  virtual ~demux_quit_flag() {}
+};
 
 // ********************************************************
 /// Demux base.
@@ -296,9 +318,11 @@ protected:
   // FACTOR. Give poll a greedy interface
   virtual void  get_evts(bool poll) = 0;
 
-  bool quit_flag; // for clean takedown
+  // for clean async takedown. contents guaranteed to be valid until
+  // quit_flag->signal_finish is called
+  demux_quit_flag* quit_flag; 
 public:
-  demuxer() : quit_flag(false) {}
+  demuxer() : quit_flag(0) {}
   virtual ~demuxer() {}
 
   void wait() { get_evts(false); }
@@ -307,8 +331,8 @@ public:
   // ask users of demuxer to exit. not guarded. be sure to either set & get
   // this flag from only one thread (with a wait/wakeup callback - see
   // self_piper) or by using a memory barrier.
-  bool get_quit_flag() { return quit_flag; }
-  void set_quit_flag(bool f) { quit_flag = f; }
+  virtual demux_quit_flag* get_quit_flag() { return quit_flag; }
+  virtual void set_quit_flag(demux_quit_flag* f) { quit_flag = f; }
 };
 }} // namespace demux, flx
 #endif  /* __DEMUXER__ */
@@ -600,7 +624,9 @@ public:
 
 class DEMUX_EXTERN posix_demuxer : public demuxer {
 protected:
-  
+  void async_quit(); // useful for requesting wait thread quit in
+                     // thread safe demuxer destructors. doesn't throw.
+
 public:
   virtual ~posix_demuxer();
 
@@ -733,13 +759,19 @@ class DEMUX_EXTERN ts_select_demuxer : public posix_demuxer {
   select_demuxer  demux;
 
   // self pipe trick for waking waiting thread when we like.
+  // for demuxer responsiveness.
   self_piper sp;
 protected:
   virtual void    get_evts(bool poll);
 public:
   ts_select_demuxer();
+  ~ts_select_demuxer();
 
   virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
+
+  // oops! need to correctly get/set the quit flag
+  virtual demux_quit_flag* get_quit_flag() { return demux.get_quit_flag(); }
+  virtual void set_quit_flag(demux_quit_flag* f) { demux.set_quit_flag(f); }
 };
 }} // namespace demux, flx
 
@@ -790,7 +822,7 @@ public:
 
 #include "pthread_thread.hpp"  // flx_thread_t
 #include "pthread_mutex.hpp"  // flx_mutex_t
-#include "pthread_condv.hpp"  // flx_cond_t
+#include "pthread_condv.hpp"  // flx_condv_t
 #include "demux_timer_queue.hpp" // base class
 #include <sys/time.h>        // timespecs, gettimeofday
 
@@ -1352,6 +1384,8 @@ epoll_demuxer::epoll_demuxer()
 
 epoll_demuxer::~epoll_demuxer()
 {
+  async_quit(); // get waiting thread to exit. 
+
   if(-1 != epoll_fd)
   {
     if(close(epoll_fd) != 0)
@@ -1486,6 +1520,7 @@ epoll_demuxer::get_evts(bool poll)
   // it. In any case, I don't know whether it should be for read or write,
   // so I just don't say. In any case, it should wake to get error.
   // I seem to get both EPOLLHUP and EPOLLERROR on bad async connect
+  // see poll demuxer notes on POLLHUP for further possibly useful info.
   if(evt.events & EPOLLHUP)
   {
     fprintf(stderr, "EPOLLHUP for %p->%i\n", sv, sv->s);
@@ -1557,6 +1592,8 @@ evtport_demuxer::evtport_demuxer()
 
 evtport_demuxer::~evtport_demuxer()
 {
+  async_quit(); // gets waiting thread to quit, returning afterwards
+
   if(-1 != evtport)
   {
     if(close(evtport) != 0)
@@ -1845,7 +1882,7 @@ iocp_demuxer::iocp_demuxer()
 
 iocp_demuxer::~iocp_demuxer()
 {
-  fprintf(stderr, "~iocp (%p)\n", iocp);
+  fprintf(stderr, "~iocp (%p) ASYNC QUITTER NEEDED HERE!\n", iocp);
 
   if(NULL != iocp && !CloseHandle(iocp))
   {
@@ -2727,7 +2764,6 @@ public:
 // try EV_EOF to pick up eofs, useful for async file io.
 
 #include "demux_kqueue_demuxer.hpp"
-#include "demux_self_piper.hpp"
 
 #include <stdio.h>      // perror
 #include <unistd.h>     // close
@@ -2759,23 +2795,10 @@ kqueue_demuxer::~kqueue_demuxer()
   // fails there. we need to wake the waiting thread, so we'll use that
   // handy self pipe waker. Luckily, kqueues are responsive to new fds,
   // otherwise we'd need the self pipe waker to be there from the start 
-
-  // we don't want exceptions being thrown in a destructor
-  try {
-    // NEW and IMPROVED!!! demux quitter which sets demux quit flag
-    // via self pipe trick then waits for self pipe/quitting callback
-    // to finish. no fear of quitter being destructed early!
-
-    // this will wake the thread (there should only be one atm), however
-    // that's just another race between kevent and close. really need to
-    // extend self piper to set a quit flag. we have to currently assume
-    // that there is only event collecting thread.
-    // fprintf(stderr, "taking down kqueue with quitter (QUITTER!)\n");
-    demux_quitter quitter;
-    quitter.quit(this);
-  } catch(...) {
-    fprintf(stderr, "error waking kqueue with self pipe quitter\n");
-  }
+  // p.s. it's also bad form to destruct a demuxer while a thread waits
+  // on it. top marks to kqueues for making this obvious, passing fail
+  // to me for not applying the same to the other async demuxers.
+  async_quit();
 
   //if(syscall(SYS_close, kq) == -1)
   // I don't seem to be able to close a kq. can't fstat it either
@@ -3067,6 +3090,7 @@ fileio_request::doit()
 @select(h)
 #include "demux_posix_demuxer.hpp"
 #include "demux_sockety.hpp"
+#include "demux_self_piper.hpp" // fns for waking and quitting a demuxer
 
 #include <stdio.h>        // "printf"
 #include <assert.h>       // assert
@@ -3145,6 +3169,28 @@ posix_demuxer::socket_send(int s, sel_param* pb)
     pb->bytes_written += nbytes;
   }
   return false;           // connection didn't close
+}
+
+// doesn't throw
+void
+posix_demuxer::async_quit()
+{
+  try {
+    // NEW and IMPROVED!!! demux quitter which sets demux quit flag
+    // via self pipe trick then waits for self pipe/quitting callback
+    // to finish. no fear of quitter being destructed early!
+
+    // this will wake the thread (there should only be one atm), however
+    // that's just another race between kevent and close. really need to
+    // extend self piper to set a quit flag. we have to currently assume
+    // that there is only event collecting thread.
+    // fprintf(stderr, "taking down kqueue with quitter (QUITTER!)\n");
+    demux_quitter quitter;
+    quitter.quit(this);
+  } catch(...) {
+    fprintf(stderr, "error waking demuxer with self pipe quitter\n");
+  }
+// zzz
 }
 
 #if 0
@@ -3379,8 +3425,6 @@ select_demuxer::select(fd_set& rset, fd_set& wset, fd_set& exset, bool poll)
   // this is depending on my fake socket to wakeup. perhaps use the timer
   // for now.
   struct timeval  tv, *tp = NULL;
-  //tv.tv_sec = 0;
-  //tv.tv_usec = 1000000/100;
 
   if(poll)
   {
@@ -3508,6 +3552,11 @@ ts_select_demuxer::ts_select_demuxer()
   sp.install(&demux);
 }
 
+ts_select_demuxer::~ts_select_demuxer()
+{
+  async_quit(); // wake thread, ask to leave.
+}
+
 void
 ts_select_demuxer::get_evts(bool poll)
 {
@@ -3608,18 +3657,27 @@ public:
     virtual void wakeup(posix_demuxer& demux);
 };
 
-// for asking demuxer (posix?) to quit and then waiting on it to do so
-// derived from selfpipe_wakeup because we still have to read that
-// byte, dammit.
-class DEMUX_EXTERN quitter_wakeup : public selfpipe_wakeup {
+// portable - needed by all async demuxers, including windows
+class DEMUX_EXTERN async_demux_quit_flag : public demux_quit_flag {
   flx::pthread::flx_mutex_t cv_lock;       // to work with the condition var
   flx::pthread::flx_condv_t finished_cond; 
   bool finished;   // might seem redundant, but that's how CVs work.
+public:
+  async_demux_quit_flag();
+
+  void wait_finish();
+  virtual void signal_finish();
+};
+
+// for asking a posix demuxer to quit and then waiting on it to do so
+// derived from selfpipe_wakeup because we still have to read that
+// byte, dammit.
+class DEMUX_EXTERN quitter_wakeup : public selfpipe_wakeup {
+  async_demux_quit_flag finished_flag;
 
 public:
-  quitter_wakeup();
-  void wait_finish();
   virtual void wakeup(posix_demuxer& demux);
+  void wait_finish();
 };
 
 class DEMUX_EXTERN auto_fd {
@@ -3641,7 +3699,8 @@ public:
   int get_read_end();
 };
 
-// wakes a demuxer, for when you want some kind of attention
+// wakes a POSIX demuxer, for when you want some kind of attention
+// todo: make portable
 class DEMUX_EXTERN self_piper {
     pipe_pair       pp;
     selfpipe_wakeup spw;
@@ -3798,14 +3857,15 @@ pipe_pair::get_read_end()
   return fds[0].fd;
 }
 
-quitter_wakeup::quitter_wakeup()
+async_demux_quit_flag::async_demux_quit_flag()
   : finished(false)
 {
   // nothing
 }
 
+// called from the non-event-waiting thread.
 void
-quitter_wakeup::wait_finish()
+async_demux_quit_flag::wait_finish()
 {
   flx::pthread::flx_mutex_locker_t    locker(cv_lock);
 
@@ -3814,6 +3874,16 @@ quitter_wakeup::wait_finish()
   {
     finished_cond.wait(&cv_lock);
   }
+}
+
+
+// call this last thing before event thread exit
+void
+async_demux_quit_flag::signal_finish()
+{
+  finished = true;
+  finished_cond.signal();
+  // do absolutely NOTHING here as we may have already been destructed. boom.
 }
 
 void
@@ -3828,12 +3898,15 @@ quitter_wakeup::wakeup(posix_demuxer& demux)
   // demux thread, which is running this code now, should not re-enter
   // the demux wait thanks to this flag. because the same thread that
   // sets the flag reads the flag, we shouldn't need synchronisation
-  demux.set_quit_flag(true);
+  demux.set_quit_flag(&finished_flag);
+  fprintf(stderr, "quitter ate byte, have set demuxer quit flag\n");
+}
 
-  fprintf(stderr, "quitter ate byte, signalling condition var\n");
-  finished = true;
-  finished_cond.signal();
-  // do absolutely NOTHING here as we may have already been destructed. boom.
+void
+quitter_wakeup::wait_finish()
+{
+  finished_flag.wait_finish();
+  // event thread exited
 }
 
 void
@@ -4032,13 +4105,18 @@ poll_demuxer::process_evts(void* infds, void* svs, int nevts)
       wake = true;    // good to do?
     }
 
-    // device has been disconnected. this and POLLOUT are mutuall exclusive.
-    // a stream can never be writeable if a hangup has occured
+    // device has been disconnected. this and POLLOUT are mutually exclusive.
+    // a stream can never be writeable again if a hangup has occured.
+    // I've seen POLLHUPs come in for shutdown(s, 1). In this case you want
+    // the wakeup, at least if you were waiting to write. POLLHUPs also seem
+    // to be the message/wake up when reading from a connection that has
+    // closed: you get the remaining bytes, but via POLLHUP rathern POLLOUT.
+    // perhaps not worth printing, seeing as this usage is quite common
     if(fds->revents & POLLHUP)
     {
       fprintf(stderr, "POLLHUP for %p->%i\n", sv, sv->s);
       assert((fds->revents & POLLOUT) == 0);
-      wake = true;    // good to do?
+      wake = true;    // good to do? probably.
     }
 
     // Invalid fd. We shouldn't ever get that.
@@ -4174,8 +4252,13 @@ protected:
   virtual void    get_evts(bool poll);
 public:
   ts_poll_demuxer();
+  ~ts_poll_demuxer();
 
   virtual int     add_socket_wakeup(socket_wakeup* sv, int flags);
+
+  // oops! need to correctly get/set the quit flag
+  virtual demux_quit_flag* get_quit_flag() { return demux.get_quit_flag(); }
+  virtual void set_quit_flag(demux_quit_flag* f) { demux.set_quit_flag(f); }
 };
 
 }} // namespace demux, flx
@@ -4194,6 +4277,13 @@ ts_poll_demuxer::ts_poll_demuxer()
   fprintf(stderr, "ts_poll_demuxer installing self-piper\n");
   // install self pipe trick.
   sp.install(&demux);
+}
+
+ts_poll_demuxer::~ts_poll_demuxer()
+{
+  fprintf(stderr, "ts_polling asking thread to quit\n");
+  async_quit();  // get async waiting thread to stop waiting
+  fprintf(stderr, "ts_poll async quit finished\n");
 }
 
 void
