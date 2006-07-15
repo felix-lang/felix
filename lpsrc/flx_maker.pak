@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.89  2006/07/15 07:24:58  idadesub
+fixed a typo
+
 Revision 1.88  2006/07/15 04:40:40  idadesub
 this should hopefully pass on the exit codes from umk and mk
 
@@ -1049,7 +1052,7 @@ OCS_MODULES = [
 @select(h)
 #!/bin/sh
 python script/maker $*
-if [ $? != 0 ]; do
+if [ $? != 0 ]; then
   exit 1
 done
 @os.system("chmod u+x umk")
@@ -1069,7 +1072,7 @@ eval `exec 4>&1 >&3 3>&-
 } | $cmd2 
 echo "ec2=$?;" >&4
 `
-if [ $ec1 != 0 ]; do
+if [ $ec1 != 0 ]; then
   exit 1
 done
 @os.system("chmod u+x mk")
