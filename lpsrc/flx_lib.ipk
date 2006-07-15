@@ -2,6 +2,10 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.169  2006/07/15 11:08:10  skaller
+Fixes to fail[] function, some _ctor_arg things that got a
+string but the C routines needed a char*.
+
 Revision 1.168  2006/07/15 02:14:08  skaller
 Misc fiddles. Enable asserts in C++ code. Delete libraries
 before ar'ing them to make sure no stale objects in them.
@@ -972,7 +976,7 @@ module System
 {
   const argc:int = "ptf->argc";
   fun argv:int -> string = 'std::string($1<0||$1>=ptf->argc??"":ptf->argv[$1])';
-  //val args = List::map (the argv) (List::range argc);
+  fun args () => List::map (the argv) (List::range argc);
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
   fun system: string -> int = "std::system($1.data())"
     requires cstdlib;
@@ -1190,7 +1194,7 @@ type string = "std::string";
   tangle("module " + string.capitalize(t))
   tangle("{")
   tangle('  gen_integral('+t+');')
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1.data()))" requires cstdlib;')
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
   if t in fast_sints:
     tangle('  fun abs: '+t+' -> '+t+' = "'+absmap[t]+'($1)";')
@@ -1214,7 +1218,7 @@ type string = "std::string";
   tangle("{")
   tangle('  gen_cmp('+t+');')
   tangle('  gen_arith('+t+');')
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
   gen_pow(t)
   gen_trig(t)
