@@ -404,6 +404,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     let exes = rexes exes in
     let ps = remap_ps ps in
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,(ps,traint),exes));
+    (*
+    print_endline "NEW PROCEDURE (clone):";
+    print_function syms.dfns bbdfns k;
+    *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     (*
@@ -417,6 +421,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     let exes = rexes exes in
     let ret = auxt ret in
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,(ps,traint),ret,exes));
+    (*
+    print_endline "NEW FUNCTION (clone):";
+    print_function syms.dfns bbdfns k;
+    *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     (*
@@ -917,10 +925,15 @@ let gen_body syms (uses,child_map,bbdfns) id
           match entry with 
           | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
             let exes = map (subarg syms bbdfns argmap) exes in 
+            recal_exes_usage syms uses sr i ps exes;
             Hashtbl.replace bbdfns i 
             (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
           | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+            (*
+            print_endline ("MODIFY " ^ si i);
+            *)
             let exes = map (subarg syms bbdfns argmap) exes in 
+            recal_exes_usage syms uses sr i ps exes;
             Hashtbl.replace bbdfns i 
             (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
           | _ -> ()
@@ -1981,38 +1994,50 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
   ;
   exes
 
-and remove_unused_children syms (uses,child_map,bbdfns) i = () (*
-  (* all the descendants of a routine, excluding self *)
+and remove_unused_children syms (uses,child_map,bbdfns) i = 
   let desc = descendants child_map i in
+  if desc <> IntSet.empty then begin
+    (* all the descendants of a routine, excluding self *)
+    (*
+    print_endline "CANDIDATE FOR CHILD REMOVAL";
+    print_function syms.dfns bbdfns i;
+    print_endline ("Descendants of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) desc "");
+    IntSet.iter (fun i-> print_function syms.dfns bbdfns i) desc;
+    *)
 
-  (* everything used by this routine directly or indirectly *)
-  let used = Flx_call.use_closure uses i in
 
-  print_endline ("Usage of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) used "");
-  (* any desendants not used by this routine *)
-  let unused_descendants = IntSet.diff desc used in
+    (* everything used by this routine directly or indirectly *)
+    let used = Flx_call.use_closure uses i in
 
-  (* remove the item *)
-  IntSet.iter
-  (fun i -> 
-    begin 
-      try 
-        (* any parent disowns the child *)
-        match Hashtbl.find bbdfns i with
-        | _,Some parent,_,_ -> remove_child child_map parent i
-        | _ -> ()
-      with Not_found -> ()
-    end
-    ;
+    (*
+    print_endline ("Usage closure of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) used "");
+    *)
+    (* any desendants not used by this routine *)
+    let unused_descendants = IntSet.diff desc used in
 
-    (* remove from symbol table, child map, and usage map *)
-    Hashtbl.remove bbdfns i;
-    Hashtbl.remove child_map i;
-    Hashtbl.remove uses i;
-    print_endline ("REMOVED SYMBOL " ^ qualified_name_of_index syms.dfns i)
-  )
-  unused_descendants
-*)
+    (* remove the item *)
+    IntSet.iter
+    (fun i -> 
+      begin 
+        try 
+          (* any parent disowns the child *)
+          match Hashtbl.find bbdfns i with
+          | _,Some parent,_,_ -> remove_child child_map parent i
+          | _ -> ()
+        with Not_found -> ()
+      end
+      ;
+
+      (* remove from symbol table, child map, and usage map *)
+      Hashtbl.remove bbdfns i;
+      Hashtbl.remove child_map i;
+      Hashtbl.remove uses i;
+      (*
+      print_endline ("REMOVED SYMBOL " ^ qualified_name_of_index syms.dfns i)
+      *)
+    )
+    unused_descendants
+  end
 
 and check_reductions syms exes =
   let changed = ref true in
@@ -2084,10 +2109,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = heavy_inline_calls syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
       print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
@@ -2099,15 +2122,15 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       *)
       
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = check_reductions syms exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) in
       Hashtbl.replace bbdfns i data;
+      recal_exes_usage syms uses sr i ps exes;
+      remove_unused_children syms (uses,child_map,bbdfns) i;
       (*
       print_endline ("DONE Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
       print_endline ("OPTIMISED PROCEDURE BODY: " ^ id ^ " :\n" ^ catmap "\n" (string_of_bexe syms.dfns 2) exes);
@@ -2132,10 +2155,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = heavy_inline_calls syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
       print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
@@ -2153,15 +2174,15 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       print_endline (id^ " After tailing(2):\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
       recal_exes_usage syms uses sr i ps exes;
-      remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = check_reductions syms exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) in
       Hashtbl.replace bbdfns i data;
+      recal_exes_usage syms uses sr i ps exes;
+      remove_unused_children syms (uses,child_map,bbdfns) i;
       (*
       print_endline ("DONE Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
       print_endline ("OPTIMISED FUNCTION BODY: " ^ id ^ " :\n" ^ catmap "\n" (string_of_bexe syms.dfns 2) exes);
