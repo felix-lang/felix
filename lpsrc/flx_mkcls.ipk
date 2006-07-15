@@ -28,6 +28,7 @@ open List
 open Flx_unify
 open Flx_treg
 open Flx_exceptions
+open Flx_use
 
 let gen_closure syms bbdfns i =
   let j = !(syms.counter) in incr syms.counter;
@@ -255,11 +256,15 @@ let set_closure bbdfns p i =
   | _ -> ()
 
 let make_closures syms bbdfns =
+  (*
   let used = ref IntSet.empty in
-  let all_closures = ref IntSet.empty in
   let uses i = Flx_use.uses syms used bbdfns true i in
   IntSet.iter uses !(syms.roots);
-  IntSet.iter (process_entry syms bbdfns all_closures ) !used;
+  *)
+
+  let all_closures = ref IntSet.empty in
+  let used = full_use_closure syms bbdfns in
+  IntSet.iter (process_entry syms bbdfns all_closures ) used;
   (*
   IntSet.iter (set_closure bbdfns `Heap_closure) (IntSet.union !all_closures !(syms.roots));
   *)

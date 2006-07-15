@@ -1988,9 +1988,7 @@ and remove_unused_children syms (uses,child_map,bbdfns) i = () (*
   (* everything used by this routine directly or indirectly *)
   let used = Flx_call.use_closure uses i in
 
-  (*
   print_endline ("Usage of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) used "");
-  *)
   (* any desendants not used by this routine *)
   let unused_descendants = IntSet.diff desc used in
 
@@ -2011,12 +2009,10 @@ and remove_unused_children syms (uses,child_map,bbdfns) i = () (*
     Hashtbl.remove bbdfns i;
     Hashtbl.remove child_map i;
     Hashtbl.remove uses i;
-    (*
     print_endline ("REMOVED SYMBOL " ^ qualified_name_of_index syms.dfns i)
-    *)
   )
   unused_descendants
- *)
+*)
 
 and check_reductions syms exes =
   let changed = ref true in

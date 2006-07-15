@@ -14,6 +14,7 @@ val find_roots:
   bid_t ->
   biface_t list -> unit
 
+(*
 val uses_type:
   sym_state_t ->
   IntSet.t ref ->
@@ -37,6 +38,7 @@ val uses:
   bool -> (* true to count initialisations as uses *)
   int ->
   unit
+*)
 
 (* counts initialisation as use *)
 val full_use_closure:

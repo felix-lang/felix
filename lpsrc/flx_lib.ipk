@@ -2,6 +2,10 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.168  2006/07/15 02:14:08  skaller
+Misc fiddles. Enable asserts in C++ code. Delete libraries
+before ar'ing them to make sure no stale objects in them.
+
 Revision 1.167  2006/07/10 11:33:47  skaller
 Add source locations in new module Debug.
 
@@ -968,7 +972,7 @@ module System
 {
   const argc:int = "ptf->argc";
   fun argv:int -> string = 'std::string($1<0||$1>=ptf->argc??"":ptf->argv[$1])';
-  val args = List::map (the argv) (List::range argc);
+  //val args = List::map (the argv) (List::range argc);
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
   fun system: string -> int = "std::system($1.data())"
     requires cstdlib;

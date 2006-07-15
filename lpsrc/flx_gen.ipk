@@ -1,4 +1,4 @@
-@head(1,'C++ Code generator')
+//@head(1,'C++ Code generator')
 @h = tangler('src/flx_gen.mli')
 @select(h)
 open Flx_ast
@@ -2898,7 +2898,7 @@ try
     ;
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     (*
-    print_endline "INLINING DONE";
+    print_endline "INLINING DONE: RESULT:";
     print_functions syms.dfns bbdfns;
     *)
   end
