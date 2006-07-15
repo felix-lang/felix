@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.88  2006/07/15 04:40:40  idadesub
+this should hopefully pass on the exit codes from umk and mk
+
 Revision 1.87  2006/07/15 02:59:51  idadesub
 it appears that when I externally kill a flx_arun being run by a test, it
 doesn't appear to be sending an errno up to the parent scripts. So, I'm
@@ -1044,14 +1047,31 @@ OCS_MODULES = [
 
 @h = tangler('umk','data')
 @select(h)
+#!/bin/sh
 python script/maker $*
+if [ $? != 0 ]; do
+  exit 1
+done
 @os.system("chmod u+x umk")
 
 @h = tangler('mk','data')
 @select(h)
 LOGFILE=mk_`date +"%Y-%m-%d-%H%M"`.log
 echo "Saving transcript to $LOGFILE" | tee -a $LOGFILE
-./umk $* | tee -a $LOGFILE 2>&1
+#./umk $* | tee -a $LOGFILE 2>&1
+cmd1="./umk $*"
+cmd2="tee -a $LOGFILE 2>&1"
+
+exec 3>&1
+eval `exec 4>&1 >&3 3>&-
+{
+	$cmd1 4>&-; echo "ec1=$?;" >&4
+} | $cmd2 
+echo "ec2=$?;" >&4
+`
+if [ $ec1 != 0 ]; do
+  exit 1
+done
 @os.system("chmod u+x mk")
 
 @h = tangler('mk.bat','data')
