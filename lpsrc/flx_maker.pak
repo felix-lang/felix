@@ -6,6 +6,12 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.87  2006/07/15 02:59:51  idadesub
+it appears that when I externally kill a flx_arun being run by a test, it
+doesn't appear to be sending an errno up to the parent scripts. So, I'm
+commenting out catching of the MakeError to get the stack trace, to see if
+it helps to isolate things down
+
 Revision 1.86  2006/07/10 13:14:25  skaller
 Change one test using repr_expr to new location in Debug module.
 
@@ -2641,47 +2647,49 @@ def enstamp(stamp):
   f.close()
   print 'Writing Stamp File:', stamp
 
-try:
+# commenting out to find why this is breaking on solaris
+#try:
 
-  # EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
-  for k in options:
-    if k in plugins:
-      plugins[k]()
-    # FIXME: commented out to allow arbitrary options
-    #else:
-    #  print "unknown option:", k
-    #  raise MakeError
+# EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
+for k in options:
+  if k in plugins:
+    plugins[k]()
+  # FIXME: commented out to allow arbitrary options
+  #else:
+  #  print "unknown option:", k
+  #  raise MakeError
 
-  # execute scheduled operations in priority order
-  schedule_table.sort()
-  for pri,f in schedule_table:
-    f()
-
-
-  if os.name != 'nt': # requires posix
-    if "test" in options or "tutorial" in options or "fcount" in options:
-      tkind = "std"
-      if "inline" in options: tkind="inline"
-      elif "noinline" in options: tkind="noinline"
-      stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
-      run(stats)
-      stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
-      run(stats)
-  
-    if "pfcount" in options:
-      stats = 'python script/pfcount.py misc/fcounts.stats'
-      run(stats)
-
-    if "pfcount_all" in options:
-      stats = 'python script/pfcount.py misc/fcounts.stats all'
-      run(stats)
-
-  print "RUN COMPLETE"
+# execute scheduled operations in priority order
+schedule_table.sort()
+for pri,f in schedule_table:
+  f()
 
 
-except MakeError:
-  print "Terminating due to MAKE error"
-  sys.exit(1)
+if os.name != 'nt': # requires posix
+  if "test" in options or "tutorial" in options or "fcount" in options:
+    tkind = "std"
+    if "inline" in options: tkind="inline"
+    elif "noinline" in options: tkind="noinline"
+    stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
+    run(stats)
+    stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
+    run(stats)
+
+  if "pfcount" in options:
+    stats = 'python script/pfcount.py misc/fcounts.stats'
+    run(stats)
+
+  if "pfcount_all" in options:
+    stats = 'python script/pfcount.py misc/fcounts.stats all'
+    run(stats)
+
+print "RUN COMPLETE"
+
+
+# commenting out to find why this is breaking on solaris
+#except MakeError:
+#  print "Terminating due to MAKE error"
+#  sys.exit(1)
 #except:
 #  print "Terminating due to UNKNOWN error"
 #  sys.exit(2)
