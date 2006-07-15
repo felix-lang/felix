@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.90  2006/07/15 07:27:03  idadesub
+maybe i should double check my patches to make sure i don't miss anything
+else :)
+
 Revision 1.89  2006/07/15 07:24:58  idadesub
 fixed a typo
 
@@ -1054,7 +1058,7 @@ OCS_MODULES = [
 python script/maker $*
 if [ $? != 0 ]; then
   exit 1
-done
+fi
 @os.system("chmod u+x umk")
 
 @h = tangler('mk','data')
@@ -1074,7 +1078,7 @@ echo "ec2=$?;" >&4
 `
 if [ $ec1 != 0 ]; then
   exit 1
-done
+fi
 @os.system("chmod u+x mk")
 
 @h = tangler('mk.bat','data')
