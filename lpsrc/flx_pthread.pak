@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.31  2006/07/16 20:53:57  skaller
+Modify thread creation error to include the error code.
+
 Revision 1.30  2006/07/16 20:18:06  skaller
 Abort program if worker_fifo::start_worker_thread fails.
 To be fixed later to something possibly saner.
@@ -317,8 +320,9 @@ flx_detached_thread_t::init(void* (*start)(void*), void* udat)
   int res = pthread_create(&thr, &attr, start, udat);
   if(res)
   {
-     fprintf(stderr, "flx_detached_thread_t: pthread_create_failed: %s\n",
-       strerror(res));
+     fprintf(stderr, "flx_detached_thread_t: pthread_create_failed [%d]: %s\n",
+       res, strerror(res)
+     );
   }
   pthread_attr_destroy(&attr);
   return res;
@@ -337,8 +341,9 @@ flx_thread_t::init(void* (*start)(void*), void* udat)
   int res = pthread_create(&thr, NULL, start, udat);
   if(res)
   {
-     fprintf(stderr, "flx_thread_t: pthread_create_failed: %s\n",
-       strerror(res));
+     fprintf(stderr, "flx_thread_t: pthread_create_failed [%d]: %s\n",
+       res,strerror(res)
+     );
   }
   return res;
 }
