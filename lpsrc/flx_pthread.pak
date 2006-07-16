@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.29  2006/07/16 10:14:36  rfistman
+added some printfs to diagnose thread creation probs
+
 Revision 1.28  2006/07/05 07:36:42  skaller
 Fiddles to speed test
 
@@ -292,6 +295,7 @@ public:
 @select(h)
 #include "pthread_thread.hpp"
 #include <stdio.h>
+#include <string.h>  // strerror
 
 namespace flx { namespace pthread {
 
@@ -307,6 +311,11 @@ flx_detached_thread_t::init(void* (*start)(void*), void* udat)
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
   int res = pthread_create(&thr, &attr, start, udat);
+  if(res)
+  {
+     fprintf(stderr, "flx_detached_thread_t: pthread_create_failed: %s\n",
+       strerror(res));
+  }
   pthread_attr_destroy(&attr);
   return res;
 }
@@ -321,7 +330,13 @@ void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 int 
 flx_thread_t::init(void* (*start)(void*), void* udat)
 {
-  return pthread_create(&thr, NULL, start, udat);
+  int res = pthread_create(&thr, NULL, start, udat);
+  if(res)
+  {
+     fprintf(stderr, "flx_thread_t: pthread_create_failed: %s\n",
+       strerror(res));
+  }
+  return res;
 }
 
 void flx_thread_t::join() { pthread_join(thr, NULL); }
@@ -360,7 +375,14 @@ int
 flx_detached_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 {
   DWORD thread_id = 0;
-  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0, &thread_id);  
+  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0,
+    &thread_id);  
+  if(!thread)
+  {
+    DWORD err = GetLastError();
+    fprintf(stderr, "flx_detached_thread_t: CreateThread failed: %i\n", err);
+    return err;
+  }
   return 0;
 }
 
@@ -402,7 +424,16 @@ int
 flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 {
   DWORD thread_id = 0;
-  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0, &thread_id);  
+  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0,
+    &thread_id);  
+
+  if(!thread)
+  {
+    DWORD err = GetLastError();
+    fprintf(stderr, "flx_thread_t: CreateThread failed: %i\n", err);
+    return err;
+  }
+
   return 0;
 }
 
