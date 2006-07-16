@@ -1,5 +1,9 @@
 @head(1,'pthread')
 $Log$
+Revision 1.30  2006/07/16 20:18:06  skaller
+Abort program if worker_fifo::start_worker_thread fails.
+To be fixed later to something possibly saner.
+
 Revision 1.29  2006/07/16 10:14:36  rfistman
 added some printfs to diagnose thread creation probs
 
@@ -1353,6 +1357,8 @@ public:
 @h=tangler('pthread/pthread_work_fifo.cpp')
 @select(h)
 #include <stdio.h>    // printf
+#include <stdlib.h>   // abort
+
 #include "pthread_work_fifo.hpp"
 namespace flx { namespace pthread {
 
@@ -1368,11 +1374,17 @@ void worker_fifo::start_worker_thread()
 {
   ++nthreads;
   fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
+  int result =
 #ifdef _WIN32
   flx_detached_thread_t().init((LPTHREAD_START_ROUTINE)thread_start, this);
 #else
   flx_detached_thread_t().init(thread_start, this);
 #endif
+  if (result != 0)
+  {
+    fprintf(stderr, "FATAL ERROR: Spawn of pre-emptive thread failed!\n");
+    abort();
+  }
 }
 
 worker_fifo::worker_fifo(int n, int m) : fifo(n), nthreads(0)
