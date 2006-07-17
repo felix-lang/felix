@@ -1,5 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.32  2006/07/17 01:14:27  skaller
+Change the way pthread switch is handled to conform to
+normal packaging system (instead of weird special case),
+should fix solaris problem.
+
 Revision 1.31  2006/07/16 20:53:57  skaller
 Modify thread creation error to include the error code.
 
@@ -115,15 +120,24 @@ Name: pthread
 Description: Pre-emptive threading support
 Version: $Id$
 
+@EXTRA_SYS_LIBS = ""
+@if SOLARIS: 
+  EXTRA_SYS_LIBS="-lrt"
+
+@if string.strip(PTHREAD_SWITCH):  
+  EXTRA_SYS_LIBS = EXTRA_SYS_LIBS + " " +PTHREAD_SWITCH
+
 @if HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_pthread_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_pthread_static")
- elif WIN32:
-   tangle("provides_dlib: -lflx_pthread_dynamic")
-   tangle("provides_slib: -lflx_pthread_static")
  else:
    tangle("provides_dlib: -lflx_pthread_dynamic")
    tangle("provides_slib: -lflx_pthread_static")
+
+   if string.strip(EXTRA_SYS_LIBS):
+     tangle("requires_dlibs: "+EXTRA_SYS_LIBS)
+     tangle("requires_slibs: "+EXTRA_SYS_LIBS)
+
 Requires: flx_gc
 
 @h = tangler('spkgs/flx_pthread.py')
@@ -186,6 +200,9 @@ if BSD or MACOSX:
 if SOLARIS:
   PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
   EXTRA_SYS_LIBS = "-lrt " # man sem_wait
+
+if string.strip(PTHREAD_SWITCH):
+  EXTRA_SYS_LIBS = EXTRA_SYS_LIBS + " " + PTHREAD_SWITCH
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES

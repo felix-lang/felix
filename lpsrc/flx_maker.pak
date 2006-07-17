@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.93  2006/07/17 01:14:27  skaller
+Change the way pthread switch is handled to conform to
+normal packaging system (instead of weird special case),
+should fix solaris problem.
+
 Revision 1.92  2006/07/16 21:00:37  skaller
 Change Makefile so uploads use the USER environment variable
 to allow any developer to do uploads.
@@ -3846,7 +3851,7 @@ TIME=0
 RUNIT=1
 CCFLAGS=""
 FELIX=1
-LINNKER_SWITCHES=""
+LINKER_SWITCHES=""
 MACROS=""
 grab=1
 
@@ -4256,7 +4261,8 @@ then
   then
     calpackages
     CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
+    #LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
@@ -4293,7 +4299,8 @@ else
   then
     calpackages
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
+    #LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
+    LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
