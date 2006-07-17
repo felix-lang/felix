@@ -1,5 +1,8 @@
 @head(1,'Garbage collector')
 $Log$
+Revision 1.4  2006/07/17 16:42:40  skaller
+Start with config and small binding for mmap.
+
 Revision 1.3  2006/06/25 16:34:02  rfistman
 added PRE_LINK_FLAGS hack to get /link flag in VS toolchain to
  precede all link directives. Diddling with LDFLAGS didn't work
@@ -212,7 +215,7 @@ struct allocator_t {
   bool debug;
   allocator_t():debug(false){}
   virtual void *allocate(std::size_t)=0;
-  virtual void deallocate(void *, std::size_t)=0;
+  virtual void deallocate(void *)=0;
   virtual ~allocator_t(){};
   void set_debug(bool d){debug=d;}
 };
@@ -623,7 +626,7 @@ struct GC_EXTERN flx_collector_t;
 struct GC_EXTERN malloc_free : public virtual allocator_t 
 {
   void *allocate(std::size_t);
-  void deallocate(void *, std::size_t);
+  void deallocate(void *);
 };
 
 
@@ -772,7 +775,7 @@ void *malloc_free::allocate(std::size_t amt)
 }
 
 
-void malloc_free::deallocate(void *p, std::size_t)
+void malloc_free::deallocate(void *p)
 {
   //printf("free %p\n",p);
   if(debug)fprintf(stderr,"Free %p\n",p);
@@ -969,7 +972,7 @@ void flx_collector_t::delete_frame(frame_t *fp)
   else
   {
     //fprintf(stderr,"Not in arena\n");
-    allocator->deallocate(fp, size);
+    allocator->deallocate(fp);
   }
 
   allocation_amt -= size;
@@ -1461,7 +1464,7 @@ void flx_collector_t::impl_compact(bool closed) {
   if (arena)
   {
     if(debug)fprintf(stderr,"DEALLOCATING OLD ARENA\n");
-    allocator->deallocate(arena, arena_size);
+    allocator->deallocate(arena);
   }
   arena = new_arena;
   arena_size = new_arena_size;
