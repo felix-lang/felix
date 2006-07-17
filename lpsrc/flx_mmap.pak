@@ -1,5 +1,8 @@
 @head(1,"Address space management")
 $Log$
+Revision 1.2  2006/07/17 17:22:40  skaller
+Add test case for mmap.
+
 Revision 1.1  2006/07/17 16:42:40  skaller
 Start with config and small binding for mmap.
 
@@ -54,8 +57,8 @@ except:
 @h = tangler('spkgs/mmap.py')
 @select(h)
 execfile('cpkgs'+os.sep+'target'+os.sep+'mmap.py')
-#if HAVE_MMAP:
-#  unit_tests = ['test'+os.sep+'flx_mmap_test.flx']
+if HAVE_MMAP:
+  unit_tests = ['test'+os.sep+'flx_mmap_test.flx']
 
 iscr_source = ['lpsrc/flx_mmap.pak']
 weaver_directory = 'doc/mmap/'
@@ -66,13 +69,17 @@ Name: mmap
 
 @h = tangler('lib/mmap.flx')
 @select(h)
+#import <flx.flxh>
+#import <flx_platform.flxh>
+
 module Mmap
 {
   header """
     #include <sys/mman.h>
     #include <unistd.h>
   """;
-
+  
+  typedef off_t = unsigned long;
   // protection options
   const PROT_EXEC : int;
   const PROT_READ: int;
@@ -109,3 +116,38 @@ module Mmap
 
   fun munmap: address * size -> int;
 }
+
+@h = tangler("test/flx_mmap_test.flx")
+@select(h)
+#import <flx.flxh>
+include "mmap";
+open Mmap;
+open MixedInt;
+open C_hack;
+
+val n = cast[size](10000);
+data :=
+  mmap
+    (
+      NULL,n, 
+      PROT_WRITE \| PROT_READ, 
+      MAP_PRIVATE \| MAP_ANONYMOUS, 
+      0,cast[off_t]0
+    )
+;
+
+if data == MAP_FAILED do
+  print$ "mmap failed!\n";
+else
+  res := munmap(data,n);
+  if res != 0 do
+    print$ "munmap failed!\n";
+  else
+    print$ "mmap worked!\n";
+  done;
+done;
+
+@select(tangler("test/flx_mmap_test.expect"))
+mmap worked!
+@doc()
+

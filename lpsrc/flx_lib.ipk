@@ -2,6 +2,9 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.170  2006/07/17 17:22:40  skaller
+Add test case for mmap.
+
 Revision 1.169  2006/07/15 11:08:10  skaller
 Fixes to fail[] function, some _ctor_arg things that got a
 string but the C routines needed a char*.
@@ -817,6 +820,9 @@ module C_hack
   const sizeof[t]:size = 'sizeof(?1)';
   fun int_of:size->int='$1';
   fun size_of:int->size='$1';
+
+  fun eq: address * address -> bool = "$1==$2";
+  fun ne: address * address -> bool = "$1!=$2";
 
   publish "Abstract type for C pointer"
   pod type ptr[t]="?1 *";
