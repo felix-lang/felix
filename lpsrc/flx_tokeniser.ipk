@@ -259,6 +259,10 @@ object(self)
     tokens <- x :: tokens;
     current_token_index <- current_token_index - 1
 
+  method get_loc =
+    let token = nth tokens_copy current_token_index in
+    slift (Flx_prelex.src_of_token token)
+
   method report_syntax_error = 
     print_endline "";
     print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
@@ -316,8 +320,10 @@ object(self)
     print_endline "";
     print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
     flush stdout;
-    clierr (Flx_srcref.slift (!sr)) "Syntax Error";
+    (*
+    clierr (slift (!sr)) "Syntax Error";
     ()
+    *)
 
   method parse_user_statement
     (name:string) 
@@ -343,14 +349,38 @@ object(self)
         begin 
           try 
             `Apply_term (term,self#parse_production name sr toks nonterminals)
-          with _ -> 
+          with RDP_match_fail _ -> 
             (* backtrack for next try *)
+            (*
+            print_endline "DEBUG: match fail caught (backtrack exception)";
+            *)
             tokens <- saved_tokens;
             current_token_index <- saved_token_index;
             aux tail
+          | x -> 
+            print_endline ("RDP: unexpected error: " ^ Printexc.to_string x);
+            failwith "RDP: unexpected error!"
         end
-      | [] -> clierr sr ("Syntax error matching user statement " ^ name)
-    in aux tokss
+      | [] -> 
+          (*
+          print_endline "DEBUG: raise alternatives exhausted";
+          *)
+          rdp_alternatives_exhausted sr
+            ("Syntax error matching user statement " ^ name)
+
+    in
+    match tokss with
+    | [] -> clierr sr "Woops, no alternatives??"
+    | [toks,term] ->
+       begin try
+         `Apply_term (term,self#parse_production name sr toks nonterminals)
+       with RDP_match_fail (sr1,sr2,s) ->
+         (*
+         print_endline "RD match failure on sole alternative";
+         *)
+         rdp_match_fail sr1 sr2 s
+       end
+    | xs -> aux xs
 
   method private parse_production
     (name:string) 
@@ -368,7 +398,8 @@ object(self)
         print_endline "Matching expression ..";
         *)
         let e,tk = 
-          exprx self#token_src dummy_lexbuf 
+          try exprx self#token_src dummy_lexbuf 
+          with ParseError s -> rdp_match_fail sr self#get_loc "parsing exprx"
         in
         (*
         print_endline (
@@ -384,7 +415,8 @@ object(self)
         print_endline "Matching statement ..";
         *)
         let s = 
-          statement self#token_src dummy_lexbuf 
+          try statement self#token_src dummy_lexbuf 
+          with ParseError s -> rdp_match_fail sr self#get_loc "parsing statement"
         in
         aux t (`Statement_term s :: res)
       
@@ -393,7 +425,8 @@ object(self)
         print_endline "Matching statements ..";
         *)
         let s,tk = 
-          statementsx self#token_src dummy_lexbuf 
+          try statementsx self#token_src dummy_lexbuf 
+          with ParseError s -> rdp_match_fail sr self#get_loc "parsing statementsx"
         in
         self#put_back tk;
         aux t (`Statements_term s :: res)
@@ -407,7 +440,7 @@ object(self)
         | NAME (sr,s) ->
           aux t (`Identifier_term s :: res)
         | _ ->
-          Flx_exceptions.clierr sr
+          rdp_match_fail sr self#get_loc
           (
             "User statement: identifier requires, got " ^
             Flx_prelex.string_of_token tok'
@@ -422,7 +455,7 @@ object(self)
           let j = `AST_literal (slift sr,`AST_int (kind,vl)) in
           aux t (`Expression_term j :: res)
         | _ ->
-          Flx_exceptions.clierr sr
+          rdp_match_fail sr self#get_loc
           (
             "User statement: integer required, got " ^
             Flx_prelex.string_of_token tok'
@@ -436,7 +469,7 @@ object(self)
           let j = `AST_literal (slift sr,`AST_float (kind,vl)) in
           aux t (`Expression_term j :: res)
         | _ ->
-          Flx_exceptions.clierr sr
+          rdp_match_fail sr self#get_loc
           (
             "User statement: integer required, got " ^
             Flx_prelex.string_of_token tok'
@@ -459,7 +492,7 @@ object(self)
           let j = `AST_literal (slift sr,`AST_ustring s) in
           aux t (`Expression_term j :: res)
         | _ ->
-          Flx_exceptions.clierr sr
+          rdp_match_fail sr self#get_loc
           (
             "User statement: integer required, got " ^
             Flx_prelex.string_of_token tok'
@@ -480,7 +513,11 @@ object(self)
           (*
           print_endline ("FOUND NONTERMINAL " ^ s);
           *)
-          let result = self#parse_alternatives s sr productions nonterminals in
+          let result = 
+            try self#parse_alternatives s sr productions nonterminals 
+            with RDP_alternatives_exhausted (sr2,s) ->
+              rdp_match_fail sr sr2 s
+          in
           aux t (result :: res)
 
         | None  ->
@@ -494,7 +531,7 @@ object(self)
         *)
         if s = s' then
           aux t (`Keyword_term s :: res)
-        else Flx_exceptions.clierr sr 
+        else rdp_match_fail sr self#get_loc
         (
           "Syntax Error in user statement: " ^
           "Failed to match keyword or symbol " ^
@@ -523,9 +560,30 @@ let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) =
   | Flx_exceptions.ClientError _ 
   | Flx_exceptions.ClientError2 _ 
   | Flx_exceptions.ClientErrorn _ as x -> 
+    (*
+    print_endline ("got client error from parse..");
+    *)
     toker#report_syntax_error;
     raise x
+
+  | Flx_exceptions.ParseError _ as x ->
+    (*
+    print_endline ("got ParseError from parse..");
+    *)
+    toker#report_syntax_error;
+    raise x
+
+  | Flx_exceptions.RDP_match_fail _ as x ->
+    (*
+    print_endline ("got RDP_match_fail from parse..");
+    *)
+    toker#report_syntax_error;
+    raise x
+
   | _ ->
+    (*
+    print_endline "Got unknown error from parse..";
+    *)
     toker#report_syntax_error;
     raise (Flx_exceptions.ParseError "Parsing Tokens")
 
@@ -545,6 +603,7 @@ class tokeniser :
     val mutable tokens_copy : token list
     method report_syntax_error : unit
     method put_back : token -> unit
+    method get_loc: range_srcref
     method token_src : Lexing.lexbuf -> token
     method token_peek : Lexing.lexbuf -> token
     method parse_user_statement: 
