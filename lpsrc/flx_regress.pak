@@ -725,19 +725,6 @@ iter (the foo) z;
 4
 5
 6
-@select(tangler('test/rt27.flx'))
-#import <flx.flxh>
-var z = 0;
-noinline proc f
-  (a:unit ->int)
-  (b:unit ->int)
-{ z = a() + b(); }
-  
-noinline proc g() { f {1} {2} ; };
-g();
-print z; endl;
-@select(tangler('test/rt27.expect'))
-3
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>

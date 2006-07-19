@@ -1355,36 +1355,35 @@ int main(int argc, char** argv) {
 
     filename = self.write_src("""
 #include <pthread.h>
-
-void* start(void* data)
-{
-  return NULL;
-}
-
 int main(int argc, char** argv) {
-  pthread_t thr;
-  pthread_attr_t attr;
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  int res = pthread_create(&thr, &attr, start, NULL);
-  pthread_attr_destroy(&attr);
-  return res;
+  pthread_t pt;
+  pthread_cancel(pt);
+  return 0;
 }
 """, 'tmp' + os.sep + 'pthreads')
 
     # find out how to do pthreads
-    opt.HAVE_PTHREADS = 0
-    opt.PTHREAD_SWITCH = None
-    for i in [' ', '-lpthread ', '-pthread ', '-pthreads ']:
-      try:
-        result, lines = self.run_static_program(shell, get_stdout, filename, LDFLAGS=i)
+    try:
+      obj = self.compile_static_main(shell, filename)
+      #shell(opt.COM+" -w -c tmp"+os.sep+"pthreads.cxx -o tmp"+os.sep+"pthreads.o")
+      opt.HAVE_PTHREADS = 1
+    except EnvironmentError:
+      opt.HAVE_PTHREADS = 0
 
-        if not result:
-          opt.HAVE_PTHREADS = 1
+    opt.PTHREAD_SWITCH = ''
+    if opt.HAVE_PTHREADS:
+      for i in [' ', '-lpthread ', '-pthread ', '-pthreads ']:
+        try:
+          self.link_static_program(shell, [obj], 'tmp' + os.sep + 'pthreads', LDFLAGS=i)
+          #shell(opt.COM + "tmp" + os.sep + "pthreads.o -o tmp" + os.sep + "pthreads " + i)
           opt.PTHREAD_SWITCH = i
           break
-      except EnvironmentError:
-        pass
+        except EnvironmentError:
+          pass
+
+    if opt.HAVE_PTHREADS and not opt.PTHREAD_SWITCH:
+      print "FATAL: Cannot find how to link pthreads"
+      sys.exit(1)
 
     if opt.HAVE_PTHREADS:
       print "Posix Threads supported with", opt.PTHREAD_SWITCH

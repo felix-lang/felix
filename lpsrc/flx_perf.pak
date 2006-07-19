@@ -331,7 +331,7 @@ end Ack_F;
 
 @head(2,'[takfp] Takfp')
 @for i in machs:
-  showgraph(i,'takfp',"Takfp on "+i)
+  showgraph(i,'ack',"Takfp on "+i)
   showdata("speed/machine/"+i+"/rankings/takfp.txt")
 
 @select(tangler('speed/specs/takfp.py','data'))
@@ -712,7 +712,6 @@ f.close()
 import sys
 import os
 import string
-import math
 hostsd = {}
 
 args = sys.argv
@@ -789,7 +788,7 @@ for h,d in hostsd.iteritems():
     mkdir(root+'/'+t)
     # one gnuplot file for each test
     fp = open(root+'plotters/'+t+'.gpl','w')
-    gx = 'set title "'+h+' '+pload+' '+t+'"\n'
+    gx = 'set title "'+hostname+' '+pload+' '+t+'"\n'
     gx = gx + 'set xlabel "N"\n'
     gx = gx + 'set ylabel "secs"\n'
     gx = gx + 'set key left\n'
@@ -815,16 +814,13 @@ for h,d in hostsd.iteritems():
         average = sum / float(count)
         emin = reduce (lambda x,y:min(x,y),es)
         emax = reduce (lambda x,y:max(x,y),es)
-        edev = 0
-        for x in es: edev = edev + (x - average) * (x - average)
-        edev = math.sqrt(edev/float(count))
-        print "        n %2d -[%3d]-> (%6.2f,%6.2f,%6.2f) sd=%6.2f" % (n,count,emin,average,emax,edev)
+        print "        n %2d -[%3d]-> (%6.2f,%6.2f,%6.2f)" % (n,count,emin,average,emax)
         # one line for each n value
         # skip too low values
         if average >= mintime and count >= mindata:
-          fxl.write("%s %d %0.2f %d %6.2f\n" % (xl,n,average,count,edev))
+          fxl.write("%s %d %0.2f\n" % (xl,n,average))
           lines = lines + 1
-        summary[(-n,average)]=(xl,count,edev)
+        summary[(-n,average)]=xl
       fxl.close()
 
       # gnuplot is too dumb to handle empty files
@@ -845,10 +841,10 @@ for h,d in hostsd.iteritems():
 
     prlimit = 10
     i = 0 
-    print "Rankings for",t,"on",h
+    print "Rankings for",t
     for m,a in keys:
-      xl,count,edev = summary[m,a]
-      print "    %-16s %2d %6.2f [N=%3d, SD=%6.2f]" % (xl,-m,a,count,edev)
+      xl = summary[m,a]
+      print "    %-16s %2d %6.2f" % (xl,-m,a)
       i = i + 1
       if i >= prlimit: break
     try: os.mkdir(root+'rankings')
@@ -856,10 +852,10 @@ for h,d in hostsd.iteritems():
     rf = open(root+'rankings/'+t+'.txt','w')
     prlimit = 10
     i = 0 
-    rf.write("Rankings for "+t+' on '+h+'\n')
+    rf.write("Rankings for "+t+'\n')
     for m,a in keys:
-      xl,count,edev = summary[m,a]
-      rf.write("    %-16s %2d %6.2f [N=%3d SD=%2d%%]\n" % (xl,-m,a,count,int(edev*100/average)))
+      xl = summary[m,a]
+      rf.write("    %-16s %2d %6.2f\n" % (xl,-m,a))
       i = i + 1
       if i >= prlimit: break
     rf.close()

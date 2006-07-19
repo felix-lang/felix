@@ -1,6 +1,15 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.56  2006/07/19 17:57:52  rfistman
+wrote self pipe for windows, not happy with it though because it
+ has to use a named pipe (anon pipes don't work in nonblock mode).
+made demux_quitter portable and now quitting iocp demuxer cleanly
+added demux callbacks which are currently used for quitting and making
+ demuxers responsive to new sockets.
+fixed unbalanced quote in ./bin/flx script
+
 Revision 1.55  2006/07/14 16:00:29  rfistman
+
 generalised demux quit flag into a condition variable that is picked up and
   signalled just before the event thread exits. this was yet another race
   condition in which a quit and destructed demuxer was still in use by
@@ -2719,8 +2728,7 @@ public:
      async_active(n0), driver(async_active,n1,m1,n2,m2) 
    {
      // start waiting thread. note that we only have ONE event waiting thread.
-     // that's currently important for clean takedowns, at least for the
-     // kqueue demuxer. see its destructor comments for more info.
+     // that's currently important for clean takedowns
 #if _WIN32
      // cast callback to itself. go figure.
      if(ethread.init((LPTHREAD_START_ROUTINE)pthread_thread, &demux) == -1) throw -1;
@@ -2750,24 +2758,24 @@ proto_async::pthread_thread(void* udat)
 
     while(1)
     {
-        // fprintf(stderr, "ETHREAD ABOUT TO WAIT\n");
+        fprintf(stderr, "ETHREAD ABOUT TO WAIT\n");
         d->wait();          // this does it
-        // fprintf(stderr, "ETHREAD CHECKING QUIT FLAG\n");
+        fprintf(stderr, "ETHREAD CHECKING QUIT FLAG\n");
         demux_quit_flag* f = d->get_quit_flag();
         if(f)
         {
           // got a quit flag - this is the very last thing we do before
           // exiting. don't use the demuxer after this as it's probably been
           // destructed.
-          // fprintf(stderr, "ETHREAD GOT QUIT FLAG, SIGNALLING AND EXITING\n");
-          f->signal_finish();
+          fprintf(stderr, "ETHREAD GOT QUIT FLAG, SIGNALLING AND EXITING\n");
+          f->signal_true();
           // in the case of a system takedown there's no guarantee that
           // anything after the signal_finish will be run at all, so this
           // is not a good place to put anything important.
           break;  // outta here
         }
     }
-    // fprintf(stderr, "ETHREAD EXITING\n");
+    fprintf(stderr, "ETHREAD EXITING\n");
     // fprintf(stderr, "proto_async was asked to quit...\n");
     return 0;
 }

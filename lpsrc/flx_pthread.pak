@@ -1,16 +1,12 @@
 @head(1,'pthread')
 $Log$
-Revision 1.32  2006/07/17 01:14:27  skaller
-Change the way pthread switch is handled to conform to
-normal packaging system (instead of weird special case),
-should fix solaris problem.
-
-Revision 1.31  2006/07/16 20:53:57  skaller
-Modify thread creation error to include the error code.
-
-Revision 1.30  2006/07/16 20:18:06  skaller
-Abort program if worker_fifo::start_worker_thread fails.
-To be fixed later to something possibly saner.
+Revision 1.33  2006/07/19 17:57:52  rfistman
+wrote self pipe for windows, not happy with it though because it
+ has to use a named pipe (anon pipes don't work in nonblock mode).
+made demux_quitter portable and now quitting iocp demuxer cleanly
+added demux callbacks which are currently used for quitting and making
+ demuxers responsive to new sockets.
+fixed unbalanced quote in ./bin/flx script
 
 Revision 1.29  2006/07/16 10:14:36  rfistman
 added some printfs to diagnose thread creation probs
@@ -120,24 +116,15 @@ Name: pthread
 Description: Pre-emptive threading support
 Version: $Id$
 
-@EXTRA_SYS_LIBS = ""
-@if SOLARIS: 
-  EXTRA_SYS_LIBS="-lrt"
-
-@if string.strip(PTHREAD_SWITCH):  
-  EXTRA_SYS_LIBS = EXTRA_SYS_LIBS + " " +PTHREAD_SWITCH
-
 @if HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_pthread_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_pthread_static")
+ elif WIN32:
+   tangle("provides_dlib: -lflx_pthread_dynamic")
+   tangle("provides_slib: -lflx_pthread_static")
  else:
    tangle("provides_dlib: -lflx_pthread_dynamic")
    tangle("provides_slib: -lflx_pthread_static")
-
-   if string.strip(EXTRA_SYS_LIBS):
-     tangle("requires_dlibs: "+EXTRA_SYS_LIBS)
-     tangle("requires_slibs: "+EXTRA_SYS_LIBS)
-
 Requires: flx_gc
 
 @h = tangler('spkgs/flx_pthread.py')
@@ -200,9 +187,6 @@ if BSD or MACOSX:
 if SOLARIS:
   PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
   EXTRA_SYS_LIBS = "-lrt " # man sem_wait
-
-if string.strip(PTHREAD_SWITCH):
-  EXTRA_SYS_LIBS = EXTRA_SYS_LIBS + " " + PTHREAD_SWITCH
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES
@@ -337,9 +321,8 @@ flx_detached_thread_t::init(void* (*start)(void*), void* udat)
   int res = pthread_create(&thr, &attr, start, udat);
   if(res)
   {
-     fprintf(stderr, "flx_detached_thread_t: pthread_create_failed [%d]: %s\n",
-       res, strerror(res)
-     );
+     fprintf(stderr, "flx_detached_thread_t: pthread_create_failed: %s\n",
+       strerror(res));
   }
   pthread_attr_destroy(&attr);
   return res;
@@ -358,9 +341,8 @@ flx_thread_t::init(void* (*start)(void*), void* udat)
   int res = pthread_create(&thr, NULL, start, udat);
   if(res)
   {
-     fprintf(stderr, "flx_thread_t: pthread_create_failed [%d]: %s\n",
-       res,strerror(res)
-     );
+     fprintf(stderr, "flx_thread_t: pthread_create_failed: %s\n",
+       strerror(res));
   }
   return res;
 }
@@ -1379,8 +1361,6 @@ public:
 @h=tangler('pthread/pthread_work_fifo.cpp')
 @select(h)
 #include <stdio.h>    // printf
-#include <stdlib.h>   // abort
-
 #include "pthread_work_fifo.hpp"
 namespace flx { namespace pthread {
 
@@ -1396,17 +1376,11 @@ void worker_fifo::start_worker_thread()
 {
   ++nthreads;
   fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
-  int result =
 #ifdef _WIN32
   flx_detached_thread_t().init((LPTHREAD_START_ROUTINE)thread_start, this);
 #else
   flx_detached_thread_t().init(thread_start, this);
 #endif
-  if (result != 0)
-  {
-    fprintf(stderr, "FATAL ERROR: Spawn of pre-emptive thread failed!\n");
-    abort();
-  }
 }
 
 worker_fifo::worker_fifo(int n, int m) : fifo(n), nthreads(0)

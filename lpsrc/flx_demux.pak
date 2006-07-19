@@ -1,6 +1,15 @@
 @head(1,'demux')
 $Log$
+Revision 1.30  2006/07/19 17:57:52  rfistman
+wrote self pipe for windows, not happy with it though because it
+ has to use a named pipe (anon pipes don't work in nonblock mode).
+made demux_quitter portable and now quitting iocp demuxer cleanly
+added demux callbacks which are currently used for quitting and making
+ demuxers responsive to new sockets.
+fixed unbalanced quote in ./bin/flx script
+
 Revision 1.29  2006/07/14 16:00:28  rfistman
+
 generalised demux quit flag into a condition variable that is picked up and
   signalled just before the event thread exits. this was yet another race
   condition in which a quit and destructed demuxer was still in use by
@@ -303,7 +312,7 @@ enum { PDEMUX_READ = 1, PDEMUX_WRITE = 2 };
 class DEMUX_EXTERN demux_quit_flag
 {
 public:
-  virtual void signal_finish() = 0;
+  virtual void signal_true() = 0; // = signal finish
   virtual ~demux_quit_flag() {}
 };
 
@@ -319,7 +328,7 @@ protected:
   virtual void  get_evts(bool poll) = 0;
 
   // for clean async takedown. contents guaranteed to be valid until
-  // quit_flag->signal_finish is called
+  // quit_flag->signal_true is called
   demux_quit_flag* quit_flag; 
 public:
   demuxer() : quit_flag(0) {}
@@ -334,6 +343,17 @@ public:
   virtual demux_quit_flag* get_quit_flag() { return quit_flag; }
   virtual void set_quit_flag(demux_quit_flag* f) { quit_flag = f; }
 };
+
+// base class for callback from demuxer. useful when used in conjuction
+// with the self piper for implementing threadsafe demuxer quit and
+// guaranteeing responsiveness to new sockets.
+// run in the same thread that called d->wait/poll.
+class DEMUX_EXTERN demux_callback {
+public:
+  virtual void callback(demuxer* d) = 0;
+  virtual ~demux_callback() {}
+};
+
 }} // namespace demux, flx
 #endif  /* __DEMUXER__ */
 
@@ -517,7 +537,7 @@ public:
 namespace flx { namespace demux {
 
 // ********************************************************
-/// kqueue demuxer for BSD
+/// kqueue demuxer for osx'n'BSD and at least 1 linux
 // ********************************************************
 class DEMUX_EXTERN kqueue_demuxer : public posix_demuxer {
   int   kq;
@@ -871,7 +891,7 @@ public:
 #include <queue>    // stl seems to have a prio_queue
 #include <sys/time.h> // gettimeofday for calculating "now"
 
-using namespace flx::pthread;
+//using namespace flx::pthread;
 namespace flx { namespace demux {
 
 #define MIL 1000000        // one million
@@ -904,7 +924,10 @@ posix_timer_queue::posix_timer_queue()
 {
     opaque_prio_queue = new void_prio_queue;    // a.k.a. PRIOQ
     fprintf(stderr,"initing timer sleep thread\n");
-    sleep_thread.init(thread_start, this);
+    
+    // NEED'S TO CHECK RETURN VAL AND HANDLE ERROR
+    if(sleep_thread.init(thread_start, this))
+      fprintf(stderr, "failed to create posix timer queue thread!\n");
 }
 
 posix_timer_queue::~posix_timer_queue()
@@ -1573,8 +1596,6 @@ epoll_demuxer::get_evts(bool poll)
 #include <unistd.h> // close
 #include <assert.h>
 
-// using namespace flx::pthread;
-
 namespace flx { namespace demux {
 
 // header files for this stuff?
@@ -1769,14 +1790,13 @@ evtport_demuxer::get_evts(bool poll)
 @h=tangler('demux/demux_iocp_demuxer.cpp')
 @select(h)
 #include "demux_iocp_demuxer.hpp"
-#include "pthread_mutex.hpp"
+#include "demux_quitter.hpp" // for clean threaded iocp takedown
 
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
 #include <assert.h>
 // shoving the win_queue in here for now
 
-using namespace flx::pthread;
 namespace flx { namespace demux {
 
 // this could really do with auto objs. steal the strat stuff?
@@ -1817,6 +1837,9 @@ winsock_initer::winsock_initer()
 {
   WSADATA wsaData;
 
+  // strange, rt_faio_01 static doesn't work under vs without this.
+  // hum.
+  // fprintf(stderr, "WINSOCK INIT!!!\n");
   // apparently 2.2's the way to go
   int res= WSAStartup(MAKEWORD(2, 2), &wsaData);
   if(res!= 0)
@@ -1882,7 +1905,18 @@ iocp_demuxer::iocp_demuxer()
 
 iocp_demuxer::~iocp_demuxer()
 {
-  fprintf(stderr, "~iocp (%p) ASYNC QUITTER NEEDED HERE!\n", iocp);
+  fprintf(stderr, "~iocp (%p) NOW WITH ASYNC QUITTER!\n", iocp);
+  try
+  {
+    demux_quitter q;
+    q.quit(this);
+  }
+  catch(...)
+  {
+    fprintf(stderr, "~iocp_demuxer async quit threw exception!\n");
+    // now what do we do?
+  }
+
 
   if(NULL != iocp && !CloseHandle(iocp))
   {
@@ -2159,6 +2193,7 @@ set_tcp_nodelay(int s, int disable)
 
   return (res == SOCKET_ERROR) ? -1 : 0;
 }
+
 }}
 
 @h=tangler('demux/demux_overlapped.cpp')
@@ -2185,7 +2220,6 @@ BOOL
     {0x25a207b9,0xddf3,0x4660,{0x8e,0xe9,0x76,0xe5,0x8c,0x74,0x06,0x3e}}
 #endif
 
-using namespace flx::pthread;
 namespace flx { namespace demux {
 
 // windows includes files here? vs will be fussy.
@@ -2578,10 +2612,11 @@ assert( !ppb->finished() );
 }
 
 
-// file io using ReadFile and WriteFile
+// file/pipe io using ReadFile and WriteFile
 
-winfileio_control_block::winfileio_control_block(HANDLE f, void* buf, int len, bool inread)
-  : file(f), reading(inread)
+winfileio_control_block::winfileio_control_block(HANDLE f, void* buf, int len,
+  bool inread)
+  : reading(inread), file(f)
 {
   // pb is not so useful here. we only want to
   // know num bytes written/processed.
@@ -2737,19 +2772,18 @@ public:
 
 // looks a bit like wsasocketio_control_block (bad name, sends too)
 class DEMUX_EXTERN winfileio_control_block : public iocp_wakeup {
-  HANDLE    file;
   bool    reading;
 public:
 // probably should be a pointer (?)
   sel_param pb;
+  HANDLE    file; // I like to modify this from the outside
 
   // offset?
   winfileio_control_block(HANDLE f, void* buf, int len, bool read);
 
   virtual bool start_overlapped();
 
-  //virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-  //  LPOVERLAPPED olp, int err);
+  // NB: no iocp_op_finished callback. defined by users of the class.
 };
 
 }}
@@ -3031,7 +3065,6 @@ kqueue_demuxer::get_evts(bool poll)
 #include <sys/uio.h>
 #include <unistd.h>
 
-using namespace flx::pthread;
 namespace flx { namespace demux {
 // fileio_request stuff follows
 
@@ -3090,7 +3123,7 @@ fileio_request::doit()
 @select(h)
 #include "demux_posix_demuxer.hpp"
 #include "demux_sockety.hpp"
-#include "demux_self_piper.hpp" // fns for waking and quitting a demuxer
+#include "demux_quitter.hpp" // fns for waking and quitting a demuxer
 
 #include <stdio.h>        // "printf"
 #include <assert.h>       // assert
@@ -3190,7 +3223,6 @@ posix_demuxer::async_quit()
   } catch(...) {
     fprintf(stderr, "error waking demuxer with self pipe quitter\n");
   }
-// zzz
 }
 
 #if 0
@@ -3542,7 +3574,6 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 
 // #include <stdio.h>
 
-using namespace flx::pthread;
 namespace flx { namespace demux {
 
 ts_select_demuxer::ts_select_demuxer()
@@ -3635,6 +3666,148 @@ int get_socket_error(int s, int* socket_err);
 }} // namespace demux, flx
 #endif
 
+@h=tangler('demux/demux_quitter.hpp')
+@select(h)
+
+#ifndef __DEMUX_QUITTER__
+#define __DEMUX_QUITTER__
+
+#include <flx_demux_config.hpp>
+#include "demux_demuxer.hpp"  // demuxers
+#include "pthread_mutex.hpp"  // mutexes 
+#include "pthread_condv.hpp"  // condition var for same
+
+#ifdef _WIN32
+#include "demux_wself_piper.hpp" // win32 self piper
+#else
+#include "demux_self_piper.hpp" // posix self piper
+#endif
+
+namespace flx { namespace demux {
+
+// a waitable boolean. gratuitously tied to demuxer by demux_quit_flag
+// todo: unhook.
+class DEMUX_EXTERN async_bool : public demux_quit_flag {
+  flx::pthread::flx_mutex_t cv_lock;       // to work with the condition var
+  flx::pthread::flx_condv_t finished_cond; 
+  bool finished;   // might seem redundant, but that's how CVs work.
+public:
+  async_bool();
+
+  void wait_until_true();
+  virtual void signal_true();
+};
+
+// quits a demuxer 
+class DEMUX_EXTERN demux_quitter : public demux_callback {
+  // self pipes for getting demuxer attention
+#ifdef _WIN32
+  wself_piper sp;
+#else
+  self_piper sp;
+#endif
+  async_bool finished;  // initially false
+  void callback(demuxer* demux); // called back by demuxer in event thread.
+public:
+  void quit(demuxer* demux); // blocks until event thread exits
+};
+
+/*
+class DEMUX_EXTERN wdemux_quitter : demux_callback {
+  wself_piper sp;
+  async_bool finished; // initially false
+public:
+  void quit(iocp_demuxer* demux); // blocks until demuxer/event thread exits
+
+  void callback(demuxer* d); // called back by demuxer
+};
+*/
+
+} }
+
+#endif
+
+@h=tangler('demux/demux_quitter.cpp')
+@select(h)
+#include "demux_quitter.hpp"
+#include <stdio.h>
+
+namespace flx { namespace demux {
+
+async_bool::async_bool()
+  : finished(false)
+{
+  // nothing
+}
+
+// called from the non-event-waiting thread.
+void
+async_bool::wait_until_true()
+{
+  flx::pthread::flx_mutex_locker_t    locker(cv_lock);
+
+  // wait for the wakeup to say it's finished
+  while(!finished)
+  {
+    finished_cond.wait(&cv_lock);
+  }
+}
+
+// call this last thing before event thread exit
+void
+async_bool::signal_true()
+{
+  finished = true;
+  finished_cond.signal();
+  // do absolutely NOTHING here as we may have already been destructed. boom.
+}
+
+void
+demux_quitter::callback(demuxer* demux)
+{
+  fprintf(stderr, "quitter callback\n");
+  demux->set_quit_flag(&finished);
+}
+
+void
+demux_quitter::quit(demuxer* demux)
+{
+   // fprintf(stderr, "trying to quit demuxer...\n");
+   // install self piper, with our callback
+   sp.install(demux, this);
+   // wake demuxer, getting our callback called, which sets quit flag
+   sp.wake(); 
+   // wait for quit flag to be signalled by exiting event thread
+   finished.wait_until_true();
+   // event thread exited
+}
+
+/*
+// blocks until demuxer/event thread exits
+void
+wdemux_quitter::quit(iocp_demuxer* demux)
+{
+  fprintf(stderr, "wdemux_quitter::quit\n");
+  
+  // install self piper in iocp demuxer, along withour callback.
+  sp.install(demux, this);
+  sp.wake(); // wake the demuxer
+  fprintf(stderr, "wdemux_quitter::quit waiting on finished flag\n");
+  finished.wait_until_true();
+  fprintf(stderr, "wdemux_quitter::quit exiting\n");
+} 
+
+void
+wdemux_quitter::callback(demuxer* d)
+{
+  fprintf(stderr, "wdemux_quitter got called back by demuxer (%p)!\n", d);
+  // install quit flag in demuxer
+  d->set_quit_flag(&finished);
+}
+*/
+
+} }
+
 @h=tangler('demux/demux_self_piper.hpp')
 @select(h)
 
@@ -3643,41 +3816,17 @@ int get_socket_error(int s, int* socket_err);
 
 #include <flx_demux_config.hpp>
 #include "demux_posix_demuxer.hpp"
-#include "pthread_mutex.hpp"  // mutexes for quitter class
-#include "pthread_condv.hpp"  // condition var for same
 
 namespace flx { namespace demux {
 
 // there's no standard posix_socketio_wakeup, could be handy. could also
 // perhaps use it here? this is a pipe, not a socket. not sure if recv nor
-// send work on it, besides want to read an unlimited amount of redundant
-// data.
+// send work on it, besides want to read an unlimited amount of redundant data.
 class DEMUX_EXTERN selfpipe_wakeup : public socket_wakeup {
 public:
-    virtual void wakeup(posix_demuxer& demux);
-};
+  demux_callback* cb; // optional callback
 
-// portable - needed by all async demuxers, including windows
-class DEMUX_EXTERN async_demux_quit_flag : public demux_quit_flag {
-  flx::pthread::flx_mutex_t cv_lock;       // to work with the condition var
-  flx::pthread::flx_condv_t finished_cond; 
-  bool finished;   // might seem redundant, but that's how CVs work.
-public:
-  async_demux_quit_flag();
-
-  void wait_finish();
-  virtual void signal_finish();
-};
-
-// for asking a posix demuxer to quit and then waiting on it to do so
-// derived from selfpipe_wakeup because we still have to read that
-// byte, dammit.
-class DEMUX_EXTERN quitter_wakeup : public selfpipe_wakeup {
-  async_demux_quit_flag finished_flag;
-
-public:
   virtual void wakeup(posix_demuxer& demux);
-  void wait_finish();
 };
 
 class DEMUX_EXTERN auto_fd {
@@ -3704,19 +3853,9 @@ public:
 class DEMUX_EXTERN self_piper {
     pipe_pair       pp;
     selfpipe_wakeup spw;
-
 public:
-    // self_piper();
-    void install(posix_demuxer* demux);
+    void install(demuxer* demux, demux_callback* cb = 0);
     void wake();
-};
-
-// quits a demuxer (posix only atm)
-class DEMUX_EXTERN demux_quitter {
-  pipe_pair      pp;
-  quitter_wakeup qw;
-public:
-  void quit(posix_demuxer* demux); // blocks until demuxer responds
 };
 
 }} // namespace demux, flx
@@ -3746,14 +3885,16 @@ auto_fd::~auto_fd()
 }
 
 void
-self_piper::install(posix_demuxer* demux)
+self_piper::install(demuxer* d, demux_callback* cb)
 {
-    fprintf(stderr, "installing self piper\n");
+    fprintf(stderr, "installing self piper in %p with cb=%p\n", d, cb);
+    posix_demuxer* demux = static_cast<posix_demuxer*>(d);
     spw.s = pp.get_read_end();
+    spw.cb = cb;
+
     int res = demux->add_socket_wakeup(&spw, PDEMUX_READ);
     assert(-1 != res);
 }
-
 
 // wake the demuxer referenced in install
 void
@@ -3792,6 +3933,9 @@ selfpipe_wakeup::wakeup(posix_demuxer& demux)
     
     // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
     assert(nbytes == 1 && b == 1);
+
+    // callback!
+    if(cb) cb->callback(&demux);
     
     // add self back! this happens even when we're quitting, but that
     // doesn't seem to matter.
@@ -3857,69 +4001,242 @@ pipe_pair::get_read_end()
   return fds[0].fd;
 }
 
-async_demux_quit_flag::async_demux_quit_flag()
-  : finished(false)
+} }
+
+@h=tangler('demux/demux_wself_piper.hpp')
+@select(h)
+#ifndef __DEMUX_WSELF_PIPER__
+#define __DEMUX_WSELF_PIPER__
+
+#include <flx_demux_config.hpp>
+#include "demux_overlapped.hpp"  // I use readfile control block
+#include "demux_wself_piper.hpp"
+
+namespace flx { namespace demux {
+
+class DEMUX_EXTERN auto_handle {
+public:
+  HANDLE h;
+  
+  auto_handle();
+  ~auto_handle();
+};
+
+// win32 self pipe trick (what a pain!)
+class DEMUX_EXTERN wpipe_pair {
+  enum { READ_END, WRITE_END };
+  // HANDLE pipe[2];  // 0 = read end, 1 = write end
+  auto_handle pipe[2];
+public:
+  wpipe_pair();
+
+  void write_byte();
+  HANDLE get_read_end() { return pipe[READ_END].h; }
+};
+
+// use a winfileio_control_block to install a nonblocking ReadFile on the
+// read end of the pipe pair. when we get a byte we can execute whatever
+// the user wanted which for win32 which seems to be naturally responsive
+// to new sockets/handles. demux quit will probably be the only operation
+// needed.
+class DEMUX_EXTERN wself_piper_wakeup : public winfileio_control_block
 {
-  // nothing
+  char the_byte;
+
+public:
+  // possibly null, if not, called on iocp_op_finished
+  demux_callback* cb; 
+
+  // the demuxer. doesn't actually get passed by iocp_op_finished
+  iocp_demuxer* d;  
+
+
+  wself_piper_wakeup();
+
+  // detect when single byte read has finished and exec callback,
+  // re-arming.
+  virtual void iocp_op_finished(DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
+
+  void arm();
+};
+
+// at the very least, the read end must be nonblocking and associated
+// with the iocp.
+class DEMUX_EXTERN wself_piper {
+  wpipe_pair pp;
+  wself_piper_wakeup spw;
+public:
+  void install(demuxer* demux, demux_callback* cb = 0);
+  void wake(); // wakes demuxer which calls callback
+};
+
+} } // demux, flx
+
+#endif
+
+@h=tangler('demux/demux_wself_piper.cpp')
+@select(h)
+
+#include "demux_wself_piper.hpp"
+#include <stdio.h>
+
+namespace flx { namespace demux {
+
+auto_handle::auto_handle()
+{
+  h = INVALID_HANDLE_VALUE;
 }
 
-// called from the non-event-waiting thread.
-void
-async_demux_quit_flag::wait_finish()
+auto_handle::~auto_handle()
 {
-  flx::pthread::flx_mutex_locker_t    locker(cv_lock);
+  if(INVALID_HANDLE_VALUE == h) return; // done
 
-  // wait for the wakeup to say it's finished
-  while(!finished)
+  if(!CloseHandle(h))
+    fprintf(stderr, "auto CloseHandle failed: %i\n", GetLastError());
+}
+
+wpipe_pair::wpipe_pair()
+{
+  // fprintf(stderr, "wpipe CTOR\n");
+  // made bufsize 1 as we only ever read and write 1 byte at a time
+
+  // looks like I can't use anonymous pipes with iocp. will have to
+  // use a specially setup named pipe - one that allows repetitions...
+  // this doesn't sound good.
+  const char* pname = "\\\\.\\pipe\\flx_iocp_quitter";
+
+  // don't actually need duplex, nor those buffers. 1 byte at a time suffices
+  // I probably don't need both ends to be marked as nonblocking either, should
+  // only need the read end nonblocking.
+
+  // create pipe
+  pipe[READ_END].h = CreateNamedPipe(pname,
+   PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+   PIPE_TYPE_BYTE, 1, 256, 256, 0, NULL);
+
+  if(INVALID_HANDLE_VALUE == pipe[READ_END].h)
   {
-    finished_cond.wait(&cv_lock);
+    fprintf(stderr, "couldn't create named pipe: %i\n", GetLastError());
+    throw -1;
   }
-}
 
+  // this is the part that I don't like - this pipe's name isn't unique
+  // and so theoretically another iocp quitter could join here. a race!
 
-// call this last thing before event thread exit
-void
-async_demux_quit_flag::signal_finish()
-{
-  finished = true;
-  finished_cond.signal();
-  // do absolutely NOTHING here as we may have already been destructed. boom.
-}
+  // connect to it. note that overlapped isn't needed for write end as
+  // we want to block.
+  pipe[WRITE_END].h = CreateFile(pname, FILE_READ_DATA | FILE_WRITE_DATA,
+    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
 
-void
-quitter_wakeup::wakeup(posix_demuxer& demux)
-{
-  fprintf(stderr, "quitter woke up\n");
-  // call parent class to eat the selfpipe byte
-  // this actually reinstalls wakeup, which we might not want to do.
-  selfpipe_wakeup::wakeup(demux);
+  if(INVALID_HANDLE_VALUE == pipe[WRITE_END].h)
+  {
+    fprintf(stderr, "failed to open named pipe: %i\n", GetLastError());
+    throw -1;
+  }
 
-  fprintf(stderr, "setting demux quit flag\n");
-  // demux thread, which is running this code now, should not re-enter
-  // the demux wait thanks to this flag. because the same thread that
-  // sets the flag reads the flag, we shouldn't need synchronisation
-  demux.set_quit_flag(&finished_flag);
-  fprintf(stderr, "quitter ate byte, have set demuxer quit flag\n");
-}
-
-void
-quitter_wakeup::wait_finish()
-{
-  finished_flag.wait_finish();
-  // event thread exited
+  // anonymous pipes can't be made nonblocking/iocpable on windows!
+  // What a shame!
+/*
+  if(!CreatePipe(&pipe[READ_END], &pipe[WRITE_END], NULL, 1))
+  {
+    fprintf(stderr, "wpipe_pair CreatePipe failed: %i\n", GetLastError());
+    throw -1;
+  }
+*/ 
 }
 
 void
-demux_quitter::quit(posix_demuxer* demux)
+wpipe_pair::write_byte()
 {
-   // fprintf(stderr, "trying to quit demuxer...\n");
-   qw.s = pp.get_read_end();
-   int res = demux->add_socket_wakeup(&qw, PDEMUX_READ);
-   assert(-1 != res);
-   // write a byte to wake up demuxer. callback sets quit flag.
-   pp.write_byte(); 
-   // wait for callback to then set the cond variable we wait on
-   qw.wait_finish();
+  // I think I want a blocking write here.
+  char  b = 1;
+  DWORD bytes_written;
+  // last arg is overlapped pointer, unused, we want to block.
+  if(!WriteFile(pipe[WRITE_END].h, &b, 1, &bytes_written, NULL))
+    fprintf(stderr, "wpipe_pair failed to write byte: %i\n",
+      GetLastError());
+}
+
+void
+wself_piper::install(demuxer* d, demux_callback* cb)
+{
+  fprintf(stderr, "wself_piper::install(%p, %p)\n", d, cb);
+  iocp_demuxer* demux = static_cast<iocp_demuxer*>(d);
+
+  // make read end non blocking and associate with iocp
+  HANDLE read_end = pp.get_read_end();
+
+#if 0
+  // make the anonymous pipe non blocking. this function is for named pipes,
+  // but I've heard talk that it works for anon pipes too. Nope, doesn't work.
+  DWORD pipe_mode = PIPE_NOWAIT;
+  if(!SetNamedPipeHandleState(read_end, &pipe_mode, NULL, NULL))
+  {
+    fprintf(stderr, "SetNamedPipeHandleState failed: %i\n", GetLastError());
+    return; // not much to be done here.
+  }
+#endif
+
+  if(0 != demux->associate_with_iocp(read_end, NULL))
+  {
+    fprintf(stderr, "failed to install self pipe in IOCP!!!\n");
+    return; // error code?
+  }
+
+  // copy into the self pipe wakeup, for its later use.
+  spw.d = demux;
+  spw.cb = cb;
+  spw.file = read_end;
+
+  fprintf(stderr, "initial self pipe arm\n");
+  spw.arm();
+}
+
+// wakes demuxer
+void
+wself_piper::wake() 
+{
+  fprintf(stderr, "wself_piper::wake - write a byte\n");
+  pp.write_byte();
+}
+
+wself_piper_wakeup::wself_piper_wakeup()
+  // configure the control block for ReadFile on the read end pipe
+  // will set pipe handle later, read = true
+  : winfileio_control_block(INVALID_HANDLE_VALUE, NULL, 0, true),
+    cb(0), d(0)
+{
+  // I'll probably need to reset the byte address
+  fprintf(stderr, "SET UP THE PIPE HANDLE!\n");
+}
+
+// at this point the byte has already been read. we want to re-arm for future
+// wakeups.
+void
+wself_piper_wakeup::iocp_op_finished(DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err)
+{
+  fprintf(stderr, "wself_piper_wakeup::iocp_op_finished\n");
+  fprintf(stderr, "nbytes=%i, err=%i\n", nbytes, err);
+  fprintf(stderr, "about to callback %p(%p)\n", cb, d);
+
+  if(cb) cb->callback(d);
+
+  arm();  // re-arm
+}
+
+void
+wself_piper_wakeup::arm()
+{
+  // exec another nonblocking ReadFile on read end of pipe
+  fprintf(stderr, "wself_piper_wakeup::arm\n");
+  pb.buffer = &the_byte;
+  pb.buffer_size = 1;
+  pb.bytes_written = 0;
+  if(start_overlapped())
+    fprintf(stderr, "WARNING: wslef_pipe install completed immediately\n");
 }
 
 } }
