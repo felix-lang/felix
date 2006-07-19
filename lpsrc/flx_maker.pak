@@ -6,13 +6,20 @@
 
 @head(2,'CVS LOG')
 $Log$
-Revision 1.94  2006/07/19 17:57:52  rfistman
-wrote self pipe for windows, not happy with it though because it
- has to use a named pipe (anon pipes don't work in nonblock mode).
-made demux_quitter portable and now quitting iocp demuxer cleanly
-added demux callbacks which are currently used for quitting and making
- demuxers responsive to new sockets.
-fixed unbalanced quote in ./bin/flx script
+Revision 1.95  2006/07/19 20:59:07  rfistman
+oops, sorry! rolling back to the future.
+
+Revision 1.93  2006/07/17 01:14:27  skaller
+Change the way pthread switch is handled to conform to
+normal packaging system (instead of weird special case),
+should fix solaris problem.
+
+Revision 1.92  2006/07/16 21:00:37  skaller
+Change Makefile so uploads use the USER environment variable
+to allow any developer to do uploads.
+
+Revision 1.91  2006/07/16 20:08:44  skaller
+Refactor tarball/upload commands.
 
 Revision 1.90  2006/07/15 07:27:03  idadesub
 maybe i should double check my patches to make sure i don't miss anything
@@ -2934,123 +2941,6 @@ We have no idea if it continues copying.
 @tangle('\t#type "make install" to install Felix')
 @tangle('')
 
-@tangle('src_tarball: extract ')
-@tangle('\trm -f felix-'+flx_version)
-@tangle('\tln -s . felix-'+flx_version)
-@tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
-@tangle('\t\tfelix-'+flx_version+'/configure \\')
-@tangle('\t\tfelix-'+flx_version+'/mk \\')
-@tangle('\t\tfelix-'+flx_version+'/boot \\')
-@tangle('\t\tfelix-'+flx_version+'/*.bat \\')
-@tangle('\t\tfelix-'+flx_version+'/Makefile \\')
-@tangle('\t\tfelix-'+flx_version+'/README \\')
-@tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
-@tangle('\t\tfelix-'+flx_version+'/INSTALL \\')
-@tangle('\t\tfelix-'+flx_version+'/VERSION \\')
-@tangle('\t\tfelix-'+flx_version+'/LICENCE \\')
-@tangle('\t\tfelix-'+flx_version+'/NEWS \\')
-@tangle('\t\tfelix-'+flx_version+'/AUTHORS \\')
-@tangle('\t\tfelix-'+flx_version+'/COPYING \\')
-@tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
-@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
-@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/core/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sinks/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sources/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/storage/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/encoding/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/frames/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/frames/platform/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/languages/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/parsers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/tanglers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/tokenisers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/utilities/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py ')
-@# debian requires gzip -9
-@tangle('\tgzip -9 flx_'+flx_version+'_src.tar')
-@tangle('\tmv -f flx_'+flx_version+'_src.tar.gz flx_'+flx_version+'_src.tgz')
-@tangle('')
-@tangle('media_tarball:')
-@tangle('\trm -f flx_media.tgz')
-@tangle('\ttar -zcvf flx_media.tgz media')
-@tangle('')
-@tangle('bin_tarball:')
-@tangle('\trm -f felix-'+flx_version)
-@tangle('\tln -s . felix-'+flx_version)
-@tangle('\ttar -zcvf flx_'+flx_version+'_share.tgz\\')
-@tangle('\t\tfelix-'+flx_version+'/configure\\')
-@tangle('\t\tfelix-'+flx_version+'/Makefile\\')
-@tangle('\t\tfelix-'+flx_version+'/README \\')
-@tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
-@tangle('\t\tfelix-'+flx_version+'/INSTALL \\')
-@tangle('\t\tfelix-'+flx_version+'/VERSION \\')
-@tangle('\t\tfelix-'+flx_version+'/LICENCE \\')
-@tangle('\t\tfelix-'+flx_version+'/NEWS \\')
-@tangle('\t\tfelix-'+flx_version+'/AUTHORS \\')
-@tangle('\t\tfelix-'+flx_version+'/COPYING\\')
-@tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
-@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
-@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
-@tangle('\t\tfelix-'+flx_version+'/media/images/* \\')
-@tangle('\t\tfelix-'+flx_version+'/script/maker \\')
-@tangle('\t\tfelix-'+flx_version+'/script/*\\')
-@tangle('\t\tfelix-'+flx_version+'/src/*.ml \\')
-@tangle('\t\tfelix-'+flx_version+'/src/*.mli \\')
-@tangle('\t\tfelix-'+flx_version+'/src/*.mly \\')
-@tangle('\t\tfelix-'+flx_version+'/src/*.mll \\')
-@tangle('\t\tfelix-'+flx_version+'/tools/*.flx \\')
-@tangle('\t\tfelix-'+flx_version+'/rtl/*.cpp\\')
-@tangle('\t\tfelix-'+flx_version+'/rtl/*.hpp\\')
-@tangle('\t\tfelix-'+flx_version+'/doxydoc/html/*\\')
-@#tangle('\t\tfelix-'+flx_version+'/libdoc/*.html \\')
-@tangle('\t\tfelix-'+flx_version+'/lib/*.flx \\')
-@tangle('\t\tfelix-'+flx_version+'/test/*.flx \\')
-@tangle('\t\tfelix-'+flx_version+'/test/*.cpp \\')
-@tangle('\t\tfelix-'+flx_version+'/test/*.expect \\')
-@tangle('\t\tfelix-'+flx_version+'/tut/examples/*.flx \\')
-@tangle('\t\tfelix-'+flx_version+'/tut/examples/*.expect \\')
-@tangle('\t\tfelix-'+flx_version+'/doc/*.html \\')
-@tangle('\t\tfelix-'+flx_version+'/doc/*.css \\')
-@tangle('\t\tfelix-'+flx_version+'/doc/*.tex \\')
-@tangle('\t\tfelix-'+flx_version+'/licences/*.txt \\')
-@tangle('\t\tfelix-'+flx_version+'/misc/* \\')
-@tangle('\t\tfelix-'+flx_version+'/doc/htmlman/*.html \\')
-@tangle('\t\tfelix-'+flx_version+'/man/man1/*.1 \\')
-@tangle('\t\tfelix-'+flx_version+'/impldoc/*.html \\')
-@tangle('\t\tfelix-'+flx_version+'/www/*.html \\')
-@tangle('\t\tfelix-'+flx_version+'/bin/flx \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/*.html \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/*.css \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/*.gpl \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/images/*/*.jpg \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/core/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sinks/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sources/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/storage/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/encoding/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/frames/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/frames/platform/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/languages/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/parsers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/tanglers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/tokenisers/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/utilities/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py \\')
-@tangle('')
-@tangle('tarball: src_tarball bin_tarball media_tarball')
-@tangle('')
-@tangle('flx_media.tgz: media_tarball')
-@tangle('')
 @tangle('debian/rules: lpsrc/flx_debian.pak lpsrc/flx_maker.ipk')
 @tangle('\trm -rf debian')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_debian.pak')
@@ -3159,29 +3049,130 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('.PHONY: dummy')
 @tangle('')
-@tangle("# These targets are for SKALLER only")
-@tangle("# they're used to upload stuff to sourceforge")
+@tangle('#')
+@tangle('# ============== TARBALL MAKERS AND UPLOADERS ==============')
+@tangle('#')
+@tangle('# ------- TARBALL MAKERS --------------')
+@tangle('#')
+@tangle('')
+@tangle('src_tarball: extract ')
+@tangle('\trm -f felix-'+flx_version)
+@tangle('\tln -s . felix-'+flx_version)
+@tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
+@tangle('\t\tfelix-'+flx_version+'/configure \\')
+@tangle('\t\tfelix-'+flx_version+'/mk \\')
+@tangle('\t\tfelix-'+flx_version+'/boot \\')
+@tangle('\t\tfelix-'+flx_version+'/*.bat \\')
+@tangle('\t\tfelix-'+flx_version+'/Makefile \\')
+@tangle('\t\tfelix-'+flx_version+'/README \\')
+@tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
+@tangle('\t\tfelix-'+flx_version+'/INSTALL \\')
+@tangle('\t\tfelix-'+flx_version+'/VERSION \\')
+@tangle('\t\tfelix-'+flx_version+'/LICENCE \\')
+@tangle('\t\tfelix-'+flx_version+'/NEWS \\')
+@tangle('\t\tfelix-'+flx_version+'/AUTHORS \\')
+@tangle('\t\tfelix-'+flx_version+'/COPYING \\')
+@tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
+@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
+@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/core/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sinks/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sources/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/storage/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/encoding/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/frames/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/frames/platform/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/languages/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/parsers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/tanglers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/tokenisers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/utilities/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py ')
+@# debian requires gzip -9
+@tangle('\tgzip -9 flx_'+flx_version+'_src.tar')
+@tangle('\tmv -f flx_'+flx_version+'_src.tar.gz flx_'+flx_version+'_src.tgz')
+@tangle('')
+@tangle('media_tarball:')
+@tangle('\trm -f flx_media.tgz')
+@tangle('\ttar -zcvf flx_media.tgz media')
+@tangle('')
+@tangle('doc_tarball:')
+@tangle('\trm -f flx_doc.tgz')
+@tangle('\ttar -zcvf flx_doc.tgz doc')
+@tangle('')
+@tangle('speed_tarball:')
+@tangle('\trm -f flx_speed.tgz')
+@tangle('\ttar -zcvf flx_speed.tgz speed/*.html speed/*.css speed/machine/*/images/*.jpg speed/machine/*/rankings/*.txt')
+@tangle('')
+@tangle('#')
+@tangle('# ------- TARBALL FILES  --------------')
+@tangle('#')
+@tangle('flx_media.tgz: media_tarball')
+@tangle('')
+@tangle('flx_doc.tgz: doc_tarball')
+@tangle('')
+@tangle('flx_speed.tgz: speed_tarball')
+@tangle('')
+@tangle('flx_'+flx_version+'_src.tgz: src_tarball')
+@tangle('')
+@tangle('tarballs: flx_'+flx_version+'_src.tgz flx_speed.tgz flx_doc.tgz flx_media.tgz')
+@tangle('')
+@tangle('#')
+@tangle('# ------- UPLOADERS --------------')
+@tangle('#')
+@tangle("#")
+@tangle("# ******* WEB SITE MISC")
+@tangle("#")
 @tangle('upload_images:')
-@tangle('\tscp homepage/images/*.jpg skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/images')
+@tangle('\tscp homepage/images/*.jpg ${USER}@felix.sf.net:/home/groups/f/fe/felix/htdocs/images')
 @tangle('')
 @tangle('upload_homepage: dummy')
-@tangle('\tscp homepage/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/')
+@tangle('\tscp homepage/*.html ${USER}@felix.sf.net:/home/groups/f/fe/felix/htdocs/')
 @tangle('')
 @tangle('upload_www: upload_homepage')
-@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/current/www')
+@tangle('\tscp www/*.html ${USER}@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('')
-@tangle('upload_src: dummy')
-@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle("#")
+@tangle("# ******* LP SOURCE TARBALL")
+@tangle("#")
+@tangle('upload_src: flx_'+flx_version+'_src.tgz')
+@tangle('\tscp flx_'+flx_version+'_src.tgz ${USER}@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
-@tangle('upload_speed: dummy')
-@tangle('\tscp -r speed/*.html speed/images skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/current/speed')
-@tangle('')
+@tangle("#")
+@tangle("# ******* MEDIA REQUIRED FOR TESTS")
+@tangle("#")
 @tangle('upload_media: flx_media.tgz')
-@tangle('\tscp flx_media.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_media.tgz ${USER}@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
-@tangle('upload: dummy')
-@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_'+flx_version+'_share.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle("#")
+@tangle("# ******* SPEED TEST TARBALL")
+@tangle("#")
+@tangle('upload_speed: flx_speed.tgz')
+@tangle('\tscp -r flx_speed.tgz ${USER}@felix.sf.net:/home/groups/f/fe/felix/htdocs/')
+@tangle('')
+@tangle("#")
+@tangle("# ******* DOC TARBALL")
+@tangle("#")
+@tangle('upload_docs: flx_doc.tgz')
+@tangle('\tscp -r flx_doc.tgz ${USER}@felix.sf.net:/home/groups/f/fe/felix/htdocs/')
+@tangle('')
+@tangle('# note: media is not uploaded here because it does not change much ')
+@tangle('upload: upload_src upload_speed upload_docs')
+@tangle('')
+@tangle("#")
+@tangle("# --------- UNPACKER -----------------------")
+@tangle("#")
+@tangle('unpack:')
+@tangle('\tssh ${USER}@felix.sf.net "(cd /home/groups/f/fe/felix/htdocs/; tar -zxvf flx_doc.tgz; tar -zxvf flx_speed.tgz)"')
+@tangle('')
+@tangle('')
+@tangle('')
+@tangle('')
+@tangle('')
 @tangle('')
 
 @head(1,'README')
@@ -3863,7 +3854,7 @@ TIME=0
 RUNIT=1
 CCFLAGS=""
 FELIX=1
-LINNKER_SWITCHES=""
+LINKER_SWITCHES=""
 MACROS=""
 grab=1
 
@@ -4204,7 +4195,7 @@ then
   # required in case the PATH has a filename with spaces
   # However this actually fails on Linux!
   FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
-  FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" "
+  FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH "
 else
   FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
   # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
@@ -4273,7 +4264,8 @@ then
   then
     calpackages
     CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
+    #LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
@@ -4310,7 +4302,8 @@ else
   then
     calpackages
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
+    #LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
+    LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
