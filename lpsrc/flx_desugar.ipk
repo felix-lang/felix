@@ -785,7 +785,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     @
     (if !iswild then [] else
       let f,sl,sc,el,ec = sr in
-      let s = "\""^ f ^"\"," ^ 
+      let s = Flx_print.string_of_string f ^"," ^ 
         si sl ^ "," ^ si sc ^ "," ^
         si el ^ "," ^ si ec
       in
