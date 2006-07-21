@@ -4,7 +4,7 @@ execfile("config"+os.sep+"config.py")
 try:
   cload(globals(),"target_gsl")
 except:
-  HAVE_GSL=TARGET_CXX.check_header_exists(xqt,'gsl.h')
+  HAVE_GSL=TARGET_CXX.check_header_exists(xqt,'gsl/gsl_blas.h')
   f=cwrite('target_gsl')
   pa(f,locals(),"HAVE_GSL")
   f.close()
@@ -38,7 +38,7 @@ provides_slib: -lgsl
 include 'std';
 
 //#define __GSL_BLAS_H__
-header '#include "gsl_blas.h"';
+header '#include "gsl/gsl_blas.h"';
 
 //INCLUDES
 include "gsl_blas_types_lib";
@@ -189,7 +189,7 @@ module gsl_blas_h
 include 'std';
 
 //#define __GSL_BLAS_TYPES_H__
-header '#include "gsl_blas_types.h"';
+header '#include "gsl/gsl_blas_types.h"';
 
 module gsl_blas_types_h
 {
@@ -229,7 +229,7 @@ module gsl_blas_types_h
 include 'std';
 
 //#define __GSL_BLOCK_CHAR_H__
-header '#include "gsl_block_char.h"';
+header '#include "gsl/gsl_block_char.h"';
 
 //INCLUDES
 include "gsl_block_char_struct_lib";
@@ -280,7 +280,7 @@ module gsl_block_char_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_char_struct"';
+header '#include "gsl/gsl_block_char_struct"';
 
 module gsl_block_char_struct_h
 {
@@ -299,7 +299,7 @@ module gsl_block_char_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_COMPLEX_DOUBLE_H__
-header '#include "gsl_block_complex_double.h"';
+header '#include "gsl/gsl_block_complex_double.h"';
 
 //INCLUDES
 include "gsl_block_complex_struct_lib";
@@ -351,7 +351,7 @@ module gsl_block_complex_double_h
 include 'std';
 
 //#define __GSL_BLOCK_COMPLEX_FLOAT_H__
-header '#include "gsl_block_complex_float.h"';
+header '#include "gsl/gsl_block_complex_float.h"';
 
 //INCLUDES
 include "gsl_block_complex_float_struct_lib";
@@ -402,7 +402,7 @@ module gsl_block_complex_float_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_complex_float_struct"';
+header '#include "gsl/gsl_block_complex_float_struct"';
 
 module gsl_block_complex_float_struct_h
 {
@@ -428,7 +428,7 @@ include 'std';
 //#define GSL_BLOCK_IMAG(z, i)  ((z)->data[2*(i) + 1])
 //#define GSL_BLOCK_REAL(z, i)  ((z)->data[2*(i)])
 //#define __GSL_BLOCK_COMPLEX__
-header '#include "gsl_block_complex.h"';
+header '#include "gsl/gsl_block_complex.h"';
 
 module gsl_block_complex_h
 {
@@ -447,7 +447,7 @@ module gsl_block_complex_h
 include 'std';
 
 //#define __GSL_BLOCK_COMPLEX_LONG_DOUBLE_H__
-header '#include "gsl_block_complex_long_double.h"';
+header '#include "gsl/gsl_block_complex_long_double.h"';
 
 //INCLUDES
 include "gsl_block_complex_long_double_struct_lib";
@@ -498,7 +498,7 @@ module gsl_block_complex_long_double_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_complex_long_double_struct"';
+header '#include "gsl/gsl_block_complex_long_double_struct"';
 
 module gsl_block_complex_long_double_struct_h
 {
@@ -516,7 +516,7 @@ module gsl_block_complex_long_double_struct_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_complex_struct"';
+header '#include "gsl/gsl_block_complex_struct"';
 
 module gsl_block_complex_struct_h
 {
@@ -535,7 +535,7 @@ module gsl_block_complex_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_DOUBLE_H__
-header '#include "gsl_block_double.h"';
+header '#include "gsl/gsl_block_double.h"';
 
 //INCLUDES
 include "gsl_block_struct_lib";
@@ -587,7 +587,7 @@ module gsl_block_double_h
 include 'std';
 
 //#define __GSL_BLOCK_FLOAT_H__
-header '#include "gsl_block_float.h"';
+header '#include "gsl/gsl_block_float.h"';
 
 //INCLUDES
 include "gsl_block_float_struct_lib";
@@ -638,7 +638,7 @@ module gsl_block_float_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_float_struct"';
+header '#include "gsl/gsl_block_float_struct"';
 
 module gsl_block_float_struct_h
 {
@@ -657,7 +657,7 @@ module gsl_block_float_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_INT_H__
-header '#include "gsl_block_int.h"';
+header '#include "gsl/gsl_block_int.h"';
 
 //INCLUDES
 include "gsl_block_int_struct_lib";
@@ -708,7 +708,7 @@ module gsl_block_int_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_int_struct"';
+header '#include "gsl/gsl_block_int_struct"';
 
 module gsl_block_int_struct_h
 {
@@ -727,7 +727,7 @@ module gsl_block_int_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_H__
-header '#include "gsl_block.h"';
+header '#include "gsl/gsl_block.h"';
 
 module gsl_block_h
 {
@@ -746,7 +746,7 @@ module gsl_block_h
 include 'std';
 
 //#define __GSL_BLOCK_LONG_DOUBLE_H__
-header '#include "gsl_block_long_double.h"';
+header '#include "gsl/gsl_block_long_double.h"';
 
 //INCLUDES
 include "gsl_block_long_double_struct_lib";
@@ -797,7 +797,7 @@ module gsl_block_long_double_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_long_double_struct"';
+header '#include "gsl/gsl_block_long_double_struct"';
 
 module gsl_block_long_double_struct_h
 {
@@ -816,7 +816,7 @@ module gsl_block_long_double_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_LONG_H__
-header '#include "gsl_block_long.h"';
+header '#include "gsl/gsl_block_long.h"';
 
 //INCLUDES
 include "gsl_block_long_struct_lib";
@@ -867,7 +867,7 @@ module gsl_block_long_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_long_struct"';
+header '#include "gsl/gsl_block_long_struct"';
 
 module gsl_block_long_struct_h
 {
@@ -886,7 +886,7 @@ module gsl_block_long_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_SHORT_H__
-header '#include "gsl_block_short.h"';
+header '#include "gsl/gsl_block_short.h"';
 
 //INCLUDES
 include "gsl_block_short_struct_lib";
@@ -937,7 +937,7 @@ module gsl_block_short_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_short_struct"';
+header '#include "gsl/gsl_block_short_struct"';
 
 module gsl_block_short_struct_h
 {
@@ -955,7 +955,7 @@ module gsl_block_short_struct_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_struct"';
+header '#include "gsl/gsl_block_struct"';
 
 module gsl_block_struct_h
 {
@@ -974,7 +974,7 @@ module gsl_block_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_UCHAR_H__
-header '#include "gsl_block_uchar.h"';
+header '#include "gsl/gsl_block_uchar.h"';
 
 //INCLUDES
 include "gsl_block_uchar_struct_lib";
@@ -1025,7 +1025,7 @@ module gsl_block_uchar_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_uchar_struct"';
+header '#include "gsl/gsl_block_uchar_struct"';
 
 module gsl_block_uchar_struct_h
 {
@@ -1044,7 +1044,7 @@ module gsl_block_uchar_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_UINT_H__
-header '#include "gsl_block_uint.h"';
+header '#include "gsl/gsl_block_uint.h"';
 
 //INCLUDES
 include "gsl_block_uint_struct_lib";
@@ -1095,7 +1095,7 @@ module gsl_block_uint_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_uint_struct"';
+header '#include "gsl/gsl_block_uint_struct"';
 
 module gsl_block_uint_struct_h
 {
@@ -1114,7 +1114,7 @@ module gsl_block_uint_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_ULONG_H__
-header '#include "gsl_block_ulong.h"';
+header '#include "gsl/gsl_block_ulong.h"';
 
 //INCLUDES
 include "gsl_block_ulong_struct_lib";
@@ -1165,7 +1165,7 @@ module gsl_block_ulong_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_ulong_struct"';
+header '#include "gsl/gsl_block_ulong_struct"';
 
 module gsl_block_ulong_struct_h
 {
@@ -1184,7 +1184,7 @@ module gsl_block_ulong_struct_h
 include 'std';
 
 //#define __GSL_BLOCK_USHORT_H__
-header '#include "gsl_block_ushort.h"';
+header '#include "gsl/gsl_block_ushort.h"';
 
 //INCLUDES
 include "gsl_block_ushort_struct_lib";
@@ -1235,7 +1235,7 @@ module gsl_block_ushort_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_block_ushort_struct"';
+header '#include "gsl/gsl_block_ushort_struct"';
 
 module gsl_block_ushort_struct_h
 {
@@ -1255,7 +1255,7 @@ include 'std';
 
 //#define CBLAS_INDEX size_t  /* this may vary between platforms */
 //#define __GSL_CBLAS_H__
-header '#include "gsl_cblas.h"';
+header '#include "gsl/gsl_cblas.h"';
 
 module gsl_cblas_h
 {
@@ -1441,7 +1441,7 @@ module gsl_cblas_h
 include 'std';
 
 //#define __GSL_CDF_H__
-header '#include "gsl_cdf.h"';
+header '#include "gsl/gsl_cdf.h"';
 
 module gsl_cdf_h
 {
@@ -1531,7 +1531,7 @@ module gsl_cdf_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_cheb_series_struct"';
+header '#include "gsl/gsl_cheb_series_struct"';
 
 module gsl_cheb_series_struct_h
 {
@@ -1550,7 +1550,7 @@ module gsl_cheb_series_struct_h
 include 'std';
 
 //#define __GSL_CHEBYSHEV_H__
-header '#include "gsl_chebyshev.h"';
+header '#include "gsl/gsl_chebyshev.h"';
 
 //INCLUDES
 include "gsl_cheb_series_struct_lib";
@@ -1610,7 +1610,7 @@ include 'std';
 //#define GSL_RANGE_CHECK 1
 //#define GSL_RANGE_CHECK 0
 //#define __GSL_CHECK_RANGE_H__
-header '#include "gsl_check_range.h"';
+header '#include "gsl/gsl_check_range.h"';
 
 module gsl_check_range_h
 {
@@ -1632,7 +1632,7 @@ module gsl_check_range_h
 include 'std';
 
 //#define __GSL_COMBINATION_H__
-header '#include "gsl_combination.h"';
+header '#include "gsl/gsl_combination.h"';
 
 //INCLUDES
 include "gsl_combination_struct_lib";
@@ -1688,7 +1688,7 @@ module gsl_combination_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_combination_struct"';
+header '#include "gsl/gsl_combination_struct"';
 
 module gsl_combination_struct_h
 {
@@ -1717,7 +1717,7 @@ include 'std';
 //#define GSL_IMAG(z)     ((z).dat[1])
 //#define GSL_REAL(z)     ((z).dat[0])
 //#define __GSL_COMPLEX_H__
-header '#include "gsl_complex.h"';
+header '#include "gsl/gsl_complex.h"';
 
 module gsl_complex_h
 {
@@ -1764,7 +1764,7 @@ include 'std';
 //#define GSL_COMPLEX_ZERO (gsl_complex_rect(0.0,0.0))
 //#define GSL_COMPLEX_ONE (gsl_complex_rect(1.0,0.0))
 //#define __GSL_COMPLEX_MATH_H__
-header '#include "gsl_complex_math.h"';
+header '#include "gsl/gsl_complex_math.h"';
 
 //INCLUDES
 include "gsl_complex_lib";
@@ -1946,7 +1946,7 @@ include 'std';
 //#define GSL_CONST_CGS_GRAVITATIONAL_CONSTANT (6.673e-8) /* cm^3 / g s^2 */
 //#define GSL_CONST_CGS_SPEED_OF_LIGHT (2.99792458e10) /* cm / s */
 //#define __GSL_CONST_CGS__
-header '#include "gsl_const_cgs.h"';
+header '#include "gsl/gsl_const_cgs.h"';
 
 module gsl_const_cgs_h
 {
@@ -2063,7 +2063,7 @@ include 'std';
 //#define GSL_CONST_CGSM_GRAVITATIONAL_CONSTANT (6.673e-8) /* cm^3 / g s^2 */
 //#define GSL_CONST_CGSM_SPEED_OF_LIGHT (2.99792458e10) /* cm / s */
 //#define __GSL_CONST_CGSM__
-header '#include "gsl_const_cgsm.h"';
+header '#include "gsl/gsl_const_cgsm.h"';
 
 module gsl_const_cgsm_h
 {
@@ -2082,7 +2082,7 @@ module gsl_const_cgsm_h
 include 'std';
 
 //#define __GSL_CONST__
-header '#include "gsl_const.h"';
+header '#include "gsl/gsl_const.h"';
 
 module gsl_const_h
 {
@@ -2201,7 +2201,7 @@ include 'std';
 //#define GSL_CONST_MKSA_GRAVITATIONAL_CONSTANT (6.673e-11) /* m^3 / kg s^2 */
 //#define GSL_CONST_MKSA_SPEED_OF_LIGHT (2.99792458e8) /* m / s */
 //#define __GSL_CONST_MKSA__
-header '#include "gsl_const_mksa.h"';
+header '#include "gsl/gsl_const_mksa.h"';
 
 module gsl_const_mksa_h
 {
@@ -2320,7 +2320,7 @@ include 'std';
 //#define GSL_CONST_MKS_GRAVITATIONAL_CONSTANT (6.673e-11) /* m^3 / kg s^2 */
 //#define GSL_CONST_MKS_SPEED_OF_LIGHT (2.99792458e8) /* m / s */
 //#define __GSL_CONST_MKS__
-header '#include "gsl_const_mks.h"';
+header '#include "gsl/gsl_const_mks.h"';
 
 module gsl_const_mks_h
 {
@@ -2357,7 +2357,7 @@ include 'std';
 //#define GSL_CONST_NUM_AVOGADRO (6.02214199e23) /* 1 / mol */
 //#define GSL_CONST_NUM_FINE_STRUCTURE (7.297352533e-3) /* 1 */
 //#define __GSL_CONST_NUM__
-header '#include "gsl_const_num.h"';
+header '#include "gsl/gsl_const_num.h"';
 
 module gsl_const_num_h
 {
@@ -2376,7 +2376,7 @@ module gsl_const_num_h
 include 'std';
 
 //#define __GSL_DERIV_H__
-header '#include "gsl_deriv.h"';
+header '#include "gsl/gsl_deriv.h"';
 
 //INCLUDES
 include "gsl_math_lib";
@@ -2404,7 +2404,7 @@ module gsl_deriv_h
 include 'std';
 
 //#define __GSL_DFT_COMPLEX_FLOAT_H__
-header '#include "gsl_dft_complex_float.h"';
+header '#include "gsl/gsl_dft_complex_float.h"';
 
 //INCLUDES
 include "gsl_fft_lib";
@@ -2433,7 +2433,7 @@ module gsl_dft_complex_float_h
 include 'std';
 
 //#define __GSL_DFT_COMPLEX_H__
-header '#include "gsl_dft_complex.h"';
+header '#include "gsl/gsl_dft_complex.h"';
 
 //INCLUDES
 include "gsl_fft_lib";
@@ -2462,7 +2462,7 @@ module gsl_dft_complex_h
 include 'std';
 
 //#define __GSL_DHT_H__
-header '#include "gsl_dht.h"';
+header '#include "gsl/gsl_dht.h"';
 
 //INCLUDES
 include "gsl_dht_struct_lib";
@@ -2512,7 +2512,7 @@ module gsl_dht_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_dht_struct"';
+header '#include "gsl/gsl_dht_struct"';
 
 module gsl_dht_struct_h
 {
@@ -2531,7 +2531,7 @@ module gsl_dht_struct_h
 include 'std';
 
 //#define __GSL_DIFF_H__
-header '#include "gsl_diff.h"';
+header '#include "gsl/gsl_diff.h"';
 
 //INCLUDES
 include "gsl_math_lib";
@@ -2559,7 +2559,7 @@ module gsl_diff_h
 include 'std';
 
 //#define __GSL_EIGEN_H__
-header '#include "gsl_eigen.h"';
+header '#include "gsl/gsl_eigen.h"';
 
 //INCLUDES
 include "gsl_matrix_complex_double_lib";
@@ -2628,7 +2628,7 @@ include 'std';
 //#define GSL_ERROR_VAL(reason, gsl_errno, value) \
 //#define GSL_ERROR(reason, gsl_errno) \
 //#define __GSL_ERRNO_H__
-header '#include "gsl_errno.h"';
+header '#include "gsl/gsl_errno.h"';
 
 //INCLUDES
 
@@ -2701,7 +2701,7 @@ module gsl_errno_h
 include 'std';
 
 //#define __GSL_FFT_COMPLEX_FLOAT_H__
-header '#include "gsl_fft_complex_float.h"';
+header '#include "gsl/gsl_fft_complex_float.h"';
 
 //INCLUDES
 include "gsl_complex_lib";
@@ -2751,7 +2751,7 @@ module gsl_fft_complex_float_h
 include 'std';
 
 //#define __GSL_FFT_COMPLEX_H__
-header '#include "gsl_fft_complex.h"';
+header '#include "gsl/gsl_fft_complex.h"';
 
 //INCLUDES
 include "gsl_complex_lib";
@@ -2801,7 +2801,7 @@ module gsl_fft_complex_h
 include 'std';
 
 //#define __GSL_FFT_HALFCOMPLEX_FLOAT_H__
-header '#include "gsl_fft_halfcomplex_float.h"';
+header '#include "gsl/gsl_fft_halfcomplex_float.h"';
 
 //INCLUDES
 include "gsl_fft_real_float_lib";
@@ -2841,7 +2841,7 @@ module gsl_fft_halfcomplex_float_h
 include 'std';
 
 //#define __GSL_FFT_HALFCOMPLEX_H__
-header '#include "gsl_fft_halfcomplex.h"';
+header '#include "gsl/gsl_fft_halfcomplex.h"';
 
 //INCLUDES
 include "gsl_fft_real_lib";
@@ -2881,7 +2881,7 @@ module gsl_fft_halfcomplex_h
 include 'std';
 
 //#define __GSL_FFT_H__
-header '#include "gsl_fft.h"';
+header '#include "gsl/gsl_fft.h"';
 
 module gsl_fft_h
 {
@@ -2907,7 +2907,7 @@ module gsl_fft_h
 include 'std';
 
 //#define __GSL_FFT_REAL_FLOAT_H__
-header '#include "gsl_fft_real_float.h"';
+header '#include "gsl/gsl_fft_real_float.h"';
 
 module gsl_fft_real_float_h
 {
@@ -2941,7 +2941,7 @@ module gsl_fft_real_float_h
 include 'std';
 
 //#define __GSL_FFT_REAL_H__
-header '#include "gsl_fft_real.h"';
+header '#include "gsl/gsl_fft_real.h"';
 
 module gsl_fft_real_h
 {
@@ -2975,7 +2975,7 @@ module gsl_fft_real_h
 include 'std';
 
 //#define __GSL_FIT_H__
-header '#include "gsl_fit.h"';
+header '#include "gsl/gsl_fit.h"';
 
 module gsl_fit_h
 {
@@ -3001,7 +3001,7 @@ module gsl_fit_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_function_fdf_struct"';
+header '#include "gsl/gsl_function_fdf_struct"';
 
 module gsl_function_fdf_struct_h
 {
@@ -3019,7 +3019,7 @@ module gsl_function_fdf_struct_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_function_struct"';
+header '#include "gsl/gsl_function_struct"';
 
 module gsl_function_struct_h
 {
@@ -3037,7 +3037,7 @@ module gsl_function_struct_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_function_vec_struct"';
+header '#include "gsl/gsl_function_vec_struct"';
 
 module gsl_function_vec_struct_h
 {
@@ -3056,7 +3056,7 @@ module gsl_function_vec_struct_h
 include 'std';
 
 //#define __GSL_HEAPSORT_H__
-header '#include "gsl_heapsort.h"';
+header '#include "gsl/gsl_heapsort.h"';
 
 module gsl_heapsort_h
 {
@@ -3088,7 +3088,7 @@ module gsl_heapsort_h
 include 'std';
 
 //#define __GSL_HISTOGRAM2D_H__
-header '#include "gsl_histogram2d.h"';
+header '#include "gsl/gsl_histogram2d.h"';
 
 //INCLUDES
 
@@ -3164,7 +3164,7 @@ module gsl_histogram2d_h
 include 'std';
 
 //#define __GSL_HISTOGRAM_H__
-header '#include "gsl_histogram.h"';
+header '#include "gsl/gsl_histogram.h"';
 
 //INCLUDES
 
@@ -3233,7 +3233,7 @@ module gsl_histogram_h
 include 'std';
 
 //#define __GSL_IEEE_UTILS_H__
-header '#include "gsl_ieee_utils.h"';
+header '#include "gsl/gsl_ieee_utils.h"';
 
 //INCLUDES
 
@@ -3292,7 +3292,7 @@ module gsl_ieee_utils_h
 include 'std';
 
 //#define __GSL_INTEGRATION_H__
-header '#include "gsl_integration.h"';
+header '#include "gsl/gsl_integration.h"';
 
 //INCLUDES
 include "gsl_math_lib";
@@ -3366,7 +3366,7 @@ module gsl_integration_h
 include 'std';
 
 //#define __GSL_INTERP_H__
-header '#include "gsl_interp.h"';
+header '#include "gsl/gsl_interp.h"';
 
 module gsl_interp_h
 {
@@ -3420,7 +3420,7 @@ module gsl_interp_h
 include 'std';
 
 //#define __GSL_LINALG_H__
-header '#include "gsl_linalg.h"';
+header '#include "gsl/gsl_linalg.h"';
 
 //INCLUDES
 include "gsl_complex_lib";
@@ -3613,7 +3613,7 @@ include 'std';
 //#define GSL_SQRT_DBL_EPSILON   1.4901161193847656e-08
 //#define GSL_DBL_EPSILON        2.2204460492503131e-16
 //#define __GSL_MACHINE_H__
-header '#include "gsl_machine.h"';
+header '#include "gsl/gsl_machine.h"';
 
 module gsl_machine_h
 {
@@ -3666,7 +3666,7 @@ include 'std';
 //#define M_LOG2E    1.44269504088896340735992468100      /* log_2 (e) */
 //#define M_E        2.71828182845904523536028747135      /* e */
 //#define __GSL_MATH_H__
-header '#include "gsl_math.h"';
+header '#include "gsl/gsl_math.h"';
 
 //INCLUDES
 include "gsl_function_fdf_struct_lib";
@@ -3731,7 +3731,7 @@ module gsl_math_h
 include 'std';
 
 //#define __GSL_MATRIX_CHAR_H__
-header '#include "gsl_matrix_char.h"';
+header '#include "gsl/gsl_matrix_char.h"';
 
 //INCLUDES
 include "gsl_block_char_lib";
@@ -3832,7 +3832,7 @@ module gsl_matrix_char_h
 include 'std';
 
 //#define __GSL_MATRIX_COMPLEX_DOUBLE_H__
-header '#include "gsl_matrix_complex_double.h"';
+header '#include "gsl/gsl_matrix_complex_double.h"';
 
 //INCLUDES
 include "gsl_block_complex_double_lib";
@@ -3929,7 +3929,7 @@ module gsl_matrix_complex_double_h
 include 'std';
 
 //#define __GSL_MATRIX_COMPLEX_FLOAT_H__
-header '#include "gsl_matrix_complex_float.h"';
+header '#include "gsl/gsl_matrix_complex_float.h"';
 
 //INCLUDES
 include "gsl_block_complex_float_lib";
@@ -4026,7 +4026,7 @@ module gsl_matrix_complex_float_h
 include 'std';
 
 //#define __GSL_MATRIX_COMPLEX_LONG_DOUBLE_H__
-header '#include "gsl_matrix_complex_long_double.h"';
+header '#include "gsl/gsl_matrix_complex_long_double.h"';
 
 //INCLUDES
 include "gsl_block_complex_long_double_lib";
@@ -4123,7 +4123,7 @@ module gsl_matrix_complex_long_double_h
 include 'std';
 
 //#define __GSL_MATRIX_DOUBLE_H__
-header '#include "gsl_matrix_double.h"';
+header '#include "gsl/gsl_matrix_double.h"';
 
 //INCLUDES
 include "gsl_block_double_lib";
@@ -4224,7 +4224,7 @@ module gsl_matrix_double_h
 include 'std';
 
 //#define __GSL_MATRIX_FLOAT_H__
-header '#include "gsl_matrix_float.h"';
+header '#include "gsl/gsl_matrix_float.h"';
 
 //INCLUDES
 include "gsl_block_float_lib";
@@ -4325,7 +4325,7 @@ module gsl_matrix_float_h
 include 'std';
 
 //#define __GSL_MATRIX_INT_H__
-header '#include "gsl_matrix_int.h"';
+header '#include "gsl/gsl_matrix_int.h"';
 
 //INCLUDES
 include "gsl_block_int_lib";
@@ -4426,7 +4426,7 @@ module gsl_matrix_int_h
 include 'std';
 
 //#define __GSL_MATRIX_H__
-header '#include "gsl_matrix.h"';
+header '#include "gsl/gsl_matrix.h"';
 
 module gsl_matrix_h
 {
@@ -4445,7 +4445,7 @@ module gsl_matrix_h
 include 'std';
 
 //#define __GSL_MATRIX_LONG_DOUBLE_H__
-header '#include "gsl_matrix_long_double.h"';
+header '#include "gsl/gsl_matrix_long_double.h"';
 
 //INCLUDES
 include "gsl_block_long_double_lib";
@@ -4546,7 +4546,7 @@ module gsl_matrix_long_double_h
 include 'std';
 
 //#define __GSL_MATRIX_LONG_H__
-header '#include "gsl_matrix_long.h"';
+header '#include "gsl/gsl_matrix_long.h"';
 
 //INCLUDES
 include "gsl_block_long_lib";
@@ -4647,7 +4647,7 @@ module gsl_matrix_long_h
 include 'std';
 
 //#define __GSL_MATRIX_SHORT_H__
-header '#include "gsl_matrix_short.h"';
+header '#include "gsl/gsl_matrix_short.h"';
 
 //INCLUDES
 include "gsl_block_short_lib";
@@ -4748,7 +4748,7 @@ module gsl_matrix_short_h
 include 'std';
 
 //#define __GSL_MATRIX_UCHAR_H__
-header '#include "gsl_matrix_uchar.h"';
+header '#include "gsl/gsl_matrix_uchar.h"';
 
 //INCLUDES
 include "gsl_block_uchar_lib";
@@ -4849,7 +4849,7 @@ module gsl_matrix_uchar_h
 include 'std';
 
 //#define __GSL_MATRIX_UINT_H__
-header '#include "gsl_matrix_uint.h"';
+header '#include "gsl/gsl_matrix_uint.h"';
 
 //INCLUDES
 include "gsl_block_uint_lib";
@@ -4950,7 +4950,7 @@ module gsl_matrix_uint_h
 include 'std';
 
 //#define __GSL_MATRIX_ULONG_H__
-header '#include "gsl_matrix_ulong.h"';
+header '#include "gsl/gsl_matrix_ulong.h"';
 
 //INCLUDES
 include "gsl_block_ulong_lib";
@@ -5051,7 +5051,7 @@ module gsl_matrix_ulong_h
 include 'std';
 
 //#define __GSL_MATRIX_USHORT_H__
-header '#include "gsl_matrix_ushort.h"';
+header '#include "gsl/gsl_matrix_ushort.h"';
 
 //INCLUDES
 include "gsl_block_ushort_lib";
@@ -5155,7 +5155,7 @@ include 'std';
 //#define GSL_MESSAGE(message, mask) do { } while(0)
 //#define GSL_MESSAGE_MASK 0xffffffffu /* default all messages allowed */
 //#define __GSL_MESSAGE_H__
-header '#include "gsl_message.h"';
+header '#include "gsl/gsl_message.h"';
 
 module gsl_message_h
 {
@@ -5190,7 +5190,7 @@ module gsl_message_h
 include 'std';
 
 //#define __GSL_MIN_H__
-header '#include "gsl_min.h"';
+header '#include "gsl/gsl_min.h"';
 
 //INCLUDES
 include "gsl_math_lib";
@@ -5252,7 +5252,7 @@ include 'std';
 //#define GSL_PREC_SINGLE  1
 //#define GSL_PREC_DOUBLE  0
 //#define __GSL_MODE_H__
-header '#include "gsl_mode.h"';
+header '#include "gsl/gsl_mode.h"';
 
 module gsl_mode_h
 {
@@ -5273,7 +5273,7 @@ module gsl_mode_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_monte_function_struct"';
+header '#include "gsl/gsl_monte_function_struct"';
 
 module gsl_monte_function_struct_h
 {
@@ -5293,7 +5293,7 @@ include 'std';
 
 //#define GSL_MONTE_FN_EVAL(F,x) (*((F)->f))(x,(F)->dim,(F)->params)
 //#define __GSL_MONTE_H__
-header '#include "gsl_monte.h"';
+header '#include "gsl/gsl_monte.h"';
 
 //INCLUDES
 include "gsl_monte_function_struct_lib";
@@ -5333,7 +5333,7 @@ module gsl_monte_h
 include 'std';
 
 //#define __GSL_MONTE_MISER_H__
-header '#include "gsl_monte_miser.h"';
+header '#include "gsl/gsl_monte_miser.h"';
 
 //INCLUDES
 include "gsl_monte_lib";
@@ -5369,7 +5369,7 @@ module gsl_monte_miser_h
 include 'std';
 
 //#define __GSL_MONTE_PLAIN_H__
-header '#include "gsl_monte_plain.h"';
+header '#include "gsl/gsl_monte_plain.h"';
 
 //INCLUDES
 include "gsl_monte_lib";
@@ -5405,7 +5405,7 @@ module gsl_monte_plain_h
 include 'std';
 
 //#define __GSL_MONTE_VEGAS_H__
-header '#include "gsl_monte_vegas.h"';
+header '#include "gsl/gsl_monte_vegas.h"';
 
 //INCLUDES
 include "gsl_monte_lib";
@@ -5445,7 +5445,7 @@ module gsl_monte_vegas_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_multifit_function_fdf_struct"';
+header '#include "gsl/gsl_multifit_function_fdf_struct"';
 
 module gsl_multifit_function_fdf_struct_h
 {
@@ -5463,7 +5463,7 @@ module gsl_multifit_function_fdf_struct_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_multifit_function_struct"';
+header '#include "gsl/gsl_multifit_function_struct"';
 
 module gsl_multifit_function_struct_h
 {
@@ -5482,7 +5482,7 @@ module gsl_multifit_function_struct_h
 include 'std';
 
 //#define __GSL_MULTIFIT_H__
-header '#include "gsl_multifit.h"';
+header '#include "gsl/gsl_multifit.h"';
 
 //INCLUDES
 include "gsl_matrix_double_lib";
@@ -5522,7 +5522,7 @@ include 'std';
 //#define GSL_MULTIFIT_FN_EVAL_F(F,x,y) ((*((F)->f))(x,(F)->params,(y)))
 //#define GSL_MULTIFIT_FN_EVAL(F,x,y) (*((F)->f))(x,(F)->params,(y))
 //#define __GSL_MULTIFIT_NLIN_H__
-header '#include "gsl_multifit_nlin.h"';
+header '#include "gsl/gsl_multifit_nlin.h"';
 
 //INCLUDES
 include "gsl_matrix_double_lib";
@@ -5612,7 +5612,7 @@ module gsl_multifit_nlin_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_multimin_function_fdf_struct"';
+header '#include "gsl/gsl_multimin_function_fdf_struct"';
 
 module gsl_multimin_function_fdf_struct_h
 {
@@ -5630,7 +5630,7 @@ module gsl_multimin_function_fdf_struct_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_multimin_function_struct"';
+header '#include "gsl/gsl_multimin_function_struct"';
 
 module gsl_multimin_function_struct_h
 {
@@ -5653,7 +5653,7 @@ include 'std';
 //#define GSL_MULTIMIN_FN_EVAL_F(F,x) (*((F)->f))(x,(F)->params)
 //#define GSL_MULTIMIN_FN_EVAL(F,x) (*((F)->f))(x,(F)->params)
 //#define __GSL_MULTIMIN_H__
-header '#include "gsl_multimin.h"';
+header '#include "gsl/gsl_multimin.h"';
 
 //INCLUDES
 include "gsl_multimin_function_fdf_struct_lib";
@@ -5747,7 +5747,7 @@ module gsl_multimin_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_multiroot_function_fdf_struct"';
+header '#include "gsl/gsl_multiroot_function_fdf_struct"';
 
 module gsl_multiroot_function_fdf_struct_h
 {
@@ -5765,7 +5765,7 @@ module gsl_multiroot_function_fdf_struct_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_multiroot_function_struct"';
+header '#include "gsl/gsl_multiroot_function_struct"';
 
 module gsl_multiroot_function_struct_h
 {
@@ -5788,7 +5788,7 @@ include 'std';
 //#define GSL_MULTIROOT_FN_EVAL_F(F,x,y) ((*((F)->f))(x,(F)->params,(y)))
 //#define GSL_MULTIROOT_FN_EVAL(F,x,y) (*((F)->f))(x,(F)->params,(y))
 //#define __GSL_MULTIROOTS_H__
-header '#include "gsl_multiroots.h"';
+header '#include "gsl/gsl_multiroots.h"';
 
 //INCLUDES
 include "gsl_matrix_double_lib";
@@ -5897,7 +5897,7 @@ include 'std';
 //#define GSL_NEGINF (-INFINITY)
 //#define GSL_POSINF INFINITY
 //#define __GSL_NAN_H__
-header '#include "gsl_nan.h"';
+header '#include "gsl/gsl_nan.h"';
 
 module gsl_nan_h
 {
@@ -5916,7 +5916,7 @@ module gsl_nan_h
 include 'std';
 
 //#define __GSL_NTUPLE_H__
-header '#include "gsl_ntuple.h"';
+header '#include "gsl/gsl_ntuple.h"';
 
 //INCLUDES
 include "gsl_histogram_lib";
@@ -5958,7 +5958,7 @@ include 'std';
 //#define GSL_ODEIV_JA_EVAL(S,t,y,dfdy,dfdt)  (*((S)->jacobian))(t,y,dfdy,dfdt,(S)->params)
 //#define GSL_ODEIV_FN_EVAL(S,t,y,f)  (*((S)->function))(t,y,f,(S)->params)
 //#define __GSL_ODEIV_H__
-header '#include "gsl_odeiv.h"';
+header '#include "gsl/gsl_odeiv.h"';
 
 module gsl_odeiv_h
 {
@@ -6021,7 +6021,7 @@ module gsl_odeiv_h
 include 'std';
 
 //#define __GSL_PERMUTATION_H__
-header '#include "gsl_permutation.h"';
+header '#include "gsl/gsl_permutation.h"';
 
 //INCLUDES
 include "gsl_permutation_struct_lib";
@@ -6083,7 +6083,7 @@ module gsl_permutation_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_permutation_struct"';
+header '#include "gsl/gsl_permutation_struct"';
 
 module gsl_permutation_struct_h
 {
@@ -6102,7 +6102,7 @@ module gsl_permutation_struct_h
 include 'std';
 
 //#define __GSL_PERMUTE_CHAR_H__
-header '#include "gsl_permute_char.h"';
+header '#include "gsl/gsl_permute_char.h"';
 
 module gsl_permute_char_h
 {
@@ -6125,7 +6125,7 @@ module gsl_permute_char_h
 include 'std';
 
 //#define __GSL_PERMUTE_COMPLEX_DOUBLE_H__
-header '#include "gsl_permute_complex_double.h"';
+header '#include "gsl/gsl_permute_complex_double.h"';
 
 module gsl_permute_complex_double_h
 {
@@ -6148,7 +6148,7 @@ module gsl_permute_complex_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_COMPLEX_FLOAT_H__
-header '#include "gsl_permute_complex_float.h"';
+header '#include "gsl/gsl_permute_complex_float.h"';
 
 module gsl_permute_complex_float_h
 {
@@ -6171,7 +6171,7 @@ module gsl_permute_complex_float_h
 include 'std';
 
 //#define __GSL_PERMUTE_COMPLEX_LONG_DOUBLE_H__
-header '#include "gsl_permute_complex_long_double.h"';
+header '#include "gsl/gsl_permute_complex_long_double.h"';
 
 module gsl_permute_complex_long_double_h
 {
@@ -6194,7 +6194,7 @@ module gsl_permute_complex_long_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_DOUBLE_H__
-header '#include "gsl_permute_double.h"';
+header '#include "gsl/gsl_permute_double.h"';
 
 module gsl_permute_double_h
 {
@@ -6217,7 +6217,7 @@ module gsl_permute_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_FLOAT_H__
-header '#include "gsl_permute_float.h"';
+header '#include "gsl/gsl_permute_float.h"';
 
 module gsl_permute_float_h
 {
@@ -6240,7 +6240,7 @@ module gsl_permute_float_h
 include 'std';
 
 //#define __GSL_PERMUTE_INT_H__
-header '#include "gsl_permute_int.h"';
+header '#include "gsl/gsl_permute_int.h"';
 
 module gsl_permute_int_h
 {
@@ -6263,7 +6263,7 @@ module gsl_permute_int_h
 include 'std';
 
 //#define __GSL_PERMUTE_H__
-header '#include "gsl_permute.h"';
+header '#include "gsl/gsl_permute.h"';
 
 module gsl_permute_h
 {
@@ -6282,7 +6282,7 @@ module gsl_permute_h
 include 'std';
 
 //#define __GSL_PERMUTE_LONG_DOUBLE_H__
-header '#include "gsl_permute_long_double.h"';
+header '#include "gsl/gsl_permute_long_double.h"';
 
 module gsl_permute_long_double_h
 {
@@ -6305,7 +6305,7 @@ module gsl_permute_long_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_LONG_H__
-header '#include "gsl_permute_long.h"';
+header '#include "gsl/gsl_permute_long.h"';
 
 module gsl_permute_long_h
 {
@@ -6328,7 +6328,7 @@ module gsl_permute_long_h
 include 'std';
 
 //#define __GSL_PERMUTE_SHORT_H__
-header '#include "gsl_permute_short.h"';
+header '#include "gsl/gsl_permute_short.h"';
 
 module gsl_permute_short_h
 {
@@ -6351,7 +6351,7 @@ module gsl_permute_short_h
 include 'std';
 
 //#define __GSL_PERMUTE_UCHAR_H__
-header '#include "gsl_permute_uchar.h"';
+header '#include "gsl/gsl_permute_uchar.h"';
 
 module gsl_permute_uchar_h
 {
@@ -6374,7 +6374,7 @@ module gsl_permute_uchar_h
 include 'std';
 
 //#define __GSL_PERMUTE_UINT_H__
-header '#include "gsl_permute_uint.h"';
+header '#include "gsl/gsl_permute_uint.h"';
 
 module gsl_permute_uint_h
 {
@@ -6397,7 +6397,7 @@ module gsl_permute_uint_h
 include 'std';
 
 //#define __GSL_PERMUTE_ULONG_H__
-header '#include "gsl_permute_ulong.h"';
+header '#include "gsl/gsl_permute_ulong.h"';
 
 module gsl_permute_ulong_h
 {
@@ -6420,7 +6420,7 @@ module gsl_permute_ulong_h
 include 'std';
 
 //#define __GSL_PERMUTE_USHORT_H__
-header '#include "gsl_permute_ushort.h"';
+header '#include "gsl/gsl_permute_ushort.h"';
 
 module gsl_permute_ushort_h
 {
@@ -6443,7 +6443,7 @@ module gsl_permute_ushort_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_CHAR_H__
-header '#include "gsl_permute_vector_char.h"';
+header '#include "gsl/gsl_permute_vector_char.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6472,7 +6472,7 @@ module gsl_permute_vector_char_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_COMPLEX_DOUBLE_H__
-header '#include "gsl_permute_vector_complex_double.h"';
+header '#include "gsl/gsl_permute_vector_complex_double.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6501,7 +6501,7 @@ module gsl_permute_vector_complex_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_COMPLEX_FLOAT_H__
-header '#include "gsl_permute_vector_complex_float.h"';
+header '#include "gsl/gsl_permute_vector_complex_float.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6530,7 +6530,7 @@ module gsl_permute_vector_complex_float_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_COMPLEX_LONG_DOUBLE_H__
-header '#include "gsl_permute_vector_complex_long_double.h"';
+header '#include "gsl/gsl_permute_vector_complex_long_double.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6559,7 +6559,7 @@ module gsl_permute_vector_complex_long_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_DOUBLE_H__
-header '#include "gsl_permute_vector_double.h"';
+header '#include "gsl/gsl_permute_vector_double.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6588,7 +6588,7 @@ module gsl_permute_vector_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_FLOAT_H__
-header '#include "gsl_permute_vector_float.h"';
+header '#include "gsl/gsl_permute_vector_float.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6617,7 +6617,7 @@ module gsl_permute_vector_float_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_INT_H__
-header '#include "gsl_permute_vector_int.h"';
+header '#include "gsl/gsl_permute_vector_int.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6646,7 +6646,7 @@ module gsl_permute_vector_int_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_H__
-header '#include "gsl_permute_vector.h"';
+header '#include "gsl/gsl_permute_vector.h"';
 
 module gsl_permute_vector_h
 {
@@ -6665,7 +6665,7 @@ module gsl_permute_vector_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_LONG_DOUBLE_H__
-header '#include "gsl_permute_vector_long_double.h"';
+header '#include "gsl/gsl_permute_vector_long_double.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6694,7 +6694,7 @@ module gsl_permute_vector_long_double_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_LONG_H__
-header '#include "gsl_permute_vector_long.h"';
+header '#include "gsl/gsl_permute_vector_long.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6723,7 +6723,7 @@ module gsl_permute_vector_long_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_SHORT_H__
-header '#include "gsl_permute_vector_short.h"';
+header '#include "gsl/gsl_permute_vector_short.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6752,7 +6752,7 @@ module gsl_permute_vector_short_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_UCHAR_H__
-header '#include "gsl_permute_vector_uchar.h"';
+header '#include "gsl/gsl_permute_vector_uchar.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6781,7 +6781,7 @@ module gsl_permute_vector_uchar_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_UINT_H__
-header '#include "gsl_permute_vector_uint.h"';
+header '#include "gsl/gsl_permute_vector_uint.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6810,7 +6810,7 @@ module gsl_permute_vector_uint_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_ULONG_H__
-header '#include "gsl_permute_vector_ulong.h"';
+header '#include "gsl/gsl_permute_vector_ulong.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6839,7 +6839,7 @@ module gsl_permute_vector_ulong_h
 include 'std';
 
 //#define __GSL_PERMUTE_VECTOR_USHORT_H__
-header '#include "gsl_permute_vector_ushort.h"';
+header '#include "gsl/gsl_permute_vector_ushort.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -6868,7 +6868,7 @@ module gsl_permute_vector_ushort_h
 include 'std';
 
 //#define __GSL_POLY_H__
-header '#include "gsl_poly.h"';
+header '#include "gsl/gsl_poly.h"';
 
 //INCLUDES
 include "gsl_complex_lib";
@@ -6909,7 +6909,7 @@ module gsl_poly_h
 include 'std';
 
 //#define __GSL_POW_INT_H__
-header '#include "gsl_pow_int.h"';
+header '#include "gsl/gsl_pow_int.h"';
 
 module gsl_pow_int_h
 {
@@ -6940,7 +6940,7 @@ include 'std';
 
 //#define _GSL_PREC_T_NUM 3
 //#define __GSL_PRECISION_H__
-header '#include "gsl_precision.h"';
+header '#include "gsl/gsl_precision.h"';
 
 module gsl_precision_h
 {
@@ -6970,7 +6970,7 @@ module gsl_precision_h
 include 'std';
 
 //#define __GSL_QRNG_H__
-header '#include "gsl_qrng.h"';
+header '#include "gsl/gsl_qrng.h"';
 
 module gsl_qrng_h
 {
@@ -7010,7 +7010,7 @@ module gsl_qrng_h
 include 'std';
 
 //#define __GSL_RANDIST_H__
-header '#include "gsl_randist.h"';
+header '#include "gsl/gsl_randist.h"';
 
 //INCLUDES
 include "gsl_rng_lib";
@@ -7130,7 +7130,7 @@ module gsl_randist_h
 include 'std';
 
 //#define __GSL_RNG_H__
-header '#include "gsl_rng.h"';
+header '#include "gsl/gsl_rng.h"';
 
 //INCLUDES
 
@@ -7243,7 +7243,7 @@ module gsl_rng_h
 include 'std';
 
 //#define __GSL_ROOTS_H__
-header '#include "gsl_roots.h"';
+header '#include "gsl/gsl_roots.h"';
 
 //INCLUDES
 include "gsl_math_lib";
@@ -7301,7 +7301,7 @@ module gsl_roots_h
 include 'std';
 
 //#define __GSL_SF_AIRY_H__
-header '#include "gsl_sf_airy.h"';
+header '#include "gsl/gsl_sf_airy.h"';
 
 //INCLUDES
 include "gsl_mode_lib";
@@ -7352,7 +7352,7 @@ module gsl_sf_airy_h
 include 'std';
 
 //#define __GSL_SF_BESSEL_H__
-header '#include "gsl_sf_bessel.h"';
+header '#include "gsl/gsl_sf_bessel.h"';
 
 //INCLUDES
 include "gsl_mode_lib";
@@ -7479,7 +7479,7 @@ module gsl_sf_bessel_h
 include 'std';
 
 //#define __GSL_SF_CLAUSEN_H__
-header '#include "gsl_sf_clausen.h"';
+header '#include "gsl/gsl_sf_clausen.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7506,7 +7506,7 @@ module gsl_sf_clausen_h
 include 'std';
 
 //#define __GSL_SF_COULOMB_H__
-header '#include "gsl_sf_coulomb.h"';
+header '#include "gsl/gsl_sf_coulomb.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7542,7 +7542,7 @@ module gsl_sf_coulomb_h
 include 'std';
 
 //#define __GSL_SF_COUPLING_H__
-header '#include "gsl_sf_coupling.h"';
+header '#include "gsl/gsl_sf_coupling.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7577,7 +7577,7 @@ module gsl_sf_coupling_h
 include 'std';
 
 //#define __GSL_SF_DAWSON_H__
-header '#include "gsl_sf_dawson.h"';
+header '#include "gsl/gsl_sf_dawson.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7604,7 +7604,7 @@ module gsl_sf_dawson_h
 include 'std';
 
 //#define __GSL_SF_DEBYE_H__
-header '#include "gsl_sf_debye.h"';
+header '#include "gsl/gsl_sf_debye.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7637,7 +7637,7 @@ module gsl_sf_debye_h
 include 'std';
 
 //#define __GSL_SF_DILOG_H__
-header '#include "gsl_sf_dilog.h"';
+header '#include "gsl/gsl_sf_dilog.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7667,7 +7667,7 @@ module gsl_sf_dilog_h
 include 'std';
 
 //#define __GSL_SF_ELEMENTARY_H__
-header '#include "gsl_sf_elementary.h"';
+header '#include "gsl/gsl_sf_elementary.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7695,7 +7695,7 @@ module gsl_sf_elementary_h
 include 'std';
 
 //#define __GSL_SF_ELLINT_H__
-header '#include "gsl_sf_ellint.h"';
+header '#include "gsl/gsl_sf_ellint.h"';
 
 //INCLUDES
 include "gsl_mode_lib";
@@ -7742,7 +7742,7 @@ module gsl_sf_ellint_h
 include 'std';
 
 //#define __GSL_SF_ELLJAC_H__
-header '#include "gsl_sf_elljac.h"';
+header '#include "gsl/gsl_sf_elljac.h"';
 
 module gsl_sf_elljac_h
 {
@@ -7764,7 +7764,7 @@ module gsl_sf_elljac_h
 include 'std';
 
 //#define __GSL_SF_ERF_H__
-header '#include "gsl_sf_erf.h"';
+header '#include "gsl/gsl_sf_erf.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7801,7 +7801,7 @@ module gsl_sf_erf_h
 include 'std';
 
 //#define __GSL_SF_EXPINT_H__
-header '#include "gsl_sf_expint.h"';
+header '#include "gsl/gsl_sf_expint.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7850,7 +7850,7 @@ module gsl_sf_expint_h
 include 'std';
 
 //#define __GSL_SF_EXP_H__
-header '#include "gsl_sf_exp.h"';
+header '#include "gsl/gsl_sf_exp.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7893,7 +7893,7 @@ module gsl_sf_exp_h
 include 'std';
 
 //#define __GSL_SF_FERMI_DIRAC_H__
-header '#include "gsl_sf_fermi_dirac.h"';
+header '#include "gsl/gsl_sf_fermi_dirac.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -7937,7 +7937,7 @@ include 'std';
 
 //#define GSL_SF_GAMMA_XMAX  171.0
 //#define __GSL_SF_GAMMA_H__
-header '#include "gsl_sf_gamma.h"';
+header '#include "gsl/gsl_sf_gamma.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8005,7 +8005,7 @@ module gsl_sf_gamma_h
 include 'std';
 
 //#define __GSL_SF_GEGENBAUER_H__
-header '#include "gsl_sf_gegenbauer.h"';
+header '#include "gsl/gsl_sf_gegenbauer.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8039,7 +8039,7 @@ module gsl_sf_gegenbauer_h
 include 'std';
 
 //#define __GSL_SF_HYPERG_H__
-header '#include "gsl_sf_hyperg.h"';
+header '#include "gsl/gsl_sf_hyperg.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8086,7 +8086,7 @@ module gsl_sf_hyperg_h
 include 'std';
 
 //#define __GSL_SF_LAGUERRE_H__
-header '#include "gsl_sf_laguerre.h"';
+header '#include "gsl/gsl_sf_laguerre.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8119,7 +8119,7 @@ module gsl_sf_laguerre_h
 include 'std';
 
 //#define __GSL_SF_LAMBERT_H__
-header '#include "gsl_sf_lambert.h"';
+header '#include "gsl/gsl_sf_lambert.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8148,7 +8148,7 @@ module gsl_sf_lambert_h
 include 'std';
 
 //#define __GSL_SF_LEGENDRE_H__
-header '#include "gsl_sf_legendre.h"';
+header '#include "gsl/gsl_sf_legendre.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8217,7 +8217,7 @@ module gsl_sf_legendre_h
 include 'std';
 
 //#define __GSL_SF_H__
-header '#include "gsl_sf.h"';
+header '#include "gsl/gsl_sf.h"';
 
 module gsl_sf_h
 {
@@ -8236,7 +8236,7 @@ module gsl_sf_h
 include 'std';
 
 //#define __GSL_SF_LOG_H__
-header '#include "gsl_sf_log.h"';
+header '#include "gsl/gsl_sf_log.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8270,7 +8270,7 @@ module gsl_sf_log_h
 include 'std';
 
 //#define __GSL_SF_POW_INT_H__
-header '#include "gsl_sf_pow_int.h"';
+header '#include "gsl/gsl_sf_pow_int.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8297,7 +8297,7 @@ module gsl_sf_pow_int_h
 include 'std';
 
 //#define __GSL_SF_PSI_H__
-header '#include "gsl_sf_psi.h"';
+header '#include "gsl/gsl_sf_psi.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8333,7 +8333,7 @@ module gsl_sf_psi_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_sf_result_e10_struct"';
+header '#include "gsl/gsl_sf_result_e10_struct"';
 
 module gsl_sf_result_e10_struct_h
 {
@@ -8353,7 +8353,7 @@ include 'std';
 
 //#define GSL_SF_RESULT_SET(r,v,e) do { (r)->val=(v); (r)->err=(e); } while(0)
 //#define __GSL_SF_RESULT_H__
-header '#include "gsl_sf_result.h"';
+header '#include "gsl/gsl_sf_result.h"';
 
 //INCLUDES
 include "gsl_sf_result_e10_struct_lib";
@@ -8399,7 +8399,7 @@ module gsl_sf_result_h
 //Felix Version : 1.1.2_rc7
 include 'std';
 
-header '#include "gsl_sf_result_struct"';
+header '#include "gsl/gsl_sf_result_struct"';
 
 module gsl_sf_result_struct_h
 {
@@ -8418,7 +8418,7 @@ module gsl_sf_result_struct_h
 include 'std';
 
 //#define __GSL_SF_SYNCHROTRON_H__
-header '#include "gsl_sf_synchrotron.h"';
+header '#include "gsl/gsl_sf_synchrotron.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8447,7 +8447,7 @@ module gsl_sf_synchrotron_h
 include 'std';
 
 //#define __GSL_SF_TRANSPORT_H__
-header '#include "gsl_sf_transport.h"';
+header '#include "gsl/gsl_sf_transport.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8480,7 +8480,7 @@ module gsl_sf_transport_h
 include 'std';
 
 //#define __GSL_SF_TRIG_H__
-header '#include "gsl_sf_trig.h"';
+header '#include "gsl/gsl_sf_trig.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8530,7 +8530,7 @@ module gsl_sf_trig_h
 include 'std';
 
 //#define __GSL_SF_ZETA_H__
-header '#include "gsl_sf_zeta.h"';
+header '#include "gsl/gsl_sf_zeta.h"';
 
 //INCLUDES
 include "gsl_sf_result_lib";
@@ -8569,7 +8569,7 @@ module gsl_sf_zeta_h
 include 'std';
 
 //#define __GSL_SIMAN_H__
-header '#include "gsl_siman.h"';
+header '#include "gsl/gsl_siman.h"';
 
 //INCLUDES
 include "gsl_rng_lib";
@@ -8622,7 +8622,7 @@ module gsl_siman_h
 include 'std';
 
 //#define __GSL_SORT_CHAR_H__
-header '#include "gsl_sort_char.h"';
+header '#include "gsl/gsl_sort_char.h"';
 
 module gsl_sort_char_h
 {
@@ -8651,7 +8651,7 @@ module gsl_sort_char_h
 include 'std';
 
 //#define __GSL_SORT_DOUBLE_H__
-header '#include "gsl_sort_double.h"';
+header '#include "gsl/gsl_sort_double.h"';
 
 module gsl_sort_double_h
 {
@@ -8680,7 +8680,7 @@ module gsl_sort_double_h
 include 'std';
 
 //#define __GSL_SORT_FLOAT_H__
-header '#include "gsl_sort_float.h"';
+header '#include "gsl/gsl_sort_float.h"';
 
 module gsl_sort_float_h
 {
@@ -8709,7 +8709,7 @@ module gsl_sort_float_h
 include 'std';
 
 //#define __GSL_SORT_INT_H__
-header '#include "gsl_sort_int.h"';
+header '#include "gsl/gsl_sort_int.h"';
 
 module gsl_sort_int_h
 {
@@ -8738,7 +8738,7 @@ module gsl_sort_int_h
 include 'std';
 
 //#define __GSL_SORT_H__
-header '#include "gsl_sort.h"';
+header '#include "gsl/gsl_sort.h"';
 
 module gsl_sort_h
 {
@@ -8757,7 +8757,7 @@ module gsl_sort_h
 include 'std';
 
 //#define __GSL_SORT_LONG_DOUBLE_H__
-header '#include "gsl_sort_long_double.h"';
+header '#include "gsl/gsl_sort_long_double.h"';
 
 module gsl_sort_long_double_h
 {
@@ -8786,7 +8786,7 @@ module gsl_sort_long_double_h
 include 'std';
 
 //#define __GSL_SORT_LONG_H__
-header '#include "gsl_sort_long.h"';
+header '#include "gsl/gsl_sort_long.h"';
 
 module gsl_sort_long_h
 {
@@ -8815,7 +8815,7 @@ module gsl_sort_long_h
 include 'std';
 
 //#define __GSL_SORT_SHORT_H__
-header '#include "gsl_sort_short.h"';
+header '#include "gsl/gsl_sort_short.h"';
 
 module gsl_sort_short_h
 {
@@ -8844,7 +8844,7 @@ module gsl_sort_short_h
 include 'std';
 
 //#define __GSL_SORT_UCHAR_H__
-header '#include "gsl_sort_uchar.h"';
+header '#include "gsl/gsl_sort_uchar.h"';
 
 module gsl_sort_uchar_h
 {
@@ -8873,7 +8873,7 @@ module gsl_sort_uchar_h
 include 'std';
 
 //#define __GSL_SORT_UINT_H__
-header '#include "gsl_sort_uint.h"';
+header '#include "gsl/gsl_sort_uint.h"';
 
 module gsl_sort_uint_h
 {
@@ -8902,7 +8902,7 @@ module gsl_sort_uint_h
 include 'std';
 
 //#define __GSL_SORT_ULONG_H__
-header '#include "gsl_sort_ulong.h"';
+header '#include "gsl/gsl_sort_ulong.h"';
 
 module gsl_sort_ulong_h
 {
@@ -8931,7 +8931,7 @@ module gsl_sort_ulong_h
 include 'std';
 
 //#define __GSL_SORT_USHORT_H__
-header '#include "gsl_sort_ushort.h"';
+header '#include "gsl/gsl_sort_ushort.h"';
 
 module gsl_sort_ushort_h
 {
@@ -8960,7 +8960,7 @@ module gsl_sort_ushort_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_CHAR_H__
-header '#include "gsl_sort_vector_char.h"';
+header '#include "gsl/gsl_sort_vector_char.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -8995,7 +8995,7 @@ module gsl_sort_vector_char_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_DOUBLE_H__
-header '#include "gsl_sort_vector_double.h"';
+header '#include "gsl/gsl_sort_vector_double.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9030,7 +9030,7 @@ module gsl_sort_vector_double_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_FLOAT_H__
-header '#include "gsl_sort_vector_float.h"';
+header '#include "gsl/gsl_sort_vector_float.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9065,7 +9065,7 @@ module gsl_sort_vector_float_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_INT_H__
-header '#include "gsl_sort_vector_int.h"';
+header '#include "gsl/gsl_sort_vector_int.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9100,7 +9100,7 @@ module gsl_sort_vector_int_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_H__
-header '#include "gsl_sort_vector.h"';
+header '#include "gsl/gsl_sort_vector.h"';
 
 module gsl_sort_vector_h
 {
@@ -9119,7 +9119,7 @@ module gsl_sort_vector_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_LONG_DOUBLE_H__
-header '#include "gsl_sort_vector_long_double.h"';
+header '#include "gsl/gsl_sort_vector_long_double.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9154,7 +9154,7 @@ module gsl_sort_vector_long_double_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_LONG_H__
-header '#include "gsl_sort_vector_long.h"';
+header '#include "gsl/gsl_sort_vector_long.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9189,7 +9189,7 @@ module gsl_sort_vector_long_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_SHORT_H__
-header '#include "gsl_sort_vector_short.h"';
+header '#include "gsl/gsl_sort_vector_short.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9224,7 +9224,7 @@ module gsl_sort_vector_short_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_UCHAR_H__
-header '#include "gsl_sort_vector_uchar.h"';
+header '#include "gsl/gsl_sort_vector_uchar.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9259,7 +9259,7 @@ module gsl_sort_vector_uchar_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_UINT_H__
-header '#include "gsl_sort_vector_uint.h"';
+header '#include "gsl/gsl_sort_vector_uint.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9294,7 +9294,7 @@ module gsl_sort_vector_uint_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_ULONG_H__
-header '#include "gsl_sort_vector_ulong.h"';
+header '#include "gsl/gsl_sort_vector_ulong.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9329,7 +9329,7 @@ module gsl_sort_vector_ulong_h
 include 'std';
 
 //#define __GSL_SORT_VECTOR_USHORT_H__
-header '#include "gsl_sort_vector_ushort.h"';
+header '#include "gsl/gsl_sort_vector_ushort.h"';
 
 //INCLUDES
 include "gsl_permutation_lib";
@@ -9364,7 +9364,7 @@ module gsl_sort_vector_ushort_h
 include 'std';
 
 //#define __GSL_SPECFUNC_H__
-header '#include "gsl_specfunc.h"';
+header '#include "gsl/gsl_specfunc.h"';
 
 module gsl_specfunc_h
 {
@@ -9383,7 +9383,7 @@ module gsl_specfunc_h
 include 'std';
 
 //#define __GSL_SPLINE_H__
-header '#include "gsl_spline.h"';
+header '#include "gsl/gsl_spline.h"';
 
 //INCLUDES
 include "gsl_interp_lib";
@@ -9424,7 +9424,7 @@ module gsl_spline_h
 include 'std';
 
 //#define __GSL_STATISTICS_CHAR_H__
-header '#include "gsl_statistics_char.h"';
+header '#include "gsl/gsl_statistics_char.h"';
 
 module gsl_statistics_char_h
 {
@@ -9474,7 +9474,7 @@ module gsl_statistics_char_h
 include 'std';
 
 //#define __GSL_STATISTICS_DOUBLE_H__
-header '#include "gsl_statistics_double.h"';
+header '#include "gsl/gsl_statistics_double.h"';
 
 module gsl_statistics_double_h
 {
@@ -9537,7 +9537,7 @@ module gsl_statistics_double_h
 include 'std';
 
 //#define __GSL_STATISTICS_FLOAT_H__
-header '#include "gsl_statistics_float.h"';
+header '#include "gsl/gsl_statistics_float.h"';
 
 module gsl_statistics_float_h
 {
@@ -9600,7 +9600,7 @@ module gsl_statistics_float_h
 include 'std';
 
 //#define __GSL_STATISTICS_INT_H__
-header '#include "gsl_statistics_int.h"';
+header '#include "gsl/gsl_statistics_int.h"';
 
 module gsl_statistics_int_h
 {
@@ -9650,7 +9650,7 @@ module gsl_statistics_int_h
 include 'std';
 
 //#define __GSL_STATISTICS_H__
-header '#include "gsl_statistics.h"';
+header '#include "gsl/gsl_statistics.h"';
 
 module gsl_statistics_h
 {
@@ -9669,7 +9669,7 @@ module gsl_statistics_h
 include 'std';
 
 //#define __GSL_STATISTICS_LONG_DOUBLE_H__
-header '#include "gsl_statistics_long_double.h"';
+header '#include "gsl/gsl_statistics_long_double.h"';
 
 module gsl_statistics_long_double_h
 {
@@ -9732,7 +9732,7 @@ module gsl_statistics_long_double_h
 include 'std';
 
 //#define __GSL_STATISTICS_LONG_H__
-header '#include "gsl_statistics_long.h"';
+header '#include "gsl/gsl_statistics_long.h"';
 
 module gsl_statistics_long_h
 {
@@ -9782,7 +9782,7 @@ module gsl_statistics_long_h
 include 'std';
 
 //#define __GSL_STATISTICS_SHORT_H__
-header '#include "gsl_statistics_short.h"';
+header '#include "gsl/gsl_statistics_short.h"';
 
 module gsl_statistics_short_h
 {
@@ -9832,7 +9832,7 @@ module gsl_statistics_short_h
 include 'std';
 
 //#define __GSL_STATISTICS_UCHAR_H__
-header '#include "gsl_statistics_uchar.h"';
+header '#include "gsl/gsl_statistics_uchar.h"';
 
 module gsl_statistics_uchar_h
 {
@@ -9882,7 +9882,7 @@ module gsl_statistics_uchar_h
 include 'std';
 
 //#define __GSL_STATISTICS_UINT_H__
-header '#include "gsl_statistics_uint.h"';
+header '#include "gsl/gsl_statistics_uint.h"';
 
 module gsl_statistics_uint_h
 {
@@ -9932,7 +9932,7 @@ module gsl_statistics_uint_h
 include 'std';
 
 //#define __GSL_STATISTICS_ULONG_H__
-header '#include "gsl_statistics_ulong.h"';
+header '#include "gsl/gsl_statistics_ulong.h"';
 
 module gsl_statistics_ulong_h
 {
@@ -9982,7 +9982,7 @@ module gsl_statistics_ulong_h
 include 'std';
 
 //#define __GSL_STATISTICS_USHORT_H__
-header '#include "gsl_statistics_ushort.h"';
+header '#include "gsl/gsl_statistics_ushort.h"';
 
 module gsl_statistics_ushort_h
 {
@@ -10032,7 +10032,7 @@ module gsl_statistics_ushort_h
 include 'std';
 
 //#define __GSL_SUM_H__
-header '#include "gsl_sum.h"';
+header '#include "gsl/gsl_sum.h"';
 
 module gsl_sum_h
 {
@@ -10069,7 +10069,7 @@ module gsl_sum_h
 include 'std';
 
 //#define __GSL_SYS_H__
-header '#include "gsl_sys.h"';
+header '#include "gsl/gsl_sys.h"';
 
 module gsl_sys_h
 {
@@ -10113,7 +10113,7 @@ include 'std';
 //#define GSL_VAR extern __declspec(dllimport)
 //#define GSL_VAR extern __declspec(dllexport)
 //#define __GSL_TYPES_H__
-header '#include "gsl_types.h"';
+header '#include "gsl/gsl_types.h"';
 
 module gsl_types_h
 {
@@ -10132,7 +10132,7 @@ module gsl_types_h
 include 'std';
 
 //#define __GSL_VECTOR_CHAR_H__
-header '#include "gsl_vector_char.h"';
+header '#include "gsl/gsl_vector_char.h"';
 
 //INCLUDES
 include "gsl_block_char_lib";
@@ -10209,7 +10209,7 @@ module gsl_vector_char_h
 include 'std';
 
 //#define __GSL_VECTOR_COMPLEX_DOUBLE_H__
-header '#include "gsl_vector_complex_double.h"';
+header '#include "gsl/gsl_vector_complex_double.h"';
 
 //INCLUDES
 include "gsl_block_complex_double_lib";
@@ -10282,7 +10282,7 @@ module gsl_vector_complex_double_h
 include 'std';
 
 //#define __GSL_VECTOR_COMPLEX_FLOAT_H__
-header '#include "gsl_vector_complex_float.h"';
+header '#include "gsl/gsl_vector_complex_float.h"';
 
 //INCLUDES
 include "gsl_block_complex_float_lib";
@@ -10362,7 +10362,7 @@ include 'std';
 //#define GSL_VECTOR_IMAG(z, i)  ((z)->data[2*(i)*(z)->stride + 1])
 //#define GSL_VECTOR_REAL(z, i)  ((z)->data[2*(i)*(z)->stride])
 //#define __GSL_VECTOR_COMPLEX_H__
-header '#include "gsl_vector_complex.h"';
+header '#include "gsl/gsl_vector_complex.h"';
 
 module gsl_vector_complex_h
 {
@@ -10381,7 +10381,7 @@ module gsl_vector_complex_h
 include 'std';
 
 //#define __GSL_VECTOR_COMPLEX_LONG_DOUBLE_H__
-header '#include "gsl_vector_complex_long_double.h"';
+header '#include "gsl/gsl_vector_complex_long_double.h"';
 
 //INCLUDES
 include "gsl_block_complex_long_double_lib";
@@ -10454,7 +10454,7 @@ module gsl_vector_complex_long_double_h
 include 'std';
 
 //#define __GSL_VECTOR_DOUBLE_H__
-header '#include "gsl_vector_double.h"';
+header '#include "gsl/gsl_vector_double.h"';
 
 //INCLUDES
 include "gsl_block_double_lib";
@@ -10531,7 +10531,7 @@ module gsl_vector_double_h
 include 'std';
 
 //#define __GSL_VECTOR_FLOAT_H__
-header '#include "gsl_vector_float.h"';
+header '#include "gsl/gsl_vector_float.h"';
 
 //INCLUDES
 include "gsl_block_float_lib";
@@ -10608,7 +10608,7 @@ module gsl_vector_float_h
 include 'std';
 
 //#define __GSL_VECTOR_INT_H__
-header '#include "gsl_vector_int.h"';
+header '#include "gsl/gsl_vector_int.h"';
 
 //INCLUDES
 include "gsl_block_int_lib";
@@ -10685,7 +10685,7 @@ module gsl_vector_int_h
 include 'std';
 
 //#define __GSL_VECTOR_H__
-header '#include "gsl_vector.h"';
+header '#include "gsl/gsl_vector.h"';
 
 module gsl_vector_h
 {
@@ -10704,7 +10704,7 @@ module gsl_vector_h
 include 'std';
 
 //#define __GSL_VECTOR_LONG_DOUBLE_H__
-header '#include "gsl_vector_long_double.h"';
+header '#include "gsl/gsl_vector_long_double.h"';
 
 //INCLUDES
 include "gsl_block_long_double_lib";
@@ -10781,7 +10781,7 @@ module gsl_vector_long_double_h
 include 'std';
 
 //#define __GSL_VECTOR_LONG_H__
-header '#include "gsl_vector_long.h"';
+header '#include "gsl/gsl_vector_long.h"';
 
 //INCLUDES
 include "gsl_block_long_lib";
@@ -10858,7 +10858,7 @@ module gsl_vector_long_h
 include 'std';
 
 //#define __GSL_VECTOR_SHORT_H__
-header '#include "gsl_vector_short.h"';
+header '#include "gsl/gsl_vector_short.h"';
 
 //INCLUDES
 include "gsl_block_short_lib";
@@ -10935,7 +10935,7 @@ module gsl_vector_short_h
 include 'std';
 
 //#define __GSL_VECTOR_UCHAR_H__
-header '#include "gsl_vector_uchar.h"';
+header '#include "gsl/gsl_vector_uchar.h"';
 
 //INCLUDES
 include "gsl_block_uchar_lib";
@@ -11012,7 +11012,7 @@ module gsl_vector_uchar_h
 include 'std';
 
 //#define __GSL_VECTOR_UINT_H__
-header '#include "gsl_vector_uint.h"';
+header '#include "gsl/gsl_vector_uint.h"';
 
 //INCLUDES
 include "gsl_block_uint_lib";
@@ -11089,7 +11089,7 @@ module gsl_vector_uint_h
 include 'std';
 
 //#define __GSL_VECTOR_ULONG_H__
-header '#include "gsl_vector_ulong.h"';
+header '#include "gsl/gsl_vector_ulong.h"';
 
 //INCLUDES
 include "gsl_block_ulong_lib";
@@ -11166,7 +11166,7 @@ module gsl_vector_ulong_h
 include 'std';
 
 //#define __GSL_VECTOR_USHORT_H__
-header '#include "gsl_vector_ushort.h"';
+header '#include "gsl/gsl_vector_ushort.h"';
 
 //INCLUDES
 include "gsl_block_ushort_lib";
@@ -11244,7 +11244,7 @@ include 'std';
 
 //#define GSL_VERSION "1.6"
 //#define __GSL_VERSION_H__
-header '#include "gsl_version.h"';
+header '#include "gsl/gsl_version.h"';
 
 module gsl_version_h
 {
@@ -11266,7 +11266,7 @@ module gsl_version_h
 include 'std';
 
 //#define __GSL_WAVELET2D_H__
-header '#include "gsl_wavelet2d.h"';
+header '#include "gsl/gsl_wavelet2d.h"';
 
 //INCLUDES
 include "gsl_matrix_double_lib";
@@ -11305,7 +11305,7 @@ module gsl_wavelet2d_h
 include 'std';
 
 //#define __GSL_WAVELET_H__
-header '#include "gsl_wavelet.h"';
+header '#include "gsl/gsl_wavelet.h"';
 
 module gsl_wavelet_h
 {

@@ -73,27 +73,12 @@ POLL_DEMUX_CPPS = [
   'demux/demux_ts_poll_demuxer',    # ditto
 ]
 
-LINUX_DEMUX_CPPS = [
-  # now conditionally included
-  # "demux/demux_epoll_demuxer",      # Linux 2.6 +
-]
-
-# SOLARIS_DEMUX_CPPS = [
-  # this needs to be conditionally compiled. it's not available on
-  # all solarises.
-  # "demux/demux_evtport_demuxer",    # solaris
-# ]
-
 WINDOWS_DEMUX_CPPS = [
   "demux/demux_iocp_demuxer",       # windows
   "demux/demux_overlapped",         # windows
   "demux/demux_wself_piper",        # windows
   "demux/demux_win_timer_queue",    # windows
 ]
-
-# BSD_DEMUX_CPPS = [
-#   "demux/demux_kqueue_demuxer",     # osx/bsd (disabled whilst fixing 10.2)
-#]
 
 EXTRA_SYS_LIBS = ""
 if WIN32:
@@ -108,12 +93,6 @@ if WIN32:
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
 
-if LINUX:
-  DEMUX_CPPS = DEMUX_CPPS + LINUX_DEMUX_CPPS
-
-# if BSD or MACOSX:
-#  DEMUX_CPPS = DEMUX_CPPS + BSD_DEMUX_CPPS
-
 if HAVE_KQUEUE_DEMUXER:
   DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_kqueue_demuxer" ]
 
@@ -127,7 +106,6 @@ if HAVE_EVTPORTS:
   DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_evtport_demuxer"] # solaris 10
 
 if SOLARIS:
-  # DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
   # RF: this might not be necessary anymore. 
   EXTRA_SYS_LIBS = "-lsocket -lnsl "
 
@@ -135,7 +113,6 @@ cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
 pkg_requires = ['flx_pthread', 'flx_rtl'] # flx_rtl for config .hpp
 lib_requires = ['libflx_pthread']  # however libflx not needed
-#lib_requires_linkflags = EXTRA_SYS_LIBS
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
 iscr_source = [

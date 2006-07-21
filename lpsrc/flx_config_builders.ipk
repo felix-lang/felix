@@ -1580,6 +1580,27 @@ main(int argc, char** argv) {
 
     print "HAVE_KQUEUE_DEMUXER =", opt.HAVE_KQUEUE_DEMUXER
 
+  def detect_epoll(self, shell, get_stdout):
+    opt = self.options
+
+    filename = self.write_src(r"""
+#include <sys/epoll.h>
+
+int
+main(int argc, char** argv) {
+  int efd = epoll_create(20);
+  return (-1 == efd) ? 0 : 1;
+}
+""", 'tmp' + os.sep + 'epolltest')
+
+    opt.HAVE_EPOLL = 0
+    try:
+      result,output=self.run_static_program(shell, filename)
+      if result == 0:
+        opt.HAVE_EPOLL = 1
+    except: pass
+
+    print "HAVE_EPOLL=", opt.HAVE_EPOLL
 
   def detect_strip(self, shell, get_stdout):
     opt = self.options

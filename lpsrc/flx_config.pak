@@ -4,7 +4,7 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '2'
-@flx_version_release = '_rc9'
+@flx_version_release = '_rc10'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.213  2006/07/21 06:45:40  skaller
+Config script check for epoll now actually executes
+create_epoll() in case it is defined but isn't implemented.
+
 Revision 1.212  2006/07/14 09:31:17  idadesub
 we can catch LookupError to catch failed indexing
 
