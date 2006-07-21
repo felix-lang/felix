@@ -1589,16 +1589,17 @@ main(int argc, char** argv) {
 int
 main(int argc, char** argv) {
   int efd = epoll_create(20);
-  return (-1 == efd) ? 0 : 1;
+  return (-1 == efd) ? 1 : 0;
 }
 """, 'tmp' + os.sep + 'epolltest')
 
     opt.HAVE_EPOLL = 0
     try:
-      result,output=self.run_static_program(shell, filename)
-      if result == 0:
+      result,lines=self.run_static_program(shell, get_stdout,filename)
+      if result == None:
         opt.HAVE_EPOLL = 1
-    except: pass
+    except: 
+      pass
 
     print "HAVE_EPOLL=", opt.HAVE_EPOLL
 
@@ -1647,9 +1648,7 @@ main(int argc, char** argv) {
     # it ain't broke.
     self.detect_kqueues(shell, get_stdout)
     self.options.HAVE_POLL = self.check_header_exists(shell,"poll.h")
-    # RF: no one freak out about that slash, ok? Epoll's not about to
-    # show up in windows or os/2 or PDP/11 or ebcdic or whatever.
-    self.options.HAVE_EPOLL = self.check_header_exists(shell,"sys/epoll.h")
+    self.detect_epoll(shell, get_stdout)
     # nice one, Sun, no one else would ever call a header file "port.h"
     self.options.HAVE_EVTPORTS = self.check_header_exists(shell,"port.h")
     print "HAVE_POLL =", self.options.HAVE_POLL
