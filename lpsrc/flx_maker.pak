@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.96  2006/07/22 08:42:39  idadesub
+modified "Makefile" so that we no longer use find to install files, as
+that wasn't working on solaris
+
 Revision 1.95  2006/07/19 20:59:07  rfistman
 oops, sorry! rolling back to the future.
 
@@ -3031,15 +3035,13 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${INSTALL_DIR}/config')
 @tangle('\tinstall -d ${DOC_DIR}/doc')
 @tangle('\tinstall -d ${EXEC_DIR}')
-@tangle('\tfind config -maxdepth 1 -type f -name "*.py" -exec install "{}" ${INSTALL_DIR}/config ";"')
-@tangle('\tfind config -maxdepth 1 -type f -name "*.fpc" -exec install "{}" ${INSTALL_DIR}/config ";"')
-@tangle('\tfind config -maxdepth 1 -type f -name "*.flxcc" -exec install "{}" ${INSTALL_DIR}/config ";"')
+@tangle('\tfor file in `ls config/*.py` `ls config/*.fpc` `ls config/*.flxcc`; do if [ -f $$file ]; then install $$file ${INSTALL_DIR}/config; fi; done')
 @tangle('\tinstall bin/flx ${EXEC_DIR}')
-@tangle('\tfind bin -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/bin ";"')
-@tangle('\tfind rtl -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/rtl ";"')
-@tangle('\tfind lib -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/lib ";"')
-@tangle('\tfind doc -maxdepth 1 -type f -name "*" -exec install "{}" ${DOC_DIR}/doc ";"')
-@tangle('\tfind man/man1 -maxdepth 1 -type f -name "*" -exec install "{}" ${MAN_DIR}/man1 ";"')
+@tangle('\tfor file in `ls bin/*`;      do if [ -f $$file ]; then install $$file ${INSTALL_DIR}/bin; fi; done')
+@tangle('\tfor file in `ls rtl/*`;      do if [ -f $$file ]; then install $$file ${INSTALL_DIR}/rtl; fi; done')
+@tangle('\tfor file in `ls lib/*`;      do if [ -f $$file ]; then install $$file ${INSTALL_DIR}/lib; fi; done')
+@tangle('\tfor file in `ls doc/*`;      do if [ -f $$file ]; then install $$file ${DOC_DIR}/doc; fi; done')
+@tangle('\tfor file in `ls man/man1/*`; do if [ -f $$file ]; then install $$file ${MAN_DIR}/man1; fi; done')
 @tangle('\techo "Stuff in misc has to be installed by hand"')
 @tangle('')
 
