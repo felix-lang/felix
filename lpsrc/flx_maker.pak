@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.97  2006/07/22 08:55:26  rfistman
+added missing quote to bin/flx and a comment on pthread stuff
+
 Revision 1.96  2006/07/22 08:42:39  idadesub
 modified "Makefile" so that we no longer use find to install files, as
 that wasn't working on solaris
@@ -4197,7 +4200,7 @@ then
   # required in case the PATH has a filename with spaces
   # However this actually fails on Linux!
   FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
-  FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH "
+  FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" "
 else
   FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
   # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH

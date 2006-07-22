@@ -1353,6 +1353,9 @@ int main(int argc, char** argv) {
   def detect_pthreads(self, shell, get_stdout):
     opt = self.options
 
+    # Note that this pthread fragment actually tests the return value
+    # as incorrectly compiled threaded code on solaris links and runs,
+    # but returns errors.
     filename = self.write_src("""
 #include <pthread.h>
 
