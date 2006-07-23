@@ -1197,6 +1197,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   if access = `Public then add_function pub_name_map component_name dfn_idx;
                   add_function priv_name_map component_name dfn_idx;
                   `SYMDEF_nonconst_ctor (n,utype,ctor_idx,t)
+            (*
             and ctor_match = 
               if unit_sum
               then
@@ -1205,7 +1206,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   [],
                   [utype],
                   flx_bool,
-                  `StrTemplate ("($1 ==" ^ si ctor_idx ^")"),`NREQ_true,
+                  `StrTemplate ("($1 /* HACK */ ==" ^ si ctor_idx ^")"),`NREQ_true,
                   "primary"
                 )
               else
@@ -1214,21 +1215,25 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   [],
                   [utype],
                   flx_bool,
-                  `StrTemplate ("($1.variant==" ^ si ctor_idx ^")"),`NREQ_true,
+                  `StrTemplate ("($1.variant /*HACK*/==" ^ si ctor_idx ^")"),`NREQ_true,
                   "primary"
                 )
             and ctor_match_name ="_match_ctor_" ^ component_name 
+            *)
             in
 
             if print_flag then print_endline ("//  " ^ spc ^ si dfn_idx ^ " -> " ^ component_name); 
             Hashtbl.add dfns dfn_idx {id=component_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=ctor_dcl2};
             
+            (*
             if print_flag then print_endline ("//  " ^ spc ^ si match_idx ^ " -> " ^ ctor_match_name); 
             Hashtbl.add dfns match_idx {id=ctor_match_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=ctor_match};
 
             if access = `Public then add_function pub_name_map ctor_match_name match_idx;
             add_function priv_name_map ctor_match_name match_idx;
+            *)
 
+            (*
             (* destructor *)
             match t with
             | `AST_void _ -> ()
@@ -1236,12 +1241,13 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               let dtor_idx = !counter in incr counter;
               let dtor_name = "_ctor_arg_" ^ component_name in
               let dtor_dcl = `SYMDEF_fun ([],[utype],t,
-                `StrTemplate ("(*(#0*)$1.data)"),`NREQ_true,"primary") 
+                `StrTemplate ("(*(#0*)/*HACK*/$1.data)"),`NREQ_true,"primary") 
               in
               if print_flag then print_endline ("//  " ^ spc ^ si dtor_idx ^ " -> " ^ dtor_name); 
               Hashtbl.add dfns dtor_idx {id=dtor_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=dtor_dcl};
               if access = `Public then add_function pub_name_map dtor_name dtor_idx;
               add_function priv_name_map dtor_name dtor_idx
+            *)
           )
           its
           ;

@@ -424,10 +424,23 @@ and expr_t =
   | `AST_dot of range_srcref * (expr_t * id_t * typecode_t list)
   | `AST_lambda of range_srcref * (params_t list * typecode_t * statement_t list)
 
+  (* this boolean expression checks its argument is 
+     the nominated union variant .. not a very good name for it
+  *)
   | `AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
+  
+  (* this boolean expression checks its argument is the nominate
+     sum variant
+  *)
   | `AST_match_case of range_srcref * (int * expr_t)
+  
+  (* this extracts the argument of a named union variant -- unsafe *)
   | `AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
+  
+  (* this extracts the argument of a number sum variant -- unsafe *)
   | `AST_case_arg of range_srcref * (int * expr_t)
+
+  (* this just returns an integer equal to union or sum index *)
   | `AST_case_index of range_srcref * expr_t (* the zero origin variant index *)
 
   | `AST_letin of range_srcref * (pattern_t * expr_t * expr_t)

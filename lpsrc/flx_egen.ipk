@@ -183,7 +183,33 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   (* NOTE this function does not do a reduce_type *)
   let raw_typename t = cpp_typename syms (beta_reduce syms [] (tsubst vs ts t)) in
+  let gen_case_index e =
+    let _,t = e in
+    let t = lstrip syms.dfns t in
+    begin match t with
+    | `BTYP_sum _
+    | `BTYP_unitsum _ 
+    | `BTYP_variant _ ->
+      if is_unitsum t then ge' e
+      else ce_dot (ge' e) "variant"
+    | `BTYP_inst (i,ts) ->
+      let ts = map tsub ts in
+      let id,_,_,entry = 
+        try Hashtbl.find bbdfns i 
+        with Not_found -> failwith ("[gen_expr: case_index] Can't find index " ^ si i)
+      in
+      begin match entry with
+      | `BBDCL_union (bvs,cts) ->
+        let tsub' t = reduce_type (beta_reduce syms [] (tsubst bvs ts t)) in
+        let cts = map (fun (_,_,t) -> tsub' t) cts in
+        if all_voids cts then ge' e
+        else ce_dot (ge' e) "variant"
+      | _ -> failwith ("Woops expected union, got " ^ id)
+      end 
+    | _ -> failwith ("Woops expected union or sum, got " ^ sbt syms.dfns t)
+    end
 
+  in
   let ge_arg ((x,t) as a) = 
     let t = tsub t in
     match t with
@@ -235,31 +261,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_expr (s,_) -> ce_top s
 
-  | `BEXPR_case_index e ->
-    let _,t = e in
-    let t = lstrip syms.dfns t in
-    begin match t with
-    | `BTYP_sum _
-    | `BTYP_unitsum _ 
-    | `BTYP_variant _ ->
-      if is_unitsum t then ge' e
-      else ce_dot (ge' e) "variant"
-    | `BTYP_inst (i,ts) ->
-      let ts = map tsub ts in
-      let id,_,_,entry = 
-        try Hashtbl.find bbdfns i 
-        with Not_found -> failwith ("[gen_expr: case_index] Can't find index " ^ si i)
-      in
-      begin match entry with
-      | `BBDCL_union (bvs,cts) ->
-        let tsub' t = reduce_type (beta_reduce syms [] (tsubst bvs ts t)) in
-        let cts = map (fun (_,_,t) -> tsub' t) cts in
-        if all_voids cts then ge' e
-        else ce_dot (ge' e) "variant"
-      | _ -> failwith ("Woops expected union, got " ^ id)
-      end 
-    | _ -> failwith ("Woops expected union or sum, got " ^ sbt syms.dfns t)
-    end
+  | `BEXPR_case_index e -> gen_case_index e
 
   | `BEXPR_range_check (e1,e2,e3) ->
      let f,sl,sc,el,ec = sr in
@@ -312,16 +314,30 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_match_case (n,((e',t') as e)) -> 
     let t' = reduce_type (beta_reduce syms [] (lstrip syms.dfns t')) in
+    let x = gen_case_index e in
+    ce_infix "==" x (ce_atom (si n))
+
+    (*
     if is_unitsum t' then
       ce_infix "==" (ge' e) (ce_atom (si n))
     else
       ce_infix "==" 
       (ce_dot (ge' e) "variant")
       (ce_atom (si n))
+    *)
 
   | `BEXPR_case_arg (n,e) ->
-    let cast = tn t ^ "*" in
-    ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
+    (*
+    print_endline ("Decoding nonconst ctor type " ^ sbt syms.dfns t);
+    *)
+    begin match t with (* t is the result of the whole expression *)
+    | `BTYP_function _ ->
+      let cast = tn t in
+      ce_cast cast (ce_dot (ge' e) "data")
+    | _ ->
+      let cast = tn t ^ "*" in
+      ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
+    end
      
   | `BEXPR_deref ((`BEXPR_ref index),`BTYP_pointer t) -> 
     ge' (`BEXPR_name index,t)

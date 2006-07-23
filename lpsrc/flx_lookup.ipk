@@ -2910,6 +2910,7 @@ and bind_expression' syms env (rs:recstop) e args
   print_env env;
   print_endline "==";
   *)
+  let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms [] t)) in
   let sr = src_of_expr e in
   match e with
   | `AST_vsprintf _
@@ -3753,12 +3754,91 @@ and bind_expression' syms env (rs:recstop) e args
   | `AST_match_ctor (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) -> 
-      let fname = `AST_name (sr,"_match_ctor_" ^ name,ts) in
-      be (`AST_apply ( sr, (fname,e)))
+      (*
+      print_endline ("WARNING(deprecate): match constructor by name! " ^ name);
+      *)
+      let (_,ut) as ue = be e in
+      let ut = rt ut in
+      (*
+      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      *)
+      begin match ut with
+      | `BTYP_inst (i,ts') -> 
+        (*
+        print_endline ("OK got type " ^ si i);
+        *)
+        begin match Hashtbl.find syms.dfns i with
+        | {id=id; symdef=`SYMDEF_union ls } -> 
+          (*
+          print_endline ("UNION TYPE! " ^ id);
+          *)
+          let vidx = 
+            let rec scan = function
+            | [] -> failwith "Can't find union variant"
+            | (vn,vidx,vat)::_ when vn = name -> vidx
+            | _:: t -> scan t
+            in scan ls
+          in
+          (*
+          print_endline ("Index is " ^ si vidx);
+          *)
+          `BEXPR_match_case (vidx,ue),flx_bbool
+
+        (* this handles the case of a C type we want to model
+        as a union by provding _match_ctor_name style function
+        as C primitives ..
+        *)
+        | {id=id; symdef=`SYMDEF_abs _ } -> 
+          let fname = `AST_name (sr,"_match_ctor_" ^ name,ts) in
+          be (`AST_apply ( sr, (fname,e)))
+
+        | _ -> failwith "Woooops expected union or abstract"
+        end
+      | _ -> failwith "Woops, expected nominal type"
+      end
 
     | `AST_lookup (sr,(context,name,ts)) ->
-      let fname = `AST_lookup (sr,(context,"_match_ctor_" ^ name,ts)) in
-      be (`AST_apply ( sr, (fname,e)))
+      (*
+      print_endline ("WARNING(deprecate): match constructor by name! " ^ name);
+      *)
+      let (_,ut) as ue = be e in
+      let ut = rt ut in
+      (*
+      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      *)
+      begin match ut with
+      | `BTYP_inst (i,ts') -> 
+        (*
+        print_endline ("OK got type " ^ si i);
+        *)
+        begin match Hashtbl.find syms.dfns i with
+        | {id=id; symdef=`SYMDEF_union ls } -> 
+          (*
+          print_endline ("UNION TYPE! " ^ id);
+          *)
+          let vidx = 
+            let rec scan = function
+            | [] -> failwith "Can't find union variant"
+            | (vn,vidx,vat)::_ when vn = name -> vidx
+            | _:: t -> scan t
+            in scan ls
+          in
+          (*
+          print_endline ("Index is " ^ si vidx);
+          *)
+          `BEXPR_match_case (vidx,ue),flx_bbool
+
+        (* this handles the case of a C type we want to model
+        as a union by provding _match_ctor_name style function
+        as C primitives ..
+        *)
+        | {id=id; symdef=`SYMDEF_abs _ } -> 
+          let fname = `AST_lookup (sr,(context,"_match_ctor_" ^ name,ts)) in
+          be (`AST_apply ( sr, (fname,e)))
+        | _ -> failwith "Woooops expected union or abstract type"
+        end
+      | _ -> failwith "Woops, expected nominal type"
+      end
 
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
@@ -3790,12 +3870,126 @@ and bind_expression' syms env (rs:recstop) e args
   | `AST_ctor_arg (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) -> 
-      let fname = `AST_name (sr,"_ctor_arg_" ^ name,ts) in
-      be (`AST_apply ( sr, (fname,e)))
+      (*
+      print_endline ("WARNING(deprecate): decode variant by name! " ^ name);
+      *)
+      let (_,ut) as ue = be e in
+      let ut = rt ut in
+      (*
+      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      *)
+      begin match ut with
+      | `BTYP_inst (i,ts') -> 
+        (*
+        print_endline ("OK got type " ^ si i);
+        *)
+        begin match Hashtbl.find syms.dfns i with
+        | {id=id; vs=vs; symdef=`SYMDEF_union ls } -> 
+          (*
+          print_endline ("UNION TYPE! " ^ id);
+          *)
+          let vidx,vt = 
+            let rec scan = function
+            | [] -> failwith "Can't find union variant"
+            | (vn,vidx,vt)::_ when vn = name -> vidx,vt
+            | _:: t -> scan t
+            in scan ls
+          in
+          (*
+          print_endline ("Index is " ^ si vidx);
+          *)
+          let vt =
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+            (*
+            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
+            *)
+            let env' = build_env syms (Some i) in
+            bind_type' syms env' rsground sr vt bvs
+          in
+          (*
+          print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
+          *)
+          let vs' = map (fun (s,i,tp) -> s,i) vs in
+          let vt = tsubst vs' ts' vt in
+          (*
+          print_endline ("Instantiated type = " ^ sbt syms.dfns vt);
+          *)
+          `BEXPR_case_arg (vidx,ue),vt
 
+        (* this handles the case of a C type we want to model
+        as a union by provding _ctor_arg style function
+        as C primitives ..
+        *)
+        | {id=id; symdef=`SYMDEF_abs _ } -> 
+          let fname = `AST_name (sr,"_ctor_arg_" ^ name,ts) in
+          be (`AST_apply ( sr, (fname,e)))
+
+        | _ -> failwith "Woooops expected union or abstract type"
+        end
+      | _ -> failwith "Woops, expected nominal type"
+      end
+
+      
     | `AST_lookup (sr,(e,name,ts)) ->
-      let fname = `AST_lookup (sr,(e,"_ctor_arg_" ^ name,ts)) in
-      be (`AST_apply ( sr, (fname,e)))
+      (*
+      print_endline ("WARNING(deprecate): decode variant by name! " ^ name);
+      *)
+      let (_,ut) as ue = be e in
+      let ut = rt ut in
+      (*
+      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      *)
+      begin match ut with
+      | `BTYP_inst (i,ts') -> 
+        (*
+        print_endline ("OK got type " ^ si i);
+        *)
+        begin match Hashtbl.find syms.dfns i with
+        | {id=id; vs=vs; symdef=`SYMDEF_union ls } -> 
+          (*
+          print_endline ("UNION TYPE! " ^ id);
+          *)
+          let vidx,vt = 
+            let rec scan = function
+            | [] -> failwith "Can't find union variant"
+            | (vn,vidx,vt)::_ when vn = name -> vidx,vt
+            | _:: t -> scan t
+            in scan ls
+          in
+          (*
+          print_endline ("Index is " ^ si vidx);
+          *)
+          let vt =
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+            (*
+            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
+            *)
+            let env' = build_env syms (Some i) in
+            bind_type' syms env' rsground sr vt bvs
+          in
+          (*
+          print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
+          *)
+          let vs' = map (fun (s,i,tp) -> s,i) vs in
+          let vt = tsubst vs' ts' vt in
+          (*
+          print_endline ("Instantiated type = " ^ sbt syms.dfns vt);
+          *)
+          `BEXPR_case_arg (vidx,ue),vt
+
+        (* this handles the case of a C type we want to model
+        as a union by provding _match_ctor_name style function
+        as C primitives ..
+        *)
+        | {id=id; symdef=`SYMDEF_abs _ } -> 
+          let fname = `AST_lookup (sr,(e,"_ctor_arg_" ^ name,ts)) in
+          be (`AST_apply ( sr, (fname,e)))
+
+        | _ -> failwith "Woooops expected union or abstract type"
+        end
+      | _ -> failwith "Woops, expected nominal type"
+      end
+
 
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
