@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.31  2006/07/24 18:22:46  skaller
+Fix epoll bug which ignored epoll bug in kernels earlier
+than 2.6.9 .. epoll_ctl requires a non-NULL event address
+even though the argument is not used.
+
 Revision 1.30  2006/07/19 17:57:52  rfistman
 wrote self pipe for windows, not happy with it though because it
  has to use a named pipe (anon pipes don't work in nonblock mode).
@@ -1482,12 +1487,12 @@ epoll_demuxer::remove_wakeup(int s)
 {
   // EPOLL_CTL_DEL uses no information from the event
   // and so I should be able to pass NULL.
-  // struct epoll_event evt;
+  struct epoll_event evt;
   // evt.events = (read) ? EPOLLIN : EPOLLOUT;
 
   // fprintf(stderr,"removing socket wakeup %i\n", s);
 
-  if(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, s, NULL) == -1)
+  if(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, s, &evt) == -1)
   {
     //const char* str = (read) ? "epoll_ctl (remove read)"
     //  : "epoll_ctl (remove write)";
