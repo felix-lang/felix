@@ -288,7 +288,10 @@ xprint (execX (X)); endl;
 // struct get projection as function
 fun execx(p:X->int,a:X):int => p a;
 proc pprint(x:int){ print "struct X: x get projection "; print x; }
-pprint (execx (get_x of (X), X(42))); endl;
+
+// note: old get_x method not supported now!
+fun getx(a:X):int=>a.x;
+pprint (execx (getx of (X), X(42))); endl;
 
 // C struct as function
 header """

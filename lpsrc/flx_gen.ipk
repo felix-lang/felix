@@ -1693,7 +1693,12 @@ let gen_C_function_body filename syms (child_map,bbdfns)
               let memexpr,t =
                 match argtype with
                 | `BTYP_array (t,`BTYP_unitsum _) -> ".data["^si n^"]",t
-                | `BTYP_tuple ts -> ".mem_"^ si n,nth ts n
+                | `BTYP_tuple ts -> ".mem_"^ si n,
+                  begin try nth ts n
+                  with Not_found -> 
+                  failwith ("Can't find component " ^ si n ^ " of " ^ sbt syms.dfns argtype)
+                  end 
+                
                 | _ -> assert false
               in
               let t = cpp_typename syms t in

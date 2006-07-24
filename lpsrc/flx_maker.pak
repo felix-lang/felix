@@ -6,6 +6,13 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.98  2006/07/24 10:52:39  skaller
+Eliminated struct projections using C thunks.
+Note that get_x methods no longer work on structs.
+Use
+  fun get_x(a:A)=>a.x
+instead.
+
 Revision 1.97  2006/07/22 08:55:26  rfistman
 added missing quote to bin/flx and a comment on pthread stuff
 
@@ -4229,8 +4236,8 @@ then
       cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
       if [ $ECHO = 1 ]; then echo $cmd; fi
       eval $cmd
+      exit $?
     fi
-    exit $?
   fi
 else
   if [ $RECOMPILE = 0 -a -r "$base$EXT_EXE" -a "(" ! -r "$base.flx" -o "$base$EXT_EXE" -nt "$base.flx" ")" ]
@@ -4240,8 +4247,8 @@ else
       cmd="$STATIC_ENV $base $args"
       if [ $ECHO = 1 ]; then echo $cmd; fi
       eval $cmd
+      exit $?
     fi
-    exit $?
   fi
 fi
 
@@ -4288,12 +4295,7 @@ then
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
         fi
-        exit $?
-      else
-        exit $?
       fi
-    else
-      exit $?
     fi
   fi
 else
@@ -4327,15 +4329,11 @@ else
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
         fi
-        exit $?
-      else
-        exit $?
       fi
-    else
-      exit $?
     fi
   fi
 fi
+exit $?
 
 @head(1,'Package Manager Meta Info')
 @head(2,'GODI')

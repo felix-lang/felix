@@ -158,10 +158,13 @@ let get_var_ref syms bbdfns this index ts : string =
 
   | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
 
-let nth_type ts i = match ts with
+let nth_type ts i = 
+  try match ts with
   | `BTYP_tuple ts -> nth ts i
   | `BTYP_array (t,`BTYP_unitsum n) -> assert (i<n); t
   | _ -> assert false
+  with Not_found ->
+    failwith ("Can't find component " ^ si i ^ " of type!")
 
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
@@ -283,8 +286,27 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | `BTYP_array (_,`BTYP_unitsum _) -> 
       ce_dot (ge' e) ("data["^si n^"]")
     | `BTYP_record es ->
-       let field_name,_ = nth es n in
-       ce_dot (ge' e) field_name
+      let field_name,_ = 
+        try nth es n 
+        with Not_found -> 
+          failwith "Woops, index of non-existent struct field"
+      in
+      ce_dot (ge' e) field_name
+
+    | `BTYP_inst (i,_) ->
+      begin match Hashtbl.find bbdfns i with
+      | _,_,_,`BBDCL_struct (_,ls)
+      | _,_,_,`BBDCL_cstruct (_,ls) ->
+        let name,_ = 
+          try nth ls n 
+          with _ -> 
+            failwith "Woops, index of non-existent struct field"
+        in
+        ce_dot (ge' e) name
+
+      | _ -> failwith "Instance expected to be (c)struct"
+      end
+      
     | _ -> ce_dot (ge' e) ("mem_" ^ si n)
     end
 

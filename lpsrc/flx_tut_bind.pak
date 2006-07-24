@@ -286,20 +286,13 @@ print 3; endl;
 
 
 @head(2,'Operator dot')
-It may look as if Felix knows how to access
-the components of a Felix struct value using
-operator dot. Strangely enough, this is not the
-case! When you write:
+For primitive types, x.name is converted to
 @begin_displayed_code()
-  expr.name
+  get_name x
 @end_displayed_code()
-in a value context, it is translated to the
-function application:
-@begin_displayed_code()
-  get_name expr
-@end_displayed_code()
-To illustrate this is really the case,
-consider the following example.
+This means a C primitive type can be accessed
+using the dot notation provided you supply
+appropriate projection functions.
 
 @select(tangler(tdir+'tut_bind133.flx'))
 #import <flx.flxh>
@@ -327,6 +320,10 @@ print ", ";
 print z.y;
 endl;
 
+/*
+THIS FEATURE NOW OBSOLETE. FELIX STRUCTS
+NO LONGER PROVIDE GET METHODS FOR C INTERFACING.
+
 // part 2
 struct X {
   x : int;
@@ -334,6 +331,7 @@ struct X {
 val i = X(1);
 print (get_x i);
 endl;
+*/
 
 @doc()
 In part 1, the functions get_x and get_y
@@ -790,7 +788,6 @@ h(yyy,2);
 @head(2,"tut/examples/tut_bind133.expect")
 @select(tangler("tut/examples/tut_bind133.expect","data"))
 1, 2
-1
 @head(2,"tut/examples/tut_bind134.expect")
 @select(tangler("tut/examples/tut_bind134.expect","data"))
 1

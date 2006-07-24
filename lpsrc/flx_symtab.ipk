@@ -1306,6 +1306,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
+          (*
           (* projections *)
           iter
           (fun (component_name,t) ->
@@ -1351,8 +1352,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           )
           sts
           ;
+          *)
           add_tvars privtab
-          ;
 
           (* NOTE: we don't add a type constructor for struct, because 
           it would have the same name as the struct type ..
