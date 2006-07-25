@@ -1,7 +1,13 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.33  2006/07/25 04:20:38  idadesub
+renamed rt_faio_01.flx test to faio_01.flx and added it to the rest of
+the faio tests, so that this test runs with the other faio tests
+sorted the results of the faio test
+
 Revision 1.32  2006/07/08 16:04:32  rfistman
+
 explicitly ignoring return val of SetErrorMode in flx_rtl.pak
 made configure script appear executable under cygwin/bash/fat32
 removed simpleline_server which didn't do anything
@@ -308,13 +314,17 @@ WINDOWS_FAIO_CPPS = [
   "faio/faio_winio",
 ]
 
+EXTRA_TEST_GLOBS = glob.glob("test" + os.sep + "faio_*.flx")
+
 if WIN32:
   FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
-  EXTRA_TEST_GLOBS = glob.glob("test" + os.sep + "win_*.flx")
+  EXTRA_TEST_GLOBS += glob.glob("test" + os.sep + "win_*.flx")
 
 if POSIX:
   FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
-  EXTRA_TEST_GLOBS = glob.glob("test" + os.sep + "posix_*.flx")
+  EXTRA_TEST_GLOBS += glob.glob("test" + os.sep + "posix_*.flx")
+
+EXTRA_TEST_GLOBS.sort()
 
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
@@ -2400,7 +2410,7 @@ var bugger = s;
 
 @head(1,"Felix Async IO tests")
 
-@h = tangler("test/rt_faio_01.flx")
+@h = tangler("test/faio_01.flx")
 @select(h)
 // portable flx sockets test (rt = regression test)
 
@@ -2748,7 +2758,7 @@ getbyte(pipe, &c);
 print "server got "; print c; endl;
 CloseFile(pipe);
 
-@h = tangler("test/rt_faio_01.expect","data")
+@h = tangler("test/faio_01.expect","data")
 @select(h)
 flx tcp stream test
 spawning connector
