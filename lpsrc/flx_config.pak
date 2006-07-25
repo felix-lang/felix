@@ -12,6 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.214  2006/07/25 07:31:29  idadesub
+fixed a couple command line arguments to make_config so that --verbose,
+--include_paths and --lib_paths work
+added a little more documentation to some of the command line arguments
+
 Revision 1.213  2006/07/21 06:45:40  skaller
 Config script check for epoll now actually executes
 create_epoll() in case it is defined but isn't implemented.
@@ -518,20 +523,20 @@ class MakeError(EnvironmentError): pass
 @select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
 #    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
-HAVE_LIBGC = TARGET_CXX.check_header_exists(xqt,"gc.h")
+HAVE_LIBGC = TARGET_CXX.check_header_exists(shell,"gc.h")
 
 @select(tangler("cpkgs/target/windowsh.py"))
 #    "Microsoft Windows core CAPI",
 #    "http://microsoft.com"
-HAVE_WINDOWS_H = TARGET_CXX.check_header_exists(xqt,"windows.h")
+HAVE_WINDOWS_H = TARGET_CXX.check_header_exists(shell,"windows.h")
 
 @select(tangler("cpkgs/target/opengl.py"))
 #    'Open GL Graphics Rendering Toolkit',
 #    "http://www.opengl.org"
 if MACOSX:
-  HAVE_OPENGL = TARGET_CXX.check_header_exists(xqt,"OpenGL"+os.sep+"gl.h")
+  HAVE_OPENGL = TARGET_CXX.check_header_exists(shell,"OpenGL"+os.sep+"gl.h")
 else:
-  HAVE_OPENGL = TARGET_CXX.check_header_exists(xqt,"GL"+os.sep+"gl.h")
+  HAVE_OPENGL = TARGET_CXX.check_header_exists(shell,"GL"+os.sep+"gl.h")
 
 
 @select(tangler("cpkgs/target/pthread.py"))
@@ -552,7 +557,7 @@ try:
   cload(globals(),"iscr")
 except:
   try:
-    xqt("iscr")
+    shell("iscr")
     ISCR="iscr "
   except EnvironmentError:
     ISCR="python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
@@ -570,7 +575,7 @@ try:
   cload(globals(),"pkgconfig")
 except:
   try:
-    xqt("pkg-config --version")
+    shell("pkg-config --version")
     HAVE_PKGCONFIG=1
   except EnvironmentError:
     HAVE_PKGCONFIG=0
@@ -856,8 +861,8 @@ SAVE_CONFIG=""
 LOAD_CONFIG=""
 BOOTFILE=""
 
-include_paths=None
-lib_paths=None
+include_paths=[]
+lib_paths=[]
 
 BUILDCC=None
 HOSTCC=None
@@ -899,11 +904,11 @@ flags:
   --force
   --refresh
   --upgrade
-  --prefix
+  --prefix        install in this prefixed directory
   --set-int
   --set-string
-  --include_paths
-  --lib_paths
+  --include_paths additionally search these paths for headers
+  --lib_paths     additionally search these paths for libraries
   --build
   --host
   --target
@@ -940,9 +945,9 @@ flags:
     v, a = string.split(a, '=', 1)
     overrides[v] = a
   elif o in ['--include_paths']:
-    include_paths = a
+    include_paths.append(a)
   elif o in ['--lib_paths']:
-    lib_paths = a
+    lib_paths.append(a)
   elif o in ['--build']:
     print "Specified build model", a
     build_model = check_model(a)
@@ -987,6 +992,11 @@ flags:
 if args:
   print "UNKNOWN CONFIGURE ARGS", args
   sys.exit(1)
+
+if verbose:
+  shell = xqt
+else:
+  shell = xxqt
 
 if PHASES == []: PHASES = ALL_PHASES
 
@@ -1043,7 +1053,7 @@ if "build" in PHASES:
       model=build_model,
       build=build_model)
 
-  BUILD_CC.check_options(xqt,get_stdout)
+  BUILD_CC.check_options(shell,get_stdout)
   BUILD_CC.report_config()
   BUILD_CC.save_options("config/build_cc.py")
   build_model=BUILD_CC.options.model
@@ -1056,7 +1066,7 @@ if "build" in PHASES:
       model=build_model,
       build=build_model)
 
-  BUILD_CXX.check_options(xqt,get_stdout)
+  BUILD_CXX.check_options(shell,get_stdout)
   BUILD_CXX.report_config()
   BUILD_CXX.save_options("config/build_cxx.py")
   build_model=BUILD_CXX.options.model
@@ -1117,7 +1127,7 @@ if "build" in PHASES:
 
 if "host" in PHASES:
   HOST_OCAML = flxbuild.ocaml_class.ocaml()
-  HOST_OCAML.autodetect(xqt,get_stdout)
+  HOST_OCAML.autodetect(shell,get_stdout)
   HOST_OCAML.report_config()
   HOST_OCAML.save_options("config/ocaml_config.py")
 
@@ -1170,7 +1180,7 @@ if "host" in PHASES:
     HOST_CC.load_options("config"+os.sep+"build_cc.py")
     HOST_CC.options.use = "host"
   else:
-    HOST_CC.check_options(xqt,get_stdout)
+    HOST_CC.check_options(shell,get_stdout)
     HOST_CC.report_config()
   HOST_CC.save_options("config"+os.sep+"host_cc.py")
 
@@ -1191,7 +1201,7 @@ if "host" in PHASES:
     HOST_CXX.load_options("config"+os.sep+"build_cxx.py")
     HOST_CXX.options.use = "host"
   else:
-    HOST_CXX.check_options(xqt,get_stdout)
+    HOST_CXX.check_options(shell,get_stdout)
     HOST_CXX.report_config()
   HOST_CXX.save_options("config"+os.sep+"host_cxx.py")
 
@@ -1299,7 +1309,7 @@ if "target" in PHASES:
     print 'using the HOST_CC options for the TARGET_CC'
     TARGET_CC.load_options("config"+os.sep+"host_cc.py")
   else:
-    TARGET_CC.check_options(xqt,get_stdout)
+    TARGET_CC.check_options(shell,get_stdout)
     TARGET_CC.report_config()
   TARGET_CC.save_options("config"+os.sep+"target_cc.py")
 
@@ -1328,7 +1338,7 @@ if "target" in PHASES:
     TARGET_CXX.options.use = "target"
      
   else:
-    TARGET_CXX.check_options(xqt,get_stdout)
+    TARGET_CXX.check_options(shell,get_stdout)
     TARGET_CXX.report_config()
   TARGET_CXX.save_options("config"+os.sep+"target_cxx.py")
 
