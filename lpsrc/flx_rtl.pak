@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.59  2006/07/25 07:21:46  idadesub
+rolling back shaller's fix since it doesn't work :(
+
 Revision 1.58  2006/07/25 04:18:04  idadesub
 fix indenting
 
@@ -3431,13 +3434,6 @@ int run_felix(
   return 0;
 }
   
-// OSX 10.2 has bug initialising locales with dynamic linkage
-#ifndef FLX_STATIC_LINK  
-#ifdef MACOSX
-#include <locale>
-#endif
-#endif
-
 int main(int argc, char** argv)
 {
 #ifndef FLX_STATIC_LINK  
@@ -3476,11 +3472,6 @@ int main(int argc, char** argv)
   char **flx_argv = argv;
   int flx_argc = argc;
   bool debug = false;
-
-// workaround for OSX 10.2 locale init bug
-#ifdef MACOSX
-  std::locale::classic();
-#endif
 
 //  printf("Statically linked Felix program running\n");
 #endif
