@@ -108,7 +108,11 @@ class c_cxx_base(compiler_base):
       macros=[], 
       optimise=0, 
       debug=0, 
-      CFLAGS=""):
+      CFLAGS="",
+      log=None,
+      ):
+    if log is None: log = sys.stdout
+
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = COM
@@ -140,7 +144,7 @@ class c_cxx_base(compiler_base):
     mkdirs(os.path.dirname(basename))
 
     # compile it
-    shell(cmd)
+    shell(cmd, log=log)
 
     return basename + EXT_DST
 
@@ -202,7 +206,11 @@ class c_cxx_base(compiler_base):
   def link_thing(self, CCLINK, EXT_DST, shell, objects, outfile, 
       lib_paths=[], 
       libs=[], 
-      LDFLAGS=""):
+      LDFLAGS="",
+      log=None,
+      ):
+    if log is None: log = sys.stdout
+
     opt = self.options
     cmd = CCLINK
     cmd = cmd + opt.SPEC_EXE_FILENAME + outfile + EXT_DST + " "
@@ -222,7 +230,7 @@ class c_cxx_base(compiler_base):
 
     mkdirs(os.path.dirname(outfile))
 
-    shell(cmd)
+    shell(cmd, log=log)
 
     return outfile + EXT_DST
 
@@ -235,7 +243,10 @@ class c_cxx_base(compiler_base):
   def link_static_rtl(self, shell, objects, outfile, 
       lib_paths=[],
       libs=[],
-      LDFLAGS=""):
+      LDFLAGS="",
+      log=None):
+    if log is None: log = sys.stdout
+
     opt = self.options
 
     filename = outfile + opt.EXT_LIB
@@ -245,9 +256,9 @@ class c_cxx_base(compiler_base):
 
     mkdirs(os.path.dirname(outfile))
 
-    shell(cmd)
+    shell(cmd, log=log)
     if opt.RANLIB:
-      shell(opt.RANLIB + " " + filename)
+      shell(opt.RANLIB + " " + filename, log=log)
 
     return filename
 
@@ -293,6 +304,7 @@ class c_cxx_base(compiler_base):
       lib_paths=[],
       libs=[],
       LDFLAGS="",
+      log=None,
       ):
     if type(basenames) != type([]):
       basenames = [basenames]
@@ -308,6 +320,7 @@ class c_cxx_base(compiler_base):
             optimise=optimise,
             debug=debug,
             CFLAGS=CFLAGS,
+            log=log,
           ))
 
     if outfile is None:
@@ -316,7 +329,9 @@ class c_cxx_base(compiler_base):
     return link_fn(shell, objects, outfile,
         lib_paths=lib_paths,
         libs=libs,
-        LDFLAGS=LDFLAGS)
+        LDFLAGS=LDFLAGS,
+        log=log,
+      )
 
 
   def build_static_rtl(self, *args, **kwds):
@@ -1549,8 +1564,6 @@ main(int argc, char** argv) {
       # basically a un*x test, note the non portable path separators and
       # gcc style switches
       self.compile_static_main(shell, filename)
-      #cmd = opt.COM+" tmp/kqt.cxx -o tmp/kqt"
-      #print "CMD IS " + cmd
       opt.HAVE_KQUEUE_DEMUXER = 1
     except EnvironmentError:
       opt.HAVE_KQUEUE_DEMUXER = 0
@@ -1936,25 +1949,28 @@ class msvcxx(msvc_mixin, cxx_base):
 @select(h)
 #---------------------------------------------------
 # discover which ocaml compilers are available
-import string
 import os
+import sys
+import string
 
 from flxbuild.flxutil import MakeError
 from flxbuild.compiler_base import compiler_base
 
 class ocaml(compiler_base):
-  def autodetect(self, shell, get_stdout):
+  def autodetect(self, shell, get_stdout, log=None):
+    if log is None: log = sys.stdout
+
     opt = self.options
 
     try: # check if the client bootstrapped the native code compiler
-      shell('ocamlopt.opt')
+      shell('ocamlopt.opt', log=log)
       opt.OCAMLCC = 'ocamlopt.opt '
       opt.OCAMLLEX = 'ocamllex.opt '
       opt.OCAMLYACC = 'ocamlyacc '
       opt.NATIVE_CODE_COMPILER = 1
     except MakeError:
       try: # check if the client has unbootstrapped native code compiler
-        shell('ocamlopt')
+        shell('ocamlopt', log=log)
         opt.OCAMLCC = 'ocamlopt '
         opt.OCAMLLEX = 'ocamllex '
         opt.OCAMLYACC = 'ocamlyacc '
@@ -1962,7 +1978,7 @@ class ocaml(compiler_base):
       except MakeError:
         opt.NATIVE_CODE_COMPILER = 0
         try: # check if the client has ocaml at all ..
-          shell('ocamlc')
+          shell('ocamlc', log=log)
           opt.OCAMLCC = 'ocamlc '
           opt.OCAMLLEX = 'ocamllex '
           opt.OCAMLYACC = 'ocamlyacc '
@@ -1974,22 +1990,22 @@ class ocaml(compiler_base):
           opt.OCAMLYACC = 'false ocamlyacc '
 
     try: # check if there is a native code version of the bytecode compiler
-      shell('ocamlc.opt')
+      shell('ocamlc.opt', log=log)
       opt.OCAMLB = 'ocamlc.opt '
     except MakeError:
       try: # check if the client has ocaml at all
-        shell('ocamlc')
+        shell('ocamlc', log=log)
         opt.OCAMLB = 'ocamlc '
       except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamlc'"
         opt.OCAMLB = 'false ocamlc '
 
     try:
-      shell('ocamldoc.opt')
+      shell('ocamldoc.opt', log=log)
       opt.OCAMLDOC = 'ocamldoc.opt '
     except MakeError:
       try:
-        shell('ocamldoc')
+        shell('ocamldoc', log=log)
         opt.OCAMLDOC = 'ocamldoc '
       except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamldoc'"

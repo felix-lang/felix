@@ -6,15 +6,13 @@
 
 @head(2,'CVS LOG')
 $Log$
-Revision 1.99  2006/07/25 08:06:45  idadesub
-added a couple new command line arguments to maker: -g,--debug,--no-debug,
--O,--optimise,--optimize (for us yankees :),--no-optimise,--no-optimize so
-that we can now specify the build arguments without needing to modify the
-config.
-
-also cleaned up code, and made sure that all except MakeError-raise MakeError
-now pass on the same exception, instead of creating new ones. I did that
-because I'll shortly be passing more relevent info in the exception
+Revision 1.100  2006/07/25 17:20:14  idadesub
+this patch adds support for a unit test to fail, but not stop the entire
+build. It does it by logging the output from the unit test, and storing it
+if it errored. Then at the end of the maker script, there's a summarize
+function that prints out any errors again. Unfortunately, I can't seem to
+get this summary to include the stderr, as it's difficult to get this info
+without causing deadlocks on windows.
 
 Revision 1.98  2006/07/24 10:52:39  skaller
 Eliminated struct projections using C thunks.
@@ -925,8 +923,7 @@ files = glob.glob(globspec)
 
 for file in files:
   cmd = 'egrep "//PROC|//FUNCTION" ' + file + ' | wc -l'
-  result,output = get_stdout(cmd)
-  output = output[0][:-1]
+  output = xqt(cmd)[0][:-1]
   x = int(output)
   try:
     d= dict[file]
@@ -1141,13 +1138,13 @@ class PLUGIN(Plugin):
     try:
       for file in MAN_PAGES:
         basename = os.path.splitext(file)[0]
-        xqt(
+        vxqt(
           "man2html man/man1/" + file + 
           '| sed -e "s%<A HREF=\\"[^<]*cgi-bin/man/man2html?1+\(.*\)\\">%<A HREF=\\"\\1_1.html\\">%"' +
           '| sed -e "7d"' +
           '| sed -e "1,3d"' +
           '| sed -e "s%<html>%'+dtd+'\\n<html>%"' +
-          ' >' + "doc/htmlman/" + basename+'_1.html'
+          ' >' + "doc/htmlman/" + basename+'_1.html',
         )
     except:pass
   
@@ -1161,9 +1158,9 @@ class PLUGIN(Plugin):
     erasedir('doc/impldoc')
     os.mkdir('doc/impldoc')
     try:
-      xqt('ocamldoc -I src -d doc/impldoc src/*.mli -html')
-      xqt('ocamldoc -I src -o doc/impldoc/flx_impl.tex src/*.mli -latex')
-      xqt('(cd doc/impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
+      vxqt('ocamldoc -I src -d doc/impldoc src/*.mli -html')
+      vxqt('ocamldoc -I src -o doc/impldoc/flx_impl.tex src/*.mli -latex')
+      vxqt('(cd doc/impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
     except: 
      pass # well ocamldoc is full of bugs ..
 
@@ -1177,7 +1174,7 @@ class PLUGIN(Plugin):
     erasedir('rtldoc')
     os.mkdir('rtldoc')
     try:
-      xqt("doxygen misc/doxconf.dox")
+      vxqt("doxygen misc/doxconf.dox")
     except:
       pass
 
@@ -1221,7 +1218,7 @@ class PLUGIN(Plugin):
       file = string.replace(lex,'/',os.sep)
       if not force:
         if filetime(file+'.mll') >= filetime(file+'.ml'): force = 1
-      if force: xqt(OCAMLLEX + file + '.mll')
+      if force: vxqt(OCAMLLEX + file + '.mll')
 
     # STEP 3: Generate parsers
     for parse in PARSES:
@@ -1229,8 +1226,8 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.mly') >= filetime(file+'.ml'): force = 1
       if force:
-        xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-        nxqt(GREP+" conflict " + file + ".output")
+        vxqt(OCAMLYACC + ' -v '+ file + '.mly')
+        nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
 
     # STEP 4: Compile ocaml interfaces
     for interface in INTERFACES:
@@ -1238,7 +1235,7 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.mli') >= filetime(file+'.cmi'): force = 1
       if force:
-        xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
+        vxqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
 
     # STEP 5: Compile ocaml implementations
     for implementation in IMPLEMENTATIONS + EXES:
@@ -1247,7 +1244,7 @@ class PLUGIN(Plugin):
         if filetime(file+'.ml') >= filetime(file+OCAML_OBJECT_EXTENSION): 
           force = 1
       if force:
-        xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
+        vxqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
     return force
 
 @select(tangler('mkplugins/build_ocamls.py'))
@@ -1281,7 +1278,7 @@ class PLUGIN(Plugin):
           library_filetime = filetime(object_library_name)
           for implementation in IMPLEMENTATIONS:
             linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
-          xqt(linkstring)
+          vxqt(linkstring)
   
         if EXES:
           print "CAML LINKING EXECUTABLES"
@@ -1292,7 +1289,7 @@ class PLUGIN(Plugin):
           # finally, mainline *.cmx or cma files to link to executables
           for exe in EXES:
             dst = os.path.join("bin", os.path.basename(exe))
-            xqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
+            vxqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
                 x + ' src/flx_version_hook.ml ' + exe + \
                 OCAML_OBJECT_EXTENSION)
     return force
@@ -1313,7 +1310,7 @@ class PLUGIN(Plugin):
         print "HOST C++ COMPILING", pkg
         pkglib = "lib"+pkg+"_host_static"
 
-        HOST_CXX.build_static_rtl(xqt, CPPS, 'hostlib' + os.sep + pkglib,
+        HOST_CXX.build_static_rtl(vxqt, CPPS, 'hostlib' + os.sep + pkglib,
               include_paths=["rtl", "elk"],
               macros=["FLX_STATIC_LINK"],
               )
@@ -1335,100 +1332,87 @@ class PLUGIN(Plugin):
         kwds['libs'] = [pkglib]
 
       for src, bin in EXES:
-        apply(HOST_CXX.build_static_program, (xqt, src, bin), kwds)
+        apply(HOST_CXX.build_static_program, (vxqt, src, bin), kwds)
 
 @select(tangler('mkplugins/build_testfile.py'))
 class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_test')
 
-  def __call__(self, testfile):
+  def __call__(self, testfile, log):
+    if log is None: log = Tee()
+
     optimise_c = optimise or "optimise_c" in options
     mode = "std"
     if optimise_c: mode = "Optimised"
-    print "------------------------------------------------"
-    print 'TRANSLATING',testfile
+
+    log.write('TRANSLATING %s\n' % testfile)
 
     basename = os.path.splitext(testfile)[0]
     cppfilename = basename + ".cpp"
     resfilename = basename + ".resh"
     indir,infile = os.path.split(basename)
     try:
-      flxg('-Ilib ' +FLXFLAGS + basename,basename)
+      flxg('-Ilib ' + FLXFLAGS + basename, log=log)
     except MakeError, e:
-      print 'TESTFILE -- ERROR!',basename
+      log.write('TESTFILE -- ERROR! %s\n' % basename)
       erasefile(basename+'.cpp')
       erasefile(basename+'.hpp')
       raise e
   
-    cmd = os.path.join(
-        "bin", 
-        "flx_pkgconfig --path=config --field=cflags @"+resfilename)
-    result,cflags= get_stdout(cmd)
-    if result: 
-      print "flx_pkgconfig failed! Args=",cmd
-      raise MakeError
-  
-    cflags = string.strip(cflags[0])+" "
-    #print 'Compiling generated code of ',testfile
+    cflags = vxqtq(os.path.join( "bin", 
+      "flx_pkgconfig --path=config --field=cflags @"+resfilename),
+      log=log)
+    cflags = string.strip(cflags[0]) + " "
+
+    #log.write('Compiling generated code of %s\n' % testfile)
     try:
       if SUPPORT_DYNAMIC_LOADING:
-        print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (dynamic)"
+        log.write("COMPILING GENERATED C++ TEST CODE: %s (dynamic)\n" % mode)
         flush()
  
-        cmd = os.path.join(
-            "bin", 
-            "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename)
-        result,dlibs= get_stdout(cmd)
-        if result: 
-          print "flx_pkgconfig failed! Args=",cmd
-          raise MakeError
-
-        dlibs = string.strip(dlibs[0])
+        dlibs = vxqtq(os.path.join("bin", 
+          "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename),
+          log=log)
+        dlibs = string.strip(dlibs[0]) + " "
   
         TARGET_CXX.build_shared_dll(
-            xqt,
+            vxqt,
             basename,
             include_paths=["rtl"],
             optimise=optimise_c,
             debug=debug,
             CFLAGS=CFLAGS+" "+cflags,
             lib_paths=[SHLIB_DIR],
-            LDFLAGS=DFLAGS+dlibs)
+            LDFLAGS=DFLAGS+dlibs,
+            log=log)
   
       if SUPPORT_STATIC_LINKAGE:
-        print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (static)"
+        log.write("COMPILING GENERATED C++ TEST CODE: %s (static)" % mode)
         flush()
 
-        cmd = os.path.join(
-            "bin",
-            "flx_pkgconfig -r --keeprightmost --path=config "
-            "--field=flx_requires_driver @"+resfilename)
-        result,driver= get_stdout(cmd)
-        if result: 
-          print "flx_pkgconfig failed! Args=",cmd
-          raise MakeError
+        driver = vxqtq(os.path.join(
+          "bin",
+          "flx_pkgconfig -r --keeprightmost --path=config "
+          "--field=flx_requires_driver @"+resfilename),
+          log=log)
         driver = string.strip(driver[0])
         if driver == '': driver = 'flx_run'
 
-        cmd = os.path.join(
-            "bin",
-            "flx_pkgconfig -r --keeprightmost --path=config "
-            "--field=provides_slib --field=requires_slibs "+driver+" @"+resfilename)
-        #print "SLIBS cmd=",cmd
-        result,slibs= get_stdout(cmd)
-        if result: 
-          print "flx_pkgconfig failed! Args=",cmd
-          raise MakeError
+        slibs = vxqtq(os.path.join(
+          "bin",
+          "flx_pkgconfig -r --keeprightmost --path=config "
+          "--field=provides_slib --field=requires_slibs "+driver+" @"+resfilename),
+          log=log)
         slibs = string.strip(slibs[0])
-        #print "slibs=",slibs
+        #log.write("slibs=%s\n" % slibs)
 
         driver = driver + EXT_STATIC_OBJ
         driver = os.path.join("rtl",driver)
-        #print 'static driver =',driver
+        #log.write('static driver =%s\n' % driver)
 
         TARGET_CXX.build_felix_static(
-          xqt,
+          vxqt,
           basename,
           objects=[driver],
           include_paths=["rtl"],
@@ -1438,10 +1422,12 @@ class PLUGIN(Plugin):
           CFLAGS=CFLAGS+" "+cflags,
           lib_paths=["rtl"],
           libs=[],
-          LDFLAGS=SFLAGS+slibs)
-      #print 'TESTFILE -- OK!',basename
+          LDFLAGS=SFLAGS+slibs,
+          log=log)
+
+      #log.write('TESTFILE -- OK! %s\n' % basename)
     except MakeError, e:
-      print 'TESTFILE -- ERROR!',basename
+      log.write('TESTFILE -- ERROR! %s\n' % basename)
       erasefile(basename+EXT_SHLIB)
       erasefile(basename+EXT_EXE)
       raise e
@@ -1624,7 +1610,7 @@ def build_target_rtl_dynamic():
 
     # RF: THIS SHOULD BE TARGET_CXX AND THE OUTPUT DIR SHOULD BE THAT OF
     # THE TARGET.
-    TARGET_CXX.build_shared_rtl(xqt, CPPS,
+    TARGET_CXX.build_shared_rtl(vxqt, CPPS,
         TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic',
         include_paths=['rtl'],
         optimise=optimise,
@@ -1648,7 +1634,7 @@ def build_target_rtl_static():
   if CPPS:
     print " ++ "+pkg+" RTL (static)"
 
-    TARGET_CXX.build_static_rtl(xqt, CPPS, "rtl"+os.sep+lib+"_static",
+    TARGET_CXX.build_static_rtl(vxqt, CPPS, "rtl"+os.sep+lib+"_static",
         include_paths=["rtl"],
         macros=["FLX_STATIC_LINK"],
         optimise=optimise,
@@ -1672,7 +1658,7 @@ def build_felix_static_drivers():
       if mode=='static':
         if verbose: print 'static Compiling driver object', src
         TARGET_CXX.compile_static_main(
-          xqt,
+          vxqt,
           src,
           include_paths=["rtl"],
           macros=["FLX_STATIC_LINK"]+macros,
@@ -1700,7 +1686,7 @@ def build_felix_dynamic_drivers():
         if verbose: print 'dynamic Compiling driver object', src
 
         TARGET_CXX.build_shared_program(
-            xqt,
+            vxqt,
             src,
             bin,
             include_paths=["rtl"],
@@ -1726,7 +1712,7 @@ def build_target_cpp_tools():
     for src,bin in EXES:
       dir = os.path.dirname(src)
       TARGET_CXX.build_static_main(
-        xqt,
+        vxqt,
         src,
         dir,
         bin,
@@ -1750,9 +1736,9 @@ def build_target_felix_tools():
     for lib in LIBS: libs.append(lib+"_static")
     fsflags = pkgdict.get("felix_requires_linkflags","")
     for src,exe in FLXS:
-      flxg("-Ilib "+src,"crap")
+      flxg("-Ilib " + src)
       TARGET_CXX.build_felix_static(
-        xqt,
+        vxqt,
         src,
         exe,
         objects=['rtl' + os.sep + 'flx_run' + EXT_STATIC_OBJ],
@@ -1781,7 +1767,7 @@ class PLUGIN(Plugin):
         testscript = "time "+drv_basename+ " "+test_basename+EXT_SHLIB+" " + moreargs
         print '(dynamic link) Executing ',testscript
         try:
-          run(testscript)
+          exqt(testscript)
           #print 'TESTFILE -- OK!',testscript
         except MakeError, e:
           print 'TESTFILE -- ERROR!',testscript
@@ -1791,7 +1777,7 @@ class PLUGIN(Plugin):
         testscript = "time "+test_basename+EXT_EXE+" " + moreargs
         print '(static link) Executing ',testscript
         try:
-          run(testscript)
+          exqt(testscript)
           #print 'TESTFILE -- OK!',testscript
         except MakeError, e:
           print 'TESTFILE -- ERROR!',testscript
@@ -1864,142 +1850,59 @@ class PLUGIN(Plugin):
   
   def __call__(self):
     bad_tests = pkgdict.get("failure_tests",[])
-    if len(bad_tests)>0:
-      print
-      print "***** TESTING PACKAGE "+pkg+" ************"
-      print
-      for testfile in bad_tests:
-        #print 'Running Felix code generator on ',testfile
-        basename = os.path.splitext(testfile)[0]
-        cppfilename = basename + ".cpp"
-        try:
-          xqtq(os.path.join(
-            'bin', 
-            'flxg -e -Ilib ' + basename))
-          #print 'TESTFILE -- failed as expected',basename
-          erasefile(basename+'.cpp')
-          erasefile(basename+'.hpp')
-        except MakeError, e:
-          print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-          erasefile(basename+'.cpp')
-          erasefile(basename+'.hpp')
-          raise e
+
+    failed = 0
+
+    for testfile in bad_tests:
+      log = Tee()
+      log.write("***** TESTING PACKAGE %s TESTFILE: %s ************\n" % (pkg, testfile))
+
+      #log.write('Running Felix code generator on %s\n' % testfile)
+      basename = os.path.splitext(testfile)[0]
+      cppfilename = basename + ".cpp"
+
+      try:
+        vxqtq(os.path.join(
+          'bin',
+          'flxg -e -Ilib ' + basename), log=log)
+        #log.write('TESTFILE -- failed as expected %s\n' % basename)
+      except MakeError, e:
+        failed = 1
+
+        log.write('TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED! %s\n' % basename)
+
+        self.failures.append(log.getvalue())
+
+      erasefile(basename+'.cpp')
+      erasefile(basename+'.hpp')
+
+    return not failed
+
 
 @select(tangler('mkplugins/run_unit_tests.py'))
-class PLUGIN(Plugin):
+class PLUGIN(TestPlugin):
   def __init__(self):
-    Plugin.__init__(self, 'run_unit_tests', 'run unit tests')
+    TestPlugin.__init__(self, 'run_unit_tests', 'run unit tests')
   
   def __call__(self):    
     unit_tests = pkgdict.get("unit_tests",[])
-    if len(unit_tests)>0:
-      print
-      print "***** UNIT TESTING PACKAGE "+pkg+" ************"
-      print
 
-      flx_run = os.path.join('bin', 'flx_run')
-
-      for testfile in unit_tests:
-        # run the tests
-        basename = plugins['build_test'](testfile)
-        path = os.path.join(os.curdir, basename)
-
-        pattern = '%s%%s > %s.output && %s %s.expect %s.output' % \
-            (path, basename, DIFF, basename, basename)
-
-        if SUPPORT_DYNAMIC_LOADING:
-          basename = os.path.splitext(testfile)[0]
-          resfilename = basename + ".resh"
-          cmd = (os.path.join( "bin", "flx_pkgconfig") +
-            " --path=config --field=flx_requires_driver --rec @"+
-            resfilename)
-          #print "flx_pkgconfig command=",cmd
-          result,driver= get_stdout(cmd)
-          if result: 
-            print "flx_pkgconfig failed! Args=",cmd
-            raise MakeError
-        
-          driver = string.strip(driver[0])
-          if driver =='': driver = "flx_run"
-          driver = os.path.join("bin",driver)
-          #print "Driver:",driver
-          testscript = driver + ' ' + pattern % EXT_SHLIB
-
-          #print 'Executing ',testscript
-          try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
-          except MakeError, e:
-            print 'TESTFILE -- ERROR!',testscript
-            raise e
-
-        if SUPPORT_STATIC_LINKAGE:
-          testscript = pattern % EXT_EXE
-
-          #print 'Executing ',testscript
-          try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
-          except MakeError, e:
-            print 'TESTFILE -- ERROR!',testscript
-            raise e
-
+    return self.run_tests(unit_tests, 1,
+      "***** UNIT TESTING PACKAGE %s TESTFILE: %%s ************\n" % pkg)
+         
 
 @select(tangler('mkplugins/run_completion_tests.py'))
 # these tests are units tests with non-deterministic results
-class PLUGIN(Plugin):
+class PLUGIN(TestPlugin):
   def __init__(self):
-    Plugin.__init__(self, 'run_completion_tests')
+    TestPlugin.__init__(self, 'run_completion_tests')
 
   def __call__(self):    
     completion_tests = pkgdict.get("completion_tests",[])
-    if len(completion_tests)>0:
-      print
-      print "***** COMPLETION (nondet) TESTING PACKAGE "+pkg+" ************"
-      print
-      flx_run = os.path.join('bin', 'flx_run')
-  
-      for testfile in completion_tests:
-        # run the tests
-        basename = plugins['build_test'](testfile)
-        resfilename = basename + ".resh"
-        path = os.path.join(os.curdir, basename)
 
-        if SUPPORT_DYNAMIC_LOADING:
-          cmd = (os.path.join( "bin", "flx_pkgconfig") +
-            " --path=config --field=flx_requires_driver --rec @"+
-            resfilename)
-          #print "flx_pkgconfig command=",cmd
-          result,driver= get_stdout(cmd)
-          if result: 
-            print "flx_pkgconfig failed! Args=",cmd
-            raise MakeError
-        
-          driver = string.strip(driver[0])
-          if driver =='': driver = "flx_run"
-          driver = os.path.join("bin",driver)
-          #print "Driver:",driver
-          testscript = driver + ' ' + path+ EXT_SHLIB
-  
-          #print 'Executing ',testscript
-          try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
-          except MakeError, e:
-            print 'TESTFILE -- ERROR!',testscript
-            raise e
-  
-        if SUPPORT_STATIC_LINKAGE:
-          testscript = path + EXT_EXE
-  
-          #print 'Executing ',testscript
-          try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
-          except MakeError, e:
-            print 'TESTFILE -- ERROR!',testscript
-            raise e
-  
+    return self.run_tests(completion_tests, 0,
+      "***** COMPLETION (nondet) TESTING PACKAGE %%s TESTFILE: %s ************\n" % pkg)
+
 
 @select(tangler('mkplugins/run_demos.py'))
 class PLUGIN(Plugin):
@@ -2009,25 +1912,27 @@ class PLUGIN(Plugin):
   def __call__(self):    
     demos = pkgdict.get("demos",[])
   
-  
-    if len(demos)>0:
-      print "RUNNING DEMOS"
-      flx_pkgconfig = os.path.join("bin", "flx_pkgconfig")
-      for testfile in demos:
-        basename = plugins['build_test'](testfile)
+    if not demos:
+      return
+
+    print "RUNNING DEMOS"
+    flx_pkgconfig = os.path.join("bin", "flx_pkgconfig")
+
+    for testfile in demos:
+      log = TEE()
+      log.write("***** DEMO PACKAGE %s TESTFILE: %s ************\n" % (pkg, testfile))
+
+      try:
+        basename = plugins['build_test'](testfile, log)
         path = os.path.join(os.curdir, basename)
   
-      # subroutine candidate
-        cmd = "%s --path=config --field=flx_requires_driver @%s" % ( 
-            flx_pkgconfig, 
-            path + '.resh')
-  
-        result,requires_driver= get_stdout(cmd)
-        if result: 
-          print "flx_pkgconfig failed! Args=",cmd
-          raise MakeError
-  
+        # subroutine candidate
         if SUPPORT_DYNAMIC_LOADING:
+          requires_driver = vxqtq(
+              "%s --path=config --field=flx_requires_driver @%s" % \
+              (flx_pkgconfig, path + '.resh'), 
+              log=log)
+  
           requires_driver = string.strip(requires_driver[0])
     
           if not requires_driver:
@@ -2036,71 +1941,27 @@ class PLUGIN(Plugin):
           requires_driver = os.path.join('bin', requires_driver)
   
           testscript = requires_driver + " " + path + EXT_SHLIB
-          #print 'Executing ',testscript
+          #log.write('Executing %s\n' % testscript)
           try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
+            exqt(testscript)
+            #log.write('TESTFILE -- OK! %s\n' % testscript)
           except MakeError, e:
-            print 'TESTFILE -- ERROR!',testscript
+            log.write('TESTFILE -- ERROR! %s\n' % testscript)
             raise e
   
         if SUPPORT_STATIC_LINKAGE:
           testscript = path + EXT_EXE
-          #print 'Executing ',testscript
+          #log.write('Executing %s\n' % testscript)
           try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
+            exqt(testscript)
+            #log.write('TESTFILE -- OK! %s\n' % testscript)
           except MakeError, e:
-            print 'TESTFILE -- ERROR!',testscript
+            log.write('TESTFILE -- ERROR! %s\n' % testscript)
             raise e
-  
+      except MakeError, e:
+        self.failures.append(log.getvalue())
+
 @select(tangler('mkplugins/xqt.py'))
-get_stdouterr = get_stdout
-
-def flush():
-  try: sys.stdin.flush()
-  except: pass
-
-def run(x):
-  print x
-  flush()
-  result = os.system(ENV+x)
-  if result: print "  .. ERROR CODE",hex(result)
-  flush()
-
-  if result:
-    raise MakeError
-
-def xqt(x):
-  if verbose: print x
-  flush()
-
-  try:
-    result,output = get_stdouterr(x)
-  except (IOError, OSError):
-    raise MakeError
-
-  if result: 
-    if not verbose: print x
-    print "  .. ERROR CODE",hex(result)
-  if output: 
-    if result or verbose:
-      print string.join(output,"")
-  flush()
-
-  if result:
-    raise MakeError
-
-# quiet execution
-def xqtq(x):
-  if verbose: print x
-  flush()
-  result,output = get_stdouterr(x)
-  if result: 
-    if not verbose: print x
-    print "  .. ERROR CODE",hex(result)
-    raise MakeError
-
 if os.name=="nt":
   ENV="set PATH=bin;%PATH%&&"
 else:
@@ -2111,25 +1972,25 @@ else:
   else:
     ENV = 'PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
 
-def exqt(x): xqt(ENV+x)
 
-# used when a negative result is expected (return code is supposed to be nonzero)
-# used for a grep which is supposed to fail
-def nxqt(x):
-  x = ENV+x
-  if verbose: print x
-  flush()
-  result,output = get_stdouterr(x)
-  if not result:
-    if output: print string.join(output,"")
-  flush()
+def vxqt(x, **kwds):
+  kwds['verbose'] = kwds.get('verbose', verbose)
+  return apply(xqt, (x,), kwds)
 
-  if not result:
-    raise MakeError
 
-def flxg(x,basename):
+def vxqtq(x, **kwds):
+  kwds['verbose'] = kwds.get('verbose', verbose)
+  return apply(xqtq, (x,), kwds)
+
+
+def exqt(x, **kwds): 
+  return apply(vxqt, (ENV+x,), kwds)
+
+
+def flxg(x, **kwds):
   x = os.path.join('bin', 'flxg ' + x)
-  exqt(x)
+  return apply(exqt, (x,), kwds)
+
 
 #interscript command (now built in part of Felix package)
 def runISCR(a,force=0):
@@ -2349,9 +2210,9 @@ class PLUGIN(Plugin):
         build_target_cpp_tools()
         build_target_felix_tools()
 
-        plugins['run_host_tests']()
-
-        enstamp(stamp)
+        # only stamp if we've passed the tests
+        if plugins['run_host_tests']():
+          enstamp(stamp)
 
     if "run" in phases:
       for pkg in run_selected_pkgs:
@@ -2360,9 +2221,10 @@ class PLUGIN(Plugin):
 
         stamp=os.path.join("pkg-stamps", pkg+".run")
         erasefile(stamp)
-        plugins['run_unit_tests']()
-        plugins['run_completion_tests']()
-        enstamp(stamp)
+
+        # only stamp if we've passed the tests
+        if plugins['run_unit_tests']() and plugins['run_completion_tests']():
+          enstamp(stamp)
  
 
 @select(tangler('flxbuild/pluginutil.py'))
@@ -2373,10 +2235,88 @@ class Plugin:
       self.help = ''
     else:
       self.help = help
-    self.priority=priority
+    self.priority = priority
+    self.failures = []
 
   def __call__(self):
     raise NotImplemented
+
+
+class TestPlugin(Plugin):
+  def run_tests(self, testfiles, deterministic, title):
+    failed = 0
+
+    for testfile in testfiles:
+      log = Tee()
+      log.write(title % testfile)
+
+      try:
+        # run the tests
+        basename = plugins['build_test'](testfile, log)
+      except MakeError, e:
+        failed = 1
+        log.write('TESTFILE -- ERROR! %s (build)\n' % testscript)
+      else:
+        path = os.path.join(os.curdir, basename)
+
+        if SUPPORT_DYNAMIC_LOADING:
+          resfilename = basename + ".resh"
+
+          try:
+            driver = vxqtq(os.path.join("bin", "flx_pkgconfig") +
+              " --path=config --field=flx_requires_driver --rec @" + resfilename,
+              log=log)
+
+            driver = string.strip(driver[0])
+            if driver =='': driver = "flx_run"
+            driver = os.path.join("bin", driver)
+            #log.write("Driver: %s\n" % driver)
+            testscript = driver + ' ' + path + EXT_SHLIB
+
+            if deterministic:
+              self.run_test(log, testscript, basename, basename + '.expect')
+            else:
+              self.run_test(log, testscript, basename)
+          except MakeError, e:
+            failed = 1
+            log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
+            
+  
+        if SUPPORT_STATIC_LINKAGE:
+          testscript = path + EXT_EXE
+
+          try:
+            if deterministic:
+              self.run_test(log, testscript, basename, basename + '.expect')
+            else:
+              self.run_test(log, testscript, basename)
+          except MakeError, e:
+            failed = 1
+            log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
+
+      if failed:
+        self.failures.append(log.getvalue())
+
+  
+
+    return not failed
+
+
+  def run_test(self, log, testscript, basename, expect=None):
+    log.write('EXECUTING TEST CODE %s\n' % testscript)
+    flush()
+
+    output = xqt(ENV + testscript, verbose=1, quiet=1, log=log)
+
+    f = open(basename + '.output', 'w')
+    try:
+      f.write(string.join(output, ""))
+    finally:
+      f.close()
+
+    if expect is not None:
+      output = xqt('%s %s %s.output' % (DIFF, expect, basename), 
+          verbose=1, quiet=1, log=log)
 
 
 @select(tangler('mkplugins/help.py'))
@@ -2470,7 +2410,8 @@ this = globals()
 if '' not in sys.path: sys.path=['']+sys.path
 import flxbuild
 from flxbuild.flxutil import *
-from flxbuild.pluginutil import Plugin
+
+execfile(os.path.join("flxbuild", "pluginutil.py"))
 
 # ------------------------------------------------
 # PROCESS COMMAND LINE OPTIONS
@@ -2702,12 +2643,16 @@ if "help" in options:
 
 plugins = {}
 schedule_table = []
+scheduled_plugins = []
+unscheduled_plugins = []
+
 def schedule(plugin):
   if plugin.priority is None:
-    return
-        
-  print "Scheduling",plugin.name," priority",plugin.priority
-  schedule_table.append((plugin.priority, plugin))
+    unscheduled_plugins.append(plugin)
+  else:
+    print "Scheduling",plugin.name," priority",plugin.priority
+    schedule_table.append((plugin.priority, plugin))
+    scheduled_plugins.append(plugin)
 
 for f in glob.glob(os.path.join("mkplugins", "*.py")):
   base = os.path.basename(os.path.splitext(f)[0])
@@ -2757,17 +2702,54 @@ if os.name != 'nt': # requires posix
     if "inline" in options: tkind="inline"
     elif "noinline" in options: tkind="noinline"
     stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
-    run(stats)
+    exqt(stats)
     stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
-    run(stats)
+    exqt(stats)
 
   if "pfcount" in options:
     stats = 'python script/pfcount.py misc/fcounts.stats'
-    run(stats)
+    exqt(stats)
 
   if "pfcount_all" in options:
     stats = 'python script/pfcount.py misc/fcounts.stats all'
-    run(stats)
+    exqt(stats)
+
+print
+
+# print out all the failed plugins
+failure_log = Tee()
+
+failed = 0
+for plugin in scheduled_plugins + unscheduled_plugins:
+  if plugin.failures:
+    if not failed:
+      found_errors = 1
+      print
+      print
+
+    failed = 1
+    failure_log.write("------------------------------------------------\n")
+    failure_log.write('PLUGIN FAILED: %s\n' % plugin.name)
+
+    first_failure = 1
+
+    for failure in plugin.failures:
+      if first_failure:
+        first_failure = 0
+      else:
+        failure_log.write('--------\n')
+
+      failure_log.write('%s\n' % failure)
+    failure_log.write('\n')
+
+f = open('errors.log', 'w')
+try:
+  f.write(failure_log.getvalue())
+finally:
+  f.close()
+
+if failed:
+  sys.exit(1)
 
 print "RUN COMPLETE"
 

@@ -12,6 +12,14 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.215  2006/07/25 17:20:14  idadesub
+this patch adds support for a unit test to fail, but not stop the entire
+build. It does it by logging the output from the unit test, and storing it
+if it errored. Then at the end of the maker script, there's a summarize
+function that prints out any errors again. Unfortunately, I can't seem to
+get this summary to include the stderr, as it's difficult to get this info
+without causing deadlocks on windows.
+
 Revision 1.214  2006/07/25 07:31:29  idadesub
 fixed a couple command line arguments to make_config so that --verbose,
 --include_paths and --lib_paths work
@@ -390,10 +398,12 @@ selected_xlators = [
 @select(h)
 # build system utility module
 import os
+import sys
 import glob
 import stat
 import string
 import time
+import StringIO
 
 def filetime(f):
   try:
@@ -501,6 +511,8 @@ def filecopy2dir(a,d):
   filecopy(a,d+os.sep+base)
 
 def get_stdout(x):
+  """We're screwed if popen doesn't work .."""
+
   if os.name == "nt": # popen doesn't work on Windows
     result = os.system(x + " >tmp.out")
     fout = open("tmp.out")
@@ -512,13 +524,114 @@ def get_stdout(x):
     result = fout.close()
   return result,output
 
+# hack because can't yet get stderr easily from windows yet
+get_stdouterr = get_stdout
+
+def flush():
+  try: 
+    sys.stdin.flush()
+  except: 
+    pass
+
+  sys.stdout.flush()
+  sys.stderr.flush()
+
+def xqt(x, 
+    verbose=0, 
+    quiet=0, 
+    invert_result=0, 
+    log=None):
+  if log is None: log = sys.stdout
+
+  if verbose: log.write('%s\n' % x)
+  flush()
+
+  try:
+    result, stdout = get_stdouterr(x)
+  except (IOError, OSError), e:
+    if not verbose: log.write('%s failed! raised exception: %s\n' % (x, e))
+    flush()
+    raise MakeError(x)
+
+  flush()
+
+  if invert_result:
+    if result == 0:
+      result = 1
+    else:
+      result = 0
+
+  if quiet < 2:
+    if result:
+      if not verbose: log.write('%s failed!\n' % x)
+
+    if stdout and (result or (verbose and not quiet)):
+      log.write(string.join(stdout, ""))
+
+    if result and not invert_result:
+      log.write("  .. ERROR CODE %s\n" % hex(result))
+
+  flush()
+
+  if result:
+    raise MakeError(x, stdout)
+
+  return stdout
+
+def xqtq(x, **kwds):
+  """quiet execution"""
+  kwds['quiet'] = 1
+  return apply(xqt, (x,), kwds)
+
+def xqtqq(x, **kwds):
+  """quiet execution"""
+  kwds['verbose'] = 0
+  kwds['quiet'] = 2
+  return apply(xqt, (x,), kwds)
+
+def nxqt(x, **kwds):
+  """
+  used when a negative result is expected (return code is supposed to be nonzero)
+  used for a grep which is supposed to fail
+  """
+  kwds['invert_result'] = 1
+  return apply(xqt, (x,), kwds)
+
 def file_exists(f):
   try:
     os.stat(f)
     return 1
   except EnvironmentError: return 0
 
-class MakeError(EnvironmentError): pass
+class Tee:
+  def __init__(self):
+    self.file = StringIO.StringIO()
+
+  def write(self, s):
+    sys.stdout.write(s)
+    self.file.write(s)
+
+  def getvalue(self):
+    return self.file.getvalue()
+
+class MakeError(EnvironmentError): 
+  def __init__(self, command=None, stdout=[], stderr=[]):
+    self.command = command
+    self.stdout = string.join(stdout, "")
+    self.stderr = string.join(stderr, "")
+
+  def __str__(self):
+    s = []
+    if self.command is not None:
+      s.append('COMMAND: ' + self.command)
+
+    if self.stdout:
+      s.append('STDOUT:\n' + self.stdout)
+
+    if self.stderr:
+      s.append('STDERR:\n' + self.stderr)
+
+    return string.join(s, "\n")
   
 @select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
@@ -697,29 +810,6 @@ print 'debian_revision',debian_revision
 time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
 config_time=time.gmtime(time.time())
 CONFIG_TIME = time.strftime(time_stamp_format, config_time)
-
-
-
-#---------- utilities -------------------
-# We're screwed if popen doesn't work ..
-
-def xxqt(x,print_cmd=0,print_on_error=1):
-  result = os.system(x)
-  if result != 0: 
-    if print_on_error:
-      print "FAIL:",x
-    raise MakeError(x)
-  else: 
-    if print_cmd:
-      print x
-
-def xqt(x,print_on_error=0,print_cmd=0,print_output=0): 
- if not print_output:
-   if os.name == "posix":
-     x = x + " >/dev/null 2>&1"
-   elif os.name == "nt":
-     x = x + " >NUL"
- xxqt(x,print_cmd,print_on_error)
 
 #----------------------------------------
 
@@ -996,7 +1086,7 @@ if args:
 if verbose:
   shell = xqt
 else:
-  shell = xxqt
+  shell = xqtqq
 
 if PHASES == []: PHASES = ALL_PHASES
 
