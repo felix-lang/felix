@@ -4,6 +4,7 @@
 @h = tangler('spkgs/flx_tut_bind.py')
 @select(h)
 TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'tut_bind*.flx')
+TESTS.sort()
 
 unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']

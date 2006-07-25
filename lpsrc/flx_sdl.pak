@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.23  2006/07/25 04:15:40  idadesub
+maks sure all the tests are sorted
+
 Revision 1.22  2006/07/09 17:45:35  skaller
 More listings..
 
@@ -294,6 +297,7 @@ if HAVE_SDL:
   rtl_interfaces = ['faio/faio_sdl_event.hpp']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
   demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
+  demos.sort()
 
 iscr_source = ['lpsrc/flx_sdl.pak']
 build_macro = "SDL"
