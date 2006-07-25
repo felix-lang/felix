@@ -34,9 +34,12 @@ some future version of the compiler.
 @h = tangler('spkgs/flx_regression_tests.py')
 @select(h)
 UNIT_TESTS = glob.glob('test'+os.sep+'rt*.flx')
+UNIT_TESTS.sort()
 COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
+COMPLETION_TESTS.sort()
 # these are supposed to fail!
 BAD_TESTS = glob.glob('test'+os.sep+'bt*.flx')
+BAD_TESTS.sort()
 
 unit_tests = UNIT_TESTS
 completion_tests = COMPLETION_TESTS
@@ -741,6 +744,29 @@ g();
 print z; endl;
 @select(tangler('test/rt27.expect'))
 3
+@select(tangler('test/rt28.flx'))
+#import <flx.flxh>
+
+union U =
+| A of (unit -> void)
+;
+
+proc p0 (x:U)
+{
+  match x with
+  | A ?f => {f;}
+  endmatch;
+}
+
+proc p1
+{
+  print "hello"; endl;
+}
+
+p0$ A the p1;
+
+@select(tangler('test/rt28.expect'))
+hello
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>
