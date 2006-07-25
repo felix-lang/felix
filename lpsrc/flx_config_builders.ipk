@@ -797,8 +797,6 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, filename)
-      #shell(opt.COM+" -w tmp"+os.sep+"intsizes.cxx -o tmp"+os.sep+"intsizes")
-      #shell(opt.COM+" /ML /w tmp"+os.sep+"intsizes.cxx /Fetmp"+os.sep+"intsizes.exe")
     except EnvironmentError:
       print "FATAL: can't determine sizes of ints"
       raise
@@ -1035,8 +1033,6 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'check_inclass')
-      #shell(opt.COM+" -w -c tmp"+os.sep+"check_inclass.cxx -o tmp"+os.sep+"dummy.o")
-      #shell(opt.COM+" /w /c tmp"+os.sep+"check_inclass.cxx /Fotmp"+os.sep+"dummy.o")
       self.options.HAVE_INCLASS_MEMBER_INITIALIZATION = 1
       print "Inclass member initialisation supported"
     except EnvironmentError:
@@ -1165,7 +1161,6 @@ class gnu_mixin:
     # find if we have g++ with -Wno-invalid-offsetof
     try:
       self.compile_dummy_main(shell, CFLAGS="-Wno-invalid-offsetof")
-      #shell(COM+"-Wno-invalid-offsetof tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
       opt.NO_INVALID_OFFSETOF_WARNING = "-Wall -Wno-invalid-offsetof "
       print "-Wno-invalid-offsetof supported"
     except EnvironmentError:
@@ -1174,7 +1169,6 @@ class gnu_mixin:
     # find if we have g++ with -Wfatal-errors
     try:
       self.compile_dummy_main(shell, CFLAGS="-Wfatal-errors")
-      #shell(COM+"-Wfatal-errors tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
       opt.NO_INVALID_OFFSETOF_WARNING = opt.NO_INVALID_OFFSETOF_WARNING + "-Wfatal-errors "
       print "-Wfatal-errors supported"
     except EnvironmentError:
@@ -1198,8 +1192,6 @@ int main(int argc, char** argv) {
     # find if we have gnu on 32 bit x86 platform with named registers
     try:
       self.build_static_program(shell, filename)
-      #shell(opt.COM + "-w tmp"+os.sep+"gnu_x86.c -o tmp"+os.sep+"x86_check")
-      #shell("tmp"+os.sep+"x86_check")
       opt.HAVE_GNU_X86 = 1
       print "gnu x86 32 bit support detected"
     except EnvironmentError:
@@ -1218,8 +1210,6 @@ int main(int argc, char** argv) {
     # find if we have gnu on 64 bit x86 platform with named registers
     try:
       self.build_static_program(shell, filename)
-      #shell(opt.COM + "-w tmp"+os.sep+"gnu_x86_64.c -o tmp"+os.sep+"x86_64_check")
-      #shell("tmp"+os.sep+"x86_64_check")
       opt.HAVE_GNU_X86_64 = 1
       print "gnu x86 64 bit support detected"
     except EnvironmentError:
@@ -1254,8 +1244,6 @@ int main(int argc, char** argv) {
     # find if we have g++ supporting computed jumps
     try:
       self.build_static_program(shell, filename)
-      #shell(COM + " tmp" + os.sep + "gnu_cgoto.c -o tmp" + os.sep + "cgoto")
-      #shell("tmp" + os.sep + "cgoto")
       opt.HAVE_CGOTO = 1
       print "Computed goto supported"
     except EnvironmentError:
@@ -1278,8 +1266,6 @@ int main(int argc, char** argv) {
     # find if we have g++ supporting computed jumps and asm labels
     try:
       self.build_static_program(shell, filename)
-      #shell(COM + "tmp" + os.sep + "gnu_asm_labels.c -o tmp" + os.sep + "asm_labels")
-      #shell("tmp" + os.sep + "asm_labels")
       opt.HAVE_ASM_LABELS = 1
       print "Asm labels supported"
     except EnvironmentError:
@@ -1294,7 +1280,6 @@ int main(int argc, char** argv) {
     # if it would not generate this warning
     try:
       self.compile_dummy_main(shell, CFLAGS="-Werror -fPIC")
-      #shell(COM+"-Werror -fPIC tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
       self.options.PIC = "-fPIC "
       print "-fPIC supported"
     except EnvironmentError:
@@ -1474,18 +1459,11 @@ int main(int argc, char** argv) {
         dll = self.build_shared_dll(shell, dummy_lib_filename)
         exe = self.build_shared_program(shell, dummy_main_filename)
         shell(exe + ' ' + dll)
-        #shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
-        #shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
-        #shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
-        #shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
-        #shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
         opt.SUPPORT_DYNAMIC_LOADING = 1
         opt.HAVE_DLOPEN = 1
       except EnvironmentError:
         try: # nope, try with -ldl
           exe = self.build_shared_program(shell, dummy_main_filename, libs=['dl'])
-          #shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain -ldl")
-          #shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
           opt.HAVE_DLOPEN = 1
           opt.SUPPORT_DYNAMIC_LOADING = 1
           opt.DLLIB = "dl"
@@ -1513,7 +1491,6 @@ int main(int argc, char** argv) { return 0; }
 
     try:
       self.compile_static_main(shell, filename)
-      #shell(opt.COM+" -w tmp"+os.sep+"have_socklen_t.cxx -o tmp"+os.sep+"dummy")
       opt.FLX_SOCKLEN_T = "socklen_t"
     except EnvironmentError:
       filename = self.write_src(r"""
@@ -1525,7 +1502,6 @@ int main(int argc, char** argv) { return 0; }
 
       try:
         self.compile_static_main(shell, filename)
-        #shell(opt.COM+" -w tmp"+os.sep+"socklen_t_is_uint.cxx -o tmp"+os.sep+"dummy")
         opt.FLX_SOCKLEN_T = "unsigned int"
       except EnvironmentError:
         filename = self.write_src(r"""
@@ -1537,7 +1513,6 @@ int main(int argc, char** argv) { return 0; }
 
         try:
           self.compile_static_main(shell, filename)
-          #shell(opt.COM+" -w tmp"+os.sep+"socklen_t_is_int.cxx -o tmp"+os.sep+"dummy")
           opt.FLX_SOCKLEN_T = "int"
         except EnvironmentError:
           opt.FLX_SOCKLEN_T = "int"
@@ -1576,7 +1551,6 @@ main(int argc, char** argv) {
       self.compile_static_main(shell, filename)
       #cmd = opt.COM+" tmp/kqt.cxx -o tmp/kqt"
       #print "CMD IS " + cmd
-      #shell(cmd)
       opt.HAVE_KQUEUE_DEMUXER = 1
     except EnvironmentError:
       opt.HAVE_KQUEUE_DEMUXER = 0
@@ -1751,8 +1725,6 @@ int main(int argc,char** argv) {
    return 0;
 }
 """, 'tmp' + os.sep + 'gnu_hash')
-      #shell(COM+"tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
-      #shell("tmp"+os.sep+"gxx_hash")
       self.options.HAVE_STL_GNU_CXX = 1
       print "Gnu ext/ templates supported"
     except EnvironmentError:
