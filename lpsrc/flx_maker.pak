@@ -6,6 +6,16 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.99  2006/07/25 08:06:45  idadesub
+added a couple new command line arguments to maker: -g,--debug,--no-debug,
+-O,--optimise,--optimize (for us yankees :),--no-optimise,--no-optimize so
+that we can now specify the build arguments without needing to modify the
+config.
+
+also cleaned up code, and made sure that all except MakeError-raise MakeError
+now pass on the same exception, instead of creating new ones. I did that
+because I'll shortly be passing more relevent info in the exception
+
 Revision 1.98  2006/07/24 10:52:39  skaller
 Eliminated struct projections using C thunks.
 Note that get_x methods no longer work on structs.
@@ -1332,23 +1342,24 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_test')
 
-  def __call__(self, testfile):        
-    optimise= "optimise_c" in options
+  def __call__(self, testfile):
+    optimise_c = optimise or "optimise_c" in options
     mode = "std"
-    if optimise: mode = "Optimised"
+    if optimise_c: mode = "Optimised"
     print "------------------------------------------------"
     print 'TRANSLATING',testfile
+
     basename = os.path.splitext(testfile)[0]
     cppfilename = basename + ".cpp"
     resfilename = basename + ".resh"
     indir,infile = os.path.split(basename)
     try:
       flxg('-Ilib ' +FLXFLAGS + basename,basename)
-    except MakeError:
+    except MakeError, e:
       print 'TESTFILE -- ERROR!',basename
       erasefile(basename+'.cpp')
       erasefile(basename+'.hpp')
-      raise MakeError
+      raise e
   
     cmd = os.path.join(
         "bin", 
@@ -1363,6 +1374,7 @@ class PLUGIN(Plugin):
     try:
       if SUPPORT_DYNAMIC_LOADING:
         print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (dynamic)"
+        flush()
  
         cmd = os.path.join(
             "bin", 
@@ -1378,13 +1390,15 @@ class PLUGIN(Plugin):
             xqt,
             basename,
             include_paths=["rtl"],
-            optimise=optimise,
+            optimise=optimise_c,
+            debug=debug,
             CFLAGS=CFLAGS+" "+cflags,
             lib_paths=[SHLIB_DIR],
             LDFLAGS=DFLAGS+dlibs)
   
       if SUPPORT_STATIC_LINKAGE:
         print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (static)"
+        flush()
 
         cmd = os.path.join(
             "bin",
@@ -1418,18 +1432,19 @@ class PLUGIN(Plugin):
           basename,
           objects=[driver],
           include_paths=["rtl"],
-          optimise=optimise,
+          optimise=optimise_c,
+          debug=debug,
           macros=["FLX_STATIC_LINK"],
           CFLAGS=CFLAGS+" "+cflags,
           lib_paths=["rtl"],
           libs=[],
           LDFLAGS=SFLAGS+slibs)
       #print 'TESTFILE -- OK!',basename
-    except MakeError:
+    except MakeError, e:
       print 'TESTFILE -- ERROR!',basename
       erasefile(basename+EXT_SHLIB)
       erasefile(basename+EXT_EXE)
-      raise MakeError
+      raise e
   
     return basename
   
@@ -1612,7 +1627,8 @@ def build_target_rtl_dynamic():
     TARGET_CXX.build_shared_rtl(xqt, CPPS,
         TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic',
         include_paths=['rtl'],
-        optimise=1,
+        optimise=optimise,
+        debug=debug,
         macros=["BUILD_"+BUILD_MACRO],
         CFLAGS=CFLAGS+EXTRA_CFLAGS,
         lib_paths=[SHLIB_DIR],
@@ -1635,7 +1651,8 @@ def build_target_rtl_static():
     TARGET_CXX.build_static_rtl(xqt, CPPS, "rtl"+os.sep+lib+"_static",
         include_paths=["rtl"],
         macros=["FLX_STATIC_LINK"],
-        optimise=1,
+        optimise=optimise,
+        debug=debug,
         CFLAGS=CFLAGS+EXTRA_CFLAGS)
 
     for x in CPPS: 
@@ -1659,7 +1676,8 @@ def build_felix_static_drivers():
           src,
           include_paths=["rtl"],
           macros=["FLX_STATIC_LINK"]+macros,
-          optimise=1,
+          optimise=optimise,
+          debug=debug,
           CFLAGS=CFLAGS+cflags)
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
@@ -1686,7 +1704,8 @@ def build_felix_dynamic_drivers():
             src,
             bin,
             include_paths=["rtl"],
-            optimise=1,
+            optimise=optimise,
+            debug=debug,
             macros=macros,
             CFLAGS=CFLAGS+cflags,
             lib_paths=[SHLIB_DIR],
@@ -1764,9 +1783,9 @@ class PLUGIN(Plugin):
         try:
           run(testscript)
           #print 'TESTFILE -- OK!',testscript
-        except MakeError:
+        except MakeError, e:
           print 'TESTFILE -- ERROR!',testscript
-          raise MakeError
+          raise e
 
       if SUPPORT_STATIC_LINKAGE:
         testscript = "time "+test_basename+EXT_EXE+" " + moreargs
@@ -1774,9 +1793,9 @@ class PLUGIN(Plugin):
         try:
           run(testscript)
           #print 'TESTFILE -- OK!',testscript
-        except MakeError:
+        except MakeError, e:
           print 'TESTFILE -- ERROR!',testscript
-          raise MakeError
+          raise e
 
 @select(tangler('mkplugins/ocaml_env.py'))
 if not globals().get("ocaml_env",None):
@@ -1797,8 +1816,15 @@ if not globals().get("ocaml_env",None):
   OCAMLOPT = OCAMLOPT + " -I " + OCAML_OBJDIR
   OCAMLC = OCAMLC + " -I " + OCAML_OBJDIR
 
-  if "debug" in options:
-    OCAMLOPT = OCAMLOPT + '-g '
+  if debug or "debug" in options:
+    if NATIVE_CODE_COMPILER:
+      if OCAMLC == OCAMLOPT:
+        OCAMLC = OCAMLC + ' -ccopt -g '
+      else:
+        OCAMLC = OCAMLC + ' -g '
+      OCAMLOPT = OCAMLOPT + ' -ccopt -g '
+    else:
+      OCAMLOPT = OCAMLOPT + ' -g '
 
   if "optimise_felix" in options:
     OCAMLOPT = OCAMLOPT + " -unsafe -noassert -inline 5 "
@@ -1836,10 +1862,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_host_tests', 'run host tests')
   
-  def __call__(self):    
-    optimise= "optimise_c" in options
-    mode = "std"
-    if optimise: mode = "Optimised"
+  def __call__(self):
     bad_tests = pkgdict.get("failure_tests",[])
     if len(bad_tests)>0:
       print
@@ -1856,11 +1879,11 @@ class PLUGIN(Plugin):
           #print 'TESTFILE -- failed as expected',basename
           erasefile(basename+'.cpp')
           erasefile(basename+'.hpp')
-        except MakeError:
+        except MakeError, e:
           print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
           erasefile(basename+'.cpp')
           erasefile(basename+'.hpp')
-          raise MakeError
+          raise e
 
 @select(tangler('mkplugins/run_unit_tests.py'))
 class PLUGIN(Plugin):
@@ -1868,9 +1891,6 @@ class PLUGIN(Plugin):
     Plugin.__init__(self, 'run_unit_tests', 'run unit tests')
   
   def __call__(self):    
-    optimise= "optimise_c" in options
-    mode = "std"
-    if optimise: mode = "Optimised"
     unit_tests = pkgdict.get("unit_tests",[])
     if len(unit_tests)>0:
       print
@@ -1909,9 +1929,9 @@ class PLUGIN(Plugin):
           try:
             run(testscript)
             #print 'TESTFILE -- OK!',testscript
-          except MakeError:
+          except MakeError, e:
             print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
+            raise e
 
         if SUPPORT_STATIC_LINKAGE:
           testscript = pattern % EXT_EXE
@@ -1920,9 +1940,9 @@ class PLUGIN(Plugin):
           try:
             run(testscript)
             #print 'TESTFILE -- OK!',testscript
-          except MakeError:
+          except MakeError, e:
             print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
+            raise e
 
 
 @select(tangler('mkplugins/run_completion_tests.py'))
@@ -1932,9 +1952,6 @@ class PLUGIN(Plugin):
     Plugin.__init__(self, 'run_completion_tests')
 
   def __call__(self):    
-    optimise= "optimise_c" in options
-    mode = "std"
-    if optimise: mode = "Optimised"
     completion_tests = pkgdict.get("completion_tests",[])
     if len(completion_tests)>0:
       print
@@ -1968,9 +1985,9 @@ class PLUGIN(Plugin):
           try:
             run(testscript)
             #print 'TESTFILE -- OK!',testscript
-          except MakeError:
+          except MakeError, e:
             print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
+            raise e
   
         if SUPPORT_STATIC_LINKAGE:
           testscript = path + EXT_EXE
@@ -1979,9 +1996,9 @@ class PLUGIN(Plugin):
           try:
             run(testscript)
             #print 'TESTFILE -- OK!',testscript
-          except MakeError:
+          except MakeError, e:
             print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
+            raise e
   
 
 @select(tangler('mkplugins/run_demos.py'))
@@ -1990,9 +2007,6 @@ class PLUGIN(Plugin):
     Plugin.__init__(self, 'run_demos')
 
   def __call__(self):    
-    optimise= "optimise_c" in options
-    mode = "std"
-    if optimise: mode = "Optimised"
     demos = pkgdict.get("demos",[])
   
   
@@ -2026,9 +2040,9 @@ class PLUGIN(Plugin):
           try:
             run(testscript)
             #print 'TESTFILE -- OK!',testscript
-          except MakeError:
+          except MakeError, e:
             print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
+            raise e
   
         if SUPPORT_STATIC_LINKAGE:
           testscript = path + EXT_EXE
@@ -2036,9 +2050,9 @@ class PLUGIN(Plugin):
           try:
             run(testscript)
             #print 'TESTFILE -- OK!',testscript
-          except MakeError:
+          except MakeError, e:
             print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
+            raise e
   
 @select(tangler('mkplugins/xqt.py'))
 get_stdouterr = get_stdout
@@ -2466,13 +2480,16 @@ all_phases = ["build","host","target","run"]
 phases = []
 options = sys.argv[1:]
 try:
-  opts, args = getopt.getopt(sys.argv[1:], 'hvqD:', 
-      ['help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive='])
+  opts, args = getopt.getopt(sys.argv[1:], 'hvqD:Og', [ \
+      'help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive=',
+      'optimise', 'optimize', 'no-optimise', 'no-optimize', 'no-debug'])
 except getopt.error, e:
   sys.stderr.write(str(e) + '\n')
   sys.exit(1)
 
 verbose = 1
+optimise = 1
+debug = 1
 packages = []
 models = []
 macros = []
@@ -2484,6 +2501,10 @@ flags:
   -h, --help      print this help message
   -v, --verbose   print out extra debugging info
   -q, --quiet     do not print out extra debugging info
+  -O, --optimise  generate optimised code
+  --no-optimise   turn off optimised code generation
+  -g, --debug     generate debugging information
+  --no-debug      turn off debugging information generation
   -Dmacro[=defn]  define a macro
   --phase         run only this phase of the build %s
   --pkg           build only these packages
@@ -2502,6 +2523,14 @@ for o, a in opts:
     verbose = verbose + 1
   elif o in ['-q', '--quiet']:
     verbose = 0
+  elif o in ['-O', '--optimise', '--optimize']:
+    optimise = 1
+  elif o in ['--no-optimise', '--no-optimize']:
+    optimise = 0
+  elif o in ['-g']:
+    debug = 1
+  elif o in ['--no-debug']:
+    debug = 0
   elif o in ['-D']:
     macros.append(a)
   elif o in ['--phase']:
@@ -2509,7 +2538,7 @@ for o, a in opts:
       phases = all_phases
     elif a not in all_phases:
       sys.stderr.write('unknown phase: %s\n' % phase)
-      raise MakeError
+      sys.exit(1)
     elif a not in phases:
       phases.append(a)
   elif o in ['--pkg']:
@@ -2613,6 +2642,9 @@ if "extract" in options or "force_extract" in options:
     os.path.join('misc', 'interscript.css'),
     os.path.join('speed', 'interscript.css'))
 
+  print "EXTRACTION COMPLETE"
+  sys.exit(0)
+
 raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
 unsorted_pkgs = []
 pkgd = {}
@@ -2703,8 +2735,6 @@ def enstamp(stamp):
   f.close()
   print 'Writing Stamp File:', stamp
 
-# commenting out to find why this is breaking on solaris
-#try:
 
 # EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
 for k in options:
@@ -2740,15 +2770,6 @@ if os.name != 'nt': # requires posix
     run(stats)
 
 print "RUN COMPLETE"
-
-
-# commenting out to find why this is breaking on solaris
-#except MakeError:
-#  print "Terminating due to MAKE error"
-#  sys.exit(1)
-#except:
-#  print "Terminating due to UNKNOWN error"
-#  sys.exit(2)
 
 @head(1,'Makefile')
 We attempt to fix the brain dead install command.
