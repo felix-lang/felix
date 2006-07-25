@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.57  2006/07/25 03:53:48  skaller
+Add workaround for OSX 10.2 locale initialisation bug.
+
 Revision 1.56  2006/07/19 17:57:52  rfistman
 wrote self pipe for windows, not happy with it though because it
  has to use a named pipe (anon pipes don't work in nonblock mode).
@@ -3424,6 +3427,13 @@ int run_felix(
   }
   return 0;
 }
+  
+// OSX 10.2 has bug initialising locales with dynamic linkage
+#ifndef FLX_STATIC_LINK  
+#ifdef MACOSX
+#include <locale>
+#endif
+#endif
 
 int main(int argc, char** argv)
 {
@@ -3463,6 +3473,12 @@ int main(int argc, char** argv)
   char **flx_argv = argv;
   int flx_argc = argc;
   bool debug = false;
+
+// workaround for OSX 10.2 locale init bug
+#ifdef MACOSX
+  std::locale::classic();
+#endif
+
 //  printf("Statically linked Felix program running\n");
 #endif
   char *debug_env = std::getenv("FLX_DEBUG");
