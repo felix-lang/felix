@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.58  2006/07/25 04:18:04  idadesub
+fix indenting
+
 Revision 1.57  2006/07/25 03:53:48  skaller
 Add workaround for OSX 10.2 locale initialisation bug.
 
@@ -2167,7 +2170,7 @@ flx_load_library(char const *filename)
 
     res = NSCreateObjectFileImageFromFile(filename, &bndl_img);
 
-	if(NSObjectFileImageSuccess != res)
+    if(NSObjectFileImageSuccess != res)
       throw flx_link_failure_t(filename, "NSCreateObjectFileImageFromFile",
               "failure to open library");
 
