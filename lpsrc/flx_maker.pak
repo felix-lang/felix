@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.101  2006/07/26 04:08:39  idadesub
+fixed typo where I forgot to append a newline to a log.write
+fixed bug where I was referencing a testscript instead of a testfile variable
+
 Revision 1.100  2006/07/25 17:20:14  idadesub
 this patch adds support for a unit test to fail, but not stop the entire
 build. It does it by logging the output from the unit test, and storing it
@@ -1388,7 +1392,7 @@ class PLUGIN(Plugin):
             log=log)
   
       if SUPPORT_STATIC_LINKAGE:
-        log.write("COMPILING GENERATED C++ TEST CODE: %s (static)" % mode)
+        log.write("COMPILING GENERATED C++ TEST CODE: %s (static)\n" % mode)
         flush()
 
         driver = vxqtq(os.path.join(
@@ -1946,7 +1950,7 @@ class PLUGIN(Plugin):
             exqt(testscript)
             #log.write('TESTFILE -- OK! %s\n' % testscript)
           except MakeError, e:
-            log.write('TESTFILE -- ERROR! %s\n' % testscript)
+            log.write('TESTFILE -- ERROR! (dynamic) %s\n' % testscript)
             raise e
   
         if SUPPORT_STATIC_LINKAGE:
@@ -1956,7 +1960,7 @@ class PLUGIN(Plugin):
             exqt(testscript)
             #log.write('TESTFILE -- OK! %s\n' % testscript)
           except MakeError, e:
-            log.write('TESTFILE -- ERROR! %s\n' % testscript)
+            log.write('TESTFILE -- ERROR! (static) %s\n' % testscript)
             raise e
       except MakeError, e:
         self.failures.append(log.getvalue())
@@ -2255,7 +2259,7 @@ class TestPlugin(Plugin):
         basename = plugins['build_test'](testfile, log)
       except MakeError, e:
         failed = 1
-        log.write('TESTFILE -- ERROR! %s (build)\n' % testscript)
+        log.write('TESTFILE -- ERROR! %s (build)\n' % testfile)
       else:
         path = os.path.join(os.curdir, basename)
 
@@ -2296,8 +2300,6 @@ class TestPlugin(Plugin):
 
       if failed:
         self.failures.append(log.getvalue())
-
-  
 
     return not failed
 
