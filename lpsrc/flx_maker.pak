@@ -6,6 +6,13 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.102  2006/07/26 07:56:08  idadesub
+Consolidated the demo code with the test code since it was essentially the
+same thing.
+renamed run_host_tests to run_failure_tests, since that what it's actually
+doing.
+added an error summary at the end of the run if there were any failures.
+
 Revision 1.101  2006/07/26 04:08:39  idadesub
 fixed typo where I forgot to append a newline to a log.write
 fixed bug where I was referencing a testscript instead of a testfile variable
@@ -1847,10 +1854,10 @@ if not globals().get("link_model_env",None):
     CCOBJ_DYNAMIC_FLX = CCOBJ_DYNAMIC_FLX + CCMACS
 
 
-@select(tangler('mkplugins/run_host_tests.py'))
+@select(tangler('mkplugins/run_failure_tests.py'))
 class PLUGIN(Plugin):
   def __init__(self):
-    Plugin.__init__(self, 'run_host_tests', 'run host tests')
+    Plugin.__init__(self, 'run_failure_tests', 'run tests meant to fail')
   
   def __call__(self):
     bad_tests = pkgdict.get("failure_tests",[])
@@ -1859,7 +1866,7 @@ class PLUGIN(Plugin):
 
     for testfile in bad_tests:
       log = Tee()
-      log.write("***** TESTING PACKAGE %s TESTFILE: %s ************\n" % (pkg, testfile))
+      log.write("***** FAILURE TESTING PACKAGE %s TESTFILE: %s ************\n" % (pkg, testfile))
 
       #log.write('Running Felix code generator on %s\n' % testfile)
       basename = os.path.splitext(testfile)[0]
@@ -1875,7 +1882,7 @@ class PLUGIN(Plugin):
 
         log.write('TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED! %s\n' % basename)
 
-        self.failures.append(log.getvalue())
+        self.failures.append((pkg, testfile, log.getvalue()))
 
       erasefile(basename+'.cpp')
       erasefile(basename+'.hpp')
@@ -1905,65 +1912,20 @@ class PLUGIN(TestPlugin):
     completion_tests = pkgdict.get("completion_tests",[])
 
     return self.run_tests(completion_tests, 0,
-      "***** COMPLETION (nondet) TESTING PACKAGE %%s TESTFILE: %s ************\n" % pkg)
+      "***** COMPLETION (nondet) TESTING PACKAGE %s TESTFILE: %%s ************\n" % pkg)
 
 
 @select(tangler('mkplugins/run_demos.py'))
-class PLUGIN(Plugin):
+class PLUGIN(TestPlugin):
   def __init__(self):
     Plugin.__init__(self, 'run_demos')
 
-  def __call__(self):    
+  def __call__(self):
     demos = pkgdict.get("demos",[])
-  
-    if not demos:
-      return
 
-    print "RUNNING DEMOS"
-    flx_pkgconfig = os.path.join("bin", "flx_pkgconfig")
+    return self.run_tests(demos, 0,
+      "***** DEMO PACKAGE %s TESTFILE: %%s ************\n" % pkg)
 
-    for testfile in demos:
-      log = TEE()
-      log.write("***** DEMO PACKAGE %s TESTFILE: %s ************\n" % (pkg, testfile))
-
-      try:
-        basename = plugins['build_test'](testfile, log)
-        path = os.path.join(os.curdir, basename)
-  
-        # subroutine candidate
-        if SUPPORT_DYNAMIC_LOADING:
-          requires_driver = vxqtq(
-              "%s --path=config --field=flx_requires_driver @%s" % \
-              (flx_pkgconfig, path + '.resh'), 
-              log=log)
-  
-          requires_driver = string.strip(requires_driver[0])
-    
-          if not requires_driver:
-            requires_driver="flx_run"
-  
-          requires_driver = os.path.join('bin', requires_driver)
-  
-          testscript = requires_driver + " " + path + EXT_SHLIB
-          #log.write('Executing %s\n' % testscript)
-          try:
-            exqt(testscript)
-            #log.write('TESTFILE -- OK! %s\n' % testscript)
-          except MakeError, e:
-            log.write('TESTFILE -- ERROR! (dynamic) %s\n' % testscript)
-            raise e
-  
-        if SUPPORT_STATIC_LINKAGE:
-          testscript = path + EXT_EXE
-          #log.write('Executing %s\n' % testscript)
-          try:
-            exqt(testscript)
-            #log.write('TESTFILE -- OK! %s\n' % testscript)
-          except MakeError, e:
-            log.write('TESTFILE -- ERROR! (static) %s\n' % testscript)
-            raise e
-      except MakeError, e:
-        self.failures.append(log.getvalue())
 
 @select(tangler('mkplugins/xqt.py'))
 if os.name=="nt":
@@ -2215,7 +2177,7 @@ class PLUGIN(Plugin):
         build_target_felix_tools()
 
         # only stamp if we've passed the tests
-        if plugins['run_host_tests']():
+        if plugins['run_failure_tests']():
           enstamp(stamp)
 
     if "run" in phases:
@@ -2299,7 +2261,7 @@ class TestPlugin(Plugin):
             log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
 
       if failed:
-        self.failures.append(log.getvalue())
+        self.failures.append((pkg, testfile, log.getvalue()))
 
     return not failed
 
@@ -2725,7 +2687,6 @@ failed = 0
 for plugin in scheduled_plugins + unscheduled_plugins:
   if plugin.failures:
     if not failed:
-      found_errors = 1
       print
       print
 
@@ -2735,7 +2696,7 @@ for plugin in scheduled_plugins + unscheduled_plugins:
 
     first_failure = 1
 
-    for failure in plugin.failures:
+    for pkg, file, failure in plugin.failures:
       if first_failure:
         first_failure = 0
       else:
@@ -2743,6 +2704,33 @@ for plugin in scheduled_plugins + unscheduled_plugins:
 
       failure_log.write('%s\n' % failure)
     failure_log.write('\n')
+
+
+if failed:
+  print 'FAILURES:'
+
+  for plugin in scheduled_plugins + unscheduled_plugins:
+    if not plugin.failures:
+      continue
+
+    print '- %s: %s' % (len(plugin.failures), plugin.name)
+
+    lookup = {}
+
+    for pkg, file, failure in plugin.failures:
+      files = lookup.get(pkg, [])
+      files.append(file)
+      lookup[pkg] = files
+
+    lookup = lookup.items()
+    lookup.sort()
+
+    for pkg, files in lookup:
+      files.sort()
+
+      print '  - %s: %s' % (len(files), pkg)
+      print '      %s' % (string.join(files))
+  
 
 f = open('errors.log', 'w')
 try:
