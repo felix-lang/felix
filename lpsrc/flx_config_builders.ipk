@@ -724,6 +724,33 @@ int main(int argc, char** argv) {
   def detect_osx(self, shell):
     return self.check_macro_defined(shell, "__APPLE__")
 
+  def detect_osx_version(self, shell):
+    if not self.options.MACOSX:
+      return None
+    else:
+      # query gestalt to determine os version
+      try:
+        from gestalt import gestalt
+        import MacOS
+      except ImportError:
+        return None
+
+      try:
+        sysv = gestalt('sysv')
+      except (RuntimeError, MacOS.Error):
+        return None
+
+      major = (sysv & 0xff00) >> 8
+      minor = (sysv & 0x00f0) >> 4
+      patch = (sysv & 0x000f)
+
+      # convert into decimal
+      major = int(hex(major)[2:])
+
+      print 'MACOSX VERSION:', (major, minor, patch)
+
+      return (major, minor, patch)
+
   def detect_bsd(self, shell):
     return self.check_macro_defined(shell, "BSD")
 
@@ -748,6 +775,7 @@ int main(int argc, char** argv) {
     self.compile_dummy_main(shell)
 
     opt.MACOSX = self.detect_osx(shell)
+    opt.MACOSX_VERSION = self.detect_osx_version(shell)
     opt.BSD = self.detect_bsd(shell)
     opt.SOLARIS = self.detect_solaris(shell, get_stdout)
     opt.LINUX= self.detect_linux(shell)
