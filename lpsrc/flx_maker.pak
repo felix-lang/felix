@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.104  2006/07/28 03:39:31  skaller
+Add 'stop' option to break unit tests on first error.
+
 Revision 1.103  2006/07/28 03:16:19  skaller
 Fiddle with test failure reporting
 
@@ -2273,6 +2276,7 @@ class TestPlugin(Plugin):
       if failed:
         tests_failed = tests_failed + 1
         self.failures.append((pkg, testfile, log.getvalue()))
+        if 'stop' in options: raise MakeError
 
     return tests_failed == 0
 
