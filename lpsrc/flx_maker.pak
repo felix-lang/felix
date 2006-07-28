@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.103  2006/07/28 03:16:19  skaller
+Fiddle with test failure reporting
+
 Revision 1.102  2006/07/26 07:56:08  idadesub
 Consolidated the demo code with the test code since it was essentially the
 same thing.
@@ -1136,7 +1139,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'man', 'make the man pages')
     
-  def __call__(self):    
+  def runme(self):    
     print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
     MAN_PAGES = []
@@ -1164,7 +1167,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'impldoc', 'make the ocaml compiler documentation')
     
-  def __call__(self):    
+  def runme(self):    
     print "GENERATING OCAMLDOCS"
     erasedir('doc/impldoc')
     os.mkdir('doc/impldoc')
@@ -1180,7 +1183,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'rtldoc', 'make the runtime language documentation')
     
-  def __call__(self):    
+  def runme(self):    
     print "GENERATING RTLDOCS"
     erasedir('rtldoc')
     os.mkdir('rtldoc')
@@ -1194,7 +1197,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'copy_mli2ml')
 
-  def __call__(self, MLIS):
+  def runme(self, MLIS):
     print "Copying MLIS="+repr(MLIS)
     for f in MLIS:
       f = string.replace(f,"/",os.sep)
@@ -1209,7 +1212,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'copy_hpp2rtl')
 
-  def __call__(self, HPPS):
+  def runme(self, HPPS):
     for f in HPPS:
       dst = os.path.join('rtl', os.path.basename(f))
       src = string.replace(f,"/",os.sep)
@@ -1223,7 +1226,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'ocamlit')
     
-  def __call__(self, LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force):
+  def runme(self, LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force):
     # STEP 2: Generate lexers
     for lex in LEXS:
       file = string.replace(lex,'/',os.sep)
@@ -1263,7 +1266,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_ocamls')
    
-  def __call__(self, force):
+  def runme(self, force):
     LEXS = pkgdict.get("caml_lexes",[])
     PARSES = pkgdict.get("caml_parses",[])
     INTERFACES = pkgdict.get("caml_interfaces",[])
@@ -1310,7 +1313,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_host_tools')
     
-  def __call__(self):
+  def runme(self):
     CPPS = pkgdict.get("host_cpp_cpps",[])
     EXES = pkgdict.get("host_exes",[])
     LIBS = pkgdict.get("host_exes_require_libs",[])
@@ -1350,7 +1353,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_test')
 
-  def __call__(self, testfile, log):
+  def runme(self, testfile, log):
     if log is None: log = Tee()
 
     optimise_c = optimise or "optimise_c" in options
@@ -1466,7 +1469,7 @@ class PLUGIN(Plugin):
     if "extract" in options or "force_extract" in options: 
       if "build" not in phases: phases.append("build")
 
-  def __call__(self):
+  def runme(self):
     global phases 
 
     if "build" not in phases: phases.append("build")
@@ -1480,7 +1483,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'virgin', 'clean and remove all the sources')
  
-  def __call__(self):
+  def runme(self):
     for d in [ \
         "spkgs",
         "cpkgs",
@@ -1547,7 +1550,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'clean', 'remove generated C++ and binaries from test locations')
  
-  def __call__(self):
+  def runme(self):
     for d in glob.glob(os.path.join("pkg-stamps", "*")):
       erasefile(d)
 
@@ -1576,7 +1579,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'mkdoc')
 
-  def __call__(self):
+  def runme(self):
     weaver_directory = pkgdict.get("weaver_directory","")
     iscr_source = pkgdict.get("iscr_source",[])
     if iscr_source and weaver_directory:
@@ -1770,7 +1773,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'performance', 'make performance tests')
 
-  def __call__(self):
+  def runme(self):
     for driver,testfile,moreargs in SPECIAL_TESTS:
       test_basename = os.path.splitext(testfile)[0]
       drv_basename = os.path.splitext(driver)[0]
@@ -1859,7 +1862,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_failure_tests', 'run tests meant to fail')
   
-  def __call__(self):
+  def runme(self):
     bad_tests = pkgdict.get("failure_tests",[])
 
     failed = 0
@@ -1877,6 +1880,7 @@ class PLUGIN(Plugin):
           'bin',
           'flxg -e -Ilib ' + basename), log=log)
         #log.write('TESTFILE -- failed as expected %s\n' % basename)
+        self.successes.append((pkg, testfile, log.getvalue()))
       except MakeError, e:
         failed = 1
 
@@ -1895,7 +1899,7 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_unit_tests', 'run unit tests')
   
-  def __call__(self):    
+  def runme(self):    
     unit_tests = pkgdict.get("unit_tests",[])
 
     return self.run_tests(unit_tests, 1,
@@ -1908,7 +1912,7 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_completion_tests')
 
-  def __call__(self):    
+  def runme(self):    
     completion_tests = pkgdict.get("completion_tests",[])
 
     return self.run_tests(completion_tests, 0,
@@ -1920,7 +1924,7 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     Plugin.__init__(self, 'run_demos')
 
-  def __call__(self):
+  def runme(self):
     demos = pkgdict.get("demos",[])
 
     return self.run_tests(demos, 0,
@@ -2034,7 +2038,7 @@ class PLUGIN(Plugin):
     Plugin.__init__(self, 'cal_pkgs',
         priority=10)
 
-  def __call__(self):
+  def runme(self):
     global pkgd
     global host_packages,target_packages,run_packages
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
@@ -2123,7 +2127,7 @@ class PLUGIN(Plugin):
             help='check if any packages need rebuilding',
             priority=50)
 
-  def __call__(self):
+  def runme(self):
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
     global pkgd,phases,pkgdict,pkg
     mkdirs("pkg-stamps")
@@ -2203,16 +2207,20 @@ class Plugin:
       self.help = help
     self.priority = priority
     self.failures = []
+    self.successes = []
+    self.used = False 
 
-  def __call__(self):
-    raise NotImplemented
+  def __call__(self,*args,**kwds):
+    self.used = 1
+    return apply(self.runme,args,kwds)
 
 
 class TestPlugin(Plugin):
   def run_tests(self, testfiles, deterministic, title):
-    failed = 0
+    tests_failed = 0
 
     for testfile in testfiles:
+      failed = 0
       log = Tee()
       log.write(title % testfile)
 
@@ -2260,10 +2268,13 @@ class TestPlugin(Plugin):
             failed = 1
             log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
 
+        self.successes.append((pkg, testfile, log.getvalue()))
+
       if failed:
+        tests_failed = tests_failed + 1
         self.failures.append((pkg, testfile, log.getvalue()))
 
-    return not failed
+    return tests_failed == 0
 
 
   def run_test(self, log, testscript, basename, expect=None):
@@ -2288,7 +2299,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'help', 'print this help message')
 
-  def __call__(self):
+  def runme(self):
     items = []
     max_len = 0
     for name, plugin in plugins.items():
@@ -2311,7 +2322,7 @@ class PLUGIN(Plugin):
     if "test" in options: 
       if "run" not in phases: phases.append("run")
 
-  def __call__(self):
+  def runme(self):
     global pkg,pkgdict
     print "##### TEST ALL PACKAGES ##################"
     for pkg in pkgs:
@@ -2325,7 +2336,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'doc', 'build all user documentation')
 
-  def __call__(self):
+  def runme(self):
     global pkg,pkgdict
     print "##### DOCUMENT ALL PACKAGES ##################"
     for pkg in pkgs:
@@ -2344,7 +2355,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'demo', 'build and run the demos')
     
-  def __call__(self):
+  def runme(self):
     global pkg,pkgdict
     print "##### DEMONSTRATE ALL PACKAGES ##################"
     for pkg in pkgs:
@@ -2683,31 +2694,24 @@ print
 # print out all the failed plugins
 failure_log = Tee()
 
-failed = 0
+failure_log.write("----- PLUGIN STATUS -----\n")
+failed = False
 for plugin in scheduled_plugins + unscheduled_plugins:
-  if plugin.failures:
-    if not failed:
-      print
-      print
-
-    failed = 1
-    failure_log.write("------------------------------------------------\n")
-    failure_log.write('PLUGIN FAILED: %s\n' % plugin.name)
-
-    first_failure = 1
-
-    for pkg, file, failure in plugin.failures:
-      if first_failure:
-        first_failure = 0
-      else:
-        failure_log.write('--------\n')
-
-      failure_log.write('%s\n' % failure)
-    failure_log.write('\n')
+  nfail = len(plugin.failures)
+  pfail = bool(nfail)
+  failed = failed or pfail
+  npass = len(plugin.successes)
+  if pfail:
+    failure_log.write('PLUGIN **FAILED**: %s, %d/%d failures\n' % (plugin.name, nfail,npass+nfail))
+  else:
+    if plugin.used:
+      failure_log.write('PLUGIN PASSED    : %s, %d pass\n' % (plugin.name,npass))
+    else:
+      failure_log.write('PLUGIN UNUSED    : %s\n' % plugin.name)
 
 
 if failed:
-  print 'FAILURES:'
+  print '^^^^^^^^^^ FAILURES ^^^^^^^^^^^^^^^^^^^^^^^^^^^'
 
   for plugin in scheduled_plugins + unscheduled_plugins:
     if not plugin.failures:
@@ -2729,7 +2733,8 @@ if failed:
       files.sort()
 
       print '  - %s: %s' % (len(files), pkg)
-      print '      %s' % (string.join(files))
+      for file in files:
+        print '      %s' % file
   
 
 f = open('errors.log', 'w')
@@ -2739,6 +2744,7 @@ finally:
   f.close()
 
 if failed:
+  print "********* BUILD FAILED ********************"
   sys.exit(1)
 
 print "RUN COMPLETE"
