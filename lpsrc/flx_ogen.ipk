@@ -472,6 +472,35 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         with Not_found -> failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^ si i)
       in 
       begin match entry with
+      | `BBDCL_abs (vs,bquals,_,_) -> 
+        (*
+        print_endline ("abstract type "^id^".. quals:");
+        print_endline (string_of_bquals syms.dfns bquals);
+        *)
+        let handle_qual bqual = match bqual with
+        | `Bound_needs_shape t -> 
+          (*
+          print_endline ("Needs shape (uninstantiated) " ^ sbt syms.dfns t);
+          *)
+          let varmap = mk_varmap vs ts in
+          let t = varmap_subst varmap t in 
+          (*
+          print_endline ("Needs shape (instantiated) " ^ sbt syms.dfns t);
+          *)
+          begin try
+            let index = Hashtbl.find syms.registry t in
+            Hashtbl.replace allocable_types t index
+          with 
+          | Not_found -> failwith "[gen_offset_tables] Woops, type isn't in registry?"
+          end
+
+        | _ -> ()
+        in
+        let rec aux quals = match quals with
+        | [] -> ()
+        | h :: t -> handle_qual h; aux t
+        in aux bquals
+
       | `BBDCL_class (props,vs) ->
         (*
         print_endline "Detected class instance type";

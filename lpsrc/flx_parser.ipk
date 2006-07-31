@@ -428,12 +428,18 @@ tvarlist:
    | { [] } 
 
 type_qual:
-  | INCOMPLETE { $1,`Incomplete }
-  | POD { $1, `Pod } /* POD types don't require destructors */
-  | GC_POINTER { $1, `GC_pointer }
+  | INCOMPLETE { [$1,`Incomplete] }
+  | POD { [$1, `Pod] } /* POD types don't require destructors */
+  | GC_POINTER { [$1, `GC_pointer] }
+  | GC_TYPE expr 
+    { 
+      let t = $2 in
+      let t = typecode_of_expr t in
+      [$1, `Raw_needs_shape t ]
+    }
 
 type_quals:
-  | type_qual type_quals { $1 :: $2 }
+  | type_qual type_quals { $1 @ $2 }
   | { [] }
   
 abstract_type:

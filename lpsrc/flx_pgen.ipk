@@ -83,10 +83,11 @@ let gen_prim_call
   let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
   let rtn t = tn (rt t) in
 
-  let ts = map rtn ts in
   let argt = rt argt in
   let tt = tn argt in
   let sh t = shape_of bbdfns tn t in
+  let gshapes = map sh ts in
+  let ts = map rtn ts in
   let carg = 
     match argt with 
     | `BTYP_tuple []  -> ce_atom "UNIT_VALUE_ERROR"
@@ -124,7 +125,7 @@ let gen_prim_call
         in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
       | _ -> assert false
     in
-    csubst sr sr2 ct carg ess ets tt ret ts prec ashape ashapes ["Error"]
+    csubst sr sr2 ct carg ess ets tt ret ts prec ashape ashapes ["Error"] gshapes
   
   (* the argument isnt a tuple, but the type is *)
   | (_,`BTYP_tuple typs) as x ->
@@ -137,7 +138,7 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["Error"]
+    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["Error"] gshapes
 
   (* the argument isnt a tuple, but the type is an array *)
   | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
@@ -150,13 +151,13 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["error"]
+    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["error"] gshapes
 
   (* the argument isn't an explicit tuple, and the type
      is neither an array nor tuple
   *)
   | (_,typ) -> 
-    csubst sr sr2 ct carg [carg] [tt] tt ret ts prec ashape [ashape] ["Error"]
+    csubst sr sr2 ct carg [carg] [tt] tt ret ts prec ashape [ashape] ["Error"] gshapes
 
 
 

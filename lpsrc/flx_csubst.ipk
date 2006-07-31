@@ -19,6 +19,7 @@ val csubst:
   string ->      (* shape of argument *)
   string list -> (* shape of arguments *)
   string list -> (* display EXCLUDING thread frame *)
+  string list -> (* shape of generic type arguments as strings *)
   cexpr_t
   
 @h = tangler('src/flx_csubst.ml')
@@ -51,6 +52,7 @@ open Flx_cexpr
    
    ??: expands to ?
    ?n: the n'th generic type argument ..
+   @?n: the n'th generic type argument shape ..
    ?a: expands to ?1,?2, ...
 
 *)
@@ -72,6 +74,7 @@ open Flx_cexpr
   'HashDigits',
   'EarholeDigits',
   'EarholeDisplayDigits',
+  'EarholeQuestDigits',
   'QuestDigits',
   'Varargs',
   'VarargsDigits',
@@ -102,7 +105,7 @@ let is_atomic s =
 
 let islower = function | 'a' .. 'z' -> true | _ -> false
 
-let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argshape argshapes display =
+let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argshape argshapes display gargshapes =
   (*
   print_endline ("INPUT ct,prec=" ^ ct ^ " is " ^ prec);
   *)
@@ -239,6 +242,10 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
       | 'd' -> 
         digits := 0;
         mode := EarholeDisplayDigits
+     
+     | '?' -> 
+        digits := 0;
+        mode := EarholeQuestDigits
       
       | '0' .. '9' -> 
         digits := Char.code ch - Char.code '0'; 
@@ -255,6 +262,24 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
       | _ ->
         let d = String.concat "," (list_prefix display !digits) in
         bcat d;
+        mode := Normal;
+        trans i ch
+      end
+
+    | EarholeQuestDigits ->
+      begin match ch with
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0' 
+
+      | _ ->
+        if !digits> List.length gargs
+        then serr i ("Generic type parameter ?" ^ string_of_int !digits ^ " too large")
+        else if !digits<1 then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too small")
+        else
+          bcat
+          (
+            nth gargshapes (!digits-1)
+          );
         mode := Normal;
         trans i ch
       end

@@ -1,5 +1,15 @@
 @head(1,'Garbage collector')
 $Log$
+Revision 1.5  2006/07/31 12:45:17  skaller
+Add _gc_type t type qualifier which tells that t is an allocable
+type and requires a shape. Add magic substitution encoding @?n
+which refers to the shape of the n'th type argument.
+Fixed faulty declaration of C++ array new operator used
+for allocation of a gc scannable array. Provided type
+Varray::varray[t] for variable length array, this is only
+a first cut: it's actually an immobile bounded length
+array with size variable up to the bound.
+
 Revision 1.4  2006/07/17 16:42:40  skaller
 Start with config and small binding for mmap.
 
@@ -395,7 +405,7 @@ length of an array, respectively.
 @select(h)
 GC_EXTERN void reset_shape(void *memory, gc_shape_t &);
 GC_EXTERN void reset_count(void *memory, unsigned long); 
-GC_EXTERN unsigned long get_count(void *memory, unsigned long); 
+GC_EXTERN unsigned long get_count(void *memory); 
 
 }}} // end namespaces
 
@@ -418,7 +428,7 @@ GC_EXTERN void *operator new
 );
 
 /// Allocate collectable array
-GC_EXTERN void *operator new
+GC_EXTERN void *operator new []
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
@@ -595,7 +605,8 @@ void *operator new(
   return collector.allocate(&shape,1);
 }
 
-void *operator new(
+// array form
+void *operator new [] (
   std::size_t amt,
   flx::gc::generic::collector_t &collector,
   flx::gc::generic::gc_shape_t &shape,

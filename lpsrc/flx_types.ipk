@@ -246,6 +246,11 @@ type  c_t = [
   | `Str of string
 ]
 
+type base_type_qual_t = [
+  | `Incomplete
+  | `Pod
+  | `GC_pointer (* this means the type is a pointer the GC must follow *)
+]
 
 (** type of a qualified name *)
 type qualified_name_t =
@@ -556,9 +561,8 @@ and property_t = [
 ]
 
 and type_qual_t = [
-  | `Incomplete
-  | `Pod
-  | `GC_pointer (* this means the type is a pointer the GC must follow *)
+  | base_type_qual_t
+  | `Raw_needs_shape of typecode_t
 ]
 
 and requirement_t = [
@@ -1044,6 +1048,11 @@ and bclass_member_t = [
   | `BMemberCtor of id_t * btypecode_t
 ]
 
+and btype_qual_t = [
+  | base_type_qual_t
+  | `Bound_needs_shape of btypecode_t
+]
+
 and bbdcl_t = 
   [
   | `BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * bexe_t list
@@ -1056,7 +1065,7 @@ and bbdcl_t =
   | `BBDCL_reglex of     property_t list * bvs_t * bparams_t * int * btypecode_t * regular_args_t
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
+  | `BBDCL_abs of        bvs_t * btype_qual_t list * c_t * breqs_t
   | `BBDCL_const of      bvs_t * btypecode_t * c_t * breqs_t
   | `BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
   | `BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * int * btypecode_t * breqs_t * prec_t
@@ -2152,6 +2161,7 @@ val print_ivs_with_index: ivs_list_t -> string
 
 val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string
+val string_of_bquals: symbol_table_t -> btype_qual_t list -> string
 
 @h = tangler('src/flx_print.ml')
 @select(h)
@@ -3102,12 +3112,21 @@ and string_of_named_reqs x = match x with
   | `NREQ_true -> "" (* requires nothing *)
   | x -> " requires " ^ string_of_named_req_expr x
 
-and string_of_qual = function 
+and string_of_base_qual = function 
 | `Incomplete -> "incomplete"
 | `Pod -> "pod"
 | `GC_pointer -> "GC_pointer"
 
+and string_of_qual = function 
+| #base_type_qual_t as x -> string_of_base_qual x
+| `Raw_needs_shape t -> "needs_shape(" ^ string_of_typecode t ^ ")"
+
+and string_of_bqual dfns = function 
+| #base_type_qual_t as x -> string_of_base_qual x
+| `Bound_needs_shape t -> "needs_shape(" ^ string_of_btypecode dfns t ^ ")"
+
 and string_of_quals qs = catmap " " string_of_qual qs
+and string_of_bquals dfns qs = catmap " " (string_of_bqual dfns) qs
 
 and string_of_ast_term level (term:ast_term_t) = 
   let sast level x = string_of_ast_term level x in
@@ -4326,7 +4345,7 @@ and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string =
 
   (* binding structures [prolog] *)
   | `BBDCL_abs (vs,quals,code,reqs) ->
-    (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
+    (match quals with [] ->"" | _ -> string_of_bquals dfns quals ^ " ") ^
     "type " ^ name ^  print_bvs vs ^
     " = " ^ string_of_code_spec code ^ ";"
 

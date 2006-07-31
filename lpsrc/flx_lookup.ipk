@@ -2680,7 +2680,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
  
     | `SYMDEF_abs _ 
     | `SYMDEF_cclass _ 
-    | `SYMDEF_union _ ->
+    | `SYMDEF_union _ 
+    | `SYMDEF_type_alias _ ->
+    
       (* recursively lookup using "_ctor_" ^ name :
          WARNING: we might find a constructor with the
          right name for a different cclass than this one,

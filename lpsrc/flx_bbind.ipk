@@ -185,7 +185,13 @@ let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
   in
     let res = aux reqs in
     res
-  
+
+let bind_qual bt qual = match qual with
+  | #base_type_qual_t as x -> x
+  | `Raw_needs_shape t -> `Bound_needs_shape (bt t)
+
+let bind_quals bt quals = map (bind_qual bt) quals
+
 let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=name_map;dirs=dirs;symdef=bdcl} =
   let qname = qualified_name_of_index syms.dfns i in
   let true_parent = find_true_parent syms.dfns name parent in
@@ -210,6 +216,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
     let bvs = map (fun (s,i,tp) -> s,i) ivs in
     let btraint = function | Some x -> Some (be x) | None -> None in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
+    let bind_quals quals = bind_quals bt quals in
     (*
     print_endline ("******Binding " ^ name);
     *)
@@ -654,12 +661,13 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
     | `SYMDEF_inherit _ -> ()
     | `SYMDEF_inherit_fun _ -> ()
 
-    | `SYMDEF_abs (complete,ct,reqs)->
+    | `SYMDEF_abs (quals,ct,reqs)->
       (*
       print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name); 
       *)
       let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (bvs,complete,ct,reqs))
+      let bquals = bind_quals quals in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (bvs,bquals,ct,reqs))
 
     | `SYMDEF_insert (ct,ikind,reqs) ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 

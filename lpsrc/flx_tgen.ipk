@@ -227,7 +227,7 @@ let gen_type_name syms bbdfns (index,typ) =
         match ct with
         | `Str c -> c
         | `StrTemplate c ->
-        try sc "expr" (csubst sr sr c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"]) 
+        try sc "expr" (csubst sr sr c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"]) 
         with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
       in
 

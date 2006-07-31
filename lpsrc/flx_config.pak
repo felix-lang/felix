@@ -12,6 +12,16 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.216  2006/07/31 12:45:17  skaller
+Add _gc_type t type qualifier which tells that t is an allocable
+type and requires a shape. Add magic substitution encoding @?n
+which refers to the shape of the n'th type argument.
+Fixed faulty declaration of C++ array new operator used
+for allocation of a gc scannable array. Provided type
+Varray::varray[t] for variable length array, this is only
+a first cut: it's actually an immobile bounded length
+array with size variable up to the bound.
+
 Revision 1.215  2006/07/25 17:20:14  idadesub
 this patch adds support for a unit test to fail, but not stop the entire
 build. It does it by logging the output from the unit test, and storing it
@@ -1727,6 +1737,7 @@ flx_expr_terminator_keywords = [
 #    ("until", "UNTIL"),
     ("_", "UNDERSCORE"),
     ("_gc_pointer", "GC_POINTER"),
+    ("_gc_type", "GC_TYPE"),
     ("_svc", "SVC"),
     ("_deref", "DEREF"),
   ]

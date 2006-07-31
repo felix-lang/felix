@@ -2,6 +2,16 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.171  2006/07/31 12:45:17  skaller
+Add _gc_type t type qualifier which tells that t is an allocable
+type and requires a shape. Add magic substitution encoding @?n
+which refers to the shape of the n'th type argument.
+Fixed faulty declaration of C++ array new operator used
+for allocation of a gc scannable array. Provided type
+Varray::varray[t] for variable length array, this is only
+a first cut: it's actually an immobile bounded length
+array with size variable up to the bound.
+
 Revision 1.170  2006/07/17 17:22:40  skaller
 Add test case for mmap.
 
@@ -2094,6 +2104,29 @@ module Array
 
     return None[T];
   }
+}
+
+publish "Bounded Variable length arrays"
+
+module Varray
+{
+   _gc_pointer _gc_type t type varray[t] = "?1*";
+
+   fun mk_array[t]: size -> varray[t] = "new(*PTF gc,@?1,(unsigned long)$1) ?1[$1]";
+
+   fun len[t]: varray[t] -> size = "flx::gc::generic::get_count($1)";
+
+   private // unsafe!
+   proc set_length[t]: size * varray[t] = 
+     """
+     { 
+       unsigned long newcount = $1;
+       unsigned long oldcount = flx::gc::generic::get_count($2);
+       flx::gc::generic::reset_count(newcount,$2);
+       while(oldcount < newcount) ::new($2+oldcount++) ?1;
+       while(oldcount > newcount) ($2+oldcount--)->~?1;
+     }
+     """;
 }
 
 @#------------- Lexer -------------------
