@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.105  2006/08/01 05:37:50  idadesub
+looks like i accidentally used False instead of 0, breaking on python versions
+less than 2.3
+
 Revision 1.104  2006/07/28 03:39:31  skaller
 Add 'stop' option to break unit tests on first error.
 
@@ -2211,7 +2215,7 @@ class Plugin:
     self.priority = priority
     self.failures = []
     self.successes = []
-    self.used = False 
+    self.used = 0
 
   def __call__(self,*args,**kwds):
     self.used = 1
@@ -2699,7 +2703,7 @@ print
 failure_log = Tee()
 
 failure_log.write("----- PLUGIN STATUS -----\n")
-failed = False
+failed = 0
 for plugin in scheduled_plugins + unscheduled_plugins:
   nfail = len(plugin.failures)
   pfail = bool(nfail)
