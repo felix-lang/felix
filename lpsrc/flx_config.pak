@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.217  2006/08/02 15:11:42  skaller
+Fix result inversion in make script, so None is also considered
+as false.
+
 Revision 1.216  2006/07/31 12:45:17  skaller
 Add _gc_type t type qualifier which tells that t is an allocable
 type and requires a shape. Add magic substitution encoding @?n
@@ -566,10 +570,10 @@ def xqt(x,
   flush()
 
   if invert_result:
-    if result == 0:
-      result = 1
-    else:
+    if result:
       result = 0
+    else:
+      result = 1
 
   if quiet < 2:
     if result:
