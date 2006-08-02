@@ -1614,7 +1614,7 @@ main(int argc, char** argv) {
     opt.HAVE_EPOLL = 0
     try:
       result,lines=self.run_static_program(shell, get_stdout,filename)
-      if result == None:
+      if not result:
         opt.HAVE_EPOLL = 1
     except: 
       pass
