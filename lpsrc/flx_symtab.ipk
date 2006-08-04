@@ -976,6 +976,15 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           ;
           add_tvars privtab
 
+        | `DCL_lazy (t,e) ->       
+          let t = if t = `TYP_none then `TYP_var n else t in
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_lazy (t,e)}
+          ;
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n
+          ;
+          add_tvars privtab
+
         | `DCL_type_alias (t) ->
           if is_class then clierr sr "Type alias not allowed in class";
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_type_alias t}

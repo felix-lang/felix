@@ -1119,7 +1119,8 @@ function_definition:
       and body = [`AST_fun_return (sr,$8)]
       and args = List.map snd $5 (* elide srcref *)
       and vs = $4
-      in mkcurry sr name vs args return_type kind body
+      in 
+      mkcurry sr name vs args return_type kind body
     }
 
   | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
@@ -1137,17 +1138,17 @@ function_definition:
       in mkcurry sr name vs args return_type kind body
     }
   
-  | adjectives FUNCTION NAME tvarlist COLON expr opt_cstring opt_prec requires_clause SEMI 
+  | adjectives FUNCTION NAME tvarlist opt_type_expr opt_cstring opt_prec requires_clause SEMI 
     { 
       let name = snd $3 
       and vs = $4
-      and t = typecode_of_expr $6 
-      and sr = rstoken $2 $10
-      and prec = $8
-      and reqs = $9 
+      and t,traint = $5
+      and sr = rstoken $2 $9
+      and prec = $7
+      and reqs = $8
       in
       let ct =  
-        match $7 with 
+        match $6 with 
         | Some x -> x 
         | None -> `StrTemplate (name ^ "($a)")
       in
@@ -1175,21 +1176,37 @@ function_definition:
         )
     }
 
-  | adjectives FUNCTION NAME tvarlist COLON expr EQUAL matchings SEMI
+  | adjectives FUNCTION NAME tvarlist opt_type_expr EQRIGHTARROW expr SEMI
+    {
+      let kind = match $1 with
+        | [] -> `Function
+        | h :: t -> snd h
+      in
+      let sr = rstoken $2 $8 in
+      let name = snd $3 
+      and return_type = $5
+      and body = [`AST_fun_return (sr,$7)]
+      and args = []
+      and vs = $4
+      in 
+      mkcurry sr name vs args return_type kind body
+    }
+
+  | adjectives FUNCTION NAME tvarlist opt_type_expr EQUAL matchings SEMI
     { 
       let kind = match $1 with
         | [] -> `Function
         | h :: t -> snd h
       in
-      let sr = rstoken $2 $9 in
+      let sr = rstoken $2 $8 in
       let name = snd $3 in
       let vs = $4 in
-      let t = typecode_of_expr $6 in
-      let traint = None in
+      let t,traint = $5 in
+      let body = $7 in
       match t with
       | `TYP_function (argt, return_type) ->
         let args = [["_a",argt],None] in 
-        let match_expr = `AST_match (sr,(`AST_name (sr,"_a",[]),$8)) in
+        let match_expr = `AST_match (sr,(`AST_name (sr,"_a",[]),body)) in
         let body = [`AST_fun_return (sr,match_expr)] in
         mkcurry sr name vs args (return_type,traint) kind body
       | _ -> 
@@ -3041,7 +3058,7 @@ let parse_file
         begin
           toker#report_syntax_error;
           print_endline s;
-          raise (Flx_exceptions.ParseError "Failure Parsing File")
+          raise (Flx_exceptions.ParseError ("Failure \""^s^"\" Parsing File"))
         end
       | Flx_exceptions.ClientError _ 
       | Flx_exceptions.ClientError2 _ 

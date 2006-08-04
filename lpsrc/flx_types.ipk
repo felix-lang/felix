@@ -693,6 +693,7 @@ and statement_t =
   
   (* variables *)
   | `AST_val_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
+  | `AST_lazy_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
   | `AST_var_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
  
   (* module system *)
@@ -829,6 +830,7 @@ type dcl_t =
   (* variables *)
   | `DCL_val of          typecode_t
   | `DCL_var of          typecode_t
+  | `DCL_lazy of          typecode_t * expr_t
   | `DCL_type_alias of   typecode_t
   | `DCL_inherit of   qualified_name_t
   | `DCL_inherit_fun of   qualified_name_t
@@ -1112,6 +1114,7 @@ type symbol_definition_t =
   | `SYMDEF_const of typecode_t * c_t * named_req_expr_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
+  | `SYMDEF_lazy of  typecode_t * expr_t
   | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_req_expr_t * prec_t
   | `SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
   | `SYMDEF_insert of c_t  * ikind_t * named_req_expr_t
@@ -1922,6 +1925,7 @@ let src_of_stmt e = match e with
   | `AST_macro_vfor (s,_,_,_)
 
   | `AST_val_decl (s,_,_,_,_) 
+  | `AST_lazy_decl (s,_,_,_,_) 
   | `AST_var_decl (s,_,_,_,_) 
  
 
@@ -3511,6 +3515,22 @@ and string_of_statement level s =
     )
     ^ ";"
 
+  | `AST_lazy_decl (_,name, vs,ty, value) ->
+    spaces level ^ 
+    "fun " ^ name ^ 
+    (
+      match ty with 
+      | Some t -> ": " ^ string_of_typecode t
+      | None -> ""
+    )
+    ^ 
+    (
+      match value with 
+      | Some e -> " = " ^ (se e) 
+      | None -> ""
+    )
+    ^ ";"
+
   | `AST_var_decl (_,name, vs,ty, value) ->
     spaces level ^ 
     "var " ^ name ^ 
@@ -3626,41 +3646,43 @@ and string_of_iface level s =
     spc ^ "export type (" ^ string_of_typecode flx_type ^ 
     ") as \"" ^ cpp_name ^ "\";"
 
-and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) 
-= match entry with
+and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) = 
+  let se e = string_of_expr e in
+  let st t = string_of_typecode t in
+  match entry with
   | `SYMDEF_regdef re ->
     "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 
   | `SYMDEF_regmatch (ps,cls) ->
     "regmatch " ^ name ^ " with " ^ 
-    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
+    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^se e) cls ^
     "endmatch;\n"
 
   | `SYMDEF_reglex (ps,i,cls) ->
     "regmatch " ^ name ^ " with " ^ 
-    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
+    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^se e) cls ^
     "endmatch;\n"
 
 
   | `SYMDEF_glr(t,(p,sexes)) ->
-    "nonterm " ^ name ^ " : " ^string_of_typecode t ^ " = | " ^
+    "nonterm " ^ name ^ " : " ^st t ^ " = | " ^
     string_of_reduced_production p ^
     " => " ^ " <exes> " ^
     ";"
 
   | `SYMDEF_const_ctor (uidx,ut,idx) -> 
-     string_of_typecode ut ^ "  " ^
+     st ut ^ "  " ^
      name ^ print_ivs vs ^ 
      ";"
 
   | `SYMDEF_nonconst_ctor (uidx,ut,idx,argt) -> 
-     string_of_typecode ut ^ "  " ^
+     st ut ^ "  " ^
      name ^ print_ivs vs ^ 
-     " of " ^ string_of_typecode argt ^
+     " of " ^ st argt ^
      ";"
 
   | `SYMDEF_type_alias t -> 
-    "typedef " ^ name ^ print_ivs vs ^" = " ^ string_of_typecode t ^ ";"
+    "typedef " ^ name ^ print_ivs vs ^" = " ^ st t ^ ";"
 
   | `SYMDEF_inherit qn -> 
     "inherit " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
@@ -3676,20 +3698,26 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     ";"
 
   | `SYMDEF_var (t) -> 
-    "var " ^ name ^ print_ivs vs ^":"^ string_of_typecode t ^ ";"
+    "var " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
   | `SYMDEF_val (t) -> 
-    "val " ^ name ^ print_ivs vs ^":"^ string_of_typecode t ^ ";"
+    "val " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
+
+  | `SYMDEF_lazy (t,e) -> 
+    "fun " ^ name ^ print_ivs vs ^
+    ": "^ st t ^ 
+    "= " ^ se e ^
+    ";"
 
   | `SYMDEF_parameter (t) -> 
-    "parameter " ^ name ^ print_ivs vs ^":"^ string_of_typecode t ^ ";"
+    "parameter " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
   | `SYMDEF_typevar (t) -> 
-    "typevar " ^ name ^ print_ivs vs ^":"^ string_of_typecode t ^ ";"
+    "typevar " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
   | `SYMDEF_const (t,ct, reqs) -> 
     "const " ^ name ^ print_ivs vs ^":"^ 
-    string_of_typecode t ^ " = " ^string_of_code_spec ct^
+    st t ^ " = " ^string_of_code_spec ct^
     string_of_named_reqs reqs ^
     ";"
     
@@ -3711,7 +3739,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
   | `SYMDEF_fun (props, pts,res,cts, reqs,prec) -> 
     string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
-    ": " ^ string_of_typecode 
+    ": " ^ st 
     (
       `TYP_function 
       (
@@ -3731,7 +3759,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
   | `SYMDEF_callback (props, pts,res,reqs) -> 
     string_of_properties props ^
     "callback fun " ^ name ^ print_ivs vs ^
-    ": " ^ string_of_typecode 
+    ": " ^ st 
     (
       `TYP_cfunction 
       (
@@ -3768,7 +3796,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     let ps,traint = ps in
     string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
-    ": " ^ string_of_typecode 
+    ": " ^ st 
     (
       `TYP_function 
       (
@@ -4071,73 +4099,75 @@ and string_of_bexe dfns level s =
 
 and string_of_dcl level name seq vs (s:dcl_t) = 
   let se e = string_of_expr e in
+  let st t = string_of_typecode t in
+  let sl = spaces level in
   let seq = match seq with Some i -> "<" ^ si i ^ ">" | None -> "" in
   match s with
   | `DCL_regdef re -> 
-    spaces level ^ "regexp " ^ name^seq ^ " = " ^ string_of_re re ^ ";\n"
+    sl ^ "regexp " ^ name^seq ^ " = " ^ string_of_re re ^ ";\n"
 
   | `DCL_regmatch cls -> 
-    spaces level ^ "regmatch " ^ name^seq ^ " with " ^ 
+    sl ^ "regmatch " ^ name^seq ^ " with " ^ 
     catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
     "endmatch;\n"
 
   | `DCL_reglex cls -> 
-    spaces level ^ "reglex " ^ name^seq ^ " with " ^ 
+    sl ^ "reglex " ^ name^seq ^ " with " ^ 
     catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
     "endmatch;\n"
 
 
   | `DCL_type_alias (t2) ->
-    spaces level ^ "typedef " ^ name^seq ^ print_vs vs ^
-    " = " ^ string_of_typecode t2 ^ ";"
+    sl ^ "typedef " ^ name^seq ^ print_vs vs ^
+    " = " ^ st t2 ^ ";"
 
   | `DCL_inherit qn ->
-    spaces level ^ "inherit " ^ name^seq ^ print_vs vs ^
+    sl ^ "inherit " ^ name^seq ^ print_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
   | `DCL_inherit_fun qn ->
-    spaces level ^ "inherit fun " ^ name^seq ^ print_vs vs ^
+    sl ^ "inherit fun " ^ name^seq ^ print_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
   | `DCL_module (asms) -> 
-    spaces level ^ "module " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "module " ^ name^seq ^ print_vs vs ^ " = " ^
     "\n" ^ 
     string_of_asm_compound level asms 
 
   | `DCL_class (asms) -> 
-    spaces level ^ "class " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "class " ^ name^seq ^ print_vs vs ^ " = " ^
     "\n" ^ 
     string_of_asm_compound level asms 
 
   | `DCL_struct (cs) -> 
     let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name^ ": " ^ string_of_typecode ty ^ ";"
+      (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
     in
-    spaces level ^ "struct " ^ name^seq ^ print_vs vs ^ " = " ^
-    spaces level ^ "{\n" ^
+    sl ^ "struct " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
-    spaces level ^ "}"
+    sl ^ "}"
 
   | `DCL_cstruct (cs) -> 
     let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name^ ": " ^ string_of_typecode ty ^ ";"
+      (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
     in
-    spaces level ^ "cstruct " ^ name^seq ^ print_vs vs ^ " = " ^
-    spaces level ^ "{\n" ^
+    sl ^ "cstruct " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
-    spaces level ^ "}"
+    sl ^ "}"
 
   | `DCL_cclass (cs) -> 
-    spaces level ^ "cclass " ^ name^seq ^ print_vs vs ^ " = " ^
-    spaces level ^ "{\n" ^
+    sl ^ "cclass " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "{\n" ^
     catmap "\n" (string_of_class_component level) cs ^ "\n" ^
-    spaces level ^ "}"
+    sl ^ "}"
 
   | `DCL_typeclass (cs) -> 
-    spaces level ^ "type class " ^ name^seq ^ print_vs vs ^ " = " ^
-    spaces level ^ "{\n" ^
+    sl ^ "type class " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "{\n" ^
     catmap "" (string_of_typeclass_component level) cs ^ 
-    spaces level ^ "}"
+    sl ^ "}"
 
   | `DCL_union (cs) -> 
     let string_of_union_component (name,v,ty) =
@@ -4146,13 +4176,13 @@ and string_of_dcl level name seq vs (s:dcl_t) =
       (match v with | None -> "" | Some i -> "="^si i) ^ 
       special_string_of_typecode ty
     in
-    spaces level ^ "union " ^ name^seq ^ print_vs vs ^
+    sl ^ "union " ^ name^seq ^ print_vs vs ^
     " = " ^
-    spaces level ^ "{\n" ^
+    sl ^ "{\n" ^
     catmap ";\n" string_of_union_component cs ^ "\n" ^
-    spaces level ^ "}"
+    sl ^ "}"
 
-  | `DCL_abs (quals, code, reqs) -> spaces level ^ 
+  | `DCL_abs (quals, code, reqs) -> sl ^ 
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name^seq ^ print_vs vs ^
     " = " ^ string_of_code_spec code ^ 
@@ -4162,10 +4192,10 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   | `DCL_fun (props, args, result, code, reqs,prec) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_function (argtype,result) in
-    spaces level ^ 
+    sl ^ 
     string_of_properties props ^
     "fun " ^ name^seq ^ print_vs vs ^
-    ": " ^ string_of_typecode t ^
+    ": " ^ st t ^
     " = " ^ string_of_code_spec code ^ 
     (if prec = "" then "" else ":"^prec^" ")^
     string_of_named_reqs reqs ^
@@ -4174,15 +4204,15 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   | `DCL_callback (props, args, result, reqs) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_cfunction (argtype,result) in
-    spaces level ^ 
+    sl ^ 
     string_of_properties props ^
     "callback fun " ^ name^seq ^ print_vs vs ^
-    ": " ^ string_of_typecode t ^
+    ": " ^ st t ^
     string_of_named_reqs reqs ^
     ";"
 
   | `DCL_insert (s,ikind, reqs) -> 
-    spaces level ^ 
+    sl ^ 
     (match ikind with 
     | `Header -> "header " 
     | `Body -> "body "
@@ -4193,47 +4223,47 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_named_reqs reqs ^ ";"
     
   | `DCL_const (typ, code, reqs) ->
-    spaces level ^ 
+    sl ^ 
      "const " ^ name^seq ^print_vs vs ^  
-     ": " ^ string_of_typecode typ ^ 
+     ": " ^ st typ ^ 
      " = "^string_of_code_spec code^ 
     string_of_named_reqs reqs ^
      ";" 
 
   | `DCL_reduce (ps, e1,e2) -> 
-    spaces level ^ 
+    sl ^ 
     "reduce " ^ name^seq ^ print_vs vs ^
     "("^ string_of_basic_parameters ps ^"): " ^
     string_of_expr e1 ^ " => " ^ string_of_expr e2 ^ ";"
 
   | `DCL_axiom (ps, e1) -> 
-    spaces level ^ 
+    sl ^ 
     "axiom " ^ name^seq ^ print_vs vs ^
     "("^ string_of_basic_parameters ps ^"): " ^
     string_of_expr e1 ^ ";"
 
   | `DCL_function (ps, res, props, ss) -> 
-    spaces level ^ 
+    sl ^ 
     string_of_properties props ^
     "fun " ^ name^seq ^ print_vs vs ^
-    "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
+    "("^ (string_of_parameters ps)^"): "^(st res)^"\n" ^
     string_of_asm_compound level ss
 
 
   | `DCL_match_check (pat,(s,i)) ->
-    spaces level ^ 
+    sl ^ 
     "function " ^ name^seq ^ "() { " ^ 
     s ^ "<"^si i^"> matches " ^ string_of_pattern pat ^
     " }"
 
   | `DCL_match_handler (pat,(varname, i), sts) ->
-    spaces level ^ 
+    sl ^ 
     "match_handler " ^ name^seq ^ 
     "(" ^ string_of_pattern pat ^ ")" ^
     string_of_asm_compound level sts
 
   | `DCL_glr (t,(p,e')) ->
-    spaces level ^ "nonterm " ^ name^seq ^ " : " ^string_of_typecode t ^
+    sl ^ "nonterm " ^ name^seq ^ " : " ^st t ^
     spaces (level + 1) ^ " | " ^
     string_of_reduced_production p ^
     " => " ^
@@ -4241,12 +4271,20 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     ";"
   
   | `DCL_val (ty) ->
-    spaces level ^ 
-    "val " ^ name^seq ^ print_vs vs ^ ": " ^ string_of_typecode ty ^ ";"
+    sl ^ 
+    "val " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
 
   | `DCL_var (ty) ->
-    spaces level ^ 
-    "var " ^ name^seq ^ print_vs vs ^ ": " ^ string_of_typecode ty ^ ";"
+    sl ^ 
+    "var " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
+  
+  | `DCL_lazy (ty,e) ->
+    sl ^ 
+    "fun " ^ name^seq ^ print_vs vs ^ 
+    ": " ^ st ty ^ 
+    "= " ^ se e ^
+    ";"
+
 
 and string_of_asm level s =
   match s with
@@ -5211,12 +5249,17 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
          begin 
            try
              let t = typecode_of_expr e in
-            `TYP_typefun 
-            ( 
-              params,
-              ret,
-              t
-            )
+             match paramss,ret with
+             (* special case, allows {t} to mean 1 -> t *)
+             | [[],None],`TYP_none -> 
+              `TYP_function (`TYP_tuple [],t)
+             | _ ->
+             `TYP_typefun 
+             ( 
+               params,
+               ret,
+               t
+             )
            with _ -> 
              clierr sr 
              "Type lambda must return type expression"

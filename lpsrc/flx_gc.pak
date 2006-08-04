@@ -1,5 +1,8 @@
 @head(1,'Garbage collector')
 $Log$
+Revision 1.6  2006/08/04 05:46:07  skaller
+Lazy variables.
+
 Revision 1.5  2006/07/31 12:45:17  skaller
 Add _gc_type t type qualifier which tells that t is an allocable
 type and requires a shape. Add magic substitution encoding @?n
@@ -226,6 +229,7 @@ struct allocator_t {
   allocator_t():debug(false){}
   virtual void *allocate(std::size_t)=0;
   virtual void deallocate(void *)=0;
+  virtual void *reallocate(void *, std::size_t)=0;
   virtual ~allocator_t(){};
   void set_debug(bool d){debug=d;}
 };
@@ -637,6 +641,7 @@ struct GC_EXTERN flx_collector_t;
 struct GC_EXTERN malloc_free : public virtual allocator_t 
 {
   void *allocate(std::size_t);
+  void *reallocate(void *, std::size_t);
   void deallocate(void *);
 };
 
@@ -785,6 +790,16 @@ void *malloc_free::allocate(std::size_t amt)
   }
 }
 
+
+void *malloc_free::reallocate(void *p, size_t amt)
+{
+  void *q = realloc(p,amt);
+  if(q) return p;
+  else {
+    fprintf(stderr,"Felix: Realloc out of memory, blk=%ld\n",long(amt));
+    abort();
+  }
+}
 
 void malloc_free::deallocate(void *p)
 {

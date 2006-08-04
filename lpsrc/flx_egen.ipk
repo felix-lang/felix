@@ -483,6 +483,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           csubst sr sr2 c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
         end
 
+      (* | `BBDCL_function (_,_,([s,(_,`BTYP_void)],_),_,[`BEXE_fun_return e]) -> *)
+      | `BBDCL_function (_,_,([],_),_,[`BEXE_fun_return (_,e)]) ->
+        ge' e
+
       | `BBDCL_cstruct _ 
       | `BBDCL_struct _ 
       | `BBDCL_reglex _
