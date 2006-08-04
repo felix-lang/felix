@@ -4,7 +4,7 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '2'
-@flx_version_release = '_rc10'
+@flx_version_release = ''
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.218  2006/08/04 08:59:49  skaller
+Commit CVS to version 1.1.2
+
 Revision 1.217  2006/08/02 15:11:42  skaller
 Fix result inversion in make script, so None is also considered
 as false.
