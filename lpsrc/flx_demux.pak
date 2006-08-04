@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.32  2006/08/04 07:07:08  skaller
+get rid of debugging stuff
+
 Revision 1.31  2006/07/24 18:22:46  skaller
 Fix epoll bug which ignored epoll bug in kernels earlier
 than 2.6.9 .. epoll_ctl requires a non-NULL event address
@@ -928,7 +931,7 @@ typedef priority_queue<future_evt> void_prio_queue;
 posix_timer_queue::posix_timer_queue()
 {
     opaque_prio_queue = new void_prio_queue;    // a.k.a. PRIOQ
-    fprintf(stderr,"initing timer sleep thread\n");
+    //fprintf(stderr,"initing timer sleep thread\n");
     
     // NEED'S TO CHECK RETURN VAL AND HANDLE ERROR
     if(sleep_thread.init(thread_start, this))
@@ -953,7 +956,7 @@ posix_timer_queue::~posix_timer_queue()
     wakeup_thread();                // wakeup, cause to goto a cancel pt
 
     sleep_thread.join();            // will join
-    fprintf(stderr,"about to delete PRIOQ\n");
+    //fprintf(stderr,"about to delete PRIOQ\n");
     delete PRIOQ;
 }
 
@@ -1070,7 +1073,7 @@ void*
 posix_timer_queue::thread_start(void* udat)
 {
     posix_timer_queue*    q = (posix_timer_queue*)udat;
-    fprintf(stderr,"sleeper thread\n");
+    //fprintf(stderr,"sleeper thread\n");
 
     while(q->thread_loop_body()) ;
 
@@ -3770,7 +3773,7 @@ async_bool::signal_true()
 void
 demux_quitter::callback(demuxer* demux)
 {
-  fprintf(stderr, "quitter callback\n");
+  //fprintf(stderr, "quitter callback\n");
   demux->set_quit_flag(&finished);
 }
 
@@ -3892,7 +3895,7 @@ auto_fd::~auto_fd()
 void
 self_piper::install(demuxer* d, demux_callback* cb)
 {
-    fprintf(stderr, "installing self piper in %p with cb=%p\n", d, cb);
+    //fprintf(stderr, "installing self piper in %p with cb=%p\n", d, cb);
     posix_demuxer* demux = static_cast<posix_demuxer*>(d);
     spw.s = pp.get_read_end();
     spw.cb = cb;

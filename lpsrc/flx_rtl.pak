@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.60  2006/08/04 07:07:08  skaller
+get rid of debugging stuff
+
 Revision 1.59  2006/07/25 07:21:46  idadesub
 rolling back shaller's fix since it doesn't work :(
 
@@ -2696,8 +2699,13 @@ public:
 
 #include "faio_asyncio.hpp"
 
-async_hooker::~async_hooker(){ fprintf(stderr,"Deleted async_hooker\n"); }
-async_hooker_impl::~async_hooker_impl(){ fprintf(stderr,"Deleted async_hooker_impl\n"); }
+async_hooker::~async_hooker(){ 
+ //fprintf(stderr,"Deleted async_hooker\n"); 
+}
+
+async_hooker_impl::~async_hooker_impl(){ 
+  //fprintf(stderr,"Deleted async_hooker_impl\n"); 
+}
 
 bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 {
@@ -2746,7 +2754,9 @@ public:
 #endif
    }
 
-  ~proto_async(){ fprintf(stderr,"Deleting proto async\n"); }
+  ~proto_async(){ 
+    //fprintf(stderr,"Deleting proto async\n"); 
+  }
   flx_drv *get_driver() { return &driver; }
   demuxer *get_demuxer(){ return &demux; }
   fthread_t* dequeue() 
@@ -2767,16 +2777,16 @@ proto_async::pthread_thread(void* udat)
 
     while(1)
     {
-        fprintf(stderr, "ETHREAD ABOUT TO WAIT\n");
+        //fprintf(stderr, "ETHREAD ABOUT TO WAIT\n");
         d->wait();          // this does it
-        fprintf(stderr, "ETHREAD CHECKING QUIT FLAG\n");
+        //fprintf(stderr, "ETHREAD CHECKING QUIT FLAG\n");
         demux_quit_flag* f = d->get_quit_flag();
         if(f)
         {
           // got a quit flag - this is the very last thing we do before
           // exiting. don't use the demuxer after this as it's probably been
           // destructed.
-          fprintf(stderr, "ETHREAD GOT QUIT FLAG, SIGNALLING AND EXITING\n");
+          //fprintf(stderr, "ETHREAD GOT QUIT FLAG, SIGNALLING AND EXITING\n");
           f->signal_true();
           // in the case of a system takedown there's no guarantee that
           // anything after the signal_finish will be run at all, so this
@@ -2784,7 +2794,7 @@ proto_async::pthread_thread(void* udat)
           break;  // outta here
         }
     }
-    fprintf(stderr, "ETHREAD EXITING\n");
+    //fprintf(stderr, "ETHREAD EXITING\n");
     // fprintf(stderr, "proto_async was asked to quit...\n");
     return 0;
 }
@@ -3163,7 +3173,8 @@ doflx (void *data) {
              }
              // debug only ..
              else { 
-               fprintf(stderr, "module 'libflx_async_dynamic' loaded!\n"); 
+               if(debug_driver) 
+                 fprintf(stderr, "module 'libflx_async_dynamic' loaded!\n"); 
              }
              ptr_create_async_hooker = (create_async_hooker_t*)
                DLSYM(async_lib,create_async_hooker)
@@ -3175,7 +3186,8 @@ doflx (void *data) {
              }
              // debug only
              else {
-               fprintf(stderr, "found 'create_async_hooker'!\n"); 
+               if(debug_driver)
+                 fprintf(stderr, "found 'create_async_hooker'!\n"); 
              }
   #endif          
 #endif

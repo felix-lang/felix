@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.34  2006/08/04 07:07:08  skaller
+get rid of debugging stuff
+
 Revision 1.33  2006/07/19 17:57:52  rfistman
 wrote self pipe for windows, not happy with it though because it
  has to use a named pipe (anon pipes don't work in nonblock mode).
@@ -1375,7 +1378,7 @@ void worker_fifo::set_nthreads(int n)
 void worker_fifo::start_worker_thread()
 {
   ++nthreads;
-  fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
+  //fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
 #ifdef _WIN32
   flx_detached_thread_t().init((LPTHREAD_START_ROUTINE)thread_start, this);
 #else
@@ -1391,7 +1394,7 @@ worker_fifo::worker_fifo(int n, int m) : fifo(n), nthreads(0)
 void
 worker_fifo::stop_worker_thread()
 {
-  fprintf(stderr,"Kill detached worker thread, count=%d\n",nthreads);
+  //fprintf(stderr,"Kill detached worker thread, count=%d\n",nthreads);
   --nthreads;
   add_worker_task(NULL);    // thread safe takedown.
 }
