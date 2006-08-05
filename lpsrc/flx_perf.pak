@@ -5,11 +5,22 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, "speed", "Run comparative tests")
 
-  def __call__(self):    
+  def run(self,x):
+    print x
+    flush()
+    result = os.system(ENV+x)
+    if result: print "  .. ERROR CODE",hex(result)
+    flush()
+
+    if result:
+      raise MakeError
+
+
+  def runme(self):    
     runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
-    run("python speed/measure.py")
-    run("python speed/panal.py")
-    run("gnuplot speed/mkjpgs.gpl")
+    self.run("python speed/measure.py")
+    self.run("python speed/panal.py")
+    self.run("gnuplot speed/mkjpgs.gpl")
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 '+
       '--weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
     filecopy2dir(os.path.join('misc', 'interscript.css'),"speed")
