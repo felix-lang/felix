@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.33  2006/08/05 19:59:18  skaller
+Remove a couple of fprintf debugs from poll demuxer
+
 Revision 1.32  2006/08/04 07:07:08  skaller
 get rid of debugging stuff
 
@@ -1036,8 +1039,8 @@ posix_timer_queue::add_sleep_request(sleep_task* st, timespec* abs)
     // with this. Turned off for now. Not sure how that works.
     if(1 || PRIOQ->top().task == st)
     {
-//        fprintf(stderr,"WE PUSHED IN - waking thread\n");
-        wakeup_thread();
+      // fprintf(stderr,"WE PUSHED IN - waking thread\n");
+      wakeup_thread();
     }
 }
 
@@ -1895,7 +1898,7 @@ iocp_demuxer::iocp_demuxer()
 // NT 3.51 doesn't let you pass null filehandle, you've got to have a dummy
 // socket. keep that in mind. see InitializeIOCP in IOCPServer.cpp example
 // taken from codeproject. GetSystemInfo to find out num CPUs
-  fprintf(stderr,"CreateIoCompletionPort with ONE WORKER THREAD\n");
+  //fprintf(stderr,"CreateIoCompletionPort with ONE WORKER THREAD\n");
   iocp = CreateIoCompletionPort(
     INVALID_HANDLE_VALUE,
     NULL,
@@ -1913,7 +1916,7 @@ iocp_demuxer::iocp_demuxer()
 
 iocp_demuxer::~iocp_demuxer()
 {
-  fprintf(stderr, "~iocp (%p) NOW WITH ASYNC QUITTER!\n", iocp);
+  //fprintf(stderr, "~iocp (%p) NOW WITH ASYNC QUITTER!\n", iocp);
   try
   {
     demux_quitter q;
@@ -2044,7 +2047,7 @@ iocp_demuxer::get_evts(bool poll) {
 SOCKET
 create_listener_socket(int* io_port, int backlog)
 {
-  fprintf(stderr,"creating_listener_socket\n");
+  //fprintf(stderr,"creating_listener_socket\n");
   SOCKET        listener;
 
   // could use WSASocket, but these seem to be turning out overlapped anyway
@@ -3795,7 +3798,7 @@ demux_quitter::quit(demuxer* demux)
 void
 wdemux_quitter::quit(iocp_demuxer* demux)
 {
-  fprintf(stderr, "wdemux_quitter::quit\n");
+  //fprintf(stderr, "wdemux_quitter::quit\n");
   
   // install self piper in iocp demuxer, along withour callback.
   sp.install(demux, this);
@@ -4599,16 +4602,16 @@ namespace flx { namespace demux {
 
 ts_poll_demuxer::ts_poll_demuxer()
 {
-  fprintf(stderr, "ts_poll_demuxer installing self-piper\n");
+  //fprintf(stderr, "ts_poll_demuxer installing self-piper\n");
   // install self pipe trick.
   sp.install(&demux);
 }
 
 ts_poll_demuxer::~ts_poll_demuxer()
 {
-  fprintf(stderr, "ts_polling asking thread to quit\n");
+  //fprintf(stderr, "ts_polling asking thread to quit\n");
   async_quit();  // get async waiting thread to stop waiting
-  fprintf(stderr, "ts_poll async quit finished\n");
+  //fprintf(stderr, "ts_poll async quit finished\n");
 }
 
 void
