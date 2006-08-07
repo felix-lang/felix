@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.107  2006/08/07 21:18:19  skaller
+Fix Makefile so nocygwin build works.
+
 Revision 1.106  2006/08/07 07:59:56  idadesub
 So using the bin/flx script wasn't generating the write filename for the
 dynamic objects. This fixes it.
@@ -2778,7 +2781,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('all: dummy')
 @tangle('\t./mk extract ')
-@tangle('\t./mk')
+@tangle('\t./mk --phase=build')
+@tangle('\t./mk --phase=host')
+@tangle('\t./mk --phase=target')
 @tangle('\t./mk test ')
 @tangle('')
 @tangle('profile: dummy')
