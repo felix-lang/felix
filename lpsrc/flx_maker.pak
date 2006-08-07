@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.106  2006/08/07 07:59:56  idadesub
+So using the bin/flx script wasn't generating the write filename for the
+dynamic objects. This fixes it.
+
 Revision 1.105  2006/08/01 05:37:50  idadesub
 looks like i accidentally used False instead of 0, breaking on python versions
 less than 2.3
@@ -4043,7 +4047,7 @@ PKGCONFIG_DRIVER="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=flx_require
 
 if [ $STATIC = 0 ]
 then
-  EXT_OBJ=$EXT_DYNAMIC_OBJ
+  EXT_OBJ=$EXT_SHARED_OBJ
 else
   EXT_OBJ=$EXT_STATIC_OBJ
 fi
