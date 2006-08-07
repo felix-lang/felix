@@ -465,6 +465,15 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       print_bvs bvs ^ ":" ^
       sbt syms.dfns t)
 
+    | `SYMDEF_ref (t) -> 
+      let t = typeofindex syms i in
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_ref (bvs,t));
+
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound ref " ^ name ^ "<"^si i^">" ^
+      print_bvs bvs ^ ":" ^
+      sbt syms.dfns t)
+
     | `SYMDEF_lazy (rt,e) -> 
       let ps = [("dummy",`AST_void sr)],None in
       let exes = [sr,`EXE_fun_return e] in

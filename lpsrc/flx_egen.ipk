@@ -25,7 +25,17 @@ val gen_expr':
   btypecode_t list ->
   range_srcref -> cexpr_t
 
+(* for use in an expression *)
 val get_var_ref:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  int ->
+  int ->
+  btypecode_t list ->
+  string
+
+(* for definition/initialisation *)
+val get_ref_ref:
   sym_state_t ->
   fully_bound_symbol_table_t ->
   int ->
@@ -114,7 +124,8 @@ let get_var_frame syms bbdfns this index ts : string =
   with (id,parent,sr,entry) -> 
   match entry with
   | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t) ->
+  | `BBDCL_var (vs,t)
+  | `BBDCL_ref (vs,t) ->
     begin match parent with
     | None -> "0"
     | Some i ->
@@ -138,6 +149,57 @@ let get_var_ref syms bbdfns this index ts : string =
   match entry with
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t) ->
+    begin match parent with
+    | None -> (* print_endline "No parent ...?"; *)
+      "PTF " ^ cpp_instance_name syms bbdfns index ts
+    | Some i -> 
+      (*
+      print_endline ("Parent " ^ si i);
+      *)
+      (
+        if i <> this 
+        then "ptr" ^ cpp_instance_name syms bbdfns i ts ^ "->" 
+        else ""
+      ) ^
+      cpp_instance_name syms bbdfns index ts
+    end
+
+  | `BBDCL_ref (vs,t) ->
+    "*(" ^
+    begin match parent with
+    | None -> (* print_endline "No parent ...?"; *)
+      "PTF " ^ cpp_instance_name syms bbdfns index ts
+    | Some i -> 
+      (*
+      print_endline ("Parent " ^ si i);
+      *)
+      (
+        if i <> this 
+        then "ptr" ^ cpp_instance_name syms bbdfns i ts ^ "->" 
+        else ""
+      ) ^
+      cpp_instance_name syms bbdfns index ts
+    end
+    ^")"
+
+
+  | `BBDCL_tmp (vs,t) ->
+      cpp_instance_name syms bbdfns index ts
+
+  | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
+
+let get_ref_ref syms bbdfns this index ts : string =
+  match 
+    try Hashtbl.find bbdfns index 
+    with Not_found -> failwith ("[get_var_ref] Can't find index " ^ si index)
+  with (id,parent,sr,entry) ->
+  (*
+  print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
+  *)
+  match entry with
+  | `BBDCL_val (vs,t)
+  | `BBDCL_var (vs,t)
+  | `BBDCL_ref (vs,t) ->
     begin match parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bbdfns index ts
@@ -433,6 +495,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     begin match entry with
       | `BBDCL_var (_,t)
       | `BBDCL_val (_,t) 
+      | `BBDCL_ref (_,t) 
       | `BBDCL_tmp (_,t) 
         ->
           ce_atom (get_var_ref syms bbdfns this index ts)

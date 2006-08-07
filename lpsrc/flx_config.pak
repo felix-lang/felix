@@ -3,8 +3,8 @@
 @print FLX_CONFIG_CVS_ID
 @flx_version_major = '1'
 @flx_version_minor = '1'
-@flx_version_patch = '2'
-@flx_version_release = ''
+@flx_version_patch = '3'
+@flx_version_release = 'rc1'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.219  2006/08/07 15:14:31  skaller
+Head moves to 1.1.3_rc1
+
 Revision 1.218  2006/08/04 08:59:49  skaller
 Commit CVS to version 1.1.2
 
@@ -1725,6 +1728,7 @@ flx_expr_terminator_keywords = [
 #    ("public", "PUBLIC"),
 #    ("publish", "PUBLISH"),
     ("reduce", "REDUCE"),
+    ("ref", "REF"),
     ("rename", "RENAME"),
     ("requires", "REQUIRES"),
     ("return", "RETURN"),

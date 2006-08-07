@@ -767,6 +767,21 @@ p0$ A the p1;
 
 @select(tangler('test/rt28.expect'))
 hello
+@select(tangler('test/rt29.flx'))
+// test lazy variables
+#include <flx.flxh>
+
+var v = 1;
+
+fun x => v;
+fun y : int => 1; // just check syntax here
+
+print$ x; endl;
+v = 2;
+print$ x; endl;
+@select(tangler('test/rt29.expect'))
+1
+2
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>

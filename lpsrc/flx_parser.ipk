@@ -1564,6 +1564,31 @@ val_def:
         None
       ) 
     }
+
+  | REF NAME tvarlist LEFTARROW expr SEMI  
+    { 
+      `AST_ref_decl 
+      (
+        rstoken $1 $6, 
+        snd $2, 
+        $3,
+        None, 
+        Some $5
+      ) 
+    }
+
+  | REF NAME tvarlist COLON expr LEFTARROW expr SEMI  
+    { 
+      `AST_ref_decl 
+      (
+        rstoken $1 $8, 
+        snd $2, 
+        $3,
+        Some (typecode_of_expr $5), 
+        Some $7
+      ) 
+    }
+
 @doc()
 Variables can be declared in both procedures and functions.
 

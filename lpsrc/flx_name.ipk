@@ -131,6 +131,7 @@ let cpp_name bbdfns index =
   | `BBDCL_reglex _  -> "_rl"
   | `BBDCL_var _ -> "_v"
   | `BBDCL_val _ -> "_v"
+  | `BBDCL_ref _ -> "_v"
   | `BBDCL_tmp _ -> "_tmp"
   | `BBDCL_class _ -> "_cl"
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"

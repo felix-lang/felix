@@ -83,6 +83,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   *)
   match entry with
   | `BBDCL_var _ 
+  | `BBDCL_ref _ 
   | `BBDCL_val _
   | `BBDCL_tmp _
   | `BBDCL_const_ctor _

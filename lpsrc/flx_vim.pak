@@ -90,6 +90,7 @@ syn keyword cStatement const
 syn keyword cStatement struct
 syn keyword cStatement var
 syn keyword cStatement val
+syn keyword cStatement ref
 syn keyword cStatement union
 syn keyword cStatement class
 syn keyword cStatement exceptions

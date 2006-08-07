@@ -387,7 +387,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
-          "[bind_exe] LHS["^s^"<"^si index^">]:\n"^
+          "[bind_exe: iinit] LHS["^s^"<"^si index^">]:\n"^
           string_of_btypecode syms.dfns lhst^
           "\n of initialisation must have same type as RHS:\n"^
           string_of_btypecode syms.dfns rhst^
@@ -408,11 +408,17 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         (*
         print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
         *)
-        if type_match syms.dfns lhst rhst
+        let lhst =
+          let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
+          match entry with
+          | `SYMDEF_ref _ -> `BTYP_pointer lhst
+          | _ -> lhst
+        in
+         if type_match syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
-          "[bind_exe] LHS["^s^"<"^si index^">]:\n"^
+          "[bind_exe: init] LHS["^s^"<"^si index^">]:\n"^
           string_of_btypecode syms.dfns lhst^
           "\n of initialisation must have same type as RHS:\n"^
           string_of_btypecode syms.dfns rhst^

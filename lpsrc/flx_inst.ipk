@@ -386,6 +386,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
 
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t)
+  | `BBDCL_ref (vs,t)
   | `BBDCL_tmp (vs,t)
     ->
     if length vs <> length ts

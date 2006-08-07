@@ -695,6 +695,7 @@ and statement_t =
   | `AST_val_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
   | `AST_lazy_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
   | `AST_var_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
+  | `AST_ref_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
  
   (* module system *)
   | `AST_untyped_module of range_srcref * id_t * vs_list_t * statement_t list  
@@ -831,6 +832,7 @@ type dcl_t =
   | `DCL_val of          typecode_t
   | `DCL_var of          typecode_t
   | `DCL_lazy of          typecode_t * expr_t
+  | `DCL_ref of          typecode_t
   | `DCL_type_alias of   typecode_t
   | `DCL_inherit of   qualified_name_t
   | `DCL_inherit_fun of   qualified_name_t
@@ -1061,6 +1063,7 @@ and bbdcl_t =
   | `BBDCL_procedure of  property_t list * bvs_t * bparams_t * bexe_t list
   | `BBDCL_val of        bvs_t * btypecode_t
   | `BBDCL_var of        bvs_t * btypecode_t
+  | `BBDCL_ref of        bvs_t * btypecode_t
   | `BBDCL_tmp of        bvs_t * btypecode_t
   | `BBDCL_glr of        property_t list * bvs_t * btypecode_t * (bproduction_t * bexe_t list)
   | `BBDCL_regmatch of   property_t list * bvs_t * bparams_t * btypecode_t * regular_args_t
@@ -1114,6 +1117,7 @@ type symbol_definition_t =
   | `SYMDEF_const of typecode_t * c_t * named_req_expr_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
+  | `SYMDEF_ref of  typecode_t
   | `SYMDEF_lazy of  typecode_t * expr_t
   | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_req_expr_t * prec_t
   | `SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
@@ -1927,6 +1931,7 @@ let src_of_stmt e = match e with
   | `AST_val_decl (s,_,_,_,_) 
   | `AST_lazy_decl (s,_,_,_,_) 
   | `AST_var_decl (s,_,_,_,_) 
+  | `AST_ref_decl (s,_,_,_,_) 
  
 
   | `AST_type_alias (s,_,_,_) 
@@ -3515,6 +3520,23 @@ and string_of_statement level s =
     )
     ^ ";"
 
+  | `AST_ref_decl (_,name, vs,ty, value) ->
+    spaces level ^ 
+    "ref " ^ name ^ 
+    (
+      match ty with 
+      | Some t -> ": " ^ string_of_typecode t
+      | None -> ""
+    )
+    ^ 
+    (
+      match value with 
+      | Some e -> " = " ^ (se e) 
+      | None -> ""
+    )
+    ^ ";"
+
+
   | `AST_lazy_decl (_,name, vs,ty, value) ->
     spaces level ^ 
     "fun " ^ name ^ 
@@ -3702,6 +3724,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
 
   | `SYMDEF_val (t) -> 
     "val " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
+
+  | `SYMDEF_ref (t) -> 
+    "ref " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
   | `SYMDEF_lazy (t,e) -> 
     "fun " ^ name ^ print_ivs vs ^
@@ -4274,6 +4299,10 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     sl ^ 
     "val " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
 
+  | `DCL_ref (ty) ->
+    sl ^ 
+    "ref " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
+
   | `DCL_var (ty) ->
     sl ^ 
     "var " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
@@ -4377,6 +4406,9 @@ and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string =
 
   | `BBDCL_var (vs,ty) ->
     "var " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
+
+  | `BBDCL_ref (vs,ty) ->
+    "ref " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   | `BBDCL_tmp (vs,ty) ->
     "tmp " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"

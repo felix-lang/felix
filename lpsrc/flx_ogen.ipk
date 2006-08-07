@@ -49,6 +49,9 @@ let find_thread_vars_with_type bbdfns =
     | None,`BBDCL_var (_,t)
     | None,`BBDCL_val (_,t)
       -> vars := (k,t) :: !vars
+    | None,`BBDCL_ref (_,t)
+      -> vars := (k,`BTYP_pointer t) :: !vars
+
     | _ -> ()
   )
   bbdfns
@@ -71,6 +74,7 @@ let find_references syms (child_map,bbdfns) index ts =
       in
       match bbdfn with
       | `BBDCL_var (vs,t)
+      | `BBDCL_ref (vs,t)
       | `BBDCL_val (vs,t)
         -> 
         if length ts <> length vs then 

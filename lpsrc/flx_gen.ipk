@@ -1,4 +1,4 @@
-//@head(1,'C++ Code generator')
+@head(1,'C++ Code generator')
 @h = tangler('src/flx_gen.mli')
 @select(h)
 open Flx_ast
@@ -93,7 +93,9 @@ let find_variable_indices syms (child_map,bbdfns) index =
     try match Hashtbl.find bbdfns i with _,_,_,entry ->
       match entry with 
       | `BBDCL_var _ 
-      | `BBDCL_val _ -> true
+      | `BBDCL_ref _ 
+      | `BBDCL_val _ -> 
+        true
       | _ -> false
     with Not_found -> false
   )
@@ -121,6 +123,21 @@ let get_variable_typename syms bbdfns i ts =
     );
     let t = rt vs t in
     let n = cpp_typename syms t in
+    n
+
+  | `BBDCL_ref (vs,t) 
+    ->
+    let t = lower t in
+    if length ts <> length vs then 
+    failwith 
+    (
+      "[get_variable_typename} wrong number of args, expected vs = " ^ 
+      si (length vs) ^ 
+      ", got ts=" ^ 
+      si (length ts)
+    );
+    let t = rt vs t in
+    let n = cpp_typename syms (`BTYP_pointer t) in
     n
 
   | _ -> 
@@ -708,6 +725,7 @@ let is_closure_var bbdfns index =
       with Not_found -> failwith ("[var_type] ]Can't get index " ^ si index)
     in match entry with 
     | `BBDCL_var (_,t) 
+    | `BBDCL_ref (_,t) 
     | `BBDCL_val (_,t) -> lower t
     | _ -> failwith ("[var_type] expected "^id^" to be variable")
   in
@@ -1475,18 +1493,19 @@ let gen_exe filename syms
           "      "^
           get_variable_typename syms bbdfns v [] ^
           " " ^
-          get_var_ref syms bbdfns this v ts^ 
+          get_ref_ref syms bbdfns this v ts^ 
           " = " ^ 
           ge sr e ^
           ";\n"
           | `BBDCL_val _
+          | `BBDCL_ref _
           | `BBDCL_var _ ->
           (*
           print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
           *)
           (if with_comments then "      //"^src_str^"\n" else "") ^
           "      "^
-          get_var_ref syms bbdfns this v ts^ 
+          get_ref_ref syms bbdfns this v ts^ 
           " = " ^ 
           ge sr e ^
           ";\n"
@@ -1612,8 +1631,9 @@ let gen_C_function_body filename syms (child_map,bbdfns)
             with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
           in
           match entry with
+          | `BBDCL_val (vs,t)
           | `BBDCL_var (vs,t)
-          | `BBDCL_val (vs,t) 
+          | `BBDCL_ref (vs,t) 
             when not (mem i params) ->
             (i, rt vs t) :: lst
           | _ -> lst
@@ -1775,6 +1795,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
           in
           match entry with
           | `BBDCL_var (vs,t)
+          | `BBDCL_ref (vs,t)
           | `BBDCL_val (vs,t) 
             when not (mem i params) ->
             (i, rt vs t) :: lst
