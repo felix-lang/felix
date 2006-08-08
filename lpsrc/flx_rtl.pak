@@ -1,5 +1,12 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.61  2006/08/08 18:55:26  skaller
+minor and probably useless tweak: when using gcc, mark
+assertions as unlikely to fail using __builtin_expect(),
+the idea being to improve branch prediction (if the
+prediction is wrong .. the program is going to terminate
+anyhow and performance is irrelevant).
+
 Revision 1.60  2006/08/04 07:07:08  skaller
 get rid of debugging stuff
 
@@ -686,6 +693,14 @@ T &reinterpret(U const &x) {
 
 @if HAVE_GNU_X86_64:
   tangle('#define HAVE_GNU_X86_64')
+
+@if HAVE_GNU_BUILTIN_EXPECT:
+  # only use these with proper predicates!
+  tangle('#define FLX_UNLIKELY(x) __builtin_expect(long(x),0)')
+  tangle('#define FLX_LIKELY(x) !__builtin_expect(!long(x),0)')
+ else:
+  tangle('#define FLX_UNLIKELY(x) x')
+  tangle('#define FLX_LIKELY(x) x')
 
 @if HAVE_CGOTO:
   tangle("#define FLX_HAVE_CGOTO")

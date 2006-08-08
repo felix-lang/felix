@@ -75,6 +75,16 @@ class c_cxx_base(compiler_base):
     opt.include_paths = include_paths
     opt.lib_paths = lib_paths
 
+    # defaults for gcc specific stuff 
+    opt.HAVE_GNU_X86 = 0
+    opt.HAVE_GNU_X86_64 = 0
+    opt.USE_REGPARM3 = 0
+    opt.HAVE_CGOTO = 0
+    opt.HAVE_ASM_LABELS = 0
+    opt.HAVE_STL_GNU_CXX = 0
+    opt.HAVE_GNU_BUILTIN_EXPECT = 0
+
+
     print "COM =", opt.COM
 
   ########
@@ -1219,6 +1229,23 @@ class gnu_mixin:
 
   ########
 
+  def detect_gcc_builtin_expect(self, shell, get_stdout):
+    opt = self.options
+
+    filename = self.write_src(r"""
+int main(int argc, char** argv) { 
+   if(__builtin_expect(1,1));
+   return 0;
+}
+""", 'tmp' + os.sep + 'gnu_builtin')
+
+    try:
+      self.build_static_program(shell, filename)
+      opt.HAVE_GNU_BUILTIN_EXPECT= 1
+      print "gcc __builtin_expect() support detected"
+    except EnvironmentError:
+      opt.HAVE_GNU_BUILTIN_EXPECT= 0
+
   def detect_named_registers(self, shell, get_stdout):
     opt = self.options
 
@@ -1658,6 +1685,7 @@ main(int argc, char** argv) {
 
 
   def check_options(self, shell, get_stdout):
+    self.detect_gcc_builtin_expect(shell, get_stdout)
     self.detect_named_registers(shell, get_stdout)
     self.detect_computed_gotos(shell, get_stdout)
     self.detect_pthreads(shell, get_stdout)
@@ -1839,13 +1867,6 @@ class msvc_mixin:
     opt.EXT_DYLIB = opt.EXT_SHLIB
     opt.EXT_STATIC_OBJ = "_static.obj"
     opt.EXT_SHARED_OBJ = "_dynamic.obj"
-
-    opt.HAVE_GNU_X86 = 0
-    opt.HAVE_GNU_X86_64 = 0
-    opt.USE_REGPARM3 = 0
-    opt.HAVE_CGOTO = 0
-    opt.HAVE_ASM_LABELS = 0
-    opt.HAVE_STL_GNU_CXX = 0
 
     opt.HAVE_DLOPEN = 0
     opt.DLLIB = ""
