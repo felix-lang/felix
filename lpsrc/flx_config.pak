@@ -12,6 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.220  2006/08/08 16:26:43  idadesub
+made sure that we define verbose in make_config.py
+allowed Tee to have specified what stdout to use, instead of the now default
+sys.stdout
+
 Revision 1.219  2006/08/07 15:14:31  skaller
 Head moves to 1.1.3_rc1
 
@@ -624,11 +629,12 @@ def file_exists(f):
   except EnvironmentError: return 0
 
 class Tee:
-  def __init__(self):
+  def __init__(self, stdout=sys.stdout):
+    self.stdout = stdout
     self.file = StringIO.StringIO()
 
   def write(self, s):
-    sys.stdout.write(s)
+    self.stdout.write(s)
     self.file.write(s)
 
   def getvalue(self):
@@ -837,7 +843,8 @@ mkdirs("misc")
 mkdirs("tmp")
 mkdirs("config")
 mkdirs("doc")
- 
+
+verbose = 1
 quiet = 0
 force = 0
 upgrade = 0
