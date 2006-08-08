@@ -1,0 +1,418 @@
+@h = tangler('spkgs/flx_ref.py')
+@select(h)
+iscr_source = ['lpsrc/flx_ref.pak']
+weaver_directory = 'doc/refman/'
+
+@set_title("Felix Reference")
+@head(1,"Types")
+Felix provides a rich type system. It consists of the types
+and features described below.
+@begin_list("keyed")
+
+@item("1. System Types")
+These are system intrinsic types supported by the compiler.
+The most important of these are the function and procedure
+types, but also include special system intrinsics such
+as procedure continuations.
+
+@item("2. Standard Library Types")
+These are standard types provided by the library. They include
+primitives such as boolean, integral and floating numeric types, 
+algebraic types including lists, arrays, and options,
+and various containers.
+
+@item("3. Type Constructors")
+These are not types, but methods of combining types. There are two
+classes:
+@begin_list("keyed")
+@item("1. Anonymous Types")
+These are types denoted by an expression. Whilst they may
+be given aliases or abbreviations with a typedef, these types
+are identified by their structure.
+
+@item("2. Nominal Types")
+These are types specified by a declaration which gives
+them an identifying name. Each declaration denotes a
+distinct types. Nominal types include structs and unions.
+@end_list()
+
+@item("4. Type Bindings")
+Type bindings specify types mapping C++ types into the
+Felix type system. There are several kinds of binding and
+associated infrastructure, including primitive (abstract)
+types, cstructs (which are mappings of C structs and unions),
+
+@item("5. Parameterised types: polymorphism")
+Most type constructors in Felix can be polymorphic.
+
+@item("6. Metatyping")
+These are not types, but functions which generate types.
+The type language is a superset of the typed lambda calculus,
+type functions providing abstraction. However the system
+also supports the notions of products and sums of types,
+intersection types, and constraints. The types of these types
+are called kinds, and kinds themselves are metatyped with the
+same metatyping system.
+
+@item("7. Type Constraints")
+
+@item("8. Overloading")
+@end_list()
+
+@head(2,"Function Types")
+Felix provides two function types, Felix and C function types.
+@head(3,"Felix Function Types")
+Felix function closure types are denoted by:
+@begin_displayed_code()
+   D -> C
+@end_displayed_code()
+where D is the domain and C the codomain types. The binary
+combinator -> is left associative. Values of such a type
+are constructed by forming closures of function classes 
+which are denoted by a function definition. 
+@p()
+Closures bind to the instance of their environment
+denoted by lexical scoping together with control flow rules,
+and remain live at least while there is a live reference to them.
+The local part of a closure denoted by a function is called
+the stack frame for historical reasons, and the list of stack 
+frames comprising that of the function and its ancestors
+is known as the display, also for historical reasons.
+@p()
+Closures are applicative objects which can be applied to a value
+of their domain type D, and which return a value of their
+codomain type C.
+@p()
+Neither the domain D nor codomain C of a function type may be void.
+@p()
+Functions may not have side effects. See
+@ref_anchor("fundef")
+
+@head(3,"C Function Types")
+Felix also provides direct access to C functions, whose type
+is denoted by:
+@begin_displayed_code()
+   D --> C
+@end_displayed_code()
+Note that C function closures certainly exist, however they bind
+only to their primitive static environment.
+
+@head(3,"Procedure Types")
+A procedure is a subroutine which may and generally should have 
+side-effects and which does not return a value. Procedures
+have types denoted by one of:
+@begin_displayed_code()
+   D -> 0
+   D -> void
+@end_displayed_code()
+where D may not be void. (void is an alias for 0 defined
+in the standard library).
+@p()
+Felix procedures values are constructed by
+forming the closure of a procedure class. Procedures are quite
+distinct from functions, since they may participate in synchronous
+multithreading, whereas functions may not. See
+@ref_anchor("sync")
+.
+
+@head(2,"Anonymous Types")
+An anonymous type is one which is identified by its structure
+rather than a declared name.
+
+@head(3,"Tuple Types")
+A tuple is a categorical products whose projection functions
+are identified positionally, using non-negative integer constant
+indicies. n-ary tuples exist for all non-negative values of n
+other than 1. Tuples of one component of type T are identified
+with type T. The nullary tuple type is denoted by
+@begin_displayed_code()
+  1 
+  unit
+@end_displayed_code()
+where 'unit' is aliased to 1 in the standard library. The sole value
+of unit type is denoted:
+@begin_displayed_code()
+  ()
+@end_displayed_code()
+An n-ary tuple type, of components T0, T1, ... is denoted by:
+@begin_displayed_code()
+  T0 * T1 * T2 * ...
+@end_displayed_code()
+and values are denoted:
+@begin_displayed_code()
+  v0, v1, v2, ...
+@end_displayed_code()
+You should note that the chain operator * is not associative,
+although it is associative up to isomorphism. 
+
+@head(3,"Array Types")
+A tuple of 2 more or more components, all of which are
+the same type T, is known as an array. The special sugar
+@begin_displayed_code()
+  T ^ n 
+@end_displayed_code()
+may be used for arrays of manifestly fixed length, where n is a 
+literally given integer constant. Array values are the same
+as tuple values, since arrays are just special cases of
+tuples. However the special notation like:
+@begin_displayed_code()
+  [| 1,2,3 |]
+@end_displayed_code()
+can be used for arrays, which results in a compile time
+error if the component values are not all the same type.
+
+@head(3,"Record Types")
+A record type is a variant on a tuple, in which the 
+components are named rather than numbered. The types
+are denoted like:
+@begin_displayed_code()
+  struct {
+    a:int;
+    b:string;
+    c:double;
+  }
+@end_displayed_code()
+and values are constructed like:
+@begin_displayed_code()
+  struct {
+    a=1;
+    c= 9.2;
+    b:string="Hello";
+  }
+@end_displayed_code()
+Record types support a generic coercion operation
+which allows the formation of a new record with
+a subset of the fields of the argument record,
+the type of this record is a subtype. See 
+@ref_anchor("record coercion")
+.
+
+@head(3,"Sum Types")
+@head(2,"Nominal Types")
+@head(3,"Struct Types")
+@head(3,"Union Types")
+@head(3,"Enumeration Types")
+@head(2,"Type Bindings")
+@head(2,"Standard Library Types")
+@head(3,"System Types")
+@head(3,"Arithmetic Types")
+@head(3,"String Types")
+@head(3,"Container Types")
+
+@head(1,"Applicative classes")
+Felix provides several constructions which are called class
+constructions (and their C++ representations are typically
+C++ classes).
+@p()
+Of these, the most commonly used are the two kinds of
+applicative class: functions and procedures. Objects
+of these classes are known as closures.
+
+@head(2,"Defining Functions",key="fundef")
+Felix supports three syntactic forms for definining functions.
+The simplest form is illustrated by:
+@begin_displayed_code()
+  fun f[t] (x:t, y:int): int * t => y,x;
+@end_displayed_code()
+You will note this function is polymorphic with one type
+argument t, it accepts a single argument of tuple type t * int,
+and returns a tuple of type int * t. The return type can be
+omitted in this case because it can be deduced:
+
+@begin_displayed_code()
+  fun f[t] (x:t, y:int)=> y,x;
+@end_displayed_code()
+
+In this form, the function body is just an expression whose
+elaboration yields the value returned by the function.
+@p()
+The second form allows procedural code in a function,
+provided its side effects are limited to the scope
+of the function, so that the function itself has no
+side effects:
+
+@begin_displayed_code()
+  fun f[t] (x:t, y:int): int * t =
+  {
+    var z = y;
+    z++;
+    return z,x;
+  }
+@end_displayed_code()
+
+In this form, the returned value is the argument of
+the first return statement elaborated by the flow
+of control. Again, the return type can be omitted if the
+function type can be deduced. This is the most general
+form, the first form is just synactic sugar for
+@begin_displayed_code()
+  fun f[t] (x:t, y:int): int * t =
+  {
+    return y,x;
+  }
+@end_displayed_code()
+saving a few keystrokes, but greatly simplifying code
+layout, and improving the ability of the programmer
+to reason that the function has no side effects.
+@p()
+This form supports an extension to curry form:
+
+@begin_displayed_code()
+  fun f[t] (x:t) (y:int) int * t =
+  {
+    return y,x;
+  }
+@end_displayed_code()
+
+which is short hand for
+
+@begin_displayed_code()
+  fun f[t] (x:t): int -> int * t =
+  {
+    fun g(y:int): int * t =
+    {
+      return y,x;
+    }
+    return g;
+  }
+@end_displayed_code()
+
+Similarly, the first form also supports this extension.
+@p()
+The final form is 
+@begin_displayed_code()
+  fun f: u -> int  =
+    | Empty => 0
+    | Cons (_,?tail) => 1 + f tail
+  ;
+@end_displayed_code()
+
+which is short hand for:
+
+@begin_displayed_code()
+  fun f(x:u):int =
+    match x with
+    | Empty => 0
+    | Cons (_,?tail) => 1 + f tail
+    endmatch
+  ;
+@end_displayed_code()
+
+All these forms can be used anonymously wherever a
+function closure is required, by simply enclosing them
+in parentheses and omitting the function name:
+
+@begin_displayed_code()
+  print$ (fun f[t] (x:t, y:int)=> y,x) (1,2);
+@end_displayed_code()
+
+This is called the lambda form of the function,
+such lambda forms are first class expressions.
+@p()
+Two special cases of the lambda forms can be used for functions:
+
+@begin_displayed_code()
+  { x }
+@end_displayed_code()
+
+is a function with unit argument, returning value x, and is short
+hand for:
+@begin_displayed_code()
+  (fun()=>x)
+@end_displayed_code()
+
+and
+
+@begin_displayed_code()
+  { var y = x; ++x; return x; }
+@end_displayed_code()
+
+is short hand for
+
+@begin_displayed_code()
+  (fun () { var y = x; ++x; return x; })
+@end_displayed_code()
+
+You should note very carefully the following
+are NOT equivalent:
+
+@begin_displayed_code()
+  fun f()=>x;
+  val f = { x };
+@end_displayed_code()
+
+The first line defines a function f, but does not
+form a closure. The second line stores a closure of
+an anonymous function into value f. Although any
+application of either f is equivalent, the lookup
+rules for variable and function names are distinct.
+Function names can be overloaded, and lookup choses
+the right function to use in an application based
+on the function argument.
+@p()
+Variable names, even if used applicatively, are never
+overloaded and do not participate in overload resolution.
+@p()
+Felix also allows functions to provide pre-conditions
+and post-conditions. Here is an example:
+
+@begin_displayed_code()
+  fun f(x: int, y:int when x+y>0): int expect result > 0 =
+  {
+    return x + y;
+  }
+@end_displayed_code()
+The special identifier result is used to denote the 
+value returned by the function. Pre and post conditions are
+part of the intuitive function type, but they are not part of the 
+formal type. Instead, pre and post conditions are checked prior
+to and after function application, respectively, and abort the
+program if the conditions are not met.
+
+@head(3,"Lazy value Types")
+A lazy value type is a function type with the domain 0 or void.
+A value of such a type can be constructed and used with syntax like:
+@begin_displayed_code()
+   var y = 1.0;
+   fun x = sin y;
+   print x; endl;
+   var y = 0.5;
+   print x; endl;
+@end_displayed_code()
+The function x is semantically equivalent to a function taking
+unit argument, however each reference to x is automatically
+applied to the unit value () wherever it is written. In effect,
+such a function looks like a value whose body is substituted
+for each reference to it. This is also how it is implemented.
+In particular in the example, the output will be the
+value sin 1.0 and sin 0.5.
+
+@head(1,"Expressions",key="expr")
+@head(2,"Coercions",key="coercion")
+@head(2,"Record Coercions",key="record coercion")
+
+@begin_displayed_code()
+  typedef isd = 
+    struct 
+    {
+      a:int;
+      b:string;
+      c:double;
+    }
+  ;
+
+  typedef id = 
+    struct 
+    {
+      a:int;
+      c:double;
+    }
+  ;
+  val x : isd = struct { a=1; b="Hello"; c=9.2; };
+  val y : id = x : id; // coercion
+@end_displayed_code()
+
+
+@head(1,"Synchronous Multithreading",key="sync")
+@head(1,"First order polymorphism",key="poly1")
+

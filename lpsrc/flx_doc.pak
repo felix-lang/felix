@@ -2,6 +2,9 @@
 @head(1,"FELIX DOCUMENTATION")
 @head(2,"TUTORIAL and REFERENCE",nospawn=1)
 
+Reference Manual (interscript):
+@cite_url("refman/en_flx_ref_top.html")
+@p()
 Basic Tutorial (interscript):
 @cite_url("tutorial/introduction/en_flx_tutorial_top.html")
 @p()
