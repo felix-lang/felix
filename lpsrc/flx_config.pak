@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.223  2006/08/09 04:26:38  skaller
+Resolve conflict in Erick's quick patches and mine.
+
 Revision 1.222  2006/08/09 03:45:04  idadesub
 there were a couple bugs in skaller's last commit. this should fix them
 enough to run on my machine :)
@@ -575,7 +578,7 @@ def xqt(x,
     log=None):
   if log is None: log = sys.stdout
 
-  if verbose: log.write('%s\n' % x)
+  if verbose and not quiet: log.write('%s\n' % x)
   flush()
 
   try:

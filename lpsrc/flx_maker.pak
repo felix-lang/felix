@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.110  2006/08/09 04:26:38  skaller
+Resolve conflict in Erick's quick patches and mine.
+
 Revision 1.109  2006/08/09 03:45:04  idadesub
 there were a couple bugs in skaller's last commit. this should fix them
 enough to run on my machine :)
@@ -1374,7 +1377,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_test')
 
-  def runme(self, testfile, log, quiet=0):
+  def runme(self, testfile, log, quiet):
     if log is None: log = Tee()
 
     optimise_c = optimise or "optimise_c" in options
@@ -1883,14 +1886,14 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_failure_tests', 'run tests meant to fail')
   
-  def runme(self):
+  def runme(self,quiet=0):
     bad_tests = pkgdict.get("failure_tests",[])
 
     failed = 0
 
     for testfile in bad_tests:
       log = Tee()
-      log.write("***** FAILURE TESTING PACKAGE %s TESTFILE: %s ************\n" % (pkg, testfile))
+      log.write("**** FAILURE TESTING PACKAGE %s : %s ****\n" % (pkg, testfile))
 
       #log.write('Running Felix code generator on %s\n' % testfile)
       basename = os.path.splitext(testfile)[0]
@@ -1920,11 +1923,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_unit_tests', 'run unit tests')
   
-  def runme(self):    
+  def runme(self,quiet):    
     unit_tests = pkgdict.get("unit_tests",[])
 
     return self.run_tests(unit_tests, 1,
-      "***** UNIT TESTING PACKAGE %s TESTFILE: %%s ************\n" % pkg)
+      "*** UNIT TESTING %s : %%s ****\n" % pkg, quiet)
          
 
 @select(tangler('mkplugins/run_completion_tests.py'))
@@ -1933,11 +1936,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_completion_tests')
 
-  def runme(self):    
+  def runme(self,quiet):
     completion_tests = pkgdict.get("completion_tests",[])
 
     return self.run_tests(completion_tests, 0,
-      "***** COMPLETION (nondet) TESTING PACKAGE %s TESTFILE: %%s ************\n" % pkg)
+      "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg,quiet)
 
 
 @select(tangler('mkplugins/run_demos.py'))
@@ -1945,11 +1948,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     Plugin.__init__(self, 'run_demos')
 
-  def runme(self):
+  def runme(self,quiet=0):
     demos = pkgdict.get("demos",[])
 
     return self.run_tests(demos, 0,
-      "***** DEMO PACKAGE %s TESTFILE: %%s ************\n" % pkg)
+      "*** DEMO PACKAGE %s : %%s ****\n" % pkg,quiet)
 
 
 @select(tangler('mkplugins/xqt.py'))
@@ -2150,7 +2153,7 @@ class PLUGIN(Plugin):
 
   def runme(self):
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
-    global pkgd,phases,pkgdict,pkg
+    global pkgd,phases,pkgdict,pkg,quiet
     mkdirs("pkg-stamps")
 
     if "host" in phases:
@@ -2202,7 +2205,7 @@ class PLUGIN(Plugin):
         build_target_felix_tools()
 
         # only stamp if we've passed the tests
-        if plugins['run_failure_tests']():
+        if plugins['run_failure_tests'](quiet):
           enstamp(stamp)
 
     if "run" in phases:
@@ -2214,7 +2217,7 @@ class PLUGIN(Plugin):
         erasefile(stamp)
 
         # only stamp if we've passed the tests
-        if plugins['run_unit_tests']() and plugins['run_completion_tests']():
+        if plugins['run_unit_tests'](quiet) and plugins['run_completion_tests'](quiet):
           enstamp(stamp)
  
 
@@ -2237,7 +2240,7 @@ class Plugin:
 
 
 class TestPlugin(Plugin):
-  def run_tests(self, testfiles, deterministic, title, quiet=0):
+  def run_tests(self, testfiles, deterministic, title,quiet):
     tests_failed = 0
 
     for testfile in testfiles:
@@ -2269,9 +2272,9 @@ class TestPlugin(Plugin):
             testscript = driver + ' ' + path + EXT_SHLIB
 
             if deterministic:
-              self.run_test(log, testscript, basename, basename + '.expect', quiet=quiet)
+              self.run_test(log, testscript, basename, basename + '.expect',quiet)
             else:
-              self.run_test(log, testscript, basename, quiet=quiet)
+              self.run_test(log, testscript, basename,quiet=0)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -2284,8 +2287,7 @@ class TestPlugin(Plugin):
             if deterministic:
               self.run_test(log, testscript, basename, basename + '.expect', quiet=quiet)
             else:
-              # never run quietly
-              self.run_test(log, testscript, basename, quiet=quiet)
+              self.run_test(log, testscript, basename,quiet=0)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
@@ -2300,8 +2302,8 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, basename, expect=None, quiet=0):
-    log.write('EXECUTING TEST CODE %s\n' % testscript)
+  def run_test(self, log, testscript, basename, expect=None,quiet=0):
+    log.write('EXECUTING TEST CODE %s\n' % testscript,quiet)
     flush()
 
     output = xqt(ENV + testscript, verbose=1, quiet=quiet, log=log)
@@ -2346,13 +2348,14 @@ class PLUGIN(Plugin):
       if "run" not in phases: phases.append("run")
 
   def runme(self):
-    global pkg,pkgdict
+    global pkg,pkgdict,quiet
     print "##### TEST ALL PACKAGES ##################"
     for pkg in pkgs:
       pkgdict = pkgd[pkg]
       print "***** TEST PACKAGE "+pkg+" ************"
-      plugins['run_unit_tests']()
-      plugins['run_completion_tests']()
+      plugins['run_failure_tests'](quiet)
+      plugins['run_unit_tests'](quiet)
+      plugins['run_completion_tests'](quiet)
 
 @select(tangler('mkplugins/doc.py'))
 class PLUGIN(Plugin):
@@ -2462,6 +2465,7 @@ for o, a in opts:
   elif o in ['-v', '--verbose']:
     verbose = verbose + 1
   elif o in ['-q', '--quiet']:
+    quiet=1
     verbose = 0
   elif o in ['-O', '--optimise', '--optimize']:
     optimise = 1
