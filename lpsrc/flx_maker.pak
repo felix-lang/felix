@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.108  2006/08/09 03:09:07  skaller
+Add quiet flag to plugins etc to tone down output more.
+
 Revision 1.107  2006/08/07 21:18:19  skaller
 Fix Makefile so nocygwin build works.
 
@@ -1367,14 +1370,14 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'build_test')
 
-  def runme(self, testfile, log):
+  def runme(self, testfile, log, quiet=0):
     if log is None: log = Tee()
 
     optimise_c = optimise or "optimise_c" in options
     mode = "std"
     if optimise_c: mode = "Optimised"
 
-    log.write('TRANSLATING %s\n' % testfile)
+    log.write('TRANSLATING %s\n' % testfile,quiet)
 
     basename = os.path.splitext(testfile)[0]
     cppfilename = basename + ".cpp"
@@ -1396,7 +1399,7 @@ class PLUGIN(Plugin):
     #log.write('Compiling generated code of %s\n' % testfile)
     try:
       if SUPPORT_DYNAMIC_LOADING:
-        log.write("COMPILING GENERATED C++ TEST CODE: %s (dynamic)\n" % mode)
+        log.write("COMPILING GENERATED C++ TEST CODE: %s (dynamic)\n" % mode,quiet)
         flush()
  
         dlibs = vxqtq(os.path.join("bin", 
@@ -1416,7 +1419,7 @@ class PLUGIN(Plugin):
             log=log)
   
       if SUPPORT_STATIC_LINKAGE:
-        log.write("COMPILING GENERATED C++ TEST CODE: %s (static)\n" % mode)
+        log.write("COMPILING GENERATED C++ TEST CODE: %s (static)\n" % mode,quiet)
         flush()
 
         driver = vxqtq(os.path.join(
@@ -2230,7 +2233,7 @@ class Plugin:
 
 
 class TestPlugin(Plugin):
-  def run_tests(self, testfiles, deterministic, title):
+  def run_tests(self, testfiles, deterministic, title,quiet=0):
     tests_failed = 0
 
     for testfile in testfiles:
@@ -2240,7 +2243,7 @@ class TestPlugin(Plugin):
 
       try:
         # run the tests
-        basename = plugins['build_test'](testfile, log)
+        basename = plugins['build_test'](testfile, log,quiet)
       except MakeError, e:
         failed = 1
         log.write('TESTFILE -- ERROR! %s (build)\n' % testfile)
@@ -2264,7 +2267,7 @@ class TestPlugin(Plugin):
             if deterministic:
               self.run_test(log, testscript, basename, basename + '.expect')
             else:
-              self.run_test(log, testscript, basename)
+              self.run_test(log, testscript, basename,quiet)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -2275,8 +2278,9 @@ class TestPlugin(Plugin):
 
           try:
             if deterministic:
-              self.run_test(log, testscript, basename, basename + '.expect')
+              self.run_test(log, testscript, basename, basename + '.expect',quiet)
             else:
+              # never run quietly
               self.run_test(log, testscript, basename)
           except MakeError, e:
             failed = 1
@@ -2292,11 +2296,11 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, basename, expect=None):
+  def run_test(self, log, testscript, basename, expect=None,quiet):
     log.write('EXECUTING TEST CODE %s\n' % testscript)
     flush()
 
-    output = xqt(ENV + testscript, verbose=1, quiet=1, log=log)
+    output = xqt(ENV + testscript, verbose=1, quiet, log=log)
 
     f = open(basename + '.output', 'w')
     try:
@@ -2306,7 +2310,7 @@ class TestPlugin(Plugin):
 
     if expect is not None:
       output = xqt('%s %s %s.output' % (DIFF, expect, basename), 
-          verbose=1, quiet=1, log=log)
+          verbose=1, quiet, log=log)
 
 
 @select(tangler('mkplugins/help.py'))
@@ -2418,6 +2422,7 @@ except getopt.error, e:
   sys.stderr.write(str(e) + '\n')
   sys.exit(1)
 
+quiet=0
 verbose = 1
 optimise = 1
 debug = 1
