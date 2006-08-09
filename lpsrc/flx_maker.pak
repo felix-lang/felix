@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.109  2006/08/09 03:45:04  idadesub
+there were a couple bugs in skaller's last commit. this should fix them
+enough to run on my machine :)
+
 Revision 1.108  2006/08/09 03:09:07  skaller
 Add quiet flag to plugins etc to tone down output more.
 
@@ -2233,7 +2237,7 @@ class Plugin:
 
 
 class TestPlugin(Plugin):
-  def run_tests(self, testfiles, deterministic, title,quiet=0):
+  def run_tests(self, testfiles, deterministic, title, quiet=0):
     tests_failed = 0
 
     for testfile in testfiles:
@@ -2243,7 +2247,7 @@ class TestPlugin(Plugin):
 
       try:
         # run the tests
-        basename = plugins['build_test'](testfile, log,quiet)
+        basename = plugins['build_test'](testfile, log, quiet)
       except MakeError, e:
         failed = 1
         log.write('TESTFILE -- ERROR! %s (build)\n' % testfile)
@@ -2265,9 +2269,9 @@ class TestPlugin(Plugin):
             testscript = driver + ' ' + path + EXT_SHLIB
 
             if deterministic:
-              self.run_test(log, testscript, basename, basename + '.expect')
+              self.run_test(log, testscript, basename, basename + '.expect', quiet=quiet)
             else:
-              self.run_test(log, testscript, basename,quiet)
+              self.run_test(log, testscript, basename, quiet=quiet)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -2278,10 +2282,10 @@ class TestPlugin(Plugin):
 
           try:
             if deterministic:
-              self.run_test(log, testscript, basename, basename + '.expect',quiet)
+              self.run_test(log, testscript, basename, basename + '.expect', quiet=quiet)
             else:
               # never run quietly
-              self.run_test(log, testscript, basename)
+              self.run_test(log, testscript, basename, quiet=quiet)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
@@ -2296,11 +2300,11 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, basename, expect=None,quiet):
+  def run_test(self, log, testscript, basename, expect=None, quiet=0):
     log.write('EXECUTING TEST CODE %s\n' % testscript)
     flush()
 
-    output = xqt(ENV + testscript, verbose=1, quiet, log=log)
+    output = xqt(ENV + testscript, verbose=1, quiet=quiet, log=log)
 
     f = open(basename + '.output', 'w')
     try:
@@ -2310,7 +2314,7 @@ class TestPlugin(Plugin):
 
     if expect is not None:
       output = xqt('%s %s %s.output' % (DIFF, expect, basename), 
-          verbose=1, quiet, log=log)
+          verbose=1, quiet=quiet, log=log)
 
 
 @select(tangler('mkplugins/help.py'))
@@ -2422,7 +2426,7 @@ except getopt.error, e:
   sys.stderr.write(str(e) + '\n')
   sys.exit(1)
 
-quiet=0
+quiet = 0
 verbose = 1
 optimise = 1
 debug = 1
