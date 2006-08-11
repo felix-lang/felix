@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.226  2006/08/11 05:49:21  idadesub
+make sure we use the right size to lookup the void pointer aliases
+
 Revision 1.225  2006/08/11 00:45:48  skaller
 Add (u)intptr and (u)intmax aliases (because I documented them :)
 
@@ -2017,8 +2020,8 @@ else:
        tmap["int"+str(size)]="emul_int"+str(size)
        tmap["uint"+str(size)]="emul_uint"+str(size)
    try:
-     tmap["intptr"]=sizes[TARGET_CXX.options.SIZEOF_VOIDP]
-     tmap["uintptr"]="unsigned "+sizes[TARGET_CXX.options.SIZEOF_VOIDP]
+     tmap["intptr"]=sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
+     tmap["uintptr"]="unsigned "+sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
    except:
      print "NO INTEGER THE SIZE OF A VOID*!"
      sys.exit(1)
