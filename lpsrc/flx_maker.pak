@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.111  2006/08/11 01:57:56  idadesub
+bool doesn't work in python 2.2 or lower
+
 Revision 1.110  2006/08/09 04:26:38  skaller
 Resolve conflict in Erick's quick patches and mine.
 
@@ -2726,10 +2729,10 @@ failure_log.write("----- PLUGIN STATUS -----\n")
 failed = 0
 for plugin in scheduled_plugins + unscheduled_plugins:
   nfail = len(plugin.failures)
-  pfail = bool(nfail)
-  failed = failed or pfail
   npass = len(plugin.successes)
-  if pfail:
+  failed = failed or nfail
+
+  if nfail:
     failure_log.write('PLUGIN **FAILED**: %s, %d/%d failures\n' % (plugin.name, nfail,npass+nfail))
   else:
     if plugin.used:
