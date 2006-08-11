@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.225  2006/08/11 00:45:48  skaller
+Add (u)intptr and (u)intmax aliases (because I documented them :)
+
 Revision 1.224  2006/08/09 09:56:13  skaller
 Change release version to '_rc1'
 
@@ -1977,6 +1980,10 @@ if TARGET_CXX.options.HAVE_STDINT:
    tmap["uint32"]="uint32_t"
    tmap["int64"]="int64_t"
    tmap["uint64"]="uint64_t"
+   tmap["intptr"]="intptr_t"
+   tmap["uintptr"]="uintptr_t"
+   tmap["intmax"]="intmax_t"
+   tmap["uintmax"]="uintmax_t"
 
    # requirements
    rmap["int8"]="c99_stdint_h"
@@ -1995,8 +2002,12 @@ else:
      TARGET_CXX.options.SIZEOF_INT*8: "int",
      TARGET_CXX.options.SIZEOF_LONG*8 : "long",
    }
+   tmap["intmax"]="long"
+   tmap["uintmax"]="unsigned long"
    if TARGET_CXX.options.HAVE_LONGLONG:
      sizes[TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
+     tmap["intmax"]="long long"
+     tmap["uintmax"]="unsigned long long"
    for size in [16,32,64]:
      try:
        t = sizes[size]
@@ -2005,6 +2016,12 @@ else:
      except KeyError:
        tmap["int"+str(size)]="emul_int"+str(size)
        tmap["uint"+str(size)]="emul_uint"+str(size)
+   try:
+     tmap["intptr"]=sizes[TARGET_CXX.options.SIZEOF_VOIDP]
+     tmap["uintptr"]="unsigned "+sizes[TARGET_CXX.options.SIZEOF_VOIDP]
+   except:
+     print "NO INTEGER THE SIZE OF A VOID*!"
+     sys.exit(1)
 
 tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
 

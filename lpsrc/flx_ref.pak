@@ -59,9 +59,9 @@ same metatyping system.
 @item("8. Overloading")
 @end_list()
 
-@head(2,"Function Types")
+@head(2,"Function Types",nospawn=1)
 Felix provides two function types, Felix and C function types.
-@head(3,"Felix Function Types")
+@head(3,"Felix Function Types",nospawn=1)
 Felix function closure types are denoted by:
 @begin_displayed_code()
    D -> C
@@ -87,8 +87,9 @@ Neither the domain D nor codomain C of a function type may be void.
 @p()
 Functions may not have side effects. See
 @ref_anchor("fundef")
+for details of defining function classes.
 
-@head(3,"C Function Types")
+@head(3,"C Function Types",nospawn=1)
 Felix also provides direct access to C functions, whose type
 is denoted by:
 @begin_displayed_code()
@@ -97,7 +98,7 @@ is denoted by:
 Note that C function closures certainly exist, however they bind
 only to their primitive static environment.
 
-@head(3,"Procedure Types")
+@head(3,"Procedure Types",nospawn=1)
 A procedure is a subroutine which may and generally should have 
 side-effects and which does not return a value. Procedures
 have types denoted by one of:
@@ -113,13 +114,15 @@ forming the closure of a procedure class. Procedures are quite
 distinct from functions, since they may participate in synchronous
 multithreading, whereas functions may not. See
 @ref_anchor("sync")
-.
+for details on synchronous threading. See 
+@ref_anchor("procdef")
+for details of defining procedure classes.
 
-@head(2,"Anonymous Types")
+@head(2,"Anonymous Types",nospawn=1)
 An anonymous type is one which is identified by its structure
 rather than a declared name.
 
-@head(3,"Tuple Types")
+@head(3,"Tuple Types",nospawn=1)
 A tuple is a categorical products whose projection functions
 are identified positionally, using non-negative integer constant
 indicies. n-ary tuples exist for all non-negative values of n
@@ -144,8 +147,22 @@ and values are denoted:
 @end_displayed_code()
 You should note that the chain operator * is not associative,
 although it is associative up to isomorphism. 
+@p()
+Tuples support two destructors. The form
+@begin_displayed_code()
+  x.(0)
+  x.(1)
+  ...
+@end_displayed_code()
+can be used with a constant expression denoting the projection.
+You can also use a tuple pattern in a match expression
+@begin_displayed_code()
+  match x with
+  | ?v1,?v2, .. => ..
+  endmatch
+@end_displayed_code()
 
-@head(3,"Array Types")
+@head(3,"Array Types",nospawn=1)
 A tuple of 2 more or more components, all of which are
 the same type T, is known as an array. The special sugar
 @begin_displayed_code()
@@ -161,7 +178,7 @@ tuples. However the special notation like:
 can be used for arrays, which results in a compile time
 error if the component values are not all the same type.
 
-@head(3,"Record Types")
+@head(3,"Record Types",nospawn=1)
 A record type is a variant on a tuple, in which the 
 components are named rather than numbered. The types
 are denoted like:
@@ -186,18 +203,202 @@ a subset of the fields of the argument record,
 the type of this record is a subtype. See 
 @ref_anchor("record coercion")
 .
+@p()
+Records can be accessed by the usual dot notation:
+@begin_displayed_code()
+  x.a
+@end_displayed_code()
+or using pattern matches:
+@begin_displayed_code()
+  match x with
+  | struct { a=?i; b=?s; } =>
+  ...
+@end_displayed_code()
+Note that record patterns need only match a subtype
+of the record, that is, only some of the field names
+need be given.
 
-@head(3,"Sum Types")
-@head(2,"Nominal Types")
-@head(3,"Struct Types")
-@head(3,"Union Types")
-@head(3,"Enumeration Types")
-@head(2,"Type Bindings")
-@head(2,"Standard Library Types")
-@head(3,"System Types")
-@head(3,"Arithmetic Types")
-@head(3,"String Types")
-@head(3,"Container Types")
+@head(3,"Sum Types",nospawn=1)
+Sum types are use to express numbered cases.
+An n-ary sum type, of case types T0, T1, ... is denoted by:
+@begin_displayed_code()
+  T0 + T1 + T2 + ...
+@end_displayed_code()
+and variant values are denoted by
+@begin_displayed_code()
+  (case 0 of T0 + T2 ...) v0
+  (case 1 of T0 + T2 ...) v1
+  (case 2 of T0 + T2 ...) v2
+  ...
+@end_displayed_code()
+In addition, a sum of n units has the special name:
+@begin_displayed_code()
+  n
+@end_displayed_code()
+where n is an non-negative integral constant.
+Three of these have standard names given by these typedefs:
+@begin_displayed_code()
+  typedef void = 0; 
+  typedef unit = 1; 
+  typedef bool = 2; 
+@end_displayed_code()
+These two variants have standard names:
+@begin_displayed_code()
+  case 0 of 2 // false
+  case 1 of 2 // true
+@end_displayed_code()
+Sums can be destroyed in pattern matches:
+@begin_displayed_code()
+  match x with
+  | (case 1) ?a => ...
+@end_displayed_code()
+Note that the sum type does not need to be named, since it
+is determined by the match argument type.
+@p()
+Note that sum type constructors can also be used as functions,
+like Haskell but unlike Ocaml. The compiler generates a wrapper
+function to form the closure automatically on such usage.
+@p()
+The standard function caseno can be used to obtain the 
+zero origin ariant index:
+@begin_displayed_code()
+  var x : int = caseno (case 1 of 2); // x is 1
+@end_displayed_code()
+
+
+@head(2,"Nominal Types",nospawn=1)
+A nominal type is one which is declared and identified by
+its name. Two nominal types may have the same structure
+and representation, but remain distinct.
+
+@head(3,"Struct Types",nospawn=1)
+Felix struct type definitions resemble C++:
+@begin_displayed_code()
+  struct X {
+    a : int;
+    b : long;
+  };
+@end_displayed_code()
+All structs are provided with constructors with the same name
+as the struct, and which take a tuple argument with the same components
+in order:
+@begin_displayed_code()
+  var x = X(1,2L);
+@end_displayed_code()
+This construction is efficient: tuple and all struct types with
+the same sequence of components always have the members 
+at the same offsets, and thus are representation compatible.
+
+@head(3,"Union Types",nospawn=1)
+Felix union type definitions come in two flavours: the ML form:
+@begin_displayed_code()
+  union X = 
+    | a of int
+    | b of long
+  ;
+@end_displayed_code()
+and the C form:
+@begin_displayed_code()
+  union X {
+    a : int;
+    b : long;
+  };
+@end_displayed_code()
+These flavours are equivalent. However the ML form 
+also supports constructors without arguments:
+@begin_displayed_code()
+  union X = 
+    | a of int
+    | b of long
+    | c
+  ;
+@end_displayed_code()
+Values of a union type are written like function applications,
+or constants:
+@begin_displayed_code()
+  var x1 : X = a 1;
+  var x2 : X = b 1L;
+  var x3 : X = c;
+@end_displayed_code()
+Constructor names can be overloaded like ordinary functions.
+Unions can be decoded with pattern matches:
+@begin_displayed_code()
+  match x with
+  | a ?x1 => ..
+  | b ?x2 => ..
+  | c => ..
+@end_displayed_code()
+and the zero origin case number can be found with the caseno function:
+@begin_displayed_code()
+  var x : int = caseno (a ?1) ; // x is 0
+@end_displayed_code()
+
+@head(3,"Enumeration Types",nospawn=1)
+If all the variants of a union have no arguments,
+the shorthand:
+@begin_displayed_code()
+  enum X { a, b=7, c };
+@end_displayed_code()
+can be used. In this form, an equal sign followed by
+an non-negative integral constant provides a way of
+fixing the case index. Case indicies are assigned
+as in C, starting at zero, and each component other
+than the first being assigned an index one higher
+than the previous one. Note duplicates and missing
+cases are both permitted.
+
+@head(3,"Class Types",nospawn=1)
+
+@head(2,"Type Bindings",nospawn=1)
+@head(2,"Standard Types",nospawn=1)
+@head(3,"System Types",nospawn=1)
+@head(3,"Arithmetic Types",nospawn=1)
+Felix provides the following standard C arithmetic types. They can
+be named with any of the usual C names with contractions,
+or using a Felix alias:
+@begin_table("Felix name","Full C name")
+@table_row("tiny","signed char")
+@table_row("utiny","unsigned char")
+@table_row("short","signed short int")
+@table_row("ushort","unsigned short int")
+@table_row("int","signed int")
+@table_row("uint","unsigned int")
+@table_row("long","signed long int")
+@table_row("ulong","unsigned long int")
+@table_row("vlong","signed long long")
+@table_row("uvlong","unsigned long long")
+@table_row("float","float")
+@table_row("double","double float")
+@table_row("ldouble","long double float")
+@end_table()
+The following aliases are also provided, in this
+case the C name may not be used:
+@begin_table("Felix name","C name")
+@table_row("size","size_t")
+@table_row("ptrdiff","ptrdiff_t")
+@table_row("intptr","intptr_t")
+@table_row("uintptr","uintptr_t")
+@table_row("intmax","intmax_t")
+@table_row("uintmax","uintmax_t")
+@end_table()
+
+The following aliases for exact integers are also provided, in this
+case the C name may not be used:
+@begin_table("Felix name","C name")
+@table_row("int8","int8_t")
+@table_row("uint8","uint8_t")
+@table_row("int16","int8_t")
+@table_row("uint16","uint16_t")
+@table_row("int32","int32_t")
+@table_row("uint32","uint32_t")
+@table_row("int64","int64_t")
+@table_row("uint64","uint64_t")
+@end_table()
+Felix guarantees all these integer aliases exist,
+even if the C99 counterparts do not.
+
+@head(3,"String Types",nospawn=1)
+@head(3,"Container Types",nospawn=1)
 
 @head(1,"Applicative classes")
 Felix provides several constructions which are called class
@@ -369,7 +570,7 @@ formal type. Instead, pre and post conditions are checked prior
 to and after function application, respectively, and abort the
 program if the conditions are not met.
 
-@head(3,"Lazy value Types")
+@head(3,"Lazy value Types",nospawn=1)
 A lazy value type is a function type with the domain 0 or void.
 A value of such a type can be constructed and used with syntax like:
 @begin_displayed_code()
@@ -386,6 +587,82 @@ such a function looks like a value whose body is substituted
 for each reference to it. This is also how it is implemented.
 In particular in the example, the output will be the
 value sin 1.0 and sin 0.5.
+
+
+@head(2,"Defining Procedures",key="procdef")
+Felix supports three syntactic forms for definining procedures.
+The simplest form is illustrated by:
+@begin_displayed_code()
+  proc f[t] (x:t, y:int) { print y; h x; }
+@end_displayed_code()
+You will note this function is polymorphic with one type
+argument t, it accepts a single argument of tuple type t * int.
+@p()
+This form supports an extension to curry form:
+
+@begin_displayed_code()
+  proc f[t] (x:t) (y:int) 
+  {
+    print y; h x;
+  }
+@end_displayed_code()
+
+which is short hand for
+
+@begin_displayed_code()
+  fun f[t] (x:t): t -> (int -> void) =
+  {
+    proc g(y:int) =
+    {
+      print y; h x;
+    }
+    return g;
+  }
+@end_displayed_code()
+Procedures also support lambda abstraction:
+
+@begin_displayed_code()
+  (proc (x:int, y:int) { print y; h x; }) (1,2);
+@end_displayed_code()
+A special form can be used for procedures with unit argument:
+@begin_displayed_code()
+  { print "Hello"; endl; }
+@end_displayed_code()
+
+is a procedure with unit argument, and is short hand for:
+@begin_displayed_code()
+  (proc(){print "Hello"; endl; })
+@end_displayed_code()
+
+You should note very carefully the following
+are NOT equivalent:
+
+@begin_displayed_code()
+  proc f(){ print "Hello"; endl; }
+  val f = { print "Hello"; endl; }
+@end_displayed_code()
+
+The first line defines a procedure f, but does not
+form a closure. The second line stores a closure of
+an anonymous procedure into value f. Although any
+application of either f is equivalent, the lookup
+rules for variable and function names are distinct.
+Procedure names can be overloaded, and lookup choses
+the right procedure to use in an application based
+on the procedure argument.
+@p()
+Variable names, even if used applicatively, are never
+overloaded and do not participate in overload resolution.
+@p()
+Felix also allows procedures to provide pre-conditions.
+Here is an example:
+
+@begin_displayed_code()
+  proc f(x: int, y:int when x+y>0)
+  {
+    print (x + y); endl;
+  }
+@end_displayed_code()
 
 @head(1,"Expressions",key="expr")
 @head(2,"Coercions",key="coercion")
@@ -412,6 +689,15 @@ value sin 1.0 and sin 0.5.
   val y : id = x : id; // coercion
 @end_displayed_code()
 
+@head(2,"Pattern match",key="expr")
+@head(1,"Statements",nospawn=1)
+@head(2,"Definitions",nospawn=1)
+@head(3,"Modules",nospawn=1)
+@head(2,"Executable Statements",nospawn=1)
+@head(3,"Goto",nospawn=1)
+@head(3,"Call",nospawn=1)
+@head(3,"Return",nospawn=1)
+@head(3,"Assignment",nospawn=1)
 
 @head(1,"Synchronous Multithreading",key="sync")
 @head(1,"First order polymorphism",key="poly1")

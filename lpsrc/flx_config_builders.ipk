@@ -672,7 +672,10 @@ int main(int argc, char** argv) {
       'int8_t', 'uint8_t',
       'int16_t', 'uint16_t',
       'int32_t', 'uint32_t',
-      'int64_t', 'uint64_t']:
+      'int64_t', 'uint64_t',
+      'intmax_t', 'uintmax_t',
+      'intptr_t', 'uintptr_t',
+      ]:
       alias = self.find_alias(shell, get_stdout, t, header='stdint.h')
       if alias:
         opt.__dict__['ALIAS_' + t] = alias
@@ -695,6 +698,10 @@ int main(int argc, char** argv) {
       ('CBOOL', '_Bool', ''),
       ('WCHAR', 'wchar_t', 'stddef.h'),
       ('PTRDIFF', 'ptrdiff_t', 'stddef.h'),
+      ('INTPTR', 'intptr_t', 'stdint.h'),
+      ('UINTPTR', 'uintptr_t', 'stdint.h'),
+      ('INTMAX', 'intmax_t', 'stdint.h'),
+      ('UINTMAX', 'uintmax_t', 'stdint.h'),
       ('SIZE', 'size_t', 'stddef.h'),
       ('COMPLEX', 'float _Complex', ''),
       ('DOUBLECOMPLEX', 'double _Complex', ''),

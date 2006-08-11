@@ -2,6 +2,9 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.172  2006/08/11 00:45:48  skaller
+Add (u)intptr and (u)intmax aliases (because I documented them :)
+
 Revision 1.171  2006/07/31 12:45:17  skaller
 Add _gc_type t type qualifier which tells that t is an allocable
 type and requires a shape. Add magic substitution encoding @?n
@@ -561,7 +564,7 @@ _gc_pointer type gcptr[t]= "?1*";
   if SIZEOF_LONGLONG == size: return 'uvlong'
 
 @# mandatory in C
-@for t in ['ptrdiff','size']:
+@for t in ['ptrdiff','size','intmax','uintmax','intptr','uintptr']:
   equiv = cint2fint[eval('ALIAS_'+t+'_t')]
   tangle('typedef ' + t + ' = ' + equiv + ';')
 
