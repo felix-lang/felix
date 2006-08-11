@@ -2,6 +2,10 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.173  2006/08/11 07:37:17  idadesub
+use tmap instead of the ALIAS's, as occasionally an alias doesn't exist,
+such as intmax on solaris
+
 Revision 1.172  2006/08/11 00:45:48  skaller
 Add (u)intptr and (u)intmax aliases (because I documented them :)
 
@@ -565,16 +569,15 @@ _gc_pointer type gcptr[t]= "?1*";
 
 @# mandatory in C
 @for t in ['ptrdiff','size','intmax','uintmax','intptr','uintptr']:
-  equiv = cint2fint[eval('ALIAS_'+t+'_t')]
-  tangle('typedef ' + t + ' = ' + equiv + ';')
+  tangle('typedef ' + t + ' = ' + tmap[t] + ';')
 
 @# optional in C
 @for t in exact_ints:
   try:
-    equiv = cint2fint[eval('ALIAS_'+t+'_t')]
+    equiv = tmap[t]
     tangle('typedef ' + t + ' = ' + equiv + ';')
     tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
-  except:
+  except KeyError:
     try:
       if t[:3] == 'int': 
         equiv = alias_sint(t)
@@ -584,7 +587,11 @@ _gc_pointer type gcptr[t]= "?1*";
         equiv = alias_uint(t)
         tangle('typedef ' + t + ' = ' + equiv + ';')
         tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
-    except:
+      else:
+        tangle("// FORCED TO USE EMULATION OF UNAVAILABLE SIZE")
+        tangle("// NOTE: The require module rename is NOT provided to force an error here")
+        tangle('type ' + t + ' = "flx_emul_'+t + '";')
+    except KeyError:
       tangle("// FORCED TO USE EMULATION OF UNAVAILABLE SIZE")
       tangle("// NOTE: The require module rename is NOT provided to force an error here")
       tangle('type ' + t + ' = "flx_emul_'+t + '";')

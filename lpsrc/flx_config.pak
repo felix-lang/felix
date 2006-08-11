@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.227  2006/08/11 07:37:17  idadesub
+use tmap instead of the ALIAS's, as occasionally an alias doesn't exist,
+such as intmax on solaris
+
 Revision 1.226  2006/08/11 05:49:21  idadesub
 make sure we use the right size to lookup the void pointer aliases
 
@@ -1906,13 +1910,14 @@ rmap = {}
 
 tmap = {
   # addressing
-  "byte"    : "unsigned char",
-  "size"    : "size_t",
+  "byte"      : "unsigned char",
+  "size"      : "size_t",
   "cvaddress" : "void const volatile*",
-  "vaddress" : "void volatile*",
-  "caddress" : "void const*",
-  "address" : "void *",
-  "offset"  : "ptrdiff_t",
+  "vaddress"  : "void volatile*",
+  "caddress"  : "void const*",
+  "address"   : "void *",
+  "offset"    : "ptrdiff_t",
+  "ptrdiff"   : "ptrdiff_t",
   
   #characters
   "char"    : "char",
