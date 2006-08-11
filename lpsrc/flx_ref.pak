@@ -348,6 +348,44 @@ than the previous one. Note duplicates and missing
 cases are both permitted.
 
 @head(3,"Class Types",nospawn=1)
+Felix classes are defined like:
+@begin_displayed_code()
+class Y {
+  val c : int;
+  var x : int;
+  
+  fun fetchc():int =>c+1;
+  fun fetchx():int =>x;
+  proc setx(a:int) { x = a; }
+  ctor (a:int): x(20000),c(1000) { x = a; }
+};
+@end_displayed_code()
+Classes may contain, val, var, fun and proc definitions.
+Val's may be initialised in constructors but not otherwise
+modified. The special function introduced by the ctor
+keyword introduces a constructor, with C++ style member 
+initialiser list.
+@p()
+All class members are public (this is a bug).
+@p()
+Unlike structs, classes are always passed by reference,
+that is, a class value is actually a pointer.
+@p()
+Unlike C++, Felix supports method object closures:
+@begin_displayed_code()
+  var y <- new Y;
+  val f = y.fetchc;  // object closure
+  print (f 1); endl; // value of y's c variable + 1
+@end_displayed_code()
+A special new statement is used to construct classes
+with the form shown above. Constructors are overloaded
+in the usual way. As a special case one default
+constructor may be given and called without arguments,
+even though it really has a unit argument. Note that
+constructors exist in the scope containing a class
+definition and are not methods.
+@p()
+Methods exist within class scope and cannot be overloaded.
 
 @head(2,"Type Bindings",nospawn=1)
 @head(2,"Standard Types",nospawn=1)

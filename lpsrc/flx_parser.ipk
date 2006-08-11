@@ -297,6 +297,13 @@ publish:
   | PRIVATE binding_definition
     { `AST_private (slift $1, $2) }
 
+  | PRIVATE var_def 
+    { `AST_private (slift $1, $2) }
+  
+  | PRIVATE val_def 
+    { `AST_private (slift $1, $2) }
+
+
 declarative:
   | function_definition { $1 }
   | object_definition { $1 }

@@ -3175,14 +3175,17 @@ and bind_expression' syms env (rs:recstop) e args
     | `BTYP_inst (i,ts) 
     | `BTYP_lvalue (`BTYP_inst (i,ts)) ->
       begin match Hashtbl.find syms.dfns i with
-      | {pubmap=pubtab; symdef = `SYMDEF_class } ->
+      | { privmap=privtab; symdef = `SYMDEF_class } ->
         (*
         print_endline "AST_get_named finds a class .. ";
         print_endline ("Looking for component named " ^ name);
         *)
         let entryset = 
-          try Hashtbl.find pubtab name 
-          with Not_found -> clierr sr ("Cannot find component " ^ name ^ " in class")
+          try Hashtbl.find privtab name 
+          with Not_found -> clierr sr 
+            ("[lookup:get_named_variable] Cannot find variable " ^ 
+              name ^ " in class"
+            )
         in
         begin match entryset with
         | NonFunctionEntry idx ->
@@ -3225,14 +3228,19 @@ and bind_expression' syms env (rs:recstop) e args
       print_endline ("Got sign bound = " ^ sbt syms.dfns sign);
       *)
       begin match Hashtbl.find syms.dfns oi with
-      | {id=classname; pubmap=pubtab; vs=obj_vs; symdef = `SYMDEF_class } ->
+      | {id=classname; privmap=privtab; 
+         vs=obj_vs; symdef = `SYMDEF_class } ->
         (*
         print_endline ("AST_get_named finds a class .. " ^ classname);
         print_endline ("Looking for component named " ^ name);
         *)
         let entryset = 
-          try Hashtbl.find pubtab meth_name 
-          with Not_found -> clierr sr ("Cannot find component " ^ meth_name ^ " in class " ^ classname)
+          try Hashtbl.find privtab meth_name 
+          (* try Hashtbl.find pubtab meth_name  *)
+          with Not_found -> clierr sr 
+            ("[lookup: get_named_method] Cannot find method " ^ 
+            meth_name ^ " in class " ^ classname
+            )
         in
         begin match entryset with
         | FunctionEntry fs ->
@@ -3273,7 +3281,7 @@ and bind_expression' syms env (rs:recstop) e args
 
             (*
             | _ -> clierr sr 
-              ("[get_named_method] Cannot find method " ^ meth_name ^ 
+              ("[lookup: get_named_method] Cannot find method " ^ meth_name ^ 
                 " with signature "^sbt syms.dfns sign^" in class, candidates are:\n" ^
                 catmap "," (fun i -> meth_name ^ "<" ^si i^ ">") fs
               )
@@ -3816,7 +3824,7 @@ and bind_expression' syms env (rs:recstop) e args
         *)
         let entryset = 
           try Hashtbl.find pubtab name 
-          with Not_found -> clierr sr ("Cannot find component " ^ name ^ " in class")
+          with Not_found -> clierr sr ("[lookup: dot] Cannot find component " ^ name ^ " in class")
         in
         begin match entryset with
         | NonFunctionEntry idx ->
