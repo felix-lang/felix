@@ -265,6 +265,7 @@ zero origin ariant index:
   var x : int = caseno (case 1 of 2); // x is 1
 @end_displayed_code()
 
+@head(3,"Pointer Types",nospawn=1)
 
 @head(2,"Nominal Types",nospawn=1)
 A nominal type is one which is declared and identified by
@@ -352,10 +353,10 @@ Felix classes are defined like:
 @begin_displayed_code()
 class Y {
   val c : int;
-  var x : int;
+  private var x : int;
   
   fun fetchc():int =>c+1;
-  fun fetchx():int =>x;
+  private fun fetchx():int =>x;
   proc setx(a:int) { x = a; }
   ctor (a:int): x(20000),c(1000) { x = a; }
 };
@@ -366,7 +367,9 @@ modified. The special function introduced by the ctor
 keyword introduces a constructor, with C++ style member 
 initialiser list.
 @p()
-All class members are public (this is a bug).
+Class members are all public by default. Var, val, proc
+and fun members can be declared private, in which case
+they can only be accessed within a method of the class.
 @p()
 Unlike structs, classes are always passed by reference,
 that is, a class value is actually a pointer.
@@ -387,7 +390,32 @@ definition and are not methods.
 @p()
 Methods exist within class scope and cannot be overloaded.
 
-@head(2,"Type Bindings",nospawn=1)
+@head(2,"Primitive Types",nospawn=1)
+Felix provides a method for importing C/C++ types into
+Felix:
+@begin_displayed_code()
+  type myint = "int";
+@end_displayed_code()
+Such definitions provide the user a way to introduce
+new primitive types into Felix. Such types are
+considered abstract. The C++ type must be allocable,
+default and copy constructible, copy assignable, 
+and destructible, that is, they must be first class data types.
+@p()
+It is also possible to introduce non-first class types, 
+with the adjective incomplete:
+@begin_displayed_code()
+  incomplete type myvoid = "void";
+@end_displayed_code()
+Such types can only be used as the argument of some kind
+of pointer type constructor, or to instantiate a 
+type variable in binding context for which it is
+suitable.
+@p()
+See 
+@ref_anchor("bindings")
+ for more information on bindings.
+
 @head(2,"Standard Types",nospawn=1)
 @head(3,"System Types",nospawn=1)
 @head(3,"Arithmetic Types",nospawn=1)
@@ -702,6 +730,113 @@ Here is an example:
   }
 @end_displayed_code()
 
+@head(1,"Bindings")
+Felix provides extensive support for binding C/C++.
+Whilst many languages provide an FFI (Foreign Function
+Interface) which allows glue logic to be written in C, 
+Felix uses the C/C++ object model directly, and provides
+the ability to bind to C/C++ data types and functions
+directly in the language. In most cases these bindings
+do not require any executable glue code, instead,
+the bindings simply provide a map between the type systems.
+
+@head(2,"Binding types")
+Felix allows you to bind types like:
+@begin_displayed_code()
+  type myint = "int";
+@end_displayed_code()
+When the target and source names are the same, the
+source string can be elided, and multiple type
+named at once:
+@begin_displayed_code()
+  ctypes int, long, complex;
+@end_displayed_code()
+The type must be a first class type, that is,
+allocable, default initialisable, copy constructible,
+copy assignable, and destructible. 
+@p()
+Non-first class type may also be introduced with
+the keyword incomplete:
+
+@begin_displayed_code()
+  incomplete type myvoid = "void";
+@end_displayed_code()
+
+and may only be used as the argument of a pointer 
+type constructor or argument to a binding construction
+for which the type makes sense in C/C++ context.
+For example:
+
+@begin_displayed_code()
+  type pt[t]="?1*";
+  typedef voidp = pt[void];
+@end_displayed_code()
+
+is acceptable usage because void* is a first class
+data type.
+@p()
+It is also possible to state that a type is a C++ POD,
+or Plain Old Data type:
+
+@begin_displayed_code()
+  pod type int = "int";
+@end_displayed_code()
+
+In such a case, the garbage collector may elide applying
+a finalisation function to the type, improving performance.
+@p()
+The decoration:
+@begin_displayed_code()
+  _gc_pointer type int = "X*";
+@end_displayed_code()
+
+tells the garbage collector the type is a pointer
+to Felix heap storage, and should be traced by the
+collector sweep when determining if storage is reachable.
+In this case, the pointer may be NULL, otherwise it must
+point to the client data part of a storage frame
+allocated by the collector. Such an type this denotes
+managed storage. This annotation is primarily provided
+so programmers developing Felix types in C++ can tell
+the Felix compiler the type is Felix compliant.
+@p()
+Type abstractions can be polymorphic. For example:
+@begin_displayed_code()
+  type vector[t] = "vector<?1>";
+@end_displayed_code()
+Here the special encoding ?1 refers to the first
+type parameter. 
+@p()
+Type bindings may also have a requirements clause:
+@begin_displayed_code()
+  type vector[t] = "vector<?1>" requires vector_h;
+@end_displayed_code()
+See 
+@ref_anchor("requirements")
+ for more details.
+
+@head(2,"Binding constants")
+Felix provides a way to lift C/C++ expressions directly
+into Felix:
+@begin_displayed_code()
+  const pi : double = "M_PI";
+  const M_PI : double;
+  const myval[t] : int = "(?1)(x+y)";
+@end_displayed_code()
+When the target and source names are the same,
+the source string can be elided.
+@p()
+When used in an expression, the Felix symbol is 
+replaced by the correspondong C code, with substitution
+of type variables if necessary.
+@p()
+The const declaration is a short form for a function
+with no arguments. Const definitions can also have
+requirements clauses. See 
+@ref_anchor("requirements")
+ for more details.
+
+@head(2,"Requirements Specifications",key="requirements")
 @head(1,"Expressions",key="expr")
 @head(2,"Coercions",key="coercion")
 @head(2,"Record Coercions",key="record coercion")

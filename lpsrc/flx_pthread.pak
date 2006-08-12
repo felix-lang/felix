@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.36  2006/08/12 05:23:24  skaller
+Add error handling to pthread management.
+
 Revision 1.35  2006/08/05 07:13:47  skaller
 add pthread switch to flx_pthread.fpc
 
@@ -331,7 +334,7 @@ flx_detached_thread_t::init(void* (*start)(void*), void* udat)
   int res = pthread_create(&thr, &attr, start, udat);
   if(res)
   {
-     fprintf(stderr, "flx_detached_thread_t: pthread_create_failed: %s\n",
+     fprintf(stderr, "WARNING: flx_detached_thread_t: pthread_create failed: %s\n",
        strerror(res));
   }
   pthread_attr_destroy(&attr);
@@ -351,13 +354,21 @@ flx_thread_t::init(void* (*start)(void*), void* udat)
   int res = pthread_create(&thr, NULL, start, udat);
   if(res)
   {
-     fprintf(stderr, "flx_thread_t: pthread_create_failed: %s\n",
+     fprintf(stderr, "WARNING: flx_thread_t: pthread_create failed: %s\n",
        strerror(res));
   }
   return res;
 }
 
-void flx_thread_t::join() { pthread_join(thr, NULL); }
+void flx_thread_t::join() { 
+  int res = pthread_join(thr, NULL); 
+  if(res)
+  {
+     fprintf(stderr, "flx_thread_t: FATAL: pthread_join failed: %s\n",
+       strerror(res));
+     exit(1);
+  }
+}
 
 flx_thread_t::~flx_thread_t() { }
 flx_thread_t::flx_thread_t() { }
@@ -369,7 +380,15 @@ void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyabl
 
 flx_thread_wrapper_t::flx_thread_wrapper_t(void* (*start)(void*), void* udat)
 {
-  thread.init(start,udat);
+  int res = thread.init(start,udat);
+  {
+    if(res)
+    {
+       fprintf(stderr, "FATAL: flx_thread_wapper_t: flx_thread_t.init failed: %s\n",
+         strerror(res));
+       exit(1);
+    }
+  }
 }
 
 flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
@@ -427,13 +446,14 @@ flx_thread_t::join()
   // will this give me my return status? how do I get that?
   if(WAIT_FAILED == wait_res)
   {
-    fprintf(stderr,"thread wait failed (%li)\n", GetLastError());
+    fprintf(stderr,"WARNING: thread wait failed (%li)\n", GetLastError());
   }
 
   // I've already tried waiting on the  thread's exit
   if(!CloseHandle(thread))
   {
-    fprintf(stderr,"failed to delete thread (%li)\n", GetLastError());
+    fprintf(stderr,"FATAL: failed to delete thread (%li)\n", GetLastError());
+    exit(1);
   }
 }
 
@@ -448,7 +468,7 @@ flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
   if(!thread)
   {
     DWORD err = GetLastError();
-    fprintf(stderr, "flx_thread_t: CreateThread failed: %i\n", err);
+    fprintf(stderr, "WARNING: flx_thread_t: CreateThread failed: %i\n", err);
     return err;
   }
 
@@ -458,7 +478,12 @@ flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 // ---- joinable thread wrapper ----------
 flx_thread_wrapper_t::flx_thread_wrapper_t(LPTHREAD_START_ROUTINE f, LPVOID lParam)
 {
-  thread.init(f,lParam);
+  int res = thread.init(f,lParam);
+  if(res)
+  {
+    fprintf(stderr,"flx_thread_wrapper_t: FATAL: flx_thread_t.init failed\n");
+    exit(1);
+  }
 }
 flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
