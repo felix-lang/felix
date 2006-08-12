@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.37  2006/08/12 05:26:19  skaller
+need cstdlib for exit()
+
 Revision 1.36  2006/08/12 05:23:24  skaller
 Add error handling to pthread management.
 
@@ -317,6 +320,7 @@ public:
 #include "pthread_thread.hpp"
 #include <stdio.h>
 #include <string.h>  // strerror
+#include <cstdlib>
 
 namespace flx { namespace pthread {
 
@@ -366,7 +370,7 @@ void flx_thread_t::join() {
   {
      fprintf(stderr, "flx_thread_t: FATAL: pthread_join failed: %s\n",
        strerror(res));
-     exit(1);
+     std::exit(1);
   }
 }
 
@@ -399,6 +403,7 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 @select(h)
 #include "pthread_thread.hpp"
 #include <stdio.h>
+#include <cstdlib>
 
 namespace flx { namespace pthread {
 
@@ -449,11 +454,11 @@ flx_thread_t::join()
     fprintf(stderr,"WARNING: thread wait failed (%li)\n", GetLastError());
   }
 
-  // I've already tried waiting on the  thread's exit
+  // I've already tried waiting on the  thread's #include <stdlib> exit
   if(!CloseHandle(thread))
   {
     fprintf(stderr,"FATAL: failed to delete thread (%li)\n", GetLastError());
-    exit(1);
+    std::exit(1);
   }
 }
 
@@ -482,7 +487,7 @@ flx_thread_wrapper_t::flx_thread_wrapper_t(LPTHREAD_START_ROUTINE f, LPVOID lPar
   if(res)
   {
     fprintf(stderr,"flx_thread_wrapper_t: FATAL: flx_thread_t.init failed\n");
-    exit(1);
+    std::exit(1);
   }
 }
 flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
