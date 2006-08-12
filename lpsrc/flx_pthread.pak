@@ -1,5 +1,12 @@
 @head(1,'pthread')
 $Log$
+Revision 1.39  2006/08/12 17:24:27  idadesub
+renamed all header guards to use the __FLX_filename_H__
+the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
+FLX_RTL_CONFIG. I renamed them to __FLX_HOST_CONFIG__
+one of the files checked if FLX_GC was defined before including flx_gc.h,
+but this check is flx_gc.h, so we don't need to guard it twice.
+
 Revision 1.38  2006/08/12 14:41:53  skaller
 Revert the ALIAS changes because they didn't work, leaves an
 open problem on Solaris with intptr etc.
@@ -223,8 +230,8 @@ weaver_directory = 'doc/rtl/flx_pthread/'
 
 @h=tangler('rtl/flx_pthread_config.hpp')
 @select(h)
-#ifndef __FLX_PTHREAD_CONFIG_GUARD__
-#define __FLX_PTHREAD_CONFIG_GUARD__
+#ifndef __FLX_PTHREAD_CONFIG_H__
+#define __FLX_PTHREAD_CONFIG_H__
 #include "flx_rtl_config.hpp"
 #ifdef BUILD_PTHREAD
 #define PTHREAD_EXTERN FLX_EXPORT
@@ -243,8 +250,8 @@ threads.
 @head(2,'Thread')
 @h=tangler('pthread/pthread_thread.hpp')
 @select(h)
-#ifndef __FLX_THREAD__
-#define __FLX_THREAD__
+#ifndef __FLX_PTHREAD_THREAD_H__
+#define __FLX_PTHREAD_THREAD_H__
 #include <flx_pthread_config.hpp>
 
 #ifdef _WIN32
@@ -546,8 +553,8 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 @head(2,'Windows Emulation of Posix Synchronisation primitives')
 @h=tangler('pthread/pthread_win_posix_condv_emul.hpp')
 @select(h)
-#ifndef __WIN_POSIX_CONDV_EMUL__
-#define __WIN_POSIX_CONDV_EMUL__
+#ifndef __FLX_PTHREAD_WIN_POSIX_CONDV_EMUL_H__
+#define __FLX_PTHREAD_WIN_POSIX_CONDV_EMUL_H__
 // Note: no namespaces here!
 // See http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
 
@@ -897,8 +904,8 @@ int pthread_cond_uswait(
 @head(2,'Portable Mutex')
 @h=tangler('pthread/pthread_mutex.hpp')
 @select(h)
-#ifndef __FLX_MUTEX__
-#define __FLX_MUTEX__
+#ifndef __FLX_PTHREAD_MUTEX_H__
+#define __FLX_PTHREAD_MUTEX_H__
 #include "flx_pthread_config.hpp"
 
 #include "pthread_win_posix_condv_emul.hpp"
@@ -957,8 +964,8 @@ flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
 @head(1,"Counter")
 @h=tangler('pthread/pthread_counter.hpp')
 @select(h)
-#ifndef __PTHREAD_COUNTER__
-#define __PTHREAD_COUNTER__
+#ifndef __FLX_PTHREAD_COUNTER_H__
+#define __FLX_PTHREAD_COUNTER_H__
 #include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
@@ -1078,8 +1085,8 @@ void flx_ts_counter_t::wait_zero() {
 @head(2,'Portable Condition Variable')
 @h=tangler('pthread/pthread_condv.hpp')
 @select(h)
-#ifndef __CONDV__
-#define __CONDV__
+#ifndef __FLX_PTHREAD_CONDV_H__
+#define __FLX_PTHREAD_CONDV_H__
 #include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 
@@ -1130,8 +1137,8 @@ int flx_condv_t::timedwait(flx_mutex_t *m, timespec *t) {
 @head(2,'Portable Semaphore')
 @h=tangler('pthread/pthread_semaphore.hpp')
 @select(h)
-#ifndef __SEMAPHORE__
-#define __SEMAPHORE__
+#ifndef __FLX_PTHREAD_SEMAPHORE_H__
+#define __FLX_PTHREAD_SEMAPHORE_H__
 #include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 
@@ -1180,8 +1187,8 @@ int flx_semaphore_t::get(){ int x; sem_getvalue(&sem,&x); return x; }
 
 @h=tangler('pthread/pthread_monitor.hpp')
 @select(h)
-#ifndef __MONITOR__
-#define __MONITOR__
+#ifndef __FLX_PTHREAD_MONITOR_H__
+#define __FLX_PTHREAD_MONITOR_H__
 #include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
@@ -1290,8 +1297,8 @@ on a semaphore signaled by the enqueue operation.
 
 @h=tangler('pthread/pthread_sleep_queue.hpp')
 @select(h)
-#ifndef __SLEEPQUEUE__
-#define __SLEEPQUEUE__
+#ifndef __FLX_PTHREAD_SLEEP_QUEUE_H__
+#define __FLX_PTHREAD_SLEEP_QUEUE_H__
 #include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
@@ -1401,8 +1408,8 @@ sleep_queue_t::resize(size_t n)
 The class is actually a thread plus a job queue.
 @h=tangler('pthread/pthread_work_fifo.hpp')
 @select(h)
-#ifndef __WORKER_FIFO__
-#define __WORKER_FIFO__
+#ifndef __FLX_PTHREAD_WORKER_FIFO_H__
+#define __FLX_PTHREAD_WORKER_FIFO_H__
 #include <flx_pthread_config.hpp>
 #include "pthread_thread.hpp"
 #include "pthread_mutex.hpp"

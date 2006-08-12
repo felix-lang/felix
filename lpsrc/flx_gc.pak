@@ -1,5 +1,12 @@
 @head(1,'Garbage collector')
 $Log$
+Revision 1.7  2006/08/12 17:24:27  idadesub
+renamed all header guards to use the __FLX_filename_H__
+the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
+FLX_RTL_CONFIG. I renamed them to __FLX_HOST_CONFIG__
+one of the files checked if FLX_GC was defined before including flx_gc.h,
+but this check is flx_gc.h, so we don't need to guard it twice.
+
 Revision 1.6  2006/08/04 05:46:07  skaller
 Lazy variables.
 
@@ -119,8 +126,8 @@ Version: $Id$
 
 @h=tangler('rtl/flx_gc_config.hpp')
 @select(h)
-#ifndef __FLX_GC_CONFIG_GUARD__
-#define __FLX_GC_CONFIG_GUARD__
+#ifndef __FLX_GC_CONFIG_H__
+#define __FLX_GC_CONFIG_H__
 #include "flx_rtl_config.hpp"
 #ifdef BUILD_FLX_GC
 #define GC_EXTERN FLX_EXPORT
@@ -131,8 +138,8 @@ Version: $Id$
 
 @h = tangler('rtl/flx_gc.hpp')
 @select(h)
-#ifndef FLX_GC
-#define FLX_GC
+#ifndef __FLX_GC_H__
+#define __FLX_GC_H__
 
 #include <cstdlib>
 #include "flx_gc_config.hpp"
@@ -623,8 +630,8 @@ void *operator new [] (
 
 
 @select(tangler('rtl/flx_collector.hpp'))
-#ifndef FLX_COLLECTOR
-#define FLX_COLLECTOR
+#ifndef __FLX_COLLECTOR_H__
+#define __FLX_COLLECTOR_H__
 #include "flx_gc.hpp"
 #include "flx_gc_private.hpp"
 #include <map>
@@ -1537,8 +1544,8 @@ void flx_collector_t::impl_compact(bool closed) {
 }}} // end namespaces
 
 @select(tangler('rtl/flx_ts_collector.hpp'))
-#ifndef FLX_TS_COLLECTOR
-#define FLX_TS_COLLECTOR
+#ifndef __FLX_TS_COLLECTOR_H__
+#define __FLX_TS_COLLECTOR_H__
 #include "flx_collector.hpp"
 #include "pthread_mutex.hpp"
 

@@ -1,5 +1,12 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.63  2006/08/12 17:24:27  idadesub
+renamed all header guards to use the __FLX_filename_H__
+the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
+FLX_RTL_CONFIG. I renamed them to __FLX_HOST_CONFIG__
+one of the files checked if FLX_GC was defined before including flx_gc.h,
+but this check is flx_gc.h, so we don't need to guard it twice.
+
 Revision 1.62  2006/08/12 14:41:53  skaller
 Revert the ALIAS changes because they didn't work, leaves an
 open problem on Solaris with intptr etc.
@@ -557,8 +564,8 @@ Requires: faio demux flx_pthread flx flx_gc
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)
-#ifndef FLX_META
-#define FLX_META
+#ifndef __FLX_META_H__
+#define __FLX_META_H__
 // taken from BOOST
 @if HAVE_INCLASS_MEMBER_INITIALIZATION:
   tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION')
@@ -633,8 +640,8 @@ T &reinterpret(U const &x) {
 
 @h = tangler("rtl/flx_host_config.hpp")
 @select(h)
-#ifndef FLX_HOST_CONFIG
-#define FLX_RTL_CONFIG
+#ifndef __FLX_HOST_CONFIG_H__
+#define __FLX_HOST_CONFIG_H__
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x500
@@ -669,8 +676,8 @@ T &reinterpret(U const &x) {
 
 @h = tangler("rtl/flx_rtl_config.hpp")
 @select(h)
-#ifndef FLX_RTL_CONFIG
-#define FLX_RTL_CONFIG
+#ifndef __FLX_RTL_CONFIG_H__
+#define __FLX_RTL_CONFIG_H__
 
 #ifdef _WIN32
 #define _WIN32_WINNT 0x500
@@ -809,13 +816,11 @@ right type by client drivers.
 
 @h = tangler("rtl/flx_rtl.hpp")
 @select(h)
-#ifndef FLX_RTL
-#define FLX_RTL
+#ifndef __FLX_RTL_H__
+#define __FLX_RTL_H__
 #include "flx_rtl_config.hpp"
 #include "flx_meta.hpp"
-#ifndef FLX_GC
 #include "flx_gc.hpp"
-#endif
 #include <string>
 #include <functional>
 
@@ -1930,8 +1935,8 @@ or even constants which require dynamic initialisation.
 
 @h = tangler("rtl/flx_dynlink.hpp")
 @select(h)
-#ifndef FLX_DYNLINK
-#define FLX_DYNLINK
+#ifndef __FLX_DYNLINK_H__
+#define __FLX_DYNLINK_H__
 #ifndef FLX_RTL
 #include "flx_rtl.hpp"
 #include "flx_gc.hpp"
@@ -2356,8 +2361,8 @@ con_t *flx_libinit_t::bind_proc(void *fn, void *data) {
 
 @h = tangler("rtl/flx_sync.hpp")
 @select(h)
-#ifndef _FLX_SYNC
-#define _FLX_SYNC
+#ifndef __FLX_SYNC_H__
+#define __FLX_SYNC_H__
 
 #include "flx_gc.hpp"
 #include "flx_dynlink.hpp"
@@ -2623,8 +2628,8 @@ shared library name are not passed.
 
 @h = tangler('rtl/flx_async.hpp','hpp')
 @select(h)
-#ifndef __FLX_ASYNC__
-#define __FLX_ASYNC__
+#ifndef __FLX_ASYNC_H__
+#define __FLX_ASYNC_H__
 #include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
 
@@ -2819,8 +2824,8 @@ async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
 
 @h = tangler('rtl/flx_eh.hpp')
 @select(h)
-#ifndef __FLX_EH__
-#define __FLX_EH__
+#ifndef __FLX_EH_H__
+#define __FLX_EH_H__
 #include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
 
@@ -3653,8 +3658,8 @@ int main(int argc, char** argv)
 
 
 @select(tangler('rtl/flx_i18n.hpp'))
-#ifndef FLX_I18N
-#define FLX_I18N
+#ifndef __FLX_I18N_H__
+#define __FLX_I18N_H__
 #include <string>
 #include "flx_rtl_config.hpp"
 

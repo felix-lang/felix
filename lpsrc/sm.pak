@@ -5222,8 +5222,8 @@ public:
 //   can pass the entire object as a single word
 // Scott McPeak, 1995-2000  This file is public domain.
 
-#ifndef STR_H
-#define STR_H
+#ifndef __FLX_SM_STR_H__
+#define __FLX_SM_STR_H__
 
 // this should eventually be put someplace more general...
 #ifndef va_copy

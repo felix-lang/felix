@@ -526,8 +526,8 @@ int main()
 
 @h = tangler('misc/elk_flx_lexer.h')
 @select(h)
-#ifndef ELK_FLX_LEXER
-#define ELK_FLX_LEXER
+#ifndef __FLX_ELK_FLX_LEXER_H__
+#define __FLX_ELK_FLX_LEXER_H__
 
 #include "lexerint.h"
 // read characters from stdin, yield tokens for the parser

@@ -1,5 +1,12 @@
 @head(1,'demux')
 $Log$
+Revision 1.35  2006/08/12 17:24:27  idadesub
+renamed all header guards to use the __FLX_filename_H__
+the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
+FLX_RTL_CONFIG. I renamed them to __FLX_HOST_CONFIG__
+one of the files checked if FLX_GC was defined before including flx_gc.h,
+but this check is flx_gc.h, so we don't need to guard it twice.
+
 Revision 1.34  2006/08/12 14:41:53  skaller
 Revert the ALIAS changes because they didn't work, leaves an
 open problem on Solaris with intptr etc.
@@ -295,8 +302,8 @@ Integrate SDL tests, provide initial SDL event demux.
 
 @h=tangler('rtl/flx_demux_config.hpp')
 @select(h)
-#ifndef __FLX_DEMUX_CONFIG_GUARD__
-#define __FLX_DEMUX_CONFIG_GUARD__
+#ifndef __FLX_DEMUX_CONFIG_H__
+#define __FLX_DEMUX_CONFIG_H__
 #include "flx_rtl_config.hpp"
 #ifdef BUILD_DEMUX
 #define DEMUX_EXTERN FLX_EXPORT
@@ -307,8 +314,8 @@ Integrate SDL tests, provide initial SDL event demux.
 
 @h=tangler('demux/demux_demuxer.hpp')
 @select(h)
-#ifndef __DEMUXER__
-#define __DEMUXER__
+#ifndef __FLX_DEMUX_DEMUXER_H__
+#define __FLX_DEMUX_DEMUXER_H__
 #include <flx_demux_config.hpp>
 
 namespace flx { namespace demux {
@@ -377,8 +384,8 @@ public:
 
 @h=tangler('demux/demux_epoll_demuxer.hpp')
 @select(h)
-#ifndef __EPOLL_DEMUXER__
-#define __EPOLL_DEMUXER__
+#ifndef __FLX_DEMUX_EPOLL_DEMUXER_H__
+#define __FLX_DEMUX_EPOLL_DEMUXER_H__
 
 #include <flx_demux_config.hpp>
 #include "demux_posix_demuxer.hpp"
@@ -413,8 +420,8 @@ public:
 
 @h=tangler('demux/demux_evtport_demuxer.hpp')
 @select(h)
-#ifndef __EVTPORT_DEMUXER__
-#define __EVTPORT_DEMUXER__
+#ifndef __FLX_DEMUX_EVTPORT_DEMUXER_H__
+#define __FLX_DEMUX_EVTPORT_DEMUXER_H__
 
 // driver for solaris 10 event port notifications
 
@@ -461,8 +468,8 @@ public:
 
 @h=tangler('demux/demux_iocp_demuxer.hpp')
 @select(h)
-#ifndef __IOCP_DEMUXER__
-#define __IOCP_DEMUXER__
+#ifndef __FLX_DEMUX_IOCP_DEMUXER_H__
+#define __FLX_DEMUX_IOCP_DEMUXER_H__
 
 #include <flx_demux_config.hpp>
 //#include <Windows.h>
@@ -547,8 +554,8 @@ public:
 
 @h=tangler('demux/demux_kqueue_demuxer.hpp')
 @select(h)
-#ifndef __KQUEUE_DEMUXER__
-#define __KQUEUE_DEMUXER__
+#ifndef __FLX_DEMUX_KQUEUE_DEMUXER_H__
+#define __FLX_DEMUX_KQUEUE_DEMUXER_H__
 
 #include "demux_posix_demuxer.hpp"
 
@@ -581,8 +588,8 @@ public:
 
 @h=tangler('demux/demux_pfileio.hpp')
 @select(h)
-#ifndef __PFILEIO__
-#define __PFILEIO__
+#ifndef __FLX_DEMUX_PFILEIO_H__
+#define __FLX_DEMUX_PFILEIO_H__
 #include <flx_demux_config.hpp>
 
 #include "demux_demuxer.hpp"
@@ -633,8 +640,8 @@ public:
 
 @h=tangler('demux/demux_posix_demuxer.hpp')
 @select(h)
-#ifndef __POSIX_DEMUXER__
-#define __POSIX_DEMUXER__
+#ifndef __FLX_DEMUX_POSIX_DEMUXER_H__
+#define __FLX_DEMUX_POSIX_DEMUXER_H__
 
 // base classes for posix style demuxers
 
@@ -728,8 +735,8 @@ public:
 
 @h=tangler('demux/demux_select_demuxer.hpp')
 @select(h)
-#ifndef __SELECT_DEMUXER__
-#define __SELECT_DEMUXER__
+#ifndef __FLX_DEMUX_SELECT_DEMUXER_H__
+#define __FLX_DEMUX_SELECT_DEMUXER_H__
 
 #include "demux_posix_demuxer.hpp"
 #include <sys/types.h>    // for sys/select.h on osx
@@ -779,8 +786,8 @@ public:
 
 @h=tangler('demux/demux_ts_select_demuxer.hpp')
 @select(h)
-#ifndef __TS_SELECT_DEMUXER__
-#define __TS_SELECT_DEMUXER__
+#ifndef __FLX_DEMUX_TS_SELECT_DEMUXER_H__
+#define __FLX_DEMUX_TS_SELECT_DEMUXER_H__
 
 #include "demux_select_demuxer.hpp"
 #include "demux_self_piper.hpp"
@@ -816,8 +823,8 @@ public:
 #endif
 @h=tangler('demux/demux_timer_queue.hpp')
 @select(h)
-#ifndef __TIMER_QUEUE__
-#define __TIMER_QUEUE__
+#ifndef __FLX_DEMUX_TIMER_QUEUE_H__
+#define __FLX_DEMUX_TIMER_QUEUE_H__
 
 #include <flx_demux_config.hpp>
 
@@ -855,8 +862,8 @@ public:
 
 @h=tangler('demux/demux_posix_timer_queue.hpp')
 @select(h)
-#ifndef __POSIX_TIMER_QUEUE__
-#define __POSIX_TIMER_QUEUE__
+#ifndef __FLX_DEMUX_POSIX_TIMER_QUEUE_H__
+#define __FLX_DEMUX_POSIX_TIMER_QUEUE_H__
 
 #include "pthread_thread.hpp"  // flx_thread_t
 #include "pthread_mutex.hpp"  // flx_mutex_t
@@ -1166,8 +1173,8 @@ timer_queue::get_time(double& t)
 
 @h=tangler('demux/demux_win_timer_queue.hpp')
 @select(h)
-#ifndef __WIN_TIMER_QUEUE__
-#define __WIN_TIMER_QUEUE__
+#ifndef __FLX_DEMUX_WIN_TIMER_QUEUE_H__
+#define __FLX_DEMUX_WIN_TIMER_QUEUE_H__
 
 #include "flx_demux_config.hpp"
 #include <Windows.h>
@@ -2692,8 +2699,8 @@ winfileio_control_block::start_overlapped()
 
 @h=tangler('demux/demux_overlapped.hpp')
 @select(h)
-#ifndef __DEMUX_OVERLAPPED__
-#define __DEMUX_OVERLAPPED__
+#ifndef __FLX_DEMUX_OVERLAPPED_H__
+#define __FLX_DEMUX_OVERLAPPED_H__
 #include "flx_demux_config.hpp"
 
 // visual studio is quite sensitve about how you do these includes.
@@ -3655,8 +3662,8 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 
 @h=tangler('demux/demux_sockety.hpp')
 @select(h)
-#ifndef __DEMUX_SOCKETY__
-#define __DEMUX_SOCKETY__
+#ifndef __FLX_DEMUX_SOCKETY_H__
+#define __FLX_DEMUX_SOCKETY_H__
 #include <flx_demux_config.hpp>
 namespace flx { namespace demux {
 
@@ -3685,8 +3692,8 @@ int get_socket_error(int s, int* socket_err);
 @h=tangler('demux/demux_quitter.hpp')
 @select(h)
 
-#ifndef __DEMUX_QUITTER__
-#define __DEMUX_QUITTER__
+#ifndef __FLX_DEMUX_QUITTER_H__
+#define __FLX_DEMUX_QUITTER_H__
 
 #include <flx_demux_config.hpp>
 #include "demux_demuxer.hpp"  // demuxers
@@ -3827,8 +3834,8 @@ wdemux_quitter::callback(demuxer* d)
 @h=tangler('demux/demux_self_piper.hpp')
 @select(h)
 
-#ifndef __DEMUX_SELF_PIPER__
-#define __DEMUX_SELF_PIPER__
+#ifndef __FLX_DEMUX_SELF_PIPER_H__
+#define __FLX_DEMUX_SELF_PIPER_H__
 
 #include <flx_demux_config.hpp>
 #include "demux_posix_demuxer.hpp"
@@ -4021,8 +4028,8 @@ pipe_pair::get_read_end()
 
 @h=tangler('demux/demux_wself_piper.hpp')
 @select(h)
-#ifndef __DEMUX_WSELF_PIPER__
-#define __DEMUX_WSELF_PIPER__
+#ifndef __FLX_DEMUX_WSELF_PIPER_H__
+#define __FLX_DEMUX_WSELF_PIPER_H__
 
 #include <flx_demux_config.hpp>
 #include "demux_overlapped.hpp"  // I use readfile control block
@@ -4259,8 +4266,8 @@ wself_piper_wakeup::arm()
 
 @h=tangler('demux/demux_poll_demuxer.hpp')
 @select(h)
-#ifndef __POLL_DEMUXER__
-#define __POLL_DEMUXER__
+#ifndef __FLX_DEMUX_POLL_DEMUXER_H__
+#define __FLX_DEMUX_POLL_DEMUXER_H__
     
 #include <flx_demux_config.hpp>
 #include "demux_posix_demuxer.hpp"
@@ -4563,8 +4570,8 @@ poll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 
 @h=tangler('demux/demux_ts_poll_demuxer.hpp')
 @select(h)
-#ifndef __TS_POLL_DEMUXER__
-#define __TS_POLL_DEMUXER__
+#ifndef FLX_DEMUX_TS_POLL_DEMUXER_H
+#define FLX_DEMUX_TS_POLL_DEMUXER_H
 
 // thread safe version of poll_demuxer
 

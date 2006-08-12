@@ -157,8 +157,8 @@ Version: 1
 
 @h=tangler('rtl/flx_target_elk_config.hpp')
 @select(h)
-#ifndef __FLX_TARGET_ELK_CONFIG_GUARD__
-#define __FLX_TARGET_ELK_CONFIG_GUARD__
+#ifndef __FLX_TARGET_ELK_CONFIG_H__
+#define __FLX_TARGET_ELK_CONFIG_H__
 #include "flx_rtl_config.hpp"
 #ifdef BUILD_ELK
 #define ELK_EXTERN FLX_EXPORT
@@ -169,8 +169,8 @@ Version: 1
 
 @h=tangler('rtl/flx_host_elk_config.hpp')
 @select(h)
-#ifndef __FLX_HOST_ELK_CONFIG_GUARD__
-#define __FLX_HOST_ELK_CONFIG_GUARD__
+#ifndef __FLX_HOST_ELK_CONFIG_H__
+#define __FLX_HOST_ELK_CONFIG_H__
 #include "flx_host_config.hpp"
 #ifdef BUILD_ELK
 #define ELK_EXTERN FLX_EXPORT
@@ -181,12 +181,15 @@ Version: 1
 
 @h=tangler('rtl/flx_elk_config.hpp')
 @select(h)
+#ifndef __FLX_ELK_CONFIG_H__
+#define __FLX_ELK_CONFIG_H__
 #if defined(HOST_BUILD)
 #include "flx_host_elk_config.hpp"
 #elif defined(TARGET_BUILD)
 #include "flx_target_elk_config.hpp"
 #else
 #error "ELKHOUND: must specify -DHOST_BUILD or -DTARGET_BUILD"
+#endif
 #endif
 
 @h=tangler('elk/elk_gramexpl.cpp')
