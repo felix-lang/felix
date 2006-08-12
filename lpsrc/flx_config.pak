@@ -10,8 +10,12 @@
 @debian_revision = '1'
 @rpm_revision = '1'
 
+
 @head(2,'CVS log')
 $Log$
+Revision 1.229  2006/08/12 17:04:05  skaller
+Fix CVS confusion about this file.
+
 Revision 1.228  2006/08/12 14:41:53  skaller
 Revert the ALIAS changes because they didn't work, leaves an
 open problem on Solaris with intptr etc.
