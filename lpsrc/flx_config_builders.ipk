@@ -668,25 +668,59 @@ int main(int argc, char** argv) {
       if alias:
         opt.__dict__['ALIAS_' + t] = alias
 
-    for t in [
-      'int8_t', 'uint8_t',
-      'int16_t', 'uint16_t',
-      'int32_t', 'uint32_t',
-      'int64_t', 'uint64_t',
-      'intmax_t', 'uintmax_t',
-      'intptr_t', 'uintptr_t',
-      ]:
-      alias = self.find_alias(shell, get_stdout, t, header='stdint.h')
-      if alias:
-        opt.__dict__['ALIAS_' + t] = alias
-   
+    if opt.HAVE_STDINT:
+      for t in [
+        'int8_t', 'uint8_t',
+        'int16_t', 'uint16_t',
+        'int32_t', 'uint32_t',
+        'int64_t', 'uint64_t',
+        'intmax_t', 'uintmax_t',
+        'intptr_t', 'uintptr_t',
+        ]:
+        alias = self.find_alias(shell, get_stdout, t, header='stdint.h')
+        if alias:
+          opt.__dict__['ALIAS_' + t] = alias
+
+    if not getattr(opt,"ALIAS_int8",None): 
+      opt.ALIAS_int8_t="signed char"
+
+    if not getattr(opt,"ALIAS_uint8",None): 
+      opt.ALIAS_uint8_t="unsigned char"
+
+    sizes = { 
+      opt.SIZEOF_SHORT*8 : "short",
+      opt.SIZEOF_INT*8: "int",
+      opt.SIZEOF_LONG*8 : "long",
+    }
+
+    if not getattr(opt,"ALIAS_intmax_t",None):
+      opt.ALIAS_intmax_t="long"
+      opt.ALIAS_uintmax_t="unsigned long"
+      if opt.HAVE_LONGLONG:
+        opt.ALIAS_intmax_t="long long"
+        opt.ALIAS_uintmax_t="unsigned long long"
+
+    for size in [16,32,64]:
+      if not getattr(opt,"ALIAS_int"+str(size)+"_t",None):
+        try:
+          t = sizes[size]
+          opt.__dict__["ALIAS_int"+str(size)+"_t"]=t
+          opt.__dict__["ALIAS_uint"+str(size)+"_t"]="unsigned " + t
+        except KeyError:
+          opt.__dict__["ALIAS_int"+str(size)+"_t"]="emul_int"+str(size)
+          opt.__dict__["ALIAS_uint"+str(size)+"_t"]="emul_uint"+str(size)
+
+    if not getattr(opt,"ALIAS_intptr_t",None):
+      try:
+        opt.ALIAS_intptr_t=sizes[opt.SIZEOF_VOIDP*8]
+        opt.ALIAS_uintptr_t="unsigned "+sizes[opt.SIZEOF_VOIDP*8]
+      except:
+        print "NO INTEGER THE SIZE OF A VOID*!"
+        sys.exit(1)
 
   def detect_c_type_data(self, shell, get_stdout):
     self.detect_int_data(shell, get_stdout)
-    self.detect_aliases(shell, get_stdout)
 
-    opt = self.options
-      
     std_dtypes = [
       ('BOOL', 'bool', ''),
       ('FLOAT', 'float', ''),
@@ -722,6 +756,10 @@ int main(int argc, char** argv) {
     for m, t, f in std_dtypes:
       self.detect_type_data(shell, get_stdout, m, t, header=f)
 
+    self.detect_aliases(shell, get_stdout)
+
+    opt = self.options
+      
 
   def detect_win32(self, shell):
     return self.check_macro_defined(shell, "_WIN32")
