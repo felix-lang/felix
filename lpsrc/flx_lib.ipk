@@ -2,6 +2,13 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.174  2006/08/12 14:41:53  skaller
+Revert the ALIAS changes because they didn't work, leaves an
+open problem on Solaris with intptr etc.
+Rewrite pthread stuff to use a portable interface, using a
+wrapper which also catches exceptions which would otherwise
+try to escape the thread.
+
 Revision 1.173  2006/08/11 07:37:17  idadesub
 use tmap instead of the ALIAS's, as occasionally an alias doesn't exist,
 such as intmax on solaris
@@ -569,12 +576,13 @@ _gc_pointer type gcptr[t]= "?1*";
 
 @# mandatory in C
 @for t in ['ptrdiff','size','intmax','uintmax','intptr','uintptr']:
-  tangle('typedef ' + t + ' = ' + tmap[t] + ';')
+  equiv = cint2fint[eval('ALIAS_'+t+'_t')]
+  tangle('typedef ' + t + ' = ' + equiv + ';')
 
 @# optional in C
 @for t in exact_ints:
   try:
-    equiv = tmap[t]
+    equiv = cint2fint[eval('ALIAS_'+t+'_t')]
     tangle('typedef ' + t + ' = ' + equiv + ';')
     tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
   except KeyError:

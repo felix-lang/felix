@@ -1,5 +1,12 @@
 @head(1,'pthread')
 $Log$
+Revision 1.38  2006/08/12 14:41:53  skaller
+Revert the ALIAS changes because they didn't work, leaves an
+open problem on Solaris with intptr etc.
+Rewrite pthread stuff to use a portable interface, using a
+wrapper which also catches exceptions which would otherwise
+try to escape the thread.
+
 Revision 1.37  2006/08/12 05:26:19  skaller
 need cstdlib for exit()
 
@@ -261,40 +268,30 @@ namespace flx { namespace pthread {
 /// and joining of threads. It is not safe.
 // ********************************************************
 
-class PTHREAD_EXTERN flx_detached_thread_t {
 #ifdef _WIN32
-  HANDLE    thread;
+typedef HANDLE flx_native_thread_t;
 #else
-  pthread_t   thr;        ///< the thread
+typedef pthread_t flx_native_thread_t;
 #endif
+
+class PTHREAD_EXTERN flx_detached_thread_t {
+  flx_native_thread_t thr;        ///< the thread
   flx_detached_thread_t(flx_detached_thread_t const&); // uncopyable
   void operator=(flx_detached_thread_t const&); // uncopyable
 public:
   flx_detached_thread_t();
   ~flx_detached_thread_t();
-#ifdef _WIN32
-  int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
-#else
-  int init(void* (*start)(void*), void* udat);
-#endif
+  int init(void (*start)(void*), void* udat);
 };
 
 class PTHREAD_EXTERN flx_thread_t {
-#ifdef _WIN32
-  HANDLE    thread;
-#else
-  pthread_t   thr;        ///< the thread
-#endif
+  flx_native_thread_t thr;        ///< the thread
   flx_thread_t(flx_thread_t const&); // uncopyable
   void operator=(flx_thread_t const&); // uncopyable
 public:
   flx_thread_t();
   ~flx_thread_t();
-#ifdef _WIN32
-  int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
-#else
-  int init(void* (*start)(void*), void* udat);
-#endif
+  int init(void (*start)(void*), void* udat);
   void join();  
 };
 
@@ -305,11 +302,7 @@ class PTHREAD_EXTERN flx_thread_wrapper_t {
   void operator=(flx_thread_wrapper_t const&); // uncopyable
 public:
   ~flx_thread_wrapper_t();
-#ifndef _WIN32
-  flx_thread_wrapper_t(void* (*start)(void*), void* udat);
-#else  
-  flx_thread_wrapper_t(LPTHREAD_START_ROUTINE, LPVOID);
-#endif
+  flx_thread_wrapper_t(void (*start)(void*), void* udat);
 };
 
 }}
@@ -324,18 +317,42 @@ public:
 
 namespace flx { namespace pthread {
 
+struct tstart_t
+{
+  void (*sr)(void*);
+  void *cd;
+  tstart_t(void (*s)(void*),void* c) : sr(s), cd(c) {}
+};
+
+static void *start_wrapper(void *e)
+{
+  tstart_t *ehd = (tstart_t*)e;
+  void (*sr)(void*)=ehd->sr;
+  void *cd = ehd->cd;
+  delete ehd;
+  try { 
+    (*sr)(cd);
+  }
+  catch (...) {
+    fprintf(stderr,"Uncaught exception in thread\n");
+    std::exit(1);
+  }
+  return NULL;
+}
+
+
 // ---- detached threads ----------
 
 flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
 void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
 
 int 
-flx_detached_thread_t::init(void* (*start)(void*), void* udat)
+flx_detached_thread_t::init(void (*start)(void*), void* udat)
 {
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  int res = pthread_create(&thr, &attr, start, udat);
+  int res = pthread_create(&thr, &attr, start_wrapper, new tstart_t(start, udat));
   if(res)
   {
      fprintf(stderr, "WARNING: flx_detached_thread_t: pthread_create failed: %s\n",
@@ -353,9 +370,9 @@ flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
 void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 
 int 
-flx_thread_t::init(void* (*start)(void*), void* udat)
+flx_thread_t::init(void (*start)(void*), void* udat)
 {
-  int res = pthread_create(&thr, NULL, start, udat);
+  int res = pthread_create(&thr, NULL, start_wrapper, new tstart_t(start, udat));
   if(res)
   {
      fprintf(stderr, "WARNING: flx_thread_t: pthread_create failed: %s\n",
@@ -382,7 +399,7 @@ flx_thread_t::flx_thread_t() { }
 flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
 void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable
 
-flx_thread_wrapper_t::flx_thread_wrapper_t(void* (*start)(void*), void* udat)
+flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat)
 {
   int res = thread.init(start,udat);
   {
@@ -407,6 +424,30 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
 namespace flx { namespace pthread {
 
+struct tstart_t
+{
+  void (*sr)(void*);
+  void *cd;
+  tstart_t(void (*s)(void*),void* c) : sr(s), cd(c) {}
+};
+
+static int start_wrapper(LPVOID e)
+{
+  tstart_t *ehd = (tstart_t*)e;
+  void (*sr)(void*)=ehd->sr;
+  void *cp = ehd->cp;
+  delete ehd;
+  try { 
+    (*sr)(cp);
+  }
+  catch (...) {
+    fprintf(stderr,"Uncaught exception in thread\n");
+    std::exit(1);
+  }
+  return 0;
+}
+
+
 // ---- detached threads ----------
 
 flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
@@ -414,12 +455,16 @@ void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopya
 
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int 
-flx_detached_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
+flx_detached_thread_t::init(void (*fn)(void*), void *lParam)
 {
   DWORD thread_id = 0;
-  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0,
-    &thread_id);  
-  if(!thread)
+  thr = (HANDLE)CreateThread(NULL, 0, 
+    (LPTHREAD_START_ROUTINE)start_wrapper, 
+    new tstart_t(fn,lParam), 0,
+    &thread_id
+  );  
+
+  if(!thr)
   {
     DWORD err = GetLastError();
     fprintf(stderr, "flx_detached_thread_t: CreateThread failed: %i\n", err);
@@ -428,7 +473,7 @@ flx_detached_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
   return 0;
 }
 
-flx_detached_thread_t::~flx_detached_thread_t() { CloseHandle(thread); }
+flx_detached_thread_t::~flx_detached_thread_t() { CloseHandle(thr); }
 flx_detached_thread_t::flx_detached_thread_t() { }
 
 // ---- joinable threads ----------
@@ -446,7 +491,7 @@ flx_thread_t::join()
   // Let's try and wait for the thread to finish, however first I have to
   // tell it to finish up.
 
-  DWORD  wait_res = WaitForSingleObject(thread, INFINITE);
+  DWORD  wait_res = WaitForSingleObject(thr, INFINITE);
 
   // will this give me my return status? how do I get that?
   if(WAIT_FAILED == wait_res)
@@ -455,7 +500,7 @@ flx_thread_t::join()
   }
 
   // I've already tried waiting on the  thread's #include <stdlib> exit
-  if(!CloseHandle(thread))
+  if(!CloseHandle(thr))
   {
     fprintf(stderr,"FATAL: failed to delete thread (%li)\n", GetLastError());
     std::exit(1);
@@ -464,13 +509,16 @@ flx_thread_t::join()
 
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int
-flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
+flx_thread_t::init(void (*fn)(void*), void *lParam)
 {
   DWORD thread_id = 0;
-  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0,
-    &thread_id);  
+  thr= (HANDLE)CreateThread(NULL, 0, 
+    (LPTHREAD_START_ROUTINE)start_wrapper, 
+    new tstart_t(fn,lParam), 0,
+    &thread_id
+  );  
 
-  if(!thread)
+  if(!thr)
   {
     DWORD err = GetLastError();
     fprintf(stderr, "WARNING: flx_thread_t: CreateThread failed: %i\n", err);
@@ -481,7 +529,7 @@ flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 }
 
 // ---- joinable thread wrapper ----------
-flx_thread_wrapper_t::flx_thread_wrapper_t(LPTHREAD_START_ROUTINE f, LPVOID lParam)
+flx_thread_wrapper_t::flx_thread_wrapper_t(void (*f), void *lParam)
 {
   int res = thread.init(f,lParam);
   if(res)
@@ -1382,7 +1430,7 @@ class PTHREAD_EXTERN worker_fifo
   sleep_queue_t fifo;
   int nthreads;                 /// scheduled number of threads
 
-  static void* thread_start(void*); // thread entry point, passed this
+  static void thread_start(void*); // thread entry point, passed this
   bool thread_loop_body();      // returns keep going flag
   void stop_worker_thread();
   void start_worker_thread();
@@ -1416,11 +1464,7 @@ void worker_fifo::start_worker_thread()
 {
   ++nthreads;
   //fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
-#ifdef _WIN32
-  flx_detached_thread_t().init((LPTHREAD_START_ROUTINE)thread_start, this);
-#else
   flx_detached_thread_t().init(thread_start, this);
-#endif
 }
 
 worker_fifo::worker_fifo(int n, int m) : fifo(n), nthreads(0)
@@ -1443,12 +1487,11 @@ worker_fifo::~worker_fifo()
 }
 
 // io thread entry point, passed this
-void*
+void
 worker_fifo::thread_start(void* udat)
 { 
   worker_fifo*  fio = (worker_fifo*)udat;
   while(fio->thread_loop_body()) ;
-  return 0;             // return status.
 }
 
 // dequeues one task and executes it, calling finished hook. interprets

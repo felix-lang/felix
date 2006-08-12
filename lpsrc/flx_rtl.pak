@@ -1,5 +1,12 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.62  2006/08/12 14:41:53  skaller
+Revert the ALIAS changes because they didn't work, leaves an
+open problem on Solaris with intptr etc.
+Rewrite pthread stuff to use a portable interface, using a
+wrapper which also catches exceptions which would otherwise
+try to escape the thread.
+
 Revision 1.61  2006/08/08 18:55:26  skaller
 minor and probably useless tweak: when using gcc, mark
 assertions as unlikely to fail using __builtin_expect(),
@@ -2749,11 +2756,10 @@ class proto_async : public async_hooker_impl
 
 #ifdef _WIN32
     wflx_drv driver;
-    static DWORD pthread_thread(LPVOID udat);
 #else
     pflx_drv driver;
-    static void* pthread_thread(void* udat);
 #endif
+    static void pthread_thread(void* udat);
 
 public:
    proto_async(int n0, int n1, int m1, int n2, int m2) : 
@@ -2761,12 +2767,11 @@ public:
    {
      // start waiting thread. note that we only have ONE event waiting thread.
      // that's currently important for clean takedowns
-#if _WIN32
-     // cast callback to itself. go figure.
-     if(ethread.init((LPTHREAD_START_ROUTINE)pthread_thread, &demux) == -1) throw -1;
-#else
-     if(ethread.init(pthread_thread, &demux) == -1) throw -1;
-#endif
+     if(ethread.init(pthread_thread, &demux) == -1) 
+     {
+       fprintf(stderr,"Proto_async thread init failure\n");
+       exit(1);
+     }
    }
 
   ~proto_async(){ 
@@ -2780,13 +2785,8 @@ public:
   }
 };
 
-#ifdef _WIN32
-DWORD
-proto_async::pthread_thread(LPVOID udat)
-#else
-void*
+void
 proto_async::pthread_thread(void* udat)
-#endif
 {
     demuxer*    d = (demuxer*)udat;
 
@@ -2811,7 +2811,6 @@ proto_async::pthread_thread(void* udat)
     }
     //fprintf(stderr, "ETHREAD EXITING\n");
     // fprintf(stderr, "proto_async was asked to quit...\n");
-    return 0;
 }
 
 async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
@@ -3065,12 +3064,7 @@ struct doflx_data
 static
 create_async_hooker_t *ptr_create_async_hooker = NULL;
 
-#ifdef _WIN32
-DWORD
-#else
-void*
-#endif
-doflx (void *data) {
+void doflx (void *data) {
   doflx_data *d = (doflx_data*)data;
   bool debug_driver = d->debug_driver;
   gc_profile_t *gcp = d-> gcp;
@@ -3159,11 +3153,7 @@ doflx (void *data) {
         flx_detached_thread_t dummy;
         if(debug_driver)fprintf(stderr,"Starting new pthread, thread counter= %ld\n",thread_control->thread_count());
         thread_control->add_thread();
-        dummy.init(
-  #ifdef _WIN32
-    (LPTHREAD_START_ROUTINE)
-  #endif
-          doflx,data);
+        dummy.init( doflx,data);
       }
       goto process_active;
 
@@ -3278,7 +3268,6 @@ doflx (void *data) {
 
   // if this fails the whole system is corrupted
   thread_control->remove_thread();
-  return 0;
 }
 
 // RUN A FELIX INSTANCE IN THE CURRENT PTHREAD

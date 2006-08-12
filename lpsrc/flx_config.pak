@@ -12,6 +12,13 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.228  2006/08/12 14:41:53  skaller
+Revert the ALIAS changes because they didn't work, leaves an
+open problem on Solaris with intptr etc.
+Rewrite pthread stuff to use a portable interface, using a
+wrapper which also catches exceptions which would otherwise
+try to escape the thread.
+
 Revision 1.227  2006/08/11 07:37:17  idadesub
 use tmap instead of the ALIAS's, as occasionally an alias doesn't exist,
 such as intmax on solaris
@@ -2002,6 +2009,10 @@ if TARGET_CXX.options.HAVE_STDINT:
    rmap["uint32"]="c99_stdint_h"
    rmap["int64"]="c99_stdint_h"
    rmap["uint64"]="c99_stdint_h"
+   rmap["intptr"]="c99_stdint_h"
+   rmap["uintptr"]="c99_stdint_h"
+   rmap["intmax"]="c99_stdint_h"
+   rmap["uintmax"]="c99_stdint_h"
 else:
    tmap["int8"]="signed char"
    tmap["uint8"]="unsigned char"

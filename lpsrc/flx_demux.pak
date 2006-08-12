@@ -1,5 +1,12 @@
 @head(1,'demux')
 $Log$
+Revision 1.34  2006/08/12 14:41:53  skaller
+Revert the ALIAS changes because they didn't work, leaves an
+open problem on Solaris with intptr etc.
+Rewrite pthread stuff to use a portable interface, using a
+wrapper which also catches exceptions which would otherwise
+try to escape the thread.
+
 Revision 1.33  2006/08/05 19:59:18  skaller
 Remove a couple of fprintf debugs from poll demuxer
 
@@ -867,7 +874,7 @@ class DEMUX_EXTERN posix_timer_queue : public timer_queue
     flx::pthread::flx_thread_t sleep_thread;
     void*        opaque_prio_queue;        // less fat
 
-    static void* thread_start(void*);    // passed "this"
+    static void thread_start(void*);    // passed "this"
     bool thread_loop_body();
 
 
@@ -1072,15 +1079,13 @@ posix_timer_queue::wakeup_thread()
     sleep_cond.signal();
 }
 
-void*
+void
 posix_timer_queue::thread_start(void* udat)
 {
     posix_timer_queue*    q = (posix_timer_queue*)udat;
     //fprintf(stderr,"sleeper thread\n");
 
     while(q->thread_loop_body()) ;
-
-    return 0;
 }
 
 bool
