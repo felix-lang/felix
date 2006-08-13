@@ -1,5 +1,9 @@
 @head(1,'pthread')
 $Log$
+Revision 1.40  2006/08/13 06:40:04  idadesub
+renamed all felix macros to have FLX_ prepended to them to prevent name
+collision with other external libraries
+
 Revision 1.39  2006/08/12 17:24:27  idadesub
 renamed all header guards to use the __FLX_filename_H__
 the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
@@ -254,7 +258,7 @@ threads.
 #define __FLX_PTHREAD_THREAD_H__
 #include <flx_pthread_config.hpp>
 
-#ifdef _WIN32
+#if FLX_WIN32
 #include <windows.h>
 #else
 #include <pthread.h>
@@ -559,7 +563,7 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 // See http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
 
 #include "flx_pthread_config.hpp"
-#ifdef _WIN32
+#if FLX_WIN32
 #include <windows.h>
 
 typedef HANDLE pthread_mutex_t;
@@ -631,7 +635,7 @@ int PTHREAD_EXTERN pthread_cond_uswait( pthread_cond_t*, pthread_mutex_t*, unsig
 @select(h)
 #include "pthread_win_posix_condv_emul.hpp"
 #include <assert.h>
-#ifdef _WIN32
+#if FLX_WIN32
 #include <string.h>
 
 struct timespec {
@@ -1126,7 +1130,7 @@ void flx_condv_t::signal() { pthread_cond_signal(&cv);}
 void flx_condv_t::broadcast() { pthread_cond_broadcast(&cv); }
 int flx_condv_t::timedwait(flx_mutex_t *m, timespec *t) {
   int res = pthread_cond_timedwait(&cv,&(m->m),t);
-  #ifndef _WIN32
+  #if !FLX_WIN32
   if(res==EINVAL) return 0; // this is NOT an error!
   #endif
   return res;

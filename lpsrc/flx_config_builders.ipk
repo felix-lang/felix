@@ -606,6 +606,7 @@ int main(int argc, char** argv) {
       ('ULONG', 'unsigned long'),
       ('LONGLONG', 'long long'),
       ('ULONGLONG', 'unsigned long long'),
+      ('BOOL', 'bool'),
       ]
 
 

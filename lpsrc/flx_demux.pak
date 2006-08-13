@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.36  2006/08/13 06:40:04  idadesub
+renamed all felix macros to have FLX_ prepended to them to prevent name
+collision with other external libraries
+
 Revision 1.35  2006/08/12 17:24:27  idadesub
 renamed all header guards to use the __FLX_filename_H__
 the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
@@ -3700,7 +3704,7 @@ int get_socket_error(int s, int* socket_err);
 #include "pthread_mutex.hpp"  // mutexes 
 #include "pthread_condv.hpp"  // condition var for same
 
-#ifdef _WIN32
+#if FLX_WIN32
 #include "demux_wself_piper.hpp" // win32 self piper
 #else
 #include "demux_self_piper.hpp" // posix self piper
@@ -3724,7 +3728,7 @@ public:
 // quits a demuxer 
 class DEMUX_EXTERN demux_quitter : public demux_callback {
   // self pipes for getting demuxer attention
-#ifdef _WIN32
+#if FLX_WIN32
   wself_piper sp;
 #else
   self_piper sp;

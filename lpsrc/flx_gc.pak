@@ -1,5 +1,9 @@
 @head(1,'Garbage collector')
 $Log$
+Revision 1.8  2006/08/13 06:40:04  idadesub
+renamed all felix macros to have FLX_ prepended to them to prevent name
+collision with other external libraries
+
 Revision 1.7  2006/08/12 17:24:27  idadesub
 renamed all header guards to use the __FLX_filename_H__
 the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
@@ -768,7 +772,7 @@ namespace gc {
 namespace collector {
 
 static int mcount FLX_UNUSED = 0;
-#ifdef HAVE_GNU_X86
+#if FLX_HAVE_GNU_X86
 register void *sp __asm__("esp");
 #else
 // this was getting us unused variable warnings

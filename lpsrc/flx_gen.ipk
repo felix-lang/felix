@@ -3450,7 +3450,7 @@ try
   plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
 
   plb "\n//-----------------------------------------";
-  plb "#ifdef FLX_CGOTO";
+  plb "#if FLX_CGOTO";
   plb "//DEFINE LABELS for GNUC ASSEMBLER LABEL HACK";
   Hashtbl.iter
   (fun (fno,_) inst ->

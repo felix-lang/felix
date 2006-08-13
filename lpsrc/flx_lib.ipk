@@ -2,6 +2,10 @@
 @head(1,'Felix Standard Library')
 @head(2,"Change Log")
 $Log$
+Revision 1.176  2006/08/13 06:40:04  idadesub
+renamed all felix macros to have FLX_ prepended to them to prevent name
+collision with other external libraries
+
 Revision 1.175  2006/08/12 17:01:49  skaller
 Attempted to fix the intptr problem by fudging ALIAS stuff
 in the compiler config to ensure all the ALIAS'es are defined,
@@ -2224,9 +2228,9 @@ size_t __gnu_cxx::hash<std::string>::
   it = 'stl_'+n+'_iterator[t]'
 
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
-  tangle('    fun create : unit -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
-  tangle('    fun create : int * t -> '+c+'= "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
-  tangle('    fun create[i] : i * i -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
+  tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
+  tangle('    fun create : int * t -> '+c+'= "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
+  tangle('    fun create[i] : i * i -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
   gen_pcmp(c)
   tangle('    fun len: '+c+' -> int = "$1.size()";')
   tangle('    fun empty: '+c+' -> int = "$1.empty()";')
@@ -2305,7 +2309,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";')
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";')
-  tangle('    fun create : unit -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
+  tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
@@ -2341,7 +2345,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1,?2>::iterator";')
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1,?2>::reverse_iterator";')
 
-  tangle('    fun create : unit -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1,?2>())";')
+  tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1,?2>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')

@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.64  2006/08/13 06:40:04  idadesub
+renamed all felix macros to have FLX_ prepended to them to prevent name
+collision with other external libraries
+
 Revision 1.63  2006/08/12 17:24:27  idadesub
 renamed all header guards to use the __FLX_filename_H__
 the file flx_host_config defined the check FLX_HOST_CONFIG, but defines
@@ -568,8 +572,11 @@ Requires: faio demux flx_pthread flx flx_gc
 #define __FLX_META_H__
 // taken from BOOST
 @if HAVE_INCLASS_MEMBER_INITIALIZATION:
-  tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION')
-#ifdef FLX_HAVE_INCLASS_MEMBER_INITIALIZATION
+  tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 1')
+ else:
+  tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 0')
+
+#if FLX_HAVE_INCLASS_MEMBER_INITIALIZATION
 #  define FLX_STATIC_CONSTANT(type, assignment) static const type assignment
 #else
 #  define FLX_STATIC_CONSTANT(type, assignment) enum { assignment }
@@ -643,17 +650,26 @@ T &reinterpret(U const &x) {
 #ifndef __FLX_HOST_CONFIG_H__
 #define __FLX_HOST_CONFIG_H__
 
-#ifdef _WIN32
-#define _WIN32_WINNT 0x500
+#if FLX_WIN32
+#define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
 #endif
 
+@if HOST_CXX.options.HAVE_BOOL:
+  tangle('#define FLX_HAVE_BOOL 1')
+ else:
+  tangle('#define FLX_HAVE_BOOL 0')
+
 @if HOST_CXX.options.HAVE_LONGLONG:
-  tangle('#define HAVE_LONGLONG')
+  tangle('#define FLX_HAVE_LONGLONG 1')
+ else:
+  tangle('#define FLX_HAVE_LONGLONG 0')
 
 @if HOST_CXX.options.HAVE_LONGDOUBLE:
-  tangle('#define HAVE_LONGDOUBLE')
+  tangle('#define FLX_HAVE_LONGDOUBLE 1')
+ else:
+  tangle('#define FLX_HAVE_LONGDOUBLE 0')
 
-#if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
+#if !defined(FLX_STATIC_LINK) && FLX_WIN32
 #define FLX_EXPORT __declspec(dllexport)
 #define FLX_IMPORT __declspec(dllimport)
 #else
@@ -679,34 +695,52 @@ T &reinterpret(U const &x) {
 #ifndef __FLX_RTL_CONFIG_H__
 #define __FLX_RTL_CONFIG_H__
 
-#ifdef _WIN32
-#define _WIN32_WINNT 0x500
+#if FLX_WIN32
+#define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
 // vs windows.h just LOVES to include winsock version 1 headers by default.
 // that's bad for everyone, so quit it.
 #define _WINSOCKAPI_
 #endif
 
 @if HAVE_VSNPRINTF:
-  tangle('#define HAVE_VSNPRINTF')
+  tangle('#define FLX_HAVE_VSNPRINTF 1')
+ else:
+  tangle('#define FLX_HAVE_VSNPRINTF 0')
+
+@if HOST_CXX.options.HAVE_BOOL:
+  tangle('#define FLX_HAVE_BOOL 1')
+ else:
+  tangle('#define FLX_HAVE_BOOL 0')
 
 @if HAVE_LONGLONG:
-  tangle('#define HAVE_LONGLONG')
+  tangle('#define FLX_HAVE_LONGLONG 1')
+ else:
+  tangle('#define FLX_HAVE_LONGLONG 0')
 
 @if HAVE_LONGDOUBLE:
-  tangle('#define HAVE_LONGDOUBLE')
+  tangle('#define FLX_HAVE_LONGDOUBLE 1')
+ else:
+  tangle('#define FLX_HAVE_LONGDOUBLE 0')
 
-#ifndef FLX_RTL_GNU
 @if HAVE_ISNAN_IN_IEEEFP:
-  tangle('#define HAVE_ISNAN_IN_IEEEFP')
+  tangle('#define FLX_HAVE_ISNAN_IN_IEEEFP 1')
+ else:
+  tangle('#define FLX_HAVE_ISNAN_IN_IEEEFP 0')
 
 @if HAVE_GNU:
-  tangle('#define HAVE_GNU')
+  tangle('#define FLX_HAVE_GNU 1')
+ else:
+  tangle('#define FLX_HAVE_GNU 0')
 
 @if HAVE_GNU_X86:
-  tangle('#define HAVE_GNU_X86')
+  tangle('#define FLX_HAVE_GNU_X86 1')
+ else:
+  tangle('#define FLX_HAVE_GNU_X86 0')
 
 @if HAVE_GNU_X86_64:
-  tangle('#define HAVE_GNU_X86_64')
+  tangle('#define FLX_HAVE_GNU_X86_64 1')
+ else:
+  tangle('#define FLX_HAVE_GNU_X86_64 0')
 
 @if HAVE_GNU_BUILTIN_EXPECT:
   # only use these with proper predicates!
@@ -717,50 +751,83 @@ T &reinterpret(U const &x) {
   tangle('#define FLX_LIKELY(x) x')
 
 @if HAVE_CGOTO:
-  tangle("#define FLX_HAVE_CGOTO")
+  tangle("#define FLX_HAVE_CGOTO 1")
+ else:
+  tangle("#define FLX_HAVE_CGOTO 0")
 
 @if USE_REGPARM3:
-  tangle("#define FLX_USE_REGPARM3")
+  tangle("#define FLX_USE_REGPARM3 1")
+ else:
+  tangle("#define FLX_USE_REGPARM3 0")
   
 @if HAVE_ASM_LABELS:
-  tangle("#define FLX_HAVE_ASM_LABELS")
+  tangle("#define FLX_HAVE_ASM_LABELS 1")
+ else:
+  tangle("#define FLX_HAVE_ASM_LABELS 0")
 
 @if HAVE_DLOPEN:
-  tangle("#define HAVE_DLOPEN")
+  tangle("#define FLX_HAVE_DLOPEN 1")
+ else:
+  tangle("#define FLX_HAVE_DLOPEN 0")
 
 @if MACOSX:
-  tangle("#define MACOSX")
+  tangle("#define FLX_MACOSX 1")
+ else:
+  tangle("#define FLX_MACOSX 0")
 
 @if LINUX:
-  tangle("#define FLX_LINUX")
+  tangle("#define FLX_LINUX 1")
+ else:
+  tangle("#define FLX_LINUX 0")
+
+@if CYGWIN:
+  tangle("#define FLX_CYGWIN 1")
+ else:
+  tangle("#define FLX_CYGWIN 0")
 
 @if POSIX:
-  tangle("#define POSIX")
+  tangle("#define FLX_POSIX 1")
+ else:
+  tangle("#define FLX_POSIX 0")
 
 @if SOLARIS:
-  tangle("#define SOLARIS")
+  tangle("#define FLX_SOLARIS 1")
+ else:
+  tangle("#define FLX_SOLARIS 0")
 
 @if HAVE_MSVC:
-  tangle("#define HAVE_MSVC")
+  tangle("#define FLX_HAVE_MSVC 1")
+ else:
+  tangle("#define FLX_HAVE_MSVC 0")
 
 @if HAVE_KQUEUE_DEMUXER:
-  tangle("#define HAVE_KQUEUE_DEMUXER")
+  tangle("#define FLX_HAVE_KQUEUE_DEMUXER 1")
+ else:
+  tangle("#define FLX_HAVE_KQUEUE_DEMUXER 0")
 
 @if HAVE_POLL:
-  tangle("#define HAVE_POLL")
+  tangle("#define FLX_HAVE_POLL 1")
+ else:
+  tangle("#define FLX_HAVE_POLL 0")
 
 @if HAVE_EPOLL:
-  tangle("#define HAVE_EPOLL")
+  tangle("#define FLX_HAVE_EPOLL 1")
+ else:
+  tangle("#define FLX_HAVE_EPOLL 0")
 
 @if HAVE_EVTPORTS:
-  tangle("#define HAVE_EVTPORTS")
+  tangle("#define FLX_HAVE_EVTPORTS 1")
+ else:
+  tangle("#define FLX_HAVE_EVTPORTS 0")
 
 //
-#if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
-#define FLX_CGOTO
+#if FLX_HAVE_CGOTO && FLX_HAVE_ASM_LABELS
+#define FLX_CGOTO 1
+#else
+#define FLX_CGOTO 0
 #endif
 
-#if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
+#if !defined(FLX_STATIC_LINK) && FLX_WIN32
 #define FLX_EXPORT __declspec(dllexport)
 #define FLX_IMPORT __declspec(dllimport)
 #else
@@ -775,25 +842,26 @@ T &reinterpret(U const &x) {
 #define RTL_EXTERN FLX_IMPORT
 #endif
 
-#if defined(MACOSX) && !defined(HAVE_DLOPEN)
-#define MACOSX_NODLCOMPAT
+#if FLX_MACOSX && !FLX_HAVE_DLOPEN
+#define FLX_MACOSX_NODLCOMPAT 1
+#else
+#define FLX_MACOSX_NODLCOMPAT 0
 #endif
 
-#ifdef HAVE_GNU
+#if FLX_HAVE_GNU
 #define FLX_ALWAYS_INLINE __attribute__ ((always_inline))
 #define FLX_NOINLINE __attribute__ ((noinline))
 #define FLX_CONST __attribute__ ((const))
 #define FLX_PURE __attribute__ ((pure))
-#define GXX_PARSER_HACK (void)0,
+#define FLX_GXX_PARSER_HACK (void)0,
 #define FLX_UNUSED __attribute__((unused))
 #else
 #define FLX_ALWAYS_INLINE
 #define FLX_NOINLINE 
 #define FLX_CONST
 #define FLX_PURE 
-#define GXX_PARSER_HACK
+#define FLX_GXX_PARSER_HACK
 #define FLX_UNUSED
-#endif
 #endif
 
 @def cal_raw_address():
@@ -824,23 +892,23 @@ right type by client drivers.
 #include <string>
 #include <functional>
 
-#if defined(FLX_PTF_STATIC_STRUCT)
+#if FLX_PTF_STATIC_STRUCT
 #define PTF ptf.
-#elif defined(FLX_PTF_STATIC_POINTER)
+#elif FLX_PTF_STATIC_POINTER
 #define PTF ptf->
 #else
 #define PTF ptf->
 #endif
 
 // for declarations in header file 
-#if defined(FLX_PTF_STATIC_STRUCT)
+#if FLX_PTF_STATIC_STRUCT
 #define FLX_FMEM_DECL
 #define FLX_FPAR_DECL_ONLY
 #define FLX_FPAR_DECL
 #define FLX_APAR_DECL_ONLY
 #define FLX_APAR_DECL
 #define FLX_DCL_THREAD_FRAME extern thread_frame_t ptf;
-#elif defined(FLX_PTF_STATIC_POINTER)
+#elif FLX_PTF_STATIC_POINTER
 #define FLX_FMEM_DECL
 #define FLX_FPAR_DECL_ONLY
 #define FLX_FPAR_DECL
@@ -906,7 +974,7 @@ struct RTL_EXTERN flx_switch_failure_t;
 
 struct RTL_EXTERN con_t ///< abstract base for mutable continuations
 {
-#ifdef FLX_CGOTO
+#if FLX_CGOTO
   void *pc;                 ///< interior program counter
 #else
    int pc;
@@ -1265,7 +1333,7 @@ struct readreq_t {
 // for generated code in body file
 #define INIT_PC pc=0;
 
-#ifdef FLX_CGOTO
+#if FLX_CGOTO
   #define FLX_START_SWITCH if(pc)goto *pc;
   #define FLX_SET_PC(x) pc=&&case_##x;
   #define FLX_CASE_LABEL(x) case_##x:;
@@ -1301,13 +1369,13 @@ static void x##_finaliser(collector_t *, void *p){\
   ((x*)p)->~x();\
 }
 
-#if defined(FLX_USE_REGPARM3) && defined(HAVE_GNU_X86)
+#if FLX_USE_REGPARM3 && FLX_HAVE_GNU_X86
 #define FLX_REGPARM __attribute__((regparm(3)))
 #else
 #define FLX_REGPARM
 #endif
 
-#if defined(FLX_PTF_STATIC_STRUCT)
+#if FLX_PTF_STATIC_STRUCT
 #define FLX_FMEM_INIT_ONLY
 #define FLX_FMEM_INIT :
 #define FLX_FPAR_PASS_ONLY
@@ -1319,7 +1387,7 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_PASS_PTF 0
 #define FLX_EAT_PTF(x)
 #define FLX_DEF_THREAD_FRAME thread_frame_t ptf;
-#elif defined(FLX_PTF_STATIC_POINTER)
+#elif FLX_PTF_STATIC_POINTER
 #define FLX_FMEM_INIT_ONLY
 #define FLX_FMEM_INIT :
 #define FLX_FPAR_PASS_ONLY
@@ -1345,7 +1413,7 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_DEF_THREAD_FRAME
 #endif
 
-#if defined(FLX_PTF_STATIC_STRUCT)
+#if FLX_PTF_STATIC_STRUCT
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
   collector_t *gc\
@@ -1353,7 +1421,7 @@ extern "C" thread_frame_t *create_thread_frame(\
   ptf.gc = gc;\
   return &ptf;\
 }
-#elif defined(FLX_PTF_STATIC_POINTER)
+#elif FLX_PTF_STATIC_POINTER
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
   collector_t *gc\
@@ -1372,7 +1440,7 @@ extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
 }
 #endif
 
-#if defined(FLX_PTF_STATIC_STRUCT)
+#if FLX_PTF_STATIC_STRUCT
 #define FLX_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1390,7 +1458,7 @@ extern "C" con_t *flx_start(\
   return (new(*ptf->gc,mname::x##_ptr_map) \
     mname::x()) ->call(0);\
 }
-#elif defined(FLX_PTF_STATIC_POINTER)
+#elif FLX_PTF_STATIC_POINTER
 #define FLX_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1428,7 +1496,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 }
 #endif
 
-#if defined(FLX_PTF_STATIC_STRUCT)
+#if FLX_PTF_STATIC_STRUCT
 #define FLX_STACK_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1446,7 +1514,7 @@ extern "C" con_t *flx_start(\
   mname::x().stack_call();\
   return 0;\
 }
-#elif defined(FLX_PTF_STATIC_POINTER)
+#elif FLX_PTF_STATIC_POINTER
 #define FLX_STACK_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1484,7 +1552,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 }
 #endif
 
-#if defined(FLX_PTF_STATIC_STRUCT)
+#if FLX_PTF_STATIC_STRUCT
 #define FLX_C_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1502,7 +1570,7 @@ extern "C" con_t *flx_start(\
   mname::x();\
   return 0;\
 }
-#elif defined(FLX_PTF_STATIC_POINTER)
+#elif FLX_PTF_STATIC_POINTER
 #define FLX_C_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1555,12 +1623,12 @@ namespace flx { namespace rtl {
 // ********************************************************
 
 con_t::con_t() : pc(0), p_svc(0), _caller(0) { 
-#ifdef FLX_DEBUG_CONT
+#if FLX_DEBUG_CONT
  fprintf(stderr,"Constructing %p\n",this);
 #endif
 }
 con_t::~con_t(){
-#ifdef FLX_DEBUG_CONT
+#if FLX_DEBUG_CONT
   fprintf(stderr,"Destroying %p\n",this);
 #endif
 }
@@ -1945,7 +2013,7 @@ or even constants which require dynamic initialisation.
 using namespace std;
 
 // define dynamic library loader stuff, even for static linkage
-#if defined(_WIN32) 
+#if FLX_WIN32
   #include <windows.h>
   typedef HMODULE LIBHANDLE;
   #define FLX_SET_NOLIBRARY(lib) lib=NULL
@@ -1953,7 +2021,7 @@ using namespace std;
   #define FLX_LIB_EXTENSION ".DLL"
   #define FLX_DLSYM(x,y) (void*)GetProcAddress(x,#y) 
   #define FLX_SDLSYM(x,y) (void*)GetProcAddress(x,y) 
-#elif defined(MACOSX_NODLCOMPAT)
+#elif FLX_MACOSX_NODLCOMPAT
   #include <mach-o/dyld.h>
   typedef NSModule LIBHANDLE;
   #define FLX_SET_NOLIBRARY(lib) lib=NULL
@@ -1966,9 +2034,9 @@ using namespace std;
   typedef void *LIBHANDLE;
   #define FLX_SET_NOLIBRARY(lib) lib=NULL
   #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
-  #if defined(__CYGWIN__)  
+  #if FLX_CYGWIN
     #define FLX_LIB_EXTENSION ".dll"
-  #elif defined(MACOSX)
+  #elif FLX_MACOSX
     #define FLX_LIB_EXTENSION ".dylib"
   #else
     #define FLX_LIB_EXTENSION ".so"
@@ -2128,7 +2196,7 @@ private:
     // called before standard destroy starts
 };
 
-#ifdef MACOSX_NODLCOMPAT
+#if FLX_MACOSX_NODLCOMPAT
 void* getmachosym(LIBHANDLE, const char*);
 #endif
 
@@ -2149,7 +2217,7 @@ extern "C" void *flx_main;
 
 namespace flx { namespace rtl {
 
-#ifdef MACOSX_NODLCOMPAT
+#if FLX_MACOSX_NODLCOMPAT
 void*
 getmachosym(NSModule library, const char* symname)
 {
@@ -2189,15 +2257,15 @@ flx_load_library(char const *filename)
   FLX_SET_NOLIBRARY(library);
 
 #ifndef FLX_STATIC_LINK
-//#if defined(_WIN32) || defined(__CYGWIN__)
-#if defined(_WIN32) 
+//#if FLX_WIN32 || FLX_CYGWIN
+#if FLX_WIN32
   // stop windows showing err dialogues, ignoring error code.
   (void)SetErrorMode(SEM_NOOPENFILEERRORBOX);  
   library = LoadLibrary(filename);
   if(FLX_CHECK_NOLIBRARY(library)) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
 #else
-  #ifdef MACOSX_NODLCOMPAT
+  #if FLX_MACOSX_NODLCOMPAT
     NSObjectFileImage            bndl_img;
     NSObjectFileImageReturnCode  res;
 
@@ -2286,11 +2354,11 @@ void flx_dynlink_t::unlink()
   if(refcnt == 0) {
     //fprintf(stderr,"closing library\n");
 #ifndef FLX_STATIC_LINK
-//#if defined(_WIN32) || defined(__CYGWIN__)
-#if defined(_WIN32) 
+//#if FLX_WIN32 || FLX_CYGWIN
+#if FLX_WIN32
     FreeLibrary(library);
 #else
-  #ifdef MACOSX_NODLCOMPAT
+  #if FLX_MACOSX_NODLCOMPAT
     NSUnLinkModule(library, NSUNLINKMODULE_OPTION_NONE);
   #else
     dlclose(library);
@@ -2696,23 +2764,23 @@ public:
 };
 
 
-#ifdef _WIN32
+#if FLX_WIN32
  #include "demux_iocp_demuxer.hpp"
  #include "faio_wdrv.hpp"
  typedef flx::demux::iocp_demuxer flx_demuxer;
-#elif defined(HAVE_KQUEUE_DEMUXER)
+#elif FLX_HAVE_KQUEUE_DEMUXER
  #include "demux_kqueue_demuxer.hpp"
  #include "faio_pdrv.hpp"
  typedef flx::demux::kqueue_demuxer flx_demuxer;
-#elif defined(HAVE_EVTPORTS)
+#elif FLX_HAVE_EVTPORTS
  #include "demux_evtport_demuxer.hpp"
  #include "faio_pdrv.hpp"
  typedef flx::demux::evtport_demuxer flx_demuxer;
-#elif defined(HAVE_EPOLL)
+#elif FLX_HAVE_EPOLL
  #include "demux_epoll_demuxer.hpp"
  #include "faio_pdrv.hpp"
  typedef flx::demux::epoll_demuxer flx_demuxer;
-#elif defined(HAVE_POLL)
+#elif FLX_HAVE_POLL
  // NB!: on osx 10.3 poll exists, but is a poor cousin emulation layer on
  // top of select. however, 10.3 has kqueues (above), so should be ok...
  #include "demux_ts_poll_demuxer.hpp"
@@ -2759,7 +2827,7 @@ class proto_async : public async_hooker_impl
     sleep_queue_t async_active;
     flx_thread_t ethread;
 
-#ifdef _WIN32
+#if FLX_WIN32
     wflx_drv driver;
 #else
     pflx_drv driver;
@@ -2946,19 +3014,17 @@ using namespace flx::rtl;
 using namespace flx::pthread;
 using namespace flx::run;
 
-#ifdef HAVE_GNU_X86
+#if FLX_HAVE_GNU_X86
 register void *sp __asm__("esp");
-#else
-#ifdef HAVE_GNU_X86_64
+#elif FLX_HAVE_GNU_X86_64
 register void *sp __asm__("rsp");
 #else
 static void *sp = 0;
 #endif
-#endif
 
 // non async drivers aren't don't depend on faio<-demux<-winsock
 // and so aren't linked with mswsock and ws2_32
-#if defined(_WIN32) && defined(FLX_SUPPORT_ASYNC)
+#if FLX_WIN32 && FLX_SUPPORT_ASYNC
   #include "demux_iocp_demuxer.hpp"
   // needed to perform win socket io (calls WSAInit). Must happen
   // before iocp_demuxer is instantiated and (I assume) happen
@@ -3170,11 +3236,11 @@ void doflx (void *data) {
         {
           if (ptr_create_async_hooker == NULL)
           {
-#ifndef FLX_SUPPORT_ASYNC             
+#if !FLX_SUPPORT_ASYNC
              ptr_create_async_hooker = 0;
 #else
              ptr_create_async_hooker = create_async_hooker;
-  #ifndef FLX_STATIC_LINK          
+  #ifndef FLX_STATIC_LINK
              LIBHANDLE async_lib = flx_load_module("libflx_async_dynamic");
              if (async_lib == NULL)
              {
@@ -3546,7 +3612,7 @@ int main(int argc, char** argv)
   if(debug)
     fprintf(stderr,"[FLX_GC_FREQ] call gc every %lu iterations\n",gc_freq);
 
-#ifdef HAVE_GNU
+#if FLX_HAVE_GNU
     if(debug)fprintf(stderr, "Compiled by g++\n");
     static void *init_sp = sp;
     static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
@@ -3591,7 +3657,7 @@ int main(int argc, char** argv)
   delete collector;
   delete allocator;
 
-#ifdef HAVE_GNU
+#if FLX_HAVE_GNU
     // check the frame pointer isn't corrupted
     static void *fin_sp = sp;
     static void *fin_fframe FLX_UNUSED = __builtin_frame_address(0);
@@ -3618,11 +3684,14 @@ int main(int argc, char** argv)
 
 @h = tangler('rtl/flx_run.cxx','cpp')
 @select(h)
+#define FLX_SUPPORT_ASYNC 0
+
 #include "flx_run.include"
 
 @h = tangler('rtl/flx_arun.cxx','cpp')
 @select(h)
-#define FLX_SUPPORT_ASYNC
+#define FLX_SUPPORT_ASYNC 1
+
 #include "flx_run.include"
 
 @h = tangler('rtl/flx_main.cpp','cpp')
