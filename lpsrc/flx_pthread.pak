@@ -1,5 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.41  2006/08/13 16:34:14  skaller
+Add synchronisation to worker_fifo variable nthreads.
+Changed declaration of thread start routine to be extern "C" ..
+it's also static, I'm not sure if that is allowed.
+
 Revision 1.40  2006/08/13 06:40:04  idadesub
 renamed all felix macros to have FLX_ prepended to them to prevent name
 collision with other external libraries
@@ -335,7 +340,7 @@ struct tstart_t
   tstart_t(void (*s)(void*),void* c) : sr(s), cd(c) {}
 };
 
-static void *start_wrapper(void *e)
+extern "C" static void *start_wrapper(void *e)
 {
   tstart_t *ehd = (tstart_t*)e;
   void (*sr)(void*)=ehd->sr;
@@ -1438,8 +1443,9 @@ public:
 /// Linear job scheduler, executes jobs in turn from queue
 class PTHREAD_EXTERN worker_fifo
 {
-  sleep_queue_t fifo;
+  flx_mutex_t nlock;
   int nthreads;                 /// scheduled number of threads
+  sleep_queue_t fifo;
 
   static void thread_start(void*); // thread entry point, passed this
   bool thread_loop_body();      // returns keep going flag
@@ -1450,7 +1456,7 @@ public:
   worker_fifo(int n, int m);   /// n: Q bound, m: # of threads
   ~worker_fifo();
   void add_worker_task(worker_task* task);
-  int get_nthreads()const;
+  int get_nthreads();
   void set_nthreads(int);
 };
 
@@ -1463,17 +1469,23 @@ public:
 #include "pthread_work_fifo.hpp"
 namespace flx { namespace pthread {
 
-int worker_fifo::get_nthreads()const { return nthreads; }
+int worker_fifo::get_nthreads() { 
+  flx_mutex_locker_t dummy(nlock);
+  return nthreads; 
+}
 
 void worker_fifo::set_nthreads(int n)
 {
-  while(nthreads<n) start_worker_thread();
-  while(nthreads>n) stop_worker_thread();
+  while(get_nthreads()<n) start_worker_thread();
+  while(get_nthreads()>n) stop_worker_thread();
 }
 
 void worker_fifo::start_worker_thread()
 {
-  ++nthreads;
+  {
+    flx_mutex_locker_t dummy(nlock);
+    ++nthreads;
+  }
   //fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
   flx_detached_thread_t().init(thread_start, this);
 }
@@ -1487,13 +1499,16 @@ void
 worker_fifo::stop_worker_thread()
 {
   //fprintf(stderr,"Kill detached worker thread, count=%d\n",nthreads);
-  --nthreads;
+  {
+    flx_mutex_locker_t dummy(nlock);
+    --nthreads;
+  }
   add_worker_task(NULL);    // thread safe takedown.
 }
 
 worker_fifo::~worker_fifo()
 {
-  while(nthreads>0)stop_worker_thread();
+  while(get_nthreads()>0)stop_worker_thread();
   fifo.wait_until_empty();
 }
 
