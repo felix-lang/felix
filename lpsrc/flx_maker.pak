@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.112  2006/08/13 07:35:48  skaller
+Small fixed to windows build
+
 Revision 1.111  2006/08/11 01:57:56  idadesub
 bool doesn't work in python 2.2 or lower
 
@@ -1846,12 +1849,16 @@ if not globals().get("ocaml_env",None):
   if debug or "debug" in options:
     if NATIVE_CODE_COMPILER:
       if OCAMLC == OCAMLOPT:
-        OCAMLC = OCAMLC + ' -ccopt -g '
+        #OCAMLC = OCAMLC + ' -ccopt -g '
+        OCAMLC = OCAMLC + ' '
       else:
-        OCAMLC = OCAMLC + ' -g '
-      OCAMLOPT = OCAMLOPT + ' -ccopt -g '
+        #OCAMLC = OCAMLC + ' -g '
+        OCAMLC = OCAMLC + ' '
+      #OCAMLOPT = OCAMLOPT + ' -ccopt -g '
+      OCAMLOPT = OCAMLOPT + ' '
     else:
-      OCAMLOPT = OCAMLOPT + ' -g '
+      #OCAMLOPT = OCAMLOPT + ' -g '
+      OCAMLOPT = OCAMLOPT + ' '
 
   if "optimise_felix" in options:
     OCAMLOPT = OCAMLOPT + " -unsafe -noassert -inline 5 "

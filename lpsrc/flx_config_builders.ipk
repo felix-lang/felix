@@ -1906,7 +1906,9 @@ class msvc_mixin:
     opt.SPEC_LIBPATH = "/LIBPATH:"
     opt.SPEC_LIB = "/DEFAULTLIB:"
     opt.SPEC_AR_OUT_FILENAME = "/OUT:"
-    opt.DEBUG_FLAGS = "/Yd /Zi /RTC "
+    #opt.DEBUG_FLAGS = "/Yd /Zi /RTC "
+    # /Yd deprecated, /RTC not recognized with VS2005
+    opt.DEBUG_FLAGS = "/Zi "
     #opt.OPTIMISE = "/Ox /DNDEBUG "
     opt.OPTIMISE = "/Ox "
 

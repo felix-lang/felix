@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.65  2006/08/13 07:35:49  skaller
+Small fixed to windows build
+
 Revision 1.64  2006/08/13 06:40:04  idadesub
 renamed all felix macros to have FLX_ prepended to them to prevent name
 collision with other external libraries
@@ -779,6 +782,16 @@ T &reinterpret(U const &x) {
   tangle("#define FLX_LINUX 1")
  else:
   tangle("#define FLX_LINUX 0")
+
+@if WIN32:
+  tangle("#define FLX_WIN32 1")
+ else:
+  tangle("#define FLX_WIN32 0")
+
+@if WIN64:
+  tangle("#define FLX_WIN64 1")
+ else:
+  tangle("#define FLX_WIN64 0")
 
 @if CYGWIN:
   tangle("#define FLX_CYGWIN 1")
