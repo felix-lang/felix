@@ -1,5 +1,9 @@
 @head(1,'pthread')
 $Log$
+Revision 1.42  2006/08/13 19:11:51  skaller
+Fix windows start routine to conform to windows specs:
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/creating_threads.asp
+
 Revision 1.41  2006/08/13 16:34:14  skaller
 Add synchronisation to worker_fifo variable nthreads.
 Changed declaration of thread start routine to be extern "C" ..
@@ -447,14 +451,14 @@ struct tstart_t
   tstart_t(void (*s)(void*),void* c) : sr(s), cd(c) {}
 };
 
-static int start_wrapper(LPVOID e)
+DWORD WINAPI start_wrapper(LPVOID e)
 {
   tstart_t *ehd = (tstart_t*)e;
   void (*sr)(void*)=ehd->sr;
-  void *cp = ehd->cp;
+  void *cd = ehd->cd;
   delete ehd;
   try { 
-    (*sr)(cp);
+    (*sr)(cd);
   }
   catch (...) {
     fprintf(stderr,"Uncaught exception in thread\n");

@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.66  2006/08/13 19:11:51  skaller
+Fix windows start routine to conform to windows specs:
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/creating_threads.asp
+
 Revision 1.65  2006/08/13 07:35:49  skaller
 Small fixed to windows build
 
@@ -653,9 +657,10 @@ T &reinterpret(U const &x) {
 #ifndef __FLX_HOST_CONFIG_H__
 #define __FLX_HOST_CONFIG_H__
 
-#if FLX_WIN32
-#define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
-#endif
+@if HOST_CXX.options.WIN32:
+  tangle('#define FLX_WIN32 1')
+ else:
+  tangle('#define FLX_WIN32 0')
 
 @if HOST_CXX.options.HAVE_BOOL:
   tangle('#define FLX_HAVE_BOOL 1')
@@ -690,6 +695,10 @@ T &reinterpret(U const &x) {
 @tangle("#define FLX_RAWADDRESS "+cal_raw_address())
 @tangle('#define FLX_MAX_ALIGN '+str(HOST_CXX.options.MAX_ALIGN))
 
+#if FLX_WIN32
+#define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
 
 #endif
 
@@ -698,19 +707,12 @@ T &reinterpret(U const &x) {
 #ifndef __FLX_RTL_CONFIG_H__
 #define __FLX_RTL_CONFIG_H__
 
-#if FLX_WIN32
-#define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
-// vs windows.h just LOVES to include winsock version 1 headers by default.
-// that's bad for everyone, so quit it.
-#define _WINSOCKAPI_
-#endif
-
 @if HAVE_VSNPRINTF:
   tangle('#define FLX_HAVE_VSNPRINTF 1')
  else:
   tangle('#define FLX_HAVE_VSNPRINTF 0')
 
-@if HOST_CXX.options.HAVE_BOOL:
+@if TARGET_CXX.options.HAVE_BOOL:
   tangle('#define FLX_HAVE_BOOL 1')
  else:
   tangle('#define FLX_HAVE_BOOL 0')
@@ -772,6 +774,11 @@ T &reinterpret(U const &x) {
   tangle("#define FLX_HAVE_DLOPEN 1")
  else:
   tangle("#define FLX_HAVE_DLOPEN 0")
+
+@if WIN32:
+  tangle('#define FLX_WIN32 1')
+ else:
+  tangle('#define FLX_WIN32 0')
 
 @if MACOSX:
   tangle("#define FLX_MACOSX 1")
@@ -839,6 +846,15 @@ T &reinterpret(U const &x) {
 #else
 #define FLX_CGOTO 0
 #endif
+
+#if FLX_WIN32
+#define _WIN32_WINNT 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+#define WINVER 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+// vs windows.h just LOVES to include winsock version 1 headers by default.
+// that's bad for everyone, so quit it.
+#define _WINSOCKAPI_
+#endif
+
 
 #if !defined(FLX_STATIC_LINK) && FLX_WIN32
 #define FLX_EXPORT __declspec(dllexport)
