@@ -13,6 +13,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.230  2006/08/13 04:11:25  idadesub
+fixed detecting int64 on machines without stdint.h
+retabbed some python code
+
 Revision 1.229  2006/08/12 17:04:05  skaller
 Fix CVS confusion about this file.
 
@@ -1979,72 +1983,73 @@ else:
   rmap["lcomplex"]="complex_hxx"
 
 if TARGET_CXX.options.HAVE_LONGDOUBLE:
-   tmap["ldouble"]="long double"
+  tmap["ldouble"]="long double"
 else:
-   tmap["ldouble"]="double"
+  tmap["ldouble"]="double"
 
 if TARGET_CXX.options.HAVE_LONGLONG:
-   tmap["vlong"]="long long"
-   tmap["uvlong"]="unsigned long long"
+  tmap["vlong"]="long long"
+  tmap["uvlong"]="unsigned long long"
 else:
-   tmap["vlong"]="long"
-   tmap["uvlong"]="unsigned long"
+  tmap["vlong"]="long"
+  tmap["uvlong"]="unsigned long"
 
 if TARGET_CXX.options.HAVE_STDINT:
-   tmap["int8"]="int8_t"
-   tmap["uint8"]="uint8_t"
-   tmap["int16"]="int16_t"
-   tmap["uint16"]="uint16_t"
-   tmap["int32"]="int32_t"
-   tmap["uint32"]="uint32_t"
-   tmap["int64"]="int64_t"
-   tmap["uint64"]="uint64_t"
-   tmap["intptr"]="intptr_t"
-   tmap["uintptr"]="uintptr_t"
-   tmap["intmax"]="intmax_t"
-   tmap["uintmax"]="uintmax_t"
+  tmap["int8"]="int8_t"
+  tmap["uint8"]="uint8_t"
+  tmap["int16"]="int16_t"
+  tmap["uint16"]="uint16_t"
+  tmap["int32"]="int32_t"
+  tmap["uint32"]="uint32_t"
+  tmap["int64"]="int64_t"
+  tmap["uint64"]="uint64_t"
+  tmap["intptr"]="intptr_t"
+  tmap["uintptr"]="uintptr_t"
+  tmap["intmax"]="intmax_t"
+  tmap["uintmax"]="uintmax_t"
 
-   # requirements
-   rmap["int8"]="c99_stdint_h"
-   rmap["uint8"]="c99_stdint_h"
-   rmap["int16"]="c99_stdint_h"
-   rmap["uint16"]="c99_stdint_h"
-   rmap["int32"]="c99_stdint_h"
-   rmap["uint32"]="c99_stdint_h"
-   rmap["int64"]="c99_stdint_h"
-   rmap["uint64"]="c99_stdint_h"
-   rmap["intptr"]="c99_stdint_h"
-   rmap["uintptr"]="c99_stdint_h"
-   rmap["intmax"]="c99_stdint_h"
-   rmap["uintmax"]="c99_stdint_h"
+  # requirements
+  rmap["int8"]="c99_stdint_h"
+  rmap["uint8"]="c99_stdint_h"
+  rmap["int16"]="c99_stdint_h"
+  rmap["uint16"]="c99_stdint_h"
+  rmap["int32"]="c99_stdint_h"
+  rmap["uint32"]="c99_stdint_h"
+  rmap["int64"]="c99_stdint_h"
+  rmap["uint64"]="c99_stdint_h"
+  rmap["intptr"]="c99_stdint_h"
+  rmap["uintptr"]="c99_stdint_h"
+  rmap["intmax"]="c99_stdint_h"
+  rmap["uintmax"]="c99_stdint_h"
 else:
-   tmap["int8"]="signed char"
-   tmap["uint8"]="unsigned char"
-   sizes = { 
-     TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
-     TARGET_CXX.options.SIZEOF_INT*8: "int",
-     TARGET_CXX.options.SIZEOF_LONG*8 : "long",
-   }
-   tmap["intmax"]="long"
-   tmap["uintmax"]="unsigned long"
-   if TARGET_CXX.options.HAVE_LONGLONG:
-     sizes[TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
-     tmap["intmax"]="long long"
-     tmap["uintmax"]="unsigned long long"
-   for size in [16,32,64]:
-     try:
-       t = sizes[size]
-       tmap["int"+str(size)]=t
-       tmap["uint"+str(size)]="unsigned " + t
-     except KeyError:
-       tmap["int"+str(size)]="emul_int"+str(size)
-       tmap["uint"+str(size)]="emul_uint"+str(size)
-   try:
-     tmap["intptr"]=sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
-     tmap["uintptr"]="unsigned "+sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
-   except:
-     print "NO INTEGER THE SIZE OF A VOID*!"
-     sys.exit(1)
+  tmap["int8"]="signed char"
+  tmap["uint8"]="unsigned char"
+  sizes = { 
+    TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
+    TARGET_CXX.options.SIZEOF_INT*8: "int",
+    TARGET_CXX.options.SIZEOF_LONG*8 : "long",
+  }
+  tmap["intmax"]="long"
+  tmap["uintmax"]="unsigned long"
+  if TARGET_CXX.options.HAVE_LONGLONG:
+    sizes[TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
+    tmap["intmax"]="long long"
+    tmap["uintmax"]="unsigned long long"
+  for size in [16,32,64]:
+    try:
+      t = sizes[size]
+    except KeyError:
+      tmap["int"+str(size)]="emul_int"+str(size)
+      tmap["uint"+str(size)]="emul_uint"+str(size)
+    else:
+      tmap["int"+str(size)]=t
+      tmap["uint"+str(size)]="unsigned " + t
+  try:
+    tmap["intptr"]=sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
+    tmap["uintptr"]="unsigned "+sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
+  except:
+    print "NO INTEGER THE SIZE OF A VOID*!"
+    sys.exit(1)
 
 tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
 

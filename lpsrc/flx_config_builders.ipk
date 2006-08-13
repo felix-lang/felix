@@ -693,6 +693,9 @@ int main(int argc, char** argv) {
       opt.SIZEOF_LONG*8 : "long",
     }
 
+    if opt.HAVE_LONGLONG:
+      sizes[opt.SIZEOF_LONGLONG*8]="long long"
+
     if not getattr(opt,"ALIAS_intmax_t",None):
       opt.ALIAS_intmax_t="long"
       opt.ALIAS_uintmax_t="unsigned long"
