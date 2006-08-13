@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.43  2006/08/13 19:30:30  skaller
+Fix windows build.
+
 Revision 1.42  2006/08/13 19:11:51  skaller
 Fix windows start routine to conform to windows specs:
 http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/creating_threads.asp
@@ -549,7 +552,7 @@ flx_thread_t::init(void (*fn)(void*), void *lParam)
 }
 
 // ---- joinable thread wrapper ----------
-flx_thread_wrapper_t::flx_thread_wrapper_t(void (*f), void *lParam)
+flx_thread_wrapper_t::flx_thread_wrapper_t(void (*f)(void*), void *lParam)
 {
   int res = thread.init(f,lParam);
   if(res)
