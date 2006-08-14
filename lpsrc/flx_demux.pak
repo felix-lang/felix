@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.37  2006/08/14 05:56:58  skaller
+Fix that faio_01 bug: uninitialised name length in call to
+getsockname().
+
 Revision 1.36  2006/08/13 06:40:04  idadesub
 renamed all felix macros to have FLX_ prepended to them to prevent name
 collision with other external libraries
@@ -2063,7 +2067,7 @@ iocp_demuxer::get_evts(bool poll) {
 SOCKET
 create_listener_socket(int* io_port, int backlog)
 {
-  //fprintf(stderr,"creating_listener_socket\n");
+  fprintf(stderr,"creating_listener_socket\n");
   SOCKET        listener;
 
   // could use WSASocket, but these seem to be turning out overlapped anyway
@@ -2103,8 +2107,7 @@ create_listener_socket(int* io_port, int backlog)
   // if user wanted port chosen tell them what it turned out to be
   if(0 == *io_port)
   {
-    int namelen;
-
+    int namelen = sizeof(addr);
     if (getsockname(listener, (struct sockaddr *)&addr, &namelen) 
       == SOCKET_ERROR)
     {
