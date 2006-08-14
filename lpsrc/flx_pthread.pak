@@ -1,5 +1,28 @@
 @head(1,'pthread')
 $Log$
+Revision 1.44  2006/08/14 05:37:53  skaller
+Changed serialisation of thread count in worker_fifo to serialise
+external attempts to change or read the thread count. The prior
+serialisation wasn't enough to prevent two attempts to change
+the worker pool size breaking the set_nthreads routine, which
+assumes the count changes monotonically. This is now enforced
+by serialising access to that routine entirely. An unfortunate
+side-effect is that the get_nthreads is also serialised, preventing
+monitoring of the progress of get_nthreads. This could be solved
+by using two locks.
+
+The serialisation is not applied to the constructor.
+It is not necessary, if the object is constructed on the heap,
+and it is no different to accessing an uninitialised object
+if it is constructed on the stack.
+
+Serialising the destructor would merely hide a design problem:
+the object should not be used once an attempt to destroy it
+is made. This can't be enforced without a more advanced
+resource manager. A garbage collector would enforce it
+(since the object would only be destroyed when it became
+unreachable).
+
 Revision 1.43  2006/08/13 19:30:30  skaller
 Fix windows build.
 
@@ -1483,16 +1506,14 @@ int worker_fifo::get_nthreads() {
 
 void worker_fifo::set_nthreads(int n)
 {
-  while(get_nthreads()<n) start_worker_thread();
-  while(get_nthreads()>n) stop_worker_thread();
+  flx_mutex_locker_t dummy(nlock);
+  while(nthreads<n) start_worker_thread();
+  while(nthreads>n) stop_worker_thread();
 }
 
 void worker_fifo::start_worker_thread()
 {
-  {
-    flx_mutex_locker_t dummy(nlock);
-    ++nthreads;
-  }
+  ++nthreads;
   //fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
   flx_detached_thread_t().init(thread_start, this);
 }
@@ -1506,16 +1527,13 @@ void
 worker_fifo::stop_worker_thread()
 {
   //fprintf(stderr,"Kill detached worker thread, count=%d\n",nthreads);
-  {
-    flx_mutex_locker_t dummy(nlock);
-    --nthreads;
-  }
+  --nthreads;
   add_worker_task(NULL);    // thread safe takedown.
 }
 
 worker_fifo::~worker_fifo()
 {
-  while(get_nthreads()>0)stop_worker_thread();
+  while(nthreads>0)stop_worker_thread();
   fifo.wait_until_empty();
 }
 
