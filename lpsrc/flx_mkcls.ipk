@@ -44,7 +44,7 @@ let gen_closure syms bbdfns i =
       let name = "_a" ^ si n in
       let ventry = `BBDCL_val (vs,arg_t) in
       Hashtbl.add bbdfns n (name,Some j,sr,ventry);
-      [name,(n,arg_t)],(`BEXPR_name (n,ts),arg_t)
+      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(`BEXPR_name (n,ts),arg_t)
     in
     
     let exes : bexe_t list = 
@@ -67,7 +67,7 @@ let gen_closure syms bbdfns i =
       let name = "_a" ^ si n in
       let ventry = `BBDCL_val (vs,arg_t) in
       Hashtbl.add bbdfns n (name,Some j,sr,ventry);
-      [name,(n,arg_t)],(`BEXPR_name (n,ts),arg_t)
+      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(`BEXPR_name (n,ts),arg_t)
     in
     let e = `BEXPR_apply_prim (i,ts,a),ret in
     let exes : bexe_t list = [`BEXE_fun_return (sr,e)] in

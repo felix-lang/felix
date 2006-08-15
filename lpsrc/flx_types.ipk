@@ -342,7 +342,7 @@ and typecode_t =
   | `TYP_case_arg of int * typecode_t           (** argument of n'th variant *)
 
   | `TYP_apply of typecode_t * typecode_t       (** type function application *)
-  | `TYP_typefun of parameter_t list * typecode_t * typecode_t
+  | `TYP_typefun of simple_parameter_t list * typecode_t * typecode_t
                                                 (** type lambda *)
   | `TYP_type                                   (** meta type of a type *)
   | `TYP_type_tuple of typecode_t list          (** meta type product *)
@@ -513,7 +513,9 @@ and pattern_t =
 @head(3,'Statements')
 Statements; that is, the procedural sequence control system.
 @select(h)
-and parameter_t = id_t * typecode_t
+and param_kind_t = [`PVal | `PVar | `PFun | `PRef ]
+and simple_parameter_t = id_t * typecode_t
+and parameter_t = param_kind_t * id_t * typecode_t
 and macro_parameter_type_t = 
   | Ident 
   | Expr 
@@ -650,8 +652,8 @@ and statement_t =
   | `AST_private of range_srcref * statement_t
 
   (* definitions *)
-  | `AST_reduce of range_srcref * id_t * vs_list_t * parameter_t list * expr_t * expr_t 
-  | `AST_axiom of range_srcref * id_t * vs_list_t * parameter_t list * expr_t 
+  | `AST_reduce of range_srcref * id_t * vs_list_t * simple_parameter_t list * expr_t * expr_t 
+  | `AST_axiom of range_srcref * id_t * vs_list_t * simple_parameter_t list * expr_t 
   | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
@@ -816,8 +818,8 @@ type dcl_t =
   [
 
   (* data structures *)
-  | `DCL_axiom of       parameter_t list * expr_t
-  | `DCL_reduce of       parameter_t list * expr_t * expr_t
+  | `DCL_axiom of       simple_parameter_t list * expr_t
+  | `DCL_reduce of       simple_parameter_t list * expr_t * expr_t
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * int option * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
@@ -1040,7 +1042,7 @@ and glr_symbol_t = [`Term of int | `Nonterm of int list]
 and bglr_entry_t = string option * glr_symbol_t 
 and bproduction_t = bglr_entry_t list
 
-and bparameter_t = string * (int * btypecode_t)
+and bparameter_t = {pkind:param_kind_t; pid:string; pindex:int; ptyp:btypecode_t}
 and breqs_t = (bid_t * btypecode_t list) list
 and bvs_t = (string * int) list
 and bparams_t = bparameter_t list * tbexpr_t option
@@ -1100,7 +1102,7 @@ type symbol_definition_t =
   | `SYMDEF_reglex of params_t * int * (regexp_t * expr_t) list
   | `SYMDEF_glr of typecode_t * (reduced_production_t * sexe_t list) 
 
-  | `SYMDEF_parameter of  typecode_t
+  | `SYMDEF_parameter of  param_kind_t * typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
   | `SYMDEF_axiom of parameter_t list * expr_t
@@ -2836,16 +2838,28 @@ and string_of_btypecode (dfns:symbol_table_t) tc =
 
 and sbt a b = string_of_btypecode a b
 
-and string_of_basic_parameters (ps: parameter_t list) =
+and string_of_basic_parameters (ps: simple_parameter_t list) =
   cat 
     ", " 
     (map (fun (x,y)-> x ^ ": "^(string_of_typecode y)) ps)
+
+and string_of_param_kind = function 
+  | `PVal -> "val"
+  | `PVar -> "var"
+  | `PRef -> "ref"
+  | `PFun -> "fun"
 
 and string_of_parameters (ps:params_t) = 
   let ps, traint = ps in
   cat 
     ", " 
-    (map (fun (x,y)-> x ^ ": "^(string_of_typecode y)) ps)
+    (map 
+      (fun (k,x,y)-> 
+        string_of_param_kind k^ " " ^ 
+        x ^ ": "^(string_of_typecode y)
+      ) 
+      ps
+     )
   ^
   (match traint with
   | Some x -> " where " ^ string_of_expr x
@@ -2867,7 +2881,7 @@ and string_of_iparameters dfns ps =
 
 and string_of_basic_bparameters dfns ps : string = 
   catmap ","
-  (fun (x,(i,y))-> 
+  (fun {pid=x; pkind=kind; pindex=i; ptyp=y}-> 
     x ^ "["^si i^"]: "^(string_of_btypecode dfns y)
   ) 
   ps
@@ -3734,8 +3748,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     "= " ^ se e ^
     ";"
 
-  | `SYMDEF_parameter (t) -> 
-    "parameter " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
+  | `SYMDEF_parameter (k,t) -> 
+    "parameter " ^ string_of_param_kind k ^ " " ^
+    name ^ print_ivs vs ^":"^ st t ^ ";"
 
   | `SYMDEF_typevar (t) -> 
     "typevar " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
@@ -3826,7 +3841,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
       `TYP_function 
       (
         (
-          match map snd ps with
+          match map (fun (x,y,z) -> z) ps with
           | [x] -> x
           | x -> `TYP_tuple x
         )
@@ -4892,7 +4907,7 @@ val type_of_argtypes :
   typecode_t list -> 
   typecode_t
   
-val funparamtype : 'a * 'b -> 'b
+val funparamtype : 'a * 'b * 't -> 't
 
 val typeoflist:
   btypecode_t list ->
@@ -4953,7 +4968,7 @@ let type_of_argtypes ls = match ls with
  | [x] -> x
  | _ -> `TYP_tuple ls
 
-let funparamtype x = snd x
+let funparamtype (_,_,t) = t
 
 module FuntypeSet = Set.Make(
   struct type t=typecode_t let compare = compare end
@@ -5110,7 +5125,7 @@ val typeof_list:
   typecode_t list -> typecode_t
 
 val paramtype: 
-  (string * typecode_t) list -> typecode_t
+  (param_kind_t * string * typecode_t) list -> typecode_t
 
 
 @h = tangler('src/flx_typing2.ml')
@@ -5127,7 +5142,7 @@ let typeof_list = function
   | x -> `TYP_tuple x
 
 let paramtype params = 
-  let typlist params = map snd params in
+  let typlist params = map (fun(_,_,t)->t) params in
   typeof_list (typlist params)
 
 let all_tunits ts = 
@@ -5286,6 +5301,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
              | [[],None],`TYP_none -> 
               `TYP_function (`TYP_tuple [],t)
              | _ ->
+             let params = map (fun (x,y,z)-> y,z) params in
              `TYP_typefun 
              ( 
                params,

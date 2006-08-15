@@ -221,9 +221,10 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
     print_endline ("******Binding " ^ name);
     *)
     let bind_basic_ps ps = 
-      List.map (fun (s,t) -> 
+      List.map (fun (k,s,t) -> 
         let i = find_param name_map s in
-        s,(i,bt t)) 
+        {pid=s; pindex=i;pkind=k; ptyp=bt t}
+      ) 
       ps
     in
     let bindps (ps,traint) = 
@@ -259,7 +260,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
  
     | `SYMDEF_function (ps,rt,props,exes) -> 
       let bps = bindps ps in
-      let ts = map (fun (s,(i,t)) -> t) (fst bps) in
+      let ts = map (fun {ptyp=t} -> t) (fst bps) in
       let brt = bt rt in
       let brt',bbexes = bexes env exes brt i bvs in
       let bbdcl = 
@@ -276,7 +277,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
           Hashtbl.add syms.ticache i t
         end
         ;
-        let atyp = typeoflist (map (fun (s,(i,t)) -> t) (fst bps)) in
+        let atyp = typeoflist (map (fun {ptyp=t} -> t) (fst bps)) in
         if syms.compiler_options.print_flag then
         print_endline 
         (
@@ -347,7 +348,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
 
     | `SYMDEF_regmatch (ps,cls) ->
       let bps = bindps ps in
-      let ts = map (fun (s,(i,t)) -> t) (fst bps) in
+      let ts = map (fun {ptyp=t} -> t) (fst bps) in
       let ret_type =  ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
       let bbdcl = `BBDCL_regmatch ([],bvs,bps,!ret_type,bregex) in
@@ -365,7 +366,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       
     | `SYMDEF_reglex (ps,le,cls) ->
       let bps = bindps ps in
-      let ts = map (fun (s,(i,t)) -> t) (fst bps) in
+      let ts = map (fun {ptyp=t} -> t) (fst bps) in
       let ret_type = ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
       let bbdcl = `BBDCL_reglex ([],bvs,bps,le,!ret_type,bregex) in

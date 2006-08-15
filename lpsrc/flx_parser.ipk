@@ -106,12 +106,11 @@ let call2 (op:string) (sr:range_srcref) (sri:srcref) l r =
     `AST_tuple(sr,[l;r])
   )
 
-let mkcurry sr name vs args return_type kind body =
+let mkcurry sr name vs (args:params_t list) return_type kind body =
   `AST_curry (sr,name,vs,args,return_type,kind,body)
 
 (* handle curried type functions *)
-(* type functions cannot have constraints yet .. so just ignore them *)
-let mktypefun sr name vs args return_type body =
+let mktypefun sr name vs (args: (string * typecode_t) list list) return_type body =
   let argtyp t = match t with
     | [] -> failwith "Lambda abstraction requires nonunit parameter"
     | [x] -> x
@@ -124,8 +123,8 @@ let mktypefun sr name vs args return_type body =
     while !p <> [] do
       let arg = List.hd !p in
       p := List.tl !p;
-      b := `TYP_typefun (fst arg, !r, !b);
-      r := `TYP_function(argtyp (List.map snd (fst arg)),!r)
+      b := `TYP_typefun (arg, !r, !b);
+      r := `TYP_function(argtyp (List.map snd (arg)),!r)
     done;
     !b
   in
@@ -736,7 +735,7 @@ type_alias:
       `AST_type_alias (sr,name,vs,body)
     }
 
-  | TYPEDEF FUNCTION NAME tvarlist fun_args COLON expr EQRIGHTARROW expr SEMI
+  | TYPEDEF FUNCTION NAME tvarlist typefun_args COLON expr EQRIGHTARROW expr SEMI
     {
       let sr = rstoken $1 $10
       and name = snd $3 
@@ -756,7 +755,7 @@ type_alias:
       let t = typecode_of_expr $6 in
       match t with
       | `TYP_function (argt, return_type) ->
-        let args = [["_a",argt],None] in 
+        let args = [["_a",argt]] in 
         let match_expr = `AST_type_match (sr,(`AST_name (sr,"_a",[]),$8)) in
         let body = typecode_of_expr match_expr in
         mktypefun sr name vs args return_type body
@@ -1049,10 +1048,18 @@ rev_name_list:
 
 @head(3,'Function and Procedure Definition')
 @select(h)
+typefun_arg:
+  | LPAR typeparameter_comma_list RPAR { rstoken $1 $3,$2 }
+  | NAME { slift (fst $1),[snd $1,`TYP_none] }
+typefun_args:
+  | typefun_arg typefun_args      { $1 :: $2 }
+  | typefun_arg               { [$1] }
+
+
 fun_arg:
   | LPAR parameter_comma_list WHEN expr RPAR { rstoken $1 $3,($2,Some $4) }
   | LPAR parameter_comma_list RPAR { rstoken $1 $3,($2,None) }
-  | NAME { slift (fst $1),([snd $1,`TYP_none],None) }
+  | NAME { slift (fst $1),([`PVal,snd $1,`TYP_none],None) }
 
 fun_args:
   | fun_arg fun_args      { $1 :: $2 }
@@ -1088,7 +1095,7 @@ opt_traint_eq:
   | { None }
 
 reduce_args:
-  | LPAR parameter_comma_list RPAR { $2 }
+  | LPAR typeparameter_comma_list RPAR { $2 }
   
 function_definition:
   | REDUCE NAME tvarlist reduce_args COLON expr EQRIGHTARROW expr SEMI
@@ -1212,7 +1219,7 @@ function_definition:
       let body = $7 in
       match t with
       | `TYP_function (argt, return_type) ->
-        let args = [["_a",argt],None] in 
+        let args = [[`PVal,"_a",argt],None] in 
         let match_expr = `AST_match (sr,(`AST_name (sr,"_a",[]),body)) in
         let body = [`AST_fun_return (sr,match_expr)] in
         mkcurry sr name vs args (return_type,traint) kind body
@@ -1318,13 +1325,22 @@ object_definition:
     }
 
 
-
-@commalistof("parameter")
-parameter:
+@commalistof("typeparameter")
+typeparameter:
   | NAME COLON arrow { snd $1,typecode_of_expr $3 }
   | NAME { snd $1,`TYP_none }
-  | VAR NAME COLON arrow { snd $2,`TYP_lvalue (typecode_of_expr $4) }
-  | VAR NAME { snd $2,`TYP_lvalue (`TYP_none) }
+ 
+@commalistof("parameter")
+param_qual:
+  | VAL { `PVal }
+  | VAR { `PVar }
+  | REF { `PRef }
+  | FUNCTION { `PFun }
+  | { `PVal }
+
+parameter:
+  | param_qual NAME COLON arrow { $1, snd $2,typecode_of_expr $4 }
+  | param_qual NAME { $1, snd $2,`TYP_none }
  
 @doc()
 Flx functions and procedures are first class citizens: the may both be passed
@@ -1370,16 +1386,26 @@ The svc statement is used for supervisor calls.
 
 @head(3,'Module Definition')
 @select(h)
+open_opt:
+  | OPEN { `Open }
+  | { `None }
+  
 module_definition:
-  | MODULE NAME tvarlist opt_equal compound 
+  | open_opt MODULE NAME tvarlist opt_equal compound 
     { 
-      `AST_untyped_module 
-      (
-        rsrange (slift $1) (fst $5), 
-        snd $2, 
-        $3,
-        snd $5
-      ) 
+      let sr = rsrange (slift $2) (fst $6) in
+      let name = snd $3 in
+      let qn = `AST_name (sr,name,[]) in
+      let dcl =
+        `AST_untyped_module 
+        (
+          sr, name,
+          $4,
+          snd $6
+        ) 
+      in match $1 with
+      | `None -> dcl
+      | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,qn)])
     }
 
 @head(3,'Variable and Constant Declaration')

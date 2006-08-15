@@ -175,12 +175,12 @@ and uses syms used bbdfns count_inits i =
       used := IntSet.add i !used;
       begin match bbdcl with
       | `BBDCL_function (props,_,(ps,traint),ret,exes) ->
-        iter (fun (_,(i,t)) -> ui i; ut t) ps;
+        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ut ret;
         ux exes
                                                                                 
       | `BBDCL_procedure (props,_,(ps,traint), exes) ->
-        iter (fun (_,(i,t)) -> ui i; ut t) ps;
+        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ux exes
 
       | `BBDCL_glr (_,_,t,(p,e)) ->
@@ -189,11 +189,11 @@ and uses syms used bbdfns count_inits i =
 
       | `BBDCL_regmatch (_,_,(ps,traint),t,(_,_,h,_)) ->
         ut t; Hashtbl.iter (fun _ e -> ue e) h;
-        iter (fun (_,(i,t)) -> ui i; ut t) ps;
+        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
 
       | `BBDCL_reglex (_,_,(ps,traint),i,t,(_,_,h,_)) ->
         ut t; Hashtbl.iter (fun _ e -> ue e) h;
-        iter (fun (_,(i,t)) -> ui i; ut t) ps;
+        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ui i
         
       | `BBDCL_union (_,ps)

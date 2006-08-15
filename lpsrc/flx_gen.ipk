@@ -171,7 +171,7 @@ let find_members syms (child_map,bbdfns) index ts =
 let typeof_bparams ps: btypecode_t  = 
   typeoflist 
   (map
-  (fun (id,(ix,t)) ->t) 
+  (fun {ptyp=t} ->t) 
   ps
   )
 
@@ -210,8 +210,8 @@ let is_gc_pointer syms bbdfns sr t =
 let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_no =
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
-  let ps = map (fun (id,(ix,t)) -> id,t) bps in
-  let params = map (fun (id,(ix,t)) -> ix) bps in
+  let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
+  let params = map (fun {pindex=ix} -> ix) bps in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -262,7 +262,7 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
       | _ -> 
         let counter = ref 0 in
         fold_left
-        (fun s (_,(i,t)) -> 
+        (fun s {pindex=i; ptyp=t} -> 
           let t = rt vs (lower t) in
           if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
           then s ^
@@ -398,7 +398,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
   (*
   print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else "DOES NOT REQUIRE PTF"));
   *)
-  let ps = map (fun (id,(ix,t)) -> id,t) bps in
+  let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1100,7 +1100,7 @@ let gen_exe filename syms
             assert (length display = 0);
             match ps with
             | [] -> ""
-            | [_,(i,t)] -> 
+            | [{pindex=i; ptyp=t}] -> 
               if Hashtbl.mem syms.instances (i,ts)
               && not (t = `BTYP_tuple[])
               then
@@ -1114,7 +1114,7 @@ let gen_exe filename syms
                 print_endline ("Arg to C function is tuple " ^ sbe syms.dfns a);
                 *)
                 fold_left 
-                (fun s (((x,t) as xt),(_,(i,_))) ->
+                (fun s (((x,t) as xt),{pindex=i}) ->
                   let x = 
                     if Hashtbl.mem syms.instances (i,ts)
                     && not (t = `BTYP_tuple[])
@@ -1134,7 +1134,7 @@ let gen_exe filename syms
                 (* NASTY, EVALUATES EXPR MANY TIMES .. *)
                 let n = ref 0 in
                 fold_left
-                (fun s (i,(_,(j,t))) -> 
+                (fun s (i,{pindex=j;ptyp=t}) -> 
                   (*
                   print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
                   print_endline ("tt=" ^ sbt syms.dfns tt);
@@ -1611,7 +1611,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     let argtypename = cpp_typename syms argtype in
     let rettypename = cpp_typename syms ret in
 
-    let params = map (fun (id,(ix,t)) -> ix) bps in
+    let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,_ =
       try 
         gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no true
@@ -1665,7 +1665,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
           | _ -> 
               let counter = ref 0 in
               fold_left
-              (fun s (_,(i,t)) -> 
+              (fun s {pindex=i; ptyp=t} -> 
                 let t = rt vs (lower t) in
                 let n = !counter in incr counter; 
                 if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
@@ -1774,7 +1774,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
     let funtype = fold syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
     let argtypename = cpp_typename syms argtype in
 
-    let params = map (fun (id,(ix,t)) -> ix) bps in
+    let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,_ =
       try 
         gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no true
@@ -1827,7 +1827,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
           | _ -> 
               let counter = ref 0 in
               fold_left
-              (fun s (_,(i,t)) -> 
+              (fun s {pindex=i; ptyp=t} -> 
                 let t = rt vs (lower t) in
                 let n = !counter in incr counter; 
                 if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
@@ -1942,7 +1942,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       let funs = filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) vars in
       gen_ctor syms bbdfns name display funs [] [] ts props
     in
-    let params = map (fun (id,(ix,t)) -> ix) bps in
+    let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,_ =
       try 
         gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no false
@@ -2037,16 +2037,16 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
   );
   let lexeme_start,buffer_end,lexeme_end,kind = match entry with 
   | `BBDCL_regmatch (props,vs,(bps,traint),ret',cls) -> 
-    let p1 = fst (snd (hd bps)) in
+    let {pindex=p1} = hd bps in
     let p1' = cpp_instance_name syms bbdfns p1 ts in
-    let p2 = fst (snd (hd (tl bps))) in
+    let {pindex=p2} = hd (tl bps) in
     let p2' = cpp_instance_name syms bbdfns p2 ts in
     p1',p2',None,`regmatch (p1',p2')
     
   | `BBDCL_reglex (props,vs,(bps,traint),i,ret',cls) -> 
-    let p1 = fst (snd (hd bps)) in
+    let {pindex=p1} = hd bps in
     let p1' = cpp_instance_name syms bbdfns p1 ts in
-    let p2 = fst (snd (hd (tl bps))) in
+    let {pindex=p2} = hd (tl bps) in
     let p2' = cpp_instance_name syms bbdfns p2 ts in
     let v = cpp_instance_name syms bbdfns i ts in
     p1',p2',Some v,`reglex (p1',p2',v)
@@ -2081,7 +2081,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
       let funs = filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) vars in
       gen_ctor syms bbdfns name display funs [] [] ts props
     in
-    let params = map (fun (id,(ix,t)) -> ix) bps in
+    let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string = 
       let ge e : string = gen_expr syms bbdfns index e vs ts sr in
       let b = Buffer.create 2000 in
@@ -2227,8 +2227,8 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     (*
     let dtor = gen_dtor syms bbdfns name display ts in
     *)
-    let ps = map (fun (id,(ix,t)) -> id,t) bps in
-    let params = map (fun (id,(ix,t)) -> ix) bps in
+    let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
+    let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,needs_switch =
       gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no (stackable && not heapable)
     in
@@ -2247,7 +2247,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         (match length bps with
         | 0 -> ""
         | 1 -> 
-          let _,(i,_) = hd bps in
+          let {pindex=i} = hd bps in
           if Hashtbl.mem syms.instances (i,ts)
           && not (argtype = `BTYP_tuple[])
           then
@@ -2525,7 +2525,7 @@ let gen_biface_header syms bbdfns biface = match biface with
 
       let argtypes = 
         map 
-        (fun (_,(_,x)) -> cpp_typename syms x) 
+        (fun {ptyp=t} -> cpp_typename syms t) 
         ps 
       in
       let arglist = "  " ^ 
@@ -2546,7 +2546,7 @@ let gen_biface_header syms bbdfns biface = match biface with
 
       let argtypes = 
         map 
-        (fun (_,(_,x)) -> cpp_typename syms x) 
+        (fun {ptyp=t} -> cpp_typename syms t) 
         ps 
       in
       let arglist = "  " ^ 
@@ -2581,12 +2581,12 @@ let gen_biface_body syms bbdfns biface = match biface with
       let display = get_display_list bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested function";
-
       let argtypes = 
         map 
-        (fun (id,(ix,t)) -> cpp_typename syms t ^ " " ^ id) 
+        (fun {ptyp=t} -> cpp_typename syms t) 
         ps 
       in
+
       let arglist = "  " ^ 
         (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
         else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
@@ -2612,11 +2612,11 @@ let gen_biface_body syms bbdfns biface = match biface with
         then "_PTFV" ^ (if length ps > 0 then "," else "")
         else ""
       )
-      ^cat ", " (map fst ps) ^ ");\n"
+      ^cat ", " (map (fun {pid=id}->id) ps) ^ ");\n"
       else
       "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
       "    " ^ class_name ^ "(_PTFV)\n" ^
-      "    ->apply(" ^ cat ", " (map fst ps) ^ ");\n" 
+      "    ->apply(" ^ cat ", " (map (fun{pid=id}->id) ps) ^ ");\n" 
       )^
       "}\n"
 
@@ -2631,7 +2631,7 @@ let gen_biface_body syms bbdfns biface = match biface with
 
       let argtypes = 
         map 
-        (fun (id,(_,t)) -> cpp_typename syms t ^ " " ^ id) 
+        (fun {ptyp=t} -> cpp_typename syms t) 
         ps 
       in
       let arglist = "  " ^ 
@@ -2658,12 +2658,12 @@ let gen_biface_body syms bbdfns biface = match biface with
               else ""
             )
             ^
-            cat ", " (map fst ps) ^ ");\n" 
+            cat ", " (map (fun {pid=id}->id) ps) ^ ");\n" 
           )
           else
           (
             "  " ^ class_name ^ "(_PTFV)\n" ^
-            "    .stack_call(" ^ cat ", " (map fst ps) ^ ");\n"
+            "    .stack_call(" ^ (catmap ", " (fun {pid=id}->id) ps) ^ ");\n"
           )
         )
         ^
@@ -2671,7 +2671,7 @@ let gen_biface_body syms bbdfns biface = match biface with
         else
         "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
         "    " ^ class_name ^ "(_PTFV))" ^
-        "\n      ->call(" ^ cat ", " ("0"::(map fst ps)) ^ ");\n" 
+        "\n      ->call(" ^ cat ", " ("0"::(map (fun{pid=id}->id) ps)) ^ ");\n" 
       )
       ^
       "}\n"
@@ -2903,7 +2903,7 @@ try
 
     syms.reductions <- List.filter 
     (fun (id,bvs,bps,e1,_) ->
-      let psi = List.map (fun (_,(i,_)) -> i) bps in
+      let psi = List.map (fun {pindex=i} -> i) bps in
       let ui i = 
         let used = List.mem i psi or Hashtbl.mem bbdfns i in
         if not used then begin

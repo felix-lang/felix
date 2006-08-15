@@ -1909,7 +1909,7 @@ and inner_typeofindex
     end
 
   | `SYMDEF_function ((ps,_), rt,_,_) -> 
-    let pts = map snd ps in
+    let pts = map (fun(_,_,t)->t) ps in
     let rt' = 
       try Hashtbl.find syms.varmap index with Not_found ->
       cal_ret_type syms { rs with idx_fixlist = index::rs.idx_fixlist}
@@ -1933,7 +1933,7 @@ and inner_typeofindex
         t
 
   | `SYMDEF_const (t,_,_)
-  | `SYMDEF_parameter (t)
+  | `SYMDEF_parameter (_,t)
   | `SYMDEF_val (t)
   | `SYMDEF_var (t)
   | `SYMDEF_ref (t)
@@ -1978,7 +1978,8 @@ and inner_typeofindex
   print_endline "inner_typeofindex: struct";
   *)
     let ts = adjust_ts syms sr index ts in
-    let t = `BTYP_function(bt (paramtype ls),`BTYP_inst (index,ts)) in
+    let t = typeof_list (map snd ls) in
+    let t = `BTYP_function(bt t,`BTYP_inst (index,ts)) in
     (*
     print_endline ("Struct as function type is " ^ sbt syms.dfns t);
     *)
@@ -2243,7 +2244,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
       | `SYMDEF_val t 
       | `SYMDEF_var t 
       | `SYMDEF_ref t 
-      | `SYMDEF_parameter t
+      | `SYMDEF_parameter (_,t)
         ->
 print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (*
@@ -2701,7 +2702,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_var t
     | `SYMDEF_ref t
     | `SYMDEF_val t 
-    | `SYMDEF_parameter t
+    | `SYMDEF_parameter (_,t)
       ->
       let sign = try hd t2 with _ -> assert false in
       handle_variable syms env rs index id srn ts t sign

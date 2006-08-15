@@ -155,11 +155,11 @@ let include_file syms inspec lookup =
 let fix_params seq (ps:params_t):vs_list_t * params_t = 
   let rec aux (ps:parameter_t list) :vs_list_t * parameter_t list =
     match ps with
-    | (x,`TYP_none) :: t ->
+    | (k,x,`TYP_none) :: t ->
       let v = "_v"^si (seq()) in
       let vt: typecode_t = `AST_name(generated,v,[]) in
       let vs,ps = aux t in
-      ((v,`TPAT_any)::vs),((x,vt)::ps) (* a bit HACKY *)
+      ((v,`TPAT_any)::vs),((k,x,vt)::ps) (* a bit HACKY *)
       
     | h :: t -> 
       let vs,ps = aux t in 
@@ -184,7 +184,7 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
     | [x] -> x
     | _ -> `TYP_tuple lst
   in 
-  let mkret arg ret = mkfuntyp (typeoflist (List.map snd (fst arg))) ret in
+  let mkret arg ret = mkfuntyp (typeoflist (List.map (fun(x,y,z)->z) (fst arg))) ret in
   let arity = List.length args in
   let rettype args = 
     match return_type with
@@ -253,7 +253,7 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
       let argt = 
         let hdt = hd t in
         let xargs,traint = hdt in
-        typeoflist (map snd xargs) 
+        typeoflist (map (fun(x,y,z)->z) xargs) 
       in
       let m = List.length args in
       let body = 
@@ -304,7 +304,7 @@ let find_methods seq sr sts =
       if vs <> [] then
       clierr sr "[process_object] Object methods may not be generic"
       ;
-      let argtyp = match map snd (fst ps) with 
+      let argtyp = match map (fun(x,y,z)->z) (fst ps) with 
         | [] -> `TYP_tuple []
         | [a] -> a
         | x -> `TYP_tuple x
@@ -503,7 +503,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       rst syms name access [] (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
     in
     if length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
-    let t = type_of_argtypes (map snd (fst (hd pps))) in
+    let t = type_of_argtypes (map (fun(x,y,z)->z) (fst (hd pps))) in
     let e = 
       `AST_suffix 
       (
@@ -1549,13 +1549,13 @@ and inner_handle_glr seq rex sr' p e glr_idx t nt_id =
   let fun_idx = seq() in
   let fun_id = nt_id ^ "_" ^ si fun_idx in
   let fun_ref = `AST_index (sr',fun_id,fun_idx) in
-  let params : (string * typecode_t) list = 
+  let params : (param_kind_t * string * typecode_t) list = 
     let rec aux params prod = match prod with
     | [] -> rev params
     | (None,_):: tail -> aux params tail
     | (Some n,qn) :: tail ->
       let typ = `TYP_glr_attr_type qn in
-      aux ((n,typ)::params) tail
+      aux ((`PVal,n,typ)::params) tail
     in aux [] p
   in
   let lams,x = rex e in
@@ -1574,7 +1574,7 @@ and inner_handle_glr seq rex sr' p e glr_idx t nt_id =
        )
     ) 
   in
-  let args = map (fun (n,_) -> `AST_name (sr',n,[])) params in
+  let args = map (fun (_,n,_) -> `AST_name (sr',n,[])) params in
   let invoke = `AST_apply(sr',(fun_ref,`AST_tuple (sr',args))) in 
   let dcl =   `DCL_glr (t,(p,invoke)) in
   let dcl =   Dcl (sr',nt_id,Some glr_idx,`Public,[],dcl) in

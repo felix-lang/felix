@@ -98,7 +98,7 @@ let uses_production h k sr p =
   in
   iter uses_symbol p
 
-let cal_param_usage syms uses sr parent (_,(child,_)) =
+let cal_param_usage syms uses sr parent {pindex=child} =
   add uses parent child sr 
 
 let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =

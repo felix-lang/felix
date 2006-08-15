@@ -1051,7 +1051,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           assert (length display = 0);
           match ps with
           | [] -> ""
-          | [_,(ix,t)] -> 
+          | [{pindex=ix; ptyp=t}] -> 
             if Hashtbl.mem syms.instances (ix,ts) 
             then ge_arg a
             else ""
@@ -1063,7 +1063,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
               print_endline ("Arg to C function is tuple " ^ sbe syms.dfns a);
               *)
               fold_left2 
-              (fun s ((x,t) as xt) (_,(ix,_)) ->
+              (fun s ((x,t) as xt) {pindex=ix} ->
                 let x = 
                   if Hashtbl.mem syms.instances (ix,ts) 
                   then ge_arg xt 

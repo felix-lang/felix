@@ -581,7 +581,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   (* Lambda hook *)
   | `AST_lambda (sr, (pss, t, sts)) -> 
-    let pr = concat (map (map fst) (map fst pss)) in
+    let pr = concat (map (map (fun(x,y,z)->y)) (map fst pss)) in
     let pr = protect sr pr in
     let sts = 
       expand_statements recursion_limit local_prefix seq (ref true) 
@@ -874,19 +874,19 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     tack(`AST_axiom (sr, mi sr id, vs, ps, me e1))
 
   | `AST_function (sr, id, vs, (ps,traits), (t,post), props, sts ) ->
-    let pr = map fst ps in
+    let pr = map (fun (x,y,z)->y) ps in
     let post = match post with | None -> None | Some x -> Some (me x) in
     let traits = match traits with | None -> None | Some x -> Some (me x) in
-    let ps = map (fun (id,t) -> id,mt sr t) ps in
+    let ps = map (fun (k,id,t) -> k,id,mt sr t) ps in
     tack(`AST_function (sr, mi sr id, vs, (ps,traits), (mt sr t, post), props, msp sr pr sts ))
 
   | `AST_curry (sr,id,vs,pss,(ret,post),kind,sts) ->
-    let pr = map fst (concat (map fst pss)) in
+    let pr = map (fun(x,y,z)->y) (concat (map fst pss)) in
     let post = match post with | None -> None | Some x -> Some (me x) in
     let pss = 
       map (fun (ps,traint) ->
         (
-          map (fun (id,t) -> id,mt sr t)) ps,
+          map (fun (k,id,t) -> k,id,mt sr t)) ps,
           match traint with | None -> None | Some x -> Some (me x)
         )
       pss 
@@ -894,8 +894,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     tack(`AST_curry(sr, mi sr id, vs, pss, (ret,post),kind, msp sr pr sts ))
 
   | `AST_object (sr, id, vs, ps, sts ) ->
-    let pr = map fst (fst ps) in
-    let ps = map (fun (id,t) -> id,mt sr t) (fst ps),snd ps in
+    let pr = map (fun(x,y,z)->y) (fst ps) in
+    let ps = map (fun (k,id,t) -> k,id,mt sr t) (fst ps),snd ps in
     tack(`AST_object (sr, mi sr id, vs, ps, msp sr pr sts ))
 
   | `AST_val_decl (sr, id, vs, optt, opte) -> 

@@ -375,7 +375,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   let auxt t = 
     map_btype tmap (varmap_subst varmap t)
   in
-  let remap_ps ps = map (fun (id,(i,t)) -> id,(revar i,auxt t)) ps in
+  let remap_ps ps = map (fun {pid=id; pindex=i; ptyp=t; pkind=k} -> 
+    {pid=id; pindex=revar i; ptyp=auxt t; pkind=k})
+     ps 
+   in
 
   let k = Hashtbl.find revariable index in
   let rexes xs = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len xs in
@@ -611,7 +614,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   sr caller callee vs callee_vs_len inline_method props
 =
   let argument = reduce_tbexpr bbdfns argument in
-  let psis: int list = map (fun (_,(i,_)) -> i) ps in
+  let psis: int list = map (fun {pindex=i} -> i) ps in
   let inline_method = match inline_method with
   | `Lazy -> 
     if 
@@ -643,7 +646,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   *)
   let paramtype  =
     let pt = 
-      let pts = map (fun (_,(_,t)) -> t) ps in
+      let pts = map (fun {ptyp=t} -> t) ps in
       match pts with
       | [x] -> x
       | x -> `BTYP_tuple x
@@ -829,7 +832,7 @@ let gen_body syms (uses,child_map,bbdfns) id
             `BEXE_init (sr,parameter,argument)
           end
           else 
-            let vid,(k,_) = hd ps in
+            let {pid=vid; pindex=k} = hd ps in
             let index = revar k in
             `BEXE_init (sr,index,argument)
         in
@@ -841,7 +844,7 @@ let gen_body syms (uses,child_map,bbdfns) id
         let p = `BEXPR_name (parameter,ts),paramtype in  
         let n = ref 0 in
         iter 
-        (fun (vid,(ix,prjt)) ->
+        (fun {pid=vid;pindex=ix; ptyp=prjt} ->
           let prjt = varmap_subst varmap prjt in
           let prj = reduce_tbexpr bbdfns (`BEXPR_get_n (!n,p),prjt) in
           let index = revar ix in
@@ -864,14 +867,14 @@ let gen_body syms (uses,child_map,bbdfns) id
       begin match length ps with
       | 0 -> ()
       | 1 -> 
-        let vid,(k,_) = hd ps in
+        let {pid=vid; pindex=k} = hd ps in
         let index = revar k in
         Hashtbl.add argmap index argument
       | _ -> 
         let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type)) vs in
         let n = ref 0 in
         iter 
-        (fun (vid,(ix,prjt)) ->
+        (fun {pid=vid; pindex=ix; ptyp=prjt} ->
           let prjt = varmap_subst varmap prjt in
           let prj = reduce_tbexpr bbdfns (`BEXPR_get_n (!n,argument),prjt) in
           let index = revar ix in
@@ -1741,7 +1744,7 @@ and heavy_inline_calls
 
 
 and fold_vars syms (uses,child_map,bbdfns) i ps exes = 
-  let pset = fold_left (fun s (_,(i,_))-> IntSet.add i s) IntSet.empty ps in
+  let pset = fold_left (fun s {pindex=i}-> IntSet.add i s) IntSet.empty ps in
   let kids = find_children child_map i in
   let id,_,_,_ = Hashtbl.find bbdfns i in
   (*
@@ -2049,7 +2052,7 @@ and check_reductions syms exes =
     iter (fun (id,bvs,bps,e1,e2) ->
       (* print_endline ("Check reduction rule " ^ id); *)
       let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
-      let evars = map (fun (eid, (eidx, etyp)) -> eidx) bps in
+      let evars = map (fun {pindex=eidx} -> eidx) bps in
       let ematch e = 
         (* print_endline ("Matching " ^ sbe syms.dfns e ^ " with " ^ sbe syms.dfns e1); *)
         match expr_maybe_matches syms.dfns tvars evars e1 e with

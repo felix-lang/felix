@@ -288,29 +288,29 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     process_production syms bbdfns ref_insts1 p ts
  
   | `BBDCL_regmatch (props,vs,(ps,traint),ret,(_,_,h,_))  ->
-    let argtypes = map (fun x -> snd (snd x)) ps in
+    let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     Hashtbl.iter
     (fun _ e -> ue hvarmap e)
     h;
-    iter (fun (_,(i,_)) -> ui i) ps
+    iter (fun {pindex=i} -> ui i) ps
 
    | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(_,_,h,_)) ->
-    let argtypes = map (fun x -> snd (snd x)) ps in
+    let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     Hashtbl.iter
     (fun _ e -> ue hvarmap e)
     h;
-    iter (fun (_,(i,_)) -> ui i) ps;
+    iter (fun {pindex=i} -> ui i) ps;
     ui le; (* lexeme end .. *)
     ui i
     
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
-    let argtypes = map (fun x -> snd (snd x)) ps in
+    let argtypes = map (fun {ptyp=t}->t) ps in
     (*
     print_endline ("len vs = " ^ si (length vs) ^ ", len ts=" ^ si (length ts));
     *)
@@ -320,7 +320,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
  
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
-    let argtypes = map (fun x -> snd (snd x)) ps in
+    let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

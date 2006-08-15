@@ -44,15 +44,14 @@ let verify syms bbdfns csr e =
     *)
     let param = match bpl with
       | [] -> `BEXPR_tuple [],`BTYP_tuple []
-      | [_,(i,t)] -> `BEXPR_name (i,[]),t
+      | [{pindex=i;ptyp=t}] -> `BEXPR_name (i,[]),t
       | ls -> 
-        let its = map snd ls in
-        let xs = map (fun (i,t)->`BEXPR_name (i,[]),t) its in
+        let xs = map (fun {pindex=i; ptyp=t}->`BEXPR_name (i,[]),t) ls in
         let ts = map snd xs in
         `BEXPR_tuple xs,`BTYP_tuple ts
     in
     let tvars = map (fun (_,i) -> i) bvs in
-    let evars = map (fun (_,(i,_)) -> i) bpl in
+    let evars = map (fun {pindex=i} -> i) bpl in
     let result = expr_maybe_matches syms.dfns tvars evars param e in
     match result with
     | None -> ()

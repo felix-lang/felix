@@ -349,11 +349,11 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                         (fun t -> 
                           let i = !cnt in incr cnt; 
                           let pname = "_" ^ si i in
-                          (pname,t)
+                          (`PVal,pname,t)
                         ) 
                         argts
                       in
-                      let args = map fst params in
+                      let args = map (fun(_,n,_)->n) params in
                       let arg = `AST_tuple (sr, map (fun n -> `AST_name (sr,n,[])) (obj_name::args)) in
                       let asms = 
                         [
@@ -423,7 +423,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   id=get_name;sr=sr;parent=parent;
                   vs=vs @ mvs;pubmap=pubtab;privmap=privtab;dirs=dirs;
                   symdef=`SYMDEF_function (
-                    ([obj_name,stype],None), rett, props, exes
+                    ([`PVal,obj_name,stype],None), rett, props, exes
                   )
                 };
                 add_function pub_name_map get_name getn;
@@ -435,7 +435,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                 Hashtbl.add dfns objidx {
                   id=obj_name;sr=sr;parent=Some getn;vs=[];
                   pubmap=null_tab;privmap=null_tab;dirs=[];
-                  symdef=`SYMDEF_parameter (stype)
+                  symdef=`SYMDEF_parameter (`PVal,stype)
                 };
                 if access = `Public then add_unique pubtab obj_name objidx;
                 add_unique privtab obj_name objidx;
@@ -473,10 +473,10 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   Hashtbl.add dfns objix {
                     id=objname;sr=sr;parent=Some getn;
                     vs=[];pubmap=null_tab;privmap=null_tab;
-                    dirs=[];symdef=`SYMDEF_parameter (stype)
+                    dirs=[];symdef=`SYMDEF_parameter (`PVal,stype)
                   };
                   add_unique funtab objname objix;
-                  let ps = ["obj",stype],None in
+                  let ps = [`PVal,"obj",stype],None in
                   let exes = [sr,
                     `EXE_fun_return (`AST_get_named_variable (sr,
                       (component_name,`AST_index (sr,"obj",objix))
@@ -521,10 +521,10 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   Hashtbl.add dfns objix {
                     id=objname;sr=sr;parent=Some getn;
                     vs=[];pubmap=null_tab;privmap=null_tab;
-                    dirs=[];symdef=`SYMDEF_parameter (`TYP_lvalue stype)
+                    dirs=[];symdef=`SYMDEF_parameter (`PVal,`TYP_lvalue stype)
                   };
                   add_unique funtab objname objix;
-                  let ps = ["obj",`TYP_lvalue stype],None in
+                  let ps = [`PVal,"obj",`TYP_lvalue stype],None in
                   let exes = [sr,
                     `EXE_fun_return (`AST_get_named_variable (sr,
                       (component_name,`AST_index (sr,"obj",objix))
@@ -572,16 +572,16 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           Hashtbl.add dfns p1 {id="lexeme_start";sr=sr;
             parent=Some n;vs=vs;
             pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
-            symdef=`SYMDEF_parameter ptyp
+            symdef=`SYMDEF_parameter (`PVal,ptyp)
           };
 
           Hashtbl.add dfns p2 {id="buffer_end";sr=sr;
             parent=Some n;vs=vs;
             pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
-            symdef=`SYMDEF_parameter ptyp
+            symdef=`SYMDEF_parameter (`PVal,ptyp)
           };
 
-          let ps = ["lexeme_start",ptyp; "buffer_end",ptyp],None in
+          let ps = [`PVal,"lexeme_start",ptyp; `PVal,"buffer_end",ptyp],None in
 
 
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;
@@ -609,13 +609,13 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           Hashtbl.add dfns p1 {id="lexeme_start";sr=sr;
             parent=Some n;vs=vs;
             pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
-            symdef=`SYMDEF_parameter ptyp
+            symdef=`SYMDEF_parameter (`PVal,ptyp)
           };
 
           Hashtbl.add dfns p2 {id="buffer_end";sr=sr;
             parent=Some n;vs=vs;
             pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
-            symdef=`SYMDEF_parameter ptyp
+            symdef=`SYMDEF_parameter (`PVal,ptyp)
           };
 
           Hashtbl.add dfns v3 {id="lexeme_end";sr=sr;
@@ -624,7 +624,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             symdef=`SYMDEF_var ptyp
           };
 
-          let ps = ["lexeme_start",ptyp; "buffer_end",ptyp],None in
+          let ps = [`PVal,"lexeme_start",ptyp; `PVal,"buffer_end",ptyp],None in
 
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;
             vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
@@ -646,11 +646,11 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
               vs=[];pubmap=null_tab;privmap=null_tab;
-              dirs=[];symdef=`SYMDEF_parameter (typ)
+              dirs=[];symdef=`SYMDEF_parameter (`PVal,typ)
             };
             if access = `Public then add_unique pubtab name n;
             add_unique privtab name n;
-            ips := (name,typ) :: !ips 
+            ips := (`PVal,name,typ) :: !ips 
           ) ps
           ; 
           Hashtbl.add dfns fun_index {
@@ -671,11 +671,11 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
               vs=[];pubmap=null_tab;privmap=null_tab;
-              dirs=[];symdef=`SYMDEF_parameter (typ)
+              dirs=[];symdef=`SYMDEF_parameter (`PVal,typ)
             };
             if access = `Public then add_unique pubtab name n;
             add_unique privtab name n;
-            ips := (name,typ) :: !ips 
+            ips := (`PVal,name,typ) :: !ips 
           ) ps
           ; 
           Hashtbl.add dfns fun_index {
@@ -724,18 +724,18 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             (Some fun_index) parent root false asms 
           in
           let ips = ref [] in
-          iter (fun (name,typ) -> 
+          iter (fun (k,name,typ) -> 
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
               vs=[];pubmap=null_tab;privmap=null_tab;
-              dirs=[];symdef=`SYMDEF_parameter (typ)
+              dirs=[];symdef=`SYMDEF_parameter (k,typ)
             };
             if access = `Public then add_unique pubtab name n;
             add_unique privtab name n;
-            ips := (name,typ) :: !ips 
+            ips := (k,name,typ) :: !ips 
           ) ps
           ; 
           Hashtbl.add dfns fun_index {
@@ -901,7 +901,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             | `SYMDEF_val t -> sts := `MemberVal (id,t,None) :: ! sts
             | `SYMDEF_function (ps,ret,props,_) ->
               if mem `Ctor props then () else
-              let ps = map snd (fst ps) in
+              let ps = map (fun(_,_,t)->t)(fst ps) in
               let a = match ps with 
                 | [x] -> x 
                 | x -> `TYP_tuple x 
