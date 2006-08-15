@@ -1933,16 +1933,21 @@ and inner_typeofindex
         t
 
   | `SYMDEF_const (t,_,_)
-  | `SYMDEF_parameter (_,t)
   | `SYMDEF_val (t)
   | `SYMDEF_var (t)
   | `SYMDEF_ref (t)
+  | `SYMDEF_parameter (`PVal,t)
+  | `SYMDEF_parameter (`PFun,t)
   | `SYMDEF_const_ctor (_,t,_)
     -> 
     (*
     print_endline ("Calculating type of variable " ^ id);
     *)
     bt t
+
+  | `SYMDEF_parameter (`PVar,t)
+  | `SYMDEF_parameter (`PRef,t) ->
+    `BTYP_lvalue (bt t)
 
   | `SYMDEF_regmatch (ps,cls)
   | `SYMDEF_reglex (ps,_,cls) ->
