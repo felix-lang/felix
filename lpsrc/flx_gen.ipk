@@ -168,12 +168,8 @@ let find_members syms (child_map,bbdfns) index ts =
   *)
   x
 
-let typeof_bparams ps: btypecode_t  = 
-  typeoflist 
-  (map
-  (fun {ptyp=t} ->t) 
-  ps
-  )
+let typeof_bparams bps: btypecode_t  = 
+  typeoflist  (typeofbps bps)
 
 let get_type bbdfns index = 
   let id,parent,sr,entry = 
@@ -725,7 +721,7 @@ let is_closure_var bbdfns index =
       with Not_found -> failwith ("[var_type] ]Can't get index " ^ si index)
     in match entry with 
     | `BBDCL_var (_,t) 
-    | `BBDCL_ref (_,t) 
+    | `BBDCL_ref (_,t)  (* ?? *)
     | `BBDCL_val (_,t) -> lower t
     | _ -> failwith ("[var_type] expected "^id^" to be variable")
   in
@@ -1633,9 +1629,11 @@ let gen_C_function_body filename syms (child_map,bbdfns)
           match entry with
           | `BBDCL_val (vs,t)
           | `BBDCL_var (vs,t)
-          | `BBDCL_ref (vs,t) 
             when not (mem i params) ->
             (i, rt vs t) :: lst
+          | `BBDCL_ref (vs,t) 
+            when not (mem i params) ->
+            (i, `BTYP_pointer (rt vs t)) :: lst
           | _ -> lst
         )
         [] kids
@@ -1656,17 +1654,23 @@ let gen_C_function_body filename syms (child_map,bbdfns)
           match length params with
           | 0 -> ""
           | 1 -> 
-            let ix = hd params in
-            if Hashtbl.mem syms.instances (ix, ts)
+            begin match hd bps with 
+            {pkind=k; pindex=i; ptyp=t} -> 
+            if Hashtbl.mem syms.instances (i, ts)
             && not (argtype = `BTYP_tuple [])
             then
-              argtypename ^ "  " ^ cpp_instance_name syms bbdfns ix ts
+              let t = rt vs t in
+              let t = match k with `PRef -> `BTYP_pointer t | _ -> t in
+              cpp_typename syms t ^ " " ^
+              cpp_instance_name syms bbdfns i ts
             else ""
+            end
           | _ -> 
               let counter = ref 0 in
               fold_left
-              (fun s {pindex=i; ptyp=t} -> 
+              (fun s {pkind=k; pindex=i; ptyp=t} -> 
                 let t = rt vs (lower t) in
+                let t = match k with `PRef -> `BTYP_pointer t | _ -> t in
                 let n = !counter in incr counter; 
                 if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
                 then s ^
@@ -1687,47 +1691,6 @@ let gen_C_function_body filename syms (child_map,bbdfns)
           )
       )^ 
       "){\n" ^
-      (*
-      (if mem `Uses_gc props then
-      "  collector_t &gc = *PTF gc;\n" 
-      else ""
-      ) ^
-      *)
-      (* NO LONGER UNPACK ARGUMENT
-      (
-        match length params with
-        | 0 -> ""
-        | 1 -> 
-          let i = hd params in
-          if Hashtbl.mem syms.instances (i, ts)
-          && not (argtype = `BTYP_tuple [])
-          then
-            argtypename ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg;\n"
-          else ""
-        | _ -> 
-          let counter = ref 0 in fold_left 
-          (fun s i -> 
-            let n = !counter in incr counter; 
-            if Hashtbl.mem syms.instances (i,ts)
-            then 
-              let memexpr,t =
-                match argtype with
-                | `BTYP_array (t,`BTYP_unitsum _) -> ".data["^si n^"]",t
-                | `BTYP_tuple ts -> ".mem_"^ si n,
-                  begin try nth ts n
-                  with Not_found -> 
-                  failwith ("Can't find component " ^ si n ^ " of " ^ sbt syms.dfns argtype)
-                  end 
-                
-                | _ -> assert false
-              in
-              let t = cpp_typename syms t in
-              s ^ "  " ^ t ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg"^ memexpr ^";\n"
-            else s (* elide initialisation of elided variable *)
-          )
-          "" params 
-      )^
-      *)
       dcl_vars ^
       exe_string ^
       "}\n"
@@ -1795,10 +1758,12 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
           in
           match entry with
           | `BBDCL_var (vs,t)
-          | `BBDCL_ref (vs,t)
           | `BBDCL_val (vs,t) 
             when not (mem i params) ->
             (i, rt vs t) :: lst
+          | `BBDCL_ref (vs,t)
+            when not (mem i params) ->
+            (i, `BTYP_pointer (rt vs t)) :: lst
           | _ -> lst
         )
         [] kids
@@ -1818,17 +1783,23 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
           match length params with
           | 0 -> ""
           | 1 -> 
-            let ix = hd params in
-            if Hashtbl.mem syms.instances (ix, ts)
+            begin match hd bps with 
+            {pkind=k; pindex=i; ptyp=t} -> 
+            if Hashtbl.mem syms.instances (i, ts)
             && not (argtype = `BTYP_tuple [])
             then
-              argtypename ^ "  " ^ cpp_instance_name syms bbdfns ix ts
+              let t = rt vs t in
+              let t = match k with `PRef -> `BTYP_pointer t | _ -> t in
+              cpp_typename syms t ^ " " ^
+              cpp_instance_name syms bbdfns i ts
             else ""
+            end
           | _ -> 
               let counter = ref 0 in
               fold_left
-              (fun s {pindex=i; ptyp=t} -> 
+              (fun s {pkind=k; pindex=i; ptyp=t} -> 
                 let t = rt vs (lower t) in
+                let t = match k with `PRef -> `BTYP_pointer t | _ -> t in
                 let n = !counter in incr counter; 
                 if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
                 then s ^
@@ -1849,42 +1820,6 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
           )
       )^ 
       "){\n" ^
-      (*
-      (if mem `Uses_gc props then
-      "  collector_t &gc = *PTF gc;\n" 
-      else ""
-      ) ^
-      *)
-      (* NO LONGER UNPACK ARGUMENT
-      (
-        match length params with
-        | 0 -> ""
-        | 1 -> 
-          let i = hd params in
-          if Hashtbl.mem syms.instances (i, ts)
-          && not (argtype = `BTYP_tuple [])
-          then
-            argtypename ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg;\n"
-          else ""
-        | _ -> 
-          let counter = ref 0 in fold_left 
-          (fun s i -> 
-            let n = !counter in incr counter; 
-            if Hashtbl.mem syms.instances (i,ts)
-            then 
-              let memexpr,t =
-                match argtype with
-                | `BTYP_array (t,`BTYP_unitsum _) -> ".data["^si n^"]",t
-                | `BTYP_tuple ts -> ".mem_"^ si n,nth ts n
-                | _ -> assert false
-              in
-              let t = cpp_typename syms t in
-              s ^ "  " ^ t ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg"^ memexpr ^";\n"
-            else s (* elide initialisation of elided variable *)
-          )
-          "" params 
-      )^
-      *)
       dcl_vars ^
       exe_string ^
       "}\n"

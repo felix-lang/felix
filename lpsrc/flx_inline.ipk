@@ -442,6 +442,9 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | `BBDCL_val (vs,t) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_val (splice vs,auxt t))
 
+  | `BBDCL_ref (vs,t) ->
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_ref (splice vs,auxt t))
+
   | `BBDCL_tmp (vs,t) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_tmp (splice vs,auxt t))
 
@@ -607,6 +610,11 @@ let subarg syms bbdfns argmap exe =
   | x -> x
   in
   reduce_bexe bbdfns (map_bexe idt rpl idt idt idt exe)
+
+let is_var bbdfns i = 
+  match Hashtbl.find bbdfns i with
+  | _,_,_,`BBDCL_var _ -> true 
+  | _ -> false
 
 (* NOTE: result is in reversed order *)
 let gen_body syms (uses,child_map,bbdfns) id 
@@ -893,7 +901,7 @@ let gen_body syms (uses,child_map,bbdfns) id
     begin match length ps with
     | 0 -> ()
     | 1 -> 
-      let {pkind=kind; pid=vid; pindex=k} = hd ps in
+      let {pkind=kind; pid=vid; pindex=k; ptyp=ptyp} = hd ps in
       let index = revar k in
       begin match kind with
       | `PVal when inline_method = `Lazy ->
@@ -903,7 +911,7 @@ let gen_body syms (uses,child_map,bbdfns) id
          let x = `BEXE_init (sr,index,argument) in
          b := x :: !b
 
-      | `PVar ->
+      | `PVar | `PRef ->
          let x = `BEXE_init (sr,index,argument) in
          b := x :: !b
 
@@ -940,12 +948,12 @@ let gen_body syms (uses,child_map,bbdfns) id
           Hashtbl.add argmap index prj
 
         | `PVal when inline_method = `Eager ->
-           let x = `BEXE_init (sr,index,prj) in
-           b := x :: !b
+          let x = `BEXE_init (sr,index,prj) in
+          b := x :: !b
 
-        | `PVar ->
-           let x = `BEXE_init (sr,index,prj) in
-           b := x :: !b
+        | `PVar | `PRef ->
+          let x = `BEXE_init (sr,index,prj) in
+          b := x :: !b
 
         | _ -> failwith "Can't handle ref/fun params yet"
         end

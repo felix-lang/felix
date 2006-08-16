@@ -127,7 +127,7 @@ let get_var_frame syms bbdfns this index ts : string =
   | `BBDCL_var (vs,t)
   | `BBDCL_ref (vs,t) ->
     begin match parent with
-    | None -> "0"
+    | None -> "ptf"
     | Some i ->
       if i <> this
       then "ptr" ^ cpp_instance_name syms bbdfns i ts

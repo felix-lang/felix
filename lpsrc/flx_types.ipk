@@ -4913,6 +4913,9 @@ val typeoflist:
   btypecode_t list ->
   btypecode_t
 
+val typeofbps_traint: bparams_t -> btypecode_t list
+val typeofbps: bparameter_t list-> btypecode_t list
+
 val lift:
   btypecode_t -> btypecode_t
                                                                          
@@ -4980,6 +4983,16 @@ module FunInstSet = Set.Make(
     let compare = compare 
   end
 )
+
+
+let typeofbps bps =
+  map 
+  (fun {ptyp=t; pkind=k} -> 
+    match k with | `PRef -> `BTYP_pointer t | _ ->t
+  ) 
+  bps
+
+let typeofbps_traint (bps,_) = typeofbps bps
 
 (* bound type! *)
 let typeoflist typlist = match typlist with
@@ -5142,7 +5155,15 @@ let typeof_list = function
   | x -> `TYP_tuple x
 
 let paramtype params = 
-  let typlist params = map (fun(_,_,t)->t) params in
+  let typlist params = 
+    map 
+    (fun (k,_,t) ->
+      match k with 
+      | `PRef -> `TYP_pointer t 
+      | _ -> t
+    ) 
+    params 
+  in
   typeof_list (typlist params)
 
 let all_tunits ts = 

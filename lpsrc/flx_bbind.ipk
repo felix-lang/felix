@@ -260,7 +260,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
  
     | `SYMDEF_function (ps,rt,props,exes) -> 
       let bps = bindps ps in
-      let ts = map (fun {ptyp=t} -> t) (fst bps) in
+      let ts = typeofbps_traint bps in
       let brt = bt rt in
       let brt',bbexes = bexes env exes brt i bvs in
       let bbdcl = 
@@ -277,7 +277,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
           Hashtbl.add syms.ticache i t
         end
         ;
-        let atyp = typeoflist (map (fun {ptyp=t} -> t) (fst bps)) in
+        let atyp = typeoflist ts in
         if syms.compiler_options.print_flag then
         print_endline 
         (
@@ -286,7 +286,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
            sbt syms.dfns (`BTYP_function (atyp,brt'))
         )
 
-    | `SYMDEF_parameter (t) -> 
+    | `SYMDEF_parameter (k,_) -> 
       begin match parent with 
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
@@ -298,7 +298,13 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
         | {symdef=`SYMDEF_reglex _} 
           ->
           let t = typeofindex syms i in
-          Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (bvs,t));
+          let dcl = match k with
+          | `PVar -> `BBDCL_var (bvs,t)
+          | `PVal -> `BBDCL_val (bvs,t)
+          | `PRef -> `BBDCL_ref (bvs,t)
+          | `PFun -> failwith "Can't bind fun param yet"
+          in
+          Hashtbl.add bbdfns i (name,true_parent,sr,dcl);
           Hashtbl.add syms.varmap i t;
 
           if syms.compiler_options.print_flag then
@@ -348,7 +354,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
 
     | `SYMDEF_regmatch (ps,cls) ->
       let bps = bindps ps in
-      let ts = map (fun {ptyp=t} -> t) (fst bps) in
+      let ts = typeofbps_traint bps in
       let ret_type =  ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
       let bbdcl = `BBDCL_regmatch ([],bvs,bps,!ret_type,bregex) in
@@ -366,7 +372,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       
     | `SYMDEF_reglex (ps,le,cls) ->
       let bps = bindps ps in
-      let ts = map (fun {ptyp=t} -> t) (fst bps) in
+      let ts = typeofbps_traint bps in
       let ret_type = ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
       let bbdcl = `BBDCL_reglex ([],bvs,bps,le,!ret_type,bregex) in
