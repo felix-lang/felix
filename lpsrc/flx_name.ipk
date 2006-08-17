@@ -201,6 +201,11 @@ let cpp_instance_name syms bbdfns index ts =
   else long_name
 
 let tix syms t = 
+  let t =
+    match t with
+    | `BTYP_function (`BTYP_void,cod) -> `BTYP_function (`BTYP_tuple [],cod)
+    | x -> x
+  in
   try Hashtbl.find syms.registry t
   with Not_found -> 
     failwith ("Cannot find type " ^sbt syms.dfns t ^" in registry")

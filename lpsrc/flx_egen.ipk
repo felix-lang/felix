@@ -493,6 +493,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     let ts = map tsub ts' in
     begin match entry with
+      | `BBDCL_val (_,`BTYP_function (`BTYP_void,_))  ->
+          let ptr = (get_var_ref syms bbdfns this index ts) in
+          ce_call (ce_arrow (ce_atom ptr) "apply") []
+
       | `BBDCL_var (_,t)
       | `BBDCL_val (_,t) 
       | `BBDCL_ref (_,t) 

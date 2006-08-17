@@ -4988,7 +4988,10 @@ module FunInstSet = Set.Make(
 let typeofbps bps =
   map 
   (fun {ptyp=t; pkind=k} -> 
-    match k with | `PRef -> `BTYP_pointer t | _ ->t
+    match k with 
+    | `PRef -> `BTYP_pointer t 
+    | `PFun -> `BTYP_function (`BTYP_tuple [],t)
+    | _ ->t
   ) 
   bps
 
@@ -5160,6 +5163,7 @@ let paramtype params =
     (fun (k,_,t) ->
       match k with 
       | `PRef -> `TYP_pointer t 
+      | `PFun -> `TYP_function (`TYP_tuple [],t)
       | _ -> t
     ) 
     params 

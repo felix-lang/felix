@@ -302,7 +302,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
           | `PVar -> `BBDCL_var (bvs,t)
           | `PVal -> `BBDCL_val (bvs,t)
           | `PRef -> `BBDCL_ref (bvs,t)
-          | `PFun -> failwith "Can't bind fun param yet"
+          | `PFun -> `BBDCL_val (bvs,`BTYP_function (`BTYP_void,t))
           in
           Hashtbl.add bbdfns i (name,true_parent,sr,dcl);
           Hashtbl.add syms.varmap i t;

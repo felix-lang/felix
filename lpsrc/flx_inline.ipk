@@ -616,6 +616,12 @@ let is_var bbdfns i =
   | _,_,_,`BBDCL_var _ -> true 
   | _ -> false
 
+let is_simple_expr syms e =
+  print_endline ("Is " ^ sbe syms.dfns e ^ " simple?");
+  match e with
+  | `BEXPR_ref _,_ -> print_endline "YES"; true
+  | _ -> print_endline "NO"; false
+
 (* NOTE: result is in reversed order *)
 let gen_body syms (uses,child_map,bbdfns) id 
   varmap ps relabel revariable exes argument 
@@ -904,14 +910,33 @@ let gen_body syms (uses,child_map,bbdfns) id
       let {pkind=kind; pid=vid; pindex=k; ptyp=ptyp} = hd ps in
       let index = revar k in
       begin match kind with
+      | `PFun ->
+        let argt = match argument with
+        | _,`BTYP_function (`BTYP_void,t) 
+        | _,`BTYP_function (`BTYP_tuple [],t) -> t 
+        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt syms.dfns t)
+        in
+        let un = `BEXPR_tuple [], `BTYP_tuple [] in
+        let apl = `BEXPR_apply (argument, un), argt in
+        Hashtbl.add argmap index apl
+
       | `PVal when inline_method = `Lazy ->
         Hashtbl.add argmap index argument
+    
+      | `PRef ->
+        begin match argument with
+        | `BEXPR_ref (i,ts),`BTYP_pointer t ->
+          Hashtbl.add argmap index (`BEXPR_name (i,ts),t)
+        | _ ->
+          let x = `BEXE_init (sr,index,argument) in
+          b := x :: !b
+        end
 
       | `PVal when inline_method = `Eager ->
          let x = `BEXE_init (sr,index,argument) in
          b := x :: !b
 
-      | `PVar | `PRef ->
+      | `PVar ->
          let x = `BEXE_init (sr,index,argument) in
          b := x :: !b
 
@@ -944,14 +969,33 @@ let gen_body syms (uses,child_map,bbdfns) id
         let prj = reduce_tbexpr bbdfns pj in
         let index = revar ix in
         begin match kind with
+        | `PFun ->
+          let t = match prj with
+          | _,`BTYP_function (`BTYP_void,t) 
+          | _,`BTYP_function (`BTYP_tuple [],t) -> t
+          | _ -> failwith "Expected argument to be function void->t!"
+          in
+          let un = `BEXPR_tuple [], `BTYP_tuple [] in
+          let apl = `BEXPR_apply (prj,un),t in
+          Hashtbl.add argmap index apl
+
         | `PVal when inline_method = `Lazy ->
           Hashtbl.add argmap index prj
+
+        | `PRef ->
+          begin match prj with
+          | `BEXPR_ref (i,ts),`BTYP_pointer t ->
+            Hashtbl.add argmap index (`BEXPR_name (i,ts),t)
+          | _ ->
+            let x = `BEXE_init (sr,index,prj) in
+            b := x :: !b
+          end
 
         | `PVal when inline_method = `Eager ->
           let x = `BEXE_init (sr,index,prj) in
           b := x :: !b
 
-        | `PVar | `PRef ->
+        | `PVar ->
           let x = `BEXE_init (sr,index,prj) in
           b := x :: !b
 
