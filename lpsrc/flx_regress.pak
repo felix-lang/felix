@@ -842,6 +842,25 @@ print a; endl;
 print "------------------\n";
 s$ 1, &a;
 print a; endl;
+print "------------------\n";
+
+noinline proc h(fun y: int)
+{
+  print$ y; endl;
+  ++a;
+  print$ y; endl;
+}
+
+inline proc k(fun y: int)
+{
+  print$ y; endl;
+  ++a;
+  print$ y; endl;
+
+}
+
+h { a+1 };
+k { a +1 };
 
 @select(tangler('test/rt30.expect'))
 3
@@ -865,6 +884,11 @@ print a; endl;
 67
 68
 68
+------------------
+69
+70
+70
+71
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>

@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.113  2006/08/19 09:10:31  skaller
+Ref man.
+
 Revision 1.112  2006/08/13 07:35:48  skaller
 Small fixed to windows build
 
@@ -1273,6 +1276,7 @@ class PLUGIN(Plugin):
         vxqt(OCAMLYACC + ' -v '+ file + '.mly')
         nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
 
+    plugins['extract_grammar']()
     # STEP 4: Compile ocaml interfaces
     for interface in INTERFACES:
       file = string.replace(interface,'/',os.sep)

@@ -4,6 +4,45 @@ iscr_source = ['lpsrc/flx_ref.pak']
 weaver_directory = 'doc/refman/'
 
 @set_title("Felix Reference")
+@head(1,"Conformance Model")
+This document purports to be a descripton of required behaviour
+of Felix language translators, programs, and components.
+It also provides semantic information in terms of C++ representations.
+@p()
+Thus, it presents several distinct semantics for Felix.
+To distinguish the two key facets, we refer
+to the Abstract and Concrete semantics.
+@p()
+The Concrete Semantics is a semi-formal description of
+Felix semantics in terms of the C++ code it generates:
+the full semantic interpretation thereby depends on the
+semantics of ISO C++. This description is more formal than the
+Abstract Semantics, but it is also more fragile,
+dependent on the implementation, and likely to change
+in ongoing releases.
+@p()
+The Abstract Semantics are specified in terms of a loose
+common understanding of programming systems, without
+resort to formal mathematical description: this manual
+is intended primarily for programmers, and C++ programmers
+in particular. The Abstract semantics, whilst not set in
+concrete (g) are considerably more stable and more likely
+to be extended in future releases than modified.
+@p()
+The key distinction between Abstract and Concrete semantics
+is manifest in a set of extensions to the Abstract Language,
+in which binding constructions bridging the Felix/C++ interfaces
+are provided. These constructions are a core part of the 
+implementation: they're not only used to provide some
+of the required abstract semantics, they're also available
+for end users to extend, modify, or even largely replace
+much of the abstract semantics.
+@p()
+Nevertheless the Abstract Semantics are not to be ignored,
+since they reflect a particular programming model whose
+invariants may be broken by arbitrary modifications
+to the standard library.
+
 @head(1,"Types")
 Felix provides a rich type system. It consists of the types
 and features described below.
@@ -84,6 +123,20 @@ of their domain type D, and which return a value of their
 codomain type C.
 @p()
 Neither the domain D nor codomain C of a function type may be void.
+@p()
+The special abbreviation:
+@begin_displayed_code()
+   {C}
+@end_displayed_code()
+may be used to denote the function type:
+@begin_displayed_code()
+   unit -> C
+@end_displayed_code()
+and thus represents lazy evaluation of the function. For example:
+@begin_displayed_code()
+  {2}
+@end_displayed_code()
+is the encoding of a boolean predicated on the environment.
 @p()
 Functions may not have side effects. See
 @ref_anchor("fundef")
@@ -266,6 +319,41 @@ zero origin ariant index:
 @end_displayed_code()
 
 @head(3,"Pointer Types",nospawn=1)
+A Felix pointer to T is denoted by the notation:
+@begin_displayed_code()
+  &T
+@end_displayed_code()
+A pointer can be formed by addressing a var kind of variable, and
+dereferenced in the usual way:
+@begin_displayed_code()
+  var x : int = 1;
+  var px : &int = &x;
+  var y : int = *px; // y is now 1
+@end_displayed_code()
+Pointers cannot dangle: it is safe to address a local variable.
+Pointers cannot be set to NULL in the abstract language,
+although they can become NULL by use of facilities
+in the C_hack module of the standard library. They cannot
+be incremented or added to.
+
+@head(3,"Type Recursion",nospawn=1)
+Felix provides a fixpoint operator for typing:
+@begin_displayed_code()
+  t as v
+@end_displayed_code()
+where v is an identifier in t. For example a list of int
+may be given by:
+@begin_displayed_code()
+  1 + int * ilist as ilist
+@end_displayed_code()
+The postfix fixpoint operator has a low precedence.
+This encoding is equivalent to:
+@begin_displayed_code()
+  typedef ilist = 1 + int * ilist;
+@end_displayed_code()
+except that the former is an expression, allowing the
+type to be used in combinator form without defining
+a named alias.
 
 @head(2,"Nominal Types",nospawn=1)
 A nominal type is one which is declared and identified by
@@ -525,7 +613,7 @@ to reason that the function has no side effects.
 This form supports an extension to curry form:
 
 @begin_displayed_code()
-  fun f[t] (x:t) (y:int) int * t =
+  fun f[t] (x:t) (y:int): int * t =
   {
     return y,x;
   }
@@ -597,7 +685,7 @@ and
 is short hand for
 
 @begin_displayed_code()
-  (fun () { var y = x; ++x; return x; })
+  (fun () = { var y = x; ++x; return x; })
 @end_displayed_code()
 
 You should note very carefully the following
@@ -617,8 +705,8 @@ Function names can be overloaded, and lookup choses
 the right function to use in an application based
 on the function argument.
 @p()
-Variable names, even if used applicatively, are never
-overloaded and do not participate in overload resolution.
+Variable names, even if used applicatively, 
+do not participate in overload resolution.
 @p()
 Felix also allows functions to provide pre-conditions
 and post-conditions. Here is an example:
@@ -837,7 +925,81 @@ requirements clauses. See
  for more details.
 
 @head(2,"Requirements Specifications",key="requirements")
+
 @head(1,"Expressions",key="expr")
+The principal syntactic combinator used to construct expressions
+are application and pattern matching, however Felix 
+also has a rich set of builtin operator patterns, and there
+is support for extensible grammar productions which allow
+arbitrary bracket operators, and binary operators at 
+pre-determined precedences. See also
+@ref_anchor("preprocessor")
+ for more details on syntax extensions.
+@p()
+@begin_table("operation "," associativity "," symbols "," function name "," description")
+@table_row("let ","left ","let in")
+@table_row("lambda ","left ","fun proc")
+@table_row("dollar_apply ","left ","$")
+@table_row("tuple ","nary ",",")
+@table_row("or_condition ","nary ","or ","lor ","logical or")
+@table_row("and_condition ","nary ","and ","land ","logical and")
+@table_row("not condition ","prefix ","not ","lnot ","logical not")
+@table_row("comparison ","chain ","< ","lt ","less than")
+@table_row("","","<= ","le ","less or equal")
+@table_row("","","== ","eq ","equal")
+@table_row("",""," != ","ne ","not equal")
+@table_row("","",">= ","ge ","greater or equal")
+@table_row("","","> ","gt ","greater")
+@table_row("","","&< &<= &== &!= &>= &>")
+@table_row("as_expr ","left ","as")
+@table_row("setunion ","nary ","|| ","","union")
+@table_row("user 10 ","left ","user defined")
+@table_row("setintersection ","nary ","&& ","","intersection")
+@table_row("arrow ","right ","-> ","","function (type)")
+@table_row("case_literal ","","case of ","","case selector")
+@table_row("bor ","left ","\\| ","bor ","bitwise or")
+@table_row("bxor ","left ","\\^ ","bxor ","bitwise exclusive or")
+@table_row("band ","left ","\\& ","band ","bitwise and")
+@table_row("shift ","left ","<< ","shl ","left shift")
+@table_row("","",">> ","shr ","right shift")
+@table_row("sum ","nary ","+ ","add ","addition")
+@table_row("subtraction ","left ","- ","sub ","subtraction")
+@table_row("product ","nary ","* ","mul ","multiplication")
+@table_row("term ","left ","/ ","div ","quotient")
+@table_row("","","% ","mod ","remainder")
+@table_row("prefixed ","prefix ","lval ","lvalue (type)")
+@table_row("","","+ ","unary plus ","")
+@table_row("","","- ","neg ","negation")
+@table_row("","","~ ","compl ","bitwise complement")
+@table_row("power ","right ","** ","pow ","real power")
+@table_row("superscript ","left ","^ ","","exponential")
+@table_row("refr ","prefix ","& ","","address")
+@table_row("","","* ","","dereference")
+@table_row("application ","left ","whitespace ","function application")
+@table_row("","","caseno ","","case number")
+@table_row("coercion ","left "," : of ","","annotation (type)")
+@table_row("factor ","postfix ",". ","","struct component")
+@table_row("","",".[] ","subscript ","array component")
+@table_row("","",".() ","","tuple component")
+@table_row("","","noexpand ","","macro inhibitor")
+@table_row("atom")
+@table_row("")
+@table_row("")
+@table_row("")
+@end_table()
+
+@head(2,'Let/In')
+The let/in construction is modelled on Ocaml: it has the lowest
+operator precedence.
+@begin_displayed_code()
+  let pattern = expr1 in expr2
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  match expr1 with pattern => expr2 endmatch
+@end_displayed_code()
+
+
 @head(2,"Coercions",key="coercion")
 @head(2,"Record Coercions",key="record coercion")
 
@@ -863,15 +1025,575 @@ requirements clauses. See
 @end_displayed_code()
 
 @head(2,"Pattern match",key="expr")
-@head(1,"Statements",nospawn=1)
+@head(1,"Statements")
 @head(2,"Definitions",nospawn=1)
 @head(3,"Modules",nospawn=1)
 @head(2,"Executable Statements",nospawn=1)
+Conditions in macros, including chains, conditional
+goto, call, and return, are subject to constant folding.
+If the condition is constant, and can be folded, Felix
+guarantees compile time shortcut evaluation, eliminating
+branches which can never execute.
+@p()
+It is therefore required that code in such branches
+be well formed syntactically, and meet syntactic
+constraints, but the code is not subject to lookup
+and in particular does not have to be correctly typed.
+@p()
+Other conditions, such as those used by higher order
+functions, may be determined to be uni-valued
+and a branch optimised away, however this is done
+after type checking. In such cases, the code does not
+need to bind to C/C++ correctly, and in particular
+incorrect bindings will not cause C++ compile time errors.
+Be warned that such optimisations are fragile, and small
+changes to the program may suddenly introduce C++
+compile time errors in code that previously appeared
+to be correct at the C++ level.
+
+@head(3,"No operation",nospawn=1)
+There are three forms of no-op in Felix:
+@begin_displayed_code()
+    ; // lone ;
+    todo "Comment";
+    comment "Comment";
+@end_displayed_code()
+The todo and comment statements are identical in
+the abstract semantics, however the todo statement
+may be used to indicate an incomplete section of
+code, and a compiler switch may permit tracing
+execution of such code, and perhaps aborting
+with a diagnostic.
+
 @head(3,"Goto",nospawn=1)
+The goto statement is used to transfer control to any
+visible label.
+@begin_displayed_code()
+  label:>
+    goto label;
+@end_displayed_code()
+There may be a label before or after any executable statement.
+There is also a conditional form:
+@begin_displayed_code()
+  label:>
+    if cond goto label;
+@end_displayed_code()
+
 @head(3,"Call",nospawn=1)
+Felix provides the call statement to execute a procedure:
+@begin_displayed_code()
+  call f x;
+@end_displayed_code()
+This may be shortened to the form:
+@begin_displayed_code()
+  f x;
+@end_displayed_code()
+A call of the form:
+@begin_displayed_code()
+  call f ();
+@end_displayed_code()
+may be shortened even more to just:
+@begin_displayed_code()
+  f;
+@end_displayed_code()
+You should not in particular that:
+@begin_displayed_code()
+  { var x = 1; print x; };
+@end_displayed_code()
+is an instance of this shortform. Although this
+looks like a block in C, with gratuitous trailing
+semi-colon ";", it is in fact a shortform anonymous
+procedure (lambda) with shortform call, equivalent to:
+@begin_displayed_code()
+  (proc(){ var x = 1; print x; })();
+@end_displayed_code()
+but terser. This explains that the trailing semi-colon
+is not in fact gratuitous: it is required to terminate
+the statement.
+@p()
+A call of the form:
+@begin_displayed_code()
+  f (x,y,z);
+@end_displayed_code()
+may be written as
+@begin_displayed_code()
+  f$ x,y,z;
+@end_displayed_code()
+in the same manner as for dollar-application operator
+in expressions.
+@p()
+There is also a conditional call:
+@begin_displayed_code()
+  if cond call f x;
+@end_displayed_code()
+The argument of call, and the shortened forms 
+have the syntax of an expression. If the expression is
+an application, it is taken as a call applying the
+first argument of the application to the second,
+if the expression is not an application, it is taken
+as an application of the whole expression to ().
+@p()
+The special form:
+@begin_displayed_code()
+  jump f x;
+@end_displayed_code()
+is equivalent to:
+@begin_displayed_code()
+  call f x;
+  return;
+@end_displayed_code()
+but is explicitly a tail call. The special form
+@begin_displayed_code()
+  loop f x;
+@end_displayed_code()
+is a special tail call, subject to the constraint that
+f must be the name of this procedure, or one of its ascendants,
+which is explicitly a tail recursive call. Felix optimised both
+kinds of tail calls, however they are recognized even if the
+explict tail call syntax is not used. 
+@p()
+If the first projection of the argument of a procedure
+which is a tuple type is a pointer type, then the procedure
+may also be called as indicated with the following syntax:
+@begin_displayed_code()
+  proc f(a:&int,b:string) ..
+  var &x:int <- f "Hello";
+@end_displayed_code()
+The arrow form suggests that return values from procedures
+with a pointer as the first parameter should be used to
+return values, however the syntax precludes the use of
+such a procedure in an expression: it looks like a
+function returning a value, but the procedure above
+actually just stores a result in the variable x
+and returns.
+
 @head(3,"Return",nospawn=1)
+The return statement:
+@begin_displayed_code()
+  return;
+@end_displayed_code()
+is used to return control to the caller of a procedure.
+If the procedure an initial procedure, control is returned
+to the embedding driver, usually flx_run.
+@p()
+The return statement:
+@begin_displayed_code()
+  return expr;
+@end_displayed_code()
+is used to return a value from a function.
+@p()
+There are also conditional return shortforms:
+@begin_displayed_code()
+  if cond return expr;
+@end_displayed_code()
+
 @head(3,"Assignment",nospawn=1)
+An lvalue pattern is either a single variable, or a tuple
+of lvalue patterns.
+@p()
+Felix supports two assignment operators:
+@begin_displayed_code()
+  lval = expr;
+  lval <-> lval;
+@end_displayed_code()
+The first form is a traditional assignment. The LHS must
+be an lvalue pattern matching the RHS. The semantics are value 
+preserving for Felix types, and use C++ assignment for C++ types.
+@p()
+The second form requires two lvalues patterns, and exchanges
+the values store in the two lvalues in parallel.
+
+@head(3,"Assertions",nospawn=1)
+Felix supports several kinds of assertions.
+@head(4,"assert",nospawn=1)
+@head(4,"reduce",nospawn=1)
+@head(4,"check",nospawn=1)
+@head(4,"Axiom",nospawn=1)
+@head(3,"Standard Control Macros",nospawn=1)
+Felix provides a number of standard control macros.
+Each of these is defined in terms of conditional gotos.
+Note in particular that bodies of these macros are not blocks:
+any symbol declared in such a block is visible in the whole
+of the current scope.
+
+@head(3,"Condition chain",nospawn=1)
+The standard conditional chain looks like:
+@begin_displayed_code()
+  if expr do 
+    statement;
+    ...
+  elif expr do
+    statement;
+    ..
+  else
+    statement;
+    ..
+  done;
+@end_displayed_code()
+The else and elif clauses are optional.
+
+@head(3,"loops",nospawn=1)
+Felix provides several general loops.
+@p()
+The whilst loop has the form:
+@begin_displayed_code()
+  whilst cond do statement; .. done;
+@end_displayed_code()
+which tests cond, then executes the statements
+between do and done and repeats, provided the 
+condition is true.
+@p()
+The until loop has the form:
+@begin_displayed_code()
+  until expr do statement; .. done;
+@end_displayed_code()
+which tests cond, then executes the statements
+between do and done and repeates, provided the
+condition is false.
+@p()
+The counting loops:
+@begin_displayed_code()
+  forall id in e1 upto e2 do statement; .. done;
+  forall id in e2 downto e1 do statement; .. done;
+@end_displayed_code()
+execute statements for all values of the integer 
+variable id between e1 and e2 inclusively, differing
+only in the order of iteration. The terminal expression 
+is re-evaluated every pass of the loop.
+
+@head(3,"Standard Control Procedures",nospawn=1)
+Felix also provides higher order functions (HOFs) in the
+library, which provide a higher level, more
+structured set of control operators. These are
+prefered to the low level control macros, since
+they properly localise variables in branches
+and loop bodies.
+@p()
+The function while is declared:
+@begin_displayed_code()
+  proc while (cond:unit->bool) (bdy:unit->void)
+@end_displayed_code()
+The first argument is a function returning a bool
+and is known as the condition, the second is
+a procedure of unit. The condition is applied to ()
+and if the result is true the procedure is applied to (),
+repeatedly until the condition application returns false.
+It is used with the C like syntax:
+@begin_displayed_code()
+  while { cond } { body; .. };
+@end_displayed_code()
+Note the terminal ; is required to actually execute
+the loop.
+@p()
+The function for_each emulates a C for loop:
+@begin_displayed_code()
+  proc for_each
+    (init:unit->void)
+    (cond:unit->bool)
+    (incr:unit->void)
+    (bdy:unit->void)
+@end_displayed_code()
+It executes the initial condition first.
+Then it tests the condition, then if the
+condition is true, executes the body, then executes the 
+increment and repeats.
+
+@head(1,"Processing Phases")
+Like C, Felix processes code in well defined phases,
+however the phasing is not per program as in C,
+but per parse unit for early phases, and per program
+for late phases.
+@begin_list("keyed")
+@item("Hash-pre-processor")
+This processor lexes on a linewise bases. Lines beginning
+with the # symbol are managed by the hash-pre-processor.
+Other lines may also be skipped as a result of # conditional
+compilation. The # pre-processor may also recursively
+include files, which by convention use ".flxh" suffix.
+The # preprocessor outputs a token stream.
+
+@item("Token-pre-processor")
+The token pre-processor accepts the hash-preprocessor
+output token stream and produces another token stream
+as its output. It is used to prepare the input stream
+for the parser, by rewriting certain constructs
+which are not parsable by an LALR parser.
+@p()
+It currently consists of a sequence
+of filters:
+@begin_list("keyed")
+@item("White filter")
+White filtering elides whitespace, end of line,
+and free form comments.
+
+@item("Int filter")
+The 'int' filter replaces sequences of tokens representing
+ISO C99 arithmetic type names with the corresponding
+Felix equivalent. For example "long long" is replaced
+by "vlong".
+@end_list()
+
+@item("Parser")
+The parser accepts a token stream constructed by the
+token level preprocessor, parses it, applies syntactic
+constraints, and generates an Syntax Tree (AST).
+[The tree is technically not abstract but we call
+it an AST anyhow]
+
+@item("Syntax Macro Processor")
+The syntax macro processor is a high end macro processor
+which operates on the AST. In particular it respects scope
+and syntactic kind, so that, for example, the result of
+macros in a subexpression are restricted to that subexpression,
+and the result is an expression.
+@p()
+In particular, syntax macros 
+also respect block scope and file scope. Therefore, if you
+prepare syntax macros in a separate file, you must
+#import or #include the file, to export the macros. Macros defined in
+a file included by an include directive are only recognized
+within that file (after other phases of processing of course).
+
+@item("Desugarer")
+The desugarer is responsible for mapping some higher
+level constructions of the grammar to lower level 
+primitives, and also for recognizing certain special
+identifiers in certain contexts, and performing
+rewriting operations, thus avoiding the introduction
+of too many keywords. 
+@p()
+It also handles elision of
+conditional constructions nased on constant conditions,
+and the
+recursive conditional desugaring of files denoted
+by include directives. The include facility caches
+the results of syntax macro processing, and inclusion
+is subject to time-stamp checking to relieve the
+compiler from expensive front end processing.
+The caches have the extension ".par". 
+@p()
+Desugaring
+is also responsible for splitting scoped entities
+into one of three kinds of statement forms: directives,
+definitions and executable. Some statements, notably
+variable initialisations, can generate both a definition
+and an executable component.
+
+@item("Symbol Table construction")
+The symbol table contructor is responsible for
+translation of the hierarchical forms output
+by the desugarer
+
+@item("Name Binder")
+The name binding (lookup) phase is responsible for
+translating the AST into a set of bound definitions.
+This is the slowest phase of compilation, and involves
+all overload resolution. The name binder is fully
+polymorphic. Note in Felix, definitions are not
+sequential: all definitions may depend on definitions
+in the same scope or any definition in an ancestor.
+There is no need to provide forward declarations
+to support recursion (and indeed there is no syntax
+for it).
+
+@item("Optimiser")
+Felix has a high end optimiser which primarily
+functions by inlining and substitution. However
+the optimiser also does usage analysis, and
+eliminates unused components.
+
+@item("Code Generator")
+The code generator is responsible for translating
+optimised sets of definitions into files which
+are subsequently processed by the C++ compiler.
+The code generator also applies the instantiator,
+which is used to instantiate polymorphic entities.
+This instantiation is transient and purely functional:
+no instantiated definitions are ever created, 
+except in the ouput C++ code.
+
+@item("C++ Compilation")
+This phase invokes the client C++ compiler and linker
+to generate object files, libraries, shared libraries
+and/or programs. It may include or link to 
+standard Felix run time library (RTL) support code,
+and/or standard Felix driver routines.
+
+@item("Execution")
+The binaries generated by C++ compilation are finally
+executed. If dynamic linkage was chose in the 
+C++ compile/link phase, this phase includes loading
+of the support code, and loading of the user application
+code by the chosen driver.
+
+@end_list()
+
+@head(1,'Hash Preprocessor')
+The hash preprocessor parses and acts on lines
+whose first non-whitespace character is #.
+It includes support for conditional compilation,
+file inclusion, and introduction of user defined
+keywords, statements and expressions.
+
+@head(2,'Conditional compilation',nospawn=1)
+@begin_list("keyed")
+@item("#define")
+@item("#if")
+@item("#ifdef")
+@item("#ifndef")
+@item("#elif")
+@item("#else")
+@item("#endif")
+@end_list()
+
+@head(2,'File inclusion',nospawn=1)
+@begin_list("keyed")
+@item("#include")
+@item("#import")
+@end_list()
+
+@head(2,'User defined Syntax',nospawn=1)
+@begin_list("keyed")
+@item("#keyword")
+@item("#statement")
+@item("#infix")
+@item("#bracket")
+@end_list()
+
+@head(2,'User defined Statements',nospawn=1)
+@head(2,'User defined Operators',nospawn=1)
+
+@head(1,'Syntax Macro Processor')
+@head(2,'Special constructions',nospawn=1)
+@head(3,"Generic Iterator",nospawn=1)
+Felix also provides a generic iterator, for examle:
+@begin_displayed_code()
+  forall id in 1,2,3 do print i; endl; done;
+@end_displayed_code()
+This is actually a shortcut for:
+@begin_displayed_code()
+  macro for val i in in 1,2,3 do print i; endl; done;
+@end_displayed_code()
+which generates:
+@begin_displayed_code()
+  print 1; endl; 
+  print 2; endl; 
+  print 3; endl; 
+@end_displayed_code()
+The generic iterator is built from a combination
+of user defined syntax and the syntax macro processor.
 
 @head(1,"Synchronous Multithreading",key="sync")
+Felix provides a simple but model of synchronous threading.
+It is especially designed so this threading is extremely
+fast and lightweight. Millions of threads can easily be
+supported on desktop machines, and contest switching
+times are roughly the same time as subroutine calling.
+@p()
+Synchronous threads are sometimes called fibres. Sets of such
+threads fibrate a single pre-emptive thread. Each fibre is
+guarranteed to interleave execution serially within
+the same pre-emptive thread, so that no low level synchronisation
+primitives are required to ensure data is accessed atomically.
+You should not that at high levels of abstraction, context
+switches may still occur within what logically must be treated
+as an atomic operation: mutual exclusion is still required.
+However we do not provide any locking primitives for fibres.
+Instead, the sole synchronisation primitive consists of an
+object called a schannel, together with two functions, read
+and write, which purport to read or write data from or to
+the channel.
+@p()
+In fact, synchronous channels are not buffers and never
+hold or transmit any data, rather they are are used
+to synchronise and control flow in one or more fibres.
+@p()
+A fibre is created by the spawn_fthread procedure
+which accepts a procedure of type
+@begin_displayed_code()
+  1 -> 0 
+@end_displayed_code()
+as an argument. It is typically used like:
+@begin_displayed_code()
+  spawn_fthread { thread_routine; .. };
+@end_displayed_code()
+It is unspecified whether the spawned routine or the
+spawning routine resumes execution first.
+@p()
+A bidirectional synchronous channel and associated
+read and write operations have types:
+@begin_displayed_code()
+  fun mk_schannel[t]: unit -> schannel[t];
+  proc read: &t * schannel[t];
+  proc write: schannel[t] * t;
+@end_displayed_code()
+  
+
 @head(1,"First order polymorphism",key="poly1")
+All Felix nominal types support first order
+polymorphism by way of type schema:
+
+@begin_displayed_code()
+type x[U,V] ..
+fun f[U,V] ..
+proc g[U,V] ..
+class k[U,V] ..
+struct s[U,V] ..
+union u[U,V] ..
+cstruct c[U,V] ..
+cclass k[U,B] ..
+@end_displayed_code()
+All such definitions are intrinsically polymorphic:
+the lack of an explicit schema designator:
+@begin_displayed_code()
+  fun f(x:int)=>x;
+@end_displayed_code()
+is simply shorthand for a unit schema:
+@begin_displayed_code()
+  fun f[](x:int)=>x;
+@end_displayed_code()
+@p()
+In addition, modules may also have type schema, however
+this is just sugar. The semantics are to prepend the schema to the 
+schema of every definition in the module:
+@begin_displayed_code()
+  module X[T] {
+    fun f(x:int)=>x;
+    fun g[U](x:int)=>x;
+  }
+@end_displayed_code()
+is equivalent to:
+@begin_displayed_code()
+  module X {
+    fun f[T](x:int)=>x;
+    fun g[T,U](x:int)=>x;
+  }
+@end_displayed_code()
+@p()
+In addition, typdefs may have schema:
+@begin_displayed_code()
+  typedef pair[T] = T * T;
+@end_displayed_code()
+Such a parameterised type alias is a special kind
+of type function or type functor:
+@begin_displayed_code()
+  typedef fun pair(T:TYPE):TYPE => T * T;
+@end_displayed_code()
+@p()
+Type schema parameters also individual constraints:
+@begin_displayed_code()
+  fun f[I:fast_sints] ..
+@end_displayed_code()
+says that the type variable I must be instantiated
+with a member of the typeset of fast_sints. Discrete
+typesets can be named by a typedef:
+@begin_displayed_code()
+  typedef fast_sints = typesetof (tiny, short, int, long, vlong);
+@end_displayed_code()
+The union and intersection of such sets may be calculated
+with the setwise union and intersection operators:
+@begin_displayed_code()
+typedef A = B || C && D;
+@end_displayed_code()
+with the usual precedence.
 
