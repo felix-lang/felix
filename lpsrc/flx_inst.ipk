@@ -110,6 +110,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
       -> 
       let ts = map vs ts in
       ui index ts; ue a
+    | `BBDCL_procedure _ ->
+      failwith "Use of mangled procedure in expression! (should have been lifted out)"
+
     (* the remaining cases are struct/variant type constructors,
     which probably don't need types either .. fix me!
     *)

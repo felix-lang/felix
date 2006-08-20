@@ -2007,6 +2007,42 @@ and inner_typeofindex
 and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
     match unfold syms.dfns t1 with
+    | `BTYP_function (`BTYP_pointer rest,`BTYP_void) ->
+      if t2 = `BTYP_tuple [] then rest else
+        clierr sr
+        (
+          "[cal_apply] Procedure used as function: " ^
+          sbe syms.dfns tbe1 ^
+          "\nof type " ^
+          sbt syms.dfns t1 ^
+          "\napplied to argument " ^
+          sbe syms.dfns tbe2 ^
+          "\n of type " ^
+          sbt syms.dfns t2 ^
+          "\nwhich doesn't agree with parameter type unit"
+        )
+
+    | `BTYP_function 
+      (
+        `BTYP_tuple ((`BTYP_pointer rest)::argt),
+        `BTYP_void
+      ) ->
+      let argt = typeoflist argt in
+      if t2 = argt then rest else
+        clierr sr
+        (
+          "[cal_apply] Procedure used as function: " ^
+          sbe syms.dfns tbe1 ^
+          "\nof type " ^
+          sbt syms.dfns t1 ^
+          "\napplied to argument " ^
+          sbe syms.dfns tbe2 ^
+          "\n of type " ^
+          sbt syms.dfns t2 ^
+          "\nwhich doesn't agree with parameter type\n" ^
+          sbt syms.dfns argt 
+        )
+      
     | `BTYP_lvalue (`BTYP_function (argt,rest))
     | `BTYP_function (argt,rest)
     | `BTYP_lvalue (`BTYP_cfunction (argt,rest))

@@ -1272,33 +1272,6 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
 
   | _ -> assert false
 
-(* this routine changes direct applications into a named
-  value plus an initialisation of that value: the argument
-  should have already been processed bottom up, ie. already
-  be in canonical form
-*)
-let bunravel syms bbdfns ts e = 
-  let counter = syms.counter in 
-  let vars = ref [] in
-  let rec urv e = 
-    match map_tbexpr ident urv ident e with
-    | (`BEXPR_apply_direct _,t) as x ->
-      let n = !counter in incr counter;
-      print_endline ("New variable " ^ si n);
-      vars := (n,x) :: !vars ;
-      `BEXPR_name (n,ts),t
-    | (`BEXPR_apply ((`BEXPR_apply_direct _,t'),a),t as x) ->
-      print_endline ("Indirect apply direct!! " ^ sbe syms.dfns x);
-      x
-    | (`BEXPR_apply (f,a),t as x) ->
-      print_endline ("Indirect apply " ^ sbe syms.dfns x);
-      x
-
-    | x -> x
-  in
-    let x = urv e in
-    x,!vars
-
 (* note u sr e must return exes in reverse order, this
   function however returns exes in forward order 
 *)
@@ -1411,32 +1384,6 @@ let expand_exe syms bbdfns u exe =
     let xs = rev xs in
     xs
 
-(* output in reverse order *)
-let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list = 
-  let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) vs in
-  let u sr e = 
-    let x,xs = bunravel syms bbdfns ts e in
-    iter 
-    (fun (i,((x,t) as e)) -> 
-      let id = "_urv_" ^ si i  in
-      (*
-      print_endline (id ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
-      *)
-      let entry = `BBDCL_val (vs,t) in
-      Hashtbl.add bbdfns i (id,Some caller,sr,entry);
-      let kids = 
-        try Hashtbl.find child_map caller
-        with Not_found -> [] 
-      in
-      Hashtbl.replace child_map caller (i::kids)
-    )
-    xs
-    ;
-    let inits = map (fun (i,e)->`BEXE_init (sr,i,e)) xs in
-    x,inits
-  in
-  expand_exe syms bbdfns u exe 
-
 let heavy_inline_call syms (uses,child_map,bbdfns) 
   caller caller_vs callee ts argument id sr (props, vs, (ps,traint), exes)
 =
@@ -1544,6 +1491,56 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
+
+
+      (* THIS CODE IS PROBABLY IN THE WRONG PLACE! 
+
+         The technique is ALSO probably insecure because
+         it only works with direct applications .. but
+         the overloading works with closures too.
+
+         To make this actually work properly requires a change
+         to the type system.
+
+         In addition, it isn't clear the lifted call is optimised
+         as it should be (it should be inlined of course).
+         In particular, its argument may also include calls
+         needing lifting.
+      *)
+      | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+        print_endline ("Mangled procedure lift! Type:" ^ sbt syms.dfns t);
+
+        (* create a new variable *)
+        let urv = !(syms.counter) in incr (syms.counter);
+        let urvid = "_pout_urv" ^ si urv in
+        add_child child_map caller urv;
+        add_use uses caller urv sr;
+        let entry = `BBDCL_var (caller_vs,t) in
+        Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
+
+        (* pointer to the varaible *)
+        let p : tbexpr_t = `BEXPR_ref (urv,ts),`BTYP_pointer t in
+
+        (* insert pointer as first argument *)
+        let a': tbexpr_t = match a with 
+          | `BEXPR_tuple [],_ -> p
+            
+          | `BEXPR_tuple ls,_ -> 
+            let lst : btypecode_t list = map snd ls in
+            `BEXPR_tuple (p :: ls), 
+            `BTYP_tuple (`BTYP_pointer t :: lst)
+            
+          | (x,t') as e -> 
+            `BEXPR_tuple [p; e], 
+            `BTYP_tuple [`BTYP_pointer t;t']
+        in
+        let cll = `BEXE_call_direct (sr,callee,ts,a') in
+        exes' := cll :: !exes';
+
+        (* replace application with the variable *)
+        let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in
+        `BEXPR_name (urv,ts),t
+
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if 
           not (mem `NoInline props) &&
