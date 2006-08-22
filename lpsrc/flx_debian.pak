@@ -29,17 +29,26 @@ Description: high performance programming language translator and tools
 @select(tangler('olddebian/dirs','data'))
 usr/bin
 usr/lib
-usr/lib/felix
-usr/lib/felix/lib
-usr/lib/felix/rtl
-usr/include
-usr/share/doc/felix
-usr/share/doc/felix/tut
-usr/share/doc/felix/tut/doc
-usr/share/doc/felix/tut/examples
-usr/share/doc/felix/test
-usr/share/doc/felix/libdoc
-usr/share/doc/felix/htmlman
+@tangle('usr/lib/felix-'+flx_version)
+@tangle('usr/lib/felix/lib
+@tangle('usr/lib/felix/rtl
+@for i in [
+  'elkhound',
+  'mmap',
+  'opengl',
+  'refman',
+  'flx',
+  'flxcc',
+  'gmp',
+  'grammar',
+  'gsl',
+  'impldoc',
+  'rtl',
+  'sdl',
+  'test',
+  'tutorial'
+  ]:
+  tangle('usr/share/doc/felix-'+flx_version+'/'i)
 usr/share/man/man1
 
 @select(tangler('olddebian/compat','data'))
