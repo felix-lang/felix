@@ -30,8 +30,8 @@ Description: high performance programming language translator and tools
 usr/bin
 usr/lib
 @tangle('usr/lib/felix-'+flx_version)
-@tangle('usr/lib/felix/lib
-@tangle('usr/lib/felix/rtl
+@tangle('usr/lib/felix-'+flx_version+'/lib')
+@tangle('usr/lib/felix-'+flx_version+'/rtl')
 @for i in [
   'elkhound',
   'mmap',
@@ -48,7 +48,7 @@ usr/lib
   'test',
   'tutorial'
   ]:
-  tangle('usr/share/doc/felix-'+flx_version+'/'i)
+  tangle('usr/share/doc/felix-'+flx_version+'/'+i)
 usr/share/man/man1
 
 @select(tangler('olddebian/compat','data'))
