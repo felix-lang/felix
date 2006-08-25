@@ -243,6 +243,7 @@ statementsx:
   | statement_aster statements_terminator { $1, $2 }
 
 statements_terminator:
+  | VBAR { VBAR $1 }
   | DONE { DONE $1 }
   | USER_KEYWORD { USER_KEYWORD $1 }
   | ENDMARKER { ENDMARKER }

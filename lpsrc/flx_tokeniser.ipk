@@ -90,11 +90,22 @@ let compress_ctypes x =
     | h :: t -> filter t (h::result)
     | [] -> rev result
   in filter x [] 
+
+let unkeyword ts =
+  let rec filter inp out = match inp with
+  | (COLONCOLON _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+  | (COLONCOLON _ as cc) :: (USER_STATEMENT_KEYWORD (sr,s,_,_) as u) :: tail ->
+    let u = NAME (sr,s) in
+    filter tail (u :: cc :: out) 
+  | h :: t -> filter t (h::out)
+  | [] -> rev out
+  in filter ts []
   
 let translate ts = 
   let filters = [
     (* 1 *) filter_comments ;
     (* 2 *) compress_ctypes ;
+    (* 3 *) unkeyword ;
     ] 
   and reverse_apply dat fn = fn dat 
   in List.fold_left reverse_apply ts filters

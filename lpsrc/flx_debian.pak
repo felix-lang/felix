@@ -79,44 +79,17 @@ Run time library Licence: Free for any use.
 
  -- John Skaller <skaller@users.sourceforge.net>  Fri, 27 May 2005 11:08:54 +1000
 
-@select(tangler('olddebian/felix.doc-base.tools','data'))
-Document: felix-tools
-Title: Felix Tools Summary
+@select(tangler('olddebian/felix.doc-base','data'))
+Document: felix
+Title: Felix
 Author: John Skaller
-Abstract: Felix toolkit summary
+Abstract: Felix documents 
 Section: main
 Format: HTML
-Index: /usr/share/doc/felix/htmlman/felix_1.html
-Files: /usr/share/doc/felix/htmlman/*.html
-
-@select(tangler('olddebian/felix.doc-base.tut','data'))
-Document: felix-tutorial
-Title: Felix Tutorial
-Author: John Skaller
-Abstract: An tutorial on Felix language and toolkit.
-Section: main
-Format: HTML
-Index: /usr/share/doc/felix/tut/en_tutorial_top.html
-Files: /usr/share/doc/felix/tut/*.html
-
-@select(tangler('olddebian/felix.doc-base.tut_bind','data'))
-Document: felix-binding-tutorial
-Title: Felix C/C++ Interfacing Tutorial
-Author: John Skaller
-Abstract: An tutorial on Felix language and toolkit.
-Section: main
-Format: HTML
-Index: /usr/share/doc/felix/tut/en_tut_bind_top.html
-
-@select(tangler('olddebian/felix.doc-base.lib','data'))
-Document: felix-library
-Title: Debian Felix Library Manual
-Author: John Skaller
-Abstract: Felix Standard Library.
-Section: main
-Format: HTML
-Index: /usr/share/doc/felix/libdoc/index.html
-Files: /usr/share/doc/felix/libdoc/*.html
+Index: /usr/share/doc/felix/doc/en_flx_doc_top.html
+Files: /usr/share/doc/felix/doc/*
+Files: /usr/share/doc/felix/doc/*/*
+Files: /usr/share/doc/felix/doc/*/*/*
 
 @select(tangler('olddebian/felix.install','data'))
 config/*.py usr/lib/felix/config
