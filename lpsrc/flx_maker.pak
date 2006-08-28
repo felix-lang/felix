@@ -2800,10 +2800,10 @@ We have no idea if it continues copying.
 @select(tangler('Makefile','data'))
 @tangle('CONFIG_ARGS=')
 @tangle('PREFIX='+PREFIX)
-@tangle('INSTALL_DIR=${PREFIX}/lib/felix-'+flx_version)
+@tangle('INSTALL_DIR=${PREFIX}/lib/felix/felix-'+flx_version)
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
-@tangle('DOC_DIR=${PREFIX}/share/felix-'+flx_version)
+@tangle('DOC_DIR=${INSTALL_DIR})
 @tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
@@ -3867,8 +3867,8 @@ ENDLOCAL
 @select(tangler('bin/flx','data'))
 #!/usr/bin/env bash
 # flx - felix script harness
-@tangle("INSTALL_ROOT="+PREFIX+"/lib/felix-"+flx_version)
-@tangle("FLX_INSTALL_DIR=${FLX_INSTALL_DIR:-"+PREFIX+"/lib/felix-"+flx_version+"}")
+@tangle("INSTALL_ROOT="+PREFIX+"/lib/felix/felix-"+flx_version)
+@tangle("FLX_INSTALL_DIR=${FLX_INSTALL_DIR:-"+PREFIX+"/lib/felix/felix-"+flx_version+"}")
 @tangle("CYGWIN="+str(CYGWIN))
 @tangle("WIN32="+str(WIN32))
 @tangle("MACOSX="+str(MACOSX))
