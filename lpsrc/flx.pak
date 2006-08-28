@@ -4,6 +4,8 @@
 @set_title('Felix '+flx_version)
 
 @head(1,'The Felix Compiler')
+SVN conversion.
+$Log$
 @h = tangler('spkgs/flx_compiler.py')
 @select(h)
 FLX_LEXS = [ 'src/flx_lex' ]
