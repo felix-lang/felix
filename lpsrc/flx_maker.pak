@@ -3462,6 +3462,7 @@ HOW TO USE IT
 
 make a sample program mytest.flx:
 
+  #import <flx.flxh>
   include "std";
   print "It works!"; endl;
 

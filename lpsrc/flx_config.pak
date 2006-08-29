@@ -720,13 +720,22 @@ else:
 @select(tangler("cpkgs/target/pthread.py"))
 # try to use Linux getconf to find the pthread version
 # Ubuntu/Breezy returns "NPTL 2.3.5"
-result,output = get_stdout("getconf GNU_LIBPTHREAD_VERSION")
-if result: # getconf failed
+# IEEE Std 1003.1-2001 for getconf uses the variable: _POSIX_THREADS
+# if the system does not support Pthreads, getconf returns 0
+# if the system supports Pthreads, getconf returns nonzero
+# on RedHat Linux, "getconf _POSIX_THREADS" returns 1
+# on Darwin (Mac OS X), "getconf _POSIX_THREADS" returns 200112
+# result,output = get_stdout("getconf GNU_LIBPTHREAD_VERSION")
+result,output = get_stdout("getconf _POSIX_THREADS")
+if result: 			# getconf failed
   PTHREAD_MODEL = "Unknown"
+elif int(string.strip(output[0])) != 0:
+  PTHREAD_MODEL = "POSIX"
 else:
-  PTHREAD_MODEL = string.strip(output[0])
+  PTHREAD_MODEL = "Unknown"
 
 print "Pthread model=",PTHREAD_MODEL
+
 
 @select(tangler("cpkgs/build/interscript.py"))
 execfile("config"+os.sep+"build_config.py")
