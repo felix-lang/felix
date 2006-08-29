@@ -2803,7 +2803,7 @@ We have no idea if it continues copying.
 @tangle('INSTALL_DIR=${PREFIX}/lib/felix/felix-'+flx_version)
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
-@tangle('DOC_DIR=${INSTALL_DIR})
+@tangle('DOC_DIR=${INSTALL_DIR}')
 @tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
