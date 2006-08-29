@@ -889,6 +889,18 @@ k { a +1 };
 70
 70
 71
+@select(tangler('test/rt31.flx'))
+#import <flx.flxh>
+#
+module X {
+  fun f(x:int)=> x + x;
+}
+
+#keyword f
+
+print$ X::f 22; endl;
+@select(tangler('test/rt31.expect'))
+44
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>

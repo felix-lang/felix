@@ -1836,6 +1836,18 @@ flx_parser_keywords = [
     ("statements", "STATEMENTS"),
   ]
 
+# symbols that can't be followed by a keyword
+flx_leadin_keywords = [
+  "COLONCOLON",
+  "DOT",
+  "RIGHTARROW",
+  "STRUCT",
+  "UNION",
+  "CLASS",
+  "FUNCTION",
+  "PROCEDURE",
+]
+
 flx_keywords = flx_expr_terminator_keywords + flx_other_keywords
 
 flx_1_char_syms = [
