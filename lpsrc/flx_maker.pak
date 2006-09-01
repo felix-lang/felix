@@ -1139,28 +1139,27 @@ OCS_MODULES = [
 @select(h)
 #!/bin/sh
 python script/maker $*
-if [ $? != 0 ]; then
-  exit 1
+ec1=$?
+if [ $ec1 != 0 ]; then
+  exit $ec1
 fi
 @os.system("chmod u+x umk")
 
 @h = tangler('mk','data')
 @select(h)
+#!/bin/sh
 LOGFILE=mk_`date +"%Y-%m-%d-%H%M"`.log
 echo "Saving transcript to $LOGFILE" | tee -a $LOGFILE
-#./umk $* | tee -a $LOGFILE 2>&1
-cmd1="./umk $*"
-cmd2="tee -a $LOGFILE 2>&1"
 
 exec 3>&1
 eval `exec 4>&1 >&3 3>&-
 {
-	$cmd1 4>&-; echo "ec1=$?;" >&4
-} | $cmd2 
+	(./umk $*) 4>&-; echo "ec1=$?;" >&4 
+} 2>&1 | tee -a $LOGFILE
 echo "ec2=$?;" >&4
 `
 if [ $ec1 != 0 ]; then
-  exit 1
+  exit $ec1
 fi
 @os.system("chmod u+x mk")
 
