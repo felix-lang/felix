@@ -1771,6 +1771,7 @@ flx_expr_terminator_keywords = [
     ("done", "DONE"),
     ("elif", "ELIF"),
     ("else", "ELSE"),
+    ("endcase", "ENDCASE"),
     ("endif", "ENDIF"),
     ("endmatch", "ENDMATCH"),
     ("enum", "ENUM"),
@@ -1855,6 +1856,7 @@ flx_other_keywords = [
     ("regmatch", "REGMATCH"),
     ("the", "THE"),
     ("typematch", "TYPEMATCH"),
+    ("typecase", "TYPECASE"),
   ]
 
 flx_parser_keywords = [

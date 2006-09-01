@@ -1175,7 +1175,7 @@ module Text_file
 
 @#------------- BOOL -------------------
 publish "Bool compatible with C"
-module Bool 
+open module Bool 
 {
 
   gen_eq bool;
@@ -1215,7 +1215,7 @@ module MixedInt
 
 type string = "std::string";
 @for t in fast_ints:
-  tangle("module " + string.capitalize(t))
+  tangle("open module " + string.capitalize(t))
   tangle("{")
   tangle('  gen_integral('+t+');')
   tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1.data()))" requires cstdlib;')
@@ -1238,7 +1238,7 @@ type string = "std::string";
 
 @#------------- FLOATING MODULES -------------------
 @for t in floats:
-  tangle("module " + string.capitalize(t))
+  tangle("open module " + string.capitalize(t))
   tangle("{")
   tangle('  gen_cmp('+t+');')
   tangle('  gen_arith('+t+');')
@@ -1257,7 +1257,7 @@ type string = "std::string";
 @for t in chars:
   tangle('  gen_eq('+t+');')
 
-module Char 
+open module Char 
 {
   open Int;
   fun ord: char -> int = "(int)$1";
@@ -1265,7 +1265,7 @@ module Char
   proc fprint: ostream * char = "*$1<<$2;" requires iostream;
 }
 
-module Wchar
+open module Wchar
 {
   open Long;
   fun ord: wchar -> long ="(long)$1";
@@ -1273,7 +1273,7 @@ module Wchar
   proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
 }
 
-module Unicode
+open module Unicode
 {
   fun ord: uchar -> uint32 ="$1";
   fun _ctor_uchar: uint32 -> uchar = "$1";
@@ -1283,7 +1283,7 @@ module Unicode
 
 
 @#------------- STDOUT UTILITY -------------------
-module Stdout 
+open module Stdout 
 {
   requires iostream;
   type ostream = "std::ostream*";
@@ -1295,7 +1295,7 @@ module Stdout
 }
 
 @#------------- STRING MODULES -------------------
-module String
+open module String
 {
   requires string_hxx;
   open Bool;
@@ -2166,13 +2166,13 @@ module Lexer
 }
 
 // ------ Open common modules -------------
-open Bool;
-open Int;
-open Double;
-open Char;
-open String;
+//open Bool;
+//open Int;
+//open Double;
+//open Char;
+//open String;
 open Array;
-open Stdout;
+//open Stdout;
 open Arith_casts;
 open Control;
 open Cstdio;

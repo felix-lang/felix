@@ -352,6 +352,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
 
+  | `AST_case _ 
   | `AST_sparse _ 
   | `AST_match_ctor _ 
   | `AST_match_case _ 
@@ -515,9 +516,10 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     in
     sts,e
 
-  | `AST_dot (sr,(obj,comp,ts)) -> 
-    let l1,x1 = rex obj in 
-    l1 , `AST_dot (sr,(x1,comp,ts))
+  | `AST_dot (sr,(a,b)) -> 
+    let l1,x1 = rex a in 
+    let l2,x2 = rex b in 
+    l1@l2 , `AST_dot (sr,(x1,x2))
 
   | `AST_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in 

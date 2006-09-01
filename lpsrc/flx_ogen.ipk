@@ -230,6 +230,7 @@ let rec get_offsets' syms bbdfns typ : string list =
   | `BTYP_void 
   | `BTYP_var _ 
 
+  | `BTYP_case _
   | `BTYP_apply _
   | `BTYP_type 
   | `BTYP_typefun _

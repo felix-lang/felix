@@ -87,6 +87,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
+  | `AST_case _
   | `AST_vsprintf _
   | `AST_type_match _ 
   | `AST_noexpand _ 
@@ -159,8 +160,13 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_method_apply (sr,(id,e,ts)) -> 
     `AST_method_apply (sr,(id, subst e,ts))
   
+  (*
   | `AST_dot (sr,(e,id,ts)) -> 
     `AST_dot (sr,(subst e, id,ts))
+  *)
+
+  | `AST_dot (sr,(e,e2)) -> 
+    `AST_dot (sr,(subst e, subst e2))
  
   | `AST_lambda _ -> assert false
 

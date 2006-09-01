@@ -2002,6 +2002,19 @@ matching:
   | VBAR pattern EQRIGHTARROW expr { $2, $4 }
   | VBAR EQRIGHTARROW expr { let sr = rstoken $1 $2 in `PAT_none sr, $3 }
 
+typecaseargs:
+  | LSQB basic_name_comma_list RSQB { $2 }
+  
+typecase:
+  | TYPECASE typecaseargs expr EQRIGHTARROW expr ENDCASE
+    {
+      let sr = rstoken $1 $6 in
+      let t1 = $3 in
+      let t2 = $5 in
+      let ls = map snd $2 in
+      `AST_case (sr,t1,ls,t2)
+    }
+    
 @doc()
 The pattern matching statment analyses the shape and contents of
 a value and selects the first matching case from the matching body.
@@ -2821,14 +2834,14 @@ factor:
     { 
       let rsr,name,ts = $3 in
       let sr = rsrange (src_of_expr $1) rsr in
-      `AST_dot (sr, ($1, name,ts)) 
+      `AST_dot (sr, ($1, `AST_name (sr,name,ts))) 
     }
   | factor DOTRIGHTARROW simple_name_parts       
     { 
       let rsr,name,ts = $3 in
       let sr = rsrange (src_of_expr $1) rsr in
       let x = apl $2 "deref" $1 in
-      `AST_dot (sr, (x, name,ts)) 
+      `AST_dot (sr, (x, `AST_name (sr,name,ts))) 
     }
   | factor DOT LPAR INTEGER RPAR
     { 
@@ -2974,6 +2987,7 @@ atom:
   | glr_parse { $1 }
   | match_expr { $1 }
   | regmatch_expr { $1 }
+  | typecase { $1 }
   | compound            
     {
       let sr, stmts = $1 in

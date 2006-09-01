@@ -49,6 +49,8 @@ and metatype' syms (params:(int * btypecode_t) list) term =
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype' syms params t in
   match term with
+  | `BTYP_case _ -> `BTYP_function (`BTYP_type, `BTYP_type)
+
   | `BTYP_typefun (a,b,c) ->
     let ps = List.map snd a in
     let argt =
@@ -215,6 +217,8 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     | _ -> `BTYP_inst (i,ts)
     with Not_found -> `BTYP_inst (i,ts) (* could be reparented class *)
     end
+
+  | `BTYP_case (a,b,c) -> `BTYP_case (br a, b, br c)
   | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
   | `BTYP_array (i,t) -> `BTYP_array (i, br t)
   | `BTYP_sum ls -> `BTYP_sum (map br ls)
@@ -338,7 +342,9 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     begin match mt1 with
     | `BTYP_function (a,b) ->
       if a <> mt2
-      then failwith ("Argument metatype not same as function parameter")
+      then failwith (
+        "Argument metatype "^st a^" not same as function parameter " ^ st mt2
+      )
     | _ -> 
       failwith (
         "[beta_reduce] Expected LHS of application to be type function, got\n" ^ 
@@ -375,6 +381,35 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
       print_endline ("Result of application = " ^ st t);
       *)
       br t
+
+    | `BTYP_case (pat,vars,body) ->
+      let u = 
+        print_endline ("Try match " ^ st pat ^ " with " ^ st t2 ^ 
+        " with vars = " ^ string_of_intset vars
+        );
+        try Some (unification false syms.dfns [pat,t2] vars)
+        with Not_found -> None
+      in
+      begin match u with
+      | Some mgu -> 
+        print_endline "Unifies";
+        print_endline (string_of_varlist syms.dfns mgu);
+        let nm = length mgu and nv = IntSet.cardinal vars in
+        if nm < nv
+        then 
+          failwith "Fails to bind all variables! Missing check?"
+        else if nm > nv
+        then
+          failwith "Binds more variables than in specified set???"
+        else begin assert (nm = nv);
+          print_endline ("Substituting into " ^ st body);
+          let body' = list_subst mgu body in
+          print_endline ("Result is         " ^ st body');
+          body'
+        end
+          
+      | None -> failwith "Doesn't unify"
+      end
 
     | `BTYP_var _ -> t (* can't reduce it yet *)
     | `BTYP_fix _ -> t (* can't reduce it yet *)

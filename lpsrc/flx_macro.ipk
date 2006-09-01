@@ -256,6 +256,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   let e = cf e in
   match e with
 
+  | `AST_case (sr,_,_,_) -> syserr sr "Unexpected typecase"
+
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e 
   | `AST_vsprintf _ -> e
@@ -641,7 +643,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_deref (sr, e1) -> `AST_deref (sr, me e1)
   | `AST_ref (sr, e1) ->  `AST_ref (sr, me e1)
   | `AST_method_apply (sr, (id, e1,ts)) -> `AST_method_apply (sr,(mi sr id, me e1,map (mt sr) ts))
+  (*
   | `AST_dot (sr, (e1, id, ts)) ->  `AST_dot (sr,(me e1,mi sr id, ts))
+  *)
+  | `AST_dot (sr, (e1, e2)) ->  `AST_dot (sr,(me e1, me e2))
   | `AST_match_ctor (sr, (qn, e1)) -> `AST_match_ctor (sr,(qn,me e1))
   | `AST_match_case (sr, (i, e1)) ->  `AST_match_case (sr,(i, me e1))
   | `AST_ctor_arg (sr, (qn, e1)) -> `AST_ctor_arg (sr,(qn, me e1))

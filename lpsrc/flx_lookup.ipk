@@ -908,6 +908,7 @@ and bind_type'
   *)
   let t = 
   match t with
+ 
   | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
   | `TYP_record ts -> `BTYP_record (map (fun (s,t) -> s,bt t) ts)
   | `TYP_variant ts -> `BTYP_variant (map (fun (s,t) -> s,bt t) ts)
@@ -1278,6 +1279,63 @@ and bind_type'
       *)
       `BTYP_typefun (bparams, bt r, bbody)
 
+  (* this is much the same as our type function *)
+  | `TYP_case (t1, ls, t2) ->
+    (*
+    print_endline ("BINDING TYPECDE " ^ string_of_typecode t);
+    *)
+
+    (* the variables *)
+    let typevars = 
+      rev_map 
+      (fun (name) -> 
+        name, 
+        `BTYP_type, 
+        let n = !(syms.counter) in 
+        incr (syms.counter); 
+        n
+      ) 
+      ls 
+    in
+    let pnames =  (* reverse order .. *)
+      map (fun (n, t, i) -> 
+        (*
+        print_endline ("Binding param " ^ n ^ "<" ^ si i ^ "> metatype " ^ sbt syms.dfns t);
+        *)
+        (n,`BTYP_var (i,t))) typevars
+    in
+    let bt1 = 
+      (*
+      print_endline (" ... binding body .. " ^ string_of_typecode t1);
+      print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.dfns t) (pnames @ params));
+      *)
+      bind_type' syms env { rs with depth=rs.depth+1 }
+      sr 
+      t1 (pnames@params)
+    in
+    let bt2 = 
+      (*
+      print_endline (" ... binding body .. " ^ string_of_typecode t2);
+      print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.dfns t) (pnames @ params));
+      *)
+      bind_type' syms env { rs with depth=rs.depth+1 }
+      sr 
+      t2 (pnames@params)
+    in
+      let bparams = (* order as written *)
+        rev_map (fun (n,t,i) -> (i,t)) typevars
+      in
+      (*
+      print_endline "BINDING DONE\n";
+      *)
+
+      (* For the moment .. the argument and return types are 
+         all of kind TYPE
+      *)
+      let varset = intset_of_list (map fst bparams) in
+      `BTYP_case (bt1, varset, bt2)
+
+ 
   | `TYP_apply (`AST_name (_,"_flatten",[]),t2) ->
     let t2 = bt t2 in
     begin match t2 with
@@ -2960,6 +3018,7 @@ and bind_expression' syms env (rs:recstop) e args
   let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms [] t)) in
   let sr = src_of_expr e in
   match e with
+  | `AST_case _
   | `AST_vsprintf _
   | `AST_type_match _ 
   | `AST_noexpand _
@@ -3575,7 +3634,12 @@ and bind_expression' syms env (rs:recstop) e args
   | `AST_lvalue (srr,e) ->
     failwith "WOOPS, lvalue in expression??";
  
+  (* DEPRECATED
   | `AST_ref (sr,(`AST_dot (_,(e,id,[])))) ->
+  *)
+
+  (*
+  | `AST_ref (sr,(`AST_dot (_,(e,`AST_name (_,id,[]))))) ->
     let ref_name = "ref_" ^ id in
     be 
     (
@@ -3588,6 +3652,7 @@ and bind_expression' syms env (rs:recstop) e args
         )
       )
     )
+  *)
 
   | `AST_ref (srr,e) -> 
     let e',t' = be e in 
@@ -3800,7 +3865,12 @@ and bind_expression' syms env (rs:recstop) e args
     `BEXPR_tuple [],`BTYP_tuple []
 
 
+  (*
   | `AST_dot (sr,(e,name,ts)) ->
+  *)
+  | `AST_dot (sr,(e,e2)) ->
+
+    (* Analyse LHS *)
     let (_,tt') as te = be e in (* polymorphic! *)
     let is_lvalue = match tt' with 
       | `BTYP_lvalue _ -> true 
@@ -3808,38 +3878,17 @@ and bind_expression' syms env (rs:recstop) e args
     in
     let lmap t = if is_lvalue then `BTYP_lvalue t else t in
     let tt' = rt tt' in
-    begin match tt' with
-    | `BTYP_inst (i,ts') ->
-      begin match Hashtbl.find syms.dfns i with
-      | {id=id; vs=vs; symdef=`SYMDEF_struct ls } -> 
-        let cidx,ct = 
-          let rec scan i = function
-          | [] -> failwith "Can't find struct component"
-          | (vn,vat)::_ when vn = name -> i,vat
-          | _:: t -> scan (i+1) t
-          in scan 0 ls
-        in
-        let ct =
-          let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
-          let env' = build_env syms (Some i) in
-          bind_type' syms env' rsground sr ct bvs
-        in
-        let vs' = map (fun (s,i,tp) -> s,i) vs in
-        let ct = tsubst vs' ts' ct in
-        (* propagate lvalueness to struct component *)
-        `BEXPR_get_n (cidx,te),lmap ct
 
-      | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } -> 
-        (* NOTE: we try $1.name binding using get_n first,
-        but if we can't find a component we treat the
-        entity as abstract.
 
-        Hmm not sure that cstructs can be polymorphic.
-        *)
-        begin try
+    begin match e2 with
+    | `AST_name (_,name,ts) ->
+      begin match tt' with
+      | `BTYP_inst (i,ts') ->
+        begin match Hashtbl.find syms.dfns i with
+        | {id=id; vs=vs; symdef=`SYMDEF_struct ls } -> 
           let cidx,ct = 
             let rec scan i = function
-            | [] -> raise Not_found
+            | [] -> failwith "Can't find struct component"
             | (vn,vat)::_ when vn = name -> i,vat
             | _:: t -> scan (i+1) t
             in scan 0 ls
@@ -3853,75 +3902,118 @@ and bind_expression' syms env (rs:recstop) e args
           let ct = tsubst vs' ts' ct in
           (* propagate lvalueness to struct component *)
           `BEXPR_get_n (cidx,te),lmap ct
-        with 
-        | Not_found ->
+
+        | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } -> 
+          (* NOTE: we try $1.name binding using get_n first,
+          but if we can't find a component we treat the
+          entity as abstract.
+
+          Hmm not sure that cstructs can be polymorphic.
+          *)
+          begin try
+            let cidx,ct = 
+              let rec scan i = function
+              | [] -> raise Not_found
+              | (vn,vat)::_ when vn = name -> i,vat
+              | _:: t -> scan (i+1) t
+              in scan 0 ls
+            in
+            let ct =
+              let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+              let env' = build_env syms (Some i) in
+              bind_type' syms env' rsground sr ct bvs
+            in
+            let vs' = map (fun (s,i,tp) -> s,i) vs in
+            let ct = tsubst vs' ts' ct in
+            (* propagate lvalueness to struct component *)
+            `BEXPR_get_n (cidx,te),lmap ct
+          with 
+          | Not_found ->
+            (*
+            print_endline ("Synth get method .. (1) " ^ name);
+            *)
+            let get_name = "get_" ^ name in
+            be (`AST_method_apply (sr,(get_name,e,ts)))
+          end
+
+        | {id=id; pubmap=pubtab; symdef = `SYMDEF_class } ->
+          (*
+          print_endline "AST_get_named finds a class .. ";
+          print_endline ("Looking for component named " ^ name);
+          *)
+          let entryset = 
+            try Hashtbl.find pubtab name 
+            with Not_found -> clierr sr ("[lookup: dot] Cannot find component " ^ name ^ " in class")
+          in
+          begin match entryset with
+          | NonFunctionEntry idx ->
+            let vtype = 
+              inner_typeofindex_with_ts syms sr
+              { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
+              idx ts'
+             in
+             (*
+             print_endline ("Class member variable has type " ^ sbt syms.dfns vtype);
+             *)
+             `BEXPR_get_named (idx,te),vtype
+          | FunctionEntry _ ->
+            (* WEAK! *)
+            (*
+            print_endline ("Synth get method .. (2) " ^ name);
+            *)
+            let get_name = "get_" ^ name in
+            be (`AST_method_apply (sr,(get_name,e,ts)))
+
+          end
+          
+        | {id=id; symdef=`SYMDEF_cclass _} -> 
+            (*
+            print_endline ("Synth get method .. (3) " ^ name);
+            *)
           let get_name = "get_" ^ name in
           be (`AST_method_apply (sr,(get_name,e,ts)))
-        end
-
-      | {id=id; pubmap=pubtab; symdef = `SYMDEF_class } ->
-        (*
-        print_endline "AST_get_named finds a class .. ";
-        print_endline ("Looking for component named " ^ name);
-        *)
-        let entryset = 
-          try Hashtbl.find pubtab name 
-          with Not_found -> clierr sr ("[lookup: dot] Cannot find component " ^ name ^ " in class")
-        in
-        begin match entryset with
-        | NonFunctionEntry idx ->
-          let vtype = 
-            inner_typeofindex_with_ts syms sr
-            { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
-            idx ts'
-           in
-           (*
-           print_endline ("Class member variable has type " ^ sbt syms.dfns vtype);
-           *)
-           `BEXPR_get_named (idx,te),vtype
-        | FunctionEntry _ ->
-          (* WEAK! *)
+          
+        (* abstract type binding *)
+        | {id=id; symdef=`SYMDEF_abs _ } ->
+            (*
+            print_endline ("Synth get method .. (4) " ^ name);
+            *)
           let get_name = "get_" ^ name in
           be (`AST_method_apply (sr,(get_name,e,ts)))
 
+        | _ -> 
+          failwith ("operator . Expected nominal type to be"^
+          " struct, cstruct or abstract primitive, got " ^ 
+          sbt syms.dfns tt')
+
         end
-        
-      | {id=id; symdef=`SYMDEF_cclass _} -> 
-        let get_name = "get_" ^ name in
-        be (`AST_method_apply (sr,(get_name,e,ts)))
-        
-      (* abstract type binding *)
-      | {id=id; symdef=`SYMDEF_abs _ } ->
-        let get_name = "get_" ^ name in
-        be (`AST_method_apply (sr,(get_name,e,ts)))
 
-      | _ -> 
-        failwith ("operator . Expected nominal type to be"^
-        " struct, cstruct or abstract primitive, got " ^ 
-        sbt syms.dfns tt')
+      | `BTYP_record es ->
+        let rcmp (s1,_) (s2,_) = compare s1 s2 in
+        let es = sort rcmp es in
+        let field_name = name in
+        begin match list_index (map fst es) field_name with
+        | Some n -> `BEXPR_get_n (n,te),lmap (assoc field_name es)
+        | None -> clierr sr 
+           (
+             "Field " ^ field_name ^ 
+             " is not a member of anonymous structure type " ^ 
+             sbt syms.dfns tt'
+            )
+        end
 
+      | `BTYP_function (d,c) ->
+        failwith ("LHS of operator . has a function type\n"
+        ^ "but RHS is simple name: should overload somehow?")
+
+      | `BTYP_tuple _ ->
+        failwith ("Expected nominal type! Got tuple ! " ^ sbt syms.dfns tt')
+
+      | _ -> failwith ("Expected nominal type! Got " ^ sbt syms.dfns tt')
       end
 
-    | `BTYP_record es ->
-      let rcmp (s1,_) (s2,_) = compare s1 s2 in
-      let es = sort rcmp es in
-      let field_name = name in
-      begin match list_index (map fst es) field_name with
-      | Some n -> `BEXPR_get_n (n,te),lmap (assoc field_name es)
-      | None -> clierr sr 
-         (
-           "Field " ^ field_name ^ 
-           " is not a member of anonymous structure type " ^ 
-           sbt syms.dfns tt'
-          )
-      end
-
-    | `BTYP_tuple _ ->
-      failwith ("Expected nominal type! Got tuple ! " ^ sbt syms.dfns tt')
-
-    | _ -> failwith ("Expected nominal type! Got " ^ sbt syms.dfns tt')
-    end
-
+    | _ -> failwith "AST_dot, arg not name not handled yet"
+  end
 
   | `AST_match_case (sr,(v,e)) ->
      `BEXPR_match_case (v,be e),flx_bbool
@@ -4471,6 +4563,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_fix _ -> t
 
   | `BTYP_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
+  | `BTYP_case _
   | `BTYP_apply _
   | `BTYP_typefun _
   | `BTYP_type
