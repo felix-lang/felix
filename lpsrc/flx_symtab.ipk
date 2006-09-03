@@ -57,10 +57,10 @@ let split_asms asms :
     | [] -> (dcls,exes,ifaces, dirs)
     | h :: t -> 
       match h with 
-      | Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
-      | Dcl (sr,id,seq,access,vs,dcl) -> aux t ((sr,id,seq,access,vs,dcl) :: dcls) exes ifaces dirs
-      | Iface (sr,iface) -> aux t dcls exes ((sr,iface) :: ifaces) dirs
-      | Dir (sr,dir) -> aux t dcls exes ifaces (dir::dirs)
+      | `Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
+      | `Dcl (sr,id,seq,access,vs,dcl) -> aux t ((sr,id,seq,access,vs,dcl) :: dcls) exes ifaces dirs
+      | `Iface (sr,iface) -> aux t dcls exes ((sr,iface) :: ifaces) dirs
+      | `Dir (sr,dir) -> aux t dcls exes ifaces (dir::dirs)
   in 
     aux asms [] [] [] []
  
@@ -83,21 +83,21 @@ let add_unique syms sr table key value =
   try 
     let entry = Hashtbl.find table key in
     match entry with 
-    | NonFunctionEntry (idx) 
-    | FunctionEntry (idx :: _ ) ->
+    | `NonFunctionEntry (idx) 
+    | `FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.dfns idx  with 
        | { sr=sr2 } ->
          clierr2 sr sr2 
          ("[build_tables] Duplicate non-function " ^ key ^ "<"^si idx^">")
        )
-     | FunctionEntry [] -> assert false
+     | `FunctionEntry [] -> assert false
   with Not_found -> 
-    Hashtbl.add table key (NonFunctionEntry (value))
+    Hashtbl.add table key (`NonFunctionEntry (value))
 
 let add_function syms sr table key value =
   try 
     match Hashtbl.find table key with
-    | NonFunctionEntry entry -> 
+    | `NonFunctionEntry entry -> 
       begin
         match Hashtbl.find syms.dfns entry with
         { id=id; sr=sr2 } ->
@@ -110,11 +110,11 @@ let add_function syms sr table key value =
         )
       end
 
-    | FunctionEntry fs ->
+    | `FunctionEntry fs ->
       Hashtbl.remove table key;
-      Hashtbl.add table key (FunctionEntry (value :: fs))
+      Hashtbl.add table key (`FunctionEntry (value :: fs))
   with Not_found -> 
-    Hashtbl.add table key (FunctionEntry [value])
+    Hashtbl.add table key (`FunctionEntry [value])
 
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
@@ -171,7 +171,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
     if name = "root" 
     then failwith ("Can't name non-toplevel module 'root'")
     else
-      Hashtbl.add priv_name_map "root" (NonFunctionEntry (root))
+      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (root))
   ;
   begin 
     iter
@@ -333,7 +333,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                         in
                           `StrTemplate("$1->" ^ component_name^"($b)" ^ trail)
                       in
-                          Dcl (sr,exec_name,Some execn,`Private,[], (* vs inherited *)
+                          `Dcl (sr,exec_name,Some execn,`Private,[], (* vs inherited *)
                             `DCL_fun ([],stype::argts,codomain, cc,`NREQ_true,"primary")
                           )
                     in
@@ -357,7 +357,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                       let arg = `AST_tuple (sr, map (fun n -> `AST_name (sr,n,[])) (obj_name::args)) in
                       let asms = 
                         [
-                          Exe (sr, 
+                          `Exe (sr, 
                             (match codomain with 
                             | `AST_void _ -> `EXE_call (f,arg)
                             | _ -> `EXE_fun_return (`AST_apply(sr,(f,arg)))
@@ -366,13 +366,13 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                           exec_asm
                         ]
                       in
-                      Dcl (sr,do_name,Some don, `Private,[], (* vs inherited *)
+                      `Dcl (sr,do_name,Some don, `Private,[], (* vs inherited *)
                         `DCL_function ((params,None),codomain,[],asms)
                       )
                     in
                     let get_asms = 
                       [
-                        Exe (sr,`EXE_fun_return (`AST_index (sr,do_name,don)));
+                        `Exe (sr,`EXE_fun_return (`AST_index (sr,do_name,don)));
                         do_asm
                       ] 
                     in
@@ -383,7 +383,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   | Some mix ->
                   let get_asms = 
                       [
-                        Exe 
+                        `Exe 
                         (
                           sr,
                           `EXE_fun_return 
@@ -793,10 +793,10 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             in
             let empty_vs = [] in
             let dcl = 
-              Dcl (sr, vname, None,`Private, empty_vs,
+              `Dcl (sr, vname, None,`Private, empty_vs,
                 `DCL_val (`TYP_typeof (component))
               ) 
-            and instr = Exe (sr, `EXE_init (vname, component)) 
+            and instr = `Exe (sr, `EXE_init (vname, component)) 
             in
               new_asms := dcl :: instr :: !new_asms;
           )
@@ -915,16 +915,16 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           let detail x = try detail x with Not_found -> () in 
           Hashtbl.iter 
           (fun id entry -> match entry with
-          | NonFunctionEntry idx -> detail idx
-          | FunctionEntry idxs -> iter detail idxs
+          | `NonFunctionEntry idx -> detail idx
+          | `FunctionEntry idxs -> iter detail idxs
           )
           privtab
           ;
           (*
           let sts = 
             let detail x = match x with
-            | Exe _ -> assert false
-            | Dcl (_,id,_,access,vs,dcl) ->
+            | `Exe _ -> assert false
+            | `Dcl (_,id,_,access,vs,dcl) ->
               (*
               print_endline ("HANDLING DETAIL for " ^ id);
               *)
@@ -1032,7 +1032,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
              both function set results and non-function results.
           *)
           begin match t with
-          | `TYP_typefun _ ->
+          | `TYP_typefun _ 
+          | `TYP_case _ ->
             if access = `Public then add_function pub_name_map id n;
             add_function priv_name_map id n
           | _ ->
@@ -1091,7 +1092,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
         | `DCL_glr (t,(p,e)) ->
           if is_class then clierr sr "GLR parsing not allowed in class";
           let fun_index = n in 
-          let asms = [Exe (sr,`EXE_fun_return e)] in
+          let asms = [`Exe (sr,`EXE_fun_return e)] in
           let pubtab,privtab, exes, ifaces,dirs =  
             build_tables syms id (level+1) 
             (Some fun_index) parent root false asms 

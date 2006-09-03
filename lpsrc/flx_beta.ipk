@@ -396,19 +396,38 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
         print_endline (string_of_varlist syms.dfns mgu);
         let nm = length mgu and nv = IntSet.cardinal vars in
         if nm < nv
-        then 
-          failwith "Fails to bind all variables! Missing check?"
+        then begin 
+          print_endline ("Unifies but doesn't bind all variables, return ident");
+          let i = !(syms.counter) in incr syms.counter;
+          let vars = IntSet.singleton i in
+          let x = `BTYP_var (i,`BTYP_type) in
+          `BTYP_case (x,vars,x)
+        end
         else if nm > nv
         then
-          failwith "Binds more variables than in specified set???"
+          failwith "Binds more variables than in specified set??? (unification algorithm bug)"
         else begin assert (nm = nv);
           print_endline ("Substituting into " ^ st body);
           let body' = list_subst mgu body in
-          print_endline ("Result is         " ^ st body');
-          body'
+          print_endline ("Unreduced Result is         " ^ st body');
+          (* after substitution, the previously irreducible result
+            may suddenly become reducible, so reduce it now.
+            May lead to infinite loop in case of recursion
+          *)
+          let b = br body' in
+          print_endline ("Reduced Result is         " ^ st b);
+          b
         end
           
-      | None -> failwith "Doesn't unify"
+      | None -> 
+        print_endline "Doesn't unify, return ident";
+        (* return the identity function, use fresh variables
+          so the terms remain alpha converted
+        *)
+        let i = !(syms.counter) in incr syms.counter;
+        let vars = IntSet.singleton i in
+        let x = `BTYP_var (i,`BTYP_type) in
+        `BTYP_case (x,vars,x)
       end
 
     | `BTYP_var _ -> t (* can't reduce it yet *)

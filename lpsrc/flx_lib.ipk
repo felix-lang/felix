@@ -366,9 +366,11 @@ namespace flx { namespace rtl { namespace strutil {
 @select(h)
 #import <flx_syntax.flxh>
 #import <flx_macros.flxh>
+#import <flx_platform.flxh>
 include "std";
 
 @h=tangler('lib/flx_macros.flxh','data')
+@select(h)
 macro val true = case 1 of 2;
 macro val false = case 0 of 2;
 macro fun print_line (x) = { fprint (cout,x); Stdout::endl cout; };
@@ -1145,7 +1147,7 @@ module Filename
 }
 
 @#------------- C I/O -------------------
-module Cstdio
+open module Cstdio
 {
   header "#include <cstdio>";
   incomplete type FILE = "std::FILE";
@@ -1457,7 +1459,7 @@ open module String
   ;
 }
 
-module Cstdlib
+open module Cstdlib
 {
   requires cstdlib;
   const RAND_MAX:long;
@@ -1467,7 +1469,7 @@ module Cstdlib
 }
 
 type ustring = "basic_string<uint32_t>" requires string_hxx;
-module Ustring
+open module Ustring
 {
   open Bool;
   open Char;
@@ -1982,7 +1984,7 @@ module Assoc_list
 @#------------- Array -------------------
 publish "Array manipulation"
 
-module Array 
+open module Array 
 {
   publish "Array type"
   typedef array[t,n] = t ^ n;
@@ -2116,7 +2118,7 @@ module Array
 
 publish "Bounded Variable length arrays"
 
-module Varray
+open module Varray
 {
    _gc_pointer _gc_type t type varray[t] = "?1*";
 

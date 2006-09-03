@@ -267,10 +267,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
             let entries = lookup_name_in_htab pubmap ("_ctor_" ^ name) in
             begin match entries with
             | None -> clierr sr "Unable to find any constructors for this class"
-            | Some (NonFunctionEntry _) -> syserr sr 
+            | Some (`NonFunctionEntry _) -> syserr sr 
               "[EXE_apply_ctor: lookup_name_in_table_dirs_with_sig] Expected constructor to be a procedure"
 
-            | Some (FunctionEntry fs) ->
+            | Some (`FunctionEntry fs) ->
               (*
               print_endline ("Ok, found "^si (length fs) ^"constructors for " ^ name);
               *)
@@ -314,7 +314,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_svc s ->          
       begin match lun sr s with
-      | NonFunctionEntry (index) -> 
+      | `NonFunctionEntry (index) -> 
         let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
         begin match entry with
         | `SYMDEF_var _ -> ()
@@ -325,7 +325,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         ;
         tack (`BEXE_svc (sr,index))
 
-      | FunctionEntry _ -> failwith "Can't svc function!"
+      | `FunctionEntry _ -> failwith "Can't svc function!"
       end
 
     | `EXE_proc_return ->
@@ -399,8 +399,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_init (s,e) -> 
       begin match lun sr s with
-      | FunctionEntry _ -> clierr sr "Can't init function constant"
-      | NonFunctionEntry (index) -> 
+      | `FunctionEntry _ -> clierr sr "Can't init function constant"
+      | `NonFunctionEntry (index) -> 
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.dfns rhst in

@@ -117,6 +117,7 @@ let sig_of_symdef symdef sr name i = match symdef with
   | `SYMDEF_type_alias t ->
     begin match t with
     | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r
+    | `TYP_case _ -> `TYP_type,`TYP_type
     | symdef -> 
       clierr sr (
         "[sig_of_symdef] Expected "^

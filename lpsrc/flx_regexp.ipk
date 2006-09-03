@@ -22,7 +22,7 @@ let hashtbl_length h =
   Hashtbl.iter (fun _ _ -> incr n) h;
   !n
 
-let augment re = REGEXP_seq (re,REGEXP_sentinel)
+let augment re = `REGEXP_seq (re,`REGEXP_sentinel)
 
 type annotation_t = 
  { 
@@ -44,9 +44,9 @@ let fp_union followpos i x =
 let rec annotate counter followpos posmap codemap re =
   let a r = annotate counter followpos posmap codemap r in
   match re with
-  | REGEXP_group _ -> failwith "Can't handle groups yet"
-  | REGEXP_name _ -> failwith "Unbound regular expresion name"
-  | REGEXP_seq (r1,r2) ->
+  | `REGEXP_group _ -> failwith "Can't handle groups yet"
+  | `REGEXP_name _ -> failwith "Unbound regular expresion name"
+  | `REGEXP_seq (r1,r2) ->
     let a1 = a r1 and a2 = a r2 in
     let au = 
     {
@@ -67,7 +67,7 @@ let rec annotate counter followpos posmap codemap re =
       ;
       au
 
-  | REGEXP_alt (r1,r2) ->
+  | `REGEXP_alt (r1,r2) ->
     let a1 = a r1 and a2 = a r2 in
     {
       nullable = a1.nullable || a2.nullable;
@@ -77,7 +77,7 @@ let rec annotate counter followpos posmap codemap re =
         PosSet.union a1.lastpos a2.lastpos
     }
 
-  | REGEXP_aster r1 ->
+  | `REGEXP_aster r1 ->
     let a1 = a r1 in
     let au = 
     {
@@ -92,10 +92,10 @@ let rec annotate counter followpos posmap codemap re =
       ;
       au
 
-  | REGEXP_string s ->
+  | `REGEXP_string s ->
     let n = String.length s in
     if n = 0
-    then (a REGEXP_epsilon)
+    then (a `REGEXP_epsilon)
     else 
       begin
         let start = !counter in
@@ -118,14 +118,14 @@ let rec annotate counter followpos posmap codemap re =
           au
       end
 
-  | REGEXP_epsilon ->
+  | `REGEXP_epsilon ->
     {
       nullable = true;
       firstpos = PosSet.empty;
       lastpos = PosSet.empty
     }
 
-  | REGEXP_code s ->
+  | `REGEXP_code s ->
     Hashtbl.add codemap !counter s;
     let u = 
     {
@@ -137,7 +137,7 @@ let rec annotate counter followpos posmap codemap re =
       incr counter;
       u
 
-  | REGEXP_sentinel ->
+  | `REGEXP_sentinel ->
     let u = 
     {
       nullable = false;

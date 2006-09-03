@@ -45,7 +45,7 @@ open Inria_syntax
 
 let find_param name_map s =
   match Hashtbl.find name_map s with
-  | NonFunctionEntry (i) -> i
+  | `NonFunctionEntry (i) -> i
   | _ -> failwith ("[find_param] Can't find parameter " ^ s )
 
 let print_bvs vs =
@@ -56,16 +56,16 @@ let print_bvs vs =
 let bind_regex' syms env sr be ret_type cls : regular_args_t =
   let irc c = Characters (Inria_cset.singleton (Char.code c)) in
   let rec inr re = match re with 
-    | REGEXP_code _ -> assert false
-    | REGEXP_name _ -> assert false
-    | REGEXP_sentinel -> assert false
+    | `REGEXP_code _ -> assert false
+    | `REGEXP_name _ -> assert false
+    | `REGEXP_sentinel -> assert false
 
-    | REGEXP_alt (a,b) -> Alternative (inr a, inr b)
-    | REGEXP_seq (a,b) -> Sequence (inr a, inr b)
-    | REGEXP_epsilon -> Epsilon
-    | REGEXP_aster a -> Repetition (inr a)
-    | REGEXP_group (name,a) -> Bind (inr a,name)
-    | REGEXP_string s -> 
+    | `REGEXP_alt (a,b) -> Alternative (inr a, inr b)
+    | `REGEXP_seq (a,b) -> Sequence (inr a, inr b)
+    | `REGEXP_epsilon -> Epsilon
+    | `REGEXP_aster a -> Repetition (inr a)
+    | `REGEXP_group (name,a) -> Bind (inr a,name)
+    | `REGEXP_string s -> 
       if String.length s = 0 then Epsilon
       else let r = ref (irc s.[0]) in
       for i = 1 to String.length s -1 do 
@@ -89,11 +89,11 @@ let bind_regex syms env sr be ret_type cls : regular_args_t =
   *) 
   let bd e = bind_regdef syms env [] e in
 
-  (* create a unified regexp using REGEXP_code for expressions *)
-  let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
+  (* create a unified regexp using `REGEXP_code for expressions *)
+  let f (e,c) = `REGEXP_seq (e, `REGEXP_code c) in
   let re = List.map f cls in
-  let alt r1 r2 = REGEXP_alt (r1,r2) in
-  let re = List.fold_right alt re REGEXP_sentinel in
+  let alt r1 r2 = `REGEXP_alt (r1,r2) in
+  let re = List.fold_right alt re `REGEXP_sentinel in
 
   (* do lookups *)
   let re = bd re in
@@ -402,13 +402,13 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       let bn q = 
         (* we have to check this .. *)
         match luqn2 q with 
-        | FunctionEntry [i],[] -> 
+        | `FunctionEntry [i],[] -> 
           begin match Hashtbl.find syms.dfns i with
           | {symdef=`SYMDEF_glr _ } -> `Nonterm [i]
           | {symdef=`SYMDEF_nonconst_ctor _} -> `Term i
           | _ -> clierr sr "Expected nonterminal or union constructor"
           end
-        | FunctionEntry ii,[] -> 
+        | `FunctionEntry ii,[] -> 
           let i = hd ii in
           begin match Hashtbl.find syms.dfns i with
           | {symdef=`SYMDEF_glr _ } -> `Nonterm ii
@@ -416,7 +416,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
             clierr sr "Expected unique union constructor (it's overloaded)"
           | _ -> clierr sr "Expected nonterminal or union constructor"
           end
-        | NonFunctionEntry i,[] -> `Term i
+        | `NonFunctionEntry i,[] -> `Term i
         | _,ts -> clierr sr "Unexpected type variables"
       in
       let bp p = map (fun (n,q) -> n,bn q) p in
@@ -937,10 +937,10 @@ try
           failwith "Can't find name _init_ in top level module's name map"
       in
       let index = match entry with
-        | FunctionEntry [x] -> x
-        | FunctionEntry [] -> failwith "Couldn't find '_init_'"
-        | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
-        | NonFunctionEntry _ -> failwith "_init_ found but not procedure"
+        | `FunctionEntry [x] -> x
+        | `FunctionEntry [] -> failwith "Couldn't find '_init_'"
+        | `FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
+        | `NonFunctionEntry _ -> failwith "_init_ found but not procedure"
       in 
       if compiler_options.print_flag 
       then print_endline ("//root module's init procedure has index " ^ si index);
