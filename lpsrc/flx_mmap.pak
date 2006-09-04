@@ -64,7 +64,6 @@ Name: mmap
 @h = tangler('lib/mmap.flx')
 @select(h)
 #import <flx.flxh>
-#import <flx_platform.flxh>
 
 module Mmap
 {
