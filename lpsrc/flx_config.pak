@@ -1535,7 +1535,6 @@ flx_expr_terminator_keywords = [
 #    ("whilst", "WHILST"),
     ("with", "WITH"),
 #    ("until", "UNTIL"),
-    ("_", "UNDERSCORE"),
     ("_gc_pointer", "GC_POINTER"),
     ("_gc_type", "GC_TYPE"),
     ("_svc", "SVC"),
@@ -1560,6 +1559,7 @@ flx_other_keywords = [
     ("the", "THE"),
     ("typematch", "TYPEMATCH"),
     ("typecase", "TYPECASE"),
+    ("_", "UNDERSCORE"),
   ]
 
 flx_parser_keywords = [

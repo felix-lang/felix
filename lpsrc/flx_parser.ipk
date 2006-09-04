@@ -425,8 +425,12 @@ charset:
 @head(3,'Abstract Type')
 @select(h)
 tvar:
+  /*
   | NAME { snd $1 , `TPAT_any }
   | NAME COLON tpattern { snd $1 , $3 }
+  */
+  | NAME { snd $1 , `AST_patany (slift (fst $1))}
+  | NAME COLON typeexpr { snd $1 , typecode_of_expr $3 }
 
 @commalistof("tvar")
 
@@ -1177,7 +1181,10 @@ function_definition:
         in
         if List.length args > 0 && list_last args = `TYP_ellipsis 
         then
+          (*
           let vs = vs @ ["_varargs",`TPAT_any] in
+          *)
+          let vs = vs @ ["_varargs",`AST_patany sr] in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
           `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs,prec) 
         else
@@ -1304,7 +1311,10 @@ procedure_definition:
       in
         if List.length args > 0 && list_last args = `TYP_ellipsis 
         then
+          (*
           let vs = vs @ ["_varargs",`TPAT_any] in
+          *)
+          let vs = vs @ ["_varargs",`AST_patany sr] in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
           `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$7,"") 
         else
@@ -2258,7 +2268,10 @@ type_matchings:
   | type_matching { [$1] }
 
 type_matching:
+  /*
   | VBAR tuple_tpattern EQRIGHTARROW expr { $2, typecode_of_expr $4 }
+  */
+  | VBAR expr EQRIGHTARROW expr { typecode_of_expr $2, typecode_of_expr $4 }
 
 @head(2,'Grammar Expressions')
 @select(h)
@@ -2402,6 +2415,7 @@ or_condition:
 */
 
 /* oring formation is 'psuedo-associative' */
+typeexpr: or_condition { $1 }
 or_condition:
   | and_condition OR or_list              
     { 
@@ -2878,6 +2892,7 @@ dollar_name:
     (`AST_the (sr,qn))
   }
   | qualified_name{ $1 }
+  | QUEST NAME { `AST_patvar (rstoken $1 (fst $2), snd $2) }
   | atom { $1 }
 
 qualified_name:
@@ -2937,6 +2952,7 @@ expr_code_prefix:
 
 
 atom:
+  | UNDERSCORE { `AST_patany (slift $1) }
   | CALLBACK LSQB qualified_name RSQB
     { 
       let sr = rstoken $1 $4 in

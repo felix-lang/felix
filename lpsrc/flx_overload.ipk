@@ -273,9 +273,15 @@ let consider syms bt i ts signs call_sr =
       in
 
       let report_unresolved = 
+        (*
         let maybe_tp tp = match tp with
           | `TPAT_any -> ""
           | tp -> ": " ^ string_of_tpattern tp
+        in
+        *)
+        let maybe_tp tp = match tp with
+          | `AST_patany _ -> ""
+          | tp -> ": " ^ string_of_typecode tp
         in
         fold_left (fun acc (s,i,tp,k) -> acc ^
           "  The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^

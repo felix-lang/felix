@@ -261,6 +261,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     at a macro level, it is an ordinary expression .. hmm
   *)
   | `AST_case (sr,pat,ls,res) -> `AST_case (sr, me pat, ls, me res)
+  | `AST_patvar _
+  | `AST_patany _ -> e
 
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e 

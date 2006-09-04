@@ -152,14 +152,17 @@ let include_file syms inspec lookup =
   in
     sts
 
-let fix_params seq (ps:params_t):vs_list_t * params_t = 
+let fix_params sr seq (ps:params_t):vs_list_t * params_t = 
   let rec aux (ps:parameter_t list) :vs_list_t * parameter_t list =
     match ps with
     | (k,x,`TYP_none) :: t ->
       let v = "_v"^si (seq()) in
       let vt: typecode_t = `AST_name(generated,v,[]) in
       let vs,ps = aux t in
+      (*
       ((v,`TPAT_any)::vs),((k,x,vt)::ps) (* a bit HACKY *)
+      *)
+      ((v,`AST_patany sr)::vs),((k,x,vt)::ps) (* a bit HACKY *)
       
     | h :: t -> 
       let vs,ps = aux t in 
@@ -177,7 +180,7 @@ let arglist x =
 
 let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
   let return_type, postcondition = return_type in
-  let vss',(args:params_t list)= split (map (fix_params seq) args) in
+  let vss',(args:params_t list)= split (map (fix_params sr seq) args) in
   let vs = concat (vs :: vss') in
   let mkfuntyp d c = `TYP_function (d,c)
   and typeoflist lst = match lst with
@@ -352,6 +355,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
 
+  | `AST_patvar _
+  | `AST_patany _ 
   | `AST_case _ 
   | `AST_sparse _ 
   | `AST_match_ctor _ 
@@ -837,9 +842,15 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)
 
+(*
 and maybe_tpat = function
   | `TPAT_any -> ""
   | tp -> ": " ^ string_of_tpattern tp
+*)
+
+and maybe_tpat = function
+  | `AST_patany _ -> ""
+  | tp -> ": " ^ string_of_typecode tp
 
 and string_of_vs (vs:vs_list_t) = 
   cat "," (map (fun (v,tp) -> v ^ maybe_tpat tp) vs)
@@ -1044,7 +1055,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     be bound correctly without lookup
   *)
   | `AST_object (sr,name,vs,params,sts) -> 
-    let vs',params = fix_params seq params in
+    let vs',params = fix_params sr seq params in
     let vs = vs @ vs' in
     let methods = find_methods seq sr sts in
     let mtuple =  
@@ -1083,7 +1094,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let ps,traint = params in
     begin match traint,postcondition with
     | None,None ->
-      let vs',params = fix_params seq params in
+      let vs',params = fix_params sr seq params in
       let vs = vs @ vs' in
       let asms = rsts name' [] `Public sts in
       let asms = bridge name' sr :: asms in
@@ -1147,7 +1158,10 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
             (*
             print_endline ("Implicit var " ^ var);
             *)
+            (*
             let v = var,`TPAT_name (name,[]) in
+            *)
+            let v = var,`AST_name (sr,name,[]) in
             let arg = `AST_name (sr,var,[]) in 
             v::vs, arg:: args
         | x -> vs,x::args

@@ -911,6 +911,8 @@ and bind_type'
   *)
   let t = 
   match t with
+  | `AST_patvar _
+  | `AST_patany _ -> failwith "Not implemented patvar/any in typecode"
  
   | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
   | `TYP_record ts -> `BTYP_record (map (fun (s,t) -> s,bt t) ts)
@@ -1270,8 +1272,10 @@ and bind_type'
         (n,`BTYP_var (i,t))) data 
     in
     let bbody = 
+      (*
       print_endline (" ... binding body .. " ^ string_of_typecode body);
       print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.dfns t) (pnames @ params));
+      *)
       bind_type' syms env { rs with depth=rs.depth+1 }
       sr 
       body (pnames@params)
@@ -3028,6 +3032,8 @@ and bind_expression' syms env (rs:recstop) e args
   let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms [] t)) in
   let sr = src_of_expr e in
   match e with
+  | `AST_patvar _
+  | `AST_patany _ 
   | `AST_case _
   | `AST_vsprintf _
   | `AST_type_match _ 

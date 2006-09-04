@@ -311,6 +311,8 @@ and typecode_t =
   | `AST_index of range_srcref * string * int
   | `AST_callback of range_srcref * qualified_name_t
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)  
+  | `AST_patvar of range_srcref * string
+  | `AST_patany of range_srcref
   | `TYP_tuple of typecode_t list               (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
@@ -349,7 +351,10 @@ and typecode_t =
   | `TYP_type                                   (** meta type of a type *)
   | `TYP_type_tuple of typecode_t list          (** meta type product *)
 
+  (*
   | `TYP_type_match of typecode_t * (tpattern_t * typecode_t) list
+  *)
+  | `TYP_type_match of typecode_t * (typecode_t * typecode_t) list
 
   | `TYP_glr_attr_type of qualified_name_t
 
@@ -372,8 +377,12 @@ and tpattern_t =
   |  `TPAT_type_tuple of tpattern_t list
   ]
 
+(*
 and vs_list_t = (id_t * tpattern_t) list
 and ivs_list_t = (id_t * int * tpattern_t) list
+*)
+and vs_list_t = (id_t * typecode_t) list
+and ivs_list_t = (id_t * int * typecode_t) list
 
 @head(3,'Literals')
 Literals recognized by the lexer.
@@ -412,6 +421,9 @@ and expr_t =
   | `AST_arrayof of range_srcref * expr_t list
   | `AST_coercion of range_srcref * (expr_t * typecode_t)
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t) 
+
+  | `AST_patvar of range_srcref * string
+  | `AST_patany of range_srcref
 
   | `AST_void of range_srcref
   | `AST_ellipsis of range_srcref
@@ -474,7 +486,10 @@ and expr_t =
 
   | `AST_expr of range_srcref * string * typecode_t
 
+  (*
   | `AST_type_match of range_srcref * (typecode_t * (tpattern_t * typecode_t) list)
+  *)
+  | `AST_type_match of range_srcref * (typecode_t * (typecode_t * typecode_t) list)
 
   | `AST_macro_ctor of range_srcref * (string * expr_t)
   | `AST_macro_statements of range_srcref * statement_t list
@@ -1294,10 +1309,15 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_case_arg (i,t) -> `TYP_case_arg (i, f t) 
   | `TYP_case (t1,ls,t2) -> `TYP_case (f t1, ls, f t2)
 
+  (*
   | `TYP_type_match (t,ps) -> 
     let ps = map (fun (p,t) -> p, f t) ps in
     `TYP_type_match (f t, ps)
-  
+  *)
+  | `TYP_type_match (t,ps) -> 
+    let ps = map (fun (p,t) -> f p, f t) ps in
+    `TYP_type_match (f t, ps)
+
   (* meta constructors *)
   | `TYP_apply (a,b) -> `TYP_apply (f a, f b)
   | `TYP_typefun (ps, a, b) -> `TYP_typefun (ps, f a, f b)
@@ -1312,6 +1332,8 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `AST_the _
   | `TYP_glr_attr_type _
   | `TYP_var _
+  | `AST_patvar _
+  | `AST_patany _
 
   (* absolute constants *)
   | `AST_void _
@@ -1323,6 +1345,8 @@ let map_type f (t:typecode_t):typecode_t = match t with
 
 
 let map_expr f (e:expr_t):expr_t = match e with
+  | `AST_patvar _
+  | `AST_patany _ 
   | `AST_vsprintf _ -> e
   | `AST_map (sr,a,b) -> `AST_map (sr,f a, f b)
   | `AST_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
@@ -1898,6 +1922,8 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_arrow (s,_)
   | `AST_longarrow (s,_)
   | `AST_superscript (s,_)
+  | `AST_patvar (s,_)
+  | `AST_patany s
 
   | `AST_map (s,_,_) 
   | `AST_apply  (s,_) 
@@ -2405,6 +2431,8 @@ and string_of_expr (e:expr_t) =
   in
   match e with
   | #suffixed_name_t as n -> string_of_suffixed_name n
+  | `AST_patvar (sr,s) -> "?"^s
+  | `AST_patany sr -> "ANY"
   | `AST_vsprintf (sr,s) -> "f"^string_of_string s
   | `AST_ellipsis _ -> "..."
   | `AST_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
@@ -2564,12 +2592,27 @@ and string_of_expr (e:expr_t) =
     ^
     " endmatch"
 
+(*
   | `AST_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^
     catmap "\n"
     (fun (p,e')->
       " | " ^
       string_of_tpattern p ^
+      " => " ^
+      string_of_typecode e'
+    )
+    ps
+    ^
+    " endmatch"
+*)
+
+  | `AST_type_match (_,(e, ps)) ->
+    "typematch " ^ string_of_typecode e ^ " with " ^
+    catmap "\n"
+    (fun (p,e')->
+      " | " ^
+      string_of_typecode p ^
       " => " ^
       string_of_typecode e'
     )
@@ -2650,8 +2693,11 @@ and st prec tc : string =
   let iprec,txt =
     match tc with
     | #suffixed_name_t as t -> 0,string_of_suffixed_name t
+    | `AST_patvar (sr,s) -> 0,"?"^s
+    | `AST_patany sr -> 0,"ANY"
     | `TYP_none -> 0,"<none>"
     | `TYP_ellipsis-> 0,"..."
+    (*
     | `TYP_type_match (e,ps) -> 0,
       "typematch " ^ string_of_typecode e ^ " with " ^
       catmap ""
@@ -2661,7 +2707,17 @@ and st prec tc : string =
       ps
       ^
       " endmatch"
-      
+    *)
+    | `TYP_type_match (e,ps) -> 0,
+      "typematch " ^ string_of_typecode e ^ " with " ^
+      catmap ""
+      (fun (p,t) ->
+      "| " ^ string_of_typecode p ^ " => " ^ string_of_typecode t 
+      )
+      ps
+      ^
+      " endmatch"
+
     | `TYP_var i -> 0,"<var " ^ si i ^ ">"
     | `TYP_unitsum k ->
       0,
@@ -3161,9 +3217,15 @@ and print_ixs = function
   | [] -> ""
   | ixs -> "[" ^ cat ", " ixs ^ "]"
 
+(*
 and string_of_maybe_tpattern = function
   | `TPAT_any -> ""
   | t -> ": " ^ string_of_tpattern t
+*)
+
+and string_of_maybe_tpattern = function
+  | `AST_patany _ -> ""
+  | t -> ": " ^ string_of_typecode t
 
 and print_ivs = function
   | [] -> ""
@@ -5392,6 +5454,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   match e with 
   | `AST_case (sr,e1,ls,e2) -> `TYP_case (te e1, ls, te e2)
   | `AST_name (_,"TYPE",[]) -> `TYP_type
+  | `AST_name (sr,"_",[]) -> `AST_patany sr
   | `AST_ellipsis _ -> `TYP_ellipsis
   | #suffixed_name_t as x -> (x:>typecode_t)
   | `AST_tuple (sr,ls) ->
@@ -5558,7 +5621,9 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     `TYP_type_match (e,ps)
 
   | `AST_noexpand (sr,e) -> te e
-   
+
+  | `AST_patvar _ as e -> e
+  | `AST_patany _ as e -> e
   | #expr_t -> 
     let sr = src_of_expr e in
     clierr sr ("Type expression expected, got " ^ string_of_expr e)
