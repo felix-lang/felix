@@ -2537,14 +2537,6 @@ and then run it:
   
   flx -Ilib mytest
 
-@head(1,'.cvsignore')
-This is actually put in the lpsrc directory to tell
-cvs to ignore certain files.
-@select(tangler('lpsrc/.cvsignore','data'))
-*.cache
-*.swp
-
-
 @head(1,'W3C Cascading Style Sheets')
 Needed to view interscript generated documentation.
 
