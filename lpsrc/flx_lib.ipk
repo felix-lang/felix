@@ -1701,12 +1701,16 @@ module List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
+  fun _ctor_list[T] () => Empty[T];
+
+  fun _ctor_list[T] (x:T) => Cons(x, Empty[T]);
+
   fun _ctor_list[T, N] (x:Array::array[T, N]) = {
     var o = Empty[T];
     var i : int;
 
     forall i in Array::len(x) - 1 downto 0 do
-      o = add(x.[i], o);
+      o = o + x.[i];
     done;
 
     return o;
