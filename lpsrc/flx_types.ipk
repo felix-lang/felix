@@ -447,7 +447,7 @@ and expr_t =
   | `AST_dot of range_srcref * (expr_t * id_t * typecode_t list)
   *)
   | `AST_dot of range_srcref * (expr_t * expr_t)
-  | `AST_lambda of range_srcref * (params_t list * typecode_t * statement_t list)
+  | `AST_lambda of range_srcref * (vs_list_t * params_t list * typecode_t * statement_t list)
 
   (* this boolean expression checks its argument is 
      the nominated union variant .. not a very good name for it
@@ -1390,7 +1390,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_dot (sr,(x,x2)) -> `AST_dot (sr,(f x,f x2))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
-  (* | `AST_lambda of range_srcref * (params_t list * typecode_t * statement_t list) *)
+  (* | `AST_lambda of range_srcref * (vs_list_t * params_t list * typecode_t * statement_t list) *)
   | `AST_lambda _ -> e
 
   | `AST_match_ctor (sr,(qn,x)) -> `AST_match_ctor (sr,(qn,f x))
@@ -2533,8 +2533,8 @@ and string_of_expr (e:expr_t) =
   | `AST_dot (_,(e1,e2)) ->  
     "(" ^ se e1 ^ "." ^ se e2 ^  ")"
 
-  | `AST_lambda (_,(paramss,ret, sts)) -> 
-    "(fun " ^
+  | `AST_lambda (_,(vs,paramss,ret, sts)) -> 
+    "(fun " ^ print_vs vs ^
     catmap " "  
     (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
     ^ 
@@ -5582,7 +5582,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       `TYP_apply (typecode_of_expr e1,typecode_of_expr e2)
     end
 
-  | `AST_lambda (sr,(paramss,ret,body)) ->
+  | `AST_lambda (sr,(vs,paramss,ret,body)) ->
      begin match paramss with
      | [params,traint] ->
        (* constraint is ignored for now!! *)

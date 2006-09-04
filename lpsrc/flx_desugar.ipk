@@ -499,12 +499,11 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let lss,xs = split (map rex t) in
     concat lss,`AST_arrayof(sr,xs)
 
-  | `AST_lambda (sr,(pps,ret,sts)) -> 
+  | `AST_lambda (sr,(vs,pps,ret,sts)) -> 
     let kind = `InlineFunction in
     let n = seq() in
     let name' = "_lam_" ^ si n in
     let access = `Private in
-    let vs = [] in
     let sts = 
       rst syms name access [] (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
     in

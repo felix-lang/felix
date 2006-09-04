@@ -158,7 +158,7 @@ let build_args sr ps args =
     | Expr -> (p,MVal a)
     | Stmt ->
       begin match a with
-      | `AST_lambda (_,([[],_],`TYP_none,sts)) -> (p,MStmt ([],sts))
+      | `AST_lambda (_,([],[[],_],`TYP_none,sts)) -> (p,MStmt ([],sts))
       | `AST_name(_,name,[]) ->(p,MVal a)
       | _ -> 
         clierr sr 
@@ -557,7 +557,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
             *)
             let sts = [`AST_call (sr,e1, e2)] in
             let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-            `AST_lambda(sr,([[],None],`TYP_none,sts))
+            `AST_lambda(sr,([],[[],None],`TYP_none,sts))
             (*
             clierr sr 
             (
@@ -588,14 +588,14 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_expr (sr,s,t) -> `AST_expr (sr,s,t)
 
   (* Lambda hook *)
-  | `AST_lambda (sr, (pss, t, sts)) -> 
+  | `AST_lambda (sr, (vs,pss, t, sts)) -> 
     let pr = concat (map (map (fun(x,y,z)->y)) (map fst pss)) in
     let pr = protect sr pr in
     let sts = 
       expand_statements recursion_limit local_prefix seq (ref true) 
       (pr @ macros) sts 
     in
-    `AST_lambda (sr, (pss, t, sts))
+    `AST_lambda (sr, (vs,pss, t, sts))
 
   (* Name lookup *)
   | `AST_the (sr, qn) -> 

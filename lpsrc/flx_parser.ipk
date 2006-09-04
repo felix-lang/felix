@@ -2356,35 +2356,39 @@ lambda_fun_args:
 lambda:
   | dollar_apply { $1 }
 
-  | adjectives FUNCTION lambda_fun_args opt_type_expr EQUAL compound
+  | adjectives FUNCTION tvarlist lambda_fun_args opt_type_expr EQUAL compound
     {
-      let sr = rsrange (slift $2) (fst $6) in
-      let args = List.map snd $3 in
-      let ret,traint = $4 in
-      let body = snd $6 in
-      `AST_lambda ( sr,(args, ret, body))
+      let sr = rsrange (slift $2) (fst $7) in
+      let vs = $3 in
+      let args = List.map snd $4 in
+      let ret,traint = $5 in
+      let body = snd $7 in
+      `AST_lambda ( sr,(vs,args, ret, body))
     }
 
-  | adjectives FUNCTION lambda_fun_args opt_type_expr EQRIGHTARROW expr
+  | adjectives FUNCTION tvarlist lambda_fun_args opt_type_expr EQRIGHTARROW expr
     {
-      let sr = rsrange (slift $2) (src_of_expr $6) in
-      let args = List.map snd $3 in
-      let body = [`AST_fun_return (sr,$6)] in
-      let ret,traint = $4 in
-      `AST_lambda (sr, (args, ret, body))
+      let sr = rsrange (slift $2) (src_of_expr $7) in
+      let vs = $3 in
+      let args = List.map snd $4 in
+      let body = [`AST_fun_return (sr,$7)] in
+      let ret,traint = $5 in
+      `AST_lambda (sr, (vs,args, ret, body))
     }
 
-  | PROCEDURE lambda_fun_args compound
+  | PROCEDURE tvarlist lambda_fun_args compound
+    {
+      let sr = rsrange (slift $1) (fst $4) in
+      let vs = $2 in
+      let args = List.map snd $3 in
+      `AST_lambda ( sr, (vs,args, `AST_void sr, snd $4))
+    }
+
+  | PROCEDURE tvarlist compound
     {
       let sr = rsrange (slift $1) (fst $3) in
-      let args = List.map snd $2 in
-      `AST_lambda ( sr, (args, `AST_void sr, snd $3))
-    }
-
-  | PROCEDURE compound
-    {
-      let sr = rsrange (slift $1) (fst $2) in
-      `AST_lambda ( sr, ([[],None], `AST_void sr, snd $2))
+      let vs = $2 in
+      `AST_lambda ( sr, (vs,[[],None], `AST_void sr, snd $3))
     }
 
 dollar_apply:
@@ -2541,7 +2545,7 @@ comparison:
       (
         sr,
         (
-          `AST_lambda (sr,([[],None],flx_bool, stmts)),
+          `AST_lambda (sr,([],[[],None],flx_bool, stmts)),
           unit_tuple
         )
       )
@@ -2994,6 +2998,7 @@ atom:
       (
         sr,
         (
+          [],
           [[],None],
           `TYP_none,
           [`AST_fun_return (sr,$2)]
@@ -3010,7 +3015,7 @@ atom:
       `AST_lambda 
       (
         sr,
-        ([[],None], `TYP_none, stmts)
+        ([],[[],None], `TYP_none, stmts)
       )
     
     }
