@@ -1,9 +1,5 @@
 @head(1,'GODI')
 @execfile('config/flx_data.py')
-@head(2,'CVS LOG')
-$Log$
-Revision 1.1  2006/02/14 09:02:00  skaller
-Splitup flx_maker.ipk to get rid of some build utilities.
 
 This is the Godiva file originally used to
 create the GODI data. At the moment this is

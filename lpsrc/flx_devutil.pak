@@ -1,21 +1,5 @@
 @head(1,"Developer utility scripts")
 @execfile('config/flx_data.py')
-$Log$
-Revision 1.2  2006/06/22 07:21:30  rfistman
-updated mkdemux.py. hopefully it won't be needed soon, as
-  flx_demux becomes the "main" demux.
-
-added poll ts_poll demuxer.
-
-conditionalised demuxer usage, so linux no longer implies epoll,
-and solaris no longer implies evtports. this means that older
-systems will fall back to select and that we may get the rare
-nice surprise of finding a system that supports an unusual
-demuxer (like osx10.4 with poll) or a linux with kqueues. who knows.
-
-Revision 1.1  2006/02/14 09:02:00  skaller
-Splitup flx_maker.ipk to get rid of some build utilities.
-
 These script are NOT required to build Felix: they're utilies
 related to munging the original code into interscript format,
 and doing miscellaneous things during development.

@@ -1,13 +1,4 @@
 @head(1,"Address space management")
-$Log$
-Revision 1.3  2006/08/02 22:24:15  idadesub
-make sure we can also deal with a None result from get_stdout
-
-Revision 1.2  2006/07/17 17:22:40  skaller
-Add test case for mmap.
-
-Revision 1.1  2006/07/17 16:42:40  skaller
-Start with config and small binding for mmap.
 
 @select(tangler('tmp' + os.sep + 'mmap_test.cxx'))
 // NOTE REQUIRES MAP_ANONYMOUS (linux only ..)
