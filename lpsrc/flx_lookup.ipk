@@ -2352,6 +2352,17 @@ print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
         `BEXPR_closure (index,ts),
         t
 
+      | `SYMDEF_type_alias _ ->
+        (*
+        print_endline "mapping type name to _ctor_type [2]";
+        *)
+        let qn =  match qn with
+          | `AST_name (sr,name,ts) -> `AST_name (sr,"_ctor_"^name,ts)
+          | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,"_ctor_"^name,ts))
+          | _ -> failwith "Unexpected name kind .."
+        in
+        lookup_qn_with_sig' syms sra srn env rs qn signs
+
       | `SYMDEF_const (t,_,_) 
       | `SYMDEF_val t 
       | `SYMDEF_var t 
@@ -2447,14 +2458,30 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     end
 
   | `AST_name (sr,name,ts) ->
-    (*
-    print_endline "Looking up name with sig ..";
+    (* HACKERY TO SUPPORT _ctor_type lookup -- this is really gross,
+       since the error could be anything ..  the retry here should
+       only be used if the lookup failed because sig_of_symdef found
+       a typename..
     *)
     let ts = map (bt sr) ts in
-    lookup_name_with_sig 
-      syms 
-      sra srn
-      env rs name ts signs
+    begin try
+      lookup_name_with_sig 
+        syms 
+        sra srn
+        env rs name ts signs
+    with ClientError (sr,s) ->
+    try
+      lookup_name_with_sig 
+        syms 
+        sra srn
+        env rs ("_ctor_" ^ name) ts signs
+     with ClientError (_,s2) ->
+       clierr sr
+       (
+       "ERROR: " ^ s ^ 
+       "\nERROR2: " ^ s2
+       )
+    end
 
   | `AST_index (sr,name,index) ->
     begin match get_data syms.dfns index with 

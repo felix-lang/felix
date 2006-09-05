@@ -901,6 +901,28 @@ module X {
 print$ X::f 22; endl;
 @select(tangler('test/rt31.expect'))
 44
+@select(tangler('test/rt32.flx'))
+// translation of typedefs to _ctor_name calls
+#import <flx.flxh>
+
+open module Foo
+{
+  typedef foo = int;
+  fun _ctor_foo () => 5;
+  val x = foo ();
+  print x; endl;
+}
+
+val y = Foo::foo ();
+print y; endl;
+
+val z = foo ();
+print z; endl;
+
+@select(tangler('test/rt32.expect'))
+5
+5
+5
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>
