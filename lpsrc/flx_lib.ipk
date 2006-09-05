@@ -1568,10 +1568,53 @@ module Control
   }
 
   _gc_pointer type schannel[t] = "flx::rtl::schannel_t*";
+  _gc_pointer type ischannel[t] = "flx::rtl::schannel_t*";
+  _gc_pointer type oschannel[t] = "flx::rtl::schannel_t*";
+
   private _gc_pointer type _schannel = "flx::rtl::schannel_t*";
   fun mk_schannel[t]: 1->schannel[t] = 
     "new(*PTF gc,flx::rtl::schannel_ptr_map) flx::rtl::schannel_t(PTF gc)"
   ; 
+
+  // safe casts from bidirectional to unidirectional channels
+  fun _ctor_oschannel[t](x:schannel[t]):oschannel[t]=> C_hack::cast[oschannel[t]] x;
+  fun _ctor_ischannel[t](x:schannel[t]):ischannel[t]=> C_hack::cast[ischannel[t]] x;
+
+  fun mk_ioschannel_pair[t](var ch:schannel[t]) => 
+    ischannel[t] ch, oschannel[t] ch
+  ;
+
+  fun mk_ioschannel_pair[t]() => 
+    mk_ioschannel_pair[t]$ mk_schannel[t] ()
+  ;
+
+  /*
+
+  // THIS IS THE DESIRED FORMULATION .. but it doesn't currently work.
+  // The typematch implied by the typeset is failing during
+  // overload resolution .. probably because unification indicates
+  // it is OK to proceed BEFORE t is substituted out.
+
+  typedef i_schannel[t] = typesetof(ischannel[t], schannel[t]);
+  typedef o_schannel[t] = typesetof(oschannel[t], schannel[t]);
+
+  proc _read[t,CHAN:i_schannel[t]](chan:CHAN,loc:&gcptr[t]) {
+    svc$ svc_sread$ cast[_schannel] chan, reinterpret[&gcaddress] loc;
+  }
+
+  proc read[t,CHAN:i_schannel[t]](v:&t,chan:CHAN) {
+    var x: gcptr[t];
+    _read(chan,&x);
+    *v = *x;
+  }
+
+  proc write[t,CHAN:o_schannel[t]](chan:CHAN,v:t) {
+    var ps = cast[gcaddress]$ xnew v;
+    svc$ svc_swrite$ cast[_schannel] chan, &ps;
+  }
+ */
+
+  // so we just hack it with extra overloads :)
 
   proc _read[t](chan:schannel[t],loc:&gcptr[t]) {
     svc$ svc_sread$ cast[_schannel] chan, reinterpret[&gcaddress] loc;
@@ -1583,14 +1626,19 @@ module Control
     *v = *x;
   }
 
+  proc read[t](v:&t,chan:ischannel[t]) { read[t] (v, cast[schannel[t]] chan); }
+
   proc write[t](chan:schannel[t],v:t) {
     var ps = cast[gcaddress]$ xnew v;
     svc$ svc_swrite$ cast[_schannel] chan, &ps;
   }
 
+  proc write[t](chan:oschannel[t],v:t) { write[t] (cast[schannel[t]] chan,v); }
+
   publish "Read primitive"
   // finds the machine address of the read buffer
   // then does a supervisor read specifying that address
+  // DEPRECATED!
   proc read[t](x:&t) { 
     val vadr : address = C_hack::as_address$ C_hack::unref x;
     req  := svc_read vadr;
