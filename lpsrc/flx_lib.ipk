@@ -1588,8 +1588,6 @@ module Control
     mk_ioschannel_pair[t]$ mk_schannel[t] ()
   ;
 
-  /*
-
   // THIS IS THE DESIRED FORMULATION .. but it doesn't currently work.
   // The typematch implied by the typeset is failing during
   // overload resolution .. probably because unification indicates
@@ -1598,13 +1596,14 @@ module Control
   typedef i_schannel[t] = typesetof(ischannel[t], schannel[t]);
   typedef o_schannel[t] = typesetof(oschannel[t], schannel[t]);
 
-  proc _read[t,CHAN:i_schannel[t]](chan:CHAN,loc:&gcptr[t]) {
+  proc _read[t](chan:schannel[t],loc:&gcptr[t]) {
     svc$ svc_sread$ cast[_schannel] chan, reinterpret[&gcaddress] loc;
   }
 
+
   proc read[t,CHAN:i_schannel[t]](v:&t,chan:CHAN) {
     var x: gcptr[t];
-    _read(chan,&x);
+    _read(cast[schannel[t]] chan,&x);
     *v = *x;
   }
 
@@ -1612,28 +1611,6 @@ module Control
     var ps = cast[gcaddress]$ xnew v;
     svc$ svc_swrite$ cast[_schannel] chan, &ps;
   }
- */
-
-  // so we just hack it with extra overloads :)
-
-  proc _read[t](chan:schannel[t],loc:&gcptr[t]) {
-    svc$ svc_sread$ cast[_schannel] chan, reinterpret[&gcaddress] loc;
-  }
-
-  proc read[t](v:&t,chan:schannel[t]) {
-    var x: gcptr[t];
-    _read(chan,&x);
-    *v = *x;
-  }
-
-  proc read[t](v:&t,chan:ischannel[t]) { read[t] (v, cast[schannel[t]] chan); }
-
-  proc write[t](chan:schannel[t],v:t) {
-    var ps = cast[gcaddress]$ xnew v;
-    svc$ svc_swrite$ cast[_schannel] chan, &ps;
-  }
-
-  proc write[t](chan:oschannel[t],v:t) { write[t] (cast[schannel[t]] chan,v); }
 
   publish "Read primitive"
   // finds the machine address of the read buffer

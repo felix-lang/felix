@@ -620,6 +620,39 @@ spawn_fthread the writer;
 
 print "Done"; endl;
 
+@select(tangler('test/rt22a.flx'))
+#import <flx.flxh>
+open Control;
+ 
+var chs = mk_ioschannel_pair[int] ();
+var chin,chout = chs;
+
+spawn_fthread { 
+  var x = 1; 
+  whilst x <= 10 do 
+    write$ chout,x; 
+    ++x;
+  done; 
+};
+
+spawn_fthread { 
+  var x = 1; 
+  whilst x < 10 do 
+    read$ &x,chin; print x; endl; 
+  done; 
+};
+
+@select(tangler('test/rt22a.expect'))
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
 @select(tangler('test/rt23.flx'))
 #import <flx.flxh>
 open C_hack;
