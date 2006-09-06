@@ -1185,6 +1185,10 @@ function_definition:
           | `TYP_tuple lst -> lst
           | x -> [x]
         in
+        let reqs = match kind with 
+          | `Generator -> `RREQ_and (`RREQ_atom (`Property_req "generator"),reqs)
+          | _ -> reqs
+        in
         if List.length args > 0 && list_last args = `TYP_ellipsis 
         then
           (*
@@ -1432,23 +1436,24 @@ var_def:
       let names = snd $2 :: $3 in
       let n = length names in
       let expr = $5 in
-      let ls =
-        match $5 with
-        | `AST_tuple (_,ls) ->
-          if length ls <> n then
-            Flx_exceptions.clierr sr ("Wrong number of initialisers, expected " ^ string_of_int n)
-          else ls 
-        | x -> map (fun i -> `AST_get_n (sr,(i,x))) (nlist n)
-      in 
-      `AST_seq 
-      (
-        sr, 
-        map2 
-        (fun name v -> 
-          `AST_var_decl ( sr, name, [], None, Some v) 
-        ) 
-        names ls
-      )
+      match expr with
+      | `AST_tuple (_,ls) ->
+        if length ls <> n then
+          Flx_exceptions.clierr sr ("Wrong number of initialisers, expected " ^ string_of_int n)
+        else 
+        `AST_seq 
+        (
+          sr, 
+          map2 
+          (fun name v -> 
+            `AST_var_decl ( sr, name, [], None, Some v) 
+          ) 
+          names ls
+        )
+
+      | x ->
+        let lexpr: tlvalue_t list = map (fun name -> `Var (sr,name),None) names in
+        `AST_assign (sr,"_set",(`List lexpr, None), expr)
     }
 
   | VAR NAME tvarlist EQUAL expr SEMI  
@@ -1555,23 +1560,24 @@ val_def:
       let names = snd $2 :: $3 in
       let n = length names in
       let expr = $5 in
-      let ls =
-        match $5 with
-        | `AST_tuple (_,ls) ->
-          if length ls <> n then
-            Flx_exceptions.clierr sr ("Wrong number of initialisers, expected " ^ string_of_int n)
-          else ls 
-        | x -> map (fun i -> `AST_get_n (sr,(i,x))) (nlist n)
-      in 
-      `AST_seq 
-      (
-        sr, 
-        map2 
-        (fun name v -> 
-          `AST_val_decl ( sr, name, [], None, Some v) 
-        ) 
-        names ls
-      )
+      match expr with
+      | `AST_tuple (_,ls) ->
+        if length ls <> n then
+          Flx_exceptions.clierr sr ("Wrong number of initialisers, expected " ^ string_of_int n)
+        else 
+        `AST_seq 
+        (
+          sr, 
+          map2 
+          (fun name v -> 
+            `AST_val_decl ( sr, name, [], None, Some v) 
+          ) 
+          names ls
+        )
+
+      | x ->
+        let lexpr: tlvalue_t list = map (fun name -> `Val (sr,name),None) names in
+        `AST_assign (sr,"_set",(`List lexpr, None), expr)
     }
 
   | VAL NAME tvarlist EQUAL expr SEMI  

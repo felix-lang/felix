@@ -1572,8 +1572,9 @@ module Control
   _gc_pointer type oschannel[t] = "flx::rtl::schannel_t*";
 
   private _gc_pointer type _schannel = "flx::rtl::schannel_t*";
-  fun mk_schannel[t]: 1->schannel[t] = 
+  gen mk_schannel[t]: 1->schannel[t] = 
     "new(*PTF gc,flx::rtl::schannel_ptr_map) flx::rtl::schannel_t(PTF gc)"
+    requires property "needs_gc"
   ; 
 
   // safe casts from bidirectional to unidirectional channels

@@ -1272,6 +1272,15 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
 
   | _ -> assert false
 
+let is_generator bbdfns i = 
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  match entry with 
+  | `BBDCL_fun (props,_,_,_,_,_,_) 
+  | `BBDCL_function (props,_,_,_,_) 
+    when mem `Generator props
+    -> true
+  | _ -> false
+
 (* note u sr e must return exes in reverse order, this
   function however returns exes in forward order 
 *)
@@ -1364,6 +1373,36 @@ let expand_exe syms bbdfns u exe =
       let e,xs = u sr e in
       `BEXE_fun_return (sr,e) :: xs
    
+    (* This case has to be handled specially, in case we already
+       have a simplified form, and the unravelling introduces
+       a gratuitous extra variable: for example
+       
+       x : = f a
+
+       might expand to
+
+       x' = f a
+       x := x'
+       
+       which is rather pointless. There is, unfortunately,
+       a duplicate of this check elsewhere ..
+    *)
+    
+    | `BEXE_init (sr,i,(`BEXPR_apply_direct(j,ts,e),t))
+      when is_generator bbdfns j ->
+      let e,xs = u sr e in
+      `BEXE_init (sr,i,(`BEXPR_apply_direct(j,ts,e),t)) :: xs
+    
+    | `BEXE_init (sr,i,(`BEXPR_apply_stack(j,ts,e),t))
+      when is_generator bbdfns j ->
+      let e,xs = u sr e in
+      `BEXE_init (sr,i,(`BEXPR_apply_stack(j,ts,e),t)) :: xs
+    
+    | `BEXE_init (sr,i,(`BEXPR_apply_prim(j,ts,e),t))
+      when is_generator bbdfns j ->
+      let e,xs = u sr e in
+      `BEXE_init (sr,i,(`BEXPR_apply_prim(j,ts,e),t)) :: xs
+       
     | `BEXE_init (sr,i,e) ->
       let e,xs = u sr e in
       `BEXE_init (sr,i,e) :: xs
@@ -1483,6 +1522,8 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
   let exes' = ref [] in
   let id x = x in
   let rec aux e = match map_tbexpr id aux id e with
+  | ((`BEXPR_apply_prim (callee,ts,a),t) as e)
+  | ((`BEXPR_apply_stack (callee,ts,a),t) as e)
   | ((`BEXPR_apply_direct (callee,ts,a),t) as e)
   | (((`BEXPR_apply(  (`BEXPR_closure (callee,ts),_) ,a)),t) as e)
     when 
@@ -1536,6 +1577,40 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
         in
         let cll = `BEXE_call_direct (sr,callee,ts,a') in
         exes' := cll :: !exes';
+
+        (* replace application with the variable *)
+        let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in
+        `BEXPR_name (urv,ts),t
+
+      (* This code must ONLY be triggered by an inner (unlifted) application
+         so the detector must not be recursively applied to RHS of initialisation
+         x = f a
+         where f is the generator, since that form is properly lifted ..
+         otherwise we get a chain:
+         x1 = f a
+         x2 = x1
+         x3 = x2 
+         ...
+      *)
+      | `BBDCL_fun (props,_,_,_,_,_,_) 
+      | `BBDCL_function (props,_,_,_,_) 
+        when mem `Generator props ->
+        (*
+        print_endline ("Unravel generator " ^ id);
+        *)
+
+        (* create a new variable *)
+        let urv = !(syms.counter) in incr (syms.counter);
+        let urvid = "_genout_urv" ^ si urv in
+        add_child child_map caller urv;
+        add_use uses caller urv sr;
+        let entry = `BBDCL_var (caller_vs,t) in
+        Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
+
+        (* set variable to function appliction *)
+        let cll = `BEXE_init (sr,urv,e) in
+        exes' := cll :: !exes';
+
 
         (* replace application with the variable *)
         let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in

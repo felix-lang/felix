@@ -624,8 +624,7 @@ print "Done"; endl;
 #import <flx.flxh>
 open Control;
  
-var chs = mk_ioschannel_pair[int] ();
-var chin,chout = chs;
+var chin,chout = mk_ioschannel_pair[int] ();
 
 spawn_fthread { 
   var x = 1; 
@@ -932,7 +931,7 @@ module X {
 #keyword f
 
 print$ X::f 22; endl;
-@select(tangler('test/rt31.expect'))
+@select(tangler('test/rt31.expect','data'))
 44
 @select(tangler('test/rt32.flx'))
 // translation of typedefs to _ctor_name calls
@@ -952,10 +951,53 @@ print y; endl;
 val z = foo ();
 print z; endl;
 
-@select(tangler('test/rt32.expect'))
+@select(tangler('test/rt32.expect','data'))
 5
 5
 5
+@select(tangler('test/rt33.flx'))
+// generators
+#import <flx.flxh>
+
+var cheat : int = 0;
+gen f():int = {
+  ++cheat;
+  //print "Generator "; print cheat; endl;
+  return cheat;
+}
+
+print "F 1="; print$ f(); endl; // 1
+
+body """
+  static int x = 0;
+  int g() { ++x; return x; }
+""";
+
+gen g : 1 -> int;
+
+print "C 1="; print$ g(); endl; // 1
+
+fun d(x:int) => x + x;
+
+// all these should be even
+print "F Even? "; print$ d(f()); endl; // 4
+print "F Even? "; print$ d(f()); endl; // 6
+
+print "C Even? "; print$ d(g()); endl; // 4
+print "C Even? "; print$ d(g()); endl; // 6
+
+print "F 4="; print$ f(); endl; // 4
+print "C 4="; print$ g(); endl; // 4
+
+@select(tangler('test/rt33.expect','data'))
+F 1=1
+C 1=1
+F Even? 4
+F Even? 6
+C Even? 4
+C Even? 6
+F 4=4
+C 4=4
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>

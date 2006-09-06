@@ -1582,6 +1582,7 @@ flx_leadin_keywords = [
   "CLASS",
   "FUNCTION",
   "PROCEDURE",
+  "GENERATOR",
 ]
 
 flx_keywords = flx_expr_terminator_keywords + flx_other_keywords

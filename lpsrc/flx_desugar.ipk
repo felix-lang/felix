@@ -890,6 +890,8 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   let mkprop sr s = match s with
     | "needs_gc" -> `Uses_gc
     | "needs_ptf" -> `Requires_ptf
+    | "pure" -> `Pure
+    | "generator" -> `Generator
     | x -> clierr sr ("Unknown property " ^ x)
   in
   let mkreqs sr (rqs :raw_req_expr_t) : property_t list * asm_t list * named_req_expr_t =
