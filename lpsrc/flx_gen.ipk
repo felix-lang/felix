@@ -1581,6 +1581,9 @@ let gen_C_function_body filename syms (child_map,bbdfns)
   );
   match entry with 
   | `BBDCL_function (props,vs,(bps,traint),ret',exes) ->
+    (*
+    print_endline ("Properties=" ^ catmap "," (fun x->st syms.dfns (x:>felix_term_t)) props);
+    *)
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then 
     failwith 

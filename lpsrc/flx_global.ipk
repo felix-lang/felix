@@ -315,6 +315,15 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
         Required
     end else Not_required
 
+  | `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
+    if mem `Requires_ptf props then Required 
+    else if mem `Not_requires_ptf props then Not_required
+    else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
+      Hashtbl.replace bbdfns i (id,parent,sr,
+        `BBDCL_fun (`Requires_ptf :: props,vs,ps,ret,ct,reqs,prec));
+        Required
+    end else Not_required
+
   | `BBDCL_glr (props,vs,t, (pr,exes)) ->
     if mem `Requires_ptf props then Required 
     else if mem `Not_requires_ptf props then Not_required
