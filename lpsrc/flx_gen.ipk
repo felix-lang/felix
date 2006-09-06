@@ -1949,7 +1949,11 @@ let gen_function_methods filename syms (child_map,bbdfns)
       "}\n"
     and clone =
       "  " ^ name ^ "* "^name^"::clone()const {\n"^
-      "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"^
+      (if mem `Generator props then
+      "  return this;\n"
+      else
+      "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"
+      )^
       "}\n"
     in
       let q = qualified_name_of_index syms.dfns index in

@@ -178,7 +178,7 @@ let arglist x =
   | `AST_tuple (_,ts) -> ts
   | _ -> [x]
 
-let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
+let mkcurry seq sr name vs (args:params_t list) return_type (kind:funkind_t) body props =
   let return_type, postcondition = return_type in
   let vss',(args:params_t list)= split (map (fix_params sr seq) args) in
   let vs = concat (vs :: vss') in
@@ -208,11 +208,13 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
         | `NoInlineFunction
         | `InlineFunction
         | `Ctor 
+        | `Generator
         | `Function ->
-          let props = match kind with
+          let props : property_t list = match kind with
           | `InlineFunction -> `Inline::props
           | `NoInlineFunction -> `NoInline::props
           | `Ctor -> `Ctor::props
+          | `Generator -> `NoInline::`Generator::props
           | _ -> props
           in
           begin match return_type with
@@ -241,10 +243,12 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
         | `NoInlineFunction
         | `InlineFunction
         | `Ctor 
+        | `Generator
         | `Function ->
           let props = match kind with
           | `InlineFunction -> `Inline::props
           | `NoInlineFunction -> `NoInline::props
+          | `Generator -> `NoInline::`Generator::props
           | `Ctor -> `Ctor::props
           | _ -> props 
           in
@@ -289,7 +293,6 @@ let assign sr op l r =
     `AST_name (sr, op,[]),
     `AST_tuple ( sr, [ l; r ])
   )
-
 
 
 let find_methods seq sr sts =

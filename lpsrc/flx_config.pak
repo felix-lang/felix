@@ -1485,6 +1485,7 @@ flx_expr_terminator_keywords = [
     ("fork", "FORK"),
     ("functor", "FUNCTOR"),
     ("fun", "FUNCTION"),
+    ("gen", "GENERATOR"),
     ("goto", "GOTO"),
     ("header", "HEADER"),
     ("ident", "IDENT"),

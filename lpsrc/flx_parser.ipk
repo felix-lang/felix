@@ -109,6 +109,13 @@ let call2 (op:string) (sr:range_srcref) (sri:srcref) l r =
 let mkcurry sr name vs (args:params_t list) return_type kind body =
   `AST_curry (sr,name,vs,args,return_type,kind,body)
 
+let cal_funkind adjs fk =
+  match fk with
+  | sr,`Generator -> sr,`Generator
+  | sr,`Function -> match adjs with
+  | [] -> sr,`Function
+  | h :: t -> sr,snd h
+  
 (* handle curried type functions *)
 let mktypefun sr name vs (args: (string * typecode_t) list list) return_type body =
   let argtyp t = match t with
@@ -1101,7 +1108,11 @@ opt_traint_eq:
 
 reduce_args:
   | LPAR typeparameter_comma_list RPAR { $2 }
-  
+
+fun_kind:
+  | FUNCTION { $1,`Function }
+  | GENERATOR { $1,`Generator }
+
 function_definition:
   | REDUCE NAME tvarlist reduce_args COLON expr EQRIGHTARROW expr SEMI
     {
@@ -1126,13 +1137,10 @@ function_definition:
       `AST_axiom (sr,name,vs,args,rsrc)
     }
 
-  | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
+  | adjectives fun_kind NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
     { 
-      let kind = match $1 with
-        | [] -> `Function
-        | h :: t -> snd h
-      in
-      let sr = rstoken $2 $9 in
+      let sr1,kind = cal_funkind $1 $2 in
+      let sr = rstoken sr1 $9 in
       let name = snd $3 
       and return_type = $6
       and body = [`AST_fun_return (sr,$8)]
@@ -1142,13 +1150,10 @@ function_definition:
       mkcurry sr name vs args return_type kind body
     }
 
-  | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
+  | adjectives fun_kind NAME tvarlist fun_args opt_type_expr EQUAL compound 
     { 
-      let kind = match $1 with
-        | [] -> `Function
-        | h :: t -> snd h
-      in
-      let sr = rsrange (slift $2) (fst $8)
+      let sr1,kind = cal_funkind $1 $2 in
+      let sr = rsrange (slift sr1) (fst $8)
       and name = snd $3 
       and return_type = $6
       and body = snd $8
@@ -1157,12 +1162,13 @@ function_definition:
       in mkcurry sr name vs args return_type kind body
     }
   
-  | adjectives FUNCTION NAME tvarlist opt_type_expr opt_cstring opt_prec requires_clause SEMI 
+  | adjectives fun_kind NAME tvarlist opt_type_expr opt_cstring opt_prec requires_clause SEMI 
     { 
+      let sr1,kind = cal_funkind $1 $2 in
       let name = snd $3 
       and vs = $4
       and t,traint = $5
-      and sr = rstoken $2 $9
+      and sr = rstoken sr1 $9
       and prec = $7
       and reqs = $8
       in
@@ -1198,13 +1204,10 @@ function_definition:
         )
     }
 
-  | adjectives FUNCTION NAME tvarlist opt_type_expr EQRIGHTARROW expr SEMI
+  | adjectives fun_kind NAME tvarlist opt_type_expr EQRIGHTARROW expr SEMI
     {
-      let kind = match $1 with
-        | [] -> `Function
-        | h :: t -> snd h
-      in
-      let sr = rstoken $2 $8 in
+      let sr1,kind = cal_funkind $1 $2 in
+      let sr = rstoken sr1 $8 in
       let name = snd $3 
       and return_type = $5
       and body = [`AST_fun_return (sr,$7)]
@@ -1214,13 +1217,10 @@ function_definition:
       mkcurry sr name vs args return_type kind body
     }
 
-  | adjectives FUNCTION NAME tvarlist opt_type_expr EQUAL matchings SEMI
+  | adjectives fun_kind NAME tvarlist opt_type_expr EQUAL matchings SEMI
     { 
-      let kind = match $1 with
-        | [] -> `Function
-        | h :: t -> snd h
-      in
-      let sr = rstoken $2 $8 in
+      let sr1,kind = cal_funkind $1 $2 in
+      let sr = rstoken sr1 $8 in
       let name = snd $3 in
       let vs = $4 in
       let t,traint = $5 in

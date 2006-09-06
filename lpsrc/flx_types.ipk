@@ -562,6 +562,7 @@ and funkind_t = [
   | `InlineFunction 
   | `NoInlineFunction
   | `Ctor
+  | `Generator
 ]
 
 and property_t = [
@@ -579,6 +580,7 @@ and property_t = [
   | `Pure                (* closure not required by self *)
   | `Uses_global_var     (* a global variable is explicitly used *)
   | `Ctor                (* Class constructor procedure *)
+  | `Generator           (* Generator: fun with internal state *)
 
   (* one of the below must be set before code generation *)
   | `Requires_ptf        (* a pointer to thread frame is needed *)
@@ -3294,6 +3296,7 @@ and string_of_property = function
 | `Not_requires_ptf -> "does_not_require_thread_frame"
 | `Uses_gc -> "uses_gc"
 | `Ctor -> "ctor"
+| `Generator -> "generator"
 
 and string_of_properties ps =
   match ps with 
@@ -3612,6 +3615,7 @@ and string_of_statement level s =
     | `InlineFunction -> "inline fun "
     | `NoInlineFunction -> "noinline fun "
     | `Ctor -> "ctor "
+    | `Generator -> "generator "
     )
     ^ 
     name ^ print_vs vs ^ 

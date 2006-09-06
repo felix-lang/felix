@@ -642,7 +642,7 @@ spawn_fthread {
   done; 
 };
 
-@select(tangler('test/rt22a.expect'))
+@select(tangler('test/rt22a.expect','data'))
 1
 2
 3
