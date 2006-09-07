@@ -345,7 +345,7 @@ macro fun print(x) = { fprint (cout,x); };
 
 #statement#
   forall ident in expr do statements done ; =># 
-    macro for val _2 in _3 do _5; done;
+    macro for val _1 in _3 do _5; done;
 #
 
 #keyword upto
