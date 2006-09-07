@@ -23,6 +23,8 @@ language than the infamous hello-world program.
 @select(tangler(tdir+'tut_beg101.flx'))
 #import <flx.flxh>
 print "Hello World\n";
+@select(tangler("tut/examples/tut_beg101.expect","data"))
+Hello World
 @doc()
 and the Felix version is simplicity itself.
 The first line includes the standard library,
@@ -55,6 +57,9 @@ program as before, just change the example number.
 print "Hello World ";
 print 42;
 print "\n";
+
+@select(tangler("tut/examples/tut_beg102.expect","data"))
+Hello World 42
 @doc()
 Here you can see that there are two procedures,
 one to print strings, and one to print ints,
@@ -103,7 +108,35 @@ print (1 > 2); endl; print (gt (1,2)); endl;
 print (1 <= 2); endl; print (le (1,2)); endl;
 print (1 >= 2); endl; print (ge (1,2)); endl;
 
-@doc()
+@select(tangler("tut/examples/tut_beg102a.expect","data"))
+2
+3
+0
+-1
+1
+2
+1
+0
+1.24456
+1.24456
+true
+true
+false
+false
+true
+true
+false
+false
+true
+true
+true
+true
+false
+false
+true
+true
+false
+false
 @head(2,'Value declaration')
 Felix allows values to be declared using the 'val'
 keyword.
@@ -113,7 +146,11 @@ val i = 40;
 val j = 2;
 val k = i + j;
 print k; print "\n";
+
+@select(tangler("tut/examples/tut_beg103.expect","data"))
+42
 @doc()
+
 There are three values declared here, 'i','j', and 'k'.
 The first two have the type 'int', because '40' and '2'
 have the type int, whilst 'k' has the type 'int'
@@ -132,7 +169,11 @@ val i : int = 40;
 val j : int = 2;
 val k : int = i + j;
 print k; print "\n";
+
+@select(tangler("tut/examples/tut_beg104.expect","data"))
+42
 @doc()
+
 but it is never necessary for values: an initialiser
 must always be given. If you do declare the type,
 Felix will still deduce the type from the initialiser,
@@ -159,7 +200,9 @@ print c; print " ";
 print d; print " ";
 print e; print " ";
 endl;
-@doc()
+
+@select(tangler("tut/examples/tut_beg104a.expect","data"))
+1 2 3 4 5 
 @head(2,'Variable declaration')
 Felix also support mutable variables, which are
 declared with the 'var' keyword.
@@ -173,7 +216,19 @@ while {i < 10}
   print j; print "\n";
   ++i;
 };
+
+@select(tangler("tut/examples/tut_beg105.expect","data"))
+2
+4
+6
+8
+10
+12
+14
+16
+18
 @doc()
+
 Like value declarations, the type of a variable
 does not need to be declared if it is initialised.
 However, as you can see uninitialised variables
@@ -221,8 +276,9 @@ print d; print " ";
 print e; print " ";
 endl;
 
-
-@doc()
+@select(tangler("tut/examples/tut_beg105a.expect","data"))
+1 2 3 
+9 8 7 
 @head(2,'Mutators')
 Felix provides a range of mutators, 
 these being assignment operators and counting operators.
@@ -259,7 +315,7 @@ i++;           post_incr (i);
 --i;           pre_decr (i);
 i--;           post_decr (i);
 
-@doc()
+@select(tangler("tut/examples/tut_beg105b.expect","data"))
 @head(2,'Functions')
 Felix allows you to define functions,
 although the syntax is different from C.
@@ -272,7 +328,11 @@ fun mid(a:int, b:int):int =
   return c;
 }
 print (mid(2,4)); print "\n";
+
+@select(tangler("tut/examples/tut_beg106.expect","data"))
+3
 @doc()
+
 It is clear that mid returns an int,
 and you might think that 'mid' has two arguments.
 This is not so. All functions in Felix have
@@ -295,7 +355,11 @@ fun mid(a:int, b:int) =
   return c;
 }
 print (mid(2,4)); print "\n";
+
+@select(tangler("tut/examples/tut_beg107.expect","data"))
+3
 @doc()
+
 which is equivalent to the one above.
 Note however that the types of the arguments
 must be given.
@@ -311,7 +375,10 @@ fun guarded_div(a:int, b:int when b!=0) =
 }
 print (guarded_div(2,4)); print "\n";
 
+@select(tangler("tut/examples/tut_beg107a.expect","data"))
+0
 @doc()
+
 Functions can also be given postconditions:
 
 @select(tangler(tdir+'tut_beg107b.flx'))
@@ -322,7 +389,10 @@ fun abs_div(a:int, b:int when b!=0) expect result >=0 =
 }
 print (abs_div(2,4)); print "\n";
 
+@select(tangler("tut/examples/tut_beg107b.expect","data"))
+0
 @doc()
+
 Note the special identifier 'result' may be used to 
 refer to the function result. 
 @p()
@@ -351,7 +421,11 @@ proc print_newline (a:int)
   print "\n";
 }
 print_newline 1;
+
+@select(tangler("tut/examples/tut_beg112.expect","data"))
+1
 @doc()
+
 There is a special short cut for calling procedures
 with unit argument: if the procedure is called
 by its name, the () can be elided:
@@ -359,7 +433,12 @@ by its name, the () can be elided:
 #import <flx.flxh>
 print 1; endl();
 print 2; endl;
+
+@select(tangler("tut/examples/tut_beg113.expect","data"))
+1
+2
 @doc()
+
 More precisely, a statement consisting
 of an (almost) atomic expression
 is taken to be a call to a procedure with
@@ -384,6 +463,8 @@ proc decr(d:int when d>=0) expect x==y-d = {
 decr 2;
 print x; endl;
 
+@select(tangler("tut/examples/tut_beg112a.expect","data"))
+5
 @head(2,'Tuples')
 As you might guess from the title, Felix has
 tuples. A tuple is a value consisting of an ordered sequence of 
@@ -417,7 +498,11 @@ fun mid(a:int, b:int):int =
 }
 val x = (2,4);
 print (mid x); print "\n";
+
+@select(tangler("tut/examples/tut_beg110.expect","data"))
+3
 @doc()
+
 Here you can see that mid takes a single
 argument which is a tuple of two ints.
 @p()
@@ -461,7 +546,11 @@ print x.(0); print " ";
 print x.(1); print " ";
 print x.(2).(0); print " ";
 print x.(2).(1); print "\n";
+
+@select(tangler("tut/examples/tut_beg111.expect","data"))
+0 1 3 4
 @doc()
+
 The brackets are needed so the lexer
 doesn't get confused with floating point.
 The notation is ugly and not recommended ..
@@ -492,7 +581,11 @@ match (v) with
   }
 endmatch;
 endl;
+
+@select(tangler("tut/examples/tut_beg120.expect","data"))
+1, (3, 4)
 @doc()
+
 Notice the use of the special pattern '_', which matches
 something without naming it. The ?x designation
 in a pattern introduces a variable.
@@ -545,8 +638,13 @@ f i1;
 f i2;
 f i3;
 
-
-@doc()
+@select(tangler("tut/examples/tut_beg207a.expect","data"))
+Case 0 of three
+Case 1 of three
+Case 2 of three
+case 0 33
+case 1 3.3
+case 2 33
 @head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
 is a categorical product type. Unlike a tuple,
@@ -568,7 +666,12 @@ xy.x = 1;
 xy.y = 2;
 print xy.x; endl;
 print xy.y;  endl;
+
+@select(tangler("tut/examples/tut_beg115.expect","data"))
+1
+2
 @doc()
+
 The name of a struct is also the name of a function
 which constructs an object of the struct type
 from a tuple consisting of values to initialise
@@ -585,7 +688,9 @@ val xy = XY(1,2);
 print xy.x; endl;
 print xy.y; endl;
 
-@doc()
+@select(tangler("tut/examples/tut_beg116.expect","data"))
+1
+2
 @head(2,'Records: anonymous structs')
 A record is an anonymous struct: its a tuple with
 named fields. Two records are the same type if their
@@ -609,6 +714,9 @@ val b = struct { b=2L; c=3.1f; a=6; };
 
 f (b:small);
 
+@select(tangler("tut/examples/tut_beg115a.expect","data"))
+6
+3.1
 @head(2,'Arrays')
 Felix provides arrays of constant length.
 The type notation
@@ -668,8 +776,13 @@ print$ str b + str (caseno b); endl;
 print$ str c + str (caseno c); endl;
 print$ str d + str (caseno d); endl;
 
-
+@select(tangler("tut/examples/tut_beg117.expect","data"))
+a0
+b2
+c3
+d15
 @doc()
+
 We'll see how to actually use unions in the
 next section. But note first that the parity
 example is very similar to a C enumeration.
@@ -719,7 +832,10 @@ match y with
 endmatch;
 endl;
 
+@select(tangler("tut/examples/tut_beg118.expect","data"))
+Some 1
 @doc()
+
 Notice that the value 'i' in the line
 @begin_displayed_code()
   | Some ?i =>
@@ -798,8 +914,18 @@ print (sign3 (-20)); endl;
 print (sign3 0); endl;
 print (sign3 20); endl;
 
-
+@select(tangler("tut/examples/tut_beg119.expect","data"))
+-1
+0
+1
+-1
+0
+1
+-1
+0
+1
 @doc()
+
 In the conditional construction, one or more
 elif clauses may be give, however the
 else clause is required. The elif clause
@@ -850,7 +976,9 @@ print (z.fetch()); endl;
 z.store(2);
 print (z.fetch()); endl;
 
-@doc()
+@select(tangler("tut/examples/tut_beg120a.expect","data"))
+1
+2
 @head(2,'Regular Matching')
 Felix provides support for matching strings
 against regular expressions.
@@ -891,7 +1019,7 @@ The usual notation for character sets is employed:
 @end_table()
 Note that a char is represented by a one character string.
 
-@h= tangler(tdir+'tut_beg121.flx')
+@h = tangler(tdir+'tut_beg121.flx')
 @select(h)
 #import <flx.flxh>
 regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
@@ -932,8 +1060,12 @@ print
 ; 
 endl;
 
-
+@select(tangler("tut/examples/tut_beg121.expect","data"))
+Identifier
+Number
+Neither
 @doc()
+
 Note that whilst conceptually regular matches are applied
 first to last, the actual implementation uses a finite state
 machine and guarranteed to be linear in the length of the input,
@@ -1008,7 +1140,16 @@ while { current != finish }
 };
 print "Done.\n";
 
-@h= tangler(tdir+'tut_beg121b.flx','data')
+@select(tangler("tut/examples/tut_beg121a.expect","data"))
+Identifier: A
+White:  
+Identifier: string
+White:  
+Number: 2
+White:  
+Identifier: lex
+Done.
+@h = tangler(tdir+'tut_beg121b.flx','data')
 @select(h)
 #!/bin/env flx
 #import <flx.flxh>
@@ -1079,2801 +1220,6 @@ use Lexer::ne;
 
 while { i1 != i2 } { print_token; };
 
-@doc()
-@head(2,'Lazy expressions')
-There is a function which is so useful, there
-is a special syntax for it: the lazy expression.
-@select(tangler(tdir+'tut_beg108.flx'))
-#import <flx.flxh>
-var x = 1;
-var y = 2;
-
-val f1 = {x + y}; // lazy expression
-fun f2():int = { return x + y; } // equivalent
-
-print (f1 ());
-print (f2 ());
-
-x = 2; // change value of variables
-y = 3;
-
-print (f1 ());
-print (f2 ());
-endl;
-
-@doc()
-The curly brackets denote a lazy expression, it is
-a function which evaluates the expression when passed
-the special unit value () explained below, the return type
-is the type of the expression.
-@p()
-You can also put statements inside curly brackets
-to define a lazy function:
-@select(tangler(tdir+'tut_beg109.flx'))
-#import <flx.flxh>
-val x = 1;
-val f = { val y = x + 1; return y; };
-val eol = { endl; };
-
-print (f ()); eol;
-
-@doc()
-If there is no return statement, a block procedure is denoted,
-otherwise the return type is the type of the return
-statement arguments, which must all be the same.
-
-@head(2,'The block procedure')
-There is a procedure which is so useful, there
-is a special syntax for it, as described above in
-the section on lazy things: the block.
-
-@select(tangler(tdir+'tut_beg114.flx'))
-#import <flx.flxh>
-var x = 1;
-val p1 = { print x; };
-proc p2() { print x; }; // equivalent to p1 (almost)
-
-// all these calls have the same behaviour
-p1();
-p1;
-p2();
-p2;
-{ print x; }();
-{ print x; };
-print x; endl;
-
-@doc()
-The block is a procedure taking a unit argument.
-So when you write one as a statement, it just gets
-called: note that unlike C, that thing in 
-curley braces is an expression, and you must 
-make a statement by adding a semi-colon,
-which has the effect of invoking it due to the
-short cut rule.
-
-
-@head(2,'Generic Functions')
-Felix functions and procedures can be generic too.
-Here is a simple example.
-
-@select(tangler(tdir+'tut_beg135a.flx'))
-header "#include <iostream>";
-type int = "int";
-proc print[T]:T="std::cout << $1 << std::endl;";
-fun fst[T,U](x:T,y:U): T ={ return x; }
-fun snd[T,U](x:T,y:U): U ={ return y; }
-
-val x = (1,2);
-print[int] (fst[int,int] x);
-print[int] (snd[int,int] x);
-
-proc pp[T] (x:T) { print[T](x); }
-
-pp[int] (snd[int,int] x);
-
-@doc()
-When declaring a generic function or procedure,
-if one of the parameters has the type of a type
-variable which is not used elsewhere, you can leave
-out the type variable, and one will be synthesised for you. 
-Synthesised type variables are added
-to the type variable list at the end. For example:
-
-@select(tangler(tdir+'tut_beg135b.flx'))
-header "#include <iostream>";
-type int = "int";
-proc print[T]:T="std::cout << $1 << std::endl;";
-fun fst(x,y) = { return x; }
-fun snd(x,y) = { return y; }
-
-val x = (1,2);
-print[int] (fst[int,int] x);
-print[int] (snd[int,int] x);
-
-proc pp[T] (x:T) { print[T](x); }
-
-pp[int] (snd[int,int] x);
-
-@doc()
-Note in this example, the return type cannot
-be stated since it depends on a synthesised type variable.
-@p()
-When there is only one argument which has a type 
-which is a type variable, then if the type variable
-is omitted, the parentheses can also be omitted.
-This is particularly useful with curried declarations.
-@p()
-Note carefully that in the call to pair below, both the
-type subscripts must be given explicity, because they cannot
-be deduced from the argument. 
-
-@select(tangler(tdir+'tut_beg135c.flx'))
-#import <flx.flxh>
-fun pair1 x y = { return x,y; }
-fun pair2[t,u] (x:t) (y:u) = { return x,y; }
-fun diag x = { return x,x; }
-fun fst (x,y) = { return x; }
-fun snd (x,y) = { return y; }
-
-{
-  val x34 = pair1[int,int] 3 4;
-  val a = fst x34;
-  val b = snd x34;
-  print a; print ","; print b; endl;
-};
-
-{
-  val x34 = pair2[int,int] 3 4;
-  val a = fst x34;
-  val b = snd x34;
-  print a; print ","; print b; endl;
-};
-
-val x22 = diag 2;
-val x = fst x22;
-val y = snd x22;
-print x; print ","; print y; endl;
-
-@doc()
-@head(2,'Generic Structs and Unions')
-Felix structs and unions can be generic too.
-Here is a simple example.
-
-@select(tangler(tdir+'tut_beg135e.flx'))
-#import <flx.flxh>
-union list[T] = 
-  | Cons of T * list[T] 
-  | Empty
-;
-
-struct pair[T,U] = 
-{
-  fst : T;
-  snd : U;
-}
-
-var x = Cons[int] (1,Empty[int]);
-x =  Cons[int] (2,x);
-x = Cons[int] (3,x);
-
-val y = pair[int,int] (1,2);
-print y.fst; print ","; print y.snd; endl;
-
-@doc()
-@head(2,'Argument Deduction')
-It is inconvenient to specify the type
-arguments for a function. Generally,
-this is not necessary, as illustrated in
-the example: Felix deduces the value
-of the type variables from function arguments.
-
-@select(tangler(tdir+'tut_beg135f.flx'))
-#import <flx.flxh>
-union list[T] =
-  | Cons of T * list[T]
-  | Empty
-;
-
-struct pair[T,U] =
-{
-  fst : T;
-  snd : U;
-}
-
-var x = Cons (1,Empty[int]);
-  // the [int] in Empty is mandatory
-
-x =  Cons(2,x);
-x = Cons(3,x);
-
-fun f[t] (x:list[t]):list[t] = { return x; }
-
-x = f(x);
-
-val y = pair(1,2);
-print y.fst; print ","; print y.snd; endl;
-
-
-// check nested generics now 
-
-module F[T] {
-  fun id1(x:T):T = { return x; }
-}
-
-print (F[int]::id1 1); endl;
-
-module A[T] {
-  module B[U] {
-    fun id2[V](x:T,y:U,z:V):V*U*T = { return z,y,x; }
-  }
-}
-
-val zyx = (A[int]::B[int]::id2(1,2,3));
-print zyx.(0);
-print zyx.(1);
-print zyx.(2);
-endl;
-
-// check specialisation
-fun idt[T] (x:T):T*T = { return x,x; }
-fun idt[T] (x:T*T):T*T = { return x; }
-
-val x1 = idt(1); // calls first idt
-val x2 = idt(1,2); // calls second idt
-print x1.(0); print x1.(1); endl; // print 11
-print x2.(0); print x2.(1); endl; // print 12
-
-proc pr[T] (x:list[T], pp:T->void) {
-  match x with
-  | Cons (?i,?t) => { pp i; pr (t,pp); }
-  | Empty => { print "Empty"; }
-  endmatch
-  ;
-}
-
-proc printint (x:int) { print x; }
-  // because we can't use a primitive as a closure yet
-
-pr (x,(printint of (int))); endl;
-
-@doc()
-@head(2,'Generic modules')
-It is also possible specify type arguments for a module.
-The effect is simply that all the entities declared in
-the module are parameterised by the type parameter.
-@p()
-Because of this, you can open a generic module,
-but you must do so without specifying any type arguments.
-@p()
-When you use a qualified name, Felix concatenates
-all the arguments and applies them to the last component.
-@p()
-Note this excludes parent functions, since the type
-arguments of the parent of a function are fully
-determined by its child.
-
-@select(tangler(tdir+'tut_beg135g.flx'))
-#import <flx.flxh>
-
-module X[t] {
-  fun f[k]: t * k  -> t = "1";
-  fun cmp: t * t -> bool = "1";
-  fun mk: 1 -> t = "1";
-  fun subscript: t * t -> t = "2";
-}
-
-// both args explicit
-var a1 = X[int,long]::f(1,1L);
-var a2 = X[int]::f[long](1,1L);
-var a3 = X::f[int,long](1,1L);
-
-// first arg explicit
-var a4 = X::f[int](1,1L);
-var a5 = X[int]::f(1,1L);
-
-// full deduction
-var a6 = X::f(1,1L);
-
-// using unqualified names
-open X;
-var a7 = f[int,long](1,1L);
-var a8 = f[int](1,1L);
-var a9 = f(1,1L);
-
-print a1;
-print a2;
-print a3;
-print a4;
-print a5;
-print a6;
-print a7;
-print a8;
-print a9;
-
-print (1).[2];
-
-var x = mk[int]();
-var y = mk[int]();
-if cmp(x,y) do print "YES"; endl; else print "NO"; endl; done;
-
-@doc()
-@head(2,'Inductive types')
-Felix supports inductive types such as lists.
-Here is a list of ints.
-
-@select(tangler(tdir+'tut_beg136.flx'))
-#import <flx.flxh>
-
-union float_list =
-  | Empty
-  | Cons of double * float_list
-;
-
-val t0 = Empty;
-val nxt = (100.1,t0);
-val t1 = Cons nxt;
-val t2 = Cons (200.2,t1);
-
-proc xprint (a: float_list) 
-{
-  match a with 
-  | Empty => { print "[]"; }
-  | Cons (?i, ?tail) =>
-    {
-      print i; 
-      print " "; 
-      xprint tail;
-    }
-  endmatch;
-}
-
-xprint t2; endl;
-
-@doc()
-A more interesting example is now given.
-Here, we use a recursive routine to build the list,
-and an iterative routine to reverse it.
-
-@select(tangler(tdir+'tut_beg137.flx'))
-#import <flx.flxh>
-
-union int_list =
-  | Empty
-  | Cons of int * int_list
-;
-
-proc xprint (a: int_list) 
-{
-  match a with
-  | Empty => { print "[]"; }
-  | Cons (?i,?tail) =>
-    {
-      print i; 
-      print " "; 
-      xprint tail;
-    }
-  endmatch;
-}
-
-fun mk(i: int, tl:int_list):int_list =
-{
-  return 
-    if(i>0) then mk(i-1,Cons(i,tl))
-    else tl
-    endif
-  ;
-}
-
-val a = mk(10,Empty);
-print "List= "; xprint a; endl;
-
-fun rev(lst:int_list):int_list =
-{
-  var result = Empty;
-  proc aux(lst:int_list)
-  {
-    match lst with
-    | Empty => {}
-    | Cons (?head,?tail) =>
-      {
-        result = Cons(head,result); 
-        aux(tail);
-      }
-    endmatch;
-  }
-  aux(lst);
-  return result;
-}
-
-print "Reversed= "; xprint (rev a); endl;
-
-@doc()
-@head(2,'Higher order Functions')
-In Felix, functions and procedures are first class:
-they may accept functions or procedures as arguments,
-functions may return them, and you can have variables
-of function or procedure type.
-@p()
-In particular, a function or procedure may be
-defined inside another function or procedure,
-and it may still use any values or variables
-defined in that function or procedure, even when
-it is returned by it.
-@p()
-Note that when the returned function or procedure
-is called later, the values of variables may have
-changed since the time that it was passed.
-@p()
-Here is an example, beware this example
-contains quite a lot of subtle features!
-
-@select(tangler(tdir+'tut_beg138.flx'))
-#import <flx.flxh>
-
-var j = 2;
-
-fun get_printer(i:int): unit->void  = {
-  proc print() { print (i+j); }
-  return print of (unit);
-}
-
-val print_i = get_printer(40);
-print_i(); endl;
-j = 3;
-print_i(); endl;
-
-@doc()
-There are a couple of things to notice.
-The function return type is given as
-
-@begin_displayed_code()
-  unit->void
-@end_displayed_code()
-
-This is the notation for a procedure type accepting
-a unit argument. 
-@p()
-Notice also that the return value is
-
-@begin_displayed_code()
-  print of (unit)
-@end_displayed_code()
-
-This is the name of the function called 'print' 
-which accepts a unit argument. Felix can perform
-overload resolution when a function name is applied
-to an argument, by inspecting the type of the argument.
-In other circumstances, you have to specify the type
-of the argument. 
-@p()
-There is a subtle point of the overloading system
-here. The procedure 'print of (unit)' actually
-calls the procedure 'print of (int)'. Now if you are
-used to C++, you may wonder how this would work:
-the search for 'print of (int)' stats by finding
-'print of (unit)', and in C++ it would stop right there
-and report an error. In Felix, if overload resolution
-for an unqualified function or procedure name fails,
-the enclosing scope is examined. This 'overloading
-across scopes' is allows you to extend an overload
-set locally. The special rule does not apply
-to qualified names (where the name must be found
-in the designated scope). [I may change this!]
-@p()
-Another thing to notice is that
-the call to print_i cannot be abbreviated by leaving
-the () off. This is because print_i is a function
-value, not the name of a function. 
-@p()
-More precisely, the function specification for p of (unit)
-is used to build a function closure: this consists of the
-code body of the function, together with the environment
-at the point of definition and the time the closure
-is created: it binds to the current 'activation record'
-or 'stack frame' of the enclosing function 'get_printer'.
-And because that environment contains the value 'i'
-initialised to 30, and the variable 'j', it will
-print 40 + j as an answer when called. This is 42
-the first time, since at that time j is 2, and 43 the
-second time, since j is then 3.
-@p()
-The difference between a function specification
-and a function closure may seem difficult to grasp
-at first, but the implementation makes the distinction
-quite clear: a function specification is a C++ class,
-whereas a function closure is an object of that class.
-Function closures exist at run time, function specifications
-only exist at compile time. Unfortunately perhaps,
-the unqualified term "function" is used to refer to both.
-Even more confusing, it sometimes means procedures
-as well (even though they're utterly different beasts).
-
-@head(2,'The "the" keyword')
-When naming functions, it annoying
-to write the signature of the function
-when there is clearly only one function
-of a given name. in this special case
-you can use the keyword 'the' to specify
-you mean that function.
-@select(tangler(tdir+'tut_beg138a.flx'))
-#import <flx.flxh>
-
-fun f(x:int):int=>x*x;
-fun apply[s,d] (f:s->d) (x:s) : d => f x;
-
-print (apply (the f) 4); endl;
-
-@doc()
-@head(2,'Currying')
-Consider the following example:
-@select(tangler(tdir+'tut_beg139.flx'))
-#import <flx.flxh>
-
-fun f4(i4:int): int->int->int->int = {
-  fun f3(i3:int): int->int->int = {
-    fun f2(i2:int): int->int = {
-      fun f1(i1:int): int = {
-        return i1+i2+i3+i4;
-      }
-      return f1 of (int);
-    }
-    return f2 of (int);
-  }
-  return f3 of (int);
-}
-
-print (f4 1 2 3 4); endl;
-print ((f4 1 2 3) 4); endl;
-print ((f4 1 2) 3 4); endl;
-print ((f4 1) 2 3 4); endl;
-print (((f4 1) 2 3) 4); endl;
-print (((f4 1 2) 3) 4); endl;
-
-val curry = f4 1 2;
-print (curry 3 4); endl;
-
-@doc()
-You should note that -> is right associative,
-so that
-
-@begin_displayed_code()
-  int->int->int->int
-@end_displayed_code()
-is equivalent to
-@begin_displayed_code()
-  int->(int->(int->int))
-@end_displayed_code()
-On the other hand, application is left associative,
-so that
-@begin_displayed_code()
-  f4 1 2 3 4
-@end_displayed_code()
-is equivalent to
-@begin_displayed_code()
-  (((f4 1) 2) 3) 4
-@end_displayed_code()
-
-Note that the 'partial' applications such as
-shown by the brackets, are of course closures
-of the inner functions, and you can use them
-to initialise values, assign them to variables
-or pass them to functions. Such 'partial'
-application is called currying (after the mathematician
-Howard Curry, who invented the lambda calculus).
-@p()
-While this is a perfectly good defintion,
-there is a lot of housekeeping going on.
-Felix provides syntactic sugar that makes it easier
-to declare functions suitable for currying.
-Here is the equivalent code, using this sugar:
-
-@select(tangler(tdir+'tut_beg140.flx'))
-#import <flx.flxh>
-
-fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
-  return i1+i2+i3+i4;
-}
-
-print (f4 1 2 3 4); endl;
-print ((f4 1 2 3) 4); endl;
-print ((f4 1 2) 3 4); endl;
-print ((f4 1) 2 3 4); endl;
-print (((f4 1) 2 3) 4); endl;
-print (((f4 1 2) 3) 4); endl;
-
-val curry = f4 1 2;
-print (curry 3 4); endl;
-
-@doc()
-You may remember eariler I said that
-all Felix accepted exactly one argument,
-with one exception: tuple constructors.
-@p()
-It is conventional to say that a function like
-'f4' above has 4 arguments. Of course,
-you know that this isn't the case: it really
-has one argument and returns a function.
-It is also sometimes said that f4 has arity 4,
-meaning you can chain applications 4 times,
-until you get a non-function result.
-@p()
-Note that the notation above can be used for
-procedures as well: of course, all the partial
-applications except the last return functions,
-and the last one returns a procedure.
-@p()
-It is a matter of style whether you write
-functions in the curried form or not.
-Any function accepting a tuple can be changed
-to a currified function accepting the components
-in sequence. This is conventional in some
-functional programming languages (like Ocaml),
-but is less heavily used in others (like SML).
-@p()
-In the current implementation of Felix, currified
-functions are more expensive than ones accepting
-tuples, but the currified version is easier to
-curry :-)
-@p()
-As an exercise, write a function that given an
-arbitrary function f accepting a tuple of 3 ints,
-returns an equivalent currified version of it
-that accepts 3 arguments.
-@p()
-What you have done is called eta-expansion.
-It is necessary even for currified functions
-if you want to fix the second argument, but
-leave the first free.
-
-@head(2,'List functions')
-@select(tangler(tdir+'tut_beg140a.flx'))
-#import <flx.flxh>
-open List;
-val x : list[int] = 
-  Cons (1, Cons (2, Cons (3, Empty[int])));
-val y = rev x;
-iter (proc (x:int) { print x; print ", "; }) x; endl;
-iter (proc (x:int) { print x; print ", "; }) y; endl;
-
-proc print (x:list[int]) 
-{
-  match x with
-  | Empty[int] => { print "[]"; }
-  | Cons[int] (?h,?t) => 
-    {
-      print "["; print h;
-      iter (proc (x:int) { print ","; print x; }) t;
-      print "]";
-    }
-  endmatch;
-}
-
-fun add (x:int) (y:int):int = { return x + y; }
-
-val x_l_total = fold_left add of (int) 0 x;
-val y_l_total = fold_left add of (int) 0 y;
-val x_r_total = fold_right add of (int) x 0;
-val y_r_total = fold_right add of (int) y 0;
-print x_l_total; endl;
-print y_l_total; endl;
-print x_r_total; endl;
-print y_r_total; endl;
-
-
-
-@doc()
-@head(2,'Modules')
-Most modern languages support packaging of related
-specifications into some kind of module, and Felix
-is no exception. Basic module use is quite simple:
-@select(tangler(tdir+'tut_beg141.flx'))
-#import <flx.flxh>
-val top = 1;
-module A {
-  val a = top + 1;
-  module B {
-    val b = a + 1;
-  }
-}
-
-print top; endl;
-print root::top; endl;
-print A::a; endl;
-print A::B::b; endl;
-@doc()
-
-This example illustrates the simple use of modules,
-including module nesting, and use of qualified names
-to access module components.
-@p()
-You can put anything except export declarations in 
-modules that you can put at the top level, and for a
-very simple reason: the top level is, in fact,
-a module itself.
-@p()
-When a qualified name is used, the qualifier specifies
-the module in which the next name must be found.
-Qualification inhibits upscope overloading.
-@p()
-Note the name 'root' is used to name the top-level
-module, in lieu of the actual module name, which is
-derived from the basename of the filename.
-@p()
-Finally, it is vital to understand that Felix
-scopes act like sets of names. Names are always defined
-in parallel, and visible to all definitions in the scope,
-so that all definitions are mutually recursive.
-For this reason, forward declarations are never needed.
-The following example is quite legal:
-
-@begin_displayed_code()
-  x = 1;
-  y = x;
-  var y:int;
-  var x:int;
-@end_displayed_code()
-
-This is much like the 'rewriting rule' for C++ class member
-functions. Note, however, that executable code
-is still sequential! Thus, the order of value and variable
-definition does matter: initialisations are executed
-in order of writing. 
-
-@head(2,'Koenig Lookup')
-Consider the following example:
-@select(tangler(tdir+'tut_beg142.flx'))
-#import <flx.flxh>
-
-module A {
-  struct X {
-    x: int;
-  }
-}
-val e = A::X(5);
-print e.x; endl;
-@doc()
-
-There is a subtle point here in this code.
-(Isn't there always?) Recall that
-@begin_displayed_code()
-  e.x
-@end_displayed_code()
-is transformed by desugaring to the function application
-@begin_displayed_code()
-  get_x e
-@end_displayed_code()
-If that is so, how is it that the get_x of (A::X)
-is found, when it is not visible in the top level scope?
-The answer is that I told a white lie before.
-@p()
-What really happens is that e.x is transformed
-into a method application. This is exactly the
-same as a function application, except that
-overloading uses a special kind of lookup
-for the method name, called Koenig Lookup,
-after its inventor, Andrew Koenig.
-@p()
-Koenig lookup works by searching the module
-in which the type of the expression e is 
-defined: in Felix the type must be generative,
-which means it must be a declared type
-such as a named struct or union
-and not an implicitly defined type like a tuple,
-pointer, or function type (typedefs do not count
-here, as in C they just specify an alias, they
-don't define a type).
-@p()
-In the example, 'get_x' is defined in the module X,
-because A is defined in the module X, and since
-e has type 'A', Felix looks in module X for 'get_x'.
-@p()
-Koenig lookup only works for method calls, that is,
-when you use the syntax e.x.
-
-@head(2,'Dynamic modules')
-Modules can contain executable code, not just declarations.
-The executable code of a module is wrapped in an
-initialisation function. This function is called
-automatically by Felix, when the enclosing
-scope is initialised. The top level module's
-initialisation routine must be called manually
-by the driver program.
-@p()
-Modules can be nested in functions or procedures. 
-In this case the data lives in the function
-or procedure stack frame, and the module is
-initialised every time the function is called.
-@p()
-[Add more later as features are implemented]
-
-@head(2,'Pointers')
-Felix supports pointers. The type of a pointer to T is
-denoted:
-@begin_displayed_code()
-  &T
-@end_displayed_code()
-A pointer can be created by addressing a variable
-using the notation:
-@begin_displayed_code()
-  &v
-@end_displayed_code()
-Pointers can be dereferenced using the usual syntax:
-@begin_displayed_code()
-  *p
-@end_displayed_code()
-and there is the usual arrow notation:
-@begin_displayed_code()
-  p->x
-@end_displayed_code()
-which means the same as
-@begin_displayed_code()
-  (*p).x
-@end_displayed_code()
-@p()
-Only variables, not values, are addressable.
-Pointers are used to implement assignment.
-You have seen many examples of assignment:
-@begin_displayed_code()
-  var v : T;
-  v = e;
-@end_displayed_code()
-What you didn't know was that the assignment
-operator is just syntactic sugar for
-the procedure call:
-@begin_displayed_code()
-  set(&v,e);
-@end_displayed_code()
-This procedure is defined automatically
-for structs, unions, and function and procedure
-closures, that is, for Felix types; but you can
-define it manually for abstract types including
-primitives. The usual definition is:
-@begin_displayed_code()
-  type T = "T";
-  proc _set: &T * t = "*$1=$2;"
-@end_displayed_code()
-If you don't define a set method for a primitive
-type, Felix assumes the C++ assignment operator
-as above. WARNING: This is wrong in principle,
-since Felix cannot check such a function exists,
-if it doesn't, you will get an error at C++ compilation
-time instead of Felix compilation time. Be warned!
-@p()
-Note that all Felix primitives must be C++ assignable
-and implicitly default constructible,
-since in the generated code all values and variables 
-are first declared without an initialiser and 
-then assigned to. 
-@p()
-It is important to note that in Felix,
-you can take the address of any variable,
-and safely pass the pointer around, without
-fear it will dangle: this includes pointers
-to function and procedure local variables.
-@p()
-This all works because Felix uses a garbage collector,
-but you should note that because the frame containing
-an object must be kept alive if there is a pointer into
-it, returning a pointer to a function local variable
-may prevent other local variables in the same
-frame from being destroyed.
-@p()
-Here is an example:
-
-@select(tangler(tdir+'tut_beg143.flx'))
-#import <flx.flxh>
-
-fun pone (): &int = 
-{
-  var x : int = 1;
-  return &x;
-}
-
-var p1 = pone();
-print (*p1); endl;
-*p1 = 2;
-
-print (*p1); endl;
-
-@doc()
-You should note that Felix pointers consist
-of two C pointers: a pointer to the variable,
-and a pointer to the frame containing the variable.
-It is this frame pointer which the garbage collector
-tracks. Although Felix pointers do not have to
-be initialised, the frame pointer component
-of the representation is always initialised to NULL
-so that the garbage collector doesn't chase off into
-the wild blue yonder.
-
-@head(2,'The ubiquitous goto')
-Felix allows statements to be labelled,
-and provides a conditional and unconditional goto statement.
-
-@select(tangler(tdir+'tut_beg144.flx'))
-#import <flx.flxh>
-print "start"; endl;
-var i = 1;
-start_loop:>
-  if (not (i<10)) goto end_loop;
-  print i; endl;
-  i++;
-  goto start_loop;
-end_loop:>
-  print "finished"; endl;
-  
-@doc()
-Note that labels require a terminating :> rather
-that C's plain :. 
-@p()
-Goto is not recommended programming style,
-but it is an essential primitive, and it is used
-both by the compiler and in the standard library
-to define control structures such as 'while'.
-@p()
-It is also useful for inventing your own
-control structures: together with higher
-order functions and currying, you can do
-this quite easily in Felix, as we shall soon see.
-@p()
-But first consider the following example:
-
-@select(tangler(tdir+'tut_beg145.flx'))
-#import <flx.flxh>
-
-var x = 1;
-proc run()
-{
-  proc check()
-  {
-    if(x!=1) goto bad_x;
-  }
-  check();
-  print "good x"; endl;
-  x = 2;
-  check();
-  print "good x"; endl;
-  goto finished;
-
-bad_x:>
-  print "bad_x"; endl;
-
-finished:>
-  print "finished"; endl;
-}
-run();
-
-@doc()
-In this example, you see what is called a non-local
-goto: a jump into an enclosing procedure. Such jumps
-are quite OK.
-@p()
-What you can't do is jump out of a function,
-that is, across a function boundary. 
-[the reason will become clear much later]
-@p()
-There is another interesting fact. A procedure
-nested in a module, including the top level,
-cannot jump to a label in the module.
-The reason is that executable code in a module,
-including any labels, are wrapped in an initialisation
-procedure, which is called where the module
-is defined. That initialisation procedure does not
-have the procedures defined in the module nested in it,
-instead, they're at the same level as the initialisation
-procedure. You can't jump into the initialisation procedure
-because it mightn't be active at the time the other
-procedure is called.
-
-@p()
-[This may change: a better model would be a that a 
-module returns the enities exported
-from it as a tuple: the procedures would
-then be nested in the initialisation routine.
-This would also make modules first class objects,
-with a type described more or less as a tuple.
-In turn this allows dynamic binding.]
-
-@head(2,'Procedure return')
-A procedure can be terminated by a goto to a label
-at the end of the procedure:
-@select(tangler(tdir+'tut_beg146.flx'))
-#import <flx.flxh>
-
-proc f(x:int) 
-{
-  if x == 0 goto zero;
-  print x; endl;
-  goto finished;
-zero:>
-  print "Zero"; endl;
-finished:>
-}
-
-f(1);
-f(0);
-@doc()
-A slightly more structured way of doing this
-involves the procedural return statement:
-@select(tangler(tdir+'tut_beg147.flx'))
-#import <flx.flxh>
-
-proc f(x:int) 
-{
-  if x == 0 goto zero;
-  print x; endl;
-  return;
-zero:>
-  print "Zero"; endl;
-}
-
-f(1);
-f(0);
-
-@doc()
-This can also be shortened by using a the jump statement:
-@select(tangler(tdir+'tut_beg148.flx'))
-#import <flx.flxh>
-
-proc f(x:int) 
-{
-  if x == 0 goto zero;
-  print x; jump endl;
-zero:>
-  print "Zero"; jump endl;
-}
-
-f(1);
-f(0);
-
-@doc()
-which is equivalent to a call statement followed by a 
-return, which in turn is equivalent to a call
-followed by a goto the end of the procedure.
-
-@head(2,'Loops')
-The final call in a procedure is known as a tail call,
-and and can be indicated by a jump statement as 
-described in the previous section, though it isn't
-necessary: tail calls are detected by the compiler.
-@p()
-There is a special kind of tail call known
-as a loop, in which the jump is made to the procedure
-containing the jump, or one or its parents.
-@p()
-Provided no pointers are kept to any of the frames
-of the procedures between the target and current
-frame, so that all these frames would be garbage
-collected, a jump to a parent can reuse the parent's
-storage.
-@p()
-This is a form of goto, except that the procedure
-arguments are re-initialised.
-@p()
-Loops are automatically detected in some cases
-by the compiler. An explicit loop statement
-may also be used:
-
-@select(tangler(tdir+'tut_beg149.flx'))
-#import <flx.flxh>
-
-proc f(x:int) 
-{
-  if x == 0 goto zero;
-  print x; endl; loop f(x-1);
-zero:>
-  print "Zero"; jump endl;
-}
-
-f(10);
-
-@doc()
-@head(2,'Conditional Statements')
-Felix supports a traditional procedural if chain.
-Here is a simple if/do/done:
-
-@select(tangler(tdir+'tut_beg149a.flx'))
-#import <flx.flxh>
-// procedural if
-proc f(x:int) {
-  if x == 1 do print "ONE"; endl; done;
-}
-
-f 1;
-f 2;
-
-@doc()
-
-You can also have an else clause:
-@select(tangler(tdir+'tut_beg149b.flx'))
-#import <flx.flxh>
-// procedural if/else
-proc f(x:int) {
-  if x == 1 do print "ONE"; endl; 
-  else print "Not a one .."; endl;
-  done;
-}
-
-f 1;
-f 2;
-
-@doc()
-
-and even elif clauses:
-@select(tangler(tdir+'tut_beg149c.flx'))
-#import <flx.flxh>
-// procedural if/do/elif/else
-proc f(x:int) {
-  if x == 1 do print "ONE"; endl; 
-  elif x == 2 do print "TWO"; endl; 
-  else print "Not a one .."; endl;
-  done;
-}
-
-f 1;
-f 2;
-f 3;
-
-@doc()
-
-Any number of statements can be used, including none.
-You can also use a conditional return or goto instead
-of the do part:
-@select(tangler(tdir+'tut_beg149d.flx'))
-#import <flx.flxh>
-// procedural if
-proc f(x:int) {
-  if x == 1 do print "ONE "; endl; 
-  elif x == 2 return;
-  else print "Weird ";
-  done;
-  print "Found";
-}
-
-f 1;
-f 2;
-f 3;
-endl;
-
-@doc()
-@head(2,'More on Conditionals')
-Of course conditional statements can be nested.
-@p()
-Also, like C, you can jump into conditionals,
-although this practice isn't recommended.
-This is because conditionals are just
-shorthand for a web of labels and conditional gotos,
-so adding extra labels can gotos is possible.
-
-@select(tangler(tdir+'tut_beg149e.flx'))
-#import <flx.flxh>
-
-inline proc f(x:int) (y:int) {
-  print "NOT ONE"; endl;
-  if x == 1 do 
-    print 1; print " ";
-    if y == 20 goto twenty;
-    if y == 10 do print "TEN"; else done;
-  elif x == 2 do 
-    print 2; print " ";
-    if y == 20 do 
-twenty:> 
-      print "TWENTY"; 
-    done;
-  else print "Dunno .. ";
-  done;
-  endl;
-}
-
-f 1 10;
-f 1 20;
-f 1 40;
-f 2 20;
-f 3 30;
-
-@doc()
-Conditionals are primarily a convenient shorthand for 
-conditional expressions with procedural arguments.
-Conditional expresssions always have an else part,
-so that f1 and f2 below are equivalent:
-
-@select(tangler(tdir+'tut_beg149f.flx'))
-#import <flx.flxh>
-
-proc f1(x:int) {
-  if x == 1 then { print 1; endl; } 
-  else {} endif;
-}
-
-proc f2(x:int) {
-  if x == 1 do print 1; endl; done;
-}
-
-f1 1;
-f2 1;
-
-@doc()
-You can see we avoid the messy 'else {}'.
-@p()
-Conditionals may contain declarations.
-However the bodies are not blocks, and the declared
-symbols are not local to the conditional bodies.
-@p()
-The macro processor can fold
-conditional statements, in particular it can
-choose between two declarations.
-
-@select(tangler(tdir+'tut_beg149g.flx'))
-#import <flx.flxh>
-macro val x = 1;
-if x == 1 do val y = 1; else val y = "ONE"; done;
-print y; endl;
-
-@doc()
-@head(2,'Failure')
-The fail construction is used to abort a
-task with prejudice. A string argument may be
-given. A C++ exception is thrown. It cannot
-be caught by the Felix program (although
-it can be caught by the driver).
-
-@select(tangler(tdir+'tut_beg150.flx'))
-#import <flx.flxh>
-// uncomment to test 
-//fail "Aborted";
-
-@doc()
-@head(2,'Dynamic exception handling using goto')
-Non local gotos are very useful for a form of
-exception handling. Consider the following example:
-
-@select(tangler(tdir+'tut_beg151.flx'))
-#import <flx.flxh>
-
-proc bad_calc(err: int -> void) 
-{
-  // do some work, detect an error
-  err 1; // throw exception
-}
-
-proc main
-{
-  proc err(errno:int) 
-  {
-    print "error "; print errno;
-    print " -- aborting"; endl;
-    goto resume;
-  }
-  bad_calc err of (int);
-  print "no error"; endl;
-resume:>
-  print "error handled, continuing"; endl;
-}
-main;
-
-@doc()
-Here, we establish a handler for an error,
-which is effectively established at the
-label resume: the handler is passed explicitly
-to the routine which may 'raise' it.
-
-
-@head(2,'Static exception handling using goto')
-Non local gotos are very useful for another form of
-exception handling. Consider the following example:
-
-@select(tangler(tdir+'tut_beg152.flx'))
-#import <flx.flxh>
-
-proc main
-{
-  // do something
-
-  // raise err1
-  err 1; goto resume;
- 
-  // do something else
-
-  // exception handlers
-  proc err(errno:int)
-  {
-    print "error "; print errno;
-    print " -- aborting"; endl;
-    goto resume;
-  }
-resume:>
-  print "error handled, continuing"; endl;
-}
-
-@doc()
-@head(2,'Procedure Values Again')
-We've seen the advantages of higher order 
-functions and procedures. It is possible
-to define anonymous procedure and function values
-literally, as in the next example,
-they're called lambdas, after the lambda calculus:
-
-@select(tangler(tdir+'tut_beg154.flx'))
-#import <flx.flxh>
-val f = fun(a:int):int = { return a * a; };
-
-print (f 1); 
-endl;
-
-print 
-(
-  (fun(a:int):int = { return a * a; })
-  1
-); 
-endl;
-
-proc thrice(p:unit->void) { p(); p(); p(); }
-thrice ( proc() { print 3; endl; } );
-thrice ( proc   { print 3; endl; } );
-thrice          { print 3; endl; };
-{ print "finished"; endl; };
-
-@doc()
-Mickey Mouse! Checkout the shortcut on the
-second last line. You can just write
-statements in curly brackets for an
-anonymous procedure taking unit argument,
-you can leave off the
-@begin_displayed_code()
-  proc() // or
-  proc
-@end_displayed_code()
-But why does the last line work?
-The answer is: this is a special shortcut.
-A statement consisting of an anonymous
-procedure taking unit, and a semicolon ;
-is a shortcut for a call:
-@begin_displayed_code()
-  { print 1; }; // is a shortcut for ..
-  { print 1; } (); 
-@end_displayed_code()
-much the same as
-@begin_displayed_code()
-  endl; // is a shortcut for ..
-  endl (); 
-@end_displayed_code()
-Now, remember those ugly semicolons at the end
-of the while statement? Are you getting a glimmer?
-Hint: Felix doesn't have a while statement.
-It's a library routine!
-
-@head(2,'The while procedure')
-Here is the while procedure from
-the standard library, renamed While
-to avoid a clash:
-@select(tangler(tdir+'tut_beg155.flx'))
-#import <flx.flxh>
-proc While (cond:unit->bool) (bdy:unit->void)
-{
-  repeatx:>
-    if not (cond()) goto finished;
-    bdy();
-    goto repeatx;
-  finished:>
-}
-
-var x = 10;
-While {x>0} { print x; endl; x = x - 1; };
-
-@doc()
-Notice how simple and powerful the combination
-of the lazy expression syntax, block syntax,
-and currying are.
-@p()
-Felix actually only has a three
-procedural control structures: 
-label/goto, procedure call/return,
-and raise/attempt/catch; and even the latter
-is only supported by the compiler for syntactic
-convenience.
-@p()
-The standard library defines several
-common procedural control structures.
-@p()
-Note that much of the rich control is obtained
-from the functional subsystem. For example
-the match expression is purely functional,
-it simply returns one of several expressions,
-but of course those expressions can be procedures
-which are subsequently called: here the default
-call syntax fools you into believing there
-is a match statement when actually there isn't.
-
-@head(2,'Lambda expressions')
-Felix allows a function to be specified in an expression,
-this is called a lambda expression:
-@select(tangler(tdir+'tut_beg156.flx'))
-#import <flx.flxh>
-var x = 10;
-while 
-  (fun ():bool = { return x>0; })
-  { print x; endl; x = x - 1; };
-
-@doc()
-Of course, we have already used lambdas in the short form,
-by enclosing expressions in curley braces;
-this example shows the long form. Lambdas of course
-may have arguments:
-@select(tangler(tdir+'tut_beg157.flx'))
-#import <flx.flxh>
-fun f(g:int->int,x:int) = { return g x; }
-print 
-(
-  f
-  (
-    (fun(a:int):int = { return a + a; }),
-    1
-  )
-); endl;
-
-
-@head(2,'Axioms and Reductions')
-Felix allows you to specify rewriting rules called reductions.
-For example:
-@begin_displayed_code()
-  reduce idem(x:int): f ( f x ) => f x;
-@end_displayed_code()
-Specifies f is idempotent, and f(f(x)) should be reduced to just f(x).
-Reductions are performed after inlining, and applied repeatly to all
-expressions until code is fully reduced. The name of a reduction
-is not significiant, it is for documentation only. Of course,
-reductions can be polymorphic.
-@p()
-Axioms are statements of laws, for example
-@begin_displayed_code()
-  axiom symmetry (x:int,y:int): x + y == y + x;
-@end_displayed_code()
-states that integer addition is symmetric. Axioms
-can be checked by providing test cases via calls
-to the pseudo function 'axiom_check'.
-@begin_displayed_code()
-  var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
-@end_displayed_code()
-Axiom checks can be disable by the flxg compiler switch
-@begin_displayed_code()
-  --no-axiom-checks
-@end_displayed_code()
-otherwise every axiom is matched against every test case,
-and each on the matches generates an assertion. An error
-is printed and the program aborted if any check fails.
-
-@select(tangler(tdir+'tut_beg157a.flx'))
-#import <flx.flxh>
-
-noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
-
-reduce idem(x:int): f ( f x ) => f x;
-
-var x = f(f(f(f(1))));
-print x; endl;
-
-axiom symmetry (x:int,y:int): x + y == y + x;
-axiom associativity (x:int, y:int, z:int): (x + y) + z == x + (y + z);
-reduce additive_unit(x:int): x + 0 => x;
-reduce multiplicative_unit(x:int): x * 0 => 0;
-reduce additive_unit(x:int): 0 + x => x;
-reduce multiplicative_unit(x:int): 0 * x=> 0;
-
-//axiom wrong(x:int,y:int): x == y;
-fun hh(x:int)=>x;
-
-reduce silly (x:int): hh x => x;
-
-axiom_check (1,2,3);
-
-var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
-
-axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
-  sym(x,y) == sym(y,x)
-;
-
-// this axiom is only right if 'add' is symmetric
-axiom_check (add of (int * int), eq of (int * int), 1,2);
-
-@doc()
-@head(2,'Standard types and Lexemes')
-Here is a more comprehensive set of examples
-of Felix standard types and numeric lexicology. 
-@p()
-The types:
-@begin_displayed_code()
-  // categorical
-  void unit
-
-  // addressing
-  byte size address offset 
-
-  // logic
-  bool
-
-  // inexact integers
-  tiny  short  int  long  vlong
-  utiny ushort uint ulong uvlong
-
-  // exact integers
-  int8  int16  int32  int64
-  uint8 uint16 uint32 uint64
-
-  // floating point
-  float double ldouble
-
-  // character
-  char  uchar
-
-  // string
-  string ustring
-@end_displayed_code()
-are defined in the standard library at the top level.
-Except for the addressing types, there is module
-containing the functions acting on the type for
-each type, with the same name except that the first
-letter is upper case: thus module Long contains all
-the operations on type long. Bool, Int, Double, Char
-and String are opened in the library so the operators
-for the corresponding types are available at the top
-level. Don't expect "1L + 1L" to work unless you
-first "open Long;" in your program!
-@p()
-
-@head(3,'Integer Lexemes')
-The compiler directly supports literals of all
-the numeric types, but the lexicology is a sanitised
-version of that used by C. Note in particular
-that 010 is decimal ten in Felix!
-
-@select(tangler(tdir+'tut_beg158.flx'))
-#import <flx.flxh>
-
-// radix
-{
-  val i1 = 999;      // decimal
-  val i2 = 0b1111;   // binary
-  val i3 = 0o7777;   // octal
-  val i4 = 0d9999;   // decimal
-  val i5 = 0xF1_F2;  // hex
-};
-
-// underscores
-{
-  val i1 = 123_456; 
-  val i2 = 0x_FF_FFu;
-};
-
-// normal signed integers
-{
-  val i1 : tiny = 1t;
-  val i2 : short = 1s;       
-  val i3 : int = 1; // default
-  val i4 : int = 1i;
-  val i5 : long = 1l;
-  val i6 : vlong = 1ll;
-};
-
-// normal unsigned integers
-{
-  val i1 : utiny = 1tu;
-  val i2 : utiny = 1ut; // u may be first or last
-  val i3 : ushort = 1su;
-  val i4 : uint = 1u; // default
-  val i5 : uint = 1iu;
-  val i6 : ulong = 1lu;
-  val i7 : uvlong = 1vu;
-  val i8 : uvlong = 1llu; // alternate
-};
-
-// exact signed integers
-{
-  val i1 : int8 = 1i8;
-  val i2 : int16 = 1i16;       
-  val i3 : int32 = 1i32;
-  val i4 : int64 = 1i64;
-};
-
-// exact unsigned integers
-{
-  val i1 : uint8 = 1u8; // 1iu8 not allowed
-  val i2 : uint16 = 1u16;       
-  val i3 : uint32 = 1u32;
-  val i4 : uint64 = 1u64;
-};
-
-// floats obey C99 rules, except we allow underscores
-{
-  val x1 : float = 2.2f;
-  val x2 : double = 2.2;
-  val x3 : ldouble = 2.2l;
-  val x4 : double = 22_345.78;
-  // val x5 : float = 0xFFFF.FFp4f; // doesn't work on g++ 2.95.3
-  val x6 : double = 2.2e4;
-  val x7 : float = 2.2e4f;
-};
-
-@doc()
-@head(3,'String')
-Felix provides two kinds of strings: 8 bit and 32 bit,
-denotes string and ustring respectively.
-@p()
-Both kinds of string are intended to provide a universal
-representation of human readable text using the 
-ISO-10646/Unicode character set.
-@p()
-Both kinds of string encode 32 bit values representing
-ISO-10646 code points. Strings use UTF-8, whilst ustrings
-use UCS-4.
-@p()
-Both kinds of string literals are replaced where they
-occur with named constants with internal linkage
-of types basic_string<char>, and 
-basic_string<uint32_t>. 
-@p()
-String literals are output in the C files as C string
-literals with all UTF-8 encoding expressed with hex
-escapes, surrounded by a constructor for basic_string<char>.
-@p()
-Ustrings are surrounded by a Felix function which constructs
-a basic_string<uint32_t> from an 8 bit C string literal
-by decoding UTF-8 sequences.
-@p()
-Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
-as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
-for slosh, quote, double quote, return, newline, tab, bell, vertical tab, and
-form feed, respectively.
-@p()
-Octal and hex escapes are NOT allowed: strings are
-for internationalisable human text, and do not represent
-arbitrary raw memory extents.
-@p()
-Although not part of the lexicology, note here two special
-forms for strings: a string may be applied to a string, or,
-a string may be applied to an integer. The first case is
-remodelled as a concatenation, and the second as the concatenation
-of the string and the ISO-10646 code point the integer represents.
-Note that if the string is 8 bit, UTF-8 encoding will be applied.
-
-@select(tangler(tdir+'tut_beg159.flx'))
-#import <flx.flxh>
-var s = "Hello" 32; // add a space after "Hello"
-s = s s; // says "Hello Hello "
-print s; endl;
-
-@doc()
-@head(2,'Floating matches')
-Felix provides special matching for
-floating point. Here are some examples:
-[This will change, the need for overlapping
-ranges is too ugly ..]
-
-@select(tangler(tdir+'tut_beg160.flx'))
-#import <flx.flxh>
-
-match (1.0) with
-  | NaN => { print "Not a Number"; }
-  | -inf .. -0.999 => { print "lt -1"; }
-  | -1.001 .. 1.001 => { print "Unit circle"; }
-  | 0.999 .. inf => { print "Greater than 1"; }
-endmatch;
-endl;
-
-match (1.0) with 
-  | 0.999 .. 1.001 => { print "one"; }
-endmatch;
-endl;
-
-match (1.0/3.0) with
- | 0.3333 .. 0.3334 => { print "One third"; }
-endmatch;
-endl;
-
-@doc()
-Things to note are: if there is NaN test,
-it must be the first test. If there is
-a test -inf .. inf, it tests for a non-NaN,
-and must be the last test. A NaN will fail
-all tests other than a test for NaN.
-@p()
-A range test is neither inclusive nor exclusive!
-That's why there is no test for a particular float,
-and why the ranges above overlap.
-Welcome to constructive mathematics!
-@p()
-Note that _floating_ point provides exact
-comparisons, however, the patterns above
-apply to constructive reals. The last
-example explains this best: you can't do
-non-constructive matches. [Use IEEE type
-for exact FP?]
-
-@head(2,'Identifiers')
-Felix identifiers consists of a string of
-characters. The first character must be a letter
-or underscore, subsequent characters may be one of a
-letter, underscore, apostrophe or digit.
-@p()
-Certain identifiers are reserved as keywords.
-Identifiers beginning with an underscore are 
-reserved to Felix. Identifiers containing
-more than one underscore in a row are
-reserved to Felix. Reserved identifiers may
-be used by programmers, but not defined.
-@p()
-The letters referred to consist of the usual
-A-Z and a-z, but also include any Unicode/ISO10646
-code point recommended as a letter for the purpose
-of use in identifiers of programming languages
-by ISO/IEC PDTR 10176, as adopted by ISO C++.
-A full table can be found in the reference manual,
-Felix Standard, and source code.
-@p()
-These code points must be represented using UTF-8,
-or by embedded Universal Character Names (ucns).
-These consist of a \uXXXX or \UXXXXXXXX where the
-X's are hex digits. Felix normalises all such
-encodings so identifiers match properly.
-
-@select(tangler(tdir+'tut_beg161.flx'))
-#import <flx.flxh>
-
-val x_y_7' = 1;
-val Y_can't_U_do_this_in_C'' : double = 2.0;
-val x\u05d0= 1; // x,Hebrew  aleph
-val zz = x\U000005D0; // x,Hebrew aleph
-
-@doc()
-@head(1,'Intermediate Felix 201')
-This section mainly deals with the Felix module system.
-
-@head(2,'The open directive')
-It's really boring writing qualified names all
-the time. Felix provides the open directive
-to allow you to open a module so its contents
-can be accesses without using qualified names.
-Here's a simple example:
-
-@select(tangler(tdir+'tut_beg205.flx'))
-#import <flx.flxh>
-module X {
-  proc print_endl (a:int) { print a; endl; }
-  fun square (a:int):int = { return a * a; }
-}
-
-open X;
-print_endl (square 2);
-
-@doc()
-Note that the open directive only affects lookup
-of unqualified names, or the first component of
-a qualified name. Lookup proceeds first in the
-current scope, before considering opened modules;
-then opened modules are considered, then the
-parent scope, then opened modules in the parent,
-etc.
-@p()
-The name of the module
-to be opened is not looked up in the modules
-opened by open directives in the same module
-as itself. Open directives in containing modules
-are, however, examined.
-@p()
-The reason for this last rule is as follows:
-open directives, like Felix declarations,
-are all considered in parallel; that is,
-their order of writing is irrelevant;
-hence, open directives are considered in a
-context in which none of the open directives
-have been applied.
-@p()
-It is not an error to open modules containing
-conflicting definitions, however, it is an error
-to refer to a name with conflicting definitions.
-@p()
-Functions with the same name in opened modules
-are overloaded. If two functions have the same
-signature, a reference will lead to an ambiguity.
-Such an ambiguity can be resolved by hiding
-such definitions in opened modules by providing
-a definition in the module containing the
-open directives. Alternatively, you can use
-a qualified name.
-
-@select(tangler(tdir+'tut_beg206.flx'))
-#import <flx.flxh>
-module X1 {
-  proc printme() { print "X1"; endl; }
-}
-module X2 {
-  proc printme() { print "X2"; endl; }
-}
-open X1;
-open X2;
-proc printme() { print "top level"; endl; }
-
-X1::printme();
-X2::printme();
-printme();
-
-@doc()
-Finally note that the effect of opening a module
-named X which contains an entity named X is well
-defined: the contained X will not be seen
-by other open directives, whereas the module X
-will not be seen by any declarations and definitions
-in the body of the containing scope.
-
-@head(2,'The use directive')
-The open directive opens a whole module
-for internal use. Sometimes that is too coarse grained.
-The use directive allows you to import individual names into
-the current scope to reference with an unqualified name.
-The entity refered to can be a non-function, or a set of
-functions, and it can also be renamed in the use directive.
-The renaming feature can also be used on names in the current
-scope.
-@p()
-Note that you can't sensibly use a name from an opened
-module, nor open a module using a used name (even as
-a prefix).
-
-@select(tangler(tdir+'tut_beg206a.flx'))
-header "#include <iostream>";
-module X {
-  type int = "int";
-  proc print: int = "std::cout << $1;";
-  proc endl: 1 = "std::cout << std::endl;";
-}
-
-use X::int;
-use eol = X::endl;
-
-val x:int = 1;
-use y = x;
-X::print y; eol;
-
-@doc()
-You can see the two forms of the use directive:
-@begin_displayed_code()
-  use qualified_name;
-  use new_name = old_qualified_name;
-@end_displayed_code()
-The first form requires a proper qualified name and is 
-equivalent to the second form, where the new_name is the
-last component of the qualified_name.
-
-@head(2,'Renaming definitions')
-It is possible to inject a name or family
-of function names defined elsewhere into the
-public interface of a module with the rename
-statement.
-@p()
-injected entities can be found both by
-unqualified and qualified lookup as if actually
-defined in the module, however the denoted
-entities are not actually part of the module,
-and in particular they're bound in the context
-in which they're actually defined.
-@p()
-There are two forms of the rename statement,
-one for non-functions and one for functions.
-The non-function form injects a reference to
-a single non-function entity. 
-@p()
-The function form injects a complete overload set.
-Additional overloads can be added to the set,
-either by local definitions, or further inherit
-statements.
-@p()
-Note that unlike open or use directives, injected
-names have the same priority as other names defined
-in the module: any collision with a locally defined
-function is final, and cannot be resolved.
-
-@select(tangler(tdir+'tut_beg207b.flx'))
-header "#include <iostream>";
-module X {
-  type x_t = "int";
-  const x42 : x_t = "42";
-}
-
-module Y {
-  rename y_t = X::x_t;
-  rename y42=X::x42;
-  proc print:y_t = "std::cout << $1 << std::endl;";
-}
-
-Y::print X::x42;
-Y::print Y::y42;
-
-rename fun print=Y::print;
-rename y42=Y::y42;
-rename x42=X::x42;
-
-print x42;
-print y42;
-
-@doc()
-@head(2,'Modular inheritance')
-It is possible to inherit all
-the symbols of a module with the inherit directive.
-Unlike the open directive, inherited symbols
-become part of the public interface of a module,
-as well as it's private interface.
-@p()
-When lookup is performed, entities
-defined in the module are always considered
-before inherited ones. This is to ensure
-a local definition can always be used to
-resolve an ambiguity, and to ensure that
-any binding to a local definition cannot
-be hijacked by a non-local change in another
-module.
-@p()
-Modular inclusion is transitive because
-it is specified to include the whole of
-the public interface of one module in another,
-including any symbols that module inherits.
-@p()
-Note that as usual and unlike other programming
-languages, Felix inheritance is fully recursive:
-a module contains all the symbols it defines
-plus the transitive closure of all inherited
-modules.
-@p()
-In particular, it is quite possible for two modules
-to inherit each other, thereby ensuring they
-publish the same set of names: note however that
-local overrides may mean the definition associated
-with a name is different for each module.
-
-@select(tangler(tdir+'tut_beg207c.flx'))
-header "#include <iostream>";
-header "#include <string>";
-
-type int = "int";
-type string= "std::string";
-proc print:int = "std::cout << $1;";
-proc print:string= "std::cout << $1;";
-proc endl:1 = "std::cout << std::endl;";
-
-module X { 
-  fun f(a:int):int={ return 11; }
-}
-module Y { 
-  fun g(a:int):int={ return 22; }
-}
-module Z { inherit X; inherit Y; }
-
-// check transitivity
-module A {
-  inherit Z;
-  print (f 3); print " "; print (g 5); endl;
-  print (Z::f 3); print " "; print (Z::g 5); endl;
-  print (A::f 3); print " "; print (A::g 5); endl;
-}
-
-
-// check recurisve transitive closure
-module P { inherit Q; fun ff(a:int):int={return 33;}}
-module Q { inherit P; fun gg(a:int):int={return 44;}}
-module R {
-  inherit P;
-  print (ff 1); print " "; print (gg 1); endl;
-  print (P::ff 1); print " "; print (P::gg 1); endl;
-  print (Q::ff 1); print " "; print (Q::gg 1); endl;
-  print (R::ff 1); print " "; print (R::gg 1); endl;
-}
-
-module W { 
-  module J { val a:int = 1;} 
-  inherit J;
-  print a; endl;
-}
-print W::a; endl;
-
-@doc()
-@head(2,'Let expression')
-There is a short form for match expressions.
-An expression of the form:
-@begin_displayed_code()
-  let letpat = expr1 in expr2
-@end_displayed_code()
-is equivalent to
-@begin_displayed_code()
-  match expr1 with letpat => expr2 endmatch
-@end_displayed_code()
-The let expression is, in effect, a prefix operator with
-the lowest precedence. 
-
-@select(tangler(tdir+'tut_beg208.flx'))
-#import <flx.flxh>
-print (match 1 with | ?x =>  x + x endmatch); endl;
-print (let ?z = 1 in z + z); endl;
-print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
-
-@doc()
-@head(2,'Metatyping')
-Felix supports a metatyping or kinding system.
-The reserved identifer TYPE denotes the kind of a type.
-You can make a function that generates a type from
-other types. Of course, you can pass these functions
-to other type functions, and do currying.
-@p()
-The type evaluator is a specialised version of the
-typed lambda calculus using eager evaluation.
-Note that in this calculus, types are values,
-and their type is TYPE, type functions are also
-values, with type TYPE->TYPE. Our calculus
-also supports type tuples of types such as
-@begin_displayed_code()
-TYPE * TYPE 
-@end_displayed_code()
-and values such as
-@begin_displayed_code()
-(int, long)
-@end_displayed_code()
-Note that (unfortunately) in the abstraction form
-@begin_displayed_code()
-  fun (t:TYPE):TYPE = 
-  { 
-    t * t
-  } 
-@end_displayed_code()
-the curly braces are required, and you can even write:
-@begin_displayed_code()
-  fun (t:TYPE):TYPE = 
-  { 
-    return t * t;
-  } 
-@end_displayed_code()
-as for an ordinary function. This is because Felix uses
-precisely the same syntax for type functions and ordinary ones;
-that is, the parser uses the same grammar to build expressions
-and type expresssions (though each imposes constraints).
-
-@select(tangler(tdir+'tut_beg209.flx'))
-#import <flx.flxh>
-open Long;
-
-typedef fun list (elt:TYPE):TYPE => 1 + elt * list elt;
-
-typedef fun f(t1:TYPE, t2:TYPE->TYPE) (t3:TYPE): TYPE => (t2 t1) * t3;
-
-typedef g = (
-    fun (t1:TYPE, t2:TYPE->TYPE):TYPE->TYPE =>
-      ( fun (t3:TYPE):TYPE => (t2 t1) * t3 )
-  )
-;
-
-
-// FIXPOINTS WORKING NOW
-val x : list int = case 0 of list int;
-
-typedef fun pair (a:TYPE,b:TYPE):TYPE => a * b;
-//typedef pair = (fun (a:TYPE,b:TYPE):TYPE => {a * b});
-
-val x2 : (pair (int,long)) = (1,1L);
-match x2 with
-| (?a,?b) => { print a; endl; print b; endl; }
-endmatch;
-
-typedef fun twoup (x:TYPE):TYPE => x * x;
-
-// (twoup int) * int = (int * int) * int
-val x3 : (f (int,twoup of (TYPE)) (int)) = ((1,2),3);
-match x3 with
-| ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
-endmatch;
-
-@doc()
-@head(1,'Felix threads -- Cooperative Multitasking')
-Felix supports event driven programming with
-a threading interface. 
-
-[SECTION TO BE REPLACED]
-
-
-@head(1,"System interface")
-We show how to get at the command line arguments.
-The function 'argv' returns an empty string
-if the argument index is out of range.
-argv 0 is usually the program name:
-for the flx_run driver its the loaded library
-name: the driver name and control arguments
-are stripped. (Note: the output is platform
-dependent and so can't be checked)
-
-@select(tangler(tdir+'xtut_beg301.flx'))
-#import <flx.flxh>
-open System;
-print "argc="; print argc; endl;
-
-var i:int;
-for_each {i=0;} {i<argc} {++i;}
-{
-  print i; print "->"; print (argv i); endl;
-};
-
-@doc()
-@head(1,"STL Containers")
-@select(tangler(tdir+'tut_beg302.flx'))
-#import <flx.flxh>
-include "stl";
-open Stl;
-open Stl::Vector;
-open Stl::Map;
-
-typedef ii = Vector::iterator[int];
-
-var v = Vector::create[int]();
-push_back (v,1);
-push_back (v,2);
-push_back (v,3);
-
-var j = 0; until j==3 do
-  print v.[j]; endl;
-  ++j;
-done;
-
-
-var m = Map::create[int,int]();
-
-insert(m,0,2);
-insert(m,1,23);
-insert(m,2,423);
-
-j = 0; until j==3 do
-  print m.[j]; endl;
-  ++j;
-done;
-
-
-var i = begin m; until i == end m do
-  def val k, val vl = deref i;
-  print k; print " -> "; print vl; endl; ++i;
-done;
-
-@doc()
-@head(1,"GLR parsing")
-Felix contains a builtin parser generator. This is roughly
-like a builtin yacc or bison facility, but it differs in
-a significant way which makes it vastly more usable.
-@p()
-Yacc traditionally supports only a very specialised
-subset of grammars -- LALR1 with some weak static ambiguity
-resolution strategies.
-@p()
-The Felix system is based on Scott McPeaks Elkhound,
-which is a Generalised LR, or GLR, parser. This system
-support all grammars, whilst parsing SLR grammars 
-just as efficiently as Yacc (namely, in linear space
-and time).
-@p()
-GLR handles ambiguity by spawning multiple concurrent
-threads for all alternatives wherever the SLR(1) 
-prediction is inadequate. These threads process the
-token stream sychronously, so there is never any backtracking.
-Instead, alternatives which would be tried in sequence
-by a backtracking algorithm are all tried at once.
-@p()
-Consequently, GLR can eat up exponentially large
-amounts of memory, and finally return all possible
-parse trees.
-@p()
-In practice, this doesn't happen. First, one of the threads
-can reach an impasse where it can't handle the next
-token, and it is automatically dropped as an alternative,
-in the same way a failure in a backtracking algorithm
-drops the current parse -- however unlike backtracking,
-that's the end of it: the viable alternatives are
-already being parsed in parallel.
-@p()
-For many nonterminals, two alternative productions
-are encoded precisely to handle the union of
-two sets of cases. At some point during the parse then,
-one of the productions must fail on for any input
-not in the common subset of the cases. In that case,
-GLR drops the failed parse attempt automatically.
-@p()
-When the input is in the common subset, however,
-the algorithm cannot know what to do. By default,
-both parses will be continued, causing a bifurcation
-in the parse of a production trying to process that
-symbol during *its* parse.
-@p()
-That divergence can only be eliminated automatically
-if the whole containing production is subsequently
-failed, in which case both subparses will be dropped.
-@p()
-For this reason, at the end of the parsing of a
-a non-terminal, the client has an oppotunity to
-pick between the parses.
-
-@head(2,"top level parser")
-@select(tangler(tdir+'tut_beg310.flx'))
-#import <flx.flxh>
- 
-// the input string
-data := "1+2+3$";
- 
-// a type for tokens
-union token_t =
-  | TOK_EOF
-  | TOK_PLUS
-  | TOK_INT of int
-;
- 
-// a token stream generator
-var i = 0;
-fun get_token():token_t =
-{
-  ch := data.[i to i+1];
-  ++i;
-  tok :=
-    match ch with
-    | "$" => TOK_EOF
-    | "+" => TOK_PLUS
-    | "1" => TOK_INT 1
-    | "2" => TOK_INT 2
-    | "3" => TOK_INT 3
-    endmatch
-  ;
-  return tok;
-}
- 
-// a type for expression terms
-union expr_t =
-  | Integer of int
-;
- 
-// a grammar for expressions
-nonterm eexpr : expr_t =
-| xx:eexpr TOK_PLUS y:TOK_INT =>
-  match xx with
-  | Integer ?i => Integer (i+y)
-  endmatch
- 
-| y:TOK_INT => Integer y
-;
- 
-// a parser for our example
-var z : 1 + int =
-  parse (the get_token) with
-  | e: eexpr => match e with | Integer ?i => i endmatch
-  endmatch
-;
- 
-// print the result
-match z with
-| case 0 => { print "Error"; }
-| case 1 (?i) => { print i; }
-endmatch;
-endl;
-
-@doc()
-@head(2,"nested parser")
-@select(tangler(tdir+'tut_beg311.flx'))
-#import <flx.flxh>
-
-data := "1+2+3$";
-
-union token_t = 
-  | TOK_EOF
-  | TOK_PLUS
-  | TOK_INT of int
-;
-
-var i = 0;
-
-fun get_token():token_t = 
-{
-  ch := data.[i to i+1];
-  ++i;
-  tok := 
-    match ch with
-    | "$" => TOK_EOF
-    | "+" => TOK_PLUS
-    | "1" => TOK_INT 1
-    | "2" => TOK_INT 2
-    | "3" => TOK_INT 3
-    endmatch
-  ;
-  return tok;
-}
-
-union expr_t = 
-  | Integer of int
-;
-
-nonterm eexpr : expr_t = 
-| xx:eexpr TOK_PLUS y:TOK_INT => 
-  match xx with 
-  | Integer ?i => Integer (i+y)
-  endmatch
-
-| y:TOK_INT => Integer y
-;
-
-proc try_parse() {
-  var z : 1 + int = 
-    parse (the get_token) with 
-    | e: eexpr => match e with | Integer ?i => i endmatch
-    endmatch
-  ;
-
-  match z with
-  | case 0 => { print "Error"; }
-  | case 1 (?i) => { print i; }
-  endmatch;
-  endl;
-}
-
-try_parse();
-
-@doc()
-@head(2,"Parser shortcuts")
-The Felix parser system actually accepts
-so-called meta-grammars.
-@p()
-You can have an anonymous sequence
-of symbols or set of alternatives,
-simply by enclosing them in parentheses.
-The implementation declares a dummy nonterminal
-for such groups, and replaces the group with 
-the name of the dummy non-terminal.
-@p()
-You can also apply the postfix operators "*", "+" and "?"
-to any symbol or group. Curly brackets "{" .. "}" can also
-be used and are equivalent to ( .. ) *. Note you can't
-use [..] notation for optional constructions, since
-this conflicts with the use of [] for type subscripts.
-@p()
-Note: although it makes sense at present anonymous
-nonterminal specifications can't contain names
-or client code.
-@p()
-Note: restriction: at present each dummy is distinct,
-so any anonymous expression occuring more than
-once will lead to a reduce/reduce conflict.
-@p()
-Note: restriction: all the anonymous symbols must have attributes.
-
-@select(tangler(tdir+'tut_beg312.flx'))
-#import <flx.flxh>
- 
-// the input string
-data := "1+22+33$";
- 
-// a type for tokens
-union token_t =
-  | TOK_EOF
-  | TOK_PLUS
-  | TOK_INT of int
-;
- 
-// a token stream generator
-var i = 0;
-fun get_token():token_t =
-{
-  ch := data.[i to i+1];
-  ++i;
-  tok :=
-    match ch with
-    | "$" => TOK_EOF
-    | "+" => TOK_PLUS
-    | "1" => TOK_INT 1
-    | "2" => TOK_INT 2
-    | "3" => TOK_INT 3
-    endmatch
-  ;
-  return tok;
-}
- 
-// a type for expression terms
-union expr_t =
-  | Integer of int
-;
-
-// a grammar for expressions
-nonterm eexpr : expr_t =
-| xx:eexpr TOK_PLUS y:TOK_INT+ =>
-  match xx with
-  | Integer ?i => let case 1 (?j,_) = y in Integer (i+j)
-  endmatch
- 
-| y:TOK_INT => Integer y
-;
- 
-// a parser for our example
-var z : 1 + int =
-  parse (the get_token) with
-  | e: eexpr => match e with | Integer ?i => i endmatch
-  endmatch
-;
- 
-// print the result
-match z with
-| case 0 => { print "Error"; }
-| case 1 (?i) => { print i; }
-endmatch;
-endl;
-
-@head(2,"Mixed Mode Arithmetic")
-@select(tangler(tdir+'tut_beg313.flx'))
-#import <flx.flxh>
-open MixedInt;
-
-var x = 1;
-var y = 2L;
-
-print$ x + y; endl;
-
-@head(2,"Classes")
-@select(tangler(tdir+'tut_beg316.flx'))
-#import <flx.flxh>
-open Long;
-
-class Y {
-  // variables
-  val c : int;
-  var x : int;
-  var y : long;
-  
-  // accessor methods
-  fun fetchc():int =>c;
-
-  // mutatoes
-  proc setx(a:int) { x = a; }
-  proc setxy( a:int, b:long) { x = a; y = b; }
-
-  // accessor procedures
-  proc yprint() {
-    print "This is a Y object, with x = "; 
-    print x; print ", y = "; print y;
-    print ", and c = "; print c; endl;
-  }
-
-  // test methods calling methods
-
-  fun f(a:int):int => g a;
-  fun g(a:int):int => a + x;
-
-  // constructors
-  ctor () {}
-  ctor (a:int): c(20000) { x = a; }
-};
-
-var ob <- new Y(99);
-ob.x = 2;
-ob.y = 3L;
-
-print ob.c; endl;
-print ob.x; endl;
-print ob.y; endl;
-print$ ob.fetchc(); endl;
-
-ob.setx 22;
-ob.yprint();
-
-ob.setxy (12,33L);
-ob.yprint;
-
-print$ ob.f 1; endl;
-
-proc ncl() {
-  var x = 42;
-  class J {
-    var j:int;
-    ctor (a:int) { j = a; }
-    fun h(q:int):int => q + j + x;
-  };
-  var b <- new J(100);
-  print$ b.h 1000; endl;
-};
-
-ncl;
-
-@head(2,"Polymorphic Classes")
-@select(tangler(tdir+'tut_beg317.flx'))
-#import <flx.flxh>
-open Long;
-
-class Y[t] {
-  // variables
-  val c : int;
-  var x : t;
-  var y : long;
-  
-  // accessor methods
-  fun fetchc():int =>c;
-
-  // mutatoes
-  proc setx(a:t) { x = a; }
-  proc setxy( a:t, b:long) { x = a; y = b; }
-
-  // accessor procedures
-  proc yprint(xprint:t->0) {
-    print "This is a Y object, with x = "; 
-    xprint x; print ", y = "; print y;
-    print ", and c = "; print c; endl;
-  }
-
-  // test methods calling methods
-
-  fun f(a:int,add:int * t->int):int => g$ a,add;
-  fun g(a:int,add:int * t->int):int => a + x;
-
-  // constructors
-  ctor () {}
-  ctor (a:int): c(20000) { x = a; }
-};
-
-var ob <- new Y[int](99);
-ob.x = 2;
-ob.y = 3L;
-
-print ob.c; endl;
-print ob.x; endl;
-print ob.y; endl;
-print$ ob.fetchc(); endl;
-
-proc iprint(x:int) { print x; }
-
-ob.setx 22;
-ob.yprint(iprint of (int));
-
-ob.setxy (12,33L);
-ob.yprint(iprint of (int));
-
-print$ ob.f (1,add of (int*int)); endl;
-
-proc ncl() {
-  var x = 42;
-  class J {
-    var j:int;
-    ctor (a:int) { j = a; }
-    fun h(q:int):int => q + j + x;
-  };
-  var b <- new J(100);
-  print$ b.h 1000; endl;
-};
-
-ncl;
-
-class A[t] {
-  fun f(a:t):t=>a;
-  ctor (){}
-};
-
-module V[t] {
-  fun f(a:t):t=>a;
-};
-
-fun X[t]() = {
-  fun f(a:t):t=>a;
-}
-var aint <- new A[int]();
-
-@head(2,"Polymorphic Methods")
-@select(tangler(tdir+'tut_beg318.flx'))
-#import <flx.flxh>
-open Long;
-
-class Y[t] {
-  // variables
-  val c : int;
-  var x : t;
-  var y : long;
-  
-  // accessor methods
-  fun fetchc():int =>c;
-
-  // mutatoes
-  proc setx(a:t) { x = a; }
-  proc setxy( a:t, b:long) { x = a; y = b; }
-
-  // accessor procedures
-  proc yprint(xprint:t->0) {
-    print "This is a Y object, with x = "; 
-    xprint x; print ", y = "; print y;
-    print ", and c = "; print c; endl;
-  }
-
-  // test methods calling methods
-
-  fun f(a:int,add:int * t->int):int => g$ a,add;
-  fun g(a:int,add:int * t->int):int => a + x;
-
-  // constructors
-  ctor () {}
-  ctor (a:int): c(20000) { x = a; }
-
-  // polymorphic method
-  fun p[u](a:u, add:t * u ->int):int => x + a;
-};
-
-var ob <- new Y[int](99);
-ob.x = 2;
-ob.y = 3L;
-
-print ob.c; endl;
-print ob.x; endl;
-print ob.y; endl;
-print$ ob.fetchc(); endl;
-
-proc iprint(x:int) { print x; }
-
-ob.setx 22;
-ob.yprint(iprint of (int));
-
-ob.setxy (12,33L);
-ob.yprint(iprint of (int));
-
-print$ ob.f (1,add of (int*int)); endl;
-print$ ob.p[int] (1,add of (int*int)); endl;
-
-@head(2,"C formating")
-@select(tangler(tdir+'tut_beg319.flx'))
-#import <flx.flxh>
-print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
-
-@head(1,'Expected outputs')
-Move these up next to the tests!
-@head(2,"tut/examples/tut_beg101.expect")
-@select(tangler("tut/examples/tut_beg101.expect","data"))
-Hello World
-@head(2,"tut/examples/tut_beg102.expect")
-@select(tangler("tut/examples/tut_beg102.expect","data"))
-Hello World 42
-@head(2,"tut/examples/tut_beg102a.expect")
-@select(tangler("tut/examples/tut_beg102a.expect","data"))
-2
-3
-0
--1
-1
-2
-1
-0
-1.24456
-1.24456
-true
-true
-false
-false
-true
-true
-false
-false
-true
-true
-true
-true
-false
-false
-true
-true
-false
-false
-@head(2,"tut/examples/tut_beg103.expect")
-@select(tangler("tut/examples/tut_beg103.expect","data"))
-42
-@head(2,"tut/examples/tut_beg104.expect")
-@select(tangler("tut/examples/tut_beg104.expect","data"))
-42
-@head(2,"tut/examples/tut_beg104a.expect")
-@select(tangler("tut/examples/tut_beg104a.expect","data"))
-1 2 3 4 5 
-@head(2,"tut/examples/tut_beg105.expect")
-@select(tangler("tut/examples/tut_beg105.expect","data"))
-2
-4
-6
-8
-10
-12
-14
-16
-18
-@head(2,"tut/examples/tut_beg105a.expect")
-@select(tangler("tut/examples/tut_beg105a.expect","data"))
-1 2 3 
-9 8 7 
-@head(2,"tut/examples/tut_beg105b.expect")
-@select(tangler("tut/examples/tut_beg105b.expect","data"))
-@head(2,"tut/examples/tut_beg106.expect")
-@select(tangler("tut/examples/tut_beg106.expect","data"))
-3
-@head(2,"tut/examples/tut_beg107.expect")
-@select(tangler("tut/examples/tut_beg107.expect","data"))
-3
-@head(2,"tut/examples/tut_beg107a.expect")
-@select(tangler("tut/examples/tut_beg107a.expect","data"))
-0
-@head(2,"tut/examples/tut_beg107b.expect")
-@select(tangler("tut/examples/tut_beg107b.expect","data"))
-0
-@head(2,"tut/examples/tut_beg108.expect")
-@select(tangler("tut/examples/tut_beg108.expect","data"))
-3355
-@head(2,"tut/examples/tut_beg109.expect")
-@select(tangler("tut/examples/tut_beg109.expect","data"))
-2
-@head(2,"tut/examples/tut_beg110.expect")
-@select(tangler("tut/examples/tut_beg110.expect","data"))
-3
-@head(2,"tut/examples/tut_beg111.expect")
-@select(tangler("tut/examples/tut_beg111.expect","data"))
-0 1 3 4
-@head(2,"tut/examples/tut_beg112.expect")
-@select(tangler("tut/examples/tut_beg112.expect","data"))
-1
-@head(2,"tut/examples/tut_beg112a.expect")
-@select(tangler("tut/examples/tut_beg112a.expect","data"))
-5
-@head(2,"tut/examples/tut_beg113.expect")
-@select(tangler("tut/examples/tut_beg113.expect","data"))
-1
-2
-@head(2,"tut/examples/tut_beg114.expect")
-@select(tangler("tut/examples/tut_beg114.expect","data"))
-1111111
-@head(2,"tut/examples/tut_beg115.expect")
-@select(tangler("tut/examples/tut_beg115.expect","data"))
-1
-2
-@head(2,"tut/examples/tut_beg115a.expect")
-@select(tangler("tut/examples/tut_beg115a.expect","data"))
-6
-3.1
-@head(2,"tut/examples/tut_beg116.expect")
-@select(tangler("tut/examples/tut_beg116.expect","data"))
-1
-2
-@head(2,"tut/examples/tut_beg117.expect")
-@select(tangler("tut/examples/tut_beg117.expect","data"))
-a0
-b2
-c3
-d15
-@head(2,"tut/examples/tut_beg118.expect")
-@select(tangler("tut/examples/tut_beg118.expect","data"))
-Some 1
-@head(2,"tut/examples/tut_beg119.expect")
-@select(tangler("tut/examples/tut_beg119.expect","data"))
--1
-0
-1
--1
-0
-1
--1
-0
-1
-@head(2,"tut/examples/tut_beg120.expect")
-@select(tangler("tut/examples/tut_beg120.expect","data"))
-1, (3, 4)
-@head(2,"tut/examples/tut_beg120a.expect")
-@select(tangler("tut/examples/tut_beg120a.expect","data"))
-1
-2
-@head(2,"tut/examples/tut_beg121.expect")
-@select(tangler("tut/examples/tut_beg121.expect","data"))
-Identifier
-Number
-Neither
-@head(2,"tut/examples/tut_beg121a.expect")
-@select(tangler("tut/examples/tut_beg121a.expect","data"))
-Identifier: A
-White:  
-Identifier: string
-White:  
-Number: 2
-White:  
-Identifier: lex
-Done.
 @head(2,"tut/examples/tut_beg121b.expect")
 @select(tangler("tut/examples/tut_beg121b.expect","data"))
 Lexer here
@@ -5330,25 +2676,286 @@ Eol:     "
 "
 Eol:     "
 "
-@head(2,"tut/examples/tut_beg135a.expect")
+@doc()
+@head(2,'Lazy expressions')
+There is a function which is so useful, there
+is a special syntax for it: the lazy expression.
+@select(tangler(tdir+'tut_beg108.flx'))
+#import <flx.flxh>
+var x = 1;
+var y = 2;
+
+val f1 = {x + y}; // lazy expression
+fun f2():int = { return x + y; } // equivalent
+
+print (f1 ());
+print (f2 ());
+
+x = 2; // change value of variables
+y = 3;
+
+print (f1 ());
+print (f2 ());
+endl;
+
+@select(tangler("tut/examples/tut_beg108.expect","data"))
+3355
+@doc()
+
+The curly brackets denote a lazy expression, it is
+a function which evaluates the expression when passed
+the special unit value () explained below, the return type
+is the type of the expression.
+@p()
+You can also put statements inside curly brackets
+to define a lazy function:
+@select(tangler(tdir+'tut_beg109.flx'))
+#import <flx.flxh>
+val x = 1;
+val f = { val y = x + 1; return y; };
+val eol = { endl; };
+
+print (f ()); eol;
+
+@select(tangler("tut/examples/tut_beg109.expect","data"))
+2
+@doc()
+
+If there is no return statement, a block procedure is denoted,
+otherwise the return type is the type of the return
+statement arguments, which must all be the same.
+
+@head(2,'The block procedure')
+There is a procedure which is so useful, there
+is a special syntax for it, as described above in
+the section on lazy things: the block.
+
+@select(tangler(tdir+'tut_beg114.flx'))
+#import <flx.flxh>
+var x = 1;
+val p1 = { print x; };
+proc p2() { print x; }; // equivalent to p1 (almost)
+
+// all these calls have the same behaviour
+p1();
+p1;
+p2();
+p2;
+{ print x; }();
+{ print x; };
+print x; endl;
+
+@select(tangler("tut/examples/tut_beg114.expect","data"))
+1111111
+@doc()
+
+The block is a procedure taking a unit argument.
+So when you write one as a statement, it just gets
+called: note that unlike C, that thing in 
+curley braces is an expression, and you must 
+make a statement by adding a semi-colon,
+which has the effect of invoking it due to the
+short cut rule.
+
+
+@head(2,'Generic Functions')
+Felix functions and procedures can be generic too.
+Here is a simple example.
+
+@select(tangler(tdir+'tut_beg135a.flx'))
+header "#include <iostream>";
+type int = "int";
+proc print[T]:T="std::cout << $1 << std::endl;";
+fun fst[T,U](x:T,y:U): T ={ return x; }
+fun snd[T,U](x:T,y:U): U ={ return y; }
+
+val x = (1,2);
+print[int] (fst[int,int] x);
+print[int] (snd[int,int] x);
+
+proc pp[T] (x:T) { print[T](x); }
+
+pp[int] (snd[int,int] x);
+
 @select(tangler("tut/examples/tut_beg135a.expect","data"))
 1
 2
 2
-@head(2,"tut/examples/tut_beg135b.expect")
+@doc()
+
+When declaring a generic function or procedure,
+if one of the parameters has the type of a type
+variable which is not used elsewhere, you can leave
+out the type variable, and one will be synthesised for you. 
+Synthesised type variables are added
+to the type variable list at the end. For example:
+
+@select(tangler(tdir+'tut_beg135b.flx'))
+header "#include <iostream>";
+type int = "int";
+proc print[T]:T="std::cout << $1 << std::endl;";
+fun fst(x,y) = { return x; }
+fun snd(x,y) = { return y; }
+
+val x = (1,2);
+print[int] (fst[int,int] x);
+print[int] (snd[int,int] x);
+
+proc pp[T] (x:T) { print[T](x); }
+
+pp[int] (snd[int,int] x);
+
 @select(tangler("tut/examples/tut_beg135b.expect","data"))
 1
 2
 2
-@head(2,"tut/examples/tut_beg135c.expect")
+@doc()
+
+Note in this example, the return type cannot
+be stated since it depends on a synthesised type variable.
+@p()
+When there is only one argument which has a type 
+which is a type variable, then if the type variable
+is omitted, the parentheses can also be omitted.
+This is particularly useful with curried declarations.
+@p()
+Note carefully that in the call to pair below, both the
+type subscripts must be given explicity, because they cannot
+be deduced from the argument. 
+
+@select(tangler(tdir+'tut_beg135c.flx'))
+#import <flx.flxh>
+fun pair1 x y = { return x,y; }
+fun pair2[t,u] (x:t) (y:u) = { return x,y; }
+fun diag x = { return x,x; }
+fun fst (x,y) = { return x; }
+fun snd (x,y) = { return y; }
+
+{
+  val x34 = pair1[int,int] 3 4;
+  val a = fst x34;
+  val b = snd x34;
+  print a; print ","; print b; endl;
+};
+
+{
+  val x34 = pair2[int,int] 3 4;
+  val a = fst x34;
+  val b = snd x34;
+  print a; print ","; print b; endl;
+};
+
+val x22 = diag 2;
+val x = fst x22;
+val y = snd x22;
+print x; print ","; print y; endl;
+
 @select(tangler("tut/examples/tut_beg135c.expect","data"))
 3,4
 3,4
 2,2
-@head(2,"tut/examples/tut_beg135e.expect")
+@head(2,'Generic Structs and Unions')
+Felix structs and unions can be generic too.
+Here is a simple example.
+
+@select(tangler(tdir+'tut_beg135e.flx'))
+#import <flx.flxh>
+union list[T] = 
+  | Cons of T * list[T] 
+  | Empty
+;
+
+struct pair[T,U] = 
+{
+  fst : T;
+  snd : U;
+}
+
+var x = Cons[int] (1,Empty[int]);
+x =  Cons[int] (2,x);
+x = Cons[int] (3,x);
+
+val y = pair[int,int] (1,2);
+print y.fst; print ","; print y.snd; endl;
+
 @select(tangler("tut/examples/tut_beg135e.expect","data"))
 1,2
-@head(2,"tut/examples/tut_beg135f.expect")
+@head(2,'Argument Deduction')
+It is inconvenient to specify the type
+arguments for a function. Generally,
+this is not necessary, as illustrated in
+the example: Felix deduces the value
+of the type variables from function arguments.
+
+@select(tangler(tdir+'tut_beg135f.flx'))
+#import <flx.flxh>
+union list[T] =
+  | Cons of T * list[T]
+  | Empty
+;
+
+struct pair[T,U] =
+{
+  fst : T;
+  snd : U;
+}
+
+var x = Cons (1,Empty[int]);
+  // the [int] in Empty is mandatory
+
+x =  Cons(2,x);
+x = Cons(3,x);
+
+fun f[t] (x:list[t]):list[t] = { return x; }
+
+x = f(x);
+
+val y = pair(1,2);
+print y.fst; print ","; print y.snd; endl;
+
+
+// check nested generics now 
+
+module F[T] {
+  fun id1(x:T):T = { return x; }
+}
+
+print (F[int]::id1 1); endl;
+
+module A[T] {
+  module B[U] {
+    fun id2[V](x:T,y:U,z:V):V*U*T = { return z,y,x; }
+  }
+}
+
+val zyx = (A[int]::B[int]::id2(1,2,3));
+print zyx.(0);
+print zyx.(1);
+print zyx.(2);
+endl;
+
+// check specialisation
+fun idt[T] (x:T):T*T = { return x,x; }
+fun idt[T] (x:T*T):T*T = { return x; }
+
+val x1 = idt(1); // calls first idt
+val x2 = idt(1,2); // calls second idt
+print x1.(0); print x1.(1); endl; // print 11
+print x2.(0); print x2.(1); endl; // print 12
+
+proc pr[T] (x:list[T], pp:T->void) {
+  match x with
+  | Cons (?i,?t) => { pp i; pr (t,pp); }
+  | Empty => { print "Empty"; }
+  endmatch
+  ;
+}
+
+proc printint (x:int) { print x; }
+  // because we can't use a primitive as a closure yet
+
+pr (x,(printint of (int))); endl;
+
 @select(tangler("tut/examples/tut_beg135f.expect","data"))
 1,2
 1
@@ -5356,24 +2963,312 @@ Eol:     "
 11
 12
 321Empty
-@head(2,"tut/examples/tut_beg135g.expect")
+@head(2,'Generic modules')
+It is also possible specify type arguments for a module.
+The effect is simply that all the entities declared in
+the module are parameterised by the type parameter.
+@p()
+Because of this, you can open a generic module,
+but you must do so without specifying any type arguments.
+@p()
+When you use a qualified name, Felix concatenates
+all the arguments and applies them to the last component.
+@p()
+Note this excludes parent functions, since the type
+arguments of the parent of a function are fully
+determined by its child.
+
+@select(tangler(tdir+'tut_beg135g.flx'))
+#import <flx.flxh>
+
+module X[t] {
+  fun f[k]: t * k  -> t = "1";
+  fun cmp: t * t -> bool = "1";
+  fun mk: 1 -> t = "1";
+  fun subscript: t * t -> t = "2";
+}
+
+// both args explicit
+var a1 = X[int,long]::f(1,1L);
+var a2 = X[int]::f[long](1,1L);
+var a3 = X::f[int,long](1,1L);
+
+// first arg explicit
+var a4 = X::f[int](1,1L);
+var a5 = X[int]::f(1,1L);
+
+// full deduction
+var a6 = X::f(1,1L);
+
+// using unqualified names
+open X;
+var a7 = f[int,long](1,1L);
+var a8 = f[int](1,1L);
+var a9 = f(1,1L);
+
+print a1;
+print a2;
+print a3;
+print a4;
+print a5;
+print a6;
+print a7;
+print a8;
+print a9;
+
+print (1).[2];
+
+var x = mk[int]();
+var y = mk[int]();
+if cmp(x,y) do print "YES"; endl; else print "NO"; endl; done;
+
 @select(tangler("tut/examples/tut_beg135g.expect","data"))
 1111111112YES
-@head(2,"tut/examples/tut_beg136.expect")
+@head(2,'Inductive types')
+Felix supports inductive types such as lists.
+Here is a list of ints.
+
+@select(tangler(tdir+'tut_beg136.flx'))
+#import <flx.flxh>
+
+union float_list =
+  | Empty
+  | Cons of double * float_list
+;
+
+val t0 = Empty;
+val nxt = (100.1,t0);
+val t1 = Cons nxt;
+val t2 = Cons (200.2,t1);
+
+proc xprint (a: float_list) 
+{
+  match a with 
+  | Empty => { print "[]"; }
+  | Cons (?i, ?tail) =>
+    {
+      print i; 
+      print " "; 
+      xprint tail;
+    }
+  endmatch;
+}
+
+xprint t2; endl;
+
 @select(tangler("tut/examples/tut_beg136.expect","data"))
 200.2 100.1 []
-@head(2,"tut/examples/tut_beg137.expect")
+@doc()
+
+A more interesting example is now given.
+Here, we use a recursive routine to build the list,
+and an iterative routine to reverse it.
+
+@select(tangler(tdir+'tut_beg137.flx'))
+#import <flx.flxh>
+
+union int_list =
+  | Empty
+  | Cons of int * int_list
+;
+
+proc xprint (a: int_list) 
+{
+  match a with
+  | Empty => { print "[]"; }
+  | Cons (?i,?tail) =>
+    {
+      print i; 
+      print " "; 
+      xprint tail;
+    }
+  endmatch;
+}
+
+fun mk(i: int, tl:int_list):int_list =
+{
+  return 
+    if(i>0) then mk(i-1,Cons(i,tl))
+    else tl
+    endif
+  ;
+}
+
+val a = mk(10,Empty);
+print "List= "; xprint a; endl;
+
+fun rev(lst:int_list):int_list =
+{
+  var result = Empty;
+  proc aux(lst:int_list)
+  {
+    match lst with
+    | Empty => {}
+    | Cons (?head,?tail) =>
+      {
+        result = Cons(head,result); 
+        aux(tail);
+      }
+    endmatch;
+  }
+  aux(lst);
+  return result;
+}
+
+print "Reversed= "; xprint (rev a); endl;
+
 @select(tangler("tut/examples/tut_beg137.expect","data"))
 List= 1 2 3 4 5 6 7 8 9 10 []
 Reversed= 10 9 8 7 6 5 4 3 2 1 []
-@head(2,"tut/examples/tut_beg138.expect")
+@head(2,'Higher order Functions')
+In Felix, functions and procedures are first class:
+they may accept functions or procedures as arguments,
+functions may return them, and you can have variables
+of function or procedure type.
+@p()
+In particular, a function or procedure may be
+defined inside another function or procedure,
+and it may still use any values or variables
+defined in that function or procedure, even when
+it is returned by it.
+@p()
+Note that when the returned function or procedure
+is called later, the values of variables may have
+changed since the time that it was passed.
+@p()
+Here is an example, beware this example
+contains quite a lot of subtle features!
+
+@select(tangler(tdir+'tut_beg138.flx'))
+#import <flx.flxh>
+
+var j = 2;
+
+fun get_printer(i:int): unit->void  = {
+  proc print() { print (i+j); }
+  return print of (unit);
+}
+
+val print_i = get_printer(40);
+print_i(); endl;
+j = 3;
+print_i(); endl;
+
 @select(tangler("tut/examples/tut_beg138.expect","data"))
 42
 43
-@head(2,"tut/examples/tut_beg138a.expect")
+@doc()
+
+There are a couple of things to notice.
+The function return type is given as
+
+@begin_displayed_code()
+  unit->void
+@end_displayed_code()
+
+This is the notation for a procedure type accepting
+a unit argument. 
+@p()
+Notice also that the return value is
+
+@begin_displayed_code()
+  print of (unit)
+@end_displayed_code()
+
+This is the name of the function called 'print' 
+which accepts a unit argument. Felix can perform
+overload resolution when a function name is applied
+to an argument, by inspecting the type of the argument.
+In other circumstances, you have to specify the type
+of the argument. 
+@p()
+There is a subtle point of the overloading system
+here. The procedure 'print of (unit)' actually
+calls the procedure 'print of (int)'. Now if you are
+used to C++, you may wonder how this would work:
+the search for 'print of (int)' stats by finding
+'print of (unit)', and in C++ it would stop right there
+and report an error. In Felix, if overload resolution
+for an unqualified function or procedure name fails,
+the enclosing scope is examined. This 'overloading
+across scopes' is allows you to extend an overload
+set locally. The special rule does not apply
+to qualified names (where the name must be found
+in the designated scope). [I may change this!]
+@p()
+Another thing to notice is that
+the call to print_i cannot be abbreviated by leaving
+the () off. This is because print_i is a function
+value, not the name of a function. 
+@p()
+More precisely, the function specification for p of (unit)
+is used to build a function closure: this consists of the
+code body of the function, together with the environment
+at the point of definition and the time the closure
+is created: it binds to the current 'activation record'
+or 'stack frame' of the enclosing function 'get_printer'.
+And because that environment contains the value 'i'
+initialised to 30, and the variable 'j', it will
+print 40 + j as an answer when called. This is 42
+the first time, since at that time j is 2, and 43 the
+second time, since j is then 3.
+@p()
+The difference between a function specification
+and a function closure may seem difficult to grasp
+at first, but the implementation makes the distinction
+quite clear: a function specification is a C++ class,
+whereas a function closure is an object of that class.
+Function closures exist at run time, function specifications
+only exist at compile time. Unfortunately perhaps,
+the unqualified term "function" is used to refer to both.
+Even more confusing, it sometimes means procedures
+as well (even though they're utterly different beasts).
+
+@head(2,'The "the" keyword')
+When naming functions, it annoying
+to write the signature of the function
+when there is clearly only one function
+of a given name. in this special case
+you can use the keyword 'the' to specify
+you mean that function.
+@select(tangler(tdir+'tut_beg138a.flx'))
+#import <flx.flxh>
+
+fun f(x:int):int=>x*x;
+fun apply[s,d] (f:s->d) (x:s) : d => f x;
+
+print (apply (the f) 4); endl;
+
 @select(tangler("tut/examples/tut_beg138a.expect","data"))
 16
-@head(2,"tut/examples/tut_beg139.expect")
+@head(2,'Currying')
+Consider the following example:
+@select(tangler(tdir+'tut_beg139.flx'))
+#import <flx.flxh>
+
+fun f4(i4:int): int->int->int->int = {
+  fun f3(i3:int): int->int->int = {
+    fun f2(i2:int): int->int = {
+      fun f1(i1:int): int = {
+        return i1+i2+i3+i4;
+      }
+      return f1 of (int);
+    }
+    return f2 of (int);
+  }
+  return f3 of (int);
+}
+
+print (f4 1 2 3 4); endl;
+print ((f4 1 2 3) 4); endl;
+print ((f4 1 2) 3 4); endl;
+print ((f4 1) 2 3 4); endl;
+print (((f4 1) 2 3) 4); endl;
+print (((f4 1 2) 3) 4); endl;
+
+val curry = f4 1 2;
+print (curry 3 4); endl;
+
 @select(tangler("tut/examples/tut_beg139.expect","data"))
 10
 10
@@ -5382,7 +3277,58 @@ Reversed= 10 9 8 7 6 5 4 3 2 1 []
 10
 10
 10
-@head(2,"tut/examples/tut_beg140.expect")
+@doc()
+You should note that -> is right associative,
+so that
+
+@begin_displayed_code()
+  int->int->int->int
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  int->(int->(int->int))
+@end_displayed_code()
+On the other hand, application is left associative,
+so that
+@begin_displayed_code()
+  f4 1 2 3 4
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  (((f4 1) 2) 3) 4
+@end_displayed_code()
+
+Note that the 'partial' applications such as
+shown by the brackets, are of course closures
+of the inner functions, and you can use them
+to initialise values, assign them to variables
+or pass them to functions. Such 'partial'
+application is called currying (after the mathematician
+Howard Curry, who invented the lambda calculus).
+@p()
+While this is a perfectly good defintion,
+there is a lot of housekeeping going on.
+Felix provides syntactic sugar that makes it easier
+to declare functions suitable for currying.
+Here is the equivalent code, using this sugar:
+
+@select(tangler(tdir+'tut_beg140.flx'))
+#import <flx.flxh>
+
+fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
+  return i1+i2+i3+i4;
+}
+
+print (f4 1 2 3 4); endl;
+print ((f4 1 2 3) 4); endl;
+print ((f4 1 2) 3 4); endl;
+print ((f4 1) 2 3 4); endl;
+print (((f4 1) 2 3) 4); endl;
+print (((f4 1 2) 3) 4); endl;
+
+val curry = f4 1 2;
+print (curry 3 4); endl;
+
 @select(tangler("tut/examples/tut_beg140.expect","data"))
 10
 10
@@ -5391,7 +3337,82 @@ Reversed= 10 9 8 7 6 5 4 3 2 1 []
 10
 10
 10
-@head(2,"tut/examples/tut_beg140a.expect")
+@doc()
+
+You may remember eariler I said that
+all Felix accepted exactly one argument,
+with one exception: tuple constructors.
+@p()
+It is conventional to say that a function like
+'f4' above has 4 arguments. Of course,
+you know that this isn't the case: it really
+has one argument and returns a function.
+It is also sometimes said that f4 has arity 4,
+meaning you can chain applications 4 times,
+until you get a non-function result.
+@p()
+Note that the notation above can be used for
+procedures as well: of course, all the partial
+applications except the last return functions,
+and the last one returns a procedure.
+@p()
+It is a matter of style whether you write
+functions in the curried form or not.
+Any function accepting a tuple can be changed
+to a currified function accepting the components
+in sequence. This is conventional in some
+functional programming languages (like Ocaml),
+but is less heavily used in others (like SML).
+@p()
+In the current implementation of Felix, currified
+functions are more expensive than ones accepting
+tuples, but the currified version is easier to
+curry :-)
+@p()
+As an exercise, write a function that given an
+arbitrary function f accepting a tuple of 3 ints,
+returns an equivalent currified version of it
+that accepts 3 arguments.
+@p()
+What you have done is called eta-expansion.
+It is necessary even for currified functions
+if you want to fix the second argument, but
+leave the first free.
+
+@head(2,'List functions')
+@select(tangler(tdir+'tut_beg140a.flx'))
+#import <flx.flxh>
+open List;
+val x : list[int] = 
+  Cons (1, Cons (2, Cons (3, Empty[int])));
+val y = rev x;
+iter (proc (x:int) { print x; print ", "; }) x; endl;
+iter (proc (x:int) { print x; print ", "; }) y; endl;
+
+proc print (x:list[int]) 
+{
+  match x with
+  | Empty[int] => { print "[]"; }
+  | Cons[int] (?h,?t) => 
+    {
+      print "["; print h;
+      iter (proc (x:int) { print ","; print x; }) t;
+      print "]";
+    }
+  endmatch;
+}
+
+fun add (x:int) (y:int):int = { return x + y; }
+
+val x_l_total = fold_left add of (int) 0 x;
+val y_l_total = fold_left add of (int) 0 y;
+val x_r_total = fold_right add of (int) x 0;
+val y_r_total = fold_right add of (int) y 0;
+print x_l_total; endl;
+print y_l_total; endl;
+print x_r_total; endl;
+print y_r_total; endl;
+
 @select(tangler("tut/examples/tut_beg140a.expect","data"))
 1, 2, 3, 
 3, 2, 1, 
@@ -5399,20 +3420,259 @@ Reversed= 10 9 8 7 6 5 4 3 2 1 []
 6
 6
 6
-@head(2,"tut/examples/tut_beg141.expect")
+@head(2,'Modules')
+Most modern languages support packaging of related
+specifications into some kind of module, and Felix
+is no exception. Basic module use is quite simple:
+@select(tangler(tdir+'tut_beg141.flx'))
+#import <flx.flxh>
+val top = 1;
+module A {
+  val a = top + 1;
+  module B {
+    val b = a + 1;
+  }
+}
+
+print top; endl;
+print root::top; endl;
+print A::a; endl;
+print A::B::b; endl;
+
 @select(tangler("tut/examples/tut_beg141.expect","data"))
 1
 1
 2
 3
-@head(2,"tut/examples/tut_beg142.expect")
+@doc()
+
+This example illustrates the simple use of modules,
+including module nesting, and use of qualified names
+to access module components.
+@p()
+You can put anything except export declarations in 
+modules that you can put at the top level, and for a
+very simple reason: the top level is, in fact,
+a module itself.
+@p()
+When a qualified name is used, the qualifier specifies
+the module in which the next name must be found.
+Qualification inhibits upscope overloading.
+@p()
+Note the name 'root' is used to name the top-level
+module, in lieu of the actual module name, which is
+derived from the basename of the filename.
+@p()
+Finally, it is vital to understand that Felix
+scopes act like sets of names. Names are always defined
+in parallel, and visible to all definitions in the scope,
+so that all definitions are mutually recursive.
+For this reason, forward declarations are never needed.
+The following example is quite legal:
+
+@begin_displayed_code()
+  x = 1;
+  y = x;
+  var y:int;
+  var x:int;
+@end_displayed_code()
+
+This is much like the 'rewriting rule' for C++ class member
+functions. Note, however, that executable code
+is still sequential! Thus, the order of value and variable
+definition does matter: initialisations are executed
+in order of writing. 
+
+@head(2,'Koenig Lookup')
+Consider the following example:
+@select(tangler(tdir+'tut_beg142.flx'))
+#import <flx.flxh>
+
+module A {
+  struct X {
+    x: int;
+  }
+}
+val e = A::X(5);
+print e.x; endl;
+
 @select(tangler("tut/examples/tut_beg142.expect","data"))
 5
-@head(2,"tut/examples/tut_beg143.expect")
+@doc()
+
+There is a subtle point here in this code.
+(Isn't there always?) Recall that
+@begin_displayed_code()
+  e.x
+@end_displayed_code()
+is transformed by desugaring to the function application
+@begin_displayed_code()
+  get_x e
+@end_displayed_code()
+If that is so, how is it that the get_x of (A::X)
+is found, when it is not visible in the top level scope?
+The answer is that I told a white lie before.
+@p()
+What really happens is that e.x is transformed
+into a method application. This is exactly the
+same as a function application, except that
+overloading uses a special kind of lookup
+for the method name, called Koenig Lookup,
+after its inventor, Andrew Koenig.
+@p()
+Koenig lookup works by searching the module
+in which the type of the expression e is 
+defined: in Felix the type must be generative,
+which means it must be a declared type
+such as a named struct or union
+and not an implicitly defined type like a tuple,
+pointer, or function type (typedefs do not count
+here, as in C they just specify an alias, they
+don't define a type).
+@p()
+In the example, 'get_x' is defined in the module X,
+because A is defined in the module X, and since
+e has type 'A', Felix looks in module X for 'get_x'.
+@p()
+Koenig lookup only works for method calls, that is,
+when you use the syntax e.x.
+
+@head(2,'Dynamic modules')
+Modules can contain executable code, not just declarations.
+The executable code of a module is wrapped in an
+initialisation function. This function is called
+automatically by Felix, when the enclosing
+scope is initialised. The top level module's
+initialisation routine must be called manually
+by the driver program.
+@p()
+Modules can be nested in functions or procedures. 
+In this case the data lives in the function
+or procedure stack frame, and the module is
+initialised every time the function is called.
+@p()
+[Add more later as features are implemented]
+
+@head(2,'Pointers')
+Felix supports pointers. The type of a pointer to T is
+denoted:
+@begin_displayed_code()
+  &T
+@end_displayed_code()
+A pointer can be created by addressing a variable
+using the notation:
+@begin_displayed_code()
+  &v
+@end_displayed_code()
+Pointers can be dereferenced using the usual syntax:
+@begin_displayed_code()
+  *p
+@end_displayed_code()
+and there is the usual arrow notation:
+@begin_displayed_code()
+  p->x
+@end_displayed_code()
+which means the same as
+@begin_displayed_code()
+  (*p).x
+@end_displayed_code()
+@p()
+Only variables, not values, are addressable.
+Pointers are used to implement assignment.
+You have seen many examples of assignment:
+@begin_displayed_code()
+  var v : T;
+  v = e;
+@end_displayed_code()
+What you didn't know was that the assignment
+operator is just syntactic sugar for
+the procedure call:
+@begin_displayed_code()
+  set(&v,e);
+@end_displayed_code()
+This procedure is defined automatically
+for structs, unions, and function and procedure
+closures, that is, for Felix types; but you can
+define it manually for abstract types including
+primitives. The usual definition is:
+@begin_displayed_code()
+  type T = "T";
+  proc _set: &T * t = "*$1=$2;"
+@end_displayed_code()
+If you don't define a set method for a primitive
+type, Felix assumes the C++ assignment operator
+as above. WARNING: This is wrong in principle,
+since Felix cannot check such a function exists,
+if it doesn't, you will get an error at C++ compilation
+time instead of Felix compilation time. Be warned!
+@p()
+Note that all Felix primitives must be C++ assignable
+and implicitly default constructible,
+since in the generated code all values and variables 
+are first declared without an initialiser and 
+then assigned to. 
+@p()
+It is important to note that in Felix,
+you can take the address of any variable,
+and safely pass the pointer around, without
+fear it will dangle: this includes pointers
+to function and procedure local variables.
+@p()
+This all works because Felix uses a garbage collector,
+but you should note that because the frame containing
+an object must be kept alive if there is a pointer into
+it, returning a pointer to a function local variable
+may prevent other local variables in the same
+frame from being destroyed.
+@p()
+Here is an example:
+
+@select(tangler(tdir+'tut_beg143.flx'))
+#import <flx.flxh>
+
+fun pone (): &int = 
+{
+  var x : int = 1;
+  return &x;
+}
+
+var p1 = pone();
+print (*p1); endl;
+*p1 = 2;
+
+print (*p1); endl;
+
 @select(tangler("tut/examples/tut_beg143.expect","data"))
 1
 2
-@head(2,"tut/examples/tut_beg144.expect")
+@doc()
+
+You should note that Felix pointers consist
+of two C pointers: a pointer to the variable,
+and a pointer to the frame containing the variable.
+It is this frame pointer which the garbage collector
+tracks. Although Felix pointers do not have to
+be initialised, the frame pointer component
+of the representation is always initialised to NULL
+so that the garbage collector doesn't chase off into
+the wild blue yonder.
+
+@head(2,'The ubiquitous goto')
+Felix allows statements to be labelled,
+and provides a conditional and unconditional goto statement.
+
+@select(tangler(tdir+'tut_beg144.flx'))
+#import <flx.flxh>
+print "start"; endl;
+var i = 1;
+start_loop:>
+  if (not (i<10)) goto end_loop;
+  print i; endl;
+  i++;
+  goto start_loop;
+end_loop:>
+  print "finished"; endl;
+  
 @select(tangler("tut/examples/tut_beg144.expect","data"))
 start
 1
@@ -5425,44 +3685,310 @@ start
 8
 9
 finished
-@head(2,"tut/examples/tut_beg145.expect")
+@doc()
+
+Note that labels require a terminating :> rather
+that C's plain :. 
+@p()
+Goto is not recommended programming style,
+but it is an essential primitive, and it is used
+both by the compiler and in the standard library
+to define control structures such as 'while'.
+@p()
+It is also useful for inventing your own
+control structures: together with higher
+order functions and currying, you can do
+this quite easily in Felix, as we shall soon see.
+@p()
+But first consider the following example:
+
+@select(tangler(tdir+'tut_beg145.flx'))
+#import <flx.flxh>
+
+var x = 1;
+proc run()
+{
+  proc check()
+  {
+    if(x!=1) goto bad_x;
+  }
+  check();
+  print "good x"; endl;
+  x = 2;
+  check();
+  print "good x"; endl;
+  goto finished;
+
+bad_x:>
+  print "bad_x"; endl;
+
+finished:>
+  print "finished"; endl;
+}
+run();
+
 @select(tangler("tut/examples/tut_beg145.expect","data"))
 good x
 bad_x
 finished
-@head(2,"tut/examples/tut_beg146.expect")
+@doc()
+
+In this example, you see what is called a non-local
+goto: a jump into an enclosing procedure. Such jumps
+are quite OK.
+@p()
+What you can't do is jump out of a function,
+that is, across a function boundary. 
+[the reason will become clear much later]
+@p()
+There is another interesting fact. A procedure
+nested in a module, including the top level,
+cannot jump to a label in the module.
+The reason is that executable code in a module,
+including any labels, are wrapped in an initialisation
+procedure, which is called where the module
+is defined. That initialisation procedure does not
+have the procedures defined in the module nested in it,
+instead, they're at the same level as the initialisation
+procedure. You can't jump into the initialisation procedure
+because it mightn't be active at the time the other
+procedure is called.
+
+@p()
+[This may change: a better model would be a that a 
+module returns the enities exported
+from it as a tuple: the procedures would
+then be nested in the initialisation routine.
+This would also make modules first class objects,
+with a type described more or less as a tuple.
+In turn this allows dynamic binding.]
+
+@head(2,'Procedure return')
+A procedure can be terminated by a goto to a label
+at the end of the procedure:
+@select(tangler(tdir+'tut_beg146.flx'))
+#import <flx.flxh>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; endl;
+  goto finished;
+zero:>
+  print "Zero"; endl;
+finished:>
+}
+
+f(1);
+f(0);
+
 @select(tangler("tut/examples/tut_beg146.expect","data"))
 1
 Zero
-@head(2,"tut/examples/tut_beg147.expect")
+@doc()
+
+A slightly more structured way of doing this
+involves the procedural return statement:
+@select(tangler(tdir+'tut_beg147.flx'))
+#import <flx.flxh>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; endl;
+  return;
+zero:>
+  print "Zero"; endl;
+}
+
+f(1);
+f(0);
+
 @select(tangler("tut/examples/tut_beg147.expect","data"))
 1
 Zero
-@head(2,"tut/examples/tut_beg148.expect")
+@doc()
+
+This can also be shortened by using a the jump statement:
+@select(tangler(tdir+'tut_beg148.flx'))
+#import <flx.flxh>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; jump endl;
+zero:>
+  print "Zero"; jump endl;
+}
+
+f(1);
+f(0);
+
 @select(tangler("tut/examples/tut_beg148.expect","data"))
 1
 Zero
 Zero
-@head(2,"tut/examples/tut_beg149.expect")
+@doc()
+
+which is equivalent to a call statement followed by a 
+return, which in turn is equivalent to a call
+followed by a goto the end of the procedure.
+
+@head(2,'Loops')
+The final call in a procedure is known as a tail call,
+and and can be indicated by a jump statement as 
+described in the previous section, though it isn't
+necessary: tail calls are detected by the compiler.
+@p()
+There is a special kind of tail call known
+as a loop, in which the jump is made to the procedure
+containing the jump, or one or its parents.
+@p()
+Provided no pointers are kept to any of the frames
+of the procedures between the target and current
+frame, so that all these frames would be garbage
+collected, a jump to a parent can reuse the parent's
+storage.
+@p()
+This is a form of goto, except that the procedure
+arguments are re-initialised.
+@p()
+Loops are automatically detected in some cases
+by the compiler. An explicit loop statement
+may also be used:
+
+@select(tangler(tdir+'tut_beg149.flx'))
+#import <flx.flxh>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; endl; loop f(x-1);
+zero:>
+  print "Zero"; jump endl;
+}
+
+f(10);
+
 @select(tangler("tut/examples/tut_beg149.expect","data"))
 10
-@head(2,"tut/examples/tut_beg149a.expect")
+@head(2,'Conditional Statements')
+Felix supports a traditional procedural if chain.
+Here is a simple if/do/done:
+
+@select(tangler(tdir+'tut_beg149a.flx'))
+#import <flx.flxh>
+// procedural if
+proc f(x:int) {
+  if x == 1 do print "ONE"; endl; done;
+}
+
+f 1;
+f 2;
+
 @select(tangler("tut/examples/tut_beg149a.expect","data"))
 ONE
-@head(2,"tut/examples/tut_beg149b.expect")
+@doc()
+
+You can also have an else clause:
+
+@select(tangler(tdir+'tut_beg149b.flx'))
+#import <flx.flxh>
+// procedural if/else
+proc f(x:int) {
+  if x == 1 do print "ONE"; endl; 
+  else print "Not a one .."; endl;
+  done;
+}
+
+f 1;
+f 2;
+
 @select(tangler("tut/examples/tut_beg149b.expect","data"))
 ONE
 Not a one ..
-@head(2,"tut/examples/tut_beg149c.expect")
+@doc()
+
+and even elif clauses:
+
+@select(tangler(tdir+'tut_beg149c.flx'))
+#import <flx.flxh>
+// procedural if/do/elif/else
+proc f(x:int) {
+  if x == 1 do print "ONE"; endl; 
+  elif x == 2 do print "TWO"; endl; 
+  else print "Not a one .."; endl;
+  done;
+}
+
+f 1;
+f 2;
+f 3;
+
 @select(tangler("tut/examples/tut_beg149c.expect","data"))
 ONE
 TWO
 Not a one ..
-@head(2,"tut/examples/tut_beg149d.expect")
+@doc()
+
+Any number of statements can be used, including none.
+You can also use a conditional return or goto instead
+of the do part:
+
+@select(tangler(tdir+'tut_beg149d.flx'))
+#import <flx.flxh>
+// procedural if
+proc f(x:int) {
+  if x == 1 do print "ONE "; endl; 
+  elif x == 2 return;
+  else print "Weird ";
+  done;
+  print "Found";
+}
+
+f 1;
+f 2;
+f 3;
+endl;
+
 @select(tangler("tut/examples/tut_beg149d.expect","data"))
 ONE 
 FoundWeird Found
-@head(2,"tut/examples/tut_beg149e.expect")
+@head(2,'More on Conditionals')
+Of course conditional statements can be nested.
+@p()
+Also, like C, you can jump into conditionals,
+although this practice isn't recommended.
+This is because conditionals are just
+shorthand for a web of labels and conditional gotos,
+so adding extra labels can gotos is possible.
+
+@select(tangler(tdir+'tut_beg149e.flx'))
+#import <flx.flxh>
+
+inline proc f(x:int) (y:int) {
+  print "NOT ONE"; endl;
+  if x == 1 do 
+    print 1; print " ";
+    if y == 20 goto twenty;
+    if y == 10 do print "TEN"; else done;
+  elif x == 2 do 
+    print 2; print " ";
+    if y == 20 do 
+twenty:> 
+      print "TWENTY"; 
+    done;
+  else print "Dunno .. ";
+  done;
+  endl;
+}
+
+f 1 10;
+f 1 20;
+f 1 40;
+f 2 20;
+f 3 30;
+
 @select(tangler("tut/examples/tut_beg149e.expect","data"))
 NOT ONE
 1 TEN
@@ -5474,22 +4000,160 @@ NOT ONE
 2 TWENTY
 NOT ONE
 Dunno .. 
-@head(2,"tut/examples/tut_beg149f.expect")
+@doc()
+
+Conditionals are primarily a convenient shorthand for 
+conditional expressions with procedural arguments.
+Conditional expresssions always have an else part,
+so that f1 and f2 below are equivalent:
+
+@select(tangler(tdir+'tut_beg149f.flx'))
+#import <flx.flxh>
+
+proc f1(x:int) {
+  if x == 1 then { print 1; endl; } 
+  else {} endif;
+}
+
+proc f2(x:int) {
+  if x == 1 do print 1; endl; done;
+}
+
+f1 1;
+f2 1;
+
 @select(tangler("tut/examples/tut_beg149f.expect","data"))
 1
 1
-@head(2,"tut/examples/tut_beg149g.expect")
+@doc()
+
+You can see we avoid the messy 'else {}'.
+@p()
+Conditionals may contain declarations.
+However the bodies are not blocks, and the declared
+symbols are not local to the conditional bodies.
+@p()
+The macro processor can fold
+conditional statements, in particular it can
+choose between two declarations.
+
+@select(tangler(tdir+'tut_beg149g.flx'))
+#import <flx.flxh>
+macro val x = 1;
+if x == 1 do val y = 1; else val y = "ONE"; done;
+print y; endl;
+
 @select(tangler("tut/examples/tut_beg149g.expect","data"))
 1
-@head(2,"tut/examples/tut_beg150.expect")
+@head(2,'Failure')
+The fail construction is used to abort a
+task with prejudice. A string argument may be
+given. A C++ exception is thrown. It cannot
+be caught by the Felix program (although
+it can be caught by the driver).
+
+@select(tangler(tdir+'tut_beg150.flx'))
+#import <flx.flxh>
+// uncomment to test 
+//fail "Aborted";
+
 @select(tangler("tut/examples/tut_beg150.expect","data"))
-@head(2,"tut/examples/tut_beg151.expect")
+@doc()
+
+@head(2,'Dynamic exception handling using goto')
+Non local gotos are very useful for a form of
+exception handling. Consider the following example:
+
+@select(tangler(tdir+'tut_beg151.flx'))
+#import <flx.flxh>
+
+proc bad_calc(err: int -> void) 
+{
+  // do some work, detect an error
+  err 1; // throw exception
+}
+
+proc main
+{
+  proc err(errno:int) 
+  {
+    print "error "; print errno;
+    print " -- aborting"; endl;
+    goto resume;
+  }
+  bad_calc err of (int);
+  print "no error"; endl;
+resume:>
+  print "error handled, continuing"; endl;
+}
+main;
+
 @select(tangler("tut/examples/tut_beg151.expect","data"))
 error 1 -- aborting
 error handled, continuing
-@head(2,"tut/examples/tut_beg152.expect")
+@doc()
+
+Here, we establish a handler for an error,
+which is effectively established at the
+label resume: the handler is passed explicitly
+to the routine which may 'raise' it.
+
+
+@head(2,'Static exception handling using goto')
+Non local gotos are very useful for another form of
+exception handling. Consider the following example:
+
+@select(tangler(tdir+'tut_beg152.flx'))
+#import <flx.flxh>
+
+proc main
+{
+  // do something
+
+  // raise err1
+  err 1; goto resume;
+ 
+  // do something else
+
+  // exception handlers
+  proc err(errno:int)
+  {
+    print "error "; print errno;
+    print " -- aborting"; endl;
+    goto resume;
+  }
+resume:>
+  print "error handled, continuing"; endl;
+}
+
 @select(tangler("tut/examples/tut_beg152.expect","data"))
-@head(2,"tut/examples/tut_beg154.expect")
+@head(2,'Procedure Values Again')
+We've seen the advantages of higher order 
+functions and procedures. It is possible
+to define anonymous procedure and function values
+literally, as in the next example,
+they're called lambdas, after the lambda calculus:
+
+@select(tangler(tdir+'tut_beg154.flx'))
+#import <flx.flxh>
+val f = fun(a:int):int = { return a * a; };
+
+print (f 1); 
+endl;
+
+print 
+(
+  (fun(a:int):int = { return a * a; })
+  1
+); 
+endl;
+
+proc thrice(p:unit->void) { p(); p(); p(); }
+thrice ( proc() { print 3; endl; } );
+thrice ( proc   { print 3; endl; } );
+thrice          { print 3; endl; };
+{ print "finished"; endl; };
+
 @select(tangler("tut/examples/tut_beg154.expect","data"))
 1
 1
@@ -5503,7 +4167,54 @@ error handled, continuing
 3
 3
 finished
-@head(2,"tut/examples/tut_beg155.expect")
+@doc()
+
+Mickey Mouse! Checkout the shortcut on the
+second last line. You can just write
+statements in curly brackets for an
+anonymous procedure taking unit argument,
+you can leave off the
+@begin_displayed_code()
+  proc() // or
+  proc
+@end_displayed_code()
+But why does the last line work?
+The answer is: this is a special shortcut.
+A statement consisting of an anonymous
+procedure taking unit, and a semicolon ;
+is a shortcut for a call:
+@begin_displayed_code()
+  { print 1; }; // is a shortcut for ..
+  { print 1; } (); 
+@end_displayed_code()
+much the same as
+@begin_displayed_code()
+  endl; // is a shortcut for ..
+  endl (); 
+@end_displayed_code()
+Now, remember those ugly semicolons at the end
+of the while statement? Are you getting a glimmer?
+Hint: Felix doesn't have a while statement.
+It's a library routine!
+
+@head(2,'The while procedure')
+Here is the while procedure from
+the standard library, renamed While
+to avoid a clash:
+@select(tangler(tdir+'tut_beg155.flx'))
+#import <flx.flxh>
+proc While (cond:unit->bool) (bdy:unit->void)
+{
+  repeatx:>
+    if not (cond()) goto finished;
+    bdy();
+    goto repeatx;
+  finished:>
+}
+
+var x = 10;
+While {x>0} { print x; endl; x = x - 1; };
+
 @select(tangler("tut/examples/tut_beg155.expect","data"))
 10
 9
@@ -5515,7 +4226,42 @@ finished
 3
 2
 1
-@head(2,"tut/examples/tut_beg156.expect")
+@doc()
+
+Notice how simple and powerful the combination
+of the lazy expression syntax, block syntax,
+and currying are.
+@p()
+Felix actually only has a three
+procedural control structures: 
+label/goto, procedure call/return,
+and raise/attempt/catch; and even the latter
+is only supported by the compiler for syntactic
+convenience.
+@p()
+The standard library defines several
+common procedural control structures.
+@p()
+Note that much of the rich control is obtained
+from the functional subsystem. For example
+the match expression is purely functional,
+it simply returns one of several expressions,
+but of course those expressions can be procedures
+which are subsequently called: here the default
+call syntax fools you into believing there
+is a match statement when actually there isn't.
+
+@head(2,'Lambda expressions')
+Felix allows a function to be specified in an expression,
+this is called a lambda expression:
+
+@select(tangler(tdir+'tut_beg156.flx'))
+#import <flx.flxh>
+var x = 10;
+while 
+  (fun ():bool = { return x>0; })
+  { print x; endl; x = x - 1; };
+
 @select(tangler("tut/examples/tut_beg156.expect","data"))
 10
 9
@@ -5527,51 +4273,610 @@ finished
 3
 2
 1
-@head(2,"tut/examples/tut_beg157.expect")
+@doc()
+
+Of course, we have already used lambdas in the short form,
+by enclosing expressions in curley braces;
+this example shows the long form. Lambdas of course
+may have arguments:
+@select(tangler(tdir+'tut_beg157.flx'))
+#import <flx.flxh>
+fun f(g:int->int,x:int) = { return g x; }
+print 
+(
+  f
+  (
+    (fun(a:int):int = { return a + a; }),
+    1
+  )
+); endl;
+
 @select(tangler("tut/examples/tut_beg157.expect","data"))
 2
-@head(2,"tut/examples/tut_beg157a.expect")
+@head(2,'Axioms and Reductions')
+Felix allows you to specify rewriting rules called reductions.
+For example:
+@begin_displayed_code()
+  reduce idem(x:int): f ( f x ) => f x;
+@end_displayed_code()
+Specifies f is idempotent, and f(f(x)) should be reduced to just f(x).
+Reductions are performed after inlining, and applied repeatly to all
+expressions until code is fully reduced. The name of a reduction
+is not significiant, it is for documentation only. Of course,
+reductions can be polymorphic.
+@p()
+Axioms are statements of laws, for example
+@begin_displayed_code()
+  axiom symmetry (x:int,y:int): x + y == y + x;
+@end_displayed_code()
+states that integer addition is symmetric. Axioms
+can be checked by providing test cases via calls
+to the pseudo function 'axiom_check'.
+@begin_displayed_code()
+  var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+@end_displayed_code()
+Axiom checks can be disable by the flxg compiler switch
+@begin_displayed_code()
+  --no-axiom-checks
+@end_displayed_code()
+otherwise every axiom is matched against every test case,
+and each on the matches generates an assertion. An error
+is printed and the program aborted if any check fails.
+
+@select(tangler(tdir+'tut_beg157a.flx'))
+#import <flx.flxh>
+
+noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
+
+reduce idem(x:int): f ( f x ) => f x;
+
+var x = f(f(f(f(1))));
+print x; endl;
+
+axiom symmetry (x:int,y:int): x + y == y + x;
+axiom associativity (x:int, y:int, z:int): (x + y) + z == x + (y + z);
+reduce additive_unit(x:int): x + 0 => x;
+reduce multiplicative_unit(x:int): x * 0 => 0;
+reduce additive_unit(x:int): 0 + x => x;
+reduce multiplicative_unit(x:int): 0 * x=> 0;
+
+//axiom wrong(x:int,y:int): x == y;
+fun hh(x:int)=>x;
+
+reduce silly (x:int): hh x => x;
+
+axiom_check (1,2,3);
+
+var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+
+axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
+  sym(x,y) == sym(y,x)
+;
+
+// this axiom is only right if 'add' is symmetric
+axiom_check (add of (int * int), eq of (int * int), 1,2);
+
 @select(tangler("tut/examples/tut_beg157a.expect","data"))
 Cheat
 1
-@head(2,"tut/examples/tut_beg158.expect")
+@head(2,'Standard types and Lexemes')
+Here is a more comprehensive set of examples
+of Felix standard types and numeric lexicology. 
+@p()
+The types:
+@begin_displayed_code()
+  // categorical
+  void unit
+
+  // addressing
+  byte size address offset 
+
+  // logic
+  bool
+
+  // inexact integers
+  tiny  short  int  long  vlong
+  utiny ushort uint ulong uvlong
+
+  // exact integers
+  int8  int16  int32  int64
+  uint8 uint16 uint32 uint64
+
+  // floating point
+  float double ldouble
+
+  // character
+  char  uchar
+
+  // string
+  string ustring
+@end_displayed_code()
+are defined in the standard library at the top level.
+Except for the addressing types, there is module
+containing the functions acting on the type for
+each type, with the same name except that the first
+letter is upper case: thus module Long contains all
+the operations on type long. Bool, Int, Double, Char
+and String are opened in the library so the operators
+for the corresponding types are available at the top
+level. Don't expect "1L + 1L" to work unless you
+first "open Long;" in your program!
+@p()
+
+@head(3,'Integer Lexemes')
+The compiler directly supports literals of all
+the numeric types, but the lexicology is a sanitised
+version of that used by C. Note in particular
+that 010 is decimal ten in Felix!
+
+@select(tangler(tdir+'tut_beg158.flx'))
+#import <flx.flxh>
+
+// radix
+{
+  val i1 = 999;      // decimal
+  val i2 = 0b1111;   // binary
+  val i3 = 0o7777;   // octal
+  val i4 = 0d9999;   // decimal
+  val i5 = 0xF1_F2;  // hex
+};
+
+// underscores
+{
+  val i1 = 123_456; 
+  val i2 = 0x_FF_FFu;
+};
+
+// normal signed integers
+{
+  val i1 : tiny = 1t;
+  val i2 : short = 1s;       
+  val i3 : int = 1; // default
+  val i4 : int = 1i;
+  val i5 : long = 1l;
+  val i6 : vlong = 1ll;
+};
+
+// normal unsigned integers
+{
+  val i1 : utiny = 1tu;
+  val i2 : utiny = 1ut; // u may be first or last
+  val i3 : ushort = 1su;
+  val i4 : uint = 1u; // default
+  val i5 : uint = 1iu;
+  val i6 : ulong = 1lu;
+  val i7 : uvlong = 1vu;
+  val i8 : uvlong = 1llu; // alternate
+};
+
+// exact signed integers
+{
+  val i1 : int8 = 1i8;
+  val i2 : int16 = 1i16;       
+  val i3 : int32 = 1i32;
+  val i4 : int64 = 1i64;
+};
+
+// exact unsigned integers
+{
+  val i1 : uint8 = 1u8; // 1iu8 not allowed
+  val i2 : uint16 = 1u16;       
+  val i3 : uint32 = 1u32;
+  val i4 : uint64 = 1u64;
+};
+
+// floats obey C99 rules, except we allow underscores
+{
+  val x1 : float = 2.2f;
+  val x2 : double = 2.2;
+  val x3 : ldouble = 2.2l;
+  val x4 : double = 22_345.78;
+  // val x5 : float = 0xFFFF.FFp4f; // doesn't work on g++ 2.95.3
+  val x6 : double = 2.2e4;
+  val x7 : float = 2.2e4f;
+};
+
 @select(tangler("tut/examples/tut_beg158.expect","data"))
-@head(2,"tut/examples/tut_beg159.expect")
+@head(3,'String')
+Felix provides two kinds of strings: 8 bit and 32 bit,
+denotes string and ustring respectively.
+@p()
+Both kinds of string are intended to provide a universal
+representation of human readable text using the 
+ISO-10646/Unicode character set.
+@p()
+Both kinds of string encode 32 bit values representing
+ISO-10646 code points. Strings use UTF-8, whilst ustrings
+use UCS-4.
+@p()
+Both kinds of string literals are replaced where they
+occur with named constants with internal linkage
+of types basic_string<char>, and 
+basic_string<uint32_t>. 
+@p()
+String literals are output in the C files as C string
+literals with all UTF-8 encoding expressed with hex
+escapes, surrounded by a constructor for basic_string<char>.
+@p()
+Ustrings are surrounded by a Felix function which constructs
+a basic_string<uint32_t> from an 8 bit C string literal
+by decoding UTF-8 sequences.
+@p()
+Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
+as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
+for slosh, quote, double quote, return, newline, tab, bell, vertical tab, and
+form feed, respectively.
+@p()
+Octal and hex escapes are NOT allowed: strings are
+for internationalisable human text, and do not represent
+arbitrary raw memory extents.
+@p()
+Although not part of the lexicology, note here two special
+forms for strings: a string may be applied to a string, or,
+a string may be applied to an integer. The first case is
+remodelled as a concatenation, and the second as the concatenation
+of the string and the ISO-10646 code point the integer represents.
+Note that if the string is 8 bit, UTF-8 encoding will be applied.
+
+@select(tangler(tdir+'tut_beg159.flx'))
+#import <flx.flxh>
+var s = "Hello" 32; // add a space after "Hello"
+s = s s; // says "Hello Hello "
+print s; endl;
+
 @select(tangler("tut/examples/tut_beg159.expect","data"))
 Hello Hello 
-@head(2,"tut/examples/tut_beg160.expect")
+@head(2,'Floating matches')
+Felix provides special matching for
+floating point. Here are some examples:
+[This will change, the need for overlapping
+ranges is too ugly ..]
+
+@select(tangler(tdir+'tut_beg160.flx'))
+#import <flx.flxh>
+
+match (1.0) with
+  | NaN => { print "Not a Number"; }
+  | -inf .. -0.999 => { print "lt -1"; }
+  | -1.001 .. 1.001 => { print "Unit circle"; }
+  | 0.999 .. inf => { print "Greater than 1"; }
+endmatch;
+endl;
+
+match (1.0) with 
+  | 0.999 .. 1.001 => { print "one"; }
+endmatch;
+endl;
+
+match (1.0/3.0) with
+ | 0.3333 .. 0.3334 => { print "One third"; }
+endmatch;
+endl;
+
 @select(tangler("tut/examples/tut_beg160.expect","data"))
 Unit circle
 one
 One third
-@head(2,"tut/examples/tut_beg161.expect")
+@doc()
+
+Things to note are: if there is NaN test,
+it must be the first test. If there is
+a test -inf .. inf, it tests for a non-NaN,
+and must be the last test. A NaN will fail
+all tests other than a test for NaN.
+@p()
+A range test is neither inclusive nor exclusive!
+That's why there is no test for a particular float,
+and why the ranges above overlap.
+Welcome to constructive mathematics!
+@p()
+Note that _floating_ point provides exact
+comparisons, however, the patterns above
+apply to constructive reals. The last
+example explains this best: you can't do
+non-constructive matches. [Use IEEE type
+for exact FP?]
+
+@head(2,'Identifiers')
+Felix identifiers consists of a string of
+characters. The first character must be a letter
+or underscore, subsequent characters may be one of a
+letter, underscore, apostrophe or digit.
+@p()
+Certain identifiers are reserved as keywords.
+Identifiers beginning with an underscore are 
+reserved to Felix. Identifiers containing
+more than one underscore in a row are
+reserved to Felix. Reserved identifiers may
+be used by programmers, but not defined.
+@p()
+The letters referred to consist of the usual
+A-Z and a-z, but also include any Unicode/ISO10646
+code point recommended as a letter for the purpose
+of use in identifiers of programming languages
+by ISO/IEC PDTR 10176, as adopted by ISO C++.
+A full table can be found in the reference manual,
+Felix Standard, and source code.
+@p()
+These code points must be represented using UTF-8,
+or by embedded Universal Character Names (ucns).
+These consist of a \uXXXX or \UXXXXXXXX where the
+X's are hex digits. Felix normalises all such
+encodings so identifiers match properly.
+
+@select(tangler(tdir+'tut_beg161.flx'))
+#import <flx.flxh>
+
+val x_y_7' = 1;
+val Y_can't_U_do_this_in_C'' : double = 2.0;
+val x\u05d0= 1; // x,Hebrew  aleph
+val zz = x\U000005D0; // x,Hebrew aleph
+
 @select(tangler("tut/examples/tut_beg161.expect","data"))
-@head(2,"tut/examples/tut_beg205.expect")
+@head(1,'Intermediate Felix 201')
+This section mainly deals with the Felix module system.
+
+@head(2,'The open directive')
+It's really boring writing qualified names all
+the time. Felix provides the open directive
+to allow you to open a module so its contents
+can be accesses without using qualified names.
+Here's a simple example:
+
+@select(tangler(tdir+'tut_beg205.flx'))
+#import <flx.flxh>
+module X {
+  proc print_endl (a:int) { print a; endl; }
+  fun square (a:int):int = { return a * a; }
+}
+
+open X;
+print_endl (square 2);
+
 @select(tangler("tut/examples/tut_beg205.expect","data"))
 4
-@head(2,"tut/examples/tut_beg206.expect")
+@doc()
+
+Note that the open directive only affects lookup
+of unqualified names, or the first component of
+a qualified name. Lookup proceeds first in the
+current scope, before considering opened modules;
+then opened modules are considered, then the
+parent scope, then opened modules in the parent,
+etc.
+@p()
+The name of the module
+to be opened is not looked up in the modules
+opened by open directives in the same module
+as itself. Open directives in containing modules
+are, however, examined.
+@p()
+The reason for this last rule is as follows:
+open directives, like Felix declarations,
+are all considered in parallel; that is,
+their order of writing is irrelevant;
+hence, open directives are considered in a
+context in which none of the open directives
+have been applied.
+@p()
+It is not an error to open modules containing
+conflicting definitions, however, it is an error
+to refer to a name with conflicting definitions.
+@p()
+Functions with the same name in opened modules
+are overloaded. If two functions have the same
+signature, a reference will lead to an ambiguity.
+Such an ambiguity can be resolved by hiding
+such definitions in opened modules by providing
+a definition in the module containing the
+open directives. Alternatively, you can use
+a qualified name.
+
+@select(tangler(tdir+'tut_beg206.flx'))
+#import <flx.flxh>
+module X1 {
+  proc printme() { print "X1"; endl; }
+}
+module X2 {
+  proc printme() { print "X2"; endl; }
+}
+open X1;
+open X2;
+proc printme() { print "top level"; endl; }
+
+X1::printme();
+X2::printme();
+printme();
+
 @select(tangler("tut/examples/tut_beg206.expect","data"))
 X1
 X2
 top level
-@head(2,"tut/examples/tut_beg206a.expect")
+@doc()
+
+Finally note that the effect of opening a module
+named X which contains an entity named X is well
+defined: the contained X will not be seen
+by other open directives, whereas the module X
+will not be seen by any declarations and definitions
+in the body of the containing scope.
+
+@head(2,'The use directive')
+The open directive opens a whole module
+for internal use. Sometimes that is too coarse grained.
+The use directive allows you to import individual names into
+the current scope to reference with an unqualified name.
+The entity refered to can be a non-function, or a set of
+functions, and it can also be renamed in the use directive.
+The renaming feature can also be used on names in the current
+scope.
+@p()
+Note that you can't sensibly use a name from an opened
+module, nor open a module using a used name (even as
+a prefix).
+
+@select(tangler(tdir+'tut_beg206a.flx'))
+header "#include <iostream>";
+module X {
+  type int = "int";
+  proc print: int = "std::cout << $1;";
+  proc endl: 1 = "std::cout << std::endl;";
+}
+
+use X::int;
+use eol = X::endl;
+
+val x:int = 1;
+use y = x;
+X::print y; eol;
+
 @select(tangler("tut/examples/tut_beg206a.expect","data"))
 1
-@head(2,"tut/examples/tut_beg207a.expect")
-@select(tangler("tut/examples/tut_beg207a.expect","data"))
-Case 0 of three
-Case 1 of three
-Case 2 of three
-case 0 33
-case 1 3.3
-case 2 33
-@head(2,"tut/examples/tut_beg207b.expect")
+@doc()
+
+You can see the two forms of the use directive:
+@begin_displayed_code()
+  use qualified_name;
+  use new_name = old_qualified_name;
+@end_displayed_code()
+The first form requires a proper qualified name and is 
+equivalent to the second form, where the new_name is the
+last component of the qualified_name.
+
+@head(2,'Renaming definitions')
+It is possible to inject a name or family
+of function names defined elsewhere into the
+public interface of a module with the rename
+statement.
+@p()
+injected entities can be found both by
+unqualified and qualified lookup as if actually
+defined in the module, however the denoted
+entities are not actually part of the module,
+and in particular they're bound in the context
+in which they're actually defined.
+@p()
+There are two forms of the rename statement,
+one for non-functions and one for functions.
+The non-function form injects a reference to
+a single non-function entity. 
+@p()
+The function form injects a complete overload set.
+Additional overloads can be added to the set,
+either by local definitions, or further inherit
+statements.
+@p()
+Note that unlike open or use directives, injected
+names have the same priority as other names defined
+in the module: any collision with a locally defined
+function is final, and cannot be resolved.
+
+@select(tangler(tdir+'tut_beg207b.flx'))
+header "#include <iostream>";
+module X {
+  type x_t = "int";
+  const x42 : x_t = "42";
+}
+
+module Y {
+  rename y_t = X::x_t;
+  rename y42=X::x42;
+  proc print:y_t = "std::cout << $1 << std::endl;";
+}
+
+Y::print X::x42;
+Y::print Y::y42;
+
+rename fun print=Y::print;
+rename y42=Y::y42;
+rename x42=X::x42;
+
+print x42;
+print y42;
+
 @select(tangler("tut/examples/tut_beg207b.expect","data"))
 42
 42
 42
 42
-@head(2,"tut/examples/tut_beg207c.expect")
+@head(2,'Modular inheritance')
+It is possible to inherit all
+the symbols of a module with the inherit directive.
+Unlike the open directive, inherited symbols
+become part of the public interface of a module,
+as well as it's private interface.
+@p()
+When lookup is performed, entities
+defined in the module are always considered
+before inherited ones. This is to ensure
+a local definition can always be used to
+resolve an ambiguity, and to ensure that
+any binding to a local definition cannot
+be hijacked by a non-local change in another
+module.
+@p()
+Modular inclusion is transitive because
+it is specified to include the whole of
+the public interface of one module in another,
+including any symbols that module inherits.
+@p()
+Note that as usual and unlike other programming
+languages, Felix inheritance is fully recursive:
+a module contains all the symbols it defines
+plus the transitive closure of all inherited
+modules.
+@p()
+In particular, it is quite possible for two modules
+to inherit each other, thereby ensuring they
+publish the same set of names: note however that
+local overrides may mean the definition associated
+with a name is different for each module.
+
+@select(tangler(tdir+'tut_beg207c.flx'))
+header "#include <iostream>";
+header "#include <string>";
+
+type int = "int";
+type string= "std::string";
+proc print:int = "std::cout << $1;";
+proc print:string= "std::cout << $1;";
+proc endl:1 = "std::cout << std::endl;";
+
+module X { 
+  fun f(a:int):int={ return 11; }
+}
+module Y { 
+  fun g(a:int):int={ return 22; }
+}
+module Z { inherit X; inherit Y; }
+
+// check transitivity
+module A {
+  inherit Z;
+  print (f 3); print " "; print (g 5); endl;
+  print (Z::f 3); print " "; print (Z::g 5); endl;
+  print (A::f 3); print " "; print (A::g 5); endl;
+}
+
+
+// check recurisve transitive closure
+module P { inherit Q; fun ff(a:int):int={return 33;}}
+module Q { inherit P; fun gg(a:int):int={return 44;}}
+module R {
+  inherit P;
+  print (ff 1); print " "; print (gg 1); endl;
+  print (P::ff 1); print " "; print (P::gg 1); endl;
+  print (Q::ff 1); print " "; print (Q::gg 1); endl;
+  print (R::ff 1); print " "; print (R::gg 1); endl;
+}
+
+module W { 
+  module J { val a:int = 1;} 
+  inherit J;
+  print a; endl;
+}
+print W::a; endl;
+
 @select(tangler("tut/examples/tut_beg207c.expect","data"))
 11 22
 11 22
@@ -5582,21 +4887,175 @@ case 2 33
 33 44
 1
 1
-@head(2,"tut/examples/tut_beg208.expect")
+@head(2,'Let expression')
+There is a short form for match expressions.
+An expression of the form:
+@begin_displayed_code()
+  let letpat = expr1 in expr2
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  match expr1 with letpat => expr2 endmatch
+@end_displayed_code()
+The let expression is, in effect, a prefix operator with
+the lowest precedence. 
+
+@select(tangler(tdir+'tut_beg208.flx'))
+#import <flx.flxh>
+print (match 1 with | ?x =>  x + x endmatch); endl;
+print (let ?z = 1 in z + z); endl;
+print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
+
 @select(tangler("tut/examples/tut_beg208.expect","data"))
 2
 2
 8
-@head(2,"tut/examples/tut_beg209.expect")
+@head(2,'Metatyping')
+Felix supports a metatyping or kinding system.
+The reserved identifer TYPE denotes the kind of a type.
+You can make a function that generates a type from
+other types. Of course, you can pass these functions
+to other type functions, and do currying.
+@p()
+The type evaluator is a specialised version of the
+typed lambda calculus using eager evaluation.
+Note that in this calculus, types are values,
+and their type is TYPE, type functions are also
+values, with type TYPE->TYPE. Our calculus
+also supports type tuples of types such as
+@begin_displayed_code()
+TYPE * TYPE 
+@end_displayed_code()
+and values such as
+@begin_displayed_code()
+(int, long)
+@end_displayed_code()
+Note that (unfortunately) in the abstraction form
+@begin_displayed_code()
+  fun (t:TYPE):TYPE = 
+  { 
+    t * t
+  } 
+@end_displayed_code()
+the curly braces are required, and you can even write:
+@begin_displayed_code()
+  fun (t:TYPE):TYPE = 
+  { 
+    return t * t;
+  } 
+@end_displayed_code()
+as for an ordinary function. This is because Felix uses
+precisely the same syntax for type functions and ordinary ones;
+that is, the parser uses the same grammar to build expressions
+and type expresssions (though each imposes constraints).
+
+@select(tangler(tdir+'tut_beg209.flx'))
+#import <flx.flxh>
+open Long;
+
+typedef fun list (elt:TYPE):TYPE => 1 + elt * list elt;
+
+typedef fun f(t1:TYPE, t2:TYPE->TYPE) (t3:TYPE): TYPE => (t2 t1) * t3;
+
+typedef g = (
+    fun (t1:TYPE, t2:TYPE->TYPE):TYPE->TYPE =>
+      ( fun (t3:TYPE):TYPE => (t2 t1) * t3 )
+  )
+;
+
+
+// FIXPOINTS WORKING NOW
+val x : list int = case 0 of list int;
+
+typedef fun pair (a:TYPE,b:TYPE):TYPE => a * b;
+//typedef pair = (fun (a:TYPE,b:TYPE):TYPE => {a * b});
+
+val x2 : (pair (int,long)) = (1,1L);
+match x2 with
+| (?a,?b) => { print a; endl; print b; endl; }
+endmatch;
+
+typedef fun twoup (x:TYPE):TYPE => x * x;
+
+// (twoup int) * int = (int * int) * int
+val x3 : (f (int,twoup of (TYPE)) (int)) = ((1,2),3);
+match x3 with
+| ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
+endmatch;
+
 @select(tangler("tut/examples/tut_beg209.expect","data"))
 1
 1
 1
 2
 3
-@head(2,"tut/examples/tut_beg301.expect")
+@head(1,'Felix threads -- Cooperative Multitasking')
+Felix supports event driven programming with
+a threading interface. 
+
+[SECTION TO BE REPLACED]
+
+
+@head(1,"System interface")
+We show how to get at the command line arguments.
+The function 'argv' returns an empty string
+if the argument index is out of range.
+argv 0 is usually the program name:
+for the flx_run driver its the loaded library
+name: the driver name and control arguments
+are stripped. (Note: the output is platform
+dependent and so can't be checked)
+
+@select(tangler(tdir+'xtut_beg301.flx'))
+#import <flx.flxh>
+open System;
+print "argc="; print argc; endl;
+
+var i:int;
+for_each {i=0;} {i<argc} {++i;}
+{
+  print i; print "->"; print (argv i); endl;
+};
+
 Output of this test is platform dependent and too hard to check.
-@head(2,"tut/examples/tut_beg302.expect")
+@head(1,"STL Containers")
+@select(tangler(tdir+'tut_beg302.flx'))
+#import <flx.flxh>
+include "stl";
+open Stl;
+open Stl::Vector;
+open Stl::Map;
+
+typedef ii = Vector::iterator[int];
+
+var v = Vector::create[int]();
+push_back (v,1);
+push_back (v,2);
+push_back (v,3);
+
+var j = 0; until j==3 do
+  print v.[j]; endl;
+  ++j;
+done;
+
+
+var m = Map::create[int,int]();
+
+insert(m,0,2);
+insert(m,1,23);
+insert(m,2,423);
+
+j = 0; until j==3 do
+  print m.[j]; endl;
+  ++j;
+done;
+
+
+var i = begin m; until i == end m do
+  def val k, val vl = deref i;
+  print k; print " -> "; print vl; endl; ++i;
+done;
+
 @select(tangler("tut/examples/tut_beg302.expect","data"))
 1
 2
@@ -5607,7 +5066,527 @@ Output of this test is platform dependent and too hard to check.
 0 -> 2
 1 -> 23
 2 -> 423
-@head(2,"tut/examples/tut_beg212.expect")
+@head(1,"GLR parsing")
+Felix contains a builtin parser generator. This is roughly
+like a builtin yacc or bison facility, but it differs in
+a significant way which makes it vastly more usable.
+@p()
+Yacc traditionally supports only a very specialised
+subset of grammars -- LALR1 with some weak static ambiguity
+resolution strategies.
+@p()
+The Felix system is based on Scott McPeaks Elkhound,
+which is a Generalised LR, or GLR, parser. This system
+support all grammars, whilst parsing SLR grammars 
+just as efficiently as Yacc (namely, in linear space
+and time).
+@p()
+GLR handles ambiguity by spawning multiple concurrent
+threads for all alternatives wherever the SLR(1) 
+prediction is inadequate. These threads process the
+token stream sychronously, so there is never any backtracking.
+Instead, alternatives which would be tried in sequence
+by a backtracking algorithm are all tried at once.
+@p()
+Consequently, GLR can eat up exponentially large
+amounts of memory, and finally return all possible
+parse trees.
+@p()
+In practice, this doesn't happen. First, one of the threads
+can reach an impasse where it can't handle the next
+token, and it is automatically dropped as an alternative,
+in the same way a failure in a backtracking algorithm
+drops the current parse -- however unlike backtracking,
+that's the end of it: the viable alternatives are
+already being parsed in parallel.
+@p()
+For many nonterminals, two alternative productions
+are encoded precisely to handle the union of
+two sets of cases. At some point during the parse then,
+one of the productions must fail on for any input
+not in the common subset of the cases. In that case,
+GLR drops the failed parse attempt automatically.
+@p()
+When the input is in the common subset, however,
+the algorithm cannot know what to do. By default,
+both parses will be continued, causing a bifurcation
+in the parse of a production trying to process that
+symbol during *its* parse.
+@p()
+That divergence can only be eliminated automatically
+if the whole containing production is subsequently
+failed, in which case both subparses will be dropped.
+@p()
+For this reason, at the end of the parsing of a
+a non-terminal, the client has an oppotunity to
+pick between the parses.
+
+@head(2,"top level parser")
+@select(tangler(tdir+'tut_beg310.flx'))
+#import <flx.flxh>
+ 
+// the input string
+data := "1+2+3$";
+ 
+// a type for tokens
+union token_t =
+  | TOK_EOF
+  | TOK_PLUS
+  | TOK_INT of int
+;
+ 
+// a token stream generator
+var i = 0;
+fun get_token():token_t =
+{
+  ch := data.[i to i+1];
+  ++i;
+  tok :=
+    match ch with
+    | "$" => TOK_EOF
+    | "+" => TOK_PLUS
+    | "1" => TOK_INT 1
+    | "2" => TOK_INT 2
+    | "3" => TOK_INT 3
+    endmatch
+  ;
+  return tok;
+}
+ 
+// a type for expression terms
+union expr_t =
+  | Integer of int
+;
+ 
+// a grammar for expressions
+nonterm eexpr : expr_t =
+| xx:eexpr TOK_PLUS y:TOK_INT =>
+  match xx with
+  | Integer ?i => Integer (i+y)
+  endmatch
+ 
+| y:TOK_INT => Integer y
+;
+ 
+// a parser for our example
+var z : 1 + int =
+  parse (the get_token) with
+  | e: eexpr => match e with | Integer ?i => i endmatch
+  endmatch
+;
+ 
+// print the result
+match z with
+| case 0 => { print "Error"; }
+| case 1 (?i) => { print i; }
+endmatch;
+endl;
+
+@select(tangler("tut/examples/tut_beg310.expect","data"))
+6
+@head(2,"nested parser")
+@select(tangler(tdir+'tut_beg311.flx'))
+#import <flx.flxh>
+
+data := "1+2+3$";
+
+union token_t = 
+  | TOK_EOF
+  | TOK_PLUS
+  | TOK_INT of int
+;
+
+var i = 0;
+
+fun get_token():token_t = 
+{
+  ch := data.[i to i+1];
+  ++i;
+  tok := 
+    match ch with
+    | "$" => TOK_EOF
+    | "+" => TOK_PLUS
+    | "1" => TOK_INT 1
+    | "2" => TOK_INT 2
+    | "3" => TOK_INT 3
+    endmatch
+  ;
+  return tok;
+}
+
+union expr_t = 
+  | Integer of int
+;
+
+nonterm eexpr : expr_t = 
+| xx:eexpr TOK_PLUS y:TOK_INT => 
+  match xx with 
+  | Integer ?i => Integer (i+y)
+  endmatch
+
+| y:TOK_INT => Integer y
+;
+
+proc try_parse() {
+  var z : 1 + int = 
+    parse (the get_token) with 
+    | e: eexpr => match e with | Integer ?i => i endmatch
+    endmatch
+  ;
+
+  match z with
+  | case 0 => { print "Error"; }
+  | case 1 (?i) => { print i; }
+  endmatch;
+  endl;
+}
+
+try_parse();
+
+@select(tangler("tut/examples/tut_beg311.expect","data"))
+6
+@head(2,"Parser shortcuts")
+The Felix parser system actually accepts
+so-called meta-grammars.
+@p()
+You can have an anonymous sequence
+of symbols or set of alternatives,
+simply by enclosing them in parentheses.
+The implementation declares a dummy nonterminal
+for such groups, and replaces the group with 
+the name of the dummy non-terminal.
+@p()
+You can also apply the postfix operators "*", "+" and "?"
+to any symbol or group. Curly brackets "{" .. "}" can also
+be used and are equivalent to ( .. ) *. Note you can't
+use [..] notation for optional constructions, since
+this conflicts with the use of [] for type subscripts.
+@p()
+Note: although it makes sense at present anonymous
+nonterminal specifications can't contain names
+or client code.
+@p()
+Note: restriction: at present each dummy is distinct,
+so any anonymous expression occuring more than
+once will lead to a reduce/reduce conflict.
+@p()
+Note: restriction: all the anonymous symbols must have attributes.
+
+@select(tangler(tdir+'tut_beg312.flx'))
+#import <flx.flxh>
+ 
+// the input string
+data := "1+22+33$";
+ 
+// a type for tokens
+union token_t =
+  | TOK_EOF
+  | TOK_PLUS
+  | TOK_INT of int
+;
+ 
+// a token stream generator
+var i = 0;
+fun get_token():token_t =
+{
+  ch := data.[i to i+1];
+  ++i;
+  tok :=
+    match ch with
+    | "$" => TOK_EOF
+    | "+" => TOK_PLUS
+    | "1" => TOK_INT 1
+    | "2" => TOK_INT 2
+    | "3" => TOK_INT 3
+    endmatch
+  ;
+  return tok;
+}
+ 
+// a type for expression terms
+union expr_t =
+  | Integer of int
+;
+
+// a grammar for expressions
+nonterm eexpr : expr_t =
+| xx:eexpr TOK_PLUS y:TOK_INT+ =>
+  match xx with
+  | Integer ?i => let case 1 (?j,_) = y in Integer (i+j)
+  endmatch
+ 
+| y:TOK_INT => Integer y
+;
+ 
+// a parser for our example
+var z : 1 + int =
+  parse (the get_token) with
+  | e: eexpr => match e with | Integer ?i => i endmatch
+  endmatch
+;
+ 
+// print the result
+match z with
+| case 0 => { print "Error"; }
+| case 1 (?i) => { print i; }
+endmatch;
+endl;
+
+@select(tangler("tut/examples/tut_beg312.expect","data"))
+6
+@head(2,"Mixed Mode Arithmetic")
+@select(tangler(tdir+'tut_beg313.flx'))
+#import <flx.flxh>
+open MixedInt;
+
+var x = 1;
+var y = 2L;
+
+print$ x + y; endl;
+
+@select(tangler("tut/examples/tut_beg313.expect","data"))
+3
+@head(2,"Classes")
+@select(tangler(tdir+'tut_beg316.flx'))
+#import <flx.flxh>
+open Long;
+
+class Y {
+  // variables
+  val c : int;
+  var x : int;
+  var y : long;
+  
+  // accessor methods
+  fun fetchc():int =>c;
+
+  // mutatoes
+  proc setx(a:int) { x = a; }
+  proc setxy( a:int, b:long) { x = a; y = b; }
+
+  // accessor procedures
+  proc yprint() {
+    print "This is a Y object, with x = "; 
+    print x; print ", y = "; print y;
+    print ", and c = "; print c; endl;
+  }
+
+  // test methods calling methods
+
+  fun f(a:int):int => g a;
+  fun g(a:int):int => a + x;
+
+  // constructors
+  ctor () {}
+  ctor (a:int): c(20000) { x = a; }
+};
+
+var ob <- new Y(99);
+ob.x = 2;
+ob.y = 3L;
+
+print ob.c; endl;
+print ob.x; endl;
+print ob.y; endl;
+print$ ob.fetchc(); endl;
+
+ob.setx 22;
+ob.yprint();
+
+ob.setxy (12,33L);
+ob.yprint;
+
+print$ ob.f 1; endl;
+
+proc ncl() {
+  var x = 42;
+  class J {
+    var j:int;
+    ctor (a:int) { j = a; }
+    fun h(q:int):int => q + j + x;
+  };
+  var b <- new J(100);
+  print$ b.h 1000; endl;
+};
+
+ncl;
+
+@select(tangler("tut/examples/tut_beg316.expect","data"))
+20000
+2
+3
+20000
+This is a Y object, with x = 22, y = 3, and c = 20000
+This is a Y object, with x = 12, y = 33, and c = 20000
+13
+1142
+@head(2,"Polymorphic Classes")
+@select(tangler(tdir+'tut_beg317.flx'))
+#import <flx.flxh>
+open Long;
+
+class Y[t] {
+  // variables
+  val c : int;
+  var x : t;
+  var y : long;
+  
+  // accessor methods
+  fun fetchc():int =>c;
+
+  // mutatoes
+  proc setx(a:t) { x = a; }
+  proc setxy( a:t, b:long) { x = a; y = b; }
+
+  // accessor procedures
+  proc yprint(xprint:t->0) {
+    print "This is a Y object, with x = "; 
+    xprint x; print ", y = "; print y;
+    print ", and c = "; print c; endl;
+  }
+
+  // test methods calling methods
+
+  fun f(a:int,add:int * t->int):int => g$ a,add;
+  fun g(a:int,add:int * t->int):int => a + x;
+
+  // constructors
+  ctor () {}
+  ctor (a:int): c(20000) { x = a; }
+};
+
+var ob <- new Y[int](99);
+ob.x = 2;
+ob.y = 3L;
+
+print ob.c; endl;
+print ob.x; endl;
+print ob.y; endl;
+print$ ob.fetchc(); endl;
+
+proc iprint(x:int) { print x; }
+
+ob.setx 22;
+ob.yprint(iprint of (int));
+
+ob.setxy (12,33L);
+ob.yprint(iprint of (int));
+
+print$ ob.f (1,add of (int*int)); endl;
+
+proc ncl() {
+  var x = 42;
+  class J {
+    var j:int;
+    ctor (a:int) { j = a; }
+    fun h(q:int):int => q + j + x;
+  };
+  var b <- new J(100);
+  print$ b.h 1000; endl;
+};
+
+ncl;
+
+class A[t] {
+  fun f(a:t):t=>a;
+  ctor (){}
+};
+
+module V[t] {
+  fun f(a:t):t=>a;
+};
+
+fun X[t]() = {
+  fun f(a:t):t=>a;
+}
+var aint <- new A[int]();
+
+@select(tangler("tut/examples/tut_beg317.expect","data"))
+20000
+2
+3
+20000
+This is a Y object, with x = 22, y = 3, and c = 20000
+This is a Y object, with x = 12, y = 33, and c = 20000
+13
+1142
+@head(2,"Polymorphic Methods")
+@select(tangler(tdir+'tut_beg318.flx'))
+#import <flx.flxh>
+open Long;
+
+class Y[t] {
+  // variables
+  val c : int;
+  var x : t;
+  var y : long;
+  
+  // accessor methods
+  fun fetchc():int =>c;
+
+  // mutatoes
+  proc setx(a:t) { x = a; }
+  proc setxy( a:t, b:long) { x = a; y = b; }
+
+  // accessor procedures
+  proc yprint(xprint:t->0) {
+    print "This is a Y object, with x = "; 
+    xprint x; print ", y = "; print y;
+    print ", and c = "; print c; endl;
+  }
+
+  // test methods calling methods
+
+  fun f(a:int,add:int * t->int):int => g$ a,add;
+  fun g(a:int,add:int * t->int):int => a + x;
+
+  // constructors
+  ctor () {}
+  ctor (a:int): c(20000) { x = a; }
+
+  // polymorphic method
+  fun p[u](a:u, add:t * u ->int):int => x + a;
+};
+
+var ob <- new Y[int](99);
+ob.x = 2;
+ob.y = 3L;
+
+print ob.c; endl;
+print ob.x; endl;
+print ob.y; endl;
+print$ ob.fetchc(); endl;
+
+proc iprint(x:int) { print x; }
+
+ob.setx 22;
+ob.yprint(iprint of (int));
+
+ob.setxy (12,33L);
+ob.yprint(iprint of (int));
+
+print$ ob.f (1,add of (int*int)); endl;
+print$ ob.p[int] (1,add of (int*int)); endl;
+
+@select(tangler("tut/examples/tut_beg318.expect","data"))
+20000
+2
+3
+20000
+This is a Y object, with x = 22, y = 3, and c = 20000
+This is a Y object, with x = 12, y = 33, and c = 20000
+13
+13
+@head(2,"C formating")
+@select(tangler(tdir+'tut_beg319.flx'))
+#import <flx.flxh>
+print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
+
+@select(tangler("tut/examples/tut_beg319.expect","data"))
+ 22 0x63 % 9.7 88
+@#
+@head(1,'Expected outputs')
+Move these up next to the tests!
 @select(tangler("tut/examples/tut_beg212.expect","data"))
 driver request test
 driver name code is 1
@@ -5619,18 +5598,6 @@ t1 continues
 t1 sends message: Hello main from t1!
 t1 dies
 Main got message: Hello main from t1!
-@head(2,"tut/examples/tut_beg310.expect")
-@select(tangler("tut/examples/tut_beg310.expect","data"))
-6
-@head(2,"tut/examples/tut_beg311.expect")
-@select(tangler("tut/examples/tut_beg311.expect","data"))
-6
-@head(2,"tut/examples/tut_beg312.expect")
-@select(tangler("tut/examples/tut_beg312.expect","data"))
-6
-@head(2,"tut/examples/tut_beg313.expect")
-@select(tangler("tut/examples/tut_beg313.expect","data"))
-3
 @head(2,"tut/examples/tut_beg315.expect")
 @select(tangler("tut/examples/tut_beg315.expect","data"))
 OK
@@ -5642,37 +5609,3 @@ OK
 11
 1
 1
-@head(2,"tut/examples/tut_beg316.expect")
-@select(tangler("tut/examples/tut_beg316.expect","data"))
-20000
-2
-3
-20000
-This is a Y object, with x = 22, y = 3, and c = 20000
-This is a Y object, with x = 12, y = 33, and c = 20000
-13
-1142
-@head(2,"tut/examples/tut_beg317.expect")
-@select(tangler("tut/examples/tut_beg317.expect","data"))
-20000
-2
-3
-20000
-This is a Y object, with x = 22, y = 3, and c = 20000
-This is a Y object, with x = 12, y = 33, and c = 20000
-13
-1142
-@head(2,"tut/examples/tut_beg318.expect")
-@select(tangler("tut/examples/tut_beg318.expect","data"))
-20000
-2
-3
-20000
-This is a Y object, with x = 22, y = 3, and c = 20000
-This is a Y object, with x = 12, y = 33, and c = 20000
-13
-13
-@head(2,"tut/examples/tut_beg319.expect")
-@select(tangler("tut/examples/tut_beg319.expect","data"))
- 22 0x63 % 9.7 88
-@#
