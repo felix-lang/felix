@@ -1536,6 +1536,7 @@ flx_expr_terminator_keywords = [
 #    ("whilst", "WHILST"),
     ("with", "WITH"),
 #    ("until", "UNTIL"),
+    ("yield", "YIELD"),
     ("_gc_pointer", "GC_POINTER"),
     ("_gc_type", "GC_TYPE"),
     ("_svc", "SVC"),

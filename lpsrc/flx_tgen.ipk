@@ -380,7 +380,7 @@ let gen_type syms bbdfns (index,typ) =
     else
     "  virtual con_t *call(con_t *, "^argtype^" const &)=0;\n"
     ) ^
-    "  virtual "^name^" *clone()const=0;\n"  ^
+    "  virtual "^name^" *clone()=0;\n"  ^
     "  virtual con_t *resume()=0;\n"  ^
     "};\n"
 
@@ -398,7 +398,7 @@ let gen_type syms bbdfns (index,typ) =
     "  virtual "^rettype^" apply("^
     (if unitfun then "" else argtype^" const &") ^
     ")=0;\n"  ^
-    "  virtual "^name^" *clone()const=0;\n"  ^
+    "  virtual "^name^" *clone()=0;\n"  ^
     "  virtual ~"^name^"(){};\n" ^
     "};\n"
 

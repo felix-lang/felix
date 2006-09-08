@@ -223,6 +223,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_ifgoto (sr,e,_)
   | `BEXE_ifnotgoto (sr,e,_)
   | `BEXE_fun_return (sr,e) 
+  | `BEXE_yield (sr,e) 
     -> ue sr e
 
   | `BEXE_init (sr,i,e) -> 

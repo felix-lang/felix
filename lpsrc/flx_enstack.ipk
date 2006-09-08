@@ -397,6 +397,7 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
        *)
        raise Not_found
        
+    | `BEXE_yield _
     | `BEXE_fun_return _ -> assert false
 
     (* Assume these are safe .. ? *)

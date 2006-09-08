@@ -374,7 +374,7 @@ let gen_class syms (child_map,bbdfns) props index id vs ts instance_no =
     (*
     "  //clone\n" ^
     *)
-    "  " ^name^"* clone()const;\n" 
+    "  " ^name^"* clone();\n" 
     else ""
   )
   ^
@@ -391,6 +391,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
   let heapable = not stackable or heapable in
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
+  let yields = mem `Yields props in
   (*
   print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else "DOES NOT REQUIRE PTF"));
   *)
@@ -435,6 +436,11 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
   let frame_dcls = 
     if requires_ptf then
     "  FLX_FMEM_DECL\n"
+    else ""
+  in
+  let pc_dcls =
+    if yields then
+    "  FLX_PC_DECL\n"
     else ""
   in
   let display_string = match display with
@@ -509,7 +515,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
       (*
       "  //clone\n" ^
       *)
-      "  " ^name^"* clone()const;\n" 
+      "  " ^name^"* clone();\n" 
       else ""
     )
     ^
@@ -546,6 +552,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
     "  //os frames\n" ^
     *)
     frame_dcls ^
+    pc_dcls ^
     (*
     "  //display\n" ^
     *)
@@ -560,7 +567,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
       (*
       "  //clone\n" ^
       *)
-      "  " ^name^"* clone()const;\n" 
+      "  " ^name^"* clone();\n" 
       else ""
     )
     ^
@@ -1455,6 +1462,23 @@ let gen_exe filename syms
       "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
 
       
+    | `BEXE_yield (sr,e) -> 
+      let labno = !counter in incr counter;
+      let code =
+        "      FLX_SET_PC(" ^ si labno ^ ")\n" ^
+        (
+          let _,t = e in
+          (if with_comments then
+          "      //" ^ src_str ^ ": type "^tn t^"\n" 
+          else "") ^
+          "      return "^ge sr e^";\n" 
+        ) 
+        ^
+        "    FLX_CASE_LABEL(" ^ si labno ^ ")\n"
+      in 
+      needs_switch := true; 
+      code
+
     | `BEXE_fun_return (sr,e) -> 
       let _,t = e in
       (if with_comments then
@@ -1897,7 +1921,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       gen_ctor syms bbdfns name display funs [] [] ts props
     in
     let params = map (fun {pindex=ix} -> ix) bps in
-    let exe_string,_ =
+    let exe_string,needs_switch =
       try 
         gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no false
       with x -> 
@@ -1948,10 +1972,18 @@ let gen_function_methods filename syms (child_map,bbdfns)
           )
           "" params 
       )^
-      exe_string ^
+        (if needs_switch then 
+        "  FLX_START_SWITCH\n" else ""
+        ) ^
+        exe_string ^
+        "    throw -1; // HACK! \n" ^ (* HACK .. should be in exe_string .. *)
+        (if needs_switch then
+        "  FLX_END_SWITCH\n" else ""
+        )
+      ^
       "}\n"
     and clone =
-      "  " ^ name ^ "* "^name^"::clone()const {\n"^
+      "  " ^ name ^ "* "^name^"::clone(){\n"^
       (if mem `Generator props then
       "  return this;\n"
       else
@@ -1971,6 +2003,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       ^
       "//FUNC " ^ q ^ ": Apply method\n" ^
       apply^ "\n"
+      
 
   | _ -> failwith "function expected"
 
@@ -2061,7 +2094,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
       exe_string ^
       "}\n"
     and clone =
-      "  " ^ name ^ "* "^name^"::clone()const {\n"^
+      "  " ^ name ^ "* "^name^"::clone(){\n"^
       "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"^
       "}\n"
     in
@@ -2262,7 +2295,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         )^
         "}\n" 
     and clone =
-      "  " ^name^"* "^name^"::clone()const {\n" ^
+      "  " ^name^"* "^name^"::clone(){\n" ^
         "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n" ^
         "}\n"
     in

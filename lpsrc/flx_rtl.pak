@@ -519,6 +519,13 @@ right type by client drivers.
 #define FLX_DCL_THREAD_FRAME
 #endif
 
+#if FLX_CGOTO
+  #define FLX_PC_DECL void *pc;
+#else
+  #define FLX_PC_DECL int pc;
+#endif
+
+
 namespace flx { namespace rtl {
 
 // ********************************************************
@@ -569,12 +576,7 @@ struct RTL_EXTERN flx_switch_failure_t;
 
 struct RTL_EXTERN con_t ///< abstract base for mutable continuations
 {
-#if FLX_CGOTO
-  void *pc;                 ///< interior program counter
-#else
-   int pc;
-#endif
-
+  FLX_PC_DECL               ///< interior program counter
   _uctor_ *p_svc;           ///< pointer to service request
 
   con_t();                  ///< initialise pc, p_svc to 0
@@ -927,6 +929,7 @@ struct readreq_t {
 
 // for generated code in body file
 #define INIT_PC pc=0;
+    ///< interior program counter
 
 #if FLX_CGOTO
   #define FLX_START_SWITCH if(pc)goto *pc;

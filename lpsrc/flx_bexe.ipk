@@ -362,6 +362,24 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           string_of_btypecode syms.dfns t'
         )
 
+    | `EXE_yield e ->        
+      incr return_count;
+      let e',t' = be e in
+      let t' = minimise syms.dfns t' in
+      if do_unify syms !ret_type t' then begin
+        ret_type := varmap_subst syms.varmap !ret_type;
+        tack (`BEXE_yield (sr,(e',lower t')))
+      end 
+      else
+        clierr sr
+        (
+          "In " ^ string_of_exe 0 x ^ "\n" ^
+          "Wrong return type,\nexpected : " ^ 
+          string_of_btypecode syms.dfns !ret_type ^
+          "\nbut we got " ^
+          string_of_btypecode syms.dfns t'
+        )
+
     | `EXE_nop s ->           tack (`BEXE_nop (sr,s))
     | `EXE_code s ->          tack (`BEXE_code (sr,s))
     | `EXE_noreturn_code s ->  

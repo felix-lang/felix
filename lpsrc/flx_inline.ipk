@@ -785,6 +785,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
   | `BEXE_ifnotgoto (sr,e,lab) -> [`BEXE_ifnotgoto (sr,ge e, relab lab)]
   | `BEXE_fun_return (sr,e) -> [`BEXE_fun_return (sr, ge e)]
+  | `BEXE_yield (sr,e) -> [`BEXE_yield (sr, ge e)]
   | `BEXE_assign (sr,e1,e2) -> [`BEXE_assign (sr, ge e1, ge e2)]
   | `BEXE_init (sr,i,e) -> [`BEXE_init (sr,revar i, ge e)]
   | `BEXE_svc (sr,i)  -> [`BEXE_svc (sr, revar i)]
@@ -1153,6 +1154,8 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
         in
         body2 := `BEXE_goto (sr,end_label) :: !body2;
         body2 := call_instr :: !body2;
+      | `BEXE_yield _ ->
+        syserr sr "Attempt to inline generator containing a yield"
       | x -> body2 := x::!body2
       )
       body
@@ -1253,6 +1256,9 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
         print_endline ("Replacing return with init: " ^ string_of_bexe syms.dfns 0 call_instr);
         *)
         body2 := call_instr :: !body2;
+
+      | `BEXE_yield _ ->
+        syserr sr "Attempt to inline generator with a yield"
 
       | x -> body2 := x::!body2
       )
@@ -1372,6 +1378,10 @@ let expand_exe syms bbdfns u exe =
     | `BEXE_fun_return (sr,e) ->
       let e,xs = u sr e in
       `BEXE_fun_return (sr,e) :: xs
+
+    | `BEXE_yield (sr,e) ->
+      let e,xs = u sr e in
+      `BEXE_yield (sr,e) :: xs
    
     (* This case has to be handled specially, in case we already
        have a simplified form, and the unravelling introduces
@@ -2120,6 +2130,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | `BEXE_apply_ctor_stack _
           | `BEXE_assign _
           | `BEXE_fun_return _
+          | `BEXE_yield _
           | `BEXE_jump _
           | `BEXE_jump_direct _
           | `BEXE_loop _

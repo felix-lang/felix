@@ -140,11 +140,33 @@ let exes_use_gc syms bbdfns exes =
     *)
     true
 
+let exe_uses_yield exe = 
+  match exe with 
+  | `BEXE_yield _ -> raise Not_found 
+  | _ -> ()
+
+let exes_use_yield exes = 
+  try 
+    iter exe_uses_yield exes;
+    false
+  with 
+    Not_found -> 
+    (*
+    print_endline "YIELD USED HERE";
+    *)
+    true
+
+(* ALSO calculates if a function uses a yield *)
 let set_gc_use syms bbdfns =
   Hashtbl.iter
   (fun i (id,parent,sr,entry) -> match entry with
   | `BBDCL_function (props,vs,ps,rt,exes) ->
-    if exes_use_gc syms bbdfns exes then
+    let uses_gc = exes_use_gc syms bbdfns exes in
+    let uses_yield = exes_use_yield exes in
+    let props = if uses_gc then `Uses_gc :: props else props in
+    let props = if uses_yield then `Heap_closure :: `Yields :: props else props in
+    if uses_gc or uses_yield 
+    then
     Hashtbl.replace bbdfns i (id,parent,sr,
       `BBDCL_function (`Uses_gc :: props,vs,ps,rt,exes))
 

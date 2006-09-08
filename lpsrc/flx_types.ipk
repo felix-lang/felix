@@ -581,6 +581,7 @@ and property_t = [
   | `Uses_global_var     (* a global variable is explicitly used *)
   | `Ctor                (* Class constructor procedure *)
   | `Generator           (* Generator: fun with internal state *)
+  | `Yields              (* Yielding generator *)
 
   (* one of the below must be set before code generation *)
   | `Requires_ptf        (* a pointer to thread frame is needed *)
@@ -747,6 +748,7 @@ and statement_t =
   | `AST_loop of range_srcref * id_t * expr_t 
   | `AST_svc of range_srcref * id_t
   | `AST_fun_return of range_srcref * expr_t
+  | `AST_yield of range_srcref * expr_t
   | `AST_proc_return of range_srcref 
   | `AST_nop of range_srcref * string
   | `AST_assert of range_srcref * expr_t
@@ -785,6 +787,7 @@ and exe_t =
   | `EXE_loop of id_t * expr_t 
   | `EXE_svc of id_t
   | `EXE_fun_return of expr_t
+  | `EXE_yield of expr_t
   | `EXE_proc_return
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
@@ -997,6 +1000,7 @@ and bexe_t =
   | `BEXE_loop of range_srcref * int * tbexpr_t 
   | `BEXE_svc of range_srcref * bid_t
   | `BEXE_fun_return of range_srcref * tbexpr_t
+  | `BEXE_yield of range_srcref * tbexpr_t
   | `BEXE_proc_return of range_srcref   
   | `BEXE_nop of range_srcref * string
   | `BEXE_code of range_srcref * c_t
@@ -1646,6 +1650,9 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_fun_return (sr,e) 
     -> fe e
 
+  | `BEXE_yield (sr,e) 
+    -> fe e
+
   | `BEXE_axiom_check (_,e)
   | `BEXE_assert2 (_,_,e)
   | `BEXE_assert (_,e)
@@ -1720,6 +1727,9 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
 
   | `BEXE_fun_return (sr,e) ->
     `BEXE_fun_return (sr,fe e) 
+
+  | `BEXE_yield (sr,e) ->
+    `BEXE_yield (sr,fe e) 
 
   | `BEXE_assert (sr,e) ->
     `BEXE_assert (sr, fe e)
@@ -1881,6 +1891,7 @@ let src_of_bexe = function
   | `BEXE_loop (sr,_,_)
   | `BEXE_svc (sr,_)
   | `BEXE_fun_return (sr,_)
+  | `BEXE_yield (sr,_)
   | `BEXE_proc_return sr
   | `BEXE_nop (sr,_)
   | `BEXE_code (sr,_)
@@ -2018,6 +2029,7 @@ let src_of_stmt e = match e with
   | `AST_loop (s, _, _ ) 
   | `AST_svc (s, _) 
   | `AST_fun_return (s, _) 
+  | `AST_yield (s, _) 
   | `AST_proc_return s 
   | `AST_ifgoto (s,_,_)
   | `AST_ifreturn (s,_)
@@ -3297,6 +3309,7 @@ and string_of_property = function
 | `Uses_gc -> "uses_gc"
 | `Ctor -> "ctor"
 | `Generator -> "generator"
+| `Yields -> "yields"
 
 and string_of_properties ps =
   match ps with 
@@ -3865,6 +3878,9 @@ and string_of_statement level s =
   | `AST_fun_return (_,e) -> 
     spaces level ^ "return " ^ (se e) ^ ";"
 
+  | `AST_yield (_,e) -> 
+    spaces level ^ "yield " ^ (se e) ^ ";"
+
   | `AST_proc_return _ -> 
     spaces level ^ "return;"
     
@@ -4115,6 +4131,9 @@ and string_of_exe level s =
   | `EXE_fun_return x -> spc ^ 
     "return " ^ se x ^ ";"
 
+  | `EXE_yield x -> spc ^ 
+    "yield " ^ se x ^ ";"
+
   | `EXE_proc_return -> spc ^ 
     "return;"
 
@@ -4315,6 +4334,9 @@ and string_of_bexe dfns level s =
 
   | `BEXE_fun_return (_,x) -> spc ^ 
     "return " ^ se x ^ ";"
+
+  | `BEXE_yield (_,x) -> spc ^ 
+    "yield " ^ se x ^ ";"
 
   | `BEXE_proc_return _ -> spc ^ 
     "return;"
