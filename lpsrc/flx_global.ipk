@@ -164,7 +164,7 @@ let set_gc_use syms bbdfns =
     let uses_gc = exes_use_gc syms bbdfns exes in
     let uses_yield = exes_use_yield exes in
     let props = if uses_gc then `Uses_gc :: props else props in
-    let props = if uses_yield then `Heap_closure :: `Yields :: props else props in
+    let props = if uses_yield then `Heap_closure :: `Yields :: `Generator :: props else props in
     if uses_gc or uses_yield 
     then
     Hashtbl.replace bbdfns i (id,parent,sr,
