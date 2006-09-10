@@ -104,7 +104,7 @@ if HAVE_SDL:
   pkg_requires = ['faio']
   rtl_interfaces = ['faio/faio_sdl_event.hpp']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
-  demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
+  demos = glob.glob('tut'+os.sep+'sdl'+os.sep+'sdl*.flx')
   demos.sort()
 
 iscr_source = ['lpsrc/flx_sdl.pak']
@@ -2653,7 +2653,7 @@ module SDL_events
   }
 }
 
-@h = tangler("tut/examples/sdl100.flx")
+@h = tangler("tut/sdl/sdl100.flx")
 @select(h)
 #import <flx.flxh>
 include "SDL/SDL";
@@ -2972,7 +2972,7 @@ proc Quit(x:int)
   System::exit x;
 }
 
-@h = tangler("tut/examples/sdl202.flx")
+@h = tangler("tut/sdl/sdl202.flx")
 @select(h)
 // REQUIRES OpenGL and GLU
 /*
@@ -3359,7 +3359,7 @@ proc Drawing()
   SDL_GL_SwapBuffers( );
 }
 
-@h = tangler("tut/examples/sdl205.flx")
+@h = tangler("tut/sdl/sdl205.flx")
 @select(h)
 // REQUIRES OpenGL and GLU
 /*
@@ -3822,7 +3822,7 @@ proc Drawing()
     SDL_GL_SwapBuffers( );
 }
 
-@h = tangler("tut/examples/sdl206.flx")
+@h = tangler("tut/sdl/sdl206.flx")
 @select(h)
 // REQUIRES OpenGL and GLU
 /*
@@ -4320,7 +4320,7 @@ proc Drawing()
     SDL_GL_SwapBuffers( );
 }
 
-@h = tangler("tut/examples/sdl208.flx")
+@h = tangler("tut/sdl/sdl208.flx")
 @select(h)
 // REQUIRES OpenGL and GLU
 /*
@@ -4938,7 +4938,7 @@ proc Drawing()
 
 }
 
-@h = tangler("tut/examples/sdl209.flx")
+@h = tangler("tut/sdl/sdl209.flx")
 @select(h)
 // REQUIRES OpenGL and GLU
 /*
