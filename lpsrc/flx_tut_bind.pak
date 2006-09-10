@@ -1,5 +1,5 @@
 @set_title('Felix Tutorial: Embedding')
-@tdir = 'tut/examples/'
+@tdir = 'tut'+os.sep+'embedding'+os.sep
 
 @flx_tut_bind_levels = []
 @flx_tut_bind_level_str = ''
@@ -12,10 +12,8 @@
   
   return head(level, name)
 
-@h = tangler('spkgs/flx_tut_bind.py')
-
-@select(h)
-TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'tut_bind*.flx')
+@select(tangler('spkgs/flx_tut_bind.py'))
+@tangle('TESTS = glob.glob("'+tdir+'*.flx")')
 TESTS.sort()
 
 unit_tests = TESTS
@@ -39,7 +37,7 @@ concrete C++ data type.
 @p()
 Here is an example of a binding. 
 
-@select(tangler(tdir+'tut_bind130.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 header """
 // This is C++ code!
@@ -103,7 +101,7 @@ gprint z3; endl;
 print n; endl;
 @doc()
 
-@select(tangler(tdir+"tut_bind130.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 (1, 2)
 (2, 4)
 (-12, 16)
@@ -181,7 +179,7 @@ What this means is that the boundary between C++ and Felix
 code is fluid. To illustrate this, lets consider
 a version of the above code written entirely in Felix.
 
-@select(tangler(tdir+'tut_bind131.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 struct gauss = {
   x : int;
@@ -234,7 +232,7 @@ gprint z3; endl;
 print n; endl;
 @doc()
 
-@select(tangler(tdir+"tut_bind131.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 (1, 2)
 (2, 4)
 (4, 16)
@@ -267,7 +265,7 @@ allows multiple type bindings to be defined
 at once. Each Felix name must also be a c identifier
 representing a type in C.
 
-@select(tangler(tdir+'tut_bind131a.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'a.flx'))
 header "#include <cstdio>";
 ctypes int, long;
 proc print:int = 'printf("%d\\n",$1);';
@@ -275,7 +273,7 @@ print 1;
 print 2;
 @doc()
 
-@select(tangler(tdir+"tut_bind131a.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+"a.expect","data"))
 1
 2
 @doc()
@@ -313,7 +311,7 @@ that it is an executable Felix statement, and is emitted
 in the place it is written.
 For example:
 
-@select(tangler(tdir+'tut_bind132.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 header "#include<stdio.h>";
 print 1; endl;
@@ -321,7 +319,7 @@ code 'printf("%d\\n",2);';
 print 3; endl;
 @doc()
 
-@select(tangler(tdir+"tut_bind132.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 1
 2
 3
@@ -336,7 +334,7 @@ This means a C primitive type can be accessed
 using the dot notation provided you supply
 appropriate projection functions.
 
-@select(tangler(tdir+'tut_bind133.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 
 // part 1
@@ -376,7 +374,7 @@ endl;
 */
 @doc()
 
-@select(tangler(tdir+"tut_bind133.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 1, 2
 @doc()
 
@@ -418,7 +416,7 @@ although that isn't the only use.
 Here is a simple example illustrating
 generic primitive bindings.
 
-@select(tangler(tdir+'tut_bind134.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 
 // include STL vector template
 header """
@@ -486,7 +484,7 @@ append[int](&v,3);
 vprint[int] v; endl();
 @doc()
 
-@select(tangler(tdir+"tut_bind134.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 1
 1 2 3 
 @doc()
@@ -519,7 +517,7 @@ and definitions.
 The same tag can be used on more than one code insertion
 statements: this is typically useful on a header-body pair.
 
-@select(tangler(tdir+'tut_bind135.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 body printu = 'void print(char *s) { printx("%s\\n",s); }';
@@ -528,14 +526,14 @@ proc hello:1='print("Hello");' requires xprint, printu;
 hello;
 @doc()
 
-@select(tangler(tdir+"tut_bind135.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 Hello
 @doc()
 
 Header and body statements can also have requirements.
 We can reorganise the previous example using this fact.
 
-@select(tangler(tdir+'tut_bind136.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 body printu = 'void print(char *s) { printx("%s\\n",s); }' 
@@ -545,7 +543,7 @@ proc hello:1='print("Hello");' requires printu;
 hello;
 @doc()
 
-@select(tangler(tdir+"tut_bind136.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 Hello
 @doc()
 
@@ -553,7 +551,7 @@ Naked requires clauses can also be used.
 They can define dependencies, or simply specify
 existing tagged requirements are roots.
 
-@select(tangler(tdir+'tut_bind137.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 body printu = 'void print(char *s) { printx("%s\\n",s); }';
@@ -564,14 +562,14 @@ proc hello:1='print("Hello");' requires xxxx;
 hello;
 @doc()
 
-@select(tangler(tdir+"tut_bind137.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 Hello
 @doc()
 
 You can also use qualified names to refer to tags defined
 inside modules, unless they're marked private of course.
 
-@select(tangler(tdir+'tut_bind138.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 module fred {
@@ -583,13 +581,13 @@ proc hello:1='print("Hello");' requires fred::printu;
 hello;
 @doc()
 
-@select(tangler(tdir+"tut_bind138.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 Hello
 @doc()
 
 The next example demonstrates untagged bodies at work.
 
-@select(tangler(tdir+'tut_bind138a.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'a.flx'))
 #import <flx.flxh>
 
 body top = 'int ptop() { printf("TOP\\n"); return 1; }';
@@ -618,7 +616,7 @@ print "Done"; endl;
 // B is not used .. (would cause y,p to be defined twice)
 @doc()
 
-@select(tangler(tdir+"tut_bind138a.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+"a.expect","data"))
 TOP
 A will be used
 A is used
@@ -628,20 +626,20 @@ Done
 Here you can see that insertions can be given
 literally too:
 
-@select(tangler(tdir+'tut_bind138b.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'b.flx'))
 proc f: 1 = 'printf("A is used\\n");'
   requires header '#include <stdio.h>';
 
 f();
 @doc()
 
-@select(tangler(tdir+"tut_bind138b.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+"b.expect","data"))
 A is used
 @doc()
 
 Here's an example demonstrating polymorphic insertions.
 
-@select(tangler(tdir+'tut_bind138c.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'c.flx'))
 pod type int="int";
 pod type double="double";
 
@@ -652,7 +650,7 @@ proc pr[t]:t = "pr($1);" requires prb[t];
 pr 1; pr 1.1;
 @doc()
 
-@select(tangler(tdir+"tut_bind138c.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+"c.expect","data"))
 1
 1.1
 @doc()
@@ -664,7 +662,7 @@ is actually generated by Felix, instead, the nominated struct
 is assumed to be defined in embedded C/C++ header
 code somewhere.
 
-@select(tangler(tdir+'tut_bind150.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 
 header """
@@ -682,7 +680,7 @@ val y:X = rev x;
 print y.a; print " "; print y.b; endl;
 @doc()
 
-@select(tangler(tdir+"tut_bind150.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 1 2
 2 1
 @doc()
@@ -696,7 +694,7 @@ with the same name and given arguments,
 and a const will refer to a C entity of the
 same name.
 
-@select(tangler(tdir+'tut_bind151.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 
 body """
@@ -716,18 +714,19 @@ ff();  print n; endl;
 print N; endl;
 print (g N); endl;
 
-@flx_tut_bind_head(2,'Binding Classes')
-C++ classes are bound using the cclass construction.
 @doc()
 
-@select(tangler(tdir+"tut_bind151.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 3
 4
 4
 16
 @doc()
 
-@select(tangler(tdir+'tut_bind160.flx'))
+@flx_tut_bind_head(2,'Binding Classes')
+C++ classes are bound using the cclass construction.
+
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 open Long;
 
@@ -837,7 +836,7 @@ var z  = Z();
 print$ z.sum[int] (12,13); endl; // 25
 @doc()
 
-@select(tangler(tdir+"tut_bind160.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 -50
 2
 3
@@ -859,7 +858,7 @@ Y=2,3
 
 @flx_tut_bind_head(2,'Callbacks')
 
-@select(tangler(tdir+'tut_bind180.flx'))
+@select(tangler(tdir+'bind-'+flx_tut_bind_level_str+'.flx'))
 #import <flx.flxh>
 
 callback fun f: int * f -> int;
@@ -889,7 +888,7 @@ const yyy: int --> int;
 h(yyy,2);
 @doc()
 
-@select(tangler(tdir+"tut_bind180.expect","data"))
+@select(tangler(tdir+"bind-"+flx_tut_bind_level_str+".expect","data"))
 5
 31
 5
