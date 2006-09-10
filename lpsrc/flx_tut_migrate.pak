@@ -1,7 +1,18 @@
 @set_title('Felix For C++ Programmers')
 @tdir = "tut/examples/"
-@h = tangler('spkgs/flx_tut_migrate.py')
-@select(h)
+
+@flx_tut_migrate_levels = []
+@flx_tut_migrate_level_str = ''
+@def flx_tut_migrate_head(level, name):
+  global flx_tut_migrate_levels,flx_tut_migrate_level_str
+  while len(flx_tut_migrate_levels) < level: flx_tut_migrate_levels.append('0')
+  flx_tut_migrate_levels[level - 1] = str(int(flx_tut_migrate_levels[level - 1]) + 1)
+  flx_tut_migrate_levels = flx_tut_migrate_levels[:level]
+  flx_tut_migrate_level_str = string.join(flx_tut_migrate_levels,'.')
+  
+  return head(level, name)
+
+@select(tangler('spkgs/flx_tut_migrate.py'))
 TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'mig*.flx')
 TESTS.sort()
 
@@ -9,13 +20,14 @@ unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
 iscr_source = [ 'lpsrc/flx_tut_migrate.pak' ]
 weaver_directory = 'doc/tutorial/migration/'
+@doc()
 
-@head(1,"Introduction")
+@flx_tut_migrate_head(1,"Introduction")
 Felix is a new programming language with special support for
 for C/C++ integration. This document highlights some of 
 the similarities and differences between Felix and C/C++.
 
-@head(1,'General Features')
+@flx_tut_migrate_head(1,'General Features')
 A brief comparison of C++ and Felix reveals the
 following key similarities and differences:
 
@@ -87,15 +99,15 @@ resource management is required.
 
 @end_list()
 
-@head(1,'Overloading')
+@flx_tut_migrate_head(1,'Overloading')
 Both C++ and Felix support overloading, including
 overloading of generic functions. The overloading
 rules differ in several key aspects.
 
-@head(2,'Automatic Conversions')
+@flx_tut_migrate_head(2,'Automatic Conversions')
 Felix does not provide any automatic conversions.
 
-@head(2,'Exact matching rule')
+@flx_tut_migrate_head(2,'Exact matching rule')
 For non-generic functionbs, Felix only supports exact 
 matches when overloading, whereas C++ rules are more relaxed. 
 @p()
@@ -108,7 +120,7 @@ one, or remove the selected function -- adding a function
 in the same scope with the same signature will lead
 to an ambiguity.
 
-@head(2,'Function hiding rule')
+@flx_tut_migrate_head(2,'Function hiding rule')
 For the purpose of overloading, a non-generic
 function in Felix only hides another if they have
 the same signature. For example:
@@ -121,13 +133,19 @@ module X {
   f 1; // calls f of (int)
   f 1.2; // calls X::f of (double)
 }
-
 @doc()
+
+@flx_tut_migrate_head(2,tdir+"mig01.expect")
+@select(tangler(tdir+"mig01.expect","data"))
+1
+2
+@doc()
+
 In C++, in the first case the outer f would have been hidden 
 by the inner one, and f(double) called, with an automatic
 conversion from 1 to 1.0.
 
-@head(2,'Generic functions')
+@flx_tut_migrate_head(2,'Generic functions')
 Like C++, Felix supports template style generic functions.
 The rule for selection of a function in the presence
 of generics is a generalisation of the rules for
@@ -160,8 +178,13 @@ fun f[v] (x:v,y:v)=>2; //2: specialises 1
 
 print (f (1,2.0)); endl; //calls 1
 print (f (1,2)); endl; //calls 2
-
 @doc()
+
+@select(tangler(tdir+"mig02.expect","data"))
+1
+2
+@doc()
+
 Note however that the innermost matching function
 is still called, even if a specialisation is present
 in an outer scope.
@@ -172,14 +195,14 @@ whether a function is more specialised than another,
 is known as the unification algorithm, and the process
 of matching is known as unification.
 
-@head(2,'Deduction of type variables')
+@flx_tut_migrate_head(2,'Deduction of type variables')
 As in C++: when a generic function is called,
 it must be possible to determine bindings for
 all its type variables. As in C++, leading type
 variables may be given explicitly, and the ones
 not given deduced from the function argument.
 
-@head(1,'Scope')
+@flx_tut_migrate_head(1,'Scope')
 Unlike C++, the scope of an identifier is the
 whole of the construction containing it, just
 like labels. In particular, all functions in
@@ -192,8 +215,12 @@ forward declaration.
 fun f(x:int) => g(x-1); 
 fun g(x:int) => if x>0 then f(x-1) else 0 endif;
 print (g 10); endl;
-
 @doc()
+
+@select(tangler(tdir+"mig03.expect","data"))
+0
+@doc()
+
 In particular this rule also applies to types,
 allowing recursive types to be easily defined:
 
@@ -212,8 +239,13 @@ proc xprint(x:ilist) {
 }
 
 xprint x; endl;
+@doc()
 
-@head(1,'Type system')
+@select(tangler(tdir+"mig04.expect","data"))
+2 1 
+@doc()
+
+@flx_tut_migrate_head(1,'Type system')
 Felix types and their annotations are quite different
 to C++. Felix currenty supports tuple types, anonymous
 sum types, a struct type like C, and a union type,
@@ -232,19 +264,4 @@ Abstract types may also be polymorphic.
 
 [A lot more is needed here]
 
-
-@head(1,"Expected outputs for tut/examples")
-@head(2,"tut/examples/mig01.expect")
-@select(tangler("tut/examples/mig01.expect","data"))
-1
-2
-@head(2,"tut/examples/mig02.expect")
-@select(tangler("tut/examples/mig02.expect","data"))
-1
-2
-@head(2,"tut/examples/mig03.expect")
-@select(tangler("tut/examples/mig03.expect","data"))
-0
-@head(2,"tut/examples/mig04.expect")
-@select(tangler("tut/examples/mig04.expect","data"))
-2 1 
+@#
