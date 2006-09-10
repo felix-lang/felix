@@ -5585,27 +5585,3 @@ print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @select(tangler("tut/examples/tut_beg319.expect","data"))
  22 0x63 % 9.7 88
 @#
-@head(1,'Expected outputs')
-Move these up next to the tests!
-@select(tangler("tut/examples/tut_beg212.expect","data"))
-driver request test
-driver name code is 1
-exit code is 2
-Name service performed, result flx_run
-main launched t1
-t1 starts
-t1 continues
-t1 sends message: Hello main from t1!
-t1 dies
-Main got message: Hello main from t1!
-@head(2,"tut/examples/tut_beg315.expect")
-@select(tangler("tut/examples/tut_beg315.expect","data"))
-OK
-10
-10
-10
-10
-11
-11
-1
-1
