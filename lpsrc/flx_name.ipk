@@ -80,42 +80,49 @@ let fixups = [
   "return","_return";
 ]
 
-let cvt s = 
+let cid_of_flxid s = 
   let n = String.length s in
   let id = Buffer.create (n+10) in
   for i=0 to n - 1 do
+    (* from http://www.w3.org/TR/html4/sgml/entities.html *)
     match s.[i] with
-    | '\'' -> Buffer.add_string id "__p"
-    | '\\' -> Buffer.add_string id "__"
-    | x -> Buffer.add_char id x
+    | ' '  -> Buffer.add_string id "__sp_"
+    | '!'  -> Buffer.add_string id "__excl_"
+    | '"'  -> Buffer.add_string id "__quot_"
+    | '#'  -> Buffer.add_string id "__num_"
+    | '$'  -> Buffer.add_string id "__dollar_"
+    | '%'  -> Buffer.add_string id "__percnt_"
+    | '&'  -> Buffer.add_string id "__amp_"
+    | '\'' -> Buffer.add_string id "__apos_"
+    | '('  -> Buffer.add_string id "__lpar_"
+    | ')'  -> Buffer.add_string id "__rpar_"
+    | '*'  -> Buffer.add_string id "__ast_"
+    | '+'  -> Buffer.add_string id "__plus_"
+    | ','  -> Buffer.add_string id "__comma_"
+    | '-'  -> Buffer.add_string id "__hyphen_"
+    | '.'  -> Buffer.add_string id "__period_"
+    | '/'  -> Buffer.add_string id "__sol_"
+    | ':'  -> Buffer.add_string id "__colon_"
+    | ';'  -> Buffer.add_string id "__semi_"
+    | '<'  -> Buffer.add_string id "__lt_"
+    | '='  -> Buffer.add_string id "__equals_"
+    | '>'  -> Buffer.add_string id "__gt_"
+    | '?'  -> Buffer.add_string id "__quest_"
+    | '@'  -> Buffer.add_string id "__commat_"
+    | '['  -> Buffer.add_string id "__lsqb_"
+    | '\\' -> Buffer.add_string id "__bsol_"
+    | ']'  -> Buffer.add_string id "__rsqb_"
+    | '^'  -> Buffer.add_string id "__caret_"
+    (* | '_'  -> Buffer.add_string id "__lowbar_" *)
+    | '`'  -> Buffer.add_string id "__grave_"
+    | '{'  -> Buffer.add_string id "__lcub_"
+    | '|'  -> Buffer.add_string id "__verbar_"
+    | '}'  -> Buffer.add_string id "__rcub_"
+    | '~'  -> Buffer.add_string id "__tilde_"
+    | x    -> Buffer.add_char id x
   done;
   let name = Buffer.contents id in
   try assoc name fixups with Not_found -> name
-
-let cid_of_flxid s = cvt s
-
-(* mangle a C++ type name into an identifier *)
-let mangle_cpp_typename ct =
-  let n = String.length ct in
-  let buf = Buffer.create (n+20) in
-  let tack_ch ch = Buffer.add_char buf ch in
-  let tack_str str = Buffer.add_string buf str in
-  for i=0 to n - 1 do
-    match ct.[i] with
-    | '*' -> tack_str "_p"
-    | ':' 
-    | '<'
-    | '>'
-    | ' '
-    | '?'
-    | '$'
-    | '@'
-    | '#'
-    | '`'
-      -> tack_ch '_'
-    | x -> tack_ch x
-  done;
-  Buffer.contents buf
 
 (* basic name mangler *)
 let cpp_name bbdfns index =
@@ -135,7 +142,7 @@ let cpp_name bbdfns index =
   | `BBDCL_tmp _ -> "_tmp"
   | `BBDCL_class _ -> "_cl"
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
-  ) ^ si index ^ "_" ^ cvt id
+  ) ^ si index ^ "_" ^ cid_of_flxid id
 
 let cpp_instance_name' syms bbdfns index ts =
   let inst = 
@@ -186,7 +193,7 @@ let cpp_instance_name syms bbdfns index ts =
     try Hashtbl.find bbdfns index 
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
-  let id' = cvt id in
+  let id' = cid_of_flxid id in
   if id = id' then 
   begin
     let inst = 
