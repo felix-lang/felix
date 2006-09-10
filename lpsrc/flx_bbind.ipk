@@ -691,7 +691,15 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
     | `SYMDEF_class -> 
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_class ([],bvs))
 
-   | `SYMDEF_typeclass _ -> ()
+    | `SYMDEF_typeclass ->
+      let sym : bbdcl_t = `BBDCL_typeclass ([],bvs) in
+      Hashtbl.add bbdfns i (name,true_parent,sr,sym)
+
+    | `SYMDEF_instance qn -> 
+      let (k:int),(ts: typecode_t list) = luqn qn in
+      let ts = map bt ts in
+      let sym : bbdcl_t = `BBDCL_instance ([],k,ts) in
+      Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()

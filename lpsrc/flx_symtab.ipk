@@ -858,6 +858,25 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           ;
           add_tvars privtab
 
+        | `DCL_instance (qn,asms) ->
+          if is_class then clierr sr "instance not allowed in class";
+          let pubtab,privtab, exes,ifaces,dirs = 
+            build_tables syms id (level+1) (Some n) parent root true
+            asms
+          in
+          Hashtbl.add dfns n {
+            id=id;sr=sr;
+            parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;
+            dirs=dirs;
+            symdef=`SYMDEF_instance qn
+          };
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n;
+          interfaces := !interfaces @ ifaces
+          ;
+          add_tvars privtab
+
         | `DCL_class asms ->
           if is_class then clierr sr "class not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs = 
@@ -1292,7 +1311,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           handle_class `CClass dont_care sts tvars stype
 
         | `DCL_typeclass (sts) -> 
-          let symdef = `SYMDEF_typeclass sts in
+          let symdef = `SYMDEF_typeclass in
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {

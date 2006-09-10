@@ -97,6 +97,8 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_union _
   | `BBDCL_abs _
   | `BBDCL_const _
+  | `BBDCL_typeclass _ 
+  | `BBDCL_instance _
     ->
     (*
     print_endline (id ^ " is intrinsically pure");

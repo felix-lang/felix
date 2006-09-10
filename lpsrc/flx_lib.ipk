@@ -1006,12 +1006,12 @@ module Dynlink
     
   noinline fun init_lib(filename:string):flx_instance = {
     var library = create_library_handle();
-    var instance =  create_instance_handle();
+    var linstance =  create_instance_handle();
     dlopen(library,filename);
-    create (library,instance);
-    var init = get_init instance;
+    create (library,linstance);
+    var init = get_init linstance;
     Control::run init;
-    return instance;
+    return linstance;
   }
 
   publish """ Run a Felix program. 
@@ -1021,16 +1021,16 @@ module Dynlink
   """
   proc run_lib(filename:string) 
   {
-    var instance = init_lib(filename);
-    destroy_lib instance;
+    var linstance = init_lib(filename);
+    destroy_lib linstance;
   }
 
-  noinline proc destroy_lib(instance:flx_instance)
+  noinline proc destroy_lib(linstance:flx_instance)
   {
-    destroy instance;
+    destroy linstance;
     Control::collect();
-    dl := get_library instance;
-    delete_instance_handle instance;
+    dl := get_library linstance;
+    delete_instance_handle linstance;
     dlclose dl;
     delete_library_handle dl;
   }
@@ -1057,12 +1057,12 @@ module Dynlink
     throw flx::rtl::flx_link_failure_t($1->filename,$2,"symbol not found");
   """;
 
-  noinline proc run_proc (instance:flx_instance, p: string, data: address) 
+  noinline proc run_proc (linstance:flx_instance, p: string, data: address) 
   {
-    var lib = get_library instance;
+    var lib = get_library linstance;
     var sym = dlsym(lib, p);
     if C_hack::isNULL(sym) do dlsym_err(lib,p); done;
-    var f = bind_proc(instance, sym, data);
+    var f = bind_proc(linstance, sym, data);
     run f;
   }
 

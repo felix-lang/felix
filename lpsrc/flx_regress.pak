@@ -24,7 +24,7 @@ is an overall time in seconds, which should
 get smaller with each compiler improvement.
 @item('dn')
 Tests with non-deterministic results. Output
-is printed, not comnpared with expected output.
+is printed, not compared with expected output.
 @item('kf')
 Tests that should compile, but are known to error out
 or hang during compilation. These should be fixed in
@@ -1016,6 +1016,105 @@ print$ x(10); endl; // 64
 54
 55
 64
+@select(tangler('test/rt35.flx'))
+#import <flx.flxh>
+
+union tree = TEmpty | Leaf of int | Node of tree * tree;
+
+var example = 
+  Node 
+  (
+    Node
+    (
+      Leaf 1,
+      Node
+      (
+        Leaf 2,
+        Leaf 3
+      )
+    )
+    ,
+    Node
+    (
+      Leaf 4,
+      Leaf 5
+    )
+  )
+;
+
+fun sum: tree->int =
+  | Leaf ?x => x
+  | Node (?l,?r) => sum l + sum r
+  | TEmpty => 0
+;
+
+print$ sum example; endl;
+
+fun accumulate(it: 1-> int):int=
+{
+  var x = 0;
+  var v = it();
+  whilst v != -1 do
+    x += v;
+    v = it();
+  done;
+  return x;
+}
+
+gen visitor(x:tree) () : int =
+{
+  var con =
+    match x with
+    | Leaf ?a => { print "visiting leaf "; print a; endl; yield a; return -1; }
+    | Node (?a,?b) => 
+      { 
+        print "visiting node: left\n";
+        var it = visitor(a);
+        var v = it();
+        whilst v != -1 do
+          yield v;
+          v = it();
+        done;
+        print "visiting node: right\n";
+        it = visitor(b);
+        v = it();
+        whilst v != -1 do
+          yield v;
+          v = it();
+        done;
+        return -1;
+      }
+    | TEmpty => { return -1; }
+    endmatch
+  ;
+  var r = con();
+  whilst r != -1 do
+    yield r;
+    r = con();
+  done;
+  return -1;
+}
+
+var it = visitor(example);
+var res = accumulate(it);
+print$ res; endl;
+
+@select(tangler('test/rt35.expect','data'))
+15
+visiting node: left
+visiting node: left
+visiting leaf 1
+visiting node: right
+visiting node: left
+visiting leaf 2
+visiting node: right
+visiting leaf 3
+visiting node: right
+visiting node: left
+visiting leaf 4
+visiting node: right
+visiting leaf 5
+15
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>

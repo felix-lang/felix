@@ -499,6 +499,10 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let ctor_argt = varmap_subst hvarmap ctor_argt in
     rtr ctor_argt
  
+   | `BBDCL_typeclass _ -> ()
+   | `BBDCL_instance (props,tc,ts) ->
+     failwith "instantiate instance of typeclass not implemented"
+
 (* 
   This routine creates the instance tables.
   There are 2 tables: instance types and function types (including procs)

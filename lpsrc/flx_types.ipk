@@ -652,11 +652,6 @@ and class_member_t = [
   | `MemberCtor of id_t * int option * typecode_t * c_t option
 ]
 
-and typeclass_member_t = [
-  | `TypeClassMemberFun of id_t * typecode_t  
-  | `TypeClassMemberProc of id_t * typecode_t  
-]
-
 and ast_term_t = 
   [
   | `Expression_term of expr_t
@@ -729,6 +724,8 @@ and statement_t =
  
   (* module system *)
   | `AST_untyped_module of range_srcref * id_t * vs_list_t * statement_t list  
+  | `AST_typeclass of range_srcref * id_t * vs_list_t * statement_t list
+  | `AST_instance of range_srcref * qualified_name_t * statement_t list
  
   (* control structures: primitives *)
   | `AST_label of range_srcref * id_t
@@ -855,7 +852,7 @@ type dcl_t =
   | `DCL_struct of       (id_t * typecode_t) list
   | `DCL_cstruct of      (id_t * typecode_t) list
   | `DCL_cclass of       class_member_t list
-  | `DCL_typeclass of    typeclass_member_t list
+  | `DCL_typeclass of    asm_t list
   | `DCL_match_check of pattern_t * (string * int)
   | `DCL_match_handler of pattern_t * (string * int) * asm_t list
   | `DCL_glr of          typecode_t * (reduced_production_t * expr_t)
@@ -872,6 +869,7 @@ type dcl_t =
   (* module system *)
   | `DCL_module of       asm_t list  
   | `DCL_class of        asm_t list  
+  | `DCL_instance of     qualified_name_t * asm_t list  
 
   (* binding structures [prolog] *)
   | `DCL_abs of          type_qual_t list * c_t * named_req_expr_t
@@ -1121,6 +1119,8 @@ and bbdcl_t =
   | `BBDCL_cstruct of     bvs_t * (id_t * btypecode_t) list
   | `BBDCL_cclass of     bvs_t * bclass_member_t list
   | `BBDCL_class of      property_t list * bvs_t
+  | `BBDCL_typeclass of  property_t list * bvs_t
+  | `BBDCL_instance of   property_t list * bid_t * btypecode_t list
   | `BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t
   ]
 
@@ -1165,10 +1165,11 @@ type symbol_definition_t =
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
   | `SYMDEF_cclass of  class_member_t list
-  | `SYMDEF_typeclass of  typeclass_member_t list
+  | `SYMDEF_typeclass
   | `SYMDEF_type_alias of   typecode_t
   | `SYMDEF_inherit of   qualified_name_t
   | `SYMDEF_inherit_fun of   qualified_name_t
+  | `SYMDEF_instance of qualified_name_t
   ]
 
 type symbol_data_t = {
@@ -2052,6 +2053,8 @@ let src_of_stmt e = match e with
   | `AST_cstruct (s,_, _, _)
   | `AST_cclass (s,_, _, _)
   | `AST_class (s,_, _, _)
+  | `AST_typeclass (s,_, _, _)
+  | `AST_instance (s,_, _)
   | `AST_untyped_module (s,_,_,_)
   | `AST_export_fun (s, _,_)
   | `AST_export_type (s, _,_)
@@ -3401,16 +3404,6 @@ and string_of_ikind = function
   | `Body -> "body "
   | `Package -> "package "
 
-and string_of_typeclass_component level mem = 
-  match mem with
-  | `TypeClassMemberFun (name,typ) -> 
-    spaces level ^ "fun " ^ name ^ ": " ^ 
-    string_of_typecode typ ^ ";\n"
-    
-  | `TypeClassMemberProc (name,typ) -> 
-    spaces level ^ "proc " ^ name ^ ": " ^ 
-    string_of_typecode typ ^ ";\n"
-
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -3526,6 +3519,15 @@ and string_of_statement level s =
     spaces level ^ "{\n" ^
     catmap "\n" (string_of_class_component level) cs ^ "\n" ^
     spaces level ^ "}"
+
+  | `AST_typeclass (_,name, vs, sts) -> 
+    spaces level ^ "typeclass " ^ name ^ print_vs vs ^ " = " ^
+    string_of_compound level sts
+  
+  | `AST_instance (_,name, sts) -> 
+    spaces level ^ "instance " ^ string_of_qualified_name name ^ " = " ^
+    string_of_compound level sts
+
 
   | `AST_class (_,name, vs, sts) -> 
     spaces level ^ "class " ^ name ^ print_vs vs ^ " = " ^
@@ -3912,6 +3914,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
   match entry with
+  | `SYMDEF_instance qn ->
+    "instance " ^ string_of_qualified_name qn ^ ";\n"
+
   | `SYMDEF_regdef re ->
     "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 
@@ -3999,7 +4004,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   | `SYMDEF_cclass (cts) -> 
     "cclass " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_typeclass (cts) -> 
+  | `SYMDEF_typeclass -> 
     "typeclass " ^ name ^ print_ivs vs ^ ";"
 
   | `SYMDEF_fun (props, pts,res,cts, reqs,prec) -> 
@@ -4411,6 +4416,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "\n" ^ 
     string_of_asm_compound level asms 
 
+  | `DCL_instance (name,asms) -> 
+    sl ^ "instance " ^ string_of_qualified_name name ^seq ^ " = " ^
+    "\n" ^ 
+    string_of_asm_compound level asms 
+
   | `DCL_struct (cs) -> 
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
@@ -4435,11 +4445,9 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     catmap "\n" (string_of_class_component level) cs ^ "\n" ^
     sl ^ "}"
 
-  | `DCL_typeclass (cs) -> 
-    sl ^ "type class " ^ name^seq ^ print_vs vs ^ " = " ^
-    sl ^ "{\n" ^
-    catmap "" (string_of_typeclass_component level) cs ^ 
-    sl ^ "}"
+  | `DCL_typeclass (asms) -> 
+    sl ^ "type class " ^ name^seq ^ print_vs vs ^ " =\n" ^
+    string_of_asm_compound level asms 
 
   | `DCL_union (cs) -> 
     let string_of_union_component (name,v,ty) =
@@ -4766,6 +4774,14 @@ and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string =
   | `BBDCL_class (props,vs) ->
     string_of_properties props ^
     "class " ^ name ^ print_bvs vs ^ ";"
+
+  | `BBDCL_typeclass (props,vs) ->
+    string_of_properties props ^
+    "typeclass " ^ name ^ print_bvs vs ^ ";"
+
+  | `BBDCL_instance (props,bid,ts) ->
+    string_of_properties props ^
+    "instance of <" ^ si bid ^">["^ catmap "," (sbt dfns) ts ^ "];"
 
   | `BBDCL_glr (props,vs,t,(p,bexes)) ->
     "  " ^ "nonterm " ^ name ^ print_bvs vs ^ " : " ^sobt t ^

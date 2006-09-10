@@ -174,6 +174,11 @@ and uses syms used bbdfns count_inits i =
     | Some (id,_,_,bbdcl) ->
       used := IntSet.add i !used;
       begin match bbdcl with
+      | `BBDCL_typeclass _ -> ()
+
+      | `BBDCL_instance (_,i,ts) ->
+        ui i; iter ut ts
+
       | `BBDCL_function (props,_,(ps,traint),ret,exes) ->
         iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ut ret;
