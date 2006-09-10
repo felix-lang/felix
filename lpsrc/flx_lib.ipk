@@ -1733,8 +1733,8 @@ module List
 
   fun _ctor_list[T, N] (x:Array::array[T, N]) = {
     var o = Empty[T];
-    var i:int; forall i in 0 upto Array::len(x) - 1 do
-      o = x.[i] + o;
+    var i:int; forall i in Array::len(x) - 1 downto 0 do
+      o += x.[i];
     done;
 
     return o;
@@ -1845,10 +1845,12 @@ module List
 
   fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
 
-  fun add[T] (x:T, y: list[T]):list[T] => Cons (x, y);
+  fun add[T] (x:list[T], y:T):list[T] => Cons (y, x);
 
   // very slow, adding to end ..
-  noinline fun add[T] (x:list[T], y: T):list[T] => rev$ Cons (y, rev x);
+  noinline fun add[T] (x:T, y:list[T]):list[T] => rev$ Cons (x, rev y);
+
+  proc pluseq[T] (x:lvalue[list[T]], y:T) { x = x + y; }
 
   noinline fun cat[T] (x:list[list[T]]):list[T] =
   {
