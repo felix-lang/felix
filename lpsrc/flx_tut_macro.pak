@@ -58,12 +58,24 @@ will defeat the check for a duplication.
 @select(tangler(tdir+'mac101.flx'))
 #import <flx.flxh>
 print "This is mac101"; endl;
+@doc()
+
+@select(tangler("tut/examples/mac101.expect","data"))
+This is mac101
+@doc()
 
 @select(tangler(tdir+'mac102.flx'))
 #import <flx.flxh>
 #include "mac101.flx"
 print "This is mac102"; endl;
 print "it should have printed the 101 message too"; endl;
+@doc()
+
+@select(tangler("tut/examples/mac102.expect","data"))
+This is mac101
+This is mac102
+it should have printed the 101 message too
+@doc()
 
 @head(2,"Conditional compilation")
 @head(3,'Macro variables and functions')
@@ -113,6 +125,12 @@ print "detected FIRST"; endl;
 #else
 print "BAD"; endl;
 #endif
+@doc()
+
+@select(tangler("tut/examples/mac103.expect","data"))
+Defining FIRST
+detected FIRST
+@doc()
 
 @select(tangler(tdir+'mac104.flx'))
 #import <flx.flxh>
@@ -123,6 +141,11 @@ print "OK"; endl;
 #else
 print "BAD"; endl;
 #endif
+@doc()
+
+@select(tangler("tut/examples/mac104.expect","data"))
+OK
+@doc()
 
 @select(tangler(tdir+'mac105.flx'))
 #import <flx.flxh>
@@ -133,10 +156,17 @@ print "OK"; endl;
 #else
 print "BAD"; endl;
 #endif
+@doc()
+
+@select(tangler("tut/examples/mac105.expect","data"))
+OK
+@doc()
 
 @select(tangler(tdir+'mac105a.flx'))
 #define FIRST 1
+@doc()
 
+@select(tangler("tut/examples/mac105a.expect","data"))
 @select(tangler(tdir+'mac105b.flx'))
 #import <flx.flxh>
 #import "mac105a.flx"
@@ -146,12 +176,16 @@ print "OK";
 print "BAD";
 #endif
 endl;
+@doc()
 
+@select(tangler("tut/examples/mac105b.expect","data"))
+OK
 @head(2,'Long Lines')
 Preprocessor directives support a kind of 'here' doc.
 Place a # character after the first part of the command, and
 all lines up to a line consisting solely of a #
 will be taken as the argument string.
+@doc()
 
 @select(tangler(tdir+'mac106.flx'))
 #import <flx.flxh>
@@ -165,6 +199,11 @@ print "Yes"; endl;
 #else
 print "No"; endl;
 #endif
+@doc()
+
+@select(tangler("tut/examples/mac106.expect","data"))
+Yes
+@doc()
 
 @head(1,'The Syntax Macro Processor')
 @head(2,'Expression Macro Facility')
@@ -206,6 +245,16 @@ macro val y2 = 1;
 
 r1 r2; // print 1
 endl;
+@doc()
+
+@select(tangler("tut/examples/mac122.expect","data"))
+101
+102
+103
+101
+102
+1
+@doc()
 
 @head(3,'Macro variables')
 The macro var statement defines a LHS symbol
@@ -226,6 +275,13 @@ print mx1; endl; // 101
   print mx1; endl;
 };
 print mx1; endl; // 103 [uses assigned value]
+@doc()
+
+@select(tangler("tut/examples/mac123.expect","data"))
+101
+103
+103
+@doc()
 
 @head(3,'Macro variables in requirements')
 Named requirements in requirements clauses are
@@ -239,6 +295,7 @@ macro val joe = fred;
 fun f: int -> int = "f($1)" requires joe;
 
 print$ f 2; endl;
+@doc()
 
 @head(2,"tut/examples/mac123a.expect")
 @select(tangler("tut/examples/mac123a.expect","data"))
@@ -292,8 +349,18 @@ endl;
 val q=1;
 macro fun z(q) = q;
 print (z q); endl;
-
 @doc()
+
+@select(tangler("tut/examples/mac124.expect","data"))
+1
+2
+1
+2
+1
+15
+1
+@doc()
+
 It is vital to understand that macros cannot break
 syntactically established precedence rules.
 In the last example, a 1 expands to (b c) 1,
@@ -391,6 +458,11 @@ macro val ext =
 ;
 // conditional compilation
 C_hack::ignore(openlib ("MyLibrary" ext));
+@doc()
+
+@select(tangler("tut/examples/mac125.expect","data"))
+LoadTheLibrary(MyLibrary.lib_ext)
+@doc()
 
 @head(2,'Procedure Macros')
 A procedure macro represents a list of statements.
@@ -451,8 +523,34 @@ dump_e todump;
 macro proc todump_wa (x) { print x; endl; }
 dump_s (todump_wa 66);
 dump_e (todump_wa 66);
-
 @doc()
+
+@select(tangler("tut/examples/mac126.expect","data"))
+1 -> 1
+2 -> 4
+30
+Start dump_s
+1
+2
+End dump_s
+Start dump_e
+1
+2
+End dump_e
+Start dump_s
+Dumped
+End dump_s
+Start dump_e
+Dumped
+End dump_e
+Start dump_s
+66
+End dump_s
+Start dump_e
+66
+End dump_e
+@doc()
+
 Note there is a crucial difference between procedure
 and expressions macros. In the above example,
 dump requires a proc argument. When the parameter
@@ -515,9 +613,17 @@ macro {
     macro if count > 0 goto start;
   endl;
 };
+@doc()
+
+@select(tangler("tut/examples/mac126a.expect","data"))
+10 9 8 7 6 5 4 3 2 1
+10 9 8 7 6 5 4 3 2 1
+10 9 8 7 6 5 4 3 2 1
+@doc()
 
 @head(2,'Expansion Barrier')
 The symbol 'noexpand' can be used to block expansion.
+
 @select(tangler(tdir+'mac127.flx'))
 #include <flx.flxh>
 // expansion barrier
@@ -532,6 +638,11 @@ macro x is x; // blocks x
   val x = 2;
   k();
 };
+@doc()
+
+@select(tangler("tut/examples/mac127.expect","data"))
+2+2 -> 4
+@doc()
 
 @head(2,'Identifier Macros')
 A identifier macros represent names. They replace names 
@@ -571,6 +682,12 @@ make_ints;
 make_ints;
 make_ints;
 print vold; endl;
+@doc()
+
+@select(tangler("tut/examples/mac128.expect","data"))
+1
+4
+@doc()
 
 @head(3,'Forgetting Macros')
 You can forget macros defined in the current scope with
@@ -593,9 +710,18 @@ macro fun greet() = hello " " place "!\n";
 };
 
 print (greet());
+@doc()
+
+@select(tangler("tut/examples/mac129.expect","data"))
+Hi there locality!
+Hello locality!
+Hello world!
+Hello world!
+@doc()
 
 @head(3,'For Loops')
 Felix provides two for loops which iterate over tuples.
+
 @select(tangler(tdir+'mac130.flx'))
 #include <flx.flxh>
 macro for val i in ("Hello","World",42) do 
@@ -607,10 +733,19 @@ macro for i in (a,b,c) do
   var i = 1;
   print$ Debug::repr_expr i; print "="; print i; endl;
 done;
+@doc()
+
+@select(tangler("tut/examples/mac130.expect","data"))
+Hello World 42 
+PTF a:int=1
+PTF b:int=1
+PTF c:int=1
+@doc()
 
 @head(3,"Unpacking Tuples")
 Tuples can be unpacked by macro assignment, 
 macro val, macro var, and macro for val statements.
+
 @select(tangler(tdir+'mac131.flx'))
 #include <flx.flxh>
 macro val x,y = 1,2;
@@ -622,6 +757,12 @@ macro for val i,j in ((1,2),(3,4)) do
   print "("; print i; print ","; print j; print ")"; print " ";
 done;
 endl;
+@doc()
+
+@select(tangler("tut/examples/mac131.expect","data"))
+1 2 2 3 
+(1,2) (3,4) 
+@doc()
 
 @head(3,"String representation")
 The string representation of an expression can be obtained
@@ -636,7 +777,13 @@ var y = 42;
 print (_str x); print " = "; print x; endl;
 print (_str y); print " = "; print y; endl;
 print (_str$ x+y); print " = "; print$ x+y; endl;
+@doc()
 
+@select(tangler("tut/examples/mac132.expect","data"))
+x = 1
+y = 42
+(add (x, y)) = 43
+@doc()
 
 @head(3,"Packing Tuples")
 The Felix syntax macro processor treats tuples as lists.
@@ -665,6 +812,11 @@ macro var x = _tuple 1;
 macro x = _tuple_cons (2,x);
 macro x = _tuple_cons (3,x);
 macro for val i in x do print i; print " "; done; endl;
+@doc()
+
+@select(tangler("tut/examples/mac133.expect","data"))
+3 2 1 
+@doc()
 
 @head(1,"User defined syntax")
 Felix has a complete, graded system which
@@ -716,6 +868,19 @@ print x; endl;
 proc gg(px:&int, a:int) { *px = a; }
 var &y:int <- gg 1;
 print y; endl;
+@doc()
+
+@select(tangler("tut/examples/mac300.expect","data"))
+OK
+10
+10
+10
+10
+11
+11
+1
+1
+@doc()
 
 @head(2,"User defined statements")
 Felix allows the programmer to invent new statements.
@@ -819,6 +984,15 @@ forall x in (1," plus ",2," is ",1+2) do print x; done; endl;
   forall i in 10 downto 1 do print i; print " "; done; 
   endl;
 };
+@doc()
+
+@select(tangler("tut/examples/mac301.expect","data"))
+10 9 8 7 6 5 4 3 2 1 
+10 9 8 7 6 5 4 3 2 1 
+1 plus 2 is 3
+1 2 3 4 5 6 7 8 9 10
+10 9 8 7 6 5 4 3 2 1
+@doc()
 
 @head(2,"User Non terminals")
 Felix syntax extensions are not limited to simple
@@ -902,7 +1076,11 @@ ELIF x==3 THEN print 3; print 3; endl;
 ELIF x==5 THEN print 5; print 5; endl;
 ELIF x==7 THEN print 7; print 7; endl;
 ELSE print "None"; endl; DONE;
+@doc()
 
+@select(tangler("tut/examples/mac302.expect","data"))
+None
+@doc()
 
 @head(2,"User Macro Statement")
 The syntax extension feature isn't limited to generated
@@ -927,142 +1105,10 @@ argument instead of using a macro goto.
 IF 1 == 1 do
   print "Hello"; endl;
 done;
+@doc()
 
-@head(1,"Expected outputs for tut/examples")
-@head(2,"tut/examples/mac101.expect")
-@select(tangler("tut/examples/mac101.expect","data"))
-This is mac101
-@head(2,"tut/examples/mac102.expect")
-@select(tangler("tut/examples/mac102.expect","data"))
-This is mac101
-This is mac102
-it should have printed the 101 message too
-@head(2,"tut/examples/mac103.expect")
-@select(tangler("tut/examples/mac103.expect","data"))
-Defining FIRST
-detected FIRST
-@head(2,"tut/examples/mac104.expect")
-@select(tangler("tut/examples/mac104.expect","data"))
-OK
-@head(2,"tut/examples/mac105.expect")
-@select(tangler("tut/examples/mac105.expect","data"))
-OK
-@head(2,"tut/examples/mac105a.expect")
-@select(tangler("tut/examples/mac105a.expect","data"))
-@head(2,"tut/examples/mac105b.expect")
-@select(tangler("tut/examples/mac105b.expect","data"))
-OK
-@head(2,"tut/examples/mac106.expect")
-@select(tangler("tut/examples/mac106.expect","data"))
-Yes
-@head(2,"tut/examples/mac122.expect")
-@select(tangler("tut/examples/mac122.expect","data"))
-101
-102
-103
-101
-102
-1
-@head(2,"tut/examples/mac123.expect")
-@select(tangler("tut/examples/mac123.expect","data"))
-101
-103
-103
-@head(2,"tut/examples/mac124.expect")
-@select(tangler("tut/examples/mac124.expect","data"))
-1
-2
-1
-2
-1
-15
-1
-@head(2,"tut/examples/mac125.expect")
-@select(tangler("tut/examples/mac125.expect","data"))
-LoadTheLibrary(MyLibrary.lib_ext)
-@head(2,"tut/examples/mac126.expect")
-@select(tangler("tut/examples/mac126.expect","data"))
-1 -> 1
-2 -> 4
-30
-Start dump_s
-1
-2
-End dump_s
-Start dump_e
-1
-2
-End dump_e
-Start dump_s
-Dumped
-End dump_s
-Start dump_e
-Dumped
-End dump_e
-Start dump_s
-66
-End dump_s
-Start dump_e
-66
-End dump_e
-@head(2,"tut/examples/mac126a.expect")
-@select(tangler("tut/examples/mac126a.expect","data"))
-10 9 8 7 6 5 4 3 2 1
-10 9 8 7 6 5 4 3 2 1
-10 9 8 7 6 5 4 3 2 1
-@head(2,"tut/examples/mac127.expect")
-@select(tangler("tut/examples/mac127.expect","data"))
-2+2 -> 4
-@head(2,"tut/examples/mac128.expect")
-@select(tangler("tut/examples/mac128.expect","data"))
-1
-4
-@head(2,"tut/examples/mac129.expect")
-@select(tangler("tut/examples/mac129.expect","data"))
-Hi there locality!
-Hello locality!
-Hello world!
-Hello world!
-@head(2,"tut/examples/mac130.expect")
-@select(tangler("tut/examples/mac130.expect","data"))
-Hello World 42 
-PTF a:int=1
-PTF b:int=1
-PTF c:int=1
-@head(2,"tut/examples/mac131.expect")
-@select(tangler("tut/examples/mac131.expect","data"))
-1 2 2 3 
-(1,2) (3,4) 
-@head(2,"tut/examples/mac132.expect")
-@select(tangler("tut/examples/mac132.expect","data"))
-x = 1
-y = 42
-(add (x, y)) = 43
-@head(2,"tut/examples/mac133.expect")
-@select(tangler("tut/examples/mac133.expect","data"))
-3 2 1 
-@head(2,"tut/examples/mac300.expect")
-@select(tangler("tut/examples/mac300.expect","data"))
-OK
-10
-10
-10
-10
-11
-11
-1
-1
-@head(2,"tut/examples/mac301.expect")
-@select(tangler("tut/examples/mac301.expect","data"))
-10 9 8 7 6 5 4 3 2 1 
-10 9 8 7 6 5 4 3 2 1 
-1 plus 2 is 3
-1 2 3 4 5 6 7 8 9 10
-10 9 8 7 6 5 4 3 2 1
-@head(2,"tut/examples/mac302.expect")
-@select(tangler("tut/examples/mac302.expect","data"))
-None
-@head(2,"tut/examples/mac303.expect")
 @select(tangler("tut/examples/mac303.expect","data"))
 Hello
 @#
+@doc()
+
