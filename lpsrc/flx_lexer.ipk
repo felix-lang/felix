@@ -157,6 +157,7 @@ let special_tokens =
 @for k,s in flx_3_char_syms:
   tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
 @#
+  ("//",(fun (sr,s)->SLASHSLASH sr));
   ]
 
 let mk_std_tokens () =
@@ -1397,6 +1398,10 @@ let decode_raw_dstring s = let n = len s in substr s 0 (n-1)
 let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
 let decode_raw_dddstring s = let n = len s in substr s 0 (n-3)
 
+exception Ok of int
+exception SlashSlash of int
+exception SlashAst of int
+
 (* WARNING: hackery: adjust this when lex expression 'white'
    is adjutsed
 *)
@@ -2014,7 +2019,7 @@ and parse_C_comment state = parse
   }
 
 and parse_line state = parse
-| not_newline * newline  
+| not_newline * (newline | eof)
   { 
     state#newline lexbuf;
     lexeme lexbuf
@@ -2204,24 +2209,63 @@ and pre_flx_lex state = parse
 | slosh { [SLOSH] } 
 
 | symchar + { 
+    let s = lexeme lexbuf in
+    let n = String.length s in
+    let s',con,lim =
+      try
+        for i = 0 to n - 1 do
+          if s.[i] = '/' && i+1<n then begin
+            if s.[i+1] = '/' then raise (SlashSlash i);
+            if s.[i+1] = '*' then raise (SlashAst i)
+          end
+        done;
+        raise (Ok n)
+      with 
+      | SlashSlash i -> String.sub s 0 i,`SlashSlash,i
+      | SlashAst i -> String.sub s 0 i,`SlashAst,i
+      | Ok i -> String.sub s 0 i,`Ok,i
+    in 
     let atstart = state#is_at_line_start in
     state#inbody; 
-    let toks = state#tokenise_symbols  lexbuf (lexeme lexbuf) in
-    match toks,atstart with
-    | [HASH _],true -> 
-      let x = state#get_loc in
-      let y = lexbuf.Lexing.lex_curr_p in
-      parse_preprocessor state 
-        { x with buf_pos = x.buf_pos } 
-        { y with Lexing.pos_fname = y.Lexing.pos_fname }
-        lexbuf
-    | [HASHBANG _ | HASHBANGSLASH _ ],true  -> 
-      (*
-      print_endline "IGNORING HASHBANG";
-      *)
-      parse_hashbang state lexbuf
-    | _ -> toks
-    
+    let toks = state#tokenise_symbols  lexbuf s' in
+    let toks =
+      match toks,atstart with
+      | [HASH _],true -> 
+        let x = state#get_loc in
+        let y = lexbuf.Lexing.lex_curr_p in
+        parse_preprocessor state 
+          { x with buf_pos = x.buf_pos } 
+          { y with Lexing.pos_fname = y.Lexing.pos_fname }
+          lexbuf
+      | [HASHBANG _ | HASHBANGSLASH _ ],true  -> 
+        (*
+        print_endline "IGNORING HASHBANG";
+        *)
+        parse_hashbang state lexbuf
+      | _ when con = `SlashSlash ->
+        (*
+        print_endline "EMBEDDED //";
+        *)
+        let lead = String.sub s (lim+2) (n-lim-2) in
+        let lex = parse_line state lexbuf in
+        let m = String.length lex in
+        toks @ [COMMENT_NEWLINE  (lead ^ String.sub lex 0 (m-1))]
+
+      | _ when con = `SlashAst ->
+        (*
+        print_endline "EMBEDDED /*";
+        *)
+        (* NOTE THIS WILL NOT HANDLE /**/ or any other
+          sequence x/*xxxx*/ where the x's are special
+          In particular x/***************/ will fail.
+        *)
+        let lead = String.sub s (lim+2) (n-lim-2) in
+        state#set_comment lead;
+        parse_C_comment state lexbuf; 
+        toks @ [COMMENT (state#get_comment)]
+
+      | _ -> toks
+    in toks 
   }
 
 (* end of line *)

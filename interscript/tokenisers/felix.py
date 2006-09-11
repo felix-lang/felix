@@ -208,6 +208,8 @@ opdict = {
 #line 135 "./lpsrc/flx_felix_tangler.pak"
 '#!':HASHBANG,
 #line 135 "./lpsrc/flx_felix_tangler.pak"
+'//':SLASHSLASH,
+#line 135 "./lpsrc/flx_felix_tangler.pak"
 '<<=':LEFTSHIFTEQUAL,
 #line 135 "./lpsrc/flx_felix_tangler.pak"
 '>>=':RIGHTSHIFTEQUAL,
