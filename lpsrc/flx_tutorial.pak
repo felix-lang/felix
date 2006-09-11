@@ -1037,8 +1037,7 @@ Note: only explicitly declared non-private functions (and procedures)
 are taken as methods. Implicit functions such as blocks
 are not taken.
 
-@h= tangler(tdir+'tut-'+flx_tutorial_level_str+'a.flx')
-@select(h)
+@select(tangler(tdir+'tut-'+flx_tutorial_level_str+'a.flx'))
 #import <flx.flxh>
 obj a(x:int) {
   var v = x;
