@@ -147,7 +147,7 @@ let rec unravel_ret tin dts =
   | `BTYP_function (a,b) -> unravel_ret b (a::dts)
   | _ -> rev dts
 
-let consider syms bt i ts signs call_sr =
+let consider syms bt name i ts signs call_sr =
     let bt sr t = bt sr i t in
     let id,sr,p,vs,pvs,con,t,r = resolve syms i in
     let con = bt sr con in
@@ -168,7 +168,7 @@ let consider syms bt i ts signs call_sr =
     print_endline ("vs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) vs);
     *)
     if con <> `BTYP_tuple [] then
-      print_endline ("type constraint = " ^ sbt syms.dfns con)
+      print_endline ("type constraint (for "^name^") = " ^ sbt syms.dfns con)
     ;
     (* Here we have a parameter list vs of m type variables,
        a signature type t, containing these variables,
@@ -527,13 +527,14 @@ let overload
 : (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
 
   (*
+  print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt syms.dfns) sufs);
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
-  *)
+  *) 
   (* HACK for the moment *)
   let rec aux i =  
-    match consider syms bt i ts sufs call_sr with
+    match consider syms bt name i ts sufs call_sr with
     | Some x -> Unique x
     | None -> Fail
   in

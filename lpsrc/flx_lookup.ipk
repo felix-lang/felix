@@ -1715,6 +1715,7 @@ and bind_type_index syms (rs:recstop)
     | `SYMDEF_cstruct _ 
     | `SYMDEF_class
     | `SYMDEF_cclass _ 
+    | `SYMDEF_typeclass 
       ->
       `BTYP_inst (index,ts)
 
@@ -2353,6 +2354,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
         `BEXPR_closure (index,ts),
         t
 
+      | `SYMDEF_union _
       | `SYMDEF_type_alias _ ->
         (*
         print_endline "mapping type name to _ctor_type [2]";

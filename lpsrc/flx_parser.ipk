@@ -2198,10 +2198,13 @@ ctor_pattern:
     }
 
 ctor_name:
-  | simple_name_parts 
+  | qualified_name 
     { 
+      $1
+      (*
       match $1 with sr,name,ts ->
       `AST_name (sr,name,ts)
+      *) 
     }
   
   | CASE INTEGER { 
