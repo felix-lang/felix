@@ -1115,6 +1115,25 @@ visiting leaf 4
 visiting node: right
 visiting leaf 5
 15
+@select(tangler('test/rt36.flx'))
+#import <flx.flxh>
+
+module Foo
+{
+  union foo = | A | B;
+
+  fun _ctor_foo (x:int):foo => A;
+}
+
+val x = Foo::foo 5;
+
+print$ match x with
+| Foo::A => "a"
+| Foo::B => "b"
+endmatch;
+endl;
+@select(tangler('test/rt36.expect','data'))
+A
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>
