@@ -213,7 +213,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
     let luqn2 n = lookup_qn_in_env2 syms env n in
     let bt t = bind_type syms env sr t in
     let ivs = find_vs syms i in (* this is the full vs list *) 
-    let bvs = map (fun (s,i,tp) -> s,i) ivs in
+    let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
     let btraint = function | Some x -> Some (be x) | None -> None in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
     let bind_quals quals = bind_quals bt quals in

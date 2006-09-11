@@ -46,6 +46,20 @@ open List
 open Flx_lookup
 open Flx_exceptions
 
+let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
+  let t = 
+    match con1,con2 with
+    | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
+    | `TYP_tuple[],b -> b
+    | a,`TYP_tuple[] -> a
+    | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
+    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
+    | a,`TYP_intersect b -> `TYP_intersect (a::b)
+    | a,b -> `TYP_intersect [a;b]
+  in
+  vs1 @ vs2, t
+
+
 let split_asms asms : 
   (range_srcref * id_t * int option * access_t * vs_list_t * dcl_t) list * 
   sexe_t list *
@@ -133,6 +147,7 @@ let add_function syms sr table key value =
 *)
 
 let null_tab = Hashtbl.create 3 
+let dfltvs = [],`TYP_tuple []
 
 let rec build_tables syms name level parent grandparent root is_class asms = 
   (*
@@ -199,7 +214,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             " " ^ kind ^ short_string_of_src sr
           )
         end;
-        let make_vs vs' = 
+        let make_vs (vs',con) : ivs_list_t = 
           map 
           (
             fun (tid,tpat)-> let n = !counter in incr counter; 
@@ -208,6 +223,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             tid,n,tpat
           ) 
           vs'
+          ,
+          con
         in
         let add_tvars' parent table vs =        
           iter
@@ -217,7 +234,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               id=tvid; 
               sr=sr; 
               parent=parent;
-              vs=[];
+              vs=dfltvs;
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
@@ -225,7 +242,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             };
             add_unique table tvid i 
           )
-          vs
+          (fst vs)
         in
         let vs = make_vs vs' in
         let add_tvars table = add_tvars' (Some n) table vs in
@@ -238,13 +255,13 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           (fun mem ->
             let kind, component_name,component_index,mvs,t,cc =
               match mem with
-              | `MemberVar (n,t,cc) -> `Var,n,None,[],t,cc
-              | `MemberVal (n,t,cc) -> `Val,n,None,[],t,cc
+              | `MemberVar (n,t,cc) -> `Var,n,None,dfltvs,t,cc
+              | `MemberVal (n,t,cc) -> `Val,n,None,dfltvs,t,cc
               | `MemberFun (n,mix,vs,t,cc) -> `Fun,n,mix,vs,t,cc
               | `MemberProc (n,mix,vs,t,cc) -> `Proc,n,mix,vs,t,cc
-              | `MemberCtor (n,mix,t,cc) -> `Ctor,n,mix,[],t,cc
+              | `MemberCtor (n,mix,t,cc) -> `Ctor,n,mix,dfltvs,t,cc
             in
-            let mtvars = map (fun (s,_)-> `AST_name (sr,s,[])) mvs in
+            let mtvars = map (fun (s,_)-> `AST_name (sr,s,[])) (fst mvs) in
             if print_flag then
             print_endline ("//Member " ^ component_name);
             if kind = `Ctor && class_kind = `CClass then
@@ -253,7 +270,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               let ctor_name = "_ctor_" ^ id in
               let ct = 
                 match vs with 
-                | [] -> `StrTemplate("new "^ id^"($a)") 
+                | [],_ -> `StrTemplate("new "^ id^"($a)") 
                 | _ -> `StrTemplate("new "^ id^"<?a>($a)") 
               in
               let argst = match t with
@@ -333,7 +350,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                         in
                           `StrTemplate("$1->" ^ component_name^"($b)" ^ trail)
                       in
-                          `Dcl (sr,exec_name,Some execn,`Private,[], (* vs inherited *)
+                          `Dcl (sr,exec_name,Some execn,`Private,dfltvs, (* vs inherited *)
                             `DCL_fun ([],stype::argts,codomain, cc,`NREQ_true,"primary")
                           )
                     in
@@ -366,7 +383,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                           exec_asm
                         ]
                       in
-                      `Dcl (sr,do_name,Some don, `Private,[], (* vs inherited *)
+                      `Dcl (sr,do_name,Some don, `Private,dfltvs, (* vs inherited *)
                         `DCL_function ((params,None),codomain,[],asms)
                       )
                     in
@@ -413,15 +430,15 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                 (* print_endline "Making fresh type variables"; *)
                 let vs = make_vs vs' in
                 let mvs = make_vs mvs in
-                add_tvars' (Some getn) privtab (vs @ mvs);
+                add_tvars' (Some getn) privtab (merge_ivs vs mvs);
                 (* add the get method to the current sumbol table *)
                 if print_flag then
                 print_endline ("//Adding get method " ^ get_name ^ " with vs=" ^
-                  print_ivs_with_index (vs @ mvs) ^ ", parent = " ^ strp parent
+                  print_ivs_with_index (merge_ivs vs mvs) ^ ", parent = " ^ strp parent
                 );
                 Hashtbl.add dfns getn {
                   id=get_name;sr=sr;parent=parent;
-                  vs=vs @ mvs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+                  vs=merge_ivs vs mvs;pubmap=pubtab;privmap=privtab;dirs=dirs;
                   symdef=`SYMDEF_function (
                     ([`PVal,obj_name,stype],None), rett, props, exes
                   )
@@ -433,7 +450,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                 if print_flag then
                 print_endline ("//  "^spc ^ si objidx ^ " -> " ^ obj_name^ " (parameter)");
                 Hashtbl.add dfns objidx {
-                  id=obj_name;sr=sr;parent=Some getn;vs=[];
+                  id=obj_name;sr=sr;parent=Some getn;vs=dfltvs;
                   pubmap=null_tab;privmap=null_tab;dirs=[];
                   symdef=`SYMDEF_parameter (`PVal,stype)
                 };
@@ -472,7 +489,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   let objname = "obj" in
                   Hashtbl.add dfns objix {
                     id=objname;sr=sr;parent=Some getn;
-                    vs=[];pubmap=null_tab;privmap=null_tab;
+                    vs=dfltvs;pubmap=null_tab;privmap=null_tab;
                     dirs=[];symdef=`SYMDEF_parameter (`PVal,stype)
                   };
                   add_unique funtab objname objix;
@@ -520,7 +537,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   let objname = "obj" in
                   Hashtbl.add dfns objix {
                     id=objname;sr=sr;parent=Some getn;
-                    vs=[];pubmap=null_tab;privmap=null_tab;
+                    vs=dfltvs;pubmap=null_tab;privmap=null_tab;
                     dirs=[];symdef=`SYMDEF_parameter (`PVal,`TYP_lvalue stype)
                   };
                   add_unique funtab objname objix;
@@ -645,7 +662,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
-              vs=[];pubmap=null_tab;privmap=null_tab;
+              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
               dirs=[];symdef=`SYMDEF_parameter (`PVal,typ)
             };
             if access = `Public then add_unique pubtab name n;
@@ -670,7 +687,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
-              vs=[];pubmap=null_tab;privmap=null_tab;
+              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
               dirs=[];symdef=`SYMDEF_parameter (`PVal,typ)
             };
             if access = `Public then add_unique pubtab name n;
@@ -730,7 +747,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
-              vs=[];pubmap=null_tab;privmap=null_tab;
+              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
               dirs=[];symdef=`SYMDEF_parameter (k,typ)
             };
             if access = `Public then add_unique pubtab name n;
@@ -751,7 +768,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
 
         | `DCL_match_check (pat,(mvname,match_var_index)) ->
           if is_class then clierr sr "Match check not allowed in class";
-          assert (length vs = 0);
+          assert (length (fst vs) = 0);
           let fun_index = n in
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
@@ -770,7 +787,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           print_endline ("Parent is " ^ match parent with Some i -> si i);
           print_endline ("Match handler, "^si n^", mvname = " ^ mvname);
           *)
-          assert (length vs = 0);
+          assert (length (fst vs) = 0);
           let vars = Hashtbl.create 97 in
           Flx_mbind.get_pattern_vars vars pat [];
           (*
@@ -791,9 +808,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               Flx_mbind.gen_extractor extractor 
               (`AST_index (sr,mvname,match_var_index)) 
             in
-            let empty_vs = [] in
             let dcl = 
-              `Dcl (sr, vname, None,`Private, empty_vs,
+              `Dcl (sr, vname, None,`Private, dfltvs,
                 `DCL_val (`TYP_typeof (component))
               ) 
             and instr = `Exe (sr, `EXE_init (vname, component)) 
@@ -897,7 +913,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           add_tvars privtab
           ;
           (* Hack it by building an interface *)
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
 
 
@@ -914,7 +930,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                 
             with
             | {id=id; vs=vs;symdef=symdef} ->
-            let vs = map (fun (s,i,pat) -> s,pat) vs in
+            let vs : vs_list_t = map (fun (s,i,pat) -> s,pat) (fst vs),snd vs in
             match symdef with
             | `SYMDEF_var t -> sts := `MemberVar (id,t,None) :: !sts
             | `SYMDEF_val t -> sts := `MemberVal (id,t,None) :: ! sts
@@ -1125,7 +1141,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ ": "^string_of_typecode (typ:> typecode_t)^" (glr parameter)");
             Hashtbl.add dfns n {
-              id=name;sr=sr;parent=Some fun_index;vs=[];
+              id=name;sr=sr;parent=Some fun_index;vs=dfltvs;
               pubmap=null_tab;
               privmap=null_tab;dirs=[];
               symdef=`SYMDEF_const (`TYP_glr_attr_type typ,
@@ -1175,7 +1191,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
 
         | `DCL_union (its) ->
           if is_class then clierr sr "Union not allowed in class";
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let utype = `AST_name(sr,id, tvars) in
           let its = 
             let ccount = ref 0 in (* count component constructors *)
@@ -1294,7 +1310,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
         | `DCL_cclass (sts) -> 
           if is_class then clierr sr "cclass not allowed in class";
           let symdef = `SYMDEF_cclass sts in
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;
@@ -1312,7 +1328,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
 
         | `DCL_typeclass (sts) -> 
           let symdef = `SYMDEF_typeclass in
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;
@@ -1328,7 +1344,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
         | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
           if is_class then clierr sr "(c)struct not allowed in class";
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;

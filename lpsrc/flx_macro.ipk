@@ -52,6 +52,7 @@ open Flx_typing2
 open Flx_util
 
 exception Macro_return
+let dfltvs = [],`TYP_tuple []
 
 let truthof x = match x with
   | `AST_typed_case (_,0,`TYP_unitsum 2) -> Some false
@@ -158,7 +159,7 @@ let build_args sr ps args =
     | Expr -> (p,MVal a)
     | Stmt ->
       begin match a with
-      | `AST_lambda (_,([],[[],_],`TYP_none,sts)) -> (p,MStmt ([],sts))
+      | `AST_lambda (_,(dfltvs,[[],_],`TYP_none,sts)) -> (p,MStmt ([],sts))
       | `AST_name(_,name,[]) ->(p,MVal a)
       | _ -> 
         clierr sr 
@@ -557,7 +558,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
             *)
             let sts = [`AST_call (sr,e1, e2)] in
             let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-            `AST_lambda(sr,([],[[],None],`TYP_none,sts))
+            `AST_lambda(sr,(dfltvs,[[],None],`TYP_none,sts))
             (*
             clierr sr 
             (
@@ -830,7 +831,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     iter 
     (fun (sr,id) -> 
       let sr = slift sr in
-      let st = `AST_abs_decl (sr,id, [], qs, `Str id, rqmap reqs) in
+      let st = `AST_abs_decl (sr,id, dfltvs, qs, `Str id, rqmap reqs) in
       tack st
     ) 
     ids

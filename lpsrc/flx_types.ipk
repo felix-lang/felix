@@ -381,8 +381,10 @@ and tpattern_t =
 and vs_list_t = (id_t * tpattern_t) list
 and ivs_list_t = (id_t * int * tpattern_t) list
 *)
-and vs_list_t = (id_t * typecode_t) list
-and ivs_list_t = (id_t * int * typecode_t) list
+and plain_vs_list_t = (id_t * typecode_t) list
+and plain_ivs_list_t = (id_t * int * typecode_t) list 
+and vs_list_t = (id_t * typecode_t) list * typecode_t
+and ivs_list_t = (id_t * int * typecode_t) list * typecode_t
 
 @head(3,'Literals')
 Literals recognized by the lexer.
@@ -3244,17 +3246,33 @@ and string_of_maybe_tpattern = function
   | `AST_patany _ -> ""
   | t -> ": " ^ string_of_typecode t
 
+and print_tcon = function
+  | `TYP_tuple [] -> ""
+  | t -> " where " ^ string_of_typecode t
+  
 and print_ivs = function
-  | [] -> ""
-  | vs -> "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ "]"
+  | [],`TYP_tuple [] -> ""
+  | vs,tcon -> 
+    "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ 
+    print_tcon tcon ^
+    "]"
 
 and print_ivs_with_index = function
-  | [] -> ""
-  | vs -> "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_tpattern tpat) vs) ^ "]"
+  | [],`TYP_tuple []-> ""
+  | vs,tcon -> 
+    "[" ^ 
+    cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_tpattern tpat) vs) ^ 
+    print_tcon tcon ^
+    "]"
 
 and print_vs = function
-  | [] -> ""
-  | vs -> "[" ^ cat ", " (map (fun (name,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ "]"
+  | [],`TYP_tuple [] -> ""
+  | vs,tcon -> 
+    "[" ^ 
+    cat ", " 
+    (map (fun (name,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ 
+    print_tcon tcon ^
+    "]"
 
 and print_bvs = function
   | [] -> ""
@@ -3388,11 +3406,11 @@ and string_of_ast_term level (term:ast_term_t) =
 
 and string_of_class_component level mem =
   let kind, name, mix,vs,ty,cc = match mem with
-  | `MemberVar (name,typ,cc) -> "var",name,None,[],typ,cc
-  | `MemberVal (name,typ,cc) -> "val",name,None,[],typ,cc
+  | `MemberVar (name,typ,cc) -> "var",name,None,([],`TYP_tuple[]),typ,cc
+  | `MemberVal (name,typ,cc) -> "val",name,None,([],`TYP_tuple[]),typ,cc
   | `MemberFun (name,mix,vs,typ,cc) -> "fun",name,mix,vs,typ,cc
   | `MemberProc (name,mix,vs,typ,cc) -> "proc",name,mix,vs,typ,cc
-  | `MemberCtor (name,mix,typ,cc) -> "ctor",name,mix,[],typ,cc
+  | `MemberCtor (name,mix,typ,cc) -> "ctor",name,mix,([],`TYP_tuple[]),typ,cc
   in
     (spaces (level+1)) ^ 
     kind ^ " " ^ name ^ print_vs vs ^ ": " ^ string_of_typecode ty ^ 
@@ -4905,13 +4923,13 @@ let string_of_term dfns term = match term with
   | #ast_term_t as x -> string_of_ast_term 0 x
 
   (* hack cause we don't know the name *)
-  | #symbol_definition_t as x -> string_of_symdef x "unk" [] 
+  | #symbol_definition_t as x -> string_of_symdef x "unk" ([],`TYP_tuple[]) 
 
   | #bbdcl_t as x -> string_of_bbdcl dfns x 0
   | #param_kind_t as x -> string_of_param_kind x
   | #property_t as x -> string_of_property x
   | #c_t as x -> string_of_code_spec x
-  | #dcl_t as x -> string_of_dcl 0 "unk" (Some 0) [] x
+  | #dcl_t as x -> string_of_dcl 0 "unk" (Some 0) ([],`TYP_tuple[]) x
   | #asm_t as x -> string_of_asm 0 x
   | #iface_t as x -> string_of_iface 0 x
   | #access_t as x -> string_of_access x

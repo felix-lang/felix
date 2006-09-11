@@ -132,15 +132,15 @@ let sig_of_symdef symdef sr name i = match symdef with
       "[sig_of_symdef] Expected "^
       name
       ^" to be function or procedure, got " ^
-     string_of_symdef symdef name []
+     string_of_symdef symdef name ([],`TYP_tuple[])
     )    
 
 let resolve syms i =
   match get_data syms.dfns i with 
   {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
-  let pvs,vs = find_split_vs syms i in
+  let pvs,vs,con = find_split_vs syms i in
   let t,r = sig_of_symdef symdef sr id i in
-  id,sr,parent,vs,pvs,t,r
+  id,sr,parent,vs,pvs,con,t,r
 
 let rec unravel_ret tin dts = 
   match tin with
@@ -149,7 +149,8 @@ let rec unravel_ret tin dts =
 
 let consider syms bt i ts signs call_sr =
     let bt sr t = bt sr i t in
-    let id,sr,p,vs,pvs,t,r = resolve syms i in
+    let id,sr,p,vs,pvs,con,t,r = resolve syms i in
+    let con = bt sr con in
     (*
     print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
     *)
@@ -165,8 +166,10 @@ let consider syms bt i ts signs call_sr =
     print_endline ("Candidate sigs= " ^  catmap "->" (sbt syms.dfns) tdms);
     print_endline ("pvs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) pvs);
     print_endline ("vs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) vs);
-    print_endline ("type constraint = " ^ sbt syms.dfns type_constraint);
     *)
+    if con <> `BTYP_tuple [] then
+      print_endline ("type constraint = " ^ sbt syms.dfns con)
+    ;
     (* Here we have a parameter list vs of m type variables,
        a signature type t, containing these variables,
        and a list ts of type expressions of length n which are

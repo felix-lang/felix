@@ -233,6 +233,7 @@ open Flx_overload
 open Flx_tpat
 
 let unit_t = `BTYP_tuple []
+let dfltvs = [],`TYP_tuple []
 
 let lvalify t = match t with 
   | `BTYP_lvalue _ -> t
@@ -1593,7 +1594,7 @@ and cal_glr_attr_type' syms sr i =
     clierr sr (
       "[cal_glr_attr_type'] Expected glr nonterminal or token "^
       "(union constructor with argument), got\n" ^
-      string_of_symdef symdef id []
+      string_of_symdef symdef id dfltvs
     )
 
 and cal_glr_attr_type syms sr ii =
@@ -2048,7 +2049,7 @@ and inner_typeofindex
   | `SYMDEF_cstruct (ls)
   | `SYMDEF_struct (ls) -> 
     (* ARGGG WHAT A MESS *)
-    let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) vs in
+    let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
     let ts = map bt ts in
   (*
   print_endline "inner_typeofindex: struct";
@@ -2062,7 +2063,7 @@ and inner_typeofindex
     t
 
   | `SYMDEF_class ->
-    let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) vs in
+    let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
     let ts = map bt ts in
     let ts = adjust_ts syms sr index ts in
     `BTYP_inst (index,ts)
@@ -2374,7 +2375,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         let ts = adjust_ts syms sr index ts in
         *)
         let t = bt sr t in
-        let bvs = map (fun (s,i,tp) -> s,i) vs in
+        let bvs = map (fun (s,i,tp) -> s,i) (fst vs) in
         let t = try tsubst bvs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
         begin match t with
         | `BTYP_function (a,b) ->
@@ -2691,7 +2692,7 @@ and handle_variable syms
     let t = bt sr t in
     let ts = adjust_ts syms sr index ts in
     let vs = find_vs syms index in
-    let bvs = map (fun (s,i,tp) -> s,i) vs in
+    let bvs = map (fun (s,i,tp) -> s,i) (fst vs) in
     let t = tsubst bvs ts t in
     let t = match t with | `BTYP_lvalue t -> t | t -> t in
     begin match t with
@@ -3364,7 +3365,7 @@ and bind_expression' syms env (rs:recstop) e args
       let sign =
         let entry = Hashtbl.find syms.dfns oi in
         match entry with | {vs = vs } ->
-        let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+        let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
         print_endline ("Binding sign = " ^ string_of_typecode sign);
         let env' = build_env syms (Some oi) in
         bind_type' syms env' rsground sr sign bvs
@@ -3411,7 +3412,7 @@ and bind_expression' syms env (rs:recstop) e args
               print_endline ("ots = " ^ catmap "," (sbt syms.dfns) ots);
               *)
               let omap =
-                let vars = map2 (fun (_,i,_) t -> i,t) obj_vs ots in
+                let vars = map2 (fun (_,i,_) t -> i,t) (fst obj_vs) ots in
                 hashtable_of_list vars 
               in
               let meth_ts = map (varmap_subst omap) meth_ts in
@@ -3937,11 +3938,11 @@ and bind_expression' syms env (rs:recstop) e args
             in scan 0 ls
           in
           let ct =
-            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
             let env' = build_env syms (Some i) in
             bind_type' syms env' rsground sr ct bvs
           in
-          let vs' = map (fun (s,i,tp) -> s,i) vs in
+          let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
           let ct = tsubst vs' ts' ct in
           (* propagate lvalueness to struct component *)
           `BEXPR_get_n (cidx,te),lmap ct
@@ -3962,11 +3963,11 @@ and bind_expression' syms env (rs:recstop) e args
               in scan 0 ls
             in
             let ct =
-              let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+              let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
               let env' = build_env syms (Some i) in
               bind_type' syms env' rsground sr ct bvs
             in
-            let vs' = map (fun (s,i,tp) -> s,i) vs in
+            let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
             let ct = tsubst vs' ts' ct in
             (* propagate lvalueness to struct component *)
             `BEXPR_get_n (cidx,te),lmap ct
@@ -4209,7 +4210,7 @@ and bind_expression' syms env (rs:recstop) e args
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -4219,7 +4220,7 @@ and bind_expression' syms env (rs:recstop) e args
           (*
           print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
           *)
-          let vs' = map (fun (s,i,tp) -> s,i) vs in
+          let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
           let vt = tsubst vs' ts' vt in
           (*
           print_endline ("Instantiated type = " ^ sbt syms.dfns vt);
@@ -4270,7 +4271,7 @@ and bind_expression' syms env (rs:recstop) e args
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -4280,7 +4281,7 @@ and bind_expression' syms env (rs:recstop) e args
           (*
           print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
           *)
-          let vs' = map (fun (s,i,tp) -> s,i) vs in
+          let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
           let vt = tsubst vs' ts' vt in
           (*
           print_endline ("Instantiated type = " ^ sbt syms.dfns vt);

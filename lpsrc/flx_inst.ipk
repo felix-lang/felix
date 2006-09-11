@@ -500,8 +500,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     rtr ctor_argt
  
    | `BBDCL_typeclass _ -> ()
-   | `BBDCL_instance (props,tc,ts) ->
-     failwith "instantiate instance of typeclass not implemented"
+   | `BBDCL_instance (props,tc,ts) -> ()
 
 (* 
   This routine creates the instance tables.

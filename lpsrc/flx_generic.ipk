@@ -8,7 +8,9 @@ open Flx_ast
 val find_split_vs:
   sym_state_t ->
   int -> 
-  ivs_list_t * ivs_list_t
+  (string * int * typecode_t) list *
+  (string * int * typecode_t) list *
+  typecode_t
 
 val find_vs:
   sym_state_t ->
@@ -45,6 +47,7 @@ open Flx_util
 open List
 open Flx_exceptions
 open Flx_print
+open Flx_ast
 
 (* Adjustment of type argument lists works much
 like the activation record display, so well call
@@ -78,52 +81,54 @@ subscript list -- this can happen when an instantiated
 call calls upscope using an unindexed name.
 *)
 
-let rec find_vs syms i =
+let merge_con con1 con2 =
+  match con1,con2 with
+  | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
+  | `TYP_tuple[],b -> b
+  | a,`TYP_tuple[] -> a
+  | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
+  | `TYP_intersect a, b -> `TYP_intersect (a @[b])
+  | a,`TYP_intersect b -> `TYP_intersect (a::b)
+  | a,b -> `TYP_intersect [a;b]
+
+let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
+  vs1 @ vs2, merge_con con1 con2
+
+let rec find_vs syms i : ivs_list_t =
   match Hashtbl.find syms.dfns i with
   {parent=parent;vs=vs} ->
   match parent with
-  | Some i -> find_vs syms i @ vs
+  | Some i -> merge_ivs (find_vs syms i) vs
   | None -> vs
 
 let rec find_func_vs syms vs j =
   match Hashtbl.find syms.dfns j with
   | {parent=parent; vs=vs'; symdef=`SYMDEF_module } ->
     begin match parent with 
-    | None -> [],vs' @ vs
-    | Some j -> find_func_vs syms (vs' @ vs) j
+    | None -> 
+      let vs = merge_ivs vs' vs in
+      [],fst vs, snd vs
+    | Some j -> find_func_vs syms (merge_ivs vs' vs) j
     end
 
   | _ ->
-    find_vs syms j,vs
-
-  (*
-  | {parent=parent; id=name; vs=vs'; symdef = symdef}-> 
-    begin match parent with 
-    | None -> [],vs' @ vs
-    | Some j -> find_func_vs syms (vs' @ vs) j
-    end
-  *)
-    (*
-    failwith 
-    (
-      "find_func_vs: parent must be module or function, got:" ^
-      Flx_print.string_of_symdef symdef name vs'
-    )
-    *)
+    let (vs',con) = find_vs syms j in
+    vs',fst vs,merge_con con (snd vs)
 
 let find_split_vs syms i =
   match Hashtbl.find syms.dfns i with
-  {symdef=`SYMDEF_typevar _} -> [],[]
+  {symdef=`SYMDEF_typevar _} -> [],[],`TYP_tuple[]
   
   | {parent=parent; vs=vs} ->
   match parent with 
-  | None -> [],vs
+  | None -> [],fst vs, snd vs
   | Some j -> find_func_vs syms vs j
 
-let print_ivs vs = catmap ", " (fun (s,i,_) -> s ^ "<" ^ si i ^ ">") vs
+let print_ivs vs = 
+  catmap ", " (fun (s,i,_) -> s ^ "<" ^ si i ^ ">") vs 
 
 let adjust_ts syms sr index ts =
-  let pvs,vs = find_split_vs syms index in
+  let pvs,vs,con = find_split_vs syms index in
   let k = length pvs in
   let m = length vs in 
   let n = length ts in
@@ -155,14 +160,14 @@ let adjust_ts syms sr index ts =
   
 
 let make_params syms sr i ts =
-  let vs = find_vs syms i in
+  let vs,_ = find_vs syms i in
   let ts = adjust_ts syms sr i ts in
   assert (length vs = length ts);
   map2 (fun (s,i,_) t -> s,t) vs ts
 
 (* full ts required *)
 let make_varmap syms sr i ts = 
-  let vs = find_vs syms i in
+  let vs,_ = find_vs syms i in
   assert (length ts = length vs);
   let vars = map2 (fun (s,i,_) t -> i,t) vs ts in
   hashtable_of_list vars

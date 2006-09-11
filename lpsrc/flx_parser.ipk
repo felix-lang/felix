@@ -143,6 +143,8 @@ let mktypefun sr name vs (args: (string * typecode_t) list list) return_type bod
     body
   )
 
+let dfltvs = [],`TYP_tuple []
+
 %}
 
 @head(2,'Tokens')
@@ -441,9 +443,13 @@ tvar:
 
 @commalistof("tvar")
 
+opt_type_constraint:
+  | WHERE expr { typecode_of_expr $2 }
+  | { `TYP_tuple [] }
+
 tvarlist:
-   | LSQB tvar_comma_list RSQB { $2 }
-   | { [] } 
+   | LSQB tvar_comma_list opt_type_constraint RSQB { $2,$3 }
+   | { [],`TYP_tuple [] } 
 
 type_qual:
   | INCOMPLETE { [$1,`Incomplete] }
@@ -517,7 +523,7 @@ abstract_type:
 union_decl:
   | ENUM NAME LBRACE enum_items RBRACE SEMI 
     { 
-      `AST_union (rstoken $1 $6, snd $2, [], $4) 
+      `AST_union (rstoken $1 $6, snd $2, ([],`TYP_tuple[]), $4) 
     }
 
   | UNION NAME tvarlist EQUAL type_sum_items SEMI 
@@ -707,25 +713,25 @@ binding_header:
   | HEADER code_spec requires_clause SEMI 
   { 
       let sr = rstoken $1 $4 in
-      `AST_insert (sr, "_root", [], $2, `Header ,$3) 
+      `AST_insert (sr, "_root", ([],`TYP_tuple[]), $2, `Header ,$3) 
   }
   
   | BODY code_spec requires_clause SEMI 
   { 
      let sr = rstoken $1 $4 in
-    `AST_insert (sr, "_root", [], $2, `Body, $3) 
+    `AST_insert (sr, "_root", ([],`TYP_tuple[]), $2, `Body, $3) 
   }
 
   | HEADER EQUAL code_spec requires_clause SEMI 
   { 
       let sr = rstoken $1 $5 in
-      `AST_insert (sr, "_root", [], $3, `Header, $4) 
+      `AST_insert (sr, "_root", ([],`TYP_tuple[]), $3, `Header, $4) 
   }
   
   | BODY EQUAL code_spec requires_clause SEMI 
   { 
      let sr = rstoken $1 $5 in
-    `AST_insert (sr, "_root", [], $3, `Body, $4) 
+    `AST_insert (sr, "_root", ([],`TYP_tuple[]), $3, `Body, $4) 
   }
 
   | HEADER NAME tvarlist EQUAL code_spec requires_clause SEMI 
@@ -741,13 +747,13 @@ binding_header:
   | REQUIRES requirements SEMI 
   { 
     let sr = rstoken $1 $3 in
-    `AST_insert (sr, "_root", [], `Str "", `Body, $2)
+    `AST_insert (sr, "_root", ([],`TYP_tuple[]), `Str "", `Body, $2)
   }
 
   | NAME REQUIRES requirements SEMI 
   { 
     let sr = rstoken (fst $1) $4 in
-    `AST_insert (sr, snd $1, [], `Str "", `Body, $3)
+    `AST_insert (sr, snd $1, ([],`TYP_tuple[]), `Str "", `Body, $3)
   }
 
 @head(3,'Inline C++ Code Definition')
@@ -1217,7 +1223,7 @@ function_definition:
           (*
           let vs = vs @ ["_varargs",`TPAT_any] in
           *)
-          let vs = vs @ ["_varargs",`AST_patany sr] in
+          let vs = let vs,t = vs in vs @ ["_varargs",`AST_patany sr],t in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
           `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs,prec) 
         else
@@ -1339,9 +1345,9 @@ procedure_definition:
         if List.length args > 0 && list_last args = `TYP_ellipsis 
         then
           (*
-          let vs = vs @ ["_varargs",`TPAT_any] in
+          let vs = match vs with vs,t -> vs @ ["_varargs",`TPAT_any],t in
           *)
-          let vs = vs @ ["_varargs",`AST_patany sr] in
+          let vs = match vs with vs,t -> vs @ ["_varargs",`AST_patany sr],t in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
           `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$7,"") 
         else
@@ -1469,7 +1475,7 @@ var_def:
           sr, 
           map2 
           (fun name v -> 
-            `AST_var_decl ( sr, name, [], None, Some v) 
+            `AST_var_decl ( sr, name, dfltvs, None, Some v) 
           ) 
           names ls
         )
@@ -1593,7 +1599,7 @@ val_def:
           sr, 
           map2 
           (fun name v -> 
-            `AST_val_decl ( sr, name, [], None, Some v) 
+            `AST_val_decl ( sr, name, dfltvs, None, Some v) 
           ) 
           names ls
         )
@@ -2532,13 +2538,13 @@ comparison:
         match lst with
         | [] -> [] 
         | ((op,opsrc),ex) :: t ->
-           `AST_val_decl(slift opsrc,"_t"^si (n+1), [],None, Some ex)
+           `AST_val_decl(slift opsrc,"_t"^si (n+1), dfltvs,None, Some ex)
            ::
            `AST_val_decl
            (
              slift opsrc,
              "_r"^si (n+1),
-             [],
+             dfltvs,
              None,
              Some 
              (
@@ -2558,11 +2564,11 @@ comparison:
       in 
       let stmts = 
         let n = List.length $4 in
-        `AST_val_decl (src_of_expr $3,"_t0",[],None,Some $3) ::
+        `AST_val_decl (src_of_expr $3,"_t0",dfltvs,None,Some $3) ::
         `AST_val_decl 
         (
           rsrange (src_of_expr $1) (src_of_expr $3),
-          "_r0",[],
+          "_r0",dfltvs,
           None,
           Some (apl2 (snd $2) (fst $2) [$1; nm "_t0"])
         ) 
@@ -2575,7 +2581,7 @@ comparison:
       (
         sr,
         (
-          `AST_lambda (sr,([],[[],None],flx_bool, stmts)),
+          `AST_lambda (sr,(dfltvs,[[],None],flx_bool, stmts)),
           unit_tuple
         )
       )
@@ -3028,7 +3034,7 @@ atom:
       (
         sr,
         (
-          [],
+          dfltvs,
           [[],None],
           `TYP_none,
           [`AST_fun_return (sr,$2)]
@@ -3045,7 +3051,7 @@ atom:
       `AST_lambda 
       (
         sr,
-        ([],[[],None], `TYP_none, stmts)
+        (dfltvs,[[],None], `TYP_none, stmts)
       )
     
     }
