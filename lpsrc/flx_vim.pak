@@ -24,239 +24,261 @@ au BufNewFile,BufRead *.flx,*.flxh setf felix
 " For version 6.x: Quit when a syntax file was already loaded
 if version < 600
   syntax clear
-elseif exists("b:current_syntax") && b:current_syntax != "felix"
+elseif exists("b:current_syntax")
   finish
 endif
 
+syn match felixKeyChar          "|"
+syn match felixKeyChar          "|[^\]]"me=e-1
+syn match felixKeyChar          ";"
+syn match felixKeyChar          "\~"
+syn match felixKeyChar          "?"
+syn match felixKeyChar          "\*"
+syn match felixKeyChar          "->"
+syn match felixKeyChar          "=>"
+syn match felixKeyChar          "<-"
+syn match felixKeyChar          "<="
+syn match felixKeyChar          "="
+syn match felixKeyChar          ":="
+
+" error
+syn match felixCommentErr       "\*\\"
+syn match felixBraceErr         "}"
+syn match felixBrackErr         "\]"
+syn match felixParenErr         ")"
+syn match felixArrErr           "|]"
+syn match felixDoneErr          "\<done\>"
+syn match felixThenErr          "\<then\>"
+syn match felixEndmatchErr      "\<endmatch\>"
+syn match felixUptoErr          "\<upto\>"
+syn match felixDowntoErr        "\<downto\>"
+
+syn cluster felixAllErrs contains=felixBraceErr,felixBrackErr,felixParenErr,felixArrErr,felixDoneErr,felixThenErr,felixEndmatchErr,felixUptoErr,felixDowntoErr
+
+" script headers highlighted like comments
+syn match felixComment "^#!.*"
+
 " C/C++ keywords which are not Felix ones (bad style)
-syn keyword cError continue
-syn keyword cError repeat
-syn keyword cError break
+syn keyword felixError break
+syn keyword felixError continue
+syn keyword felixError repeat
 
 @for k,j in flx_keywords:
-  tangle('syn keyword cStatement '+k)
+  tangle('syn keyword felixStatement ' + k)
 
 " all the felix keywords ..
 " directives
-syn keyword cDefine reduce 
-syn keyword cDefine comment
-syn keyword cDefine publish
-syn keyword cDefine private 
-syn keyword cDefine open
-syn keyword cDefine rename 
-syn keyword cDefine inherit 
-syn keyword cDefine export 
-syn keyword cDefine use
-syn keyword cDefine include
-syn keyword cDefine header
-syn keyword cDefine package
-syn keyword cDefine body
-syn keyword cDefine macro
-syn keyword cDefine pod
-syn keyword cDefine inline
-syn keyword cDefine noinline
-syn keyword cDefine incomplete 
+syn keyword felixDefine body
+syn keyword felixDefine comment
+syn keyword felixDefine export
+syn keyword felixDefine header
+syn keyword felixDefine include inherit inline
+syn keyword felixDefine macro
+syn keyword felixDefine noinline
+syn keyword felixDefine open
+syn keyword felixDefine package pod private publish
+syn keyword felixDefine reduce rename
+syn keyword felixDefine todo
+syn keyword felixDefine use
 
 " actually this is a statement, but the directive colour seems best..
-syn keyword cDefine inherit
-
+syn keyword felixDefine inherit
 " special identifiers
-syn keyword cDefine root
-syn keyword cDefine self
-syn keyword cDefine this
-
-" to do stuff
-syn keyword cToDo todo
+syn keyword felixDefine this
+syn keyword felixDefine root
+syn keyword felixDefine self
 
 " statement keywords
-syn keyword cStatement interface
-syn keyword cStatement functor
-syn keyword cStatement fun
-syn keyword cStatement obj
-syn keyword cStatement def
-syn keyword cStatement proc
-syn keyword cStatement call
-syn keyword cStatement jump
-syn keyword cStatement loop
-
-syn keyword cStatement type
-syn keyword cStatement ctypes
-syn keyword cStatement typedef
-syn keyword cStatement fun
-syn keyword cStatement read
-syn keyword cStatement return
-syn keyword cStatement proc
-syn keyword cStatement const
-syn keyword cStatement struct
-syn keyword cStatement var
-syn keyword cStatement val
-syn keyword cStatement ref
-syn keyword cStatement union
-syn keyword cStatement class
-syn keyword cStatement exceptions
-syn keyword cStatement module
-syn keyword cStatement regexp
-syn keyword cStatement attempt
-syn keyword cStatement endattempt
-syn keyword cStatement endmatch
-syn keyword cStatement except
-syn keyword cStatement finally
-syn keyword cStatement raise
-syn keyword cStatement do
-syn keyword cStatement done
+syn keyword felixStatement all as attempt
+syn keyword felixStatement call case caseno code const class ctypes
+syn keyword felixStatement def 
+syn keyword felixStatement endattempt except exceptions export
+syn keyword felixStatement finally fork functor fun
+syn keyword felixStatement goto
+syn keyword felixStatement interface inf
+syn keyword felixStatement jump
+syn keyword felixStatement lambda loop
+syn keyword felixStatement module
+syn keyword felixStatement NaN
+syn keyword felixStatement obj of
+syn keyword felixStatement proc
+syn keyword felixStatement raise read ref regexp return
+syn keyword felixStatement struct
+syn keyword felixStatement to type typedef
+syn keyword felixStatement union
+syn keyword felixStatement val var
+syn keyword felixStatement when with
+syn keyword felixStatement _
 
 " operators
-syn keyword cStatement not
-syn keyword cStatement and
-syn keyword cStatement not
-syn keyword cStatement or
+syn keyword felixOperator and not or xor
 
-syn keyword cStatement if
-syn keyword cStatement then
-syn keyword cStatement else
-syn keyword cStatement elif
-syn keyword cStatement endif
+" Enclosing delimiters
+syn region felixEncl transparent matchgroup=felixKeyword start="(" matchgroup=felixKeyword end=")" 
+syn region felixEncl transparent matchgroup=felixKeyword start="{" matchgroup=felixKeyword end="}"  
+syn region felixEncl transparent matchgroup=felixKeyword start="\[" matchgroup=felixKeyword end="\]" 
+syn region felixEncl transparent matchgroup=felixKeyword start="\[|" matchgroup=felixKeyword end="|\]" 
 
-syn keyword cStatement code
-syn keyword cStatement fork
-syn keyword cStatement of
-syn keyword cStatement _
-syn keyword cStatement when
-syn keyword cStatement as
-syn keyword cStatement all
-syn keyword cStatement case
-syn keyword cStatement with
-syn keyword cStatement match
-syn keyword cStatement typematch
-syn keyword cStatement regmatch
-syn keyword cStatement lambda
-syn keyword cStatement goto
-syn keyword cStatement export
-syn keyword cStatement inf
-syn keyword cStatement NaN
-syn keyword cStatement to
+" conditionals
+syn keyword felixConditional if
+syn keyword felixConditional then
+syn keyword felixConditional else
+syn keyword felixConditional elif
+syn keyword felixConditional endif
+
+syn keyword felixConditional match
+syn keyword felixConditional typematch
+syn keyword felixConditional regmatch
+syn keyword felixConditional endmatch
+
+syn keyword felixConditional typecase
+syn keyword felixConditional endcase
+
+" repeating constructs
+syn keyword felixRepeat for
+syn keyword felixRepeat while
+syn keyword felixRepeat forall
+syn keyword felixRepeat upto
+syn keyword felixRepeat downto
+syn keyword felixRepeat do
+syn keyword felixRepeat done
 
 " standard library types
-syn keyword cType unit
-syn keyword cType void
-syn keyword cType bool
+syn keyword felixType unit
+syn keyword felixType void
+syn keyword felixType bool
 
-syn keyword cType byte 
-syn keyword cType address
-syn keyword cType offset
+syn keyword felixType byte 
+syn keyword felixType address
+syn keyword felixType offset
+
+syn keyword felixType tiny
+syn keyword felixType short
+syn keyword felixType int
+syn keyword felixType long
+syn keyword felixType vlong
+
+syn keyword felixType utiny
+syn keyword felixType ushort
+syn keyword felixType uint
+syn keyword felixType ulong
+syn keyword felixType uvlong
+
+syn keyword felixType int8
+syn keyword felixType int16
+syn keyword felixType int32
+syn keyword felixType int64
+
+syn keyword felixType uint8
+syn keyword felixType uint16
+syn keyword felixType uint32
+syn keyword felixType uint64
+
+syn keyword felixType float
+syn keyword felixType double
+syn keyword felixType ldouble
+
+syn keyword felixType char
+syn keyword felixType wchar
+syn keyword felixType uchar
+
+syn keyword felixType string
+syn keyword felixType wstring
+syn keyword felixType ustring
+
+syn keyword felixType cont
+
+syn keyword felixConstant true false
 
 
-syn keyword cType tiny
-syn keyword cType short
-syn keyword cType int
-syn keyword cType long
-syn keyword cType vlong
+" standard library types
+syn keyword felixType array
+syn keyword felixType list
 
-syn keyword cType utiny
-syn keyword cType ushort
-syn keyword cType uint
-syn keyword cType ulong
-syn keyword cType uvlong
+" strings -- make special exception to handle identifiers with quotes in them
+syn region felixString          start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\='+ end=+'+ skip=+\\\\\|\\'+ contains=felixEscape
+syn region felixString          start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\="+ end=+"+ skip=+\\\\\|\\"+ contains=felixEscape
+syn region felixString          start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\="""+ end=+"""+ contains=felixEscape
+syn region felixString          start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\='''+ end=+'''+ contains=felixEscape
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\=[rR]'+ end=+'+ skip=+\\\\\|\\'+
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\=[rR]"+ end=+"+ skip=+\\\\\|\\"+
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\=[rR]"""+ end=+"""+
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\=[rR]'''+ end=+'''+
+syn match  felixEscape          +\\[abfnrtv'"\\]+ contained
+syn match  felixEscape          "\\\o\{1,3}" contained
+syn match  felixEscape          "\\x\x\{2}" contained
+syn match  felixEscape          "\(\\u\x\{4}\|\\U\x\{8}\)" contained
+syn match  felixEscape          "\\$"
 
-syn keyword cType int8
-syn keyword cType int16
-syn keyword cType int32
-syn keyword cType int64
+"integer number, or floating point number without a dot and with "f".
+syn case ignore
+syn match       felixNumbers    display transparent "\<\d\|\.\d" contains=felixNumber,felixFloat,felixOctalError,felixOctal
+" Same, but without octal error (for comments)
+syn match       felixNumbersCom display contained transparent "\<\d\|\.\d" contains=felixNumber,felixFloat,felixOctal
+syn match       felixNumber     display contained "\d\+\(u\=l\{0,2}\|ll\=u\)\>"
+"hex number
+syn match       felixNumber     display contained "0x\x\+\(u\=l\{0,2}\|ll\=u\)\>"
+" Flag the first zero of an octal number as something special
+syn match       felixOctal      display contained "0\o\+\(u\=l\{0,2}\|ll\=u\)\>" contains=felixOctalZero
+syn match       felixOctalZero  display contained "\<0"
+syn match       felixFloat      display contained "\d\+f"
+"floating point number, with dot, optional exponent
+syn match       felixFloat      display contained "\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\="
+"floating point number, starting with a dot, optional exponent
+syn match       felixFloat      display contained "\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
+"floating point number, without dot, with exponent
+syn match       felixFloat      display contained "\d\+e[-+]\=\d\+[fl]\=\>"
+"hexadecimal floating point number, optional leading digits, with dot, with exponent
+syn match       felixFloat      display contained "0x\x*\.\x\+p[-+]\=\d\+[fl]\=\>"
+"hexadecimal floating point number, with leading digits, optional dot, with exponent
+syn match       felixFloat      display contained "0x\x\+\.\=p[-+]\=\d\+[fl]\=\>"
 
-syn keyword cType uint8
-syn keyword cType uint16
-syn keyword cType uint32
-syn keyword cType uint64
 
-syn keyword cType float
-syn keyword cType double
-syn keyword cType ldouble
-
-syn keyword cType char
-syn keyword cType wchar
-syn keyword cType uchar
-
-syn keyword cType string
-syn keyword cType wstring
-syn keyword cType ustring
-
-syn keyword cType cont
-
-syn keyword cConstant true false
-
-" [JMS] yeah well, OK ..
-syn keyword     cTodo           contained TODO FIXME XXX KLUDGE HACK
-
-" cCommentGroup allows adding matches for special things in comments
-syn cluster     cCommentGroup   contains=cTodo
-
-syn region pythonString         matchgroup=Normal start=+'+  end=+'+ skip=+\\\\\|\\'+ contains=pythonEscape
-syn region pythonString         matchgroup=Normal start=+"+  end=+"+ skip=+\\\\\|\\"+ contains=pythonEscape
-syn region pythonString         matchgroup=Normal start=+"""+  end=+"""+ contains=pythonEscape
-syn region pythonString         matchgroup=Normal start=+'''+  end=+'''+ contains=pythonEscape
-syn region pythonRawString      matchgroup=Normal start=+[rR]'+ end=+'+ skip=+\\\\\|\\'+
-syn region pythonRawString      matchgroup=Normal start=+[rR]"+    end=+"+ skip=+\\\\\|\\"+
-syn region pythonRawString      matchgroup=Normal start=+[rR]"""+ end=+"""+
-syn region pythonRawString      matchgroup=Normal start=+[rR]'''+ end=+'''+
-syn match  pythonEscape         +\\[abfnrtv'"\\]+ contained
-syn match  pythonEscape         "\\o\o\+" contained
-syn match  pythonEscape         "\\x\x\+" contained
-syn match  pythonEscape         "\\d\d\+" contained
-syn match  pythonEscape         "\\$"
-syn match  pythonEscape         display contained "\\\(u\x\{4}\|U\x\{8}\)"
-
+" flag an octal number with wrong digits
+syn match       felixOctalError display contained "0\o*[89]\d*"
+syn case match
 
 " numbers -- skip weird error checks for now .. too hard
 syn case ignore
-syn match       cNumbers        display transparent "\<\d" contains=cNumber
-syn match       cNumber         display contained "\(0d_\=\)\=\(\d\+_\)*\d\+\(u\=\(t\|s\|l\|v\|ll\)\=u\=\)\>"
-syn match       cNumber         display contained "\(\d\+_\)*\d\+[.]\(\d+_\)*\d\+\(e[+-]\=\d\+\)\=\>"
-syn match       cNumber         display contained "0x_\=\(\x\+_\)*\(\x\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
-syn match       cNumber         display contained "0o_\=\(\o\+_\)*\(\o\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
-syn match       cNumber         display contained "0b_\=\([01]\+_\)*\([01]\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
+syn match       felixNumbers    display transparent "\<\d" contains=felixNumber
+syn match       felixNumber     display contained "\(0d_\=\)\=\(\d\+_\)*\d\+\(u\=\(t\|s\|l\|v\|ll\)\=u\=\)\>"
+syn match       felixNumber     display contained "\(\d\+_\)*\d\+[.]\(\d+_\)*\d\+\(e[+-]\=\d\+\)\=\>"
+syn match       felixNumber     display contained "0x_\=\(\x\+_\)*\(\x\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
+syn match       felixNumber     display contained "0o_\=\(\o\+_\)*\(\o\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
+syn match       felixNumber     display contained "0b_\=\([01]\+_\)*\([01]\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
 syn case match
 
-if exists("c_comment_strings")
-  " A comment can contain cString, cCharacter and cNumber.
-  " But a "*/" inside a cString in a cComment DOES end the comment!  So we
-  " need to use a special type of cString: cCommentString, which also ends on
-  " "*/", and sees a "*" at the start of the line as comment again.
-  " Unfortunately this doesn't very well work for // type of comments :-(
-  syntax match  cCommentSkip    contained "^\s*\*\($\|\s\+\)"
-  syntax region cCommentString  contained start=+L\="+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=cSpecial,cCommentSkip
-  syntax region cComment2String contained start=+L\="+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=cSpecial
-  syntax region  cCommentL      start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cComment2String,cCharacter,cNumbersCom,cSpaceError
-  syntax region cComment        matchgroup=cCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@cCommentGroup,cCommentStartError,cCommentString,cCharacter,cNumbersCom,cSpaceError
-else
-  syn region    cCommentL       start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cSpaceError
-  syn region    cComment        matchgroup=cCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@cCommentGroup,cCommentStartError,cSpaceError
-endif
-" keep a // comment separately, it terminates a preproc. conditional
-syntax match    cCommentError   display "\*/"
-syntax match    cCommentStartError display "/\*"me=e-1 contained
+" comments
+syn region      felixComment    start="/\*" end="\*/" contains=felixComment,felixTodo
+syn region      felixCommentL   start="//" skip="\\$" end="$" keepend contains=felixComment,felixTodo
+syn keyword     felixTodo       contained TODO FIXME XXX NOTE KLUDGE HACK
 
-syn region      cPreCondit      start="^\s*#\s*\(if\|ifdef\|ifndef\|elif\)\>" skip="\\$" end="$" end="//"me=s-1 contains=cComment,cCppString,cCharacter,cCppParen,cParenError,cNumbers,cCommentError,cSpaceError
-syn match       cPreCondit      display "^\s*#\s*\(else\|endif\)\>"
-if !exists("c_no_if0")
-  syn region    cCppOut         start="^\s*#\s*if\s\+0\+\>" end=".\|$" contains=cCppOut2
-  syn region    cCppOut2        contained start="0" end="^\s*#\s*\(endif\>\|else\>\|elif\>\)" contains=cSpaceError,cCppSkip
-  syn region    cCppSkip        contained start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\)" skip="\\$" end="^\s*#\s*endif\>" contains=cSpaceError,cCppSkip
-endif
-syn region      cIncluded       display contained start=+"+ skip=+\\\\\|\\"+ end=+"+
-syn match       cIncluded       display contained "<[^>]*>"
-syn match       cInclude        display "^\s*#\s*include\>\s*["<]" contains=cIncluded
-syn match       cInclude        display "^\s*#\s*import\>\s*["<]" contains=cIncluded
+" keep a // comment separately, it terminates a preproc. conditional
+syntax match    felixCommentError       display "\*/"
+
+syn region      felixPreCondit  start="^\s*#\s*\(if\|ifdef\|ifndef\|elif\)\>" skip="\\$" end="$" end="//"me=s-1 contains=felixComment,felixNumbers,felixCommentError,felixAllErrs
+syn match       felixPreCondit  display "^\s*#\s*\(else\|endif\)\>"
+
+
+" import/include statements
+syn region      felixIncluded   display contained start=+"+ skip=+\\\\\|\\"+ end=+"+
+syn match       felixIncluded   display contained "<[^>]*>"
+syn match       felixInclude    display "^\s*#\s*include\>\s*["<]" contains=felixIncluded
+syn match       felixInclude    display "^\s*#\s*import\>\s*["<]" contains=felixIncluded
+
+" preprocessors
 "syn match cLineSkip    "\\$"
-syn cluster     cPreProcGroup   contains=cPreCondit,cIncluded,cInclude,cDefine,cErrInParen,cErrInBracket,cUserLabel,cSpecial,cOctalZero,cCppOut,cCppOut2,cCppSkip,cFormat,cNumber,cFloat,cOctal,cOctalError,cNumbersCom,cString,cCommentSkip,cCommentString,cComment2String,@cCommentGroup,cCommentStartError,cParen,cBracket,cMulti
-syn region      cDefine         start="^\s*#\s*\(define\|undef\)\>" skip="\\$" end="$" end="//"me=s-1 contains=ALLBUT,@cPreProcGroup
-syn region      cPreProc        start="^\s*#\s*\(pragma\>\|line\>\|warning\>\|warn\>\|error\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@cPreProcGroup
+syn cluster     felixPreProcGroup       contains=felixPreCondit,felixIncluded,felixInclude,felixDefine,felixUserLabel,felixOctalZero,felixCppSkip,felixNumber,felixFloat,felixOctal,felixOctalError,felixNumbersCom,felixComment,felixCommentL
+syn region      felixDefine             start="^\s*#\s*\(define\|undef\)\>" skip="\\$" end="$" end="//"me=s-1 contains=ALLBUT,@felixPreProcGroup
+syn region      felixPreProc            start="^\s*#\s*\(pragma\>\|line\>\|warning\>\|warn\>\|error\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@felixPreProcGroup
 
 " Highlight User Labels
-syn cluster     cMultiGroup     contains=cIncluded,cSpecial,cCommentSkip,cCommentString,cComment2String,@cCommentGroup,cCommentStartError,cUserCont,cUserLabel,cBitField,cOctalZero,cCppOut,cCppOut2,cCppSkip,cFormat,cNumber,cFloat,cOctal,cOctalError,cNumbersCom,cCppParen,cCppBracket,cCppString
+syn cluster     felixMultiGroup contains=felixIncluded,felixCommentSkip,felixCommentString,felixComment2String,@felixCommentGroup,felixUserCont,felixUserLabel,cBitField,felixOctalZero,felixCppSkip,felixNumber,felixFloat,felixOctal,felixOctalError,felixNumbersCom
+
 " Avoid matching foo::bar() in C++ by requiring that the next char is not ':'
-syn cluster     cLabelGroup     contains=cUserLabel
-syn match       cUserCont       display "^\s*\I\i*\s*:>" contains=@cLabelGroup
-syn match       cUserLabel      display "\I\i*" contained
+syn cluster     felixLabelGroup contains=felixUserLabel
+syn match       felixUserCont   display "^\s*\I\i*\s*:>" contains=@felixLabelGroup
+syn match       felixUserLabel  display "\I\i*" contained
 
 if exists("c_minlines")
   let b:c_minlines = c_minlines
@@ -267,7 +289,7 @@ else
     let b:c_minlines = 15       " mostly for () constructs
   endif
 endif
-exec "syn sync ccomment cComment minlines=" . b:c_minlines
+exec "syn sync ccomment felixComment minlines=" . b:c_minlines
 
 " Define the default highlighting.
 " For version 5.7 and earlier: only when not done already
@@ -280,50 +302,45 @@ if version >= 508 || !exists("did_flx_syn_inits")
     command -nargs=+ HiLink hi def link <args>
   endif
 
-  HiLink cFormat                cSpecial
-  HiLink cCppString             cString
-  HiLink cCommentL              cComment
-  HiLink cCommentStart          cComment
-  HiLink cLabel                 Label
-  HiLink cUserLabel             Label
-  HiLink cConditional           Conditional
-  HiLink cRepeat                Repeat
-  HiLink cCharacter             Character
-  HiLink cSpecialCharacter      cSpecial
-  HiLink cNumber                Number
-  HiLink cOctal                 Number
-  HiLink cOctalZero             PreProc  " link this to Error if you want
-  HiLink cFloat                 Float
-  HiLink cOctalError            cError
-  HiLink cParenError            cError
-  HiLink cErrInParen            cError
-  HiLink cErrInBracket          cError
-  HiLink cCommentError          cError
-  HiLink cCommentStartError     cError
-  HiLink cSpaceError            cError
-  HiLink cSpecialError          cError
-  HiLink cOperator              Operator
-  HiLink cStructure             Structure
-  HiLink cStorageClass          StorageClass
-  HiLink cInclude               Include
-  HiLink cPreProc               PreProc
-  HiLink cDefine                Macro
-  HiLink cIncluded              cString
-  HiLink cError                 Error
-  HiLink cStatement             Statement
-  HiLink cPreCondit             PreCondit
-  HiLink cType                  Type
-  HiLink cConstant              Constant
-  HiLink cCommentString         cString
-  HiLink cComment2String        cString
-  HiLink cCommentSkip           cComment
-  HiLink pythonString           String
-  HiLink cComment               Comment
-  HiLink cSpecial               SpecialChar
-  HiLink cTodo                  Todo
-  HiLink cCppSkip               cCppOut
-  HiLink cCppOut2               cCppOut
-  HiLink cCppOut                Comment
+  HiLink felixError             Error
+  HiLink felixOctalError        Error
+  HiLink felixCommentError      Error
+  HiLink felixBraceErr          Error
+  HiLink felixBrackErr          Error
+  HiLink felixParenErr          Error
+  HiLink felixArrErr            Error
+  HiLink felixOctalZero         Error
+
+  HiLink felixComment           Comment
+  HiLink felixCommentL          Comment
+
+  HiLink felixLabel             Label
+  HiLink felixUserLabel         Label
+
+  HiLink felixConstructor       Constant
+
+  HiLink felixConditional       Keyword
+  HiLink felixRepeat            Keyword
+  HiLink felixKeyChar           Keyword
+  HiLink felixOperator          Keyword
+  HiLink felixKeyword           Keyword
+
+  HiLink felixNumber            Number
+  HiLink felixOctal             Number
+  HiLink felixFloat             Float
+  HiLink felixConstant          Constant
+  HiLink felixType              Function
+  HiLink felixString            String
+  HiLink felixRawString         String
+
+  HiLink felixInclude           Include
+  HiLink felixPreProc           PreProc
+  HiLink felixDefine            Macro
+  HiLink felixIncluded          String
+  HiLink felixStatement         Statement
+  HiLink felixPreCondit         PreCondit
+  HiLink felixTodo              Todo
+  HiLink felixEncl              Keyword
 
   delcommand HiLink
 endif
