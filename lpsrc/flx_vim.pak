@@ -10,11 +10,11 @@ iscr_source = ["lpsrc/flx_vim.pak"]
 au BufNewFile,BufRead *.flx,*.flxh setf felix
 
 
-@select(tangler("misc/vim/felix.vim",'data'))
+@select(tangler("misc/vim/syntax/felix.vim",'data'))
 " Vim syntax file
-" Language:	Felix
-" Maintainer:	<John Max Skaller> skaller@ozemail.com.au
-" Last Change:	2002 Apr 25
+" Language:     Felix
+" Maintainer:   <John Max Skaller> skaller@ozemail.com.au
+" Last Change:  2002 Apr 25
 
 " This vim file is adapted from the c.vim file
 " for use with Felix .. it doesn't quite work,
@@ -24,7 +24,7 @@ au BufNewFile,BufRead *.flx,*.flxh setf felix
 " For version 6.x: Quit when a syntax file was already loaded
 if version < 600
   syntax clear
-elseif exists("b:current_syntax")
+elseif exists("b:current_syntax") && b:current_syntax != "felix"
   finish
 endif
 
@@ -185,10 +185,10 @@ syn keyword cType cont
 syn keyword cConstant true false
 
 " [JMS] yeah well, OK ..
-syn keyword	cTodo		contained TODO FIXME XXX KLUDGE HACK
+syn keyword     cTodo           contained TODO FIXME XXX KLUDGE HACK
 
 " cCommentGroup allows adding matches for special things in comments
-syn cluster	cCommentGroup	contains=cTodo
+syn cluster     cCommentGroup   contains=cTodo
 
 syn region pythonString         matchgroup=Normal start=+'+  end=+'+ skip=+\\\\\|\\'+ contains=pythonEscape
 syn region pythonString         matchgroup=Normal start=+"+  end=+"+ skip=+\\\\\|\\"+ contains=pythonEscape
@@ -208,12 +208,12 @@ syn match  pythonEscape         display contained "\\\(u\x\{4}\|U\x\{8}\)"
 
 " numbers -- skip weird error checks for now .. too hard
 syn case ignore
-syn match	cNumbers	display transparent "\<\d" contains=cNumber
-syn match	cNumber		display contained "\(0d_\=\)\=\(\d\+_\)*\d\+\(u\=\(t\|s\|l\|v\|ll\)\=u\=\)\>"
+syn match       cNumbers        display transparent "\<\d" contains=cNumber
+syn match       cNumber         display contained "\(0d_\=\)\=\(\d\+_\)*\d\+\(u\=\(t\|s\|l\|v\|ll\)\=u\=\)\>"
 syn match       cNumber         display contained "\(\d\+_\)*\d\+[.]\(\d+_\)*\d\+\(e[+-]\=\d\+\)\=\>"
-syn match	cNumber		display contained "0x_\=\(\x\+_\)*\(\x\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
-syn match	cNumber		display contained "0o_\=\(\o\+_\)*\(\o\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
-syn match	cNumber		display contained "0b_\=\([01]\+_\)*\([01]\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
+syn match       cNumber         display contained "0x_\=\(\x\+_\)*\(\x\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
+syn match       cNumber         display contained "0o_\=\(\o\+_\)*\(\o\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
+syn match       cNumber         display contained "0b_\=\([01]\+_\)*\([01]\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
 syn case match
 
 if exists("c_comment_strings")
@@ -222,49 +222,49 @@ if exists("c_comment_strings")
   " need to use a special type of cString: cCommentString, which also ends on
   " "*/", and sees a "*" at the start of the line as comment again.
   " Unfortunately this doesn't very well work for // type of comments :-(
-  syntax match	cCommentSkip	contained "^\s*\*\($\|\s\+\)"
-  syntax region cCommentString	contained start=+L\="+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=cSpecial,cCommentSkip
-  syntax region cComment2String	contained start=+L\="+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=cSpecial
-  syntax region  cCommentL	start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cComment2String,cCharacter,cNumbersCom,cSpaceError
-  syntax region cComment	matchgroup=cCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@cCommentGroup,cCommentStartError,cCommentString,cCharacter,cNumbersCom,cSpaceError
+  syntax match  cCommentSkip    contained "^\s*\*\($\|\s\+\)"
+  syntax region cCommentString  contained start=+L\="+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=cSpecial,cCommentSkip
+  syntax region cComment2String contained start=+L\="+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=cSpecial
+  syntax region  cCommentL      start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cComment2String,cCharacter,cNumbersCom,cSpaceError
+  syntax region cComment        matchgroup=cCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@cCommentGroup,cCommentStartError,cCommentString,cCharacter,cNumbersCom,cSpaceError
 else
-  syn region	cCommentL	start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cSpaceError
-  syn region	cComment	matchgroup=cCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@cCommentGroup,cCommentStartError,cSpaceError
+  syn region    cCommentL       start="//" skip="\\$" end="$" keepend contains=@cCommentGroup,cSpaceError
+  syn region    cComment        matchgroup=cCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@cCommentGroup,cCommentStartError,cSpaceError
 endif
 " keep a // comment separately, it terminates a preproc. conditional
-syntax match	cCommentError	display "\*/"
-syntax match	cCommentStartError display "/\*"me=e-1 contained
+syntax match    cCommentError   display "\*/"
+syntax match    cCommentStartError display "/\*"me=e-1 contained
 
-syn region	cPreCondit	start="^\s*#\s*\(if\|ifdef\|ifndef\|elif\)\>" skip="\\$" end="$" end="//"me=s-1 contains=cComment,cCppString,cCharacter,cCppParen,cParenError,cNumbers,cCommentError,cSpaceError
-syn match	cPreCondit	display "^\s*#\s*\(else\|endif\)\>"
+syn region      cPreCondit      start="^\s*#\s*\(if\|ifdef\|ifndef\|elif\)\>" skip="\\$" end="$" end="//"me=s-1 contains=cComment,cCppString,cCharacter,cCppParen,cParenError,cNumbers,cCommentError,cSpaceError
+syn match       cPreCondit      display "^\s*#\s*\(else\|endif\)\>"
 if !exists("c_no_if0")
-  syn region	cCppOut		start="^\s*#\s*if\s\+0\+\>" end=".\|$" contains=cCppOut2
-  syn region	cCppOut2	contained start="0" end="^\s*#\s*\(endif\>\|else\>\|elif\>\)" contains=cSpaceError,cCppSkip
-  syn region	cCppSkip	contained start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\)" skip="\\$" end="^\s*#\s*endif\>" contains=cSpaceError,cCppSkip
+  syn region    cCppOut         start="^\s*#\s*if\s\+0\+\>" end=".\|$" contains=cCppOut2
+  syn region    cCppOut2        contained start="0" end="^\s*#\s*\(endif\>\|else\>\|elif\>\)" contains=cSpaceError,cCppSkip
+  syn region    cCppSkip        contained start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\)" skip="\\$" end="^\s*#\s*endif\>" contains=cSpaceError,cCppSkip
 endif
-syn region	cIncluded	display contained start=+"+ skip=+\\\\\|\\"+ end=+"+
-syn match	cIncluded	display contained "<[^>]*>"
-syn match	cInclude	display "^\s*#\s*include\>\s*["<]" contains=cIncluded
-syn match	cInclude	display "^\s*#\s*import\>\s*["<]" contains=cIncluded
-"syn match cLineSkip	"\\$"
-syn cluster	cPreProcGroup	contains=cPreCondit,cIncluded,cInclude,cDefine,cErrInParen,cErrInBracket,cUserLabel,cSpecial,cOctalZero,cCppOut,cCppOut2,cCppSkip,cFormat,cNumber,cFloat,cOctal,cOctalError,cNumbersCom,cString,cCommentSkip,cCommentString,cComment2String,@cCommentGroup,cCommentStartError,cParen,cBracket,cMulti
-syn region	cDefine		start="^\s*#\s*\(define\|undef\)\>" skip="\\$" end="$" end="//"me=s-1 contains=ALLBUT,@cPreProcGroup
-syn region	cPreProc	start="^\s*#\s*\(pragma\>\|line\>\|warning\>\|warn\>\|error\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@cPreProcGroup
+syn region      cIncluded       display contained start=+"+ skip=+\\\\\|\\"+ end=+"+
+syn match       cIncluded       display contained "<[^>]*>"
+syn match       cInclude        display "^\s*#\s*include\>\s*["<]" contains=cIncluded
+syn match       cInclude        display "^\s*#\s*import\>\s*["<]" contains=cIncluded
+"syn match cLineSkip    "\\$"
+syn cluster     cPreProcGroup   contains=cPreCondit,cIncluded,cInclude,cDefine,cErrInParen,cErrInBracket,cUserLabel,cSpecial,cOctalZero,cCppOut,cCppOut2,cCppSkip,cFormat,cNumber,cFloat,cOctal,cOctalError,cNumbersCom,cString,cCommentSkip,cCommentString,cComment2String,@cCommentGroup,cCommentStartError,cParen,cBracket,cMulti
+syn region      cDefine         start="^\s*#\s*\(define\|undef\)\>" skip="\\$" end="$" end="//"me=s-1 contains=ALLBUT,@cPreProcGroup
+syn region      cPreProc        start="^\s*#\s*\(pragma\>\|line\>\|warning\>\|warn\>\|error\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@cPreProcGroup
 
 " Highlight User Labels
-syn cluster	cMultiGroup	contains=cIncluded,cSpecial,cCommentSkip,cCommentString,cComment2String,@cCommentGroup,cCommentStartError,cUserCont,cUserLabel,cBitField,cOctalZero,cCppOut,cCppOut2,cCppSkip,cFormat,cNumber,cFloat,cOctal,cOctalError,cNumbersCom,cCppParen,cCppBracket,cCppString
+syn cluster     cMultiGroup     contains=cIncluded,cSpecial,cCommentSkip,cCommentString,cComment2String,@cCommentGroup,cCommentStartError,cUserCont,cUserLabel,cBitField,cOctalZero,cCppOut,cCppOut2,cCppSkip,cFormat,cNumber,cFloat,cOctal,cOctalError,cNumbersCom,cCppParen,cCppBracket,cCppString
 " Avoid matching foo::bar() in C++ by requiring that the next char is not ':'
-syn cluster	cLabelGroup	contains=cUserLabel
-syn match	cUserCont	display "^\s*\I\i*\s*:>" contains=@cLabelGroup
-syn match	cUserLabel	display "\I\i*" contained
+syn cluster     cLabelGroup     contains=cUserLabel
+syn match       cUserCont       display "^\s*\I\i*\s*:>" contains=@cLabelGroup
+syn match       cUserLabel      display "\I\i*" contained
 
 if exists("c_minlines")
   let b:c_minlines = c_minlines
 else
   if !exists("c_no_if0")
-    let b:c_minlines = 50	" #if 0 constructs can be long
+    let b:c_minlines = 50       " #if 0 constructs can be long
   else
-    let b:c_minlines = 15	" mostly for () constructs
+    let b:c_minlines = 15       " mostly for () constructs
   endif
 endif
 exec "syn sync ccomment cComment minlines=" . b:c_minlines
@@ -280,50 +280,50 @@ if version >= 508 || !exists("did_flx_syn_inits")
     command -nargs=+ HiLink hi def link <args>
   endif
 
-  HiLink cFormat		cSpecial
-  HiLink cCppString		cString
-  HiLink cCommentL		cComment
-  HiLink cCommentStart		cComment
-  HiLink cLabel			Label
-  HiLink cUserLabel		Label
-  HiLink cConditional		Conditional
-  HiLink cRepeat		Repeat
-  HiLink cCharacter		Character
-  HiLink cSpecialCharacter	cSpecial
-  HiLink cNumber		Number
-  HiLink cOctal			Number
-  HiLink cOctalZero		PreProc	 " link this to Error if you want
-  HiLink cFloat			Float
-  HiLink cOctalError		cError
-  HiLink cParenError		cError
-  HiLink cErrInParen		cError
-  HiLink cErrInBracket		cError
-  HiLink cCommentError		cError
-  HiLink cCommentStartError	cError
-  HiLink cSpaceError		cError
-  HiLink cSpecialError		cError
-  HiLink cOperator		Operator
-  HiLink cStructure		Structure
-  HiLink cStorageClass		StorageClass
-  HiLink cInclude		Include
-  HiLink cPreProc		PreProc
-  HiLink cDefine		Macro
-  HiLink cIncluded		cString
-  HiLink cError			Error
-  HiLink cStatement		Statement
-  HiLink cPreCondit		PreCondit
-  HiLink cType			Type
-  HiLink cConstant		Constant
-  HiLink cCommentString		cString
-  HiLink cComment2String	cString
-  HiLink cCommentSkip		cComment
-  HiLink pythonString		String
-  HiLink cComment		Comment
-  HiLink cSpecial		SpecialChar
-  HiLink cTodo			Todo
-  HiLink cCppSkip		cCppOut
-  HiLink cCppOut2		cCppOut
-  HiLink cCppOut		Comment
+  HiLink cFormat                cSpecial
+  HiLink cCppString             cString
+  HiLink cCommentL              cComment
+  HiLink cCommentStart          cComment
+  HiLink cLabel                 Label
+  HiLink cUserLabel             Label
+  HiLink cConditional           Conditional
+  HiLink cRepeat                Repeat
+  HiLink cCharacter             Character
+  HiLink cSpecialCharacter      cSpecial
+  HiLink cNumber                Number
+  HiLink cOctal                 Number
+  HiLink cOctalZero             PreProc  " link this to Error if you want
+  HiLink cFloat                 Float
+  HiLink cOctalError            cError
+  HiLink cParenError            cError
+  HiLink cErrInParen            cError
+  HiLink cErrInBracket          cError
+  HiLink cCommentError          cError
+  HiLink cCommentStartError     cError
+  HiLink cSpaceError            cError
+  HiLink cSpecialError          cError
+  HiLink cOperator              Operator
+  HiLink cStructure             Structure
+  HiLink cStorageClass          StorageClass
+  HiLink cInclude               Include
+  HiLink cPreProc               PreProc
+  HiLink cDefine                Macro
+  HiLink cIncluded              cString
+  HiLink cError                 Error
+  HiLink cStatement             Statement
+  HiLink cPreCondit             PreCondit
+  HiLink cType                  Type
+  HiLink cConstant              Constant
+  HiLink cCommentString         cString
+  HiLink cComment2String        cString
+  HiLink cCommentSkip           cComment
+  HiLink pythonString           String
+  HiLink cComment               Comment
+  HiLink cSpecial               SpecialChar
+  HiLink cTodo                  Todo
+  HiLink cCppSkip               cCppOut
+  HiLink cCppOut2               cCppOut
+  HiLink cCppOut                Comment
 
   delcommand HiLink
 endif
@@ -333,22 +333,33 @@ let b:current_syntax = "felix"
 " vim: ts=8
 
 @head(1,"Interscript Syntax File")
-@select(tangler("misc/vim/interscript.vim",'data'))
-" Vim syntax file
-" Language:  Interscript	
-" Maintainer:	Neil Schemenauer <nascheme@acs.ucalgary.ca>
-" Last change:	1998 July 17
 
-" Remove any old syntax stuff hanging around
-syn clear
+@select(tangler("misc/vim/ftdetect/interscript.vim",'data'))
+au BufNewFile,BufRead *.pak,*.ipk setf interscript
+@doc()
+
+@select(tangler("misc/vim/syntax/interscript.vim",'data'))
+" Vim syntax file
+" Language:  Interscript
+" Maintainer:   Neil Schemenauer <nascheme@acs.ucalgary.ca>
+" Last change:  1998 July 17
+
+" For version 5.x: Clear all syntax items
+" For version 6.x: Quit when a syntax file was already loaded
+if version < 600
+  syntax clear
+elseif exists("b:current_syntax") && b:current_syntax != "interscript"
+  finish
+endif
+
 
 syn match   iscrOther /^@.*$/ 
 syn match   iscrHead /^@head.*$/ 
 syn match   iscrHead /^@set_title.*$/ 
 syn match   iscrInclude /^@include.*$/ 
-syn region iscrSelect start=/^@select.*$/ end=/^@/me=e-1 contains=iscrCodeContainer
+syn region  iscrSelect start=/^@select.*$/ end=/^@/me=e-1 contains=iscrCodeContainer
 syn region  iscrCodeContainer start=/@select.*$/ms=e+1 end=/^@/me=e-1 contained 
-syn sync minlines=200
+syn sync    minlines=200
 
 if !exists("did_iscr_syntax_inits")
   let did_iscr_syntax_inits = 1
@@ -360,7 +371,3 @@ if !exists("did_iscr_syntax_inits")
 endif
 
 let b:current_syntax = "interscript"
-
-" vim: ts=8
-
-
