@@ -680,20 +680,28 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'mkdoc')
 
+    self.already_generated = {}
+
   def runme(self):
+    mkdirs("pkg-stamps")
+
     weaver_directory = pkgdict.get("weaver_directory","")
     iscr_source = pkgdict.get("iscr_source",[])
     if iscr_source and weaver_directory:
+      print "GENERATING DOCUMENTATION",weaver_directory
+
+      iscr_source = filter(lambda x: x not in self.already_generated, iscr_source)
+
       filecopy2dir(os.path.join('misc', 'interscript.css'),weaver_directory)
       filecopy2dir(os.path.join('misc', 'user.css'),weaver_directory)
-
-      print "GENERATING DOCUMENTATION",weaver_directory
 
       for src in iscr_source:
         srcdir = os.path.join(FLX_LPARCHIVE, src)
         runISCR(
             '--language=en --weaver=web --weaver=latex '
             '--passes=2 --weaver-directory=%s %s' % (weaver_directory, srcdir))
+
+        self.already_generated[src] = 1
 
 @select(tangler('mkplugins/cflags.py'))
 # GLOBAL COMPILATION FLAGS
@@ -1042,6 +1050,8 @@ class PLUGIN(Plugin):
       log = Tee()
       log.write("**** KNOWN FAILED TESTING PACKAGE %s : %s ****\n" % (pkg, testfile))
 
+      failed = 1
+
       # don't even bother to compile
       self.failures.append((pkg, testfile, ""))
 
@@ -1171,8 +1181,8 @@ class PLUGIN(Plugin):
 
   def runme(self):
     global pkgd
-    global host_packages,target_packages,run_packages
-    global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
+    global host_packages,target_packages,run_packages,doc_packages
+    global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs,doc_selected_pkgs
 
     for pkg in pkgd.keys():
       pkgdict = pkgd[pkg]
@@ -1216,6 +1226,18 @@ class PLUGIN(Plugin):
           print "  ** Run build:",fmtime(latest_run_build_time)
           print "  ** REQUIRES REBUILD due to changed sources"
           if pkg not in run_packages: run_packages.append(pkg)
+
+      doc_stamp=os.path.join("pkg-stamps", pkg+".doc")
+      latest_doc_build_time = filetime(doc_stamp)
+      if latest_doc_build_time == 0:
+        print "  ** Doc UNBUILT"
+        if pkg not in doc_packages: doc_packages.append(pkg)
+      else:
+        if latest_doc_build_time < latest_src_time:
+          print "  ** Doc build:",fmtime(latest_doc_build_time)
+          print "  ** REQUIRES REBUILD due to changed sources"
+          if pkg not in doc_packages: doc_packages.append(pkg)
+
   
     # doesn't work so well if both deps and reqs specified!
     # would work better, if reqs was already reduced to
@@ -1225,26 +1247,31 @@ class PLUGIN(Plugin):
       host_packages = closure(pkgdeps,host_packages)
       target_packages = closure(pkgdeps,target_packages)
       run_packages = closure(pkgdeps,run_packages)
+      doc_packages = closure(pkgdeps,doc_packages)
   
     if "reqs" in options:
       host_packages = closure(pkgreqs,host_packages)
       target_packages = closure(pkgreqs,target_packages)
       run_packages = closure(pkgreqs,run_packages)
+      doc_packages = closure(pkgreqs,doc_packages)
   
     host_selected_pkgs = filter(lambda x: x in host_packages,pkgs)
     target_selected_pkgs = filter(lambda x: x in target_packages,pkgs)
     run_selected_pkgs = filter(lambda x: x in run_packages,pkgs)
+    doc_selected_pkgs = filter(lambda x: x in doc_packages,pkgs)
   
     if "all" in options: 
        print "SELECTING ALL PACKAGES"
        host_selected_pkgs = pkgs
        target_selected_pkgs = pkgs
        run_selected_pkgs = pkgs
+       doc_selected_pkgs = pkgs
   
     #print "AVAILABLE SOURCES",paks
     print "Host SELECTED PACKAGES ARE ",host_selected_pkgs
     print "Target SELECTED PACKAGES ARE ",target_selected_pkgs
-    print "Run SELECTED PACKAGES ARE ",target_selected_pkgs
+    print "Run SELECTED PACKAGES ARE ",run_selected_pkgs
+    print "Doc SELECTED PACKAGES ARE ",doc_selected_pkgs
     print "SELECTED PHASES ARE   ",phases
     print "Build model  ",build_model
     print "Host model   ",host_model
@@ -1472,12 +1499,20 @@ class PLUGIN(Plugin):
     Plugin.__init__(self, 'doc', 'build all user documentation')
 
   def runme(self):
-    global pkg,pkgdict
+    plugins['cal_pkgs']()
+
+    global doc_selected_pkgs,pkgdict
     print "##### DOCUMENT ALL PACKAGES ##################"
-    for pkg in pkgs:
+    for pkg in doc_selected_pkgs:
       pkgdict = pkgd[pkg]
       print "***** DOCUMENT PACKAGE "+pkg+" ************"
+
+      stamp=os.path.join("pkg-stamps", pkg+".doc")
+      erasefile(stamp)
+
       plugins['mkdoc']()
+
+      enstamp(stamp)
 
     print "***** OCAMLDOC COMPILER [HACK!] ************"
     plugins['impldoc']()
@@ -1608,6 +1643,7 @@ for o, a in opts:
 host_packages = list(packages)
 target_packages = list(packages)
 run_packages = list(packages)
+doc_packages = list(packages)
 
 print "USER SELECTED PACKAGES",packages
 

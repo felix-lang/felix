@@ -841,7 +841,7 @@ checking arg 1=words
 terminating
 @doc()
 
-@flx_regress_head(3,tdir+"/rt22.flx")
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 Warning: result is dependent on implementation
 detail (order of execution after read/write matchup)
 
