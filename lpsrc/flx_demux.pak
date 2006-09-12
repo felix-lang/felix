@@ -3092,6 +3092,7 @@ connect_control_block::wakeup(posix_demuxer& demux)
 #include <stdlib.h>
 #include "demux_sockety.hpp"  // get_socket_error
 #include <memory>
+#include <sys/time.h>
 
 namespace flx { namespace demux {
 
