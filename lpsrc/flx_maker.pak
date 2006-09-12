@@ -1843,7 +1843,19 @@ if failed:
 
       print '  - %s: %s' % (len(files), pkg)
       for file in files:
-        print '      %s' % file
+        # grab the first line of the file to see if it
+        # has a #line number to print out as well, so we can
+        # localize the error to the interscript file location
+        f = open(file)
+        try:
+          firstline = f.readline()
+        finally:
+          f.close()
+
+        if firstline[0:5] == '#line':
+          print '      %s\t%s' % (file, string.strip(firstline))
+        else:
+          print '      %s' % file
   
 
 f = open('errors.log', 'w')
