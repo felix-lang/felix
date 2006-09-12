@@ -1133,7 +1133,7 @@ print$ match x with
 endmatch;
 endl;
 @select(tangler('test/rt36.expect','data'))
-A
+a
 @select(tangler('test/rt37.flx'))
 #import <flx.flxh>
 
@@ -1184,7 +1184,7 @@ print "should not see this"; endl; /*
 print "should not see this"; endl;
 */ print "should not see this"; endl;
 */ "12"; endl;
-@select(tangler('test/rt36.expect','data'))
+@select(tangler('test/rt37.expect','data'))
 1
 2
 3

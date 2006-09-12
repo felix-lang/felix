@@ -157,7 +157,6 @@ let special_tokens =
 @for k,s in flx_3_char_syms:
   tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
 @#
-  ("//",(fun (sr,s)->SLASHSLASH sr));
   ]
 
 let mk_std_tokens () =

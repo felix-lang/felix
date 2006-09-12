@@ -1664,7 +1664,6 @@ flx_2_char_syms = [
     ("SLOSHVBAR","\\\\|"),
     ("SLOSHCIRCUMFLEX","\\\\^"),
     ("HASHBANG","#!"),
-    ("SLASHSLASH","//"),
   ]
 
 flx_3_char_syms = [
