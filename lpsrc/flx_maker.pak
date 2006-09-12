@@ -2975,8 +2975,8 @@ link /dll %1.obj /OUT:%1.dll @%1_linkflags.txt /LIBPATH:"%FID%\BIN" /DEFAULTLIB:
 if ERRORLEVEL 1 GOTO ERROR
 del %1.exp
 del %1.lib
-del %_cflags.txt
-del %_linkflags.txt
+del %1_cflags.txt
+del %1_linkflags.txt
 IF %RUNIT% EQU 1 (
 "%FID%\bin\flx_run" %1 %2 %3 %4 %5 %6 %7 %8 %9  
 )
