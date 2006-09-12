@@ -1,9 +1,30 @@
+@import glob
+
+@set_title('Regression Tests')
 @execfile("config"+os.sep+"config.py")
-@head(1,'Regression tests')
+@tdir = 'test'+os.sep+'regress'+os.sep
+
+@flx_regress_levels = []
+@flx_regress_level_str = ''
+@def flx_regress_head(level, name):
+  global flx_regress_levels,flx_regress_level_str
+  while len(flx_regress_levels) < level: flx_regress_levels.append(0)
+  flx_regress_levels[level - 1] = int(flx_regress_levels[level - 1]) + 1
+  flx_regress_levels = flx_regress_levels[:level]
+
+  for i in range(len(flx_regress_levels)):
+    flx_regress_levels[i] = string.zfill(str(flx_regress_levels[i]), 2)
+
+  flx_regress_level_str = string.join(flx_regress_levels,'.')
+  
+  return head(level, name)
+
+@flx_regress_head(1,'Regression tests')
 There are four kinds of test. The compiler
 must be run with standard output redirected
 to /dev/null. All these tests use the standard
 flx_run harness.
+
 @begin_list('keyed')
 @item('rt')
 Each good test should generate output which,
@@ -31,27 +52,73 @@ or hang during compilation. These should be fixed in
 some future version of the compiler.
 @end_list()
 
-@h = tangler('spkgs/flx_regression_tests.py')
-@select(h)
-UNIT_TESTS = glob.glob('test'+os.sep+'rt*.flx')
-UNIT_TESTS.sort()
-COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
-COMPLETION_TESTS.sort()
-# these are supposed to fail!
-BAD_TESTS = glob.glob('test'+os.sep+'bt*.flx')
-BAD_TESTS.sort()
 
-unit_tests = UNIT_TESTS
-completion_tests = COMPLETION_TESTS
-failure_tests = BAD_TESTS
+@select(tangler('spkgs/flx_regression_tests_rt.py'))
+@tangle("unit_tests = glob.glob('"+tdir+"rt-*.flx')")
+
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
 
 weaver_directory = 'doc/test/'
+@doc()
 
 
-@head(2,'Good tests')
-@select(tangler('test/rt01.flx'))
+@select(tangler('spkgs/flx_regression_tests_drt.py'))
+@tangle("unit_tests = glob.glob('"+tdir+"drt-*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests_nd.py'))
+@tangle("completion_tets = glob.glob('"+tdir+"nd-*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests_bt.py'))
+# these are supposed to fail!
+@tangle("bad_tests = glob.glob('"+tdir+"bt-*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+@select(tangler('spkgs/flx_regression_tests_kf.py'))
+# these are supposed to fail!
+@tangle("known_failed_tests = glob.glob('"+tdir+"kf-*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests.py'))
+pkg_requires = [
+  'flx_regression_tests_rt', 'flx_regression_tests_drt', 
+  'flx_regression_tests_nd', 'flx_regression_tests_bt', 
+  'flx_regression_tests_kf']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@flx_regress_head(2,'Good tests')
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 open Tiny;
 open Short;
@@ -106,9 +173,15 @@ open Uint64;
     tangle("}")
     tangle(tname+";")
 
-print "rt01 complete\n";
+print "test complete"; endl;
+@doc()
 
-@select(tangler('test/rt02.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+test complete
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 header r"""
 #include <stdio.h>
 typedef char *charp;
@@ -181,8 +254,17 @@ module A
   print 1;
   print "\n";
 }
+@doc()
 
-@select(tangler('test/rt03.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+10
+10x=1, y=2
+Not hidden: int=1 print:int hides outer
+module A print int=1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 // test lazy functions and procedures
 print "lazy expr eval test\n";
@@ -192,8 +274,16 @@ val f = {x+y};
 print (f ()); print "\n";
 x = 3;
 print (f ()); print "\n";
+@doc()
 
-@select(tangler('test/rt04.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+lazy expr eval test
+3
+5
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // test the string library
 #import <flx.flxh>
 var x = "Hello";
@@ -220,14 +310,30 @@ while {i <= n} {
   ++i;
 };
 endl;
+@doc()
 
-@select(tangler('test/rt05.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+Hello+World
+ello+
+Hello+
+World
+Worl
+Hello+World
+dlroW+olleH
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // test the chained comparison
 #import <flx.flxh>
 assert(1<2&<3&<4);
+@doc()
 
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+@doc()
 
-@select(tangler('test/rt07.flx'))
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 fun land: 2 * 2 -> 2 = "$1 && $2";
 type int = "int";
 fun eq: int * int -> 2 = "$1 == $2";
@@ -268,8 +374,21 @@ eol;
 
 print (if 1==1 then "true" else "false" endif); eol;
 print (if 1==0 then "true" else "false" endif); eol;
+@doc()
 
-@select(tangler('test/rt08.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+1
+1
+25
+OK
+1
+1
+true
+false
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 // closure formation test
 
@@ -319,8 +438,21 @@ union U = | A | B of int;
 fun exec3(y2:int->U,a:int):U= { return  y2 a; }
 proc xprint(y:U) { print "union U"; }
 xprint (exec3(B of (int), 1)); endl;
+@doc()
 
-@select(tangler('test/rt09.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+closure of add primitive 4
+struct X
+struct X
+struct X: x get projection 42
+struct CX
+struct CX
+union Y
+union U
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // code insertion
 body "#include <iostream>";
 code 'static int x = 1;';
@@ -329,9 +461,16 @@ fun add:int * int -> int = "$1 + $2";
 fun two (): int = { return code[int]x + code[int]'x'; }
 proc print:int = 'std::cout << $1 << std::endl;';
 print (two());
+@doc()
 
-@select(tangler('test/rt10.flx'))
-//multiple assignment
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+2
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+multiple assignment
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 var a:int;
 var b:int;
@@ -354,8 +493,15 @@ print a; print " ";
 print d; print " ";
 print e; print " ";
 endl;
+@doc()
 
-@select(tangler('test/rt11.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+1 2 3 
+9 8 7 
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 open Long;
 
@@ -384,9 +530,19 @@ val one:itys = 1;
 val two:ityf = 1;
 print one; endl;
 print two; endl;
+@doc()
 
-@select(tangler('test/rt12.flx'))
-// generics inlining/call lifting tests
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+1 2
+1 2 3 4
+1
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+generics inlining/call lifting tests
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 proc f[k] (z:k, pr:k->void) {
@@ -399,9 +555,15 @@ proc f[k] (z:k, pr:k->void) {
 // eta expansion
 proc pr(x:int) { fprint (cout,x); }
 f[int] (1, the pr);
+@doc()
 
-@select(tangler('test/rt13.flx'))
-//call inlining
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+call inlining
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 proc g[t]()
 {
@@ -442,9 +604,33 @@ print "ONE\n";
 print "TWO\n";
 print "THREE\n";
 f[int]();
+@doc()
 
-@select(tangler('test/rt14.flx'))
-//call inlining
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+ONE
+TWO
+THREE
+FOUR
+FIVE
+SIX
+SEVEN
+EIGHT
+NINE
+TEN
+ELEVEN
+TWELVE
+THIRTEEN
+FOURTEEN
+FIFTEEN
+SIXTEEN
+SEVENTEEN
+EIGHTTEEN
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+call inlining
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 val x = 1;
@@ -462,9 +648,16 @@ else
 }
 endif
 ;
+@doc()
 
-@select(tangler('test/rt15.flx'))
-// more generic stuff
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+ONE
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+more generic stuff
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 open List;
 
@@ -503,8 +696,19 @@ iter
   )
   z
 ;
+@doc()
 
-@select(tangler('test/rt16.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+0 -> 66
+1 -> 55
+2 -> 44
+3 -> 33
+4 -> 22
+5 -> 11
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 // self-tail rec test (inspect output)
 // (requires --inline atm)
@@ -518,11 +722,20 @@ proc recur ()
 endoff:>
 }
 recur();
+@doc()
 
-@select(tangler('test/rt17.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+4
+3
+2
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+non-self-tail rec test (inspect output) (requires --inline atm)
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
-// non-self-tail rec test (inspect output)
-// (requires --inline atm)
 var x = 4;
 proc recur2 ()
 {
@@ -535,12 +748,20 @@ proc recur2 ()
   else {} endif;
 }
 recur2();
+@doc()
 
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+4
+3
+2
+1
+@doc()
 
-@select(tangler('test/rt18.flx'))
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+self-tail rec test (inspect output) (requires --inline atm)
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
-// self-tail rec test (inspect output)
-// (requires --inline atm)
 fun g(x:int):int = {
   if x == 0 goto endoff;
   return g(x-1);
@@ -549,7 +770,14 @@ endoff:>
 }
  
 print (g 10); endl;
-@select(tangler('test/rt19.flx'))
+@doc()
+
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 // non-self-tail rec test (inspect output)
 // (requires --inline atm)
@@ -561,16 +789,27 @@ fun f(x:int)=>
 ;
  
 print (f 10); endl;
+@doc()
 
-@select(tangler('test/rt20.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // lvalue decay if function called thru variable
 #import <flx.flxh>
 
 proc f(g:int->void) { var x=1; g x; }
 proc g(x:int) { }
 f g of (int);
+@doc()
 
-@select(tangler('test/rt21.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // contrib by Valery, mod by Skaller
 #import <flx.flxh>
 
@@ -593,8 +832,20 @@ whilst i < argc do
   endmatch;
   i++;
 done;
+@doc()
 
-@select(tangler('test/rt22.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+checking arg 0=--test
+test
+checking arg 1=words
+terminating
+@doc()
+
+@flx_regress_head(3,tdir+"/rt22.flx")
+Warning: result is dependent on implementation
+detail (order of execution after read/write matchup)
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 var y = ();
@@ -619,8 +870,18 @@ spawn_fthread the reader;
 spawn_fthread the writer;
 
 print "Done"; endl;
+@doc()
 
-@select(tangler('test/rt22a.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+Hello
+Done
+W1
+R1
+R2
+W2
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'a.flx'))
 #import <flx.flxh>
 open Control;
  
@@ -640,8 +901,9 @@ spawn_fthread {
     read$ &x,chin; print x; endl; 
   done; 
 };
+@doc()
 
-@select(tangler('test/rt22a.expect','data'))
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'a.expect','data'))
 1
 2
 3
@@ -652,7 +914,10 @@ spawn_fthread {
 8
 9
 10
-@select(tangler('test/rt23.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
@@ -672,13 +937,19 @@ h2(px,1);
 
 proc k[t,u:ptr[?t]]: u = "std::cout << *$1 <<std::endl;";
 k px;
+@doc()
 
-@select(tangler('test/rt24.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+3
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 // the noinline is needed because reductions are
 // currently applies AFTER inlining. Hmm.
-
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
@@ -708,8 +979,15 @@ axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t):
 ;
 
 axiom_check (add of (int * int), eq of (int * int), 1,2);
+@doc()
 
-@select(tangler('test/rt25.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+Cheat
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 // HACK!
 // NOTE: who_cares is now in the library! 
@@ -723,8 +1001,16 @@ proc f2[t] (a:t) { print who_cares[t]; endl; }
 var x: double ^ 42;
 f x;
 f2 x;
+@doc()
 
-@select(tangler('test/rt26.flx'))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+22
+42
+42
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 open List;
@@ -742,7 +1028,7 @@ Array::iter[int, 3] (the foo) x;
 iter (the foo) y;
 iter (the foo) z;
 
-@select(tangler("test/rt26.expect","data"))
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
 1
 2
 3
@@ -752,7 +1038,10 @@ iter (the foo) z;
 4
 5
 6
-@select(tangler('test/rt27.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 var z = 0;
 noinline proc f
@@ -763,9 +1052,14 @@ noinline proc f
 noinline proc g() { f {1} {2} ; };
 g();
 print z; endl;
-@select(tangler('test/rt27.expect'))
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 3
-@select(tangler('test/rt28.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 union U =
@@ -786,9 +1080,12 @@ proc p1
 
 p0$ A the p1;
 
-@select(tangler('test/rt28.expect'))
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 hello
-@select(tangler('test/rt29.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // test lazy variables
 #include <flx.flxh>
 
@@ -800,10 +1097,15 @@ fun y : int => 1; // just check syntax here
 print$ x; endl;
 v = 2;
 print$ x; endl;
-@select(tangler('test/rt29.expect'))
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 1
 2
-@select(tangler('test/rt30.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // Ref semantics
 #include <flx.flxh>
 
@@ -882,8 +1184,9 @@ inline proc k(fun y: int)
 
 h { a+1 };
 k { a +1 };
+@doc()
 
-@select(tangler('test/rt30.expect'))
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 3
 4
 1
@@ -910,7 +1213,10 @@ k { a +1 };
 70
 70
 71
-@select(tangler('test/rt31.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 #
 module X {
@@ -920,9 +1226,14 @@ module X {
 #keyword f
 
 print$ X::f 22; endl;
-@select(tangler('test/rt31.expect','data'))
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 44
-@select(tangler('test/rt32.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // translation of typedefs to _ctor_name calls
 #import <flx.flxh>
 
@@ -939,12 +1250,16 @@ print y; endl;
 
 val z = foo ();
 print z; endl;
+@doc()
 
-@select(tangler('test/rt32.expect','data'))
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 5
 5
 5
-@select(tangler('test/rt33.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 // generators
 #import <flx.flxh>
 
@@ -977,8 +1292,9 @@ print "C Even? "; print$ d(g()); endl; // 6
 
 print "F 4="; print$ f(); endl; // 4
 print "C 4="; print$ g(); endl; // 4
+@doc()
 
-@select(tangler('test/rt33.expect','data'))
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 F 1=1
 C 1=1
 F Even? 4
@@ -987,7 +1303,10 @@ C Even? 4
 C Even? 6
 F 4=4
 C 4=4
-@select(tangler('test/rt34.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 gen f(init:int)(inc:int):int = {
@@ -1007,8 +1326,9 @@ print$ x(999); endl; // 45
 print$ x(10); endl; // 54
 print$ x(999); endl; // 55
 print$ x(10); endl; // 64
+@doc()
 
-@select(tangler('test/rt34.expect','data'))
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 42
 43
 44
@@ -1016,7 +1336,10 @@ print$ x(10); endl; // 64
 54
 55
 64
-@select(tangler('test/rt35.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 union tree = TEmpty | Leaf of int | Node of tree * tree;
@@ -1098,8 +1421,9 @@ gen visitor(x:tree) () : int =
 var it = visitor(example);
 var res = accumulate(it);
 print$ res; endl;
+@doc()
 
-@select(tangler('test/rt35.expect','data'))
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 15
 visiting node: left
 visiting node: left
@@ -1115,7 +1439,10 @@ visiting leaf 4
 visiting node: right
 visiting leaf 5
 15
-@select(tangler('test/rt36.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 module Foo
@@ -1132,9 +1459,14 @@ print$ match x with
 | Foo::B => "b"
 endmatch;
 endl;
-@select(tangler('test/rt36.expect','data'))
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 a
-@select(tangler('test/rt37.flx'))
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 //test
@@ -1184,7 +1516,9 @@ print "should not see this"; endl; /*
 print "should not see this"; endl;
 */ print "should not see this"; endl;
 */ "12"; endl;
-@select(tangler('test/rt37.expect','data'))
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.expect','data'))
 1
 2
 3
@@ -1197,44 +1531,50 @@ print "should not see this"; endl;
 10
 11
 12
-@select(tangler('test/drt1.flx'))
+@doc()
+
+@flx_regress_head(2,"Dynamic good tests")
+@flx_regress_head(3,tdir+"drt-"+flx_regress_level_str+".flx")
 // plugin loader test
+@select(tangler(tdir+'drt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 print "Starting .. "; endl;
-@tangle('Dynlink::run_lib("./test/rt02'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt04'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt05'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt07'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt08'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt09'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt10'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt11'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt12'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt13'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt14'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt15'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt16'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt17'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt18'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./test/rt19'+EXT_SHLIB+'");')
+@tangle('Dynlink::run_lib("./'+tdir+'rt-01-01'+EXT_SHLIB+'");')
+@tangle('Dynlink::run_lib("./'+tdir+'rt-01-02'+EXT_SHLIB+'");')
 print "Its run"; endl;
+@doc()
 
-@head(2,'Bad tests')
+@select(tangler(tdir+"drt1.expect","data"))
+test complete
+10
+10x=1, y=2
+Not hidden: int=1 print:int hides outer
+module A print int=1
+Its run
+@doc()
+
+@flx_regress_head(2,'Bad tests')
 All these should fail gracefully at (felix) compile time. 
 Run the compiler with the -e option to invert
 the return code parity.
-@select(tangler('test/bt01.flx'))
-basic parser error
 
-@select(tangler('test/bt02.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
+basic parser error
+@doc()
+
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 module X { proc p(){} }
 module Y { proc p(){} }
 open X;
 open Y;
 p; // ambiguous
+@doc()
 
-@select(tangler('test/bt03.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 // open depends on self
 #import <flx.flxh>
 interface I { proc print_endl:int; }
@@ -1245,19 +1585,25 @@ module X {
 open X;
 open B;
 print_endl 1;
+@doc()
 
-@select(tangler('test/bt04.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 // these now fail OK: (should yield 'any' .. then fail overload :-)
 val aa = bb + 1;
 val bb = aa + 1;
+@doc()
 
-@select(tangler('test/bt05.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 // impossible recursion
 type int = "int";
 fun neg(a:int) = { return -a; }
+@doc()
 
-@select(tangler('test/bt06.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 // privacy violation
 #import <flx.flxh>
 
@@ -1268,19 +1614,26 @@ module X
 }
 open X;
 val x = f 1;
+@doc()
 
-@select(tangler('test/bt07.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 #define FIRST
 #define FIRST
+@doc()
 
-@select(tangler('test/bt08.imp','data'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.imp','data'))
 #define FIRST
+@doc()
 
-@select(tangler('test/bt08.flx'))
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 #define FIRST
-#import "bt08.imp"
+@tangle('#import "bt-'+flx_regress_level_str+'.imp"')
+@doc()
 
-@select(tangler('test/bt09.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 // this should give an error at felix time
 // but we only get one at C++ compile time
 
@@ -1299,8 +1652,10 @@ ctypes int;
 { {var x:int; read x; } }
 
 ;
+@doc()
 
-@select(tangler('test/bt10.flx'))
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
 // function drops off end
 #import <flx.flxh>
 fun f(x:int):int =
@@ -1308,12 +1663,14 @@ fun f(x:int):int =
   if  x == 1 do return 1; done;
 }
 print (f 1); endl;
+@doc()
 
-@head(2,'Bad tests')
+@flx_regress_head(2,'Bad tests')
 All these should successfully compile, but currently fail
 or enter into an infinite loop.
 
-@select(tangler('test/kf01.flx'))
+@flx_regress_head(3,'kf-'+flx_regress_level_str+'.flx')
+@select(tangler(tdir+'kf-'+flx_regress_level_str+'.flx'))
 #import <flx.flxh>
 
 proc foo(x, y:int)
@@ -1326,220 +1683,4 @@ proc foo(x)
 }
 
 foo 0;
-
-@head(1,"Expected outputs for test")
-@head(2,"test/rt01.expect")
-@select(tangler("test/rt01.expect","data"))
-rt01 complete
-@head(2,"test/rt02.expect")
-@select(tangler("test/rt02.expect","data"))
-10
-10x=1, y=2
-Not hidden: int=1 print:int hides outer
-module A print int=1
-@head(2,"test/rt03.expect")
-@select(tangler("test/rt03.expect","data"))
-lazy expr eval test
-3
-5
-@head(2,"test/rt04.expect")
-@select(tangler("test/rt04.expect","data"))
-Hello+World
-ello+
-Hello+
-World
-Worl
-Hello+World
-dlroW+olleH
-@head(2,"test/rt05.expect")
-@select(tangler("test/rt05.expect","data"))
-@head(2,"test/rt07.expect")
-@select(tangler("test/rt07.expect","data"))
-1
-1
-25
-OK
-1
-1
-true
-false
-@head(2,"test/rt08.expect")
-@select(tangler("test/rt08.expect","data"))
-closure of add primitive 4
-struct X
-struct X
-struct X: x get projection 42
-struct CX
-struct CX
-union Y
-union U
-@head(2,"test/rt09.expect")
-@select(tangler("test/rt09.expect","data"))
-2
-@head(2,"test/rt10.expect")
-@select(tangler("test/rt10.expect","data"))
-1 2 3 
-9 8 7 
-@head(2,"test/rt11.expect")
-@select(tangler("test/rt11.expect","data"))
-1 2
-1 2 3 4
-1
-1
-@head(2,"test/rt12.expect")
-@select(tangler("test/rt12.expect","data"))
-1
-@head(2,"test/rt13.expect")
-@select(tangler("test/rt13.expect","data"))
-ONE
-TWO
-THREE
-FOUR
-FIVE
-SIX
-SEVEN
-EIGHT
-NINE
-TEN
-ELEVEN
-TWELVE
-THIRTEEN
-FOURTEEN
-FIFTEEN
-SIXTEEN
-SEVENTEEN
-EIGHTTEEN
-@head(2,"test/rt14.expect")
-@select(tangler("test/rt14.expect","data"))
-ONE
-@head(2,"test/rt15.expect")
-@select(tangler("test/rt15.expect","data"))
-0 -> 66
-1 -> 55
-2 -> 44
-3 -> 33
-4 -> 22
-5 -> 11
-@head(2,"test/rt16.expect")
-@select(tangler("test/rt16.expect","data"))
-4
-3
-2
-1
-@head(2,"test/rt17.expect")
-@select(tangler("test/rt17.expect","data"))
-4
-3
-2
-1
-@head(2,"test/rt18.expect")
-@select(tangler("test/rt18.expect","data"))
-1
-@head(2,"test/rt19.expect")
-@select(tangler("test/rt19.expect","data"))
-1
-@head(2,"test/rt20.expect")
-@select(tangler("test/rt20.expect","data"))
-@head(2,"test/rt21.expect")
-@select(tangler("test/rt21.expect","data"))
-checking arg 0=--test
-test
-checking arg 1=words
-terminating
-@head(2,"test/rt22.expect")
-Warning: result is dependent on implementation
-detail (order of execution after read/write matchup)
-@select(tangler("test/rt22.expect","data"))
-Hello
-Done
-W1
-R1
-R2
-W2
-@head(2,"test/rt23.expect")
-@select(tangler("test/rt23.expect","data"))
-3
-1
-@head(2,"test/rt24.expect")
-@select(tangler("test/rt24.expect","data"))
-Cheat
-1
-@head(2,"test/rt25.expect")
-@select(tangler("test/rt25.expect","data"))
-22
-42
-42
-@head(2,"test/drt1.expect")
-@select(tangler("test/drt1.expect","data"))
-Starting .. 
-10
-10x=1, y=2
-Not hidden: int=1 print:int hides outer
-module A print int=1
-Hello+World
-ello+
-Hello+
-World
-Worl
-Hello+World
-dlroW+olleH
-1
-1
-25
-OK
-1
-1
-true
-false
-closure of add primitive 4
-struct X
-struct X
-struct X: x get projection 42
-struct CX
-struct CX
-union Y
-union U
-2
-1 2 3 
-9 8 7 
-1 2
-1 2 3 4
-1
-1
-1
-ONE
-TWO
-THREE
-FOUR
-FIVE
-SIX
-SEVEN
-EIGHT
-NINE
-TEN
-ELEVEN
-TWELVE
-THIRTEEN
-FOURTEEN
-FIFTEEN
-SIXTEEN
-SEVENTEEN
-EIGHTTEEN
-ONE
-0 -> 66
-1 -> 55
-2 -> 44
-3 -> 33
-4 -> 22
-5 -> 11
-4
-3
-2
-1
-4
-3
-2
-1
-1
-1
-Its run
+@doc()

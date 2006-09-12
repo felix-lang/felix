@@ -969,6 +969,7 @@ class PLUGIN(Plugin):
   
   def runme(self,quiet=0):
     bad_tests = pkgdict.get("failure_tests",[])
+    bad_tests.sort()
 
     failed = 0
 
@@ -1006,6 +1007,7 @@ class PLUGIN(TestPlugin):
   
   def runme(self,quiet):    
     unit_tests = pkgdict.get("unit_tests",[])
+    unit_tests.sort()
 
     return self.run_tests(unit_tests, 1,
       "*** UNIT TESTING %s : %%s ****\n" % pkg, quiet)
@@ -1019,9 +1021,32 @@ class PLUGIN(TestPlugin):
 
   def runme(self,quiet):
     completion_tests = pkgdict.get("completion_tests",[])
+    completion_tests.sort()
 
     return self.run_tests(completion_tests, 0,
       "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg,quiet)
+
+
+@select(tangler('mkplugins/run_known_failed_tests.py'))
+class PLUGIN(Plugin):
+  def __init__(self):
+    Plugin.__init__(self, 'run_known_failed_tests', 'mark tests failed that should run')
+  
+  def runme(self,quiet=0):
+    bad_tests = pkgdict.get("known_failed_tests",[])
+    bad_tests.sort()
+
+    failed = 0
+
+    for testfile in bad_tests:
+      log = Tee()
+      log.write("**** KNOWN FAILED TESTING PACKAGE %s : %s ****\n" % (pkg, testfile))
+
+      # don't even bother to compile
+      self.failures.append((pkg, testfile, ""))
+
+    return not failed
+
 
 
 @select(tangler('mkplugins/run_demos.py'))
@@ -1031,6 +1056,7 @@ class PLUGIN(TestPlugin):
 
   def runme(self,quiet=0):
     demos = pkgdict.get("demos",[])
+    demos.sort()
 
     return self.run_tests(demos, 0,
       "*** DEMO PACKAGE %s : %%s ****\n" % pkg,quiet)
@@ -1298,7 +1324,9 @@ class PLUGIN(Plugin):
         erasefile(stamp)
 
         # only stamp if we've passed the tests
-        if plugins['run_unit_tests'](quiet) and plugins['run_completion_tests'](quiet):
+        if plugins['run_unit_tests'](quiet) \
+                and plugins['run_completion_tests'](quiet) \
+                and plugins['run_known_failed_tests'](quiet):
           enstamp(stamp)
  
 

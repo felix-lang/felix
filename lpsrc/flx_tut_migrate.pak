@@ -5,16 +5,19 @@
 @flx_tut_migrate_level_str = ''
 @def flx_tut_migrate_head(level, name):
   global flx_tut_migrate_levels,flx_tut_migrate_level_str
-  while len(flx_tut_migrate_levels) < level: flx_tut_migrate_levels.append('0')
-  flx_tut_migrate_levels[level - 1] = str(int(flx_tut_migrate_levels[level - 1]) + 1)
+  while len(flx_tut_migrate_levels) < level: flx_tut_migrate_levels.append(0)
+  flx_tut_migrate_levels[level - 1] = int(flx_tut_migrate_levels[level - 1]) + 1
   flx_tut_migrate_levels = flx_tut_migrate_levels[:level]
+
+  for i in range(len(flx_tut_migrate_levels)):
+    flx_tut_migrate_levels[i] = string.zfill(flx_tut_migrate_levels[i], 2)
+
   flx_tut_migrate_level_str = string.join(flx_tut_migrate_levels,'.')
   
   return head(level, name)
 
 @select(tangler('spkgs/flx_tut_migrate.py'))
 @tangle('TESTS = glob.glob("'+tdir+'*.flx")')
-TESTS.sort()
 
 unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
