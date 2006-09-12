@@ -52,15 +52,19 @@ this shortly.
 To run the example, make sure you are in the
 directory containing the Felix demo package,
 then type:
+
 @begin_displayed_code()
- print '  bin/flx '+tdir+'tut-'+flx_tutorial_level_str
+@weave('  bin/flx '+tdir+'tut-'+flx_tutorial_level_str)
 @end_displayed_code()
+
 This produces three files:
+
 @begin_displayed_code()
- print '  '+tdir+'tut-'+flx_tutorial_level_str+'.hpp'
- print '  '+tdir+'tut-'+flx_tutorial_level_str+'.cpp'
- print '  '+tdir+'tut-'+flx_tutorial_level_str+'.so'
+@weave('  '+tdir+'tut-'+flx_tutorial_level_str+'.hpp')
+@weave('  '+tdir+'tut-'+flx_tutorial_level_str+'.cpp')
+@weave('  '+tdir+'tut-'+flx_tutorial_level_str+'.so')
 @end_displayed_code()
+
 We'll learn more about their structure later.
 
 @flx_tutorial_head(2,'Overloading')
