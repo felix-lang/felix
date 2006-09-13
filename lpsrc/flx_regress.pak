@@ -85,7 +85,7 @@ weaver_directory = 'doc/test/'
 
 @select(tangler('spkgs/flx_regression_tests_bt.py'))
 # these are supposed to fail!
-@tangle("bad_tests = glob.glob('"+tdir+"bt-*.flx')")
+@tangle("failure_tests = glob.glob('"+tdir+"bt-*.flx')")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -1533,6 +1533,38 @@ print "should not see this"; endl;
 12
 @doc()
 
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+test argument handling
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+#import <flx.flxh>
+  
+open List;
+
+iter (proc (x:string) { print x; endl; })$ 
+  match System::args() with
+  | Empty[string] => Empty[string]
+  | Cons(?h, ?t) => t
+  endmatch
+;
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.arguments','data'))
+a b c
+e f g
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.args0.expect','data'))
+a
+b
+c
+@doc()
+
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.args1.expect','data'))
+e
+f
+g
+@doc()
+
 @flx_regress_head(2,"Dynamic good tests")
 @flx_regress_head(3,tdir+"drt-"+flx_regress_level_str+".flx")
 // plugin loader test
@@ -1663,6 +1695,16 @@ fun f(x:int):int =
   if  x == 1 do return 1; done;
 }
 print (f 1); endl;
+@doc()
+
+@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
+#import <flx.flxh>
+
+if (len s > 3) do
+  print s;
+  s := "12345\n";
+done;
 @doc()
 
 @flx_regress_head(2,'Bad tests')

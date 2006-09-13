@@ -1407,10 +1407,7 @@ class TestPlugin(Plugin):
             #log.write("Driver: %s\n" % driver)
             testscript = driver + ' ' + path + EXT_SHLIB
 
-            if deterministic:
-              self.run_test(log, testscript, basename, basename + '.expect',quiet)
-            else:
-              self.run_test(log, testscript, basename,quiet=0)
+            self.run_test(log, testscript, basename, deterministic, quiet=0)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -1438,21 +1435,51 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, basename, expect=None,quiet=0):
+  def run_test(self, log, testscript, basename, deterministic, quiet=0):
     log.write('EXECUTING TEST CODE %s\n' % testscript,quiet)
     flush()
 
-    output = xqt(ENV + testscript, verbose=1, quiet=quiet, log=log)
+    arguments = []
+    if os.path.exists(basename + '.arguments'):
+      f = open(basename + '.arguments')
+      try:
+        for line in f.readlines():
+          arguments.append(string.strip(line))
+      finally:
+        f.close()
 
-    f = open(basename + '.output', 'w')
-    try:
-      f.write(string.join(output, ""))
-    finally:
-      f.close()
+    if arguments:
+      count = 0
+      for args in arguments:
+        output = xqt(ENV + testscript + ' ' + args, verbose=1, quiet=quiet, log=log)
 
-    if expect is not None:
-      output = xqt('%s %s %s.output' % (DIFF, expect, basename), 
-          verbose=1, quiet=quiet, log=log)
+        f = open(basename + '.args' + str(count) + '.output', 'w')
+        try:
+          f.write(string.join(output, ""))
+        finally:
+          f.close()
+        count = count + 1
+    else:
+      output = xqt(ENV + testscript, verbose=1, quiet=quiet, log=log)
+
+      f = open(basename + '.output', 'w')
+      try:
+        f.write(string.join(output, ""))
+      finally:
+        f.close()
+
+    if deterministic:
+      if not arguments:
+        output = xqt('%s %s.expect %s.output' % (DIFF, basename, basename), 
+                verbose=1, quiet=quiet, log=log)
+      else:
+        count = 0
+        for args in arguments:
+           output = xqt('%s %s.args%s.expect %s.args%s.output' % \
+                   (DIFF, basename, count, basename, count), 
+                   verbose=1, quiet=quiet, log=log)
+           count = count + 1
+       
 
 
 @select(tangler('mkplugins/help.py'))
