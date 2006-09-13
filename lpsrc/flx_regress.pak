@@ -1572,8 +1572,8 @@ g
 #import <flx.flxh>
 
 print "Starting .. "; endl;
-@tangle('Dynlink::run_lib("./'+tdir+'rt-01-01'+EXT_SHLIB+'");')
-@tangle('Dynlink::run_lib("./'+tdir+'rt-01-02'+EXT_SHLIB+'");')
+@tangle('Dynlink::run_lib("./'+tdir+'rt-01.01.01'+EXT_SHLIB+'");')
+@tangle('Dynlink::run_lib("./'+tdir+'rt-01.01.02'+EXT_SHLIB+'");')
 print "Its run"; endl;
 @doc()
 

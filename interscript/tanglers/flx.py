@@ -155,8 +155,6 @@ py_op_tokens = [
 #line 370 "./lpsrc/flx_felix_tangler.pak"
   felix_token.HASHBANG,
 #line 370 "./lpsrc/flx_felix_tangler.pak"
-  felix_token.SLASHSLASH,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
   felix_token.LEFTSHIFTEQUAL,
 #line 370 "./lpsrc/flx_felix_tangler.pak"
   felix_token.RIGHTSHIFTEQUAL,
