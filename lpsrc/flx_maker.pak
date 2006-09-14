@@ -298,13 +298,14 @@ class PLUGIN(Plugin):
     Plugin.__init__(self, 'copy_mli2ml')
 
   def runme(self, MLIS):
-    print "Copying MLIS="+repr(MLIS)
+    if not quiet: print "Copying MLIS="+repr(MLIS)
+
     for f in MLIS:
       f = string.replace(f,"/",os.sep)
       src = f+'.mli'
       dst = f+'.ml'
       if filetime(src) >= filetime (dst):
-        print("filecopy "+src+" -> "+dst)
+        if not quiet: print("filecopy "+src+" -> "+dst)
         filecopy(src,dst)
 
 @select(tangler('mkplugins/copy_hpp2rtl.py'))
@@ -1086,6 +1087,7 @@ else:
 
 def vxqt(x, **kwds):
   kwds['verbose'] = kwds.get('verbose', verbose)
+  kwds['quiet'] = kwds.get('quiet', quiet)
   return apply(xqt, (x,), kwds)
 
 
@@ -1261,22 +1263,23 @@ class PLUGIN(Plugin):
     doc_selected_pkgs = filter(lambda x: x in doc_packages,pkgs)
   
     if "all" in options: 
-       print "SELECTING ALL PACKAGES"
-       host_selected_pkgs = pkgs
-       target_selected_pkgs = pkgs
-       run_selected_pkgs = pkgs
-       doc_selected_pkgs = pkgs
+      if not quiet: print "SELECTING ALL PACKAGES"
+      host_selected_pkgs = pkgs
+      target_selected_pkgs = pkgs
+      run_selected_pkgs = pkgs
+      doc_selected_pkgs = pkgs
   
-    #print "AVAILABLE SOURCES",paks
-    print "Host SELECTED PACKAGES ARE ",host_selected_pkgs
-    print "Target SELECTED PACKAGES ARE ",target_selected_pkgs
-    print "Run SELECTED PACKAGES ARE ",run_selected_pkgs
-    print "Doc SELECTED PACKAGES ARE ",doc_selected_pkgs
-    print "SELECTED PHASES ARE   ",phases
-    print "Build model  ",build_model
-    print "Host model   ",host_model
-    print "Target model ",target_model
-    print "Run model    ",run_model
+    if not quiet:
+      #print "AVAILABLE SOURCES",paks
+      print "Host SELECTED PACKAGES ARE ",host_selected_pkgs
+      print "Target SELECTED PACKAGES ARE ",target_selected_pkgs
+      print "Run SELECTED PACKAGES ARE ",run_selected_pkgs
+      print "Doc SELECTED PACKAGES ARE ",doc_selected_pkgs
+      print "SELECTED PHASES ARE   ",phases
+      print "Build model  ",build_model
+      print "Host model   ",host_model
+      print "Target model ",target_model
+      print "Run model    ",run_model
 
 @select(tangler('mkplugins/make.py'))
 class PLUGIN(Plugin):
@@ -1301,7 +1304,7 @@ class PLUGIN(Plugin):
         srcs = pkgdict.get("iscr_source",[])      
         for src in srcs:
           src = unix2native(src)
-          print "REExtracting",pkg,"from",src
+          if not quiet: print "REExtracting",pkg,"from",src
           runISCR(os.path.join(FLX_LPARCHIVE, src))
 
         MLIS = pkgdict.get("caml_raw_interfaces",[])
@@ -1407,7 +1410,7 @@ class TestPlugin(Plugin):
             #log.write("Driver: %s\n" % driver)
             testscript = driver + ' ' + path + EXT_SHLIB
 
-            self.run_test(log, testscript, basename, deterministic, quiet=0)
+            self.run_test(log, testscript, basename, deterministic, quiet=quiet)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -1418,9 +1421,9 @@ class TestPlugin(Plugin):
 
           try:
             if deterministic:
-              self.run_test(log, testscript, basename, basename + '.expect', quiet=quiet)
+              self.run_test(log, testscript, basename, deterministic, quiet=quiet)
             else:
-              self.run_test(log, testscript, basename,quiet=0)
+              self.run_test(log, testscript, basename, quiet=0)
           except MakeError, e:
             failed = 1
             log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
@@ -1436,7 +1439,7 @@ class TestPlugin(Plugin):
 
 
   def run_test(self, log, testscript, basename, deterministic, quiet=0):
-    log.write('EXECUTING TEST CODE %s\n' % testscript,quiet)
+    log.write('EXECUTING TEST CODE %s\n' % testscript, quiet)
     flush()
 
     arguments = []
@@ -1451,7 +1454,7 @@ class TestPlugin(Plugin):
     if arguments:
       count = 0
       for args in arguments:
-        output = xqt(ENV + testscript + ' ' + args, verbose=1, quiet=quiet, log=log)
+        output = vxqt(ENV + testscript + ' ' + args, verbose=1, log=log)
 
         f = open(basename + '.args' + str(count) + '.output', 'w')
         try:
@@ -1460,7 +1463,7 @@ class TestPlugin(Plugin):
           f.close()
         count = count + 1
     else:
-      output = xqt(ENV + testscript, verbose=1, quiet=quiet, log=log)
+      output = vxqt(ENV + testscript, verbose=1, log=log)
 
       f = open(basename + '.output', 'w')
       try:
@@ -1470,14 +1473,14 @@ class TestPlugin(Plugin):
 
     if deterministic:
       if not arguments:
-        output = xqt('%s %s.expect %s.output' % (DIFF, basename, basename), 
-                verbose=1, quiet=quiet, log=log)
+        output = vxqt('%s %s.expect %s.output' % (DIFF, basename, basename), 
+                verbose=1, log=log)
       else:
         count = 0
         for args in arguments:
-           output = xqt('%s %s.args%s.expect %s.args%s.output' % \
+           output = vxqtq('%s %s.args%s.expect %s.args%s.output' % \
                    (DIFF, basename, count, basename, count), 
-                   verbose=1, quiet=quiet, log=log)
+                   verbose=1, log=log)
            count = count + 1
        
 
@@ -1672,7 +1675,7 @@ target_packages = list(packages)
 run_packages = list(packages)
 doc_packages = list(packages)
 
-print "USER SELECTED PACKAGES",packages
+if not quiet: print "USER SELECTED PACKAGES",packages
 
 # ------------------------------------------------
 # Load the initial config
@@ -1853,7 +1856,8 @@ def enstamp(stamp):
   t = fmtime(time.time())
   f.write(t+"\n")
   f.close()
-  print 'Writing Stamp File:', stamp
+  if not quiet:
+    print 'Writing Stamp File:', stamp
 
 
 # EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
