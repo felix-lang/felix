@@ -506,10 +506,28 @@ See
 
 @head(2,"Standard Types",nospawn=1)
 @head(3,"System Types",nospawn=1)
+@head(4,"Fibres",nospawn=1)
+Felix provides a system of cooperative multithreading
+based on resumable procedural continuations and channels.
+@p()
+The following basic types are defined as bindings to the underlying
+C++ technology. They are:
+@begin_table("Type", "Role")
+@table_row("Control::fthread","Thread of control")
+@table_row("Control::cont","Procedural Continuation")
+@table_row("Control::schannel[t]","Bidirectional Channel")
+@table_row("Control::ischannel[t]","Input Channel")
+@table_row("Control::oschannel[t]","Output Channel")
+@end_table()
+@p()
+The following operations are used to manage these entities.
+...
+
 @head(3,"Arithmetic Types",nospawn=1)
 Felix provides the following standard C arithmetic types. They can
 be named with any of the usual C names with contractions,
 or using a Felix alias:
+@p()
 @begin_table("Felix name","Full C name")
 @table_row("tiny","signed char")
 @table_row("utiny","unsigned char")
@@ -525,8 +543,10 @@ or using a Felix alias:
 @table_row("double","double float")
 @table_row("ldouble","long double float")
 @end_table()
+@p()
 The following aliases are also provided, in this
 case the C name may not be used:
+@p()
 @begin_table("Felix name","C name")
 @table_row("size","size_t")
 @table_row("ptrdiff","ptrdiff_t")
@@ -535,9 +555,11 @@ case the C name may not be used:
 @table_row("intmax","intmax_t")
 @table_row("uintmax","uintmax_t")
 @end_table()
+@p()
 
 The following aliases for exact integers are also provided, in this
 case the C name may not be used:
+@p()
 @begin_table("Felix name","C name")
 @table_row("int8","int8_t")
 @table_row("uint8","uint8_t")
@@ -548,10 +570,76 @@ case the C name may not be used:
 @table_row("int64","int64_t")
 @table_row("uint64","uint64_t")
 @end_table()
+@p()
 Felix guarantees all these integer aliases exist,
 even if the C99 counterparts do not.
+@p()
+Complex number are provided with one of the follwing
+bindings, dependent on the configuration.
+@begin_table("Felix name","C name")
+@table_row("complex","float _Complex")
+@table_row("dcomplex","double _Complex")
+@table_row("lcomplex","long double _Complex")
+@end_table()
+@p()
+OR
+@p()
+@begin_table("Felix name","C++ name")
+@table_row("complex","std::complex<float>")
+@table_row("dcomplex","std::complex<double>")
+@table_row("lcomplex","std::complex<long double>")
+@end_table()
+@p()
+The choice between C99 and C++ complex types is
+implementation dependent and very unfortunate.
+@p()
+In all these cases, where a long version of a type
+is not provided by C or C++, such as long long and
+long double, a distinct replacement type is used instead,
+to ensure C++ level overloads are distinct.
+@p()
+[NOTE: THIS IS NOT IMPLEMENTED. The current system
+just uses an alias.]
+@p()
+Arithmetic types support the same operations as ISO C99.
+For the purpose of specifying bitwise operations on signed
+types, they use a full two's complement representation.
+Systems on machines with other representations must 
+provide the appropriate glue logic.
+@p()
+Overflow of operations on signed types is undefined
+behaviour. Operations on unsigned types cannot overflow
+because it is defined as the modular residual of the
+underlying operation on integers.
+@p()
+Thus, operations on exact unsigned integral types are fully
+deterministic, and operations on signed integral types
+are also deterministic when it does not overflow.
+@p()
+Felix also guarantees 'long' is at least twice the
+length of 'short'.
+@p()
+[NOTE: THIS IS NOT IMPLEMENTED. Config check required.]
 
-@head(3,"String Types",nospawn=1)
+@head(3,"Character and String Types",nospawn=1)
+Felix provides 3 character types and 3 corresponding
+string types.
+@p()
+@begin_table("Felix name","C++ name")
+@table_row("char","char")
+@table_row("wchar","wchar_t")
+@table_row("wchar","int32_t")
+@table_row("string","std::basic_string<char>")
+@table_row("wstring","std::basic_string<wchar_t>")
+@table_row("ustring","std::basic_string<int32_t>")
+@end_table()
+Use of wchar and wstring is strongly discouraged,
+and is only provided for compatibility. Char is guaranteed
+to be an 8 bit clean representation. Note that unicode
+character type uchar is signed two's complement full
+32 bit encoding. Characters support comparison and
+addition and subtraction of int.
+
 @head(3,"Container Types",nospawn=1)
 
 @head(1,"Applicative classes")

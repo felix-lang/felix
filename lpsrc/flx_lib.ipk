@@ -1623,12 +1623,12 @@ module Control
     svc req;
   }
 
-  private fun _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
-  fun start[t] (p:t->0) (x:t) = { return _start (p,x); }
+  private gen _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
+  gen start[t] (p:t->0) (x:t) = { return _start (p,x); }
   private fun _start0: (1->0)->cont = "$1->clone()->call(0)";
-  fun start (p:1->0) = { return _start0 (p); }
+  gen start (p:1->0) = { return _start0 (p); }
 
-  fun mk_thread: cont->fthread = "new(*PTF gc,_fthread_ptr_map) flx::rtl::fthread_t($1)";
+  gen mk_thread: cont->fthread = "new(*PTF gc,_fthread_ptr_map) flx::rtl::fthread_t($1)";
 
   proc spawn_fthread(p:1->0)
   {
@@ -1638,7 +1638,7 @@ module Control
   }
 
   publish "Resume a continuation until it yields"
-  fun step: cont -> cont = "$1->resume()";
+  gen step: cont -> cont = "$1->resume()";
   proc kill: fthread = "$1->cc = 0;";
 
   publish """
