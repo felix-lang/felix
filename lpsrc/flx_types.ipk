@@ -894,19 +894,6 @@ and asm_t =
   | `Dir of range_srcref * dir_t
   ]
  
-and entry_kind_t = int
-
-and entry_set_t =
-  [
-  | `FunctionEntry of entry_kind_t list
-  | `NonFunctionEntry of entry_kind_t
-  ]
-  
-and module_rep_t = 
-  | Simple_module of bid_t * typecode_t list * name_map_t * dir_t list
-
-and name_map_t = (string, entry_set_t) Hashtbl.t
-
 and iface_t =
   [
   | `IFACE_export_fun of suffixed_name_t * string
@@ -968,6 +955,26 @@ type 't btypecode_t' =
 type b0typecode_t = 't b0typecode_t' as 't
 type btypecode_t = 't btypecode_t' as 't
 type btpattern_t = btypecode_t btpattern_t'
+
+type entry_kind_t = { 
+  base_sym:int;                 (* the function *)
+  spec_vs:(string * int) list;  (* the type variables of the specialisation *)
+  sub_ts:btypecode_t list      (* types to replace the old type variables 
+                               expressed in terms of the new ones 
+                            *)
+}    
+
+and entry_set_t =
+  [
+  | `FunctionEntry of entry_kind_t list
+  | `NonFunctionEntry of entry_kind_t
+  ]
+  
+and module_rep_t = 
+  | Simple_module of bid_t * typecode_t list * name_map_t * dir_t list
+
+and name_map_t = (string, entry_set_t) Hashtbl.t
+
 
 type biface_t =
   [
@@ -4825,10 +4832,10 @@ let string_of_dfn dfns i =
   string_of_symdef entry id vs
   ^ " defined at " ^ short_string_of_src sr
 
-let full_string_of_entry_kind dfns i =
+let full_string_of_entry_kind dfns {base_sym=i} =
   string_of_dfn dfns i
 
-let string_of_entry_kind i = si i
+let string_of_entry_kind {base_sym=i} = si i
 
 let string_of_entry_set = function
   | `NonFunctionEntry x -> string_of_entry_kind x
@@ -4854,7 +4861,7 @@ let print_env e =
       "  " ^ k ^ " " ^
       (
         match v with 
-        | (`NonFunctionEntry (i)) -> string_of_int i
+        | (`NonFunctionEntry (i)) -> string_of_entry_kind i
         | _ -> ""
       )
     )
@@ -5257,6 +5264,8 @@ module FuntypeSet : Set.S with type elt = typecode_t
 
 module FunInstSet : Set.S with type elt = bid_t * btypecode_t list
 
+val sye: entry_kind_t -> int
+
 @h = tangler('src/flx_typing.ml')
 @select(h)
 open Flx_ast
@@ -5264,6 +5273,8 @@ open Flx_types
 open Flx_srcref
 open List
 open Flx_maps
+
+let sye {base_sym=i} = i
 
 let all_voids ls =    
     fold_left 

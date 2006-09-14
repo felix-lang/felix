@@ -45,7 +45,7 @@ open Inria_syntax
 
 let find_param name_map s =
   match Hashtbl.find name_map s with
-  | `NonFunctionEntry (i) -> i
+  | `NonFunctionEntry (i) -> sye i
   | _ -> failwith ("[find_param] Can't find parameter " ^ s )
 
 let print_bvs vs =
@@ -178,6 +178,7 @@ let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
     | Some (entries, ts) ->
       let ts = map bt ts in
       fold_left (fun lst index -> 
+        let index = sye index in
         if index = 0 then lst else
         let ts = adjust_ts syms sr index ts in 
         add lst (index,ts)
@@ -403,12 +404,14 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
         (* we have to check this .. *)
         match luqn2 q with 
         | `FunctionEntry [i],[] -> 
+          let i = sye i in
           begin match Hashtbl.find syms.dfns i with
           | {symdef=`SYMDEF_glr _ } -> `Nonterm [i]
           | {symdef=`SYMDEF_nonconst_ctor _} -> `Term i
           | _ -> clierr sr "Expected nonterminal or union constructor"
           end
         | `FunctionEntry ii,[] -> 
+          let ii = map sye ii in
           let i = hd ii in
           begin match Hashtbl.find syms.dfns i with
           | {symdef=`SYMDEF_glr _ } -> `Nonterm ii
@@ -416,7 +419,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
             clierr sr "Expected unique union constructor (it's overloaded)"
           | _ -> clierr sr "Expected nonterminal or union constructor"
           end
-        | `NonFunctionEntry i,[] -> `Term i
+        | `NonFunctionEntry i,[] -> `Term (sye i)
         | _,ts -> clierr sr "Unexpected type variables"
       in
       let bp p = map (fun (n,q) -> n,bn q) p in
@@ -696,7 +699,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
     | `SYMDEF_instance qn -> 
-      let (k:int),(ts: typecode_t list) = luqn qn in
+      let (k:entry_kind_t),(ts: typecode_t list) = luqn qn in
+      let k = sye k in
       let ts = map bt ts in
       let sym : bbdcl_t = `BBDCL_instance ([],k,ts) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
@@ -843,6 +847,7 @@ open Flx_exceptions
 open Flx_mtypes1
 open Flx_mtypes2
 open Flx_use
+open Flx_typing
 ;;
 
 let print_help () = print_options(); exit(0)
@@ -945,7 +950,7 @@ try
           failwith "Can't find name _init_ in top level module's name map"
       in
       let index = match entry with
-        | `FunctionEntry [x] -> x
+        | `FunctionEntry [x] -> sye x
         | `FunctionEntry [] -> failwith "Couldn't find '_init_'"
         | `FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
         | `NonFunctionEntry _ -> failwith "_init_ found but not procedure"

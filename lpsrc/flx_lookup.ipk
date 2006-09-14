@@ -169,7 +169,7 @@ val resolve_overload:
   id_t -> 
   btypecode_t list ->
   btypecode_t list ->      (* explicit param/arg bindings *)
-  (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option
+  (int * btypecode_t * (int * btypecode_t) list * btypecode_t list) option
 
 val bind_expression :
   sym_state_t ->
@@ -234,6 +234,7 @@ open Flx_tpat
 
 let unit_t = `BTYP_tuple []
 let dfltvs = [],`TYP_tuple []
+let mkentry i = {base_sym=i; spec_vs=[]; sub_ts=[]}
 
 let lvalify t = match t with 
   | `BTYP_lvalue _ -> t
@@ -340,26 +341,33 @@ some of which might be inherits, into a list of
 actual functions
 *)
 
+module EntrySet = Set.Make(
+  struct
+    type t = entry_kind_t
+    let compare = compare
+  end
+)
+
 let rec trclose syms rs sr fs =
-  let inset = ref IntSet.empty in
-  let outset = ref IntSet.empty in
-  let exclude = ref IntSet.empty in
-  let append fs = iter (fun i -> inset := IntSet.add i !inset) fs in
+  let inset = ref EntrySet.empty in
+  let outset = ref EntrySet.empty in
+  let exclude = ref EntrySet.empty in
+  let append fs = iter (fun i -> inset := EntrySet.add i !inset) fs in
 
   let rec trclosem () =
-    if IntSet.is_empty !inset then ()
+    if EntrySet.is_empty !inset then ()
     else
       (* grab an element *)
-      let x = IntSet.choose !inset in
-      inset := IntSet.remove x !inset;
+      let x = EntrySet.choose !inset in
+      inset := EntrySet.remove x !inset;
       
       (* loop if already handled *)
-      if IntSet.mem x !exclude then trclosem ()
+      if EntrySet.mem x !exclude then trclosem ()
       else begin
         (* say we're handling this one *)
-        exclude := IntSet.add x !exclude;
+        exclude := EntrySet.add x !exclude;
 
-        match Hashtbl.find syms.dfns x with
+        match Hashtbl.find syms.dfns (sye x) with
         | {parent=parent; sr=sr2; symdef=`SYMDEF_inherit_fun qn} ->
           let env = build_env syms parent in
           begin match fst (lookup_qn_in_env2' syms env rs qn) with
@@ -367,19 +375,19 @@ let rec trclose syms rs sr fs =
           | `FunctionEntry fs' -> append fs'; trclosem ()
           end
 
-        | _ -> outset := IntSet.add x !outset; trclosem ()
+        | _ -> outset := EntrySet.add x !outset; trclosem ()
       end
   in
   append fs;
   trclosem (); 
   let output = ref [] in 
-  IntSet.iter (fun i -> output := i :: !output) !outset;
+  EntrySet.iter (fun i -> output := i :: !output) !outset;
   !output
 
 and resolve_inherits syms rs sr x =
   match x with
   | `NonFunctionEntry z -> 
-    begin match Hashtbl.find syms.dfns z with
+    begin match Hashtbl.find syms.dfns (sye z) with
     | {parent=parent; symdef=`SYMDEF_inherit qn} ->
       (*
       print_endline ("Found an inherit symbol qn=" ^ string_of_qualified_name qn);
@@ -523,7 +531,7 @@ and lookup_code_in_env syms env sr qn =
   | Some (`FunctionEntry x,ts) -> 
     iter 
     (fun i -> 
-      match Hashtbl.find syms.dfns i with
+      match Hashtbl.find syms.dfns (sye i) with
       | {symdef=`SYMDEF_insert _} -> ()
       | {id=id; vs=vs; symdef=y} -> clierr sr 
         (
@@ -537,7 +545,7 @@ and lookup_code_in_env syms env sr qn =
     ;
     x,ts
 
-  | None -> [0],[]
+  | None -> [mkentry 0],[]
 
 and lookup_qn_in_env 
   syms
@@ -612,13 +620,13 @@ and lookup_sn_in_env
     begin match
       lookup_qn_in_env syms env x
     with
-    | index,ts -> index,map bt ts
+    | index,ts -> (sye index),map bt ts
     end
 
   | `AST_suffix (sr,(qn,suf)) ->
     let bsuf = bind_type syms env sr suf in
     (* OUCH HACKERY *)
-    let (be,t) = 
+    let ((be,t) : tbexpr_t) = 
       lookup_qn_with_sig' 
       syms 
       sr sr 
@@ -1473,13 +1481,13 @@ and bind_type'
     let t = 
       match lookup_qn_in_env2' syms env rs qn with
       | `FunctionEntry ii,[] -> 
-        cal_glr_attr_type syms sr ii
+        cal_glr_attr_type syms sr (map sye ii)
 
       | `NonFunctionEntry i,[] ->
-        begin match Hashtbl.find syms.dfns i with
+        begin match Hashtbl.find syms.dfns (sye i) with
         | {sr=sr; symdef=`SYMDEF_const_ctor (_,ut,_)} -> `BTYP_void (* hack *)
         | {sr=sr; symdef=`SYMDEF_nonconst_ctor (_,_,_,argt)} -> 
-          cal_glr_attr_type'' syms sr i argt
+          cal_glr_attr_type'' syms sr (sye i) argt
         | _ -> clierr sr "Token must be union constructor"
         end
       | _,ts -> clierr sr "GLR symbol can't have type subscripts"
@@ -1541,7 +1549,7 @@ and bind_type'
       print_endline ("Qualified name lookup finds index " ^ si i ^
       "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
       *)
-      bi i ts
+      bi (sye i) ts
     end
 
   | `AST_suffix (sr,(qn,t)) ->
@@ -1564,7 +1572,7 @@ and bind_type'
     *)
     t
 
-and cal_glr_attr_type'' syms sr i t =
+and cal_glr_attr_type'' syms sr (i:int) t =
   try Hashtbl.find syms.glr_cache i
   with Not_found ->
   try Hashtbl.find syms.varmap i
@@ -2244,7 +2252,7 @@ and koenig_lookup syms rs sra id' name_map fn t2 ts =
         )
       )
   in 
-  match entries with
+  match (entries:entry_set_t) with
   | `FunctionEntry fs ->
     (*
     print_endline ("Got candidates: " ^ string_of_entry_set entries);
@@ -2500,7 +2508,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       *)
       begin match
         resolve_overload'
-        syms rs sra [index] name signs []
+        syms rs sra [mkentry index] name signs []
       with
       | Some (index,t,mgu,ts) ->
         `BEXPR_closure (index,ts),
@@ -2537,7 +2545,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       )
     | Some entries -> match entries with 
     | `NonFunctionEntry (index) ->
-      handle_nonfunction_index index ts
+      handle_nonfunction_index (sye index) ts
 
     | `FunctionEntry fs ->
       match
@@ -2608,7 +2616,7 @@ and handle_function
   sra srn 
   name 
   ts
-  index 
+  (index : int)
 : tbexpr_t 
 =
   match get_data syms.dfns index with 
@@ -2747,7 +2755,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   in
   match result with
   | `NonFunctionEntry (index) ->
-    begin match get_data syms.dfns index with
+    begin match get_data syms.dfns (sye index) with
     {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
     (*
     print_endline ("FOUND " ^ id);
@@ -2848,7 +2856,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_parameter (_,t)
       ->
       let sign = try hd t2 with _ -> assert false in
-      handle_variable syms env rs index id srn ts t sign
+      handle_variable syms env rs (sye index) id srn ts t sign
     | _ 
       -> 
         clierr sra 
@@ -2906,7 +2914,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         match opens with 
         | [`NonFunctionEntry i] when 
           (
-              match get_data syms.dfns i with
+              match get_data syms.dfns (sye i) with
               {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
               (*
               print_endline ("FOUND " ^ id);
@@ -2961,7 +2969,7 @@ and bind_regdef syms env regexp_exclude e =
   | `REGEXP_name qn ->
     begin match lookup_qn_in_env syms env qn with
     | i,_ ->
-      if mem i regexp_exclude
+      if mem (sye i) regexp_exclude
       then 
         let sr = src_of_expr (qn:>expr_t) in
         clierr sr
@@ -2971,11 +2979,11 @@ and bind_regdef syms env regexp_exclude e =
         )
       else
         begin
-          match get_data syms.dfns i with
+          match get_data syms.dfns (sye i) with
           {symdef=entry} ->
           match entry with
           | `SYMDEF_regdef e ->
-            bind_regdef syms env (i::regexp_exclude) e
+            bind_regdef syms env ((sye i)::regexp_exclude) e
           | _ -> 
             let sr = src_of_expr (qn:>expr_t) in
             clierr sr
@@ -3092,8 +3100,8 @@ and bind_expression' syms env (rs:recstop) e args
     | `FunctionEntry [index] ->
        print_endline "Callback closure ..";
        let ts = map (bt sr) ts in
-       `BEXPR_closure (index, ts),
-       ti sr index ts
+       `BEXPR_closure (sye index, ts),
+       ti sr (sye index) ts
     | `NonFunctionEntry  _
     | _ -> clierr sr
       "'callback' expression denotes non-singleton function set"
@@ -3336,6 +3344,7 @@ and bind_expression' syms env (rs:recstop) e args
         in
         begin match entryset with
         | `NonFunctionEntry idx ->
+          let idx = sye idx in
           let vtype = 
             inner_typeofindex_with_ts syms sr
             { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
@@ -3391,7 +3400,7 @@ and bind_expression' syms env (rs:recstop) e args
         in
         begin match entryset with
         | `FunctionEntry fs ->
-          if not (mem meth_idx fs) then syserr sr "Woops, method index isn't a member function!";
+          if not (mem meth_idx (map sye fs)) then syserr sr "Woops, method index isn't a member function!";
           begin match Hashtbl.find syms.dfns meth_idx with
           | {id=method_name; vs=meth_vs; symdef = `SYMDEF_function _} ->
             assert (meth_name = method_name);
@@ -3508,6 +3517,7 @@ and bind_expression' syms env (rs:recstop) e args
     let ts = map (bt sr) ts in
     begin match inner_lookup_name_in_env syms env rs sr name with
     | `NonFunctionEntry (index) -> 
+      let index = sye index in 
       let ts = adjust_ts syms sr index ts in
       `BEXPR_name (index,ts),
       let t = ti sr index ts in
@@ -3568,12 +3578,14 @@ and bind_expression' syms env (rs:recstop) e args
     let ts = map (bt sr) ts in
     begin match inner_lookup_name_in_env syms env rs sr name with
     | `NonFunctionEntry (index) -> 
+      let index = sye index in
       let ts = adjust_ts syms sr index ts in
       `BEXPR_name (index,ts),
       let t = ti sr index ts in
       t
 
     | `FunctionEntry [index] -> 
+      let index = sye index in
       let ts = adjust_ts syms sr index ts in
       `BEXPR_closure (index,ts),
       let t = ti sr index ts in
@@ -3611,6 +3623,7 @@ and bind_expression' syms env (rs:recstop) e args
       | Some entry -> 
         begin match entry with
         | `NonFunctionEntry (i) ->  
+          let i = sye i in
           begin match Hashtbl.find syms.dfns i with
           | {sr=srn; symdef=`SYMDEF_inherit qn} -> be (qn :> expr_t)
           | _ ->
@@ -3993,6 +4006,7 @@ and bind_expression' syms env (rs:recstop) e args
           in
           begin match entryset with
           | `NonFunctionEntry idx ->
+            let idx = sye idx in
             let vtype = 
               inner_typeofindex_with_ts syms sr
               { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
@@ -4360,7 +4374,7 @@ and resolve_overload'
   (name: string)
   (sufs : btypecode_t list)
   (ts:btypecode_t list)
-: (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
+: (int * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
 
   if length fs = 0 then None else
   let bt sr i t =
@@ -4438,7 +4452,7 @@ and get_includes' syms includes index =
           try lookup_qn_in_env syms env qn 
           with Not_found -> failwith "QN NOT FOUND"
         in 
-          get_includes' syms includes i
+          get_includes' syms includes (sye i)
     )
     dirs
   end
@@ -4460,7 +4474,7 @@ and bind_dir
     with Not_found -> failwith "QN NOT FOUND"
   in
   match result with
-  | i,ts -> i
+  | i,ts -> sye i
 
 and pub_table_dir 
   syms 
@@ -4621,9 +4635,9 @@ and rebind_btype syms env sr ts t: btypecode_t =
 and check_module syms name sr entries ts =
     begin match entries with
     | `NonFunctionEntry (index) ->
-      begin match get_data syms.dfns index with
+      begin match get_data syms.dfns (sye index) with
       | {dirs=dirs;pubmap=table;symdef=`SYMDEF_module} -> 
-        Simple_module (index,ts,table,dirs)
+        Simple_module (sye index,ts,table,dirs)
       | {id=id;sr=sr'} -> 
         clierr sr
         (

@@ -2699,6 +2699,7 @@ open Flx_exceptions
 open Flx_flxopt
 open Flx_ogen
 open Flx_elkgen
+open Flx_typing
 ;;
 
 let print_help () = print_options(); exit(0)
@@ -2868,7 +2869,7 @@ try
         failwith "Can't find name _init_ in top level module's name map"
     in
     let index = match entry with
-      | `FunctionEntry [x] -> x
+      | `FunctionEntry [x] -> sye x
       | `FunctionEntry [] -> failwith "Couldn't find '_init_'"
       | `FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
       | `NonFunctionEntry _ -> failwith "_init_ found but not procedure"

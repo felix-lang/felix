@@ -5,6 +5,12 @@ open Flx_ast
 open Flx_types
 open Flx_mtypes2
 
+type overload_result = 
+ int *  (* index of function *)
+ btypecode_t * (* type of function signature *)
+ (int * btypecode_t) list * (* mgu *)
+ btypecode_t list (* ts *)
+
 val overload:
   sym_state_t -> 
   (range_srcref  -> int -> typecode_t -> btypecode_t) ->
@@ -13,12 +19,7 @@ val overload:
   string ->
   btypecode_t list ->
   btypecode_t list ->
-  (
-    entry_kind_t * 
-    btypecode_t * 
-    (int * btypecode_t) list * 
-    btypecode_t list
-  ) option
+  overload_result option
 
 @h = tangler("src/flx_overload.ml")
 @select(h)
@@ -50,6 +51,8 @@ type result =
   | Unique of overload_result
   | Fail
 
+
+let mkentry i = {base_sym=i; spec_vs=[]; sub_ts=[]}
 
 let get_data table index : symbol_data_t = 
   try Hashtbl.find table index
@@ -147,7 +150,8 @@ let rec unravel_ret tin dts =
   | `BTYP_function (a,b) -> unravel_ret b (a::dts)
   | _ -> rev dts
 
-let consider syms bt name i ts signs call_sr =
+let consider syms bt name i ts signs call_sr : overload_result option =
+    let i : int = sye i in (* HACK!!!!! STRIP OFF SPECIALISATION DATA *)
     let bt sr t = bt sr i t in
     let id,sr,p,vs,pvs,con,t,r = resolve syms i in
     let con = bt sr con in
@@ -524,8 +528,9 @@ let overload
   (name: string)
   (sufs : btypecode_t list) 
   (ts:btypecode_t list) 
-: (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
-
+: 
+  overload_result option 
+=
   (*
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt syms.dfns) sufs);
@@ -533,7 +538,7 @@ let overload
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
   *) 
   (* HACK for the moment *)
-  let rec aux i =  
+  let aux i =  
     match consider syms bt name i ts sufs call_sr with
     | Some x -> Unique x
     | None -> Fail

@@ -315,6 +315,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_svc s ->          
       begin match lun sr s with
       | `NonFunctionEntry (index) -> 
+        let index = sye index in
         let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
         begin match entry with
         | `SYMDEF_var _ -> ()
@@ -419,6 +420,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       begin match lun sr s with
       | `FunctionEntry _ -> clierr sr "Can't init function constant"
       | `NonFunctionEntry (index) -> 
+        let index = sye index in
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.dfns rhst in

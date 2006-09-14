@@ -46,6 +46,8 @@ open List
 open Flx_lookup
 open Flx_exceptions
 
+let mkentry i = {base_sym=i; spec_vs=[]; sub_ts=[]}
+
 let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
   let t = 
     match con1,con2 with
@@ -99,36 +101,36 @@ let add_unique syms sr table key value =
     match entry with 
     | `NonFunctionEntry (idx) 
     | `FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.dfns idx  with 
+       (match Hashtbl.find syms.dfns (sye idx)  with 
        | { sr=sr2 } ->
          clierr2 sr sr2 
-         ("[build_tables] Duplicate non-function " ^ key ^ "<"^si idx^">")
+         ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
        )
      | `FunctionEntry [] -> assert false
   with Not_found -> 
-    Hashtbl.add table key (`NonFunctionEntry (value))
+    Hashtbl.add table key (`NonFunctionEntry (mkentry value))
 
 let add_function syms sr table key value =
   try 
     match Hashtbl.find table key with
     | `NonFunctionEntry entry -> 
       begin
-        match Hashtbl.find syms.dfns entry with
+        match Hashtbl.find syms.dfns ( sye entry ) with
         { id=id; sr=sr2 } ->
         clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^ 
           key ^ "<" ^ si value ^ ">" ^
           " with non-function " ^ 
-          id ^ "<" ^ si entry ^ ">"
+          id ^ "<" ^ si (sye entry) ^ ">"
         )
       end
 
     | `FunctionEntry fs ->
       Hashtbl.remove table key;
-      Hashtbl.add table key (`FunctionEntry (value :: fs))
+      Hashtbl.add table key (`FunctionEntry (mkentry value :: fs))
   with Not_found -> 
-    Hashtbl.add table key (`FunctionEntry [value])
+    Hashtbl.add table key (`FunctionEntry [mkentry value])
 
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
@@ -186,7 +188,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
     if name = "root" 
     then failwith ("Can't name non-toplevel module 'root'")
     else
-      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (root))
+      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry root))
   ;
   begin 
     iter
@@ -919,7 +921,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
 
           (* THIS IS A SUPERIOR HACK!!!! *)
           let sts = ref [] in
-          let detail idx = 
+          let detail {base_sym=idx} = 
             match 
               try Hashtbl.find syms.dfns idx 
               with Not_found -> 
