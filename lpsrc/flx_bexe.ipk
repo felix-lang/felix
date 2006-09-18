@@ -227,7 +227,53 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_call (`AST_name (_,"axiom_check",[]), e2) ->
        tack (`BEXE_axiom_check(sr,be e2))
 
-    | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
+    | `EXE_call (f',a') ->
+      (*
+      print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
+      *)
+      let (ea,ta) as a = be a' in
+      (*
+      print_endline ("Recursive descent into application " ^ string_of_expr e);
+      *)
+      let (bf,tf) as f  =
+        match f' with
+        | #qualified_name_t as name -> 
+          let srn = src_of_expr name in
+          (*
+          print_endline "Lookup qn with sig .. ";
+          *)
+          lookup_qn_with_sig syms sr srn env name [ta]
+        | _ -> bind_expression_with_args syms env f' [a]
+      in
+      (*
+      print_endline ("tf=" ^ sbt syms.dfns tf);
+      print_endline ("ta=" ^ sbt syms.dfns ta);
+      *)
+      begin match tf with 
+      | `BTYP_cfunction _ -> 
+        tack (cal_call syms sr f a)
+
+      | `BTYP_function _ -> 
+        (* print_endline "Function .. cal apply"; *) 
+        tack (cal_call syms sr f a)
+      | _ ->
+        let apl name =
+          bind_exe 
+          (
+            sr,
+            `EXE_call
+            (
+              `AST_name (sr,name,[]),
+              `AST_tuple (sr,[f';a'])
+            )
+          )
+        in
+        apl "apply"
+      end
+
+(*
+
+    | `EXE_call (f', a') -> (* OVERLOADING *)
       let sr = src_of_expr sn in
       let be2,t2 = be e2 in
       let (be1,t1) as tbe1 =
@@ -241,6 +287,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          | _ -> be sn
       in  
         tack (cal_call syms sr tbe1 (be2,t2))
+
+    | `EXE_call (p,e) ->
+      let p',pt' = be p and e',et' = be e in
+      tack (cal_call syms sr (p', pt') (e', et'))
+*)
 
     | `EXE_apply_ctor (vname, clsname, arg) ->
       let (e2,t2) as barg = be arg in
@@ -307,10 +358,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | _ -> 
         clierr sr ("Class constructor must name class, got " ^ sbe syms.dfns cls)
       end
-
-    | `EXE_call (p,e) ->
-      let p',pt' = be p and e',et' = be e in
-      tack (cal_call syms sr (p', pt') (e', et'))
 
     | `EXE_svc s ->          
       begin match lun sr s with

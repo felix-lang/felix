@@ -108,7 +108,7 @@ let dump_name_to_int_map level name name_map =
 
 let strp = function | Some x -> si x | None -> "none" 
  
-let add_unique syms sr (vs:ivs_list_t) table key value =
+let full_add_unique syms sr (vs:ivs_list_t) table key value =
   try 
     let entry = Hashtbl.find table key in
     match entry with 
@@ -123,7 +123,7 @@ let add_unique syms sr (vs:ivs_list_t) table key value =
   with Not_found -> 
     Hashtbl.add table key (`NonFunctionEntry (mkentry syms vs value))
 
-let add_function syms sr (vs:ivs_list_t) table key value =
+let full_add_function syms sr (vs:ivs_list_t) table key value =
   try 
     match Hashtbl.find table key with
     | `NonFunctionEntry entry -> 
@@ -240,8 +240,8 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
           con
         in
         let vs = make_vs vs' in
-        let add_unique table id idx = add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
-        let add_function table id idx = add_function syms sr (merge_ivs vs inherit_vs) table id idx in
+        let add_unique table id idx = full_add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
+        let add_function table id idx = full_add_function syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_tvars' parent table vs =        
           iter
           (fun (tvid,i,tpat) ->
@@ -276,6 +276,10 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
               | `MemberProc (n,mix,vs,t,cc) -> `Proc,n,mix,vs,t,cc
               | `MemberCtor (n,mix,t,cc) -> `Ctor,n,mix,dfltvs,t,cc
             in
+            (*
+            print_endline ("//Member " ^ component_name);
+            print_endline ("vs= " ^ catmap "," (fun (n,i)->n) (fst mvs));
+            *)
             let mtvars = map (fun (s,_)-> `AST_name (sr,s,[])) (fst mvs) in
             if print_flag then
             print_endline ("//Member " ^ component_name);
@@ -458,8 +462,18 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
                     ([`PVal,obj_name,stype],None), rett, props, exes
                   )
                 };
+                let xvs = merge_ivs vs mvs in
+                let xvs = merge_ivs inherit_vs xvs in
+                (*
+                print_endline ("ADDING class method " ^ get_name);
+                print_endline ("vs= " ^ catmap "," (fun (n,i,_)->n) (fst xvs));
+                *)
+                full_add_function syms sr xvs pub_name_map get_name getn;
+                full_add_function syms sr xvs priv_name_map get_name getn;
+                (*
                 add_function pub_name_map get_name getn;
                 add_function priv_name_map get_name getn;
+                *)
 
                 (* add parameter now *)
                 if print_flag then

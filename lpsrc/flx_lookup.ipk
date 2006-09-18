@@ -178,6 +178,13 @@ val bind_expression :
   expr_t ->
   tbexpr_t
 
+val bind_expression_with_args :
+  sym_state_t ->
+  env_t ->
+  expr_t ->
+  tbexpr_t list ->
+  tbexpr_t
+
 val typeofindex :
   sym_state_t ->
   int ->
@@ -2677,7 +2684,7 @@ and handle_function
   | `SYMDEF_callback _
     ->
     (*
-    print_endline ("Handle function .."^si index^", ts=" ^ catmap "," (sbt syms.dfns) ts);
+    print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
     *)
     let t = inner_typeofindex_with_ts syms sr rs index ts 
     in
@@ -3072,8 +3079,10 @@ and handle_map sr (f,ft) (a,at) =
       *)
       failwith "MAP NOT IMPLEMENTED"
  
-and bind_expression' syms env (rs:recstop) e args
-: tbexpr_t = 
+and bind_expression_with_args syms env e args : tbexpr_t = 
+  bind_expression' syms env rsground e args
+
+and bind_expression' syms env (rs:recstop) e args : tbexpr_t = 
   (*
   print_endline ("[bind_expression'] " ^ string_of_expr e);
   print_endline ("expr_fixlist is " ^ 

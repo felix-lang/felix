@@ -176,7 +176,16 @@ let consider syms bt name
     (* these are wrong .. ? or is it just shitty table? 
        or is the mismatch due to unresolved variables?
     *)
-    if (length base_vs != length sub_ts) then print_endline "WARN: VS != SUB_TS";
+    if (length base_vs != length sub_ts) then begin
+      print_endline "WARN: VS != SUB_TS";
+      print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
+      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs); 
+      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs); 
+      print_endline ("sub TS=" ^ catmap "," (sbt syms.dfns) sub_ts); 
+      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs); 
+      print_endline ("input TS=" ^ catmap "," (sbt syms.dfns) input_ts); 
+    end
+    ;
     (*
     if (length spec_vs != length input_ts) then print_endline "WARN: SPEC_VS != INPUT_TS";
     *)
@@ -632,7 +641,7 @@ let overload
   print_endline ("Argument sigs are " ^ catmap ", " (sbt syms.dfns) sufs);
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
-  *) 
+  *)
   (* HACK for the moment *)
   let aux i =  
     match consider syms bt name i ts sufs call_sr with
