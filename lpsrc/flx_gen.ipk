@@ -2702,6 +2702,8 @@ open Flx_elkgen
 open Flx_typing
 ;;
 
+let dfltvs = [],`TYP_tuple []
+
 let print_help () = print_options(); exit(0)
 ;;
 
@@ -2820,7 +2822,7 @@ try
   then print_endline "//BUILDING TABLES";
 
   let pubtab, _, exes, ifaces,dirs = 
-    build_tables syms "root" 0 None None root false deblocked 
+    build_tables syms "root" dfltvs 0 None None root false deblocked 
   in
   let build_table_time = tim() in
   if compiler_options.print_flag 

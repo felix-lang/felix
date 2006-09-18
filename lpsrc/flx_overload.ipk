@@ -8,6 +8,7 @@ open Flx_mtypes2
 type overload_result = 
  int *  (* index of function *)
  btypecode_t * (* type of function signature *)
+ btypecode_t * (* type of function return *)
  (int * btypecode_t) list * (* mgu *)
  btypecode_t list (* ts *)
 
@@ -20,6 +21,8 @@ val overload:
   btypecode_t list ->
   btypecode_t list ->
   overload_result option
+
+exception OverloadKindError of range_srcref * string
 
 @h = tangler("src/flx_overload.ml")
 @select(h)
@@ -41,9 +44,12 @@ open Flx_name
 open Flx_tconstraint
 open Flx_tpat
 
+exception OverloadKindError of range_srcref * string
+
 type overload_result = 
  int *  (* index of function *)
  btypecode_t * (* type of function signature *)
+ btypecode_t * (* type of function return *)
  (int * btypecode_t) list * (* mgu *)
  btypecode_t list (* ts *)
 
@@ -51,8 +57,6 @@ type result =
   | Unique of overload_result
   | Fail
 
-
-let mkentry i = {base_sym=i; spec_vs=[]; sub_ts=[]}
 
 let get_data table index : symbol_data_t = 
   try Hashtbl.find table index
@@ -122,21 +126,21 @@ let sig_of_symdef symdef sr name i = match symdef with
     | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r
     | `TYP_case _ -> `TYP_type,`TYP_type
     | symdef -> 
-      clierr sr (
+      raise (OverloadKindError (sr,
         "[sig_of_symdef] Expected "^
         name
         ^" to be a type function, got " ^
         string_of_typecode t
-      )
+      ))
     end
   
   | symdef -> 
-    clierr sr (
+    raise (OverloadKindError (sr,
       "[sig_of_symdef] Expected "^
       name
       ^" to be function or procedure, got " ^
      string_of_symdef symdef name ([],`TYP_tuple[])
-    )    
+    ))
 
 let resolve syms i =
   match get_data syms.dfns i with 
@@ -150,90 +154,150 @@ let rec unravel_ret tin dts =
   | `BTYP_function (a,b) -> unravel_ret b (a::dts)
   | _ -> rev dts
 
-let consider syms bt name i ts signs call_sr : overload_result option =
-    let i : int = sye i in (* HACK!!!!! STRIP OFF SPECIALISATION DATA *)
+(* Note this bt must bind types in the base context *)
+let consider syms bt name 
+  ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
+  input_ts arg_types call_sr 
+: overload_result option =
     let bt sr t = bt sr i t in
-    let id,sr,p,vs,pvs,con,t,r = resolve syms i in
+    let id,sr,p,base_vs,parent_vs,con,base_domain,base_result = resolve syms i in
+
+    (*
+    print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
+    begin
+      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs); 
+      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs); 
+      print_endline ("sub TS=" ^ catmap "," (sbt syms.dfns) sub_ts); 
+      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs); 
+      print_endline ("input TS=" ^ catmap "," (sbt syms.dfns) input_ts); 
+    end
+    ;
+    *)
+    (* these are wrong .. ? or is it just shitty table? 
+       or is the mismatch due to unresolved variables?
+    *)
+    if (length base_vs != length sub_ts) then print_endline "WARN: VS != SUB_TS";
+    (*
+    if (length spec_vs != length input_ts) then print_endline "WARN: SPEC_VS != INPUT_TS";
+    *)
+
+    (* bind type in base context, then translate it to view context:
+       thus, base type variables are eliminated and specialisation
+       type variables introduced
+    *)
+   let spec t =
+      (*
+      print_endline ("specialise Base type " ^ sbt syms.dfns t);
+      *)
+      let n = length base_vs in
+      let ts = list_prefix sub_ts n in
+      let vs = map (fun (i,n,_) -> i,n) base_vs in
+      let t = tsubst vs ts t in
+      (*
+      print_endline ("to View type " ^ sbt syms.dfns t);
+      *)
+      t
+    in
+    let spec_bt sr t =
+      let t = bt sr t in
+      let t = spec t in
+      t
+    in
+      
     let con = bt sr con in
     (*
     print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
     *)
-    let t = bt sr t in
-    let dms = 
-      try unravel_ret (bt sr r) []
-      with _ -> print_endline "Failed to bind candidate return type!"; []
+    let domain = bt sr base_domain in
+    let spec_domain = spec domain in
+    let spec_result =
+      try spec_bt sr base_result
+      with _ -> clierr sr "Failed to bind candidate return type!"
     in
-    let tdms = t :: dms in
+    (*
+    print_endline ("BASE Return type of function " ^ id^ "<"^si i^">=" ^ sbt syms.dfns spec_result);
+    *)
+
+    (* unravel function a->b->c->d->..->z into domains a,b,c,..y 
+      to match curry argument list
+    *)
+    let curry_domains = 
+      try unravel_ret spec_result []
+      with _ -> print_endline "Failed to unravel candidate return type!"; []
+    in
+    let curry_domains = spec_domain :: curry_domains in
 
     (*
-    print_endline ("Argument  sigs= " ^  catmap "->" (sbt syms.dfns) signs);
-    print_endline ("Candidate sigs= " ^  catmap "->" (sbt syms.dfns) tdms);
-    print_endline ("pvs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) pvs);
-    print_endline ("vs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) vs);
+    print_endline ("Argument  sigs= " ^  catmap "->" (sbt syms.dfns) arg_types);
+    print_endline ("Candidate sigs= " ^  catmap "->" (sbt syms.dfns) curry_domains);
     *)
     if con <> `BTYP_tuple [] then
       print_endline ("type constraint (for "^name^") = " ^ sbt syms.dfns con)
     ;
-    (* Here we have a parameter list vs of m type variables,
-       a signature type t, containing these variables,
-       and a list ts of type expressions of length n which are
-       bindings to first n of the m type variables.
 
-       Because of recursion, it is possible the ts also
-       contain the type variables in vs, however, these
-       are quite distinct.
+    (*
+       We need to attempt to find assignments for spec_vs which
+       unify the specialised function signature(s) with arguments.
 
-       To fix this problem we must 'alpha convert'
-       the type expression by replacing the vs variables
-       in t with fresh variables, and also assigning the
-       first n of these to the ts values.
+       To do this we match up:
 
-       Matching requires a solution for all the fresh variables.
-       The return type must be converted to use the fresh variables,
-       and then the solution plugged in to eliminate them: any
-       remaining variables from the original vs list are actually
-       from the environment of a recursive function call
+       (a) spec vs variables with input ts values
+       (b) signatures with arguments
+
+       which hopefully produces mgu with all the spec_vs variables
+      
+       If this succeeds, we plug these into the sub_ts to get
+       assignments for base_vs, eliminating the spec vs and
+       base vs variables. The parent variables must not be
+       eliminated since they act like constants (constructors).
+
+       The resulting ts is then returned, it may contain variables
+       from the calling context.
+
+       There is a twist: a polymorphic function calling itself.
+       In that case the variables in the calling context
+       can be the same as the base variables of the called
+       function, but they have to be treated like constants.
+       for example here:
+    
+       fun f[t] ... => .... f[g t]
+
+       the 't' in f[g t] has to be treated like a constant.
+
+       So the base_vs variables are renamed in the 
+       function signature where they're dependent.
+
+       The spec vs variables don't need renaming
+       because they're anonymous.
+
+       Note that the base_vs variables are eliminated
+       from the signature .. so the renaming is pointless!
+
+
     *)
     (* Step1: make equations for the ts *)
-   
-    let k = length pvs in
-    let m = length vs in 
-    let n = length ts in
-    (* This is actually NOT an error .. it should just 
-      cause this candidate to be rejected
-    *)
+
+    let n_parent_vs = length parent_vs in
+    let n_base_vs = length base_vs in 
+    let n_spec_vs = length spec_vs in 
+    let n_sub_ts = length sub_ts in
+    let n_input_ts = length input_ts in
+
+    (* equations for user specified assignments *)
+    let lhs = map (fun (n,i) -> `BTYP_var ((i),`BTYP_type)) spec_vs in
+    let n = min n_spec_vs n_input_ts in
+    let eqns = combine (list_prefix lhs n) (list_prefix input_ts n) in
+
     (*
-    if n>m then clierr sr 
-    (
-      "[overload] Overloading " ^ name ^ 
-      "\nToo many type subscripts for index "^si i^", expected " ^ 
-      si m ^ ", got:\n" ^
-      catmap "," (sbt syms.dfns) ts
-    )
+    print_endline "EQUATIONS ARE:";
+    iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
+    eqns
     ;
     *)
-    if n>m then None else
 
-    (* Currently, vs lists can only specify TYPE variables *)
-    let base = !(syms.counter) in
-    syms.counter := base + k + m;
-    let lhs = map (fun i -> `BTYP_var ((i+base),`BTYP_type)) (nlist (k + m)) in
-    let rhs = (map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) pvs) @ ts in
-    let eqns = combine (list_prefix lhs (k+n)) rhs in
+    let n = min (length curry_domains) (length arg_types) in
+    let eqns = eqns @ combine (list_prefix curry_domains n) (list_prefix arg_types n) in
 
-    (* Step 2: convert t to use variables 0 to m-1 
-      instead of those in vs
-    *)
-    let bvs = map (fun (s,i,tp) -> s,i) (pvs @ vs) in
-    let tdms' = map (tsubst bvs lhs) tdms in
-    let rec rfld res x y = match x,y with
-    | [],_ | _,[] -> res
-    | h::t,h'::t' -> rfld ((h,h'):: res) t t'
-    in 
-    let eqns = rfld eqns tdms' signs in
-    (*
-    let eqns = (t',sign) :: eqns in
-    *)
     (*
     print_endline "EQUATIONS ARE:";
     iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
@@ -241,14 +305,15 @@ let consider syms bt name i ts signs call_sr : overload_result option =
     ;
     print_endline "...";
     *)
+
     let mgu = maybe_specialisation syms.dfns eqns in
-    (match mgu with
+    match mgu with
     | Some mgu -> 
-      let mgu = ref mgu in
       (*
       print_endline "Specialisation detected";
       print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
       *)
+      let mgu = ref mgu in
       (* each universally quantified variable must be fixed
         by the mgu .. if it doesn't its an error .. hmmm
 
@@ -263,6 +328,7 @@ let consider syms bt name i ts signs call_sr : overload_result option =
          to see if the return type can help
        *)
 
+(*
       let unresolved = ref (
         fold_left2 
         (fun acc (s,i,tp) k ->
@@ -271,7 +337,20 @@ let consider syms bt name i ts signs call_sr : overload_result option =
         [] vs (nlist m)
       )
       in
+*)
+(* *)
+(*
+      print_endline "Check for unresolved";
+      let unresolved = ref (
+        fold_left2 
+        (fun acc (s,i) k ->
+          if not (mem_assoc (k+base) !mgu) then (s,i,`TYP_type,k)::acc else acc
+        )
+        [] spec_vs (nlist (k+m))
+      )
+      in
 
+(* *)
       let th i = match i with 
         | 0 -> "first"
         | 1 -> "second"
@@ -309,7 +388,8 @@ let consider syms bt name i ts signs call_sr : overload_result option =
         )
       ;
       *)
-
+*)
+(*
       (* HACKERY to try to get more values from type patterns*)
       if length !unresolved > 0 then 
       begin
@@ -467,18 +547,31 @@ let consider syms bt name i ts signs call_sr : overload_result option =
             "\nwhich specialises a variable of the argument type"
           )
         )
-        signs
+        arg_types 
         ;
+*)        
         (*
         print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns !mgu);
         *)
         (* RIGHT! *)
+(*        
         let ts = map (fun i -> assoc (base+i) !mgu) (nlist (m+k)) in
-        
+*)        
+        (* The above ts is for plugging into the view, but we
+          have to return the elements to plug into the base
+          vs list, this is the sub_ts with the above ts plugged in,
+          substituting away the view vs
+        *)
+       
+        let base_ts = map (list_subst !mgu) sub_ts in
+
         (*
-        print_endline ("Matched candidate " ^ si i ^ 
-          " mgu=" ^ string_of_varlist syms.dfns !mgu ^ 
-          ", ts=" ^ catmap ", " (sbt syms.dfns) ts
+        print_endline ("Matched candidate " ^ si i ^ "\n" ^
+          ", spec domain=" ^ sbt syms.dfns spec_domain ^"\n" ^
+          ", base domain=" ^ sbt syms.dfns domain ^"\n" ^
+          ", return=" ^ sbt syms.dfns spec_result ^"\n" ^
+          ", mgu=" ^ string_of_varlist syms.dfns !mgu ^ "\n" ^
+          ", ts=" ^ catmap ", " (sbt syms.dfns) base_ts
         );
         *)
 
@@ -487,7 +580,10 @@ let consider syms bt name i ts signs call_sr : overload_result option =
           in the corresponding ts values. First we need to build
           a map of the correspondence
         *)
-
+(* ignore constraints for the moment *)
+        let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type)) parent_vs in
+        Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
+(*
         assert (length bvs = length ts);
         let type_constraint = build_type_constraints syms (bt sr) sr vs in
         let type_constraint = tsubst bvs ts type_constraint in
@@ -504,7 +600,7 @@ let consider syms bt name i ts signs call_sr : overload_result option =
           print_endline "Constraint failure, rejecting candidate";
           *)
           None
-        | `BTYP_tuple [] -> Some (i,t,!mgu,ts)
+        | `BTYP_tuple [] -> Some (i,ret,t,!mgu,ts)
         | _ -> 
           clierr sr 
           ("[overload] Cannot resolve type constraint! " ^
@@ -512,13 +608,13 @@ let consider syms bt name i ts signs call_sr : overload_result option =
           )
         end
       end
+*)
 
     | None -> 
       (*
       print_endline "No match"; 
       *)
       None
-    )
  
 let overload 
   syms 
@@ -582,7 +678,7 @@ let overload
 
   let candidates = fold_left
   (fun oc r ->
-     match r with Unique (j,c,_,_) -> 
+     match r with Unique (j,c,_,_,_) -> 
      (*
      print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
      *)
@@ -593,7 +689,7 @@ let overload
          print_endline "return elements plus candidate";
          *)
          r::lhs (* return all non-greater elements plus candidate *)
-       | (Unique(i,typ,mgu,ts) as x)::t 
+       | (Unique(i,typ,rtyp,mgu,ts) as x)::t 
        ->
          (*
          print_endline (" .. comparing with " ^ sbt syms.dfns typ);
@@ -632,11 +728,11 @@ let overload
   []
   candidates in
   match candidates with
-  | [Unique (i,t,mgu,ts)] -> 
+  | [Unique (i,t,rtyp,mgu,ts)] -> 
     (*
     print_endline ("[overload] Got unique result " ^ si i);
     *)
-    Some (i,t,mgu,ts)
+    Some (i,t,rtyp,mgu,ts)
 
   | [] -> None
   | _ -> 
@@ -646,7 +742,7 @@ let overload
       " with argument types " ^ catmap "," (sbt syms.dfns) sufs ^
       "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
       catmap "\n" (function 
-        | Unique (i,t,_,_) ->
+        | Unique (i,t,_,_,_) ->
           qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ 
           sbt syms.dfns t
         | Fail -> assert false

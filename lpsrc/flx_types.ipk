@@ -2234,6 +2234,12 @@ val string_of_entry_set:
 val full_string_of_entry_set:
   symbol_table_t -> entry_set_t -> string
 
+val print_name_table: 
+  symbol_table_t -> name_map_t -> unit
+
+val string_of_myentry:
+  symbol_table_t -> entry_kind_t -> string
+
 val string_of_varlist:
   symbol_table_t ->
   (int * btypecode_t) list ->
@@ -2927,7 +2933,10 @@ and sb dfns depth fixlist counter prec tc =
            lab 
        )
 
-    | `BTYP_var (i,mt) -> 0,"<T" ^ si i ^ ":"^sbt 0 mt^">"
+    | `BTYP_var (i,mt) -> 0,"<T" ^ si i ^ 
+      (match mt with `BTYP_type ->"" | _ -> ":"^sbt 0 mt)^
+      ">"
+
     | `BTYP_inst (i,ts) -> 
       0,qualified_name_of_index dfns i ^ 
       (if List.length ts = 0 then "" else
@@ -4850,6 +4859,23 @@ let full_string_of_entry_set dfns = function
     "{\n" ^
       catmap "\n" (full_string_of_entry_kind dfns) ls ^
     "\n}"
+
+let string_of_myentry dfns {base_sym=i; spec_vs=vs; sub_ts=ts} =
+ si i ^ 
+ " vs=" ^ catmap "," (fun (s,_)->s) vs ^
+ " ts=" ^ catmap "," (sbt dfns) ts
+
+let print_name_table dfns table =
+  Hashtbl.iter
+  (fun s v -> 
+    print_endline (s ^ " --> " ^
+      match v with
+      | `NonFunctionEntry i -> string_of_myentry dfns i
+      | `FunctionEntry ii -> "{"^ catmap "," (string_of_myentry dfns) ii ^ "}"
+    );
+  )
+  table
+
 
 let string_of_varlist dfns varlist =
   catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt dfns t) varlist

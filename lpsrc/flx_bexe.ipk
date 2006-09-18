@@ -279,7 +279,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
                 syms sr fs ("_ctor_" ^ name) [t2] [] (* constructors can't be polymorphic *)
               in
               match ro with 
-                | Some (ctor_idx,t,mgu,ts') ->
+                | Some (ctor_idx,t,ret,mgu,ts') ->
                   (* The overload resolution is generic, but the application
                     is concrete. so ts' should be a list of type variables
                     corresponding to the class vs, and the mgu should 

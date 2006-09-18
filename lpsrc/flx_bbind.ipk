@@ -850,6 +850,8 @@ open Flx_use
 open Flx_typing
 ;;
 
+let dfltvs = [],`TYP_tuple []
+
 let print_help () = print_options(); exit(0)
 ;;
 let reverse_return_parity = ref false
@@ -920,7 +922,7 @@ try
   print_endline ("//Top level module '"^module_name^"' has index " ^ si root);
 
   let table, _, exes, ifaces,dirs = 
-    build_tables syms "root" 0 None None root false deblocked 
+    build_tables syms "root" dfltvs 0 None None root false deblocked 
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";

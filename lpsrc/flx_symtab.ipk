@@ -19,6 +19,7 @@ open Flx_mtypes2
 val build_tables:
   sym_state_t ->
   string ->
+  ivs_list_t ->
   int ->
   int option -> (* parent index *)
   int option -> (* grandparent index *)
@@ -46,7 +47,19 @@ open List
 open Flx_lookup
 open Flx_exceptions
 
-let mkentry i = {base_sym=i; spec_vs=[]; sub_ts=[]}
+(* use fresh variables, but preserve names *)
+let mkentry syms (vs:ivs_list_t) i = 
+  let n = length (fst vs) in
+  let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
+  let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type)) (nlist n) in
+  let vs = map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
+  (*
+  print_endline ("Make entry " ^ si i ^ ", " ^ "vs =" ^
+    catmap "," (fun (s,i) -> s^ "<" ^ si i ^">") vs ^
+    ", ts=" ^ catmap "," (sbt syms.dfns) ts
+  );
+  *)
+  {base_sym=i; spec_vs=vs; sub_ts=ts}
 
 let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
   let t = 
@@ -95,7 +108,7 @@ let dump_name_to_int_map level name name_map =
 
 let strp = function | Some x -> si x | None -> "none" 
  
-let add_unique syms sr table key value =
+let add_unique syms sr (vs:ivs_list_t) table key value =
   try 
     let entry = Hashtbl.find table key in
     match entry with 
@@ -108,9 +121,9 @@ let add_unique syms sr table key value =
        )
      | `FunctionEntry [] -> assert false
   with Not_found -> 
-    Hashtbl.add table key (`NonFunctionEntry (mkentry value))
+    Hashtbl.add table key (`NonFunctionEntry (mkentry syms vs value))
 
-let add_function syms sr table key value =
+let add_function syms sr (vs:ivs_list_t) table key value =
   try 
     match Hashtbl.find table key with
     | `NonFunctionEntry entry -> 
@@ -128,9 +141,9 @@ let add_function syms sr table key value =
 
     | `FunctionEntry fs ->
       Hashtbl.remove table key;
-      Hashtbl.add table key (`FunctionEntry (mkentry value :: fs))
+      Hashtbl.add table key (`FunctionEntry (mkentry syms vs value :: fs))
   with Not_found -> 
-    Hashtbl.add table key (`FunctionEntry [mkentry value])
+    Hashtbl.add table key (`FunctionEntry [mkentry syms vs value])
 
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
@@ -151,7 +164,7 @@ let add_function syms sr table key value =
 let null_tab = Hashtbl.create 3 
 let dfltvs = [],`TYP_tuple []
 
-let rec build_tables syms name level parent grandparent root is_class asms = 
+let rec build_tables syms name inherit_vs level parent grandparent root is_class asms = 
   (*
   print_endline ("//Building tables for " ^ name);
   *)
@@ -188,7 +201,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
     if name = "root" 
     then failwith ("Can't name non-toplevel module 'root'")
     else
-      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry root))
+      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry syms ([],`TYP_tuple[]) root))
   ;
   begin 
     iter
@@ -196,8 +209,6 @@ let rec build_tables syms name level parent grandparent root is_class asms =
       fun (sr,id,seq,access,vs',dcl) -> 
         let pubtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
         let privtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
-        let add_unique table id idx = add_unique syms sr table id idx in
-        let add_function table id idx = add_function syms sr table id idx in
         let n = match seq with 
           | Some n -> (* print_endline ("SPECIAL " ^ id ^ si n); *) n 
           | None -> let n = !counter in incr counter; n
@@ -228,6 +239,9 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           ,
           con
         in
+        let vs = make_vs vs' in
+        let add_unique table id idx = add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
+        let add_function table id idx = add_function syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_tvars' parent table vs =        
           iter
           (fun (tvid,i,tpat) ->
@@ -246,7 +260,6 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           )
           (fst vs)
         in
-        let vs = make_vs vs' in
         let add_tvars table = add_tvars' (Some n) table vs in
 
         let handle_class class_kind classno sts tvars stype = 
@@ -426,7 +439,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                 if print_flag then
                 print_endline ("//Building tables for " ^ get_name);
                 let pubtab,privtab, exes, ifaces,dirs =  
-                  build_tables syms get_name (level+1) 
+                  build_tables syms get_name dfltvs (level+1) 
                  (Some getn) parent root false get_asms 
                 in
                 (* print_endline "Making fresh type variables"; *)
@@ -739,7 +752,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           let ps,traint = ps in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let pubtab,privtab, exes, ifaces,dirs =  
-            build_tables syms id (level+1) 
+            build_tables syms id dfltvs (level+1) 
             (Some fun_index) parent root false asms 
           in
           let ips = ref [] in
@@ -824,7 +837,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           *)
           let fun_index = n in
           let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (level+1) 
+            build_tables syms id dfltvs (level+1) 
             (Some fun_index) parent root false !new_asms 
           in
           Hashtbl.add dfns fun_index {
@@ -851,7 +864,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
         | `DCL_module asms ->
           if is_class then clierr sr "Module not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (level+1) (Some n) parent root false
+            build_tables syms id (merge_ivs inherit_vs vs) (level+1) (Some n) parent root false
             asms
           in
           Hashtbl.add dfns n {
@@ -879,7 +892,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
         | `DCL_instance (qn,asms) ->
           if is_class then clierr sr "instance not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (level+1) (Some n) parent root true
+            build_tables syms id dfltvs (level+1) (Some n) parent root true
             asms
           in
           Hashtbl.add dfns n {
@@ -898,7 +911,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
         | `DCL_class asms ->
           if is_class then clierr sr "class not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (level+1) (Some n) parent root true
+            build_tables syms id dfltvs (level+1) (Some n) parent root true
             asms
           in
           Hashtbl.add dfns n {
@@ -1131,7 +1144,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           let fun_index = n in 
           let asms = [`Exe (sr,`EXE_fun_return e)] in
           let pubtab,privtab, exes, ifaces,dirs =  
-            build_tables syms id (level+1) 
+            build_tables syms id dfltvs (level+1) 
             (Some fun_index) parent root false asms 
           in
           let ips = ref [] in
