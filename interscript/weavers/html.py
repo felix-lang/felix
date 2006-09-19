@@ -223,7 +223,7 @@ class html_weaver(weaver_base):
 
 #line 248 "interscript/src/html_weaver.ipk"
   def set_anchor(self, label):
-    self._write('<A NAME="#'+label+'"></A>')
+    self._write('<A NAME="'+label+'"></A>')
 
   def get_anchor(self, label):
     return '#'+label
