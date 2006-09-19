@@ -3510,7 +3510,7 @@ and string_of_statement level s =
   
 
   | `AST_type_alias (_,t1,vs,t2) ->
-    spaces level ^ "type " ^ t1 ^ print_vs vs ^
+    spaces level ^ "typedef " ^ t1 ^ print_vs vs ^
     " = " ^ 
     string_of_typecode t2 ^ ";"
 

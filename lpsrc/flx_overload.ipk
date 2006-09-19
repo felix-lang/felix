@@ -337,29 +337,18 @@ let consider syms bt name
          to see if the return type can help
        *)
 
-(*
-      let unresolved = ref (
-        fold_left2 
-        (fun acc (s,i,tp) k ->
-          if not (mem_assoc (k+base) !mgu) then (s,i,tp,k)::acc else acc
-        )
-        [] vs (nlist m)
-      )
-      in
-*)
-(* *)
-(*
+      (*
       print_endline "Check for unresolved";
+      *)
       let unresolved = ref (
         fold_left2 
         (fun acc (s,i) k ->
-          if not (mem_assoc (k+base) !mgu) then (s,i,`TYP_type,k)::acc else acc
+          if not (mem_assoc i !mgu) then (s,i,`TYP_type,k)::acc else acc
         )
-        [] spec_vs (nlist (k+m))
+        [] spec_vs (nlist n_spec_vs)
       )
       in
 
-(* *)
       let th i = match i with 
         | 0 -> "first"
         | 1 -> "second"
@@ -383,7 +372,6 @@ let consider syms bt name
            maybe_tp tp ^ "\n"
         ) "" !unresolved
       in
-      (*
       if length !unresolved > 0 then
         print_endline (
         "WARNING: experimental feature coming up\n" ^
@@ -396,8 +384,7 @@ let consider syms bt name
          "\nMost General Unifier(mgu)=\n" ^ string_of_varlist syms.dfns !mgu 
         )
       ;
-      *)
-*)
+      if length !unresolved > 0 then None else
 (*
       (* HACKERY to try to get more values from type patterns*)
       if length !unresolved > 0 then 
@@ -589,13 +576,10 @@ let consider syms bt name
           in the corresponding ts values. First we need to build
           a map of the correspondence
         *)
-(* ignore constraints for the moment *)
         let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type)) parent_vs in
-        Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
-(*
-        assert (length bvs = length ts);
-        let type_constraint = build_type_constraints syms (bt sr) sr vs in
-        let type_constraint = tsubst bvs ts type_constraint in
+        let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
+        let vs = map (fun (s,i,_)-> s,i) base_vs in
+        let type_constraint = tsubst vs base_ts type_constraint in
         (*
         print_endline ("Substituted type constraint " ^ sbt syms.dfns type_constraint);
         *)
@@ -609,13 +593,17 @@ let consider syms bt name
           print_endline "Constraint failure, rejecting candidate";
           *)
           None
-        | `BTYP_tuple [] -> Some (i,ret,t,!mgu,ts)
+        | `BTYP_tuple [] -> 
+          let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type)) parent_vs in
+          Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
+
         | _ -> 
           clierr sr 
           ("[overload] Cannot resolve type constraint! " ^
             sbt syms.dfns type_constraint
           )
         end
+(*
       end
 *)
 
