@@ -1125,7 +1125,7 @@ open module String
   }
 
   fun startswith (x:string) (e:char) : bool => x.[0] == e;
-  fun endsswith (x:string) (e:char) : bool => x.[len x - 1] == e;
+  fun endswith (x:string) (e:char) : bool => x.[len x - 1] == e;
 
 
   // trim whitespace
