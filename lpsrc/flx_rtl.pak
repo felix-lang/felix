@@ -1,5 +1,7 @@
 @head(1,"Run time driver support library")
 
+@execfile('config'+os.sep+'flx_data.py')
+
 This package contains core types and routines
 to facilitate construction of drivers for
 felix shared libraries. A felix driver is the top
@@ -12,27 +14,20 @@ The code all lives in directory rtl, the run time
 library support directory. The symbols are defined
 in namespace flx::rtl, except as noted.
 
-@execfile('config'+os.sep+'flx_data.py')
-@include_file ('flx_lib.ipk')
-@include_file ('flx_lex_lib.ipk')
+@select(tangler('spkgs/flx.py'))
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio','flx_stdlib']
+@doc()
 
-
-@h = tangler('spkgs/flx.py')
-@select(h)
-
-pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio']
-
-@h = tangler('spkgs/flx_async.py')
-@select(h)
+@select(tangler('spkgs/flx_async.py'))
 cpp_cpps = ['rtl/flx_async']
 provides_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl','flx_gc']
 lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "ASYNC"
+@doc()
 
-@h = tangler('spkgs/flx_rtl.py')
-@select(h)
+@select(tangler('spkgs/flx_rtl.py'))
 RTL_CPPS = [
   "rtl/flx_rtl",
   "rtl/flx_dynlink",
@@ -51,10 +46,9 @@ pkg_requires = ['flx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
 weaver_directory = 'doc/rtl/flx_rtl/'
+@doc()
 
-@h = tangler('spkgs/flx_drivers.py')
-@select(h)
-
+@select(tangler('spkgs/flx_drivers.py'))
 DRIVERS = [
   ('static','rtl/flx_run','',[]),
   ('dynamic','rtl/flx_run','bin/flx_run',[]),
@@ -75,10 +69,9 @@ drivers_require_libs = DRLIBS
 pkg_requires = ['flx_rtl','flx_pthread','flx_gc']
 lib_requires = ['libdemux','libflx_pthread','libflx']
 iscr_source = ['lpsrc/flx_rtl.pak']
+@doc()
 
-@h = tangler('spkgs/flx_async_drivers.py')
-@select(h)
-
+@select(tangler('spkgs/flx_async_drivers.py'))
 DRIVERS = [
   ('static','rtl/flx_arun','',[]),
   ('dynamic','rtl/flx_arun','bin/flx_arun',[]),
@@ -97,9 +90,9 @@ drivers = DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_gc','flx_rtl','flx_pthread','flx_async','demux','faio']
 iscr_source = ['lpsrc/flx_rtl.pak']
+@doc()
 
-@h = tangler('config/flx.fpc')
-@select(h)
+@select(tangler('config/flx.fpc', 'data'))
 Name: flx
 Description: Felix core runtime support
 Version: $Id$
@@ -110,23 +103,23 @@ Version: $Id$
    tangle("provides_dlib: -lflx_dynamic")
    tangle("provides_slib: -lflx_static")
 Requires: flx_gc
+@doc()
 
-@h = tangler('config/flx_arun.fpc')
-@select(h)
+@select(tangler('config/flx_arun.fpc', 'data'))
 Name: flx_arun
 Description: Felix standard driver, async support
 Version: $Id$
 Requires: flx_async faio demux flx_pthread flx flx_gc
+@doc()
 
-@h = tangler('config/flx_run.fpc')
-@select(h)
+@select(tangler('config/flx_run.fpc', 'data'))
 Name: flx_run
 Description: Felix standard driver, no async support
 Version: $Id$
 Requires: flx_pthread flx flx_gc
+@doc()
 
-@h = tangler('config/flx_async.fpc')
-@select(h)
+@select(tangler('config/flx_async.fpc', 'data'))
 Name: flx_async
 Description: Async hook
 Version: $Id$
@@ -138,9 +131,9 @@ Version: $Id$
    tangle("provides_slib: -lflx_async_static")
 
 Requires: faio demux flx_pthread flx flx_gc
+@doc()
 
-@h = tangler("rtl/flx_meta.hpp")
-@select(h)
+@select(tangler("rtl/flx_meta.hpp"))
 #ifndef __FLX_META_H__
 #define __FLX_META_H__
 // taken from BOOST
@@ -217,9 +210,9 @@ T &reinterpret(U const &x) {
   return reinterpret_cast<T&>(const_cast<U&>(x));
 }
 #endif
+@doc()
 
-@h = tangler("rtl/flx_host_config.hpp")
-@select(h)
+@select(tangler("rtl/flx_host_config.hpp"))
 #ifndef __FLX_HOST_CONFIG_H__
 #define __FLX_HOST_CONFIG_H__
 
@@ -268,8 +261,7 @@ T &reinterpret(U const &x) {
 
 #endif
 
-@h = tangler("rtl/flx_rtl_config.hpp")
-@select(h)
+@select(tangler("rtl/flx_rtl_config.hpp"))
 #ifndef __FLX_RTL_CONFIG_H__
 #define __FLX_RTL_CONFIG_H__
 
@@ -467,9 +459,8 @@ T &reinterpret(U const &x) {
 
 @tangle("#define FLX_RAWADDRESS "+cal_raw_address())
 @tangle('#define FLX_MAX_ALIGN '+str(MAX_ALIGN))
-
-
 #endif
+@doc()
 
 @head(2,"Procedure Continuation Abstraction")
 The heart of the driver/library interface
@@ -477,8 +468,7 @@ is the continuation class. Note the message pointer
 is an abstract address and must be cast to the
 right type by client drivers.
 
-@h = tangler("rtl/flx_rtl.hpp")
-@select(h)
+@select(tangler("rtl/flx_rtl.hpp"))
 #ifndef __FLX_RTL_H__
 #define __FLX_RTL_H__
 #include "flx_rtl_config.hpp"
@@ -1207,9 +1197,9 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 #endif
 
 #endif
+@doc()
 
-@h = tangler("rtl/flx_rtl.cpp")
-@select(h)
+@select(tangler("rtl/flx_rtl.cpp"))
 #include "flx_rtl.hpp"
 #include <cstdio>
 #include <cassert>
@@ -1575,6 +1565,7 @@ long range_check (long l, long x, long h, flx_range_srcref_t sref, char *cf, int
 
 
 }}
+@doc()
 
 @head(2,"Unix Dynamic linker")
 This is a Unix specific module, which uses dlopen
@@ -1582,6 +1573,7 @@ and friends to dynamically attach a shared file
 representing a felix top level module to an 
 application, and extract the standard 
 symbols from it.
+
 @p()
 The link routine links the following symbols,
 which must be present in all felix libraries.
@@ -1593,14 +1585,14 @@ which must be present in all felix libraries.
 
 The unlink routine is called to unlink the library.
 @p()
+
 Note that felix never generates variables of static,
 storage class, however felix has no control over
 used C/C++ code embedded in Felix library modules.
 DO NOT use static storage class for variables,
 or even constants which require dynamic initialisation.
 
-@h = tangler("rtl/flx_dynlink.hpp")
-@select(h)
+@select(tangler("rtl/flx_dynlink.hpp"))
 #ifndef __FLX_DYNLINK_H__
 #define __FLX_DYNLINK_H__
 #ifndef FLX_RTL
@@ -1800,9 +1792,9 @@ void* getmachosym(LIBHANDLE, const char*);
 
 }} // namespaces
 #endif
+@doc()
 
-@h = tangler("rtl/flx_dynlink.cpp")
-@select(h)
+@select(tangler("rtl/flx_dynlink.cpp"))
 #include "flx_dynlink.hpp"
 #include <cstring>
 #include <cstdlib>
@@ -2024,9 +2016,9 @@ con_t *flx_libinit_t::bind_proc(void *fn, void *data) {
 }
 
 }} // namespaces
+@doc()
 
-@h = tangler("rtl/flx_sync.hpp")
-@select(h)
+@select(tangler("rtl/flx_sync.hpp"))
 #ifndef __FLX_SYNC_H__
 #define __FLX_SYNC_H__
 
@@ -2083,9 +2075,9 @@ struct RTL_EXTERN sync_state_t {
 }}
 
 #endif
+@doc()
 
-@h = tangler("rtl/flx_sync.cpp")
-@select(h)
+@select(tangler("rtl/flx_sync.cpp"))
 #include "flx_sync.hpp"
 using namespace flx::rtl;
 
@@ -2277,23 +2269,25 @@ check_collect:
 }
 
 }}
+@doc()
 
 @head(2,'Universal Program Driver')
 This driver runs stand alone Felix programs.
 It invokes the library routine 'start'.
 No messages are dispatched, the Felix
 program must not read any messages.
+
 @p()
 For statically linked programs,
 command line arguments are passed directly,
 the debugging switch isn't supported.
+
 @p()
 For dynamically loaded programs, the name of the
 driver and optional --debug switch given before the
 shared library name are not passed.
 
-@h = tangler('rtl/flx_async.hpp','hpp')
-@select(h)
+@select(tangler('rtl/flx_async.hpp','hpp'))
 #ifndef __FLX_ASYNC_H__
 #define __FLX_ASYNC_H__
 #include "flx_rtl_config.hpp"
@@ -2338,9 +2332,9 @@ create_async_hooker
 }
 
 #endif
+@doc()
 
-@h = tangler('rtl/flx_async.cpp','cpp')
-@select(h)
+@select(tangler('rtl/flx_async.cpp','cpp'))
 #include "flx_async.hpp"
 #include "pthread_sleep_queue.hpp"
 #include "flx_rtl.hpp"
@@ -2487,9 +2481,9 @@ proto_async::pthread_thread(void* udat)
 async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
   return new proto_async(n0,n1,m1,n2,m2);
 }
+@doc()
 
-@h = tangler('rtl/flx_eh.hpp')
-@select(h)
+@select(tangler('rtl/flx_eh.hpp'))
 #ifndef __FLX_EH_H__
 #define __FLX_EH_H__
 #include "flx_rtl_config.hpp"
@@ -2503,8 +2497,7 @@ int RTL_EXTERN flx_exception_handler (flx::rtl::flx_exception_t *e);
 
 #endif
 
-@h = tangler('rtl/flx_eh.cpp')
-@select(h)
+@select(tangler('rtl/flx_eh.cpp'))
 #include <stdio.h>
 #include "flx_rtl.hpp"
 #include "flx_dynlink.hpp"
@@ -2583,9 +2576,9 @@ int flx::rtl::flx_exception_handler (flx_exception_t *e)
     return 5;
   }
 }
+@doc()
 
-@h = tangler('rtl/flx_run.include','cpp')
-@select(h)
+@select(tangler('rtl/flx_run.include','cpp'))
 #include <cstdlib>
 #include <stdio.h>
 #include <vector>
@@ -3279,29 +3272,28 @@ int main(int argc, char** argv)
   if(debug)fprintf(stderr,"flx_run driver ends OK\n");
   return 0;
 }
+@doc()
 
-@h = tangler('rtl/flx_run.cxx','cpp')
-@select(h)
+@select(tangler('rtl/flx_run.cxx','cpp'))
 #define FLX_SUPPORT_ASYNC 0
 
 #include "flx_run.include"
+@doc()
 
-@h = tangler('rtl/flx_arun.cxx','cpp')
-@select(h)
+@select(tangler('rtl/flx_arun.cxx','cpp'))
 #define FLX_SUPPORT_ASYNC 1
 
 #include "flx_run.include"
+@doc()
 
-@h = tangler('rtl/flx_main.cpp','cpp')
-@select(h)
+@select(tangler('rtl/flx_main.cpp','cpp'))
 #include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
 // THIS IS A DO NOTHING MAINLINE FOR USE WHEN STATICALLY LINKING
 extern "C" flx::rtl::con_t *flx_main( void *p){ return 0; }
+@doc()
 
-
-@h = tangler('test/micky_mouse.cxx','cpp')
-@select(h)
+@select(tangler('test/micky_mouse.cxx','cpp'))
 #include <stdio.h>
 #include "flx_rtl.hpp"
 #include "flx_collector.hpp"
@@ -3322,7 +3314,7 @@ int main(int argc, char** argv)
   while( top ) top = top->resume();
   return 0;
 }
-
+@doc()
 
 @select(tangler('rtl/flx_i18n.hpp'))
 #ifndef __FLX_I18N_H__
@@ -3334,6 +3326,7 @@ namespace flx { namespace rtl { namespace i18n {
    RTL_EXTERN std::string utf8(unsigned long);
 }}}
 #endif
+@doc()
 
 @select(tangler('rtl/flx_i18n.cpp'))
 #include "flx_i18n.hpp"
@@ -3389,4 +3382,222 @@ namespace flx { namespace rtl { namespace i18n {
     return s;
   }
 }}}
+@doc()
 
+@select(tangler('rtl/flx_ioutil.hpp'))
+#ifndef FLX_IOUTIL
+#define FLX_IOUTIL
+#include <string>
+#include <cstdio>
+#include "flx_rtl_config.hpp"
+
+namespace flx { namespace rtl { namespace ioutil {
+  RTL_EXTERN std::string load_file (std::FILE *);
+  RTL_EXTERN std::string load_file (std::string);
+  RTL_EXTERN std::string readln(std::FILE*);
+  RTL_EXTERN void write (std::FILE *, std::string);
+  RTL_EXTERN void writeln (std::FILE *, std::string);
+}}}
+#endif
+@doc()
+
+@select(tangler('rtl/flx_ioutil.cpp'))
+#include <cstdio>
+#include <string>
+#include "flx_ioutil.hpp"
+namespace flx { namespace rtl { namespace ioutil {
+  using namespace std;
+
+  string load_file (FILE *fi)
+  {
+    if (fi)
+    {
+      string x = "";
+      char buffer[512];
+      while (fgets(buffer,512,fi))
+        x = x + string(buffer);
+      fclose(fi);
+      return x;
+    }
+    else return "";
+  }
+
+  string load_file (string f)
+  {
+    char const *fname = f.data();
+    FILE *fi = fopen(fname,"rt");
+    if (fi)
+    {
+      string x = "";
+      char buffer[512];
+      while (fgets(buffer,512,fi))
+        x = x + string(buffer);
+      fclose(fi);
+      return x;
+    }
+    else return "";
+  }
+
+  // includes newline if present
+  // null string indicates end of file
+  string readln (FILE *fi)
+  {
+    if(fi)
+    {
+      string x = "";
+      char buffer[513];
+      buffer[512]='\0';
+      int n;
+      while 
+      ( 
+        !(
+          (n=x.size()) && 
+          x[n-1]=='\n'
+        ) 
+        &&
+        fgets(buffer,512,fi)
+      )
+        x = x + string(buffer);
+      return x;
+    }
+    else return "";
+  }
+
+  void write (FILE *fi, string s)
+  {
+    fwrite(s.data(),s.size(),1,fi);
+  }
+
+  void writeln (FILE *fi, string s)
+  {
+    static char *eol = "\n";
+    static int n = 0;
+    if(n==0)n=strlen(eol);
+    fwrite(s.data(),s.size(),1,fi);
+    fwrite(eol,n,1,fi);
+  }
+
+}}}
+@doc()
+
+@select(tangler('rtl/flx_strutil.hpp'))
+#include <string>
+#include <sstream>
+#include <stdarg.h>
+
+#include "flx_rtl_config.hpp"
+
+//RF: was only to commented out to fix macosx problem,
+//but lets see what happens to all the other builds.
+//#ifndef MACOSX
+//template class RTL_EXTERN std::basic_string<char>;
+//#endif
+
+namespace flx { namespace rtl { namespace strutil {
+  using namespace std;
+  template<class T>
+  basic_string<T> mul(basic_string<T> s, int n) {
+    basic_string<T> r = "";
+    while(n--) r+=s;
+    return r;
+  }
+
+  // normalise string positions Python style
+  // note substr requires 0<=b<=size, 0<=n,
+  // however n>size is OK
+  template<class T>
+  basic_string<T> substr(basic_string<T> const &s, int b, int e)
+  {
+    int n = s.size();
+    if(b<0)  b=b+n;
+    if(b<0)  b=0;
+    if(b>=n) b=n;
+    if(e<0)  e=e+n;
+    if(e<0)  e=0;
+    if(e>=n) e=n;
+    int m =  e-b;
+    if(m<0)  m=0;
+    return s.substr(b,m);
+  }
+
+  template<class T>
+  T subscript(basic_string<T> const &s, int i)
+  {
+    int n = s.size();
+    if(i<0)  i=i+n;
+    return i<0 || i >= n ? T(0) : s[i];
+  }
+
+  template<class T>
+  string str(T const &t) {
+    std::ostringstream x;
+    x << t;
+    return x.str();
+  }
+
+  RTL_EXTERN string atostr(char const *a);
+  RTL_EXTERN string ltrim(string const &x);
+  RTL_EXTERN string rtrim(string const &x);
+  RTL_EXTERN string flx_asprintf(char *fmt,...);
+
+}}}
+@doc()
+
+@select(tangler('rtl/flx_strutil.cpp'))
+#include "flx_strutil.hpp"
+
+namespace flx { namespace rtl { namespace strutil {
+
+  string atostr(char const *a) {
+    if(a) return a;
+    else return "";
+  }
+
+ string ltrim(string const &x) {
+   int n = x.size();
+   int i;
+   for(i = 0; i < n; ++i)
+     if(x[i]>' ')break;
+   return x.substr(i,n-i);
+ }
+
+ string rtrim(string const &x) {
+   int n = x.size();
+   int i;
+   for(i = n; i > 0; --i)
+     if(x[i-1]>' ')break;
+   return x.substr(0,i);
+ }
+
+#ifdef HAVE_VSNPRINTF  
+  string flx_asprintf(char *fmt,...){
+    va_list ap;
+    va_start(ap,fmt);
+    int n = vsnprintf(NULL,0,fmt,ap);
+    va_end(ap);
+    char *res = (char*)malloc(n+1);
+    va_start(ap,fmt);
+    vsnprintf(res,n+1,fmt,ap);
+    va_end(ap);
+    string s = string(res);
+    free(res);
+    return s;
+  }
+#else
+  // THIS IS UNSAFE .. but Windows sucks.
+  // It documents vsnprintf .. but doesn't provide it
+  string flx_asprintf(char *fmt,...){
+    va_list ap;
+    int n = 1000;
+    char *res = (char*)malloc(n+1);
+    va_start(ap,fmt);
+    vsprintf(res,fmt,ap);
+    va_end(ap);
+    string s = string(res);
+    free(res);
+    return s;
+  }
+#endif
+
+}}}
+@doc()

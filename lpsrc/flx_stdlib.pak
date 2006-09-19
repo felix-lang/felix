@@ -1,5 +1,14 @@
-@execfile('config'+os.sep+'flx_data.py')
 @head(1,'Felix Standard Library')
+
+@execfile('config'+os.sep+'flx_data.py')
+@include_file ('flx_stdlib_lex.ipk')
+
+@select(tangler('spkgs/flx_stdlib.py'))
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio']
+pkg_provides = ['flx_stdlib']
+
+iscr_source = ['lpsrc/flx_stdlib.pak']
+@doc()
 
 @head(2,"Code")
 Support table.
@@ -11,292 +20,75 @@ Support table.
 @table_row("lib/stl","Felix","","STL support")
 @end_table()
 
-@h=tangler('rtl/flx_ioutil.hpp')
-@select(h)
-#ifndef FLX_IOUTIL
-#define FLX_IOUTIL
-#include <string>
-#include <cstdio>
-#include "flx_rtl_config.hpp"
 
-namespace flx { namespace rtl { namespace ioutil {
-  RTL_EXTERN std::string load_file (std::FILE *);
-  RTL_EXTERN std::string load_file (std::string);
-  RTL_EXTERN std::string readln(std::FILE*);
-  RTL_EXTERN void write (std::FILE *, std::string);
-  RTL_EXTERN void writeln (std::FILE *, std::string);
-}}}
-#endif
+@select(tangler('lib/flx_categories.flxh', 'data'))
+macro proc gen_eq(t){
+  fun eq: t * t -> bool = "$1==$2" ;
+  fun ne: t * t -> bool = "$1!=$2" ;
+}
 
-@h=tangler('rtl/flx_ioutil.cpp')
-@select(h)
-#include <cstdio>
-#include <string>
-#include "flx_ioutil.hpp"
-namespace flx { namespace rtl { namespace ioutil {
-  using namespace std;
+macro proc gen_cmp(t){
+  gen_eq t;
+  fun lt: t * t -> bool = "$1<$2" ;
+  fun gt: t * t -> bool = "$1>$2" ;
+  fun le: t * t -> bool = "$1<=$2" ;
+  fun ge: t * t -> bool = "$1>=$2" ;
+}
 
-  string load_file (FILE *fi)
-  {
-    if (fi)
-    {
-      string x = "";
-      char buffer[512];
-      while (fgets(buffer,512,fi))
-        x = x + string(buffer);
-      fclose(fi);
-      return x;
-    }
-    else return "";
-  }
+// additive group
+macro proc gen_add (t){
+  fun pos: t -> t = "+$1" ;
+  fun neg: t -> t = "-$1" ;
+  fun add: t * t -> t = "$1+$2" ;
+  fun sub: t * t -> t = "$1-$2" ;
+  proc pluseq: lvalue[t] * t = "$1+=$2;";
+  proc minuseq: lvalue[t] * t = "$1-=$2;";
+}
 
-  string load_file (string f)
-  {
-    char const *fname = f.data();
-    FILE *fi = fopen(fname,"rt");
-    if (fi)
-    {
-      string x = "";
-      char buffer[512];
-      while (fgets(buffer,512,fi))
-        x = x + string(buffer);
-      fclose(fi);
-      return x;
-    }
-    else return "";
-  }
+// ring
+macro proc gen_arith(t){
+  gen_add t;
+  fun mul: t * t -> t = "$1*$2" ;
+  fun div: t * t -> t = "$1/$2" ;
+  proc muleq: lvalue[t] * t = "$1*=$2;";
+  proc diveq: lvalue[t] * t = "$1/=$2;";
+}
 
-  // includes newline if present
-  // null string indicates end of file
-  string readln (FILE *fi)
-  {
-    if(fi)
-    {
-      string x = "";
-      char buffer[513];
-      buffer[512]='\0';
-      int n;
-      while 
-      ( 
-        !(
-          (n=x.size()) && 
-          x[n-1]=='\n'
-        ) 
-        &&
-        fgets(buffer,512,fi)
-      )
-        x = x + string(buffer);
-      return x;
-    }
-    else return "";
-  }
+// division ring
+macro proc gen_dring(t){
+  gen_arith t;
+  fun mod : t * t -> t = "$1%$2" ;
+  proc modeq: lvalue[t] * t = "$1%=$2;";
+}
 
-  void write (FILE *fi, string s)
-  {
-    fwrite(s.data(),s.size(),1,fi);
-  }
+macro proc gen_forward (t){
+  fun succ: t -> t = "$1:add + 1" is add;
+  proc pre_incr:  lvalue[t] = "++$1;";
+  proc post_incr: lvalue[t] = "$1++;";
+}
 
-  void writeln (FILE *fi, string s)
-  {
-    static char *eol = "\n";
-    static int n = 0;
-    if(n==0)n=strlen(eol);
-    fwrite(s.data(),s.size(),1,fi);
-    fwrite(eol,n,1,fi);
-  }
+macro proc gen_bidirectional(t){
+  gen_forward t;
+  fun pred: t -> t = "$1:add - 1" is add;
+  proc pre_decr:  lvalue[t] = "--$1;";
+  proc post_decr: lvalue[t] = "$1--;";
+}
 
-}}}
+macro proc gen_random(t){
+  gen_bidirectional t;
+  fun add: t * int -> t = "$1+$2";
+  fun sub: t * int -> t = "$1-$2";
+  proc pluseq: lvalue[t] * int = "$1+=$2;";
+  proc minuseq: lvalue[t] * int = "$1-=$2;";
+}
 
-@h=tangler('rtl/flx_strutil.hpp')
-@select(h)
-#include <string>
-#include <sstream>
-#include <stdarg.h>
-
-#include "flx_rtl_config.hpp"
-
-//RF: was only to commented out to fix macosx problem,
-//but lets see what happens to all the other builds.
-//#ifndef MACOSX
-//template class RTL_EXTERN std::basic_string<char>;
-//#endif
-
-namespace flx { namespace rtl { namespace strutil {
-  using namespace std;
-  template<class T>
-  basic_string<T> mul(basic_string<T> s, int n) {
-    basic_string<T> r = "";
-    while(n--) r+=s;
-    return r;
-  }
-
-  // normalise string positions Python style
-  // note substr requires 0<=b<=size, 0<=n,
-  // however n>size is OK
-  template<class T>
-  basic_string<T> substr(basic_string<T> const &s, int b, int e)
-  {
-    int n = s.size();
-    if(b<0)  b=b+n;
-    if(b<0)  b=0;
-    if(b>=n) b=n;
-    if(e<0)  e=e+n;
-    if(e<0)  e=0;
-    if(e>=n) e=n;
-    int m =  e-b;
-    if(m<0)  m=0;
-    return s.substr(b,m);
-  }
-
-  template<class T>
-  T subscript(basic_string<T> const &s, int i)
-  {
-    int n = s.size();
-    if(i<0)  i=i+n;
-    return i<0 || i >= n ? T(0) : s[i];
-  }
-
-  template<class T>
-  string str(T const &t) {
-    std::ostringstream x;
-    x << t;
-    return x.str();
-  }
-
-  RTL_EXTERN string atostr(char const *a);
-  RTL_EXTERN string ltrim(string const &x);
-  RTL_EXTERN string rtrim(string const &x);
-  RTL_EXTERN string flx_asprintf(char *fmt,...);
-
-}}}
-
-@h=tangler('rtl/flx_strutil.cpp')
-@select(h)
-#include "flx_strutil.hpp"
-
-namespace flx { namespace rtl { namespace strutil {
-
-  string atostr(char const *a) {
-    if(a) return a;
-    else return "";
-  }
-
- string ltrim(string const &x) {
-   int n = x.size();
-   int i;
-   for(i = 0; i < n; ++i)
-     if(x[i]>' ')break;
-   return x.substr(i,n-i);
- }
-
- string rtrim(string const &x) {
-   int n = x.size();
-   int i;
-   for(i = n; i > 0; --i)
-     if(x[i-1]>' ')break;
-   return x.substr(0,i);
- }
-
-#ifdef HAVE_VSNPRINTF  
-  string flx_asprintf(char *fmt,...){
-    va_list ap;
-    va_start(ap,fmt);
-    int n = vsnprintf(NULL,0,fmt,ap);
-    va_end(ap);
-    char *res = (char*)malloc(n+1);
-    va_start(ap,fmt);
-    vsnprintf(res,n+1,fmt,ap);
-    va_end(ap);
-    string s = string(res);
-    free(res);
-    return s;
-  }
-#else
-  // THIS IS UNSAFE .. but Windows sucks.
-  // It documents vsnprintf .. but doesn't provide it
-  string flx_asprintf(char *fmt,...){
-    va_list ap;
-    int n = 1000;
-    char *res = (char*)malloc(n+1);
-    va_start(ap,fmt);
-    vsprintf(res,fmt,ap);
-    va_end(ap);
-    string s = string(res);
-    free(res);
-    return s;
-  }
-#endif
-
-}}}
-
-@h=tangler('lib/flx_categories.flxh')
-@select(h)
-  macro proc gen_eq(t){
-    fun eq: t * t -> bool = "$1==$2" ;
-    fun ne: t * t -> bool = "$1!=$2" ;
-  }
-
-  macro proc gen_cmp(t){
-    gen_eq t;
-    fun lt: t * t -> bool = "$1<$2" ;
-    fun gt: t * t -> bool = "$1>$2" ;
-    fun le: t * t -> bool = "$1<=$2" ;
-    fun ge: t * t -> bool = "$1>=$2" ;
-  }
-
-  // additive group
-  macro proc gen_add (t){
-    fun pos: t -> t = "+$1" ;
-    fun neg: t -> t = "-$1" ;
-    fun add: t * t -> t = "$1+$2" ;
-    fun sub: t * t -> t = "$1-$2" ;
-    proc pluseq: lvalue[t] * t = "$1+=$2;";
-    proc minuseq: lvalue[t] * t = "$1-=$2;";
-  }
-
-  // ring
-  macro proc gen_arith(t){
-    gen_add t;
-    fun mul: t * t -> t = "$1*$2" ;
-    fun div: t * t -> t = "$1/$2" ;
-    proc muleq: lvalue[t] * t = "$1*=$2;";
-    proc diveq: lvalue[t] * t = "$1/=$2;";
-  }
-
-  // division ring
-  macro proc gen_dring(t){
-    gen_arith t;
-    fun mod : t * t -> t = "$1%$2" ;
-    proc modeq: lvalue[t] * t = "$1%=$2;";
-  }
-
-  macro proc gen_forward (t){
-    fun succ: t -> t = "$1:add + 1" is add;
-    proc pre_incr:  lvalue[t] = "++$1;";
-    proc post_incr: lvalue[t] = "$1++;";
-  }
-
-  macro proc gen_bidirectional(t){
-    gen_forward t;
-    fun pred: t -> t = "$1:add - 1" is add;
-    proc pre_decr:  lvalue[t] = "--$1;";
-    proc post_decr: lvalue[t] = "$1--;";
-  }
-
-  macro proc gen_random(t){
-    gen_bidirectional t;
-    fun add: t * int -> t = "$1+$2";
-    fun sub: t * int -> t = "$1-$2";
-    proc pluseq: lvalue[t] * int = "$1+=$2;";
-    proc minuseq: lvalue[t] * int = "$1-=$2;";
-  }
-
-  // division ring
-  macro proc gen_integral(t){
-    gen_cmp t;
-    gen_dring t;
-    gen_bidirectional t;
-  }
+// division ring
+macro proc gen_integral(t){
+  gen_cmp t;
+  gen_dring t;
+  gen_bidirectional t;
+}
+@doc()
 
 @h=tangler('lib/flx.flxh','data')
 @select(h)
