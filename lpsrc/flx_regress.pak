@@ -19,6 +19,38 @@
   
   return head(level, name)
 
+@def kat(code):
+  tangle("//Check " + code)
+  f = get_tangler().sink.filename
+  ff = string.split(f,'/')[-1][:-4]
+  v = registry_out.get(code,[])
+  if ff not in v:
+    set_anchor(ff)
+    v.append(ff) 
+    registry_out[code]=v
+
+@def emit_katlist():
+  begin_list("keyed")
+  keys = registry_in.keys()
+  keys.sort()
+  for k in keys:
+    v = registry_in[k]
+    item(k)
+    first = 1
+    for i in v:
+      if first: first = 0
+      else: weave(", ")
+      ref_anchor(i)
+  end_list()
+
+
+@registry_in = {}
+@registry_out = {}
+@katfile="tmp" + os.sep + "kat-regress.tmp"
+@try:
+  execfile(katfile)
+ except: pass
+
 @flx_regress_head(1,'Regression tests')
 There are four kinds of test. The compiler
 must be run with standard output redirected
@@ -57,6 +89,9 @@ be added to some future version of the compiler, so
 they are not currently checked.
 @end_list()
 
+@head(2,"Category Reference",nospawn=1)
+Tests by category keyword.
+@emit_katlist()
 
 @select(tangler('spkgs/flx_regression_tests_rt.py'))
 @tangle("unit_tests = glob.glob('"+tdir+"rt-*.flx')")
@@ -124,6 +159,7 @@ weaver_directory = 'doc/test/'
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("integer math")
 #import <flx.flxh>
 open Tiny;
 open Short;
@@ -187,6 +223,8 @@ test complete
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("closures")
+@kat("recursion")
 header r"""
 #include <stdio.h>
 typedef char *charp;
@@ -270,6 +308,7 @@ module A print int=1
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("laziness")
 #import <flx.flxh>
 // test lazy functions and procedures
 print "lazy expr eval test\n";
@@ -289,6 +328,7 @@ lazy expr eval test
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("strings")
 // test the string library
 #import <flx.flxh>
 var x = "Hello";
@@ -339,6 +379,7 @@ assert(1<2&<3&<4);
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("recursive types")
 fun land: 2 * 2 -> 2 = "$1 && $2";
 type int = "int";
 fun eq: int * int -> 2 = "$1 == $2";
@@ -394,6 +435,7 @@ false
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("closures")
 #import <flx.flxh>
 // closure formation test
 
@@ -458,6 +500,7 @@ union U
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("insertions")
 // code insertion
 body "#include <iostream>";
 code 'static int x = 1;';
@@ -476,6 +519,7 @@ print (two());
 multiple assignment
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("def statement")
 #import <flx.flxh>
 var a:int;
 var b:int;
@@ -507,6 +551,7 @@ endl;
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("type operator")
 #import <flx.flxh>
 open Long;
 
@@ -548,6 +593,7 @@ print two; endl;
 generics inlining/call lifting tests
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("polymorphism")
 #import <flx.flxh>
 
 proc f[k] (z:k, pr:k->void) {
@@ -569,6 +615,7 @@ f[int] (1, the pr);
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 call inlining
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("inlining")
 #import <flx.flxh>
 proc g[t]()
 {
@@ -636,6 +683,7 @@ EIGHTTEEN
 call inlining
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("inlining")
 #import <flx.flxh>
 
 val x = 1;
@@ -663,6 +711,7 @@ ONE
 more generic stuff
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("polymorphism")
 #import <flx.flxh>
 open List;
 
@@ -714,6 +763,8 @@ iter
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("recursion")
+@kat("tail call optimisation")
 #import <flx.flxh>
 // self-tail rec test (inspect output)
 // (requires --inline atm)
@@ -740,6 +791,8 @@ recur();
 non-self-tail rec test (inspect output) (requires --inline atm)
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("recursion")
+@kat("tail call optimisation")
 #import <flx.flxh>
 var x = 4;
 proc recur2 ()
@@ -766,6 +819,8 @@ recur2();
 self-tail rec test (inspect output) (requires --inline atm)
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("recursion")
+@kat("tail call optimisation")
 #import <flx.flxh>
 fun g(x:int):int = {
   if x == 0 goto endoff;
@@ -783,6 +838,8 @@ print (g 10); endl;
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("recursion")
+@kat("tail call optimisation")
 #import <flx.flxh>
 // non-self-tail rec test (inspect output)
 // (requires --inline atm)
@@ -802,6 +859,7 @@ print (f 10); endl;
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("lvalues")
 // lvalue decay if function called thru variable
 #import <flx.flxh>
 
@@ -1764,3 +1822,9 @@ if (len s > 3) do
   s := "12345\n";
 done;
 @doc()
+
+
+@f = open(katfile,"w")
+@f.write("registry_in="+repr(registry_out))
+@f.close()
+
