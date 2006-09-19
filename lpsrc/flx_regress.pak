@@ -873,6 +873,7 @@ f g of (int);
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("regmatch")
 // contrib by Valery, mod by Skaller
 #import <flx.flxh>
 
@@ -909,6 +910,8 @@ Warning: result is dependent on implementation
 detail (order of execution after read/write matchup)
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("fibres")
+@kat("channels")
 #import <flx.flxh>
 
 var y = ();
@@ -945,6 +948,8 @@ W2
 @doc()
 
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'a.flx'))
+@kat("fibres")
+@kat("channels")
 #import <flx.flxh>
 open Control;
  
@@ -981,6 +986,7 @@ spawn_fthread {
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("type constraints")
 #import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
@@ -1006,6 +1012,7 @@ print$ f$ 1,2.0; endl; // 999
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("type constraints")
 #import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
@@ -1034,6 +1041,8 @@ k px;
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("reductions")
+@kat("axioms")
 #import <flx.flxh>
 
 // the noinline is needed because reductions are
@@ -1076,6 +1085,7 @@ Cheat
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("member count")
 #import <flx.flxh>
 // HACK!
 // NOTE: who_cares is now in the library! 
@@ -1099,6 +1109,8 @@ f2 x;
 
 @flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("arrays")
+@kat("array iterators")
 #import <flx.flxh>
 
 open List;
@@ -1174,7 +1186,8 @@ hello
 
 @flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
-// test lazy variables
+@kat("laziness")
+@kat("lazy variables")
 #include <flx.flxh>
 
 var v = 1;
@@ -1194,7 +1207,7 @@ print$ x; endl;
 
 @flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
-// Ref semantics
+@kat("ref semantics")
 #include <flx.flxh>
 
 noinline proc f(var x:int, val y:int)
@@ -1305,6 +1318,7 @@ k { a +1 };
 
 @flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("lexing keywords")
 #import <flx.flxh>
 #
 module X {
@@ -1322,7 +1336,7 @@ print$ X::f 22; endl;
 
 @flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
-// translation of typedefs to _ctor_name calls
+@kat("translation of typedefs to _ctor_name calls")
 #import <flx.flxh>
 
 open module Foo
@@ -1348,7 +1362,7 @@ print z; endl;
 
 @flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
-// generators
+@kat("generators")
 #import <flx.flxh>
 
 var cheat : int = 0;
@@ -1395,6 +1409,7 @@ C 4=4
 
 @flx_regress_head(3,tdir+'rt-'+flx_regress_level_str+'.flx')
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("generators")
 #import <flx.flxh>
 
 gen f(init:int)(inc:int):int = {
@@ -1428,6 +1443,7 @@ print$ x(10); endl; // 64
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("generators")
 #import <flx.flxh>
 
 union tree = TEmpty | Leaf of int | Node of tree * tree;
@@ -1555,6 +1571,7 @@ a
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("comments")
 #import <flx.flxh>
 
 //test
