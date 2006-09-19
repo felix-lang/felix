@@ -50,6 +50,11 @@ is printed, not compared with expected output.
 Tests that should compile, but are known to error out
 or hang during compilation. These should be fixed in
 some future version of the compiler.
+@item('wt')
+Tests that suggest a possible language changes that
+are not currently implemented. They may or may not
+be added to some future version of the compiler, so
+they are not currently checked.
 @end_list()
 
 
@@ -64,7 +69,7 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_drt.py'))
-@tangle("unit_tests = glob.glob('"+tdir+"drt-*.flx')")
+@tangle("dynamic_unit_tests = glob.glob('"+tdir+"drt-*.flx')")
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -1577,7 +1582,8 @@ print "Starting .. "; endl;
 print "Its run"; endl;
 @doc()
 
-@select(tangler(tdir+"drt1.expect","data"))
+@select(tangler(tdir+'drt-'+flx_regress_level_str+'.expect', 'data'))
+Starting ..
 test complete
 10
 10x=1, y=2
@@ -1697,16 +1703,6 @@ fun f(x:int):int =
 print (f 1); endl;
 @doc()
 
-@flx_regress_head(3,tdir+"bt-"+flx_regress_level_str+".flx")
-@select(tangler(tdir+'bt-'+flx_regress_level_str+'.flx'))
-#import <flx.flxh>
-
-if (len s > 3) do
-  print s;
-  s := "12345\n";
-done;
-@doc()
-
 @flx_regress_head(2,'Bad tests')
 All these should successfully compile, but currently fail
 or enter into an infinite loop.
@@ -1725,4 +1721,21 @@ proc foo(x)
 }
 
 foo 0;
+@doc()
+
+@flx_regress_head(2,'Wish tests')
+Tests that suggest a possible language changes that
+are not currently implemented. They may or may not
+be added to some future version of the compiler, so
+they are not currently checked.
+
+
+@flx_regress_head(3,tdir+"wt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'wt-'+flx_regress_level_str+'.flx'))
+#import <flx.flxh>
+
+if (len s > 3) do
+  print s;
+  s := "12345\n";
+done;
 @doc()

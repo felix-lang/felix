@@ -1009,6 +1009,32 @@ class PLUGIN(Plugin):
     return not failed
 
 
+@select(tangler('mkplugins/run_static_unit_tests.py'))
+class PLUGIN(TestPlugin):
+  def __init__(self):
+    TestPlugin.__init__(self, 'run_static_unit_tests', 'run static unit tests')
+  
+  def runme(self,quiet):
+    static_unit_tests = pkgdict.get("static_unit_tests",[])
+    static_unit_tests.sort()
+
+    return self.run_tests(static_unit_tests, 1, 1, 0,
+      "*** STATIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
+
+
+@select(tangler('mkplugins/run_dynamic_unit_tests.py'))
+class PLUGIN(TestPlugin):
+  def __init__(self):
+    TestPlugin.__init__(self, 'run_dynamic_unit_tests', 'run unit tests')
+  
+  def runme(self,quiet):    
+    dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
+    dynamic_unit_tests.sort()
+
+    return self.run_tests(dynamic_unit_tests, 1, 0, 1,
+      "*** DYNAMIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
+
+
 @select(tangler('mkplugins/run_unit_tests.py'))
 class PLUGIN(TestPlugin):
   def __init__(self):
@@ -1018,7 +1044,7 @@ class PLUGIN(TestPlugin):
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
-    return self.run_tests(unit_tests, 1,
+    return self.run_tests(unit_tests, 1, 1, 1,
       "*** UNIT TESTING %s : %%s ****\n" % pkg, quiet)
          
 
@@ -1032,7 +1058,7 @@ class PLUGIN(TestPlugin):
     completion_tests = pkgdict.get("completion_tests",[])
     completion_tests.sort()
 
-    return self.run_tests(completion_tests, 0,
+    return self.run_tests(completion_tests, 0, 1, 1,
       "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg,quiet)
 
 
@@ -1069,7 +1095,7 @@ class PLUGIN(TestPlugin):
     demos = pkgdict.get("demos",[])
     demos.sort()
 
-    return self.run_tests(demos, 0,
+    return self.run_tests(demos, 0, 1, 1,
       "*** DEMO PACKAGE %s : %%s ****\n" % pkg,quiet)
 
 
@@ -1354,7 +1380,10 @@ class PLUGIN(Plugin):
         erasefile(stamp)
 
         # only stamp if we've passed the tests
-        if plugins['run_unit_tests'](quiet) \
+        if \
+                plugins['run_unit_tests'](quiet) \
+                and plugins['run_static_unit_tests'](quiet) \
+                and plugins['run_dynamic_unit_tests'](quiet) \
                 and plugins['run_completion_tests'](quiet) \
                 and plugins['run_known_failed_tests'](quiet):
           enstamp(stamp)
@@ -1379,7 +1408,7 @@ class Plugin:
 
 
 class TestPlugin(Plugin):
-  def run_tests(self, testfiles, deterministic, title,quiet):
+  def run_tests(self, testfiles, deterministic, static, dynamic, title, quiet):
     tests_failed = 0
 
     for testfile in testfiles:
@@ -1396,7 +1425,7 @@ class TestPlugin(Plugin):
       else:
         path = os.path.join(os.curdir, basename)
 
-        if SUPPORT_DYNAMIC_LOADING:
+        if dynamic and SUPPORT_DYNAMIC_LOADING:
           resfilename = basename + ".resh"
 
           try:
@@ -1416,7 +1445,7 @@ class TestPlugin(Plugin):
             log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
             
   
-        if SUPPORT_STATIC_LINKAGE:
+        if static and SUPPORT_STATIC_LINKAGE:
           testscript = path + EXT_EXE
 
           try:
@@ -1521,6 +1550,8 @@ class PLUGIN(Plugin):
       print "***** TEST PACKAGE "+pkg+" ************"
       plugins['run_failure_tests'](quiet)
       plugins['run_unit_tests'](quiet)
+      plugins['run_static_unit_tests'](quiet)
+      plugins['run_dynamic_unit_tests'](quiet)
       plugins['run_completion_tests'](quiet)
 
 @select(tangler('mkplugins/doc.py'))
