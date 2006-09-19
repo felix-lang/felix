@@ -1018,7 +1018,7 @@ class PLUGIN(TestPlugin):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
     static_unit_tests.sort()
 
-    return self.run_tests(static_unit_tests, 1, 1, 0,
+    return self.run_tests(static_unit_tests, 1, 1, 0, 1,
       "*** STATIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
 
 
@@ -1031,7 +1031,7 @@ class PLUGIN(TestPlugin):
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
     dynamic_unit_tests.sort()
 
-    return self.run_tests(dynamic_unit_tests, 1, 0, 1,
+    return self.run_tests(dynamic_unit_tests, 1, 0, 1, 1,
       "*** DYNAMIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
 
 
@@ -1044,7 +1044,7 @@ class PLUGIN(TestPlugin):
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
-    return self.run_tests(unit_tests, 1, 1, 1,
+    return self.run_tests(unit_tests, 1, 1, 1, 1,
       "*** UNIT TESTING %s : %%s ****\n" % pkg, quiet)
          
 
@@ -1058,7 +1058,7 @@ class PLUGIN(TestPlugin):
     completion_tests = pkgdict.get("completion_tests",[])
     completion_tests.sort()
 
-    return self.run_tests(completion_tests, 0, 1, 1,
+    return self.run_tests(completion_tests, 0, 1, 1, 1,
       "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg,quiet)
 
 
@@ -1095,7 +1095,7 @@ class PLUGIN(TestPlugin):
     demos = pkgdict.get("demos",[])
     demos.sort()
 
-    return self.run_tests(demos, 0, 1, 1,
+    return self.run_tests(demos, 0, 1, 1, 0,
       "*** DEMO PACKAGE %s : %%s ****\n" % pkg,quiet)
 
 
@@ -1408,56 +1408,69 @@ class Plugin:
 
 
 class TestPlugin(Plugin):
-  def run_tests(self, testfiles, deterministic, static, dynamic, title, quiet):
+  def run_tests(self, testfiles, deterministic, static, dynamic, stamp,
+          title, quiet):
     tests_failed = 0
+
+    latest_src_time = get_latest_src_time(pkgdict)
 
     for testfile in testfiles:
       failed = 0
       log = Tee()
       log.write(title % testfile)
 
-      try:
-        # run the tests
-        basename = plugins['build_test'](testfile, log, quiet)
-      except MakeError, e:
-        failed = 1
-        log.write('TESTFILE -- ERROR! %s (build)\n' % testfile)
-      else:
-        path = os.path.join(os.curdir, basename)
-
-        if dynamic and SUPPORT_DYNAMIC_LOADING:
-          resfilename = basename + ".resh"
-
-          try:
-            driver = vxqtq(os.path.join("bin", "flx_pkgconfig") +
-              " --path=config --field=flx_requires_driver --rec @" + resfilename,
-              log=log)
-
-            driver = string.strip(driver[0])
-            if driver =='': driver = "flx_run"
-            driver = os.path.join("bin", driver)
-            #log.write("Driver: %s\n" % driver)
-            testscript = driver + ' ' + path + EXT_SHLIB
-
-            self.run_test(log, testscript, basename, deterministic, quiet=quiet)
-          except MakeError, e:
-            failed = 1
-            log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
-            
+      stamp = os.path.join("pkg-stamps", testfile + '.test')
+      
+      # run the tests
+      if filetime(stamp) < latest_src_time:
+        # build the felix code
+        try:
+          basename = plugins['build_test'](testfile, log, quiet)
+        except MakeError, e:
+          failed = 1
+          log.write('TESTFILE -- ERROR! %s (build)\n' % testfile)
+        else:
+          path = os.path.join(os.curdir, basename)
   
-        if static and SUPPORT_STATIC_LINKAGE:
-          testscript = path + EXT_EXE
-
-          try:
-            if deterministic:
+          # run the dynamic tests
+          if dynamic and SUPPORT_DYNAMIC_LOADING:
+            resfilename = basename + ".resh"
+  
+            try:
+              driver = vxqtq(os.path.join("bin", "flx_pkgconfig") +
+                " --path=config --field=flx_requires_driver --rec @" + resfilename,
+                log=log)
+  
+              driver = string.strip(driver[0])
+              if driver =='': driver = "flx_run"
+              driver = os.path.join("bin", driver)
+              #log.write("Driver: %s\n" % driver)
+              testscript = driver + ' ' + path + EXT_SHLIB
+  
               self.run_test(log, testscript, basename, deterministic, quiet=quiet)
-            else:
-              self.run_test(log, testscript, basename, quiet=0)
-          except MakeError, e:
-            failed = 1
-            log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
+            except MakeError, e:
+              failed = 1
+              log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
+              
+          # run the static tests
+          if static and SUPPORT_STATIC_LINKAGE:
+            testscript = path + EXT_EXE
+  
+            try:
+              if deterministic:
+                self.run_test(log, testscript, basename, deterministic, quiet=quiet)
+              else:
+                self.run_test(log, testscript, basename, quiet=0)
+            except MakeError, e:
+              failed = 1
+              log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
 
-        self.successes.append((pkg, testfile, log.getvalue()))
+        if not failed:
+          if stamp: enstamp(stamp)
+          self.successes.append((pkg, testfile, log.getvalue()))
+
+
+      ####
 
       if failed:
         tests_failed = tests_failed + 1
@@ -1511,7 +1524,6 @@ class TestPlugin(Plugin):
                    (DIFF, basename, count, basename, count), 
                    verbose=1, log=log)
            count = count + 1
-       
 
 
 @select(tangler('mkplugins/help.py'))
@@ -1883,6 +1895,7 @@ for f in glob.glob(os.path.join("mkplugins", "*.py")):
 # ----------- Here begins the actual build procedure ---------------------
 
 def enstamp(stamp):
+  mkdirs(os.path.split(stamp)[0])
   f = open(stamp,"w")
   t = fmtime(time.time())
   f.write(t+"\n")
