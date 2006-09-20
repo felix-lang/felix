@@ -551,7 +551,6 @@ let mark_stackable cache syms (child_map,bbdfns) =
   bbdfns
 
 let enstack_calls cache syms (child_map,bbdfns) self exes =
-  let self_stacked = ref false in
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   let id x = x in
   let exes =
@@ -564,13 +563,9 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
         | `BBDCL_procedure (props,vs,p,exes) -> 
           if mem `Stackable props then
           begin
-            if i = self then self_stacked := true else
             if not (mem `Stack_closure props) then
               Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
             ;
-            (*
-            print_endline "CALL STACK";
-            *)
             `BEXE_call_stack (sr,i,ts,a)
           end
           else 
@@ -586,7 +581,6 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
         | `BBDCL_procedure (props,vs,p,exes) -> 
           if mem `Stackable props then
           begin
-            if i = self then self_stacked := true else
             if not (mem `Stack_closure props) then
               Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
             ;
@@ -607,7 +601,6 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
         | `BBDCL_procedure (props,vs,p,exes) -> 
           if mem `Stackable props then
           begin
-            if meth = self then self_stacked := true else
             if not (mem `Stack_closure props) then
               Hashtbl.replace bbdfns meth (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
             ;
@@ -628,7 +621,7 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
     ) 
     exes
   in
-  !self_stacked, exes
+  exes
 
 let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) =
   let cache = Hashtbl.create 97 in
@@ -637,24 +630,32 @@ let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) =
   Hashtbl.iter
   (fun i (id,parent,sr,entry) -> match entry with
     | `BBDCL_procedure (props,vs,p,exes) ->
-      let self_stacked,exes = enstack_calls cache syms (child_map,bbdfns) i exes in
+      let exes = enstack_calls cache syms (child_map,bbdfns) i exes in
       let exes = Flx_cflow.final_tailcall_opt exes in
-      let props = 
-        if self_stacked then 
-          if not (mem `Stack_closure props) 
-          then `Stack_closure :: props 
-          else props
-        else props 
-      in
-      Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (props,vs,p,exes))
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      begin match entry with 
+      | `BBDCL_procedure (props,vs,p,_) ->
+        Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (props,vs,p,exes))
+      | _ -> assert false
+      end
 
     | `BBDCL_function (props,vs,p,ret,exes) ->
-      let _,exes = enstack_calls cache syms (child_map,bbdfns) i exes in
-      Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_function (props,vs,p,ret,exes))
+      let exes = enstack_calls cache syms (child_map,bbdfns) i exes in
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      begin match entry with 
+      | `BBDCL_function (props,vs,p,ret,_) ->
+        Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_function (props,vs,p,ret,exes))
+      | _ -> assert false
+      end
 
     | `BBDCL_glr (props,vs,t,(p,exes)) ->
-      let _,exes = enstack_calls cache syms (child_map,bbdfns) i exes in
-      Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes)))
+      let exes = enstack_calls cache syms (child_map,bbdfns) i exes in
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      begin match entry with 
+      | `BBDCL_glr (props,vs,t,(p,_)) ->
+        Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes)))
+      | _ -> assert false
+      end
 
     | `BBDCL_regmatch (_,vs,p,t,(a,i,h,m)) ->
       Hashtbl.iter

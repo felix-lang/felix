@@ -388,7 +388,14 @@ let gen_class syms (child_map,bbdfns) props index id vs ts instance_no =
 let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_no =
   let stackable = mem `Stack_closure props in
   let heapable = mem `Heap_closure props in
+  (*
+  let strb x y = (if x then " is " else " is not " ) ^ y in
+  print_endline ("The function " ^ id ^ strb stackable "stackable");
+  print_endline ("The function " ^ id ^ strb heapable "heapable");
+  *)
+  (*
   let heapable = not stackable or heapable in
+  *)
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
   let yields = mem `Yields props in
@@ -884,9 +891,7 @@ let gen_exe filename syms
         in
         let name = cpp_instance_name syms bbdfns index ts in
         if stack_call then begin
-          (*
-          print_endline "GENERATING STACK CALL";
-          *)
+          print_endline ("[handle_closure] GENERATING STACK CALL for " ^ id);
           (if with_comments 
           then "      //run procedure " ^ src_str ^ "\n" 
           else "") ^ 
@@ -1093,6 +1098,7 @@ let gen_exe filename syms
       in
       begin match entry with
       | `BBDCL_procedure (props,vs,(ps,traint),_) ->
+        assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
         let ts = map tsub ts in
         (* C FUNCTION CALL *)
@@ -2199,7 +2205,9 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     );
     let stackable = mem `Stack_closure props in
     let heapable = mem `Heap_closure props in
+    (*
     let heapable = not stackable or heapable in
+    *)
     let argtype = lower (typeof_bparams bps) in
     let argtype = rt vs argtype in
     let funtype = fold syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
@@ -2221,7 +2229,10 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
     let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,needs_switch =
+      (*
       gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no (stackable && not heapable)
+      *)
+      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no stackable 
     in
 
     let cont = "con_t *" in
