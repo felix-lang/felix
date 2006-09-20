@@ -1840,7 +1840,9 @@ if (len s > 3) do
 done;
 @doc()
 
-
+@try:
+   os.mkdir("tmp")
+ except: pass
 @f = open(katfile,"w")
 @f.write("registry_in="+repr(registry_out))
 @f.close()

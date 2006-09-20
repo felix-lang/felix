@@ -1815,9 +1815,12 @@ if "extract" in options or "force_extract" in options:
   print "EXTRACTION COMPLETE"
   sys.exit(0)
 
+
 raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
 unsorted_pkgs = []
 pkgd = {}
+pkgs = []
+pkgreqs = {}
 
 for i in raw_pkgs:
   pkg = os.path.basename(os.path.splitext(i)[0])
@@ -1831,57 +1834,26 @@ for i in raw_pkgs:
       v = X.__dict__[k]
       d[k]=v
   pkgd[pkg]=d
-
-unsorted_pkgs.sort()
-
-# copy the initial list
-pkgs = unsorted_pkgs[:]
    
-# determine the full recurive package requirements
-visited = {}
-pkgreqs = {}
 def addpkg_r(pkg):
-  # check if we hit an infinite loop
-  if pkg in visited:
-    print "Requirement loop for:", pkg
-
-
-  # check if we've already calculated the requirements. If so, just return 
-  # what we've generated
-  try:
-    reqs = pkgreqs[pkg]
-  except KeyError:
-    visited[pkg] = None
-
-    # error out if we don't have a package for a package name
+  if pkg not in pkgs:
     if pkg not in pkgd.keys():
-      print "Unknown package", pkg
+      print "Unknown package",pkg
       print "Please extract!"
       sys.exit(1)
+    else:
+      reqs = pkgd[pkg].get('pkg_requires',[])
+      pkgreqs[pkg]=reqs
+      for i in reqs:
+        addpkg_r(i)
+      pkgs.append(pkg)
 
-    reqs = {}
-
-    # actually calculate the requirements by recursively calculating the
-    # sub-packages and adding the result to this package. 
-    for r in pkgd[pkg].get('pkg_requires',[]):
-      reqs[r] = None
-      reqs.update(addpkg_r(r))
-    
-    pkgreqs[pkg] = reqs
-
-    # remove the visited tag when we've finished
-    del visited[pkg]
-
-  return reqs
-
-# calculate the requirements for every package
 for pkg in unsorted_pkgs:
   addpkg_r(pkg)
 
-# get rid of the dictionaries and sort so that everything is consistant
-for pkg in pkgreqs:
-  pkgreqs[pkg] = pkgreqs[pkg].keys()
-  pkgreqs[pkg].sort()
+
+
+
 
 # invert the requirements in order to determine the dependencies
 pkgdeps = invert(pkgreqs)
