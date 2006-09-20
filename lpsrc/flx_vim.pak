@@ -104,7 +104,7 @@ syn keyword felixStatement obj of
 syn keyword felixStatement proc
 syn keyword felixStatement raise read ref regexp return
 syn keyword felixStatement struct
-syn keyword felixStatement to type typedef
+syn keyword felixStatement to type typedef typeof
 syn keyword felixStatement union
 syn keyword felixStatement val var
 syn keyword felixStatement when with
@@ -135,13 +135,10 @@ syn keyword felixConditional typecase
 syn keyword felixConditional endcase
 
 " repeating constructs
-syn keyword felixRepeat for
-syn keyword felixRepeat while
-syn keyword felixRepeat forall
-syn keyword felixRepeat upto
-syn keyword felixRepeat downto
-syn keyword felixRepeat do
-syn keyword felixRepeat done
+syn keyword felixRepeat for forall
+syn keyword felixRepeat do done downto
+syn keyword felixRepeat until upto
+syn keyword felixRepeat while whilst
 
 " standard library types
 syn keyword felixType unit
