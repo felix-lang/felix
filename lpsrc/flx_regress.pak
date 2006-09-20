@@ -1027,10 +1027,10 @@ var px:ptr[int] = addr x;
 proc h[t,u:ptr[t]]: u  * t = "*$1=$2;";
 h(px,1);
 
-proc h2[t,u:ptr[?t]]: u  * t = "*$1=$2;";
+proc h2[t,u:ptr[t]]: u  * t = "*$1=$2;";
 h2(px,1);
 
-proc k[t,u:ptr[?t]]: u = "std::cout << *$1 <<std::endl;";
+proc k[t,u:ptr[t]]: u = "std::cout << *$1 <<std::endl;";
 k px;
 @doc()
 

@@ -176,7 +176,8 @@ let consider syms bt name
     (* these are wrong .. ? or is it just shitty table? 
        or is the mismatch due to unresolved variables?
     *)
-    if (length base_vs != length sub_ts) then begin
+    if (length base_vs != length sub_ts) then 
+    begin
       print_endline "WARN: VS != SUB_TS";
       print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
       print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs); 
@@ -384,41 +385,33 @@ let consider syms bt name
          "\nMost General Unifier(mgu)=\n" ^ string_of_varlist syms.dfns !mgu 
         )
       ;
+(*      
       if length !unresolved > 0 then None else
-(*
+*)
+
       (* HACKERY to try to get more values from type patterns*)
       if length !unresolved > 0 then 
       begin
+        (* convert mgu from spec vars to base vars *)
+        let basemap = map2 (fun (_,i,_) t -> i,list_subst !mgu t) base_vs sub_ts in
+        print_endline ("New basemap: " ^ catmap "," 
+          (fun (i,t) -> si i ^ "->" ^ sbt syms.dfns t)
+          basemap
+       );
+
         let extra_eqns = ref [] in
         let dvars = ref IntSet.empty in
-        (*
-        print_endline ("BASE=" ^ si base);
-        *)
-        let counter = ref 0 in
+        iter (fun (_,i)-> 
+          if not (mem_assoc i !mgu) then (* mgu vars get eliminated *)
+          dvars := IntSet.add i !dvars
+        ) 
+        spec_vs;
+
         iter (fun (s,j',tp) ->
            let et,explicit_vars1,any_vars1, as_vars1, eqns1 = 
             type_of_tpattern syms tp
            in
-           let et = bt sr et in
-           let j = !counter + base in 
-           incr counter;
-           (*
-           print_endline ("Analysing "^s^"<"^si j^">: " ^ string_of_tpattern tp);
-           print_endline (si j ^ (if mem_assoc j !mgu then " IS IN MGU" else " IS NOT IN MGU"));
-           *)
-           if mem_assoc j !mgu then begin
-             let t1 = assoc j !mgu in
-             let t2 = et in
-             (*
-             print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
-             *)
-             extra_eqns := (t1,t2) :: !extra_eqns
-           end
-           ; 
-           (*
-           print_endline ("Equivalen type is:\n  " ^ sbt syms.dfns et);
-           *)
-
+           let et = spec_bt sr et in
            let et = list_subst !mgu et in
            let et = beta_reduce syms [] et in
            (*
@@ -427,67 +420,91 @@ let consider syms bt name
            ;
            *)
            (*
+           print_endline ("Analysing "^s^"<"^si j'^">: " ^ string_of_typecode tp);
+           print_endline (si j' ^ (if mem_assoc j' basemap then " IS IN BASEMAP" else " IS NOT IN BASEMAP"));
+           *)
+           (* this check is redundant .. we're SCANNING the base vs! *)
+           if mem_assoc j' basemap then begin
+             let t1 = assoc j' basemap in
+             let t2 = et in
+             (*
+             print_endline ("CONSTRAINT: Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
+             *)
+             extra_eqns := (t1,t2) :: !extra_eqns
+           end
+           ; 
+
+           (* THIS CODE DOES NOT WORK RIGHT YET *)
            if length explicit_vars1 > 0 then
            print_endline ("Explicit ?variables: " ^ 
              catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") explicit_vars1)
            ;
-           *)
-           let pos_ix vs k = 
-              let rec aux vs i = match vs with
-              | (_,k',_) :: tl -> if k = k' then i else aux tl (i+1)
-              | _ -> failwith "WOOPS not in vs list??"
-              in
-              aux vs 0
-           in
            iter
            (fun (i,s) -> 
-             let coupled = filter (fun (s',_,_) -> s = s') vs in
+             let coupled = filter (fun (s',_,_) -> s = s') base_vs in
              match coupled with
              | [] -> ()
              | [s',k,pat] -> 
-                (*
                 print_endline (
                     "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^ 
-                  " pat=" ^ string_of_tpattern pat);
-                 *)
-             let q = pos_ix vs k in
-             (*
-             print_endline ("Position in vs list is " ^ si q);
-             *)
-             let q = q+base in
-             (*
-             print_endline ("Alpha converted index is " ^ si q);
-             *)
+                  " pat=" ^ string_of_typecode pat);
              let t1 = `BTYP_var (i,`BTYP_type) in 
-             let t2 = `BTYP_var (q,`BTYP_type) in 
-             (*
+             let t2 = `BTYP_var (k,`BTYP_type) in 
              print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
-             *)
              extra_eqns := (t1,t2) :: !extra_eqns;
              dvars := IntSet.add i !dvars;
-             dvars := IntSet.add q !dvars;
+             print_endline ("ADDING DEPENDENT VARIABLE " ^ si i);
 
              | _ -> assert false (* vs should have distinct names *)
            )
            explicit_vars1
            ;
+
+           if length as_vars1 > 0 then begin
+             print_endline ("As variables: " ^ 
+               catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
+             ;
+             print_endline "RECURSIVE?? AS VARS NOT HANDLED YET"
+           end;
+
            (*
-           if length as_vars1 > 0 then
-           print_endline ("As variables: " ^ 
-             catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
-           ;
            if length any_vars1 > 0 then
            print_endline ("Wildcard variables: " ^ 
              catmap "," (fun i -> "<" ^ si i ^ ">") any_vars1)
            ;
+           *)
+
+           (* add wildcards to dependent variable set *)
+           iter (fun i-> dvars := IntSet.add i !dvars) any_vars1;
+ 
+           (* add 'as' equations from patterns like
+              t as v
+           *)
+           iter (fun (i,t) -> let t2 = bt sr t in
+             let t1 = `BTYP_var (i,`BTYP_type) in 
+             extra_eqns := (t1,t2) :: !extra_eqns
+           ) eqns1;
+
+           (*
            if length eqns1 > 0 then
            print_endline ("Equations for as terms (unbound): " ^ 
              catmap "\n" (fun (i,t) -> si i ^ " -> " ^ string_of_typecode t) eqns1)
            ;
            *)
         )
-        vs
+        base_vs
         ;
+        (*
+        print_endline "UNIFICATION STAGE 2";
+        print_endline "EQUATIONS ARE:";
+        iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
+        !extra_eqns
+        ;
+        print_endline "...";
+        print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
+          (IntSet.fold (fun i l-> i::l) !dvars [])
+        );
+        *)
         let maybe_extra_mgu = 
           try Some (unification false syms.dfns !extra_eqns !dvars)
           with Not_found -> None
@@ -503,7 +520,10 @@ let consider syms bt name
            let ur = !unresolved in 
            unresolved := [];
            iter (fun ((s,i,_,k) as u) -> 
+             (*
              let j = base + k in
+             *)
+             let j = i in
              if mem_assoc j extra_mgu 
              then begin
                 let t = assoc j extra_mgu in 
@@ -537,7 +557,7 @@ let consider syms bt name
           (
             "[resolve_overload] Unification of function " ^ 
             id ^ "<" ^ si i ^ "> signature " ^
-            sbt syms.dfns t ^ 
+            sbt syms.dfns domain ^ 
             "\nwith argument type " ^ sbt syms.dfns sign ^
             "\nhas mgu " ^ string_of_varlist syms.dfns !mgu ^
             "\nwhich specialises a variable of the argument type"
@@ -545,7 +565,7 @@ let consider syms bt name
         )
         arg_types 
         ;
-*)        
+        
         (*
         print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns !mgu);
         *)
@@ -603,9 +623,7 @@ let consider syms bt name
             sbt syms.dfns type_constraint
           )
         end
-(*
       end
-*)
 
     | None -> 
       (*
