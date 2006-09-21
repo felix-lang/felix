@@ -976,7 +976,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_failure_tests', 'run tests meant to fail')
   
-  def runme(self,quiet=0):
+  def runme(self,quiet,check_stamp):
     bad_tests = pkgdict.get("failure_tests",[])
     bad_tests.sort()
 
@@ -1014,11 +1014,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_static_unit_tests', 'run static unit tests')
   
-  def runme(self,quiet):
+  def runme(self,quiet,check_stamp):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
     static_unit_tests.sort()
 
-    return self.run_tests(static_unit_tests, 1, 1, 0, 1,
+    return self.run_tests(static_unit_tests, 1, 1, 0, check_stamp,
       "*** STATIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
 
 
@@ -1027,11 +1027,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_dynamic_unit_tests', 'run unit tests')
   
-  def runme(self,quiet):    
+  def runme(self,quiet,check_stamp):    
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
     dynamic_unit_tests.sort()
 
-    return self.run_tests(dynamic_unit_tests, 1, 0, 1, 1,
+    return self.run_tests(dynamic_unit_tests, 1, 0, 1, check_stamp,
       "*** DYNAMIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
 
 
@@ -1040,11 +1040,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_unit_tests', 'run unit tests')
   
-  def runme(self,quiet):    
+  def runme(self,quiet,check_stamp):    
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
-    return self.run_tests(unit_tests, 1, 1, 1, 1,
+    return self.run_tests(unit_tests, 1, 1, 1, check_stamp,
       "*** UNIT TESTING %s : %%s ****\n" % pkg, quiet)
          
 
@@ -1054,11 +1054,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     TestPlugin.__init__(self, 'run_completion_tests')
 
-  def runme(self,quiet):
+  def runme(self,quiet,check_stamp):
     completion_tests = pkgdict.get("completion_tests",[])
     completion_tests.sort()
 
-    return self.run_tests(completion_tests, 0, 1, 1, 1,
+    return self.run_tests(completion_tests, 0, 1, 1, check_stamp,
       "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg,quiet)
 
 
@@ -1067,7 +1067,7 @@ class PLUGIN(Plugin):
   def __init__(self):
     Plugin.__init__(self, 'run_known_failed_tests', 'mark tests failed that should run')
   
-  def runme(self,quiet=0):
+  def runme(self,quiet,check_stamp):
     bad_tests = pkgdict.get("known_failed_tests",[])
     bad_tests.sort()
 
@@ -1091,11 +1091,11 @@ class PLUGIN(TestPlugin):
   def __init__(self):
     Plugin.__init__(self, 'run_demos')
 
-  def runme(self,quiet=0):
+  def runme(self,quiet=0,check_stamp=0):
     demos = pkgdict.get("demos",[])
     demos.sort()
 
-    return self.run_tests(demos, 0, 1, 1, 0,
+    return self.run_tests(demos, 0, 1, 1, check_stamp,
       "*** DEMO PACKAGE %s : %%s ****\n" % pkg,quiet)
 
 
@@ -1318,6 +1318,7 @@ class PLUGIN(Plugin):
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
     global pkgd,phases,pkgdict,pkg,quiet
     mkdirs("pkg-stamps")
+    check_stamp = "force" not in options
 
     if "host" in phases:
       ocaml_sequencer = "force" in options
@@ -1368,7 +1369,7 @@ class PLUGIN(Plugin):
         build_target_felix_tools()
 
         # only stamp if we've passed the tests
-        if plugins['run_failure_tests'](quiet):
+        if plugins['run_failure_tests'](quiet,check_stamp):
           enstamp(stamp)
 
     if "run" in phases:
@@ -1381,11 +1382,11 @@ class PLUGIN(Plugin):
 
         # only stamp if we've passed the tests
         if \
-                plugins['run_unit_tests'](quiet) \
-                and plugins['run_static_unit_tests'](quiet) \
-                and plugins['run_dynamic_unit_tests'](quiet) \
-                and plugins['run_completion_tests'](quiet) \
-                and plugins['run_known_failed_tests'](quiet):
+                plugins['run_unit_tests'](quiet,check_stamp) \
+                and plugins['run_static_unit_tests'](quiet,check_stamp) \
+                and plugins['run_dynamic_unit_tests'](quiet,check_stamp) \
+                and plugins['run_completion_tests'](quiet,check_stamp) \
+                and plugins['run_known_failed_tests'](quiet,check_stamp):
           enstamp(stamp)
  
 
@@ -1408,7 +1409,7 @@ class Plugin:
 
 
 class TestPlugin(Plugin):
-  def run_tests(self, testfiles, deterministic, static, dynamic, stamp,
+  def run_tests(self, testfiles, deterministic, static, dynamic, check_stamp,
           title, quiet):
     if not testfiles:
       return 1
@@ -1430,7 +1431,7 @@ class TestPlugin(Plugin):
       stamp = os.path.join("pkg-stamps", testfile + '.test')
       
       # run the tests
-      if filetime(stamp) < latest_src_time:
+      if not check_stamp or filetime(stamp) < latest_src_time:
         # build the felix code
         try:
           basename = plugins['build_test'](testfile, log, quiet)
@@ -1455,7 +1456,7 @@ class TestPlugin(Plugin):
               #log.write("Driver: %s\n" % driver)
               testscript = driver + ' ' + path + EXT_SHLIB
   
-              self.run_test(log, testscript, basename, deterministic, quiet=quiet)
+              self.run_test(log, testscript, basename, deterministic, quiet,check_stamp)
             except MakeError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -1466,7 +1467,7 @@ class TestPlugin(Plugin):
   
             try:
               if deterministic:
-                self.run_test(log, testscript, basename, deterministic, quiet=quiet)
+                self.run_test(log, testscript, basename, deterministic, quiet, check_stamp)
               else:
                 self.run_test(log, testscript, basename, quiet=0)
             except MakeError, e:
@@ -1474,9 +1475,10 @@ class TestPlugin(Plugin):
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
 
         if not failed:
-          if stamp: enstamp(stamp)
+          enstamp(stamp)
           self.successes.append((pkg, testfile, log.getvalue()))
-
+        else:
+          erasefile(stamp)
 
       ####
 
@@ -1488,7 +1490,7 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, basename, deterministic, quiet=0):
+  def run_test(self, log, testscript, basename, deterministic, quiet,check_stamp):
     log.write('EXECUTING TEST CODE %s\n' % testscript, quiet)
     flush()
 
@@ -1563,16 +1565,17 @@ class PLUGIN(Plugin):
       if "run" not in phases: phases.append("run")
 
   def runme(self):
-    global pkg,pkgdict,quiet
+    global pkg,pkgdict,quiet,force
+    check_stamp = "force"  not in options
     print "##### TEST ALL PACKAGES ##################"
     for pkg in pkgs:
       pkgdict = pkgd[pkg]
       print "***** TEST PACKAGE "+pkg+" ************"
-      plugins['run_failure_tests'](quiet)
-      plugins['run_unit_tests'](quiet)
-      plugins['run_static_unit_tests'](quiet)
-      plugins['run_dynamic_unit_tests'](quiet)
-      plugins['run_completion_tests'](quiet)
+      plugins['run_failure_tests'](quiet,check_stamp)
+      plugins['run_unit_tests'](quiet,check_stamp)
+      plugins['run_static_unit_tests'](quiet,check_stamp)
+      plugins['run_dynamic_unit_tests'](quiet,check_stamp)
+      plugins['run_completion_tests'](quiet,check_stamp)
 
 @select(tangler('mkplugins/doc.py'))
 class PLUGIN(Plugin):
