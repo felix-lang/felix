@@ -1041,6 +1041,49 @@ k px;
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
 @select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
+@kat("type constraints")
+#import <flx.flxh>
+open C_hack;
+header '#include <iostream>';
+proc pr[t]:t="std::cout<<$1<<std::endl;";
+
+var x = 1;
+var px:ptr[int] = addr x;
+
+module X {
+  proc h[t,u:ptr[t]]: u  * t = '*$1=$2; std::cout <<*$1<<","<<$2<<std::endl;';
+  h(px,1);
+
+  // address and dereference operators where
+  // constraint is required to deduce type variable
+  // (artificial example, since we could write signatures
+  // directly in terms of t)
+  fun adr[t,u:ptr[t]]: lvalue[t]->u = "&$1";
+  fun drf[t,u:ptr[t]]:  u -> t = "*$1";
+  //h(px,1.1); // should fail
+}
+
+open X[int];
+h(px,1);
+//h(px,1.1); // should fail
+
+pr$ drf px;
+pr$ drf$ adr x;
+pr$ X::drf px;
+pr$ X::drf$ X::adr x;
+
+@doc()
+@select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
+1,1
+1,1
+1
+1
+1
+1
+@doc()
+
+@flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")
+@select(tangler(tdir+'rt-'+flx_regress_level_str+'.flx'))
 @kat("reductions")
 @kat("axioms")
 #import <flx.flxh>

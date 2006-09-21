@@ -4517,9 +4517,11 @@ and split_dirs open_excludes dirs :
 and get_includes' syms includes ((i, ts) as index) =
   if not (mem index !includes) then
   begin
+    (*
     if length ts != 0 then
       print_endline ("INCLUDES, ts="^catmap "," (sbt syms.dfns) ts)
     ;
+    *)
     includes := index :: !includes;
     let env = mk_bare_env syms i in (* should have ts in .. *)
     match Hashtbl.find syms.dfns i with
@@ -4572,7 +4574,7 @@ and bind_dir
    let ts' = map (fun t-> bind_type syms env sr t) ts' in
    i,ts'
 
-and review_entry dfns vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t =
+and review_entry syms vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t =
    (* vs is the set of type variables at the call point,
      there are vs in the given ts,
      ts is the instantiation of another view,
@@ -4588,39 +4590,59 @@ and review_entry dfns vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t
      to allow for the next composition .. whew!
    *)
 
-   (* if vs' is has extra variables, tack them on to the ts 
+   (* if vs' is has extra variables, 
+      (*
+      tack them on to the ts 
+      *)
+      synthesise a new vs/ts pair
       if vs' doesn't have enough variables, just drop the extra ts
    *)
+    (*
     print_endline ("input vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs^
-      ", input ts="^catmap "," (sbt dfns) ts);
+      ", input ts="^catmap "," (sbt syms.dfns) ts);
     print_endline ("old vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs'^
-      ", old ts="^catmap "," (sbt dfns) ts');
-
+      ", old ts="^catmap "," (sbt syms.dfns) ts');
+   *)
+   let vs = ref (rev vs) in
    let vs',ts =
      let rec aux invs ints outvs outts =
        match invs,ints with
        | h::t,h'::t' -> aux t t' (h::outvs) (h'::outts)
        | h::t,[] -> 
+         let i = !(syms.counter) in incr syms.counter;
+         let (name,_) = h in
+         vs := (name,i)::!vs;
+         (*
+         print_endline ("SYNTHESISE FRESH VIEW VARIABLE "^si i^" for missing ts");
+         *)
+         let h' = `BTYP_var (i,`BTYP_type) in
+         (*
          let h' = let (_,i) = h in `BTYP_var (i,`BTYP_type) in
+         *)
          aux t [] (h::outvs) (h'::outts)
        | _ -> rev outvs, rev outts
      in aux vs' ts [] []
    in
+   let vs = rev !vs in
    let ts' = map (tsubst vs' ts) ts' in
    {base_sym=i; spec_vs=vs; sub_ts=ts'}
      
-and review_entry_set dfns v vs ts : entry_set_t = match v with
-  | `NonFunctionEntry i -> `NonFunctionEntry (review_entry dfns vs ts i)
-  | `FunctionEntry fs -> `FunctionEntry (map (review_entry dfns vs ts) fs)
+and review_entry_set syms v vs ts : entry_set_t = match v with
+  | `NonFunctionEntry i -> `NonFunctionEntry (review_entry syms vs ts i)
+  | `FunctionEntry fs -> `FunctionEntry (map (review_entry syms vs ts) fs)
 
-and make_view_table dfns table (vs: (string * int) list) ts : name_map_t =
-  print_endline ("vs="^catmap "," (fun (s,_)->s) vs^", ts="^catmap "," (sbt dfns) ts);
+and make_view_table syms table (vs: (string * int) list) ts : name_map_t =
+  (*
+  print_endline ("vs="^catmap "," (fun (s,_)->s) vs^", ts="^catmap "," (sbt syms.dfns) ts);
   print_endline "Building view table!";
+  *)
   let h = Hashtbl.create 97 in
   Hashtbl.iter
   (fun k v ->
+    (*
     print_endline ("Entry " ^ k);
-    let v = review_entry_set dfns v vs ts in
+    *)
+    let v = review_entry_set syms v vs ts in
     Hashtbl.add h k v
   )
   table
@@ -4635,9 +4657,13 @@ and pub_table_dir
   | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_module} -> 
     if length ts = 0 then table else
     begin
+      (*
       print_endline ("TABLE " ^ id);
-      let table = make_view_table syms.dfns table [] ts in
+      *)
+      let table = make_view_table syms table [] ts in
+      (*
       print_name_table syms.dfns table;
+      *)
       table
     end
 

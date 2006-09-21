@@ -373,6 +373,7 @@ let consider syms bt name
            maybe_tp tp ^ "\n"
         ) "" !unresolved
       in
+      (*
       if length !unresolved > 0 then
         print_endline (
         "WARNING: experimental feature coming up\n" ^
@@ -385,19 +386,24 @@ let consider syms bt name
          "\nMost General Unifier(mgu)=\n" ^ string_of_varlist syms.dfns !mgu 
         )
       ;
+      *)
 (*      
       if length !unresolved > 0 then None else
 *)
 
       (* HACKERY to try to get more values from type patterns*)
+(*      
       if length !unresolved > 0 then 
+*)      
       begin
         (* convert mgu from spec vars to base vars *)
         let basemap = map2 (fun (_,i,_) t -> i,list_subst !mgu t) base_vs sub_ts in
+        (*
         print_endline ("New basemap: " ^ catmap "," 
           (fun (i,t) -> si i ^ "->" ^ sbt syms.dfns t)
           basemap
-       );
+        );
+        *)
 
         let extra_eqns = ref [] in
         let dvars = ref IntSet.empty in
