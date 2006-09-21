@@ -2,8 +2,8 @@
 
 @select(tangler('mkplugins/speed.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, "speed", "Run comparative tests")
+  name = 'speed'
+  help = 'Run comparative tests'
 
   def run(self,x):
     print x
