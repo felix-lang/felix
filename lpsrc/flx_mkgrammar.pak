@@ -1,7 +1,7 @@
 @select(tangler('mkplugins/extract_grammar.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'extract_grammar', 'extract the grammar as a text file from ocamlyacc src')
+  name = 'extract_grammar'
+  help = 'extract the grammar as a text file from ocamlyacc src'
     
   def runme(self):    
     print "GENERATING GRAMMAR"

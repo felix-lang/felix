@@ -236,9 +236,9 @@ fi
 python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
 @select(tangler('mkplugins/man.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'man', 'make the man pages')
-    
+  name = 'man'
+  help = 'make the man pages'
+
   def runme(self):    
     print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
@@ -264,8 +264,8 @@ class PLUGIN(Plugin):
   
 @select(tangler('mkplugins/impldoc.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'impldoc', 'make the ocaml compiler documentation')
+  name = 'impldoc'
+  help = 'make the ocaml compiler documentation'
     
   def runme(self):    
     print "GENERATING OCAMLDOCS"
@@ -280,9 +280,9 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/rtldoc.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'rtldoc', 'make the runtime language documentation')
-    
+  name = 'rtldoc'
+  help = 'make the runtime language documentation'
+
   def runme(self):    
     print "GENERATING RTLDOCS"
     erasedir('rtldoc')
@@ -294,8 +294,7 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/copy_mli2ml.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'copy_mli2ml')
+  name = 'copy_mli2ml'
 
   def runme(self, MLIS):
     if not quiet: print "Copying MLIS="+repr(MLIS)
@@ -310,8 +309,7 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/copy_hpp2rtl.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'copy_hpp2rtl')
+  name = 'copy_hpp2rtl'
 
   def runme(self, HPPS):
     for f in HPPS:
@@ -324,8 +322,7 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/ocamlit.py'))
 #ocaml compilation
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'ocamlit')
+  name = 'ocamlit'
     
   def runme(self, LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force):
     # STEP 2: Generate lexers
@@ -365,8 +362,7 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/build_ocamls.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'build_ocamls')
+  name = 'build_ocamls'
    
   def runme(self, force):
     LEXS = pkgdict.get("caml_lexes",[])
@@ -412,8 +408,7 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/build_host_tools.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'build_host_tools')
+  name = 'build_host_tools'
     
   def runme(self):
     CPPS = pkgdict.get("host_cpp_cpps",[])
@@ -452,8 +447,7 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/build_testfile.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'build_test')
+  name = 'build_test'
 
   def runme(self, testfile, log, quiet):
     if log is None: log = Tee()
@@ -565,8 +559,11 @@ else:
 
 @select(tangler('mkplugins/build.py'))
 class PLUGIN(Plugin):
+  name = 'build'
+  help = 'build the sources'
+
   def __init__(self):
-    Plugin.__init__(self, 'build', 'build the source')
+    Plugin.__init__(self)
  
     if "extract" in options or "force_extract" in options: 
       if "build" not in phases: phases.append("build")
@@ -582,8 +579,8 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/virgin.py'))
 #cleans everything
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'virgin', 'clean and remove all the sources')
+  name = 'virgin'
+  help = 'clean and remove all the sources'
  
   def runme(self):
     for d in [ \
@@ -649,8 +646,8 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/clean.py'))
 # cleans products, but not extracted sources
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'clean', 'remove generated C++ and binaries from test locations')
+  name = 'clean'
+  help = 'remove generated C++ and binaries from test locations'
  
   def runme(self):
     for d in glob.glob(os.path.join("pkg-stamps", "*")):
@@ -678,8 +675,10 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/mkdoc.py'))
 class PLUGIN(Plugin):
+  name = 'mkdoc'
+
   def __init__(self):
-    Plugin.__init__(self, 'mkdoc')
+    Plugin.__init__(self)
 
     self.already_generated = {}
 
@@ -880,8 +879,8 @@ SPECIAL_TESTS = [
 ]
 
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'performance', 'make performance tests')
+  name = 'performance'
+  help = 'make performance tests'
 
   def runme(self):
     for driver,testfile,moreargs in SPECIAL_TESTS:
@@ -973,8 +972,8 @@ if not globals().get("link_model_env",None):
 
 @select(tangler('mkplugins/run_failure_tests.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'run_failure_tests', 'run tests meant to fail')
+  name = 'run_failure_tests'
+  help = 'run tests meant to fail'
   
   def runme(self,quiet,check_stamp):
     bad_tests = pkgdict.get("failure_tests",[])
@@ -1011,8 +1010,8 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/run_static_unit_tests.py'))
 class PLUGIN(TestPlugin):
-  def __init__(self):
-    TestPlugin.__init__(self, 'run_static_unit_tests', 'run static unit tests')
+  name = 'run_static_unit_tests'
+  help = 'run static unit tests'
   
   def runme(self,quiet,check_stamp):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
@@ -1024,8 +1023,8 @@ class PLUGIN(TestPlugin):
 
 @select(tangler('mkplugins/run_dynamic_unit_tests.py'))
 class PLUGIN(TestPlugin):
-  def __init__(self):
-    TestPlugin.__init__(self, 'run_dynamic_unit_tests', 'run unit tests')
+  name = 'run_dynamic_unit_tests'
+  help = 'run dynamic unit tests'
   
   def runme(self,quiet,check_stamp):    
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
@@ -1037,8 +1036,8 @@ class PLUGIN(TestPlugin):
 
 @select(tangler('mkplugins/run_unit_tests.py'))
 class PLUGIN(TestPlugin):
-  def __init__(self):
-    TestPlugin.__init__(self, 'run_unit_tests', 'run unit tests')
+  name = 'run_unit_tests'
+  help = 'run unit tests'
   
   def runme(self,quiet,check_stamp):    
     unit_tests = pkgdict.get("unit_tests",[])
@@ -1051,8 +1050,8 @@ class PLUGIN(TestPlugin):
 @select(tangler('mkplugins/run_completion_tests.py'))
 # these tests are units tests with non-deterministic results
 class PLUGIN(TestPlugin):
-  def __init__(self):
-    TestPlugin.__init__(self, 'run_completion_tests')
+  name = 'run_completion_tests'
+  help = 'run tests that just need to finish'
 
   def runme(self,quiet,check_stamp):
     completion_tests = pkgdict.get("completion_tests",[])
@@ -1064,8 +1063,8 @@ class PLUGIN(TestPlugin):
 
 @select(tangler('mkplugins/run_known_failed_tests.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'run_known_failed_tests', 'mark tests failed that should run')
+  name = 'run_known_failed_tests'
+  help = 'mark tests failed that are known to fail without running'
   
   def runme(self,quiet,check_stamp):
     bad_tests = pkgdict.get("known_failed_tests",[])
@@ -1088,8 +1087,8 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/run_demos.py'))
 class PLUGIN(TestPlugin):
-  def __init__(self):
-    Plugin.__init__(self, 'run_demos')
+  name = 'run_demos'
+  help = 'run demonstrations'
 
   def runme(self,quiet=0,check_stamp=0):
     demos = pkgdict.get("demos",[])
@@ -1203,9 +1202,8 @@ def get_latest_src_time(pkgdict):
   return newest_filetime(output_iscrs)
 
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'cal_pkgs',
-        priority=10)
+  name = 'cal_pkgs'
+  priority = 10
 
   def runme(self):
     global pkgd
@@ -1309,10 +1307,9 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/make.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'compile_check', 
-            help='check if any packages need rebuilding',
-            priority=50)
+  name = 'make'
+  help = 'check if any packages need rebuilding'
+  priority = 50
 
   def runme(self):
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
@@ -1392,13 +1389,11 @@ class PLUGIN(Plugin):
 
 @select(tangler('flxbuild/pluginutil.py'))
 class Plugin:
-  def __init__(self, name, help=None, priority=None):
-    self.name = name
-    if help is None:
-      self.help = ''
-    else:
-      self.help = help
-    self.priority = priority
+  name = None
+  help = ''
+  priority = None
+
+  def __init__(self):
     self.failures = []
     self.successes = []
     self.used = 0
@@ -1538,8 +1533,8 @@ class TestPlugin(Plugin):
 
 @select(tangler('mkplugins/help.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'help', 'print this help message')
+  name = 'help'
+  help = 'print this help message'
 
   def runme(self):
     items = []
@@ -1558,8 +1553,11 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/test.py'))
 class PLUGIN(Plugin):
+  name = 'test'
+  help = 'regression and tutorial combined'
+
   def __init__(self):
-    Plugin.__init__(self, 'test', 'regression and tutorial combined')
+    Plugin.__init__(self)
 
     if "test" in options: 
       if "run" not in phases: phases.append("run")
@@ -1579,8 +1577,8 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/doc.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'doc', 'build all user documentation')
+  name = 'doc'
+  help = 'build all user documentation'
 
   def runme(self):
     plugins['cal_pkgs']()
@@ -1606,8 +1604,8 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/demo.py'))
 class PLUGIN(Plugin):
-  def __init__(self):
-    Plugin.__init__(self, 'demo', 'build and run the demos')
+  name = 'demo'
+  help = 'build and run the demos'
     
   def runme(self):
     global pkg,pkgdict
