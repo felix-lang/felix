@@ -241,10 +241,11 @@ let consider syms bt name
     print_endline ("Argument  sigs= " ^  catmap "->" (sbt syms.dfns) arg_types);
     print_endline ("Candidate sigs= " ^  catmap "->" (sbt syms.dfns) curry_domains);
     *)
+    (*
     if con <> `BTYP_tuple [] then
       print_endline ("type constraint (for "^name^") = " ^ sbt syms.dfns con)
     ;
-
+    *)
     (*
        We need to attempt to find assignments for spec_vs which
        unify the specialised function signature(s) with arguments.
@@ -604,6 +605,11 @@ let consider syms bt name
         *)
         let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type)) parent_vs in
         let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
+        let type_constraint = `BTYP_intersect [type_constraint; con] in
+        (*
+        print_endline ("Raw type constraint " ^ sbt syms.dfns type_constraint);
+        *)
+
         let vs = map (fun (s,i,_)-> s,i) base_vs in
         let type_constraint = tsubst vs base_ts type_constraint in
         (*

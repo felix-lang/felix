@@ -1072,6 +1072,11 @@ pr$ drf$ adr x;
 pr$ X::drf px;
 pr$ X::drf$ X::adr x;
 
+fun ff[t,k where t==k ]: t * k -> t = "$1+$2";
+
+pr$ ff$ 1,2; 
+//pr$ ff$ 1,2.0; // should fail
+
 @doc()
 @select(tangler(tdir+"rt-"+flx_regress_level_str+".expect","data"))
 1,1
@@ -1080,6 +1085,7 @@ pr$ X::drf$ X::adr x;
 1
 1
 1
+3
 @doc()
 
 @flx_regress_head(3,tdir+"rt-"+flx_regress_level_str+".flx")

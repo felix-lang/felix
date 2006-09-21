@@ -487,7 +487,7 @@ publish "Deref hack"
 
  
 @#------------- TYPING ---------------------------
-module Typing
+open module Typing
 {
   typedef fun dom(t:TYPE):TYPE =>
     typematch t with
@@ -527,6 +527,14 @@ module Typing
     | _,_ => 1
     endmatch
   ;
+  
+  typedef fun eq(x:TYPE, y:TYPE):TYPE=>
+    typematch x with
+    | y => typematch y with | x => 1 | _ => 0 endmatch
+    | _ => 0
+    endmatch
+  ;
+
 
   const memcount[t] : int = "#memcount";
 }
