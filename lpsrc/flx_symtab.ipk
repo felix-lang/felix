@@ -61,7 +61,10 @@ let mkentry syms (vs:ivs_list_t) i =
   *)
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
-let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
+let merge_ivs 
+  (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1}) 
+  (vs2,{raw_type_constraint=con2; raw_typeclass_reqs=rtcr2}) 
+:ivs_list_t =
   let t = 
     match con1,con2 with
     | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
@@ -71,8 +74,12 @@ let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
     | `TYP_intersect a, b -> `TYP_intersect (a @[b])
     | a,`TYP_intersect b -> `TYP_intersect (a::b)
     | a,b -> `TYP_intersect [a;b]
+  and 
+    rtcr = uniq_list (rtcr1 @ rtcr2) 
   in
-  vs1 @ vs2, t
+  vs1 @ vs2, 
+  { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
+
 
 
 let split_asms asms : 
@@ -162,7 +169,9 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
 *)
 
 let null_tab = Hashtbl.create 3 
-let dfltvs = [],`TYP_tuple []
+let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+let dfltvs = [],dfltvs_aux
+
 
 let rec build_tables syms name inherit_vs level parent grandparent root is_class asms = 
   (*
@@ -201,7 +210,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
     if name = "root" 
     then failwith ("Can't name non-toplevel module 'root'")
     else
-      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry syms ([],`TYP_tuple[]) root))
+      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry syms dfltvs root))
   ;
   begin 
     iter

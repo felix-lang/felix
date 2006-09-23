@@ -381,10 +381,16 @@ and tpattern_t =
 and vs_list_t = (id_t * tpattern_t) list
 and ivs_list_t = (id_t * int * tpattern_t) list
 *)
+and raw_typeclass_insts_t = qualified_name_t list
+and vs_aux_t = { 
+  raw_type_constraint:typecode_t; 
+  raw_typeclass_reqs: raw_typeclass_insts_t 
+}
+
 and plain_vs_list_t = (id_t * typecode_t) list
 and plain_ivs_list_t = (id_t * int * typecode_t) list 
-and vs_list_t = (id_t * typecode_t) list * typecode_t
-and ivs_list_t = (id_t * int * typecode_t) list * typecode_t
+and vs_list_t = plain_vs_list_t *  vs_aux_t
+and ivs_list_t = plain_ivs_list_t * vs_aux_t
 
 @head(3,'Literals')
 Literals recognized by the lexer.
@@ -3262,32 +3268,43 @@ and string_of_maybe_tpattern = function
   | `AST_patany _ -> ""
   | t -> ": " ^ string_of_typecode t
 
-and print_tcon = function
+and print_tconstraint = function
   | `TYP_tuple [] -> ""
   | t -> " where " ^ string_of_typecode t
+
+and print_tclass_req qn = string_of_qualified_name qn
   
-and print_ivs = function
-  | [],`TYP_tuple [] -> ""
-  | vs,tcon -> 
+and print_tclass_reqs = function
+  | [] -> ""
+  | t -> " with " ^ catmap "," print_tclass_req t
+
+and print_tcon {raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} =
+  print_tconstraint tcon ^ print_tclass_reqs rtcr 
+
+and print_ivs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
+  match vs,tcon,rtcr with
+  | [],`TYP_tuple [],[] -> ""
+  | _ -> 
     "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ 
-    print_tcon tcon ^
+    print_tcon con ^
     "]"
 
-and print_ivs_with_index = function
-  | [],`TYP_tuple []-> ""
-  | vs,tcon -> 
-    "[" ^ 
-    cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_tpattern tpat) vs) ^ 
-    print_tcon tcon ^
+and print_ivs_with_index (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
+  match vs,tcon,rtcr with
+  | [],`TYP_tuple [],[] -> ""
+  | _ -> 
+    "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_tpattern tpat) vs) ^ 
+    print_tcon con ^
     "]"
 
-and print_vs = function
-  | [],`TYP_tuple [] -> ""
-  | vs,tcon -> 
+and print_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
+  match vs,tcon,rtcr with
+  | [],`TYP_tuple [],[] -> ""
+  | _ -> 
     "[" ^ 
     cat ", " 
     (map (fun (name,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ 
-    print_tcon tcon ^
+    print_tcon con ^
     "]"
 
 and print_bvs = function
@@ -3420,13 +3437,15 @@ and string_of_ast_term level (term:ast_term_t) =
   | `Keyword_term s -> s
   | `Apply_term (t,ts) -> "apply("^ sast 0 t ^ ",(" ^ catmap ", " (sast 0) ts ^ "))"
 
+and dfltvs = [], {raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+and dfltivs = [], {raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 and string_of_class_component level mem =
   let kind, name, mix,vs,ty,cc = match mem with
-  | `MemberVar (name,typ,cc) -> "var",name,None,([],`TYP_tuple[]),typ,cc
-  | `MemberVal (name,typ,cc) -> "val",name,None,([],`TYP_tuple[]),typ,cc
+  | `MemberVar (name,typ,cc) -> "var",name,None,dfltvs,typ,cc
+  | `MemberVal (name,typ,cc) -> "val",name,None,dfltvs,typ,cc
   | `MemberFun (name,mix,vs,typ,cc) -> "fun",name,mix,vs,typ,cc
   | `MemberProc (name,mix,vs,typ,cc) -> "proc",name,mix,vs,typ,cc
-  | `MemberCtor (name,mix,typ,cc) -> "ctor",name,mix,([],`TYP_tuple[]),typ,cc
+  | `MemberCtor (name,mix,typ,cc) -> "ctor",name,mix,dfltvs,typ,cc
   in
     (spaces (level+1)) ^ 
     kind ^ " " ^ name ^ print_vs vs ^ ": " ^ string_of_typecode ty ^ 
@@ -4956,13 +4975,13 @@ let string_of_term dfns term = match term with
   | #ast_term_t as x -> string_of_ast_term 0 x
 
   (* hack cause we don't know the name *)
-  | #symbol_definition_t as x -> string_of_symdef x "unk" ([],`TYP_tuple[]) 
+  | #symbol_definition_t as x -> string_of_symdef x "unk" dfltivs 
 
   | #bbdcl_t as x -> string_of_bbdcl dfns x 0
   | #param_kind_t as x -> string_of_param_kind x
   | #property_t as x -> string_of_property x
   | #c_t as x -> string_of_code_spec x
-  | #dcl_t as x -> string_of_dcl 0 "unk" (Some 0) ([],`TYP_tuple[]) x
+  | #dcl_t as x -> string_of_dcl 0 "unk" (Some 0) dfltivs x
   | #asm_t as x -> string_of_asm 0 x
   | #iface_t as x -> string_of_iface 0 x
   | #access_t as x -> string_of_access x

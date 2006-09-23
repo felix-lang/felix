@@ -2713,7 +2713,9 @@ open Flx_elkgen
 open Flx_typing
 ;;
 
-let dfltvs = [],`TYP_tuple []
+let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+let dfltvs = [],dfltvs_aux
+
 
 let print_help () = print_options(); exit(0)
 ;;

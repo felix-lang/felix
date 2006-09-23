@@ -241,7 +241,9 @@ open Flx_overload
 open Flx_tpat
 
 let unit_t = `BTYP_tuple []
-let dfltvs = [],`TYP_tuple []
+let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+let dfltvs = [],dfltvs_aux
+
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i = 

@@ -143,7 +143,12 @@ let mktypefun sr name vs (args: (string * typecode_t) list list) return_type bod
     body
   )
 
-let dfltvs = [],`TYP_tuple []
+let dfltvs = 
+  [],
+  {
+    raw_type_constraint=`TYP_tuple [];
+    raw_typeclass_reqs=[]
+  } 
 
 %}
 
@@ -442,14 +447,44 @@ tvar:
   | NAME COLON typeexpr { snd $1 , typecode_of_expr $3 }
 
 @commalistof("tvar")
+@commalistof("qualified_name")
 
 opt_type_constraint:
-  | WHERE expr { typecode_of_expr $2 }
-  | { `TYP_tuple [] }
+  | WITH qualified_name_comma_list WHERE expr 
+    { {
+      raw_type_constraint=typecode_of_expr $4;
+      raw_typeclass_reqs=map qualified_name_of_expr $2
+    } }
+  | WHERE expr WITH qualified_name_comma_list
+    { {
+      raw_type_constraint=typecode_of_expr $2;
+      raw_typeclass_reqs=map qualified_name_of_expr $4
+    } }
+
+  | WITH qualified_name_comma_list
+    { {
+      raw_type_constraint=`TYP_tuple [];
+      raw_typeclass_reqs=map qualified_name_of_expr $2
+    } }
+
+
+  | WHERE expr
+    { {
+      raw_type_constraint=typecode_of_expr $2;
+      raw_typeclass_reqs=[]
+    } }
+
+  | { {
+      raw_type_constraint=`TYP_tuple [];
+      raw_typeclass_reqs=[]
+    } }
 
 tvarlist:
    | LSQB tvar_comma_list opt_type_constraint RSQB { $2,$3 }
-   | { [],`TYP_tuple [] } 
+   | { [], {
+      raw_type_constraint=`TYP_tuple [];
+      raw_typeclass_reqs=[]
+    } } 
 
 type_qual:
   | INCOMPLETE { [$1,`Incomplete] }
@@ -523,7 +558,7 @@ abstract_type:
 union_decl:
   | ENUM NAME LBRACE enum_items RBRACE SEMI 
     { 
-      `AST_union (rstoken $1 $6, snd $2, ([],`TYP_tuple[]), $4) 
+      `AST_union (rstoken $1 $6, snd $2, dfltvs, $4) 
     }
 
   | UNION NAME tvarlist EQUAL type_sum_items SEMI 
@@ -713,25 +748,25 @@ binding_header:
   | HEADER code_spec requires_clause SEMI 
   { 
       let sr = rstoken $1 $4 in
-      `AST_insert (sr, "_root", ([],`TYP_tuple[]), $2, `Header ,$3) 
+      `AST_insert (sr, "_root", dfltvs, $2, `Header ,$3) 
   }
   
   | BODY code_spec requires_clause SEMI 
   { 
      let sr = rstoken $1 $4 in
-    `AST_insert (sr, "_root", ([],`TYP_tuple[]), $2, `Body, $3) 
+    `AST_insert (sr, "_root", dfltvs, $2, `Body, $3) 
   }
 
   | HEADER EQUAL code_spec requires_clause SEMI 
   { 
       let sr = rstoken $1 $5 in
-      `AST_insert (sr, "_root", ([],`TYP_tuple[]), $3, `Header, $4) 
+      `AST_insert (sr, "_root", dfltvs, $3, `Header, $4) 
   }
   
   | BODY EQUAL code_spec requires_clause SEMI 
   { 
      let sr = rstoken $1 $5 in
-    `AST_insert (sr, "_root", ([],`TYP_tuple[]), $3, `Body, $4) 
+    `AST_insert (sr, "_root", dfltvs, $3, `Body, $4) 
   }
 
   | HEADER NAME tvarlist EQUAL code_spec requires_clause SEMI 
@@ -747,13 +782,13 @@ binding_header:
   | REQUIRES requirements SEMI 
   { 
     let sr = rstoken $1 $3 in
-    `AST_insert (sr, "_root", ([],`TYP_tuple[]), `Str "", `Body, $2)
+    `AST_insert (sr, "_root", dfltvs, `Str "", `Body, $2)
   }
 
   | NAME REQUIRES requirements SEMI 
   { 
     let sr = rstoken (fst $1) $4 in
-    `AST_insert (sr, snd $1, ([],`TYP_tuple[]), `Str "", `Body, $3)
+    `AST_insert (sr, snd $1, dfltvs, `Str "", `Body, $3)
   }
 
 @head(3,'Inline C++ Code Definition')

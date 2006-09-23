@@ -57,6 +57,9 @@ type result =
   | Unique of overload_result
   | Fail
 
+let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+let dfltvs = [],dfltvs_aux
+
 
 let get_data table index : symbol_data_t = 
   try Hashtbl.find table index
@@ -139,15 +142,17 @@ let sig_of_symdef symdef sr name i = match symdef with
       "[sig_of_symdef] Expected "^
       name
       ^" to be function or procedure, got " ^
-     string_of_symdef symdef name ([],`TYP_tuple[])
+     string_of_symdef symdef name dfltvs
     ))
 
 let resolve syms i =
   match get_data syms.dfns i with 
   {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
-  let pvs,vs,con = find_split_vs syms i in
+  let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} = 
+    find_split_vs syms i 
+  in
   let t,r = sig_of_symdef symdef sr id i in
-  id,sr,parent,vs,pvs,con,t,r
+  id,sr,parent,vs,pvs,con,rtcr,t,r
 
 let rec unravel_ret tin dts = 
   match tin with
@@ -160,7 +165,7 @@ let consider syms bt name
   input_ts arg_types call_sr 
 : overload_result option =
     let bt sr t = bt sr i t in
-    let id,sr,p,base_vs,parent_vs,con,base_domain,base_result = resolve syms i in
+    let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result = resolve syms i in
 
     (*
     print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);

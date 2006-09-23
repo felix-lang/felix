@@ -8,9 +8,9 @@ open Flx_ast
 val find_split_vs:
   sym_state_t ->
   int -> 
-  (string * int * typecode_t) list *
-  (string * int * typecode_t) list *
-  typecode_t
+  plain_ivs_list_t *
+  plain_ivs_list_t *
+  vs_aux_t
 
 val find_vs:
   sym_state_t ->
@@ -81,15 +81,27 @@ subscript list -- this can happen when an instantiated
 call calls upscope using an unindexed name.
 *)
 
-let merge_con con1 con2 =
-  match con1,con2 with
-  | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
-  | `TYP_tuple[],b -> b
-  | a,`TYP_tuple[] -> a
-  | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
-  | `TYP_intersect a, b -> `TYP_intersect (a @[b])
-  | a,`TYP_intersect b -> `TYP_intersect (a::b)
-  | a,b -> `TYP_intersect [a;b]
+let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+let dfltvs = [],dfltvs_aux
+
+
+let merge_con
+  {raw_type_constraint=con1; raw_typeclass_reqs=rtcr1} 
+  {raw_type_constraint=con2; raw_typeclass_reqs=rtcr2}
+: vs_aux_t =
+  let t = 
+    match con1,con2 with
+    | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
+    | `TYP_tuple[],b -> b
+    | a,`TYP_tuple[] -> a
+    | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
+    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
+    | a,`TYP_intersect b -> `TYP_intersect (a::b)
+    | a,b -> `TYP_intersect [a;b]
+  and 
+    rtcr = uniq_list (rtcr1 @ rtcr2) 
+  in
+  { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
 
 let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
   vs1 @ vs2, merge_con con1 con2
@@ -123,7 +135,7 @@ let rec find_func_vs syms vs j =
 
 let find_split_vs syms i =
   match Hashtbl.find syms.dfns i with
-  {symdef=`SYMDEF_typevar _} -> [],[],`TYP_tuple[]
+  {symdef=`SYMDEF_typevar _} -> [],[],dfltvs_aux
   
   | {parent=parent; vs=vs} ->
   match parent with 
