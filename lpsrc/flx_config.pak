@@ -156,9 +156,121 @@ selected_xlators = [
 
 @include_file('flx_config_builders.ipk')
 
-@h=tangler("flxbuild/__init__.py")
-@select(h)
-#package base
+@select(tangler("flxbuild/__init__.py"))
+@doc()
+
+@select(tangler('flxbuild/iscrutil.py'))
+import interscript.frames.inputf
+
+class setup_test:
+  def __init__(self, root, zfill_pattern=[1], zfill_default=2):
+    self.root = root
+    self.zfill_pattern = zfill_pattern
+    self.zfill_default = 2
+
+    self.levels = []
+    self.testcount = 0
+    self.argcount = 0
+
+    self.names_written = {}
+
+
+  def head(self, level, title=None):
+    if not self.levels and level > 1:
+      self.levels = [1]
+
+    self.testcount = 0
+    self.argcount = 0
+
+    while len(self.levels) < level: 
+      self.levels.append(0)
+
+    self.levels[level - 1] = self.levels[level - 1] + 1
+    self.levels = self.levels[:level]
+
+    if title is None:
+      title = self.root + self.level_str()
+
+    return head(level, title)
+
+
+  def level_str(self):
+    levels = []
+    for i in range(len(self.levels)):
+      try:
+        z = self.zfill_pattern[i]
+      except IndexError:
+        z = self.zfill_default
+
+      levels.append(string.zfill(str(self.levels[i]), z))
+
+    return string.join(levels, '.')
+
+
+  def filename(self):
+    return self.root + self.level_str()
+
+
+  def tangler(self, name, 
+      extension='',
+      filetype=interscript.frames.inputf.deduce):
+
+    path = name + extension
+    if path in self.names_written:
+      print 'file:', path, 'already created!'
+
+      # XXX: NEED TO GENERATE A NEW FILE NAME
+      # XXX: what's the proper way to error out an interscript file?
+      sys.exit(1)
+
+    h = tangler(path, filetype)
+    self.names_written[path] = h
+
+    return h
+
+
+  def test(self, *args, **kwds):
+    name = '%s-%s' % (self.filename(), self.testcount)
+    self.testcount = self.testcount + 1
+
+    return apply(self.tangler, (name,) + args, kwds)
+
+
+  def expect(self):
+    name = '%s-%s' % (self.filename(), self.testcount - 1)
+
+    return self.tangler(name, '.expect', 'data')
+
+
+  def args(self, arguments):
+    name = '%s-%s-%s' % (self.filename(), self.testcount - 1, self.argcount)
+    self.argcount = self.argcount + 1
+
+    a = self.tangler(name, '.args', 'data')
+
+    select(a)
+    tangle(arguments)
+    doc()
+
+    return a
+
+
+  def test_args(self, arglist, *args, **kwds):
+    t = apply(self.test, args, kwds)
+
+    for arguments in arglist:
+      self.args(arguments)
+
+    return t
+
+
+  def expect_args(self, arguments):
+    self.args(arguments)
+
+    name = '%s-%s-%s' % (self.filename(), self.testcount - 1, self.argcount - 1)
+
+    return self.tangler(name, '.argexpect', 'data')
+@doc()
 
 @h=tangler("flxbuild/flxutil.py")
 @select(h)

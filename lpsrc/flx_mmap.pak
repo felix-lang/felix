@@ -1,8 +1,13 @@
+@execfile("config"+os.sep+"target_cxx.py")
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env = setup_test(os.path.join('test', 'mmap', 'mmap-'))
+
 @head(1,"Address space management")
 
 @select(tangler('spkgs/mmap.py'))
 if HAVE_MMAP:
-  unit_tests = ['test'+os.sep+'flx_mmap_test.flx']
+@tangle('  unit_tests = glob.glob("'+env.root+'*.flx")')
 
 iscr_source = ['lpsrc/flx_mmap.pak']
 weaver_directory = 'doc/mmap/'
@@ -64,7 +69,8 @@ module Mmap
   fun munmap: address * size -> int;
 }
 
-@select(tangler("test/flx_mmap_test.flx"))
+@env.head(1, 'mmap tests')
+@select(env.test('.flx'))
 #import <flx.flxh>
 include "mmap";
 open Mmap;
@@ -94,7 +100,7 @@ else
 done;
 @doc()
 
-@select(tangler("test/flx_mmap_test.expect"))
+@select(env.expect())
 mmap worked!
 @doc()
 

@@ -1,9 +1,14 @@
+@execfile('config'+os.sep+'config.py')
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env_faio = setup_test(os.path.join('test', 'faio', 'faio-'))
+@env_win = setup_test(os.path.join('test', 'faio', 'win-'))
+@env_posix = setup_test(os.path.join('test', 'faio', 'posix-'))
+
 @head(1,"Faio")
 Asynch I/O interface pack.
 
-@execfile('config'+os.sep+'config.py')
-
-@h = tangler('config/faio.fpc')
+@h = tangler('config/faio.fpc', 'data')
 @select(h)
 Name: faio
 Description: Asynchronous I/O support
@@ -44,17 +49,15 @@ WINDOWS_FAIO_CPPS = [
   "faio/faio_winio",
 ]
 
-EXTRA_TEST_GLOBS = glob.glob("test" + os.sep + "faio_*.flx")
+@tangle('EXTRA_TEST_GLOBS = glob.glob("'+env_faio.root+'*.flx")')
 
 if WIN32:
   FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
-  EXTRA_TEST_GLOBS += glob.glob("test" + os.sep + "win_*.flx")
+@tangle('  EXTRA_TEST_GLOBS = glob.glob("'+env_win.root+'*.flx")')
 
 if POSIX:
   FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
-  EXTRA_TEST_GLOBS += glob.glob("test" + os.sep + "posix_*.flx")
-
-EXTRA_TEST_GLOBS.sort()
+@tangle('  EXTRA_TEST_GLOBS = glob.glob("'+env_posix.root+'*.flx")')
 
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
@@ -2140,8 +2143,9 @@ var bugger = s;
 
 @head(1,"Felix Async IO tests")
 
-@h = tangler("test/faio_01.flx")
-@select(h)
+@env_faio.head(2, 'faio tests')
+@env_faio.head(3)
+@select(env_faio.test('.flx'))
 // portable flx sockets test (rt = regression test)
 
 #import <flx.flxh>
@@ -2192,9 +2196,19 @@ get_line(s, &str);
 
 print "server got "; print str; endl;
 flx_close(s);
+@doc()
 
-@h = tangler("test/posix_t1.flx")
-@select(h)
+@select(env_faio.expect())
+flx tcp stream test
+spawning connector
+got connection
+connector got server says hi
+server got thanks
+@doc()
+
+@env_posix.head(2, 'Posix tests')
+@env_posix.head(3)
+@select(env_posix.test('.flx'))
 #import <flx.flxh>
 include "flx_faio_posix";
 open Faio_posix;
@@ -2221,9 +2235,17 @@ if s == -1 then {
   print "accepted connection\n";
   System::exit 0;
 } endif;
+@doc()
 
-@h = tangler("test/posix_t2.flx")
-@select(h)
+@select(env_posix.expect())
+felix posix accept/connect test
+creating listener
+spawning connector
+accepted connection
+@doc()
+
+@env_posix.head(3)
+@select(env_posix.test('.flx'))
 #import <flx.flxh>
 include "flx_faio_posix";
 open Faio_posix;
@@ -2265,17 +2287,29 @@ var eof: bool;
 async_read(s, &len, b.data, &eof);
 print "acceptor read "; print len; print " bytes: "; dprint b; endl;
 async_write(s, &len, get_data((c"thanks!!")), &eof);
+@doc()
 
-@h = tangler("test/posix_t3.flx")
-@select(h)
+@select(env_posix.expect())
+acceptor read 8 bytes: faio2you
+connector read thanks!!
+@doc()
+
+@env_posix.head(3)
+@select(env_posix.test('.flx'))
 #include <flx.flxh>
 // actually portable, but I don't know the scheme for
 // adding those tests.
 include "flx_stream";
 print "more output here\n";
+@doc()
 
-@h = tangler("test/win_t1.flx")
-@select(h)
+@select(env_posix.expect())
+more output here
+@doc()
+
+@env_win.head(2, 'Windows tests')
+@env_win.head(3)
+@select(env_win.test('.flx'))
 #import <flx.flxh>
 include "flx_faio_win32";
 open Faio_win32;
@@ -2306,9 +2340,15 @@ if success then {
   print "accept failed!\n";
   System::exit 1;
 } endif;
+@doc()
 
+@select(env_win.expect())
+spawning connector
+successful accept!
+@doc()
 
-@h = tangler("test/win_t2.flx")
+@env_win.head(3)
+@select(env_win.test('.flx'))
 @select(h)
 #import <flx.flxh>
 include "Flx_faio_win32";
@@ -2487,33 +2527,9 @@ var c: char;
 getbyte(pipe, &c);
 print "server got "; print c; endl;
 CloseFile(pipe);
+@doc()
 
-@h = tangler("test/faio_01.expect","data")
-@select(h)
-flx tcp stream test
-spawning connector
-got connection
-connector got server says hi
-server got thanks
-@h = tangler("test/posix_t1.expect","data")
-@select(h)
-felix posix accept/connect test
-creating listener
-spawning connector
-accepted connection
-@h = tangler("test/posix_t2.expect","data")
-@select(h)
-acceptor read 8 bytes: faio2you
-connector read thanks!!
-@h = tangler("test/posix_t3.expect","data")
-@select(h)
-more output here
-@h = tangler("test/win_t1.expect","data")
-@select(h)
-spawning connector
-successful accept!
-@h = tangler("test/win_t2.expect","data")
-@select(h)
+@select(env_win.expect())
 Creating named pipe \\.\pipe\flx_pipe
 whoo!
 client opened pipe
@@ -2524,7 +2540,8 @@ client got a
 server got b
 @doc()
 
-@h = tangler("test/demo_webserver.flx")
+@head(1, 'Demos')
+@h = tangler("demos/faio/demo_webserver.flx")
 @select(h)
 #import <flx.flxh>
 #import <flx_platform.flxh>

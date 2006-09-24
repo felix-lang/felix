@@ -1,4 +1,7 @@
 @execfile('config/config.py')
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env = setup_test(os.path.join('test', 'tre', 'tre-'))
 
 @head(1,'tre')
 @h = tangler('spkgs/tre.py')
@@ -35,8 +38,7 @@ cpp_cpps = TRE_CPPS
 iscr_source = ['lpsrc/tre.pak']
 weaver_directory = 'doc/rtl/tre/'
 build_macro = "TRE"
-unit_tests = glob.glob("test" + os.sep + "tre*.flx")
-unit_tests.sort()
+@tangle('unit_tests = glob.glob("'+env.root+'*.flx")')
 
 @h = tangler('config/tre.fpc')
 @select(h)
@@ -106,67 +108,6 @@ module Tre
   }
 }
 
-@h=tangler('test/tre_01.flx')
-@select(h)
-#import <flx.flxh>
-include "tre.flx";
-open Tre;
-open C_hack;
-open Carray;
-
-print$ "Using tre " tre_version; endl;
-
-var r = tre_regcomp("(a|b)*abb");
-print "Done tre compile"; endl;
-
-print 
-  match r with
-  | Some _ => "Compiled"
-  | None => "failed" 
-  endmatch
-;
-endl;
-
-
-var re : tre_regex_t = 
-  match r with 
-  | Some ?re => re 
-  | None => re // HACK!
-  endmatch
-;  
-
-var s = "aabbabababb";
-res,n,a := tre_regexec re s;
-print "Result = "; print res; endl;
-print "nmatches = "; print n; endl;
-
-var i : int;
-for_each { i=0; } { i<n } { ++i; }
-  {
-    if int(a.[i].rm_so) == -1 do
-      print i; print " -> nomatch\n";
-    else 
-      print i; print "-> match '";
-      start := int(a.[i].rm_so);
-      finish := int(a.[i].rm_eo);
-      print s.[start to finish];
-      print "'"; endl;
-    done;
-  }
-;
-
-print "Finished"; endl;
-
-@h=tangler('test/tre_01.expect')
-@select(h)
-Using tre TRE 0.7.2 (GPL)
-Done tre compile
-Compiled
-Result = 0
-nmatches = 2
-0-> match 'aabbabababb'
-1-> match 'b'
-Finished
 @h=tangler('rtl/flx_target_tre_config.hpp')
 @select(h)
 #ifndef __FLX_TARGET_TRE_CONFIG_H__
@@ -9478,7 +9419,68 @@ xrealloc_impl(void *ptr, size_t new_size, const char *file, int line,
     }
   return new_ptr;
 }
+@doc()
+
+@head(1, 'Tre tests')
+@env.head(2)
+@select(env.test('.flx'))
+#import <flx.flxh>
+include "tre.flx";
+open Tre;
+open C_hack;
+open Carray;
+
+print$ "Using tre " tre_version; endl;
+
+var r = tre_regcomp("(a|b)*abb");
+print "Done tre compile"; endl;
+
+print 
+  match r with
+  | Some _ => "Compiled"
+  | None => "failed" 
+  endmatch
+;
+endl;
 
 
+var re : tre_regex_t = 
+  match r with 
+  | Some ?re => re 
+  | None => re // HACK!
+  endmatch
+;  
 
-/* EOF */
+var s = "aabbabababb";
+res,n,a := tre_regexec re s;
+print "Result = "; print res; endl;
+print "nmatches = "; print n; endl;
+
+var i : int;
+for_each { i=0; } { i<n } { ++i; }
+  {
+    if int(a.[i].rm_so) == -1 do
+      print i; print " -> nomatch\n";
+    else 
+      print i; print "-> match '";
+      start := int(a.[i].rm_so);
+      finish := int(a.[i].rm_eo);
+      print s.[start to finish];
+      print "'"; endl;
+    done;
+  }
+;
+
+print "Finished"; endl;
+@doc()
+
+@select(env.expect())
+Using tre TRE 0.7.2 (GPL)
+Done tre compile
+Compiled
+Result = 0
+nmatches = 2
+0-> match 'aabbabababb'
+1-> match 'b'
+Finished
+@doc()

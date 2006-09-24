@@ -1,30 +1,17 @@
 @set_title('Felix Tutorial: Macros')
-@tdir = 'tut'+os.sep+'macros'+os.sep
 
-@flx_tut_macro_levels = []
-@flx_tut_macro_level_str = ''
-@def flx_tut_macro_head(level, name):
-  global flx_tut_macro_levels,flx_tut_macro_level_str
-  while len(flx_tut_macro_levels) < level: flx_tut_macro_levels.append(0)
-  flx_tut_macro_levels[level - 1] = int(flx_tut_macro_levels[level - 1]) + 1
-  flx_tut_macro_levels = flx_tut_macro_levels[:level]
-
-  for i in range(len(flx_tut_macro_levels)):
-    flx_tut_macro_levels[i] = string.zfill(flx_tut_macro_levels[i], 2)
-
-  flx_tut_macro_level_str = string.join(flx_tut_macro_levels,'.')
-  
-  return head(level, name)
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+@env = setup_test(os.path.join('tut', 'macros', 'mac-'))
 
 @select(tangler('spkgs/flx_tut_macro.py'))
-@tangle('TESTS = glob.glob("'+tdir+'*.flx")')
+@tangle('TESTS = glob.glob("'+env.root+'*.flx")')
 
 unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
 iscr_source = [ 'lpsrc/flx_tut_macro.pak' ]
 weaver_directory = 'doc/tutorial/macros/'
 
-@flx_tut_macro_head(1,'The PreProcessor')
+@env.head(1,'The PreProcessor')
 Felix provides a C like pre-processor. Note that 
 whilst it is C like in appearance, it isn't the same.
 Preprocessor directives start with a # in column 1,
@@ -33,7 +20,7 @@ followed by a keyword denoting the directive.
 The syntax and semantics of directives are 
 described below.
 
-@flx_tut_macro_head(2,'Include directive')
+@env.head(2,'Include directive')
 The #include directive takes the same
 form as the corresponding C preprocessor
 directive.
@@ -69,30 +56,32 @@ Unlike the C #include directive, Felix only
 includes a file once: note that symbolic links
 will defeat the check for a duplication.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'a.flx'))
+@h1 = env.test('.flx')
+@select(h1)
 #import <flx.flxh>
-@tangle('print "This is mac-'+flx_tut_macro_level_str+'a"; endl;')
+@tangle('print "This is '+h1.sink.name+'"; endl;')
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+"a.expect","data"))
-@tangle('This is mac-'+flx_tut_macro_level_str+'a')
+@select(env.expect())
+@tangle('This is '+h1.sink.name)
 @doc()
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'b.flx'))
+@h2 = env.test('.flx')
+@select(h2)
 #import <flx.flxh>
-@tangle('#include "mac-'+flx_tut_macro_level_str+'a.flx"')
-@tangle('print "This is mac-'+flx_tut_macro_level_str+'b"; endl;')
-@tangle('print "it should have printed the mac-'+flx_tut_macro_level_str+'a message too"; endl;')
+@tangle('#include "'+os.path.basename(h1.sink.name)+'"')
+@tangle('print "This is '+h2.sink.name+'"; endl;')
+@tangle('print "it should have printed the '+h1.sink.name+' message too"; endl;')
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+"b.expect","data"))
-@tangle('This is mac-'+flx_tut_macro_level_str+'a')
-@tangle('This is mac-'+flx_tut_macro_level_str+'b')
-@tangle('it should have printed the mac-'+flx_tut_macro_level_str+'a message too')
+@select(env.expect())
+@tangle('This is '+h1.sink.name)
+@tangle('This is '+h2.sink.name)
+@tangle('it should have printed the '+h1.sink.name+' message too')
 @doc()
 
-@flx_tut_macro_head(2,"Conditional compilation")
-@flx_tut_macro_head(3,'Macro variables and functions')
+@env.head(2,"Conditional compilation")
+@env.head(3,'Macro variables and functions')
 Felix provides the #define directive to
 define a macro variable or macro function.
 Unlike C macros, Felix macros are strictly scoped.
@@ -113,7 +102,7 @@ A macro variable must be a valid constant expression
 after substitution of macro variables and application
 of macro functions.
 
-@flx_tut_macro_head(3,'Conditionals')
+@env.head(3,'Conditionals')
 Felix provides the usual conditional directives
 #ifdef, #ifndef, #if, #elif, #else, #endif.
 [Add #switch/#case/#endswitch]
@@ -130,7 +119,7 @@ constant folded and must yield a boolean constant.
 Note that every name encountered must name a 
 preprocessor macro.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 print "Defining FIRST"; endl;
 #define FIRST
@@ -141,12 +130,12 @@ print "BAD"; endl;
 #endif
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 Defining FIRST
 detected FIRST
 @doc()
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 #define FIRST 1
 #define SECOND 2
@@ -157,11 +146,11 @@ print "BAD"; endl;
 #endif
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 OK
 @doc()
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 #define FIRST 1
 #define SECOND 2
@@ -172,20 +161,21 @@ print "BAD"; endl;
 #endif
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 OK
 @doc()
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'a.flx'))
+@h = env.test('.flx')
+@select(h)
 #define FIRST 1
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+"a.expect","data"))
+@select(env.expect())
 @doc()
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'b.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
-@tangle('#import "mac-'+flx_tut_macro_level_str+'a.flx"')
+@tangle('#import "'+os.path.basename(h.sink.name)+'"')
 #ifdef FIRST
 print "OK";
 #else
@@ -194,16 +184,16 @@ print "BAD";
 endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+"b.expect","data"))
+@select(env.expect())
 OK
-@flx_tut_macro_head(2,'Long Lines')
+@env.head(2,'Long Lines')
 Preprocessor directives support a kind of 'here' doc.
 Place a # character after the first part of the command, and
 all lines up to a line consisting solely of a #
 will be taken as the argument string.
 @doc()
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 #define ONE 1
 #define TWO 1
@@ -217,12 +207,12 @@ print "No"; endl;
 #endif
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 Yes
 @doc()
 
-@flx_tut_macro_head(1,'The Syntax Macro Processor')
-@flx_tut_macro_head(2,'Expression Macro Facility')
+@env.head(1,'The Syntax Macro Processor')
+@env.head(2,'Expression Macro Facility')
 Felix provides an powerful and dangerous 
 expression macro facility. Felix macros 
 generally respect scope, so any definitions
@@ -231,14 +221,14 @@ will not be visible outside that scope.
 @p()
 Expresion symbols only expand inside expressions.
 
-@flx_tut_macro_head(3,'Macro values')
+@env.head(3,'Macro values')
 The macro val statement defines a LHS symbol
 as the expansion of the RHS. The same
 value can be defined any number of times,
 a redefinition hides the preceding defintion
 until the end of the scope.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 macro val mx1 = 1+y;
 macro val mx2 = 2+y;
@@ -263,7 +253,7 @@ r1 r2; // print 1
 endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 101
 102
 103
@@ -272,7 +262,7 @@ endl;
 1
 @doc()
 
-@flx_tut_macro_head(3,'Macro variables')
+@env.head(3,'Macro variables')
 The macro var statement defines a LHS symbol
 as the expansion of the RHS. The same
 value can be defined any number of times,
@@ -281,7 +271,7 @@ until the end of the scope.
 @p()
 Macro variables can be assigned a new value.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 macro var mx1 = 1+y;
 val y = 100;
@@ -293,18 +283,18 @@ print mx1; endl; // 101
 print mx1; endl; // 103 [uses assigned value]
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 101
 103
 103
 @doc()
 
-@flx_tut_macro_head(3,'Macro variables in requirements')
+@env.head(3,'Macro variables in requirements')
 Named requirements in requirements clauses are
 macro expanded as expressions: they must be qualified
 names though.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'a.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 header fred = "inline int f(int x){return x;}";
 macro val joe = fred;
@@ -313,11 +303,11 @@ fun f: int -> int = "f($1)" requires joe;
 print$ f 2; endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+"a.expect","data"))
+@select(env.expect())
 2
 @doc()
 
-@flx_tut_macro_head(3,'Macro functions')
+@env.head(3,'Macro functions')
 You can also define a macro function.
 The expansion rules are: the body
 is not expanded during definition.
@@ -329,7 +319,7 @@ WARNING: macro function definitions need a semi-colon
 at the end. This is because the RHS is universally
 treated as an expression.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 
 // a basic expression macro without parameters
@@ -366,7 +356,7 @@ macro fun z(q) = q;
 print (z q); endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 1
 2
 1
@@ -383,7 +373,7 @@ which expands to f 1. Substitutions are implemented
 by manipulation of the abstract syntax tree (AST),
 not token pasting or string manipulation.
 
-@flx_tut_macro_head(2,'Constant Expression Folding')
+@env.head(2,'Constant Expression Folding')
 The Felix macro processor also performs constant folding;
 that is, evaluation of certain expressions involving 
 only literals. The following operations are folded:
@@ -439,7 +429,7 @@ are semantically, but not physically equivalent.
 The first operation is the UTF-8 representation
 of 999, whilst the second is the UCS-32 value 999.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 header '''
 #define flx_unix 0
@@ -475,11 +465,11 @@ macro val ext =
 C_hack::ignore(openlib ("MyLibrary" ext));
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 LoadTheLibrary(MyLibrary.lib_ext)
 @doc()
 
-@flx_tut_macro_head(2,'Procedure Macros')
+@env.head(2,'Procedure Macros')
 A procedure macro represents a list of statements.
 Macros defined in macro procedures are exported
 to the surrounding scope so that macro procedures
@@ -487,7 +477,7 @@ can be used to package up a set of macro definitions.
 This represents a special exception to the rule
 that macros respect scope.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 // procedure macro
 macro proc k ()
@@ -540,7 +530,7 @@ dump_s (todump_wa 66);
 dump_e (todump_wa 66);
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 1 -> 1
 2 -> 4
 30
@@ -576,7 +566,7 @@ expression applied to unit argument. The difference
 is in the handling of any variable declarations:
 they'd be exposed in the first case, but not the second.
 
-@flx_tut_macro_head(2,'Advanced Procedure Macro Programming')
+@env.head(2,'Advanced Procedure Macro Programming')
 Felix procedure macros also contain rudimentary
 control structures: you can encode labels, unconditional
 jumps, conditional jumps, and returns. Note the conditional
@@ -594,7 +584,7 @@ is expanded more than once, particularly cases where
 a macro expansion has as its argument another expansion
 of itself.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'a.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 macro proc print_alot () 
 {
@@ -630,16 +620,16 @@ macro {
 };
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+"a.expect","data"))
+@select(env.expect())
 10 9 8 7 6 5 4 3 2 1
 10 9 8 7 6 5 4 3 2 1
 10 9 8 7 6 5 4 3 2 1
 @doc()
 
-@flx_tut_macro_head(2,'Expansion Barrier')
+@env.head(2,'Expansion Barrier')
 The symbol 'noexpand' can be used to block expansion.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 // expansion barrier
 macro val x = 1;
@@ -655,11 +645,11 @@ macro x is x; // blocks x
 };
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 2+2 -> 4
 @doc()
 
-@flx_tut_macro_head(2,'Identifier Macros')
+@env.head(2,'Identifier Macros')
 A identifier macros represent names. They replace names 
 in expressions and most declarations, including the
 name of a function or variable being defined.
@@ -676,7 +666,7 @@ On use, the value of an ident macro is the first
 name in the chain which is not an ident macro,
 or which recurs.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 
 macro oldname is newname;
@@ -699,17 +689,17 @@ make_ints;
 print vold; endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 1
 4
 @doc()
 
-@flx_tut_macro_head(3,'Forgetting Macros')
+@env.head(3,'Forgetting Macros')
 You can forget macros defined in the current scope with
 the forget statement. If no arguments are given,
 all macros defined in the current scope are forgotten. 
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 macro val hello = "Hello";
 macro val place = "world";
@@ -727,17 +717,17 @@ macro fun greet() = hello " " place "!\n";
 print (greet());
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 Hi there locality!
 Hello locality!
 Hello world!
 Hello world!
 @doc()
 
-@flx_tut_macro_head(3,'For Loops')
+@env.head(3,'For Loops')
 Felix provides two for loops which iterate over tuples.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 macro for val i in ("Hello","World",42) do 
   print i; print " ";
@@ -750,18 +740,18 @@ macro for i in (a,b,c) do
 done;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 Hello World 42 
 PTF a:int=1
 PTF b:int=1
 PTF c:int=1
 @doc()
 
-@flx_tut_macro_head(3,"Unpacking Tuples")
+@env.head(3,"Unpacking Tuples")
 Tuples can be unpacked by macro assignment, 
 macro val, macro var, and macro for val statements.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 macro val x,y = 1,2;
 macro var a,b = 1,2;
@@ -774,18 +764,18 @@ done;
 endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 1 2 2 3 
 (1,2) (3,4) 
 @doc()
 
-@flx_tut_macro_head(3,"String representation")
+@env.head(3,"String representation")
 The string representation of an expression can be obtained
 with the special operator _str. This is most useful for
 printing a variable name (but it works for any expression).
 Note the expanded value is stringized.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 var x = 1;
 var y = 42;
@@ -794,13 +784,13 @@ print (_str y); print " = "; print y; endl;
 print (_str$ x+y); print " = "; print$ x+y; endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 x = 1
 y = 42
 (add (x, y)) = 43
 @doc()
 
-@flx_tut_macro_head(3,"Packing Tuples")
+@env.head(3,"Packing Tuples")
 The Felix syntax macro processor treats tuples as lists.
 The for val construction can be used to iterate over
 list contents. Two primitive macro functions are provided
@@ -821,7 +811,7 @@ These two functions are most useful in recursive
 expansions, particularly when driven by user defined
 nontermial parses (see the next section).
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 macro var x = _tuple 1;
 macro x = _tuple_cons (2,x);
@@ -829,15 +819,15 @@ macro x = _tuple_cons (3,x);
 macro for val i in x do print i; print " "; done; endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 3 2 1 
 @doc()
 
-@flx_tut_macro_head(1,"User defined syntax")
+@env.head(1,"User defined syntax")
 Felix has a complete, graded system which
 allows the programmer to extend its syntax.
 
-@flx_tut_macro_head(2,"User defined operators")
+@env.head(2,"User defined operators")
 The programmer may add infix operators at a particular
 precedence level. Infix operators are any sequence
 of the special characters ~!@#$%^&*.?/\=(){}[], or, any identifier. 
@@ -856,7 +846,7 @@ If you put some of these things in a separate file,
 be sure to #import the file in every file that it is
 needed.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 #infix 10 "^%" myfun
 print "OK"; endl;
@@ -885,7 +875,7 @@ var &y:int <- gg 1;
 print y; endl;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 OK
 10
 10
@@ -897,7 +887,7 @@ OK
 1
 @doc()
 
-@flx_tut_macro_head(2,"User defined statements")
+@env.head(2,"User defined statements")
 Felix allows the programmer to invent new statements.
 The statements must start with a user keyword: they
 may not start with an existing non-user keyword.
@@ -926,7 +916,7 @@ Felix considers productions in LIFO order, like a stack.
 Therefore, general cases must be given after specialised
 ones. 
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 
 #statement#
@@ -1001,7 +991,7 @@ forall x in (1," plus ",2," is ",1+2) do print x; done; endl;
 };
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 10 9 8 7 6 5 4 3 2 1 
 10 9 8 7 6 5 4 3 2 1 
 1 plus 2 is 3
@@ -1009,7 +999,7 @@ forall x in (1," plus ",2," is ",1+2) do print x; done; endl;
 10 9 8 7 6 5 4 3 2 1
 @doc()
 
-@flx_tut_macro_head(2,"User Non terminals")
+@env.head(2,"User Non terminals")
 Felix syntax extensions are not limited to simple
 statements. The parser is a general, backtracking
 RD parser and can handle any LL grammar. The only
@@ -1032,7 +1022,7 @@ They are also recognized immediately after the
 preprocessor #statement statement, including in
 the very next #statement definition.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 #keyword DONE
 #keyword THEN
@@ -1093,11 +1083,11 @@ ELIF x==7 THEN print 7; print 7; endl;
 ELSE print "None"; endl; DONE;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 None
 @doc()
 
-@flx_tut_macro_head(2,"User Macro Statement")
+@env.head(2,"User Macro Statement")
 The syntax extension feature isn't limited to generated
 executable statements or definitions: you can actually
 generated macro statements, and thus extend the macro
@@ -1105,7 +1095,7 @@ processor itself. The example below introduces a
 macro conditional that accepts some statements as an 
 argument instead of using a macro goto.
 
-@select(tangler(tdir+'mac-'+flx_tut_macro_level_str+'.flx'))
+@select(env.test('.flx'))
 #include <flx.flxh>
 #statement#
   IF expr do statements done; =>#
@@ -1122,7 +1112,7 @@ IF 1 == 1 do
 done;
 @doc()
 
-@select(tangler(tdir+"mac-"+flx_tut_macro_level_str+".expect","data"))
+@select(env.expect())
 Hello
 @#
 @doc()

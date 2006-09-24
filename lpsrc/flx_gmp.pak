@@ -1,3 +1,7 @@
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env = setup_test(os.path.join('test', 'gmp', 'gmp-'))
+
 @head(1,'GNU Multiple Precision library')
 This module provides a wrapper for the Gnu Multiple
 Precision Arithmetic library known as gmp.
@@ -23,7 +27,7 @@ except:
 @select(h)
 execfile('cpkgs'+os.sep+'target'+os.sep+'gmpxx.py')
 if HAVE_GMPXX:
-  unit_tests = ['test'+os.sep+'flx_gmp_test.flx']
+@tangle('  unit_tests = glob.glob("'+env.root+'*.flx")')
 
 iscr_source = ['lpsrc/flx_gmp.pak']
 weaver_directory = 'doc/gmp/'
@@ -110,9 +114,10 @@ fun mpz_of_int: int -> mpz = "mpz_class($1)";
 fun mpq_of_int: int -> mpq = "mpq_class($1)";
 fun mpf_of_double: double -> mpf = "mpf_class($1)";
 }
+@doc()
 
-@h = tangler('test/flx_gmp_test.flx')
-@select(h)
+@env.head(1,'gmp tests')
+@select(env.test('.flx'))
 #import <flx.flxh>
 include "flx_gmp";
 open Gmp;
@@ -172,9 +177,9 @@ open Gmp;
   print$ x > y; endl;
   print$ x >= y; endl;
 };
+@doc()
 
-@h = tangler('test/flx_gmp_test.expect')
-@select(h)
+@select(env.expect())
 99
 7
 106
@@ -216,4 +221,4 @@ false
 false
 true
 true
-@#
+@doc()

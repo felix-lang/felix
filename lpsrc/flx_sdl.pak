@@ -1,5 +1,10 @@
 @set_title('SDL')
 
+@execfile('config'+os.sep+'config.py')
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env = setup_test(os.path.join('demos', 'sdl', 'sdl-'))
+
 @head(1,'SDL')
 @head(2,'SDL configuration')
 
@@ -2576,7 +2581,7 @@ module SDL_net_h
 }
 @doc()
 
-@select(tangler("rtl/flx_sdl_config.hpp"))
+@h = tangler("rtl/flx_sdl_config.hpp")
 #ifndef __FLX_SDL_CONFIG_GUARD__
 #define __FLX_SDL_CONFIG_GUARD__
 #include "flx_rtl_config.hpp"
@@ -2702,7 +2707,9 @@ module SDL_events
 }
 @doc()
 
-@select(tangler("tut/sdl/sdl100.flx"))
+@env.head(2,'SDL tutorial')
+@env.head(3)
+@select(env.test('.flx'))
 #import <flx.flxh>
 include "SDL/SDL";
 include "SDL/SDL_video";
@@ -3021,7 +3028,8 @@ proc Quit(x:int)
 }
 @doc()
 
-@select(tangler("tut/sdl/sdl202.flx"))
+@env.head(3)
+@select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -3408,7 +3416,8 @@ proc Drawing()
 }
 @doc()
 
-@select(tangler("tut/sdl/sdl205.flx"))
+@env.head(3)
+@select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -3871,7 +3880,8 @@ proc Drawing()
 }
 @doc()
 
-@select(tangler("tut/sdl/sdl206.flx"))
+@env.head(3)
+@select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -4369,7 +4379,8 @@ proc Drawing()
 }
 @doc()
 
-@select(tangler("tut/sdl/sdl208.flx"))
+@env.head(3)
+@select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -4985,8 +4996,10 @@ proc Drawing()
   SDL_GL_SwapBuffers( );
 
 }
+@doc()
 
-@select(tangler("tut/sdl/sdl209.flx"))
+@env.head(3)
+@select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 

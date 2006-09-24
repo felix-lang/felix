@@ -1537,27 +1537,10 @@ class TestPlugin(Plugin):
     log.write('EXECUTING TEST CODE %s\n' % testscript, quiet)
     flush()
 
-    arguments = []
-    if os.path.exists(basename + '.arguments'):
-      f = open(basename + '.arguments')
-      try:
-        for line in f.readlines():
-          arguments.append(string.strip(line))
-      finally:
-        f.close()
+    # FIXME
+    argfiles = glob.glob(basename + '*.args')
 
-    if arguments:
-      count = 0
-      for args in arguments:
-        output = vxqt(ENV + testscript + ' ' + args, verbose=1, log=log)
-
-        f = open(basename + '.args' + str(count) + '.output', 'w')
-        try:
-          f.write(string.join(output, ""))
-        finally:
-          f.close()
-        count = count + 1
-    else:
+    if not argfiles:
       output = vxqt(ENV + testscript, verbose=1, log=log)
 
       f = open(basename + '.output', 'w')
@@ -1566,17 +1549,31 @@ class TestPlugin(Plugin):
       finally:
         f.close()
 
-    if deterministic:
-      if not arguments:
+      if deterministic:
         output = vxqt('%s %s.expect %s.output' % (DIFF, basename, basename), 
-                verbose=1, log=log)
-      else:
-        count = 0
-        for args in arguments:
-           output = vxqtq('%s %s.args%s.expect %s.args%s.output' % \
-                   (DIFF, basename, count, basename, count), 
+            verbose=1, log=log)
+
+    else:
+      for argcount, argfile in zip(range(len(argfiles)), argfiles):
+        # read the arguments fromm the file
+        f = open(argfile)
+        try:
+          args = string.strip(f.read())
+        finally:
+          f.close()
+
+        output = vxqt(ENV + testscript + ' ' + args, verbose=1, log=log)
+
+        f = open('%s-%s.argoutput' % (basename, argcount), 'w')
+        try:
+          f.write(string.join(output, ""))
+        finally:
+          f.close()
+
+        if deterministic:
+           output = vxqtq('%s %s-%s.argexpect %s-%s.argoutput' % \
+                   (DIFF, basename, argcount, basename, argcount), 
                    verbose=1, log=log)
-           count = count + 1
 
 
 @select(tangler('mkplugins/help.py'))

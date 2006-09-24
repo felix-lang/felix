@@ -1,3 +1,7 @@
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env = setup_test(os.path.join('test', 'pthread', 'pthread-'))
+
 @head(1,'pthread')
 
 @execfile('config'+os.sep+'config.py')
@@ -82,6 +86,8 @@ if BSD or MACOSX:
 if SOLARIS:
   PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
   EXTRA_SYS_LIBS = "-lrt " # man sem_wait
+
+@tangle('completion_tests = glob.glob("'+env.root+'*.flx")')
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES
@@ -1446,8 +1452,9 @@ module Pthread
   }
 }
 
-@h=tangler('test/nd101.flx')
-@select(h)
+@env.head(1,'pthread tests')
+@env.head(2)
+@select(env.test('.flx'))
 #import <flx.flxh>
 include "flx_faio";
 include "pthread";
@@ -1489,9 +1496,10 @@ proc flx_main
 }
 
 export proc flx_main of (1) as "flx_main";
+@doc()
 
-@h=tangler('test/nd102.flx')
-@select(h)
+@env.head(2)
+@select(env.test('.flx'))
 #import <flx.flxh>
 include "pthread";
 include "flx_faio";
@@ -1524,3 +1532,4 @@ Pthread::spawn_pthread { randprint(4); };
 Pthread::spawn_pthread { randprint(5); };
 
 print "Mainline done!"; endl;
+@doc()
