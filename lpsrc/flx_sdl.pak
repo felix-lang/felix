@@ -2581,7 +2581,7 @@ module SDL_net_h
 }
 @doc()
 
-@h = tangler("rtl/flx_sdl_config.hpp")
+@select(tangler("rtl/flx_sdl_config.hpp"))
 #ifndef __FLX_SDL_CONFIG_GUARD__
 #define __FLX_SDL_CONFIG_GUARD__
 #include "flx_rtl_config.hpp"
