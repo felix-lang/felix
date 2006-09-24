@@ -1,5 +1,7 @@
-@execfile('config'+os.sep+'config.py')
+@set_title('SDL')
+
 @head(1,'SDL')
+@head(2,'SDL configuration')
 
 @select(tangler("cpkgs/target/sdl.py"))
 execfile("config"+os.sep+"config.py")
@@ -84,9 +86,12 @@ except:
   pa(f,locals(),"HAVE_OPENGL")
   f.close()
   cload(globals(),"sdl")
+@doc()
 
-@h = tangler('spkgs/sdl.py')
-@select(h)
+@head(2,'SDL package')
+
+@head(3,'Base package')
+@select(tangler('spkgs/sdl.py'))
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
   SDL_FAIO_CPPS = [
@@ -110,9 +115,10 @@ if HAVE_SDL:
 iscr_source = ['lpsrc/flx_sdl.pak']
 build_macro = "SDL"
 weaver_directory = "doc/sdl/"
+@doc()
 
-@h = tangler('spkgs/sdl_drivers.py')
-@select(h)
+@head(3,'Driver package')
+@select(tangler('spkgs/sdl_drivers.py'))
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
   DRIVERS = [
@@ -135,10 +141,33 @@ if HAVE_SDL:
   cflags = SDL_CFLAGS
   dflags = SDL_LIBS
   sflags = SDL_STATIC_LIBS
-   
+@doc()
 
-@h=tangler('lib/SDL/SDL_opengl.flx')
-@select(h)
+@select(tangler("tmp/sdl_opengl.cxx",'c++'))
+// for testing whether we have SDL_opengl
+#include <SDL.h>            // overrides main
+#include <SDL_opengl.h>
+
+int
+main(int argc, char** argv)
+{
+    if(SDL_Init(SDL_INIT_VIDEO) == -1
+        || SDL_SetVideoMode(640, 480, 32, SDL_ANYFORMAT | SDL_OPENGL) == NULL)
+    {
+        return 1;       // fail
+    }
+
+    // random gl stuff to make sure we link
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    return 0;           // pass
+}
+@doc()
+
+@head(2,'SDL wrapper')
+@head(3,'SDL felix wrapper')
+@select(tangler('lib/SDL/SDL_opengl.flx'))
 
 header '#include "SDL_opengl.h"';
 
@@ -150,9 +179,9 @@ module SDL_opengl_h
   inherit GL_gl_h;  
   inherit GL_glu_h;  
 }
+@doc()
 
-@h=tangler('lib/SDL/SDL.flx')
-@select(h)
+@select(tangler('lib/SDL/SDL.flx'))
 //Module        : SDL_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -197,8 +226,9 @@ module SDL_h
   fun SDL_InitSubSystem: uint32 -> int;
   fun SDL_WasInit: uint32 -> uint32;
 }
-@h=tangler('lib/SDL/SDL_active.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_active.flx'))
 //Module        : SDL_active_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -223,8 +253,9 @@ module SDL_active_h
   //FUNCTIONS
   fun SDL_GetAppState: 1 -> uint8;
 }
-@h=tangler('lib/SDL/SDL_audio.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_audio.flx'))
 //Module        : SDL_audio_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -355,9 +386,9 @@ module SDL_audio_h
   fun SDL_OpenAudio: ptr[SDL_AudioSpec] * ptr[SDL_AudioSpec] -> int;
   fun SDL_LoadWAV: cptr[char] * ptr[SDL_AudioSpec] * ptr[ptr[uint8]] * ptr[uint32] -> ptr[SDL_AudioSpec];
 }
+@doc()
 
-@h=tangler('lib/SDL/SDL_cdrom.flx')
-@select(h)
+@select(tangler('lib/SDL/SDL_cdrom.flx'))
 //Module        : SDL_cdrom_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -433,8 +464,9 @@ module SDL_cdrom_h
   fun SDL_CDStatus: ptr[SDL_CD] -> CDstatus;
   fun SDL_CDStop: ptr[SDL_CD] -> int;
 }
-@h=tangler('lib/SDL/SDL_error.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_error.flx'))
 //Module        : SDL_error_h
 //Timestamp     : 2006/1/6 2:1:27 UTC
 //Timestamp     : 2006/1/6 13:1:27 (local)
@@ -472,8 +504,9 @@ module SDL_error_h
   //FUNCTIONS
   fun SDL_GetError: 1 -> ptr[char];
 }
-@h=tangler('lib/SDL/SDL_events.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_events.flx'))
 //Module        : SDL_events_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -690,8 +723,9 @@ module SDL_events_h
   fun SDL_PushEvent: ptr[SDL_Event] -> int;
   fun SDL_WaitEvent: ptr[SDL_Event] -> int;
 }
-@h=tangler('lib/SDL/SDL_joystick.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_joystick.flx'))
 //Module        : SDL_joystick_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -745,8 +779,9 @@ module SDL_joystick_h
   fun SDL_JoystickOpened: int -> int;
   fun SDL_NumJoysticks: 1 -> int;
 }
-@h=tangler('lib/SDL/SDL_keyboard.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_keyboard.flx'))
 //Module        : SDL_keyboard_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -797,8 +832,9 @@ module SDL_keyboard_h
   fun SDL_GetKeyState: ptr[int] -> ptr[uint8];
   fun SDL_GetModState: 1 -> SDLMod;
 }
-@h=tangler('lib/SDL/SDL_keysym.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_keysym.flx'))
 //Module        : SDL_keysym_h
 //Timestamp     : 2006/1/6 2:1:27 UTC
 //Timestamp     : 2006/1/6 13:1:27 (local)
@@ -1077,9 +1113,9 @@ module SDL_keysym_h
   fun eq: SDLKey * SDLKey -> bool = "$1==$2";
   fun ne: SDLKey * SDLKey -> bool = "$1!=$2";
 }
+@doc()
 
-@h=tangler('lib/SDL/SDL_mouse.flx')
-@select(h)
+@select(tangler('lib/SDL/SDL_mouse.flx'))
 //Module        : SDL_mouse_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1145,8 +1181,9 @@ module SDL_mouse_h
   fun SDL_GetRelativeMouseState: ptr[int] * ptr[int] -> uint8;
   fun SDL_ShowCursor: int -> int;
 }
-@h=tangler('lib/SDL/SDL_mutex.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_mutex.flx'))
 //Module        : SDL_mutex_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -1195,8 +1232,9 @@ module SDL_mutex_h
   fun SDL_LockMutex: ptr[SDL_mutex] -> int;
   fun SDL_UnlockMutex: ptr[SDL_mutex] -> int;
 }
-@h=tangler('lib/SDL/SDL_rwops.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_rwops.flx'))
 //Module        : SDL_rwops_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -1253,8 +1291,9 @@ module SDL_rwops_h
   fun get_close: _struct_SDL_RWops -> SDL_rwops_h_cft_4 = '$1->close';
   fun get_type: _struct_SDL_RWops -> uint32 = '$1->type';
 }
-@h=tangler('lib/SDL/SDL_timer.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_timer.flx'))
 //Module        : SDL_timer_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -1323,8 +1362,9 @@ module SDL_timer_h
     return SDL_AddTimer(a1, _fcbw_SDL_timer_h_cft_2, C_hack::cast[address]a2);
   }
 }
-@h=tangler('lib/SDL/SDL_types.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_types.flx'))
 //Module        : SDL_types_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1372,8 +1412,9 @@ module SDL_types_h
   const SDL_TRUE: int = 'SDL_TRUE';
   const SDL_FALSE: int = 'SDL_FALSE';
 }
-@h=tangler('lib/SDL/SDL_version.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_version.flx'))
 //Module        : SDL_version_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1414,8 +1455,9 @@ module SDL_version_h
   //FUNCTIONS
   fun SDL_Linked_Version: 1 -> cptr[SDL_version];
 }
-@h=tangler('lib/SDL/SDL_video.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_video.flx'))
 //Module        : SDL_video_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1691,8 +1733,7 @@ module SDL_video_h
   fun SDL_WM_ToggleFullScreen: ptr[SDL_Surface] -> int;
 }
 
-@h=tangler('lib/SDL/SDL_endian.flx')
-@select(h)
+@select(tangler('lib/SDL/SDL_endian.flx'))
 //Module        : SDL_endian_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1748,8 +1789,7 @@ module SDL_endian_h
   fun SDL_WriteLE64: ptr[SDL_RWops] * Uint64 -> int;
 }
 
-@h=tangler('lib/SDL/SDL_framerate.flx')
-@select(h)
+@select(tangler('lib/SDL/SDL_framerate.flx'))
 //Module        : SDL_framerate_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1789,8 +1829,9 @@ module SDL_framerate_h
   fun SDL_getFramerate: ptr[FPSmanager] -> int;
   fun SDL_setFramerate: ptr[FPSmanager] * int -> int;
 }
-@h=tangler('lib/SDL/SDL_gfxPrimitives.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_gfxPrimitives.flx'))
 //Module        : SDL_gfxPrimitives_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1870,8 +1911,9 @@ module SDL_gfxPrimitives_h
   fun vlineColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
   fun vlineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
 }
-@h=tangler('lib/SDL/SDL_gfxPrimitives_font.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_gfxPrimitives_font.flx'))
 //Module        : SDL_gfxPrimitives_font_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1893,8 +1935,9 @@ module SDL_gfxPrimitives_font_h
   //VARIABLES
   const gfxPrimitivesFontdata: ptr[utiny] = 'gfxPrimitivesFontdata';
 }
-@h=tangler('lib/SDL/SDL_image.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_image.flx'))
 //Module        : SDL_image_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1956,8 +1999,9 @@ module SDL_image_h
   fun IMG_isXCF: ptr[SDL_RWops] -> int;
   fun IMG_isXPM: ptr[SDL_RWops] -> int;
 }
-@h=tangler('lib/SDL/SDL_imageFilter.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_imageFilter.flx'))
 //Module        : SDL_imageFilter_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2021,8 +2065,9 @@ module SDL_imageFilter_h
   fun SDL_imageFilterSub: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
   fun SDL_imageFilterSubByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
 }
-@h=tangler('lib/SDL/SDL_mixer.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_mixer.flx'))
 //Module        : SDL_mixer_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2217,8 +2262,9 @@ module SDL_mixer_h
     Mix_SetPostMix(_fcbw_SDL_mixer_h_cft_3, C_hack::cast[address]a1);
   }
 }
-@h=tangler('lib/SDL/SDL_sound.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_sound.flx'))
 //Module        : SDL_sound_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2280,8 +2326,9 @@ module SDL_sound_h
   fun Sound_Seek: ptr[Sound_Sample] * uint32 -> int;
   fun Sound_SetBufferSize: ptr[Sound_Sample] * uint32 -> int;
 }
-@h=tangler('lib/SDL/SDL_rotozoom.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_rotozoom.flx'))
 //Module        : SDL_rotozoom_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2338,8 +2385,9 @@ module SDL_rotozoom_h
   fun rotozoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
   fun zoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
 }
-@h=tangler('lib/SDL/SDL_ttf.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_ttf.flx'))
 //Module        : SDL_ttf_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2427,8 +2475,9 @@ module SDL_ttf_h
   fun TTF_SizeUTF8: ptr[TTF_Font] * cptr[char] * ptr[int] * ptr[int] -> int;
   fun TTF_WasInit: 1 -> int;
 }
-@h=tangler('lib/SDL/SDL_net.flx')
-@select(h)
+@doc()
+
+@select(tangler('lib/SDL/SDL_net.flx'))
 //Module        : SDL_net_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2525,9 +2574,9 @@ module SDL_net_h
   fun SDLNet_UDP_Send: UDPsocket * int * ptr[UDPpacket] -> int;
   fun SDLNet_UDP_SendV: UDPsocket * ptr[ptr[UDPpacket]] * int -> int;
 }
+@doc()
 
-@h = tangler("rtl/flx_sdl_config.hpp")
-@select(h)
+@select(tangler("rtl/flx_sdl_config.hpp"))
 #ifndef __FLX_SDL_CONFIG_GUARD__
 #define __FLX_SDL_CONFIG_GUARD__
 #include "flx_rtl_config.hpp"
@@ -2537,10 +2586,9 @@ module SDL_net_h
 #define SDL_EXTERN FLX_IMPORT
 #endif
 #endif
+@doc()
 
-
-@h = tangler("faio/faio_sdl_event.hpp")
-@select(h)
+@select(tangler("faio/faio_sdl_event.hpp"))
 #ifndef __FAIO_SDL_EVENT__
 #define __FAIO_SDL_EVENT__
 #include <flx_sdl_config.hpp>
@@ -2574,9 +2622,9 @@ public:
 
 }}
 #endif
+@doc()
 
-@h = tangler("faio/faio_sdl_event.cpp")
-@select(h)
+@select(tangler("faio/faio_sdl_event.cpp"))
 #include "pthread_work_fifo.hpp"
 #include "SDL_mutex.h"
 #include "SDL_events.h"
@@ -2605,9 +2653,9 @@ void faio_sdl_event::doit() {
 void faio_sdl_event::finished(){ fw.wake(); }
 
 }}
+@doc()
 
-@h=tangler('lib/flx_faio_sdl.flx')
-@select(h)
+@select(tangler('lib/flx_faio_sdl.flx'))
 #import <flx.flxh>
 
 include "SDL/SDL";
@@ -2652,9 +2700,9 @@ module SDL_events
     ignore(SDL_UnlockMutex(m));
   }
 }
+@doc()
 
-@h = tangler("tut/sdl/sdl100.flx")
-@select(h)
+@select(tangler("tut/sdl/sdl100.flx"))
 #import <flx.flxh>
 include "SDL/SDL";
 include "SDL/SDL_video";
@@ -2892,7 +2940,7 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { ignore$ SDL_WM_ToggleFullScreen(screen); }
+        { ignore$ SDL_WM_ToggleFullScreen(screen); }
   | _ => {}
   endmatch;
 }
@@ -2971,9 +3019,9 @@ proc Quit(x:int)
   SDL_Quit;
   System::exit x;
 }
+@doc()
 
-@h = tangler("tut/sdl/sdl202.flx")
-@select(h)
+@select(tangler("tut/sdl/sdl202.flx"))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -3138,14 +3186,14 @@ var
 
 /* This checks to see if surfaces can be stored in memory */
 if  videoInfo.->hw_available != 0 do
-	videoFlags |= SDL_HWSURFACE;
+    videoFlags |= SDL_HWSURFACE;
 else
-	videoFlags |= SDL_SWSURFACE;
+    videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
 if videoInfo.->blit_hw != 0 do
-	videoFlags |= SDL_HWACCEL;
+    videoFlags |= SDL_HWACCEL;
 done;
 
 /* Sets up OpenGL double buffering */
@@ -3204,7 +3252,7 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { 
+        { 
         block_sdl_events event_lock;
         ignore$ SDL_WM_ToggleFullScreen( surface ); 
         unblock_sdl_events event_lock;
@@ -3358,9 +3406,9 @@ proc Drawing()
   /* Draw it to the screen */
   SDL_GL_SwapBuffers( );
 }
+@doc()
 
-@h = tangler("tut/sdl/sdl205.flx")
-@select(h)
+@select(tangler("tut/sdl/sdl205.flx"))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -3535,14 +3583,14 @@ var
 
 /* This checks to see if surfaces can be stored in memory */
 if  videoInfo.->hw_available != 0 do
-	videoFlags |= SDL_HWSURFACE;
+    videoFlags |= SDL_HWSURFACE;
 else
-	videoFlags |= SDL_SWSURFACE;
+    videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
 if videoInfo.->blit_hw != 0 do
-	videoFlags |= SDL_HWACCEL;
+    videoFlags |= SDL_HWACCEL;
 done;
 
 /* Sets up OpenGL double buffering */
@@ -3592,7 +3640,7 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { 
+      { 
         block_sdl_events event_lock;
         ignore$ SDL_WM_ToggleFullScreen( surface ); 
         unblock_sdl_events event_lock;
@@ -3821,9 +3869,9 @@ proc Drawing()
     /* Draw it to the screen */
     SDL_GL_SwapBuffers( );
 }
+@doc()
 
-@h = tangler("tut/sdl/sdl206.flx")
-@select(h)
+@select(tangler("tut/sdl/sdl206.flx"))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -3909,19 +3957,19 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl206.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl206.bmp";
+    print "Can't load texture file media/textures/sdl.bmp";
     Quit 1;
   done;
 
   /* Create The Texture */
-	glGenTextures( 1, texture );
+    glGenTextures( 1, texture );
 
   /* Typical Texture Generation Using Data From The Bitmap */
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
-	/* Generate The Texture */
+    /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
     TextureImage.->h, 0, GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
@@ -3929,10 +3977,10 @@ proc LoadGLTextures( )
 
   /* Linear Filtering */
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
   /* Free up any memory we may have used */
-	SDL_FreeSurface( TextureImage );
+    SDL_FreeSurface( TextureImage );
 }
 
 /* general OpenGL initialization function */
@@ -4036,14 +4084,14 @@ var
 
 /* This checks to see if surfaces can be stored in memory */
 if  videoInfo.->hw_available != 0 do
-	videoFlags |= SDL_HWSURFACE;
+    videoFlags |= SDL_HWSURFACE;
 else
-	videoFlags |= SDL_SWSURFACE;
+    videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
 if videoInfo.->blit_hw != 0 do
-	videoFlags |= SDL_HWACCEL;
+    videoFlags |= SDL_HWACCEL;
 done;
 
 /* Sets up OpenGL double buffering */
@@ -4094,7 +4142,7 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { 
+        { 
         block_sdl_events event_lock;
         ignore$ SDL_WM_ToggleFullScreen( surface ); 
         unblock_sdl_events event_lock;
@@ -4319,9 +4367,9 @@ proc Drawing()
     /* Draw it to the screen */
     SDL_GL_SwapBuffers( );
 }
+@doc()
 
-@h = tangler("tut/sdl/sdl208.flx")
-@select(h)
+@select(tangler("tut/sdl/sdl208.flx"))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -4406,19 +4454,19 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl208.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl206.bmp";
+    print "Can't load texture file media/textures/sdl.bmp";
     Quit 1;
   done;
 
   /* Create The Texture */
-	glGenTextures( 3, texture );
+    glGenTextures( 3, texture );
 
   /* Typical Texture Generation Using Data From The Bitmap */
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
-	/* Generate The Texture */
+    /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
     TextureImage.->h, 0, GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
@@ -4426,15 +4474,15 @@ proc LoadGLTextures( )
 
   /* Linear Filtering */
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
 
   glBindTexture( GL_TEXTURE_2D, texture.[1] );
 
   /* Linear Filtering */
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
-	/* Generate The Texture */
+    /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
     TextureImage.->h, 0, cast[uint] GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
@@ -4443,8 +4491,8 @@ proc LoadGLTextures( )
   glBindTexture( GL_TEXTURE_2D, texture.[2] );
 
   /* Linear Filtering */
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST );
 
   /* Generate The MipMapped Texture ( NEW ) */
   ignore(gluBuild2DMipmaps( 
@@ -4455,7 +4503,7 @@ proc LoadGLTextures( )
   ));
 
   /* Free up any memory we may have used */
-	SDL_FreeSurface( TextureImage );
+    SDL_FreeSurface( TextureImage );
 }
 
 /* general OpenGL initialization function */
@@ -4595,14 +4643,14 @@ var
 
 /* This checks to see if surfaces can be stored in memory */
 if  videoInfo.->hw_available != 0 do
-	videoFlags |= SDL_HWSURFACE;
+    videoFlags |= SDL_HWSURFACE;
 else
-	videoFlags |= SDL_SWSURFACE;
+    videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
 if videoInfo.->blit_hw != 0 do
-	videoFlags |= SDL_HWACCEL;
+    videoFlags |= SDL_HWACCEL;
 done;
 
 /* Sets up OpenGL double buffering */
@@ -4653,40 +4701,40 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { ignore$ SDL_WM_ToggleFullScreen( surface ); }
+        { ignore$ SDL_WM_ToggleFullScreen( surface ); }
   | ?k when k == SDLK_b => 
     { 
       blend = not blend; 
       if blend do
-		    glEnable( GL_BLEND );
-		    glDisable( GL_DEPTH_TEST );
+            glEnable( GL_BLEND );
+            glDisable( GL_DEPTH_TEST );
       else
-		    glDisable( GL_BLEND );
-		    glEnable( GL_DEPTH_TEST );
+            glDisable( GL_BLEND );
+            glEnable( GL_DEPTH_TEST );
       done;
     }
   | ?k when k == SDLK_f => 
     {
-	    filter = ( filter + 1) % 3;
+        filter = ( filter + 1) % 3;
       print "Filter "; print filter; endl;
     }
   | ?k when k == SDLK_l => 
     {
-	    light = not light;
-	    if not light do
-        glDisable( GL_LIGHTING );
- 	    else
-        glEnable( GL_LIGHTING );
-	    done;
+        light = not light;
+        if not light do
+            glDisable( GL_LIGHTING );
+         else
+            glEnable( GL_LIGHTING );
+        done;
     }
   | ?k when k == SDLK_PAGEUP => 
     {
-	    z = z - 0.02f;
+        z = z - 0.02f;
     }
 
   | ?k when k == SDLK_PAGEDOWN => 
     {
-	    z = z + 0.02f;
+        z = z + 0.02f;
     }
 
   | ?k when k == SDLK_UP => 
@@ -4938,8 +4986,7 @@ proc Drawing()
 
 }
 
-@h = tangler("tut/sdl/sdl209.flx")
-@select(h)
+@select(tangler("tut/sdl/sdl209.flx"))
 // REQUIRES OpenGL and GLU
 /*
  * This code was created by Jeff Molofee '99 
@@ -5025,30 +5072,30 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl209.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl209.bmp";
+    print "Can't load texture file media/textures/sdl.bmp";
     Quit 1;
   done;
 
   /* Create The Texture */
-	glGenTextures( 1, texture );
+    glGenTextures( 1, texture );
 
   /* Typical Texture Generation Using Data From The Bitmap */
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
-	/* Generate The Texture */
+    /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
     TextureImage.->h, 0, GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
   );
 
   /* Linear Filtering */
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
   /* Free up any memory we may have used */
-	SDL_FreeSurface( TextureImage );
+    SDL_FreeSurface( TextureImage );
 }
 
 var twinkle = false;
@@ -5095,17 +5142,17 @@ proc initGL()
 
   /* Create A Loop That Goes Through All The Stars */
   var i = 0; whilst i< NUM do
-	  /* Start All The Stars At Angle Zero */
-	  stars.[i].angle = 0.0f;
+      /* Start All The Stars At Angle Zero */
+      stars.[i].angle = 0.0f;
 
-	  /* Calculate Distance From The Center */
-	  stars.[i].dist = ( float_of i / float_of NUM ) * 5.0f;
-	  /* Give star.[i] A Random Red Intensity */
-	  stars.[i].r = Cstdlib::rand( ) % 256;
-	  /* Give star.[i] A Random Green Intensity */
-	  stars.[i].g = Cstdlib::rand( ) % 256;
-	  /* Give star.[i] A Random Blue Intensity */
-	  stars.[i].b = Cstdlib::rand( ) % 256;
+      /* Calculate Distance From The Center */
+      stars.[i].dist = ( float_of i / float_of NUM ) * 5.0f;
+      /* Give star.[i] A Random Red Intensity */
+      stars.[i].r = Cstdlib::rand( ) % 256;
+      /* Give star.[i] A Random Green Intensity */
+      stars.[i].g = Cstdlib::rand( ) % 256;
+      /* Give star.[i] A Random Blue Intensity */
+      stars.[i].b = Cstdlib::rand( ) % 256;
     ++i;
   done;
 }
@@ -5203,14 +5250,14 @@ var
 
 /* This checks to see if surfaces can be stored in memory */
 if  videoInfo.->hw_available != 0 do
-	videoFlags |= SDL_HWSURFACE;
+    videoFlags |= SDL_HWSURFACE;
 else
-	videoFlags |= SDL_SWSURFACE;
+    videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
 if videoInfo.->blit_hw != 0 do
-	videoFlags |= SDL_HWACCEL;
+    videoFlags |= SDL_HWACCEL;
 done;
 
 /* Sets up OpenGL double buffering */
@@ -5261,7 +5308,7 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { 
+        { 
         block_sdl_events event_lock;
         ignore$ SDL_WM_ToggleFullScreen( surface ); 
         unblock_sdl_events event_lock;
@@ -5272,12 +5319,12 @@ proc handle_key( keysym : SDL_keysym)
     }
   | ?k when k == SDLK_PAGEUP => 
     {
-	    zoom = zoom - 0.2f;
+        zoom = zoom - 0.2f;
     }
 
   | ?k when k == SDLK_PAGEDOWN => 
     {
-	    zoom = zoom + 0.2f;
+        zoom = zoom + 0.2f;
     }
 
   | ?k when k == SDLK_UP => 
@@ -5490,25 +5537,4 @@ proc Drawing()
   /* Draw it to the screen */
   SDL_GL_SwapBuffers( );
 }
-
-@h = tangler("tmp/sdl_opengl.cxx",'c++')
-@select(h)
-// for testing whether we have SDL_opengl
-#include <SDL.h>            // overrides main
-#include <SDL_opengl.h>
-
-int
-main(int argc, char** argv)
-{
-    if(SDL_Init(SDL_INIT_VIDEO) == -1
-        || SDL_SetVideoMode(640, 480, 32, SDL_ANYFORMAT | SDL_OPENGL) == NULL)
-    {
-        return 1;       // fail
-    }
-
-    // random gl stuff to make sure we link
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    return 0;           // pass
-}
+@doc()
