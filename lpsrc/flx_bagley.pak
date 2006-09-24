@@ -1647,6 +1647,7 @@ var wmap = Set::create[int * string] ();
   done;
 };
 
+@head(2,"bagley/felix/prodcons")
 @select(tangler('bagley/felix/prodcons.flx','data'))
 @setup()
 var produced = 0;
@@ -1673,7 +1674,13 @@ var prod= start the producer;
 run prod;
 
 print produced; print " "; print consumed; endl;
+@doc()
 
+@select(tangler("bagley/felix/prodcons.expect","data"))
+1000 1000
+@doc()
+
+@head(2,"bagley/felix/takfp")
 @select(tangler('bagley/felix/takfp.flx','data'))
 @setup()
 open Float;
@@ -1688,7 +1695,13 @@ fun Tak (x:float, y:float, z:float): float =>
  
 w := float_of n;
 print1 (Tak(w*3.0f, w*2.0f, w*1.0f));
+@doc()
 
+@select(tangler("bagley/felix/takfp.expect","data"))
+11.0
+@doc()
+
+@head(2,"bagley/felix/procinst")
 @select(tangler('bagley/felix/procinst.flx','data'))
 @setup()
 thread_max := n;  
@@ -1731,7 +1744,11 @@ whilst message_count >0 do
   send[int] (&first) 0;
   //collect();
 done;
+@doc()
 
+@select(tangler("bagley/felix/procinst.expect","data"))
+100
+@doc()
 
 @select(tangler('bagley/data/Usr.Dict.Words','data'))
 aback
@@ -2172,13 +2189,4 @@ zuul
       1 with
       1 withstood
       1 written
-@head(2,"bagley/felix/prodcons.expect")
-@select(tangler("bagley/felix/prodcons.expect","data"))
-1000 1000
-@head(2,"bagley/felix/takfp.expect")
-@select(tangler("bagley/felix/takfp.expect","data"))
-11.0
-@head(2,"bagley/felix/procinst.expect")
-@select(tangler("bagley/felix/procinst.expect","data"))
-100
 @doc()
