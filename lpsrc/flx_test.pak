@@ -1,3 +1,15 @@
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env = setup_test(os.path.join('test', 'drivers', 'drvr-'))
+
+@select(tangler('spkgs/flx_test.py'))
+@tangle('TESTS = glob.glob("'+env.root+'*.flx")')
+
+unit_tests = TESTS
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl']
+iscr_source = [ 'lpsrc/flx_test.pak' ]
+@doc()
+
 @head(1,'Drivers')
 These are C++ mainline routines, which are used
 to drive different kinds of Felix programs.
@@ -9,15 +21,15 @@ We need some other standard drivers.
 An X-Windows driver would be really nice.
 
 
-@head(2,'Test 1')
+@env.head(2,'Test 1')
 The Universal Program Driver, flx_run,
 runs a Felix program with no inputs.
 This driver is located in flx_rtl.ipk.
 @p()
 This routine just loops through
 numbers 1 to 10, and prints if they're odd or even.
-@d = tangler('test/drivers/flx_run_lib1.flx')
-@select(d)
+
+@select(env.test('.flx'))
 // dispatcher test
 header r"""
 #include <string>
@@ -82,7 +94,22 @@ proc fire()
 print "Felix test_library1 initialising\n";
 fire();
 print "Felix test_library1 terminating\n";
+@doc()
 
+@select(env.expect())
+Felix test_library1 initialising
+0 Even
+1 Odd
+2 Even
+3 Odd
+4 Even
+5 Odd
+6 Even
+7 Odd
+8 Even
+9 Odd
+Felix test_library1 terminating
+@doc()
 
 @head(2,'Performance Test')
 The first test program generates lines like:
@@ -103,8 +130,7 @@ We create 1 million threads, and process 2 million
 messages.
 
 @head(3,'Driver Implementation')
-@d = tangler('test/drivers/flx_perf_drv1.cxx','cpp')
-@select(d)
+@select(tangler('test/drivers/flx_perf_drv1.cxx','cpp'))
 #include <time.h>
 //#include <unistd.h>
 
@@ -354,10 +380,10 @@ int main(int argc, char** argv)
     fprintf(stderr,"EXCEPTION CAUGHT\n");
   }
 }
+@doc()
 
 @head(2,'Performance test client')
-@d = tangler('test/drivers/flx_perf_lib1.flx')
-@select(d)
+@select(tangler('test/drivers/flx_perf_lib1.flx'))
 // dispatcher test
 header r"""
 #include <string>
@@ -393,5 +419,6 @@ proc handle_line()
 }
 
 export proc handle_line of (1) as "line_handler_creator";
+@doc()
 
 
