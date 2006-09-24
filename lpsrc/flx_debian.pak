@@ -117,7 +117,7 @@ htmlman/*.html usr/share/doc/felix/htmlman
 tut/doc/*.html usr/share/doc/felix/tut/doc
 tut/examples/*.flx usr/share/doc/felix/tut/examples
 test/*.flx usr/share/doc/felix/test
-test/flx_perf_drv1.cpp usr/share/doc/felix/test
+test/drivers/flx_perf_drv1.cpp usr/share/doc/felix/test
 libdoc/*.html usr/share/doc/felix/libdoc
 
 @select(tangler('olddebian/felix.links','data'))
