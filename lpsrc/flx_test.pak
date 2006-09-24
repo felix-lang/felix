@@ -16,7 +16,7 @@ This driver is located in flx_rtl.ipk.
 @p()
 This routine just loops through
 numbers 1 to 10, and prints if they're odd or even.
-@d = tangler('test/flx_run_lib1.flx')
+@d = tangler('test/drivers/flx_run_lib1.flx')
 @select(d)
 // dispatcher test
 header r"""
@@ -103,7 +103,7 @@ We create 1 million threads, and process 2 million
 messages.
 
 @head(3,'Driver Implementation')
-@d = tangler('test/flx_perf_drv1.cxx','cpp')
+@d = tangler('test/drivers/flx_perf_drv1.cxx','cpp')
 @select(d)
 #include <time.h>
 //#include <unistd.h>
@@ -356,7 +356,7 @@ int main(int argc, char** argv)
 }
 
 @head(2,'Performance test client')
-@d = tangler('test/flx_perf_lib1.flx')
+@d = tangler('test/drivers/flx_perf_lib1.flx')
 @select(d)
 // dispatcher test
 header r"""

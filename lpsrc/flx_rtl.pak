@@ -52,10 +52,10 @@ weaver_directory = 'doc/rtl/flx_rtl/'
 DRIVERS = [
   ('static','rtl/flx_run','',[]),
   ('dynamic','rtl/flx_run','bin/flx_run',[]),
-  ('static','test/flx_perf_drv1','',[]),
-  ('dynamic','test/flx_perf_drv1','test/flx_perf_drv1',[]),
-  ('static','test/micky_mouse','',[]),
-  ('dynamic','test/micky_mouse','bin/micky_mouse',[]),
+  ('static','test/drivers/flx_perf_drv1','',[]),
+  ('dynamic','test/drivers/flx_perf_drv1','test/drivers/flx_perf_drv1',[]),
+  ('static','test/drivers/mickey_mouse','',[]),
+  ('dynamic','test/drivers/mickey_mouse','bin/mickey_mouse',[]),
 ]
 
 DRLIBS = [
@@ -3293,7 +3293,7 @@ int main(int argc, char** argv)
 extern "C" flx::rtl::con_t *flx_main( void *p){ return 0; }
 @doc()
 
-@select(tangler('test/micky_mouse.cxx','cpp'))
+@select(tangler('test/drivers/mickey_mouse.cxx','cpp'))
 #include <stdio.h>
 #include "flx_rtl.hpp"
 #include "flx_collector.hpp"

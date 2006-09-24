@@ -285,8 +285,6 @@ class PLUGIN(Plugin):
 
   def runme(self):    
     print "GENERATING RTLDOCS"
-    erasedir('rtldoc')
-    os.mkdir('rtldoc')
     try:
       vxqt("doxygen misc/doxconf.dox")
     except:
@@ -582,42 +580,48 @@ class PLUGIN(Plugin):
  
   def runme(self):
     for d in [ \
-        "spkgs",
-        "cpkgs",
-        "manifests",
-        "speed",
-        "pthread",
-        "tre",
-        "script",
-        "pkg-stamps",
-        "tmp",
-        "rtl",
-        os.path.join("lib", "GL"), 
-        os.path.join("lib", "SDL"), 
-        "lib", 
-        "bin",
-        "elk",
-        "src",
-        "lib",
-        "doc",
-        os.path.join("man", "man1"),
-        "man",
-        "impldoc",
-        "htmlman",
-        "meta",
-        os.path.join("tools", "lua"), 
-        "tools",
-        "faio",
-        "demux",
-        os.path.join("tut", "examples"),
-        "tut",
         os.path.join("bagley", "data"),
         os.path.join("bagley", "felix"),
         "bagley",
-        "test",
-        "pkg",
-        "mkplugin",
+        "bin",
+        os.path.join("cpkgs", "build"), 
+        os.path.join("cpkgs", "host"), 
+        os.path.join("cpkgs", "target"), 
+        "cpkgs",
+        os.path.join("demos", "faio"),
+        os.path.join("demos", "sdl"),
+        "demos",
+        "demux",
+        os.path.join("doc", "elkhound"),
+        os.path.join("doc", "flx"),
+        os.path.join("doc", "flxcc"),
+        os.path.join("doc", "gmp"),
+        os.path.join("doc", "grammar"),
+        os.path.join("doc", "gsl"),
+        os.path.join("doc", "htmlman"),
+        os.path.join("doc", "impldoc"),
+        os.path.join("doc", "mmap"),
+        os.path.join("doc", "opengl"),
+        os.path.join("doc", "refman"),
+        os.path.join("doc", "rtl"),
+        os.path.join("doc", "sdl"),
+        os.path.join("doc", "test"),
+        os.path.join("doc", "tutorial"),
+        "doc",
+        "elk",
+        "faio",
         "flxbuild",
+        "hostlib",
+        "impldoc",
+        os.path.join("lib", "gsl"),
+        os.path.join("lib", "mpi"),
+        os.path.join("lib", "pari"),
+        os.path.join("lib", "GL"), 
+        os.path.join("lib", "SDL"), 
+        "lib",
+        os.path.join("man", "man1"),
+        "man",
+        "manifests",
         os.path.join("meta", "godi"), 
         os.path.join("meta", "godiva"), 
         "meta",
@@ -625,7 +629,53 @@ class PLUGIN(Plugin):
         os.path.join("misc", "lua"),
         os.path.join("misc", "jedit"),
         "misc",
-        "www"
+        "mkplugin",
+        "oldebian",
+        "pkg",
+        os.path.join("pkg-stamps", "test", "regress"),
+        os.path.join("pkg-stamps", "test"),
+        os.path.join("pkg-stamps", "tut", "embedding"),
+        os.path.join("pkg-stamps", "tut", "macros"),
+        os.path.join("pkg-stamps", "tut", "migration"),
+        os.path.join("pkg-stamps", "tut", "tutorial"),
+        os.path.join("pkg-stamps", "tut"),
+        "pkg-stamps",
+        "pthread",
+        "rtl",
+        "script",
+        os.path.join("speed", "specs"),
+        os.path.join("speed", "src", "ada"),
+        os.path.join("speed", "src", "c"),
+        os.path.join("speed", "src", "felix"),
+        os.path.join("speed", "src", "haskell"),
+        os.path.join("speed", "src", "java"),
+        os.path.join("speed", "src", "ocaml"),
+        os.path.join("speed", "src", "pascal"),
+        os.path.join("speed", "src"),
+        os.path.join("speed", "xlators"),
+        "speed",
+        "spkgs",
+        "src",
+        os.path.join("test", "drivers"),
+        os.path.join("test", "faio"),
+        os.path.join("test", "gmp"),
+        os.path.join("test", "mmap"),
+        os.path.join("test", "pthread"),
+        os.path.join("test", "regress"),
+        os.path.join("test", "tre"),
+        "test",
+        "tmp",
+        os.path.join("tools", "lua"), 
+        "tools",
+        "tre",
+        os.path.join("tut", "embedding"),
+        os.path.join("tut", "examples"),
+        os.path.join("tut", "macros"),
+        os.path.join("tut", "migration"),
+        os.path.join("tut", "sdl"),
+        os.path.join("tut", "tutorial"),
+        "tut",
+        "www",
         ]:
       for f in glob.glob(os.path.join(d, "*")):
         print "Del",f
@@ -872,8 +922,8 @@ def build_target_felix_tools(pkg, pkgdict):
 
 @select(tangler('mkplugins/performance.py'))
 SPECIAL_TESTS = [
-  (os.path.join('bin', 'flx_run'), os.path.join('test', 'flx_run_lib1.flx'),''),
-  (os.path.join('test', 'flx_perf_drv1'), os.path.join('test', 'flx_perf_lib1.flx'),'1000'),
+  (os.path.join('bin', 'drivers', 'flx_run'), os.path.join('test', 'drivers', 'flx_run_lib1.flx'),''),
+  (os.path.join('test', 'drivers', 'flx_perf_drv1'), os.path.join('test', 'drivers', 'flx_perf_lib1.flx'),'1000'),
 ]
 
 class PLUGIN(Plugin):
@@ -1377,7 +1427,8 @@ class PLUGIN(Plugin):
 
         # only stamp if we've passed the tests
         if \
-                plugins['run_unit_tests'](pkg, pkgdict, quiet, check_stamp) \
+                    plugins['run_failure_tests'](pkg, pkgdict, quiet, check_stamp) \
+                and plugins['run_unit_tests'](pkg, pkgdict, quiet, check_stamp) \
                 and plugins['run_static_unit_tests'](pkg, pkgdict, quiet, check_stamp) \
                 and plugins['run_dynamic_unit_tests'](pkg, pkgdict, quiet, check_stamp) \
                 and plugins['run_completion_tests'](pkg, pkgdict, quiet, check_stamp) \
@@ -1424,7 +1475,9 @@ class TestPlugin(Plugin):
       stamp = os.path.join("pkg-stamps", testfile + '.test')
       
       # run the tests
-      if not check_stamp or filetime(stamp) < latest_src_time:
+      if check_stamp and latest_src_time < filetime(stamp):
+        self.successes.append((pkg, testfile, log.getvalue()))
+      else:
         # build the felix code
         try:
           basename = plugins['build_test'](testfile, log, quiet)
@@ -1459,10 +1512,7 @@ class TestPlugin(Plugin):
             testscript = path + EXT_EXE
   
             try:
-              if deterministic:
-                self.run_test(log, testscript, basename, deterministic, quiet, check_stamp)
-              else:
-                self.run_test(log, testscript, basename, quiet=0)
+              self.run_test(log, testscript, basename, deterministic, quiet, check_stamp)
             except MakeError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
@@ -1572,6 +1622,7 @@ class PLUGIN(Plugin):
       plugins['run_static_unit_tests'](pkg, pkgdict, quiet, check_stamp)
       plugins['run_dynamic_unit_tests'](pkg, pkgdict, quiet, check_stamp)
       plugins['run_completion_tests'](pkg, pkgdict, quiet, check_stamp)
+      plugins['run_known_failed_tests'](pkg, pkgdict, quiet, check_stamp)
 
 @select(tangler('mkplugins/doc.py'))
 class PLUGIN(Plugin):
