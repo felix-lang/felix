@@ -1,63 +1,13 @@
 @head(1,"Address space management")
 
-@select(tangler('tmp' + os.sep + 'mmap_test.cxx'))
-// NOTE REQUIRES MAP_ANONYMOUS (linux only ..)
-#include <sys/mman.h>
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-
-int main()
-{
-   size_t n = 10000;
-   void *data = 
-       mmap
-       (
-          NULL,n, 
-          PROT_WRITE | PROT_READ, 
-          MAP_PRIVATE | MAP_ANONYMOUS, 
-          0,0
-       )
-    ;
-   if (data == MAP_FAILED) 
-   {
-      return 1;
-   }
-   int res = munmap(data,n);
-   if (res != 0)
-   {
-      return 1;
-   }
-   return 0;
-}
-
-@select(tangler("cpkgs/target/mmap.py"))
-execfile("config"+os.sep+"config.py")
-try:
-  cload(globals(),"mmap")
-except:
-  #HAVE_MMAP=TARGET_CXX.check_header_exists(xqt,'sys/mman.h')
-  try:
-    result, lines = TARGET_CXX.run_static_program(xqt, get_stdout, "tmp"+os.sep+"mmap_test")
-  except:
-    HAVE_MMAP = 0
-  else:
-    HAVE_MMAP = not result
-  f = cwrite("mmap")
-  pa(f,locals(),"HAVE_MMAP")
-  f.close()
-  cload(globals(),"mmap")
-
-@h = tangler('spkgs/mmap.py')
-@select(h)
-execfile('cpkgs'+os.sep+'target'+os.sep+'mmap.py')
+@select(tangler('spkgs/mmap.py'))
 if HAVE_MMAP:
   unit_tests = ['test'+os.sep+'flx_mmap_test.flx']
 
 iscr_source = ['lpsrc/flx_mmap.pak']
 weaver_directory = 'doc/mmap/'
 
-@h = tangler('config/mmap.fpc')
+@h = tangler('config/mmap.fpc', 'data')
 @select(h)
 Name: mmap
 
@@ -70,28 +20,32 @@ module Mmap
   header """
     #include <sys/mman.h>
     #include <unistd.h>
+
+    // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
+    #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+    #  define MAP_ANONYMOUS MAP_ANON
+    #endif
   """;
   
   typedef off_t = unsigned long;
   // protection options
-  const PROT_EXEC : int;
-  const PROT_READ: int;
-  const PROT_WRITE : int;
-  const PROT_NONE: int;
+@if HAVE_MMAP_PROT_EXEC:  tangle('  const PROT_EXEC : int;')
+@if HAVE_MMAP_PROT_READ:  tangle('  const PROT_READ : int;')
+@if HAVE_MMAP_PROT_WRITE: tangle('  const PROT_WRITE : int;')
 
-  const MAP_FIXED: int;
-  const MAP_SHARED: int;
-  const MAP_PRIVATE: int;
-
-#if LINUX  
-  const MAP_NORESERVE: int;
-  const MAP_LOCKED: int;
-  const MAP_GROWSDOWN: int;
-  const MAP_ANONYMOUS: int;
-  const MAP_32BIT: int;
-  const MAP_POPULATE: int;
-  const MAP_NONBLOCK: int;
-#endif
+@if HAVE_MMAP_DENYWRITE:    tangle('  const MAP_DENYWRITE: int;')
+@if HAVE_MMAP_ANONYMOUS:    tangle('  const MAP_ANONYMOUS: int;')
+@if HAVE_MMAP_FILE:         tangle('  const MAP_FILE: int;')
+@if HAVE_MMAP_FIXED:        tangle('  const MAP_FIXED: int;')
+@if HAVE_MMAP_HASSEMAPHORE: tangle('  const MAP_HASSEMAPHORE: int;')
+@if HAVE_MMAP_SHARED:       tangle('  const MAP_SHARED : int;')
+@if HAVE_MMAP_PRIVATE:      tangle('  const MAP_PRIVATE : int;')
+@if HAVE_MMAP_NORESERVE:    tangle('  const MAP_NORESERVE: int;')
+@if HAVE_MMAP_LOCKED:       tangle('  const MAP_LOCKED: int;')
+@if HAVE_MMAP_GROWSDOWN:    tangle('  const MAP_GROWSDOWN: int;')
+@if HAVE_MMAP_32BIT:        tangle('  const MAP_32BIT: int;')
+@if HAVE_MMAP_POPULATE:     tangle('  const MAP_POPULATE: int;')
+@if HAVE_MMAP_NONBLOCK:     tangle('  const MAP_NONBLOCK: int;')
 
   const MAP_FAILED : address;
 
@@ -110,8 +64,7 @@ module Mmap
   fun munmap: address * size -> int;
 }
 
-@h = tangler("test/flx_mmap_test.flx")
-@select(h)
+@select(tangler("test/flx_mmap_test.flx"))
 #import <flx.flxh>
 include "mmap";
 open Mmap;
@@ -125,7 +78,7 @@ data :=
       NULL,n, 
       PROT_WRITE \| PROT_READ, 
       MAP_PRIVATE \| MAP_ANONYMOUS, 
-      0,cast[off_t]0
+      -1,cast[off_t]0
     )
 ;
 
@@ -139,6 +92,7 @@ else
     print$ "mmap worked!\n";
   done;
 done;
+@doc()
 
 @select(tangler("test/flx_mmap_test.expect"))
 mmap worked!

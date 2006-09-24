@@ -1499,6 +1499,108 @@ int main(int argc, char** argv) {
       print "Posix Threads not supported"
 
 
+  def detect_mmap(self, shell, get_stdout):
+    opt = self.options
+    opt.HAVE_MMAP = 0
+    opt.HAVE_MMAP_PROT_EXEC = 0
+    opt.HAVE_MMAP_PROT_READ = 0
+    opt.HAVE_MMAP_PROT_WRITE = 0
+    opt.HAVE_MMAP_DENYWRITE = 0
+    opt.HAVE_MMAP_ANONYMOUS = 0
+    opt.HAVE_MMAP_FILE = 0
+    opt.HAVE_MMAP_FIXED = 0
+    opt.HAVE_MMAP_HASSEMAPHORE = 0
+    opt.HAVE_MMAP_SHARED = 0
+    opt.HAVE_MMAP_PRIVATE = 0
+    opt.HAVE_MMAP_NORESERVE = 0
+    opt.HAVE_MMAP_LOCKED = 0
+    opt.HAVE_MMAP_GROWSDOWN = 0
+    opt.HAVE_MMAP_32BIT = 0
+    opt.HAVE_MMAP_POPULATE = 0
+    opt.HAVE_MMAP_NONBLOCK = 0
+
+    opt.HAVE_MMAP_DEV_ZERO = 0
+
+    if not self.check_header_exists(shell, 'sys/mman.h'):
+      print "mmap not supported"
+      return
+
+    opt.HAVE_MMAP = 1
+    print "mmap supported"
+
+    for d in [
+        'MAP_DENYWRITE',
+        'MAP_ANONYMOUS',
+        'MAP_FILE',
+        'MAP_FIXED',
+        'MAP_HASSEMAPHORE',
+        'MAP_SHARED',
+        'MAP_PRIVATE',
+        'MAP_NORESERVE',
+        'MAP_LOCKED',
+        'MAP_GROWSDOWN',
+        'MAP_32BIT',
+        'MAP_POPULATE',
+        'MAP_NONBLOCK',
+        ]:
+      if self.check_macro_defined(shell, d, 'sys/mman.h'):
+        opt.__dict__['HAVE_M' + d] = 1
+
+    if self.check_macro_defined(shell, 'PROT_EXEC', 'sys/mman.h'):
+      opt.HAVE_MMAP_PROT_EXEC = 1
+
+    if self.check_macro_defined(shell, 'PROT_READ', 'sys/mman.h'):
+      opt.HAVE_MMAP_PROT_READ = 1
+
+    if self.check_macro_defined(shell, 'PROT_WRITE', 'sys/mman.h'):
+      opt.HAVE_MMAP_PROT_WRITE = 1
+
+    if self.check_macro_defined(shell, 'MAP_ANON', 'sys/mman.h'):
+      opt.HAVE_MMAP_ANONYMOUS = 1
+
+    try:
+      errno, output = self.run_static_string_program(shell, get_stdout, """
+#include <sys/mman.h>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+
+int main(int argc, char** argv)
+{
+   size_t n = 10000;
+   int fd;
+   fd = open("/dev/zero", O_RDWR);
+   if (fd == -1) {
+     return 1;
+   }
+   void *data = 
+       mmap
+       (
+          NULL,n, 
+          PROT_WRITE | PROT_READ, 
+          MAP_PRIVATE, 
+          fd,0
+       )
+    ;
+   if (data == MAP_FAILED) 
+   {
+      return 1;
+   }
+   int res = munmap(data,n);
+   if (res != 0)
+   {
+      return 1;
+   }
+   return 0;
+}
+""", 'tmp'+os.sep+'mmap')
+    except EnvironmentError:
+      pass
+    else:
+      if not errno:
+        opt.HAVE_MMAP_DEV_ZERO = 1
+
+
   def detect_dynamic_loading(self, shell, get_stdout):
     opt = self.options
 
@@ -1738,6 +1840,7 @@ main(int argc, char** argv) {
     self.detect_named_registers(shell, get_stdout)
     self.detect_computed_gotos(shell, get_stdout)
     self.detect_pthreads(shell, get_stdout)
+    self.detect_mmap(shell, get_stdout)
     self.detect_sockets(shell, get_stdout)
     # could just replace this with header_exists("sys/event.h") but
     # it ain't broke.
