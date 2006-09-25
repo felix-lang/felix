@@ -4276,8 +4276,8 @@ poll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 
 @h=tangler('demux/demux_ts_poll_demuxer.hpp')
 @select(h)
-#ifndef FLX_DEMUX_TS_POLL_DEMUXER_H
-#define FLX_DEMUX_TS_POLL_DEMUXER_H
+#ifndef __FLX_DEMUX_TS_POLL_DEMUXER_H__
+#define __FLX_DEMUX_TS_POLL_DEMUXER_H__
 
 // thread safe version of poll_demuxer
 
