@@ -3536,8 +3536,6 @@ namespace flx { namespace rtl { namespace strutil {
   }
 
   RTL_EXTERN string atostr(char const *a);
-  RTL_EXTERN string ltrim(string const &x);
-  RTL_EXTERN string rtrim(string const &x);
   RTL_EXTERN string flx_asprintf(char *fmt,...);
 
 }}}
@@ -3552,22 +3550,6 @@ namespace flx { namespace rtl { namespace strutil {
     if(a) return a;
     else return "";
   }
-
- string ltrim(string const &x) {
-   int n = x.size();
-   int i;
-   for(i = 0; i < n; ++i)
-     if(x[i]>' ')break;
-   return x.substr(i,n-i);
- }
-
- string rtrim(string const &x) {
-   int n = x.size();
-   int i;
-   for(i = n; i > 0; --i)
-     if(x[i-1]>' ')break;
-   return x.substr(0,i);
- }
 
 #ifdef HAVE_VSNPRINTF  
   string flx_asprintf(char *fmt,...){

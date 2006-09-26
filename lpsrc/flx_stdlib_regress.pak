@@ -1,0 +1,90 @@
+@import glob
+
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env = setup_test(os.path.join('test', 'stdlib', 'rt-'))
+
+@select(tangler('spkgs/flx_stdlib_regress.py'))
+@tangle("unit_tests = glob.glob('"+env.root+"*.flx')")
+pkg_requires = ['flx_stdlib']
+
+iscr_source = ['lpsrc/flx_stdlib_regress.pak']
+
+weaver_directory = 'doc/test/stdlib'
+@doc()
+
+@env.head(1, 'Standard library regression tests')
+@env.head(2, 'String tests')
+@env.head(3, 'String triming')
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ ltrim "hello how are you" "hello"; endl;
+print$ ltrim "hello how are you" "goodbye"; endl;
+@doc()
+
+@select(env.expect())
+ how are you
+hello how are you
+@doc()
+
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ rtrim "hello how are you" "you"; endl;
+print$ rtrim "hello how are you" "me"; endl;
+
+@select(env.expect())
+hello how are 
+hello how are you
+@doc()
+
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ trim "hello how are you" "me"; endl;
+print$ trim "hello how are you" "hello"; endl;
+print$ trim "hello how are you" "you"; endl;
+
+print$ trim "hello how are hello" "hello"; endl;
+print$ trim "hello how are hello" "goodbye"; endl;
+@doc()
+
+@select(env.expect())
+hello how are you
+ how are you
+hello how are 
+ how are 
+hello how are hello
+@doc()
+
+@env.head(3, 'String stripping')
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ lstrip "  a b c  "; endl;
+print$ lstrip "a b c  "; endl;
+@doc()
+
+@select(env.expect())
+a b c  
+a b c  
+@doc()
+
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ rstrip "  a b c  "; endl;
+print$ rstrip "  a b c"; endl;
+@doc()
+
+@select(env.expect())
+  a b c
+  a b c
+@doc()
+
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ strip "  a b c  "; endl;
+print$ strip "a b c"; endl;
+@doc()
+
+@select(env.expect())
+a b c
+a b c
+@doc()

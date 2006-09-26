@@ -1000,6 +1000,7 @@ open module Char
   open Int;
   fun ord: char -> int = "(int)$1";
   fun _ctor_char: int -> char = "(char)$1";
+  fun str: char -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   proc fprint: ostream * char = "*$1<<$2;" requires iostream;
 }
 
@@ -1008,6 +1009,7 @@ open module Wchar
   open Long;
   fun ord: wchar -> long ="(long)$1";
   fun _ctor_wchar: long -> wchar = "(wchar_t)$1";
+  fun str: wchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
 }
 
@@ -1015,6 +1017,7 @@ open module Unicode
 {
   fun ord: uchar -> uint32 ="$1";
   fun _ctor_uchar: uint32 -> uchar = "$1";
+  fun str: uchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   //this needs to be fixed!
   //proc print: uchar = "std::cout<<$1;" requires iostream;
 }
@@ -1049,7 +1052,9 @@ open module String
   fun str: ucharp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
   fun str: ucharcp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
 
-  fun len: string -> int = "$1.size()";
+  // we need to cast to an int so that c++ won't complain
+  fun len: string -> int = "static_cast<int>($1.size())";
+
   fun add: string * string -> string = "$1+$2";
   fun add: string * charp -> string = "$1+$2";
   fun add: charp * string -> string = "$1+$2";
@@ -1079,7 +1084,7 @@ open module String
   // Note we use int instead of size here: size is correct,
   // but that would requires heaps of casts in Felix
 
-  const stl_npos: int = "std::string::npos";
+  const stl_npos: int = "static_cast<int>(std::string::npos)";
 
 @stringfuncs = ["find", "rfind", "find_first_of", "find_first_not_of", \
       "find_last_of", "find_last_not_of"]
@@ -1135,13 +1140,86 @@ open module String
   fun startswith (x:string) (e:char) : bool => x.[0] == e;
   fun endswith (x:string) (e:char) : bool => x.[len x - 1] == e;
 
+  fun ltrim (x:string) (e:string) : string =
+  {
+    if len x < len e do
+      return x;
+    done;
 
-  // trim whitespace
-  fun ltrim : string -> string = 
-    "flx::rtl::strutil::ltrim($1)" requires flx_strutil;
-  fun rtrim : string -> string = 
-    "flx::rtl::strutil::rtrim($1)" requires flx_strutil;
-  fun trim (x:string) : string => ltrim$ rtrim x;
+    var i: int; forall i in 0 upto (len e) - 1 do
+      if e.[i] != x.[i] do
+        // failed to find the substring, so just return the first string
+        return x;
+      done;
+    done;
+
+    return x.[len e to];
+  }
+
+  fun rtrim (x:string) (e:string) : string =
+  {
+    val len_x = len x;
+    val len_e = len e;
+
+    if len_x < len_e do
+      return x;
+    done;
+
+    var i: int; forall i in 0 upto (len_e) - 1 do
+      if e.[len_e - i - 1] != x.[len_x - i - 1] do
+        return x;
+      done;
+    done;
+
+    return x.[to len_x - len_e];
+  }
+
+  fun trim (x:string) (e:string) : string => ltrim (rtrim x e) e;
+
+
+  // strip whitespace
+  fun lstrip (x:string, e:string) : string = 
+  {
+    var i: int; forall i in 0 upto (len x) - 1 do
+      var found = false;
+      var j: int; forall j in 0 upto (len e) - 1 do
+        if x.[i] == e.[j] do
+          found = true;
+        done; 
+      done; 
+
+      if not found do
+        return x.[i to];
+      done;
+    done;
+
+    return '';
+  }
+
+  fun rstrip (x:string, e:string) : string = 
+  {
+    var i: int; forall i in (len x) - 1 downto 0 do
+      var found = false;
+      var j: int; forall j in 0 upto (len e) - 1 do
+        if x.[i] == e.[j] do
+          found = true;
+        done; 
+      done;
+
+      if not found do
+        return x.[to i + 1];
+      done;
+    done;
+
+    return '';
+  }
+
+  fun strip (x:string, e:string) : string => lstrip(rstrip(x, e), e);
+
+  fun lstrip (x:string) : string => lstrip(x, " \t\n\r\f\v");
+  fun rstrip (x:string) : string => rstrip(x, " \t\n\r\f\v");
+  fun strip (x:string) : string => lstrip$ rstrip x;
+
 
   fun split (x:string, d:char): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>

@@ -32,7 +32,7 @@ FLXFLAGS = ""
 # DRLIBS = ['libflx_async','libfaio','libdemux','libflx_pthread','libflx']
 DRLIBS = ['libflx_pthread','libflx','libflx_gc']
 
-pkg_requires = ['flx_compiler','flx_drivers']
+pkg_requires = ['flx_compiler','flx_drivers','flx_stdlib']
 felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
 felix_requires_linkflags = FLXFLAGS
 exes_require_libs = DRLIBS
@@ -169,7 +169,7 @@ proc parse_args(args:list[string])
 
 
       elif "@" == arg.[0 to 1] do
-        val data = Text_file::load$ trim arg.[1 to];
+        val data = Text_file::load$ strip arg.[1 to];
         parse_args$ split(data,c" \n\r\t,");
 
       // ignore unknown options
@@ -207,8 +207,8 @@ fun get_field(line:string):string * string =>
     match find (line,char ':') with
     | None => "","" 
     | Some ?n => 
-        trim line.[to n],
-        trim line.[n+1 to]
+        strip line.[to n],
+        strip line.[n+1 to]
     endmatch
   ;
 
@@ -295,7 +295,7 @@ whilst not is_empty pkgs do
   endmatch;
 done;
 
-// trim any trailing space off to ease bash scripting
-print$ trim$ str result; endl;
+// strip any trailing space off to ease bash scripting
+print$ strip$ str result; endl;
 System::exit return_code;
 
