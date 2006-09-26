@@ -3490,7 +3490,17 @@ shift
 
 function calpackages () {
   # find all include directories
+  if [ "$ECHO" = "1" ]
+  then
+    echo "$PKGCONFIG_CFLAGS @$base.resh"
+  fi
+
   INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS @$base.resh))"
+
+  if [ "$ECHO" = "1" ]
+  then
+    echo "$PKGCONFIG_DRIVER @$base.resh"
+  fi
 
   # find the driver package
   DRIVER_PKG=$($(echo $PKGCONFIG_DRIVER @$base.resh))
@@ -3512,9 +3522,19 @@ function calpackages () {
 
   if [ $STATIC = 0 ]
   then 
+    if [ "$ECHO" = "1" ]
+    then
+     echo "$PKGCONFIG_DLIBS @$base.resh"
+    fi
+
     # dynamic linkage: all the libraries required by the application
     LINK_STRING="$DLINK_STRING$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS @$base.resh))"
   else
+    if [ "$ECHO" = "1" ]
+    then
+     echo "$PKGCONFIG_SLIBS $DRIVER_PKG @$base.resh"
+    fi
+
     # static linkage: all the libraries required by the application and driver
     LINK_STRING="$SLINK_STRING$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS $DRIVER_PKG @$base.resh))"
   fi
