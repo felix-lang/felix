@@ -447,7 +447,7 @@ def xqt(x,
       log.write(string.join(stdout, ""))
 
     if result and not invert_result:
-      log.write("  .. ERROR CODE %s\n" % hex(result))
+      log.write("  .. ERROR CODE %s: %s\n" % (hex(result), x))
 
   flush()
 
