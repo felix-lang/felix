@@ -210,7 +210,10 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
   let recursion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let mt t : typecode_t = expand_type_expr sr recursion_limit local_prefix seq macros t in
-  let mi sr i = expand_ident sr macros [] i in
+  let mi sr i = 
+    let out = expand_ident sr macros [] i in
+    out
+  in
   match Flx_maps.map_type mt t with
 
   (* Name expansion *)
@@ -252,7 +255,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   let recursion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
-  let mi sr i = expand_ident sr macros [] i in
+  let mi sr i = 
+    let out = expand_ident sr macros [] i in
+    out
+  in
   let cf e = const_fold e in
   let e = cf e in
   match e with
@@ -749,7 +755,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let pr = protect sr ps in
     recurse recursion_limit local_prefix seq (ref true) (pr @ macros) ss 
   in
-  let mi sr id = expand_ident sr macros [] id in
+  let mi sr id = 
+    let out = expand_ident sr macros [] id in
+    out
+  in
   let result = ref [] in
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
@@ -1001,7 +1010,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 1 then 
       ( 
-        ctack (`AST_goto (sr,id));
+        ctack (`AST_goto (sr,mi sr id));
         reachable := false
       )
     | _ ->
@@ -1033,61 +1042,14 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
         ctack (`AST_assert (sr,e))
     end
 
-  (*
-  | `AST_whilst (sr, e , sts) -> 
-    let e = me e in
-    let n = !seq in incr seq;
-    let start = "_" ^ string_of_int n in
-    let n = !seq in incr seq;
-    let fin = "_" ^ string_of_int n in
-    begin match e with
-    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
-      if c = 1 then (* infinite loop *)
-      begin
-        ctack (`AST_label(sr,start));
-        iter ctack (ms sts);
-        ctack (`AST_goto (sr,start))
-      end
-
-    | _ ->
-      ctack (`AST_label(sr,start));
-      ctack (`AST_ifnotgoto (sr,e,fin));
-      iter ctack (ms sts);
-      ctack (`AST_goto (sr,start));
-      ctack (`AST_label(sr,fin))
-    end
-
-  | `AST_until (sr, e , sts) -> 
-    let e = me e in
-    let n = !seq in incr seq;
-    let start = "_" ^ string_of_int n in
-    let n = !seq in incr seq;
-    let fin = "_" ^ string_of_int n in
-    begin match e with
-    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
-      if c = 0 then (* infinite loop *)
-      begin
-        ctack (`AST_label(sr,start));
-        iter ctack (ms sts);
-        ctack (`AST_goto (sr,start))
-      end
-
-    | _ ->
-      ctack (`AST_label(sr,start));
-      ctack (`AST_ifgoto (sr,e,fin));
-      iter ctack (ms sts);
-      ctack (`AST_goto (sr,start));
-      ctack (`AST_label(sr,fin))
-    end
-  *)
-
   | `AST_ifnotgoto (sr, e, id) -> 
     let e = me e in
+    let e = cf e in
     begin match e with
     | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 0 then 
       (
-        ctack (`AST_goto (sr,id)); 
+        ctack (`AST_goto (sr,mi sr id)); 
         reachable := false
       )
     | _ ->
@@ -1105,7 +1067,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       )
     | _ ->
       let n = !seq in incr seq;
-      let lab = "_" ^ string_of_int n in
+      let lab = "_ifret_" ^ string_of_int n in
       ctack (`AST_ifnotgoto (sr, e, lab));
       ctack (`AST_proc_return sr);
       ctack (`AST_label (sr,lab))
@@ -1113,6 +1075,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | `AST_ifdo (sr, e, sts1, sts2) -> 
     let e = me e in
+    let e = cf e in
     begin match e with
     | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 1 then
@@ -1123,8 +1086,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | _ ->
       let n1 = !seq in incr seq;
       let n2 = !seq in incr seq;
-      let lab1 = "_" ^ string_of_int n1 in
-      let lab2 = "_" ^ string_of_int n2 in
+      let lab1 = "_ifdoend_" ^ string_of_int n1 in
+      let lab2 = "_ifdoelse_" ^ string_of_int n2 in
       (*
       print_endline ("Assigned labels " ^ lab1 ^ " and " ^ lab2);
       *)
@@ -1191,7 +1154,10 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let ms ss = subst_statement recursion_limit local_prefix seq (ref true) macros ss in
   let mss ss = subst_statements recursion_limit local_prefix seq (ref true) macros ss in
-  let mi sr id = expand_ident sr macros [] id in
+  let mi sr id = 
+    let out = expand_ident sr macros [] id in
+    out
+  in
   let result = ref [] in
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
@@ -1251,6 +1217,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     begin try
       match assoc name macros with
       | MStmt ([],b) ->
+        print_endline ("EXPANDING call to macro " ^ name);
         iter tack (mss b)
       | _ -> 
         tack (`AST_call (sr, me e1, me e2))
@@ -1317,7 +1284,10 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
   let recurion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq (!ref_macros @ macros) e in
   let ms ss = expand_statements recursion_limit local_prefix seq (ref true) (!ref_macros @ macros) ss in
-  let mi sr id = expand_ident sr (!ref_macros @ macros) [] id in
+  let mi sr id = 
+    let out = expand_ident sr (!ref_macros @ macros) [] id  in
+    out
+  in
   let result = ref [] in
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
@@ -1382,7 +1352,8 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     begin 
       match ids with 
       | [] -> ref_macros := []
-      | _ -> ref_macros := filter (fun (x,_) -> mem x ids) !ref_macros
+      | _ -> 
+        ref_macros := filter (fun (x,_) -> not (mem x ids)) !ref_macros
     end
     
   | `AST_expr_macro (sr, id, ps, e) ->
@@ -1629,11 +1600,17 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
           *)
 
           | MExpr (ps,b) ->
+            (*
+            print_endline ("Expanding statement, MExpr " ^ name);
+            *)
             let result = me (`AST_apply (sr,(e1,e2))) in
             let u = `AST_tuple (sr,[]) in
             iter tack (ms [`AST_call(sr,result,u)])
 
           | MStmt(ps,b) ->
+            (*
+            print_endline ("Expanding statement, MStmt " ^ name);
+            *)
             let args = 
               match e2 with
               | `AST_tuple (_,ls) -> ls
@@ -1647,6 +1624,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
                 let args = build_args sr ps args in
                 let b = subst_statements recursion_limit local_prefix seq reachable args b in
                 let b = ses b in
+                (* ?? ctack ?? *)
                 iter ctack b
               end
             else 
