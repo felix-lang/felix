@@ -165,7 +165,7 @@ let get_var_ref syms bbdfns this index ts : string =
     end
 
   | `BBDCL_ref (vs,t) ->
-    "*(" ^
+    "(*(" ^
     begin match parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bbdfns index ts
@@ -180,7 +180,7 @@ let get_var_ref syms bbdfns this index ts : string =
       ) ^
       cpp_instance_name syms bbdfns index ts
     end
-    ^")"
+    ^"))"
 
 
   | `BBDCL_tmp (vs,t) ->
