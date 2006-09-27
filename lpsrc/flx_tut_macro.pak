@@ -719,7 +719,7 @@ print (greet());
 
 @select(env.expect())
 Hi there locality!
-Hello locality!
+Hi there world!
 Hello world!
 Hello world!
 @doc()
