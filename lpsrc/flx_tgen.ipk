@@ -225,6 +225,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let tss = map tn ts in
       let instance = 
         match ct with
+        | `Virtual -> clierr sr "Instantiate virtual type!"
         | `Str c -> c
         | `StrTemplate c ->
         try sc "expr" (csubst sr sr c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"]) 

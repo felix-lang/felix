@@ -165,6 +165,7 @@ val eval_module_expr:
 
 val resolve_overload:
   sym_state_t -> 
+  env_t ->
   range_srcref ->
   entry_kind_t list ->  
   id_t -> 
@@ -243,6 +244,26 @@ open Flx_tpat
 let unit_t = `BTYP_tuple []
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
+
+let cal_typeclass_dirs syms id vs =
+  begin
+    match vs with (_,{raw_typeclass_reqs=rtcr})->
+    match rtcr  with 
+    | _::_ -> 
+      print_endline (id^": TYPECLASS REQUIREMENTS " ^
+      catmap "," string_of_qualified_name rtcr);
+    | [] -> ();
+  end;
+  let rec addtc tcin dirsout = match tcin with
+    | [] -> rev dirsout
+    | h::t -> 
+      addtc t (DIR_typeclass_req h :: dirsout);
+  in
+  let typeclass_dirs = 
+    match vs with (_,{raw_typeclass_reqs=rtcr})-> addtc rtcr []
+  in
+  typeclass_dirs
+
 
 
 (* use fresh variables, but preserve names *)
@@ -2293,7 +2314,7 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   | _ ->
     `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
 
-and koenig_lookup syms rs sra id' name_map fn t2 ts =
+and koenig_lookup syms env rs sra id' name_map fn t2 ts =
   (*
   print_endline ("Applying Koenig lookup for " ^ fn);
   *)
@@ -2315,7 +2336,7 @@ and koenig_lookup syms rs sra id' name_map fn t2 ts =
     (*
     print_endline ("Got candidates: " ^ string_of_entry_set entries);
     *)
-    begin match resolve_overload' syms rs sra fs fn [t2] ts with
+    begin match resolve_overload' syms env rs sra fs fn [t2] ts with
     | Some (index'',t,ret,mgu,ts) ->
       (*
       print_endline "Overload resolution OK";
@@ -2539,13 +2560,13 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       lookup_name_with_sig 
         syms 
         sra srn
-        env rs name ts signs
+        env env rs name ts signs
     with OverloadKindError (sr,s) ->
     try
       lookup_name_with_sig 
         syms 
         sra srn
-        env rs ("_ctor_" ^ name) ts signs
+        env env rs ("_ctor_" ^ name) ts signs
      with ClientError (_,s2) ->
        clierr sr
        (
@@ -2598,7 +2619,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | `FunctionEntry fs ->
       match
         resolve_overload'
-        syms rs sra fs name signs ts
+        syms env rs sra fs name signs ts
       with
       | Some (index,t,ret,mgu,ts) ->
         (*
@@ -2624,7 +2645,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
 and lookup_name_with_sig 
   syms 
   sra srn 
-  env
+  caller_env env
   (rs:recstop)
   (name : string)
   (ts : btypecode_t list)
@@ -2646,7 +2667,7 @@ and lookup_name_with_sig
     match 
       lookup_name_in_table_dirs_with_sig 
       (table, dirs) 
-      syms env rs
+      syms caller_env env rs
       sra srn name ts t2 
     with
     | Some result -> (result:>tbexpr_t)
@@ -2655,12 +2676,12 @@ and lookup_name_with_sig
         lookup_name_with_sig 
           syms 
           sra srn 
-          tail rs name ts t2
+          caller_env tail rs name ts t2
        in (tbx:>tbexpr_t)
         
 and handle_function 
   syms 
-  env (rs:recstop)
+  (rs:recstop)
   sra srn 
   name 
   ts
@@ -2787,7 +2808,7 @@ and handle_variable syms
 
 and lookup_name_in_table_dirs_with_sig (table, dirs) 
   syms 
-  env (rs:recstop)
+  caller_env env (rs:recstop)
   sra srn name (ts:btypecode_t list) (t2: btypecode_t list)
 : tbexpr_t option
 =
@@ -2828,7 +2849,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         *)
         let ro = 
           resolve_overload'
-          syms rs sra [index] name t2 ts
+          syms caller_env rs sra [index] name t2 ts
         in
           begin match ro with 
           | Some (index,t,ret,mgu,ts) ->
@@ -2836,7 +2857,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             let tb : tbexpr_t =
               handle_function 
               syms 
-              env rs
+              rs
               sra srn name ts index
             in 
               Some tb 
@@ -2859,7 +2880,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         *)
         let ro = 
           resolve_overload'
-          syms rs sra fs ("_ctor_" ^ name) t2 ts
+          syms caller_env rs sra fs ("_ctor_" ^ name) t2 ts
         in
         match ro with 
           | Some (index,t,ret,mgu,ts) ->
@@ -2867,7 +2888,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             let ((_,tt) as tb) =
               handle_function 
               syms 
-              env rs
+              rs
               sra srn name ts index
             in 
               (*
@@ -2899,7 +2920,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       print_endline "mapping type name to _ctor_type";
       *)
       lookup_name_in_table_dirs_with_sig (table, dirs) 
-      syms env rs sra srn ("_ctor_" ^ name) ts t2 
+      syms caller_env env rs sra srn ("_ctor_" ^ name) ts t2 
     
     | `SYMDEF_const_ctor (_,t,_)
     | `SYMDEF_const (t,_,_)
@@ -2927,7 +2948,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     *)
     let ro = 
       resolve_overload'
-      syms rs sra fs name t2 ts
+      syms caller_env rs sra fs name t2 ts
     in
     match ro with 
       | Some (index,t,ret,mgu,ts) ->
@@ -2941,7 +2962,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         let ((_,tt) as tb) =
           handle_function 
           syms 
-          env rs
+          rs
           sra srn name ts index
         in 
           (*
@@ -2989,7 +3010,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
              print_endline "mapping type name to _ctor_type2";
              *)
              lookup_name_in_table_dirs_with_sig (table, dirs) 
-             syms env rs sra srn ("_ctor_" ^ name) ts t2 
+             syms caller_env env rs sra srn ("_ctor_" ^ name) ts t2 
         | _ -> 
         let fs = 
           match opens with
@@ -2999,7 +3020,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         in
           let ro = 
             resolve_overload'
-            syms rs sra fs name t2 ts
+            syms caller_env rs sra fs name t2 ts
           in
           (*
           print_endline "OVERLOAD RESOLVED .. ";
@@ -3012,7 +3033,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             let tb : tbexpr_t = 
               handle_function 
               syms 
-              env rs
+              rs
               sra srn name ts result
             in 
               Some tb
@@ -3477,7 +3498,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             print_endline ("Method vs = " ^ print_ivs_with_index meth_vs);
             *)
             (*
-            begin match resolve_overload' syms rs sr fs meth_name [sign] meth_ts with
+            begin match resolve_overload' syms env rs sr fs meth_name [sign] meth_ts with
             | Some (meth_idx,meth_dom,meth_ret,mgu,meth_ts) ->
               (*
               print_endline "Overload resolution OK";
@@ -3601,7 +3622,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       | args -> 
         let sufs = map snd args in
         let rs = { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist } in
-        let ro = resolve_overload' syms rs sr fs name sufs ts in
+        let ro = resolve_overload' syms env rs sr fs name sufs ts in
         begin match ro with
          | Some (index, dom,ret,mgu,ts) ->
            (*
@@ -3719,7 +3740,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           | args -> 
             let sufs = map snd args in
             let rs  = { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist } in
-            let ro = resolve_overload' syms rs sr fs name sufs ts in
+            let ro = resolve_overload' syms env rs sr fs name sufs ts in
             begin match ro with
              | Some (index, dom,ret,mgu,ts) ->
                (*
@@ -3887,7 +3908,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           | `SYMDEF_module 
           | `SYMDEF_function _
             ->
-            koenig_lookup syms rs sra id' name_map fn t2 (ts @ meth_ts)
+            koenig_lookup syms env rs sra id' name_map fn t2 (ts @ meth_ts)
 
           | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
         end
@@ -3903,6 +3924,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_apply (sr,(f',a')) ->
     (*
     print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
+    print_env env;
     *)
     let (ea,ta) as a = be a' in
     (*
@@ -4439,16 +4461,122 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
 and resolve_overload
   syms
+  env
   sr
   (fs : entry_kind_t list)
   (name: string)
   (sufs : btypecode_t list)
   (ts:btypecode_t list)
 : overload_result option =
-  resolve_overload' syms rsground sr fs name sufs ts
+  resolve_overload' syms env rsground sr fs name sufs ts
+
+
+and hack_name qn = match qn with
+| `AST_name (sr,name,ts) -> `AST_name (sr,"_inst_"^name,ts)
+| `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,"_inst_"^name,ts))
+| _ -> failwith "expected qn .."
+
+and grab_ts qn = match qn with
+| `AST_name (sr,name,ts) -> ts
+| `AST_lookup (sr,(e,name,ts)) -> ts
+| _ -> failwith "expected qn .."
+
+and grab_name qn = match qn with
+| `AST_name (sr,name,ts) -> name
+| `AST_lookup (sr,(e,name,ts)) -> name
+| _ -> failwith "expected qn .."
+
+
+
+
+and instance_check syms caller_env called_env mgu sr name rtcr tsub = 
+  (*
+  print_env caller_env;
+  *)
+  let luqn2 qn = lookup_qn_in_env2 syms caller_env qn in
+  if length rtcr > 0 then begin
+    print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^ 
+      catmap "," string_of_qualified_name rtcr
+    );
+    iter
+    (fun qn -> 
+      let classname = grab_name qn in
+      let insts = ref [] in
+        let es,ts' = luqn2 (hack_name qn) in
+        print_endline ("With unbound ts = " ^ catmap "," string_of_typecode ts');
+        let ts' = map (fun t -> try bind_type syms called_env sr t with _ -> print_endline "Bind type failed .."; assert false) ts' in
+        print_endline ("With bound ts = " ^ catmap "," (sbt syms.dfns) ts');
+        let ts' = map tsub ts' in
+        print_endline ("With bound, mapped ts = " ^ catmap "," (sbt syms.dfns) ts');
+        match es with
+        | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
+        | `FunctionEntry es ->
+          print_endline ("instance Candidates " ^ catmap "," string_of_entry_kind es);
+          iter
+          (fun {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts} ->
+          match Hashtbl.find syms.dfns i  with
+          {id=id;sr=sr;parent=parent;vs=vs;symdef=entry} ->
+          match entry with 
+          | `SYMDEF_instance qn' ->
+            print_endline ("Verified " ^ si i ^ " is an instance of " ^ string_of_qualified_name qn);
+            print_endline ("  base vs = " ^ print_ivs_with_index vs);
+            print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
+            print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+            let inst_ts = grab_ts qn' in
+            let inst_ts = map (bind_type syms caller_env sr) inst_ts in
+            print_endline ("  instantiating ts = " ^ catmap "," (fun t -> sbt syms.dfns t) inst_ts);
+            if inst_ts = ts' then begin
+              print_endline "INSTANCE MATCHES";
+              insts := `Inst i :: !insts
+            end
+            else
+              print_endline "INSTANCE DOES NOT MATCH: REJECTED"
+            ;
+
+
+          | `SYMDEF_typeclass ->
+            print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ string_of_qualified_name qn);
+            print_endline ("  base vs = " ^ print_ivs_with_index vs);
+            print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
+            print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+            if sub_ts = ts' then begin
+              print_endline "SPECIALISATION MATCHES";
+              insts := `Typeclass (i,sub_ts) :: !insts
+            end else
+              print_endline "SPECIALISATION DOES NOT MATCH: REJECTED"
+            ;
+
+          | _ -> print_endline "EXPECTED TYPECLASS INSTANCE!"
+          )
+          es
+          ;
+          begin match !insts with
+          | [`Inst i] -> ()
+          | [`Typeclass (i,ts)] -> ()
+          | [] -> 
+            clierr sr ("In call of " ^ name ^", Typeclass instance matching " ^ 
+              classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
+              " not found"
+            )
+          | `Inst i :: t -> 
+            clierr sr ("In call of " ^ name ^", More than one instances matching " ^ 
+              classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
+              " found"
+            )
+          | `Typeclass (i,ts) :: tail ->
+            clierr sr ("In call of " ^ name ^", Multiple typeclass specialisations matching " ^ 
+              classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
+              " found"
+            )
+          end
+    )
+    rtcr
+  end
 
 and resolve_overload'
-  syms (rs:recstop)
+  syms 
+  caller_env
+  (rs:recstop)
   sr
   (fs : entry_kind_t list)
   (name: string)
@@ -4457,12 +4585,35 @@ and resolve_overload'
 : overload_result option =
 
   if length fs = 0 then None else
-  let bt sr i t =
-    let env = inner_build_env syms rs (Some i) in
-    bind_type syms env sr t
+  let env i = 
+    (*
+    print_endline ("resolve_overload': Building env for " ^ name ^ "<" ^ si i ^ ">");
+    *)
+    inner_build_env syms rs (Some i) 
   in
-    let fs = trclose syms rs sr fs in
-    overload syms bt sr fs name sufs ts
+  let bt sr i t =
+    bind_type syms (env i) sr t
+  in
+  let luqn2 i qn = lookup_qn_in_env2 syms (env i) qn in
+  let fs = trclose syms rs sr fs in
+  let result : overload_result option = overload syms bt luqn2 sr fs name sufs ts in
+  begin match result with 
+  | None -> () 
+  | Some (index,sign,ret,mgu,ts) ->
+    (*
+    print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
+    print_endline ("Resolve ts = " ^ catmap "," (sbt syms.dfns) ts);
+    *)
+    let _,vs,{raw_typeclass_reqs=rtcr} = find_split_vs syms index in
+    (*
+    print_endline ("Function vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") vs);
+    *)
+    let vs = map (fun (s,i,_)->s,i) vs in
+    let tsub t = tsubst vs ts t in
+    instance_check syms caller_env (env index) mgu sr name rtcr tsub
+  end
+  ;
+  result
 
 (* an environment is a list of hastables, mapping
    names to definition indicies. Each entity defining
@@ -4489,6 +4640,9 @@ and split_dirs open_excludes dirs :
          | DIR_open qn -> if mem qn open_excludes then [] else [qn]
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> []
+         | DIR_typeclass_req qn -> 
+           print_endline ("Adding typeclass " ^ string_of_qualified_name qn); 
+           [qn]
        )
        dirs
      )
@@ -4500,6 +4654,7 @@ and split_dirs open_excludes dirs :
          | DIR_open qn -> []
          | DIR_inject_module qn -> [qn]
          | DIR_use (n,qn) -> []
+         | DIR_typeclass_req qn -> []
        )
        dirs
      )
@@ -4511,6 +4666,7 @@ and split_dirs open_excludes dirs :
          | DIR_open qn -> []
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> [n,qn]
+         | DIR_typeclass_req qn -> []
        )
        dirs
      )
@@ -4531,6 +4687,7 @@ and get_includes' syms includes ((i, ts) as index) =
     iter
     (fun x -> match x with 
       | DIR_open _
+      | DIR_typeclass_req _
       | DIR_use _ -> ()
       | DIR_inject_module qn -> 
         let {base_sym=j; spec_vs=vs; sub_ts=ts'},ts =
@@ -4656,7 +4813,7 @@ and pub_table_dir
   (i,ts)
 : name_map_t =
   match get_data syms.dfns i with
-  | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_module} -> 
+  | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_module} ->
     if length ts = 0 then table else
     begin
       (*
@@ -4668,6 +4825,18 @@ and pub_table_dir
       *)
       table
     end
+
+  | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_typeclass} -> 
+    let table = make_view_table syms table [] ts in
+    (* a bit hacky .. add the type class specialisation view
+       to its contents as an instance
+    *)
+    let inst = mkentry syms vs i in
+    let inst = review_entry syms [] ts inst in
+    let inst_name = "_inst_" ^ id in
+    Hashtbl.add table inst_name (`FunctionEntry [inst]);
+    print_endline ("Added typeclass "^si i^" as instance " ^ inst_name ^": "^ string_of_myentry syms.dfns inst);
+    table
 
   | {sr=sr} -> clierr sr "[map_dir] Expected module"
 
@@ -4733,7 +4902,9 @@ and merge_opens syms env rs (opens,includes,uses) =
 
 and build_env'' syms rs index : env_t =
   match Hashtbl.find syms.dfns index with
-  {id=id; parent=parent;privmap=table;dirs=dirs} ->
+  {id=id; parent=parent; vs=vs; privmap=table;dirs=dirs} ->
+  let typeclass_dirs = cal_typeclass_dirs syms id vs in
+  let dirs = typeclass_dirs @ dirs in
   let opens,includes,uses = split_dirs rs.open_excludes dirs in
   let env = inner_build_env syms rs parent in
   let env' = (index,id,table,[])::env in

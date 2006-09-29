@@ -25,7 +25,12 @@ val is_ancestor:
 
 val descendants:
   child_map_t -> bid_t -> IntSet.t
-  
+
+val cal_children:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  child_map_t
+ 
 @h = tangler("src/flx_child.ml")
 @select(h)
 open Flx_ast
@@ -33,6 +38,7 @@ open Flx_types
 open Flx_mtypes1
 open Flx_mtypes2
 open List
+open Flx_util
 
 type child_map_t = 
   (bid_t, bid_t list) Hashtbl.t
@@ -75,5 +81,24 @@ let rec descendants child_map index =
   children
   ;
   !d
+
+let cal_children syms bbdfns =
+  let child_map = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun i (id,parent,sr,entry) ->
+    match parent with
+    | Some parent ->
+      Hashtbl.replace child_map parent
+      (i ::
+        (
+          try Hashtbl.find child_map parent
+          with Not_found -> []
+        )
+      )
+    | None -> ()
+  )
+  bbdfns
+  ;
+  child_map
 
 

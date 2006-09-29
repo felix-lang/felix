@@ -116,7 +116,9 @@ let rec find_vs syms i : ivs_list_t =
 
 let rec find_func_vs syms vs j =
   match Hashtbl.find syms.dfns j with
-  | {parent=parent; vs=vs'; symdef=`SYMDEF_module } ->
+  | {parent=parent; vs=vs'; symdef=`SYMDEF_module } 
+  | {parent=parent; vs=vs'; symdef=`SYMDEF_typeclass } 
+    ->
     begin match parent with 
     | None -> 
       let vs = merge_ivs vs' vs in

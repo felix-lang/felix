@@ -213,12 +213,14 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
         | `InlineFunction
         | `Ctor 
         | `Generator
+        | `Virtual
         | `Function ->
           let props : property_t list = match kind with
           | `InlineFunction -> `Inline::props
           | `NoInlineFunction -> `NoInline::props
           | `Ctor -> `Ctor::props
           | `Generator -> `NoInline::`Generator::props
+          | `Virtual -> `Virtual::props
           | _ -> props
           in
           begin match return_type with
@@ -248,11 +250,13 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
         | `InlineFunction
         | `Ctor 
         | `Generator
+        | `Virtual
         | `Function ->
           let props = match kind with
           | `InlineFunction -> `Inline::props
           | `NoInlineFunction -> `NoInline::props
           | `Generator -> `NoInline::`Generator::props
+          | `Virtual -> `Virtual::props
           | `Ctor -> `Ctor::props
           | _ -> props 
           in

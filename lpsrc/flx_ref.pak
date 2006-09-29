@@ -1113,6 +1113,7 @@ is equivalent to
 @end_displayed_code()
 
 @head(2,"Pattern match",key="expr")
+To be written.
 @head(1,"Statements")
 @head(2,"Definitions",nospawn=1)
 @head(3,"Modules",nospawn=1)

@@ -1646,6 +1646,7 @@ flx_expr_terminator_keywords = [
     ("use","USE"),
     ("val", "VAL"),
     ("var", "VAR"),
+    ("virtual", "VIRTUAL"),
     ("where", "WHERE"),
     ("when", "WHEN"),
 #    ("whilst", "WHILST"),

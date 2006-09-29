@@ -85,6 +85,7 @@ open Flx_pgen
 open Flx_ctorgen
 open Flx_child
 open Flx_beta
+open Flx_srcref
 
 let find_variable_indices syms (child_map,bbdfns) index = 
   let children = find_children child_map index in
@@ -764,7 +765,6 @@ let gen_exe filename syms
     ", got ts=" ^ 
     si (length ts)
   );
-  let sr = ("dummy",0,0,0,0) in
   let src_str = string_of_bexe syms.dfns 0 exe in
   let with_comments = syms.compiler_options.with_comments in
   (*
@@ -776,7 +776,7 @@ let gen_exe filename syms
   let ge sr e : string = gen_expr syms bbdfns this e vs ts sr in
   let ge' sr e : cexpr_t = gen_expr' syms bbdfns this e vs ts sr in
   let tn t : string = cpp_typename syms (tsub t) in
-  let id,parent,sr,entry = 
+  let id,parent,parent_sr,entry = 
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_exe] Can't find this " ^ si this)
   in
@@ -818,6 +818,7 @@ let gen_exe filename syms
       ;
       let s = 
         match ct with
+        | `Virtual -> clierr sr "Instantiate virtual procedure!"
         | `Str s -> ce_expr "expr" s
         | `StrTemplate s ->
           gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom" 
@@ -984,15 +985,19 @@ let gen_exe filename syms
     "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
     "      return " ^ frame_ptr ^ ";\n"
   in
-  let forget_template s = match s with | `Str s -> s | `StrTemplate s -> s in
+  let forget_template sr s = match s with 
+  | `Virtual -> clierr sr "Instantiate virtual procedure!"
+  | `Str s -> s 
+  | `StrTemplate s -> s 
+  in
   let rec gexe exe = 
     (*
     print_endline (string_of_bexe syms.dfns 0 exe);
     *)
     match exe with
     | `BEXE_axiom_check _ -> assert false
-    | `BEXE_code (_,s) -> forget_template s
-    | `BEXE_nonreturn_code (_,s) -> forget_template s
+    | `BEXE_code (sr,s) -> forget_template sr s
+    | `BEXE_nonreturn_code (sr,s) -> forget_template sr s
     | `BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
     | `BEXE_label (_,s) -> 
       let local_labels = 
@@ -1783,9 +1788,11 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
       try 
         gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no true
       with x -> 
+        (*
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
         print_endline "Can't gen exes ..";
+        *)
         raise x
     in
     let dcl_vars =
@@ -1931,9 +1938,11 @@ let gen_function_methods filename syms (child_map,bbdfns)
       try 
         gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no false
       with x -> 
+        (*
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
         print_endline "Can't gen exes ..";
+        *)
         raise x
     in
     let cont = "con_t *" in
@@ -2847,11 +2856,13 @@ try
   ;
   let bbdfns = bbind syms in
 
+  let child_map = Flx_child.cal_children syms bbdfns in
+  Flx_typeclass.typeclass_instance_check syms bbdfns child_map;
+
   (* generate axiom checks *)
   if compiler_options.generate_axiom_checks then
   Flx_axiom.axiom_check syms bbdfns;
 
-  let child_map = cal_children syms bbdfns in
   syms.bifaces <- bind_ifaces syms ifaces;
   Hashtbl.clear syms.ticache;
 
@@ -2898,7 +2909,7 @@ try
   then print_endline "//OPTIMISING";
   let () = Flx_use.find_roots syms bbdfns root_proc syms.bifaces in
   let bbdfns = Flx_use.copy_used syms bbdfns in
-  let child_map = cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children syms bbdfns in
 
   if compiler_options.max_inline_length > 0 then
   begin
@@ -2937,7 +2948,7 @@ try
   end
   ;
   let bbdfns = Flx_use.copy_used syms bbdfns in
-  let child_map = cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children syms bbdfns in
 
   let elim_init maybe_unused exes =
     List.filter (function 
@@ -3009,7 +3020,7 @@ try
   if compiler_options.print_flag 
   then print_endline "//Generating primitive wrapper closures";
   Flx_mkcls.make_closures syms bbdfns;
-  let child_map = cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children syms bbdfns in
 
   if compiler_options.print_flag then 
   begin
@@ -3163,6 +3174,7 @@ try
         | _ ->
           let s = 
             match s with
+            | `Virtual -> clierr sr "Instantiate virtual insertion!"
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
               (* do we need tsubst vs ts t? *)
@@ -3224,6 +3236,7 @@ try
         | _ ->
           let s = 
             match s with
+            | `Virtual -> clierr sr "Instantiate virtual insertion!"
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
               (* do we need tsubst vs ts t? *)
@@ -3395,6 +3408,7 @@ try
         | _ ->
           let s = 
             match s with
+            | `Virtual -> clierr sr "Instantiate virtual insertion!"
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
               (* do we need tsubst vs ts t? *)

@@ -244,6 +244,7 @@ type index_map_t = (int,int) Hashtbl.t
 type  c_t = [
   | `StrTemplate of string
   | `Str of string
+  | `Virtual
 ]
 
 type base_type_qual_t = [
@@ -569,6 +570,7 @@ and funkind_t = [
   | `Function 
   | `InlineFunction 
   | `NoInlineFunction
+  | `Virtual
   | `Ctor
   | `Generator
 ]
@@ -596,6 +598,7 @@ and property_t = [
   | `Not_requires_ptf    (* no pointer to thread frame is needed *)
 
   | `Uses_gc             (* requires gc locally *)
+  | `Virtual             (* interface in a typeclass *)
 ]
 
 and type_qual_t = [
@@ -848,6 +851,7 @@ type dir_t =
   | DIR_open of qualified_name_t
   | DIR_inject_module of qualified_name_t
   | DIR_use of id_t * qualified_name_t
+  | DIR_typeclass_req of qualified_name_t
 
 type dcl_t = 
   [
@@ -2279,6 +2283,7 @@ val print_ivs_with_index: ivs_list_t -> string
 val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string
 val string_of_bquals: symbol_table_t -> btype_qual_t list -> string
+val print_bvs: bvs_t -> string
 
 type felix_term_t = [
   | qualified_name_t 
@@ -3364,6 +3369,7 @@ and string_of_property = function
 | `Ctor -> "ctor"
 | `Generator -> "generator"
 | `Yields -> "yields"
+| `Virtual -> "virtual"
 
 and string_of_properties ps =
   match ps with 
@@ -3373,12 +3379,14 @@ and string_of_properties ps =
 and string_of_code_spec = function
   | `StrTemplate s -> "\"" ^ s ^  "\""
   | `Str s -> "c\"" ^ s ^  "\""
+  | `Virtual -> "virtual"
 
 and string_of_long_code_spec c = 
   let triple_quote = "\"\"\"" in
   match c with
   | `StrTemplate s -> triple_quote ^ s ^ triple_quote
   | `Str s -> "c" ^ triple_quote ^ s ^ triple_quote
+  | `Virtual -> "virtual"
 
 and string_of_raw_req = function 
   | `Named_req s -> string_of_qualified_name s
@@ -3682,6 +3690,7 @@ and string_of_statement level s =
     | `Object -> "obj " 
     | `InlineFunction -> "inline fun "
     | `NoInlineFunction -> "noinline fun "
+    | `Virtual -> "virtual fun "
     | `Ctor -> "ctor "
     | `Generator -> "generator "
     )
@@ -4649,6 +4658,10 @@ and string_of_dir level s =
 
   | DIR_inject_module qn ->
     spaces level ^ "include " ^ sqn qn ^ ";"
+
+  | DIR_typeclass_req qn ->
+    spaces level ^ "typeclass_req " ^ sqn qn ^ ";"
+
 
 and string_of_breq dfns (i,ts) = "rq<"^si i^">" ^ print_inst dfns ts
 and string_of_breqs dfns reqs = catmap ", " (string_of_breq dfns) reqs

@@ -68,6 +68,7 @@ open Flx_cexpr
 open Flx_maps
 open Flx_pgen
 open Flx_beta
+open Flx_srcref
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -231,6 +232,7 @@ let nth_type ts i =
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
+  print_endline ("Location " ^ short_string_of_src sr);
   *)
   let ge' e = gen_expr' syms bbdfns this e vs ts sr in
   let ge e = gen_expr syms bbdfns this e vs ts sr in
@@ -281,7 +283,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | `BTYP_tuple [] -> ""
     | _ -> ge a
   in
-  let id,parent,sr,entry = 
+  let id,parent,_,entry = 
     try Hashtbl.find bbdfns this 
     with Not_found -> failwith ("[gen_expr] Can't find this = " ^ si this)
   in
@@ -506,6 +508,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
       | `BBDCL_const (_,_,ct,_) -> 
         begin match ct with
+        | `Virtual -> clierr2 sr sr2 ("Instantiate virtual const" ^ id)
         | `Str c
         | `StrTemplate c when c = "#srcloc" ->
            let filename, startline, startcol, endline, endcol = sr in
@@ -905,6 +908,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         si (length ts)
       );
       begin match ct with
+      | `Virtual -> clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id)
       | `Str s -> ce_expr prec s
       | `StrTemplate s ->
         let ts = map tsub ts in

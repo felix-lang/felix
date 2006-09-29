@@ -173,7 +173,9 @@ let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
 
-let rec build_tables syms name inherit_vs level parent grandparent root is_class asms = 
+let rec build_tables syms name inherit_vs 
+  level parent grandparent root is_class asms 
+= 
   (*
   print_endline ("//Building tables for " ^ name);
   *)
@@ -249,6 +251,26 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
           con
         in
         let vs = make_vs vs' in
+
+        (*
+        begin
+          match vs with (_,{raw_typeclass_reqs=rtcr})->
+          match rtcr  with 
+          | _::_ -> 
+            print_endline (id^": TYPECLASS REQUIREMENTS " ^
+            catmap "," string_of_qualified_name rtcr);
+          | [] -> ();
+        end;
+        let rec addtc tcin dirsout = match tcin with
+          | [] -> rev dirsout
+          | h::t -> 
+            addtc t (DIR_typeclass_req h :: dirsout);
+        in
+        let typeclass_dirs = 
+          match vs with (_,{raw_typeclass_reqs=rtcr})-> addtc rtcr []
+        in
+        *)
+
         let add_unique table id idx = full_add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_function table id idx = full_add_function syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_tvars' parent table vs =        
@@ -795,7 +817,8 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
           ; 
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            pubmap=pubtab;privmap=privtab;
+            dirs=dirs;
             symdef=`SYMDEF_function ((rev !ips,traint), t, props, exes)
           };
           if access = `Public then add_function pub_name_map id fun_index;
@@ -887,7 +910,8 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
         | `DCL_module asms ->
           if is_class then clierr sr "Module not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (merge_ivs inherit_vs vs) (level+1) (Some n) parent root false
+            build_tables syms id (merge_ivs inherit_vs vs) 
+            (level+1) (Some n) parent root false
             asms
           in
           Hashtbl.add dfns n {
@@ -912,10 +936,37 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
           ;
           add_tvars privtab
 
+        | `DCL_typeclass asms -> 
+          (*
+          let symdef = `SYMDEF_typeclass in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
+          let stype = `AST_name(sr,id,tvars) in
+          *)
+          if is_class then clierr sr "typeclass not allowed in class";
+
+          let pubtab,privtab, exes,ifaces,dirs = 
+            build_tables syms id (merge_ivs inherit_vs vs) 
+            (level+1) (Some n) parent root false
+            asms
+          in
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;
+            vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_typeclass
+          }
+          ;
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n;
+          interfaces := !interfaces @ ifaces
+          ;
+          add_tvars privtab
+
+
         | `DCL_instance (qn,asms) ->
           if is_class then clierr sr "instance not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id dfltvs (level+1) (Some n) parent root true
+            build_tables syms id dfltvs 
+            (level+1) (Some n) parent root true
             asms
           in
           Hashtbl.add dfns n {
@@ -925,8 +976,9 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
             dirs=dirs;
             symdef=`SYMDEF_instance qn
           };
-          if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n;
+          let inst_name = "_inst_" ^ id in
+          if access = `Public then add_function pub_name_map inst_name n;
+          add_function priv_name_map inst_name n;
           interfaces := !interfaces @ ifaces
           ;
           add_tvars privtab
@@ -1204,8 +1256,11 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
 
 
         | `DCL_fun (props, ts,t,c,reqs,prec) ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
-            symdef=`SYMDEF_fun (props, ts,t,c,reqs,prec)}
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_fun (props, ts,t,c,reqs,prec)
+          }
           ;
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
@@ -1363,21 +1418,6 @@ let rec build_tables syms name inherit_vs level parent grandparent root is_class
           ;
           let dont_care = 0 in
           handle_class `CClass dont_care sts tvars stype
-
-        | `DCL_typeclass (sts) -> 
-          let symdef = `SYMDEF_typeclass in
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
-          let stype = `AST_name(sr,id,tvars) in
-          Hashtbl.add dfns n {
-            id=id;sr=sr;parent=parent;
-            vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
-            symdef=symdef
-          }
-          ;
-          if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n
-          ;
-          add_tvars privtab
 
         | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->

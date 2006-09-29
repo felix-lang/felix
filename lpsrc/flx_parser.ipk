@@ -467,7 +467,6 @@ opt_type_constraint:
       raw_typeclass_reqs=map qualified_name_of_expr $2
     } }
 
-
   | WHERE expr
     { {
       raw_type_constraint=typecode_of_expr $2;
@@ -1157,6 +1156,7 @@ opt_cstring:
 adjective:
   | INLINE { $1,`InlineFunction }
   | NOINLINE { $1,`NoInlineFunction }
+  | VIRTUAL { $1,`Virtual }
 
 adjectives:
   | adjective adjectives { $1 :: $2 }
@@ -1238,8 +1238,13 @@ function_definition:
       in
       let ct =  
         match $6 with 
-        | Some x -> x 
-        | None -> `StrTemplate (name ^ "($a)")
+        | Some x -> 
+          if kind = `Virtual then 
+            Flx_exceptions.clierr sr "Virtual procedure can't have body"
+          else x 
+        | None -> 
+          if kind = `Virtual then `Virtual else
+          `StrTemplate (name ^ "($a)")
       in
       match t with
       | `TYP_cfunction (arg, ret) 
@@ -1335,42 +1340,39 @@ procedure_definition:
       mkcurry sr name vs args (return_type,traint) `Ctor body
     }
 
-  | PROCEDURE NAME tvarlist opt_fun_args opt_traint_eq compound 
+  | adjectives PROCEDURE NAME tvarlist fun_args opt_traint_eq compound 
     { 
-      let sr = rsrange (slift $1) (fst $6) in
-      let name = snd $2 
-      and vs = $3
-      and return_type = `AST_void sr
-      and traint = $5 
-      and body = snd $6
-      and args = List.map snd $4 (* elide srcref *)
-      in mkcurry sr name vs args (return_type,traint) `Function body
-    }
-
-  | adjective PROCEDURE NAME tvarlist fun_args opt_traint_eq compound 
-    { 
-      let sr = rsrange (slift (fst $1)) (fst $7) in
+      let sr = rsrange (slift $2) (fst $7) in
       let name = snd $3 
       and vs = $4
       and return_type = `AST_void sr
       and traint = $6
       and body = snd $7
       and args = List.map snd $5 (* elide srcref *)
-      and adjective = snd $1 
-      in mkcurry sr name vs args (return_type,traint) adjective body
+      and adjectives = map snd $1 
+      in let adjective = match adjectives with
+      | [] -> `Function 
+      | h :: t -> h
+      in
+      mkcurry sr name vs args (return_type,traint) adjective body
     }
 
-  | PROCEDURE NAME tvarlist COLON expr opt_cstring requires_clause SEMI 
+  | adjectives PROCEDURE NAME tvarlist COLON expr opt_cstring requires_clause SEMI 
     { 
-      let sr = rstoken $1 $8
-      and vs = $3
-      and name = snd $2 
-      and t = typecode_of_expr $5
-      in
-      let ct =  
-        match $6 with 
-        | Some x -> x 
-        | None -> `StrTemplate (name ^ "($a);")
+      let sr = rstoken $2 $9
+      and vs = $4
+      and name = snd $3 
+      and t = typecode_of_expr $6
+      and adjectives = map snd $1
+      in let ct =  
+        match $7 with 
+        | Some x -> 
+          if mem `Virtual adjectives then 
+            Flx_exceptions.clierr sr "Virtual procedure can't have body"
+          else x 
+        | None -> 
+          if mem `Virtual adjectives then `Virtual else
+          `StrTemplate (name ^ "($a);")
       in
       let args = 
         match t with
@@ -1384,9 +1386,9 @@ procedure_definition:
           *)
           let vs = match vs with vs,t -> vs @ ["_varargs",`AST_patany sr],t in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
-          `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$7,"") 
+          `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$8,"") 
         else
-          `AST_fun_decl (sr,name,vs, args,`AST_void sr, ct, $7,"") 
+          `AST_fun_decl (sr,name,vs, args,`AST_void sr, ct, $8,"") 
     }
 
 @head(3,'Object')
@@ -2450,19 +2452,19 @@ lambda:
       `AST_lambda (sr, (vs,args, ret, body))
     }
 
-  | PROCEDURE tvarlist lambda_fun_args compound
+  | adjectives PROCEDURE tvarlist lambda_fun_args compound
     {
-      let sr = rsrange (slift $1) (fst $4) in
-      let vs = $2 in
-      let args = List.map snd $3 in
-      `AST_lambda ( sr, (vs,args, `AST_void sr, snd $4))
+      let sr = rsrange (slift $2) (fst $5) in
+      let vs = $3 in
+      let args = List.map snd $4 in
+      `AST_lambda ( sr, (vs,args, `AST_void sr, snd $5))
     }
 
-  | PROCEDURE tvarlist compound
+  | adjectives PROCEDURE tvarlist compound
     {
-      let sr = rsrange (slift $1) (fst $3) in
-      let vs = $2 in
-      `AST_lambda ( sr, (vs,[[],None], `AST_void sr, snd $3))
+      let sr = rsrange (slift $2) (fst $4) in
+      let vs = $3 in
+      `AST_lambda ( sr, (vs,[[],None], `AST_void sr, snd $4))
     }
 
 dollar_apply:

@@ -327,7 +327,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
               *)
               let ro = 
                 resolve_overload
-                syms sr fs ("_ctor_" ^ name) [t2] [] (* constructors can't be polymorphic *)
+                syms env sr fs ("_ctor_" ^ name) [t2] [] (* constructors can't be polymorphic *)
               in
               match ro with 
                 | Some (ctor_idx,t,ret,mgu,ts') ->

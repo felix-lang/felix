@@ -1558,6 +1558,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
          In particular, its argument may also include calls
          needing lifting.
       *)
+      (*
       | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
         print_endline ("Mangled procedure lift! Type:" ^ sbt syms.dfns t);
 
@@ -1591,6 +1592,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
         (* replace application with the variable *)
         let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in
         `BEXPR_name (urv,ts),t
+      *)
 
       (* This code must ONLY be triggered by an inner (unlifted) application
          so the detector must not be recursively applied to RHS of initialisation

@@ -1,0 +1,137 @@
+@head(1,"Typeclass checker")
+@h = tangler("src/flx_typeclass.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_child
+
+val typeclass_instance_check:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  child_map_t ->
+  unit
+ 
+@h = tangler("src/flx_typeclass.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_generic
+open Flx_maps
+open Flx_exceptions
+open Flx_use
+open Flx_child
+
+let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map_t)
+  (inst:int) (inst_id: string) inst_sr inst_props tc inst_ts 
+=
+  let tc_id, _, tc_sr, tc_entry = Hashtbl.find bbdfns tc in
+  match tc_entry with
+  | `BBDCL_typeclass (tc_props, tc_bvs) ->
+    print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
+    "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" ^
+    " to be instance of typeclass " ^ tc_id ^ "<"^si tc^">")
+    ;
+    print_endline ("Typeclass vs = " ^ 
+      catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs
+    );
+    if length tc_bvs <> length inst_ts then
+      clierr2 inst_sr tc_sr 
+      ("Wrong number of arguments, expected match for " ^
+        catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs ^
+       "\nbut got " ^
+       "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" 
+      )
+    ;
+
+    let tc_kids = try Hashtbl.find child_map tc with Not_found -> [] in
+    let inst_kids = try Hashtbl.find child_map inst with Not_found -> [] in
+    print_endline ("Typeclass kids " ^ catmap "," si tc_kids);
+    print_endline ("Instance kids " ^ catmap "," si inst_kids);
+    let inst_map = fold_left (fun acc i-> 
+      let id,_,_,entry = Hashtbl.find bbdfns i in
+      match entry with
+      | `BBDCL_fun (_,bvs,params,ret,_,_,_) ->
+        let argt  : btypecode_t= typeoflist params in
+        let qt = bvs,`BTYP_function (argt,ret) in
+        (id,(i,qt)) :: acc
+
+      | `BBDCL_proc (_,bvs,params,_,_) ->
+        let argt  : btypecode_t= typeoflist params in
+        let qt = bvs,`BTYP_function (argt,`BTYP_void) in
+        (id,(i,qt)) :: acc
+        
+      | `BBDCL_procedure (_,bvs,bps,_) ->
+        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let qt = bvs,`BTYP_function (argt,`BTYP_void) in
+        (id,(i,qt)) :: acc
+
+      | `BBDCL_function (_,bvs,bps,ret,_) -> 
+        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let qt = bvs,`BTYP_function (argt,ret) in
+        (id,(i,qt)) :: acc
+
+      | _ -> acc
+      ) [] inst_kids
+    in
+    let check_binding sr id tctype =
+      let entries = filter (fun (name,x) -> name = id) inst_map in
+      match entries with
+      | [] -> clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
+      | [_,(i,(bvs,t))] -> 
+        print_endline ("Found unique " ^ id ^ "<"^si i^"> in instance");
+        print_endline ("  vs = " ^ print_bvs bvs);
+        print_endline ("  Type is " ^ sbt syms.dfns t);
+        
+
+      | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
+    in
+    iter
+    (fun tck -> 
+      let tckid,tckparent,tcksr,tckentry = Hashtbl.find bbdfns tck in
+      match tckentry with
+      | `BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
+        if ct <> `Virtual then clierr tcksr "Typeclass requires virtual function";
+        let ft = `BTYP_function (typeoflist params,ret) in
+        check_binding tcksr tckid ft
+
+      | `BBDCL_proc (props,bvs,params,ct,breq) ->
+        if ct <> `Virtual then clierr tcksr "Typeclass requires virtual procedure";
+        let ft = `BTYP_function (typeoflist params,`BTYP_void) in
+        check_binding tcksr tckid ft
+        
+      | `BBDCL_insert _ -> ()
+      | _ -> clierr tcksr "Typeclass entry must be virtual function or procedure"
+    )
+    tc_kids
+
+
+  | _ -> 
+    clierr2 inst_sr tc_sr ("Expected " ^ inst_id ^ "<"^si inst ^ ">" ^
+    "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" ^
+    " to be typeclass instance, but" ^ tc_id ^ "<"^si tc^">, " ^
+    "is not a typeclass" 
+    )
+  
+let typeclass_instance_check syms bbdfns child_map = 
+Hashtbl.iter
+(fun i (id,_,sr,entry) -> match entry with
+  | `BBDCL_instance (props, tc, ts) ->
+     check_instance syms bbdfns child_map i id sr props tc ts
+
+  | _ -> ()
+)
+bbdfns
+
+

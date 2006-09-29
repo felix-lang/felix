@@ -5,6 +5,44 @@
 
 @env = setup_test(os.path.join('tut', 'tutorial', 'tut-'))
 
+@def kat(code):
+  tangle("//Check " + code)
+  f = get_tangler().sink.filename
+  ff = string.split(f,'/')[-1][:-4]
+  v = registry_out.get(code,[])
+  if ff not in v:
+    set_anchor(ff)
+    v.append(ff) 
+    registry_out[code]=v
+
+@def emit_katlist():
+  begin_list("keyed")
+  keys = registry_in.keys()
+  keys.sort()
+  for k in keys:
+    v = registry_in[k]
+    item(k)
+    first = 1
+    for i in v:
+      if first: first = 0
+      else: weave(", ")
+      ref_anchor(i)
+  end_list()
+
+
+@registry_in = {}
+@registry_out = {}
+@katfile="tmp" + os.sep + "kat-tutorial.tmp"
+@try:
+  execfile(katfile)
+ except: pass
+
+
+
+@head(1,"Category Reference",nospawn=1)
+Tests by category keyword.
+@emit_katlist()
+
 @select(tangler('spkgs/flx_tutorial.py'))
 @tangle('TESTS = glob.glob("'+env.root+'*.flx")')
 
@@ -3438,6 +3476,33 @@ print (curry 3 4); endl;
 10
 10
 @doc()
+@select(env.test('.flx'))
+// contrib: Jonathan Kelly
+#import <flx.flxh>
+
+fun f4a (d:int) (c:int) (b:int) (a:int) : int = {
+  return a*1000+b*100+c*10+d;
+}
+
+fun f4b (a:int) (b:int) (c:int) (d:int) : int = {
+  return a*1000+b*100+c*10+d;
+}
+
+print (f4a 1 2 3 4); endl; // 4321
+
+f1 := f4a 1;
+print (f1 2 3 4); endl;    // 4321
+
+print (f4b 1 2 3 4); endl; // 1234
+
+f2 := f4b 1;
+print (f2 2 3 4); endl;    // 1234
+@select(env.expect())
+4321
+4321
+1234
+1234
+@doc()
 
 You may remember eariler I said that
 all Felix accepted exactly one argument,
@@ -4772,6 +4837,7 @@ can be accesses without using qualified names.
 Here's a simple example:
 
 @select(env.test('.flx'))
+@kat("open directive")
 #import <flx.flxh>
 module X {
   proc print_endl (a:int) { print a; endl; }
@@ -4822,6 +4888,7 @@ open directives. Alternatively, you can use
 a qualified name.
 
 @select(env.test('.flx'))
+@kat("open directive")
 #import <flx.flxh>
 module X1 {
   proc printme() { print "X1"; endl; }
@@ -4866,6 +4933,7 @@ module, nor open a module using a used name (even as
 a prefix).
 
 @select(env.test('.flx'))
+@kat("use directive")
 header "#include <iostream>";
 module X {
   type int = "int";
@@ -4923,6 +4991,7 @@ in the module: any collision with a locally defined
 function is final, and cannot be resolved.
 
 @select(env.test('.flx'))
+@kat("rename directive")
 header "#include <iostream>";
 module X {
   type x_t = "int";
@@ -4987,6 +5056,7 @@ local overrides may mean the definition associated
 with a name is different for each module.
 
 @select(env.test('.flx'))
+@kat("inherit directive")
 header "#include <iostream>";
 header "#include <string>";
 
@@ -5058,6 +5128,7 @@ The let expression is, in effect, a prefix operator with
 the lowest precedence. 
 
 @select(env.test('.flx'))
+@kat("let")
 #import <flx.flxh>
 print (match 1 with | ?x =>  x + x endmatch); endl;
 print (let ?z = 1 in z + z); endl;
@@ -5108,6 +5179,7 @@ that is, the parser uses the same grammar to build expressions
 and type expresssions (though each imposes constraints).
 
 @select(env.test('.flx'))
+@kat("metatypes")
 #import <flx.flxh>
 open Long;
 
@@ -5286,6 +5358,7 @@ pick between the parses.
 @env.head(2,"top level parser")
 
 @select(env.test('.flx'))
+@kat("parser generator")
 #import <flx.flxh>
  
 // the input string
@@ -5351,6 +5424,7 @@ endl;
 @env.head(2,"nested parser")
 
 @select(env.test('.flx'))
+@kat("parser generator")
 #import <flx.flxh>
 
 data := "1+2+3$";
@@ -5439,6 +5513,7 @@ once will lead to a reduce/reduce conflict.
 Note: restriction: all the anonymous symbols must have attributes.
 
 @select(env.test('.flx'))
+@kat("parser generator")
 #import <flx.flxh>
  
 // the input string
@@ -5504,6 +5579,7 @@ endl;
 @env.head(2,"Mixed Mode Arithmetic")
 
 @select(env.test('.flx'))
+@kat("type constraints")
 #import <flx.flxh>
 open MixedInt;
 
@@ -5518,6 +5594,7 @@ print$ x + y; endl;
 @env.head(2,"Classes")
 
 @select(env.test('.flx'))
+@kat("classes")
 #import <flx.flxh>
 open Long;
 
@@ -5594,6 +5671,8 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 @env.head(2,"Polymorphic Classes")
 
 @select(env.test('.flx'))
+@kat("polymorphism")
+@kat("classes")
 #import <flx.flxh>
 open Long;
 
@@ -5686,6 +5765,8 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 @env.head(2,"Polymorphic Methods")
 
 @select(env.test('.flx'))
+@kat("polymorphism")
+@kat("classes")
 #import <flx.flxh>
 open Long;
 
@@ -5758,6 +5839,7 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 This is how you do printf-style string formatting.
 
 @select(env.test('.flx'))
+@kat("formatting")
 #import <flx.flxh>
 print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @doc()
@@ -5765,5 +5847,10 @@ print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @select(env.expect())
  22 0x63 % 9.7 88
 @doc()
-
+@try:
+   os.mkdir("tmp")
+ except: pass
+@f = open(katfile,"w")
+@f.write("registry_in="+repr(registry_out))
+@f.close()
 @#

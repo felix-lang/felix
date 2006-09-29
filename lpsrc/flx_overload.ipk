@@ -15,6 +15,7 @@ type overload_result =
 val overload:
   sym_state_t -> 
   (range_srcref  -> int -> typecode_t -> btypecode_t) ->
+  (int -> qualified_name_t -> entry_set_t * typecode_t list) ->
   range_srcref ->
   entry_kind_t list ->
   string ->
@@ -109,11 +110,13 @@ let sig_of_symdef symdef sr name i = match symdef with
     -> 
     let p = fst ps in
     begin match p,r with
+    (*
     | (`PRef,_, r)::tail,`AST_void _
     (* | (`PVal,_,`TYP_pointer r)::tail,`AST_void _ *) ->
       print_endline "Mangled Procedure Overload";
       paramtype tail,r
-      
+    *)
+
     | _ ->
       paramtype p,r
     end
@@ -159,14 +162,35 @@ let rec unravel_ret tin dts =
   | `BTYP_function (a,b) -> unravel_ret b (a::dts)
   | _ -> rev dts
 
+let hack_name qn = match qn with
+| `AST_name (sr,name,ts) -> `AST_name (sr,"_inst_"^name,ts)
+| `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,"_inst_"^name,ts))
+| _ -> failwith "expected qn .."
+
 (* Note this bt must bind types in the base context *)
-let consider syms bt name 
+let consider syms bt luqn2 name 
   ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
   input_ts arg_types call_sr 
 : overload_result option =
     let bt sr t = bt sr i t in
     let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result = resolve syms i in
 
+    (*
+    if length rtcr > 0 then begin
+      print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^ 
+      catmap "," string_of_qualified_name rtcr);
+      iter
+      (fun qn -> let es,ts' = luqn2 i (hack_name qn) in
+        print_endline ("With ts = " ^ catmap "," string_of_typecode ts');
+        match es with
+        | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
+        | `FunctionEntry es ->
+          print_endline ("Candidates " ^ catmap "," string_of_entry_kind es)
+      )
+      rtcr
+    end
+    ;
+    *)
     (*
     print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
     begin
@@ -651,6 +675,7 @@ let consider syms bt name
 let overload 
   syms 
   bt 
+  luqn2
   call_sr 
   (fs : entry_kind_t list)
   (name: string)
@@ -665,9 +690,11 @@ let overload
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
   *)
+  (*
+  *)
   (* HACK for the moment *)
   let aux i =  
-    match consider syms bt name i ts sufs call_sr with
+    match consider syms bt luqn2 name i ts sufs call_sr with
     | Some x -> Unique x
     | None -> Fail
   in
