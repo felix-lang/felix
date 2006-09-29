@@ -1340,7 +1340,7 @@ procedure_definition:
       mkcurry sr name vs args (return_type,traint) `Ctor body
     }
 
-  | adjectives PROCEDURE NAME tvarlist fun_args opt_traint_eq compound 
+  | adjectives PROCEDURE NAME tvarlist opt_fun_args opt_traint_eq compound 
     { 
       let sr = rsrange (slift $2) (fst $7) in
       let name = snd $3 

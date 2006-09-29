@@ -1538,7 +1538,9 @@ and bind_type'
       
 
   | `AST_index (sr,name,index) as x -> 
+    (*
     print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
+    *)
     let { vs=vs; symdef=entry } =
       try Hashtbl.find syms.dfns index 
       with Not_found -> 
@@ -2853,7 +2855,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         in
           begin match ro with 
           | Some (index,t,ret,mgu,ts) ->
+            (*
             print_endline "handle_function (1)";
+            *)
             let tb : tbexpr_t =
               handle_function 
               syms 

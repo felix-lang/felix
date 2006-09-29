@@ -93,7 +93,9 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         print_endline ("Found unique " ^ id ^ "<"^si i^"> in instance");
         print_endline ("  vs = " ^ print_bvs bvs);
         print_endline ("  Type is " ^ sbt syms.dfns t);
-        
+        let tct = reduce_type (tsubst tc_bvs inst_ts tctype) in
+        print_endline ("  Typeclass (after subst) type is " ^ sbt syms.dfns tct);
+
 
       | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in

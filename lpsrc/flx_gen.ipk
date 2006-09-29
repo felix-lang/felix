@@ -892,7 +892,9 @@ let gen_exe filename syms
         in
         let name = cpp_instance_name syms bbdfns index ts in
         if stack_call then begin
+          (*
           print_endline ("[handle_closure] GENERATING STACK CALL for " ^ id);
+          *)
           (if with_comments 
           then "      //run procedure " ^ src_str ^ "\n" 
           else "") ^ 

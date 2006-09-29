@@ -490,7 +490,42 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | `BBDCL_class (props,vs) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_class (props,splice vs));
 
+  (* no need to reparent these things *)
+  | `BBDCL_proc (props,vs,params,ct,breqs) ->
+    let params = map auxt params in
+    let vs = splice vs in
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_proc (props,vs,params,ct,breqs));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    (*
+    print_endline ("Cal new usage of proc " ^ si k ^ ": " ^
+      catmap "," (fun (j,_) -> si j) calls);
+    *)
+    Hashtbl.add uses k calls
+
+  | `BBDCL_fun (props,vs,params,ret,ct,breqs,prec) -> 
+    let params = map auxt params in
+    let vs = splice vs in
+    let ret = auxt ret in
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_fun (props,vs,params,ret,ct,breqs,prec));
+    (*
+    print_endline "NEW FUNCTION (clone):";
+    print_function syms.dfns bbdfns k;
+    *)
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    (*
+    print_endline ("Cal new usage of fun " ^ si k ^ ": " ^
+      catmap "," (fun (j,_) -> si j) calls);
+    *)
+    Hashtbl.add uses k calls
+
+  |  _ ->
+    Hashtbl.add bbdfns k (id,parent,sr,entry)
+
+  (*
   | _ -> syserr sr ("[reparent1] Unexpected bbdcl " ^ string_of_bbdcl syms.dfns entry index)
+  *)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent
