@@ -1062,6 +1062,7 @@ the very next #statement definition.
     macro next is new;
     if not _1 goto next;
       _3;
+			goto endoff;
     next:>
       macro for val elifcond,elifclause in elifs do
       macro next' is new;
@@ -1081,10 +1082,19 @@ ELIF x==3 THEN print 3; print 3; endl;
 ELIF x==5 THEN print 5; print 5; endl;
 ELIF x==7 THEN print 7; print 7; endl;
 ELSE print "None"; endl; DONE;
+
+val y = 5;
+IF y==1 THEN print 1; print 1; endl;
+ELIF y==3 THEN print 3; print 3; endl;
+ELIF y==5 THEN print 5; print 5; endl;
+ELIF y==7 THEN print 7; print 7; endl;
+ELSE print "None"; endl; DONE;
+
 @doc()
 
 @select(env.expect())
 None
+55
 @doc()
 
 @env.head(2,"User Macro Statement")

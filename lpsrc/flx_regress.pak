@@ -1736,6 +1736,82 @@ f
 g
 @doc()
 
+@env_rt.head(3)
+@env_rt.test('.flx')
+proc foo (x:int, _f:int->void) {
+  _f x;
+}
+
+foo (5, proc (x:int) { print x; endl; });
+@doc()
+
+@env_rt.expect()
+5
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat('macros')
+#import <flx.flxh>
+
+val x = { goto foo; };
+print 'there'; endl;
+foo:>
+print 'here'; endl;
+
+var y = { goto foo; };
+print 'there'; endl;
+foo:>
+print 'here'; endl;
+
+proc f () {
+  val x = { goto foo; };
+  print 'there'; endl;
+  foo:>
+  print 'here'; endl;
+}
+
+f;
+
+proc g () {
+  val x = { goto foo; };
+  print 'there'; endl;
+  foo:>
+  print 'here'; endl;
+}
+
+g;
+@doc()
+
+@select(env_rt.expect())
+there
+here
+there
+here
+there
+here
+there
+here
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat('generators')
+#import <flx.flxh>
+ 
+gen f ():int = {
+  var i:int; forall i in 0 upto 5 do
+    yield i;
+  done;
+}
+
+print$ f; endl;
+@doc()
+
+@select(env_rt.expect())
+0
+@doc()
+
 @env_srt.head(2,"Static good tests")
 
 @env_drt.head(2,"Dynamic good tests")
