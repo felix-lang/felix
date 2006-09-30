@@ -129,14 +129,8 @@ let rec find_true_parent dfns child parent =
       match bdcl with 
       | `SYMDEF_module 
         -> find_true_parent dfns id grandparent
-      | `SYMDEF_instance _
-      | `SYMDEF_typeclass
-      | `SYMDEF_regmatch _ 
-      | `SYMDEF_reglex _ 
-      | `SYMDEF_function _ 
-      | `SYMDEF_class  -> Some parent
-      | _ -> None
-    
+      | _ -> Some parent
+
 let bind_req syms env sr tag =
   (* HACKY *)
   try Some (lookup_code_in_env syms env sr tag)

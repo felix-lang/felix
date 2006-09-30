@@ -354,6 +354,24 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
 let remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len exes =
   map (remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len) exes
 
+let remap_reqs syms bbdfns varmap revariable caller_vars callee_vs_len reqs : breqs_t =
+  let revar i = try Hashtbl.find revariable i with Not_found -> i in
+  let tmap t = match t with
+  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | x -> x
+  in
+  let auxt t = 
+    map_btype tmap (varmap_subst varmap t)
+  in
+  let fixup (i, ts) = 
+    let ts = map auxt ts in
+    try 
+      let j= Hashtbl.find revariable i in 
+      j, vsplice caller_vars callee_vs_len ts
+    with Not_found -> i,ts
+  in
+  map fixup reqs
+
 let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   relabel varmap revariable 
   caller_vs callee_vs_len index parent
@@ -383,6 +401,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   let k = Hashtbl.find revariable index in
   let rexes xs = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len xs in
   let rexpr e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in 
+  let rreqs rqs = remap_reqs syms bbdfns varmap revariable caller_vars callee_vs_len rqs in
   let id,old_parent,sr,entry = Hashtbl.find bbdfns index in
   (*
   print_endline 
@@ -489,11 +508,34 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
 
   | `BBDCL_class (props,vs) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_class (props,splice vs));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
 
-  (* no need to reparent these things *)
+
+  | `BBDCL_abs (vs,quals,ct,breqs) ->
+    let vs = splice vs in
+    let breqs = rreqs breqs in
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_abs (vs,quals,ct,breqs));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+
+
+  | `BBDCL_const (vs,t,ct,breqs) ->
+    let vs = splice vs in
+    let breqs = rreqs breqs in
+    let t = auxt t in
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_const (vs,t,ct,breqs));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+
+
   | `BBDCL_proc (props,vs,params,ct,breqs) ->
     let params = map auxt params in
     let vs = splice vs in
+    let breqs = rreqs breqs in
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_proc (props,vs,params,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
@@ -507,6 +549,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     let params = map auxt params in
     let vs = splice vs in
     let ret = auxt ret in
+    let breqs = rreqs breqs in
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_fun (props,vs,params,ret,ct,breqs,prec));
     (*
     print_endline "NEW FUNCTION (clone):";
@@ -520,12 +563,21 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     *)
     Hashtbl.add uses k calls
 
-  |  _ ->
-    Hashtbl.add bbdfns k (id,parent,sr,entry)
+  | `BBDCL_insert (vs,ct,ik,breqs) ->
+    let breqs = rreqs breqs in
+    let vs = splice vs in
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_insert (vs,ct,ik,breqs));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+
 
   (*
-  | _ -> syserr sr ("[reparent1] Unexpected bbdcl " ^ string_of_bbdcl syms.dfns entry index)
+  |  _ ->
+    Hashtbl.add bbdfns k (id,parent,sr,entry)
   *)
+
+  | _ -> syserr sr ("[reparent1] Unexpected bbdcl " ^ string_of_bbdcl syms.dfns entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent
@@ -2277,9 +2329,7 @@ and remove_unused_children syms (uses,child_map,bbdfns) i =
       Hashtbl.remove bbdfns i;
       Hashtbl.remove child_map i;
       Hashtbl.remove uses i;
-      (*
       print_endline ("REMOVED SYMBOL " ^ qualified_name_of_index syms.dfns i)
-      *)
     )
     unused_descendants
   end

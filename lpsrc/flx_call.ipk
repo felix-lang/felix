@@ -58,6 +58,9 @@ open Flx_util
 open Flx_print
 open Flx_mtypes2
 
+
+(* NOTE: THIS CODE LARGELY DUPLICATES CODE IN flx_use.ml *)
+
 type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
@@ -74,6 +77,11 @@ let add (h:usage_table_t) k j sr =
       with Not_found -> []
     )
   )
+
+let faulty_req syms i =
+  match Hashtbl.find syms.dfns i with {id=id; sr=sr } ->
+  clierr sr (id ^ " is used but has unsatisfied requirement")
+
 
 let rec process_expr h k sr ((e,t) as be) =
   let ue e = process_expr h k sr e in
@@ -105,6 +113,13 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   let uses = Hashtbl.create 97 in
   let usedby = Hashtbl.create 97 in
   let usage = uses,usedby in
+  let cal_req_usage sr parent reqs = 
+    let ur (j,ts) = 
+      if j = 0 then faulty_req syms parent 
+      else add uses parent j sr
+    in
+    iter ur reqs 
+  in
   Hashtbl.iter
   (fun k (_,_,sr,entry) -> match entry with
   | `BBDCL_procedure (_,_,(ps,_),exes)
@@ -120,6 +135,13 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   | `BBDCL_reglex (_,_,(ps,_),_,_,(_,_,h,_)) -> 
     iter (cal_param_usage syms uses sr k) ps;
     Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
+
+  | `BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
+  | `BBDCL_const (_,_,_,reqs) -> cal_req_usage sr k reqs
+  | `BBDCL_proc (_,_,_,_, reqs)  -> cal_req_usage sr k reqs
+  | `BBDCL_fun (_,_,_,_,_, reqs,_)  -> cal_req_usage sr k reqs
+  | `BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
+  | `BBDCL_instance (_,i,_) -> add uses k i sr
 
   | _ -> () 
   )
