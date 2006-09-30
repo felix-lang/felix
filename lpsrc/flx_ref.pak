@@ -1112,7 +1112,10 @@ is equivalent to
   val y : id = x : id; // coercion
 @end_displayed_code()
 
-@head(2,"Pattern match",key="expr")
+@head(2,"Pattern match")
+
+[Needs attention]
+
 To be written.
 @head(1,"Statements")
 @head(2,"Definitions",nospawn=1)
