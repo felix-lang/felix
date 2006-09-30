@@ -1,3 +1,4 @@
+@execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flx_ref.py')
 @select(h)
 iscr_source = ['lpsrc/flx_ref.pak']
@@ -1118,8 +1119,18 @@ is equivalent to
 
 To be written.
 @head(1,"Statements")
+@head(2,"Directives",nospawn=1)
+@head(2,"Include Directive",nospawn=1)
+@head(2,"Open Directive",nospawn=1)
+@head(2,"Inherit Directive",nospawn=1)
+@head(2,"Use Directive",nospawn=1)
 @head(2,"Definitions",nospawn=1)
+@head(3,"Typedef",nospawn=1)
 @head(3,"Modules",nospawn=1)
+@head(3,"Typeclasses",nospawn=1)
+@head(3,"Instances",nospawn=1)
+@head(3,"Regular Expressions",nospawn=1)
+@head(3,"Grammar Productions",nospawn=1)
 @head(2,"Executable Statements",nospawn=1)
 Conditions in macros, including chains, conditional
 goto, call, and return, are subject to constant folding.
@@ -1548,12 +1559,35 @@ keywords, statements and expressions.
 @begin_list("keyed")
 @item("#keyword")
 @item("#statement")
+@item("#nonterminal")
 @item("#infix")
 @item("#bracket")
 @end_list()
 
-@head(2,'User defined Statements',nospawn=1)
-@head(2,'User defined Operators',nospawn=1)
+@head(3,'User defined Statements',nospawn=1)
+@head(3,'User defined Operators',nospawn=1)
+@head(2,'Tokens',nospawn=1)
+@python('//') 
+begin_displayed_code()
+l = "  "
+def add(s):
+  global l
+  if len(s) < 10:
+    l = l + (s+"          ")[:10]
+  else:
+    l = l + (s+"                    ")[:20]
+
+  if len (l) >= 60:
+    weave(l)
+    line_break()
+    l = "  "
+
+for k,s in flx_1_char_syms: add(s)
+for k,s in flx_2_char_syms: add(s)
+for k,s in flx_3_char_syms: add(s)
+for n,t in flx_keywords + flx_parser_keywords: add(n)
+end_displayed_code()
+//
 
 @head(1,'Syntax Macro Processor')
 @head(2,'Special constructions',nospawn=1)
