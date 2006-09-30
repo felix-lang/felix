@@ -59,9 +59,9 @@ syn cluster felixAllErrs contains=felixBraceErr,felixBrackErr,felixParenErr,feli
 syn match felixComment "^#!.*"
 
 " C/C++ keywords which are not Felix ones (bad style)
-syn keyword felixError break
-syn keyword felixError continue
-syn keyword felixError repeat
+"syn keyword felixError break
+"syn keyword felixError continue
+"syn keyword felixError repeat
 
 @for k,j in flx_keywords:
   tangle('syn keyword felixStatement ' + k)
