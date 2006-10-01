@@ -758,6 +758,7 @@ and statement_t =
   | `AST_fun_return of range_srcref * expr_t
   | `AST_yield of range_srcref * expr_t
   | `AST_proc_return of range_srcref 
+  | `AST_halt of range_srcref  * string
   | `AST_nop of range_srcref * string
   | `AST_assert of range_srcref * expr_t
   | `AST_apply_ctor of range_srcref * id_t * expr_t * expr_t
@@ -797,6 +798,7 @@ and exe_t =
   | `EXE_fun_return of expr_t
   | `EXE_yield of expr_t
   | `EXE_proc_return
+  | `EXE_halt of string
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
   | `EXE_iinit of (id_t * int) * expr_t 
@@ -2051,6 +2053,7 @@ let src_of_stmt e = match e with
   | `AST_fun_return (s, _) 
   | `AST_yield (s, _) 
   | `AST_proc_return s 
+  | `AST_halt (s,_)
   | `AST_ifgoto (s,_,_)
   | `AST_ifreturn (s,_)
   | `AST_ifdo (s,_,_,_)
@@ -3947,6 +3950,9 @@ and string_of_statement level s =
 
   | `AST_proc_return _ -> 
     spaces level ^ "return;"
+
+  | `AST_halt (_,s) -> 
+    spaces level ^ "halt "^string_of_string s^";"
     
   | `AST_svc (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
@@ -4203,6 +4209,9 @@ and string_of_exe level s =
 
   | `EXE_proc_return -> spc ^ 
     "return;"
+
+  | `EXE_halt s -> spc ^ 
+    "halt "^string_of_string s^";"
 
   | `EXE_nop s -> spc ^ 
     "/*" ^ s ^ "*/"

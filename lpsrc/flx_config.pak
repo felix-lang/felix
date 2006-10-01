@@ -1599,6 +1599,7 @@ flx_expr_terminator_keywords = [
     ("fun", "FUNCTION"),
     ("gen", "GENERATOR"),
     ("goto", "GOTO"),
+    ("halt", "HALT"),
     ("header", "HEADER"),
     ("ident", "IDENT"),
     ("include","INCLUDE"),

@@ -220,7 +220,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         tack (cal_loop syms sr tbe1 (be2,t2) index)
 
     | `EXE_jump (a,b) ->
-      incr proc_return_count;
       bind_exe (sr,`EXE_call (a,b));
       bind_exe  (sr,`EXE_proc_return)
 
@@ -390,6 +389,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         (
           "function " ^id^" has void return type"
         )
+
+    | `EXE_halt s ->
+      incr proc_return_count;
+      reachable := false;
+      tack (`BEXE_halt (sr,s))
 
     | `EXE_fun_return e ->        
       reachable := false;

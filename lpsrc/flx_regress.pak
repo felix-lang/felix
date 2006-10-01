@@ -1803,9 +1803,14 @@ gen f ():int = {
   var i:int; forall i in 0 upto 5 do
     yield i;
   done;
+  halt "Call exhausted generator";
 }
 
-print$ f; endl;
+var g = the f;
+print$ g (); endl;
+print$ g (); endl;
+print$ g (); endl;
+print$ g (); endl;
 @doc()
 
 @select(env_rt.expect())

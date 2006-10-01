@@ -812,6 +812,20 @@ struct RTL_EXTERN flx_range_srcref_t {
 };
 
 // ********************************************************
+/// EXCEPTION: HALT.
+/// Thrown by halt command
+// ********************************************************
+
+struct RTL_EXTERN flx_halt_t : flx_exception_t {
+  std::string reason;         ///< halt argument
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
+  flx_halt_t(flx_range_srcref_t ff, char *cf, int cl, std::string reason);
+  virtual ~flx_halt_t();
+};
+
+// ********************************************************
 /// EXCEPTION: MATCH failure.
 /// Thrown when no match cases match the argument of a match,
 /// regmatch, or reglex
@@ -901,6 +915,12 @@ struct readreq_t {
 };
 
 }} // namespaces
+
+#define FLX_EXEC_FAILURE(f,op,what) \
+  throw flx::rtl::flx_exec_failure_t (f,op,what)
+
+#define FLX_HALT(f,sl,sc,el,ec,s) \
+  throw flx::rtl::flx_halt_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
 
 #define FLX_MATCH_FAILURE(f,sl,sc,el,ec) \
   throw flx::rtl::flx_match_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
@@ -1538,6 +1558,10 @@ flx_range_srcref_t::flx_range_srcref_t() :
     filename(""),startline(0),startcol(0),endline(0),endcol(0){}
 flx_range_srcref_t::flx_range_srcref_t(char *f,int sl, int sc, int el, int ec) :
     filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
+
+flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char *cf, int cl, std::string r) :
+   reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_halt_t::~flx_halt_t(){}
 
 flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
@@ -2525,6 +2549,12 @@ int flx::rtl::std_exception_handler (std::exception *e)
 
 int flx::rtl::flx_exception_handler (flx_exception_t *e)
 {
+  if (flx_halt_t *x = dynamic_cast<flx_halt_t*>(e))
+  {
+    fprintf(stderr,"Halt: %s \n",x->reason.data());
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
   if (flx_link_failure_t *x = dynamic_cast<flx_link_failure_t*>(e))
   {
     fprintf(stderr,"Dynamic linkage error\n");

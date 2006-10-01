@@ -1032,13 +1032,14 @@ let gen_exe filename syms
       )
 
     (* FIX THIS TO PUT SOURCE REFERENCE IN *)
-    | `BEXE_halt (sr,s) -> 
-       "      // halt " ^ cid_of_flxid s ^ "\n" ^
-       "      throw flx::rtl::flx_exec_failure_t(\n" ^
-       "        \"" ^ Flx_srcref.short_string_of_src sr ^ "\",\n" ^
-       "        \"halt\",\n" ^
-       "        \"" ^ cid_of_flxid s ^ "\"\n" ^
-       "      );\n"
+    | `BEXE_halt (sr,msg) -> 
+      let msg = Flx_print.string_of_string ("HALT: " ^ msg) in
+      let f,sl,sc,el,ec = sr in
+      let s = Flx_print.string_of_string f ^"," ^ 
+        si sl ^ "," ^ si sc ^ "," ^
+        si el ^ "," ^ si ec
+      in
+       "      FLX_HALT(" ^ s ^ "," ^ msg ^ ");\n"
 
     | `BEXE_goto (sr,s) -> 
       begin match find_label bbdfns label_map this s with

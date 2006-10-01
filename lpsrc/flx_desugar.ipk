@@ -983,6 +983,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     [`Dcl (sr,name,None,access,dfltvs,`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [`Exe (sr,`EXE_label s)]
   | `AST_proc_return sr -> [`Exe (sr,`EXE_proc_return)]
+  | `AST_halt (sr,s) -> [`Exe (sr,`EXE_halt s)]
   | `AST_goto (sr,s) -> [`Exe (sr,`EXE_goto s)]
   | `AST_open (sr,name) -> [`Dir (sr,DIR_open name)]
   | `AST_inject_module (sr,name) -> [`Dir (sr,DIR_inject_module name)]

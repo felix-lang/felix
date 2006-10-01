@@ -1714,6 +1714,8 @@ return:
   | YIELD expr SEMI          { `AST_yield (rstoken $1 $3, $2) }
   | RETURN expr SEMI          { `AST_fun_return (rstoken $1 $3, $2) }
   | RETURN SEMI               { `AST_proc_return (rstoken $1 $2) }
+  | HALT STRING SEMI          { `AST_halt (rstoken $1 $3, snd $2) }
+
 @doc()
 The return statement is only permitted as the last statement
 in a function.
