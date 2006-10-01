@@ -1815,6 +1815,9 @@ print$ g (); endl;
 
 @select(env_rt.expect())
 0
+1
+2
+3
 @doc()
 
 @env_srt.head(2,"Static good tests")
