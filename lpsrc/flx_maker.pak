@@ -1225,17 +1225,19 @@ def mk_manifests():
   paks = glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.pak"))
   for pkg in paks:
     base = os.path.basename(os.path.splitext(pkg)[0])
-    fname = os.path.join("manifests", base+".log")
-    manifest_time = filetime(fname)
-    if manifest_time == 0:
-      print "New pak",pkg,"BUILDING MANIFEST"
+    fbase = os.path.join("manifests", base)
+
+    if not os.path.exists(fbase + '.log') or not os.path.exists(fbase + '.deps'):
+      print "New pak", pkg, "BUILDING MANIFEST"
       make_manifest(pkg)
     else:
-     files = get_deps(base)
-     src_time = newest_filetime(files)
-     if src_time > manifest_time:
-       print "Changed pak",pkg,"REBUILDING MANIFEST"
-       make_manifest(pkg)
+      manifest_time = filetime(fbase + '.log')
+
+      files = get_deps(base)
+      src_time = newest_filetime(files)
+      if src_time > manifest_time:
+        print "Changed pak", pkg, "REBUILDING MANIFEST"
+        make_manifest(pkg)
 
 mk_manifests()
 
