@@ -163,6 +163,10 @@ selected_xlators = [
 import os
 import pickle
 
+if '' not in sys.path: sys.path = [''] + sys.path
+import flxbuild
+from flxbuild.flxutil import *
+
 import flxbuild.flxutil
 import interscript.frames.inputf
 
