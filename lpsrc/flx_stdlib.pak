@@ -1849,6 +1849,11 @@ open module Array
   publish "Array type"
   typedef array[t,n] = t ^ n;
 
+  publish "Array constructors"
+  fun _ctor_array[T] () = { val x:array[T,0]; return x; }
+  fun _ctor_array[T] (x:T) = { var y:array[T, 1]; y.[0] = x; return y; }
+  fun _ctor_array[T,N] (x:array[T,N]) => x;
+
   publish "Array access: works on LHS of assignment too"
   fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
   fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
