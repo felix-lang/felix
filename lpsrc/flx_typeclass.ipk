@@ -12,6 +12,12 @@ val typeclass_instance_check:
   fully_bound_symbol_table_t ->
   child_map_t ->
   unit
+
+val fixup_typeclass_instance:
+  sym_state_t -> 
+  int ->
+  btypecode_t list ->
+  int * btypecode_t list
  
 @h = tangler("src/flx_typeclass.ml")
 @select(h)
@@ -143,4 +149,8 @@ Hashtbl.iter
 )
 bbdfns
 
-
+let fixup_typeclass_instance syms i ts =
+  try 
+    let i = Hashtbl.find syms.typeclass_to_instance (i,ts) in
+    i,[]
+  with Not_found -> i,ts
