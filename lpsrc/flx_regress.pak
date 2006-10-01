@@ -14,37 +14,6 @@
 @env_kf  = setup_test(os.path.join('test', 'regress', 'kf-'))
 @env_wt  = setup_test(os.path.join('test', 'regress', 'wt-'))
 
-@def kat(code):
-  tangle("//Check " + code)
-  f = get_tangler().sink.filename
-  ff = string.split(f,'/')[-1][:-4]
-  v = registry_out.get(code,[])
-  if ff not in v:
-    set_anchor(ff)
-    v.append(ff) 
-    registry_out[code]=v
-
-@def emit_katlist():
-  begin_list("keyed")
-  keys = registry_in.keys()
-  keys.sort()
-  for k in keys:
-    v = registry_in[k]
-    item(k)
-    first = 1
-    for i in v:
-      if first: first = 0
-      else: weave(", ")
-      ref_anchor(i)
-  end_list()
-
-
-@registry_in = {}
-@registry_out = {}
-@katfile="tmp" + os.sep + "kat-regress.tmp"
-@try:
-  execfile(katfile)
- except: pass
 
 @head(1,'Regression tests')
 There are four kinds of test. The compiler
@@ -86,96 +55,19 @@ they are not currently checked.
 
 @head(2,"Category Reference",nospawn=1)
 Tests by category keyword.
-@emit_katlist()
-
-@select(tangler('spkgs/flx_regression_tests_rt.py'))
-@tangle("unit_tests = glob.glob('"+env_rt.root+"*.flx')")
-
-pkg_requires = ['flx_compiler','flx_drivers']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/regress'
-@doc()
-
-
-@select(tangler('spkgs/flx_regression_tests_srt.py'))
-@tangle("static_unit_tests = glob.glob('"+env_srt.root+"*.flx')")
-
-pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/'
-@doc()
-
-
-@select(tangler('spkgs/flx_regression_tests_drt.py'))
-@tangle("dynamic_unit_tests = glob.glob('"+env_drt.root+"*.flx')")
-
-pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/'
-@doc()
-
-
-@select(tangler('spkgs/flx_regression_tests_nd.py'))
-@tangle("completion_tets = glob.glob('"+env_nd.root+"*.flx')")
-
-pkg_requires = ['flx_compiler','flx_drivers']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/'
-@doc()
-
-
-@select(tangler('spkgs/flx_regression_tests_pt.py'))
-@tangle("perform_tets = glob.glob('"+env_pt.root+"*.flx')")
-
-pkg_requires = ['flx_compiler','flx_drivers']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/'
-@doc()
-
-
-@select(tangler('spkgs/flx_regression_tests_bt.py'))
-# these are supposed to fail!
-@tangle("failure_tests = glob.glob('"+env_bt.root+"*.flx')")
-
-pkg_requires = ['flx_compiler','flx_drivers']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/'
-@doc()
-
-@select(tangler('spkgs/flx_regression_tests_kf.py'))
-# these are supposed to fail!
-@tangle("known_failed_tests = glob.glob('"+env_kf.root+"*.flx')")
-
-pkg_requires = ['flx_compiler','flx_drivers']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/'
-@doc()
-
-
-@select(tangler('spkgs/flx_regression_tests.py'))
-pkg_requires = [
-  'flx_regression_tests_rt', 'flx_regression_tests_drt', 
-  'flx_regression_tests_nd', 'flx_regression_tests_bt', 
-  'flx_regression_tests_kf']
-iscr_source = ['lpsrc/flx_regress.pak']
-
-weaver_directory = 'doc/test/'
-@doc()
-
+@env_rt.emit_katlist()
+@env_srt.emit_katlist()
+@env_drt.emit_katlist()
+@env_pt.emit_katlist()
+@env_nd.emit_katlist()
+@env_kf.emit_katlist()
+@env_wt.emit_katlist()
 
 @env_rt.head(2,'Good tests')
 
 @env_rt.head(3)
-@rt_test1 = env_rt.test('.flx')
+@rt_test1 = env_rt.test('.flx', categories=['integer math'])
 @select(rt_test1)
-@kat("integer math")
 #import <flx.flxh>
 open Tiny;
 open Short;
@@ -239,10 +131,8 @@ test complete
 @doc()
 
 @env_rt.head(3)
-@rt_test2 = env_rt.test('.flx')
+@rt_test2 = env_rt.test('.flx', categories=['closures', 'recursion'])
 @select(rt_test2)
-@kat("closures")
-@kat("recursion")
 header r"""
 #include <stdio.h>
 typedef char *charp;
@@ -326,8 +216,7 @@ module A print int=1
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("laziness")
+@select(env_rt.test('.flx', categories=['laziness']))
 #import <flx.flxh>
 // test lazy functions and procedures
 print "lazy expr eval test\n";
@@ -346,8 +235,7 @@ lazy expr eval test
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("strings")
+@select(env_rt.test('.flx', categories=['strings']))
 // test the string library
 #import <flx.flxh>
 var x = "Hello";
@@ -387,7 +275,7 @@ dlroW+olleH
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
+@select(env_rt.test('.flx', categories=['assert']))
 // test the chained comparison
 #import <flx.flxh>
 assert(1<2&<3&<4);
@@ -397,8 +285,7 @@ assert(1<2&<3&<4);
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("recursive types")
+@select(env_rt.test('.flx', categories=['recursive types']))
 fun land: 2 * 2 -> 2 = "$1 && $2";
 type int = "int";
 fun eq: int * int -> 2 = "$1 == $2";
@@ -453,8 +340,7 @@ false
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("closures")
+@select(env_rt.test('.flx', categories=['closures']))
 #import <flx.flxh>
 // closure formation test
 
@@ -518,8 +404,7 @@ union U
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("insertions")
+@select(env_rt.test('.flx', categories=['insertions']))
 // code insertion
 body "#include <iostream>";
 code 'static int x = 1;';
@@ -537,8 +422,7 @@ print (two());
 @env_rt.head(3)
 multiple assignment
 
-@select(env_rt.test('.flx'))
-@kat("def statement")
+@select(env_rt.test('.flx', categories=['def statement']))
 #import <flx.flxh>
 var a:int;
 var b:int;
@@ -569,8 +453,7 @@ endl;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("type operator")
+@select(env_rt.test('.flx', categories=['type operator']))
 #import <flx.flxh>
 open Long;
 
@@ -611,8 +494,7 @@ print two; endl;
 @env_rt.head(3)
 generics inlining/call lifting tests
 
-@select(env_rt.test('.flx'))
-@kat("polymorphism")
+@select(env_rt.test('.flx', categories=['polymorphism']))
 #import <flx.flxh>
 
 proc f[k] (z:k, pr:k->void) {
@@ -633,8 +515,7 @@ f[int] (1, the pr);
 
 @env_rt.head(3)
 call inlining
-@select(env_rt.test('.flx'))
-@kat("inlining")
+@select(env_rt.test('.flx', categories=['inlining']))
 #import <flx.flxh>
 proc g[t]()
 {
@@ -701,8 +582,7 @@ EIGHTTEEN
 @env_rt.head(3)
 call inlining
 
-@select(env_rt.test('.flx'))
-@kat("inlining")
+@select(env_rt.test('.flx', categories=['inlining']))
 #import <flx.flxh>
 
 val x = 1;
@@ -729,8 +609,7 @@ ONE
 @env_rt.head(3)
 more generic stuff
 
-@select(env_rt.test('.flx'))
-@kat("polymorphism")
+@select(env_rt.test('.flx', categories=['polymorphism']))
 #import <flx.flxh>
 open List;
 
@@ -781,9 +660,7 @@ iter
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("recursion")
-@kat("tail call optimisation")
+@select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
 #import <flx.flxh>
 // self-tail rec test (inspect output)
 // (requires --inline atm)
@@ -809,9 +686,7 @@ recur();
 @env_rt.head(3)
 non-self-tail rec test (inspect output) (requires --inline atm)
 
-@select(env_rt.test('.flx'))
-@kat("recursion")
-@kat("tail call optimisation")
+@select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
 #import <flx.flxh>
 var x = 4;
 proc recur2 ()
@@ -837,9 +712,7 @@ recur2();
 @env_rt.head(3)
 self-tail rec test (inspect output) (requires --inline atm)
 
-@select(env_rt.test('.flx'))
-@kat("recursion")
-@kat("tail call optimisation")
+@select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
 #import <flx.flxh>
 fun g(x:int):int = {
   if x == 0 goto endoff;
@@ -856,9 +729,7 @@ print (g 10); endl;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("recursion")
-@kat("tail call optimisation")
+@select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
 #import <flx.flxh>
 // non-self-tail rec test (inspect output)
 // (requires --inline atm)
@@ -877,8 +748,7 @@ print (f 10); endl;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("lvalues")
+@select(env_rt.test('.flx', categories=['lvalues']))
 // lvalue decay if function called thru variable
 #import <flx.flxh>
 
@@ -891,8 +761,7 @@ f g of (int);
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("regmatch")
+@select(env_rt.test('.flx', categories=['regmatch']))
 // contrib by Valery, mod by Skaller
 #import <flx.flxh>
 
@@ -928,9 +797,7 @@ terminating
 Warning: result is dependent on implementation
 detail (order of execution after read/write matchup)
 
-@select(env_rt.test('.flx'))
-@kat("fibres")
-@kat("channels")
+@select(env_rt.test('.flx', categories=['fibres', 'channels']))
 #import <flx.flxh>
 
 var y = ();
@@ -966,9 +833,7 @@ R2
 W2
 @doc()
 
-@select(env_rt.test('.flx'))
-@kat("fibres")
-@kat("channels")
+@select(env_rt.test('.flx', categories=['fibres', 'channels']))
 #import <flx.flxh>
 open Control;
  
@@ -1004,8 +869,7 @@ spawn_fthread {
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("type constraints")
+@select(env_rt.test('.flx', categories=['type constraints']))
 #import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
@@ -1030,8 +894,7 @@ print$ f$ 1,2.0; endl; // 999
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("type constraints")
+@select(env_rt.test('.flx', categories=['type constraints']))
 #import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
@@ -1059,8 +922,7 @@ k px;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("type constraints")
+@select(env_rt.test('.flx', categories=['type constraints']))
 #import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
@@ -1108,9 +970,7 @@ pr$ ff$ 1,2;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("reductions")
-@kat("axioms")
+@select(env_rt.test('.flx', categories=['reductions', 'axioms']))
 #import <flx.flxh>
 
 // the noinline is needed because reductions are
@@ -1152,8 +1012,7 @@ Cheat
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("member count")
+@select(env_rt.test('.flx', categories=['member count']))
 #import <flx.flxh>
 // HACK!
 // NOTE: who_cares is now in the library! 
@@ -1176,9 +1035,7 @@ f2 x;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("arrays")
-@kat("array iterators")
+@select(env_rt.test('.flx', categories=['arrays', 'array iterators']))
 #import <flx.flxh>
 
 open List;
@@ -1253,9 +1110,7 @@ hello
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("laziness")
-@kat("lazy variables")
+@select(env_rt.test('.flx', categories=['laziness', 'lazy variables']))
 #include <flx.flxh>
 
 var v = 1;
@@ -1274,8 +1129,7 @@ print$ x; endl;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("ref semantics")
+@select(env_rt.test('.flx', categories=['ref semantics']))
 #include <flx.flxh>
 
 noinline proc f(var x:int, val y:int)
@@ -1385,8 +1239,7 @@ k { a +1 };
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("lexing keywords")
+@select(env_rt.test('.flx', categories=['lexing keywords']))
 #import <flx.flxh>
 #
 module X {
@@ -1403,8 +1256,7 @@ print$ X::f 22; endl;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("translation of typedefs to _ctor_name calls")
+@select(env_rt.test('.flx', categories=['translation of typedefs to _ctor_name calls']))
 #import <flx.flxh>
 
 open module Foo
@@ -1429,8 +1281,7 @@ print z; endl;
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("generators")
+@select(env_rt.test('.flx', categories=['generators']))
 #import <flx.flxh>
 
 var cheat : int = 0;
@@ -1476,8 +1327,7 @@ C 4=4
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("generators")
+@select(env_rt.test('.flx', categories=['generators']))
 #import <flx.flxh>
 
 gen f(init:int)(inc:int):int = {
@@ -1510,8 +1360,7 @@ print$ x(10); endl; // 64
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("generators")
+@select(env_rt.test('.flx', categories=['generators']))
 #import <flx.flxh>
 
 union tree = TEmpty | Leaf of int | Node of tree * tree;
@@ -1638,8 +1487,7 @@ a
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat("comments")
+@select(env_rt.test('.flx', categories=['comments']))
 #import <flx.flxh>
 
 //test
@@ -1750,8 +1598,7 @@ foo (5, proc (x:int) { print x; endl; });
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat('macros')
+@select(env_rt.test('.flx', categories=['macros']))
 #import <flx.flxh>
 
 val x = { goto foo; };
@@ -1795,8 +1642,7 @@ here
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat('generators')
+@select(env_rt.test('.flx', categories=['generators']))
 #import <flx.flxh>
  
 gen f ():int = {
@@ -1994,10 +1840,105 @@ if (len s > 3) do
 done;
 @doc()
 
-@try:
-   os.mkdir("tmp")
- except: pass
-@f = open(katfile,"w")
-@f.write("registry_in="+repr(registry_out))
-@f.close()
+@env_wt.head(3)
+@select(env_wt.test('.flx'))
+#import <flx.flxh>
 
+proc foo (x:int) = {
+  print 'here'; endl;
+}
+
+proc bar (x:int) => foo x;
+@doc()
+
+
+@head(1, 'Packages')
+@select(tangler('spkgs/flx_regression_tests_rt.py'))
+@tangle("unit_tests = glob.glob('"+env_rt.root+"*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/regress'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests_srt.py'))
+@tangle("static_unit_tests = glob.glob('"+env_srt.root+"*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests_drt.py'))
+@tangle("dynamic_unit_tests = glob.glob('"+env_drt.root+"*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests_nd.py'))
+@tangle("completion_tets = glob.glob('"+env_nd.root+"*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests_pt.py'))
+@tangle("perform_tets = glob.glob('"+env_pt.root+"*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests_bt.py'))
+# these are supposed to fail!
+@tangle("failure_tests = glob.glob('"+env_bt.root+"*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+@select(tangler('spkgs/flx_regression_tests_kf.py'))
+# these are supposed to fail!
+@tangle("known_failed_tests = glob.glob('"+env_kf.root+"*.flx')")
+
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+
+@select(tangler('spkgs/flx_regression_tests.py'))
+pkg_requires = [
+  'flx_regression_tests_rt', 'flx_regression_tests_drt', 
+  'flx_regression_tests_nd', 'flx_regression_tests_bt', 
+  'flx_regression_tests_kf']
+iscr_source = ['lpsrc/flx_regress.pak']
+
+weaver_directory = 'doc/test/'
+@doc()
+
+@env_rt.write_katfile()
+@env_srt.write_katfile()
+@env_drt.write_katfile()
+@env_pt.write_katfile()
+@env_nd.write_katfile()
+@env_bt.write_katfile()
+@env_kf.write_katfile()
+@env_wt.write_katfile()

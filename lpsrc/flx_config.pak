@@ -160,6 +160,10 @@ selected_xlators = [
 @doc()
 
 @select(tangler('flxbuild/iscrutil.py'))
+import os
+import pickle
+
+import flxbuild.flxutil
 import interscript.frames.inputf
 
 class setup_test:
@@ -173,6 +177,19 @@ class setup_test:
     self.argcount = 0
 
     self.names_written = {}
+
+    self.katfile = self.root + 'categories'
+
+    if os.path.exists(self.katfile):
+      f = open(self.katfile)
+      try:
+        self.registry_in = pickle.load(f)
+      finally:
+        f.close()
+    else:
+      self.registry_in = {}
+
+    self.registry_out = {}
 
 
   def head(self, level, title=None):
@@ -231,6 +248,28 @@ class setup_test:
 
   def test(self, *args, **kwds):
     name = '%s-%s' % (self.filename(), self.testcount)
+    basename = os.path.basename(name)
+
+    # make sure we have a nice anchor point to this filename
+    set_anchor(basename)
+
+    # if categories are specified, write them out
+    if 'categories' in kwds:
+      categories = kwds['categories']
+      del kwds['categories']
+
+      select(self.tangler(name, '.kat', 'data'))
+      for kat in categories:
+        tangle(kat)
+
+        # register this file with the category
+        v = self.registry_out.get(kat, [])
+        if basename not in v:
+          v.append(basename)
+          self.registry_out[kat] = v
+
+      doc()
+
     self.testcount = self.testcount + 1
 
     return apply(self.tangler, (name,) + args, kwds)
@@ -270,6 +309,30 @@ class setup_test:
     name = '%s-%s-%s' % (self.filename(), self.testcount - 1, self.argcount - 1)
 
     return self.tangler(name, '.argexpect', 'data')
+
+
+  def emit_katlist(self):
+    begin_list("keyed")
+    keys = self.registry_in.keys()
+    keys.sort()
+    for k in keys:
+      v = self.registry_in[k]
+      item(k)
+      first = 1
+      for i in v:
+        if first: first = 0
+        else: weave(", ")
+        ref_anchor(i)
+    end_list()
+
+    
+  def write_katfile(self):
+    flxbuild.flxutil.mkdirs(os.path.basename(self.katfile))
+    f = open(self.katfile, 'w')
+    try:
+      pickle.dump(self.registry_out, f)
+    finally:
+      f.close()
 @doc()
 
 @h=tangler("flxbuild/flxutil.py")
