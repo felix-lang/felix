@@ -428,6 +428,15 @@ publish "option type"
     | Some of T
   ;
 
+publish "slice type"
+  union slice[T] =
+    | Slice_all
+    | Slice_from of T
+    | Slice_to of T
+    | Slice_range of T * T
+    | Slice_one of T
+  ;
+
 publish "Universal type 'x as x'"
   typedef any = any;
 
@@ -1078,6 +1087,16 @@ open module String
   fun substring: string * int * int -> string = 
     "flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
 
+  fun subscript (x:string, s:slice[int]):string =>
+    match s with
+    | Slice_all[int] => substring (x, 0, len x)
+    | Slice_from (?start) => copyfrom (x, start)
+    | Slice_to (?end) => copyto (x, end)
+    | Slice_range (?start, ?end) => substring (x, start, end)
+    | Slice_one (?index) => str x.[index]
+    endmatch
+  ;
+
   // comparisons
   gen_cmp string;
 
@@ -1673,7 +1692,7 @@ module List
     return
       match x with
       | Empty[T] => init
-      | Cons[T] (?h,?t) => fold_right _f t (_f h init)
+      | Cons[T] (?h,?t) => _f h (fold_right _f t init)
       endmatch
     ;
   }
@@ -1751,18 +1770,15 @@ module List
     ;
   }
 
-  fun mem[T, U] (eq:T * U -> bool) (x:list[T]) (e:U) : bool =>
-    match x with 
-    | Empty => false
-    | Cons (?h,?t) => if eq (h, e) then true else mem eq t e endif
-    endmatch
-  ;
-
   fun mem[T] (eq:T -> bool) (x:list[T]) : bool =>
     match x with
       | Empty => false
       | Cons (?h,?t) => if eq(h) then true else mem eq t endif
     endmatch
+  ;
+
+  fun mem[T, U] (eq:T * U -> bool) (x:list[T]) (e:U) : bool =>
+    mem (fun (i:T) => eq(i, e)) x
   ;
 
   fun find[T, U] (eq:T * U -> bool) (x:list[T]) (e:U) : opt[T] =>
@@ -1842,6 +1858,13 @@ open module Array
 
   fun len[T, N] (x:array[T, N]): int => Typing::memcount[N];
 
+  proc iter[T, N] (_f:T->void) (x:array[T, N]) {
+    var i : int;
+    forall i in 0 upto len(x) - 1 do
+      _f x.[i];
+    done;
+  }
+
   fun map[T, N, U] (_f:T->U) (x:array[T, N]): array[U, N] = {
     var o : array[U, N];
     var i : int;
@@ -1852,31 +1875,11 @@ open module Array
     return o;
   };
 
-  fun rev[T, N] (x:array[T, N]): array[T, N] = {
-    var o : array[T, N];
-    var i : int;
-
-    val length = len x;
-
-    forall i in 0 upto length - 1 do
-      o.[length - 1 - i] = x.[i];
-    done;
-
-    return o;  
-  }
-
-  proc iter[T, N] (_f:T->void) (x:array[T, N]) {
-    var i : int;
-    forall i in 0 upto len(x) - 1 do
-      _f x.[i];
-    done;
-  }
-
   fun fold_left[T, N, U] (_f:U->T->U) (init:U) (x:array[T, N]): U = {
     var o = init;
     var i : int;
 
-    forall i in len(x) - 1 downto 0 do 
+    forall i in 0 upto len(x) - 1 do 
       o = _f o x.[i];
     done;
 
@@ -1888,7 +1891,7 @@ open module Array
     var i : int;
     val length = len x;
 
-    forall i in 0 upto len(x) - 1 do 
+    forall i in len(x) - 1 downto 0 do 
       o = _f x.[i] o;
     done;
 
@@ -1914,17 +1917,6 @@ open module Array
   }
 */
 
-  fun mem[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): bool = {
-    var i : int;
-    forall i in 0 upto len(x) - 1 do
-      if eq(x.[i], e) do
-        return true;
-      done;
-    done;
-
-    return false;
-  }
-
   fun mem[T, N] (eq:T->bool) (x:array[T, N]): bool = {
     var i : int;
     forall i in 0 upto len(x) - 1 do
@@ -1935,6 +1927,10 @@ open module Array
 
     return false;
   }
+
+  fun mem[T, N, U] (eq:T*U->bool) (x:array[T, N]) (e:U): bool =>
+    mem (fun (i:T) => eq(i, e)) x
+  ;
 
   fun find[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
     var i : int;
@@ -1957,6 +1953,19 @@ open module Array
     done;
 
     return None[T];
+  }
+
+  fun rev[T, N] (x:array[T, N]): array[T, N] = {
+    var o : array[T, N];
+    var i : int;
+
+    val length = len x;
+
+    forall i in 0 upto length - 1 do
+      o.[length - 1 - i] = x.[i];
+    done;
+
+    return o;  
   }
 }
 

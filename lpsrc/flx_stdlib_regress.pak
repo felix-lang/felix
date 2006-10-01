@@ -13,9 +13,211 @@ iscr_source = ['lpsrc/flx_stdlib_regress.pak']
 weaver_directory = 'doc/test/stdlib'
 @doc()
 
+@# ----------------------------------------------------------------------------
+
 @env.head(1, 'Standard library regression tests')
+@env.head(2, 'Array tests')
+@env.head(3, 'Array::len')
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ len [|2|]; endl;
+print$ len [|2, 3, 4|]; endl;
+print$ len (5, 6); endl;
+print$ len (7, 8, 9, 10); endl;
+@doc()
+
+@select(env.expect())
+1
+3
+2
+4
+@doc()
+
+@env.head(3, 'Array::subscript')
+@select(env.test('.flx'))
+#import <flx.flxh>
+val x = [|5, 6, 7, 8, 9|];
+print$ x.[2]; endl;
+print$ x.[4]; endl;
+print$ x.[0]; endl;
+print$ x.[3]; endl;
+print$ x.[1]; endl;
+@doc()
+
+@select(env.expect())
+7
+9
+5
+8
+6
+@doc()
+
+@env.head(3, 'Array::iter')
+@select(env.test('.flx'))
+#import <flx.flxh>
+iter (proc (i:int) { print i; }) [|3, 4, 5, 6|]; 
+endl;
+@doc()
+
+@select(env.expect())
+3456
+@doc()
+
+@env.head(3, 'Array::map')
+@select(env.test('.flx'))
+#import <flx.flxh>
+val x = map (fun (i:int) => i - 1) [|4, 5, 6, 7|];
+iter (proc (i:int) { print i; }) x; 
+endl;
+@doc()
+
+@select(env.expect())
+3456
+@doc()
+
+@env.head(3, 'Array::fold_left')
+@select(env.test('.flx'))
+#import <flx.flxh>
+val x = [|4, 5, 6, 7|];
+print$ fold_left (fun (x:int) (y:int) => x - y) 3 x; 
+endl;
+@doc()
+
+@select(env.expect())
+-19
+@doc()
+
+@env.head(3, 'Array::fold_right')
+@select(env.test('.flx'))
+#import <flx.flxh>
+val x = [|4, 5, 6, 7|];
+print$ fold_right (fun (x:int) (y:int) => x - y) x 8; 
+endl;
+@doc()
+
+@select(env.expect())
+6
+@doc()
+
+@env.head(3, 'Array::rev')
+@select(env.test('.flx'))
+#import <flx.flxh>
+val x = rev [|4, 5, 6, 7|];
+iter (proc (i:int) { print i; }) x; 
+endl;
+@doc()
+
+@select(env.expect())
+7654
+@doc()
+
+@# ----------------------------------------------------------------------------
+
+@env.head(2, 'List tests')
+@env.head(3, 'List::subscript')
+@env.head(3, 'List::len')
+@select(env.test('.flx'))
+#import <flx.flxh>
+open List;
+print$ len$ Empty[int]; endl;
+print$ len$ Cons(2, Empty[int]); endl;
+print$ len$ Cons(2, Cons(3, Cons(4, Empty[int]))); endl;
+print$ len$ list(5, 6); endl;
+print$ len$ list(7, 8, 9, 10); endl;
+@doc()
+
+@select(env.expect())
+0
+1
+3
+2
+4
+@doc()
+
+@env.head(3, 'List::iter')
+@select(env.test('.flx'))
+#import <flx.flxh>
+open List;
+iter (proc (i:int) { print i; })$ list(3, 4, 5, 6); 
+endl;
+@doc()
+
+@select(env.expect())
+3456
+@doc()
+
+@env.head(3, 'List::map')
+@select(env.test('.flx'))
+#import <flx.flxh>
+open List;
+val x = map (fun (i:int) => i - 1)$ list(4, 5, 6, 7);
+iter (proc (i:int) { print i; }) x; 
+endl;
+@doc()
+
+@select(env.expect())
+3456
+@doc()
+
+@env.head(3, 'List::fold_left')
+@select(env.test('.flx'))
+#import <flx.flxh>
+open List;
+val x = list(4, 5, 6, 7);
+print$ fold_left (fun (x:int) (y:int) => x - y) 3 x; 
+endl;
+@doc()
+
+@select(env.expect())
+-19
+@doc()
+
+@env.head(3, 'List::fold_right')
+@select(env.test('.flx'))
+#import <flx.flxh>
+open List;
+val x = list(4, 5, 6, 7);
+print$ fold_right (fun (x:int) (y:int) => x - y) x 8; 
+endl;
+@doc()
+
+@select(env.expect())
+6
+@doc()
+
+@env.head(3, 'List::rev')
+@select(env.test('.flx'))
+#import <flx.flxh>
+open List;
+val x = rev$ list(4, 5, 6, 7);
+iter (proc (i:int) { print i; }) x; 
+endl;
+@doc()
+
+@select(env.expect())
+7654
+@doc()
+
+@# ----------------------------------------------------------------------------
+
 @env.head(2, 'String tests')
-@env.head(3, 'String triming')
+@env.head(3, 'String::subscript')
+@select(env.test('.flx'))
+#import <flx.flxh>
+print$ "hello how are you".[4]; endl;
+print$ "hello how are you".[5 to]; endl;
+print$ "hello how are you".[to 7]; endl;
+print$ "hello how are you".[3 to 8]; endl;
+@doc()
+
+@select(env.expect())
+o
+ how are you
+hello h
+lo ho
+@doc()
+
+@env.head(3, 'String::trim')
 @select(env.test('.flx'))
 #import <flx.flxh>
 print$ ltrim "hello how are you" "hello"; endl;
@@ -55,7 +257,7 @@ hello how are
 hello how are hello
 @doc()
 
-@env.head(3, 'String stripping')
+@env.head(3, 'String::strip')
 @select(env.test('.flx'))
 #import <flx.flxh>
 print$ lstrip "  a b c  "; endl;
