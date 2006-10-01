@@ -77,7 +77,11 @@ let get_labels bbdfns counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
     (fun exe -> match exe with 
-      | `BEXE_label (_,s) -> Hashtbl.add labels s !counter; incr counter
+      | `BEXE_label (_,s) -> 
+        (*
+        print_endline ("Label " ^ s);
+        *)
+        Hashtbl.add labels s !counter; incr counter
       | _ -> ()
     )
     exes
@@ -85,9 +89,15 @@ let get_labels bbdfns counter exes =
   labels
 
 let create_label_map bbdfns counter =
+  (*
+  print_endline "Creating label map";
+  *)
   let label_map = Hashtbl.create 97 in
   Hashtbl.iter
   (fun index (id,parent,sr,entry) ->
+    (*
+    print_endline ("Routine " ^ id ^ "<"^ si index ^">");
+    *)
     match entry with
     | `BBDCL_function (_,_,_,_,exes) -> 
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
@@ -134,7 +144,7 @@ let cal_usage syms bbdfns label_map caller exes usage =
     | `BEXE_ifnotgoto (sr,_,label) ->
       begin match find_label bbdfns label_map caller label with
       | `Unreachable -> 
-        syserr sr ("Jump to unreachable label " ^ label ^ "\n" ^
+        syserr sr ("[flx_label] Caller "^si caller^" Jump to unreachable label " ^ label ^ "\n" ^
         (catmap "\n" (string_of_bexe syms.dfns 2) exes))
       | `Local lix ->
         begin match get_label_kind_from_index usage lix with

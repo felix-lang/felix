@@ -1046,7 +1046,14 @@ let gen_exe filename syms
       | `Local _ -> "      goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) -> gen_nonlocal_goto pc frame s
       | `Unreachable -> 
-        clierr sr ("Jump to unreachable label " ^ cid_of_flxid s)
+        print_endline "LABELS ..";
+        let labels = Hashtbl.find label_map this in
+        Hashtbl.iter (fun lab lno ->
+          print_endline ("Label " ^ lab ^ " -> " ^ si lno);
+        )
+        labels
+        ;
+        clierr sr ("Unconditional Jump to unreachable label " ^ cid_of_flxid s)
       end
 
     | `BEXE_ifgoto (sr,e,s) -> 
@@ -1063,7 +1070,7 @@ let gen_exe filename syms
         "    " ^ cid_of_flxid skip ^ ":;\n"
          
       | `Unreachable -> 
-        clierr sr ("Jump to unreachable label " ^ s)
+        clierr sr ("Conditional Jump to unreachable label " ^ s)
       end
 
     | `BEXE_ifnotgoto (sr,e,s) ->
@@ -1084,7 +1091,7 @@ let gen_exe filename syms
         "    " ^ cid_of_flxid skip ^ ":;\n"
 
       | `Unreachable -> 
-        clierr sr ("Jump to unreachable label " ^ s)
+        clierr sr ("Conditional Jump to unreachable label " ^ s)
       end 
       
     (* Hmmm .. stack calls ?? *)
@@ -3012,7 +3019,7 @@ try
   let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
   let label_info = label_map, label_usage in
 
-  Flx_stack_calls.make_stack_calls syms (child_map,bbdfns);
+  Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) label_map label_usage;
 
   let opt_time = tim() in
 

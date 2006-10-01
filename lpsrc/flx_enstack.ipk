@@ -7,10 +7,12 @@ open Flx_ast
 open Flx_types
 open Flx_mtypes2
 open Flx_child
+open Flx_label
 
 val make_stack_calls:
   sym_state_t ->
   child_map_t * fully_bound_symbol_table_t -> 
+  label_map_t -> label_usage_t ->
   unit
 
 @h = tangler("src/flx_stack_calls.ml")
@@ -331,7 +333,7 @@ let can_stack_func cache syms (child_map,bbdfns) i =
     -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
-let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
+let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i recstop =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   (*
@@ -339,6 +341,7 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
   *)
   match entry with
   | `BBDCL_procedure (_,_,_,exes) -> 
+    let labels = Hashtbl.find label_map i in
     begin try iter (fun exe -> 
     (*
     print_endline (string_of_bexe syms.dfns 0 exe);
@@ -352,7 +355,7 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
     | `BEXE_call_method_direct (_,_,j,_,_)
     | `BEXE_apply_ctor (_,_,_,_,j,_)
       ->
-      if not (check_stackable_proc cache syms (child_map,bbdfns) j (i::recstop))
+      if not (check_stackable_proc cache syms (child_map,bbdfns) label_map label_usage j (i::recstop))
       then begin 
         (*
         print_endline (id ^ " calls unstackable proc " ^ si j);
@@ -398,6 +401,11 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
        print_endline (id ^ " has loop?");
        *)
        raise Not_found
+
+    | `BEXE_label (_,s) ->
+       let  lno = Hashtbl.find labels s in
+       let lkind = Hashtbl.find label_usage lno in
+       if lkind = `Far then raise Not_found
        
     | `BEXE_yield _
     | `BEXE_fun_return _ -> assert false
@@ -411,7 +419,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
     | `BEXE_call_method_stack _
     | `BEXE_halt _
     | `BEXE_comment _
-    | `BEXE_label _
     | `BEXE_goto _
     | `BEXE_ifgoto _
     | `BEXE_ifnotgoto _
@@ -437,7 +444,7 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
 
   | _ -> assert false
 
-and check_stackable_proc cache syms (child_map,bbdfns) i recstop =
+and check_stackable_proc cache syms (child_map,bbdfns) label_map label_usage i recstop =
   if mem i recstop then true else
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
@@ -445,7 +452,7 @@ and check_stackable_proc cache syms (child_map,bbdfns) i recstop =
   | `BBDCL_procedure (props,vs,p,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
-    else if can_stack_proc cache syms (child_map,bbdfns) i recstop
+    else if can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i recstop
     then begin
       (*
       print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
@@ -514,7 +521,7 @@ let rec enstack_applies cache syms (child_map, bbdfns) x =
       end
   | x -> x
 
-let mark_stackable cache syms (child_map,bbdfns) =
+let mark_stackable cache syms (child_map,bbdfns) label_map label_usage =
   Hashtbl.iter
   (fun i (id,parent,sr,entry) ->
     match entry with
@@ -545,7 +552,7 @@ let mark_stackable cache syms (child_map,bbdfns) =
 
     | `BBDCL_procedure (props,vs,p,exes) ->
       if mem `Stackable props or mem `Unstackable props then ()
-      else ignore(check_stackable_proc cache syms (child_map,bbdfns) i [])
+      else ignore(check_stackable_proc cache syms (child_map,bbdfns) label_map label_usage i [])
     | _ -> ()
   )
   bbdfns
@@ -623,10 +630,10 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
   in
   exes
 
-let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) =
+let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) label_map label_usage =
   let cache = Hashtbl.create 97 in
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
-  mark_stackable cache syms (child_map,bbdfns);
+  mark_stackable cache syms (child_map,bbdfns) label_map label_usage;
   Hashtbl.iter
   (fun i (id,parent,sr,entry) -> match entry with
     | `BBDCL_procedure (props,vs,p,exes) ->

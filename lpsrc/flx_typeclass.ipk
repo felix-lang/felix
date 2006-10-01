@@ -85,7 +85,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | _ -> acc
       ) [] inst_kids
     in
-    let check_binding sr id tctype =
+    let check_binding tck sr id tctype =
       let entries = filter (fun (name,x) -> name = id) inst_map in
       match entries with
       | [] -> clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
@@ -95,7 +95,14 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         print_endline ("  Type is " ^ sbt syms.dfns t);
         let tct = reduce_type (tsubst tc_bvs inst_ts tctype) in
         print_endline ("  Typeclass (after subst) type is " ^ sbt syms.dfns tct);
-
+        if Hashtbl.mem syms.typeclass_to_instance (tck,inst_ts) 
+        then 
+          clierr sr "Instance already registered??"
+        ;
+        Hashtbl.add syms.typeclass_to_instance (tck,inst_ts) i;
+        print_endline ("Register mapping " ^ si tck ^ 
+           "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "] -> " ^ si i
+        );
 
       | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
@@ -106,12 +113,12 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | `BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct <> `Virtual then clierr tcksr "Typeclass requires virtual function";
         let ft = `BTYP_function (typeoflist params,ret) in
-        check_binding tcksr tckid ft
+        check_binding tck tcksr tckid ft
 
       | `BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct <> `Virtual then clierr tcksr "Typeclass requires virtual procedure";
         let ft = `BTYP_function (typeoflist params,`BTYP_void) in
-        check_binding tcksr tckid ft
+        check_binding tck tcksr tckid ft
         
       | `BBDCL_insert _ -> ()
       | _ -> clierr tcksr "Typeclass entry must be virtual function or procedure"

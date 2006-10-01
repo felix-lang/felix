@@ -209,6 +209,7 @@ let make_syms options =
     reductions = [];
     axioms = [];
     variant_map = Hashtbl.create 97;
+    typeclass_to_instance = Hashtbl.create 97;
   }
 
 
