@@ -160,6 +160,7 @@ selected_xlators = [
 @doc()
 
 @select(tangler('flxbuild/iscrutil.py'))
+import sys
 import os
 import pickle
 
