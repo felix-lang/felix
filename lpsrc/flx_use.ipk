@@ -308,13 +308,14 @@ let full_use_closure syms bbdfns =
   cal_use_closure syms bbdfns true
 
 let copy_used syms bbdfns =
+  if syms.compiler_options.print_flag then
+    print_endline "COPY USED";
   let h = Hashtbl.create 97 in
   let u = full_use_closure syms bbdfns in
   IntSet.iter
   begin fun i ->
-    (*
-    print_endline ("Copying " ^ si i);
-    *)
+    if syms.compiler_options.print_flag then
+      print_endline ("Copying " ^ si i);
     Hashtbl.add h i (Hashtbl.find bbdfns i)
   end
   u;

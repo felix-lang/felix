@@ -2329,9 +2329,8 @@ and remove_unused_children syms (uses,child_map,bbdfns) i =
       Hashtbl.remove bbdfns i;
       Hashtbl.remove child_map i;
       Hashtbl.remove uses i;
-      (*
-      print_endline ("REMOVED SYMBOL " ^ qualified_name_of_index syms.dfns i)
-      *)
+      if syms.compiler_options.print_flag then
+        print_endline ("REMOVED CHILD SYMBOL " ^ qualified_name_of_index syms.dfns i)
     )
     unused_descendants
   end

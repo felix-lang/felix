@@ -2986,6 +2986,8 @@ try
     exes
   in
   let elim_pass () =
+    if syms.compiler_options.print_flag then
+      print_endline "Elim pass";
     (* check for unused things .. possible, just a diagnostic for now *)
     let full_use = Flx_use.full_use_closure syms bbdfns in
     let partial_use = Flx_use.cal_use_closure syms bbdfns false in
@@ -3062,6 +3064,11 @@ try
   then print_endline "//Finding which functions use globals";
   let bbdfns = Flx_use.copy_used syms bbdfns in
   Flx_global.set_globals syms bbdfns;
+  let child_map = Flx_child.cal_children syms bbdfns in
+
+  (*
+  print_functions syms.dfns bbdfns;
+  *)
 
   if compiler_options.print_flag 
   then print_endline "//instantiating";
