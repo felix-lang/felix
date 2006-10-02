@@ -90,9 +90,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_tmp _
   | `BBDCL_const_ctor _
   | `BBDCL_nonconst_ctor _
-  | `BBDCL_fun _
   | `BBDCL_callback _
-  | `BBDCL_proc _
   | `BBDCL_insert _
   | `BBDCL_struct _
   | `BBDCL_cstruct _
@@ -106,6 +104,11 @@ let rec is_pure syms (child_map, bbdfns) i =
     print_endline (id ^ " is intrinsically pure");
     *)
     true
+
+  (* not sure if this is the right place for this check .. *)
+  | `BBDCL_fun (_,_,_,_,ct,_,_)
+  | `BBDCL_proc (_,_,_,ct,_) ->
+    ct <> `Virtual
 
   | `BBDCL_cclass _  (* not sure FIXME .. *)
   | `BBDCL_class _  (* not sure FIXME .. *)
@@ -354,6 +357,9 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     | `BEXE_call_direct (_,j,_,_) 
     | `BEXE_call_method_direct (_,_,j,_,_)
     | `BEXE_apply_ctor (_,_,_,_,j,_)
+
+    (* this case needed for virtuals/typeclasses .. *)
+    | `BEXE_call_prim (_,j,_,_) 
       ->
       if not (check_stackable_proc cache syms (child_map,bbdfns) label_map label_usage j (i::recstop))
       then begin 
@@ -371,9 +377,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     | `BEXE_init (sr,_,(_,t)) 
     | `BEXE_assign (sr,(_,t),_) 
       when not (has_ptr_fn cache syms bbdfns children t) -> ()
-
-    (* THIS IS WRONG .. BUT LETS FIND SOME BAD CASES .. *)
-    | `BEXE_call_prim _ -> ()
 
     | `BEXE_init _
     | `BEXE_assign _ -> 
@@ -448,7 +451,7 @@ and check_stackable_proc cache syms (child_map,bbdfns) label_map label_usage i r
   if mem i recstop then true else
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_proc _ -> true
+  | `BBDCL_proc (_,_,_,ct,_) -> ct <> `Virtual
   | `BBDCL_procedure (props,vs,p,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false

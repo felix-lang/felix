@@ -231,16 +231,39 @@ let process_entry syms bbdfns all_closures i =
 
   | _ -> ()
 
+(* NOTE: before monomorphisation, we can't tell if a 
+  typeclass method will dispatch to a C function
+  or a Felix function .. so we have to mark all typeclass
+  methods and probably instances as requiring a closure ..
+
+  This is overkill and will defeat some optimisations ..
+  needs to be fixed. .. Ouch .. this is too late,
+  enstack has already run .. won't affect enstack.
+*)
+
 let set_closure bbdfns p i =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  (*
+  print_endline (id ^ "<" ^ si i ^">" ^ " needs closure!");
+  *)
    match entry with
   | `BBDCL_function (props,vs,ps,ret,exes) ->
     let entry = `BBDCL_function (p :: props,vs,ps,ret,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry);
 
+  (* because of type classes .. *)
+  | `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
+    let entry = `BBDCL_fun (p :: props,vs,ps,ret,ct,reqs,prec) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry);
+
   | `BBDCL_procedure (props,vs,ps,exes) ->
     let entry = `BBDCL_procedure (p :: props,vs,ps,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+  (* because of type classes .. *)
+  | `BBDCL_proc (props,vs,ps,ct,reqs) ->
+    let entry = `BBDCL_proc (p :: props,vs,ps,ct,reqs) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry);
 
   | `BBDCL_regmatch (props,vs,ps,t,x) ->
     let entry = `BBDCL_regmatch (p :: props, vs, ps, t, x) in
@@ -266,6 +289,19 @@ let make_closures syms bbdfns =
   let all_closures = ref IntSet.empty in
   let used = full_use_closure syms bbdfns in
   IntSet.iter (process_entry syms bbdfns all_closures ) used;
+
+  (* this is a hack! *)
+  Hashtbl.iter
+  ( fun (i,ts) j -> 
+    (*
+    print_endline ("Keep instance " ^ si j); 
+    *)
+    set_closure bbdfns `Heap_closure i;
+    set_closure bbdfns `Heap_closure j;
+  )
+  syms.typeclass_to_instance
+  ;
+
   (*
   IntSet.iter (set_closure bbdfns `Heap_closure) (IntSet.union !all_closures !(syms.roots));
   *)
