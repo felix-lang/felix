@@ -177,7 +177,7 @@ and uses syms used bbdfns count_inits i =
       | `BBDCL_typeclass _ -> ()
 
       | `BBDCL_instance (_,i,ts) ->
-        ui i; iter ut ts
+        iter ut ts
 
       | `BBDCL_function (props,_,(ps,traint),ret,exes) ->
         iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
@@ -285,21 +285,36 @@ let cal_use_closure syms bbdfns (count_inits:bool) =
        uses syms v bbdfns count_inits j
     end
   in
+  let ut t = uses_type syms u bbdfns count_inits t in
+  Hashtbl.iter
+  ( fun (i,ts) j -> 
+    (*
+    print_endline ("Keep instance " ^ si j); 
+    *)
+    add i; add j;
+    iter ut ts
+  )
+  syms.typeclass_to_instance
+  ;
   while not (IntSet.is_empty !v) do 
     let j = IntSet.choose !v in
     v := IntSet.remove j !v;
     add j
-  done;
+  done
+  ;
   !u
-       
-let full_use_closure syms bbdfns = cal_use_closure syms bbdfns true
+
+let full_use_closure syms bbdfns = 
+  cal_use_closure syms bbdfns true
 
 let copy_used syms bbdfns =
   let h = Hashtbl.create 97 in
   let u = full_use_closure syms bbdfns in
   IntSet.iter
   begin fun i ->
-    (* print_endline ("Copying " ^ si i); *)
+    (*
+    print_endline ("Copying " ^ si i);
+    *)
     Hashtbl.add h i (Hashtbl.find bbdfns i)
   end
   u;

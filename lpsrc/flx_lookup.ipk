@@ -246,6 +246,7 @@ let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
 let cal_typeclass_dirs syms id vs =
+  (*
   begin
     match vs with (_,{raw_typeclass_reqs=rtcr})->
     match rtcr  with 
@@ -254,6 +255,7 @@ let cal_typeclass_dirs syms id vs =
       catmap "," string_of_qualified_name rtcr);
     | [] -> ();
   end;
+  *)
   let rec addtc tcin dirsout = match tcin with
     | [] -> rev dirsout
     | h::t -> 
@@ -4499,56 +4501,81 @@ and instance_check syms caller_env called_env mgu sr name rtcr tsub =
   *)
   let luqn2 qn = lookup_qn_in_env2 syms caller_env qn in
   if length rtcr > 0 then begin
+    (*
     print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^ 
       catmap "," string_of_qualified_name rtcr
     );
+    *)
     iter
     (fun qn -> 
       let classname = grab_name qn in
       let insts = ref [] in
         let es,ts' = luqn2 (hack_name qn) in
+        (*
         print_endline ("With unbound ts = " ^ catmap "," string_of_typecode ts');
+        *)
         let ts' = map (fun t -> try bind_type syms called_env sr t with _ -> print_endline "Bind type failed .."; assert false) ts' in
+        (*
         print_endline ("With bound ts = " ^ catmap "," (sbt syms.dfns) ts');
+        *)
         let ts' = map tsub ts' in
+        (*
         print_endline ("With bound, mapped ts = " ^ catmap "," (sbt syms.dfns) ts');
+        *)
         match es with
         | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
         | `FunctionEntry es ->
+          (*
           print_endline ("instance Candidates " ^ catmap "," string_of_entry_kind es);
+          *)
           iter
           (fun {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts} ->
           match Hashtbl.find syms.dfns i  with
           {id=id;sr=sr;parent=parent;vs=vs;symdef=entry} ->
           match entry with 
           | `SYMDEF_instance qn' ->
+            (*
             print_endline ("Verified " ^ si i ^ " is an instance of " ^ string_of_qualified_name qn);
             print_endline ("  base vs = " ^ print_ivs_with_index vs);
             print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
             print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+            *)
             let inst_ts = grab_ts qn' in
             let inst_ts = map (bind_type syms caller_env sr) inst_ts in
+            (*
             print_endline ("  instantiating ts = " ^ catmap "," (fun t -> sbt syms.dfns t) inst_ts);
+            *)
             if inst_ts = ts' then begin
+              (*
               print_endline "INSTANCE MATCHES";
+              *)
               insts := `Inst i :: !insts
             end
+            (*
             else
               print_endline "INSTANCE DOES NOT MATCH: REJECTED"
             ;
+            *)
 
 
           | `SYMDEF_typeclass ->
+            (*
             print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ string_of_qualified_name qn);
             print_endline ("  base vs = " ^ print_ivs_with_index vs);
             print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
             print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+            *)
             if sub_ts = ts' then begin
+              (*
               print_endline "SPECIALISATION MATCHES";
+              *)
               insts := `Typeclass (i,sub_ts) :: !insts
-            end else
+            end 
+            (*
+            else
               print_endline "SPECIALISATION DOES NOT MATCH: REJECTED"
             ;
+            *)
 
           | _ -> print_endline "EXPECTED TYPECLASS INSTANCE!"
           )
@@ -4645,7 +4672,9 @@ and split_dirs open_excludes dirs :
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> []
          | DIR_typeclass_req qn -> 
+           (*
            print_endline ("Adding typeclass " ^ string_of_qualified_name qn); 
+           *)
            [qn]
        )
        dirs
@@ -4839,7 +4868,9 @@ and pub_table_dir
     let inst = review_entry syms [] ts inst in
     let inst_name = "_inst_" ^ id in
     Hashtbl.add table inst_name (`FunctionEntry [inst]);
+    (*
     print_endline ("Added typeclass "^si i^" as instance " ^ inst_name ^": "^ string_of_myentry syms.dfns inst);
+    *)
     table
 
   | {sr=sr} -> clierr sr "[map_dir] Expected module"

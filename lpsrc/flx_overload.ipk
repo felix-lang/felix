@@ -177,8 +177,10 @@ let consider syms bt luqn2 name
 
     (*
     if length rtcr > 0 then begin
+      (*
       print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^ 
       catmap "," string_of_qualified_name rtcr);
+      *)
       iter
       (fun qn -> let es,ts' = luqn2 i (hack_name qn) in
         print_endline ("With ts = " ^ catmap "," string_of_typecode ts');

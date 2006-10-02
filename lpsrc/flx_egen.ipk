@@ -287,7 +287,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     try Hashtbl.find bbdfns this 
     with Not_found -> failwith ("[gen_expr] Can't find this = " ^ si this)
   in
-  let our_display = get_display_list bbdfns this in
+  let our_display = get_display_list syms bbdfns this in
   let our_level = length our_display in
   let rt t = reduce_type (beta_reduce syms [] (lstrip syms.dfns (tsubst vs ts t))) in
   let t = rt t in
@@ -598,7 +598,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let the_display = 
         let d' = 
           map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns index)
+          (get_display_list syms bbdfns index)
         in 
           if length d' > our_level
           then "this" :: tl d'
@@ -640,7 +640,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let the_display = 
         let d' = 
           map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns meth)
+          (get_display_list  syms bbdfns meth)
         in 
           let d' = tl d' in (* throw out class pointer *)
           if length d' > our_level
@@ -681,7 +681,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let the_display = 
         let d' = 
           map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns meth)
+          (get_display_list syms bbdfns meth)
         in 
           let d' = tl d' in (* throw out class pointer *)
           if length d' > our_level
@@ -730,7 +730,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let the_display = 
         let d' = 
           map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns index)
+          (get_display_list syms bbdfns index)
         in 
         let d' = tl d' in (* throw out class pointer *)
 
@@ -908,7 +908,22 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         si (length ts)
       );
       begin match ct with
-      | `Virtual -> clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id)
+      | `Virtual -> 
+        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
+        if index = index' then
+          clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id)
+        ;
+        begin let _,_,sr3,entry = 
+          try Hashtbl.find bbdfns index' 
+          with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
+        in
+        match entry with
+        | `BBDCL_fun _ -> ge' (`BEXPR_apply_prim (index',ts',a),t)
+        | `BBDCL_function _ -> ge' (`BEXPR_apply_direct (index',ts',a),t)
+        | _ ->
+          clierr2 sr sr3 ("expected instance to be function " ^ id)
+        end
+
       | `Str s -> ce_expr prec s
       | `StrTemplate s ->
         let ts = map tsub ts in
@@ -1012,7 +1027,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let the_display = 
         let d' = 
           map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns index)
+          (get_display_list syms bbdfns index)
         in 
           if length d' > our_level
           then "this" :: tl d'
@@ -1050,7 +1065,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     match entry with
     | `BBDCL_function (props,vs,(ps,traint),retyp,_) ->
       let ts = map tsub ts in
-      let display = get_display_list bbdfns index in
+      let display = get_display_list syms bbdfns index in
       let name = cpp_instance_name syms bbdfns index ts in
 
       (* C FUNCTION CALL *)

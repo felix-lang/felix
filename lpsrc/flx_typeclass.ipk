@@ -45,6 +45,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
   let tc_id, _, tc_sr, tc_entry = Hashtbl.find bbdfns tc in
   match tc_entry with
   | `BBDCL_typeclass (tc_props, tc_bvs) ->
+    (*
     print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
     "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" ^
     " to be instance of typeclass " ^ tc_id ^ "<"^si tc^">")
@@ -52,6 +53,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
     print_endline ("Typeclass vs = " ^ 
       catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs
     );
+    *)
     if length tc_bvs <> length inst_ts then
       clierr2 inst_sr tc_sr 
       ("Wrong number of arguments, expected match for " ^
@@ -63,8 +65,10 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
 
     let tc_kids = try Hashtbl.find child_map tc with Not_found -> [] in
     let inst_kids = try Hashtbl.find child_map inst with Not_found -> [] in
+    (*
     print_endline ("Typeclass kids " ^ catmap "," si tc_kids);
     print_endline ("Instance kids " ^ catmap "," si inst_kids);
+    *)
     let inst_map = fold_left (fun acc i-> 
       let id,_,_,entry = Hashtbl.find bbdfns i in
       match entry with
@@ -96,19 +100,25 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       match entries with
       | [] -> clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
       | [_,(i,(bvs,t))] -> 
+        (*
         print_endline ("Found unique " ^ id ^ "<"^si i^"> in instance");
         print_endline ("  vs = " ^ print_bvs bvs);
         print_endline ("  Type is " ^ sbt syms.dfns t);
+        *)
         let tct = reduce_type (tsubst tc_bvs inst_ts tctype) in
+        (*
         print_endline ("  Typeclass (after subst) type is " ^ sbt syms.dfns tct);
+        *)
         if Hashtbl.mem syms.typeclass_to_instance (tck,inst_ts) 
         then 
           clierr sr "Instance already registered??"
         ;
         Hashtbl.add syms.typeclass_to_instance (tck,inst_ts) i;
+        (*
         print_endline ("Register mapping " ^ si tck ^ 
            "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "] -> " ^ si i
         );
+        *)
 
       | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in

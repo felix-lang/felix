@@ -64,7 +64,7 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   let tn t = cpp_typename syms t in
   let get_token_fun_type = tn t' in
 
-  let display = cal_display bbdfns (Some this) in
+  let display = cal_display syms bbdfns (Some this) in
   let frame_dcls = 
     "  FLX_FMEM_DECL\n"
   in
@@ -279,7 +279,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     | _ -> assert false
     end
   in
-  let display = cal_display bbdfns (Some this) in
+  let display = cal_display syms bbdfns (Some this) in
   let frame_dcls = 
     "  FLX_FMEM_DECL"
   in

@@ -239,7 +239,7 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
   let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
-  let display = get_display_list bbdfns index in
+  let display = get_display_list syms bbdfns index in
   assert (length display = 0);
   let name = cpp_instance_name syms bbdfns index ts in
   let rettypename = cpp_typename syms ret in
@@ -300,7 +300,7 @@ let gen_class syms (child_map,bbdfns) props index id vs ts instance_no =
     ", got ts=" ^ 
     si (length ts)
   );
-  let display = get_display_list bbdfns index in
+  let display = get_display_list syms bbdfns index in
   let frame_dcls = 
     if requires_ptf then
     "  FLX_FMEM_DECL\n"
@@ -440,7 +440,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
       with _ -> None 
     else None
   in 
-  let display = get_display_list bbdfns index in
+  let display = get_display_list syms bbdfns index in
   let frame_dcls = 
     if requires_ptf then
     "  FLX_FMEM_DECL\n"
@@ -780,14 +780,14 @@ let gen_exe filename syms
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_exe] Can't find this " ^ si this)
   in
-  let our_display = get_display_list bbdfns this in
+  let our_display = get_display_list syms bbdfns this in
   let kind = match entry with
     | `BBDCL_function (_,_,_,_,_) -> Function
     | `BBDCL_procedure (_,_,_,_) -> Procedure
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = length our_display in
 
-  let handle_closure sr is_jump index ts subs a stack_call =
+  let rec handle_closure sr is_jump index ts subs' a stack_call =
     let subs = 
       catmap ""
       (fun ((_,t) as e,s) ->
@@ -795,7 +795,7 @@ let gen_exe filename syms
         let e = ge sr e in
         "      " ^ t ^ " " ^ s ^ " = " ^ e ^ ";\n"
       )
-      subs
+      subs'
     in
     let sub_start =
       if String.length subs = 0 then ""
@@ -816,18 +816,36 @@ let gen_exe filename syms
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
-      let s = 
-        match ct with
-        | `Virtual -> clierr sr "Instantiate virtual procedure!"
-        | `Str s -> ce_expr "expr" s
-        | `StrTemplate s ->
-          gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom" 
-      in
-      let s = sc "expr" s in
-      (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
-      sub_start ^
-      "      " ^ s ^ "\n" ^
-      sub_end
+
+      let ws s = 
+        let s = sc "expr" s in
+        (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
+        sub_start ^
+        "      " ^ s ^ "\n" ^
+        sub_end
+      in 
+      begin match ct with
+      | `Virtual -> 
+        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
+        if index = index' then
+          clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id)
+        ;
+        begin let _,_,sr3,entry = 
+          try Hashtbl.find bbdfns index' 
+          with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
+        in
+        match entry with
+        | `BBDCL_proc _ 
+        | `BBDCL_procedure _ ->
+          handle_closure sr is_jump index' ts' subs' a stack_call
+        | _ ->
+          clierr2 sr sr3 ("expected instance to be function " ^ id)
+        end
+      | `Str s -> ws (ce_expr "expr" s)
+      | `StrTemplate s ->
+        let ss = gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom"  in
+        ws ss
+      end
 
     | `BBDCL_callback (props,vs,ps_cf,ps_c,_,ret,_,_) -> 
       assert (not is_jump);
@@ -857,7 +875,7 @@ let gen_exe filename syms
         let the_display = 
           let d' = 
             map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-            (get_display_list bbdfns index)
+            (get_display_list syms bbdfns index)
           in 
             if length d' > our_level
             then "this" :: tl d'
@@ -988,7 +1006,7 @@ let gen_exe filename syms
     "      return " ^ frame_ptr ^ ";\n"
   in
   let forget_template sr s = match s with 
-  | `Virtual -> clierr sr "Instantiate virtual procedure!"
+  | `Virtual -> clierr sr "Instantiate virtual procedure(2)!"
   | `Str s -> s 
   | `StrTemplate s -> s 
   in
@@ -1118,7 +1136,7 @@ let gen_exe filename syms
         let ts = map tsub ts in
         (* C FUNCTION CALL *)
         if mem `Pure props && not (mem `Heap_closure props) then
-          let display = get_display_list bbdfns index in
+          let display = get_display_list syms bbdfns index in
           let name = cpp_instance_name syms bbdfns index ts in
           let s = 
             assert (length display = 0);
@@ -1210,7 +1228,7 @@ let gen_exe filename syms
       let the_display = 
         let d' = 
           map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns meth)
+          (get_display_list syms bbdfns meth)
         in 
           let d' = tl d' in (* throw out class pointer *)
           if length d' > our_level
@@ -1244,7 +1262,7 @@ let gen_exe filename syms
       let the_display = 
         let d' = 
           map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns meth)
+          (get_display_list syms bbdfns meth)
         in 
           let d' = tl d' in (* throw out class pointer *)
           if length d' > our_level
@@ -1280,7 +1298,7 @@ let gen_exe filename syms
       let the_display = 
         let d' = 
           map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns i2)
+          (get_display_list syms bbdfns i2)
         in 
           if length d' > our_level
           then "this" :: tl d'
@@ -1322,7 +1340,7 @@ let gen_exe filename syms
       let the_display = 
         let d' = 
           map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns i2)
+          (get_display_list syms bbdfns i2)
         in 
           if length d' > our_level
           then "this" :: tl d'
@@ -1934,7 +1952,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bbdfns index ts in
 
-    let display = get_display_list bbdfns index in
+    let display = get_display_list syms bbdfns index in
 
     let rettypename = cpp_typename syms ret in
 
@@ -2088,7 +2106,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bbdfns index ts in
 
-    let display = get_display_list bbdfns index in
+    let display = get_display_list syms bbdfns index in
 
     let rettypename = cpp_typename syms ret in
 
@@ -2170,7 +2188,7 @@ let gen_class_methods filename syms (child_map,bbdfns)
     );
 
     let name = cpp_instance_name syms bbdfns index ts in
-    let display = get_display_list bbdfns index in
+    let display = get_display_list syms bbdfns index in
     let ctor = 
       let vars =  find_references syms (child_map,bbdfns) index ts in
       let funs = filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) vars in
@@ -2234,7 +2252,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bbdfns index ts in
     
-    let display = get_display_list bbdfns index in
+    let display = get_display_list syms bbdfns index in
 
     let ctor = 
       let vars =  find_references syms (child_map,bbdfns) index ts in
@@ -2540,7 +2558,7 @@ let gen_biface_header syms bbdfns biface = match biface with
     in
     begin match entry with
     | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
-      let display = get_display_list bbdfns index in
+      let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested function";
 
@@ -2561,7 +2579,7 @@ let gen_biface_header syms bbdfns biface = match biface with
       "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
     | `BBDCL_procedure (props,vs,(ps,traint), _) ->
-      let display = get_display_list bbdfns index in
+      let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested proc";
 
@@ -2599,7 +2617,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       if length vs <> 0
       then clierr sr ("Can't export generic function " ^ id)
       ;
-      let display = get_display_list bbdfns index in
+      let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested function";
       let argtypes = 
@@ -2646,7 +2664,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       if length vs <> 0
       then clierr sr ("Can't export generic procedure " ^ id)
       ;
-      let display = get_display_list bbdfns index in
+      let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested function";
 

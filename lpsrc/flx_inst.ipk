@@ -35,6 +35,7 @@ open Flx_maps
 let null_table = Hashtbl.create 3
 
 let add_inst syms ref_insts1 (i,ts) =
+  let i,ts = Flx_typeclass.fixup_typeclass_instance syms i ts in
   let x = i, map (fun t -> reduce_type (lstrip syms.dfns t)) ts in
   let has_variables = 
     fold_left
