@@ -130,8 +130,8 @@ print$ len$ array(7, 8, 9, 10); endl;
 @select(env.expect())
 0
 1
-3
 2
+3
 4
 @doc()
 
