@@ -14,6 +14,14 @@
 @env_kf  = setup_test(os.path.join('test', 'regress', 'kf-'))
 @env_wt  = setup_test(os.path.join('test', 'regress', 'wt-'))
 
+@def kat_rt(code): env_rt.kat(get_tangler(),code)
+@def kat_srt(code): env_srt.kat(get_tangler(),code)
+@def kat_drt(code): env_drt.kat(get_tangler(),code)
+@def kat_pt(code): env_pt.kat(get_tangler(),code)
+@def kat_nd(code): env_nd.kat(get_tangler(),code)
+@def kat_bt(code): env_bt.kat(get_tangler(),code)
+@def kat_kf(code): env_fk.kat(get_tangler(),code)
+@def kat_wt(code): env_wt.kat(get_tangler(),code)
 
 @head(1,'Regression tests')
 There are four kinds of test. The compiler

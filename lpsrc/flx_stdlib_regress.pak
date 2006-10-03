@@ -2,7 +2,9 @@
 
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('test', 'stdlib', 'rt-'))
+@env = setup_test(os.path.join('test', 'stdlib', 'slrt-'))
+@def kat(code):
+  env.kat(get_tangler(),code)
 
 @select(tangler('spkgs/flx_stdlib_regress.py'))
 @tangle("unit_tests = glob.glob('"+env.root+"*.flx')")
@@ -16,8 +18,16 @@ weaver_directory = 'doc/test/stdlib'
 @# ----------------------------------------------------------------------------
 
 @env.head(1, 'Standard library regression tests')
+
+@head(2,"Category Reference",nospawn=1)
+Tests by category keyword.
+@env.emit_katlist()
+
 @env.head(2, 'Array tests')
 @env.head(3, 'Tuple constructors')
+@select(env.test('.flx'))
+@kat("tuples")
+@kat("arrays")
 #import <flx.flxh>
 val x2 = (3, 4);
 print$ x2.[0]; 
@@ -47,6 +57,8 @@ endl;
 
 
 @env.head(3, 'Array constructors')
+@select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val x1 = [|2|];
 print$ x1.[0]; 
@@ -82,6 +94,7 @@ endl;
 
 @env.head(3, 'Array::_ctor_array')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val x0 = array[int]();
 
@@ -119,6 +132,7 @@ endl;
 
 @env.head(3, 'Array::len')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 print$ len$ array[int](); endl;
 print$ len$ array(5); endl;
@@ -139,6 +153,7 @@ print$ len$ array(7, 8, 9, 10); endl;
 
 @env.head(3, 'Array::subscript')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val x0 = array[int]();
 
@@ -176,6 +191,7 @@ endl;
 
 @env.head(3, 'Array::iter')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val f = proc (i:int) { print i; };
 iter f$ array[int](); endl;
@@ -197,6 +213,7 @@ iter f$ array(4, 5, 6, 7); endl;
 
 @env.head(3, 'Array::map')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val f = proc (i:int) { print i; };
 val g = fun (i:int) => i - 1;
@@ -219,6 +236,7 @@ iter f$ map g$ array(4, 5, 6, 7); endl;
 
 @env.head(3, 'Array::fold_left')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val f = fun (x:int) (y:int) => x - y;
 print$ fold_left f 3$ array[int](); endl;
@@ -240,6 +258,7 @@ print$ fold_left f 3$ array(4, 5, 6, 7); endl;
 
 @env.head(3, 'Array::fold_right')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val f = fun (x:int) (y:int) => x - y;
 print$ fold_right f (array[int]()) 5; endl;
@@ -261,6 +280,7 @@ print$ fold_right f (array(4, 5, 6, 7)) 8; endl;
 
 @env.head(3, 'Array::rev')
 @select(env.test('.flx'))
+@kat("arrays")
 #import <flx.flxh>
 val f = proc (i:int) { print i; };
 iter f$ rev$ array[int](); endl;
@@ -283,6 +303,7 @@ iter f$ rev$ array(4, 5, 6, 7); endl;
 @env.head(2, 'List tests')
 @env.head(3, 'List::_ctor_list')
 @select(env.test('.flx'))
+@kat("lists")
 #import <flx.flxh>
 open List;
 fun str (x:list[int]) =>
@@ -310,6 +331,7 @@ print$ str$ list(4, 5, 6, 7); endl;
 
 @env.head(3, 'List::len')
 @select(env.test('.flx'))
+@kat("lists")
 #import <flx.flxh>
 open List;
 print$ len$ list[int](); endl;
@@ -331,6 +353,7 @@ print$ len$ list(8, 9, 10, 11); endl;
 
 @env.head(3, 'List::iter')
 @select(env.test('.flx'))
+@kat("lists")
 #import <flx.flxh>
 open List;
 val f = proc (i:int) { print i; };
@@ -353,6 +376,7 @@ iter f$ list(4, 5, 6, 7); endl;
 
 @env.head(3, 'List::map')
 @select(env.test('.flx'))
+@kat("lists")
 #import <flx.flxh>
 open List;
 val f = proc (i:int) { print i; };
@@ -376,6 +400,7 @@ iter f$ map g$ list(4, 5, 6, 7); endl;
 
 @env.head(3, 'List::fold_left')
 @select(env.test('.flx'))
+@kat("lists")
 #import <flx.flxh>
 open List;
 val f = fun (x:int) (y:int) => x - y;
@@ -398,6 +423,7 @@ print$ fold_left f 3$ list(4, 5, 6, 7); endl;
 
 @env.head(3, 'List::fold_right')
 @select(env.test('.flx'))
+@kat("lists")
 #import <flx.flxh>
 open List;
 val f = fun (x:int) (y:int) => x - y;
@@ -420,6 +446,7 @@ print$ fold_right f (list(4, 5, 6, 7)) 8; endl;
 
 @env.head(3, 'List::rev')
 @select(env.test('.flx'))
+@kat("lists")
 #import <flx.flxh>
 open List;
 val f = proc (i:int) { print i; };
@@ -443,6 +470,7 @@ iter f$ rev$ list(4, 5, 6, 7); endl;
 @env.head(2, 'String tests')
 @env.head(3, 'String::subscript')
 @select(env.test('.flx'))
+@kat("strings")
 #import <flx.flxh>
 print$ "hello how are you".[4]; endl;
 print$ "hello how are you".[5 to]; endl;
@@ -461,6 +489,7 @@ lo ho
 
 @env.head(3, 'String::trim')
 @select(env.test('.flx'))
+@kat("strings")
 #import <flx.flxh>
 print$ ltrim "hello how are you" "hello"; endl;
 print$ ltrim "hello how are you" "goodbye"; endl;
@@ -474,6 +503,7 @@ hello how are you
 
 
 @select(env.test('.flx'))
+@kat("strings")
 #import <flx.flxh>
 print$ rtrim "hello how are you" "you"; endl;
 print$ rtrim "hello how are you" "me"; endl;
@@ -486,6 +516,7 @@ hello how are you
 
 
 @select(env.test('.flx'))
+@kat("strings")
 #import <flx.flxh>
 print$ trim "hello how are you" "me"; endl;
 print$ trim "hello how are you" "hello"; endl;
@@ -507,6 +538,7 @@ hello how are hello
 
 @env.head(3, 'String::strip')
 @select(env.test('.flx'))
+@kat("strings")
 #import <flx.flxh>
 print$ lstrip "  a b c  "; endl;
 print$ lstrip "a b c  "; endl;
@@ -520,6 +552,7 @@ a b c
 
 
 @select(env.test('.flx'))
+@kat("strings")
 #import <flx.flxh>
 print$ rstrip "  a b c  "; endl;
 print$ rstrip "  a b c"; endl;
@@ -533,6 +566,7 @@ print$ rstrip "  a b c"; endl;
 
 
 @select(env.test('.flx'))
+@kat("strings")
 #import <flx.flxh>
 print$ strip "  a b c  "; endl;
 print$ strip "a b c"; endl;
@@ -542,3 +576,5 @@ print$ strip "a b c"; endl;
 a b c
 a b c
 @doc()
+@env.write_katfile()
+

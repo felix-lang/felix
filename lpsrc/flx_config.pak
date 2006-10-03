@@ -254,31 +254,21 @@ class setup_test:
   def test(self, *args, **kwds):
     name = '%s-%s' % (self.filename(), self.testcount)
     basename = os.path.basename(name)
+    print "TEST CASE ",name
 
-    # make sure we have a nice anchor point to this filename
-    set_anchor(basename)
-
+    
     # if categories are specified, write them out
+    categories = []
     if 'categories' in kwds:
       categories = kwds['categories']
       del kwds['categories']
 
-      select(self.tangler(name, '.kat', 'data'))
-      for kat in categories:
-        tangle(kat)
-
-        # register this file with the category
-        v = self.registry_out.get(kat, [])
-        if basename not in v:
-          v.append(basename)
-          self.registry_out[kat] = v
-
-      doc()
-
+    # construct the tangler
+    tangler = apply(self.tangler, (name,) + args, kwds)
+    for cat in categories: self.kat(tangler,cat)
+      
     self.testcount = self.testcount + 1
-
-    return apply(self.tangler, (name,) + args, kwds)
-
+    return tangler
 
   def expect(self):
     name = '%s-%s' % (self.filename(), self.testcount - 1)
@@ -314,6 +304,18 @@ class setup_test:
     name = '%s-%s-%s' % (self.filename(), self.testcount - 1, self.argcount - 1)
 
     return self.tangler(name, '.argexpect', 'data')
+
+
+  def kat(self,tangler,code):
+    inp = get_input_frame()
+    tangler.writeline("//Check " + code,inp.original_filename,inp.original_count)
+    f = tangler.sink.filename
+    ff = string.split(f,'/')[-1][:-4]
+    v = self.registry_out.get(code,[])
+    if ff not in v:
+      set_anchor(ff)
+      v.append(ff) 
+      self.registry_out[code]=v
 
 
   def emit_katlist(self):

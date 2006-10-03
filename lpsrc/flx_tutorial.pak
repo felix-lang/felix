@@ -4,44 +4,12 @@
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
 @env = setup_test(os.path.join('tut', 'tutorial', 'tut-'))
-
 @def kat(code):
-  tangle("//Check " + code)
-  f = get_tangler().sink.filename
-  ff = string.split(f,'/')[-1][:-4]
-  v = registry_out.get(code,[])
-  if ff not in v:
-    set_anchor(ff)
-    v.append(ff) 
-    registry_out[code]=v
-
-@def emit_katlist():
-  begin_list("keyed")
-  keys = registry_in.keys()
-  keys.sort()
-  for k in keys:
-    v = registry_in[k]
-    item(k)
-    first = 1
-    for i in v:
-      if first: first = 0
-      else: weave(", ")
-      ref_anchor(i)
-  end_list()
-
-
-@registry_in = {}
-@registry_out = {}
-@katfile="tmp" + os.sep + "kat-tutorial.tmp"
-@try:
-  execfile(katfile)
- except: pass
-
-
+  env.kat(get_tangler(),code)
 
 @head(1,"Category Reference",nospawn=1)
 Tests by category keyword.
-@emit_katlist()
+@env.emit_katlist()
 
 @select(tangler('spkgs/flx_tutorial.py'))
 @tangle('TESTS = glob.glob("'+env.root+'*.flx")')
@@ -5847,10 +5815,4 @@ print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @select(env.expect())
  22 0x63 % 9.7 88
 @doc()
-@try:
-   os.mkdir("tmp")
- except: pass
-@f = open(katfile,"w")
-@f.write("registry_in="+repr(registry_out))
-@f.close()
-@#
+@env.write_katfile()
