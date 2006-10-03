@@ -451,6 +451,7 @@ and check_stackable_proc cache syms (child_map,bbdfns) label_map label_usage i r
   if mem i recstop then true else
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
+  | `BBDCL_callback _ -> false (* not sure if this is right .. *) 
   | `BBDCL_proc (_,_,_,ct,_) -> ct <> `Virtual
   | `BBDCL_procedure (props,vs,p,exes) ->
     if mem `Stackable props then true
@@ -473,7 +474,10 @@ and check_stackable_proc cache syms (child_map,bbdfns) label_map label_usage i r
       Hashtbl.replace bbdfns i (id,parent,sr,entry);
       false 
     end
-  | _ -> assert false
+  | _ -> failwith ("Unexpected non-procedure " ^ id)
+    (*
+    assert false
+    *)
 
 let ident x = x 
 let tident t = t 
