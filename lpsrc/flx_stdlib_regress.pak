@@ -90,14 +90,14 @@ print$ x1.[0];
 endl;
 
 val x2 = array(3, 4);
-print$ x1.[0]; 
-print$ x1.[1]; 
+print$ x2.[0]; 
+print$ x2.[1]; 
 endl;
 
 val x3 = array(5, 6, 7);
-print$ x1.[0]; 
-print$ x1.[1]; 
-print$ x1.[2]; 
+print$ x3.[0]; 
+print$ x3.[1]; 
+print$ x3.[2]; 
 endl;
 
 val x4 = array(8, 9, 10, 11);

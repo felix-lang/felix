@@ -524,6 +524,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         | `StrTemplate c when c = "#memcount" ->
           let ts = map (lstrip syms.dfns) ts in
           begin match ts with 
+          | [`BTYP_void] -> ce_atom "0"
           | [`BTYP_unitsum n]
           | [`BTYP_array (_,`BTYP_unitsum n)] -> ce_atom (si n)
           | [`BTYP_sum ls]

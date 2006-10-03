@@ -159,6 +159,7 @@ let rec get_offsets' syms bbdfns typ : string list =
     | _ -> []
     end
 
+  | `BTYP_array (t,`BTYP_void ) ->  []
   | `BTYP_array (t,`BTYP_unitsum k) -> 
     let toffsets = get_offsets' syms bbdfns t in
     if toffsets = [] then [] else 

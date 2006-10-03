@@ -5364,8 +5364,10 @@ let is_unitsum (t:btypecode_t) = match t with
 
 
 let int_of_unitsum t = match t with
+  | `BTYP_void -> 0
   | `BTYP_tuple [] -> 1
   | `BTYP_unitsum k -> k
+  | `BTYP_sum [] ->  0
   | `BTYP_sum ls ->  
     if all_units ls then length ls
     else raise Not_found

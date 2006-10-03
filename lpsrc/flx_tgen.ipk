@@ -425,24 +425,7 @@ let gen_type syms bbdfns (index,typ) =
   | `BTYP_array (v,i) ->
     let name = tn typ in
     let v = tn v in
-    let n =
-      match i with
-      | `BTYP_unitsum k -> k
-      | `BTYP_sum ls ->
-        if all_units ls then length ls
-        else 
-          failwith 
-          (
-            "Array index must be unit sum, got\n" ^
-            sbt syms.dfns i
-          )
-      | _ ->
-        failwith 
-        (
-          "Array index must be unit sum, got\n" ^
-          sbt syms.dfns i
-        )
-    in
+    let n = int_of_unitsum i in
     descr ^
     "struct " ^ name ^ " {\n" ^
     "  static size_t const len = " ^ si n ^ ";\n" ^
