@@ -706,35 +706,37 @@ module Carray
   requires cstdlib;
   open C_hack;
 
-  fun array_alloc[t]: int -> ptr[t] = '(?1*)std::malloc(sizeof(?1)*$1)'; 
-  fun array_calloc[t]: int -> ptr[t] = '(?1*)std::calloc(sizeof(?1),$1)'; 
-  proc free[t]: ptr[t]="std::free($1);";
-  fun subscript[t]: ptr[t] * int -> lvalue[t] = '$1[$2]';
-
-  fun add[t]: ptr[t] * int -> ptr[t]= '$1+$2';
-  fun sub[t]: ptr[t] * int -> ptr[t] = '$1-$2';
-  fun sub[t]: ptr[t] * ptr[t]-> int = '$1-$2';
-
-  proc pre_incr[t]: lvalue[ptr[t]] = '++$1;'; 
-  proc post_incr[t]: lvalue[ptr[t]] = '$1++;'; 
-  proc pre_decr[t]: lvalue[ptr[t]] = '--$1;'; 
-  proc post_decr[t]: lvalue[ptr[t]] = '$1--;'; 
-  proc pluseq[t]: lvalue[ptr[t]] * int = '$1+=$2;'; 
-  proc minuseq[t]: lvalue[ptr[t]] * int = '$1-=$2;'; 
-
-
-  fun eq[t]: ptr[t] * ptr[t] -> bool = '$1==$2';
-  fun ne[t]: ptr[t] * ptr[t] -> bool = '$1!=$2';
-  fun lt[t]: ptr[t] * ptr[t] -> bool = '$1<$2';
-  fun le[t]: ptr[t] * ptr[t] -> bool = '$1<=$2';
-  fun gt[t]: ptr[t] * ptr[t] -> bool = '$1>$2';
-  fun ge[t]: ptr[t] * ptr[t] -> bool = '$1>=$2';
+  publish "Carray type"
+  typedef carray[T] = ptr[T];
 
   publish "Convert Felix array to C array"
-  fun carray_of[t,n]: t ^ n -> ptr[t] = "$t.data";
+  fun _ctor_carray[T,N]: array[T,N] -> carray[T] = "$t.data";
+
+  fun array_alloc[T]: int -> carray[T] = '(?1*)std::malloc(sizeof(?1)*$1)'; 
+  fun array_calloc[T]: int -> carray[T] = '(?1*)std::calloc(sizeof(?1),$1)'; 
+  proc free[T]: carray[T] = "std::free($1);";
+  fun subscript[T]: carray[T] * int -> lvalue[T] = '$1[$2]';
+
+  fun add[T]: carray[T] * int -> carray[T]= '$1+$2';
+  fun sub[T]: carray[T] * int -> carray[T] = '$1-$2';
+  fun sub[T]: carray[T] * carray[T]-> int = '$1-$2';
+
+  proc pre_incr[T]: lvalue[carray[T]] = '++$1;'; 
+  proc post_incr[T]: lvalue[carray[T]] = '$1++;'; 
+  proc pre_decr[T]: lvalue[carray[T]] = '--$1;'; 
+  proc post_decr[T]: lvalue[carray[T]] = '$1--;'; 
+  proc pluseq[T]: lvalue[carray[T]] * int = '$1+=$2;'; 
+  proc minuseq[T]: lvalue[carray[T]] * int = '$1-=$2;'; 
+
+  fun eq[T]: carray[T] * carray[T] -> bool = '$1==$2';
+  fun ne[T]: carray[T] * carray[T] -> bool = '$1!=$2';
+  fun lt[T]: carray[T] * carray[T] -> bool = '$1<$2';
+  fun le[T]: carray[T] * carray[T] -> bool = '$1<=$2';
+  fun gt[T]: carray[T] * carray[T] -> bool = '$1>$2';
+  fun ge[T]: carray[T] * carray[T] -> bool = '$1>=$2';
 
   publish "Convert C array to Felix array"
-  fun array_of[t,n]: ptr[t] -> ptr[t ^ n] = "*(#0*)(void*)$1";
+  fun array_of[T,N]: carray[T] -> ptr[array[T,N]] = "*(#0*)(void*)$1";
   
   proc memcpy: address * address * size = 
     "{if($1 && $2 && $3)std::memcpy($1,$2,$3);}"
@@ -1637,10 +1639,15 @@ module List
     return o;
   }
 
-  fun len[T] : list[T] -> int =
-    | Empty => 0
-    | Cons (_,?t) => 1 + len t
-  ;
+  fun len[T] (x:list[T]) = {
+		fun aux (acc:int) (x:list[T]) =>
+			match x with
+    	| Empty => 0
+    	| Cons (_,?t) => aux (acc + 1) t
+			endmatch
+		;
+		return aux 0 x;
+	}
 
   fun is_empty[T] : list[T] -> 2 =
     | Empty => true
