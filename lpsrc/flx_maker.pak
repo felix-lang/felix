@@ -1612,7 +1612,10 @@ class PLUGIN(Plugin):
   def runme(self):
     global quiet,force
     check_stamp = "force"  not in options
-    print "##### TEST ALL PACKAGES ##################"
+    if check_stamp:
+      print "##### TEST SELECTED PACKAGES ##################"
+    else:
+      print "##### TEST ALL PACKAGES ##################"
     for pkg in pkgs:
       pkgdict = pkgd[pkg]
       print "***** TEST PACKAGE "+pkg+" ************"
@@ -1629,10 +1632,16 @@ class PLUGIN(Plugin):
   help = 'build all user documentation'
 
   def runme(self):
-    plugins['cal_pkgs']()
-
     global doc_selected_pkgs
-    print "##### DOCUMENT ALL PACKAGES ##################"
+    global quiet,force
+    check_stamp = "force"  not in options
+    if check_stamp:
+      plugins['cal_pkgs']()
+      print "##### DOCUMENT SELECTED PACKAGES ##################"
+    else:
+      print "##### DOCUMENT ALL PACKAGES ##################"
+      doc_selected_pkgs = pkgs 
+
     for pkg in doc_selected_pkgs:
       pkgdict = pkgd[pkg]
       print "***** DOCUMENT PACKAGE "+pkg+" ************"
