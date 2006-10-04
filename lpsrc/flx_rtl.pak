@@ -675,6 +675,12 @@ struct RTL_EXTERN _ref_
 
   void set(void *f, void *p) 
   { frame = f; offset = (unsigned char*)p - (unsigned char*)f; } ///< set from frame f and interior pointer
+
+  bool operator==(_ref_ x) const  ///< compare equal
+  { return frame==x.frame && offset==x.offset; }
+
+  bool operator!=(_ref_ x) const  ///< compare inequal
+  { return frame!=x.frame || offset!=x.offset; }
 };
 
 

@@ -2031,7 +2031,7 @@ for plugin in scheduled_plugins + unscheduled_plugins:
 if failed:
   print '^^^^^^^^^^ FAILURES by group ^^^^^^^^^^^^^'
 
-  kat_lookup = {}
+  kats = {}
   for plugin in scheduled_plugins + unscheduled_plugins:
     if not plugin.failures:
       continue
@@ -2052,53 +2052,51 @@ if failed:
       files.sort()
 
       print '  - %s: %s' % (len(files), pkg)
-      for filename in files:
-        # check if a .kat category file exists for this file
-        # if so, add it to the category dict
-
-        comments = []
-        katfile = os.path.splitext(filename)[0] + '.kat'
-
-        if os.path.exists(katfile):
-          f = open(katfile)
-          try:
-            for line in f.readlines():
-              comments.append(string.strip(line))
-          finally:
-            f.close()
-
-          for kat in comments: 
-            l = kat_lookup.get(kat, [])
-            l.append(filename)
-            kat_lookup[kat] = l
-
+      lastfile = ""
+      for file in files:
+        if file == lastfile: continue
+        lastfile = file
         # grab the first line of the file to see if it
         # has a #line number to print out as well, so we can
         # localize the error to the interscript file location
-        f = open(filename)
-        try:
-          firstline = string.strip(f.readline())
-        finally:
-          f.close()
-
-        if firstline[0:5] == '#line':
-          comments.insert(0, firstline)
-
-        if comments:
-          s = filename
-          for comments in comments:
-            print '      %-35s\t%s' % (s, comments)
-            s = ''
-          print
-        else:
-          print '      %s' % filename
+        
+        emitted = 0
+        f = open(file)
+        eat = 1
+        while eat == 1:
+          try:
+            line = f.readline()
+          except:
+            eat = 0
+          if emitted == 0: fstring = file
+          else: fstring = ""
+          if emitted == 0 and line[0:5] == '#line':
+            comment = line
+          elif line [0:8] == "//Check ":
+            kat = string.strip(line[8:])
+            l = kats.get(kat,[])
+            l.append(file)
+            kats[kat]=l
+            comment = kat
+          else:
+            if emitted == 0:
+              comment = line
+            else:
+              comment = ""
+            eat = 0
+          if line != "":
+            print '      %-35s %s' % (fstring, string.strip(comment))
+            emitted = 1
+        if emitted == 0:
+          print '      %s' % file
+        f.close()
 
   print '^^^^^^^^^^ FAILURES by category ^^^^^^^^^^'
-  keys = kat_lookup.keys()
+  keys = kats.keys()
   keys.sort()
   for kat in keys:
     print kat+":"
-    files = kat_lookup[kat]
+    files = kats[kat]
     for file in files:
       print "  ",file
 

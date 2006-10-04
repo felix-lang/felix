@@ -254,7 +254,6 @@ class setup_test:
   def test(self, *args, **kwds):
     name = '%s-%s' % (self.filename(), self.testcount)
     basename = os.path.basename(name)
-    print "TEST CASE ",name
 
     
     # if categories are specified, write them out
