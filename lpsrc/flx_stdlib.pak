@@ -1647,14 +1647,14 @@ module List
   }
 
   fun len[T] (x:list[T]) = {
-		fun aux (acc:int) (x:list[T]) =>
-			match x with
-    	| Empty => 0
-    	| Cons (_,?t) => aux (acc + 1) t
+    fun aux (acc:int) (x:list[T]) =>
+      match x with
+    	| Empty => acc
+      | Cons (_,?t) => aux (acc + 1) t
 			endmatch
-		;
-		return aux 0 x;
-	}
+    ;
+    return aux 0 x;
+  }
 
   fun is_empty[T] : list[T] -> 2 =
     | Empty => true
