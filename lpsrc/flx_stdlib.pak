@@ -16,6 +16,7 @@ Support table.
 @table_row("rtl/flx_i18n","C++","flx::rtl::i18n","utf8 codec support")
 @table_row("rtl/flx_strutil","C++","flx::rtl::strutil","Python style substring support")
 @table_row("rtl/flx_ioutil","C++","flx::rtl::ioutil","Standard IO support")
+@table_row("rtl/flx_executil","C++","flx::rtl::executil","Fibre suport")
 @table_row("lib/std","Felix","","Standard Library")
 @table_row("lib/stl","Felix","","STL support")
 @end_table()
@@ -209,6 +210,7 @@ using namespace std;
 """;
 
 header flx_ioutil = '#include "flx_ioutil.hpp"';
+header flx_executil = '#include "flx_executil.hpp"';
 header flx_dynlink = '#include "flx_dynlink.hpp"';
 header flx_i18n = '#include "flx_i18n.hpp"';
 header stdexcept = '#include <stdexcept>';
@@ -1554,18 +1556,7 @@ module Control
   
   This is a low level primitive, bypassing fthreads.
   """
-  proc run: cont = 
-  """
-  {
-    flx::rtl::con_t *tmp=$1;
-    //if(!tmp)
-    //  throw flx::rtl::flx_exec_failure_t (__FILE__,"run","Run terminated procedure");
-    while(tmp) {
-      try { tmp=tmp->resume(); }
-      catch (flx::rtl::con_t *x) { tmp = x; }
-    }
-  }
-  """;
+  proc run: cont = "flx::rtl::executil::run($1);" requires flx_executil;
 
   private proc _send[t]: &cont * t = 
   """

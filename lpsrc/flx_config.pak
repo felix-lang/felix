@@ -1750,6 +1750,8 @@ flx_other_keywords = [
     ("the", "THE"),
     ("typematch", "TYPEMATCH"),
     ("typecase", "TYPECASE"),
+    ("whence", "WHENCE"),
+    ("unless", "UNLESS"),
     ("_", "UNDERSCORE"),
   ]
 

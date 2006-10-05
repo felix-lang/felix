@@ -910,9 +910,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       );
       begin match ct with
       | `Virtual -> 
+        let ts = map tsub ts in
         let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
         if index = index' then
-          clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id)
+          clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id ^ "<" ^si index ^ 
+            ">, no instance for ts="^ catmap "," (sbt syms.dfns) ts
+          )
         ;
         begin let _,_,sr3,entry = 
           try Hashtbl.find bbdfns index' 

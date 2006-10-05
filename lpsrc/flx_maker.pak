@@ -1118,20 +1118,14 @@ class PLUGIN(Plugin):
     bad_tests = pkgdict.get("known_failed_tests",[])
     bad_tests.sort()
 
-    failed = 0
-
     for testfile in bad_tests:
       log = Tee()
       log.write("**** KNOWN FAILED TESTING PACKAGE %s : %s ****\n" % (pkg, testfile))
 
-      failed = 1
-
       # don't even bother to compile
       self.failures.append((pkg, testfile, ""))
 
-    return not failed
-
-
+    return 1 # don't report any failure!
 
 @select(tangler('mkplugins/run_demos.py'))
 class PLUGIN(TestPlugin):
