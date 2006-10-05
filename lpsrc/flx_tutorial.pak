@@ -5815,4 +5815,36 @@ print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @select(env.expect())
  22 0x63 % 9.7 88
 @doc()
+
+@env.head(2,"Typeclasses")
+Felix has typeclasses similar to Haskell.
+@select(env.test('.flx'))
+@kat("typeclasses")
+#import <flx.flxh>
+
+typeclass Str[T] {
+  virtual fun str2: T->string;
+}
+
+instance Str[int] {
+  fun str2 (x:int):string => str x;
+}
+
+open List;
+
+fun foo[T with Str[T]] (x:list[T]):string =>
+  match x with
+  | Empty[T] => "()"
+  | Cons(?h, ?t) => "(" + (str2 h) + ", " + (foo t) + ")"
+  endmatch
+;
+
+val x = list(1,2);
+print$ foo x; endl;
+@doc()
+
+@select(env.expect())
+(1, (2, ()))
+@doc()
+
 @env.write_katfile()
