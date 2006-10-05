@@ -449,7 +449,7 @@ let bbind_sym syms bbdfns i {
         if unit_sum then si ctor_idx 
         else "_uctor_(" ^ si ctor_idx ^ ",0)"
       in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (bvs,t,`Str ct,[]));
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (bvs,t,`Str ct,[]));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
@@ -460,7 +460,7 @@ let bbind_sym syms bbdfns i {
       let argt = bt argt in
       let ut = bt ut in
       let bbdcl = `BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt) in
-      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
+      Hashtbl.add bbdfns i (name,None,sr,bbdcl);
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound fun " ^ name ^ "<"^si i^">:" ^
@@ -651,19 +651,19 @@ let bbind_sym syms bbdfns i {
       (* print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,v,t) -> n, v,bt t) cs in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_union (bvs,cs'))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_union (bvs,cs'))
 
     | `SYMDEF_struct (cs) ->
       (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_struct (bvs,cs'))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_struct (bvs,cs'))
 
     | `SYMDEF_cstruct (cs) ->
       (* print_endline ("//Binding cstruct " ^ si i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cstruct (bvs,cs'))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_cstruct (bvs,cs'))
 
     | `SYMDEF_cclass (cs) -> 
       (* NOTE: At present the code spec is already handled by symtab,
@@ -716,7 +716,7 @@ let bbind_sym syms bbdfns i {
       *)
       let reqs = bind_reqs reqs in
       let bquals = bind_quals quals in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_abs (bvs,bquals,ct,reqs))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (bvs,bquals,ct,reqs))
 
     | `SYMDEF_insert (ct,ikind,reqs) ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 

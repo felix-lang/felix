@@ -571,13 +571,12 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
-
   (*
   |  _ ->
     Hashtbl.add bbdfns k (id,parent,sr,entry)
   *)
 
-  | _ -> syserr sr ("[reparent1] Unexpected bbdcl " ^ string_of_bbdcl syms.dfns entry index)
+  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl syms.dfns entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent

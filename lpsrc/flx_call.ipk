@@ -78,16 +78,28 @@ let add (h:usage_table_t) k j sr =
     )
   )
 
+let rec uses_type h k sr t = 
+  let ut t = uses_type h k sr t in 
+  match t with
+  | `BTYP_inst (i,ts)
+    -> 
+      add h k i sr;
+      iter ut ts
+
+  | _ -> iter_btype ut t
+
+
+
 let faulty_req syms i =
   match Hashtbl.find syms.dfns i with {id=id; sr=sr } ->
   clierr sr (id ^ " is used but has unsatisfied requirement")
 
 
-let rec process_expr h k sr ((e,t) as be) =
+let rec process_expr h k sr e =
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
-  (* Use the flx_maps iterator now! *)
-  iter_tbexpr ui ignore ignore be
+  let ut t = uses_type h k sr t in
+  iter_tbexpr ui ignore ut e
 
 and cal_exe_usage syms h k exe =
   (*
@@ -96,8 +108,8 @@ and cal_exe_usage syms h k exe =
   let sr = src_of_bexe exe in
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
-  (* USE A MAP *)
-  iter_bexe ui ue ignore ignore ignore exe
+  let ut t = uses_type h k sr t in
+  iter_bexe ui ue ut ignore ignore exe
 
 let uses_production h k sr p =
   let uses_symbol (_,nt) = match nt with
@@ -106,7 +118,8 @@ let uses_production h k sr p =
   in
   iter uses_symbol p
 
-let cal_param_usage syms uses sr parent {pindex=child} =
+let cal_param_usage syms uses sr parent {pindex=child;ptyp=t} =
+  uses_type uses parent sr t;
   add uses parent child sr 
 
 let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
@@ -121,7 +134,12 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
     iter ur reqs 
   in
   Hashtbl.iter
-  (fun k (_,_,sr,entry) -> match entry with
+  (fun k (_,_,sr,entry) -> 
+  let ut t = uses_type uses k sr t in
+  
+  match entry with
+  | `BBDCL_typeclass _ -> ()
+
   | `BBDCL_procedure (_,_,(ps,_),exes)
   | `BBDCL_function (_,_,(ps,_),_,exes) ->
     iter (cal_param_usage syms uses sr k) ps;
@@ -137,13 +155,30 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
     Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
 
   | `BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
-  | `BBDCL_const (_,_,_,reqs) -> cal_req_usage sr k reqs
-  | `BBDCL_proc (_,_,_,_, reqs)  -> cal_req_usage sr k reqs
-  | `BBDCL_fun (_,_,_,_,_, reqs,_)  -> cal_req_usage sr k reqs
+  | `BBDCL_const (_,t,_,reqs) -> cal_req_usage sr k reqs
+  | `BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps
+  | `BBDCL_fun (_,_,ps,ret,_, reqs,_)  -> cal_req_usage sr k reqs; iter ut ps; ut ret
   | `BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
-  | `BBDCL_instance (_,i,_) -> add uses k i sr
+  | `BBDCL_instance (_,i,ts) -> add uses k i sr; iter ut ts
 
-  | _ -> () 
+  | `BBDCL_nonconst_ctor (_,_,unt,_,ct) -> ut unt; ut ct
+  | `BBDCL_union _  -> ()
+
+  | `BBDCL_struct (_,ps) 
+  | `BBDCL_cstruct (_,ps)  ->
+    iter ut (map snd ps)
+
+  | `BBDCL_class _ -> ()
+  | `BBDCL_cclass _ -> ()
+  | `BBDCL_val (_,t) 
+  | `BBDCL_var (_,t) 
+  | `BBDCL_tmp (_,t) -> ut t
+  | `BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
+  | `BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) -> 
+    iter ut ps_cf; 
+    iter ut ps_c; 
+    ut ret; cal_req_usage sr k reqs
+
   )
   bbdfns
   ;
