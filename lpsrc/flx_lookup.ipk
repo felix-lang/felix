@@ -4510,7 +4510,14 @@ and instance_check syms caller_env called_env mgu sr name rtcr tsub =
     (fun qn -> 
       let classname = grab_name qn in
       let insts = ref [] in
-        let es,ts' = luqn2 (hack_name qn) in
+        let es,ts' = 
+          try luqn2 (hack_name qn) 
+          with 
+            (* This is a HACK. we need lookup to throw a specific
+               lookup failure exception
+            *)
+            ClientError (sr',msg) -> raise (ClientError2 (sr,sr',msg))
+        in
         (*
         print_endline ("With unbound ts = " ^ catmap "," string_of_typecode ts');
         *)

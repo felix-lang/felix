@@ -127,15 +127,23 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       let tckid,tckparent,tcksr,tckentry = Hashtbl.find bbdfns tck in
       match tckentry with
       | `BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
-        if ct <> `Virtual then clierr tcksr "Typeclass requires virtual function";
-        let ft = `BTYP_function (typeoflist params,ret) in
-        check_binding tck tcksr tckid ft
+        if ct == `Virtual then
+          let ft = `BTYP_function (typeoflist params,ret) in
+          check_binding tck tcksr tckid ft
+        (*
+        clierr tcksr "Typeclass requires virtual function";
+        *)
 
       | `BBDCL_proc (props,bvs,params,ct,breq) ->
-        if ct <> `Virtual then clierr tcksr "Typeclass requires virtual procedure";
-        let ft = `BTYP_function (typeoflist params,`BTYP_void) in
-        check_binding tck tcksr tckid ft
+        if ct == `Virtual then 
+          let ft = `BTYP_function (typeoflist params,`BTYP_void) in
+          check_binding tck tcksr tckid ft
+        (*
+        clierr tcksr "Typeclass requires virtual procedure";
+        *)
         
+      | `BBDCL_function _ 
+      | `BBDCL_procedure _
       | `BBDCL_insert _ -> ()
       | _ -> clierr tcksr "Typeclass entry must be virtual function or procedure"
     )
