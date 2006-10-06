@@ -5846,5 +5846,41 @@ print$ foo x; endl;
 @select(env.expect())
 (1, (2, ()))
 @doc()
+in a module:
+@select(env.test('.flx'))
+@kat("typeclasses")
+#import <flx.flxh>
+
+open List;
+
+typeclass Str[T] {
+  virtual fun str2: T->string;
+}
+
+module Foo {
+  instance Str[int] {
+    fun str2 (x:int):string => str x;
+  }
+
+  fun foo[T with Str[T]] (x:T):string => str2 x;
+
+  fun foo[T with Str[T]] (x:list[T]):string =>
+    match x with
+    | Empty[T] => "()"
+    | Cons(?h, ?t) => "(" + (str2 h) + ", " + (foo t) + ")"
+    endmatch
+  ;
+}
+
+open Foo;
+
+print$ Foo::foo 5; endl;
+print$ Foo::foo$ list(1,2,3,4); endl;
+
+@select(env.expect())
+5
+(1, (2, (3, (4, ()))))
+@doc()
+
 
 @env.write_katfile()
