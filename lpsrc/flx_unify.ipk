@@ -549,12 +549,14 @@ let rec unification allow_lval dfns
         if not (IntSet.mem i dvars) then raise Not_found;
         if var_i_occurs i t
         then begin
+          (*
           print_endline 
           (
             "recursion in unification, terms: " ^
             match h with (a,b) ->
             sbt dfns a ^ " = " ^ sbt dfns b
           );
+          *)
           s := Some (i, fix i t)
         end else begin
           let t = lstrip dfns t in

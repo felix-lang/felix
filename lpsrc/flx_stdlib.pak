@@ -677,8 +677,8 @@ module C_hack
   // this hackery is here to force Felix to make 
   // a suitable shape object
   private union _dummy[t] = | _new of t;
-  private gen _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
-  gen xnew[t](x:t) => _udata$ _new x;
+  private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
+  fun xnew[t](x:t) => _udata$ _new x;
 
   // raw allocation and deallocation
   fun malloc: int -> address = 'malloc($1)' requires stdlib_h;

@@ -585,25 +585,32 @@ let consider syms bt luqn2 name
 
 
       if length !unresolved > 0 then None else begin
-
-
-
+        let ok = ref true in
         iter 
         (fun sign ->
           if sign <> list_subst !mgu sign then
-          clierr call_sr 
-          (
-            "[resolve_overload] Unification of function " ^ 
-            id ^ "<" ^ si i ^ "> signature " ^
-            sbt syms.dfns domain ^ 
-            "\nwith argument type " ^ sbt syms.dfns sign ^
-            "\nhas mgu " ^ string_of_varlist syms.dfns !mgu ^
-            "\nwhich specialises a variable of the argument type"
-          )
+          begin
+            ok := false;
+            (*
+            print_endline ("At " ^ short_string_of_src call_sr);
+            (*
+            clierr call_sr 
+            *)
+            print_endline
+            (
+              "[resolve_overload] Unification of function " ^ 
+              id ^ "<" ^ si i ^ "> signature " ^
+              sbt syms.dfns domain ^ 
+              "\nwith argument type " ^ sbt syms.dfns sign ^
+              "\nhas mgu " ^ string_of_varlist syms.dfns !mgu ^
+              "\nwhich specialises a variable of the argument type"
+            )
+            *)
+          end
         )
         arg_types 
         ;
-        
+        if not (!ok) then None else 
         (*
         print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns !mgu);
         *)
