@@ -4734,8 +4734,12 @@ and get_includes' syms includes ((i, ts) as index) =
           try lookup_qn_in_env syms env qn 
           with Not_found -> failwith "QN NOT FOUND"
         in 
-          assert (length ts' = 0);
-          get_includes' syms includes (j,[])
+          let ts = map (bind_type syms env sr) ts in
+          let ts' = map (tsubst vs ts) ts' in
+          (*
+          print_endline ("Inherit " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts' ^"]");
+          *)
+          get_includes' syms includes (j,ts')
     )
     dirs
   end
