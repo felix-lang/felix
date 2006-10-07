@@ -520,6 +520,17 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
              si endcol ^ ")"
            )
 
+        | `Str c when c = "#this" ->
+          begin match parent with
+          | None -> clierr sr "Use 'this' outside class"
+          | Some p ->
+            let name = cpp_instance_name syms bbdfns p ts in
+            (*
+            print_endline ("class = " ^ si p ^ ", instance name = " ^ name);
+            *)
+            ce_atom("ptr"^name)
+          end
+
         | `Str c
         | `StrTemplate c when c = "#memcount" ->
           let ts = map (lstrip syms.dfns) ts in

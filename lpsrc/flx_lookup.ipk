@@ -4227,7 +4227,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let fname = `AST_name (sr,"_match_ctor_" ^ name,ts) in
           be (`AST_apply ( sr, (fname,e)))
 
-        | _ -> failwith "Woooops expected union or abstract"
+        | _ -> clierr sr ("expected union of abstract type, got" ^ sbt syms.dfns ut)
         end
       | _ -> clierr sr ("expected nominal type, got" ^ sbt syms.dfns ut)
       end

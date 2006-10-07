@@ -1002,6 +1002,15 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
           ;
+          let thisix = !(syms.counter) in incr counter;
+          let dcl =`SYMDEF_const (`AST_index (sr,id,n),`Str "#this",`NREQ_true) in
+          Hashtbl.add syms.dfns thisix {
+            id="this";sr=sr;parent=Some n; vs=dfltvs;
+            pubmap=null_tab; privmap=null_tab;
+            dirs=[];symdef=dcl
+          };
+          add_unique priv_name_map "this" thisix;
+
           (* Hack it by building an interface *)
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
@@ -1045,42 +1054,6 @@ let rec build_tables syms name inherit_vs
           )
           privtab
           ;
-          (*
-          let sts = 
-            let detail x = match x with
-            | `Exe _ -> assert false
-            | `Dcl (_,id,_,access,vs,dcl) ->
-              (*
-              print_endline ("HANDLING DETAIL for " ^ id);
-              *)
-              begin if access = `Private then None else match dcl with
-              | `DCL_var t -> Some (`MemberVar (id,t,None))
-              | `DCL_val t -> Some (`MemberVal (id,t,None))
-              | `DCL_function (ps,ret,props,_) -> 
-                if mem `Ctor props then None else
-                let ps = map snd (fst ps) in
-                let a = match ps with 
-                  | [x] -> x 
-                  | x -> `TYP_tuple x 
-                in
-                begin match ret with
-                | `AST_void _ -> Some (`MemberProc (id,vs,a,None))
-                | _ -> Some (`MemberFun (id,vs,`TYP_function(a,ret),None))
-                end
-              | _ -> None
-              end
-            | _ -> None
-            in
-            let rec aux out inp = match inp with
-            | [] -> rev out
-            | h :: t -> 
-              match detail h with 
-              | Some x ->  aux (x::out) t
-              | None -> aux out t
-            in
-            aux [] asms
-          in
-          *)
           handle_class `Class n (!sts) tvars stype
  
         | `DCL_val t ->
