@@ -4229,7 +4229,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
         | _ -> failwith "Woooops expected union or abstract"
         end
-      | _ -> failwith "Woops, expected nominal type"
+      | _ -> clierr sr ("expected nominal type, got" ^ sbt syms.dfns ut)
       end
 
     | `AST_lookup (sr,(context,name,ts)) ->
