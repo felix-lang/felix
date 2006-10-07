@@ -167,8 +167,21 @@ Hashtbl.iter
 )
 bbdfns
 
+(* try to find a match for i,ts .. if it doesn't work,
+   remove the last type on the list and retry.
+   When found, return instance plus the removed
+   tail, which are arguments to the functions personal
+   type variables
+*)
 let fixup_typeclass_instance syms i ts =
-  try 
-    let i = Hashtbl.find syms.typeclass_to_instance (i,ts) in
-    i,[]
-  with Not_found -> i,ts
+  let rec aux ts1 ts2 = match ts1 with
+    | [] -> i,ts (* not found *)
+    | h::t ->
+      match try 
+        Some (Hashtbl.find syms.typeclass_to_instance (i,rev ts1)) 
+        with Not_found -> None
+      with
+      | Some i -> i,ts2
+      | None -> aux t (h::ts2)
+  in aux (rev ts) []
+
