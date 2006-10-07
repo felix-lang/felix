@@ -1009,7 +1009,7 @@ let rec build_tables syms name inherit_vs
             pubmap=null_tab; privmap=null_tab;
             dirs=[];symdef=dcl
           };
-          add_unique priv_name_map "this" thisix;
+          add_unique privtab "this" thisix;
 
           (* Hack it by building an interface *)
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
