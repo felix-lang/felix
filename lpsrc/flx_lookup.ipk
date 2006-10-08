@@ -1540,9 +1540,7 @@ and bind_type'
       
 
   | `AST_index (sr,name,index) as x -> 
-    (*
     print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
-    *)
     let { vs=vs; symdef=entry } =
       try Hashtbl.find syms.dfns index 
       with Not_found -> 
@@ -1560,13 +1558,17 @@ and bind_type'
          AND IT WORKS .. so the diagnostic is comment out
       *)
       (*
-      if length vs <> 0 then begin
+      if length (fst vs) <> 0 then begin
         print_endline ("Synthetic name "^name ^ " is a nominal type!");
         print_endline ("Using ts = [] .. probably wrong since type is polymorphic!");
+        (*
+        failwith "FAULT!"
+        *)
       end
       ;
       *)
-      `BTYP_inst (index,[])
+      let ts = map (fun (s,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      `BTYP_inst (index,ts)
 
     | `SYMDEF_typevar _ ->
       print_endline ("Synthetic name "^name ^ " is a typevar!");

@@ -522,7 +522,8 @@ let bbind_sym syms bbdfns i {
       let reqs = bind_reqs reqs in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (bvs,t,ct,reqs));
       if syms.compiler_options.print_flag then
-      print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
+      print_endline ("//bound const " ^ name ^ "<"^si i^">" ^
+      print_bvs bvs ^ ":" ^
       sbt syms.dfns t)
 
 
