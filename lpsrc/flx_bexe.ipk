@@ -508,47 +508,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | _ -> clierr sr "LHS must be lvalue"
       end
 
-      (*
-      begin match bel with
-      | `BEXPR_name (index,_),_ -> 
-        let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
-        begin match entry with
-        | `SYMDEF_var _ -> ()
-        | `SYMDEF_val _ -> clierr sr ("Can't assign into value " ^ id)
-        | `SYMDEF_parameter _ -> clierr sr ("Can't assign into parameter value " ^ id)
-        | _ -> clierr sr ("[bexe] assign requires variable, got " ^ id)
-        end
-      | `BEXPR_deref _,_ -> ()
-
-      | `BEXPR_apply_prim (i,_,_),_ -> 
-        let {symdef=entry; id=id; vs=vs} = Hashtbl.find syms.dfns i in
-        begin match entry with 
-        | `SYMDEF_fun (_,t,_,_) -> 
-          begin match t with
-          | `TYP_lvalue _ -> ()
-          | _ -> 
-            print_endline 
-            (
-              "WARNING: assign to application of primitive "^
-              id^
-              " not declared to return an lvalue"
-            )
-          end
-        | _ -> 
-          failwith 
-          (
-            "[bexe]Expected prim apply to apply a primitive fun, got: " ^
-            string_of_symdef entry id vs
-          )
-        end
-      | _ -> 
-        print_endline ("Assign to non variable..(is it an lvalue?)" ^ sbe syms.dfns bel);
-        ()
-      end
-      ;
-      tack (`BEXE_assign (sr,bel, be r))
-      *)
-
 
   in 
   List.iter bind_exe exes;

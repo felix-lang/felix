@@ -1556,20 +1556,19 @@ and bind_type'
     | `SYMDEF_cclass _ 
     | `SYMDEF_abs _ 
       ->
-      (* I STILL DO NOT UNDERSTAND THIS .. BUT LOTS OF EXAMPLES USE IT
-         AND IT WORKS .. so the diagnostic is comment out
-      *)
       (*
       if length (fst vs) <> 0 then begin
         print_endline ("Synthetic name "^name ^ " is a nominal type!");
         print_endline ("Using ts = [] .. probably wrong since type is polymorphic!");
-        (*
-        failwith "FAULT!"
-        *)
       end
       ;
       *)
       let ts = map (fun (s,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      (*
+      print_endline ("Synthetic name "^name ^ "<"^si index^"> is a nominal type, ts=" ^
+      catmap "," (sbt syms.dfns) ts
+      );
+      *)
       `BTYP_inst (index,ts)
 
     | `SYMDEF_typevar _ ->
@@ -2600,7 +2599,9 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       inner_typeofindex syms rs index
 
     | _ ->
-      handle_nonfunction_index index []
+      print_endline "Non function ..";
+      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      handle_nonfunction_index index ts
     end
 
   | `AST_lookup (sr,(qn',name,ts)) -> 

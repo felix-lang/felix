@@ -35,6 +35,10 @@ open Flx_maps
 let null_table = Hashtbl.create 3
 
 let add_inst syms ref_insts1 (i,ts) =
+  (*
+    print_endline ("Attempt to register instance " ^ si i ^ "[" ^
+    catmap ", " (sbt syms.dfns) ts ^ "]");
+  *)
   let i,ts = Flx_typeclass.fixup_typeclass_instance syms i ts in
   let x = i, map (fun t -> reduce_type (lstrip syms.dfns t)) ts in
   let has_variables = 
@@ -86,10 +90,18 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     print_endline "Get named: class member";
     *)
     ue obj;
+    (*
+    print_endline "Register object expr";
+    *)
     (* instantiate member with binding for class type parameters *)
     begin match ot with
     | `BTYP_inst (j,ts)
-    | `BTYP_lvalue (`BTYP_inst (j,ts)) -> ui i ts
+    | `BTYP_lvalue (`BTYP_inst (j,ts)) -> 
+      (*
+      print_endline ("Register member " ^ si i^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
+      *)
+      let ts = map vs ts in
+      ui i ts
     | _ -> assert false
     end
 
@@ -98,6 +110,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_apply_struct (index,ts,a)
   | `BEXPR_apply_stack (index,ts,a)
   | `BEXPR_apply ((`BEXPR_closure (index,ts),_),a) ->
+    (*
+    print_endline "apply direct";
+    *)
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^ si index)
@@ -118,17 +133,27 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     which probably don't need types either .. fix me!
     *)
     (* | _ -> ue f; ue a *)
-    | _ -> ui index ts; ue a
+    | _ -> 
+      (*
+      print_endline "struct component?";
+      *)
+      ui index ts; ue a
     end
 
   | `BEXPR_apply_method_direct (obj,meth,ts,a) 
   | `BEXPR_apply_method_stack (obj,meth,ts,a) 
   | `BEXPR_apply ((`BEXPR_method_closure (obj,meth,ts),_),a) ->
+    (*
+    print_endline "method apply";
+    *)
     ue obj; 
     ui meth ts; 
     ue a
     
   | `BEXPR_apply (e1,e2) -> 
+    (*
+    print_endline "Simple apply";
+    *)
     ue e1; ue e2
 
   | `BEXPR_tuple es -> 
@@ -150,10 +175,28 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_closure (i,ts)
     -> 
     (* substitute out display variables *)
+    (*
+    print_endline ("Raw Variable " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+    *)
     let ts = map vs ts in
-    ui i ts; iter ut ts
+    (*
+    print_endline ("Variable with mapped ts " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+    *)
+    ui i ts; 
+    (*
+    print_endline "Instance done";
+    *)
+    iter ut ts
+    (*
+    ;
+    print_endline "ts done";
+    *)
+
 
   | `BEXPR_method_closure (e,i,ts) ->
+    (*
+    print_endline "method closure";
+    *)
     ue e;
     let ts = map vs ts in
     ui i ts; iter ut ts
@@ -338,9 +381,6 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     *)
 
-    (*
-    print_endline "Registering class type!";
-    *)
     rtnr (`BTYP_inst (i,ts));
 
     (*
@@ -394,6 +434,9 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_ref (vs,t)
   | `BBDCL_tmp (vs,t)
     ->
+    (*
+    print_endline "Registering variable";
+    *)
     if length vs <> length ts
     then syserr sr
     (
@@ -408,6 +451,9 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     rtr t
  
   | `BBDCL_const (vs,t,_,reqs) ->
+    (*
+    print_endline "Register const";
+    *)
     assert (length vs = length ts);
     (*
     if length vs <> length ts
