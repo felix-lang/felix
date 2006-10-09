@@ -4,7 +4,7 @@
 @select(h)
 FLXCC_EXES = [ 'src/flxcc', ]
 caml_exes = FLXCC_EXES
-caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
+caml_require_libs = ['nums','unix','misclib','cillib','flxcclib','flxlib']
 pkg_requires = ['cil']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 weaver_directory = 'doc/flxcc/'
@@ -18,6 +18,7 @@ open Flx_version
 open Flx_mtypes1
 open Flx_cil_cabs
 open Flx_cil_cil
+open Flxcc_util
 ;;
 
 let force_open_in place f = 
@@ -560,62 +561,6 @@ let rplname s =
   try Hashtbl.find control.replacements s 
   with Not_found -> s
 
-let soi = function
-| IBool -> "bool"
-| IChar -> "char"
-| ISChar -> "tiny"
-| IUChar -> "utiny"
-| IInt -> "int"
-| IUInt -> "uint"
-| IShort -> "short"
-| IUShort -> "ushort"
-| ILong -> "long"
-| IULong -> "ulong"
-| ILongLong -> "vlong"
-| IULongLong -> "uvlong"
-
-let sof = function
-| FFloat -> "float"
-| FDouble -> "double"
-| FLongDouble -> "ldouble"
-
-| IFloat -> "imaginary"
-| IDouble -> "dimaginary"
-| ILongDouble -> "limaginary"
-
-| CFloat -> "complex"
-| CDouble -> "dcomplex"
-| CLongDouble -> "lcomplex"
-
-let cvqual a = 
-  let const = ref false
-  and volatile = ref false
-  in
-  List.iter
-  (fun (Attr (s,_)) -> 
-    if s = "const" then const := true
-    else if s = "volatile" then volatile := true
-  )
-  a
-  ;
-  if !const && !volatile then "cv"
-  else if !const then "c"
-  else if !volatile then "v"
-  else ""
-
-let attrof = function
-| TVoid a
-| TInt (_,a) 
-| TFloat (_,a)
-| TPtr (_,a)
-| TArray (_,_,a)
-| TFun (_,_,_,a) 
-| TNamed (_,a)
-| TComp (_,a) 
-| TEnum (_,a) 
-| TBuiltin_va_list a 
--> a
-
 let strexp n = "0" (* cheat *)
 ;;
 
@@ -731,30 +676,8 @@ let rec sot stab t = match t with
 | TEnum (ei,a) -> "int"
 | TBuiltin_va_list a -> "__builtin_va_list"
 
-and ptname {tname=tname} = tname
-and ciname {cname=cname} = cname
-and einame {ename=ename} = ename
-and viname {vname=vname} = vname
-
-and pci ci = match ci with
-{cname=cname; cstruct=cstruct} -> 
-(if cstruct then "_struct_" else "_union_") ^ cname
-
-and pcci ci = match ci with
-{cname=cname; cstruct=cstruct} -> 
-(if cstruct then "struct " else " union ") ^ cname
-
-and pei ei = match ei with
-{ename=ename} -> "_enum_" ^ ename
-
-and pcei ei = match ei with
-{ename=ename} -> "enum " ^ ename
-
 and ptdef registry ti:string = match ti with
 {ttype=tt} -> sot registry tt
-
-and pcomp pi = match pi with
-{cname=name} -> name
 
 and soa stab (name,t,a) = sot stab t
 
@@ -765,39 +688,6 @@ and sov registry vi = match vi with
 let pe x = print_endline x
 ;;
 
-let achk x = 
-  let a = "__anon" in
-  let n = String.length a in
-  String.length x > n &&
-  a = String.sub x 0 n 
-  
-let isanon = function
-  | GType ({tname=tname},_) -> achk tname
-  | GCompTag ({cname=cname},_) -> achk cname
-  | GCompTagDecl ({cname=cname},_) -> achk cname
-  | GEnumTag ({ename=ename},_) -> achk ename
-  | GEnumTagDecl ({ename=ename},_) -> achk ename
-  | GVarDecl ({vname=vname},_) -> false
-  | GVar ({vname=vname},_,_) -> false
-  | GFun (fd,sr) -> false
-  | GAsm _ -> true
-  | GPragma _ -> true
-  | GText _ -> true
-
-(* pure name *)
-let flx_name' = function
-  | GType ({tname=tname},_) -> Some tname
-  | GCompTag (ci,sr) -> Some (pci ci)
-  | GCompTagDecl (ci,_) -> Some (pci ci)
-  | GEnumTag ({ename=ename},_) -> Some ename
-  | GEnumTagDecl ({ename=ename},_) -> Some ename
-  | GVarDecl ({vname=vname},_) -> Some vname
-  | GVar ({vname=vname},_,_) -> Some vname
-  | GFun ({svar={vname=vname}},sr) -> Some vname
-  | GAsm _ -> None
-  | GPragma _ -> None
-  | GText _ -> None
-
 (* name with replacement *)
 let flx_name x = match flx_name' x with 
 | Some x -> Some (rplname x)
@@ -807,54 +697,6 @@ let flx_name x = match flx_name' x with
 let flx_tname x = match flx_name' x with 
 | Some x -> rpltname x
 | None -> "error!!"
-
-let c_name = function
-  | GType ({tname=tname},_) -> Some tname
-  | GCompTag (ci,sr) -> Some (pcci ci)
-  | GCompTagDecl (ci,_) -> Some (pcci ci)
-  | GEnumTag (ei,_) -> Some "int"
-  | GEnumTagDecl (ei,_) -> Some "int"
-  | GVarDecl ({vname=vname},_) -> Some vname
-  | GVar ({vname=vname},_,_) -> Some vname
-  | GFun ({svar={vname=vname}},sr) -> Some vname
-  | GAsm _ -> None
-  | GPragma _ -> None
-  | GText _ -> None
-;;
-
-let rec isanont t =  match t with
-| TVoid _
-| TInt _
-| TFloat _ -> false
-| TPtr (t,_) -> isanont t
-| TArray (t,_,_) -> isanont t
-| TFun (t,Some ps,_,_) -> 
-  fold_left (fun b (_,t,_)-> b || isanont t ) (isanont t) ps
-
-| TFun (t,None,_,_) -> isanont t
-| TNamed ({tname=tname},_) -> achk tname
-| TComp ({cname=cname},_) -> achk cname
-| TEnum _ -> false
-| TBuiltin_va_list _ -> false
-
-(* got to be a named non function type *)
-let is_cstruct_field t =  match t with
-| TVoid _
-| TInt _
-| TFloat _  
-| TNamed _
-| TPtr _
-| TArray _
-| TComp _
-| TEnum _ 
-  -> true
-
-| TFun _
-| TBuiltin_va_list _ 
-  -> false
-
-let ispublic s = 
- String.length s < 2 || String.sub s 0 2 <> "__" 
 
 let can_gen_ctype cstruct cfields =  cstruct &&
   fold_left 

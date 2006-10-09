@@ -18,9 +18,7 @@ FLX_MODULES = [
   'src/flx_mtypes1'      ,
   'src/flx_ast'          ,
   'src/flx_types'        ,
-  'src/flx_ctypes'       ,
   'src/flx_version'      ,
-  'src/flx_ctype'        ,
   'src/flx_util'         ,
   'src/flx_dlst'         ,
   'src/flx_getopt'       ,
@@ -95,7 +93,6 @@ FLX_MODULES = [
 FLX_RAW_INTERFACES = [
   'src/flx_ast'          ,
   'src/flx_types'        ,
-  'src/flx_ctypes'       ,
 ] 
 
 FLX_INTERFACES = FLX_MODULES
@@ -118,8 +115,8 @@ caml_interfaces = FLX_INTERFACES
 caml_raw_interfaces = FLX_RAW_INTERFACES
 caml_exes = FLX_EXES
 caml_implementations = FLX_IMPLEMENTATIONS
-caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
-pkg_requires = ['misc','cil']
+caml_require_libs = ['nums','unix','misclib','cillib','flxcclib','flxlib']
+pkg_requires = ['misc','cil','flxcc_util']
 caml_provide_lib = 'flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
@@ -359,7 +356,6 @@ Flx_version.version_data := version_data
 @include_file ('flx_filesys.ipk')
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
-@include_file ('flx_ctypes.ipk')
 @include_file ('flx_unify.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
