@@ -50,6 +50,7 @@ FLX_MODULES = [
   'src/flx_pat'          , 
   'src/flx_macro'        , 
   'src/flx_cformat'      , 
+  'src/flx_ciltoflx'     ,
   'src/flx_desugar'      , 
   'src/flx_mbind'        , 
   'src/flx_symtab'       , 
@@ -366,6 +367,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_constfld.ipk')
 @include_file ('flx_macro.ipk')
 @include_file ('flx_cformat.ipk')
+@include_file ('flx_ciltoflx.ipk')
 @include_file ('flx_desugar.ipk')
 @include_file ('flx_symtab.ipk')
 @include_file ('flx_beta.ipk')

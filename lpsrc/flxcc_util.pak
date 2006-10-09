@@ -8,7 +8,7 @@ FLXCC_UTIL_MODULES = [
   'src/flxcc_util'
 ]
 
-FLXCC_UTIL_RAW_INTERFACES = ['src/flx_ctypes.mli']
+FLXCC_UTIL_RAW_INTERFACES = ['src/flx_ctypes']
 
 pkg_requires = ['misc','cil']
 iscr_source = ["lpsrc/flxcc_util.pak"]
@@ -16,7 +16,7 @@ weaver_directory = 'doc/flxcc_util/'
 caml_provide_lib = 'flxcclib'
 caml_interfaces = FLXCC_UTIL_MODULES
 caml_implementations = FLXCC_UTIL_MODULES
-caml_raw_interfaces = FLX_UTIL_RAW_INTERFACES
+caml_raw_interfaces = FLXCC_UTIL_RAW_INTERFACES
 
 @include_file("flx_ctypes.ipk")
 
