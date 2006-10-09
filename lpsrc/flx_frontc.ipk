@@ -1129,6 +1129,14 @@ val visitorLocation: Flx_cil_cabs.cabsloc ref
 
 
 val init: filename:string -> lang:Flx_cil_cabs.lang_t -> Lexing.lexbuf
+
+val init_from_string: 
+  filename:string -> 
+  line:int-> 
+  lang:Flx_cil_cabs.lang_t -> 
+  ins:string ->
+  Lexing.lexbuf
+  
 val finish: unit -> unit
 
 (* This is the main parser function *)
@@ -1365,7 +1373,7 @@ let attribDepth = ref 0 (* Remembers the nesting level when parsing
                          * attributes *)
 
 
-let init ~(filename: string) ~(lang: Flx_cil_cabs.lang_t) : Lexing.lexbuf =
+let init_lexer lang =
   attribDepth := 0;
   init_lexicon lang;
   (* Inititialize the pointer in Flx_cil_errormsg *)
@@ -1376,8 +1384,20 @@ let init ~(filename: string) ~(lang: Flx_cil_cabs.lang_t) : Lexing.lexbuf =
   Flx_cil_lexerhack.pop_class := pop_class;
   Flx_cil_lexerhack.add_identifier := add_identifier;
   let get_lang () = lang in
-  Flx_cil_lexerhack.get_lang := get_lang;
+  Flx_cil_lexerhack.get_lang := get_lang
+
+let init ~(filename: string) ~(lang: Flx_cil_cabs.lang_t) : Lexing.lexbuf =
+  init_lexer lang;
   E.startParsing filename
+
+let init_from_string 
+  ~(filename: string)
+  ~(line: int)
+  ~(lang: Flx_cil_cabs.lang_t) 
+  ~(ins: string) : Lexing.lexbuf 
+=
+  init_lexer lang;
+  E.startParsingFromString ~file:filename ~line:line ins
 
 
 let finish () = 

@@ -286,6 +286,7 @@ statement:
   | comment { $1 }
   | null_statement { $1 }
   | user_statement { $1 }
+  | cparse { $1 }
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }
@@ -370,6 +371,14 @@ inclusion:
       `AST_include (sr, snd $2) 
     }
  
+@head(2,"C parse hack")
+@select(h)
+cparse:
+  | CPARSE STRING SEMI
+    {
+      `AST_cparse (rstoken $1 $3, snd $2)
+    }
+    
 @head(2,"Regular definitions")
 @select(h)
 

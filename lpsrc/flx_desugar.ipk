@@ -979,6 +979,19 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let sts = include_file syms inspec true in
     rsts name parent_vs  access sts
 
+  | `AST_cparse (sr,s) ->
+    let filename,lineno,_,_,_ = sr in
+    let lexbuf = Flx_cil_clexer.init_from_string filename lineno `C s in
+    let cabs = 
+      try Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf 
+      with 
+      | Flx_cil_errormsg.Flx_cil_parse_error (filename, line, c1, c2) ->
+        let sr = filename, line, c1, line, c2 in
+        clierr sr "Frontc Parsing error"
+    in
+    failwith "Parsed it"
+
+
   | `AST_regdef (sr,name,regexp) -> 
     [`Dcl (sr,name,None,access,dfltvs,`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [`Exe (sr,`EXE_label s)]

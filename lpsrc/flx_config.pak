@@ -1650,6 +1650,7 @@ flx_expr_terminator_keywords = [
     ("compound", "COMPOUND"),
     ("const", "CONST"),
     ("cclass", "CCLASS"),
+    ("cparse", "CPARSE"),
     ("cstruct", "CSTRUCT"),
     ("ctor", "CTOR"),
     ("ctypes", "CTYPES"),

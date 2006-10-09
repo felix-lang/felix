@@ -9,61 +9,6 @@ pkg_requires = ['cil']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 weaver_directory = 'doc/flxcc/'
 
-@h = tangler('spkgs/cil.py')
-@select(h)
-CIL_LEXS = [ 'src/flx_cil_clexer', 'src/flx_cil_formatlex', ]
-CIL_PARSES = [ 'src/flx_cil_cparser', 'src/flx_cil_formatparse', ]
-
-CIL_MODULES = [
-  'src/flx_cil_machdep_type',
-  'src/flx_cil_cabs',
-  'src/flx_cil_cilversion',
-  'src/flx_cil_machdep',
-  'src/flx_cil_pretty',
-  'src/flx_cil_errormsg',
-  'src/flx_cil_cabs_helper',
-  'src/flx_cil_lexerhack',
-  'src/flx_cil_escape',
-  'src/flx_cil_cprint',
-  'src/flx_cil_cparser',
-  'src/flx_cil_clexer',
-  'src/flx_cil_stats',
-  'src/flx_cil_trace',
-  'src/flx_cil_clist',
-  'src/flx_cil_cil',
-  'src/flx_cil_frontc',
-  'src/flx_cil_rmtmps',
-  'src/flx_cil_cabsvisit',
-  'src/flx_cil_inthash',
-  'src/flx_cil_formatparse',
-  'src/flx_cil_formatlex',
-  'src/flx_cil_util',
-  'src/flx_cil_mergecil',
-  'src/flx_cil_patch',
-  'src/flx_cil_formatcil',
-  'src/flx_cil_cilutil',
-  'src/flx_cil_cabs2cil',
-  'src/flx_cil_check',
-]
-
-CIL_RAW_INTERFACES = [
-  'src/flx_cil_machdep_type',
-  'src/flx_cil_cabs',
-]
-
-CIL_INTERFACES = CIL_MODULES
-CIL_IMPLEMENTATIONS = CIL_INTERFACES
-
-caml_lexes = CIL_LEXS
-caml_parses = CIL_PARSES
-caml_raw_interfaces = CIL_RAW_INTERFACES
-caml_interfaces = CIL_INTERFACES
-caml_implementations = CIL_IMPLEMENTATIONS
-caml_require_libs = ['nums','unix','misclib','cillib']
-pkg_requires = ['misc']
-
-@include_file("flx_frontc.ipk")
-@include_file("flx_cil.ipk")
 @h= tangler("src/flxcc.ml")
 @select(h)
 open List

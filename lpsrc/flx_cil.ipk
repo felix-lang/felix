@@ -20642,6 +20642,9 @@ let debugFlag  = ref false              (* If set then print debugging info *)
 let verboseFlag = ref false
 
 (**** Error reporting ****)  
+(* JS: added this *)
+exception Flx_cil_parse_error of string * int * int * int
+
 exception Error
 let s (d : doc) = raise Error
 
@@ -20891,7 +20894,10 @@ let parse_error (msg: string) : 'a =
     output_string stderr "Too many errors. Aborting.\n" ;
     exit 1 
   end;
+  raise (Flx_cil_parse_error (i.fileName, i.linenum, adjStart, adjEnd))
+  (*
   raise Parsing.Parse_error
+  *)
 
 
 
@@ -20946,6 +20952,9 @@ val warnFlag: bool ref
 
 (** Error reporting functions raise this exception *)
 exception Error
+
+(* JS: added this *)
+exception Flx_cil_parse_error of string * int * int * int
 
 
    (* Error reporting. All of these functions take same arguments as a 
