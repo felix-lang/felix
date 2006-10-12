@@ -61,5 +61,5 @@ then
   exit 1
 fi
 
-echo PLEASE RUN ./configure  && ./mk extract && ./mk
+echo "PLEASE RUN ./configure  && ./mk extract && ./mk"
 
