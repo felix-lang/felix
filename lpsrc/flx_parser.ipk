@@ -649,12 +649,13 @@ struct_decl:
     `AST_typeclass (sr, snd $2, $3, snd $5) 
   }
 
-  | INSTANCE qualified_name opt_equal compound
+  | INSTANCE tvarlist qualified_name opt_equal compound
   {
-    let sr = rsrange (slift $1) (fst $4) in 
-    match $2 with
+    let sr = rsrange (slift $1) (fst $5) in 
+    let vs = $2 in
+    match $3 with
     | (`AST_name _ | `AST_lookup _) as qn ->
-      `AST_instance (sr, qn, snd $4) 
+      `AST_instance (sr, vs, qn, snd $5) 
     | _ -> Flx_exceptions.clierr sr "Qualified name required"
   }
 

@@ -1100,7 +1100,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let asms = bridge name sr :: asms in
     [ `Dcl (sr,name,None,access,vs, `DCL_typeclass asms) ]
 
-  | `AST_instance (sr, name, sts) ->
+  | `AST_instance (sr, vs, name, sts) ->
     let name',ts = match name with
     | `AST_lookup (_,(_,name,ts)) -> name,ts
     | `AST_name (_,name,ts) -> name,ts
@@ -1109,7 +1109,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let asms = rsts name' dfltvs `Public sts in
     let asms = bridge name' sr :: asms in
     let mdcl =
-      [ `Dcl (sr,name',None,access,dfltvs, `DCL_instance (name,asms)) ]
+      [ `Dcl (sr,name',None,access,vs, `DCL_instance (name,asms)) ]
     in mdcl
 
  

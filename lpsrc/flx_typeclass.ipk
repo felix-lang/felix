@@ -39,8 +39,14 @@ open Flx_exceptions
 open Flx_use
 open Flx_child
 
+let vs2ts vs = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) vs
+
+(* drop first n elements of list l *)
+let rec drop l n = 
+  if n = 0 then l else drop (tl l) (n-1)
+
 let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map_t)
-  (inst:int) (inst_id: string) inst_sr inst_props tc inst_ts 
+  (inst:int) (inst_id: string) inst_vs inst_sr inst_props tc inst_ts 
 =
   let tc_id, _, tc_sr, tc_entry = Hashtbl.find bbdfns tc in
   match tc_entry with
@@ -95,20 +101,59 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | _ -> acc
       ) [] inst_kids
     in
-    let check_binding tck sr id tctype =
+    let check_binding tck sr id tck_bvs tctype =
       let entries = filter (fun (name,x) -> name = id) inst_map in
       match entries with
       | [] -> clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
-      | [_,(i,(bvs,t))] -> 
+      | [_,(i,(inst_funbvs,t))] -> 
         (*
-        print_endline ("Found unique " ^ id ^ "<"^si i^"> in instance");
-        print_endline ("  vs = " ^ print_bvs bvs);
-        print_endline ("  Type is " ^ sbt syms.dfns t);
+        print_endline ("Typeclass " ^ tc_id ^ "<" ^ si tc ^">" ^ print_bvs tc_bvs);
+        print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^ 
+          print_bvs tck_bvs ^ ":" ^ sbt syms.dfns tctype
+        );
+
+        print_endline ("Instance vs = " ^ print_bvs inst_vs);
+        print_endline ("Instance ts = " ^ catmap "," (sbt syms.dfns) inst_ts);
+        print_endline ("Instance function " ^ id ^ "<"^si i^">" ^ print_bvs inst_funbvs ^
+        ":" ^ sbt syms.dfns t);
         *)
-        let tct = reduce_type (tsubst tc_bvs inst_ts tctype) in
+
+        let tc_ptv = length tck_bvs - length tc_bvs in
         (*
-        print_endline ("  Typeclass (after subst) type is " ^ sbt syms.dfns tct);
+        print_endline ("Typeclass fun has " ^ si tc_ptv ^ " private type variables");
         *)
+
+        let inst_ptv = length inst_funbvs - length inst_vs in
+        (*
+        print_endline ("Instance fun has " ^ si inst_ptv ^ " private type variables");
+        *)
+
+        if inst_ptv <> tc_ptv then
+        clierr sr ("Wrong number of type parameters in instance fun!\n" ^
+          "Expected " ^ si tc_ptv ^ "\n" ^
+          "Got " ^ si inst_ptv 
+        );
+
+        let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (length inst_vs)) in
+        
+        assert (length tck_bvs = length inst_funts);
+
+        let tct = reduce_type (tsubst tck_bvs inst_funts tctype) in
+        (*
+        print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^ 
+          ":" ^ sbt syms.dfns tct
+        );
+        *)
+
+        let matches =  type_match syms.dfns tct t  && type_match syms.dfns t tct in
+        if matches then 
+          (*
+          print_endline "Matches!";
+          *)
+          ()
+        else
+          clierr sr "Sole instance doesn't match virtual"
+         ; 
         if Hashtbl.mem syms.typeclass_to_instance (tck,inst_ts) 
         then 
           clierr sr "Instance already registered??"
@@ -129,7 +174,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | `BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == `Virtual then
           let ft = `BTYP_function (typeoflist params,ret) in
-          check_binding tck tcksr tckid ft
+          check_binding tck tcksr tckid bvs ft
         (*
         clierr tcksr "Typeclass requires virtual function";
         *)
@@ -137,7 +182,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | `BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct == `Virtual then 
           let ft = `BTYP_function (typeoflist params,`BTYP_void) in
-          check_binding tck tcksr tckid ft
+          check_binding tck tcksr tckid bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
         *)
@@ -160,8 +205,8 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
 let typeclass_instance_check syms bbdfns child_map = 
 Hashtbl.iter
 (fun i (id,_,sr,entry) -> match entry with
-  | `BBDCL_instance (props, tc, ts) ->
-     check_instance syms bbdfns child_map i id sr props tc ts
+  | `BBDCL_instance (props, vs, tc, ts) ->
+     check_instance syms bbdfns child_map i id vs sr props tc ts
 
   | _ -> ()
 )

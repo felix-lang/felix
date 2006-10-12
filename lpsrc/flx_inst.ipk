@@ -547,7 +547,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     rtr ctor_argt
  
    | `BBDCL_typeclass _ -> ()
-   | `BBDCL_instance (props,tc,ts) -> ()
+   | `BBDCL_instance (props,vs,tc,ts) -> ()
 
 (* 
   This routine creates the instance tables.

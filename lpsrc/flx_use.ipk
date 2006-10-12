@@ -176,7 +176,7 @@ and uses syms used bbdfns count_inits i =
       begin match bbdcl with
       | `BBDCL_typeclass _ -> ()
 
-      | `BBDCL_instance (_,i,ts) ->
+      | `BBDCL_instance (_,_,i,ts) ->
         iter ut ts
 
       | `BBDCL_function (props,_,(ps,traint),ret,exes) ->

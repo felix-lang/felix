@@ -703,7 +703,7 @@ let bbind_sym syms bbdfns i {
       let (k:entry_kind_t),(ts: typecode_t list) = luqn qn in
       let k = sye k in
       let ts = map bt ts in
-      let sym : bbdcl_t = `BBDCL_instance ([],k,ts) in
+      let sym : bbdcl_t = `BBDCL_instance ([],bvs,k,ts) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
     | `SYMDEF_regdef _ -> ()

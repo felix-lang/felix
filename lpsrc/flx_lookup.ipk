@@ -4502,6 +4502,7 @@ and grab_name qn = match qn with
 
 and instance_check syms caller_env called_env mgu sr name rtcr tsub = 
   (*
+  print_endline "SEARCH FOR INSTANCE!";
   print_env caller_env;
   *)
   let luqn2 qn = lookup_qn_in_env2 syms caller_env qn in
@@ -4553,11 +4554,24 @@ and instance_check syms caller_env called_env mgu sr name rtcr tsub =
             print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
             *)
             let inst_ts = grab_ts qn' in
-            let inst_ts = map (bind_type syms caller_env sr) inst_ts in
             (*
-            print_endline ("  instantiating ts = " ^ catmap "," (fun t -> sbt syms.dfns t) inst_ts);
+            print_endline ("Unbound instance ts = " ^ catmap "," string_of_typecode inst_ts);
             *)
-            if inst_ts = ts' then begin
+            let instance_env = build_env syms (Some i) in
+            let inst_ts = map (bind_type syms instance_env sr) inst_ts in
+            (*
+            print_endline ("  instance ts = " ^ catmap "," (fun t -> sbt syms.dfns t) inst_ts);
+            print_endline ("  caller   ts = " ^ catmap "," (fun t -> sbt syms.dfns t) ts');
+            *)
+
+            let matches = 
+              if length inst_ts <> length ts' then false else
+              match maybe_specialisation syms.dfns (combine inst_ts ts') with
+              | None -> false
+              | Some _ -> true
+            in
+
+            if matches then begin
               (*
               print_endline "INSTANCE MATCHES";
               *)
@@ -4566,8 +4580,8 @@ and instance_check syms caller_env called_env mgu sr name rtcr tsub =
             (*
             else
               print_endline "INSTANCE DOES NOT MATCH: REJECTED"
-            ;
             *)
+            ;
 
 
           | `SYMDEF_typeclass ->
