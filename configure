@@ -1,0 +1,60 @@
+#!/bin/sh
+# RF: added above line to make configure script tab
+# completable as exe under cygwin/fat32 fs. chmod
+# does NOT work in this case.
+PYTHONPATH=.:$PYTHONPATH
+export PYTHONPATH
+echo "Configuring Felix"
+FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
+PREFIX=$PREFIX
+ARGS="$*" # save the arguments
+
+while :; do
+  if [ $# -lt 1 ]; then
+    break
+  fi
+
+  case $1 in
+  --prefix=*)
+    PREFIX="`echo \"$1\" | sed 's/^--prefix=\(.*\)/\\1/'`"
+  ;;
+
+  --prefix)
+    shift
+    PREFIX="$1"
+  ;;
+
+  --lparchive=*)
+    FLX_LPARCHIVE="`echo \"$1\" | sed 's/^--lparchive=\(.*\)/\\1/'`"
+  ;;
+
+  --lparchive)
+    shift
+    FLX_LPARCHIVE="$1"
+  ;;
+
+  --)
+    break # respect request to stop parsing args
+  ;;
+  esac
+  shift
+done
+
+echo FLX_LPARCHIVE at $FLX_LPARCHIVE
+
+rm -f $FLX_LPARCHIVE/lpsrc/*.cache
+python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
+if [ $? != 0 ];
+then
+  echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
+  exit 1
+fi
+
+python -O script/make_config.py --quiet ${ARGS}
+python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
+if [ $? != 0 ];
+then
+  echo "ERROR EXTRACTING MAKER PROGRAM"
+  exit 1
+fi
+
