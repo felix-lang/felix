@@ -2339,8 +2339,6 @@ We have no idea if it continues copying.
 @tangle('\trm -rf boot.sh')
 @tangle('\trm -rf boot.bat')
 @tangle('')
-@tangle('lpsrc: checkout')
-@tangle('')
 @tangle('checkout:')
 @tangle('\tsvn co https://svn.sourceforge.net:/svnroot/felix/felix/trunk .')
 @tangle('')
