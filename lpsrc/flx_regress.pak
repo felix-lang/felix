@@ -2008,6 +2008,59 @@ true
 false
 @doc()
 
+@env_nd.head(2,"Non deterministic tests")
+
+@env_nd.head(3)
+@select(env_nd.test('.flx'))
+@kat_nd("pthreads")
+@kat_nd("pchannels")
+#import <flx.flxh>
+open System;
+
+include "flx_faio";
+include "pthread";
+
+open Faio; // async I/O module
+open Pthread; // pre-emptive threading
+
+var nthreads, njobs = 3,4;
+print$ f"%d threads, %d jobs\n"$ nthreads,njobs;
+
+// read delay, and wait that long, exit on 0
+proc worker(i:int, chan:pchannel[int])(){
+ print$ f"Starting pthread %d\n" i;
+ var &delay:int <- read chan; 
+ whilst delay != 0 do
+   print$ f"Thread %i, Delay %d\n"$ i,delay;
+   sleep$ double delay;
+   &delay <- read chan; 
+ done;
+}
+
+// start the worker pthreads
+var chan = mk_pchannel[int]();
+proc spawn_workers(i:int)
+{
+  if i > nthreads return;
+  spawn_pthread (worker$ i,chan);
+  spawn_workers$ i+1;
+}
+spawn_workers 1;
+
+// dispatch jobs
+whilst njobs > 0 do
+  var delay = Cstdlib::rand () % 10 + 1;
+  print$ f"Dispatch job %d\n" delay;
+  write$ chan, delay; 
+  --njobs;
+done;
+
+// terminate workers
+whilst nthreads > 0 do 
+  write$ chan, 0;
+  --nthreads;
+done;
+
 @env_srt.head(2,"Static good tests")
 
 @env_drt.head(2,"Dynamic good tests")
@@ -2226,7 +2279,7 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_nd.py'))
-@tangle("completion_tets = glob.glob('"+env_nd.root+"*.flx')")
+@tangle("completion_tests = glob.glob('"+env_nd.root+"*.flx')")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -2236,7 +2289,7 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_pt.py'))
-@tangle("perform_tets = glob.glob('"+env_pt.root+"*.flx')")
+@tangle("perform_tests = glob.glob('"+env_pt.root+"*.flx')")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
