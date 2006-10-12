@@ -1,0 +1,7 @@
+echo "DEFAULT FELIX BUILD"
+./boot
+./configure
+./mk extract
+./mk
+
+
