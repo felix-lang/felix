@@ -145,7 +145,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         );
         *)
 
-        let matches =  type_match syms.dfns tct t  && type_match syms.dfns t tct in
+        let matches =  tct = t in
         if matches then 
           (*
           print_endline "Matches!";
@@ -153,17 +153,21 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
           ()
         else
           clierr sr "Sole instance doesn't match virtual"
-         ; 
-        if Hashtbl.mem syms.typeclass_to_instance (tck,inst_ts) 
-        then 
+        ; 
+        let old = 
+          try Hashtbl.find syms.typeclass_to_instance tck 
+          with Not_found -> []
+        in
+        let entry = inst_vs , inst_ts , i in
+        if mem entry old then
           clierr sr "Instance already registered??"
-        ;
-        Hashtbl.add syms.typeclass_to_instance (tck,inst_ts) i;
-        (*
+        else
+          Hashtbl.replace syms.typeclass_to_instance tck (entry :: old);
+        
         print_endline ("Register mapping " ^ si tck ^ 
+        print_bvs inst_vs ^
            "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "] -> " ^ si i
         );
-        *)
 
       | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
@@ -222,11 +226,20 @@ let fixup_typeclass_instance syms i ts =
   let rec aux ts1 ts2 = match ts1 with
     | [] -> i,ts (* not found *)
     | h::t ->
-      match try 
-        Some (Hashtbl.find syms.typeclass_to_instance (i,rev ts1)) 
-        with Not_found -> None
-      with
-      | Some i -> i,ts2
-      | None -> aux t (h::ts2)
+      let entries = 
+        try Hashtbl.find syms.typeclass_to_instance i 
+        with Not_found -> []
+      in
+      match entries with
+      | [] -> aux t (h::ts2)
+      | [vs,ts,j] ->
+        print_endline 
+        ("Found unique instance for typeclass " ^
+        "[" ^ catmap "," (sbt syms.dfns) (rev ts1)^ "] fun ["^
+        catmap "," (sbt syms.dfns) ts2 ^"] -> " ^ si j
+        )
+        ;
+        j,ts2
+      | _ -> failwith "can't handle multiple instances yet"
   in aux (rev ts) []
 

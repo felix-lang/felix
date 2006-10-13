@@ -297,8 +297,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let var_idx = 
         let varname = `AST_name (sr,vname,[]) in
         match be varname with
-          | `BEXPR_name (i,[]),_ -> i
-          | _ -> clierr sr "Expected (nonpolymorphic) variable name to store object"
+          | `BEXPR_name (i,_),_ -> i
+          | _ -> clierr sr "Expected variable name to store object"
       in
       let cls = be clsname in
       begin match cls with 

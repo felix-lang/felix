@@ -292,12 +292,13 @@ let make_closures syms bbdfns =
 
   (* this is a hack! *)
   Hashtbl.iter
-  ( fun (i,ts) j -> 
-    (*
-    print_endline ("Keep instance " ^ si j); 
-    *)
+  ( fun i entries ->
+    iter (fun (vs,ts,j) -> 
+    print_endline ("[flx_mkcls] KNOWN WRONG CODE Keep instance " ^ si j); 
     set_closure bbdfns `Heap_closure i;
     set_closure bbdfns `Heap_closure j;
+    )
+    entries
   )
   syms.typeclass_to_instance
   ;

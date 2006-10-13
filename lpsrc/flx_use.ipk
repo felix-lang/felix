@@ -287,12 +287,13 @@ let cal_use_closure syms bbdfns (count_inits:bool) =
   in
   let ut t = uses_type syms u bbdfns count_inits t in
   Hashtbl.iter
-  ( fun (i,ts) j -> 
-    (*
-    print_endline ("Keep instance " ^ si j); 
-    *)
+  ( fun i entries -> 
+    iter (fun (vs,ts,j) ->
+    print_endline ("KNOWN WRONG CODE >> Keep instance " ^ si j); 
     add i; add j;
     iter ut ts
+    )
+    entries
   )
   syms.typeclass_to_instance
   ;

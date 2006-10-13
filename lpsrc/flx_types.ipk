@@ -5162,7 +5162,7 @@ type sym_state_t =
   mutable reductions : reduction_t list;
   mutable axioms: axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
-  typeclass_to_instance: (int * btypecode_t list, int) Hashtbl.t;
+  typeclass_to_instance: (int, (bvs_t * btypecode_t list * int) list) Hashtbl.t;
 }
 
 module VarMap = StringMap
@@ -5252,7 +5252,7 @@ type sym_state_t =
   mutable reductions : reduction_t list;
   mutable axioms : axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
-  typeclass_to_instance: (int * btypecode_t list, int) Hashtbl.t;
+  typeclass_to_instance: (int, (bvs_t * btypecode_t list * int) list) Hashtbl.t;
 }
 
 
