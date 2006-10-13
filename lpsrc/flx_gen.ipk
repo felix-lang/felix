@@ -1292,9 +1292,9 @@ let gen_exe filename syms
       needs_switch := true; 
       code
 
-    | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,a) ->
+    | `BEXE_apply_ctor_stack (sr,i1,i2,class_ts,i3,a) ->
       let a = match a with (a,t) -> a, tsub t in
-      let ts = map tsub ts in
+      let class_ts = map tsub class_ts in
       let the_display = 
         let d' = 
           map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bbdfns i (list_prefix ts vslen))
@@ -1306,8 +1306,8 @@ let gen_exe filename syms
       in
       (* let var_name = cpp_instance_name syms bbdfns i1 ts in *)
       (* dummy type in variable name .. : *)
-      let var_name = ge sr (`BEXPR_name (i1, []),`BTYP_void) in
-      let class_name = cpp_instance_name syms bbdfns i2 ts in
+      let var_name = ge sr (`BEXPR_name (i1, ts),`BTYP_void) in
+      let class_name = cpp_instance_name syms bbdfns i2 class_ts in
       let class_props = 
         try match Hashtbl.find bbdfns i2 with 
           | _,_,_,`BBDCL_class (props,_)->props
@@ -1334,9 +1334,9 @@ let gen_exe filename syms
       in 
       code
 
-    | `BEXE_apply_ctor (sr,i1,i2,ts,i3,a) ->
+    | `BEXE_apply_ctor (sr,i1,i2,class_ts,i3,a) ->
       let a = match a with (a,t) -> a, tsub t in
-      let ts = map tsub ts in
+      let class_ts = map tsub class_ts in
       let the_display = 
         let d' = 
           map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bbdfns i (list_prefix ts vslen))
@@ -1348,8 +1348,8 @@ let gen_exe filename syms
       in
       (* let var_name = cpp_instance_name syms bbdfns i1 ts in *)
       (* dummy type in variable name .. : *)
-      let var_name = ge sr (`BEXPR_name (i1, []),`BTYP_void) in
-      let class_name = cpp_instance_name syms bbdfns i2 ts in
+      let var_name = ge sr (`BEXPR_name (i1, ts),`BTYP_void) in
+      let class_name = cpp_instance_name syms bbdfns i2 class_ts in
       let class_props = 
         try match Hashtbl.find bbdfns i2 with 
           | _,_,_,`BBDCL_class (props,_)->props
@@ -1366,7 +1366,7 @@ let gen_exe filename syms
         | _,`BTYP_tuple [] -> "this"
         | _ -> let a = ge sr a in "this" ^ ", " ^ a
       in
-      let ctor_name = cpp_instance_name syms bbdfns i3 ts in
+      let ctor_name = cpp_instance_name syms bbdfns i3 class_ts in
       let labno = !counter in incr counter;
       let code =
           needs_switch := true; 
