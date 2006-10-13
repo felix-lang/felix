@@ -2599,7 +2599,9 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       inner_typeofindex syms rs index
 
     | _ ->
+      (*
       print_endline "Non function ..";
+      *)
       let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
       handle_nonfunction_index index ts
     end
