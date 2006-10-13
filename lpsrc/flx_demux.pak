@@ -520,7 +520,7 @@ public:
 
   virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
 
-  // oops! need to correctly get/set the quit flag
+  // pass it on to composed non-threadsafe demuxer
   virtual demux_quit_flag* get_quit_flag() { return demux.get_quit_flag(); }
   virtual void set_quit_flag(demux_quit_flag* f) { demux.set_quit_flag(f); }
 };
@@ -2498,11 +2498,10 @@ public:
     LPOVERLAPPED olp, int err);
 };
 
-// looks a bit like wsasocketio_control_block (bad name, sends too)
+// winfileio_control_block, much like wsasocketio_control_block
 class DEMUX_EXTERN winfileio_control_block : public iocp_wakeup {
   bool    reading;
 public:
-// probably should be a pointer (?)
   sel_param pb;
   HANDLE    file; // I like to modify this from the outside
 
@@ -2932,6 +2931,9 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   return false;           // connection didn't close
 }
 
+// get a posix demuxer to quit, that is, get the demuxer's event thread
+// to exit. doesn't return until this has happened. pretty sure that
+// calling this on a demuxer used synchronously would be a bad idea.
 // doesn't throw
 void
 posix_demuxer::async_quit()
@@ -2940,14 +2942,10 @@ posix_demuxer::async_quit()
     // NEW and IMPROVED!!! demux quitter which sets demux quit flag
     // via self pipe trick then waits for self pipe/quitting callback
     // to finish. no fear of quitter being destructed early!
-
-    // this will wake the thread (there should only be one atm), however
-    // that's just another race between kevent and close. really need to
-    // extend self piper to set a quit flag. we have to currently assume
-    // that there is only event collecting thread.
-    // fprintf(stderr, "taking down kqueue with quitter (QUITTER!)\n");
+    // fprintf(stderr, "async_quit called on posix demuxer\n");
     demux_quitter quitter;
     quitter.quit(this);
+	// event thread has exited at this point
   } catch(...) {
     fprintf(stderr, "error waking demuxer with self pipe quitter\n");
   }
@@ -3441,17 +3439,6 @@ public:
   void quit(demuxer* demux); // blocks until event thread exits
 };
 
-/*
-class DEMUX_EXTERN wdemux_quitter : demux_callback {
-  wself_piper sp;
-  async_bool finished; // initially false
-public:
-  void quit(iocp_demuxer* demux); // blocks until demuxer/event thread exits
-
-  void callback(demuxer* d); // called back by demuxer
-};
-*/
-
 } }
 
 #endif
@@ -3482,7 +3469,10 @@ async_bool::wait_until_true()
   }
 }
 
-// call this last thing before event thread exit
+// call this last thing before event thread exit, or more explicitly
+// call it before never touching the given demuxer ever again. see?
+// it is linked to demuxers. a better name for this method would be
+// i_promise_to_never_use_the_associated_object_ever_again_clear_question_mark
 void
 async_bool::signal_true()
 {
@@ -3491,6 +3481,14 @@ async_bool::signal_true()
   // do absolutely NOTHING here as we may have already been destructed. boom.
 }
 
+// this is called by the demuxer, from its event thread.
+// for this reason it can modify the demuxer with tranquility, asking it
+// to quit, by setting the "quit flag". this is an obj with a virtual 
+// signal_true method which the event thread/demuxer user calls, in effect
+// promising to never interact with that demuxer ever again. what to do with
+// the wakeups that demuxer still knows about is unclear, and with most
+// demuxer impls there isn't even a way to know which wakeups are outstanding.
+// it hasn't been a problem yet.
 void
 demux_quitter::callback(demuxer* demux)
 {
@@ -3510,30 +3508,6 @@ demux_quitter::quit(demuxer* demux)
    finished.wait_until_true();
    // event thread exited
 }
-
-/*
-// blocks until demuxer/event thread exits
-void
-wdemux_quitter::quit(iocp_demuxer* demux)
-{
-  //fprintf(stderr, "wdemux_quitter::quit\n");
-  
-  // install self piper in iocp demuxer, along withour callback.
-  sp.install(demux, this);
-  sp.wake(); // wake the demuxer
-  fprintf(stderr, "wdemux_quitter::quit waiting on finished flag\n");
-  finished.wait_until_true();
-  fprintf(stderr, "wdemux_quitter::quit exiting\n");
-} 
-
-void
-wdemux_quitter::callback(demuxer* d)
-{
-  fprintf(stderr, "wdemux_quitter got called back by demuxer (%p)!\n", d);
-  // install quit flag in demuxer
-  d->set_quit_flag(&finished);
-}
-*/
 
 } }
 
@@ -3633,18 +3607,6 @@ self_piper::wake()
     pp.write_byte();
 }
 
-// currently setup to not see the self piper
-/*
-void
-self_piper::inspect(int s)
-{   
-    // lets wake the demuxer by writing to our end of the pipe
-    // lets also not add redundant select wakes for our own selfpipe, as
-    // we know it's adding whilst not in select. Is that clear?
-    if(s != fds[0].fd) wake();
-}
-*/
-
 void
 selfpipe_wakeup::wakeup(posix_demuxer& demux)
 {   
@@ -3690,25 +3652,6 @@ pipe_pair::pipe_pair()
   fds[0].fd = self_pipe_fds[0];
   fds[1].fd = self_pipe_fds[1];
 }
-
-// never gets called.
-/*
-void
-pipe_pair::read_byte()
-{
-  ssize_t         nbytes;
-  char            b;
-    
-  // if this were read then this fn would work with non-sockets
-  // EH? It IS read.
-  nbytes = read(fds[0].fd, &b, 1);  // read end of the pipe
-    
-  if(nbytes == -1) perror("read");
-    
-  // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
-  assert(nbytes == 1 && b == 1);
-}
-*/
 
 void
 pipe_pair::write_byte()
@@ -3833,6 +3776,10 @@ wpipe_pair::wpipe_pair()
   // looks like I can't use anonymous pipes with iocp. will have to
   // use a specially setup named pipe - one that allows repetitions...
   // this doesn't sound good.
+  // This will be a problem if we have multiple event waiting threads.
+  // If I don't get the flags right it will also be a problem if we
+  // have multiple instances/apps running. I don't wan't this resource
+  // to be globally visible. Flags?
   const char* pname = "\\\\.\\pipe\\flx_iocp_quitter";
 
   // don't actually need duplex, nor those buffers. 1 byte at a time suffices
@@ -4302,7 +4249,7 @@ public:
 
   virtual int     add_socket_wakeup(socket_wakeup* sv, int flags);
 
-  // oops! need to correctly get/set the quit flag
+  // pass it on to composed non-threadsafe demuxer
   virtual demux_quit_flag* get_quit_flag() { return demux.get_quit_flag(); }
   virtual void set_quit_flag(demux_quit_flag* f) { demux.set_quit_flag(f); }
 };
