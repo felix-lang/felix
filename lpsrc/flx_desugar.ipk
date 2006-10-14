@@ -227,7 +227,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
           | `NoInlineFunction -> `NoInline::props
           | `Ctor -> `Ctor::props
           | `Generator -> `NoInline::`Generator::props
-          | `Virtual -> `Virtual::props
+          | `Virtual -> `NoInline::`Virtual::props
           | _ -> props
           in
           begin match return_type with
@@ -263,7 +263,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
           | `InlineFunction -> `Inline::props
           | `NoInlineFunction -> `NoInline::props
           | `Generator -> `NoInline::`Generator::props
-          | `Virtual -> `Virtual::props
+          | `Virtual -> `NoInline::`Virtual::props
           | `Ctor -> `Ctor::props
           | _ -> props 
           in

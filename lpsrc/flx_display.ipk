@@ -61,12 +61,17 @@ let cal_display syms bbdfns parent : (bid_t *int) list =
     | Some (_,parent',sr,`BBDCL_reglex (_,vs,_,_,_,_))
     | Some (_,parent',sr,`BBDCL_glr (_,vs,_,_))
       -> aux parent' ((parent,length vs)::display)
+
+    (* typeclasses have to be treated 'as if' top level *)
+    (* MAY NEED REVISION! *)
+    | Some (_,parent',sr,`BBDCL_typeclass _ ) -> rev display
     | None ->
       begin
         try  
           match Hashtbl.find syms.dfns parent with
           (* instances have to be top level *)
           | {id=id; symdef=`SYMDEF_instance _} -> rev display
+          | {id=id; symdef=`SYMDEF_typeclass } -> rev display
 
           | {id=id} ->
             failwith ("[cal_display] Can't find index(1) " ^id^"<"^ si parent^">")

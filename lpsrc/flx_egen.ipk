@@ -1022,6 +1022,21 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     end
 
   | `BEXPR_apply_direct (index,ts,a) ->
+    let ts = map tsub ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
+    if index <> index' then
+    begin 
+      let _,_,sr3,entry = 
+        try Hashtbl.find bbdfns index' 
+        with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
+      in
+      match entry with
+      | `BBDCL_fun _ -> ge' (`BEXPR_apply_prim (index',ts',a),t)
+      | `BBDCL_function _ -> ge' (`BEXPR_apply_direct (index',ts',a),t)
+      | _ ->
+          clierr2 sr sr3 ("expected instance to be function " ^ id)
+    end else
+
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
@@ -1038,7 +1053,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       (*
       print_endline ("Generating closure[apply direct] of " ^ si index);
       *)
-      let ts = map tsub ts in
       let the_display = 
         let d' = 
           map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
@@ -1068,6 +1082,21 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     end
 
   | `BEXPR_apply_stack (index,ts,a) ->
+    let ts = map tsub ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
+    if index <> index' then
+    begin 
+      let _,_,sr3,entry = 
+        try Hashtbl.find bbdfns index' 
+        with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
+      in
+      match entry with
+      | `BBDCL_fun _ -> ge' (`BEXPR_apply_prim (index',ts',a),t)
+      | `BBDCL_function _ -> ge' (`BEXPR_apply_direct (index',ts',a),t)
+      | _ ->
+          clierr2 sr sr3 ("expected instance to be function " ^ id)
+    end else
+
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
@@ -1079,7 +1108,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     *)
     match entry with
     | `BBDCL_function (props,vs,(ps,traint),retyp,_) ->
-      let ts = map tsub ts in
       let display = get_display_list syms bbdfns index in
       let name = cpp_instance_name syms bbdfns index ts in
 

@@ -788,6 +788,11 @@ let gen_exe filename syms
   in let our_level = length our_display in
 
   let rec handle_closure sr is_jump index ts subs' a stack_call =
+    let index',ts' = index,ts in
+    let index, ts = Flx_typeclass.fixup_typeclass_instance syms index ts in
+    (*
+    print_endline ("Remapped " ^ si index' ^ " to " ^ si index');
+    *)
     let subs = 
       catmap ""
       (fun ((_,t) as e,s) ->
@@ -826,21 +831,7 @@ let gen_exe filename syms
       in 
       begin match ct with
       | `Virtual -> 
-        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
-        if index = index' then
-          clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id)
-        ;
-        begin let _,_,sr3,entry = 
-          try Hashtbl.find bbdfns index' 
-          with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
-        in
-        match entry with
-        | `BBDCL_proc _ 
-        | `BBDCL_procedure _ ->
-          handle_closure sr is_jump index' ts' subs' a stack_call
-        | _ ->
-          clierr2 sr sr3 ("expected instance to be function " ^ id)
-        end
+          clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id) ;
       | `Str s -> ws (ce_expr "expr" s)
       | `StrTemplate s ->
         let ss = gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom"  in

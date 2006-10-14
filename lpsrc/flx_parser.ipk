@@ -1250,7 +1250,7 @@ function_definition:
         match $6 with 
         | Some x -> 
           if kind = `Virtual then 
-            Flx_exceptions.clierr sr "Virtual procedure can't have body"
+            Flx_exceptions.clierr sr "Virtual function can't have body"
           else x 
         | None -> 
           if kind = `Virtual then `Virtual else

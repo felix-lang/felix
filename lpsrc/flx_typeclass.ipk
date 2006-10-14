@@ -101,10 +101,13 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | _ -> acc
       ) [] inst_kids
     in
-    let check_binding tck sr id tck_bvs tctype =
+    let check_binding force tck sr id tck_bvs tctype =
       let entries = filter (fun (name,x) -> name = id) inst_map in
       match entries with
-      | [] -> clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
+      | [] -> 
+         if force then 
+         clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
+
       | [_,(i,(inst_funbvs,t))] -> 
         (*
         print_endline ("Typeclass " ^ tc_id ^ "<" ^ si tc ^">" ^ print_bvs tc_bvs);
@@ -180,7 +183,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | `BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == `Virtual then
           let ft = `BTYP_function (typeoflist params,ret) in
-          check_binding tck tcksr tckid bvs ft
+          check_binding true tck tcksr tckid bvs ft
         (*
         clierr tcksr "Typeclass requires virtual function";
         *)
@@ -188,13 +191,22 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | `BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct == `Virtual then 
           let ft = `BTYP_function (typeoflist params,`BTYP_void) in
-          check_binding tck tcksr tckid bvs ft
+          check_binding true tck tcksr tckid bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
         *)
         
-      | `BBDCL_function _ 
-      | `BBDCL_procedure _
+      | `BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
+        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let ft = `BTYP_function (argt,ret) in
+        check_binding false tck tcksr tckid bvs ft
+
+      | `BBDCL_procedure (props, bvs, bps,_) when mem `Virtual props ->
+        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let ft = `BTYP_function (argt,`BTYP_void) in
+        check_binding false tck tcksr tckid bvs ft
+
+
       | `BBDCL_insert _ -> ()
       | _ -> clierr tcksr "Typeclass entry must be virtual function or procedure"
     )
