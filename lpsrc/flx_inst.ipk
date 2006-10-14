@@ -35,11 +35,15 @@ open Flx_maps
 let null_table = Hashtbl.create 3
 
 let add_inst syms ref_insts1 (i,ts) =
-  (*
+    (*
     print_endline ("Attempt to register instance " ^ si i ^ "[" ^
     catmap ", " (sbt syms.dfns) ts ^ "]");
-  *)
+    *)
   let i,ts = Flx_typeclass.fixup_typeclass_instance syms i ts in
+    (*
+    print_endline ("remapped to instance " ^ si i ^ "[" ^
+    catmap ", " (sbt syms.dfns) ts ^ "]");
+    *)
   let x = i, map (fun t -> reduce_type (lstrip syms.dfns t)) ts in
   let has_variables = 
     fold_left
@@ -490,6 +494,10 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     (*
     print_endline ("Handling requirements of fun " ^ id);
     *)
+    if length vs <> length ts then
+      print_endline ("For fun " ^ id ^ " vs=" ^ print_bvs vs ^
+      ", but ts=" ^ catmap "," (sbt syms.dfns) ts)
+    ;
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

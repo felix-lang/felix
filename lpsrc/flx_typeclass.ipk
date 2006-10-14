@@ -164,10 +164,12 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         else
           Hashtbl.replace syms.typeclass_to_instance tck (entry :: old);
         
+        (*
         print_endline ("Register mapping " ^ si tck ^ 
         print_bvs inst_vs ^
            "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "] -> " ^ si i
         );
+        *)
 
       | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
@@ -222,24 +224,59 @@ bbdfns
    tail, which are arguments to the functions personal
    type variables
 *)
+
+let chk syms i ts (inst_vs, inst_ts, j)  = 
+     if length inst_ts > length ts then
+       failwith (
+         "Not enough ts given, expected at least " ^ 
+         si (length inst_ts) ^ ", got " ^ si (length ts)
+       )
+     ;
+     (* solve for vs' *)
+     let vset = fold_left (fun acc (_,i) -> IntSet.add i acc) IntSet.empty inst_vs in
+     let eqns = combine (list_prefix ts (length inst_ts)) inst_ts in
+     let mgu = 
+       try Some (unification false syms.dfns eqns vset) 
+       with Not_found -> None
+     in
+     begin match mgu with 
+     | None -> None
+     | Some mgu ->
+       let tsv = 
+         map 
+         (fun (s,i) ->
+           if not (mem_assoc i mgu) then
+             failwith ("Didn't solve for instance type variable " ^ s)
+           else 
+           (
+             (*
+             print_endline ("Solved " ^ s ^ "-> " ^ sbt syms.dfns (assoc i mgu));
+             *)
+             assoc i mgu
+           )
+         )
+         inst_vs
+       in
+       let tail = drop ts (length inst_ts) in
+       let ts = tsv @ tail in
+       (*
+       print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+       *)
+       Some (j,ts)
+     end
+
 let fixup_typeclass_instance syms i ts =
-  let rec aux ts1 ts2 = match ts1 with
-    | [] -> i,ts (* not found *)
-    | h::t ->
-      let entries = 
-        try Hashtbl.find syms.typeclass_to_instance i 
-        with Not_found -> []
-      in
-      match entries with
-      | [] -> aux t (h::ts2)
-      | [vs,ts,j] ->
-        print_endline 
-        ("Found unique instance for typeclass " ^
-        "[" ^ catmap "," (sbt syms.dfns) (rev ts1)^ "] fun ["^
-        catmap "," (sbt syms.dfns) ts2 ^"] -> " ^ si j
-        )
-        ;
-        j,ts2
-      | _ -> failwith "can't handle multiple instances yet"
-  in aux (rev ts) []
+  let entries = 
+    try Hashtbl.find syms.typeclass_to_instance i 
+    with Not_found -> []
+   in
+   let entries = fold_left (fun acc x -> match chk syms i ts x with
+     | None -> acc
+     | Some x -> x::acc
+     ) [] entries
+   in
+   match entries with
+   | [] -> i,ts
+   | [j,ts] -> j,ts
+   | _ -> failwith "can't handle overlapping instances yet"
 

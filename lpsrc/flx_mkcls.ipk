@@ -294,7 +294,6 @@ let make_closures syms bbdfns =
   Hashtbl.iter
   ( fun i entries ->
     iter (fun (vs,ts,j) -> 
-    print_endline ("[flx_mkcls] KNOWN WRONG CODE Keep instance " ^ si j); 
     set_closure bbdfns `Heap_closure i;
     set_closure bbdfns `Heap_closure j;
     )

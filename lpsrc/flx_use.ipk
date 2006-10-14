@@ -289,7 +289,6 @@ let cal_use_closure syms bbdfns (count_inits:bool) =
   Hashtbl.iter
   ( fun i entries -> 
     iter (fun (vs,ts,j) ->
-    print_endline ("KNOWN WRONG CODE >> Keep instance " ^ si j); 
     add i; add j;
     iter ut ts
     )
