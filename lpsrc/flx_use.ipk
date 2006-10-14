@@ -176,7 +176,8 @@ and uses syms used bbdfns count_inits i =
       begin match bbdcl with
       | `BBDCL_typeclass _ -> ()
 
-      | `BBDCL_instance (_,_,i,ts) ->
+      | `BBDCL_instance (_,_,con,i,ts) ->
+        ut con; 
         iter ut ts
 
       | `BBDCL_function (props,_,(ps,traint),ret,exes) ->
@@ -288,8 +289,9 @@ let cal_use_closure syms bbdfns (count_inits:bool) =
   let ut t = uses_type syms u bbdfns count_inits t in
   Hashtbl.iter
   ( fun i entries -> 
-    iter (fun (vs,ts,j) ->
+    iter (fun (vs,con,ts,j) ->
     add i; add j;
+    ut con;
     iter ut ts
     )
     entries

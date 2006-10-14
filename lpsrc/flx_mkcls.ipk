@@ -293,7 +293,7 @@ let make_closures syms bbdfns =
   (* this is a hack! *)
   Hashtbl.iter
   ( fun i entries ->
-    iter (fun (vs,ts,j) -> 
+    iter (fun (vs,con,ts,j) -> 
     set_closure bbdfns `Heap_closure i;
     set_closure bbdfns `Heap_closure j;
     )

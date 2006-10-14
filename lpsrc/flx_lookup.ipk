@@ -4504,6 +4504,7 @@ and grab_name qn = match qn with
 
 and instance_check syms caller_env called_env mgu sr name rtcr tsub = 
   (*
+  print_endline ("INSTANCE CHECK MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.dfns t) mgu);
   print_endline "SEARCH FOR INSTANCE!";
   print_env caller_env;
   *)
@@ -4570,7 +4571,22 @@ and instance_check syms caller_env called_env mgu sr name rtcr tsub =
               if length inst_ts <> length ts' then false else
               match maybe_specialisation syms.dfns (combine inst_ts ts') with
               | None -> false
-              | Some _ -> true
+              | Some mgu -> 
+                (*
+                print_endline ("MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.dfns t) mgu);
+                *)
+                let {raw_type_constraint=inst_constraint} = snd vs in 
+                let cons = bind_type syms instance_env sr inst_constraint in
+                let cons = list_subst mgu cons in
+                let cons = Flx_maps.reduce_type (beta_reduce syms [] cons) in
+                match cons with
+                | `BTYP_tuple [] -> true
+                | `BTYP_void -> false
+                | _ -> print_endline (
+                     "[instance_check] Can't reduce instance type constraint " ^
+                     sbt syms.dfns cons
+                   );
+                   true
             in
 
             if matches then begin
@@ -4660,6 +4676,7 @@ and resolve_overload'
   | None -> () 
   | Some (index,sign,ret,mgu,ts) ->
     (*
+    print_endline ("RESOLVED OVERLOAD OF " ^ name);
     print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt syms.dfns) ts);
     *)

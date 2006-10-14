@@ -46,7 +46,7 @@ let rec drop l n =
   if n = 0 then l else drop (tl l) (n-1)
 
 let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map_t)
-  (inst:int) (inst_id: string) inst_vs inst_sr inst_props tc inst_ts 
+  (inst:int) (inst_id: string) inst_vs inst_constraint inst_sr inst_props tc inst_ts 
 =
   let tc_id, _, tc_sr, tc_entry = Hashtbl.find bbdfns tc in
   match tc_entry with
@@ -158,7 +158,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
           try Hashtbl.find syms.typeclass_to_instance tck 
           with Not_found -> []
         in
-        let entry = inst_vs , inst_ts , i in
+        let entry = inst_vs , inst_constraint, inst_ts , i in
         if mem entry old then
           clierr sr "Instance already registered??"
         else
@@ -211,8 +211,8 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
 let typeclass_instance_check syms bbdfns child_map = 
 Hashtbl.iter
 (fun i (id,_,sr,entry) -> match entry with
-  | `BBDCL_instance (props, vs, tc, ts) ->
-     check_instance syms bbdfns child_map i id vs sr props tc ts
+  | `BBDCL_instance (props, vs, cons, tc, ts) ->
+     check_instance syms bbdfns child_map i id vs cons sr props tc ts
 
   | _ -> ()
 )
@@ -225,7 +225,7 @@ bbdfns
    type variables
 *)
 
-let chk syms i ts (inst_vs, inst_ts, j)  = 
+let chk syms i ts (inst_vs, inst_constraint, inst_ts, j)  = 
      if length inst_ts > length ts then
        failwith (
          "Not enough ts given, expected at least " ^ 
@@ -257,12 +257,18 @@ let chk syms i ts (inst_vs, inst_ts, j)  =
          )
          inst_vs
        in
-       let tail = drop ts (length inst_ts) in
-       let ts = tsv @ tail in
-       (*
-       print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
-       *)
-       Some (j,ts)
+       let con = list_subst mgu inst_constraint in
+       let con = reduce_type (Flx_beta.beta_reduce syms [] con) in
+       match con with
+       | `BTYP_tuple [] ->
+         let tail = drop ts (length inst_ts) in
+         let ts = tsv @ tail in
+         (*
+         print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+         *)
+         Some (j,ts)
+       | `BTYP_void -> None
+       | _ -> failwith "Unable to reduce type constraint!"
      end
 
 let fixup_typeclass_instance syms i ts =

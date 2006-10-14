@@ -159,7 +159,11 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   | `BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps
   | `BBDCL_fun (_,_,ps,ret,_, reqs,_)  -> cal_req_usage sr k reqs; iter ut ps; ut ret
   | `BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
-  | `BBDCL_instance (_,_,i,ts) -> add uses k i sr; iter ut ts
+  | `BBDCL_instance (_,_,cons,i,ts) -> 
+    (* we dont add the type constraint, since it
+    is only used for instance selection
+    *)
+    add uses k i sr; iter ut ts
 
   | `BBDCL_nonconst_ctor (_,_,unt,_,ct) -> ut unt; ut ct
   | `BBDCL_union _  -> ()

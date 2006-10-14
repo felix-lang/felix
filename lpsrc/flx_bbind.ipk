@@ -215,6 +215,10 @@ let bbind_sym syms bbdfns i {
     let bt t = bind_type syms env sr t in
     let ivs = find_vs syms i in (* this is the full vs list *) 
     let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
+    let bcons = 
+      let {raw_type_constraint=t} = snd ivs in
+      bt t
+    in
     let btraint = function | Some x -> Some (be x) | None -> None in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
     let bind_quals quals = bind_quals bt quals in
@@ -703,7 +707,7 @@ let bbind_sym syms bbdfns i {
       let (k:entry_kind_t),(ts: typecode_t list) = luqn qn in
       let k = sye k in
       let ts = map bt ts in
-      let sym : bbdcl_t = `BBDCL_instance ([],bvs,k,ts) in
+      let sym : bbdcl_t = `BBDCL_instance ([],bvs,bcons, k,ts) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
     | `SYMDEF_regdef _ -> ()

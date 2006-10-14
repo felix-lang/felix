@@ -1142,7 +1142,11 @@ and bbdcl_t =
   | `BBDCL_cclass of     bvs_t * bclass_member_t list
   | `BBDCL_class of      property_t list * bvs_t
   | `BBDCL_typeclass of  property_t list * bvs_t
-  | `BBDCL_instance of   property_t list * bvs_t * bid_t * btypecode_t list
+  | `BBDCL_instance of   property_t list * 
+                         bvs_t * 
+                         btypecode_t (* constraint *) * 
+                         bid_t * 
+                         btypecode_t list
   | `BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t
   ]
 
@@ -3329,6 +3333,14 @@ and print_bvs = function
     ) ^
     "]"
 
+and print_bvs_cons dfns vs cons = match vs,cons with
+ | [],`BTYP_tuple [] -> ""
+ | vs,cons ->
+   "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^
+   (if cons = `BTYP_tuple[] then "" 
+   else " where " ^ sbt dfns cons) ^
+   "]"
+
 and print_inst dfns = function
   | [] -> ""
   | ts -> 
@@ -4863,9 +4875,9 @@ and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string =
     string_of_properties props ^
     "typeclass " ^ name ^ print_bvs vs ^ ";"
 
-  | `BBDCL_instance (props,vs,bid,ts) ->
+  | `BBDCL_instance (props,vs,cons,bid,ts) ->
     string_of_properties props ^
-    "instance "^print_bvs vs^
+    "instance "^print_bvs_cons dfns vs cons^
     " of <" ^ si bid ^">["^ catmap "," (sbt dfns) ts ^ "];"
 
   | `BBDCL_glr (props,vs,t,(p,bexes)) ->
@@ -5162,7 +5174,7 @@ type sym_state_t =
   mutable reductions : reduction_t list;
   mutable axioms: axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
-  typeclass_to_instance: (int, (bvs_t * btypecode_t list * int) list) Hashtbl.t;
+  typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
 }
 
 module VarMap = StringMap
@@ -5252,7 +5264,7 @@ type sym_state_t =
   mutable reductions : reduction_t list;
   mutable axioms : axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
-  typeclass_to_instance: (int, (bvs_t * btypecode_t list * int) list) Hashtbl.t;
+  typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
 }
 
 
