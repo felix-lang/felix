@@ -769,13 +769,15 @@ let overload
            *)
            lhs @ rhs (* keep whole list, discard c *) 
          | `Equal -> 
+           (* same function .. *)
+           if i = j then aux lhs t else
            let sr = match Hashtbl.find syms.dfns i with {sr=sr} -> sr in
            let sr2 = match Hashtbl.find syms.dfns j with {sr=sr} -> sr in
            clierrn [call_sr; sr2; sr]
            (
              "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^
-             "\n(1) " ^ sbt syms.dfns typ ^
-             "\n(2) " ^ sbt syms.dfns c
+             "\n(1) fun " ^ si i^ ":" ^ sbt syms.dfns typ ^
+             "\n(2) fun " ^ si j^ ":"^ sbt syms.dfns c
            )
 
          | `Greater -> 
