@@ -1863,6 +1863,10 @@ open module Array
   publish "Array access: works on LHS of assignment too"
   fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
   fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
+  
+  // hack to make subscript of non-array work: ignores index
+  fun subscript[t]: lvalue[t] * int -> lvalue[t] = "$1";
+  fun subscript[t]: t * int -> t = "$1";
 
   publish "Explicit array store function"
   proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.get_data()))[$2]=$3;";
