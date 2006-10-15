@@ -229,6 +229,16 @@ let nth_type ts i =
   with Not_found ->
     failwith ("Can't find component " ^ si i ^ " of type!")
 
+let isclass bbdfns t : bool = 
+  match t with
+  | `BTYP_inst (i,_) ->
+  begin let _,_,_,entry = Hashtbl.find bbdfns i in
+  match entry with 
+  | `BBDCL_class _ -> true
+  | _ -> false
+  end
+  | _ -> false
+
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
@@ -420,6 +430,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | `BTYP_function _ ->
       let cast = tn t in
       ce_cast cast (ce_dot (ge' e) "data")
+    | _ when isclass bbdfns t ->
+      let cast = tn t in
+      ce_cast cast (ce_dot (ge' e) "data")
+
     | _ ->
       let cast = tn t ^ "*" in
       ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
@@ -477,7 +491,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
               string_of_btypecode syms.dfns t
            )
        in ce_atom s
-       (* "(" ^ tn (lower t) ^ "*)_uctor_" *)
 
     | _ -> failwith "Case tag must have sum type"
     end 
@@ -817,6 +830,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       union_typename = tn t 
     in
     let aval = 
+       if isclass bbdfns t' then ge_arg e else
       "new (*PTF gc, "^arg_typename^"_ptr_map) " ^
       arg_typename ^ "(" ^ ge_arg e ^ ")"
     in 
@@ -871,6 +885,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
          union_typename = tn (lower t)
        in
        let aval = 
+         if isclass bbdfns t'' then ge_arg (a,t'') else
          "new (*PTF gc, "^arg_typename^"_ptr_map) " ^
          arg_typename ^ "(" ^ ge_arg (a,t'') ^ ")"
        in
@@ -1003,16 +1018,21 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
 
       (* function types are already pointers .. any use of this
-         should do a clone ..
+         should do a clone .. class types are also pointers ..
       *)
       | `BTYP_function _ ->
         ce_atom (
           "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
         )
 
+      | _ when isclass bbdfns t ->
+        ce_atom (
+          "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
+        )
+
       | _ ->
         let ctt = tn ct in
-        let ptrmap = shape_of bbdfns tn ct in 
+        let ptrmap = shape_of syms bbdfns tn ct in 
         ce_atom (
           "_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
           ctt ^"("^ ge a ^"))"

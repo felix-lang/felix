@@ -391,7 +391,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "  return result.variant;";
         end else begin
         pe ("    result.data =");
-        pe ("      new(gc,"^shape_of bbdfns tn t^")");
+        pe ("      new(gc,"^shape_of syms bbdfns tn t^")");
         pe ("      "^result_type^"(*("^result_type^"*)(void*)p)");
         pe ("  ;");
         pe "  delete (void*)p;";

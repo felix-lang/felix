@@ -23,6 +23,7 @@ val gen_prim_call :
   cexpr_t
   
 val shape_of:
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   (btypecode_t -> string) ->
   btypecode_t ->
@@ -50,7 +51,7 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
 
-let shape_of bbdfns tn t =
+let shape_of syms bbdfns tn t =
   match t with
   | `BTYP_inst (i,ts) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
@@ -60,8 +61,10 @@ let shape_of bbdfns tn t =
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
       if all_voids cpts then "_int_ptr_map"
       else "_uctor_ptr_map"
-     | _ -> tn t ^ "_ptr_map"
-     end
+    | `BBDCL_class _ ->
+      cpp_instance_name syms bbdfns i ts ^ "_ptr_map"
+    | _ -> tn t ^ "_ptr_map"
+    end
   | `BTYP_pointer _ -> "_ref_ptr_map"
   | _ -> tn t ^ "_ptr_map"
  
@@ -85,7 +88,7 @@ let gen_prim_call
 
   let argt = rt argt in
   let tt = tn argt in
-  let sh t = shape_of bbdfns tn t in
+  let sh t = shape_of syms bbdfns tn t in
   let gshapes = map sh ts in
   let ts = map rtn ts in
   let carg = 
