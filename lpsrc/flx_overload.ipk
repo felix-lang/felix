@@ -336,19 +336,40 @@ let consider syms bt luqn2 name
     eqns
     ;
     *)
-
     let n = min (length curry_domains) (length arg_types) in
     let eqns = eqns @ combine (list_prefix curry_domains n) (list_prefix arg_types n) in
+
+    let dvars = ref IntSet.empty in
+    iter (fun (_,i)-> dvars := IntSet.add i !dvars) spec_vs;
 
     (*
     print_endline "EQUATIONS ARE:";
     iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
     eqns
     ;
+    (* WRONG!! dunno why, but it is! *)
+    print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
+      (IntSet.fold (fun i l-> i::l) !dvars [])
+    );
     print_endline "...";
     *)
 
     let mgu = maybe_specialisation syms.dfns eqns in
+    (* 
+    (* doesn't work .. fails to solve for some vars
+       which aren't local vs of the fun .. this case:
+
+       fun g2[w with Eq[w,w]] (x:int,y:int)=> xeq(x,y);
+
+       doesn't solve for w checking xeq(x,y) .. not
+       sure why it should tho .. w should be fixed
+       already by the instance match .. hmm ..
+    *)
+    let mgu = 
+      try Some (unification true syms.dfns eqns !dvars)
+      with Not_found -> None
+    in
+    *)
     match mgu with
     | Some mgu -> 
       (*
@@ -490,8 +511,10 @@ let consider syms bt luqn2 name
              let t2 = `BTYP_var (k,`BTYP_type) in 
              print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
              extra_eqns := (t1,t2) :: !extra_eqns;
+             (*
              dvars := IntSet.add i !dvars;
              print_endline ("ADDING DEPENDENT VARIABLE " ^ si i);
+             *)
 
              | _ -> assert false (* vs should have distinct names *)
            )
@@ -512,7 +535,7 @@ let consider syms bt luqn2 name
            ;
            *)
 
-           (* add wildcards to dependent variable set *)
+           (* add wildcards to dependent variable set ?? *)
            iter (fun i-> dvars := IntSet.add i !dvars) any_vars1;
  
            (* add 'as' equations from patterns like

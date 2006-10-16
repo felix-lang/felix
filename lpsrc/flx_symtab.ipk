@@ -949,9 +949,55 @@ let rec build_tables syms name inherit_vs
             (level+1) (Some n) parent root false
             asms
           in
+          let fudged_privtab = Hashtbl.create 97 in
+          let vsl = length (fst inherit_vs) + length (fst vs) in
+          (*
+          print_endline ("Strip " ^ si vsl ^ " vs");
+          *)
+          let drop vs = 
+            let keep = length vs - vsl in
+            if keep >= 0 then rev (list_prefix (rev vs) keep)
+            else failwith "WEIRD CASE"
+          in
+          let nts = map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type)) (fst vs) in
+          (* fudge the private view to remove the vs *)
+          let show { base_sym=i; spec_vs=vs; sub_ts=ts } =
+          si i ^ " |-> " ^ 
+            "vs= " ^catmap "," (fun (s,i) -> s^"<" ^si i^">") vs^
+            "ts =" ^catmap  "," (sbt syms.dfns) ts
+          in
+          let fixup ({ base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
+            let e' = {
+              base_sym=i; 
+              spec_vs=drop vs; 
+              sub_ts=nts @ drop ts 
+              } 
+            in
+            (*
+            print_endline (show e ^ " ===> " ^ show e');
+            *)
+            e'
+          in
+          Hashtbl.iter
+          (fun s es ->
+            (*
+            print_endline ("Entry " ^ s );
+            *)
+            let nues = 
+              if s = "root" then es else
+              match es with
+              | `NonFunctionEntry e -> 
+                 `NonFunctionEntry (fixup e)
+              | `FunctionEntry es -> 
+                `FunctionEntry (map fixup es)
+             in
+             Hashtbl.add fudged_privtab s nues
+          )
+          privtab
+          ;
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;
-            vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            vs=vs;pubmap=pubtab;privmap=fudged_privtab;dirs=dirs;
             symdef=`SYMDEF_typeclass
           }
           ;
@@ -959,7 +1005,7 @@ let rec build_tables syms name inherit_vs
           add_unique priv_name_map id n;
           interfaces := !interfaces @ ifaces
           ;
-          add_tvars privtab
+          add_tvars fudged_privtab
 
 
         | `DCL_instance (qn,asms) ->

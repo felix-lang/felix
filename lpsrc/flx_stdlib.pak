@@ -1864,9 +1864,26 @@ open module Array
   fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
   fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
   
+  /*
+  THIS HACK IS NASTY because we get the error:
+
+    Too many candidates match in overloading subscript with argument types lvalue[(string<1498>)] * lvalue[(int<709>)]
+    Of the matching candidates, the following are most specialised ones are incomparable
+    String::subscript<2115><2115> sig string<1498> * int<709>
+    Array::subscript<3461><3461> sig lvalue[(<T3462>)] * int<709>
+    Perhaps you need to define a function more specialised than all these?
+
+  and it is RIGHT. There's no lvalue form of String::subscript.
+  We would HAVE to define one to resolve the conflict.
+
+  I have no idea what I changed .. this used to work .. hmm ..
+  I fiddled with overloading ..
+
   // hack to make subscript of non-array work: ignores index
   fun subscript[t]: lvalue[t] * int -> lvalue[t] = "$1";
   fun subscript[t]: t * int -> t = "$1";
+  */
+
 
   publish "Explicit array store function"
   proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.get_data()))[$2]=$3;";
