@@ -96,6 +96,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_cstruct _
   | `BBDCL_union _
   | `BBDCL_abs _
+  | `BBDCL_newtype _
   | `BBDCL_const _
   | `BBDCL_typeclass _ 
   | `BBDCL_instance _
@@ -280,6 +281,7 @@ let has_ptr_fn cache syms bbdfns children e =
       | `BTYP_inst (i,ts) ->
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with
+        | `BBDCL_newtype _ -> () (* FIXME *)
         | `BBDCL_abs _ -> ()
         | `BBDCL_union (vs,cs)->
           check_components vs ts (map (fun (_,_,t)->t) cs)

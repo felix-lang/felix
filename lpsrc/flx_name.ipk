@@ -263,6 +263,7 @@ let rec cpp_type_classname syms t =
       | `SYMDEF_union _   -> "_u"
       | `SYMDEF_abs _  -> "_a"
       | `SYMDEF_class -> "_cl"
+      | `SYMDEF_newtype _ -> "_abstr_"
       | _ -> "_unk_"
     in
     if ts = [] then

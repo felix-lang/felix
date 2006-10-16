@@ -523,6 +523,12 @@ abstract_type:
       `AST_abs_decl (rstoken $2 $8, snd $3, $4, qs, $6, $7) 
     }
 
+  | type_quals TYPE NAME tvarlist EQUAL NEW typeexpr SEMI 
+    { 
+      let t = typecode_of_expr $7 in
+      `AST_newtype (rstoken $2 $8, snd $3, $4, t) 
+    }
+
   | CALLBACK PROCEDURE NAME COLON expr requires_clause SEMI 
     {
       let sr = rstoken $1 $7 in

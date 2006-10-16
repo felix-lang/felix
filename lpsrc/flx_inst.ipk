@@ -413,6 +413,10 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     iter rtr tss;
     rtnr (`BTYP_inst (i,ts))
 
+  | `BBDCL_newtype (vs,t) ->
+    rtnr t;
+    rtnr (`BTYP_inst (i,ts))
+
   | `BBDCL_cclass (vs,ps)
     ->
     (*

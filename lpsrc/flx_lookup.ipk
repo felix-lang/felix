@@ -1762,6 +1762,7 @@ and bind_type_index syms (rs:recstop)
     | `SYMDEF_abs _ -> 
       `BTYP_inst (index,ts)
 
+    | `SYMDEF_newtype _
     | `SYMDEF_union _
     | `SYMDEF_struct _ 
     | `SYMDEF_cstruct _ 

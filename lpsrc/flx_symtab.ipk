@@ -1210,6 +1210,38 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
         
+        | `DCL_newtype t ->
+          if is_class then clierr sr "Type abstraction not allowed in class";
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_newtype t
+          }
+          ;
+          let n_repr = !(syms.counter) in incr (syms.counter);
+          let piname = `AST_name (sr,id,[]) in
+          Hashtbl.add dfns n_repr {
+            id="_repr_";sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_fun ([],[piname],t,`StrTemplate "$1",`NREQ_true,"expr") 
+          }
+          ;
+          add_function priv_name_map "_repr_" n_repr
+          ;
+          let n_make = !(syms.counter) in incr (syms.counter);
+          Hashtbl.add dfns n_make {
+            id="_make_"^id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_fun ([],[t],piname,`StrTemplate "(#t)($t)",`NREQ_true,"expr") 
+          }
+          ;
+          add_function priv_name_map ("_make_"^id) n_make
+          ;
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n
+          ;
+          add_tvars privtab
+
         | `DCL_abs (quals,c, reqs) ->
           if is_class then clierr sr "Type binding not allowed in class";
           Hashtbl.add dfns n {

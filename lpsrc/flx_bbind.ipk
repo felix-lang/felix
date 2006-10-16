@@ -723,6 +723,10 @@ let bbind_sym syms bbdfns i {
       let bquals = bind_quals quals in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (bvs,bquals,ct,reqs))
 
+    | `SYMDEF_newtype t ->
+      let t = bt t in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_newtype (bvs,t))
+
     | `SYMDEF_insert (ct,ikind,reqs) ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
       *)

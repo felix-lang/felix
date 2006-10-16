@@ -154,6 +154,7 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
     iter (cal_param_usage syms uses sr k) ps;
     Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
 
+  | `BBDCL_newtype (_,t) -> ut t
   | `BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
   | `BBDCL_const (_,t,_,reqs) -> cal_req_usage sr k reqs
   | `BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps

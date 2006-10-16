@@ -32,6 +32,7 @@ open Flx_treg
 open List
 open Flx_ctypes
 open Flx_ctype
+open Flx_maps
 
 @doc()
 Now some code to generate the bases, given the
@@ -243,6 +244,8 @@ let gen_type_name syms bbdfns (index,typ) =
       ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
+    | `BBDCL_newtype (_,t') -> ""
+
     | `BBDCL_cstruct _ -> if ts = [] then "" else
       let descr = 
         "\n//CSTRUCT "^si i ^" INSTANCE " ^ 
@@ -440,6 +443,19 @@ let gen_type syms bbdfns (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
+    | `BBDCL_newtype (vs,t') -> 
+      let t' = reduce_type t' in
+      let descr = 
+        "\n//NEWTYPE "^si i ^" INSTANCE " ^ 
+        si index^": " ^ 
+        sbt syms.dfns typ ^ 
+        "\n" 
+      in
+      let instance_name = cn typ in
+      let instance = cn t' in
+      descr ^
+      "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
+
     | `BBDCL_abs (vs,quals,ct,_) -> ""
     | `BBDCL_cstruct (vs,cts) -> ""
     | `BBDCL_cclass (vs,cts) -> ""

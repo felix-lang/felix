@@ -234,6 +234,7 @@ and uses syms used bbdfns count_inits i =
 
       | `BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; rq reqs
 
+      | `BBDCL_newtype (_,t) -> ut t
       | `BBDCL_abs (_,_,_,reqs) -> rq reqs
       | `BBDCL_insert (_,s,ikind,reqs)  -> rq reqs
       | `BBDCL_nonconst_ctor (_,_,unt,_,ct) ->

@@ -830,9 +830,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_typeclass (sr, id, vs, sts) ->  
     tack (`AST_typeclass (sr, mi sr id, vs, ms sts))
 
-  (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type_alias (sr, id, vs, t) ->  
-    tack (`AST_type_alias (sr,id,vs, mt sr t))
+    tack (`AST_type_alias (sr,mi sr id,vs, mt sr t))
   
   | `AST_inherit (sr, id, vs, t) ->  tack st
   | `AST_inherit_fun (sr, id, vs, t) ->  tack st
@@ -840,6 +839,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_ctypes (sr, ids, qs, reqs) ->  
     iter 
     (fun (sr,id) -> 
+      let id = mi sr id in
       let sr = slift sr in
       let st = `AST_abs_decl (sr,id, dfltvs, qs, `Str id, rqmap reqs) in
       tack st
@@ -847,7 +847,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     ids
 
   | `AST_abs_decl (sr,id,vs,typs,v,rqs) ->  
-    tack (`AST_abs_decl (sr,id,vs,typs,v, rqmap rqs))
+    tack (`AST_abs_decl (sr,mi sr id,vs,typs,v, rqmap rqs))
+
+  | `AST_newtype (sr,id,vs,t) ->  
+    tack (`AST_newtype (sr,mi sr id,vs,mt sr t))
 
   | `AST_callback_decl (sr,id,args,ret,rqs) ->  
     tack (`AST_callback_decl (sr,mi sr id,map (mt sr) args,mt sr ret,rqmap rqs))
