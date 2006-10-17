@@ -2881,6 +2881,11 @@ try
   ;
   let bbdfns = bbind syms in
 
+  if compiler_options.print_flag 
+  then print_endline "//DOWNGRADING ABSTRACT TYPES"
+  ;
+  let bbdfns = Flx_strabs.strabs syms bbdfns in
+
   let child_map = Flx_child.cal_children syms bbdfns in
   Flx_typeclass.typeclass_instance_check syms bbdfns child_map;
 

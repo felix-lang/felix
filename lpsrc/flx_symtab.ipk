@@ -1223,7 +1223,7 @@ let rec build_tables syms name inherit_vs
           Hashtbl.add dfns n_repr {
             id="_repr_";sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=dirs;
-            symdef=`SYMDEF_fun ([],[piname],t,`StrTemplate "$1",`NREQ_true,"expr") 
+            symdef=`SYMDEF_fun ([],[piname],t,`StrTemplate "($t)",`NREQ_true,"expr") 
           }
           ;
           add_function priv_name_map "_repr_" n_repr
@@ -1232,7 +1232,7 @@ let rec build_tables syms name inherit_vs
           Hashtbl.add dfns n_make {
             id="_make_"^id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=dirs;
-            symdef=`SYMDEF_fun ([],[t],piname,`StrTemplate "(#t)($t)",`NREQ_true,"expr") 
+            symdef=`SYMDEF_fun ([],[t],piname,`StrTemplate "($t)",`NREQ_true,"expr") 
           }
           ;
           add_function priv_name_map ("_make_"^id) n_make
