@@ -2007,6 +2007,36 @@ Listn(11)->Listn(11)->Loop
 true
 false
 @doc()
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("type:abstract")
+#import <flx.flxh>
+
+module X {
+  open C_hack;
+  type pi = new int * int;
+  fun fst(x:pi):int => (_repr_ x).(0);
+  fun snd(x:pi):int => (_repr_ x).(1);
+  fun mkpi(x:int,y:int):pi=>pi(x,y);
+
+  type ii = new int;
+  fun mkii(x:int):ii=>ii x;
+  fun get(x:ii):int=>_repr_ x;
+}
+
+open X;
+
+var x:pi = mkpi$ 1,2;
+print$ str(fst x) + " " + str(snd x) + ";\n";
+
+var y = mkii 99;
+print$ get y; endl;
+
+//print$ str x.(0); endl;
+@select(env_rt.expect())
+1 2;
+99
+@doc()
 
 @env_nd.head(2,"Non deterministic tests")
 

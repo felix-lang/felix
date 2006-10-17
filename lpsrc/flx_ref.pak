@@ -1309,9 +1309,92 @@ the values store in the two lvalues in parallel.
 @head(3,"Assertions",nospawn=1)
 Felix supports several kinds of assertions.
 @head(4,"assert",nospawn=1)
+@begin_displayed_code()
+  assert arg;
+@end_displayed_code()
+The assert statement provides a run time check that
+its argument is true. If the argument evaluates to false,
+a C++ exception is thrown which terminates the program.
+
+@head(4,"axiom",nospawn=1)
+@begin_displayed_code()
+  axiom name(p1:t1,p2:t2): term;
+@end_displayed_code()
+The axiom statement asserts that the term evalues
+to true for all values of its arguments.
+
 @head(4,"reduce",nospawn=1)
+@begin_displayed_code()
+  reduce name(p1:t1,p2:t2): term1 => term2;
+@end_displayed_code()
+The reduce statement asserts that term1 equals term2
+for all values of the parameters, and also instructs
+the compiler to replace all occurences matching term1 with
+term2, substituting the terms matching the arguments.
+The reduction name is for easy reference and has no
+semantic implications.
+@p()
+Reductions are extremely expensive and should be used
+sparingly. Every subexpression in the program is examined
+for applicability of all reductions. Reduced expressions
+are reduced repeatedly until they become irreducible.
+@p()
+The global set of reductions must be confluent and terminating.
+Both these conditions require inspection of the whole program
+to ensure. Therefore, reductions should be used with caution.
+@p()
+However, reductions are capable of performing significant
+high level optimisations automatically, so they should
+be used where appropriate.
+@p()
+[At present reductions are applied before inlining,
+however this may change. The current implementation
+elides reductions which cannot possibly apply anywhere
+as an optimisation, but reductions can still consume
+significant compile time]
+
 @head(4,"check",nospawn=1)
-@head(4,"Axiom",nospawn=1)
+@begin_displayed_code()
+ check(arg1, arg2);
+@end_displayed_code()
+The check statement evaluates all axioms matching
+the arguments and throws an exception which aborts
+the program if any axiom evaluates to false.
+Check statements can be used in subroutine calls,
+allowing test cases to be generated dynamically.
+@p()
+Checks can generate an exponential number of
+test cases so checking code should always be
+conditionally compiled in production code.
+
+@head(4,"precondition",nospawn=1)
+@begin_displayed_code()
+  fun f(x:int,y:int when y!=0)=>x/y;
+@end_displayed_code()
+A precondition may be appended to an argument list
+to express a subtype of the product of the argument
+types dynamically.
+@p()
+Preconditions are checked on every call, and throw
+a C++ exception which aborts the program if they
+evaluate to false.
+
+@head(4,"postcondition",nospawn=1)
+@begin_displayed_code()
+  fun f(x:int,y:int when y>0 and x>0): int 
+    expect if y>1 then result <= x else result == x endif
+    => x/y
+  ;
+@end_displayed_code()
+A postcondition may be given after a function 
+optional return type or procedure argument list.
+For functions (only) the magic name result refers to
+the value the function is returning.
+@p()
+Postconditions are checked on every call, and throw
+a C++ exception which aborts the program if they
+evaluate to false.
+
 @head(3,"Standard Control Macros",nospawn=1)
 Felix provides a number of standard control macros.
 Each of these is defined in terms of conditional gotos.
@@ -1723,3 +1806,119 @@ typedef A = B || C && D;
 @end_displayed_code()
 with the usual precedence.
 
+@head(1,"Appenix: Magic names",key="magic")
+This section summaries all the magic names Felix uses.
+A magic name is a special operator or other
+symbol for which a normal identifier or perhaps
+a string is used syntactically where a keyword 
+would be more appropriate semantically. 
+@p()
+Magic names are used because it simplifies parsing.
+
+@head(2,"Expression operator names")
+Function names representing symbolic operators.
+@begin_table("Name","kind","symbol")
+@table_row("swap","assignment","<->")
+@table_row("_set","assignment","=")
+@table_row("_init","assignment",":=")
+@table_row("pluseq","assignment","+=")
+@table_row("minusq","assignment","-=")
+@table_row("muleq","assignment","*=")
+@table_row("diveq","assignment","/=")
+@table_row("leftshifteq","assignment","<<=")
+@table_row("rightshifteq","assignment",">>=")
+@table_row("bxoreq","assignment","^=")
+@table_row("boreq","assignment","|=")
+@table_row("ampeq","assignment","&=")
+@table_row("tildeeq","assignment","~=")
+@table_row("pre_incr","assignment","++a")
+@table_row("pre_decr","assignment","--a")
+@table_row("post_incr","assignment","a++")
+@table_row("post_decr","assignment","a--")
+
+@table_row("band","infix","\\&")
+@table_row("bor","infix","\\|")
+@table_row("bxor","infix","\\~")
+@table_row("shr","infix",">>")
+@table_row("shl","infix","<<")
+@table_row("sub","infix","-")
+@table_row("add","infix","+")
+@table_row("mod","infix","%")
+@table_row("div","infix","/")
+@table_row("pow","infix","**")
+@table_row("neg","prefix","-")
+@table_row("pos","prefix","+")
+@table_row("compl","prefix","~")
+@table_row("excl","prefix","!")
+@table_row("len","prefix","#")
+@table_row("_isin","infix","isin")
+@table_row("lor","infix","or")
+@table_row("lor","infix","or")
+@table_row("land","infix","and")
+@table_row("lnot","prefix","not")
+@table_row("eq","infix","==")
+@table_row("ne","infix","!=")
+@table_row("lt","infix","<")
+@table_row("gt","infix",">")
+@table_row("le","infix","<=")
+@table_row("ge","infix",">=")
+@table_row("eq","chain","&==")
+@table_row("ne","chain","&!=")
+@table_row("lt","chain","&<")
+@table_row("gt","chain","&>")
+@table_row("le","chain","&<=")
+@table_row("ge","chain","&>=")
+@table_row("deref","prefix","*")
+@table_row("deref","prefix","_deref")
+@table_row("subscript","postfix","a.[b]")
+@table_row("substring","postfix","a.[b to c]")
+@table_row("copyfrom","postfix","a.[b to ]")
+@table_row("copyto","postfix","a.[to b]")
+@end_table()
+
+@head(2,"Other magic")
+@begin_list("keyed")
+@item("bounds")
+Used in reglex construction, end of string being lexed.
+@item("lexeme_start")
+Used in reglex construction, pointer to start of current lexeme.
+@item("lexeme_end")
+Used in reglex construction, pointer to end of current lexeme.
+@item("root")
+Alias of top level module.
+@item("_ot_*")
+Names the type of a struct returned by obj construction.
+@item("result")
+Return value of function used in postcondition.
+@item("this")
+Name of current class object.
+@item("get_*")
+Function called to get a component from an abstract type.
+@item("_tuple_cons")
+Macro which concatenates tuples.
+@item("_flatten")
+Macro which recursively flattens a tuple or sum type.
+@item("_tuple")
+Macro which makes a singleton tuple term.
+@item("_str")
+Macro which returns the Felix string representation of
+an expression term.
+@item("_parse_expr")
+Macro which returns an expression based on parsing
+a string literal.
+@item("_apply_*")
+Function which allows specifies handling of applicative
+types other than functions.
+@item("_ctor_*")
+Function which implements type constructor.
+@item("typeof")
+The type of an expression.
+@item("proj_*")
+The n'th projection of a product type.
+@item("case_arg*")
+The n'th varianty of a sum type.
+@item("typesetof")
+Creates typeset from a type tuple.
+@item("TYPE")
+The kind (category) of all types.
+@end_list()
