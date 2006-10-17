@@ -2017,10 +2017,10 @@ module X {
   type pi = new int * int;
   fun fst(x:pi):int => (_repr_ x).(0);
   fun snd(x:pi):int => (_repr_ x).(1);
-  fun mkpi(x:int,y:int):pi=>pi(x,y);
+  fun mkpi(x:int,y:int):pi=>_make_pi(x,y);
 
   type ii = new int;
-  fun mkii(x:int):ii=>ii x;
+  fun mkii(x:int):ii=>_make_ii x;
   fun get(x:ii):int=>_repr_ x;
 }
 
