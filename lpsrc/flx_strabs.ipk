@@ -48,9 +48,19 @@ let fixtype bbdfns t =
 
 let id x = x 
 
+let isident bbdfns i = match Hashtbl.find bbdfns i with
+  | _,_,_,`BBDCL_fun (_,_,_,_,`Identity,_,_) -> true
+  | _ -> false
+
 let fixexpr bbdfns e : tbexpr_t =
-  let rec aux e = map_tbexpr id aux (fixtype bbdfns) e in
-  aux e
+  let rec aux e = 
+    match map_tbexpr id aux (fixtype bbdfns) e with
+    | `BEXPR_apply ( (`BEXPR_closure(i,_),_),a),_
+    | `BEXPR_apply_direct (i,_,a),_
+    | `BEXPR_apply_prim (i,_,a),_ 
+      when isident bbdfns i -> a
+    | x -> x
+  in aux e
 
 let fixbexe bbdfns x =
   map_bexe id (fixexpr bbdfns) (fixtype bbdfns) id id x
@@ -143,6 +153,7 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
     h (`BBDCL_const (  bvs, ft t, c, breqs) )
   
   | `BBDCL_fun (  props, bvs, ts, t, c, breqs, prec) ->
+    if c = `Identity then () else
     h (`BBDCL_fun (  props, bvs, fts ts, ft t, c, breqs, prec) )
   
   | `BBDCL_callback ( props, bvs, ts1, ts2, j, t, breqs, prec) ->
