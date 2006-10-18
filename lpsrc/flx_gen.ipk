@@ -830,6 +830,7 @@ let gen_exe filename syms
         sub_end
       in 
       begin match ct with
+      | `Identity -> syserr sr "Identity proc is nonsense"
       | `Virtual -> 
           clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id) ;
       | `Str s -> ws (ce_expr "expr" s)
@@ -997,6 +998,7 @@ let gen_exe filename syms
     "      return " ^ frame_ptr ^ ";\n"
   in
   let forget_template sr s = match s with 
+  | `Identity -> syserr sr "Identity proc is nonsense(2)!"
   | `Virtual -> clierr sr "Instantiate virtual procedure(2)!"
   | `Str s -> s 
   | `StrTemplate s -> s 
@@ -3207,10 +3209,11 @@ try
       match entry with
       | `BBDCL_insert (_,s,`Package,_) -> 
         begin match s with
-        | `Str "" | `StrTemplate "" -> ()
+        | `Identity | `Str "" | `StrTemplate "" -> ()
         | _ ->
           let s = 
             match s with
+            | `Identity -> assert false (* covered above *)
             | `Virtual -> clierr sr "Instantiate virtual insertion!"
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
@@ -3269,10 +3272,11 @@ try
       match entry with
       | `BBDCL_insert (_,s,`Header,_) -> 
         begin match s with
-        | `Str "" | `StrTemplate "" -> ()
+        | `Identity | `Str "" | `StrTemplate "" -> ()
         | _ ->
           let s = 
             match s with
+            | `Identity -> assert false
             | `Virtual -> clierr sr "Instantiate virtual insertion!"
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
@@ -3441,10 +3445,11 @@ try
       match entry with
       | `BBDCL_insert (_,s,`Body,_) -> 
         begin match s with
-        | `Str "" | `StrTemplate "" -> ()
+        | `Identity | `Str "" | `StrTemplate "" -> ()
         | _ ->
           let s = 
             match s with
+            | `Identity -> assert false
             | `Virtual -> clierr sr "Instantiate virtual insertion!"
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->

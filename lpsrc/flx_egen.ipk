@@ -521,6 +521,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
       | `BBDCL_const (_,_,ct,_) -> 
         begin match ct with
+        | `Identity -> syserr sr ("Nonsense Idendity const" ^ id)
         | `Virtual -> clierr2 sr sr2 ("Instantiate virtual const" ^ id)
         | `Str c
         | `StrTemplate c when c = "#srcloc" ->
@@ -935,6 +936,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         si (length ts)
       );
       begin match ct with
+      | `Identity -> ge' a
+
       | `Virtual -> 
         let ts = map tsub ts in
         let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in

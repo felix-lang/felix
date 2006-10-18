@@ -245,6 +245,7 @@ type  c_t = [
   | `StrTemplate of string
   | `Str of string
   | `Virtual
+  | `Identity
 ]
 
 type base_type_qual_t = [
@@ -3403,6 +3404,7 @@ and string_of_code_spec = function
   | `StrTemplate s -> "\"" ^ s ^  "\""
   | `Str s -> "c\"" ^ s ^  "\""
   | `Virtual -> "virtual"
+  | `Identity -> "identity"
 
 and string_of_long_code_spec c = 
   let triple_quote = "\"\"\"" in
@@ -3410,6 +3412,7 @@ and string_of_long_code_spec c =
   | `StrTemplate s -> triple_quote ^ s ^ triple_quote
   | `Str s -> "c" ^ triple_quote ^ s ^ triple_quote
   | `Virtual -> "virtual"
+  | `Identity -> "identity"
 
 and string_of_raw_req = function 
   | `Named_req s -> string_of_qualified_name s

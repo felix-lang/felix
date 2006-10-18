@@ -2018,9 +2018,14 @@ module X {
   fun fst(x:pi):int => (_repr_ x).(0);
   fun snd(x:pi):int => (_repr_ x).(1);
   fun mkpi(x:int,y:int):pi=>_make_pi(x,y);
+  
+  type pif = new int * double;
+  fun fst(x:pif):int => (_repr_ x).(0);
+  fun snd(x:pif):double => (_repr_ x).(1);
+  fun mkpif(x:int,y:double):pif=>_make_pif(x,y);
 
   type ii = new int;
-  fun mkii(x:int):ii=>_make_ii x;
+  fun mkii(x:int):ii=> _make_ii x;
   fun get(x:ii):int=>_repr_ x;
 }
 
@@ -2029,12 +2034,17 @@ open X;
 var x:pi = mkpi$ 1,2;
 print$ str(fst x) + " " + str(snd x) + ";\n";
 
-var y = mkii 99;
-print$ get y; endl;
+var y:pif = mkpif$ 1,2.76;
+print$ str(fst y) + " " + str(snd y) + ";\n";
+
+var z = mkii 99;
+print$ get z; endl;
 
 //print$ str x.(0); endl;
+
 @select(env_rt.expect())
 1 2;
+1 2.76;
 99
 @doc()
 

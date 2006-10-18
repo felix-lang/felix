@@ -727,6 +727,7 @@ const_def:
 code_spec:
   | STRING { `StrTemplate (snd $1) }
   | CSTRING { `Str (snd $1) }
+  | IDENT { `Identity }
 
 requirement:
   | qualified_name
