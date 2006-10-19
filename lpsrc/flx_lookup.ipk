@@ -5001,7 +5001,8 @@ and inner_build_env syms rs parent : env_t =
   | None -> []
   | Some i ->
     try 
-      Hashtbl.find syms.env_cache i
+      let env = Hashtbl.find syms.env_cache i in
+      env
     with 
       Not_found ->
        let env = build_env'' syms rs i in
