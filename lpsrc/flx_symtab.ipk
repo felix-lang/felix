@@ -230,6 +230,11 @@ let rec build_tables syms name inherit_vs
           | `DCL_function _ -> "(function) "
           | `DCL_module _ -> "(module) "
           | `DCL_insert _ -> "(insert) "
+          | `DCL_typeclass _ -> "(typeclass) "
+          | `DCL_instance _ -> "(instance) "
+          | `DCL_fun _ -> "(fun) "
+          | `DCL_var _ -> "(var) "
+          | `DCL_val _ -> "(val) "
           | _ -> ""
           in 
           print_endline 

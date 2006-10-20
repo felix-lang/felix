@@ -245,29 +245,6 @@ let unit_t = `BTYP_tuple []
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
-let cal_typeclass_dirs syms id vs =
-  (*
-  begin
-    match vs with (_,{raw_typeclass_reqs=rtcr})->
-    match rtcr  with 
-    | _::_ -> 
-      print_endline (id^": TYPECLASS REQUIREMENTS " ^
-      catmap "," string_of_qualified_name rtcr);
-    | [] -> ();
-  end;
-  *)
-  let rec addtc tcin dirsout = match tcin with
-    | [] -> rev dirsout
-    | h::t -> 
-      addtc t (DIR_typeclass_req h :: dirsout);
-  in
-  let typeclass_dirs = 
-    match vs with (_,{raw_typeclass_reqs=rtcr})-> addtc rtcr []
-  in
-  typeclass_dirs
-
-
-
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i = 
   let n = length (fst vs) in
@@ -710,9 +687,10 @@ and bind_type syms env sr t : btypecode_t =
   (*
   print_endline ("[bind_type] " ^ string_of_typecode t);
   *)
+  let mkenv i = build_env syms (Some i) in
   let bt:btypecode_t = 
     try
-      bind_type' syms env rsground sr t []
+      bind_type' syms env rsground sr t [] mkenv
 
     with 
       | Free_fixpoint b ->
@@ -929,16 +907,17 @@ should start with reset traps.
 
 and bind_type' 
   syms env (rs:recstop)
-  sr t (params: (string * btypecode_t) list)
+  sr t (params: (string * btypecode_t) list) 
+  mkenv
 : btypecode_t =
   let st x = st syms.dfns x in
   let btp t params = bind_type' syms env 
     {rs with depth = rs.depth+1}
-    sr t params 
+    sr t params mkenv
   in
   let bt t = btp t params in
-  let bi i ts = bind_type_index syms rs sr i ts  in
-  let bisub i ts = bind_type_index syms {rs with depth= rs.depth+1} sr i ts in
+  let bi i ts = bind_type_index syms rs sr i ts mkenv in
+  let bisub i ts = bind_type_index syms {rs with depth= rs.depth+1} sr i ts mkenv in
   (*
   print_endline ("[bind_type'] " ^ string_of_typecode t);
   print_endline ("expr_fixlist is " ^ 
@@ -1221,7 +1200,7 @@ and bind_type'
   | `TYP_as (t,s) -> 
     bind_type' syms env 
     { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
-    sr t params
+    sr t params mkenv
 
   | `TYP_typeof e ->
     (*
@@ -1328,7 +1307,7 @@ and bind_type'
       *)
       bind_type' syms env { rs with depth=rs.depth+1 }
       sr 
-      body (pnames@params)
+      body (pnames@params) mkenv
     in
       let bparams = (* order as written *)
         rev_map (fun (n,t,i) -> (i,t)) data 
@@ -1370,7 +1349,7 @@ and bind_type'
       *)
       bind_type' syms env { rs with depth=rs.depth+1 }
       sr 
-      t1 (pnames@params)
+      t1 (pnames@params) mkenv
     in
     let bt2 = 
       (*
@@ -1379,7 +1358,7 @@ and bind_type'
       *)
       bind_type' syms env { rs with depth=rs.depth+1 }
       sr 
-      t2 (pnames@params)
+      t2 (pnames@params) mkenv
     in
       let bparams = (* order as written *)
         rev_map (fun (n,t,i) -> (i,t)) typevars
@@ -1676,7 +1655,7 @@ and cal_glr_attr_type syms sr ii =
     t
 
 and bind_type_index syms (rs:recstop)
-  sr index ts 
+  sr index ts mkenv
 = 
   (*
   print_endline 
@@ -1713,11 +1692,11 @@ and bind_type_index syms (rs:recstop)
   let ts = adjust_ts syms sr index ts in
   let bt t =
       let params = make_params syms sr index ts in
-      let env:env_t = build_env syms (Some index) in
+      let env:env_t = mkenv index in
       let t = 
         bind_type' syms env
         { rs with type_alias_fixlist = (index,rs.depth):: rs.type_alias_fixlist }
-        sr t params 
+        sr t params mkenv
       in
         (*
         print_endline ("Unravelled and bound is " ^ sbt syms.dfns t);
@@ -1834,7 +1813,8 @@ and cal_ret_type syms (rs:recstop) index args =
     rs.expr_fixlist
   );
   *)
-  let env = build_env syms (Some index) in
+  let mkenv i = build_env syms (Some i) in
+  let env = mkenv index in
   (*
   print_env_short env;
   *)
@@ -1845,7 +1825,7 @@ and cal_ret_type syms (rs:recstop) index args =
     (*
     print_endline ("Calculate return type of " ^ id);
     *)
-    let rt = bind_type' syms env rs sr rt args in
+    let rt = bind_type' syms env rs sr rt args mkenv in
     let rt = beta_reduce syms [] rt in
     let ret_type = ref rt in
     (*
@@ -2031,14 +2011,15 @@ and inner_typeofindex
   match get_data syms.dfns index with
   | {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry} 
   ->
-  let env:env_t = build_env syms (Some index) in 
+  let mkenv i = build_env syms (Some i) in 
+  let env:env_t = mkenv index in 
   (*
   print_endline ("Setting up env for " ^ si index);
   print_env_short env;
   *)
   let bt t:btypecode_t = 
     let t' = 
-      bind_type' syms env rs sr t [] in
+      bind_type' syms env rs sr t [] mkenv in
     let t' = beta_reduce syms [] t' in
     t'
   in
@@ -2778,8 +2759,9 @@ and handle_variable syms
   index id sr ts t t2 
 = 
   (* HACKED the params argument to [] .. this is WRONG!! *)
+  let mkenv i = build_env syms (Some i) in
   let bt sr t = 
-    bind_type' syms env rs sr t []
+    bind_type' syms env rs sr t [] mkenv
   in
 
     (* we have to check the variable is the right type *) 
@@ -3133,11 +3115,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   ;
   let be e' = bind_expression' syms env 
     { rs with expr_fixlist=(e,rs.depth)::rs.expr_fixlist; depth=rs.depth+1} e' [] in
+  let mkenv i = build_env syms (Some i) in
   let bt sr t = 
     (* we're really wanting to call bind type and propagate depth ? *)
     let t = bind_type' syms env 
       { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth=rs.depth +1 }
-      sr t [] 
+      sr t [] mkenv
     in
     let t = beta_reduce syms [] t in
     t
@@ -3479,7 +3462,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
         print_endline ("Binding sign = " ^ string_of_typecode sign);
         let env' = build_env syms (Some oi) in
-        bind_type' syms env' rsground sr sign bvs
+        bind_type' syms env' rsground sr sign bvs mkenv
       in
       print_endline ("Got sign bound = " ^ sbt syms.dfns sign);
       *)
@@ -4071,7 +4054,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let ct =
             let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
             let env' = build_env syms (Some i) in
-            bind_type' syms env' rsground sr ct bvs
+            bind_type' syms env' rsground sr ct bvs mkenv
           in
           let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
           let ct = tsubst vs' ts' ct in
@@ -4096,7 +4079,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             let ct =
               let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
               let env' = build_env syms (Some i) in
-              bind_type' syms env' rsground sr ct bvs
+              bind_type' syms env' rsground sr ct bvs mkenv
             in
             let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
             let ct = tsubst vs' ts' ct in
@@ -4347,7 +4330,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
             let env' = build_env syms (Some i) in
-            bind_type' syms env' rsground sr vt bvs
+            bind_type' syms env' rsground sr vt bvs mkenv
           in
           (*
           print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
@@ -4408,7 +4391,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
             let env' = build_env syms (Some i) in
-            bind_type' syms env' rsground sr vt bvs
+            bind_type' syms env' rsground sr vt bvs mkenv
           in
           (*
           print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
@@ -4501,9 +4484,132 @@ and grab_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 
+and check_instances syms sr calledname classname es ts' mkenv =
+  let insts = ref [] in
+  match es with
+  | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
+  | `FunctionEntry es ->
+    (*
+    print_endline ("instance Candidates " ^ catmap "," string_of_entry_kind es);
+    *)
+    iter
+    (fun {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts} ->
+    match Hashtbl.find syms.dfns i  with
+    {id=id;sr=sr;parent=parent;vs=vs;symdef=entry} ->
+    match entry with 
+    | `SYMDEF_instance qn' ->
+      (*
+      print_endline ("Verified " ^ si i ^ " is an instance of " ^ id);
+      print_endline ("  base vs = " ^ print_ivs_with_index vs);
+      print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
+      print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+      *)
+      let inst_ts = grab_ts qn' in
+      (*
+      print_endline ("Unbound instance ts = " ^ catmap "," string_of_typecode inst_ts);
+      *)
+      let instance_env = mkenv i in
+      let bt t = bind_type' syms instance_env rsground sr t [] mkenv in
+      let inst_ts = map bt inst_ts in
+      (*
+      print_endline ("  instance ts = " ^ catmap "," (fun t -> sbt syms.dfns t) inst_ts);
+      print_endline ("  caller   ts = " ^ catmap "," (fun t -> sbt syms.dfns t) ts');
+      *)
+      let matches = 
+        if length inst_ts <> length ts' then false else
+        match maybe_specialisation syms.dfns (combine inst_ts ts') with
+        | None -> false
+        | Some mgu -> 
+          (*
+          print_endline ("MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.dfns t) mgu);
+          print_endline ("check base vs (constraint) = " ^ print_ivs_with_index vs);
+          *)
+          let cons = try 
+            Flx_tconstraint.build_type_constraints syms bt sr (fst vs) 
+            with _ -> clierr sr "Can't build type constraints, type binding failed"
+          in
+          let {raw_type_constraint=icons} = snd vs in
+          let icons = bt icons in
+          let cons = `BTYP_intersect [cons; icons] in
+          (*
+          print_endline ("Constraint = " ^ sbt syms.dfns cons);
+          *)
+          let cons = list_subst mgu cons in
+          (*
+          print_endline ("Constraint = " ^ sbt syms.dfns cons);
+          *)
+          let cons = Flx_maps.reduce_type (beta_reduce syms [] cons) in
+          match cons with
+          | `BTYP_tuple [] -> true
+          | `BTYP_void -> false
+          | _ ->
+             (*
+              print_endline (
+               "[instance_check] Can't reduce instance type constraint " ^
+               sbt syms.dfns cons
+             );
+             *)
+             true
+      in
+
+      if matches then begin
+        (*
+        print_endline "INSTANCE MATCHES";
+        *)
+        insts := `Inst i :: !insts
+      end
+      (*
+      else
+        print_endline "INSTANCE DOES NOT MATCH: REJECTED"
+      *)
+      ;
 
 
-and instance_check syms caller_env called_env mgu sr name rtcr tsub = 
+    | `SYMDEF_typeclass ->
+      (*
+      print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ classname);
+      print_endline ("  base vs = " ^ print_ivs_with_index vs);
+      print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
+      print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+      *)
+      if sub_ts = ts' then begin
+        (*
+        print_endline "SPECIALISATION MATCHES";
+        *)
+        insts := `Typeclass (i,sub_ts) :: !insts
+      end 
+      (*
+      else
+        print_endline "SPECIALISATION DOES NOT MATCH: REJECTED"
+      ;
+      *)
+
+    | _ -> print_endline "EXPECTED TYPECLASS INSTANCE!"
+    )
+    es
+    ;
+    begin match !insts with
+    | [`Inst i] -> ()
+    | [`Typeclass (i,ts)] -> ()
+    | [] -> 
+      clierr sr ("In call of " ^ calledname ^", Typeclass instance matching " ^ 
+        classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
+        " not found"
+      )
+    | `Inst i :: t -> 
+      clierr sr ("In call of " ^ calledname ^", More than one instances matching " ^ 
+        classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
+        " found"
+      )
+    | `Typeclass (i,ts) :: tail ->
+      clierr sr ("In call of " ^ calledname ^", Multiple typeclass specialisations matching " ^ 
+        classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
+        " found"
+      )
+    end
+
+
+and instance_check syms caller_env called_env mgu sr calledname rtcr tsub = 
   (*
   print_endline ("INSTANCE CHECK MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.dfns t) mgu);
   print_endline "SEARCH FOR INSTANCE!";
@@ -4512,139 +4618,33 @@ and instance_check syms caller_env called_env mgu sr name rtcr tsub =
   let luqn2 qn = lookup_qn_in_env2 syms caller_env qn in
   if length rtcr > 0 then begin
     (*
-    print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^ 
+    print_endline (calledname ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^ 
       catmap "," string_of_qualified_name rtcr
     );
     *)
     iter
     (fun qn -> 
       let classname = grab_name qn in
-      let insts = ref [] in
-        let es,ts' = 
-          try luqn2 (hack_name qn) 
-          with 
-            (* This is a HACK. we need lookup to throw a specific
-               lookup failure exception
-            *)
-            ClientError (sr',msg) -> raise (ClientError2 (sr,sr',msg))
-        in
-        (*
-        print_endline ("With unbound ts = " ^ catmap "," string_of_typecode ts');
-        *)
-        let ts' = map (fun t -> try bind_type syms called_env sr t with _ -> print_endline "Bind type failed .."; assert false) ts' in
-        (*
-        print_endline ("With bound ts = " ^ catmap "," (sbt syms.dfns) ts');
-        *)
-        let ts' = map tsub ts' in
-        (*
-        print_endline ("With bound, mapped ts = " ^ catmap "," (sbt syms.dfns) ts');
-        *)
-        match es with
-        | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
-        | `FunctionEntry es ->
-          (*
-          print_endline ("instance Candidates " ^ catmap "," string_of_entry_kind es);
+      let es,ts' = 
+        try luqn2 (hack_name qn) 
+        with 
+          (* This is a HACK. we need lookup to throw a specific
+             lookup failure exception
           *)
-          iter
-          (fun {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts} ->
-          match Hashtbl.find syms.dfns i  with
-          {id=id;sr=sr;parent=parent;vs=vs;symdef=entry} ->
-          match entry with 
-          | `SYMDEF_instance qn' ->
-            (*
-            print_endline ("Verified " ^ si i ^ " is an instance of " ^ string_of_qualified_name qn);
-            print_endline ("  base vs = " ^ print_ivs_with_index vs);
-            print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
-            print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
-            *)
-            let inst_ts = grab_ts qn' in
-            (*
-            print_endline ("Unbound instance ts = " ^ catmap "," string_of_typecode inst_ts);
-            *)
-            let instance_env = build_env syms (Some i) in
-            let inst_ts = map (bind_type syms instance_env sr) inst_ts in
-            (*
-            print_endline ("  instance ts = " ^ catmap "," (fun t -> sbt syms.dfns t) inst_ts);
-            print_endline ("  caller   ts = " ^ catmap "," (fun t -> sbt syms.dfns t) ts');
-            *)
-
-            let matches = 
-              if length inst_ts <> length ts' then false else
-              match maybe_specialisation syms.dfns (combine inst_ts ts') with
-              | None -> false
-              | Some mgu -> 
-                (*
-                print_endline ("MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.dfns t) mgu);
-                *)
-                let {raw_type_constraint=inst_constraint} = snd vs in 
-                let cons = bind_type syms instance_env sr inst_constraint in
-                let cons = list_subst mgu cons in
-                let cons = Flx_maps.reduce_type (beta_reduce syms [] cons) in
-                match cons with
-                | `BTYP_tuple [] -> true
-                | `BTYP_void -> false
-                | _ -> print_endline (
-                     "[instance_check] Can't reduce instance type constraint " ^
-                     sbt syms.dfns cons
-                   );
-                   true
-            in
-
-            if matches then begin
-              (*
-              print_endline "INSTANCE MATCHES";
-              *)
-              insts := `Inst i :: !insts
-            end
-            (*
-            else
-              print_endline "INSTANCE DOES NOT MATCH: REJECTED"
-            *)
-            ;
-
-
-          | `SYMDEF_typeclass ->
-            (*
-            print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ string_of_qualified_name qn);
-            print_endline ("  base vs = " ^ print_ivs_with_index vs);
-            print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
-            print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
-            *)
-            if sub_ts = ts' then begin
-              (*
-              print_endline "SPECIALISATION MATCHES";
-              *)
-              insts := `Typeclass (i,sub_ts) :: !insts
-            end 
-            (*
-            else
-              print_endline "SPECIALISATION DOES NOT MATCH: REJECTED"
-            ;
-            *)
-
-          | _ -> print_endline "EXPECTED TYPECLASS INSTANCE!"
-          )
-          es
-          ;
-          begin match !insts with
-          | [`Inst i] -> ()
-          | [`Typeclass (i,ts)] -> ()
-          | [] -> 
-            clierr sr ("In call of " ^ name ^", Typeclass instance matching " ^ 
-              classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
-              " not found"
-            )
-          | `Inst i :: t -> 
-            clierr sr ("In call of " ^ name ^", More than one instances matching " ^ 
-              classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
-              " found"
-            )
-          | `Typeclass (i,ts) :: tail ->
-            clierr sr ("In call of " ^ name ^", Multiple typeclass specialisations matching " ^ 
-              classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
-              " found"
-            )
-          end
+          ClientError (sr',msg) -> raise (ClientError2 (sr,sr',msg))
+      in
+      (*
+      print_endline ("With unbound ts = " ^ catmap "," string_of_typecode ts');
+      *)
+      let ts' = map (fun t -> try bind_type syms called_env sr t with _ -> print_endline "Bind type failed .."; assert false) ts' in
+      (*
+      print_endline ("With bound ts = " ^ catmap "," (sbt syms.dfns) ts');
+      *)
+      let ts' = map tsub ts' in
+      (*
+      print_endline ("With bound, mapped ts = " ^ catmap "," (sbt syms.dfns) ts');
+      *)
+      check_instances syms sr calledname classname es ts' (fun i->build_env syms (Some i))
     )
     rtcr
   end
@@ -4717,11 +4717,6 @@ and split_dirs open_excludes dirs :
          | DIR_open qn -> if mem qn open_excludes then [] else [qn]
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> []
-         | DIR_typeclass_req qn -> 
-           (*
-           print_endline ("Adding typeclass " ^ string_of_qualified_name qn); 
-           *)
-           [qn]
        )
        dirs
      )
@@ -4733,7 +4728,6 @@ and split_dirs open_excludes dirs :
          | DIR_open qn -> []
          | DIR_inject_module qn -> [qn]
          | DIR_use (n,qn) -> []
-         | DIR_typeclass_req qn -> []
        )
        dirs
      )
@@ -4745,43 +4739,61 @@ and split_dirs open_excludes dirs :
          | DIR_open qn -> []
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> [n,qn]
-         | DIR_typeclass_req qn -> []
        )
        dirs
      )
   in opens, includes, uses
 
-and get_includes' syms includes ((i, ts) as index) =
-  if not (mem index !includes) then
-  begin
-    (*
-    if length ts != 0 then
-      print_endline ("INCLUDES, ts="^catmap "," (sbt syms.dfns) ts)
-    ;
-    *)
-    includes := index :: !includes;
-    let env = mk_bare_env syms i in (* should have ts in .. *)
-    match Hashtbl.find syms.dfns i with
-    {id=id;sr=sr;parent=parent;vs=vs;pubmap=table;dirs=dirs} ->
-    iter
-    (fun x -> match x with 
-      | DIR_open _
-      | DIR_typeclass_req _
-      | DIR_use _ -> ()
-      | DIR_inject_module qn -> 
-        let {base_sym=j; spec_vs=vs; sub_ts=ts'},ts =
-          try lookup_qn_in_env syms env qn 
-          with Not_found -> failwith "QN NOT FOUND"
-        in 
-          let ts = map (bind_type syms env sr) ts in
-          let ts' = map (tsubst vs ts) ts' in
-          (*
-          print_endline ("Inherit " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts' ^"]");
-          *)
-          get_includes' syms includes (j,ts')
-    )
-    dirs
-  end
+(* calculate the transitive closure of an i,ts list
+  with respect to inherit clauses. 
+
+  The result is an i,ts list.
+
+  This is BUGGED because it ignores typeclass requirements ..
+  however 
+  (a) modules can't have them (use inherit clause)
+  (b) typeclasses don't use them (use inherit clause)
+  (c) the routine is only called for modules and typeclasses?
+*)
+
+and get_includes syms xs =
+  let rec get_includes' syms includes ((i, ts) as index) =
+    if not (mem index !includes) then
+    begin
+      (*
+      if length ts != 0 then
+        print_endline ("INCLUDES, ts="^catmap "," (sbt syms.dfns) ts)
+      ;
+      *)
+      includes := index :: !includes;
+      let env = mk_bare_env syms i in (* should have ts in .. *)
+      match Hashtbl.find syms.dfns i with
+      {id=id;sr=sr;parent=parent;vs=vs;pubmap=table;dirs=dirs} ->
+      let _,incl_qns,_ = split_dirs [] dirs in
+      (* let {raw_typeclass_reqs=tc_qns} = snd vs in 
+      let qns = tc_qns @ incl_qns in
+      *)
+      let qns = incl_qns in
+      iter (fun qn ->
+          let {base_sym=j; spec_vs=vs; sub_ts=ts'},ts =
+            try lookup_qn_in_env syms env qn 
+            with Not_found -> failwith "QN NOT FOUND"
+          in 
+            let ts = map (bind_type syms env sr) ts in
+            let ts' = map (tsubst vs ts) ts' in
+            (*
+            print_endline ("Inherit " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts' ^"]");
+            *)
+            get_includes' syms includes (j,ts')
+      )
+      qns 
+    end
+  in
+  let includes = ref [] in
+  iter (get_includes' syms includes) xs;
+
+  (* list is unique due to check during construction *)
+  !includes
 
 and bind_dir 
   syms 
@@ -4892,7 +4904,7 @@ and make_view_table syms table (vs: (string * int) list) ts : name_map_t =
   h
 
 and pub_table_dir 
-  syms 
+  syms env inst_check
   (i,ts)
 : name_map_t =
   match get_data syms.dfns i with
@@ -4918,9 +4930,23 @@ and pub_table_dir
     let inst = review_entry syms [] ts inst in
     let inst_name = "_inst_" ^ id in
     Hashtbl.add table inst_name (`FunctionEntry [inst]);
-    (*
-    print_endline ("Added typeclass "^si i^" as instance " ^ inst_name ^": "^ string_of_myentry syms.dfns inst);
-    *)
+    if inst_check then
+    begin
+      if syms.compiler_options.print_flag then
+      print_endline ("Added typeclass "^si i^
+        " as instance " ^ inst_name ^": "^ string_of_myentry syms.dfns inst
+      );
+      let luqn2 qn = 
+        try 
+          Some (lookup_qn_in_env2 syms env qn) 
+        with _ -> None 
+      in
+      let res = luqn2 (`AST_name (sr,inst_name,[])) in
+      match res with 
+      | None -> clierr sr "Couldn't find any instances to open!"
+      | Some (es,_) -> check_instances syms sr "open" id es ts (mk_bare_env syms)
+    end
+    ;
     table
 
   | {sr=sr} -> clierr sr "[map_dir] Expected module"
@@ -4928,11 +4954,9 @@ and pub_table_dir
 
 and get_pub_tables syms env rs dirs =
   let _,includes,_ = split_dirs rs.open_excludes dirs in
-  let opens = uniq_list (map (bind_dir syms env rs) includes) in
-  let includes = ref [] in
-  iter (get_includes' syms includes) opens;
-  let includes = uniq_list !includes in
-  let tables = map (pub_table_dir syms) includes in
+  let xs = uniq_list (map (bind_dir syms env rs) includes) in
+  let includes = get_includes syms xs in
+  let tables = map (pub_table_dir syms env false) includes in
   tables
 
 and mk_bare_env syms index = 
@@ -4942,7 +4966,7 @@ and mk_bare_env syms index =
   | None -> [] 
   | Some index -> mk_bare_env syms index
 
-and merge_opens syms env rs (opens,includes,uses) =
+and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   (*
   print_endline ("MERGE OPENS ");
   *)
@@ -4970,30 +4994,48 @@ and merge_opens syms env rs (opens,includes,uses) =
   )
   uses 
   ;
-  (*
-  print_endline "Binding opens ..";
-  *)
-  let opens = uniq_list (map (bind_dir syms env rs) opens) in
-  (*
-  print_endline "Binding complete";
-  *)
-  let opens = uniq_cat opens (map (bind_dir syms env rs) includes) in
 
-  let includes = ref [] in
-  iter (get_includes' syms includes) opens;
-  let includes = uniq_list !includes in
-  let tables = map (pub_table_dir syms) includes in
+  (* convert qualified names to i,ts format *)
+  let btypeclasses = map (bind_dir syms env rs) typeclasses in
+  let bopens = map (bind_dir syms env rs) opens in
+  let bincludes= map (bind_dir syms env rs) includes in
+
+  (* HACK to check open typeclass *)
+  let _ = 
+    let x = get_includes syms bopens in
+    let tables = map (pub_table_dir syms env true) x in
+    ()
+  in
+  (* strip duplicates *)
+  let u = uniq_cat [] btypeclasses in
+  let u = uniq_cat u bopens in
+  let u = uniq_cat u bincludes in
+
+  (* add on any inherited modules *)
+  let u = get_includes syms u in
+
+  (* convert the i,ts list to a list of lookup tables *)
+  let tables = map (pub_table_dir syms env false) u in
+
+  (* return the list with the explicitly renamed symbols prefixed 
+     so they can be used for clash resolution
+  *)
   use_map::tables 
 
 and build_env'' syms rs index : env_t =
   match Hashtbl.find syms.dfns index with
   {id=id; parent=parent; vs=vs; privmap=table;dirs=dirs} ->
-  let typeclass_dirs = cal_typeclass_dirs syms id vs in
-  let dirs = typeclass_dirs @ dirs in
+  let typeclasses = match vs with (_,{raw_typeclass_reqs=rtcr})-> rtcr in
   let opens,includes,uses = split_dirs rs.open_excludes dirs in
   let env = inner_build_env syms rs parent in
+
+  (* build temporary bare innermost environment with a full parent env *)
   let env' = (index,id,table,[])::env in
-  let second = merge_opens syms env' rs (opens,includes,uses) in
+
+  (* use that env to process directives and type classes *)
+  let second = merge_opens syms env' rs (typeclasses,opens,includes,uses) in
+
+  (* finally push the full environment layer on top of the parent env *)
   (index,id,table,second)::env
   
 and inner_build_env syms rs parent : env_t =

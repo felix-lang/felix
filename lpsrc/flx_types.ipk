@@ -857,7 +857,6 @@ type dir_t =
   | DIR_open of qualified_name_t
   | DIR_inject_module of qualified_name_t
   | DIR_use of id_t * qualified_name_t
-  | DIR_typeclass_req of qualified_name_t
 
 type dcl_t = 
   [
@@ -4711,10 +4710,6 @@ and string_of_dir level s =
 
   | DIR_inject_module qn ->
     spaces level ^ "include " ^ sqn qn ^ ";"
-
-  | DIR_typeclass_req qn ->
-    spaces level ^ "typeclass_req " ^ sqn qn ^ ";"
-
 
 and string_of_breq dfns (i,ts) = "rq<"^si i^">" ^ print_inst dfns ts
 and string_of_breqs dfns reqs = catmap ", " (string_of_breq dfns) reqs
