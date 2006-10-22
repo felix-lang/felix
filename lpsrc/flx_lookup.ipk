@@ -3812,7 +3812,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       | `SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
       | `SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
       | `SYMDEF_ref _ 
-      | `SYMDEF_var _ ->
+      | `SYMDEF_var _ 
+      | `SYMDEF_parameter (`PVar,_)
+      | `SYMDEF_parameter (`PRef,_) (* not sure if this works .. *)
+        ->
         let vtype = 
           inner_typeofindex_with_ts syms sr
           { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
