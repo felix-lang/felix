@@ -2048,6 +2048,37 @@ print$ get z; endl;
 99
 @doc()
 
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("types:recursive")
+@kat_rt("type functions:recursive")
+
+ctypes int, long, float;
+
+typedef fun uncurry(t:TYPE):TYPE =>
+  typematch t with
+  | ?head -> ?tail => head * uncurry tail
+  | _ => t
+  endmatch
+;
+
+typedef f123 = int -> (long -> float);
+
+typedef f567 = uncurry f123;
+
+var x: f567 = 1, (2L, 3.0f);
+
+typedef list = 1 + int * list;
+
+typedef fun lst(t1:TYPE, t2:TYPE ):TYPE=> 1 + t1 * lst (t2,t1);
+
+var y1: lst (int,long);
+var y2:  1 + int * (1 + long * x)  as x;
+y1 = y2;
+
+@select(env_rt.expect())
+@doc()
+
 @env_nd.head(2,"Non deterministic tests")
 
 @env_nd.head(3)

@@ -249,9 +249,30 @@ let rec check_recursion t = match t with
    | x -> iter_btype check_recursion x
 
 let term_subst t1 i t2 =
-  let rec s t = match map_btype s t with
+  let rec s t = match t with
   | `BTYP_var (j,_) when i = j -> t2
-  | t -> t
+  | `BTYP_typefun (ps,r,b) ->
+    let ps = map (fun (i,t) -> i,s t) ps in
+    if (mem_assoc i ps) then
+      `BTYP_typefun (ps,r,b)
+    else
+      let b = s b in
+      let r = s r in
+      `BTYP_typefun (ps,r,b)
+
+  | `BTYP_type_match (tt, pts) ->
+    let tt = s tt in
+    let pts = 
+      map (fun ({pattern=p; pattern_vars=vs; assignments=asgs},x as case) ->
+       if IntSet.mem i vs then case else
+       let asgs = map (fun (i,t) -> i, s t) asgs in
+       {pattern= s p; pattern_vars=vs; assignments=asgs}, s x
+      )
+    pts 
+    in
+    `BTYP_type_match (tt,pts)
+  
+  | t -> map_btype s t
   in s t1
 
 let list_subst x t1 = 
@@ -1016,6 +1037,17 @@ let unfold dfns t =
 
   | `BTYP_apply (a,b) -> `BTYP_apply(uf a, uf b)
   | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
+  | `BTYP_typefun (p,r,b) ->
+     `BTYP_typefun (p,r,uf b) 
+
+  | `BTYP_type_match (a,tts) ->
+     let a = uf a in
+     (* don't unfold recursions in patterns yet because we don't
+        know what they mean
+     *)
+     let tts = map (fun (p,x) -> p, uf x) tts in
+    `BTYP_type_match (a,tts)
+
   | _ -> t'
   in aux 0 t
 

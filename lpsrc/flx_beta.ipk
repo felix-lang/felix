@@ -6,13 +6,11 @@ open Flx_mtypes2
 
 val metatype:
   sym_state_t ->
-  (int * btypecode_t) list ->
   btypecode_t -> 
   btypecode_t
 
 val beta_reduce:
   sym_state_t ->
-  (int * btypecode_t) list ->
   btypecode_t -> 
   btypecode_t
 
@@ -34,20 +32,19 @@ open Flx_maps
 
 exception BTfound of btypecode_t
 
-(* params is list of string * bound_typecode *)
-let rec metatype syms (params:(int * btypecode_t) list) term =
+let rec metatype syms term =
   (*
   print_endline ("Find Metatype  of: " ^ string_of_btypecode syms.dfns term);
   *)
-  let t = metatype' syms params term in
+  let t = metatype' syms term in
   (*
   print_endline "Done";
   *)
   t
   
-and metatype' syms (params:(int * btypecode_t) list) term =
+and metatype' syms term =
   let st t = string_of_btypecode syms.dfns t in
-  let mt t = metatype' syms params t in
+  let mt t = metatype' syms t in
   match term with
   | `BTYP_case _ -> `BTYP_function (`BTYP_type, `BTYP_type)
 
@@ -58,7 +55,7 @@ and metatype' syms (params:(int * btypecode_t) list) term =
       | [x] -> x
       | _ -> `BTYP_tuple ps
     in 
-      let rt = metatype syms (a @ params) c in
+      let rt = metatype syms c in
       if b<>rt
       then 
         failwith 
@@ -73,7 +70,7 @@ and metatype' syms (params:(int * btypecode_t) list) term =
       else `BTYP_function (argt,b)
 
   | `BTYP_type_tuple ts ->
-    `BTYP_tuple (List.map (metatype syms params) ts)
+    `BTYP_tuple (map mt ts)
 
   | `BTYP_apply (a,b) ->
     begin 
@@ -87,31 +84,6 @@ and metatype' syms (params:(int * btypecode_t) list) term =
       | _ -> failwith "Metatype error: function required for LHS of application"
     end
   | `BTYP_var (i,mt) ->  mt
-    (*
-    begin try 
-      List.assoc i params 
-      with 
-        Not_found -> 
-          print_endline "assoc list = ";
-          List.iter
-          (fun (i,s) -> 
-            print_string 
-            (
-              string_of_int i ^ 
-              ": " ^ 
-              string_of_btypecode syms.dfns s ^ 
-              " "
-            )
-          )
-          params
-          ;
-          print_endline "";
-          failwith 
-          (
-            "[metatype] Type variable " ^ string_of_int i ^ " not found in generic assoc list"
-          )
-    end
-    *)
 
   | _ -> `BTYP_type (* THIS ISN'T RIGHT *)
   
@@ -120,7 +92,47 @@ and metatype' syms (params:(int * btypecode_t) list) term =
 (* fixpoint reduction: reduce
    Fix f. Lam x. e ==> Lam x. Fix z. e [f x -> z]
    to replace a recursive function
-   with a recursive data structure
+   with a recursive data structure. 
+
+   Example: consider:
+
+   list t = t * list t
+
+   which is
+
+   list = fix f. lam t. t * f t
+
+   We can apply list to int:
+
+   list int = (fix f. lam t. t * f t) int
+
+   unfolding:
+
+   list int = (lam t. t * (fix f. lam t. t * f t)) int
+            = int * (fix f. lam t. t * f t) int
+            = int * list int
+
+   which is just
+
+   list int = fix z. int * z
+
+  The rule ONLY works when a recursive function f
+  is applied in its own definition to its own parameter.
+
+  The rule traps in infinite expansion of a data type,
+  and creates instead an recursive data type, eliminating
+  the function.
+
+  The normal beta reduction rule is
+
+  (lam t. b) a => b [t->a]
+
+  For a recursive function:
+
+  (fix f. lam t. b) a => b[f-> fix f. lam t. b; t-> a]
+
+  and the result must be reduced again.
+  
 *)
 
 and fixup syms ps body =
@@ -139,7 +151,8 @@ and fixup syms ps body =
    | `BTYP_apply (`BTYP_fix i, arg) 
      when arg = param 
      && i + depth +1  = 0 (* looking inside application, one more level *)
-     -> `BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
+     -> print_endline "SPECIAL REDUCTION";
+     `BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
 
    | `BTYP_typefun (a,b,c) ->
       (* NOTE we have to add 2 to depth here, an extra
@@ -156,6 +169,20 @@ and fixup syms ps body =
    extra level in the term structure 
    *)
    aux body 1
+
+(* generic fixpoint adjuster: add amt to the fixpoint
+   to make it span less deep term, to compensate
+   for removing the top combinator of the term as a result
+   of a one level adjustment eg: reduce a type match
+*)
+
+and adjust t =
+  let rec adj depth t = 
+    let fx t = adj (depth + 1) t in
+    match map_btype fx t with
+    | `BTYP_fix i when i + depth < 0 -> `BTYP_fix (i+1)
+    | x -> x
+  in adj 0 t
 
 and mk_prim_type_inst syms i args =
   print_endline "MK_PRIM_TYPE";
@@ -177,38 +204,57 @@ and mk_prim_type_inst syms i args =
   t  
 
 
-and beta_reduce syms (btvars:(int * btypecode_t) list) t = 
+and beta_reduce syms t1 = 
   (*
-  print_endline ("Beta reduce " ^ sbt syms.dfns t);
+  print_endline ("---------- Beta reduce " ^ sbt syms.dfns t1);
   *)
-  let t = 
+  let t2 = 
   try
-  beta_reduce' syms btvars [] t 
-  with Failure s -> failwith ("beta-reduce failed in " ^ sbt syms.dfns t ^ "msg: " ^ s)
+  beta_reduce' syms [] t1
+  with Failure s -> failwith ("beta-reduce failed in " ^ sbt syms.dfns t1 ^ "msg: " ^ s)
   in
   (*
-  print_endline ("  reduced= " ^ sbt syms.dfns t);
+  print_endline ("============  reduced= " ^ sbt syms.dfns t2);
+  if t1 <> t2 then print_endline "!!!!!!!!!!!! CHANGED";
   *)
-  t
+  t2
 
-and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t = 
+and beta_reduce' syms termlist t = 
   (*
-  print_endline ("BETA REDUCE " ^ string_of_btypecode syms.dfns t);
+  print_endline (spc ^ "BETA REDUCE " ^ string_of_btypecode syms.dfns t);
   *)
   match list_index termlist t with
-  | Some i -> print_endline ("Beta find fixpoint " ^ si (-i-1)); `BTYP_fix (-i - 1)
-  | None ->
-  let br t' = beta_reduce' syms btvars (t::termlist) t' in
+  | Some j -> 
+        (*
+        print_endline "+++Trail:";
+        let i = ref 0 in
+        iter (fun t -> print_endline (
+          "    " ^ si (!i) ^ " ---> " ^sbt syms.dfns t)
+          ; decr i
+        )
+        (t::termlist)
+        ;
+        print_endline "++++End";
+    print_endline ("Beta find fixpoint " ^ si (-j-1)); 
+    print_endline ("Repeated term " ^ sbt syms.dfns t);
+    *)
+    `BTYP_fix (-j - 1)
+
+  | None -> 
+
+  let br t' = beta_reduce' syms (t::termlist) t' in
   let st t = string_of_btypecode syms.dfns t in
-  let mt t = metatype syms btvars t in
-  (* hhmm .. this has to handle a free fixpoint, because it 
-  is called during construction of a recursive type .. so
-  we can't do an unfold.. but them beta-reduce won't
-  find fix points .. hmm .. hmm .. we could fix that by
-  replacing a fixpoint with a copy of the recursed expression ..
-  then let beta-reduce find it..
-  *)
+  let mt t = metatype syms t in
   match t with
+  | `BTYP_fix _ -> t
+  | `BTYP_var (i,_) -> t 
+
+  | `BTYP_typefun (p,r,b) ->
+    let b = fixup syms p b in
+    let b' = beta_reduce' syms (t::termlist) b in
+    let t = `BTYP_typefun (p, br r, b') in
+    t
+
   | `BTYP_inst (i,ts) -> 
     let ts = map br ts in
     begin try match Hashtbl.find syms.dfns i with
@@ -311,182 +357,102 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
 
   | `BTYP_void -> t
   | `BTYP_type -> t
-  | `BTYP_fix _ -> t
-  | `BTYP_var _ -> t
   | `BTYP_unitsum _ -> t
 
   | `BTYP_apply (t1,t2) ->
-    (*
-    print_endline "-----------------------";
-    print_endline ("Application " ^ st t);
-    print_endline "";
-    print_endline ("Unreduced function is " ^ st t1);
-    print_endline ("Unreduced Argument is " ^ st t2);
-    *)
-    let t2 = br t2 in (* eager evaluation *)
     let t1 = br t1 in (* eager evaluation *)
-    (*
-    print_endline ("reduced function is " ^ st t1);
-    print_endline ("reduced Argument is " ^ st t2);
-    *)
-    let mt1 = mt t1
-    and mt2 = mt t2 
-    in
-    (*
-    print_endline ("Function metatype is" ^ st mt1);
-    print_endline ("Argument metatype is" ^ st mt2);
-    *)
-    begin match t1 with
-    | `BTYP_fix _ -> `BTYP_apply(t1,t2)
-    | _ ->
-    begin match mt1 with
-    | `BTYP_function (a,b) ->
-      if a <> mt2
-      then failwith (
-        "Argument metatype "^st a^" not same as function parameter " ^ st mt2
-      )
-    | _ -> 
-      failwith (
-        "[beta_reduce] Expected LHS of application to be type function, got\n" ^ 
-        st t1^"\nmeta type: " ^ st mt1
-      )
-    end
-    ;
-    begin match t1 with
-    | `BTYP_typefun (ps,r,body) ->
-      let v = Hashtbl.create 97 in
-      begin match ps with
-      | [] -> ()
-      | [i,_] -> Hashtbl.add v i t2
-      | _ -> 
-        let ts = match t2 with 
-        | `BTYP_type_tuple ts -> ts 
-        | _ -> assert false 
-        in
-          if List.length ps <> List.length ts
-          then failwith "Wrong number of arguments to typefun"
-          else List.iter2 (fun (i,_) y -> Hashtbl.add v i y) ps ts
-      end
-      ;
-      (*
-      print_endline "Variable assignments are ";
-      Hashtbl.iter
-      (fun i t -> print_endline (string_of_int i ^ " -> " ^ st t))
-      v
-      ;
-      print_endline ("Body is " ^ st body);
-      *)
-      let t = varmap_subst v body in
-      (*
-      print_endline ("Result of application = " ^ st t);
-      *)
-      br t
-
-    | `BTYP_case (pat,vars,body) ->
-      let u = 
-        print_endline ("Try match " ^ st pat ^ " with " ^ st t2 ^ 
-        " with vars = " ^ string_of_intset vars
-        );
-        try Some (unification false syms.dfns [pat,t2] vars)
-        with Not_found -> None
-      in
-      begin match u with
-      | Some mgu -> 
-        print_endline "Unifies";
-        print_endline (string_of_varlist syms.dfns mgu);
-        let nm = length mgu and nv = IntSet.cardinal vars in
-        if nm < nv
-        then begin 
-          print_endline ("Unifies but doesn't bind all variables, return ident");
-          let i = !(syms.counter) in incr syms.counter;
-          let vars = IntSet.singleton i in
-          let x = `BTYP_var (i,`BTYP_type) in
-          `BTYP_case (x,vars,x)
-        end
-        else if nm > nv
-        then
-          failwith "Binds more variables than in specified set??? (unification algorithm bug)"
-        else begin assert (nm = nv);
-          print_endline ("Substituting into " ^ st body);
-          let body' = list_subst mgu body in
-          print_endline ("Unreduced Result is         " ^ st body');
-          (* after substitution, the previously irreducible result
-            may suddenly become reducible, so reduce it now.
-            May lead to infinite loop in case of recursion
-          *)
-          let b = br body' in
-          print_endline ("Reduced Result is         " ^ st b);
-          b
-        end
-          
-      | None -> 
-        print_endline "Doesn't unify, return ident";
-        (* return the identity function, use fresh variables
-          so the terms remain alpha converted
+    let t2 = br t2 in (* eager evaluation *)
+    let t1 = 
+      match t1 with
+      | `BTYP_fix j -> 
+        (*
+        print_endline ("++++Fixpoint application " ^ si j);
+        print_endline "+++Trail:";
+        let i = ref 0 in
+        iter (fun t -> print_endline (
+          "    " ^ si (!i) ^ " ---> " ^sbt syms.dfns t)
+          ; decr i
+        )
+        (t1::t::termlist)
+        ;
+        print_endline "++++End";
         *)
-        let i = !(syms.counter) in incr syms.counter;
-        let vars = IntSet.singleton i in
-        let x = `BTYP_var (i,`BTYP_type) in
-        `BTYP_case (x,vars,x)
-      end
+        let whole = nth termlist (-2-j) in
+        (*
+        print_endline ("Recfun = " ^ sbt syms.dfns whole);
+        *)
+        begin match whole with
+        | `BTYP_typefun _ -> ()
+        | _ -> assert false
+        end;
+        whole
+        
+      | _ -> t1
+    in 
+    (*
+    print_endline ("Function = " ^ sbt syms.dfns t1);
+    print_endline ("Argument = " ^ sbt syms.dfns t2);
+    print_endline ("Unfolded = " ^ sbt syms.dfns (unfold syms.dfns t1));
+    *)
+    begin match unfold syms.dfns t1 with
+    | `BTYP_typefun (ps,r,body) ->
+      let params' =
+        match ps with
+        | [] -> []
+        | [i,_] -> [i,t2]
+        | _ -> 
+          let ts = match t2 with 
+          | `BTYP_type_tuple ts -> ts 
+          | _ -> assert false 
+          in
+            if List.length ps <> List.length ts
+            then failwith "Wrong number of arguments to typefun"
+            else List.map2 (fun (i,_) t -> i, t) ps ts
+      in
+      (*
+      print_endline ("Body before subs" ^ sbt syms.dfns body);
+      *)
+      let t' = list_subst params' body in
+      (*
+      print_endline ("Body after subs" ^ sbt syms.dfns t');
+      *)
+      let t' = beta_reduce' syms (t::termlist) t' in
+      (*
+      print_endline ("Body after reduction" ^ sbt syms.dfns t');
+      *)
+      let t' = adjust t' in
+      t'
 
-    | `BTYP_var _ -> t (* can't reduce it yet *)
-    | `BTYP_fix _ -> t (* can't reduce it yet *)
-
-    | _ -> failwith 
-      (
-        "[beta-reduce] Expected type function or variable, got " ^ 
-        string_of_btypecode syms.dfns t1
-      )
+    | _ -> 
+      (*
+      print_endline "Apply nonfunction .. can't reduce";
+      *)
+      `BTYP_apply (t1,t2)
     end
-    end
-
-  | `BTYP_typefun (p,r,b) -> 
-    let p' = List.map (fun (i,t) -> (i, br t)) p in
-    (*
-    print_endline ("fixing up function " ^ st t);
-    *)
-    (*
-    print_endline ("body is " ^ st b);
-    *)
-    let b = fixup syms p b in
-    (*
-    print_endline ("After fixup body is " ^ st b);
-    *)
-    let b' = beta_reduce syms (p' @ btvars) b in
-    (*
-    print_endline ("Reducing body inside lambda, result is" ^ sbt syms.dfns b');
-    *)
-    `BTYP_typefun (p', br r, b')
 
   | `BTYP_type_match (tt,pts) ->
     (*
     print_endline ("Typematch [before reduction] " ^ sbt syms.dfns t);
     *)
     let tt = br tt in
-    let pts = 
-      map (fun (tp,t) -> 
-        {
-          tp with pattern=br tp.pattern; 
-           assignments= map (fun (j,t) -> j, br t) tp.assignments
-         }, br t
-      ) 
-      pts 
-    in
-    (*
-    let xx = `BTYP_type_match (tt,pts) in
-    print_endline ("Typematch [after reduction] " ^ sbt syms.dfns xx);
-    *)
     let new_matches = ref [] in
-    iter (fun (({pattern=p'; pattern_vars=dvars; assignments=eqns}, t') as x) ->
+    iter (fun ({pattern=p; pattern_vars=dvars; assignments=eqns}, t') ->
       (*
-      print_endline ("Tring to unify argument with " ^ sbt syms.dfns p');
+      print_endline (spc ^"Tring to unify argument with " ^ sbt syms.dfns p');
       *)
-      match maybe_unification syms.dfns [p',tt] with
+      let p =  br p in
+      let x = 
+        {
+          pattern=p;
+          assignments= map (fun (j,t) -> j, br t) eqns;
+          pattern_vars=dvars;
+        }, t'
+      in
+      match maybe_unification syms.dfns [p,tt] with
       | Some _ -> new_matches := x :: !new_matches
       | None -> 
         (*
-        print_endline ("Discarding pattern " ^ sbt syms.dfns p'); 
+        print_endline (spc ^"Discarding pattern " ^ sbt syms.dfns p'); 
         *)
         ()
     )
@@ -499,7 +465,14 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try 
         let mgu = unification false syms.dfns [p', tt] dvars in
-        let t' = list_subst eqns t' in
-        list_subst mgu t'
+        (*
+        print_endline "Typematch success";
+        *)
+        let t' = list_subst (mgu @ eqns) t' in
+        let t' = br t' in
+        (*
+        print_endline ("type match reduction result=" ^ sbt syms.dfns t');
+        *)
+        adjust t'
       with Not_found -> `BTYP_type_match (tt,pts)
 

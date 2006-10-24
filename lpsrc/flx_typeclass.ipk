@@ -270,7 +270,7 @@ let chk syms i ts (inst_vs, inst_constraint, inst_ts, j)  =
          inst_vs
        in
        let con = list_subst mgu inst_constraint in
-       let con = reduce_type (Flx_beta.beta_reduce syms [] con) in
+       let con = reduce_type (Flx_beta.beta_reduce syms con) in
        match con with
        | `BTYP_tuple [] ->
          let tail = drop ts (length inst_ts) in

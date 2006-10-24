@@ -698,9 +698,9 @@ and bind_type syms env sr t : btypecode_t =
         ("Unresolvable recursive type " ^ sbt syms.dfns b)
   in
   (*
-  print_endline ("Bound type= " ^ sbt syms.dfns t);
+  print_endline ("Bound type= " ^ sbt syms.dfns bt);
   *)
-  let bt = beta_reduce syms [] bt 
+  let bt = beta_reduce syms bt 
   in
     (*
     print_endline ("Beta reduced type= " ^ sbt syms.dfns bt);
@@ -717,7 +717,7 @@ and bind_expression syms env e  =
        clierr sr 
        ("Circular dependency typing expression " ^ string_of_expr e)
   in
-  let t' = beta_reduce syms [] t' in
+  let t' = beta_reduce syms t' in
   e',t'
 
 
@@ -1409,7 +1409,7 @@ and bind_type'
      (*
      print_endline ("meta typing argument " ^ sbt syms.dfns t2);
      *)
-     let sign = metatype syms [] t2 in
+     let sign = metatype syms t2 in
      (*
      print_endline ("Arg type " ^ sbt syms.dfns t2 ^ " meta type " ^ sbt syms.dfns sign);
      *)
@@ -1463,7 +1463,9 @@ and bind_type'
      (*
      print_endline ("type Application is " ^ sbt syms.dfns t);
      *)
-     let t = beta_reduce syms [] t in
+     (*
+     let t = beta_reduce syms t in
+     *)
      (*
      print_endline ("after beta reduction is " ^ sbt syms.dfns t);
      *)
@@ -1475,7 +1477,7 @@ and bind_type'
     let t2 = bt t2 in
     let t = `BTYP_apply (t1,t2) in
     (*
-    let t = beta_reduce syms [] t in
+    let t = beta_reduce syms t in
     *)
     t
 
@@ -1701,7 +1703,9 @@ and bind_type_index syms (rs:recstop)
         (*
         print_endline ("Unravelled and bound is " ^ sbt syms.dfns t);
         *)
-        let t = beta_reduce syms [] t in
+        (*
+        let t = beta_reduce syms t in
+        *)
         (*
         print_endline ("Beta reduced: " ^ sbt syms.dfns t);
         *)
@@ -1788,7 +1792,7 @@ and typeofindex_with_ts
   let t = typeofindex syms index in
   let varmap = make_varmap syms sr index ts in
   let t = varmap_subst varmap t in
-  beta_reduce syms [] t
+  beta_reduce syms t
 
 (* This routine should ONLY 'fail' if the return type
   is indeterminate. This cannot usually happen.
@@ -1826,7 +1830,7 @@ and cal_ret_type syms (rs:recstop) index args =
     print_endline ("Calculate return type of " ^ id);
     *)
     let rt = bind_type' syms env rs sr rt args mkenv in
-    let rt = beta_reduce syms [] rt in
+    let rt = beta_reduce syms rt in
     let ret_type = ref rt in
     (*
     begin match rt with
@@ -1946,7 +1950,7 @@ and inner_typeofindex_with_ts
  assert (length ts = length vs + length pvs);
  let varmap = make_varmap syms sr index ts in
  let t = varmap_subst varmap t in
- let t = beta_reduce syms [] t in
+ let t = beta_reduce syms t in
  (*
  print_endline ("typeofindex=" ^ sbt syms.dfns t);
  *)
@@ -1976,9 +1980,9 @@ and typeofindex
       let t = inner_typeofindex syms rsground index in
       let _ = try unfold syms.dfns t with _ ->
         print_endline "typeofindex produced free fixpoint";
-        failwith "[typeofindex] free fixpoint constructed"
+        failwith ("[typeofindex] free fixpoint constructed for " ^ sbt syms.dfns t)
       in
-      let t = beta_reduce syms [] t in
+      let t = beta_reduce syms t in
       (*
       print_endline ("Type of index "^ si index ^ " is " ^ sbt syms.dfns t);
       *)
@@ -2020,7 +2024,7 @@ and inner_typeofindex
   let bt t:btypecode_t = 
     let t' = 
       bind_type' syms env rs sr t [] mkenv in
-    let t' = beta_reduce syms [] t' in
+    let t' = beta_reduce syms t' in
     t'
   in
   match entry with
@@ -2030,7 +2034,7 @@ and inner_typeofindex
   | `SYMDEF_type_alias t ->
     begin
       let t = bt t in
-      let mt = metatype syms [] t in
+      let mt = metatype syms t in
       (*
       print_endline ("Type of type alias is meta_type: " ^ sbt syms.dfns mt);
       *)
@@ -3122,7 +3126,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth=rs.depth +1 }
       sr t [] mkenv
     in
-    let t = beta_reduce syms [] t in
+    let t = beta_reduce syms t in
     t
   in
   let ti sr i ts = 
@@ -3150,7 +3154,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   print_env env;
   print_endline "==";
   *)
-  let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms [] t)) in
+  let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms t)) in
   let sr = src_of_expr e in
   match e with
   | `AST_patvar _
@@ -3822,6 +3826,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
          index ts
         in
           `BEXPR_ref (index,ts), `BTYP_pointer vtype
+
 
       | `SYMDEF_parameter _ -> 
          clierr2 srr sr
@@ -4541,7 +4546,7 @@ and check_instances syms sr calledname classname es ts' mkenv =
           (*
           print_endline ("Constraint = " ^ sbt syms.dfns cons);
           *)
-          let cons = Flx_maps.reduce_type (beta_reduce syms [] cons) in
+          let cons = Flx_maps.reduce_type (beta_reduce syms cons) in
           match cons with
           | `BTYP_tuple [] -> true
           | `BTYP_void -> false

@@ -472,7 +472,7 @@ let consider syms bt luqn2 name
            in
            let et = spec_bt sr et in
            let et = list_subst !mgu et in
-           let et = beta_reduce syms [] et in
+           let et = beta_reduce syms et in
            (*
            print_endline ("After substitution of mgu, Reduced type is:\n  " ^ 
              sbt syms.dfns et)
@@ -676,7 +676,7 @@ let consider syms bt luqn2 name
         (*
         print_endline ("Substituted type constraint " ^ sbt syms.dfns type_constraint);
         *)
-        let reduced_constraint = beta_reduce syms [] type_constraint in
+        let reduced_constraint = beta_reduce syms type_constraint in
         (*
         print_endline ("Reduced type constraint " ^ sbt syms.dfns reduced_constraint);
         *)

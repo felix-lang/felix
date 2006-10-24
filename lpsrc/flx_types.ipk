@@ -353,9 +353,6 @@ and typecode_t =
   | `TYP_type                                   (** meta type of a type *)
   | `TYP_type_tuple of typecode_t list          (** meta type product *)
 
-  (*
-  | `TYP_type_match of typecode_t * (tpattern_t * typecode_t) list
-  *)
   | `TYP_type_match of typecode_t * (typecode_t * typecode_t) list
 
   | `TYP_glr_attr_type of qualified_name_t
@@ -496,9 +493,6 @@ and expr_t =
 
   | `AST_expr of range_srcref * string * typecode_t
 
-  (*
-  | `AST_type_match of range_srcref * (typecode_t * (tpattern_t * typecode_t) list)
-  *)
   | `AST_type_match of range_srcref * (typecode_t * (typecode_t * typecode_t) list)
 
   | `AST_macro_ctor of range_srcref * (string * expr_t)
@@ -2667,16 +2661,16 @@ and string_of_expr (e:expr_t) =
 
   | `AST_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^
-    catmap "\n"
+    catmap ""
     (fun (p,e')->
-      " | " ^
+      "\n  | " ^
       string_of_typecode p ^
       " => " ^
       string_of_typecode e'
     )
     ps
     ^
-    " endmatch"
+    "\n endmatch"
 
   | `AST_macro_ctor (_,(s,e)) ->
     "macro ctor " ^ s ^ string_of_expr e
@@ -2755,26 +2749,16 @@ and st prec tc : string =
     | `AST_patany sr -> 0,"ANY"
     | `TYP_none -> 0,"<none>"
     | `TYP_ellipsis-> 0,"..."
-    (*
+
     | `TYP_type_match (e,ps) -> 0,
       "typematch " ^ string_of_typecode e ^ " with " ^
       catmap ""
       (fun (p,t) ->
-      "| " ^ string_of_tpattern p ^ " => " ^ string_of_typecode t 
+      "\n  | " ^ string_of_typecode p ^ " => " ^ string_of_typecode t 
       )
       ps
       ^
-      " endmatch"
-    *)
-    | `TYP_type_match (e,ps) -> 0,
-      "typematch " ^ string_of_typecode e ^ " with " ^
-      catmap ""
-      (fun (p,t) ->
-      "| " ^ string_of_typecode p ^ " => " ^ string_of_typecode t 
-      )
-      ps
-      ^
-      " endmatch"
+      "\nendmatch"
 
     | `TYP_var i -> 0,"<var " ^ si i ^ ">"
     | `TYP_unitsum k ->
@@ -2941,11 +2925,11 @@ and sb dfns depth fixlist counter prec tc =
         " with" ^
         catmap ""
         (fun ({pattern=p},t) ->
-          " | " ^ sbt 99 p ^ " => " ^ sbt 99 t 
+          "\n  | " ^ sbt 99 p ^ " => " ^ sbt 99 t 
         )
         ps 
         ^
-        " endmatch"
+        "\nendmatch"
       )
 
     | `BTYP_fix i ->
