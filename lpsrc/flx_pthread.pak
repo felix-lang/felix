@@ -1071,7 +1071,7 @@ int flx_semaphore_t::get(){ int x; sem_getvalue(&sem,&x); return x; }
 namespace flx { namespace pthread {
 
 // ********************************************************
-/// A monitor is an concurrent version of a channel.
+/// A monitor is a concurrent version of a channel.
 /// It matches up readers and writers in pairs,
 /// synchronising transfer of one datum.
 ///
@@ -1080,7 +1080,7 @@ namespace flx { namespace pthread {
 /// handshake.
 /// 
 /// In particular, unlike the queue of size 1, the writer
-/// cannot proceed until the reader sends an acknowlege
+/// cannot proceed until the reader sends an acknowledge
 /// signal.
 ///
 /// This logic matches that provides by schannels, but 
