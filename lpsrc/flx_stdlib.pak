@@ -1,4 +1,4 @@
-@head(1,'Felix Standard Library')
+	@head(1,'Felix Standard Library')
 
 @execfile('config'+os.sep+'flx_data.py')
 @include_file ('flx_stdlib_lex.ipk')
@@ -34,8 +34,9 @@ macro proc gen_cmp(t){
   fun gt: t * t -> bool = "$1>$2" ;
   fun le: t * t -> bool = "$1<=$2" ;
   fun ge: t * t -> bool = "$1>=$2" ;
-  fun max: t * t -> t  = "$1<$2?$2:$1" ;
-  fun min: t * t -> t = "$1<$2?$1:$2" ;
+  fun min (x:t, y:t) => if x < y then x else y endif;
+  fun max (x:t, y:t) => if x > y then x else y endif;
+  fun cmp (x:t, y:t) => if x < y then -1 elif x > y then 1 else 0 endif;
 }
 
 // additive group
