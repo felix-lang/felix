@@ -34,6 +34,7 @@ macro proc gen_cmp(t){
   fun gt: t * t -> bool = "$1>$2" ;
   fun le: t * t -> bool = "$1<=$2" ;
   fun ge: t * t -> bool = "$1>=$2" ;
+
   fun min (x:t, y:t) => if x < y then x else y endif;
   fun max (x:t, y:t) => if x > y then x else y endif;
   fun cmp (x:t, y:t) => if x < y then -1 elif x > y then 1 else 0 endif;
