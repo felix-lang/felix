@@ -22,6 +22,74 @@ Support table.
 @end_table()
 
 
+@select(tangler('lib/flx_tclass.flxh', 'data'))
+// Core types and type classes
+
+typedef void = 0;
+typedef unit = 1;
+typedef bool = 2;
+
+
+// equality
+typeclass Eq[t] {
+  virtual fun eq: t * t -> bool;
+  virtual fun ne (x:t,y:t):bool => not (eq (x,y));
+}
+
+// total order
+typeclass Tord[t]{
+  inherit Eq[t];
+  virtual fun lt: t * t -> bool; 
+  virtual fun gt(x:t,y:t):bool =>lt(y,x);
+  virtual fun le(x:t,y:t):bool => not (gt(x,y));
+  virtual fun ge(x:t,y:t):bool => not (lt(x,y));
+}
+
+// additive symmetric group
+typeclass Addgrp[t] {
+  inherit Eq[t];
+  virtual fun zero: 1 -> t;
+  virtual fun add: t * t -> t;
+  virtual fun inv: t -> t;
+  virtual fun sub(x:t,y:t):t => add (x,inv y);
+  virtual proc pluseq (x:lvalue[t],y:t){ x = x + y; }
+  virtual proc minuseq (x:lvalue[t],y:t){ x = x - y; }
+  reduce id (x:t): x+zero() => x;
+  reduce id (x:t): zero()+x => x;
+  axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
+  reduce inv(x:t): x-x => zero();
+  reduce inv(x:t,y:t): x+y-y => x;
+  axiom sym (x:t,y:t): x+y == y+x;
+}
+
+// mult semi group with unit
+typeclass MultSemi1[t] {
+  inherit Eq[t];
+  virtual fun one: unit -> t;
+  virtual fun mul: t * t -> t;
+  virtual proc muleq: lvalue[t] * t;
+  reduce id (x:t): x*one() => x;
+  reduce id (x:t): one()*x => x;
+  axiom assoc (x:t,y:t,z:t): (x*y)*z == x*(y*z);
+  reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+}
+
+// ring
+typeclass Ring[t] {
+  inherit Addgrp[t];
+  inherit MultSemi1[t];
+  axiom distrib (x:t,y:t,z:t): x * ( y + z) == x * y + x * z;
+}
+
+// division ring
+typeclass Dring[t] {
+  inherit Ring[t];
+  virtual fun div: t * t -> t; // pre t != 0
+  virtual proc diveq: lvalue[t] * t;
+  virtual fun mod : t * t -> t;
+  virtual proc modeq: lvalue[t] * t;
+}
+
 @select(tangler('lib/flx_categories.flxh', 'data'))
 macro proc gen_eq(t){
   fun eq: t * t -> bool = "$1==$2" ;
@@ -29,7 +97,6 @@ macro proc gen_eq(t){
 }
 
 macro proc gen_cmp(t){
-  gen_eq t;
   fun lt: t * t -> bool = "$1<$2" ;
   fun gt: t * t -> bool = "$1>$2" ;
   fun le: t * t -> bool = "$1<=$2" ;
@@ -38,6 +105,11 @@ macro proc gen_cmp(t){
   fun min (x:t, y:t) => if x < y then x else y endif;
   fun max (x:t, y:t) => if x > y then x else y endif;
   fun cmp (x:t, y:t) => if x < y then -1 elif x > y then 1 else 0 endif;
+}
+
+macro proc gen_cmpeq(t){
+  gen_eq t;
+  gen_cmp t;
 }
 
 // additive group
@@ -185,48 +257,8 @@ macro val false = case 0 of 2;
   else: y = "false" 
   tangle("macro val " + i + " = " + y + ";")
 
-@h=tangler('lib/std.flx','data')
-@# use data tangler to prevent line number generation
+@h=tangler('lib/flx_ctypes.flxh','data')
 @select(h)
-#import <flx_syntax.flxh>
-#import <flx_categories.flxh>
-#import <flx_platform.flxh>
-#import <flx_macros.flxh>
-
-header '#include "flx_rtl_config.hpp"';
-
-header iostream = "#include <iostream>";
-header cmath = """
-#include <cmath>
-#ifdef HAVE_ISNAN_IN_IEEEFP
-extern "C" {
-#include <ieeefp.h>
-}
-#endif
-""";
-
-header """
-#include <cstdio>
-#include <cstddef>
-#include <cassert>
-#include <climits>
-using namespace std;
-""";
-
-header flx_ioutil = '#include "flx_ioutil.hpp"';
-header flx_executil = '#include "flx_executil.hpp"';
-header flx_dynlink = '#include "flx_dynlink.hpp"';
-header flx_i18n = '#include "flx_i18n.hpp"';
-header stdexcept = '#include <stdexcept>';
-
-// note -- this code is templated, we include
-// it in the header file because that's where
-// most C++ compilers need it (ISO requires
-// separate compilation of templates but most
-// compilers as at 2004 don't implement it)
-
-header flx_strutil = '#include "flx_strutil.hpp"';
-
 header cctype_hxx = '#include <cctype>';
 header string_hxx = '#include <string>';
 header complex_hxx = '#include <complex>';
@@ -330,6 +362,11 @@ _gc_pointer type gcptr[t]= "?1*";
   tangle('typedef ' + t + ' = ' + equiv + ';')
   tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
 
+typedef addressing = typesetof (
+  byte,offset,
+  address,caddress,vaddress,cvaddress
+);
+
 typedef chars = typesetof (char, wchar, uchar);
 
 typedef fast_sints = typesetof (tiny, short, int, long, vlong);
@@ -352,6 +389,8 @@ typedef complexes = typesetof (complex,dcomplex,lcomplex);
 typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
 
 typedef numbers = reals || imaginaries || complexes;
+
+typedef basic_types = bool || numbers || chars || addressing;
 
 // C integer promotion rule
 typedef fun integral_promotion: TYPE -> TYPE =
@@ -395,6 +434,71 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   endmatch
 ;
 
+instance [t:basic_types] Eq[t] {
+  fun eq: t * t -> bool = "$1==$2";
+}
+
+instance[t:reals] Tord[t] {
+  fun lt: t * t -> bool = "$1<$2";
+}
+
+instance[t:numbers] Addgrp[t] {
+  fun zero: 1 -> t = "(?1)0" ;
+  fun add: t * t -> t = "$1+$2" ;
+  fun inv: t -> t = "-$1" ;
+  fun sub: t * t -> t = "$1-$2" ;
+  proc pluseq: lvalue[t] * t = "$1+=$2;";
+  proc minuseq: lvalue[t] * t = "$1-=$2;";
+}
+
+@for t in all:
+  tangle("open Eq["+t+"];")
+  
+@h=tangler('lib/std.flx','data')
+@# use data tangler to prevent line number generation
+@select(h)
+#import <flx_syntax.flxh>
+#import <flx_categories.flxh>
+#import <flx_platform.flxh>
+#import <flx_macros.flxh>
+
+header '#include "flx_rtl_config.hpp"';
+
+header iostream = "#include <iostream>";
+header cmath = """
+#include <cmath>
+#ifdef HAVE_ISNAN_IN_IEEEFP
+extern "C" {
+#include <ieeefp.h>
+}
+#endif
+""";
+
+header """
+#include <cstdio>
+#include <cstddef>
+#include <cassert>
+#include <climits>
+using namespace std;
+""";
+
+header flx_ioutil = '#include "flx_ioutil.hpp"';
+header flx_executil = '#include "flx_executil.hpp"';
+header flx_dynlink = '#include "flx_dynlink.hpp"';
+header flx_i18n = '#include "flx_i18n.hpp"';
+header stdexcept = '#include <stdexcept>';
+
+// note -- this code is templated, we include
+// it in the header file because that's where
+// most C++ compilers need it (ISO requires
+// separate compilation of templates but most
+// compilers as at 2004 don't implement it)
+
+header flx_strutil = '#include "flx_strutil.hpp"';
+
+#import <flx_tclass.flxh>
+#import <flx_ctypes.flxh>
+
 @absmap = { 
   "tiny":"abs",
   "short":"abs",
@@ -418,15 +522,6 @@ typedef charcp = C_hack::cptr[char];
 
 typedef ucharp = C_hack::ptr[utiny];
 typedef ucharcp = C_hack::cptr[utiny];
-
-publish "Empty sum"
-  typedef void = 0;
-
-publish "Unit type"
-  typedef unit = 1;
-
-publish "Boolean"
-  typedef bool = 2;
 
 publish "option type"
   union opt[T] =
@@ -941,7 +1036,6 @@ publish "Bool compatible with C"
 open module Bool 
 {
 
-  gen_eq bool;
   fun land: bool * bool -> bool = "$1&&$2";
   fun nand: bool * bool -> bool = "!($1&&$2)";
   fun lor: bool * bool -> bool = "$1||$2";
@@ -1017,8 +1111,6 @@ type string = "std::string";
   
 @#------------- CHARACTER MODULES -------------------
 // ordinary value of chars
-@for t in chars:
-  tangle('  gen_eq('+t+');')
 
 open module Char 
 {
@@ -1067,6 +1159,7 @@ open module String
   open Bool;
   open Char;
   open Int;
+  gen_eq(string);
   proc pluseq: lvalue[string] * string = "$1.append($2);";
   proc pluseq: lvalue[string] * charcp = "$1.append($2);";
   proc pluseq: lvalue[string] * charp = "$1.append($2);";
@@ -1308,21 +1401,13 @@ open module String
   ;
 }
 
-open module Cstdlib
-{
-  requires cstdlib;
-  const RAND_MAX:long;
-
-  proc srand: uint = 'std::srand($1);';
-  fun rand: 1 -> int = 'std::rand()';
-}
-
 type ustring = "basic_string<uint32_t>" requires string_hxx;
 open module Ustring
 {
   open Bool;
   open Char;
   open Int;
+  gen_eq(ustring);
   proc pluseq: lvalue[ustring] * ustring = "$1.append($2);";
 
   fun len: ustring -> int = "$1.size()";
@@ -1355,6 +1440,16 @@ module Arith_casts
 @for t1 in ints+floats:
   tangle('  fun '+t1+'_of[t2:reals]: t2 -> '+t1+' = "('+tmap[t1]+')$1:cast" is cast;')
 }
+
+open module Cstdlib
+{
+  requires cstdlib;
+  const RAND_MAX:long;
+
+  proc srand: uint = 'std::srand($1);';
+  fun rand: 1 -> int = 'std::rand()';
+}
+
 
 @#------------- CONTROL STRUCTURES -------------------
 module Control 
@@ -2236,7 +2331,7 @@ module Lexer
   fun string_between: iterator * iterator -> string =
    "std::string($1,$2)";
 
-  gen_cmp iterator;
+  gen_cmpeq iterator;
 
   fun add: iterator * int -> iterator = "$1 + $2";
   fun sub: iterator * int -> iterator = "$1 - $2";
@@ -2392,11 +2487,11 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";')
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";')
   tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
-  tangle('    gen_cmp '+c+';')
+  tangle('    gen_cmpeq '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
-  tangle('    gen_cmp '+it+';')
-  tangle('    gen_cmp '+rit+';')
+  tangle('    gen_cmpeq '+it+';')
+  tangle('    gen_cmpeq '+rit+';')
   tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
   tangle('    proc post_incr : '+it+' = "++$1;";')
   tangle('    proc pre_incr : lvalue['+rit+'] = "++$1;";')
@@ -2428,11 +2523,11 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1,?2>::reverse_iterator";')
 
   tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1,?2>())";')
-  tangle('    gen_cmp '+c+';')
+  tangle('    gen_cmpeq '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
-  tangle('    gen_cmp '+it+';')
-  tangle('    gen_cmp '+rit+';')
+  tangle('    gen_cmpeq '+it+';')
+  tangle('    gen_cmpeq '+rit+';')
   tangle('    proc pre_incr : '+it+' = "++$1;";')
   tangle('    proc post_incr : '+it+' = "++$1;";')
   tangle('    proc pre_incr : '+rit+' = "++$1;";')

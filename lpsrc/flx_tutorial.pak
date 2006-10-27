@@ -3073,7 +3073,7 @@ determined by its child.
 
 module X[t] {
   fun f[k]: t * k  -> t = "1";
-  fun cmp: t * t -> bool = "1";
+  fun xcmp: t * t -> bool = "1";
   fun mk: 1 -> t = "1";
   fun subscript: t * t -> t = "2";
 }
@@ -3110,7 +3110,7 @@ print (1).[2];
 
 var x = mk[int]();
 var y = mk[int]();
-if cmp(x,y) do print "YES"; endl; else print "NO"; endl; done;
+if xcmp(x,y) do print "YES"; endl; else print "NO"; endl; done;
 @doc()
 
 @select(env.expect())
@@ -4502,7 +4502,20 @@ and each on the matches generates an assertion. An error
 is printed and the program aborted if any check fails.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
+type int = "int";
+type string = "std::string";
+
+typedef bool = 2;
+
+fun add: int * int -> int = "$1+$2";
+fun mul: int * int -> int = "$1*$2";
+fun le: int * int -> bool = "$1<=$2";
+fun eq: int * int -> bool = "$1==$2";
+
+header '#include <iostream>';
+header '#include <string>';
+proc print[t]: t = "std::cout<<$1;";
+proc endl: 1 = "std::cout<<std::endl;";
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
@@ -4525,18 +4538,24 @@ reduce silly (x:int): hh x => x;
 
 axiom_check (1,2,3);
 
-var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+var i:int=1; 
+lab:>
+  axiom_check (i,2); 
+  i=i+1;
+  if i <= 5  goto lab;
 
 axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
   sym(x,y) == sym(y,x)
 ;
 
-// this axiom is only right if 'add' is symmetric
 axiom_check (add of (int * int), eq of (int * int), 1,2);
+
 
 @select(env.expect())
 Cheat
 1
+@doc()
+
 @env.head(2,'Standard types and Lexemes')
 Here is a more comprehensive set of examples
 of Felix standard types and numeric lexicology. 

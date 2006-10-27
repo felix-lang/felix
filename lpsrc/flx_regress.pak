@@ -994,10 +994,20 @@ pr$ ff$ 1,2;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['reductions', 'axioms']))
-#import <flx.flxh>
+type int = "int";
+type string = "std::string";
 
-// the noinline is needed because reductions are
-// currently applies AFTER inlining. Hmm.
+typedef bool = 2;
+
+fun add: int * int -> int = "$1+$2";
+fun mul: int * int -> int = "$1*$2";
+fun le: int * int -> bool = "$1<=$2";
+fun eq: int * int -> bool = "$1==$2";
+
+header '#include <iostream>';
+header '#include <string>';
+proc print[t]: t = "std::cout<<$1;";
+proc endl: 1 = "std::cout<<std::endl;";
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
@@ -1020,13 +1030,18 @@ reduce silly (x:int): hh x => x;
 
 axiom_check (1,2,3);
 
-var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+var i:int=1; 
+lab:>
+  axiom_check (i,2); 
+  i=i+1;
+  if i <= 5  goto lab;
 
 axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
   sym(x,y) == sym(y,x)
 ;
 
 axiom_check (add of (int * int), eq of (int * int), 1,2);
+
 @doc()
 
 @select(env_rt.expect())
@@ -1758,27 +1773,27 @@ pr$ ff$ 1,2;
 #import <flx.flxh>
 proc pr[t]:t="std::cout<<$1<<std::endl;" requires iostream;
 
-typeclass Eq[t,u] {
-  virtual fun eq: t * u -> 2;
+typeclass XEq[t,u] {
+  virtual fun xeq: t * u -> 2;
   virtual proc ppp: t;
 }
 
-instance Eq[int,int] {
-  fun eq: int * int -> 2 = "$1==$2";
+instance XEq[int,int] {
+  fun xeq: int * int -> 2 = "$1==$2";
   proc ppp (x:int) { pr x; }
   fun fred: int -> int = "";
 }
 
 
-instance Eq[long,int] {
-  fun eq: long * int -> 2 = "$1==$2";
+instance XEq[long,int] {
+  fun xeq: long * int -> 2 = "$1==$2";
   proc ppp (x:long) { pr x; }
 }
 
-fun jeq[r,s with Eq[r,s]] (x:r,y:s)=> x == y;
-fun keq[t with Eq[t,t]] (x:t,y:t)=> jeq(x,y);
-fun peq[t with Eq[t,t]] (x:t,y:t)=> keq(x,y);
-proc zzz[t with Eq[t,t]] (x:t) { ppp x; }
+fun jeq[r,s with XEq[r,s]] (x:r,y:s)=> xeq(x,y);
+fun keq[t with XEq[t,t]] (x:t,y:t)=> jeq(x,y);
+fun peq[t with XEq[t,t]] (x:t,y:t)=> keq(x,y);
+proc zzz[t with XEq[t,t]] (x:t) { ppp x; }
 
 pr$ peq$ 1,2; 
 pr$ peq$ 1,1; 
@@ -1830,33 +1845,33 @@ print$ str2$ list(1,2,3,4); endl;
 #import <flx.flxh>
 header '#include <iostream>';
 
-typeclass Eq[t] {
+typeclass XEq[t] {
   virtual fun xeq: t * t -> bool;
   virtual fun xne: t * t -> bool;
 }
 
-typeclass Cmp[t] {
-  inherit Eq[t];
+typeclass XCmp[t] {
+  inherit XEq[t];
   virtual fun xlt: t * t -> bool;
   virtual fun xgt: t * t -> bool;
   virtual fun xle: t * t -> bool;
   virtual fun xge: t * t -> bool;
 }
 
-instance Eq[int] {
+instance XEq[int] {
   fun xeq: int * int -> bool = "$1==$2";  
   fun xne: int * int -> bool = "$1!=$2";  
 }
 
-instance Cmp[int] {
+instance XCmp[int] {
   fun xlt: int * int -> bool = "$1<$2" ;
   fun xgt: int * int -> bool = "$1>$2" ;
   fun xle: int * int -> bool = "$1<=$2" ;
   fun xge: int * int -> bool = "$1>=$2" ;
 }
 
-fun feq[with Eq[int]] (x:int,y:int) => xeq(x,y);
-fun geq[with Cmp[int]] (x:int,y:int) => xeq(x,y);
+fun feq[with XEq[int]] (x:int,y:int) => xeq(x,y);
+fun geq[with XCmp[int]] (x:int,y:int) => xeq(x,y);
 
 print$ feq(1,2); endl;
 print$ geq(1,2); endl;
@@ -1915,22 +1930,22 @@ print$ g$ 1,2L; endl;
 header '#include <iostream>';
 
 
-typeclass Eq[t] {
+typeclass XEq[t] {
   virtual fun xeq: t * t -> bool;
   virtual fun xne: t * t -> bool;
 }
 
-instance Eq[int] {
+instance XEq[int] {
   fun xeq: int * int -> bool = "$1==$2";  
   fun xne: int * int -> bool = "$1!=$2";  
 }
 
-module Joe[with Eq[int]] {
+module Joe[with XEq[int]] {
   fun feq(x:int,y:int) => xeq(x,y);
 }
 print$ Joe::feq(1,2); endl;
 
-module Max[t with Eq[t]] {
+module Max[t with XEq[t]] {
   fun feq(x:t,y:t) => xeq(x,y);
 }
 print$ Max::feq(1,1); endl;
