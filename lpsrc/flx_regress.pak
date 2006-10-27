@@ -2094,6 +2094,130 @@ y1 = y2;
 @select(env_rt.expect())
 @doc()
 
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("purely functional")
+#import <flx.flxh>;
+
+open List;
+
+open Avl;
+
+proc pr_node (x:int) {
+    print "B(";
+    print x;
+    print ")\n";
+}
+
+proc pr_tree(tree:avl[int]) {
+    Avl::iter[int] (pr_node of int, tree);
+}
+
+proc pr_node (d:int, x:int) {
+    print ("  " * d);
+    print "B(";
+    print x;
+    print ")\n";
+}
+
+proc pr_treed(tree:avl[int]) {
+    Avl::iter[int] (pr_node of (int*int), tree);
+}
+
+proc print_string (x:string) {
+    print x;
+}
+
+fun cmp_int(x:int, y:int) =>
+    if x > y then
+        1
+    elif x < y then
+        -1
+    else
+        0
+    endif
+;
+
+fun cadd_list_to_int (x:int) (y:list[int]) =>
+    y + x
+;
+
+fun cadd_int_to_list (y:list[int]) (x:int) =>
+    y + x
+;
+
+fun cadd_int_to_avl (y:avl[int]) (x:int) =>
+    Avl::insert[int](y, x, cmp_int of (int*int));
+
+fun main () =
+{
+
+    var y = list(1, 3, 5, 7, 9 );
+    var z:avl[int] = (fold_left (the cadd_int_to_avl)  (avl[int]())  y);
+    pr_treed(z);
+    endl;
+
+    z = remove[int](z, 7, cmp_int of (int*int));
+    pr_treed(z);
+    endl;
+
+    z = insert(z, 11, cmp_int of(int*int));
+    pr_treed(z);
+    endl;
+
+    print_line$ first(z);
+    endl;
+
+    z = all_but_first(z);
+    pr_treed(z);
+    endl;
+
+    print_line$ last(z);
+    endl;
+
+    z = all_but_last(z);
+    pr_treed(z);
+    endl;
+
+    return 0;
+}
+
+System::exit (main());
+@doc()
+
+@select(env_rt.expect())
+  B(1)
+B(3)
+    B(5)
+  B(7)
+    B(9)
+
+  B(1)
+B(3)
+  B(5)
+    B(9)
+
+  B(1)
+B(3)
+    B(5)
+  B(9)
+    B(11)
+
+1
+
+  B(3)
+    B(5)
+B(9)
+  B(11)
+
+11
+
+B(3)
+    B(5)
+  B(9)
+
+@doc()
+
 @env_nd.head(2,"Non deterministic tests")
 
 @env_nd.head(3)
