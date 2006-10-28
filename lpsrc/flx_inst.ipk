@@ -254,7 +254,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     uis i2 ts;
     (*
     print_endline ("INSTANTIATING CLASS " ^ si i2 ^ "<"^catmap "," (sbt syms.dfns) ts^">");
-    *)
+    *) 
     uis i3 ts;
     (*
     print_endline ("INSTANTIATING CONSTRUCTOR " ^ si i3 ^ "<"^catmap "," (sbt syms.dfns) ts^">");
@@ -272,7 +272,8 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_ifnotgoto (sr,e,_)
   | `BEXE_fun_return (sr,e) 
   | `BEXE_yield (sr,e) 
-    -> ue sr e
+    -> 
+      ue sr e
 
   | `BEXE_init (sr,i,e) -> 
     ui i; (* this is wrong?: initialisation is not use .. *)
@@ -302,6 +303,9 @@ and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes t
   print_endline ("Process function " ^ si index);
   *)
   process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
+  (*
+  print_endline ("Done Process function " ^ si index);
+  *)
 
 and process_production syms bbdfns ref_insts1 p ts =
   let uses_symbol (_,nt) = match nt with
@@ -363,9 +367,6 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
     let argtypes = map (fun {ptyp=t}->t) ps in
-    (*
-    print_endline ("len vs = " ^ si (length vs) ^ ", len ts=" ^ si (length ts));
-    *)
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

@@ -306,7 +306,9 @@ and beta_reduce' syms termlist t =
       begin match ot with 
       | [] -> `BTYP_typeset ts
       | _ -> 
+        (*
         print_endline "WARNING UNREDUCED TYPESET UNION";
+        *)
         `BTYP_typesetunion (`BTYP_typeset ts :: ot)
       end
 

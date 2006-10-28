@@ -343,6 +343,34 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
     let i,ts = fixup i ts in
     `BEXE_call_stack (sr,i,ts, ge e2)
     
+  (*
+  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
+    print_endline ("Apply ctor " ^ si i1 ^ ", " ^ si i2 ^ ", [" ^
+    catmap "," (sbt syms.dfns) ts ^ "]" ^ si i3);
+    let fixup i ts = 
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i2,ts = fixup i2 ts in
+    `BEXE_apply_ctor (sr,revar i1,i2,ts,revar i3,ge e2)
+   
+  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
+    print_endline ("Apply ctor stack " ^ si i1 ^ ", " ^ si i2 ^ ", [" ^
+    catmap "," (sbt syms.dfns) ts ^ "]" ^ si i3);
+    let fixup i ts = 
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i2,ts = fixup i2 ts in
+    `BEXE_apply_ctor_stack (sr,revar i1,i2,ts,revar i3,ge e2)
+  *)
+
   | x -> map_bexe revar ge ident relab relab x
   in 
   (*
@@ -507,7 +535,8 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add uses k calls
 
   | `BBDCL_class (props,vs) ->
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_class (props,splice vs));
+    let vs = splice vs in
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_class (props,vs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
@@ -847,19 +876,31 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_call_stack (sr,i,ts,e2)  -> assert false
 
   | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
-    let auxt t = varmap_subst varmap t in
-    let ts = map auxt ts in
-    let ts = vsplice caller_vars callee_vs_len ts in
+    let fixup i ts = 
+      let auxt t = varmap_subst varmap t in
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i2,ts = fixup i2 ts in
     let rv i = try Hashtbl.find revariable i with Not_found -> i in
-    [`BEXE_apply_ctor (sr,rv i1, rv i2,ts,rv i3,ge e2)]
+    [`BEXE_apply_ctor (sr,rv i1, i2,ts,rv i3,ge e2)]
 
   | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
-    let auxt t = varmap_subst varmap t in
-    let ts = map auxt ts in
-    let ts = vsplice caller_vars callee_vs_len ts in
+    let fixup i ts = 
+      let auxt t = varmap_subst varmap t in
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i2,ts = fixup i2 ts in
     let rv i = try Hashtbl.find revariable i with Not_found -> i in
-    [`BEXE_apply_ctor_stack (sr,rv i1, rv i2,ts,rv i3,ge e2)]
-    
+    [`BEXE_apply_ctor_stack (sr,rv i1, i2,ts,rv i3,ge e2)]
+ 
   | `BEXE_call (sr,e1,e2)  -> [reduce_bexe bbdfns (`BEXE_call (sr,ge e1, ge e2))]
   | `BEXE_jump (sr,e1,e2)  -> assert false
 
