@@ -34,12 +34,12 @@ open Flx_maps
 
 let null_table = Hashtbl.create 3
 
-let add_inst syms ref_insts1 (i,ts) =
+let add_inst syms bbdfns ref_insts1 (i,ts) =
     (*
     print_endline ("Attempt to register instance " ^ si i ^ "[" ^
     catmap ", " (sbt syms.dfns) ts ^ "]");
     *)
-  let i,ts = Flx_typeclass.fixup_typeclass_instance syms i ts in
+  let i,ts = Flx_typeclass.fixup_typeclass_instance syms bbdfns i ts in
     (*
     print_endline ("remapped to instance " ^ si i ^ "[" ^
     catmap ", " (sbt syms.dfns) ts ^ "]");
@@ -71,7 +71,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   print_endline (" .. instantiated type " ^ string_of_btypecode syms.dfns (varmap_subst hvarmap t));
   *)
   let ue e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
-  let ui i ts = add_inst syms ref_insts1 (i,ts) in
+  let ui i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
   let ut t = register_type_r ui syms bbdfns [] sr t in
   let vs t = varmap_subst hvarmap t in
   let t' = vs t in
@@ -213,7 +213,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
 
 and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   let ue sr e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
-  let uis i ts = add_inst syms ref_insts1 (i,ts) in
+  let uis i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
   let ui i = uis i ts in
   (*
   print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
@@ -305,13 +305,13 @@ and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes t
 
 and process_production syms bbdfns ref_insts1 p ts =
   let uses_symbol (_,nt) = match nt with
-  | `Nonterm ii -> iter (fun i -> add_inst syms ref_insts1 (i,ts)) ii
+  | `Nonterm ii -> iter (fun i -> add_inst syms bbdfns ref_insts1 (i,ts)) ii
   | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
   in
   iter uses_symbol p
                                                                                 
 and process_inst syms bbdfns ref_insts1 i ts inst =
-  let uis i ts = add_inst syms ref_insts1 (i,ts) in
+  let uis i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
   let ui i = uis i ts in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns i 
@@ -608,7 +608,7 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
     add_cand root [];
 
     (* add exported functions, and register exported types *)
-    let ui i ts = add_inst syms insts1 (i,ts) in
+    let ui i ts = add_inst syms bbdfns insts1 (i,ts) in
     iter 
     (function 
       | `BIFACE_export_fun (_,x,_) -> add_cand x []

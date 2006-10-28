@@ -216,8 +216,14 @@ let bbind_sym syms bbdfns i {
     let ivs = find_vs syms i in (* this is the full vs list *) 
     let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
     let bcons = 
-      let {raw_type_constraint=t} = snd ivs in
-      bt t
+      let cons = try 
+        Flx_tconstraint.build_type_constraints syms bt sr (fst ivs) 
+        with _ -> clierr sr "Can't build type constraints, type binding failed"
+      in
+      let {raw_type_constraint=icons} = snd ivs in
+      let icons = bt icons in
+      let cons = `BTYP_intersect [cons; icons] in
+      cons
     in
     let btraint = function | Some x -> Some (be x) | None -> None in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in

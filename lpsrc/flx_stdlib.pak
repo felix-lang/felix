@@ -1153,13 +1153,22 @@ open module Stdout
 }
 
 @#------------- STRING MODULES -------------------
+
+typedef strings = typesetof (string,ustring);
+
+instance[t:strings] Eq[t] {
+  fun eq: t * t -> bool = "$1==$2";
+}
+
+open Eq[string];
+open Eq[ustring];
+
 open module String
 {
   requires string_hxx;
   open Bool;
   open Char;
   open Int;
-  gen_eq(string);
   proc pluseq: lvalue[string] * string = "$1.append($2);";
   proc pluseq: lvalue[string] * charcp = "$1.append($2);";
   proc pluseq: lvalue[string] * charp = "$1.append($2);";

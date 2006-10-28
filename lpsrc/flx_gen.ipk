@@ -789,7 +789,7 @@ let gen_exe filename syms
 
   let rec handle_closure sr is_jump index ts subs' a stack_call =
     let index',ts' = index,ts in
-    let index, ts = Flx_typeclass.fixup_typeclass_instance syms index ts in
+    let index, ts = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
     (*
     print_endline ("Remapped " ^ si index' ^ " to " ^ si index');
     *)

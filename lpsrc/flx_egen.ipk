@@ -940,7 +940,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
       | `Virtual -> 
         let ts = map tsub ts in
-        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
+        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
         if index = index' then
           clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id ^ "<" ^si index ^ 
             ">, no instance for ts="^ catmap "," (sbt syms.dfns) ts
@@ -1046,7 +1046,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_apply_direct (index,ts,a) ->
     let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
     if index <> index' then
     begin 
       let _,_,sr3,entry = 
@@ -1106,7 +1106,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_apply_stack (index,ts,a) ->
     let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms index ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
     if index <> index' then
     begin 
       let _,_,sr3,entry = 

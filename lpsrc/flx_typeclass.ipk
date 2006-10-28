@@ -15,6 +15,7 @@ val typeclass_instance_check:
 
 val fixup_typeclass_instance:
   sym_state_t -> 
+  fully_bound_symbol_table_t ->
   int ->
   btypecode_t list ->
   int * btypecode_t list
@@ -269,6 +270,9 @@ let chk syms i ts (inst_vs, inst_constraint, inst_ts, j)  =
          )
          inst_vs
        in
+       (*
+       print_endline ("instance constraint: " ^ sbt syms.dfns inst_constraint);
+       *)
        let con = list_subst mgu inst_constraint in
        let con = reduce_type (Flx_beta.beta_reduce syms con) in
        match con with
@@ -283,7 +287,7 @@ let chk syms i ts (inst_vs, inst_constraint, inst_ts, j)  =
        | _ -> failwith "Unable to reduce type constraint!"
      end
 
-let fixup_typeclass_instance syms i ts =
+let fixup_typeclass_instance syms bbdcls i ts =
   let entries = 
     try Hashtbl.find syms.typeclass_to_instance i 
     with Not_found -> []
@@ -296,5 +300,17 @@ let fixup_typeclass_instance syms i ts =
    match entries with
    | [] -> i,ts
    | [j,ts] -> j,ts
-   | _ -> failwith "can't handle overlapping instances yet"
+   | ls ->
+     iter
+     (fun (j,ts) ->
+       let id,parent,sr,entry = Hashtbl.find bbdcls j in
+       let parent = match parent with Some k -> k | None -> assert false in
+       print_endline ("Function " ^ si j ^ " instance parent " ^ si parent);
+       let id,parent,sr,entry = Hashtbl.find bbdcls parent in
+       ()
+       (* FINISH ME! *)
+     ) 
+     ls
+     ;
+   failwith "can't handle overlapping instances yet"
 
