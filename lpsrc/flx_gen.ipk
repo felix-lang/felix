@@ -1361,22 +1361,34 @@ let gen_exe filename syms
           | _ -> failwith "Panic, index isn't procedure"
         with Not_found -> failwith "Panic, can't find procedure"
       in
-      let args = match a with
-        | _,`BTYP_tuple [] -> "this"
-        | _ -> let a = ge sr a in "this" ^ ", " ^ a
-      in
       let ctor_name = cpp_instance_name syms bbdfns i3 class_ts in
       let labno = !counter in incr counter;
-      let code =
-          needs_switch := true; 
+      let mk_obj_code =
           "      " ^ var_name ^ " = " ^
-          " (FLX_NEWP(" ^ class_name ^ ")" ^ strd the_display class_props ^ ");\n" ^
+          " (FLX_NEWP(" ^ class_name ^ ")" ^ strd the_display class_props ^ ");\n" 
+      in
+      let init_code = match kind with
+      | Procedure ->
+          needs_switch := true; 
+          let args = match a with
+            | _,`BTYP_tuple [] -> "this"
+            | _ -> let a = ge sr a in "this" ^ ", " ^ a
+          in
           "      FLX_SET_PC(" ^ si labno ^ ")\n" ^
           "      return (FLX_NEWP(" ^ ctor_name ^ ")"^strd (var_name::the_display) ctor_props ^ ")" ^
           "\n      ->call(" ^ args ^ ");\n" ^
           "    FLX_CASE_LABEL(" ^ si labno ^ ")\n"
+      | Function ->
+          let args = match a with
+            | _,`BTYP_tuple [] -> "0"
+            | _ -> let a = ge sr a in "0" ^ ", " ^ a
+          in
+          "    {\n" ^
+          "      con_t *_p= (FLX_NEWP(" ^ ctor_name ^ ")"^strd (var_name::the_display) ctor_props ^ ")->call(" ^ args ^ ");\n" ^
+          "      while(_p)_p=_p->resume();\n"  ^
+          "    }\n"
       in 
-      code
+      mk_obj_code ^ init_code
 
     | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_)),a) 
     | `BEXE_jump_direct (sr,index,ts,a) ->
