@@ -1016,7 +1016,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let ct = reduce_type (beta_reduce syms  (tsubst vs ts ct)) in
       let _,t = a in
       let t = reduce_type (beta_reduce syms  (tsubst vs ts t)) in
-      begin match t with
+      begin match ct with
       | `BTYP_tuple [] ->
         ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
 
@@ -1028,7 +1028,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
         )
 
-      | _ when isclass bbdfns t ->
+      | _ when isclass bbdfns ct ->
         ce_atom (
           "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
         )
@@ -1036,10 +1036,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       | _ ->
         let ctt = tn ct in
         let ptrmap = shape_of syms bbdfns tn ct in 
-        ce_atom (
-          "_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
-          ctt ^"("^ ge a ^"))"
-        )
+        let txt =
+           "_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
+           ctt ^"("^ ge a ^"))"
+        in
+        ce_atom txt
       end
     | _ -> assert false
     end
