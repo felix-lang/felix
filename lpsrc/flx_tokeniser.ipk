@@ -105,12 +105,42 @@ let unkeyword ts =
   | h :: t -> filter t (h::out)
   | [] -> rev out
   in filter ts []
+
+
+type state = { macs: (string * token list) list }
+
+let token_expander ts = 
+  let rec aux state output input = match input with
+  | NAME (sr,name) as head :: tail ->
+    begin match name with
+    | "_tokdef" ->
+       begin match tail with
+       | NAME (sr2,name) :: EQUAL _ :: tail ->
+         let rec grab output input = match input with
+         | NAME (sr,"_edef") :: tail -> rev output,tail
+         | h::t -> grab (h::output) t
+         | [] -> clierr (slift sr) "unterminated token macro definition"
+         in 
+         let mac,tail = grab [] tail in
+         aux {state with macs=(name,mac)::state.macs} output tail
+
+       | _ -> clierr (slift sr) "usage: _tokdef name = stream"
+       end 
+    | _ when mem_assoc name state.macs ->
+      aux state output ((assoc name state.macs) @ tail )
+    | _ -> aux state (head::output) tail
+    end
+  | head :: tail -> aux state (head::output) tail
+  | [] -> rev output
+  in aux {macs=[]} [] ts
+  
   
 let translate ts = 
   let filters = [
     (* 1 *) filter_comments ;
     (* 2 *) compress_ctypes ;
     (* 3 *) unkeyword ;
+    (* 4 *) token_expander;
     ] 
   and reverse_apply dat fn = fn dat 
   in List.fold_left reverse_apply ts filters

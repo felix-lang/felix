@@ -612,7 +612,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   (* the name here is just for diagnostics *)
   | `AST_index (sr, n, i) -> `AST_index (sr,n,i)
 
-  | `AST_lookup (sr, (e1, name,ts)) -> `AST_lookup (sr,(me e1, mi sr name,ts))
+  | `AST_lookup (sr, (e1, name,ts)) -> `AST_lookup (sr,(me e1, mi sr name,map (mt sr) ts))
 
   | `AST_case_tag (sr, i) -> e
   | `AST_typed_case (sr, i, t) -> e
@@ -755,9 +755,13 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let pr = protect sr ps in
     recurse recursion_limit local_prefix seq (ref true) (pr @ macros) ss 
   in
-  let mi sr id = 
-    let out = expand_ident sr macros [] id in
-    out
+  let mi sr id = expand_ident sr macros [] id in
+  let mq qn =  match qn with
+    | `AST_lookup (sr, (e1, name,ts)) -> 
+      `AST_lookup (sr,(me e1, mi sr name,map (mt sr) ts))
+    | `AST_name (sr, name, ts) -> 
+      `AST_name (sr, mi sr name, map (mt sr) ts)
+    | x -> x
   in
   let result = ref [] in
   let tack x = result := x :: !result in
@@ -779,7 +783,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_cparse (sr, s) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
-  | `AST_open (sr, qn) -> tack st
+  | `AST_open (sr, qn) -> 
+    tack (`AST_open (sr, mq qn))
+
   | `AST_inject_module (sr, qn) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)

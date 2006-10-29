@@ -720,14 +720,15 @@ and bind_expression syms env e  =
   let t' = beta_reduce syms t' in
   e',t'
 
+and expand_typeset t =
+  match t with 
+  | `BTYP_type_tuple ls
+  | `BTYP_typeset ls
+  | `BTYP_typesetunion ls -> fold_left (fun ls t -> expand_typeset t @ ls) [] ls
+  | x -> [x]
+
 and handle_typeset syms sr elt tset =
-  let rec aux t =
-    match t with 
-    | `BTYP_typeset ls -> ls
-    | `BTYP_typesetunion ls -> fold_left (fun ls t -> aux t @ ls) [] ls
-    | x -> [x]
-  in
-  let ls = aux tset in
+  let ls = expand_typeset tset in
   (* x isin { a,b,c } is the same as 
     typematch x with
     | a => 1
@@ -1190,9 +1191,11 @@ and bind_type'
   | `TYP_none ->  
     failwith "Unexpected `TYP_none in bind type"
 
-  | `TYP_setunion ts -> `BTYP_typesetunion (map bt ts)
+  | `TYP_typeset ts 
+  | `TYP_setunion ts -> 
+    `BTYP_typeset (expand_typeset (`BTYP_typeset (map bt ts)))
+
   | `TYP_setintersection ts -> `BTYP_typesetintersection (map bt ts)
-  | `TYP_typeset ts -> `BTYP_typeset (map bt ts)
 
 
   | `TYP_isin (elt,tset) ->  
