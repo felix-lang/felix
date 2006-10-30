@@ -2230,6 +2230,22 @@ module Avl
 
   //=================================
 
+  fun find[T] (tree : avl[T], y : T, cmp : T*T->int) : opt[T] =>
+      match tree with
+        | Nil => None[T]
+        | Tree(?H, ?x, ?left, ?right) =>
+          if cmp(x, y) > 0 then
+            find(left, y, cmp)
+          elif cmp(x, y) < 0 then
+            find(right, y, cmp)
+          else
+            Some x
+          endif
+      endmatch
+    ;
+
+  //=================================
+
   fun last[T] : avl[T]->T =
     | Tree(_, ?x, _, Nil[T]) => x
     | Tree(_, _, _, ?right) => last(right)
