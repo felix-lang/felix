@@ -106,33 +106,134 @@ let unkeyword ts =
   | [] -> rev out
   in filter ts []
 
+let token_packer ts = 
+  let rec aux n o i = match i with
+    | [] -> 
+      if n = 0 then rev o,[]
+      else failwith "At end of file, unterminated token group"
 
-type state = { macs: (string * token list) list }
+    | NAME (sr,"_tok") :: t ->
+      let h,t = aux (n+1) [] t in
+      aux n (TOKEN_LIST h :: o) t
+
+    | NAME (sr,"_etok") :: t -> 
+      if n = 0 then failwith "Unmatched _etok"
+      else rev o,t
+
+    | h :: t -> aux n (h::o) t
+  in fst (aux 0 [] ts)
+
+type state = { 
+  macs: (string * token list) list ;
+  cstack : bool list;
+  cond : bool;
+}
+
+let cond ls = fold_left (fun x y -> x && y) true ls
 
 let token_expander ts = 
-  let rec aux state output input = match input with
-  | NAME (sr,name) as head :: tail ->
-    begin match name with
-    | "_tokdef" ->
-       begin match tail with
-       | NAME (sr2,name) :: EQUAL _ :: tail ->
-         let rec grab output input = match input with
-         | NAME (sr,"_edef") :: tail -> rev output,tail
-         | h::t -> grab (h::output) t
-         | [] -> clierr (slift sr) "unterminated token macro definition"
-         in 
-         let mac,tail = grab [] tail in
-         aux {state with macs=(name,mac)::state.macs} output tail
+  let rec aux s o i = match i with
+  | TOKEN_LIST ts :: t -> aux s o (ts @ i)
 
-       | _ -> clierr (slift sr) "usage: _tokdef name = stream"
-       end 
-    | _ when mem_assoc name state.macs ->
-      aux state output ((assoc name state.macs) @ tail )
-    | _ -> aux state (head::output) tail
+  | NAME (sr,name) as h :: t ->
+    let err x = clierr (slift sr) x in
+    begin match name with
+    | "_ifdef" ->
+       begin match t with
+       | NAME (sr2,name) :: NAME(_,"_then" ) :: t ->
+         let cs = mem_assoc name s.macs :: s.cstack in
+         aux { s with cond=cond cs; cstack=cs} o t
+       | _ -> err "usage: _ifdef token _then .. _endif"
+       end
+
+    | "_elifdef" ->
+       begin match t with
+       | NAME (sr2,name) :: NAME(_,"_then" ) :: t ->
+         if length s.cstack > 0 then
+           let cs = mem_assoc name s.macs :: tl s.cstack in
+           aux { s with cond = cond cs; cstack=cs} o t
+         else
+          err "Unmatch _elif"
+
+       | _ -> err "usage: _elifdef token _then .. _endif"
+       end
+
+    | "_endif" ->
+      if length s.cstack > 0 then
+        let cs = tl s.cstack in
+        aux { s with cond = cond cs; cstack=cs} o t
+      else
+        err "Unmatch _endif"
+
+    | "_else" ->
+      if length s.cstack > 0 then
+        let cs = not (hd s.cstack) :: tl s.cstack in
+        aux { s with cond = cond cs; cstack=cs} o t
+      else
+        err "Unmatch _else"
+
+    | _ when not (s.cond) -> aux s o t
+
+    | "_tokdef" ->
+      begin match t with
+      | NAME (sr2,name) :: EQUAL _ :: t ->
+        let rec grab n o i = match i with
+          | NAME (sr,"_tokdef") as  h :: t -> 
+            grab (n+1) (h::o) t
+
+          | NAME (sr,"_edef") as h :: t -> 
+            if n = 0 then rev o,t
+            else grab (n-1) (h::o) t
+
+          | NAME (sr,"_quote") :: h :: t -> 
+            grab n (h::o) t
+
+          | h::t -> grab n (h::o) t
+          | [] -> clierr (slift sr) "unterminated token macro substream"
+        in 
+        let mac,t = grab 0 [] t in
+         aux {s with macs=(name,mac)::s.macs} o t
+      | _ -> err "usage: _tokdef name = stream"
+      end 
+
+    | "_undef" ->
+       begin match t with
+       | NAME (sr2,name) :: t ->
+         let rec strip flag inp out = match inp with
+         | [] -> rev out
+         | (n,_) :: t when flag && n = name ->
+           strip false t out
+         | h :: t -> strip flag t (h::out)
+         in
+         let macs = strip true s.macs [] in
+         aux {s with macs=macs} o t
+       | _ -> err "usage: _undef name"
+       end
+    
+    | "_popto" ->
+       begin match t with
+       | NAME (sr2,name) :: t ->
+         let rec strip flag inp out = match inp with
+         | [] -> rev out
+         | (n,_) :: t when flag && n = name ->
+           strip false t out
+         | h :: t -> 
+           if flag then strip flag t out
+           else strip flag t (h::out)
+         in
+         let macs = strip true s.macs [] in
+         aux {s with macs=macs} o t
+       | _ -> err "usage: _undef name"
+       end
+
+    | _ when mem_assoc name s.macs ->
+      aux s o ((assoc name s.macs) @ t )
+    | _ -> aux s (h::o) t
     end
-  | head :: tail -> aux state (head::output) tail
-  | [] -> rev output
-  in aux {macs=[]} [] ts
+  | h :: t when not s.cond -> aux s o t
+  | h :: t -> aux s (h::o) t
+  | [] -> rev o
+  in aux {macs=[]; cond=true; cstack=[]} [] ts
   
   
 let translate ts = 
@@ -140,7 +241,8 @@ let translate ts =
     (* 1 *) filter_comments ;
     (* 2 *) compress_ctypes ;
     (* 3 *) unkeyword ;
-    (* 4 *) token_expander;
+    (* 4 *) token_packer;
+    (* 5 *) token_expander;
     ] 
   and reverse_apply dat fn = fn dat 
   in List.fold_left reverse_apply ts filters

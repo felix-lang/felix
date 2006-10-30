@@ -28,6 +28,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
   | USER_STATEMENT_DRIVER (sr,s,_) -> s
   | HASH_INCLUDE_FILES fs -> "include_files(" ^ String.concat "," fs ^ ")"
+  | TOKEN_LIST ts -> "<<token list>>"
   (*
   | PARSE_ACTION sr -> "=>#"
   *)
@@ -69,6 +70,7 @@ let name_of_token (tok :Flx_parse.token): string =
   | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
   | USER_STATEMENT_DRIVER (sr,s,_) -> s
   | HASH_INCLUDE_FILES _ -> "HASH_INCLUDE_FILES"
+  | TOKEN_LIST _ -> "TOKEN_LIST"
   (*
   | PARSE_ACTION sr -> "PARSE_ACTION"
   *)
@@ -101,6 +103,7 @@ let src_of_token t = match t with
   | ENDMARKER
   | SLOSH 
   | HASH_INCLUDE_FILES _
+  | TOKEN_LIST _
     -> ("",0,0,0)
 
   | NAME    (s,_)

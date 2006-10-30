@@ -176,6 +176,7 @@ let dfltvs =
 %token<Flx_ast.srcref * string> USTRING
 %token<Flx_ast.srcref * string> USER_KEYWORD
 %token <string list> HASH_INCLUDE_FILES
+%token<token list> TOKEN_LIST
 
 /* this has to be defined, but is never seen */
 %token<Flx_ast.srcref * string * (token list * Flx_ast.ast_term_t) list * (string, (token list * Flx_ast.ast_term_t) list) Hashtbl.t > USER_STATEMENT_KEYWORD
