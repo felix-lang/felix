@@ -2984,6 +2984,7 @@ try
     )
     syms.reductions
     ;
+    Flx_typeclass.fixup_typeclass_instances syms bbdfns;
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     (*
     print_endline "INLINING DONE: RESULT:";

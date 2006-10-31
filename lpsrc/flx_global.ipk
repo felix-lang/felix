@@ -7,7 +7,7 @@ Run after inlining is done. Uses two properies:
 @end_displayed_code()
 The first is a local property, whilst the second is its
 closure over abstract closure formation -- both explicit
-closure building and direct calls. The tfp is only required
+closure building and direct calls. The ptf is only required
 to reference global variables, to pass to constructors
 of function objects that do so, or to access the garbage collector. 
 @p()
@@ -72,7 +72,8 @@ let throw_on_gc syms bbdfns e : unit = match e with
     raise Not_found
 
  
-  | `BEXPR_apply_direct (i,_,_),_ -> raise Not_found
+  | `BEXPR_apply_direct _,_ -> raise Not_found
+  | `BEXPR_apply_method_direct _,_ -> raise Not_found
   | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> assert false
   | `BEXPR_apply_struct (i,_,_),_ ->
     let id,sr,parent,entry=Hashtbl.find bbdfns i in

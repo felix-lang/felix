@@ -1651,7 +1651,7 @@ let inlining_complete bbdfns i =
   | `BBDCL_procedure (props,_,_,_) ->
     mem `Inlining_complete props
   | _ -> assert false
- 
+
 let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr e =
   (*
   print_endline ("Special inline " ^ sbe syms.dfns e); flush stdout;
@@ -1659,6 +1659,10 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
   let exes' = ref [] in
   let id x = x in
   let rec aux e = match map_tbexpr id aux id e with
+  | `BEXPR_closure (callee,_),_ as x ->
+      heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
+      x
+
   | ((`BEXPR_apply_prim (callee,ts,a),t) as e)
   | ((`BEXPR_apply_stack (callee,ts,a),t) as e)
   | ((`BEXPR_apply_direct (callee,ts,a),t) as e)
@@ -1684,41 +1688,6 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
          as it should be (it should be inlined of course).
          In particular, its argument may also include calls
          needing lifting.
-      *)
-      (*
-      | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
-        print_endline ("Mangled procedure lift! Type:" ^ sbt syms.dfns t);
-
-        (* create a new variable *)
-        let urv = !(syms.counter) in incr (syms.counter);
-        let urvid = "_pout_urv" ^ si urv in
-        add_child child_map caller urv;
-        add_use uses caller urv sr;
-        let entry = `BBDCL_var (caller_vs,t) in
-        Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
-
-        (* pointer to the varaible *)
-        let p : tbexpr_t = `BEXPR_ref (urv,ts),`BTYP_pointer t in
-
-        (* insert pointer as first argument *)
-        let a': tbexpr_t = match a with 
-          | `BEXPR_tuple [],_ -> p
-            
-          | `BEXPR_tuple ls,_ -> 
-            let lst : btypecode_t list = map snd ls in
-            `BEXPR_tuple (p :: ls), 
-            `BTYP_tuple (`BTYP_pointer t :: lst)
-            
-          | (x,t') as e -> 
-            `BEXPR_tuple [p; e], 
-            `BTYP_tuple [`BTYP_pointer t;t']
-        in
-        let cll = `BEXE_call_direct (sr,callee,ts,a') in
-        exes' := cll :: !exes';
-
-        (* replace application with the variable *)
-        let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in
-        `BEXPR_name (urv,ts),t
       *)
 
       (* This code must ONLY be triggered by an inner (unlifted) application
@@ -1841,6 +1810,18 @@ and heavy_inline_calls
   syms (uses,child_map,bbdfns)
   caller_vs caller excludes exes 
 =
+  let inline_check caller callee props exes =        
+    not (mem `NoInline props) &&
+    (
+        mem `Inline props ||
+        length exes <= syms.compiler_options.max_inline_length
+    ) && 
+    (
+      (* only inline a recursive call to a child *)
+      not (Flx_call.is_recursive_call uses caller callee) ||
+      is_child child_map caller callee
+    )
+  in
   let hic callee exes =
     (*
     print_endline "Rescanning ..";
@@ -1898,19 +1879,8 @@ and heavy_inline_calls
       *)
       begin match entry with
       | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
-        if 
-         mem `Inlining_complete props &&
-         not (mem `NoInline props) &&
-         (
-              mem `Inline props ||
-              length exes <= syms.compiler_options.max_inline_length
-         ) &&
-         (
-            (* only inline a recursive call to a child *)
-            not (Flx_call.is_recursive_call uses caller callee) ||
-            is_child child_map caller callee
-         )
-        then begin
+        if inline_check caller callee props exes then
+        begin
           (*
           print_endline "INLINE CANDIDATE DETECTED - CALL";
           *)
@@ -1943,19 +1913,7 @@ and heavy_inline_calls
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        if 
-          mem `Inlining_complete props &&
-          not (mem `NoInline props) &&
-          (
-            mem `Inline props ||
-            length exes <= syms.compiler_options.max_inline_length
-          ) &&
-          (
-            (* only inline a recursive call to a child *)
-            not (Flx_call.is_recursive_call uses caller callee) ||
-            is_child child_map caller callee
-          )
-        then 
+        if inline_check caller callee props exes then
           let xs = 
              call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argument
           in 
@@ -1991,19 +1949,7 @@ and heavy_inline_calls
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        if 
-          mem `Inlining_complete props &&
-          not (mem `NoInline props) &&
-          (
-            mem `Inline props ||
-            length exes <= syms.compiler_options.max_inline_length
-          ) && 
-          (
-            (* only inline a recursive call to a child *)
-            not (Flx_call.is_recursive_call uses caller callee) ||
-            is_child child_map caller callee
-          )
-        then 
+        if inline_check caller callee props exes then
           begin
             let vid,vparent,vsr,ventry = Hashtbl.find bbdfns i in
             begin match ventry with
@@ -2037,21 +1983,8 @@ and heavy_inline_calls
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        if 
-          not (mem `NoInline props) &&
-          (
-              mem `Inline props ||
-              length exes <= syms.compiler_options.max_inline_length
-          ) && 
-          (
-            (* only inline a recursive call to a child *)
-            not (Flx_call.is_recursive_call uses caller callee) ||
-            is_child child_map caller callee
-          )
-        then begin
-          (*
-          heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
-          *)
+        if inline_check caller callee props exes then
+        begin
           if inlining_complete bbdfns callee then
             let xs = 
                (*
@@ -2428,6 +2361,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
   match specs with None -> () | Some spec ->
   match spec with
   | id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) ->
+    (*
+    print_endline ("HIB: consider procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+    *)
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
       let data = id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) in
@@ -2474,6 +2410,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
     end
 
   | id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+     (*
+     print_endline ("HIB:Consider function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+     *)
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
       let data = id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) in
@@ -2537,6 +2476,11 @@ let heavy_inlining syms
     used := IntSet.remove i !used;
     heavily_inline_bbdcl syms (uses,child_map,bbdfns) [i] i
   done;
+
+  Hashtbl.iter
+    (fun i _ -> try heavily_inline_bbdcl syms (uses,child_map,bbdfns) [i] i with _ -> ())
+  bbdfns
+
 
 (* NOTES: this algorithm ONLY WORKS if inlining is attempted
 in the corect order. Attempting to inline into children

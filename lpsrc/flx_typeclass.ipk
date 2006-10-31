@@ -19,6 +19,11 @@ val fixup_typeclass_instance:
   int ->
   btypecode_t list ->
   int * btypecode_t list
+
+val fixup_typeclass_instances:
+  sym_state_t -> 
+  fully_bound_symbol_table_t -> 
+  unit
  
 @h = tangler("src/flx_typeclass.ml")
 @select(h)
@@ -238,7 +243,11 @@ bbdfns
    type variables
 *)
 
-let chk syms i ts (inst_vs, inst_constraint, inst_ts, j)  = 
+let chk syms allow_fail i ts (inst_vs, inst_constraint, inst_ts, j)  = 
+     (*
+     print_endline 
+     ("virtual " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+     *)
      if length inst_ts > length ts then
        failwith (
          "Not enough ts given, expected at least " ^ 
@@ -283,16 +292,25 @@ let chk syms i ts (inst_vs, inst_constraint, inst_ts, j)  =
          print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
          *)
          Some (j,ts)
-       | `BTYP_void -> None
-       | _ -> failwith "Unable to reduce type constraint!"
+       | `BTYP_void -> (* print_endline "constraint reduce failure"; *) None
+       | _ -> 
+         if not allow_fail then failwith "Unable to reduce type constraint!"
+         else 
+         (
+           (*
+           print_endline ("Unable to reduce type constraint! " ^ sbt syms.dfns con);
+           *)
+           None
+         )
      end
 
-let fixup_typeclass_instance syms bbdcls i ts =
+ 
+let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
   let entries = 
     try Hashtbl.find syms.typeclass_to_instance i 
-    with Not_found -> []
+    with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
    in
-   let entries = fold_left (fun acc x -> match chk syms i ts x with
+   let entries = fold_left (fun acc x -> match chk syms allow_fail i ts x with
      | None -> acc
      | Some x -> x::acc
      ) [] entries
@@ -314,3 +332,61 @@ let fixup_typeclass_instance syms bbdcls i ts =
      ;
    failwith "can't handle overlapping instances yet"
 
+
+let id x = x
+
+let fixup_expr syms bbdfns e = 
+  (*
+  print_endline ("Check expr " ^ sbe syms.dfns e);
+  *)
+  let rec aux e =  match map_tbexpr id aux id e with
+  | `BEXPR_apply_direct (i,ts,a),t ->
+    let a = aux a in
+    let j,ts = (* print_endline ("Check apply direct " ^ si i); *)
+      fixup_typeclass_instance' syms bbdfns true i ts in
+    if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
+    `BEXPR_apply_direct (j,ts,a),t
+
+  | `BEXPR_apply_prim (i,ts,a),t ->
+    let a = aux a in
+    let j,ts = (* print_endline ("Check apply prim " ^ si i); *)
+      fixup_typeclass_instance' syms bbdfns true i ts in
+    (*
+    if j <> i then print_endline ("[prim] instantiate virtual as " ^ si j);
+    *)
+    `BEXPR_apply_direct (j,ts,a),t
+
+  | x -> x
+  in aux e
+
+let fixup_exe syms bbdfns exe = match exe with
+  | `BEXE_call_direct (sr,i,ts,a) ->
+    let j,ts = fixup_typeclass_instance' syms bbdfns true i ts in
+    if j <> i then print_endline "instantiate virtual ..";
+    let a  = fixup_expr syms bbdfns a in
+    `BEXE_call_direct (sr,j,ts,a)
+  | x ->
+    map_bexe id (fixup_expr syms bbdfns) id id id x
+  
+let fixup_exes syms bbdfns exes = map (fixup_exe syms bbdfns) exes
+
+let fixup_typeclass_instances syms bbdfns =
+  Hashtbl.iter (fun i (id,parent,sr,entry) -> match entry with
+  | `BBDCL_function (props,bvs,bps,ret,exes) ->
+    let exes = fixup_exes syms bbdfns exes in
+    let entry = `BBDCL_function (props, bvs, bps, ret, exes) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+  | `BBDCL_procedure (props, bvs, bps,exes)  ->
+    let exes = fixup_exes syms bbdfns exes in
+    let entry = `BBDCL_procedure (props, bvs, bps,exes) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+  | _ -> ()
+  )
+  bbdfns
+
+(* public routine doesn't allow constraint reduction failure
+  because it is run at instantiation time 
+*)
+let fixup_typeclass_instance syms bbdcls i ts =
+  fixup_typeclass_instance' syms bbdcls false i ts
+ 
