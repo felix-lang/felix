@@ -121,10 +121,11 @@ let token_packer ts =
       else rev o,t
 
     | h :: t -> aux n (h::o) t
-  in fst (aux 0 [] ts)
+  in 
+  fst (aux 0 [] ts)
 
 type state = { 
-  macs: (string * token list) list ;
+  macs: (string * (string list * token list)) list ;
   cstack : bool list;
   cond : bool;
 }
@@ -133,7 +134,7 @@ let cond ls = fold_left (fun x y -> x && y) true ls
 
 let token_expander ts = 
   let rec aux s o i = match i with
-  | TOKEN_LIST ts :: t -> aux s o (ts @ i)
+  | TOKEN_LIST ts :: t -> aux s o (ts @ t)
 
   | NAME (sr,name) as h :: t ->
     let err x = clierr (slift sr) x in
@@ -175,24 +176,33 @@ let token_expander ts =
     | _ when not (s.cond) -> aux s o t
 
     | "_tokdef" ->
+      let rec grabdef n o i = match i with
+        | NAME (sr,"_tokdef") as  h :: t -> 
+          grabdef (n+1) (h::o) t
+
+        | NAME (sr,"_edef") as h :: t -> 
+          if n = 0 then rev o,t
+          else grabdef (n-1) (h::o) t
+
+        | NAME (sr,"_quote") :: h :: t -> 
+          grabdef n (h::o) t
+
+        | h::t -> grabdef n (h::o) t
+        | [] -> err "unterminated token macro substream"
+      in 
       begin match t with
-      | NAME (sr2,name) :: EQUAL _ :: t ->
-        let rec grab n o i = match i with
-          | NAME (sr,"_tokdef") as  h :: t -> 
-            grab (n+1) (h::o) t
-
-          | NAME (sr,"_edef") as h :: t -> 
-            if n = 0 then rev o,t
-            else grab (n-1) (h::o) t
-
-          | NAME (sr,"_quote") :: h :: t -> 
-            grab n (h::o) t
-
-          | h::t -> grab n (h::o) t
-          | [] -> clierr (slift sr) "unterminated token macro substream"
-        in 
-        let mac,t = grab 0 [] t in
-         aux {s with macs=(name,mac)::s.macs} o t
+      | NAME (sr2,name) :: t ->
+        let rec grabp n o i : string list * token list  = 
+          if n = 0 then err "too many macro args, runaway?";
+          match i with
+          | [] -> err "unterminated macro definition"
+          | EQUAL _ :: t -> rev o, t
+          | NAME (_,s) :: t -> grabp (n-1) (s::o) t
+          | _ -> err "macro arg must be identifier"
+        in
+        let params,t = grabp 10 [] t in
+        let mac,t = grabdef 0 [] t in
+         aux {s with macs=(name,(params,mac))::s.macs} o t
       | _ -> err "usage: _tokdef name = stream"
       end 
 
@@ -213,23 +223,43 @@ let token_expander ts =
     | "_popto" ->
        begin match t with
        | NAME (sr2,name) :: t ->
-         let rec strip flag inp out = match inp with
-         | [] -> rev out
-         | (n,_) :: t when flag && n = name ->
-           strip false t out
-         | h :: t -> 
-           if flag then strip flag t out
-           else strip flag t (h::out)
+         let rec strip inp = match inp with
+         | [] -> err ("_popto can't find macro " ^ name);
+         | (n,_) :: t when n = name -> t
+         | h :: t -> strip t
          in
-         let macs = strip true s.macs [] in
+         let macs = strip s.macs in
          aux {s with macs=macs} o t
-       | _ -> err "usage: _undef name"
+       | _ -> err "usage: _popto name"
        end
 
     | _ when mem_assoc name s.macs ->
-      aux s o ((assoc name s.macs) @ t )
+      let rec graba n o i = 
+        if n = 0 then rev o,i else 
+        match i with
+        | [] -> err ("Not enough args for macro " ^ name)
+        | h :: t -> graba (n-1) (h::o) t
+      in
+      let params,body = assoc name s.macs in
+      let args, t = graba (length params) [] t in
+      let pas = 
+        fold_left2 
+        (fun m p a -> (p,a) :: m) 
+        [] params args 
+      in
+      let body = 
+        map 
+        (fun t -> match t with 
+          | NAME(_,s) ->
+            (try assoc s pas with Not_found -> t)
+          | _ -> t
+        ) 
+        body 
+      in
+      aux s o (body @ t) 
     | _ -> aux s (h::o) t
-    end
+    end (* name handling *)
+
   | h :: t when not s.cond -> aux s o t
   | h :: t -> aux s (h::o) t
   | [] -> rev o
