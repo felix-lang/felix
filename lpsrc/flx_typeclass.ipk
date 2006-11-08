@@ -344,7 +344,9 @@ let fixup_expr syms bbdfns e =
     let a = aux a in
     let j,ts = (* print_endline ("Check apply direct " ^ si i); *)
       fixup_typeclass_instance' syms bbdfns true i ts in
+    (*
     if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
+    *)
     `BEXPR_apply_direct (j,ts,a),t
 
   | `BEXPR_apply_prim (i,ts,a),t ->

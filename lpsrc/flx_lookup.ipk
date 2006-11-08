@@ -1767,7 +1767,7 @@ and bind_type_index syms (rs:recstop)
     | _ -> 
       clierr sr
       (
-        "[bind_type_index] Type " ^ id ^ 
+        "[bind_type_index] Type " ^ id ^ "<" ^ si index ^ ">" ^ 
         " must be a type [alias, abstract, union, struct], got:\n" ^
         string_of_symdef entry id vs
       )
@@ -2146,6 +2146,15 @@ and inner_typeofindex
     let ts = map bt ts in
     let ts = adjust_ts syms sr index ts in
     `BTYP_inst (index,ts)
+
+  | `SYMDEF_abs _ ->
+    clierr sr
+    (
+      "[typeofindex] Expected declaration of typed entity for index " ^
+      string_of_int index ^ "\ngot abstract type " ^ id  ^ " instead.\n" ^
+      "Perhaps a constructor named " ^ "_ctor_" ^ id ^ " is missing " ^
+      " or out of scope."
+    )
 
   | _ ->
     clierr sr
@@ -4500,7 +4509,7 @@ and grab_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 
-and check_instances syms sr calledname classname es ts' mkenv =
+and check_instances syms call_sr calledname classname es ts' mkenv =
   let insts = ref [] in
   match es with
   | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
@@ -4612,17 +4621,25 @@ and check_instances syms sr calledname classname es ts' mkenv =
     | [`Inst i] -> ()
     | [`Typeclass (i,ts)] -> ()
     | [] -> 
-      clierr sr ("In call of " ^ calledname ^", Typeclass instance matching " ^ 
+      print_endline ("WARNING: In call of " ^ calledname ^", Typeclass instance matching " ^ 
         classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
         " not found"
       )
     | `Inst i :: t -> 
-      clierr sr ("In call of " ^ calledname ^", More than one instances matching " ^ 
+      print_endline ("WARNING: In call of " ^ calledname ^", More than one instances matching " ^ 
         classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
         " found"
+      );
+      print_endline ("Call of " ^ calledname ^ " at " ^ short_string_of_src call_sr);
+      iter (fun i -> 
+        match i with 
+        | `Inst i -> print_endline ("Instance " ^ si i)
+        | `Typeclass (i,ts) -> print_endline ("Typeclass " ^ si i^"[" ^ catmap "," (sbt syms.dfns) ts ^ "]")
       )
+      !insts
+      
     | `Typeclass (i,ts) :: tail ->
-      clierr sr ("In call of " ^ calledname ^", Multiple typeclass specialisations matching " ^ 
+      clierr call_sr ("In call of " ^ calledname ^", Multiple typeclass specialisations matching " ^ 
         classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^ 
         " found"
       )
@@ -4644,6 +4661,7 @@ and instance_check syms caller_env called_env mgu sr calledname rtcr tsub =
     *)
     iter
     (fun qn -> 
+      let call_sr = src_of_expr (qn:>expr_t) in
       let classname = grab_name qn in
       let es,ts' = 
         try luqn2 (hack_name qn) 
@@ -4664,7 +4682,7 @@ and instance_check syms caller_env called_env mgu sr calledname rtcr tsub =
       (*
       print_endline ("With bound, mapped ts = " ^ catmap "," (sbt syms.dfns) ts');
       *)
-      check_instances syms sr calledname classname es ts' (fun i->build_env syms (Some i))
+      check_instances syms call_sr calledname classname es ts' (fun i->build_env syms (Some i))
     )
     rtcr
   end
@@ -4787,22 +4805,35 @@ and get_includes syms xs =
       *)
       includes := index :: !includes;
       let env = mk_bare_env syms i in (* should have ts in .. *)
-      match Hashtbl.find syms.dfns i with
-      {id=id;sr=sr;parent=parent;vs=vs;pubmap=table;dirs=dirs} ->
-      let _,incl_qns,_ = split_dirs [] dirs in
-      (* let {raw_typeclass_reqs=tc_qns} = snd vs in 
-      let qns = tc_qns @ incl_qns in
-      *)
-      let qns = incl_qns in
+      let qns,sr,vs =
+        match Hashtbl.find syms.dfns i with
+        {id=id;sr=sr;parent=parent;vs=vs;pubmap=table;dirs=dirs} ->
+        (*
+        print_endline (id ^", Raw vs = " ^ catmap "," (fun (n,k,_) -> n ^ "<" ^ si k ^ ">") (fst vs));
+        *)
+        let _,incl_qns,_ = split_dirs [] dirs in 
+        let vs = map (fun (n,i,_) -> n,i) (fst vs) in
+        incl_qns,sr,vs
+      in
       iter (fun qn ->
-          let {base_sym=j; spec_vs=vs; sub_ts=ts'},ts =
+          let {base_sym=j; spec_vs=vs'; sub_ts=ts'},ts'' =
             try lookup_qn_in_env syms env qn 
             with Not_found -> failwith "QN NOT FOUND"
           in 
-            let ts = map (bind_type syms env sr) ts in
-            let ts' = map (tsubst vs ts) ts' in
+            let ts'' = map (bind_type syms env sr) ts'' in
             (*
-            print_endline ("Inherit " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts' ^"]");
+            print_endline ("inherit " ^ string_of_qualified_name qn ^
+            ", bound ts="^catmap "," (sbt syms.dfns) ts'');
+            print_endline ("Spec vs = " ^ catmap "," (fun (n,k) -> n ^ "<" ^ si k ^ ">") vs');
+            *)
+
+            let ts'' = map (tsubst vs ts) ts'' in
+            (*
+            print_endline ("Inherit after subs(1): " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts'' ^"]");
+            *)
+            let ts' = map (tsubst vs' ts'') ts' in
+            (*
+            print_endline ("Inherit after subs(2): " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts' ^"]");
             *)
             get_includes' syms includes (j,ts')
       )
@@ -4963,7 +4994,10 @@ and pub_table_dir
       in
       let res = luqn2 (`AST_name (sr,inst_name,[])) in
       match res with 
-      | None -> clierr sr "Couldn't find any instances to open!"
+      | None -> clierr sr 
+        ("Couldn't find any instances to open for " ^ id ^ 
+          "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"
+        )
       | Some (es,_) -> check_instances syms sr "open" id es ts (mk_bare_env syms)
     end
     ;

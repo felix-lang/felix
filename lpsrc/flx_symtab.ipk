@@ -96,7 +96,7 @@ let split_asms asms :
       | `Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
       | `Dcl (sr,id,seq,access,vs,dcl) -> aux t ((sr,id,seq,access,vs,dcl) :: dcls) exes ifaces dirs
       | `Iface (sr,iface) -> aux t dcls exes ((sr,iface) :: ifaces) dirs
-      | `Dir (sr,dir) -> aux t dcls exes ifaces (dir::dirs)
+      | `Dir dir -> aux t dcls exes ifaces (dir::dirs)
   in 
     aux asms [] [] [] []
  

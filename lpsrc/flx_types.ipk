@@ -901,7 +901,7 @@ and asm_t =
   | `Exe of range_srcref * exe_t 
   | `Dcl of range_srcref * id_t * int option * access_t * vs_list_t * dcl_t 
   | `Iface of range_srcref * iface_t
-  | `Dir of range_srcref * dir_t
+  | `Dir of dir_t
   ]
  
 and iface_t =
@@ -4681,18 +4681,18 @@ and string_of_asm level s =
     string_of_dcl level name seq vs d
   | `Exe (sr,s) -> string_of_exe level s
   | `Iface (sr,s) -> string_of_iface level s
-  | `Dir (sr,s) -> string_of_dir level s
+  | `Dir s -> string_of_dir level s
 
 and string_of_dir level s =
   let sqn n = string_of_qualified_name n in
   match s with
-  | DIR_open qn ->
+  | DIR_open (qn) ->
     spaces level ^ "open " ^ sqn qn ^ ";"
 
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
 
-  | DIR_inject_module qn ->
+  | DIR_inject_module (qn) ->
     spaces level ^ "include " ^ sqn qn ^ ";"
 
 and string_of_breq dfns (i,ts) = "rq<"^si i^">" ^ print_inst dfns ts

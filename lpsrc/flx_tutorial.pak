@@ -1235,6 +1235,7 @@ Done.
 @env.head(3,'A (much) longer example')
 @h = env.test('.flx', 'data')
 @select(h)
+@kat("lexer")
 #import <flx.flxh>
 include "flx_lex";
 use Lexer::sub;
@@ -1299,13 +1300,15 @@ proc print_token()
   i1 = j;
 }
 
-use Lexer::ne;
 
 while { i1 != i2 } { print_token; };
 @doc()
 
 @select(env.expect())
 Lexer here
+Cppc:    "//Check lexer"
+Eol:     "
+"
 HASH:    "#"
 Id:      "import"
 White:   " "
@@ -2718,14 +2721,6 @@ Eol:     "
 "
 Eol:     "
 "
-Id:      "use"
-White:   " "
-Id:      "Lexer"
-:::      "::"
-Id:      "ne"
-SEMI:    ";"
-Eol:     "
-"
 Eol:     "
 "
 Id:      "while"
@@ -3237,6 +3232,7 @@ Here is an example, beware this example
 contains quite a lot of subtle features!
 
 @select(env.test('.flx'))
+@kat('functions:higher order')
 #import <flx.flxh>
 
 var j = 2;
@@ -3331,6 +3327,7 @@ you can use the keyword 'the' to specify
 you mean that function.
 
 @select(env.test('.flx'))
+@kat('the:keyword')
 #import <flx.flxh>
 
 fun f(x:int):int=>x*x;
@@ -3347,6 +3344,7 @@ print (apply (the f) 4); endl;
 Consider the following example:
 
 @select(env.test('.flx'))
+@kat('currying')
 #import <flx.flxh>
 
 fun f4(i4:int): int->int->int->int = {
@@ -3418,6 +3416,7 @@ to declare functions suitable for currying.
 Here is the equivalent code, using this sugar:
 
 @select(env.test('.flx'))
+@kat('currying')
 #import <flx.flxh>
 
 fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
@@ -3445,6 +3444,7 @@ print (curry 3 4); endl;
 10
 @doc()
 @select(env.test('.flx'))
+@kat('currying')
 // contrib: Jonathan Kelly
 #import <flx.flxh>
 
@@ -3515,6 +3515,7 @@ leave the first free.
 @env.head(2,'List functions')
 
 @select(env.test('.flx'))
+@kat('list:inductive')
 #import <flx.flxh>
 open List;
 val x : list[int] = 
@@ -3563,6 +3564,7 @@ specifications into some kind of module, and Felix
 is no exception. Basic module use is quite simple:
 
 @select(env.test('.flx'))
+@kat('modules')
 #import <flx.flxh>
 val top = 1;
 module A {
@@ -3626,6 +3628,8 @@ in order of writing.
 Consider the following example:
 
 @select(env.test('.flx'))
+@kat('lookup:koenig')
+@kat('lookup:dependent')
 #import <flx.flxh>
 
 module A {
@@ -3769,6 +3773,7 @@ frame from being destroyed.
 Here is an example:
 
 @select(env.test('.flx'))
+@kat('modules:initialisation')
 #import <flx.flxh>
 
 fun pone (): &int = 
@@ -3804,6 +3809,8 @@ Felix allows statements to be labelled,
 and provides a conditional and unconditional goto statement.
 
 @select(env.test('.flx'))
+@kat('goto')
+@kat('labels')
 #import <flx.flxh>
 print "start"; endl;
 var i = 1;
@@ -3846,6 +3853,7 @@ this quite easily in Felix, as we shall soon see.
 But first consider the following example:
 
 @select(env.test('.flx'))
+@kat('goto:nonlocal')
 #import <flx.flxh>
 
 var x = 1;
@@ -3912,6 +3920,8 @@ A procedure can be terminated by a goto to a label
 at the end of the procedure:
 
 @select(env.test('.flx'))
+@kat('labels')
+@kat('return:procedure')
 #import <flx.flxh>
 
 proc f(x:int) 
@@ -3937,6 +3947,7 @@ A slightly more structured way of doing this
 involves the procedural return statement:
 
 @select(env.test('.flx'))
+@kat('return:procedure')
 #import <flx.flxh>
 
 proc f(x:int) 
@@ -3960,6 +3971,7 @@ Zero
 This can also be shortened by using a the jump statement:
 
 @select(env.test('.flx'))
+@kat('return:procedure')
 #import <flx.flxh>
 
 proc f(x:int) 
@@ -4008,6 +4020,7 @@ by the compiler. An explicit loop statement
 may also be used:
 
 @select(env.test('.flx'))
+@kat('loops')
 #import <flx.flxh>
 
 proc f(x:int) 
@@ -4027,6 +4040,7 @@ Felix supports a traditional procedural if chain.
 Here is a simple if/do/done:
 
 @select(env.test('.flx'))
+@kat('conditional:functional')
 #import <flx.flxh>
 // procedural if
 proc f(x:int) {
@@ -4044,6 +4058,7 @@ ONE
 You can also have an else clause:
 
 @select(env.test('.flx'))
+@kat('conditional:procedural')
 #import <flx.flxh>
 // procedural if/else
 proc f(x:int) {
@@ -4064,6 +4079,7 @@ Not a one ..
 and even elif clauses:
 
 @select(env.test('.flx'))
+@kat('conditional:procedural')
 #import <flx.flxh>
 // procedural if/do/elif/else
 proc f(x:int) {
@@ -4089,6 +4105,7 @@ You can also use a conditional return or goto instead
 of the do part:
 
 @select(env.test('.flx'))
+@kat('conditional:procedural')
 #import <flx.flxh>
 // procedural if
 proc f(x:int) {
@@ -4120,6 +4137,7 @@ shorthand for a web of labels and conditional gotos,
 so adding extra labels can gotos is possible.
 
 @select(env.test('.flx'))
+@kat('conditional:procedural')
 #import <flx.flxh>
 
 inline proc f(x:int) (y:int) {
@@ -4165,6 +4183,7 @@ Conditional expresssions always have an else part,
 so that f1 and f2 below are equivalent:
 
 @select(env.test('.flx'))
+@kat('conditional:functional')
 #import <flx.flxh>
 
 proc f1(x:int) {
@@ -4196,6 +4215,7 @@ conditional statements, in particular it can
 choose between two declarations.
 
 @select(env.test('.flx'))
+@kat('conditional:folding')
 #import <flx.flxh>
 macro val x = 1;
 if x == 1 do val y = 1; else val y = "ONE"; done;
@@ -4214,6 +4234,8 @@ be caught by the Felix program (although
 it can be caught by the driver).
 
 @select(env.test('.flx'))
+@kat('termination:failure')
+@kat('program:abort')
 #import <flx.flxh>
 // uncomment to test 
 //fail "Aborted";
@@ -4227,6 +4249,7 @@ Non local gotos are very useful for a form of
 exception handling. Consider the following example:
 
 @select(env.test('.flx'))
+@kat('exceptions')
 #import <flx.flxh>
 
 proc bad_calc(err: int -> void) 
@@ -4267,6 +4290,7 @@ Non local gotos are very useful for another form of
 exception handling. Consider the following example:
 
 @select(env.test('.flx'))
+@kat('exceptions')
 #import <flx.flxh>
 
 proc main
@@ -4305,6 +4329,7 @@ literally, as in the next example,
 they're called lambdas, after the lambda calculus:
 
 @select(env.test('.flx'))
+@kat('closures:procedural')
 #import <flx.flxh>
 val f = fun(a:int):int = { return a * a; };
 
@@ -4374,6 +4399,7 @@ the standard library, renamed While
 to avoid a clash:
 
 @select(env.test('.flx'))
+@kat('procedures:higher order')
 #import <flx.flxh>
 proc While (cond:unit->bool) (bdy:unit->void)
 {
@@ -4429,6 +4455,8 @@ Felix allows a function to be specified in an expression,
 this is called a lambda expression:
 
 @select(env.test('.flx'))
+@kat('functions:anonymous')
+@kat('functions:lambda')
 #import <flx.flxh>
 var x = 10;
 while 
@@ -4455,6 +4483,8 @@ this example shows the long form. Lambdas of course
 may have arguments:
 
 @select(env.test('.flx'))
+@kat('functions:anonymous')
+@kat('functions:lambda')
 #import <flx.flxh>
 fun f(g:int->int,x:int) = { return g x; }
 print 
@@ -4502,6 +4532,8 @@ and each on the matches generates an assertion. An error
 is printed and the program aborted if any check fails.
 
 @select(env.test('.flx'))
+@kat('axioms')
+@kat('reductions')
 type int = "int";
 type string = "std::string";
 
@@ -4607,6 +4639,8 @@ version of that used by C. Note in particular
 that 010 is decimal ten in Felix!
 
 @select(env.test('.flx'))
+@kat('lexemes:integer')
+@kat('literals:integer')
 #import <flx.flxh>
 
 // radix
@@ -4731,6 +4765,8 @@ floating point. Here are some examples:
 ranges is too ugly ..]
 
 @select(env.test('.flx'))
+@kat('match:float')
+@kat('nan')
 #import <flx.flxh>
 
 match (1.0) with
@@ -5378,23 +5414,23 @@ fun get_token():token_t =
  
 // a type for expression terms
 union expr_t =
-  | Integer of int
+  | Integr of int
 ;
  
 // a grammar for expressions
 nonterm eexpr : expr_t =
 | xx:eexpr TOK_PLUS y:TOK_INT =>
   match xx with
-  | Integer ?i => Integer (i+y)
+  | Integr ?i => Integr (i+y)
   endmatch
  
-| y:TOK_INT => Integer y
+| y:TOK_INT => Integr y
 ;
  
 // a parser for our example
 var z : 1 + int =
   parse (the get_token) with
-  | e: eexpr => match e with | Integer ?i => i endmatch
+  | e: eexpr => match e with | Integr ?i => i endmatch
   endmatch
 ;
  
@@ -5441,22 +5477,22 @@ fun get_token():token_t =
 }
 
 union expr_t = 
-  | Integer of int
+  | Integr of int
 ;
 
 nonterm eexpr : expr_t = 
 | xx:eexpr TOK_PLUS y:TOK_INT => 
   match xx with 
-  | Integer ?i => Integer (i+y)
+  | Integr ?i => Integr (i+y)
   endmatch
 
-| y:TOK_INT => Integer y
+| y:TOK_INT => Integr y
 ;
 
 proc try_parse() {
   var z : 1 + int = 
     parse (the get_token) with 
-    | e: eexpr => match e with | Integer ?i => i endmatch
+    | e: eexpr => match e with | Integr ?i => i endmatch
     endmatch
   ;
 
@@ -5533,23 +5569,23 @@ fun get_token():token_t =
  
 // a type for expression terms
 union expr_t =
-  | Integer of int
+  | Integr of int
 ;
 
 // a grammar for expressions
 nonterm eexpr : expr_t =
 | xx:eexpr TOK_PLUS y:TOK_INT+ =>
   match xx with
-  | Integer ?i => let case 1 (?j,_) = y in Integer (i+j)
+  | Integr ?i => let case 1 (?j,_) = y in Integr (i+j)
   endmatch
  
-| y:TOK_INT => Integer y
+| y:TOK_INT => Integr y
 ;
  
 // a parser for our example
 var z : 1 + int =
   parse (the get_token) with
-  | e: eexpr => match e with | Integer ?i => i endmatch
+  | e: eexpr => match e with | Integr ?i => i endmatch
   endmatch
 ;
  

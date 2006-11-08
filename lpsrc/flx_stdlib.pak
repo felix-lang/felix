@@ -43,6 +43,8 @@ typeclass Tord[t]{
   virtual fun gt(x:t,y:t):bool =>lt(y,x);
   virtual fun le(x:t,y:t):bool => not (gt(x,y));
   virtual fun ge(x:t,y:t):bool => not (lt(x,y));
+  virtual fun max(x:t,y:t):t=> if lt(x,y) then y else x endif;
+  virtual fun min(x:t,y:t):t => if lt(x,y) then x else y endif;
 }
 
 // additive symmetric group
@@ -50,16 +52,27 @@ typeclass Addgrp[t] {
   inherit Eq[t];
   virtual fun zero: 1 -> t;
   virtual fun add: t * t -> t;
-  virtual fun inv: t -> t;
-  virtual fun sub(x:t,y:t):t => add (x,inv y);
+  virtual fun neg: t -> t;
+  virtual fun sub(x:t,y:t):t => add (x,neg y);
   virtual proc pluseq (x:lvalue[t],y:t){ x = x + y; }
   virtual proc minuseq (x:lvalue[t],y:t){ x = x - y; }
+
   reduce id (x:t): x+zero() => x;
   reduce id (x:t): zero()+x => x;
   axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
   reduce inv(x:t): x-x => zero();
   reduce inv(x:t,y:t): x+y-y => x;
   axiom sym (x:t,y:t): x+y == y+x;
+}
+
+typeclass Bits[t] {
+  virtual fun bxor: t * t -> t;
+  virtual fun bor: t * t -> t;
+  virtual fun band: t * t -> t;
+  virtual fun bnot: t -> t;
+  virtual proc bxoreq: lvalue[t] * t;
+  virtual proc boreq: lvalue[t] * t; 
+  virtual proc bandeq: lvalue[t] * t;
 }
 
 // mult semi group with unit
@@ -88,6 +101,89 @@ typeclass Dring[t] {
   virtual proc diveq: lvalue[t] * t;
   virtual fun mod : t * t -> t;
   virtual proc modeq: lvalue[t] * t;
+}
+
+typeclass Forward[t] {
+  virtual fun succ: t -> t;
+  virtual proc pre_incr: lvalue[t];
+  virtual proc post_incr: lvalue[t];
+}
+
+typeclass Bidirectional[t] {
+  inherit Forward[t];
+  virtual fun pred: t -> t;
+  virtual proc pre_decr: lvalue[t];
+  virtual proc post_decr: lvalue[t];
+}
+
+typeclass Iterator[it,t] {
+  virtual fun deref: it -> t;
+}
+
+typeclass Forward_iterator[it,t] {
+  inherit Tord[it];
+  inherit Forward[it];
+  inherit Iterator[it,t];
+}
+
+typeclass Bidirectional_iterator[it,t] {
+  inherit Forward_iterator[it,t];
+  inherit Bidirectional[it];
+}
+
+typeclass Integer[t] {
+  inherit Tord[t];
+  inherit Dring[t];
+  inherit Bidirectional[t];
+}
+
+// Signed Integers
+typeclass Signed_integer[t] {
+  inherit Integer[t];
+  virtual fun sgn: t -> int;
+  virtual fun abs: t -> t;
+}
+
+// Unsigned Integers
+typeclass Unsigned_integer[t] {
+  inherit Integer[t];
+  inherit Bits[t];
+}
+
+
+typeclass Trig[t] {
+  virtual fun sin: t -> t;
+  virtual fun cos: t -> t;
+  virtual fun tan: t -> t;
+  virtual fun asin: t -> t;
+  virtual fun acos: t -> t;
+  virtual fun atan: t -> t;
+  virtual fun sinh: t -> t;
+  virtual fun cosh: t -> t;
+  virtual fun tanh: t -> t;
+  virtual fun asinh: t -> t;
+  virtual fun acosh: t -> t;
+  virtual fun atanh: t -> t;
+  virtual fun exp: t -> t;
+  virtual fun log: t -> t;
+  virtual fun pow: t * t -> t;
+}
+
+typeclass Real[t] {
+  inherit Tord[t];
+  inherit Trig[t];
+  inherit Dring[t];
+  virtual fun log10: t -> t;
+  virtual fun abs: t -> t;
+  virtual fun sqrt: t -> t;
+  virtual fun ceil: t -> t;
+  virtual fun floor: t -> t;
+  virtual fun trunc: t -> t;
+}
+
+typeclass Complex[t] {
+  inherit Trig[t];
+  virtual fun arg: t -> t;
 }
 
 @select(tangler('lib/flx_categories.flxh', 'data'))
@@ -165,7 +261,55 @@ macro proc gen_integral(t){
   gen_dring t;
   gen_bidirectional t;
 }
-@doc()
+
+@def gen_uint(t):
+  for opname,op in [
+    ("bxor","^"),
+    ("bor","\\|"),
+    ("band","\\&"),
+  ]:
+    tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
+  tangle('  fun bnot: '+t+' -> '+t+' = "~$1";')
+
+
+@def gen_uint_assign(t):
+  for opname,op in [
+    ("bxoreq","^="),
+    ("boreq","|="),
+    ("bandeq","&=")
+  ]:
+    tangle('  proc '+opname+': lvalue['+t+'] * '+t+' = "$1'+op+'$2;";')
+
+@fc = {'float':'f', 'double':'','ldouble':'l'}
+@def gen_pow(t):
+  for op in [
+    'pow',
+    'atan2',
+    'fmod',
+    'fmax','fmin'
+    ]:
+    tangle('  fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)" is postfix requires cmath;')
+
+@def gen_trig(t):
+  for op in [
+    'sin','cos','tan',
+    'asin','acos','atan',
+    'sinh','cosh','tanh',
+    'asinh','acosh','atanh',
+    'exp', 'log','log10',
+    'fabs','sqrt',
+    'ceil','floor','trunc'
+    ]:
+    tangle('  fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)" is postfix requires cmath;')
+
+@def gen_nan(t):
+  if HAVE_ISNAN_IN_CMATH:
+    tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)" is postfix requires cmath;')
+  elif HAVE_ISNAN_IN_IEEEFP:
+    tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" is postfix requires cmath;')
+  else:
+    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary requires cmath;')
+
 
 @h=tangler('lib/flx.flxh','data')
 @select(h)
@@ -259,6 +403,8 @@ macro val false = case 0 of 2;
 
 @h=tangler('lib/flx_ctypes.flxh','data')
 @select(h)
+#import <flx_syntax.flxh>
+
 header cctype_hxx = '#include <cctype>';
 header string_hxx = '#include <string>';
 header complex_hxx = '#include <complex>';
@@ -445,20 +591,230 @@ instance[t:reals] Tord[t] {
 instance[t:numbers] Addgrp[t] {
   fun zero: 1 -> t = "(?1)0" ;
   fun add: t * t -> t = "$1+$2" ;
-  fun inv: t -> t = "-$1" ;
+  fun neg: t -> t = "-$1" ;
   fun sub: t * t -> t = "$1-$2" ;
   proc pluseq: lvalue[t] * t = "$1+=$2;";
   proc minuseq: lvalue[t] * t = "$1-=$2;";
 }
 
-@for t in all:
-  tangle("open Eq["+t+"];")
+instance[t:numbers] MultSemi1[t] {
+  fun one: unit -> t = "(?1)1";
+  fun mul: t * t -> t = "$1*$2";
+  proc muleq: lvalue[t] * t = "$1*=$2;";
+}
+
+instance[t:numbers] Ring[t] {}
+
+instance[t:numbers] Dring[t] {
+  fun div: t * t -> t = "$1/$2";
+  fun mod: t * t -> t = "$1/$2";
+  proc diveq: lvalue[t] * t = "$1%=$2;";
+  proc modeq: lvalue[t] * t = "$1%=$2;";
+}
+
+instance [t:fast_uints] Bits [t] {
+  fun bxor: t * t -> t = "$1^$2";
+  fun bor: t * t -> t = "$1|$2";
+  fun band: t * t -> t = "$1&$2";
+  fun bnot: t -> t = "~$1";
+  proc bxoreq: lvalue[t] * t = "$1^=$2;";
+  proc boreq: lvalue[t] * t = "$1|=$2;";
+  proc bandeq: lvalue[t] * t = "$1&=$2;";
+}
+
+instance[t:ints] Forward[t] {
+  fun succ: t -> t = "$1+1";
+  proc pre_incr: lvalue[t] = "++$1;";
+  proc post_incr: lvalue[t] = "$1++;";
+}
+
+instance[t:ints] Bidirectional[t] {
+  fun pred: t -> t = "$1-1";
+  proc pre_decr: lvalue[t] = "--$1;";
+  proc post_decr: lvalue[t] = "$1--;";
+}
+
+instance[t:ints] Integer[t] { }
+
+instance[t:fast_sints] Signed_integer[t] {
+  fun sgn: t -> int = "$1<0??-1:$1>0??1:0";
+  fun abs: t -> t = "$1<0??-$1:$1";
+}
+
+instance[t:fast_uints] Unsigned_integer[t] {}
+
+@#------------- BOOL -------------------
+open module Bool 
+{
+
+  fun land: bool * bool -> bool = "$1&&$2";
+  fun nand: bool * bool -> bool = "!($1&&$2)";
+  fun lor: bool * bool -> bool = "$1||$2";
+  fun nor: bool * bool -> bool = "!($1||$2)";
+  fun xor: bool * bool -> bool = "$1!=$2";
+  fun lnot: bool -> bool = "!$1";
+  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires iostream;
+}
+
+type string = "std::string";
+@for t in fast_ints:
+  tangle("open module " + string.capitalize(t))
+  tangle("{")
+  #tangle('  gen_integral('+t+');')
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1.data()))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
+  #if t in fast_sints:
+  #  tangle('  fun abs: '+t+' -> '+t+' = "'+absmap[t]+'($1)";')
+  #if t in uints: gen_uint(t)
+  #if t in uints: gen_uint_assign(t)
+  if t == "tiny":
+    tangle('  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires iostream;')
+    tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;')
+  elif t == "utiny":
+    tangle('  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires iostream;')
+    tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;')
+  else:
+    tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
+    tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
+  tangle("}")
+  tangle("")
+
+@#------------- INTEGER MODULES -------------------
+
+publish "Mixed Mode arithmentic"
+module MixedInt 
+{
+  fun add[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1+$2";
+  fun sub[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1-$2";
+  fun mul[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1*$2";
+  fun div[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1/$2";
+  fun mod[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1%$2";
+
+  fun band[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1&$2";
+  fun bor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1|$2";
+  fun bxor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1^$2";
+  fun shl[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1<<$2";
+  fun shr[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1>>$2";
+
+  fun lt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<$2";
+  fun le[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<=$2";
+  fun eq[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1==$2";
+  fun ne[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1!=$2";
+  fun gt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>$2";
+  fun ge[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>=$2";
+}
+
+@#------------- FLOATING MODULES -------------------
+@for t in floats:
+  tangle("open module " + string.capitalize(t))
+  tangle("{")
+  #tangle('  gen_cmp('+t+');')
+  #tangle('  gen_arith('+t+');')
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
+  #gen_pow(t)
+  #gen_trig(t)
+  gen_nan(t)
+  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
+  tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
+  tangle("}")
+  tangle("")
+
+instance[t:floats] Trig[t] {
+  requires cmath;
+  fun sin: t -> t = "std::sin($1)";
+  fun cos: t -> t = "std::cos($1)";
+  fun tan: t -> t = "std::tan($1)";
+  fun asin: t -> t = "std::asin($1)";
+  fun acos: t -> t = "std::acos($1)";
+  fun atan: t -> t = "std::atan($1)";
+  fun sinh: t -> t = "std::sinh($1)";
+  fun cosh: t -> t = "std::cosh($1)";
+  fun tanh: t -> t = "std::tanh($1)";
+  fun asinh: t -> t = "std::asinh($1)";
+  fun acosh: t -> t = "std::acosh($1)";
+  fun atanh: t -> t = "std::atanh($1)";
+  fun exp: t -> t = "std::exp($1)";
+  fun log: t -> t = "std::log($1)";
+  fun pow: t * t -> t = "std::pow($1,$2)";
+}
+
+instance[t:floats] Real[t] {
+  fun abs: t -> t = "std::abs($1)";
+  fun log10: t -> t = "std::log10($1)";
+  fun sqrt: t -> t = "std::sqrt($1)";
+  fun ceil: t -> t = "std::ceil($1)";
+  fun floor: t -> t = "std::floor($1)";
+  fun trunc: t -> t = "std::trunc($1)";
+}
+
+@#------------- CHARACTER MODULES -------------------
+// ordinary value of chars
+
+open module Char 
+{
+  open Int;
+  fun ord: char -> int = "(int)$1";
+  fun _ctor_char: int -> char = "(char)$1";
+  fun str: char -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  proc fprint: ostream * char = "*$1<<$2;" requires iostream;
+}
+
+open module Wchar
+{
+  open Long;
+  fun ord: wchar -> long ="(long)$1";
+  fun _ctor_wchar: long -> wchar = "(wchar_t)$1";
+  fun str: wchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
+}
+
+open module Unicode
+{
+  fun ord: uchar -> uint32 ="$1";
+  fun _ctor_uchar: uint32 -> uchar = "$1";
+  fun str: uchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  //this needs to be fixed!
+  //proc print: uchar = "std::cout<<$1;" requires iostream;
+}
+
+
+open Eq[byte];
+
+open Eq[address];
+open Eq[caddress];
+open Eq[vaddress];
+open Eq[cvaddress];
+
+open Eq[char];
+open Eq[wchar];
+open Eq[uchar];
+
+open Signed_integer[tiny];
+open Signed_integer[short];
+open Signed_integer[int];
+open Signed_integer[long];
+open Signed_integer[vlong];
+open Unsigned_integer[utiny];
+open Unsigned_integer[ushort];
+open Unsigned_integer[uint];
+open Unsigned_integer[ulong];
+open Unsigned_integer[uvlong];
+open Real[float];
+open Real[double];
+open Real[ldouble];
+open Addgrp[complex];
+open Addgrp[dcomplex];
+open Addgrp[lcomplex];
+open Addgrp[imaginary];
+open Addgrp[dimaginary];
+open Addgrp[limaginary];
+
   
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
 #import <flx_syntax.flxh>
-#import <flx_categories.flxh>
 #import <flx_platform.flxh>
 #import <flx_macros.flxh>
 
@@ -547,55 +903,7 @@ publish "Lvalue hack"
 publish "Deref hack"
   inline fun deref[t](p:&t):lval t => _deref p;
  
-@def gen_uint(t):
-  for opname,op in [
-    ("bxor","^"),
-    ("bor","\\|"),
-    ("band","\\&"),
-  ]:
-    tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
-  tangle('  fun bnot: '+t+' -> '+t+' = "~$1";')
 
-
-@def gen_uint_assign(t):
-  for opname,op in [
-    ("bxoreq","^="),
-    ("boreq","|="),
-    ("bandeq","&=")
-  ]:
-    tangle('  proc '+opname+': lvalue['+t+'] * '+t+' = "$1'+op+'$2;";')
-
-@fc = {'float':'f', 'double':'','ldouble':'l'}
-@def gen_pow(t):
-  for op in [
-    'pow',
-    'atan2',
-    'fmod',
-    'fmax','fmin'
-    ]:
-    tangle('  fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)" is postfix requires cmath;')
-
-@def gen_trig(t):
-  for op in [
-    'sin','cos','tan',
-    'asin','acos','atan',
-    'sinh','cosh','tanh',
-    'asinh','acosh','atanh',
-    'exp', 'log','log10',
-    'fabs','sqrt',
-    'ceil','floor','trunc'
-    ]:
-    tangle('  fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)" is postfix requires cmath;')
-
-@def gen_nan(t):
-  if HAVE_ISNAN_IN_CMATH:
-    tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)" is postfix requires cmath;')
-  elif HAVE_ISNAN_IN_IEEEFP:
-    tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" is postfix requires cmath;')
-  else:
-    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary requires cmath;')
-
- 
 @#------------- Pointers ---------------------------
 open module Pointer
 {
@@ -1031,115 +1339,6 @@ module Text_file
 }
 
 
-@#------------- BOOL -------------------
-publish "Bool compatible with C"
-open module Bool 
-{
-
-  fun land: bool * bool -> bool = "$1&&$2";
-  fun nand: bool * bool -> bool = "!($1&&$2)";
-  fun lor: bool * bool -> bool = "$1||$2";
-  fun nor: bool * bool -> bool = "!($1||$2)";
-  fun xor: bool * bool -> bool = "$1!=$2";
-  fun lnot: bool -> bool = "!$1";
-  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires iostream;
-}
-
-@#------------- INTEGER MODULES -------------------
-
-publish "Mixed Mode arithmentic"
-module MixedInt 
-{
-  fun add[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1+$2";
-  fun sub[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1-$2";
-  fun mul[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1*$2";
-  fun div[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1/$2";
-  fun mod[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1%$2";
-
-  fun band[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1&$2";
-  fun bor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1|$2";
-  fun bxor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1^$2";
-  fun shl[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1<<$2";
-  fun shr[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1>>$2";
-
-  fun lt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<$2";
-  fun le[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<=$2";
-  fun eq[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1==$2";
-  fun ne[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1!=$2";
-  fun gt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>$2";
-  fun ge[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>=$2";
-}
-
-type string = "std::string";
-@for t in fast_ints:
-  tangle("open module " + string.capitalize(t))
-  tangle("{")
-  tangle('  gen_integral('+t+');')
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1.data()))" requires cstdlib;')
-  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
-  if t in fast_sints:
-    tangle('  fun abs: '+t+' -> '+t+' = "'+absmap[t]+'($1)";')
-  if t in uints: gen_uint(t)
-  if t in uints: gen_uint_assign(t)
-  if t == "tiny":
-    tangle('  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires iostream;')
-    tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;')
-  elif t == "utiny":
-    tangle('  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires iostream;')
-    tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;')
-  else:
-    tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
-    tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
-  tangle("}")
-  tangle("")
-
-@#------------- FLOATING MODULES -------------------
-@for t in floats:
-  tangle("open module " + string.capitalize(t))
-  tangle("{")
-  tangle('  gen_cmp('+t+');')
-  tangle('  gen_arith('+t+');')
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
-  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
-  gen_pow(t)
-  gen_trig(t)
-  gen_nan(t)
-  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
-  tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
-  tangle("}")
-  tangle("")
-  
-@#------------- CHARACTER MODULES -------------------
-// ordinary value of chars
-
-open module Char 
-{
-  open Int;
-  fun ord: char -> int = "(int)$1";
-  fun _ctor_char: int -> char = "(char)$1";
-  fun str: char -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-  proc fprint: ostream * char = "*$1<<$2;" requires iostream;
-}
-
-open module Wchar
-{
-  open Long;
-  fun ord: wchar -> long ="(long)$1";
-  fun _ctor_wchar: long -> wchar = "(wchar_t)$1";
-  fun str: wchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-  proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
-}
-
-open module Unicode
-{
-  fun ord: uchar -> uint32 ="$1";
-  fun _ctor_uchar: uint32 -> uchar = "$1";
-  fun str: uchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-  //this needs to be fixed!
-  //proc print: uchar = "std::cout<<$1;" requires iostream;
-}
-
-
 @#------------- STDOUT UTILITY -------------------
 open module Stdout 
 {
@@ -1216,7 +1415,7 @@ open module String
   ;
 
   // comparisons
-  gen_cmp string;
+  //gen_cmp string;
 
   // Note we use int instead of size here: size is correct,
   // but that would requires heaps of casts in Felix
@@ -1416,7 +1615,7 @@ open module Ustring
   open Bool;
   open Char;
   open Int;
-  gen_eq(ustring);
+  //gen_eq(ustring);
   proc pluseq: lvalue[ustring] * ustring = "$1.append($2);";
 
   fun len: ustring -> int = "$1.size()";
@@ -1436,7 +1635,7 @@ open module Ustring
     "flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
 
   // comparisons
-  gen_cmp ustring;
+  //gen_cmp ustring;
 
   proc fprint: ostream * ustring = "*$1<<$2;" requires iostream;
 }
@@ -2356,7 +2555,7 @@ module Lexer
   fun string_between: iterator * iterator -> string =
    "std::string($1,$2)";
 
-  gen_cmpeq iterator;
+  //gen_cmpeq iterator;
 
   fun add: iterator * int -> iterator = "$1 + $2";
   fun sub: iterator * int -> iterator = "$1 - $2";
@@ -2366,6 +2565,16 @@ module Lexer
   fun deref: iterator -> char = "*$1";
 
 }
+
+instance Eq[Lexer::iterator] {
+  fun eq:Lexer::iterator * Lexer::iterator -> bool = "$1==$2";
+}
+
+instance Tord[Lexer::iterator] {
+  fun lt:Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
+}
+
+open Eq[Lexer::iterator];
 
 // ------ Open common modules -------------
 //open Bool;
@@ -2425,6 +2634,7 @@ size_t __gnu_cxx::hash<std::string>::
 @def gen_peq(t):
   tangle('    gen_eq '+t+';')
 
+
 @def mkseq(n,ns='std'):
   c = 'stl_'+n+'[t]'
   it = 'stl_'+n+'_iterator[t]'
@@ -2438,10 +2648,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun empty: '+c+' -> int = "$1.empty()";')
 
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";');
-  gen_pcmp(it)
-
-  tangle('    gen_forward '+it+';')
-  tangle('    fun deref : '+it+' ->  lvalue[t]  = "*$1";')
 
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
@@ -2449,11 +2655,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    proc erase : '+c+' * '+it+' * '+it+' = "$1.erase($1,$2);";')
   tangle('    proc clear : '+c+' = "$1.clear();";')
 
-  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
-  tangle('    proc post_incr : '+it+' = "++$1;";')
-  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
-  tangle('    proc post_decr : '+it+' = "--$1;";')
-
+ 
 @def mkrseq(n,ns='std'):
   mkseq(n,ns)
   c = 'stl_'+n+'[t]'
@@ -2461,13 +2663,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";');
   tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
   tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
-  tangle('    fun deref : '+rit+' ->  lvalue[t]  = "*$1";')
-  gen_pcmp(rit)
-  tangle('    proc pre_incr : lvalue['+rit+'] = "++$1;";')
-  tangle('    proc post_incr : '+rit+' = "++$1;";')
-  tangle('    proc pre_decr: lvalue['+rit+'] = "--$1;";')
-  tangle('    proc post_decr : '+rit+' = "--$1;";')
-
 
 
 @def mkinsat(n):
@@ -2551,17 +2746,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    gen_cmpeq '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
-  tangle('    gen_cmpeq '+it+';')
-  tangle('    gen_cmpeq '+rit+';')
-  tangle('    proc pre_incr : '+it+' = "++$1;";')
-  tangle('    proc post_incr : '+it+' = "++$1;";')
-  tangle('    proc pre_incr : '+rit+' = "++$1;";')
-  tangle('    proc post_incr : '+rit+' = "++$1;";')
-  tangle('    proc pre_decr : '+it+' = "--$1;";')
-  tangle('    proc post_decr : '+it+' = "--$1;";')
-  tangle('    proc pre_decr : '+rit+' = "--$1;";')
-  tangle('    proc post_decr : '+rit+' = "--$1;";')
-  tangle('    fun deref : '+it+' ->  k * lvalue[v]  = "*(#0*)&*$1:unary" is unary;')
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
   tangle('    fun deref : '+rit+' ->  k * lvalue[v]  = "*(#0*)&*$1:unary" is unary;')
@@ -2696,3 +2880,65 @@ module Stl
   mkass('hash_multimap','__gnu_cxx')    
   tangle('  }')
 }
+
+@def mkfor(it,ts,kv=None):
+  if kv == None: kv = ts
+  tangle('  instance['+ts+'] Eq['+it+'] {')
+  tangle('    fun eq: '+it+' * '+it+' -> bool = "$1==$2";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Tord['+it+'] {')
+  tangle('    fun lt: '+it+' * '+it+' -> bool = "$1<$2";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Iterator['+it+','+kv+'] {')
+  tangle('    fun deref : '+it+' ->  lvalue['+kv+']  = "*$1";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Forward['+it+'] {')
+  tangle('    proc succ: '+it+' = "$1+1;";')
+  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
+  tangle('    proc post_incr : lvalue['+it+'] = "++$1;";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Forward_iterator['+it+'] {}')
+
+@def mkbidir(it,ts,kv=None):
+  if kv == None: kv = ts
+  mkfor(it,ts,kv)
+  tangle('  instance['+ts+'] Bidirectional['+it+'] {')
+  tangle('    proc pred: '+it+' = "$1-11;";')
+  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
+  tangle('    proc post_decr : lvalue['+it+'] = "--$1;";')
+  tangle('  }')
+  
+  tangle('  instance['+ts+'] Bidirectional_iterator['+it+'] {}')
+
+// Vector
+@mkbidir('Stl::Vector::stl_vector_iterator[t]','t')
+@mkbidir('Stl::Vector::stl_vector_reverse_iterator[t]','t')
+
+// List
+@mkbidir('Stl::List::stl_list_iterator[t]','t')
+@mkbidir('Stl::List::stl_list_reverse_iterator[t]','t')
+
+// Deque
+@mkbidir('Stl::Deque::stl_deque_iterator[t]','t')
+@mkbidir('Stl::Deque::stl_deque_reverse_iterator[t]','t')
+
+// Set
+@mkbidir('Stl::Set::stl_set_iterator[t]','t')
+@mkbidir('Stl::Set::stl_set_reverse_iterator[t]','t')
+
+// MultiSet
+@mkbidir('Stl::MultiSet::stl_multiset_iterator[t]','t')
+@mkbidir('Stl::MultiSet::stl_multiset_reverse_iterator[t]','t')
+
+// Map
+@mkbidir('Stl::Map::stl_map_iterator[k,v]','k,v','k*v')
+@mkbidir('Stl::Map::stl_map_reverse_iterator[k,v]','k,v','k*v')
+
+// MultiMap
+@mkbidir('Stl::MultiMap::stl_multimap_iterator[k,v]','k,v','k*v')
+@mkbidir('Stl::MultiMap::stl_multimap_reverse_iterator[k,v]','k,v','k*v')
+
