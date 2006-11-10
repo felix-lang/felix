@@ -68,10 +68,13 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
     *)
     if length tc_bvs <> length inst_ts then
       clierr2 inst_sr tc_sr 
-      ("Wrong number of arguments, expected match for " ^
-        catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs ^
-       "\nbut got " ^
-       "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" 
+      (
+        "Instance " ^
+        "["^catmap "," (fun (s,j) -> s^"<"^si j^">") inst_vs^"] " ^
+        inst_id ^"<"^ si inst^">"^
+        "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" ^
+        "\nsupplies wrong number of type arguments for typeclass parameters\n" ^
+        inst_id^"["^catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs^"]"
       )
     ;
 

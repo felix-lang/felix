@@ -117,7 +117,7 @@ typeclass Bidirectional[t] {
 }
 
 typeclass Iterator[it,t] {
-  virtual fun deref: it -> t;
+  virtual fun deref: it -> lvalue[t];
 }
 
 typeclass Forward_iterator[it,t] {
@@ -2560,10 +2560,6 @@ module Lexer
   fun add: iterator * int -> iterator = "$1 + $2";
   fun sub: iterator * int -> iterator = "$1 - $2";
   fun sub: iterator * iterator -> int = "$1 - $2";
-  proc pre_incr: lvalue[iterator] = "++$1;";
-  proc post_incr: lvalue[iterator] = "++$1;";
-  fun deref: iterator -> char = "*$1";
-
 }
 
 instance Eq[Lexer::iterator] {
@@ -2574,7 +2570,12 @@ instance Tord[Lexer::iterator] {
   fun lt:Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
 }
 
+instance Iterator[Lexer::iterator, char] {
+  fun deref: Lexer::iterator -> lvalue[char] = "*$1";
+}
+
 open Eq[Lexer::iterator];
+open Iterator[Lexer::iterator, char];
 
 // ------ Open common modules -------------
 //open Bool;
@@ -2712,16 +2713,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
   tangle('    gen_cmpeq '+it+';')
   tangle('    gen_cmpeq '+rit+';')
-  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
-  tangle('    proc post_incr : '+it+' = "++$1;";')
-  tangle('    proc pre_incr : lvalue['+rit+'] = "++$1;";')
-  tangle('    proc post_incr : '+rit+' = "++$1;";')
-  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
-  tangle('    proc post_decr : '+it+' = "--$1;";')
-  tangle('    proc pre_decr: lvalue['+rit+'] = "--$1;";')
-  tangle('    proc post_decr : '+rit+' = "--$1;";')
-  tangle('    fun deref : '+it+' ->  t  = "*(#0*)&*$1:unary" is unary;')
-  tangle('    fun deref : '+rit+' ->  t  = "*(#0*)&*$1:unary" is unary;')
 
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
@@ -2748,7 +2739,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  tangle('    fun deref : '+rit+' ->  k * lvalue[v]  = "*(#0*)&*$1:unary" is unary;')
   tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
   tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
   tangle('    proc insert : '+c+' * k * v = "$1.insert(std::make_pair($2,$3));";')
@@ -2892,27 +2882,27 @@ module Stl
   tangle('  }')
 
   tangle('  instance['+ts+'] Iterator['+it+','+kv+'] {')
-  tangle('    fun deref : '+it+' ->  lvalue['+kv+']  = "*$1";')
+  tangle('    fun deref : '+it+' ->  lvalue['+kv+']  = "*(#0*)(void*)&*$1";')
   tangle('  }')
 
   tangle('  instance['+ts+'] Forward['+it+'] {')
-  tangle('    proc succ: '+it+' = "$1+1;";')
+  tangle('    fun succ: '+it+' -> '+it+' = "$1+1";')
   tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
   tangle('    proc post_incr : lvalue['+it+'] = "++$1;";')
   tangle('  }')
 
-  tangle('  instance['+ts+'] Forward_iterator['+it+'] {}')
+  tangle('  instance['+ts+'] Forward_iterator['+it+','+kv+'] {}')
 
 @def mkbidir(it,ts,kv=None):
   if kv == None: kv = ts
   mkfor(it,ts,kv)
   tangle('  instance['+ts+'] Bidirectional['+it+'] {')
-  tangle('    proc pred: '+it+' = "$1-11;";')
+  tangle('    fun pred: '+it+' -> '+it+' = "$1-11;";')
   tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
   tangle('    proc post_decr : lvalue['+it+'] = "--$1;";')
   tangle('  }')
   
-  tangle('  instance['+ts+'] Bidirectional_iterator['+it+'] {}')
+  tangle('  instance['+ts+'] Bidirectional_iterator['+it+','+kv+'] {}')
 
 // Vector
 @mkbidir('Stl::Vector::stl_vector_iterator[t]','t')

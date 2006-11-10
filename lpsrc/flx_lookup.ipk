@@ -4876,7 +4876,11 @@ and bind_dir
    assert (length vs = 0);
    assert (length ts = 0);
    *)
+   let mkenv i = mk_bare_env syms i in
+   let ts' = map (fun t -> beta_reduce syms (bind_type' syms env rsground sr t [] mkenv)) ts' in
+   (*
    let ts' = map (fun t-> bind_type syms env sr t) ts' in
+   *)
    i,ts'
 
 and review_entry syms vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t =
@@ -5106,6 +5110,9 @@ and inner_build_env syms rs parent : env_t =
        env
 
 and build_env syms parent : env_t =
+  (*
+  print_endline ("Build env " ^ match parent with None -> "None" | Some i -> si i);
+  *)
   inner_build_env syms rsground parent
  
 

@@ -5274,11 +5274,14 @@ for_each {i=0;} {i<argc} {++i;}
 @env.head(1,"STL Containers")
 
 @select(env.test('.flx'))
+@kat("stl:Vector")
+@kat("stl:Map")
 #import <flx.flxh>
 include "stl";
 open Stl;
 open Stl::Vector;
 open Stl::Map;
+open Bidirectional_iterator[Stl::Map::stl_map_iterator[int,int],int*int];
 
 typedef ii = Vector::iterator[int];
 
