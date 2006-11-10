@@ -1,4 +1,4 @@
-	@head(1,'Felix Standard Library')
+@head(1,'Felix Standard Library')
 
 @execfile('config'+os.sep+'flx_data.py')
 @include_file ('flx_stdlib_lex.ipk')
