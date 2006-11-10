@@ -607,8 +607,8 @@ instance[t:numbers] Ring[t] {}
 
 instance[t:numbers] Dring[t] {
   fun div: t * t -> t = "$1/$2";
-  fun mod: t * t -> t = "$1/$2";
-  proc diveq: lvalue[t] * t = "$1%=$2;";
+  fun mod: t * t -> t = "$1%$2";
+  proc diveq: lvalue[t] * t = "$1/=$2;";
   proc modeq: lvalue[t] * t = "$1%=$2;";
 }
 

@@ -1599,36 +1599,6 @@ print "should not see this"; endl;
 @doc()
 
 @env_rt.head(3)
-test argument handling
-@select(env_rt.test('.flx'))
-#import <flx.flxh>
-  
-open List;
-
-iter (proc (x:string) { print x; endl; })$ 
-  match System::args() with
-  | Empty[string] => Empty[string]
-  | Cons(?h, ?t) => t
-  endmatch
-;
-@doc()
-
-@select(env_rt.expect())
-@doc()
-
-@select(env_rt.expect_args('a b c'))
-a
-b
-c
-@doc()
-
-@select(env_rt.expect_args('e f g'))
-e
-f
-g
-@doc()
-
-@env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("types:nested")
 #import <flx.flxh>

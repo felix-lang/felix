@@ -567,7 +567,7 @@ namespace flx { namespace faio {
 // in the active queue (that's a fourth queue .. :))
 
 pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m2)
-    : flx_drv(q,n1,m1), file_aio_worker(n2,m2)
+    : flx_drv(q,n1,m1), file_aio_worker(n2,m2), debug(0)
 {
     // we might actually like to ignore SIGPIPE's conditionally,
     // e.g. when a flx prog actually requests socket io, we could even
