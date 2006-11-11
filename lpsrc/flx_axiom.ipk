@@ -68,11 +68,12 @@ let verify syms bbdfns csr e =
       let ident x = x in 
       let rec aux x = map_tbexpr ident aux tsub x in
       let cond = aux cond in
+      let comment = `BEXE_comment (csr,"Check " ^ id) in
       let ax = `BEXE_assert2 (csr,axsr,cond) in
       (*
       print_endline ("Assertion: " ^ tsbe syms.dfns cond);
       *)
-      xx := ax :: !xx
+      xx := ax :: comment :: !xx
   )
   syms.axioms
   ;

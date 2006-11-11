@@ -62,6 +62,7 @@ typeclass Addgrp[t] {
   axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
   reduce inv(x:t): x-x => zero();
   reduce inv(x:t,y:t): x+y-y => x;
+  reduce inv(x:t): - (-x) => x;
   axiom sym (x:t,y:t): x+y == y+x;
 }
 
@@ -182,6 +183,7 @@ typeclass Real[t] {
 }
 
 typeclass Complex[t] {
+  inherit Eq[t];
   inherit Trig[t];
   virtual fun arg: t -> t;
 }
@@ -216,50 +218,6 @@ macro proc gen_add (t){
   fun sub: t * t -> t = "$1-$2" ;
   proc pluseq: lvalue[t] * t = "$1+=$2;";
   proc minuseq: lvalue[t] * t = "$1-=$2;";
-}
-
-// ring
-macro proc gen_arith(t){
-  gen_add t;
-  fun mul: t * t -> t = "$1*$2" ;
-  fun div: t * t -> t = "$1/$2" ;
-  proc muleq: lvalue[t] * t = "$1*=$2;";
-  proc diveq: lvalue[t] * t = "$1/=$2;";
-}
-
-// division ring
-macro proc gen_dring(t){
-  gen_arith t;
-  fun mod : t * t -> t = "$1%$2" ;
-  proc modeq: lvalue[t] * t = "$1%=$2;";
-}
-
-macro proc gen_forward (t){
-  fun succ: t -> t = "$1:add + 1" is add;
-  proc pre_incr:  lvalue[t] = "++$1;";
-  proc post_incr: lvalue[t] = "$1++;";
-}
-
-macro proc gen_bidirectional(t){
-  gen_forward t;
-  fun pred: t -> t = "$1:add - 1" is add;
-  proc pre_decr:  lvalue[t] = "--$1;";
-  proc post_decr: lvalue[t] = "$1--;";
-}
-
-macro proc gen_random(t){
-  gen_bidirectional t;
-  fun add: t * int -> t = "$1+$2";
-  fun sub: t * int -> t = "$1-$2";
-  proc pluseq: lvalue[t] * int = "$1+=$2;";
-  proc minuseq: lvalue[t] * int = "$1-=$2;";
-}
-
-// division ring
-macro proc gen_integral(t){
-  gen_cmp t;
-  gen_dring t;
-  gen_bidirectional t;
 }
 
 @def gen_uint(t):
@@ -660,13 +618,10 @@ type string = "std::string";
 @for t in fast_ints:
   tangle("open module " + string.capitalize(t))
   tangle("{")
-  #tangle('  gen_integral('+t+');')
   tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1.data()))" requires cstdlib;')
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
   #if t in fast_sints:
   #  tangle('  fun abs: '+t+' -> '+t+' = "'+absmap[t]+'($1)";')
-  #if t in uints: gen_uint(t)
-  #if t in uints: gen_uint_assign(t)
   if t == "tiny":
     tangle('  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires iostream;')
     tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;')

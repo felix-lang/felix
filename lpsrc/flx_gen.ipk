@@ -616,7 +616,7 @@ let gen_functions syms (child_map,bbdfns) =
     match entry with
     | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
       bcat s ("\n//------------------------------\n");
-      if mem `Pure props && not (mem `Heap_closure props) then begin
+      if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
         bcat s 
         (gen_C_function syms (child_map,bbdfns) props index id vs ps ret ts i)
@@ -685,7 +685,7 @@ let gen_functions syms (child_map,bbdfns) =
 
     | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
       bcat s ("\n//------------------------------\n");
-      if mem `Pure props && not (mem `Heap_closure props) then begin
+      if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
         bcat s 
         (gen_C_function syms (child_map,bbdfns) props index id vs ps `BTYP_void ts i)
@@ -1592,7 +1592,8 @@ let gen_exe filename syms
          si sl ^ "," ^ si sc ^ "," ^
          si el ^ "," ^ si ec
        in
-       "      {if(FLX_UNLIKELY(!(" ^ ge sr e ^ ")))FLX_ASSERT_FAILURE("^s^");}\n"
+       "      {if(FLX_UNLIKELY(!(" ^ ge sr e ^ ")))\n" ^
+       "        FLX_ASSERT_FAILURE("^s^");}\n"
 
     | `BEXE_assert2 (sr,sr2,e) ->
        let f,sl,sc,el,ec = sr in
@@ -1605,7 +1606,8 @@ let gen_exe filename syms
          si sl2 ^ "," ^ si sc2 ^ "," ^
          si el2 ^ "," ^ si ec2
        in
-       "      {if(FLX_UNLIKELY(!(" ^ ge sr e ^ ")))FLX_ASSERT2_FAILURE("^s^"," ^ s2 ^");}\n"
+       "      {if(FLX_UNLIKELY(!(" ^ ge sr e ^ ")))\n" ^
+       "        FLX_ASSERT2_FAILURE("^s^"," ^ s2 ^");}\n"
   in gexe exe
 
 let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no stackable =

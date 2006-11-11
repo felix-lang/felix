@@ -111,6 +111,7 @@ let mkcurry sr name vs (args:params_t list) return_type kind body =
 
 let cal_funkind adjs fk =
   match fk with
+  | sr,`CFunction -> sr,`CFunction
   | sr,`Generator -> sr,`Generator
   | sr,`Function -> match adjs with
   | [] -> sr,`Function
@@ -1192,6 +1193,7 @@ reduce_args:
   | LPAR typeparameter_comma_list RPAR { $2 }
 
 fun_kind:
+  | CFUNCTION { $1,`CFunction }
   | FUNCTION { $1,`Function }
   | GENERATOR { $1,`Generator }
 

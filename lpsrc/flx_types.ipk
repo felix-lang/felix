@@ -563,6 +563,7 @@ and tlvalue_t = lvalue_t * typecode_t option
 and funkind_t = [
   | `Object 
   | `Function 
+  | `CFunction 
   | `InlineFunction 
   | `NoInlineFunction
   | `Virtual
@@ -587,6 +588,7 @@ and property_t = [
   | `Ctor                (* Class constructor procedure *)
   | `Generator           (* Generator: fun with internal state *)
   | `Yields              (* Yielding generator *)
+  | `Cfun                (* C function *)
 
   (* one of the below must be set before code generation *)
   | `Requires_ptf        (* a pointer to thread frame is needed *)
@@ -3377,6 +3379,7 @@ and string_of_property = function
 | `Generator -> "generator"
 | `Yields -> "yields"
 | `Virtual -> "virtual"
+| `Cfun -> "cfun"
 
 and string_of_properties ps =
   match ps with 
@@ -3706,6 +3709,7 @@ and string_of_statement level s =
     spaces level ^ 
     (match kind with 
     | `Function -> "fun " 
+    | `CFunction -> "cfun " 
     | `Object -> "obj " 
     | `InlineFunction -> "inline fun "
     | `NoInlineFunction -> "noinline fun "
