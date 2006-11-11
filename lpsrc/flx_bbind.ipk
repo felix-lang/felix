@@ -284,17 +284,28 @@ let bbind_sym syms bbdfns i {
         Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
         begin
           if not (Hashtbl.mem syms.ticache i) then
-          let t = fold syms.dfns (`BTYP_function (typeoflist ts,brt')) in
+          let d = typeoflist ts in
+          let ft = 
+            if mem `Cfun props 
+            then `BTYP_cfunction (d,brt')
+            else `BTYP_function (d,brt')
+          in
+          let t = fold syms.dfns ft in
           Hashtbl.add syms.ticache i t
         end
         ;
         let atyp = typeoflist ts in
         if syms.compiler_options.print_flag then
+        let t = 
+          if mem `Cfun props 
+          then `BTYP_cfunction (atyp,brt')
+          else `BTYP_function (atyp,brt')
+        in 
         print_endline 
         (
           "//bound function " ^ qname ^ "<"^si i^">" ^
            print_bvs bvs ^":" ^
-           sbt syms.dfns (`BTYP_function (atyp,brt'))
+           sbt syms.dfns t 
         )
 
     | `SYMDEF_parameter (k,_) -> 

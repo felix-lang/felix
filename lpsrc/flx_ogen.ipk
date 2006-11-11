@@ -399,6 +399,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     *)
     match entry with
     | `BBDCL_function (props,vs,ps, ret,_) -> 
+      if mem `Cfun props then () else
       if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props last_ptr_map
       (*
@@ -419,6 +420,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       *)
         
     | `BBDCL_procedure (props,vs,ps,_) -> 
+      if mem `Cfun props then () else
       if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance props last_ptr_map
       else if mem `Stack_closure props then ()

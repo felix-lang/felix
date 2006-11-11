@@ -631,9 +631,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           else d'
       in
       let name = cpp_instance_name syms bbdfns index ts in
-      ce_atom (
-      "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
-      )
+      if mem `Cfun props then ce_atom name
+      else
+        ce_atom (
+        "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
+        )
 
     | `BBDCL_callback _ -> 
       print_endline "Mapping closure of callback to C function pointer";
@@ -717,6 +719,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let class_frame = ge obj in
       let the_display = class_frame :: the_display in
       let name = cpp_instance_name syms bbdfns meth ts in
+      if mem `Cfun props then failwith "Not expecting `Cfun for apply_method_direct" else
       ce_atom (
       "(FLX_NEWP("^name^")"^ strd the_display props ^")"^
       "\n      ->apply(" ^ ge_arg a ^ ")"
@@ -778,6 +781,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let class_frame = ge e in
       let the_display = class_frame :: the_display in
       let name = cpp_instance_name syms bbdfns index ts in
+      if mem `Cfun props then failwith "Not expecting `Cfun for apply_method_direct" else
       ce_atom (
       "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
       )
@@ -1087,10 +1091,14 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           else d'
       in
       let name = cpp_instance_name syms bbdfns index ts in
-      ce_atom (
-      "(FLX_NEWP("^name^")"^ strd the_display props ^")"^
-      "\n      ->apply(" ^ ge_arg a ^ ")"
-      )
+      if mem `Cfun props 
+      then  (* this is probably wrong because it doesn't split arguments up *)
+        ce_call (ce_atom name) [ce_atom (ge_arg a)]
+      else
+        ce_atom (
+        "(FLX_NEWP("^name^")"^ strd the_display props ^")"^
+        "\n      ->apply(" ^ ge_arg a ^ ")"
+        )
 
     | `BBDCL_fun _ -> assert false
     (*
@@ -1225,6 +1233,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (* application of C function pointer, type
      f: a --> b
   *)
+  | `BEXPR_apply ( (_,`BTYP_lvalue(`BTYP_cfunction _)) as f,a)
   | `BEXPR_apply ( (_,`BTYP_cfunction _) as f,a) ->
     ce_atom (
     (ge f) ^"(" ^ ge_arg a ^ ")"

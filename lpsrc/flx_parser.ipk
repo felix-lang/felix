@@ -1343,7 +1343,11 @@ ctor_init_list:
 ctor_inits:
   | COLON ctor_init_list { $2 }
   | {[]}
-  
+
+proc_kind:
+  | PROCEDURE { $1,`Function }
+  | CPROCEDURE { $1,`CFunction }
+
 procedure_definition:
   | CTOR tvarlist opt_fun_args opt_traint_eq ctor_inits compound 
     { 
@@ -1360,31 +1364,30 @@ procedure_definition:
       mkcurry sr name vs args (return_type,traint) `Ctor body
     }
 
-  | adjectives PROCEDURE NAME tvarlist opt_fun_args opt_traint_eq compound 
+  | adjectives proc_kind NAME tvarlist opt_fun_args opt_traint_eq compound 
     { 
-      let sr = rsrange (slift $2) (fst $7) in
+      let sr1,kind = cal_funkind $1 $2 in
+      let sr = rsrange (slift sr1) (fst $7) in
       let name = snd $3 
       and vs = $4
       and return_type = `AST_void sr
       and traint = $6
       and body = snd $7
       and args = List.map snd $5 (* elide srcref *)
-      and adjectives = map snd $1 
-      in let adjective = match adjectives with
-      | [] -> `Function 
-      | h :: t -> h
       in
-      mkcurry sr name vs args (return_type,traint) adjective body
+      mkcurry sr name vs args (return_type,traint) kind body
     }
 
-  | adjectives PROCEDURE NAME tvarlist COLON expr opt_cstring requires_clause SEMI 
+  | adjectives proc_kind NAME tvarlist COLON expr opt_cstring requires_clause SEMI 
     { 
-      let sr = rstoken $2 $9
-      and vs = $4
+      let sr1,kind = cal_funkind $1 $2 in
+      let sr = rstoken sr1 $9 in
+      let vs = $4
       and name = snd $3 
       and t = typecode_of_expr $6
       and adjectives = map snd $1
-      in let ct =  
+      in 
+      let ct =  
         match $7 with 
         | Some x -> 
           if mem `Virtual adjectives then 
