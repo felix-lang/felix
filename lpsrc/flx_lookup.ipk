@@ -2049,7 +2049,7 @@ and inner_typeofindex
       mt
     end
 
-  | `SYMDEF_function ((ps,_), rt,_,_) -> 
+  | `SYMDEF_function ((ps,_), rt,props,_) -> 
     let pts = map (fun(_,_,t)->t) ps in
     let rt' = 
       try Hashtbl.find syms.varmap index with Not_found ->
@@ -2080,7 +2080,12 @@ and inner_typeofindex
           "\nTry adding an explicit return type annotation"
         )))
       end else
-        let t = `BTYP_function (bt (typeof_list pts), rt') in
+        let d =bt (typeof_list pts) in 
+        let t = 
+          if mem `Cfun props 
+          then `BTYP_cfunction (d,rt')
+          else `BTYP_function (d, rt') 
+        in
         t
 
   | `SYMDEF_const (t,_,_)
