@@ -38,7 +38,7 @@ open Flx_child
 let verify syms bbdfns csr e =
   let xx = ref [] in
   iter
-  ( fun (id, axsr, bvs, bpl, x) ->
+  ( fun (id, axsr, bvs, (bpl,precond), x) ->
     (*
     print_endline ("Checking for cases of axiom " ^ id);
     *)
@@ -64,12 +64,15 @@ let verify syms bbdfns csr e =
       (*
       print_endline ("tmgu= " ^ catmap ", " (fun (i,t) -> si i ^ "->" ^ sbt syms.dfns t) tmgu);
       *)
-      let cond = xsub x in
       let ident x = x in 
       let rec aux x = map_tbexpr ident aux tsub x in
-      let cond = aux cond in
+      let cond = aux (xsub x) in
+      let precond = match precond with
+      | Some x -> Some (aux (xsub x))
+      | None -> None
+      in
       let comment = `BEXE_comment (csr,"Check " ^ id) in
-      let ax = `BEXE_assert2 (csr,axsr,cond) in
+      let ax = `BEXE_assert2 (csr,axsr,precond,cond) in
       (*
       print_endline ("Assertion: " ^ tsbe syms.dfns cond);
       *)

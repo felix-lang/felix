@@ -185,7 +185,9 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
   | `BEXE_init (sr,i,e) -> `BEXE_init (sr,i,ue e)
   | `BEXE_assign (sr,e1,e2) -> `BEXE_assign (sr, ue e1, ue e2)
   | `BEXE_assert (sr,e) -> `BEXE_assert (sr, ue e)
-  | `BEXE_assert2 (sr,sr2,e) -> `BEXE_assert2 (sr, sr2,ue e)
+  | `BEXE_assert2 (sr,sr2,e1,e2) -> 
+    let e1 = match e1 with Some e -> Some (ue e) | None -> None in
+    `BEXE_assert2 (sr, sr2,e1,ue e2)
 
   | `BEXE_svc (sr,i) -> exe
 

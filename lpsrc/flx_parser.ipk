@@ -1210,12 +1210,12 @@ function_definition:
       `AST_reduce (sr,name,vs,args,rsrc,rdst)
     }
 
-  | AXIOM NAME tvarlist reduce_args COLON expr SEMI
+  | AXIOM NAME tvarlist fun_arg COLON expr SEMI
     {
       let sr = rstoken $1 $7
       and name = snd $2
       and vs = $3 
-      and args = $4
+      and args = snd $4
       and rsrc = $6 
       in
       `AST_axiom (sr,name,vs,args,rsrc)

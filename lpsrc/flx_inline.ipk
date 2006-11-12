@@ -907,7 +907,9 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_loop (sr,i,e) -> assert false
 
   | `BEXE_assert (sr,e) -> [`BEXE_assert (sr, ge e)]
-  | `BEXE_assert2 (sr,sr2,e) -> [`BEXE_assert2 (sr, sr2, ge e)]
+  | `BEXE_assert2 (sr,sr2,e1,e2) -> 
+    let e1 = match e1 with Some e1 -> Some (ge e1) | None -> None in
+    [`BEXE_assert2 (sr, sr2, e1,ge e2)]
 
   | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
   | `BEXE_ifnotgoto (sr,e,lab) -> [`BEXE_ifnotgoto (sr,ge e, relab lab)]
@@ -1462,9 +1464,13 @@ let expand_exe syms bbdfns u exe =
       let e,xs = u sr e in
       `BEXE_assert (sr,e) :: xs
 
-    | `BEXE_assert2 (sr,sr2,e) ->
-      let e,xs = u sr e in
-      `BEXE_assert2 (sr,sr2,e) :: xs
+    | `BEXE_assert2 (sr,sr2,e1,e2) ->
+      let e1,xs1 = 
+        match e1 with Some e -> let a,b = u sr e in Some a,b
+        | None -> None,[]
+      in
+      let e2,xs2 = u sr e2 in
+      `BEXE_assert2 (sr,sr2,e1,e2) :: xs2 @ xs1
 
     (* preserve call lift pattern ??*)
     | `BEXE_call (sr,(`BEXPR_apply_direct(i,ts,e1),t),e2) ->

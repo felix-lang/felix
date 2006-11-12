@@ -4,6 +4,17 @@
 
 @env = setup_test(os.path.join('tut', 'embedding', 'bind-'))
 
+@def kat(code):
+  env.kat(get_tangler(),code)
+
+@head(1,'Embedding')
+Felix is designed to integrate smoothly with C and C++.
+
+
+@head(2,"Category Reference",nospawn=1)
+Tests by category keyword.
+@env.emit_katlist()
+
 @select(tangler('spkgs/flx_tut_bind.py'))
 @tangle('TESTS = glob.glob("'+env.root+'*.flx")')
 
@@ -12,9 +23,6 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
 iscr_source = [ 'lpsrc/flx_tut_bind.pak' ]
 weaver_directory = 'doc/tutorial/embedding/'
 @doc()
-
-@head(1,'Embedding')
-Felix is designed to integrate smoothly with C and C++.
 
 @env.head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
@@ -884,5 +892,79 @@ h(yyy,2);
 31
 5
 @doc()
+
+@env.head(2,'C functions')
+Felix can be forced to generate C/C++ style functions.
+The type:
+@begin_displayed_code()
+  int * int --> int
+@end_displayed_code()
+with a long arrow denotes a C style function. The keywords
+cfun and cproc introduce such functions. C functions
+can be passed by value as in C, and are represented
+by the usual C function pointer.
+@p()
+C functions and procedures have no access to global
+variables or the garbage collector, and they use
+the system standard calling conventions for a
+C++ function.
+
+@select(env.test('.flx'))
+#import <flx.flxh>
+
+cfun fff(x:int)=>x + 1;
+
+print$ fff 22; endl;
+
+fun apl(g:int-->int,x:int)=> g x;
+
+print$ apl$ the fff,22; endl;
+
+var q = the fff;
+print$ apl$ q,22; endl;
+
+cproc ggg(x:int) {
+  print x; endl;
+}
+
+ggg 42;
+
+proc cll(g:int-->void, x:int) {
+  g x;
+}
+
+cll$ the ggg, 43;
+
+hhh := the ggg;
+
+cll$ hhh, 44;
+
+cfun f2(x:int, y:int)=>x+y;
+fun apl2(g:int*int-->int,x:int,y:int)=> g (x,y);
+print$ apl2$ the f2,12,13; endl;
+
+cproc g2(x:int,y:int) {
+  print x; print " "; print y; endl;
+}
+
+g2 (37,38);
+
+proc cll2(g:int*int-->void,x:int,y:int) {
+  g (x,y);
+}
+
+cll2(the g2, 39,40);
+@select(env.expect())
+23
+23
+23
+42
+43
+44
+25
+37 38
+39 40
+@doc()
+
 
 @#

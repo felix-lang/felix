@@ -1614,7 +1614,7 @@ let gen_exe filename syms
        "      {if(FLX_UNLIKELY(!(" ^ ge sr e ^ ")))\n" ^
        "        FLX_ASSERT_FAILURE("^s^");}\n"
 
-    | `BEXE_assert2 (sr,sr2,e) ->
+    | `BEXE_assert2 (sr,sr2,e1,e2) ->
        let f,sl,sc,el,ec = sr in
        let s = string_of_string f ^"," ^ 
          si sl ^ "," ^ si sc ^ "," ^
@@ -1625,7 +1625,13 @@ let gen_exe filename syms
          si sl2 ^ "," ^ si sc2 ^ "," ^
          si el2 ^ "," ^ si ec2
        in
-       "      {if(FLX_UNLIKELY(!(" ^ ge sr e ^ ")))\n" ^
+       (match e1 with
+       | None ->
+       "      {if(FLX_UNLIKELY(!(" ^ ge sr e2 ^ ")))\n" 
+       | Some e ->
+       "      {if(FLX_UNLIKELY("^ge sr e^" && !(" ^ ge sr e2 ^ ")))\n" 
+       )
+       ^
        "        FLX_ASSERT2_FAILURE("^s^"," ^ s2 ^");}\n"
   in gexe exe
 

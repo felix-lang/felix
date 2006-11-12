@@ -93,7 +93,7 @@ syn keyword felixStatement all as attempt
 syn keyword felixStatement call case caseno code const class ctypes
 syn keyword felixStatement def 
 syn keyword felixStatement endattempt except exceptions export
-syn keyword felixStatement finally fork functor fun
+syn keyword felixStatement finally fork functor fun cfun
 syn keyword felixStatement goto
 syn keyword felixStatement interface inf
 syn keyword felixStatement jump
@@ -101,7 +101,7 @@ syn keyword felixStatement lambda loop
 syn keyword felixStatement module
 syn keyword felixStatement NaN
 syn keyword felixStatement obj of
-syn keyword felixStatement proc
+syn keyword felixStatement proc cproc
 syn keyword felixStatement raise read ref regexp return
 syn keyword felixStatement struct
 syn keyword felixStatement to type typedef typeof

@@ -685,7 +685,7 @@ and statement_t =
 
   (* definitions *)
   | `AST_reduce of range_srcref * id_t * vs_list_t * simple_parameter_t list * expr_t * expr_t 
-  | `AST_axiom of range_srcref * id_t * vs_list_t * simple_parameter_t list * expr_t 
+  | `AST_axiom of range_srcref * id_t * vs_list_t * params_t * expr_t 
   | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
@@ -858,7 +858,7 @@ type dcl_t =
   [
 
   (* data structures *)
-  | `DCL_axiom of       simple_parameter_t list * expr_t
+  | `DCL_axiom of       params_t * expr_t
   | `DCL_reduce of       simple_parameter_t list * expr_t * expr_t
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * int option * typecode_t) list
@@ -1029,7 +1029,7 @@ and bexe_t =
   | `BEXE_begin
   | `BEXE_end
   | `BEXE_assert of range_srcref * tbexpr_t
-  | `BEXE_assert2 of range_srcref * range_srcref * tbexpr_t
+  | `BEXE_assert2 of range_srcref * range_srcref * tbexpr_t option * tbexpr_t
   | `BEXE_axiom_check of range_srcref * tbexpr_t
 
   | `BEXE_apply_ctor of range_srcref * bid_t * bid_t * btypecode_t list * bid_t * tbexpr_t
@@ -1151,7 +1151,7 @@ and bbdcl_t =
   ]
 
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-and axiom_t = id_t * range_srcref * bvs_t * bparameter_t list * tbexpr_t
+and axiom_t = id_t * range_srcref * bvs_t * bparams_t * tbexpr_t
 
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
 
@@ -1169,7 +1169,7 @@ type symbol_definition_t =
   | `SYMDEF_parameter of  param_kind_t * typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
-  | `SYMDEF_axiom of parameter_t list * expr_t
+  | `SYMDEF_axiom of params_t * expr_t
   | `SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | `SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
 
@@ -1682,7 +1682,11 @@ let iter_bexe fi fe ft fl fldef exe =
     -> fe e
 
   | `BEXE_axiom_check (_,e)
-  | `BEXE_assert2 (_,_,e)
+    -> fe e
+    
+  | `BEXE_assert2 (_,_,e1,e2)
+    -> (match e1 with Some e -> fe e | None->()); fe e2
+
   | `BEXE_assert (_,e)
     -> fe e
 
@@ -1762,8 +1766,9 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   | `BEXE_assert (sr,e) ->
     `BEXE_assert (sr, fe e)
 
-  | `BEXE_assert2 (sr,sr2,e) ->
-    `BEXE_assert2 (sr, sr2,fe e)
+  | `BEXE_assert2 (sr,sr2,e1, e2) ->
+     let e1 = match e1 with Some e1 -> Some (fe e1) | None -> None in
+    `BEXE_assert2 (sr, sr2,e1, fe e2)
 
   | `BEXE_axiom_check (sr,e) ->
     `BEXE_axiom_check (sr, fe e)
@@ -1901,7 +1906,7 @@ open Flx_types
 let src_of_bexe = function
   | `BEXE_goto (sr,_)
   | `BEXE_assert (sr,_)
-  | `BEXE_assert2 (sr,_,_)
+  | `BEXE_assert2 (sr,_,_,_)
   | `BEXE_axiom_check (sr,_)
   | `BEXE_halt (sr,_)
   | `BEXE_ifgoto (sr,_,_)
@@ -3689,7 +3694,7 @@ and string_of_statement level s =
   | `AST_axiom (_,name, vs, ps, rsrc) -> 
     spaces level ^ 
     "axiom " ^ name ^ print_vs vs ^ 
-    "("^string_of_basic_parameters ps^"): "^
+    "("^string_of_parameters ps^"): "^
     string_of_expr rsrc ^ 
     ";\n"
 
@@ -4369,7 +4374,9 @@ and string_of_bexe dfns level s =
   | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
   | `BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
-  | `BEXE_assert2 (_,_,e) -> spc ^ "assert2 " ^ se e ^ ";"
+  | `BEXE_assert2 (_,_,e1,e2) -> spc ^ "assert2 " ^ 
+    (match e1 with Some e1 -> se e1 ^ " implies " | None -> "") ^ 
+    se e2^";"
 
   | `BEXE_axiom_check (_,e) -> spc ^ "axiom_check " ^ se e ^ ";"
 
@@ -4621,7 +4628,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   | `DCL_axiom (ps, e1) -> 
     sl ^ 
     "axiom " ^ name^seq ^ print_vs vs ^
-    "("^ string_of_basic_parameters ps ^"): " ^
+    "("^ string_of_parameters ps ^"): " ^
     string_of_expr e1 ^ ";"
 
   | `DCL_function (ps, res, props, ss) -> 
