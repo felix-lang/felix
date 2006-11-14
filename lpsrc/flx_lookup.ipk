@@ -342,7 +342,7 @@ type recstop = {
   as_fixlist: (string * int) list;
   expr_fixlist: (expr_t * int) list;
   depth:int;
-  open_excludes : (vs_list_t * qualified_name_t) list
+  open_excludes : (ivs_list_t * qualified_name_t) list
 }
 
 let rsground= { 
@@ -4713,8 +4713,8 @@ and resolve_overload'
 *)
 
 and split_dirs open_excludes dirs :
-    (vs_list_t * qualified_name_t) list *
-    (vs_list_t * qualified_name_t) list *
+    (ivs_list_t * qualified_name_t) list *
+    (ivs_list_t * qualified_name_t) list *
     (string * qualified_name_t) list
 =
   let opens = 
@@ -4765,7 +4765,7 @@ and split_dirs open_excludes dirs :
 *)
 
 and get_includes syms xs =
-  let rec get_includes' syms includes ((i, ts) as index) =
+  let rec get_includes' syms includes ((invs,i, ts) as index) =
     if not (mem index !includes) then
     begin
       (*
@@ -4805,7 +4805,7 @@ and get_includes syms xs =
             (*
             print_endline ("Inherit after subs(2): " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts' ^"]");
             *)
-            get_includes' syms includes (j,ts')
+            get_includes' syms includes (invs,j,ts')
       )
       qns 
     end
@@ -4820,11 +4820,28 @@ and bind_dir
   syms 
   (env:env_t) rs
   (vs,qn) 
-: vs_list_t * int * btypecode_t list =
+: ivs_list_t * int * btypecode_t list =
   let sr = ("dummy",0,0,0,0) in
   (*
   print_endline ("Try to bind dir " ^ string_of_qualified_name qn);
   *)
+  let nullmap=Hashtbl.create 3 in
+  (* cheating stuff to add the type variables to the environment *)
+  let cheat_table = Hashtbl.create 7 in
+  iter
+  (fun (n,i,_) ->
+   let entry = `NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
+    Hashtbl.add cheat_table n entry;
+    if not (Hashtbl.mem syms.dfns i) then
+      Hashtbl.add syms.dfns i {id=n;sr=sr;parent=None;vs=dfltvs;
+      pubmap=nullmap; privmap=nullmap;dirs=[];
+      symdef=`SYMDEF_typevar `TYP_type
+      }
+    ; 
+  )
+  (fst vs)
+  ;
+  let cheat_env = (0,"cheat",cheat_table,[]) in 
   let result = 
     try 
       lookup_qn_in_env' syms env 
@@ -4847,7 +4864,7 @@ and bind_dir
    assert (length ts = 0);
    *)
    let mkenv i = mk_bare_env syms i in
-   let ts' = map (fun t -> beta_reduce syms (bind_type' syms env rsground sr t [] mkenv)) ts' in
+   let ts' = map (fun t -> beta_reduce syms (bind_type' syms (cheat_env::env) rsground sr t [] mkenv)) ts' in
    (*
    let ts' = map (fun t-> bind_type syms env sr t) ts' in
    *)
@@ -4930,8 +4947,9 @@ and make_view_table syms table (vs: (string * int) list) ts : name_map_t =
 
 and pub_table_dir 
   syms env inst_check
-  (i,ts)
+  (invs,i,ts)
 : name_map_t =
+  let invs = map (fun (i,n,_)->i,n) (fst invs) in
   match get_data syms.dfns i with
   | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_module} ->
     if length ts = 0 then table else
@@ -4939,7 +4957,7 @@ and pub_table_dir
       (*
       print_endline ("TABLE " ^ id);
       *)
-      let table = make_view_table syms table [] ts in
+      let table = make_view_table syms table invs ts in
       (*
       print_name_table syms.dfns table;
       *)
@@ -4952,7 +4970,7 @@ and pub_table_dir
        to its contents as an instance
     *)
     let inst = mkentry syms vs i in
-    let inst = review_entry syms [] ts inst in
+    let inst = review_entry syms invs ts inst in
     let inst_name = "_inst_" ^ id in
     Hashtbl.add table inst_name (`FunctionEntry [inst]);
     if inst_check then
@@ -4983,7 +5001,6 @@ and pub_table_dir
 and get_pub_tables syms env rs dirs =
   let _,includes,_ = split_dirs rs.open_excludes dirs in
   let xs = uniq_list (map (bind_dir syms env rs) includes) in
-  let xs = map (fun (_,i,ts)->i,ts) xs in (* drop vs *)
   let includes = get_includes syms xs in
   let tables = map (pub_table_dir syms env false) includes in
   tables
@@ -5031,8 +5048,7 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
 
   (* HACK to check open typeclass *)
   let _ = 
-    let xopens = map (fun (_,i,ts)->i,ts) bopens in (* drop vs *)
-    let xs = get_includes syms xopens in
+    let xs = get_includes syms bopens in
     let tables = map (pub_table_dir syms env true) xs in
     ()
   in
@@ -5042,8 +5058,7 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   let u = uniq_cat u bincludes in
 
   (* add on any inherited modules *)
-  let us = map (fun (_,i,ts)->i,ts) u in (* drop vs *)
-  let u = get_includes syms us in
+  let u = get_includes syms u in
 
   (* convert the i,ts list to a list of lookup tables *)
   let tables = map (pub_table_dir syms env false) u in

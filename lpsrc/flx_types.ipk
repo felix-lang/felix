@@ -850,7 +850,7 @@ This type is used to extract components of a value,
 corresponding to a match.
 @select(h)
 type dir_t =
-  | DIR_open of vs_list_t * qualified_name_t
+  | DIR_open of ivs_list_t * qualified_name_t
   | DIR_inject_module of qualified_name_t
   | DIR_use of id_t * qualified_name_t
 
@@ -4698,7 +4698,7 @@ and string_of_dir level s =
   let sqn n = string_of_qualified_name n in
   match s with
   | DIR_open (vs,qn) ->
-    spaces level ^ "open" ^ print_vs vs ^ sqn qn ^ ";"
+    spaces level ^ "open" ^ print_ivs vs ^ sqn qn ^ ";"
 
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
