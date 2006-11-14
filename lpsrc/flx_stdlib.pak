@@ -663,12 +663,8 @@ module MixedInt
 @for t in floats:
   tangle("open module " + string.capitalize(t))
   tangle("{")
-  #tangle('  gen_cmp('+t+');')
-  #tangle('  gen_arith('+t+');')
   tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
-  #gen_pow(t)
-  #gen_trig(t)
   gen_nan(t)
   tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
   tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')

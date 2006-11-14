@@ -674,7 +674,7 @@ and statement_t =
   [ 
   | `AST_cparse of range_srcref * string
   | `AST_include of range_srcref * string 
-  | `AST_open of range_srcref * qualified_name_t
+  | `AST_open of range_srcref * vs_list_t * qualified_name_t
   | `AST_inject_module of range_srcref * qualified_name_t
   | `AST_use of range_srcref * id_t * qualified_name_t
   | `AST_comment of string (* for documenting generated code *)
@@ -850,7 +850,7 @@ This type is used to extract components of a value,
 corresponding to a match.
 @select(h)
 type dir_t =
-  | DIR_open of qualified_name_t
+  | DIR_open of vs_list_t * qualified_name_t
   | DIR_inject_module of qualified_name_t
   | DIR_use of id_t * qualified_name_t
 
@@ -2093,7 +2093,7 @@ let src_of_stmt e = match e with
   | `AST_export_fun (s, _,_)
   | `AST_export_type (s, _,_)
   | `AST_type (s,_,_)
-  | `AST_open (s,_)
+  | `AST_open (s,_,_)
   | `AST_inject_module (s,_)
   | `AST_include (s,_)
   | `AST_cparse (s,_)
@@ -3523,8 +3523,8 @@ and string_of_statement level s =
 
   | `AST_comment s -> spaces level ^ "// " ^ s
 
-  | `AST_open (_,n) -> 
-    spaces level ^ "open " ^ sqn n ^ ";"
+  | `AST_open (_,vs,n) -> 
+    spaces level ^ "open" ^ print_vs vs ^ " " ^ sqn n ^ ";"
 
   | `AST_inject_module (_,n) -> 
     spaces level ^ "include " ^ sqn n ^ ";"
@@ -4697,8 +4697,8 @@ and string_of_asm level s =
 and string_of_dir level s =
   let sqn n = string_of_qualified_name n in
   match s with
-  | DIR_open (qn) ->
-    spaces level ^ "open " ^ sqn qn ^ ";"
+  | DIR_open (vs,qn) ->
+    spaces level ^ "open" ^ print_vs vs ^ sqn qn ^ ";"
 
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"

@@ -1468,7 +1468,7 @@ let gen_exe filename syms
         "      //run procedure " ^ src_str ^ "\n" 
         else "") ^
         "      {\n" ^
-        "        con_t *_p = "^ge sr p ^ "->clone()\n      ->call("^args^");\n" ^
+        "        con_t *_p = ("^ge sr p ^ ")->clone()\n      ->call("^args^");\n" ^
         "        while(_p) _p=_p->resume();\n" ^
         "      }\n"
         
@@ -1482,7 +1482,7 @@ let gen_exe filename syms
         "      //"^ src_str ^ "\n" 
         else "") ^
         "      FLX_SET_PC(" ^ si n ^ ")\n" ^
-        "      return " ^ ge sr p ^ "->clone()\n      ->call(" ^ args ^");\n" ^
+        "      return (" ^ ge sr p ^ ")->clone()\n      ->call(" ^ args ^");\n" ^
         "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
       end
 

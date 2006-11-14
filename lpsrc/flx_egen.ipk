@@ -1242,7 +1242,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (* General application*)
   | `BEXPR_apply (f,a) ->
     ce_atom (
-    (ge f) ^ "->clone()\n      ->apply(" ^ ge_arg a ^ ")"
+    "("^(ge f) ^ ")->clone()\n      ->apply(" ^ ge_arg a ^ ")"
     )
 
   | `BEXPR_record es ->

@@ -1016,7 +1016,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_proc_return sr -> [`Exe (sr,`EXE_proc_return)]
   | `AST_halt (sr,s) -> [`Exe (sr,`EXE_halt s)]
   | `AST_goto (sr,s) -> [`Exe (sr,`EXE_goto s)]
-  | `AST_open (sr,name) -> [`Dir (DIR_open name)]
+  | `AST_open (sr,vs,name) -> [`Dir (DIR_open (vs,name))]
   | `AST_inject_module (sr,name) -> [`Dir (DIR_inject_module name)]
   | `AST_use (sr,n,qn) -> [`Dir (DIR_use (n,qn))]
   | `AST_comment s -> [`Exe (generated,`EXE_comment s)]

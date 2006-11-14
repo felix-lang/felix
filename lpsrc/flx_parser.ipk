@@ -912,9 +912,10 @@ export_statement:
 @head(3,'Open')
 @select(h)
 open_decl:
-  | OPEN qualified_name SEMI
+  | OPEN tvarlist qualified_name SEMI
   {
-    `AST_open (rstoken $1 $3,qualified_name_of_expr $2)
+    let vs : vs_list_t = $2 in
+    `AST_open (rstoken $1 $4,vs,qualified_name_of_expr $3)
   }
 
 use_decl:
@@ -1509,7 +1510,7 @@ module_definition:
         ) 
       in match $1 with
       | `None -> dcl
-      | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,qn)])
+      | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,dfltvs,qn)])
     }
 
 @head(3,'Variable and Constant Declaration')
