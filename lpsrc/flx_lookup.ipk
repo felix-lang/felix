@@ -710,13 +710,26 @@ and bind_type syms env sr t : btypecode_t =
 and bind_expression syms env e  =
   let e',t' = 
     try
-      bind_expression' syms env rsground e []
+     let x = bind_expression' syms env rsground e [] in
+     x
     with 
      | Free_fixpoint b ->
        let sr = src_of_expr e in
        clierr sr 
        ("Circular dependency typing expression " ^ string_of_expr e)
-  in
+     | SystemError (sr,msg) as x ->
+       print_endline ("System Error binding expression " ^ string_of_expr e);
+       raise x
+
+     | ClientError (sr,msg) as x ->
+       print_endline ("Client Error binding expression " ^ string_of_expr e);
+       raise x
+
+     | Failure msg as x ->
+       print_endline ("Failure binding expression " ^ string_of_expr e);
+       raise x
+
+in
   let t' = beta_reduce syms t' in
   e',t'
 
@@ -2940,9 +2953,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     match ro with 
       | Some (index,t,ret,mgu,ts) ->
         (*
-        print_endline "handle_function (3)";
-        *)
-        (*
+        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.dfns) ts);
         let ts = adjust_ts syms sra index ts in
         print_endline "Adjusted ts";
         *)
@@ -3090,7 +3101,7 @@ and handle_map sr (f,ft) (a,at) =
       failwith "MAP NOT IMPLEMENTED"
  
 and bind_expression_with_args syms env e args : tbexpr_t = 
-  bind_expression' syms env rsground e args
+  bind_expression' syms env rsground e args 
 
 and bind_expression' syms env (rs:recstop) e args : tbexpr_t = 
   (*
@@ -4667,7 +4678,6 @@ and resolve_overload'
   (sufs : btypecode_t list)
   (ts:btypecode_t list)
 : overload_result option =
-
   if length fs = 0 then None else
   let env i = 
     (*
@@ -4689,11 +4699,12 @@ and resolve_overload'
     print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt syms.dfns) ts);
     *)
-    let _,vs,{raw_typeclass_reqs=rtcr} = find_split_vs syms index in
+    let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs syms index in
     (*
     print_endline ("Function vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") vs);
+    print_endline ("Parent vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") parent_vs);
     *)
-    let vs = map (fun (s,i,_)->s,i) vs in
+    let vs = map (fun (s,i,_)->s,i) (parent_vs @ vs) in
     let tsub t = tsubst vs ts t in
     instance_check syms caller_env (env index) mgu sr name rtcr tsub
   end
