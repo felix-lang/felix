@@ -382,7 +382,35 @@ let gen_thread_frame_offsets s syms bbdfns last_ptr_map =
   );
   gen_offset_data s n name offsets false [] (Some "gc_flags_immobile") last_ptr_map
 
+let id x = ()
+
+let scan_bexpr syms allocable_types e : unit = 
+  let rec aux e = match e with
+  | `BEXPR_new ((_,t) as x),_ -> 
+    let t = lstrip syms.dfns t in
+    let t = reduce_type t in
+    (*
+    print_endline ("FOUND A NEW " ^ sbt syms.dfns t);
+    *)
+    let index = 
+      try Hashtbl.find syms.registry t 
+      with Not_found -> failwith ("Can't find type in registry " ^ sbt syms.dfns t)
+    in
+    Hashtbl.replace allocable_types t index;
+
+  | x -> ()
+  in 
+  iter_tbexpr id aux id e
+
+let scan_exe syms allocable_types exe : unit =
+  iter_bexe id (scan_bexpr syms allocable_types) id id id exe
+
+let scan_exes syms allocable_types exes : unit = 
+  iter (scan_exe syms allocable_types) exes 
+  
 let gen_offset_tables syms (child_map,bbdfns) module_name =
+  let allocable_types = Hashtbl.create 97 in
+  let scan exes = scan_exes syms allocable_types exes in
   let last_ptr_map = ref "NULL" in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
@@ -398,7 +426,8 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.dfns) ts ^"]");
     *)
     match entry with
-    | `BBDCL_function (props,vs,ps, ret,_) -> 
+    | `BBDCL_function (props,vs,ps, ret,exes) -> 
+      scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props last_ptr_map
@@ -419,7 +448,8 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
       *)
         
-    | `BBDCL_procedure (props,vs,ps,_) -> 
+    | `BBDCL_procedure (props,vs,ps,exes) -> 
+      scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance props last_ptr_map
@@ -439,7 +469,6 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     are the arguments of non-constant variant constructors:
     this WILL change when a 'new' operator is introduced.
   *)
-  let allocable_types = Hashtbl.create 97 in
   Hashtbl.iter
   (fun btyp index -> 
     match unfold syms.dfns btyp with
