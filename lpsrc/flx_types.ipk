@@ -447,6 +447,7 @@ and expr_t =
   | `AST_literal of range_srcref * literal_t
   | `AST_deref of range_srcref * expr_t
   | `AST_ref of range_srcref * expr_t
+  | `AST_new of range_srcref * expr_t
   | `AST_lvalue of range_srcref * expr_t
   | `AST_callback of range_srcref * qualified_name_t
   | `AST_method_apply of range_srcref * (id_t * expr_t * typecode_t list)
@@ -1067,6 +1068,7 @@ and bexpr_t =
   | `BEXPR_deref of tbexpr_t
   | `BEXPR_name of bid_t * btypecode_t list
   | `BEXPR_ref of bid_t * btypecode_t list
+  | `BEXPR_new of tbexpr_t 
   | `BEXPR_literal of literal_t 
   | `BEXPR_apply of tbexpr_t * tbexpr_t 
   | `BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t 
@@ -1416,6 +1418,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_literal _ -> e
   | `AST_deref (sr,x) -> `AST_deref (sr,f x)
   | `AST_ref (sr,x) -> `AST_ref (sr, f x)
+  | `AST_new (sr,x) -> `AST_new (sr, f x)
   | `AST_lvalue (sr,x) -> `AST_lvalue (sr, x)
   | `AST_method_apply (sr,(id,x,ts)) -> `AST_method_apply (sr,(id,f x,ts))
   (*
@@ -1574,6 +1577,7 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_parse (e,iis) -> fe e; iter fi iis
   | `BEXPR_deref e -> fe e
   | `BEXPR_ref (i,ts) -> fi i; iter ft ts
+  | `BEXPR_new e -> fe e
 
   | `BEXPR_apply (e1,e2) -> fe e1; fe e2
 
@@ -1607,6 +1611,7 @@ let map_tbexpr fi fe ft e = match e with
   | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t
   | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
   | `BEXPR_ref (i,ts),t -> `BEXPR_ref (fi i, map ft ts), ft t
+  | `BEXPR_new e,t -> `BEXPR_new (fe e), ft t
 
   | `BEXPR_apply (e1,e2),t -> `BEXPR_apply (fe e1, fe e2), ft t
 
@@ -1974,6 +1979,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_map (s,_,_) 
   | `AST_apply  (s,_) 
   | `AST_deref (s,_) 
+  | `AST_new (s,_) 
   | `AST_ref  (s,_) 
   | `AST_lvalue (s,_) 
   | `AST_literal  (s,_) 
@@ -2523,6 +2529,7 @@ and string_of_expr (e:expr_t) =
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
   | `AST_lvalue (_,e) -> "lvalue" ^ "(" ^ se e ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
+  | `AST_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
   | `AST_literal (_,e) -> string_of_literal e
   | `AST_apply  (_,(fn, arg)) -> "(" ^ 
     sme fn ^ " " ^ 
@@ -4286,6 +4293,7 @@ and string_of_bound_expression' dfns se e =
   | `BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
   | `BEXPR_method_closure (e,i,ts) -> se e ^ "." ^ sid i ^ print_inst dfns ts
   | `BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
+  | `BEXPR_new e -> "new " ^ se e 
 
   | `BEXPR_literal e -> string_of_literal e
   | `BEXPR_apply  (fn, arg) -> "(" ^ 
@@ -5524,6 +5532,11 @@ let rec cmp_tbexpr (a,_) (b,_) =
      i = i' && 
      fold_left2 (fun r a b -> r && a = b) true ts ts'
 
+  (* Note any two distinct new expressions are distinct ... 
+    not sure what is really needed here
+  *)
+  | `BEXPR_new e1,`BEXPR_new e2 -> false
+ 
   | `BEXPR_method_closure (e,i,ts),`BEXPR_method_closure (e',i',ts') ->
      ecmp e e' &&
      i = i' && 

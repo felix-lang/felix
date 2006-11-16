@@ -3868,6 +3868,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
 
+  | `AST_new (srr,e) -> 
+     let e,t as x = be e in
+     `BEXPR_new x, `BTYP_pointer t
+
   | `AST_literal (sr,v) -> 
     let t = typeof_literal syms env sr v in
     `BEXPR_literal v, t

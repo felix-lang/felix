@@ -147,6 +147,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
 
   | `AST_deref (sr,e') -> `AST_deref (sr,subst e')
   | `AST_ref (sr,e') -> `AST_ref (sr,subst e')
+  | `AST_new (sr,e') -> `AST_new (sr,subst e')
   | `AST_lvalue (sr,e') -> `AST_lvalue (sr,subst e')
   | `AST_apply (sr,(f,e)) -> `AST_apply (sr,(subst f,subst e))
   | `AST_map (sr,f,e) -> `AST_map (sr,subst f,subst e)

@@ -2900,6 +2900,15 @@ refr:
         $2
       ) 
     }
+  | NEW refr 
+    { 
+      `AST_new
+      (
+        rsrange (slift $1) (src_of_expr $2), 
+        $2
+      ) 
+    }
+
   | application { $1 }
 
 /* applications is left associative */

@@ -196,7 +196,8 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     print_endline "ts done";
     *)
 
-
+  | `BEXPR_new e -> ue e
+   
   | `BEXPR_method_closure (e,i,ts) ->
     (*
     print_endline "method closure";

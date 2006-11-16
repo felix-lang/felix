@@ -446,6 +446,19 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let cast = tn t ^ "*" in
     ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "get_data()"))
 
+  | `BEXPR_new e ->
+    let ref_type = tn t in
+    let _,t' = e in
+    let pname = shape_of syms bbdfns tn t' in
+    let typ = tn t' in
+    let frame_ptr = 
+      "new(*PTF gc,"^pname^") " ^
+      typ ^ "("^ge e ^")" 
+    in
+    let reference = ref_type ^ "(" ^ frame_ptr ^ ", 0)" in
+    ce_atom reference
+
+
   | `BEXPR_literal v ->
     if is_native_literal v
     then ce_atom (cstring_of_literal v)
