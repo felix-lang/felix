@@ -455,7 +455,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       "new(*PTF gc,"^pname^") " ^
       typ ^ "("^ge e ^")" 
     in
-    let reference = ref_type ^ "(" ^ frame_ptr ^ ", 0)" in
+    let reference = ref_type ^ "(" ^ frame_ptr ^ ")" in
     ce_atom reference
 
 

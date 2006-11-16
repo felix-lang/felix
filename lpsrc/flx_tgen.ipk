@@ -142,6 +142,7 @@ let gen_ref name typ =
   "struct " ^ name ^ ": _ref_ {\n" ^
   "  "^name^"(){}\n" ^
   "  "^name^"(void *f, " ^typ^" *d): _ref_(f,d){}\n" ^
+  "  "^name^"(" ^typ^" *f): _ref_(f,std::ptrdiff_t(0)){}\n" ^
   "  "^typ^" *operator->()const { return ("^typ^"*)get_data(); }\n" ^
   "  "^typ^" &operator*() const { return *("^typ^"*)get_data(); }\n" ^
   "};\n"
