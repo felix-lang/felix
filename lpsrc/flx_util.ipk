@@ -72,6 +72,12 @@ let terminate rrp = let return_parity = not rrp in function
     print_endline s;
     exit (if return_parity then 1 else 0)
 
+  | Unresolved_return (sr,s) ->
+    flush stdout; print_endline "UNRESOLVED RETURN ERROR";
+    print_endline ("In " ^ long_string_of_src sr);
+    print_endline s;
+    exit (if return_parity then 1 else 0)
+
 
   | Failure s -> 
     flush stdout; print_endline "SYSTEM FAILURE";
