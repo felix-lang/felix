@@ -711,6 +711,11 @@ and bind_expression syms env e  =
   let e',t' = 
     try
      let x = bind_expression' syms env rsground e [] in
+     (*
+     print_endline ("Bound expression " ^ 
+       string_of_bound_expression_with_type syms.dfns x
+     );
+     *)
      x
     with 
      | Free_fixpoint b ->

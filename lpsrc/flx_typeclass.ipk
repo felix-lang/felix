@@ -191,9 +191,10 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
           Hashtbl.replace syms.typeclass_to_instance tck (entry :: old);
         
         (*
-        print_endline ("Register mapping " ^ si tck ^ 
-        print_bvs inst_vs ^
-           "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "] -> " ^ si i
+        print_endline ("Register mapping " ^ si tck ^ " vs=" ^
+          print_bvs inst_vs ^
+          " constraint=(" ^ sbt syms.dfns inst_constraint ^
+          ") ts=[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "] -----> " ^ si i
         );
         *)
 
@@ -253,27 +254,74 @@ Hashtbl.iter
 )
 bbdfns
 
-(* try to find a match for i,ts .. if it doesn't work,
-   remove the last type on the list and retry.
-   When found, return instance plus the removed
-   tail, which are arguments to the functions personal
-   type variables
+(* Notes.
+
+  ts is the virtual function call ts, and generally doesn't
+  include any inst_vs (unless the call is INSIDE the instance!)
+
+  inst_vs are the type variables of the instance type schema
+  They need to be eliminated, since they're arbitrary.
+
+  inst_ts are the ts needed to replace the typeclass vs
+  to obtain the candidate instance function signature from the
+  virtual signature, these will contain variables of the
+  instance type schema.
+
+  We match up the call ts with the inst_ts first,
+  to find values for the instance schema types, so we
+  can eliminate them.
+
+  But there is a special case: if the call is actually
+  inside an instance, the ts may contain schema variables.
+  In this context they're fixed variables, not to be
+  eliminated. So any such variables have to be alpha converted
+  away before the solution for inst_vs is found,
+  the put back afterwards: when replacing the inst_vs,
+  some of inst_vs type variable will then remain,
+  which is correct.
+
+  For technical reasons we do this backwards. We alpha convert
+  the inst_vs in the inst_ts away, solve for the new set
+  of variables, and then modify the solution back to 
+  the old set .. this is easier because the dependent
+  variables are just integers, so the remapping
+  doens't penetrate any type terms.
 *)
 
+  
 let chk syms allow_fail i ts (inst_vs, inst_constraint, inst_ts, j)  = 
      (*
      print_endline 
      ("virtual " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
-     *)
      if length inst_ts > length ts then
        failwith (
          "Not enough ts given, expected at least " ^ 
          si (length inst_ts) ^ ", got " ^ si (length ts)
        )
      ;
+     *)
      (* solve for vs' *)
-     let vset = fold_left (fun acc (_,i) -> IntSet.add i acc) IntSet.empty inst_vs in
-     let eqns = combine (list_prefix ts (length inst_ts)) inst_ts in
+     let v0 = !(syms.counter) in
+     let n = length inst_vs in
+     let vis =  (* list of ints from v0 to v0+n-1 *)
+       let rec aux i o = match i with 
+       | 0 -> o
+       | _ -> aux (i-1) ((v0+i-1)::o)
+       in aux n []
+     in
+     let nuvs = map (fun i -> `BTYP_var (i,`BTYP_type)) vis in
+     let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
+     let vset = fold_left (fun acc i -> IntSet.add i acc) IntSet.empty vis in
+
+     (*
+     let vset = fold_left (fun acc (_,i) -> IntSet.add i acc) IntSet.empty inst_vs' in
+     *)
+     let eqns = combine (list_prefix ts (length inst_ts)) inst_ts' in
+     (*
+     print_endline ("Solving equations\n " ^
+       catmap "\n" (fun (a,b) -> sbt syms.dfns a ^ " = " ^ sbt syms.dfns b ) eqns
+     );
+     *)
      let mgu = 
        try Some (unification false syms.dfns eqns vset) 
        with Not_found -> None
@@ -281,6 +329,10 @@ let chk syms allow_fail i ts (inst_vs, inst_constraint, inst_ts, j)  =
      begin match mgu with 
      | None -> None
      | Some mgu ->
+       let mgu =
+         let goback = combine vis (map (fun (_,i)->i) inst_vs) in
+         map (fun (i,t) -> assoc i goback, t) mgu
+       in
        let tsv = 
          map 
          (fun (s,i) ->
@@ -289,7 +341,7 @@ let chk syms allow_fail i ts (inst_vs, inst_constraint, inst_ts, j)  =
            else 
            (
              (*
-             print_endline ("Solved " ^ s ^ "-> " ^ sbt syms.dfns (assoc i mgu));
+             print_endline ("Solved " ^ s ^"<"^si i^">" ^ "-> " ^ sbt syms.dfns (assoc i mgu));
              *)
              assoc i mgu
            )
@@ -334,7 +386,11 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
    in
    match entries with
    | [] -> i,ts
-   | [j,ts] -> j,ts
+   | [j,ts] -> 
+     (*
+     print_endline ("Found instance " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+     *)
+     j,ts
    | ls ->
      iter
      (fun (j,ts) ->
@@ -359,7 +415,7 @@ let fixup_expr syms bbdfns e =
   let rec aux e =  match map_tbexpr id aux id e with
   | `BEXPR_apply_direct (i,ts,a),t ->
     let a = aux a in
-    let j,ts = (* print_endline ("Check apply direct " ^ si i); *)
+    let j,ts = (* print_endline ("Check apply direct " ^ si i);  *)
       fixup_typeclass_instance' syms bbdfns true i ts in
     (*
     if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
@@ -368,10 +424,14 @@ let fixup_expr syms bbdfns e =
 
   | `BEXPR_apply_prim (i,ts,a),t ->
     let a = aux a in
-    let j,ts = (* print_endline ("Check apply prim " ^ si i); *)
+    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"); *)
       fixup_typeclass_instance' syms bbdfns true i ts in
     (*
-    if j <> i then print_endline ("[prim] instantiate virtual as " ^ si j);
+    if j <> i then 
+      print_endline ("[prim] instantiate virtual as " ^ 
+        si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"
+      )
+    ;
     *)
     `BEXPR_apply_direct (j,ts,a),t
 

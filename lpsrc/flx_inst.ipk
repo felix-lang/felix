@@ -218,6 +218,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   let ui i = uis i ts in
   (*
   print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
+  print_endline ("With ts = " ^ catmap "," (sbt syms.dfns) ts);
   *)
   (* TODO: replace with a map *)
   match exe with
