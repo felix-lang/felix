@@ -1,0 +1,519 @@
+@set_title('STL')
+
+@import glob
+
+@execfile("config"+os.sep+"config.py")
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+
+@env  = setup_test(os.path.join('test', 'regress', 'stl-'))
+
+@def kat(code): env.kat(get_tangler(),code)
+
+@head(1,'Stl library')
+@h=tangler('lib/stl.flx','data')
+@select(h)
+#include <flx_categories.flxh>
+
+include "std";
+header std_stl_vector = "#include <vector>";
+header std_stl_list = "#include <list>";
+header std_stl_deque = "#include <deque>";
+header std_stl_queue = "#include <queue>";
+header std_stl_set = "#include <set>";
+header std_stl_map = "#include <map>";
+header std_stl_stack = "#include <stack>";
+@if HAVE_STL_GNU_CXX:
+  tangle('header ext_hash_set = "#include <ext/hash_set>";')
+  tangle('header ext_hash_map = "#include <ext/hash_map>";')
+  tangle('header ext_slist = "#include <ext/slist>";')
+
+// hash for std::string for use with hash containers
+header ext_string_hash = """
+  namespace __gnu_cxx {
+    template<> struct hash<std::string> { 
+      size_t operator()(std::string const& s)const;
+    };
+  }
+""";
+
+body ext_string_hash = """
+// this is a sick hash .. fix it!
+size_t __gnu_cxx::hash<std::string>::
+  operator()(std::string const& s)const {
+    char const *p = s.data();
+    int n = s.size();
+    int h = 0;
+    for(; n; --n,++p) h+= 5 * *p;
+    return h;
+  }
+""";
+
+@#------------- STL CONTAINERS -----------------------
+@def gen_pcmp(t):
+  tangle('    gen_cmp '+t+';') 
+
+@def gen_peq(t):
+  tangle('    gen_eq '+t+';')
+
+
+@def mkseq(n,ns='std'):
+  c = 'stl_'+n+'[t]'
+  it = 'stl_'+n+'_iterator[t]'
+
+  tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
+  tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
+  tangle('    fun create : int * t -> '+c+'= "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
+  tangle('    fun create[i] : i * i -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
+  gen_pcmp(c)
+  tangle('    fun len: '+c+' -> int = "$1.size()";')
+  tangle('    fun empty: '+c+' -> int = "$1.empty()";')
+
+  tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";');
+
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
+  tangle('    proc erase : '+c+' * '+it+' * '+it+' = "$1.erase($1,$2);";')
+  tangle('    proc clear : '+c+' = "$1.clear();";')
+
+ 
+@def mkrseq(n,ns='std'):
+  mkseq(n,ns)
+  c = 'stl_'+n+'[t]'
+  rit = 'stl_'+n+'_reverse_iterator[t]'
+  tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";');
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+
+
+@def mkinsat(n):
+  c = 'stl_'+n+'[t]'
+  it = 'stl_'+n+'_iterator[t]'
+  tangle('    proc insert: '+c+' * '+it+' *  t  = "$1.insert($2,$3);";')
+
+@def mkpuf(n):
+  c = 'stl_'+n+'[t]'
+  tangle('    proc push_front : '+c+' *  t  = "$1.push_front($2);";')
+
+@def mkpub(n):
+  c = 'stl_'+n+'[t]'
+  tangle('    proc push_back : '+c+' *  t  = "$1.push_back($2);";')
+
+@def mkpof(n):
+  c = 'stl_'+n+'[t]'
+  tangle('    proc pop_front : '+c+' = "$1.pop_back();";')
+
+@def mkpob(n):
+  c = 'stl_'+n+'[t]'
+  tangle('    proc pop_back : '+c+' = "$1.pop_back();";')
+
+@def mkfront(n):
+  c = 'stl_'+n+'[t]'
+  tangle('    fun front : '+c+' -> t = "$1.front()";')
+
+@def mkback(n):
+  c = 'stl_'+n+'[t]'
+  tangle('    fun front : '+c+' -> t = "$1.front()";')
+
+@def mksub(n):
+  c = 'stl_'+n+'[t]'
+  tangle('    fun subscript : lvalue['+c+'] * int -> lvalue[t] = "$1.at($2)";')
+  tangle('    fun subscript : '+c+' * int -> t = "$1.at($2)";')
+
+@def mkset(n,ns='std'):
+  c = 'stl_'+n+'[t]'
+  it = 'stl_'+n+'_iterator[t]'
+  rit = 'stl_'+n+'_reverse_iterator[t]'
+  tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
+  tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";')
+  tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";')
+  tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
+  tangle('    gen_cmpeq '+c+';')
+  tangle('    fun len: '+c+'->int = "$1.size()";')
+  tangle('    fun empty: '+c+'->int = "$1.empty()";')
+  tangle('    gen_cmpeq '+it+';')
+  tangle('    gen_cmpeq '+rit+';')
+
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+
+  tangle('    proc insert : '+c+' * t = "$1.insert($2);";')
+  tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
+  tangle('    proc clear : '+c+' = "$1.clear();";')
+  tangle('    fun find : '+c+' * t ->  '+it+' = "$1.find($2)";')
+  tangle('    fun mem : '+c+' * t -> bool = "$1.find($2) != $1.end()";')
+
+@def mkass(n,ns='std'):
+  c = 'stl_'+n+'[k,v]'
+  it = 'stl_'+n+'_iterator[k,v]'
+  rit = 'stl_'+n+'_reverse_iterator[k,v]'
+  tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1,?2>";')
+  tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1,?2>::iterator";')
+  tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1,?2>::reverse_iterator";')
+
+  tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1,?2>())";')
+  tangle('    gen_cmpeq '+c+';')
+  tangle('    fun len: '+c+'->int = "$1.size()";')
+  tangle('    fun empty: '+c+'->int = "$1.empty()";')
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+  tangle('    proc insert : '+c+' * k * v = "$1.insert(std::make_pair($2,$3));";')
+  tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
+  tangle('    proc clear : '+c+' = "$1.clear();";')
+  tangle('    fun find : '+c+' * k ->  '+it+' = "$1.find($2)";')
+  tangle('    fun mem : '+c+' * k -> bool = "$1.find($2) != $1.end()";')
+   
+  tangle('    fun subscript: '+c+' * k -> lvalue[v] = "$1[$2]";')
+
+module Stl 
+{
+  type pair[k,v] = "std::pair<?1 const,?2>";
+  fun make_pair[k,v]: k * v ->pair[k,v] = "std::make_pair($1,$2)";
+
+  module Vector[t]
+  {
+    requires std_stl_vector;
+@mkrseq('vector')
+@mkinsat('vector')
+@mkpub('vector')
+@mkfront('vector')
+@mkback('vector')
+@mksub('vector')
+    fun add: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1+$2";
+    fun sub: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1-$2";
+    proc pluseq: lvalue[stl_vector_iterator[t]] * int = "$1+=$2;";
+    proc minuseq: lvalue[stl_vector_iterator[t]] * int -> stl_vector_iterator[t] = "$1-=$2;";
+    fun subscript: stl_vector_iterator[t] * int -> lvalue[t] = "$1[$2]";
+  }
+  module List[t]
+  {
+    requires std_stl_list;
+@mkrseq('list')
+@mkinsat('list')
+@mkpuf('list')
+@mkpub('list')
+@mkfront('list')
+@mkback('list')
+@mkpof('list')
+  }
+  module Queue[t]
+  {
+    requires std_stl_queue;
+@mkseq('queue')
+@mkinsat('queue')
+  }
+  module Deque[t]
+  {
+    requires std_stl_deque;
+@mkrseq('deque')
+@mkinsat('deque')
+@mkpuf('deque')
+@mkpub('deque')
+@mkpof('deque')
+@mkfront('deque')
+@mkback('deque')
+@mksub('deque')
+  }
+  module PriorityQueue[t]
+  {
+    requires std_stl_queue;
+@mkseq('priorityqueue')
+  }
+  module Stack[t]
+  {
+    requires std_stl_stack;
+@mkseq('stack')
+  }
+
+  module Set[t]
+  {
+    requires std_stl_set;
+@mkset('set')
+  }
+  module MultiSet[t]
+  {
+    requires std_stl_set;
+@mkset('multiset')
+  }
+  module Map[k,v]
+  {
+    requires std_stl_map;
+@mkass('map')
+  }
+  module MultiMap[k,v]
+  {
+    requires std_stl_map;
+@mkass('multimap')
+  }
+
+@if HAVE_STL_GNU_CXX:
+  tangle('  module Slist[t]')
+  tangle('  {')
+  tangle('    requires ext_slist;')
+  mkseq('slist','__gnu_cxx')
+  mkpuf('slist')
+  mkfront('slist')
+  mkpof('slist')
+  tangle('    proc insert_after : stl_slist[t] * stl_slist_iterator[t] *  t  = "$1.insert_after($2,$3);";')
+  tangle('    proc erase_after : stl_slist[t] * stl_slist_iterator[t] = "$1.erase_after($1);";')
+  tangle('  }')
+
+@if HAVE_STL_GNU_CXX:
+  tangle('// HASHTABLE based containers assume')
+  tangle('// these classes will be added to C++ via TR1 in the future.')
+  tangle('// g++ 3.2.2 at least has these classes')
+  tangle('// The free SGI implementation may suffice as a replacement,')
+  tangle('// this is what my version of g++ uses.')
+  tangle('')
+  tangle('  module HashSet[t]')
+  tangle('  {')
+  tangle('    requires ext_hash_set;')
+  mkset('hash_set','__gnu_cxx')
+  tangle('  }')
+  tangle('  module HashMultiSet[t]')
+  tangle('  {')
+  tangle('    requires ext_hash_set;')
+  mkseq('hash_multiset','__gnu_cxx')
+  tangle('  }')
+  tangle('  module HashMap[k,v]')
+  tangle('  {')
+  tangle('    requires ext_hash_map;')
+  mkass('hash_map','__gnu_cxx')    
+  tangle('  }')
+  tangle('  module HashMultiMap[k,v]')
+  tangle('  {')
+  tangle('    requires ext_hash_map;')
+  mkass('hash_multimap','__gnu_cxx')    
+  tangle('  }')
+}
+
+@def mkfor(it,ts,kv=None):
+  if kv == None: kv = ts
+  tangle('  instance['+ts+'] Eq['+it+'] {')
+  tangle('    fun eq: '+it+' * '+it+' -> bool = "$1==$2";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Tord['+it+'] {')
+  tangle('    fun lt: '+it+' * '+it+' -> bool = "$1<$2";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Iterator['+it+','+kv+'] {')
+  tangle('    fun deref : '+it+' ->  lvalue['+kv+']  = "*(#0*)(void*)&*$1";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Forward['+it+'] {')
+  tangle('    fun succ: '+it+' -> '+it+' = "$1+1";')
+  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
+  tangle('    proc post_incr : lvalue['+it+'] = "++$1;";')
+  tangle('  }')
+
+  tangle('  instance['+ts+'] Forward_iterator['+it+','+kv+'] {}')
+
+@def mkbidir(it,ts,kv=None):
+  if kv == None: kv = ts
+  mkfor(it,ts,kv)
+  tangle('  instance['+ts+'] Bidirectional['+it+'] {')
+  tangle('    fun pred: '+it+' -> '+it+' = "$1-11;";')
+  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
+  tangle('    proc post_decr : lvalue['+it+'] = "--$1;";')
+  tangle('  }')
+  
+  tangle('  instance['+ts+'] Bidirectional_iterator['+it+','+kv+'] {}')
+
+@def tcmkseq(n):
+  c = n+'[v]'
+  it = n+'_iterator[v]'
+  tangle('  instance[v] Eq['+n+'[v]] {')
+  tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
+  tangle('  }')
+
+  tangle('  instance[v] Sequence['+c+','+it+',v] {')
+  tangle('    fun len: '+c+' -> int = "$1.size()";')
+  tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
+  tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
+  tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
+  tangle('  }')
+
+@def tcmkrseq(n):
+  c = n+'[v]'
+  it = n+'_iterator[v]'
+  rit = n+'_reverse_iterator[v]'
+
+  tangle('  instance[v] Reversible_Sequence['+c+','+it+','+rit+',v] {')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.begin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.end()";')
+  tangle('  }')
+
+
+
+// Vector
+@tcmkseq('Stl::Vector::stl_vector')
+@tcmkrseq('Stl::Vector::stl_vector')
+
+// Vector iterator
+@mkbidir('Stl::Vector::stl_vector_iterator[t]','t')
+
+// Vector reverse iterator
+@mkbidir('Stl::Vector::stl_vector_reverse_iterator[t]','t')
+
+// List
+@tcmkseq('Stl::List::stl_list')
+@tcmkrseq('Stl::List::stl_list')
+
+// List iterator
+@mkbidir('Stl::List::stl_list_iterator[t]','t')
+
+// List reverse iterator
+@mkbidir('Stl::List::stl_list_reverse_iterator[t]','t')
+
+// Deque
+@tcmkseq('Stl::Deque::stl_deque')
+@tcmkrseq('Stl::Deque::stl_deque')
+
+// Deque iterator
+@mkbidir('Stl::Deque::stl_deque_iterator[t]','t')
+
+// Deque reverse iterator
+@mkbidir('Stl::Deque::stl_deque_reverse_iterator[t]','t')
+
+// Priority Queue
+@tcmkseq('Stl::PriorityQueue::stl_priorityqueue')
+
+// Stack 
+@tcmkseq('Stl::Stack::stl_stack')
+
+// Set
+@tcmkseq('Stl::Set::stl_set')
+@tcmkrseq('Stl::Set::stl_set')
+
+// Set iterator
+@mkbidir('Stl::Set::stl_set_iterator[t]','t')
+
+// Set reverse iterator
+@mkbidir('Stl::Set::stl_set_reverse_iterator[t]','t')
+
+// MultiSet
+@tcmkseq('Stl::MultiSet::stl_multiset')
+@tcmkrseq('Stl::MultiSet::stl_multiset')
+
+// MultiSet iterator
+@mkbidir('Stl::MultiSet::stl_multiset_iterator[t]','t')
+
+// MultiSet reverse iterator
+@mkbidir('Stl::MultiSet::stl_multiset_reverse_iterator[t]','t')
+
+// Map
+@mkbidir('Stl::Map::stl_map_iterator[k,v]','k,v','k*v')
+@mkbidir('Stl::Map::stl_map_reverse_iterator[k,v]','k,v','k*v')
+
+// MultiMap
+@mkbidir('Stl::MultiMap::stl_multimap_iterator[k,v]','k,v','k*v')
+@mkbidir('Stl::MultiMap::stl_multimap_reverse_iterator[k,v]','k,v','k*v')
+
+@head(1,'Regression tests')
+
+@head(2,"Category Reference",nospawn=1)
+Tests by category keyword.
+@env.emit_katlist()
+
+@env.head(2,'tests')
+
+@env.head(3)
+@t = env.test('.flx')
+@select(t)
+@kat("STL::vector")
+#import <flx.flxh>
+
+include "stl";
+
+open Sequence[
+  Stl::Vector::stl_vector[int], 
+  Stl::Vector::stl_vector_iterator[int],
+  int
+];
+
+var x: Stl::Vector::stl_vector[int];
+
+print$ empty x; endl;
+
+@doc()
+
+@t = env.expect()
+@select(t)
+true
+@doc()
+
+@env.head(3)
+@select(env.test('.flx'))
+@kat("stl:Vector")
+@kat("stl:Map")
+#import <flx.flxh>
+include "stl";
+open Stl;
+open Stl::Vector;
+open Stl::Map;
+open Bidirectional_iterator[Stl::Map::stl_map_iterator[int,int],int*int];
+
+typedef ii = Vector::iterator[int];
+
+var v = Vector::create[int]();
+push_back (v,1);
+push_back (v,2);
+push_back (v,3);
+
+var j = 0; until j==3 do
+  print v.[j]; endl;
+  ++j;
+done;
+
+
+var m = Map::create[int,int]();
+
+insert(m,0,2);
+insert(m,1,23);
+insert(m,2,423);
+
+j = 0; until j==3 do
+  print m.[j]; endl;
+  ++j;
+done;
+
+
+var i = begin m; until i == end m do
+  def val k, val vl = deref i;
+  print k; print " -> "; print vl; endl; ++i;
+done;
+@doc()
+
+@select(env.expect())
+1
+2
+3
+2
+23
+423
+0 -> 2
+1 -> 23
+2 -> 423
+@doc()
+
+
+@head(1, 'Packages')
+@select(tangler('spkgs/flx_stl_tests.py'))
+@tangle("unit_tests = glob.glob('"+env.root+"*.flx')")
+
+pkg_requires = ['flx_stdlib','flx_compiler']
+iscr_source = ['lpsrc/flx_stl.pak']
+
+weaver_directory = 'doc/test/stl'
+@doc()
+
+@env.write_katfile()
+

@@ -5271,60 +5271,6 @@ for_each {i=0;} {i<argc} {++i;}
   print i; print "->"; print (argv i); endl;
 };
 @end_displayed_code()
-@env.head(1,"STL Containers")
-
-@select(env.test('.flx'))
-@kat("stl:Vector")
-@kat("stl:Map")
-#import <flx.flxh>
-include "stl";
-open Stl;
-open Stl::Vector;
-open Stl::Map;
-open Bidirectional_iterator[Stl::Map::stl_map_iterator[int,int],int*int];
-
-typedef ii = Vector::iterator[int];
-
-var v = Vector::create[int]();
-push_back (v,1);
-push_back (v,2);
-push_back (v,3);
-
-var j = 0; until j==3 do
-  print v.[j]; endl;
-  ++j;
-done;
-
-
-var m = Map::create[int,int]();
-
-insert(m,0,2);
-insert(m,1,23);
-insert(m,2,423);
-
-j = 0; until j==3 do
-  print m.[j]; endl;
-  ++j;
-done;
-
-
-var i = begin m; until i == end m do
-  def val k, val vl = deref i;
-  print k; print " -> "; print vl; endl; ++i;
-done;
-@doc()
-
-@select(env.expect())
-1
-2
-3
-2
-23
-423
-0 -> 2
-1 -> 23
-2 -> 423
-@doc()
 
 @env.head(1,"GLR parsing")
 Felix contains a builtin parser generator. This is roughly
