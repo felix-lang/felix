@@ -490,7 +490,7 @@ elif int(string.strip(output[0])) != 0:
 else:
   PTHREAD_MODEL = "Unknown"
 
-print "Pthread model=",PTHREAD_MODEL
+print "Pthread model according to linuxy getconf=",PTHREAD_MODEL
 
 
 @select(tangler("cpkgs/build/interscript.py"))

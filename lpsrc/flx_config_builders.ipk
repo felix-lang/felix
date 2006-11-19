@@ -1995,10 +1995,15 @@ class msvc_mixin:
     self.construct_compiler_commands(shell, get_stdout)
 
 
+  # CHECK_OPTIONS FOR CL.EXE IN CASE YOU WERE WONDERING
+  # RIGHT NOW WE'RE IN THE FILE msvc_mixin.py, SOMETIMES THAT CAN
+  # BE CONFUSING.
   def check_options(self, shell, get_stdout):
     opt = self.options
     COM = opt.COM
 
+    # RF: Does windows have mmap? Let's say no.
+    opt.HAVE_MMAP = 0
     opt.RANLIB = "@rem nothing" # RF: better than none.
     opt.SUPPORT_DYNAMIC_LOADING = 1
     opt.SPEC_COMPILE_OBJ = "/c "
