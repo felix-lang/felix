@@ -188,6 +188,27 @@ typeclass Complex[t] {
   virtual fun arg: t -> t;
 }
 
+typeclass Sequence[c,it,v] {
+  inherit Eq[c];
+  inherit Forward_iterator[it,v];
+  virtual fun len: c -> int;
+  virtual fun empty: c -> bool;
+  virtual gen begin: c -> it;
+  virtual gen end: c -> it;
+  virtual proc erase: lvalue[c] * it;
+  virtual proc erase_between: lvalue[c] * it * it;
+  virtual proc clear: lvalue[c];
+}
+
+typeclass Reversible_Sequence[c,it,rit,v] {
+  inherit Sequence[c,it,v];
+  inherit Bidirectional_iterator[it,v];
+  inherit Bidirectional_iterator[rit,v];
+  virtual gen rbegin: c -> rit;
+  virtual gen rend: c -> rit;
+}
+
+
 @select(tangler('lib/flx_categories.flxh', 'data'))
 macro proc gen_eq(t){
   fun eq: t * t -> bool = "$1==$2" ;
@@ -2855,24 +2876,89 @@ module Stl
   
   tangle('  instance['+ts+'] Bidirectional_iterator['+it+','+kv+'] {}')
 
+@def tcmkseq(n):
+  c = n+'[v]'
+  it = n+'_iterator[v]'
+  tangle('  instance[v] Eq['+n+'[v]] {')
+  tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
+  tangle('  }')
+
+  tangle('  instance[v] Sequence['+c+','+it+',v] {')
+  tangle('    fun len: '+c+' -> int = "$1.size()";')
+  tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
+  tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
+  tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
+  tangle('  }')
+
+@def tcmkrseq(n):
+  c = n+'[v]'
+  it = n+'_iterator[v]'
+  rit = n+'_reverse_iterator[v]'
+
+  tangle('  instance[v] Reversible_Sequence['+c+','+it+','+rit+',v] {')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.begin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.end()";')
+  tangle('  }')
+
+
+
 // Vector
+@tcmkseq('Stl::Vector::stl_vector')
+@tcmkrseq('Stl::Vector::stl_vector')
+
+// Vector iterator
 @mkbidir('Stl::Vector::stl_vector_iterator[t]','t')
+
+// Vector reverse iterator
 @mkbidir('Stl::Vector::stl_vector_reverse_iterator[t]','t')
 
 // List
+@tcmkseq('Stl::List::stl_list')
+@tcmkrseq('Stl::List::stl_list')
+
+// List iterator
 @mkbidir('Stl::List::stl_list_iterator[t]','t')
+
+// List reverse iterator
 @mkbidir('Stl::List::stl_list_reverse_iterator[t]','t')
 
 // Deque
+@tcmkseq('Stl::Deque::stl_deque')
+@tcmkrseq('Stl::Deque::stl_deque')
+
+// Deque iterator
 @mkbidir('Stl::Deque::stl_deque_iterator[t]','t')
+
+// Deque reverse iterator
 @mkbidir('Stl::Deque::stl_deque_reverse_iterator[t]','t')
 
+// Priority Queue
+@tcmkseq('Stl::PriorityQueue::stl_priorityqueue')
+
+// Stack 
+@tcmkseq('Stl::Stack::stl_stack')
+
 // Set
+@tcmkseq('Stl::Set::stl_set')
+@tcmkrseq('Stl::Set::stl_set')
+
+// Set iterator
 @mkbidir('Stl::Set::stl_set_iterator[t]','t')
+
+// Set reverse iterator
 @mkbidir('Stl::Set::stl_set_reverse_iterator[t]','t')
 
 // MultiSet
+@tcmkseq('Stl::MultiSet::stl_multiset')
+@tcmkrseq('Stl::MultiSet::stl_multiset')
+
+// MultiSet iterator
 @mkbidir('Stl::MultiSet::stl_multiset_iterator[t]','t')
+
+// MultiSet reverse iterator
 @mkbidir('Stl::MultiSet::stl_multiset_reverse_iterator[t]','t')
 
 // Map
