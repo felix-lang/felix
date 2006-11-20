@@ -49,15 +49,15 @@ WINDOWS_FAIO_CPPS = [
   "faio/faio_winio",
 ]
 
-@tangle('EXTRA_TEST_GLOBS = glob.glob("'+env_faio.root+'*.flx")')
+@tangle('EXTRA_TEST_GLOBS = glob.glob("'+unix2native(env_faio.root)+'*.flx")')
 
 if WIN32:
   FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
-@tangle('  EXTRA_TEST_GLOBS = glob.glob("'+env_win.root+'*.flx")')
+@tangle('  EXTRA_TEST_GLOBS = glob.glob("'+unix2native(env_win.root)+'*.flx")')
 
 if POSIX:
   FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
-@tangle('  EXTRA_TEST_GLOBS = glob.glob("'+env_posix.root+'*.flx")')
+@tangle('  EXTRA_TEST_GLOBS = glob.glob("'+unix2native(env_posix.root)+'*.flx")')
 
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES

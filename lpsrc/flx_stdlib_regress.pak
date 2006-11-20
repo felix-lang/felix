@@ -7,7 +7,7 @@
   env.kat(get_tangler(),code)
 
 @select(tangler('spkgs/flx_stdlib_regress.py'))
-@tangle("unit_tests = glob.glob('"+env.root+"*.flx')")
+@tangle("unit_tests = glob.glob('"+unix2native(env.root)+"*.flx')")
 pkg_requires = ['flx_stdlib']
 
 iscr_source = ['lpsrc/flx_stdlib_regress.pak']

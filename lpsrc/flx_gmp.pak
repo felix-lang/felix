@@ -27,7 +27,7 @@ except:
 @select(h)
 execfile('cpkgs'+os.sep+'target'+os.sep+'gmpxx.py')
 if HAVE_GMPXX:
-@tangle('  unit_tests = glob.glob("'+env.root+'*.flx")')
+@tangle('  unit_tests = glob.glob("'+unix2native(env.root)+'*.flx")')
 
 iscr_source = ['lpsrc/flx_gmp.pak']
 weaver_directory = 'doc/gmp/'

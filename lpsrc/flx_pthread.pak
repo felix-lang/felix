@@ -87,7 +87,7 @@ if SOLARIS:
   PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
   EXTRA_SYS_LIBS = "-lrt " # man sem_wait
 
-@tangle('completion_tests = glob.glob("'+env.root+'*.flx")')
+@tangle('completion_tests = glob.glob("'+unix2native(env.root)+'*.flx")')
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES

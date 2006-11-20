@@ -3,7 +3,7 @@
 @env = setup_test('test/drivers/drvr-')
 
 @select(tangler('spkgs/flx_test.py'))
-@tangle('TESTS = glob.glob("'+env.root+'*.flx")')
+@tangle('TESTS = glob.glob("'+unix2native(env.root)+'*.flx")')
 
 unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl']
