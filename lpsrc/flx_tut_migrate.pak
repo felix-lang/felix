@@ -4,7 +4,7 @@
 @env = setup_test('tut/migration//mig-')
 
 @select(tangler('spkgs/flx_tut_migrate.py'))
-@tangle('TESTS = glob.glob("'+unix2native(env.root)+'*.flx")')
+@tangle('TESTS = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']

@@ -7,7 +7,7 @@
 
 @select(tangler('spkgs/mmap.py'))
 if HAVE_MMAP:
-@tangle('  unit_tests = glob.glob("'+unix2native(env.root)+'*.flx")')
+@tangle('  unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 iscr_source = ['lpsrc/flx_mmap.pak']
 weaver_directory = 'doc/mmap/'
