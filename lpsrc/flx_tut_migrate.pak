@@ -1,7 +1,7 @@
 @set_title('Felix For C++ Programmers')
 
 @execfile("flxbuild"+os.sep+"iscrutil.py")
-@env = setup_test(os.path.join('tut', 'migration', 'mig-'))
+@env = setup_test('tut/migration//mig-')
 
 @select(tangler('spkgs/flx_tut_migrate.py'))
 @tangle('TESTS = glob.glob("'+env.root+'*.flx")')

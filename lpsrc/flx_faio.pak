@@ -1,9 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env_faio = setup_test(os.path.join('test', 'faio', 'faio-'))
-@env_win = setup_test(os.path.join('test', 'faio', 'win-'))
-@env_posix = setup_test(os.path.join('test', 'faio', 'posix-'))
+@env_faio = setup_test('test/faio/faio-')
+@env_win = setup_test('test/faio/win-')
+@env_posix = setup_test('test/faio/posix-')
 
 @head(1,"Faio")
 Asynch I/O interface pack.

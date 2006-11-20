@@ -3,7 +3,7 @@
 @execfile('config'+os.sep+'config.py')
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('demos', 'sdl', 'sdl-'))
+@env = setup_test('demos/sdl/sdl-')
 
 @head(1,'SDL')
 @head(2,'SDL configuration')

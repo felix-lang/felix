@@ -1,7 +1,7 @@
 @execfile('config/config.py')
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('test', 'tre', 'tre-'))
+@env = setup_test('test/tre/tre-')
 
 @head(1,'tre')
 @h = tangler('spkgs/tre.py')

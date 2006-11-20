@@ -1,7 +1,7 @@
 @set_title('Felix Tutorial: Macros')
 
 @execfile("flxbuild"+os.sep+"iscrutil.py")
-@env = setup_test(os.path.join('tut', 'macros', 'mac-'))
+@env = setup_test('tut/macros/mac-')
 
 @select(tangler('spkgs/flx_tut_macro.py'))
 @tangle('TESTS = glob.glob("'+env.root+'*.flx")')

@@ -2,7 +2,7 @@
 
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('tut', 'embedding', 'bind-'))
+@env = setup_test('tut/embedding/bind-')
 
 @def kat(code):
   env.kat(get_tangler(),code)

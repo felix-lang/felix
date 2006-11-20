@@ -2,7 +2,7 @@
 
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('test', 'stdlib', 'slrt-'))
+@env = setup_test('test/stdlib/slrt-')
 @def kat(code):
   env.kat(get_tangler(),code)
 

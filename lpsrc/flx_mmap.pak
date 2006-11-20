@@ -1,7 +1,7 @@
 @execfile("config"+os.sep+"target_cxx.py")
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('test', 'mmap', 'mmap-'))
+@env = setup_test('test/mmap/mmap-')
 
 @head(1,"Address space management")
 

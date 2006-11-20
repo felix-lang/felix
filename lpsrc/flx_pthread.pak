@@ -1,6 +1,6 @@
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('test', 'pthread', 'pthread-'))
+@env = setup_test('test/pthread/pthread-')
 
 @head(1,'pthread')
 

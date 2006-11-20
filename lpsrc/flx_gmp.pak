@@ -1,6 +1,6 @@
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('test', 'gmp', 'gmp-'))
+@env = setup_test('test/gmp/gmp-')
 
 @head(1,'GNU Multiple Precision library')
 This module provides a wrapper for the Gnu Multiple

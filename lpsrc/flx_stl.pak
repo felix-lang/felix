@@ -5,7 +5,7 @@
 @execfile("config"+os.sep+"config.py")
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env  = setup_test(os.path.join('test', 'regress', 'stl-'))
+@env  = setup_test('test/regress//stl-')
 
 @def kat(code): env.kat(get_tangler(),code)
 

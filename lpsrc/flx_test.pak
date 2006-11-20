@@ -1,6 +1,6 @@
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test(os.path.join('test', 'drivers', 'drvr-'))
+@env = setup_test('test/drivers/drvr-')
 
 @select(tangler('spkgs/flx_test.py'))
 @tangle('TESTS = glob.glob("'+env.root+'*.flx")')
