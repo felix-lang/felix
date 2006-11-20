@@ -9,10 +9,10 @@ class PLUGIN(Plugin):
       os.mkdir('misc')
     except:
       pass
-    vxqt("env PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
-    vxqt('env PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
-    vxqt('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
-    vxqt('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
+    vxqt("python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
+    vxqt('python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
+    vxqt('python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
+    vxqt('python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 
 @head(1,"Felix Grammar")
 @try:
