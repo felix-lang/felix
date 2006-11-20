@@ -2208,7 +2208,7 @@ axiom_check(42,0);
 axiom_check(5,6,7);
 axiom_check(0,-8,9);
 
-@env_rt.head(3)
+@select(env_rt.expect())
 @doc()
 
 @env_rt.head(3)
@@ -2231,8 +2231,9 @@ axiom_check(1.0,-8.0,9.0);
 axiom_check(-1.0,8.0,-9.0);
 axiom_check(-0.1,0.4,0.7);
 
-@env_rt.head(3)
+@select(env_rt.expect())
 @doc()
+
 @env_nd.head(2,"Non deterministic tests")
 
 @env_nd.head(3)

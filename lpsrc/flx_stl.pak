@@ -64,17 +64,17 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
   tangle('    fun create : int * t -> '+c+'= "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
   tangle('    fun create[i] : i * i -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
-  gen_pcmp(c)
-  tangle('    fun len: '+c+' -> int = "$1.size()";')
-  tangle('    fun empty: '+c+' -> int = "$1.empty()";')
+  #gen_pcmp(c)
+  #tangle('    fun len: '+c+' -> int = "$1.size()";')
+  #tangle('    fun empty: '+c+' -> int = "$1.empty()";')
 
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";');
 
-  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
-  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
-  tangle('    proc erase : '+c+' * '+it+' * '+it+' = "$1.erase($1,$2);";')
-  tangle('    proc clear : '+c+' = "$1.clear();";')
+  #tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  #tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  #tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
+  #tangle('    proc erase : '+c+' * '+it+' * '+it+' = "$1.erase($1,$2);";')
+  #tangle('    proc clear : '+c+' = "$1.clear();";')
 
  
 @def mkrseq(n,ns='std'):
@@ -82,8 +82,8 @@ size_t __gnu_cxx::hash<std::string>::
   c = 'stl_'+n+'[t]'
   rit = 'stl_'+n+'_reverse_iterator[t]'
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";');
-  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
-  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+  #tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  #tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
 
 
 @def mkinsat(n):
@@ -128,20 +128,20 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";')
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";')
   tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
-  tangle('    gen_cmpeq '+c+';')
-  tangle('    fun len: '+c+'->int = "$1.size()";')
-  tangle('    fun empty: '+c+'->int = "$1.empty()";')
-  tangle('    gen_cmpeq '+it+';')
-  tangle('    gen_cmpeq '+rit+';')
+  #tangle('    gen_cmpeq '+c+';')
+  #tangle('    fun len: '+c+'->int = "$1.size()";')
+  #tangle('    fun empty: '+c+'->int = "$1.empty()";')
+  #tangle('    gen_cmpeq '+it+';')
+  #tangle('    gen_cmpeq '+rit+';')
 
-  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
-  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
-  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+  #tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  #tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  #tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  #tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
 
   tangle('    proc insert : '+c+' * t = "$1.insert($2);";')
-  tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
-  tangle('    proc clear : '+c+' = "$1.clear();";')
+  #tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
+  #tangle('    proc clear : '+c+' = "$1.clear();";')
   tangle('    fun find : '+c+' * t ->  '+it+' = "$1.find($2)";')
   tangle('    fun mem : '+c+' * t -> bool = "$1.find($2) != $1.end()";')
 
