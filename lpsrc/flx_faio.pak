@@ -2444,7 +2444,7 @@ public:
       
     }
 
-    return false;  // let's not get woken, packet still to come (\?)
+    return false;  // let's not get woken, packet still to come (?)
   }
 
   // this belongs in faio class

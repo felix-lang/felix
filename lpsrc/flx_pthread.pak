@@ -34,6 +34,7 @@ PTHREADRTL_INTERFACES = [
  'pthread/pthread_win_posix_condv_emul.hpp',         # win32 and posix
  'pthread/pthread_mutex.hpp',         # portable
  'pthread/pthread_counter.hpp',       # portable
+ 'pthread/pthread_waitable_bool.hpp', # portable
  'pthread/pthread_condv.hpp',         # portable
  'pthread/pthread_semaphore.hpp',     # portable
  'pthread/pthread_monitor.hpp',       # portable
@@ -46,6 +47,7 @@ PTHREAD_CPPS = [
   "pthread/pthread_mutex", 
   "pthread/pthread_condv",
   "pthread/pthread_counter",
+  "pthread/pthread_waitable_bool",
   "pthread/pthread_semaphore",
   "pthread/pthread_monitor",
   "pthread/pthread_sleep_queue",
@@ -1159,6 +1161,68 @@ monitor_t::dequeue()
 
 }}
 
+@h=tangler('pthread/pthread_waitable_bool.hpp')
+@select(h)
+#ifndef __FLX_PTHREAD_WAIT_BOOL_H__
+#define __FLX_PTHREAD_WAIT_BOOL_H__
+#include <flx_pthread_config.hpp>
+#include "pthread_mutex.hpp"  // mutexes 
+#include "pthread_condv.hpp"  // condition var for same
+
+namespace flx { namespace pthread {
+
+// a waitable boolean.
+class PTHREAD_EXTERN waitable_bool {
+  flx::pthread::flx_mutex_t cv_lock;       // to work with the condition var
+  flx::pthread::flx_condv_t finished_cond; 
+  bool finished;   // might seem redundant, but that's how CVs work.
+public:
+  waitable_bool();
+
+  void wait_until_true();
+  void signal_true();
+};
+
+}} // namespace pthread, flx
+#endif // __FLX_PTHREAD_WAIT_BOOL_H__
+
+@h=tangler('pthread/pthread_waitable_bool.cpp')
+@select(h)
+#include "pthread_waitable_bool.hpp"
+
+namespace flx { namespace pthread {
+
+waitable_bool::waitable_bool()
+  : finished(false)
+{
+  // nothing
+}
+
+// can be called from any thread
+void
+waitable_bool::wait_until_true()
+{
+  flx::pthread::flx_mutex_locker_t    locker(cv_lock);
+
+  // wait for the wakeup to say it's finished
+  while(!finished)
+  {
+    finished_cond.wait(&cv_lock);
+  }
+}
+
+void
+waitable_bool::signal_true()
+{
+  finished = true;
+  finished_cond.signal();
+  // do absolutely NOTHING here as a typical use of this class is to 
+  // wait for a thread exit and then destruct its resources, which could
+  // very well include this object. boom.
+}
+
+} }
+
 @head(1,"Portable Thread safe Queue")
 Both queue and dequeue operations are critical
 sections protected by a mutex.
@@ -1350,7 +1414,7 @@ void worker_fifo::start_worker_thread()
   flx_detached_thread_t().init(thread_start, this);
 }
 
-worker_fifo::worker_fifo(int n, int m) : fifo(n), nthreads(0)
+worker_fifo::worker_fifo(int n, int m) : nthreads(0), fifo(n)
 {
   set_nthreads(m);
 }

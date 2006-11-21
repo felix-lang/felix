@@ -226,7 +226,7 @@ public:
     LPOVERLAPPED olp, int err) = 0;
 
   // start overlapped async operation. returns true if it finished
-  // immediately. in this case there will be no iocp_finished wakeup.
+  // immediately. in this case there will be no iocp_op_finished wakeup.
   // assumes all args ready for call.
   virtual bool start_overlapped() = 0;
 
@@ -807,7 +807,7 @@ posix_timer_queue::thread_loop_body()
     // lock on. lock off when waiting on condition
     flx::pthread::flx_mutex_locker_t    locker(lock);
 
-    int        res;
+    // int        res;
 
     // pthread_cond_wait & pthread_cond_timedwait (& np rel version?) are
     // cancellation points. doco notes for timed & untimed waits that the
@@ -3401,8 +3401,6 @@ int get_socket_error(int s, int* socket_err);
 
 #include <flx_demux_config.hpp>
 #include "demux_demuxer.hpp"  // demuxers
-#include "pthread_mutex.hpp"  // mutexes 
-#include "pthread_condv.hpp"  // condition var for same
 
 #if FLX_WIN32
 #include "demux_wself_piper.hpp" // win32 self piper
@@ -3410,31 +3408,22 @@ int get_socket_error(int s, int* socket_err);
 #include "demux_self_piper.hpp" // posix self piper
 #endif
 
+#include "pthread_waitable_bool.hpp"
+
 namespace flx { namespace demux {
 
-// a waitable boolean. gratuitously tied to demuxer by demux_quit_flag
-// todo: unhook.
-class DEMUX_EXTERN async_bool : public demux_quit_flag {
-  flx::pthread::flx_mutex_t cv_lock;       // to work with the condition var
-  flx::pthread::flx_condv_t finished_cond; 
-  bool finished;   // might seem redundant, but that's how CVs work.
-public:
-  async_bool();
-
-  void wait_until_true();
-  virtual void signal_true();
-};
-
 // quits a demuxer 
-class DEMUX_EXTERN demux_quitter : public demux_callback {
+class DEMUX_EXTERN demux_quitter
+	: public demux_callback, public demux_quit_flag {
   // self pipes for getting demuxer attention
 #if FLX_WIN32
   wself_piper sp;
 #else
   self_piper sp;
 #endif
-  async_bool finished;  // initially false
+  pthread::waitable_bool finished;  // initially false
   void callback(demuxer* demux); // called back by demuxer in event thread.
+  virtual void signal_true(); // signal finish, from demux_quit_flag
 public:
   void quit(demuxer* demux); // blocks until event thread exits
 };
@@ -3450,37 +3439,6 @@ public:
 
 namespace flx { namespace demux {
 
-async_bool::async_bool()
-  : finished(false)
-{
-  // nothing
-}
-
-// called from the non-event-waiting thread.
-void
-async_bool::wait_until_true()
-{
-  flx::pthread::flx_mutex_locker_t    locker(cv_lock);
-
-  // wait for the wakeup to say it's finished
-  while(!finished)
-  {
-    finished_cond.wait(&cv_lock);
-  }
-}
-
-// call this last thing before event thread exit, or more explicitly
-// call it before never touching the given demuxer ever again. see?
-// it is linked to demuxers. a better name for this method would be
-// i_promise_to_never_use_the_associated_object_ever_again_clear_question_mark
-void
-async_bool::signal_true()
-{
-  finished = true;
-  finished_cond.signal();
-  // do absolutely NOTHING here as we may have already been destructed. boom.
-}
-
 // this is called by the demuxer, from its event thread.
 // for this reason it can modify the demuxer with tranquility, asking it
 // to quit, by setting the "quit flag". this is an obj with a virtual 
@@ -3493,7 +3451,19 @@ void
 demux_quitter::callback(demuxer* demux)
 {
   //fprintf(stderr, "quitter callback\n");
-  demux->set_quit_flag(&finished);
+  demux->set_quit_flag(this);
+}
+
+// call this last thing before event thread exit, or more explicitly
+// call it before never touching the given demuxer ever again. see?
+// it is linked to demuxers. a better name for this method would be
+// i_promise_to_never_use_the_associated_object_ever_again_clear_question_mark
+void
+demux_quitter::signal_true() // signal finish, from demux_quit_flag
+{
+  finished.signal_true(); 
+  // do NOTHING here, we've probably already been destructed, mr anderson.
+  // I told you, my name is "neil".
 }
 
 void
