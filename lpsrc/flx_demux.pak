@@ -584,7 +584,7 @@ class DEMUX_EXTERN posix_timer_queue : public timer_queue
 {
     flx::pthread::flx_mutex_t lock; // factor to prio queue?
     flx::pthread::flx_condv_t sleep_cond;
-    flx::pthread::flx_thread_t sleep_thread;
+    flx::pthread::flx_thread_t sleep_thread; // joinable, we join later
     void*        opaque_prio_queue;        // less fat
 
     static void thread_start(void*);    // passed "this"

@@ -154,6 +154,8 @@ typedef HANDLE flx_native_thread_t;
 typedef pthread_t flx_native_thread_t;
 #endif
 
+// a class for threads that can't be joined. upon exit all their resources
+// are freed. they just evaporate. probably the best type of thread.
 class PTHREAD_EXTERN flx_detached_thread_t {
   flx_native_thread_t thr;        ///< the thread
   flx_detached_thread_t(flx_detached_thread_t const&); // uncopyable
@@ -164,6 +166,7 @@ public:
   int init(void (*start)(void*), void* udat);
 };
 
+// rf: joinable threads. is it an error to not join joinable threads?
 class PTHREAD_EXTERN flx_thread_t {
   flx_native_thread_t thr;        ///< the thread
   flx_thread_t(flx_thread_t const&); // uncopyable
