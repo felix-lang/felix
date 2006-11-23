@@ -515,6 +515,9 @@ struct timespec {
   unsigned long tv_nsec;
 };
 
+// RF: unlike real pthread mutexes, windows mutexes are always recursive.
+// that's annoying because I use deadlock as a debugging tool. the upshot
+// is that recursively acquiring a mutex gives undefined results.
 int pthread_mutex_init (pthread_mutex_t *m, const pthread_mutexattr_t*)
 {
   *m = CreateMutex(NULL,FALSE,NULL); 
