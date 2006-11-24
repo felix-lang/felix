@@ -1250,8 +1250,9 @@ function_definition:
   | adjectives fun_kind NAME tvarlist opt_type_expr opt_cstring opt_prec requires_clause SEMI 
     { 
       let sr1,kind = cal_funkind $1 $2 in
-      let name = snd $3 
-      and vs = $4
+      let name = snd $3 in
+      let adjectives = map snd $1 in 
+      let vs = $4
       and t,traint = $5
       and sr = rstoken sr1 $9
       and prec = $7
@@ -1259,12 +1260,9 @@ function_definition:
       in
       let ct =  
         match $6 with 
-        | Some x -> 
-          if kind = `Virtual then 
-            Flx_exceptions.clierr sr "Virtual function can't have body"
-          else x 
+        | Some x -> x 
         | None -> 
-          if kind = `Virtual then `Virtual else
+          if mem `Virtual adjectives then `Virtual else
           `StrTemplate (name ^ "($a)")
       in
       match t with
@@ -1276,8 +1274,14 @@ function_definition:
           | x -> [x]
         in
         let reqs = match kind with 
-          | `Generator -> `RREQ_and (`RREQ_atom (`Property_req "generator"),reqs)
+          | `Generator -> 
+            `RREQ_and (`RREQ_atom (`Property_req "generator"),reqs)
           | _ -> reqs
+        in
+        let reqs = 
+          if mem `Virtual adjectives then
+            `RREQ_and (`RREQ_atom (`Property_req "virtual"),reqs)
+          else reqs
         in
         if List.length args > 0 && list_last args = `TYP_ellipsis 
         then

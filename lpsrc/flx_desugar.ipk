@@ -934,6 +934,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     | "needs_ptf" -> `Requires_ptf
     | "pure" -> `Pure
     | "generator" -> `Generator
+    | "virtual" -> `Virtual
     | x -> clierr sr ("Unknown property " ^ x)
   in
   let mkreqs sr (rqs :raw_req_expr_t) : property_t list * asm_t list * named_req_expr_t =
@@ -968,6 +969,14 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
         `NREQ_atom (`AST_name (sr,n,parent_ts sr))
 
       | `Named_req n -> `NREQ_atom n
+      | `Property_req "generator" -> 
+        props := `Generator :: !props;
+        `NREQ_true
+
+      | `Property_req "virtual" -> 
+        props := `Virtual:: !props;
+        `NREQ_true
+
       | `Property_req s -> 
         props := mkprop sr s :: !props;
         `NREQ_true
@@ -1259,6 +1268,15 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       (rev vs,[])
       args
     in
+    (*
+    if mem `Generator props then
+      print_endline (name' ^ " is a GENERATOR");
+    if mem `Virtual props then
+      print_endline (name' ^ " is property Virtual");
+    if code = `Virtual then
+      print_endline (name' ^ " is pure Virtual");
+    *)
+
     `Dcl (sr,name',None,access,(rev vs,con),
       `DCL_fun (props,rev args,result,code,map_reqs sr reqs,prec))
     :: dcls

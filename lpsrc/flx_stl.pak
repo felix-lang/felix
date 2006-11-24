@@ -443,11 +443,37 @@ var x: Stl::Vector::stl_vector[int];
 
 print$ empty x; endl;
 
+open Stl::Vector;
+push_back  (x,4);
+push_back  (x,5);
+push_back  (x,6);
+
+insert (x,begin x,3);
+insert (x,end x,7);
+insert (x,begin x,2);
+insert (x,begin x,1);
+
+print$ empty x; endl;
+
+var i = begin x;
+whilst i != end x do
+  print$ *i; endl;
+  i++;
+done;
+
 @doc()
 
 @t = env.expect()
 @select(t)
 true
+false
+1
+2
+3
+4
+5
+6
+7
 @doc()
 
 @env.head(3)
