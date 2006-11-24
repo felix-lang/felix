@@ -1477,12 +1477,13 @@ class TestPlugin(Plugin):
       else:
         log = Tee()
         log.write(title % testfile)
-        if stamptime == 0:
-          log.write("+++UNTRIED or FAILED\n")
-        elif not check_stamp:
-          log.write("+++FORCED\n")
-        else:
-          log.write("+++OUT OF DATE, source changed since "+fmtime(stamptime)+"\n")
+        if not quiet:
+          if stamptime == 0:
+            log.write("+++UNTRIED or FAILED\n")
+          elif not check_stamp:
+            log.write("+++FORCED\n")
+          else:
+            log.write("+++OUT OF DATE, source changed since "+fmtime(stamptime)+"\n")
 
         # build the felix code
         try:

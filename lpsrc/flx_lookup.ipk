@@ -1689,11 +1689,7 @@ and bind_type_index syms (rs:recstop)
   print_endline 
   (
     "BINDING INDEX " ^ string_of_int index ^ 
-    " with ["^
-    catmap ", " 
-    (sbt syms.dfns)
-    ts^
-    "]"
+    " with ["^ catmap ", " (sbt syms.dfns) ts^ "]"
   );
   print_endline ("type alias fixlist is " ^ catmap "," 
     (fun (i,j) -> si i ^ "(depth "^si j^")") type_alias_fixlist
@@ -1718,8 +1714,23 @@ and bind_type_index syms (rs:recstop)
   print_endline "bind_type_index";
   *)
   let ts = adjust_ts syms sr index ts in
+  (*
+  print_endline ("Adjusted ts =h ["^ catmap ", " (sbt syms.dfns) ts^ "]");
+  *)
   let bt t =
+      (*
+      print_endline "Making params .. ";
+      *)
+      let vs,_ = find_vs syms index in
+      assert (length vs = length ts);
+      let params = map2 (fun (s,i,_) t -> s,t) vs ts in
+
+      (*
       let params = make_params syms sr index ts in
+      *)
+      (*
+      print_endline ("params made");
+      *)
       let env:env_t = mkenv index in
       let t = 
         bind_type' syms env
