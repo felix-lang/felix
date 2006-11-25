@@ -347,8 +347,8 @@ module Stl
   rit = n+'_reverse_iterator[v]'
 
   tangle('  instance[v] Reversible_Sequence['+c+','+it+','+rit+',v] {')
-  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.begin()";')
-  tangle('    fun rend : '+c+'-> '+rit+'= "$1.end()";')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
   tangle('  }')
 
 
@@ -430,14 +430,15 @@ Tests by category keyword.
 @select(t)
 @kat("STL::vector")
 #import <flx.flxh>
-
 include "stl";
 
-open Sequence[
+open Reversible_Sequence[
   Stl::Vector::stl_vector[int], 
   Stl::Vector::stl_vector_iterator[int],
+  Stl::Vector::stl_vector_reverse_iterator[int],
   int
 ];
+
 
 var x: Stl::Vector::stl_vector[int];
 
@@ -455,18 +456,70 @@ insert (x,begin x,1);
 
 print$ empty x; endl;
 
-var i = begin x;
-whilst i != end x do
-  print$ *i; endl;
-  i++;
-done;
+proc check[c,it,rit with Reversible_Sequence[c,it,rit,int]]
+{
+  // forward iterator: forwards
+  var i = begin x;
+  whilst i != end x do
+    print$ *i; endl;
+    i++;
+  done;
 
+  // forward iterator: backwards
+  i = end x;
+  whilst i != begin x do
+    i--;
+    print$ *i; endl;
+  done;
+
+  // reverse iterator: forwards
+  var j = rbegin x;
+  whilst j != rend x do
+    print$ *j; endl;
+    j++;
+  done;
+
+  // reverse iterator: backwards 
+  j = rend x;
+  whilst j != rbegin x do
+    j--;
+    print$ *j; endl;
+  done;
+}
+
+check [
+  Stl::Vector::stl_vector[int], 
+  Stl::Vector::stl_vector_iterator[int],
+  Stl::Vector::stl_vector_reverse_iterator[int],
+  int
+]();
 @doc()
 
 @t = env.expect()
 @select(t)
 true
 false
+1
+2
+3
+4
+5
+6
+7
+7
+6
+5
+4
+3
+2
+1
+7
+6
+5
+4
+3
+2
+1
 1
 2
 3
