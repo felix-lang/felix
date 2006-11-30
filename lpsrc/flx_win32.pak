@@ -24,6 +24,11 @@ python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_config.pak
 python script\make_config.py --build=win32 --host=win64 --target=win64
 python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_maker.pak
 
+@select(tangler("vista64config.bat","data"))
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_config.pak
+python script\make_config.py --build=win64 --host=win64 --target=win64
+python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_maker.pak
+
 @select(tangler("make.bat","data"))
 python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
 @select(tangler("iscr.bat","data"))
