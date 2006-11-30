@@ -1846,6 +1846,8 @@ let rec reduce_type t =
      `BTYP_variant ts
     end
   | `BTYP_tuple ts -> typeoflist ts
+  | `BTYP_array (t',`BTYP_unitsum 0) -> `BTYP_tuple []
+  | `BTYP_array (t',`BTYP_unitsum 1) -> t' 
   | t -> t
 
 @head(1,'Routines to extract source reference from terms')
