@@ -145,18 +145,15 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     rr ps; rr ret; rnr (`BTYP_function (ps,ret))
 
   | `BTYP_cfunction (ps,ret) -> rr ps; rr ret; rnr t
-  | `BTYP_array (ps,ret) -> 
-    rr ps; rr ret; rnr t
-    (*
-    ;
-    begin match ret with
-    | `BTYP_unitsum k ->
-      let tt = `BTYP_tuple (map (fun _ -> ps) (nlist k)) in
-      rnr tt
 
-    | _ -> clierr sr "Array of non-integer not supported"
+  | `BTYP_array (ps,ret) -> 
+    begin match ret with
+    | `BTYP_unitsum 0 | `BTYP_void -> syserr sr "Unexpected array length 0"
+    | `BTYP_unitsum 1 | `BTYP_tuple [] -> syserr sr "Unexpected array length 1"
+    | `BTYP_unitsum _ ->
+      rr ps; rr ret; rnr t
+    | _ -> syserr sr "Array bound must be unitsum"
     end
-    *)
 
   | `BTYP_tuple ps -> iter rr ps; rnr t
 

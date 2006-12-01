@@ -2135,8 +2135,6 @@ open module Array
   typedef array[t,n] = t ^ n;
 
   publish "Array constructors"
-  fun _ctor_array[T] () = { val x:array[T,0]; return x; }
-  fun _ctor_array[T] (x:T) = { var y:array[T, 1]; y.[0] = x; return y; }
   fun _ctor_array[T,N] (x:array[T,N]) => x;
 
   publish "Array access: works on LHS of assignment too"

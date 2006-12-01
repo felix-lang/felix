@@ -431,6 +431,7 @@ let gen_type syms bbdfns (index,typ) =
     let name = tn typ in
     let v = tn v in
     let n = int_of_unitsum i in
+    if n < 2 then failwith "[flx_tgen] unexpected array length < 2";
     descr ^
     "struct " ^ name ^ " {\n" ^
     "  static size_t const len = " ^ si n ^ ";\n" ^
