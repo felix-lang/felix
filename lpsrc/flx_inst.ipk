@@ -376,6 +376,13 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
+    if mem `Cfun props then
+      iter (fun {pindex=i; ptyp=t} -> 
+        ui i; 
+        rtr (varmap_subst hvarmap t)
+      ) 
+      ps
+    ;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
  
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
@@ -383,6 +390,13 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
+    if mem `Cfun props then
+      iter (fun {pindex=i; ptyp=t} -> 
+        ui i; 
+        rtr (varmap_subst hvarmap t)
+      ) 
+      ps
+    ;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
 
   | `BBDCL_class (props,vs) ->
