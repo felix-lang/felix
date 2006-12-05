@@ -4034,7 +4034,7 @@ proc rotate()
 }
 
 var f_texture : uint ^ 1; /* Storage For One Texture ( NEW ) */
-var texture : ptr[uint] = carray_of f_texture;
+var texture : carray[uint] = carray f_texture;
 
 
 /* Here goes our drawing code */
@@ -4542,13 +4542,13 @@ proc initGL()
   glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
 
   /* Setup The Ambient Light */
-  glLightfv( GL_LIGHT1, GL_AMBIENT, enconst (carray_of LightAmbient) );
+  glLightfv( GL_LIGHT1, GL_AMBIENT, enconst (carray LightAmbient) );
 
   /* Setup The Diffuse Light */
-  glLightfv( GL_LIGHT1, GL_DIFFUSE, enconst (carray_of LightDiffuse) );
+  glLightfv( GL_LIGHT1, GL_DIFFUSE, enconst (carray LightDiffuse) );
 
   /* Position The Light */
-  glLightfv( GL_LIGHT1, GL_POSITION, enconst (carray_of LightPosition) );
+  glLightfv( GL_LIGHT1, GL_POSITION, enconst (carray LightPosition) );
 
   /* Enable Light One */
   glEnable( GL_LIGHT1 );
@@ -4594,7 +4594,7 @@ var LightPosition = 0.0f, 0.0f, 2.0f, 1.0f;
 var filter = 0;
 
 var f_texture : uint ^ 3; /* Storage For 3 Textures ( NEW ) */
-var texture : ptr[uint] = carray_of f_texture;
+var texture : carray[uint] = carray f_texture;
 
 
 /* Here goes our drawing code */
@@ -5203,7 +5203,7 @@ proc rotate()
 var filter = 0;
 
 var f_texture : uint ^ 3; /* Storage For 3 Textures ( NEW ) */
-var texture : ptr[uint] = carray_of f_texture;
+var texture : carray[uint] = carray f_texture;
 
 
 /* Here goes our drawing code */
