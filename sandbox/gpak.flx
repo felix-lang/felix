@@ -1,5 +1,5 @@
 // run with
-// flx `pkg-config --cflags --libs gtk+-2.0` gpak
+// flx `pkg-config --cflags --libs gtk+-2.0 gthread-2.0` gpak
 
 #import <flx.flxh>
 include "pthread";
@@ -31,7 +31,6 @@ gen glob (pat:string): stl_vector[string] =
   var files: stl_vector[string];
   whilst not isNULL(pfile) do
     var file = str(pfile);
-    print file;
     push_back (files, file);
     p++;
     pfile = *p;
@@ -62,15 +61,23 @@ const TRUE : bool = "TRUE";
 type GtkWidget = "GtkWidget*";
 type GtkContainer = "GtkContainer*";
 type GtkBox = "GtkBox*";
+type GtkButton = "GtkButton*";
 type GtkTable= "GtkTable*";
 type GtkAdjustment = "GtkAdjustment*";
 type GtkObject = "GtkObject*";
 
 fun GTK_CONTAINER[t]: t -> GtkContainer = "GTK_CONTAINER($1)";
 fun GTK_BOX[t]: t -> GtkBox = "GTK_BOX($1)";
+fun GTK_BUTTON[t]: t -> GtkButton = "GTK_BUTTON($1)";
 fun GTK_TABLE[t]: t -> GtkTable = "GTK_TABLE($1)";
 fun GTK_ADJUSTMENT[t]: t -> GtkAdjustment = "GTK_ADJUSTMENT($1)";
 
+proc gtk_widget_destroy: GtkWidget;
+
+proc g_thread_init: 1 = 'g_thread_init(NULL);';
+proc gdk_threads_init: 1 = 'gdk_threads_init();';
+proc gdk_threads_enter: 1 = 'gdk_threads_enter();';
+proc gdk_threads_leave: 1 = 'gdk_threads_leave();';
 proc gtk_init: 1 = 'gtk_init(NULL,NULL);';
 proc gtk_widget_show : GtkWidget = 'gtk_widget_show($1);';
 proc gtk_main: 1 = 'gtk_main();';
@@ -111,10 +118,12 @@ gen gtk_button_new_with_label: string -> GtkWidget=
 fun gtk_adjustment_get_value: GtkAdjustment -> double;
 
 proc gtk_container_add: GtkContainer * GtkWidget;
+proc gtk_container_remove: GtkContainer * GtkWidget;
 proc gtk_box_pack_start: GtkBox * GtkWidget * bool * bool * int;
 proc gtk_table_attach_defaults: GtkTable * GtkWidget * int * int * int * int;
+proc gtk_button_set_alignment: GtkButton * double *double;
 
-const gtk_widget_destroy: GCallback;
+const gtk_widget_destroy_fun: GCallback = "G_CALLBACK(gtk_widget_destroy)";
 
 //-------------------------------------------------------
 
@@ -150,6 +159,8 @@ cproc hello( widget: GtkWidget, data : gpointer)
 }
 
 
+g_thread_init();
+gdk_threads_init();
 gtk_init();
 val window = gtk_window_new();
 
@@ -163,14 +174,13 @@ g_signal_connect (G_OBJECT (button), c"clicked", G_CALLBACK (the hello), GNULL);
 /* This will cause the window to be destroyed by calling
 * gtk_widget_destroy(window) when "clicked".  Again, the destroy
 * signal could come from here, or the window manager. */
-g_signal_connect_swapped (G_OBJECT (button), c"clicked", G_CALLBACK (gtk_widget_destroy), G_OBJECT (window));
+g_signal_connect_swapped (G_OBJECT (button), c"clicked", gtk_widget_destroy_fun, G_OBJECT (window));
 
 var topbox = gtk_vbox_new(false,4); // top level vbox
 var stabbox = gtk_hbox_new(false,4); // scrolled table
 var tabbox = gtk_vbox_new(false,4); // table
 
 // make the table
-var table = gtk_table_new(20,2,true);
 var files = glob("lpsrc/*.pak");
 
 open Reversible_Sequence[
@@ -181,37 +191,51 @@ open Reversible_Sequence[
 ];
 
 
-var i = 1;
 var nfiles = 0;
 var first = 0;
 var depth = 20;
-var p = begin files; whilst p != end files do
-  var file = *p;
-  print file; endl;
-  if i >= first and i < first+depth do
-    var buttonx = gtk_button_new_with_label(file);
-    gtk_table_attach_defaults(GTK_TABLE(table),buttonx,0,1,i-1,i);
-    gtk_widget_show(buttonx);
+
+var initial = true;
+var table : GtkWidget;
+
+proc display_files() {
+  var i = 1;
+  nfiles = 0;
+  if not initial do
+    //gtk_container_remove(GTK_CONTAINER(tabbox),table);
+    gtk_widget_destroy(table);
   done;
-  ++p;
-  ++i;
-  ++nfiles;
-done;    
+  initial = false;
+  table = gtk_table_new(20,2,true);
+
+  var p = begin files; whilst p != end files do
+    var file = *p;
+    if i >= first and i < first+depth do
+      var buttonx = gtk_button_new_with_label(file);
+      gtk_button_set_alignment(GTK_BUTTON(buttonx),0.0,0.7);
+      gtk_table_attach_defaults(GTK_TABLE(table),buttonx,0,1,i-first,i-first+1);
+      gtk_widget_show(buttonx);
+    done;
+    ++p;
+    ++i;
+    ++nfiles;
+  done;    
+  // the table
+  gtk_box_pack_start(GTK_BOX(tabbox),table,false,false,1);
+  gtk_widget_show(table);
+}
+
+display_files;
 
 // scroll bar for the table
 var adj = gtk_adjustment_new(0.0,0.0,double(nfiles),1.0,5.0,20.0);
 var bar = gtk_vscrollbar_new(GTK_ADJUSTMENT(adj));
 
-/*
-cproc set_scroll( widget : GtkWidget, data : gpointer ) 
-{
-  g_print ("Scrollbar moved\n");
-}
-*/
-
 proc pslider () {
   val pos = gtk_adjustment_get_value$ GTK_ADJUSTMENT(adj);
-  g_print$ f"Pos = %2.2f\n" pos;
+  //g_print$ f"Pos = %2.2f\n" pos;
+  first = int(pos);
+  display_files();
 }
 
 signal_connect(G_OBJECT(adj),c"value_changed",the pslider);
@@ -219,10 +243,6 @@ signal_connect(G_OBJECT(adj),c"value_changed",the pslider);
 // top button
 gtk_box_pack_start(GTK_BOX(topbox),button,false,false,1);
 gtk_widget_show(button);
-
-// the table
-gtk_box_pack_start(GTK_BOX(tabbox),table,false,false,1);
-gtk_widget_show(table);
 
 // scrolled table
 gtk_box_pack_start(GTK_BOX(stabbox),tabbox,false,false,1);
@@ -237,7 +257,11 @@ gtk_container_add(GTK_CONTAINER(window),topbox);
 gtk_widget_show(topbox);
 gtk_widget_show(window);
 
-spawn_pthread { gtk_main(); };
+spawn_pthread { 
+  gdk_threads_enter();
+  gtk_main(); 
+  gdk_threads_leave();
+};
 
 print "GTK is running now!"; endl;
 
