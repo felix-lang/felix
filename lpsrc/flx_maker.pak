@@ -3255,7 +3255,8 @@ FELIX=1
 LINKER_SWITCHES=""
 MACROS=""
 grab=1
-
+cpps=""
+cppos=""
 INCLUDE_DIRS=""
 
 while (( "$grab" == "1" ));
@@ -3379,6 +3380,57 @@ do
    shift
   ;;
 
+  x*.cpp)
+    cpps="$cpps $1"
+    cppos="$cppos `dirname $1`/`basename $1 .cpp`$EXT_OBJ"
+    shift
+  ;;
+
+  x*.cxx)
+    cpps="$cpps $1"
+    cppos="$cppos `dirname $1`/`basename $1 .cxx`$EXT_OBJ"
+    shift
+  ;;
+
+  x*.c)
+    cpps="$cpps $1"
+    cppos="$cppos `dirname $1`/`basename $1 .c`$EXT_OBJ"
+    shift
+  ;;
+
+  x*.o)
+    cppos="$cppos `dirname $1`/`basename $1 .o`$EXT_OBJ"
+    shift
+  ;;
+
+  x*.obj)
+    cppos="$cppos `dirname $1`/`basename $1 .obj`$EXT_OBJ"
+    shift
+  ;;
+
+  x*.a)
+    cppos="$cppos $1"
+    shift
+  ;;
+
+  x*.lib)
+    cppos="$cppos $1"
+    shift
+  ;;
+
+  x--pkg=*)
+    pkgs=" `echo \"$1\" | sed 's/--pkg=\(.*\)/\\1/'`"
+    shift
+  ;;
+
+# unknown flag .. pass to both compile and link
+   x-*)
+      cpps="$cpps $1"
+      cppos="$cppos $1"
+      shift
+    ;;
+
+# the main filename -- subsequent args are args to flx_run
   x*)
     grab=0
   ;;
@@ -3427,72 +3479,9 @@ else
   EXT_OBJ=$EXT_STATIC_OBJ
 fi
 
-cpps=""
-cppos=""
-grab=1
-kgs=""
-while (( "$grab" == "1" ));
-do
-  case "$1" in
-    *.cpp)
-      cpps="$cpps $1"
-      cppos="$cppos `dirname $1`/`basename $1 .cpp`$EXT_OBJ"
-      shift
-    ;;
-
-    *.cxx)
-      cpps="$cpps $1"
-      cppos="$cppos `dirname $1`/`basename $1 .cxx`$EXT_OBJ"
-      shift
-    ;;
-
-    *.c)
-      cpps="$cpps $1"
-      cppos="$cppos `dirname $1`/`basename $1 .c`$EXT_OBJ"
-      shift
-    ;;
-
-    *.o)
-      cppos="$cppos `dirname $1`/`basename $1 .o`$EXT_OBJ"
-      shift
-    ;;
-
-    *.obj)
-      cppos="$cppos `dirname $1`/`basename $1 .obj`$EXT_OBJ"
-      shift
-    ;;
-
-    *.a)
-      cppos="$cppos $1"
-      shift
-    ;;
-
-    *.lib)
-      cppos="$cppos $1"
-      shift
-    ;;
-
-    --pkg=*)
-      pkgs=" `echo \"$1\" | sed 's/--pkg=\(.*\)/\\1/'`"
-      shift
-    ;;
-
-# unknown flag .. pass to both compile and link
-    -*)
-      cpps="$cpps $1"
-      cppos="$cppos $1"
-      shift
-    ;;
-
-    *)
-      grab=0
-    ;;
-  esac
-done
-
 if [ "x$1" = "x" ]
 then
-  echo "usage: flx filename"
+  echo "usage: flx [options] filename"
   exit 1
 fi
 
@@ -3682,8 +3671,7 @@ then
   then
     calpackages
     CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    #LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING $LINKER_SWITCHES"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING "
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
@@ -3715,7 +3703,6 @@ else
   then
     calpackages
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    #LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING $PTHREAD_SWITCH"
     LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
