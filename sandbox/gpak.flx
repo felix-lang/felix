@@ -11,6 +11,7 @@ open C_hack;
 
 proc post_incr[t]: lvalue[ptr[t]] = "$1++;";
 
+// glob
 header '#include <glob.h>';
 cstruct glob_t {
   gl_pathc: size;
@@ -39,6 +40,81 @@ gen glob (pat:string): stl_vector[string] =
   return files;
 }
 
+// stat
+
+header "#include <sys/types.h>";
+header "#include <sys/stat.h>";
+header "#include <unistd.h>";
+
+type time_t = "time_t";
+const eternity : time_t = "(time_t)-1";
+const creation : time_t = "(time_t)0";
+fun _ctor_int : time_t -> int = "(int)$1";
+
+instance Eq[time_t] {
+  fun eq: time_t * time_t -> bool = "$1==$2";
+}
+
+
+instance Tord[time_t] {
+  fun native_less: time_t * time_t -> bool = "$1<$2";
+  fun lt[with Eq[time_t]] (a: time_t, b:time_t):bool=>
+    if a == eternity then false
+    elif b == eternity then true
+    else native_less (a,b)
+    endif
+  ;
+}
+
+open Tord[time_t];
+
+type stat_t = "struct stat";
+gen stat: string * ptr[stat_t] -> bool = "(stat($1.data(),$2)==0)";
+fun modtime: ptr[stat_t] -> time_t = "$1->st_mtime";
+gen filetime( f:string ) : time_t =
+{
+  var s: stat_t;
+  return
+    if stat (f, addr s) then
+      modtime (addr s)
+    else
+      eternity
+    endif
+  ;
+}
+
+open Text_file;
+
+gen get_manifest(pak:string): stl_vector[string] =
+{
+  var v : stl_vector[string];
+  fn := "manifests/"+pak+".deps";
+  //print$ "fn = " + fn; endl;
+  f := fopen_input fn;
+  if valid f do
+    var line = strip$ readln f;
+    //print line; endl;
+    whilst line != "" do
+      push_back (v,line);
+      line = strip$ readln f;
+    done;
+  done;
+  return v;
+}
+
+gen maxtime (v: stl_vector[string]): time_t =
+{
+  var p = begin v; e := end v;
+  var t = creation;
+  whilst p != e do
+     fn := *p;
+     tf := filetime fn;
+     //print "Filetime '"; print fn; print "' "; print$ int tf; endl;
+     t = max (t,tf);
+     ++p;
+  done;
+  return t;
+}
 
 header '#include <gtk/gtk.h>';
 header '#include <glib.h>';
@@ -58,6 +134,7 @@ type GdkEvent = "GdkEvent*";
 const TRUE : bool = "TRUE";
 
 // GTK
+type GtkWindow = "GtkWindow*";
 type GtkWidget = "GtkWidget*";
 type GtkContainer = "GtkContainer*";
 type GtkBox = "GtkBox*";
@@ -65,8 +142,11 @@ type GtkButton = "GtkButton*";
 type GtkTable= "GtkTable*";
 type GtkAdjustment = "GtkAdjustment*";
 type GtkObject = "GtkObject*";
+type GtkNotebook = "GtkNotebook*";
 
+fun GTK_WINDOW[t]: t -> GtkWindow = "GTK_WINDOW($1)";
 fun GTK_CONTAINER[t]: t -> GtkContainer = "GTK_CONTAINER($1)";
+fun GTK_NOTEBOOK[t]: t -> GtkNotebook = "GTK_NOTEBOOK($1)";
 fun GTK_BOX[t]: t -> GtkBox = "GTK_BOX($1)";
 fun GTK_BUTTON[t]: t -> GtkButton = "GTK_BUTTON($1)";
 fun GTK_TABLE[t]: t -> GtkTable = "GTK_TABLE($1)";
@@ -102,7 +182,7 @@ proc g_signal_connect_swapped: GObject * charp * GCallback * GObject;
 
 proc gtk_container_set_border_width  : GtkContainer * int;
 
-// Widgets
+// Widget constructors
 gen gtk_window_new: 1 -> GtkWidget ="gtk_window_new (GTK_WINDOW_TOPLEVEL)";
 gen gtk_table_new: int * int * bool -> GtkWidget;
 gen gtk_hbox_new: bool * int -> GtkWidget;
@@ -110,11 +190,14 @@ gen gtk_vbox_new: bool * int -> GtkWidget;
 gen gtk_adjustment_new: double ^ 6 -> GtkObject;
 gen gtk_vscrollbar_new: GtkAdjustment -> GtkWidget;
 gen gtk_hscrollbar_new: GtkAdjustment -> GtkWidget;
+gen gtk_notebook_new: 1 -> GtkWidget;
+gen gtk_label_new: string -> GtkWidget = "gtk_label_new($1.data())";
 
 gen gtk_button_new_with_label: string -> GtkWidget= 
   "gtk_button_new_with_label($1.data())"
 ;
 
+// operators
 fun gtk_adjustment_get_value: GtkAdjustment -> double;
 
 proc gtk_container_add: GtkContainer * GtkWidget;
@@ -122,6 +205,8 @@ proc gtk_container_remove: GtkContainer * GtkWidget;
 proc gtk_box_pack_start: GtkBox * GtkWidget * bool * bool * int;
 proc gtk_table_attach_defaults: GtkTable * GtkWidget * int * int * int * int;
 proc gtk_button_set_alignment: GtkButton * double *double;
+proc gtk_notebook_append_page: GtkNotebook * GtkWidget * GtkWidget;
+proc gtk_window_set_title: GtkWindow * string = "gtk_window_set_title($1,$2.data());";
 
 const gtk_widget_destroy_fun: GCallback = "G_CALLBACK(gtk_widget_destroy)";
 
@@ -163,12 +248,13 @@ g_thread_init();
 gdk_threads_init();
 gtk_init();
 val window = gtk_window_new();
+gtk_window_set_title(GTK_WINDOW(window),"Felix Build Tool");
 
 g_signal_connect (G_OBJECT(window), c"delete_event",G_CALLBACK(the delete_event), GNULL);
 g_signal_connect (G_OBJECT(window), c"destroy",G_CALLBACK(the destroy), GNULL);
 
 gtk_container_set_border_width (GTK_CONTAINER (window), 10);
-var button = gtk_button_new_with_label ("Hello World");
+var button = gtk_button_new_with_label ("QUIT");
 g_signal_connect (G_OBJECT (button), c"clicked", G_CALLBACK (the hello), GNULL);
 
 /* This will cause the window to be destroyed by calling
@@ -177,6 +263,7 @@ g_signal_connect (G_OBJECT (button), c"clicked", G_CALLBACK (the hello), GNULL);
 g_signal_connect_swapped (G_OBJECT (button), c"clicked", gtk_widget_destroy_fun, G_OBJECT (window));
 
 var topbox = gtk_vbox_new(false,4); // top level vbox
+var notebook = gtk_notebook_new();
 var stabbox = gtk_hbox_new(false,4); // scrolled table
 var tabbox = gtk_vbox_new(false,4); // table
 
@@ -189,6 +276,21 @@ open Reversible_Sequence[
   Stl::Vector::stl_vector_reverse_iterator[string],
   string 
 ];
+
+// for a pak, the file manifests/pakname.deps records
+// all the files on which the pak depends.
+// The file manifests/pakname.log is a log of extraction
+// and so records the extract date.
+//
+// If a pak file has no correpsonding manifest the button
+// is coloured RED to indicate a manifest building extract
+// is required. Ditto if there is no log file.
+//
+// Otherwise, if there is a log file is newer than
+// all the dependencies, the button is coloured GREEN
+// otherwise it is coloured yellow to indicate an 
+// extract is required. For this purpose a missing dependency
+// is considered very new, that is, it has 'maxtime' value.
 
 
 var nfiles = 0;
@@ -206,15 +308,30 @@ proc display_files() {
     gtk_widget_destroy(table);
   done;
   initial = false;
-  table = gtk_table_new(20,2,true);
+  table = gtk_table_new(20,2,false);
 
   var p = begin files; whilst p != end files do
     var file = *p;
+    pak := file.[6 to -4];
     if i >= first and i < first+depth do
-      var buttonx = gtk_button_new_with_label(file);
+      deps := get_manifest pak;
+      change_time := maxtime deps;
+      log_time := filetime$ "manifests/" + pak + ".log";
+      //print$ f"%s %d Deps, change time %d, log time %d\n"$ cstr pak, len deps, int(change_time), int(log_time);
+      var buttonx = gtk_button_new_with_label(pak);
+      descr := 
+        if change_time > log_time then "CHANGED" 
+        elif log_time == eternity then "NOT EXTRACTED"
+        else "UP TO DATE"
+        endif
+      ;
+      var buttonx2 = gtk_button_new_with_label(descr);
       gtk_button_set_alignment(GTK_BUTTON(buttonx),0.0,0.7);
+      gtk_button_set_alignment(GTK_BUTTON(buttonx2),0.0,0.7);
       gtk_table_attach_defaults(GTK_TABLE(table),buttonx,0,1,i-first,i-first+1);
+      gtk_table_attach_defaults(GTK_TABLE(table),buttonx2,1,2,i-first,i-first+1);
       gtk_widget_show(buttonx);
+      gtk_widget_show(buttonx2);
     done;
     ++p;
     ++i;
@@ -250,7 +367,26 @@ gtk_widget_show(tabbox);
 gtk_box_pack_start(GTK_BOX(stabbox),bar,false,false,1);
 gtk_widget_show(bar);
 gtk_widget_show(stabbox);
-gtk_box_pack_start(GTK_BOX(topbox),stabbox,false,false,1);
+
+var tablabel = gtk_label_new("Paks");
+gtk_widget_show(tablabel);
+gtk_notebook_append_page(GTK_NOTEBOOK(notebook),stabbox,tablabel);
+
+tablabel = gtk_label_new("spkgs");
+gtk_widget_show(tablabel);
+var unimp = gtk_label_new("not implemented");
+gtk_widget_show(unimp);
+gtk_notebook_append_page(GTK_NOTEBOOK(notebook),unimp,tablabel);
+
+unimp = gtk_label_new("not implemented");
+gtk_widget_show(unimp);
+tablabel = gtk_label_new("cpkgs");
+gtk_widget_show(tablabel);
+gtk_notebook_append_page(GTK_NOTEBOOK(notebook),unimp,tablabel);
+
+gtk_widget_show(notebook);
+
+gtk_box_pack_start(GTK_BOX(topbox),notebook,false,false,1);
 
 // the client area
 gtk_container_add(GTK_CONTAINER(window),topbox);

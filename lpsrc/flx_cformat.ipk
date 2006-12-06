@@ -79,9 +79,9 @@ let fmts = [
 
   ("c","int");
 
-  ("s","C_hack::charp");
-  ("p","C_hack::address");
-  ("P","C_hack::address");
+  ("s","charp");
+  ("p","address");
+  ("P","address");
 ]
 
 
