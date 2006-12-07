@@ -147,6 +147,7 @@ red := GdkColor(bright,dark,dark);
 green:= GdkColor(dark,bright,dark);
 blue := GdkColor(dark,dark,bright);
 
+
 fun mul (a: GdkColor, x: double) =>
   GdkColor(
     int(double(a.red) * x), 
