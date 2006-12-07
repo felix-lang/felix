@@ -1574,7 +1574,7 @@ open module String
   proc reserve: lvalue[string] * int = "$1.reserve($2);";
 
   publish "Unsafe extract buffer pointer"
-  fun cstr: string -> C_hack::ptr[char] = "$1.data()";
+  fun cstr: string -> C_hack::cptr[char] = "$1.data()";
 
   fun vsprintf[t]: C_hack::ptr[char] * t -> string = 
     "flx::rtl::strutil::flx_asprintf($1,$T2)" requires flx_strutil
@@ -2283,22 +2283,10 @@ publish "Bounded Variable length arrays"
 open module Varray
 {
    _gc_pointer _gc_type t type varray[t] = "?1*";
-
-   fun mk_array[t]: size -> varray[t] = "new(*PTF gc,@?1,(unsigned long)$1) ?1[$1]";
-
+   fun mkv[t]: int -> varray[t] = "new(*PTF gc,@?1,(unsigned long)$1) ?1[$1]";
+   fun subscript[t]: varray[t] * int -> lvalue[t] = "$1[$2]";
    fun len[t]: varray[t] -> size = "flx::gc::generic::get_count($1)";
 
-   private // unsafe!
-   proc set_length[t]: size * varray[t] = 
-     """
-     { 
-       unsigned long newcount = $1;
-       unsigned long oldcount = flx::gc::generic::get_count($2);
-       flx::gc::generic::reset_count(newcount,$2);
-       while(oldcount < newcount) ::new($2+oldcount++) ?1;
-       while(oldcount > newcount) ($2+oldcount--)->~?1;
-     }
-     """;
 }
 
 module Avl

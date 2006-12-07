@@ -132,6 +132,40 @@ proc g_print: string = "g_print($1.data());";
 // GDK
 type GdkEvent = "GdkEvent*";
 const TRUE : bool = "TRUE";
+cstruct GdkColor {
+  red: int;
+  green: int;
+  blue: int;
+};
+
+bright := 65535;
+dark := 0;
+
+black := GdkColor(dark,dark,dark);
+white := GdkColor(bright,bright,bright);
+red := GdkColor(bright,dark,dark);
+green:= GdkColor(dark,bright,dark);
+blue := GdkColor(dark,dark,bright);
+
+fun mul (a: GdkColor, x: double) =>
+  GdkColor(
+    int(double(a.red) * x), 
+    int(double(a.green) * x), 
+    int(double(a.blue) * x)
+  )
+;
+  
+fun add (a: GdkColor, b: GdkColor) : GdkColor =>
+  GdkColor (a.red + b.red, a.green + b.green, a.blue + b.blue)
+;
+
+type GtkStateType = "GtkStateType";
+
+const GTK_STATE_NORMAL : GtkStateType;
+const GTK_STATE_ACTIV : GtkStateType;
+const GTK_STATE_PRELIGH : GtkStateType;
+const GTK_STATE_SELECTE : GtkStateType;
+const GTK_STATE_INSENSITI : GtkStateType;
 
 // GTK
 type GtkWindow = "GtkWindow*";
@@ -143,6 +177,7 @@ type GtkTable= "GtkTable*";
 type GtkAdjustment = "GtkAdjustment*";
 type GtkObject = "GtkObject*";
 type GtkNotebook = "GtkNotebook*";
+type GtkStyle = "GtkStyle*";
 
 fun GTK_WINDOW[t]: t -> GtkWindow = "GTK_WINDOW($1)";
 fun GTK_CONTAINER[t]: t -> GtkContainer = "GTK_CONTAINER($1)";
@@ -207,6 +242,8 @@ proc gtk_table_attach_defaults: GtkTable * GtkWidget * int * int * int * int;
 proc gtk_button_set_alignment: GtkButton * double *double;
 proc gtk_notebook_append_page: GtkNotebook * GtkWidget * GtkWidget;
 proc gtk_window_set_title: GtkWindow * string = "gtk_window_set_title($1,$2.data());";
+proc gtk_widget_modify_fg: GtkWidget * GtkStateType * ptr[GdkColor];
+proc gtk_widget_modify_bg: GtkWidget * GtkStateType * ptr[GdkColor];
 
 const gtk_widget_destroy_fun: GCallback = "G_CALLBACK(gtk_widget_destroy)";
 
@@ -327,6 +364,9 @@ proc display_files() {
       ;
       var buttonx2 = gtk_button_new_with_label(descr);
       gtk_button_set_alignment(GTK_BUTTON(buttonx),0.0,0.7);
+      var color= red + blue;
+      gtk_widget_modify_bg(buttonx,GTK_STATE_NORMAL,addr color);
+
       gtk_button_set_alignment(GTK_BUTTON(buttonx2),0.0,0.7);
       gtk_table_attach_defaults(GTK_TABLE(table),buttonx,0,1,i-first,i-first+1);
       gtk_table_attach_defaults(GTK_TABLE(table),buttonx2,1,2,i-first,i-first+1);
