@@ -187,6 +187,15 @@ let arglist x =
   | `AST_tuple (_,ts) -> ts
   | _ -> [x]
 
+let cal_props = function
+  | `CFunction -> `Cfun::[]
+  | `InlineFunction -> `Inline::[]
+  | `NoInlineFunction -> `NoInline::[]
+  | `Ctor -> `Ctor::[]
+  | `Generator -> `NoInline::`Generator::[]
+  | `Virtual -> `NoInline::`Virtual::[]
+  | _ -> []
+
 let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =
   let vs, tcon = vs in
   let return_type, postcondition = return_type in
@@ -206,7 +215,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
     | _ -> List.fold_right mkret args return_type 
   in
 
-  let rec aux (args:params_t list) (vs:vs_list_t) =  
+  let rec aux (args:params_t list) (vs:vs_list_t) props =  
     let n = List.length args in
     let name n = 
       if n = arity
@@ -215,23 +224,10 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
     in
     match args with 
     | [] -> 
-        (match kind with
-        | `NoInlineFunction
-        | `InlineFunction
-        | `Ctor 
-        | `Generator
-        | `Virtual
-        | `Function 
-        | `CFunction ->
-          let props : property_t list = match kind with
-          | `CFunction -> `Cfun::props
-          | `InlineFunction -> `Inline::props
-          | `NoInlineFunction -> `NoInline::props
-          | `Ctor -> `Ctor::props
-          | `Generator -> `NoInline::`Generator::props
-          | `Virtual -> `NoInline::`Virtual::props
-          | _ -> props
-          in
+      (match kind with
+        | `Object ->
+          `AST_object (sr, name n, vs, ([],None), body)
+        | _ ->
           begin match return_type with
           | `AST_void _ ->
             `AST_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
@@ -249,31 +245,13 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
             end
           end
 
-        | `Object ->
-          `AST_object (sr, name n, vs, ([],None), body)
         )
 
     | h :: [] -> (* bottom level *)
         (match kind with
-        | `NoInlineFunction
-        | `InlineFunction
-        | `Ctor 
-        | `Generator
-        | `Virtual
-        | `CFunction 
-        | `Function ->
-          let props = match kind with
-          | `CFunction -> `Cfun::props
-          | `InlineFunction -> `Inline::props
-          | `NoInlineFunction -> `NoInline::props
-          | `Generator -> `NoInline::`Generator::props
-          | `Virtual -> `NoInline::`Virtual::props
-          | `Ctor -> `Ctor::props
-          | _ -> props 
-          in
+        | `Object -> `AST_object (sr, name n, vs, h, body)
+        | _  ->
           `AST_function (sr, name n, vs, h, (return_type,postcondition), props, body)
-        | `Object ->
-          `AST_object (sr, name n, vs, h, body)
         )
     | h :: t ->
       let argt = 
@@ -284,7 +262,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
       let m = List.length args in
       let body = 
         [
-          aux t dfltvs;
+          aux t dfltvs [];
           `AST_fun_return 
           (
             sr,
@@ -298,8 +276,8 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
           )
         ] 
       in
-        `AST_function (sr, name m, vs, h, (rettype t,None), [`Generated "curry";`Inline], body)
-   in aux args vs
+        `AST_function (sr, name m, vs, h, (rettype t,None), `Generated "curry"::props, body)
+   in aux args vs (cal_props kind @ props)
 
 (* model binary operator as procedure call *)
 let assign sr op l r = 

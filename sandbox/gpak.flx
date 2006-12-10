@@ -133,31 +133,34 @@ proc g_print: string = "g_print($1.data());";
 type GdkEvent = "GdkEvent*";
 const TRUE : bool = "TRUE";
 cstruct GdkColor {
-  red: int;
-  green: int;
-  blue: int;
+  pixel: uint32;
+  red: uint16;
+  green: uint16;
+  blue: uint16;
 };
 
-bright := 65535;
-dark := 0;
+nopix := 0u32;
+bright := 65535u16;
+dark := 0u16;
 
-black := GdkColor(dark,dark,dark);
-white := GdkColor(bright,bright,bright);
-red := GdkColor(bright,dark,dark);
-green:= GdkColor(dark,bright,dark);
-blue := GdkColor(dark,dark,bright);
-
+black := GdkColor(nopix,dark,dark,dark);
+white := GdkColor(nopix,bright,bright,bright);
+red := GdkColor(nopix,bright,dark,dark);
+green:= GdkColor(nopix,dark,bright,dark);
+blue := GdkColor(nopix,dark,dark,bright);
+yellow := green + blue;
 
 fun mul (a: GdkColor, x: double) =>
   GdkColor(
-    int(double(a.red) * x), 
-    int(double(a.green) * x), 
-    int(double(a.blue) * x)
+    nopix,
+    cast[uint16](double(a.red) * x), 
+    cast[uint16](double(a.green) * x), 
+    cast[uint16](double(a.blue) * x)
   )
 ;
   
 fun add (a: GdkColor, b: GdkColor) : GdkColor =>
-  GdkColor (a.red + b.red, a.green + b.green, a.blue + b.blue)
+  GdkColor (nopix,a.red + b.red, a.green + b.green, a.blue + b.blue)
 ;
 
 type GtkStateType = "GtkStateType";
@@ -179,7 +182,10 @@ type GtkAdjustment = "GtkAdjustment*";
 type GtkObject = "GtkObject*";
 type GtkNotebook = "GtkNotebook*";
 type GtkStyle = "GtkStyle*";
+type GtkTextView= "GtkTextView*";
+type GtkTextBuffer= "GtkTextBuffer*";
 
+fun GTK_TEXT_VIEW[t]: t -> GtkTextView= "GTK_TEXT_VIEW($1)";
 fun GTK_WINDOW[t]: t -> GtkWindow = "GTK_WINDOW($1)";
 fun GTK_CONTAINER[t]: t -> GtkContainer = "GTK_CONTAINER($1)";
 fun GTK_NOTEBOOK[t]: t -> GtkNotebook = "GTK_NOTEBOOK($1)";
@@ -220,6 +226,7 @@ proc gtk_container_set_border_width  : GtkContainer * int;
 
 // Widget constructors
 gen gtk_window_new: 1 -> GtkWidget ="gtk_window_new (GTK_WINDOW_TOPLEVEL)";
+gen gtk_scrolled_window_new: GtkAdjustment ^2 -> GtkWidget ="gtk_scrolled_window_new ($1,$2)";
 gen gtk_table_new: int * int * bool -> GtkWidget;
 gen gtk_hbox_new: bool * int -> GtkWidget;
 gen gtk_vbox_new: bool * int -> GtkWidget;
@@ -228,7 +235,7 @@ gen gtk_vscrollbar_new: GtkAdjustment -> GtkWidget;
 gen gtk_hscrollbar_new: GtkAdjustment -> GtkWidget;
 gen gtk_notebook_new: 1 -> GtkWidget;
 gen gtk_label_new: string -> GtkWidget = "gtk_label_new($1.data())";
-
+gen gtk_text_view_new : 1 -> GtkWidget;
 gen gtk_button_new_with_label: string -> GtkWidget= 
   "gtk_button_new_with_label($1.data())"
 ;
@@ -245,6 +252,12 @@ proc gtk_notebook_append_page: GtkNotebook * GtkWidget * GtkWidget;
 proc gtk_window_set_title: GtkWindow * string = "gtk_window_set_title($1,$2.data());";
 proc gtk_widget_modify_fg: GtkWidget * GtkStateType * ptr[GdkColor];
 proc gtk_widget_modify_bg: GtkWidget * GtkStateType * ptr[GdkColor];
+gen gtk_text_view_get_buffer: GtkTextView -> GtkTextBuffer;
+proc gtk_text_buffer_set_text: GtkTextBuffer * string =
+  "gtk_text_buffer_set_text($1,$2.data(),$2.size());"
+;
+
+proc gtk_window_set_default_size: GtkWindow * int * int;
 
 const gtk_widget_destroy_fun: GCallback = "G_CALLBACK(gtk_widget_destroy)";
 
@@ -357,17 +370,16 @@ proc display_files() {
       log_time := filetime$ "manifests/" + pak + ".log";
       //print$ f"%s %d Deps, change time %d, log time %d\n"$ cstr pak, len deps, int(change_time), int(log_time);
       var buttonx = gtk_button_new_with_label(pak);
-      descr := 
-        if change_time > log_time then "CHANGED" 
-        elif log_time == eternity then "NOT EXTRACTED"
-        else "UP TO DATE"
+      def var descr, var color = 
+        if change_time > log_time then "CHANGED" , red
+        elif log_time == eternity then "NOT EXTRACTED", yellow
+        else "UP TO DATE", green
         endif
       ;
       var buttonx2 = gtk_button_new_with_label(descr);
       gtk_button_set_alignment(GTK_BUTTON(buttonx),0.0,0.7);
-      var color= red + blue;
       gtk_widget_modify_bg(buttonx,GTK_STATE_NORMAL,addr color);
-
+      signal_connect(G_OBJECT(buttonx),c"clicked",editfile file);
       gtk_button_set_alignment(GTK_BUTTON(buttonx2),0.0,0.7);
       gtk_table_attach_defaults(GTK_TABLE(table),buttonx,0,1,i-first,i-first+1);
       gtk_table_attach_defaults(GTK_TABLE(table),buttonx2,1,2,i-first,i-first+1);
@@ -379,14 +391,14 @@ proc display_files() {
     ++nfiles;
   done;    
   // the table
-  gtk_box_pack_start(GTK_BOX(tabbox),table,false,false,1);
+  gtk_box_pack_start(GTK_BOX(tabbox),table,true,true,1);
   gtk_widget_show(table);
 }
 
 display_files;
 
 // scroll bar for the table
-var adj = gtk_adjustment_new(0.0,0.0,double(nfiles),1.0,5.0,20.0);
+var adj = gtk_adjustment_new(0.0,0.0,double(nfiles+1),1.0,5.0,20.0);
 var bar = gtk_vscrollbar_new(GTK_ADJUSTMENT(adj));
 
 proc pslider () {
@@ -396,6 +408,23 @@ proc pslider () {
   display_files();
 }
 
+noinline proc editfile (var filename:string) () {
+  print filename; endl;
+  var data = Text_file::load filename;
+  var view = gtk_text_view_new();
+  var buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (view));
+  gtk_text_buffer_set_text (buffer, data);
+  var swin = gtk_scrolled_window_new(cast[GtkAdjustment]0,cast[GtkAdjustment]0);
+  gtk_container_add(GTK_CONTAINER(swin),view);
+  var window = gtk_window_new();
+  gtk_container_add(GTK_CONTAINER(window),swin);
+  gtk_window_set_default_size(GTK_WINDOW(window),300,300);
+  gtk_widget_show(view);
+  gtk_widget_show(swin);
+  gtk_widget_show(window);
+  gtk_window_set_title(GTK_WINDOW(window),filename);
+}
+
 signal_connect(G_OBJECT(adj),c"value_changed",the pslider);
 
 // top button
@@ -403,9 +432,9 @@ gtk_box_pack_start(GTK_BOX(topbox),button,false,false,1);
 gtk_widget_show(button);
 
 // scrolled table
-gtk_box_pack_start(GTK_BOX(stabbox),tabbox,false,false,1);
+gtk_box_pack_start(GTK_BOX(stabbox),tabbox,true,true,1);
 gtk_widget_show(tabbox);
-gtk_box_pack_start(GTK_BOX(stabbox),bar,false,false,1);
+gtk_box_pack_start(GTK_BOX(stabbox),bar,true,true,1);
 gtk_widget_show(bar);
 gtk_widget_show(stabbox);
 
@@ -427,7 +456,7 @@ gtk_notebook_append_page(GTK_NOTEBOOK(notebook),unimp,tablabel);
 
 gtk_widget_show(notebook);
 
-gtk_box_pack_start(GTK_BOX(topbox),notebook,false,false,1);
+gtk_box_pack_start(GTK_BOX(topbox),notebook,true,true,1);
 
 // the client area
 gtk_container_add(GTK_CONTAINER(window),topbox);
