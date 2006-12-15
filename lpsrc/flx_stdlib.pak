@@ -970,7 +970,13 @@ module C_hack
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
   fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
   fun reinterpret[dst,src]: src->dst = "reinterpret<?1>($1)";
+
   const sizeof[t]:size = 'sizeof(?1)';
+
+  fun _ctor_int: size -> int = "$1";
+  fun _ctor_size: int -> size = "$1";
+
+  // deprecated
   fun int_of:size->int='$1';
   fun size_of:int->size='$1';
 
@@ -1019,10 +1025,19 @@ module C_hack
   containing frame won't be collected. 
   Addresses of temporaries must not be taken.
   """
+  fun _ctor_ptr[t]: lvalue[t] -> ptr[t] = "&$1";
+  fun _ctor_cptr[t]: lvalue[t] -> cptr[t] = "(void*)&$1";
+  fun _ctor_address[t]: ptr[t] -> address = "(void*)$1";
+  fun _ctor_address[t]: lvalue[t] -> address = "(void*)&$1";
+
+  // deprecated
   fun addr[t]: lvalue[t] -> ptr[t] = "&$1";
   fun caddr[t]: lvalue[t] -> cptr[t] ="(?1 const*)&$1";
+
   fun as_address[t]: ptr[t]->address = "(void*)$1";
   fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
+
+
   fun isNULL: address -> bool = "(NULL==$1)";
   fun isNULL[t]: ptr[t] -> bool = "(NULL==$1)";
   fun isNULL[t]: cptr[t] -> bool = "(NULL==$1)";
@@ -1920,9 +1935,9 @@ module List
   fun len[T] (x:list[T]) = {
     fun aux (acc:int) (x:list[T]) =>
       match x with
-    	| Empty => acc
+      | Empty => acc
       | Cons (_,?t) => aux (acc + 1) t
-			endmatch
+      endmatch
     ;
     return aux 0 x;
   }
