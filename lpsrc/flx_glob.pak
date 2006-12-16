@@ -697,7 +697,7 @@ static char const *strrpbrk(char const *string, char const *strCharSet)
 
     for(pch = strCharSet; *pch; ++pch)
     {
-        char    *p  =   strrchr(string, *pch);
+        char const *p  =   strrchr(string, *pch);
 
         if(NULL != p)
         {
