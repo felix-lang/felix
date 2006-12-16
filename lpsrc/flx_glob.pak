@@ -1,7 +1,11 @@
 @execfile("flxbuild"+os.sep+"iscrutil.py")
-@env = setup_test('test/glob/glob-')
-@head(1,'Directory Services (glob)')
 @execfile('config'+os.sep+'config.py')
+@env = setup_test('test/glob/glob-')
+
+@head(1,'Directory Services (glob)')
+@head(2,"Category Reference",nospawn=1)
+Tests by category keyword.
+@env.emit_katlist()
 @h = tangler('config/flx_glob.fpc')
 Name: glob
 Description: Directory Serivces
@@ -33,6 +37,7 @@ pkg_requires = ['flx_rtl'] # flx_rtl provides flx_rtl_config.hpp
 iscr_source = ["lpsrc/flx_glob.pak"]
 build_macro = "GLOB"
 weaver_directory = 'doc/rtl/flx_glob/'
+@tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 @h=tangler('rtl/flx_glob_config.hpp')
 @select(h)
@@ -1058,6 +1063,7 @@ void globfree(glob_t *pglob)
     }
 }
 
+@env.head(1,'glob tests')
 @h=tangler("lib/glob.flx")
 @select(h)
 #import <flx.flxh>
@@ -1074,6 +1080,7 @@ module glob {
     gl_pathv: ptr[charp];
     gl_offs: size;
   };
+  private proc post_incr[t]: lvalue[ptr[t]] = "$1++;";
 
   proc glob: string * ptr[glob_t] = "::glob($1.data(),0,NULL,$2);";
   proc globfree: ptr[glob_t] = "globfree($1);";
@@ -1097,4 +1104,27 @@ module glob {
   }
 }
 
+@select(env.test('.flx'))
+#import <flx.flxh>
+include "stl";
+include "glob";
+
+var files = glob::glob("lpsrc/*.pak");
+open Reversible_Sequence[
+  Stl::Vector::stl_vector[string], 
+  Stl::Vector::stl_vector_iterator[string],
+  Stl::Vector::stl_vector_reverse_iterator[string],
+  string 
+];
+
+var p = begin files; whilst p != end files do
+  basename := (*p).[6 to];
+  if basename == "flx_glob.pak" do print "true"; endl; done;
+  ++p;
+done;
+@doc()
+@select(env.expect())
+true
+@doc()
+@env.write_katfile()
 
