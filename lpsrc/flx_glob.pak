@@ -692,7 +692,7 @@ void globfree(glob_t *pglob);
 
 static char const *strrpbrk(char const *string, char const *strCharSet)
 {
-    char        *part   =   NULL;
+    char const *part   =   NULL;
     char const  *pch;
 
     for(pch = strCharSet; *pch; ++pch)
