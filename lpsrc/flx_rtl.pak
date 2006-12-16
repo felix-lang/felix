@@ -1643,6 +1643,7 @@ using namespace std;
   #define FLX_DLSYM(x,y) (void*)GetProcAddress(x,#y) 
   #define FLX_SDLSYM(x,y) (void*)GetProcAddress(x,y) 
 #elif FLX_MACOSX_NODLCOMPAT
+  #include <sys/stat.h>
   #include <mach-o/dyld.h>
   typedef NSModule LIBHANDLE;
   #define FLX_SET_NOLIBRARY(lib) lib=NULL
@@ -1890,7 +1891,34 @@ flx_load_library(char const *filename)
     NSObjectFileImage            bndl_img;
     NSObjectFileImageReturnCode  res;
 
-    res = NSCreateObjectFileImageFromFile(filename, &bndl_img);
+    string s_filename(filename);
+    struct stat st;
+
+    if (stat(s_filename.c_str(), &st) != 0) {
+      // we can't find the file, so search DYLD_LIBRARY_PATH
+      string paths = getenv("DYLD_LIBRARY_PATH");
+
+      size_t i = 0;
+      bool found = false;
+
+      while ((i = paths.find_first_of(':')) != paths.npos) {
+        string s = paths.substr(0, i) + '/' + filename;
+        paths = paths.substr(i + 1);
+
+        if (stat(s.c_str(), &st) == 0) {
+          s_filename = s;
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+              throw flx_link_failure_t(filename, "stat",
+                string("cannot find file: ") + filename);
+      }
+    }
+
+    res = NSCreateObjectFileImageFromFile(s_filename.c_str(), &bndl_img);
 
     if(NSObjectFileImageSuccess != res)
       throw flx_link_failure_t(filename, "NSCreateObjectFileImageFromFile",
@@ -1899,7 +1927,7 @@ flx_load_library(char const *filename)
     // don't merge globals with loader's, load programmatically
     // return on error allows us to continue without being terminated
 
-    unsigned long                link_flags;
+    unsigned long link_flags;
     link_flags = NSLINKMODULE_OPTION_PRIVATE | NSLINKMODULE_OPTION_RETURN_ON_ERROR;
     library = NSLinkModule(bndl_img, filename, link_flags);
 
@@ -2626,10 +2654,9 @@ int flx::rtl::flx_exception_handler (flx_exception_t *e)
 
 #include <string>
 //#include <unistd.h>
+
 #include "flx_rtl.hpp"
-
 #include "flx_async.hpp"
-
 #include "flx_ts_collector.hpp"
 #include "flx_dynlink.hpp"
 #include "flx_sync.hpp"
