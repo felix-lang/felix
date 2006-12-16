@@ -4,41 +4,13 @@
 #import <flx.flxh>
 include "pthread";
 include "stl";
+include "glob";
 
 open Stl::Vector;
 open Pthread;
 open C_hack;
 
 proc post_incr[t]: lvalue[ptr[t]] = "$1++;";
-
-// glob
-header '#include <glob.h>';
-cstruct glob_t {
-  gl_pathc: size;
-  gl_pathv: ptr[charp];
-  gl_offs: size;
-};
-
-proc glob: string * ptr[glob_t] = "::glob($1.data(),0,NULL,$2);";
-proc globfree: ptr[glob_t] = "globfree($1);";
-
-gen glob (pat:string): stl_vector[string] =
-{
-  var glob_data: glob_t; glob_data.gl_offs=0;
-  glob(pat,addr glob_data);
-  var n = glob_data.gl_pathc;
-  var p = glob_data.gl_pathv;
-  var pfile = *p;
-  var files: stl_vector[string];
-  whilst not isNULL(pfile) do
-    var file = str(pfile);
-    push_back (files, file);
-    p++;
-    pfile = *p;
-  done;
-  globfree(addr glob_data);
-  return files;
-}
 
 // stat
 
@@ -184,6 +156,8 @@ type GtkNotebook = "GtkNotebook*";
 type GtkStyle = "GtkStyle*";
 type GtkTextView= "GtkTextView*";
 type GtkTextBuffer= "GtkTextBuffer*";
+type GtkMenuShell= "GtkMenuShell*";
+type GtkMenuItem= "GtkMenuItem*";
 
 fun GTK_TEXT_VIEW[t]: t -> GtkTextView= "GTK_TEXT_VIEW($1)";
 fun GTK_WINDOW[t]: t -> GtkWindow = "GTK_WINDOW($1)";
@@ -193,6 +167,8 @@ fun GTK_BOX[t]: t -> GtkBox = "GTK_BOX($1)";
 fun GTK_BUTTON[t]: t -> GtkButton = "GTK_BUTTON($1)";
 fun GTK_TABLE[t]: t -> GtkTable = "GTK_TABLE($1)";
 fun GTK_ADJUSTMENT[t]: t -> GtkAdjustment = "GTK_ADJUSTMENT($1)";
+fun GTK_MENU_SHELL[t]: t -> GtkMenuShell = "GTK_MENU_SHELL($1)";
+fun GTK_MENU_ITEM[t]: t -> GtkMenuItem = "GTK_MENU_ITEM($1)";
 
 proc gtk_widget_destroy: GtkWidget;
 
@@ -239,6 +215,13 @@ gen gtk_text_view_new : 1 -> GtkWidget;
 gen gtk_button_new_with_label: string -> GtkWidget= 
   "gtk_button_new_with_label($1.data())"
 ;
+gen gtk_menu_bar_new: 1 -> GtkWidget;
+gen gtk_menu_new: 1 -> GtkWidget;
+gen gtk_menu_item_new: 1 -> GtkWidget;
+gen gtk_menu_item_new_with_label: string -> GtkWidget = 
+  "gtk_menu_item_new_with_label($1.data())"
+;
+
 
 // operators
 fun gtk_adjustment_get_value: GtkAdjustment -> double;
@@ -256,6 +239,9 @@ gen gtk_text_view_get_buffer: GtkTextView -> GtkTextBuffer;
 proc gtk_text_buffer_set_text: GtkTextBuffer * string =
   "gtk_text_buffer_set_text($1,$2.data(),$2.size());"
 ;
+
+proc gtk_menu_shell_append: GtkMenuShell * GtkWidget;
+proc gtk_menu_item_set_submenu: GtkMenuItem * GtkWidget;
 
 proc gtk_window_set_default_size: GtkWindow * int * int;
 
@@ -319,7 +305,7 @@ var stabbox = gtk_hbox_new(false,4); // scrolled table
 var tabbox = gtk_vbox_new(false,4); // table
 
 // make the table
-var files = glob("lpsrc/*.pak");
+var files = glob::glob("lpsrc/*.pak");
 
 open Reversible_Sequence[
   Stl::Vector::stl_vector[string], 
@@ -453,8 +439,26 @@ gtk_widget_show(unimp);
 tablabel = gtk_label_new("cpkgs");
 gtk_widget_show(tablabel);
 gtk_notebook_append_page(GTK_NOTEBOOK(notebook),unimp,tablabel);
-
 gtk_widget_show(notebook);
+
+// menu
+var menu = gtk_menu_new();
+var item = gtk_menu_item_new_with_label("build");
+gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+gtk_widget_show(item);
+item = gtk_menu_item_new_with_label("quit");
+gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+gtk_widget_show(item);
+gtk_widget_show(menu);
+
+var root_menu = gtk_menu_item_new_with_label("File");
+gtk_widget_show(root_menu);
+gtk_menu_item_set_submenu(GTK_MENU_ITEM(root_menu), menu);
+
+var menubar = gtk_menu_bar_new();
+gtk_menu_shell_append(GTK_MENU_SHELL(menubar), root_menu);
+gtk_widget_show(menubar);
+gtk_box_pack_start(GTK_BOX(topbox),menubar,false,false,2);
 
 gtk_box_pack_start(GTK_BOX(topbox),notebook,true,true,1);
 
