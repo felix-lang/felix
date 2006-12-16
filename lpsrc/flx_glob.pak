@@ -87,11 +87,13 @@ weaver_directory = 'doc/rtl/flx_glob/'
  * ////////////////////////////////////////////////////////////////////////// */
 
 @h=tangler('unixem/unixem_util.hpp')
-int errno_from_Win32(unsigned long w32Err);
-char get_current_drive(void);
-#ifndef UNIXEM_NUM_ELEMENTS
+#ifndef __UNIXEM_UTIL_
+#define __UNIXEM_UTIL_
+
+extern "C" int errno_from_Win32(unsigned long w32Err);
+extern "C" char get_current_drive(void);
 # define UNIXEM_NUM_ELEMENTS(x)        (sizeof(x) / sizeof(0[x]))
-#endif /* !UNIXEM_NUM_ELEMENTS */
+#endif
 
 
 @h=tangler('unixem/unixem_util.cpp')
@@ -679,8 +681,7 @@ void globfree(glob_t *pglob);
 @h=tangler('unixem/flx_glob.cpp')
 @select(h)
 #include "flx_glob.hpp"
-
-//#include <unixem/internal/util.h>
+#include "unixem_util.hpp"
 
 #include <errno.h>
 #include <stdlib.h>
