@@ -24,7 +24,11 @@ Version: $Id$
 @select(h)
 
 if WIN32:
-  GLOB_CPPS = ['unixem/flx_glob']
+  GLOB_CPPS = [
+    'unixem/flx_glob',
+    'unixem/unixem_util',
+
+    ]
 else:
   GLOB_CPPS = []
 
@@ -96,8 +100,8 @@ weaver_directory = 'doc/rtl/flx_glob/'
 #ifndef __UNIXEM_UTIL_
 #define __UNIXEM_UTIL_
 
-extern "C" int errno_from_Win32(unsigned long w32Err);
-extern "C" char get_current_drive(void);
+int errno_from_Win32(unsigned long w32Err);
+char get_current_drive(void);
 # define UNIXEM_NUM_ELEMENTS(x)        (sizeof(x) / sizeof(0[x]))
 #endif
 
@@ -672,8 +676,6 @@ typedef struct
   char  **gl_pathv; /*!< list of paths matching pattern */
 } glob_t;
 
-extern "C" {
-
 int glob( char const  *pattern
         , int         flags
         , int       (*errfunc)(char const *, int)
@@ -681,7 +683,6 @@ int glob( char const  *pattern
 
 void globfree(glob_t *pglob);
 
-}
 #endif
 #endif
 
@@ -723,7 +724,6 @@ static char const *strrpbrk(char const *string, char const *strCharSet)
     return part;
 }
 
-extern "C" 
 int glob(   char const  *pattern
         ,   int         flags
         , int         (*errfunc)(char const *, int)
@@ -1052,7 +1052,6 @@ int glob(   char const  *pattern
     return result;
 }
 
-extern "C"
 void globfree(glob_t *pglob)
 {
     if(pglob != NULL)
