@@ -89,6 +89,10 @@ weaver_directory = 'doc/rtl/flx_glob/'
 @h=tangler('unixem/unixem_util.hpp')
 int errno_from_Win32(unsigned long w32Err);
 char get_current_drive(void);
+#ifndef UNIXEM_NUM_ELEMENTS
+# define UNIXEM_NUM_ELEMENTS(x)        (sizeof(x) / sizeof(0[x]))
+#endif /* !UNIXEM_NUM_ELEMENTS */
+
 
 @h=tangler('unixem/unixem_util.cpp')
 
@@ -333,7 +337,7 @@ int errno_from_Win32(unsigned long w32Err)
 
     size_t  i;
 
-    for(i = 0; i < NUM_ELEMENTS(errmap); ++i)
+    for(i = 0; i < UNIXEM_NUM_ELEMENTS(errmap); ++i)
     {
         if(w32Err == errmap[i].w32Err)
         {
@@ -349,9 +353,9 @@ int errno_from_Win32(unsigned long w32Err)
 char get_current_drive(void)
 {
     char    szDrive[1 + _MAX_PATH] = "";
-    DWORD   dw  =   GetCurrentDirectoryA(NUM_ELEMENTS(szDrive), &szDrive[0]);
+    DWORD   dw  =   GetCurrentDirectoryA(UNIXEM_NUM_ELEMENTS(szDrive), &szDrive[0]);
 
-    if(dw < NUM_ELEMENTS(szDrive))
+    if(dw < UNIXEM_NUM_ELEMENTS(szDrive))
     {
         if( szDrive[0] < 'A' ||
             szDrive[0] > 'Z')
@@ -753,12 +757,12 @@ int glob(   char const  *pattern
 
             (void)lstrcpyA(&szPattern2[0], "%HOMEDRIVE%%HOMEPATH%");
 
-            dw = ExpandEnvironmentStringsA(&szPattern2[0], &szPattern3[0], NUM_ELEMENTS(szPattern3) - 1);
+            dw = ExpandEnvironmentStringsA(&szPattern2[0], &szPattern3[0], UNIXEM_NUM_ELEMENTS(szPattern3) - 1);
 
             if(0 != dw)
             {
-                (void)lstrcpynA(&szPattern3[0] + dw - 1, &pattern[1], (int)(NUM_ELEMENTS(szPattern3) - dw));
-                szPattern3[NUM_ELEMENTS(szPattern3) - 1] = '\0';
+                (void)lstrcpynA(&szPattern3[0] + dw - 1, &pattern[1], (int)(UNIXEM_NUM_ELEMENTS(szPattern3) - dw));
+                szPattern3[UNIXEM_NUM_ELEMENTS(szPattern3) - 1] = '\0';
 
                 effectivePattern = szPattern3;
             }
