@@ -87,6 +87,7 @@ weaver_directory = 'doc/rtl/flx_glob/'
  * ////////////////////////////////////////////////////////////////////////// */
 
 @h=tangler('unixem/unixem_util.hpp')
+@select(h)
 #ifndef __UNIXEM_UTIL_
 #define __UNIXEM_UTIL_
 
@@ -97,6 +98,7 @@ extern "C" char get_current_drive(void);
 
 
 @h=tangler('unixem/unixem_util.cpp')
+@select(h)
 
 #include "unixem_util.hpp"
 
@@ -377,7 +379,7 @@ char get_current_drive(void)
 
 
 @h=tangler('unixem/flx_unistd.hpp')
-
+@select(h)
 #ifndef SYNSOFT_UNIXEM_INCL_H_UNISTD
 #define SYNSOFT_UNIXEM_INCL_H_UNISTD
 
