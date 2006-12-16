@@ -7,6 +7,7 @@
 Tests by category keyword.
 @env.emit_katlist()
 @h = tangler('config/flx_glob.fpc')
+@select(h)
 Name: glob
 Description: Directory Serivces
 Version: $Id$
