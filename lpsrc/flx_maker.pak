@@ -407,12 +407,23 @@ class PLUGIN(Plugin):
   name = 'build_host_tools'
     
   def runme(self, pkg, pkgdict):
+    CCS = pkgdict.get("host_cc_ccs",[])
     CPPS = pkgdict.get("host_cpp_cpps",[])
     EXES = pkgdict.get("host_exes",[])
     LIBS = pkgdict.get("host_exes_require_libs",[])
-    if len(CPPS)+len(EXES)+len(LIBS)>0:
+    if len(CCS)+len(CPPS)+len(EXES)+len(LIBS)>0:
       print "BUILDING HOST TOOLS"
       pkglib = None
+
+      if CCS:
+        print "HOST C COMPILING", pkg
+        pkglib = "lib"+pkg+"_host_static"
+
+        HOST_C.build_static_rtl(vxqt, CCS, 'hostlib' + os.sep + pkglib,
+              include_paths=["rtl", "elk"],
+              macros=["FLX_STATIC_LINK"],
+              )
+
       if CPPS:
         print "HOST C++ COMPILING", pkg
         pkglib = "lib"+pkg+"_host_static"
@@ -422,7 +433,7 @@ class PLUGIN(Plugin):
               macros=["FLX_STATIC_LINK"],
               )
 
-        for x in CPPS: 
+        for x in CCS+CPPS: 
           f = x + EXT_STATIC_OBJ
           if verbose: print "Removing", f
           deletefile(f) # delete the object files
@@ -765,54 +776,94 @@ OCAML_INCLUDES = ""
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 def build_target_rtl_dynamic(pkg, pkgdict):
+  CCS = pkgdict.get("cc_ccs",[])
   CPPS = pkgdict.get("cpp_cpps",[])
   BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   EXTRA_DFLAGS = pkgdict.get("dflags","")
+
+  flibs = pkgdict.get("lib_requires",[])
+  needs_libs = []
+  for i in flibs:
+    needs_libs.append(i+"_dynamic")
+
+  lib = pkgdict.get("provides_lib","lib"+pkg)
+
+  print " ++ "+pkg+" RTL (dynamic)"
+
+  compile_kwds = {
+      'include_paths': ['rtl'],
+      'optimise': optimise,
+      'debug': debug,
+      'macros': ["BUILD_"+BUILD_MACRO],
+      'CFLAGS': CFLAGS+EXTRA_CFLAGS,
+      }
+
+  link_kwds = {
+      'lib_paths': [SHLIB_DIR],
+      'libs': EXTRA_LIBS+needs_libs,
+      'LDFLAGS': DFLAGS+EXTRA_DFLAGS,
+      }
+
+  if CCS:
+    # RF: THIS SHOULD BE TARGET_CC AND THE OUTPUT DIR SHOULD BE THAT OF
+    # THE TARGET.
+    objects = apply(TARGET_CC.compile_shared_rtl, (vxqt, CCS), 
+        compile_kwds)
+
+    apply(TARGET_CC.link_shared_rtl, 
+      (vxqt, objects, TARGET_CC.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
+      link_kwds)
+
+    if EXT_DYLIB != EXT_SHLIB:
+      apply(TARGET_CC.link_shared_dll, 
+        (vxqt, objects, TARGET_CC.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
+        link_kwds)
+
   if CPPS:
-    print " ++ "+pkg+" RTL (dynamic)"
-    
-    flibs = pkgdict.get("lib_requires",[])
-    needs_libs = []
-    for i in flibs:
-      needs_libs.append(i+"_dynamic")
-
-    lib = pkgdict.get("provides_lib","lib"+pkg)
-
     # RF: THIS SHOULD BE TARGET_CXX AND THE OUTPUT DIR SHOULD BE THAT OF
     # THE TARGET.
-    TARGET_CXX.build_shared_rtl(vxqt, CPPS,
-        TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic',
-        include_paths=['rtl'],
-        optimise=optimise,
-        debug=debug,
-        macros=["BUILD_"+BUILD_MACRO],
-        CFLAGS=CFLAGS+EXTRA_CFLAGS,
-        lib_paths=[SHLIB_DIR],
-        libs=EXTRA_LIBS+needs_libs,
-        LDFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
+    objects = apply(TARGET_CXX.compile_shared_rtl, (vxqt, CPPS), 
+        compile_kwds)
 
-    for x in CPPS: 
+    apply(TARGET_CXX.link_shared_rtl, 
+      (vxqt, objects, TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
+      link_kwds)
+
+
+    for x in CCS + CPPS: 
       f = x + EXT_SHARED_OBJ
       if verbose: print "Removing",f
       deletefile(f) # delete the .o files
 
 @select(tangler('mkplugins/build_target_rtl_static.py'))
 def build_target_rtl_static(pkg, pkgdict):
+  CCS = pkgdict.get("cc_ccs",[])
   CPPS = pkgdict.get("cpp_cpps",[])
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   lib = pkgdict.get("provides_lib","lib"+pkg)
+
+  print " ++ "+pkg+" RTL (static)"
+
+  kwds = {
+      'include_paths': ["rtl"],
+      'macros': ["FLX_STATIC_LINK"],
+      'optimise': optimise,
+      'debug': debug,
+      'CFLAGS': CFLAGS+EXTRA_CFLAGS,
+      }
+
+  if CCS:
+    apply(TARGET_CC.build_static_rtl,
+        (vxqt, CCS, "rtl"+os.sep+lib+"_static"),
+        kwds)
+
   if CPPS:
-    print " ++ "+pkg+" RTL (static)"
+    apply(TARGET_CXX.build_static_rtl,
+        (vxqt, CPPS, "rtl"+os.sep+lib+"_static"),
+        kwds)
 
-    TARGET_CXX.build_static_rtl(vxqt, CPPS, "rtl"+os.sep+lib+"_static",
-        include_paths=["rtl"],
-        macros=["FLX_STATIC_LINK"],
-        optimise=optimise,
-        debug=debug,
-        CFLAGS=CFLAGS+EXTRA_CFLAGS)
-
-    for x in CPPS: 
+    for x in CCS + CPPS: 
       f = x + EXT_STATIC_OBJ
       if verbose: print "Removing", f
       deletefile(f) # delete the object files
@@ -830,7 +881,7 @@ def build_felix_static_drivers(pkg, pkgdict):
         if verbose: print 'static Compiling driver object', src
         TARGET_CXX.compile_static_main(
           vxqt,
-          src,
+          [src],
           include_paths=["rtl"],
           macros=["FLX_STATIC_LINK"]+macros,
           optimise=optimise,

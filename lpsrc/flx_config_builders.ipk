@@ -113,7 +113,7 @@ class c_cxx_base(compiler_base):
    
   ########
   
-  def compile_thing(self, COM, EXT_SRC, EXT_DST, shell, basename, 
+  def compile_thing(self, COM, EXT_SRC, EXT_DST, shell, basenames, 
       include_paths=[], 
       macros=[], 
       optimise=0, 
@@ -124,39 +124,44 @@ class c_cxx_base(compiler_base):
     if log is None: log = sys.stdout
 
     opt = self.options
-    # compile for a dll: position independent code etc
-    cmd = COM
 
-    # debug symbols
-    if debug: cmd = cmd + opt.DEBUG_FLAGS
+    objects = []
+    for basename in basenames:
+      # compile for a dll: position independent code etc
+      cmd = COM
+  
+      # debug symbols
+      if debug: cmd = cmd + opt.DEBUG_FLAGS
+  
+      # optimisation
+      if optimise: cmd = cmd + opt.OPTIMISE + " "
+  
+      # include path
+      for i in include_paths:     cmd = cmd + opt.SPEC_INCLUDE + i + " "
+      for i in opt.include_paths: cmd = cmd + opt.SPEC_INCLUDE + i + " "
+  
+      # output file
+      cmd = cmd + opt.SPEC_OBJ_FILENAME + basename + EXT_DST + " "
+  
+      #macros
+      for i in macros: cmd=cmd + opt.SPEC_DEFINE + i + " "
+  
+      if opt.use == "host":     cmd=cmd + opt.SPEC_DEFINE + "HOST_BUILD "
+      elif opt.use == "target": cmd=cmd + opt.SPEC_DEFINE + "TARGET_BUILD "
+  
+      cmd = cmd + CFLAGS + " "
+  
+      #input file
+      cmd = cmd + basename + EXT_SRC
+  
+      mkdirs(os.path.dirname(basename))
+  
+      # compile it
+      shell(cmd, log=log)
 
-    # optimisation
-    if optimise: cmd = cmd + opt.OPTIMISE + " "
+      objects.append(basename + EXT_DST)
 
-    # include path
-    for i in include_paths:     cmd = cmd + opt.SPEC_INCLUDE + i + " "
-    for i in opt.include_paths: cmd = cmd + opt.SPEC_INCLUDE + i + " "
-
-    # output file
-    cmd = cmd + opt.SPEC_OBJ_FILENAME + basename + EXT_DST + " "
-
-    #macros
-    for i in macros: cmd=cmd + opt.SPEC_DEFINE + i + " "
-
-    if opt.use == "host":     cmd=cmd + opt.SPEC_DEFINE + "HOST_BUILD "
-    elif opt.use == "target": cmd=cmd + opt.SPEC_DEFINE + "TARGET_BUILD "
-
-    cmd = cmd + CFLAGS + " "
-
-    #input file
-    cmd = cmd + basename + EXT_SRC
-
-    mkdirs(os.path.dirname(basename))
-
-    # compile it
-    shell(cmd, log=log)
-
-    return basename + EXT_DST
+    return objects
 
   ####
 
@@ -320,18 +325,15 @@ class c_cxx_base(compiler_base):
       basenames = [basenames]
 
     assert basenames
-      
-    objects = objects[:]
-    for basename in basenames:
-      objects.append(
-          compile_fn(shell, basename, 
+
+    objects = objects + compile_fn(shell, basenames,
             include_paths=include_paths,
             macros=macros,
             optimise=optimise,
             debug=debug,
             CFLAGS=CFLAGS,
             log=log,
-          ))
+            )
 
     if outfile is None:
       outfile = basenames[0]
@@ -406,7 +408,7 @@ class c_cxx_base(compiler_base):
     basename = 'tmp' + os.sep + 'dummy'
     filename = self.write_src(
         'int main(int argc, char** argv) { return 0; }', basename)
-    return apply(self.compile_static_main, (shell, filename), kwds)
+    return apply(self.compile_static_main, (shell, [filename]), kwds)
 
 
   def compile_dummy_lib_program(self, shell, **kwds):
@@ -424,7 +426,7 @@ int fred(int argc, char** argv) { return 0; }
 
     filename = self.write_src(proggy, basename)
 
-    return apply(self.compile_static_main, (shell, filename), kwds)
+    return apply(self.compile_static_main, (shell, [filename]), kwds)
 
   ########
 
@@ -442,7 +444,7 @@ int main(int argc, char** argv) {return 0;}
 """ % (header, macro, macro), filename)
 
     try:
-      self.compile_static_main(shell, filename)
+      self.compile_static_main(shell, [filename])
     except EnvironmentError:
       if header:
         print "NOT defined %s in %s" % (macro, header)
@@ -461,7 +463,7 @@ int main(int argc, char** argv) {return 0;}
     basename = "tmp" + os.sep + "hchk"
     filename = self.write_src('#include <%s>\nint main(int argc, char** argv) { return 0; }' % name, basename)
     try:
-      self.compile_static_main(shell, filename)
+      self.compile_static_main(shell, [filename])
       print "#include <%s>" % name
       return 1
     except EnvironmentError:
@@ -806,9 +808,11 @@ int main(int argc, char** argv) {
       # convert into decimal
       major = int(hex(major)[2:])
 
-      print 'MACOSX VERSION:', (major, minor, patch)
+      version = major*100 + minor*10 + patch
 
-      return (major, minor, patch)
+      print 'MACOSX VERSION:', version
+
+      return version
 
   def detect_bsd(self, shell):
     return self.check_macro_defined(shell, "BSD")
@@ -1254,7 +1258,7 @@ class gnu_mixin:
       # differentiated now because osx treats dylibs
       # and plugin-type libraries.
       opt.EXT_DYLIB = ".dylib"
-      opt.PIC = ""		# darwin code is by default position independent
+      opt.PIC = "" # darwin code is by default position independent
 
 
   def detect_warning_flags(self, shell, get_stdout):
@@ -1711,7 +1715,7 @@ int main(int argc, char** argv) { return 0; }
 """, 'tmp' + os.sep + 'have_socketlen_t')
 
     try:
-      self.compile_static_main(shell, filename)
+      self.compile_static_main(shell, [filename])
       opt.FLX_SOCKLEN_T = "socklen_t"
     except EnvironmentError:
       filename = self.write_src(r"""
@@ -1722,7 +1726,7 @@ int main(int argc, char** argv) { return 0; }
 """, 'tmp' + os.sep + 'have_socketlen_t_is_uint')
 
       try:
-        self.compile_static_main(shell, filename)
+        self.compile_static_main(shell, [filename])
         opt.FLX_SOCKLEN_T = "unsigned int"
       except EnvironmentError:
         filename = self.write_src(r"""
@@ -1733,7 +1737,7 @@ int main(int argc, char** argv) { return 0; }
 """, 'tmp' + os.sep + 'have_socketlen_t_is_int')
 
         try:
-          self.compile_static_main(shell, filename)
+          self.compile_static_main(shell, [filename])
           opt.FLX_SOCKLEN_T = "int"
         except EnvironmentError:
           opt.FLX_SOCKLEN_T = "int"
@@ -1769,7 +1773,7 @@ main(int argc, char** argv) {
     try: 
       # basically a un*x test, note the non portable path separators and
       # gcc style switches
-      self.compile_static_main(shell, filename)
+      self.compile_static_main(shell, [filename])
       opt.HAVE_KQUEUE_DEMUXER = 1
     except EnvironmentError:
       opt.HAVE_KQUEUE_DEMUXER = 0
@@ -1817,8 +1821,8 @@ main(int argc, char** argv) {
     opt = self.options
 
     # see if we have ar
-    filename = self.compile_dummy_main(shell)
-    shell(opt.AR + "tmp" + os.sep + "dummy.a " + filename)
+    filenames = self.compile_dummy_main(shell)
+    shell(opt.AR + "tmp" + os.sep + "dummy.a " + ' '.join(filenames))
 
     # see if we have ranlib, it isn't considered essential
     # (a totally brain dead Unix idea: AR should do this)
