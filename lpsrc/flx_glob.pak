@@ -677,12 +677,12 @@ typedef struct
   char  **gl_pathv; /*!< list of paths matching pattern */
 } glob_t;
 
-int glob( char const  *pattern
+int GLOB_EXTERN glob( char const  *pattern
         , int         flags
         , int       (*errfunc)(char const *, int)
         , glob_t      *pglob);
 
-void globfree(glob_t *pglob);
+void GLOB_EXTERN globfree(glob_t *pglob);
 
 #endif
 #endif
