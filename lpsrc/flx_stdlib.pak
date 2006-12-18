@@ -1543,6 +1543,19 @@ open module String
   fun rstrip (x:string) : string => rstrip(x, " \t\n\r\f\v");
   fun strip (x:string) : string => lstrip$ rstrip x;
 
+  fun ljust(x:string, width:int) : string =>
+    if len x >= width
+      then x
+      else x + (' ' * (width - len x))
+    endif;
+  ;
+
+  fun rjust(x:string, width:int) : string =>
+    if len x >= width
+      then x
+      else (' ' * (width - len x)) + x
+    endif;
+  ;
 
   fun split (x:string, d:char): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
@@ -2199,7 +2212,7 @@ open module Array
     done;
 
     return o;
-  };
+  }
 
   fun fold_left[T, N, U] (_f:U->T->U) (init:U) (x:array[T, N]): U = {
     var o = init;
@@ -2285,8 +2298,9 @@ open module Array
   fun rev[T, N] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];
     var i : int;
+    var length = len x;
 
-    forall i in 0 upto len(x) - 1 do
+    forall i in 0 upto length - 1 do
       o.[length - 1 - i] = x.[i];
     done;
 
