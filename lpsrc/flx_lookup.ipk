@@ -3195,6 +3195,24 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       clierr sr 
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 
 
+  | `AST_tuple_fold (sr,f,i,c) ->
+    let _,t = be c in
+    let calfold n = 
+      let rec aux m result = 
+        if m = 0 then result else
+        let  k = n-m in
+        let arg = `AST_get_n (sr,(k,c)) in
+        let arg = `AST_tuple (sr,[result; arg]) in
+        aux (m-1) (`AST_apply(sr,(f,arg)))
+      in be (aux n i)
+    in
+    begin match t with
+    | `BTYP_tuple ts  -> calfold (length ts)
+    | `BTYP_array (_,`BTYP_unitsum n) when n<20 -> calfold n
+    | _ -> clierr sr "Tuple fold requires tuple argument"
+    end
+    
+
   | `AST_callback (sr,qn) ->
     let es,ts = lookup_qn_in_env2' syms env rs qn in
     begin match es with

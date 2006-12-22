@@ -444,6 +444,24 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     | Not_found -> e
     end
 
+  | `AST_apply 
+    (
+      sr,
+      (
+        `AST_apply
+        (
+          _,
+          (
+            `AST_apply ( _, ( `AST_name(_,"_tuple_fold",[]), f)),
+            i
+          )
+        ),
+        c
+      )
+    )
+    
+    -> `AST_tuple_fold (sr,me f, me i, me c)
+
    (* artificially make singleton tuple *)
   | `AST_apply (sr,(`AST_name(_,"_tuple",[]),x)) ->
      (*
@@ -714,6 +732,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_lvalue (sr,e) -> `AST_lvalue (sr, me e)
 
   | `AST_typeof (sr,e) -> `AST_typeof (sr, me e)
+
+  | `AST_tuple_fold (sr,f,i,c) -> `AST_tuple_fold (sr,me f, me i, me c)
 
   (*
     -> syserr (Flx_srcref.src_of_expr e) ("Expand expr: expected expresssion, got type: " ^ string_of_expr e)
