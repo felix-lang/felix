@@ -315,12 +315,16 @@ class PLUGIN(Plugin):
         if not quiet: print("filecopy "+src+" -> "+dst)
         filecopy(src,dst)
 
-@select(tangler('mkplugins/ocamlit.py'))
-#ocaml compilation
+@select(tangler('mkplugins/build_ocaml_grammar.py'))
 class PLUGIN(Plugin):
-  name = 'ocamlit'
-    
-  def runme(self, LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force):
+  name = 'build_ocaml_grammar'
+
+  def runme(self, pkg, LEXS, PARSES, force):
+    if not (LEXS or PARSES):
+      return force
+
+    print "CAML BUILDING GRAMMAR", pkg
+
     # STEP 2: Generate lexers
     for lex in LEXS:
       file = string.replace(lex,'/',os.sep)
@@ -337,7 +341,23 @@ class PLUGIN(Plugin):
         vxqt(OCAMLYACC + ' -v '+ file + '.mly')
         nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
 
-    plugins['extract_grammar']()
+    if LEXS or PARSES:
+      plugins['extract_grammar']()
+
+    return force
+@doc()
+
+@select(tangler('mkplugins/build_ocaml_modules.py'))
+#ocaml compilation
+class PLUGIN(Plugin):
+  name = 'build_ocaml_modules'
+    
+  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, force):
+    if not (INTERFACES or IMPLEMENTATIONS):
+      return force
+
+    print "CAML COMPILING", pkg
+
     # STEP 4: Compile ocaml interfaces
     for interface in INTERFACES:
       file = string.replace(interface,'/',os.sep)
@@ -347,60 +367,89 @@ class PLUGIN(Plugin):
         vxqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
 
     # STEP 5: Compile ocaml implementations
-    for implementation in IMPLEMENTATIONS + EXES:
+    for implementation in IMPLEMENTATIONS:
       file = string.replace(implementation,'/',os.sep)
       if not force:
-        if filetime(file+'.ml') >= filetime(file+OCAML_OBJECT_EXTENSION): 
+        if filetime(file+'.ml') >= filetime(file + OCAML_OBJECT_EXTENSION): 
           force = 1
       if force:
         vxqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
+
     return force
+@doc()
+
+@select(tangler('mkplugins/build_ocaml_libraries.py'))
+#ocaml compilation
+class PLUGIN(Plugin):
+  name = 'build_ocaml_libraries'
+
+  def runme(self, IMPLEMENTATIONS, lib, force):
+    if not IMPLEMENTATIONS:
+      return force
+
+    print "CAML CREATING LIBRARY", lib
+
+    # STEP 6: Build Ocaml Library
+    object_library_name = os.path.join("src", lib + OCAML_LIB_EXTENSION)
+    linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
+    library_filetime = filetime(object_library_name)
+
+    force = 1
+    for implementation in IMPLEMENTATIONS:
+      linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
+    vxqt(linkstring)
+
+    return force
+@doc()
+
+@select(tangler('mkplugins/build_ocaml_exes.py'))
+#ocaml compilation
+class PLUGIN(Plugin):
+  name = 'build_ocaml_exes'
+
+  def runme(self, EXES, OLIBRARIES, force):
+    # finally, mainline *.cmx or cma files to link to executables
+    if not EXES:
+      return
+
+    print "CAML LINKING EXECUTABLES"
+    x = ''
+    for library in OLIBRARIES:
+      x = x + ' ' + library + OCAML_LIB_EXTENSION
+  
+    for exe in EXES:
+      dst = os.path.join("bin", os.path.basename(exe))
+      vxqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
+          x + ' src/flx_version_hook.ml ' + exe + \
+          OCAML_OBJECT_EXTENSION)
+@doc()
 
 @select(tangler('mkplugins/build_ocamls.py'))
 class PLUGIN(Plugin):
   name = 'build_ocamls'
    
   def runme(self, pkg, pkgdict, force):
-    LEXS = pkgdict.get("caml_lexes",[])
-    PARSES = pkgdict.get("caml_parses",[])
-    INTERFACES = pkgdict.get("caml_interfaces",[])
-    IMPLEMENTATIONS = pkgdict.get("caml_implementations",[])
-    EXES = pkgdict.get("caml_exes",[])
-    OLIBRARIES = pkgdict.get("caml_require_libs",[])
-    if (len(LEXS)+
-      len(PARSES)+
-      len(INTERFACES)+
-      len(IMPLEMENTATIONS)+
-      len(EXES)+
-      len(OLIBRARIES)> 0):
-      print "CAML COMPILING "+pkg
-      force = plugins['ocamlit'](LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force)
+    LEXS = pkgdict.get("caml_lexes", [])
+    PARSES = pkgdict.get("caml_parses", [])
+
+    force = plugins['build_ocaml_grammar'].runme(pkg, LEXS, PARSES, force)
+
+    INTERFACES = pkgdict.get("caml_interfaces", [])
+    IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
+    EXES = pkgdict.get("caml_exes", [])
+
+    force = plugins['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS + EXES, force)
+
+    lib = pkgdict.get('caml_provide_lib', pkg+"lib")
+
+    force = plugins['build_ocaml_libraries'].runme(IMPLEMENTATIONS, lib, force)
+
+    OLIBRARIES = pkgdict.get("caml_require_libs", [])
+
+    plugins['build_ocaml_exes'].runme(EXES, OLIBRARIES, force)
   
-      if force:
-        # STEP 6: Build Ocaml Library
-        if IMPLEMENTATIONS != []:
-          lib = pkgdict.get('caml_provide_lib',pkg+"lib")
-          print "CAML CREATING LIBRARY ",lib
-          object_library_name = os.path.join("src", lib + OCAML_LIB_EXTENSION)
-          linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
-          library_filetime = filetime(object_library_name)
-          for implementation in IMPLEMENTATIONS:
-            linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
-          vxqt(linkstring)
-  
-        if EXES:
-          print "CAML LINKING EXECUTABLES"
-          x = ''
-          for library in OLIBRARIES:
-            x = x + ' ' + library + OCAML_LIB_EXTENSION
-  
-          # finally, mainline *.cmx or cma files to link to executables
-          for exe in EXES:
-            dst = os.path.join("bin", os.path.basename(exe))
-            vxqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
-                x + ' src/flx_version_hook.ml ' + exe + \
-                OCAML_OBJECT_EXTENSION)
     return force
+@doc()
 
 @select(tangler('mkplugins/build_host_tools.py'))
 class PLUGIN(Plugin):
@@ -451,6 +500,7 @@ class PLUGIN(Plugin):
 
       for src, bin in EXES:
         apply(HOST_CXX.build_static_program, (vxqt, src, bin), kwds)
+@doc()
 
 @select(tangler('mkplugins/build_testfile.py'))
 class PLUGIN(Plugin):
@@ -778,6 +828,10 @@ OCAML_INCLUDES = ""
 def build_target_rtl_dynamic(pkg, pkgdict):
   CCS = pkgdict.get("cc_ccs",[])
   CPPS = pkgdict.get("cpp_cpps",[])
+
+  if not CCS or CPPS:
+    return
+
   BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   EXTRA_DFLAGS = pkgdict.get("dflags","")
@@ -830,6 +884,10 @@ def build_target_rtl_dynamic(pkg, pkgdict):
       (vxqt, objects, TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
       link_kwds)
 
+    if EXT_DYLIB != EXT_SHLIB:
+      apply(TARGET_CXX.link_shared_dll, 
+        (vxqt, objects, TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
+        link_kwds)
 
     for x in CCS + CPPS: 
       f = x + EXT_SHARED_OBJ
@@ -840,6 +898,10 @@ def build_target_rtl_dynamic(pkg, pkgdict):
 def build_target_rtl_static(pkg, pkgdict):
   CCS = pkgdict.get("cc_ccs",[])
   CPPS = pkgdict.get("cpp_cpps",[])
+
+  if not CCS or CPPS:
+    return
+
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   lib = pkgdict.get("provides_lib","lib"+pkg)
 
