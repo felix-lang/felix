@@ -501,6 +501,7 @@ and expr_t =
 
   | `AST_case of range_srcref * expr_t * string list * expr_t
   | `AST_tuple_fold of range_srcref * expr_t * expr_t * expr_t
+  | `AST_tuple_trans of range_srcref * expr_t
   ]
 
 @head(3,'Pattern')
@@ -1469,6 +1470,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_macro_statements _ -> e
   | `AST_case (sr,e1,ls,e2) -> `AST_case (sr,f e1, ls, f e2)
   | `AST_tuple_fold (sr,e1,e2,e3) -> `AST_tuple_fold (sr,f e1, f e2, f e3)
+  | `AST_tuple_trans (sr,e1) -> `AST_tuple_trans (sr,f e1)
 
 let all_units' ts = 
   try 
@@ -2021,6 +2023,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_macro_statements (s,_)
   | `AST_case (s,_,_,_) 
   | `AST_tuple_fold (s,_,_,_) 
+  | `AST_tuple_trans (s,_) 
     -> s
 
 let src_of_stmt e = match e with
@@ -2745,6 +2748,9 @@ and string_of_expr (e:expr_t) =
 
   | `AST_tuple_fold (_,f,i,c) ->
     "_tuple_fold (" ^ se f ^ ") (" ^ se i ^ ") (" ^ se c ^ ")"
+
+  | `AST_tuple_trans (_,e1) ->
+    "_tuple_trans (" ^ se e1 ^ ")"
 
 (* precedences for type operators ..
    0 -- atomic

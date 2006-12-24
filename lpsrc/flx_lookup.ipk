@@ -3195,6 +3195,67 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       clierr sr 
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 
 
+  | `AST_tuple_trans (sr,e) ->
+    let tr nrows ncolumns =
+      let e' = ref [] in
+      for i = nrows - 1 downto 0 do
+        let x = ref [] in
+        for j = ncolumns - 1 downto 0 do
+          let v = `AST_get_n (sr,(i,`AST_get_n (sr,(j,e)))) in
+          x := v :: !x;
+        done;
+        e' := `AST_tuple (sr,!x) :: (!e');
+      done
+      ;
+      be (`AST_tuple (sr,!e'))
+    in
+    let calnrows t = 
+      let nrows =
+        match t with 
+        | `BTYP_tuple ls -> length ls
+        | `BTYP_array (_,`BTYP_unitsum n) -> n
+        | _ -> clierr sr "Tuple transpose requires entry to be tuple"
+      in 
+      if nrows < 2 then
+        clierr sr "Tuple transpose requires tuple argument with 2 or more elements"
+      ;
+      nrows
+    in
+    let colchk nrows t =
+      match t with 
+      | `BTYP_tuple ls -> 
+        if length ls != nrows then
+          clierr sr ("Tuple transpose requires entry to be tuple of length " ^ si nrows)
+
+      | `BTYP_array (_,`BTYP_unitsum n) ->
+        if n != nrows then
+          clierr sr ("Tuple transpose requires entry to be tuple of length " ^ si nrows)
+        
+      | _ -> clierr sr "Tuple transpose requires entry to be tuple"
+    in
+    let _,t = be e in
+    let ncolumns, nrows = 
+      match t with
+      | `BTYP_tuple ls ->
+        let ncolumns  = length ls in
+        let nrows = calnrows (hd ls) in
+        iter (colchk nrows) ls;
+        ncolumns, nrows
+
+      | `BTYP_array (t,`BTYP_unitsum ncolumns) ->
+        let nrows = calnrows t in
+        ncolumns, nrows
+
+      | _ -> clierr sr "Tuple transpose requires tuple argument"
+    in
+      if nrows > 20 then
+        clierr sr ("tuple fold: row bound " ^ si nrows ^ ">20, to large")
+      ;
+      if ncolumns> 20 then
+        clierr sr ("tuple fold: column bound " ^ si ncolumns^ ">20, to large")
+      ;
+      tr nrows ncolumns
+
   | `AST_tuple_fold (sr,f,i,c) ->
     let _,t = be c in
     let calfold n = 
@@ -3208,7 +3269,11 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     in
     begin match t with
     | `BTYP_tuple ts  -> calfold (length ts)
-    | `BTYP_array (_,`BTYP_unitsum n) when n<20 -> calfold n
+    | `BTYP_array (_,`BTYP_unitsum n) ->
+       if  n<20 then calfold n 
+       else
+         clierr sr ("Tuple fold array length " ^ si n ^ " too big, limit 20")
+       
     | _ -> clierr sr "Tuple fold requires tuple argument"
     end
     
