@@ -3214,7 +3214,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         match t with 
         | `BTYP_tuple ls -> length ls
         | `BTYP_array (_,`BTYP_unitsum n) -> n
-        | _ -> clierr sr "Tuple transpose requires entry to be tuple"
+        | _ -> clierrn [sr] "Tuple transpose requires entry to be tuple"
       in 
       if nrows < 2 then
         clierr sr "Tuple transpose requires tuple argument with 2 or more elements"

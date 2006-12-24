@@ -1287,6 +1287,8 @@ val reduce_type:
   btypecode_t ->
   btypecode_t
 
+val scan_expr: expr_t -> range_srcref list
+
 @h = tangler('src/flx_maps.ml')
 @select(h)
 open Flx_ast
@@ -1471,6 +1473,92 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_case (sr,e1,ls,e2) -> `AST_case (sr,f e1, ls, f e2)
   | `AST_tuple_fold (sr,e1,e2,e3) -> `AST_tuple_fold (sr,f e1, f e2, f e3)
   | `AST_tuple_trans (sr,e1) -> `AST_tuple_trans (sr,f e1)
+
+let iter_expr f (e:expr_t) = 
+  f e;
+  match e with
+  | `AST_patvar _
+  | `AST_patany _ 
+  | `AST_vsprintf _ 
+  | `AST_name _ 
+  | `AST_callback _ 
+  | `AST_the _ 
+  | `AST_index _ 
+  | `AST_case_tag _ 
+  | `AST_typed_case _ 
+  | `AST_record_type _
+  | `AST_variant_type _
+  | `AST_void _
+  | `AST_ellipsis _
+  | `AST_noexpand _
+  | `AST_suffix _ 
+  | `AST_literal _ 
+  | `AST_lambda _ 
+  | `AST_parse _
+  | `AST_sparse _
+  | `AST_regmatch _
+  | `AST_string_regmatch _
+  | `AST_reglex _ 
+  | `AST_expr _ 
+  | `AST_type_match _ 
+  | `AST_macro_ctor _ 
+  | `AST_macro_statements _ 
+    -> ()
+
+  | `AST_variant (_,(_,x))
+  | `AST_tuple_trans (_,x)
+  | `AST_typeof (_,x)
+  | `AST_as (_,(x,_))
+  | `AST_get_named_method (_,(_,_,_,x))
+  | `AST_get_n (_,(_,x)) 
+  | `AST_get_named_variable (_,(_,x))
+  | `AST_ctor_arg (_,(_,x))
+  | `AST_case_arg (_,(_,x)) 
+  | `AST_case_index (_,x)
+  | `AST_match_ctor (_,(_,x))
+  | `AST_match_case (_,(_,x))
+  | `AST_method_apply (_,(_,x,_))
+  | `AST_deref (_,x) 
+  | `AST_ref (_,x) 
+  | `AST_new (_,x)
+  | `AST_lvalue (_,x)
+  | `AST_lookup (_,(x,_,_))
+  | `AST_coercion (_, (x,_)) 
+    -> f x
+
+  | `AST_case (_,a,_,b) 
+  | `AST_letin (_,(_,a,b))
+  | `AST_dot (_,(a,b)) 
+  | `AST_longarrow (_,(a,b)) 
+  | `AST_superscript (_,(a,b))
+  | `AST_arrow (_,(a,b)) 
+  | `AST_map (_,a,b) 
+  | `AST_apply (_,(a,b)) 
+    -> f a; f b
+
+  | `AST_tuple (_,es) 
+  | `AST_product (_,es)
+  | `AST_sum (_,es)
+  | `AST_setunion (_,es)
+  | `AST_setintersection (_,es)
+  | `AST_orlist (_,es)
+  | `AST_andlist (_,es)
+  | `AST_arrayof (_, es) ->  
+    iter f es
+
+  | `AST_record (sr,es) -> iter (fun (s,e) -> f e) es
+
+  | `AST_match (sr,(a,pes)) ->
+    f a; iter (fun (pat,x) -> f x) pes
+  
+  | `AST_tuple_fold (sr,a,b,c) 
+  | `AST_cond (sr,(a,b,c)) -> f a; f b; f c
+
+let scan_expr e = 
+  let ls = ref [] in 
+  let add x = ls := Flx_srcref.src_of_expr x :: !ls in
+  iter_expr add e;
+  Flx_util.uniq_list !ls
 
 let all_units' ts = 
   try 

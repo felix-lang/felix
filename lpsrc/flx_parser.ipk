@@ -957,6 +957,10 @@ mac_arg_list:
   | LPAR mac_args RPAR     { $2 }
   | LPAR RPAR              { [] }
 
+eqop: 
+  | EQUAL {}
+  | EQRIGHTARROW {}
+
 macro_definition:
   | MACRO NAME IS expr SEMI
     {
@@ -1074,7 +1078,7 @@ macro_definition:
     }
 
 
-  | MACRO FUNCTION NAME mac_arg_list EQUAL expr SEMI
+  | MACRO FUNCTION NAME mac_arg_list eqop expr SEMI
     {
       let 
         sr = rstoken $1 $7 and

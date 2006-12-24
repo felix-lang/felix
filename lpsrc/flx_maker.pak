@@ -829,7 +829,7 @@ def build_target_rtl_dynamic(pkg, pkgdict):
   CCS = pkgdict.get("cc_ccs",[])
   CPPS = pkgdict.get("cpp_cpps",[])
 
-  if not CCS or CPPS:
+  if not CCS and not CPPS:
     return
 
   BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
@@ -899,7 +899,7 @@ def build_target_rtl_static(pkg, pkgdict):
   CCS = pkgdict.get("cc_ccs",[])
   CPPS = pkgdict.get("cpp_cpps",[])
 
-  if not CCS or CPPS:
+  if not CCS and not CPPS:
     return
 
   EXTRA_CFLAGS = pkgdict.get("cflags","")
