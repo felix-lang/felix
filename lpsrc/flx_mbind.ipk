@@ -121,8 +121,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_callback _ 
   | `AST_record_type _
   | `AST_variant_type _
-  | `AST_tuple_fold _
-  | `AST_tuple_trans _
     -> 
       let sr = src_of_expr e in
       clierr sr "[mbind:subst] Not expected in when part of pattern"

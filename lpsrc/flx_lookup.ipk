@@ -3195,7 +3195,37 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       clierr sr 
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 
 
-  | `AST_tuple_trans (sr,e) ->
+  | `AST_apply (sr,(`AST_name (_,"_tuple_flatten",[]),e)) ->
+    let result = ref [] in
+    let stack = ref [] in
+    let push () = stack := 0 :: !stack in
+    let pop () = stack := tl (!stack) in
+    let inc () =
+      match !stack with 
+      | [] -> () 
+      | _ -> stack := hd (!stack) + 1 :: tl (!stack) 
+    in
+    let rec term stack = match stack with
+      | [] -> e
+      | _ -> `AST_get_n (sr, (hd stack, term (tl stack)))
+    in
+    let _,t = be e in
+    let rec aux t = match t with
+    | `BTYP_tuple ls ->
+      push (); iter aux ls; pop(); inc ()
+
+    | `BTYP_array (t,`BTYP_unitsum n) when n < 20 -> 
+      push(); for i = 0 to n-1 do aux t done; pop(); inc();
+
+    | _ -> 
+      result := term (!stack) :: !result;
+      inc ()
+    in 
+    aux t;
+    let e = `AST_tuple (sr,rev (!result)) in
+    be e
+
+  | `AST_apply (sr,(`AST_name (_,"_tuple_trans",[]),e)) ->
     let tr nrows ncolumns =
       let e' = ref [] in
       for i = nrows - 1 downto 0 do
@@ -3256,7 +3286,23 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       ;
       tr nrows ncolumns
 
-  | `AST_tuple_fold (sr,f,i,c) ->
+  | `AST_apply 
+    (
+      sr,
+      (
+        `AST_apply
+        (
+          _,
+          (
+            `AST_apply ( _, ( `AST_name(_,"_tuple_fold",[]), f)),
+            i
+          )
+        ),
+        c
+      )
+    ) ->
+    
+
     let _,t = be c in
     let calfold n = 
       let rec aux m result = 

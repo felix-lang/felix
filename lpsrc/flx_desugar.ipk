@@ -386,16 +386,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_noexpand (_,e) -> rex e
   | `AST_name (sr,name,_) -> [],e
 
-  | `AST_tuple_trans (sr,e1) ->
-    let l1,x1 = rex e1 in
-    l1,`AST_tuple_trans (sr,x1)
-
-  | `AST_tuple_fold (sr,e1,e2,e3) ->
-    let l1,x1 = rex e1 in
-    let l2,x2 = rex e2 in
-    let l3,x3 = rex e3 in
-    l1 @ l2 @ l3, `AST_tuple_fold (sr,x1,x2,x3)
-
   | `AST_deref (sr,e) ->
     let l1,x1 = rex e in
     l1, `AST_deref (sr,x1)
