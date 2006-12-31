@@ -64,26 +64,13 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
   tangle('    fun create : int * t -> '+c+'= "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
   tangle('    fun create[i] : i * i -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
-  #gen_pcmp(c)
-  #tangle('    fun len: '+c+' -> int = "$1.size()";')
-  #tangle('    fun empty: '+c+' -> int = "$1.empty()";')
-
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";');
 
-  #tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
-  #tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  #tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
-  #tangle('    proc erase : '+c+' * '+it+' * '+it+' = "$1.erase($1,$2);";')
-  #tangle('    proc clear : '+c+' = "$1.clear();";')
-
- 
 @def mkrseq(n,ns='std'):
   mkseq(n,ns)
   c = 'stl_'+n+'[t]'
   rit = 'stl_'+n+'_reverse_iterator[t]'
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";');
-  #tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
-  #tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
 
 
 @def mkinsat(n):
@@ -128,20 +115,8 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";')
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";')
   tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
-  #tangle('    gen_cmpeq '+c+';')
-  #tangle('    fun len: '+c+'->int = "$1.size()";')
-  #tangle('    fun empty: '+c+'->int = "$1.empty()";')
-  #tangle('    gen_cmpeq '+it+';')
-  #tangle('    gen_cmpeq '+rit+';')
-
-  #tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
-  #tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  #tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
-  #tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
 
   tangle('    proc insert : '+c+' * t = "$1.insert($2);";')
-  #tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
-  #tangle('    proc clear : '+c+' = "$1.clear();";')
   tangle('    fun find : '+c+' * t ->  '+it+' = "$1.find($2)";')
   tangle('    fun mem : '+c+' * t -> bool = "$1.find($2) != $1.end()";')
 
@@ -154,21 +129,13 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1,?2>::reverse_iterator";')
 
   tangle('    fun create : unit -> '+c+' = "(FLX_GXX_PARSER_HACK '+ns+'::'+n+'<?1,?2>())";')
-  tangle('    gen_cmpeq '+c+';')
-  tangle('    fun len: '+c+'->int = "$1.size()";')
-  tangle('    fun empty: '+c+'->int = "$1.empty()";')
-  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
-  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
-  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
-  tangle('    proc insert : '+c+' * k * v = "$1.insert(std::make_pair($2,$3));";')
-  tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
-  tangle('    proc clear : '+c+' = "$1.clear();";')
+  tangle('    fun subscript: '+c+' * k -> lvalue[v] = "$1[$2]";')
   tangle('    fun find : '+c+' * k ->  '+it+' = "$1.find($2)";')
   tangle('    fun mem : '+c+' * k -> bool = "$1.find($2) != $1.end()";')
-   
-  tangle('    fun subscript: '+c+' * k -> lvalue[v] = "$1[$2]";')
+  tangle('    proc insert : '+c+' * k * v = "$1.insert(std::make_pair($2,$3));";')
 
+
+  
 module Stl 
 {
   type pair[k,v] = "std::pair<?1 const,?2>";
@@ -331,9 +298,12 @@ module Stl
   tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
   tangle('  }')
 
-  tangle('  instance[v] Sequence['+c+','+it+',v] {')
-  tangle('    fun len: '+c+' -> int = "$1.size()";')
+  tangle('  instance[v] Container['+c+',v] {')
+  tangle('    fun len: '+c+' -> size = "$1.size()";')
   tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
+  tangle('  }')
+
+  tangle('  instance[v] Sequence['+c+','+it+',v] {')
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
   tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
@@ -347,6 +317,33 @@ module Stl
   rit = n+'_reverse_iterator[v]'
 
   tangle('  instance[v] Reversible_Sequence['+c+','+it+','+rit+',v] {')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+  tangle('  }')
+
+@def tcmkass(n):
+  c = n+'[k,v]'
+  it = n+'_iterator[k,v]'
+  tangle('  instance[k,v] Eq['+n+'[k,v]] {')
+  tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
+  tangle('  }')
+
+  tangle('  instance[k,v] Container['+c+',k*v] {')
+  tangle('    fun len: '+c+' -> size = "$1.size()";')
+  tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
+  tangle('  }')
+
+  tangle('  instance[k,v] Sequence['+c+','+it+',k*v] {')
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
+  tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
+  tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
+  tangle('  }')
+
+  rit = n+'_reverse_iterator[k,v]'
+
+  tangle('  instance[k,v] Reversible_Sequence['+c+','+it+','+rit+',k*v] {')
   tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
   tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
   tangle('  }')
@@ -410,11 +407,21 @@ module Stl
 @mkbidir('Stl::MultiSet::stl_multiset_reverse_iterator[t]','t')
 
 // Map
+@tcmkass('Stl::Map::stl_map')
+
+// Map iterator
 @mkbidir('Stl::Map::stl_map_iterator[k,v]','k,v','k*v')
+
+// Map reverse iterator
 @mkbidir('Stl::Map::stl_map_reverse_iterator[k,v]','k,v','k*v')
 
 // MultiMap
+@tcmkass('Stl::MultiMap::stl_multimap')
+
+// MultiMap iterator
 @mkbidir('Stl::MultiMap::stl_multimap_iterator[k,v]','k,v','k*v')
+
+//MultiMap reverse iterator
 @mkbidir('Stl::MultiMap::stl_multimap_reverse_iterator[k,v]','k,v','k*v')
 
 @head(1,'Regression tests')
@@ -539,6 +546,7 @@ open Stl;
 open Stl::Vector;
 open Stl::Map;
 open Bidirectional_iterator[Stl::Map::stl_map_iterator[int,int],int*int];
+open Sequence[Stl::Map::stl_map[int,int],Stl::Map::stl_map_iterator[int,int],int*int];
 
 typedef ii = Vector::iterator[int];
 

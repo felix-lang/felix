@@ -188,11 +188,17 @@ typeclass Complex[t] {
   virtual fun arg: t -> t;
 }
 
+typeclass Container [c,v]
+{
+//  virtual fun fold[i]: (i->v->i) -> i -> c -> i;
+  virtual fun len: c -> size;
+  virtual fun empty(x: c): bool => len x == size(0);
+}
+
 typeclass Sequence[c,it,v] {
   inherit Eq[c];
   inherit Forward_iterator[it,v];
-  virtual fun len: c -> int;
-  virtual fun empty: c -> bool;
+  inherit Container[c,v];
   virtual gen begin: c -> it;
   virtual gen end: c -> it;
   virtual proc erase: lvalue[c] * it;
@@ -558,6 +564,10 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   | _,_ => int
   endmatch
 ;
+
+fun _ctor_int: size -> int = "$1";
+fun _ctor_size: int -> size = "$1";
+
 
 instance [t:basic_types] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
@@ -972,9 +982,6 @@ module C_hack
   fun reinterpret[dst,src]: src->dst = "reinterpret<?1>($1)";
 
   const sizeof[t]:size = 'sizeof(?1)';
-
-  fun _ctor_int: size -> int = "$1";
-  fun _ctor_size: int -> size = "$1";
 
   // deprecated
   fun int_of:size->int='$1';
@@ -2542,8 +2549,6 @@ module Lexer
   }
   fun string_between: iterator * iterator -> string =
    "std::string($1,$2)";
-
-  //gen_cmpeq iterator;
 
   fun add: iterator * int -> iterator = "$1 + $2";
   fun sub: iterator * int -> iterator = "$1 - $2";
