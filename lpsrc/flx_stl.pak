@@ -134,8 +134,96 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun mem : '+c+' * k -> bool = "$1.find($2) != $1.end()";')
   tangle('    proc insert : '+c+' * k * v = "$1.insert(std::make_pair($2,$3));";')
 
+@def mkfor(it,ts,kv=None):
+  if kv == None: kv = ts
+  tangle('  instance Eq['+it+'] {')
+  tangle('    fun eq: '+it+' * '+it+' -> bool = "$1==$2";')
+  tangle('  }')
 
+  tangle('  instance Tord['+it+'] {')
+  tangle('    fun lt: '+it+' * '+it+' -> bool = "$1<$2";')
+  tangle('  }')
+
+  tangle('  instance Iterator['+it+','+kv+'] {')
+  tangle('    fun deref : '+it+' ->  lvalue['+kv+']  = "*(#0*)(void*)&*$1";')
+  tangle('  }')
+
+  tangle('  instance Forward['+it+'] {')
+  tangle('    fun succ: '+it+' -> '+it+' = "$1+1";')
+  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
+  tangle('    proc post_incr : lvalue['+it+'] = "++$1;";')
+  tangle('  }')
+
+  tangle('  instance Forward_iterator['+it+','+kv+'] {}')
+
+@def mkbidir(it,ts,kv=None):
+  if kv == None: kv = ts
+  mkfor(it,ts,kv)
+  tangle('  instance Bidirectional['+it+'] {')
+  tangle('    fun pred: '+it+' -> '+it+' = "$1-11;";')
+  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
+  tangle('    proc post_decr : lvalue['+it+'] = "--$1;";')
+  tangle('  }')
   
+  tangle('  instance Bidirectional_iterator['+it+','+kv+'] {}')
+
+@def tcmkseq(n):
+  c = n+'[t]'
+  it = n+'_iterator[t]'
+  tangle('  instance Eq['+n+'[t]] {')
+  tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
+  tangle('  }')
+
+  tangle('  instance Container['+c+',t] {')
+  tangle('    fun len: '+c+' -> size = "$1.size()";')
+  tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
+  tangle('  }')
+
+  tangle('  instance Sequence['+c+','+it+',t] {')
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
+  tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
+  tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
+  tangle('  }')
+
+@def tcmkrseq(n):
+  c = n+'[t]'
+  it = n+'_iterator[t]'
+  rit = n+'_reverse_iterator[t]'
+
+  tangle('  instance Reversible_Sequence['+c+','+it+','+rit+',t] {')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+  tangle('  }')
+
+@def tcmkass(n):
+  c = n+'[k,v]'
+  it = n+'_iterator[k,v]'
+  tangle('  instance Eq['+n+'[k,v]] {')
+  tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
+  tangle('  }')
+
+  tangle('  instance Container['+c+',k*v] {')
+  tangle('    fun len: '+c+' -> size = "$1.size()";')
+  tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
+  tangle('  }')
+
+  tangle('  instance Sequence['+c+','+it+',k*v] {')
+  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
+  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
+  tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
+  tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
+  tangle('  }')
+
+  rit = n+'_reverse_iterator[k,v]'
+
+  tangle('  instance Reversible_Sequence['+c+','+it+','+rit+',k*v] {')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+  tangle('  }')
+
 module Stl 
 {
   type pair[k,v] = "std::pair<?1 const,?2>";
@@ -155,6 +243,16 @@ module Stl
     proc pluseq: lvalue[stl_vector_iterator[t]] * int = "$1+=$2;";
     proc minuseq: lvalue[stl_vector_iterator[t]] * int -> stl_vector_iterator[t] = "$1-=$2;";
     fun subscript: stl_vector_iterator[t] * int -> lvalue[t] = "$1[$2]";
+// Vector
+@tcmkseq('stl_vector')
+@tcmkrseq('stl_vector')
+
+// Vector iterator
+@mkbidir('stl_vector_iterator[t]','t')
+
+// Vector reverse iterator
+@mkbidir('stl_vector_reverse_iterator[t]','t')
+
   }
   module List[t]
   {
@@ -166,6 +264,16 @@ module Stl
 @mkfront('list')
 @mkback('list')
 @mkpof('list')
+// List
+@tcmkseq('stl_list')
+@tcmkrseq('stl_list')
+
+// List iterator
+@mkbidir('stl_list_iterator[t]','t')
+
+// List reverse iterator
+@mkbidir('stl_list_reverse_iterator[t]','t')
+
   }
   module Queue[t]
   {
@@ -184,37 +292,91 @@ module Stl
 @mkfront('deque')
 @mkback('deque')
 @mksub('deque')
+// Deque
+@tcmkseq('stl_deque')
+@tcmkrseq('stl_deque')
+
+// Deque iterator
+@mkbidir('stl_deque_iterator[t]','t')
+
+// Deque reverse iterator
+@mkbidir('stl_deque_reverse_iterator[t]','t')
+
   }
   module PriorityQueue[t]
   {
     requires std_stl_queue;
 @mkseq('priorityqueue')
+// Priority Queue
+@tcmkseq('stl_priorityqueue')
+
   }
   module Stack[t]
   {
     requires std_stl_stack;
 @mkseq('stack')
+// Stack 
+@tcmkseq('stl_stack')
+
   }
 
   module Set[t]
   {
     requires std_stl_set;
 @mkset('set')
+// Set
+@tcmkseq('Set::stl_set')
+@tcmkrseq('Set::stl_set')
+
+// Set iterator
+@mkbidir('stl_set_iterator[t]','t')
+
+// Set reverse iterator
+@mkbidir('stl_set_reverse_iterator[t]','t')
+
   }
   module MultiSet[t]
   {
     requires std_stl_set;
 @mkset('multiset')
+// MultiSet
+@tcmkseq('stl_multiset')
+@tcmkrseq('stl_multiset')
+
+// MultiSet iterator
+@mkbidir('stl_multiset_iterator[t]','t')
+
+// MultiSet reverse iterator
+@mkbidir('stl_multiset_reverse_iterator[t]','t')
+
   }
   module Map[k,v]
   {
     requires std_stl_map;
 @mkass('map')
+// Map
+@tcmkass('stl_map')
+
+// Map iterator
+@mkbidir('stl_map_iterator[k,v]','k,v','k*v')
+
+// Map reverse iterator
+@mkbidir('stl_map_reverse_iterator[k,v]','k,v','k*v')
+
   }
   module MultiMap[k,v]
   {
     requires std_stl_map;
 @mkass('multimap')
+// MultiMap
+@tcmkass('stl_multimap')
+
+// MultiMap iterator
+@mkbidir('stl_multimap_iterator[k,v]','k,v','k*v')
+
+//MultiMap reverse iterator
+@mkbidir('stl_multimap_reverse_iterator[k,v]','k,v','k*v')
+
   }
 
 @if HAVE_STL_GNU_CXX:
@@ -258,171 +420,6 @@ module Stl
   tangle('  }')
 }
 
-@def mkfor(it,ts,kv=None):
-  if kv == None: kv = ts
-  tangle('  instance['+ts+'] Eq['+it+'] {')
-  tangle('    fun eq: '+it+' * '+it+' -> bool = "$1==$2";')
-  tangle('  }')
-
-  tangle('  instance['+ts+'] Tord['+it+'] {')
-  tangle('    fun lt: '+it+' * '+it+' -> bool = "$1<$2";')
-  tangle('  }')
-
-  tangle('  instance['+ts+'] Iterator['+it+','+kv+'] {')
-  tangle('    fun deref : '+it+' ->  lvalue['+kv+']  = "*(#0*)(void*)&*$1";')
-  tangle('  }')
-
-  tangle('  instance['+ts+'] Forward['+it+'] {')
-  tangle('    fun succ: '+it+' -> '+it+' = "$1+1";')
-  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
-  tangle('    proc post_incr : lvalue['+it+'] = "++$1;";')
-  tangle('  }')
-
-  tangle('  instance['+ts+'] Forward_iterator['+it+','+kv+'] {}')
-
-@def mkbidir(it,ts,kv=None):
-  if kv == None: kv = ts
-  mkfor(it,ts,kv)
-  tangle('  instance['+ts+'] Bidirectional['+it+'] {')
-  tangle('    fun pred: '+it+' -> '+it+' = "$1-11;";')
-  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
-  tangle('    proc post_decr : lvalue['+it+'] = "--$1;";')
-  tangle('  }')
-  
-  tangle('  instance['+ts+'] Bidirectional_iterator['+it+','+kv+'] {}')
-
-@def tcmkseq(n):
-  c = n+'[v]'
-  it = n+'_iterator[v]'
-  tangle('  instance[v] Eq['+n+'[v]] {')
-  tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
-  tangle('  }')
-
-  tangle('  instance[v] Container['+c+',v] {')
-  tangle('    fun len: '+c+' -> size = "$1.size()";')
-  tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
-  tangle('  }')
-
-  tangle('  instance[v] Sequence['+c+','+it+',v] {')
-  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
-  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
-  tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
-  tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
-  tangle('  }')
-
-@def tcmkrseq(n):
-  c = n+'[v]'
-  it = n+'_iterator[v]'
-  rit = n+'_reverse_iterator[v]'
-
-  tangle('  instance[v] Reversible_Sequence['+c+','+it+','+rit+',v] {')
-  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
-  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
-  tangle('  }')
-
-@def tcmkass(n):
-  c = n+'[k,v]'
-  it = n+'_iterator[k,v]'
-  tangle('  instance[k,v] Eq['+n+'[k,v]] {')
-  tangle('    fun eq: '+c+' * '+c+' -> bool = "$1==$2";')
-  tangle('  }')
-
-  tangle('  instance[k,v] Container['+c+',k*v] {')
-  tangle('    fun len: '+c+' -> size = "$1.size()";')
-  tangle('    fun empty: '+c+' -> bool = "$1.empty()";')
-  tangle('  }')
-
-  tangle('  instance[k,v] Sequence['+c+','+it+',k*v] {')
-  tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
-  tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
-  tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
-  tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
-  tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
-  tangle('  }')
-
-  rit = n+'_reverse_iterator[k,v]'
-
-  tangle('  instance[k,v] Reversible_Sequence['+c+','+it+','+rit+',k*v] {')
-  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
-  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
-  tangle('  }')
-
-
-
-// Vector
-@tcmkseq('Stl::Vector::stl_vector')
-@tcmkrseq('Stl::Vector::stl_vector')
-
-// Vector iterator
-@mkbidir('Stl::Vector::stl_vector_iterator[t]','t')
-
-// Vector reverse iterator
-@mkbidir('Stl::Vector::stl_vector_reverse_iterator[t]','t')
-
-// List
-@tcmkseq('Stl::List::stl_list')
-@tcmkrseq('Stl::List::stl_list')
-
-// List iterator
-@mkbidir('Stl::List::stl_list_iterator[t]','t')
-
-// List reverse iterator
-@mkbidir('Stl::List::stl_list_reverse_iterator[t]','t')
-
-// Deque
-@tcmkseq('Stl::Deque::stl_deque')
-@tcmkrseq('Stl::Deque::stl_deque')
-
-// Deque iterator
-@mkbidir('Stl::Deque::stl_deque_iterator[t]','t')
-
-// Deque reverse iterator
-@mkbidir('Stl::Deque::stl_deque_reverse_iterator[t]','t')
-
-// Priority Queue
-@tcmkseq('Stl::PriorityQueue::stl_priorityqueue')
-
-// Stack 
-@tcmkseq('Stl::Stack::stl_stack')
-
-// Set
-@tcmkseq('Stl::Set::stl_set')
-@tcmkrseq('Stl::Set::stl_set')
-
-// Set iterator
-@mkbidir('Stl::Set::stl_set_iterator[t]','t')
-
-// Set reverse iterator
-@mkbidir('Stl::Set::stl_set_reverse_iterator[t]','t')
-
-// MultiSet
-@tcmkseq('Stl::MultiSet::stl_multiset')
-@tcmkrseq('Stl::MultiSet::stl_multiset')
-
-// MultiSet iterator
-@mkbidir('Stl::MultiSet::stl_multiset_iterator[t]','t')
-
-// MultiSet reverse iterator
-@mkbidir('Stl::MultiSet::stl_multiset_reverse_iterator[t]','t')
-
-// Map
-@tcmkass('Stl::Map::stl_map')
-
-// Map iterator
-@mkbidir('Stl::Map::stl_map_iterator[k,v]','k,v','k*v')
-
-// Map reverse iterator
-@mkbidir('Stl::Map::stl_map_reverse_iterator[k,v]','k,v','k*v')
-
-// MultiMap
-@tcmkass('Stl::MultiMap::stl_multimap')
-
-// MultiMap iterator
-@mkbidir('Stl::MultiMap::stl_multimap_iterator[k,v]','k,v','k*v')
-
-//MultiMap reverse iterator
-@mkbidir('Stl::MultiMap::stl_multimap_reverse_iterator[k,v]','k,v','k*v')
 
 @head(1,'Regression tests')
 

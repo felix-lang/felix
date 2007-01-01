@@ -4747,6 +4747,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
     )
     es
     ;
+    (*
     begin match !insts with
     | [`Inst i] -> ()
     | [`Typeclass (i,ts)] -> ()
@@ -4774,6 +4775,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
         " found"
       )
     end
+    *)
 
 
 and instance_check syms caller_env called_env mgu sr calledname rtcr tsub = 
@@ -5206,12 +5208,14 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   let bopens = map (bind_dir syms env rs) opens in
   let bincludes= map (bind_dir syms env rs) includes in
 
+  (*
   (* HACK to check open typeclass *)
   let _ = 
     let xs = get_includes syms bopens in
     let tables = map (pub_table_dir syms env true) xs in
     ()
   in
+  *)
   (* strip duplicates *)
   let u = uniq_cat [] btypeclasses in
   let u = uniq_cat u bopens in
