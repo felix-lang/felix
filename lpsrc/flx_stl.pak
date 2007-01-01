@@ -420,6 +420,63 @@ module Stl
   tangle('  }')
 }
 
+open Stl;
+open Stl::Vector;
+open[t] Reversible_Sequence[
+  Stl::Vector::stl_vector[t],
+  Stl::Vector::stl_vector_iterator[t],
+  Stl::Vector::stl_vector_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::Vector::stl_vector_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::Vector::stl_vector_reverse_iterator[t],t];
+
+open Stl::List;
+open[t] Reversible_Sequence[
+  Stl::List::stl_list[t],
+  Stl::List::stl_list_iterator[t],
+  Stl::List::stl_list_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::List::stl_list_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::List::stl_list_reverse_iterator[t],t];
+
+open Stl::Deque;
+open[t] Reversible_Sequence[
+  Stl::Deque::stl_deque[t],
+  Stl::Deque::stl_deque_iterator[t],
+  Stl::Deque::stl_deque_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::Deque::stl_deque_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::Deque::stl_deque_reverse_iterator[t],t];
+
+open Stl::Set;
+open[t] Reversible_Sequence[
+  Stl::Set::stl_set[t],
+  Stl::Set::stl_set_iterator[t],
+  Stl::Set::stl_set_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::Set::stl_set_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::Set::stl_set_reverse_iterator[t],t];
+
+open Stl::MultiSet;
+open[t] Reversible_Sequence[
+  Stl::MultiSet::stl_multiset[t],
+  Stl::MultiSet::stl_multiset_iterator[t],
+  Stl::MultiSet::stl_multiset_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::MultiSet::stl_multiset_iterator[t],t];
+open[t] Bidirectional_iterator[Stl::MultiSet::stl_multiset_reverse_iterator[t],t];
+
+open Stl::Map;
+open[k,v] Reversible_Sequence[
+  Stl::Map::stl_map[k,v],
+  Stl::Map::stl_map_iterator[k,v],
+  Stl::Map::stl_map_reverse_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl::Map::stl_map_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl::Map::stl_map_reverse_iterator[k,v],k*v];
+
+open Stl::MultiMap;
+open[k,v] Reversible_Sequence[
+  Stl::MultiMap::stl_multimap[k,v],
+  Stl::MultiMap::stl_multimap_iterator[k,v],
+  Stl::MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl::MultiMap::stl_multimap_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl::MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
+
 
 @head(1,'Regression tests')
 
@@ -436,19 +493,10 @@ Tests by category keyword.
 #import <flx.flxh>
 include "stl";
 
-open Reversible_Sequence[
-  Stl::Vector::stl_vector[int], 
-  Stl::Vector::stl_vector_iterator[int],
-  Stl::Vector::stl_vector_reverse_iterator[int],
-  int
-];
-
-
-var x: Stl::Vector::stl_vector[int];
+var x: stl_vector[int];
 
 print$ empty x; endl;
 
-open Stl::Vector;
 push_back  (x,4);
 push_back  (x,5);
 push_back  (x,6);
@@ -492,9 +540,9 @@ proc check[c,it,rit with Reversible_Sequence[c,it,rit,int]]
 }
 
 check [
-  Stl::Vector::stl_vector[int], 
-  Stl::Vector::stl_vector_iterator[int],
-  Stl::Vector::stl_vector_reverse_iterator[int],
+  stl_vector[int], 
+  stl_vector_iterator[int],
+  stl_vector_reverse_iterator[int],
   int
 ]();
 @doc()
@@ -539,11 +587,6 @@ false
 @kat("stl:Map")
 #import <flx.flxh>
 include "stl";
-open Stl;
-open Stl::Vector;
-open Stl::Map;
-open Bidirectional_iterator[Stl::Map::stl_map_iterator[int,int],int*int];
-open Sequence[Stl::Map::stl_map[int,int],Stl::Map::stl_map_iterator[int,int],int*int];
 
 typedef ii = Vector::iterator[int];
 
