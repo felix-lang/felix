@@ -2038,14 +2038,21 @@ if "help" in options:
   print "REQS: "
   ks=pkgreqs.keys()
   ks.sort()
+  length = 0
   for k in ks:
-    print "  ",k,pkgreqs[k]
+    length = max(len(k), length)
+  for k in ks:
+    print "  ",string.ljust(k,length),pkgreqs[k]
    
+  print
   print "DEPS: "
   ks = pkgdeps.keys()
   ks.sort()
+  length = 0
   for k in ks:
-    print "  ",k,pkgdeps[k]
+    length = max(len(k), length)
+  for k in ks:
+    print "  ",string.ljust(k,length),pkgdeps[k]
 
 # -------------------------------------------------
 # LOAD PLUGINS
