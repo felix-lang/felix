@@ -130,27 +130,6 @@ for k in sys.argv[1:]:
     f.close()
 
 
-@h = tangler('spkgs/misc.py')
-@select(h)
-# files containing ocamllex sources
-MISC_LEXS = []
-
-# files containing ocamlyacc sources
-MISC_PARSES = [ ]
-
-# ocaml modules = interfaces + implementation files
-MISC_MODULES = [
-  'src/flx_filesys'      ,
-]
-
-MISC_INTERFACES = MISC_MODULES
-
-MISC_IMPLEMENTATIONS = MISC_INTERFACES
-
-caml_interfaces = MISC_INTERFACES
-caml_implementations = MISC_IMPLEMENTATIONS
-
-
 @h = tangler('spkgs/tutorial.py')
 @select(h)
 pkg_requires = [
@@ -352,7 +331,7 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_ocaml_modules'
     
-  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, force):
+  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, INCLUDES, force):
     if not (INTERFACES or IMPLEMENTATIONS):
       return force
 
@@ -364,7 +343,7 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.mli') >= filetime(file+'.cmi'): force = 1
       if force:
-        vxqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
+        vxqt(OCAMLC + ' ' + INCLUDES + ' -c ' + file + '.mli')
 
     # STEP 5: Compile ocaml implementations
     for implementation in IMPLEMENTATIONS:
@@ -373,7 +352,7 @@ class PLUGIN(Plugin):
         if filetime(file+'.ml') >= filetime(file + OCAML_OBJECT_EXTENSION): 
           force = 1
       if force:
-        vxqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
+        vxqt(OCAMLOPT + ' '+ INCLUDES + ' -c ' + file +'.ml')
 
     return force
 @doc()
@@ -390,7 +369,7 @@ class PLUGIN(Plugin):
     print "CAML CREATING LIBRARY", lib
 
     # STEP 6: Build Ocaml Library
-    object_library_name = os.path.join("src", lib + OCAML_LIB_EXTENSION)
+    object_library_name = lib + OCAML_LIB_EXTENSION
     linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
     library_filetime = filetime(object_library_name)
 
@@ -407,7 +386,7 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_ocaml_exes'
 
-  def runme(self, EXES, OLIBRARIES, force):
+  def runme(self, EXES, OLIBRARIES, INCLUDES, force):
     # finally, mainline *.cmx or cma files to link to executables
     if not EXES:
       return
@@ -419,7 +398,7 @@ class PLUGIN(Plugin):
   
     for exe in EXES:
       dst = os.path.join("bin", os.path.basename(exe))
-      vxqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
+      vxqt(OCAMLOPT + INCLUDES + ' -o ' + dst + \
           x + ' src/flx_version_hook.ml ' + exe + \
           OCAML_OBJECT_EXTENSION)
 @doc()
@@ -437,16 +416,23 @@ class PLUGIN(Plugin):
     INTERFACES = pkgdict.get("caml_interfaces", [])
     IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
     EXES = pkgdict.get("caml_exes", [])
+    INCLUDES = pkgdict.get("caml_include_paths", ['src'])
 
-    force = plugins['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS + EXES, force)
+    # prepend -I to each include
+    if INCLUDES:
+      for i in range(len(INCLUDES)):
+        INCLUDES[i] = '-I ' + INCLUDES[i]
+    INCLUDES = string.join(INCLUDES)
 
-    lib = pkgdict.get('caml_provide_lib', pkg+"lib")
+    force = plugins['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS + EXES, INCLUDES, force)
+
+    lib = pkgdict.get('caml_provide_lib', 'src'+os.sep+pkg+"lib")
 
     force = plugins['build_ocaml_libraries'].runme(IMPLEMENTATIONS, lib, force)
 
     OLIBRARIES = pkgdict.get("caml_require_libs", [])
 
-    plugins['build_ocaml_exes'].runme(EXES, OLIBRARIES, force)
+    plugins['build_ocaml_exes'].runme(EXES, OLIBRARIES, INCLUDES, force)
   
     return force
 @doc()
@@ -717,6 +703,7 @@ class PLUGIN(Plugin):
         "speed",
         "spkgs",
         "src",
+        os.path.join("src", "cil"),
         os.path.join("test", "drivers"),
         os.path.join("test", "faio"),
         os.path.join("test", "gmp"),
@@ -820,9 +807,6 @@ CFLAGS = ""
 SFLAGS = ""
 DFLAGS = ""
 EXTRA_LIBS = []
-
-# OCAML STUFFS
-OCAML_INCLUDES = ""
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 def build_target_rtl_dynamic(pkg, pkgdict):
@@ -1071,7 +1055,6 @@ class PLUGIN(Plugin):
 if not globals().get("ocaml_env",None):
   ocaml_env = 1
 
-  OCAML_OBJDIR = "src"
   BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options 
   if BYTECODE:
     if "profile" in options: 
@@ -1082,9 +1065,6 @@ if not globals().get("ocaml_env",None):
     OCAMLOPT = OCAMLC
     if "profile" in options:
       OCAMLOPT = OCAMLOPT+' -p '
-
-  OCAMLOPT = OCAMLOPT + " -I " + OCAML_OBJDIR
-  OCAMLC = OCAMLC + " -I " + OCAML_OBJDIR
 
   if debug or "debug" in options:
     if NATIVE_CODE_COMPILER:

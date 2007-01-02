@@ -34,5 +34,25 @@ let filetime f =
   else 
     try (Unix.stat f).Unix.st_mtime 
     with | _ -> 0.0
+@doc()
 
+@h = tangler('spkgs/misc.py')
+@select(h)
+# files containing ocamllex sources
+MISC_LEXS = []
+
+# files containing ocamlyacc sources
+MISC_PARSES = [ ]
+
+# ocaml modules = interfaces + implementation files
+MISC_MODULES = [
+  'src/flx_filesys',
+]
+
+MISC_INTERFACES = MISC_MODULES
+
+MISC_IMPLEMENTATIONS = MISC_INTERFACES
+
+caml_interfaces = MISC_INTERFACES
+caml_implementations = MISC_IMPLEMENTATIONS
 

@@ -6,6 +6,7 @@ FLXCC_EXES = [ 'src/flxcc', ]
 caml_exes = FLXCC_EXES
 caml_require_libs = ['nums','unix','misclib','cillib','flxcclib','flxlib']
 pkg_requires = ['cil']
+caml_include_paths = ['src', 'src/cil']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 weaver_directory = 'doc/flxcc/'
 

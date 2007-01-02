@@ -2,44 +2,44 @@
 @execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/cil.py')
 @select(h)
-CIL_LEXS = [ 'src/flx_cil_clexer', 'src/flx_cil_formatlex', ]
-CIL_PARSES = [ 'src/flx_cil_cparser', 'src/flx_cil_formatparse', ]
+CIL_LEXS = [ 'src/cil/flx_cil_clexer', 'src/cil/flx_cil_formatlex', ]
+CIL_PARSES = [ 'src/cil/flx_cil_cparser', 'src/cil/flx_cil_formatparse', ]
 
 CIL_MODULES = [
-  'src/flx_cil_machdep_type',
-  'src/flx_cil_cabs',
-  'src/flx_cil_cilversion',
-  'src/flx_cil_machdep',
-  'src/flx_cil_pretty',
-  'src/flx_cil_errormsg',
-  'src/flx_cil_cabs_helper',
-  'src/flx_cil_lexerhack',
-  'src/flx_cil_escape',
-  'src/flx_cil_cprint',
-  'src/flx_cil_cparser',
-  'src/flx_cil_clexer',
-  'src/flx_cil_stats',
-  'src/flx_cil_trace',
-  'src/flx_cil_clist',
-  'src/flx_cil_cil',
-  'src/flx_cil_frontc',
-  'src/flx_cil_rmtmps',
-  'src/flx_cil_cabsvisit',
-  'src/flx_cil_inthash',
-  'src/flx_cil_formatparse',
-  'src/flx_cil_formatlex',
-  'src/flx_cil_util',
-  'src/flx_cil_mergecil',
-  'src/flx_cil_patch',
-  'src/flx_cil_formatcil',
-  'src/flx_cil_cilutil',
-  'src/flx_cil_cabs2cil',
-  'src/flx_cil_check',
+  'src/cil/flx_cil_machdep_type',
+  'src/cil/flx_cil_cabs',
+  'src/cil/flx_cil_cilversion',
+  'src/cil/flx_cil_machdep',
+  'src/cil/flx_cil_pretty',
+  'src/cil/flx_cil_errormsg',
+  'src/cil/flx_cil_cabs_helper',
+  'src/cil/flx_cil_lexerhack',
+  'src/cil/flx_cil_escape',
+  'src/cil/flx_cil_cprint',
+  'src/cil/flx_cil_cparser',
+  'src/cil/flx_cil_clexer',
+  'src/cil/flx_cil_stats',
+  'src/cil/flx_cil_trace',
+  'src/cil/flx_cil_clist',
+  'src/cil/flx_cil_cil',
+  'src/cil/flx_cil_frontc',
+  'src/cil/flx_cil_rmtmps',
+  'src/cil/flx_cil_cabsvisit',
+  'src/cil/flx_cil_inthash',
+  'src/cil/flx_cil_formatparse',
+  'src/cil/flx_cil_formatlex',
+  'src/cil/flx_cil_util',
+  'src/cil/flx_cil_mergecil',
+  'src/cil/flx_cil_patch',
+  'src/cil/flx_cil_formatcil',
+  'src/cil/flx_cil_cilutil',
+  'src/cil/flx_cil_cabs2cil',
+  'src/cil/flx_cil_check',
 ]
 
 CIL_RAW_INTERFACES = [
-  'src/flx_cil_machdep_type',
-  'src/flx_cil_cabs',
+  'src/cil/flx_cil_machdep_type',
+  'src/cil/flx_cil_cabs',
 ]
 
 CIL_INTERFACES = CIL_MODULES
@@ -50,6 +50,8 @@ caml_parses = CIL_PARSES
 caml_raw_interfaces = CIL_RAW_INTERFACES
 caml_interfaces = CIL_INTERFACES
 caml_implementations = CIL_IMPLEMENTATIONS
+caml_provide_lib = 'src/cil/cillib'
+caml_include_paths = ['src/cil']
 caml_require_libs = ['nums','unix','misclib','cillib']
 pkg_requires = ['misc']
 
