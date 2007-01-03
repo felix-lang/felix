@@ -13,6 +13,7 @@
 @h=tangler('lib/stl.flx','data')
 @select(h)
 #include <flx_categories.flxh>
+#import <flx.flxh>
 
 include "std";
 header std_stl_vector = "#include <vector>";
@@ -185,6 +186,11 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
   tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
   tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
+  tangle('    fun fold[i] (x:'+c+') (f:i->t->i) (var acc:i):i= {')
+  tangle('      var s = begin x; var e = end x;')
+  tangle('      whilst s != e do acc = f acc (*s); ++s; done;')
+  tangle('      return acc;')
+  tangle('    }')
   tangle('  }')
 
 @def tcmkrseq(n):
@@ -275,12 +281,6 @@ module Stl
 @mkbidir('stl_list_reverse_iterator[t]','t')
 
   }
-  module Queue[t]
-  {
-    requires std_stl_queue;
-@mkseq('queue')
-@mkinsat('queue')
-  }
   module Deque[t]
   {
     requires std_stl_deque;
@@ -303,23 +303,6 @@ module Stl
 @mkbidir('stl_deque_reverse_iterator[t]','t')
 
   }
-  module PriorityQueue[t]
-  {
-    requires std_stl_queue;
-@mkseq('priorityqueue')
-// Priority Queue
-@tcmkseq('stl_priorityqueue')
-
-  }
-  module Stack[t]
-  {
-    requires std_stl_stack;
-@mkseq('stack')
-// Stack 
-@tcmkseq('stl_stack')
-
-  }
-
   module Set[t]
   {
     requires std_stl_set;
