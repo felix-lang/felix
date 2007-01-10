@@ -190,7 +190,6 @@ typeclass Complex[t] {
 
 typeclass Container [c,v]
 {
-//  virtual fun fold[i]: (i->v->i) -> i -> c -> i;
   virtual fun len: c -> size;
   virtual fun empty(x: c): bool => len x == size(0);
 }
@@ -204,6 +203,7 @@ typeclass Sequence[c,it,v] {
   virtual proc erase: lvalue[c] * it;
   virtual proc erase_between: lvalue[c] * it * it;
   virtual proc clear: lvalue[c];
+  virtual fun fold[i]: (i->v->i) -> i -> c -> i;
 }
 
 typeclass Reversible_Sequence[c,it,rit,v] {
@@ -212,6 +212,7 @@ typeclass Reversible_Sequence[c,it,rit,v] {
   inherit Bidirectional_iterator[rit,v];
   virtual gen rbegin: c -> rit;
   virtual gen rend: c -> rit;
+  virtual fun rfold[i]: (i->v->i) -> i -> c -> i;
 }
 
 
