@@ -51,6 +51,7 @@ FLX_MODULES = [
   'src/flx_macro', 
   'src/flx_cformat', 
   'src/flx_ciltoflx',
+  'src/flx_colns', 
   'src/flx_desugar', 
   'src/flx_mbind', 
   'src/flx_symtab', 

@@ -1521,6 +1521,24 @@ module_definition:
       | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,dfltvs,qn)])
     }
 
+  | open_opt NAMESPACE NAME tvarlist opt_equal compound 
+    { 
+      let sr = rsrange (slift $2) (fst $6) in
+      let name = snd $3 in
+      let qn = `AST_name (sr,name,[]) in
+      let dcl =
+        `AST_namespace
+        (
+          sr, name,
+          $4,
+          snd $6
+        ) 
+      in match $1 with
+      | `None -> dcl
+      | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,dfltvs,qn)])
+    }
+
+
 @head(3,'Variable and Constant Declaration')
 @select(h)
 name_suffix:

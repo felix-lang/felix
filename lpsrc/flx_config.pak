@@ -1559,6 +1559,7 @@ flx_expr_terminator_keywords = [
     ("lval", "LVAL"),
     ("macro", "MACRO"),
     ("module", "MODULE"),
+    ("namespace", "NAMESPACE"),
     ("NaN", "NAN"),
     ("new", "NEW"),
     ("noinline", "NOINLINE"),

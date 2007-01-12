@@ -734,6 +734,7 @@ and statement_t =
  
   (* module system *)
   | `AST_untyped_module of range_srcref * id_t * vs_list_t * statement_t list  
+  | `AST_namespace of range_srcref * id_t * vs_list_t * statement_t list  
   | `AST_typeclass of range_srcref * id_t * vs_list_t * statement_t list
   | `AST_instance of range_srcref * vs_list_t * qualified_name_t * statement_t list
  
@@ -2184,6 +2185,7 @@ let src_of_stmt e = match e with
   | `AST_typeclass (s,_, _, _)
   | `AST_instance (s,_, _,_)
   | `AST_untyped_module (s,_,_,_)
+  | `AST_namespace (s,_,_,_)
   | `AST_export_fun (s, _,_)
   | `AST_export_type (s, _,_)
   | `AST_type (s,_,_)
@@ -3668,10 +3670,17 @@ and string_of_statement level s =
     string_of_qualified_name qn ^ ";"
 
   | `AST_untyped_module (_,name, vs,sts)  -> 
-    spaces level ^ "module " ^ name ^ 
+    spaces level ^ "module " ^ name ^ print_vs vs ^ 
     " = " ^
     "\n" ^ 
     string_of_compound level sts
+  
+  | `AST_namespace (_,name, vs,sts)  -> 
+    spaces level ^ "namespace " ^ name ^ print_vs vs ^ 
+    " = " ^
+    "\n" ^ 
+    string_of_compound level sts
+
 
   | `AST_struct (_,name, vs, cs) -> 
     let string_of_struct_component (name,ty) =
