@@ -525,16 +525,22 @@ abstract_type:
       `AST_ctypes (sr,$3,qs,$4)
     }
 
-  | type_quals TYPE NAME tvarlist EQUAL code_spec requires_clause SEMI 
+  | type_quals TYPE declname EQUAL code_spec requires_clause SEMI 
     { 
+      let name,vs = hd $3 in
       let qs = List.map snd $1 in
-      `AST_abs_decl (rstoken $2 $8, snd $3, $4, qs, $6, $7) 
+      let sr = rstoken $2 $7 in
+      let stmt = `AST_abs_decl (sr, name, vs, qs, $5, $6) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
     }
 
-  | type_quals TYPE NAME tvarlist EQUAL NEW typeexpr SEMI 
+  | type_quals TYPE declname EQUAL NEW typeexpr SEMI 
     { 
-      let t = typecode_of_expr $7 in
-      `AST_newtype (rstoken $2 $8, snd $3, $4, t) 
+      let name,vs = hd $3 in
+      let sr = rstoken $2 $7 in
+      let t = typecode_of_expr $6 in
+      let stmt = `AST_newtype (sr, name, vs, t) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
     }
 
   | CALLBACK PROCEDURE NAME COLON expr requires_clause SEMI 
@@ -583,18 +589,27 @@ union_decl:
       `AST_union (rstoken $1 $6, snd $2, dfltvs, $4) 
     }
 
-  | UNION NAME tvarlist EQUAL type_sum_items SEMI 
+  | UNION declname EQUAL type_sum_items SEMI 
     { 
-      `AST_union (rstoken $1 $6, snd $2, $3, $5) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let stmt = `AST_union (sr, name,vs, $4) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
-  | UNION NAME tvarlist EQUAL VBAR type_sum_items SEMI 
+  | UNION declname EQUAL VBAR type_sum_items SEMI 
     { 
-      `AST_union (rstoken $1 $7, snd $2, $3, $6) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let stmt = `AST_union (sr, name,vs, $5) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | UNION NAME tvarlist LBRACE type_sum_items2 RBRACE 
+  | UNION declname LBRACE type_sum_items2 RBRACE 
     { 
-      `AST_union (rstoken $1 $6, snd $2, $3, $5) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let stmt = `AST_union (sr, name,vs, $4) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
 opt_value:
@@ -636,31 +651,44 @@ opt_equal:
   | {()}
 
 struct_decl:
-  | STRUCT NAME tvarlist opt_equal LBRACE struct_component_aster RBRACE 
+  | STRUCT declname opt_equal LBRACE struct_component_aster RBRACE 
   { 
-    `AST_struct (rstoken $1 $7, snd $2, $3, $6) 
+    let name,vs = hd $2 in
+    let sr = rstoken $1 $6 in
+    let stmt = `AST_struct (sr,name,vs,$5) in
+    fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
   }
 
-  | CSTRUCT NAME tvarlist opt_equal LBRACE struct_component_aster RBRACE 
+  | CSTRUCT declname opt_equal LBRACE struct_component_aster RBRACE 
   { 
-    `AST_cstruct (rstoken $1 $7, snd $2, $3, $6) 
+    let name,vs = hd $2 in
+    let sr = rstoken $1 $6 in
+    let stmt = `AST_cstruct (sr,name,vs, $5) in
+    fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
   }
 
-  | CCLASS NAME tvarlist opt_equal LBRACE class_component_aster RBRACE 
+  | CCLASS declname opt_equal LBRACE class_component_aster RBRACE 
   { 
-    `AST_cclass (rstoken $1 $7, snd $2, $3, $6) 
+    let name,vs = hd $2 in
+    let sr = rstoken $1 $6 in
+    let stmt = `AST_cclass (sr, name,vs, $5) in
+    fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
   }
 
-  | CLASS NAME tvarlist opt_equal compound
+  | CLASS declname opt_equal compound
   { 
-    let sr = rsrange (slift $1) (fst $5) in
-    `AST_class (sr, snd $2, $3, snd $5) 
+    let name,vs = hd $2 in
+    let sr = rsrange (slift $1) (fst $4) in
+    let stmt = `AST_class (sr, name,vs, snd $4) in
+    fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
   }
 
-  | TYPECLASS NAME tvarlist opt_equal compound
+  | TYPECLASS declname opt_equal compound
   {
-    let sr = rsrange (slift $1) (fst $5) in 
-    `AST_typeclass (sr, snd $2, $3, snd $5) 
+    let name,vs = hd $2 in
+    let sr = rsrange (slift $1) (fst $4) in 
+    let stmt = `AST_typeclass (sr, name, vs, snd $4)  in
+    fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
   }
 
   | INSTANCE tvarlist qualified_name opt_equal compound
@@ -704,30 +732,32 @@ typeclass_component:
 @head(3,'Abstract Constant Binding')
 @select(h)
 const_def:
-  | CONST NAME tvarlist COLON expr EQUAL code_spec requires_clause SEMI 
-  { 
-    `AST_const_decl 
-    (
-      rstoken $1 $9, 
-      snd $2, 
-      $3,
-      typecode_of_expr $5, 
-      $7, $8
-    ) 
-  }
+  | CONST declname COLON expr EQUAL code_spec requires_clause SEMI 
+    { 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $8 in
+      let stmt = `AST_const_decl 
+      (
+        sr, name,vs,
+        typecode_of_expr $4, 
+        $6, $7
+      ) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
 
-  | CONST NAME tvarlist COLON expr requires_clause SEMI 
-  { 
-    let sr = rstoken $1 $7 in
-    `AST_const_decl 
-    (
-      sr,
-      snd $2, 
-      $3,
-      typecode_of_expr $5, 
-      `Str (snd $2), $6
-    ) 
-  }
+    }
+
+  | CONST declname COLON expr requires_clause SEMI 
+    { 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let stmt = `AST_const_decl 
+      (
+        sr, name, vs,
+        typecode_of_expr $4, 
+        `Str name, $5
+      ) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+    }
 
 
 @head(3,'Binding Header Definition')
@@ -793,15 +823,21 @@ binding_header:
     `AST_insert (sr, "_root", dfltvs, $3, `Body, $4) 
   }
 
-  | HEADER NAME tvarlist EQUAL code_spec requires_clause SEMI 
-  { 
-    `AST_insert (rstoken $1 $7, snd $2, $3, $5, `Header, $6) 
-  }
+  | HEADER declname EQUAL code_spec requires_clause SEMI 
+    { 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let stmt = `AST_insert (sr,name,vs, $4, `Header, $5) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+    }
   
-  | BODY NAME tvarlist EQUAL code_spec requires_clause SEMI 
-  { 
-    `AST_insert (rstoken $1 $7, snd $2, $3, $5, `Body, $6) 
-  }
+  | BODY declname EQUAL code_spec requires_clause SEMI 
+    { 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let stmt = `AST_insert (sr,name,vs, $4, `Body, $5) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+    }
 
   | REQUIRES requirements SEMI 
   { 
