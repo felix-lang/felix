@@ -860,41 +860,40 @@ inline_cpp:
 @head(3,'Type Alias')
 @select(h)
 type_alias:
-  | TYPEDEF NAME tvarlist EQUAL expr SEMI 
+  | TYPEDEF declname EQUAL expr SEMI 
     { 
-      let sr = rstoken $1 $6
-      and name = snd $2 
-      and return_type = `TYP_type
-      and body = typecode_of_expr $5
-      and vs = $3 
-      in
-      `AST_type_alias (sr,name,vs,body)
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let return_type = `TYP_type in
+      let body = typecode_of_expr $4 in
+      let stmt = `AST_type_alias (sr,name,vs,body) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | TYPEDEF FUNCTION NAME tvarlist typefun_args COLON expr EQRIGHTARROW expr SEMI
+  | TYPEDEF FUNCTION declname typefun_args COLON expr EQRIGHTARROW expr SEMI
     {
-      let sr = rstoken $1 $10
-      and name = snd $3 
-      and return_type = typecode_of_expr $7
-      and body = typecode_of_expr $9
-      and args = List.map snd $5 (* elide srcref *)
-      and vs = $4 
-      in 
-      mktypefun sr name vs args return_type body
+      let name,vs = hd $3 in
+      let sr = rstoken $1 $9 in
+      let return_type = typecode_of_expr $6 in
+      let body = typecode_of_expr $8 in
+      let args = List.map snd $4 (* elide srcref *) in
+      let stmt =  mktypefun sr name vs args return_type body in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
     }
  
- | TYPEDEF FUNCTION NAME tvarlist COLON expr EQUAL type_matchings SEMI
+ | TYPEDEF FUNCTION declname COLON expr EQUAL type_matchings SEMI
     { 
-      let sr = rstoken $1 $9 in
-      let name = snd $3 in
-      let vs = $4 in
-      let t = typecode_of_expr $6 in
+      let name,vs = hd $3 in
+      let sr = rstoken $1 $8 in
+      let t = typecode_of_expr $5 in
       match t with
       | `TYP_function (argt, return_type) ->
         let args = [["_a",argt]] in 
-        let match_expr = `AST_type_match (sr,(`AST_name (sr,"_a",[]),$8)) in
+        let match_expr = `AST_type_match (sr,(`AST_name (sr,"_a",[]),$7)) in
         let body = typecode_of_expr match_expr in
-        mktypefun sr name vs args return_type body
+        let stmt = mktypefun sr name vs args return_type body in
+        fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
+
       | _ -> 
         failwith 
         (
@@ -905,24 +904,22 @@ type_alias:
     }
 
 
-  | RENAME NAME tvarlist EQUAL qualified_name SEMI 
+  | RENAME declname EQUAL qualified_name SEMI 
     { 
-      let sr = rstoken $1 $6
-      and name = snd $2 
-      and vs = $3 
-      and qn = qualified_name_of_expr $5
-      in
-      `AST_inherit (sr,name,vs,qn)
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let qn = qualified_name_of_expr $4 in
+      let stmt = `AST_inherit (sr,name,vs,qn) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
   
-  | RENAME FUNCTION NAME tvarlist EQUAL qualified_name SEMI 
+  | RENAME FUNCTION declname EQUAL qualified_name SEMI 
     { 
-      let sr = rstoken $1 $7
-      and name = snd $3 
-      and vs = $4 
-      and qn = qualified_name_of_expr $6
-      in
-      `AST_inherit_fun (sr,name,vs,qn)
+      let name,vs = hd $3 in
+      let sr = rstoken $1 $6 in
+      let qn = qualified_name_of_expr $5 in
+      let stmt = `AST_inherit_fun (sr,name,vs,qn) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
     }
 
   | INHERIT qualified_name SEMI 
@@ -1245,27 +1242,25 @@ fun_kind:
   | GENERATOR { $1,`Generator }
 
 function_definition:
-  | REDUCE NAME tvarlist reduce_args COLON expr EQRIGHTARROW expr SEMI
+  | REDUCE declname reduce_args COLON expr EQRIGHTARROW expr SEMI
     {
-      let sr = rstoken $1 $9 
-      and name = snd $2
-      and vs = $3 
-      and args = $4
-      and rsrc = $6 
-      and rdst = $8
-      in
-      `AST_reduce (sr,name,vs,args,rsrc,rdst)
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $8 in
+      let args = $3 in
+      let rsrc = $5 in
+      let rdst = $7 in
+      let stmt = `AST_reduce (sr,name,vs,args,rsrc,rdst) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | AXIOM NAME tvarlist fun_arg COLON expr SEMI
+  | AXIOM declname fun_arg COLON expr SEMI
     {
-      let sr = rstoken $1 $7
-      and name = snd $2
-      and vs = $3 
-      and args = snd $4
-      and rsrc = $6 
-      in
-      `AST_axiom (sr,name,vs,args,rsrc)
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let args = snd $3 in
+      let rsrc = $5 in
+      let stmt = `AST_axiom (sr,name,vs,args,rsrc) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
   | adjectives fun_kind declname fun_args opt_type_expr EQRIGHTARROW expr SEMI
@@ -1472,15 +1467,15 @@ procedure_definition:
 @head(3,'Object')
 @select(h)
 object_definition:
-  | OBJECT NAME tvarlist fun_args compound 
+  | OBJECT declname fun_args compound 
     { 
-      let sr = rsrange (slift $1) (fst $5)
-      and name = snd $2 
-      and return_type = `TYP_none
-      and body = snd $5
-      and args = List.map snd $4 (* elide srcref *)
-      and vs = $3
-      in mkcurry sr name vs args (return_type,None) `Object body
+      let name,vs = hd $2 in
+      let sr = rsrange (slift $1) (fst $4) in
+      let return_type = `TYP_none in
+      let body = snd $4 in
+      let args = List.map snd $3 (* elide srcref *) in
+      let stmt = mkcurry sr name vs args (return_type,None) `Object body in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
 
@@ -1550,38 +1545,34 @@ open_opt:
   | { `None }
   
 module_definition:
-  | open_opt MODULE NAME tvarlist opt_equal compound 
+  | open_opt MODULE declname opt_equal compound 
     { 
-      let sr = rsrange (slift $2) (fst $6) in
-      let name = snd $3 in
+      let name,vs = hd $3 in
+      let sr = rsrange (slift $2) (fst $5) in
       let qn = `AST_name (sr,name,[]) in
-      let dcl =
-        `AST_untyped_module 
-        (
-          sr, name,
-          $4,
-          snd $6
-        ) 
-      in match $1 with
-      | `None -> dcl
-      | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,dfltvs,qn)])
+      let stmt = 
+        let dcl =
+          `AST_untyped_module ( sr, name, vs, snd $5) 
+        in match $1 with
+        | `None -> dcl
+        | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,dfltvs,qn)])
+      in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
+
     }
 
-  | open_opt NAMESPACE NAME tvarlist opt_equal compound 
+  | open_opt NAMESPACE declname opt_equal compound 
     { 
-      let sr = rsrange (slift $2) (fst $6) in
-      let name = snd $3 in
+      let name,vs = hd $3 in
+      let sr = rsrange (slift $2) (fst $5) in
       let qn = `AST_name (sr,name,[]) in
-      let dcl =
-        `AST_namespace
-        (
-          sr, name,
-          $4,
-          snd $6
-        ) 
-      in match $1 with
-      | `None -> dcl
-      | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,dfltvs,qn)])
+      let stmt = 
+        let dcl = `AST_namespace ( sr, name, vs, snd $5) in
+        match $1 with
+        | `None -> dcl
+        | `Open -> `AST_seq (sr,[dcl; `AST_open (sr,dfltvs,qn)])
+      in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
     }
 
 
@@ -1618,22 +1609,21 @@ var_def:
         `AST_assign (sr,"_set",(`List lexpr, None), expr)
     }
 
-  | VAR NAME tvarlist EQUAL expr SEMI  
+  | VAR declname EQUAL expr SEMI  
     { 
-      `AST_var_decl 
-      (
-        rstoken $1 $6, 
-        snd $2, 
-        $3, None, Some $5
-      ) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let stmt = `AST_var_decl ( sr,name,vs, None, Some $4) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | VAR NAME tvarlist COLON expr LEFTARROW expr SEMI  
+  | VAR declname COLON expr LEFTARROW expr SEMI  
    {
-      let sr = rstoken $1 $8 in
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $7 in
       let call =
-        let lsym = `AST_name (slift (fst $2),snd $2,[]) in
-        match $7 with
+        let lsym = `AST_name (slift $1,name,[]) in
+        match $6 with
         | `AST_apply (sr2,(f,a)) ->
           begin match a with
           | `AST_tuple (sr3,ls) ->
@@ -1644,17 +1634,10 @@ var_def:
         | _ as f -> 
           `AST_call (sr,f,lsym)
       in
-      let vardef =
-        `AST_var_decl 
-        (
-          rstoken $1 $6, 
-          snd $2, 
-          $3,
-          Some (typecode_of_expr $5), 
-          None
-        ) 
-      in 
-        `AST_seq (sr,[vardef;call])
+      let vardef = `AST_var_decl (sr,name,vs, Some (typecode_of_expr $4), None) in 
+      let stmt = `AST_seq (sr,[vardef;call]) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+
     }
 
   | VAR AMPER NAME tvarlist COLON expr LEFTARROW expr SEMI  
@@ -1691,28 +1674,20 @@ var_def:
         `AST_seq (sr,[vardef;call])
     }
 
-  | VAR NAME tvarlist COLON expr EQUAL expr SEMI  
+  | VAR declname COLON expr EQUAL expr SEMI  
     { 
-      `AST_var_decl 
-      (
-        rstoken $1 $8, 
-        snd $2, 
-        $3,
-        Some (typecode_of_expr $5), 
-        Some $7
-      ) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $7 in
+      let stmt = `AST_var_decl ( sr,name,vs, Some (typecode_of_expr $4), Some $6) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | VAR NAME tvarlist COLON expr SEMI  
+  | VAR declname COLON expr SEMI  
     { 
-      `AST_var_decl 
-      (
-        rstoken $1 $6, 
-        snd $2, 
-        $3,
-        Some (typecode_of_expr $5), 
-        None
-      ) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let stmt = `AST_var_decl ( sr,name,vs, Some (typecode_of_expr $4), None) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
 val_def:  
@@ -1742,63 +1717,44 @@ val_def:
         `AST_assign (sr,"_set",(`List lexpr, None), expr)
     }
 
-  | VAL NAME tvarlist EQUAL expr SEMI  
+  | VAL declname EQUAL expr SEMI  
     { 
-      `AST_val_decl 
-      (
-        rstoken $1 $6, 
-        snd $2, 
-        $3,
-        None, 
-        Some $5
-      ) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let stmt = `AST_val_decl ( sr,name,vs, None, Some $4) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | VAL NAME tvarlist COLON expr EQUAL expr SEMI  
+  | VAL declname COLON expr EQUAL expr SEMI  
     { 
-      `AST_val_decl 
-      (
-        rstoken $1 $8, 
-        snd $2, 
-        $3,
-        Some (typecode_of_expr $5), 
-        Some $7
-      ) 
-    }
-  | VAL NAME tvarlist COLON expr SEMI  
-    { 
-      `AST_val_decl 
-      (
-        rstoken $1 $6, 
-        snd $2, 
-        $3,
-        Some (typecode_of_expr $5), 
-        None
-      ) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $7 in
+      let stmt = `AST_val_decl ( sr,name,vs, Some (typecode_of_expr $4), Some $6) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | REF NAME tvarlist LEFTARROW expr SEMI  
+  | VAL declname COLON expr SEMI  
     { 
-      `AST_ref_decl 
-      (
-        rstoken $1 $6, 
-        snd $2, 
-        $3,
-        None, 
-        Some $5
-      ) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let stmt = `AST_val_decl ( sr,name,vs, Some (typecode_of_expr $4), None) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
-  | REF NAME tvarlist COLON expr LEFTARROW expr SEMI  
+  | REF declname LEFTARROW expr SEMI  
     { 
-      `AST_ref_decl 
-      (
-        rstoken $1 $8, 
-        snd $2, 
-        $3,
-        Some (typecode_of_expr $5), 
-        Some $7
-      ) 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $5 in
+      let stmt = `AST_ref_decl ( sr,name,vs, None, Some $4) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+    }
+
+  | REF declname COLON expr LEFTARROW expr SEMI  
+    { 
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $7 in
+      let stmt = `AST_ref_decl ( sr,name,vs, Some (typecode_of_expr $4), Some $6) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 
 @doc()
