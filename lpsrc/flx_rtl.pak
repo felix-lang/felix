@@ -2398,48 +2398,43 @@ create_async_hooker
 #include "pthread_sleep_queue.hpp"
 #include "flx_rtl.hpp"
 #include "demux_demuxer.hpp"
-#include "faio_drv.hpp"
+#include "faio_asyncio.hpp"
+#include "pthread_thread.hpp"
 
 using namespace flx::rtl;
 using namespace flx::demux;
-using namespace flx::faio;
 using namespace flx::pthread;
+using namespace flx::faio;
 
 
 class async_hooker_impl : public async_hooker {
-  virtual flx::faio::flx_drv *get_driver()=0;
   virtual flx::demux::demuxer *get_demuxer()=0;
 public:
   bool handle_request(void *data,fthread_t *ss);
+  virtual sleep_queue_t *get_ready_queue()=0;
   ~async_hooker_impl();
 };
 
 
 #if FLX_WIN32
  #include "demux_iocp_demuxer.hpp"
- #include "faio_wdrv.hpp"
  typedef flx::demux::iocp_demuxer flx_demuxer;
 #elif FLX_HAVE_KQUEUE_DEMUXER
  #include "demux_kqueue_demuxer.hpp"
- #include "faio_pdrv.hpp"
  typedef flx::demux::kqueue_demuxer flx_demuxer;
 #elif FLX_HAVE_EVTPORTS
  #include "demux_evtport_demuxer.hpp"
- #include "faio_pdrv.hpp"
  typedef flx::demux::evtport_demuxer flx_demuxer;
 #elif FLX_HAVE_EPOLL
  #include "demux_epoll_demuxer.hpp"
- #include "faio_pdrv.hpp"
  typedef flx::demux::epoll_demuxer flx_demuxer;
 #elif FLX_HAVE_POLL
  // NB!: on osx 10.3 poll exists, but is a poor cousin emulation layer on
  // top of select. however, 10.3 has kqueues (above), so should be ok...
  #include "demux_ts_poll_demuxer.hpp"
- #include "faio_pdrv.hpp"
  typedef flx::demux::ts_poll_demuxer flx_demuxer;
 #else
  #include "demux_ts_select_demuxer.hpp"
- #include "faio_pdrv.hpp"
  typedef flx::demux::ts_select_demuxer flx_demuxer;  // thread safe!
 #endif
 
@@ -2463,31 +2458,22 @@ bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
   // RF hates the flag this function returns .. might
   // mask a race condition, get rid of it
 
-  bool result =dreq->start_async_op(
-   *get_demuxer(), 
-   get_driver(), 
-  ft)
-  ;
+  finote_t *fn = new wakeup_fthread_t(get_ready_queue(),ft);
+  bool result =dreq->start_async_op(*get_demuxer(),fn);
   return result;
 }
 
 class proto_async : public async_hooker_impl
 {
-   flx_demuxer demux;
-
+    flx_demuxer demux;
     sleep_queue_t async_active;
     flx_thread_t ethread;
 
-#if FLX_WIN32
-    wflx_drv driver;
-#else
-    pflx_drv driver;
-#endif
     static void pthread_thread(void* udat);
 
 public:
    proto_async(int n0, int n1, int m1, int n2, int m2) : 
-     async_active(n0), driver(async_active,n1,m1,n2,m2) 
+     async_active(n0)
    {
      // start waiting thread. note that we only have ONE event waiting thread.
      // that's currently important for clean takedowns
@@ -2501,8 +2487,8 @@ public:
   ~proto_async(){ 
     //fprintf(stderr,"Deleting proto async\n"); 
   }
-  flx_drv *get_driver() { return &driver; }
   demuxer *get_demuxer(){ return &demux; }
+  sleep_queue_t *get_ready_queue() { return &async_active; }
   fthread_t* dequeue() 
   { 
     return (fthread_t*)async_active.dequeue(); 

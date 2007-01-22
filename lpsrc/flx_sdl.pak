@@ -2610,19 +2610,18 @@ namespace flx { namespace faio {
 // get ONE SDL event
 class SDL_EXTERN faio_sdl_event : public flx_driver_request_base,
   public flx::pthread::worker_task {
-   thread_wakeup   fw;
+   pthread::worker_fifo* job_queue;
    SDL_Event *e;
    SDL_mutex *m;
 public:  
   faio_sdl_event() {}     // felix linkage
-  faio_sdl_event(SDL_Event *_e, SDL_mutex *_m);
+  faio_sdl_event(pthread::worker_fifo* q, SDL_Event *_e, SDL_mutex *_m);
 
   // from flx_driver_request_base
-  bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
+  bool start_async_op(demux::demuxer& demux);
 
   // from fifo_worker_task
   void doit();
-  void finished();
 };
 
 }}
@@ -2637,15 +2636,12 @@ public:
 
 namespace flx { namespace faio {
 
-faio_sdl_event::faio_sdl_event(SDL_Event *_e, SDL_mutex *_m) : e(_e), m(_m) {}
+faio_sdl_event::faio_sdl_event(pthread::worker_fifo* q, SDL_Event *_e, SDL_mutex *_m) : job_queue(q), e(_e), m(_m) {}
 
 bool
-faio_sdl_event::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+faio_sdl_event::start_async_op(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fw);    // so we can wake up
-
-  // get worker fifo, add this task
-  drv->get_worker_fifo()->add_worker_task(this);
+  job_queue->add_worker_task(this);
   return false;              // suspended
 }
 
@@ -2654,8 +2650,6 @@ void faio_sdl_event::doit() {
   SDL_WaitEvent(e); // blocks in pthread
   if(m)SDL_UnlockMutex(m);
 } 
-
-void faio_sdl_event::finished(){ fw.wake(); }
 
 }}
 @doc()

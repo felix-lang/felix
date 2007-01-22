@@ -25,27 +25,23 @@ Requires: demux
 @select(h)
 FAIORTL_INTERFACES = [
  'faio/faio_job.hpp',
+ 'faio/faio_timer.hpp',
  'faio/faio_asyncio.hpp',
- 'faio/faio_drv.hpp',
- 'faio/faio_pdrv.hpp',
- 'faio/faio_wdrv.hpp',
  'faio/faio_posixio.hpp',
  'faio/faio_winio.hpp',
 ]
 
 FAIO_CPPS = [
+  "faio/faio_timer",
   "faio/faio_job",
   "faio/faio_asyncio",
-  "faio/faio_drv",
 ]
 
 POSIX_FAIO_CPPS = [
-  "faio/faio_pdrv",
   "faio/faio_posixio",
 ]
 
 WINDOWS_FAIO_CPPS = [
-  "faio/faio_wdrv",
   "faio/faio_winio",
 ]
 
@@ -80,317 +76,118 @@ weaver_directory = 'doc/rtl/flx_faio/'
 #endif
 #endif
 
-@head(1,'Async IO (deprecated)')
+@head(1,'Async IO')
 @h=tangler('faio/faio_asyncio.hpp')
 @select(h)
 #ifndef __FLX_FAIO_ASYNCIO_H__
 #define __FLX_FAIO_ASYNCIO_H__
 #include <flx_faio_config.hpp>
+#include "pthread_sleep_queue.hpp"
+#include <assert.h>
 
-// this file acts as go-between for my asynchronous interface for felix
-// programmes. 
-
-// portable. Not that asynchronous.
-    
 #include "demux_demuxer.hpp"        // sel_param, demuxer base
-#include "faio_drv.hpp"
+#include "flx_rtl.hpp"
 
 namespace flx { namespace faio {
 
+struct FAIO_EXTERN finote_t 
+{
+  virtual void signal()=0;
+  virtual ~finote_t(){}
+};
+
+class FAIO_EXTERN wakeup_fthread_t : public finote_t 
+{
+  rtl::fthread_t *f;
+  pthread::sleep_queue_t *q;
+public:  
+  wakeup_fthread_t(pthread::sleep_queue_t *q_a, rtl::fthread_t *f_a) : f(f_a), q(q_a) {}
+  void signal () { q->enqueue(f); }
+};
+
+
 class FAIO_EXTERN flx_driver_request_base {
+    finote_t *fn;
+    virtual bool start_async_op_impl(demux::demuxer& demux) = 0;
 public:
+    flx_driver_request_base() : fn(0) {} 
     virtual ~flx_driver_request_base() {}       // so destructors work
+
     // returns finished flag (async may fail or immediately finish)
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f) = 0;
+    bool start_async_op(demux::demuxer& demuxer, finote_t *fn_a)
+    {
+      fn = fn_a;
+      return start_async_op_impl(demuxer);
+    }
+    void notify_finished() { 
+      assert(fn!=0);
+      fn->signal(); delete fn; 
+      fn=0;
+    }
 };  
-    
-// not actually asynchronous as such since the threads are woken synchronously
-// definitely portable. look out for this shared structure when flx threads
-// are run pre-emptively. start_async_op will need to be serialised.
-class FAIO_EXTERN async_copipe : public flx_driver_request_base {
-public:
-    enum { WINDWARD, LEEWARD, NUM_CHANNELS };
-    
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
-    void connect(void* f, demux::sel_param* pb, bool reading, int channel);
-    void close_channel(int which);      // WINDWARD or LEEWARD
-    void disconnect();                  // will be used by close
-    
-    static async_copipe* create_copipe() { return new async_copipe; }
-    bool debug;
-    void set_debug(bool);
 
-private: 
-    enum { READER, WRITER, NUM_CNXNS };
-    
-    // if there's a thread here, it's sleeping
-    void*   thread[NUM_CNXNS];
-    demux::sel_param*  pb[NUM_CNXNS];
-    int         num_users;
-    
-    bool        channel_open[NUM_CHANNELS];
-    int         current_channel;
-    void wake_thread(int n, flx_drv* drv);
-    void wake_all_threads(flx_drv* drv);
-    
-    async_copipe();                     // to control alloc/dealloc
-};
+}} // namespace faio, flx
+#endif  // __ASYNCIO__
 
-class FAIO_EXTERN copipe_endpt {
-    int             read_channel;       // the channel this endpt reads on
-    
-    copipe_endpt(async_copipe* p, int rchan) : 
-      read_channel(rchan), pipe(p), debug(false)
-    {}
 
-public:
-    async_copipe*   pipe;               // endpt's copy (flx accessible)
-    
-    // 0 = no reads, 1 = no writes, 2 = no nothing (! = close, however)
-    void shutdown(int how);
-    int get_channel(bool reading);
-    bool debug; 
-    void set_debug(bool d) { debug = d; }
+@head(1,'Timer')
+@h=tangler('faio/faio_timer.hpp')
+@select(h)
+#ifndef __FLX_FAIO_TIMER_H__
+#define __FLX_FAIO_TIMER_H__
+#include <flx_faio_config.hpp>
 
-    ~copipe_endpt() { pipe->disconnect(); } 
-    static void pipe_pair(copipe_endpt* pair[2]);
-};
+#include "demux_demuxer.hpp"        // sel_param, demuxer base
+#include "faio_asyncio.hpp"
+#include "demux_timer_queue.hpp"
+
+#include "flx_rtl.hpp"
+
+namespace flx { namespace faio {
+
 
 // sleeping
 class FAIO_EXTERN sleep_request 
   : public flx_driver_request_base, public demux::sleep_task
 {
-  thread_wakeup fw;
+  demux::timer_queue *sleepers; 
   double      delta;
 public:
   sleep_request() {}        // flx linkage
 
-  sleep_request(double d) : delta(d) {}
+  sleep_request(demux::timer_queue *sleepers_a, double d) : 
+    sleepers(sleepers_a), delta(d) 
+  {}
 
   // from driver request
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 
-  // from sleep_task
-  virtual void fire();  
+  void fire();
+
 };
 
 }} // namespace faio, flx
-#endif  // __ASYNCIO__
+#endif  
 
 @h=tangler('faio/faio_asyncio.cpp')
 @select(h)
-#include "faio_asyncio.hpp"
-#include <string.h>     // memmove
-#include <stdio.h>      // debugging
+// empty at the moment
+
+@h=tangler('faio/faio_timer.cpp')
+@select(h)
+#include "faio_timer.hpp"
 
 using namespace flx::demux;
 namespace flx { namespace faio {
-// cooperative pipes
-
-// this is a bit interesting because the copipes are not asynchronous and
-// their work is actually all done in this function (once both ends have
-// read & written)
-
-void
-async_copipe::set_debug(bool d) { debug = d; }
-
 bool
-async_copipe::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+sleep_request::start_async_op_impl(demuxer& demux)
 {
-// this is where a big lock will go for multithreaded driver
-    // we don't want to wake anyone twice
-    bool wake_caller = (f != thread[READER] && f != thread[WRITER]);
-
-    // no channel => shutdown was called with no-one reading or writing
-    if(-1 == current_channel)
-        return true;                // wake caller
-
-    // we may have one reader/writer (or even 2 with a multithreaded driver)
-    if(!channel_open[current_channel])
-    {
-        wake_all_threads(drv);
-        current_channel = -1;       // channel now undefined
-        return wake_caller;
-    }
-    // channel closed situations handled
-
-    // if we don't have both endpts, then the op isn't finished
-    if(!(thread[READER] && thread[WRITER])) return wake_caller;
-    
-    // we have both ends. one or both must wake after this
-if(wake_caller) fprintf(stderr,"we should never have a 3rd party here!\n");
-    
-    // move data from writer to reader
-    long    len;
-    long    nb1 = pb[READER]->buffer_size-pb[READER]->bytes_written;
-    long    nb2 = pb[WRITER]->buffer_size-pb[WRITER]->bytes_written;
-    
-    // min(read bytes, write bytes)
-    len = (nb1 < nb2) ? nb1 : nb2;
-    
-    // write buf -> read buf
-    memmove(pb[READER]->buffer + pb[READER]->bytes_written,
-        pb[WRITER]->buffer + pb[WRITER]->bytes_written, len);
-    pb[READER]->bytes_written += len;
-    pb[WRITER]->bytes_written += len;
-    
-    // I could let the driver wake one of the threads, but it makes for
-    // easier reading if I do it myself:
-    int     num_woken = 0;
-    for(int i = 0; i < NUM_CNXNS; i++)
-    {   
-        // wake up!
-        if(pb[i]->bytes_written == pb[i]->buffer_size)
-        {   
-            wake_thread(i, drv);
-            num_woken++;
-        }
-    }
-    
-    if(num_woken == NUM_CNXNS)  // everyone woke up
-        current_channel = -1;   // channel now undefined
-    
-    // we're doing our own waking, so just say no, it isn't finished.
-    // not strictly honest, is it? driver waking is kind of lame anyway.
-    // it's our job.
-    return false;
-}
-
-void
-async_copipe::wake_thread(int n, flx_drv* drv)
-{   
-    drv->sched(thread[n]);  
-    thread[n] = 0;          // not ours anymore
-}
-
-void
-async_copipe::wake_all_threads(flx_drv* drv)
-{   
-    for(int i = 0; i < NUM_CNXNS; i++)
-    {   
-        if(thread[i]) wake_thread(i, drv);
-    }
-}
-
-async_copipe::async_copipe() : debug(false) 
-{
-    thread[READER] = 0;
-    thread[WRITER] = 0;
-    channel_open[WINDWARD] = true;  // both channels open = duplex io
-    channel_open[LEEWARD] = true;   
-    current_channel = -1;           // current channel undefined
-    num_users = 2;                  // we delete this after 2 disconnects
-}
-
-// this requires a driver request to make anything actually happen
-void
-async_copipe::close_channel(int which)
-{   
-    // this should wake up the threads, but I don't have the queue.
-    // my choice is for the felix code to do an async op on this and
-    // re-evaluate, waking as necessary or hang on to the queue
-    channel_open[which] = false;
-}
-
-void
-async_copipe::disconnect()
-{   
-    if(debug)fprintf(stderr,"num_users before disconnect: %i\n", num_users);
-    if(--num_users == 0)
-    {   
-        if(debug)fprintf(stderr,"deleting this!\n");
-        delete this;
-    }
-}
-
-void
-async_copipe::connect(void* f, sel_param* inpb, bool reading, int channel)
-{
-    int i = (reading) ? READER : WRITER;
-
-    if(-1 == current_channel)
-    {
-        current_channel = channel;
-    }
-    else if(current_channel != channel) // channel must agree if already chosen
-    {
-        if(debug)fprintf(stderr,"conflicting channels! make sure this causes a wake up!\n");
-        current_channel = -1;           // causes this thread to wake up
-        return;
-    }
-        
-    // there shouldn't be anything already there
-    if(f && thread[i]) 
-        if(debug)fprintf(stderr,"copipe conflict! results undefined!\n");
-    
-    thread[i] = f;
-    pb[i] = inpb;
-}
-
-// copipe endpoints, just like socketpair. static.
-void
-copipe_endpt::pipe_pair(copipe_endpt* pair[2])
-{
-//fprintf(stderr,"this will leak if one fails, you buffoon!\n");
-// can just delete in that case. eh.
-    async_copipe* p = async_copipe::create_copipe();
-    // initialize with pipe and the channel they'll read on.
-    pair[0] = new copipe_endpt(p, async_copipe::WINDWARD);
-    pair[1] = new copipe_endpt(p, async_copipe::LEEWARD);
-}
-
-int
-copipe_endpt::get_channel(bool reading)
-{   
-    if(reading) return read_channel;
-    
-    return (read_channel == async_copipe::WINDWARD) ?
-            async_copipe::LEEWARD : async_copipe::WINDWARD;
-}
-
-// this requires a driver request to make anything actually happen
-void
-copipe_endpt::shutdown(int how)
-{   
-    int write_channel = get_channel(false);
-    
-    switch(how)
-    {   
-        case 0:
-            // no further reads, shut read channel
-            pipe->close_channel(read_channel);
-        break;
-        case 1:
-            pipe->close_channel(write_channel);
-        break;
-        case 2:
-            // shut both channels, regardless
-            pipe->close_channel(async_copipe::WINDWARD);
-            pipe->close_channel(async_copipe::LEEWARD);
-        break;
-    }
-}
-
-
-// sleep task prio queue thing
-
-bool
-sleep_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
-{
-  // fprintf(stderr,"driver called sleep_task start_async_op code\n");
-  // important: copy down the thread and the driver
-  RECORD_THREAD_INFO(fw);
-
-  drv->get_sleepers()->add_sleep_request(this, delta);
-
+  sleepers->add_sleep_request(this, delta);
   return false;   // no wakeup
 }
 
-// from async io thread
-void
-sleep_request::fire()
-{
-  fw.wake();    // wake thread
+void sleep_request::fire() {
+  notify_finished();
 }
 
 }}
@@ -408,20 +205,18 @@ To use this class, just override doit().
 #include <flx_faio_config.hpp>
 #include "demux_demuxer.hpp"
 #include "pthread_work_fifo.hpp"
-#include "faio_drv.hpp"
 #include "faio_asyncio.hpp"
 
 namespace flx { namespace faio {
 class FAIO_EXTERN job_t: 
-  public flx::faio::flx_driver_request_base,
-  public flx::pthread::worker_task 
+  public flx_driver_request_base,
+  public pthread::worker_task 
 {
-   flx::faio::thread_wakeup   fw;
+   pthread::worker_fifo* job_queue;
 public:  
 
   // from flx_driver_request_base
-  bool start_async_op(flx::demux::demuxer& demux, flx::faio::flx_drv* drv,  void* f);
-  void finished();
+  bool start_async_op_impl(flx::demux::demuxer& demux);
 };
 }}
 
@@ -433,21 +228,15 @@ public:
 
 namespace flx { namespace faio {
 // from flx_driver_request_base
-bool job_t::start_async_op(flx::demux::demuxer& demux, flx::faio::flx_drv* drv,  void* f)
+bool job_t::start_async_op_impl(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fw);    // so we can wake up
-
   //printf("Adding task to worker queue\\n");
   // get worker fifo, add this task
-  drv->get_worker_fifo()->add_worker_task(this);
+  job_queue->add_worker_task(this);
   //printf("Task added\\n");
   return false;              // suspended
 }
 
-void job_t::finished(){ 
-  //printf("Finished\\n"); 
-  fw.wake();
-}
 }}
 
 @head(1,'Scheduler')
@@ -463,123 +252,13 @@ void job_t::finished(){
 #include "demux_demuxer.hpp"
 
 namespace flx { namespace faio {
-// vestigal driver class is all that remains of the embedded driver from
-// which faio came. all it is now is a pointer to a queue. 
-// watch this space.
-class FAIO_EXTERN flx_drv {
-    flx::pthread::sleep_queue_t&    ready_queue;
-    flx::pthread::worker_fifo     work_fifo;
-public:
-    flx_drv(
-      flx::pthread::sleep_queue_t& q, 
-      int qbound, int nthreads
-    );
-    virtual ~flx_drv();
 
-    void sched(void* f);
+// this may be needed but I've lost track of where
+// we get SIGPIPE, SIG_IGN from ..
 
-    flx::pthread::worker_fifo* get_worker_fifo() { return &work_fifo; }
-    virtual demux::timer_queue* get_sleepers() = 0;
-};
-
-// this becomes socket thread wakeup. um.
-class FAIO_EXTERN thread_wakeup {
-public:
-    void wake() { drv->sched(f); }
-
-    void*           f;              // thread to be woken
-    flx_drv*        drv;            // in which driver
-};
-
-// to be called inside every start_async_op
-// note: the windows version often needs the demuxer, but the posix one
-// doesn't. I forget why.
-#define RECORD_THREAD_INFO(w) (w).f=f;\
-                              (w).drv=drv;
-
-}}
-#endif              //__FLXDRV__
-
-
-@h=tangler('faio/faio_drv.cpp')
-@select(h)
-#include <stdio.h>              // debug printf
-#include "faio_drv.hpp"
-
-using namespace flx::demux;
-namespace flx { namespace faio {
-flx_drv::flx_drv(flx::pthread::sleep_queue_t& q, int jobqbound, int nthreads)
-    : ready_queue(q), work_fifo(jobqbound,nthreads)
-{   
-}
-
-flx_drv::~flx_drv()
-{   
-}
-
-void
-flx_drv::sched(void* f)
-{   
-    ready_queue.enqueue(f);
-}
-
-}}
-
-@h=tangler('faio/faio_pdrv.hpp')
-@select(h)
-#ifndef __FLX_FAIO_PDRV_H__
-#define __FLX_FAIO_PDRV_H__
-
-#include <flx_faio_config.hpp>
-#include "demux_pfileio.hpp"
-#include "demux_posix_timer_queue.hpp"
-#include "faio_drv.hpp"
-namespace flx { namespace faio {
-
-// same as flx_drv, but with an async file io worker fifo.
-class FAIO_EXTERN pflx_drv : public flx_drv {
-    demux::pasync_fileio       file_aio_worker;
-    demux::posix_timer_queue   sleepers;
-public:
-    pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m2, int n2, int m2);
-
-    demux::pasync_fileio* get_aio_worker() { return &file_aio_worker; }
-    demux::timer_queue* get_sleepers() { return &sleepers; }
-    bool debug;
-    void set_debug(bool d) { debug = d; }
-};
-}}
-#endif
-
-@h=tangler('faio/faio_pdrv.cpp')
-@select(h)
-#include "faio_pdrv.hpp"
-#include <signal.h>     // for SIGPIPE portable ignoring
-#include <stdio.h>      // printf
-
-using namespace flx::demux;
-namespace flx { namespace faio {
-
-// what is this stuff?? 3 queues needed?
-// YUP! The job queue schedules jobs, the demux queue
-// gets the return events, and the sleep queue is to
-// put woken up felix threads on so they end up later
-// in the active queue (that's a fourth queue .. :))
-
-pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m2)
-    : flx_drv(q,n1,m1), file_aio_worker(n2,m2), debug(0)
+#if 0
+void FAIO_EXTERN sigpipe_ignorer()
 {
-    // we might actually like to ignore SIGPIPE's conditionally,
-    // e.g. when a flx prog actually requests socket io, we could even
-    // transform it into a flx level signal (if those exist, signals are
-    // pretty lame & don't work well for library code - would you want them
-    // to exist?) (osx has a per socket sockopt that does this, linux has
-    // the send flag MSG_NOSIGNAL)
-
-    // this is actually demux/flxasync io's problem, so shift it there
-    if(debug)fprintf(stderr,"pdrv installing SIGPIPE ignorer\n");
-    //if(debug)fprintf(stderr,"OSX/bsd only: setsockopt(SO_NOSIGPIPE) -> EPIPE\n");
-    // sig_t   prev_handler;
     void (*prev_handler)(int);  // solaris is FUN.
     prev_handler = signal(SIGPIPE, SIG_IGN);
 
@@ -594,8 +273,10 @@ pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m
             prev_handler);
     }
 }
+#endif
 
 }}
+#endif
 
 @head(1,'Sockets')
 @h=tangler('faio/faio_posixio.hpp')
@@ -605,7 +286,6 @@ pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m
 #include <flx_faio_config.hpp>
 
 #include "faio_asyncio.hpp"
-#include "faio_drv.hpp" 
 
 // we don't need to piggyback much data at all. for now just the demuxer,
 // so that we can be woken up, and the buffer info (this replaces the
@@ -624,9 +304,8 @@ namespace flx { namespace faio {
 class FAIO_EXTERN socketio_wakeup : public demux::socket_wakeup {
 public:
   demux::sel_param   pb;     // in: what you want, out: what you get
-  thread_wakeup fw;
-
-  int       sio_flags;  // either one of PDEMUX_{READ|WRITE}
+  int       sio_flags;  // either one of PDEMUX_{READ|WRITE}A
+  struct socketio_request *request;
 
   virtual void wakeup(demux::posix_demuxer& demux);
 };
@@ -642,18 +321,17 @@ public:
     socketio_request() {}       // Lord Felix demands it. Like STL.
     
     socketio_request(int s, char* buf, long len, bool r);
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
+    bool start_async_op_impl(demux::demuxer& demux);
 };
 
 class FAIO_EXTERN connect_request
   : public flx_driver_request_base, public demux::connect_control_block {
 public:
-  thread_wakeup fw;
 
   connect_request() {}      // flx linkage
 
   connect_request(const char* addr, int port) { addy = addr; p = port; s=-1; }
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
   virtual void wakeup(demux::posix_demuxer& demux);
 };
 
@@ -663,7 +341,6 @@ public:
   // we sometimes know that there'll be several connections to accept.
   // this'll need a different wakeup - and a different interface between
   // event source & wakeups
-  thread_wakeup fw;
 
   accept_request() {} // flx linkage
 
@@ -671,7 +348,7 @@ public:
   accept_request(int listener) { s = listener; }
 
   // from flx_driver_request_base
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 
   // from accept_control_block
   virtual void wakeup(demux::posix_demuxer& demux);
@@ -683,68 +360,29 @@ public:
 class FAIO_EXTERN flxfileio_request
     : public flx_driver_request_base, public demux::fileio_request
 {
-    thread_wakeup   fw;
+    demux::pasync_fileio       *aio_worker;
 public:
     flxfileio_request();           // flx linkage
     ~flxfileio_request();          // flx linkage
 
-    flxfileio_request(int f, char* buf, long len, long off, bool rd)
-        : fileio_request(f, buf, len, off, rd) {}
+    flxfileio_request(
+      demux::pasync_fileio *a,
+      int f, char* buf, long len, long off, bool rd
+     )
+        : fileio_request(f, buf, len, off, rd), aio_worker(a) {}
 
     // from driver request
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
-
-    // from async io thread
-    virtual void finished();
+    bool start_async_op_impl(demux::demuxer& demux);
 };
 
 }}
 #endif
-@h=tangler('faio/faio_wdrv.hpp')
-@select(h)
-
-#ifndef __FLX_FAIO_WDRV_H__
-#define __FLX_FAIO_WDRV_H__
-
-#include "demux_win_timer_queue.hpp"
-#include "faio_drv.hpp"
-
-namespace flx { namespace faio {
-
-class FAIO_EXTERN wflx_drv : public flx_drv {
-  demux::win_timer_queue sleepers;
-public:
-  wflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m2);
-
-  demux::timer_queue* get_sleepers() { return &sleepers; }
-};
-
-}}
-
-#endif
-
-@h=tangler('faio/faio_wdrv.cpp')
-@select(h)
-
-#include <Windows.h>  // see note in win_timer_queue.hpp
-#include "faio_wdrv.hpp"
-
-namespace flx { namespace faio {
-
-  // vs requirement that I have a cpp file?
-  wflx_drv::wflx_drv(flx::pthread::sleep_queue_t& q,int n1,int m1,int n2, int m2) : flx_drv(q,n1,m1) {}
-
-}}
 
 @h=tangler('faio/faio_posixio.cpp')
 @select(h)
 #include <stdio.h>      // printf
 #include "faio_posixio.hpp"
 #include "demux_sockety.hpp"    // async_connect
-
-// pthread async file io stuff
-#include "faio_pdrv.hpp"
-
 
 #include <sys/types.h>  // getsockopt & co
 #include <sys/socket.h>
@@ -758,6 +396,7 @@ namespace flx { namespace faio {
 socketio_request::socketio_request(int s, char* buf, long len, bool read)
 {
     sv.s = s;
+    sv.request = this;
   // demux supports reading AND writing. We don't. Yet.
   sv.sio_flags = ((read) ? PDEMUX_READ : PDEMUX_WRITE);
 
@@ -767,14 +406,12 @@ socketio_request::socketio_request(int s, char* buf, long len, bool read)
 }
 
 bool
-socketio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+socketio_request::start_async_op_impl(demux::demuxer& demux)
 {
     // fprintf(stderr, "adding wakeup: len %i, done %i\n",
     //   sv.pb.buffer_size, sv.pb.bytes_written);
 
     // important: copy down the thread and the driver
-    RECORD_THREAD_INFO(sv.fw);
-
     posix_demuxer*  pd = (posix_demuxer*)&demux;
 
     // wake thread if call failed
@@ -817,8 +454,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
     if(connection_closed || pb.bytes_written == pb.buffer_size)
     {   
     // fprintf(stderr,"schedding %p, drv: %p, f: %p\n", this, drv, f);
-        //drv->sched(f);
-        fw.wake();
+        request->notify_finished();
         return;
     }
     
@@ -829,13 +465,13 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
 
 // asynchronous connect
 bool
-connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+connect_request::start_async_op_impl(demuxer& demux)
 {
 // fprintf(stderr, "connect_request::start_async_op\n");
     // important: copy down the thread and the driver
-  RECORD_THREAD_INFO(fw);
 
-  posix_demuxer*  pd = (posix_demuxer*)&demux;
+  // covariant
+  posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
 
   // call failed or finished (!), wake up thread as no wakeup coming
   if(start(*pd) == -1) return true; 
@@ -863,19 +499,17 @@ connect_request::wakeup(posix_demuxer& demux)
   connect_control_block::wakeup(demux);
 
   // felix thread can pick out error itself.
-  fw.wake();
+  notify_finished();
 }
 
 
 // async accept
 bool
-accept_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+accept_request::start_async_op_impl(demuxer& demux)
 {
-    // important: copy down the thread and the driver
-  RECORD_THREAD_INFO(fw);
-
-  posix_demuxer*  pd = (posix_demuxer*)&demux;
-    return (start(*pd) == -1);      // accept_control_block function
+  // covariant
+  posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
+  return (start(*pd) == -1);      // accept_control_block function
 }
 
 void
@@ -895,7 +529,7 @@ accept_request::wakeup(posix_demuxer& demux)
     return; 
   }
 
-  fw.wake();
+  notify_finished();
 }
 
 // from driver request
@@ -904,28 +538,16 @@ flxfileio_request::flxfileio_request(){}
 
 
 bool
-flxfileio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+flxfileio_request::start_async_op_impl(demux::demuxer& demux)
 {
     // printf("driver called fileio start_async_op code\n");
-    // important: copy down the thread and the driver
-    RECORD_THREAD_INFO(fw);
     
     // need to create the async io thing here, or ask the driver for it
     // driver needs to go a little less portable
-    pflx_drv*   pdrv = (pflx_drv*)drv;
-    pdrv->get_aio_worker()->add_fileio_request(this);
+    aio_worker->add_fileio_request(this);
     
     return false;       // no wakeup
 }
-
-// from async io thread
-void
-flxfileio_request::finished()
-{
-    // fprintf(stderr,"async fileio got finished callback\n");
-    fw.wake();    // wake thread
-}
-
 
 }}
 
@@ -958,7 +580,7 @@ public:
   iocp_associator() {}
   iocp_associator(SOCKET associatee) : s(associatee) {}
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 };
 
 // flx <-> c++ stuff for async io (well, it was)
@@ -966,7 +588,7 @@ public:
 // transition to new windows async control block
 class FAIO_EXTERN waio_base : public flx_driver_request_base {
 protected:
-  thread_wakeup fw;
+  finote_t *fn_a;
 public:
   bool  success;          // eh?
 
@@ -989,7 +611,7 @@ public:
 
   wasync_accept(SOCKET l, SOCKET a) { listener = l; acceptor = a; }
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -1005,7 +627,7 @@ public:
   connect_ex(SOCKET soc, const char* addr, int port)
     { s = soc; addy = addr; p = port; }
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -1026,7 +648,7 @@ public:
     : transmitfile_control_block(dst, src) {}
 
   // from flx_request_base
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 
   virtual void iocp_op_finished(DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -1043,7 +665,7 @@ public:
   wsa_socketio(SOCKET src, demux::sel_param* ppb, bool read)
     : wsasocketio_control_block(src, ppb, read) {}
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -1061,7 +683,7 @@ public:
   winfile_io(HANDLE f, void* buf, int len, bool read)
     : winfileio_control_block(f, buf, len, read) {}
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  bool start_async_op_impl(demux::demuxer& demux);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -1080,7 +702,7 @@ namespace flx { namespace faio {
 
 // way of adding sockets to the IOCP.
 bool
-iocp_associator::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+iocp_associator::start_async_op_impl(demuxer& demux)
 {
   iocp_demuxer* iod = (iocp_demuxer*)&demux;
   // nasty: note how I'm making the user cookie constant (0).
@@ -1102,13 +724,13 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     fprintf(stderr,"catchall wakeup got error: %i (should store it)\n", err);
 
   success = (NO_ERROR == err);  // this works pretty well
-  fw.wake();
+  fn->signal();
 }
 
 bool
-wasync_accept::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+wasync_accept::start_async_op_impl(demuxer& demux)
 {
-  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
+  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -1121,9 +743,9 @@ wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 
 
 bool
-connect_ex::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+connect_ex::start_async_op_impl(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
+  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -1136,9 +758,9 @@ connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 
 
 bool
-wasync_transmit_file::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+wasync_transmit_file::start_async_op_impl(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
+  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -1150,9 +772,9 @@ wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 }
 
 bool
-wsa_socketio::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+wsa_socketio::start_async_op_impl(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fw); // records enough info for wakeup
+  RECORD_THREAD_INFO(fn); // records enough info for wakeup
   return start_overlapped();    // start overlapped op
 }
 
@@ -1192,9 +814,9 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 // file io
 
 bool
-winfile_io::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+winfile_io::start_async_op_impl(demuxer& demux)
 {
-  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
+  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();  // go
 }
 
@@ -1253,17 +875,16 @@ proc get_thread(thread: ptr[fthread]) {
 
 header stdlib_h = '#include <stdlib.h>';            // malloc, free
     
-// be careful of this being optimized away 
-//JS: why? it isn't used .. and its in C_hack anyhow :)
-//RF: I'm not seeing it.
-fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
-proc free: address = 'free($1);' requires stdlib_h; 
+//fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
+//proc free: address = 'free($1);' requires stdlib_h; 
     
 //header asyncio_h = '#include "faio_asyncio.hpp"';
 // could go through and conditionally require this header, but I'm
 // not going to right now.
 // this pulls in sel_params & demuxers & so on
 header = '#include "faio_asyncio.hpp"';
+
+header faio_timer_h = '#include "faio_timer.hpp"';
 
 type sel_param = "flx::demux::sel_param";
 type sel_param_ptr = "flx::demux::sel_param*";
@@ -1290,6 +911,7 @@ proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
 // is actually being used. useful for a few hairy svc/gc interactions
 proc gc_collect_me_not_hack[t]: t = ';';
 
+/*
 // copipe interface.
 
 // copipes are actually implemented as end_point_a <= pipe => end_point_b
@@ -1307,6 +929,7 @@ proc priv_delete : copipe = 'delete $1;';
 // this is awful but I don't know how to interact with flx ptrs
 // via the c interface. YUK!
 //JS: check out C_hack and _ref_ in the rtl
+
 header 'typedef struct{ flx::faio::copipe_endpt* foo[2]; }sorry_awful;';
 type co_awful = 'sorry_awful';
 proc init_awful_pair : co_awful = 'flx::faio::copipe_endpt::pipe_pair($1.foo);';
@@ -1374,15 +997,19 @@ proc co_write(pipe: copipe, len: &int, buf: address, eof: &bool)
 {   
     co_rw(pipe, len, buf, eof, false);      // read
 }
+*/
 
 // sleep! finally!
 
-type sleep_request = 'flx::faio::sleep_request';
-fun mk_sleep_request: double -> sleep_request = 'flx::faio::sleep_request($1)';
+type sleep_request = 'flx::faio::sleep_request' requires faio_timer_h;
+type alarm_clock = 'flx::demux::timer_queue*' requires faio_timer_h;
 
-proc sleep(delta: double)
+fun mk_alarm_clock: 1 -> alarm_clock = 'flx::faio::mk_timer_queue()';
+fun mk_sleep_request: alarm_clock * double -> sleep_request = 'flx::faio::sleep_request($1,$2)';
+
+proc sleep(clock: alarm_clock, delta: double)
 {
-  var sr = mk_sleep_request delta;
+  var sr = mk_sleep_request$ clock,delta;
   faio_req$ &sr;
 }
 
@@ -2448,10 +2075,10 @@ public:
   }
 
   // this belongs in faio class
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+  bool start_async_op_impl(demux::demuxer& demux)
   {
     fprintf(stderr, "start_async_op for named pipe\\n");
-    RECORD_THREAD_INFO(fw);   // records enough info for wakeup
+    RECORD_THREAD_INFO(fn);   // records enough info for wakeup
     return start_overlapped();
   }
 

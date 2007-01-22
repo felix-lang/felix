@@ -2249,6 +2249,8 @@ include "pthread";
 open Faio; // async I/O module
 open Pthread; // pre-emptive threading
 
+var clock = mk_alarm_clock();
+
 var nthreads, njobs = 3,4;
 print$ f"%d threads, %d jobs\n"$ nthreads,njobs;
 
@@ -2258,7 +2260,7 @@ proc worker(i:int, chan:pchannel[int])(){
  var &delay:int <- read chan; 
  whilst delay != 0 do
    print$ f"Thread %i, Delay %d\n"$ i,delay;
-   sleep$ double delay;
+   sleep$ clock,double delay;
    &delay <- read chan; 
  done;
 }

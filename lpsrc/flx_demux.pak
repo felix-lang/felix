@@ -26,13 +26,13 @@
 
 namespace flx { namespace demux {
 
-typedef struct {
+struct sel_param {
   char*   buffer;           // set on input
   long    buffer_size;        // set on input
   long    bytes_written;        // set on input and output
 
   bool    finished() { return bytes_written == buffer_size; }
-}sel_param;
+};
 
 // rename ...
 // read/write flags - they're no longer mutually exclusive
