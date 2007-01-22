@@ -411,8 +411,10 @@ socketio_request::start_async_op_impl(demux::demuxer& demux)
     // fprintf(stderr, "adding wakeup: len %i, done %i\n",
     //   sv.pb.buffer_size, sv.pb.bytes_written);
 
-    // important: copy down the thread and the driver
-    posix_demuxer*  pd = (posix_demuxer*)&demux;
+    // posix_demuxer*  pd = (posix_demuxer*)&demux;
+    // covariant
+    posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
+
 
     // wake thread if call failed
   return (pd->add_socket_wakeup(&sv, sv.sio_flags) == -1);
@@ -704,7 +706,13 @@ namespace flx { namespace faio {
 bool
 iocp_associator::start_async_op_impl(demuxer& demux)
 {
-  iocp_demuxer* iod = (iocp_demuxer*)&demux;
+  // covariant
+  iocp_demuxer*  iod = dynamic_cast<iocp_demuxer*>(&demux);
+
+  // not sure why we're doing dynamic casts if we don't check
+  // the return value.
+  //iocp_demuxer* iod = (iocp_demuxer*)&demux;
+
   // nasty: note how I'm making the user cookie constant (0).
   if(iod->associate_with_iocp((HANDLE)s, 0) != 0)
     fprintf(stderr,"associate request failed - get result here!\n");
@@ -724,13 +732,12 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     fprintf(stderr,"catchall wakeup got error: %i (should store it)\n", err);
 
   success = (NO_ERROR == err);  // this works pretty well
-  fn->signal();
+  notify_finished();
 }
 
 bool
 wasync_accept::start_async_op_impl(demuxer& demux)
 {
-  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -745,7 +752,6 @@ wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 connect_ex::start_async_op_impl(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -760,7 +766,6 @@ connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wasync_transmit_file::start_async_op_impl(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -774,7 +779,6 @@ wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wsa_socketio::start_async_op_impl(demux::demuxer& demux)
 {
-  RECORD_THREAD_INFO(fn); // records enough info for wakeup
   return start_overlapped();    // start overlapped op
 }
 
@@ -816,7 +820,6 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 winfile_io::start_async_op_impl(demuxer& demux)
 {
-  RECORD_THREAD_INFO(fn);   // records enough info for wakeup
   return start_overlapped();  // go
 }
 
@@ -2078,7 +2081,6 @@ public:
   bool start_async_op_impl(demux::demuxer& demux)
   {
     fprintf(stderr, "start_async_op for named pipe\\n");
-    RECORD_THREAD_INFO(fn);   // records enough info for wakeup
     return start_overlapped();
   }
 
