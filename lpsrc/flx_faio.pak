@@ -5,6 +5,16 @@
 @env_win = setup_test('test/faio/win-')
 @env_posix = setup_test('test/faio/posix-')
 
+@def kat_faio(code):
+  env_faio.kat(get_tangler(),code)
+
+@def kat_win(code):
+  env_win.kat(get_tangler(),code)
+
+@def kat_posix(code):
+  env_posix.kat(get_tangler(),code)
+
+
 @head(1,"Faio")
 Asynch I/O interface pack.
 
@@ -114,11 +124,12 @@ public:
     virtual ~flx_driver_request_base() {}       // so destructors work
 
     // returns finished flag (async may fail or immediately finish)
-    bool start_async_op(demux::demuxer& demuxer, finote_t *fn_a)
+    void start_async_op(demux::demuxer& demuxer, finote_t *fn_a)
     {
       fprintf(stderr,"start async op, set fn = %p\n",fn_a);
       fn = fn_a;
-      return start_async_op_impl(demuxer);
+      bool completed =  start_async_op_impl(demuxer);
+      if(completed) notify_finished();
     }
     void notify_finished() { 
       fprintf(stderr, "Notify %p\n", fn);
@@ -234,6 +245,7 @@ namespace flx { namespace faio {
 // from flx_driver_request_base
 bool job_t::start_async_op_impl(demux::demuxer& demux)
 {
+  fprintf(stderr,"job_t: start async_op_impl\n");
   //printf("Adding task to worker queue\\n");
   // get worker fifo, add this task
   job_queue->add_worker_task(this);
@@ -328,6 +340,7 @@ public:
     bool start_async_op_impl(demux::demuxer& demux);
 };
 
+// client open
 class FAIO_EXTERN connect_request
   : public flx_driver_request_base, public demux::connect_control_block {
 public:
@@ -339,6 +352,7 @@ public:
   virtual void wakeup(demux::posix_demuxer& demux);
 };
 
+// server open
 class FAIO_EXTERN accept_request
   : public flx_driver_request_base, public demux::accept_control_block {
 public:
@@ -399,6 +413,7 @@ using namespace flx::demux;
 namespace flx { namespace faio {
 socketio_request::socketio_request(int s, char* buf, long len, bool read)
 {
+    fprintf(stderr,"socketio_request %p making socketio_wakeup for socket %d\n",this,s);
     sv.s = s;
     sv.request = this;
   // demux supports reading AND writing. We don't. Yet.
@@ -412,6 +427,7 @@ socketio_request::socketio_request(int s, char* buf, long len, bool read)
 bool
 socketio_request::start_async_op_impl(demux::demuxer& demux)
 {
+    fprintf(stderr,"socketio_request: start async_op_impl %p\n",this);
     // fprintf(stderr, "adding wakeup: len %i, done %i\n",
     //   sv.pb.buffer_size, sv.pb.bytes_written);
 
@@ -421,7 +437,12 @@ socketio_request::start_async_op_impl(demux::demuxer& demux)
 
 
     // wake thread if call failed
-  return (pd->add_socket_wakeup(&sv, sv.sio_flags) == -1);
+  bool failed = (pd->add_socket_wakeup(&sv, sv.sio_flags) == -1);
+  if (failed)
+    fprintf(stderr,"socketio_request FAILED %p\n",this);
+  else
+    fprintf(stderr,"socketio_request OK %p\n",this);
+  return failed;
 }
 
 
@@ -432,6 +453,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
     // otherwise wakeup return false.
   bool  connection_closed;
 
+  fprintf(stderr, "making socketio_wakeup %p\n",this);
   //fprintf(stderr,"prehandle wakeup, this: %p, read: %i, len: %i, done %i\n",
   //  this, read, pb.buffer_size, pb.bytes_written);
 
@@ -473,17 +495,20 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
 bool
 connect_request::start_async_op_impl(demuxer& demux)
 {
-// fprintf(stderr, "connect_request::start_async_op\n");
-    // important: copy down the thread and the driver
+  fprintf(stderr,"connect_request %p: start async_op_impl\n",this);
 
   // covariant
   posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
 
   // call failed or finished (!), wake up thread as no wakeup coming
-  if(start(*pd) == -1) return true; 
+  if(start(*pd) == -1) {
+    fprintf(stderr, "FAILED TO SPAWN CONNECT REQUEST\N");
+    return true; 
+  }
 
   // NONONONONO! Referring to this's variables after a successful start
   // gives rise to a race condition, which is bad.
+  fprintf(stderr, "CONNECT REQUEST SPAWNED\n");
   return false;     // do not reschedule after a successful start
 
 /*
@@ -513,9 +538,15 @@ connect_request::wakeup(posix_demuxer& demux)
 bool
 accept_request::start_async_op_impl(demuxer& demux)
 {
+  fprintf(stderr,"accept_request %p: start async_op_impl\n",this);
   // covariant
   posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
-  return (start(*pd) == -1);      // accept_control_block function
+  bool failed = (start(*pd) == -1);      // accept_control_block function
+  if(failed)
+    fprintf(stderr, "FAILED TO SPAWN ACCEPT REQUEST\n");
+  else
+    fprintf(stderr, "ACCEPT REQUEST SPAWNED\n");
+  return failed;
 }
 
 void
@@ -546,6 +577,7 @@ flxfileio_request::flxfileio_request(){}
 bool
 flxfileio_request::start_async_op_impl(demux::demuxer& demux)
 {
+    fprintf(stderr,"flxfileio_request: start async_op_impl\n");
     // printf("driver called fileio start_async_op code\n");
     
     // need to create the async io thing here, or ask the driver for it
@@ -710,6 +742,7 @@ namespace flx { namespace faio {
 bool
 iocp_associator::start_async_op_impl(demuxer& demux)
 {
+  fprintf(stderr,"iocp_associator: start async_op_impl\n");
   // covariant
   iocp_demuxer*  iod = dynamic_cast<iocp_demuxer*>(&demux);
 
@@ -742,6 +775,7 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wasync_accept::start_async_op_impl(demuxer& demux)
 {
+  fprintf(stderr,"wasync_accept: start async_op_impl\n");
   return start_overlapped();
 }
 
@@ -756,6 +790,7 @@ wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 connect_ex::start_async_op_impl(demux::demuxer& demux)
 {
+  fprintf(stderr,"connect_ex: start async_op_impl\n");
   return start_overlapped();
 }
 
@@ -770,6 +805,7 @@ connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wasync_transmit_file::start_async_op_impl(demux::demuxer& demux)
 {
+  fprintf(stderr,"wasync_transmit_file: start async_op_impl\n");
   return start_overlapped();
 }
 
@@ -783,6 +819,7 @@ wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wsa_socketio::start_async_op_impl(demux::demuxer& demux)
 {
+  fprintf(stderr,"wsa_socketio: start async_op_impl\n");
   return start_overlapped();    // start overlapped op
 }
 
@@ -824,6 +861,7 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 winfile_io::start_async_op_impl(demuxer& demux)
 {
+  fprintf(stderr,"winfile_io: start async_op_impl\n");
   return start_overlapped();  // go
 }
 
@@ -1780,6 +1818,7 @@ var bugger = s;
 @env_faio.head(2, 'faio tests')
 @env_faio.head(3)
 @select(env_faio.test('.flx'))
+@kat_faio("sockets")
 // portable flx sockets test (rt = regression test)
 
 #import <flx.flxh>
@@ -2084,6 +2123,7 @@ public:
   // this belongs in faio class
   bool start_async_op_impl(demux::demuxer& demux)
   {
+    fprintf(stderr,"named_pipe: start async_op_impl\n");
     fprintf(stderr, "start_async_op for named pipe\\n");
     return start_overlapped();
   }
@@ -2421,5 +2461,9 @@ forever {
 };
 
 flx_close(listener);
+@doc()
 
+@env_faio.write_katfile()
+@env_posix.write_katfile()
+@env_win.write_katfile()
 

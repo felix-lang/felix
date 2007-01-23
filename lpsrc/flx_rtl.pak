@@ -2363,7 +2363,7 @@ shared library name are not passed.
 class ASYNC_EXTERN async_hooker {
 public:
   virtual flx::rtl::fthread_t *dequeue()=0;
-  virtual bool handle_request(void *data, flx::rtl::fthread_t *ss)=0;
+  virtual void handle_request(void *data, flx::rtl::fthread_t *ss)=0;
   virtual ~async_hooker();
 };
 
@@ -2410,7 +2410,7 @@ using namespace flx::faio;
 class async_hooker_impl : public async_hooker {
   virtual flx::demux::demuxer *get_demuxer()=0;
 public:
-  bool handle_request(void *data,fthread_t *ss);
+  void handle_request(void *data,fthread_t *ss);
   virtual sleep_queue_t *get_ready_queue()=0;
   ~async_hooker_impl();
 };
@@ -2448,7 +2448,7 @@ async_hooker_impl::~async_hooker_impl(){
   //fprintf(stderr,"Deleted async_hooker_impl\n"); 
 }
 
-bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
+void async_hooker_impl::handle_request(void *data,fthread_t *ft)
 {
   flx::faio::flx_driver_request_base* dreq = 
         (flx::faio::flx_driver_request_base*)data
@@ -2460,8 +2460,7 @@ bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 
   finote_t *fn = new wakeup_fthread_t(get_ready_queue(),ft);
   fprintf(stderr,"async hooker dispatching request, fn = %p\n",fn);
-  bool result =dreq->start_async_op(*get_demuxer(),fn);
-  return result;
+  dreq->start_async_op(*get_demuxer(),fn);
 }
 
 class proto_async : public async_hooker_impl
@@ -2926,17 +2925,10 @@ void doflx (void *data) {
         ++async_count;
         void *dreq =  (((_ref_*)(ss.request->data))->get_data());
 
-        //fprintf(stderr,"Request object at %p\n",dreq);
-        // RF hates the flag this function returns .. might
-        // mask a race condition, get rid of it
-        if(!async->handle_request(dreq, ss.ft))
-        {
-          ss.pc = next_fthread_pos;
-        } 
-        else {
-          --async_count;
-          ss.pc = next_request_pos;
-        }
+        // requests are now ALWAYS considered asynchronous
+        // even if the request handler reschedules them immediately
+        async->handle_request(dreq, ss.ft);
+        ss.pc = next_fthread_pos;
       }
       goto process_active;
 
