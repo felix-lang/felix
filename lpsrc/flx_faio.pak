@@ -116,12 +116,15 @@ public:
     // returns finished flag (async may fail or immediately finish)
     bool start_async_op(demux::demuxer& demuxer, finote_t *fn_a)
     {
+      fprintf(stderr,"start async op, set fn = %p\n",fn_a);
       fn = fn_a;
       return start_async_op_impl(demuxer);
     }
     void notify_finished() { 
+      fprintf(stderr, "Notify %p\n", fn);
       assert(fn!=0);
-      fn->signal(); delete fn; 
+      fn->signal(); 
+      delete fn; 
       fn=0;
     }
 };  
@@ -182,6 +185,7 @@ namespace flx { namespace faio {
 bool
 sleep_request::start_async_op_impl(demuxer& demux)
 {
+  fprintf(stderr,"Sleep: start async_op_impl\n");
   sleepers->add_sleep_request(this, delta);
   return false;   // no wakeup
 }
@@ -1007,7 +1011,7 @@ proc co_write(pipe: copipe, len: &int, buf: address, eof: &bool)
 type sleep_request = 'flx::faio::sleep_request' requires faio_timer_h;
 type alarm_clock = 'flx::demux::timer_queue*' requires faio_timer_h;
 
-fun mk_alarm_clock: 1 -> alarm_clock = 'flx::faio::mk_timer_queue()';
+fun mk_alarm_clock: 1 -> alarm_clock = 'flx::demux::mk_timer_queue()';
 fun mk_sleep_request: alarm_clock * double -> sleep_request = 'flx::faio::sleep_request($1,$2)';
 
 proc sleep(clock: alarm_clock, delta: double)

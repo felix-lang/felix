@@ -562,6 +562,8 @@ public:
     static void get_time(double& t);        // in seconds from some ref pt
 };
 
+DEMUX_EXTERN timer_queue *mk_timer_queue();
+
 }} // namespace demux, flx
 
 #endif
@@ -624,6 +626,9 @@ public:
 
 //using namespace flx::pthread;
 namespace flx { namespace demux {
+
+timer_queue *mk_timer_queue() { return new posix_timer_queue; }
+
 
 #define MIL 1000000        // one million
 #define BIL (MIL*1000)    // one billion (metric)
@@ -921,6 +926,8 @@ public:
 #include <stdio.h>
 
 namespace flx { namespace demux {
+
+timer_queue *mk_timer_queue() { return new win_timer_queue; }
 
 #define MIL 1000000    // 1 metric million
 
