@@ -34,9 +34,9 @@ Requires: demux
 @h = tangler('spkgs/faio.py')
 @select(h)
 FAIORTL_INTERFACES = [
+ 'faio/faio_asyncio.hpp',
  'faio/faio_job.hpp',
  'faio/faio_timer.hpp',
- 'faio/faio_asyncio.hpp',
  'faio/faio_posixio.hpp',
  'faio/faio_winio.hpp',
 ]
@@ -93,7 +93,6 @@ weaver_directory = 'doc/rtl/flx_faio/'
 #define __FLX_FAIO_ASYNCIO_H__
 #include <flx_faio_config.hpp>
 #include "pthread_sleep_queue.hpp"
-#include <assert.h>
 
 #include "demux_demuxer.hpp"        // sel_param, demuxer base
 #include "flx_rtl.hpp"
@@ -124,25 +123,39 @@ public:
     virtual ~flx_driver_request_base() {}       // so destructors work
 
     // returns finished flag (async may fail or immediately finish)
-    void start_async_op(demux::demuxer& demuxer, finote_t *fn_a)
-    {
-      fprintf(stderr,"start async op, set fn = %p\n",fn_a);
-      fn = fn_a;
-      bool completed =  start_async_op_impl(demuxer);
-      if(completed) notify_finished();
-    }
-    void notify_finished() { 
-      fprintf(stderr, "Notify %p\n", fn);
-      assert(fn!=0);
-      fn->signal(); 
-      delete fn; 
-      fn=0;
-    }
+    void start_async_op(demux::demuxer& demuxer, finote_t *fn_a);
+    void notify_finished();
 };  
 
 }} // namespace faio, flx
 #endif  // __ASYNCIO__
 
+
+@h=tangler('faio/faio_asyncio.cpp')
+@select(h)
+#include <assert.h>
+#include "faio_asyncio.hpp"
+
+namespace flx { namespace faio {
+
+void flx_driver_request_base:: start_async_op(demux::demuxer& demuxer, finote_t *fn_a)
+{
+  fprintf(stderr,"start async op %p, set fn = %p\n",this,fn_a);
+  fn = fn_a;
+  bool completed =  start_async_op_impl(demuxer);
+  if(completed) notify_finished();
+}
+
+void flx_driver_request_base:: notify_finished()
+{ 
+  fprintf(stderr, "Notify %p\n", fn);
+  assert(fn!=0);
+  fn->signal(); 
+  delete fn; 
+  fn=0;
+}
+
+}}
 
 @head(1,'Timer')
 @h=tangler('faio/faio_timer.hpp')
@@ -182,10 +195,6 @@ public:
 
 }} // namespace faio, flx
 #endif  
-
-@h=tangler('faio/faio_asyncio.cpp')
-@select(h)
-// empty at the moment
 
 @h=tangler('faio/faio_timer.cpp')
 @select(h)
@@ -335,6 +344,8 @@ public:
     socketio_wakeup sv;
     
     socketio_request() {}       // Lord Felix demands it. Like STL.
+    socketio_request(socketio_request const&);
+    void operator = (socketio_request const&);
     
     socketio_request(int s, char* buf, long len, bool r);
     bool start_async_op_impl(demux::demuxer& demux);
@@ -424,10 +435,26 @@ socketio_request::socketio_request(int s, char* buf, long len, bool read)
     sv.pb.bytes_written = 0;        // really bytes_processed
 }
 
+socketio_request::socketio_request(socketio_request const &a)
+{
+  fprintf(stderr, "copying socketio_request to %p\n",this);
+  sv.request = this;
+}
+
+// EXTREME HACKERY!
+void socketio_request::operator=(socketio_request const &a)
+{
+  fprintf(stderr, "assigning socketio_request to %p\n",this);
+
+  flx_driver_request_base::operator=(a);
+  sv = a.sv;
+  sv.request = this;
+}
+
 bool
 socketio_request::start_async_op_impl(demux::demuxer& demux)
 {
-    fprintf(stderr,"socketio_request: start async_op_impl %p\n",this);
+    fprintf(stderr,"socketio_request: socket %d start async_op_impl %p\n",sv.s,this);
     // fprintf(stderr, "adding wakeup: len %i, done %i\n",
     //   sv.pb.buffer_size, sv.pb.bytes_written);
 
@@ -502,7 +529,7 @@ connect_request::start_async_op_impl(demuxer& demux)
 
   // call failed or finished (!), wake up thread as no wakeup coming
   if(start(*pd) == -1) {
-    fprintf(stderr, "FAILED TO SPAWN CONNECT REQUEST\N");
+    fprintf(stderr, "FAILED TO SPAWN CONNECT REQUEST\n");
     return true; 
   }
 
@@ -1097,7 +1124,7 @@ header = '#include "faio_posixio.hpp"';
 // socketio_request should be renamed to be async_fd_request
 type socketio_request = "flx::faio::socketio_request";
 
-fun mk_socketio_request: int*address*int*bool -> socketio_request
+gen mk_socketio_request: int*address*int*bool -> socketio_request
     = 'flx::faio::socketio_request($1, (char*)$2, $3, $4)';
 
 fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
