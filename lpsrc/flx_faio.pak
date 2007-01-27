@@ -926,42 +926,20 @@ requires package "faio";
 open C_hack;
 
 proc faio_req[t](x:&t) {
-  // svc_general takes an arbitrary machine
-  // address as an argument: the _ref_ denotes
-  // that address. It does NOT point to an 'address'
-  // but to an faio request .. however the svc doesn't
-  // know the type of such requests objects .. so we use
-  // the type 'address' as a convenient dummy
   val y : &address = reinterpret[&address] x;
   svc (svc_general y);
 }
 
-// Faio library bindings
-// this file should be portable. it currently defines only a few simple
-// driver interactions and copipes. no stream wrappers in here.
-    
-// get thread self from driver
 proc get_thread(thread: ptr[fthread]) {
     svc (svc_get_fthread thread );
 }
 
 header stdlib_h = '#include <stdlib.h>';            // malloc, free
-    
-//fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
-//proc free: address = 'free($1);' requires stdlib_h; 
-    
-//header asyncio_h = '#include "faio_asyncio.hpp"';
-// could go through and conditionally require this header, but I'm
-// not going to right now.
-// this pulls in sel_params & demuxers & so on
 header = '#include "faio_asyncio.hpp"';
-
 header faio_timer_h = '#include "faio_timer.hpp"';
 
 type sel_param = "flx::demux::sel_param";
 type sel_param_ptr = "flx::demux::sel_param*";
-
-// this is felix coding at its least subtle
 fun to_ptr : sel_param -> sel_param_ptr = '&$1';
 
 
@@ -969,9 +947,6 @@ fun get_bytes_done : sel_param_ptr -> int = '$1->bytes_written';
 proc init_pb : sel_param*address*int
 = '{$1.buffer=(char*)$2;$1.buffer_size=$3;$1.bytes_written=0;}';
 
-// this way when I realise that my eof calc is wrong, I can change it
-// everywhere at once. so, should exactly n of n bytes read be eof?
-// it currently isn't. 
 proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
 {
     var bytes_done = pb.bytes_done;
@@ -979,99 +954,7 @@ proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
     *len = bytes_done;
 }
 
-// this is a no-op hack to make it look like the argument t
-// is actually being used. useful for a few hairy svc/gc interactions
 proc gc_collect_me_not_hack[t]: t = ';';
-
-/*
-// copipe interface.
-
-// copipes are actually implemented as end_point_a <= pipe => end_point_b
-// felix only needs to know about endpoints, which we'll call pipes.
-type copipe = 'flx::faio::copipe_endpt*';
-
-// private calls
-proc connect : copipe*fthread*sel_param*bool
- = '$1->pipe->connect((void*)$2, &$3, $4, $1->get_channel($4));';
-fun pipe_request : copipe -> address = '$1->pipe';
-fun to_ptr : copipe -> address = '$1';      // easier than cast
-proc priv_shutdown : copipe*int = '$1->shutdown($2);';
-proc priv_delete : copipe = 'delete $1;';
-
-// this is awful but I don't know how to interact with flx ptrs
-// via the c interface. YUK!
-//JS: check out C_hack and _ref_ in the rtl
-
-header 'typedef struct{ flx::faio::copipe_endpt* foo[2]; }sorry_awful;';
-type co_awful = 'sorry_awful';
-proc init_awful_pair : co_awful = 'flx::faio::copipe_endpt::pipe_pair($1.foo);';
-fun get : co_awful*int -> copipe = '$1.foo[$2]';
-
-proc flx_copipe_pair(p1: &copipe, p2: &copipe)
-{   
-    var awful: co_awful;
-    init_awful_pair(awful);
-    *p1 = get(awful, 0);
-    *p2 = get(awful, 1);
-}
-
-// not for public consumption
-//JS -- then make it private
-// the c++ copipe code figures out what you wanted from the pipe itself.
-private proc copipe_driver_request(pipe: copipe)
-{   
-    var request = pipe_request pipe;
-    faio_req$ &request;
-}
-
-proc co_rw(pipe: copipe, len: &int, buf: address, eof: &bool, read_flag: bool)
-{
-    // Suppose I could move this to start_async_op, it knows the thread, but
-    // not whether it's reading or writing
-    var thread : fthread;
-    get_thread(addr thread);                    // ask driver for thread pointer
-    
-    var pb: sel_param;
-    init_pb(pb, buf, *len);
-    
-    // connect thread to its apropriate read/write channel
-    connect(pipe, thread, pb, read_flag);
-    
-    copipe_driver_request(pipe);
-    
-    calc_eof(to_ptr(pb), len, eof);
-}
-
-// public copipe calls
-
-// shutdown pipe endpoint. no matter what how is, pipe must still be closed
-// how = 0 => no more reads, 1 no more writes, 2 no more anything
-proc co_shutdown(pipe: copipe, how: int)
-{   
-    priv_shutdown(pipe, how);
-    // let pipe request be evaluated
-    copipe_driver_request(pipe);
-}
-
-proc co_close(pipe: copipe)
-{   
-    co_shutdown(pipe, 2);                   // no more io, eof those waiting
-    priv_delete(pipe);
-    // the end!
-}
-
-proc co_read(pipe: copipe, len: &int, buf: address, eof: &bool)
-{   
-    co_rw(pipe, len, buf, eof, true);       // read
-}
-
-proc co_write(pipe: copipe, len: &int, buf: address, eof: &bool)
-{   
-    co_rw(pipe, len, buf, eof, false);      // read
-}
-*/
-
-// sleep! finally!
 
 type sleep_request = 'flx::faio::sleep_request' requires faio_timer_h;
 type alarm_clock = 'flx::demux::timer_queue*' requires faio_timer_h;
@@ -1101,7 +984,6 @@ requires package "faio";
 open C_hack;        // cast, address
 open Faio;
 
-// some random stuff, sorta unixy
 header unistd_h = '#include <unistd.h>';            // close
 header fcntl_h = '#include <fcntl.h>';              // fcntl for O_NONBLOCK
 header sys_socket_h = '#include <sys/socket.h>';    // shutdown
@@ -1110,12 +992,9 @@ header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 proc close: int = 'close($1);' requires unistd_h;
 proc shutdown: int*int = 'shutdown($a);' requires sys_socket_h;
 
-// this too can be optimised away to nothing
-// mucking around with pushing file fd through the async socket code
 fun aio_ropen: string -> int = 'open($1.c_str(), O_RDONLY | O_NONBLOCK, 0)'
     requires fcntl_h;
 
-// blocking, read only
 fun ropen: charp -> int = 'open($1, O_RDONLY, 0)' requires fcntl_h;
 
 
@@ -1133,10 +1012,7 @@ fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
 proc async_rw(fd: int, len: &int, buf: address, eof: &bool, read_flag: bool)
 {
     var asyncb = mk_socketio_request(fd, buf, *len, read_flag);
-
-    // magic! (break to driver, wake up when it's all over)
     faio_req$ &asyncb;
-
     calc_eof(asyncb.pb, len, eof);
 }
 
@@ -1260,9 +1136,7 @@ fun eq : SOCKET*SOCKET -> bool = '($1 == $2)';
 proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
 {
     var acc = mk_accept(listener, accepted);
-
     faio_req$ &acc;    // causes AcceptEx to be called
-
     *success = get_success(acc);
 }
 
@@ -1447,9 +1321,11 @@ open Faio_win32;
 module Flx_stream {
 requires package "demux";
 requires package "faio";
-//JS: the type name should be flx_stream_t by convention ..
+
+union devnull_t = DEVNULL;
+
+/*
 union flx_stream =
-    | CO of copipe     // copipe
     | DEVNULL          // nothing
 #if POSIX
     | UFD of int       // Unix file
@@ -1461,6 +1337,7 @@ union flx_stream =
     | WSOCK of SOCKET  // Windows socket
     | WFD of WFILE     // Windows file
 #endif
+*/
 
 // MISSING CASES: strstreams  -- strings as streams
 // FILE* streams, C++ iostreams as streams. kind of messy ..
@@ -1469,55 +1346,171 @@ union flx_stream =
 
 ;
 
-// will be ambiguous for file fd, will need name. do I even need these
-// when the conversion is unambiguous?
+typeclass IByteStream[s] { 
+  virtual proc flx_read: s * &int * address * &bool; 
+}
 
-//JS: use the constructor, no need for a separate
-//JS: function to make things, that's what
-//JS: type constructors are for .. maybe the names
-//JS: should be changed to FLX_STRM_UFD or something ..
+typeclass OByteStream[s] { 
+  virtual proc flx_write: s * &int * address * &bool; 
+}
 
-//fun to_stream (p: copipe): flx_stream = { return CO p; }
-//fun new_devnull (): flx_stream = { return DEVNULL; }
-//fun file_to_stream (fd: int): flx_stream = { return UFD fd; }
-//fun to_stream (fd: int): flx_stream = { return USOCK fd; }
-//fun to_stream (f: WFILE): flx_stream = { return WFD f; }
-//fun to_stream (s: SOCKET): flx_stream = { return WSOCK s; }
+typeclass IOByteStream[s] { 
+  inherit IByteStream[s];
+  inherit OByteStream[s];
+}
 
-proc flx_read(strm: flx_stream, len: &int, buf: address, eof: &bool)
+typeclass TerminalIByteStream[s] { 
+  inherit IByteStream[s];
+  virtual proc iclose: s; 
+}
+
+typeclass TerminalOByteStream[s] { 
+  inherit OByteStream[s];
+  virtual proc oclose: s; 
+}
+
+typeclass TerminalIOStream[s] { 
+  inherit TerminalIBytestream[s];
+  inherit TerminalOBytestream[s];
+  virtual proc ioclose (f:s) { iclose f; oclose f; }
+}
+
+//
+// devnull_t
+//
+instance IByteStream[devnull_t]
 {
-    match strm with
-    | CO ?pipe => { co_read(pipe, len, buf, eof); }
-    | DEVNULL => { *len = 0; *eof = true; }
-#if POSIX
-    | USOCK ?fd => { async_read(fd, len, buf, eof); }
-    | UFD ?fd => { faio_read(fd, len, buf, eof); }
-#endif
-//#if WIN32 or CYGWIN
-#if WIN32
-    | WSOCK ?s => { WSARecv(s, len, buf, eof); }
-    | WFD ?file => { ReadFile(file, len, buf, eof); }
-#endif
-    endmatch;
+  proc flx_read(strm: t, len: &int, buf: address, eof: &bool)
+    { *len = 0; *eof = true; }
 }
 
-proc flx_write(strm: flx_stream, len: &int, buf: address, eof: &bool)
-{   
-    match strm with 
-    | CO ?pipe => { co_write(pipe, len, buf, eof); }
-    | DEVNULL => { /* nothing to do */ }
-#if POSIX
-    | USOCK ?fd => { async_write(fd, len, buf, eof); }
-    | UFD ?fd => { faio_write(fd, len, buf, eof); }
-#endif
-//#if WIN32 or CYGWIN
-#if WIN32
-    | WSOCK ?s => { WSASend(s, len, buf, eof); }
-    | WFD ?file => { WriteFile(file, len, buf, eof); }
-#endif
-    endmatch;
+instance OByteStream[devnull_t]
+{
+  proc flx_write(strm: devnull_t, len: &int, buf: address, eof: &bool)
+    { *eof = false; }
 }
 
+instance IOByteStream[devnull_t] {}
+instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) { } } 
+instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) { } }
+instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) { } }
+
+
+//
+// socket_t
+//
+instance IByteStream[socket_t]
+{
+  proc flx_read(s: socket_t, len: &int, buf: address, eof: &bool)
+  #if POSIX
+    { async_read(s, len, buf, eof); }
+  #elif WIN32
+    { WSARecv(s, len, buf, eof); }
+  #endif
+}
+
+instance OByteStream[socket_t]
+{
+  proc flx_write(strm: flx_stream, len: &int, buf: address, eof: &bool)
+  #if POSIX
+    { async_write(fd, len, buf, eof); }
+  #elif WIN32
+    { WSASend(fd, len, buf, eof); }
+  #endif
+}
+
+instance IOByteStream[socket_t] {}
+
+instance TerminalIByteStream[socket_t]
+{
+  proc iclose (s:socket_t)
+  #if POSIX
+    { close s; }
+  #else
+    { closesocket s; }
+  #endif
+}
+
+instance TerminalOByteStream[socket_t]
+{
+  proc oclose (s:socket_t) 
+  #if POSIX
+    { close s; }
+  #elif WIN32
+    { closesocket s; }
+  #endif
+}
+
+
+instance TerminalIOByteStream[socket_t]
+{
+  proc oclose (s:socket_t) 
+  #if POSIX
+    { close s; }
+  #elif WIN32
+    { closesocket s; }
+  #endif
+}
+
+
+//
+// fd_t -- native file handle (disk file)
+//
+instance IByteStream[fd_t]
+{
+  proc flx_read(s: fd_t, len: &int, buf: address, eof: &bool)
+  #if POSIX
+    { async_read(s, len, buf, eof); }
+  #elif WIN32
+    { ReadFile(s, len, buf, eof); }
+  #endif
+}
+
+instance OByteStream[fd_t]
+{
+  proc flx_write(s: fd_t, len: &int, buf: address, eof: &bool)
+  #if POSIX
+    { async_write(s, len, buf, eof); }
+  #elif WIN32
+    { WriteFile(s, len, buf, eof); }
+  #endif
+}
+
+instance ByteStream[fd_t] {}
+
+instance TerminalIByteStream[fd_t]
+{
+  proc iclose (x:fd_t)
+  #if POSIX
+    { close f; }
+  #elif WIN32
+    { CloseFile f; }
+  #endif
+}
+
+instance TerminalOByteStream[fd_t]
+{
+  proc iclose (x:fd_t)
+  #if POSIX
+    { close f; }
+  #elif WIN32
+    { CloseFile f; }
+  #endif
+}
+
+instance TerminalIOByteStream[fd_t]
+{
+  proc iclose (x:fd_t)
+  #if POSIX
+    { close f; }
+  #elif WIN32
+    { CloseFile f; }
+  #endif
+}
+
+
+
+/*
 proc flx_shutdown(strm: flx_stream, how: int)
 {
     match strm with
@@ -1534,39 +1527,12 @@ proc flx_shutdown(strm: flx_stream, how: int)
 #endif
     endmatch;
 }
-
-proc flx_close(strm: flx_stream)
-{
-    match strm with
-    | CO ?pipe => { co_close(pipe); }
-    | DEVNULL => { /* nothing to do */ }
-#if POSIX
-    | USOCK ?socket => { close(socket); }    // error check?
-    | UFD ?fd => { close(fd); }          // error check?
-#endif
-//#if WIN32 or CYGWIN
-#if WIN32
-    | WSOCK ?socket => { closesocket(socket); }
-    | WFD ?file => { CloseFile(file); }
-#endif    
-    endmatch;
-}
-
-proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
-{   
-    var a: copipe;
-    var b: copipe;
-    
-    flx_copipe_pair(&a, &b);
-    *ourend = CO a;
-    var theirend = CO b;
-    spawn_fthread { p theirend; };
-}
-
-
+*/
 
 // fun things that probably need renaming
-proc cat(infd: flx_stream, outfd: flx_stream, buf: address, bufsize: int) {
+proc cat[istr,ostr where IByteStream[istr], OByteStream[ostr]]
+(infd: istr , outfd: ostr, buf: address, bufsize: int) 
+{
     var eof = false;
     var weof = false;
     var len: int;
@@ -1574,9 +1540,9 @@ proc cat(infd: flx_stream, outfd: flx_stream, buf: address, bufsize: int) {
     // if we finish input, stop. if output eofs, don't keep hammering on it!
     while{not(eof) and not(weof)} {
         len = bufsize;
-// print "catting in "; print len; print " bytes\n";
+     // print "catting in "; print len; print " bytes\n";
         flx_read(infd, &len, buf, &eof);
-// print "catting out "; print len; print " bytes\n";
+     // print "catting out "; print len; print " bytes\n";
         flx_write(outfd, &len, buf, &weof);
     };
 };
@@ -1597,12 +1563,13 @@ open List;
 // all open at once. would a generator be better?
 // could make this supercat, with multiple in, multiple out (multiout
 // in the sense of tee)
-proc cat(in_fds: list[flx_stream], outfd: flx_stream,
+proc cat[istr,ostr where IByteStream[istr], OByteStream[ostr]]
+(in_fds: list[istr], outfd: ostr,
     buf: address, bufsize: int)
 {
     match in_fds with
-    | Empty[flx_stream] => {}               // finished
-    | Cons[flx_stream] (?fd, ?l) =>
+    | Empty[istr] => {}                     // finished
+    | Cons[istr] (?fd, ?l) =>
         {
             cat(fd, outfd, buf, bufsize);   // cat first
             cat(l, outfd, buf, bufsize);    // cat the rest
@@ -1612,7 +1579,8 @@ proc cat(in_fds: list[flx_stream], outfd: flx_stream,
 }
 
 // try the stream interface
-proc echo(fd: flx_stream, buf: address, bufsize: int)
+proc echo[iostr where IOByteStream]
+(fd: iostr, buf: address, bufsize: int)
 {
     // echo a = cat a a. that's deep, man.
     cat(fd, fd, buf, bufsize);
@@ -1621,7 +1589,8 @@ proc echo(fd: flx_stream, buf: address, bufsize: int)
 // playing around. need to be able to control io buffers in a more
 // global way. I like the supercat idea. need to be careful not to hammer
 // multiple outputs. move tee to own file
-proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
+proc tee[istr,ostr where IByteStream[istr], OByteStream[ostr]]
+(infd: istr, outfd: ostr, outfd2: ostr)
 {
     var eof = false;
     var weof = false;
@@ -1730,6 +1699,24 @@ proc flx_write(s: flx_socket, len: &int, buf: address, eof: &bool)
 #elif WIN32
   WSASend(s, len, buf, eof);
 #endif
+}
+
+instance IBuffer[flx_socket] {
+  gen read(s:flx_socket, buf:address, inlen: int) = {
+    var outlen = inlen;
+    var eof = false;
+    flx_read (s, addr outlen, buf, addr eof);
+    return outlen,eof;
+  }
+}
+
+instance OBuffer[flx_socket] {
+  gen read(s:flx_socket, buf:address, inlen: int) = {
+    var outlen = inlen;
+    var eof = false;
+    flx_write (s, addr outlen, buf, addr eof);
+    return outlen,eof;
+  }
 }
 
 // this should work without the conditional compilation

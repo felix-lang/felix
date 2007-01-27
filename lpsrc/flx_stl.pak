@@ -12,7 +12,6 @@
 @head(1,'Stl library')
 @h=tangler('lib/stl.flx','data')
 @select(h)
-#include <flx_categories.flxh>
 #import <flx.flxh>
 
 include "std";
@@ -50,13 +49,6 @@ size_t __gnu_cxx::hash<std::string>::
 """;
 
 @#------------- STL CONTAINERS -----------------------
-@def gen_pcmp(t):
-  tangle('    gen_cmp '+t+';') 
-
-@def gen_peq(t):
-  tangle('    gen_eq '+t+';')
-
-
 @def mkseq(n,ns='std'):
   c = 'stl_'+n+'[t]'
   it = 'stl_'+n+'_iterator[t]'

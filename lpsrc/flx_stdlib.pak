@@ -117,6 +117,36 @@ typeclass Bidirectional[t] {
   virtual proc post_decr: lvalue[t];
 }
 
+typeclass IStream[f,t] {
+  virtual gen read: f -> t;
+}
+
+typeclass OStream[f,t] {
+  virtual proc write: f * t;
+}
+
+typeclass IOStream[f,t] {
+  inherit IStream[f,t];
+  inherit OStream[f,t];
+}
+
+typeclass IFile[f,t] {
+  inherit IStream [f,opt[t]];
+}
+
+typeclass OFile[f,t] {
+  inherit OStream;
+  virtual proc close: f; // invalidates write operation
+}
+
+typeclass IBuffer [f] {
+  virtual gen read: f -> address * int -> int * bool;
+}
+
+typeclass OBuffer [f] {
+  virtual gen write : f -> address * int -> int * bool;
+}
+
 typeclass Iterator[it,t] {
   virtual fun deref: it -> lvalue[t];
 }
@@ -216,77 +246,7 @@ typeclass Reversible_Sequence[c,it,rit,v] {
 }
 
 
-@select(tangler('lib/flx_categories.flxh', 'data'))
-macro proc gen_eq(t){
-  fun eq: t * t -> bool = "$1==$2" ;
-  fun ne: t * t -> bool = "$1!=$2" ;
-}
-
-macro proc gen_cmp(t){
-  fun lt: t * t -> bool = "$1<$2" ;
-  fun gt: t * t -> bool = "$1>$2" ;
-  fun le: t * t -> bool = "$1<=$2" ;
-  fun ge: t * t -> bool = "$1>=$2" ;
-
-  fun min (x:t, y:t) => if x < y then x else y endif;
-  fun max (x:t, y:t) => if x > y then x else y endif;
-  fun cmp (x:t, y:t) => if x < y then -1 elif x > y then 1 else 0 endif;
-}
-
-macro proc gen_cmpeq(t){
-  gen_eq t;
-  gen_cmp t;
-}
-
-// additive group
-macro proc gen_add (t){
-  fun pos: t -> t = "+$1" ;
-  fun neg: t -> t = "-$1" ;
-  fun add: t * t -> t = "$1+$2" ;
-  fun sub: t * t -> t = "$1-$2" ;
-  proc pluseq: lvalue[t] * t = "$1+=$2;";
-  proc minuseq: lvalue[t] * t = "$1-=$2;";
-}
-
-@def gen_uint(t):
-  for opname,op in [
-    ("bxor","^"),
-    ("bor","\\|"),
-    ("band","\\&"),
-  ]:
-    tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
-  tangle('  fun bnot: '+t+' -> '+t+' = "~$1";')
-
-
-@def gen_uint_assign(t):
-  for opname,op in [
-    ("bxoreq","^="),
-    ("boreq","|="),
-    ("bandeq","&=")
-  ]:
-    tangle('  proc '+opname+': lvalue['+t+'] * '+t+' = "$1'+op+'$2;";')
-
 @fc = {'float':'f', 'double':'','ldouble':'l'}
-@def gen_pow(t):
-  for op in [
-    'pow',
-    'atan2',
-    'fmod',
-    'fmax','fmin'
-    ]:
-    tangle('  fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)" is postfix requires cmath;')
-
-@def gen_trig(t):
-  for op in [
-    'sin','cos','tan',
-    'asin','acos','atan',
-    'sinh','cosh','tanh',
-    'asinh','acosh','atanh',
-    'exp', 'log','log10',
-    'fabs','sqrt',
-    'ceil','floor','trunc'
-    ]:
-    tangle('  fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)" is postfix requires cmath;')
 
 @def gen_nan(t):
   if HAVE_ISNAN_IN_CMATH:
@@ -1623,7 +1583,6 @@ open module Ustring
   open Bool;
   open Char;
   open Int;
-  //gen_eq(ustring);
   proc pluseq: lvalue[ustring] * ustring = "$1.append($2);";
 
   fun len: ustring -> int = "$1.size()";
