@@ -2601,41 +2601,43 @@ let gen_biface_header syms bbdfns biface = match biface with
       if length display <> 0
       then clierr sr "Can't export nested function";
 
-      let argtypes = 
+      let arglist = 
         map 
         (fun {ptyp=t} -> cpp_typename syms t) 
         ps 
       in
       let arglist = "  " ^ 
-        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
         ) 
       in
       let rettypename = cpp_typename syms ret in
 
       "//EXPORT FUNCTION " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
-      "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
+      "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^ 
+      export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
     | `BBDCL_procedure (props,vs,(ps,traint), _) ->
       let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested proc";
 
-      let argtypes = 
+      let arglist = 
         map 
         (fun {ptyp=t} -> cpp_typename syms t) 
         ps 
       in
       let arglist = "  " ^ 
-        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
         ) 
       in
       
       "//EXPORT PROCEDURE " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
-      "extern \"C\" FLX_EXPORT con_t * "  ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
+      "extern \"C\" FLX_EXPORT con_t * "  ^ export_name ^ 
+      "(\n" ^ arglist ^ "\n);\n"
   
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
@@ -2659,15 +2661,14 @@ let gen_biface_body syms bbdfns biface = match biface with
       let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested function";
-      let argtypes = 
+      let arglist = 
         map 
-        (fun {ptyp=t} -> cpp_typename syms t) 
-        ps 
-      in
-
+        (fun {ptyp=t; pid=name} -> cpp_typename syms t ^ " " ^ name)
+        ps
+      in 
       let arglist = "  " ^ 
-        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
         ) 
       in
       (*
@@ -2707,14 +2708,14 @@ let gen_biface_body syms bbdfns biface = match biface with
       if length display <> 0
       then clierr sr "Can't export nested function";
 
-      let argtypes = 
+      let arglist= 
         map 
-        (fun {ptyp=t} -> cpp_typename syms t) 
+        (fun {ptyp=t; pid=name} ->cpp_typename syms t ^ " " ^ name) 
         ps 
       in
       let arglist = "  " ^ 
-        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        (if length arglist = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
         ) 
       in
       let class_name = cpp_instance_name syms bbdfns index [] in
@@ -2730,7 +2731,7 @@ let gen_biface_body syms bbdfns biface = match biface with
             "  " ^ class_name ^"(" ^
             (
               if mem `Requires_ptf props then
-                if length argtypes = 0 
+                if length ps = 0 
                 then "FLX_APAR_PASS_ONLY "
                 else "FLX_APAR_PASS "
               else ""
