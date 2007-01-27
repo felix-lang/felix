@@ -989,13 +989,19 @@ header fcntl_h = '#include <fcntl.h>';              // fcntl for O_NONBLOCK
 header sys_socket_h = '#include <sys/socket.h>';    // shutdown
 header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 
-proc close: int = 'close($1);' requires unistd_h;
-proc shutdown: int*int = 'shutdown($a);' requires sys_socket_h;
+type socket_t = "int";
+type fd_t = "int";
+proc close: socket_t = 'close($1);' requires unistd_h;
+proc close: fd_t = 'close($1);' requires unistd_h;
 
-fun aio_ropen: string -> int = 'open($1.c_str(), O_RDONLY | O_NONBLOCK, 0)'
+proc shutdown: socket_t*int = 'shutdown($a);' requires sys_socket_h;
+
+fun bad_socket : socket_t -> bool = "$1 == -1";
+
+fun aio_ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY | O_NONBLOCK, 0)'
     requires fcntl_h;
 
-fun ropen: charp -> int = 'open($1, O_RDONLY, 0)' requires fcntl_h;
+fun ropen: charp -> fd_t = 'open($1, O_RDONLY, 0)' requires fcntl_h;
 
 
 header = '#include "faio_posixio.hpp"';
@@ -1003,65 +1009,41 @@ header = '#include "faio_posixio.hpp"';
 // socketio_request should be renamed to be async_fd_request
 type socketio_request = "flx::faio::socketio_request";
 
-gen mk_socketio_request: int*address*int*bool -> socketio_request
+gen mk_socketio_request: socket_t*address*int*bool -> socketio_request
     = 'flx::faio::socketio_request($1, (char*)$2, $3, $4)';
 
 fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
 
 // read & write differ only by a flag
-proc async_rw(fd: int, len: &int, buf: address, eof: &bool, read_flag: bool)
+proc async_rw(fd: socket_t, len: &int, buf: address, eof: &bool, read_flag: bool)
 {
     var asyncb = mk_socketio_request(fd, buf, *len, read_flag);
     faio_req$ &asyncb;
     calc_eof(asyncb.pb, len, eof);
 }
 
-proc async_read(fd: int, len: &int, buf: address,
+proc async_read(fd: socket_t, len: &int, buf: address,
     eof: &bool)
 {   
     async_rw(fd, len, buf, eof, true);      // read
 }
 
-proc async_write(fd: int, len: &int, buf: address, eof: &bool)
+proc async_write(fd: socket_t, len: &int, buf: address, eof: &bool)
 {   
     async_rw(fd, len, buf, eof, false);     // write
 }
 
 type flxfileio_request = "flx::faio::flxfileio_request";
 
-// offset ? let it be for a moment
-fun mk_faio: int*address*int*int*bool -> flxfileio_request
-    = 'flx::faio::flxfileio_request($1, (char*)$2, $3, $4, $5)';
-fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
-
-proc faio_rw(fd: int, len: &int, buf: address, eof: &bool, read_flag: bool)
-{   
-    // constant offset for now, rushing to get this in flx_stream
-    var faio = mk_faio(fd, buf, *len, 0, read_flag);
-    faio_req$ &faio;
-    calc_eof(faio.pb, len, eof);
-}
-
-proc faio_read(fd: int, len: &int, buf: address,
-    eof: &bool)
-{   
-    faio_rw(fd, len, buf, eof, true);       // read
-}
-
-proc faio_write(fd: int, len: &int, buf: address, eof: &bool)
-{   
-    faio_rw(fd, len, buf, eof, false);      // write
-}
-
 // connect!
 type async_connect = 'flx::faio::connect_request';
 
-fun mk_async_connect: charp*int -> async_connect = 'flx::faio::connect_request($a)';
-fun get_socket: async_connect -> int = '$1.s';
+fun mk_async_connect: charp*int-> async_connect = 'flx::faio::connect_request($a)';
+fun get_socket: async_connect -> socket_t = '$1.s';
 fun get_err: async_connect -> int = '$1.socket_err';
 
 // could do multi connects for capable drivers
-proc connect(s: &int, addr: charp, port: int)
+proc connect(s: &socket_t, addr: charp, port: int)
 {   
     var ac = mk_async_connect(addr, port);
     faio_req$ &ac;
@@ -1070,18 +1052,44 @@ proc connect(s: &int, addr: charp, port: int)
 
 type accept_request = "flx::faio::accept_request";
 
-fun mk_accept: int -> accept_request = 'flx::faio::accept_request($1)';
+fun mk_accept: socket_t -> accept_request = 'flx::faio::accept_request($1)';
 fun get_socket: accept_request -> int = '$1.accepted';
 
 // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
-proc mk_listener: lvalue[int]*lvalue[int]*int
+proc mk_listener: lvalue[socket_t]*lvalue[int]*int
     = '$1 = flx::demux::create_async_listener(&$2, $3);' requires sockety_h;
 
-proc accept(s: &int, listener: int)
+proc accept(s: &socket_t, listener: socket_t)
 {   
     var acc = mk_accept listener ;
     faio_req$ &acc;
     *s = acc.socket;
+}
+
+// ASYNC FILE IO
+
+// offset ? let it be for a moment
+fun mk_faio: fd_t*address*int*int*bool -> flxfileio_request
+    = 'flx::faio::flxfileio_request($1, (char*)$2, $3, $4, $5)';
+fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
+
+proc faio_rw(fd: fd_t, len: &int, buf: address, eof: &bool, read_flag: bool)
+{   
+    // constant offset for now, rushing to get this in flx_stream
+    var faio = mk_faio(fd, buf, *len, 0, read_flag);
+    faio_req$ &faio;
+    calc_eof(faio.pb, len, eof);
+}
+
+proc faio_read(fd: fd_t, len: &int, buf: address,
+    eof: &bool)
+{   
+    faio_rw(fd, len, buf, eof, true);       // read
+}
+
+proc faio_write(fd: fd_t, len: &int, buf: address, eof: &bool)
+{   
+    faio_rw(fd, len, buf, eof, false);      // write
 }
 
 
@@ -1369,9 +1377,9 @@ typeclass TerminalOByteStream[s] {
   virtual proc oclose: s; 
 }
 
-typeclass TerminalIOStream[s] { 
-  inherit TerminalIBytestream[s];
-  inherit TerminalOBytestream[s];
+typeclass TerminalIOByteStream[s] { 
+  inherit TerminalIByteStream[s];
+  inherit TerminalOByteStream[s];
   virtual proc ioclose (f:s) { iclose f; oclose f; }
 }
 
@@ -1380,7 +1388,7 @@ typeclass TerminalIOStream[s] {
 //
 instance IByteStream[devnull_t]
 {
-  proc flx_read(strm: t, len: &int, buf: address, eof: &bool)
+  proc flx_read(strm: devnull_t, len: &int, buf: address, eof: &bool)
     { *len = 0; *eof = true; }
 }
 
@@ -1411,11 +1419,11 @@ instance IByteStream[socket_t]
 
 instance OByteStream[socket_t]
 {
-  proc flx_write(strm: flx_stream, len: &int, buf: address, eof: &bool)
+  proc flx_write(s: socket_t, len: &int, buf: address, eof: &bool)
   #if POSIX
-    { async_write(fd, len, buf, eof); }
+    { async_write(s, len, buf, eof); }
   #elif WIN32
-    { WSASend(fd, len, buf, eof); }
+    { WSASend(s, len, buf, eof); }
   #endif
 }
 
@@ -1444,7 +1452,7 @@ instance TerminalOByteStream[socket_t]
 
 instance TerminalIOByteStream[socket_t]
 {
-  proc oclose (s:socket_t) 
+  proc ioclose (s:socket_t) 
   #if POSIX
     { close s; }
   #elif WIN32
@@ -1460,7 +1468,7 @@ instance IByteStream[fd_t]
 {
   proc flx_read(s: fd_t, len: &int, buf: address, eof: &bool)
   #if POSIX
-    { async_read(s, len, buf, eof); }
+    { faio_read(s, len, buf, eof); }
   #elif WIN32
     { ReadFile(s, len, buf, eof); }
   #endif
@@ -1470,17 +1478,17 @@ instance OByteStream[fd_t]
 {
   proc flx_write(s: fd_t, len: &int, buf: address, eof: &bool)
   #if POSIX
-    { async_write(s, len, buf, eof); }
+    { faio_write(s, len, buf, eof); }
   #elif WIN32
     { WriteFile(s, len, buf, eof); }
   #endif
 }
 
-instance ByteStream[fd_t] {}
+instance IOByteStream[fd_t] {}
 
 instance TerminalIByteStream[fd_t]
 {
-  proc iclose (x:fd_t)
+  proc iclose (f:fd_t)
   #if POSIX
     { close f; }
   #elif WIN32
@@ -1490,7 +1498,7 @@ instance TerminalIByteStream[fd_t]
 
 instance TerminalOByteStream[fd_t]
 {
-  proc iclose (x:fd_t)
+  proc oclose (f:fd_t)
   #if POSIX
     { close f; }
   #elif WIN32
@@ -1500,7 +1508,7 @@ instance TerminalOByteStream[fd_t]
 
 instance TerminalIOByteStream[fd_t]
 {
-  proc iclose (x:fd_t)
+  proc ioclose (f:fd_t)
   #if POSIX
     { close f; }
   #elif WIN32
@@ -1530,7 +1538,7 @@ proc flx_shutdown(strm: flx_stream, how: int)
 */
 
 // fun things that probably need renaming
-proc cat[istr,ostr where IByteStream[istr], OByteStream[ostr]]
+proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
 (infd: istr , outfd: ostr, buf: address, bufsize: int) 
 {
     var eof = false;
@@ -1547,14 +1555,15 @@ proc cat[istr,ostr where IByteStream[istr], OByteStream[ostr]]
     };
 };
 
-proc cat(infd: flx_stream, outfd: flx_stream)
+proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
+(infd: istr, outfd: ostr)
 {
     val BUFSIZE = 10*1024;
-    var buf = malloc(BUFSIZE);
+    var buf = C_hack::malloc(BUFSIZE);
 
     // that's some nice error checking
     cat(infd, outfd, buf, BUFSIZE);
-    free(buf);
+    C_hack::free(buf);
 }
 
 open List;
@@ -1563,7 +1572,7 @@ open List;
 // all open at once. would a generator be better?
 // could make this supercat, with multiple in, multiple out (multiout
 // in the sense of tee)
-proc cat[istr,ostr where IByteStream[istr], OByteStream[ostr]]
+proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
 (in_fds: list[istr], outfd: ostr,
     buf: address, bufsize: int)
 {
@@ -1579,7 +1588,7 @@ proc cat[istr,ostr where IByteStream[istr], OByteStream[ostr]]
 }
 
 // try the stream interface
-proc echo[iostr where IOByteStream]
+proc echo[iostr with IOByteStream[iostr]]
 (fd: iostr, buf: address, bufsize: int)
 {
     // echo a = cat a a. that's deep, man.
@@ -1589,7 +1598,7 @@ proc echo[iostr where IOByteStream]
 // playing around. need to be able to control io buffers in a more
 // global way. I like the supercat idea. need to be careful not to hammer
 // multiple outputs. move tee to own file
-proc tee[istr,ostr where IByteStream[istr], OByteStream[ostr]]
+proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]]
 (infd: istr, outfd: ostr, outfd2: ostr)
 {
     var eof = false;
@@ -1598,7 +1607,7 @@ proc tee[istr,ostr where IByteStream[istr], OByteStream[ostr]]
     var len: int;
 
     val BUFSIZE = 10*1024;
-    var buf = malloc(BUFSIZE);
+    var buf = C_hack::malloc(BUFSIZE);
 
     // don't hammer!
     while{not(eof) and not(weof) and not(weof2)} {
@@ -1607,7 +1616,7 @@ proc tee[istr,ostr where IByteStream[istr], OByteStream[ostr]]
         flx_write(outfd, &len, buf, &weof);
         flx_write(outfd2, &len, buf, &weof2);
     };
-    free buf;
+    C_hack::free buf;
 }
 
 } // module Flx_stream
@@ -1907,16 +1916,16 @@ print "felix posix accept/connect test\n";
 
 var port = 0;   // let mk_listener choose the port
 print "creating listener\n";
-var listener: int <- mk_listener(port, 1);
+var listener: socket_t <- mk_listener(port, 1);
 
 print "spawning connector\n";
 // not printing in thread to make output repeatable in
 // the face of scheduler changes.
-spawn_fthread{ { var c: int; connect(&c, c"127.0.0.1", port); }; };
+spawn_fthread{ { var c: socket_t; connect(&c, c"127.0.0.1", port); }; };
 
-var s: int;
+var s: socket_t;
 accept (&s, listener);  // async!
-if s == -1 then {
+if bad_socket s then {
   System::exit 1;
 } else {
   print "accepted connection\n";
@@ -1945,13 +1954,13 @@ fun get_data: charp -> address = "$1";
 
 // try to send some data down a socket
 var port = 0;   // let mk_listener choose the port
-var listener: int <- mk_listener(port, 1);
+var listener: socket_t <- mk_listener(port, 1);
 
 // not printing in thread to make output repeatable in
 // the face of scheduler changes.
 spawn_fthread{
   {
-    var c: int;
+    var c: socket_t;
     connect(&c, c"127.0.0.1", port);
 
     var len = 8;
@@ -1966,7 +1975,7 @@ spawn_fthread{
   };
 };
 
-var s: int;
+var s: socket_t;
 accept (&s, listener);  // async!
 var b: tstbuf;
 var len = 16;           // ask for more than there is and rely on shutdown
