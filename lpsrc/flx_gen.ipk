@@ -238,7 +238,7 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
 
   let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
-  let argtypename = cpp_typename syms argtype in
+  (* let argtypename = cpp_typename syms argtype in *)
   let display = get_display_list syms bbdfns index in
   assert (length display = 0);
   let name = cpp_instance_name syms bbdfns index ts in
@@ -255,7 +255,7 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
         let ix = hd params in
         if Hashtbl.mem syms.instances (ix, ts)
         && not (argtype = `BTYP_tuple [] or argtype = `BTYP_void)
-        then argtypename else ""
+        then cpp_typename syms argtype else ""
       | _ -> 
         let counter = ref 0 in
         fold_left
@@ -1708,7 +1708,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
 
 
     let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
-    let argtypename = cpp_typename syms argtype in
+    (* let argtypename = cpp_typename syms argtype in *)
     let rettypename = cpp_typename syms ret in
 
     let params = map (fun {pindex=ix} -> ix) bps in
@@ -1848,7 +1848,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
     let argtype = rt vs argtype in
 
     let funtype = fold syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
-    let argtypename = cpp_typename syms argtype in
+    (* let argtypename = cpp_typename syms argtype in *)
 
     let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,_ =
