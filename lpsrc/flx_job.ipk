@@ -1,0 +1,49 @@
+@head(1,'Jobs')
+@h=tangler('faio/faio_job.hpp')
+Abstract base for jobs. A job does some work asynchronously,
+then wakes up the fthread that scheduled it. The fthread blocks
+until the job is completed.
+@p()
+To use this class, just override doit().
+@select(h)
+#ifndef __FLX_FAIO_JOB_H__
+#define __FLX_FAIO_JOB_H__
+#include <flx_faio_config.hpp>
+#include "demux_demuxer.hpp"
+#include "pthread_work_fifo.hpp"
+#include "faio_asyncio.hpp"
+
+namespace flx { namespace faio {
+class FAIO_EXTERN job_t: 
+  public flx_driver_request_base,
+  public pthread::worker_task 
+{
+   pthread::worker_fifo* job_queue;
+public:  
+
+  // from flx_driver_request_base
+  bool start_async_op_impl(flx::demux::demuxer& demux);
+};
+}}
+
+#endif
+
+@h=tangler('faio/faio_job.cpp')
+@select(h)
+#include "faio_job.hpp"
+
+namespace flx { namespace faio {
+// from flx_driver_request_base
+bool job_t::start_async_op_impl(demux::demuxer& demux)
+{
+  //fprintf(stderr,"job_t: start async_op_impl\n");
+  //printf("Adding task to worker queue\\n");
+  // get worker fifo, add this task
+  job_queue->add_worker_task(this);
+  //printf("Task added\\n");
+  return false;              // suspended
+}
+
+}}
+
+

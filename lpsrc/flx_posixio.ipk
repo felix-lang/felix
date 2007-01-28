@@ -1,0 +1,442 @@
+@head(1,'Posix Sockets')
+@h=tangler('faio/faio_posixio.hpp')
+@select(h)
+#ifndef __FLX_FAIO_POSIXIO_H__
+#define __FLX_FAIO_POSIXIO_H__
+#include <flx_faio_config.hpp>
+
+#include "faio_asyncio.hpp"
+
+// we don't need to piggyback much data at all. for now just the demuxer,
+// so that we can be woken up, and the buffer info (this replaces the
+// felix "socket" thread type, which was ugly.
+
+#include "demux_posix_demuxer.hpp" 
+
+// a new sort of demuxer/event source: file io completions
+// haven't given up on using the socket style demuxers yet.
+#include "demux_pfileio.hpp"
+
+#include "demux_timer_queue.hpp"
+
+namespace flx { namespace faio {
+ 
+class FAIO_EXTERN socketio_wakeup : public demux::socket_wakeup {
+public:
+  demux::sel_param   pb;     // in: what you want, out: what you get
+  int       sio_flags;  // either one of PDEMUX_{READ|WRITE}A
+  struct socketio_request *request;
+
+  virtual void wakeup(demux::posix_demuxer& demux);
+};
+
+// this can handle most unix style io, that is, read & write on sockets,
+// files & pipes. NICE. the fact that the socket is now in here may mean
+// I can get rid of the epoll hack
+// Not sure if this can be used for file fds.
+class FAIO_EXTERN socketio_request : public flx_driver_request_base {
+public:
+    socketio_wakeup sv;
+    
+    socketio_request() {}       // Lord Felix demands it. Like STL.
+    socketio_request(socketio_request const&);
+    void operator = (socketio_request const&);
+    
+    socketio_request(int s, char* buf, long len, bool r);
+    bool start_async_op_impl(demux::demuxer& demux);
+};
+
+// client open
+class FAIO_EXTERN connect_request
+  : public flx_driver_request_base, public demux::connect_control_block {
+public:
+
+  connect_request() {}      // flx linkage
+
+  connect_request(const char* addr, int port) { addy = addr; p = port; s=-1; }
+  bool start_async_op_impl(demux::demuxer& demux);
+  virtual void wakeup(demux::posix_demuxer& demux);
+};
+
+// server open
+class FAIO_EXTERN accept_request
+  : public flx_driver_request_base, public demux::accept_control_block {
+public:
+  // we sometimes know that there'll be several connections to accept.
+  // this'll need a different wakeup - and a different interface between
+  // event source & wakeups
+
+  accept_request() {} // flx linkage
+
+  // eeh, give that a better name
+  accept_request(int listener) { s = listener; }
+
+  // from flx_driver_request_base
+  bool start_async_op_impl(demux::demuxer& demux);
+
+  // from accept_control_block
+  virtual void wakeup(demux::posix_demuxer& demux);
+};
+
+
+// separate pthread file io
+// hum. multiple inheritance
+class FAIO_EXTERN flxfileio_request
+    : public flx_driver_request_base, public demux::fileio_request
+{
+    demux::pasync_fileio       *aio_worker;
+public:
+    flxfileio_request();           // flx linkage
+    ~flxfileio_request();          // flx linkage
+
+    flxfileio_request(
+      demux::pasync_fileio *a,
+      int f, char* buf, long len, long off, bool rd
+     )
+        : fileio_request(f, buf, len, off, rd), aio_worker(a) {}
+
+    // from driver request
+    bool start_async_op_impl(demux::demuxer& demux);
+};
+
+}}
+#endif
+
+@h=tangler('faio/faio_posixio.cpp')
+@select(h)
+#include <stdio.h>      // printf
+#include "faio_posixio.hpp"
+#include "demux_sockety.hpp"    // async_connect
+
+#include <sys/types.h>  // getsockopt & co
+#include <sys/socket.h>
+
+#include <unistd.h>     // close
+#include <string.h>     // strerror - probably not portable
+#include <assert.h>
+
+using namespace flx::demux;
+namespace flx { namespace faio {
+socketio_request::socketio_request(int s, char* buf, long len, bool read)
+{
+  //fprintf(stderr,"socketio_request %p making socketio_wakeup for socket %d\n",this,s);
+  sv.s = s;
+  sv.request = this;
+  // demux supports reading AND writing. We don't. Yet.
+  sv.sio_flags = ((read) ? PDEMUX_READ : PDEMUX_WRITE);
+
+  sv.pb.buffer = buf;
+  sv.pb.buffer_size = len;
+  sv.pb.bytes_written = 0;        // really bytes_processed
+}
+
+socketio_request::socketio_request(socketio_request const &a)
+{
+  //fprintf(stderr, "copying socketio_request to %p\n",this);
+  sv.request = this;
+}
+
+// EXTREME HACKERY!
+void socketio_request::operator=(socketio_request const &a)
+{
+  //fprintf(stderr, "assigning socketio_request to %p\n",this);
+
+  flx_driver_request_base::operator=(a);
+  sv = a.sv;
+  sv.request = this;
+}
+
+bool
+socketio_request::start_async_op_impl(demux::demuxer& demux)
+{
+  //fprintf(stderr,"socketio_request: socket %d start async_op_impl %p\n",sv.s,this);
+  // fprintf(stderr, "adding wakeup: len %i, done %i\n",
+  //   sv.pb.buffer_size, sv.pb.bytes_written);
+
+  // posix_demuxer*  pd = (posix_demuxer*)&demux;
+  // covariant
+  posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
+
+
+  // wake thread if call failed
+  bool failed = (pd->add_socket_wakeup(&sv, sv.sio_flags) == -1);
+  if (failed)
+    fprintf(stderr,"socketio_request FAILED %p\n",this);
+  //else
+  //  fprintf(stderr,"socketio_request OK %p\n",this);
+  return failed;
+}
+
+
+void
+socketio_wakeup::wakeup(posix_demuxer& demux)
+{
+  // handle read/write, return true if not finished.
+  // otherwise wakeup return false.
+  bool  connection_closed;
+
+  //fprintf(stderr, "making socketio_wakeup %p\n",this);
+  //fprintf(stderr,"prehandle wakeup, this: %p, read: %i, len: %i, done %i\n",
+  //  this, read, pb.buffer_size, pb.bytes_written);
+
+  // NOTE: this code does not handle the possibility of both read AND
+  // write being set. That would require thinking about the what
+  // the connect_closed return value meant. In any case, we don't
+  // do that stuff here yet.
+  if(wakeup_flags & PDEMUX_READ)
+  {
+    // just check that our above assumption hasn't been violated.
+    assert(wakeup_flags == PDEMUX_READ);
+        connection_closed = posix_demuxer::socket_recv(s, &pb);
+  }
+  else
+  {   
+    // never hurts to be paranoid.
+    assert(wakeup_flags == PDEMUX_WRITE);
+        connection_closed = posix_demuxer::socket_send(s, &pb);
+  }
+    
+  // fprintf(stderr,"posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",
+  //  this, read, pb.buffer_size, pb.bytes_written);
+  // fprintf(stderr,"wakeup of %p, closed = %i\n", this, connection_closed);
+    
+  // wake up: time to process some data
+  if(connection_closed || pb.bytes_written == pb.buffer_size)
+  {   
+    // fprintf(stderr,"schedding %p, drv: %p, f: %p\n", this, drv, f);
+    request->notify_finished();
+    return;
+  }
+    
+  // fprintf(stderr,"not schedding %p\n", this);
+  if(demux.add_socket_wakeup(this, sio_flags) == -1)
+  fprintf(stderr,"failed to re-add_socket_wakeup\n");
+}
+
+// asynchronous connect
+bool
+connect_request::start_async_op_impl(demuxer& demux)
+{
+  //fprintf(stderr,"connect_request %p: start async_op_impl\n",this);
+
+  // covariant
+  posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
+
+  // call failed or finished (!), wake up thread as no wakeup coming
+  if(start(*pd) == -1) {
+    fprintf(stderr, "FAILED TO SPAWN CONNECT REQUEST\n");
+    return true; 
+  }
+
+  // NONONONONO! Referring to this's variables after a successful start
+  // gives rise to a race condition, which is bad.
+  //fprintf(stderr, "CONNECT REQUEST SPAWNED\n");
+  return false;     // do not reschedule after a successful start
+
+/*
+  // I've not seen this yet, don't know why.
+  if(0 == socket_err) fprintf(stderr, "WOW, instant CONNECT\n");
+
+  // call didn't fail, could be pending or finished.
+  // return socket_err != EINPROGRESS, the contrapositive, sort of
+  return 0 == socket_err;   // no err => finished immediately
+*/
+}
+
+void
+connect_request::wakeup(posix_demuxer& demux)
+{
+  //fprintf(stderr, "connect_request::wakeup\n");
+
+  // fprintf(stderr,"connect woke up\n");
+  connect_control_block::wakeup(demux);
+
+  // felix thread can pick out error itself.
+  notify_finished();
+}
+
+
+// async accept
+bool
+accept_request::start_async_op_impl(demuxer& demux)
+{
+  //fprintf(stderr,"accept_request %p: start async_op_impl\n",this);
+  // covariant
+  posix_demuxer*  pd = dynamic_cast<posix_demuxer*>(&demux);
+  bool failed = (start(*pd) == -1);      // accept_control_block function
+  if(failed)
+    fprintf(stderr, "FAILED TO SPAWN ACCEPT REQUEST\n");
+  //else
+  //  fprintf(stderr, "ACCEPT REQUEST SPAWNED\n");
+  return failed;
+}
+
+void
+accept_request::wakeup(posix_demuxer& demux)
+{
+  // does the leg work.
+  accept_control_block::wakeup(demux);
+
+  if(accepted == -1)
+  {
+    // I don't know if this is a good idea...
+    fprintf(stderr, "accept request failed (%i), retrying...\n",
+      socket_err);
+    // didn't get it - go back to sleep
+    if(start(demux) == -1)
+      fprintf(stderr, "failed again... probably was a bad idea\n");
+    return; 
+  }
+
+  notify_finished();
+}
+
+// from driver request
+flxfileio_request::~flxfileio_request(){}  
+flxfileio_request::flxfileio_request(){}
+
+
+bool
+flxfileio_request::start_async_op_impl(demux::demuxer& demux)
+{
+  //fprintf(stderr,"flxfileio_request: start async_op_impl\n");
+  // printf("driver called fileio start_async_op code\n");
+    
+  // need to create the async io thing here, or ask the driver for it
+  // driver needs to go a little less portable
+  aio_worker->add_fileio_request(this);
+    
+  return false;       // no wakeup
+}
+
+}}
+
+@h=tangler('lib/flx_faio_posix.flx')
+@select(h)
+#import <flx.flxh>
+// contains posix async socket io & copipes, all wrapped up streams
+
+include "flx_faio";
+module Faio_posix  {
+header faio_posixio_hpp = '#include "faio_posixio.hpp"';
+requires package "demux";
+requires package "faio";
+open C_hack;        // cast, address
+open Faio;
+
+header unistd_h = '#include <unistd.h>';            // close
+header fcntl_h = '#include <fcntl.h>';              // fcntl for O_NONBLOCK
+header sys_socket_h = '#include <sys/socket.h>';    // shutdown
+header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
+header = '#include "faio_posixio.hpp"';
+
+
+type fd_t = "int";
+proc close: socket_t = 'close($1);' requires unistd_h;
+proc close: fd_t = 'close($1);' requires unistd_h;
+
+proc shutdown: socket_t*int = 'shutdown($a);' requires sys_socket_h;
+
+fun bad_socket : socket_t -> bool = "$1 == -1";
+
+// non blocking
+fun aio_ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY | O_NONBLOCK, 0)'
+    requires fcntl_h;
+
+// blocking
+fun ropen: charp -> fd_t = 'open($1, O_RDONLY, 0)' requires fcntl_h;
+
+
+
+type socket_t = "int";
+// socketio_request should be renamed to be async_fd_request
+type socketio_request = "flx::faio::socketio_request";
+
+gen mk_socketio_request: socket_t*address*int*bool -> socketio_request
+    = 'flx::faio::socketio_request($1, (char*)$2, $3, $4)';
+
+fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
+
+// read & write differ only by a flag
+proc async_rw(fd: socket_t, len: &int, buf: address, eof: &bool, read_flag: bool)
+{
+    var asyncb = mk_socketio_request(fd, buf, *len, read_flag);
+    faio_req$ &asyncb;
+    calc_eof(asyncb.pb, len, eof);
+}
+
+proc async_read(fd: socket_t, len: &int, buf: address,
+    eof: &bool)
+{   
+    async_rw(fd, len, buf, eof, true);      // read
+}
+
+proc async_write(fd: socket_t, len: &int, buf: address, eof: &bool)
+{   
+    async_rw(fd, len, buf, eof, false);     // write
+}
+
+type flxfileio_request = "flx::faio::flxfileio_request";
+
+// connect!
+type async_connect = 'flx::faio::connect_request';
+
+fun mk_async_connect: charp*int-> async_connect = 'flx::faio::connect_request($a)';
+fun get_socket: async_connect -> socket_t = '$1.s';
+fun get_err: async_connect -> int = '$1.socket_err';
+
+// could do multi connects for capable drivers
+proc connect(s: &socket_t, addr: charp, port: int)
+{   
+    var ac = mk_async_connect(addr, port);
+    faio_req$ &ac;
+    *s = ac.socket;
+}
+
+type accept_request = "flx::faio::accept_request";
+
+fun mk_accept: socket_t -> accept_request = 'flx::faio::accept_request($1)';
+fun get_socket: accept_request -> int = '$1.accepted';
+
+// arg1 = returned socket, arg2 is port, pass 0 to have one assigned
+proc mk_listener: lvalue[socket_t]*lvalue[int]*int
+    = '$1 = flx::demux::create_async_listener(&$2, $3);' requires sockety_h;
+
+proc accept(s: &socket_t, listener: socket_t)
+{   
+    var acc = mk_accept listener ;
+    faio_req$ &acc;
+    *s = acc.socket;
+}
+
+// ASYNC FILE IO
+
+// offset ? let it be for a moment
+fun mk_faio: fd_t*address*int*int*bool -> flxfileio_request
+    = 'flx::faio::flxfileio_request($1, (char*)$2, $3, $4, $5)';
+fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
+
+proc faio_rw(fd: fd_t, len: &int, buf: address, eof: &bool, read_flag: bool)
+{   
+    // constant offset for now, rushing to get this in flx_stream
+    var faio = mk_faio(fd, buf, *len, 0, read_flag);
+    faio_req$ &faio;
+    calc_eof(faio.pb, len, eof);
+}
+
+proc faio_read(fd: fd_t, len: &int, buf: address,
+    eof: &bool)
+{   
+    faio_rw(fd, len, buf, eof, true);       // read
+}
+
+proc faio_write(fd: fd_t, len: &int, buf: address, eof: &bool)
+{   
+    faio_rw(fd, len, buf, eof, false);      // write
+}
+
+
+
+} // module faio_posix
+
+

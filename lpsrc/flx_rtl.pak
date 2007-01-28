@@ -2459,7 +2459,7 @@ void async_hooker_impl::handle_request(void *data,fthread_t *ft)
   // mask a race condition, get rid of it
 
   finote_t *fn = new wakeup_fthread_t(get_ready_queue(),ft);
-  fprintf(stderr,"async hooker dispatching request %p, fn = %p\n",dreq,fn);
+  //fprintf(stderr,"async hooker dispatching request %p, fn = %p\n",dreq,fn);
   dreq->start_async_op(*get_demuxer(),fn);
 }
 
