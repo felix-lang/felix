@@ -2234,6 +2234,59 @@ axiom_check(-0.1,0.4,0.7);
 @select(env_rt.expect())
 @doc()
 
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("export")
+#import <flx.flxh>
+
+include "flx_faio";
+
+var clock = Faio::mk_alarm_clock();
+
+proc foo(x: int, y: int) {
+    print x; endl; print y; endl;
+    Faio::sleep (clock,1.0);
+}
+
+export proc foo of (int*int) as "foo";
+@doc()
+
+@select(env_rt.expect())
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("export")
+#import <flx.flxh>
+
+proc foo(x: int, y: int) { print x; print y; endl; }
+proc foo(a:int) { print a; }
+proc foo { }
+
+export proc foo of (int*int) as "foo2";
+export proc foo of (int) as "foo1";
+export proc foo of (1) as "foo0";
+
+@doc()
+@select(env_rt.expect())
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("export")
+#import <flx.flxh>
+
+proc foo(x: int, y: int) {
+    print y; endl;
+    spawn_fthread { print "fibre\n"; };
+}
+
+export proc foo of (int*int) as "foo";
+@doc()
+@select(env_rt.expect())
+@doc()
+
+
 @env_nd.head(2,"Non deterministic tests")
 
 @env_nd.head(3)

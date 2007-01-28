@@ -171,6 +171,7 @@ let get_felix_options options =
       end
       end
     ;
+    hash_include = get_key_values options "hash-include";
     compile_only = check_keys options ["c";"compile-only"]
   }
 
