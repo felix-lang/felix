@@ -633,7 +633,28 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
     iter 
     (function 
       | `BIFACE_export_fun (_,x,_) -> 
-        add_cand x []
+        let _,_,sr,entry = Hashtbl.find bbdfns x in
+        begin match entry with
+        | `BBDCL_procedure (props,_,(ps,_),_) 
+        | `BBDCL_function (props,_,(ps,_),_,_) -> 
+        begin match ps with
+        | [] -> ()
+        | [{ptyp=t}] -> register_type_r ui syms bbdfns [] sr t
+        | _ -> 
+          let t =
+            `BTYP_tuple
+            (
+              map
+              (fun {ptyp=t} -> t)
+              ps
+            )
+          in
+          register_type_r ui syms bbdfns [] sr t;
+          register_type_nr syms t;
+          add_cand x []
+        end
+        | _ -> assert false
+        end
 
       | `BIFACE_export_type (sr,t,_) ->
         register_type_r ui syms bbdfns [] sr t

@@ -2719,6 +2719,33 @@ let gen_biface_body syms bbdfns biface = match biface with
         ) 
       in
       let class_name = cpp_instance_name syms bbdfns index [] in
+      let args = 
+        let ge sr e : string = gen_expr syms bbdfns index e [] [] sr in
+        match ps with
+        | [] -> "0"
+        | [{ptyp=t; pid=name; pindex=idx}] -> "0" ^ ", " ^ ge sr (
+              `BEXPR_name (idx,[]),t
+            )
+        | _ -> 
+          let a = 
+            `BEXPR_tuple 
+            (
+              map 
+              (fun {ptyp=t; pid=name; pindex=idx} -> `BEXPR_name (idx,[]),t)
+              ps
+            ),
+            let t = 
+              `BTYP_tuple
+              (
+                map
+                (fun {ptyp=t} -> t)
+                ps
+              )
+            in 
+            reduce_type t
+          in
+          "0" ^ ", " ^ ge sr a
+      in
 
       "//EXPORT PROC " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
@@ -2750,7 +2777,7 @@ let gen_biface_body syms bbdfns biface = match biface with
         else
         "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
         "    " ^ class_name ^ "(_PTFV))" ^
-        "\n      ->call(" ^ cat ", " ("0"::(map (fun{pid=id}->id) ps)) ^ ");\n" 
+        "\n      ->call(" ^ args ^ ");\n" 
       )
       ^
       "}\n"
