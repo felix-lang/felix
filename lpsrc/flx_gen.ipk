@@ -2708,30 +2708,41 @@ let gen_biface_body syms bbdfns biface = match biface with
       if length display <> 0
       then clierr sr "Can't export nested function";
 
-      let arglist= 
+      let args = rev (fold_left (fun args
+        ({ptyp=t; pid=name; pindex=pidx} as arg) ->
+        try ignore(cpp_instance_name syms bbdfns pidx []); arg:: args
+        with _ -> args
+        )
+        []
+        ps)
+      in
+      let params = 
         map 
-        (fun {ptyp=t; pid=name} ->cpp_typename syms t ^ " " ^ name) 
+        (fun {ptyp=t; pindex=pidx; pid=name} ->
+          cpp_typename syms t ^ " " ^ name
+        ) 
         ps 
       in
-      let arglist = "  " ^ 
-        (if length arglist = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
+      let strparams = "  " ^ 
+        (if length params = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " params
         ) 
       in
       let class_name = cpp_instance_name syms bbdfns index [] in
-      let args = 
+      let strargs = 
         let ge sr e : string = gen_expr syms bbdfns index e [] [] sr in
         match ps with
         | [] -> "0"
-        | [{ptyp=t; pid=name; pindex=idx}] -> "0" ^ ", " ^ ge sr (
-              `BEXPR_name (idx,[]),t
-            )
+        | [{ptyp=t; pid=name; pindex=idx}] -> "0" ^ ", " ^ name
         | _ -> 
           let a = 
+            let counter = ref 0 in
             `BEXPR_tuple 
             (
               map 
-              (fun {ptyp=t; pid=name; pindex=idx} -> `BEXPR_name (idx,[]),t)
+              (fun {ptyp=t; pid=name; pindex=idx} -> 
+                `BEXPR_expr (name,t),t
+              )
               ps
             ),
             let t = 
@@ -2749,7 +2760,7 @@ let gen_biface_body syms bbdfns biface = match biface with
 
       "//EXPORT PROC " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
-      "con_t *" ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
+      "con_t *" ^ export_name ^ "(\n" ^ strparams ^ "\n){\n" ^
       (
         if stackable then
         (
@@ -2764,12 +2775,12 @@ let gen_biface_body syms bbdfns biface = match biface with
               else ""
             )
             ^
-            cat ", " (map (fun {pid=id}->id) ps) ^ ");\n" 
+            cat ", " (map (fun {pid=id}->id) args) ^ ");\n" 
           )
           else
           (
             "  " ^ class_name ^ "(_PTFV)\n" ^
-            "    .stack_call(" ^ (catmap ", " (fun {pid=id}->id) ps) ^ ");\n"
+            "    .stack_call(" ^ (catmap ", " (fun {pid=id}->id) args) ^ ");\n"
           )
         )
         ^
@@ -2777,7 +2788,7 @@ let gen_biface_body syms bbdfns biface = match biface with
         else
         "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
         "    " ^ class_name ^ "(_PTFV))" ^
-        "\n      ->call(" ^ args ^ ");\n" 
+        "\n      ->call(" ^ strargs ^ ");\n" 
       )
       ^
       "}\n"
