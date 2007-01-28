@@ -651,10 +651,11 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
           in
           register_type_r ui syms bbdfns [] sr t;
           register_type_nr syms t;
-          add_cand x []
         end
         | _ -> assert false
         end
+        ;
+        add_cand x []
 
       | `BIFACE_export_type (sr,t,_) ->
         register_type_r ui syms bbdfns [] sr t
