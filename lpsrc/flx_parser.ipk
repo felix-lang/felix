@@ -3255,23 +3255,17 @@ open Flx_exceptions
 open Flx_parse
 
 let parse_file 
-  (filenames : string list) 
+  (filename : string) 
   (basedir :string) 
   (include_dirs : string list) 
   expand_expr
 = 
   let pre_tokens  = 
-    List.concat
-    (List.map
-      (fun filename -> 
-        Flx_pretok.pre_tokens_of_filename 
-          filename 
-          basedir
-          include_dirs 
-          expand_expr
-      )
-      filenames
-    )
+    Flx_pretok.pre_tokens_of_filename 
+      filename 
+      basedir
+      include_dirs 
+      expand_expr
   in
   let tokens  = Flx_lex1.translate pre_tokens in
   let hash_include_files, tokens = match tokens with
@@ -3338,7 +3332,7 @@ let parse_string (data : string) (filename : string) expand_expr =
 open Flx_ast
 
 val parse_file : 
-  string list -> (* filenames *)
+  string -> (* filenames *)
   string ->
   string list ->
   (string -> expr_t -> expr_t) ->
@@ -3399,7 +3393,7 @@ let run() =
 
   let _,parse_tree = 
     Flx_parse_ctrl.parse_file 
-    [input_file_name]
+    input_file_name
     (Filename.dirname input_file_name)
     compiler_options.include_dirs
     Flx_macro.expand_expression

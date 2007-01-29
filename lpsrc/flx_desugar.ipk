@@ -161,7 +161,7 @@ let include_file syms inspec lookup =
       if syms.compiler_options.print_flag then
       print_endline ("Parsing " ^ tf);
       Flx_parse_ctrl.parse_file 
-        (syms.compiler_options.hash_include @ [tf])
+        tf
         (Filename.dirname tf)
         include_dirs 
         expand_expression

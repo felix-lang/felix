@@ -59,11 +59,11 @@ WINDOWS_FAIO_CPPS = [
 
 if WIN32:
   FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
-@tangle('  EXTRA_TEST_GLOBS = glob.glob('+repr(unix2native(env_win.root)+"*.flx")+')')
+@tangle('  EXTRA_TEST_GLOBS = EXTRA_TEST_GLOBS + glob.glob('+repr(unix2native(env_win.root)+"*.flx")+')')
 
 if POSIX:
   FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
-@tangle('  EXTRA_TEST_GLOBS = glob.glob('+repr(unix2native(env_posix.root)+"*.flx")+')')
+@tangle('  EXTRA_TEST_GLOBS = EXTRA_TEST_GLOBS + glob.glob('+repr(unix2native(env_posix.root)+"*.flx")+')')
 
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
@@ -276,34 +276,12 @@ requires package "faio";
 
 union devnull_t = DEVNULL;
 
-/*
-union flx_stream =
-    | DEVNULL          // nothing
-#if POSIX
-    | UFD of int       // Unix file
-    | USOCK of int     // Unix socket
-#endif
-// isn't this covered by the fact that under cygwin POSIX AND WIN32 are true?
-//#if WIN32 or CYWGIN
-#if WIN32
-    | WSOCK of SOCKET  // Windows socket
-    | WFD of WFILE     // Windows file
-#endif
-*/
-
-// MISSING CASES: strstreams  -- strings as streams
-// FILE* streams, C++ iostreams as streams. kind of messy ..
-// windows named pipes (may or may not work with the WFD file io)
-// try it out.
-
-;
-
 typeclass IByteStream[s] { 
-  virtual proc flx_read: s * &int * address * &bool; 
+  virtual proc read: s * &int * address * &bool; 
 }
 
 typeclass OByteStream[s] { 
-  virtual proc flx_write: s * &int * address * &bool; 
+  virtual proc write: s * &int * address * &bool; 
 }
 
 typeclass IOByteStream[s] { 
@@ -332,13 +310,13 @@ typeclass TerminalIOByteStream[s] {
 //
 instance IByteStream[devnull_t]
 {
-  proc flx_read(strm: devnull_t, len: &int, buf: address, eof: &bool)
+  proc read(strm: devnull_t, len: &int, buf: address, eof: &bool)
     { *len = 0; *eof = true; }
 }
 
 instance OByteStream[devnull_t]
 {
-  proc flx_write(strm: devnull_t, len: &int, buf: address, eof: &bool)
+  proc write(strm: devnull_t, len: &int, buf: address, eof: &bool)
     { *eof = false; }
 }
 
@@ -353,7 +331,7 @@ instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) { } }
 //
 instance IByteStream[socket_t]
 {
-  proc flx_read(s: socket_t, len: &int, buf: address, eof: &bool)
+  proc read(s: socket_t, len: &int, buf: address, eof: &bool)
   #if POSIX
     { async_read(s, len, buf, eof); }
   #elif WIN32
@@ -363,7 +341,7 @@ instance IByteStream[socket_t]
 
 instance OByteStream[socket_t]
 {
-  proc flx_write(s: socket_t, len: &int, buf: address, eof: &bool)
+  proc write(s: socket_t, len: &int, buf: address, eof: &bool)
   #if POSIX
     { async_write(s, len, buf, eof); }
   #elif WIN32
@@ -410,7 +388,7 @@ instance TerminalIOByteStream[socket_t]
 //
 instance IByteStream[fd_t]
 {
-  proc flx_read(s: fd_t, len: &int, buf: address, eof: &bool)
+  proc read(s: fd_t, len: &int, buf: address, eof: &bool)
   #if POSIX
     { faio_read(s, len, buf, eof); }
   #elif WIN32
@@ -420,7 +398,7 @@ instance IByteStream[fd_t]
 
 instance OByteStream[fd_t]
 {
-  proc flx_write(s: fd_t, len: &int, buf: address, eof: &bool)
+  proc write(s: fd_t, len: &int, buf: address, eof: &bool)
   #if POSIX
     { faio_write(s, len, buf, eof); }
   #elif WIN32
@@ -471,9 +449,9 @@ proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
     while{not(eof) and not(weof)} {
         len = bufsize;
      // print "catting in "; print len; print " bytes\n";
-        flx_read(infd, &len, buf, &eof);
+        read(infd, &len, buf, &eof);
      // print "catting out "; print len; print " bytes\n";
-        flx_write(outfd, &len, buf, &weof);
+        write(outfd, &len, buf, &weof);
     };
 };
 
@@ -526,9 +504,9 @@ proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]]
     // don't hammer!
     while{not(eof) and not(weof) and not(weof2)} {
         len = BUFSIZE;
-        flx_read(infd, &len, buf, &eof);
-        flx_write(outfd, &len, buf, &weof);
-        flx_write(outfd2, &len, buf, &weof2);
+        read(infd, &len, buf, &eof);
+        write(outfd, &len, buf, &weof);
+        write(outfd2, &len, buf, &weof2);
     };
     C_hack::free buf;
 }
@@ -546,7 +524,7 @@ proc get_line[istr with IByteStream[istr]]
     var len = 1;
     var eof: bool;
 
-    flx_read(strm, &len, ac, &eof);
+    read(strm, &len, ac, &eof);
 
     if eof or c == char '\n' do
       finished = true;
@@ -563,7 +541,7 @@ proc write_string[ostr with OByteStream[ostr]]
   var slen = len s;
   var a = C_hack::cast[address]$ cstr s; 
   var eof: bool;
-  flx_write(sk, &slen, a, &eof);
+  write(sk, &slen, a, &eof);
 }
 
 
@@ -571,7 +549,7 @@ proc write_string[ostr with OByteStream[ostr]]
 
 @h = tangler("lib/flx_socket.flx")
 @select(h)
-#import <flx_platform.flxh>
+#import <flx.flxh>
 include "flx_faio";
 
 #if POSIX
@@ -633,8 +611,6 @@ proc connect(s: &socket_t, addr: charp, port: int)
 @env_faio.head(3)
 @select(env_faio.test('.flx'))
 @kat_faio("sockets")
-// portable flx sockets test (rt = regression test)
-
 #import <flx.flxh>
 include "flx_socket";
 open Flx_socket;
@@ -1189,7 +1165,7 @@ proc serve_file(infname: string, s: flx_socket)
   } endif;
 #elif POSIX
   // this fn sets the O_NONBLOCK flag which is completely unnecessary
-  // as flx_read goes via the preading worker fifo. don't know if
+  // as read goes via the preading worker fifo. don't know if
   // O_NONBLOCK even works on actual files.
   var fd = aio_ropen(fname);
 
