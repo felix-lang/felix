@@ -258,21 +258,23 @@ proc sleep(clock: alarm_clock, delta: double)
 #import <flx.flxh>
 
 include "flx_faio";
+#if POSIX
 include "flx_faio_posix";
+#elif WIN32
 include "flx_faio_win32";
+#endif
 
-open Faio;  // copipes
+module Flx_stream {
+requires package "demux";
+requires package "faio";
+
+open Faio; 
 
 #if POSIX
 open Faio_posix;
 #elif WIN32
 open Faio_win32;
 #endif
-
-
-module Flx_stream {
-requires package "demux";
-requires package "faio";
 
 union devnull_t = DEVNULL;
 
@@ -324,63 +326,6 @@ instance IOByteStream[devnull_t] {}
 instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) { } } 
 instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) { } }
 instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) { } }
-
-
-//
-// socket_t
-//
-instance IByteStream[socket_t]
-{
-  proc read(s: socket_t, len: &int, buf: address, eof: &bool)
-  #if POSIX
-    { async_read(s, len, buf, eof); }
-  #elif WIN32
-    { WSARecv(s, len, buf, eof); }
-  #endif
-}
-
-instance OByteStream[socket_t]
-{
-  proc write(s: socket_t, len: &int, buf: address, eof: &bool)
-  #if POSIX
-    { async_write(s, len, buf, eof); }
-  #elif WIN32
-    { WSASend(s, len, buf, eof); }
-  #endif
-}
-
-instance IOByteStream[socket_t] {}
-
-instance TerminalIByteStream[socket_t]
-{
-  proc iclose (s:socket_t)
-  #if POSIX
-    { close s; }
-  #else
-    { closesocket s; }
-  #endif
-}
-
-instance TerminalOByteStream[socket_t]
-{
-  proc oclose (s:socket_t) 
-  #if POSIX
-    { close s; }
-  #elif WIN32
-    { closesocket s; }
-  #endif
-}
-
-
-instance TerminalIOByteStream[socket_t]
-{
-  proc ioclose (s:socket_t) 
-  #if POSIX
-    { close s; }
-  #elif WIN32
-    { closesocket s; }
-  #endif
-}
 
 
 //
@@ -560,16 +505,23 @@ include "flx_faio_win32";
 
 module Flx_socket {
 
+#if POSIX
+typedef socket_t = Faio_posix::socket_t;
+#elif WIN32
+typedef socket_t = Faio_win::socket_t;
+#endif
+
+
 proc mk_listener(l: &socket_t, port: &int, qlen: int)
 {
 #if POSIX
-  Faio_posix::mk_listener(l,*port, qlen);
+  Faio_posix::mk_listener(*l,*port, qlen);
 #elif WIN32
-  Faio_win32::mk_listener(l, port, qlen);
+  Faio_win32::mk_listener(*l, port, qlen);
 #endif
 }
 
-proc accept(l: socket_t, s: &flx_socket)
+proc accept(l: socket_t, s: &socket_t)
 {
 #if POSIX
   Faio_posix::accept(s, l);  // success or not? error checking
@@ -601,9 +553,64 @@ proc connect(s: &socket_t, addr: charp, port: int)
 #endif
 }
 
+
+//
+// socket_t
+//
+instance IByteStream[socket_t]
+{
+  proc read(s: socket_t, len: &int, buf: address, eof: &bool)
+  #if POSIX
+    { Faio_posix::async_read(s, len, buf, eof); }
+  #elif WIN32
+    { Faio_win32::WSARecv(s, len, buf, eof); }
+  #endif
 }
 
-} // module Flx_socket
+instance OByteStream[socket_t]
+{
+  proc write(s: socket_t, len: &int, buf: address, eof: &bool)
+  #if POSIX
+    { Faio_posix::async_write(s, len, buf, eof); }
+  #elif WIN32
+    { Faio_win32::WSASend(s, len, buf, eof); }
+  #endif
+}
+
+instance IOByteStream[socket_t] {}
+
+instance TerminalIByteStream[socket_t]
+{
+  proc iclose (s:socket_t)
+  #if POSIX
+    { Faio_posix::close s; }
+  #else
+    { Faio_win32::closesocket s; }
+  #endif
+}
+
+instance TerminalOByteStream[socket_t]
+{
+  proc oclose (s:socket_t) 
+  #if POSIX
+    { Faio_posix::close s; }
+  #elif WIN32
+    { Faio_win32::closesocket s; }
+  #endif
+}
+
+
+instance TerminalIOByteStream[socket_t]
+{
+  proc ioclose (s:socket_t) 
+  #if POSIX
+    { Faio_posix::close s; }
+  #elif WIN32
+    { Faio_win32::closesocket s; }
+  #endif
+}
+
+}
 
 @head(1,"Felix Async IO tests")
 
@@ -612,18 +619,20 @@ proc connect(s: &socket_t, addr: charp, port: int)
 @select(env_faio.test('.flx'))
 @kat_faio("sockets")
 #import <flx.flxh>
+include "flx_stream";
 include "flx_socket";
+open Flx_stream;
 open Flx_socket;
+open Flx_stream::TerminalIOByteStream[Flx_socket::socket_t];
 
 print "flx tcp stream test\n";
-// System::exit 0;  // Work in progress
 
-var listener: flx_listener;
+var listener: socket_t;
 var port = 0;  // you choose
 // var port = 1024;
 
 // check errors. how is that done?
-mk_flx_listener(&listener, &port, 1);
+mk_listener(&listener, &port, 1);
 // print "Got port: "; print port; endl;
 // print "accepting\n";
 
@@ -635,21 +644,21 @@ spawn_fthread
 {
   {
     // print "Connector dude\n";  // get rid of, hard to test
-    var c: flx_socket;
-    flx_connect(&c, c"127.0.0.1", port); // connect to localhost
+    var c: socket_t;
+    connect(&c, c"127.0.0.1", port); // connect to localhost
     var str: string;
 
     get_line(c, &str);
     print "connector got "; print str; endl;
     write_string(c, "thanks\n");         // newline important
 
-    flx_close(c);  // finished with this
+    ioclose(c);  // finished with this
   };
 };
 
-var s: flx_socket;
-flx_accept(listener, &s);
-flx_close(listener);  // not needed anymore
+var s: socket_t;
+accept(listener, &s);
+ioclose(listener);  // not needed anymore
 
 print "got connection\n";
 write_string(s, "server says hi\n");     // newline important here
@@ -658,7 +667,7 @@ var str: string;
 get_line(s, &str);
 
 print "server got "; print str; endl;
-flx_close(s);
+ioclose(s);
 @doc()
 
 @select(env_faio.expect())
@@ -812,7 +821,6 @@ successful accept!
 
 @env_win.head(3)
 @select(env_win.test('.flx'))
-@select(h)
 #import <flx.flxh>
 include "Flx_faio_win32";
 open Faio_win32;

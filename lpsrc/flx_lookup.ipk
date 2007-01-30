@@ -330,9 +330,15 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
         opens
     then 
       Some some
-    else
-      clierr sr ("Conflicting values for "^name ^" found in open modules")
-  
+    else begin
+      iter
+      (fun es ->  print_endline ("Symbol " ^(string_of_entry_set es)))
+      opens
+      ;
+      clierr sr ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
+        name ^" found in open modules"
+      )
+    end 
   | [] -> None
 
 
