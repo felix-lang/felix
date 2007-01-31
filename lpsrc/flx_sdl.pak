@@ -114,7 +114,7 @@ if HAVE_SDL:
   pkg_requires = ['faio']
   rtl_interfaces = ['faio/faio_sdl_event.hpp']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
-  demos = glob.glob('tut'+os.sep+'sdl'+os.sep+'sdl*.flx')
+  demos = glob.glob(os.path.join('demos', 'sdl', '*.flx'))
   demos.sort()
 
 iscr_source = ['lpsrc/flx_sdl.pak']

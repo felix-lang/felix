@@ -70,6 +70,7 @@ rtl_interfaces = FAIORTL_INTERFACES
 pkg_requires = ['demux','flx_pthread', 'flx_rtl'] # flx_rtl for rtl_config.
 lib_requires = ['libdemux','libflx_pthread'] # however lib not required
 unit_tests = EXTRA_TEST_GLOBS
+demos = glob.glob(os.path.join('demos', 'faio', '*.flx'))
 iscr_source = ["lpsrc/flx_faio.pak"]
 build_macro = "FAIO"
 weaver_directory = 'doc/rtl/flx_faio/'
