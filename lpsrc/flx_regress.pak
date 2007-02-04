@@ -511,6 +511,29 @@ print two; endl;
 @doc()
 
 @env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("functors")
+@kat_rt("polymorphism")
+@kat_rt("types:higher order")
+#import <flx.flxh>
+
+typedef fun pair (t:TYPE):TYPE => t * t;
+typedef Pair[t] = t * t;
+
+var x: pair int;
+
+fun f[t,u:TYPE->TYPE] (x: u t)=>x;
+
+var k = f[int, the pair] (1,2);
+//var k = f[int, Pair] (1);
+
+print k.(0); print ","; print k.(1); endl;
+@doc()
+@select(env_rt.expect())
+1,2
+@doc()
+
+@env_rt.head(3)
 generics inlining/call lifting tests
 
 @select(env_rt.test('.flx'))
