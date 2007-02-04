@@ -488,6 +488,7 @@ and lookup_qn_in_env2'
     inner_lookup_name_in_env syms env rs sr name, ts
 
   | `AST_the (sr,qn) -> 
+    print_endline ("[lookup_qn_in_env2'] AST_the " ^ string_of_qualified_name qn);
     let es,ts = lookup_qn_in_env2' syms env rs qn in
     begin match es with
     | `NonFunctionEntry  _
@@ -591,7 +592,7 @@ and lookup_qn_in_env'
       let sr = src_of_expr (qn:>expr_t) in
       clierr sr
       (
-        "[lookup_qn_in_env] Not expecting " ^ 
+        "[lookup_qn_in_env'] Not expecting " ^ 
         string_of_qualified_name qn ^
         " to be function set"
       )
@@ -609,7 +610,7 @@ and lookup_uniq_in_env
       let sr = src_of_expr (qn:>expr_t) in
       clierr sr
       (
-        "[lookup_qn_in_env] Not expecting " ^ 
+        "[lookup_uniq_in_env] Not expecting " ^ 
         string_of_qualified_name qn ^
         " to be non-singleton function set"
       )
@@ -1575,9 +1576,44 @@ and bind_type'
     end
 
   (* QUALIFIED OR UNQUALIFIED NAME *)
+  | `AST_the (sr,qn) ->
+    (*
+    print_endline ("[bind_type] Matched THE qualified name " ^ string_of_qualified_name qn);
+    *)
+    let es,ts = lookup_qn_in_env2' syms env rs qn in
+    begin match es with
+    | `FunctionEntry [index] ->
+       let ts = map bt ts in
+       let f =  bi (sye index) ts in
+       (*
+       print_endline ("f = " ^ sbt syms.dfns f);
+       *)
+       f
+  
+       (*
+       `BTYP_typefun (params, ret, body)
+
+       
+       of (int * 't) list * 't * 't
+       *)
+       (*
+       failwith "TYPE FUNCTION CLOSURE REQUIRED!"
+       *)
+       (*
+       `BTYP_typefun_closure (sye index, ts)
+       *)
+
+    | `NonFunctionEntry index  ->
+      let ts = map bt ts in
+      bi (sye index) ts
+
+    | _ -> clierr sr
+      "'the' expression denotes non-singleton function set"
+    end
+
   | #qualified_name_t as x ->
     (*
-    print_endline ("Matched qualified name " ^ string_of_qualified_name x);
+    print_endline ("[bind_type] Matched qualified name " ^ string_of_qualified_name x);
     *)
     begin match lookup_qn_in_env syms env x with
     | i,ts ->
@@ -2502,6 +2538,9 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
 
   | `AST_the (sr,qn) -> 
+    (*
+    print_endline ("AST_the " ^ string_of_qualified_name qn);
+    *)
     lookup_qn_with_sig' syms sra srn
     env rs
     qn signs
@@ -2735,6 +2774,7 @@ and lookup_type_qn_with_sig'
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
 
   | `AST_the (sr,qn) -> 
+    print_endline ("AST_the " ^ string_of_qualified_name qn);
     lookup_type_qn_with_sig' syms sra srn
     env rs
     qn signs
@@ -3367,6 +3407,11 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt syms.dfns) t2
   ); 
   *)
+  let mkenv i = build_env syms (Some i) in
+  let bt sr t = 
+    bind_type' syms env rs sr t [] mkenv
+  in
+
   let result:entry_set_t =
     match lookup_name_in_htab table name  with
     | Some x -> x
@@ -3384,11 +3429,6 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
       clierr sra "Woops found inherit in lookup_type_name_in_table_dirs_with_sig"
     | `SYMDEF_inherit_fun _ -> 
       clierr sra "Woops found inherit function in lookup_type_name_in_table_dirs_with_sig"
-
-    | `SYMDEF_regmatch _ ->
-      clierr sra "Woops found regmatch in lookup_type_name_in_table_dirs_with_sig"
-    | `SYMDEF_reglex _ ->
-      clierr sra "Woops found reglex in lookup_type_name_in_table_dirs_with_sig"
 
     | `SYMDEF_cstruct _
     | `SYMDEF_struct _
@@ -3454,6 +3494,25 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
             clierr sr "Unable to find matching constructor"
       end
  
+    | `SYMDEF_typevar mt -> 
+      let mt = bt sra mt in
+      (* match function a -> b -> c -> d with sigs a b c *)
+      let rec m f s = match f,s with
+      | `BTYP_function (d,c),h::t when d = h -> m c t
+      | `BTYP_typefun _,_ -> failwith "Can't handle actual lambda form yet"
+      | _,[] -> true
+      | _ -> false
+      in 
+      if m mt t2
+      then Some (`BTYP_var (sye index,mt))
+      else 
+      (print_endline 
+      (
+        "Typevariable has wrong meta-type" ^
+        "\nexpected domains " ^ catmap ", " (sbt syms.dfns) t2 ^
+        "\ngot " ^ sbt syms.dfns mt
+      ); None)
+
     | `SYMDEF_abs _ 
     | `SYMDEF_cclass _ 
     | `SYMDEF_union _ 
@@ -3467,7 +3526,22 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_ref _
     | `SYMDEF_val _ 
     | `SYMDEF_parameter _
-    | _ 
+    | `SYMDEF_axiom _
+    | `SYMDEF_callback _
+    | `SYMDEF_fun _
+    | `SYMDEF_function _
+    | `SYMDEF_glr _
+    | `SYMDEF_insert _
+    | `SYMDEF_instance _
+    | `SYMDEF_lazy _
+    | `SYMDEF_match_check _
+    | `SYMDEF_module 
+    | `SYMDEF_newtype _
+    | `SYMDEF_reduce _
+    | `SYMDEF_regdef _
+    | `SYMDEF_regmatch _
+    | `SYMDEF_reglex _
+    | `SYMDEF_typeclass 
       -> 
         clierr sra 
         (
@@ -4328,6 +4402,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | `AST_the(_,`AST_name (sr,name,ts)) ->
     (*
+    print_endline ("[bind_expression] AST_the " ^ name);
     print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
     *)
     let ts = map (bt sr) ts in

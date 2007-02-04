@@ -281,6 +281,13 @@ let rec build_tables syms name inherit_vs
         let add_tvars' parent table vs =        
           iter
           (fun (tvid,i,tpat) ->
+            let mt = match tpat with 
+              | `AST_patany _ -> `TYP_type (* default/unspecified *)
+              | #suffixed_name_t -> `TYP_type (* HACK *)
+              | `TYP_none -> `TYP_type
+              | `TYP_ellipsis -> clierr sr "Ellipsis ... as metatype"
+              | _ -> tpat 
+            in
             Hashtbl.add dfns i 
             {
               id=tvid; 
@@ -290,7 +297,7 @@ let rec build_tables syms name inherit_vs
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
-              symdef=`SYMDEF_typevar `TYP_type
+              symdef=`SYMDEF_typevar mt
             };
             add_unique table tvid i 
           )

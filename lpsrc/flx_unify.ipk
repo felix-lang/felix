@@ -671,10 +671,18 @@ let rec unification allow_lval dfns
       | `BTYP_fix i,`BTYP_fix j ->
         if i <> j then raise Not_found
 
+      (* array/tuple sidedness must be preserved in 
+         case of lvalue decay, which only affects the
+         RHS term [that is, argument lvalue[t] matches
+         parameter t, but not the other way around]
+      *)
       | `BTYP_tuple ls, `BTYP_array (ta,`BTYP_unitsum n)
-      | `BTYP_array (ta,`BTYP_unitsum n), `BTYP_tuple ls 
         when n = length ls ->
         iter (fun t -> eqns := (t,ta) :: !eqns) ls
+
+      | `BTYP_array (ta,`BTYP_unitsum n), `BTYP_tuple ls 
+        when n = length ls ->
+        iter (fun t -> eqns := (ta,t) :: !eqns) ls
 
       (* type tuple is handled same as a tuple type .. not
         really sure this is right. Certainly, the corresponding

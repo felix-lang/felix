@@ -107,9 +107,11 @@ let rec uses_type syms used bbdfns count_inits (t:btypecode_t) =
       uses syms used bbdfns count_inits i; (* don't care on uses inits? *)
       iter ut ts
 
+  (*
   | `BTYP_type 
     -> 
       failwith "[uses_type] Unexpected metatype"
+  *)
 
   | _ -> iter_btype ut t
 

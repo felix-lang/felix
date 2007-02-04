@@ -44,6 +44,7 @@ open Flx_generic
 open Flx_name
 open Flx_tconstraint
 open Flx_tpat
+open Flx_maps
 
 exception OverloadKindError of range_srcref * string
 
@@ -246,9 +247,6 @@ let consider syms bt luqn2 name
     in
       
     let con = bt sr con in
-    (*
-    print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
-    *)
     let domain = bt sr base_domain in
     let spec_domain = spec domain in
     let spec_result =
@@ -326,16 +324,36 @@ let consider syms bt luqn2 name
     let n_input_ts = length input_ts in
 
     (* equations for user specified assignments *)
+    let lhsi = map (fun (n,i) -> i) spec_vs in
     let lhs = map (fun (n,i) -> `BTYP_var ((i),`BTYP_type)) spec_vs in
     let n = min n_spec_vs n_input_ts in
     let eqns = combine (list_prefix lhs n) (list_prefix input_ts n) in
 
+    (* these are used for early substitution *)
+    let eqnsi = combine (list_prefix lhsi n) (list_prefix input_ts n) in
+
     (*
-    print_endline "EQUATIONS ARE:";
+    print_endline "TS EQUATIONS ARE:";
     iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
     eqns
     ;
     *)
+
+    (*
+    print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt syms.dfns) curry_domains);
+    *)
+    let curry_domains = map (fun t -> list_subst eqnsi t) curry_domains in 
+
+    (*
+    print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt syms.dfns) curry_domains);
+    *)
+
+    let curry_domains = map (fun t -> reduce_type (beta_reduce syms t)) curry_domains in
+
+    (*
+    print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt syms.dfns) curry_domains);
+    *)
+
     let n = min (length curry_domains) (length arg_types) in
     let eqns = eqns @ combine (list_prefix curry_domains n) (list_prefix arg_types n) in
 
@@ -347,6 +365,8 @@ let consider syms bt luqn2 name
     iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
     eqns
     ;
+    *)
+    (*
     (* WRONG!! dunno why, but it is! *)
     print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
       (IntSet.fold (fun i l-> i::l) !dvars [])
@@ -478,11 +498,32 @@ let consider syms bt luqn2 name
              sbt syms.dfns et)
            ;
            *)
+
+           (* tp is a metatype .. it could be a pattern-like thing, which is
+           a constraint. But it could also be an actual meta-type! In that
+           case it is a constraint too, but not the right kind of constraint.
+           EG in 
+           
+              j' -> fun (x:TYPE):TYPE=>x : TYPE->TYP
+
+           the TYPE->TYPE is a constraint only in the sense that it
+           is the type of j'. Felix messes these things up.. you can
+           give an explicit TYPE->TYPE which really amounts only
+           to a typing constraint .. and no additional constraint.
+
+           So we have to eliminate these from consideration
+           
+           *)
+
            (*
            print_endline ("Analysing "^s^"<"^si j'^">: " ^ string_of_typecode tp);
            print_endline (si j' ^ (if mem_assoc j' basemap then " IS IN BASEMAP" else " IS NOT IN BASEMAP"));
            *)
            (* this check is redundant .. we're SCANNING the base vs! *)
+           match et with
+           | `BTYP_type
+           | `BTYP_function _ -> () (* print_endline "ignoring whole metatype" *)
+           | _ ->
            if mem_assoc j' basemap then begin
              let t1 = assoc j' basemap in
              let t2 = et in
@@ -571,7 +612,7 @@ let consider syms bt luqn2 name
           with Not_found -> None
         in
         match maybe_extra_mgu with
-        | None -> () (* print_endline "COULDN'T RESOLVE EQUATIONS" *)
+        | None -> () (* print_endline "COULDN'T RESOLVE EQUATIONS"  *)
         | Some extra_mgu -> 
            (*
            print_endline ("Resolved equations with mgu:\n  " ^
@@ -670,7 +711,6 @@ let consider syms bt luqn2 name
         (*
         print_endline ("Raw type constraint " ^ sbt syms.dfns type_constraint);
         *)
-
         let vs = map (fun (s,i,_)-> s,i) base_vs in
         let type_constraint = tsubst vs base_ts type_constraint in
         (*
@@ -721,8 +761,6 @@ let overload
   print_endline ("Argument sigs are " ^ catmap ", " (sbt syms.dfns) sufs);
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
-  *)
-  (*
   *)
   (* HACK for the moment *)
   let aux i =  
