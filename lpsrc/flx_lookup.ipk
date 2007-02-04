@@ -5765,6 +5765,55 @@ and mk_bare_env syms index =
   | None -> [] 
   | Some index -> mk_bare_env syms index
 
+and merge_directives syms rs env dirs typeclasses =
+  let env = ref env in
+  let add table = 
+   env := 
+     match !env with 
+     | (idx, id, nm, nms) :: tail ->
+     (idx, id, nm,  table :: nms) :: tail
+     | [] -> assert false
+  in
+  let use_map = Hashtbl.create 97 in
+  add use_map;
+
+  let add_qn (vs, qn) =
+    if mem (vs,qn) rs.open_excludes then () else 
+    let u = [bind_dir syms !env rs (vs,qn)] in
+    let u = get_includes syms u in
+    let tables = map (pub_table_dir syms !env false) u in
+    iter add tables
+  in
+  iter
+  (fun dir -> match dir with
+  | DIR_inject_module qn -> add_qn (dfltvs,qn)
+  | DIR_use (n,qn) ->
+    begin let entry,_ = lookup_qn_in_env2' syms !env rs qn in
+    match entry with
+    
+    | `NonFunctionEntry _ ->
+      if Hashtbl.mem use_map n
+      then failwith "Duplicate non function used"
+      else Hashtbl.add use_map n entry
+
+    | `FunctionEntry ls ->
+      let entry2 = 
+        try Hashtbl.find use_map  n 
+        with Not_found -> `FunctionEntry []
+      in
+      match entry2 with
+      | `NonFunctionEntry _ ->
+        failwith "Use function and non-function kinds"
+      | `FunctionEntry ls2 ->
+        Hashtbl.replace use_map n (`FunctionEntry (ls @ ls2))
+    end
+
+  | DIR_open (vs,qn) -> add_qn (vs,qn)
+ )
+ dirs;
+ iter add_qn typeclasses;
+ !env
+
 and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   (*
   print_endline ("MERGE OPENS ");
@@ -5797,6 +5846,9 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   (* convert qualified names to i,ts format *)
   let btypeclasses = map (bind_dir syms env rs) typeclasses in
   let bopens = map (bind_dir syms env rs) opens in
+
+  (* HERE! *)
+
   let bincludes= map (bind_dir syms env rs) includes in
 
   (*
@@ -5827,7 +5879,6 @@ and build_env'' syms rs index : env_t =
   match Hashtbl.find syms.dfns index with
   {id=id; parent=parent; vs=vs; privmap=table;dirs=dirs} ->
   let typeclasses = match vs with (_,{raw_typeclass_reqs=rtcr})-> rtcr in
-  let opens,includes,uses = split_dirs rs.open_excludes dirs in
   let env = inner_build_env syms rs parent in
 
   (* build temporary bare innermost environment with a full parent env *)
@@ -5835,10 +5886,8 @@ and build_env'' syms rs index : env_t =
 
   (* use that env to process directives and type classes *)
   let typeclasses = map (fun qn -> dfltvs,qn) typeclasses in
-  let second = merge_opens syms env' rs (typeclasses,opens,includes,uses) in
-
-  (* finally push the full environment layer on top of the parent env *)
-  (index,id,table,second)::env
+  let env = merge_directives syms rs env' dirs typeclasses in
+  env
   
 and inner_build_env syms rs parent : env_t =
   match parent with
