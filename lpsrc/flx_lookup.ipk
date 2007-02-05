@@ -1022,8 +1022,8 @@ and bind_type'
   *)
   let t = 
   match t with
-  | `AST_patvar _
-  | `AST_patany _ -> failwith "Not implemented patvar/any in typecode"
+  | `AST_patvar _ -> failwith "Not implemented patvar in typecode"
+  | `AST_patany _ -> failwith "Not implemented patany in typecode"
  
   | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
   | `TYP_record ts -> `BTYP_record (map (fun (s,t) -> s,bt t) ts)
@@ -1604,8 +1604,38 @@ and bind_type'
        *)
 
     | `NonFunctionEntry index  ->
-      let ts = map bt ts in
-      bi (sye index) ts
+      let {id=id; vs=vs; sr=sr;symdef=entry} = Hashtbl.find syms.dfns (sye index) in
+      (*
+      print_endline ("NON FUNCTION ENTRY " ^ id);
+      *)
+      begin match entry with
+      | `SYMDEF_type_alias t ->
+        (* This is HACKY but probably right most of the time: we're defining
+           "the t" where t is parameterised type as a type function accepting
+           all the parameters and returning a type .. if the result were 
+           actually a functor this would be wrong .. you'd need to say
+           "the (the t)" to bind the domain of the returned functor ..
+        *)
+        (* NOTE THIS STUFF IGNORES THE VIEW AT THE MOMENT *)
+        let ivs,traint = vs in
+        let bmt mt = 
+          match mt with 
+          | `AST_patany _ -> `BTYP_type (* default *)
+          | _ -> (try bt mt with _ -> clierr sr "metatyp binding FAILED")
+        in
+        let body = 
+          let env = mkenv (sye index) in
+          let xparams = map (fun (id,idx,mt) -> id, `BTYP_var (idx, bmt mt)) ivs in
+          bind_type' syms env {rs with depth = rs.depth+1} sr t (xparams @ params) mkenv 
+        in
+        let ret = `BTYP_type in 
+        let params = map (fun (id,idx,mt) -> idx, bmt mt) ivs in
+        `BTYP_typefun (params, ret, body)
+
+      | _ ->
+        let ts = map bt ts in
+        bi (sye index) ts
+      end
 
     | _ -> clierr sr
       "'the' expression denotes non-singleton function set"
@@ -5811,6 +5841,13 @@ and merge_directives syms rs env dirs typeclasses =
   | DIR_open (vs,qn) -> add_qn (vs,qn)
  )
  dirs;
+
+ (* these should probably be done first not last, because this is
+ the stuff passed through the function interface .. the other
+ opens are merely in the body .. but typeclasses can't contain
+ modules or types at the moment .. only functions .. so it
+ probably doesn't matter
+ *)
  iter add_qn typeclasses;
  !env
 
