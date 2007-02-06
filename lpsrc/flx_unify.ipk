@@ -705,6 +705,14 @@ let rec unification allow_lval dfns
             s := None
         end
 
+      (* structural, not functional, equality of lambdas by alpha equivalence *)
+      | `BTYP_typefun (p1,r1,b1), `BTYP_typefun (p2,r2,b2)
+        when length p1 = length p2 ->
+        let vs = map2 (fun (i1,_) (i2,t) -> i1,`BTYP_var (i2,t))  p1 p2 in
+        let b1 = list_subst vs b1 in
+        eqns := (b1, b2):: !eqns;
+        s := None
+
       | x,y -> 
         (*
         print_endline ("Terms do not match: " ^ sbt dfns x ^ " <-> " ^ sbt dfns y); 
@@ -1012,6 +1020,12 @@ let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
     let b = assoc (rdepth+j) rtrail in 
     type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t b
 
+  | `BTYP_typefun (p1,r1,b1), `BTYP_typefun (p2,r2,b2) ->
+    length p1 = length p2 &&
+    let vs = map2 (fun (i1,_) (i2,t) -> i1,`BTYP_var (i2,t))  p1 p2 in
+    let b1 = list_subst vs b1 in
+    te b1 b2
+    
   | _ -> false
 
 let type_eq dfns t1 t2 = (* print_endline "TYPE EQ";  *)
@@ -1115,7 +1129,7 @@ by folding at every node *)
 let minimise dfns t = match map_btype (fold dfns) t with x -> fold dfns x
 
 let var_occurs t =
-  let rec aux t =
+  let rec aux' excl t = let aux t = aux' excl t in
     match t with
     | `BTYP_intersect ls 
     | `BTYP_typeset ls 
@@ -1138,10 +1152,13 @@ let var_occurs t =
     | `BTYP_void
     | `BTYP_fix _ -> ()
 
-    | `BTYP_var _ -> raise Not_found
+    | `BTYP_var (k,_) -> if not (mem k excl) then raise Not_found
+    | `BTYP_typefun (p,r,b) ->
+      aux' (map fst p @ excl) b
+    
     | _ -> failwith "[var_occurs] unexpected metatype"
 
- in try aux t; false with Not_found -> true
+ in try aux' [] t; false with Not_found -> true
 
 let normalise_type t =
   let counter = ref 0 in

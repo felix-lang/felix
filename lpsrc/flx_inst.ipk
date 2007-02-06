@@ -47,7 +47,10 @@ let add_inst syms bbdfns ref_insts1 (i,ts) =
   let x = i, map (fun t -> reduce_type (lstrip syms.dfns t)) ts in
   let has_variables = 
     fold_left
-    (fun truth t -> truth || var_occurs t)
+    (fun truth t -> truth || 
+      try var_occurs t 
+      with _ -> failwith ("[add_inst] metatype in var_occurs for " ^ sbt syms.dfns t)
+    )
     false
     ts
   in

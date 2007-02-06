@@ -44,6 +44,7 @@ open Flx_maps
 open Flx_exceptions
 open Flx_use
 open Flx_child
+open Flx_beta
 
 let vs2ts vs = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) vs
 
@@ -151,7 +152,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         
         assert (length tck_bvs = length inst_funts);
 
-        let tct = reduce_type (tsubst tck_bvs inst_funts tctype) in
+        let tct = reduce_type (beta_reduce syms (tsubst tck_bvs inst_funts tctype)) in
         (*
         print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^ 
           ":" ^ sbt syms.dfns tct

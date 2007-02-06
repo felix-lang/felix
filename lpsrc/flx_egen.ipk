@@ -959,10 +959,20 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         let ts = map tsub ts in
         let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
         if index = index' then
+        begin
+          let entries = 
+            try Hashtbl.find syms.typeclass_to_instance index 
+            with Not_found -> (* print_endline ("Symbol " ^ si index ^ " Not instantiated?"); *) []
+          in
+          iter
+          (fun (bvs,t,ts,j) -> print_endline ("Candidate Instance " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"))
+          entries
+          ;
+
           clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id ^ "<" ^si index ^ 
             ">, no instance for ts="^ catmap "," (sbt syms.dfns) ts
           )
-        ;
+        end;
         begin let _,_,sr3,entry = 
           try Hashtbl.find bbdfns index' 
           with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')

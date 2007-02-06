@@ -3154,7 +3154,7 @@ and handle_variable syms
     let ts = adjust_ts syms sr index ts in
     let vs = find_vs syms index in
     let bvs = map (fun (s,i,tp) -> s,i) (fst vs) in
-    let t = tsubst bvs ts t in
+    let t = beta_reduce syms (tsubst bvs ts t) in
     let t = match t with | `BTYP_lvalue t -> t | t -> t in
     begin match t with
     | `BTYP_cfunction (d,c) 
