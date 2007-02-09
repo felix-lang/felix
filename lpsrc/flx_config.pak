@@ -834,7 +834,8 @@ try:
       'prefix=', 'set-int=', 'set-string=', 
       'include_paths=', 'lib_paths=',
       'build=', 'host=', 'target=', 'run=',
-      'buildcc=', 'hostcc=', 'targetcc=', 'boot=', 'save-config=', 
+      'buildcc=', 'hostcc=', 'targetcc=', 'targetcxx=',
+      'boot=', 'save-config=', 
       'load-config=', 'lparchive=', 'phase='])
       #'set-int', 
 except getopt.error, e:
