@@ -2905,6 +2905,7 @@ try
   and package_file_name = filebase ^ ".resh" 
   and rtti_file_name = filebase ^ ".rtti" 
   and report_file_name = filebase ^ ".xref" 
+  and why_file_name = filebase ^ ".why"
   and module_name = 
     let n = String.length filebase in 
     let i = ref (n-1) in
@@ -3255,7 +3256,10 @@ try
   (fun (this,e) n ->  gen_elk_lexer filebase module_name syms bbdfns this sr e n)
   syms.lexers 
   ;
-    
+  
+  Flx_why.emit_whycode why_file_name syms bbdfns
+  ;
+
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
   let pf = open_out package_file_name in 

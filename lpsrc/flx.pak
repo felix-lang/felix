@@ -88,6 +88,7 @@ FLX_MODULES = [
   'src/flx_egen', 
   'src/flx_ctorgen', 
   'src/flx_elkgen', 
+  'src/flx_why', 
   'src/flx_gen', 
   'src/flx_flxopt', 
   'src/flx_terminate', 
@@ -413,6 +414,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_egen.ipk')
 @include_file ('flx_ctorgen.ipk')
 @include_file ('flx_elkgen.ipk')
+@include_file ('flx_why.ipk')
 @include_file ('flx_gen.ipk')
 @include_file ('flx_getopt.ipk')
 @pop_head()

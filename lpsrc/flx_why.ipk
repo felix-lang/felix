@@ -1,0 +1,175 @@
+@head(1,"Why interface")
+Interface to Why program.
+
+@h = tangler("src/flx_why.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_typing
+open Flx_mtypes2
+
+val emit_whycode:
+  string ->
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  unit
+
+@h = tangler("src/flx_why.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_print
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_exceptions
+open Flx_maps
+
+let emit_axiom syms bbdfns f (name,sr,bvs,bps,e) =
+  let srt = Flx_srcref.short_string_of_src sr in
+  output_string f ("(* axiom " ^ name ^ ", at "^srt^" *)\n\n")
+ 
+let cal_bvs bvs =
+  let tps = match bvs with
+    | [] -> "" 
+    | [s,_] -> "'" ^ s ^ " "
+    | ss -> "('" ^ catmap ", '" fst ss ^ ") "
+  in tps
+
+let emit_type syms bbdfns f index name sr bvs = 
+  let srt = Flx_srcref.short_string_of_src sr in
+  output_string f ("(* type " ^ name ^ ", at "^srt^" *)\n");
+
+  (* NOTE BUG: needs namespace qualifier mangled in! *)
+  if name = "int" then 
+    output_string f ("(* type int" ^ " -- USE why's builtin *)\n\n")
+  else
+    let tps = cal_bvs bvs in
+    output_string f ("type " ^ tps ^ name ^ "\n\n")
+
+let rec cal_type syms bbdfns t = 
+  let ct t = cal_type syms bbdfns t in
+  match t with
+  | `BTYP_lvalue t -> ct t ^ " lvalue "
+  | `BTYP_tuple [] -> "unit"
+  | `BTYP_void -> "unit" (* cheat *)
+  | `BTYP_unitsum 2 -> "bool"
+  | `BTYP_function (a,b) -> 
+    "(" ^ ct a ^ ", " ^ ct b ^ ") fn"
+
+  | `BTYP_inst (index,ts) -> 
+    let id,sr,parent,entry = Hashtbl.find bbdfns index in
+    (* HACK! *)
+    let ts = match ts with
+      | [] -> ""
+      | [t] -> cal_type syms bbdfns t ^ " "
+      | ts -> "(" ^ catmap ", " ct ts ^ ")"
+    in 
+    ts ^ id
+  | `BTYP_var (index,_) ->
+    begin try 
+      let id,sr,parent,entry = Hashtbl.find bbdfns index
+      in "'" ^ id
+    with Not_found -> "'T" ^ si index
+    end
+
+  | _ -> "dunno"
+  
+let emit_function syms (bbdfns:fully_bound_symbol_table_t) f index id sr bvs ps ret =
+  let srt = Flx_srcref.short_string_of_src sr in
+  output_string f ("(* function " ^ id ^ ", at "^srt^" *)\n");
+  let name = id ^ "_" ^ si index in
+  let dom = match ps with 
+    | [] -> "unit" 
+    | _ -> catmap ", " (cal_type syms bbdfns) ps 
+  in
+  let cod = cal_type syms bbdfns ret in
+  output_string f ("logic " ^ name ^ ": " ^ dom ^ " -> " ^ cod ^ "\n\n")
+
+let calps ps = 
+  let ps = fst ps in (* elide constraint *)
+  let ps = 
+    map 
+    (* again a bit of a hack! *)
+    (fun {pkind=pk; pid=name; pindex=pidx; ptyp=t} -> t)
+    ps
+  in ps
+
+let unitt = `BTYP_tuple [] 
+
+let emit_whycode filename syms bbdfns =
+  let f = open_out filename in
+  output_string f "(****** HACKS *******)\n";
+  output_string f "type 'a lvalue  (* Felix lvalues *) \n";
+  output_string f "type dunno      (* translation error *)\n";
+  output_string f "type ('a,'b) fn (* functions *)\n";
+  output_string f "\n";
+
+  output_string f "(****** ABSTRACT TYPES *******)\n";
+  Hashtbl.iter
+  (fun index (id,parent,sr,entry) -> match entry with
+  | `BBDCL_abs (bvs,qual,ct,breqs) ->
+    emit_type syms bbdfns f index id sr bvs 
+  | _ -> ()
+  )
+  bbdfns
+  ;
+
+  output_string f "(****** UNIONS *******)\n";
+  Hashtbl.iter
+  (fun index (id,parent,sr,entry) -> match entry with
+  | `BBDCL_union (bvs,variants) ->
+    emit_type syms bbdfns f index id sr bvs 
+  | _ -> ()
+  )
+  bbdfns
+  ;
+
+  output_string f "(****** STRUCTS *******)\n";
+  Hashtbl.iter
+  (fun index (id,parent,sr,entry) -> match entry with
+  | `BBDCL_cstruct (bvs,variants)
+  | `BBDCL_struct (bvs,variants) ->
+    emit_type syms bbdfns f index id sr bvs 
+  | _ -> ()
+  )
+  bbdfns
+  ;
+
+
+  output_string f "(******* FUNCTIONS ******)\n";
+  Hashtbl.iter
+  (fun index (id,parent,sr,entry) -> match entry with
+  | `BBDCL_procedure (_,bvs,ps,_) ->
+    let ps = calps ps in
+    emit_function syms bbdfns f index id sr bvs ps unitt
+
+  | `BBDCL_function (_,bvs,ps,ret,_) ->
+    let ps = calps ps in
+    emit_function syms bbdfns f index id sr bvs ps ret
+
+  | `BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
+    emit_function syms bbdfns f index id sr bvs ps ret
+
+  | `BBDCL_proc (_,bvs,ps,_,_) ->
+    emit_function syms bbdfns f index id sr bvs ps unitt
+
+  | _ -> ()
+  )
+  bbdfns
+  ;
+
+  output_string f "(******* AXIOMS ******)\n";
+  iter
+  (emit_axiom syms bbdfns f)
+  syms.axioms
+  ;
+  close_out f
+
+
