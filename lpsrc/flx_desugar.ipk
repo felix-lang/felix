@@ -490,7 +490,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
   | `AST_vsprintf (sr,s) ->
     let ix = seq () in
-    let id = si ix in
+    let id = "_fmt_" ^ si ix in
     let str = `AST_name (sr,"string",[]) in
     let ts = Flx_cformat.types_of_cformat_string sr s in
     let ss = Flx_print.string_of_string s in
