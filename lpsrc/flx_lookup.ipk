@@ -285,7 +285,12 @@ let merge_functions
         if mem x init then init else x :: init
       )
       init ls
-    | _ -> failwith ("[merge_functions] Expected " ^ name ^ " to be function overload set in all open modules")
+    | `NonFunctionEntry x -> 
+      failwith 
+      ("[merge_functions] Expected " ^ 
+        name ^ " to be function overload set in all open modules, got non-function:\n" ^
+        string_of_entry_kind x
+      )
     )
   []
   opens
@@ -317,6 +322,7 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   match opens with
   | [x] -> Some x
   | `FunctionEntry ls :: rest ->
+    print_endline "HERE 3";
     Some (`FunctionEntry (merge_functions opens name))
 
   | (`NonFunctionEntry (i)) as some ::_ -> 
@@ -3358,15 +3364,18 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         print_endline "Can't overload: Trying opens";
         *)
         let opens : entry_set_t list = 
-          concat
+          uniq_cat [] 
           (
-            map
-            (fun table -> 
-              match lookup_name_in_htab table name with
-              | Some x -> [x]
-              | None -> []
+            concat
+            (
+              map
+              (fun table -> 
+                match lookup_name_in_htab table name with
+                | Some x -> [x]
+                | None -> []
+              )
+              dirs
             )
-            dirs
           )
         in
         (*
@@ -3396,7 +3405,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           match opens with
           | [`NonFunctionEntry i] -> [i]
           | [`FunctionEntry ii] -> ii
-          | _ -> merge_functions opens name 
+          | _ -> 
+            merge_functions opens name 
         in
           let ro = 
             resolve_overload'
@@ -3650,7 +3660,8 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
           match opens with
           | [`NonFunctionEntry i] -> [i]
           | [`FunctionEntry ii] -> ii
-          | _ -> merge_functions opens name 
+          | _ -> 
+            merge_functions opens name 
         in
           let ro = 
             resolve_overload'

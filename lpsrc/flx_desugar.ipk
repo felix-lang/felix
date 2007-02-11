@@ -492,10 +492,35 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let ix = seq () in
     let id = "_fmt_" ^ si ix in
     let str = `AST_name (sr,"string",[]) in
-    let ts = Flx_cformat.types_of_cformat_string sr s in
-    let ss = Flx_print.string_of_string s in
-    let fs = "flx::rtl::strutil::flx_asprintf("^ss^",$a)" in
+    let fmt,its = Flx_cformat.types_of_cformat_string sr s in
+    let args = catmap "," 
+      (fun (i,s) -> match s with
+      | `AST_name (_,"string",[]) -> "$" ^ si i ^ ".data()"
+      | _ ->  "$" ^ si i 
+      )
+      its 
+    in
+    let ss = Flx_print.string_of_string fmt in
+    let fs = "flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
     let req = `NREQ_atom (`AST_name (sr,"flx_strutil",[])) in
+    let ts =
+      let n = fold_left (fun n (i,_) -> max n i) 0 its in
+      let a = Array.make n `TYP_none in
+      iter
+      (fun (i,s) -> 
+        if a.(i-1) = `TYP_none then a.(i-1) <-s
+        else if a.(i-1) = s then ()
+        else clierr sr ("Conflicting types for argument " ^ si i)
+      )
+      its
+      ;
+      for i = 1 to n do
+        if a.(i-1) = `TYP_none then
+          clierr sr ("Missing format for argument " ^ si i)
+      done
+      ;
+      Array.to_list a
+    in
     let f = `DCL_fun([],ts,str,`StrTemplate fs,req,"primary") in
     let x=`AST_index (sr,id,ix) in
     [

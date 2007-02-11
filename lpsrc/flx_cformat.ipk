@@ -7,7 +7,7 @@ open Flx_ast
 val types_of_cformat_string:
   range_srcref ->
   string ->
-  typecode_t list
+  string * (int * typecode_t) list
 
 @h = tangler("src/flx_cformat.ml")
 @select(h)
@@ -15,6 +15,8 @@ open String
 open List
 open Flx_ast
 open Flx_exceptions
+open Flx_util
+open Flx_print
 
 let fmts = [
   ("hhd","tiny");
@@ -79,6 +81,7 @@ let fmts = [
 
   ("c","int");
 
+  ("S","string");
   ("s","charp");
   ("p","address");
   ("P","address");
@@ -86,15 +89,15 @@ let fmts = [
 
 
 let is_final ch =
-  try ignore(index "dioxXeEfFgGaAcspPn" ch); true
+  try ignore(index "dioxXeEfFgGaAcsSpPn" ch); true
   with Not_found -> false
 
 let is_alpha ch =
   try ignore(index "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" ch); true
   with Not_found -> false
 
-let is_ok ch =
-  try ignore(index "+-0123456789." ch); true
+let is_num ch =
+  try ignore(index "0123456789" ch); true
   with Not_found -> false
 
 
@@ -106,16 +109,41 @@ type mode_t = [
 
 let strchr ch = String.make 1 ch
 
+let ast i = 
+  let s = String.make (i+1) ' 'in
+  s.[i] <- '*';
+  s
+
+let numval ch = index "0123456789" ch
+
 let types_of_cformat_string sr s =
+  let err i msg = clierr sr ("In format, pos="^si i^"\n"^string_of_string s^"\n "^ast i^"\n"^msg) in
+  let outfmt = ref "" in
+  let tent = ref "" in 
   let types = ref [] in
   let mode = ref `Skip in
   let fmt = ref "" in
   let space_used = ref false in
+  let sign = ref ' ' in
+  let dp = ref ' ' in
+  let argno = ref 1 in
+
+  let width = ref None in
+  let prec = ref None in
+  let pos = ref None in
+  let acc = ref None in
+
+  let drop () = tent := "" in
+  let commit () = outfmt := !outfmt ^ !tent; drop () in
+  let app ch = commit(); outfmt := !outfmt ^ String.make 1 ch in
+  let ten ch = tent := !tent ^ String.make 1 ch in
 
   for i = 0 to String.length s - 1 do
     match !mode with 
     (* look for leading % sign *)
-    | `Skip -> if s.[i]='%' then mode := `Scan
+    | `Skip -> 
+      app s.[i];
+      if s.[i]='%' then mode := `Scan
 
     | `Scan -> 
       let ch = s.[i] in
@@ -125,34 +153,93 @@ let types_of_cformat_string sr s =
       begin
         mode := `Skip;
         space_used := false;
-        fmt := ""
+        fmt := "";
+        app ch;
       end
 
       (* last char of format spec *)
       else if is_final ch then 
       begin
+        app (if ch = 'S' then 's' else ch); (* convert string to charp *)
         let xfmt = !fmt ^ strchr ch in
+        begin 
+          match !acc with | None -> () | Some j ->
+          match !width with | None -> width := !acc | Some _ -> prec := !acc
+        end
+        ;
         try 
-          types := assoc xfmt fmts :: !types;
+          let arg = match !pos with None -> !argno | Some j -> j in
+          types := (arg,assoc xfmt fmts) :: !types;
           mode := `Skip;
+          acc := None;
+          width := None;
+          prec := None;
+          sign := ' ';
+          dp := ' ';
+          begin match !pos with None -> incr argno | Some _ -> () end; 
+          pos := None;
         with Not_found ->
-          clierr sr ("Unsupported format '" ^ xfmt ^ "'")
+          err i ("Unsupported format '" ^ xfmt ^ "'")
       end
 
       (* some other alpha char *)
-      else if is_alpha ch then fmt := !fmt ^ strchr ch
+      else if is_alpha ch then begin
+        fmt := !fmt ^ strchr ch;
+        app ch;
+      end
 
       (* an * spec, add a new format immediately *)
-      else if ch = '*' then types := "int" :: !types
+      (* hacked: you can't do *99$ at the moment! *)
+      else if ch = '*' then begin 
+        let arg = !argno in incr argno;
+        types := (arg,"int") :: !types;
+        app ch;
+      end
 
-      (* something else, scan over it *)
-      else if is_ok ch then () 
+      (* sign *)
+      else if ch = '+' or ch = '-' then begin 
+        if !sign <> ' ' then err i "Extra sign"
+        else 
+          sign := ch;
+          app ch;
+      end
+
+      (* decimal point *)
+      else if ch = '.' then begin
+        if !dp <> ' ' then err i "Duplicate decimal point"
+        else begin
+          width := !acc;
+          acc := None;
+          dp := '.';
+          app ch;
+        end
+      end
+
+      (* digit *)
+      else if is_num ch then begin
+        ten ch;
+        match !acc with 
+        | None -> acc := Some (numval ch)
+        | Some j -> acc := Some (10 * j + numval ch)
+      end
+
+      (* dollar sign *)
+      else if ch = '$' then begin
+        drop();
+        pos := !acc;
+        acc := None;
+      end
 
       (* one space is allowed after the % *)
-      else if ch = ' ' && !fmt = "" && not !space_used then
-        space_used := true
+      else if ch = ' ' && !fmt = "" && not !space_used then begin
+        space_used := true;
+        app ch
+      end
+
       else
         clierr sr ("unsupported format '" ^ !fmt ^ strchr ch ^ "'")
   done;
-  rev_map (fun s -> `AST_name (sr,s,[])) !types
+  commit();
+  !outfmt,
+  rev_map (fun (i,s) -> i,`AST_name (sr,s,[])) !types
 
