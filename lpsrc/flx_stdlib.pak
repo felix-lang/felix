@@ -245,6 +245,10 @@ typeclass Reversible_Sequence[c,it,rit,v] {
   virtual fun rfold[i]: (i->v->i) -> i -> c -> i;
 }
 
+typeclass Monad [M: TYPE->TYPE] {
+  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+  virtual fun ret[a]: a -> M a;
+}
 
 @fc = {'float':'f', 'double':'','ldouble':'l'}
 
@@ -275,6 +279,8 @@ macro fun print(x) = { fprint (cout,x); };
 @select(h)
 #infix 10 "/\\" wedge
 #infix 10 "\\/" vee
+#infix 10 ">>=" bind
+
 
 #statement#
   whilst expr do statements done ; =># 

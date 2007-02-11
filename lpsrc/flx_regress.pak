@@ -2025,69 +2025,6 @@ Listn(11)->Listn(11)->Loop
 true
 false
 @doc()
-@env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat_rt("typeclasses:monad")
-#import <flx.flxh>
-
-typeclass Monad [M: TYPE->TYPE] {
-  // elimination
-  virtual fun thn[a,b]: M a * (a -> M b) -> M b;
-  //virtual fun dn[a,b]: M a -> M b -> M b;
-
-  // introduction
-  virtual fun ret[a]: a -> M a;
-  virtual fun fail[a]: string -> M a;
-}
-
-typedef fun Maybe (t:TYPE):TYPE=>opt[t];
-
-instance Monad [the Maybe] {
-  fun thn[a,b] (x:Maybe a, f:a -> Maybe b) =>
-    match x with
-    | None[a] => None[b]
-    | Some ?x => f x
-    endmatch
-  ;
-
-  fun ret[a](x:a):Maybe a => Some x;
-  fun fail[a] (x:string): Maybe a => None[a];
-}
-
-#infix 10 ">>=" thn
-
-fun madd(x:double) (y:double):opt[double]=>Some (y+x);
-fun msub(x:double) (y:double):opt[double]=>Some (y-x);
-fun mmul(x:double) (y:double):opt[double]=>Some (y*x);
-fun mdiv(x:double) (y:double):opt[double]=>
-  if x == 0.0 then None[double] else Some (y/x) endif
-;
-fun mneg(x:double):opt[double]=>Some (-x);
-
-open Monad[the Maybe];
-
-proc show(r:Maybe double) {
-   match r with
-  | Some ?x => { print x; }
-  | None => { print "divide by zero somewhere"; }
-  endmatch; endl;
-}
-
-var x1 = 2.7; var y1 = 1.2; var z = 0.0;
-{
-  var r = ret x1 >>= msub y1 >>= mdiv z;
-  show r; 
-};
-
-{
-  var r = ret x1 >>= msub y1 >>= mdiv 2.0;
-  show r;
-};
-
-@select(env_rt.expect())
-divide by zero somewhere
-0.75
-@doc()
 
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
