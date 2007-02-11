@@ -31,6 +31,7 @@ open Flx_srcref
 open Flx_unify
 open Flx_exceptions
 open List
+open Flx_maps
 
 let rec check_if_parent syms child parent =
   if child = parent then true
@@ -453,6 +454,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.dfns rhst in
         let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
+        let lhst = reduce_type lhst in
         if type_match syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
@@ -476,6 +478,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.dfns rhst in
         let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
+        let lhst = reduce_type lhst in
         (*
         print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
         *)
