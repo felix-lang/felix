@@ -352,9 +352,15 @@ of object an memory block hold, and reset the
 length of an array, respectively.
 
 @select(h)
-GC_EXTERN void reset_shape(void *memory, gc_shape_t &);
-GC_EXTERN void reset_count(void *memory, unsigned long); 
+GC_EXTERN void set_used(void *memory, unsigned long); 
+GC_EXTERN void incr_used(void *memory, unsigned long); 
+GC_EXTERN unsigned long get_used(void *memory); 
 GC_EXTERN unsigned long get_count(void *memory); 
+GC_EXTERN void *create_empty_array(
+  collector_t &collector,
+  gc_shape_t &shape,
+  unsigned long count
+);
 
 }}} // end namespaces
 
@@ -400,8 +406,9 @@ namespace generic { // SHOULD BE NAMESPACE collector
 /// Heap Frame header
 struct frame_t
 {
-  gc_shape_t *shape;      // the shape of each object
-  unsigned long n_objects; // how many objects (for arrays)
+  gc_shape_t *shape;       // the shape of each object
+  unsigned long n_objects; // how many slots max 
+  unsigned long n_used;    // how many slots used 
   frame_t *next;          // the next and previous objects
   frame_t *prev;          // in the collectors list
   collector_t *collector; // the managing collector
@@ -515,16 +522,31 @@ void _destroy_ptr(void **a)
   destroy(b);
 }
 
+/*
 void reset_shape(void *memory, gc_shape_t &shape)
 {
   assert(memory);
   CLIENT_TO_FRAME(memory)->shape = &shape;
 }
+*/
 
-void reset_count(void *memory, unsigned long n)
+void set_used(void *memory, unsigned long n)
 {
   assert(memory);
-  CLIENT_TO_FRAME(memory)->n_objects = n;
+  assert(n>=0);
+  assert(n<=get_count(memory));
+  CLIENT_TO_FRAME(memory)->n_used = n;
+}
+
+void incr_used(void *memory, unsigned long n)
+{
+  set_used(memory, get_used(memory)+n);
+}
+
+unsigned long get_used(void *memory)
+{
+  assert(memory);
+  return CLIENT_TO_FRAME(memory)->n_used;
 }
 
 unsigned long get_count(void *memory)
@@ -535,6 +557,16 @@ unsigned long get_count(void *memory)
 
 collector_t::collector_t() : debug(false) {}
 
+void *create_empty_array(
+  flx::gc::generic::collector_t &collector,
+  flx::gc::generic::gc_shape_t &shape,
+  unsigned long count
+)
+{
+  void *p = collector.allocate(&shape,count);
+  set_used (p, 0);
+  return p;
+}
 
 }}} // end namespaces
 
@@ -551,10 +583,13 @@ void *operator new(
     fprintf(stderr,"Shape %s size = %ld\n",shape.cname,shape.amt);
     abort();
   }
-  return collector.allocate(&shape,1);
+  void *p = collector.allocate(&shape,1);
+  flx::gc::generic::set_used (p, 1);
+  return p;
 }
 
-// array form
+// array form: default initialised, NOT recommended!
+
 void *operator new [] (
   std::size_t amt,
   flx::gc::generic::collector_t &collector,
@@ -563,9 +598,10 @@ void *operator new [] (
 )
 {
   assert (amt == shape.amt * count);
-  return collector.allocate(&shape,count);
+  void *p = collector.allocate(&shape,count);
+  flx::gc::generic::set_used (p, count);
+  return p;
 }
-
 
 @select(tangler('rtl/flx_collector.hpp'))
 #ifndef __FLX_COLLECTOR_H__
@@ -858,6 +894,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
   fp->garbage = parity;
   fp->finalised = false;
   fp->n_objects = nobj;
+  fp->n_used = 0;
   fp->collector = this;
 
   // link the frame into the collectors list
@@ -894,8 +931,15 @@ void flx_collector_t::unlink(frame_t *fp)
   void (*finaliser)(collector_t*, void*) = fp->shape->finaliser;
   if (finaliser)  
   {
-    void *cp = FRAME_TO_CLIENT(fp);
-    (*finaliser)(this,cp);
+    unsigned char *cp = (unsigned char*)FRAME_TO_CLIENT(fp);
+    unsigned long n_used = fp->n_used * fp->shape->count;
+    unsigned long eltsize = fp->shape->amt;
+    for(unsigned long j = 0; j<n_used; ++j)
+    {
+      (*finaliser)(this,(void*)cp);
+      cp += eltsize;
+    }
+      
   }
   // unlink the frame from the collectors list
   if(fp->prev)
@@ -1054,13 +1098,13 @@ void flx_collector_t::scan_object(frame_t *frame)
     }
     frame->garbage = !parity; // reachable!
     gc_shape_t *shape = frame->shape;
-    unsigned long n_objects = frame->n_objects * shape->count;
+    unsigned long n_used = frame->n_used * shape->count;
     std::size_t obj_size = shape->amt;
     std::size_t n_offsets = shape->n_offsets;
     std::size_t *offsets = shape->offsets;
     unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
 
-    for(unsigned long j=0; j<n_objects; ++j)
+    for(unsigned long j=0; j<n_used; ++j)
     {
       for(unsigned int i=0; i<n_offsets; ++i)
       {
@@ -1159,12 +1203,12 @@ void flx_collector_t::impl_check()
   for(unsigned int i = 0; i<nobj; ++i) {
     frame_t *frame = (frame_t*) ctrl[i];
     gc_shape_t *shape = frame->shape;
-    unsigned long n_objects = frame->n_objects * shape->count;
+    unsigned long n_used = frame->n_used * shape->count;
 
     // scan the frame for pointers and adjust them
     unsigned char *client = (unsigned char*)FRAME_TO_CLIENT(frame);
     size_t *offsets = shape -> offsets;
-    for(unsigned int nel = 0; nel < n_objects; nel++)
+    for(unsigned int nel = 0; nel < n_used; nel++)
     {
       for(unsigned int k = 0; k<shape->n_offsets; ++k) 
       {
@@ -1363,7 +1407,11 @@ void flx_collector_t::impl_compact(bool closed) {
     frame_t *new_frame = (frame_t*) ctrl[i].new_frame;
     gc_shape_t *shape = old_frame->shape;
     //if(debug)fprintf(stderr,"\nCOPYING OBJECT %s at %p to %p\n",shape->cname,old_frame,new_frame);
+
+    // somewhat inconsistent .. this local variable n_objects
+    // includes the shape count
     unsigned long n_objects = old_frame->n_objects * shape->count;
+    unsigned long n_used = old_frame->n_used * shape->count;
     std::size_t obj_size = shape->amt;
 
     // NOTE: NOT ALIGNED!! in case source is not an arena
@@ -1387,8 +1435,8 @@ void flx_collector_t::impl_compact(bool closed) {
     unsigned char *client = (unsigned char*)FRAME_TO_CLIENT(new_frame);
     size_t *offsets = shape -> offsets;
     //if(debug)fprintf(stderr,"Client pointer %p\n",client);
-    //if(debug)fprintf(stderr,"SCANNING frame %d, %ld objects\n",i,n_objects);
-    for(unsigned int nel = 0; nel < n_objects; nel++)
+    //if(debug)fprintf(stderr,"SCANNING frame %d, %ld objects\n",i,n_used);
+    for(unsigned int nel = 0; nel < n_used; nel++)
     {
       for(unsigned int k = 0; k<shape->n_offsets; ++k) 
       {

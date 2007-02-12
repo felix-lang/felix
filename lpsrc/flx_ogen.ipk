@@ -641,13 +641,9 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       last_ptr_map := "&"^this_ptr_map;
 
       if not is_pod then begin
-        bcat s ("//WARNING: ONLY WORKS WITH CORRECT STATIC SIZE\n");
         bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
-        bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
-        bcat s ("  {\n");
-        bcat s ("    (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
-        bcat s ("    p = (void*)((char*)p + sizeof("^tname^"));\n");
-        bcat s ("  }\n");
+        bcat s ("  (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
+        bcat s ("  p = (void*)((char*)p + sizeof("^tname^"));\n");
         bcat s ("}\n")
       end
       ;

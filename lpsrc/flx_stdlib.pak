@@ -250,6 +250,10 @@ typeclass Monad [M: TYPE->TYPE] {
   virtual fun ret[a]: a -> M a;
 }
 
+typeclass Show [t] {
+  virtual fun str: t -> string;
+}
+
 @fc = {'float':'f', 'double':'','ldouble':'l'}
 
 @def gen_nan(t):
@@ -2286,10 +2290,35 @@ publish "Bounded Variable length arrays"
 open module Varray
 {
    _gc_pointer _gc_type t type varray[t] = "?1*";
-   fun mkv[t]: int -> varray[t] = "new(*PTF gc,@?1,(unsigned long)$1) ?1[$1]";
-   fun subscript[t]: varray[t] * int -> lvalue[t] = "$1[$2]";
-   fun len[t]: varray[t] -> size = "flx::gc::generic::get_count($1)";
 
+   // default initialised to n elements
+   fun mkiv[t]: size -> varray[t] = 
+     "new(*PTF gc,@?1,(unsigned long)$1) ?1[$1]"
+   ;
+   private proc set_used[t]: varray[t] * ulong =
+     "flx::gc::generic::set_used($1,$2);"
+   ;
+   
+   // default initialised but set to 0 length
+   fun mkuiv[t] (n:size): varray[t] = {
+     var p: varray[t] = mkiv[t](n);
+     set_used(p,size 0);
+     return p;
+   }
+
+   fun subscript[t]: varray[t] * !ints -> lvalue[t] = 
+     "$1[$2]"
+   ;
+   fun len[t]: varray[t] -> size = "flx::gc::generic::get_used($1)";
+   fun maxlen[t]: varray[t] -> size = "flx::gc::generic::get_count($1)";
+   proc pluseq[t] : varray[t] * t = """
+     {
+       ?1 * _p = $1;
+       unsigned long n = flx::gc::generic::get_used(_p);
+       flx::gc::generic::incr_used(_p,1L);
+       _p[n]=$2;
+     }
+   """;
 }
 
 module Avl
