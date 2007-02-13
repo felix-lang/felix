@@ -26,7 +26,7 @@ This section deals with the basic concepts in Felix.
 
 @env.head(2,'Hello Felix')
 There is no better introduction to a programming
-language than the infamous hello-world program.
+language than the infamous hello world program.
 
 @select(env.test('.flx'))
 #import <flx.flxh>

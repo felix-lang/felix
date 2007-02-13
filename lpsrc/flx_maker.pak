@@ -4,6 +4,23 @@
 @execfile(os.path.join('config', 'flx_data.py'))
 @execfile(os.path.join('cpkgs', 'build', 'interscript.py'))
 
+@h = tangler('script/bin2hex.py','python')
+@select(h)
+# convert a binary file to hex 
+import sys
+fn = sys.argv[1]
+f = open(fn)
+data = f.read()
+f.close()
+counter = 0
+for ch in data:
+  print ("%02x" % ord(ch)),
+  counter = counter + 1
+  if counter == 8:
+    print
+    counter = 0
+print
+
 @h = tangler('script/fcount.py','python')
 @select(h)
 import glob
@@ -788,6 +805,9 @@ class PLUGIN(Plugin):
 
       iscr_source = filter(lambda x: x not in self.already_generated, iscr_source)
 
+      filecopy2dir(os.path.join('misc', 'plus.gif'),weaver_directory)
+      filecopy2dir(os.path.join('misc', 'minus.gif'),weaver_directory)
+      filecopy2dir(os.path.join('misc', 'dot.gif'),weaver_directory)
       filecopy2dir(os.path.join('misc', 'interscript.css'),weaver_directory)
       filecopy2dir(os.path.join('misc', 'user.css'),weaver_directory)
 
@@ -2922,6 +2942,48 @@ and then run it:
 
 @head(1,'W3C Cascading Style Sheets')
 Needed to view interscript generated documentation.
+Also some gif images.
+
+@python("//")
+def mkgif(fn,d):
+  f = open("misc"+os.sep+fn+".gif","w")
+  f.write(d)
+  f.close()
+
+plus=("\x47\x49\x46\x38\x39\x61\x09\x00"+
+  "\x09\x00\x91\x00\x00\xfe\xfe\xfe"+
+  "\x82\x82\x82\x02\x02\x02\x00\x00"+
+  "\x00\x2c\x00\x00\x00\x00\x09\x00"+
+  "\x09\x00\x00\x02\x14\x8c\x8f\xa0"+
+  "\x0b\xb6\xb2\x9c\x82\xca\x89\x7b"+
+  "\x5b\x78\x71\xcf\xce\x74\x08\x52"+
+  "\x00\x00\x3b")
+
+minus=("\x47\x49\x46\x38\x39\x61\x09\x00"+
+  "\x09\x00\x91\x00\x00\xfe\xfe\xfe"+
+  "\x82\x82\x82\x02\x02\x02\x00\x00"+
+  "\x00\x2c\x00\x00\x00\x00\x09\x00"+
+  "\x09\x00\x00\x02\x11\x8c\x8f\xa0"+
+  "\x0b\xc6\xeb\x5e\x0b\x40\x58\x3b"+
+  "\x65\x96\xf1\xa1\x1f\x14\x00\x3b")
+
+dot=("\x47\x49\x46\x38\x39\x61\x09\x00"+
+  "\x09\x00\xa1\x03\x00\xfe\xfe\xfe"+
+  "\x82\x82\x82\x02\x02\x02\xff\xff"+
+  "\xff\x21\xfe\x15\x43\x72\x65\x61"+
+  "\x74\x65\x64\x20\x77\x69\x74\x68"+
+  "\x20\x54\x68\x65\x20\x47\x49\x4d"+
+  "\x50\x00\x2c\x00\x00\x00\x00\x09"+
+  "\x00\x09\x00\x00\x02\x14\x8c\x8f"+
+  "\xa0\x0b\xb6\xb2\x1c\x10\x54\x39"+
+  "\x8a\x5b\x50\x59\xbf\xb8\x31\x16"+
+  "\x42\x16\x00\x3b")
+
+mkgif("plus",plus)
+mkgif("minus",plus)
+mkgif("dot",dot)
+
+//
 
 @select(tangler('misc/interscript.css','data'))
 BODY {

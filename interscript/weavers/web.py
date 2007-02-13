@@ -534,44 +534,26 @@ class stacking_weaver(multiplexor):
         weaver.head(adjusted_level,text,key=anchor)
 
 
-#line 643 "interscript/src/web_weaver.ipk"
-  MSIE_treehandler = """
+  treehandler = """
 <SCRIPT type="text/javascript">
 <!--
-function clickHandler() {
-  var targetId, srcElement, targetElement;
-  srcElement = window.event.srcElement;
-  if (srcElement.className == "Button") {
-    targetId = srcElement.id + "d";
-    targetElement = document.all(targetId);
-    if(targetElement.style.display == "none") {
-      targetElement.style.display = "";
-      srcElement.checked = true;
-    } else {
-      targetElement.style.display = "none";
-      srcElement.checked = false;
-    }
+function toggle(button,id)
+{
+  var n = document.getElementById(id).style;
+  if (n.display == "none")
+  {
+    button.src = "minus.gif";
+    button.alt = "-";
+    n.display = "block";
+  }
+  else
+  {
+    button.src = "plus.gif";
+    button.alt = "+";
+    n.display = "none";
   }
 }
 
-// this function restores the status of the contents tree
-// IE4 preserves the buttons states, but not the visibility
-function loadHandler() {
-  for (var srcId in document.all) {
-    srcElement = document.all(srcId);
-    if (srcElement != null && srcElement.className == "Button") {
-      var targetId = srcId + "d";
-      var targetElement = document.all(targetId);
-      if(srcElement.checked == true) {
-        targetElement.style.display = "";
-      } else {
-        targetElement.style.display = "none";
-      }
-    }
-  }
-}
-//document.onclick = clickHandler
-//document.onload = loadHandler
 // -->
 </SCRIPT>
 """
@@ -589,12 +571,12 @@ function loadHandler() {
       print 'File name',self.toc_sink.name
     self.mk_head(self.toc_sink)
     w = self.toc_sink.writeline
-    w( '<BODY lang="'+self.language+'" onload="loadHandler()" onclick="clickHandler()">')
+    w( '<BODY lang="'+self.language+'">')
     if not target:
       nav = '<DIV CLASS="NAVIGATION">'+self.home_anchor+' '+self.frames_anchor+'<BR><HR></DIV>'
       self.toc_sink.writeline(nav)
     w('<H1>'+self.tr_phrase('Table of Contents')+'</H1>')
-    w(stacking_weaver.MSIE_treehandler)
+    w(stacking_weaver.treehandler)
     last_level = -1
     if self.toc:
       i = 0
@@ -628,9 +610,11 @@ function loadHandler() {
   def emit_contents_line(self, level, hnum, href, text, enabled, target):
     self.toc_sink.writeline('&nbsp;'*(3*level))
     headid ='h'+hnum
-    flag = 'disabled'
-    if enabled: flag = ''
-    self.toc_sink.writeline('<INPUT ID='+headid+' CLASS="Button" TYPE="Radio" '+flag+'>')
+    if enabled:
+      self.toc_sink.writeline('<IMG SRC="minus.gif" ID='+headid+' ONCLICK="toggle(this,'+"'"+headid+'d'+"'"+')" ALT="-">')
+    else:
+      self.toc_sink.writeline('<IMG SRC="dot.gif" ID='+headid+' ALT=".">')
+
     if target:
       self.toc_sink.writeline('<A HREF="'+href+'" TARGET="'+target+'">'+text+'</A>')
     else:
