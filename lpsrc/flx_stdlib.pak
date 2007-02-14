@@ -2292,7 +2292,7 @@ open module Varray
    _gc_pointer _gc_type t type varray[t] = "?1*";
 
    // default initialised to n elements
-   gen mkiv[t]: size -> varray[t] = 
+   gen mkiv[t]: ulong -> varray[t] = 
      "new(*PTF gc,@?1,(unsigned long)$1) ?1[$1]"
      requires property "needs_gc"
    ;
@@ -2301,17 +2301,17 @@ open module Varray
    ;
    
    // default initialised but set to 0 length
-   gen mkuiv[t] (n:size): varray[t] = {
+   gen mkuiv[t] (n:ulong): varray[t] = {
      var p: varray[t] = mkiv[t](n);
-     set_used(p,size 0);
+     set_used(p,ulong 0);
      return p;
    }
 
    fun subscript[t]: varray[t] * !ints -> lvalue[t] = 
      "$1[$2]"
    ;
-   fun len[t]: varray[t] -> size = "flx::gc::generic::get_used($1)";
-   fun maxlen[t]: varray[t] -> size = "flx::gc::generic::get_count($1)";
+   fun len[t]: varray[t] -> ulong = "flx::gc::generic::get_used($1)";
+   fun maxlen[t]: varray[t] -> ulong = "flx::gc::generic::get_count($1)";
    proc pluseq[t] : varray[t] * t = """
      {
        ?1 * _p = $1;
