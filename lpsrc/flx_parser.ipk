@@ -173,6 +173,7 @@ let dfltvs =
 %token<Flx_ast.srcref * string> STRING
 %token<Flx_ast.srcref * string> CSTRING
 %token<Flx_ast.srcref * string> FSTRING
+%token<Flx_ast.srcref * string> QSTRING
 %token<Flx_ast.srcref * string> WSTRING
 %token<Flx_ast.srcref * string> USTRING
 %token<Flx_ast.srcref * string> USER_KEYWORD
@@ -3160,6 +3161,12 @@ atom:
       let sr,s = $1 in 
       let sr = slift sr in 
       `AST_vsprintf (sr,s) 
+    }
+  | QSTRING             
+    { 
+      let sr,s = $1 in 
+      let sr = slift sr in 
+      `AST_interpolate (sr,s) 
     }
     
   | USERLB expr USERRB  

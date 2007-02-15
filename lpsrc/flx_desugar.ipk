@@ -488,6 +488,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
   | `AST_expr _ -> [],e
 
+  | `AST_interpolate (sr,s) -> failwith "UNEXPECTED interpolate!"
+
   | `AST_vsprintf (sr,s) ->
     let ix = seq () in
     let id = "_fmt_" ^ si ix in

@@ -19,6 +19,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
   | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | FSTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | QSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USER10 (sr,op,fn) -> "op10 " ^ op
@@ -61,6 +62,7 @@ let name_of_token (tok :Flx_parse.token): string =
   | STRING (sr,s) -> "STRING"
   | CSTRING (sr,s) -> "CSTRING"
   | FSTRING (sr,s) -> "FSTRING"
+  | QSTRING (sr,s) -> "QSTRING"
   | WSTRING (sr,s) -> "WSTRING"
   | USTRING (sr,s) -> "USTRING"
   | USER10 (sr,op,f) -> "USER10"
@@ -112,6 +114,7 @@ let src_of_token t = match t with
   | STRING  (s,_)
   | CSTRING  (s,_)
   | FSTRING  (s,_)
+  | QSTRING  (s,_)
   | WSTRING  (s,_)
   | USTRING  (s,_)
   | USER10 (s,_,_)
@@ -1549,6 +1552,9 @@ let quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote
 
 (* ====================== PARSERS ============================ *)
 (* string lexers *)
+
+(* ----------- BASIC STRING -----------------------------------*)
+
 rule parse_qstring state = parse
 | qstring { 
       state#inbody;
@@ -1612,6 +1618,7 @@ and parse_dddstring state = parse
     )] 
   }
 
+(* ----------- FORMAT STRING -----------------------------------*)
 and parse_fqstring state = parse
 | qstring { 
       state#inbody;
@@ -1675,6 +1682,71 @@ and parse_fdddstring state = parse
     )] 
   }
 
+(* ----------- INTERPOLATION STRING -----------------------------------*)
+and parse_Qqstring state = parse
+| qstring { 
+      state#inbody;
+      [QSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "' string"
+    )] 
+  }
+
+and parse_Qdstring state = parse
+| dstring {
+      state#inbody;
+      [QSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_dstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    state#inbody; 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "\" string"
+    )]
+  }
+
+and parse_Qqqqstring state = parse
+| qqqstring { 
+      state#inbody;
+      [QSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qqqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "''' string"
+    )] 
+  }
+
+and parse_Qdddstring state = parse
+| dddstring { 
+      state#inbody;
+      [QSTRING (
+        state#get_srcref lexbuf,
+        state#decode decode_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf,
+      "\"\"\" string"
+    )] 
+  }
+
+(* ----------- C STRING -----------------------------------*)
 and parse_cqstring state = parse
 | qstring { 
       state#inbody;
@@ -1738,6 +1810,7 @@ and parse_cdddstring state = parse
     )] 
   }
 
+(* ----------- WIDE STRING -----------------------------------*)
 and parse_wqstring state = parse
 | qstring { 
       state#inbody;
@@ -1801,6 +1874,7 @@ and parse_wdddstring state = parse
     )] 
   }
 
+(* ----------- UNICODE STRING -----------------------------------*)
 and parse_uqstring state = parse
 | qstring { 
       state#inbody;
@@ -1864,6 +1938,7 @@ and parse_udddstring state = parse
     )] 
   }
 
+(* ----------- RAW STRING -----------------------------------*)
 and parse_raw_qstring state = parse
 | raw_qstring { 
       state#inbody;
@@ -2147,6 +2222,12 @@ and pre_flx_lex state = parse
 | ('f'|'F') qqq    { state#inbody; parse_fqqqstring state lexbuf }
 | ('f'|'F') dquote { state#inbody; parse_fdstring state lexbuf }
 | ('f'|'F') ddd    { state#inbody; parse_fdddstring state lexbuf }
+
+(* Format strings *)
+| ('q'|'Q') quote  { state#inbody; parse_Qqstring state lexbuf }
+| ('q'|'Q') qqq    { state#inbody; parse_Qqqqstring state lexbuf }
+| ('q'|'Q') dquote { state#inbody; parse_Qdstring state lexbuf }
+| ('q'|'Q') ddd    { state#inbody; parse_Qdddstring state lexbuf }
 
 (* wide strings *)
 | ('w' | 'W') quote  { state#inbody; parse_wqstring state lexbuf }

@@ -1342,6 +1342,7 @@ open module String
   fun str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
   fun str: ucharp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
   fun str: ucharcp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
+  fun str: string -> string = '$1';
 
   // we need to cast to an int so that c++ won't complain
   fun len: string -> int = "static_cast<int>($1.size())";

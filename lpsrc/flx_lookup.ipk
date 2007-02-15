@@ -3805,6 +3805,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_patvar _
   | `AST_patany _ 
   | `AST_case _
+  | `AST_interpolate _
   | `AST_vsprintf _
   | `AST_type_match _ 
   | `AST_noexpand _

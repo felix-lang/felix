@@ -410,6 +410,7 @@ Raw expression terms.
 @select(h)
 and expr_t =
   [
+  | `AST_interpolate of range_srcref * string
   | `AST_vsprintf of range_srcref * string
   | `AST_map of range_srcref * expr_t * expr_t
   | `AST_noexpand of range_srcref * expr_t
@@ -1387,6 +1388,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_patvar _
   | `AST_patany _ 
   | `AST_vsprintf _ -> e
+  | `AST_interpolate _ -> e
   | `AST_map (sr,a,b) -> `AST_map (sr,f a, f b)
   | `AST_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
   | `AST_name _ -> e
@@ -1477,6 +1479,7 @@ let iter_expr f (e:expr_t) =
   | `AST_patvar _
   | `AST_patany _ 
   | `AST_vsprintf _ 
+  | `AST_interpolate _ 
   | `AST_name _ 
   | `AST_callback _ 
   | `AST_the _ 
@@ -2050,6 +2053,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
 
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
+  | `AST_interpolate (s,_)
   | `AST_vsprintf (s,_)
   | `AST_ellipsis (s)
   | `AST_noexpand (s,_)
@@ -2589,6 +2593,7 @@ and string_of_expr (e:expr_t) =
   | `AST_patvar (sr,s) -> "?"^s
   | `AST_patany sr -> "ANY"
   | `AST_vsprintf (sr,s) -> "f"^string_of_string s
+  | `AST_interpolate (sr,s) -> "q"^string_of_string s
   | `AST_ellipsis _ -> "..."
   | `AST_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
 

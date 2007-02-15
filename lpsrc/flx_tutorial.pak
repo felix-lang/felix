@@ -5904,7 +5904,7 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 This is how you do printf-style string formatting.
 
 @select(env.test('.flx'))
-@kat("formatting")
+@kat("formatting:printf style")
 #import <flx.flxh>
 print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @doc()
@@ -5912,6 +5912,51 @@ print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @select(env.expect())
  22 0x63 % 9.7 88
 @doc()
+
+@env.head(2,"String interpolation")
+This is how you do string interpolation:
+
+@select(env.test('.flx'))
+@kat("formatting:interpolation")
+#import <flx.flxh>
+
+var x = "Hello";
+var y = "World";
+var u = 41;
+
+var z = q"$x $(y) $(1+u) $'2+u'\n";
+
+print z;
+@doc()
+
+
+@select(env.expect())
+Hello World 42 43
+@doc()
+The 'q' character introduces an interpolated string,
+any of the usual quoting styles are allowed.
+@p()
+Inside the string, the '$' character introduces
+an expression which is evaluated, converted to a string
+using the 'str' function, and replaces itself with
+that string.
+@p()
+The expression may begin with a '(', in which case
+it proceeds up to the balancing ')'. You should note
+the scan for brackets ignores other characters,
+in particular quote marks, so this form does not
+allow you to embed another string containing an
+unbalanced bracket.
+@p()
+The expression may begin with a double quote, 
+single quote, or backtick, in which case it
+consists of the text up to the next occurence
+of the same kind of quote mark.
+@p()
+Finally, you can just write a Felix identifier,
+starting with a letter or underscore, and 
+continuing with any letter, underscore, digit,
+or single quote mark.
 
 @env.head(2,"Typeclasses")
 Felix has typeclasses similar to Haskell.
