@@ -20,6 +20,13 @@ val fixup_typeclass_instance:
   btypecode_t list ->
   int * btypecode_t list
 
+val maybe_fixup_typeclass_instance:
+  sym_state_t -> 
+  fully_bound_symbol_table_t ->
+  int ->
+  btypecode_t list ->
+  int * btypecode_t list
+
 val fixup_typeclass_instances:
   sym_state_t -> 
   fully_bound_symbol_table_t -> 
@@ -364,7 +371,8 @@ let chk syms allow_fail i ts (inst_vs, inst_constraint, inst_ts, j)  =
          Some (j,ts)
        | `BTYP_void -> (* print_endline "constraint reduce failure"; *) None
        | _ -> 
-         if not allow_fail then failwith "Unable to reduce type constraint!"
+         if not allow_fail then 
+         failwith ("Unable to reduce type constraint: " ^ sbt syms.dfns con)
          else 
          (
            (*
@@ -481,9 +489,15 @@ let fixup_typeclass_instances syms bbdfns =
   )
   bbdfns
 
-(* public routine doesn't allow constraint reduction failure
-  because it is run at instantiation time 
+(* this routine doesn't allow constraint reduction failure
+  and should only be run at instantiation time 
 *)
 let fixup_typeclass_instance syms bbdcls i ts =
   fixup_typeclass_instance' syms bbdcls false i ts
- 
+
+(* this routine allows failure, only use for early
+  instantiation for optimisation 
+*)
+let maybe_fixup_typeclass_instance syms bbdcls i ts =
+  fixup_typeclass_instance' syms bbdcls true i ts
+  
