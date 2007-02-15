@@ -74,6 +74,8 @@ FLX_MODULES = [
   'src/flx_call', 
   'src/flx_use', 
   'src/flx_tailit', 
+  'src/flx_reparent', 
+  'src/flx_spexes', 
   'src/flx_inline', 
   'src/flx_stack_calls', 
   'src/flx_mkcls', 
@@ -393,6 +395,8 @@ Flx_version.version_data := version_data
 @include_file ('flx_use.ipk')
 @include_file ('flx_child.ipk')
 @include_file ('flx_tailit.ipk')
+@include_file ('flx_spexes.ipk')
+@include_file ('flx_reparent.ipk')
 @include_file ('flx_inline.ipk')
 @include_file ('flx_enstack.ipk')
 @include_file ('flx_mkcls.ipk')
