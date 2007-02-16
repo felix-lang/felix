@@ -5303,6 +5303,7 @@ type sym_state_t =
   mutable axioms: axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
   typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
+  transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
 }
 
 module VarMap = StringMap
@@ -5394,6 +5395,7 @@ type sym_state_t =
   mutable axioms : axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
   typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
+  transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
 }
 
 

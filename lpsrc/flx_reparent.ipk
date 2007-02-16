@@ -21,6 +21,8 @@ val reparent1 :
   int ->                          (* callee vs length *)
   bid_t ->                        (* routine index *)
   int option ->                   (* parent *)
+  int ->                          (* new index, perhaps the caller! *)
+  bool ->                         (* allow rescan of cloned stuff? *)
   unit
 
 val reparent_children :
@@ -32,7 +34,21 @@ val reparent_children :
   bid_t option ->                  (* parent *)
   (string, string) Hashtbl.t ->    (* relabel *)
   (int, btypecode_t) Hashtbl.t ->  (* varmap *)
+  bool ->                          (* rescan flag *)
   (int, bid_t) Hashtbl.t           (* returns revariable map *)
+
+val specialise_symbol:
+  sym_state_t ->
+  usage_table_t * child_map_t * fully_bound_symbol_table_t ->
+  (string * int) list ->           (* caller vs *)
+  int ->                           (* callee_vs_len *)
+  bid_t ->                         (* routine index *)
+  btypecode_t list ->              (* instantiating types *)
+  bid_t option ->                  (* parent *)
+  (string, string) Hashtbl.t ->    (* relabel *)
+  (int, btypecode_t) Hashtbl.t ->  (* varmap *)
+  bool ->                          (* rescan flag *)
+  int * btypecode_t list           (* result instance *)
 
 val remap_expr :
   sym_state_t ->
@@ -310,9 +326,29 @@ let remap_reqs syms bbdfns varmap revariable caller_vars callee_vs_len reqs : br
   in
   map fixup reqs
 
+
+(* this routine makes a (type) specialised version of a symbol:
+   a function, procedure, variable, or whatever.
+
+   relabel: maps old labels onto fresh labels
+   revariable: maps old variables and functions to fresh ones
+   varmap: maps type variables to types (type specialisation)
+   index: this routine
+   parent: the new parent
+
+   this routine doesn't specialise any children,
+   just any reference to them: the kids need
+   to be specialised by reparent_children.
+*)
+
+let allow_rescan flag props = 
+  match flag with
+  | false -> props
+  | true -> filter (function | `Inlining_complete | `Inlining_started -> false | _ -> true ) props
+
 let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   relabel varmap revariable 
-  caller_vs callee_vs_len index parent
+  caller_vs callee_vs_len index parent k rescan_flag
 =
   let splice vs = (* replace callee type variables with callers *)
     vsplice caller_vs callee_vs_len vs 
@@ -336,7 +372,6 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
      ps 
    in
 
-  let k = Hashtbl.find revariable index in
   let rexes xs = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len xs in
   let rexpr e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in 
   let rreqs rqs = remap_reqs syms bbdfns varmap revariable caller_vars callee_vs_len rqs in
@@ -363,6 +398,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
     let ps = remap_ps ps in
+    let props = allow_rescan rescan_flag props in
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,(ps,traint),exes));
     (*
     print_endline "NEW PROCEDURE (clone):";
@@ -377,6 +413,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add uses k calls
      
   | `BBDCL_function (props, vs, (ps,traint), ret, exes) ->
+    let props = allow_rescan rescan_flag props in
     let ps = remap_ps ps in
     let exes = rexes exes in
     let ret = auxt ret in
@@ -521,8 +558,12 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   parent which is i to the given new parent
 *)
 
+(* this routine reparents all the children of a given
+   routine, but it doesn't reparent the routine itself
+*)
+
 let reparent_children syms (uses,child_map,bbdfns) 
-  caller_vs callee_vs_len index parent relabel varmap 
+  caller_vs callee_vs_len index parent relabel varmap rescan_flag
 =
   let pp p = match p with None -> "NONE" | Some i -> si i in
   (*
@@ -553,8 +594,9 @@ let reparent_children syms (uses,child_map,bbdfns)
         if p = index then parent
         else Some (Hashtbl.find revariable p)
     in
+    let k = Hashtbl.find revariable i in
     reparent1 syms (uses,child_map,bbdfns) relabel varmap revariable 
-    caller_vs callee_vs_len i new_parent
+    caller_vs callee_vs_len i new_parent k rescan_flag
   )
   closure
   ;
@@ -568,4 +610,53 @@ let reparent_children syms (uses,child_map,bbdfns)
   ;
   revariable
 
- 
+(* NOTE! when we specialise a routine, calls to the same
+  routine (polymorphically recursive) need not end up
+  recursive. They're only recursive if they call the
+  original routine with the same type specialisations
+  as the one we're making here.
+
+  In particular a call is recursive if, and only if,
+  it is fully polymorphic (that is, just resupplies
+  all the original type variables). In that case,
+  recursion is preserved by specialisation.
+
+  However recursion can also be *introduced* by specialisation
+  where it didn't exist before!
+
+  So remapping function indices has to be conditional.
+
+  Note that calls to children HAVE to be remapped
+  because of reparenting -- the original kids
+  are no longer reachable! But this is no problem
+  because the kid's inherited type variables are
+  specialised away: you can't supply a kid with
+  type variable instances distinct from the kid's
+  parents variables (or the kid would refer to the
+  stack from of a distinct function!)
+
+  So the only problem is on self calls of the main
+  routine, since they can call self either with
+  the current specialisation or any other.
+*)
+  
+
+let specialise_symbol syms (uses,child_map,bbdfns) 
+  caller_vs callee_vs_len index ts parent relabel varmap rescan_flag
+=
+  try Hashtbl.find syms.transient_specialisation_cache (index,ts)
+  with Not_found ->
+    let k = !(syms.counter) in incr (syms.counter);
+    let revariable = 
+       reparent_children syms (uses,child_map,bbdfns) 
+       caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag
+    in
+    reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
+      relabel varmap revariable 
+      caller_vs callee_vs_len index parent k rescan_flag
+    ;
+    let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) caller_vs in
+    let ts' = vsplice caller_vars callee_vs_len ts in
+    Hashtbl.add syms.transient_specialisation_cache (index,ts) (k,ts');
+    k,ts'
+
