@@ -322,7 +322,9 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   match opens with
   | [x] -> Some x
   | `FunctionEntry ls :: rest ->
+    (*
     print_endline "HERE 3";
+    *)
     Some (`FunctionEntry (merge_functions opens name))
 
   | (`NonFunctionEntry (i)) as some ::_ -> 
