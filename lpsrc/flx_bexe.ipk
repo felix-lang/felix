@@ -147,7 +147,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   *)
 
   (* a type variable in executable code just has to be of kind TYPE *)
-  let parent_ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) parent_vs in
+  let parent_ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) parent_vs in
   let ret_type = ref ret_type in
   let be e : tbexpr_t = bind_expression syms env e in
   let lun sr n = lookup_name_in_env syms env sr n in

@@ -771,7 +771,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
 
 
         (* replace application with the variable *)
-        let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in
+        let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type 0)) caller_vs in
         `BEXPR_name (urv,ts),t
 
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -841,7 +841,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
                   Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
 
                   exes' := rxs @ !exes';
-                  let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in
+                  let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type 0)) caller_vs in
                   `BEXPR_name (urv,ts),t
               end
               else e

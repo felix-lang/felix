@@ -413,7 +413,7 @@ let bbind_sym syms bbdfns i {
       (*
       print_endline ("Binding nonterm " ^ name ^"<"^ si i ^">");
       *)
-      let brt = if t = `TYP_none then `BTYP_var (i,`BTYP_type) else bt t in
+      let brt = if t = `TYP_none then `BTYP_var (i,`BTYP_type 0) else bt t in
       (*
       print_endline ("Specified type " ^ sbt syms.dfns brt);
       *)

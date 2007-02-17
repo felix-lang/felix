@@ -357,7 +357,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     | None -> "NONE?" 
     | Some i -> si i
   in
-  let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) caller_vs in
+  let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) caller_vs in
 
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
@@ -655,7 +655,7 @@ let specialise_symbol syms (uses,child_map,bbdfns)
       relabel varmap revariable 
       caller_vs callee_vs_len index parent k rescan_flag
     ;
-    let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) caller_vs in
+    let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) caller_vs in
     let ts' = vsplice caller_vars callee_vs_len ts in
     Hashtbl.add syms.transient_specialisation_cache (index,ts) (k,ts');
     k,ts'

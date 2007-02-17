@@ -46,7 +46,7 @@ and metatype' syms term =
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype' syms t in
   match term with
-  | `BTYP_case _ -> `BTYP_function (`BTYP_type, `BTYP_type)
+  | `BTYP_case _ -> `BTYP_function (`BTYP_type 0, `BTYP_type 0)
 
   | `BTYP_typefun (a,b,c) ->
     let ps = List.map snd a in
@@ -85,7 +85,8 @@ and metatype' syms term =
     end
   | `BTYP_var (i,mt) ->  mt
 
-  | _ -> `BTYP_type (* THIS ISN'T RIGHT *)
+  | `BTYP_type i -> `BTYP_type (i+1)
+  | _ -> `BTYP_type 0 (* THIS ISN'T RIGHT *)
   
 
 
@@ -358,7 +359,7 @@ and beta_reduce' syms termlist t =
   | `BTYP_lvalue a -> `BTYP_lvalue (br a)
 
   | `BTYP_void -> t
-  | `BTYP_type -> t
+  | `BTYP_type _ -> t
   | `BTYP_unitsum _ -> t
 
   | `BTYP_apply (t1,t2) ->

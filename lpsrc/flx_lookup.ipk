@@ -249,7 +249,7 @@ let dfltvs = [],dfltvs_aux
 let mkentry syms (vs:ivs_list_t) i = 
   let n = length (fst vs) in
   let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
-  let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type)) (nlist n) in
+  let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
   let vs = map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
@@ -799,7 +799,7 @@ and handle_typeset syms sr elt tset =
   let fresh = !(syms.counter) in incr (syms.counter);
   let dflt = 
     {
-      pattern=`BTYP_var (fresh,`BTYP_type); 
+      pattern=`BTYP_var (fresh,`BTYP_type 0); 
       pattern_vars = IntSet.singleton fresh;
       assignments=[]
     },
@@ -1084,7 +1084,7 @@ and bind_type'
       (*
       print_endline ("Mapping " ^ s ^ "<"^si i^"> to TYPE"); 
       *)
-      s,`BTYP_var (i,`BTYP_type)) (explicit_vars @ as_vars) 
+      s,`BTYP_var (i,`BTYP_type 0)) (explicit_vars @ as_vars) 
       in
       let t' = btp t' (params@args) in
       let t' = list_subst eqns t' in
@@ -1237,7 +1237,7 @@ and bind_type'
     handle_typeset syms sr elt tset
 
   (* HACK .. assume variable is type TYPE *)
-  | `TYP_var i ->  `BTYP_var (i,`BTYP_type)
+  | `TYP_var i ->  `BTYP_var (i,`BTYP_type 0)
   | `TYP_as (t,s) -> 
     bind_type' syms env 
     { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
@@ -1369,7 +1369,7 @@ and bind_type'
       rev_map 
       (fun (name) -> 
         name, 
-        `BTYP_type, 
+        `BTYP_type 0, 
         let n = !(syms.counter) in 
         incr (syms.counter); 
         n
@@ -1505,7 +1505,7 @@ and bind_type'
   | `TYP_type_tuple ts ->
     `BTYP_type_tuple (map bt ts)
 
-  | `TYP_type -> `BTYP_type
+  | `TYP_type -> `BTYP_type 0
 
   | `AST_name (sr,s,[]) when mem_assoc s rs.as_fixlist ->
     `BTYP_fix ((assoc s rs.as_fixlist)-rs.depth)
@@ -1565,7 +1565,7 @@ and bind_type'
       end
       ;
       *)
-      let ts = map (fun (s,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      let ts = map (fun (s,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
       (*
       print_endline ("Synthetic name "^name ^ "<"^si index^"> is a nominal type, ts=" ^
       catmap "," (sbt syms.dfns) ts
@@ -1628,7 +1628,7 @@ and bind_type'
         let ivs,traint = vs in
         let bmt mt = 
           match mt with 
-          | `AST_patany _ -> `BTYP_type (* default *)
+          | `AST_patany _ -> `BTYP_type 0 (* default *)
           | _ -> (try bt mt with _ -> clierr sr "metatyp binding FAILED")
         in
         let body = 
@@ -1636,7 +1636,7 @@ and bind_type'
           let xparams = map (fun (id,idx,mt) -> id, `BTYP_var (idx, bmt mt)) ivs in
           bind_type' syms env {rs with depth = rs.depth+1} sr t (xparams @ params) mkenv 
         in
-        let ret = `BTYP_type in 
+        let ret = `BTYP_type 0 in 
         let params = map (fun (id,idx,mt) -> idx, bmt mt) ivs in
         `BTYP_typefun (params, ret, body)
 
@@ -1689,7 +1689,7 @@ and cal_glr_attr_type'' syms sr (i:int) t =
   try Hashtbl.find syms.varmap i
   with Not_found ->
   match t with 
-  | `TYP_none -> `BTYP_var (i,`BTYP_type)
+  | `TYP_none -> `BTYP_var (i,`BTYP_type 0)
   | _ ->
     let env = build_env syms (Some i) in
     let t = bind_type syms env sr t in
@@ -2658,7 +2658,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | `SYMDEF_match_check _ 
       ->
       let vs = find_vs syms index in
-      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
       `BEXPR_closure (index,ts),
       inner_typeofindex syms rs index
 
@@ -2666,7 +2666,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       (*
       print_endline "Non function ..";
       *)
-      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
       handle_nonfunction_index index ts
     end
 
@@ -2868,14 +2868,14 @@ and lookup_type_qn_with_sig'
     | `SYMDEF_match_check _ 
       ->
       let vs = find_vs syms index in
-      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
       inner_typeofindex syms rs index
 
     | _ ->
       (*
       print_endline "Non function ..";
       *)
-      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) (fst vs) in
+      let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
       handle_nonfunction_index index ts
     end
 
@@ -3120,7 +3120,7 @@ and handle_function
   | `SYMDEF_type_alias (`TYP_typefun _) ->
     (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
     (* let t = inner_typeofindex_with_ts syms sr rs index ts in *)
-    let t = `BTYP_function (`BTYP_type,`BTYP_type) in
+    let t = `BTYP_function (`BTYP_type 0,`BTYP_type 0) in
     `BEXPR_closure (index,ts),
     (
       match t with
@@ -4240,7 +4240,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let sign =
         let entry = Hashtbl.find syms.dfns oi in
         match entry with | {vs = vs } ->
-        let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
+        let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
         print_endline ("Binding sign = " ^ string_of_typecode sign);
         let env' = build_env syms (Some oi) in
         bind_type' syms env' rsground sr sign bvs mkenv
@@ -4842,7 +4842,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             in scan 0 ls
           in
           let ct =
-            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
             let env' = build_env syms (Some i) in
             bind_type' syms env' rsground sr ct bvs mkenv
           in
@@ -4867,7 +4867,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
               in scan 0 ls
             in
             let ct =
-              let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
+              let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
               let env' = build_env syms (Some i) in
               bind_type' syms env' rsground sr ct bvs mkenv
             in
@@ -5115,7 +5115,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -5176,7 +5176,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) (fst vs) in
+            let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -5708,9 +5708,9 @@ and review_entry syms vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t
          (*
          print_endline ("SYNTHESISE FRESH VIEW VARIABLE "^si i^" for missing ts");
          *)
-         let h' = `BTYP_var (i,`BTYP_type) in
+         let h' = `BTYP_var (i,`BTYP_type 0) in
          (*
-         let h' = let (_,i) = h in `BTYP_var (i,`BTYP_type) in
+         let h' = let (_,i) = h in `BTYP_var (i,`BTYP_type 0) in
          *)
          aux t [] (h::outvs) (h'::outts)
        | _ -> rev outvs, rev outts
@@ -6017,7 +6017,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_case _
   | `BTYP_apply _
   | `BTYP_typefun _
-  | `BTYP_type
+  | `BTYP_type _
   | `BTYP_type_tuple _
   | `BTYP_type_match _
     -> clierr sr ("[rebind_type] Unexpected metatype " ^ sbt syms.dfns t)

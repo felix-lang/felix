@@ -325,7 +325,7 @@ let consider syms bt luqn2 name
 
     (* equations for user specified assignments *)
     let lhsi = map (fun (n,i) -> i) spec_vs in
-    let lhs = map (fun (n,i) -> `BTYP_var ((i),`BTYP_type)) spec_vs in
+    let lhs = map (fun (n,i) -> `BTYP_var ((i),`BTYP_type 0)) spec_vs in
     let n = min n_spec_vs n_input_ts in
     let eqns = combine (list_prefix lhs n) (list_prefix input_ts n) in
 
@@ -521,7 +521,7 @@ let consider syms bt luqn2 name
            *)
            (* this check is redundant .. we're SCANNING the base vs! *)
            match et with
-           | `BTYP_type
+           | `BTYP_type _
            | `BTYP_function _ -> () (* print_endline "ignoring whole metatype" *)
            | _ ->
            if mem_assoc j' basemap then begin
@@ -548,8 +548,8 @@ let consider syms bt luqn2 name
                 print_endline (
                     "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^ 
                   " pat=" ^ string_of_typecode pat);
-             let t1 = `BTYP_var (i,`BTYP_type) in 
-             let t2 = `BTYP_var (k,`BTYP_type) in 
+             let t1 = `BTYP_var (i,`BTYP_type 0) in 
+             let t2 = `BTYP_var (k,`BTYP_type 0) in 
              print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
              extra_eqns := (t1,t2) :: !extra_eqns;
              (*
@@ -583,7 +583,7 @@ let consider syms bt luqn2 name
               t as v
            *)
            iter (fun (i,t) -> let t2 = bt sr t in
-             let t1 = `BTYP_var (i,`BTYP_type) in 
+             let t1 = `BTYP_var (i,`BTYP_type 0) in 
              extra_eqns := (t1,t2) :: !extra_eqns
            ) eqns1;
 
@@ -705,7 +705,7 @@ let consider syms bt luqn2 name
           in the corresponding ts values. First we need to build
           a map of the correspondence
         *)
-        let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type)) parent_vs in
+        let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
         let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
         let type_constraint = `BTYP_intersect [type_constraint; con] in
         (*
@@ -727,7 +727,7 @@ let consider syms bt luqn2 name
           *)
           None
         | `BTYP_tuple [] -> 
-          let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type)) parent_vs in
+          let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
         | _ -> 

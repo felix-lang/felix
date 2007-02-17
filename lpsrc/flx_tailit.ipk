@@ -105,7 +105,7 @@ let functions_find_xclosures syms cls bbdfns ii =
   ii
 
 let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list = 
-  let ts' = map (fun (_,i) -> `BTYP_var (i,`BTYP_type)) vs in
+  let ts' = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
   let pset = fold_left (fun s {pindex=i} -> IntSet.add i s) IntSet.empty ps in
   let parameters = ref [] in
   let descend = descendants child_map this in

@@ -947,7 +947,7 @@ type 't b1typecode_t' =
   | `BTYP_var of int * 't
   | `BTYP_apply of 't * 't 
   | `BTYP_typefun of (int * 't) list * 't * 't
-  | `BTYP_type
+  | `BTYP_type of int
   | `BTYP_type_tuple of 't list
   | `BTYP_type_match of 't * ('t btpattern_t' * 't) list
 
@@ -1622,7 +1622,7 @@ let map_btype f = function
   | `BTYP_typesetunion ls -> `BTYP_typesetunion (map f ls)
   | `BTYP_typesetintersection ls -> `BTYP_typesetintersection (map f ls)
 
-  | `BTYP_type -> `BTYP_type 
+  | `BTYP_type i -> `BTYP_type i
   | x -> map_b0type f x
 
 let iter_b0type f = function
@@ -3053,7 +3053,7 @@ and sb dfns depth fixlist counter prec tc =
        )
 
     | `BTYP_var (i,mt) -> 0,"<T" ^ si i ^ 
-      (match mt with `BTYP_type ->"" | _ -> ":"^sbt 0 mt)^
+      (match mt with `BTYP_type i ->"" | _ -> ":"^sbt 0 mt)^
       ">"
 
     | `BTYP_inst (i,ts) -> 
@@ -3146,7 +3146,7 @@ and sb dfns depth fixlist counter prec tc =
     | `BTYP_void -> 0,"void"
     
     | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
-    | `BTYP_type -> 0,"TYPE"
+    | `BTYP_type i -> 0,"TYPE " ^ si i
     | `BTYP_type_tuple ls ->
       4, cat ", " (map (sbt 4) ls)
 

@@ -51,7 +51,7 @@ open Flx_exceptions
 let mkentry syms (vs:ivs_list_t) i = 
   let n = length (fst vs) in
   let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
-  let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type)) (nlist n) in
+  let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
   let vs = map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
   (*
   print_endline ("Make entry " ^ si i ^ ", " ^ "vs =" ^
@@ -970,7 +970,7 @@ let rec build_tables syms name inherit_vs
             if keep >= 0 then rev (list_prefix (rev vs) keep)
             else failwith "WEIRD CASE"
           in
-          let nts = map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type)) (fst vs) in
+          let nts = map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
           (* fudge the private view to remove the vs *)
           let show { base_sym=i; spec_vs=vs; sub_ts=ts } =
           si i ^ " |-> " ^ 

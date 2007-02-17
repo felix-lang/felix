@@ -445,7 +445,7 @@ let fix i t =
     | `BTYP_fix _
     | `BTYP_apply _
     | `BTYP_typefun _
-    | `BTYP_type 
+    | `BTYP_type _
     | `BTYP_type_tuple _
     | `BTYP_type_match _ 
     | `BTYP_typesetunion _ -> t
@@ -651,7 +651,7 @@ let rec unification allow_lval dfns
         end
         else raise Not_found
  
-      | `BTYP_type,`BTYP_type-> ()
+      | `BTYP_type i,`BTYP_type j when i = j -> ()
       | `BTYP_void,`BTYP_void -> ()
 
       | `BTYP_inst (i1,ts1),`BTYP_inst (i2,ts2) ->
@@ -1115,7 +1115,7 @@ let fold dfns t =
     | `BTYP_typesetunion _
     | `BTYP_typeset _
     | `BTYP_typefun _
-    | `BTYP_type 
+    | `BTYP_type _
     | `BTYP_type_tuple _
     | `BTYP_type_match _ -> () (* assume fixpoint can't span these boundaries *) 
       (* failwith ("[fold] unexpected metatype " ^ sbt dfns t') *)
