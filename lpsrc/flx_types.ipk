@@ -718,7 +718,7 @@ and statement_t =
   | `AST_seq of range_srcref * statement_t list
 
   (* types *)
-  | `AST_union of range_srcref * id_t * vs_list_t * (id_t * int option * typecode_t) list
+  | `AST_union of range_srcref * id_t * vs_list_t * (id_t * int option * vs_list_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_cstruct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_cclass of range_srcref * id_t * vs_list_t * class_member_t list
@@ -864,7 +864,7 @@ type dcl_t =
   | `DCL_axiom of       params_t * expr_t
   | `DCL_reduce of       simple_parameter_t list * expr_t * expr_t
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
-  | `DCL_union of        (id_t * int option * typecode_t) list
+  | `DCL_union of        (id_t * int option * vs_list_t * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
   | `DCL_cstruct of      (id_t * typecode_t) list
   | `DCL_cclass of       class_member_t list
@@ -1151,7 +1151,8 @@ and bbdcl_t =
                          btypecode_t (* constraint *) * 
                          bid_t * 
                          btypecode_t list
-  | `BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t
+  | `BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t *
+                         bvs_t * btypecode_t (* existentials and constraint for GADTs *)
   ]
 
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
@@ -1181,8 +1182,8 @@ type symbol_definition_t =
   | `SYMDEF_module
   | `SYMDEF_class
 
-  | `SYMDEF_const_ctor of int * typecode_t * int
-  | `SYMDEF_nonconst_ctor of int * typecode_t * int * typecode_t
+  | `SYMDEF_const_ctor of int * typecode_t * int * ivs_list_t
+  | `SYMDEF_nonconst_ctor of int * typecode_t * int * ivs_list_t * typecode_t
 
   | `SYMDEF_const of typecode_t * c_t * named_req_expr_t
   | `SYMDEF_var of  typecode_t
@@ -1192,7 +1193,7 @@ type symbol_definition_t =
   | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_req_expr_t * prec_t
   | `SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
   | `SYMDEF_insert of c_t  * ikind_t * named_req_expr_t
-  | `SYMDEF_union of  (id_t * int *  typecode_t) list
+  | `SYMDEF_union of  (id_t * int *  vs_list_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
   | `SYMDEF_cclass of  class_member_t list
@@ -3726,7 +3727,7 @@ and string_of_statement level s =
     string_of_compound level sts
 
   | `AST_union (_,name, vs,cs) -> 
-    let string_of_union_component (name,cval, ty) =
+    let string_of_union_component (name,cval, vs,ty) =
       (spaces (level+1)) ^ "|" ^ name ^ 
       (match cval with None -> "" | Some i -> "="^ si i) ^
       special_string_of_typecode ty
@@ -4140,12 +4141,12 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     " => " ^ " <exes> " ^
     ";"
 
-  | `SYMDEF_const_ctor (uidx,ut,idx) -> 
+  | `SYMDEF_const_ctor (uidx,ut,idx,vs') -> 
      st ut ^ "  " ^
      name ^ print_ivs vs ^ 
      ";"
 
-  | `SYMDEF_nonconst_ctor (uidx,ut,idx,argt) -> 
+  | `SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) -> 
      st ut ^ "  " ^
      name ^ print_ivs vs ^ 
      " of " ^ st argt ^
@@ -4665,7 +4666,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_asm_compound level asms 
 
   | `DCL_union (cs) -> 
-    let string_of_union_component (name,v,ty) =
+    let string_of_union_component (name,v,vs,ty) =
       (spaces (level+1)) ^ 
       "|" ^name^ 
       (match v with | None -> "" | Some i -> "="^si i) ^ 
@@ -5018,7 +5019,7 @@ and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string =
   | `BBDCL_regmatch (props,vs,ps,t,regargs) -> "regmatch.."
   | `BBDCL_reglex (props,vs,ps,i,t,regargs) -> "reglex.."
 
-  | `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt) ->
+  | `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
     "  uctor<" ^ name ^ ">"^ print_bvs vs ^
     " : " ^ sobt ut ^ 
     " of " ^ sobt ctor_argt ^

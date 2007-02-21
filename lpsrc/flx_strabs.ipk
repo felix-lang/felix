@@ -189,8 +189,8 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
   | `BBDCL_instance ( props, bvs, t, j, ts) ->
     h (`BBDCL_instance ( props, bvs, ft t, j, fts ts) )
   
-  | `BBDCL_nonconst_ctor ( bvs, j, t1, k,t2) ->
-    h (`BBDCL_nonconst_ctor ( bvs, j, ft t1, k, ft t2) )
+  | `BBDCL_nonconst_ctor ( bvs, j, t1, k,t2, evs, etraint) ->
+    h (`BBDCL_nonconst_ctor ( bvs, j, ft t1, k, ft t2, evs, ft etraint) )
   ) 
   bbdfns
   ;

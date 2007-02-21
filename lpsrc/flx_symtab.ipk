@@ -283,7 +283,13 @@ let rec build_tables syms name inherit_vs
           (fun (tvid,i,tpat) ->
             let mt = match tpat with 
               | `AST_patany _ -> `TYP_type (* default/unspecified *)
-              | #suffixed_name_t -> `TYP_type (* HACK *)
+              (*
+              | #suffixed_name_t as name -> 
+                print_endline ("Decoding type variable " ^ si i ^ " kind");
+                print_endline ("Hacking suffixed kind name " ^ string_of_suffixed_name name ^ " to TYPE");
+                `TYP_type (* HACK *)
+              *)
+
               | `TYP_none -> `TYP_type
               | `TYP_ellipsis -> clierr sr "Ellipsis ... as metatype"
               | _ -> tpat 
@@ -1353,7 +1359,7 @@ let rec build_tables syms name inherit_vs
           let utype = `AST_name(sr,id, tvars) in
           let its = 
             let ccount = ref 0 in (* count component constructors *)
-            map (fun (component_name,v,t) ->
+            map (fun (component_name,v,vs,t) ->
               (* ctor sequence in union *)
               let ctor_idx = match v with
                 | None ->  !ccount 
@@ -1361,7 +1367,7 @@ let rec build_tables syms name inherit_vs
               in 
               incr ccount
               ; 
-              component_name,ctor_idx,t
+              component_name,ctor_idx,vs,t
             )
             its
           in
@@ -1378,88 +1384,52 @@ let rec build_tables syms name inherit_vs
 
           let unit_sum = 
             fold_left 
-            (fun v (_,_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
+            (fun v (_,_,_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
             true 
             its
           in
           iter
-          (fun (component_name,ctor_idx,t) ->
+          (fun (component_name,ctor_idx,vs',t) ->
             let dfn_idx = !counter in incr counter; (* constructor *)
             let match_idx = !counter in incr counter; (* matcher *)
+
+            (* existential type variables *)
+            let evs = make_vs vs' in
+            add_tvars' (Some dfn_idx) privtab evs;
             let ctor_dcl2 =
               if unit_sum
               then begin
                   if access = `Public then add_unique pub_name_map component_name dfn_idx;
                   add_unique priv_name_map component_name dfn_idx;
-                  `SYMDEF_const_ctor (n,utype,ctor_idx)
+                  `SYMDEF_const_ctor (n,utype,ctor_idx,evs)
               end
               else
                 match t with
                 | `AST_void _ -> (* constant constructor *)
                   if access = `Public then add_unique pub_name_map component_name dfn_idx;
                   add_unique priv_name_map component_name dfn_idx;
-                  `SYMDEF_const_ctor (n,utype,ctor_idx)
+                  `SYMDEF_const_ctor (n,utype,ctor_idx,evs)
 
                 | `TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
                   if access = `Public then add_function pub_name_map component_name dfn_idx;
                   add_function priv_name_map component_name dfn_idx;
-                  `SYMDEF_nonconst_ctor (n,utype,ctor_idx,t)
+                  `SYMDEF_nonconst_ctor (n,utype,ctor_idx,evs,t)
 
                 | _ -> (* non-constant constructor of 1 argument *)
                   if access = `Public then add_function pub_name_map component_name dfn_idx;
                   add_function priv_name_map component_name dfn_idx;
-                  `SYMDEF_nonconst_ctor (n,utype,ctor_idx,t)
-            (*
-            and ctor_match = 
-              if unit_sum
-              then
-                `SYMDEF_fun 
-                (
-                  [],
-                  [utype],
-                  flx_bool,
-                  `StrTemplate ("($1 /* HACK */ ==" ^ si ctor_idx ^")"),`NREQ_true,
-                  "primary"
-                )
-              else
-                `SYMDEF_fun 
-                (
-                  [],
-                  [utype],
-                  flx_bool,
-                  `StrTemplate ("($1.variant /*HACK*/==" ^ si ctor_idx ^")"),`NREQ_true,
-                  "primary"
-                )
-            and ctor_match_name ="_match_ctor_" ^ component_name 
-            *)
+                  `SYMDEF_nonconst_ctor (n,utype,ctor_idx,evs,t)
             in
 
             if print_flag then print_endline ("//  " ^ spc ^ si dfn_idx ^ " -> " ^ component_name); 
-            Hashtbl.add dfns dfn_idx {id=component_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=ctor_dcl2};
-            
-            (*
-            if print_flag then print_endline ("//  " ^ spc ^ si match_idx ^ " -> " ^ ctor_match_name); 
-            Hashtbl.add dfns match_idx {id=ctor_match_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=ctor_match};
-
-            if access = `Public then add_function pub_name_map ctor_match_name match_idx;
-            add_function priv_name_map ctor_match_name match_idx;
-            *)
-
-            (*
-            (* destructor *)
-            match t with
-            | `AST_void _ -> ()
-            | _ -> (* non-constant constructor *)
-              let dtor_idx = !counter in incr counter;
-              let dtor_name = "_ctor_arg_" ^ component_name in
-              let dtor_dcl = `SYMDEF_fun ([],[utype],t,
-                `StrTemplate ("(*(#0*)/*HACK*/$1.data)"),`NREQ_true,"primary") 
-              in
-              if print_flag then print_endline ("//  " ^ spc ^ si dtor_idx ^ " -> " ^ dtor_name); 
-              Hashtbl.add dfns dtor_idx {id=dtor_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=dtor_dcl};
-              if access = `Public then add_function pub_name_map dtor_name dtor_idx;
-              add_function priv_name_map dtor_name dtor_idx
-            *)
+            Hashtbl.add dfns dfn_idx {
+              id=component_name;sr=sr;parent=parent;
+              vs=vs;
+              pubmap=pubtab;
+              privmap=privtab;
+              dirs=[];
+              symdef=ctor_dcl2
+            };
           )
           its
           ;

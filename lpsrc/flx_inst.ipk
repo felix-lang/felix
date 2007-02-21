@@ -573,7 +573,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
 
-  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt) ->
+  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

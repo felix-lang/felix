@@ -1528,8 +1528,8 @@ and bind_type'
 
       | `NonFunctionEntry i,[] ->
         begin match Hashtbl.find syms.dfns (sye i) with
-        | {sr=sr; symdef=`SYMDEF_const_ctor (_,ut,_)} -> `BTYP_void (* hack *)
-        | {sr=sr; symdef=`SYMDEF_nonconst_ctor (_,_,_,argt)} -> 
+        | {sr=sr; symdef=`SYMDEF_const_ctor (_,ut,_,_)} -> `BTYP_void (* hack *)
+        | {sr=sr; symdef=`SYMDEF_nonconst_ctor (_,_,_,_,argt)} -> 
           cal_glr_attr_type'' syms sr (sye i) argt
         | _ -> clierr sr "Token must be union constructor"
         end
@@ -1653,11 +1653,13 @@ and bind_type'
     (*
     print_endline ("[bind_type] Matched qualified name " ^ string_of_qualified_name x);
     *)
+    if env = [] then print_endline "WOOPS EMPTY ENVIRONMENT!";
+
     begin match lookup_qn_in_env syms env x with
     | i,ts ->
       let ts = map bt ts in
       (*
-      print_endline ("Qualified name lookup finds index " ^ si i ^
+      print_endline ("Qualified name lookup finds index " ^ si (sye i) ^
       "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
       *)
       bi (sye i) ts
@@ -1702,11 +1704,11 @@ and cal_glr_attr_type' syms sr i =
   | {symdef=`SYMDEF_glr (t,_)} -> 
     `Nonterm,cal_glr_attr_type'' syms sr i t 
     
-  | {symdef=`SYMDEF_nonconst_ctor (_,_,_,t)} -> 
+  | {symdef=`SYMDEF_nonconst_ctor (_,_,_,_,t)} -> 
     `Term, cal_glr_attr_type'' syms sr i t 
 
   (* shouldn't happen .. *)
-  | {symdef=`SYMDEF_const_ctor (_,_,_)} -> 
+  | {symdef=`SYMDEF_const_ctor (_,_,_,_)} -> 
     `Term, `BTYP_void 
 
   | {id=id;symdef=symdef} -> 
@@ -1741,6 +1743,54 @@ and cal_glr_attr_type syms sr ii =
     tts
     ;
     t
+
+and cal_assoc_type syms sr t = 
+  let ct t = cal_assoc_type syms sr t in 
+  let chk ls =
+    match ls with
+    | [] -> `BTYP_void
+    | h::t -> 
+      fold_left (fun acc t -> 
+        if acc <> t then 
+          clierr sr ("[cal_assoc_type] typeset elements should all be assoc type " ^ sbt syms.dfns acc)
+        ;
+        acc
+     ) h t
+  in
+  match t with
+  | `BTYP_type i -> t
+  | `BTYP_function (a,b) -> `BTYP_function (ct a, ct b)
+
+  | `BTYP_intersect ls 
+  | `BTYP_typesetunion ls
+  | `BTYP_typeset ls 
+    ->
+    let ls = map ct ls in chk ls
+
+  | `BTYP_tuple _
+  | `BTYP_record _
+  | `BTYP_variant _
+  | `BTYP_unitsum _
+  | `BTYP_sum _
+  | `BTYP_cfunction _
+  | `BTYP_pointer _
+  | `BTYP_lvalue _
+  | `BTYP_array _
+  | `BTYP_void
+    -> `BTYP_type 0
+
+  | `BTYP_inst (i,ts) ->
+    (*
+    print_endline ("Assuming named type "^si i^" is a TYPE");
+    *)
+    `BTYP_type 0 
+    
+
+  | `BTYP_type_match (_,ls) ->
+    let ls = map snd ls in
+    let ls = map ct ls in chk ls
+
+  | _ -> clierr sr ("Don't know what to make of " ^ sbt syms.dfns t)
 
 and bind_type_index syms (rs:recstop)
   sr index ts mkenv
@@ -1782,7 +1832,12 @@ and bind_type_index syms (rs:recstop)
       print_endline "Making params .. ";
       *)
       let vs,_ = find_vs syms index in
-      assert (length vs = length ts);
+      if length vs <> length ts then begin
+        print_endline ("vs=" ^ catmap "," (fun (s,i,_)-> s^"<"^si i^">") vs);
+        print_endline ("ts=" ^ catmap "," (sbt syms.dfns) ts);
+        failwith "len vs != len ts"
+      end
+      else
       let params = map2 (fun (s,i,_) t -> s,t) vs ts in
 
       (*
@@ -1829,7 +1884,43 @@ and bind_type_index syms (rs:recstop)
         metatypes .. we get vs != ts .. ts don't make sense
         for type variables, only for named things ..
       *)
-      let mt = bind_type syms [] sr mt in
+      (* WELL the above is PROBABLY because we're calling
+      this routine using sye function to strip the view,
+      so the supplied ts are wrong ..
+      *)
+      (*
+      print_endline ("CALCULATING TYPE VARIABLE METATYPE " ^ si index);
+      *)
+      (* weird .. a type variables parent function has an env containing
+      the type variable .. so we need ITS parent for resolving the
+      meta type ..??
+
+      No? We STILL get an infinite recursion???????
+      *)
+      (*
+      print_endline ("type variable index " ^ si index);
+      *)
+      let env = match parent with 
+        | Some parent -> 
+          (*
+          print_endline ("It's parent is " ^ si parent);
+          *)
+          (*
+          let {parent=parent} = Hashtbl.find syms.dfns parent in
+          begin match parent with
+          | Some parent ->  
+             print_endline ("and IT's parent is " ^ si parent);
+          *)
+            let mkenv i = mk_bare_env syms i in
+            mkenv parent 
+          (*
+          | None -> []
+          end
+          *)
+        | None -> [] 
+      in
+      let mt = bind_type syms env sr mt in
+      let mt = cal_assoc_type syms sr mt in
       `BTYP_var (index,mt)
 
     (* type alias RECURSE *)
@@ -2183,7 +2274,7 @@ and inner_typeofindex
   | `SYMDEF_ref (t)
   | `SYMDEF_parameter (`PVal,t)
   | `SYMDEF_parameter (`PFun,t)
-  | `SYMDEF_const_ctor (_,t,_)
+  | `SYMDEF_const_ctor (_,t,_,_)
     -> 
     (*
     print_endline ("Calculating type of variable " ^ id);
@@ -2205,7 +2296,7 @@ and inner_typeofindex
     let lexit_t = bt (`AST_lookup (sr,(`AST_name (sr,"Lexer",[]),"iterator",[]))) in
     `BTYP_function (`BTYP_array (lexit_t,`BTYP_unitsum 2),t)
 
-  | `SYMDEF_nonconst_ctor (_,ut,_,argt) ->
+  | `SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
     bt (`TYP_function (argt,ut))
 
   | `SYMDEF_match_check _ ->
@@ -3312,7 +3403,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       lookup_name_in_table_dirs_with_sig (table, dirs) 
       syms caller_env env rs sra srn ("_ctor_" ^ name) ts t2 
     
-    | `SYMDEF_const_ctor (_,t,_)
+    | `SYMDEF_const_ctor (_,t,_,_)
     | `SYMDEF_const (t,_,_)
     | `SYMDEF_var t
     | `SYMDEF_ref t
@@ -4991,7 +5082,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let vidx = 
             let rec scan = function
             | [] -> failwith "Can't find union variant"
-            | (vn,vidx,vat)::_ when vn = name -> vidx
+            | (vn,vidx,vs',vat)::_ when vn = name -> vidx
             | _:: t -> scan t
             in scan ls
           in
@@ -5035,7 +5126,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let vidx = 
             let rec scan = function
             | [] -> failwith "Can't find union variant"
-            | (vn,vidx,vat)::_ when vn = name -> vidx
+            | (vn,vidx,vs,vat)::_ when vn = name -> vidx
             | _:: t -> scan t
             in scan ls
           in
@@ -5107,7 +5198,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let vidx,vt = 
             let rec scan = function
             | [] -> failwith "Can't find union variant"
-            | (vn,vidx,vt)::_ when vn = name -> vidx,vt
+            | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vt
             | _:: t -> scan t
             in scan ls
           in
@@ -5168,7 +5259,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let vidx,vt = 
             let rec scan = function
             | [] -> failwith "Can't find union variant"
-            | (vn,vidx,vt)::_ when vn = name -> vidx,vt
+            | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vt
             | _:: t -> scan t
             in scan ls
           in

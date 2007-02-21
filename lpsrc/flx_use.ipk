@@ -239,7 +239,7 @@ and uses syms used bbdfns count_inits i =
       | `BBDCL_newtype (_,t) -> ut t
       | `BBDCL_abs (_,_,_,reqs) -> rq reqs
       | `BBDCL_insert (_,s,ikind,reqs)  -> rq reqs
-      | `BBDCL_nonconst_ctor (_,_,unt,_,ct) ->
+      | `BBDCL_nonconst_ctor (_,_,unt,_,ct,evs, etraint) ->
         ut unt; ut ct
 
       end

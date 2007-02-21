@@ -456,13 +456,14 @@ charset:
  
 @head(3,'Abstract Type')
 @select(h)
+eqorin:
+  | EQUAL typeexpr { `Eq (typecode_of_expr $2) }
+  | IN typeexpr { `In (typecode_of_expr $2) }
+  | { `None }
+
 tvar:
-  /*
-  | NAME { snd $1 , `TPAT_any }
-  | NAME COLON tpattern { snd $1 , $3 }
-  */
-  | NAME { snd $1 , `AST_patany (slift (fst $1))}
-  | NAME COLON typeexpr { snd $1 , typecode_of_expr $3 }
+  | NAME eqorin { snd $1 , `TYP_type, $2}
+  | NAME COLON typeexpr eqorin { snd $1 , typecode_of_expr $3, $4 }
 
 @commalistof("tvar")
 @commalistof("qualified_name")
@@ -497,11 +498,31 @@ opt_type_constraint:
     } }
 
 tvarlist:
-   | LSQB tvar_comma_list opt_type_constraint RSQB { $2,$3 }
-   | { [], {
-      raw_type_constraint=`TYP_tuple [];
-      raw_typeclass_reqs=[]
-    } } 
+   | LSQB tvar_comma_list opt_type_constraint RSQB
+     {
+       let sr = slift $1 in
+       let vs,cs = fold_left
+         (fun (vs,ct) (v,t,c) -> 
+           let ct = match c with
+           | `None -> ct
+           | `Eq et -> `TYP_type_match (`AST_name (sr,v,[]),[et,`TYP_tuple []]) :: ct
+           | `In elt -> `TYP_isin (`AST_name (sr,v,[]),elt) :: ct
+           in
+           (v,t)::vs, ct
+         )
+         ([], [])
+         $2
+       in
+       let {raw_typeclass_reqs=rtr; raw_type_constraint=rtc} = $3 in
+       let ct = 
+         {
+           raw_typeclass_reqs=rtr; 
+           raw_type_constraint=`TYP_intersect (rtc::cs) 
+         } 
+       in
+       rev vs, ct
+     }
+   | { dfltvs }
 
 type_qual:
   | INCOMPLETE { [$1,`Incomplete] }
@@ -628,18 +649,18 @@ enum_item:
   | NAME opt_value
     { 
       let sr = slift (fst $1) in
-      snd $1, $2, typecode_of_expr (`AST_void sr)
+      snd $1, $2, dfltvs, typecode_of_expr (`AST_void sr)
     }
 
 type_sum_items:
   | type_sum_items VBAR type_sum_item { $1 @ [$3] }
   | type_sum_item { [$1] }
 type_sum_item:
-  | NAME OF expr { (snd $1,None,typecode_of_expr $3) }
-  | NAME 
+  | NAME tvarlist OF expr { (snd $1,None,$2,typecode_of_expr $4) }
+  | NAME tvarlist
     { 
       let sr = slift (fst $1) in
-      snd $1, None, typecode_of_expr (`AST_void sr)
+      snd $1, None, $2, typecode_of_expr (`AST_void sr)
     }
 type_sum_items2:
   | type_sum_items2 type_sum_item SEMI { $1 @ [$2] }
@@ -2862,7 +2883,7 @@ refr:
   | UNION LBRACE type_sum_items2 RBRACE 
     { 
       let sr = rstoken $1 $4 in
-      let ls = map (fun (s,_,t)->s,t) $3 in
+      let ls = map (fun (s,_,vs,t)->s,t) $3 in
       `AST_variant_type (sr,ls)
     }
 

@@ -47,6 +47,9 @@ let build_constraint_element syms bt sr i p1 =
   | _ ->
 
   (* more general cases *)
+  (*
+  print_endline ("Build constraint " ^ string_of_typecode p1);
+  *)
   let p1,explicit_vars1,any_vars1, as_vars1, eqns1 = type_of_tpattern syms p1 in
 
   (* check the pattern doesn't introduce any named variables *)
@@ -76,9 +79,6 @@ let build_constraint_element syms bt sr i p1 =
   let un = `BTYP_tuple [] in (* the 'true' value of the type system *)
   let elt = `BTYP_var (i,`BTYP_type 0) in
   let p1 = bt p1 in
-  (*
-  print_endline ("Build type constraint for element " ^ sbt syms.dfns p1);
-  *)
   let rec fe t = match t with
   | `BTYP_typeset ls
   | `BTYP_typesetunion ls ->

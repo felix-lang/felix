@@ -38,6 +38,9 @@ let rec metatype syms term =
   *)
   let t = metatype' syms term in
   (*
+  print_endline ("Metatype  of: " ^ string_of_btypecode syms.dfns term ^ " is " ^ sbt syms.dfns t);
+  *)
+  (*
   print_endline "Done";
   *)
   t
@@ -83,10 +86,24 @@ and metatype' syms term =
           failwith "Metatype error: function argument wrong metatype"
       | _ -> failwith "Metatype error: function required for LHS of application"
     end
-  | `BTYP_var (i,mt) ->  mt
+  | `BTYP_var (i,mt) ->  
+    (*
+    print_endline ("Type variable " ^ si i^ " has encoded meta type " ^ sbt syms.dfns mt);
+    (
+      try 
+        let symdef = Hashtbl.find syms.dfns i in begin match symdef with
+        | {symdef=`SYMDEF_typevar mt} -> print_endline ("Table shows metatype is " ^ string_of_typecode mt);
+        | _ -> print_endline "Type variable isn't a type variable?"
+        end
+      with Not_found -> print_endline "Cannot find type variable in symbol table"
+    );
+    *)
+    mt
 
   | `BTYP_type i -> `BTYP_type (i+1)
-  | _ -> `BTYP_type 0 (* THIS ISN'T RIGHT *)
+  | _ -> 
+     print_endline ("Questionable meta typing of term: " ^ sbt syms.dfns term); 
+     `BTYP_type 0 (* THIS ISN'T RIGHT *)
   
 
 

@@ -906,7 +906,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     tack (`AST_glr (sr, mi sr id, mt sr t, ms ))
 
   | `AST_union (sr, id, vs, idts ) ->  
-    let idts = map (fun (id,v,t) -> id,v,mt sr t) idts in
+    let idts = map (fun (id,v,vs,t) -> id,v,vs,mt sr t) idts in
     tack (`AST_union (sr, mi sr id, vs, idts))
     
   | `AST_struct (sr, id, vs, idts) ->  

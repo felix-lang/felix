@@ -215,7 +215,7 @@ let bbind_sym syms bbdfns i {
     let bt t = bind_type syms env sr t in
     let ivs = find_vs syms i in (* this is the full vs list *) 
     let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
-    let bcons = 
+    let bind_type_constraint ivs = 
       let cons = try 
         Flx_tconstraint.build_type_constraints syms bt sr (fst ivs) 
         with _ -> clierr sr "Can't build type constraints, type binding failed"
@@ -225,6 +225,7 @@ let bbind_sym syms bbdfns i {
       let cons = `BTYP_intersect [cons; icons] in
       cons
     in
+    let bcons = bind_type_constraint ivs in
     let btraint = function | Some x -> Some (be x) | None -> None in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
     let bind_quals quals = bind_quals bt quals in
@@ -452,12 +453,15 @@ let bbind_sym syms bbdfns i {
       if syms.compiler_options.print_flag then
       print_endline ("//bound glr " ^ name ^ "<"^si i^">" )
 
-    | `SYMDEF_const_ctor (uidx,ut,ctor_idx) ->
+    | `SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
+      (*
+      print_endline ("Binding const ctor " ^ name);
+      *)
       let unit_sum = 
         match Hashtbl.find syms.dfns uidx with
         | {symdef=`SYMDEF_union its} ->
           fold_left 
-          (fun v (_,_,t) -> 
+          (fun v (_,_,_,t) -> 
             v && (match t with `AST_void _ -> true | _ -> false) 
           )
           true 
@@ -476,11 +480,16 @@ let bbind_sym syms bbdfns i {
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
       sbt syms.dfns t)
 
-    | `SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,argt) ->
+    | `SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
+      (*
+      print_endline ("Binding non const ctor " ^ name);
+      *)
       let t = typeofindex syms i in
       let argt = bt argt in
       let ut = bt ut in
-      let bbdcl = `BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt) in
+      let btraint = bind_type_constraint vs' in
+      let evs = map (fun (s,i,__) -> s,i) (fst vs') in
+      let bbdcl = `BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint) in
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
 
       if syms.compiler_options.print_flag then
@@ -670,9 +679,10 @@ let bbind_sym syms bbdfns i {
       sbt syms.dfns (`BTYP_function (atyp,bret)))
 
     | `SYMDEF_union (cs) ->
-      (* print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 
+      (*
+      print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 
       *)
-      let cs' = List.map (fun (n,v,t) -> n, v,bt t) cs in
+      let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_union (bvs,cs'))
 
     | `SYMDEF_struct (cs) ->
@@ -721,9 +731,18 @@ let bbind_sym syms bbdfns i {
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
     | `SYMDEF_instance qn -> 
+      (*
+      print_endline "INSTANCE";
+      *)
       let (k:entry_kind_t),(ts: typecode_t list) = luqn qn in
       let k = sye k in
+      (*
+      print_endline ("binding ts = " ^ catmap "," string_of_typecode ts);
+      *)
       let ts = map bt ts in
+      (*
+      print_endline "DOne ..";
+      *)
       let sym : bbdcl_t = `BBDCL_instance ([],bvs,bcons, k,ts) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 

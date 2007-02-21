@@ -962,13 +962,13 @@ print$ f$ 1,2L; endl;
 var x = 1;
 var px:ptr[int] = addr x;
 
-proc h[t,u:ptr[t]]: u  * t = "*$1=$2;";
+proc h[t,u=ptr[t]]: u  * t = "*$1=$2;";
 h(px,1);
 
-proc h2[t,u:ptr[t]]: u  * t = "*$1=$2;";
+proc h2[t,u=ptr[t]]: u  * t = "*$1=$2;";
 h2(px,1);
 
-proc k[t,u:ptr[t]]: u = "std::cout << *$1 <<std::endl;";
+proc k[t,u=ptr[t]]: u = "std::cout << *$1 <<std::endl;";
 k px;
 @doc()
 
@@ -988,15 +988,15 @@ var x = 1;
 var px:ptr[int] = addr x;
 
 module X {
-  proc h[t,u:ptr[t]]: u  * t = '*$1=$2; std::cout <<*$1<<","<<$2<<std::endl;';
+  proc h[t,u=ptr[t]]: u  * t = '*$1=$2; std::cout <<*$1<<","<<$2<<std::endl;';
   h(px,1);
 
   // address and dereference operators where
   // constraint is required to deduce type variable
   // (artificial example, since we could write signatures
   // directly in terms of t)
-  fun adr[t,u:ptr[t]]: lvalue[t]->u = "&$1";
-  fun drf[t,u:ptr[t]]:  u -> t = "*$1";
+  fun adr[t,u=ptr[t]]: lvalue[t]->u = "&$1";
+  fun drf[t,u=ptr[t]]:  u -> t = "*$1";
   //h(px,1.1); // should fail
 }
 
@@ -1730,11 +1730,11 @@ var x = 1;
 var px:ptr[int] = addr x;
 
 module X {
-  proc h[t,u:ptr[t]]: u  * t = '*$1=$2; std::cout <<*$1<<","<<$2<<std::endl;';
+  proc h[t,u=ptr[t]]: u  * t = '*$1=$2; std::cout <<*$1<<","<<$2<<std::endl;';
   h(px,1);
 
-  fun adr[t,u:ptr[t]]: lvalue[t]->u = "&$1";
-  fun drf[t,u:ptr[t]]:  u -> t = "*$1";
+  fun adr[t,u=ptr[t]]: lvalue[t]->u = "&$1";
+  fun drf[t,u=ptr[t]]:  u -> t = "*$1";
 //h(px,1.1);
 }
 
@@ -1746,10 +1746,10 @@ pr$ drf$ adr x;
 pr$ X::drf px;
 pr$ X::drf$ X::adr x;
 
-proc h2[t,u:ptr[t]]: u  * t = "*$1=$2;";
+proc h2[t,u=ptr[t]]: u  * t = "*$1=$2;";
 h2(px,1);
 
-proc k[t,u:ptr[t]]: u = "std::cout << *$1 <<std::endl;";
+proc k[t,u=ptr[t]]: u = "std::cout << *$1 <<std::endl;";
 k px;
 
 fun ff[t,k where t==k ]: t * k -> t = "$1+$2";

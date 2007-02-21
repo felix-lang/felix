@@ -126,8 +126,8 @@ let sig_of_symdef symdef sr name i = match symdef with
   | `SYMDEF_struct ls ->
     typeof_list (map snd ls),`AST_index (sr,name,i)
 
-  | `SYMDEF_const_ctor (_,r,_) -> `AST_void sr,r
-  | `SYMDEF_nonconst_ctor (_,r,_,t) -> t,r
+  | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r
+  | `SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r
   | `SYMDEF_type_alias t ->
     begin match t with
     | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r
@@ -596,6 +596,22 @@ let consider syms bt luqn2 name
         )
         base_vs
         ;
+
+        (* NOW A SUPER HACK! *)
+        let rec xcons con = match con with
+        | `BTYP_intersect cons -> iter xcons cons
+        | `BTYP_type_match (arg,[{pattern=pat},`BTYP_tuple[]]) ->
+          let arg = spec arg in
+          let arg = list_subst !mgu arg in
+          let arg = beta_reduce syms arg in
+          let pat = spec pat in
+          let pat = list_subst !mgu pat in
+          let pat = beta_reduce syms pat in
+          extra_eqns := (arg, pat)::!extra_eqns
+        | _ -> ()
+        in
+        xcons con;
+
         (*
         print_endline "UNIFICATION STAGE 2";
         print_endline "EQUATIONS ARE:";

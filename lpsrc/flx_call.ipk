@@ -166,7 +166,9 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
     *)
     add uses k i sr; iter ut ts
 
-  | `BBDCL_nonconst_ctor (_,_,unt,_,ct) -> ut unt; ut ct
+  | `BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) -> 
+    ut unt; ut ct
+    
   | `BBDCL_union _  -> ()
 
   | `BBDCL_struct (_,ps) 
