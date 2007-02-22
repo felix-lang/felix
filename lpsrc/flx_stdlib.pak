@@ -540,15 +540,15 @@ fun _ctor_int: size -> int = "$1";
 fun _ctor_size: int -> size = "$1";
 
 
-instance [t:basic_types] Eq[t] {
+instance [t in basic_types] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
 }
 
-instance[t:reals] Tord[t] {
+instance[t in reals] Tord[t] {
   fun lt: t * t -> bool = "$1<$2";
 }
 
-instance[t:numbers] Addgrp[t] {
+instance[t in numbers] Addgrp[t] {
   fun zero: 1 -> t = "(?1)0" ;
   fun add: t * t -> t = "$1+$2" ;
   fun neg: t -> t = "-$1" ;
@@ -557,22 +557,22 @@ instance[t:numbers] Addgrp[t] {
   proc minuseq: lvalue[t] * t = "$1-=$2;";
 }
 
-instance[t:numbers] MultSemi1[t] {
+instance[t in numbers] MultSemi1[t] {
   fun one: unit -> t = "(?1)1";
   fun mul: t * t -> t = "$1*$2";
   proc muleq: lvalue[t] * t = "$1*=$2;";
 }
 
-instance[t:numbers] Ring[t] {}
+instance[t in numbers] Ring[t] {}
 
-instance[t:numbers] Dring[t] {
+instance[t in numbers] Dring[t] {
   fun div: t * t -> t = "$1/$2";
   fun mod: t * t -> t = "$1%$2";
   proc diveq: lvalue[t] * t = "$1/=$2;";
   proc modeq: lvalue[t] * t = "$1%=$2;";
 }
 
-instance [t:fast_uints] Bits [t] {
+instance [t in fast_uints] Bits [t] {
   fun bxor: t * t -> t = "$1^$2";
   fun bor: t * t -> t = "$1|$2";
   fun band: t * t -> t = "$1&$2";
@@ -582,26 +582,26 @@ instance [t:fast_uints] Bits [t] {
   proc bandeq: lvalue[t] * t = "$1&=$2;";
 }
 
-instance[t:ints] Forward[t] {
+instance[t in ints] Forward[t] {
   fun succ: t -> t = "$1+1";
   proc pre_incr: lvalue[t] = "++$1;";
   proc post_incr: lvalue[t] = "$1++;";
 }
 
-instance[t:ints] Bidirectional[t] {
+instance[t in ints] Bidirectional[t] {
   fun pred: t -> t = "$1-1";
   proc pre_decr: lvalue[t] = "--$1;";
   proc post_decr: lvalue[t] = "$1--;";
 }
 
-instance[t:ints] Integer[t] { }
+instance[t in ints] Integer[t] { }
 
-instance[t:fast_sints] Signed_integer[t] {
+instance[t in fast_sints] Signed_integer[t] {
   fun sgn: t -> int = "$1<0??-1:$1>0??1:0";
   fun abs: t -> t = "$1<0??-$1:$1";
 }
 
-instance[t:fast_uints] Unsigned_integer[t] {}
+instance[t in fast_uints] Unsigned_integer[t] {}
 
 @#------------- BOOL -------------------
 open module Bool 
@@ -621,7 +621,7 @@ type string = "std::string";
   tangle("open module " + string.capitalize(t))
   tangle("{")
   tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1.data()))" requires cstdlib;')
-  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
+  tangle('  fun _ctor_'+t+'[T in reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
   #if t in fast_sints:
   #  tangle('  fun abs: '+t+' -> '+t+' = "'+absmap[t]+'($1)";')
   if t == "tiny":
@@ -641,24 +641,24 @@ type string = "std::string";
 publish "Mixed Mode arithmentic"
 module MixedInt 
 {
-  fun add[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1+$2";
-  fun sub[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1-$2";
-  fun mul[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1*$2";
-  fun div[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1/$2";
-  fun mod[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1%$2";
+  fun add[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1+$2";
+  fun sub[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1-$2";
+  fun mul[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1*$2";
+  fun div[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1/$2";
+  fun mod[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1%$2";
 
-  fun band[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1&$2";
-  fun bor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1|$2";
-  fun bxor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1^$2";
-  fun shl[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1<<$2";
-  fun shr[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1>>$2";
+  fun band[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1&$2";
+  fun bor[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1|$2";
+  fun bxor[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1^$2";
+  fun shl[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1<<$2";
+  fun shr[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1>>$2";
 
-  fun lt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<$2";
-  fun le[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<=$2";
-  fun eq[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1==$2";
-  fun ne[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1!=$2";
-  fun gt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>$2";
-  fun ge[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>=$2";
+  fun lt[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1<$2";
+  fun le[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1<=$2";
+  fun eq[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1==$2";
+  fun ne[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1!=$2";
+  fun gt[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1>$2";
+  fun ge[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1>=$2";
 }
 
 @#------------- FLOATING MODULES -------------------
@@ -673,7 +673,7 @@ module MixedInt
   tangle("}")
   tangle("")
 
-instance[t:floats] Trig[t] {
+instance[t in floats] Trig[t] {
   requires cmath;
   fun sin: t -> t = "std::sin($1)";
   fun cos: t -> t = "std::cos($1)";
@@ -692,7 +692,7 @@ instance[t:floats] Trig[t] {
   fun pow: t * t -> t = "std::pow($1,$2)";
 }
 
-instance[t:floats] Real[t] {
+instance[t in floats] Real[t] {
   fun abs: t -> t = "std::abs($1)";
   fun log10: t -> t = "std::log10($1)";
   fun sqrt: t -> t = "std::sqrt($1)";
@@ -1320,7 +1320,7 @@ open module Stdout
 
 typedef strings = typesetof (string,ustring);
 
-instance[t:strings] Eq[t] {
+instance[t in strings] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
 }
 
@@ -1624,7 +1624,7 @@ All the arithmetic casts between standard C arithmetic types.
 module Arith_casts
 {
 @for t1 in ints+floats:
-  tangle('  fun '+t1+'_of[t2:reals]: t2 -> '+t1+' = "('+tmap[t1]+')$1:cast" is cast;')
+  tangle('  fun '+t1+'_of[t2 in reals]: t2 -> '+t1+' = "('+tmap[t1]+')$1:cast" is cast;')
 }
 
 open module Cstdlib
