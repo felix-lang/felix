@@ -241,6 +241,8 @@ open Flx_name
 open Flx_overload
 open Flx_tpat
 
+let dummy_sr = "[flx_lookup] generated", 0,0,0,0
+
 let unit_t = `BTYP_tuple []
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
@@ -249,7 +251,12 @@ let dfltvs = [],dfltvs_aux
 let mkentry syms (vs:ivs_list_t) i = 
   let n = length (fst vs) in
   let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
-  let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
+  let ts = map (fun i -> 
+    (*
+    print_endline ("[mkentry] Fudging type variable type " ^ si i);
+    *)
+    `BTYP_var (i+base,`BTYP_type 0)) (nlist n) 
+  in
   let vs = map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
@@ -715,7 +722,7 @@ and bind_type syms env sr t : btypecode_t =
   (*
   print_endline ("Bound type= " ^ sbt syms.dfns bt);
   *)
-  let bt = beta_reduce syms bt 
+  let bt = beta_reduce syms sr bt 
   in
     (*
     print_endline ("Beta reduced type= " ^ sbt syms.dfns bt);
@@ -723,6 +730,7 @@ and bind_type syms env sr t : btypecode_t =
     bt 
 
 and bind_expression syms env e  =
+  let sr = src_of_expr e in
   let e',t' = 
     try
      let x = bind_expression' syms env rsground e [] in
@@ -734,7 +742,6 @@ and bind_expression syms env e  =
      x
     with 
      | Free_fixpoint b ->
-       let sr = src_of_expr e in
        clierr sr 
        ("Circular dependency typing expression " ^ string_of_expr e)
      | SystemError (sr,msg) as x ->
@@ -749,9 +756,9 @@ and bind_expression syms env e  =
        print_endline ("Failure binding expression " ^ string_of_expr e);
        raise x
 
-in
-  let t' = beta_reduce syms t' in
-  e',t'
+  in
+    let t' = beta_reduce syms sr t' in
+    e',t'
 
 and expand_typeset t =
   match t with 
@@ -1036,6 +1043,7 @@ and bind_type'
   | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
   | `TYP_record ts -> `BTYP_record (map (fun (s,t) -> s,bt t) ts)
   | `TYP_variant ts -> `BTYP_variant (map (fun (s,t) -> s,bt t) ts)
+  | `TYP_lift t -> `BTYP_lift (bt t)
 
   (* We first attempt to perform the match
     at binding time as an optimisation, if that
@@ -1081,9 +1089,7 @@ and bind_type'
         notation for that yet either
       *)
       let args = map (fun (i,s) -> 
-      (*
       print_endline ("Mapping " ^ s ^ "<"^si i^"> to TYPE"); 
-      *)
       s,`BTYP_var (i,`BTYP_type 0)) (explicit_vars @ as_vars) 
       in
       let t' = btp t' (params@args) in
@@ -1237,7 +1243,12 @@ and bind_type'
     handle_typeset syms sr elt tset
 
   (* HACK .. assume variable is type TYPE *)
-  | `TYP_var i ->  `BTYP_var (i,`BTYP_type 0)
+  | `TYP_var i ->  
+    (*
+    print_endline ("Fudging metatype of type variable " ^ si i);
+    *)
+    `BTYP_var (i,`BTYP_type 0)
+    
   | `TYP_as (t,s) -> 
     bind_type' syms env 
     { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
@@ -1453,7 +1464,7 @@ and bind_type'
      (*
      print_endline ("meta typing argument " ^ sbt syms.dfns t2);
      *)
-     let sign = metatype syms t2 in
+     let sign = metatype syms sr t2 in
      (*
      print_endline ("Arg type " ^ sbt syms.dfns t2 ^ " meta type " ^ sbt syms.dfns sign);
      *)
@@ -1470,6 +1481,16 @@ and bind_type'
        the previous case .. so we can drop them .. ?
        *)
 
+       (* PROBLEM: we don't know if the term is a type alias
+         or type constructor. The former don't overload ..
+         the latter do .. lookup_type_qn_with_sig is probably
+         the wrong routine .. if it finds a constructor, it
+         seems to return the type of the constructor instead
+         of the actual constructor ..
+       *)
+       (*
+       print_endline ("Lookup type qn " ^ string_of_qualified_name qn ^ " with sig " ^ sbt syms.dfns sign);
+       *)
        let t1 = lookup_type_qn_with_sig' syms sr sr env
          {rs with depth=rs.depth+1 } qn [sign]
        in
@@ -1477,15 +1498,13 @@ and bind_type'
        let t1 = bisub j ts in
        *)
        (*
-       print_endline ("Result of binding is term " ^ sbt syms.dfns t1);
+       print_endline ("Result of binding function term is " ^ sbt syms.dfns t1);
        *)
        `BTYP_apply (t1,t2) 
      in
      (*
      print_endline ("type Application is " ^ sbt syms.dfns t);
-     *)
-     (*
-     let t = beta_reduce syms t in
+     let t = beta_reduce syms sr t in
      *)
      (*
      print_endline ("after beta reduction is " ^ sbt syms.dfns t);
@@ -1498,7 +1517,7 @@ and bind_type'
     let t2 = bt t2 in
     let t = `BTYP_apply (t1,t2) in
     (*
-    let t = beta_reduce syms t in
+    let t = beta_reduce syms sr t in
     *)
     t
 
@@ -1565,7 +1584,10 @@ and bind_type'
       end
       ;
       *)
-      let ts = map (fun (s,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
+      let ts = map (fun (s,i,_) -> 
+        print_endline ("[Ast_index] fudging type variable " ^ si i);
+        `BTYP_var (i,`BTYP_type 0)) (fst vs) 
+      in
       (*
       print_endline ("Synthetic name "^name ^ "<"^si index^"> is a nominal type, ts=" ^
       catmap "," (sbt syms.dfns) ts
@@ -1856,7 +1878,7 @@ and bind_type_index syms (rs:recstop)
         print_endline ("Unravelled and bound is " ^ sbt syms.dfns t);
         *)
         (*
-        let t = beta_reduce syms t in
+        let t = beta_reduce syms sr t in
         *)
         (*
         print_endline ("Beta reduced: " ^ sbt syms.dfns t);
@@ -1889,7 +1911,7 @@ and bind_type_index syms (rs:recstop)
       so the supplied ts are wrong ..
       *)
       (*
-      print_endline ("CALCULATING TYPE VARIABLE METATYPE " ^ si index);
+      print_endline ("CALCULATING TYPE VARIABLE METATYPE " ^ si index ^ " unbound=" ^ string_of_typecode mt);
       *)
       (* weird .. a type variables parent function has an env containing
       the type variable .. so we need ITS parent for resolving the
@@ -1920,7 +1942,11 @@ and bind_type_index syms (rs:recstop)
         | None -> [] 
       in
       let mt = bind_type syms env sr mt in
+      (*
+      print_endline ("Bound metatype is " ^ sbt syms.dfns mt);
       let mt = cal_assoc_type syms sr mt in
+      print_endline ("Assoc type is " ^ sbt syms.dfns mt);
+      *)
       `BTYP_var (index,mt)
 
     (* type alias RECURSE *)
@@ -1943,6 +1969,13 @@ and bind_type_index syms (rs:recstop)
       ->
       `BTYP_inst (index,ts)
 
+
+    (* allow binding to type constructors now too .. *)
+    | `SYMDEF_const_ctor (uidx,ut,idx,vs') ->
+      `BTYP_inst (index,ts)
+
+    | `SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
+      `BTYP_inst (index,ts)
 
     | _ -> 
       clierr sr
@@ -1980,7 +2013,7 @@ and typeofindex_with_ts
   let t = typeofindex syms index in
   let varmap = make_varmap syms sr index ts in
   let t = varmap_subst varmap t in
-  beta_reduce syms t
+  beta_reduce syms sr t
 
 (* This routine should ONLY 'fail' if the return type
   is indeterminate. This cannot usually happen.
@@ -2018,7 +2051,7 @@ and cal_ret_type syms (rs:recstop) index args =
     print_endline ("Calculate return type of " ^ id);
     *)
     let rt = bind_type' syms env rs sr rt args mkenv in
-    let rt = beta_reduce syms rt in
+    let rt = beta_reduce syms sr rt in
     let ret_type = ref rt in
     (*
     begin match rt with
@@ -2138,7 +2171,7 @@ and inner_typeofindex_with_ts
  assert (length ts = length vs + length pvs);
  let varmap = make_varmap syms sr index ts in
  let t = varmap_subst varmap t in
- let t = beta_reduce syms t in
+ let t = beta_reduce syms sr t in
  (*
  print_endline ("typeofindex=" ^ sbt syms.dfns t);
  *)
@@ -2170,7 +2203,11 @@ and typeofindex
         print_endline "typeofindex produced free fixpoint";
         failwith ("[typeofindex] free fixpoint constructed for " ^ sbt syms.dfns t)
       in
-      let t = beta_reduce syms t in
+      let sr = try 
+        match Hashtbl.find syms.dfns index with {sr=sr}-> sr 
+        with Not_found -> dummy_sr
+      in
+      let t = beta_reduce syms sr t in
       (*
       print_endline ("Type of index "^ si index ^ " is " ^ sbt syms.dfns t);
       *)
@@ -2212,7 +2249,7 @@ and inner_typeofindex
   let bt t:btypecode_t = 
     let t' = 
       bind_type' syms env rs sr t [] mkenv in
-    let t' = beta_reduce syms t' in
+    let t' = beta_reduce syms sr t' in
     t'
   in
   match entry with
@@ -2222,7 +2259,7 @@ and inner_typeofindex
   | `SYMDEF_type_alias t ->
     begin
       let t = bt t in
-      let mt = metatype syms t in
+      let mt = metatype syms sr t in
       (*
       print_endline ("Type of type alias is meta_type: " ^ sbt syms.dfns mt);
       *)
@@ -2831,6 +2868,7 @@ and lookup_type_qn_with_sig'
     bind_type syms env sr t 
   in
   let handle_nonfunction_index index ts =
+    print_endline ("Found non function? index " ^ si index);
     begin match get_data syms.dfns index with 
     {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry} 
     ->
@@ -2871,9 +2909,7 @@ and lookup_type_qn_with_sig'
 
       | `SYMDEF_union _
       | `SYMDEF_type_alias _ ->
-        (*
         print_endline "mapping type name to _ctor_type [2]";
-        *)
         let qn =  match qn with
           | `AST_name (sr,name,ts) -> `AST_name (sr,"_ctor_"^name,ts)
           | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,"_ctor_"^name,ts))
@@ -2997,14 +3033,14 @@ and lookup_type_qn_with_sig'
         syms env rs sra fs name signs ts
       with
       | Some (index,t,ret,mgu,ts) ->
-        (*
         print_endline ("Resolved overload for " ^ name);
         print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
-        *)
         (*
         let ts = adjust_ts syms sr index ts in
         *)
-         typeofindex_with_ts syms sr index ts
+        let t =  typeofindex_with_ts syms sr index ts in
+        print_endline "WRONG!";
+        t
 
       | None -> 
         clierr sra
@@ -3123,9 +3159,9 @@ and handle_type
   | `SYMDEF_reglex _
   | `SYMDEF_callback _
     ->
-    (*
     print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
-    *)
+    `BTYP_inst (index,ts)
+    (*
     let t = inner_typeofindex_with_ts syms sr rs index ts 
     in
     (
@@ -3146,6 +3182,8 @@ and handle_type
           sbt syms.dfns t ^ "'"
         )
     )
+    *)
+
   | `SYMDEF_type_alias _ ->
     bind_type_index syms (rs:recstop) sr index ts mkenv
 
@@ -3253,7 +3291,7 @@ and handle_variable syms
     let ts = adjust_ts syms sr index ts in
     let vs = find_vs syms index in
     let bvs = map (fun (s,i,tp) -> s,i) (fst vs) in
-    let t = beta_reduce syms (tsubst bvs ts t) in
+    let t = beta_reduce syms sr (tsubst bvs ts t) in
     let t = match t with | `BTYP_lvalue t -> t | t -> t in
     begin match t with
     | `BTYP_cfunction (d,c) 
@@ -3650,6 +3688,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_cclass _ 
     | `SYMDEF_union _ 
     | `SYMDEF_type_alias _ ->
+      print_endline "Found abs,cclass, union or alias";
       Some (`BTYP_inst (sye index, ts))
     
     
@@ -3699,7 +3738,10 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
         print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.dfns) ts);
         let ts = adjust_ts syms sra index ts in
         print_endline "Adjusted ts";
+        print_endline ("Found functional thingo, " ^ si index);
+        print_endline (" ts=" ^ catmap "," (sbt syms.dfns) ts);
         *)
+
         let tb =
           handle_type
           syms 
@@ -3844,6 +3886,7 @@ and bind_expression_with_args syms env e args : tbexpr_t =
   bind_expression' syms env rsground e args 
 
 and bind_expression' syms env (rs:recstop) e args : tbexpr_t = 
+  let sr = src_of_expr e in 
   (*
   print_endline ("[bind_expression'] " ^ string_of_expr e);
   print_endline ("expr_fixlist is " ^ 
@@ -3864,7 +3907,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth=rs.depth +1 }
       sr t [] mkenv
     in
-    let t = beta_reduce syms t in
+    let t = beta_reduce syms sr t in
     t
   in
   let ti sr i ts = 
@@ -3892,7 +3935,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   print_env env;
   print_endline "==";
   *)
-  let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms t)) in
+  let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms sr t)) in
   let sr = src_of_expr e in
   match e with
   | `AST_patvar _
@@ -3916,6 +3959,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_setintersection _
   | `AST_macro_ctor _
   | `AST_macro_statements  _
+  | `AST_lift _
     -> 
       clierr sr 
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 
@@ -5423,7 +5467,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
           (*
           print_endline ("Constraint = " ^ sbt syms.dfns cons);
           *)
-          let cons = Flx_maps.reduce_type (beta_reduce syms cons) in
+          let cons = Flx_maps.reduce_type (beta_reduce syms sr cons) in
           match cons with
           | `BTYP_tuple [] -> true
           | `BTYP_void -> false
@@ -5752,7 +5796,7 @@ and bind_dir
    assert (length ts = 0);
    *)
    let mkenv i = mk_bare_env syms i in
-   let ts' = map (fun t -> beta_reduce syms (bind_type' syms (cheat_env::env) rsground sr t [] mkenv)) ts' in
+   let ts' = map (fun t -> beta_reduce syms sr (bind_type' syms (cheat_env::env) rsground sr t [] mkenv)) ts' in
    (*
    let ts' = map (fun t-> bind_type syms env sr t) ts' in
    *)
@@ -6097,6 +6141,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r) 
   | `BTYP_cfunction (a,r) -> `BTYP_cfunction (rbt a, rbt r) 
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
+  | `BTYP_lift t -> `BTYP_lift (rbt t)
   | `BTYP_lvalue t -> lvalify (rbt t)
   | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
 

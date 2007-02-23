@@ -2859,7 +2859,9 @@ prefixed:
         $2
       ) 
     }
+  /*
   | HASH power  { apl $1 "len" $2 }
+  */
   | EXCLAMATION power  { apl $1 "excl" $2 }
   | PLUS power  { apl $1 "pos" $2 }
   | MINUS power { apl $1 "neg" $2 }
@@ -2997,7 +2999,7 @@ coercion:
 
 
 factor:
-  | dollar_name                        { ($1:>expr_t) }
+  | hash_name                        { ($1:>expr_t) }
   | factor DOT LSQB expr RSQB          { apl2 $3 "subscript" [$1; $4] }
   | factor DOT LSQB expr TO expr RSQB  { apl2 $3 "substring" [$1; $4; $6] }
   | factor DOT LSQB expr TO RSQB       { apl2 $3 "copyfrom" [$1; $4] }
@@ -3034,7 +3036,11 @@ factor:
           `AST_get_n (sr, (n,$1)) 
     }
 
-dollar_name:
+hash_name:
+  | HASH hash_name { `AST_lift ((slift $1), $2) }
+  | the_name { $1 }
+
+the_name:
   | NOEXPAND qualified_name
     { 
       let e = ($2:>expr_t) in
@@ -3049,7 +3055,7 @@ dollar_name:
     let qn = qualified_name_of_expr $2 in
     (`AST_the (sr,qn))
   }
-  | qualified_name{ $1 }
+  | qualified_name { $1 }
   | QUEST NAME { `AST_patvar (rstoken $1 (fst $2), snd $2) }
   | atom { $1 }
 

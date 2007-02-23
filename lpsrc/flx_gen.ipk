@@ -103,11 +103,11 @@ let find_variable_indices syms (child_map,bbdfns) index =
   children
 
 let get_variable_typename syms bbdfns i ts =
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns i 
     with Not_found -> failwith ("[get_variable_typename] can't find index " ^ si i)
   in
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   match entry with
   | `BBDCL_var (vs,t)
   | `BBDCL_val (vs,t) 
@@ -204,8 +204,8 @@ let is_gc_pointer syms bbdfns sr t =
    end
   | _ -> false
 
-let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_no =
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
+let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instance_no =
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
   let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
   let params = map (fun {pindex=ix} -> ix) bps in
@@ -230,7 +230,7 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
     si (length ts)
   );
   let argtype = rt vs argtype in
-  let rt' vs t = reduce_type (beta_reduce syms  (tsubst vs ts t)) in
+  let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let ret = rt' vs ret' in
   let is_ref = match ret with `BTYP_lvalue _ -> true | _ -> false in
   let ret = lstrip syms.dfns ret in
@@ -281,8 +281,8 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
   ) ^
   ");\n"
 
-let gen_class syms (child_map,bbdfns) props index id vs ts instance_no =
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
+let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
   if syms.compiler_options.print_flag then
   print_endline 
@@ -389,7 +389,7 @@ let gen_class syms (child_map,bbdfns) props index id vs ts instance_no =
 
 
 (* vs here is the (name,index) list of type variables *)
-let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_no =
+let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instance_no =
   let stackable = mem `Stack_closure props in
   let heapable = mem `Heap_closure props in
   (*
@@ -400,7 +400,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
   (*
   let heapable = not stackable or heapable in
   *)
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
   let yields = mem `Yields props in
   (*
@@ -428,7 +428,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
     si (length ts)
   );
   let argtype = rt vs argtype in
-  let rt' vs t = reduce_type (beta_reduce syms  (tsubst vs ts t)) in
+  let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let ret = rt' vs ret' in
   let is_ref = match ret with | `BTYP_lvalue _ -> true | _ -> false in
   let ret = lstrip syms.dfns ret in
@@ -622,11 +622,11 @@ let gen_functions syms (child_map,bbdfns) =
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
         bcat s 
-        (gen_C_function syms (child_map,bbdfns) props index id vs ps ret ts i)
+        (gen_C_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
       end else begin
         bcat s ("//FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
         bcat s 
-        (gen_function syms (child_map,bbdfns) props index id vs ps ret ts i)
+        (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
       end
 
     | `BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) -> 
@@ -638,7 +638,7 @@ let gen_functions syms (child_map,bbdfns) =
         bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       end
       ;
-      let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
+      let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
       if syms.compiler_options.print_flag then
       print_endline 
       (
@@ -691,24 +691,24 @@ let gen_functions syms (child_map,bbdfns) =
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
         bcat s 
-        (gen_C_function syms (child_map,bbdfns) props index id vs ps `BTYP_void ts i)
+        (gen_C_function syms (child_map,bbdfns) props index id sr vs ps `BTYP_void ts i)
       end else begin
         bcat s ("//PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
         bcat s 
-        (gen_function syms (child_map,bbdfns) props index id vs ps `BTYP_void ts i)
+        (gen_function syms (child_map,bbdfns) props index id sr vs ps `BTYP_void ts i)
       end
 
     | `BBDCL_regmatch (props,vs, (ps,traint), ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//REGMATCH " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
-      (gen_function syms (child_map,bbdfns) props index id vs ps ret ts i)
+      (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
 
     | `BBDCL_reglex (props, vs, (ps,traint), i, ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//REGLEX " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
-      (gen_function syms (child_map,bbdfns) props index id vs ps ret ts i)
+      (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
 
     | `BBDCL_class (props,vs) ->
       bcat s ("\n//------------------------------\n");
@@ -720,7 +720,7 @@ let gen_functions syms (child_map,bbdfns) =
       in
       bcat s ("//CLASS " ^ si index ^ ", OBJECT INSTANCE " ^ si i ^ " TYPE INSTANCE " ^ si j ^ "\n");
       bcat s 
-      (gen_class syms (child_map,bbdfns) props index id vs ts i)
+      (gen_class syms (child_map,bbdfns) props index id sr vs ts i)
 
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
@@ -760,6 +760,7 @@ type kind_t = Function | Procedure
 let gen_exe filename syms 
   (child_map,bbdfns) (label_map,label_usage_map) 
   counter this vs ts instance_no needs_switch stackable (exe:bexe_t) : string =
+  let sr = src_of_bexe exe in
   if length ts <> length vs then 
   failwith 
   (
@@ -775,7 +776,7 @@ let gen_exe filename syms
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (string_of_btypecode syms.dfns) ts);
   *)
-  let tsub t = reduce_type (beta_reduce syms  (tsubst vs ts t)) in
+  let tsub t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let ge sr e : string = gen_expr syms bbdfns this e vs ts sr in
   let ge' sr e : cexpr_t = gen_expr' syms bbdfns this e vs ts sr in
   let tn t : string = cpp_typename syms (tsub t) in
@@ -1174,7 +1175,7 @@ let gen_exe filename syms
                 (combine xs ps)
 
               | _,tt ->
-                let tt = reduce_type (beta_reduce syms  (lstrip syms.dfns (tsubst vs ts tt))) in
+                let tt = reduce_type (beta_reduce syms sr  (lstrip syms.dfns (tsubst vs ts tt))) in
                 (* NASTY, EVALUATES EXPR MANY TIMES .. *)
                 let n = ref 0 in
                 fold_left
@@ -1662,9 +1663,9 @@ let gen_exes filename syms bbdfns display label_info counter index exes vs ts in
   The machine stack is used for functions.
 *)
 let gen_C_function_body filename syms (child_map,bbdfns) 
-  label_info counter index ts instance_no 
+  label_info counter index ts sr instance_no 
 = 
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
@@ -1700,7 +1701,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
 
     let argtype = lower (typeof_bparams bps) in
     let argtype = rt vs argtype in
-    let rt' vs t = reduce_type (beta_reduce syms  (tsubst vs ts t)) in
+    let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
     let ret = rt' vs ret' in
     let is_ref = match ret with | `BTYP_lvalue _ -> true | _ -> false in
     let ret = lstrip syms.dfns ret in
@@ -1811,9 +1812,9 @@ let gen_C_function_body filename syms (child_map,bbdfns)
   | _ -> failwith "function expected"
 
 let gen_C_procedure_body filename syms (child_map,bbdfns) 
-  label_info counter index ts instance_no 
+  label_info counter index ts sr instance_no 
 = 
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
@@ -1950,13 +1951,13 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
   | _ -> failwith "procedure expected"
 
 let gen_function_methods filename syms (child_map,bbdfns) 
-  label_info counter index ts instance_no 
+  label_info counter index ts sr instance_no 
 = 
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("[gen_function_methods] can't find " ^ si index)
   in
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1980,7 +1981,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     );
     let argtype = lower (typeof_bparams bps) in
     let argtype = rt vs argtype in
-    let rt' vs t = reduce_type (beta_reduce syms  (tsubst vs ts t)) in
+    let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
     let ret = rt' vs ret' in
     let is_ref = match ret with | `BTYP_lvalue _ -> true | _ -> false in
     let ret = lstrip syms.dfns ret in
@@ -2092,11 +2093,11 @@ let gen_function_methods filename syms (child_map,bbdfns)
 let gen_regexp_methods filename syms (child_map,bbdfns) 
   label_info counter index ts instance_no 
 = 
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("[gen_regexp_methods] Can't find index " ^ si index)
   in
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -2199,11 +2200,11 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
 let gen_class_methods filename syms (child_map,bbdfns) 
   label_info counter index ts instance_no 
 = 
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("[gen_class_methods] Can't find index " ^ si index)
   in (* can't fail *)
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -2253,11 +2254,11 @@ let gen_class_methods filename syms (child_map,bbdfns)
 let gen_procedure_methods filename syms (child_map,bbdfns) 
   label_info counter index ts instance_no 
 = 
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("[gen_procedure_methods] Can't find index " ^ si index)
   in (* can't fail *)
+  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -2432,12 +2433,12 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
         gen_C_function_body filename syms (child_map,bbdfns) 
-        label_info counter index ts instance_no
+        label_info counter index ts sr instance_no
       )
     else
       bcat s (
         gen_function_methods filename syms (child_map,bbdfns) 
-        label_info counter index ts instance_no
+        label_info counter index ts sr instance_no
       )
 
   | `BBDCL_callback (props,vs,ps_cf,ps_c,client_data_pos,ret',_,_) -> 
@@ -2452,7 +2453,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
         bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       end
       ;
-      let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms  (tsubst vs ts t))) in
+      let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
       let ps_c = map (rt vs) ps_c in
       let ps_cf = map (rt vs) ps_cf in
       let ret = rt vs ret' in
@@ -2560,7 +2561,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
         gen_C_procedure_body filename syms (child_map,bbdfns) 
-        label_info counter index ts instance_no
+        label_info counter index ts sr instance_no
       )
     else
       bcat s (

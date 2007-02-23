@@ -112,6 +112,8 @@ let rec get_offsets' syms bbdfns typ : string list =
   let t' = unfold syms.dfns typ in
   match t' with
     
+  | `BTYP_lift _ -> assert false
+
   | `BTYP_pointer t -> 
     ["offsetof("^tname^",frame)"]
 

@@ -359,6 +359,8 @@ and typecode_t =
 
   (* Barry Jay pattern calculus case *)
   | `TYP_case of typecode_t * string list * typecode_t
+
+  | `TYP_lift of typecode_t                      (** lift type to metatype *)
   ]
 
 and tpattern_t =
@@ -491,6 +493,7 @@ and expr_t =
   | `AST_string_regmatch of range_srcref * (expr_t * (regexp_t * expr_t) list)
   | `AST_reglex of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
+  | `AST_lift of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
 
   | `AST_expr of range_srcref * string * typecode_t
@@ -958,6 +961,8 @@ type 't b1typecode_t' =
 
   (* Barry Jay pattern calculus *)
   | `BTYP_case of 't * IntSet.t * 't
+
+  | `BTYP_lift of 't (* lift type to metatype *)
   ]
 
 (** general typing *)
@@ -1363,6 +1368,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_apply (a,b) -> `TYP_apply (f a, f b)
   | `TYP_typefun (ps, a, b) -> `TYP_typefun (ps, f a, f b)
   | `TYP_type_tuple ts -> `TYP_type_tuple (map f ts)
+  | `TYP_lift t -> `TYP_lift (f t)
 
 
   (* invariant ..?? *)
@@ -1425,7 +1431,8 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_deref (sr,x) -> `AST_deref (sr,f x)
   | `AST_ref (sr,x) -> `AST_ref (sr, f x)
   | `AST_new (sr,x) -> `AST_new (sr, f x)
-  | `AST_lvalue (sr,x) -> `AST_lvalue (sr, x)
+  | `AST_lvalue (sr,x) -> `AST_lvalue (sr, f x)
+  | `AST_lift (sr,x) -> `AST_lift (sr, f x)
   | `AST_method_apply (sr,(id,x,ts)) -> `AST_method_apply (sr,(id,f x,ts))
   (*
   | `AST_dot (sr,(x,id,ts)) -> `AST_dot (sr,(f x,id,ts))
@@ -1524,6 +1531,7 @@ let iter_expr f (e:expr_t) =
   | `AST_lvalue (_,x)
   | `AST_lookup (_,(x,_,_))
   | `AST_coercion (_, (x,_)) 
+  | `AST_lift (_,x)
     -> f x
 
   | `AST_case (_,a,_,b) 
@@ -2076,6 +2084,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_new (s,_) 
   | `AST_ref  (s,_) 
   | `AST_lvalue (s,_) 
+  | `AST_lift (s,_) 
   | `AST_literal  (s,_) 
   | `AST_method_apply  (s,_) 
   | `AST_tuple  (s,_) 
@@ -2585,10 +2594,10 @@ and string_of_re re =
   | `REGEXP_group (n,r) -> "(" ^ string_of_re r ^ " as " ^ n ^ ")"
 
 and string_of_expr (e:expr_t) = 
-  let se e = string_of_expr e 
-  and sme e = string_of_expr e 
-  and sqn e = string_of_qualified_name e
-  in
+  let st t = string_of_typecode t in
+  let se e = string_of_expr e in
+  let sme e = string_of_expr e in
+  let sqn e = string_of_qualified_name e in
   match e with
   | #suffixed_name_t as n -> string_of_suffixed_name n
   | `AST_patvar (sr,s) -> "?"^s
@@ -2624,6 +2633,7 @@ and string_of_expr (e:expr_t) =
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
   | `AST_lvalue (_,e) -> "lvalue" ^ "(" ^ se e ^ ")"
+  | `AST_lift (_,t) -> "lift " ^ "(" ^ se t ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `AST_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
   | `AST_literal (_,e) -> string_of_literal e
@@ -2941,6 +2951,7 @@ and st prec tc : string =
     | `TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]"
     
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
+    | `TYP_lift t -> 0,"lift(" ^ st 0 t ^ ")"
     | `TYP_as (t,s) -> 11,st 11 t ^ " as " ^ s
 
     | `TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
@@ -3143,6 +3154,7 @@ and sb dfns depth fixlist counter prec tc =
       end
 
     | `BTYP_lvalue t -> 0,"lvalue[" ^ sbt 0 t ^"]"
+    | `BTYP_lift t -> 0,"lift[" ^ sbt 0 t ^"]"
     | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
     | `BTYP_void -> 0,"void"
     
@@ -4142,12 +4154,12 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     ";"
 
   | `SYMDEF_const_ctor (uidx,ut,idx,vs') -> 
-     st ut ^ "  " ^
+     st ut ^ "  const_ctor: " ^
      name ^ print_ivs vs ^ 
      ";"
 
   | `SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) -> 
-     st ut ^ "  " ^
+     st ut ^ "  nonconst_ctor: " ^
      name ^ print_ivs vs ^ 
      " of " ^ st argt ^
      ";"
@@ -5776,6 +5788,8 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       `TYP_unitsum (length ts)
     else
       `TYP_sum ts
+
+  | `AST_lift (sr,e) -> `TYP_lift (te e)
 
   | `AST_orlist (sr,ts) -> 
     begin match ts with

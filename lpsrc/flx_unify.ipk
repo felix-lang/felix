@@ -225,6 +225,7 @@ let rec dual t =
 
   | `BTYP_pointer t -> `BTYP_pointer (dual t)
   | `BTYP_lvalue t -> `BTYP_lvalue (dual t)
+  | `BTYP_lift t -> `BTYP_lift (dual t)
   | `BTYP_void -> unit_t
   | `BTYP_unitsum k -> 
     let rec aux ds k = if k = 0 then ds else aux (unit_t::ds) (k-1) in
@@ -432,6 +433,7 @@ let fix i t =
     | `BTYP_cfunction (a,b) -> `BTYP_cfunction (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
     | `BTYP_lvalue a -> `BTYP_lvalue (aux a)
+    | `BTYP_lift a -> `BTYP_lift (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
 
     | `BTYP_record ts ->
@@ -477,6 +479,7 @@ let lstrip dfns t =
 
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
   | `BTYP_lvalue a -> aux (1::trail) a
+  | `BTYP_lift a -> aux (1::trail) a
   | `BTYP_fix i -> 
      let k = ref i in
      let j = ref 0 in
@@ -587,6 +590,9 @@ let rec unification allow_lval dfns
           s := Some (i,t)
         end
 
+      | `BTYP_lift t1, `BTYP_lift t2 ->
+        eqns := (t1,t2) :: !eqns
+        
       | `BTYP_intersect ts,t
       | t,`BTYP_intersect ts ->
         iter (function t' -> eqns := (t,t') :: !eqns) ts
@@ -987,6 +993,7 @@ let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
   | `BTYP_pointer p1,`BTYP_pointer p2 
     -> te p1 p2
 
+  | `BTYP_lift p1,`BTYP_lift p2 
   | `BTYP_lvalue p1,`BTYP_lvalue p2 
     -> te p1 p2
 
@@ -1053,6 +1060,7 @@ let unfold dfns t =
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
   | `BTYP_lvalue a -> `BTYP_lvalue (uf a)
+  | `BTYP_lift a -> `BTYP_lift (uf a)
   | `BTYP_fix i when (-i) = depth -> t
   | `BTYP_fix i when (-i) > depth -> 
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
@@ -1093,6 +1101,7 @@ let fold dfns t =
 
     | `BTYP_pointer a  -> ax a
     | `BTYP_lvalue a  -> ax a
+    | `BTYP_lift a  -> ax a
 
     | `BTYP_void
     | `BTYP_unitsum _
@@ -1147,6 +1156,7 @@ let var_occurs t =
 
     | `BTYP_pointer a  -> aux a
     | `BTYP_lvalue a  -> aux a
+    | `BTYP_lift a  -> aux a
 
     | `BTYP_unitsum _
     | `BTYP_void
