@@ -1,0 +1,190 @@
+@head(1,'Monomorphisation')
+This requires the instantiator to have been run.
+@h = tangler("src/flx_mono.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_call
+
+val monomorphise:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  unit
+ 
+
+@h = tangler("src/flx_mono.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_generic
+open Flx_maps
+open Flx_exceptions
+open Flx_use
+open Flx_child
+open Flx_reparent
+open Flx_spexes
+
+let fixup_expr syms mt expr = expr
+let fixup_exe syms mt exe = exe
+
+let fixup_exes syms mt exes =
+  map (fixup_exe syms mt) exes
+
+let mono syms (bbdfns: fully_bound_symbol_table_t) i ts n =
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  let entry' = match entry with
+   
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let ret = mt ret in
+    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> {pkind=pk;pid=s;pindex=i;ptyp=mt t}) ps in
+    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms mt x) in
+    let exes = fixup_exes syms mt exes in
+    `BBDCL_function (props,[],(ps,traint),ret,exes) 
+ 
+  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> {pkind=pk;pid=s;pindex=i;ptyp=mt t}) ps in
+    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms mt x) in
+    let exes = fixup_exes syms mt exes in
+    `BBDCL_procedure (props,[],(ps,traint), exes) 
+
+  | `BBDCL_val (vs,t) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let t = mt t in
+    `BBDCL_val ([],t) 
+
+  | `BBDCL_var (vs,t) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let t = mt t in
+    `BBDCL_var ([],t) 
+
+  | `BBDCL_ref (vs,t) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let t = mt t in
+    `BBDCL_ref ([],t) 
+
+  | `BBDCL_tmp (vs,t) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let t = mt t in
+    `BBDCL_tmp ([],t) 
+ 
+  | `BBDCL_glr (props,vs,ret, (p,exes)) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let ret = mt ret in
+    let exes = fixup_exes syms mt exes in
+    `BBDCL_glr (props,[],ret,(p,exes))
+
+  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms mt x) in
+    let ret = mt ret in
+    `BBDCL_regmatch (props,[],(ps,traint),ret,(alpha,states,h,mx))
+
+  | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms mt x) in
+    let ret = mt ret in
+    `BBDCL_reglex (props,[],(ps,traint),le,ret,(alpha,states,h,mx)) 
+
+  | `BBDCL_class (props,vs) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_class (props,[]) 
+
+  | `BBDCL_union (vs,ps) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let ps = map (fun (i,j,t) -> i,j,mt t) ps in
+    `BBDCL_union ([],ps) 
+
+  | `BBDCL_struct (vs,ps) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let ps = map (fun (i,t) -> i,mt t) ps in
+    `BBDCL_struct ([],ps) 
+
+  | `BBDCL_cstruct (vs,ps) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let ps = map (fun (i,t) -> i,mt t) ps in
+    `BBDCL_cstruct ([],ps) 
+
+  | `BBDCL_newtype (vs,t) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let t = mt t in
+    `BBDCL_newtype ([],t) 
+
+  | `BBDCL_cclass (vs,ps) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_cclass ([],ps) 
+
+  | `BBDCL_const (vs,t,ct,reqs) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_const ([],t,ct,reqs) 
+ 
+  | `BBDCL_insert (vs,s,ikind,reqs) -> 
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_insert (vs,s,ikind,reqs)  
+
+  | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_fun (props,[],argtypes,ret,ct,reqs,prec) 
+
+  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_callback (props,[],argtypes_cf,argtypes_c,k,ret,reqs,prec)
+
+  | `BBDCL_proc (props,vs,argtypes,ct,reqs) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_proc (props,[],argtypes,ct,reqs) 
+
+  | `BBDCL_abs (vs,tqual,ct,reqs) -> 
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_abs ([],tqual,ct,reqs)  
+
+  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_nonconst_ctor ([],uidx,udt, ctor_idx, ctor_argt, evs, etraint)
+ 
+  | `BBDCL_typeclass (props,vs) ->  entry
+    (*
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_typeclass (props,[])  
+    *)
+
+  | `BBDCL_instance (props,vs,con,tc,ts) ->  entry
+    (*
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    `BBDCL_instance (props,[],con,tc,ts) -> 
+    *)
+
+  in Hashtbl.add bbdfns n (id,parent,sr,entry')
+
+  
+let monomorphise syms bbdfns =
+Hashtbl.iter
+(fun (i,ts) n -> mono syms bbdfns i ts n)
+syms.instances
+;
