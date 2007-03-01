@@ -36,9 +36,83 @@ open Flx_child
 open Flx_reparent
 open Flx_spexes
 
-let fixup_expr syms mt expr = expr
-let fixup_exe syms mt exe = exe
+let fixup_expr' syms (e:bexpr_t) =
+  match e with
+  | `BEXPR_apply_prim (i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_apply_prim (i,[],a)
 
+  | `BEXPR_apply_direct (i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_apply_direct (i,[],a)
+
+  | `BEXPR_apply_struct (i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_apply_struct (i,[],a)
+
+  | `BEXPR_apply_stack (i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_apply_stack (i,[],a)
+
+  | `BEXPR_apply_method_direct (obj,i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_apply_method_direct (obj,i,[],a) 
+
+  | `BEXPR_apply_method_stack (obj,i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_apply_method_stack (obj,i,[],a) 
+
+  | `BEXPR_ref (i,ts)  ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_ref (i,[])
+
+  | `BEXPR_name (i,ts) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_name (i,[])
+
+  | `BEXPR_closure (i,ts) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_closure (i,[])
+   
+  | `BEXPR_method_closure (e,i,ts) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXPR_method_closure (e,i,[])
+
+  | x -> x
+
+let id x = x 
+
+let rec fixup_expr syms mt e =
+  let fe e = fixup_expr syms mt e in
+  let fe' (e,t) = fixup_expr' syms e,t in
+  let e = map_tbexpr id fe mt e in
+  fe' e
+  
+let fixup_exe syms mt exe = 
+  let fe e = fixup_expr syms mt e in
+  match map_bexe id fe mt id id exe with
+  | `BEXE_call_direct (sr, i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXE_call_direct (sr,i,[],a)
+
+  | `BEXE_call_prim (sr, i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXE_call_prim (sr,i,[],a)
+
+  | `BEXE_call_stack (sr, i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXE_call_stack (sr,i,[],a)
+
+  | `BEXE_call_method_direct (sr, o,i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXE_call_method_direct (sr,o, i,[],a)
+
+  | `BEXE_call_method_stack (sr, o, i,ts,a) ->
+    let i = Hashtbl.find syms.instances (i,ts) in
+    `BEXE_call_method_stack (sr,o, i,[],a)
+
+  | x -> x
+  
 let fixup_exes syms mt exes =
   map (fixup_exe syms mt) exes
 
@@ -185,6 +259,12 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) i ts n =
   
 let monomorphise syms bbdfns =
 Hashtbl.iter
-(fun (i,ts) n -> mono syms bbdfns i ts n)
+(fun (i,ts) n -> 
+  print_endline (
+     "[monomorphise] Adding instance " ^ si n ^ " = " ^ 
+     si i ^ "["^catmap "," (sbt syms.dfns) ts^"]"
+  );
+  mono syms bbdfns i ts n
+)
 syms.instances
 ;

@@ -3064,6 +3064,7 @@ try
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = Flx_child.cal_children syms bbdfns in
 
+
   let elim_init maybe_unused exes =
     List.filter (function 
       | `BEXE_init (_,i,_) -> not (IntSet.mem i maybe_unused) 
@@ -3165,6 +3166,18 @@ try
     with Not_found -> 
       failwith ("can't name instance of root _init_ procedure index " ^ si root_proc)
   in
+
+  (* EXPERIMENTAL!
+    Adds monomorphic versions of all symbols.
+    This will do nothing, because they're not
+    actually instantiated!
+  *)
+  (*
+  print_endline "MONOMORPHISING";
+  Flx_mono.monomorphise syms bbdfns;
+  print_endline "MONOMORPHISING DONE";
+  let child_map = Flx_child.cal_children syms bbdfns in
+  *)
 
   (* fix up root procedures so if they're not stackable,
      then they need a heap closure -- wrappers require
