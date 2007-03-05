@@ -81,7 +81,9 @@ let find_references syms (child_map,bbdfns) index ts =
         if length ts <> length vs then 
         failwith 
         (
-          "[find_references} wrong number of args, expected vs = " ^ 
+          "[find_references] entry " ^ si index ^
+          ", child " ^ id ^ "<" ^ si idx ^ ">" ^
+          ", wrong number of args, expected vs = " ^ 
           si (length vs) ^ 
           ", got ts=" ^ 
           si (length ts)

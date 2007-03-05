@@ -7,6 +7,12 @@ open Flx_mtypes1
 open Flx_mtypes2
 open Flx_label
 
+val gen_function_names:
+  sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  string
+
 val gen_functions:
   sym_state_t ->
   (bid_t, bid_t list) Hashtbl.t *
@@ -593,6 +599,72 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
     ");\n"  ^
     "};\n"
 
+
+let gen_function_names syms (child_map,bbdfns) = 
+  let xxdfns = ref [] in
+  Hashtbl.iter
+  (fun x i -> 
+    (* if proper_descendant syms.dfns parent then  *)
+    xxdfns := (i,x) :: !xxdfns
+  )
+  syms.instances
+  ;
+  
+  let s = Buffer.create 2000 in
+  iter
+  (fun (i,(index,ts)) ->
+    let tss = 
+      if length ts = 0 then "" else 
+      "[" ^ catmap "," (string_of_btypecode syms.dfns) ts^ "]"
+    in
+    match 
+      try Hashtbl.find bbdfns index 
+      with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
+    with (id,parent,sr,entry) -> 
+    match entry with
+    | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
+      if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
+      end else begin
+        let name = cpp_instance_name syms bbdfns index ts in
+        bcat s ("struct " ^ name ^ ";\n");
+      end
+
+    | `BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->  ()
+
+    | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
+      if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
+      end else begin
+        let name = cpp_instance_name syms bbdfns index ts in
+        bcat s ("struct " ^ name ^ ";\n");
+      end
+
+    | `BBDCL_regmatch (props,vs, (ps,traint), ret, regargs) -> 
+      let name = cpp_instance_name syms bbdfns index ts in
+      bcat s ("struct " ^ name ^ ";\n");
+
+    | `BBDCL_reglex (props, vs, (ps,traint), i, ret, regargs) -> 
+      let name = cpp_instance_name syms bbdfns index ts in
+      bcat s ("struct " ^ name ^ ";\n");
+
+    | `BBDCL_class (props,vs) -> ()
+      (*
+      bcat s ("\n//------------------------------\n");
+      bcat s ("//CLASS " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      let t = `BTYP_inst (index,ts) in
+      let j = try 
+        Hashtbl.find syms.registry t with 
+        Not_found -> failwith "Cannot find class type instance in type registry"
+      in
+      bcat s ("//CLASS " ^ si index ^ ", OBJECT INSTANCE " ^ si i ^ " TYPE INSTANCE " ^ si j ^ "\n");
+      bcat s 
+      (gen_class syms (child_map,bbdfns) props index id sr vs ts i)
+      *)
+
+    | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
+  )
+  (sort compare !xxdfns)
+  ;
+  Buffer.contents s
 
 (* This code generates the class declarations *)
 let gen_functions syms (child_map,bbdfns) = 
@@ -3024,11 +3096,30 @@ try
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = Flx_child.cal_children syms bbdfns in
 
-  if compiler_options.max_inline_length > 0 then
+  let bbdfns = if compiler_options.max_inline_length > 0 then
   begin
     (*
     print_functions syms.dfns !bbdfns;
     *)
+
+    Flx_inst.instantiate syms bbdfns true root_proc syms.bifaces;
+    (* EXPERIMENTAL!
+      Adds monomorphic versions of all symbols.
+      This will do nothing, because they're not
+      actually instantiated!
+    *)
+    if compiler_options.print_flag 
+    then print_endline "//MONOMORPHISING";
+    Flx_mono.monomorphise syms bbdfns;
+    if compiler_options.print_flag 
+    then print_endline "//MONOMORPHISING DONE";
+
+    let bbdfns = Flx_use.copy_used syms bbdfns in
+    (*
+    print_endline "POST MONOMORPHISATION FUNCTION SET";
+    print_functions syms.dfns bbdfns;
+    *)
+
     if compiler_options.print_flag then
     print_endline "//INLINING";
 
@@ -3054,15 +3145,23 @@ try
     syms.reductions
     ;
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
+    let child_map = Flx_child.cal_children syms bbdfns in
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     (*
     print_endline "INLINING DONE: RESULT:";
     print_functions syms.dfns bbdfns;
     *)
+    bbdfns
   end
-  ;
+  else bbdfns
+  in
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = Flx_child.cal_children syms bbdfns in
+
+  (*
+  print_endline "Discarding crud .. left with:";
+  print_functions syms.dfns bbdfns;
+  *)
 
 
   let elim_init maybe_unused exes =
@@ -3160,24 +3259,18 @@ try
   if compiler_options.print_flag 
   then print_endline "//instantiating";
 
-  Flx_inst.instantiate syms bbdfns root_proc syms.bifaces;
+  Flx_inst.instantiate syms bbdfns false root_proc syms.bifaces;
+
+  let label_map = Flx_label.create_label_map bbdfns syms.counter in
+  let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
+  let label_info = label_map, label_usage in
+
+
   let top_class =
     try cpp_instance_name syms bbdfns root_proc []
     with Not_found -> 
       failwith ("can't name instance of root _init_ procedure index " ^ si root_proc)
   in
-
-  (* EXPERIMENTAL!
-    Adds monomorphic versions of all symbols.
-    This will do nothing, because they're not
-    actually instantiated!
-  *)
-  (*
-  print_endline "MONOMORPHISING";
-  Flx_mono.monomorphise syms bbdfns;
-  print_endline "MONOMORPHISING DONE";
-  let child_map = Flx_child.cal_children syms bbdfns in
-  *)
 
   (* fix up root procedures so if they're not stackable,
      then they need a heap closure -- wrappers require
@@ -3466,6 +3559,10 @@ try
   if compiler_options.print_flag then 
   print_endline "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
+  plh  "//DEFINE FUNCTION CLASS NAMES";
+  plh  (gen_function_names syms (child_map,bbdfns));
+
+  plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
   plh  (gen_functions syms (child_map,bbdfns));
 
@@ -3610,28 +3707,35 @@ try
 
   plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
 
-  plb "\n//-----------------------------------------";
-  plb "#if FLX_CGOTO";
-  plb "//DEFINE LABELS for GNUC ASSEMBLER LABEL HACK";
-  Hashtbl.iter
-  (fun (fno,_) inst ->
-    try 
-      let labels = Hashtbl.find label_map fno in
-      Hashtbl.iter
-      (fun lab lno ->
-        match Flx_label.get_label_kind_from_index label_usage lno with
-        | `Far ->
-          plb ("FLX_DECLARE_LABEL(" ^ si lno ^ ","^ si inst ^ "," ^ lab^")")
-        | `Near -> ()
-        | `Unused -> () 
-      )
-      labels
-    with Not_found -> ()
-  )
-  syms.instances
+  begin
+    let header_emitted = ref false in
+    Hashtbl.iter
+    (fun (fno,_) inst ->
+      try 
+        let labels = Hashtbl.find label_map fno in
+        Hashtbl.iter
+        (fun lab lno ->
+          match Flx_label.get_label_kind_from_index label_usage lno with
+          | `Far ->
+            if not !header_emitted then begin
+              plb "\n//-----------------------------------------";
+              plb "#if FLX_CGOTO";
+              plb "//DEFINE LABELS for GNUC ASSEMBLER LABEL HACK";
+              header_emitted := true;
+            end
+            ;
+            plb ("FLX_DECLARE_LABEL(" ^ si lno ^ ","^ si inst ^ "," ^ lab^")")
+          | `Near -> ()
+          | `Unused -> () 
+        )
+        labels
+      with Not_found -> ()
+    )
+    syms.instances
+    ;
+    if !header_emitted then plb "#endif";
+  end
   ;
-  plb "#endif";
-
   if not (Hashtbl.length syms.parsers + Hashtbl.length syms.lexers = 0) then begin
   plb "\n//-----------------------------------------";
   plb  "//INCLUDE ELKHOUND PARSERS";

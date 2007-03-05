@@ -775,6 +775,9 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
         `BEXPR_name (urv,ts),t
 
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        (*
+        print_endline ("Consider inlining " ^ id);
+        *)
         if 
           not (mem `NoInline props) &&
           (
@@ -792,6 +795,9 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
               heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
               *)
               if inlining_complete bbdfns callee then begin
+                (*
+                print_endline ("INLINE " ^ id);
+                *)
                 (*
                 print_endline ("Special inline " ^ si caller ^" calls " ^ si callee);
                 *)
@@ -1422,7 +1428,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
   match specs with None -> () | Some spec ->
   match spec with
   | id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) ->
-    (* 
+    (*
     print_endline ("HIB: consider procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
     *)
     if not (mem `Inlining_started props) then begin

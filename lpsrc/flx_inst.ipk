@@ -11,6 +11,7 @@ open Flx_mtypes2
 val instantiate:
   sym_state_t ->
   fully_bound_symbol_table_t ->
+  bool -> (* instantiate parameters? *)
   bid_t ->
   biface_t list ->
   unit
@@ -323,7 +324,7 @@ and process_production syms bbdfns ref_insts1 p ts =
   in
   iter uses_symbol p
                                                                                 
-and process_inst syms bbdfns ref_insts1 i ts inst =
+and process_inst syms bbdfns instps ref_insts1 i ts inst =
   let uis i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
   let ui i = uis i ts in
   let id,parent,sr,entry = 
@@ -379,7 +380,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
-    if mem `Cfun props then
+    if instps || mem `Cfun props then
       iter (fun {pindex=i; ptyp=t} -> 
         ui i; 
         rtr (varmap_subst hvarmap t)
@@ -393,7 +394,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
-    if mem `Cfun props then
+    if instps || mem `Cfun props then
       iter (fun {pindex=i; ptyp=t} -> 
         ui i; 
         rtr (varmap_subst hvarmap t)
@@ -556,7 +557,9 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
 
   | `BBDCL_proc (props,vs,argtypes,_,reqs) ->
     (*
-    print_endline ("Handling requirements of proc " ^ id);
+    print_endline ("[flx_inst] Handling requirements of proc " ^ id);
+    print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
+    print_endline ("ts = " ^ catmap "," (sbt syms.dfns) ts);
     *)
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -620,7 +623,10 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   type and function.
 *)
 
-let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
+let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
+  Hashtbl.clear syms.instances;
+  Hashtbl.clear syms.registry;
+
   (* empty instantiation registry *)
   let insts1 = ref FunInstSet.empty in
 
@@ -667,9 +673,16 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
   end
   ;
 
+  (* NEW: if a symbol is monomorphic use its index as its instance! *)
+  (* this is a TRICK .. saves remapping the root/exports, since they
+     have to be monomorphic anyhow
+  *)
   let add_instance i ts =
-    let n = !(syms.counter) in
-    incr (syms.counter);
+    let n = 
+      match ts with
+      | [] -> i
+      | _ -> let n = !(syms.counter) in incr (syms.counter); n
+    in
     Hashtbl.add syms.instances (i,ts) n;
     n
   in
@@ -678,7 +691,7 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
     let (index,vars) as x = FunInstSet.choose !insts1 in
     insts1 := FunInstSet.remove x !insts1;
     let inst = add_instance index vars in
-    process_inst syms bbdfns insts1 index vars inst
+    process_inst syms bbdfns instps insts1 index vars inst
   done
 
 

@@ -124,7 +124,9 @@ let exe_uses_gc syms bbdfns exe =
       then begin (* print_endline "Flagged as using gc"; *) raise Not_found end
       else
       iter_bexe ignore (expr_uses_gc syms bbdfns) ignore ignore ignore exe
-    | _ -> assert false
+    | _ -> 
+      print_endline ("Call primitive to non-primitive " ^ id ^ "<"^ si i^ ">");
+      assert false
     end
 
   | _ ->

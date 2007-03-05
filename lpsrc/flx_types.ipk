@@ -2393,7 +2393,7 @@ val print_functions:
 
 val print_function_body:
   symbol_table_t ->
-  string -> int -> bexe_t list -> 
+  string -> int -> bexe_t list -> int option ->
   unit
 
 val print_function:
@@ -5115,27 +5115,29 @@ let print_env_short e =
   in 
   List.iter print_level e
 
-let print_function_body dfns id i exes =
+let print_function_body dfns id i exes parent =
   print_endline "";
-  print_endline ("BODY OF " ^ id ^ "<" ^ si i ^ ">");
+  print_endline ("BODY OF " ^ id ^ "<" ^ si i ^ "> parent " ^ 
+    match parent with None -> "NONE" | Some k -> si k
+  );
   iter 
   (fun exe -> print_endline (string_of_bexe dfns 1 exe)) 
   exes
 
 let print_function dfns bbdfns i =
-  match Hashtbl.find bbdfns i with (id,_,_,entry) -> 
+  match Hashtbl.find bbdfns i with (id,parent,_,entry) -> 
   match entry with
   | `BBDCL_function (_,_,_,_,exes) 
   | `BBDCL_procedure (_,_,_,exes) ->
-    print_function_body dfns id i exes
+    print_function_body dfns id i exes parent
   | _ -> ()
 
 let print_functions dfns bbdfns =
   Hashtbl.iter
-  (fun i (id,_,_,entry) -> match entry with
+  (fun i (id,parent,_,entry) -> match entry with
   | `BBDCL_function (_,_,_,_,exes) 
   | `BBDCL_procedure (_,_,_,exes) ->
-    print_function_body dfns id i exes
+    print_function_body dfns id i exes parent
 
   | _ -> ()
   )

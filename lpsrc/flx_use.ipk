@@ -319,8 +319,10 @@ let copy_used syms bbdfns =
   let u = full_use_closure syms bbdfns in
   IntSet.iter
   begin fun i ->
+    (*
     if syms.compiler_options.print_flag then
       print_endline ("Copying " ^ si i);
+    *)
     Hashtbl.add h i (Hashtbl.find bbdfns i)
   end
   u;

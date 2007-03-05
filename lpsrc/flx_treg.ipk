@@ -64,6 +64,7 @@ open Flx_srcref
 open Flx_name
 open List
 open Flx_maps
+open Flx_beta
 
 let register_type_nr syms t =
   (*
@@ -119,7 +120,7 @@ let register_tuple syms t =
   | _ -> assert false
 
 let rec register_type_r ui syms bbdfns exclude sr t =
-  let t = reduce_type (lower (lstrip syms.dfns t)) in
+  let t = reduce_type (beta_reduce syms sr (lower (lstrip syms.dfns t))) in
   (*
   let sp = String.make (length exclude * 2) ' ' in
   print_endline (sp ^ "Register type " ^ string_of_btypecode syms.dfns t);
@@ -258,10 +259,12 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       )
     end
 
-  | _ -> 
+  | _ ->  ()
+    (*
     clierr sr 
     (
       "Unexpected kind in register type: " ^ 
       string_of_btypecode syms.dfns t
     )
+    *)
 

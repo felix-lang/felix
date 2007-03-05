@@ -390,6 +390,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     *)
     begin match rt t with
     | `BTYP_inst (i,ts) -> 
+      let cname = cpp_instance_name syms bbdfns n ts in
+      ce_arrow (ge' e) cname
+      (*
       begin match
         try Hashtbl.find syms.dfns i 
         with Not_found -> assert false
@@ -405,6 +408,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         end
       | _ -> clierr sr ("[gen_expr'] Expecting "^si i^" to be class, got " ^ string_of_bbdcl syms.dfns entry i)
       end
+      *)
     | _ -> assert false
     end
 
