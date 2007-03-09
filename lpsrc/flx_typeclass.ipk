@@ -32,6 +32,18 @@ val fixup_typeclass_instances:
   fully_bound_symbol_table_t -> 
   unit
  
+val tcinst_chk:
+  sym_state_t -> 
+  bool ->
+  int ->
+  btypecode_t list ->
+  range_srcref ->
+  (string * int) list *
+  btypecode_t *
+  btypecode_t list *
+  int -> 
+  (int * btypecode_t list) option
+
 @h = tangler("src/flx_typeclass.ml")
 @select(h)
 open Flx_util
@@ -258,6 +270,12 @@ let typeclass_instance_check syms bbdfns child_map =
 Hashtbl.iter
 (fun i (id,_,sr,entry) -> match entry with
   | `BBDCL_instance (props, vs, cons, tc, ts) ->
+     let iss = 
+       try Hashtbl.find syms.instances_of_typeclass tc 
+       with Not_found -> []
+     in
+     let entry = i,(vs,cons,ts) in
+     Hashtbl.replace syms.instances_of_typeclass tc (entry::iss);
      check_instance syms bbdfns child_map i id vs cons sr props tc ts
 
   | _ -> ()
@@ -299,7 +317,7 @@ bbdfns
 *)
 
   
-let chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  = 
+let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  = 
      (*
      print_endline 
      ("virtual " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
@@ -394,7 +412,7 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
      try match Hashtbl.find syms.dfns i with {sr=sr} -> sr 
      with Not_found -> dummy_sr
    in
-   let entries = fold_left (fun acc x -> match chk syms allow_fail i ts sr x with
+   let entries = fold_left (fun acc x -> match tcinst_chk syms allow_fail i ts sr x with
      | None -> acc
      | Some x -> x::acc
      ) [] entries

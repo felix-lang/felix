@@ -267,7 +267,7 @@ let cal_props = function
   | `NoInlineFunction -> `NoInline::[]
   | `Ctor -> `Ctor::[]
   | `Generator -> `NoInline::`Generator::[]
-  | `Virtual -> `NoInline::`Virtual::[]
+  | `Virtual -> `Virtual::[]
   | _ -> []
 
 let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =

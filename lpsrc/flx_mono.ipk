@@ -217,7 +217,6 @@ let fixup_exe syms bbdfns fi mt exe =
     else
       `BEXE_call_direct (sr,i,ts,a)
 
-
   | `BEXE_call_stack (sr, i,ts,a) ->
     let i,ts = fi i ts in
     `BEXE_call_stack (sr,i,ts,a)

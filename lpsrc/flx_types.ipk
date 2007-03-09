@@ -2922,6 +2922,7 @@ and st prec tc : string =
       end
 
     | `TYP_intersect ls ->
+      let ls = filter (fun t -> t <> `TYP_tuple []) ls in
       begin match ls with 
       | [] -> 0,"unit" 
       | _ -> 9,cat " & " (map (st 9) ls)
@@ -3396,6 +3397,7 @@ and string_of_maybe_tpattern = function
 
 and print_tconstraint = function
   | `TYP_tuple [] -> ""
+  | `TYP_intersect [`TYP_tuple []] -> ""
   | t -> " where " ^ string_of_typecode t
 
 and print_tclass_req qn = string_of_qualified_name qn
@@ -5318,6 +5320,7 @@ type sym_state_t =
   mutable axioms: axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
   typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
+  instances_of_typeclass: (int, (int * (bvs_t * btypecode_t * btypecode_t list)) list) Hashtbl.t;
   transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
 }
 
@@ -5410,6 +5413,7 @@ type sym_state_t =
   mutable axioms : axiom_t list;
   variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
   typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
+  instances_of_typeclass: (int, (int * (bvs_t * btypecode_t * btypecode_t list)) list) Hashtbl.t;
   transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
 }
 

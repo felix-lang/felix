@@ -211,6 +211,7 @@ let make_syms options =
     axioms = [];
     variant_map = Hashtbl.create 97;
     typeclass_to_instance = Hashtbl.create 97;
+    instances_of_typeclass = Hashtbl.create 97;
     transient_specialisation_cache = Hashtbl.create 97;
   }
 

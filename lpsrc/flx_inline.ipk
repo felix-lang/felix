@@ -702,6 +702,141 @@ let inlining_complete bbdfns i =
     mem `Inlining_complete props
   | _ -> assert false
 
+
+(*
+
+
+See post in felix-language. The problem is knowing
+when to inline a function: typeclass virtual function
+default methods can only be inlined if there is an instance
+of the typeclass AND the virtual is not overridden in the
+instance.
+
+Proposed algorithm. 
+
+1. Check if the function is virtual.
+
+2. If so, find its parent, which is the typeclass
+
+3. strip the tail off the instantiating ts so it
+   matches the length of the typeclass vs list
+   (in case the function is polymorphic, the function's
+    private type arguments will be the remaining ones)
+
+3. Using a table of pairs:
+
+	(typeclass, (instance, (vs,ts)))
+
+discover if there is an instance. This is actually hard:
+the check actually requires seeing if the given ts specialises
+one of the ts in the above table for the given typeclass.
+The instantiation's vs is required too, since the ts of the
+typeclass have to be mapped to the instance view.
+
+4. IF there is a match:
+
+4a. try to find an instance  of the virtual function. 
+
+4b. If none is found, then inline the virtual function
+    default body
+
+4c.  otherwise inline the instance.
+
+5. otherwise (no instance) leave the call alone.
+
+IF we know the code is fully monorphised then 5 becomes
+instead an error.
+
+Note that Felix currently DOES NOT detect this error.
+If the function has a default, it will be used even
+if there is no instance. This will result in either
+an infinite recursion at run time OR lead to another
+virtual that has no body, resulting in an error diagnostic.
+
+But the infinite recursion is also possible even if there
+is an instance .. so nothing is lost here.. :)
+
+*)
+
+let virtual_check syms (bbdfns:fully_bound_symbol_table_t) sr i ts =
+  let id,parent,callee_sr,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_fun (props,_,_,_,_,_,_) 
+  | `BBDCL_function (props,_,_,_,_)
+  | `BBDCL_proc (props,_,_,_,_)
+  | `BBDCL_procedure (props,_,_,_) when mem `Virtual props ->
+    print_endline ("Examining call to virtual " ^ id);
+    let parent = match parent with | Some p -> p | None -> assert false in
+    let tcvslen =
+      try 
+        let {id=pid; vs=vs; symdef=entry} = Hashtbl.find syms.dfns parent in
+        match entry with
+        | `SYMDEF_typeclass ->
+          print_endline ("Found parent " ^ pid ^ "<" ^ si i ^ ">");
+          List.length (fst vs)
+        | _ -> 
+          print_endline "Woops, parent isn't typeclass?"; 
+          assert false
+      with Not_found -> 
+        print_endline ("Parent typeclass " ^ si parent ^ " not found!");
+        assert false
+    in
+    let tslen = List.length ts in
+    print_endline ("Vs len of parent = " ^ si tcvslen);
+    print_endline ("ts len           = " ^ si tslen);
+    if tcvslen > tslen then
+      clierr sr "Not enough type arguments for typeclass"
+    ;
+    let ts = list_prefix ts tcvslen in
+    let instances = 
+      try Hashtbl.find syms.instances_of_typeclass parent 
+      with Not_found ->
+        print_endline "No instances of typeclass?";
+        assert false
+    in
+    print_endline "Found some instances!";
+    print_endline ("ts = " ^ catmap "," (sbt syms.dfns) ts);
+    let matches = ref [] in
+    iter (fun (j,(jvs,jcon,jts)) ->
+      print_endline ("instance[" ^
+        catmap "," (fun (s,i) -> s^ "<"^si i^">") jvs ^ "] " ^
+        si j ^ "[" ^
+        catmap "," (sbt syms.dfns) jts ^ "]"
+      );
+      (* check if the call specialises the instance. *)
+      let ok = 
+        Flx_typeclass.tcinst_chk syms true i ts sr 
+          (jvs, jcon,jts, j)
+      in
+      begin match ok with
+      | Some _ -> 
+        print_endline "matches";
+        matches := j :: !matches
+
+      | None -> print_endline "Doesn't match"
+      end
+    )
+    instances
+    ;
+    begin match !matches with 
+    | [_] -> 
+      let i',ts' = 
+        Flx_typeclass.maybe_fixup_typeclass_instance syms bbdfns i ts 
+      in
+      if i = i' then begin
+        print_endline (id ^ " -- Dispatch to default");
+        true,i',ts'
+      end else begin
+        print_endline (id ^ " -- Dispatch to instance");
+        true,i',ts'
+      end
+    | _ -> 
+      print_endline (id ^ " -- Dispatch unknown");
+      false,i,ts
+    end
+
+  | _ -> (* print_endline (id ^ " -- Not virtual") *) true,i,ts
+
 let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr e =
   (*
   print_endline ("Special inline " ^ sbe syms.dfns e); flush stdout;
@@ -794,11 +929,11 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
               (*
               heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
               *)
+              if not (inlining_complete bbdfns callee) then print_endline "Inlining isn't complete in callee ..??";
+
               if inlining_complete bbdfns callee then begin
                 (*
                 print_endline ("INLINE " ^ id);
-                *)
-                (*
                 print_endline ("Special inline " ^ si caller ^" calls " ^ si callee);
                 *)
                 (* GENERAL CASE -- we need to add a variable *)
@@ -860,7 +995,6 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
   in 
    let e = aux e in (* we need left to right evaluation here ..*)
    e,!exes'
-
 
 and heavy_inline_calls
   syms (uses,child_map,bbdfns)
@@ -933,14 +1067,15 @@ and heavy_inline_calls
     | `BEXE_call_direct (sr,callee,ts,argument) 
       when not (mem callee excludes)
       ->
+      let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
-      let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+      let id,parent,callee_sr,entry = Hashtbl.find bbdfns callee in
       (*
       print_endline ("CALL DIRECT " ^ id ^ "<"^ si callee^">");
       *)
       begin match entry with
       | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
-        if inline_check caller callee props exes then
+        if can_inline && inline_check caller callee props exes then
         begin
           (*
           print_endline "INLINE CANDIDATE DETECTED - CALL";
@@ -976,11 +1111,12 @@ and heavy_inline_calls
       print_endline (string_of_bexe syms.dfns 0 exe);
       print_endline ("Callee is " ^ si callee ^ " with ts = " ^ catmap "," (sbt syms.dfns) ts);
       *)
+      let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
-      let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+      let id,parent,callee_sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        if inline_check caller callee props exes then
+        if can_inline && inline_check caller callee props exes then
           let xs = 
              call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argument
           in 
@@ -1012,11 +1148,12 @@ and heavy_inline_calls
       (*
       print_endline ("Handling init: " ^ string_of_bexe syms.dfns 0 exe);
       *)
+      let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
-      let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+      let id,parent,callee_sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        if inline_check caller callee props exes then
+        if can_inline && inline_check caller callee props exes then
           begin
             let vid,vparent,vsr,ventry = Hashtbl.find bbdfns i in
             begin match ventry with
@@ -1047,10 +1184,11 @@ and heavy_inline_calls
       print_endline ("Handling return: " ^ string_of_bexe syms.dfns 0 exe);
       *)
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
-      let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+      let id,parent,callee_sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        if inline_check caller callee props exes then
+        let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
+        if can_inline && inline_check caller callee props exes then
         begin
           if inlining_complete bbdfns callee then
             let xs = 
