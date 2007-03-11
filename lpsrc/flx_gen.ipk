@@ -213,6 +213,9 @@ let is_gc_pointer syms bbdfns sr t =
 let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instance_no =
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
+  (*
+  print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
+  *)
   let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
   let params = map (fun {pindex=ix} -> ix) bps in
   if syms.compiler_options.print_flag then
@@ -866,9 +869,9 @@ let gen_exe filename syms
   let rec handle_closure sr is_jump index ts subs' a stack_call =
     let index',ts' = index,ts in
     let index, ts = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
-    (*
-    print_endline ("Remapped " ^ si index' ^ " to " ^ si index');
-    *)
+    if index <> index' then
+      clierr sr ("Virtual call of " ^ si index' ^ " dispatches to " ^ si index')
+    ;
     let subs = 
       catmap ""
       (fun ((_,t) as e,s) ->
@@ -1574,7 +1577,7 @@ let gen_exe filename syms
       "      {\n" ^
       "        con_t *tmp = _caller;\n" ^
       "        _caller=0;\n" ^
-      "        return " ^ ge sr p ^ "\n      ->call(" ^ args ^");\n" ^
+      "        return (" ^ ge sr p ^ ")\n      ->call(" ^ args ^");\n" ^
       "      }\n"
       end
 
@@ -3098,9 +3101,26 @@ try
 
   let bbdfns = if compiler_options.max_inline_length > 0 then
   begin
-    (*
-    print_functions syms.dfns !bbdfns;
-    *)
+    if compiler_options.print_flag then begin
+      print_endline "";
+      print_endline "---------------------------";
+      print_endline "INPUT TO OPTIMISATION PASS";
+      print_endline "---------------------------";
+      print_endline "";
+      print_functions syms.dfns bbdfns
+   end;
+
+    Flx_typeclass.fixup_typeclass_instances syms bbdfns;
+    Flx_inline.heavy_inlining syms (child_map,bbdfns);
+    let bbdfns = Flx_use.copy_used syms bbdfns in
+    let child_map = Flx_child.cal_children syms bbdfns in
+    Hashtbl.iter
+    (fun i _ -> 
+      Flx_prop.rem_prop bbdfns `Inlining_started i;
+      Flx_prop.rem_prop bbdfns `Inlining_complete i;
+    )
+    bbdfns
+    ;
 
     Flx_inst.instantiate syms bbdfns true root_proc syms.bifaces;
     (* EXPERIMENTAL!
@@ -3115,10 +3135,15 @@ try
     then print_endline "//MONOMORPHISING DONE";
 
     let bbdfns = Flx_use.copy_used syms bbdfns in
-    (*
-    print_endline "POST MONOMORPHISATION FUNCTION SET";
-    print_functions syms.dfns bbdfns;
-    *)
+
+    if compiler_options.print_flag then begin
+      print_endline "";
+      print_endline "---------------------------";
+      print_endline "POST MONOMORPHISATION FUNCTION SET";
+      print_endline "---------------------------";
+      print_endline "";
+      print_functions syms.dfns bbdfns
+    end;
 
     if compiler_options.print_flag then
     print_endline "//INLINING";
@@ -3219,6 +3244,7 @@ try
   print_functions syms.dfns bbdfns;
   *)
 
+  Flx_typeclass.fixup_typeclass_instances syms bbdfns;
   if compiler_options.print_flag 
   then print_endline "//Calculating stackable calls";
   let label_map = Flx_label.create_label_map bbdfns syms.counter in

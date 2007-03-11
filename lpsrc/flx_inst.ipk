@@ -32,6 +32,7 @@ open Flx_unify
 open Flx_treg
 open Flx_exceptions
 open Flx_maps
+open Flx_prop
 
 let null_table = Hashtbl.create 3
 
@@ -286,12 +287,19 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
      ue sr e2
 
   | `BEXE_init (sr,i,e) -> 
-    ui i; (* this is wrong?: initialisation is not use .. *)
+    let vs' = get_vs bbdfns i in
+    let ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs' in
+    let ts = map (varmap_subst hvarmap) ts in
+    uis i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
 
   | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
-  | `BEXE_svc (sr,i) -> ui i 
+  | `BEXE_svc (sr,i) ->
+    let vs' = get_vs bbdfns i in
+    let ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs' in
+    let ts = map (varmap_subst hvarmap) ts in
+    uis i ts
 
   | `BEXE_label _
   | `BEXE_halt _

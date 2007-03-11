@@ -49,6 +49,7 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
     if type_match syms.dfns t argt 
     then 
       ( 
+        (*
         match p with 
         | `BEXPR_closure (i,ts) -> 
           begin match Hashtbl.find syms.dfns i with
@@ -63,6 +64,7 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
           | _ -> assert false
           end
         | _ -> 
+        *)
           `BEXE_call (sr,(p,lower pt), tbe2)
       )
     else
@@ -94,7 +96,10 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
       | `BEXPR_closure (i,ts) ->
         if check_if_parent syms i this
         then
+          `BEXE_call (sr,(p,lower pt), tbe2)
+          (*
           `BEXE_call_direct (sr,i, ts, tbe2)
+          *)
         else
           clierr sr
           "[cal_loop] Loop target must be self or parent"

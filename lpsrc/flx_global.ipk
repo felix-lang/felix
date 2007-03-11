@@ -278,6 +278,15 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
       fold_left 
       (fun u (j,_) -> 
         let r = set_ptf_usage syms bbdfns usage (i::excludes) j in
+          (*
+          print_endline ("Call of " ^ si i^ " to " ^ si j ^ " PTF of j " ^ (
+            match r with
+            | Unknown -> "UNKNOWN"
+            | Required -> "REQUIRED"
+            | Not_required -> "NOT REQUIRED"
+          ));
+          *)
+
           begin match u,r with
           | Unknown, x | x, Unknown -> x
           | Required, _ | _, Required -> Required
@@ -304,6 +313,9 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
   let id,parent,sr,entry =  try Hashtbl.find bbdfns i with Not_found -> failwith ("YIKES2 -- " ^ si i) in
   match entry with
   | `BBDCL_function (props,vs,ps,rt,exes) ->
+    (*
+    print_endline ("Function " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);
+    *)
     if mem `Requires_ptf props then Required 
     else if mem `Not_requires_ptf props then Not_required
     else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
@@ -312,6 +324,9 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
         Required
     end else begin
       let result1, result2 = cal_reqs calls i in
+      (*
+      print_endline ("Function " ^ id ^ " ADDING properties " ^ string_of_properties [result2]);
+      *)
       Hashtbl.replace bbdfns i (id,parent,sr,
         `BBDCL_function (result2 :: props,vs,ps,rt,exes));
       result1
@@ -341,6 +356,9 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
     end else Not_required
 
   | `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
+    (*
+    print_endline ("Fun " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);
+    *)
     if mem `Requires_ptf props then Required 
     else if mem `Not_requires_ptf props then Not_required
     else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin

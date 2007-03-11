@@ -29,6 +29,7 @@ open Flx_unify
 open Flx_treg
 open Flx_exceptions
 open Flx_use
+open Flx_prop
 
 let gen_closure syms bbdfns i =
   let j = !(syms.counter) in incr syms.counter;
@@ -243,43 +244,7 @@ let process_entry syms bbdfns all_closures i =
   enstack has already run .. won't affect enstack.
 *)
 
-let set_closure bbdfns p i =
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
-  (*
-  print_endline (id ^ "<" ^ si i ^">" ^ " needs closure!");
-  *)
-   match entry with
-  | `BBDCL_function (props,vs,ps,ret,exes) ->
-    let entry = `BBDCL_function (p :: props,vs,ps,ret,exes) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry);
-
-  (* because of type classes .. *)
-  | `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
-    let entry = `BBDCL_fun (p :: props,vs,ps,ret,ct,reqs,prec) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry);
-
-  | `BBDCL_procedure (props,vs,ps,exes) ->
-    let entry = `BBDCL_procedure (p :: props,vs,ps,exes) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  (* because of type classes .. *)
-  | `BBDCL_proc (props,vs,ps,ct,reqs) ->
-    let entry = `BBDCL_proc (p :: props,vs,ps,ct,reqs) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry);
-
-  | `BBDCL_regmatch (props,vs,ps,t,x) ->
-    let entry = `BBDCL_regmatch (p :: props, vs, ps, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_reglex (props,vs,ps,le,t,x) ->
-    let entry = `BBDCL_reglex (p :: props, vs, ps, le, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_glr (props, vs, t, x) -> 
-    let entry = `BBDCL_glr (p :: props, vs, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | _ -> ()
+let set_closure bbdfns i = add_prop bbdfns `Heap_closure i
 
 let make_closures syms bbdfns =
   (*
@@ -292,17 +257,23 @@ let make_closures syms bbdfns =
   let used = full_use_closure syms bbdfns in
   IntSet.iter (process_entry syms bbdfns all_closures ) used;
 
+  (*
   (* this is a hack! *)
   Hashtbl.iter
   ( fun i entries ->
     iter (fun (vs,con,ts,j) -> 
-    set_closure bbdfns `Heap_closure i;
-    set_closure bbdfns `Heap_closure j;
+    set_closure bbdfns i;
+    process_entry syms bbdfns all_closures j;
+
+    (*
+    set_closure bbdfns j;
+    *)
     )
     entries
   )
   syms.typeclass_to_instance
   ;
+  *)
 
   (*
   IntSet.iter (set_closure bbdfns `Heap_closure) (IntSet.union !all_closures !(syms.roots));
@@ -311,7 +282,7 @@ let make_closures syms bbdfns =
   (* Now root proc might not need a closure .. since it can be
      executed all at once
   *)
-  IntSet.iter (set_closure bbdfns `Heap_closure) !all_closures
+  IntSet.iter (set_closure bbdfns) !all_closures
   
  
 

@@ -2333,6 +2333,8 @@ val tsbe:
   tbexpr_t -> 
   string
 
+val string_of_properties : property_t list -> string
+
 val string_of_pattern : pattern_t -> string
 val string_of_tpattern : tpattern_t -> string
 val string_of_literal : literal_t -> string
@@ -2393,7 +2395,7 @@ val print_functions:
 
 val print_function_body:
   symbol_table_t ->
-  string -> int -> bexe_t list -> int option ->
+  string -> int -> bvs_t -> bexe_t list -> int option ->
   unit
 
 val print_function:
@@ -5117,9 +5119,11 @@ let print_env_short e =
   in 
   List.iter print_level e
 
-let print_function_body dfns id i exes parent =
+let print_function_body dfns id i (bvs:bvs_t) exes parent =
   print_endline "";
-  print_endline ("BODY OF " ^ id ^ "<" ^ si i ^ "> parent " ^ 
+  print_endline ("BODY OF " ^ id ^ "<" ^ si i ^ "> [" ^
+  catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
+  "] parent " ^ 
     match parent with None -> "NONE" | Some k -> si k
   );
   iter 
@@ -5129,17 +5133,17 @@ let print_function_body dfns id i exes parent =
 let print_function dfns bbdfns i =
   match Hashtbl.find bbdfns i with (id,parent,_,entry) -> 
   match entry with
-  | `BBDCL_function (_,_,_,_,exes) 
-  | `BBDCL_procedure (_,_,_,exes) ->
-    print_function_body dfns id i exes parent
+  | `BBDCL_function (_,bvs,_,_,exes) 
+  | `BBDCL_procedure (_,bvs,_,exes) ->
+    print_function_body dfns id i bvs exes parent
   | _ -> ()
 
-let print_functions dfns bbdfns =
+let print_functions dfns (bbdfns:fully_bound_symbol_table_t) =
   Hashtbl.iter
   (fun i (id,parent,_,entry) -> match entry with
-  | `BBDCL_function (_,_,_,_,exes) 
-  | `BBDCL_procedure (_,_,_,exes) ->
-    print_function_body dfns id i exes parent
+  | `BBDCL_function (_,bvs,_,_,exes) 
+  | `BBDCL_procedure (_,bvs,_,exes) ->
+    print_function_body dfns id i bvs exes parent
 
   | _ -> ()
   )

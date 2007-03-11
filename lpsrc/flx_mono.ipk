@@ -36,35 +36,7 @@ open Flx_child
 open Flx_reparent
 open Flx_spexes
 open Flx_beta
-
-let get_vs bbdfns i =
-  let _,_,_,entry = Hashtbl.find bbdfns i in
-  match entry with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> vs
-  | `BBDCL_procedure (props,vs,(ps,traint), exes) -> vs
-  | `BBDCL_val (vs,t) -> vs
-  | `BBDCL_var (vs,t) -> vs
-  | `BBDCL_ref (vs,t) -> vs
-  | `BBDCL_tmp (vs,t) -> vs
-  | `BBDCL_glr (props,vs,ret, (p,exes)) -> vs
-  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  -> vs
-  | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) -> vs
-  | `BBDCL_class (props,vs) -> vs
-  | `BBDCL_union (vs,ps) -> vs
-  | `BBDCL_struct (vs,ps) -> vs
-  | `BBDCL_cstruct (vs,ps) -> vs
-  | `BBDCL_newtype (vs,t) -> vs
-  | `BBDCL_cclass (vs,ps) -> vs
-  | `BBDCL_const (vs,t,ct,reqs) -> vs
-  | `BBDCL_insert (vs,s,ikind,reqs) -> vs
-  | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> vs
-  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> vs
-  | `BBDCL_proc (props,vs,argtypes,ct,reqs) -> vs
-  | `BBDCL_abs (vs,tqual,ct,reqs) ->  vs
-  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> vs
-  | `BBDCL_typeclass (props,vs) ->  vs
-  | `BBDCL_instance (props,vs,con,tc,ts) -> vs
-
+open Flx_prop
 
 let cal_parent syms bbdfns i' ts' =
   let id,parent,sr,_ = Hashtbl.find bbdfns i' in
@@ -182,15 +154,23 @@ let rec fixup_expr syms bbdfns fi mt e =
   *)
   let e = match e with
   | `BEXPR_get_named (i,(e,t)),t' ->
+    (*
     print_endline ("REMAPPING component variable " ^ si i);
+    *)
     let vs = get_vs bbdfns i in
+    (*
     print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
+    *)
     begin match t with
     | `BTYP_inst (j,ts) 
     | `BTYP_lvalue (`BTYP_inst (j,ts)) ->
+      (*
       print_endline ("type=" ^ si j ^ ", ts = " ^ catmap "," (sbt syms.dfns) ts);
+      *)
       let i,ts = fi i ts in
+      (*
       print_endline ("Remapped to " ^ si i);
+      *)
       `BEXPR_get_named (i,(e,t)),t'
     | _ -> assert false
     end
@@ -200,26 +180,38 @@ let rec fixup_expr syms bbdfns fi mt e =
   fe' e
   
 let fixup_exe syms bbdfns fi mt exe = 
+  (*
+  print_endline ("FIXUP EXE[In] =" ^ string_of_bexe syms.dfns 0 exe);
+  *)
   let fe e = fixup_expr syms bbdfns fi mt e in
+  let result =
   match map_bexe id fe mt id id exe with
-  | `BEXE_call_direct (sr, i,ts,a) ->
+  | `BEXE_call_direct (sr, i,ts,a) -> assert false
+    (*
     let i,ts = fi i ts in
     `BEXE_call_direct (sr,i,ts,a)
+    *)
 
-  | `BEXE_jump_direct (sr, i,ts,a) ->
+  | `BEXE_jump_direct (sr, i,ts,a) -> assert false
+    (*
     let i,ts = fi i ts in
     `BEXE_jump_direct (sr,i,ts,a)
+    *)
 
-  | `BEXE_call_prim (sr, i',ts,a) ->
+  | `BEXE_call_prim (sr, i',ts,a) -> assert false
+    (*
     let i,ts = fi i' ts in
     if i = i' then
       `BEXE_call_prim (sr,i,ts,a)
     else
       `BEXE_call_direct (sr,i,ts,a)
+    *)
 
-  | `BEXE_call_stack (sr, i,ts,a) ->
+  | `BEXE_call_stack (sr, i,ts,a) -> assert false
+    (*
     let i,ts = fi i ts in
     `BEXE_call_stack (sr,i,ts,a)
+    *)
 
   | `BEXE_call_method_direct (sr,o,i,ts,a) ->
     let i,ts = fi i ts in
@@ -231,24 +223,51 @@ let fixup_exe syms bbdfns fi mt exe =
 
   (* this is deviant case: implied ts is vs of parent! *)
   | `BEXE_init (sr,i,e) ->
+    (*
+    print_endline ("[init] Deviant case variable " ^ si i);
+    *)
     let vs = get_vs bbdfns i in
     let ts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) vs in
     let i,ts = fi i ts in
+    (*
+    print_endline ("[init] Remapped deviant variable to " ^ si i);
+    *)
     `BEXE_init (sr,i,e)
 
+  | `BEXE_svc (sr,i) ->
+    (*
+    print_endline ("[svc] Deviant case variable " ^ si i);
+    *)
+    let vs = get_vs bbdfns i in
+    let ts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) vs in
+    let i,ts = fi i ts in
+    (*
+    print_endline ("[svc] Remapped deviant variable to " ^ si i);
+    *)
+    `BEXE_svc (sr,i)
+
+
   | `BEXE_apply_ctor (sr,dst,cls,clsts,ctor,ctorarg) ->
+    (*
     print_endline ("ORIGINAL: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
+    *)
     let cls,clsts = fi cls clsts and ctor,_ = fi ctor clsts in
+    (*
     print_endline ("REMAPPED: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
+    *)
     let dstvs = get_vs bbdfns dst in
     let dstts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) dstvs in
     let dst,dstts = fi dst dstts in
     `BEXE_apply_ctor (sr,dst,cls,clsts,ctor,ctorarg)
 
   | `BEXE_apply_ctor_stack (sr,dst,cls,clsts,ctor,ctorarg) ->
+    (*
     print_endline ("ORIGINAL: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
+    *)
     let cls,clsts = fi cls clsts and ctor,_ = fi ctor clsts in
+    (*
     print_endline ("REMAPPED: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
+    *)
     let dstvs = get_vs bbdfns dst in
     let dstts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) dstvs in
     let dst,dstts = fi dst dstts in
@@ -256,6 +275,12 @@ let fixup_exe syms bbdfns fi mt exe =
 
 
   | x -> x
+  in
+  (*
+  print_endline ("FIXUP EXE[Out]=" ^ string_of_bexe syms.dfns 0 result);
+  *)
+  result
+
   
 let fixup_exes syms bbdfns fi mt exes =
   map (fixup_exe syms bbdfns fi mt) exes
@@ -265,9 +290,13 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   match entry with
    
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
+    let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
     let ret = mt ret in
+    (*
+    let fi i ts = fi i (map mt ts) in
+    *)
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
       {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps 
     in
@@ -278,6 +307,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
  
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+    let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
@@ -291,6 +321,9 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
       {pkind=pk;pid=s;pindex=k;ptyp=u}) ps 
     in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
+    (*
+    let fi i ts = fi i (map mt ts) in
+    *)
     let exes = fixup_exes syms bbdfns fi mt exes in
     let entry = `BBDCL_procedure (props,[],(ps,traint), exes) in
     let parent = cal_parent syms bbdfns i ts in
@@ -509,22 +542,41 @@ let monomorphise syms bbdfns =
   syms.instances
   ;
 
-  let fi i ts = 
+  let fi polyinst i ts = 
     let ts = map reduce_type ts in
     let i,ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bbdfns i ts in
     try Hashtbl.find polyinst (i,ts),[]
     with Not_found ->  i,ts
   in
 
+  (* make a new table where the ts are ALSO converted to monomorphised
+     class clones .. we still need the originals for non-type uses
+     of the class (eg constructor)
+  *)
+  let polyinst2 = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun (i,ts) n ->
+    Hashtbl.replace polyinst2 (i,ts) n;
+    let ts = map (fixup_type syms bbdfns (fi polyinst)) ts in
+    Hashtbl.replace polyinst2 (i,ts) n;
+  )
+  polyinst
+  ;
+  let fi i ts = fi polyinst2 i ts in
+
   Hashtbl.iter
   (fun (i,ts) n -> 
-    if (n <> i) then
-    (*
-    print_endline (
-       "[monomorphise] Adding instance " ^ si n ^ " = " ^ 
-       si i ^ "["^catmap "," (sbt syms.dfns) ts^"]"
-    );
-    *)
+    if syms.compiler_options.print_flag then begin
+      if (n <> i) then print_endline (
+         "[monomorphise] Adding instance " ^ si n ^ " = " ^ 
+         si i ^ "["^catmap "," (sbt syms.dfns) ts^"]"
+      ) else print_endline (
+         "[monomorphise] Process instance " ^ si n ^ " = " ^ 
+         si i ^ "["^catmap "," (sbt syms.dfns) ts^"]"
+      );
+    end;
+
+
     mono syms bbdfns fi i ts n;
   )
   syms.instances

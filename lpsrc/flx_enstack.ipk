@@ -588,7 +588,11 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
           `BEXE_call_direct (sr,i,ts,a)
           
         | `BBDCL_proc _ -> `BEXE_call_prim (sr,i,ts,a)
-        | _ -> assert false
+
+        (* seems to work at the moment *)
+        | `BBDCL_callback _ -> `BEXE_call_direct (sr,i,ts,a)
+
+        | _ -> syserr sr ("Call to non-procedure " ^ id ^ "<" ^ si i ^ ">")
         end 
 
       | `BEXE_call_method_direct (sr,obj,i,ts,a) ->

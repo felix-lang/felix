@@ -20,6 +20,7 @@ FLX_MODULES = [
   'src/flx_types',
   'src/flx_version',
   'src/flx_util',
+  'src/flx_prop',
   'src/flx_dlst',
   'src/flx_getopt',
   'src/flx_mtypes2',
@@ -364,6 +365,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_filesys.ipk')
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
+@include_file ('flx_prop.ipk')
 @include_file ('flx_unify.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')

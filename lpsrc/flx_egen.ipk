@@ -962,6 +962,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       | `Virtual -> 
         let ts = map tsub ts in
         let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
+        if index <> index' then
+          clierr sr ("Virtual call of " ^ si index ^ " dispatches to " ^ si index')
+        ;
         if index = index' then
         begin
           let entries = 
@@ -1080,6 +1083,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
     if index <> index' then
+      clierr sr ("Virtual call of " ^ si index ^ " dispatches to " ^ si index')
+    ;
+    if index <> index' then
     begin 
       let _,_,sr3,entry = 
         try Hashtbl.find bbdfns index' 
@@ -1143,6 +1149,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | `BEXPR_apply_stack (index,ts,a) ->
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
+    if index <> index' then
+      clierr sr ("Virtual call of " ^ si index ^ " dispatches to " ^ si index')
+    ;
     if index <> index' then
     begin 
       let _,_,sr3,entry = 
