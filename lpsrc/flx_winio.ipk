@@ -316,6 +316,8 @@ fun GetLastError: 1 -> int = 'GetLastError()';
 
 ctypes SOCKET;
 
+typedef socket_t = SOCKET;
+
 // maybe don't use this - let the socket be passed in already associated
 // with an IOCP. do I have to make this explicitly overlapped? If we
 // want async io I think I'll need to associate this with the iocp.
@@ -394,6 +396,8 @@ type wasync_transmit_file = "flx::faio::wasync_transmit_file";
 
 // I could just use HANDLEs everywhere, but I want to see how this goes
 type WFILE = 'HANDLE';
+typedef fd_t = WFILE;
+
 const INVALID_HANDLE_VALUE: WFILE = 'INVALID_HANDLE_VALUE';
 fun eq : WFILE*WFILE -> bool = '($1 == $2)';
 

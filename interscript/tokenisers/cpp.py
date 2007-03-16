@@ -1,4 +1,4 @@
-#line 63 "./lpsrc/flx_cpp_tangler.pak"
+#line 63 ".\lpsrc\flx_cpp_tangler.pak"
 import string, re
 from interscript.tokenisers.cpp_token import *
 

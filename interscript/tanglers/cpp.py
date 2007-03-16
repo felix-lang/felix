@@ -1,4 +1,4 @@
-#line 365 "./lpsrc/flx_cpp_tangler.pak"
+#line 365 ".\lpsrc\flx_cpp_tangler.pak"
 #---------------------------------------------------------
 # cpp tangler: write to a file, insert source line numbers
 # using '#line ' comments

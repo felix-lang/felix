@@ -509,16 +509,16 @@ module Flx_socket {
 #if POSIX
 typedef socket_t = Faio_posix::socket_t;
 #elif WIN32
-typedef socket_t = Faio_win::socket_t;
+typedef socket_t = Faio_win32::socket_t;
 #endif
 
 
 proc mk_listener(l: &socket_t, port: &int, qlen: int)
 {
 #if POSIX
-  Faio_posix::mk_listener(*l,*port, qlen);
+  Faio_posix::mk_listener(l,port, qlen);
 #elif WIN32
-  Faio_win32::mk_listener(*l, port, qlen);
+  Faio_win32::mk_listener(l, port, qlen);
 #endif
 }
 
@@ -693,7 +693,7 @@ print "felix posix accept/connect test\n";
 
 var port = 0;   // let mk_listener choose the port
 print "creating listener\n";
-var listener: socket_t <- mk_listener(port, 1);
+var listener: socket_t <- mk_listener(&port, 1);
 
 print "spawning connector\n";
 // not printing in thread to make output repeatable in
@@ -731,7 +731,7 @@ fun get_data: charp -> address = "$1";
 
 // try to send some data down a socket
 var port = 0;   // let mk_listener choose the port
-var listener: socket_t <- mk_listener(port, 1);
+var listener: socket_t <- mk_listener(&port, 1);
 
 // not printing in thread to make output repeatable in
 // the face of scheduler changes.
@@ -916,13 +916,13 @@ public:
       
     }
 
-    return false;  // let's not get woken, packet still to come (?)
+    return false;  // let's not get woken, packet still to come (??)
   }
 
   // this belongs in faio class
   bool start_async_op_impl(demux::demuxer& demux)
   {
-    fprintf(stderr,"named_pipe: start async_op_impl\n");
+    fprintf(stderr,"named_pipe: start async_op_impl\\n");
     fprintf(stderr, "start_async_op for named pipe\\n");
     return start_overlapped();
   }
