@@ -3373,7 +3373,7 @@ ENDLOCAL
 #!/usr/bin/env bash
 # flx - felix script harness
 @tangle("INSTALL_ROOT="+PREFIX+"/lib/felix/felix-"+flx_version)
-@tangle("FLX_INSTALL_DIR=${FLX_INSTALL_DIR:-"+PREFIX+"/lib/felix/felix-"+flx_version+"}")
+@tangle("FLX_INSTALL_DIR=${FLX_INSTALL_DIR:-$INSTALL_ROOT}")
 @tangle("CYGWIN="+str(CYGWIN))
 @tangle("WIN32="+str(WIN32))
 @tangle("MACOSX="+str(MACOSX))

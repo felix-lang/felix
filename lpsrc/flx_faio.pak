@@ -693,7 +693,7 @@ print "felix posix accept/connect test\n";
 
 var port = 0;   // let mk_listener choose the port
 print "creating listener\n";
-var listener: socket_t <- mk_listener(&port, 1);
+var &listener: socket_t <- mk_listener(&port, 1);
 
 print "spawning connector\n";
 // not printing in thread to make output repeatable in
@@ -731,7 +731,7 @@ fun get_data: charp -> address = "$1";
 
 // try to send some data down a socket
 var port = 0;   // let mk_listener choose the port
-var listener: socket_t <- mk_listener(&port, 1);
+var &listener: socket_t <- mk_listener(&port, 1);
 
 // not printing in thread to make output repeatable in
 // the face of scheduler changes.
