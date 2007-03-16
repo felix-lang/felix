@@ -2586,7 +2586,7 @@ We have no idea if it continues copying.
 @tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
 @tangle('\t\tfelix-'+flx_version+'/configure \\')
 @tangle('\t\tfelix-'+flx_version+'/mk \\')
-@tangle('\t\tfelix-'+flx_version+'/boot \\')
+@tangle('\t\tfelix-'+flx_version+'/autogen.sh \\')
 @tangle('\t\tfelix-'+flx_version+'/*.bat \\')
 @tangle('\t\tfelix-'+flx_version+'/Makefile \\')
 @tangle('\t\tfelix-'+flx_version+'/README \\')

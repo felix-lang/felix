@@ -3157,6 +3157,7 @@ int run_felix(
   
 int main(int argc, char** argv)
 {
+  int error_exit_code = 0;
 #ifndef FLX_STATIC_LINK  
   bool static_link = false;
   if (argc<2) 
@@ -3281,7 +3282,7 @@ int main(int argc, char** argv)
     finalise,
     collector
   );
-  run_felix(
+  error_exit_code = run_felix(
     debug_driver,
     gcp,
     filename,flx_argc,flx_argv
@@ -3312,8 +3313,8 @@ int main(int argc, char** argv)
       fprintf(stderr,"g++: RETURN ADDRESS ERROR %p != %p\n",init_ret,fin_ret);
     }
 #endif
-  if(debug)fprintf(stderr,"flx_run driver ends OK\n");
-  return 0;
+  if(debug)fprintf(stderr,"flx_run driver ends code=%d\n",error_exit_code);
+  return error_exit_code;
 }
 @doc()
 
