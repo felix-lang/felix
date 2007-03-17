@@ -259,7 +259,12 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
     print_endline ("Found procedure "^id^": Inline it!");
     *)
     let relabel = mk_label_map syms exes in
-    let varmap = mk_varmap vs ts in
+    let varmap = 
+      try mk_varmap vs ts 
+      with Failure x -> 
+        print_endline "[call_lifting] FAIL mk_varmap";
+        raise (Failure x)
+    in
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
@@ -319,17 +324,19 @@ let inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a 
   match entry with 
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let id2,_,_,_ = Hashtbl.find bbdfns caller in
-    (*
     print_endline 
     (
       "TAIL Inlining function "^id^
       "<"^si callee^">"^
       "[" ^ catmap "," (sbt syms.dfns) ts ^ "] into " ^ id2 ^ "<" ^ si caller ^">"
     );
-    flush stdout;
-    *)
     let relabel = mk_label_map syms exes in
-    let varmap = mk_varmap vs ts in
+    let varmap = 
+      try mk_varmap vs ts 
+      with Failure x -> 
+        print_endline "[inline_tail_apply] FAIL mk_varmap";
+        raise (Failure x)
+    in
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
@@ -350,18 +357,22 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
   let id,parent,sr,entry = Hashtbl.find bbdfns callee in
   match entry with 
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    (*
     print_endline 
     (
       "Inlining function "^id^
       "<"^si callee^">"^
       "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"^
-      "var="^ si varindex
+      " retvar="^ si varindex ^
+      "\nvs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs
     );
-    flush stdout;
-    *)
+
     let relabel = mk_label_map syms exes in
-    let varmap = mk_varmap vs ts in
+    let varmap = 
+      try mk_varmap vs ts 
+      with Failure x -> 
+        print_endline "[inline_function] FAIL mk_varmap";
+        raise (Failure x)
+    in
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
@@ -434,6 +445,9 @@ let is_generator bbdfns i =
 *)
 let expand_exe syms bbdfns u exe = 
   let xs = 
+    (*
+    print_endline ("EXPAND EXE " ^ string_of_bexe syms.dfns 0 exe);
+    *)
     match exe with
     | `BEXE_axiom_check _ -> assert false
     | `BEXE_call_prim (sr,i,ts,e2) -> assert false
@@ -549,21 +563,11 @@ let expand_exe syms bbdfns u exe =
        a duplicate of this check elsewhere ..
     *)
     
-    | `BEXE_init (sr,i,(`BEXPR_apply_direct(j,ts,e),t))
+    | `BEXE_init (sr,i,(`BEXPR_apply((`BEXPR_closure (j,ts),t'),e),t))
       when is_generator bbdfns j ->
       let e,xs = u sr e in
-      `BEXE_init (sr,i,(`BEXPR_apply_direct(j,ts,e),t)) :: xs
-    
-    | `BEXE_init (sr,i,(`BEXPR_apply_stack(j,ts,e),t))
-      when is_generator bbdfns j ->
-      let e,xs = u sr e in
-      `BEXE_init (sr,i,(`BEXPR_apply_stack(j,ts,e),t)) :: xs
-    
-    | `BEXE_init (sr,i,(`BEXPR_apply_prim(j,ts,e),t))
-      when is_generator bbdfns j ->
-      let e,xs = u sr e in
-      `BEXE_init (sr,i,(`BEXPR_apply_prim(j,ts,e),t)) :: xs
-       
+      `BEXE_init (sr,i,(`BEXPR_apply((`BEXPR_closure (j,ts),t'),e),t)) :: xs
+
     | `BEXE_init (sr,i,e) ->
       let e,xs = u sr e in
       `BEXE_init (sr,i,e) :: xs
@@ -583,6 +587,8 @@ let expand_exe syms bbdfns u exe =
   in 
     let xs = rev xs in
     xs
+
+let check_reductions syms exes = Flx_reduce.reduce_exes syms syms.reductions exes
 
 let heavy_inline_call syms (uses,child_map,bbdfns) 
   caller caller_vs callee ts argument id sr (props, vs, (ps,traint), exes)
@@ -607,7 +613,12 @@ let heavy_inline_call syms (uses,child_map,bbdfns)
   print_endline ("Found procedure "^id^": Inline it!");
   *)
   let relabel = mk_label_map syms exes in
-  let varmap = mk_varmap vs ts in
+  let varmap = 
+    try mk_varmap vs ts 
+    with Failure x -> 
+      print_endline "[heavy_inline_call] FAIL mk_varmap";
+      raise (Failure x)
+  in
   let revariable = reparent_children 
     syms (uses,child_map,bbdfns) 
     caller_vs callee_vs_len callee (Some caller) relabel varmap false
@@ -641,7 +652,12 @@ let make_specialisation syms (uses,child_map,bbdfns)
   print_endline ("Found procedure "^id^": Inline it!");
   *)
   let relabel = mk_label_map syms exes in
-  let varmap = mk_varmap vs ts in
+  let varmap = 
+    try mk_varmap vs ts 
+    with Failure x -> 
+      print_endline "[make_specialisation] FAIL mk_varmap";
+      raise (Failure x)
+  in
   let k,ts' =
     specialise_symbol
       syms (uses,child_map,bbdfns) 
@@ -708,6 +724,10 @@ let inlining_complete bbdfns i =
   | `BBDCL_function (props,_,_,_,_)
   | `BBDCL_procedure (props,_,_,_) ->
     mem `Inlining_complete props
+  | `BBDCL_proc _
+  | `BBDCL_fun _ 
+    -> true
+
   | _ -> assert false
 
 
@@ -804,12 +824,16 @@ let virtual_check syms (bbdfns:fully_bound_symbol_table_t) sr i ts =
     if tcvslen > tslen then
       clierr sr "Not enough type arguments for typeclass"
     ;
+    let fts = rev (list_prefix (rev ts) (tslen - tcvslen)) in
     let ts = list_prefix ts tcvslen in
     let instances = 
       try Hashtbl.find syms.instances_of_typeclass parent 
       with Not_found ->
         print_endline "No instances of typeclass?";
+        (*
         assert false
+        *)
+        []
     in
     (*
     print_endline "Found some instances!";
@@ -850,18 +874,18 @@ let virtual_check syms (bbdfns:fully_bound_symbol_table_t) sr i ts =
         (*
         print_endline (id ^ " -- Dispatch to default");
         *)
-        true,i',ts'
+        true,i',ts' @ fts
       end else begin
         (*
         print_endline (id ^ " -- Dispatch to instance");
         *)
-        true,i',ts'
+        true,i',ts' @ fts
       end
     | _ -> 
       (*
       print_endline (id ^ " -- Dispatch unknown");
       *)
-      false,i,ts
+      false,i,ts @ fts
     end
 
   | _ -> (* print_endline (id ^ " -- Not virtual") *) true,i,ts
@@ -883,7 +907,8 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
 
   | ((`BEXPR_apply_prim (callee,ts,a),t) as e)
   | ((`BEXPR_apply_stack (callee,ts,a),t) as e)
-  | ((`BEXPR_apply_direct (callee,ts,a),t) as e)
+  | ((`BEXPR_apply_direct (callee,ts,a),t) as e) -> assert false
+
   | (((`BEXPR_apply(  (`BEXPR_closure (callee,ts),_) ,a)),t) as e)
     ->
       let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
@@ -1092,9 +1117,11 @@ and heavy_inline_calls
   let exes' = ref [] in (* reverse order *)
   iter  (* each exe *)
   (fun exeIN -> 
-    let xs = ee exeIN in
     (*
     print_endline ("EXE[in] =" ^ string_of_bexe syms.dfns 0 exeIN);
+    *)
+    let xs = ee exeIN in
+    (*
     iter (fun x -> print_endline ("EXE[out]=" ^ string_of_bexe syms.dfns 0 x)) xs;
     print_endline "--";
     *)
@@ -1160,11 +1187,12 @@ and heavy_inline_calls
       | _ ->  exes' := exe :: !exes'
       end
 
-    | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure (callee,ts),_),a),_),argument) -> assert false
-    | `BEXE_call (sr,(`BEXPR_apply_stack (callee,ts,a),_),argument) -> assert false
-
+    | `BEXE_call (sr,(`BEXPR_apply_stack (callee,ts,a),_),argument)
     | `BEXE_call (sr,(`BEXPR_apply_prim (callee,ts,a),_),argument)
-    | `BEXE_call (sr,(`BEXPR_apply_direct (callee,ts,a),_),argument)
+    | `BEXE_call (sr,(`BEXPR_apply_direct (callee,ts,a),_),argument) 
+      -> assert false
+
+    | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure (callee,ts),_),a),_),argument)
       when not (mem callee excludes)
       ->
       (*
@@ -1207,8 +1235,12 @@ and heavy_inline_calls
       | _ -> exes' := exe :: !exes'
       end
 
+    | `BEXE_init (sr,i,(`BEXPR_apply_stack (callee,ts,a),_)) 
     | `BEXE_init (sr,i,(`BEXPR_apply_prim (callee,ts,a),_)) 
-    | `BEXE_init (sr,i,(`BEXPR_apply_direct (callee,ts,a),_)) 
+    | `BEXE_init (sr,i,(`BEXPR_apply_direct (callee,ts,a),_))  
+      -> assert false
+
+    | `BEXE_init (sr,i,(`BEXPR_apply ((`BEXPR_closure(callee,ts),_),a),_)) 
       when not (mem callee excludes)  ->
       (*
       print_endline ("Handling init: " ^ string_of_bexe syms.dfns 0 exe);
@@ -1241,20 +1273,21 @@ and heavy_inline_calls
       | _ -> exes' := exe :: !exes'
       end
 
-    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(callee,ts),_),a),_)) 
-    (* -> assert false .. seems this still happens ..*)
     | `BEXE_fun_return (sr,(`BEXPR_apply_direct (callee,ts,a),_)) 
     | `BEXE_fun_return (sr,(`BEXPR_apply_stack (callee,ts,a),_)) 
     | `BEXE_fun_return (sr,(`BEXPR_apply_prim (callee,ts,a),_)) 
+     -> assert false
+
+    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(callee,ts),_),a),_)) 
       when not (mem callee excludes)  ->
       (*
       print_endline ("Handling return: " ^ string_of_bexe syms.dfns 0 exe);
       *)
+      let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,callee_sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
         if can_inline && inline_check caller callee props exes then
         begin
           if inlining_complete bbdfns callee then
@@ -1270,7 +1303,8 @@ and heavy_inline_calls
             exes' := exe :: !exes'
         end else
           exes' := exe :: !exes'
-      | _ -> exes' := exe :: !exes'
+      | _ -> 
+        exes' := exe :: !exes'
       end
     | _ -> exes' := exe :: !exes' 
     )
@@ -1580,51 +1614,6 @@ and remove_unused_children syms (uses,child_map,bbdfns) i =
     unused_descendants
   end
 
-and check_reductions syms exes =
-  let changed = ref true in
-  let count = ref 10 in
-  let exes = ref exes in
-
-  while !count > 0 && !changed do
-    changed := false;
-    iter (fun (id,bvs,bps,e1,e2) ->
-      (* print_endline ("Check reduction rule " ^ id); *)
-      let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
-      let evars = map (fun {pindex=eidx} -> eidx) bps in
-      let ematch e = 
-        (* print_endline ("Matching " ^ sbe syms.dfns e ^ " with " ^ sbe syms.dfns e1); *)
-        match expr_maybe_matches syms.dfns tvars evars e1 e with
-        | Some (tmgu,emgu) -> 
-          changed := true;
-          (*
-          print_endline ("FOUND A MATCH, candidate " ^ sbe syms.dfns e^" with reduced LHS " ^ sbe syms.dfns e1); 
-          print_endline ("EMGU=" ^catmap ", " (fun (i,e')-> si i ^ " --> " ^ sbe syms.dfns e') emgu);
-          print_endline ("TMGU=" ^catmap ", " (fun (i,t')-> si i ^ " --> " ^ sbt syms.dfns t') tmgu);
-          *)
-          let e = fold_left (fun e (i,e') -> expr_term_subst e i e') e2 emgu in
-          let rec s e = map_tbexpr ident s (list_subst tmgu) e in
-          let e = s e in
-          (*
-          print_endline ("RESULT OF SUBSTITUTION into RHS: " ^ sbe syms.dfns e2 ^ " is " ^ sbe syms.dfns e); 
-          *)
-          e
-        | None -> e
-      in
-      exes := 
-        map 
-        (fun bexe ->
-          map_bexe ident ematch ident ident ident bexe
-        )
-        !exes
-      ;
-    )
-    syms.reductions
-    ;
-    decr count
-  done
-  ;
-  !exes
-
 and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
   let specs = 
     try Some (Hashtbl.find bbdfns i) 
@@ -1648,13 +1637,17 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
       IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bbdfns) excludes i) xcls;
 
-      (*
+      if syms.compiler_options.print_flag then
       print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+      (*
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       recal_exes_usage syms uses sr i ps exes;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
+      (*
+      print_endline (id ^ " Before inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      *)
       let exes = heavy_inline_calls syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
       print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
@@ -1663,8 +1656,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let exes = Flx_tailit.tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
       (*
       print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
-      *)
-      
+      *) 
       recal_exes_usage syms uses sr i ps exes;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
@@ -1694,8 +1686,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
       IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bbdfns) excludes i) xcls;
 
-      (*
+      if syms.compiler_options.print_flag then
       print_endline ("HIB:Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+      (*
       print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       recal_exes_usage syms uses sr i ps exes;
@@ -1710,10 +1703,6 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       *)
       recal_exes_usage syms uses sr i ps exes;
       let exes = Flx_tailit.tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
-      (*
-      print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
-      *)
-      
       (*
       print_endline (id^ " After tailing(2):\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)

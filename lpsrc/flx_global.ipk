@@ -74,7 +74,7 @@ let throw_on_gc syms bbdfns e : unit = match e with
  
   | `BEXPR_apply_direct _,_ -> raise Not_found
   | `BEXPR_apply_method_direct _,_ -> raise Not_found
-  | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> assert false
+  | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> raise Not_found
   | `BEXPR_apply_struct (i,_,_),_ ->
     let id,sr,parent,entry=Hashtbl.find bbdfns i in
     begin match entry with

@@ -142,7 +142,9 @@ let gen_body syms (uses,child_map,bbdfns) id
   varmap ps relabel revariable exes argument 
   sr caller callee vs callee_vs_len inline_method props
 =
+  (*
   let argument = reduce_tbexpr bbdfns argument in
+  *)
   let psis: int list = map (fun {pindex=i} -> i) ps in
 
   (* NOTE: this is the inline method for val's ONLY.
@@ -419,7 +421,10 @@ let gen_body syms (uses,child_map,bbdfns) id
               end
             | _ -> `BEXPR_get_n (!n,p),prjt  
           in
+          (*
           let prj = reduce_tbexpr bbdfns pj in
+          *)
+          let prj = pj in
           let index = revar ix in
           let x = `BEXE_init (sr,index,prj) in
           b := x :: !b;
@@ -500,7 +505,10 @@ let gen_body syms (uses,child_map,bbdfns) id
             end
           | p -> `BEXPR_get_n (!n,p),prjt  
         in
+        (*
         let prj = reduce_tbexpr bbdfns pj in
+        *)
+        let prj = pj in
         let index = revar ix in
         begin match kind with
         | `PFun ->

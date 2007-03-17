@@ -317,10 +317,11 @@ let mk_varmap
   then 
     failwith 
     (
-      "[tsubst] wrong number of type args, expected vs=" ^ 
+      "[mk_varmap] wrong number of type args, expected vs=" ^ 
       si (length vs) ^
       ", got ts=" ^ 
-      si (length ts)
+      si (length ts) ^
+      "\nvs= " ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs
     )
   ;
   let varmap = Hashtbl.create 97 in
@@ -1215,7 +1216,8 @@ let rec expr_unification dfns
   (int * tbexpr_t) list
 = 
   (*
-  print_endline ( "Dvars = { " ^ catmap ", " si (IntSet.elements dvars) ^ "}");
+  print_endline ( "Tdvars = { " ^ catmap ", " si (IntSet.elements tdvars) ^ "}");
+  print_endline ( "Edvars = { " ^ catmap ", " si (IntSet.elements edvars) ^ "}");
   *)
   let teqns = ref [] in
   let eqns = ref eqns in
@@ -1262,10 +1264,22 @@ let rec expr_unification dfns
         s := Some (i,(x,lhst))
 
       | `BEXPR_apply (f1,e1),`BEXPR_apply(f2,e2) ->
+        (*
+        print_endline "matched applications";
+        *)
         eqns := (f1,f2) :: (e1,e2) :: !eqns
 
       | `BEXPR_closure (i,ts1),`BEXPR_closure(j,ts2) when i = j -> ()
 
+      | `BEXPR_apply_prim _, _ 
+      | `BEXPR_apply_direct _, _ 
+      | `BEXPR_apply_stack _, _ 
+      | _, `BEXPR_apply_prim _ 
+      | _, `BEXPR_apply_direct _ 
+      | _, `BEXPR_apply_stack _
+         -> assert false
+
+      (*
       | `BEXPR_apply_prim (i,ts1,e1),`BEXPR_apply_prim(j,ts2,e2) 
       | `BEXPR_apply ( (`BEXPR_closure (i,ts1),_), e1),`BEXPR_apply_prim(j,ts2,e2) 
       | `BEXPR_apply_prim (i,ts1,e1),`BEXPR_apply( (`BEXPR_closure(j,ts2),_),e2) 
@@ -1278,6 +1292,8 @@ let rec expr_unification dfns
         assert (length ts1 = length ts2);
         teqns := combine ts1 ts2 @ !teqns;
         eqns := (e1,e2) :: !eqns
+
+      *)
 
       | `BEXPR_coerce (e,t),`BEXPR_coerce (e',t') ->
         teqns := (t,t') :: !teqns;
@@ -1296,8 +1312,9 @@ let rec expr_unification dfns
         end
 
       | x,y -> 
+        (* the `BTYP_void is a hack .. *)
         (*
-        print_endline ("Terms do not match: " ^ sbt dfns x ^ " <-> " ^ sbt dfns y); 
+        print_endline ("Terms do not match: " ^ sbe dfns (x,`BTYP_void) ^ " <-> " ^ sbe dfns (y,`BTYP_void)); 
         *)
         raise Not_found
       end 
@@ -1345,6 +1362,9 @@ let expr_maybe_matches (dfns:symbol_table_t)
   let tvars = setoflist tvars in
   let evars = setoflist evars in
   let eqns = [le,re] in
+  (*
+  print_endline ("Expr unify: le = " ^ sbe dfns le ^  "\nre = " ^ sbe dfns re);
+  *)
   try Some (expr_unification dfns eqns tvars evars)
   with Not_found -> None
 

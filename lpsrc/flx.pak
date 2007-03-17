@@ -77,6 +77,7 @@ FLX_MODULES = [
   'src/flx_tailit', 
   'src/flx_reparent', 
   'src/flx_spexes', 
+  'src/flx_reduce',
   'src/flx_inline', 
   'src/flx_mono', 
   'src/flx_stack_calls', 
@@ -400,6 +401,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_tailit.ipk')
 @include_file ('flx_spexes.ipk')
 @include_file ('flx_reparent.ipk')
+@include_file ('flx_reduce.ipk')
 @include_file ('flx_inline.ipk')
 @include_file ('flx_mono.ipk')
 @include_file ('flx_enstack.ipk')

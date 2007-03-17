@@ -3110,8 +3110,13 @@ try
       print_functions syms.dfns bbdfns
    end;
 
+    syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
+    if compiler_options.print_flag then 
+      print_endline "PHASE 1 INLINING COMPLETE"
+    ;
+
     let bbdfns = Flx_use.copy_used syms bbdfns in
     let child_map = Flx_child.cal_children syms bbdfns in
     Hashtbl.iter
@@ -3146,29 +3151,13 @@ try
     end;
 
     if compiler_options.print_flag then
+    print_endline "//Removing useless reductions";
+
+    syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
+
+    if compiler_options.print_flag then
     print_endline "//INLINING";
 
-    syms.reductions <- List.filter 
-    (fun (id,bvs,bps,e1,_) ->
-      let psi = List.map (fun {pindex=i} -> i) bps in
-      let ui i = 
-        let used = List.mem i psi or Hashtbl.mem bbdfns i in
-        if not used then begin
-          if compiler_options.print_flag then
-          print_endline ("ELIDING USELESS REDUCTION " ^ id ^ " because " ^ si i ^ " isn't found");
-          raise Not_found
-        end
-      in
-      begin 
-        try
-          Flx_maps.iter_tbexpr ui ignore ignore e1;
-          true
-        with 
-        | Not_found -> false
-      end
-    )
-    syms.reductions
-    ;
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
     let child_map = Flx_child.cal_children syms bbdfns in
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
