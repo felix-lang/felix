@@ -3051,6 +3051,11 @@ try
   if compiler_options.generate_axiom_checks then
   Flx_axiom.axiom_check syms bbdfns;
 
+  (* generate why file *)
+  Flx_why.emit_whycode why_file_name syms bbdfns
+  ;
+
+
   syms.bifaces <- bind_ifaces syms ifaces;
   Hashtbl.clear syms.ticache;
 
@@ -3379,9 +3384,6 @@ try
   syms.lexers 
   ;
   
-  Flx_why.emit_whycode why_file_name syms bbdfns
-  ;
-
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
   let pf = open_out package_file_name in 

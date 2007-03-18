@@ -31,10 +31,49 @@ open Flx_treg
 open Flx_exceptions
 open Flx_maps
 
-let emit_axiom syms bbdfns f (name,sr,bvs,bps,e) =
-  let srt = Flx_srcref.short_string_of_src sr in
-  output_string f ("(* axiom " ^ name ^ ", at "^srt^" *)\n\n")
- 
+let getname syms bbdfns i =
+  try match Hashtbl.find syms.dfns i with {id=id} -> id
+  with Not_found ->
+  try match Hashtbl.find bbdfns i with id,_,_,_ -> id
+  with Not_found -> "index_" ^ si i
+
+let rec why_expr syms bbdfns (e: tbexpr_t) =
+  let ee e = why_expr syms bbdfns e in
+  match e with
+  | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b),_ ->
+    let id = getname syms bbdfns i in
+    id ^ "_" ^ si i ^ "(" ^ 
+    (
+      match b with
+      | `BEXPR_tuple ls,_ -> catmap ", " ee ls
+      | x -> ee x
+    ) ^
+    ")"
+
+
+  | `BEXPR_apply (a,b),_ ->
+     "(" ^ ee a ^ ")(" ^ ee b ^")"
+
+  (* this probably isn't right, ignoring ts *)
+  | `BEXPR_closure (i,ts),_ ->
+    let id = getname syms bbdfns i in
+    id ^ "_" ^ si i
+
+  (* this probably isn't right, ignoring ts *)
+  | `BEXPR_name (i,ts),_ ->
+    let id = getname syms bbdfns i in
+    id ^ "_" ^ si i
+
+  | `BEXPR_tuple ls,_ ->
+    "(" ^ catmap ", " ee ls ^ ")"
+
+  | `BEXPR_literal x,_ -> begin match x with
+    | `AST_int (s,j) -> let j = Big_int.int_of_big_int j in si j
+    | _ -> "UNKLIT"
+    end
+  | _ -> "UNKEXPR"
+
+  
 let cal_bvs bvs =
   let tps = match bvs with
     | [] -> "" 
@@ -80,7 +119,22 @@ let rec cal_type syms bbdfns t =
     end
 
   | _ -> "dunno"
-  
+
+let emit_axiom syms bbdfns f (name,sr,bvs,bps,e) =
+  let srt = Flx_srcref.short_string_of_src sr in
+  output_string f ("(* axiom " ^ name ^ ", at "^srt^" *)\n\n");
+  output_string f ("axiom " ^ name ^ ":\n");
+  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} -> 
+    output_string f 
+    ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bbdfns ptyp ^ ".\n")
+  )
+  (fst bps)
+  ;
+  output_string f "  true=\n";
+  output_string f ("    " ^ why_expr syms bbdfns e);
+  output_string f "\n\n"
+
+   
 let emit_function syms (bbdfns:fully_bound_symbol_table_t) f index id sr bvs ps ret =
   let srt = Flx_srcref.short_string_of_src sr in
   output_string f ("(* function " ^ id ^ ", at "^srt^" *)\n");
