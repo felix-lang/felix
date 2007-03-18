@@ -324,12 +324,14 @@ let inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a 
   match entry with 
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let id2,_,_,_ = Hashtbl.find bbdfns caller in
+    (*
     print_endline 
     (
       "TAIL Inlining function "^id^
       "<"^si callee^">"^
       "[" ^ catmap "," (sbt syms.dfns) ts ^ "] into " ^ id2 ^ "<" ^ si caller ^">"
     );
+    *)
     let relabel = mk_label_map syms exes in
     let varmap = 
       try mk_varmap vs ts 
@@ -357,6 +359,7 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
   let id,parent,sr,entry = Hashtbl.find bbdfns callee in
   match entry with 
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    (*
     print_endline 
     (
       "Inlining function "^id^
@@ -365,7 +368,7 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
       " retvar="^ si varindex ^
       "\nvs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs
     );
-
+    *)
     let relabel = mk_label_map syms exes in
     let varmap = 
       try mk_varmap vs ts 
