@@ -31,10 +31,12 @@ open Flx_treg
 open Flx_exceptions
 open Flx_maps
 
+let mn s = Flx_name.cid_of_flxid s
+
 let getname syms bbdfns i =
-  try match Hashtbl.find syms.dfns i with {id=id} -> id
+  try match Hashtbl.find syms.dfns i with {id=id} -> mn id
   with Not_found ->
-  try match Hashtbl.find bbdfns i with id,_,_,_ -> id
+  try match Hashtbl.find bbdfns i with id,_,_,_ -> mn id
   with Not_found -> "index_" ^ si i
 
 let rec why_expr syms bbdfns (e: tbexpr_t) =
@@ -45,6 +47,7 @@ let rec why_expr syms bbdfns (e: tbexpr_t) =
     id ^ "_" ^ si i ^ "(" ^ 
     (
       match b with
+      | `BEXPR_tuple [],_ -> "void"
       | `BEXPR_tuple ls,_ -> catmap ", " ee ls
       | x -> ee x
     ) ^
@@ -134,11 +137,24 @@ let emit_axiom syms bbdfns f (name,sr,bvs,bps,e) =
   output_string f ("    " ^ why_expr syms bbdfns e);
   output_string f "\n\n"
 
-   
+let emit_reduction syms bbdfns f (name,bvs,bps,el,er) =
+  output_string f ("(* reduction " ^ name ^ " *)\n\n");
+  output_string f ("axiom " ^ name ^ ":\n");
+  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} -> 
+    output_string f 
+    ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bbdfns ptyp ^ ".\n")
+  )
+  bps
+  ;
+  output_string f ("    " ^ why_expr syms bbdfns el);
+  output_string f ("\n  = " ^ why_expr syms bbdfns er);
+  output_string f "\n\n"
+
+    
 let emit_function syms (bbdfns:fully_bound_symbol_table_t) f index id sr bvs ps ret =
   let srt = Flx_srcref.short_string_of_src sr in
   output_string f ("(* function " ^ id ^ ", at "^srt^" *)\n");
-  let name = id ^ "_" ^ si index in
+  let name = mn id ^ "_" ^ si index in
   let dom = match ps with 
     | [] -> "unit" 
     | _ -> catmap ", " (cal_type syms bbdfns) ps 
@@ -235,6 +251,13 @@ let emit_whycode filename syms bbdfns =
   (emit_axiom syms bbdfns f)
   syms.axioms
   ;
+
+  output_string f "(******* REDUCTIONS ******)\n";
+  iter
+  (emit_reduction syms bbdfns f)
+  syms.reductions
+  ;
   close_out f
+
 
 
