@@ -1003,7 +1003,20 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_axiom (sr, id, vs, (ps,pre), e1) ->
     let ps = map (fun (k,id,t) -> k,id,mt sr t) ps in
     let pre = match pre with | None -> None | Some x -> Some (me x) in
-    tack(`AST_axiom (sr, mi sr id, vs, (ps,pre), me e1))
+    let e1 = match e1 with 
+      | `Predicate e -> `Predicate (me e)
+      | `Equation (l,r) -> `Equation (me l, me r)
+    in
+    tack(`AST_axiom (sr, mi sr id, vs, (ps,pre), e1))
+
+  | `AST_lemma (sr, id, vs, (ps,pre), e1) ->
+    let ps = map (fun (k,id,t) -> k,id,mt sr t) ps in
+    let pre = match pre with | None -> None | Some x -> Some (me x) in
+    let e1 = match e1 with 
+      | `Predicate e -> `Predicate (me e)
+      | `Equation (l,r) -> `Equation (me l, me r)
+    in
+    tack(`AST_lemma (sr, mi sr id, vs, (ps,pre), e1))
 
   | `AST_function (sr, id, vs, (ps,pre), (t,post), props, sts ) ->
     let pr = map (fun (x,y,z)->y) ps in

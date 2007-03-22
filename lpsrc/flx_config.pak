@@ -1555,6 +1555,7 @@ flx_expr_terminator_keywords = [
     ("inherit", "INHERIT"),
     ("inline", "INLINE"),
     ("jump", "JUMP"),
+    ("lemma", "LEMMA"),
     ("let", "LET"),
     ("loop", "LOOP"),
     ("lval", "LVAL"),

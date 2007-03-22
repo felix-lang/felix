@@ -1281,7 +1281,39 @@ function_definition:
       let sr = rstoken $1 $6 in
       let args = snd $3 in
       let rsrc = $5 in
-      let stmt = `AST_axiom (sr,name,vs,args,rsrc) in
+      let stmt = `AST_axiom (sr,name,vs,args,`Predicate rsrc) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+    }
+
+  | AXIOM declname fun_arg COLON expr EQUAL expr SEMI
+    {
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let args = snd $3 in
+      let l= $5 in
+      let r= $7 in
+      let stmt = `AST_axiom (sr,name,vs,args,`Equation (l,r)) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+    }
+
+  | LEMMA declname fun_arg COLON expr SEMI
+    {
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let args = snd $3 in
+      let rsrc = $5 in
+      let stmt = `AST_lemma (sr,name,vs,args,`Predicate rsrc) in
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+    }
+
+  | LEMMA declname fun_arg COLON expr EQUAL expr SEMI
+    {
+      let name,vs = hd $2 in
+      let sr = rstoken $1 $6 in
+      let args = snd $3 in
+      let l= $5 in
+      let r= $7 in
+      let stmt = `AST_lemma (sr,name,vs,args,`Equation (l,r)) in
       fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
     }
 

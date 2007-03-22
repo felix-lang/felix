@@ -38,7 +38,8 @@ open Flx_child
 let verify syms bbdfns csr e =
   let xx = ref [] in
   iter
-  ( fun (id, axsr, bvs, (bpl,precond), x) ->
+  ( fun (id, axsr, axiom_kind, bvs, (bpl,precond), x) ->
+    match x with | `BEquation _ -> () | `BPredicate x ->
     (*
     print_endline ("Checking for cases of axiom " ^ id);
     *)

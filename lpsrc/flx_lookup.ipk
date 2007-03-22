@@ -3703,6 +3703,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_val _ 
     | `SYMDEF_parameter _
     | `SYMDEF_axiom _
+    | `SYMDEF_lemma _
     | `SYMDEF_callback _
     | `SYMDEF_fun _
     | `SYMDEF_function _

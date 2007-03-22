@@ -410,6 +410,8 @@ and literal_t =
 Raw expression terms.
 
 @select(h)
+and axiom_kind_t = [`Axiom | `Lemma ]
+and axiom_method_t = [`Predicate of expr_t | `Equation of expr_t * expr_t]
 and expr_t =
   [
   | `AST_interpolate of range_srcref * string
@@ -690,7 +692,8 @@ and statement_t =
 
   (* definitions *)
   | `AST_reduce of range_srcref * id_t * vs_list_t * simple_parameter_t list * expr_t * expr_t 
-  | `AST_axiom of range_srcref * id_t * vs_list_t * params_t * expr_t 
+  | `AST_axiom of range_srcref * id_t * vs_list_t * params_t * axiom_method_t
+  | `AST_lemma of range_srcref * id_t * vs_list_t * params_t * axiom_method_t
   | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
@@ -864,7 +867,8 @@ type dcl_t =
   [
 
   (* data structures *)
-  | `DCL_axiom of       params_t * expr_t
+  | `DCL_axiom of       params_t * axiom_method_t
+  | `DCL_lemma of       params_t * axiom_method_t
   | `DCL_reduce of       simple_parameter_t list * expr_t * expr_t
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * int option * vs_list_t * typecode_t) list
@@ -1160,8 +1164,9 @@ and bbdcl_t =
                          bvs_t * btypecode_t (* existentials and constraint for GADTs *)
   ]
 
+and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-and axiom_t = id_t * range_srcref * bvs_t * bparams_t * tbexpr_t
+and axiom_t = id_t * range_srcref * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
 
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
 
@@ -1179,7 +1184,8 @@ type symbol_definition_t =
   | `SYMDEF_parameter of  param_kind_t * typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
-  | `SYMDEF_axiom of params_t * expr_t
+  | `SYMDEF_axiom of params_t * axiom_method_t
+  | `SYMDEF_lemma of params_t * axiom_method_t
   | `SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | `SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
 
@@ -2134,6 +2140,7 @@ let src_of_stmt e = match e with
   | `AST_function (s,_, _, _ , _, _, _)
   | `AST_reduce (s,_, _, _ , _, _)
   | `AST_axiom (s,_, _, _ , _)
+  | `AST_lemma (s,_, _, _ , _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
   | `AST_macro_name (s, _,_)
@@ -3601,6 +3608,14 @@ and string_of_ikind = function
   | `Body -> "body "
   | `Package -> "package "
 
+and string_of_axiom_method a = match a with
+  | `Predicate e -> string_of_expr e
+  | `Equation (l,r) -> string_of_expr l ^ " = " ^ string_of_expr r
+
+and string_of_baxiom_method dfns a = match a with
+  | `BPredicate e -> string_of_expr e
+  | `BEquation (l,r) -> sbe dfns l ^ " = " ^ sbe dfns r
+
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -3817,11 +3832,18 @@ and string_of_statement level s =
     string_of_expr rsrc ^ " => " ^ string_of_expr rdst ^
     ";\n"
 
-  | `AST_axiom (_,name, vs, ps, rsrc) -> 
+  | `AST_axiom (_,name, vs, ps, a) -> 
     spaces level ^ 
     "axiom " ^ name ^ print_vs vs ^ 
     "("^string_of_parameters ps^"): "^
-    string_of_expr rsrc ^ 
+    string_of_axiom_method a ^ 
+    ";\n"
+
+  | `AST_lemma (_,name, vs, ps, a) -> 
+    spaces level ^ 
+    "lemma " ^ name ^ print_vs vs ^ 
+    "("^string_of_parameters ps^"): "^
+    string_of_axiom_method a ^ 
     ";\n"
 
   | `AST_function (_,name, vs, ps, (res,post), props, ss) -> 
@@ -4287,6 +4309,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
 
   | `SYMDEF_axiom (ps,e1) ->
     "axiom " ^ name ^ print_ivs vs ^ ";"
+
+  | `SYMDEF_lemma (ps,e1) ->
+    "lemma " ^ name ^ print_ivs vs ^ ";"
 
   | `SYMDEF_function (ps,res,props, es) -> 
     let ps,traint = ps in
@@ -4756,7 +4781,13 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     sl ^ 
     "axiom " ^ name^seq ^ print_vs vs ^
     "("^ string_of_parameters ps ^"): " ^
-    string_of_expr e1 ^ ";"
+    string_of_axiom_method e1 ^ ";"
+
+  | `DCL_lemma (ps, e1) -> 
+    sl ^ 
+    "lemma " ^ name^seq ^ print_vs vs ^
+    "("^ string_of_parameters ps ^"): " ^
+    string_of_axiom_method e1 ^ ";"
 
   | `DCL_function (ps, res, props, ss) -> 
     sl ^ 

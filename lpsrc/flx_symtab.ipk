@@ -781,6 +781,31 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
 
+        | `DCL_lemma ((ps,pre),e1) ->
+          let fun_index = n in
+          let ips = ref [] in
+          iter (fun (k,name,typ) -> 
+            let n = !counter in incr counter;
+            if print_flag then
+            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            Hashtbl.add dfns n {
+              id=name;sr=sr;parent=Some fun_index;
+              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
+              dirs=[];symdef=`SYMDEF_parameter (k,typ)
+            };
+            if access = `Public then add_unique pubtab name n;
+            add_unique privtab name n;
+            ips := (k,name,typ) :: !ips 
+          ) ps
+          ; 
+          Hashtbl.add dfns fun_index {
+            id=id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=[];
+            symdef=`SYMDEF_lemma ((rev !ips, pre),e1)
+          };
+          ;
+          add_tvars privtab
+
 
         | `DCL_function ((ps,pre),t,props,asms) ->   
           let is_ctor =  mem `Ctor props in

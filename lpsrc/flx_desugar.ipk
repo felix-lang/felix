@@ -1267,6 +1267,9 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_axiom (sr,name,vs,params, rsrc) ->
     [ `Dcl (sr,name,None,access,vs,`DCL_axiom (params,rsrc)) ]
+
+  | `AST_lemma (sr,name,vs,params, rsrc) ->
+    [ `Dcl (sr,name,None,access,vs,`DCL_lemma (params,rsrc)) ]
  
   | `AST_function (sr,name', vs, params, (res,postcondition), props, sts) -> 
     let ps,traint = params in

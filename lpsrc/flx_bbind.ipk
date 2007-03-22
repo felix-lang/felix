@@ -263,11 +263,26 @@ let bbind_sym syms bbdfns i {
 
     | `SYMDEF_axiom (ps,e1) -> 
       let bps = bindps ps in
-      let be1 = be e1 in
-      syms.axioms <- (name,sr,bvs,bps,be1) :: syms.axioms
+      let be1 = match e1 with 
+        | `Predicate e -> `BPredicate (be e)
+        | `Equation (l,r) -> `BEquation (be l, be r)
+      in
+      syms.axioms <- (name,sr,`Axiom, bvs,bps,be1) :: syms.axioms
       ;
       if syms.compiler_options.print_flag then
       print_endline ("//bound axiom " ^ name ^ "<"^si i^">" ^
+      print_bvs bvs) 
+
+    | `SYMDEF_lemma (ps,e1) -> 
+      let bps = bindps ps in
+      let be1 = match e1 with 
+        | `Predicate e -> `BPredicate (be e)
+        | `Equation (l,r) -> `BEquation (be l, be r)
+      in
+      syms.axioms <- (name,sr,`Lemma, bvs,bps,be1) :: syms.axioms
+      ;
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound lemma " ^ name ^ "<"^si i^">" ^
       print_bvs bvs) 
  
     | `SYMDEF_function (ps,rt,props,exes) -> 
@@ -316,6 +331,7 @@ let bbind_sym syms bbdfns i {
         match Hashtbl.find syms.dfns ip with
         | {symdef=`SYMDEF_reduce _} 
         | {symdef=`SYMDEF_axiom _} 
+        | {symdef=`SYMDEF_lemma _} 
         | {symdef=`SYMDEF_function _} 
         | {symdef=`SYMDEF_regmatch _} 
         | {symdef=`SYMDEF_reglex _} 
