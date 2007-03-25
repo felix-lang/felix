@@ -5426,9 +5426,6 @@ pick between the parses.
 @kat("parser generator")
 #import <flx.flxh>
  
-// the input string
-data := "1+2+3$";
- 
 // a type for tokens
 union token_t =
   | TOK_EOF
@@ -5437,21 +5434,18 @@ union token_t =
 ;
  
 // a token stream generator
-var i = 0;
-fun get_token():token_t =
-{
-  ch := data.[i to i+1];
-  ++i;
-  tok :=
-    match ch with
-    | "$" => TOK_EOF
-    | "+" => TOK_PLUS
-    | "1" => TOK_INT 1
-    | "2" => TOK_INT 2
-    | "3" => TOK_INT 3
-    endmatch
-  ;
-  return tok;
+gen get_token (s:string) ():token_t = {
+  var i: int; forall i in 0 upto (len s) - 1 do
+    yield 
+      match s.[i to i+1] with
+      | "+" => TOK_PLUS
+      | "1" => TOK_INT 1
+      | "2" => TOK_INT 2
+      | "3" => TOK_INT 3
+      endmatch
+    ;
+  done;
+  return TOK_EOF;
 }
  
 // a type for expression terms
@@ -5468,10 +5462,13 @@ nonterm eexpr : expr_t =
  
 | y:TOK_INT => Integr y
 ;
+
+// the input string
+data := "1+2+3";
  
 // a parser for our example
 var z : 1 + int =
-  parse (the get_token) with
+  parse get_token data with
   | e: eexpr => match e with | Integr ?i => i endmatch
   endmatch
 ;
@@ -5492,30 +5489,25 @@ endl;
 @kat("parser generator")
 #import <flx.flxh>
 
-data := "1+2+3$";
-
 union token_t = 
   | TOK_EOF
   | TOK_PLUS
   | TOK_INT of int
 ;
 
-var i = 0;
-
-fun get_token():token_t = 
-{
-  ch := data.[i to i+1];
-  ++i;
-  tok := 
-    match ch with
-    | "$" => TOK_EOF
-    | "+" => TOK_PLUS
-    | "1" => TOK_INT 1
-    | "2" => TOK_INT 2
-    | "3" => TOK_INT 3
-    endmatch
-  ;
-  return tok;
+// a token stream generator
+gen get_token (s:string) ():token_t = {
+  var i: int; forall i in 0 upto (len s) - 1 do
+    yield 
+      match s.[i to i+1] with
+      | "+" => TOK_PLUS
+      | "1" => TOK_INT 1
+      | "2" => TOK_INT 2
+      | "3" => TOK_INT 3
+      endmatch
+    ;
+  done;
+  return TOK_EOF;
 }
 
 union expr_t = 
@@ -5532,8 +5524,11 @@ nonterm eexpr : expr_t =
 ;
 
 proc try_parse() {
+  // the input string
+  data := "1+2+3";
+
   var z : 1 + int = 
-    parse (the get_token) with 
+    parse get_token data with 
     | e: eexpr => match e with | Integr ?i => i endmatch
     endmatch
   ;
@@ -5641,7 +5636,81 @@ endl;
 
 @select(env.expect())
 6
-@env.head(2,"Mixed Mode Arithmetic")
+@doc()
+
+@env.head(2,"Lexing and parsing example")
+@doc()
+
+@select(env.test('flx.'))
+#import <flx.flxh>
+
+open List;
+
+union token_t =
+  | TOK_EOF
+  | TOK_PLUS
+  | TOK_INT of int
+;
+
+fun lexit(start:iterator) (finish:iterator):iterator*token_t =>
+  reglex start to finish with
+  | "+" => TOK_PLUS
+  | ["0"-"9"]+ => TOK_INT $ int $ string_between(lexeme_start, lexeme_end)
+  endmatch
+;
+
+gen get_token (var s:string) ():token_t = {
+  print s; endl;
+  val first = Lexer::start_iterator s;
+  val finish = Lexer::end_iterator s;
+  var current = first;
+start:>
+  if current == finish do
+    goto stop;
+  done;
+    val next, tok = lexit current finish;
+    current = next;
+    yield tok;
+  goto start;
+stop:>
+  return TOK_EOF;
+}
+
+union expr_t =
+  | Integr of int
+;
+
+nonterm eexpr : expr_t =
+| xx:eexpr TOK_PLUS y:TOK_INT =>
+  match xx with
+  | Integr ?i => Integr (i+y)
+  endmatch
+
+| y:TOK_INT => Integr y
+;
+
+proc try_parse() {
+  var z : 1 + int =
+    parse get_token "1+2+3" with
+    | e: eexpr => match e with | Integr ?i => i endmatch
+    endmatch
+  ;
+
+  match z with
+  | case 0 => { print "Error"; }
+  | case 1 (?i) => { print i; }
+  endmatch;
+  endl;
+}
+
+try_parse();
+@doc()
+
+@select(env.expect())
+6
+@doc()
+
+@env.head(1,"Mixed Mode Arithmetic")
 
 @select(env.test('.flx'))
 @kat("type constraints")
@@ -5656,7 +5725,7 @@ print$ x + y; endl;
 
 @select(env.expect())
 3
-@env.head(2,"Classes")
+@env.head(1,"Classes")
 
 @select(env.test('.flx'))
 @kat("classes")
@@ -5900,6 +5969,7 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 13
 @doc()
 
+@env.head(1,"String formating")
 @env.head(2,"C formating")
 This is how you do printf-style string formatting.
 
@@ -5958,7 +6028,7 @@ starting with a letter or underscore, and
 continuing with any letter, underscore, digit,
 or single quote mark.
 
-@env.head(2,"Typeclasses")
+@env.head(1,"Typeclasses")
 Felix has typeclasses similar to Haskell.
 @select(env.test('.flx'))
 @kat("typeclasses")
