@@ -2292,7 +2292,7 @@ open module Array
     forall i in 0 upto len(x) - 1 do
       if eq(x.[i]) do
         return Some x.[i];
-    done;
+      done;
     done;
 
     return None[T];
