@@ -3341,9 +3341,24 @@ try
   ;
 
   begin let cnt = ref 1 in
-  let find_parsers this e = match e with 
+  let find_parsers this sr e = match e with 
     | `BEXPR_parse ((_,t') as e,ii),_ -> 
       if not (Hashtbl.mem syms.parsers (this,t',ii)) then begin
+        begin match t' with
+        | `BTYP_function (`BTYP_tuple [],`BTYP_inst(i,[])) ->
+          let token_id,parent,sr',entry = Hashtbl.find bbdfns i in
+          begin match entry with
+          | `BBDCL_union ([],cts) -> ()
+          | _ -> clierr sr 
+            ("Parser function must have unit domain and return a non-polymorphic union\n" ^
+            "Got: " ^ sbt syms.dfns t')
+          end
+        | _ -> clierr sr 
+            ("Parser function must have unit domain and return a non-polymorphic union\n" ^
+            "Got: " ^ sbt syms.dfns t')
+        end
+        ;
+        
         let n = !cnt in incr cnt;
         Hashtbl.add syms.parsers (this,t',ii) n;
         (*
@@ -3366,7 +3381,12 @@ try
   (fun i (_,_,_,entry) -> match entry with
   | `BBDCL_function (_,_,_,_,exes)
   | `BBDCL_procedure (_,_,_,exes) ->
-    List.iter (Flx_maps.iter_bexe nul (find_parsers i) nul nul nul) exes
+    List.iter 
+      (fun exe -> 
+         let sr = src_of_bexe exe in 
+         Flx_maps.iter_bexe nul (find_parsers i sr) nul nul nul exe
+      ) 
+    exes
   | _ -> ()
   )
   bbdfns
