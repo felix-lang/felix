@@ -832,7 +832,9 @@ let virtual_check syms (bbdfns:fully_bound_symbol_table_t) sr i ts =
     let instances = 
       try Hashtbl.find syms.instances_of_typeclass parent 
       with Not_found ->
+        (*
         print_endline "No instances of typeclass?";
+        *)
         (*
         assert false
         *)
