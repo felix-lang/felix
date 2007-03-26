@@ -4518,6 +4518,11 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     (*
     print_endline ("BINDING NAME " ^ name);
     *)
+    if name = "_felix_type_name" then
+       let sname = catmap "," string_of_typecode ts in
+       let x = `AST_literal (sr,`AST_string sname) in
+       be x
+    else
     let ts = map (bt sr) ts in
     begin match inner_lookup_name_in_env syms env rs sr name with
     | `NonFunctionEntry (index) -> 
