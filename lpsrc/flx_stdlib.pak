@@ -974,8 +974,9 @@ module C_hack
   fun cast[dst,src]: src->dst = '(?1)($1)';
   fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
+  fun const_cast[dst,src]: src->dst = 'const_cast<?1>($1)';
   fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
-  fun reinterpret[dst,src]: src->dst = "reinterpret<?1>($1)";
+  fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($1)';
 
   const sizeof[t]:size = 'sizeof(?1)';
 
