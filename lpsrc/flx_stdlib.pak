@@ -1612,6 +1612,10 @@ open module String
   fun vsprintf[t]: C_hack::ptr[char] * t -> string = 
     "flx::rtl::strutil::flx_asprintf($1,$T2)" requires flx_strutil
   ;
+
+  fun vsprintf[t]: string * t -> string = 
+    "flx::rtl::strutil::flx_asprintf(const_cast<char*>($1.c_str()),$T2)" requires flx_strutil
+  ;
 }
 
 type ustring = "basic_string<uint32_t>" requires string_hxx;
