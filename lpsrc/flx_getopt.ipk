@@ -151,24 +151,30 @@ let get_felix_options options =
     reverse_return_parity = check_key options "e"; 
     force_recompile = check_keys options ["force"];
     max_inline_length = 
-      begin match get_key_value options "inline" with 
-      | Some i -> 
-        (
-          if i = "none" then 0 else
-          if i = "" then 50 else
-          try int_of_string i 
-          with _ -> 
-            failwith ("Invalid value for inline: '" ^ i^"'")
-        )
-      | None -> 
-      begin match check_key options "noinline" with
-      | true -> 0
-      | false -> 
-      begin match check_keys options ["inline";"opt";"optimise"] with
-      | true -> 50 
-      | false -> 5 
-      end
-      end
+      begin
+        let inline =
+          match get_key_value options "inline" with 
+          | Some i -> 
+            (
+              if i = "none" then 0 else
+              if i = "" then 50 else
+                try 
+                  int_of_string i 
+                with _ -> 
+                  failwith ("Invalid value for inline: '" ^ i^"'")
+            )
+          | None -> 
+            begin match check_key options "noinline" with
+            | true -> 0
+            | false -> 
+              begin match check_keys options ["inline";"opt";"optimise"] with
+              | true -> 50 
+              | false -> 5 
+              end
+            end
+        in
+          (* we need to at least inline a little for typeclasses *)
+          if inline < 1 then 1 else inline
       end
     ;
     hash_include = get_key_values options "hash-include";
