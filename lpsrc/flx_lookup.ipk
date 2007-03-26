@@ -3852,6 +3852,8 @@ and bind_regdef syms env regexp_exclude e =
           {symdef=entry} ->
           match entry with
           | `SYMDEF_regdef e ->
+            let mkenv i = build_env syms (Some i) in
+            let env = mkenv (sye i) in
             bind_regdef syms env ((sye i)::regexp_exclude) e
           | _ -> 
             let sr = src_of_expr (qn:>expr_t) in
