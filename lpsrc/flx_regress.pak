@@ -2320,6 +2320,52 @@ export proc foo of (int*int) as "foo";
 @select(env_rt.expect())
 @doc()
 
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("reglex")
+#import <flx.flxh>
+
+open Lexer;
+
+module Foo
+{
+  regexp space = ' ';
+  regexp tab = '\t';
+  regexp white = space | tab;
+}
+
+fun f (start:iterator, finish:iterator) =>
+  reglex start to finish with
+  | Foo::white => "foo"
+  endmatch
+;
+
+var s = " ";
+val start = start_iterator s;
+val finish = end_iterator s;
+
+val x, y = f (start, finish);
+
+print y; endl;
+@select(env_rt.expect())
+foo
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("regmatch")
+#import <flx.flxh>
+
+fun format (suffix:string) : string =>
+  regmatch "1" with
+  | "1" => ".static_suffix" + suffix
+  endmatch
+;
+
+print $ format (".dynamic_suffix"); endl;
+@select(env_rt.expect())
+.static_suffix.dynamic_suffix
+@doc()
 
 @env_nd.head(2,"Non deterministic tests")
 
