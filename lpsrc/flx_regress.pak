@@ -1816,11 +1816,11 @@ zzz 1;
 
 open List;
 
-typeclass Str[T] {
+typeclass Str2[T] {
   virtual fun str2: T->string;
 }
 
-instance Str[int] {
+instance Str2[int] {
   fun str2 (x:int): string => str x;
 }
 
@@ -1831,7 +1831,7 @@ fun str2[T with Str[T]] (x:list[T]):string =>
   endmatch
 ;
 
-fun str2[T with Str[T]] (x:T) => str2 x;
+fun str2[T with Str2[T]] (x:T) => str2 x;
 
 print$ str2 5; endl;
 print$ str2$ list(1,2,3,4); endl;
@@ -2365,6 +2365,129 @@ fun format (suffix:string) : string =>
 print $ format (".dynamic_suffix"); endl;
 @select(env_rt.expect())
 .static_suffix.dynamic_suffix
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("show typeclass")
+#import <flx.flxh>
+
+proc p[T with Show[T]] (t:T) {
+  var x = t;
+  print $ "str:  " + (str x); endl;
+  print $ "repr: " + (repr x); endl;
+}
+
+p true;
+p 1t;
+p 1ut;
+p 1s;
+p 1us;
+p 1;
+p 1u;
+p 1l;
+p 1ul;
+p 1v;
+p 1uv;
+
+/*
+// to dodge c++'s divide-by-zero check
+val fzero = 0.0f;
+val dzero = 0.0;
+val ldzero = 0.0l;
+
+p 1.0f;
+p 1.5f;
+p (0.0f/fzero);
+p (1.0f/fzero);
+p (-1.0f/fzero);
+
+p 1.0;
+p (0.0/dzero);
+p (1.0/dzero);
+p (-1.0/dzero);
+
+p 1.0l;
+p (0.0l/ldzero);
+p (1.0l/ldzero);
+p (-1.0l/ldzero);
+*/
+
+p $ char 'a';
+p $ wchar 97l;
+p $ uchar $ 97u;
+
+p $ C_hack::cast[byte] 1t;
+p $ C_hack::cast[address] 16ul;
+p $ C_hack::cast[caddress] 16ul;
+p $ C_hack::cast[vaddress] 16ul;
+p $ C_hack::cast[cvaddress] 16ul;
+p $ C_hack::cast[offset] 16ul;
+
+p "Domo Arigato,\n\tMr Roboto!";
+//p u"Domo Arigato,\n\tMr Roboto!";
+
+p $ List::list(1,2,3);
+p $ List::list("a","b","c");
+
+// can't have the same number of template and array typeclasses
+/*
+p $ (1,2,3,4);
+p $ (1,2,3,4,5);
+p $ (1,2,3,4,5,6);
+p $ (1,"b");
+p $ (1,"b",1.0);
+*/
+@doc()
+
+@select(env_rt.expect())
+str:  true
+repr: true
+str:  1
+repr: 1t
+str:  1
+repr: 1ut
+str:  1
+repr: 1s
+str:  1
+repr: 1us
+str:  1
+repr: 1
+str:  1
+repr: 1u
+str:  1
+repr: 1l
+str:  1
+repr: 1ul
+str:  1
+repr: 1v
+str:  1
+repr: 1uv
+str:  a
+repr: a
+str:  97
+repr: 97
+str:  97
+repr: 97
+str:  1
+repr: 1
+str:  16
+repr: 16
+str:  16
+repr: 16
+str:  16
+repr: 16
+str:  16
+repr: 16
+str:  16
+repr: 16
+str:  Domo Arigato,
+        Mr Roboto!
+repr: 'Domo Arigato,\n\tMr Roboto!'
+str:  [1, 2, 3]
+repr: [1, 2, 3]
+str:  ['a', 'b', 'c']
+repr: ['a', 'b', 'c']
 @doc()
 
 @env_nd.head(2,"Non deterministic tests")
