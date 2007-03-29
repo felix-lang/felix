@@ -3121,6 +3121,14 @@ try
     if compiler_options.print_flag then 
       print_endline "PHASE 1 INLINING COMPLETE"
     ;
+    if compiler_options.print_flag then begin
+      print_endline "";
+      print_endline "---------------------------";
+      print_endline "POST PHASE 1 FUNCTION SET";
+      print_endline "---------------------------";
+      print_endline "";
+      print_functions syms.dfns bbdfns
+    end;
 
     let bbdfns = Flx_use.copy_used syms bbdfns in
     let child_map = Flx_child.cal_children syms bbdfns in

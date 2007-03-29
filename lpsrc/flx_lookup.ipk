@@ -1089,7 +1089,9 @@ and bind_type'
         notation for that yet either
       *)
       let args = map (fun (i,s) -> 
+      (*
       print_endline ("Mapping " ^ s ^ "<"^si i^"> to TYPE"); 
+      *)
       s,`BTYP_var (i,`BTYP_type 0)) (explicit_vars @ as_vars) 
       in
       let t' = btp t' (params@args) in

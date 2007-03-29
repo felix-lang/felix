@@ -414,7 +414,9 @@ let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list =
       end
   in
   let rec aux tail res = match tail with
-  | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail 
+  | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> assert false
+
+  | (`BEXE_call (sr,(`BEXPR_closure(i,ts),_),a)) as x :: tail 
     when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
     ->
     if can_loop ()
@@ -432,7 +434,9 @@ let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list =
       aux tail (x::res)
     end
 
-  | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,a),_)) :: tail 
+  | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,a),_)) :: tail -> assert false
+
+  | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure (i,ts),_),a),_)) :: tail 
     when (i,ts)=(this,ts') 
     ->
      (*
@@ -442,7 +446,7 @@ let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list =
      let res = cal_tail_call a @ res
      in aux tail res
 
-  | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail  ->
+  | (`BEXE_call(sr,(`BEXPR_closure (i,ts),_),a)) as x :: tail  ->
     (*
     print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt syms.dfns) ts^"]");
     print_endline ("This = " ^ si this);

@@ -398,6 +398,26 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
+  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  ->
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let mt t = list_subst vars t in
+    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
+    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
+      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps 
+    in
+    let ret = mt ret in
+    let h2 = Hashtbl.create 97 in
+    Hashtbl.iter (fun j e -> 
+      let e = fixup_expr syms bbdfns fi mt e in
+      Hashtbl.add h2 j e
+    )
+    h
+    ;
+    let entry = `BBDCL_regmatch (props,[],(ps,traint),ret,(alpha,states,h2,mx)) in
+    let parent = cal_parent syms bbdfns i ts in
+    Hashtbl.replace bbdfns n (id,parent,sr,entry)
+
+
   (*
   | `BBDCL_glr (props,vs,ret, (p,exes)) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -405,13 +425,6 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let ret = mt ret in
     let exes = fixup_exes syms bbdfns mt exes in
     `BBDCL_glr (props,[],ret,(p,exes))
-
-  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
-    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns mt x) in
-    let ret = mt ret in
-    `BBDCL_regmatch (props,[],(ps,traint),ret,(alpha,states,h,mx))
 
   | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -495,10 +508,10 @@ let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
   | `BBDCL_tmp (vs,t) -> true
   | `BBDCL_class (props,vs) -> true
   | `BBDCL_const (_,_,`Str "#this",_) -> true
+  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  -> true
 
  
   | `BBDCL_glr (props,vs,ret, (p,exes)) -> false
-  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  -> false
   | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) -> false
   | `BBDCL_union (vs,ps) -> false
   | `BBDCL_struct (vs,ps) -> false

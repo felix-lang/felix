@@ -23,6 +23,9 @@ val is_recursive: usage_table_t -> bid_t -> bool
 val cal_exe_usage:
   sym_state_t -> usage_table_t -> int -> bexe_t -> unit
 
+val cal_expr_usage:
+  sym_state_t -> usage_table_t -> int -> range_srcref -> tbexpr_t -> unit
+
 val cal_param_usage:
   sym_state_t -> 
   usage_table_t -> 
@@ -110,6 +113,9 @@ and cal_exe_usage syms h k exe =
   let ui i = add h k i sr in
   let ut t = uses_type h k sr t in
   iter_bexe ui ue ut ignore ignore exe
+
+let cal_expr_usage syms h k sr e =
+  process_expr h k sr e
 
 let uses_production h k sr p =
   let uses_symbol (_,nt) = match nt with

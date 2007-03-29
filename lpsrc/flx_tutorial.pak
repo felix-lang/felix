@@ -6034,17 +6034,17 @@ Felix has typeclasses similar to Haskell.
 @kat("typeclasses")
 #import <flx.flxh>
 
-typeclass Str[T] {
+typeclass XStr[T] {
   virtual fun str2: T->string;
 }
 
-instance Str[int] {
+instance XStr[int] {
   fun str2 (x:int):string => str x;
 }
 
 open List;
 
-fun foo[T with Str[T]] (x:list[T]):string =>
+fun foo[T with XStr[T]] (x:list[T]):string =>
   match x with
   | Empty[T] => "()"
   | Cons(?h, ?t) => "(" + (str2 h) + ", " + (foo t) + ")"
@@ -6065,18 +6065,18 @@ in a module:
 
 open List;
 
-typeclass Str[T] {
+typeclass XStr[T] {
   virtual fun str2: T->string;
 }
 
 module Foo {
-  instance Str[int] {
+  instance XStr[int] {
     fun str2 (x:int):string => str x;
   }
 
-  fun foo[T with Str[T]] (x:T):string => str2 x;
+  fun foo[T with XStr[T]] (x:T):string => str2 x;
 
-  fun foo[T with Str[T]] (x:list[T]):string =>
+  fun foo[T with XStr[T]] (x:list[T]):string =>
     match x with
     | Empty[T] => "()"
     | Cons(?h, ?t) => "(" + (str2 h) + ", " + (foo t) + ")"

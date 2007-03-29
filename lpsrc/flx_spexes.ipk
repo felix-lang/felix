@@ -30,6 +30,15 @@ val gen_body :
   property_t list ->               (* properties *)
   bexe_t list
 
+val recal_exes_usage:
+  sym_state_t ->
+  usage_table_t ->
+  range_srcref ->
+  int ->
+  bparameter_t list ->
+  bexe_t list ->
+  unit
+
 @h = tangler("src/flx_spexes.ml")
 @select(h)
 open Flx_util
@@ -50,6 +59,8 @@ open Flx_exceptions
 open Flx_use
 open Flx_child
 open Flx_reparent
+open Flx_call
+
 
 type submode_t = [`Eager | `Lazy]
 
@@ -119,11 +130,8 @@ prevent gross bloat.
 *)
 
 let idt t = t 
-let subarg syms bbdfns argmap exe =
-  (*
-  print_endline ("[subarg] Checking " ^ string_of_bexe syms.dfns 0 exe);
-  *)
-  let rec rpl x = match map_tbexpr ident rpl idt x with
+
+let rec rpl syms argmap x = match map_tbexpr ident (rpl syms argmap) idt x with
   (* No need to check ts or type here *)
   | (`BEXPR_name (i,_),_) as x -> 
     (try 
@@ -134,14 +142,20 @@ let subarg syms bbdfns argmap exe =
       x'
       with Not_found -> x)
   | x -> x
-  in
-  map_bexe idt rpl idt idt idt exe
+
+let subarg syms bbdfns argmap exe =
+  map_bexe idt (rpl syms argmap) idt idt idt exe
 
 (* NOTE: result is in reversed order *)
 let gen_body syms (uses,child_map,bbdfns) id 
   varmap ps relabel revariable exes argument 
   sr caller callee vs callee_vs_len inline_method props
 =
+  (*
+  print_endline ("Gen body caller = " ^ si caller ^ 
+    ", callee=" ^ id ^ "<" ^ si callee ^ ">"
+  );
+  *)
   (*
   let argument = reduce_tbexpr bbdfns argument in
   *)
@@ -596,6 +610,7 @@ let gen_body syms (uses,child_map,bbdfns) id
           recal_exes_usage syms uses sr i ps exes;
           Hashtbl.replace bbdfns i 
           (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
+
         | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
           (*
           print_endline ("MODIFY " ^ si i);
@@ -604,6 +619,35 @@ let gen_body syms (uses,child_map,bbdfns) id
           recal_exes_usage syms uses sr i ps exes;
           Hashtbl.replace bbdfns i 
           (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
+
+        | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx)) ->
+          (try Hashtbl.remove uses i with Not_found -> ());
+          iter (cal_param_usage syms uses sr i) ps;
+          let h2 = Hashtbl.create 97 in
+          Hashtbl.iter (fun k x ->
+            let x = rpl syms argmap x in
+            Hashtbl.add h2 k x;
+            cal_expr_usage syms uses i sr x
+          )
+          h
+          ;
+          Hashtbl.replace bbdfns i
+          (id,parent,sr,`BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h2,mx)))
+
+        | `BBDCL_reglex (props,vs,(ps,traint),j,ret,(alpha,states,h,mx)) ->
+          (try Hashtbl.remove uses i with Not_found -> ());
+          iter (cal_param_usage syms uses sr i) ps;
+          let h2 = Hashtbl.create 97 in
+          Hashtbl.iter (fun k x ->
+            let x = rpl syms argmap x in
+            Hashtbl.add h2 k x;
+            cal_expr_usage syms uses i sr x
+          )
+          h
+          ;
+          Hashtbl.replace bbdfns i
+          (id,parent,sr,`BBDCL_reglex (props,vs,(ps,traint),j,ret,(alpha,states,h2,mx)))
+
         | _ -> ()
       )
       kids
