@@ -55,10 +55,6 @@ open List
 *)
 
 let fixups = [
-  (* C++ keywords *)
-  "true","_true";
-  "false","_false";
-  
   (* special names in thread frame *)
   "argc","_argc";
   "argv","_argv";
@@ -66,18 +62,9 @@ let fixups = [
   "flx_stdout","_flx_stdout";
   "flx_stderr","_flx_stderr";
   "gc","_gc";
-  
-  (*
-  "read","_read";
-  "write","_write";
-  *)
-
-  (* C keywords shouldnt occur because they should all be Felix keywords *)
-  "while","_while";
-  "continue","_continue";
-  "break","_break";
-  "for","_for";
-  "return","_return";
+@for ck in cpp_keywords:
+  tangle('  "' + ck + '","_' + ck+'";')
+@#
 ]
 
 let cid_of_flxid s = 
