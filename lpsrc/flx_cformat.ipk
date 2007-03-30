@@ -27,36 +27,42 @@ let fmts = [
 
   ("hd","short");
   ("hi","short");
+  ("hu","ushort");
   ("ho","ushort");
   ("hx","ushort");
   ("hX", "ushort");
 
   ("d","int");
   ("i","int");
+  ("u","uint");
   ("o","uint");
   ("x","uint");
   ("X", "uint");
 
   ("ld","long");
   ("li","long");
+  ("lu","ulong");
   ("lo","ulong");
   ("lx","ulong");
   ("lX","ulong");
 
   ("lld","vlong");
   ("lli","vlong");
+  ("llu","uvlong");
   ("llo","uvlong");
   ("llx","uvlong");
   ("llX","uvlong");
 
   ("zd","size");
   ("zi","size");
+  ("zu","size");
   ("zo","size");
   ("zx","size");
   ("zX","size");
 
   ("td","ptrdiff");
   ("ti","ptrdiff");
+  ("tu","ptrdiff");
   ("to","ptrdiff");
   ("tx","ptrdiff");
   ("tX","ptrdiff");
@@ -89,7 +95,7 @@ let fmts = [
 
 
 let is_final ch =
-  try ignore(index "dioxXeEfFgGaAcsSpPn" ch); true
+  try ignore(index "udioxXeEfFgGaAcsSpPn" ch); true
   with Not_found -> false
 
 let is_alpha ch =
