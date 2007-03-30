@@ -381,16 +381,6 @@ GC_EXTERN void *operator new
   flx::gc::generic::collector_t &, 
   flx::gc::generic::gc_shape_t &
 );
-
-/// Allocate collectable array
-GC_EXTERN void *operator new []
-(
-  std::size_t, 
-  flx::gc::generic::collector_t &, 
-  flx::gc::generic::gc_shape_t &, 
-  unsigned long
-);
-
 #endif
 
 @h=tangler('rtl/flx_gc_private.hpp')
@@ -585,21 +575,6 @@ void *operator new(
   }
   void *p = collector.allocate(&shape,1);
   flx::gc::generic::set_used (p, 1);
-  return p;
-}
-
-// array form: default initialised, NOT recommended!
-
-void *operator new [] (
-  std::size_t amt,
-  flx::gc::generic::collector_t &collector,
-  flx::gc::generic::gc_shape_t &shape,
-  unsigned long count
-)
-{
-  assert (amt == shape.amt * count);
-  void *p = collector.allocate(&shape,count);
-  flx::gc::generic::set_used (p, count);
   return p;
 }
 

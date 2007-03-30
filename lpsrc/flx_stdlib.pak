@@ -1427,10 +1427,10 @@ open module String
   proc pluseq: lvalue[string] * charp = "$1.append($2);";
   proc pluseq: lvalue[string] * char = "$1 += $2;";
 
-  fun str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
-  fun str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
-  fun str: ucharp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
-  fun str: ucharcp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
+  //fun str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+  //fun str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+  //fun str: ucharp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
+  //fun str: ucharcp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
   //fun str: string -> string = '$1';
 
   // we need to cast to an int so that c++ won't complain
@@ -2418,22 +2418,14 @@ open module Varray
 {
    _gc_pointer _gc_type t type varray[t] = "?1*";
 
-   // default initialised to n elements
-   gen mkiv[t]: ulong -> varray[t] = 
-     "new(*PTF gc,@?1,(unsigned long)$1) ?1[$1]"
+   gen mkva[t]: ulong -> varray[t] = 
+     "(?1*)(PTF gc->allocate(&@?1,$1))"
      requires property "needs_gc"
    ;
    private proc set_used[t]: varray[t] * ulong =
      "flx::gc::generic::set_used($1,$2);"
    ;
-   
-   // default initialised but set to 0 length
-   gen mkuiv[t] (n:ulong): varray[t] = {
-     var p: varray[t] = mkiv[t](n);
-     set_used(p,ulong 0);
-     return p;
-   }
-
+  
    fun subscript[t]: varray[t] * !ints -> lvalue[t] = 
      "$1[$2]"
    ;
@@ -2444,7 +2436,7 @@ open module Varray
        ?1 * _p = $1;
        unsigned long n = flx::gc::generic::get_used(_p);
        flx::gc::generic::incr_used(_p,1L);
-       _p[n]=$2;
+       new(_p+n) ?1($2);
      }
    """;
 }
