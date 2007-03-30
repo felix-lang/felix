@@ -679,19 +679,19 @@ instance Str[utiny] {
   fun str: utiny -> string = "flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;
 }
 
-instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong] Str[T] {
+instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong||float||double||ldouble] Str[T] {
   fun str: T -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
 }
 
-instance Repr[tiny]   { fun repr (t:tiny)   : string => (str t) + "t";  }
-instance Repr[utiny]  { fun repr (t:utiny)  : string => (str t) + "ut"; }
-instance Repr[short]  { fun repr (t:short)  : string => (str t) + "s";  }
-instance Repr[ushort] { fun repr (t:ushort) : string => (str t) + "us"; }
-instance Repr[uint]   { fun repr (t:uint)   : string => (str t) + "u";  }
-instance Repr[long]   { fun repr (t:long)   : string => (str t) + "l";  }
-instance Repr[ulong]  { fun repr (t:ulong)  : string => (str t) + "ul"; }
-instance Repr[vlong]  { fun repr (t:vlong)  : string => (str t) + "v";  }
-instance Repr[uvlong] { fun repr (t:uvlong) : string => (str t) + "uv"; }
+instance Repr[tiny]   { fun repr[with Str[tiny]] (t:tiny)   : string => (str t) + "t";  }
+instance Repr[utiny]  { fun repr[with Str[utiny]] (t:utiny)  : string => (str t) + "ut"; }
+instance Repr[short]  { fun repr[with Str[short]] (t:short)  : string => (str t) + "s";  }
+instance Repr[ushort] { fun repr[with Str[ushort]] (t:ushort) : string => (str t) + "us"; }
+instance Repr[uint]   { fun repr[with Str[uint]] (t:uint)   : string => (str t) + "u";  }
+instance Repr[long]   { fun repr[with Str[long]] (t:long)   : string => (str t) + "l";  }
+instance Repr[ulong]  { fun repr[with Str[ulong]] (t:ulong)  : string => (str t) + "ul"; }
+instance Repr[vlong]  { fun repr[with Str[vlong]] (t:vlong)  : string => (str t) + "v";  }
+instance Repr[uvlong] { fun repr[with Str[uvlong]] (t:uvlong) : string => (str t) + "uv"; }
 
 instance[T in addressing] Str[T] {
   fun str (t:T) : string => vsprintf (c"%i", t);
@@ -735,7 +735,7 @@ module MixedInt
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
   gen_nan(t)
   tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
-  tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
+  tangle('  //fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
   tangle("}")
   tangle("")
 
@@ -775,7 +775,7 @@ open module Char
   open Int;
   fun ord: char -> int = "(int)$1";
   fun _ctor_char: int -> char = "(char)$1";
-  fun str: char -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  //fun str: char -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   proc fprint: ostream * char = "*$1<<$2;" requires iostream;
 }
 
@@ -784,7 +784,7 @@ open module Wchar
   open Long;
   fun ord: wchar -> long ="(long)$1";
   fun _ctor_wchar: long -> wchar = "(wchar_t)$1";
-  fun str: wchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  //fun str: wchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
 }
 
@@ -792,7 +792,7 @@ open module Unicode
 {
   fun ord: uchar -> uint32 ="$1";
   fun _ctor_uchar: uint32 -> uchar = "$1";
-  fun str: uchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  //fun str: uchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   //this needs to be fixed!
   //proc print: uchar = "std::cout<<$1;" requires iostream;
 }
@@ -802,7 +802,7 @@ instance[T in chars] Str[T] {
 }
 
 instance[T in chars] Repr[T] {
-  fun repr (c:T) : string = {
+  fun repr[with Str[T]] (c:T) : string = {
     val s = str c;
     return
       match s with
@@ -1431,7 +1431,7 @@ open module String
   fun str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
   fun str: ucharp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
   fun str: ucharcp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
-  fun str: string -> string = '$1';
+  //fun str: string -> string = '$1';
 
   // we need to cast to an int so that c++ won't complain
   fun len: string -> int = "static_cast<int>($1.size())";
@@ -1449,6 +1449,7 @@ open module String
   fun apply (x:string, y:int):string => x + y;
  
   fun _ctor_char (x:string) => x.[0];
+  fun _ctor_string (c:char) => ""+c;
 
   fun subscript: string * int -> char = 
     "flx::rtl::strutil::subscript($1,$2)" requires flx_strutil;
@@ -1465,7 +1466,7 @@ open module String
     | Slice_from (?start) => copyfrom (x, start)
     | Slice_to (?end) => copyto (x, end)
     | Slice_range (?start, ?end) => substring (x, start, end)
-    | Slice_one (?index) => str x.[index]
+    | Slice_one (?index) => string x.[index]
     endmatch
   ;
 
@@ -1688,7 +1689,7 @@ instance Str[string] {
 instance Repr[string] {
   fun repr (x:string) : string = {
     var o = "'";
-    var i: int; forall i in 0 upto (len x) - 1 do
+    var i: int; forall i in 0 upto (String::len x) - 1 do
       o += repr x.[i];
     done;
     return o + "'";
