@@ -2418,7 +2418,7 @@ open module Varray
 {
    _gc_pointer _gc_type t type varray[t] = "?1*";
 
-   gen mkva[t]: ulong -> varray[t] = 
+   gen _ctor_varray[t]: ulong -> varray[t] = 
      "(?1*)(PTF gc->allocate(&@?1,$1))"
      requires property "needs_gc"
    ;
