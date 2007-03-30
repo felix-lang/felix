@@ -2390,7 +2390,6 @@ p 1ul;
 p 1v;
 p 1uv;
 
-/*
 // to dodge c++'s divide-by-zero check
 val fzero = 0.0f;
 val dzero = 0.0;
@@ -2411,7 +2410,6 @@ p 1.0l;
 p (0.0l/ldzero);
 p (1.0l/ldzero);
 p (-1.0l/ldzero);
-*/
 
 p $ char 'a';
 p $ wchar 97l;
