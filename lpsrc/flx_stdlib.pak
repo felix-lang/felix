@@ -2244,7 +2244,6 @@ module List
   } 
 }
 
-/*
 instance[T with Show[T]] Str[List::list[T]] {
   fun str (xs:List::list[T]) =>
     '[' +
@@ -2258,7 +2257,6 @@ instance[T with Show[T]] Str[List::list[T]] {
     + ']'
   ;
 }
-*/
 
 publish "Association Lists (lists of pairs)"
 module Assoc_list
