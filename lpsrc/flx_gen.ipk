@@ -2845,7 +2845,7 @@ let gen_biface_body syms bbdfns biface = match biface with
             "  " ^ class_name ^"(" ^
             (
               if mem `Requires_ptf props then
-                if length ps = 0 
+                if length args = 0 
                 then "FLX_APAR_PASS_ONLY "
                 else "FLX_APAR_PASS "
               else ""
