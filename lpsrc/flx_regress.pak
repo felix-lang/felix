@@ -251,6 +251,21 @@ lazy expr eval test
 
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
+@kat_rt("export")
+// The following program gets me c++ compilation errors when "print s" is
+// commented out:
+#import <flx.flxh>
+
+proc poot(s: charp) {
+  // print s;
+}
+
+export proc poot of (charp) as "poot";
+
+@select(env_rt.expect())
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
 @kat_rt("strings")
 // test the string library
 #import <flx.flxh>
