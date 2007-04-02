@@ -252,7 +252,7 @@ lazy expr eval test
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("export")
-// The following programme gets me c++ compilation errors when "print s" is
+// The following program gets me c++ compilation errors when "print s" is
 // commented out:
 #import <flx.flxh>
 
