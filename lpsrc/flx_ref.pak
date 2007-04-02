@@ -623,16 +623,17 @@ length of 'short'.
 [NOTE: THIS IS NOT IMPLEMENTED. Config check required.]
 
 @head(3,"Character and String Types",nospawn=1)
-Felix provides 3 character types and 3 corresponding
-string types.
-@p()
-@begin_table("Felix name","C++ name")
+Felix provides 3 character types:
+@begin_table("Felix name","C++ name","Notes")
 @table_row("char","char")
 @table_row("wchar","wchar_t")
-@table_row("wchar","int32_t")
-@table_row("string","std::basic_string<char>")
-@table_row("wstring","std::basic_string<wchar_t>")
-@table_row("ustring","std::basic_string<int32_t>")
+@table_row("uchar","int32_t")
+@end_table()
+and these string types:
+@begin_table("Felix name","Element Type","C++ name")
+@table_row("string","char","std::basic_string<char>")
+@table_row("wstring","wchar","std::basic_string<wchar_t>")
+@table_row("ustring","uchar","std::basic_string<int32_t>")
 @end_table()
 Use of wchar and wstring is strongly discouraged,
 and is only provided for compatibility. Char is guaranteed
@@ -1025,6 +1026,151 @@ pre-determined precedences. See also
 @ref_anchor("preprocessor")
  for more details on syntax extensions.
 @p()
+@head(2,"Literals",key="literals")
+@head(3,"Numeric Literals",key="numbers")
+@head(4,"Integer Literals",key="integers")
+@begin_table("Felix name","suffix")
+@table_row("tiny","t")
+@table_row("utiny","ut, tu")
+@table_row("short","s")
+@table_row("ushort","us, su")
+@table_row("int","<none>, i")
+@table_row("uint","u, ui, iu")
+@table_row("long","l")
+@table_row("ulong","ul, lu")
+@table_row("vlong","ll, v")
+@table_row("uvlong","ull, llu, uv, vu")
+@table_row("int8","i8")
+@table_row("uint8","u8")
+@table_row("int16","i16")
+@table_row("uint16","u16")
+@table_row("int32","i32")
+@table_row("uint32","u32")
+@table_row("int64","i64")
+@table_row("uint64","u64")
+@end_table()
+@p()
+An integer consists of a prefix, numeric form and suffix.
+Either the size indicator or signedness indicator 'u' or 'i' 
+can be wholly capitalised (but note that lL is not allowed).
+The prefix denotes the radix as in the table below:
+@begin_table("Prefix","Radix", "name", "Allowed digits")
+@table_row("0b,0B","2", "binary","01")
+@table_row("0o,0O","8", "octal","01234567")
+@table_row("0d,0D,<none>","10", "decimal","0123456789")
+@table_row("0x,0X","16", "hexadecimal","0123456789ABCDEFabcdef")
+@end_table()
+@p()
+The numeric form is followed by a non-empty string of allowed digits
+which may be separated by a single underscore.  Each such
+underscore must be between two digits.
+@p()
+In addition an single underscore is allowed between a non-empty
+prefix and the numeric form, or the numeric form and a non-empty
+suffix. Underscores have no semantics and can be used to improve 
+spacing.
+
+
+@head(4,"Floating Literals",key="floats")
+Float literals follow ISO C99 except we allow underscores between
+digits. The allowed suffixes are:
+@begin_table("Felix name","suffix")
+@table_row("float","f, F")
+@table_row("double","d,D,<none>")
+@table_row("ldouble","l, L")
+@end_table()
+@p()
+The mantissa may be give in either decimal or hexadecimal,
+the latter requires a prefix "0x" or "0X". The exponent
+may be given as a decimal power using code "e" or "E"
+or binary power using "p" or "P", the radix is always decimal.
+@p()
+Note that float literals are distinguished from integers
+by the presence of a decimal point. The decimal point may
+not be elided, even if an exponent is given. A digit must
+appear either to the left or right of the decimal point.
+
+@head(3,"String Literals")
+Felix provides literals for four types of string as follows,
+indicated by the denoted prefix.
+@begin_table("type", "prefix")
+@table_row("<none>","string")
+@table_row("r, R","string")
+@table_row("w, W","wstring")
+@table_row("u, U","ustring")
+@table_row("c, C","charcp")
+@end_table()
+Note that literals of type charcp denote a C pointer to
+a null terminated array, not a string. The array is
+constructed the same way as for a standard string,
+except that a NULL byte is appended to the result.
+@p()
+The prefix is followed by the string which is delimited by
+the following quotation marks:
+@begin_table("name", "code", "mark")
+@table_row("single-quote","q","'")
+@table_row("double-quote","d",'"')
+@table_row("tripled-single-quote","qqq","'''")
+@table_row("tripled-double-quote","ddd",'"""')
+@end_table()
+Triple quoted string may span lines, singly quoted
+strings may not.
+@p()
+The r or R prefix designates a raw string, which
+consists of the whole of the string up to the next
+matching delimiter, there is no escape processing.
+@p()
+Other string process escapes as follows.
+@begin_table("Escape","Result")
+@table_row(r"\a","7, ASCII Bell")
+@table_row(r"\b","8, ASCII Backspace")
+@table_row(r"\t","9, ASCII Tab")
+@table_row(r"\n","10, ASCII Linefeed")
+@table_row(r"\v","11, ASCII Vertical Tab")
+@table_row(r"\f","12, ASCII Form Feed")
+@table_row(r"\r","13, ASCII Carriage Return")
+@table_row(r"\e","33, ASCII Escape")
+@table_row(r"\\","\\")
+@table_row(r"\"","\"")
+@table_row(r"\'","'")
+@table_row(r"\ ","See Notes")
+@table_row(r"\o","See Notes")
+@table_row(r"\d","See Notes")
+@table_row(r"\x","See Notes")
+@table_row(r"\u","See Notes")
+@table_row(r"\U","See Notes")
+@end_table()
+The escape slosh followed by spaces and a newline is elided
+and can be used in a triple quotes string to distinguish
+trailing whitespace which is included in the string, and that
+which is not.
+@p()
+The escapes \o, \d and \x are octal, decimal, and hex code point encodings.
+They encode a single character from the octal, decimal, or
+hex numeric digits following, respectively, up to the first non-digit
+or the encoding limits 3, 3, 2 respectively.
+@p()
+The \u and \U escapes are used to interpret longer hex escapes,
+up to 4 or 8 digits respectively. However whereas in a ustring
+literal the numeric value is a single character, in a string
+it is replaced by the UTF8 encoding of the value.
+@p()
+Therefore, unicode strings, whether stored in a string or
+ustring, have the same interpretation as unicode,
+provided the all characters presented literally or
+via \o, \d or \x encodings, have unicode
+value less than 128 (that is, they're plain ASCII).
+@p()
+The intepretation of wstring literals is platform independent
+and undefined by Felix at this time.
+@p()
+Note that C style octal escapes are NOT ALLOWED.
+@p()
+If an escape code is followed by any character other than those
+listed, the result is undefined. The current implementation
+preserves the sequence (including the leading slosh).
+
+@head(2,"Table of operators")
 @begin_table("operation "," associativity "," symbols "," function name "," description")
 @table_row("let ","left ","let in")
 @table_row("lambda ","left ","fun proc")
