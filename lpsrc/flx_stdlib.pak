@@ -1686,6 +1686,14 @@ instance Str[string] {
   fun str (s:string) : string => s;
 }
 
+instance[T in charp||charcp] Str[T] {
+  fun str: T -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+}
+
+instance[T in ucharp||ucharcp] Str[T] {
+  fun str: T -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
+}
+
 instance Repr[string] {
   fun repr (x:string) : string = {
     var o = "'";
@@ -2440,6 +2448,25 @@ open module Varray
      }
    """;
 }
+
+instance[T with Show[T]] Str[Varray::varray[T]] {
+  fun str (xs:varray[T]) = {
+    var o = 'varray(';
+    var i : ulong;
+
+    if len(xs) > 0ul do
+      o += str xs.[0];
+
+      forall i in 1 upto len(xs) - 1ul do
+        o += ', ' + str xs.[i];
+      done;
+    done;
+
+    return o + ')';
+  }
+}
+
+open[T] Show[Varray::varray[T]];
 
 module Avl
 {
