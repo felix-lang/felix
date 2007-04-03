@@ -213,7 +213,7 @@ let rec cal_type syms bbdfns t =
 
   | _ -> "dunno"
 
-let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,kind,bvs,bps,e) =
+let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bps,e) =
   if k <> kind then () else
   let srt = Flx_srcref.short_string_of_src sr in
   let tkind,ykind = 

@@ -1166,7 +1166,7 @@ and bbdcl_t =
 
 and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-and axiom_t = id_t * range_srcref * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
+and axiom_t = id_t * range_srcref * int option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
 
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
 

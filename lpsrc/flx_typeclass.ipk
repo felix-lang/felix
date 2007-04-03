@@ -38,10 +38,7 @@ val tcinst_chk:
   int ->
   btypecode_t list ->
   range_srcref ->
-  (string * int) list *
-  btypecode_t *
-  btypecode_t list *
-  int -> 
+  bvs_t * btypecode_t * btypecode_t list * int -> 
   (int * btypecode_t list) option
 
 @h = tangler("src/flx_typeclass.ml")

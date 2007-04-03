@@ -247,7 +247,7 @@ typeclass Trig[t] {
 typeclass Real[t] {
   inherit Tord[t];
   inherit Trig[t];
-  inherit Dring[t];
+  inherit FloatDring[t];
   virtual fun log10: t -> t;
   virtual fun abs: t -> t;
   virtual fun sqrt: t -> t;
@@ -868,12 +868,12 @@ open Unsigned_integer[uvlong];
 open Real[float];
 open Real[double];
 open Real[ldouble];
-open Addgrp[complex];
-open Addgrp[dcomplex];
-open Addgrp[lcomplex];
-open Addgrp[imaginary];
-open Addgrp[dimaginary];
-open Addgrp[limaginary];
+open FloatAddgrp[complex];
+open FloatAddgrp[dcomplex];
+open FloatAddgrp[lcomplex];
+open FloatAddgrp[imaginary];
+open FloatAddgrp[dimaginary];
+open FloatAddgrp[limaginary];
 
 open[T in basic_types] Show[T];
 @doc()

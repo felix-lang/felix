@@ -34,11 +34,15 @@ open Flx_maps
 open Flx_exceptions
 open Flx_use
 open Flx_child
+open Flx_typeclass
+
+let string_of_bvs bvs = 
+  catmap "," (fun (s,i)->s^"<"^si i^">") bvs
 
 let verify syms bbdfns csr e =
   let xx = ref [] in
   iter
-  ( fun (id, axsr, axiom_kind, bvs, (bpl,precond), x) ->
+  ( fun (id, axsr, parent, axiom_kind, bvs, (bpl,precond), x) ->
     match x with | `BEquation _ -> () | `BPredicate x ->
     (*
     print_endline ("Checking for cases of axiom " ^ id);
@@ -59,7 +63,65 @@ let verify syms bbdfns csr e =
     | Some (tmgu, emgu) ->
       (*
       print_endline (sbe syms.dfns e ^  " MATCHES AXIOM " ^ id);
+      print_endline ("Axiom vs =" ^ string_of_bvs bvs);
+      print_endline ("TMgu=" ^ string_of_varlist syms.dfns tmgu);
       *)
+      let ok = match parent with
+      | None -> true
+      | Some i -> 
+        try 
+          let tcid,_,sr,entry = Hashtbl.find bbdfns i in
+          match entry with
+          | `BBDCL_typeclass (_,tcbvs) ->
+            begin
+              (*
+              print_endline ("Axiom "^id^" is owned by typeclass " ^ tcid);
+              print_endline ("Typeclass bvs=" ^ string_of_bvs tcbvs);
+              *)
+              let ts = 
+                try 
+                  Some (map (fun (s,i) -> assoc i tmgu) tcbvs)
+                with Not_found -> 
+                  (*
+                  print_endline "Can't instantiate typeclass vars- FAIL";
+                  *)
+                  None
+              in
+              match ts with None -> false | Some ts ->
+              let insts = 
+                try 
+                  Some (Hashtbl.find syms.instances_of_typeclass i)
+                with Not_found ->
+                  (*
+                  print_endline "Typeclass has no instances";
+                  *) 
+                  None
+              in
+              match insts with | None -> false | Some insts ->
+              try 
+                iter (fun (instidx,(inst_bvs, inst_traint, inst_ts)) ->
+                  match tcinst_chk syms true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
+                  | None -> ()
+                  | Some _ -> raise Not_found
+                )
+                insts;
+                (*
+                print_endline "Couldn't find instance";
+                *)
+                false
+              with Not_found -> 
+                (*
+                print_endline "FOUND INSTANCE";
+                *)
+                true
+            end
+          | _ -> true
+        with 
+          Not_found -> 
+          print_endline "Wha .. can't find axiom's parent";
+          true 
+      in 
+      if not ok then () else
       let xsub x = fold_left (fun x (i,e) -> expr_term_subst x i e) x emgu in
       let tsub t = list_subst tmgu t in
       (*
