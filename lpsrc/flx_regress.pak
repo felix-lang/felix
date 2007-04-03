@@ -2437,8 +2437,8 @@ p $ C_hack::cast[vaddress] 16ul;
 p $ C_hack::cast[cvaddress] 16ul;
 p $ C_hack::cast[offset] 16ul;
 
-p "Domo Arigato,\n\tMr Roboto!";
-//p u"Domo Arigato,\n\tMr Roboto!";
+p "Domo Arigato,\nMr Roboto!";
+//p u"Domo Arigato,\nMr Roboto!";
 
 p $ List::list(1,2,3);
 p $ List::list("a","b","c");
@@ -2454,6 +2454,7 @@ p $ (1,"b",1.0);
 @doc()
 
 @select(env_rt.expect())
+@doc()
 str:  true
 repr: true
 str:  1
@@ -2476,6 +2477,32 @@ str:  1
 repr: 1v
 str:  1
 repr: 1uv
+str:  1
+repr: 1
+str:  1.5
+repr: 1.5
+str:  nan
+repr: nan
+str:  inf
+repr: inf
+str:  -inf
+repr: -inf
+str:  1
+repr: 1
+str:  nan
+repr: nan
+str:  inf
+repr: inf
+str:  -inf
+repr: -inf
+str:  1
+repr: 1
+str:  nan
+repr: nan
+str:  inf
+repr: inf
+str:  -inf
+repr: -inf
 str:  a
 repr: a
 str:  97
@@ -2495,8 +2522,8 @@ repr: 16
 str:  16
 repr: 16
 str:  Domo Arigato,
-        Mr Roboto!
-repr: 'Domo Arigato,\n\tMr Roboto!'
+Mr Roboto!
+repr: 'Domo Arigato,\nMr Roboto!'
 str:  [1, 2, 3]
 repr: [1, 2, 3]
 str:  ['a', 'b', 'c']
