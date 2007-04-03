@@ -1227,6 +1227,10 @@ class PLUGIN(Plugin):
   name = 'run_known_failed_tests'
   help = 'mark tests failed that are known to fail without running'
   
+  def __init__(self): 
+    Plugin.__init__(self)
+    self.dummy = 1
+
   def runme(self,pkg, pkgdict, quiet, check_stamp):
     bad_tests = pkgdict.get("known_failed_tests",[])
     bad_tests.sort()
@@ -1554,6 +1558,7 @@ class Plugin:
   def __init__(self):
     self.failures = []
     self.successes = []
+    self.dummy = 0
     self.used = 0
 
   def __call__(self,*args,**kwds):
@@ -2143,10 +2148,12 @@ failure_log = Tee()
 
 failure_log.write("----- PLUGIN STATUS -----\n")
 failed = 0
+fatal = 0
 for plugin in scheduled_plugins + unscheduled_plugins:
   nfail = len(plugin.failures)
   npass = len(plugin.successes)
-  failed = failed or nfail
+  failed = failed or nfail>0
+  failed = failed or (nfail>0 and not plugin.dummy)
 
   if nfail:
     failure_log.write('PLUGIN **FAILED**: %s, %d/%d failures\n' % (plugin.name, nfail,npass+nfail))
@@ -2235,11 +2242,11 @@ try:
 finally:
   f.close()
 
-if failed:
+if fatal:
   print "********* BUILD FAILED ********************"
   sys.exit(1)
 
-print "RUN COMPLETE"
+print "*********** RUN COMPLETE: NO UNEXPECTED FAILURES DETECTED *******"
 
 @head(1,'Makefile')
 We attempt to fix the brain dead install command.
