@@ -259,6 +259,7 @@ proc poot(s: charp) {
 export proc poot of (charp) as "poot";
 
 @select(env_rt.expect())
+@doc()
 
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
