@@ -121,11 +121,8 @@ open Uint64;
   "i8","i16","i32","i64",
   "u8","u16","u32","u64"
   ]
-@cut = 30 
 @for x in xs:
   for y in ys:
-    cut = cut - 1
-    if cut==0: tangle("if false do")
     tname = "tst_"+x+y
     tangle("//noinline is needed to stop gcc dropping dead") 
     tangle("noinline proc "+tname+" () {")
@@ -133,7 +130,6 @@ open Uint64;
       tangle("  assert(int_of("+x+s+" + "+y+s+")==42);") 
     tangle("}")
     tangle(tname+";")
- if cut<= 0: tangle("done;")
 print "test complete"; endl;
 @doc()
 

@@ -1212,7 +1212,9 @@ and heavy_inline_calls
                *)
                inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a
             in 
+              (*
               let xs = hic revariable callee xs in
+              *)
               exes' := rev xs @ !exes'
           else
             exes' := exe :: !exes'
