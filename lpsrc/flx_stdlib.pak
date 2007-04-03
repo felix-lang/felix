@@ -70,7 +70,7 @@ typeclass Tord[t]{
 }
 
 // additive symmetric group
-typeclass Addgrp[t] {
+typeclass FloatAddgrp[t] {
   inherit Eq[t];
   virtual fun zero: 1 -> t;
   virtual fun add: t * t -> t;
@@ -81,12 +81,17 @@ typeclass Addgrp[t] {
 
   reduce id (x:t): x+zero() => x;
   reduce id (x:t): zero()+x => x;
-  axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
   reduce inv(x:t): x-x => zero();
-  reduce inv(x:t,y:t): x+y-y => x;
   reduce inv(x:t): - (-x) => x;
   axiom sym (x:t,y:t): x+y == y+x;
 }
+
+typeclass Addgrp[t] {
+  inherit FloatAddgrp[t];
+  axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
+  reduce inv(x:t,y:t): x+y-y => x;
+}
+
 
 typeclass Bits[t] {
   virtual fun bxor: t * t -> t;
@@ -99,15 +104,26 @@ typeclass Bits[t] {
 }
 
 // mult semi group with unit
-typeclass MultSemi1[t] {
+typeclass FloatMultSemi1[t] {
   inherit Eq[t];
   virtual fun one: unit -> t;
   virtual fun mul: t * t -> t;
   virtual proc muleq: lvalue[t] * t;
   reduce id (x:t): x*one() => x;
   reduce id (x:t): one()*x => x;
+}
+
+// mult semi group with unit
+typeclass MultSemi1[t] {
+  inherit FloatMultSemi1[t];
   axiom assoc (x:t,y:t,z:t): (x*y)*z == x*(y*z);
   reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+}
+
+// ring
+typeclass FloatRing[t] {
+  inherit FloatAddgrp[t];
+  inherit FloatMultSemi1[t];
 }
 
 // ring
@@ -118,12 +134,18 @@ typeclass Ring[t] {
 }
 
 // division ring
-typeclass Dring[t] {
-  inherit Ring[t];
+typeclass FloatDring[t] {
+  inherit FloatRing[t];
   virtual fun div: t * t -> t; // pre t != 0
   virtual proc diveq: lvalue[t] * t;
   virtual fun mod : t * t -> t;
   virtual proc modeq: lvalue[t] * t;
+}
+
+// division ring
+typeclass Dring[t] {
+  inherit Ring[t];
+  inherit FloatDring[t];
 }
 
 typeclass Forward[t] {
@@ -579,7 +601,7 @@ instance[t in reals] Tord[t] {
   fun lt: t * t -> bool = "$1<$2";
 }
 
-instance[t in numbers] Addgrp[t] {
+instance[t in numbers] FloatAddgrp[t] {
   fun zero: 1 -> t = "(?1)0" ;
   fun add: t * t -> t = "$1+$2" ;
   fun neg: t -> t = "-$1" ;
@@ -587,21 +609,25 @@ instance[t in numbers] Addgrp[t] {
   proc pluseq: lvalue[t] * t = "$1+=$2;";
   proc minuseq: lvalue[t] * t = "$1-=$2;";
 }
+instance[t in ints] Addgrp[t] {}
 
-instance[t in numbers] MultSemi1[t] {
+instance[t in numbers] FloatMultSemi1[t] {
   fun one: unit -> t = "(?1)1";
   fun mul: t * t -> t = "$1*$2";
   proc muleq: lvalue[t] * t = "$1*=$2;";
 }
+instance[t in ints] MultSemi1[t] {}
 
-instance[t in numbers] Ring[t] {}
+instance[t in numbers] FloatRing[t] {}
+instance[t in ints] Ring[t] {}
 
-instance[t in numbers] Dring[t] {
+instance[t in numbers] FloatDring[t] {
   fun div: t * t -> t = "$1/$2";
   fun mod: t * t -> t = "$1%$2";
   proc diveq: lvalue[t] * t = "$1/=$2;";
   proc modeq: lvalue[t] * t = "$1%=$2;";
 }
+instance[t in ints] Dring[t] {}
 
 instance [t in fast_uints] Bits [t] {
   fun bxor: t * t -> t = "$1^$2";
