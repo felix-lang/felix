@@ -2454,7 +2454,6 @@ p $ (1,"b",1.0);
 @doc()
 
 @select(env_rt.expect())
-@doc()
 str:  true
 repr: true
 str:  1
