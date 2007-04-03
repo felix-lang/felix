@@ -1006,7 +1006,7 @@ and heavy_inline_calls
     not (Flx_call.is_recursive_call uses caller callee)
     *)
   in
-  let hic revariable callee exes =
+  let hic revariable callee exes = if true then exes else
     (*
     print_endline "Rescanning ..";
     *)
@@ -1212,9 +1212,7 @@ and heavy_inline_calls
                *)
                inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a
             in 
-              (*
               let xs = hic revariable callee xs in
-              *)
               exes' := rev xs @ !exes'
           else
             exes' := exe :: !exes'
