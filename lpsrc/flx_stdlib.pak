@@ -2448,29 +2448,29 @@ publish "Bounded Variable length arrays"
 
 open module Varray
 {
-   _gc_pointer _gc_type t type varray[t] = "?1*";
+  _gc_pointer _gc_type t type varray[t] = "?1*";
 
-   gen _ctor_varray[t]: ulong -> varray[t] = 
-     "(?1*)(PTF gc->allocate(&@?1,$1))"
-     requires property "needs_gc"
-   ;
-   private proc set_used[t]: varray[t] * ulong =
-     "flx::gc::generic::set_used($1,$2);"
-   ;
-  
-   fun subscript[t]: varray[t] * !ints -> lvalue[t] = 
-     "$1[$2]"
-   ;
-   fun len[t]: varray[t] -> ulong = "flx::gc::generic::get_used($1)";
-   fun maxlen[t]: varray[t] -> ulong = "flx::gc::generic::get_count($1)";
-   proc pluseq[t] : varray[t] * t = """
-     {
-       ?1 * _p = $1;
-       unsigned long n = flx::gc::generic::get_used(_p);
-       flx::gc::generic::incr_used(_p,1L);
-       new(_p+n) ?1($2);
-     }
-   """;
+  gen _ctor_varray[t]: ulong -> varray[t] = 
+    "(?1*)(PTF gc->allocate(&@?1,$1))"
+    requires property "needs_gc"
+  ;
+  private proc set_used[t]: varray[t] * ulong =
+    "flx::gc::generic::set_used($1,$2);"
+  ;
+ 
+  fun subscript[t]: varray[t] * !ints -> lvalue[t] = 
+    "$1[$2]"
+  ;
+  fun len[t]: varray[t] -> ulong = "flx::gc::generic::get_used($1)";
+  fun maxlen[t]: varray[t] -> ulong = "flx::gc::generic::get_count($1)";
+  proc pluseq[t] : varray[t] * t = """
+    {
+      ?1 * _p = $1;
+      unsigned long n = flx::gc::generic::get_used(_p);
+      flx::gc::generic::incr_used(_p,1L);
+      new(_p+n) ?1($2);
+    }
+  """;
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {
