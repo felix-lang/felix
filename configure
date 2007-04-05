@@ -4,7 +4,6 @@
 # does NOT work in this case.
 PYTHONPATH=.:$PYTHONPATH
 export PYTHONPATH
-echo "Configuring Felix"
 FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
 PREFIX=$PREFIX
 ARGS="$*" # save the arguments
@@ -33,6 +32,17 @@ while :; do
     FLX_LPARCHIVE="$1"
   ;;
 
+  --help)
+    echo "Usage: configure [options]"
+    echo 
+    echo "Options are:"
+    echo "  --prefix path:      set path for installation"
+    echo "  --lparchive path:   the location of the lpsrc directory"
+    echo "  --help:             display this message and exit"
+    echo
+    exit 0
+  ;;
+
   --)
     break # respect request to stop parsing args
   ;;
@@ -40,6 +50,7 @@ while :; do
   shift
 done
 
+echo "Configuring Felix"
 echo FLX_LPARCHIVE at $FLX_LPARCHIVE
 
 rm -f $FLX_LPARCHIVE/lpsrc/*.cache
