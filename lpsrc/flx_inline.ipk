@@ -419,10 +419,10 @@ let expand_exe syms bbdfns u exe =
       `BEXE_assert2 (sr,sr2,e1,e2) :: xs2 @ xs1
 
     (* preserve call lift pattern ??*)
-    | `BEXE_call (sr,(`BEXPR_apply_direct(i,ts,e1),t),e2) ->
+    | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure(i,ts),t'),e1),t),e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      `BEXE_call (sr,(`BEXPR_apply_direct(i,ts,e1),t),e2) :: xs2 @ xs1
+      `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure(i,ts),t'),e1),t),e2) :: xs2 @ xs1
 
     | `BEXE_call (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
@@ -449,9 +449,9 @@ let expand_exe syms bbdfns u exe =
        tail-rec eliminator 
        and by call lifter (which converts returns to calls)
     *)
-    | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,e),t)) ->
+    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(i,ts),t'),e),t)) ->
       let e,xs = u sr e in
-      `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,e),t)) :: xs
+      `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(i,ts),t'),e),t)) :: xs
     
     | `BEXE_fun_return (sr,e) ->
       let e,xs = u sr e in
@@ -477,7 +477,10 @@ let expand_exe syms bbdfns u exe =
     *)
     
     | `BEXE_init (sr,i,(`BEXPR_apply((`BEXPR_closure (j,ts),t'),e),t))
-      when is_generator bbdfns j ->
+      (*
+      when is_generator bbdfns j 
+      *)
+      ->
       let e,xs = u sr e in
       `BEXE_init (sr,i,(`BEXPR_apply((`BEXPR_closure (j,ts),t'),e),t)) :: xs
 
@@ -805,7 +808,7 @@ let virtual_check syms (bbdfns:fully_bound_symbol_table_t) sr i ts =
 
   | _ -> (* print_endline (id ^ " -- Not virtual") *) true,i,ts
 
-let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr e =
+let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic excludes sr e =
   (*
   print_endline ("Special inline " ^ sbe syms.dfns e);
   *)
@@ -860,7 +863,8 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
         *)
         | `BBDCL_fun (props,_,_,_,_,_,_) 
         | `BBDCL_function (props,_,_,_,_) 
-          when mem `Generator props ->
+          when mem `Generator props 
+          ->
           (*
           print_endline ("Unravel generator " ^ id);
           *)
@@ -883,6 +887,28 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
           `BEXPR_name (urv,ts),t
 
         | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+          (* TEMPORARY FIX! *)
+
+          (* create a new variable *)
+          let urv = !(syms.counter) in incr (syms.counter);
+          let urvid = "_urv" ^ si urv in
+          add_child child_map caller urv;
+          add_use uses caller urv sr;
+          let entry = `BBDCL_val (caller_vs,t) in
+          Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
+
+          (* set variable to function appliction *)
+          let cll = `BEXE_init (sr,urv,e) in
+          exes' := cll :: !exes';
+
+
+          (* replace application with the variable *)
+          let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type 0)) caller_vs in
+          `BEXPR_name (urv,ts),t
+
+
+
+          (*
           (*
           print_endline ("Consider inlining " ^ id);
           *)
@@ -924,7 +950,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
                   print_endline "Inline body = ";
                   iter (fun exe -> print_endline (string_of_bexe syms.dfns 4 exe)) xs;
                   *)
-
+                  let xs = hic revariable callee xs in
                   match rev xs with
                   (* SPECIAL CASE DETECTOR: if the inlined function
                     terminates with an initialisation of the new variable,
@@ -971,6 +997,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
                 else e
               end
           else e
+        *)
         | _ -> e
         end
       end else e
@@ -1006,7 +1033,7 @@ and heavy_inline_calls
     not (Flx_call.is_recursive_call uses caller callee)
     *)
   in
-  let hic revariable callee exes = if true then exes else
+  let hic revariable callee exes = if false then exes else
     (*
     print_endline "Rescanning ..";
     *)
@@ -1026,7 +1053,7 @@ and heavy_inline_calls
     (that is, inside out). 
   *)
   
-  let sinl sr e = special_inline syms (uses,child_map,bbdfns) caller_vs caller (caller::excludes) sr e in 
+  let sinl sr e = special_inline syms (uses,child_map,bbdfns) caller_vs caller hic (caller::excludes) sr e in 
 
   let ee exe = expand_exe syms bbdfns sinl exe in
   let exes' = ref [] in (* reverse order *)
@@ -1078,24 +1105,15 @@ and heavy_inline_calls
       | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
         if can_inline && inline_check caller callee props exes then
         begin
-          (*
-          print_endline "INLINE CANDIDATE DETECTED - CALL";
-          *)
+          if syms.compiler_options.print_flag then
+          print_endline ("inlining direct call: " ^ string_of_bexe syms.dfns 0 exe);
           let revariable,xs = 
             heavy_inline_call syms (uses,child_map,bbdfns) 
             caller caller_vs callee ts argument id sr (props,vs,(ps,traint),exes)
           in 
-            let xs = hic revariable callee xs in
-            exes' := rev xs @ !exes'
+          let xs = hic revariable callee xs in
+          exes' := rev xs @ !exes'
         end
-        (*
-        else if specialise_check caller callee ts props exes then
-          let k,ts' = make_specialisation
-             syms (uses,child_map,bbdfns) 
-             caller caller_vs callee ts id sr parent props vs exes true
-          in
-            exes' := `BEXE_call_direct (sr,k,ts',argument) :: !exes'
-        *)
         else
           exes' := exe :: !exes'
 
@@ -1124,28 +1142,15 @@ and heavy_inline_calls
       begin match entry with
       | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if can_inline && inline_check caller callee props exes then
+        begin
+          if syms.compiler_options.print_flag then
+          print_endline ("Inline call lift: " ^ string_of_bexe syms.dfns 0 exe);
           let revariable,xs = 
-             call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argument
+            call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argument
           in 
-            (* The recursion here is because the call is lifted,
-            so there may be new calls that didn't previously
-            exist, they need rescanning eg:
-            
-              call {if x then f else g endif} a 
-              -->
-              if x then call f a else call f a endif
-            
-            creates new calls to f and g when now need
-            to be scanned (possibly for a further lift,
-            possibly for call inlining)
-
-            The hassle here is that we might unfold
-            an unrelated recursive function multiple times
-            as a side effect.
-            *)
-            let xs = hic revariable callee xs in
-            exes' := rev xs @ !exes'
-        else
+          let xs = hic revariable callee xs in
+          exes' := rev xs @ !exes'
+        end else
           exes' := exe :: !exes'
       | _ -> exes' := exe :: !exes'
       end
@@ -1157,9 +1162,6 @@ and heavy_inline_calls
 
     | `BEXE_init (sr,i,(`BEXPR_apply ((`BEXPR_closure(callee,ts),_),a),_)) 
       when not (mem callee excludes)  ->
-      (*
-      print_endline ("Handling init: " ^ string_of_bexe syms.dfns 0 exe);
-      *)
       let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,callee_sr,entry = Hashtbl.find bbdfns callee in
@@ -1177,11 +1179,13 @@ and heavy_inline_calls
               Hashtbl.replace bbdfns i (vid,vparent,vsr,`BBDCL_var (vs,t))
             | _ -> ()
             end;
+            if syms.compiler_options.print_flag then
+            print_endline ("Inline init: " ^ string_of_bexe syms.dfns 0 exe);
             let revariable,xs = 
-               inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a i
+              inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a i
             in 
-              let xs = hic revariable callee xs in
-              exes' := rev xs @ !exes'
+            let xs = hic revariable callee xs in
+            exes' := rev xs @ !exes'
           end
         else
           exes' := exe :: !exes'
@@ -1195,9 +1199,6 @@ and heavy_inline_calls
 
     | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(callee,ts),_),a),_)) 
       when not (mem callee excludes)  ->
-      (*
-      print_endline ("Handling return: " ^ string_of_bexe syms.dfns 0 exe);
-      *)
       let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,callee_sr,entry = Hashtbl.find bbdfns callee in
@@ -1206,15 +1207,15 @@ and heavy_inline_calls
         if can_inline && inline_check caller callee props exes then
         begin
           if inlining_complete bbdfns callee then
+          begin
+            if syms.compiler_options.print_flag then
+            print_endline ("Inline tail apply : " ^ string_of_bexe syms.dfns 0 exe);
             let revariable,xs = 
-               (*
-               print_endline ("Tail apply: " ^ string_of_bexe syms.dfns 0 exe);
-               *)
-               inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a
+              inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a
             in 
-              let xs = hic revariable callee xs in
-              exes' := rev xs @ !exes'
-          else
+            let xs = hic revariable callee xs in
+            exes' := rev xs @ !exes'
+          end else
             exes' := exe :: !exes'
         end else
           exes' := exe :: !exes'
