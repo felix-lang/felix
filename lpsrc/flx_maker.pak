@@ -986,7 +986,7 @@ def build_felix_dynamic_drivers(pkg, pkgdict):
             libs=libs,
             LDFLAGS=DFLAGS+dflags)
 
-        deletefile(src + EXT_SHARED_OBJ)
+        #deletefile(src + EXT_SHARED_OBJ)
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 def build_target_cpp_tools(pkg, pkgdict):

@@ -768,6 +768,14 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         )
     end
 
+   | `BTYP_unitsum _ ->
+     let name = cpp_typename syms btyp in
+     bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_int_ptr_map;\n");
+
+   | `BTYP_sum _ ->
+     let name = cpp_typename syms btyp in
+     bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_uctor_ptr_map;\n");
+
    | _ -> 
      failwith 
      (
