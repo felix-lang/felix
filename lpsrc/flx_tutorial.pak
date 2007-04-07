@@ -4802,14 +4802,14 @@ that 010 is decimal ten in Felix!
 
 @select(env.expect())
 @env.head(3,'String')
-Felix provides two kinds of strings: 8 bit and 32 bit,
+Felix provides two kinds of strings: 8-bit and 32-bit,
 denoted by string and ustring respectively.
 @p()
 Both kinds of string are intended to provide a universal
 representation of human readable text using the 
 ISO-10646/Unicode character set.
 @p()
-Both kinds of string encode 32 bit values representing
+Both kinds of string encode 32-bit values representing
 ISO-10646 code points. Strings use UTF-8, whilst ustrings
 use UCS-4.
 @p()
@@ -4899,7 +4899,7 @@ and why the ranges above overlap.
 Welcome to constructive mathematics!
 @p()
 Note that _floating_ point provides exact
-comparisons, however, the patterns above
+comparisons; however, the patterns above
 apply to constructive reals. The last
 example explains this best: you can't do
 non-constructive matches. [Use IEEE type
@@ -5084,7 +5084,7 @@ of function names defined elsewhere into the
 public interface of a module with the rename
 statement.
 @p()
-injected entities can be found both by
+Injected entities can be found both by
 unqualified and qualified lookup as if actually
 defined in the module, however the denoted
 entities are not actually part of the module,
@@ -5092,7 +5092,8 @@ and in particular they're bound in the context
 in which they're actually defined.
 @p()
 There are two forms of the rename statement,
-one for non-functions and one for functions.
+one for functions and one for non-functions.
+@p()
 The non-function form injects a reference to
 a single non-function entity. 
 @p()
