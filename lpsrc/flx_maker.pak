@@ -2293,7 +2293,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('grammar: dummy')
 @tangle('\tenv PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar')
-@tangle('\tenv PYTHONPATH=. python script/get_grammar src/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
+@tangle('\tenv PYTHONPATH=. python script/get_grammar src/cil/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
 #@tangle('\tenv PYTHONPATH=. python script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr')
 @tangle('\tenv PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
 #@tangle('\tenv PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
