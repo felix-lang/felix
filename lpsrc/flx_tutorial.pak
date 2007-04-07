@@ -4714,7 +4714,7 @@ The types:
   string ustring
 @end_displayed_code()
 are defined in the standard library at the top level.
-Except for the addressing types, there is module
+Except for the addressing types, there is a module
 containing the functions acting on the type for
 each type, with the same name except that the first
 letter is upper case: thus module Long contains all
