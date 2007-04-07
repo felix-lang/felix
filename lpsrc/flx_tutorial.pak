@@ -2826,7 +2826,7 @@ print x; endl;
 The block is a procedure taking a unit argument.
 So when you write one as a statement, it just gets
 called: note that unlike C, that thing in 
-curley braces is an expression, and you must 
+curly braces is an expression, and you must 
 make a statement by adding a semi-colon,
 which has the effect of invoking it due to the
 short cut rule.
@@ -4544,7 +4544,7 @@ call syntax fools you into believing there
 is a match statement when actually there isn't.
 
 @env.head(2,'Lambda expressions')
-Felix allows a function to be specified in an expression,
+Felix allows a function to be specified in an expression;
 this is called a lambda expression:
 
 @select(env.test('.flx'))
@@ -4571,7 +4571,7 @@ while
 @doc()
 
 Of course, we have already used lambdas in the short form,
-by enclosing expressions in curley braces;
+by enclosing expressions in curly braces;
 this example shows the long form. Lambdas of course
 may have arguments:
 
