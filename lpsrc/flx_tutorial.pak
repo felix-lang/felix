@@ -405,7 +405,7 @@ print (mid(2,4)); print "\n";
 @doc()
 
 which is equivalent to the one above.
-Note however that the types of the arguments
+Note, however, that the types of the arguments
 must be given.
 
 @env.head(3,'Preconditions and postconditions')
@@ -442,10 +442,10 @@ print (abs_div(2,4)); print "\n";
 Note the special identifier 'result' may be used to 
 refer to the function result. 
 @p()
-If a pre or post condition is not met, a C++ exception
+If a pre- or post- condition is not met, a C++ exception
 is thrown. Typically this will result in a diagnostic
 error being printed the thread terminated by the driver.
-However it is driver dependent. 
+However, it is driver dependent. 
 @p()
 At present (Felix 1.1.1) recovery is not possible,
 nor is it possible to catch the exception.
@@ -474,7 +474,7 @@ print_newline 1;
 1
 @doc()
 
-There is a special short cut for calling procedures
+There is a special shortcut for calling procedures
 with unit argument: if the procedure is called
 by its name, the () can be elided:
 
@@ -5351,7 +5351,8 @@ argv 0 is usually the program name:
 for the flx_run driver it's the loaded library
 name: the driver name and control arguments
 are stripped. (Note: the output is platform
-dependent and so can't be checked)
+dependent and so can't be automatically checked
+by the Felix build system.)
 
 @begin_displayed_code()
 #import <flx.flxh>
@@ -5374,7 +5375,7 @@ Yacc traditionally supports only a very specialised
 subset of grammars -- LALR1 with some weak static ambiguity
 resolution strategies.
 @p()
-The Felix system is based on Scott McPeaks Elkhound,
+The Felix system is based on Scott McPeak's Elkhound,
 which is a Generalised LR, or GLR, parser. This system
 support all grammars, whilst parsing SLR grammars 
 just as efficiently as Yacc (namely, in linear space
@@ -5395,7 +5396,7 @@ In practice, this doesn't happen. First, one of the threads
 can reach an impasse where it can't handle the next
 token, and it is automatically dropped as an alternative,
 in the same way a failure in a backtracking algorithm
-drops the current parse -- however unlike backtracking,
+drops the current parse -- unlike backtracking, however,
 that's the end of it: the viable alternatives are
 already being parsed in parallel.
 @p()
@@ -5417,7 +5418,7 @@ if the whole containing production is subsequently
 failed, in which case both subparses will be dropped.
 @p()
 For this reason, at the end of the parsing of a
-a non-terminal, the client has an oppotunity to
+a non-terminal, the client has an opportunity to
 pick between the parses.
 
 @env.head(2,"top level parser")
@@ -5562,7 +5563,7 @@ be used and are equivalent to ( .. ) *. Note you can't
 use [..] notation for optional constructions, since
 this conflicts with the use of [] for type subscripts.
 @p()
-Note: although it makes sense at present anonymous
+Note: although it makes sense, at present anonymous
 nonterminal specifications can't contain names
 or client code.
 @p()
@@ -6003,13 +6004,12 @@ print z;
 @select(env.expect())
 Hello World 42 43
 @doc()
-The 'q' character introduces an interpolated string,
+The 'q' character introduces an interpolated string;
 any of the usual quoting styles is allowed.
 @p()
 Inside the string, the '$' character introduces
 an expression which is evaluated, converted to a string
-using the 'str' function, and replaces itself with
-that string.
+using the 'str' function, and replaced by that string.
 @p()
 The expression may begin with a '(', in which case
 it proceeds up to the balancing ')'. You should note
