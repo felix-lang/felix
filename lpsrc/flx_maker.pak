@@ -2450,7 +2450,7 @@ We have no idea if it continues copying.
 @tangle('\t#')
 @tangle('\t#type "make doc" to typeset the original sources')
 @tangle('\t#')
-@tangle('\t#Obtain the required priviledges to install into the chosen directories')
+@tangle('\t#Obtain the required privileges to install into the chosen directories')
 @tangle('\t#or ask someone who has the to do it for you')
 @tangle('\t#type "make install" to install Felix')
 @tangle('')
