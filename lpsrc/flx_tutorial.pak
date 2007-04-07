@@ -5368,7 +5368,7 @@ for_each {i=0;} {i<argc} {++i;}
 @end_displayed_code()
 
 @env.head(1,"GLR parsing")
-Felix contains a builtin parser generator. This is roughly
+Felix contains a built-in parser generator. This is roughly
 like a builtin yacc or bison facility, but it differs in
 a significant way which makes it vastly more usable.
 @p()
@@ -5385,7 +5385,7 @@ and time).
 GLR handles ambiguity by spawning multiple concurrent
 threads for all alternatives wherever the SLR(1) 
 prediction is inadequate. These threads process the
-token stream sychronously, so there is never any backtracking.
+token stream synchronously, so there is never any backtracking.
 Instead, alternatives which would be tried in sequence
 by a backtracking algorithm are all tried at once.
 @p()
