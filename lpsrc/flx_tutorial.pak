@@ -26,7 +26,7 @@ This section deals with the basic concepts in Felix.
 
 @env.head(2,'Hello Felix')
 There is no better introduction to a programming
-language than the infamous hello world program.
+language than the infamous hello world program
 
 @select(env.test('.flx'))
 #import <flx.flxh>
@@ -41,7 +41,7 @@ and the Felix version is simplicity itself.
 The first line includes the standard library,
 and the second prints the hello world message.
 You'll notice that the argument to print is not
-enclosed in backets.  We'll learn more about
+enclosed in brackets.  We'll learn more about
 this shortly.
 @p()
 To run the example, make sure you are in the
@@ -4227,7 +4227,7 @@ Also, like C, you can jump into conditionals,
 although this practice isn't recommended.
 This is because conditionals are just
 shorthand for a web of labels and conditional gotos,
-so adding extra labels can gotos is possible.
+so adding extra labels and gotos is possible.
 
 @select(env.test('.flx'))
 @kat('conditional:procedural')
@@ -4803,7 +4803,7 @@ that 010 is decimal ten in Felix!
 @select(env.expect())
 @env.head(3,'String')
 Felix provides two kinds of strings: 8 bit and 32 bit,
-denotes string and ustring respectively.
+denoted by string and ustring respectively.
 @p()
 Both kinds of string are intended to provide a universal
 representation of human readable text using the 
@@ -4828,8 +4828,8 @@ by decoding UTF-8 sequences.
 @p()
 Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
 as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
-for slosh, quote, double quote, return, newline, tab, bell, vertical tab, and
-form feed, respectively.
+for slosh (backslash), quote, double quote, return, newline, tab, 
+bell, vertical tab, and form feed, respectively.
 @p()
 Octal and hex escapes are NOT allowed: strings are
 for internationalisable human text, and do not represent
@@ -4949,7 +4949,7 @@ This section mainly deals with the Felix module system.
 It's really boring writing qualified names all
 the time. Felix provides the open directive
 to allow you to open a module so its contents
-can be accesses without using qualified names.
+can be accessed without using qualified names.
 Here's a simple example:
 
 @select(env.test('.flx'))
@@ -5348,7 +5348,7 @@ We show how to get at the command line arguments.
 The function 'argv' returns an empty string
 if the argument index is out of range.
 argv 0 is usually the program name:
-for the flx_run driver its the loaded library
+for the flx_run driver it's the loaded library
 name: the driver name and control arguments
 are stripped. (Note: the output is platform
 dependent and so can't be checked)
@@ -5741,7 +5741,7 @@ class Y {
   // accessor methods
   fun fetchc():int =>c;
 
-  // mutatoes
+  // mutators
   proc setx(a:int) { x = a; }
   proc setxy( a:int, b:long) { x = a; y = b; }
 
@@ -5819,7 +5819,7 @@ class Y[t] {
   // accessor methods
   fun fetchc():int =>c;
 
-  // mutatoes
+  // mutators
   proc setx(a:t) { x = a; }
   proc setxy( a:t, b:long) { x = a; y = b; }
 
@@ -5913,7 +5913,7 @@ class Y[t] {
   // accessor methods
   fun fetchc():int =>c;
 
-  // mutatoes
+  // mutators
   proc setx(a:t) { x = a; }
   proc setxy( a:t, b:long) { x = a; y = b; }
 
@@ -5969,8 +5969,8 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 13
 @doc()
 
-@env.head(1,"String formating")
-@env.head(2,"C formating")
+@env.head(1,"String formatting")
+@env.head(2,"C formatting")
 This is how you do printf-style string formatting.
 
 @select(env.test('.flx'))
@@ -6004,7 +6004,7 @@ print z;
 Hello World 42 43
 @doc()
 The 'q' character introduces an interpolated string,
-any of the usual quoting styles are allowed.
+any of the usual quoting styles is allowed.
 @p()
 Inside the string, the '$' character introduces
 an expression which is evaluated, converted to a string
