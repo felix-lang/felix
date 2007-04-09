@@ -144,16 +144,26 @@ void flx_driver_request_base:: start_async_op(demux::demuxer& demuxer, finote_t 
   //fprintf(stderr,"start async op %p, set fn = %p\n",this,fn_a);
   fn = fn_a;
   bool completed =  start_async_op_impl(demuxer);
-  if(completed) notify_finished();
+  if(completed) 
+  {
+    //fprintf(stderr,"instant complete\n");
+    notify_finished();
+  }
+  else
+  {
+    //fprintf(stderr,"Pending\n");
+  }
 }
 
 void flx_driver_request_base:: notify_finished()
 { 
-  //fprintf(stderr, "Notify %p\n", fn);
+  //fprintf(stderr, "faio_req=%p, Notify %p\n", this,fn);
   assert(fn!=0);
-  fn->signal(); 
-  delete fn; 
+  finote_t *fin = fn;
   fn=0;
+  fin->signal(); 
+  delete fin; 
+  //fprintf(stderr, "faio_req=%p, FINISHED\n",this);
 }
 
 }}
@@ -273,6 +283,7 @@ open Faio;
 
 #if POSIX
 open Faio_posix;
+typedef fd_t = Faio_posix::fd_t;
 #elif WIN32
 open Faio_win32;
 #endif
@@ -399,7 +410,7 @@ proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
      // print "catting out "; print len; print " bytes\n";
         write(outfd, &len, buf, &weof);
     };
-};
+}
 
 proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
 (infd: istr, outfd: ostr)
@@ -497,6 +508,7 @@ proc write_string[ostr with OByteStream[ostr]]
 @select(h)
 #import <flx.flxh>
 include "flx_faio";
+include "flx_stream";
 
 #if POSIX
 include "flx_faio_posix";
@@ -558,7 +570,7 @@ proc connect(s: &socket_t, addr: charp, port: int)
 //
 // socket_t
 //
-instance IByteStream[socket_t]
+instance Flx_stream::IByteStream[socket_t]
 {
   proc read(s: socket_t, len: &int, buf: address, eof: &bool)
   #if POSIX
@@ -568,7 +580,7 @@ instance IByteStream[socket_t]
   #endif
 }
 
-instance OByteStream[socket_t]
+instance Flx_stream::OByteStream[socket_t]
 {
   proc write(s: socket_t, len: &int, buf: address, eof: &bool)
   #if POSIX
@@ -578,9 +590,9 @@ instance OByteStream[socket_t]
   #endif
 }
 
-instance IOByteStream[socket_t] {}
+instance Flx_stream::IOByteStream[socket_t] {}
 
-instance TerminalIByteStream[socket_t]
+instance Flx_stream::TerminalIByteStream[socket_t]
 {
   proc iclose (s:socket_t)
   #if POSIX
@@ -590,7 +602,7 @@ instance TerminalIByteStream[socket_t]
   #endif
 }
 
-instance TerminalOByteStream[socket_t]
+instance Flx_stream::TerminalOByteStream[socket_t]
 {
   proc oclose (s:socket_t) 
   #if POSIX
@@ -601,7 +613,7 @@ instance TerminalOByteStream[socket_t]
 }
 
 
-instance TerminalIOByteStream[socket_t]
+instance Flx_stream::TerminalIOByteStream[socket_t]
 {
   proc ioclose (s:socket_t) 
   #if POSIX
@@ -1016,16 +1028,27 @@ server got b
 @h = tangler("demos/faio/demo_webserver.flx")
 @select(h)
 #import <flx.flxh>
-#import <flx_platform.flxh>
 
 #if POSIX
-//include "flx_faio_posix";  // aio_ropen
+include "flx_faio_posix";  // aio_ropen
 //open Faio_posix;
 #endif
 
 
 include "flx_socket";
 open Flx_socket;
+
+include "flx_stream";
+open Flx_stream;
+
+open TerminalIByteStream[fd_t];
+
+// this is a hack to make close work on a listener
+// RF got this right the first time: 
+// in the abstract a listener is NOT a socket
+// In fact, it is a socket server, with accept() a way to
+// read new sockets off it ..
+open TerminalIByteStream[socket_t]; 
 
 header = """
 string
@@ -1034,7 +1057,7 @@ getline_to_url(const string& get)
     // chomp off "GET " (should check it)
     if(get.length() < 4) return "";
 
-    unsigned int pos = get.substr(4).find(' ');
+    std::size_t pos = get.substr(4).find(' ');
 
     if(pos == string::npos) return "";
 
@@ -1053,7 +1076,7 @@ split_url(const string& inurl, string& base, string& file)
     else
       url = inurl; 
 
-    unsigned int pos = url.find('/');
+    std::size_t pos = url.find('/');
 
     if(string::npos == pos)  return false;       // all bad
 
@@ -1121,7 +1144,7 @@ proc substitute(s: string, a: char, b: char, res: &string)
   *res = s2;
 }
 
-proc serve_file(infname: string, s: flx_socket)
+proc serve_file(infname: string, s: socket_t)
 {
   var fname: string;
 
@@ -1176,24 +1199,24 @@ proc serve_file(infname: string, s: flx_socket)
   // this fn sets the O_NONBLOCK flag which is completely unnecessary
   // as read goes via the preading worker fifo. don't know if
   // O_NONBLOCK even works on actual files.
-  var fd = aio_ropen(fname);
+  var fd = Faio_posix::aio_ropen(fname);
 
-  if fd == -1 then 
+  if Faio_posix::invalid fd then 
   {
     print "BUGGER, posix open failed\n";
   } else {
-    print "got fd="; print fd; endl;
+    print "got fd="; print$ str fd; endl;
 
     // mime type mapping from suffix. make better here.
     // factor out
     if("gif" == suffix) then { write_string(s, gif_header); }
     else { write_string(s, html_header); } endif;
 
-    var from_strm: flx_stream = UFD fd;
-    var to_strm: flx_stream = USOCK s;
-    cat(from_strm, to_strm);
+    var from_strm: Faio_posix::fd_t = fd;
+    var to_strm: socket_t = s;
+    Flx_stream::cat(from_strm, to_strm);
 
-    flx_close(from_strm); // this'll know how to close a unix fd
+    iclose(from_strm); // this'll know how to close a unix fd
   } endif;
 
   // var contents = Text_file::load(fname);
@@ -1210,13 +1233,13 @@ print "FLX WEB!!! listening on port "; print webby_port; endl;
 
 // up the queue len for stress testing
 var p = webby_port;
-var listener: flx_listener;
-mk_flx_listener(&listener, &p, 10);
+var listener: socket_t;
+mk_listener(&listener, &p, 10);
 
 
 forever {
-  var s: flx_socket;
-  flx_accept(listener, &s);  // blocking
+  var s: socket_t;
+  accept(listener, &s);  // blocking
   print "got connection (or something)\n";  // error check here
 
   // hmm - spawning an fthread is blocking the web server. don't know why
@@ -1253,13 +1276,13 @@ forever {
     print "BAD get line: "; print line; endl;
   } endif;
 
-  flx_close(s);
+  iclose(s);
 
   };
 
 };
 
-flx_close(listener);
+iclose(listener);
 @doc()
 
 @env_faio.write_katfile()

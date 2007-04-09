@@ -99,10 +99,6 @@ except:
 @select(tangler('spkgs/sdl.py'))
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
-  SDL_FAIO_CPPS = [
-    "faio/faio_sdl_event",             # any platform with SDL
-  ]
-
   # flags are compiler natives switches
   # not to be confused with platform independent lists
   # of libraries, include files, paths, etc
@@ -110,7 +106,6 @@ if HAVE_SDL:
   dflags = SDL_LIBS
   sflags = SDL_STATIC_LIBS
   
-  cpp_cpps = SDL_FAIO_CPPS
   pkg_requires = ['faio']
   rtl_interfaces = ['faio/faio_sdl_event.hpp']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
@@ -2593,67 +2588,6 @@ module SDL_net_h
 #endif
 @doc()
 
-@select(tangler("faio/faio_sdl_event.hpp"))
-#ifndef __FAIO_SDL_EVENT__
-#define __FAIO_SDL_EVENT__
-#include <flx_sdl_config.hpp>
-#include "pthread_work_fifo.hpp"
-#include "faio_drv.hpp"      // thread_wakeups, 
-#include "faio_asyncio.hpp"  // flx_driver_request_base
-#include "SDL_mutex.h"
-#include "SDL_events.h"
-
-namespace flx { namespace faio {
-
-// ONE PROBLEM: this is faio level. It needs to know about fthreads
-
-// get ONE SDL event
-class SDL_EXTERN faio_sdl_event : public flx_driver_request_base,
-  public flx::pthread::worker_task {
-   pthread::worker_fifo* job_queue;
-   SDL_Event *e;
-   SDL_mutex *m;
-public:  
-  faio_sdl_event() {}     // felix linkage
-  faio_sdl_event(pthread::worker_fifo* q, SDL_Event *_e, SDL_mutex *_m);
-
-  // from flx_driver_request_base
-  bool start_async_op(demux::demuxer& demux);
-
-  // from fifo_worker_task
-  void doit();
-};
-
-}}
-#endif
-@doc()
-
-@select(tangler("faio/faio_sdl_event.cpp"))
-#include "pthread_work_fifo.hpp"
-#include "SDL_mutex.h"
-#include "SDL_events.h"
-#include "faio_sdl_event.hpp"
-
-namespace flx { namespace faio {
-
-faio_sdl_event::faio_sdl_event(pthread::worker_fifo* q, SDL_Event *_e, SDL_mutex *_m) : job_queue(q), e(_e), m(_m) {}
-
-bool
-faio_sdl_event::start_async_op(demux::demuxer& demux)
-{
-  job_queue->add_worker_task(this);
-  return false;              // suspended
-}
-
-void faio_sdl_event::doit() { 
-  if(m)SDL_LockMutex(m);
-  SDL_WaitEvent(e); // blocks in pthread
-  if(m)SDL_UnlockMutex(m);
-} 
-
-}}
-@doc()
-
 @select(tangler('lib/flx_faio_sdl.flx'))
 #import <flx.flxh>
 
@@ -2664,28 +2598,10 @@ include "flx_faio";
 module SDL_events 
 {
   requires package "sdl";
-  requires package "faio";
   open SDL_events_h;
   open SDL_mutex_h;
 
-  header faio_sdl_event_hpp = '#include "faio_sdl_event.hpp"';
-
-  private type sdl_event_request = 
-    "flx::faio::faio_sdl_event"
-    requires faio_sdl_event_hpp
-  ;
-
-  private fun mk_sdl_event_request: ptr[SDL_Event] * ptr[SDL_mutex] -> sdl_event_request = 
-    "flx::faio::faio_sdl_event($1,$2)";
-
   fun event_type: SDL_Event -> uint8 = "$1.type";
-
-  proc get_sdl_event(pe:&SDL_Event, m:ptr[SDL_mutex])
-  {
-    var cpe = unref pe;
-    var req = mk_sdl_event_request (cpe,m);
-    Faio::faio_req$ &req;
-  }
 
   proc block_sdl_events(m:ptr[SDL_mutex])
   {
@@ -2868,7 +2784,7 @@ proc PlaySound(filename:string)
 
   if 
     SDL_LoadWAV(
-      enconst (cstr filename), 
+      cstr filename, 
       addr wave, 
       addr data, 
       addr dlen
@@ -2919,7 +2835,7 @@ var s: ptr[SDL_Surface] ^ 16;
        //filename := "media/images/fc" + str i+ ".jpg"; 
        filename := "media/images/fc" + str i+ ".bmp"; 
        print$ "Loading file " + filename; endl;
-       rwop := SDL_RWFromFile (enconst (cstr filename),enconst (c"rb"));
+       rwop := SDL_RWFromFile (cstr filename,enconst (c"rb"));
        //s.[i-1] = IMG_LoadJPG_RW(rwop);
        s.[i-1] = SDL_LoadBMP_RW(rwop,1);
   done;
@@ -2930,8 +2846,9 @@ SDL_GetClipRect(screen,addr rcDest);
 
 black := SDL_MapRGB(screen.->format, 0u8, 0u8, 0u8);
 
+val clock = Faio::mk_alarm_clock();
 proc waitt(t:double) (f:schannel[uint8]) {
-  Faio::sleep t;
+  Faio::sleep$ clock, t;
   write (f,SDL_USEREVENT); // hack for timer event
 }
 
@@ -2958,7 +2875,7 @@ tryagain:>
     //print "Got event"; endl;
     return;
   done;
-  Faio::sleep 0.1;
+  Faio::sleep$ clock, 0.1;
   goto tryagain;
 }
 
@@ -3300,6 +3217,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
   done;
 }
 
+val clock = Faio::mk_alarm_clock();
 proc poll_event(e: &SDL_Event)
 {
 tryagain:>
@@ -3309,7 +3227,7 @@ tryagain:>
     //print "Got event"; endl;
     return;
   done;
-  Faio::sleep 0.1;
+  Faio::sleep$ clock, 0.1;
   goto tryagain;
 }
 
@@ -3346,7 +3264,7 @@ proc dispatch_event(
 proc framerate (x:schannel[int], framerate:double)
 {
   whilst true do
-    Faio::sleep framerate;
+    Faio::sleep$ clock, framerate;
     write (x,1);
   done;
 }
@@ -3697,6 +3615,7 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+val clock = Faio::mk_alarm_clock();
 proc poll_event(e: &SDL_Event)
 {
 tryagain:>
@@ -3706,7 +3625,7 @@ tryagain:>
     //print "Got event"; endl;
     return;
   done;
-  Faio::sleep 0.1;
+  Faio::sleep$ clock, 0.1;
   goto tryagain;
 }
 
@@ -3742,7 +3661,7 @@ proc dispatch_event(
 proc framerate (x:schannel[int], framerate:double)
 {
   whilst true do
-    Faio::sleep framerate;
+    Faio::sleep $ clock,framerate;
     write (x,1);
   done;
 }
@@ -4200,6 +4119,7 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+val clock = Faio::mk_alarm_clock();
 proc poll_event(e: &SDL_Event)
 {
 tryagain:>
@@ -4209,7 +4129,7 @@ tryagain:>
     //print "Got event"; endl;
     return;
   done;
-  Faio::sleep 0.1;
+  Faio::sleep$ clock, 0.1;
   goto tryagain;
 }
 
@@ -4246,7 +4166,7 @@ proc dispatch_event(
 proc framerate (x:schannel[int], framerate:double)
 {
   whilst true do
-    Faio::sleep framerate;
+    Faio::sleep $ clock,framerate;
     write (x,1);
   done;
 }
@@ -4811,6 +4731,7 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+val clock = Faio::mk_alarm_clock();
 proc poll_event(e: &SDL_Event)
 {
 tryagain:>
@@ -4820,7 +4741,7 @@ tryagain:>
     //print "Got event"; endl;
     return;
   done;
-  Faio::sleep 0.1;
+  Faio::sleep$ clock, 0.1;
   goto tryagain;
 }
 
@@ -4856,7 +4777,7 @@ proc dispatch_event(
 proc framerate (x:schannel[int], framerate:double)
 {
   whilst true do
-    Faio::sleep framerate;
+    Faio::sleep$ clock, framerate;
     write (x,1);
   done;
 }
@@ -5393,6 +5314,7 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+val clock = Faio::mk_alarm_clock();
 proc poll_event(e: &SDL_Event)
 {
 tryagain:>
@@ -5402,7 +5324,7 @@ tryagain:>
     //print "Got event"; endl;
     return;
   done;
-  Faio::sleep 0.1;
+  Faio::sleep$ clock, 0.1;
   goto tryagain;
 }
 
@@ -5438,7 +5360,7 @@ proc dispatch_event(
 proc framerate (x:schannel[int], framerate:double)
 {
   whilst true do
-    Faio::sleep framerate;
+    Faio::sleep$ clock, framerate;
     write (x,1);
   done;
 }

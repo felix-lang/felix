@@ -330,17 +330,6 @@ public:
   virtual void doit();      // sync
 };
 
-// ********************************************************
-// could do separate threads for in & out. or implement some form of cache.
-// ********************************************************
-class DEMUX_EXTERN pasync_fileio : public flx::pthread::worker_fifo
-{
-public:
-  pasync_fileio(int n,int m) : worker_fifo(n,m) {}
-  // compatibility only. don't need this class anymore.
-  void add_fileio_request(fileio_request* req) { add_worker_task(req); } 
-};
-
 }} // namespace demux, flx
 #endif  // __PFILEIO__
 
