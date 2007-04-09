@@ -3880,9 +3880,9 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl206.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl.bmp";
+    print "Can't load texture file media/textures/sdl206.bmp";
     Quit 1;
   done;
 
@@ -3946,7 +3946,7 @@ proc rotate()
   zrot += 0.4f; /* Z Axis Rotation */
 }
 
-var f_texture : uint ^ 1; /* Storage For One Texture ( NEW ) */
+var f_texture : uint ^ 2; /* Storage For One Texture ( NEW ) */
 var texture : carray[uint] = carray f_texture;
 
 
@@ -4379,9 +4379,9 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl208.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl.bmp";
+    print "Can't load texture file media/textures/sdl208.bmp";
     Quit 1;
   done;
 
@@ -5000,9 +5000,9 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl209.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl.bmp";
+    print "Can't load texture file media/textures/sdl209.bmp";
     Quit 1;
   done;
 
