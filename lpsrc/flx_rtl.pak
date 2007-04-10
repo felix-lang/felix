@@ -2408,35 +2408,12 @@ using namespace flx::faio;
 
 
 class async_hooker_impl : public async_hooker {
-  virtual flx::demux::demuxer *get_demuxer()=0;
 public:
   void handle_request(void *data,fthread_t *ss);
   virtual sleep_queue_t *get_ready_queue()=0;
   ~async_hooker_impl();
 };
 
-
-#if FLX_WIN32
- #include "demux_iocp_demuxer.hpp"
- typedef flx::demux::iocp_demuxer flx_demuxer;
-#elif FLX_HAVE_KQUEUE_DEMUXER
- #include "demux_kqueue_demuxer.hpp"
- typedef flx::demux::kqueue_demuxer flx_demuxer;
-#elif FLX_HAVE_EVTPORTS
- #include "demux_evtport_demuxer.hpp"
- typedef flx::demux::evtport_demuxer flx_demuxer;
-#elif FLX_HAVE_EPOLL
- #include "demux_epoll_demuxer.hpp"
- typedef flx::demux::epoll_demuxer flx_demuxer;
-#elif FLX_HAVE_POLL
- // NB!: on osx 10.3 poll exists, but is a poor cousin emulation layer on
- // top of select. however, 10.3 has kqueues (above), so should be ok...
- #include "demux_ts_poll_demuxer.hpp"
- typedef flx::demux::ts_poll_demuxer flx_demuxer;
-#else
- #include "demux_ts_select_demuxer.hpp"
- typedef flx::demux::ts_select_demuxer flx_demuxer;  // thread safe!
-#endif
 
 #include "faio_asyncio.hpp"
 
@@ -2460,68 +2437,28 @@ void async_hooker_impl::handle_request(void *data,fthread_t *ft)
 
   finote_t *fn = new wakeup_fthread_t(get_ready_queue(),ft);
   //fprintf(stderr,"async hooker dispatching request %p, fn = %p\n",dreq,fn);
-  dreq->start_async_op(*get_demuxer(),fn);
+  dreq->start_async_op(fn);
 }
 
 class proto_async : public async_hooker_impl
 {
-    flx_demuxer demux;
     sleep_queue_t async_active;
-    flx_thread_t ethread;
-
-    static void pthread_thread(void* udat);
 
 public:
    proto_async(int n0, int n1, int m1, int n2, int m2) : 
      async_active(n0)
    {
-     // start waiting thread. note that we only have ONE event waiting thread.
-     // that's currently important for clean takedowns
-     if(ethread.init(pthread_thread, &demux) == -1) 
-     {
-       fprintf(stderr,"Proto_async thread init failure\n");
-       exit(1);
-     }
    }
 
   ~proto_async(){ 
     //fprintf(stderr,"Deleting proto async\n"); 
   }
-  demuxer *get_demuxer(){ return &demux; }
   sleep_queue_t *get_ready_queue() { return &async_active; }
   fthread_t* dequeue() 
   { 
     return (fthread_t*)async_active.dequeue(); 
   }
 };
-
-void
-proto_async::pthread_thread(void* udat)
-{
-    demuxer*    d = (demuxer*)udat;
-
-    while(1)
-    {
-        //fprintf(stderr, "ETHREAD ABOUT TO WAIT\n");
-        d->wait();          // this does it
-        //fprintf(stderr, "ETHREAD CHECKING QUIT FLAG\n");
-        demux_quit_flag* f = d->get_quit_flag();
-        if(f)
-        {
-          // got a quit flag - this is the very last thing we do before
-          // exiting. don't use the demuxer after this as it's probably been
-          // destructed.
-          //fprintf(stderr, "ETHREAD GOT QUIT FLAG, SIGNALLING AND EXITING\n");
-          f->signal_true();
-          // in the case of a system takedown there's no guarantee that
-          // anything after the signal_finish will be run at all, so this
-          // is not a good place to put anything important.
-          break;  // outta here
-        }
-    }
-    //fprintf(stderr, "ETHREAD EXITING\n");
-    // fprintf(stderr, "proto_async was asked to quit...\n");
-}
 
 async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
   return new proto_async(n0,n1,m1,n2,m2);

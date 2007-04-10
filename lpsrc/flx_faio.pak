@@ -118,13 +118,13 @@ public:
 
 class FAIO_EXTERN flx_driver_request_base {
     finote_t *fn;
-    virtual bool start_async_op_impl(demux::demuxer& demux) = 0;
+    virtual bool start_async_op_impl() = 0;
 public:
     flx_driver_request_base() : fn(0) {} 
     virtual ~flx_driver_request_base() {}       // so destructors work
 
     // returns finished flag (async may fail or immediately finish)
-    void start_async_op(demux::demuxer& demuxer, finote_t *fn_a);
+    void start_async_op(finote_t *fn_a);
     void notify_finished();
 };  
 
@@ -139,11 +139,11 @@ public:
 
 namespace flx { namespace faio {
 
-void flx_driver_request_base:: start_async_op(demux::demuxer& demuxer, finote_t *fn_a)
+void flx_driver_request_base:: start_async_op(finote_t *fn_a)
 {
   //fprintf(stderr,"start async op %p, set fn = %p\n",this,fn_a);
   fn = fn_a;
-  bool completed =  start_async_op_impl(demuxer);
+  bool completed =  start_async_op_impl();
   if(completed) 
   {
     //fprintf(stderr,"instant complete\n");
@@ -932,7 +932,7 @@ public:
   }
 
   // this belongs in faio class
-  bool start_async_op_impl(demux::demuxer& demux)
+  bool start_async_op_impl()
   {
     fprintf(stderr,"named_pipe: start async_op_impl\\n");
     fprintf(stderr, "start_async_op for named pipe\\n");
