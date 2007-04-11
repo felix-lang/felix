@@ -150,6 +150,7 @@ void socketio_request::operator=(socketio_request const &a)
   flx_driver_request_base::operator=(a);
   sv = a.sv;
   sv.request = this;
+  pd = a.pd;
 }
 
 bool
