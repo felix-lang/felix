@@ -53,7 +53,7 @@ public:
   demux::posix_demuxer *pd;
   connect_request() {}      // flx linkage
 
-  connect_request(demux::posix_demuxer *pd_a,const char* addr, int port) :pd(pd_a) { addy = addr; p = port; s=-1; }
+  connect_request(demux::posix_demuxer *pd_a,const char* addr, int port);
   bool start_async_op_impl();
   virtual void wakeup(demux::posix_demuxer&);
 };
@@ -119,6 +119,9 @@ public:
 
 using namespace flx::demux;
 namespace flx { namespace faio {
+
+connect_request::connect_request(demux::posix_demuxer *pd_a,const char* addr, int port) :pd(pd_a) { addy = addr; p = port; s=-1; }
+
 socketio_request::socketio_request(demux::posix_demuxer *pd_a, int s, char* buf, long len, bool read)
 : pd(pd_a)
 {
@@ -191,7 +194,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   {   
     // never hurts to be paranoid.
     assert(wakeup_flags == PDEMUX_WRITE);
-        connection_closed = posix_demuxer::socket_send(s, &pb);
+    connection_closed = posix_demuxer::socket_send(s, &pb);
   }
     
   // fprintf(stderr,"posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",

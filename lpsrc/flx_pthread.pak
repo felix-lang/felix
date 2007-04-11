@@ -1477,18 +1477,20 @@ worker_fifo::add_worker_task(worker_task* task)
 @select(h)
 #import <flx.flxh>
 
+header pthread_hxx = '#include "pthread_thread.hpp"';
 header mutex_hxx = '#include "pthread_mutex.hpp"';
 header condv_hxx = '#include "pthread_condv.hpp"';
 header counter_hxx = '#include "pthread_counter.hpp"';
 header semaphore_hxx = '#include "pthread_semaphore.hpp"';
 header monitor_hxx = '#include "pthread_monitor.hpp"';
+header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
 
 module Pthread
 {
   requires package "flx_pthread";
   open C_hack;
 
-  type job_queue = "flx::pthread::worker_fifo*";
+  type job_queue = "flx::pthread::worker_fifo*" requires work_fifo_hxx;
 
   gen mk_job_queue: int * int -> job_queue = "new flx::pthread::worker_fifo($1,$2)";
   
