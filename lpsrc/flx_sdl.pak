@@ -107,7 +107,6 @@ if HAVE_SDL:
   sflags = SDL_STATIC_LIBS
   
   pkg_requires = ['faio']
-  rtl_interfaces = ['faio/faio_sdl_event.hpp']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
   demos = glob.glob(os.path.join('demos', 'sdl', '*.flx'))
   demos.sort()
