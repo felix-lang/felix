@@ -2479,10 +2479,10 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
     var i : ulong;
 
     if Varray::len(xs) > 0ul do
-      o += str xs.[0];
+      o += repr xs.[0];
 
       forall i in 1 upto Varray::len(xs) - 1ul do
-        o += ', ' + str xs.[i];
+        o += ', ' + repr xs.[i];
       done;
     done;
 
