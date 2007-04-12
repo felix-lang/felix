@@ -1,7 +1,5 @@
 #!/bin/bash
 echo "DEFAULT FELIX BUILD"
-./configure
+./configure $*
 ./mk extract
 ./mk
-
-
