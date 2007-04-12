@@ -761,7 +761,6 @@ module MixedInt
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
   gen_nan(t)
   tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
-  tangle('  //fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
   tangle("}")
   tangle("")
 
@@ -801,7 +800,6 @@ open module Char
   open Int;
   fun ord: char -> int = "(int)$1";
   fun _ctor_char: int -> char = "(char)$1";
-  //fun str: char -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   proc fprint: ostream * char = "*$1<<$2;" requires iostream;
 }
 
@@ -810,7 +808,6 @@ open module Wchar
   open Long;
   fun ord: wchar -> long ="(long)$1";
   fun _ctor_wchar: long -> wchar = "(wchar_t)$1";
-  //fun str: wchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
 }
 
@@ -818,7 +815,6 @@ open module Unicode
 {
   fun ord: uchar -> uint32 ="$1";
   fun _ctor_uchar: uint32 -> uchar = "$1";
-  //fun str: uchar -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
   //this needs to be fixed!
   //proc print: uchar = "std::cout<<$1;" requires iostream;
 }
@@ -1453,11 +1449,6 @@ open module String
   proc pluseq: lvalue[string] * charp = "$1.append($2);";
   proc pluseq: lvalue[string] * char = "$1 += $2;";
 
-  //fun str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
-  //fun str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
-  //fun str: ucharp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
-  //fun str: ucharcp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
-  //fun str: string -> string = '$1';
 
   // we need to cast to an int so that c++ won't complain
   fun len: string -> int = "static_cast<int>($1.size())";
@@ -2457,12 +2448,13 @@ open module Varray
   private proc set_used[t]: varray[t] * ulong =
     "flx::gc::generic::set_used($1,$2);"
   ;
- 
-  fun subscript[t]: varray[t] * !ints -> lvalue[t] = 
-    "$1[$2]"
-  ;
+
+  fun subscript[t]: varray[t] * !ints -> lvalue[t] = "$1[$2]";
+
   fun len[t]: varray[t] -> ulong = "flx::gc::generic::get_used($1)";
+
   fun maxlen[t]: varray[t] -> ulong = "flx::gc::generic::get_count($1)";
+
   proc pluseq[t] : varray[t] * t = """
     {
       ?1 * _p = $1;
