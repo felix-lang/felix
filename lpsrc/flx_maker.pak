@@ -2153,10 +2153,12 @@ for plugin in scheduled_plugins + unscheduled_plugins:
   nfail = len(plugin.failures)
   npass = len(plugin.successes)
   failed = failed or nfail>0
-  failed = failed or (nfail>0 and not plugin.dummy)
+  fatal = fatal or (nfail>0 and not plugin.dummy)
 
   if nfail:
     failure_log.write('PLUGIN **FAILED**: %s, %d/%d failures\n' % (plugin.name, nfail,npass+nfail))
+    if plugin.dummy:
+      failure_log.write("  [Expected failure, doesn't break build]")
   else:
     if plugin.used:
       failure_log.write('PLUGIN PASSED    : %s, %d pass\n' % (plugin.name,npass))
