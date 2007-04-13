@@ -136,9 +136,10 @@ socketio_request::socketio_request(demux::posix_demuxer *pd_a, int s, char* buf,
   sv.pb.bytes_written = 0;        // really bytes_processed
 }
 
-socketio_request::socketio_request(socketio_request const &a)
+socketio_request::socketio_request(socketio_request const &a) : pd(a.pd)
 {
   //fprintf(stderr, "copying socketio_request to %p\n",this);
+  sv = a.sv;
   sv.request = this;
 }
 
@@ -163,7 +164,7 @@ socketio_request::start_async_op_impl()
   // wake thread if call failed
   bool failed = (pd->add_socket_wakeup(&sv, sv.sio_flags) == -1);
   if (failed)
-    fprintf(stderr,"socketio_request FAILED %p\n",this);
+    fprintf(stderr,"socketio_request FAILED %p, sock=%d, dir=%d\n",this, sv.s, sv.sio_flags);
   //else
   //  fprintf(stderr,"socketio_request OK %p\n",this);
   return failed;
@@ -330,6 +331,7 @@ open Demux;
 
 header unistd_h = '#include <unistd.h>';            // close
 header fcntl_h = '#include <fcntl.h>';              // fcntl for O_NONBLOCK
+header sys_stat_h = '#include <fcntl.h>';              // for S_* permissions
 header sys_socket_h = '#include <sys/socket.h>';    // shutdown
 header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 header = '#include "faio_posixio.hpp"';
@@ -349,14 +351,56 @@ proc shutdown: socket_t*int = 'shutdown($a);' requires sys_socket_h;
 
 fun bad_socket : socket_t -> bool = "$1 == -1";
 
+type posix_permissions = "mode_t" requires sys_stat_h;
+const S_IRUSR : posix_permissions;
+const S_IWUSR : posix_permissions;
+const S_IXUSR : posix_permissions;
+const S_IRGRP : posix_permissions;
+const S_IWGRP : posix_permissions;
+const S_IXGRP : posix_permissions;
+const S_IROTH : posix_permissions;
+const S_IWOTH : posix_permissions;
+const S_IXOTH : posix_permissions;
+
 // non blocking
-fun aio_ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY | O_NONBLOCK, 0)'
-    requires fcntl_h;
+gen aio_ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY | O_NONBLOCK)'
+    requires fcntl_h, sys_stat_h;
+gen aio_wopen: string -> fd_t = ' open($1.c_str(), O_WRONLY | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
+    requires fcntl_h, sys_stat_h;
+gen aio_rwopen: string -> fd_t = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
+    requires fcntl_h, sys_stat_h;
+gen aio_creat: string * posix_permissions-> fd_t = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, $2)'
+    requires fcntl_h, sys_stat_h;
+
+
 
 // blocking
-fun ropen: charp -> fd_t = 'open($1, O_RDONLY, 0)' requires fcntl_h;
+gen ropen: string -> fd_t = 'open($1.data(), O_RDONLY,0)' requires fcntl_h, sys_stat_h;
+gen wopen: string -> fd_t = 'open($1.data(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)' requires fcntl_h, sys_stat_h;
+gen rwopen: string -> fd_t = 'open($1.data(), O_RDWR,0)' requires fcntl_h, sys_stat_h;
+gen creat: string * posix_permissions -> fd_t = 'open($1.data(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires fcntl_h, sys_stat_h;
 
+fun access: string -> posix_permissions = "get_perm($1.data())"
+  requires body """
+  mode_t get_perm(char const *f)
+  {
+    struct stat b;
+    stat(f,&b);
+    return b.st_mode;
+  }
+  """
+;
 
+fun access: fd_t -> posix_permissions = "get_perm($1)"
+  requires body """
+  mode_t get_perm(int f)
+  {
+    struct stat b;
+    fstat(f,&b);
+    return b.st_mode;
+  }
+  """
+;
 
 type socket_t = "int";
 // socketio_request should be renamed to be async_fd_request

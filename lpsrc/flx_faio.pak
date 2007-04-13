@@ -1042,6 +1042,7 @@ include "flx_stream";
 open Flx_stream;
 
 open TerminalIByteStream[fd_t];
+open TerminalIOByteStream[socket_t];
 
 // this is a hack to make close work on a listener
 // RF got this right the first time: 
@@ -1099,33 +1100,53 @@ fun substr: string*int -> string = "$1.substr($2)";
 
 // TODO: fill in that length field, stream back the requested jpeg,
 // get port from argv.
-// took out the Content-Length: 604. line. wasn't right anyway. still
-// works with firefox that goes up to EOF.
-// what's ETag?
+
 val html_header = """
 HTTP/1.1 200 OK
 Date: Tue, 25 Apr 2006 00:16:12 GMT
 Server: felix web server
 Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT
-ETag: "6d8029-25c-43e10339"
 Accept-Ranges: bytes
 Connection: close
 Content-Type: text/html
 
 """;
 
-// deleted Content-Length: 1414
 val gif_header = """
 HTTP/1.1 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
-ETag: "7f004d-586-41aa2013"\r
 Accept-Ranges: bytes\r
 Connection: close\r
 Content-Type: image/gif\r
 
 """;
+
+val css_header = """
+HTTP/1.1 200 OK\r
+Date: Sun, 30 Apr 2006 07:14:50 GMT\r
+Server: felix web server\r
+Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
+Accept-Ranges: bytes\r
+Connection: close\r
+Content-Type: text/css\r
+
+""";
+
+
+val notfound_header = """
+HTTP/1.1 404 Not Found\r
+Date: Sun, 30 Apr 2006 07:14:50 GMT\r
+Server: felix web server\r
+Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
+Accept-Ranges: bytes\r
+Connection: close\r
+Content-Type: text/html\r
+
+PAGE NOT FOUND:
+""";
+
 
 proc substitute(s: string, a: char, b: char, res: &string)
 {
@@ -1187,6 +1208,7 @@ proc serve_file(infname: string, s: socket_t)
 
     // mime type mapping from suffix. make better here.
     if("gif" == suffix) then { write_string(s, gif_header); }
+    elif("css" == suffix) then { write_string(s, css_header); }
     else { write_string(s, html_header); } endif;
 
     print "Transmitting file!\n";
@@ -1204,6 +1226,8 @@ proc serve_file(infname: string, s: socket_t)
   if Faio_posix::invalid fd then 
   {
     print "BUGGER, posix open failed\n";
+    write_string(s, notfound_header); 
+    write_string(s, fname+"\r\n\n"); 
   } else {
     print "got fd="; print$ str fd; endl;
 
@@ -1237,7 +1261,7 @@ var listener: socket_t;
 mk_listener(&listener, &p, 10);
 
 
-forever {
+proc forever {
   var s: socket_t;
   accept(listener, &s);  // blocking
   print "got connection (or something)\n";  // error check here
@@ -1245,42 +1269,44 @@ forever {
   // hmm - spawning an fthread is blocking the web server. don't know why
   print "spawning fthread to handle connection\n";
   spawn_fthread {
-// should spawn fthread here to allow for more io overlap
+    // should spawn fthread here to allow for more io overlap
 
-  var line: string;
-  get_line(s, &line);  // should be the GET line.
+    var line: string;
+    get_line(s, &line);  // should be the GET line.
 
-  val poo = 
-  if "GET " == line.[0 to 4] then line.[4 to ] else "" endif;
-  print ("poo="poo); endl;
+    val poo = 
+    if "GET " == line.[0 to 4] then line.[4 to ] else "" endif;
+    print ("poo="poo); endl;
 
-//print ("blah " line.[0 to 4]); endl;
-  print "got line: "; print line; endl;
+  //print ("blah " line.[0 to 4]); endl;
+    print "got line: "; print line; endl;
 
-  // now I need to parse the GET line, get a file name out of its url
-  // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
-  var succ: bool;
-  var base: string;
-  var file: string;
+    // now I need to parse the GET line, get a file name out of its url
+    // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
+    var succ: bool;
+    var base: string;
+    var file: string;
 
-  parse_get_line(line, succ, base, file);
-  // print "succ="; print succ; endl;
+    parse_get_line(line, succ, base, file);
+    // print "succ="; print succ; endl;
 
-  if succ then {
-    print "well formed get...\n";
-    print "base="; print base; endl;
-    print "file="; print file; endl;
+    if succ then {
+      print "well formed get...\n";
+      print "base="; print base; endl;
+      print "file="; print file; endl;
 
-    serve_file(file, s);
-  } else {
-    print "BAD get line: "; print line; endl;
-  } endif;
+      serve_file(file, s);
+    } else {
+      print "BAD get line: "; print line; endl;
+    } endif;
 
-  iclose(s);
+    ioclose(s);
 
   };
-
+  collect();
+  forever;
 };
+forever;
 
 iclose(listener);
 @doc()
