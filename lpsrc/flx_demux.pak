@@ -62,7 +62,7 @@
 
 
 namespace flx { namespace demux {
-flx_demuxer_t * DEMUX_EXTERN make_std_demuxer();
+DEMUX_EXTERN flx_demuxer_t * make_std_demuxer();
 }}
 
 #endif
