@@ -125,7 +125,6 @@ if HAVE_SDL:
     ('dynamic','rtl/flx_arun','bin/flx_arun',[]),
   ]
   DRLIBS = [
-   'libsdl',
    'libflx_async',
    'libfaio',
    'libdemux',
