@@ -9,6 +9,18 @@ set LIB="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\PlatformSDK\LIB"
 set PATH=c:\Python24;%PATH%
 set PYTHONPATH=.
 
+@select(tangler("win32_VS2005_env.bat","data"))
+set OCAMLLIB=c:\program files\Objective Caml\lib
+set PATH="c:\Program files\Objective Caml\bin";%PATH%
+set PATH="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\bin";%PATH%
+set PATH="C:\Program Files\Microsoft Visual Studio 8\Common7\IDE";%PATH%
+set INCLUDE="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\INCLUDE";%INCLUDE%
+set INCLUDE="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\PlatformSDK\INCLUDE";%INCLUDE%
+set LIB="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\LIB";%LIB%
+set LIB="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\PlatformSDK\LIB";%LIB%
+set PATH=c:\Python24;%PATH%
+set PYTHONPATH=.
+
 @select(tangler("win32config.bat","data"))
 python interscript\bin\iscr.py --nocache --break-on-error lpsrc\flx_config.pak
 python script\make_config.py --build=win32 --host=win32 --target=win32 %1 %2 %3 %4 %5 %6 %7 %8 %9
