@@ -1234,6 +1234,7 @@ proc serve_file(infname: string, s: socket_t)
     // mime type mapping from suffix. make better here.
     // factor out
     if("gif" == suffix) then { write_string(s, gif_header); }
+    elif("css" == suffix) then { write_string(s, css_header); }
     else { write_string(s, html_header); } endif;
 
     var from_strm: Faio_posix::fd_t = fd;

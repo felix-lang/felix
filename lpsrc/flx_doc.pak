@@ -1,5 +1,7 @@
-@set_title("Felix documentation")
-@head(1,"FELIX DOCUMENTATION")
+@execfile('config'+os.sep+'config.py')
+
+@set_title("Felix documentation "+flx_version)
+@head(1,"FELIX DOCUMENTATION Version "+flx_version)
 @head(2,"TUTORIAL and REFERENCE",nospawn=1)
 
 Reference Manual (interscript):
