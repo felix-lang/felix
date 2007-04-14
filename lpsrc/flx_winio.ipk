@@ -333,7 +333,7 @@ proc mk_socket(s: &SOCKET)
 
 type wasync_accept = "flx::faio::wasync_accept";
 
-fun mk_accept: SOCKET*SOCKET -> wasync_accept = 'flx::faio::wasync_accept($a)';
+fun mk_accept: demuxer *  SOCKET*SOCKET -> wasync_accept = 'flx::faio::wasync_accept($a)';
 // make this a parameterised type
 fun get_success[t]: t -> bool = '$1.success';
 
@@ -351,13 +351,13 @@ proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
 }
 
 type connect_ex="flx::faio::connect_ex";
-fun mk_connect_ex: SOCKET*charp*int -> connect_ex = 'flx::faio::connect_ex($a)';
+fun mk_connect_ex: demuxer * SOCKET*charp*int -> connect_ex = 'flx::faio::connect_ex($a)';
 
 // for use on sockets you make yourself, who knows, maybe you want to
 // reuse them
 proc Connect(success: &bool, s: SOCKET, addr: charp, port: int)
 {   
-    var con = mk_connect_ex(s, addr, port);  
+    var con = mk_connect_ex(sys_demux,s, addr, port);  
      faio_req$ &con;    // causes ConnectEx to be called
     *success = get_success(con);
 }
@@ -422,7 +422,7 @@ proc CloseFile: WFILE = 'if(!CloseHandle($1))\
 // error handling?
 // proc CloseFile: WFILE = 'CloseHandle($1);';
 
-fun mk_transmit_file : SOCKET*WFILE -> wasync_transmit_file
+fun mk_transmit_file : demuxer * SOCKET*WFILE -> wasync_transmit_file
     = 'flx::faio::wasync_transmit_file($a)';
 
 // toylike interface for now, but still fun
@@ -437,7 +437,7 @@ proc TransmitFile(s: SOCKET, f: WFILE)
 // does this and without the warning that accept-style & connect-style sockets
 // cannot be reused as the other type (which isn't a problem for my use)
 // however I already have TransmitFile code in place.
-fun mk_reuse_socket : SOCKET -> wasync_transmit_file
+fun mk_reuse_socket : demuxer * SOCKET -> wasync_transmit_file
     = 'flx::faio::wasync_transmit_file($a)';
 
 proc ReuseSocket(s: SOCKET)
@@ -447,7 +447,7 @@ proc ReuseSocket(s: SOCKET)
 }
 
 type wsa_socketio = "flx::faio::wsa_socketio";
-fun mk_wsa_socketio: SOCKET*sel_param_ptr*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
+gen mk_wsa_socketio: demuxer * SOCKET*sel_param_ptr*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
 
 private fun to_ptr : sel_param -> sel_param_ptr = '&$1';
 
@@ -458,7 +458,7 @@ proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
     init_pb(pb, buf, *len);
     var ppb: sel_param_ptr = to_ptr pb;
 
-    var rev = mk_wsa_socketio(s, ppb, true);  // reading
+    var rev = mk_wsa_socketio(sys_demux,s, ppb, true);  // reading
     faio_req$ &rev;
 // we do have a success flag
     calc_eof(ppb, len, eof);
@@ -470,21 +470,21 @@ proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
     init_pb(pb, buf, *len);
     var ppb: sel_param_ptr = to_ptr pb;
 
-    var rev = mk_wsa_socketio(s, ppb, false); // writing
+    var rev = mk_wsa_socketio(sys_demux,s, ppb, false); // writing
     faio_req$ &rev;
     calc_eof(ppb, len, eof);
 }
 
 type winfile_io = "flx::faio::winfile_io";
 
-fun mk_winfile_io: WFILE*address*int*bool->winfile_io = 'flx::faio::winfile_io($a)';
+fun mk_winfile_io: demuxer * WFILE*address*int*bool->winfile_io = 'flx::faio::winfile_io($a)';
 
 // no offset - just for streams now. write probably doesn't work
 fun get_pb: winfile_io -> sel_param_ptr = '&$1.pb';
 
 proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
 {   
-    var io = mk_winfile_io(f, buf, *len, true); // reading
+    var io = mk_winfile_io(sys_demux, f, buf, *len, true); // reading
     faio_req$ &io;
 // we do have a success flag
     calc_eof(io.pb, len, eof);
@@ -492,7 +492,7 @@ proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
 
 proc WriteFile(f: WFILE, len: &int, buf: address, eof: &bool)
 {
-    var io = mk_winfile_io(f, buf, *len, false);    // writing
+    var io = mk_winfile_io(sys_demux, f, buf, *len, false);    // writing
     faio_req$ &io;
     calc_eof(io.pb, len, eof);
 }
@@ -501,7 +501,7 @@ proc WriteFile(f: WFILE, len: &int, buf: address, eof: &bool)
 // general request for addition of socket to iocp. might be better to
 // just create them that way.
 type iocp_associator = "flx::faio::iocp_associator";
-fun mk_iocp_associator: SOCKET -> iocp_associator = 'flx::faio::iocp_associator($1)';
+fun mk_iocp_associator: demux * SOCKET -> iocp_associator = 'flx::faio::iocp_associator($1)';
 
 // this ends up just casting to a handle, so I should be able to use
 // this for other HANDLEs. Note that the user cookie is not settable
@@ -509,7 +509,7 @@ fun mk_iocp_associator: SOCKET -> iocp_associator = 'flx::faio::iocp_associator(
 proc associate_with_iocp(s: SOCKET)
 {
     // results? err code?
-    var req = mk_iocp_associator(s);
+    var req = mk_iocp_associator(sys_demux, s);
     faio_req$ &req;
 }
 
