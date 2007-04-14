@@ -431,7 +431,7 @@ fun mk_transmit_file : demuxer * SOCKET*WFILE -> wasync_transmit_file
 // toylike interface for now, but still fun
 proc TransmitFile(s: SOCKET, f: WFILE)
 {   
-    var tf = mk_transmit_file(s, f); 
+    var tf = mk_transmit_file(sys_demux,s, f); 
     faio_req$ &tf;
 }
 
@@ -445,7 +445,7 @@ fun mk_reuse_socket : demuxer * SOCKET -> wasync_transmit_file
 
 proc ReuseSocket(s: SOCKET)
 {   
-    var tf = mk_reuse_socket(s);
+    var tf = mk_reuse_socket(sys_demux,s);
     faio_req$ &tf;
 }
 
