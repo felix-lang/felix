@@ -28,7 +28,7 @@ public:
   iocp_associator() {}
   iocp_associator(SOCKET associatee) : s(associatee) {}
 
-  bool start_async_op_impl(demux::demuxer& demux);
+  bool start_async_op_impl();
 };
 
 // flx <-> c++ stuff for async io (well, it was)
@@ -38,9 +38,11 @@ class FAIO_EXTERN waio_base : public flx_driver_request_base {
 protected:
   finote_t *fn_a;
 public:
+  demux::iocp_demuxer *pd; 
   bool  success;          // eh?
 
-  waio_base() : success(false) {}
+  waio_base() : success(false), pd(0) {}
+  waio_base(demux::iocp_demuxer *pd_a) : pd(pd_a), success(false) {} 
 
   // actually wakes up thread
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
@@ -59,7 +61,7 @@ public:
 
   wasync_accept(SOCKET l, SOCKET a) { listener = l; acceptor = a; }
 
-  bool start_async_op_impl(demux::demuxer& demux);
+  bool start_async_op_impl();
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -75,7 +77,7 @@ public:
   connect_ex(SOCKET soc, const char* addr, int port)
     { s = soc; addy = addr; p = port; }
 
-  bool start_async_op_impl(demux::demuxer& demux);
+  bool start_async_op_impl();
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -96,7 +98,7 @@ public:
     : transmitfile_control_block(dst, src) {}
 
   // from flx_request_base
-  bool start_async_op_impl(demux::demuxer& demux);
+  bool start_async_op_impl();
 
   virtual void iocp_op_finished(DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -113,7 +115,7 @@ public:
   wsa_socketio(SOCKET src, demux::sel_param* ppb, bool read)
     : wsasocketio_control_block(src, ppb, read) {}
 
-  bool start_async_op_impl(demux::demuxer& demux);
+  bool start_async_op_impl();
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -131,7 +133,7 @@ public:
   winfile_io(HANDLE f, void* buf, int len, bool read)
     : winfileio_control_block(f, buf, len, read) {}
 
-  bool start_async_op_impl(demux::demuxer& demux);
+  bool start_async_op_impl();
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -150,7 +152,7 @@ namespace flx { namespace faio {
 
 // way of adding sockets to the IOCP.
 bool
-iocp_associator::start_async_op_impl(demuxer& demux)
+iocp_associator::start_async_op_impl()
 {
   fprintf(stderr,"iocp_associator: start async_op_impl\n");
   // covariant
@@ -183,7 +185,7 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 }
 
 bool
-wasync_accept::start_async_op_impl(demuxer& demux)
+wasync_accept::start_async_op_impl()
 {
   fprintf(stderr,"wasync_accept: start async_op_impl\n");
   return start_overlapped();
@@ -198,7 +200,7 @@ wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 
 
 bool
-connect_ex::start_async_op_impl(demux::demuxer& demux)
+connect_ex::start_async_op_impl()
 {
   fprintf(stderr,"connect_ex: start async_op_impl\n");
   return start_overlapped();
@@ -213,7 +215,7 @@ connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 
 
 bool
-wasync_transmit_file::start_async_op_impl(demux::demuxer& demux)
+wasync_transmit_file::start_async_op_impl()
 {
   fprintf(stderr,"wasync_transmit_file: start async_op_impl\n");
   return start_overlapped();
@@ -227,7 +229,7 @@ wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 }
 
 bool
-wsa_socketio::start_async_op_impl(demux::demuxer& demux)
+wsa_socketio::start_async_op_impl()
 {
   fprintf(stderr,"wsa_socketio: start async_op_impl\n");
   return start_overlapped();    // start overlapped op
@@ -269,7 +271,7 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 // file io
 
 bool
-winfile_io::start_async_op_impl(demuxer& demux)
+winfile_io::start_async_op_impl()
 {
   fprintf(stderr,"winfile_io: start async_op_impl\n");
   return start_overlapped();  // go
