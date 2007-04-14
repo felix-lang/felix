@@ -504,7 +504,7 @@ proc WriteFile(f: WFILE, len: &int, buf: address, eof: &bool)
 // general request for addition of socket to iocp. might be better to
 // just create them that way.
 type iocp_associator = "flx::faio::iocp_associator";
-fun mk_iocp_associator: demux * SOCKET -> iocp_associator = 'flx::faio::iocp_associator($1)';
+fun mk_iocp_associator: demuxer * SOCKET -> iocp_associator = 'flx::faio::iocp_associator($1)';
 
 // this ends up just casting to a handle, so I should be able to use
 // this for other HANDLEs. Note that the user cookie is not settable
