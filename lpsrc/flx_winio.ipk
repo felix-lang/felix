@@ -24,9 +24,11 @@ namespace flx { namespace faio {
 class FAIO_EXTERN iocp_associator : public flx_driver_request_base {
   SOCKET  s;
 public:
+  demux::iocp_demuxer *iod; 
   // should have result & errcode
-  iocp_associator() {}
-  iocp_associator(SOCKET associatee) : s(associatee) {}
+  iocp_associator() : iod(0) {}
+  iocp_associator(demux::iocp_demuxer *iod_a, SOCKET associatee) 
+  : iod(iod_a), s(associatee) {}
 
   bool start_async_op_impl();
 };
