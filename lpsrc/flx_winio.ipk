@@ -38,7 +38,7 @@ class FAIO_EXTERN waio_base : public flx_driver_request_base {
 protected:
   finote_t *fn_a;
 public:
-  demux::iocp_demuxer *pd; 
+  demux::iocp_demuxer *iod; 
   bool  success;          // eh?
 
   waio_base() : success(false), iod(0) {}
