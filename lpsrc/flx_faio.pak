@@ -461,6 +461,8 @@ gen cmp
   var buf2 = C_hack::malloc(BUFSIZE);
   var res : int;
   stream_cmp(i1, i2, buf1, buf2, BUFSIZE, &res);
+  C_hack::free(buf1);
+  C_hack::free(buf2);
   return res;
 }
 
