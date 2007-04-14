@@ -348,7 +348,7 @@ fun eq : SOCKET*SOCKET -> bool = '($1 == $2)';
 // windows style accept. accepted is an already created socket, unbound
 proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
 {
-    var acc = mk_accept(listener, accepted);
+    var acc = mk_accept(sys_demux,listener, accepted);
     faio_req$ &acc;    // causes AcceptEx to be called
     *success = get_success(acc);
 }
