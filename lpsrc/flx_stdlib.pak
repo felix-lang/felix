@@ -1235,6 +1235,9 @@ module Carray
     "{if($1 && $2 && $3)std::memcpy($1,$2,$3);}"
     requires cstring
   ;
+  fun memcmp: address * address * size -> int = "std::memcmp($1,$2,$3)"
+    requires cstring
+  ;
 }
 
 publish "System Interface"
