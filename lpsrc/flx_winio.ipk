@@ -300,6 +300,7 @@ winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 @select(h)
 #import <flx.flxh>
 include "flx_faio";     // defines copipes & some driver interaction
+include "flx_demux";
 
 module Faio_win32 {
 requires package "demux";
@@ -307,6 +308,8 @@ requires package "faio";
 // contains windows overlapped/iocp io & copipes. no stream wrapper yet.
 open C_hack;
 open Faio;
+open Demux;
+
 header '#include "faio_winio.hpp"'; // this has everything (includes asyncio.h)
 
 // useful windows function
