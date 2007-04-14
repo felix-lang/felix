@@ -41,8 +41,8 @@ public:
   demux::iocp_demuxer *pd; 
   bool  success;          // eh?
 
-  waio_base() : success(false), pd(0) {}
-  waio_base(demux::iocp_demuxer *pd_a) : pd(pd_a), success(false) {} 
+  waio_base() : success(false), iod(0) {}
+  waio_base(demux::iocp_demuxer *iod_a) : iod(iod_a), success(false) {} 
 
   // actually wakes up thread
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
@@ -59,7 +59,7 @@ class FAIO_EXTERN wasync_accept
 public:
   wasync_accept() {}  // felix linkage demands it
 
-  wasync_accept(SOCKET l, SOCKET a) { listener = l; acceptor = a; }
+  wasync_accept(demux::iocp_demuxer *iod_a,SOCKET l, SOCKET a) : waio_base(iod_a) { listener = l; acceptor = a; }
 
   bool start_async_op_impl();
 
@@ -74,8 +74,8 @@ public:
 
   connect_ex() {}     // flx linkage
 
-  connect_ex(SOCKET soc, const char* addr, int port)
-    { s = soc; addy = addr; p = port; }
+  connect_ex(demux::iocp_demuxer *iod_a,SOCKET soc, const char* addr, int port)
+    : waio_base(iod_a) { s = soc; addy = addr; p = port; }
 
   bool start_async_op_impl();
 
@@ -89,13 +89,13 @@ class FAIO_EXTERN wasync_transmit_file
 {
 public:
   wasync_transmit_file() 
-    : transmitfile_control_block(INVALID_SOCKET, NULL) {}   // flx linkage
+    : waio_base(0), transmitfile_control_block(INVALID_SOCKET, NULL) {}   // flx linkage
 
-  wasync_transmit_file(SOCKET dst)      // for reuse of socket
-    : transmitfile_control_block(dst) {}
+  wasync_transmit_file(demux::iocp_demuxer *iod_a,SOCKET dst)      // for reuse of socket
+    : waio_base(iod_a), transmitfile_control_block(dst) {}
 
-  wasync_transmit_file(SOCKET dst, HANDLE src)  // actual transmitfile
-    : transmitfile_control_block(dst, src) {}
+  wasync_transmit_file(demux::iocp_demuxer *iod_a,SOCKET dst, HANDLE src)  // actual transmitfile
+    : waio_base(iod_a), transmitfile_control_block(dst, src) {}
 
   // from flx_request_base
   bool start_async_op_impl();
@@ -112,8 +112,8 @@ public:
   wsa_socketio()
     : wsasocketio_control_block(INVALID_SOCKET, NULL, false) {}
 
-  wsa_socketio(SOCKET src, demux::sel_param* ppb, bool read)
-    : wsasocketio_control_block(src, ppb, read) {}
+  wsa_socketio(demux::iocp_demuxer *iod_a,SOCKET src, demux::sel_param* ppb, bool read)
+    : waio_base(iod_a), wsasocketio_control_block(src, ppb, read) {}
 
   bool start_async_op_impl();
 
@@ -130,8 +130,8 @@ public:
     : winfileio_control_block(NULL, NULL, 0, false){}
   
   // offset?
-  winfile_io(HANDLE f, void* buf, int len, bool read)
-    : winfileio_control_block(f, buf, len, read) {}
+  winfile_io(demux::iocp_demuxer *iod_a,HANDLE f, void* buf, int len, bool read)
+    : waio_base(iod_a), winfileio_control_block(f, buf, len, read) {}
 
   bool start_async_op_impl();
 
@@ -155,12 +155,6 @@ bool
 iocp_associator::start_async_op_impl()
 {
   fprintf(stderr,"iocp_associator: start async_op_impl\n");
-  // covariant
-  iocp_demuxer*  iod = dynamic_cast<iocp_demuxer*>(&demux);
-
-  // not sure why we're doing dynamic casts if we don't check
-  // the return value.
-  //iocp_demuxer* iod = (iocp_demuxer*)&demux;
 
   // nasty: note how I'm making the user cookie constant (0).
   if(iod->associate_with_iocp((HANDLE)s, 0) != 0)
