@@ -650,7 +650,7 @@ instance Flx_stream::TerminalIByteStream[socket_t]
 {
   proc iclose (s:socket_t)
   #if POSIX
-    { Faio_posix::close s; }
+    { Faio_posix::shutdown (s,0); Faio_posix::close s; }
   #else
     { Faio_win32::closesocket s; }
   #endif
@@ -660,7 +660,7 @@ instance Flx_stream::TerminalOByteStream[socket_t]
 {
   proc oclose (s:socket_t) 
   #if POSIX
-    { Faio_posix::close s; }
+    { Faio_posix::shutdown (s,1); Faio_posix::close s; }
   #elif WIN32
     { Faio_win32::closesocket s; }
   #endif
@@ -671,7 +671,7 @@ instance Flx_stream::TerminalIOByteStream[socket_t]
 {
   proc ioclose (s:socket_t) 
   #if POSIX
-    { Faio_posix::close s; }
+    { Faio_posix::shutdown(s,2); Faio_posix::close s; }
   #elif WIN32
     { Faio_win32::closesocket s; }
   #endif

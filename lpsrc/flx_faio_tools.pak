@@ -87,48 +87,44 @@ fun substr: string*int -> string = "$1.substr($2)";
 // get port from argv.
 
 val html_header = """
-HTTP/1.1 200 OK
-Date: Tue, 25 Apr 2006 00:16:12 GMT
-Server: felix web server
-Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT
-Accept-Ranges: bytes
-Connection: close
-Content-Type: text/html
-
+HTTP/0.9 200 OK\r
+Date: Tue, 25 Apr 2006 00:16:12 GMT\r
+Server: felix web server\r
+Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
+Connection: close\r
+Content-Type: text/html\r
+\r
 """;
 
 val gif_header = """
-HTTP/1.1 200 OK\r
+HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
-Accept-Ranges: bytes\r
 Connection: close\r
 Content-Type: image/gif\r
-
+\r
 """;
 
 val css_header = """
-HTTP/1.1 200 OK\r
+HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
-Accept-Ranges: bytes\r
 Connection: close\r
 Content-Type: text/css\r
-
+\r
 """;
 
 
 val notfound_header = """
-HTTP/1.1 404 Not Found\r
+HTTP/0.9 404 Not Found\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
-Accept-Ranges: bytes\r
 Connection: close\r
 Content-Type: text/html\r
-
+\r
 PAGE NOT FOUND:
 """;
 
