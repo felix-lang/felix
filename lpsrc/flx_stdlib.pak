@@ -1470,6 +1470,10 @@ open module String
  
   fun _ctor_char (x:string) => x.[0];
   fun _ctor_string (c:char) => ""+c;
+  gen _ctor_string: charp -> string = "std::string($1)";
+  gen _ctor_string: charp * int -> string = "std::string($1,$2)";
+  gen _ctor_string: charcp -> string = "std::string($1)";
+  gen _ctor_string: charcp * int -> string = "std::string($1,$2)";
 
   fun subscript: string * int -> char = 
     "flx::rtl::strutil::subscript($1,$2)" requires flx_strutil;
