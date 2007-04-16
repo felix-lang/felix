@@ -2921,8 +2921,10 @@ fileio_request::fileio_request(int f, char* buf, long len, long off, bool rd)
 void
 fileio_request::doit()
 {
-  // fprintf(stderr,"faio about to try to %s %i bytes from fd=%i\n",
-  //  (read_flag) ? "read" : "write", pb.buffer_size, fd);
+  /*
+  fprintf(stderr,"faio about to try to %s %i bytes from fd=%i\n",
+    (read_flag) ? "read" : "write", pb.buffer_size, fd);
+  */
 
 // switching off (explicit) seeks for now because I'm not using them
 // in the flx code & I'm not passing around enough info (just the fd)

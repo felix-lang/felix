@@ -427,7 +427,9 @@ proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]]
 
   while{cmp == 0 and not terminated} {
     len1 = bufsize; read(fd1, &len1, buf1, &eof1);
-    len2 = bufsize; read(fd2, &len2, buf2, &eof1);
+    len2 = bufsize; read(fd2, &len2, buf2, &eof2);
+//print "Len1="; print len1; endl;
+//print "Len2="; print len2; endl;
 
     len  := min(len1,len2);
     cmp = Carray::memcmp(buf1, buf2, size len);
@@ -452,18 +454,16 @@ proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]]
 }
 
 
-gen cmp
+proc cmp
   [istr1, istr2 with IByteStream[istr1], IByteStream[istr2]]
-  (i1: istr1, i2: istr2) : int =
+  (i1: istr1, i2: istr2, res: &int)
 {
   val BUFSIZE = 10*1024;
   var buf1 = C_hack::malloc(BUFSIZE);
   var buf2 = C_hack::malloc(BUFSIZE);
-  var res : int;
-  stream_cmp(i1, i2, buf1, buf2, BUFSIZE, &res);
+  stream_cmp(i1, i2, buf1, buf2, BUFSIZE, res);
   C_hack::free(buf1);
   C_hack::free(buf2);
-  return res;
 }
 
 proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]

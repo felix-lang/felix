@@ -94,7 +94,10 @@ public:
       pthread::worker_fifo *a,
       int f, char* buf, long len, long off, bool rd
      )
-        : fileio_request(f, buf, len, off, rd), aio_worker(a) {}
+        : fileio_request(f, buf, len, off, rd), aio_worker(a) 
+     {
+       //fprintf(stderr, "flxfilio_request ctor\n");
+     }
 
     // from driver request
     bool start_async_op_impl();
@@ -480,6 +483,7 @@ proc faio_rw(q:job_queue, fd: fd_t, len: &int, buf: address, eof: &bool, read_fl
     // constant offset for now, rushing to get this in flx_stream
     var faio = mk_faio(q, fd, buf, *len, 0, read_flag);
     faio_req$ &faio;
+    //print$ f"faio_rw: request %d, actual %d\n" (*len,faio.pb.bytes_done);
     calc_eof(faio.pb, len, eof);
 }
 

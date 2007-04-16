@@ -361,7 +361,8 @@ gen openi(s:string):fd_t = {
 
 var f1 = openi(fn1);
 var f2 = openi(fn2);
-var result = cmp (f1,f2);
+var result : int;
+cmp (f1,f2, &result);
 iclose(f1);
 iclose(f2);
 
