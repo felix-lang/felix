@@ -366,6 +366,7 @@ const S_IWOTH : posix_permissions;
 const S_IXOTH : posix_permissions;
 
 // non blocking
+/*
 gen aio_ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY | O_NONBLOCK)'
     requires fcntl_h, sys_stat_h;
 gen aio_wopen: string -> fd_t = ' open($1.c_str(), O_WRONLY | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
@@ -374,7 +375,7 @@ gen aio_rwopen: string -> fd_t = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREA
     requires fcntl_h, sys_stat_h;
 gen aio_creat: string * posix_permissions-> fd_t = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, $2)'
     requires fcntl_h, sys_stat_h;
-
+*/
 
 
 // blocking

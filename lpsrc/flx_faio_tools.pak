@@ -202,7 +202,7 @@ proc serve_file(infname: string, s: socket_t)
   // this fn sets the O_NONBLOCK flag which is completely unnecessary
   // as read goes via the preading worker fifo. don't know if
   // O_NONBLOCK even works on actual files.
-  var fd = Faio_posix::aio_ropen(fname);
+  var fd = Faio_posix::ropen(fname);
 
   if Faio_posix::invalid fd then 
   {
@@ -309,7 +309,7 @@ val fnin,fnout = System::argv 1, System::argv 2;
 
 gen openi(s:string):fd_t = {
   var f: fd_t;
-  f = Faio_posix::aio_ropen(s);
+  f = Faio_posix::ropen(s);
   if Faio_posix::invalid f do
     print$ "Can't open input file " + s + "\n";
     System::exit 1;
@@ -351,7 +351,7 @@ val fn1,fn2 = System::argv 1, System::argv 2;
 
 gen openi(s:string):fd_t = {
   var f: fd_t;
-  f = Faio_posix::aio_ropen(s);
+  f = Faio_posix::ropen(s);
   if Faio_posix::invalid f do
     print$ "Can't open input file " + s + "\n";
     System::exit 1;
