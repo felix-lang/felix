@@ -1317,6 +1317,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       (*
       print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *) 
+      let exes = check_reductions syms exes in
       recal_exes_usage syms uses sr i ps exes;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
@@ -1366,6 +1367,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       (*
       print_endline (id^ " After tailing(2):\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
+      let exes = check_reductions syms exes in
       recal_exes_usage syms uses sr i ps exes;
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
       recal_exes_usage syms uses sr i ps exes;
