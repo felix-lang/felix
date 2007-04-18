@@ -1,0 +1,625 @@
+@h=tangler('demux/demux_posix_demuxer.hpp')
+@select(h)
+#ifndef __FLX_DEMUX_POSIX_DEMUXER_H__
+#define __FLX_DEMUX_POSIX_DEMUXER_H__
+
+// base classes for posix style demuxers
+
+#include "demux_demuxer.hpp"
+
+namespace flx { namespace demux {
+class DEMUX_EXTERN posix_demuxer;            // fwd decl
+
+// abc
+class DEMUX_EXTERN posix_wakeup {
+public:
+  virtual ~posix_wakeup() {}
+
+  // when called, the wakeup has finished and been removed.
+  virtual void wakeup(posix_demuxer& demux) = 0;
+};
+
+class DEMUX_EXTERN socket_wakeup : public posix_wakeup {
+public:
+  int   s;                // the non blocking socket
+  int   wakeup_flags;         // set on wakeup, r/w or both
+
+  socket_wakeup() : s(-1) {}
+};
+
+class DEMUX_EXTERN posix_demuxer : public demuxer {
+protected:
+  void async_quit(); // useful for requesting wait thread quit in
+                     // thread safe demuxer destructors. doesn't throw.
+
+public:
+  virtual ~posix_demuxer();
+
+  // posix style sockets. for reading and writing (but not both at once
+  // for the same socket_wakeup) you are guaranteed to receive only one
+  // wakeup per call to this function when you call wait.
+  // returns -1 if no wakeup is coming and zero if one is.
+  // For simultaneous reading and writing you may get two wakeups,
+  // that is, it may violate the "one shot" rule. Ignoring for now,
+  // as it's not a common use. This makes it undefined behaviour.
+  // wakeup is owned by the demuxer until its wakeup is called,
+  // so treat it with kid gloves, i.e. don't mess with it.
+  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags) = 0;
+
+  // to be called when we can read & write without blocking
+  // return true if connection closed, update pb
+  // sort of a strange place to have this..., more a socket wakeup
+  // thing, even if static
+  static bool   socket_recv(int s, sel_param* pb);
+  static bool   socket_send(int s, sel_param* pb);
+};
+
+// some handy control blocks for common non-blocking socket operations
+// note that they "fortuitously" both have start methods. hmm.
+// a socket io one could be handy here.
+
+// this one's restartable (makes sense for listener sockets)
+class DEMUX_EXTERN accept_control_block : public socket_wakeup {
+public:
+  int   accepted;   // accepted socket (out)
+  int   socket_err;   // the error, if acceptee == -1, else 0 (out)
+  
+  accept_control_block() : accepted(-1), socket_err(0) {}
+
+  virtual int start(posix_demuxer& demux);
+  virtual void wakeup(posix_demuxer& demux);
+};
+
+class DEMUX_EXTERN connect_control_block : public socket_wakeup {
+public:
+  int     socket_err;   // outgoing error (on start or wake)
+  // this should probably be a sockaddr type
+  const char* addy;     // addr (dotted quad) (in)
+  int     p;        // port (in)
+  
+  connect_control_block() : socket_err(0) {}
+
+  virtual int start(posix_demuxer& demux);
+  virtual void wakeup(posix_demuxer& demux);
+
+  // oops, can't check for s != -1 as it's always there.
+  // was always "finished" and so I started io, losing the first wakeup
+  // on epoll evtsrc. Is this right, or should it be != EINPROGRESS?
+  // keep in sync with iocp version. give socket_err initial definition
+  // that works with this?
+  bool finished() { return ( 0 == socket_err); }
+};
+
+}} // namespace demux, flx
+#endif
+
+@h=tangler('demux/demux_posix_demuxer.cpp')
+@select(h)
+#include "demux_posix_demuxer.hpp"
+#include "demux_sockety.hpp"
+#include "demux_quitter.hpp" // fns for waking and quitting a demuxer
+
+#include <stdio.h>        // "printf"
+#include <assert.h>       // assert
+#include <string.h>       // strerror
+#include <unistd.h>       // close
+
+#include <sys/types.h>      // send/recv
+#include <sys/socket.h>
+
+//#include <sys/errno.h>
+#include <errno.h>        // GUSI & solaris prefer this
+
+namespace flx { namespace demux {
+
+posix_demuxer::~posix_demuxer()
+{
+}
+
+bool
+posix_demuxer::socket_recv(int s, sel_param* pb)
+{
+  // why do I have the zero buffer size?
+  assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
+  ssize_t     nbytes;
+  
+  // if this were read then this fn would work with non-sockets
+  nbytes = recv(s, pb->buffer + pb->bytes_written,
+        pb->buffer_size - pb->bytes_written, 0);
+
+  if(nbytes <= 0)
+  {
+    if(nbytes == 0)
+    {
+      return true;        // connection closed
+    }
+    else
+    {
+      perror("recv");       // can get reset connection here
+      return true;        // so say closed, yeah?
+    }
+  }
+  else
+  {
+    // got some data
+    pb->bytes_written += nbytes;
+  }
+  return false;           // connection didn't close
+}
+
+bool
+posix_demuxer::socket_send(int s, sel_param* pb)
+{
+  // kqueue (and some of the other ones) can let you know know how much
+  // to write... imagine that!
+
+  // why do I have the zero buffer size?
+  assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
+
+  ssize_t     nbytes;
+
+  nbytes = send(s, pb->buffer + pb->bytes_written,
+    pb->buffer_size - pb->bytes_written, 0);
+
+  // similar story here, with send vs write?
+
+  // what's the story with zero? Is that allowed or does it signal
+  // that the connection closed?
+  if(-1 == nbytes)
+  {
+    perror("send");
+    return true;          // I guess the connection closed
+  }
+  else
+  {
+    // sent some data
+    pb->bytes_written += nbytes;
+  }
+  return false;           // connection didn't close
+}
+
+// get a posix demuxer to quit, that is, get the demuxer's event thread
+// to exit. doesn't return until this has happened. pretty sure that
+// calling this on a demuxer used synchronously would be a bad idea.
+// doesn't throw
+void
+posix_demuxer::async_quit()
+{
+  try {
+    // NEW and IMPROVED!!! demux quitter which sets demux quit flag
+    // via self pipe trick then waits for self pipe/quitting callback
+    // to finish. no fear of quitter being destructed early!
+    // fprintf(stderr, "async_quit called on posix demuxer\n");
+    demux_quitter quitter;
+    quitter.quit(this);
+	// event thread has exited at this point
+  } catch(...) {
+    fprintf(stderr, "error waking demuxer with self pipe quitter\n");
+  }
+}
+
+#if 0
+  //nbytes = recv(s, pb->buffer + pb->bytes_written,
+  //      pb->buffer_size - pb->bytes_written, 0);
+
+  // select and kqueue know when non socket fds have data.
+  // recv only works with sockets, but read works with both files
+  // and sockets and who knows what else. is there any disadvantage
+  // to using read instead? apart from losing flags arg?
+  // does read get the same 0 bytes = close behaviour
+  nbytes = read(s, pb->buffer + pb->bytes_written,
+        pb->buffer_size - pb->bytes_written);
+#endif
+
+// handy posix control blocks for accept, connect.
+
+int
+accept_control_block::start(posix_demuxer& demux)
+{
+  // add listener to demuxer as reading socket - see man 2 accept
+  // returns 0 on success, -1 on failure. not sure how to communicate
+  // the error.
+// could try the accept now, to see if it succeeds instantly...
+// observe wakeup rules (formulate them first)
+  accepted = -1;
+  // socket_err = 0;
+  // not quite true, but I want it to be clear if this ever becomes possible
+  // to do immediately
+  socket_err = EINPROGRESS;
+    return demux.add_socket_wakeup(this, PDEMUX_READ);
+}
+
+// one wakeup socket is in accepted and error in socket_err
+void
+accept_control_block::wakeup(posix_demuxer& demux)
+{
+  // fprintf(stderr,"accept_control_block woke up\n");
+
+  // we can now accept without blocking
+  // s is the listener, ambiguously named in parent socket_wakeup class
+  accepted = nice_accept(s, &socket_err);
+
+  if(accepted == -1)
+  {
+    fprintf(stderr, "nice_accept failed, err (%i)\n", socket_err);
+  }
+}
+
+// returns -1 on failure, 0 on success. on success the call is finished
+// (and so no wakeup) if socket_err == 0.
+int
+connect_control_block::start(posix_demuxer& demux)
+{
+  // fprintf(stderr,"async connect start\n");
+
+  int finished;
+
+  // returns either finished and err, or not finished
+  // and (no err || EINPROGRESS)
+  s = async_connect(addy, p, &finished, &socket_err);
+
+  // fprintf(stderr,"async_connect returned s: %i, finished: %i, err=%i\n",
+  //  s, finished, socket_err);
+
+  if(-1 == s)   // failed!
+  {
+    fprintf(stderr,"async_connect failed (%i)\n", socket_err);
+    return -1;  // error in socket_err, no wakeup
+  }
+
+  if(finished)
+  {
+    // this actually happens on solaris when connecting to localhost!
+    fprintf(stderr,"async_connect finished immediately, waking\n");
+    fprintf(stderr, "No wakeup coming...\n");
+    // this does not indicate an error, but that there is no wakeup
+    // coming. this could be done by a wakeup, all that happens is
+    // getsockopt is called to check the socket's error state.
+    return -1;          
+  }
+
+  // fprintf(stderr,"connect_request didn't finish immediatly, sleeping\n");
+
+  // add to demuxer as writing socket - see man 2 connect
+  // how do they get the error?
+    return demux.add_socket_wakeup(this, PDEMUX_WRITE);
+}
+
+void
+connect_control_block::wakeup(posix_demuxer& demux)
+{
+  // fprintf(stderr,"connect woke up\n");
+  // this is how we check the success of async connects
+  // if get_socket_err fails, we're treating its errno as the socket's...
+  if(get_socket_error(s, &socket_err) == -1)
+    fprintf(stderr, "eep - get_socket_err failed!\n");
+
+  // failed, throw away socket
+  if(0 != socket_err)
+  {
+    fprintf(stderr,"async connect error: %s (%i), closing\n",
+      strerror(socket_err), socket_err);
+    // we created the connect socket, so we close it too.
+    if(close(s) != 0)
+      perror("async socket close");
+
+    s = -1;   // the result
+  }
+
+  // resulting connected socket in s
+}
+}}
+
+@h=tangler('demux/demux_pfileio.hpp')
+@select(h)
+#ifndef __FLX_DEMUX_PFILEIO_H__
+#define __FLX_DEMUX_PFILEIO_H__
+#include <flx_demux_config.hpp>
+
+#include "demux_demuxer.hpp"
+#include "pthread_sleep_queue.hpp"
+#include "pthread_mutex.hpp"
+// #include <sys/types.h> // off_t (don't have flx iface to this yet)
+              // can just add new constructor
+#include "pthread_work_fifo.hpp"
+namespace flx { namespace demux {
+
+// ********************************************************
+/// like another event source. this is basically a wrapped pread, pwrite
+/// should probably be derived from posix_wakeup or something like that.
+/// or have the same signature. abstract - users overload "finished
+// ********************************************************
+class DEMUX_EXTERN fileio_request : public flx::pthread::worker_task
+{
+  long    offset;   // make this a proper offset (64bit)
+  // off_t    offset; // in: offset, for use with pread, pwrite
+  int     fd;     // in: fd in question
+  bool    read_flag;  // in: read else write
+
+  int     err;    // out:
+public:
+  // public so it can be got in felix
+  sel_param pb;   // in & out: what you want, what you get (64bit len?)
+
+  virtual ~fileio_request(); // c++ should do this automatically
+  fileio_request();       // flx linkage
+  fileio_request(int f, char* buf, long len, long off, bool rd);
+
+  virtual void doit();      // sync
+};
+
+}} // namespace demux, flx
+#endif  // __PFILEIO__
+
+@h=tangler('demux/demux_pfileio.cpp')
+@select(h)
+#include <stdio.h>    // printf
+#include <errno.h>    // errno
+#include "demux_pfileio.hpp"
+
+// blocking reads & writes that use a worker fifo. users overload
+// finished flag to implement wakeup
+
+// if we could group the requests, we could do a scattered read
+// or we could do single reads if the requests were of a similar
+// nature, i.e. the whole file, of popular files.
+
+// for pwrite/pread, I'm supposed to include the following three (osx man page)
+// they don't appear to be necessary, but let's play it safe
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+
+namespace flx { namespace demux {
+// fileio_request stuff follows
+
+// read or write in a blocking fashion. I like the idea of using pread
+// which doesn't change the file pointer. this could allow reuse of the same
+// file descriptor & block caching
+
+fileio_request::~fileio_request(){}
+fileio_request::fileio_request(){}
+
+fileio_request::fileio_request(int f, char* buf, long len, long off, bool rd)
+  : offset(off), fd(f), read_flag(rd), err(0)
+{
+  pb.buffer = buf;
+  pb.buffer_size = len;
+  pb.bytes_written = 0;
+}
+
+// synchronously process read/write
+void
+fileio_request::doit()
+{
+  /*
+  fprintf(stderr,"faio about to try to %s %i bytes from fd=%i\n",
+    (read_flag) ? "read" : "write", pb.buffer_size, fd);
+  */
+
+// switching off (explicit) seeks for now because I'm not using them
+// in the flx code & I'm not passing around enough info (just the fd)
+  ssize_t res;
+
+  if(read_flag)
+  {
+    // res = pread(fd, pb.buffer, pb.buffer_size, offset);
+    res = read(fd, pb.buffer, pb.buffer_size);
+  }
+  else
+  {
+    // res = pwrite(fd, pb.buffer, pb.buffer_size, offset);
+    res = write(fd, pb.buffer, pb.buffer_size);
+  }
+  
+  // zero return value indicates end of file. that should just work.
+  if(-1 == res)
+  {
+    err = errno;    // grab errno
+    fprintf(stderr,"faio error: %i\n", err);
+  }
+  else
+  {
+    // fprintf(stderr,"faio %s %i bytes\n", (read_flag) ? "read" : "write", res);
+    pb.bytes_written = res;
+  }
+}
+}}
+
+@h=tangler('demux/demux_self_piper.hpp')
+@select(h)
+
+#ifndef __FLX_DEMUX_SELF_PIPER_H__
+#define __FLX_DEMUX_SELF_PIPER_H__
+
+#include <flx_demux_config.hpp>
+#include "demux_posix_demuxer.hpp"
+
+namespace flx { namespace demux {
+
+// there's no standard posix_socketio_wakeup, could be handy. could also
+// perhaps use it here? this is a pipe, not a socket. not sure if recv nor
+// send work on it, besides want to read an unlimited amount of redundant data.
+class DEMUX_EXTERN selfpipe_wakeup : public socket_wakeup {
+public:
+  demux_callback* cb; // optional callback
+
+  virtual void wakeup(posix_demuxer& demux);
+};
+
+class DEMUX_EXTERN auto_fd {
+public:
+    int fd;
+
+    auto_fd();
+    ~auto_fd();
+};
+
+// make portable here? make part of the wakeup obj?
+class DEMUX_EXTERN pipe_pair {
+  // self pipe trick!!! fd[0] = read end, fd[1] = write end.
+  auto_fd         fds[2];
+public:
+  pipe_pair();
+  // void read_byte(); // done for us by wakeup obj.
+  void write_byte();
+  int get_read_end();
+};
+
+// wakes a POSIX demuxer, for when you want some kind of attention
+// todo: make portable
+class DEMUX_EXTERN self_piper {
+    pipe_pair       pp;
+    selfpipe_wakeup spw;
+public:
+    void install(demuxer* demux, demux_callback* cb = 0);
+    void wake();
+};
+
+}} // namespace demux, flx
+
+#endif
+@h=tangler('demux/demux_self_piper.cpp')
+@select(h)
+
+#include "demux_self_piper.hpp"
+#include <stdio.h>              // printf, perror
+#include <unistd.h>             // pipe for self-pipe trick.
+#include <assert.h>
+
+namespace flx { namespace demux {
+
+auto_fd::auto_fd()
+{
+    fd = -1;        // invalid
+}
+
+auto_fd::~auto_fd()
+{
+    if(-1 == fd) return;
+
+    if(close(fd) == -1)
+        perror("auto fd close");
+}
+
+void
+self_piper::install(demuxer* d, demux_callback* cb)
+{
+    //fprintf(stderr, "installing self piper in %p with cb=%p\n", d, cb);
+    posix_demuxer* demux = static_cast<posix_demuxer*>(d);
+    spw.s = pp.get_read_end();
+    spw.cb = cb;
+
+    int res = demux->add_socket_wakeup(&spw, PDEMUX_READ);
+    assert(-1 != res);
+}
+
+// wake the demuxer referenced in install
+void
+self_piper::wake()
+{
+    // fprintf(stderr, "self_piper::wake\n");
+    pp.write_byte();
+}
+
+void
+selfpipe_wakeup::wakeup(posix_demuxer& demux)
+{   
+    // fprintf(stderr, "selfpipe wakeup: read the pending byte and re-arm\n");
+    // not using the pipe pair because it doesn't know that it's part of
+    // one. not to worry.
+    ssize_t         nbytes;
+    char            b;
+    
+    // if this were read then this fn would work with non-sockets
+    // EH? It IS read.
+    nbytes = read(s, &b, 1);
+    
+    if(nbytes == -1) perror("read");
+    
+    // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
+    assert(nbytes == 1 && b == 1);
+
+    // callback!
+    if(cb) cb->callback(&demux);
+    
+    // add self back! this happens even when we're quitting, but that
+    // doesn't seem to matter.
+    // fprintf(stderr, "selfpiper rearming\n");
+    int res = demux.add_socket_wakeup(this, PDEMUX_READ);
+    assert(-1 != res);
+}
+
+pipe_pair::pipe_pair()
+{
+  // fprintf(stderr, "creating pipe for self-pipe trick\n");
+
+  int         self_pipe_fds[2];
+  if(pipe(self_pipe_fds) == -1)
+  {
+      perror("ts_select_demuxer::self_pipe");
+      throw -1;
+  }
+
+  // fprintf(stderr, "self pipe fds: read: %i, write: %i\n",
+  //  self_pipe_fds[0], self_pipe_fds[1]);
+
+  fds[0].fd = self_pipe_fds[0];
+  fds[1].fd = self_pipe_fds[1];
+}
+
+void
+pipe_pair::write_byte()
+{
+    char    b = 1;
+    ssize_t nbytes;
+    // is this blocking? I guess it has to be...
+    nbytes = write(fds[1].fd, &b, 1);       // wake up, jeff!
+
+    // fprintf(stderr, "self_piper::wake write returned: %i\n", nbytes);
+
+    if(-1 == nbytes) perror("pipe_pair::write_byte");
+    assert(1 == nbytes);
+}
+
+int
+pipe_pair::get_read_end()
+{
+  return fds[0].fd;
+}
+
+} }
+
+@h=tangler('demux/demux_sockety.hpp')
+@select(h)
+#ifndef __FLX_DEMUX_SOCKETY_H__
+#define __FLX_DEMUX_SOCKETY_H__
+#include <flx_demux_config.hpp>
+namespace flx { namespace demux {
+
+// Shouldn't this all be DEMUX_EXTERN? eh, doesn't happen on win32
+// we'll probably live.
+int create_listener_socket(int* io_port, int q_len);
+int create_async_listener(int* io_port, int q_len);
+int nice_accept(int listener, int* err);
+int nice_connect(const char* addr, int port);
+int async_connect(const char* addr, int port, int* finished, int* err);
+
+/* handy socket building blocks */
+
+int connect_sock(int s, const char* addr, int port);
+
+/* this could possibly do with NIC addr as well as port */
+int bind_sock(int s, int* io_port);
+
+int make_nonblock(int s);
+int set_tcp_nodelay(int s, int disable_nagle);
+int get_socket_error(int s, int* socket_err);
+
+}} // namespace demux, flx
+#endif
+
+@doc()
+NOTE: sockety.cpp is created by flx_demuxconfig.pak ..
+it isn't missing!
+
