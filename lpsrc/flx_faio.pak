@@ -405,10 +405,11 @@ proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
     // if we finish input, stop. if output eofs, don't keep hammering on it!
     while{not(eof) and not(weof)} {
         len = bufsize;
-     // print "catting in "; print len; print " bytes\n";
         read(infd, &len, buf, &eof);
-     // print "catting out "; print len; print " bytes\n";
+        fprint$ cerr,q"catted in $len bytes, eof=$eof\n";
+        //fprint$ cerr, string(C_hack::cast[charp] buf,len);
         write(outfd, &len, buf, &weof);
+        fprint$ cerr,q"catted out $len bytes, eof=$weof\n";
     };
 }
 
@@ -528,7 +529,7 @@ proc get_line[istr with IByteStream[istr]]
 {
   var c: char;
   val ac = C_hack::cast[address]$ C_hack::addr c;
-  var str: string;
+  var st: string;
   var finished = false;
 
   whilst not finished do
@@ -540,10 +541,10 @@ proc get_line[istr with IByteStream[istr]]
     if eof or c == char '\n' do
       finished = true;
     else
-      str += c;
+      st += c;
     done;
   done;
-  *s = str;  // pass back result
+  *s = st;  // pass back result
 }
 
 proc write_string[ostr with OByteStream[ostr]]
@@ -713,10 +714,10 @@ spawn_fthread
     // print "Connector dude\n";  // get rid of, hard to test
     var c: socket_t;
     connect(&c, c"127.0.0.1", port); // connect to localhost
-    var str: string;
+    var st: string;
 
-    get_line(c, &str);
-    print "connector got "; print str; endl;
+    get_line(c, &st);
+    print "connector got "; print st; endl;
     write_string(c, "thanks\n");         // newline important
 
     ioclose(c);  // finished with this
@@ -730,10 +731,10 @@ ioclose(listener);  // not needed anymore
 print "got connection\n";
 write_string(s, "server says hi\n");     // newline important here
 
-var str: string;
-get_line(s, &str);
+var st: string;
+get_line(s, &st);
 
-print "server got "; print str; endl;
+print "server got "; print st; endl;
 ioclose(s);
 @doc()
 

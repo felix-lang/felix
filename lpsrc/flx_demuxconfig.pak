@@ -238,9 +238,21 @@ nice_accept(int listener, int* err)
 
       /* bizarre case, note that close's errno is lost */
       if(close(newfd) == -1) 
-        perror("nice_accept close");
+        perror("nice_accept can't set non-block");
       newfd = -1;
     }
+    /*
+    // Linger does nothing good in non-blocking mode
+    else if(make_linger(newfd, 30) == -1)
+    {
+      *err = errno;
+
+      // bizarre case, note that close's errno is lost
+      if(close(newfd) == -1) 
+        perror("nice_accept can't set linger");
+      newfd = -1;
+    }
+    */
   }
   return newfd;
 }
@@ -304,8 +316,20 @@ bind_sock(int s, int* io_port)
 int
 make_nonblock(int s)
 {
-  return fcntl(s, F_SETFL, O_NONBLOCK);
+  int old = fcntl(s, F_GETFL,0);
+  if (old == -1) return old;
+  return fcntl(s, F_SETFL, O_NONBLOCK | old );
 }
+
+int
+make_linger(int s, int t)
+{
+  struct linger ling;
+  ling.l_onoff = 1; // on
+  ling.l_linger = t;
+  return setsockopt(s, SOL_SOCKET, SO_LINGER,&ling, sizeof(ling));
+}
+
 
 /* returns -1 on failure with errno set or 0 otherwise */
 int

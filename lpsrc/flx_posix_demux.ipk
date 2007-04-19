@@ -613,6 +613,7 @@ int connect_sock(int s, const char* addr, int port);
 int bind_sock(int s, int* io_port);
 
 int make_nonblock(int s);
+int make_linger(int s, int t);
 int set_tcp_nodelay(int s, int disable_nagle);
 int get_socket_error(int s, int* socket_err);
 

@@ -347,6 +347,10 @@ instance Str[fd_t] {
   fun str: fd_t -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;
 }
 
+instance Str[socket_t] {
+  fun str: socket_t -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;
+}
+
 proc close: socket_t = 'close($1);' requires unistd_h;
 proc close: fd_t = 'close($1);' requires unistd_h;
 

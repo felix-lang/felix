@@ -872,6 +872,7 @@ open FloatAddgrp[dimaginary];
 open FloatAddgrp[limaginary];
 
 open[T in basic_types] Show[T];
+open[bool] Show[bool];
 @doc()
   
 @h=tangler('lib/std.flx','data')
@@ -1421,9 +1422,13 @@ module Text_file
 @#------------- STDOUT UTILITY -------------------
 open module Stdout 
 {
+  // NOTE: this module works on C++ standard streams
+  // NOT on the streams passed in the thread frame
+  // almost certainly this is a bug .. :)
   requires iostream;
   type ostream = "std::ostream*";
-  const cout: ostream = "&cout";
+  const cout: ostream = "&std::cout";
+  const cerr: ostream = "&std::cerr";
   proc endl: ostream = "*$1<<std::endl;";
   proc endl: unit = "std::cout << std::endl;";
   proc space: int = "std::cout << ' ';";

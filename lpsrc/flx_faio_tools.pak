@@ -29,6 +29,9 @@ open Flx_stream;
 open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];
 
+macro fun dbg(x) = { fprint (cerr,x); };
+
+
 // this is a hack to make close work on a listener
 // RF got this right the first time: 
 // in the abstract a listener is NOT a socket
@@ -222,6 +225,7 @@ proc serve_file(infname: string, s: socket_t)
     var to_strm: socket_t = s;
     Flx_stream::cat(from_strm, to_strm);
 
+    dbg q"close file $from_strm\n";
     iclose(from_strm); // this'll know how to close a unix fd
   } endif;
 
@@ -242,11 +246,10 @@ var p = webby_port;
 var listener: socket_t;
 mk_listener(&listener, &p, 10);
 
-
 proc forever {
   var s: socket_t;
   accept(listener, &s);  // blocking
-  print "got connection (or something)\n";  // error check here
+  dbg q"got connection $s\n";  // error check here
 
   // hmm - spawning an fthread is blocking the web server. don't know why
   print "spawning fthread to handle connection\n";
@@ -282,6 +285,7 @@ proc forever {
       print "BAD get line: "; print line; endl;
     } endif;
 
+    fprint$ cerr,q"closing socket $s\n";
     ioclose(s);
 
   };
