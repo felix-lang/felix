@@ -316,7 +316,7 @@ typeclass TerminalOByteStream[s] {
 typeclass TerminalIOByteStream[s] { 
   inherit TerminalIByteStream[s];
   inherit TerminalOByteStream[s];
-  virtual proc ioclose (f:s) { iclose f; oclose f; }
+  virtual proc ioclose: s;
 }
 
 //
