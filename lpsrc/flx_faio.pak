@@ -459,7 +459,7 @@ proc cmp
   [istr1, istr2 with IByteStream[istr1], IByteStream[istr2]]
   (i1: istr1, i2: istr2, res: &int)
 {
-  val BUFSIZE = 10*1024;
+  val BUFSIZE = 100000;
   var buf1 = C_hack::malloc(BUFSIZE);
   var buf2 = C_hack::malloc(BUFSIZE);
   stream_cmp(i1, i2, buf1, buf2, BUFSIZE, res);
@@ -470,7 +470,7 @@ proc cmp
 proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
 (infd: istr, outfd: ostr)
 {
-    val BUFSIZE = 10*1024;
+    val BUFSIZE = 100000;
     var buf = C_hack::malloc(BUFSIZE);
 
     // that's some nice error checking

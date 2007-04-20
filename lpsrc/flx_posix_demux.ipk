@@ -127,6 +127,9 @@ posix_demuxer::socket_recv(int s, sel_param* pb)
   nbytes = recv(s, pb->buffer + pb->bytes_written,
         pb->buffer_size - pb->bytes_written, 0);
 
+  fprintf(stderr,"posix_demuxer RECV: pb=%p, buf+%d, req=%d, got %d\n",
+    pb, pb->bytes_written, pb->buffer_size - pb->bytes_written, nbytes
+  );
   if(nbytes <= 0)
   {
     if(nbytes == 0)
@@ -161,6 +164,9 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   nbytes = send(s, pb->buffer + pb->bytes_written,
     pb->buffer_size - pb->bytes_written, 0);
 
+ fprintf(stderr,"posix_demuxer SEND: pb=%p buf+%d, req=%d, got %d\n",
+    pb, pb->bytes_written, pb->buffer_size - pb->bytes_written, nbytes
+  );
   // similar story here, with send vs write?
 
   // what's the story with zero? Is that allowed or does it signal
