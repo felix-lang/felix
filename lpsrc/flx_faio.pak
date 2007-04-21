@@ -255,6 +255,8 @@ type alarm_clock = 'flx::demux::timer_queue*' requires faio_timer_h;
 fun mk_alarm_clock: 1 -> alarm_clock = 'flx::demux::mk_timer_queue()';
 fun mk_sleep_request: alarm_clock * double -> sleep_request = 'flx::faio::sleep_request($1,$2)';
 
+var sys_clock = mk_alarm_clock();
+
 proc sleep(clock: alarm_clock, delta: double)
 {
   var sr = mk_sleep_request$ clock,delta;
@@ -667,21 +669,21 @@ instance Flx_stream::TerminalOByteStream[socket_t]
   #endif
 }
 
-
 instance Flx_stream::TerminalIOByteStream[socket_t]
 {
   proc ioclose (s:socket_t) 
   #if POSIX
     { 
       fprint (cerr,q"STREAM:Closing socket $s\n");
-      Faio_posix::shutdown(s,1);
+      Faio_posix::shutdown(s,2);
+      Faio::sleep (Faio::sys_clock,5.0);
       /*
       var len = 1; var eof = false; var buf = C_hack::malloc(1);
       Faio_posix::async_read(s, &len, buf, &eof);
       fprint (cerr,q"STREAM:socket $s, eof=$eof\n");
       Faio_posix::shutdown(s,0);
-      Faio_posix::close s; 
       */
+      Faio_posix::close s; 
     }
   #elif WIN32
     { Faio_win32::closesocket s; }

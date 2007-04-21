@@ -219,6 +219,7 @@ epoll_demuxer::get_evts(bool poll)
   if(evt.events & EPOLLHUP)
   {
     fprintf(stderr, "EPOLLHUP for %p->%i\n", sv, sv->s);
+    sv->wakeup_flags |= PDEMUX_EOF;
     wake = true;
   }
 
@@ -231,6 +232,7 @@ epoll_demuxer::get_evts(bool poll)
 // should already have been removed
     fprintf(stderr,"epoll error, waking: %i (errno?)\n", sv->s);
     // similar story to EPOLLHUP
+    sv->wakeup_flags |= PDEMUX_ERROR;
     wake = true;
   }
 

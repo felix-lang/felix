@@ -189,7 +189,20 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   // write being set. That would require thinking about the what
   // the connect_closed return value meant. In any case, we don't
   // do that stuff here yet.
-  if(wakeup_flags & PDEMUX_READ)
+
+  if(wakeup_flags & PDEMUX_ERROR)
+  {
+    connection_closed = true;
+    //pb.bytes_written=0;
+  }
+
+  else if(wakeup_flags & PDEMUX_EOF)
+  {
+    connection_closed = true;
+    //pb.bytes_written=0;
+  }
+
+  else if(wakeup_flags & PDEMUX_READ)
   {
     // just check that our above assumption hasn't been violated.
     assert(wakeup_flags == PDEMUX_READ);

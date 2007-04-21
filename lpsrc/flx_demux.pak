@@ -147,7 +147,7 @@ struct sel_param {
 
 // rename ...
 // read/write flags - they're no longer mutually exclusive
-enum { PDEMUX_READ = 1, PDEMUX_WRITE = 2 };
+enum { PDEMUX_READ = 1, PDEMUX_WRITE = 2, PDEMUX_EOF=4, PDEMUX_ERROR=8 };
 
 // base class/hook for implementing thread safe multithreaded demux quit
 // not that useful for single threaded implementations.

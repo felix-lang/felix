@@ -241,7 +241,6 @@ nice_accept(int listener, int* err)
         perror("nice_accept can't set non-block");
       newfd = -1;
     }
-    /*
     // Linger does nothing good in non-blocking mode
     else if(make_linger(newfd, 30) == -1)
     {
@@ -252,7 +251,6 @@ nice_accept(int listener, int* err)
         perror("nice_accept can't set linger");
       newfd = -1;
     }
-    */
   }
   return newfd;
 }
@@ -324,10 +322,13 @@ make_nonblock(int s)
 int
 make_linger(int s, int t)
 {
+  return 0;
+  /*
   struct linger ling;
   ling.l_onoff = 1; // on
   ling.l_linger = t;
   return setsockopt(s, SOL_SOCKET, SO_LINGER,&ling, sizeof(ling));
+  */
 }
 
 
