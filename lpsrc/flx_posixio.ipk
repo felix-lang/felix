@@ -193,7 +193,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   {
     // just check that our above assumption hasn't been violated.
     assert(wakeup_flags == PDEMUX_READ);
-        connection_closed = posix_demuxer::socket_recv(s, &pb);
+    connection_closed = posix_demuxer::socket_recv(s, &pb);
   }
   else
   {   
