@@ -408,10 +408,10 @@ proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
     while{not(eof) and not(weof)} {
         len = bufsize;
         read(infd, &len, buf, &eof);
-        fprint$ cerr,q"catted in $len bytes, eof=$eof\n";
+        //fprint$ cerr,q"catted in $len bytes, eof=$eof\n";
         //fprint$ cerr, string(C_hack::cast[charp] buf,len);
         write(outfd, &len, buf, &weof);
-        fprint$ cerr,q"catted out $len bytes, eof=$weof\n";
+        //fprint$ cerr,q"catted out $len bytes, eof=$weof\n";
     };
 }
 
@@ -674,7 +674,7 @@ instance Flx_stream::TerminalIOByteStream[socket_t]
   proc ioclose (s:socket_t) 
   #if POSIX
     { 
-      fprint (cerr,q"STREAM:Closing socket $s\n");
+      //fprint (cerr,q"STREAM:Closing socket $s\n");
       Faio_posix::shutdown(s,2);
       Faio::sleep (Faio::sys_clock,5.0);
       /*

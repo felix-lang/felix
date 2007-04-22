@@ -176,6 +176,7 @@ poll_demuxer::process_evts(void* infds, void* svs, int nevts)
     if(fds->revents & POLLERR)
     {
       fprintf(stderr, "POLLERR for %p->%i\n", sv, sv->s);
+      wakeup_flags |= PDEMUX_ERROR;
       wake = true;    // good to do?
     }
 
@@ -190,6 +191,7 @@ poll_demuxer::process_evts(void* infds, void* svs, int nevts)
     {
       fprintf(stderr, "POLLHUP for %p->%i\n", sv, sv->s);
       assert((fds->revents & POLLOUT) == 0);
+      wakeup_flags |= PDEMUX_EOF;
       wake = true;    // good to do? probably.
     }
 
