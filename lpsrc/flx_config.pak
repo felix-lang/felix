@@ -4,7 +4,7 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '3'
-@flx_version_release = '_rc3'
+@flx_version_release = '_rc4'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
