@@ -329,7 +329,7 @@ include "std";
 @select(h)
 macro val true = case 1 of 2;
 macro val false = case 0 of 2;
-macro fun print_line (x) = { fprint (cout,x); Stdout::endl cout; };
+macro fun println (x) = { fprint (cout,x); Stdout::endl cout; };
 macro fun print(x) = { fprint (cout,x); };
 
 @h=tangler('lib/flx_syntax.flxh','data')

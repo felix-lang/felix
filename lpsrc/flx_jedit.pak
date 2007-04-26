@@ -60,8 +60,7 @@ It's not nessacary, but I highly recommend to also install the plug-in "Editor S
     <RULES  ESCAPE="\"
         IGNORE_CASE="FALSE"
         HIGHLIGHT_DIGITS="TRUE"
-        DIGIT_RE="(0x[[:xdigit:]]+[lL]?|(0b)[10]+|(0o)[01234567]+|(0d)[0123456789]+|[[:digit:]]+(e[[:digit:]]*)?(_)?[lLdDfFtTsSiIvV]?(i8)?(u8)?(i16)?(u16)?(i32)?(u32)?(i64)?(u64)?)"><!-- [lLdDfF] -->
-        <!-- embedded C++ header -->
+        DIGIT_RE="(((0x)|(0X))[0123456789abcdefABCDEF_]*[[:xdigit:]]+[123468tsilvuTSILVUn]*)|(((0b)|(0B))[10_]*[10]+[123468tsilvuTSILVUn]*)|(((0o)|(0O))[01234567_]*[01234567]+[123468tsilvuTSILVUn]*)|(((0d)|(0D))?[0123456789_]*[0123456789]+[123468tsilvuTSILVUn]*)|([0123456789._]+([ep][[:digit:]]+)?([lLdDfF])?)">        <!-- embedded C++ header -->
         <SPAN TYPE="KEYWORD4" DELEGATE="c_plus_plus">
             <BEGIN>header """</BEGIN>
             <END>""";</END>
@@ -99,6 +98,7 @@ It's not nessacary, but I highly recommend to also install the plug-in "Editor S
         <EOL_SPAN TYPE="KEYWORD2" DELEGATE="c::CPP">#</EOL_SPAN>
         <EOL_SPAN TYPE="COMMENT2">//</EOL_SPAN>
 
+        <SEQ TYPE="OPERATOR">OPERATOR_FÄRG</SEQ>
         <SEQ TYPE="OPERATOR">&lt;-</SEQ>
         <SEQ TYPE="OPERATOR">:=</SEQ>
         <SEQ TYPE="OPERATOR">+=</SEQ>
@@ -143,97 +143,110 @@ It's not nessacary, but I highly recommend to also install the plug-in "Editor S
         <MARK_PREVIOUS TYPE="FUNCTION" EXCLUDE_MATCH="TRUE">(</MARK_PREVIOUS>
 
         <KEYWORDS>
-			<KEYWORD3>all</KEYWORD3>			<!-- ? -->
-            <KEYWORD3>and</KEYWORD3>			<!--						3 -->
+            <KEYWORD1>=></KEYWORD1>
+            <KEYWORD1>KEYWORD1</KEYWORD1>
+            <KEYWORD2>KEYWORD2</KEYWORD2>
+            <KEYWORD3>KEYWORD3</KEYWORD3>
+            <KEYWORD4>KEYWORD4</KEYWORD4>
+			      <KEYWORD2>all</KEYWORD2>			<!-- ? -->
+            <KEYWORD2>and</KEYWORD2>			<!--						3 -->
             <KEYWORD4>assert</KEYWORD4>			<!--								4 -->
             <KEYWORD2>as</KEYWORD2>				<!--				2 -->
+            <KEYWORD2>axiom</KEYWORD2>
             <KEYWORD4>body</KEYWORD4>			<!--								4 -->
             <KEYWORD2>call</KEYWORD2>			<!--				2 -->
             <KEYWORD2>caseno</KEYWORD2>			<!--				2 -->
-            <KEYWORD1>case</KEYWORD1>			<!--		1 -->
+            <KEYWORD2>case</KEYWORD2>			<!--		1 -->
             <KEYWORD4>cclass</KEYWORD4>			<!--								4 -->
-            <KEYWORD2>class</KEYWORD2>			<!--				2 -->
-			<KEYWORD4>code</KEYWORD4>			<!--								4 -->
-			<KEYWORD3>commment</KEYWORD3>		<!--						3 -->
+            <KEYWORD1>class</KEYWORD1>			<!--				2 -->
+			      <KEYWORD4>code</KEYWORD4>			<!--								4 -->
+			      <KEYWORD2>comment</KEYWORD2>		<!--						3 -->
+            <KEYWORD2>compound</KEYWORD2>
             <KEYWORD2>const</KEYWORD2>			<!--				2 -->
             <KEYWORD4>cstruct</KEYWORD4>		<!--								4 -->
-            <KEYWORD4>ctor</KEYWORD4>			<!--								4 -->
+            <KEYWORD2>ctor</KEYWORD2>			<!--								4 -->
             <KEYWORD4>ctypes</KEYWORD4>			<!--								4 -->
-            <KEYWORD4>def</KEYWORD4>			<!--								4 -->
-            <KEYWORD1>done</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>do</KEYWORD1>				<!--        1 -->
-            <KEYWORD1>elif</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>else</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>endif</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>def</KEYWORD1>			<!--								4 -->
+            <KEYWORD2>done</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>do</KEYWORD2>				<!--        1 -->
+            <KEYWORD2>downto</KEYWORD2>
+            <KEYWORD2>elif</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>else</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>endif</KEYWORD2>			<!--        1 -->
             <KEYWORD2>endmatch</KEYWORD2>		<!--				2 -->
-            <KEYWORD3>enum</KEYWORD3>			<!--						3 -->
+            <KEYWORD1>enum</KEYWORD1>			<!--						3 -->
             <KEYWORD2>expect</KEYWORD2>			<!--				2 -->
-            <KEYWORD4>export</KEYWORD4>			<!--								4 -->
-            <KEYWORD1>forget</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>fork</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>for</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>functor</KEYWORD1>		<!--        1 -->
+            <KEYWORD1>export</KEYWORD1>			<!--								4 -->
+            <KEYWORD2>forget</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>fork</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>for</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>forall</KEYWORD2>
+            <KEYWORD2>functor</KEYWORD2>		<!--        1 -->
             <KEYWORD1>fun</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>goto</KEYWORD1>			<!--        1 -->
+            <KEYWORD2>goto</KEYWORD2>			<!--        1 -->
             <KEYWORD4>header</KEYWORD4>			<!--								4 -->
-            <KEYWORD1>if</KEYWORD1>				<!--        1 -->
+            <KEYWORD2>if</KEYWORD2>				<!--        1 -->
             <KEYWORD1>include</KEYWORD1>		<!--        1 -->
             <KEYWORD1>incomplete</KEYWORD1>		<!--        1 -->
-            <KEYWORD1>inf</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>inherit</KEYWORD1>		<!--        1 -->
+            <KEYWORD2>ident</KEYWORD2>
+            <KEYWORD2>inf</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>inherit</KEYWORD2>		<!--        1 -->
             <KEYWORD4>inline</KEYWORD4>			<!--								4 -->
-            <KEYWORD1>in</KEYWORD1>				<!--        1 -->
-            <KEYWORD1>isin</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>is</KEYWORD1>				<!--        1 -->
-            <KEYWORD1>jump</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>let</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>loop</KEYWORD1>			<!--        1 -->
+            <KEYWORD2>in</KEYWORD2>				<!--        1 -->
+            <KEYWORD2>isin</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>is</KEYWORD2>				<!--        1 -->
+            <KEYWORD2>jump</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>let</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>loop</KEYWORD2>			<!--        1 -->
             <KEYWORD4>lval</KEYWORD4>			<!--								4 -->
             <KEYWORD1>macro</KEYWORD1>			<!--        1 -->
             <KEYWORD2>match</KEYWORD2>			<!--				2 -->
-            <KEYWORD2>module</KEYWORD2>			<!--				2 -->
+            <KEYWORD1>module</KEYWORD1>			<!--				2 -->
             <KEYWORD2>NaN</KEYWORD2>			<!--				2 -->
-            <KEYWORD4>new</KEYWORD4>			<!--								4 -->
-            <KEYWORD4>noexpand</KEYWORD4>		<!--								4 -->
-            <KEYWORD4>noinline</KEYWORD4>		<!--								4 -->
-            <KEYWORD4>nointerm</KEYWORD4>		<!--								4 -->
+            <KEYWORD2>new</KEYWORD2>			<!--								4 -->
+            <KEYWORD2>noexpand</KEYWORD2>		<!--								4 -->
+            <KEYWORD2>noinline</KEYWORD2>		<!--								4 -->
+            <KEYWORD2>nointerm</KEYWORD2>		<!--								4 -->
             <KEYWORD2>noreturn</KEYWORD2>		<!--				2 -->
-            <KEYWORD3>not</KEYWORD3>			<!--						3 -->
-            <KEYWORD4>obj</KEYWORD4>			<!--								4 -->
-            <KEYWORD1>of</KEYWORD1>				<!--		1 -->
-            <KEYWORD3>open</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>or</KEYWORD3>				<!--						3 -->
-            <KEYWORD3>parse</KEYWORD3>			<!--						3 -->
+            <KEYWORD2>not</KEYWORD2>			<!--						3 -->
+            <KEYWORD2>obj</KEYWORD2>			<!--								4 -->
+            <KEYWORD2>of</KEYWORD2>				<!--		1 -->
+            <KEYWORD1>open</KEYWORD1>			<!--						3 -->
+            <KEYWORD2>or</KEYWORD2>				<!--						3 -->
+            <KEYWORD2>parse</KEYWORD2>			<!--						3 -->
             <KEYWORD4>pod</KEYWORD4>			<!--								4 -->
             <KEYWORD1>private</KEYWORD1>		<!--        1 -->
             <KEYWORD1>proc</KEYWORD1>			<!--        1 -->
-            <KEYWORD3>property</KEYWORD3>		<!--						3 -->
+            <KEYWORD2>property</KEYWORD2>		<!--						3 -->
             <KEYWORD1>public</KEYWORD1>			<!--        1 -->
-            <KEYWORD3>publish</KEYWORD3>		<!--						3 -->
-            <KEYWORD3>read</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>regexp</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>reglex</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>regmatch</KEYWORD3>		<!--						3 -->
-            <KEYWORD3>rename</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>requires</KEYWORD3>		<!--						3 -->
-            <KEYWORD1>return</KEYWORD1>			<!--        1 -->
-            <KEYWORD3>set</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>struct</KEYWORD3>			<!--						3 -->
-            <KEYWORD1>then</KEYWORD1>			<!--        1 -->
-            <KEYWORD3>the</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>todo</KEYWORD3>			<!--						3 -->
-            <KEYWORD1>to</KEYWORD1>				<!--        1 -->
-            <KEYWORD3>typedef</KEYWORD3>		<!--						3 -->
-            <KEYWORD3>typematch</KEYWORD3>		<!--						3 -->
-            <KEYWORD3>type</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>union</KEYWORD3>			<!--						3 -->
-            <KEYWORD3>use</KEYWORD3>			<!--						3 -->
+            <KEYWORD1>publish</KEYWORD1>		<!--						3 -->
+            <KEYWORD2>readuce</KEYWORD2>
+            <KEYWORD2>read</KEYWORD2>			<!--						3 -->
+            <KEYWORD2>regexp</KEYWORD2>			<!--						3 -->
+            <KEYWORD2>reglex</KEYWORD2>			<!--						3 -->
+            <KEYWORD2>regmatch</KEYWORD2>		<!--						3 -->
+            <KEYWORD2>rename</KEYWORD2>			<!--						3 -->
+            <KEYWORD1>requires</KEYWORD1>		<!--						3 -->
+            <KEYWORD2>return</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>set</KEYWORD2>			<!--						3 -->
+            <KEYWORD1>struct</KEYWORD1>			<!--						3 -->
+            <KEYWORD2>then</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>the</KEYWORD2>			<!--						3 -->
+            <KEYWORD2>todo</KEYWORD2>			<!--						3 -->
+            <KEYWORD2>to</KEYWORD2>				<!--        1 -->
+            <KEYWORD1>typedef</KEYWORD1>		<!--						3 -->
+            <KEYWORD2>typematch</KEYWORD2>		<!--						3 -->
+            <KEYWORD4>type</KEYWORD4>			<!--						3 -->
+            <KEYWORD1>union</KEYWORD1>			<!--						3 -->
+            <KEYWORD2>upto</KEYWORD2>
+            <KEYWORD1>use</KEYWORD1>			<!--						3 -->
             <KEYWORD3>val</KEYWORD3>			<!--						3 -->
             <KEYWORD3>var</KEYWORD3>			<!--						3 -->
-            <KEYWORD1>when</KEYWORD1>			<!--        1 -->
-            <KEYWORD1>whilst</KEYWORD1>			<!--        1 -->
+            <KEYWORD2>when</KEYWORD2>			<!--        1 -->
+            <KEYWORD2>whilst</KEYWORD2>			<!--        1 -->
             <KEYWORD2>with</KEYWORD2>			<!--				2 -->
-            <KEYWORD1>until</KEYWORD1>			<!--        1 -->
+            <KEYWORD2>until</KEYWORD2>			<!--        1 -->
+            <KEYWORD4>_deref</KEYWORD4>
             <KEYWORD4>_gc_pointer</KEYWORD4>	<!--								4 -->
             <KEYWORD4>_svc</KEYWORD4>			<!--								4 -->
         </KEYWORDS>
@@ -383,3 +396,4 @@ It's not nessacary, but I highly recommend to also install the plug-in "Editor S
         </KEYWORDS>
     </RULES> 
 </MODE>
+

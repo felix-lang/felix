@@ -2229,7 +2229,7 @@ and pre_flx_lex state = parse
 | ('f'|'F') dquote { state#inbody; parse_fdstring state lexbuf }
 | ('f'|'F') ddd    { state#inbody; parse_fdddstring state lexbuf }
 
-(* Format strings *)
+(* interpolated strings *)
 | ('q'|'Q') quote  { state#inbody; parse_Qqstring state lexbuf }
 | ('q'|'Q') qqq    { state#inbody; parse_Qqqqstring state lexbuf }
 | ('q'|'Q') dquote { state#inbody; parse_Qdstring state lexbuf }
