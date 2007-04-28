@@ -45,6 +45,40 @@ Grammar:
 @head(2,"PERFORMANCE COMPARISON",nospawn=1)
 @cite_url("../speed/en_flx_perf_top.html")
 
+@head(2,"LIBRARY BINDINGS",nospawn=1)
+GMP  Gnu Multiple Precision Arithmetic library: libgmp and libgmp++
+binding.
+@cite_url("gmp/en_flx_gmp_top.html")
+@p()
+
+GSL  Gnu Scientific library: libgsl binding.
+@cite_url("gsl/en_gsl_top.html")
+@p()
+
+Mmap - binding to Unix mmap() facility.
+@cite_url("mmap/en_flx_mmap_top.html")
+@p()
+
+OpenGL - binding to OpenGL library.
+@cite_url("opengl/en_flx_opengl_top.html")
+@p()
+
+
+
+@head(2,"DEMO APPLICATIONS",nospawn=1)
+SDL Simple Direct Media Layer
+binding with demo applications:
+@cite_url("sdl/en_flx_sdl_top.html")
+To run this code you need to download and unpack the tarball:
+@cite_url("http://felix.sourceforge.net/flx_media.tgz")
+in the development directory. Then ./mk demo should run
+the examples in sequence.
+@p()
+Async I/O demos: 
+@cite_url("tools/en_flx_faio_tools.html")
+Includes a file copy tool, file compare tool,
+and mini webserver.
+
 @head(2,"RTL SOURCE CODE LISTINGS",nospawn=1)
 Driver and RTL (run time library) (interscript):
 @cite_url("rtl/flx_rtl/en_flx_rtl_top.html")
