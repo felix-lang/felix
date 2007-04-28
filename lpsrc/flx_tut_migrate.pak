@@ -30,8 +30,8 @@ have a complete set of standard types defined in
 the standard library.
 
 @item("classes")
-Felix does not have classes. However C style structs,
-and an object construction, are supported.
+Felix currently has classes, but without inheritance. 
+C style structs, and an object construction, are supported.
 New abstract types can be introduced into 
 Felix by binding to any copyable C or C++ type.
 
@@ -46,6 +46,12 @@ style, including for generic functions. However,
 in C++ hiding is based only on the name, whereas
 in Felix the parameter type is also taken into account.
 
+@item("typeclasses")
+Felix has Haskell style type classes which play
+the same role as template (partial) specialisations
+in C++: they provide ad-hoc polymorphism, as does
+overloading, but with a parametric interface.
+
 @item("functions")
 Felix functions are first class and can be passed
 as arguments to other functions. Functions may
@@ -57,20 +63,26 @@ Felix modules are similar to C++ namespaces
 except that they cannot be extended, however
 they may be polymorphic.
 
+@item("namespaces")
+Felix also has namespaces which are like modules
+except that they can be extended, like C++ namespaces.
+
 @item("tuples")
 Felix supports a first class tuple kind.
 A tuple is just a canonical immutable struct.
 
 @item("arrays")
-Felix supports a first class fixed length array kind.
+Felix supports a first class fixed length array kind,
+which is just a special case of a tuple. The library
+also provides various dynamic length array types.
 
 @item("procedures")
-Felix actually supports two kinds of executable
-objects: functions and procedures. Unlike C++
+Felix actually supports three kinds of executable
+objects: functions and procedures and generators. Unlike C++
 functions may not have side effects. A procedure
 is like a function that returns no value, and may
-have side effects. Procedures may also read a value
-from the central event queue.
+have side effects.  Generators are like functions
+but are may have side-effects.
 
 @item("pointers")
 Felix supports pointers to variables.
@@ -96,19 +108,15 @@ rules differ in several key aspects.
 
 @env.head(2,'Automatic Conversions')
 Felix does not provide any automatic conversions.
+[Except for decay of lvalues to rvalues which is
+necessary for binding to C++ properly]
 
 @env.head(2,'Exact matching rule')
 For non-generic functionbs, Felix only supports exact 
 matches when overloading, whereas C++ rules are more relaxed. 
 @p()
 It is therefore much easier to determine exactly which function
-will be chosen from an overload set in Felix,
-and once a particular function is selected
-the choice is stable: the only way to change the choice
-of function is to add a function which hides the selected
-one, or remove the selected function -- adding a function
-in the same scope with the same signature will lead
-to an ambiguity.
+will be chosen from an overload set in Felix.
 
 @env.head(2,'Function hiding rule')
 For the purpose of overloading, a non-generic
