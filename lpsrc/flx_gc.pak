@@ -613,6 +613,8 @@ struct GC_EXTERN flx_collector_t : public collector_t
   bool check_client_pointer(void *);
   bool check_frame_pointer(frame_t *);
 
+  // RF: added to allow implementation of non-leaky drivers.
+  void free_all_mem(); // clear all roots, sweep.
 
 protected:
 
@@ -1251,6 +1253,13 @@ bool flx_collector_t::check_client_pointer(void *p)
   return p?check_frame_pointer (CLIENT_TO_FRAME(p)):true;
 }
 
+void flx_collector_t::free_all_mem()
+{
+  roots.clear();
+  root_count = 0;
+  sweep();
+}
+
 flx_collector_t::~flx_collector_t()
 {
   //THIS IS VERY DANGEROUS! What if don't want to collect
@@ -1258,9 +1267,7 @@ flx_collector_t::~flx_collector_t()
   //
   // ELIDED .. already caused a bug!
   //
-  //roots.clear();
-  //root_count = 0;
-  //sweep();
+  //free_all_mem();
 }
 
 // ONCE THIS ROUTINE IS CALLED, the allocator
