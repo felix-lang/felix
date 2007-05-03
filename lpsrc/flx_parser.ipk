@@ -190,7 +190,6 @@ let dfltvs =
 %token<Flx_ast.srcref * string * string> USER10
 %token<Flx_ast.srcref * (string * string) list * string> USERLB
 %token<Flx_ast.srcref * string > USERRB
-%token<Flx_ast.srcref> PARSE_ACTION
 
 @for k,v in flx_1_char_syms:
   tangle("%token<Flx_ast.srcref> " + k,inhibit_sref=1)
@@ -217,7 +216,6 @@ let dfltvs =
 
 %type <Flx_ast.expr_t> qualified_name
 %type <Flx_ast.expr_t> expression
-%type <Flx_ast.expr_t> expr
 %type <Flx_ast.expr_t * token> exprx
 %type <Flx_ast.expr_t> atom
 %type <unit> semi

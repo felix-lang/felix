@@ -237,9 +237,11 @@ let rec build_tables syms name inherit_vs
           | `DCL_val _ -> "(val) "
           | _ -> ""
           in 
+          let vss = catmap "," fst (fst vs') in
+          let vss = if vss <> "" then "["^vss^"]" else "" in
           print_endline 
           (
-            "//" ^ spc ^ si n ^ " -> " ^ id ^ 
+            "//" ^ spc ^ si n ^ " -> " ^ id ^ vss ^ 
             " " ^ kind ^ short_string_of_src sr
           )
         end;

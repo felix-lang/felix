@@ -171,8 +171,13 @@ let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
       fold_left (fun lst index -> 
         let index = sye index in
         if index = 0 then lst else
-        let ts = adjust_ts syms sr index ts in 
-        add lst (index,ts)
+        try
+          let ts = adjust_ts syms sr index ts in 
+          add lst (index,ts)
+        with x -> 
+          print_endline "** Bind_req failed due to vs/ts mismatch";
+          print_endline "** IGNORING! (HACK!!)";
+          lst
       ) [] entries
   in
     let res = aux reqs in

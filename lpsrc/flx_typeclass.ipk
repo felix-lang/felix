@@ -177,6 +177,11 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         );
         *)
 
+        (*
+        (* THIS CHECK IS CRAP!!
+           We need to actually use the unification engine here,
+           not trivial equality.
+        *)
         let matches =  tct = t in
         if matches then 
           (*
@@ -199,6 +204,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
           );
         end
         ; 
+        *)
         let old = 
           try Hashtbl.find syms.typeclass_to_instance tck 
           with Not_found -> []

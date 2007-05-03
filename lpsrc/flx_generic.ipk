@@ -169,7 +169,7 @@ let adjust_ts syms sr index ts =
     clierr sr 
     (
       "For "^id^"<" ^ si index ^ 
-      "> Not enough type subscripts, expected " ^ 
+      "> [adjust_ts] Not enough type subscripts, expected " ^ 
       si m ^ " got " ^ si n ^ 
       "\nparent vs="^print_ivs pvs ^ 
       "\nvs=" ^ print_ivs vs
