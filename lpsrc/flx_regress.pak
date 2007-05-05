@@ -2184,14 +2184,14 @@ fun main () =
     pr_treed(z);
     endl;
 
-    print_line$ first(z);
+    println$ first(z);
     endl;
 
     z = all_but_first(z);
     pr_treed(z);
     endl;
 
-    print_line$ last(z);
+    println$ last(z);
     endl;
 
     z = all_but_last(z);
