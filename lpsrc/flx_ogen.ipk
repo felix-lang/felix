@@ -265,13 +265,13 @@ let gen_offset_data s n name offsets isfun props flags last_ptr_map =
     bcat s ("\n" ^  "};\n");
   end;
   bcat s ("FLX_FINALISER("^name^")\n");
-  bcat s (  "static gc_shape_t "^ this_ptr_map ^" (\n");
+  bcat s (  "static gc_shape_t "^ this_ptr_map ^" ={\n");
   bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n  "^name^"_finaliser,\n");
   bcat s ("  "^noffsets^",\n  "^ (if n<>0 then name^"_offsets" else "0"));
-  bcat s (match flags with None -> "\n" | Some flags -> ",\n  " ^ flags^"\n");
-  bcat s ( ");\n")
+  bcat s (match flags with None -> "gc_flags_default\n" | Some flags -> ",\n  " ^ flags^"\n");
+  bcat s ( "};\n")
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
 
@@ -651,7 +651,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         bcat s ("}\n")
       end
       ;
-      bcat s ("static gc_shape_t "^ name ^"_ptr_map(\n");
+      bcat s ("static gc_shape_t "^ name ^"_ptr_map = {\n");
       bcat s ("  " ^ old_ptr_map ^ ",\n");
       bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
@@ -665,11 +665,12 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       (
         "  "^si n^
         (
-          if n = 0 then ",0\n" 
-          else ",\n  " ^name^"_offsets\n"
+          if n = 0 then ",0,\n" 
+          else ",\n  " ^name^"_offsets,\n"
         )
       );
-      bcat s ");\n"
+      bcat s "  gc_flags_default\n";
+      bcat s "};\n"
 
     | `BTYP_inst (i,ts) ->
       let name = cpp_typename syms btyp in
@@ -710,15 +711,15 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
             last_ptr_map := "&"^this_ptr_map;
 
             if not pod then bcat s ("FLX_FINALISER("^name^")\n");
-            bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+            bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
             bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ name ^ "\",\n");
             if pod then
-              bcat s ("  1,sizeof("^name^"),0,0,0\n")
+              bcat s ("  1,sizeof("^name^"),0,0,0,gc_flags_default\n")
             else
-              bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0\n")
+              bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,gc_flags_default\n")
             ;
-            bcat s ");\n"
+            bcat s "};\n"
           end else begin
             bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
             bcat s ("//Use "^name^"_ptr_map\n");
@@ -740,15 +741,15 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         (* HACK .. in fact, some C structs might have finalisers! *)
         let pod = true in
         if not pod then bcat s ("FLX_FINALISER("^name^")\n");
-        bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+        bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
         bcat s ("  " ^ old_ptr_map ^ ",\n");
         bcat s ("  \"" ^ name ^ "\",\n");
         if pod then
-          bcat s ("  1,sizeof("^name^"),0,0,0\n")
+          bcat s ("  1,sizeof("^name^"),0,0,0,gc_flags_default\n")
         else
-          bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0\n")
+          bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,gc_flags_default\n")
         ;
-        bcat s ");\n"
+        bcat s "};\n"
 
       | `BBDCL_struct (vs,cps) ->
         failwith 

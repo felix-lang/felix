@@ -112,6 +112,7 @@ struct GC_EXTERN gc_shape_t
   std::size_t n_offsets;          ///< number of offsets
   std::size_t *offsets;           ///< actual offsets
   gc_shape_flags_t flags;         ///< flags
+#if 0
   // convenience constructor
   gc_shape_t(
     gc_shape_t *ns,
@@ -132,6 +133,7 @@ struct GC_EXTERN gc_shape_t
     std::size_t *offsets_a,
     gc_shape_flags_t flags_a
   );
+#endif
 };
 @doc()
 The following template is provided as a standard wrapper
@@ -432,6 +434,7 @@ namespace flx {
 namespace gc {
 namespace generic {
 
+#if 0
 // create a shape object given an array of offsets
 gc_shape_t::gc_shape_t
 (
@@ -476,6 +479,7 @@ gc_shape_t::gc_shape_t
   offsets(offsets_a),
   flags(gc_flags_default)
 {}
+#endif
 
 void destroy(void *p)
 {
