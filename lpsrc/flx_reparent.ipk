@@ -512,11 +512,12 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add uses k calls
 
 
-  | `BBDCL_const (vs,t,ct,breqs) ->
+  | `BBDCL_const (props,vs,t,ct,breqs) ->
+    let props = filter (fun p -> p <> `Virtual) props in
     let vs = splice vs in
     let breqs = rreqs breqs in
     let t = auxt t in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_const (vs,t,ct,breqs));
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_const (props,vs,t,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

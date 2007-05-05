@@ -495,7 +495,7 @@ let bbind_sym syms bbdfns i {
         if unit_sum then si ctor_idx 
         else "_uctor_(" ^ si ctor_idx ^ ",0)"
       in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (bvs,t,`Str ct,[]));
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const ([],bvs,t,`Str ct,[]));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
@@ -568,10 +568,10 @@ let bbind_sym syms bbdfns i {
       print_bvs bvs ^ ":" ^
       sbt syms.dfns t)
     
-    | `SYMDEF_const (t,ct,reqs) ->
+    | `SYMDEF_const (props,t,ct,reqs) ->
       let t = typeofindex syms i in
       let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (bvs,t,ct,reqs));
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (props,bvs,t,ct,reqs));
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">" ^
       print_bvs bvs ^ ":" ^

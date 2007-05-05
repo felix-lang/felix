@@ -536,10 +536,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         ->
           ce_atom (get_var_ref syms bbdfns this index ts)
 
-      | `BBDCL_const (_,_,ct,_) -> 
+      | `BBDCL_const (props,_,_,ct,_) -> 
+        if mem `Virtual props then
+          print_endline ("Instantiate virtual const " ^ id)
+        ;
         begin match ct with
         | `Identity -> syserr sr ("Nonsense Idendity const" ^ id)
-        | `Virtual -> clierr2 sr sr2 ("Instantiate virtual const" ^ id)
+        | `Virtual -> clierr2 sr sr2 ("Instantiate virtual const " ^ id)
         | `Str c
         | `StrTemplate c when c = "#srcloc" ->
            let filename, startline, startcol, endline, endcol = sr in

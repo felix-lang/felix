@@ -226,7 +226,7 @@ and uses syms used bbdfns count_inits i =
 
       | `BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
 
-      | `BBDCL_const (_,t,_,reqs) -> ut t; rq reqs
+      | `BBDCL_const (_,_,t,_,reqs) -> ut t; rq reqs
       | `BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; rq reqs
 
       | `BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) -> 

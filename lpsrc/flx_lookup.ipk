@@ -2323,7 +2323,7 @@ and inner_typeofindex
         in
         t
 
-  | `SYMDEF_const (t,_,_)
+  | `SYMDEF_const (_,t,_,_)
   | `SYMDEF_val (t)
   | `SYMDEF_var (t)
   | `SYMDEF_ref (t)
@@ -2671,7 +2671,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
         in
         lookup_qn_with_sig' syms sra srn env rs qn signs
 
-      | `SYMDEF_const (t,_,_) 
+      | `SYMDEF_const (_,t,_,_) 
       | `SYMDEF_val t 
       | `SYMDEF_var t 
       | `SYMDEF_ref t 
@@ -2937,7 +2937,7 @@ and lookup_type_qn_with_sig'
         in
         lookup_type_qn_with_sig' syms sra srn env rs qn signs
 
-      | `SYMDEF_const (t,_,_) 
+      | `SYMDEF_const (_,t,_,_) 
       | `SYMDEF_val t 
       | `SYMDEF_var t 
       | `SYMDEF_ref t 
@@ -3467,7 +3467,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       syms caller_env env rs sra srn ("_ctor_" ^ name) ts t2 
     
     | `SYMDEF_const_ctor (_,t,_,_)
-    | `SYMDEF_const (t,_,_)
+    | `SYMDEF_const (_,t,_,_)
     | `SYMDEF_var t
     | `SYMDEF_ref t
     | `SYMDEF_val t 
@@ -4548,9 +4548,13 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     else
     let ts = map (bt sr) ts in
     begin match inner_lookup_name_in_env syms env rs sr name with
-    | `NonFunctionEntry (index) -> 
+    | `NonFunctionEntry {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts} ->
+      (*
       let index = sye index in 
       let ts = adjust_ts syms sr index ts in
+      *)
+      assert (length spec_vs = length ts);
+      let ts = map (tsubst spec_vs ts) sub_ts in
       `BEXPR_name (index,ts),
       let t = ti sr index ts in
       t

@@ -491,7 +491,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let t = varmap_subst hvarmap t in
     rtr t
  
-  | `BBDCL_const (vs,t,_,reqs) ->
+  | `BBDCL_const (props,vs,t,_,reqs) ->
     (*
     print_endline "Register const";
     *)

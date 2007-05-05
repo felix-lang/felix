@@ -126,6 +126,15 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         let qt = bvs,`BTYP_function (argt,ret) in
         (id,(i,qt)) :: acc
 
+      | `BBDCL_const (_,bvs,ret,_,_) -> 
+        let qt = bvs,ret in
+        (id,(i,qt)) :: acc
+
+      | `BBDCL_val (bvs,ret) -> 
+        let qt = bvs,ret in
+        (id,(i,qt)) :: acc
+
+
       | _ -> acc
       ) [] inst_kids
     in
@@ -255,9 +264,16 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         let ft = `BTYP_function (argt,`BTYP_void) in
         check_binding false tck tcksr tckid bvs ft
 
+      | `BBDCL_const (props,bvs,ret,_,_) when mem `Virtual props ->
+        check_binding false tck tcksr tckid bvs ret
+
 
       | `BBDCL_insert _ -> ()
-      | _ -> clierr tcksr "Typeclass entry must be virtual function or procedure"
+      | _ -> 
+        (*
+        clierr tcksr "Typeclass entry must be virtual function or procedure"
+        *)
+        print_endline ("Warning: typeclass "^tc_id ^" entry " ^ tckid ^ " is not virtual");
     )
     tc_kids
 
@@ -485,6 +501,11 @@ let fixup_expr syms bbdfns e =
     ;
     *)
     `BEXPR_apply_direct (j,ts,a),t
+
+  | `BEXPR_name (i,ts),t ->
+    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"); *)
+      fixup_typeclass_instance' syms bbdfns true i ts in
+    `BEXPR_name (j,ts),t
 
   | x -> x
   in aux e

@@ -149,8 +149,8 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
   | `BBDCL_abs (  bvs, btqs, c, breqs) ->
     h (`BBDCL_abs (  bvs, btqs, c, breqs) )
   
-  | `BBDCL_const (  bvs, t, c, breqs) ->
-    h (`BBDCL_const (  bvs, ft t, c, breqs) )
+  | `BBDCL_const (  props, bvs, t, c, breqs) ->
+    h (`BBDCL_const ( props,  bvs, ft t, c, breqs) )
   
   | `BBDCL_fun (  props, bvs, ts, t, c, breqs, prec) ->
     if c = `Identity then () else

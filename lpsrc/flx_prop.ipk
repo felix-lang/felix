@@ -51,6 +51,10 @@ let add_prop bbdfns p i =
     Hashtbl.replace bbdfns i (id,parent,sr,entry);
 
   (* because of type classes .. *)
+  | `BBDCL_const (props,vs,ret,ct,reqs) ->
+    let entry = `BBDCL_const (p :: props,vs,ret,ct,reqs) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry);
+
   | `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
     let entry = `BBDCL_fun (p :: props,vs,ps,ret,ct,reqs,prec) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry);
@@ -87,6 +91,11 @@ let rem_prop bbdfns p i =
     Hashtbl.replace bbdfns i (id,parent,sr,entry);
 
   (* because of type classes .. *)
+  | `BBDCL_const (props,vs,ret,ct,reqs) ->
+    let props = List.filter (fun k -> p <> k) props in
+    let entry = `BBDCL_const (props,vs,ret,ct,reqs) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry);
+
   | `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
     let props = List.filter (fun k -> p <> k) props in
     let entry = `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) in
@@ -138,7 +147,7 @@ let get_vs bbdfns i =
   | `BBDCL_cstruct (vs,ps) -> vs
   | `BBDCL_newtype (vs,t) -> vs
   | `BBDCL_cclass (vs,ps) -> vs
-  | `BBDCL_const (vs,t,ct,reqs) -> vs
+  | `BBDCL_const (_,vs,t,ct,reqs) -> vs
   | `BBDCL_insert (vs,s,ikind,reqs) -> vs
   | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> vs
   | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> vs

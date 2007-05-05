@@ -1172,7 +1172,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_const_decl (sr,name, vs,typ, s, reqs) -> 
     let props,dcls, reqs = mkreqs sr reqs in
-    `Dcl (sr,name,None,access,vs,`DCL_const (typ,s, map_reqs sr reqs))
+    `Dcl (sr,name,None,access,vs,`DCL_const (props,typ,s, map_reqs sr reqs))
     :: dcls
 
   (* types *)

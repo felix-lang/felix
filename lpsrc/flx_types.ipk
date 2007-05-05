@@ -897,7 +897,7 @@ type dcl_t =
   (* binding structures [prolog] *)
   | `DCL_newtype of     typecode_t
   | `DCL_abs of         type_qual_t list * c_t * named_req_expr_t
-  | `DCL_const of       typecode_t * c_t * named_req_expr_t
+  | `DCL_const of       property_t list * typecode_t * c_t * named_req_expr_t
   | `DCL_fun of         property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
   | `DCL_callback of    property_t list * typecode_t list * typecode_t * named_req_expr_t 
   | `DCL_insert of      c_t * ikind_t * named_req_expr_t
@@ -1143,7 +1143,7 @@ and bbdcl_t =
   (* binding structures [prolog] *)
   | `BBDCL_newtype of    bvs_t * btypecode_t
   | `BBDCL_abs of        bvs_t * btype_qual_t list * c_t * breqs_t
-  | `BBDCL_const of      bvs_t * btypecode_t * c_t * breqs_t
+  | `BBDCL_const of      property_t list * bvs_t * btypecode_t * c_t * breqs_t
   | `BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
   | `BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * int * btypecode_t * breqs_t * prec_t
   | `BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
@@ -1196,7 +1196,7 @@ type symbol_definition_t =
   | `SYMDEF_const_ctor of int * typecode_t * int * ivs_list_t
   | `SYMDEF_nonconst_ctor of int * typecode_t * int * ivs_list_t * typecode_t
 
-  | `SYMDEF_const of typecode_t * c_t * named_req_expr_t
+  | `SYMDEF_const of property_t list * typecode_t * c_t * named_req_expr_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
   | `SYMDEF_ref of  typecode_t
@@ -4233,7 +4233,8 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   | `SYMDEF_typevar (t) -> 
     "typevar " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
-  | `SYMDEF_const (t,ct, reqs) -> 
+  | `SYMDEF_const (props,t,ct, reqs) -> 
+    string_of_properties props ^
     "const " ^ name ^ print_ivs vs ^":"^ 
     st t ^ " = " ^string_of_code_spec ct^
     string_of_named_reqs reqs ^
@@ -4763,13 +4764,14 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     " = "^ string_of_code_spec s ^
     string_of_named_reqs reqs ^ ";"
     
-  | `DCL_const (typ, code, reqs) ->
+  | `DCL_const (props,typ, code, reqs) ->
     sl ^ 
-     "const " ^ name^seq ^print_vs vs ^  
-     ": " ^ st typ ^ 
-     " = "^string_of_code_spec code^ 
+    string_of_properties props ^
+    "const " ^ name^seq ^print_vs vs ^  
+    ": " ^ st typ ^ 
+    " = "^string_of_code_spec code^ 
     string_of_named_reqs reqs ^
-     ";" 
+    ";" 
 
   | `DCL_reduce (ps, e1,e2) -> 
     sl ^ 
@@ -4948,7 +4950,8 @@ and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string =
     "type " ^ name ^  print_bvs vs ^
     " = " ^ string_of_code_spec code ^ ";"
 
-  | `BBDCL_const (vs,ty,code,reqs) ->
+  | `BBDCL_const (props, vs,ty,code,reqs) ->
+    string_of_properties props ^
      "const " ^ name ^ print_bvs vs ^    
      ": " ^ sobt ty ^ 
      " = "^string_of_code_spec code^ 

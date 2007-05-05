@@ -752,31 +752,45 @@ typeclass_component:
 @head(3,'Abstract Constant Binding')
 @select(h)
 const_def:
-  | CONST declname COLON expr EQUAL code_spec requires_clause SEMI 
+  | adjectives CONST declname COLON expr EQUAL code_spec requires_clause SEMI 
     { 
-      let name,vs = hd $2 in
-      let sr = rstoken $1 $8 in
+      let adjectives = map snd $1 in
+      let name,vs = hd $3 in
+      let reqs = $8 in
+      let reqs = 
+        if mem `Virtual adjectives then
+          `RREQ_and (`RREQ_atom (`Property_req "virtual"),reqs)
+        else reqs
+      in
+      let sr = rstoken $2 $9 in
       let stmt = `AST_const_decl 
       (
         sr, name,vs,
-        typecode_of_expr $4, 
-        $6, $7
+        typecode_of_expr $5, 
+        $7, reqs
       ) in
-      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
 
     }
 
-  | CONST declname COLON expr requires_clause SEMI 
+  | adjectives CONST declname COLON expr requires_clause SEMI 
     { 
-      let name,vs = hd $2 in
-      let sr = rstoken $1 $6 in
+      let adjectives = map snd $1 in
+      let name,vs = hd $3 in
+      let reqs = $6 in
+      let reqs = 
+        if mem `Virtual adjectives then
+          `RREQ_and (`RREQ_atom (`Property_req "virtual"),reqs)
+        else reqs
+      in
+      let sr = rstoken $2 $7 in
       let stmt = `AST_const_decl 
       (
         sr, name, vs,
-        typecode_of_expr $4, 
-        `Str name, $5
+        typecode_of_expr $5, 
+        `Str name, reqs
       ) in
-      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $2)
+      fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
     }
 
 

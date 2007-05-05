@@ -1110,7 +1110,7 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
           ;
           let thisix = !(syms.counter) in incr counter;
-          let dcl =`SYMDEF_const (`AST_index (sr,id,n),`Str "#this",`NREQ_true) in
+          let dcl =`SYMDEF_const ([],`AST_index (sr,id,n),`Str "#this",`NREQ_true) in
           Hashtbl.add syms.dfns thisix {
             id="this";sr=sr;parent=Some n; vs=dfltvs;
             pubmap=null_tab; privmap=null_tab;
@@ -1316,12 +1316,12 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
 
-        | `DCL_const (t,c, reqs) ->
+        | `DCL_const (props,t,c, reqs) ->
           if is_class then clierr sr "Const binding not allowed in class";
           let t = if t = `TYP_none then `TYP_var n else t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_const (t,c,reqs)
+            symdef=`SYMDEF_const (props,t,c,reqs)
           }
           ;
           if access = `Public then add_unique pub_name_map id n;
@@ -1349,7 +1349,7 @@ let rec build_tables syms name inherit_vs
               id=name;sr=sr;parent=Some fun_index;vs=dfltvs;
               pubmap=null_tab;
               privmap=null_tab;dirs=[];
-              symdef=`SYMDEF_const (`TYP_glr_attr_type typ,
+              symdef=`SYMDEF_const ([],`TYP_glr_attr_type typ,
                 `Str ("*"^name),`NREQ_true
               )
             };

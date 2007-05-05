@@ -2384,6 +2384,27 @@ print $ format (".dynamic_suffix"); endl;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
+@kat_rt("typedef")
+type long = "long";
+type string = "string";
+header "#include <iostream>";
+
+proc println: long = "std::cout << $1 << std::endl;";
+
+module X[t] {
+  fun f () : t => "khg";
+  typedef mytype = t;
+}
+
+open X[long];
+var x: mytype = 1L;
+println$ x;
+@select(env_rt.expect())
+1
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
 @kat_rt("show typeclass")
 #import <flx.flxh>
 

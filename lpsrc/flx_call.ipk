@@ -162,7 +162,7 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
 
   | `BBDCL_newtype (_,t) -> ut t
   | `BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
-  | `BBDCL_const (_,t,_,reqs) -> cal_req_usage sr k reqs
+  | `BBDCL_const (_,_,t,_,reqs) -> cal_req_usage sr k reqs
   | `BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps
   | `BBDCL_fun (_,_,ps,ret,_, reqs,_)  -> cal_req_usage sr k reqs; iter ut ps; ut ret
   | `BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
