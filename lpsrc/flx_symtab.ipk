@@ -47,6 +47,11 @@ open List
 open Flx_lookup
 open Flx_exceptions
 
+let null_tab = Hashtbl.create 3 
+let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+let dfltvs = [],dfltvs_aux
+
+
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i = 
   let n = length (fst vs) in
@@ -130,6 +135,22 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
   with Not_found -> 
     Hashtbl.add table key (`NonFunctionEntry (mkentry syms vs value))
 
+let full_add_typevar syms sr table key value =
+  try 
+    let entry = Hashtbl.find table key in
+    match entry with 
+    | `NonFunctionEntry (idx) 
+    | `FunctionEntry (idx :: _ ) ->
+       (match Hashtbl.find syms.dfns (sye idx)  with 
+       | { sr=sr2 } ->
+         clierr2 sr sr2 
+         ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
+       )
+     | `FunctionEntry [] -> assert false
+  with Not_found -> 
+    Hashtbl.add table key (`NonFunctionEntry (mkentry syms dfltvs value))
+
+
 let full_add_function syms sr (vs:ivs_list_t) table key value =
   try 
     match Hashtbl.find table key with
@@ -167,10 +188,6 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
   be created in the child, but it cannot be followed until
   registration of all the children and their parent is complete
 *)
-
-let null_tab = Hashtbl.create 3 
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
-let dfltvs = [],dfltvs_aux
 
 
 let rec build_tables syms name inherit_vs 
@@ -307,7 +324,7 @@ let rec build_tables syms name inherit_vs
               dirs=[];
               symdef=`SYMDEF_typevar mt
             };
-            add_unique table tvid i 
+            full_add_typevar syms sr table tvid i 
           )
           (fst vs)
         in

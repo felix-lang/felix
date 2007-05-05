@@ -1682,13 +1682,27 @@ and bind_type'
     if env = [] then print_endline "WOOPS EMPTY ENVIRONMENT!";
 
     begin match lookup_qn_in_env syms env x with
-    | i,ts ->
+    | {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts},ts ->
       let ts = map bt ts in
       (*
-      print_endline ("Qualified name lookup finds index " ^ si (sye i) ^
-      "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+      print_endline ("Qualified name lookup finds index " ^ si i);
+      print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
+      print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
+      print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
+      begin match Hashtbl.find syms.dfns i with
+        | {id=id;vs=vs;symdef=`SYMDEF_typevar _} -> 
+          print_endline (id ^ " is a typevariable, vs=" ^
+            catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
+          )
+        | {id=id} -> print_endline (id ^ " is not a type variable")
+      end;
       *)
-      bi (sye i) ts
+      let baset = bi i sub_ts in
+      (* SHOULD BE CLIENT ERROR not assertion *)
+      assert (length ts = length spec_vs);
+      let t = tsubst spec_vs ts baset in
+      t
+
     end
 
   | `AST_suffix (sr,(qn,t)) ->
@@ -3191,6 +3205,11 @@ and handle_type
     *)
 
   | `SYMDEF_type_alias _ ->
+    (*
+    print_endline ("Binding type alias " ^ name ^ "<" ^ si index ^ ">" ^ 
+      "[" ^catmap "," (sbt syms.dfns) ts^ "]"
+    );
+    *)
     bind_type_index syms (rs:recstop) sr index ts mkenv
 
   | _ -> 
