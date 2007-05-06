@@ -4572,7 +4572,22 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       end;
       *)
       (* should be a client error not an assertion *)
-      assert (length spec_vs = length ts);
+      if length spec_vs <> length ts then begin
+        print_endline ("BINDING NAME " ^ name);
+        begin match Hashtbl.find syms.dfns index with
+          | {id=id;vs=vs;symdef=`SYMDEF_typevar _} -> 
+            print_endline (id ^ " is a typevariable, vs=" ^
+              catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
+            )
+          | {id=id} -> print_endline (id ^ " is not a type variable")
+        end;
+        print_endline ("NAME lookup finds index " ^ si index);
+        print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
+        print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
+        print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
+        clierr sr "[lookup,AST_name] ts/vs mismatch"
+      end;
+
       let ts = map (tsubst spec_vs ts) sub_ts in
       let ts = adjust_ts syms sr index ts in
       let t = ti sr index ts in

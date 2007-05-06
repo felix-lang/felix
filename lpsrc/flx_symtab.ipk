@@ -551,9 +551,12 @@ let rec build_tables syms name inherit_vs
                   pubmap=null_tab;privmap=null_tab;dirs=[];
                   symdef=`SYMDEF_parameter (`PVal,stype)
                 };
-                (* BUGGED FIX ME -- see function, need full_add ..? *)
+                (*
                 if access = `Public then add_unique pubtab obj_name objidx;
                 add_unique privtab obj_name objidx;
+                *)
+                if access = `Public then full_add_unique syms sr dfltvs pubtab obj_name objidx;
+                full_add_unique syms sr dfltvs privtab obj_name objidx;
 
                 interfaces := !interfaces @ ifaces
                 ;
@@ -590,7 +593,10 @@ let rec build_tables syms name inherit_vs
                     vs=dfltvs;pubmap=null_tab;privmap=null_tab;
                     dirs=[];symdef=`SYMDEF_parameter (`PVal,stype)
                   };
+                  (*
                   add_unique funtab objname objix;
+                  *)
+                  full_add_unique syms sr dfltvs funtab objname objix;
                   let ps = [`PVal,"obj",stype],None in
                   let exes = [sr,
                     `EXE_fun_return (`AST_get_named_variable (sr,
@@ -638,7 +644,10 @@ let rec build_tables syms name inherit_vs
                     vs=dfltvs;pubmap=null_tab;privmap=null_tab;
                     dirs=[];symdef=`SYMDEF_parameter (`PVal,`TYP_lvalue stype)
                   };
+                  (*
                   add_unique funtab objname objix;
+                  *)
+                  full_add_unique syms sr dfltvs funtab objname objix;
                   let ps = [`PVal,"obj",`TYP_lvalue stype],None in
                   let exes = [sr,
                     `EXE_fun_return (`AST_get_named_variable (sr,
@@ -682,8 +691,8 @@ let rec build_tables syms name inherit_vs
 
           let p1 = !(syms.counter) in incr syms.counter;
           let p2 = !(syms.counter) in incr syms.counter;
-          add_unique privtab "lexeme_start" p1;
-          add_unique privtab "buffer_end" p2;
+          full_add_unique syms sr dfltvs privtab "lexeme_start" p1;
+          full_add_unique syms sr dfltvs privtab "buffer_end" p2;
           Hashtbl.add dfns p1 {id="lexeme_start";sr=sr;
             parent=Some n;vs=vs;
             pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
@@ -717,9 +726,9 @@ let rec build_tables syms name inherit_vs
           let p2 = !(syms.counter) in incr syms.counter;
           let v3 = !(syms.counter) in incr syms.counter;
 
-          add_unique privtab "lexeme_start" p1;
-          add_unique privtab "buffer_end" p2;
-          add_unique privtab "lexeme_end" v3;
+          full_add_unique syms sr dfltvs privtab "lexeme_start" p1;
+          full_add_unique syms sr dfltvs privtab "buffer_end" p2;
+          full_add_unique syms sr dfltvs privtab "lexeme_end" v3;
 
           Hashtbl.add dfns p1 {id="lexeme_start";sr=sr;
             parent=Some n;vs=vs;
@@ -1117,7 +1126,7 @@ let rec build_tables syms name inherit_vs
             pubmap=null_tab; privmap=null_tab;
             dirs=[];symdef=dcl
           };
-          add_unique privtab "this" thisix;
+          full_add_unique syms sr dfltvs privtab "this" thisix;
           (*
           print_endline ("Added this: " ^ si thisix);
           *)
@@ -1354,8 +1363,12 @@ let rec build_tables syms name inherit_vs
                 `Str ("*"^name),`NREQ_true
               )
             };
+            (*
             if access = `Public then add_unique pubtab name n;
             add_unique privtab name n;
+            *)
+            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
+            full_add_unique syms sr dfltvs privtab name n;
             ips := (name,typ) :: !ips 
           ) p
           ; 
