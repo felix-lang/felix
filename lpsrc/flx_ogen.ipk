@@ -269,8 +269,8 @@ let gen_offset_data s n name offsets isfun props flags last_ptr_map =
   bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n  "^name^"_finaliser,\n");
-  bcat s ("  "^noffsets^",\n  "^ (if n<>0 then name^"_offsets" else "0"));
-  bcat s (match flags with None -> "gc_flags_default\n" | Some flags -> ",\n  " ^ flags^"\n");
+  bcat s ("  "^noffsets^",\n  "^ (if n<>0 then name^"_offsets" else "0")^",\n  ");
+  bcat s (match flags with None -> "gc_flags_default\n" | Some flags ->  flags^"\n");
   bcat s ( "};\n")
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)

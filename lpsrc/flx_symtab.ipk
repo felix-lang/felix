@@ -551,6 +551,7 @@ let rec build_tables syms name inherit_vs
                   pubmap=null_tab;privmap=null_tab;dirs=[];
                   symdef=`SYMDEF_parameter (`PVal,stype)
                 };
+                (* BUGGED FIX ME -- see function, need full_add ..? *)
                 if access = `Public then add_unique pubtab obj_name objidx;
                 add_unique privtab obj_name objidx;
 
@@ -762,8 +763,8 @@ let rec build_tables syms name inherit_vs
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
               dirs=[];symdef=`SYMDEF_parameter (`PVal,typ)
             };
-            if access = `Public then add_unique pubtab name n;
-            add_unique privtab name n;
+            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
+            full_add_unique syms sr dfltvs privtab name n;
             ips := (`PVal,name,typ) :: !ips 
           ) ps
           ; 
@@ -787,8 +788,8 @@ let rec build_tables syms name inherit_vs
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
               dirs=[];symdef=`SYMDEF_parameter (k,typ)
             };
-            if access = `Public then add_unique pubtab name n;
-            add_unique privtab name n;
+            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
+            full_add_unique syms sr dfltvs privtab name n;
             ips := (k,name,typ) :: !ips 
           ) ps
           ; 
@@ -812,8 +813,8 @@ let rec build_tables syms name inherit_vs
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
               dirs=[];symdef=`SYMDEF_parameter (k,typ)
             };
-            if access = `Public then add_unique pubtab name n;
-            add_unique privtab name n;
+            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
+            full_add_unique syms sr dfltvs privtab name n;
             ips := (k,name,typ) :: !ips 
           ) ps
           ; 
@@ -871,8 +872,8 @@ let rec build_tables syms name inherit_vs
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
               dirs=[];symdef=`SYMDEF_parameter (k,typ)
             };
-            if access = `Public then add_unique pubtab name n;
-            add_unique privtab name n;
+            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
+            full_add_unique syms sr dfltvs privtab name n;
             ips := (k,name,typ) :: !ips 
           ) ps
           ; 

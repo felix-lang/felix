@@ -2183,8 +2183,13 @@ and inner_typeofindex_with_ts
  let vs,_ = find_vs syms index in
  assert (length vs = length ts);
  *)
- if (length ts != length vs + length pvs) then
+ if (length ts != length vs + length pvs) then begin
+   print_endline ("#pvs=" ^ si (length pvs) ^ 
+     ", #vs="^si (length vs) ^", #ts="^ 
+     si (length ts)
+   );
    print_endline ("#ts != #vs + #pvs")
+ end
  ;
  assert (length ts = length vs + length pvs);
  let varmap = make_varmap syms sr index ts in
@@ -4553,11 +4558,25 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let index = sye index in 
       let ts = adjust_ts syms sr index ts in
       *)
+      (*
+      print_endline ("NAME lookup finds index " ^ si index);
+      print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
+      print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
+      print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
+      begin match Hashtbl.find syms.dfns index with
+        | {id=id;vs=vs;symdef=`SYMDEF_typevar _} -> 
+          print_endline (id ^ " is a typevariable, vs=" ^
+            catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
+          )
+        | {id=id} -> print_endline (id ^ " is not a type variable")
+      end;
+      *)
+      (* should be a client error not an assertion *)
       assert (length spec_vs = length ts);
       let ts = map (tsubst spec_vs ts) sub_ts in
-      `BEXPR_name (index,ts),
+      let ts = adjust_ts syms sr index ts in
       let t = ti sr index ts in
-      t
+      `BEXPR_name (index,ts), t
 
     | `FunctionEntry fs ->
       assert (length fs > 0);
