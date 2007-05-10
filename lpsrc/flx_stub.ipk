@@ -14,6 +14,16 @@ open Flx_cexpr
 open Flx_ctype
 open List
 
+@if USE_DYPGEN:
+  tangle(" (* only with dypgen! *) ")
+  tangle("let dyphack (ls : ( 'a * Flx_parse.priority) list) : 'a =")
+  tangle("  match ls with")
+  tangle("  | [x,_] -> x")
+  tangle('  | _ -> failwith "Dypgen parser failed"')
+ else:
+  tangle("let dyphack x = x")
+@#
+
 let raw_options = Flx_getopt.parse_options Sys.argv;;
 let compiler_options = Flx_flxopt.get_felix_options raw_options;;
 let syms = Flx_flxopt.make_syms compiler_options;;
@@ -37,9 +47,11 @@ let () =
   while toker#token_peek lexbuf != Flx_parse .ENDMARKER do
     let x,tok = 
         try 
+          dyphack (
           Flx_parse.exprx
           (toker#token_src) 
           lexbuf 
+          )
         with _ -> begin
           toker#report_syntax_error;
           raise (Flx_exceptions.ParseError "Parsing Expr")
@@ -51,9 +63,11 @@ let () =
     ;
     let _ = 
         try 
+          dyphack (
           Flx_parse.semi
           (toker#token_src) 
           lexbuf
+          )
         with _ -> begin
           toker#report_syntax_error;
           raise (Flx_exceptions.ParseError "Parsing String")

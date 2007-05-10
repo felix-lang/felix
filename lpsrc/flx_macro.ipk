@@ -51,6 +51,16 @@ open Flx_srcref
 open Flx_typing2 
 open Flx_util
 
+@if USE_DYPGEN:
+  tangle(" (* only with dypgen! *) ")
+  tangle("let dyphack (ls : ( 'a * Flx_parse.priority) list) : 'a =")
+  tangle("  match ls with")
+  tangle("  | [x,_] -> x")
+  tangle('  | _ -> failwith "Dypgen parser failed"')
+ else:
+  tangle("let dyphack x = x")
+@#
+
 exception Macro_return
 let dfltvs = [],{ raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 
@@ -194,9 +204,11 @@ let rec parse_expr sr s =
   let tokens  = Flx_lex1.translate pre_tokens in
   let toker = (new Flx_tok.tokeniser tokens) in
   begin try
+    dyphack (
     Flx_parse.expr
     (toker#token_src)
     (Lexing.from_string "dummy" )
+    )
   with _ ->
     toker#report_syntax_error;
     raise (Flx_exceptions.ParseError "Parsing String as Expression")

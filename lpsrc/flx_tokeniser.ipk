@@ -360,6 +360,16 @@ open List
 open Flx_srcref 
 open Flx_parse
 
+@if USE_DYPGEN:
+  tangle(" (* only with dypgen! *) ")
+  tangle("let dyphack (ls : ( 'a * priority) list) : 'a =")
+  tangle("  match ls with")
+  tangle("  | [x,_] -> x")
+  tangle('  | _ -> failwith "Dypgen parser failed"')
+ else:
+  tangle("let dyphack x = x")
+@#
+
 let print_pre_token t = 
   let emit t = print_string (Flx_prelex.string_of_token t) in
     begin match t with
@@ -421,6 +431,10 @@ object(self)
     hd tokens
 
   method token_src (dummy :Lexing.lexbuf) =
+    if List.length tokens = 0 then begin
+      print_endline "Tokeniser: Run out of tokens!";
+      ENDMARKER
+    end else
     let tmp = hd tokens in
     tokens <- tl tokens;
     current_token_index <- current_token_index + 1;
@@ -576,7 +590,7 @@ object(self)
         print_endline "Matching expression ..";
         *)
         let e,tk = 
-          try exprx self#token_src dummy_lexbuf 
+          try dyphack (exprx self#token_src dummy_lexbuf)
           with ParseError s -> rdp_match_fail sr self#get_loc "parsing exprx"
         in
         (*
@@ -593,7 +607,7 @@ object(self)
         print_endline "Matching statement ..";
         *)
         let s = 
-          try statement self#token_src dummy_lexbuf 
+          try dyphack (statement self#token_src dummy_lexbuf)
           with ParseError s -> rdp_match_fail sr self#get_loc "parsing statement"
         in
         aux t (`Statement_term s :: res)
@@ -603,7 +617,7 @@ object(self)
         print_endline "Matching statements ..";
         *)
         let s,tk = 
-          try statementsx self#token_src dummy_lexbuf 
+          try dyphack (statementsx self#token_src dummy_lexbuf)
           with ParseError s -> rdp_match_fail sr self#get_loc "parsing statementsx"
         in
         self#put_back tk;
@@ -758,10 +772,9 @@ let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) =
     toker#report_syntax_error;
     raise x
 
-  | _ ->
-    (*
+  | exn ->
     print_endline "Got unknown error from parse..";
-    *)
+    print_endline (Printexc.to_string exn);
     toker#report_syntax_error;
     raise (Flx_exceptions.ParseError "Parsing Tokens")
 

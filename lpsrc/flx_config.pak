@@ -3,8 +3,8 @@
 @print FLX_CONFIG_CVS_ID
 @flx_version_major = '1'
 @flx_version_minor = '1'
-@flx_version_patch = '3'
-@flx_version_release = '_rc4'
+@flx_version_patch = '4'
+@flx_version_release = '_x1'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -1415,6 +1415,13 @@ if "target" in PHASES:
     pa(f,this,"HAVE_GNU")
     pr(f,"FLXCC_CPP='cpp '")
     pa(f,this,"HAVE_MSVC")
+    pr(f,"")
+    pr(f,"########### DYPGEN EXPERIMENT #########")
+    pr(f,"# set to 1 to enable experimental dypgen parser generator support")
+    pr(f,"USE_DYPGEN = 0")
+    pr(f,"DYPGEN_DIR = '"+HOST_OCAML.options.OCAML_INCLUDE_DIRECTORY+os.sep+"dypgen'") 
+    pr(f,"########### DYPGEN EXPERIMENT #########")
+    pr(f,"")
     pr(f,"# HACK to get all the target variables into global namespace")
     pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")
     pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")

@@ -979,6 +979,17 @@ and merge_vs
   vs1 @ vs2, 
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
 
+and gen_call_init sr name' =
+  let mname = `AST_name (sr,name',[]) in 
+  let pname = `AST_lookup ( sr, ( mname, "_init_", [])) in
+  let sname = `AST_suffix ( sr, ( pname, `TYP_tuple [])) in
+  let unitt = `AST_tuple (generated,[]) in
+  `Exe 
+  ( 
+    sr,
+    `EXE_call ( sname, unitt)
+  )
+
 and rst syms name access (parent_vs:vs_list_t) st : asm_t list = 
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list = 
@@ -1212,8 +1223,8 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let asms = bridge name' sr :: asms in
     let mdcl =
       [ `Dcl (sr,name',None,access,vs, `DCL_instance (name,asms)) ]
-    in mdcl
-
+    in 
+    mdcl
  
   | `AST_type_alias (sr,name,vs,typ) -> [`Dcl (sr,name,None,access,vs,`DCL_type_alias (typ))]
   | `AST_inherit (sr,name,vs,qn) -> [`Dcl (sr,name,None,access,vs,`DCL_inherit qn)]
@@ -1380,33 +1391,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       [ `Dcl (sr,name',None,access,vs', `DCL_module asms) ]
     in
       (* HACK !!!! *)
-    if vs' = dfltvs then
-    (
-      `Exe 
-      (
-        sr,
-        `EXE_call 
-        (
-          `AST_suffix
-          (
-            sr,
-            (
-              `AST_lookup
-              (
-                sr,
-                (
-                  `AST_name (sr,name',[]),
-                  "_init_",
-                  []
-                )
-              ),
-              `TYP_tuple []
-            )
-          ),
-          `AST_tuple (generated,[])
-        )
-      )
-    ) :: mdcl else mdcl
+    if vs' = dfltvs then gen_call_init sr name' :: mdcl else mdcl
 
   | `AST_insert (sr,name',vs,s,kind,reqs) -> 
     let props, dcls, reqs = mkreqs sr reqs in

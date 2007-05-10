@@ -334,8 +334,11 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.mly') >= filetime(file+'.ml'): force = 1
       if force:
-        vxqt(OCAMLYACC + ' -v '+ file + '.mly')
-        nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
+        if USE_DYPGEN and file == "src/flx_parse":
+          vxqt("dypgen -symbols-with-variants " + file + ".dyp")
+        else:
+          vxqt(OCAMLYACC + ' -v '+ file + '.mly')
+          nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
 
     if LEXS or PARSES:
       plugins['extract_grammar']()
@@ -2510,12 +2513,13 @@ We have no idea if it continues copying.
 @tangle('\trm -rf cpkgs')
 @tangle('\trm -rf spkgs')
 @tangle('\trm -rf pthread')
-@tangle('\trm -rf flxbuild')
 @tangle('\trm -rf mkplugins')
 @tangle('\trm -rf olddebian')
 @tangle('\trm -rf script')
 @tangle('\trm -rf manifests')
 @tangle('\trm -rf pkg-stamps')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_config.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_maker.pak')
 @tangle('')
 @tangle('virgin: distclean')
 @tangle('\tcp Makefile Makefile.old')
@@ -2955,6 +2959,10 @@ Also some gif images.
 
 @python("//")
 def mkgif(fn,d):
+  try:
+    os.mkdir("misc")
+  except:
+    pass
   f = open("misc"+os.sep+fn+".gif","w")
   f.write(d)
   f.close()

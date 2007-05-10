@@ -125,9 +125,14 @@ caml_interfaces = FLX_INTERFACES
 caml_raw_interfaces = FLX_RAW_INTERFACES
 caml_exes = FLX_EXES
 caml_implementations = FLX_IMPLEMENTATIONS
-caml_require_libs = ['nums','unix','misclib','cillib','flxcclib','flxlib']
+@if USE_DYPGEN:
+  tangle("caml_require_libs = ['nums','unix','dyp','misclib','cillib','flxcclib','flxlib']")
+  tangle("caml_include_paths = ['src', 'src/cil','"+DYPGEN_DIR+"']")
+ else:
+  tangle("caml_require_libs = ['nums','unix','misclib','cillib','flxcclib','flxlib']")
+  tangle("caml_include_paths = ['src', 'src/cil']")
+@#
 pkg_requires = ['misc','cil','flxcc_util']
-caml_include_paths = ['src', 'src/cil']
 caml_provide_lib = 'flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'

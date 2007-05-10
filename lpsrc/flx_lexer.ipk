@@ -739,7 +739,7 @@ val handle_preprocessor :
   Lexing.position ->
   token list
 
-@h = tangler('src/flx_preproc.ml','data')
+@h = tangler('src/flx_preproc.ml')
 @select(h)
 open Flx_util
 open Flx_parse
@@ -748,6 +748,18 @@ open Big_int
 open Flx_exceptions
 open Flx_lexstate
 open List
+
+@if USE_DYPGEN:
+  tangle(" (* only with dypgen! *) ")
+  tangle("let dyphack (ls : ( 'a * priority) list) : 'a =")
+  tangle("  match ls with")
+  tangle("  | [x,_] -> x")
+  tangle('  | _ -> failwith "Dypgen parser failed"')
+ else:
+  tangle("let dyphack x = x")
+@#
+
+let dyphack_parser f tk lb = dyphack (f tk lb)
 
 let substr = String.sub
 let len = String.length
@@ -877,7 +889,7 @@ let rec expand' state exclude toks =
   in aux [] toks [] []
 
 let eval state toks =
-  let e = Flx_tok.parse_tokens Flx_parse.expression (toks @ [ENDMARKER]) in
+  let e = Flx_tok.parse_tokens (dyphack_parser Flx_parse.expression) (toks @ [ENDMARKER]) in
   let e = state#get_expand_expr "PREPROC_EVAL" e in
   e
   
@@ -995,14 +1007,12 @@ let statement_directive state sr toks =
   match toks with
   | NAME (sr,tok) :: t 
   | USER_STATEMENT_KEYWORD (sr,tok,_,_) :: t ->
-    (*
     print_endline ("Statement directive " ^ tok);
-    *)
     let t1,t2 = action_split t in
     let sts,_ =
       match t2 with 
       | [] -> [],ENDMARKER
-      | _ -> Flx_tok.parse_tokens Flx_parse.statementsx (t2 @ [ENDMARKER])
+      | _ -> Flx_tok.parse_tokens (dyphack_parser Flx_parse.statementsx) (t2 @ [ENDMARKER])
     in
     (*
     print_endline ("Action Statements " ^ catmap "\n" (Flx_print.string_of_statement 0) sts);
@@ -1024,7 +1034,7 @@ let nonterminal_directive state sr toks =
     (*
     print_endline ("Action Tokens: " ^ catmap ", " Flx_prelex.string_of_token t2);
     *)
-    let expr = Flx_tok.parse_tokens Flx_parse.expression (t2 @ [ENDMARKER]) in
+    let expr = Flx_tok.parse_tokens (dyphack_parser Flx_parse.expression) (t2 @ [ENDMARKER]) in
     state#add_nonterminal tok (Flx_srcref.slift sr) t1 (`Expression_term expr);
     []
 
