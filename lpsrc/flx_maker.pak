@@ -315,8 +315,8 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_ocaml_grammar'
 
-  def runme(self, pkg, LEXS, PARSES, force):
-    if not (LEXS or PARSES):
+  def runme(self, pkg, LEXS, PARSES, PGENPARSES,DYPARSES, force):
+    if not (LEXS or PARSES or DYPARSES):
       return force
 
     print "CAML BUILDING GRAMMAR", pkg
@@ -334,13 +334,26 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.mly') >= filetime(file+'.ml'): force = 1
       if force:
-        if USE_DYPGEN and file == "src/flx_parse":
-          vxqt("dypgen -symbols-with-variants " + file + ".dyp")
-        else:
-          vxqt(OCAMLYACC + ' -v '+ file + '.mly')
-          nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
+        vxqt(OCAMLYACC + ' -v '+ file + '.mly')
+        nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
 
-    if LEXS or PARSES:
+    # STEP 3: Generate parsers (pgen)
+    for parse in PGENPARSES:
+      file = string.replace(parse,'/',os.sep)
+      if not force:
+        if filetime(file+'.dyp') >= filetime(file+'.ml'): force = 1
+      if force:
+        vxqt("bin/pgen " + file + ".dyp")
+
+    # STEP 3: Generate parsers (dypgen)
+    for parse in DYPARSES:
+      file = string.replace(parse,'/',os.sep)
+      if not force:
+        if filetime(file+'.dyp') >= filetime(file+'.ml'): force = 1
+      if force:
+        vxqt("bin/dypgen --pv-obj " + file + ".dyp")
+
+    if LEXS or PARSES or DYPARSES:
       plugins['extract_grammar']()
 
     return force
@@ -351,7 +364,7 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_ocaml_modules'
     
-  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, INCLUDES, force):
+  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES, force):
     if not (INTERFACES or IMPLEMENTATIONS):
       return force
 
@@ -363,7 +376,11 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.mli') >= filetime(file+'.cmi'): force = 1
       if force:
-        vxqt(OCAMLC + ' ' + INCLUDES + ' -c ' + file + '.mli')
+        pack = ""
+        for path, packed, parts in PACKS:
+          if interface in parts:
+            pack = " -for-pack " + path
+        vxqt(OCAMLC + ' ' + INCLUDES + pack + ' -c ' + file + '.mli')
 
     # STEP 5: Compile ocaml implementations
     for implementation in IMPLEMENTATIONS:
@@ -372,7 +389,22 @@ class PLUGIN(Plugin):
         if filetime(file+'.ml') >= filetime(file + OCAML_OBJECT_EXTENSION): 
           force = 1
       if force:
-        vxqt(OCAMLOPT + ' '+ INCLUDES + ' -c ' + file +'.ml')
+        pack = ""
+        for path, packed, parts in PACKS:
+          if implementation in parts:
+            pack = " -for-pack " + path
+        vxqt(OCAMLOPT + ' '+ INCLUDES + pack + ' -c ' + file +'.ml')
+
+    # STEP 5a -- pack
+    for path, packed, parts in PACKS:
+      xparts = ' '
+      for part in parts:
+        if part in IMPLEMENTATIONS:
+          xparts = xparts + part + OCAML_OBJECT_EXTENSION + ' '
+        elif part in INTERFACES:
+          xparts = xparts + part + ".cmi "
+      vxqt(OCAMLOPT + ' -pack -o ' + packed + OCAML_OBJECT_EXTENSION + xparts)
+
 
     return force
 @doc()
@@ -430,11 +462,14 @@ class PLUGIN(Plugin):
   def runme(self, pkg, pkgdict, force):
     LEXS = pkgdict.get("caml_lexes", [])
     PARSES = pkgdict.get("caml_parses", [])
+    PGENPARSES = pkgdict.get("caml_pgenparses", [])
+    DYPARSES = pkgdict.get("caml_dyparses", [])
 
-    force = plugins['build_ocaml_grammar'].runme(pkg, LEXS, PARSES, force)
+    force = plugins['build_ocaml_grammar'].runme(pkg, LEXS, PARSES, PGENPARSES,DYPARSES, force)
 
     INTERFACES = pkgdict.get("caml_interfaces", [])
     IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
+    PACKS = pkgdict.get("caml_pack", [])
     EXES = pkgdict.get("caml_exes", [])
     INCLUDES = pkgdict.get("caml_include_paths", ['src'])
 
@@ -444,11 +479,22 @@ class PLUGIN(Plugin):
         INCLUDES[i] = '-I ' + INCLUDES[i]
     INCLUDES = string.join(INCLUDES)
 
-    force = plugins['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS + EXES, INCLUDES, force)
+    force = plugins['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS + EXES, PACKS, INCLUDES, force)
 
     lib = pkgdict.get('caml_provide_lib', 'src'+os.sep+pkg+"lib")
 
-    force = plugins['build_ocaml_libraries'].runme(IMPLEMENTATIONS, lib, force)
+    implementations = []
+    for path,packed,parts in PACKS:
+      implementations.append(packed)
+    for implementation in IMPLEMENTATIONS:
+      found = 0
+      for path,packed,parts in PACKS:
+        if implementation in parts: 
+          found = 1
+      if not found:
+        implementations.append(implementation)
+
+    force = plugins['build_ocaml_libraries'].runme(implementations, lib, force)
 
     OLIBRARIES = pkgdict.get("caml_require_libs", [])
 
