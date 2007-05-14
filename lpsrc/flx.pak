@@ -3,6 +3,21 @@
 @execfile('config'+os.sep+'config.py')
 @set_title('Felix '+flx_version)
 
+@head(1,'Verion Control')
+@h = tangler('spkgs/flx_version.py')
+@select(h)
+caml_interfaces = [
+  'src/flx_version',
+]
+
+caml_implementations = [
+  'src/flx_version',
+]
+
+caml_provide_lib = 'src/flx_version'
+iscr_source = ["lpsrc/flx.pak"]
+weaver_directory = 'doc/flx/flx_compiler/'
+
 @head(1,'The Felix Compiler')
 SVN conversion.
 @h = tangler('spkgs/flx_compiler.py')
@@ -18,7 +33,6 @@ FLX_MODULES = [
   'src/flx_mtypes1',
   'src/flx_ast',
   'src/flx_types',
-  'src/flx_version',
   'src/flx_util',
   'src/flx_dlst',
   'src/flx_getopt',
@@ -120,20 +134,21 @@ FLX_EXES = [
 ]
 
 caml_lexes = FLX_LEXS
-caml_parses = FLX_PARSES
 caml_interfaces = FLX_INTERFACES
 caml_raw_interfaces = FLX_RAW_INTERFACES
 caml_exes = FLX_EXES
 caml_implementations = FLX_IMPLEMENTATIONS
 @if USE_DYPGEN:
-  tangle("caml_require_libs = ['nums','unix','dyp','misclib','cillib','flxcclib','flxlib']")
-  tangle("caml_include_paths = ['src', 'src/cil','"+DYPGEN_DIR+"']")
+  tangle("caml_require_libs = ['nums','unix','flx_version','dyplib','misclib','cillib','flxcclib','flxlib']")
+  tangle("caml_include_paths = ['src', 'src/cil','dypgen/dyplib']")
+  tangle('caml_dyparses = FLX_PARSES')
  else:
-  tangle("caml_require_libs = ['nums','unix','misclib','cillib','flxcclib','flxlib']")
+  tangle("caml_require_libs = ['nums','unix','flx_version','misclib','cillib','flxcclib','flxlib']")
   tangle("caml_include_paths = ['src', 'src/cil']")
+  tangle('caml_parses = FLX_PARSES')
 @#
-pkg_requires = ['misc','cil','flxcc_util']
-caml_provide_lib = 'flxlib'
+pkg_requires = ['flx_version','dypgen','misc','cil','flxcc_util']
+caml_provide_lib = 'src/flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
 
@@ -309,12 +324,26 @@ the mainline module begins.
 
 @h=tangler('src/flx_version.mli')
 @select(h)
-open Flx_types
+type version_data_t =
+{
+  version_string : string;
+  build_time_float : float;
+  build_time : string;
+  buildno : int;
+}
+
 val version_data: version_data_t ref
 
 @h=tangler('src/flx_version.ml')
 @select(h)
-open Flx_types
+type version_data_t =
+{
+  version_string : string;
+  build_time_float : float;
+  build_time : string;
+  buildno : int;
+}
+
 let version_data = ref
 {
   version_string = "no version";
@@ -350,7 +379,7 @@ def get_buildno():
 @short_time = time.strftime("%a %d %b %Y",gmtime)
 @buildno = get_buildno()
 @print "BUILDNO",buildno
-open Flx_types
+open Flx_version
 let version_data: version_data_t =
 {
 @tangle('  buildno = '+buildno+";")

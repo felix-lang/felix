@@ -957,6 +957,128 @@ for fn,tgt in tgts:
       if line[:5] != '#line':
         print line,
  
+@h = tangler('script/mkdypgen.py','python')
+@select(h)
+
+import string
+import os
+
+prefix = '/home/skaller/dypgen/dypgen'
+
+dyplib = """
+@@h = tangler('spkgs/dyplib.py')
+@@select(h)
+caml_interfaces = [
+  'dypgen/dyplib/sig',
+  'dypgen/dyplib/dyp',
+]
+
+caml_implementations = [
+  'dypgen/dyplib/priority_by_relation',
+  'dypgen/dyplib/automaton',
+  'dypgen/dyplib/gs',
+  'dypgen/dyplib/parser',
+]
+
+caml_pack = [
+  ("Dyp",'dypgen/dyplib/dyp',[ 
+    'dypgen/dyplib/sig',
+    'dypgen/dyplib/gs', 
+    'dypgen/dyplib/priority_by_relation',
+    'dypgen/dyplib/automaton',
+    'dypgen/dyplib/parser'
+  ])
+]
+
+caml_include_paths=['dypgen/dyplib']
+caml_provide_lib = 'dypgen/dyplib/dyplib'
+iscr_source = ["lpsrc/dyp.pak"]
+weaver_directory = 'doc/dypgen/'
+
+"""
+
+pgen = """
+@@h = tangler('spkgs/pgen.py')
+@@select(h)
+caml_include_paths=['src','dypgen/dyplib','dypgen/generators/pgen']
+caml_lexes = ['dypgen/generators/pgen/pgen_lexer']
+caml_implementations=[
+  'dypgen/generators/pgen/pgen_parser_param',
+  'dypgen/generators/pgen/pgen_lexer'
+]
+caml_provide_lib = 'dypgen/generators/pgen/pgen'
+caml_require_libs = ['flx_version','dyplib','pgen']
+caml_exes = ['dypgen/generators/pgen/pgen']
+iscr_source = ["lpsrc/dyp.pak"]
+weaver_directory = 'doc/dypgen/'
+pkg_requires = ['flx_version','dyplib']
+"""
+
+dypgen = """
+@@h = tangler('spkgs/dypgen.py')
+@@select(h)
+caml_lexes = [
+  'dypgen/generators/dypgen/dypgen_lexer', 
+  'dypgen/generators/dypgen/insert_linenum'
+]
+
+caml_pgenparses = ['dypgen/generators/dypgen/dypgen_parser']
+caml_interfaces =[
+  'dypgen/generators/dypgen/parse_tree',
+  'dypgen/generators/dypgen/dypgen_parser',
+]
+caml_implementations=[
+  'dypgen/generators/dypgen/argument',
+  'dypgen/generators/dypgen/dypgen_parser',
+  'dypgen/generators/dypgen/dypgen_lexer',
+  'dypgen/generators/dypgen/insert_linenum',
+]
+caml_include_paths=['src','dypgen/dyplib','dypgen/generators/dypgen']
+caml_provide_lib = 'dypgen/generators/dypgen/dypgen'
+caml_require_libs = ['flx_version','dyplib','dypgen']
+caml_exes = ['dypgen/generators/dypgen/dypgen']
+iscr_source = ["lpsrc/dyp.pak"]
+pkg_requires = ['flx_version','dyplib','pgen']
+weaver_directory = 'doc/dypgen/'
+"""
+
+files = [
+  'dyplib/dyp.mli', 
+  'dyplib/sig.mli',
+  'dyplib/automaton.ml',
+  'dyplib/parser.ml',
+  'dyplib/priority_by_relation.ml',
+  'dyplib/gs.ml',
+  'generators/pgen/pgen_lexer.mll',
+  'generators/pgen/pgen.ml',  
+  'generators/pgen/pgen_parser_param.ml',
+  'generators/dypgen/dypgen_parser.dyp',
+  'generators/dypgen/parse_tree.mli',
+  'generators/dypgen/argument.ml',
+  'generators/dypgen/dypgen.ml',
+  'generators/dypgen/dypgen_lexer.mll',
+  'generators/dypgen/insert_linenum.mll'
+]
+
+mods = {}
+tgts = [] 
+
+print "@head(1,'Dypgen')"
+print dyplib
+print pgen
+print dypgen
+
+for fn in files:
+  print "@h=tangler('dypgen/"+fn+"')"
+  print "@select(h)"
+  f = open(prefix+'/'+fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    print line,
+  print
+ 
 @h = tangler('script/mkocs.py','python')
 @select(h)
 

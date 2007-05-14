@@ -170,6 +170,29 @@ let dfltvs =
     raw_type_constraint=`TYP_tuple [];
     raw_typeclass_reqs=[]
   } 
+
+@define_statement = """\
+ let define_statement dyp name rhs (statement:statement_t) =
+   let lhs = dyp.find_nt name in
+   let f o =
+     match o with
+       | NAME (sr,s) -> Non_ter ((dyp.find_nt s),No_priority)
+       | s -> 
+         (*
+         let name = Flx_prelex.name_of_token s in
+         *)
+         let name = Parser_parameters_module.str_token s in
+         print_endline ("Processing keyword " ^ name);
+         Ter (Parser_parameters_module.get_name s)
+   in
+   let rule  = lhs,(List.map f rhs),default_priority in
+   let action = fun _ avl -> `Obj_statement statement in
+   rule,action
+ """
+@#
+
+@if USE_DYPGEN: tangle(define_statement)
+
 @if USE_DYPGEN:
   tangle("}")
  else:
@@ -321,6 +344,41 @@ statement:
   | null_statement { $1 }
   | user_statement { $1 }
   | cparse { $1 }
+@dyp_statement = """\
+  | SYNTAX define_cont 
+    {
+      let name, rhs, (stmt:statement_t) = $2 in
+      print_endline ("PROCESSING DEFINITION " ^ name);
+      ignore(dyp.add_nt name);
+      dyp.add_rules <- [define_statement dyp name rhs stmt];
+      `AST_nop (rstoken $1 $1, name)
+    }
+ define_cont :
+  | NAME COLONEQUAL rhs PARSE_ACTION statement { snd $1,$3,$5 }
+
+ rhs:
+  | rhs_term { [$1] }
+  | rhs_term rhs { $1 :: $2 }
+
+ rhs_term :
+  | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
+  | EXPRESSION { NAME ($1,"expr") } /* hack special token to a non-terminal */
+  | STATEMENT { NAME ($1,"statement") } /* hack special token to a non-terminal */
+  | STATEMENTS { NAME ($1,"statements") } /* hack special token to a non-terminal */
+
+  /* terminals:
+    should be 'almost' any keyword except => because that
+    terminates the production (FIXME!)
+  */
+  | SEMI { SEMI $1 }
+  | DONE { DONE $1 }
+  | DO { DO $1 }
+
+ """
+@# 
+@if USE_DYPGEN:
+  tangle(dyp_statement)
+@#
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }

@@ -843,16 +843,7 @@ type partial_order_result_t =
 ]
 
 
-@head(2,'Version identification kit')
-@select(h)
 open Flx_ast
-type version_data_t =
-{
-  version_string : string;
-  build_time_float : float;
-  build_time : string;
-  buildno : int;
-}
 
 @head(3,'Pattern extractor')
 This type is used to extract components of a value,

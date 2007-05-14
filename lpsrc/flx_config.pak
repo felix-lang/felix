@@ -1419,7 +1419,6 @@ if "target" in PHASES:
     pr(f,"########### DYPGEN EXPERIMENT #########")
     pr(f,"# set to 1 to enable experimental dypgen parser generator support")
     pr(f,"USE_DYPGEN = 0")
-    pr(f,"DYPGEN_DIR = '"+HOST_OCAML.options.OCAML_INCLUDE_DIRECTORY+os.sep+"dypgen'") 
     pr(f,"########### DYPGEN EXPERIMENT #########")
     pr(f,"")
     pr(f,"# HACK to get all the target variables into global namespace")
@@ -1589,6 +1588,7 @@ flx_expr_terminator_keywords = [
     ("rename", "RENAME"),
     ("requires", "REQUIRES"),
     ("return", "RETURN"),
+    ("syntax", "SYNTAX"),
     ("struct", "STRUCT"),
     ("then", "THEN"),
     ("todo", "TODO"),

@@ -94,6 +94,7 @@ val include_file:
 
 @h = tangler("src/flx_desugar.ml")
 @select(h)
+open Flx_version
 open Flx_util
 open Flx_ast
 open Flx_types

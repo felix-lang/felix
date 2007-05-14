@@ -676,7 +676,7 @@ instance Flx_stream::TerminalIOByteStream[socket_t]
     { 
       //fprint (cerr,q"STREAM:Closing socket $s\n");
       Faio_posix::shutdown(s,2);
-      Faio::sleep (Faio::sys_clock,5.0);
+      //Faio::sleep (Faio::sys_clock,5.0);
       /*
       var len = 1; var eof = false; var buf = C_hack::malloc(1);
       Faio_posix::async_read(s, &len, buf, &eof);
