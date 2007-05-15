@@ -334,10 +334,81 @@ macro fun print(x) = { fprint (cout,x); };
 
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
+@if USE_DYPGEN:
+   tangle('#import <flx_dypgen_syntax.flxh>')
+ else:
+   tangle('#import <flx_ocamlyacc_syntax.flxh>')
+@#
+
+@h=tangler('lib/flx_dypgen_syntax.flxh','data')
+@select(h)
 #infix 10 "/\\" wedge
 #infix 10 "\\/" vee
 #infix 10 ">>=" bind
 
+#keyword whilst
+
+syntax statement := whilst expr do statements done; =># 
+  macro {
+    macro lab1 is new;
+    macro lab2 is new;
+    lab1:>
+      if not _2 goto lab2;
+      _4;
+      goto lab1;
+    lab2:>
+  }
+;
+
+#keyword until
+syntax statement :=
+  until expr do statements done; =>#
+  macro {
+    macro lab1 is new;
+    macro lab2 is new;
+    lab1:>
+      if _2 goto lab2;
+      _4;
+      goto lab1;
+    lab2:>
+  }
+;
+
+#keyword forall
+syntax statement :=
+  forall ident in expr do statements done ; =>#
+    macro for val _2 in _4 do _6; done
+;
+
+#keyword upto
+syntax statement :=
+  forall ident in expr upto expr do statements done ; =>#
+  macro {
+  _2 = _4;
+  whilst _2 <= _6 do _8; ++_2; done;
+  }
+;
+
+#keyword downto
+syntax statement :=
+  forall ident in expr downto expr do statements done ; =>#
+  macro {
+  _2 = _4;
+  whilst _2 >= _6 do _8; --_2; done;
+  }
+;
+
+#keyword publish
+syntax statement := publish 
+  string_literal statement =># _3
+;
+
+
+@h=tangler('lib/flx_ocamlyacc_syntax.flxh','data')
+@select(h)
+#infix 10 "/\\" wedge
+#infix 10 "\\/" vee
+#infix 10 ">>=" bind
 
 #statement#
   whilst expr do statements done ; =># 
