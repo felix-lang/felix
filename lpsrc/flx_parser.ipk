@@ -176,7 +176,14 @@ let dfltvs =
    let lhs = dyp.find_nt name in
    let f o =
      match o with
-       | NAME (sr,s) -> Non_ter ((dyp.find_nt s),No_priority)
+       | NAME (sr,s) -> 
+         begin try
+           Non_ter ((dyp.find_nt s),No_priority)
+         with
+         | Not_found ->
+           print_endline ("User Syntax: Cannot find non-terminal " ^ s);
+           failwith ("User syntax: Missing nonterminal " ^ s)
+         end
        | s -> 
          (*
          let name = Flx_prelex.name_of_token s in
@@ -186,7 +193,54 @@ let dfltvs =
          Ter (Parser_parameters_module.get_name s)
    in
    let rule  = lhs,(List.map f rhs),default_priority in
-   let action = fun _ avl -> `Obj_statement statement in
+   let action = fun _ avl ->
+     let dummy = ("dummy",0,0,0,0) in
+     let srr = ref dummy in
+     let setsr sr = if dummy = !srr then srr := slift sr in
+     let rec aux objs syms args = match objs, syms with
+     | [],[] -> rev args
+     | [],_ | _,[] -> assert false
+     | h1::t1,h2::t2 -> 
+       match h1,h2 with
+       | USER_KEYWORD (_,s1),`Obj_USER_KEYWORD (sr,s2) ->
+         setsr sr;
+         if s1 <> s2 then raise Giveup else
+         aux t1 t2 (`Keyword_term s1::args)
+
+       | NAME (_,"statements"),`Obj_statements sts -> 
+         print_endline "Matched statements";
+         List.iter
+         (fun st -> print_endline (string_of_statement 0 st))
+         sts
+         ;
+         aux t1 t2 (`Statements_term sts:: args)
+
+       | NAME (_,"statement"),`Obj_statement st -> 
+         print_endline "Matched statement";
+         print_endline (string_of_statement 0 st);
+         aux t1 t2 (`Statement_term st::args)
+
+       | NAME (_,"expr"),`Obj_expr e -> 
+         print_endline ("Matched expr " ^ string_of_expr e);
+         aux t1 t2 (`Expression_term e::args)
+       
+       | NAME (_,s),_ ->
+         print_endline ("Syntax: Unknown symbol " ^ s);
+         failwith ("Syntax: Unknown Symbol " ^ s)
+
+       | DO _,_ -> aux t1 t2 (`Keyword_term "do" :: args)
+       | DONE _,_ -> aux t1 t2 (`Keyword_term "done" :: args)
+       | SEMI _,_ -> aux t1 t2 (`Keyword_term ";" :: args)
+
+       | x,_ -> 
+         print_endline ("Unknown symbol " ^ Parser_parameters_module.str_token x);
+         failwith ("Unknown symbol " ^ Parser_parameters_module.str_token x);
+
+     in
+     let args = aux rhs avl [] in
+     let ast_term = `Apply_term (`Statement_term statement, args) in
+     `Obj_statement (`AST_user_statement (!srr,"unknownusersyntax",ast_term))
+   in
    rule,action
  """
 @#
@@ -268,6 +322,7 @@ let dfltvs =
 @if USE_DYPGEN:
   tangle('%start <(Flx_ast.compilation_unit_t)> compilation_unit')
   tangle('%start <(Flx_ast.statement_t list * token)> statementsx')
+  tangle('%start <(Flx_ast.statement_t list)> statements')
   tangle('%start <(Flx_ast.statement_t)> statement')
   tangle('%start <(Flx_ast.expr_t)> expression')
   tangle('%start <(Flx_ast.expr_t * token)> exprx')
@@ -275,6 +330,7 @@ let dfltvs =
   tangle('%start <(unit)> semi')
  else:
   tangle('%type <Flx_ast.compilation_unit_t> compilation_unit')
+  tangle('%type <Flx_ast.statement_t list> statements')
   tangle('%type <Flx_ast.statement_t list * token> statementsx')
   tangle('%type <Flx_ast.statement_t> statement')
   tangle('%type <Flx_ast.expr_t> expression')
@@ -284,6 +340,7 @@ let dfltvs =
 
   tangle('%start compilation_unit')
   tangle('%start statementsx')
+  tangle('%start statements')
   tangle('%start statement')
   tangle('%start expression')
   tangle('%start exprx')
@@ -311,7 +368,7 @@ expr_terminator:
   tangle("  | "  + t + " { " + t + " $1 }",inhibit_sref=1)
 
 statementsx:
-  | statement_aster statements_terminator { $1, $2 }
+  | statements statements_terminator { $1, $2 }
 
 statements_terminator:
   | VBAR { VBAR $1 }
@@ -320,12 +377,15 @@ statements_terminator:
   | ENDMARKER { ENDMARKER }
  
 compilation_unit:  
-  | statement_aster ENDMARKER { $1 }
+  | statements ENDMARKER { $1 }
 
 expression:  
   | expr ENDMARKER { $1 }
 
-@aster("statement")
+statements:
+ | statement statements { $1 :: $2 }
+ | { [] }
+
 @doc()
 A compilation unit is just a sequence of statements.
 Executable statements (or parts thereof) form the initialisation
@@ -372,6 +432,7 @@ statement:
   */
   | SEMI { SEMI $1 }
   | DONE { DONE $1 }
+  | USER_KEYWORD { USER_KEYWORD $1 }
   | DO { DO $1 }
 
  """
@@ -1150,7 +1211,7 @@ macro_definition:
         | _ -> clierr sr "RHS must be name or name list"
     }
 
-  | MACRO FOR NAME IN expr DO statement_aster DONE SEMI
+  | MACRO FOR NAME IN expr DO statements DONE SEMI
     { 
       let 
         sr = rstoken $1 $9 and
@@ -1290,7 +1351,7 @@ macro_definition:
   | MACRO IF expr GOTO NAME SEMI
     { `AST_macro_ifgoto (rstoken $1 $6,$3,snd $5) }
 
-  | MACRO FOR VAL macro_names IN expr DO statement_aster DONE SEMI
+  | MACRO FOR VAL macro_names IN expr DO statements DONE SEMI
   { 
     `AST_macro_vfor (rstoken $1 $10, $4,$6,$8) 
   }
@@ -1932,7 +1993,7 @@ in a function.
 @head(3,'Procedure Call')
 @select(h)
 compound:     
-  | LBRACE statement_aster RBRACE  { rstoken $1 $3, $2 }
+  | LBRACE statements RBRACE  { rstoken $1 $3, $2 }
 
 @doc()
 A procedure call looks like a function application,
@@ -2161,7 +2222,7 @@ of the programmers intentions.
 @head(3,'Conditional Statements')
 @select(h)
 elif_clause:
-  | ELIF expr DO statement_aster 
+  | ELIF expr DO statements 
     { 
       let sr = rstoken $1 $3 in
       let sr = fold_left (fun l r -> rsrange l (src_of_stmt r)) sr $4 in
@@ -2184,7 +2245,7 @@ elif_clauses:
   | elif_clause { [$1] }
 
 else_clause:
-  | elif_clauses ELSE statement_aster
+  | elif_clauses ELSE statements
     {
       let sr = fold_left (fun l r -> rsrange l (src_of_stmt r)) (slift $2) $3 in
       fold_left (* actually a right fold cause list is reversed *)
@@ -2194,7 +2255,7 @@ else_clause:
       )
       (sr,$3) $1
     }
-  | ELSE statement_aster 
+  | ELSE statements 
     {   
       let sr = fold_left (fun l r -> rsrange l (src_of_stmt r)) (slift $1) $2 in
       sr,$2 
@@ -2231,18 +2292,18 @@ ifgoto_stmt:
     }
 
 
-  | IF expr DO statement_aster else_clause DONE SEMI
+  | IF expr DO statements else_clause DONE SEMI
     { `AST_ifdo (rstoken $1 $6,$2,$4,snd $5) }
 
-  | IF expr DO statement_aster DONE SEMI
+  | IF expr DO statements DONE SEMI
     { `AST_ifdo (rstoken $1 $5,$2,$4,[]) }
 
 /*
 whilst_stmt:
-   | WHILST expr DO statement_aster DONE SEMI
+   | WHILST expr DO statements DONE SEMI
      { `AST_whilst (rstoken $1 $6, $2, $4) }
 
-   | UNTIL expr DO statement_aster DONE SEMI
+   | UNTIL expr DO statements DONE SEMI
      { `AST_until (rstoken $1 $6, $2, $4) }
 */
 
@@ -3888,7 +3949,7 @@ expr_terminator:
   | SVC { SVC $1 }
   | DEREF { DEREF $1 }
 statementsx:
-  | statement_aster statements_terminator { $1, $2 }
+  | statements statements_terminator { $1, $2 }
 
 statements_terminator:
   | VBAR { VBAR $1 }
@@ -3897,13 +3958,13 @@ statements_terminator:
   | ENDMARKER { ENDMARKER }
 
 compilation_unit:
-  | statement_aster ENDMARKER { $1 }
+  | statements ENDMARKER { $1 }
 
 expression:
   | expr ENDMARKER { $1 }
 
-statement_aster:
-  | statement statement_aster { $1 :: $2 }
+statements:
+  | statement statements { $1 :: $2 }
   | { [] }
 statement:
   | binding_definition { $1 }
@@ -4659,7 +4720,7 @@ macro_definition:
         | _ -> clierr sr "RHS must be name or name list"
     }
 
-  | MACRO FOR NAME IN expr DO statement_aster DONE SEMI
+  | MACRO FOR NAME IN expr DO statements DONE SEMI
     {
       let
         sr = rstoken $1 $9 and
@@ -4799,7 +4860,7 @@ macro_definition:
   | MACRO IF expr GOTO NAME SEMI
     { `AST_macro_ifgoto (rstoken $1 $6,$3,snd $5) }
 
-  | MACRO FOR VAL macro_names IN expr DO statement_aster DONE SEMI
+  | MACRO FOR VAL macro_names IN expr DO statements DONE SEMI
   {
     `AST_macro_vfor (rstoken $1 $10, $4,$6,$8)
   }
@@ -5408,7 +5469,7 @@ return:
   | HALT STRING SEMI          { `AST_halt (rstoken $1 $3, snd $2) }
 
 compound:
-  | LBRACE statement_aster RBRACE  { rstoken $1 $3, $2 }
+  | LBRACE statements RBRACE  { rstoken $1 $3, $2 }
 
 call:
   | expr SEMI
@@ -5586,7 +5647,7 @@ todo:
   | TODO SEMI               { `AST_nop (rstoken $1 $2, "") }
 
 elif_clause:
-  | ELIF expr DO statement_aster
+  | ELIF expr DO statements
     {
       let sr = rstoken $1 $3 in
       let sr = fold_left (fun l r -> rsrange l (src_of_stmt r)) sr $4 in
@@ -5609,7 +5670,7 @@ elif_clauses:
   | elif_clause { [$1] }
 
 else_clause:
-  | elif_clauses ELSE statement_aster
+  | elif_clauses ELSE statements
     {
       let sr = fold_left (fun l r -> rsrange l (src_of_stmt r)) (slift $2) $3 in
       fold_left (* actually a right fold cause list is reversed *)
@@ -5619,7 +5680,7 @@ else_clause:
       )
       (sr,$3) $1
     }
-  | ELSE statement_aster
+  | ELSE statements
     {
       let sr = fold_left (fun l r -> rsrange l (src_of_stmt r)) (slift $1) $2 in
       sr,$2
@@ -5656,18 +5717,18 @@ ifgoto_stmt:
     }
 
 
-  | IF expr DO statement_aster else_clause DONE SEMI
+  | IF expr DO statements else_clause DONE SEMI
     { `AST_ifdo (rstoken $1 $6,$2,$4,snd $5) }
 
-  | IF expr DO statement_aster DONE SEMI
+  | IF expr DO statements DONE SEMI
     { `AST_ifdo (rstoken $1 $5,$2,$4,[]) }
 
 /*
 whilst_stmt:
-   | WHILST expr DO statement_aster DONE SEMI
+   | WHILST expr DO statements DONE SEMI
      { `AST_whilst (rstoken $1 $6, $2, $4) }
 
-   | UNTIL expr DO statement_aster DONE SEMI
+   | UNTIL expr DO statements DONE SEMI
      { `AST_until (rstoken $1 $6, $2, $4) }
 */
 
