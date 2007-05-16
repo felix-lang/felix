@@ -295,7 +295,7 @@ class PLUGIN(Plugin):
       f = string.replace(f,"/",os.sep)
       src = f+'.mli'
       dst = f+'.ml'
-      if filetime(src) >= filetime (dst):
+      if filetime(src) > filetime (dst):
         if not quiet: print("filecopy "+src+" -> "+dst)
         filecopy(src,dst)
 
@@ -307,7 +307,7 @@ class PLUGIN(Plugin):
     for f in HPPS:
       dst = os.path.join('rtl', os.path.basename(f))
       src = string.replace(f,"/",os.sep)
-      if filetime(src) >= filetime (dst):
+      if filetime(src) > filetime (dst):
         if not quiet: print("filecopy "+src+" -> "+dst)
         filecopy(src,dst)
 
@@ -316,7 +316,7 @@ class PLUGIN(Plugin):
   name = 'build_ocaml_grammar'
 
   def runme(self, pkg, LEXS, PARSES, PGENPARSES,DYPARSES, force):
-    if not (LEXS or PARSES or DYPARSES):
+    if not (LEXS or PARSES or PGENPARSES or DYPARSES):
       return force
 
     print "CAML BUILDING GRAMMAR", pkg
@@ -325,14 +325,25 @@ class PLUGIN(Plugin):
     for lex in LEXS:
       file = string.replace(lex,'/',os.sep)
       if not force:
-        if filetime(file+'.mll') >= filetime(file+'.ml'): force = 1
+
+        print "Checking lexer time stamps"
+        print file+".mll time=",filetime(file+'.mll')
+        print file+".ml time=",filetime(file+'.ml')
+        if filetime(file+'.mll') > filetime(file+'.ml'):
+          print file+".mll is NEWER: run ocamllex"
+        else:
+          print file+".mll is OLDER: nothing to do"
+
+        if filetime(file+'.mll') > filetime(file+'.ml'): force = 1
+      else:
+        print "Lexer build FORCED"
       if force: vxqt(OCAMLLEX + file + '.mll')
 
     # STEP 3: Generate parsers
     for parse in PARSES:
       file = string.replace(parse,'/',os.sep)
       if not force:
-        if filetime(file+'.mly') >= filetime(file+'.ml'): force = 1
+        if filetime(file+'.mly') > filetime(file+'.ml'): force = 1
       if force:
         vxqt(OCAMLYACC + ' -v '+ file + '.mly')
         nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
@@ -341,7 +352,7 @@ class PLUGIN(Plugin):
     for parse in PGENPARSES:
       file = string.replace(parse,'/',os.sep)
       if not force:
-        if filetime(file+'.dyp') >= filetime(file+'.ml'): force = 1
+        if filetime(file+'.dyp') > filetime(file+'.ml'): force = 1
       if force:
         vxqt("bin/pgen " + file + ".dyp")
 
@@ -349,11 +360,11 @@ class PLUGIN(Plugin):
     for parse in DYPARSES:
       file = string.replace(parse,'/',os.sep)
       if not force:
-        if filetime(file+'.dyp') >= filetime(file+'.ml'): force = 1
+        if filetime(file+'.dyp') > filetime(file+'.ml'): force = 1
       if force:
         vxqt("bin/dypgen --pv-obj " + file + ".dyp")
 
-    if LEXS or PARSES or DYPARSES:
+    if PARSES: # only works on ocamlyacc grammars ..
       plugins['extract_grammar']()
 
     return force
@@ -374,7 +385,7 @@ class PLUGIN(Plugin):
     for interface in INTERFACES:
       file = string.replace(interface,'/',os.sep)
       if not force:
-        if filetime(file+'.mli') >= filetime(file+'.cmi'): force = 1
+        if filetime(file+'.mli') > filetime(file+'.cmi'): force = 1
       if force:
         pack = ""
         for path, packed, parts in PACKS:
@@ -386,7 +397,7 @@ class PLUGIN(Plugin):
     for implementation in IMPLEMENTATIONS:
       file = string.replace(implementation,'/',os.sep)
       if not force:
-        if filetime(file+'.ml') >= filetime(file + OCAML_OBJECT_EXTENSION): 
+        if filetime(file+'.ml') > filetime(file + OCAML_OBJECT_EXTENSION): 
           force = 1
       if force:
         pack = ""

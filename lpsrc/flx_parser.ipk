@@ -189,7 +189,9 @@ let dfltvs =
          let name = Flx_prelex.name_of_token s in
          *)
          let name = Parser_parameters_module.str_token s in
+         (*
          print_endline ("Processing keyword " ^ name);
+         *)
          Ter (Parser_parameters_module.get_name s)
    in
    let rule  = lhs,(List.map f rhs),default_priority in
@@ -213,28 +215,38 @@ let dfltvs =
          aux t1 t2 (`Keyword_term s1::args)
 
        | NAME (_,"statements"),`Obj_statements sts -> 
+         (*
          print_endline "Matched statements";
          List.iter
          (fun st -> print_endline (string_of_statement 0 st))
          sts
          ;
+         *)
          aux t1 t2 (`Statements_term sts:: args)
 
        | NAME (_,"statement"),`Obj_statement st -> 
+         (*
          print_endline "Matched statement";
          print_endline (string_of_statement 0 st);
+         *)
          aux t1 t2 (`Statement_term st::args)
 
        | NAME (_,"expr"),`Obj_expr e -> 
+         (*
          print_endline ("Matched expr " ^ string_of_expr e);
+         *)
          aux t1 t2 (`Expression_term e::args)
 
        | NAME (_,"string_literal"),`Obj_string_literal e -> 
+         (*
          print_endline ("Matched string_literal " ^ truncs e);
+         *)
          aux t1 t2 (`Expression_term e::args)
 
        | NAME (_,"identifier"),`Obj_identifier (_,name,[]) -> 
+         (*
          print_endline ("Matched ident " ^ name);
+         *)
          aux t1 t2 (`Identifier_term name::args)
        
        | NAME (_,s),_ ->
@@ -422,7 +434,9 @@ statement:
   | SYNTAX define_cont 
     {
       let name, rhs, (stmt:statement_t) = $2 in
+      (*
       print_endline ("PROCESSING DEFINITION " ^ name);
+      *)
       ignore(dyp.add_nt name);
       dyp.add_rules <- [define_statement dyp name rhs stmt];
       `AST_nop (rstoken $1 $1, name)

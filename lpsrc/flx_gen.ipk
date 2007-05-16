@@ -2902,6 +2902,7 @@ open Flx_flxopt
 open Flx_ogen
 open Flx_elkgen
 open Flx_typing
+open List
 ;;
 
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
@@ -2967,12 +2968,17 @@ try
   end
   ;
 
- (* main filename processing *)
- let filename = 
-    match get_key_value raw_options "" with
-    | Some s -> s
-    | None -> exit 0
-  in
+  (* main filename processing *)
+  (*
+  List.iter (fun f ->
+  print_endline ("File " ^ f))
+  compiler_options.files
+  ;
+  *)
+  let files = compiler_options.files in
+  if length files = 0 then print_help();
+
+  let filename = hd (rev files) in
   let filebase = filename in
   let input_file_name = filebase ^ ".flx" 
   and iface_file_name = filebase ^ ".fix"
@@ -2995,10 +3001,18 @@ try
 
   (* PARSE THE IMPLEMENTATION FILE *)
 
-  if compiler_options.print_flag
-  then print_endline ("//Parsing Implementation " ^ input_file_name);
   let parse_tree = 
-    Flx_desugar.include_file syms input_file_name false
+    fold_left (fun tree file ->
+      let file_name = 
+        if Filename.check_suffix file ".flx" then file else file ^ ".flx"
+      in
+      if compiler_options.print_flag or length files > 1 
+      then print_endline ("//Parsing Implementation " ^ file_name);
+      let sts = Flx_desugar.include_file syms file_name false in
+      concat [tree; sts]
+    )
+    []
+    files
   in
   if compiler_options.print_flag
   then print_endline (Flx_print.string_of_compilation_unit parse_tree);

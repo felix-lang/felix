@@ -3,21 +3,6 @@
 @execfile('config'+os.sep+'config.py')
 @set_title('Felix '+flx_version)
 
-@head(1,'Verion Control')
-@h = tangler('spkgs/flx_version.py')
-@select(h)
-caml_interfaces = [
-  'src/flx_version',
-]
-
-caml_implementations = [
-  'src/flx_version',
-]
-
-caml_provide_lib = 'src/flx_version'
-iscr_source = ["lpsrc/flx.pak"]
-weaver_directory = 'doc/flx/flx_compiler/'
-
 @head(1,'The Felix Compiler')
 SVN conversion.
 @h = tangler('spkgs/flx_compiler.py')
@@ -305,52 +290,6 @@ be used to create the configuration creator script.
     print "       this is done automatically by 'make boot'"
     sys.exit(1)
 
-
-@head(2,'Version control')
-We need a special hack for version control.
-Since every build results in a changed
-version control record, we have to put
-the record in the last module in the
-compiler list to avoid unnecessary compilations.
-Unfortunately, that means no modules can reference
-it due to a limitation in Ocaml. Therefore,
-we make the first module a reference to the version
-control data, initialised with a dummy value,
-put the real data in the last module, and store
-it in the reference when the last module is
-initialised. Note that this means the version
-information will not be available until
-the mainline module begins.
-
-@h=tangler('src/flx_version.mli')
-@select(h)
-type version_data_t =
-{
-  version_string : string;
-  build_time_float : float;
-  build_time : string;
-  buildno : int;
-}
-
-val version_data: version_data_t ref
-
-@h=tangler('src/flx_version.ml')
-@select(h)
-type version_data_t =
-{
-  version_string : string;
-  build_time_float : float;
-  build_time : string;
-  buildno : int;
-}
-
-let version_data = ref
-{
-  version_string = "no version";
-  build_time_float = -1.0;
-  build_time = "0000-00-00";
-  buildno = -1;
-}
 
 @h=tangler('src/flx_version_hook.ml')
 @select(h)
