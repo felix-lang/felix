@@ -583,7 +583,7 @@ class PLUGIN(Plugin):
     resfilename = basename + ".resh"
     indir,infile = os.path.split(basename)
     try:
-      flxg('-Ilib ' + FLXFLAGS + basename, log=log)
+      flxg('-Ilib std ' + FLXFLAGS + basename, log=log)
     except MakeError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
       erasefile(basename+'.cpp')
