@@ -326,13 +326,13 @@ class PLUGIN(Plugin):
       file = string.replace(lex,'/',os.sep)
       if not force:
 
-        print "Checking lexer time stamps"
-        print file+".mll time=",filetime(file+'.mll')
-        print file+".ml time=",filetime(file+'.ml')
-        if filetime(file+'.mll') > filetime(file+'.ml'):
-          print file+".mll is NEWER: run ocamllex"
-        else:
-          print file+".mll is OLDER: nothing to do"
+        #print "Checking lexer time stamps"
+        #print file+".mll time=",filetime(file+'.mll')
+        #print file+".ml time=",filetime(file+'.ml')
+        #if filetime(file+'.mll') > filetime(file+'.ml'):
+        #  print file+".mll is NEWER: run ocamllex"
+        #else:
+        #  print file+".mll is OLDER: nothing to do"
 
         if filetime(file+'.mll') > filetime(file+'.ml'): force = 1
       else:
@@ -3502,6 +3502,7 @@ grab=1
 cpps=""
 cppos=""
 INCLUDE_DIRS=""
+NOSTDLIB=0
 
 while (( "$grab" == "1" ));
 do
@@ -3531,6 +3532,11 @@ do
 
   x--time)
     TIME=1
+    shift
+  ;;
+
+  x--nostdlib)
+    NOSTDLIB=1
     shift
   ;;
 
@@ -3840,6 +3846,13 @@ done
 
 INCLUDE_DIR="-I$FLX_INSTALL_DIR/rtl"
 FLXLIB="-I$FLX_INSTALL_DIR/lib"
+STDLIB="std"
+if [ "$NOSTDLIB" = "1" ]
+then
+  FLXLIB=""
+  STDLIB=""
+fi
+
 if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
 then
   # bash is a heap of crap! The escaped quotes here are
@@ -3907,7 +3920,7 @@ if [ $STATIC = 0 ]
 then
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDLIB $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi
@@ -3939,7 +3952,7 @@ then
 else
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDLIB $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi

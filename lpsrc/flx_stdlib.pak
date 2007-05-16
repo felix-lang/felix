@@ -323,7 +323,6 @@ typeclass Show [T] {
 #import <flx_syntax.flxh>
 #import <flx_macros.flxh>
 #import <flx_platform.flxh>
-include "std";
 
 @h=tangler('lib/flx_macros.flxh','data')
 @select(h)

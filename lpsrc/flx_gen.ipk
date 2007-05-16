@@ -2995,7 +2995,7 @@ try
     String.sub filebase (!i+1) (n - !i - 1)
   in
 
-  let include_dirs =  (* (Filename.dirname input_file_name) :: *) compiler_options.include_dirs in
+  let include_dirs =  Filename.current_dir_name :: compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
 
@@ -3008,7 +3008,7 @@ try
       in
       if compiler_options.print_flag or length files > 1 
       then print_endline ("//Parsing Implementation " ^ file_name);
-      let sts = Flx_desugar.include_file syms file_name false in
+      let sts = Flx_desugar.include_file syms file_name true in
       concat [tree; sts]
     )
     []
