@@ -403,7 +403,7 @@ class PLUGIN(Plugin):
           xparts = xparts + part + OCAML_OBJECT_EXTENSION + ' '
         elif part in INTERFACES:
           xparts = xparts + part + ".cmi "
-      vxqt(OCAMLOPT + ' -pack -o ' + packed + OCAML_OBJECT_EXTENSION + xparts)
+      vxqt(OCAMLOPT + ' '+INCLUDES + ' -pack -o ' + packed + OCAML_OBJECT_EXTENSION + xparts)
 
 
     return force
