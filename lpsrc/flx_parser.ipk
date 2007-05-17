@@ -303,7 +303,9 @@ let dfltvs =
 
  let define_expr dyp name rhs (expr:expr_t) =
    let lhs = dyp.find_nt name in
+   (*
    print_endline ("DEFINE "^name^" = " ^ string_of_expr expr);
+   *)
    let f o =
      match o with
        | NAME (sr,s) -> 
@@ -331,7 +333,9 @@ let dfltvs =
      if n > 20 then String.sub s 0 20 else s
    in
    let action = fun _ avl ->
+     (*
      print_endline ("REDUCING "^name^" = " ^ string_of_expr expr);
+     *)
      let dummy = ("dummy",0,0,0,0) in
      let srr = ref dummy in
      let setsr sr = if dummy = !srr then srr := slift sr in
@@ -342,7 +346,13 @@ let dfltvs =
        match h1,h2 with
        | USER_KEYWORD (_,s1),`Obj_USER_KEYWORD (sr,s2) ->
          setsr sr;
-         if s1 <> s2 then raise Giveup else
+         if s1 <> s2 then (
+           (*
+           print_endline "keyword mismatch";
+           *)
+           raise Giveup 
+         )
+         else
          aux t1 t2 (`Keyword_term s1::args)
 
        | NAME (_,"statements"),`Obj_statements sts -> 
@@ -362,13 +372,23 @@ let dfltvs =
          *)
          aux t1 t2 (`Statement_term st::args)
 
-  """
+ """
 @for i in expr_nts: extend_syntax = extend_syntax + \
-  '\n| NAME (_,"'+i+'"),`Obj_'+i+' e'
+  '      | NAME (_,"'+i+'"),obj\n'
 
 @extend_syntax = extend_syntax + """\
-         -> 
+       -> 
+         let e = match obj with
+ """
+@for i in expr_nts: extend_syntax = extend_syntax + \
+  '        | `Obj_'+i+' e -> e\n'
+
+@extend_syntax = extend_syntax + """\
+         | _ -> failwith "Expression nonterminal has wrong type"
+         in
+         (*
          print_endline ("Matched expr " ^ string_of_expr e);
+         *)
          aux t1 t2 (`Expression_term e::args)
 
        | NAME (_,"string_literal"),`Obj_string_literal e -> 
@@ -383,6 +403,10 @@ let dfltvs =
          *)
          aux t1 t2 (`Identifier_term name::args)
        
+       (* Unknown nonterminal returning expression *)
+       | NAME (_,s),`Obj_expr e ->
+         aux t1 t2 (`Expression_term e::args)
+
        | NAME (_,s),_ ->
          print_endline ("Syntax: Unknown symbol " ^ s);
          failwith ("Syntax: Unknown Symbol " ^ s)
@@ -399,7 +423,14 @@ let dfltvs =
      in
      let args = aux rhs avl [] in
      let ast_term = `Apply_term (`Expression_term expr, args) in
-     `Obj_expr (`AST_user_expr (!srr,"unknownusersyntax",ast_term))
+     let e = `AST_user_expr (!srr,"unknownusersyntax",ast_term) in
+     match name with
+ """
+@for i in expr_nts: extend_syntax = extend_syntax + \
+  '    | "'+i+'"-> `Obj_'+i+' e\n'
+  
+@extend_syntax = extend_syntax + """\
+     | _ -> `Obj_expr e
    in
    rule,action
  """
@@ -571,6 +602,7 @@ statement:
       let rhs = $4 in
       let stmt:statement_t = $6 in
       let sr = rstoken $1 $5 in
+      (*
       print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
       catmap " " (function 
       | NAME (_,s) -> "<"^s^">"
@@ -580,7 +612,9 @@ statement:
       "=>#\n" ^
       string_of_statement 0 stmt
       );
-      (* ignore(dyp.add_nt name); *)
+      *)
+      (* WE should use a distinct syntax for adding new nonterms .. *)
+      ignore(dyp.add_nt name);
       begin match name with
       | "statement" ->
         dyp.add_rules <- [define_statement dyp name rhs stmt];
@@ -607,7 +641,27 @@ statement:
 
       | _ ->
         print_endline ("Syntax extension: unknown non-terminal " ^ name);
+        print_endline ("Syntax extension: ASSUME EXPRESSION " ^ name);
+        begin match stmt with
+        | `AST_call (sr, proc, arg) -> 
+          let expr = match arg with
+          | `AST_tuple (_,[]) -> proc
+          | _ -> `AST_apply (sr,(proc,arg))
+          in
+          dyp.add_rules <- [define_expr dyp name rhs expr];
+        | _ ->
+          let s = 
+            "Syntax extension: expression non-terminal " ^ name ^
+            " requires action to be expression!"
+          in
+          print_endline s;
+          clierr sr s
+        end
+
+
+        (*
         failwith ("Syntax extension: unknown non-terminal " ^ name);
+        *)
       end
       ;
       `AST_nop (rstoken $1 $1, name)

@@ -46,7 +46,8 @@ let find_function syms env name =
     | Some (`NonFunctionEntry _ ) -> 
       print_endline ("[flx_why] Expected '" ^ name ^ "' to be function");
       []
-    |  None ->
+    | None ->
+      if syms.compiler_options.print_flag then
       print_endline ("[flx_why] Can't find logic function '" ^ name ^ "' ");
       []
   in
@@ -68,7 +69,10 @@ let find_function syms env name =
   in
   match entries with
   | [{base_sym=i}] -> i
-  | [] -> print_endline ("WARNING: flx_why cannot find '" ^ name ^ "'"); 0
+  | [] -> 
+     if syms.compiler_options.print_flag then
+     print_endline ("WARNING: flx_why cannot find '" ^ name ^ "'"); 
+     0
   | _ -> print_endline ("WARNING: flx_why found too many '" ^ name ^ "'"); 0
 
 let find_logics syms root =

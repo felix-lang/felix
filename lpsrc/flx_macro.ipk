@@ -923,7 +923,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let reachable = ref true in
     (* END HACKS ARGGGHH .. *)
 
+    (*
     print_endline ("Replacing into user expression " ^ name);
+    *)
     let rec aux term = match term with
       | `Statement_term s -> clierr sr ( "User expr: expected expression ") 
       | `Statements_term ss -> clierr sr ( "User expr: expected expression ") 
