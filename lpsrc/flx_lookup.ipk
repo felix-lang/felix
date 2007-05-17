@@ -3993,6 +3993,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_macro_ctor _
   | `AST_macro_statements  _
   | `AST_lift _
+  | `AST_user_expr _
     -> 
       clierr sr 
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 

@@ -321,6 +321,98 @@ and alpha_stmts sr local_prefix seq ps sts =
     let ps = combine psn' pst in
     ps,sts
   
+(* Syntax extension stuffs *)
+and eval_arg ses recursion_limit local_prefix seq reachable sr (id:string) (h:ast_term_t) : macro_dfn_t option = 
+  let wrap_stmts ss = `AST_macro_statements (sr,ss) in
+  match h with
+  | `Expression_term  e -> Some (id,MVal e)
+  | `Identifier_term s -> Some (id,MName s)
+  (*
+  | `Statement_term s -> Some (id,MStmt ([],[s]))
+  | `Statements_term ss -> Some (id,MStmt ([],ss))
+  *)
+  | `Statement_term s -> Some (id,MVal (wrap_stmts [s]))
+  | `Statements_term ss -> Some (id,MVal (wrap_stmts ss))
+  | `Keyword_term _ ->
+    (*
+    print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
+    *)
+    None
+  | `Apply_term (body,args) -> 
+    let body = eval_apply ses recursion_limit local_prefix seq reachable sr body args in
+    eval_arg ses recursion_limit local_prefix seq reachable sr id body
+
+and eval_args ses recursion_limit local_prefix seq reachable sr (ts: ast_term_t list) : macro_dfn_t list =
+  let rec aux terms res count = 
+    let id = "_" ^ si count in 
+    match terms with
+    | h :: t -> 
+      let mac = eval_arg ses recursion_limit local_prefix seq reachable sr id h in
+      begin match mac with
+      | Some m -> aux t (m::res) (count+1)
+      | None -> aux t res (count+1)
+      end
+    | [] -> res
+  in aux ts [] 1
+
+and eval_apply ses recursion_limit local_prefix seq reachable sr (body:ast_term_t) (args:ast_term_t list) : ast_term_t =
+  (*
+  print_endline "Processing Application .. evaluating args";
+  *)
+  let args = eval_args ses recursion_limit local_prefix seq reachable sr args in
+  (*
+  print_endline "[apply] Got arguments ..";
+  print_endline (string_of_macro_env args);
+  print_endline "[apply] WE SHOULD EXPAND THE ARGS BUT AREN'T AT THE MOMENT";
+  print_endline ("[apply] Body is " ^ string_of_ast_term 0 body);
+  print_endline "[apply] APPLYING TERM TO EVALUATED ARGUMENTS ";
+  *)
+  let term = eval_term_apply ses recursion_limit local_prefix seq reachable sr body args in
+  (*
+  print_endline ("Term after evaluation is " ^ string_of_ast_term 0 term);
+  *)
+  term
+
+and eval_term_apply ses recursion_limit local_prefix seq reachable sr (body:ast_term_t) (args:macro_dfn_t list) : ast_term_t =
+  match body with
+  | `Expression_term e ->
+    (*
+    print_endline ("EXPANDING EXPRESSION " ^ string_of_expr e);
+    *)
+    let e = expand_expr (recursion_limit-1) local_prefix seq args e in
+    `Expression_term e
+
+  | `Identifier_term id -> 
+    let id = expand_ident sr args [] id in
+    `Identifier_term id
+
+  | `Statement_term s ->
+    let ss = subst_statements recursion_limit local_prefix seq reachable args [s] in
+    (*
+    print_endline ("[apply:statement] Body after substitution is" ^ string_of_statements ss);
+    print_endline "[apply:statement] EXECUTING STATEMENTS NOW";
+    *)
+    let ss = ses ss in
+    `Statements_term ss
+
+  | `Statements_term ss ->
+    let ss = subst_statements recursion_limit local_prefix seq reachable args ss in
+    (*
+    print_endline ("[apply:statements] Body after substitution is " ^ string_of_statements ss);
+    print_endline "[apply:statements] EXECUTING STATEMENTS NOW";
+    *)
+    let ss = ses ss in
+    `Statements_term ss
+
+  | `Keyword_term _ -> body
+  | `Apply_term (body',args') -> 
+    (*
+    print_endline "[apply] Inner application";
+    *)
+    (* Inner application -- substitute into its arguments first *)
+    let args' = map (fun body -> eval_term_apply ses recursion_limit local_prefix seq reachable sr body args) args' in
+    eval_apply ses recursion_limit local_prefix seq reachable sr body' args'
+
 and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t list) (t:typecode_t):typecode_t=
   if recursion_limit < 1 
   then failwith "Recursion limit exceeded expanding macros";
@@ -821,6 +913,60 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_lift (sr,e) -> `AST_lift (sr, me e)
 
   | `AST_typeof (sr,e) -> `AST_typeof (sr, me e)
+
+  | `AST_user_expr (sr,name,term) -> 
+    (* HACKS ARGGGHH .. *)
+    let ref_macros = ref [] in 
+    let ses ss =
+      special_expand_statements recursion_limit local_prefix seq (ref true) ref_macros macros ss
+    in
+    let reachable = ref true in
+    (* END HACKS ARGGGHH .. *)
+
+    print_endline ("Replacing into user expression " ^ name);
+    let rec aux term = match term with
+      | `Statement_term s -> clierr sr ( "User expr: expected expression ") 
+      | `Statements_term ss -> clierr sr ( "User expr: expected expression ") 
+      | `Expression_term e -> `Expression_term (me e)
+      | `Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
+
+      (* ONLY SUBSTITUTE INTO PARAMETERS? *)
+      | `Apply_term (t,ts) -> `Apply_term (t, map aux ts)
+
+      (* invariant -- for the moment *)
+      | `Keyword_term _ -> term
+    in 
+    let e = aux term in
+    (*
+    print_endline ("Expanding expression " ^ name);
+    *)
+    let substitute_expr_terms sr e ts =
+      let args = eval_args ses recursion_limit local_prefix seq reachable sr ts in
+      let e = expand_expr recursion_limit local_prefix seq args e in
+      e
+    in
+    (*
+    print_endline ("Expand Statement: Processing user defined statement " ^ name);
+    *)
+    let aux term = match term with
+      | `Statement_term s -> clierr sr ( "User expr: expected expression ") 
+      | `Statements_term ss -> clierr sr ( "User expr: expected expression ") 
+      | `Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
+      | `Keyword_term s -> clierr sr ( "User expr : expected statement got keyword " ^ s)
+
+      | `Expression_term e -> e
+      | `Apply_term (t,ts) ->
+        begin match t with
+        | `Expression_term e ->
+          substitute_expr_terms sr e ts
+
+        | _ -> 
+          clierr sr 
+          (
+            "User statement: In application, expected statement "
+          )
+        end
+    in aux term
 
   (*
     -> syserr (Flx_srcref.src_of_expr e) ("Expand expr: expected expresssion, got type: " ^ string_of_expr e)
@@ -1786,104 +1932,13 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     let string_of_statements sts =
         String.concat "\n" (map (string_of_statement 1) sts)
     in
-    let wrap_stmts ss = `AST_macro_statements (sr,ss) in
-    let rec eval_arg (id:string) (h:ast_term_t) : macro_dfn_t option = 
-      match h with
-      | `Expression_term  e -> Some (id,MVal e)
-      | `Identifier_term s -> Some (id,MName s)
-      (*
-      | `Statement_term s -> Some (id,MStmt ([],[s]))
-      | `Statements_term ss -> Some (id,MStmt ([],ss))
-      *)
-      | `Statement_term s -> Some (id,MVal (wrap_stmts [s]))
-      | `Statements_term ss -> Some (id,MVal (wrap_stmts ss))
-      | `Keyword_term _ ->
-        (*
-        print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
-        *)
-        None
-      | `Apply_term (body,args) -> 
-        let body = eval_apply sr body args in
-        eval_arg id body
-
-    and eval_args sr (ts: ast_term_t list) : macro_dfn_t list =
-      let rec aux terms res count = 
-        let id = "_" ^ si count in 
-        match terms with
-        | h :: t -> 
-          let mac = eval_arg id h in
-          begin match mac with
-          | Some m -> aux t (m::res) (count+1)
-          | None -> aux t res (count+1)
-          end
-        | [] -> res
-      in aux ts [] 1
-
-    and eval_apply sr (body:ast_term_t) (args:ast_term_t list) : ast_term_t =
-      (*
-      print_endline "Processing Application .. evaluating args";
-      *)
-      let args = eval_args sr args in
-      (*
-      print_endline "[apply] Got arguments ..";
-      print_endline (string_of_macro_env args);
-      print_endline "[apply] WE SHOULD EXPAND THE ARGS BUT AREN'T AT THE MOMENT";
-      print_endline ("[apply] Body is " ^ string_of_ast_term 0 body);
-      print_endline "[apply] APPLYING TERM TO EVALUATED ARGUMENTS ";
-      *)
-      let term = eval_term_apply sr body args in
-      (*
-      print_endline ("Term after evaluation is " ^ string_of_ast_term 0 term);
-      *)
-      term
-
-    and eval_term_apply sr (body:ast_term_t) (args:macro_dfn_t list) : ast_term_t =
-      match body with
-      | `Expression_term e ->
-        (*
-        print_endline ("EXPANDING EXPRESSION " ^ string_of_expr e);
-        *)
-        let e = expand_expr (recursion_limit-1) local_prefix seq args e in
-        `Expression_term e
-
-      | `Identifier_term id -> 
-        let id = expand_ident sr args [] id in
-        `Identifier_term id
-
-      | `Statement_term s ->
-        let ss = subst_statements recursion_limit local_prefix seq reachable args [s] in
-        (*
-        print_endline ("[apply:statement] Body after substitution is" ^ string_of_statements ss);
-        print_endline "[apply:statement] EXECUTING STATEMENTS NOW";
-        *)
-        let ss = ses ss in
-        `Statements_term ss
-
-      | `Statements_term ss ->
-        let ss = subst_statements recursion_limit local_prefix seq reachable args ss in
-        (*
-        print_endline ("[apply:statements] Body after substitution is " ^ string_of_statements ss);
-        print_endline "[apply:statements] EXECUTING STATEMENTS NOW";
-        *)
-        let ss = ses ss in
-        `Statements_term ss
-
-      | `Keyword_term _ -> body
-      | `Apply_term (body',args') -> 
-        (*
-        print_endline "[apply] Inner application";
-        *)
-        (* Inner application -- substitute into its arguments first *)
-        let args' = map (fun body -> eval_term_apply sr body args) args' in
-        eval_apply sr body' args'
-    in
     let substitute_statement_terms sr ss ts =
       (*
       print_endline "[statement] Substitute statements terms!";
       print_endline "[statement] Original argument term list (the parse tree) is";
       iter (fun term -> print_endline (string_of_ast_term 0 term)) ts;
       *)
-      let args = eval_args sr ts in
+      let args = eval_args ses recursion_limit local_prefix seq reachable sr ts in
       (*
       print_endline "[statement] Got arguments ..";
       print_endline (string_of_macro_env args);
