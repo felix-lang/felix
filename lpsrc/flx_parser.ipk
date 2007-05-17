@@ -171,7 +171,39 @@ let dfltvs =
     raw_typeclass_reqs=[]
   } 
 
-@define_statement = """\
+@expr_nts = [
+  "expr",
+  "dollar_apply",
+  "tuple",
+  "or_condition",
+  "and_confition",
+  "nor_condition",
+  "comparison",
+  "as_expr",
+  "setunion",
+  "setintersection",
+  "arrow",
+  "bor",
+  "bxor",
+  "band",
+  "shift",
+  "sum",
+  "subtraction",
+  "product",
+  "term",
+  "prefixed",
+  "power",
+  "superscript",
+  "refr",
+  "coercion",
+  "factor",
+  "hash_name",
+  "the_name",
+  "qualified_name",
+  "atom",
+  ]
+
+@extend_syntax = """\
  let define_statement dyp name rhs (statement:statement_t) =
    let lhs = dyp.find_nt name in
    let f o =
@@ -268,10 +300,112 @@ let dfltvs =
      `Obj_statement (`AST_user_statement (!srr,"unknownusersyntax",ast_term))
    in
    rule,action
+
+ let define_expr dyp name rhs (expr:expr_t) =
+   let lhs = dyp.find_nt name in
+   print_endline ("DEFINE "^name^" = " ^ string_of_expr expr);
+   let f o =
+     match o with
+       | NAME (sr,s) -> 
+         begin try
+           Non_ter ((dyp.find_nt s),No_priority)
+         with
+         | Not_found ->
+           print_endline ("User Syntax: Cannot find non-terminal " ^ s);
+           failwith ("User syntax: Missing nonterminal " ^ s)
+         end
+       | s -> 
+         (*
+         let name = Flx_prelex.name_of_token s in
+         *)
+         let name = Parser_parameters_module.str_token s in
+         (*
+         print_endline ("Processing keyword " ^ name);
+         *)
+         Ter (Parser_parameters_module.get_name s)
+   in
+   let rule  = lhs,(List.map f rhs),default_priority in
+   let truncs e = 
+     let s = string_of_expr e in
+     let n = String.length s in
+     if n > 20 then String.sub s 0 20 else s
+   in
+   let action = fun _ avl ->
+     print_endline ("REDUCING "^name^" = " ^ string_of_expr expr);
+     let dummy = ("dummy",0,0,0,0) in
+     let srr = ref dummy in
+     let setsr sr = if dummy = !srr then srr := slift sr in
+     let rec aux objs syms args = match objs, syms with
+     | [],[] -> rev args
+     | [],_ | _,[] -> assert false
+     | h1::t1,h2::t2 -> 
+       match h1,h2 with
+       | USER_KEYWORD (_,s1),`Obj_USER_KEYWORD (sr,s2) ->
+         setsr sr;
+         if s1 <> s2 then raise Giveup else
+         aux t1 t2 (`Keyword_term s1::args)
+
+       | NAME (_,"statements"),`Obj_statements sts -> 
+         (*
+         print_endline "Matched statements";
+         List.iter
+         (fun st -> print_endline (string_of_statement 0 st))
+         sts
+         ;
+         *)
+         aux t1 t2 (`Statements_term sts:: args)
+
+       | NAME (_,"statement"),`Obj_statement st -> 
+         (*
+         print_endline "Matched statement";
+         print_endline (string_of_statement 0 st);
+         *)
+         aux t1 t2 (`Statement_term st::args)
+
+  """
+@for i in expr_nts: extend_syntax = extend_syntax + \
+  '\n| NAME (_,"'+i+'"),`Obj_'+i+' e'
+
+@extend_syntax = extend_syntax + """\
+         -> 
+         print_endline ("Matched expr " ^ string_of_expr e);
+         aux t1 t2 (`Expression_term e::args)
+
+       | NAME (_,"string_literal"),`Obj_string_literal e -> 
+         (*
+         print_endline ("Matched string_literal " ^ truncs e);
+         *)
+         aux t1 t2 (`Expression_term e::args)
+
+       | NAME (_,"identifier"),`Obj_identifier (_,name,[]) -> 
+         (*
+         print_endline ("Matched ident " ^ name);
+         *)
+         aux t1 t2 (`Identifier_term name::args)
+       
+       | NAME (_,s),_ ->
+         print_endline ("Syntax: Unknown symbol " ^ s);
+         failwith ("Syntax: Unknown Symbol " ^ s)
+
+       | DO _,_ -> aux t1 t2 (`Keyword_term "do" :: args)
+       | DONE _,_ -> aux t1 t2 (`Keyword_term "done" :: args)
+       | SEMI _,_ -> aux t1 t2 (`Keyword_term ";" :: args)
+       | IN _,_ -> aux t1 t2 (`Keyword_term "in" :: args)
+
+       | x,_ -> 
+         print_endline ("Unknown symbol " ^ Parser_parameters_module.str_token x);
+         failwith ("Unknown symbol " ^ Parser_parameters_module.str_token x);
+
+     in
+     let args = aux rhs avl [] in
+     let ast_term = `Apply_term (`Expression_term expr, args) in
+     `Obj_expr (`AST_user_expr (!srr,"unknownusersyntax",ast_term))
+   in
+   rule,action
  """
 @#
 
-@if USE_DYPGEN: tangle(define_statement)
+@if USE_DYPGEN: tangle(extend_syntax)
 
 @if USE_DYPGEN:
   tangle("}")
@@ -431,18 +565,53 @@ statement:
   | user_statement { $1 }
   | cparse { $1 }
 @dyp_statement = """\
-  | SYNTAX define_cont 
+  | SYNTAX NAME COLONEQUAL rhs PARSE_ACTION statement
     {
-      let name, rhs, (stmt:statement_t) = $2 in
-      (*
-      print_endline ("PROCESSING DEFINITION " ^ name);
-      *)
-      ignore(dyp.add_nt name);
-      dyp.add_rules <- [define_statement dyp name rhs stmt];
+      let name = snd $2 in
+      let rhs = $4 in
+      let stmt:statement_t = $6 in
+      let sr = rstoken $1 $5 in
+      print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
+      catmap " " (function 
+      | NAME (_,s) -> "<"^s^">"
+      | USER_KEYWORD (_,s) -> s
+      | x -> Parser_parameters_module.str_token x
+      ) rhs ^ 
+      "=>#\n" ^
+      string_of_statement 0 stmt
+      );
+      (* ignore(dyp.add_nt name); *)
+      begin match name with
+      | "statement" ->
+        dyp.add_rules <- [define_statement dyp name rhs stmt];
+      """
+
+@for i in expr_nts: dyp_statement = dyp_statement + '    | "' + i + '"'
+@dyp_statement = dyp_statement + """\        
+        ->
+        begin match stmt with
+        | `AST_call (sr, proc, arg) -> 
+          let expr = match arg with
+          | `AST_tuple (_,[]) -> proc
+          | _ -> `AST_apply (sr,(proc,arg))
+          in
+          dyp.add_rules <- [define_expr dyp name rhs expr];
+        | _ ->
+          let s = 
+            "Syntax extension: expression non-terminal " ^ name ^
+            " requires action to be expression!"
+          in
+          print_endline s;
+          clierr sr s
+        end
+
+      | _ ->
+        print_endline ("Syntax extension: unknown non-terminal " ^ name);
+        failwith ("Syntax extension: unknown non-terminal " ^ name);
+      end
+      ;
       `AST_nop (rstoken $1 $1, name)
     }
- define_cont :
-  | NAME COLONEQUAL rhs PARSE_ACTION statement { snd $1,$3,$5 }
 
  rhs:
   | rhs_term { [$1] }
