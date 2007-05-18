@@ -751,7 +751,7 @@ open List
 
 @if USE_DYPGEN:
   tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * priority) list) : 'a =")
+  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
   tangle("  match ls with")
   tangle("  | [x,_] -> x")
   tangle('  | _ -> failwith "Dypgen parser failed"')
@@ -982,6 +982,32 @@ let infix_directive state sr toks =
     state#add_infix_keyword j tok fn;
     []
 
+  (* as above, without the precedence integer -- we set it to 10.
+     in the dypgen system it isn't relevant anyhow
+  *)
+  | [STRING (sr2,tok); NAME (sr3,fn)] ->
+    state#add_infix_symbol 10 tok fn;
+    []
+
+  | [ NAME (sr2,tok); NAME (sr3,fn)] ->
+    state#add_infix_keyword 10 tok fn;
+    []
+
+
+  (* as above, without the precedence integer or mapping function
+     in the dypgen system it isn't relevant if the symbol is
+     used as a keyword other than an operator.
+
+     NOTE: such symbols are USER10 encoded not USER_KEYWORD encoded 
+  *)
+  | [STRING (sr2,tok)] ->
+    state#add_infix_symbol 10 tok tok;
+    []
+
+  | [NAME (sr2,tok)] ->
+    state#add_infix_keyword 10 tok tok;
+    []
+
   | _ ->
     clierr sr "#infix directive has syntax #infix 99 \"..\" fname"
 
@@ -990,6 +1016,7 @@ let keyword_directive state sr toks =
   | NAME (sr,tok) :: t ->
     state#add_keyword tok;
     aux t
+
   | [] -> []
   | _ ->
     clierr sr "#keyword directive has syntax #keyword id1 id2 ..."
@@ -1349,6 +1376,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
         undef_directive state sr toks
 
    
+    | "symbol" 
     | "infix" ->
         infix_directive state sr toks
 
