@@ -1197,7 +1197,7 @@ hello
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['laziness', 'lazy variables']))
-#include <flx.flxh>
+#import <flx.flxh>
 
 var v = 1;
 
@@ -1216,7 +1216,7 @@ print$ x; endl;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['ref semantics']))
-#include <flx.flxh>
+#import <flx.flxh>
 
 noinline proc f(var x:int, val y:int)
 {
