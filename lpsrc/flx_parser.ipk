@@ -213,8 +213,8 @@ let dfltvs =
            Non_ter ((dyp.find_nt s),No_priority)
          with
          | Not_found ->
-           print_endline ("User Syntax: Cannot find non-terminal " ^ s);
-           failwith ("User syntax: Missing nonterminal " ^ s)
+           print_endline ("[define_statement] User Syntax: Cannot find non-terminal " ^ s);
+           failwith ("[define_statement] User syntax: Missing nonterminal " ^ s)
          end
        | s -> 
          (*
@@ -243,7 +243,13 @@ let dfltvs =
        match h1,h2 with
        | USER_KEYWORD (_,s1),`Obj_USER_KEYWORD (sr,s2) ->
          setsr sr;
-         if s1 <> s2 then raise Giveup else
+         if s1 <> s2 then (
+           (*
+           print_endline ("Keyword mismatch req=" ^ s1 ^ ", got=" ^ s2);
+           *)
+           raise Giveup 
+         )
+         else
          aux t1 t2 (`Keyword_term s1::args)
 
        | NAME (_,"statements"),`Obj_statements sts -> 
@@ -285,10 +291,15 @@ let dfltvs =
          print_endline ("Syntax: Unknown symbol " ^ s);
          failwith ("Syntax: Unknown Symbol " ^ s)
 
-       | DO _,_ -> aux t1 t2 (`Keyword_term "do" :: args)
-       | DONE _,_ -> aux t1 t2 (`Keyword_term "done" :: args)
-       | SEMI _,_ -> aux t1 t2 (`Keyword_term ";" :: args)
-       | IN _,_ -> aux t1 t2 (`Keyword_term "in" :: args)
+ """
+@for s,t in flx_keywords:
+  if t != "IDENT":
+    extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
+
+@for t,s in flx_syms:
+  extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
+
+@extend_syntax = extend_syntax + """\
 
        | x,_ -> 
          print_endline ("Unknown symbol " ^ Parser_parameters_module.str_token x);
@@ -313,8 +324,8 @@ let dfltvs =
            Non_ter ((dyp.find_nt s),No_priority)
          with
          | Not_found ->
-           print_endline ("User Syntax: Cannot find non-terminal " ^ s);
-           failwith ("User syntax: Missing nonterminal " ^ s)
+           print_endline ("[define_expr] User Syntax: Cannot find non-terminal " ^ s);
+           failwith ("[define_expr] User syntax: Missing nonterminal " ^ s)
          end
        | s -> 
          (*
@@ -411,10 +422,15 @@ let dfltvs =
          print_endline ("Syntax: Unknown symbol " ^ s);
          failwith ("Syntax: Unknown Symbol " ^ s)
 
-       | DO _,_ -> aux t1 t2 (`Keyword_term "do" :: args)
-       | DONE _,_ -> aux t1 t2 (`Keyword_term "done" :: args)
-       | SEMI _,_ -> aux t1 t2 (`Keyword_term ";" :: args)
-       | IN _,_ -> aux t1 t2 (`Keyword_term "in" :: args)
+ """
+@for s,t in flx_keywords:
+  if t != "IDENT":
+    extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
+
+@for t,s in flx_syms:
+  extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
+
+@extend_syntax = extend_syntax + """\
 
        | x,_ -> 
          print_endline ("Unknown symbol " ^ Parser_parameters_module.str_token x);
@@ -640,8 +656,10 @@ statement:
         end
 
       | _ ->
+        (*
         print_endline ("Syntax extension: unknown non-terminal " ^ name);
         print_endline ("Syntax extension: ASSUME EXPRESSION " ^ name);
+        *)
         begin match stmt with
         | `AST_call (sr, proc, arg) -> 
           let expr = match arg with
@@ -673,22 +691,15 @@ statement:
 
  rhs_term :
   | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
-  | IDENT { NAME ($1,"identifier") } /* arbitrary nonterminal */
-  | EXPRESSION { NAME ($1,"expr") } /* hack special token to a non-terminal */
-  | STATEMENT { NAME ($1,"statement") } /* hack special token to a non-terminal */
-  | STATEMENTS { NAME ($1,"statements") } /* hack special token to a non-terminal */
-
-  /* terminals:
-    should be 'almost' any keyword except => because that
-    terminates the production (FIXME!)
-  */
-  | SEMI { SEMI $1 }
-  | DONE { DONE $1 }
-  | USER_KEYWORD { USER_KEYWORD $1 }
-  | DO { DO $1 }
-  | IN { IN $1 }
-
+  | IDENT { NAME ($1,"identifier") }
+  | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
  """
+@for s,t in flx_keywords:
+  if t != "IDENT":
+    dyp_statement = dyp_statement + "  | " +t+ " { " + t + " $1 }\n"
+@for t,s in flx_syms:
+  if t != "PARSE_ACTION":
+    dyp_statement = dyp_statement + "  | " +t+ " { " + t + " $1 }\n"
 @# 
 @if USE_DYPGEN:
   tangle(dyp_statement)
