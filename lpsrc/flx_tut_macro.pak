@@ -630,7 +630,7 @@ macro {
 The symbol 'noexpand' can be used to block expansion.
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 // expansion barrier
 macro val x = 1;
 macro proc k ()
@@ -667,7 +667,7 @@ name in the chain which is not an ident macro,
 or which recurs.
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 
 macro oldname is newname;
 fun oldname(x:int):int = { return x; }
@@ -700,7 +700,7 @@ the forget statement. If no arguments are given,
 all macros defined in the current scope are forgotten. 
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 macro val hello = "Hello";
 macro val place = "world";
 macro fun greet() = hello " " place "!\n";
@@ -728,7 +728,7 @@ Hello world!
 Felix provides two for loops which iterate over tuples.
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 macro for val i in ("Hello","World",42) do 
   print i; print " ";
 done;
@@ -752,7 +752,7 @@ Tuples can be unpacked by macro assignment,
 macro val, macro var, and macro for val statements.
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 macro val x,y = 1,2;
 macro var a,b = 1,2;
 macro a,b = a+1,b+1;
@@ -776,7 +776,7 @@ printing a variable name (but it works for any expression).
 Note the expanded value is stringized.
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 var x = 1;
 var y = 42;
 print (_str x); print " = "; print x; endl;
@@ -812,7 +812,7 @@ expansions, particularly when driven by user defined
 nontermial parses (see the next section).
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 macro var x = _tuple 1;
 macro x = _tuple_cons (2,x);
 macro x = _tuple_cons (3,x);
@@ -917,7 +917,7 @@ Therefore, general cases must be given after specialised
 ones. 
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 
 #statement#
   whilst expr do statements done ; =>#
@@ -1023,7 +1023,7 @@ preprocessor #statement statement, including in
 the very next #statement definition.
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 #keyword DONE
 #keyword THEN
 #keyword ELIF
@@ -1106,7 +1106,7 @@ macro conditional that accepts some statements as an
 argument instead of using a macro goto.
 
 @select(env.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 #statement#
   IF expr do statements done; =>#
   macro {

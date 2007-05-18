@@ -848,7 +848,7 @@ connector read thanks!!
 
 @env_posix.head(3)
 @select(env_posix.test('.flx'))
-#include <flx.flxh>
+#import <flx.flxh>
 // actually portable, but I don't know the scheme for
 // adding those tests.
 include "flx_stream";
