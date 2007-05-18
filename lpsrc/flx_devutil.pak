@@ -969,7 +969,7 @@ dyplib = """
 @@h = tangler('spkgs/dyplib.py')
 @@select(h)
 caml_interfaces = [
-  'dypgen/dyplib/sig',
+#  'dypgen/dyplib/sig',
   'dypgen/dyplib/dyp',
 ]
 
@@ -977,18 +977,19 @@ caml_implementations = [
   'dypgen/dyplib/priority_by_relation',
   'dypgen/dyplib/automaton',
   'dypgen/dyplib/gs',
-  'dypgen/dyplib/parser',
+#  'dypgen/dyplib/parser',
+  'dypgen/dyplib/dyp',
 ]
 
-caml_pack = [
-  ("Dyp",'dypgen/dyplib/dyp',[ 
-    'dypgen/dyplib/sig',
-    'dypgen/dyplib/gs', 
-    'dypgen/dyplib/priority_by_relation',
-    'dypgen/dyplib/automaton',
-    'dypgen/dyplib/parser'
-  ])
-]
+#caml_pack = [
+#  ("Dyp",'dypgen/dyplib/dyp',[ 
+#    'dypgen/dyplib/sig',
+#    'dypgen/dyplib/gs', 
+#    'dypgen/dyplib/priority_by_relation',
+#    'dypgen/dyplib/automaton',
+#    'dypgen/dyplib/parser'
+#  ])
+#]
 
 caml_include_paths=['dypgen/dyplib']
 caml_provide_lib = 'dypgen/dyplib/dyplib'
@@ -1044,9 +1045,10 @@ weaver_directory = 'doc/dypgen/'
 
 files = [
   'dyplib/dyp.mli', 
-  'dyplib/sig.mli',
+#  'dyplib/sig.mli',
   'dyplib/automaton.ml',
-  'dyplib/parser.ml',
+#  'dyplib/parser.ml',
+  'dyplib/dyp.ml',
   'dyplib/priority_by_relation.ml',
   'dyplib/gs.ml',
   'generators/pgen/pgen_lexer.mll',
