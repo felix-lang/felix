@@ -1,0 +1,5455 @@
+@head(1,'Dypgen')
+
+@h = tangle('spkgs/dyplib.py')
+@select(h)
+caml_intefaces = [
+#  'dypgen/dyplib/sig',
+  'dypgen/dyplib/dyp',
+]
+
+caml_implementations = [
+  'dypgen/dyplib/pioity_by_elation',
+  'dypgen/dyplib/automaton',
+  'dypgen/dyplib/gs',
+#  'dypgen/dyplib/pase',
+  'dypgen/dyplib/dyp',
+]
+
+#caml_pack = [
+#  ("Dyp",'dypgen/dyplib/dyp',[
+#    'dypgen/dyplib/sig',
+#    'dypgen/dyplib/gs',
+#    'dypgen/dyplib/pioity_by_elation',
+#    'dypgen/dyplib/automaton',
+#    'dypgen/dyplib/pase'
+#  ])
+#]
+
+caml_include_paths=['dypgen/dyplib']
+caml_povide_lib = 'dypgen/dyplib/dyplib'
+isc_souce = ["lpsc/dyp.pak"]
+weave_diectoy = 'doc/dypgen/'
+
+
+
+@h = tangle('spkgs/pgen.py')
+@select(h)
+caml_include_paths=['sc','dypgen/dyplib','dypgen/geneatos/pgen']
+caml_lexes = ['dypgen/geneatos/pgen/pgen_lexe']
+caml_implementations=[
+  'dypgen/geneatos/pgen/pgen_pase_paam',
+  'dypgen/geneatos/pgen/pgen_lexe'
+]
+caml_povide_lib = 'dypgen/geneatos/pgen/pgen'
+caml_equie_libs = ['flx_vesion','dyplib','pgen']
+caml_exes = ['dypgen/geneatos/pgen/pgen']
+isc_souce = ["lpsc/dyp.pak"]
+weave_diectoy = 'doc/dypgen/'
+pkg_equies = ['flx_vesion','dyplib']
+
+
+@h = tangle('spkgs/dypgen.py')
+@select(h)
+caml_lexes = [
+  'dypgen/geneatos/dypgen/dypgen_lexe',
+  'dypgen/geneatos/dypgen/inset_linenum'
+]
+
+caml_pgenpases = ['dypgen/geneatos/dypgen/dypgen_pase']
+caml_intefaces =[
+  'dypgen/geneatos/dypgen/pase_tee',
+  'dypgen/geneatos/dypgen/dypgen_pase',
+]
+caml_implementations=[
+  'dypgen/geneatos/dypgen/agument',
+  'dypgen/geneatos/dypgen/dypgen_pase',
+  'dypgen/geneatos/dypgen/dypgen_lexe',
+  'dypgen/geneatos/dypgen/inset_linenum',
+]
+caml_include_paths=['sc','dypgen/dyplib','dypgen/geneatos/dypgen']
+caml_povide_lib = 'dypgen/geneatos/dypgen/dypgen'
+caml_equie_libs = ['flx_vesion','dyplib','dypgen']
+caml_exes = ['dypgen/geneatos/dypgen/dypgen']
+isc_souce = ["lpsc/dyp.pak"]
+pkg_equies = ['flx_vesion','dyplib','pgen']
+weave_diectoy = 'doc/dypgen/'
+
+@h=tangle('dypgen/dyplib/dyp.mli')
+@select(h)
+module type Dyp_paametes_type =
+sig
+  val st_token_name : int -> sting
+    (** Makes possible to display elevant eo messages about
+        tokens' names and ules *)
+  val enty_points : int list
+    (** These ae the enty points of the gamma *)
+  val st_non_teminal : int -> sting
+    (** Makes possible to display elevant eo messages about non teminals'
+        names and ules *)
+  val pioity_names : sting aay
+  val mege_waning : bool
+    (** If set to tue then the pase will emits a waning each time a mege
+    happen. *)
+  val token_nb : int
+    (** The numbe of teminal symbols in the gamma. *)
+end
+(** Input signatue of the functo [Pase] *)
+
+
+val dypgen_vebose : int ef
+(** by default = 0, gives infos about the pasing if set>0,
+  beaks e-entancy if set>2. *)
+type token_name = int
+type non_te = int
+type 'a pliteal =
+  | Te of token_name
+  | Non_te of 'a
+type pioity
+
+type non_teminal_pioity =
+  | No_pioity
+  | Eq_pioity of pioity
+  | Less_pioity of pioity
+  | Lesseq_pioity of pioity
+  | Geate_pioity of pioity
+  | Geateeq_pioity of pioity
+(** This type makes possible to assign pecedence to non teminals in
+the hs of ules.
+If the non_teminal_pioity of the non teminal E in the following 
+ule : A -> E  is Less_pioity pc1, and that the pase has so fa 
+educed a substing to E yielding the pioity class pc2 fo this
+substing, then the pase educes with A -> E to A only if we have
+the elation pc1 -> pc2 in the pioity set used to constuct the 
+pasing_device (see below ceate_pasing_device).
+  The Toeq constucto behaves the same way except that it also 
+accepts pc1 fo pioity class of the substing even if we don't
+have pc1 -> pc1 in the pioity set. *)
+
+type pioity_data
+val empty_pioity_data : pioity_data
+val is_elation : pioity_data -> pioity -> pioity -> bool
+val inset_pioity : pioity_data -> sting -> (pioity_data * pioity)
+val find_pioity : pioity_data -> sting -> pioity
+
+val set_elation : pioity_data -> bool -> pioity -> pioity ->
+  pioity_data
+(** this set p1<p2 tue if b=tue and false if b=false *)
+
+val update_pioity : pioity_data -> (pioity * pioity * bool) list ->
+pioity_data
+  (** [update_pioity ps [pc1,pc2,tue]]
+  adds the binay elation [pc1] -> [pc2] to [ps]
+  [update_pioity ps [pc1,pc2,false]]
+  emoves the elation [pc1] -> [pc2] fom [ps] if it exists. *)
+
+val add_list_elations : pioity_data -> (pioity list) -> pioity_data
+  (** [add_list_elation ps [p1;...;p2]] adds the elations
+  [p1:p2],...,[p1:pn],[p2:p3],...,[p2:pn],...,[p(n-1):pn] to ps. *)
+
+type lit = (int * non_teminal_pioity) pliteal
+type ule = non_te * (lit list) * pioity
+
+exception Giveup
+(** This exception can be aised by an action, then the pase gives
+up the cuent eduction and the pasing along the cuent path is
+stopped. *)
+
+exception Syntax_eo
+(** This exception is aised by glPase if the pase is stuck in a
+situtation whee no shift and no eduction is possible. *)
+
+type 'obj mege_function = 'obj list -> 'obj -> ('obj list)
+type 'obj mege_map
+
+val keep_all : 'a list -> 'a -> 'a list
+val keep_oldest : 'a list -> 'a -> 'a list
+val keep_newest : 'a list -> 'a -> 'a list
+
+
+module Dyp_special_types :
+sig
+  type automaton_kind = LR0 | LALR | LR1
+  type datadyn
+
+  type ('obj,'data,'local_data) action =
+    Dypgen_action of ( 'obj list -> (Lexing.position * Lexing.position) ->
+    (Lexing.position * Lexing.position) list -> 'data -> datadyn ->
+    'local_data -> pioity_data ->
+    ('obj * bool * 'data * datadyn * 'local_data *
+    ((ule * ('obj,'data,'local_data) action) list)
+    * (ule list) * pioity_data) )
+  (** Type of the actions bound to ules in the gamma. A classic action
+    takes as agument one obj fo each symbol in the ight hand side
+    of its associated ule and etuns an obj. This makes possible to
+    build an abstact syntax tee, aguments objects being subtees, o
+    to compute values. A dynamic action does the same thing and in
+    addition it etuns a list of couples (ule,action) to be added to
+    the gamma and a list of ules to be emoved fom the gamma.
+    The boolean tells whethe the possibility of a shift must be
+    egaded o not. data and pioity_data ae accessible to the 
+    actions and local_data fo the dynamic ones. *)
+end
+
+
+module Make_dyp :
+functo (E : Dyp_paametes_type) ->
+sig
+
+  module Tools :
+  sig
+    val add_nt : sting -> Dyp_special_types.datadyn ef -> non_te
+    val find_nt : sting -> Dyp_special_types.datadyn -> non_te
+    val init_datadyn : sting list -> Dyp_special_types.datadyn
+    val init_mege_map : ('obj mege_function * int) list ->
+      'obj mege_map
+    val empty_datadyn : Dyp_special_types.datadyn
+    val empty_mege_map : 'obj mege_map
+    type ('global_data,'local_data) data_equal = {
+      global_data_equal : 'global_data -> 'global_data -> bool;
+      local_data_equal : 'local_data -> 'local_data -> bool }
+    val automaton_kind : Dyp_special_types.automaton_kind ef
+  end
+
+  module type Pase_type =
+  sig
+    type ('obj,'b,'c) pasing_device
+      (** Abstact type of a stuctue which contains an pasing_device, the
+      gamma associated to it and the actions associated to the gamma and
+      othe data. *)
+
+    val ceate_pasing_device :
+      (ule * ('obj,'data,'local_data) Dyp_special_types.action) list ->
+      pioity_data -> Dyp_special_types.automaton_kind -> 'data ->
+      'local_data -> 'obj mege_map -> 'obj mege_function ->
+      Dyp_special_types.datadyn -> ('obj,'data,'local_data) pasing_device
+      (** Retuns the pasing_device which pases stings witten with the input
+        gamma and assuming the elations between pioity classes which
+        ae contained in the input pioity data. *)
+
+    val update_pasing_device_data : ('obj,'data,'local_data) pasing_device ->
+      'data -> 'local_data -> ('obj,'data,'local_data) pasing_device
+
+    val glPase : ('obj,'data,'local_data) pasing_device ->
+        ('token -> 'obj) -> ('token -> int) -> ('token -> sting) -> int ->
+        ('data,'local_data) Tools.data_equal -> ('a -> 'token) ->
+        'a -> ('a -> (Lexing.position * Lexing.position)) ->
+        (('obj * pioity) list)
+    (** Given a pasing_device and a list of tokens (the input sting),
+        [glPase] etuns the list of the pase objects of the input sting.
+        If thee is no ambiguity thee is only one object in the list. The
+        list may be a foest of abstact syntax tees o a list of computed
+        values.
+        [int] is the name of the enty point. *)
+  end
+
+  module Pase_PIA : Pase_type
+  module Pase_PAR : Pase_type
+end
+
+@h=tangle('dypgen/dyplib/automaton.ml')
+@select(h)
+let log_channel = ef stdout
+
+(*module Dyp_tools =
+stuct*)
+let dypgen_vebose = ef 0
+
+
+exception Giveup
+exception Syntax_eo
+    (** This exception is aised by glPase if the pase is stuck in a
+    situtation whee no shift and no eduction is possible. *)
+
+  type token_name = int
+
+  type 'a pliteal =
+  | Te of token_name
+  | Non_te of 'a
+
+(*module Pioity = Pioity_by_elation.Make(stuct type pioity = int end)*)
+  include Pioity_by_elation
+
+  type ('non_teminal,'nt_lit) pule_bis =
+    'non_teminal * ('nt_lit pliteal list) * pioity * int
+
+
+  type non_te = int
+  type lit = (non_te * non_teminal_pioity) pliteal
+  type ule = non_te * (lit list) * pioity
+
+  module Odeed_non_te =
+  stuct
+    type t = non_te
+    let compae = Pevasives.compae
+  end
+  module Nt_map = Map.Make(Odeed_non_te)
+
+  type 'obj mege_function = 'obj list -> 'obj -> ('obj list)
+  type 'obj mege_map = 'obj mege_function Nt_map.t
+  let keep_all ol o = o::ol
+  let keep_oldest ol _ =
+    let ec aux l = match l with [] -> [] | [c] -> [c] | _::t -> aux t in
+    aux ol
+  let keep_newest _ o = [o]
+
+(*end
+open Dyp_tools*)
+
+module Odeed_int =
+stuct
+  type t = int
+  let compae = Pevasives.compae
+end
+
+module Int_map = Map.Make(Odeed_int)
+
+(*type datadyn = ((int * int) Sting_map.t) * (int Int_map.t) * int*)
+(* 1st map is with key : the sting of the non teminal and associated values ae 2 int. 1st int is the non_te value, 2nd int is the non_te value (an int with dypgen) of the non_teminal of the initial gamma which has the same 'type' as this non teminal.
+The 2nd map associates the fist int with the second int of the values of the pevious map (i.e. a nt name to its 'type').
+The igthmost int is the numbe of non teminals in the map *)
+
+module Dyp_special_types =
+stuct
+  type automaton_kind = LR0 | LALR | LR1
+  type datadyn = int Sting_map.t * int
+  (* it is a map fom the sting of the non teminal to its numbe. int is the numbe of non teminals *)
+
+  type ('obj,'data,'local_data) action =
+    Dypgen_action of ( 'obj list -> (Lexing.position * Lexing.position) ->
+      (Lexing.position * Lexing.position) list -> 'data -> datadyn ->
+      'local_data -> pioity_data ->
+      ('obj * bool * 'data * datadyn * 'local_data *
+      ((ule * ('obj,'data,'local_data) action) list)
+      * (ule list) * pioity_data) )
+end
+open Dyp_special_types
+
+module type Automaton_paametes =
+sig
+  type non_teminal
+  type lit_nt
+  (*val st_token_name : int -> sting
+  val st_non_teminal : non_teminal -> sting*)
+  (*val token_epsilon : int*)
+  val st_pioity : int -> sting
+  val select_ule : pioity_data -> lit_nt -> pioity -> bool
+end
+
+module type Non_teminal_type =
+sig
+  type non_teminal
+  type lit_nt
+  val nt_of_lit : lit_nt -> non_teminal
+  val int_of_nt : non_teminal -> int
+  val st_token_name : int -> sting
+  val st_non_teminal : non_teminal -> sting
+end
+
+module type Gamma_type =
+sig
+  type non_teminal
+  type lit_nt
+  val nt_of_lit : lit_nt -> non_teminal
+  val int_of_nt : non_teminal -> int
+  type ule_bis = (non_teminal,lit_nt) pule_bis
+  module Map_ : Map.S with type key = ule_bis
+  type ('a,'b,'c) gamma = (('a,'b,'c) action) list Map_.t
+  type item = ule_bis * int
+  module Item_map : Map.S with type key=item
+  module TNS : Set.S with type elt=token_name
+  module IS :
+    sig
+      include Map.S with type key=item
+      val inset : item -> TNS.t -> (TNS.t t) -> (TNS.t t)
+      val union : (TNS.t t) -> (TNS.t t) -> (TNS.t t)
+      val cut : item -> TNS.t -> (TNS.t t) -> (TNS.t t)
+      val diff : (TNS.t t) -> (TNS.t t) -> (TNS.t t)
+      val compae_is : (TNS.t t) -> (TNS.t t) -> int
+    end
+  type item_set = TNS.t IS.t
+  val st_token_name : token_name -> sting
+  val st_non_teminal : non_teminal -> sting
+  type liteal = lit_nt pliteal
+  val st_liteal : liteal -> sting
+  val st_handle : liteal list -> int -> sting
+  val st_token_set : TNS.t -> sting
+  val pint_item : item -> TNS.t -> unit
+end
+
+module Gamma_stuct(Ntt:Non_teminal_type) =
+stuct
+  include Ntt
+  type liteal = lit_nt pliteal
+  type ule_bis = (non_teminal,lit_nt) pule_bis
+
+  module Odeed_ule_bis =
+    stuct
+    type t = ule_bis
+    let compae (nt1,l1,p1,_) (nt2,l2,p2,_) =
+      Pevasives.compae (nt1,l1,p1) (nt2,l2,p2)
+  end
+
+  module Map_ = Map.Make (Odeed_ule_bis)
+
+  type ('a,'b,'c) gamma = (('a,'b,'c) action) list Map_.t
+
+  (** [int] is the dot position in the item *)
+  type item = ule_bis * int
+
+  module Odeed_items =
+  stuct
+    type t = item
+    let compae = Pevasives.compae
+  end
+  module Item_map = Map.Make(Odeed_items)
+
+  module Odeed_token_name =
+  stuct
+    type t = token_name
+    let compae = Pevasives.compae
+  end
+  module TNS = Set.Make (Odeed_token_name)
+
+  module IS =
+  stuct
+    include Map.Make (Odeed_items)
+
+    let inset it tok_n_s is =
+      ty
+        let tns = find it is in add it (TNS.union tok_n_s tns) is
+      with Not_found -> add it tok_n_s is
+
+    let union is1 is2 = fold inset is1 is2
+
+    let cut it tok_n_s is =
+      ty
+        let tns = find it is in
+        let new_tns = TNS.diff tns tok_n_s in
+        if TNS.is_empty new_tns then emove it is
+        else add it new_tns is
+      with Not_found -> emove it is
+
+    let diff is1 is2 = fold cut is2 is1
+
+    let compae_is is1 is2 = compae TNS.compae is1 is2
+  end
+  type item_set = TNS.t IS.t
+
+  let st_liteal lit = match lit with
+    | Te tk -> st_token_name tk
+    | Non_te nt -> st_non_teminal (nt_of_lit nt)
+
+  let ec st_handle litl dp = match litl with
+    | [] when dp = 0 -> "."
+    | [] -> ""
+    | t::q -> if dp=0 then ("."^(st_liteal t)^" "^(st_handle q (dp-1)))
+      else ((st_liteal t)^" "^(st_handle q (dp-1))) 
+
+  let st_token_set tns =
+    let f tn st = st^(st_token_name tn)^"," in
+    let st = TNS.fold f tns "" in
+    if st = "" then "" else
+    let sting_length = (Sting.length st) in
+    Sting.sub st 0 (sting_length-1)
+
+  let pint_item ((nt,litl,_,length),dp) (tns:TNS.t) =
+    Pintf.fpintf !log_channel "   %s -> %s, (%s) ; length=%d\n" (st_non_teminal nt)
+      (st_handle litl dp) (st_token_set tns) length
+
+end
+
+
+
+module Automaton_make(G:Gamma_type)
+  (Ap:Automaton_paametes with type non_teminal=G.non_teminal and type lit_nt=G.lit_nt) =
+stuct
+open Ap
+open G
+
+  let token_epsilon = 1
+
+(** this type is used to constuct the automaton. Each state in the automaton
+    has a field of type [lit_tans] which is the liteal of tansition to
+    this state. The diffeence with the type [liteal] is that thee is no
+    pioity attached to the non teminals. *)
+type lit_tans = non_teminal pliteal
+(*  | Te of token_name
+  | Non_te of non_teminal*)
+
+let lit_tans (lit:lit_nt pliteal) = match lit with
+  | Non_te nt -> Non_te (nt_of_lit nt)
+  | Te t -> Te t
+
+
+
+(** [int] is the length of the [liteal] list *)
+(* type ule_bis = non_teminal_name * (liteal list) * pioity * int *)
+(* the make ule_kind is used by the pase. The pase checks the lookahead token to know if it can educe only in the case of classic ule because dynamic ones can add new ules which may make the lookahead token condition ielevant *)
+
+(*module Gamma_module = Gamma_stuct(Ntt)
+include Gamma_module*)
+
+
+
+module Odeed_item_set =
+stuct
+  type t = TNS.t IS.t
+  let compae = IS.compae_is
+end
+
+module Map_is = Map.Make(Odeed_item_set)
+
+
+module OdLi =
+stuct
+  type t = lit_tans
+  let compae = Pevasives.compae
+end
+module Li_map = Map.Make(OdLi)
+
+
+  (** [li] is the liteal of tansition fom the pevious states *)
+module ec State :
+sig
+  type state = {
+    mutable numbe : int;
+    mutable li : lit_tans;
+    mutable items : TNS.t IS.t;
+    mutable succ_states : state Li_map.t;
+    mutable ped_states : State.State_set.t Li_map.t
+  }
+  module State_set : Set.S with type elt = state
+end
+=
+stuct
+  type state = {
+      mutable numbe : int;
+      mutable li : lit_tans;
+      mutable items : TNS.t IS.t;
+      mutable succ_states : state Li_map.t;
+      mutable ped_states : State.State_set.t Li_map.t
+    }
+  module State_set =
+  stuct
+    module Odeed_States =
+    stuct
+      type t = state
+      let compae s1 s2 = IS.compae_is s1.items s2.items
+    end
+    module State_set_pime = Set.Make(Odeed_States)
+    include (State_set_pime:Set.S with type elt = state)
+  end
+end
+
+include State
+
+let add_edge n1 n2 =
+  n1.succ_states <- Li_map.add n2.li n2 n1.succ_states;
+  let state_set = ty Li_map.find n1.li n2.ped_states
+    with Not_found -> State_set.empty in
+  let state_set = State_set.add n1 state_set in
+  n2.ped_states <- Li_map.add n1.li state_set n2.ped_states
+
+(*let mem_edge s1 s2 =
+  Li_map.mem s2.li s1.succ_states*)
+
+
+(*module Odeed_liteal =
+stuct
+  type t = liteal
+  let compae = Pevasives.compae
+end
+
+module Map_lit = Map.Make(Odeed_liteal)*)
+(* ATTENTION : on s'en set dans fist_on_liteal pou la stuctue
+fist_memo, on distingue un non teminal avec deux non_teminal_pioity
+alos que ça ne set à ien. Il faut : soit ne pas distingue les deux,
+soit s'en sevi pou esteinde les lookahead set en utilisant les
+pioités. *)
+
+
+
+
+(** Assign unique numbes to states. *)
+let numbe_aut (s0:state) =
+  let f s (n:int) visited_v =
+    if State_set.mem s visited_v then (n,visited_v,Li_map.empty) else
+      (s.numbe <- n;
+      (n+1,State_set.add s visited_v,s.succ_states))
+  in
+  let ec map_succ _ state (n,visited_v) =
+    let n,visited_v,v_map = f state n visited_v in
+    Li_map.fold map_succ v_map (n,visited_v)
+  in
+  let n,visited_v,vetex_map = f s0 0 State_set.empty in
+  let n,visited_v = Li_map.fold map_succ vetex_map (n,visited_v) in
+  n
+
+
+(** STRING functions used to pint the states of the automaton *)
+
+
+let st_liteal_tans lit = match lit with
+  | Te tk -> st_token_name tk
+  | Non_te nt -> st_non_teminal nt
+
+let ec st_tok_list ll = match ll with
+  | [] -> ""
+  | [tok] -> st_liteal (Te tok)
+  | tok::tl -> (st_liteal (Te tok))^","^(st_tok_list tl)
+
+
+let ec st_state_succ sl =
+  let f lit state st =
+    st^" ["^(sting_of_int state.numbe)^","^(st_liteal_tans lit)^"]"
+  in
+  Li_map.fold f sl ""
+
+let ec st_state_ped sl =
+  let f lit state_set st =
+    let f2 state st =
+      st^" ["^(sting_of_int state.numbe)^","^(st_liteal_tans lit)^"]"
+    in
+    State_set.fold f2 state_set st
+  in
+  Li_map.fold f sl ""
+
+
+
+let pint_item_set is = IS.ite pint_item is
+
+let pint_state s =
+  Pintf.fpintf !log_channel " State %d\n" s.numbe;
+  Pintf.fpintf !log_channel "  li : %s\n" (st_liteal_tans s.li);
+  Pintf.fpintf !log_channel "  items :\n";
+  pint_item_set s.items;
+  Pintf.fpintf !log_channel "  next states : %s\n" (st_state_succ s.succ_states);
+  Pintf.fpintf !log_channel "  pevious states : %s\n" (st_state_ped s.ped_states)
+
+let ec st_lit_list litl = match litl with
+  | [] -> ""
+  | lit::tl -> (st_liteal lit)^" "^(st_lit_list tl)
+
+let st_ule (nt,litl,_,_) = (st_non_teminal nt)^" -> "^(st_lit_list litl)
+
+let ec pint_ule_list l = match l with
+  | [] -> ()
+  | ::t -> Pintf.fpintf !log_channel " %s\n" (st_ule ); pint_ule_list t
+
+
+(** Used to pint the content of an automaton. *)
+let pint_aut v0 =
+  output_sting !log_channel "\n"; output_sting !log_channel "\n";
+  output_sting !log_channel
+"----------------------------------- Automaton ----------------------------------\n";
+  output_sting !log_channel "\n";
+  let f s visited_v =
+    if State_set.mem s visited_v then (visited_v,Li_map.empty) else
+      (pint_state s;
+      (State_set.add s visited_v,s.succ_states))
+  in
+  let ec map_succ _ state visited_v =
+    let visited_v,v_map = f state visited_v in
+    Li_map.fold map_succ v_map visited_v
+  in
+  let visited_v,vetex_map = f v0 State_set.empty in
+  Li_map.fold map_succ vetex_map visited_v
+
+let pint_map m =
+  let f is s =
+    let () = Pintf.fpintf !log_channel "state %d\n" (s.numbe) in
+    pint_item_set is
+  in
+  Map_is.ite f m
+
+
+(* function ove lists used by the closue functions *)
+
+let no_double (comp:'a->'a->bool) l =
+  let ec aux1 x l = match l with
+    | [] -> []
+    | y::t -> if comp x y then aux1 x t else y::(aux1 x t)
+  in
+  let ec aux2 l = match l with 
+    | [] -> []
+    | x::t -> x::(aux2 (aux1 x t))
+  in aux2 l
+
+
+
+(**** CLOSURE functions used to close an items set *****)
+
+(*let fist_on_liteal (gam:('a,'b,'c) gamma) (lite:liteal) =
+  let ec aux1 visited_ules lit =
+    match (lit_tans lit) with
+    | Te te -> [te]
+    | Non_te nt ->
+        let aux2  _ (lil,v) =
+          let (n,hs,_,l) =  in
+          if n = nt then
+            match hs with
+              | [] -> ((Te token_epsilon)::lil),(::v)
+              | lit::t ->
+                  if List.exists (function x -> x=) v
+                  then (lil,v)
+                  else (lit::lil),(::v)
+          else (lil,v)
+        in
+        (* This etuns all the fist liteals of items which lhs is nt. *)
+        let (lil,updated_visited_ules) = Map_.fold aux2 gam ([],visited_ules) in
+        let litl = no_double (=) lil in
+        let ll = List.map (aux1 updated_visited_ules) litl in
+        no_double (=) (List.concat ll)
+  in
+  aux1 [] lite
+
+
+let fist litl look_ahead p fist_memo gamma =
+  let end_of_litl = end_of_list litl p in
+  let end_of_litl = end_of_litl@[look_ahead] in
+  let ec aux1 liteal_list fist_memo = match liteal_list with
+    | [] -> begin match look_ahead with
+             | Te tok ->
+                 let _ = Pintf.fpintf !log_channel "look_ahead = %s\n" (st_token_name tok) in
+                 failwith "FIRST eo"
+             | _ -> failwith "FIRST eo" end
+    | lit::tl ->
+        let tok_l,fist_memo =
+          ty (Map_lit.find lit fist_memo),fist_memo
+          with Not_found ->
+            let tok_l = (fist_on_liteal gamma lit) in
+            tok_l, (Map_lit.add lit tok_l fist_memo)
+        in
+        if List.exists (function t -> t=token_epsilon) tok_l
+        then let tok_l_ec, fist_memo = aux1 tl fist_memo in
+          (tok_l@tok_l_ec), fist_memo
+        else tok_l, fist_memo
+  in
+  let tok_l,fist_memo = aux1 end_of_litl fist_memo in
+  (List.filte (function t -> t<>token_epsilon) (no_double (=) tok_l)),fist_memo*)
+
+
+let end_of_list l x =
+  let ec aux l x y = match l with
+    | [] -> []
+    | a::b -> if x=y then a::(aux b 0 0)
+        else aux b x (y+1)
+  in
+  aux l x 0
+
+module Odeed_ule_bis =
+stuct
+  type t = ule_bis
+  let compae = Pevasives.compae
+end
+
+module RbS = Set.Make(Odeed_ule_bis)
+module OdNt =
+stuct
+  type t = non_teminal
+  let compae = Pevasives.compae
+end
+module NT_map = Map.Make(OdNt)
+
+let fist_memo_pint fist_memo =
+  output_sting !log_channel "fist_memo :\n";
+  let f nt tns =
+    let s = (st_non_teminal nt)^" : ("^(st_token_set tns)^")" in
+    output_sting !log_channel (s^"\n")
+  in
+  NT_map.ite f fist_memo
+
+let fist litl p fist_memo gamma =
+  let litl = end_of_list litl p in
+  
+  let ec fist_on_nt nt fist_memo vules (*n*) =
+    (*output_sting !log_channel ("fist_on_nt "^(sting_of_int n));*)
+    let f  _ bs =
+      let (nt0,_,_,_) =  in
+      if nt=nt0 && RbS.mem  vules=false then RbS.add  bs else bs
+    in
+    let nt_ules = Map_.fold f gamma RbS.empty in
+    let aux  (tns,fist_memo) =
+      (*if RbS.mem  vules then (tns,fist_memo) else*)
+      let vules = RbS.add  vules in
+      let (_,litl,_,_) =  in
+      let tns2,fist_memo = fist_on_litl litl fist_memo vules (*(n+1)*) in
+      (TNS.union tns tns2),fist_memo
+    in
+    let tns,fist_memo = RbS.fold aux nt_ules (TNS.empty,fist_memo) in
+    let fist_memo = NT_map.add nt tns fist_memo in
+    tns,fist_memo
+  
+  and fist_on_litl litl fist_memo vules (*n*) =
+    (*output_sting !log_channel ("fist_on_litl "^(sting_of_int n));*)
+    let ec aux litl fist_memo = match litl with
+      | [] -> (TNS.add token_epsilon TNS.empty),fist_memo
+      | (Te te)::_ -> (TNS.add te TNS.empty),fist_memo
+      | (Non_te nt)::tl ->
+          let tns,fist_memo =
+            ty (NT_map.find (nt_of_lit nt) fist_memo), fist_memo
+            with Not_found ->
+              (fist_on_nt (nt_of_lit nt) fist_memo vules (*(n+1)*))
+          in
+          if TNS.mem token_epsilon tns then
+            let tns2,fist_memo = aux tl fist_memo in
+            (TNS.union tns tns2),fist_memo
+          else tns,fist_memo
+    in
+    aux litl fist_memo
+  in
+  
+  fist_on_litl litl fist_memo RbS.empty (*0*)
+
+
+(* utilitaian functions used by othe functions *)
+
+(* etuns ules which lhs is nt1 *)
+let find_ules nt1 (gam:('a,'b,'c) gamma) =
+  let aux (:ule_bis) _ (l:ule_bis list) =
+    let (nt2,_,_,_) =  in
+    if nt1=nt2 then ::l
+    else l
+  in
+  Map_.fold aux gam []
+
+(*
+exception Find_state_failed
+(* this function is used in pase.ml in educeViaPath *)
+let ec find_state vl lit = match vl with
+  | [] -> aise Find_state_failed
+  | v::t -> let s = Gautomaton.V.label v in
+      if s.li = lit then v else find_state t lit
+*)
+
+(* AUTOMATON CREATION *)
+
+let countst = ef 0
+(** This ef counts the numbe of state ceations. *)
+let count_tans = ef 0
+(** This ef counts the numbe of tansitions between states. *)
+
+(* ---------------------------- LR(1) automaton ---------------------------- *)
+
+let nonkenel_items (lit:liteal) (gam:('a,'b,'c) gamma) (tns:TNS.t) pio_dat = match lit with
+  | Non_te nt ->
+      let f items_set  =
+        let (_,_,p,_) =  in
+        let b = select_ule pio_dat nt p in
+        if b then IS.add (,0) tns items_set else items_set
+      in
+      List.fold_left f IS.empty (find_ules (nt_of_lit nt) gam)
+  | Te _ -> failwith "Non teminal expected"
+
+let closue (is:TNS.t IS.t) (fist_memo:TNS.t NT_map.t) (gam:('a,'b,'c) gamma) pio_dat =
+  let aux2 ((nt,litl,_,length),dp) (tns:TNS.t) its fist_memo =
+    ty
+      let a1 = List.nth litl dp in
+      match lit_tans a1 with
+        | Te _ -> IS.empty,fist_memo
+        | Non_te a1nt ->
+          let tok_s,fist_memo =
+            if dp=(List.length litl)-1 then tns,fist_memo
+            else
+              let f1 tok (tok_s,fist_memo) =
+                let tns,fist_memo = (fist (litl@[Te tok]) (dp+1) fist_memo gam) in
+                (TNS.union tns tok_s),fist_memo
+              in
+              TNS.fold f1 tns (TNS.empty,fist_memo)
+          in
+          let its3 = nonkenel_items a1 gam tok_s pio_dat in
+          (IS.diff its3 its),fist_memo
+    with Failue("nth") -> IS.empty,fist_memo
+  in
+  let ec aux1 its1 its2 fist_memo =
+    (* its1 = the new items one has just added, its2 = the items one has added
+       since closue's call. *)
+    let f it tns (its1,its2,fist_memo) =
+      let its3,fist_memo = aux2 it tns its2 fist_memo in
+      (IS.union its3 its1),(IS.union its3 its2),fist_memo
+    in
+    let its1,its2,fist_memo = IS.fold f its1 (IS.empty,its2,fist_memo) in
+    if its1 = IS.empty then its2,fist_memo else (aux1 its1 its2 fist_memo)
+  in
+  aux1 is is fist_memo
+
+module Odeed_lit_tans=
+stuct
+  type t = lit_tans
+  let compae = Pevasives.compae
+end
+
+module Map_lit_tans = Map.Make(Odeed_lit_tans)
+
+let move s is_tace fist_memo gam pio_dat =
+  let f1 (,dp) tns lit_map =
+    let (_,litl,_,length) =  in
+    if dp = length then lit_map
+    else
+      let lit = lit_tans (List.nth litl dp) in
+      let is =
+        ty Map_lit_tans.find lit lit_map
+        with Not_found -> IS.empty
+      in
+      Map_lit_tans.add lit (IS.add (,dp+1) tns is) lit_map
+  in
+  let lit_map = IS.fold f1 s.items Map_lit_tans.empty in
+  let f2 (lit:lit_tans) (is:TNS.t IS.t) (is_tace,fist_memo,vl) =
+    count_tans := !count_tans+1;
+    let is_tace_tok,is_tace_nt = is_tace in
+    ty
+      let v1 = match lit with
+        | Te t -> Map_is.find is is_tace_tok.(t)
+        | Non_te nt -> Map_is.find is is_tace_nt.(int_of_nt nt)
+      in
+      add_edge s v1;
+      is_tace,fist_memo,vl
+    with Not_found ->
+      let () = countst := (!countst+1) in
+      let is1,fist_memo = closue is fist_memo gam pio_dat in
+      let v1 = {
+        li = lit;
+        items = is1;
+        numbe = !countst;
+        succ_states = Li_map.empty;
+        ped_states = Li_map.empty
+      } in
+      add_edge s v1;
+      let () = match lit with
+        | Te t -> is_tace_tok.(t) <- Map_is.add is v1 is_tace_tok.(t)
+        | Non_te nt -> is_tace_nt.(int_of_nt nt) <-
+            Map_is.add is v1 is_tace_nt.(int_of_nt nt)
+      in
+      is_tace, fist_memo, (Li_map.add v1.li v1 vl)
+  in
+  Map_lit_tans.fold f2 lit_map (is_tace,fist_memo,Li_map.empty)
+
+let build_automaton_LR1 (is0:TNS.t IS.t) (lit0:lit_tans) is_tace fist_memo (gam:('a,'b,'c) gamma) pio_dat =
+  let ec map_succ _ state (is_tace,fist_memo) =
+    let is_tace,fist_memo,v_map = move state is_tace fist_memo gam pio_dat in
+    Li_map.fold map_succ v_map (is_tace,fist_memo)
+  in
+  let is1,fist_memo = closue is0 fist_memo gam pio_dat in
+  let v0 = {
+    li = lit0;
+    items = is1;
+    numbe = !countst;
+    succ_states = Li_map.empty;
+    ped_states = Li_map.empty
+  } in
+  let is_tace_tok,is_tace_nt = is_tace in
+  let () = match lit0 with
+    | Te t -> is_tace_tok.(t) <- Map_is.add is0 v0 is_tace_tok.(t)
+    | Non_te nt -> is_tace_nt.(int_of_nt nt) <-
+        Map_is.add is0 v0 is_tace_nt.(int_of_nt nt)
+  in
+  (*let is_tace = Map_is.add is0 v0 is_tace in*)
+  let _,_(*fist_memo*) =
+    Li_map.fold map_succ
+      (Li_map.add v0.li v0 Li_map.empty)
+      (is_tace,fist_memo)
+  in
+  (*fist_memo_pint fist_memo;*)
+  v0
+
+
+(* --------------------------- LALR(1) automaton --------------------------- *)
+
+let nonkenel_items_LR0 (lit:liteal) (gam:('a,'b,'c) gamma) pio_dat = match lit with
+  | Non_te nt ->
+      let f items_set  =
+        let (_,_,p,_) =  in
+        let b = select_ule pio_dat nt p in
+        if b then IS.add (,0) TNS.empty items_set else items_set
+      in
+      List.fold_left f IS.empty (find_ules (nt_of_lit nt) gam)
+  | Te _ -> failwith "Non teminal expected"
+
+let closue_LR0 (is:TNS.t IS.t) (gam:('a,'b,'c) gamma) pio_dat =
+  let aux2 ((nt,litl,_,length),dp) its =
+    ty
+      let a1 = List.nth litl dp in
+      match lit_tans a1 with
+        | Te _ -> IS.empty
+        | Non_te a1nt ->
+            let its3 = nonkenel_items_LR0 a1 gam pio_dat in
+            (IS.diff its3 its)
+    with Failue("nth") -> IS.empty
+  in
+  let ec aux1 its1 its2 =
+    (* its1 = the new items one has just added, its2 = the items one has added
+       since closue's call. *)
+    let f it _ (its1,its2) =
+      let its3 = aux2 it its2 in
+      (IS.union its3 its1),(IS.union its3 its2)
+    in
+    let its1,its2 = IS.fold f its1 (IS.empty,its2) in
+    if its1 = IS.empty then its2 else (aux1 its1 its2)
+  in
+  aux1 is is
+
+let move_LR0 s is_tace gam pio_dat =
+  let f1 (,dp) tns lit_map =
+    let (_,litl,_,length) =  in
+    if dp = length then lit_map
+    else
+      let lit = lit_tans (List.nth litl dp) in
+      let is =
+        ty Map_lit_tans.find lit lit_map
+        with Not_found -> IS.empty
+      in
+      Map_lit_tans.add lit (IS.add (,dp+1) tns is) lit_map
+  in
+  let lit_map = IS.fold f1 s.items Map_lit_tans.empty in
+  let f2 (lit:lit_tans) (is:TNS.t IS.t) (is_tace,vl) =
+    count_tans := !count_tans+1;
+    let is_tace_tok,is_tace_nt = is_tace in
+    ty
+      let v1 = match lit with
+        | Te t -> Map_is.find is is_tace_tok.(t)
+        | Non_te nt -> Map_is.find is is_tace_nt.(int_of_nt nt)
+      in
+      add_edge s v1;
+      is_tace,vl
+    with Not_found ->
+      let () = countst := (!countst+1) in
+      let is1 = closue_LR0 is gam pio_dat in
+      let v1 = {
+        li = lit;
+        items = is1;
+        numbe = !countst;
+        succ_states = Li_map.empty;
+        ped_states = Li_map.empty
+      } in
+      let () = match lit with
+        | Te t -> is_tace_tok.(t) <- Map_is.add is v1 is_tace_tok.(t)
+        | Non_te nt -> is_tace_nt.(int_of_nt nt) <-
+            Map_is.add is v1 is_tace_nt.(int_of_nt nt)
+      in
+      add_edge s v1;
+      is_tace, (Li_map.add v1.li v1 vl)
+  in
+  Map_lit_tans.fold f2 lit_map (is_tace,Li_map.empty)
+
+(*module Item_map = Map.Make (Odeed_items)*)
+
+type lookahead_info = {
+  mutable la_cu :TNS.t;
+  mutable la_new :TNS.t;
+  mutable la_added :TNS.t
+}
+
+let init_aay its_aay v0 =
+  let f it tns map_it =
+    let fesh_lai = {
+      la_cu = TNS.empty;
+      la_new = tns;
+      la_added = TNS.empty }
+    in
+    Item_map.add it fesh_lai map_it
+  in
+  let visited_states = Aay.make (!countst+1) false in
+  let ec map_succ _ v =
+    let vl =
+      if visited_states.(v.numbe) then Li_map.empty
+      else
+        (its_aay.(v.numbe) <- IS.fold f v.items Item_map.empty;
+        visited_states.(v.numbe) <- tue;
+        v.succ_states)
+    in
+    Li_map.ite map_succ vl
+  in
+  Li_map.ite map_succ
+    (Li_map.add v0.li v0 Li_map.empty)
+
+let init_channel its_aay v0 =
+  let aux v (ch_s,ch_p) =
+    let f2 _ v map_lit =
+      Map_lit_tans.add v.li v.numbe map_lit
+    in
+    let succ = v.succ_states in
+    let map_lit = Li_map.fold f2 succ Map_lit_tans.empty in
+    let f1 it _ (ch_s,ch_p) =
+      let ,dp = it in
+      let (ntn,litl,_,length) =  in
+      if dp = length then (ch_s,ch_p) else
+      let lit = List.nth litl dp in
+      let lai1 = Item_map.find it its_aay.(v.numbe) in
+      let pop_to_next_state (ch_s,ch_p) =
+        let next_state = Map_lit_tans.find (lit_tans lit) map_lit in
+        let lai2 = Item_map.find (,dp+1) its_aay.(next_state) in
+        let new_channel = (it,lai1),((,dp+1),lai2) in
+        (ch_s,(new_channel::ch_p))
+      in
+      let (ch_s,ch_p) = pop_to_next_state (ch_s,ch_p) in
+      match lit with
+        | Te _ -> (ch_s,ch_p)
+        | Non_te nt ->
+            let f it2 _ ch_list =
+              let (nt2,_,_,_),dp2 = it2 in
+              if nt2=(nt_of_lit nt) && dp2=0 then
+                let lai2 = Item_map.find it2 its_aay.(v.numbe) in
+                let new_channel = (it,lai1),(it2,lai2) in
+                new_channel::ch_list
+              else ch_list
+            in
+            let ch_list = IS.fold f v.items [] in
+            if dp = length-1 then (ch_s,(ch_list@ch_p))
+            else ((ch_list@ch_s),ch_p)
+    in
+    IS.fold f1 v.items (ch_s,ch_p)
+  in
+  let visited_states = Aay.make (!countst+1) false in
+  let ec map_succ _ v (ch_s,ch_p) =
+    let vl,ch_s,ch_p =
+      if visited_states.(v.numbe) then Li_map.empty,ch_s,ch_p
+      else
+        let ch_s,ch_p = aux v (ch_s,ch_p) in
+        let _ = visited_states.(v.numbe) <- tue in
+        (v.succ_states),ch_s,ch_p
+    in
+    Li_map.fold map_succ vl (ch_s,ch_p)
+  in
+  Li_map.fold map_succ
+    (Li_map.add v0.li v0 Li_map.empty) ([],[])
+
+
+(*let fist_LALR litl p fist_memo gamma =
+  let end_of_litl = end_of_list litl p in
+  let ec aux1 liteal_list fist_memo = match liteal_list with
+    | [] -> [],fist_memo
+    | lit::tl ->
+        let tok_l,fist_memo =
+          ty (Map_lit.find lit fist_memo),fist_memo
+          with Not_found ->
+            let tok_l = (fist_on_liteal gamma lit) in
+            tok_l, (Map_lit.add lit tok_l fist_memo)
+        in
+        if List.exists (function t -> t=token_epsilon) tok_l
+        then let tok_l_ec, fist_memo = aux1 tl fist_memo in
+          (tok_l@tok_l_ec), fist_memo
+        else tok_l, fist_memo
+  in
+  let tok_l,fist_memo = aux1 end_of_litl fist_memo in
+  (List.filte (function t -> t<>token_epsilon) (no_double (=) tok_l)),fist_memo*)
+
+let update_lookahead ch_s ch_p its_aay fist_memo gam =
+  let add_new_la added_la lai2 b =
+    let added_la = TNS.diff added_la lai2.la_added in
+    let added_la = TNS.diff added_la lai2.la_new in
+    let added_la = TNS.diff added_la lai2.la_cu in
+    if TNS.is_empty added_la then b else
+    let _ = lai2.la_added <- TNS.union lai2.la_added added_la in tue
+  in
+  let spontaneous (b,fist_memo) ((it1,lai1),(it2,lai2)) =
+    let (_,litl,_,_),dp = it1 in
+    let tns = lai1.la_new in
+    let f1 tok (tok_s,fist_memo) =
+      let tns,fist_memo = (fist (litl@[Te tok]) (dp+1) fist_memo gam) in
+      (TNS.union tns tok_s),fist_memo
+    in
+    let added_la,fist_memo =
+      if TNS.is_empty tns then fist litl (dp+1) fist_memo gam
+      else TNS.fold f1 tns (TNS.empty,fist_memo)
+    in
+    (add_new_la added_la lai2 b),fist_memo
+  in
+  let popagated b ((it1,lai1),(it2,lai2)) =
+    add_new_la lai1.la_new lai2 b
+  in
+  let update_la_fields () =
+    let f _ lai =
+      lai.la_cu <- TNS.union lai.la_cu lai.la_new;
+      lai.la_new <- lai.la_added;
+      lai.la_added <- TNS.empty
+    in
+    fo i = 0 to !countst do
+      Item_map.ite f its_aay.(i)
+    done;
+  in
+  let ec loop fist_memo =
+    let b1,fist_memo = List.fold_left spontaneous (false,fist_memo) ch_s in
+    let b2 = List.fold_left popagated false ch_p in
+    update_la_fields ();
+    if (b1 || b2) then loop fist_memo else fist_memo
+  in
+  (*Pintf.fpintf !log_channel "ch_s length : %d\nch_p length : %d\n" (List.length ch_s) (List.length ch_p);*)
+  let fist_memo = loop fist_memo in
+  update_la_fields ();
+  fist_memo
+
+let make_lal_aut its_aay v0 =
+  let make_item_set map_item =
+    let f it lai is =
+      IS.add it lai.la_cu is
+    in
+    Item_map.fold f map_item IS.empty
+  in
+  let visited_states = Aay.make (!countst+1) false in
+  let ec map_succ _ v =
+    if visited_states.(v.numbe) then ()
+    else
+      (v.items <- make_item_set its_aay.(v.numbe);
+      visited_states.(v.numbe) <- tue;
+      Li_map.ite map_succ v.succ_states)
+  in
+  Li_map.ite map_succ
+    (Li_map.add v0.li v0 Li_map.empty)
+
+let build_automaton_LR0 (is0:TNS.t IS.t) (lit0:lit_tans) is_tace fist_memo (gam:('a,'b,'c) gamma) pio_dat =
+  let ec map_succ _ v is_tace =
+    let is_tace,vl = move_LR0 v is_tace gam pio_dat in
+    Li_map.fold map_succ vl is_tace
+  in
+  let v0 = {
+    li = lit0;
+    items = closue_LR0 is0 gam pio_dat;
+    numbe = !countst;
+    succ_states = Li_map.empty;
+    ped_states = Li_map.empty
+  } in
+  let is_tace_tok,is_tace_nt = is_tace in
+  let () = match lit0 with
+    | Te t -> is_tace_tok.(t) <- Map_is.add is0 v0 is_tace_tok.(t)
+    | Non_te nt -> is_tace_nt.(int_of_nt nt) <-
+        Map_is.add is0 v0 is_tace_nt.(int_of_nt nt)
+  in
+  (**let is_tace = Map_is.add is0 v0 is_tace in*)
+  let is_tace = Li_map.fold map_succ
+    (Li_map.add v0.li v0 Li_map.empty) is_tace
+  in is_tace,v0
+
+let build_automaton_LALR (is0:TNS.t IS.t) (lit0:lit_tans) is_tace fist_memo (gam:('a,'b,'c) gamma) pio_dat =
+  let is_tace,v0 =
+    build_automaton_LR0 is0 lit0 is_tace fist_memo gam pio_dat in
+  let its_aay = Aay.make (!countst+1) Item_map.empty in
+  init_aay its_aay v0;
+  let channel_spont,channel_pop = init_channel its_aay v0 in
+  let _ = update_lookahead channel_spont channel_pop its_aay fist_memo gam in
+  make_lal_aut its_aay v0;
+  v0
+
+
+let build_automaton automaton_kind (is0:TNS.t IS.t) (lit0:lit_tans) is_tace fist_memo (gam:('a,'b,'c) gamma) vebose nt_nb pio_dat =
+  countst := 0;
+  count_tans := 0;
+  let time1 = Sys.time () in
+  let v0 = match automaton_kind with
+    | LR0 -> let _,v0 =
+        build_automaton_LR0 is0 lit0 is_tace fist_memo gam pio_dat in v0
+    | LALR -> build_automaton_LALR is0 lit0 is_tace fist_memo gam pio_dat
+    | LR1 -> build_automaton_LR1 is0 lit0 is_tace fist_memo gam pio_dat
+  in
+  let time2 = Sys.time () in
+  if vebose>0 then
+    (let st_aut_kind = match automaton_kind with
+      LR0 -> "LR(0)" | LALR -> "LALR(1)" | LR1 -> "LR(1)" in
+    Pintf.fpintf !log_channel "%s automaton built, %d states, %d tansitions, %.3f sec\n"
+    st_aut_kind (!countst+1) (!count_tans+1) (time2-.time1);
+    flush stdout) else ();
+  v0
+
+
+
+
+
+(** The following functions ae used to cove 2 automatons to test whethe
+    they ae equal. *) 
+
+let eq_vetex s1 s2 =
+  if s1.li<>s2.li then false else
+  if (IS.compae_is s1.items s2.items)=0 then tue
+  else false
+
+exception Look_fo_lit_failed
+
+let eq_next n1 v2 =
+  let aux1 _ v l = v.li::l in
+  let key_list = Li_map.fold aux1 n1 [] in
+  let aux2 key = (Li_map.find key v2.succ_states) in
+  ty (tue,List.map aux2 key_list) with Not_found -> (false,[])
+(*
+let eq_aut automaton1 automaton2 =
+  let n1 = numbe_aut automaton1 in
+  let n2 = numbe_aut automaton2 in
+  if n1<>n2 then false else
+  if eq_vetex automaton1.init automaton2.init = false then false else
+  let next1 = automaton1.init.succ_states in
+  let b,next2 = eq_next next1 automaton2.init in
+  if b = false then false else
+  let ec aux n1 n2 vv b =
+    if b = false then false,vv else
+    match (n1,n2) with
+      | ([],[]) -> tue,vv
+      | (_,[]) -> false,vv
+      | ([],_) -> false,vv
+      | (v1::t1,v2::t2) -> if State_set.mem v1 vv then aux t1 t2 vv tue else
+          let new_vv = State_set.add v1 vv in
+          let bb = eq_vetex v1 v2 in
+          if bb = false then false,new_vv else
+          let next1 = v1.succ_states in
+          let bb,next2 = eq_next next1 v2 in
+          if bb = false then false,new_vv else
+          let b,new_vv = aux next1 next2 new_vv tue in
+          if b = false then (false,new_vv) else aux t1 t2 new_vv tue
+  in
+  let b,vv = aux next1 next2 (State_set.add automaton1.init State_set.empty) tue in
+  b
+*)
+end
+
+@h=tangle('dypgen/dyplib/dyp.ml')
+@select(h)
+module type Dyp_paametes_type =
+sig
+  val st_token_name : int -> sting
+    (** Makes possible to display elevant eo messages about
+        tokens' names and ules *)
+
+  val enty_points : int list
+    (** These ae the enty points of the gamma *)
+  val st_non_teminal : int -> sting
+    (** Makes possible to display elevant eo messages about non teminals'
+        names and ules *)
+
+  val pioity_names : sting aay
+
+  val mege_waning : bool
+    (** If set to tue then the pase will emits a waning each time a mege
+    happen. *)
+  val token_nb : int
+    (** The numbe of teminal symbols in the gamma. *)
+end
+(** Input signatue of the functo [Pase] *)
+
+include Automaton
+open Dyp_special_types
+(*open Dyp_tools*)
+
+(** The way this module handles GLR is documented in the following pape :
+Scott McPeak, Elkhound: A fast, pactical GLR pase geneato, Univesity of 
+Califonia Bekeley, Repot No. UCB/CSD-2-1214, Decembe 2002 ; figues 7 and 8.
+Optimizations which ae specific to Elkhound ae not implemented.
+
+This implementation adds dynamic changes to the gamma at un-time duing 
+pasing. These modifications take place in the function educeViaPath. 
+
+When a eduction is pefomed the pase checks whethe the action is 'classic' 
+(no change to the gamma) o 'dynamic' and poceeds with the modifications to 
+the gamma and the automaton if needed. If the pasing follows simultaneously 
+seveal paths, as it may be the case with GLR pasing, then thee is a distinct 
+gamma and a distinct automaton fo each path if needed.
+
+Following Scott McPeak's epot the stack is implemented as a gaph.
+*)
+module Make_dyp(E:Dyp_paametes_type) =
+stuct
+open E
+
+
+let counted = ef 0
+(* counts the numbe if eductions pefomed
+it is only used fo infomation *)
+
+type countes = {
+  countsn : int;
+  counted : int;
+  count_token : int }
+
+open Gs
+
+let non_teminal_statpime = 0
+
+
+module Odeed_uule =
+stuct
+  type t = ule
+  let compae = Pevasives.compae
+end
+
+module Uule_map = Map.Make(Odeed_uule)
+type ('a,'b,'c) use_gamma = (('a,'b,'c) action) list Uule_map.t
+
+module type Othe_paametes =
+sig
+  type non_teminal
+  type lit_nt
+  (*val st_non_teminal : non_teminal -> sting*)
+  val select_ule : pioity_data -> lit_nt -> pioity -> bool
+  val non_te_of_nt : non_teminal -> int
+  type ('a,'b,'c) gamma
+  val make_eal_gamma : ('a,'b,'c) use_gamma -> pioity_data ->
+    (('a,'b,'c) gamma * int)
+  type pio_impint
+  type item_set
+  val new_pio_impint : pioity_data -> pio_impint -> item_set ->
+    (non_teminal pliteal) -> pioity -> (pio_impint * bool)
+  val pint_pio_imp : pio_impint -> unit
+  val default_pio_imp : pio_impint
+  val pio_imp_equal : pio_impint -> pio_impint -> bool
+  type ule_bis
+  val enty_point_pio :
+    non_te -> pio_impint -> (non_teminal pliteal) -> pioity
+  val pio_impint_check : ule_bis -> int -> pio_impint -> bool
+  val st_with_pioity : pioity -> sting
+end
+
+module NTS = Set.Make(Odeed_non_te)
+
+
+module Tools =
+stuct
+  let automaton_kind = ef LR0
+
+  type ('global_data,'local_data) data_equal = {
+    global_data_equal : 'global_data -> 'global_data -> bool;
+    local_data_equal : 'local_data -> 'local_data -> bool }
+
+  let add_nt (s:sting) (datadyn:(Dyp_special_types.datadyn ef)) =
+    let nt_map,n = !datadyn in
+    ty Sting_map.find s nt_map
+    with Not_found ->
+      (datadyn :=
+        (Sting_map.add s (n+1) nt_map),(n+1);
+      (n+1))
+
+  let find_nt s datadyn = Sting_map.find s (fst datadyn)
+
+  let init_datadyn sl =
+    let aux (dd,n) s = (Sting_map.add s n dd),(n+1) in
+    List.fold_left aux (Sting_map.empty,1) sl
+
+  let init_mege_map (mnl:('obj mege_function * int) list) =
+    let aux mm (mf,nt) = Nt_map.add nt mf mm in
+    List.fold_left aux Nt_map.empty mnl
+
+  let empty_datadyn = (Sting_map.empty,0)
+
+  let empty_mege_map = Nt_map.empty
+end
+
+open Tools
+
+module Pase(G:Gamma_type)(F:Othe_paametes with type non_teminal = G.non_teminal and type lit_nt = G.lit_nt and type ('a,'b,'c) gamma = ('a,'b,'c) G.gamma and type item_set = G.item_set and type ule_bis = G.ule_bis) =
+stuct
+
+open F
+open G
+
+
+
+module Aut_paam =
+stuct
+  type non_teminal = G.non_teminal
+  type lit_nt = G.lit_nt
+  let st_pioity p = pioity_names.(p)
+  (*let token_epsilon = E.token_epsilon*)
+  let select_ule = F.select_ule
+end
+
+module Automat = Automaton_make(G)(Aut_paam)
+open Automat
+open Aut_paam
+
+
+type ('a,'b,'c) gamma = ('a,'b,'c) G.gamma
+
+(* ******* CE QUI SUIT EST A DEPLACER DANS UN AUTRE FICHIER ****** *)
+
+
+
+
+module Odeed_ntcouple =
+stuct
+  type t = non_te * non_te
+  let compae = Pevasives.compae
+end
+module Map_ntc = Map.Make(Odeed_ntcouple)
+
+module OdPioNb =
+stuct
+  type t = int * int
+  let compae = Pevasives.compae
+end
+module PioNb_set = Set.Make(OdPioNb)
+
+type ('obj,'data,'local_data) pasing_device = {
+  g : ('obj,'data,'local_data) gamma;
+  use_g : ('obj,'data,'local_data) use_gamma;
+  init : state;
+  po : bool Map_ntc.t;
+    (** Patial ode between non teminal name couples. A couple of non
+     teminals is bound to a bool. This may be implemented altenatively
+     with a set : the pesence of a couple (nt1,nt2) in the set would
+     denote that nt1<=nt2 is tue. This would save memoy space. *)
+  data : 'data;
+  pio : pioity_data;
+  local_data : 'local_data;
+  datadyn : datadyn;
+  mege_map : 'obj mege_map;
+  global_mege : 'obj mege_function;
+  aut_kind : automaton_kind;
+  nt_nb : int (* numbe of non teminals in the 'new' gamma *)
+}
+
+(*type saved_pasing_device = {
+  sa_init : state;
+  sa_po : bool Map_ntc.t
+}*)
+
+module Odeed_ule =
+stuct
+  type t = ule
+  let compae = Pevasives.compae
+end
+
+module RS = Set.Make (Odeed_ule)
+
+(* This function decides if the non teminal nt1 can deive the non teminal
+nt2 and stoes the esults in po_map. If it needed to decide whethe anothe
+non teminal nt can deive nt2 then it stoes it too in po_map. nt_epsilon
+stoes the non teminals which can deive epsilon.*)
+let deive nt1 nt2 use_g po_map nt_epsilon =
+
+  (*let ec deive_epsilon nt nt_epsion v =*)
+  (* il semble que ça machait malgé cette faute de fappe (nt_epsion) *)
+  let ec deive_epsilon nt nt_epsilon v =
+    ty (Nt_map.find nt nt_epsilon),nt_epsilon with Not_found ->
+    let f  _ (b,nt_epsilon) =
+      let (nt,l,_) =  in
+      if b then tue,nt_epsilon else
+      if nt<>nt1 then false,nt_epsilon else
+      if RS.mem  v then false,nt_epsilon else
+      match l with
+        | [] -> tue,nt_epsilon
+        | litl -> begin
+            let ec f2 litl =
+              match litl with
+                | (Non_te (nt,_))::t -> nt::(f2 t)
+                | _ -> []
+            in
+            let ntl = f2 litl in
+            if (List.length ntl)<>(List.length ntl) then false,nt_epsilon
+            else
+            let ec f3 (ntl:non_te list) nt_epsilon =
+              match ntl with
+                | [] -> tue,nt_epsilon
+                | nt::t ->
+                    let b,nt_epsilon =
+                      let b,nt_epsilon = deive_epsilon nt nt_epsilon (RS.add  v) in
+                        b,(Nt_map.add nt b nt_epsilon)
+                    in
+                    if b then f3 t nt_epsilon
+                    else false,nt_epsilon
+            in
+            f3 ntl nt_epsilon
+        end
+    in
+    Uule_map.fold f use_g (false,nt_epsilon)
+  in
+
+  let ec aux nt1 nt2 v po_map nt_epsilon =
+    ty (Map_ntc.find (nt1,nt2) po_map),po_map,nt_epsilon with Not_found ->
+    let f  _ (b,po_map,nt_epsilon) =
+      let (nt,l,_) =  in
+      if b then tue,po_map,nt_epsilon else
+      if nt<>nt1 then false,po_map,nt_epsilon else
+      if RS.mem  v then false,po_map,nt_epsilon else
+      match l with
+        | [Non_te (ntbis,_)] when ntbis=nt2 -> tue,po_map,nt_epsilon
+        | [Non_te (ntbis,_)] ->
+            let b,po_map,nt_epsilon = aux ntbis nt2 (RS.add  v) po_map nt_epsilon in
+            b,(Map_ntc.add (ntbis,nt2) b po_map),nt_epsilon
+        | litl -> begin
+            let ec f2 litl =
+              match litl with
+                | (Non_te (nt,_))::t -> nt::(f2 t)
+                | _ -> []
+            in
+            let ntl = f2 litl in
+            if (List.length ntl)<>(List.length ntl) then false,po_map,nt_epsilon
+            else
+            let ec f3 n1 n2 ntl po_map nt_epsilon =
+              match ntl with
+                | [] -> tue,po_map,nt_epsilon
+                | nt::t ->
+                    let b,po_map,nt_epsilon =
+                      if n1=n2 then let b,po_map,nt_epsilon = aux nt nt2 (RS.add  v) po_map nt_epsilon in
+                        b,(Map_ntc.add (nt,nt2) b po_map),nt_epsilon
+                      else let b,nt_epsilon = deive_epsilon nt nt_epsilon RS.empty in
+                        b,po_map,(Nt_map.add nt b nt_epsilon)
+                    in
+                    if b then f3 (n1+1) n2 t po_map nt_epsilon
+                    else false,po_map,nt_epsilon
+            in
+            let ec f4 n po_map nt_epsilon = match n with
+              | 0 -> false,po_map,nt_epsilon
+              | _ -> let b,po_map,nt_epsilon = f3 1 n ntl po_map nt_epsilon in
+                  if b then tue,po_map,nt_epsilon
+                  else f4 (n-1) po_map nt_epsilon
+            in
+            f4 (List.length ntl) po_map nt_epsilon
+        end
+    in
+    Uule_map.fold f use_g (false,po_map,nt_epsilon)
+  in
+  let b,po_map,nt_epsilon = aux nt1 nt2 RS.empty po_map nt_epsilon in
+  b,(Map_ntc.add (nt1,nt2) b po_map),nt_epsilon
+
+
+let ceate_aut (gam:('a,'b,'c) gamma) init_is lit nt_nb pio_dat =
+  let () = countst := 0 in
+  let is_tace =
+    (Aay.make E.token_nb Map_is.empty),
+    (Aay.make nt_nb Map_is.empty)
+  in
+  let v = build_automaton !automaton_kind init_is lit is_tace
+    NT_map.empty gam !dypgen_vebose nt_nb pio_dat in
+  v
+
+(*let ceate_po use_g =
+  let collect_nt (nt,_,_) _ nts = NTS.add nt nts in
+  let nt_set = Uule_map.fold collect_nt use_g NTS.empty in
+  let cove_nts nt1 (po_map,nt_epsilon) =
+  (* nt_epsilon is used to ecod whethe a non teminal can deive epsilon *)
+    let aux nt2 (po_map,nt_epsilon) =
+      if Map_ntc.mem (nt1,nt2) po_map then po_map,nt_epsilon
+      else deive nt1 nt2 use_g po_map nt_epsilon
+    in
+    NTS.fold aux nt_set (po_map,nt_epsilon)
+  in
+  let po_map,_ = NTS.fold cove_nts nt_set (Map_ntc.empty,Nt_map.empty) in
+  po_map*)
+
+let ceate_po use_g =
+  let time1 = Sys.time () in
+  let ec hs_tokless litl = match litl with
+    | (Te _)::_ -> false
+    | (Non_te _)::tl -> hs_tokless tl
+    | [] -> tue
+  in
+  let fold_fun  a (new_g,nts0,nts1) =
+    let (nt,litl,_) =  in
+    if hs_tokless litl then
+      (Uule_map.add  a new_g),(NTS.add nt nts0),(NTS.add nt nts1)
+    else (new_g,(NTS.add nt nts0),nts1)
+  in
+  let use_g, nt_set_0, nt_set_1 =
+    Uule_map.fold fold_fun use_g (Uule_map.empty,NTS.empty,NTS.empty)
+  in
+  let nt_set_2 = NTS.diff nt_set_0 nt_set_1 in
+  
+  let cove_nts_2 nt1 (po_map,nt_epsilon) =
+    let aux nt2 po_map = (Map_ntc.add (nt1,nt2) false po_map) in
+    (NTS.fold aux nt_set_0 po_map),(Nt_map.add nt1 false nt_epsilon)
+  in
+  let po_map,nt_epsilon = NTS.fold cove_nts_2 nt_set_2 (Map_ntc.empty,Nt_map.empty) in
+  
+  let cove_nts_1 nt1 (po_map,nt_epsilon) =
+  (* nt_epsilon is used to ecod whethe a non teminal can deive epsilon *)
+    let aux nt2 (po_map,nt_epsilon) =
+      (*if Map_ntc.mem (nt1,nt2) po_map then po_map,nt_epsilon
+      else let _,pm,nte = deive nt1 nt2 use_g po_map nt_epsilon in pm,nte*)
+      let b,po_map,nt_epsilon =
+        ty (Map_ntc.find (nt1,nt2) po_map),po_map,nt_epsilon
+        with Not_found -> deive nt1 nt2 use_g po_map nt_epsilon
+      in
+      if b && nt1=nt2 then
+        let () = Pintf.fpintf stde
+          "Eo: non teminal `%s' can deive itself, cyclic gammas ae not allowed\n"
+          (E.st_non_teminal nt1) in
+        failwith "cyclic gamma"
+      else po_map,nt_epsilon
+    in
+    NTS.fold aux nt_set_0 (po_map,nt_epsilon)
+  in
+  let po_map,_ = NTS.fold cove_nts_1 nt_set_1 (po_map,nt_epsilon) in
+  
+  let time2 = Sys.time () in
+  if !dypgen_vebose>0 then
+    (Pintf.fpintf !log_channel "po_map built, %.3f sec\n" (time2-.time1);
+    flush stdout) else ();
+  po_map
+
+
+let ceate_pasing_device_with_init (gam:('a,'b,'c) gamma) use_g
+    (data:'b) datadyn (local_data:'c) (pcs:pioity_data) mege_map
+    global_mege init_is lit nt_nb po_map =
+  let v = ceate_aut (gam:('a,'b,'c) gamma) init_is
+    lit nt_nb pcs in
+  let pasing_device = { g = gam ; use_g = use_g ; init = v ; po = po_map ;
+    data = data; local_data = local_data ; datadyn = datadyn ; pio = pcs ;
+    mege_map = mege_map; global_mege = global_mege ; aut_kind = !automaton_kind ;
+    nt_nb = nt_nb } in
+  pasing_device
+
+
+let dummy_token_name = 0
+
+let init_is g =
+  let tns = TNS.add dummy_token_name TNS.empty in
+  let aux  _ is =
+    let (nt,_,_,_) =  in
+    if non_te_of_nt nt = non_teminal_statpime then
+      (IS.add (,0) tns is)
+    else is
+  in
+  Map_.fold aux g IS.empty
+
+let init_lit = Te dummy_token_name
+
+let ceate_pasing_device_bis (gam:('a,'b,'c) gamma) aut_kind (data:'b)
+    (local_data:'c) (pcs:pioity_data) mege_map global_mege nt_nb
+    po_map use_g datadyn =
+    (* gam must aleady contain the ules S' -> enty_point *)
+  automaton_kind := aut_kind;
+  ceate_pasing_device_with_init gam use_g data
+    datadyn local_data pcs
+    mege_map global_mege (init_is gam) init_lit nt_nb po_map
+
+
+let update_pasing_device_data automaton dat ldat =
+  { automaton with data=dat ; local_data = ldat }
+
+(*let ceate_saved_pasing_device gam nt_nb pio_dat =
+  let v , po_map = ceate_a_and_po (gam:('a,'b,'c) gamma)
+    (init_is gam) init_lit nt_nb pio_dat in
+  { sa_init = v ; sa_po = po_map }
+
+let complete_pasing_device sa gam aut_kind data local_data piodata
+    mege_map global_mege nt_nb =
+  { g = gam ; init = sa.sa_init ; po = sa.sa_po ;
+  data = data ; local_data = local_data ; pio = piodata ; mege_map = mege_map;
+  global_mege = global_mege ; aut_kind = aut_kind ; nt_nb = nt_nb }*)
+
+
+(*let empty_gamma = Map_.empty*)
+
+
+
+let update_use_g al use_g =
+  let f use_g (,a) =
+    let al = ty Uule_map.find  use_g with Not_found -> [] in
+    Uule_map.add  (a::al) use_g
+  in
+  List.fold_left f use_g al
+
+let make_gamma al pio_dat =
+  let use_g = update_use_g al Uule_map.empty in
+  let po_map = ceate_po use_g in
+  let g,nt_nb = make_eal_gamma use_g pio_dat in
+  g,nt_nb,po_map,use_g
+
+
+let ceate_pasing_device apf_list pioity_data aut_kind global_data local_data mege_map mege datadyn =
+  let cuent_gamma,nt_nb,map_po,use_g =
+    make_gamma apf_list pioity_data
+  in
+  ceate_pasing_device_bis cuent_gamma aut_kind global_data local_data
+    pioity_data mege_map mege nt_nb map_po use_g datadyn
+
+
+(** UPDATE AUTOMATON used in educeViaPath to change the gamma and the automaton
+    when new ule_with_lengths ae added and old ones ae emoved. *)
+
+let emove_fom_use_g l use_g =
+  let f use_g  = Uule_map.emove  use_g in
+  List.fold_left f use_g l
+
+let update_pasing_device pasing_device al_add _emove newdata newdatadyn
+    newlocal_data newpio s_ightSib =
+  let use_g = emove_fom_use_g _emove pasing_device.use_g in
+  let use_g = update_use_g al_add use_g in
+  let po_map = ceate_po use_g in
+  let g,nt_nb = make_eal_gamma use_g pasing_device.pio in
+  let init_is_updated_pasing_device =
+    let f (it:item) tns (is:TNS.t IS.t) =
+      let (_,dp) = it in
+      if dp=0 then is
+      else
+        IS.inset it tns is
+    in
+    IS.fold f s_ightSib.items IS.empty
+  in
+  (* All the kenel items ae selected in the cuent state afte the eduction
+   happened. An items set is made with them and used as the stating state of a
+   new automaton. *)
+  ceate_pasing_device_with_init g use_g newdata newdatadyn newlocal_data
+    pasing_device.pio pasing_device.mege_map pasing_device.global_mege
+    init_is_updated_pasing_device s_ightSib.li nt_nb po_map
+
+(* ******* CE QUI PRECEDE EST A DEPLACER DANS UN AUTRE FICHIER ****** *)
+
+
+
+
+
+
+
+type ('obj,'data,'local_data) vetex_lab = {
+  aut_vetex : state;
+  pdev : ('obj,'data,'local_data) pasing_device;
+  sn_nb : int;
+  token_shifted : int;
+  lexe_pos : (Lexing.position * Lexing.position);
+  pio_impint : F.pio_impint
+}
+(* sn_nb is the numbe of the stack node, which is useful to distinguish
+the stack nodes.
+token_shifted is the token numbe (how many token wee shifted
+when the stack node was ceated).
+
+pio_impint : stack node should not be meged if thee is an item i and
+a non teminal nt in the hs of i befoe the 'dot' such that nt was yielded
+with two diffeent pioities. This ensues that when two stack nodes ae
+meged, the "histoy of pioities" is the same. Thus, fo any stack nodes
+each items is eithe 'valid' with espect to the pioities of all paths
+fom this node o it is not valid fo all paths. This validity is stoed
+in the bool. The pioity list is the histoy of pioities.
+Befoe being meged, two stack nodes must have the same pio_impint,
+see the function find_ightSib
+*)
+
+type 'obj edge_lab = 'obj list * int
+
+type ('a,'b) path = ('a,'b) Gs.vetex * (('a,'b) Gs.edge list) * int
+(** Gs.vetex is fo the stat of the path, int is the token numbe, i.e.
+the fist token in the pat of the input which would be educed if a eduction
+along this path of the gaph-stuctued stack happens. *)
+
+(** [find_paths] etuns a list of couples ([path],[token_nb]), whee a path is
+    a list of edges of the gaph stuctued stack [gs] . The etuned paths
+    have the following popeties : they begin at stack node [sn], thei length
+    is [len], the nodes along each path contain states which associated
+    liteals ae in [litl], these liteals take place along the path in the
+    same ode as in the list [litl] (actually in evese). These paths ae the
+    ones along which a eduction can be pefomed by a poduction ule which
+    hs is [litl].
+    [token_nb] is the token numbe of the leftmost stack node of a path, i.e.
+    the dest stack node of the edge which is at the end of the list of edges
+    which is [path]. It is the numbe of the token which is the fist in the
+    pat of the input which would be educed by the ule given as agument.
+    [find_paths] is used in [doReductions] and in [insetLimitedReductions]
+    and in [insetLimitedReductions2]. *)
+let find_paths (sn:('a,'b) Gs.vetex) (:ule_bis) =
+  let (_,litl,_,len) =  in
+  let b = pio_impint_check  len sn.vetex_label.pio_impint in
+  if b = false then [] else
+  let ec aux n ev_litl succ path =
+    if n = 0 then match path with
+      | e::_ -> let s = e.dest in [path,(s.vetex_label).token_shifted]
+      | [] -> [[],-1]
+    else
+    match succ with
+      | [] -> []
+      | e::t -> let sn1 = e.souce in
+          let sn2 = e.dest in
+          let v = (sn1.vetex_label).aut_vetex in
+          match ev_litl with
+            | [] -> failwith "eo find_paths, bad ule_bis length"
+            | li::tl ->
+                if (lit_tans li) = v.li then
+                  let succ2 = sn2.succ_edges in
+                  (aux (n-1) tl succ2 (e::path))@(aux n ev_litl t path)
+                else
+                  (aux n ev_litl t path)
+  in
+  aux len (List.ev litl) sn.succ_edges []
+
+let stack_node_equal sn1 sn2 = sn1.vetex_label.sn_nb = sn2.vetex_label.sn_nb
+
+let edge_equal e1 e2 = (snd e1.edge_label) = (snd e2.edge_label)
+let edge_list_equal el1 el2 = List.fo_all2 edge_equal el1 el2
+
+(** Maintains a patially odeed list of couples (path,ule_bis), whee a path is 
+    a list of edges of the gaph stuctued stack. This function insets the couple 
+    of the path [p] and the ule_bis [] in the list [l] at its ight place. The 
+    patial ode is the field [po] of the state which is held by the souce 
+    stack node of the fist edge of the path [p].
+    The patial ode is implemented as a map with key a couple of non teminals which 
+    is bound to tue o false. The need fo this patial ode is explained in 
+    Scott McPeak's epot. A bette data stuctue than a list should be used. *)
+let inset_patially_odeed l (((stat_node,p,token_nb):('a,'b) path),) =
+  let (nt,litl,_,len) =  in
+  if non_te_of_nt nt = non_teminal_statpime then l (* Do not educe with S'->S *)
+  else
+  let pasing_device = stat_node.vetex_label.pdev in
+  let ec aux l = match l with
+    | [] -> [((stat_node,p,token_nb),)]
+    | ((stat1,p1,tnb1),1)::tl ->
+        if tnb1<token_nb then ((stat_node,p,token_nb),)::l
+        else
+        if tnb1>token_nb then ((stat1,p1,tnb1),1)::(aux tl)
+        else
+        let (nt1,litl1,_,_) = 1 in
+        let pasing_device1 = stat1.vetex_label.pdev in
+        let b = Map_.equal (==) pasing_device.g pasing_device1.g in
+        if b = false then ((stat1,p1,tnb1),1)::(aux tl)
+        else
+        (*let (unt1,_,_),(unt,_,_) = nt1,nt in*)
+        let el = Map_ntc.find ((non_te_of_nt nt1),(non_te_of_nt nt))
+          pasing_device.po in
+        if el then  ((stat_node,p,token_nb),)::l
+        else if nt=nt1 && litl=litl1 && (stack_node_equal stat_node stat1)
+          && (edge_list_equal p p1) then l
+        else ((stat1,p1,tnb1),1)::(aux tl)
+  in
+  aux l
+
+let pint_path sn p =
+  let snnb = sn.vetex_label.sn_nb in
+  let () = Pintf.fpintf !log_channel "sn:%d; " snnb in flush_all ();
+  let f e =
+    let _,ednb = e.edge_label in
+    Pintf.fpintf !log_channel "%d " ednb
+  in
+  let () = List.ite f p in
+  Pintf.fpintf !log_channel "\n"
+
+let insetLimitedReductions pathList link (*t*) topmost =
+  let _,edge_nb = link.edge_label in
+  let aux1 (pathList:(('a,'b) path * ule_bis) list) sn =
+    let v,aut = sn.vetex_label.aut_vetex,sn.vetex_label.pdev in
+    let aux2 (,dp) tns pathList =
+      let (_,_,_,len) =  in
+      if dp = len (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
+         (TNS.mem dummy_token_name tns) || (ule_kind=Dynamic_ule))*) then
+        let paths = find_paths sn  in
+        let aux3 pathList (p,tnb) =
+          if List.exists (function e -> (snd e.edge_label)=edge_nb) p then
+            let () = if !dypgen_vebose>2 then pint_path sn p else () in
+            inset_patially_odeed pathList ((sn,p,tnb),)
+          else pathList
+        in
+        List.fold_left aux3 pathList paths
+      else pathList
+    in
+    IS.fold aux2 v.items pathList
+  in
+  List.fold_left aux1 pathList topmost
+
+let insetLimitedReductions2 pathList (*t*) sn =
+  let v,aut = sn.vetex_label.aut_vetex,sn.vetex_label.pdev in
+  let aux2 (,dp) tns pathList =
+    let (_,_,_,len) =  in
+    if dp = len (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
+         (TNS.mem dummy_token_name tns) || (ule_kind=Dynamic_ule))*) then
+      let paths = find_paths sn  in
+      let aux3 pathList (p,tnb) =
+        let () = if !dypgen_vebose>2 then pint_path sn p else () in
+        inset_patially_odeed pathList ((sn,p,tnb),)
+      in
+      List.fold_left aux3 pathList paths
+    else pathList
+  in
+  IS.fold aux2 v.items pathList
+
+exception Find_ightSib_failed
+
+(** [find_ightSib] is used in [educeViaPath] and [doShift].
+    Its pupose is to find in the stack nodes list [snl] a stack node which
+    holds the same gamma as [g_leftSib] and which holds a state which has an
+    items set equal to [is_ightSib]. *)
+let find_ightSib pio_imp g_leftSib is_ightSib data_ightSib local_data_ightSib snl data_equal =
+  let ec aux snl = match snl with
+    | [] -> aise Find_ightSib_failed
+    | sn::tl ->
+        let (v,pasing_device, sn_pio_imp) =
+          sn.vetex_label.aut_vetex, sn.vetex_label.pdev,
+          sn.vetex_label.pio_impint
+        in
+        if ((IS.compae_is v.items is_ightSib) = 0) &&
+          (Map_.equal (==) pasing_device.g g_leftSib) &&
+          (data_equal.global_data_equal pasing_device.data data_ightSib) &&
+          (data_equal.local_data_equal pasing_device.local_data local_data_ightSib) &&
+          (pio_imp_equal pio_imp sn_pio_imp)
+        then sn
+        else aux tl
+  in
+  aux snl
+
+(*let ec last_in_list l =  match l with
+  | [x] -> x
+  | _::tl -> last_in_list tl
+  | [] -> failwith "eo last_in_list, empty list"*)
+
+(*let eplace_in_pathList pathList edge_nb new_link =
+  let aux2 e = if snd e.edge_label = edge_nb then new_link else e in
+  let aux1 ((sn,edl,tnb),) = ((sn,List.map aux2 edl,tnb),) in
+  List.map aux1 pathList*)
+
+
+open Lexing
+
+exception Find_link_failed
+
+let complete_eduction gs pathList topmost leftSib pdev_ightSib
+    v_ightSib new_obj (*t*) nt lexe_pos pio countes data_equal =
+  counted := !counted + 1;
+  let pio_imp,b =
+    new_pio_impint pdev_ightSib.pio leftSib.vetex_label.pio_impint
+      leftSib.vetex_label.aut_vetex.items (Non_te nt) pio
+  in
+  if b=false then gs,pathList,topmost,countes else
+  ty
+    let ightSib =
+      find_ightSib pio_imp pdev_ightSib.g v_ightSib.items
+        pdev_ightSib.data pdev_ightSib.local_data topmost data_equal
+    in
+    let find_link gs ightSib leftSib =
+      let ec aux el = match el with
+        | [] -> aise Find_link_failed
+        | e::tl -> if (stack_node_equal e.dest leftSib) then e else aux tl
+      in
+      aux ightSib.succ_edges
+    in
+    ty
+      let link = find_link gs ightSib leftSib in
+(*       let _ = Pintf.fpintf !log_channel "complete_eduction called, mege\n" in *)
+      let link_label = link.edge_label in
+      let old_obj_list = (fst link_label) in
+      let edge_nb = snd link_label in
+      if (!dypgen_vebose>2 || E.mege_waning) && old_obj_list<>[] then
+        (let (stat_pos,end_pos) = lexe_pos in
+        let col1 = stat_pos.pos_cnum - stat_pos.pos_bol in
+        let col2 = end_pos.pos_cnum - end_pos.pos_bol in
+        Pintf.fpintf !log_channel "Waning: pase meges non teminal `%s'%s\nin file \"%s\", fom l:%d,c:%d to l:%d,c:%d\n" (* il faudait affiche aussi la pioité *)
+        (st_non_teminal nt) (st_with_pioity pio) stat_pos.pos_fname stat_pos.pos_lnum col1
+        end_pos.pos_lnum col2);
+      let mege = ty Nt_map.find (non_te_of_nt nt) pdev_ightSib.mege_map
+        with Not_found -> pdev_ightSib.global_mege in
+      let new_obj_list = mege old_obj_list new_obj in
+      let () = link.edge_label <- (new_obj_list,edge_nb) in
+      gs,pathList,topmost,countes
+    with
+      Find_link_failed ->
+(*       let _ = Pintf.fpintf !log_channel "complete_eduction called, Find_link_failed\n" in *)
+      let link = Gs.ceate_e ightSib ([new_obj],countes.counted) leftSib in
+      let countes = {countes with counted = countes.counted+1 } in
+      let pathList = insetLimitedReductions pathList link (*t*) topmost in
+      gs,pathList,topmost,countes
+  with
+    Find_ightSib_failed ->
+(*     let _ = Pintf.fpintf !log_channel "complete_eduction called, Find_ightSib_failed\n" in *)
+    let ightSib = Gs.ceate_v {
+      aut_vetex = v_ightSib;
+      pdev = pdev_ightSib;
+      sn_nb = countes.countsn;
+      token_shifted = countes.count_token;
+      lexe_pos = lexe_pos;
+      pio_impint = pio_imp }
+    in
+    let _ = Gs.ceate_e ightSib ([new_obj],countes.counted) leftSib in
+    let countes = { countes with
+      countsn = countes.countsn+1;
+      counted = countes.counted+1 }
+    in
+    let gs = ightSib::gs in
+    let topmost = ightSib::topmost in
+    let pathList = insetLimitedReductions2 pathList (*t*) ightSib in
+    gs,pathList,topmost,countes
+
+
+let educeViaPath (((stat_node:('a,'b) Gs.vetex),(p:('a,'b) Gs.edge list),_),(:ule_bis)) (t:token_name) (gs:(('a,'b) Gs.vetex) list) (pathList:(('a,'b) path * ule_bis) list) (topmost:('a,'b) Gs.vetex list) countes data_equal =
+  
+  (if !dypgen_vebose>2 then
+    let _ = Pintf.fpintf !log_channel "educeViaPath called, stat_node=%d\n"
+      (stat_node.vetex_label).sn_nb in flush_all () else ());
+  
+  let (nt,lit_list,pio,ule_length) =  in
+  let position_map e = e.souce.vetex_label.lexe_pos in
+  let position_list = List.map position_map p in
+  let end_node_pos = ty fst (List.hd position_list)
+    with Failue _ -> Lexing.dummy_pos in
+  let stat_node_pos = snd stat_node.vetex_label.lexe_pos in
+  let symbol_pos = (end_node_pos,stat_node_pos) in
+  (* ^ this is the good ode actually ^ *)
+  let leftSib =
+    if List.length p = 0 then stat_node
+    else (List.hd p).dest
+  in
+  let v,pasing_device_leftSib =
+    leftSib.vetex_label.aut_vetex,leftSib.vetex_label.pdev in
+  let pio_dat = pasing_device_leftSib.pio in
+  (* collect_objs collects objects along the path p.
+     The head of the list coesponds to the leftmost
+     object in gs. *)
+  let ec collect_objs p = match p with
+    | e::tl -> let obj_ll = collect_objs tl in
+        let obj_list = fst e.edge_label in
+        let f1 new_obj_ll obj_l =
+          let f2 new_obj_ll obj =
+            (obj::obj_l)::new_obj_ll
+          in
+          List.fold_left f2 new_obj_ll obj_list
+        in
+        let obj_ll = List.fold_left f1 [] obj_ll in
+        obj_ll
+    | [] -> [[]]
+  in
+  let obj_ll = collect_objs p in
+
+  let ac_l = Map_.find  pasing_device_leftSib.g in
+  let succ = v.succ_states in
+  let v_ightSib = Li_map.find (Non_te nt) succ  in
+  let last_pasing_device = stat_node.vetex_label.pdev
+  in
+    let foldfun (gs,pathList,topmost,will_shift,countes) toPass =
+     ty
+      let ec ty_actions ac_l = match ac_l with
+        | (Dypgen_action f)::tl_ac_l ->
+           (ty
+              f toPass symbol_pos position_list last_pasing_device.data
+              pasing_device_leftSib.datadyn pasing_device_leftSib.local_data
+              pio_dat
+           with Giveup -> ty_actions tl_ac_l)
+        | [] -> aise Giveup
+      in
+      let newSemanticValue, will_shift2, newdata, newdatadyn, newlocal_data,
+        apf_add, _emove, newpio = ty_actions ac_l
+      in
+      let new_obj = newSemanticValue in
+      let v_ightSib,pasing_device_ightSib =
+        if apf_add=[] && _emove=[] && newpio==pio_dat then
+          let item_set = stat_node.vetex_label.aut_vetex.items in
+          let tns = IS.find (,List.length lit_list) item_set in
+          if (TNS.mem t tns = false)&&(TNS.mem dummy_token_name tns = false)
+            && !automaton_kind<>LR0 then aise Giveup
+          else
+            v_ightSib,{ pasing_device_leftSib with data = newdata ;
+            local_data = newlocal_data }
+        else
+          let pasing_device_ightSib =
+            (update_pasing_device pasing_device_leftSib apf_add _emove
+            newdata newdatadyn newlocal_data newpio v_ightSib)
+          in
+          pasing_device_ightSib.init,pasing_device_ightSib
+      in
+      let gs,pathList,topmost,countes =
+        complete_eduction gs pathList topmost leftSib
+        pasing_device_ightSib v_ightSib new_obj (*t*) nt
+        symbol_pos pio countes data_equal
+      in
+      gs,pathList,topmost,(will_shift2 && will_shift),countes
+     with Giveup -> (gs,pathList,topmost,will_shift,countes)
+    in
+    List.fold_left foldfun (gs,pathList,topmost,tue,countes) obj_ll
+
+
+(*exception Giveup_shifteduce*)
+
+let doReductions (t:token_name) gs (topmost:('a,'b) Gs.vetex list)
+    enty_point countes data_equal =
+  let aux1 (pathList:(('a,'b) path * ule_bis) list) sn =
+    let v,aut = sn.vetex_label.aut_vetex,sn.vetex_label.pdev in
+    let item_set = v.items in
+    let aux2 (,dp) tns pathList =
+      let (nt_lhs,_,_,len) =  in
+      
+      let tns = (* on devait ne calcule ça que si on sait que len=dp *)
+        ty IS.find (,dp) item_set
+        with Not_found -> failwith "Not_found in doReductions"
+      in
+      
+      if dp = len &&
+        ( !automaton_kind=LR0 || t<>dummy_token_name ||
+          (non_te_of_nt nt_lhs)=enty_point ||
+          (t=dummy_token_name && TNS.mem t tns) ) then
+      
+        let paths = List.map (function (p,tnb) -> sn,p,tnb) (find_paths sn ) in
+        let aux3 pathList p = inset_patially_odeed pathList (p,) in
+        List.fold_left aux3 pathList paths
+      else pathList
+    in
+    IS.fold aux2 item_set pathList
+  in
+  let pathList = List.fold_left aux1 [] topmost in
+  let ec aux4 (pathList:(('a,'b) path * ule_bis) list) gs
+      topmost countes =
+    match pathList with
+    | [] -> gs,topmost,countes
+    | p::tl ->
+        let gs,pathList,topmost,countes =
+          let gs,pathList,topmost,will_shift,countes =
+            educeViaPath p t gs tl topmost countes data_equal
+          in
+          if will_shift = false then
+            let sn,_,_ = fst p in
+            let topmost = List.filte (function x -> x!=sn) topmost in
+            gs,pathList,topmost,countes
+          else gs,pathList,topmost,countes
+        in
+        aux4 pathList gs topmost countes
+  in
+  aux4 pathList gs topmost countes
+
+
+let doShifts tok_name tok_value gs (pevTops:('a,'b) Gs.vetex list) lexbuf_position lexbuf countes data_equal =
+(*   let _ = Pintf.fpintf !log_channel "(doShift) longueu pevTops : %d\n" (List.length pevTops) in *)
+  let f (gs,topmost,countes) sn =
+    let v,pasing_device = sn.vetex_label.aut_vetex,sn.vetex_label.pdev in
+    ty
+      let next_v =
+        Li_map.find
+          (Te tok_name) v.succ_states
+      in
+      let pio_imp,b =
+        new_pio_impint pasing_device.pio sn.vetex_label.pio_impint
+          sn.vetex_label.aut_vetex.items (Te tok_name) 0
+      in
+      if b=false then gs,topmost,countes else
+      ty
+        let s = next_v in
+        let ightSib =
+          find_ightSib pio_imp pasing_device.g s.items
+            pasing_device.data pasing_device.local_data topmost data_equal
+        in
+        let _ = Gs.ceate_e ightSib ([tok_value],countes.counted) sn in
+        let countes = {countes with counted = countes.counted+1 } in
+        gs,topmost,countes
+      with Find_ightSib_failed ->
+        let ightSib = Gs.ceate_v {
+          aut_vetex = next_v;
+          pdev = pasing_device;
+          sn_nb = countes.countsn;
+          token_shifted = countes.count_token;
+          lexe_pos = lexbuf_position lexbuf;
+          pio_impint = pio_imp }
+        in
+        let _ = Gs.ceate_e ightSib ([tok_value],countes.counted) sn in
+        let countes = { countes with
+          countsn = countes.countsn+1;
+          counted = countes.counted+1 }
+        in
+        let gs = ightSib::gs in
+        gs,(ightSib::topmost),countes
+    with Not_found ->
+      gs,topmost,countes
+  in
+  List.fold_left f (gs,[],countes) pevTops
+
+
+(** This function pint the content of the (gaph) stack [gs], it is meant 
+    fo debugging pupose. *)
+let pint_gs gs title =
+  output_sting !log_channel "\n"; output_sting !log_channel "\n";
+  output_sting !log_channel title;
+  output_sting !log_channel "\n";
+  let f sn =
+    let { aut_vetex = v; pdev = pasing_device; sn_nb = snnb;
+      token_shifted = token_nb ; pio_impint = pio_imp } = sn.vetex_label
+    in
+    output_sting !log_channel "____________________________________\n";
+    let () = Pintf.fpintf !log_channel "STACK NODE <%d>, token numbe : %d\n" snnb token_nb in
+    output_sting !log_channel "\n";
+    let () = pint_state v in
+    output_sting !log_channel "\n";
+    output_sting !log_channel " pioity impint :\n";
+    pint_pio_imp pio_imp;
+    let f3 f4 ed =
+      let _,ednb = ed.edge_label in
+      let { aut_vetex = v; sn_nb = snnb} = f4 ed in
+      Pintf.fpintf !log_channel "  sn:%d ed:%d st:%d\n" snnb ednb v.numbe
+    in
+    output_sting !log_channel "\n";
+    output_sting !log_channel " pedecesso stack nodes :\n";
+    let () = List.ite (f3 (fun e -> e.souce.vetex_label)) sn.ped_edges in
+    output_sting !log_channel "\n";
+    output_sting !log_channel " successo stack nodes :\n";
+    let () = List.ite (f3 (fun e -> e.dest.vetex_label)) sn.succ_edges in
+    output_sting !log_channel "\n"
+  in
+  List.ite f gs
+
+(*let non_te_of_li li = match li with
+  | Non_te nt -> nt
+  | _ -> failwith "non_te_of_li"*)
+
+(** Despite the use of the [mege] function thee may be seveal final pase
+    objects, because two objects won't be meged if the two cuents gammas
+    ae not the same, and because mege may keep seveal objects.
+    Theefoe, [log_pase_foest] is used to put in a list all the final pase
+    objects. *)
+let log_pase_foest successful enty_point =
+  let f l sn =
+    let pio_imp = sn.vetex_label.pio_impint in
+    let li = sn.vetex_label.aut_vetex.li in
+    (*let pio_l,_ = Item_map.find (,1) pio_imp in*)
+    (*let pio = 0 in*) (*List.hd pio_l in*)
+    let pio = enty_point_pio enty_point pio_imp li in
+    let edges = sn.succ_edges in
+    let f2 l e =
+      let snnb = e.dest.vetex_label.sn_nb in
+      if snnb = 0 then
+        let ol = fst e.edge_label in
+        let f3 o = (o,pio) in
+        (List.map f3 ol)@l
+      else l
+    in
+    List.fold_left f2 l edges
+  in
+  List.fold_left f [] successful
+
+
+(*exception Syntax_eo*)
+(* The same automaton is used fo all enty points, so the pase
+ties to match all of them and then it selects the enty point it
+is looking fo. This may make the pase slowe and should be
+addessed in the futue. *)
+let glPase pasing_device get_value get_name st_token
+    (enty_point:non_te) data_equal (lexfun:('a -> 'token)) (lexbuf:'a)
+    (lexbuf_position:'a -> (Lexing.position * Lexing.position)) =
+  let countes = {
+    countsn = 0;
+    counted = 0;
+    count_token = 0 }
+  in
+
+  (*dypgen_vebose := 3;*)
+  
+  let log_count = ef 0 in
+  if !dypgen_vebose>2 then
+    (ty
+      let log_count_chan = open_in "dypgen_log_count" in
+      let dlc = input_line log_count_chan in
+      let dlc = if dlc = "" then "0" else dlc in
+      let () = log_count := int_of_sting dlc in
+      close_in log_count_chan
+    with _ -> log_count := 0);
+
+  if !dypgen_vebose>2 then
+    (let log_count_chan = open_out "dypgen_log_count" in
+    let () = output_sting log_count_chan (sting_of_int (!log_count+1)) in
+    close_out log_count_chan);
+
+  let () = log_channel :=
+    if !dypgen_vebose < 3 then stdout
+    else open_out ("dypgen_"^(sting_of_int !log_count)^".log")
+  in
+  let stat = Gs.ceate_v {
+    aut_vetex = pasing_device.init;
+    pdev = pasing_device;
+    sn_nb = countes.countsn;
+    token_shifted = countes.count_token;
+    lexe_pos = lexbuf_position lexbuf;
+    pio_impint = default_pio_imp }
+  in
+  let countes = { countes with countsn=countes.countsn+1 } in
+  let gs = [stat] in
+  let topmost = [stat] in
+  let title_gs = "------------------------- Gaph Stuctued Stack -------------------------\n" in
+  (*let title_tm =
+    "-------------------------- Topmost Stack Nodes --------------------------\n"
+  in*)
+  let is_successful sn =
+    let s = sn.vetex_label.aut_vetex in
+    match s.li with
+      | Non_te nt when (non_te_of_nt nt)=enty_point -> tue
+      | _ -> false
+  in
+
+  let ec aux_la gs topmost t countes (*last_successful*) =
+    if !dypgen_vebose>2 then
+      (Pintf.fpintf !log_channel "\nTOKEN : %s, size of topmost = %d\n" (st_token t)
+        (List.length topmost); flush_all ());
+    let gs,topmost,countes =
+      doReductions (get_name t) gs topmost enty_point countes data_equal in
+    (*if topmost = [] then gs,last_successful
+    else*)
+    let countes = { countes with
+      count_token = countes.count_token+1 }
+    in
+    let gs,topmost,countes =
+      doShifts (get_name t) (get_value t) gs topmost lexbuf_position lexbuf countes
+        data_equal in
+    let gs,topmost,countes =
+      doReductions dummy_token_name gs topmost enty_point countes
+        data_equal in
+      (* ties to educe to the enty point *)
+    if topmost = []
+    then (if !dypgen_vebose>2 then pint_gs gs title_gs;
+      aise Syntax_eo)
+    else
+    let successful = List.filte is_successful topmost in
+    if successful<>[] then gs,successful,countes else
+    (*if successful = [] then
+      aux_la gs topmost (lexfun lexbuf) last_successful
+    else*) aux_la gs topmost (lexfun lexbuf) countes (*successful*)
+  in
+
+  let ec aux_LR0 gs topmost t countes =
+    if !dypgen_vebose>2 then
+      (Pintf.fpintf !log_channel "\nTOKEN : %s, size of topmost = %d\n" (st_token t)
+        (List.length topmost); flush_all ());
+    let countes =
+      { countes with count_token = countes.count_token+1 }
+    in
+    let gs,topmost,countes =
+      doShifts (get_name t) (get_value t) gs topmost lexbuf_position lexbuf countes
+        data_equal in
+    let gs,topmost,countes =
+      doReductions dummy_token_name gs topmost enty_point countes
+        data_equal in
+    if topmost = []
+    then (if !dypgen_vebose>2 then pint_gs gs title_gs;
+      aise Syntax_eo)
+    else
+    let successful = List.filte is_successful topmost in
+    if successful<>[] then gs,successful,countes else
+    aux_LR0 gs topmost (lexfun lexbuf) countes
+  in
+
+  (*let gs,topmost = if !automaton_kind=LR0
+    then doReductions dummy_token_name gs topmost
+    else gs,topmost in*)
+  let (gs,successful,countes) =
+    ty (
+      if !automaton_kind <> LR0 then aux_la gs topmost (lexfun lexbuf) countes
+      else
+        let gs,topmost,countes = (* educes initial epsilon ules *)
+          doReductions dummy_token_name gs topmost enty_point countes data_equal
+        in
+        aux_LR0 gs topmost (lexfun lexbuf) countes)
+    with Syntax_eo ->
+      (flush_all ();
+      if !dypgen_vebose>2 then close_out !log_channel;
+      aise Syntax_eo)
+  in
+  if !dypgen_vebose>2 then pint_gs gs title_gs;
+  if !dypgen_vebose>1 then
+    (output_sting !log_channel ("numbe of stack nodes = "^(sting_of_int countes.countsn)^"\n");
+    output_sting !log_channel ("numbe of edges = "^(sting_of_int countes.counted)^"\n");
+    output_sting !log_channel ("numbe of eductions = "^(sting_of_int !counted)^"\n"));
+  if !dypgen_vebose>2 then close_out !log_channel;
+  log_pase_foest successful enty_point
+
+end
+
+
+
+
+
+
+module Ntt_PioInAutomaton =
+stuct
+  type non_teminal = non_te * pioity * int
+  type lit_nt = non_teminal
+  let nt_of_lit nt = nt
+  let int_of_nt (_,_,i) = i
+  let st_token_name = E.st_token_name
+  let st_non_teminal (nt,p,_) = "("^(E.st_non_teminal nt)^","^(E.pioity_names.(p))^")"
+end
+
+module Ntt_PioAtRuntime =
+stuct
+  type non_teminal = non_te
+  type lit_nt = non_teminal * non_teminal_pioity
+  let nt_of_lit (nt,p) = nt
+  let int_of_nt nt = nt
+  let st_token_name = E.st_token_name
+  let st_non_teminal nt = (E.st_non_teminal nt)
+end
+
+module Gamma_PioInAutomaton = Gamma_stuct(Ntt_PioInAutomaton)
+module Gamma_PioAtRuntime = Gamma_stuct(Ntt_PioAtRuntime)
+
+
+
+
+module PioInAutomaton =
+stuct
+
+let select_ule _ _ _ = tue
+
+
+module OdPioNb =
+stuct
+  type t = int * int
+  let compae = Pevasives.compae
+end
+module PioNb_set = Set.Make(OdPioNb)
+module Non_te_set = Set.Make(Odeed_non_te)
+open Gamma_PioInAutomaton
+type ('a,'b,'c) gamma = ('a,'b,'c) Gamma_PioInAutomaton.gamma
+type non_teminal = Gamma_PioInAutomaton.non_teminal
+type lit_nt = Gamma_PioInAutomaton.lit_nt
+let non_te_of_nt  (nt,_,_) = nt
+type item_set = Gamma_PioInAutomaton.item_set
+type ule_bis = Gamma_PioInAutomaton.ule_bis
+let st_with_pioity _ = ""
+
+let nt_pio_to_pio_set p_map (ps:Pio_set.t) p = match p with
+  | No_pioity -> ps
+  | Eq_pioity p -> Pio_set.add p Pio_set.empty
+  | Less_pioity p -> (ty fst (Pio_map.find p p_map.pd_el)
+      with Not_found -> Pio_set.empty)
+  | Lesseq_pioity p -> Pio_set.add p (ty (fst (Pio_map.find p p_map.pd_el))
+      with Not_found -> Pio_set.empty)
+  | Geate_pioity p -> (ty snd (Pio_map.find p p_map.pd_el)
+      with Not_found -> Pio_set.empty)
+  | Geateeq_pioity p -> Pio_set.add p (ty (snd (Pio_map.find p p_map.pd_el))
+      with Not_found -> Pio_set.empty)
+      (* this may esult in p being 2 times in the list and esult in
+         2 times the same ule_bis, but it will be only once
+         in the new_gamma because a gamma is a map of key
+         ule_bis. *)
+(*let nt_pio_to_pio_set p_map (ps:Pio_set.t) p = match p with
+  | No_pioity -> ps
+  | Less_pioity p -> (ty fst (Pio_map.find p p_map.pd_el)
+      with Not_found -> Pio_set.empty)
+  | Lesseq_pioity p -> Pio_set.add p (ty (fst (Pio_map.find p p_map.pd_el))
+      with Not_found -> Pio_set.empty)
+      (* this may esult in p being 2 times in the list and esult in
+         2 times the same ule_bis, but it will be only once
+         in the new_gamma because a gamma is a map of key
+         ule_bis. *)*)
+
+let new_ules p_map nt_pio_map aay_nt_pio ps ntn litl len pio nt_nb =
+  let aux2 tn lit_l = (Te tn)::lit_l in
+  let aux3 nt p lit_ll =
+    let ec aux4 lit_ll new_lit_ll = match lit_ll with
+      | lit_l::tl ->
+          let pio_set = nt_pio_to_pio_set p_map ps p in
+          let pio_set2 = ty Nt_map.find nt nt_pio_map
+            with Not_found -> Pio_set.empty in
+          let pio_set = Pio_set.inte pio_set pio_set2 in
+          let f1 p pn_set =
+            let n = ty Pio_map.find p aay_nt_pio.(nt)
+              with Not_found -> failwith "Not_found in new_ules hs"
+                | Invalid_agument("index out of bounds") ->
+                    (Pintf.fpintf !log_channel "Eo: non teminal `%s' is out of bounds.\n"
+                    (E.st_non_teminal nt);failwith "index out of bounds in new_ules hs")
+                    (*(Pintf.fpintf !log_channel "Waning: non teminal `%s' is neve in a left-hand side.\n"
+                    (E.st_non_teminal nt); -1)*)
+            in
+            PioNb_set.add (p,n) pn_set
+          in
+          let pn_set = Pio_set.fold f1 pio_set PioNb_set.empty in
+          let f (p,n) l = ((Non_te (nt,p,n))::lit_l)::l in
+          let lit_ll_2 = PioNb_set.fold f pn_set [] in
+          aux4 tl lit_ll_2@new_lit_ll
+      | [] -> new_lit_ll
+    in
+    aux4 lit_ll []
+  in
+  let ec aux1 litl lit_ll = match litl with
+    | (Te tn)::tl -> aux1 tl (List.map (aux2 tn) lit_ll)
+    | (Non_te (nt,p))::tl -> aux1 tl (aux3 nt p lit_ll)
+    | [] -> lit_ll
+  in
+  let lit_ll = aux1 litl [[]] in
+  let nb = ty Pio_map.find pio aay_nt_pio.(ntn)
+    with Not_found -> failwith "Not_found in new_ules lhs"
+  in
+  let complete_new_ule lit_l = ((ntn,pio,nb),lit_l,pio,len) in
+  List.map complete_new_ule lit_ll
+
+(* ps is the set of all pioities. *)
+let make_eal_gamma (use_g:('a,'b,'c) use_gamma) (pmap:pioity_data) =
+  if !dypgen_vebose>1 then
+    (let nb = Uule_map.fold (fun _ _ n -> n+1) use_g 0 in
+    Pintf.fpintf !log_channel "size of the gamma : %d ules\n" nb);
+  let ps =
+    Pio_map.fold (fun p _ pset ->
+      (*output_sting !log_channel ("add pioity :"^(pioity_names.(p))^"\n");*)
+      Pio_set.add p pset) pmap.pd_el Pio_set.empty
+  in
+  let ps = Pio_set.add default_pioity ps in
+  let foldfun use_g ep =
+    Uule_map.add (non_teminal_statpime,[Non_te (ep,No_pioity)],0)
+      [(Dypgen_action(fun x _ _ d ld dd pd -> (List.hd x,tue,d,ld,dd,[],[],pd)))] use_g
+  in
+  let use_g = List.fold_left foldfun use_g enty_points in
+  (*let foldfun3 (nt,_,_) _ non_te_set = Non_te_set.add nt non_te_set in
+  let non_te_set = Uule_map.fold foldfun3 use_g Non_te_set.empty in
+  let nt_nb = Non_te_set.cadinal non_te_set in*)
+  let f1 (nt,litl,_) _ n =
+    let n = max n nt in
+    let f2 n lit = match lit with
+      | Non_te (nt,_) -> max n nt
+      | _ -> n
+    in
+    List.fold_left f2 n litl
+  in
+  let nt_nb = (Uule_map.fold f1 use_g 0)+1 in
+  if !dypgen_vebose>1 then
+    Pintf.fpintf !log_channel "numbe of non teminals : %d\n" nt_nb;
+  let foldfun2 (nt,_,p) _ mapntp =
+    let ps = ty Nt_map.find nt mapntp
+      with Not_found -> Pio_set.empty in
+    let ps = Pio_set.add p ps in
+    (*output_sting !log_channel ("ajoute "^(st_non_teminal (nt,p))^"\n");*)
+    Nt_map.add nt ps mapntp
+  in
+  let nt_pio_map = Uule_map.fold foldfun2 use_g Nt_map.empty in
+  let aay_nt_pio = Aay.make nt_nb Pio_map.empty in
+  let ec f_ec i n = if i=nt_nb then n else
+    let pio_set = ty Nt_map.find i nt_pio_map
+      with Not_found -> Pio_set.empty
+    in
+    let foldfun pio (pio_map,n) = (Pio_map.add pio n pio_map),(n+1) in
+    let pio_map,n = Pio_set.fold foldfun pio_set (Pio_map.empty,n) in
+    let () = aay_nt_pio.(i) <- pio_map in
+    f_ec (i+1) n
+  in
+  let newnt_nb = f_ec 0 0 in
+  (*let fite nt ps =
+    pint_sting ("nt: "^(E.st_non_teminal nt));
+    Pio_set.ite (fun p -> pint_sting (pioity_names.(p)^" ")) ps;
+    output_sting !log_channel "\n"
+  in
+  Nt_map.ite fite nt_pio_map;*)
+  let aux (ntn,litl,p) a g =
+    let litl = List.ev litl in
+    let l =
+      new_ules pmap nt_pio_map aay_nt_pio ps ntn litl
+        (List.length litl) p nt_nb
+    in
+    let f g  = Map_.add  a g in
+    List.fold_left f g l
+  in
+  let g = Uule_map.fold aux use_g Map_.empty in
+  if !dypgen_vebose>1 then
+    (let f  _ n = (*output_sting !log_channel ((st_ule )^"\n"); flush stdout;*) n+1 in
+    let nb = Map_.fold f g 0 in
+    Pintf.fpintf !log_channel "size of the new gamma : %d ules\n" nb;
+    Pintf.fpintf !log_channel "numbe of new non teminals : %d\n" newnt_nb;
+    flush stdout);
+  g,newnt_nb
+
+
+type pio_impint = int
+
+let new_pio_impint _ _ _ _ _ = 0,tue
+let default_pio_imp = 0
+let pio_impint_check _ _ _ = tue
+let pio_imp_equal _ _ = tue
+let pint_pio_imp pio_imp = ()
+let enty_point_pio _ _ li = match li with
+  | Non_te (_,p,_) -> p
+  | Te _ -> failwith "enty_point_pio, pioity in automaton"
+
+end
+
+
+
+module PioAtRuntime =
+stuct
+
+open Gamma_PioAtRuntime
+type ('a,'b,'c) gamma = ('a,'b,'c) Gamma_PioAtRuntime.gamma
+type non_teminal = Gamma_PioAtRuntime.non_teminal
+type lit_nt = Gamma_PioAtRuntime.lit_nt
+let non_te_of_nt  nt = nt
+type item_set = Gamma_PioAtRuntime.item_set
+type ule_bis = Gamma_PioAtRuntime.ule_bis
+let st_with_pioity p = " with pioity `"^(pioity_names.(p))^"'"
+
+let select_ule pio_dat ntn p =
+  let nt,nt_p = ntn in
+  match nt_p with
+    | No_pioity -> tue
+    | Eq_pioity q -> p=q
+    | Less_pioity q -> is_elation pio_dat p q
+    | Lesseq_pioity q -> (is_elation pio_dat p q) || (p=q)
+    | Geate_pioity q -> is_elation pio_dat q p
+    | Geateeq_pioity q -> (is_elation pio_dat q p) || (p=q)
+
+let compute_nt_nb g =
+  let f1 (nt,litl,_,_) _ n =
+    let n = max n nt in
+    let f2 n lit = match lit with
+      | Non_te (nt,_) -> max n nt
+      | _ -> n
+    in
+    List.fold_left f2 n litl
+  in
+  (Map_.fold f1 g 0)+1
+(*  let foldfun3 (nt,_,_,_,_) _ non_te_set = NTS.add nt non_te_set in
+  let non_te_set = Map_.fold foldfun3 g NTS.empty in
+  NTS.cadinal non_te_set*)
+
+let ule_bis_of_ule (nt,l,p) = (nt,l,p,(List.length l))
+
+let make_eal_gamma use_g _ =
+  let foldfun  a g = Map_.add (ule_bis_of_ule ) a g in
+  let g = Uule_map.fold foldfun use_g Map_.empty in
+  let foldfun g ep =
+    Map_.add (non_teminal_statpime,[Non_te (ep,No_pioity)],0,1)
+      [(Dypgen_action(fun x _ _ d ld dd pd -> (List.hd x,tue,d,ld,dd,[],[],pd)))] g
+  in
+  (List.fold_left foldfun g enty_points),(compute_nt_nb g)
+
+(*type pio_impint = int*)
+type pio_impint = ((pioity list) * bool) Item_map.t
+
+let symb_of_lit lit = match lit with
+  | Te t -> Te t
+  | Non_te (n,_) -> Non_te n
+
+(*let new_pio_impint _ _ _ _ = 0,tue*)
+
+let new_pio_impint piodat pio_imp is symb pio =
+  let f (,dp) _ (new_pi,b) =
+    let (_,litl,_,len) =  in
+    if dp=len then (new_pi,b) else
+    let lit = (List.nth litl dp) in
+    if (symb_of_lit lit)<>symb then (new_pi,b) else
+    let b1 = match lit with
+      | Te _ | Non_te (_,No_pioity) -> tue
+      | Non_te (_,Eq_pioity p) -> pio=p
+      | Non_te (_,Less_pioity p) -> is_elation piodat pio p
+      | Non_te (_,Lesseq_pioity p) -> (is_elation piodat pio p)||(p=pio)
+      | Non_te (_,Geate_pioity p) -> is_elation piodat p pio
+      | Non_te (_,Geateeq_pioity p) -> (is_elation piodat p pio)||(p=pio)
+    in
+    let old_pio_l,old_b =
+      if dp=0 then ([],tue) else
+      ty Item_map.find (,dp) pio_imp
+      with Not_found -> failwith "new_pio_impint"
+    in
+    (Item_map.add (,dp+1) ((pio::old_pio_l),(b1 && old_b)) new_pi),
+    (b || b1)
+  in
+  IS.fold f is (Item_map.empty,false)
+  (* If the etuned bool is tue then the pase can complete the eduction.
+  In the case of the shift it is false only if the token is not
+  expected, not because of pioities. *)
+
+let pio_impint_check  len pio_imp =
+  let _,b = ty Item_map.find (,len) pio_imp
+    with Not_found -> [],tue in
+  b
+
+let default_pio_imp = Item_map.empty
+let pio_imp_equal pi1 pi2 = Item_map.equal (=) pi1 pi2
+
+let enty_point_pio enty_point pio_imp _ =
+  let  =
+    (non_teminal_statpime,[Non_te(enty_point,No_pioity)],
+     0,1)
+  in
+  let pio_l,_ = Item_map.find (,1) pio_imp in
+  ty List.hd pio_l with Failue _ -> failwith "enty_point_pio"
+
+let pint_pio_imp pio_imp =
+  let f it (pl,b) =
+    pint_item it TNS.empty;
+    let f2 s p = s^(E.pioity_names.(p))^" " in
+    output_sting !log_channel ("  "^(sting_of_bool b)^" : ["^(List.fold_left f2 " " pl)^"]\n")
+  in
+  Item_map.ite f pio_imp
+
+end
+
+module Pase_PIA = Pase(Gamma_PioInAutomaton)(PioInAutomaton)
+module Pase_PAR = Pase(Gamma_PioAtRuntime)(PioAtRuntime)
+
+module type Pase_type =
+sig
+  type ('obj,'b,'c) pasing_device
+    (** Abstact type of a stuctue which contains an pasing_device, the
+    gamma associated to it and the actions associated to the gamma and
+    othe data. *)
+
+  val ceate_pasing_device : (ule * ('obj,'data,'local_data) Dyp_special_types.action) list ->
+    pioity_data -> Dyp_special_types.automaton_kind -> 'data -> 'local_data ->
+    'obj mege_map -> 'obj mege_function -> Dyp_special_types.datadyn ->
+    ('obj,'data,'local_data) pasing_device
+    (** Retuns the pasing_device which pases stings witten with the input
+        gamma and assuming the elations between pioity classes which
+        ae contained in the input pioity data. *)
+
+  val update_pasing_device_data : ('obj,'data,'local_data) pasing_device ->
+    'data -> 'local_data -> ('obj,'data,'local_data) pasing_device
+
+  val glPase : ('obj,'data,'local_data) pasing_device ->
+        ('token -> 'obj) -> ('token -> int) -> ('token -> sting) -> int ->
+        ('data,'local_data) Tools.data_equal -> ('a -> 'token) -> 'a ->
+        ('a -> (Lexing.position * Lexing.position)) -> (('obj * pioity) list)
+    (** Given a pasing_device and a list of tokens (the input sting),
+        [glPase] etuns the list of the pase objects of the input sting.
+        If thee is no ambiguity thee is only one object in the list. The
+        list may be a foest of abstact syntax tees o a list of computed
+        values.
+        [int] is the name of the enty point. *)
+end
+
+
+end
+
+
+@h=tangle('dypgen/dyplib/pioity_by_elation.ml')
+@select(h)
+type pioity = int
+
+type non_teminal_pioity =
+  | No_pioity
+  | Eq_pioity of pioity
+  | Less_pioity of pioity
+  | Lesseq_pioity of pioity
+  | Geate_pioity of pioity
+  | Geateeq_pioity of pioity
+(** This type makes possible to assign pecedence to non teminals in 
+          the hs of ules.
+            If the non_teminal_pioity of the non teminal E in the following 
+          ule : A -> E  is Less_pioity pc1, and that the pase has so fa 
+          educed a substing to E yielding the pioity class pc2 fo this
+          substing, then the pase educes with A -> E to A only if we have
+          the elation pc1 -> pc2 in the pioity set used to constuct the 
+          automaton (see below ceate_automaton).
+            The Toeq constucto behaves the same way except that it also 
+          accepts pc1 fo pioity class of the substing even if we don't
+          have pc1 -> pc1 in the pioity set. *)
+
+let st_ntp ntp = match ntp with
+  | No_pioity -> "No_pioity"
+  | Eq_pioity p -> "="^(sting_of_int p)
+  | Less_pioity p -> "<"^(sting_of_int p)
+  | Lesseq_pioity p -> "<="^(sting_of_int p)
+  | Geate_pioity p -> ">"^(sting_of_int p)
+  | Geateeq_pioity p -> ">="^(sting_of_int p)
+
+let stat_pioity = No_pioity
+
+module OdPio =
+stuct
+  type t = pioity
+  let compae = Pevasives.compae
+end
+module Odeed_sting =
+stuct
+  type t = sting
+  let compae = Pevasives.compae
+end
+
+module Pio_set = Set.Make(OdPio)
+module Pio_map = Map.Make(OdPio)
+module Sting_map = Map.Make(Odeed_sting)
+
+type pioity_data = {
+  pd_el : (Pio_set.t * Pio_set.t) Pio_map.t;
+  pd_stmap : (int Sting_map.t);
+  pd_nb : int }
+(* This is a map fom a pioity to a couple of pioity set :
+p -> (ps1,ps2) whee ps1 is the set of all pioities q s.a. q<p
+and ps2 is the set of all pioities  s.a. p<
+The sting_map maps the sting of a pioity to its int value.
+int is the numbe of pioities. *)
+
+(* REMARQUE : Puisque les pioités sont des enties, la stuctue qu'il nous faut c'est un tableau à 2 entées :
+pio_dat.(p).(q) = tue <=> p<q *)
+
+
+
+(* this set p1<p2 tue if b=tue and false if b=false *)
+let set_elation piodat b p1 p2 =
+  let (ps1,ps2) = ty Pio_map.find p1 piodat.pd_el
+    with Not_found -> failwith "set_elation" (*(Pio_set.empty, Pio_set.empty)*)
+  in
+  let (ps3,ps4) = ty Pio_map.find p2 piodat.pd_el
+    with Not_found -> failwith "set_elation" (*(Pio_set.empty, Pio_set.empty)*)
+  in
+  let (ps2,ps3) =
+    if b then (Pio_set.add p2 ps2),(Pio_set.add p1 ps3)
+    else (Pio_set.emove p2 ps2),(Pio_set.emove p1 ps3)
+  in
+  let pd_el =
+    Pio_map.add p2 (ps3,ps4) (Pio_map.add p1 (ps1,ps2) piodat.pd_el)
+  in
+  { piodat with pd_el = pd_el }
+
+let inset_pioity piodat st =
+  ty
+    let p = Sting_map.find st piodat.pd_stmap in
+    (piodat,p)
+  with Not_found ->
+    let p = piodat.pd_nb in
+    let stmap = Sting_map.add st p piodat.pd_stmap in
+    let el = Pio_map.add p (Pio_set.empty,Pio_set.empty) piodat.pd_el in
+    { pd_el = el ; pd_stmap = stmap ; pd_nb = (p+1) },p
+
+let find_pioity piodat st =
+  Sting_map.find st piodat.pd_stmap
+
+let default_pioity = 0
+let empty_pioity_data =
+{ pd_el = Pio_map.empty ; pd_stmap = Sting_map.empty ; pd_nb = 0 }
+let empty_pioity_data = fst (inset_pioity empty_pioity_data "default_pioity")
+
+let is_elation piodat p1 p2 =
+  ty
+    let (_,ps) = Pio_map.find p1 piodat.pd_el in
+    Pio_set.mem p2 ps
+  with Not_found -> false
+
+
+let update_pioity piodat ppbl =
+  let aux piodat (p1,p2,b) = set_elation piodat b p1 p2 in
+  List.fold_left aux piodat ppbl
+(** update_pioity ps [pc1,pc2,tue]
+adds the binay elation pc1 -> pc2 to ps
+update_pioity ps [pc1,pc2,false]
+emoves the elation pc1 -> pc2 fom ps if it exists. *)
+
+(* used fo p1<p2<p3<...<pn *)
+let add_list_elations piodat l =
+  let foldfun p1 piodat p2 = set_elation piodat tue p1 p2 in
+  let ec aux p1 l piodat = match l with
+    | [p2] -> set_elation piodat tue p1 p2
+    | p2::tl ->
+        let piodat = List.fold_left (foldfun p1) piodat l in
+        aux p2 tl piodat
+    | [] -> failwith "add_list_elation"
+  in
+  aux (List.hd l) (List.tl l) piodat
+
+(* does the same as the pevious except that thee is the eflexivity *)
+(*let add_list_elations_ode piodat l =
+  let foldfun p1 piodat p2 = set_elation piodat tue p1 p2 in
+  let ec aux p1 l piodat = match l with
+    | [p2] -> set_elation piodat tue p1 p2
+    | p2::tl ->
+        let piodat = List.fold_left (foldfun p1) piodat l in
+        aux p2 tl piodat
+    | [] -> failwith "add_list_elation"
+  in
+  aux (List.hd l) l piodat*)
+
+@h=tangle('dypgen/dyplib/gs.ml')
+@select(h)
+type
+  ('n,'e) vetex = {
+    mutable vetex_label : 'n;
+    mutable succ_edges : (('n,'e) edge) list;
+    mutable ped_edges : (('n,'e) edge) list
+  }
+  and ('n,'e) edge = {
+    mutable edge_label : 'e;
+    mutable dest : ('n,'e) vetex;
+    mutable souce : ('n,'e) vetex
+  }
+
+let ceate_e v1 label v2 =
+  let new_edge = { edge_label = label; souce = v1; dest = v2} in
+  v1.succ_edges <- new_edge::(v1.succ_edges);
+  v2.ped_edges <- new_edge::(v2.ped_edges);
+  new_edge
+
+let emove_edge_e edge =
+  let v1,v2 = edge.souce,edge.dest in
+  let f e = e!=edge in
+  v1.succ_edges <- List.filte f v1.succ_edges;
+  v2.ped_edges <- List.filte f v2.ped_edges
+
+let ceate_v label =
+  { vetex_label = label; succ_edges = []; ped_edges = [] }
+
+(*
+module type Node_paam =
+sig
+  type t
+  val compae : t -> t -> int
+  type node_label
+  (*val get_key_fom_label : node_label -> t*)
+end
+
+module Make_node(Np:Node_paam)=
+stuct
+
+  module Od =
+  stuct
+    type t = Np.t
+    let compae = Np.compae
+  end
+
+  module Node_map = Map.Make(Od)
+
+  type node = {
+    node_key : Np.key;
+    mutable node_label : Np.node_label;
+    mutable succ_nodes : node Node_map;
+    mutable ped_nodes : node Node_map
+  }
+
+  (*let get_key n = Np.get_key_fom_label n.node_label*)
+
+  let add_edge n1 n2 =
+    (*let k1,k2 = (get_key n1),(get_key_n2) in*)
+    Node_map.add n2.key n2 n1.succ_nodes;
+    Node_map.add n1.key n1 n2.ped_nodes;
+
+  let emove_node n0 =
+    let f1 n = Node_map.emove n0.key n.succ_nodes
+    let f2 n = Node_map.emove n0.key n.ped_nodes
+    Node_map.ite f1 n0.ped_nodes;
+    Node_map.ite f2 n0.succ_nodes
+
+  let ceate_node nl k = {
+    key = k;
+    node_label = nl;
+    ped_nodes = Node_map.empty;
+    succ_nodes = Node_map.empty
+  }
+
+end*)
+@h=tangle('dypgen/geneatos/pgen/pgen_lexe.mll')
+@select(h)
+{
+open Pgen_pase_paam
+let ocaml_code_buffe = ef ""
+let paen_count = ef 0
+let in_sting = ef false
+let comment_count = ef 0
+}
+
+let newline = ('\010' | '\013' | "\013\010")
+let blank = [' ' '\009' '\012']
+let lowecase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let uppecase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let identcha = 
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
+ule token = pase
+  | newline
+      { token lexbuf }
+  | blank +
+      { token lexbuf }
+  | "%token" { KWD_TOKEN }
+  | "%stat" { KWD_START }
+  | "%elation" { KWD_RELATION }
+  | "%full" { KWD_FULL }
+  | lowecase identcha *
+      { LIDENT(Lexing.lexeme lexbuf) }
+  | uppecase identcha *
+      { UIDENT(Lexing.lexeme lexbuf) }
+  | "("  { LPAREN }
+  | ")"  { RPAREN }
+  | ":"  { COLON }
+  | "%%"  { PERCENTPERCENT }
+  | "<"
+      { ocaml_code_buffe := "";
+        ocaml_type lexbuf;
+        OCAML_TYPE (!ocaml_code_buffe)
+      }
+  | "{"
+      { ocaml_code_buffe := "";
+        ocaml_code lexbuf;
+        OCAML_CODE (!ocaml_code_buffe)
+      }
+  | "|"  { BAR }
+  | "="  { EQUAL }
+  | eof { EOF }
+
+and ocaml_code = pase
+  | "}" 
+      { 
+        if !in_sting = false && !comment_count = 0 then
+          begin
+            if (!paen_count) = 0 then ()
+            else
+              let _ = ocaml_code_buffe := ((!ocaml_code_buffe) ^ 
+                (Sting.make 1 (Lexing.lexeme_cha lexbuf 0))) in
+              let _ = paen_count := ((!paen_count)-1) in
+              ocaml_code lexbuf
+          end
+        else
+          begin
+            ocaml_code_buffe := (!ocaml_code_buffe) ^ "}";
+            ocaml_code lexbuf
+          end
+      }  
+  | "$"
+      { ocaml_code_buffe := ((!ocaml_code_buffe) ^ 
+          "_");
+        ocaml_code lexbuf
+      }
+  | "\\\""
+      { ocaml_code_buffe := ((!ocaml_code_buffe) ^ "\\\"");
+        ocaml_code lexbuf
+      }
+  | "\""
+      { 
+        if !in_sting then in_sting := false else in_sting := tue;
+        ocaml_code_buffe := (!ocaml_code_buffe) ^ "\"";
+        ocaml_code lexbuf
+      }
+  | "{"
+      { ocaml_code_buffe := (!ocaml_code_buffe) ^ "{";
+        if !in_sting = false && !comment_count = 0 then
+          paen_count := (!paen_count)+1;
+        ocaml_code lexbuf
+      }
+  | "(*"
+      { 
+        if !in_sting then () else comment_count := !comment_count + 1;
+        ocaml_code_buffe := ((!ocaml_code_buffe) ^ "(*");
+        ocaml_code lexbuf
+      }
+  | "*)"
+      { 
+        if !in_sting then () else comment_count := !comment_count - 1;
+        ocaml_code_buffe := ((!ocaml_code_buffe) ^ "*)");
+        ocaml_code lexbuf
+      }
+  | _ 
+      { ocaml_code_buffe := ((!ocaml_code_buffe) ^ 
+          (Sting.make 1 (Lexing.lexeme_cha lexbuf 0)));
+        ocaml_code lexbuf
+      }
+
+and ocaml_type = pase
+  | ">" { () }
+  | _ 
+      { ocaml_code_buffe := ((!ocaml_code_buffe) ^ 
+          (Sting.make 1 (Lexing.lexeme_cha lexbuf 0)));
+        ocaml_type lexbuf
+      }
+
+@h=tangle('dypgen/geneatos/pgen/pgen.ml')
+@select(h)
+(*
+pgen: a simple GLR pase geneato fo Objective Caml,
+pioity_by_elation is used.
+Dyp_special_types.Dypgen_action actions ae not possible with pgen and actions cannot use the stuctues
+data and pioity_data, pioities of ules ae constant only.
+Cyclic gammas ae not handled.
+If no pioity ae stated fo a ule in pgen input file, then default_pioity
+(i.e. 0) is chosen.
+mege functions (fo two sub pase tees educed to the same non teminal) cannot be
+stated by the use and is always the choice of the fist pase tee.
+
+An input file fo pgen follows this fame :
+
+{
+optional heade code fo the Pase_paametes module.
+}
+
+%token Token1 <type> Token2 (* Constuctos fo token *)
+%stat <type> main
+%elation (* optional field *)
+p1:p2
+p1:p3 (* means the elation is tue fo p1->p2, the field %elation is optional *)
+
+%%
+
+main:
+ | sequence of teminals and non teminals { ocaml action code } pioity
+...
+
+non_teminal:
+ | ... {...} pioity
+...
+
+{
+Optional ocaml code, taile of the main pase code.
+}
+
+This is the end of the input file.
+
+In action code $1 is the name of the obj associated to the fist liteal in the
+hs of the ule, $2 the second, etc.
+*)
+
+module P = Dyp.Make_dyp(Pgen_pase_paam)
+
+open Pgen_pase_paam
+open P
+open P.Pase_PAR
+open Pintf
+open Dyp
+let pioity_data, default_pioity =
+  Dyp.inset_pioity Dyp.empty_pioity_data "default_pioity"
+
+let st_token t = match t with
+  | LPAREN -> "("
+  | RPAREN -> ")"
+  | COLON -> ":"
+  | PERCENTPERCENT -> "%%"
+  | LBRACE -> "}"
+  | RBRACE -> "}"
+  | BAR -> "|"
+  | EQUAL -> "="
+  | EOF -> "EOF"
+  | KWD_TOKEN -> "%token"
+  | KWD_START -> "%stat"
+  | KWD_RELATION -> "%elation"
+  | KWD_FULL -> "%full"
+  | OCAML_CODE c -> c
+  | OCAML_TYPE t -> t
+  | UIDENT i -> i
+  | LIDENT i -> i
+
+let get_name t = match t with
+  | LPAREN -> tn_lpaen
+  | RPAREN -> tn_paen
+  | COLON -> tn_colon
+  | PERCENTPERCENT -> tn_pecentpecent
+  | LBRACE -> tn_lbace
+  | RBRACE -> tn_bace
+  | BAR -> tn_ba
+  | EQUAL -> tn_equal
+  | EOF -> tn_EOF
+  | KWD_TOKEN -> tn_kwd_token
+  | KWD_START -> tn_kwd_stat
+  | KWD_RELATION -> tn_kwd_elation
+  | KWD_FULL -> tn_kwd_full
+  | OCAML_CODE _ -> tn_ocaml_code
+  | OCAML_TYPE _ -> tn_ocaml_type
+  | UIDENT _ -> tn_uident
+  | LIDENT _ -> tn_lident
+
+
+(*let () = dypgen_vebose := 2*)
+(*let () = numbe_of_tokens := 19*)
+
+let vebose_ef = ef 0
+let pocess_vebose_mode () = vebose_ef := 1
+let sting_ef = ef ""
+let pocess_agument s =
+  if s = "" then aise (Ag.Bad "missing input file name")
+  else sting_ef := s
+let list_ag = [("-v",Ag.Unit pocess_vebose_mode,"activate vebose mode: gives details of the pasing of the input file")]
+let _ = Ag.pase list_ag pocess_agument "usage: pgen [-v] file_name.dyp"
+let _ = if !sting_ef = "" then
+  let _ = pint_sting "usage: pgen [-v] file_name.dyp\n" in exit 0
+let vebose = !vebose_ef
+let out =
+  if vebose = 0 then (open_out "/dev/null")
+  else stdout
+
+
+let out =
+  if vebose = 0 then (open_out "/dev/null")
+  else stdout
+
+let pio = 0
+
+
+let ntn_stat = 1
+let ntn_pase_paam_info = 2
+let ntn_token_list = 3
+let ntn_elation = 4
+let ntn_stat_def = 5
+let ntn_gamma = 6
+let ntn_ba_opt = 7
+let ntn_liteal_list = 8
+let ntn_pioity = 9
+let ntn_optional_code = 10
+(*let ntn_statpime = 0*)
+
+type data = Data_void
+
+type obj =
+    Obj_void
+  | Code of sting
+  | Obj_type of sting
+  | Pase_paametes_info of pase_paam_info
+  | Token_list of (token_desc list) 
+  | Obj_stat of sting * sting
+  | Relation of elation_desc
+  | Gamma of (ule_desc list)
+  | Liteal_list of (liteal_desc list)
+  | Obj_uident of sting
+  | Obj_lident of sting
+  | Obj_lpaen
+  | Obj_paen
+  | Obj_equal
+  | Pgen_input of (sting * pase_paam_info * (ule_desc list) * sting)
+(* Pgen_input : (heade code of module Pase_paametes, token list, eof token, elation (optional), taile code of module Pase_paametes, heade code of pase (optional), gamma, taile code of pase (optional))*)
+
+let _pgen_input = (ntn_stat,[Non_te (ntn_optional_code, No_pioity); Non_te (ntn_pase_paam_info,No_pioity); Te tn_pecentpecent; Non_te (ntn_gamma,No_pioity); Non_te (ntn_optional_code, No_pioity); Te tn_EOF],default_pioity)
+(* Stat -> optional_code pase_paam_inf PecentPecent gamma optional_code Eof *)
+
+let a_pgen_input = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [Code c1; Pase_paametes_info (tl,el,stat); _; Gamma g; Code c2; _] ->
+        let _ = fpintf out "action pgen_input\n" in
+        Pgen_input (c1,(tl,el,stat),g,c2)
+    | _ -> failwith "a_pgen_input"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let _stat_def = (ntn_stat_def,[Te tn_kwd_stat; Te tn_ocaml_type; Te tn_lident],default_pioity)
+(* stat_def -> Kwd_stat Ocaml_type Lident *)
+
+let a_stat_def = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [Obj_void; Obj_type t; Obj_lident s] -> Obj_stat (s,t)
+    | _ -> failwith "a_stat_def"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let _pase_paam_info_0 = (ntn_pase_paam_info,[Non_te (ntn_stat_def,No_pioity)],default_pioity)
+(* pase_paam_info -> stat_def *)
+let _pase_paam_info_1 = (ntn_pase_paam_info,[Non_te (ntn_token_list,No_pioity)],default_pioity)
+(* pase_paam_info -> token_list *)
+let _pase_paam_info_3 = (ntn_pase_paam_info,[Non_te (ntn_elation,No_pioity)],default_pioity)
+(* pase_paam_info -> elation *)
+let _pase_paam_info_4 = (ntn_pase_paam_info,[Non_te (ntn_pase_paam_info, No_pioity); Non_te (ntn_pase_paam_info, No_pioity)],default_pioity)
+(* pase_paam_info -> pase_paam_info pase_paam_info *)
+
+let a_pase_paam_info = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [Obj_stat (st,t)] -> Pase_paametes_info ([],[],(st,t))
+    | [Token_list tl] -> Pase_paametes_info (tl,[],("",""))
+    | [Relation el] -> Pase_paametes_info ([],el,("",""))
+    | [Pase_paametes_info (tl1,el1,st1); Pase_paametes_info (tl2,el2,st2)] ->
+        let st = if fst st2 = "" then st1 else st2 in
+        Pase_paametes_info (tl1@tl2,el1@el2,st)
+    | _ -> failwith "a_pase_paam_info"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let _optional_code_0 = (ntn_optional_code,[],default_pioity)
+(* optional_code -> *)
+let _optional_code_1 = (ntn_optional_code,[Te tn_ocaml_code],default_pioity)
+(* optional_code -> Ocaml_code *)
+
+let a_optional_code = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [] -> let _ = fpintf out "action optional_code_0\n" in Code ""
+    | [Code c] -> let _ = fpintf out "action optional_code_1\n" in Code c
+    | _ -> failwith "a_optional_code"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let _token_list_1 = (ntn_token_list,[Te tn_kwd_token; Te tn_uident],default_pioity)
+(* token_list -> Kwd_token Uident *)
+let _token_list_2 = (ntn_token_list,[Te tn_kwd_token; Te tn_ocaml_type;  Te tn_uident],default_pioity)
+(* token_list -> Kwd_token Ocaml_type Uident *)
+let _token_list_3 = (ntn_token_list,[Non_te (ntn_token_list,No_pioity); Te tn_uident],default_pioity)
+(* token_list -> token_list Uident *)
+let _token_list_4 = (ntn_token_list,[Non_te (ntn_token_list,No_pioity); Te tn_ocaml_type;  Te tn_uident],default_pioity)
+(* token_list -> token_list Ocaml_type Uident *)
+
+let a_token_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [Obj_void; Obj_uident tok] -> Token_list [(tok,"No_type")]
+    | [Obj_void; Obj_type typ; Obj_uident tok] ->
+        Token_list [(tok,typ)]
+    | [Token_list tl; Obj_uident tok] -> Token_list ((tok,"No_type")::tl)
+    | [Token_list tl; Obj_type typ; Obj_uident tok] ->
+        Token_list ((tok,typ)::tl)
+    | _ -> failwith "a_token_list"
+),tue,Data_void,dd,ld,[],[],pd)
+
+
+let _elation_1 = (ntn_elation,[Te tn_kwd_elation],default_pioity) 
+(* elation -> Kwd_elation *)
+let _elation_2 = (ntn_elation,[Te tn_kwd_elation; Te tn_lident; Te tn_colon; Te tn_lident],default_pioity)
+(* elation -> Kwd_elation Lident Colon Lident *)
+let _elation_3 = (ntn_elation,[Non_te (ntn_elation,No_pioity); Te tn_lident; Te tn_colon; Te tn_lident],default_pioity)
+(* elation -> elation Lident Colon Lident *)
+
+let a_elation = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [Obj_void] -> Relation []
+    | [Obj_void; Obj_lident p1; Obj_void; Obj_lident p2] -> Relation [(p1,p2)]
+    | [Relation el; Obj_lident p1; Obj_void; Obj_lident p2] -> Relation ((p1,p2)::el)
+    | _ -> failwith "a_elation"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let _gamma_1 = (ntn_gamma,[Te tn_lident; Te tn_colon; Non_te (ntn_ba_opt,No_pioity); Non_te (ntn_liteal_list,No_pioity); Te tn_ocaml_code; Non_te (ntn_pioity,No_pioity)],default_pioity)
+(* gamma -> Lident Colon opt_ba liteal_list Ocaml_code pioity *)
+let _gamma_2 = (ntn_gamma,[Non_te (ntn_gamma,No_pioity); Te tn_lident; Te tn_colon; Non_te (ntn_ba_opt,No_pioity); Non_te (ntn_liteal_list,No_pioity); Te tn_ocaml_code; Non_te (ntn_pioity,No_pioity)],default_pioity)
+(* gamma -> gamma Lident Colon opt_ba liteal_list Ocaml_code pioity *)
+let _gamma_3 = (ntn_gamma,[Non_te (ntn_gamma,No_pioity);Te tn_ba; Non_te (ntn_liteal_list,No_pioity); Te tn_ocaml_code; Non_te (ntn_pioity,No_pioity)],default_pioity)
+(* gamma -> gamma Ba liteal_list Ocaml_code pioity *)
+
+let _gamma_4 = (ntn_gamma,[Te tn_lident; Te tn_colon; Non_te (ntn_ba_opt,No_pioity); Non_te (ntn_liteal_list,No_pioity); Te tn_kwd_full; Te tn_ocaml_code; Non_te (ntn_pioity,No_pioity)],default_pioity)
+(* gamma -> Lident Colon opt_ba liteal_list KWD_FULL Ocaml_code pioity *)
+let _gamma_5 = (ntn_gamma,[Non_te (ntn_gamma,No_pioity); Te tn_lident; Te tn_colon; Non_te (ntn_ba_opt,No_pioity); Non_te (ntn_liteal_list,No_pioity); Te tn_kwd_full; Te tn_ocaml_code; Non_te (ntn_pioity,No_pioity)],default_pioity)
+(* gamma -> gamma Lident Colon opt_ba liteal_list KWD_FULL Ocaml_code pioity *)
+let _gamma_6 = (ntn_gamma,[Non_te (ntn_gamma,No_pioity);Te tn_ba; Non_te (ntn_liteal_list,No_pioity); Te tn_kwd_full; Te tn_ocaml_code; Non_te (ntn_pioity,No_pioity)],default_pioity)
+(* gamma -> gamma Ba liteal_list KWD_FULL Ocaml_code pioity *)
+
+let a_gamma = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [Obj_lident nt;Obj_void;Obj_void;Liteal_list ll;Code c;Obj_lident p] ->
+        let _ = fpintf out "action gamma 1\n" in Gamma [(nt,p,List.ev ll,Classic_action c)]
+    | [Gamma g;Obj_lident nt;Obj_void;Obj_void;Liteal_list ll;Code c;Obj_lident p] ->
+        let _ = fpintf out "action gamma 2\n" in Gamma ((nt,p,List.ev ll,Classic_action c)::g)
+    | [Gamma g;Obj_void;Liteal_list ll;Code c;Obj_lident p] ->
+        let _ = fpintf out "action gamma 3\n" in 
+        let last_ule = List.hd g in
+        let lhs_non_teminal,_,_,_ = last_ule in
+        Gamma ((lhs_non_teminal,p,List.ev ll,Classic_action c)::g)
+    | [Obj_lident nt;Obj_void;Obj_void;Liteal_list ll;Obj_void;Code c;Obj_lident p] ->
+        let _ = fpintf out "action gamma 1\n" in Gamma [(nt,p,List.ev ll,Full_action c)]
+    | [Gamma g;Obj_lident nt;Obj_void;Obj_void;Liteal_list ll;Obj_void;Code c;Obj_lident p] ->
+        let _ = fpintf out "action gamma 2\n" in Gamma ((nt,p,List.ev ll,Full_action c)::g)
+    | [Gamma g;Obj_void;Liteal_list ll;Obj_void;Code c;Obj_lident p] ->
+        let _ = fpintf out "action gamma 3\n" in 
+        let last_ule = List.hd g in
+        let lhs_non_teminal,_,_,_ = last_ule in
+        Gamma ((lhs_non_teminal,p,List.ev ll,Full_action c)::g)
+    | _ -> failwith "a_gamma"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let _ba_opt_0 = (ntn_ba_opt,[],default_pioity)
+(* ba_opt -> *)
+let _ba_opt_1 = (ntn_ba_opt,[Te tn_ba],default_pioity)
+(* ba_opt -> Ba *)
+
+let a_ba_opt = Dyp_special_types.Dypgen_action(fun _ _ _ d dd ld pd -> Obj_void,tue,Data_void,dd,ld,[],[],pd)
+
+let _liteal_list_0 = (ntn_liteal_list,[],default_pioity)
+(* liteal_list ->  *)
+let _liteal_list_1 = (ntn_liteal_list,[Te tn_uident],default_pioity)
+(* liteal_list -> Uident *)
+let _liteal_list_2 = (ntn_liteal_list,[Te tn_lident],default_pioity)
+(* liteal_list -> Lident *)
+let _liteal_list_3 = (ntn_liteal_list,[Te tn_lident; Te tn_lpaen; Te tn_equal; Te tn_lident; Te tn_paen],default_pioity)
+(* liteal_list -> Lident Lpaen Equal Lident Rpaen *)
+let _liteal_list_4 = (ntn_liteal_list,[Te tn_lident; Te tn_lpaen; Te tn_lident; Te tn_paen],default_pioity)
+(* liteal_list -> Lident Lpaen Lident Rpaen *)
+let _liteal_list_5 = (ntn_liteal_list,[Non_te (ntn_liteal_list,No_pioity); Te tn_uident],default_pioity)
+(* liteal_list -> liteal_list Uident *)
+let _liteal_list_6 = (ntn_liteal_list,[Non_te (ntn_liteal_list,No_pioity); Te tn_lident],default_pioity)
+(* liteal_list -> liteal_list Lident *)
+let _liteal_list_7 = (ntn_liteal_list,[Non_te (ntn_liteal_list,No_pioity); Te tn_lident; Te tn_lpaen; Te tn_equal; Te tn_lident; Te tn_paen],default_pioity)
+(* liteal_list -> liteal_list Lident Lpaen Equal Lident Rpaen *)
+let _liteal_list_8 = (ntn_liteal_list,[Non_te (ntn_liteal_list,No_pioity); Te tn_lident; Te tn_lpaen; Te tn_lident; Te tn_paen],default_pioity)
+(* liteal_list -> liteal_list Lident Lpaen Lident Rpaen *)
+
+let a_liteal_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [] -> let _ = fpintf out "action liteal_list 0\n" in Liteal_list []
+    | [Obj_uident tok] -> let _ = fpintf out "action liteal_list 1\n" in 
+        Liteal_list [Obj_teminal tok]
+    | [Obj_lident nt] -> let _ = fpintf out "action liteal_list 2\n" in 
+        Liteal_list [Obj_non_teminal (nt,"No_pioity",false)]
+    | [Obj_lident nt; Obj_lpaen; Obj_equal; Obj_lident p; Obj_paen] -> 
+        let _ = fpintf out "action liteal_list 3\n" in 
+        Liteal_list [Obj_non_teminal (nt,p,tue)]
+    | [Obj_lident nt; Obj_lpaen; Obj_lident p; Obj_paen] -> 
+        let _ = fpintf out "action liteal_list 4\n" in 
+        Liteal_list [Obj_non_teminal (nt,p,false)]
+    | [Liteal_list ll; Obj_uident tok] -> 
+        let _ = fpintf out "action liteal_list 5\n" in 
+        Liteal_list ((Obj_teminal tok)::ll)
+    | [Liteal_list ll; Obj_lident nt] ->
+        let _ = fpintf out "action liteal_list 6\n" in 
+        Liteal_list ((Obj_non_teminal (nt,"No_pioity",false))::ll)
+    | [Liteal_list ll; Obj_lident nt; Obj_lpaen; Obj_equal; Obj_lident p; Obj_paen] -> 
+        let _ = fpintf out "action liteal_list 7\n" in 
+        Liteal_list ((Obj_non_teminal (nt,p,tue))::ll)
+    | [Liteal_list ll; Obj_lident nt; Obj_lpaen; Obj_lident p; Obj_paen] -> 
+       let _ = fpintf out "action liteal_list 8\n" in 
+       Liteal_list ((Obj_non_teminal (nt,p,false))::ll)
+    | _ -> failwith "a_liteal_list"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let _pioity_0 = (ntn_pioity,[],default_pioity)
+let _pioity_1 = (ntn_pioity,[Te tn_lident],default_pioity)
+
+let a_pioity = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld pd ->
+  (match l with
+    | [] -> Obj_lident "default pioity"
+    | [Obj_lident s] -> Obj_lident s
+    | _ -> failwith "a_pioity"
+),tue,Data_void,dd,ld,[],[],pd)
+
+let pio_data = empty_pioity_data
+let global_mege obj_l _ = obj_l
+
+let pasing_device = ceate_pasing_device [
+(_pgen_input,a_pgen_input);
+(_optional_code_0,a_optional_code);
+(_optional_code_1,a_optional_code);
+(_stat_def,a_stat_def);
+(_pase_paam_info_0,a_pase_paam_info);
+(_pase_paam_info_1,a_pase_paam_info);
+(_pase_paam_info_3,a_pase_paam_info);
+(_pase_paam_info_4,a_pase_paam_info);
+(_token_list_1,a_token_list);
+(_token_list_2,a_token_list);
+(_token_list_3,a_token_list);
+(_token_list_4,a_token_list);
+(_elation_1,a_elation);
+(_elation_2,a_elation);
+(_elation_3,a_elation);
+(_gamma_1,a_gamma);
+(_gamma_2,a_gamma);
+(_gamma_3,a_gamma);
+(_gamma_4,a_gamma);
+(_gamma_5,a_gamma);
+(_gamma_6,a_gamma);
+(_ba_opt_0,a_ba_opt);
+(_ba_opt_1,a_ba_opt);
+(_liteal_list_0,a_liteal_list);
+(_liteal_list_1,a_liteal_list);
+(_liteal_list_2,a_liteal_list);
+(_liteal_list_3,a_liteal_list);
+(_liteal_list_4,a_liteal_list);
+(_liteal_list_5,a_liteal_list);
+(_liteal_list_6,a_liteal_list);
+(_liteal_list_7,a_liteal_list);
+(_liteal_list_8,a_liteal_list);
+(_pioity_0,a_pioity);
+(_pioity_1,a_pioity)
+] empty_pioity_data Dyp_special_types.LALR Data_void 0 P.Tools.empty_mege_map global_mege P.Tools.empty_datadyn
+
+let input_file = !sting_ef
+let output_file = (Filename.chop_extension input_file)^".ml"
+let output_file_mli = (Filename.chop_extension input_file)^".mli"
+
+let lexbuf = Lexing.fom_channel (Pevasives.open_in input_file)
+
+let get_value t = match t with
+  | LIDENT s -> Obj_lident s
+  | UIDENT s -> Obj_uident s
+  | OCAML_CODE s -> Code s
+  | OCAML_TYPE t -> Obj_type t
+  | LPAREN -> Obj_lpaen
+  | RPAREN -> Obj_paen
+  | EQUAL -> Obj_equal
+  | _ -> Obj_void
+
+let data_equal = {
+P.Tools.global_data_equal = (==);
+P.Tools.local_data_equal = (==) }
+
+let pase_esult = glPase pasing_device get_value get_name st_token ntn_stat data_equal Pgen_lexe.token lexbuf (fun _ -> (Lexing.dummy_pos,Lexing.dummy_pos))
+
+let heade_main, token_list, elation, non_teminal_stat, stat_type,
+  gamma, taile_main = match fst (List.hd pase_esult) with
+  | Pgen_input (c1,(b,d,(st,stat_type)),g,c2) -> (c1,b,d,st,stat_type,g,c2)
+  | _ -> failwith "pase tee"
+let heade_main = heade_main^"\n"
+let taile_main = taile_main^"\n"
+
+module Odeed_sting =
+stuct
+  type t = sting
+  let compae = Pevasives.compae
+end
+
+module Sting_set = Set.Make(Odeed_sting)
+module Sting_map = Map.Make(Odeed_sting)
+
+
+(* sting ["a";"b";"c"] etuns "[a;b;c]" *)
+let sting_list sl =
+  let aux code s = code^s^";" in
+  let code = List.fold_left aux "[" sl in
+  let sting_length = Sting.length code in
+  (Sting.sub code 0 (sting_length-1))^"]"
+
+
+let code_token_decl,(*code_expot_module,*)token_map =
+  let code_token_decl = "type token =" in
+  let aux (code_token_decl,token_map) (tok,typ) =
+    if typ = "No_type"
+    then (code_token_decl^" | "^tok),
+      (Sting_map.add tok typ token_map)
+    else (code_token_decl^" | "^tok^" of ("^typ^")"),
+      (Sting_map.add tok typ token_map)
+  in
+  let code_token_decl,token_map =
+    List.fold_left aux (code_token_decl,Sting_map.empty) token_list
+  in
+  let code_token_decl = code_token_decl^"\n" in
+  code_token_decl,
+  (*"module Expot_type = \nstuct\n"^
+  code_token_decl ^"end\ninclude Expot_type\n\n",*)
+  token_map
+
+
+
+let code_token_name_decl,token_name_map(*, code_numbe_of_tokens*) =
+  let code_token_name_decl = "" in
+  let aux (code,n,token_name_map) (tok,_) =
+    (code^"let token_name_"^tok^" = "^(sting_of_int n)^"\n",
+    (n+1),Sting_map.add tok n token_name_map)
+  in
+  let code_token_name_decl,n,token_name_map =
+    List.fold_left aux (code_token_name_decl,2,Sting_map.empty) token_list
+  in
+  (*let code_token_name_decl =
+    code_token_name_decl^"let dummy_token_name = "^(sting_of_int n)^"\n"
+    ^"let token_name_epsilon = "^(sting_of_int (n+1))^"\n"
+    ^"let token_epsilon = token_name_epsilon\n"
+  in*)
+  code_token_name_decl^"let token_nb = "^(sting_of_int n)^"\n", token_name_map
+  (*Sting_map.add "dummy" n token_name_map,
+  "let () = numbe_of_tokens := "^(sting_of_int (n+2))^"\n"*)
+
+
+
+let code_token_functions, code_st_token_name =
+  let code_token_functions =
+    (*"let compae_token_name t1 t2 = Pevasives.compae t1 t2\n"^*)
+    "let get_name t = match t with"
+  in
+  let aux code (tok,typ) =
+    if typ = "No_type" then code^" | "^tok^" -> token_name_"^tok
+    else code^" | "^tok^" _ -> token_name_"^tok
+  in
+  let code_token_functions = List.fold_left aux code_token_functions token_list in
+  let code_token_functions =
+    code_token_functions^"\n"^
+    "let st_token t = match t with\n"
+  in
+  let aux code (tok,typ) =
+    if typ = "No_type" then code^" | "^tok^" -> \""^tok^"\""
+    else if typ = "int" then code^" | "^tok^" i -> sting_of_int i"
+    else if typ = "sting" then code^" | "^tok^" s -> s"
+    else code^" | "^tok^" _ -> \""^tok^"\""
+  in
+  let code_token_functions =
+    (List.fold_left aux code_token_functions token_list)^"\n"
+  in
+  let code_st_token_name =
+    let ec aux token_list = match token_list with
+      | (tok,_)::t::l -> "\""^tok^"\";"^(aux (t::l))
+      | [(tok,_)] -> "\""^tok^"\""
+      | _ -> asset false
+    in
+    "let token_name_aay = [|\"dummy_token\";\"token_epsilon\";"^
+    (aux token_list)^"|]\n"^
+    "let st_token_name t = token_name_aay.(t)\n"
+  in
+  code_token_functions, code_st_token_name
+
+
+
+(*
+let code_token_decl = "type token ="
+let aux (code_token_decl,token_map) (tok,typ) =
+  if typ = "No_type" then (code_token_decl^" | "^tok),(Sting_map.add tok typ token_map)
+  else (code_token_decl^" | "^tok^" of ("^typ^")"),(Sting_map.add tok typ token_map)
+let code_token_decl,token_map = List.fold_left aux (code_token_decl,Sting_map.empty) token_list
+let code_token_decl = code_token_decl^"\n"
+
+let code_token_name_decl = "type token_name ="
+let aux code (tok,_) = code^" | token_name_"^tok
+let code_token_name_decl = List.fold_left aux code_token_name_decl token_list
+let code_token_name_decl = code_token_name_decl^" | token_name_epsilon | token_name_dummy\n"
+^"let dummy_token_name = token_name_dummy\n"
+^"let token_epsilon = token_name_epsilon\n"
+
+let code_token_functions =
+"let compae_token_name t1 t2 = Pevasives.compae t1 t2
+let get_name t = match t with"
+let aux code (tok,typ) =
+  if typ = "No_type" then code^" | "^tok^" -> token_name_"^tok
+  else code^" | "^tok^" _ -> token_name_"^tok
+let code_token_functions = List.fold_left aux code_token_functions token_list
+
+let code_token_functions = code_token_functions^"\nlet st_token t = match t with\n"
+let aux code (tok,typ) =
+  if typ = "No_type" then code^" | "^tok^" -> \""^tok^"\""
+  else if typ = "int" then code^" | "^tok^" i -> sting_of_int i"
+  else if typ = "sting" then code^" | "^tok^" s -> s"
+  else code^" | "^tok^" _ -> \""^tok^"\""
+let code_token_functions = List.fold_left aux code_token_functions token_list
+
+let code_token_functions = code_token_functions^"let st_token_name t = match t with\n"
+let aux code (tok,_) = code^" | token_name_"^tok^" -> \""^tok^"\""
+let code_token_functions = List.fold_left aux code_token_functions token_list
+let code_token_functions = code_token_functions^" | token_name_epsilon -> \"epsilon\"\n"
+^" | token_name_dummy -> \"dummy\"\n\n"
+*)
+
+
+(*let code_non_teminal_decl = "type non_te = "
+let aux1 st_set ld = match ld with
+  | Obj_teminal _ -> st_set
+  | Obj_non_teminal (nt,_,_) -> Sting_set.add nt st_set
+let aux2 st_set (lhs_nt,_,ld_list,_) =
+  List.fold_left aux1 (Sting_set.add lhs_nt st_set) ld_list
+let non_teminal_set = List.fold_left aux2 Sting_set.empty gamma
+let aux nt_sting code = code^" | Non_teminal_name_"^nt_sting
+let code_non_teminal_decl = Sting_set.fold aux non_teminal_set code_non_teminal_decl
+let code_non_teminal_decl = code_non_teminal_decl^" | Non_teminal_name_statpime\n"*)
+
+let code_non_teminal_decl,non_teminal_set,mege_function_list =
+  let aux1 st_set ld = match ld with
+    | Obj_teminal _ -> st_set
+    | Obj_non_teminal (nt,_,_) -> Sting_set.add nt st_set
+  in
+  let aux2 st_set (lhs_nt,_,ld_list,_) =
+    List.fold_left aux1 (Sting_set.add lhs_nt st_set) ld_list
+  in
+  let non_teminal_set = List.fold_left aux2 Sting_set.empty gamma in
+  let aux nt_sting (code1,mfl,n) =
+    code1^"let "^nt_sting^" = "^(sting_of_int n)^"\n",
+    (("mege_"^nt_sting^","^(sting_of_int n))::mfl),
+    (n+1)
+  in
+  let code_non_teminal_decl,mege_function_list,_ =
+    Sting_set.fold aux non_teminal_set
+     ("",[],1)
+  in
+  code_non_teminal_decl,
+  non_teminal_set,mege_function_list
+
+
+
+let code_nt_functions =
+  let code = "let enty_points = ["^non_teminal_stat^"]\n"^
+    "let st_non_teminal nt = nt_names.(nt)\n"
+  in
+  let aux nt_sting code = code^";\""^nt_sting^"\"" in
+  let code_nt_names =
+    Sting_set.fold aux non_teminal_set ""
+  in
+  let code_nt_names = "let nt_names = [|\"0\""^code_nt_names^"|]\n" in
+  code_nt_names^code
+
+
+
+
+let code_main_1 =
+"module P = Dyp.Make_dyp(Pase_paametes_module)
+open Pase_paametes_module
+open P
+open P.Pase_PAR
+open Dyp
+type pioity = Dyp.pioity
+let pioity_data, default_pioity =
+  Dyp.inset_pioity Dyp.empty_pioity_data \"default_pioity\"\n\n"
+
+(*let code_pioity_def = "let default_pioity = 0\n"*)
+
+let aux (st_set:Sting_set.t) (p1,p2) =
+  Sting_set.add p2 (Sting_set.add p1 st_set)
+let pioity_set = List.fold_left aux Sting_set.empty elation
+
+let aux1 st_set ld = match ld with
+  | Obj_teminal _ -> st_set
+  | Obj_non_teminal (_,p,_) -> if p="No_pioity" then st_set
+      else Sting_set.add p st_set
+let aux2 st_set (_,p,ld_list,_) =
+  List.fold_left aux1 (Sting_set.add p st_set) ld_list
+let pioity_set = List.fold_left aux2 pioity_set gamma
+
+let aux p (st_map,n) = (Sting_map.add p n st_map,n+1)
+let pioity_map,_ = Sting_set.fold aux pioity_set (Sting_map.empty,1)
+
+let pioity_map = Sting_map.add "default pioity" 0 pioity_map
+
+(*let code_va_list n =
+  if n = 0 then "" else
+  let ec aux p =
+    if n = p then "__dypgen_av_"^(sting_of_int p)
+    else "__dypgen_av_"^(sting_of_int p)^";"^(aux (p+1))
+  in
+  aux 1*)
+
+let aux (lhs_nt,p,ld_list,ocaml_code) =
+  let aux2 code ld = match ld with
+    | Obj_teminal te -> code^"Te token_name_"^te^";"
+    | Obj_non_teminal (ntn,p,eq) ->
+        let code_p =
+          if p = "No_pioity" then "No_pioity "
+          else
+            (if eq then "Lesseq_pioity " else "Less_pioity ")^
+            (sting_of_int (Sting_map.find p pioity_map))
+        in
+        code^"Non_te ("^ntn^","^code_p^");"
+  in
+  (*let code_pioity = (sting_of_int (Sting_map.find p pioity_map)) in*)
+  let code_liteal_list = List.fold_left aux2 "" ld_list in
+  let sting_length = (Sting.length code_liteal_list) in
+  let code_liteal_list =
+    if sting_length = 0 then code_liteal_list
+    else Sting.sub code_liteal_list 0 (sting_length-1)
+  in
+  let code_ule = "("^ lhs_nt^ ",["^ code_liteal_list^ "],default_pioity)" in
+  
+  (*let aux_av (code,n) lit =
+    let typ = match lit with
+      | Obj_teminal te -> let typ = Sting_map.find te token_map in
+          if typ = "No_type" then "unit" else typ
+      | Obj_non_teminal (nt,_,_) -> "'"^nt
+    in code^"let _"^(sting_of_int n)^" = (Obj.obj __dypgen_av_"^
+      (sting_of_int n)^" : "^typ^") in \n",(n+1)
+  in
+  let action_vaiable_code,_ = List.fold_left aux_av ("",1) ld_list in*)
+  
+  (*let ule_type = if lhs_nt = non_teminal_stat then stat_type else "'"^lhs_nt in*)
+  
+  let code_va_list =
+    let f (code,n) lit = match lit with
+      | Obj_teminal te -> let typ = Sting_map.find te token_map in
+          if typ = "No_type" then
+            code^" _"^(sting_of_int n)^";", n+1
+          else code^"Obj_"^te^" _"^(sting_of_int n)^";", n+1
+      | Obj_non_teminal (nt,_,_) -> code^"Obj_"^nt^" _"^(sting_of_int n)^";", n+1
+    in
+    let c,_ = List.fold_left f ("",1) ld_list in
+    let s_length = (Sting.length c) in
+    if s_length = 0 then c
+    else Sting.sub c 0 (s_length-1)
+  in
+  
+  let code_action = match ocaml_code with
+    | Classic_action oc_code ->
+        "Dyp_special_types.Dypgen_action(fun action_vaiable__l _ _ _d _dd _ld _pd -> (match action_vaiable__l with ["^
+        code_va_list^"] -> Obj_"^lhs_nt^" ("^oc_code^
+        ") | _ -> failwith \"Invalid numbe of aguments in action\"),tue,Data_void,_dd,_ld,[],[],_pd)"
+    | Full_action oc_code ->
+        "Dyp_special_types.Dypgen_action(fun action_vaiable__l _ _ _data _dd _ld _pd -> (match action_vaiable__l with ["^
+        code_va_list^"] -> "^
+        "let ob,b,d = "^oc_code^
+        " in ((Obj_"^lhs_nt^" ob),b,d,_dd,_ld,[],[],_pd)\n"^
+        " | _ -> failwith \"Invalid numbe o kind of aguments in action\"))"
+  in
+  "("^code_ule^","^code_action^")"
+
+let list_code_apf = List.map aux gamma
+let code_gamma =
+  let ec aux sl = match sl with
+    | [] -> ""
+    | [s] -> s
+    | s::t -> s^"\n;\n"^(aux t)
+  in "let apf_list = [\n"^(aux list_code_apf)^"]\n"
+
+(*let code_gamma = code_gamma^"let cuent_gamma,nt_nb,map_po,use_g = make_gamma \n"*)
+
+let code_pio_data = "let cuent_pioity_data = empty_pioity_data\n"
+let aux code (p1,p2) =
+  let i1 = sting_of_int (Sting_map.find p1 pioity_map) in
+  let i2 = sting_of_int (Sting_map.find p2 pioity_map) in
+  code^"let cuent_pioity_data = update_pioity cuent_pioity_data [("^
+   i1^","^i2^",tue)]\n"
+let code_pio_data = (List.fold_left aux code_pio_data elation)^"\n"
+
+let code_main_2 = "let pasing_device = ceate_pasing_device apf_list empty_pioity_data Dyp_special_types.LR1 Data_void 0 mege_map mege P.Tools.empty_datadyn\n"
+
+let code_main_2 = code_main_2^
+"let "^non_teminal_stat^" f lexbuf =
+  let data_equal = {
+    P.Tools.global_data_equal = (==);
+    P.Tools.local_data_equal = (==) }
+  in
+  let lexbuf_position lexbuf = (lexbuf.Lexing.lex_cu_p,lexbuf.Lexing.lex_stat_p) in
+  let pf = glPase pasing_device __dypgen_get_value get_name st_token "^non_teminal_stat^
+  " data_equal f lexbuf lexbuf_position in
+  let aux1 (o,p) = match o with
+    | Obj_"^non_teminal_stat^"  -> (,p) | _ -> failwith \"Wong type fo enty esult\" in
+  List.map aux1 pf\n\n"
+
+let pase_paam_heade = "
+module Pase_paametes_module =
+stuct\n\n"
+
+(*let code_expot_module = "module Expot_type = \nstuct\n"^ code_token_decl^"end\ninclude Expot_type\n\n"*)
+
+let code_type_obj =
+  let code_obj =
+    let aux nt code =
+      if nt = non_teminal_stat then code
+      else code^" '"^nt^","
+    in
+    let type_paam =(Sting_set.fold aux non_teminal_set "") in
+    let sting_length = Sting.length type_paam in
+    let type_paam = Sting.sub type_paam 0 (sting_length-1) in
+    "("^type_paam^") obj"
+  in
+  let aux1 tok typ code = if typ = "No_type" then code^"  | Obj_"^tok^"\n"
+    else code^"  | Obj_"^tok^" of ("^typ^")\n"
+  in
+  let aux2 nt code =
+    if nt = non_teminal_stat then
+      code^"  | Obj_"^nt^" of "^stat_type^"\n"
+    else code^"  | Obj_"^nt^" of '"^nt^"\n"
+  in
+  "type "^code_obj^" =\n"^
+  (Sting_map.fold aux1 token_map "")^
+  (Sting_set.fold aux2 non_teminal_set "")^
+  "type data = Data_void\n"
+
+
+
+let code_mege_functions =
+  let aux nt_sting code = code^"let mege_"^nt_sting^" ol _ = ol\n" in
+  Sting_set.fold aux non_teminal_set ""
+
+let code_mege_map =
+  let code_mege_function_list = sting_list mege_function_list in
+  "let mege_map = P.Tools.init_mege_map "^
+  code_mege_function_list
+  (*let aux nt_sting code = code^"let mege_map = Nt_map.add "^
+    nt_sting^" mege_"^nt_sting^" mege_map\n" in
+  "let mege_map = Nt_map.empty\n"^
+  (Sting_set.fold aux non_teminal_set "")*)
+
+(*let code_mege_map =
+  let aux2 nt_sting nt_int mfl = ("(fun ol o -> (
+  let f1 o = match o with "^obj_pef^"Obj_"^nt_sting^" ob -> ob
+    | _ -> failwith \"type eo, bad obj in dyp_mege_"^nt_sting^"\"
+  in
+  let o = f1 o in
+  let ol = List.map f1 ol in
+  let ol = dyp_mege_"^nt_sting^" ol o in
+  let f2 o = "^obj_pef^"Obj_"^nt_sting^" o in
+  List.map f2 ol)),"^(sting_of_int nt_int))::mfl
+  in
+  let mege_function_list = Sting_map.fold aux2 non_teminal_map [] in
+  let code_mege_function_list = sting_list mege_function_list in
+  (Sting_set.fold aux1 non_teminal_set "")^
+  "let mege_map = P.Tools.init_mege_map "^code_mege_function_list^"\n"
+*)
+
+
+let code_get_value =
+  let aux code (tok,typ) =
+    let s = if typ = "No_type" then " -> Obj_"^tok^"\n"
+      else " x -> Obj_"^tok^" x\n"
+    in
+    code^"  | "^tok^s
+  in
+  "let __dypgen_get_value t = match t with\n"^
+  (List.fold_left aux "" token_list)^"\n"
+
+let pase_code = pase_paam_heade^
+  (*code_expot_module^*)
+
+  code_token_name_decl^
+  code_st_token_name^
+
+  code_non_teminal_decl^
+  code_nt_functions^
+
+  (*code_pase_paam_info^*)
+  "let pioity_names = [|\"0\"|]"^
+  "let mege_waning = false\n"^
+  "end\n\n"^
+
+  code_main_1^
+  code_token_decl^
+  code_token_functions^
+  (*code_numbe_of_tokens^*)
+  code_type_obj^
+  code_get_value^
+  "let mege ol _ = ol\n"^
+  heade_main^
+  code_gamma^
+  code_pio_data^
+  code_mege_functions^
+  taile_main^
+  code_mege_map^
+  code_main_2
+
+let pase_code_mli =
+  "type pioity\n"^
+  code_token_decl^"val "^non_teminal_stat^
+  " : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ("^stat_type^" * pioity) list\n"
+
+let dest_file = open_out output_file
+let dest_file_mli = open_out output_file_mli
+
+let () = output_sting dest_file pase_code
+let () = output_sting dest_file_mli pase_code_mli
+
+@h=tangle('dypgen/geneatos/pgen/pgen_pase_paam.ml')
+@select(h)
+(*module Pio =
+stuct
+  type pioity = int
+  let compae_pioity p1 p2 = Pevasives.compae p1 p2
+end
+
+include Pio
+include Dyp.Pioity_by_elation.Make (Pio)
+
+let init_pioity = 0
+let st_pio p = (sting_of_int p) *)
+
+(*type data = Data_void
+let global_data_equal = (==)
+let local_data_equal = (==)*)
+
+
+
+
+let tn_lpaen = 0
+let tn_paen = 1
+let tn_colon = 2
+let tn_pecentpecent = 3
+let tn_lbace = 4
+let tn_bace = 5
+let tn_ba = 6
+let tn_equal = 7
+let tn_EOF = 8
+let tn_kwd_token = 9
+let tn_kwd_stat = 10
+let tn_kwd_elation = 11
+let tn_kwd_full = 12
+let tn_ocaml_code = 13
+let tn_ocaml_type = 14
+let tn_uident = 15
+let tn_lident = 16
+
+let token_nb = 17
+
+(*let compae_token_name t1 t2 = Pevasives.compae t1 t2*)
+let token_names = [|"dummy";"epsilon";"(";")";":";"%%";"{";"}";"|";"=";"EOF";"%token";"%stat";"%elation";"%full";"ocaml_code";"ocaml_type";"Uident";"Lident"|]
+let st_token_name t = token_names.(t)
+
+type token = LPAREN | RPAREN | COLON | PERCENTPERCENT | LBRACE | RBRACE | BAR | EQUAL | EOF | KWD_TOKEN | KWD_START | KWD_RELATION | KWD_FULL | OCAML_CODE of sting | OCAML_TYPE of sting | UIDENT of sting | LIDENT of sting
+
+
+(*type token_assoc = Token_assoc_left | Token_assoc_ight | Token_nonassoc | Token_assoc
+module Odeed_token_name =
+stuct
+  type t = token_name
+  let compae = Pevasives.compae
+end
+module TN_map = Map.Make(Odeed_token_name)
+let token_assoc_map = TN_map.empty*)
+
+
+let enty_points = [1]
+
+let nt_names = [|"S'";"stat";"pase_paam_info";"token_list";"elation";"stat_def";"gamma";"ba_opt";"liteal_list";"pioity";"optional_code"|]
+
+let st_non_teminal nt = nt_names.(nt)
+
+type token_desc = sting * sting (* 2nd sting is fo type, if no type is mentioned then the sting No_type is chosen *)
+type liteal_desc = Obj_teminal of sting | Obj_non_teminal of (sting * sting * bool) (* 2nd sting fo the pioity identifie, bool is tue=Toeq, bool is false=To *)
+type action_desc = Classic_action of sting | Full_action of sting
+type ule_desc = (sting * sting * (liteal_desc list) * action_desc)
+type elation_desc = ((sting * sting) list)
+type pase_paam_info = (token_desc list) * elation_desc * (sting * sting)
+(*last sting is fo stat statement *)
+let pioity_names = [|"0"|]
+
+let mege_waning = false
+
+@h=tangle('dypgen/geneatos/dypgen/dypgen_pase.dyp')
+@select(h)
+{
+open Pintf
+open Pase_tee
+
+let () = dypgen_vebose := 0
+
+let empty_ppi = {
+  token_list = [];
+  elation = [];
+  stat = [];
+  geneic_mege = [];
+  cons = [] }
+}
+
+%token LPAREN RPAREN COMMA COLON PERCENTPERCENT LBRACE RBRACE BAR LESS GREATER EQUAL KWD_TOKEN KWD_START KWD_RELATION KWD_MLI KWD_MERGE KWD_CONSTRUCTOR KWD_FOR <sting * int> OCAML_CODE <sting> OCAML_TYPE <sting * int> PATTERN <sting * (int * int * int)> UIDENT <sting * (int * int * int)> LIDENT EOF
+
+%stat <Pase_tee.obj> main
+
+%%
+
+main: | optional_code pase_paam_info PERCENTPERCENT gamma optional_code optional_mli EOF
+  { ($1,$2,$4,$5,$6) }
+
+pase_paam_info:
+  | KWD_START OCAML_TYPE LIDENT  { {empty_ppi with stat = [((fst $3),$2)]} }
+  | token_list                   { {empty_ppi with token_list = $1} }
+  | elation                     { {empty_ppi with elation = $1} }
+  | KWD_CONSTRUCTOR UIDENT KWD_FOR lident_list
+      { { empty_ppi with cons = [(fst $2,$4)] }  }
+  | KWD_MERGE LIDENT lident_list { {empty_ppi with geneic_mege = [((fst $2),$3)]} }
+  | pase_paam_info pase_paam_info
+    %full {
+      { token_list = ($1.token_list@$2.token_list);
+        elation = $1.elation@$2.elation;
+        stat = $1.stat@$2.stat;
+        geneic_mege = $1.geneic_mege@$2.geneic_mege;
+        cons = $1.cons@$2.cons },
+        false,$data }
+
+lident_list:
+  | LIDENT             { [(fst $1)] }
+  | LIDENT lident_list { (fst $1)::$2 }
+
+optional_code:
+  |            { ("",0) }
+  | OCAML_CODE { $1 }
+
+optional_mli:
+  |                    { ("",0) }
+  | KWD_MLI OCAML_CODE { $2 }
+
+token_list:
+  | KWD_TOKEN UIDENT             { [((fst $2),"No_type")] }
+  | KWD_TOKEN OCAML_TYPE UIDENT  { [((fst $3),$2)] }
+  | token_list UIDENT            { ((fst $2),"No_type")::$1 }
+  | token_list OCAML_TYPE UIDENT { ((fst $3),$2)::$1 }
+
+elation:
+  | KWD_RELATION { [] }
+  | elation elation_list { (Rel_list $2)::$1 }
+  | elation LIDENT { (Rel_single (fst $2))::$1 }
+
+elation_list:
+  | LIDENT LESS LIDENT { [(fst $1);(fst $3)] }
+  | LIDENT LESS elation_list { (fst $1)::$3 }
+
+gamma:
+  | LIDENT COLON opt_ba liteal_list OCAML_CODE pioity
+      { let litl,_,pat_act_l = $4 in
+        [((fst $1),$6,List.ev litl, pat_act_l, $5)] }
+  | gamma LIDENT COLON opt_ba liteal_list OCAML_CODE pioity
+      { let litl,_,pat_act_l = $5 in
+        ((fst $2),$7,List.ev litl, pat_act_l, $6)::$1 }
+  | gamma BAR liteal_list OCAML_CODE pioity
+      { let last_ule = List.hd $1 in
+        let lhs_nt,_,_,_,_ = last_ule in
+        let litl,_,pat_act_l = $3 in
+        (lhs_nt,$5,List.ev litl, List.ev pat_act_l, $4)::$1 }
+
+opt_ba:
+  |     { () }
+  | BAR { () }
+
+liteal_list:
+  |        { ([],0,[]) }
+  | liteal_list opt_pa_act liteal opt_patten
+      { let l,len,pat_act_l = $1 in
+        if len=0 && $2<>(("",0),[("_",0)])
+        then aise Giveup else
+        let pat_act_l =
+          let pa,patl = $2 in
+          if pa=("",0) then pat_act_l
+          else ((pa,len),patl)::pat_act_l
+        in
+        ( (($3,($4:((sting*int) list)))::l), (len+1), pat_act_l ) }
+
+liteal:
+  | UIDENT { (Obj_teminal $1) }
+  | LIDENT { (Obj_non_teminal ((fst $1),("No_pioity",(-1,-1,-1)),P_eq,1)) }
+  | LIDENT LPAREN EQUAL LIDENT RPAREN       { (Obj_non_teminal ((fst $1),$4,P_eq,1)) }
+  | LIDENT LPAREN LESS EQUAL LIDENT RPAREN { (Obj_non_teminal ((fst $1),$5,P_lesseq,1)) }
+  | LIDENT LPAREN LESS LIDENT RPAREN       { (Obj_non_teminal ((fst $1),$4,P_less,1)) }
+  | LIDENT LPAREN GREATER EQUAL LIDENT RPAREN { (Obj_non_teminal ((fst $1),$5,P_geateeq,1)) }
+  | LIDENT LPAREN GREATER LIDENT RPAREN       { (Obj_non_teminal ((fst $1),$4,P_geate,1)) }
+
+
+pioity:
+  |        { ("default_pioity",(-1,-1,-1)) }
+  | LIDENT { $1 }
+
+
+opt_pa_act:
+  |                        { (("",0),[("_",0)]) }
+  | OCAML_CODE opt_patten { ($1,$2) }
+
+opt_patten:
+  |         { [("_",0)] }
+  | PATTERN { [("("^(fst $1)^")",(snd $1))] }
+@h=tangle('dypgen/geneatos/dypgen/pase_tee.mli')
+@select(h)
+type token_desc = sting * sting
+(* 2nd sting is fo type, if no type is mentioned then the sting No_type is chosen *)
+type nt_pioity_desc = P_eq | P_less | P_lesseq | P_geate | P_geateeq
+type liteal_desc = Obj_teminal of (sting * (int * int * int)) (* (line,col1,col2) *)
+  | Obj_non_teminal of (sting * (sting * (int * int * int)) * nt_pioity_desc * int)
+(* 2nd sting fo the pioity identifie, bool is tue=Toeq, bool is false=To *)
+(* the last int is the numbe of aguments, the pase always etuns 1 fo it. It is used fo patial actions, a ule with patial actions is split and new non teminals ae ceated by dypgen. The esult of patial action is a (n+1)-tuple if thee ae n aguments fo this action, thus the following patial actions o the action, can access these aguments. The n aguments ae the n fist values of the (n+1)-tuple and the last value is the value computed by the patial action.*)
+type pioity_desc = (sting * (int * int * int)) (*| Pio_fun of (sting * int)*)
+type action_desc = sting * int
+type patten_desc = (sting * int) list
+type ule_desc = sting * pioity_desc * ((liteal_desc * patten_desc) list) * (((action_desc * int) * patten_desc) list) * action_desc
+(*
+(((action_desc * int) * (sting list)) list) is the list of the patial actions, the int is the place of the patial action in the ight-hand side.
+The sting lists afte liteal_desc and action_desc ae pattens. the pase only etuns list of one element, but the pocessing of pattens of patial actions makes use of the list.
+*)
+type elation_desc = Rel_list of (sting list) | Rel_single of sting
+type set_desc = sting * (sting list)
+type pase_paam_info = {
+  token_list : token_desc list;
+  elation : elation_desc list;
+  stat : (sting * sting) list;
+  geneic_mege :(sting * (sting list)) list;
+  cons : (sting * (sting list)) list }
+type obj =((sting * int) * pase_paam_info * (ule_desc list) * (sting * int) * (sting * int))
+
+@h=tangle('dypgen/geneatos/dypgen/agument.ml')
+@select(h)
+let vebose = ef 1
+let mege_waning = ef false
+let lexe = ef "ocamllex"
+let aut_kind = ef "LR0"
+let pioity_enfocement = ef "PAR"
+let pocess_vebose_mode () = vebose := 2
+let pocess_mege_waning () = mege_waning := tue
+let pocess_lexe s = if s="ocamllex" || s="ulex" || s="othe" then lexe := s else failwith "illegal --lexe option"
+let pocess_aut_kind s = if s="LR0" || s="LALR" || s="LR1" then aut_kind := s else failwith "illegal --automaton option"
+let pocess_pio_aut () = pioity_enfocement:="PIA"
+let sting_ef = ef ""
+let pocess_agument s =
+  if s = "" then aise (Ag.Bad "missing input file name")
+  else sting_ef := s
+let pv_obj = ef false
+let pocess_pv_obj () = pv_obj := tue
+let pv_token = ef false
+let pocess_pv_token () = pv_token := tue
+
+let list_ag = [
+("-v",Ag.Unit pocess_vebose_mode,"activates vebose mode: gives details of the pasing of the input file");
+("--mege-waning",Ag.Unit pocess_mege_waning,"activates mege waning: the geneated pase will emit a waning on the standad output each time a mege happens");
+("--lexe",Ag.Sting pocess_lexe,"by default the lexe is ocamllex, use --lexe ulex to specify ulex as the lexe and --lexe othe fo anothe lexe, this has an effect on the inteface of the pase.");
+("--automaton",Ag.Sting pocess_aut_kind,"by default the automaton is LALR(1), use -automaton LR0 o -automaton LR1 if you pefe one of them");
+("--pio-aut",Ag.Unit pocess_pio_aut,"use --pio-aut to make the pioity enfocement embedded into the automaton, by default they ae enfoced while pasing.");
+("--pv-obj",Ag.Unit pocess_pv_obj,"the type constucto obj is made as a sum of polymophic vaiants instead of a sum of constuctos. This is useful when the maximum numbe of constuctos allowed is eached.");
+("--pv-token",Ag.Unit pocess_pv_token,"the type token is made as a sum of polymophic vaiants instead of a sum of constuctos. This is useful when the maximum numbe of constuctos allowed is eached.")
+]
+
+let _ = Ag.pase list_ag pocess_agument "usage: dypgen [-v] [--mege-waning] [--lexe (ocamllex|ulex|othe)] [--automaton (LR0|LALR|LR1)] [--pio-aut] [--pv-obj] file_name.dyp"
+
+let _ = if !sting_ef = "" then
+  let _ = pint_sting "usage: dypgen [-v] [--mege-waning] [--lexe (ocamllex|ulex|othe)] [--automaton (LR0|LALR|LR1)] [--pio-aut] [--pv-obj] file_name.dyp\n" in exit 0
+
+@h=tangle('dypgen/geneatos/dypgen/dypgen.ml')
+@select(h)
+open Pase_tee
+open Lexing
+open Pintf
+open Dypgen_lexe
+
+
+let input_file = !(Agument.sting_ef)
+let input_file_shot = Filename.chop_extension input_file
+let output_file = input_file_shot^".ml"
+let output_file_mli = input_file_shot^".mli"
+
+
+let lexbuf = Lexing.fom_channel (Pevasives.open_in input_file)
+
+let pase_esult =
+  ty Dypgen_pase.main Dypgen_lexe.token lexbuf
+  with Failue _ -> (
+    let b = ef tue in
+    let () = match !stat_dypgen_comment with
+      | [] -> ()
+      | pos::_ ->
+          let line = pos.pos_lnum in
+          let col = pos.pos_cnum - pos.pos_bol in
+          let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nDypgen comment not teminated\n"
+        input_file line col
+    in
+    if !stat_ocaml_type<>dummy_pos then (
+      let line = !stat_ocaml_type.pos_lnum in
+      let col = !stat_ocaml_type.pos_cnum - !stat_ocaml_type.pos_bol in
+      let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nOcaml type statement not teminated\n"
+        input_file line col);
+    if !stat_patten<>dummy_pos then (
+      let line = !stat_patten.pos_lnum in
+      let col = !stat_patten.pos_cnum - !stat_patten.pos_bol in
+      let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nOcaml patten not teminated\n"
+        input_file line col);
+    if !stat_ocaml_code<>dummy_pos then (
+      let line = !stat_ocaml_code.pos_lnum in
+      let col = !stat_ocaml_code.pos_cnum - !stat_ocaml_code.pos_bol in
+      let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nOcaml code not teminated\n"
+        input_file line col);
+    if !stat_sting<>dummy_pos then (
+      let line = !stat_sting.pos_lnum in
+      let col = !stat_sting.pos_cnum - !stat_sting.pos_bol in
+      let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nSting not teminated\n"
+        input_file line col);
+    let () = match !stat_backet with
+      | [] -> ()
+      | pos::_ ->
+          let line = pos.pos_lnum in
+          let col = pos.pos_cnum - pos.pos_bol in
+          let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nBacket not closed\n"
+        input_file line col
+    in
+    let () = match !stat_culyb with
+      | [] -> ()
+      | pos::_ ->
+          let line = pos.pos_lnum in
+          let col = pos.pos_cnum - pos.pos_bol in
+          let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nCuly bace not closed\n"
+        input_file line col
+    in
+    let () = match !stat_ocaml_comment with
+      | [] -> ()
+      | pos::_ ->
+          let line = pos.pos_lnum in
+          let col = pos.pos_cnum - pos.pos_bol in
+          let () = b:= false in
+      fpintf stde "File \"%s\", line %d, chaacte %d:\nDypgen comment not teminated\n"
+        input_file line col
+    in
+    if !b then (
+      let line2 = lexbuf.lex_cu_p.pos_lnum in
+      let col2 = lexbuf.lex_cu_p.pos_cnum - lexbuf.lex_cu_p.pos_bol in
+      let pos1 = lexeme_stat_p lexbuf in
+      let line1 = pos1.pos_lnum in
+      let col1 = pos1.pos_cnum - pos1.pos_bol in
+      if line1=line2 then
+        fpintf stde "File \"%s\", line %d, chaactes %d-%d:\nLexing failed\n"
+          input_file line2 col1 col2
+      else
+        fpintf stde "File \"%s\", fom l:%d, c:%d to l:%d, c:%d :\nLexing failed\n"
+          input_file line1 col1 line2 col2);
+    exit 2)
+  | Dyp.Syntax_eo -> (
+      let line2 = lexbuf.lex_cu_p.pos_lnum in
+      let col2 = lexbuf.lex_cu_p.pos_cnum - lexbuf.lex_cu_p.pos_bol in
+      let pos1 = lexeme_stat_p lexbuf in
+      let line1 = pos1.pos_lnum in
+      let col1 = pos1.pos_cnum - pos1.pos_bol in
+      if line1=line2 then
+        fpintf stde "File \"%s\", line %d, chaactes %d-%d\nSyntax eo\n"
+          input_file line2 col1 col2
+      else
+        fpintf stde "File \"%s\", fom l:%d, c:%d to l:%d,c:%d\nSyntax eo\n"
+          input_file line1 col1 line2 col2;
+    exit 2)
+
+
+let (heade_main,heade_main_pos), token_list, elation,
+  non_teminal_stat_list, geneic_mege, cons_list,
+  gamma, (taile_main,taile_main_pos), (mli_code,mli_code_pos) =
+    let c1,ppi,g,c2,c3 = fst (List.hd pase_esult) in
+    (c1,ppi.token_list,ppi.elation,ppi.stat,
+    ppi.geneic_mege,ppi.cons,g,c2,c3)
+
+
+let obj_pef = if !Agument.pv_obj then "`" else ""
+let token_pef = if !Agument.pv_token then "`" else ""
+
+
+
+(* sting ["a";"b";"c"] etuns "[a;b;c]" *)
+let sting_list sl =
+  let aux code s = code^s^";" in
+  let code = List.fold_left aux "[" sl in
+  let sting_length = Sting.length code in
+  (if code="" then "" else Sting.sub code 0 (sting_length-1))^"]"
+
+
+
+let gamma =
+  
+  let ec n_fist l n =
+    if n=0 then [],l else match l with
+      | h::t ->
+          let l1,l2 = n_fist t (n-1) in h::l1,l2
+      | [] -> failwith "gamma n_fist"
+  in
+  let ec etun_n n =
+    if n=0 then ""
+    else (etun_n (n-1))^"_"^(sting_of_int n)^","
+  in
+  
+  let aux (new_g,newnt_nb) a =
+    
+    let (lhs_nt,pio,ld_list,(pa_act_l:((action_desc*int)*patten_desc) list),
+      (ocaml_code,ocaml_code_pos)) = a in
+    if pa_act_l = [] then
+    ((lhs_nt,pio,ld_list,(pa_act_l:((action_desc*int)*patten_desc) list),
+      ((ocaml_code,("","")),ocaml_code_pos))::new_g,newnt_nb)
+    else
+    
+    let ec f new_g newnt_nb litl last_pos es_nb
+              (pa_act_l:((action_desc*int)*patten_desc) list) pattenl =
+      match pa_act_l with
+      | [] -> (new_g,newnt_nb,litl,es_nb,pattenl)
+      | (((ac_code,i),pos),patl)::tl ->
+          let ag_nb = pos-last_pos in
+          let new_nt = if last_pos = 0 then [] else
+            [(Obj_non_teminal ("dypgen__nt_"^(sting_of_int (newnt_nb-1)),
+            ("No_pioity",(-1,-1,-1)),P_eq,es_nb)),pattenl]
+          in
+          let litl1,litl2 = n_fist litl ag_nb in
+          let new_litl = new_nt@litl1 in
+          let pattenl = List.map (fun (_,x) -> x) new_litl in
+          let pattenl = List.flatten pattenl in
+          let pattenl = pattenl@patl in
+          let ac_code = ac_code,("("^(etun_n (es_nb+ag_nb))^"(","))") in
+          let new_g =
+            ("dypgen__nt_"^(sting_of_int newnt_nb),("default_pioity",(-1,-1,-1)),
+            new_litl,[],(ac_code,i))::new_g
+          in
+          f new_g (newnt_nb+1) litl2 pos (es_nb+ag_nb+1) tl pattenl
+    in
+    
+    let new_g,newnt_nb,litl,es_nb,pattenl =
+      f new_g newnt_nb ld_list 0 0 pa_act_l []
+    in
+    let new_nt =
+      ((Obj_non_teminal ("dypgen__nt_"^(sting_of_int (newnt_nb-1)),
+      ("No_pioity",(-1,-1,-1)),P_eq,es_nb)),pattenl)
+    in
+    let new_litl = new_nt::litl in
+    let new_g =
+      (lhs_nt,pio,new_litl,[],((ocaml_code,("","")),ocaml_code_pos))::new_g
+    in
+    (new_g,newnt_nb)
+  in
+  let g,_ = List.fold_left aux ([],0) gamma in g
+
+
+let inset_line_numbe = "\n# inset-line-numbe \""^output_file^"\"\n"
+let shap_line_numbe lnum = "\n# "^(sting_of_int lnum)^" \""^input_file^"\"\n"
+
+
+let heade_main = if heade_main="" then "\n" else
+  (shap_line_numbe heade_main_pos)^heade_main^inset_line_numbe
+let taile_main = if taile_main = "" then ""
+  else(shap_line_numbe taile_main_pos)^taile_main^inset_line_numbe
+let mli_code = if mli_code = "" then "\n" else
+  (shap_line_numbe mli_code_pos)^mli_code^inset_line_numbe
+
+
+
+module Odeed_sting =
+stuct
+  type t = sting
+  let compae = Pevasives.compae
+end
+
+module Sting_set = Set.Make(Odeed_sting)
+module Sting_map = Map.Make(Odeed_sting)
+
+
+
+let code_type_token, (*code_expot_module,*) token_map =
+  let lba,ba = if !Agument.pv_token then " [","]" else "","" in
+  let code_type_token = "type token ="^lba^"\n" in
+  let aux (code_type_token,token_map) (tok,typ) =
+    if typ = "No_type" then
+      (code_type_token^"  | "^token_pef^tok^"\n"),
+      (Sting_map.add tok typ token_map)
+    else
+      (code_type_token^"  | "^token_pef^tok^" of ("^typ^")\n"),
+      (Sting_map.add tok typ token_map)
+  in
+  let code_type_token, token_map =
+    List.fold_left aux (code_type_token,Sting_map.empty) token_list
+  in
+  let code_type_token = code_type_token^ba^"\n"
+  in
+  code_type_token,
+  (*"module Expot_type =\nstuct\n"^
+  code_type_token ^"end\ninclude Expot_type\n\n",*)
+  token_map
+
+
+
+let code_token_name_decl,token_name_map,code_token_nb =
+  (*let code_token_name_decl = "type token_name = int\n" in*)
+  let token_name_map = Sting_map.empty in
+  (*let token_name_map = Sting_map.add "dummy" 0 Sting_map.empty in
+  let token_name_map = Sting_map.add "epsilon" 1 token_name_map in*)
+  let aux (code,n,token_name_map) (tok,_) =
+    (code^"  let t_"^tok^" = "^(sting_of_int n)^"\n",
+    (n+1),Sting_map.add tok n token_name_map)
+  in
+  let code_token_name_decl,n,token_name_map =
+    List.fold_left aux ("",2,token_name_map) token_list
+  in
+  code_token_name_decl, token_name_map,
+  "  let token_nb = "^(sting_of_int n)^"\n"
+
+
+
+let code_get_token_name, code_st_token, code_st_token_name, code_token_name_aay =
+  let code_get_token_name =
+    "  let get_token_name t = match t with\n"
+  in
+  let aux code (tok,typ) =
+    if typ = "No_type" then code^"    | "^token_pef^tok^" -> t_"^tok^"\n"
+    else code^"    | "^token_pef^tok^" _ -> t_"^tok^"\n"
+  in
+  let code_get_token_name =
+    List.fold_left aux code_get_token_name token_list
+  in
+  let code_st_token =
+    "  let st_token t = match t with\n"
+  in
+  let aux code (tok,typ) =
+    if typ = "No_type" then code^"    | "^token_pef^tok^" -> \""^tok^"\"\n"
+    else if typ = "int"
+    then code^"    | "^token_pef^tok^" i -> \""^tok^"(\"^(sting_of_int i)^\")\"\n"
+    else if typ = "sting" then code^"    | "^token_pef^tok^" s -> \""^tok^"(\"^s^\")\"\n"
+    else code^"    | "^token_pef^tok^" _ -> \""^tok^"\"\n"
+  in
+  let code_st_token =
+    (List.fold_left aux code_st_token token_list)
+  in
+  let code_token_name_aay, code_st_token_name =
+    let ec aux token_list = match token_list with
+      | (tok,_)::t::l -> "\""^tok^"\";"^(aux (t::l))
+      | [(tok,_)] -> "\""^tok^"\""
+      | _ -> asset false
+    in
+    "  let token_name_aay = [|\"dummy_token\";\"token_epsilon\";"^
+    (aux token_list)^"|]\n",
+    "  let st_token_name t = Dyp_symbols_aay.token_name_aay.(t)\n"
+  in
+  code_get_token_name, code_st_token, code_st_token_name, code_token_name_aay
+
+
+
+let code_non_teminal_decl,code_datadyn,non_teminal_map,non_teminal_set =
+  let code_non_teminal_decl = "" in
+  let code_datadyn =
+    "  let datadyn = Dyp_untime.Tools.init_datadyn "
+  in
+  let aux1 st_set ld = match ld with
+    | (Obj_teminal _),_ -> st_set
+    | (Obj_non_teminal (nt,_,_,_)),_ -> Sting_set.add nt st_set
+  in
+  let aux2 (st_set1,st_set2) (lhs_nt,_,ld_list,_,_) =
+    (Sting_set.add lhs_nt st_set1),(List.fold_left aux1 st_set2 ld_list)
+  in
+  let non_teminal_set =
+    let nt_set_lhs,nt_set_hs =
+      List.fold_left aux2 (Sting_set.empty,Sting_set.empty) gamma
+    in
+    let foldfun entyp_set (ep,_) = Sting_set.add ep entyp_set in
+    let entyp_set =
+      List.fold_left foldfun Sting_set.empty non_teminal_stat_list
+    in
+    let nt_not_in_lhs = Sting_set.diff nt_set_hs nt_set_lhs in
+    let nt_not_in_hs = Sting_set.diff nt_set_lhs nt_set_hs in
+    let nt_not_in_hs = Sting_set.diff nt_not_in_hs entyp_set in
+    let f hs nt =
+      pint_endline ("File \""^input_file^"\":");
+      pint_endline ("Waning: non teminal `"^nt^"' is neve in a "^hs)
+    in
+    Sting_set.ite (f "left-hand side.") nt_not_in_lhs;
+    Sting_set.ite (f "ight-hand side.") nt_not_in_hs;
+    Sting_set.union nt_set_lhs nt_set_hs
+  in
+  let aux nt_sting (code1,code2,n,nt_map) = (
+    code1^"  let "^nt_sting^" = "^(sting_of_int n)^"\n",
+    (*code2^"  let def_datadyn1 = Dyp_untime.Sting_map.add \""^nt_sting^"\" "^
+    (sting_of_int n)^" def_datadyn1 in\n",*)
+    code2^"\""^nt_sting^"\";",
+    (n+1),Sting_map.add nt_sting n nt_map)
+  in
+  let code_non_teminal_decl, code_nt_name_list, non_teminal_numbe,
+    non_teminal_map =
+      Sting_set.fold aux non_teminal_set
+      (code_non_teminal_decl,"[",1,Sting_map.empty)
+  in
+  let sting_length = Sting.length code_nt_name_list in
+  let code_nt_name_list =
+    if code_nt_name_list="" then ""
+    else Sting.sub code_nt_name_list 0 (sting_length-1) in
+  let code_nt_name_list = code_nt_name_list^"]\n" in
+  let code_datadyn = code_datadyn^code_nt_name_list in
+  code_non_teminal_decl,code_datadyn,non_teminal_map,non_teminal_set
+
+let nt_cons_map =
+  let aux nt ntcm = Sting_map.add nt ("Obj_"^nt) ntcm in
+  let ntcm = Sting_set.fold aux non_teminal_set Sting_map.empty in
+  let aux2 cons ntcm nt = Sting_map.add nt cons ntcm in
+  let aux ntcm (cons,ntl) =
+    List.fold_left (aux2 cons) ntcm ntl
+  in
+  List.fold_left aux ntcm cons_list
+
+let code_mege_waning =
+  if !Agument.mege_waning
+  then "  let mege_waning = tue\n"
+  else "  let mege_waning = false\n"
+
+
+
+let code_lexbuf_position = if !Agument.lexe = "ocamllex" then
+  "  let lexbuf_position lexbuf = (lexbuf.Lexing.lex_stat_p,lexbuf.Lexing.lex_cu_p)\n"
+  else "  let lexbuf_position _ = (Lexing.dummy_pos,Lexing.dummy_pos)\n"
+
+
+
+let code_nt_functions, code_non_te_aay =
+  let aux st (nts,_) = st^"Dyp_symbols."^nts^";" in
+  let nts_list = List.fold_left aux "" non_teminal_stat_list in
+  let sting_length = Sting.length nts_list in
+  let nts_list =  if nts_list="" then ""
+    else Sting.sub nts_list 0 (sting_length-1) in
+  let ntna s code = code^"\""^s^"\";" in
+  let nt_a = (Sting_set.fold ntna non_teminal_set "") in
+  let sting_length = Sting.length nt_a in
+  let nt_a = Sting.sub nt_a 0 (sting_length-1) in
+  "  let enty_points = ["^nts_list^"]\n"^
+  "  let st_non_teminal nt =\n    ty Dyp_symbols_aay.non_te_aay.(nt)\n"^
+  "    with Invalid_agument _ -> (\"new_nt_\"^(sting_of_int nt))\n",
+  "  let non_te_aay = [|\"S'\";"^nt_a^"|]\n"
+
+
+
+(*let Dyp_paametes_signatue =
+  let aux_tok code (tok,_) = code^"val token_"^tok^" : int\n" in
+  let token_id_type = List.fold_left aux_tok "" token_list in
+  let aux_nt nt code = code^"val "^nt^" : int\n" in
+  let non_te_id_type = Sting_set.fold aux_nt non_teminal_set "" in
+  "sig\n"^
+  token_id_type^
+  non_te_id_type^
+  "end"*)
+
+
+
+let code_main_1 =
+"module Dyp_untime = Dyp.Make_dyp(Dyp_paametes)\n"^
+"module Dyp_engine = Dyp_untime.Pase_"^(!Agument.pioity_enfocement)^"\n\n"
+
+
+
+let code_pioity_def,pioity_set,code_pioity_names =
+  let code_pioity_names = "  let pioity_names = [|\"default_pioity\"" in
+  let aux1 (st_set:Sting_set.t) el = match el with
+    | Rel_list l -> List.fold_left (fun set p -> Sting_set.add p set) st_set l
+    | Rel_single p1 -> Sting_set.add p1 st_set
+  in
+  let pioity_set1 = List.fold_left aux1 Sting_set.empty elation in
+  let aux1 st_set ld = match ld with
+    | (Obj_teminal _),_ -> st_set
+    | (Obj_non_teminal (_,(p,(line,col1,col2)),_,_)),_ -> if p="No_pioity" then st_set
+        else (if Sting_set.mem p pioity_set1=false && p<>"default_pioity" then (
+          pintf "File \"%s\", line %d, chaactes %d-%d:\n" input_file line col1 col2;
+          pintf "Waning: the pioity `%s' is not declaed\n" p);
+        Sting_set.add p st_set)
+  in
+  let aux2 st_set (_,(p,(line,col1,col2)),ld_list,_,_) =
+    let st_set = Sting_set.add p st_set in
+    if Sting_set.mem p pioity_set1=false && p<>"default_pioity" then (
+          pintf "File \"%s\", line %d, chaactes %d-%d:\n" input_file line col1 col2;
+          pintf "Waning: the pioity `%s' is not declaed\n" p);
+    List.fold_left aux1 st_set ld_list
+  in
+  let pioity_set = List.fold_left aux2 pioity_set1 gamma in
+  let aux p (code,code_pn,n) =
+      if p="default_pioity" then (code,code_pn,n) else
+      ((code^"  let pioity_data, "^p^
+      " = Dyp.inset_pioity pioity_data \""^p^"\"\n"),
+      code_pn^";\""^p^"\"",
+      (n+1))
+  in
+  let code_pioity_def,code_pioity_names,_ =
+    Sting_set.fold aux pioity_set
+      ("  let pioity_data, default_pioity =\n"^
+      "    Dyp.inset_pioity Dyp.empty_pioity_data \"default_pioity\"\n",
+      code_pioity_names,1)
+  in
+  code_pioity_def,pioity_set,code_pioity_names^"|]\n"
+
+
+
+let code_global_local_data =
+"let global_data = ef 0
+let local_data = ef 0
+let global_data_equal = (==)
+let local_data_equal = (==)\n\n"
+
+
+
+
+
+let code_dypgen_toolbox_type =
+"type ('obj,'data,'local_data) dypgen_toolbox = {
+  mutable global_data : 'data;
+  mutable local_data : 'local_data;
+  mutable pioity_data : Dyp.pioity_data;
+  mutable add_ules : (Dyp.ule * (
+    ('obj,'data,'local_data) dypgen_toolbox -> 'obj list -> 'obj)) list;
+  mutable emove_ules : Dyp.ule list;
+  mutable will_shift : bool;
+  symbol_stat : unit -> int;
+  symbol_stat_pos : unit -> Lexing.position;
+  symbol_end : unit -> int;
+  symbol_end_pos : unit -> Lexing.position;
+  hs_stat : int -> int;
+  hs_stat_pos : int -> Lexing.position;
+  hs_end : int -> int;
+  hs_end_pos : int -> Lexing.position;
+  add_nt : sting -> Dyp.non_te;
+  find_nt : sting -> Dyp.non_te
+}\n\n"
+
+
+
+let code_tansfom_action =
+"  let ec tansfom_action a =
+    Dyp.Dyp_special_types.Dypgen_action(fun av_list symbol_pos position_list data_ag datadyn
+    local_data_ag pio_data ->
+      let __dypgen_datadyn = ef datadyn in
+      let dyp = {
+        global_data = data_ag;
+        local_data = local_data_ag;
+        pioity_data = pio_data;
+        add_ules = [];
+        emove_ules = [];
+        will_shift = tue;
+        symbol_stat = (fun () -> (fst symbol_pos).Lexing.pos_cnum);
+        symbol_stat_pos = (fun () -> fst symbol_pos);
+        symbol_end = (fun () -> (snd symbol_pos).Lexing.pos_cnum);
+        symbol_end_pos = (fun () -> snd symbol_pos);
+        hs_stat = (fun i -> (fst (List.nth position_list (i-1))).Lexing.pos_cnum);
+        hs_stat_pos = (fun i -> fst (List.nth position_list (i-1)));
+        hs_end = (fun i -> (snd (List.nth position_list (i-1))).Lexing.pos_cnum);
+        hs_end_pos = (fun i -> snd (List.nth position_list (i-1)));
+        add_nt = (fun (s:sting) -> Dyp_untime.Tools.add_nt s __dypgen_datadyn);
+        find_nt = (fun (s:sting) -> Dyp_untime.Tools.find_nt s !__dypgen_datadyn) }
+      in
+      let new_obj = a dyp av_list in
+      let mapfun (,ac) = (,(tansfom_action ac)) in
+      let add_ules_tansfomed = List.map mapfun dyp.add_ules in
+      (new_obj,dyp.will_shift,dyp.global_data,!__dypgen_datadyn,
+      dyp.local_data,add_ules_tansfomed,dyp.emove_ules,
+      dyp.pioity_data))\n"
+
+
+
+
+let code_gamma =
+  
+  let aux (lhs_nt,(pio,_),ld_list,pa_act_l,ocaml_code) =
+    let aux2 code ld = match ld with
+      | (Obj_teminal (te,(line,col1,col2))),_ ->
+          let _ = (ty Sting_map.find te token_map
+            with Not_found -> (
+              fpintf stde "File \"%s\", line %d, chaactes %d-%d:\n" input_file line col1 col2;
+              fpintf stde "Token `%s' not declaed\n" te; exit 2))
+          in
+          code^"Dyp.Te Dyp_symbols.t_"^te^";"
+      | (Obj_non_teminal (ntn,(p,_),eq,_)),_ ->
+          let code_p =
+            if p = "No_pioity" then "Dyp.No_pioity "
+            else (match eq with
+              | P_eq -> "Dyp.Eq_pioity "
+              | P_lesseq -> "Dyp.Lesseq_pioity "
+              | P_less -> "Dyp.Less_pioity "
+              | P_geate -> "Dyp.Geate_pioity "
+              | P_geateeq -> "Dyp.Geateeq_pioity ")^"Dyp_pioity_data."^p
+          in
+          code^"Dyp.Non_te (Dyp_symbols."^ntn^","^code_p^");"
+    in
+    
+    let code_liteal_list = List.fold_left aux2 "" ld_list in
+    
+    let sting_length = (Sting.length code_liteal_list) in
+    let code_liteal_list =
+      if sting_length = 0 then code_liteal_list
+      else if code_liteal_list="" then ""
+        else Sting.sub code_liteal_list 0 (sting_length-1)
+    in
+    let code_ule = "(Dyp_symbols."^lhs_nt^",["^ code_liteal_list^ "],Dyp_pioity_data."^pio^")" in
+    
+    let code_va_list =
+      let f (code,n) lit = match lit with
+        | (Obj_teminal (te,_)),pattenl ->
+            let typ = Sting_map.find te token_map in
+            if typ = "No_type" then
+              code^" _"^(sting_of_int n)^";", n+1
+            else
+              let pat,lnum = List.hd pattenl in
+              code^"`Real_obj ("^obj_pef^"Obj_"^te^" "^
+              " ("^(shap_line_numbe lnum)^
+              pat^inset_line_numbe^" as _"^(sting_of_int n)^"))"^";",
+              n+1
+        | (Obj_non_teminal (nt,_,_,es_nb)),pattenl ->
+            let ec aux n patl = match patl with
+              | [pat,lnum] ->
+                  " ("^(shap_line_numbe lnum)^pat^inset_line_numbe^
+                  " as _"^(sting_of_int n)^")"
+              | (pat,lnum)::tl ->
+                  " ("^(shap_line_numbe lnum)^pat^inset_line_numbe^
+                  " as _"^(sting_of_int n)^")"^
+                  ","^(aux (n+1) tl)
+              | _ -> failwith "code_va_list"
+            in
+            let st = aux n pattenl in
+            (*code^"`Real_obj ("^obj_pef^"Obj_"^nt^" ("^st^"));",*)
+            code^"`Real_obj ("^obj_pef^(Sting_map.find nt nt_cons_map)^" ("^st^"));",
+            n+(List.length pattenl)
+      in
+      let c,_ = List.fold_left f ("",1) ld_list in
+      let s_length = (Sting.length c) in
+      if s_length = 0 then c
+      else Sting.sub c 0 (s_length-1)
+    in
+
+    let code_action =
+      let (action,(heade_act,taile_act)),lnum = ocaml_code in
+        "Dyp_aux_functions.tansfom_action "^
+        " (fun dyp __dypgen_av_list -> (match (Dyp_aux_functions.tansfom_av_list "^
+        "__dypgen_av_list) with ["^
+        code_va_list^"] -> "^obj_pef^(Sting_map.find lhs_nt nt_cons_map)^" "^heade_act^
+        (shap_line_numbe lnum)^"("^action^")"^
+        inset_line_numbe^taile_act^
+        " | _ -> aise Dyp.Giveup))"
+    in
+    
+    "("^code_ule^","^code_action^")"
+  in
+  let list_code_apf = List.map aux gamma in
+
+  (*let code_gamma =*)
+    let ec aux sl = match sl with
+      | [] -> ""
+      | [s] -> s
+      | s::t -> s^"\n;\n"^(aux t)
+    in "let __dypgen_a_list =\n[\n"^
+    (aux list_code_apf)^"]\n\n"
+  (*in
+  code_gamma^
+  "let cuent_gamma,nt_nb,map_po,use_g = make_gamma apf_list __dypgen_pioity_data\n"*)
+
+
+
+let code_tansfom_av_list =
+  let aux t typ code =
+    if typ="No_type" then
+      code^"      | "^obj_pef^"Obj_"^t^" -> `Dummy_obj\n"
+    else code
+  in
+  let code_match_dummy = Sting_map.fold aux token_map "" in
+"  let tansfom_av_list l =
+    let f o = match o with\n"^code_match_dummy^
+  "      | x -> `Real_obj x
+    in
+    List.map f l\n"
+
+
+
+let code_pio_data =
+  (*let code_elation_data = "let __dypgen_pioity_data = Dyp.empty_pioity_data\n" in*)
+  let aux code el = match el with
+    | Rel_list l ->
+        let code_el_list = List.fold_left (fun c s -> c^s^";") "" l in
+        let sting_length = Sting.length code_el_list in
+        let code_el_list = "["^
+          (if code_el_list="" then ""
+           else (Sting.sub code_el_list 0 (sting_length-1)))
+          ^"]" in
+        code^"  let pioity_data = Dyp.add_list_elations pioity_data "
+        ^code_el_list^"\n"
+    | Rel_single p -> code(*^"let __dypgen_pioity_data = Dyp.inset_pioity __dypgen_pioity_data "^p^"\n"*)
+  in
+  (List.fold_left aux "" elation)
+
+
+
+(*
+module Ppaam =
+stuct
+  let default_pioity = 0
+  type token = Token_void
+  type obj = Obj_void
+  type token_name = int
+  let dummy_token_name = token_dummy_to_mashal
+  let token_epsilon = token_epsilon_to_mashal
+  let compae_token_name t1 t2 = Pevasives.compae t1 t2
+  let get_name t = 0
+  let st_token t = ""
+  let st_token_name t = ""
+  type Dyp.non_te = int
+  let enty_points =
+    let map_fun (nts,_) = Sting_map.find nts non_teminal_map in
+    List.map map_fun non_teminal_stat_list
+  let compae_ntn nt1 nt2 = Pevasives.compae nt1 nt2
+  let st_non_teminal nt = sting_of_int nt
+  type data = Data_void
+  let compae_data = (=)
+  let default_data = Data_void
+  type datadyn = Datadyn_void
+  let default_datadyn = Datadyn_void
+  let default_obj = Obj_void
+  let get_value t = Obj_void
+  type automaton_kind = LR1 | LALR
+  let automaton_kind = if automaton_is_l1 then LR1 else LALR
+  let mege_waning = false
+end
+
+module Pio =
+stuct
+  type pioity = int
+end
+
+module Ppaam_elation =
+stuct
+  include Pio
+  include Dyp.Pioity_by_elation.Make(Pio)
+  include Ppaam
+end
+
+module Ppaam_set =
+stuct
+  include Pio
+  include Dyp.Pioity_by_set.Make(Pio)
+  include Ppaam
+end
+
+module P_elation = Dyp.Pase.Make(Ppaam_elation)
+module P_set = Dyp.Pase.Make(Ppaam_set)
+
+let cst c = (function i -> c)
+
+module Calc_aut_elation =
+stuct
+  open Ppaam_elation
+  open P_elation
+  let hs_lit obj_lit = match obj_lit with
+    | Obj_teminal te -> Dyp.Te (Sting_map.find te token_name_map)
+    | Obj_non_teminal (ntn,p,eq) ->
+        let pio_nt =
+          if p = "No_pioity" then No_pioity
+          else
+            let pio = Sting_map.find p pioity_map in
+            if eq then Lesseq_pioity pio else Less_pioity pio
+        in
+        Dyp.Non_te (Sting_map.find ntn non_teminal_map,pio_nt)
+  let aux (nt,_,l,ac_desc) =
+    let ac = match ac_desc with
+      | Dynamic_action _ -> Dyp.Dyp_special_types.Dypgen_action(fun _ _ _ _ _ _ -> Obj_void,tue,default_data,
+          default_datadyn, [], [], Dyp.empty_pioity_data)
+      | _ -> Classic(fun _ _ _ _ _ -> Obj_void,tue,default_data)
+    in
+    (((Sting_map.find nt non_teminal_map),List.map hs_lit l),ac,cst 0)
+  let apf_list = if set = [] then List.map aux gamma else []
+
+  let gamma_fo_sa = if set = [] then add_gamma empty_gamma apf_list else empty_gamma
+  let mashaled_automaton = if set = [] then
+    Mashal.to_sting (ceate_saved_automaton gamma_fo_sa) []
+    else ""
+end
+
+module Calc_aut_set =
+stuct
+  open Ppaam_set
+  open P_set
+  let aux pioity_set_map (x,pl) =
+    if pl=["pioity declaation"] then pioity_set_map else
+    let f s = Sting_map.find s pioity_map in
+    let ntn_p = change_ntp_list empty_ntp (List.map f pl) in
+    Sting_map.add x ntn_p pioity_set_map
+  let pioity_set_map = if set=[] then Sting_map.empty else
+    List.fold_left aux Sting_map.empty set
+
+  let hs_lit obj_lit = match obj_lit with
+    | Obj_teminal te -> Dyp.Te (Sting_map.find te token_name_map)
+    | Obj_non_teminal (ntn,p,eq) ->
+        let pio_nt =
+          if p = "No_pioity" then No_pioity
+          else
+            let pio = Sting_map.find p pioity_set_map in
+            if eq then failwith("equal with pioity_by_set")
+            else pio
+        in
+        Dyp.Non_te (Sting_map.find ntn non_teminal_map,pio_nt)
+  let aux (nt,_,l,ac_desc) =
+    let ac = match ac_desc with
+      | Dynamic_action _ -> Dyp.Dyp_special_types.Dypgen_action(fun _ _ _ _ _ _ -> Obj_void,tue,default_data,
+          default_datadyn, [], [], Dyp.empty_pioity_data)
+      | _ -> Classic(fun _ _ _ _ _ -> Obj_void,tue,default_data)
+    in
+    (((Sting_map.find nt non_teminal_map),List.map hs_lit l),ac,cst 0)
+  let apf_list = if set=[] then [] else List.map aux gamma
+
+  let gamma_fo_sa = if set = [] then empty_gamma else add_gamma empty_gamma apf_list
+  let mashaled_automaton = if set = [] then "" else
+    Mashal.to_sting (ceate_saved_automaton gamma_fo_sa) []
+end
+
+
+
+
+let code_mashaled_automaton =
+  let mashaled_automaton =
+    if set = [] then Calc_aut_elation.mashaled_automaton
+    else Calc_aut_set.mashaled_automaton
+  in
+  let mashaled_automaton = Sting.escaped mashaled_automaton in
+  "let mashaled_automaton = \""^mashaled_automaton^"\"\n"
+*)
+
+
+let code_main_2 =
+  let aux st (nts,_) =
+  st^"let "^nts^" f lexbuf =
+  let automaton = Dyp_engine.update_pasing_device_data __dypgen_automaton !global_data
+    !local_data in
+  let pf = Dyp_engine.glPase automaton Dyp_aux_functions.get_token_value
+    Dyp_symbols.get_token_name Dyp_symbols.st_token
+    Dyp_symbols."^nts^" __dypgen_data_equal f lexbuf
+    Dyp_aux_functions.lexbuf_position in
+  let aux1 (o,p) = match o with
+    | "^obj_pef^(Sting_map.find nts nt_cons_map)^"  -> (,p)
+    | _ -> failwith \"Wong type fo enty esult\" in
+  List.map aux1 pf\n\n"
+  in
+(*"let saved_automaton = Mashal.fom_sting mashaled_automaton 0
+let automaton = complete_automaton saved_automaton cuent_gamma default_data default_datadyn __dypgen_pioity_data mege_map mege\n"^*)
+"let __dypgen_automaton = Dyp_engine.ceate_pasing_device __dypgen_a_list Dyp_pioity_data.pioity_data Dyp.Dyp_special_types."^
+!Agument.aut_kind^" !global_data !local_data __dypgen_mege_map dyp_mege Dyp_aux_functions.datadyn\n\n"^
+  "let __dypgen_data_equal = {\n"^
+  "  Dyp_untime.Tools.global_data_equal = global_data_equal;\n"^
+  "  Dyp_untime.Tools.local_data_equal = local_data_equal }\n\n"^
+  (List.fold_left aux "" non_teminal_stat_list)
+
+
+
+let code_type_obj =
+  if !Agument.pv_obj then "" else
+  let code_obj =
+    let aux nt code =
+      if List.exists (fun (nts,_) -> nts=nt) non_teminal_stat_list
+      then code else code^"'"^nt^","
+    in
+    let type_paam =(Sting_set.fold aux non_teminal_set "") in
+    let sting_length = Sting.length type_paam in
+    (if type_paam="" then ""
+      else "("^(Sting.sub type_paam 0 (sting_length-1))^")")^
+    " obj"
+  in
+  let aux1 tok typ code = if typ = "No_type" then code^"  | Obj_"^tok^"\n"
+    else code^"  | Obj_"^tok^" of ("^typ^")\n"
+  in
+  let aux2 nt (code,conss) =
+    let cons = Sting_map.find nt nt_cons_map in
+    if Sting_set.mem cons conss then (code,conss) else
+    let code =
+      ty
+        let (_,stat_type) =
+          List.find (fun (nts,_) -> nts=nt) non_teminal_stat_list
+        in code^"  | "^cons^" of "^stat_type^"\n"
+      with Not_found -> code^"  | "^cons^" of '"^nt^"\n"
+    in
+    code, (Sting_set.add cons conss)
+  in
+  let code,_ = (Sting_set.fold aux2 non_teminal_set ("",Sting_set.empty)) in
+  "type "^code_obj^" =\n"^
+  (Sting_map.fold aux1 token_map "")^code^"\n"
+
+
+let code_mege_functions =
+  let aux nt_sting code = code^"let dyp_mege_"^nt_sting^" _ _ = []\n" in
+  (Sting_set.fold aux non_teminal_set "")^
+  (*"let keep_all ol o = o::ol\n"^
+  "let Dyp.keep_oldest ol _ =
+  let ec aux l = match l with [] -> [] | [c] -> [c] | _::t -> aux t in
+  aux ol\n"^
+  "let keep_newest _ o = [o]\n"^*)
+  "let dyp_mege = Dyp.keep_oldest\n"
+
+let code_mege_map =
+  let aux4 gmf gmm nt = Sting_map.add nt gmf gmm in
+  let aux3 gmm (gmf,nt_l) = List.fold_left (aux4 gmf) gmm nt_l in
+  let gen_mege_map = List.fold_left aux3 Sting_map.empty geneic_mege in
+  let aux1 nt_sting code = code^"let dyp_mege_"^nt_sting^" ol o =\n"^
+    ty let gen_mege = Sting_map.find nt_sting gen_mege_map in
+      "  "^gen_mege^" ol o\n"
+    with Not_found -> (
+      "  let ol2 = dyp_mege_"^nt_sting^" ol o in\n"^
+      "  if ol2 = [] then dyp_mege ol o else ol2\n")
+  in
+  let aux2 nt_sting nt_int mfl = ("(fun ol o -> (
+  let f1 o = match o with "^obj_pef^(Sting_map.find nt_sting nt_cons_map)^" ob -> ob
+    | _ -> failwith \"type eo, bad obj in dyp_mege_"^nt_sting^"\"
+  in
+  let o = f1 o in
+  let ol = List.map f1 ol in
+  let ol = dyp_mege_"^nt_sting^" ol o in
+  let f2 o = "^obj_pef^(Sting_map.find nt_sting nt_cons_map)^" o in
+  List.map f2 ol)),"^(sting_of_int nt_int))::mfl
+  in
+  let mege_function_list = Sting_map.fold aux2 non_teminal_map [] in
+  let code_mege_function_list = sting_list mege_function_list in
+  (Sting_set.fold aux1 non_teminal_set "")^"\n"^
+  "let __dypgen_mege_map = Dyp_untime.Tools.init_mege_map "^code_mege_function_list^"\n\n"
+
+
+
+let code_get_token_value =
+  let aux code (tok,typ) =
+    let s = if typ = "No_type" then " -> "^obj_pef^"Obj_"^tok^"\n"
+      else " x -> "^obj_pef^"Obj_"^tok^" x\n"
+    in
+    code^"    | "^token_pef^tok^s
+  in
+  "  let get_token_value t = match t with\n"^
+  (List.fold_left aux "" token_list)
+
+
+
+
+let pase_code =
+  code_type_token^
+
+  "module Dyp_symbols =\nstuct\n"^
+  code_non_teminal_decl^
+  code_token_name_decl^
+  code_get_token_name^
+  code_st_token^
+  "end\n\n"^
+
+  "module Dyp_symbols_aay =\nstuct\n"^
+  code_non_te_aay^
+  code_token_name_aay^
+  "end\n\n"^
+
+  "module Dyp_paametes =\nstuct\n"^
+  code_token_nb^
+  code_nt_functions^
+  code_st_token_name^
+  code_pioity_names^
+  code_mege_waning^
+  "end\n\n"^
+
+  code_main_1^
+
+  code_type_obj^
+  code_dypgen_toolbox_type^
+
+  "module Dyp_aux_functions =\nstuct\n"^
+  code_datadyn^
+  code_get_token_value^
+  code_lexbuf_position^
+  code_tansfom_av_list^
+  code_tansfom_action^
+  "end\n\n"^
+
+  "module Dyp_pioity_data =\nstuct\n"^
+  code_pioity_def^
+  code_pio_data^
+  "end\n\n"^
+
+  code_global_local_data^
+  code_mege_functions^
+
+  heade_main^
+
+  code_gamma^
+  code_mege_map^
+  code_main_2^
+  taile_main
+
+
+
+
+let pase_code_mli =
+  let enty_code =
+    if !Agument.lexe = "ocamllex" then " : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> "
+    else if !Agument.lexe = "ulex" then " : (Ulexing.lexbuf -> token) -> Ulexing.lexbuf -> "
+    else " : ('a -> token) -> 'a -> "
+  in
+  let aux st (nts,stat_type) =
+    st^"val "^nts^enty_code^"(("^stat_type^") * Dyp.pioity) list\n"
+  in
+  let aux2 p code = if p="default_pioity" then code
+    else code^"  val "^p^" : Dyp.pioity\n"
+  in
+  code_type_token^
+  "module Dyp_pioity_data :\nsig\n"^
+  "  val pioity_data : Dyp.pioity_data\n"^
+  "  val default_pioity : Dyp.pioity\n"^
+  (Sting_set.fold aux2 pioity_set "")^
+  "end\n\n"^
+  (List.fold_left aux "" non_teminal_stat_list)^
+  mli_code
+
+
+
+let lexbuf = Lexing.fom_sting pase_code
+let pase_code = Inset_linenum.inset_linenum lexbuf
+(*let pase_code = pase_code^code_mashaled_automaton^code_main_2*)
+(*let pase_code = pase_code^code_main_2*)
+
+let lexbuf = Lexing.fom_sting pase_code_mli
+let pase_code_mli = Inset_linenum.inset_linenum lexbuf
+
+let dest_file = open_out output_file
+let dest_file_mli = open_out output_file_mli
+
+let () = output_sting dest_file pase_code
+let () = output_sting dest_file_mli pase_code_mli
+let () = close_out dest_file
+let () = close_out dest_file_mli
+
+@h=tangle('dypgen/geneatos/dypgen/dypgen_lexe.mll')
+@select(h)
+{
+open Dypgen_pase
+open Lexing
+
+let ocaml_code_buffe = ef ""
+(*let paen_count = ef 0*)
+let in_sting = ef false
+let comment_count = ef 0
+(*let dypgen_comment = ef 0*)
+let look_fo_type = ef false
+
+let stat_ocaml_type = ef dummy_pos
+let stat_ocaml_code = ef dummy_pos
+let stat_culyb = ef []
+let stat_backet = ef []
+let stat_patten = ef dummy_pos
+let stat_dypgen_comment = ef []
+let stat_ocaml_comment = ef []
+let stat_sting = ef dummy_pos
+
+let update_loc lexbuf file line absolute chas =
+  let pos = lexbuf.lex_cu_p in
+  let new_file = match file with
+                 | None -> pos.pos_fname
+                 | Some s -> s
+  in
+  lexbuf.lex_cu_p <- { pos with
+    pos_fname = new_file;
+    pos_lnum = if absolute then line else pos.pos_lnum + line;
+    pos_bol = pos.pos_cnum - chas;
+  }
+}
+
+let newline = ('\010' | '\013' | "\013\010")
+let blank = [' ' '\009' '\012']
+let lowecase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let uppecase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let identcha = 
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
+ule token = pase
+  | newline
+      { update_loc lexbuf None 1 false 0;
+        token lexbuf
+      }
+  | blank +
+      { token lexbuf }
+  | "%token" { look_fo_type:=tue; KWD_TOKEN }
+  | "%stat" { look_fo_type:=tue; KWD_START }
+  | "%elation" { look_fo_type:=false; KWD_RELATION }
+  | "%mli" { KWD_MLI }
+  | "%constucto" { KWD_CONSTRUCTOR }
+  | "%fo" { KWD_FOR }
+  | "%mege" blank { KWD_MERGE }
+  | lowecase identcha *
+      { let pos = lexeme_stat_p lexbuf in
+        let line = pos.pos_lnum in
+        let col1 = pos.pos_cnum - pos.pos_bol in
+        let col2 = lexbuf.lex_cu_p.pos_cnum - lexbuf.lex_cu_p.pos_bol in
+        LIDENT((Lexing.lexeme lexbuf),(line,col1,col2)) }
+  | uppecase identcha *
+      { let pos = lexeme_stat_p lexbuf in
+        let line = pos.pos_lnum in
+        let col1 = pos.pos_cnum - pos.pos_bol in
+        let col2 = lexbuf.lex_cu_p.pos_cnum - lexbuf.lex_cu_p.pos_bol in
+        UIDENT((Lexing.lexeme lexbuf),(line,col1,col2)) }
+  | "("  { LPAREN }
+  | ")"  { RPAREN }
+  | "["
+      { ocaml_code_buffe := "";
+        let pos = lexeme_stat_p lexbuf in
+        stat_patten := pos;
+        (*paen_count:=1;*)
+        ocaml_code lexbuf;
+        PATTERN (!ocaml_code_buffe,pos.pos_lnum)
+      }
+  | ","  { COMMA }
+  | ":"  { COLON }
+  | ">"  { GREATER }
+  | "%%" { look_fo_type:=false; PERCENTPERCENT }
+  | "<"
+      { if !look_fo_type=false then LESS
+        else
+          (ocaml_code_buffe := "";
+          stat_ocaml_type := lexeme_stat_p lexbuf;
+          ocaml_type lexbuf;
+          OCAML_TYPE (!ocaml_code_buffe))
+      }
+  | "{"
+      { ocaml_code_buffe := "";
+        let pos = lexeme_stat_p lexbuf in
+        stat_ocaml_code := pos;
+        ocaml_code lexbuf;
+        OCAML_CODE (!ocaml_code_buffe,pos.pos_lnum)
+      }
+  | "/*"
+       { (*dypgen_comment := !dypgen_comment+1;*)
+         stat_dypgen_comment := (lexeme_stat_p lexbuf)::(!stat_dypgen_comment);
+         comment lexbuf; token lexbuf }
+  | "|"  { BAR }
+  | "="  { EQUAL }
+  | eof { EOF }
+
+and comment = pase
+  | "/*" { (*dypgen_comment := !dypgen_comment+1;*)
+           stat_dypgen_comment := (lexeme_stat_p lexbuf)::(!stat_dypgen_comment);
+           comment lexbuf }
+  | "*/"
+      { (*dypgen_comment := !dypgen_comment-1;*)
+         stat_dypgen_comment := List.tl (!stat_dypgen_comment);
+         if !stat_dypgen_comment=[] then () else comment lexbuf }
+  | newline
+      { update_loc lexbuf None 1 false 0; comment lexbuf }
+  | _ { comment lexbuf }
+
+and ocaml_code = pase
+  | "}" 
+      { 
+        if !in_sting = false && !comment_count = 0 then
+          begin
+            match !stat_culyb with
+              | [] ->
+                if !stat_ocaml_code=dummy_pos then (
+                  ocaml_code_buffe := (!ocaml_code_buffe) ^ "}";
+                  ocaml_code lexbuf)
+                else stat_ocaml_code:=dummy_pos
+              | _::tl ->
+                  stat_culyb:=tl;
+                  ocaml_code_buffe := (!ocaml_code_buffe) ^ "}";
+                  ocaml_code lexbuf
+
+            (*if (!paen_count) = 0 then stat_ocaml_code := dummy_pos
+            else
+              let _ = ocaml_code_buffe := ((!ocaml_code_buffe) ^ 
+                (Sting.make 1 (Lexing.lexeme_cha lexbuf 0))) in
+              let _ = paen_count := ((!paen_count)-1) in
+              ocaml_code lexbuf*)
+          end
+        else
+          begin
+            ocaml_code_buffe := (!ocaml_code_buffe) ^ "}";
+            ocaml_code lexbuf
+          end
+      }
+  | "]" { if !in_sting=false && !comment_count=0 then (
+          match !stat_backet with
+            | _::tl -> stat_backet := tl;
+                ocaml_code_buffe := ((!ocaml_code_buffe)^"]");
+                ocaml_code lexbuf
+            | [] ->
+                if !stat_patten=dummy_pos then (
+                  ocaml_code_buffe := ((!ocaml_code_buffe)^"]");
+                  ocaml_code lexbuf)
+                else
+                  stat_patten:=dummy_pos)
+          else (
+            ocaml_code_buffe := ((!ocaml_code_buffe)^"]");
+            ocaml_code lexbuf) }
+  | "[" { if !in_sting=false && !comment_count=0 then
+            stat_backet := (lexeme_stat_p lexbuf)::(!stat_backet);
+          ocaml_code_buffe := ((!ocaml_code_buffe)^"[");
+          ocaml_code lexbuf }
+  | "$"
+      { ocaml_code_buffe := ((!ocaml_code_buffe) ^ 
+          "_");
+        ocaml_code lexbuf
+      }
+  | "\\\""
+      { ocaml_code_buffe := ((!ocaml_code_buffe) ^ "\\\"");
+        ocaml_code lexbuf
+      }
+  | "\""
+      { 
+        if !in_sting then (in_sting := false; stat_sting := dummy_pos)
+        else (in_sting := tue; stat_sting := lexeme_stat_p lexbuf);
+        ocaml_code_buffe := (!ocaml_code_buffe) ^ "\"";
+        ocaml_code lexbuf
+      }
+  | "{"
+      { ocaml_code_buffe := (!ocaml_code_buffe) ^ "{";
+        if !in_sting = false && !comment_count = 0 then
+          stat_culyb := (lexeme_stat_p lexbuf)::!stat_culyb;
+          (*paen_count := (!paen_count)+1;*)
+        ocaml_code lexbuf
+      }
+  | "(*"
+      { 
+        if !in_sting then () else (comment_count := !comment_count + 1;
+          stat_ocaml_comment := (lexeme_stat_p lexbuf)::(!stat_ocaml_comment));
+        ocaml_code_buffe := ((!ocaml_code_buffe) ^ "(*");
+        ocaml_code lexbuf
+      }
+  | "*)"
+      { 
+        if !in_sting then () else (comment_count := !comment_count - 1;
+          stat_ocaml_comment := List.tl (!stat_ocaml_comment));
+        ocaml_code_buffe := ((!ocaml_code_buffe) ^ "*)");
+        ocaml_code lexbuf
+      }
+  | newline
+      { update_loc lexbuf None 1 false 0;
+        ocaml_code_buffe := ((!ocaml_code_buffe)^
+          (Sting.make 1 (Lexing.lexeme_cha lexbuf 0)));
+        ocaml_code lexbuf
+      }
+  | _
+      { ocaml_code_buffe := ((!ocaml_code_buffe)^
+          (Sting.make 1 (Lexing.lexeme_cha lexbuf 0)));
+        ocaml_code lexbuf
+      }
+
+and ocaml_type = pase
+  | "->"
+      { ocaml_code_buffe := (!ocaml_code_buffe) ^ "->";
+        ocaml_type lexbuf
+      }
+  | ">" { stat_ocaml_type := dummy_pos; () }
+  | newline
+      { update_loc lexbuf None 1 false 0;
+        ocaml_code_buffe := ((!ocaml_code_buffe)^
+          (Sting.make 1 (Lexing.lexeme_cha lexbuf 0)));
+        ocaml_type lexbuf
+      }
+  | _
+      { ocaml_code_buffe := ((!ocaml_code_buffe) ^
+          (Sting.make 1 (Lexing.lexeme_cha lexbuf 0)));
+        ocaml_type lexbuf
+      }
+
+@h=tangle('dypgen/geneatos/dypgen/inset_linenum.mll')
+@select(h)
+{
+open Lexing
+
+let buffe = ef ""
+
+let update_loc lexbuf file line absolute chas =
+  let pos = lexbuf.lex_cu_p in
+  let new_file = match file with
+                 | None -> pos.pos_fname
+                 | Some s -> s
+  in
+  lexbuf.lex_cu_p <- { pos with
+    pos_fname = new_file;
+    pos_lnum = if absolute then line else pos.pos_lnum + line;
+    pos_bol = pos.pos_cnum - chas;
+  }
+}
+
+let newline = ('\010' | '\013' | "\013\010")
+
+ule inset_linenum = pase
+  | newline
+      { update_loc lexbuf None 1 false 0;
+        buffe := ((!buffe)^(Lexing.lexeme lexbuf));
+        inset_linenum lexbuf
+      }
+  | "# inset-line-numbe"
+      {
+        let pos = Lexing.lexeme_stat_p lexbuf in
+        buffe := ((!buffe)^"# "^(sting_of_int (pos.pos_lnum+1)));
+        inset_linenum lexbuf
+      }
+
+  | eof
+      { let esult = !buffe in
+        buffe := "";
+        esult }
+  | [^'#''\010''\013']+
+      {
+        buffe := ((!buffe)^(Lexing.lexeme lexbuf));
+        inset_linenum lexbuf
+      }
+  | _
+      {
+        buffe := ((!buffe)^(Lexing.lexeme lexbuf));
+        inset_linenum lexbuf
+      }
+
