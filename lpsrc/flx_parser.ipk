@@ -210,7 +210,7 @@ let dfltvs =
      match o with
        | NAME (sr,s) -> 
          begin try
-           Non_ter ((dyp.find_nt s),No_priority)
+           Dyp.Non_ter ((dyp.find_nt s),Dyp.No_priority)
          with
          | Not_found ->
            print_endline ("[define_statement] User Syntax: Cannot find non-terminal " ^ s);
@@ -220,13 +220,13 @@ let dfltvs =
          (*
          let name = Flx_prelex.name_of_token s in
          *)
-         let name = Parser_parameters_module.str_token s in
+         let name = Dyp_symbols.str_token s in
          (*
          print_endline ("Processing keyword " ^ name);
          *)
-         Ter (Parser_parameters_module.get_name s)
+         Dyp.Ter (Dyp_symbols.get_token_name s)
    in
-   let rule  = lhs,(List.map f rhs),default_priority in
+   let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
    let truncs e = 
      let s = string_of_expr e in
      let n = String.length s in
@@ -247,7 +247,7 @@ let dfltvs =
            (*
            print_endline ("Keyword mismatch req=" ^ s1 ^ ", got=" ^ s2);
            *)
-           raise Giveup 
+           raise Dyp.Giveup 
          )
          else
          aux t1 t2 (`Keyword_term s1::args)
@@ -302,8 +302,8 @@ let dfltvs =
 @extend_syntax = extend_syntax + """\
 
        | x,_ -> 
-         print_endline ("Unknown symbol " ^ Parser_parameters_module.str_token x);
-         failwith ("Unknown symbol " ^ Parser_parameters_module.str_token x);
+         print_endline ("Unknown symbol " ^ Dyp_symbols.str_token x);
+         failwith ("Unknown symbol " ^ Dyp_symbols.str_token x);
 
      in
      let args = aux rhs avl [] in
@@ -321,7 +321,7 @@ let dfltvs =
      match o with
        | NAME (sr,s) -> 
          begin try
-           Non_ter ((dyp.find_nt s),No_priority)
+           Dyp.Non_ter ((dyp.find_nt s),Dyp.No_priority)
          with
          | Not_found ->
            print_endline ("[define_expr] User Syntax: Cannot find non-terminal " ^ s);
@@ -331,13 +331,13 @@ let dfltvs =
          (*
          let name = Flx_prelex.name_of_token s in
          *)
-         let name = Parser_parameters_module.str_token s in
+         let name = Dyp_symbols.str_token s in
          (*
          print_endline ("Processing keyword " ^ name);
          *)
-         Ter (Parser_parameters_module.get_name s)
+         Dyp.Ter (Dyp_symbols.get_token_name s)
    in
-   let rule  = lhs,(List.map f rhs),default_priority in
+   let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
    let truncs e = 
      let s = string_of_expr e in
      let n = String.length s in
@@ -361,7 +361,7 @@ let dfltvs =
            (*
            print_endline "keyword mismatch";
            *)
-           raise Giveup 
+           raise Dyp.Giveup 
          )
          else
          aux t1 t2 (`Keyword_term s1::args)
@@ -433,8 +433,8 @@ let dfltvs =
 @extend_syntax = extend_syntax + """\
 
        | x,_ -> 
-         print_endline ("Unknown symbol " ^ Parser_parameters_module.str_token x);
-         failwith ("Unknown symbol " ^ Parser_parameters_module.str_token x);
+         print_endline ("Unknown symbol " ^ Dyp_symbols.str_token x);
+         failwith ("Unknown symbol " ^ Dyp_symbols.str_token x);
 
      in
      let args = aux rhs avl [] in
@@ -623,7 +623,7 @@ statement:
       catmap " " (function 
       | NAME (_,s) -> "<"^s^">"
       | USER_KEYWORD (_,s) -> s
-      | x -> Parser_parameters_module.str_token x
+      | x -> Dyp_symbols.str_token x
       ) rhs ^ 
       "=>#\n" ^
       string_of_statement 0 stmt
@@ -3757,7 +3757,7 @@ open Flx_parse
 
 @if USE_DYPGEN:
   tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * priority) list) : 'a =")
+  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
   tangle("  match ls with")
   tangle("  | [x,_] -> x")
   tangle('  | _ -> failwith "Dypgen parser failed"')

@@ -16,7 +16,7 @@ open List
 
 @if USE_DYPGEN:
   tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * Flx_parse.priority) list) : 'a =")
+  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
   tangle("  match ls with")
   tangle("  | [x,_] -> x")
   tangle('  | _ -> failwith "Dypgen parser failed"')

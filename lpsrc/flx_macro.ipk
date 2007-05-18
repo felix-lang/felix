@@ -53,7 +53,7 @@ open Flx_util
 
 @if USE_DYPGEN:
   tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * Flx_parse.priority) list) : 'a =")
+  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
   tangle("  match ls with")
   tangle("  | [x,_] -> x")
   tangle('  | _ -> failwith "Dypgen parser failed"')
@@ -205,7 +205,7 @@ let rec parse_expr sr s =
   let toker = (new Flx_tok.tokeniser tokens) in
   begin try
     dyphack (
-    Flx_parse.expr
+    Flx_parse.expression
     (toker#token_src)
     (Lexing.from_string "dummy" )
     )

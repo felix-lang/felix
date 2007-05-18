@@ -569,6 +569,16 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_test'
 
+  def check_hack(self, file):
+    f = open(file)
+    lines = f.read() 
+    f.close()
+    pos = string.find(lines,"#import <flx.flxh>")
+    if pos == -1:
+      return ""
+    else:
+      return "std "
+
   def runme(self, testfile, log, quiet):
     if log is None: log = Tee()
 
@@ -583,7 +593,7 @@ class PLUGIN(Plugin):
     resfilename = basename + ".resh"
     indir,infile = os.path.split(basename)
     try:
-      flxg('-Ilib std ' + FLXFLAGS + basename, log=log)
+      flxg('-Ilib ' + self.check_hack(testfile)+ FLXFLAGS + basename, log=log)
     except MakeError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
       erasefile(basename+'.cpp')
@@ -1092,7 +1102,8 @@ def build_target_felix_tools(pkg, pkgdict):
     for lib in LIBS: libs.append(lib+"_static")
     fsflags = pkgdict.get("felix_requires_linkflags","")
     for src,exe in FLXS:
-      flxg("-Ilib " + src)
+      # added 'std' here so flx_pkgconfig builds
+      flxg("-Ilib std " + src)
       TARGET_CXX.build_felix_static(
         vxqt,
         src,
