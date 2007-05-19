@@ -203,6 +203,12 @@ let dentit x =
     | NEWLINE :: WHITE n :: t when n < hd dent -> 
       filter x' (tl dent) (RBRACE dummysr :: SEMI dummysr :: result)
 
+    | ENDMARKER :: t when length dent > 1 -> 
+      filter x' (tl dent) (RBRACE dummysr :: SEMI dummysr :: result)
+
+    | ENDMARKER :: t when length dent = 1 -> 
+      rev (ENDMARKER :: SEMI dummysr :: result)
+
     | h :: t -> filter t dent (h::result)
     | [] -> rev result
   in
@@ -425,10 +431,10 @@ let translate ts =
     filter_inner_white;
     filter_trailing_white;
     filter_dup_newline;
-    check_dollardollar;
     check_dent;
     canonical_dent;
     check_full_dent;
+    check_dollardollar;
     dentit ;
     filter_dup_semi;
     check_nowhite;
