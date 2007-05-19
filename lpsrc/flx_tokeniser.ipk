@@ -42,18 +42,171 @@ open Flx_exceptions
 open List
 open Flx_srcref
 
-(* remove comments, whitespace, newlines *)
+(* 
 
+NOTES on token filters
+----------------------
+
+These routine are all meant to be short and simple
+so its easy to see what they do -- the result
+of composition is inefficient!
+
+The results of filter application may depend on
+ordering! In other words, each filter has
+a postcondition, but also may have several
+stronger postconditions given a pre-condition.
+
+Composition of these routines is inefficient!
+*)
+
+let dummysr = ("<eol>",0,0,0)
+
+(* throw out C comments; replace newline terminated C++
+   comment with a newline
+*)
 let filter_comments x =
   let rec filter x' result  =
     match x' with 
-    | COMMENT_NEWLINE _ :: t
-    | COMMENT _ :: t 
-    | NEWLINE :: t
+    | COMMENT_NEWLINE _ :: t -> filter t (NEWLINE::result)
+    | COMMENT _ :: t  -> filter t result
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x []
+
+(* throw out all white space *)
+let filter_white x =
+  let rec filter x' result  =
+    match x' with 
     | WHITE _ :: t -> filter t result
     | h :: t -> filter t (h::result)
     | [] -> rev result
   in filter x []
+
+(* throw out all newlines *)
+let filter_newline x =
+  let rec filter x' result  =
+    match x' with 
+    | NEWLINE :: t -> filter t result
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x []
+
+(* throw out white space not immediately following a newline *)
+let filter_inner_white x =
+  let rec filter x' result  =
+    match x' with 
+    | NEWLINE :: (WHITE _ as w) :: t -> filter t (w :: NEWLINE :: result)
+    | WHITE _ :: t -> filter t result
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x []
+
+(* throw out whitespace immediately preceding a NEWLINE *)
+let filter_trailing_white x =
+  let rec filter x' result  =
+    match x' with 
+    | WHITE _ :: NEWLINE :: t -> filter t (NEWLINE::result)
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x []
+
+(* throw out duplicate NEWLINE, elides blanks lines if they're cleared
+   of white space etc
+*)
+let filter_dup_newline x =
+  let rec filter x' result  =
+    match x' with 
+    | NEWLINE :: NEWLINE :: t -> filter (NEWLINE :: t) result
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x []
+
+(* throw out duplicate SEMI *)
+let filter_dup_semi x =
+  let rec filter x' result  =
+    match x' with 
+    | SEMI _ as s :: SEMI _ :: t -> filter (s :: t) result
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x []
+
+let check_nowhite x =
+  let rec filter x' = match x' with 
+    | WHITE _ :: t -> failwith "UNEXPECTED WHITESPACE"
+    | h :: t -> filter t 
+    | [] -> x
+  in filter x
+
+let check_nonewline x =
+  let rec filter x' = match x' with 
+    | NEWLINE :: t -> failwith "UNEXPECTED NEWLINE"
+    | h :: t -> filter t 
+    | [] -> x
+  in filter x
+
+let check_dent x =
+  let rec filter x' = match x' with 
+    | NEWLINE :: WHITE _  :: t -> filter t
+    | WHITE _ :: t -> failwith "WHITESPACE NOT AFTER NEWLINE"
+    | h :: t -> filter t
+    | [] -> x
+  in filter x
+
+(* this checks canonical form, every newline has white space
+   after it, even width 0 if necessary
+*)
+let check_full_dent x =
+  let rec filter x' = match x' with 
+    | NEWLINE :: WHITE _  :: t -> filter t
+    | WHITE _ :: t -> failwith "WHITESPACE NOT AFTER NEWLINE"
+    | NEWLINE :: t -> failwith "NEWLINE NOT FOLLOWED BY WHITESPACE"
+    | h :: t -> filter t
+    | [] -> x
+  in filter x
+
+let check_dollardollar x =
+  let rec filter x' = match x' with 
+    | DOLLARDOLLAR _ :: NEWLINE :: WHITE _  :: t -> filter t
+    | DOLLARDOLLAR _ :: t -> failwith "$$ not followed by INDENT"
+    | h :: t -> filter t
+    | [] -> x
+  in filter x
+
+(* canonicalise indents, by adding whitespace width 0 if necessary 
+  Afterwards all newlines should be followed by white space
+*)
+let canonical_dent x =
+  let rec filter x' result  =
+    match x' with 
+    | NEWLINE :: (WHITE _ as w) :: t -> filter t (w::NEWLINE::result)
+    | NEWLINE :: t -> filter t (WHITE 0::NEWLINE::result)
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x []
+
+
+let dentit x =
+  let rec filter x' dent result = match x' with
+    (* New block start *)
+    | DOLLARDOLLAR sr :: NEWLINE :: WHITE n :: t -> 
+      filter t (n::dent) (LBRACE sr::result)
+
+    (* continuation line *)
+    | NEWLINE :: WHITE n :: t when n > hd dent -> 
+      filter t dent result
+
+    (* new statement *)
+    | NEWLINE :: WHITE n :: t when n = hd dent -> 
+      filter t dent (SEMI dummysr :: result)
+
+    (* dedent *)
+    | NEWLINE :: WHITE n :: t when n < hd dent -> 
+      filter x' (tl dent) (RBRACE dummysr :: SEMI dummysr :: result)
+
+    | h :: t -> filter t dent (h::result)
+    | [] -> rev result
+  in
+  filter x [-1] []
 
 (* remove comments, whitespace, newlines, trailing sloshes,
   and a trailing hash on the first line 
@@ -268,11 +421,22 @@ let token_expander ts =
   
 let translate ts = 
   let filters = [
-    (* 1 *) filter_comments ;
-    (* 2 *) compress_ctypes ;
-    (* 3 *) unkeyword ;
-    (* 4 *) token_packer;
-    (* 5 *) token_expander;
+    filter_comments ;
+    filter_inner_white;
+    filter_trailing_white;
+    filter_dup_newline;
+    check_dollardollar;
+    check_dent;
+    canonical_dent;
+    check_full_dent;
+    dentit ;
+    filter_dup_semi;
+    check_nowhite;
+    check_nonewline;
+    compress_ctypes ;
+    unkeyword ;
+    token_packer;
+    token_expander;
     ] 
   and reverse_apply dat fn = fn dat 
   in List.fold_left reverse_apply ts filters

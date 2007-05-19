@@ -1691,6 +1691,7 @@ flx_1_char_syms = [
   ]
 
 flx_2_char_syms = [
+    ("DOLLARDOLLAR","$$"),
     ("ANDLESS","&<"),
     ("ANDGREATER","&>"),
     ("EQEQUAL","=="),
