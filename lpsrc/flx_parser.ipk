@@ -452,6 +452,74 @@ let dfltvs =
  """
 @#
 
+@extend_syntax = extend_syntax + """\
+ let do_dyp_rule dyp (name,rhs,stmt,sr) =
+      (*
+      print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
+      catmap " " (function 
+      | NAME (_,s) -> "<"^s^">"
+      | USER_KEYWORD (_,s) -> s
+      | x -> Dyp_symbols.str_token x
+      ) rhs ^ 
+      "=>#\n" ^
+      string_of_statement 0 stmt
+      );
+      *)
+      (* WE should use a distinct syntax for adding new nonterms .. *)
+      ignore(dyp.add_nt name);
+      begin match name with
+      | "statement" ->
+        dyp.add_rules <- (define_statement dyp name rhs stmt) :: dyp.add_rules;
+      """
+
+@for i in expr_nts: extend_syntax = extend_syntax + '    | "' + i + '"'
+@extend_syntax = extend_syntax + """\        
+        ->
+        begin match stmt with
+        | `AST_call (sr, proc, arg) -> 
+          let expr = match arg with
+          | `AST_tuple (_,[]) -> proc
+          | _ -> `AST_apply (sr,(proc,arg))
+          in
+          dyp.add_rules <- (define_expr dyp name rhs expr) :: dyp.add_rules;
+        | _ ->
+          let s = 
+            "Syntax extension: expression non-terminal " ^ name ^
+            " requires action to be expression!"
+          in
+          print_endline s;
+          clierr sr s
+        end
+
+      | _ ->
+        (*
+        print_endline ("Syntax extension: unknown non-terminal " ^ name);
+        print_endline ("Syntax extension: ASSUME EXPRESSION " ^ name);
+        *)
+        begin match stmt with
+        | `AST_call (sr, proc, arg) -> 
+          let expr = match arg with
+          | `AST_tuple (_,[]) -> proc
+          | _ -> `AST_apply (sr,(proc,arg))
+          in
+          dyp.add_rules <-(define_expr dyp name rhs expr) :: dyp.add_rules;
+        | _ ->
+          let s = 
+            "Syntax extension: expression non-terminal " ^ name ^
+            " requires action to be expression!"
+          in
+          print_endline s;
+          clierr sr s
+        end
+
+
+        (*
+        failwith ("Syntax extension: unknown non-terminal " ^ name);
+        *)
+      end
+ """
+@#
+
 @if USE_DYPGEN: tangle(extend_syntax)
 
 @if USE_DYPGEN:
@@ -612,78 +680,26 @@ statement:
   | user_statement { $1 }
   | cparse { $1 }
 @dyp_statement = """\
-  | SYNTAX NAME COLONEQUAL rhs PARSE_ACTION statement
+  | SYNTAX NAME LBRACE dyprods RBRACE
     {
-      let name = snd $2 in
-      let rhs = $4 in
-      let stmt:statement_t = $6 in
       let sr = rstoken $1 $5 in
-      (*
-      print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
-      catmap " " (function 
-      | NAME (_,s) -> "<"^s^">"
-      | USER_KEYWORD (_,s) -> s
-      | x -> Dyp_symbols.str_token x
-      ) rhs ^ 
-      "=>#\n" ^
-      string_of_statement 0 stmt
-      );
-      *)
-      (* WE should use a distinct syntax for adding new nonterms .. *)
-      ignore(dyp.add_nt name);
-      begin match name with
-      | "statement" ->
-        dyp.add_rules <- [define_statement dyp name rhs stmt];
-      """
-
-@for i in expr_nts: dyp_statement = dyp_statement + '    | "' + i + '"'
-@dyp_statement = dyp_statement + """\        
-        ->
-        begin match stmt with
-        | `AST_call (sr, proc, arg) -> 
-          let expr = match arg with
-          | `AST_tuple (_,[]) -> proc
-          | _ -> `AST_apply (sr,(proc,arg))
-          in
-          dyp.add_rules <- [define_expr dyp name rhs expr];
-        | _ ->
-          let s = 
-            "Syntax extension: expression non-terminal " ^ name ^
-            " requires action to be expression!"
-          in
-          print_endline s;
-          clierr sr s
-        end
-
-      | _ ->
-        (*
-        print_endline ("Syntax extension: unknown non-terminal " ^ name);
-        print_endline ("Syntax extension: ASSUME EXPRESSION " ^ name);
-        *)
-        begin match stmt with
-        | `AST_call (sr, proc, arg) -> 
-          let expr = match arg with
-          | `AST_tuple (_,[]) -> proc
-          | _ -> `AST_apply (sr,(proc,arg))
-          in
-          dyp.add_rules <- [define_expr dyp name rhs expr];
-        | _ ->
-          let s = 
-            "Syntax extension: expression non-terminal " ^ name ^
-            " requires action to be expression!"
-          in
-          print_endline s;
-          clierr sr s
-        end
-
-
-        (*
-        failwith ("Syntax extension: unknown non-terminal " ^ name);
-        *)
-      end
-      ;
-      `AST_nop (rstoken $1 $1, name)
+      List.iter (do_dyp_rule dyp) $4;
+      `AST_nop (sr, snd $2)
     }
+
+ dyprod:
+   | NAME COLONEQUAL rhs PARSE_ACTION statement
+     {
+       let name = snd $1 in
+       let rhs = $3 in
+       let stmt:statement_t = $5 in
+       let sr = rstoken (fst $1) $4 in
+       name,rhs,stmt,sr
+     }
+  
+ dyprods:
+   | dyprod dyprods { $1 :: $2 }
+   | { [] }
 
  rhs:
   | rhs_term { [$1] }

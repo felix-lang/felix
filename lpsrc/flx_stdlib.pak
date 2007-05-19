@@ -345,9 +345,17 @@ macro fun print(x) = { fprint (cout,x); };
 #infix 10 "\\/" vee
 #infix 10 ">>=" bind
 
-#keyword whilst
+#keyword publish
+syntax document {
+  statement := publish 
+    string_literal statement =># _3
+  ;
+}
 
-syntax statement := whilst expr do statements done; =># 
+
+syntax syn_ctrl {
+#keyword whilst
+  statement := whilst expr do statements done; =># 
   macro {
     macro lab1 is new;
     macro lab2 is new;
@@ -357,10 +365,10 @@ syntax statement := whilst expr do statements done; =>#
       goto lab1;
     lab2:>
   }
-;
+  ;
 
 #keyword until
-syntax statement :=
+  statement :=
   until expr do statements done; =>#
   macro {
     macro lab1 is new;
@@ -371,36 +379,34 @@ syntax statement :=
       goto lab1;
     lab2:>
   }
-;
+  ;
 
 #keyword forall
-syntax statement :=
+  statement :=
   forall ident in expr do statements done ; =>#
     macro for val _2 in _4 do _6; done
-;
+  ;
+}
 
+syntax syn_ctrl {
 #keyword upto
-syntax statement :=
+  statement :=
   forall ident in expr upto expr do statements done ; =>#
   macro {
   _2 = _4;
   whilst _2 <= _6 do _8; ++_2; done;
   }
-;
+  ;
 
 #keyword downto
-syntax statement :=
+  statement :=
   forall ident in expr downto expr do statements done ; =>#
   macro {
   _2 = _4;
   whilst _2 >= _6 do _8; --_2; done;
   }
-;
-
-#keyword publish
-syntax statement := publish 
-  string_literal statement =># _3
-;
+  ;
+}
 
 
 @h=tangler('lib/flx_ocamlyacc_syntax.flxh','data')
