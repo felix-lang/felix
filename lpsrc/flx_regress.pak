@@ -226,7 +226,8 @@ module A print int=1
 @doc()
 
 @env_rt.head(3)
-@select(env_rt.test('.flx'))
+@rt_test3 = env_rt.test('.flx')
+@select(rt_test3)
 @kat_rt("laziness")
 #import <flx.flxh>
 // test lazy functions and procedures
@@ -239,7 +240,8 @@ x = 3;
 print (f ()); print "\n";
 @doc()
 
-@select(env_rt.expect())
+@rt_expect3 = env_rt.expect()
+@select(rt_expect3)
 lazy expr eval test
 3
 5
@@ -2616,18 +2618,18 @@ done;
 
 print "Starting .. "; endl;
 @tangle('Dynlink::run_lib("./' + \
-        os.path.splitext(rt_test1.sink.name)[0] + \
+        os.path.splitext(rt_test2.sink.name)[0] + \
         EXT_SHLIB + '");')
 @tangle('Dynlink::run_lib("./' + \
-        os.path.splitext(rt_test2.sink.name)[0] + \
+        os.path.splitext(rt_test3.sink.name)[0] + \
         EXT_SHLIB + '");')
 print "Its run"; endl;
 @doc()
 
 @select(env_drt.expect())
 Starting .. 
-@tangle(open(rt_expect1.sink.name).read()[:-1])
 @tangle(open(rt_expect2.sink.name).read()[:-1])
+@tangle(open(rt_expect3.sink.name).read()[:-1])
 Its run 
 @doc()
 

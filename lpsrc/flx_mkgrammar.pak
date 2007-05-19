@@ -1,3 +1,4 @@
+@execfile('config'+os.sep+'config.py')
 @select(tangler('mkplugins/extract_grammar.py'))
 import os
 class PLUGIN(Plugin):
@@ -10,7 +11,11 @@ class PLUGIN(Plugin):
       os.mkdir('misc')
     except:
       pass
-    os.system('python script'+os.sep+'get_grammar src'+os.sep+'flx_parse.mly >misc'+os.sep+'flx_parse.grammar')
+@if USE_DYPGEN:
+   tangle("    os.system('python script'+os.sep+'get_grammar src'+os.sep+'flx_parse.dyp >misc'+os.sep+'flx_parse.grammar')")
+ else:
+   tangle("    os.system('python script'+os.sep+'get_grammar src'+os.sep+'flx_parse.mly >misc'+os.sep+'flx_parse.grammar')")
+@#
     os.system('python script'+os.sep+'flx_flx_grgen misc'+os.sep+'flx_parse.grammar >lib'+os.sep+'flx_grammar.flx')
     os.system('python script'+os.sep+'elk_flx_lexgen misc'+os.sep+'flx_parse.grammar >misc'+os.sep+'elk_flx_lex.cc')
     os.system('python script'+os.sep+'flx_tokgen misc'+os.sep+'flx_parse.grammar >lib'+os.sep+'flx_token.flx')

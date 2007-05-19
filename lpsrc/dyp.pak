@@ -1523,12 +1523,20 @@ let derive nt1 nt2 user_g po_map nt_epsilon =
       match l with
         | [] -> true,nt_epsilon
         | litl -> begin
+            (* NOT TAIL REC
             let rec f2 litl =
               match litl with
                 | (Non_ter (nt,_))::t -> nt::(f2 t)
                 | _ -> []
             in
-            let ntl = f2 litl in
+            *)
+            let rec f2 res litl =
+              match litl with
+                | (Non_ter (nt,_))::t -> f2 (nt::res) t
+                | _ -> List.rev res
+            in
+
+            let ntl = f2 [] litl in
             if (List.length ntl)<>(List.length ntl) then false,nt_epsilon
             else
             let rec f3 (ntl:non_ter list) nt_epsilon =
@@ -1561,12 +1569,20 @@ let derive nt1 nt2 user_g po_map nt_epsilon =
             let b,po_map,nt_epsilon = aux ntbis nt2 (RS.add r vr) po_map nt_epsilon in
             b,(Map_ntc.add (ntbis,nt2) b po_map),nt_epsilon
         | litl -> begin
+            (* NOT TAIL REC
             let rec f2 litl =
               match litl with
                 | (Non_ter (nt,_))::t -> nt::(f2 t)
                 | _ -> []
             in
-            let ntl = f2 litl in
+            *)
+            let rec f2 res litl =
+              match litl with
+                | (Non_ter (nt,_))::t -> f2 (nt::res) t
+                | _ -> List.rev res
+            in
+
+            let ntl = f2 [] litl in
             if (List.length ntl)<>(List.length ntl) then false,po_map,nt_epsilon
             else
             let rec f3 n1 n2 ntl po_map nt_epsilon =
@@ -1835,6 +1851,7 @@ let find_paths (sn:('a,'b) Gs.vertex) (r:rule_bis) =
   let (_,litl,_,len) = r in
   let b = prio_imprint_check r len sn.vertex_label.prio_imprint in
   if b = false then [] else
+  (* NOT TAIL REC .. fix *)
   let rec aux n rev_litl succ path =
     if n = 0 then match path with
       | e::_ -> let s = e.dest in [path,(s.vertex_label).token_shifted]
@@ -1869,6 +1886,9 @@ let edge_list_equal el1 el2 = List.for_all2 edge_equal el1 el2
     The partial order is implemented as a map with key a couple of non terminals which 
     is bound to true or false. The need for this partial order is explained in 
     Scott McPeak's report. A better data structure than a list should be used. *)
+
+(* NOT TAIL REC
+
 let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),r) =
   let (nt,litl,_,len) = r in
   if non_ter_of_nt nt = non_terminal_startprime then l (* Do not reduce with S'->S *)
@@ -1895,6 +1915,39 @@ let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),r) =
         else ((start1,p1,tnb1),r1)::(aux tl)
   in
   aux l
+*)
+
+(* revcat a b = rev a @ b *)
+let rec revcat a b = match a with
+  | [] -> b
+  | h :: t -> revcat t (h::b)
+
+let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),r) =
+  let (nt,litl,_,len) = r in
+  if non_ter_of_nt nt = non_terminal_startprime then l (* Do not reduce with S'->S *)
+  else
+  let parsing_device = start_node.vertex_label.pdev in
+  let rec aux result l = match l with
+    | [] -> ((start_node,p,token_nb),r) :: List.rev result
+    | ((start1,p1,tnb1),r1)::tl ->
+        if tnb1<token_nb then revcat result (((start_node,p,token_nb),r)::l)
+        else
+        if tnb1>token_nb then aux (((start1,p1,tnb1),r1)::result) tl
+        else
+        let (nt1,litl1,_,_) = r1 in
+        let parsing_device1 = start1.vertex_label.pdev in
+        let b = Map_r.equal (==) parsing_device.g parsing_device1.g in
+        if b = false then aux (((start1,p1,tnb1),r1)::result) tl
+        else
+        (*let (unt1,_,_),(unt,_,_) = nt1,nt in*)
+        let rel = Map_ntc.find ((non_ter_of_nt nt1),(non_ter_of_nt nt))
+          parsing_device.po in
+        if rel then  revcat (((start_node,p,token_nb),r)::result) l
+        else if nt=nt1 && litl=litl1 && (stack_node_equal start_node start1)
+          && (edge_list_equal p p1) then revcat result l
+        else aux (((start1,p1,tnb1),r1)::result) tl
+  in
+  aux [] l 
 
 let print_path sn p =
   let snnb = sn.vertex_label.sn_nb in
