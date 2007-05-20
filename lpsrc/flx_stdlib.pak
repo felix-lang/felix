@@ -346,14 +346,13 @@ macro fun print(x) = { fprint (cout,x); };
 #infix 10 ">>=" bind
 
 #keyword publish
-syntax document {
+syntax syn_document {
   statement := publish 
     string_literal statement =># _3
   ;
 }
 
-
-syntax syn_ctrl {
+syntax syn_ctrl1 {
 #keyword whilst
   statement := whilst expr do statements done; =># 
   macro {
@@ -388,7 +387,9 @@ syntax syn_ctrl {
   ;
 }
 
-syntax syn_ctrl {
+open syntax syn_ctrl1;
+
+syntax syn_ctrl2 {
 #keyword upto
   statement :=
   forall ident in expr upto expr do statements done ; =>#
@@ -408,6 +409,7 @@ syntax syn_ctrl {
   ;
 }
 
+open syntax syn_ctrl2, syn_document;
 
 @h=tangler('lib/flx_ocamlyacc_syntax.flxh','data')
 @select(h)
