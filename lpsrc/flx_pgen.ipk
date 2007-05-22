@@ -79,8 +79,10 @@ let gen_prim_call
   ret sr sr2 prec
 =
   (*
+  print_endline ("ct= "^ct);
   print_endline ("ts= "^catmap "," (sbt syms.dfns) ts);
   print_endline ("argt = " ^ sbt syms.dfns argt);
+  print_endline ("arg = " ^ sbe syms.dfns a);
   *)
   let tn t = cpp_typename syms t in
   let rt t = reduce_type (lstrip syms.dfns (tsub t)) in

@@ -688,6 +688,9 @@ code of the compilation unit.
 statement:
   | binding_definition { $1 }
   | declarative { $1 }
+  /*
+  | executable { print_endline ("Reducing executable " ^ Flx_print.string_of_statement 0 $1); $1 }
+  */
   | executable { $1 }
   | inclusion { $1 }
   | directive { $1 }

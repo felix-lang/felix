@@ -10,7 +10,7 @@ caml_implementations = [
 ]
 
 caml_provide_lib = 'src/flx_version'
-iscr_source = ["lpsrc/flx.pak"]
+iscr_source = ["lpsrc/flx_version.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
 
 @doc()
