@@ -15,18 +15,23 @@ except:
       HAVE_JUDY=1
     else:
       print "Judy.h NOT FOUND, package disabled"
+  else:
+    print "Judy at standard location"
+  if dir == '/usr': dir = ''
 
   if HAVE_JUDY:
-    f = open("config"+os.sep+"judy.fpc","w")
-    if dir != "/usr":
+    fname = "config"+os.sep+"judy.fpc"
+    print "Writing judy fpc file ", fname
+    f = open(fname,"w")
+    if dir != '':
       f.write("cflags: -I"+dir+"/include\n")
-    if dir == "/usr":
+    if dir == "":
       f.write("provides_slib: -lJudy\n")
       f.write("provides_dlib: -lJudy\n")
     else:
       f.write("provides_slib: -L"+dir+" -lJudy\n")
       f.write("provides_dlib: -L"+dir+" -lJudy\n")
-      f.write("ld_library_path: "+dir+"\n")
+      f.write("ld_library_path: "+dir+"/lib\n")
     f.close()
   f=cwrite('target_judy')
   pa(f,locals(),"HAVE_JUDY")
@@ -84,22 +89,49 @@ module Judy
       void _j1free(void **p) { Judy1FreeArray(p); free(p); }
     """;
 
-  proc Judy1Set: J1Array * word * JError_t * ptr[int] = "*$4=Judy1Set($1,$2,$3);";
-  proc Judy1UnSet: J1Array * word * JError_t * ptr[int] = "*$4=Judy1UnSet($1,$2,$3);";
-  proc Judy1Test: J1Array * word * JError_t * ptr[int] = "*$4=Judy1Test(*$1,$2,$3);";
-  proc Judy1Count: J1Array * word * word* JError_t * ptr[word] = "*$5=Judy1Count(*$1,$2,$3,$4);";
-  proc Judy1ByCount: J1Array * word * ptr[word] * JError_t * ptr[word] = "*$5=Judy1ByCount(*$1,$2,$3,$4);";
-  proc Judy1FreeArray: J1Array * JError_t * ptr[word] = "*$3=Judy1Free($1,$2);";
+  proc Judy1Set: J1Array * word * JError_t * ptr[int] = 
+    "*$4=Judy1Set($1,$2,$3);";
+
+  proc Judy1UnSet: J1Array * word * JError_t * ptr[int] = 
+    "*$4=Judy1UnSet($1,$2,$3);";
+
+  proc Judy1Test: J1Array * word * JError_t * ptr[int] = 
+    "*$4=Judy1Test(*$1,$2,$3);";
+
+  proc Judy1Count: J1Array * word * word* JError_t * ptr[word] = 
+    "*$5=Judy1Count(*$1,$2,$3,$4);";
+
+  proc Judy1ByCount: J1Array * word * ptr[word] * JError_t * ptr[word] = 
+    "*$5=Judy1ByCount(*$1,$2,$3,$4);";
+
+  proc Judy1FreeArray: J1Array * JError_t * ptr[word] = 
+    "*$3=Judy1Free($1,$2);";
+
   proc Judy1MemUsed: J1Array * ptr[word] = "*$2=Judy1MemUsed(*$1);";
 
-  proc Judy1First: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1First(*$1,$2,$3);";
-  proc Judy1Next: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1Next(*$1,$2,$3);";
-  proc Judy1Last: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1Last(*$1,$2,$3);";
-  proc Judy1Prev: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1Prev(*$1,$2,$3);";
-  proc Judy1FirstEmpty: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1FirstEmpty(*$1,$2,$3);";
-  proc Judy1NextEmpty: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1NextEmpty(*$1,$2,$3);";
-  proc Judy1LastEmpty: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1LastEmpty(*$1,$2,$3);";
-  proc Judy1PrevEmpty: J1Array * ptr[word] * JError_t * ptr[int] = "*$4=Judy1PrevEmpty(*$1,$2,$3);";
+  proc Judy1First: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1First(*$1,$2,$3);";
+
+  proc Judy1Next: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1Next(*$1,$2,$3);";
+
+  proc Judy1Last: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1Last(*$1,$2,$3);";
+
+  proc Judy1Prev: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1Prev(*$1,$2,$3);";
+
+  proc Judy1FirstEmpty: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1FirstEmpty(*$1,$2,$3);";
+
+  proc Judy1NextEmpty: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1NextEmpty(*$1,$2,$3);";
+
+  proc Judy1LastEmpty: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1LastEmpty(*$1,$2,$3);";
+
+  proc Judy1PrevEmpty: J1Array * ptr[word] * JError_t * ptr[int] = 
+    "*$4=Judy1PrevEmpty(*$1,$2,$3);";
 
   type JLArray = "void**";
   gen _ctor_JLArray: 1 -> JLArray = "_mkjL()" requires body 
@@ -116,23 +148,50 @@ module Judy
       void _jLfree(void **p) { JudyLFreeArray(p); free(p); }
     """;
 
-  proc JudyLIns: JLArray * word * JError_t * ptr[ptr[word]] = "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
-  proc JudyLDel: JLArray * word * JError_t * ptr[ptr[int]] = "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
-  proc JudyLGet: JLArray * word * JError_t * ptr[ptr[word]] = "*(Word_t**)$4=(Word_t*)JudyLGet(*$1,$2,$3);";
+  proc JudyLIns: JLArray * word * JError_t * ptr[ptr[word]] = 
+    "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
 
-  proc JudyLCount: JLArray * word * word * JError_t * ptr[word] = "*$5=JudyLCount(*$1,$2,$3,$4);";
-  proc JudyLByCount: JLArray * word * ptr[word], JError_t * ptr[ptr[word]] = "*$5=JudyLCount(*$1,$2,$3,$4);";
-  proc JudyLFreeArray: JLArray * JError_t * ptr[word] = "*$3=JudyLFree($1,$2);";
-  proc JudyLMemUsed: JLArray * ptr[word] = "*$2=JudyLMemUsed(*$1);";
+  proc JudyLDel: JLArray * word * JError_t * ptr[ptr[int]] = 
+    "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
 
-  proc JudyLFirst: JLArray * ptr[word] * JError_t * ptr[ptr[word]] = "*$4=JudyLFirst(*$1,$2,$3);";
-  proc JudyLNext: JLArray * ptr[word] * JError_t * ptr[ptr[int]] = "*$4=JudyLNext(*$1,$2,$3);";
-  proc JudyLLast: JLArray * ptr[word] * JError_t * ptr[ptr[int]] = "*$4=JudyLLast(*$1,$2,$3);";
-  proc JudyLPrev: JLArray * ptr[word] * JError_t * ptr[ptr[int]] = "*$4=JudyLPrev(*$1,$2,$3);";
-  proc JudyLFirstEmpty: JLArray * ptr[word] * JError_t * ptr[int] = "*$4=JudyLFirstEmpty(*$1,$2,$3);";
-  proc JudyLNextEmpty: JLArray * ptr[word] * JError_t * ptr[int] = "*$4=JudyLNextEmpty(*$1,$2,$3);";
-  proc JudyLLastEmpty: JLArray * ptr[word] * JError_t * ptr[int] = "*$4=JudyLLastEmpty(*$1,$2,$3);";
-  proc JudyLPrevEmpty: JLArray * ptr[word] * JError_t * ptr[int] = "*$4=JudyLPrevEmpty(*$1,$2,$3);";
+  proc JudyLGet: JLArray * word * JError_t * ptr[ptr[word]] = 
+    "*(Word_t**)$4=(Word_t*)JudyLGet(*$1,$2,$3);";
+
+  proc JudyLCount: JLArray * word * word * JError_t * ptr[word] = 
+    "*$5=JudyLCount(*$1,$2,$3,$4);";
+
+  proc JudyLByCount: JLArray * word * ptr[word], JError_t * ptr[ptr[word]] = 
+    "*$5=JudyLCount(*$1,$2,$3,$4);";
+
+  proc JudyLFreeArray: JLArray * JError_t * ptr[word] = 
+    "*$3=JudyLFree($1,$2);";
+
+  proc JudyLMemUsed: JLArray * ptr[word] = 
+    "*$2=JudyLMemUsed(*$1);";
+
+  proc JudyLFirst: JLArray * ptr[word] * JError_t * ptr[ptr[word]] = 
+    "*(Word_t**)$4=(Word_t*)JudyLFirst(*$1,$2,$3);";
+
+  proc JudyLNext: JLArray * ptr[word] * JError_t * ptr[ptr[word]] = 
+    "*(Word_t**)$4=(Word_t*)JudyLNext(*$1,$2,$3);";
+
+  proc JudyLLast: JLArray * ptr[word] * JError_t * ptr[ptr[word]] = 
+    "*$4=JudyLLast(*$1,$2,$3);";
+
+  proc JudyLPrev: JLArray * ptr[word] * JError_t * ptr[ptr[word]] = 
+    "*$4=JudyLPrev(*$1,$2,$3);";
+
+  proc JudyLFirstEmpty: JLArray * ptr[word] * JError_t * ptr[word] = 
+    "*$4=JudyLFirstEmpty(*$1,$2,$3);";
+
+  proc JudyLNextEmpty: JLArray * ptr[word] * JError_t * ptr[word] = 
+    "*$4=JudyLNextEmpty(*$1,$2,$3);";
+
+  proc JudyLLastEmpty: JLArray * ptr[word] * JError_t * ptr[word] = 
+    "*$4=JudyLLastEmpty(*$1,$2,$3);";
+
+  proc JudyLPrevEmpty: JLArray * ptr[word] * JError_t * ptr[word] = 
+    "*$4=JudyLPrevEmpty(*$1,$2,$3);";
 
 }
 
@@ -168,8 +227,8 @@ var pwres = addr wres;
 
   var i : int;
   forall i in 0 upto 10 do
-  Judy1Test(ja,word i,je,pires);
-  print i; print " isset="; println$ ires;
+    Judy1Test(ja,word i,je,pires);
+    print i; print " isset="; println$ ires;
   done;
 
 
@@ -213,50 +272,32 @@ var pwres = addr wres;
   print "23->"; println$ int$ *pv;
 
   JudyLGet(ja,word 7,je,ppv);
-  print "77->"; println$ int$ *pv;
+  print "7->"; println$ int$ *pv;
 
   JudyLCount(ja,word 0,word 10,je,pwres);
   print "Count="; println$ int wres;
 
-/*
-  JudyLSet(ja,word 1,je,pires);
-  print "1 was unset="; println$ ires;
-
-  JudyLSet(ja,word 9,je,pires);
-  print "9 was unset="; println$ ires;
-  JudyLSet(ja,word 7,je,pires);
-  print "7 was unset="; println$ ires;
-  JudyLSet(ja,word 23,je,pires);
-  print "23 was unset="; println$ ires;
-  JudyLSet(ja,word 7,je,pires);
-  print "7 was unset="; println$ ires;
-
   var i : int;
   forall i in 0 upto 10 do
-  JudyLTest(ja,word i,je,pires);
-  print i; print " isset="; println$ ires;
+    JudyLGet(ja,word i,je,ppv);
+    print i; 
+    if isNULL pv do
+      println " --> NOT STORED";
+    else
+      print " --> ";
+      println$ ulong$ *pv;
+    done;
   done;
-
-
-  JudyLCount(ja,word 0,word 10,je,pwres);
-  print "count="; println$ int wres;
 
   var curr: word;
   var pcurr= C_hack::addr curr;
-  JudyLFirst(ja,pcurr,je,pires);
-  print "First="; println$ int curr;
-  print "res="; println$ ires;
-  JudyLNext(ja,pcurr,je,pires);
-  print "Next="; println$ int curr;
-  print "res="; println$ ires;
-  JudyLNext(ja,pcurr,je,pires);
-  print "Next="; println$ int curr;
-  print "res="; println$ ires;
-  JudyLNext(ja,pcurr,je,pires);
-  print "Next="; println$ int curr;
-  print "res="; println$ ires;
+  JudyLFirst(ja,pcurr,je,ppv);
+  print "First="; print$ int curr; print " -> "; println$ int$ *pv;
 
-*/
+  JudyLNext(ja,pcurr,je,ppv);
+  print "Next="; print$ int curr; print " -> "; println$ int$ *pv;
+
+
   println "Done JL";
 };
 
@@ -279,19 +320,30 @@ var pwres = addr wres;
 9 isset=1
 10 isset=0
 count=3
-First=47391124318561
+First=1
 res=0
-Next=455174498
+Next=7
 res=0
-Next=455174499
+Next=9
 res=0
-Next=455174500
+Next=23
 res=0
 Done J1
 1->11
 23->2323
-77->77
+7->77
 Count=2
+0 --> NOT STORED
+1 --> 11
+2 --> NOT STORED
+3 --> NOT STORED
+4 --> NOT STORED
+5 --> NOT STORED
+6 --> NOT STORED
+7 --> 77
+8 --> NOT STORED
+9 --> NOT STORED
+10 --> NOT STORED
 Done JL
 @doc()
 

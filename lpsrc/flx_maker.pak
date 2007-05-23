@@ -1450,65 +1450,71 @@ class PLUGIN(Plugin):
     global host_packages,target_packages,run_packages,doc_packages
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs,doc_selected_pkgs
 
-    for pkg in pkgd.keys():
-      pkgdict = pkgd[pkg]
-  
-      latest_src_time = get_latest_src_time(pkgdict)
-      if latest_src_time == 0:
-        print "Pak %-20s (virtual)" % pkg
-      else:
-        src_time_s = fmtime(latest_src_time)
-        print "Pak %-20s changed: %s" % (pkg,src_time_s)
-  
-      host_stamp=os.path.join("pkg-stamps", pkg+".host")
-      latest_host_build_time = filetime(host_stamp)
-      if latest_host_build_time == 0:
-        print "  ** Host UNBUILT"
-        if pkg not in host_packages: host_packages.append(pkg)
-      else:
-        if latest_host_build_time < latest_src_time:
-          print "  ** Host build:",fmtime(latest_host_build_time)
-          print "  ** REQUIRES REBUILD due to changed sources"
+    if packages:
+      build_packages = packages
+      host_packages = packages
+      target_packages = packages
+      run_packages = packages
+    else:
+      for pkg in pkgd.keys():
+        pkgdict = pkgd[pkg]
+    
+        latest_src_time = get_latest_src_time(pkgdict)
+        if latest_src_time == 0:
+          print "Pak %-20s (virtual)" % pkg
+        else:
+          src_time_s = fmtime(latest_src_time)
+          print "Pak %-20s changed: %s" % (pkg,src_time_s)
+    
+        host_stamp=os.path.join("pkg-stamps", pkg+".host")
+        latest_host_build_time = filetime(host_stamp)
+        if latest_host_build_time == 0:
+          print "  ** Host UNBUILT"
           if pkg not in host_packages: host_packages.append(pkg)
-  
-      target_stamp=os.path.join("pkg-stamps", pkg+".target")
-      latest_target_build_time = filetime(target_stamp)
-      if latest_target_build_time == 0:
-        print "  ** Target UNBUILT"
-        if pkg not in target_packages: target_packages.append(pkg)
-      else:
-        if latest_target_build_time < latest_src_time:
-          print "  ** Target build:",fmtime(latest_target_build_time)
-          print "  ** REQUIRES REBUILD due to changed sources"
+        else:
+          if latest_host_build_time < latest_src_time:
+            print "  ** Host build:",fmtime(latest_host_build_time)
+            print "  ** REQUIRES REBUILD due to changed sources"
+            if pkg not in host_packages: host_packages.append(pkg)
+    
+        target_stamp=os.path.join("pkg-stamps", pkg+".target")
+        latest_target_build_time = filetime(target_stamp)
+        if latest_target_build_time == 0:
+          print "  ** Target UNBUILT"
           if pkg not in target_packages: target_packages.append(pkg)
-  
-      run_stamp=os.path.join("pkg-stamps", pkg+".run")
-      latest_run_build_time = filetime(run_stamp)
-      if latest_run_build_time == 0:
-        print "  ** Run UNBUILT"
-        if pkg not in run_packages: run_packages.append(pkg)
-      else:
-        if latest_run_build_time < latest_src_time:
-          print "  ** Run build:",fmtime(latest_run_build_time)
-          print "  ** REQUIRES REBUILD due to changed sources"
+        else:
+          if latest_target_build_time < latest_src_time:
+            print "  ** Target build:",fmtime(latest_target_build_time)
+            print "  ** REQUIRES REBUILD due to changed sources"
+            if pkg not in target_packages: target_packages.append(pkg)
+    
+        run_stamp=os.path.join("pkg-stamps", pkg+".run")
+        latest_run_build_time = filetime(run_stamp)
+        if latest_run_build_time == 0:
+          print "  ** Run UNBUILT"
           if pkg not in run_packages: run_packages.append(pkg)
+        else:
+          if latest_run_build_time < latest_src_time:
+            print "  ** Run build:",fmtime(latest_run_build_time)
+            print "  ** REQUIRES REBUILD due to changed sources"
+            if pkg not in run_packages: run_packages.append(pkg)
 
-      doc_stamp=os.path.join("pkg-stamps", pkg+".doc")
-      latest_doc_build_time = filetime(doc_stamp)
-      if latest_doc_build_time == 0:
-        print "  ** Doc UNBUILT"
-        if pkg not in doc_packages: doc_packages.append(pkg)
-      else:
-        if latest_doc_build_time < latest_src_time:
-          print "  ** Doc build:",fmtime(latest_doc_build_time)
-          print "  ** REQUIRES REBUILD due to changed sources"
+        doc_stamp=os.path.join("pkg-stamps", pkg+".doc")
+        latest_doc_build_time = filetime(doc_stamp)
+        if latest_doc_build_time == 0:
+          print "  ** Doc UNBUILT"
           if pkg not in doc_packages: doc_packages.append(pkg)
+        else:
+          if latest_doc_build_time < latest_src_time:
+            print "  ** Doc build:",fmtime(latest_doc_build_time)
+            print "  ** REQUIRES REBUILD due to changed sources"
+            if pkg not in doc_packages: doc_packages.append(pkg)
 
-  
-    # doesn't work so well if both deps and reqs specified!
-    # would work better, if reqs was already reduced to
-    # what actually needed o be rebuilt
-  
+    
+      # doesn't work so well if both deps and reqs specified!
+      # would work better, if reqs was already reduced to
+      # what actually needed o be rebuilt
+    
     if "deps" in options:
       host_packages = closure(pkgdeps,host_packages)
       target_packages = closure(pkgdeps,target_packages)
