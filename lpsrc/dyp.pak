@@ -250,50 +250,47 @@ end
 @select(h)
 let log_channel = ref stdout
 
-(*module Dyp_tools =
-struct*)
 let dypgen_verbose = ref 0
 
+let list_append l1 l2 = List.rev_append (List.rev l1) l2
+let (@) l1 l2 = list_append l1 l2
 
 exception Giveup
 exception Syntax_error
     (** This exception is raised by glrParse if the parser is stuck in a
     situtation where no shift and no reduction is possible. *)
 
-  type token_name = int
+type token_name = int
 
-  type 'a pliteral =
+type 'a pliteral =
   | Ter of token_name
   | Non_ter of 'a
 
 (*module Priority = Priority_by_relation.Make(struct type priority = int end)*)
-  include Priority_by_relation
+include Priority_by_relation
 
-  type ('non_terminal,'nt_lit) prule_bis =
-    'non_terminal * ('nt_lit pliteral list) * priority * int
+type ('lhs,'nt_lit) prule_bis = 'lhs * ('nt_lit pliteral list) * int
+type 'nt_lit p_rhs = ('nt_lit pliteral list) * int
 
+type non_ter = int
+type lit = (non_ter * non_terminal_priority) pliteral
+type rule = non_ter * (lit list) * priority
 
-  type non_ter = int
-  type lit = (non_ter * non_terminal_priority) pliteral
-  type rule = non_ter * (lit list) * priority
+module Ordered_non_ter =
+struct
+  type t = non_ter
+  let compare = Pervasives.compare
+end
+module Nt_map = Map.Make(Ordered_non_ter)
 
-  module Ordered_non_ter =
-  struct
-    type t = non_ter
-    let compare = Pervasives.compare
-  end
-  module Nt_map = Map.Make(Ordered_non_ter)
+type 'obj merge_function = 'obj list -> 'obj -> ('obj list)
+type 'obj merge_map = 'obj merge_function Nt_map.t
+let keep_all ol o = o::ol
+let keep_oldest ol _ =
+  let rec aux l = match l with [] -> [] | [c] -> [c] | _::t -> aux t in
+  aux ol
+let keep_newest _ o = [o]
 
-  type 'obj merge_function = 'obj list -> 'obj -> ('obj list)
-  type 'obj merge_map = 'obj merge_function Nt_map.t
-  let keep_all ol o = o::ol
-  let keep_oldest ol _ =
-    let rec aux l = match l with [] -> [] | [c] -> [c] | _::t -> aux t in
-    aux ol
-  let keep_newest _ o = [o]
-
-(*end
-open Dyp_tools*)
 
 module Ordered_int =
 struct
@@ -302,6 +299,7 @@ struct
 end
 
 module Int_map = Map.Make(Ordered_int)
+module Int_set = Set.Make(Ordered_int)
 
 (*type datadyn = ((int * int) String_map.t) * (int Int_map.t) * int*)
 (* 1st map is with key : the string of the non terminal and associated values are 2 int. 1st int is the non_ter value, 2nd int is the non_ter value (an int with dypgen) of the non_terminal of the initial grammar which has the same 'type' as this non terminal.
@@ -327,74 +325,113 @@ open Dyp_special_types
 module type Automaton_parameters =
 sig
   type non_terminal
+  type lhs
   type lit_nt
   (*val str_token_name : int -> string
   val str_non_terminal : non_terminal -> string*)
   (*val token_epsilon : int*)
   val str_priority : int -> string
-  val select_rule : priority_data -> lit_nt -> priority -> bool
+  (*val select_rule : priority_data -> lit_nt -> lhs -> bool*)
+  val select_lhs : lit_nt -> priority_data -> (int Prio_map.t) array -> lhs list
+  (*val lhsl_of_nt : non_terminal -> (int Prio_map.t) array -> lhs list*)
 end
 
 module type Non_terminal_type =
 sig
   type non_terminal
+  type lhs
   type lit_nt
   val nt_of_lit : lit_nt -> non_terminal
-  val int_of_nt : non_terminal -> int
+  val nt_of_lhs : lhs -> non_terminal
+  val ind_of_lhs : lhs -> int
+  val ind_of_nt : non_terminal -> int
+  val get_lhs_prio : lhs -> priority
   val str_token_name : int -> string
   val str_non_terminal : non_terminal -> string
+  val str_lhs : lhs -> string
 end
 
 module type Grammar_type =
 sig
   type non_terminal
+  type lhs
   type lit_nt
   val nt_of_lit : lit_nt -> non_terminal
-  val int_of_nt : non_terminal -> int
-  type rule_bis = (non_terminal,lit_nt) prule_bis
-  module Map_r : Map.S with type key = rule_bis
-  type ('a,'b,'c) grammar = (('a,'b,'c) action) list Map_r.t
-  type item = rule_bis * int
+  val nt_of_lhs : lhs -> non_terminal
+  val ind_of_lhs : lhs -> int
+  val ind_of_nt : non_terminal -> int
+  val get_lhs_prio : lhs -> priority
+  type rule_bis = (lhs,lit_nt) prule_bis
+  type rhs = lit_nt p_rhs
+  module Map_rhs : Map.S with type key = rhs
+  type ('a,'b,'c) grammar = ((('a,'b,'c) action) list Map_rhs.t) array
+    (* the index of the array is the index of the non terminal of the lhs
+      i.e. the 3rd int. *)
+  type item = int * (rhs * int)
+  type item_rhs = rhs * int
   module Item_map : Map.S with type key=item
+  module Irhs_map : Map.S with type key=item_rhs
   module TNS : Set.S with type elt=token_name
   module IS :
     sig
-      include Map.S with type key=item
-      val insert : item -> TNS.t -> (TNS.t t) -> (TNS.t t)
-      val union : (TNS.t t) -> (TNS.t t) -> (TNS.t t)
-      val cut : item -> TNS.t -> (TNS.t t) -> (TNS.t t)
-      val diff : (TNS.t t) -> (TNS.t t) -> (TNS.t t)
-      val compare_is : (TNS.t t) -> (TNS.t t) -> int
+      (*include Map.S with type key=item*)
+      type t = (TNS.t Irhs_map.t array) * Int_set.t
+      val make : int -> t
+      val is_empty : t -> bool
+      val lhs_nb : t -> int
+      val find : int -> item_rhs -> t -> TNS.t
+      val add : int -> item_rhs -> TNS.t -> t -> t
+      val remove : int -> item_rhs -> t -> t
+      val iter : (int -> item_rhs -> TNS.t -> unit) -> t -> unit
+      val fold : (int -> item_rhs -> TNS.t -> 'a -> 'a) -> t -> 'a -> 'a
+      val insert : int -> item_rhs -> TNS.t -> t -> t
+      val insert_irm : int -> (TNS.t Irhs_map.t) -> t -> t
+      (*val union : (TNS.t t) -> (TNS.t t) -> (TNS.t t)
+      val cut : item -> TNS.t -> (TNS.t t) -> (TNS.t t)*)
+      val diff_irm : t -> int -> (TNS.t Irhs_map.t) -> t
+      val diff : t -> t -> t
+      val union : t -> t -> t
+      val compare_is : t -> t -> int
     end
-  type item_set = TNS.t IS.t
+  type item_set = IS.t
   val str_token_name : token_name -> string
   val str_non_terminal : non_terminal -> string
+  val str_lhs : lhs -> string
   type literal = lit_nt pliteral
   val str_literal : literal -> string
   val str_handle : literal list -> int -> string
   val str_token_set : TNS.t -> string
-  val print_item : item -> TNS.t -> unit
+  val print_item : lhs array -> int -> item_rhs -> TNS.t -> unit
 end
 
 module Grammar_struct(Ntt:Non_terminal_type) =
 struct
   include Ntt
   type literal = lit_nt pliteral
-  type rule_bis = (non_terminal,lit_nt) prule_bis
+  type rule_bis = (lhs,lit_nt) prule_bis
+  type rhs = lit_nt p_rhs
 
-  module Ordered_rule_bis =
+  (*module Ordered_rule_bis =
     struct
     type t = rule_bis
-    let compare (nt1,l1,p1,_) (nt2,l2,p2,_) =
-      Pervasives.compare (nt1,l1,p1) (nt2,l2,p2)
+    let compare (nt1,l1,_) (nt2,l2,_) =
+      Pervasives.compare (nt1,l1) (nt2,l2)
   end
-
   module Map_r = Map.Make (Ordered_rule_bis)
+  type ('a,'b,'c) grammar = (('a,'b,'c) action) list Map_r.t*)
 
-  type ('a,'b,'c) grammar = (('a,'b,'c) action) list Map_r.t
+  module Ordered_rhs =
+    struct
+    type t = rhs
+    let compare (l1,_) (l2,_) =
+      Pervasives.compare l1 l2
+  end
+  module Map_rhs = Map.Make (Ordered_rhs)
+  type ('a,'b,'c) grammar = ((('a,'b,'c) action) list Map_rhs.t) array
 
   (** [int] is the dot position in the item *)
-  type item = rule_bis * int
+  type item = int * (rhs * int)
+  type item_rhs = rhs * int
 
   module Ordered_items =
   struct
@@ -402,6 +439,13 @@ struct
     let compare = Pervasives.compare
   end
   module Item_map = Map.Make(Ordered_items)
+
+  module Ordered_item_rhs =
+  struct
+    type t = item_rhs
+    let compare = Pervasives.compare
+  end
+  module Irhs_map = Map.Make(Ordered_item_rhs)
 
   module Ordered_token_name =
   struct
@@ -412,28 +456,106 @@ struct
 
   module IS =
   struct
-    include Map.Make (Ordered_items)
+    (*include Map.Make (Ordered_items)*)
+    
+    type t = (TNS.t Irhs_map.t array) * Int_set.t
+      (* the int set is the set of the indices of all the cells,
+        that are different from Irhs_map.empty *)
+      (* on pourrait faire plus simplement une map int -> (TNS.t Irhs_map.t) 
+      mais on n'accède plus en temps constant dans dyp.ml.
+      Si on utilise une table au lieu de l'automate pendant le parsing
+      alors ce serait intéressant. *)
 
-    let insert it tok_n_s is =
+    let make i = (Array.make i Irhs_map.empty),Int_set.empty
+
+    let is_empty (_,inds) = Int_set.is_empty inds
+    let lhs_nb (_,inds) = Int_set.cardinal inds
+
+    let find ind ((litl,len),pos) (is,_) =
+      Irhs_map.find ((litl,len),pos) is.(ind)
+
+    let add ind ((litl,len),pos) tns (is,inds) =
+      is.(ind) <- Irhs_map.add ((litl,len),pos) tns is.(ind);
+      (is,Int_set.add ind inds)
+
+    let remove ind ((litl,len),pos) its =
+      let (is,inds) = its in
+      is.(ind) <- Irhs_map.remove ((litl,len),pos) is.(ind);
+      if Irhs_map.is_empty is.(ind) then (is,Int_set.remove ind inds)
+      else its
+
+    let iter f (is,inds) =
+      let f1 ind =
+        let f2 irhs tns = f ind irhs tns in
+        Irhs_map.iter f2 is.(ind)
+      in
+      Int_set.iter f1 inds
+
+    let fold f (is,inds) x =
+      let f1 i x = Irhs_map.fold (f i) is.(i) x in
+      Int_set.fold f1 inds x
+
+    let insert ind irhs tok_n_s is =
       try
-        let tns = find it is in add it (TNS.union tok_n_s tns) is
-      with Not_found -> add it tok_n_s is
+        let tns = find ind irhs is in
+        add ind irhs (TNS.union tok_n_s tns) is
+      with Not_found -> add ind irhs tok_n_s is
 
-    let union is1 is2 = fold insert is1 is2
+    let insert_irm ind irhs_map (is,inds) =
+      let aux irhs tns1 irm =
+        try
+          let tns2 = Irhs_map.find irhs irhs_map in
+          Irhs_map.add irhs (TNS.union tns1 tns2) irm
+        with Not_found -> Irhs_map.add irhs tns1 irm
+      in
+      let new_map = Irhs_map.fold aux is.(ind) irhs_map in
+      let new_set =
+        if Irhs_map.is_empty new_map
+        then inds else Int_set.add ind inds
+      in
+      is.(ind) <- new_map;
+      (is,new_set)
 
-    let cut it tok_n_s is =
-      try
-        let tns = find it is in
-        let new_tns = TNS.diff tns tok_n_s in
-        if TNS.is_empty new_tns then remove it is
-        else add it new_tns is
-      with Not_found -> remove it is
+    let diff_irm (is,inds) ind irhs_map =
+      let aux irhs tns1 irm =
+        try
+          let tns2 = Irhs_map.find irhs is.(ind) in
+          let new_tns = TNS.diff tns2 tns1 in
+          if TNS.is_empty new_tns then Irhs_map.remove irhs irm
+          else Irhs_map.add irhs new_tns irm
+        with Not_found -> irm
+      in
+      let new_map = Irhs_map.fold aux irhs_map is.(ind) in
+      let new_set =
+        if Irhs_map.is_empty new_map
+        then Int_set.remove ind inds else inds
+      in
+      is.(ind) <- new_map;
+      (is,new_set)
 
-    let diff is1 is2 = fold cut is2 is1
+    let diff is (is2,inds2) =
+      let f i is = diff_irm is i is2.(i) in
+      Int_set.fold f inds2 is
 
-    let compare_is is1 is2 = compare TNS.compare is1 is2
+    let union is (is2,inds2) =
+      let f i is = insert_irm i is2.(i) is in
+      Int_set.fold f inds2 is
+
+    exception Compare_is of int
+
+    let compare_is (is1,inds1) (is2,inds2) =
+      let c = Int_set.compare inds1 inds2 in
+      if c<>0 then c else
+      let f ind _ =
+        let c1 = Irhs_map.compare TNS.compare is1.(ind) is2.(ind) in
+        if c1<>0 then raise (Compare_is c1) else 0
+      in
+      try Int_set.fold f inds1 0
+      with Compare_is c -> c
+
   end
-  type item_set = TNS.t IS.t
+
+  type item_set = IS.t
 
   let str_literal lit = match lit with
     | Ter tk -> str_token_name tk
@@ -452,8 +574,11 @@ struct
     let string_length = (String.length str) in
     String.sub str 0 (string_length-1)
 
-  let print_item ((nt,litl,_,length),dp) (tns:TNS.t) =
-    Printf.fprintf !log_channel "   %s -> %s, (%s) ; length=%d\n" (str_non_terminal nt)
+  (*let print_item ((nt,litl,length),dp) (tns:TNS.t) =
+    Printf.fprintf !log_channel "   %s -> %s, (%s) ; length=%d\n" (str_lhs nt)
+      (str_handle litl dp) (str_token_set tns) length*)
+  let print_item lhs_of_ind ind ((litl,length),dp) (tns:TNS.t) =
+    Printf.fprintf !log_channel "   %s -> %s, (%s) ; length=%d\n" (str_lhs lhs_of_ind.(ind))
       (str_handle litl dp) (str_token_set tns) length
 
 end
@@ -461,7 +586,8 @@ end
 
 
 module Automaton_make(Gr:Grammar_type)
-  (Ap:Automaton_parameters with type non_terminal=Gr.non_terminal and type lit_nt=Gr.lit_nt) =
+  (Ap:Automaton_parameters with type non_terminal=Gr.non_terminal
+    and type lit_nt=Gr.lit_nt with type lhs=Gr.lhs) =
 struct
 open Ap
 open Gr
@@ -493,8 +619,11 @@ include Grammar_module*)
 
 module Ordered_item_set =
 struct
-  type t = TNS.t IS.t
-  let compare = IS.compare_is
+  type t = IS.t * int (* int is the number of items *)
+  let compare (is1,n1) (is2,n2) =
+    if n1>n2 then 1
+    else if n2>n1 then -1
+    else IS.compare_is is1 is2
 end
 
 module Map_is = Map.Make(Ordered_item_set)
@@ -514,7 +643,7 @@ sig
   type state = {
     mutable number : int;
     mutable li : lit_trans;
-    mutable items : TNS.t IS.t;
+    mutable items : IS.t;
     mutable succ_states : state Li_map.t;
     mutable pred_states : State.State_set.t Li_map.t
   }
@@ -525,7 +654,7 @@ struct
   type state = {
       mutable number : int;
       mutable li : lit_trans;
-      mutable items : TNS.t IS.t;
+      mutable items : IS.t;
       mutable succ_states : state Li_map.t;
       mutable pred_states : State.State_set.t Li_map.t
     }
@@ -616,13 +745,13 @@ let rec str_state_pred sl =
 
 
 
-let print_item_set is = IS.iter print_item is
+let print_item_set is lhs_of_ind = IS.iter (print_item lhs_of_ind) is
 
-let print_state s =
+let print_state s lhs_of_ind =
   Printf.fprintf !log_channel " State %d\n" s.number;
   Printf.fprintf !log_channel "  li : %s\n" (str_literal_trans s.li);
   Printf.fprintf !log_channel "  items :\n";
-  print_item_set s.items;
+  print_item_set s.items lhs_of_ind;
   Printf.fprintf !log_channel "  next states : %s\n" (str_state_succ s.succ_states);
   Printf.fprintf !log_channel "  previous states : %s\n" (str_state_pred s.pred_states)
 
@@ -630,7 +759,7 @@ let rec str_lit_list litl = match litl with
   | [] -> ""
   | lit::tl -> (str_literal lit)^" "^(str_lit_list tl)
 
-let str_rule (nt,litl,_,_) = (str_non_terminal nt)^" -> "^(str_lit_list litl)
+let str_rule (nt,litl,_) = (str_lhs nt)^" -> "^(str_lit_list litl)
 
 let rec print_rule_list rl = match rl with
   | [] -> ()
@@ -638,14 +767,14 @@ let rec print_rule_list rl = match rl with
 
 
 (** Used to print the content of an automaton. *)
-let print_aut v0 =
+let print_aut v0 lhs_of_ind =
   output_string !log_channel "\n"; output_string !log_channel "\n";
   output_string !log_channel
 "----------------------------------- Automaton ----------------------------------\n";
   output_string !log_channel "\n";
   let f s visited_v =
     if State_set.mem s visited_v then (visited_v,Li_map.empty) else
-      (print_state s;
+      (print_state s lhs_of_ind; print_newline ();
       (State_set.add s visited_v,s.succ_states))
   in
   let rec map_succ _ state visited_v =
@@ -655,10 +784,10 @@ let print_aut v0 =
   let visited_v,vertex_map = f v0 State_set.empty in
   Li_map.fold map_succ vertex_map visited_v
 
-let print_map m =
-  let f is s =
+let print_map m lhs_of_ind =
+  let f (is,_) s =
     let () = Printf.fprintf !log_channel "state %d\n" (s.number) in
-    print_item_set is
+    print_item_set is lhs_of_ind
   in
   Map_is.iter f m
 
@@ -742,37 +871,37 @@ struct
   type t = rule_bis
   let compare = Pervasives.compare
 end
-
 module RbS = Set.Make(Ordered_rule_bis)
-module OrdNt =
+(*module RhsS = Set.Make(Oredered_rhs)*)
+
+module OrdLitNt =
 struct
-  type t = non_terminal
+  type t = lit_nt
   let compare = Pervasives.compare
 end
-module NT_map = Map.Make(OrdNt)
+module NT_map = Map.Make(OrdLitNt)
 
 let first_memo_print first_memo =
   output_string !log_channel "first_memo :\n";
   let f nt tns =
-    let s = (str_non_terminal nt)^" : ("^(str_token_set tns)^")" in
+    let s = (str_non_terminal (nt_of_lit nt))^" : ("^(str_token_set tns)^")" in
     output_string !log_channel (s^"\n")
   in
   NT_map.iter f first_memo
 
-let first litl p first_memo grammar =
+let first litl p first_memo grammar prio_dat array_nt_prio =
   let litl = end_of_list litl p in
   
   let rec first_on_nt nt first_memo vrules (*n*) =
     (*output_string !log_channel ("first_on_nt "^(string_of_int n));*)
-    let f r _ rbs =
-      let (nt0,_,_,_) = r in
-      if nt=nt0 && RbS.mem r vrules=false then RbS.add r rbs else rbs
-    in
-    let nt_rules = Map_r.fold f grammar RbS.empty in
+    let f lhs (litl,len) _ rbs = RbS.add (lhs,litl,len) rbs in
+    let lhs_l = select_lhs nt prio_dat array_nt_prio in
+    let foldfun rbs lhs = Map_rhs.fold (f lhs) grammar.(ind_of_lhs lhs) rbs in
+    let nt_rules = List.fold_left foldfun RbS.empty lhs_l in
     let aux r (tns,first_memo) =
-      (*if RbS.mem r vrules then (tns,first_memo) else*)
+      if RbS.mem r vrules then (tns,first_memo) else
       let vrules = RbS.add r vrules in
-      let (_,litl,_,_) = r in
+      let (_,litl,_) = r in
       let tns2,first_memo = first_on_litl litl first_memo vrules (*(n+1)*) in
       (TNS.union tns tns2),first_memo
     in
@@ -787,9 +916,9 @@ let first litl p first_memo grammar =
       | (Ter ter)::_ -> (TNS.add ter TNS.empty),first_memo
       | (Non_ter nt)::tl ->
           let tns,first_memo =
-            try (NT_map.find (nt_of_lit nt) first_memo), first_memo
+            try (NT_map.find nt first_memo), first_memo
             with Not_found ->
-              (first_on_nt (nt_of_lit nt) first_memo vrules (*(n+1)*))
+              (first_on_nt nt first_memo vrules (*(n+1)*))
           in
           if TNS.mem token_epsilon tns then
             let tns2,first_memo = aux tl first_memo in
@@ -805,13 +934,13 @@ let first litl p first_memo grammar =
 (* utilitarian functions used by other functions *)
 
 (* returns rules which lhs is nt1 *)
-let find_rules nt1 (gram:('a,'b,'c) grammar) =
+(*let find_rules nt1 (gram:('a,'b,'c) grammar) =
   let aux (r:rule_bis) _ (l:rule_bis list) =
-    let (nt2,_,_,_) = r in
+    let (nt2,_,_) = r in
     if nt1=nt2 then r::l
     else l
   in
-  Map_r.fold aux gram []
+  Map_r.fold aux gram []*)
 
 (*
 exception Find_state_failed
@@ -831,45 +960,49 @@ let count_trans = ref 0
 
 (* ---------------------------- LR(1) automaton ---------------------------- *)
 
-let nonkernel_items (lit:literal) (gram:('a,'b,'c) grammar) (tns:TNS.t) prio_dat = match lit with
+let nonkernel_items (lit:literal) (gram:('a,'b,'c) grammar) (tns:TNS.t) prio_dat array_nt_prio nt_nb =
+  match lit with
   | Non_ter nt ->
-      let f items_set r =
-        let (_,_,p,_) = r in
-        let b = select_rule prio_dat nt p in
-        if b then IS.add (r,0) tns items_set else items_set
+      let f lhs (litl,len) _ items_set =
+        IS.add (ind_of_lhs lhs) ((litl,len),0) tns items_set
       in
-      List.fold_left f IS.empty (find_rules (nt_of_lit nt) gram)
+      let lhs_list = select_lhs nt prio_dat array_nt_prio in
+      let f2 is lhs = Map_rhs.fold (f lhs) gram.(ind_of_lhs lhs) is in
+      List.fold_left f2 (IS.make nt_nb) lhs_list
   | Ter _ -> failwith "Non terminal expected"
 
-let closure (is:TNS.t IS.t) (first_memo:TNS.t NT_map.t) (gram:('a,'b,'c) grammar) prio_dat =
-  let aux2 ((nt,litl,_,length),dp) (tns:TNS.t) its first_memo =
+let closure (is:IS.t) (first_memo:TNS.t NT_map.t) (gram:('a,'b,'c) grammar) prio_dat array_nt_prio nt_nb =
+  let aux2 _ ((litl,length),dp) (tns:TNS.t) its first_memo =
     try
       let a1 = List.nth litl dp in
       match lit_trans a1 with
-        | Ter _ -> IS.empty,first_memo
+        | Ter _ -> (IS.make nt_nb),first_memo
         | Non_ter a1nt ->
           let tok_s,first_memo =
             if dp=(List.length litl)-1 then tns,first_memo
             else
               let f1 tok (tok_s,first_memo) =
-                let tns,first_memo = (first (litl@[Ter tok]) (dp+1) first_memo gram) in
+                let tns,first_memo =
+                  (first (litl@[Ter tok]) (dp+1) first_memo gram prio_dat array_nt_prio)
+                in
                 (TNS.union tns tok_s),first_memo
               in
               TNS.fold f1 tns (TNS.empty,first_memo)
           in
-          let its3 = nonkernel_items a1 gram tok_s prio_dat in
+          let its3 = nonkernel_items a1 gram tok_s prio_dat array_nt_prio nt_nb in
           (IS.diff its3 its),first_memo
-    with Failure("nth") -> IS.empty,first_memo
+    with Failure("nth") -> (IS.make nt_nb),first_memo
   in
-  let rec aux1 its1 its2 first_memo =
+  let rec aux1 (its1:IS.t) (its2:IS.t) first_memo =
+    (*Printf.fprintf !log_channel "compt_bug=%d\n" compt_bug; flush_all ();*)
     (* its1 = the new items one has just added, its2 = the items one has added
        since closure's call. *)
-    let f it tns (its1,its2,first_memo) =
-      let its3,first_memo = aux2 it tns its2 first_memo in
+    let f ind irhs tns (its1,its2,first_memo) =
+      let its3,first_memo = aux2 ind irhs tns its2 first_memo in
       (IS.union its3 its1),(IS.union its3 its2),first_memo
     in
-    let its1,its2,first_memo = IS.fold f its1 (IS.empty,its2,first_memo) in
-    if its1 = IS.empty then its2,first_memo else (aux1 its1 its2 first_memo)
+    let its1,its2,first_memo = IS.fold f its1 ((IS.make nt_nb),its2,first_memo) in
+    if its1 = (IS.make nt_nb) then its2,first_memo else (aux1 its1 its2 first_memo)
   in
   aux1 is is first_memo
 
@@ -881,32 +1014,32 @@ end
 
 module Map_lit_trans = Map.Make(Ordered_lit_trans)
 
-let move s is_trace first_memo gram prio_dat =
-  let f1 (r,dp) tns lit_map =
-    let (_,litl,_,length) = r in
-    if dp = length then lit_map
+let move s is_trace first_memo gram prio_dat array_nt_prio nt_nb =
+  let is_trace_tok,is_trace_nt = is_trace in
+  let f1 ind (rhs,dp) tns lit_map =
+    if dp = snd rhs then lit_map
     else
-      let lit = lit_trans (List.nth litl dp) in
+      let lit = lit_trans (List.nth (fst rhs) dp) in
       let is =
         try Map_lit_trans.find lit lit_map
-        with Not_found -> IS.empty
+        with Not_found -> (IS.make nt_nb),0
       in
-      Map_lit_trans.add lit (IS.add (r,dp+1) tns is) lit_map
+      let new_is = (IS.add ind (rhs,dp+1) tns (fst is)),((snd is)+1) in
+      Map_lit_trans.add lit new_is lit_map
   in
   let lit_map = IS.fold f1 s.items Map_lit_trans.empty in
-  let f2 (lit:lit_trans) (is:TNS.t IS.t) (is_trace,first_memo,vl) =
+  let f2 (lit:lit_trans) (is:IS.t * int) (first_memo,vl) =
     count_trans := !count_trans+1;
-    let is_trace_tok,is_trace_nt = is_trace in
     try
       let v1 = match lit with
         | Ter t -> Map_is.find is is_trace_tok.(t)
-        | Non_ter nt -> Map_is.find is is_trace_nt.(int_of_nt nt)
+        | Non_ter nt -> Map_is.find is is_trace_nt.(ind_of_nt nt)
       in
       add_edge s v1;
-      is_trace,first_memo,vl
+      first_memo,vl
     with Not_found ->
       let () = countst := (!countst+1) in
-      let is1,first_memo = closure is first_memo gram prio_dat in
+      let is1,first_memo = closure (fst is) first_memo gram prio_dat array_nt_prio nt_nb in
       let v1 = {
         li = lit;
         items = is1;
@@ -917,19 +1050,22 @@ let move s is_trace first_memo gram prio_dat =
       add_edge s v1;
       let () = match lit with
         | Ter t -> is_trace_tok.(t) <- Map_is.add is v1 is_trace_tok.(t)
-        | Non_ter nt -> is_trace_nt.(int_of_nt nt) <-
-            Map_is.add is v1 is_trace_nt.(int_of_nt nt)
+        | Non_ter nt -> is_trace_nt.(ind_of_nt nt) <-
+            Map_is.add is v1 is_trace_nt.(ind_of_nt nt)
       in
-      is_trace, first_memo, (Li_map.add v1.li v1 vl)
+      first_memo, (Li_map.add v1.li v1 vl)
   in
-  Map_lit_trans.fold f2 lit_map (is_trace,first_memo,Li_map.empty)
+  Map_lit_trans.fold f2 lit_map (first_memo,Li_map.empty)
 
-let build_automaton_LR1 (is0:TNS.t IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) prio_dat =
+let build_automaton_LR1 (is0:IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) prio_dat it_nb array_nt_prio nt_nb =
   let rec map_succ _ state (is_trace,first_memo) =
-    let is_trace,first_memo,v_map = move state is_trace first_memo gram prio_dat in
+    (*Printf.fprintf !log_channel "-state built-";
+    print_state state;
+    Printf.fprintf !log_channel "\n";*)
+    let first_memo,v_map = move state is_trace first_memo gram prio_dat array_nt_prio nt_nb in
     Li_map.fold map_succ v_map (is_trace,first_memo)
   in
-  let is1,first_memo = closure is0 first_memo gram prio_dat in
+  let is1,first_memo = closure is0 first_memo gram prio_dat array_nt_prio nt_nb in
   let v0 = {
     li = lit0;
     items = is1;
@@ -939,9 +1075,9 @@ let build_automaton_LR1 (is0:TNS.t IS.t) (lit0:lit_trans) is_trace first_memo (g
   } in
   let is_trace_tok,is_trace_nt = is_trace in
   let () = match lit0 with
-    | Ter t -> is_trace_tok.(t) <- Map_is.add is0 v0 is_trace_tok.(t)
-    | Non_ter nt -> is_trace_nt.(int_of_nt nt) <-
-        Map_is.add is0 v0 is_trace_nt.(int_of_nt nt)
+    | Ter t -> is_trace_tok.(t) <- Map_is.add (is0,it_nb) v0 is_trace_tok.(t)
+    | Non_ter nt -> is_trace_nt.(ind_of_nt nt) <-
+        Map_is.add (is0,it_nb) v0 is_trace_nt.(ind_of_nt nt)
   in
   (*let is_trace = Map_is.add is0 v0 is_trace in*)
   let _,_(*first_memo*) =
@@ -955,65 +1091,77 @@ let build_automaton_LR1 (is0:TNS.t IS.t) (lit0:lit_trans) is_trace first_memo (g
 
 (* --------------------------- LALR(1) automaton --------------------------- *)
 
-let nonkernel_items_LR0 (lit:literal) (gram:('a,'b,'c) grammar) prio_dat = match lit with
+(*let nonkernel_items_LR0 (lit:literal) (gram:('a,'b,'c) grammar) prio_dat = match lit with
   | Non_ter nt ->
       let f items_set r =
-        let (_,_,p,_) = r in
-        let b = select_rule prio_dat nt p in
+        let (nt_lhs,_,_) = r in
+        let b = select_rule prio_dat nt nt_lhs in
         if b then IS.add (r,0) TNS.empty items_set else items_set
       in
-      List.fold_left f IS.empty (find_rules (nt_of_lit nt) gram)
+      List.fold_left f (IS.make nt_nb) (find_rules (nt_of_lit nt) gram)
+  | Ter _ -> assert false*)
+
+let nonkernel_items_LR0 (lit:literal) (gram:('a,'b,'c) grammar) prio_dat array_nt_prio nt_nb =
+  match lit with
+  | Non_ter nt ->
+      let f lhs (litl,len) _ items_set =
+        IS.add (ind_of_lhs lhs) ((litl,len),0) TNS.empty items_set
+      in
+      let lhs_list = select_lhs nt prio_dat array_nt_prio in
+      let f2 is lhs = Map_rhs.fold (f lhs) gram.(ind_of_lhs lhs) is in
+      List.fold_left f2 (IS.make nt_nb) lhs_list
   | Ter _ -> failwith "Non terminal expected"
 
-let closure_LR0 (is:TNS.t IS.t) (gram:('a,'b,'c) grammar) prio_dat =
-  let aux2 ((nt,litl,_,length),dp) its =
+let closure_LR0 (is:IS.t) (gram:('a,'b,'c) grammar) prio_dat array_nt_prio nt_nb =
+  let aux2 _ ((litl,length),dp) its =
     try
       let a1 = List.nth litl dp in
       match lit_trans a1 with
-        | Ter _ -> IS.empty
+        | Ter _ -> (IS.make nt_nb)
         | Non_ter a1nt ->
-            let its3 = nonkernel_items_LR0 a1 gram prio_dat in
-            (IS.diff its3 its)
-    with Failure("nth") -> IS.empty
+            let its3 = nonkernel_items_LR0 a1 gram prio_dat array_nt_prio nt_nb in
+            (IS.diff its3 its) (* complexité de diff ? n.log(m) ou m.log(n) ? *)
+    with Failure("nth") -> (IS.make nt_nb)
   in
   let rec aux1 its1 its2 =
     (* its1 = the new items one has just added, its2 = the items one has added
        since closure's call. *)
-    let f it _ (its1,its2) =
-      let its3 = aux2 it its2 in
+    let f ind irhs _ (its1,its2) =
+      let its3 = aux2 ind irhs its2 in
       (IS.union its3 its1),(IS.union its3 its2)
     in
-    let its1,its2 = IS.fold f its1 (IS.empty,its2) in
-    if its1 = IS.empty then its2 else (aux1 its1 its2)
+    let its1,its2 = IS.fold f its1 ((IS.make nt_nb),its2) in
+    if IS.is_empty its1 then its2 else (aux1 its1 its2)
   in
   aux1 is is
 
-let move_LR0 s is_trace gram prio_dat =
-  let f1 (r,dp) tns lit_map =
-    let (_,litl,_,length) = r in
+let move_LR0 s is_trace gram prio_dat array_nt_prio nt_nb =
+  let is_trace_tok,is_trace_nt = is_trace in
+  let f1 ind (rhs,dp) tns lit_map =
+    let (litl,length) = rhs in
     if dp = length then lit_map
     else
       let lit = lit_trans (List.nth litl dp) in
       let is =
         try Map_lit_trans.find lit lit_map
-        with Not_found -> IS.empty
+        with Not_found -> (IS.make nt_nb),0
       in
-      Map_lit_trans.add lit (IS.add (r,dp+1) tns is) lit_map
+      let new_is = (IS.add ind (rhs,dp+1) tns (fst is)),((snd is)+1) in
+      Map_lit_trans.add lit new_is lit_map
   in
   let lit_map = IS.fold f1 s.items Map_lit_trans.empty in
-  let f2 (lit:lit_trans) (is:TNS.t IS.t) (is_trace,vl) =
+  let f2 (lit:lit_trans) (is:IS.t*int) vl =
     count_trans := !count_trans+1;
-    let is_trace_tok,is_trace_nt = is_trace in
     try
       let v1 = match lit with
         | Ter t -> Map_is.find is is_trace_tok.(t)
-        | Non_ter nt -> Map_is.find is is_trace_nt.(int_of_nt nt)
+        | Non_ter nt -> Map_is.find is is_trace_nt.(ind_of_nt nt)
       in
       add_edge s v1;
-      is_trace,vl
+      vl
     with Not_found ->
       let () = countst := (!countst+1) in
-      let is1 = closure_LR0 is gram prio_dat in
+      let is1 = closure_LR0 (fst is) gram prio_dat array_nt_prio nt_nb in
       let v1 = {
         li = lit;
         items = is1;
@@ -1023,13 +1171,13 @@ let move_LR0 s is_trace gram prio_dat =
       } in
       let () = match lit with
         | Ter t -> is_trace_tok.(t) <- Map_is.add is v1 is_trace_tok.(t)
-        | Non_ter nt -> is_trace_nt.(int_of_nt nt) <-
-            Map_is.add is v1 is_trace_nt.(int_of_nt nt)
+        | Non_ter nt -> is_trace_nt.(ind_of_nt nt) <-
+            Map_is.add is v1 is_trace_nt.(ind_of_nt nt)
       in
       add_edge s v1;
-      is_trace, (Li_map.add v1.li v1 vl)
+      (Li_map.add v1.li v1 vl)
   in
-  Map_lit_trans.fold f2 lit_map (is_trace,Li_map.empty)
+  Map_lit_trans.fold f2 lit_map Li_map.empty
 
 (*module Item_map = Map.Make (Ordered_items)*)
 
@@ -1040,13 +1188,13 @@ type lookahead_info = {
 }
 
 let init_array its_array v0 =
-  let f it tns map_it =
+  let f ind rhs tns map_it =
     let fresh_lai = {
       la_curr = TNS.empty;
       la_new = tns;
       la_added = TNS.empty }
     in
-    Item_map.add it fresh_lai map_it
+    Item_map.add (ind,rhs) fresh_lai map_it
   in
   let visited_states = Array.make (!countst+1) false in
   let rec map_succ _ v =
@@ -1062,32 +1210,33 @@ let init_array its_array v0 =
   Li_map.iter map_succ
     (Li_map.add v0.li v0 Li_map.empty)
 
-let init_channel its_array v0 =
+let init_channel its_array v0 nt_of_ind =
   let aux v (ch_s,ch_p) =
     let f2 _ v map_lit =
       Map_lit_trans.add v.li v.number map_lit
     in
     let succ = v.succ_states in
     let map_lit = Li_map.fold f2 succ Map_lit_trans.empty in
-    let f1 it _ (ch_s,ch_p) =
-      let r,dp = it in
-      let (ntn,litl,_,length) = r in
+    let f1 ind irhs _ (ch_s,ch_p) =
+      let (litl,length),dp = irhs in
+      let it = (ind,irhs) in
       if dp = length then (ch_s,ch_p) else
       let lit = List.nth litl dp in
       let lai1 = Item_map.find it its_array.(v.number) in
       let prop_to_next_state (ch_s,ch_p) =
         let next_state = Map_lit_trans.find (lit_trans lit) map_lit in
-        let lai2 = Item_map.find (r,dp+1) its_array.(next_state) in
-        let new_channel = (it,lai1),((r,dp+1),lai2) in
+        let lai2 = Item_map.find (ind,((fst irhs),dp+1)) its_array.(next_state) in
+        let new_channel = (it,lai1),((ind,((fst irhs),dp+1)),lai2) in
         (ch_s,(new_channel::ch_p))
       in
       let (ch_s,ch_p) = prop_to_next_state (ch_s,ch_p) in
       match lit with
         | Ter _ -> (ch_s,ch_p)
         | Non_ter nt ->
-            let f it2 _ ch_list =
-              let (nt2,_,_,_),dp2 = it2 in
-              if nt2=(nt_of_lit nt) && dp2=0 then
+            let f ind rhs _ ch_list =
+              let _,dp2 = rhs in
+              if (nt_of_ind.(ind))=(nt_of_lit nt) && dp2=0 then
+                let it2 = (ind,rhs) in
                 let lai2 = Item_map.find it2 its_array.(v.number) in
                 let new_channel = (it,lai1),(it2,lai2) in
                 new_channel::ch_list
@@ -1133,7 +1282,7 @@ let init_channel its_array v0 =
   let tok_l,first_memo = aux1 end_of_litl first_memo in
   (List.filter (function t -> t<>token_epsilon) (no_double (=) tok_l)),first_memo*)
 
-let update_lookahead ch_s ch_p its_array first_memo gram =
+let update_lookahead ch_s ch_p its_array first_memo gram prio_dat array_nt_prio =
   let add_new_la added_la lai2 b =
     let added_la = TNS.diff added_la lai2.la_added in
     let added_la = TNS.diff added_la lai2.la_new in
@@ -1141,15 +1290,17 @@ let update_lookahead ch_s ch_p its_array first_memo gram =
     if TNS.is_empty added_la then b else
     let _ = lai2.la_added <- TNS.union lai2.la_added added_la in true
   in
-  let spontaneous (b,first_memo) ((it1,lai1),(it2,lai2)) =
-    let (_,litl,_,_),dp = it1 in
+  let spontaneous (b,first_memo) ((it1,lai1),(_,lai2)) =
+    let _,((litl,_),dp) = it1 in
     let tns = lai1.la_new in
     let f1 tok (tok_s,first_memo) =
-      let tns,first_memo = (first (litl@[Ter tok]) (dp+1) first_memo gram) in
+      let tns,first_memo =
+        (first (litl@[Ter tok]) (dp+1) first_memo gram prio_dat array_nt_prio)
+      in
       (TNS.union tns tok_s),first_memo
     in
     let added_la,first_memo =
-      if TNS.is_empty tns then first litl (dp+1) first_memo gram
+      if TNS.is_empty tns then first litl (dp+1) first_memo gram prio_dat array_nt_prio
       else TNS.fold f1 tns (TNS.empty,first_memo)
     in
     (add_new_la added_la lai2 b),first_memo
@@ -1178,12 +1329,12 @@ let update_lookahead ch_s ch_p its_array first_memo gram =
   update_la_fields ();
   first_memo
 
-let make_lalr_aut its_array v0 =
+let make_lalr_aut its_array v0 nt_nb =
   let make_item_set map_item =
-    let f it lai is =
-      IS.add it lai.la_curr is
+    let f (ind,irhs) lai is =
+      IS.add ind irhs lai.la_curr is
     in
-    Item_map.fold f map_item IS.empty
+    Item_map.fold f map_item (IS.make nt_nb)
   in
   let visited_states = Array.make (!countst+1) false in
   let rec map_succ _ v =
@@ -1196,49 +1347,54 @@ let make_lalr_aut its_array v0 =
   Li_map.iter map_succ
     (Li_map.add v0.li v0 Li_map.empty)
 
-let build_automaton_LR0 (is0:TNS.t IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) prio_dat =
+let build_automaton_LR0 (is0:IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) prio_dat it_nb array_nt_prio nt_nb lhs_of_ind =
   let rec map_succ _ v is_trace =
-    let is_trace,vl = move_LR0 v is_trace gram prio_dat in
+    (*Printf.fprintf !log_channel "-state built-";
+    print_state v lhs_of_ind;
+    Printf.fprintf !log_channel "\n";
+    flush_all ();*)
+    let vl = move_LR0 v is_trace gram prio_dat array_nt_prio nt_nb in
     Li_map.fold map_succ vl is_trace
   in
   let v0 = {
     li = lit0;
-    items = closure_LR0 is0 gram prio_dat;
+    items = closure_LR0 is0 gram prio_dat array_nt_prio nt_nb;
     number = !countst;
     succ_states = Li_map.empty;
     pred_states = Li_map.empty
   } in
   let is_trace_tok,is_trace_nt = is_trace in
   let () = match lit0 with
-    | Ter t -> is_trace_tok.(t) <- Map_is.add is0 v0 is_trace_tok.(t)
-    | Non_ter nt -> is_trace_nt.(int_of_nt nt) <-
-        Map_is.add is0 v0 is_trace_nt.(int_of_nt nt)
+    | Ter t -> is_trace_tok.(t) <- Map_is.add (is0,it_nb) v0 is_trace_tok.(t)
+    | Non_ter nt -> is_trace_nt.(ind_of_nt nt) <-
+        Map_is.add (is0,it_nb) v0 is_trace_nt.(ind_of_nt nt)
   in
   (**let is_trace = Map_is.add is0 v0 is_trace in*)
   let is_trace = Li_map.fold map_succ
     (Li_map.add v0.li v0 Li_map.empty) is_trace
   in is_trace,v0
 
-let build_automaton_LALR (is0:TNS.t IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) prio_dat =
+let build_automaton_LALR (is0:IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) prio_dat it_nb array_nt_prio nt_nb nt_of_ind lhs_of_ind=
   let is_trace,v0 =
-    build_automaton_LR0 is0 lit0 is_trace first_memo gram prio_dat in
+    build_automaton_LR0 is0 lit0 is_trace first_memo gram prio_dat it_nb array_nt_prio nt_nb lhs_of_ind in
   let its_array = Array.make (!countst+1) Item_map.empty in
   init_array its_array v0;
-  let channel_spont,channel_prop = init_channel its_array v0 in
-  let _ = update_lookahead channel_spont channel_prop its_array first_memo gram in
-  make_lalr_aut its_array v0;
+  let channel_spont,channel_prop = init_channel its_array v0 nt_of_ind in
+  let _ = update_lookahead channel_spont channel_prop its_array first_memo
+    gram prio_dat array_nt_prio in
+  make_lalr_aut its_array v0 nt_nb;
   v0
 
 
-let build_automaton automaton_kind (is0:TNS.t IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) verbose nt_nb prio_dat =
+let build_automaton automaton_kind (is0:IS.t) (lit0:lit_trans) is_trace first_memo (gram:('a,'b,'c) grammar) verbose nt_nb prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind =
   countst := 0;
   count_trans := 0;
   let time1 = Sys.time () in
   let v0 = match automaton_kind with
     | LR0 -> let _,v0 =
-        build_automaton_LR0 is0 lit0 is_trace first_memo gram prio_dat in v0
-    | LALR -> build_automaton_LALR is0 lit0 is_trace first_memo gram prio_dat
-    | LR1 -> build_automaton_LR1 is0 lit0 is_trace first_memo gram prio_dat
+        build_automaton_LR0 is0 lit0 is_trace first_memo gram prio_dat it_nb array_nt_prio nt_nb lhs_of_ind in v0
+    | LALR -> build_automaton_LALR is0 lit0 is_trace first_memo gram prio_dat it_nb array_nt_prio nt_nb nt_of_ind lhs_of_ind
+    | LR1 -> build_automaton_LR1 is0 lit0 is_trace first_memo gram prio_dat it_nb array_nt_prio nt_nb
   in
   let time2 = Sys.time () in
   if verbose>0 then
@@ -1246,6 +1402,7 @@ let build_automaton automaton_kind (is0:TNS.t IS.t) (lit0:lit_trans) is_trace fi
       LR0 -> "LR(0)" | LALR -> "LALR(1)" | LR1 -> "LR(1)" in
     Printf.fprintf !log_channel "%s automaton built, %d states, %d transitions, %.3f sec\n"
     str_aut_kind (!countst+1) (!count_trans+1) (time2-.time1);
+    (*let _ = print_aut v0 lhs_of_ind in*)
     flush stdout) else ();
   v0
 
@@ -1255,7 +1412,7 @@ let build_automaton automaton_kind (is0:TNS.t IS.t) (lit0:lit_trans) is_trace fi
 
 (** The following functions are used to cover 2 automatons to test whether
     they are equal. *) 
-
+(*
 let eq_vertex s1 s2 =
   if s1.li<>s2.li then false else
   if (IS.compare_is s1.items s2.items)=0 then true
@@ -1268,6 +1425,8 @@ let eq_next n1 v2 =
   let key_list = Li_map.fold aux1 n1 [] in
   let aux2 key = (Li_map.find key v2.succ_states) in
   try (true,List.map aux2 key_list) with Not_found -> (false,[])
+*)
+
 (*
 let eq_aut automaton1 automaton2 =
   let n1 = number_aut automaton1 in
@@ -1322,9 +1481,10 @@ sig
 end
 (** Input signature of the functor [Parser] *)
 
+let list_map f l = List.rev (List.rev_map f l)
+
 include Automaton
 open Dyp_special_types
-(*open Dyp_tools*)
 
 (** The way this module handles GLR is documented in the following paper :
 Scott McPeak, Elkhound: A fast, practical GLR parser generator, University of 
@@ -1374,23 +1534,30 @@ module type Other_parameters =
 sig
   type non_terminal
   type lit_nt
+  type lhs
   (*val str_non_terminal : non_terminal -> string*)
-  val select_rule : priority_data -> lit_nt -> priority -> bool
+  (*val select_rule : priority_data -> lit_nt -> non_terminal -> bool*)
+  val select_lhs : lit_nt -> priority_data -> (int Prio_map.t) array -> lhs list
+  (*val lhsl_of_non_ter : non_ter -> (int Prio_map.t) array -> lhs list*)
+  val lhs_startprime : lhs
   val non_ter_of_nt : non_terminal -> int
+  val non_ter_of_lhs : lhs -> int
   type ('a,'b,'c) grammar
   val make_real_grammar : ('a,'b,'c) user_grammar -> priority_data ->
-    (('a,'b,'c) grammar * int)
+    (('a,'b,'c) grammar * (int Prio_map.t) array * int * int * non_terminal array *
+    int array * int array * lhs array)
   type prio_imprint
   type item_set
   val new_prio_imprint : priority_data -> prio_imprint -> item_set ->
     (non_terminal pliteral) -> priority -> (prio_imprint * bool)
-  val print_prio_imp : prio_imprint -> unit
+  val print_prio_imp : lhs array -> prio_imprint -> unit
   val default_prio_imp : prio_imprint
   val prio_imp_equal : prio_imprint -> prio_imprint -> bool
   type rule_bis
+  type rhs
   val entry_point_prio :
     non_ter -> prio_imprint -> (non_terminal pliteral) -> priority
-  val prio_imprint_check : rule_bis -> int -> prio_imprint -> bool
+  val prio_imprint_check : int-> rhs -> int -> prio_imprint -> bool
   val str_with_priority : priority -> string
 end
 
@@ -1409,9 +1576,7 @@ struct
     let nt_map,n = !datadyn in
     try String_map.find s nt_map
     with Not_found ->
-      (datadyn :=
-        (String_map.add s (n+1) nt_map),(n+1);
-      (n+1))
+      (datadyn := (String_map.add s n nt_map),(n+1); (n+1))
 
   let find_nt s datadyn = String_map.find s (fst datadyn)
 
@@ -1430,7 +1595,7 @@ end
 
 open Tools
 
-module Parser(Gr:Grammar_type)(F:Other_parameters with type non_terminal = Gr.non_terminal and type lit_nt = Gr.lit_nt and type ('a,'b,'c) grammar = ('a,'b,'c) Gr.grammar and type item_set = Gr.item_set and type rule_bis = Gr.rule_bis) =
+module Parser(Gr:Grammar_type)(F:Other_parameters with type non_terminal = Gr.non_terminal and type lit_nt = Gr.lit_nt and type lhs=Gr.lhs and type ('a,'b,'c) grammar = ('a,'b,'c) Gr.grammar and type item_set = Gr.item_set and type rule_bis = Gr.rule_bis and type rhs = Gr.rhs) =
 struct
 
 open F
@@ -1442,9 +1607,12 @@ module Aut_param =
 struct
   type non_terminal = Gr.non_terminal
   type lit_nt = Gr.lit_nt
+  type lhs = Gr.lhs
   let str_priority p = priority_names.(p)
   (*let token_epsilon = E.token_epsilon*)
-  let select_rule = F.select_rule
+  (*let select_rule = F.select_rule*)
+  let select_lhs = F.select_lhs
+  (*let lhsl_of_non_ter = F.lhsl_of_non_ter*)
 end
 
 module Automat = Automaton_make(Gr)(Aut_param)
@@ -1459,12 +1627,12 @@ type ('a,'b,'c) grammar = ('a,'b,'c) Gr.grammar
 
 
 
-module Ordered_ntcouple =
+(*module Ordered_ntcouple =
 struct
   type t = non_ter * non_ter
   let compare = Pervasives.compare
 end
-module Map_ntc = Map.Make(Ordered_ntcouple)
+module Map_ntc = Map.Make(Ordered_ntcouple)*)
 
 module OrdPrioNb =
 struct
@@ -1477,7 +1645,7 @@ type ('obj,'data,'local_data) parsing_device = {
   g : ('obj,'data,'local_data) grammar;
   user_g : ('obj,'data,'local_data) user_grammar;
   init : state;
-  po : bool Map_ntc.t;
+  po : bool option array array;
     (** Patial order between non terminal name couples. A couple of non
      terminals is bound to a bool. This may be implemented alternatively
      with a set : the presence of a couple (nt1,nt2) in the set would
@@ -1489,7 +1657,11 @@ type ('obj,'data,'local_data) parsing_device = {
   merge_map : 'obj merge_map;
   global_merge : 'obj merge_function;
   aut_kind : automaton_kind;
-  nt_nb : int (* number of non terminals in the 'new' grammar *)
+  nt_nb : int; (* number of non terminals in the 'new' grammar *)
+  non_ter_of_ind : int array;
+  prio_of_ind : int array;
+  nt_of_ind : non_terminal array;
+  lhs_of_ind : lhs array
 }
 
 (*type saved_parsing_device = {
@@ -1506,139 +1678,130 @@ end
 module RS = Set.Make (Ordered_rule)
 
 (* This function decides if the non terminal nt1 can derive the non terminal
-nt2 and stores the results in po_map. If it needed to decide whether another
-non terminal nt can derive nt2 then it stores it too in po_map. nt_epsilon
+nt2 and stores the results in po_array. If it needed to decide whether another
+non terminal nt can derive nt2 then it stores it too in po_array. nt_epsilon
 stores the non terminals which can derive epsilon.*)
-let derive nt1 nt2 user_g po_map nt_epsilon =
+let derive nt1 nt2 user_g po_array nt_epsilon =
 
   (*let rec derive_epsilon nt nt_epsion vr =*)
   (* il semble que ça marchait malgré cette faute de frappe (nt_epsion) *)
-  let rec derive_epsilon nt nt_epsilon vr =
-    try (Nt_map.find nt nt_epsilon),nt_epsilon with Not_found ->
-    let f r _ (b,nt_epsilon) =
+  let rec derive_epsilon nt vr =
+    (*try (Nt_map.find nt nt_epsilon),nt_epsilon with Not_found ->*)
+    match nt_epsilon.(nt) with Some b -> b
+    | None ->
+    let f r _ b =
       let (nt,l,_) = r in
-      if b then true,nt_epsilon else
-      if nt<>nt1 then false,nt_epsilon else
-      if RS.mem r vr then false,nt_epsilon else
+      if b then true else
+      if nt<>nt1 then false else
+      if RS.mem r vr then false else
       match l with
-        | [] -> true,nt_epsilon
+        | [] -> true
         | litl -> begin
-            (* NOT TAIL REC
             let rec f2 litl =
               match litl with
                 | (Non_ter (nt,_))::t -> nt::(f2 t)
                 | _ -> []
             in
-            *)
-            let rec f2 res litl =
-              match litl with
-                | (Non_ter (nt,_))::t -> f2 (nt::res) t
-                | _ -> List.rev res
-            in
-
-            let ntl = f2 [] litl in
-            if (List.length ntl)<>(List.length ntl) then false,nt_epsilon
+            let ntl = f2 litl in
+            if (List.length ntl)<>(List.length ntl) then false
             else
-            let rec f3 (ntl:non_ter list) nt_epsilon =
+            let rec f3 (ntl:non_ter list) =
               match ntl with
-                | [] -> true,nt_epsilon
+                | [] -> true
                 | nt::t ->
-                    let b,nt_epsilon =
-                      let b,nt_epsilon = derive_epsilon nt nt_epsilon (RS.add r vr) in
-                        b,(Nt_map.add nt b nt_epsilon)
+                    let b =
+                      let b = derive_epsilon nt (RS.add r vr) in
+                      let () = nt_epsilon.(nt) <- Some b in b
                     in
-                    if b then f3 t nt_epsilon
-                    else false,nt_epsilon
+                    if b then f3 t
+                    else false
             in
-            f3 ntl nt_epsilon
+            f3 ntl
         end
     in
-    Urule_map.fold f user_g (false,nt_epsilon)
+    Urule_map.fold f user_g false
   in
 
-  let rec aux nt1 nt2 vr po_map nt_epsilon =
-    try (Map_ntc.find (nt1,nt2) po_map),po_map,nt_epsilon with Not_found ->
-    let f r _ (b,po_map,nt_epsilon) =
+  let rec aux nt1 nt2 vr =
+    (*try (Map_ntc.find (nt1,nt2) po_array),po_array,nt_epsilon with Not_found ->*)
+    match po_array.(nt1).(nt2) with Some b -> b
+    | None ->
+    let f r _ b =
       let (nt,l,_) = r in
-      if b then true,po_map,nt_epsilon else
-      if nt<>nt1 then false,po_map,nt_epsilon else
-      if RS.mem r vr then false,po_map,nt_epsilon else
+      if b then true else
+      if nt<>nt1 then false else
+      if RS.mem r vr then false else
       match l with
-        | [Non_ter (ntbis,_)] when ntbis=nt2 -> true,po_map,nt_epsilon
+        | [Non_ter (ntbis,_)] when ntbis=nt2 -> true
         | [Non_ter (ntbis,_)] ->
-            let b,po_map,nt_epsilon = aux ntbis nt2 (RS.add r vr) po_map nt_epsilon in
-            b,(Map_ntc.add (ntbis,nt2) b po_map),nt_epsilon
+            let b = aux ntbis nt2 (RS.add r vr) in
+            let () = (po_array.(ntbis).(nt2) <- Some b) in b
         | litl -> begin
-            (* NOT TAIL REC
             let rec f2 litl =
               match litl with
                 | (Non_ter (nt,_))::t -> nt::(f2 t)
                 | _ -> []
             in
-            *)
-            let rec f2 res litl =
-              match litl with
-                | (Non_ter (nt,_))::t -> f2 (nt::res) t
-                | _ -> List.rev res
-            in
-
-            let ntl = f2 [] litl in
-            if (List.length ntl)<>(List.length ntl) then false,po_map,nt_epsilon
+            let ntl = f2 litl in
+            if (List.length ntl)<>(List.length ntl) then false
             else
-            let rec f3 n1 n2 ntl po_map nt_epsilon =
+            let rec f3 n1 n2 ntl =
               match ntl with
-                | [] -> true,po_map,nt_epsilon
+                | [] -> true
                 | nt::t ->
-                    let b,po_map,nt_epsilon =
-                      if n1=n2 then let b,po_map,nt_epsilon = aux nt nt2 (RS.add r vr) po_map nt_epsilon in
-                        b,(Map_ntc.add (nt,nt2) b po_map),nt_epsilon
-                      else let b,nt_epsilon = derive_epsilon nt nt_epsilon RS.empty in
-                        b,po_map,(Nt_map.add nt b nt_epsilon)
+                    let b =
+                      if n1=n2 then let b = aux nt nt2 (RS.add r vr) in
+                        let () = po_array.(nt).(nt2) <- Some b in b
+                      else let b = derive_epsilon nt RS.empty in
+                        let () = nt_epsilon.(nt) <- Some b in b
                     in
-                    if b then f3 (n1+1) n2 t po_map nt_epsilon
-                    else false,po_map,nt_epsilon
+                    if b then f3 (n1+1) n2 t
+                    else false
             in
-            let rec f4 n po_map nt_epsilon = match n with
-              | 0 -> false,po_map,nt_epsilon
-              | _ -> let b,po_map,nt_epsilon = f3 1 n ntl po_map nt_epsilon in
-                  if b then true,po_map,nt_epsilon
-                  else f4 (n-1) po_map nt_epsilon
+            let rec f4 n = match n with
+              | 0 -> false
+              | _ -> let b = f3 1 n ntl in
+                  if b then true
+                  else f4 (n-1)
             in
-            f4 (List.length ntl) po_map nt_epsilon
+            f4 (List.length ntl)
         end
     in
-    Urule_map.fold f user_g (false,po_map,nt_epsilon)
+    Urule_map.fold f user_g false
   in
-  let b,po_map,nt_epsilon = aux nt1 nt2 RS.empty po_map nt_epsilon in
-  b,(Map_ntc.add (nt1,nt2) b po_map),nt_epsilon
+  let b = aux nt1 nt2 RS.empty in
+  let () = po_array.(nt1).(nt2) <- Some b in
+  b
 
 
-let create_aut (gram:('a,'b,'c) grammar) init_is lit nt_nb prio_dat =
+let create_aut (gram:('a,'b,'c) grammar) init_is lit nt_nb prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind =
   let () = countst := 0 in
   let is_trace =
     (Array.make E.token_nb Map_is.empty),
     (Array.make nt_nb Map_is.empty)
   in
   let v = build_automaton !automaton_kind init_is lit is_trace
-    NT_map.empty gram !dypgen_verbose nt_nb prio_dat in
+    NT_map.empty gram !dypgen_verbose nt_nb prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind in
   v
 
 (*let create_po user_g =
   let collect_nt (nt,_,_) _ nts = NTS.add nt nts in
   let nt_set = Urule_map.fold collect_nt user_g NTS.empty in
-  let cover_nts nt1 (po_map,nt_epsilon) =
+  let cover_nts nt1 (po_array,nt_epsilon) =
   (* nt_epsilon is used to record whether a non terminal can derive epsilon *)
-    let aux nt2 (po_map,nt_epsilon) =
-      if Map_ntc.mem (nt1,nt2) po_map then po_map,nt_epsilon
-      else derive nt1 nt2 user_g po_map nt_epsilon
+    let aux nt2 (po_array,nt_epsilon) =
+      if Map_ntc.mem (nt1,nt2) po_array then po_array,nt_epsilon
+      else derive nt1 nt2 user_g po_array nt_epsilon
     in
-    NTS.fold aux nt_set (po_map,nt_epsilon)
+    NTS.fold aux nt_set (po_array,nt_epsilon)
   in
-  let po_map,_ = NTS.fold cover_nts nt_set (Map_ntc.empty,Nt_map.empty) in
-  po_map*)
+  let po_array,_ = NTS.fold cover_nts nt_set (Map_ntc.empty,Nt_map.empty) in
+  po_array*)
 
-let create_po user_g =
+let create_po user_g nt_nb=
   let time1 = Sys.time () in
+  let po_array = Array.make nt_nb (Array.make nt_nb None) in
+  let nt_epsilon = Array.make nt_nb None in
   let rec rhs_tokless litl = match litl with
     | (Ter _)::_ -> false
     | (Non_ter _)::tl -> rhs_tokless tl
@@ -1646,91 +1809,96 @@ let create_po user_g =
   in
   let fold_fun r a (new_g,nts0,nts1) =
     let (nt,litl,_) = r in
-    if rhs_tokless litl then
-      (Urule_map.add r a new_g),(NTS.add nt nts0),(NTS.add nt nts1)
-    else (new_g,(NTS.add nt nts0),nts1)
+    let nts0 = NTS.add nt nts0 in
+    let new_g,nts1 = match litl with
+      | [] -> let () = nt_epsilon.(nt) <- Some true in new_g,nts1
+      | [Non_ter (nt2,_)] -> let () = po_array.(nt).(nt2) <- Some true in
+          new_g,(NTS.add nt nts1)
+      | _ ->
+          if rhs_tokless litl then
+            (Urule_map.add r a new_g),(NTS.add nt nts1)
+          else (new_g,nts1)
+    in
+    (new_g,nts0,nts1)
   in
   let user_g, nt_set_0, nt_set_1 =
     Urule_map.fold fold_fun user_g (Urule_map.empty,NTS.empty,NTS.empty)
   in
   let nt_set_2 = NTS.diff nt_set_0 nt_set_1 in
   
-  let cover_nts_2 nt1 (po_map,nt_epsilon) =
-    let aux nt2 po_map = (Map_ntc.add (nt1,nt2) false po_map) in
-    (NTS.fold aux nt_set_0 po_map),(Nt_map.add nt1 false nt_epsilon)
+  let cover_nts_2 nt1 =
+    let aux nt2 = po_array.(nt1).(nt2) <- Some false in
+    NTS.iter aux nt_set_0;
+    nt_epsilon.(nt1) <- Some false
   in
-  let po_map,nt_epsilon = NTS.fold cover_nts_2 nt_set_2 (Map_ntc.empty,Nt_map.empty) in
+  let () = NTS.iter cover_nts_2 nt_set_2 in
   
-  let cover_nts_1 nt1 (po_map,nt_epsilon) =
+  let cover_nts_1 nt1 =
   (* nt_epsilon is used to record whether a non terminal can derive epsilon *)
-    let aux nt2 (po_map,nt_epsilon) =
-      (*if Map_ntc.mem (nt1,nt2) po_map then po_map,nt_epsilon
-      else let _,pm,nte = derive nt1 nt2 user_g po_map nt_epsilon in pm,nte*)
-      let b,po_map,nt_epsilon =
-        try (Map_ntc.find (nt1,nt2) po_map),po_map,nt_epsilon
-        with Not_found -> derive nt1 nt2 user_g po_map nt_epsilon
+    let aux nt2 =
+      (*if Map_ntc.mem (nt1,nt2) po_array then po_array,nt_epsilon
+      else let _,pm,nte = derive nt1 nt2 user_g po_array nt_epsilon in pm,nte*)
+      let b = match po_array.(nt1).(nt2) with
+        | None -> derive nt1 nt2 user_g po_array nt_epsilon
+        | Some b -> b
+        (*try (Map_ntc.find (nt1,nt2) po_array),po_array,nt_epsilon
+        with Not_found -> derive nt1 nt2 user_g po_array nt_epsilon*)
       in
       if b && nt1=nt2 then
         let () = Printf.fprintf stderr
           "Error: non terminal `%s' can derive itself, cyclic grammars are not allowed\n"
           (E.str_non_terminal nt1) in
         failwith "cyclic grammar"
-      else po_map,nt_epsilon
+      else ()
     in
-    NTS.fold aux nt_set_0 (po_map,nt_epsilon)
+    NTS.iter aux nt_set_0
   in
-  let po_map,_ = NTS.fold cover_nts_1 nt_set_1 (po_map,nt_epsilon) in
+  let () = NTS.iter cover_nts_1 nt_set_1 in
   
   let time2 = Sys.time () in
   if !dypgen_verbose>0 then
-    (Printf.fprintf !log_channel "po_map built, %.3f sec\n" (time2-.time1);
+    (Printf.fprintf !log_channel "po_array built, %.3f sec\n" (time2-.time1);
     flush stdout) else ();
-  po_map
+  po_array
 
 
 let create_parsing_device_with_init (gram:('a,'b,'c) grammar) user_g
     (data:'b) datadyn (local_data:'c) (pcs:priority_data) merge_map
-    global_merge init_is lit nt_nb po_map =
+    global_merge init_is lit nt_nb po_array it_nb array_nt_prio nt_of_ind non_ter_of_ind prio_of_ind lhs_of_ind =
   let v = create_aut (gram:('a,'b,'c) grammar) init_is
-    lit nt_nb pcs in
-  let parsing_device = { g = gram ; user_g = user_g ; init = v ; po = po_map ;
+    lit nt_nb pcs it_nb array_nt_prio nt_of_ind lhs_of_ind in
+  let parsing_device = { g = gram ; user_g = user_g ; init = v ; po = po_array ;
     data = data; local_data = local_data ; datadyn = datadyn ; prio = pcs ;
     merge_map = merge_map; global_merge = global_merge ; aut_kind = !automaton_kind ;
-    nt_nb = nt_nb } in
+    nt_nb = nt_nb; non_ter_of_ind=non_ter_of_ind; prio_of_ind=prio_of_ind; nt_of_ind=nt_of_ind; lhs_of_ind=lhs_of_ind } in
   parsing_device
 
 
 let dummy_token_name = 0
 
-let init_is g =
+let init_is g array_nt_prio nt_nb =
   let tns = TNS.add dummy_token_name TNS.empty in
-  let aux r _ is =
-    let (nt,_,_,_) = r in
-    if non_ter_of_nt nt = non_terminal_startprime then
-      (IS.add (r,0) tns is)
-    else is
-  in
-  Map_r.fold aux g IS.empty
+  let aux (litl,len) _ is = IS.add (ind_of_lhs lhs_startprime) ((litl,len),0) tns is in
+  Map_rhs.fold aux g.(ind_of_lhs lhs_startprime) (IS.make nt_nb)
 
 let init_lit = Ter dummy_token_name
 
 let create_parsing_device_bis (gram:('a,'b,'c) grammar) aut_kind (data:'b)
     (local_data:'c) (pcs:priority_data) merge_map global_merge nt_nb
-    po_map user_g datadyn =
+    po_array user_g datadyn array_nt_prio nt_of_ind non_ter_of_ind prio_of_ind lhs_of_ind=
     (* gram must already contain the rules S' -> entry_point *)
   automaton_kind := aut_kind;
-  create_parsing_device_with_init gram user_g data
-    datadyn local_data pcs
-    merge_map global_merge (init_is gram) init_lit nt_nb po_map
+  create_parsing_device_with_init gram user_g data datadyn local_data pcs
+    merge_map global_merge (init_is gram array_nt_prio nt_nb) init_lit nt_nb po_array 0 array_nt_prio nt_of_ind non_ter_of_ind prio_of_ind lhs_of_ind
 
 
 let update_parsing_device_data automaton dat ldat =
   { automaton with data=dat ; local_data = ldat }
 
 (*let create_saved_parsing_device gram nt_nb prio_dat =
-  let v , po_map = create_a_and_po (gram:('a,'b,'c) grammar)
+  let v , po_array = create_a_and_po (gram:('a,'b,'c) grammar)
     (init_is gram) init_lit nt_nb prio_dat in
-  { sa_init = v ; sa_po = po_map }
+  { sa_init = v ; sa_po = po_array }
 
 let complete_parsing_device sa gram aut_kind data local_data priodata
     merge_map global_merge nt_nb =
@@ -1739,7 +1907,6 @@ let complete_parsing_device sa gram aut_kind data local_data priodata
   global_merge = global_merge ; aut_kind = aut_kind ; nt_nb = nt_nb }*)
 
 
-(*let empty_grammar = Map_r.empty*)
 
 
 
@@ -1752,21 +1919,21 @@ let update_user_g ral user_g =
 
 let make_grammar ral prio_dat =
   let user_g = update_user_g ral Urule_map.empty in
-  let po_map = create_po user_g in
-  let g,nt_nb = make_real_grammar user_g prio_dat in
-  g,nt_nb,po_map,user_g
+  let g,array_nt_prio,nt_nb,user_nt_nb,nt_of_ind,non_ter_of_ind,prio_of_ind,lhs_of_ind = make_real_grammar user_g prio_dat in
+  let po_array = create_po user_g user_nt_nb in
+  g,nt_nb,po_array,user_g,array_nt_prio,nt_of_ind,non_ter_of_ind,prio_of_ind,lhs_of_ind
 
 
 let create_parsing_device rapf_list priority_data aut_kind global_data local_data merge_map merge datadyn =
-  let current_grammar,nt_nb,map_po,user_g =
+  let current_grammar,nt_nb,po_array,user_g,array_nt_prio,nt_of_ind,non_ter_of_ind,prio_of_ind, lhs_of_ind =
     make_grammar rapf_list priority_data
   in
   create_parsing_device_bis current_grammar aut_kind global_data local_data
-    priority_data merge_map merge nt_nb map_po user_g datadyn
+    priority_data merge_map merge nt_nb po_array user_g datadyn array_nt_prio nt_of_ind non_ter_of_ind prio_of_ind lhs_of_ind
 
 
 (** UPDATE AUTOMATON used in reduceViaPath to change the grammar and the automaton
-    when new rule_with_lengths are added and old ones are removed. *)
+    when new rule_bis are added and old ones are removed. *)
 
 let remove_from_user_g rl user_g =
   let f user_g r = Urule_map.remove r user_g in
@@ -1776,23 +1943,23 @@ let update_parsing_device parsing_device ral_add r_remove newdata newdatadyn
     newlocal_data newprio s_rightSib =
   let user_g = remove_from_user_g r_remove parsing_device.user_g in
   let user_g = update_user_g ral_add user_g in
-  let po_map = create_po user_g in
-  let g,nt_nb = make_real_grammar user_g parsing_device.prio in
-  let init_is_updated_parsing_device =
-    let f (it:item) tns (is:TNS.t IS.t) =
-      let (_,dp) = it in
-      if dp=0 then is
+  let g,array_nt_prio,nt_nb,user_nt_nb,nt_of_ind,non_ter_of_ind,prio_of_ind, lhs_of_ind = make_real_grammar user_g parsing_device.prio in
+  let po_array = create_po user_g user_nt_nb in
+  let init_is_updated_parsing_device,it_nb =
+    let f ind irhs tns ((is:IS.t),it_nb) =
+      let (_,dp) = irhs in
+      if dp=0 then is,it_nb
       else
-        IS.insert it tns is
+        (IS.insert ind irhs tns is),(it_nb+1)
     in
-    IS.fold f s_rightSib.items IS.empty
+    IS.fold f s_rightSib.items (IS.make nt_nb,0)
   in
   (* All the kernel items are selected in the current state after the reduction
    happened. An items set is made with them and used as the starting state of a
    new automaton. *)
   create_parsing_device_with_init g user_g newdata newdatadyn newlocal_data
     parsing_device.prio parsing_device.merge_map parsing_device.global_merge
-    init_is_updated_parsing_device s_rightSib.li nt_nb po_map
+    init_is_updated_parsing_device s_rightSib.li nt_nb po_array it_nb array_nt_prio nt_of_ind non_ter_of_ind prio_of_ind lhs_of_ind
 
 (* ******* CE QUI PRECEDE EST A DEPLACER DANS UN AUTRE FICHIER ****** *)
 
@@ -1847,11 +2014,10 @@ along this path of the graph-structured stack happens. *)
     part of the input which would be reduced by the rule given as argument.
     [find_paths] is used in [doReductions] and in [insertLimitedReductions]
     and in [insertLimitedReductions2]. *)
-let find_paths (sn:('a,'b) Gs.vertex) (r:rule_bis) =
-  let (_,litl,_,len) = r in
-  let b = prio_imprint_check r len sn.vertex_label.prio_imprint in
+let find_paths (sn:('a,'b) Gs.vertex) ind (rhs:rhs) =
+  let (litl,len) = rhs in
+  let b = prio_imprint_check ind rhs len sn.vertex_label.prio_imprint in
   if b = false then [] else
-  (* NOT TAIL REC .. fix *)
   let rec aux n rev_litl succ path =
     if n = 0 then match path with
       | e::_ -> let s = e.dest in [path,(s.vertex_label).token_shifted]
@@ -1878,76 +2044,53 @@ let stack_node_equal sn1 sn2 = sn1.vertex_label.sn_nb = sn2.vertex_label.sn_nb
 let edge_equal e1 e2 = (snd e1.edge_label) = (snd e2.edge_label)
 let edge_list_equal el1 el2 = List.for_all2 edge_equal el1 el2
 
-(** Maintains a partially ordered list of couples (path,rule_bis), where a path is 
-    a list of edges of the graph structured stack. This function inserts the couple 
-    of the path [p] and the rule_bis [r] in the list [l] at its right place. The 
-    partial order is the field [po] of the state which is held by the source 
-    stack node of the first edge of the path [p].
-    The partial order is implemented as a map with key a couple of non terminals which 
-    is bound to true or false. The need for this partial order is explained in 
-    Scott McPeak's report. A better data structure than a list should be used. *)
-
-(* NOT TAIL REC
-
-let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),r) =
-  let (nt,litl,_,len) = r in
-  if non_ter_of_nt nt = non_terminal_startprime then l (* Do not reduce with S'->S *)
-  else
-  let parsing_device = start_node.vertex_label.pdev in
-  let rec aux l = match l with
-    | [] -> [((start_node,p,token_nb),r)]
-    | ((start1,p1,tnb1),r1)::tl ->
-        if tnb1<token_nb then ((start_node,p,token_nb),r)::l
-        else
-        if tnb1>token_nb then ((start1,p1,tnb1),r1)::(aux tl)
-        else
-        let (nt1,litl1,_,_) = r1 in
-        let parsing_device1 = start1.vertex_label.pdev in
-        let b = Map_r.equal (==) parsing_device.g parsing_device1.g in
-        if b = false then ((start1,p1,tnb1),r1)::(aux tl)
-        else
-        (*let (unt1,_,_),(unt,_,_) = nt1,nt in*)
-        let rel = Map_ntc.find ((non_ter_of_nt nt1),(non_ter_of_nt nt))
-          parsing_device.po in
-        if rel then  ((start_node,p,token_nb),r)::l
-        else if nt=nt1 && litl=litl1 && (stack_node_equal start_node start1)
-          && (edge_list_equal p p1) then l
-        else ((start1,p1,tnb1),r1)::(aux tl)
-  in
-  aux l
-*)
-
 (* revcat a b = rev a @ b *)
 let rec revcat a b = match a with
   | [] -> b
   | h :: t -> revcat t (h::b)
 
-let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),r) =
-  let (nt,litl,_,len) = r in
-  if non_ter_of_nt nt = non_terminal_startprime then l (* Do not reduce with S'->S *)
-  else
+(** Maintains a partially ordered list of couples (path,rule_bis), where a path is
+    a list of edges of the graph structured stack. This function inserts the couple
+    of the path [p] and the rule_bis [r] in the list [l] at its right place. The
+    partial order is the field [po] of the state which is held by the source
+    stack node of the first edge of the path [p].
+    The partial order is implemented a 2 dim array of type bool option.
+    The need for this partial order is explained in Scott McPeak's report.
+    A better data structure than a list should be used. *)
+let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),(ind,rhs)) =
+  let (litl,len) = rhs in
   let parsing_device = start_node.vertex_label.pdev in
+  let non_ter_of_ind = parsing_device.non_ter_of_ind in
+  if non_ter_of_ind.(ind) = non_terminal_startprime then l (* Do not reduce with S'->S *)
+  else
   let rec aux result l = match l with
-    | [] -> ((start_node,p,token_nb),r) :: List.rev result
-    | ((start1,p1,tnb1),r1)::tl ->
-        if tnb1<token_nb then revcat result (((start_node,p,token_nb),r)::l)
+    | [] -> revcat result [((start_node,p,token_nb),(ind,rhs))]
+    | ((start1,p1,tnb1),(ind1,rhs1))::tl ->
+        if tnb1<token_nb then revcat result (((start_node,p,token_nb),(ind,rhs))::l)
         else
-        if tnb1>token_nb then aux (((start1,p1,tnb1),r1)::result) tl
+        if tnb1>token_nb then aux (((start1,p1,tnb1),(ind1,rhs1))::result) tl
         else
-        let (nt1,litl1,_,_) = r1 in
+        let (litl1,_) = rhs1 in
         let parsing_device1 = start1.vertex_label.pdev in
-        let b = Map_r.equal (==) parsing_device.g parsing_device1.g in
-        if b = false then aux (((start1,p1,tnb1),r1)::result) tl
+        (* let b = Map_r.equal (==) parsing_device.g parsing_device1.g in *)
+        if parsing_device.g != parsing_device1.g
+        then aux (((start1,p1,tnb1),(ind1,rhs1))::result) tl
         else
         (*let (unt1,_,_),(unt,_,_) = nt1,nt in*)
-        let rel = Map_ntc.find ((non_ter_of_nt nt1),(non_ter_of_nt nt))
-          parsing_device.po in
-        if rel then  revcat (((start_node,p,token_nb),r)::result) l
-        else if nt=nt1 && litl=litl1 && (stack_node_equal start_node start1)
-          && (edge_list_equal p p1) then revcat result l
-        else aux (((start1,p1,tnb1),r1)::result) tl
+        (*let rel = Map_ntc.find ((non_ter_of_nt nt1),(non_ter_of_nt nt))
+          parsing_device.po in*)
+        let rel =
+          match parsing_device.po.(non_ter_of_ind.(ind1)).(non_ter_of_ind.(ind)) with
+          | Some b -> b
+          | None -> assert false
+        in
+        if rel then revcat result (((start_node,p,token_nb),(ind,rhs))::l)
+        else if non_ter_of_ind.(ind)=non_ter_of_ind.(ind1) && litl=litl1 &&
+          (stack_node_equal start_node start1) && (edge_list_equal p p1)
+        then revcat result l
+        else aux (((start1,p1,tnb1),(ind1,rhs1))::result) tl
   in
-  aux [] l 
+  aux [] l
 
 let print_path sn p =
   let snnb = sn.vertex_label.sn_nb in
@@ -1961,17 +2104,17 @@ let print_path sn p =
 
 let insertLimitedReductions pathList link (*t*) topmost =
   let _,edge_nb = link.edge_label in
-  let aux1 (pathList:(('a,'b) path * rule_bis) list) sn =
+  let aux1 (pathList:(('a,'b) path * (int * rhs)) list) sn =
     let v,aut = sn.vertex_label.aut_vertex,sn.vertex_label.pdev in
-    let aux2 (r,dp) tns pathList =
-      let (_,_,_,len) = r in
+    let aux2 ind (rhs,dp) tns pathList =
+      let (_,len) = rhs in
       if dp = len (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
          (TNS.mem dummy_token_name tns) || (rule_kind=Dynamic_rule))*) then
-        let paths = find_paths sn r in
+        let paths = find_paths sn ind rhs in
         let aux3 pathList (p,tnb) =
           if List.exists (function e -> (snd e.edge_label)=edge_nb) p then
             let () = if !dypgen_verbose>2 then print_path sn p else () in
-            insert_partially_ordered pathList ((sn,p,tnb),r)
+            insert_partially_ordered pathList ((sn,p,tnb),(ind,rhs))
           else pathList
         in
         List.fold_left aux3 pathList paths
@@ -1983,14 +2126,14 @@ let insertLimitedReductions pathList link (*t*) topmost =
 
 let insertLimitedReductions2 pathList (*t*) sn =
   let v,aut = sn.vertex_label.aut_vertex,sn.vertex_label.pdev in
-  let aux2 (r,dp) tns pathList =
-    let (_,_,_,len) = r in
+  let aux2 ind (rhs,dp) tns pathList =
+    let (_,len) = rhs in
     if dp = len (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
          (TNS.mem dummy_token_name tns) || (rule_kind=Dynamic_rule))*) then
-      let paths = find_paths sn r in
+      let paths = find_paths sn ind rhs in
       let aux3 pathList (p,tnb) =
         let () = if !dypgen_verbose>2 then print_path sn p else () in
-        insert_partially_ordered pathList ((sn,p,tnb),r)
+        insert_partially_ordered pathList ((sn,p,tnb),(ind,rhs))
       in
       List.fold_left aux3 pathList paths
     else pathList
@@ -2012,7 +2155,8 @@ let find_rightSib prio_imp g_leftSib is_rightSib data_rightSib local_data_rightS
           sn.vertex_label.prio_imprint
         in
         if ((IS.compare_is v.items is_rightSib) = 0) &&
-          (Map_r.equal (==) parsing_device.g g_leftSib) &&
+          (*(Map_r.equal (==) parsing_device.g g_leftSib) &&*)
+          parsing_device.g == g_leftSib &&
           (data_equal.global_data_equal parsing_device.data data_rightSib) &&
           (data_equal.local_data_equal parsing_device.local_data local_data_rightSib) &&
           (prio_imp_equal prio_imp sn_prio_imp)
@@ -2028,8 +2172,8 @@ let find_rightSib prio_imp g_leftSib is_rightSib data_rightSib local_data_rightS
 
 (*let replace_in_pathList pathList edge_nb new_link =
   let aux2 e = if snd e.edge_label = edge_nb then new_link else e in
-  let aux1 ((sn,edl,tnb),r) = ((sn,List.map aux2 edl,tnb),r) in
-  List.map aux1 pathList*)
+  let aux1 ((sn,edl,tnb),r) = ((sn,list_map aux2 edl,tnb),r) in
+  list_map aux1 pathList*)
 
 
 open Lexing
@@ -2103,15 +2247,15 @@ let complete_reduction gs pathList topmost leftSib pdev_rightSib
     gs,pathList,topmost,counters
 
 
-let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(r:rule_bis)) (t:token_name) (gs:(('a,'b) Gs.vertex) list) (pathList:(('a,'b) path * rule_bis) list) (topmost:('a,'b) Gs.vertex list) counters data_equal =
+let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs)) (t:token_name) (gs:(('a,'b) Gs.vertex) list) (pathList:(('a,'b) path * (int * rhs)) list) (topmost:('a,'b) Gs.vertex list) counters data_equal =
   
   (if !dypgen_verbose>2 then
     let _ = Printf.fprintf !log_channel "reduceViaPath called, start_node=%d\n"
       (start_node.vertex_label).sn_nb in flush_all () else ());
   
-  let (nt,lit_list,prio,rule_length) = r in
+  let (lit_list,rule_length) = rhs in
   let position_map e = e.source.vertex_label.lexer_pos in
-  let position_list = List.map position_map p in
+  let position_list = list_map position_map p in
   let end_node_pos = try fst (List.hd position_list)
     with Failure _ -> Lexing.dummy_pos in
   let start_node_pos = snd start_node.vertex_label.lexer_pos in
@@ -2124,6 +2268,8 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
   let v,parsing_device_leftSib =
     leftSib.vertex_label.aut_vertex,leftSib.vertex_label.pdev in
   let prio_dat = parsing_device_leftSib.prio in
+  let prio = parsing_device_leftSib.prio_of_ind.(ind) in
+  let nt_of_ind = parsing_device_leftSib.nt_of_ind in
   (* collect_objs collects objects along the path p.
      The head of the list corresponds to the leftmost
      object in gs. *)
@@ -2142,9 +2288,9 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
   in
   let obj_ll = collect_objs p in
 
-  let ac_l = Map_r.find r parsing_device_leftSib.g in
+  let ac_l = Map_rhs.find (lit_list,rule_length) parsing_device_leftSib.g.(ind) in
   let succ = v.succ_states in
-  let v_rightSib = Li_map.find (Non_ter nt) succ  in
+  let v_rightSib = Li_map.find (Non_ter nt_of_ind.(ind)) succ  in
   let last_parsing_device = start_node.vertex_label.pdev
   in
     let foldfun (gs,pathList,topmost,will_shift,counters) toPass =
@@ -2165,7 +2311,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
       let v_rightSib,parsing_device_rightSib =
         if rapf_add=[] && r_remove=[] && newprio==prio_dat then
           let item_set = start_node.vertex_label.aut_vertex.items in
-          let tns = IS.find (r,List.length lit_list) item_set in
+          let tns = IS.find ind (rhs,List.length lit_list) item_set in
           if (TNS.mem t tns = false)&&(TNS.mem dummy_token_name tns = false)
             && !automaton_kind<>LR0 then raise Giveup
           else
@@ -2180,7 +2326,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
       in
       let gs,pathList,topmost,counters =
         complete_reduction gs pathList topmost leftSib
-        parsing_device_rightSib v_rightSib new_obj (*t*) nt
+        parsing_device_rightSib v_rightSib new_obj (*t*) (nt_of_ind.(ind))
         symbol_pos prio counters data_equal
       in
       gs,pathList,topmost,(will_shift2 && will_shift),counters
@@ -2193,31 +2339,31 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
 
 let doReductions (t:token_name) gs (topmost:('a,'b) Gs.vertex list)
     entry_point counters data_equal =
-  let aux1 (pathList:(('a,'b) path * rule_bis) list) sn =
-    let v,aut = sn.vertex_label.aut_vertex,sn.vertex_label.pdev in
+  let aux1 (pathList:(('a,'b) path * (int * rhs)) list) sn =
+    let v,pdev = sn.vertex_label.aut_vertex,sn.vertex_label.pdev in
     let item_set = v.items in
-    let aux2 (r,dp) tns pathList =
-      let (nt_lhs,_,_,len) = r in
+    let aux2 ind (rhs,dp) tns pathList =
+      let (_,len) = rhs in
       
       let tns = (* on devrait ne calculer ça que si on sait que len=dp *)
-        try IS.find (r,dp) item_set
+        try IS.find ind (rhs,dp) item_set
         with Not_found -> failwith "Not_found in doReductions"
       in
       
       if dp = len &&
-        ( !automaton_kind=LR0 || t<>dummy_token_name ||
-          (non_ter_of_nt nt_lhs)=entry_point ||
+        (!automaton_kind=LR0 || t<>dummy_token_name ||
+          (pdev.non_ter_of_ind.(ind))=entry_point ||
           (t=dummy_token_name && TNS.mem t tns) ) then
       
-        let paths = List.map (function (p,tnb) -> sn,p,tnb) (find_paths sn r) in
-        let aux3 pathList p = insert_partially_ordered pathList (p,r) in
+        let paths = list_map (function (p,tnb) -> sn,p,tnb) (find_paths sn ind rhs) in
+        let aux3 pathList p = insert_partially_ordered pathList (p,(ind,rhs)) in
         List.fold_left aux3 pathList paths
       else pathList
     in
     IS.fold aux2 item_set pathList
   in
   let pathList = List.fold_left aux1 [] topmost in
-  let rec aux4 (pathList:(('a,'b) path * rule_bis) list) gs
+  let rec aux4 (pathList:(('a,'b) path * (int * rhs)) list) gs
       topmost counters =
     match pathList with
     | [] -> gs,topmost,counters
@@ -2292,13 +2438,14 @@ let print_gs gs title =
     let { aut_vertex = v; pdev = parsing_device; sn_nb = snnb;
       token_shifted = token_nb ; prio_imprint = prio_imp } = sn.vertex_label
     in
+    let lhs_of_ind = parsing_device.lhs_of_ind in
     output_string !log_channel "____________________________________\n";
     let () = Printf.fprintf !log_channel "STACK NODE <%d>, token number : %d\n" snnb token_nb in
     output_string !log_channel "\n";
-    let () = print_state v in
+    let () = print_state v lhs_of_ind in
     output_string !log_channel "\n";
     output_string !log_channel " priority imprint :\n";
-    print_prio_imp prio_imp;
+    print_prio_imp lhs_of_ind prio_imp;
     let f3 f4 ed =
       let _,ednb = ed.edge_label in
       let { aut_vertex = v; sn_nb = snnb} = f4 ed in
@@ -2336,7 +2483,7 @@ let log_parse_forest successful entry_point =
       if snnb = 0 then
         let ol = fst e.edge_label in
         let f3 o = (o,prio) in
-        (List.map f3 ol)@l
+        (list_map f3 ol)@l
       else l
     in
     List.fold_left f2 l edges
@@ -2468,6 +2615,7 @@ let glrParse parsing_device get_value get_name str_token
       if !dypgen_verbose>2 then close_out !log_channel;
       raise Syntax_error)
   in
+  
   if !dypgen_verbose>2 then print_gs gs title_gs;
   if !dypgen_verbose>1 then
     (output_string !log_channel ("number of stack nodes = "^(string_of_int counters.countsn)^"\n");
@@ -2486,21 +2634,33 @@ end
 module Ntt_PrioInAutomaton =
 struct
   type non_terminal = non_ter * priority * int
+  type lhs = non_ter * priority * int
   type lit_nt = non_terminal
   let nt_of_lit nt = nt
-  let int_of_nt (_,_,i) = i
+  let nt_of_lhs nt = nt
+  let ind_of_lhs (_,_,i) = i
+  let ind_of_nt (_,_,i) = i
+  let get_lhs_prio (_,p,_) = p
   let str_token_name = E.str_token_name
-  let str_non_terminal (nt,p,_) = "("^(E.str_non_terminal nt)^","^(E.priority_names.(p))^")"
+  let str_non_terminal (nt,p,i) = "("^(E.str_non_terminal nt)^
+    ","^(E.priority_names.(p))^ ","^(string_of_int i)^")"
+  let str_lhs = str_non_terminal
 end
 
 module Ntt_PrioAtRuntime =
 struct
   type non_terminal = non_ter
-  type lit_nt = non_terminal * non_terminal_priority
-  let nt_of_lit (nt,p) = nt
-  let int_of_nt nt = nt
+  type lhs = non_ter * priority * int
+  type lit_nt = non_ter * non_terminal_priority
+  let nt_of_lit (nt,_) = nt
+  let nt_of_lhs (nt,_,_) = nt
+  let ind_of_lhs (_,_,i) = i
+  let ind_of_nt i = i
+  let get_lhs_prio (_,p,_) = p
   let str_token_name = E.str_token_name
-  let str_non_terminal nt = (E.str_non_terminal nt)
+  let str_non_terminal nt = E.str_non_terminal nt
+  let str_lhs (nt,p,i) = "("^(E.str_non_terminal nt)^
+    ","^(E.priority_names.(p))^ ","^(string_of_int i)^")"
 end
 
 module Grammar_PrioInAutomaton = Grammar_struct(Ntt_PrioInAutomaton)
@@ -2512,8 +2672,10 @@ module Grammar_PrioAtRuntime = Grammar_struct(Ntt_PrioAtRuntime)
 module PrioInAutomaton =
 struct
 
-let select_rule _ _ _ = true
-
+(*let select_rule _ _ _ = true*)
+let select_lhs nt _ _ = [nt]
+(*let lhsl_of_non_ter nt _ = [nt]*)
+let lhs_startprime = (0,0,0)
 
 module OrdPrioNb =
 struct
@@ -2525,10 +2687,13 @@ module Non_ter_set = Set.Make(Ordered_non_ter)
 open Grammar_PrioInAutomaton
 type ('a,'b,'c) grammar = ('a,'b,'c) Grammar_PrioInAutomaton.grammar
 type non_terminal = Grammar_PrioInAutomaton.non_terminal
+type lhs = Grammar_PrioInAutomaton.lhs
 type lit_nt = Grammar_PrioInAutomaton.lit_nt
 let non_ter_of_nt  (nt,_,_) = nt
+let non_ter_of_lhs (nt,_,_) = nt
 type item_set = Grammar_PrioInAutomaton.item_set
 type rule_bis = Grammar_PrioInAutomaton.rule_bis
+type rhs = Grammar_PrioInAutomaton.rhs
 let str_with_priority _ = ""
 
 let nt_prio_to_prio_set p_map (ps:Prio_set.t) p = match p with
@@ -2557,14 +2722,13 @@ let nt_prio_to_prio_set p_map (ps:Prio_set.t) p = match p with
          in the new_grammar because a grammar is a map of key
          rule_bis. *)*)
 
-let new_rules p_map nt_prio_map array_nt_prio ps ntn litl len prio nt_nb =
+let new_rules p_map array_nt_ps array_nt_prio ps ntn litl len prio nt_nb =
   let aux2 tn lit_l = (Ter tn)::lit_l in
   let aux3 nt p lit_ll =
     let rec aux4 lit_ll new_lit_ll = match lit_ll with
       | lit_l::tl ->
           let prio_set = nt_prio_to_prio_set p_map ps p in
-          let prio_set2 = try Nt_map.find nt nt_prio_map
-            with Not_found -> Prio_set.empty in
+          let prio_set2 = array_nt_ps.(nt) in
           let prio_set = Prio_set.inter prio_set prio_set2 in
           let f1 pr pn_set =
             let n = try Prio_map.find pr array_nt_prio.(nt)
@@ -2586,7 +2750,7 @@ let new_rules p_map nt_prio_map array_nt_prio ps ntn litl len prio nt_nb =
     aux4 lit_ll []
   in
   let rec aux1 litl lit_ll = match litl with
-    | (Ter tn)::tl -> aux1 tl (List.map (aux2 tn) lit_ll)
+    | (Ter tn)::tl -> aux1 tl (list_map (aux2 tn) lit_ll)
     | (Non_ter (nt,p))::tl -> aux1 tl (aux3 nt p lit_ll)
     | [] -> lit_ll
   in
@@ -2594,8 +2758,9 @@ let new_rules p_map nt_prio_map array_nt_prio ps ntn litl len prio nt_nb =
   let nb = try Prio_map.find prio array_nt_prio.(ntn)
     with Not_found -> failwith "Not_found in new_rules lhs"
   in
-  let complete_new_rule lit_l = ((ntn,prio,nb),lit_l,prio,len) in
-  List.map complete_new_rule lit_ll
+  let complete_new_rule lit_l = ((ntn,prio,nb),lit_l,len) in
+  list_map complete_new_rule lit_ll
+
 
 (* ps is the set of all priorities. *)
 let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) =
@@ -2627,57 +2792,83 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) =
   let nt_nb = (Urule_map.fold f1 user_g 0)+1 in
   if !dypgen_verbose>1 then
     Printf.fprintf !log_channel "number of non terminals : %d\n" nt_nb;
-  let foldfun2 (nt,_,p) _ mapntp =
-    let ps = try Nt_map.find nt mapntp
-      with Not_found -> Prio_set.empty in
-    let ps = Prio_set.add p ps in
-    (*output_string !log_channel ("ajoute "^(str_non_terminal (nt,p))^"\n");*)
-    Nt_map.add nt ps mapntp
-  in
-  let nt_prio_map = Urule_map.fold foldfun2 user_g Nt_map.empty in
+  
+  let array_nt_ps = Array.make nt_nb Prio_set.empty in
+  
+  let iterfun (nt,_,p) _ = array_nt_ps.(nt) <- Prio_set.add p array_nt_ps.(nt) in
+  
+  Urule_map.iter iterfun user_g;
+  
   let array_nt_prio = Array.make nt_nb Prio_map.empty in
   let rec f_rec i n = if i=nt_nb then n else
-    let prio_set = try Nt_map.find i nt_prio_map
-      with Not_found -> Prio_set.empty
-    in
+    let prio_set = array_nt_ps.(i) in
     let foldfun prio (prio_map,n) = (Prio_map.add prio n prio_map),(n+1) in
     let prio_map,n = Prio_set.fold foldfun prio_set (Prio_map.empty,n) in
     let () = array_nt_prio.(i) <- prio_map in
     f_rec (i+1) n
   in
   let newnt_nb = f_rec 0 0 in
+  
+  let non_ter_of_ind = Array.make newnt_nb 0 in
+  let prio_of_ind = Array.make newnt_nb 0 in
+  let nt_of_ind = Array.make newnt_nb (0,0,0) in
+  let f2 nt p n =
+    non_ter_of_ind.(n) <- nt;
+    prio_of_ind.(n) <- p;
+    nt_of_ind.(n) <- (nt,p,n)
+  in
+  for i=0 to newnt_nb-1 do
+    Prio_map.iter (f2 i) array_nt_prio.(i)
+  done;
+  
+  (*let rec print_array_nt_prio i =
+    if i=nt_nb then () else
+    (print_string ("  "^(E.str_non_terminal i)^" : ");
+    Prio_map.iter (fun p _ -> print_string (priority_names.(p)^" ")) array_nt_prio.(i);
+    print_newline ();
+    print_array_nt_prio (i+1))
+  in
+  print_endline "array_nt_prio :";
+  print_array_nt_prio 0;*)
+  
   (*let fiter nt ps =
     print_string ("nt: "^(E.str_non_terminal nt));
     Prio_set.iter (fun p -> print_string (priority_names.(p)^" ")) ps;
     output_string !log_channel "\n"
   in
   Nt_map.iter fiter nt_prio_map;*)
-  let aux (ntn,litl,p) a g =
+  
+  let g = Array.make newnt_nb Map_rhs.empty in
+  
+  let aux (ntn,litl,p) a =
     let litl = List.rev litl in
     let rl =
-      new_rules pmap nt_prio_map array_nt_prio ps ntn litl
+      new_rules pmap array_nt_ps array_nt_prio ps ntn litl
         (List.length litl) p nt_nb
     in
-    let f g r = Map_r.add r a g in
-    List.fold_left f g rl
+    let f ((_,_,i),litl,len) = g.(i) <- Map_rhs.add (litl,len) a g.(i) in
+    List.iter f rl
   in
-  let g = Urule_map.fold aux user_g Map_r.empty in
+  let () = Urule_map.iter aux user_g in
   if !dypgen_verbose>1 then
-    (let f r _ n = (*output_string !log_channel ((str_rule r)^"\n"); flush stdout;*) n+1 in
-    let nbr = Map_r.fold f g 0 in
+    (let aux _ _ i = i+1 in
+    let rec f nt i = if nt=newnt_nb then i else
+      f (nt+1) (Map_rhs.fold aux g.(nt) i)
+    in
+    let nbr = f 0 0 in
     Printf.fprintf !log_channel "size of the new grammar : %d rules\n" nbr;
     Printf.fprintf !log_channel "number of new non terminals : %d\n" newnt_nb;
     flush stdout);
-  g,newnt_nb
+  g,array_nt_prio,newnt_nb,nt_nb,nt_of_ind,non_ter_of_ind,prio_of_ind,nt_of_ind
 
 
 type prio_imprint = int
 
 let new_prio_imprint _ _ _ _ _ = 0,true
 let default_prio_imp = 0
-let prio_imprint_check _ _ _ = true
+let prio_imprint_check _ _ _ _ = true
 let prio_imp_equal _ _ = true
-let print_prio_imp prio_imp = ()
+let print_prio_imp lhs_of_ind prio_imp = ()
 let entry_point_prio _ _ li = match li with
   | Non_ter (_,p,_) -> p
   | Ter _ -> failwith "entry_point_prio, priority in automaton"
@@ -2693,12 +2884,15 @@ open Grammar_PrioAtRuntime
 type ('a,'b,'c) grammar = ('a,'b,'c) Grammar_PrioAtRuntime.grammar
 type non_terminal = Grammar_PrioAtRuntime.non_terminal
 type lit_nt = Grammar_PrioAtRuntime.lit_nt
-let non_ter_of_nt  nt = nt
+type lhs = Grammar_PrioAtRuntime.lhs
+let non_ter_of_nt nt = nt
+let non_ter_of_lhs (nt,_,_) = nt
 type item_set = Grammar_PrioAtRuntime.item_set
 type rule_bis = Grammar_PrioAtRuntime.rule_bis
+type rhs = Grammar_PrioAtRuntime.rhs
 let str_with_priority p = " with priority `"^(priority_names.(p))^"'"
 
-let select_rule prio_dat ntn p =
+(*let select_rule prio_dat ntn (_,p,_) =
   let nt,nt_p = ntn in
   match nt_p with
     | No_priority -> true
@@ -2706,10 +2900,49 @@ let select_rule prio_dat ntn p =
     | Less_priority q -> is_relation prio_dat p q
     | Lesseq_priority q -> (is_relation prio_dat p q) || (p=q)
     | Greater_priority q -> is_relation prio_dat q p
-    | Greatereq_priority q -> (is_relation prio_dat q p) || (p=q)
+    | Greatereq_priority q -> (is_relation prio_dat q p) || (p=q) *)
 
-let compute_nt_nb g =
-  let f1 (nt,litl,_,_) _ n =
+(*let str_nt_lit (nt,nt_p) =
+  match nt_p with
+    | No_priority -> "("^(str_non_terminal nt)^",No_priority)"
+    | Eq_priority q -> "("^(str_non_terminal nt)^",="^priority_names.(q)^")"
+    | Less_priority q -> "("^(str_non_terminal nt)^",<"^priority_names.(q)^")"
+    | Lesseq_priority q -> "("^(str_non_terminal nt)^",<="^priority_names.(q)^")"
+    | Greater_priority q -> "("^(str_non_terminal nt)^",>"^priority_names.(q)^")"
+    | Greatereq_priority q -> "("^(str_non_terminal nt)^",>="^priority_names.(q)^")"*)
+
+let select_lhs (nt,nt_p) prio_dat array_nt_prio =
+  (*print_endline ("select_lhs sur "^(str_nt_lit (nt,nt_p)));*)
+  let test = match nt_p with
+    | No_priority -> (fun _ -> true)
+    | Eq_priority q -> (fun p -> p=q)
+    | Less_priority q -> (fun p -> is_relation prio_dat p q)
+    | Lesseq_priority q -> (fun p -> (is_relation prio_dat p q) || (p=q))
+    | Greater_priority q -> (fun p -> is_relation prio_dat q p)
+    | Greatereq_priority q -> (fun p -> (is_relation prio_dat q p) || (p=q))
+  in
+  let rec f p =
+    if p = prio_dat.prd_nb then [] else
+    if test p then
+      try
+        let ind = Prio_map.find p array_nt_prio.(nt) in
+        (nt,p,ind)::(f (p+1))
+      with Not_found -> f (p+1)
+    else f (p+1)
+  in
+  let l = f 0 in
+  (*List.iter (fun lhs -> print_endline (str_lhs lhs)) l;*)
+  l
+
+
+let lhs_startprime = (0,0,0)
+
+(*let lhsl_of_non_ter nt array_nt_prio =
+  let f p ind lhs_l = (nt,p,ind)::lhs_l in
+  Prio_map.fold f array_nt_prio.(nt) []*)
+
+(*let compute_nt_nb g =
+  let f1 (nt,litl,_) _ n =
     let n = max n nt in
     let f2 n lit = match lit with
       | Non_ter (nt,_) -> max n nt
@@ -2717,21 +2950,111 @@ let compute_nt_nb g =
     in
     List.fold_left f2 n litl
   in
-  (Map_r.fold f1 g 0)+1
+  (Map_r.fold f1 g 0)+1*)
 (*  let foldfun3 (nt,_,_,_,_) _ non_ter_set = NTS.add nt non_ter_set in
   let non_ter_set = Map_r.fold foldfun3 g NTS.empty in
   NTS.cardinal non_ter_set*)
 
-let rule_bis_of_rule (nt,l,p) = (nt,l,p,(List.length l))
+(*let rule_bis_of_rule (nt,l,p) = (nt,l,p,(List.length l))*)
 
-let make_real_grammar user_g _ =
+(*let make_real_grammar user_g _ =
   let foldfun r a g = Map_r.add (rule_bis_of_rule r) a g in
   let g = Urule_map.fold foldfun user_g Map_r.empty in
   let foldfun g ep =
     Map_r.add (non_terminal_startprime,[Non_ter (ep,No_priority)],0,1)
       [(Dypgen_action(fun x _ _ d ld dd prd -> (List.hd x,true,d,ld,dd,[],[],prd)))] g
   in
-  (List.fold_left foldfun g entry_points),(compute_nt_nb g)
+  let nt_nb = compute_nt_nb g in
+  (List.fold_left foldfun g entry_points),nt_nb,nt_nb*)
+
+
+let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) =
+  if !dypgen_verbose>1 then
+    (let nbr = Urule_map.fold (fun _ _ n -> n+1) user_g 0 in
+    Printf.fprintf !log_channel "size of the grammar : %d rules\n" nbr);
+  let foldfun user_g ep =
+    Urule_map.add (non_terminal_startprime,[Non_ter (ep,No_priority)],0)
+      [(Dypgen_action(fun x _ _ d ld dd prd -> (List.hd x,true,d,ld,dd,[],[],prd)))] user_g
+  in
+  let user_g = List.fold_left foldfun user_g entry_points in
+  (*let foldfun3 (nt,_,_) _ non_ter_set = Non_ter_set.add nt non_ter_set in
+  let non_ter_set = Urule_map.fold foldfun3 user_g Non_ter_set.empty in
+  let nt_nb = Non_ter_set.cardinal non_ter_set in*)
+  let f1 (nt,litl,_) _ n =
+    let n = max n nt in
+    let f2 n lit = match lit with
+      | Non_ter (nt,_) -> max n nt
+      | _ -> n
+    in
+    List.fold_left f2 n litl
+  in
+  let nt_nb = (Urule_map.fold f1 user_g 0)+1 in
+  if !dypgen_verbose>1 then
+    Printf.fprintf !log_channel "number of non terminals : %d\n" nt_nb;
+  
+  let array_nt_ps = Array.make nt_nb Prio_set.empty in
+  
+  let iterfun (nt,_,p) _ = array_nt_ps.(nt) <- Prio_set.add p array_nt_ps.(nt) in
+  
+  let () = Urule_map.iter iterfun user_g in
+  
+  let array_nt_prio = Array.make nt_nb Prio_map.empty in
+  let rec f_rec i n = if i=nt_nb then n else
+    let prio_set = array_nt_ps.(i) in
+    let foldfun prio (prio_map,n) = (Prio_map.add prio n prio_map),(n+1) in
+    let prio_map,n = Prio_set.fold foldfun prio_set (Prio_map.empty,n) in
+    let () = array_nt_prio.(i) <- prio_map in
+    f_rec (i+1) n
+  in
+  let newnt_nb = f_rec 0 0 in
+  
+  let non_ter_of_ind = Array.make newnt_nb 0 in
+  let prio_of_ind = Array.make newnt_nb 0 in
+  let lhs_of_ind = Array.make newnt_nb (0,0,0) in
+  let f2 nt p n =
+    non_ter_of_ind.(n) <- nt;
+    prio_of_ind.(n) <- p;
+    lhs_of_ind.(n) <- (nt,p,n)
+  in
+  for i=0 to newnt_nb-1 do
+    Prio_map.iter (f2 i) array_nt_prio.(i)
+  done;
+  
+  (*let rec print_array_nt_prio i =
+    if i=nt_nb then () else
+    (print_string ("  "^(str_non_terminal i)^" : ");
+    Prio_map.iter (fun p _ -> print_string (priority_names.(p)^" ")) array_nt_prio.(i);
+    print_newline ();
+    print_array_nt_prio (i+1))
+  in
+  print_endline "array_nt_prio :";
+  print_array_nt_prio 0;*)
+  
+  (*let fiter nt ps =
+    print_string ("nt: "^(E.str_non_terminal nt));
+    Prio_set.iter (fun p -> print_string (priority_names.(p)^" ")) ps;
+    output_string !log_channel "\n"
+  in
+  Nt_map.iter fiter nt_prio_map;*)
+  
+  let g = Array.make newnt_nb Map_rhs.empty in
+  
+  let aux (ntn,litl,p) a =
+    let ind = Prio_map.find p array_nt_prio.(ntn) in
+    g.(ind) <- Map_rhs.add (litl,List.length litl) a g.(ind)
+  in
+  let () = Urule_map.iter aux user_g in
+  if !dypgen_verbose>1 then
+    (let aux _ _ i = i+1 in
+    let rec f nt i = if nt=newnt_nb then i else
+      f (nt+1) (Map_rhs.fold aux g.(nt) i)
+    in
+    let nbr = f 0 0 in
+    Printf.fprintf !log_channel "size of the new grammar : %d rules\n" nbr;
+    Printf.fprintf !log_channel "number of new non terminals : %d\n" newnt_nb;
+    flush stdout);
+  g,array_nt_prio,newnt_nb,nt_nb,non_ter_of_ind,non_ter_of_ind,prio_of_ind,lhs_of_ind
+
 
 (*type prio_imprint = int*)
 type prio_imprint = ((priority list) * bool) Item_map.t
@@ -2743,8 +3066,8 @@ let symb_of_lit lit = match lit with
 (*let new_prio_imprint _ _ _ _ = 0,true*)
 
 let new_prio_imprint priodat prio_imp is symb prio =
-  let f (r,dp) _ (new_pi,b) =
-    let (_,litl,_,len) = r in
+  let f ind (rhs,dp) _ (new_pi,b) =
+    let (litl,len) = rhs in
     if dp=len then (new_pi,b) else
     let lit = (List.nth litl dp) in
     if (symb_of_lit lit)<>symb then (new_pi,b) else
@@ -2758,10 +3081,10 @@ let new_prio_imprint priodat prio_imp is symb prio =
     in
     let old_prio_l,old_b =
       if dp=0 then ([],true) else
-      try Item_map.find (r,dp) prio_imp
+      try Item_map.find (ind,(rhs,dp)) prio_imp
       with Not_found -> failwith "new_prio_imprint"
     in
-    (Item_map.add (r,dp+1) ((prio::old_prio_l),(b1 && old_b)) new_pi),
+    (Item_map.add (ind,(rhs,dp+1)) ((prio::old_prio_l),(b1 && old_b)) new_pi),
     (b || b1)
   in
   IS.fold f is (Item_map.empty,false)
@@ -2769,8 +3092,8 @@ let new_prio_imprint priodat prio_imp is symb prio =
   In the case of the shift it is false only if the token is not
   expected, not because of priorities. *)
 
-let prio_imprint_check r len prio_imp =
-  let _,b = try Item_map.find (r,len) prio_imp
+let prio_imprint_check ind rhs len prio_imp =
+  let _,b = try Item_map.find (ind,(rhs,len)) prio_imp
     with Not_found -> [],true in
   b
 
@@ -2778,16 +3101,17 @@ let default_prio_imp = Item_map.empty
 let prio_imp_equal pi1 pi2 = Item_map.equal (=) pi1 pi2
 
 let entry_point_prio entry_point prio_imp _ =
-  let r =
-    (non_terminal_startprime,[Non_ter(entry_point,No_priority)],
-     0,1)
-  in
-  let prio_l,_ = Item_map.find (r,1) prio_imp in
+  (*let r =
+    (lhs_startprime,[Non_ter(entry_point,No_priority)],1)
+  in*)
+  let prio_l,_ = Item_map.find
+    ((ind_of_lhs lhs_startprime),(([Non_ter(entry_point,No_priority)],1),1))
+    prio_imp in
   try List.hd prio_l with Failure _ -> failwith "entry_point_prio"
 
-let print_prio_imp prio_imp =
-  let f it (pl,b) =
-    print_item it TNS.empty;
+let print_prio_imp lhs_of_ind prio_imp =
+  let f (ind,irhs) (pl,b) =
+    print_item lhs_of_ind ind irhs TNS.empty;
     let f2 s p = s^(E.priority_names.(p))^" " in
     output_string !log_channel ("  "^(string_of_bool b)^" : ["^(List.fold_left f2 " " pl)^"]\n")
   in
@@ -3538,7 +3862,7 @@ let parsing_device = create_parsing_device [
 (r_literal_list_8,a_literal_list);
 (r_priority_0,a_priority);
 (r_priority_1,a_priority)
-] empty_priority_data Dyp_special_types.LALR Data_void 0 P.Tools.empty_merge_map global_merge P.Tools.empty_datadyn
+] empty_priority_data Dyp_special_types.LR0 Data_void 0 P.Tools.empty_merge_map global_merge P.Tools.empty_datadyn
 
 let input_file = !string_ref
 let output_file = (Filename.chop_extension input_file)^".ml"
@@ -3867,7 +4191,7 @@ let aux code (p1,p2) =
    i1^","^i2^",true)]\n"
 let code_prio_data = (List.fold_left aux code_prio_data relation)^"\n"
 
-let code_main_2 = "let parsing_device = create_parsing_device rapf_list empty_priority_data Dyp_special_types.LR1 Data_void 0 merge_map merge P.Tools.empty_datadyn\n"
+let code_main_2 = "let parsing_device = create_parsing_device rapf_list empty_priority_data Dyp_special_types.LR0 Data_void 0 merge_map merge P.Tools.empty_datadyn\n"
 
 let code_main_2 = code_main_2^
 "let "^non_terminal_start^" f lexbuf =
@@ -5390,8 +5714,8 @@ and ocaml_code = parse
           ocaml_code_buffer := ((!ocaml_code_buffer)^"[");
           ocaml_code lexbuf }
   | "$"
-      { ocaml_code_buffer := ((!ocaml_code_buffer) ^ 
-          "_");
+      { (if !in_string then ocaml_code_buffer := ((!ocaml_code_buffer)^"$")
+      else ocaml_code_buffer := ((!ocaml_code_buffer)^"_"));
         ocaml_code lexbuf
       }
   | "\\\""

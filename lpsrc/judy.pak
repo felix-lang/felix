@@ -80,6 +80,7 @@ module Judy
      void **_mkj1(){
        void **m =(void**)malloc(sizeof(void*));
        *m=0;
+       std::cout << "Judy1 array at " << m << std::endl;
        return m;
      }
    """;
@@ -133,6 +134,8 @@ module Judy
   proc Judy1PrevEmpty: J1Array * ptr[word] * JError_t * ptr[int] = 
     "*$4=Judy1PrevEmpty(*$1,$2,$3);";
 
+///////////////////////////////////////
+
   type JLArray = "void**";
   gen _ctor_JLArray: 1 -> JLArray = "_mkjL()" requires body 
    """
@@ -143,7 +146,7 @@ module Judy
      }
    """;
 
-  proc free: JLArray = "_j1free($1);" requires body
+  proc free: JLArray = "_jLfree($1);" requires body
     """
       void _jLfree(void **p) { JudyLFreeArray(p); free(p); }
     """;
@@ -151,11 +154,11 @@ module Judy
   proc JudyLIns: JLArray * word * JError_t * ptr[ptr[word]] = 
     "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
 
-  proc JudyLDel: JLArray * word * JError_t * ptr[ptr[int]] = 
-    "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
+  proc JudyLDel: JLArray * word * JError_t * ptr[int] = 
+    "*$4=JudyLDel($1,$2,$3);";
 
   proc JudyLGet: JLArray * word * JError_t * ptr[ptr[word]] = 
-    "*(Word_t**)$4=(Word_t*)JudyLGet(*$1,$2,$3);";
+    "*$4=(Word_t*)JudyLGet(*$1,$2,$3);";
 
   proc JudyLCount: JLArray * word * word * JError_t * ptr[word] = 
     "*$5=JudyLCount(*$1,$2,$3,$4);";
@@ -193,6 +196,30 @@ module Judy
   proc JudyLPrevEmpty: JLArray * ptr[word] * JError_t * ptr[word] = 
     "*$4=JudyLPrevEmpty(*$1,$2,$3);";
 
+  type JHSArray = "void**";
+  gen _ctor_JHSArray: 1 -> JHSArray = "_mkjHS()" requires body 
+   """
+     void **_mkjHS(){
+       void **m =(void**)malloc(sizeof(void*));
+       *m=0;
+       return m;
+     }
+   """;
+
+  proc free: JHSArray = "_jHSfree($1);" requires body
+    """
+      void _jHSfree(void **p) { JudyHSFreeArray(p); free(p); }
+    """;
+
+  proc JudyHSIns: JHSArray * address * word * JError_t * ptr[ptr[word]] = 
+    "*$5=(Word_t*)JudyHSIns($1,$2,$3,$4);";
+
+  proc JudyHSDel: JHSArray * address * word * JError_t * ptr[int] = 
+    "*$5=JudyHSDel($1,$2,$3,$4);";
+
+  proc JudyHSGet: JHSArray * address * word * JError_t * ptr[ptr[word]] = 
+    "*$5=(Word_t*)JudyHSGet(*$1,$2,$3);";
+
 }
 
 @env.head(1, 'judy tests')
@@ -202,6 +229,8 @@ module Judy
 include "judy";
 open Judy;
 open C_hack;
+
+gen _ctor_address : string -> address = "(void*)$1.data()";
 
 val je = JError_t();
 var ires : int;
@@ -235,7 +264,7 @@ var pwres = addr wres;
   Judy1Count(ja,word 0,word 10,je,pwres);
   print "count="; println$ int wres;
 
-  var curr: word;
+  var curr: word = word 0;
   var pcurr= addr curr;
   Judy1First(ja,pcurr,je,pires);
   print "First="; println$ ulong curr;
@@ -289,7 +318,7 @@ var pwres = addr wres;
     done;
   done;
 
-  var curr: word;
+  var curr: word = word 0;
   var pcurr= C_hack::addr curr;
   JudyLFirst(ja,pcurr,je,ppv);
   print "First="; print$ int curr; print " -> "; println$ int$ *pv;
@@ -299,6 +328,27 @@ var pwres = addr wres;
 
 
   println "Done JL";
+};
+
+{
+  val ja = JHSArray();
+  var pv : ptr[word]; // pointer to space in the array to put value
+  var ppv = addr pv;
+
+  s1 := "Hello";
+  JudyHSIns(ja,address s1,word (len s1),je, ppv);
+  *pv = 101;
+
+  s2 := "World";
+  JudyHSIns(ja,address s2,word (len s2),je,ppv);
+  *pv = 22;
+
+  s3 := "Silly";
+  JudyHSIns(ja,address s3,word (len s3),je,ppv);
+  *pv = 303;
+
+  JudyHSGet(ja,address s2, word (len s2),je, ppv);
+  println$ "s2 -> " + str (int(*pv));
 };
 
 @select(env.expect())
