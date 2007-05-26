@@ -523,6 +523,8 @@ class PLUGIN(Plugin):
     CPPS = pkgdict.get("host_cpp_cpps",[])
     EXES = pkgdict.get("host_exes",[])
     LIBS = pkgdict.get("host_exes_require_libs",[])
+    INCLUDE_PATH=pkgdict.get("host_include_path",[])
+
     if len(CCS)+len(CPPS)+len(EXES)+len(LIBS)>0:
       print "BUILDING HOST TOOLS"
       pkglib = None
@@ -532,7 +534,7 @@ class PLUGIN(Plugin):
         pkglib = "lib"+pkg+"_host_static"
 
         HOST_C.build_static_rtl(vxqt, CCS, 'hostlib' + os.sep + pkglib,
-              include_paths=["rtl", "elk"],
+              include_paths=INCLUDE_PATH+["rtl", "elk"],
               macros=["FLX_STATIC_LINK"],
               )
 
@@ -541,7 +543,7 @@ class PLUGIN(Plugin):
         pkglib = "lib"+pkg+"_host_static"
 
         HOST_CXX.build_static_rtl(vxqt, CPPS, 'hostlib' + os.sep + pkglib,
-              include_paths=["rtl", "elk"],
+              include_paths=INCLUDE_PATH+["rtl", "elk"],
               macros=["FLX_STATIC_LINK"],
               )
 
@@ -551,7 +553,7 @@ class PLUGIN(Plugin):
           deletefile(f) # delete the object files
 
       kwds = {\
-          'include_paths': ["rtl", "elk"],
+          'include_paths': INCLUDE_PATH+["rtl", "elk"],
           'macros': ["FLX_STATIC_LINK"],
           'CFLAGS': CFLAGS,
           'LDFLAGS': SFLAGS,
@@ -714,6 +716,12 @@ class PLUGIN(Plugin):
  
   def runme(self):
     for d in [ \
+        os.path.join("judy", "JudyCommon"),
+        os.path.join("judy", "Judy1"),
+        os.path.join("judy", "JudyL"),
+        os.path.join("judy", "JudySL"),
+        os.path.join("judy", "JudyHS"),
+        "judy",
         os.path.join("bagley", "data"),
         os.path.join("bagley", "felix"),
         "bagley",
@@ -917,6 +925,7 @@ def build_target_rtl_dynamic(pkg, pkgdict):
   BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   EXTRA_DFLAGS = pkgdict.get("dflags","")
+  INCLUDE_PATH = pkgdict.get("include_path",[])
 
   flibs = pkgdict.get("lib_requires",[])
   needs_libs = []
@@ -928,7 +937,7 @@ def build_target_rtl_dynamic(pkg, pkgdict):
   print " ++ "+pkg+" RTL (dynamic)"
 
   compile_kwds = {
-      'include_paths': ['rtl'],
+      'include_paths': INCLUDE_PATH+['rtl'],
       'optimise': optimise,
       'debug': debug,
       'macros': ["BUILD_"+BUILD_MACRO],
@@ -986,11 +995,12 @@ def build_target_rtl_static(pkg, pkgdict):
 
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   lib = pkgdict.get("provides_lib","lib"+pkg)
+  INCLUDE_PATH = pkgdict.get("include_path",[])
 
   print " ++ "+pkg+" RTL (static)"
 
   kwds = {
-      'include_paths': ["rtl"],
+      'include_paths': INCLUDE_PATH+["rtl"],
       'macros': ["FLX_STATIC_LINK"],
       'optimise': optimise,
       'debug': debug,
@@ -2579,7 +2589,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('distclean:')
 @tangle('\trm -rf pkg tut rtl test www src misc man bin doc lib impldoc htmlman tmp tmp.tmp')
-@tangle('\trm -rf elk tmp faio demux tmp.out demos')
+@tangle('\trm -rf elk tmp faio demux tmp.out demos judy')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
 @tangle('\trm -rf doc_out libdoc tools doxydoc')

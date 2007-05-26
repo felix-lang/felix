@@ -1204,6 +1204,8 @@ class gnu_mixin:
     opt = self.options
     opt.STRIP = STRIP + " "
 
+    self.lang = opt.COM
+
     if opt.model == "nocygwin": 
       opt.COM = opt.COM + "-mno-cygwin "
       opt.EXT_STATIC_OBJ = "_static.obj" # temporary hack
@@ -1265,12 +1267,24 @@ class gnu_mixin:
     opt = self.options
 
     # find if we have g++ with -Wno-invalid-offsetof
-    try:
-      self.compile_dummy_main(shell, CFLAGS="-Wno-invalid-offsetof")
-      opt.NO_INVALID_OFFSETOF_WARNING = "-Wall -Wno-invalid-offsetof "
-      print "-Wno-invalid-offsetof supported"
-    except EnvironmentError:
-      opt.NO_INVALID_OFFSETOF_WARNING = "-w "
+    #
+    # NOTE: this is a hack .. Felix makes offsetof() errors
+    # We HAVE to detect if the switch turn them off is available
+    # first, and if not use -w, otherwise we use -Wall -Wno-offsetof, 
+    # because these errors must be tolderated in Felix generated C++
+    #
+    # But the error can't occur in C, and specifying the option
+    # causes gcc to barf with a warning
+    #
+    if self.lang == "g++ ":
+      try:
+        self.compile_dummy_main(shell, CFLAGS="-Wno-invalid-offsetof")
+        opt.NO_INVALID_OFFSETOF_WARNING = "-Wall -Wno-invalid-offsetof "
+        print "-Wno-invalid-offsetof supported"
+      except EnvironmentError:
+        opt.NO_INVALID_OFFSETOF_WARNING = "-w "
+    else:
+      opt.NO_INVALID_OFFSETOF_WARNING = "-Wall "
 
     # find if we have g++ with -Wfatal-errors
     try:

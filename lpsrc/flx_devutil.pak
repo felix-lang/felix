@@ -163,6 +163,315 @@ for line in data:
   f.write(line)
 f.close()
 
+@h = tangler('script/mkjudy.py','python')
+@select(h)
+#
+# Judy .. it's a bit of a mess .. macro threaded for
+# code sharing
+# 
+import string
+import os
+import sys
+
+prefix = '/home/skaller/judy/Judy-1.0.4/src'
+
+files = [
+  'Judy.h',
+
+  'JudyCommon/JudyMalloc.c',
+  'JudyCommon/JudyPrivate1L.h',
+  'JudyCommon/JudyPrivateBranch.h',
+  'JudyCommon/JudyPrivate.h',
+
+  'Judy1/Judy1ByCount.c',
+  'Judy1/Judy1Cascade.c',
+  'Judy1/Judy1Count.c',
+  'Judy1/Judy1CreateBranch.c',
+  'Judy1/Judy1Decascade.c',
+  'Judy1/Judy1First.c',
+  'Judy1/Judy1FreeArray.c',
+  'Judy1/Judy1.h',
+  'Judy1/Judy1InsertBranch.c',
+  'Judy1/Judy1MallocIF.c',
+  'Judy1/Judy1MemActive.c',
+  'Judy1/Judy1MemUsed.c',
+  'Judy1/Judy1Next.c',
+  'Judy1/Judy1NextEmpty.c',
+  'Judy1/Judy1Prev.c',
+  'Judy1/Judy1PrevEmpty.c',
+  'Judy1/Judy1SetArray.c',
+  'Judy1/Judy1Set.c',
+  'Judy1/Judy1Tables.c',
+  'Judy1/Judy1TablesGen.c',
+  'Judy1/j__udy1Test.c',
+  'Judy1/Judy1Test.c',
+  'Judy1/Judy1Unset.c',
+
+  'JudyL/JudyLByCount.c',
+  'JudyL/JudyLCascade.c',
+  'JudyL/JudyLCount.c',
+  'JudyL/JudyLCreateBranch.c',
+  'JudyL/JudyLDecascade.c',
+  'JudyL/JudyLDel.c',
+  'JudyL/JudyLFirst.c',
+  'JudyL/JudyLFreeArray.c',
+  'JudyL/j__udyLGet.c',
+  'JudyL/JudyLGet.c',
+  'JudyL/JudyL.h',
+  'JudyL/JudyLInsArray.c',
+  'JudyL/JudyLIns.c',
+  'JudyL/JudyLInsertBranch.c',
+  'JudyL/JudyLMallocIF.c',
+  'JudyL/JudyLMemActive.c',
+  'JudyL/JudyLMemUsed.c',
+  'JudyL/JudyLNext.c',
+  'JudyL/JudyLNextEmpty.c',
+  'JudyL/JudyLPrev.c',
+  'JudyL/JudyLPrevEmpty.c',
+  'JudyL/JudyLTables.c',
+  'JudyL/JudyLTablesGen.c',
+
+  'JudyHS/JudyHS.c',
+  'JudyHS/JudyHS.h',
+
+  'JudySL/JudySL.c',
+  ]
+
+cph = '// Copyright (C) 2000 - 2002 Hewlett-Packard Company'
+cpt = '// _________________'
+cphn = len(cph)
+cptn = len(cpt)
+
+print "@execfile('config'+os.sep+'config.py')"
+print "@head(1,'Judy')"
+for fn in files:
+  copy = 1
+  print "@h=tangler('judy/"+fn+"')"
+  print "@select(h)"
+  f = open(prefix+'/'+fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    if line[:cphn]==cph:
+      copy = 0
+    if copy: 
+      print line,
+    if line[:cptn] == cpt:
+      copy = 1
+  print 
+
+print "@head(1,'Judy wrappers')"
+compile = []
+
+judycommon = [
+  'JudyMalloc'
+  ]
+
+for i in judycommon:
+  compile.append("judy/JudyCommon/"+i)
+
+judy1 = [
+  'Judy1ByCount',
+  'Judy1Cascade',
+  'Judy1Count',
+  'Judy1CreateBranch',
+  'Judy1Decascade',
+  'Judy1First',
+  'Judy1FreeArray',
+  'Judy1InsertBranch',
+  'Judy1MallocIF',
+  'Judy1MemActive',
+  'Judy1MemUsed',
+  'Judy1SetArray',
+  'Judy1Set',
+  'Judy1Tables',
+  'Judy1Unset',
+  ]
+
+for file in judy1:
+  fn = 'judy/Judy1/JUDY1_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDY1"
+  print '#include "'+file+'.c"'
+  print
+
+judy1next = [
+  'Judy1Next',
+  'Judy1NextEmpty',
+]
+
+for file in judy1next:
+  fn = 'judy/Judy1/JUDY1_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDY1"
+  print "#define JUDYNEXT"
+  print '#include "'+file+'.c"'
+  print
+
+
+judy1prev = [
+  'Judy1Prev',
+  'Judy1PrevEmpty',
+]
+
+for file in judy1prev:
+  fn = 'judy/Judy1/JUDY1_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDY1"
+  print "#define JUDYPREV"
+  print '#include "'+file+'.c"'
+  print
+
+judy1get= [
+  'Judy1Test',
+  ]
+
+for file in judy1get:
+  fn='judy/Judy1/JUDY1_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDY1"
+  print '#include "'+file+'.c"'
+  print
+
+judy1geti = [
+  'j__udy1Test',
+  ]
+
+for file in judy1geti:
+  fn='judy/Judy1/JUDY1_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDY1"
+  print "#define JUDYGETINLINE"
+  print '#include "'+file+'.c"'
+  print
+
+
+judyl = [
+  'JudyLByCount',
+  'JudyLCascade',
+  'JudyLCount',
+  'JudyLCreateBranch',
+  'JudyLDecascade',
+  'JudyLDel',
+  'JudyLFirst',
+  'JudyLFreeArray',
+  'JudyLInsArray',
+  'JudyLIns',
+  'JudyLInsertBranch',
+  'JudyLMemActive',
+  'JudyLMemUsed',
+  'JudyLMallocIF',
+  'JudyLTables',
+  ]
+
+for file in judyl:
+  fn='judy/JudyL/JUDYL_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDYL"
+  print '#include "'+file+'.c"'
+  print
+
+
+judylnext = [
+  'JudyLNext',
+  'JudyLNextEmpty',
+  ]
+
+for file in judylnext:
+  fn='judy/JudyL/JUDYL_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDYL"
+  print "#define JUDYNEXT"
+  print '#include "'+file+'.c"'
+  print
+
+
+judylprev = [
+  'JudyLPrev',
+  'JudyLPrevEmpty',
+  ]
+
+for file in judylprev:
+  fn='judy/JudyL/JUDYL_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDYL"
+  print "#define JUDYPREV"
+  print '#include "'+file+'.c"'
+  print
+
+judylget= [
+  'JudyLGet',
+  ]
+
+for file in judylget:
+  fn='judy/JudyL/JUDYL_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDYL"
+  print '#include "'+file+'.c"'
+  print
+
+judylgeti = [
+  'j__udyLGet',
+  ]
+
+for file in judylgeti:
+  fn='judy/JudyL/JUDYL_'+file
+  compile.append(fn)
+  print "@select(tangler('"+fn+".c'))"
+  print "#define JUDYL"
+  print "#define JUDYGETINLINE"
+  print '#include "'+file+'.c"'
+  print
+
+judyHS = [
+  'JudyHS'
+  ]
+
+for i in judyHS:
+  compile.append("judy/JudyHS/"+i)
+
+@# ------- source package -------------------------------
+
+print "@head(1,'Judy source package')"
+print "@select(tangler('spkgs/flx_judy.py'))"
+print "rtl_interfaces = ['judy/Judy.h']"
+print "cc_ccs = ["
+for i in compile:
+  print "  '"+i+"',"
+print "  ]"
+
+# this line is a HACK
+print "include_path=['judy/Judy1', 'judy/JudyL', 'judy/JudyCommon', 'judy']"
+print "cflags='-DJU_64BIT'"
+
+print "provides_lib = 'libflx_judy'"
+print "iscr_source = ['lpsrc/flx_judy.pak']"
+print "weaver_directory = 'doc/judy'"
+print "build_macro = 'JUDY'"
+print
+
+@# ------- run time library  -------------------------------
+
+print "@head(1,'Judy run time library')"
+print "@select(tangler('config/flx_judy.fpc'))"
+print '@if HAVE_MSVC:'
+print '   tangle("provides_dlib: /DEFAULTLIB:libflx_judy_dynamic")'
+print '   tangle("provides_slib: /DEFAULTLIB:libflx_judy_static")'
+print ' else:'
+print '   tangle("provides_dlib: -lflx_judy_dynamic")'
+print '   tangle("provides_slib: -lflx_judy_static")'
+print
+
 @h = tangler('script/mkdemux.py','python')
 @select(h)
 

@@ -1,50 +1,13 @@
 @execfile("config"+os.sep+"target_cxx.py")
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 @env = setup_test('test/judy/judy-')
-@select(tangler("cpkgs/target/judy.py"))
-execfile("config"+os.sep+"config.py")
-try:
-  cload(globals(),"target_judy")
-except:
-  dir = ''
-  HAVE_JUDY=TARGET_CXX.check_header_exists(xqt,'Judy.h')
-  if not HAVE_JUDY:
-    dir = locate_file("Judy.h")
-    if dir:
-      print "FOUND Judy.h at",dir
-      HAVE_JUDY=1
-    else:
-      print "Judy.h NOT FOUND, package disabled"
-  else:
-    print "Judy at standard location"
-  if dir == '/usr': dir = ''
-
-  if HAVE_JUDY:
-    fname = "config"+os.sep+"judy.fpc"
-    print "Writing judy fpc file ", fname
-    f = open(fname,"w")
-    if dir != '':
-      f.write("cflags: -I"+dir+"/include\n")
-    if dir == "":
-      f.write("provides_slib: -lJudy\n")
-      f.write("provides_dlib: -lJudy\n")
-    else:
-      f.write("provides_slib: -L"+dir+" -lJudy\n")
-      f.write("provides_dlib: -L"+dir+" -lJudy\n")
-      f.write("ld_library_path: "+dir+"/lib\n")
-    f.close()
-  f=cwrite('target_judy')
-  pa(f,locals(),"HAVE_JUDY")
-  f.close()
-  cload(globals(),"target_judy")
 
 @select(tangler('spkgs/judy.py'))
-execfile('cpkgs'+os.sep+'target'+os.sep+'judy.py')
-if HAVE_JUDY:
-@tangle('  unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 iscr_source = ['lpsrc/judy.pak']
 weaver_directory = 'doc/judy/'
+pkg_requires = ['flx_judy']
 
 @head(1,"Judy Arrays binding")
 @h = tangler("lib/judy.flx")
@@ -62,7 +25,7 @@ include "std";
 
 module Judy
 {
-  requires package "judy";
+  requires package "flx_judy";
   requires header "#include <Judy.h>";
   open C_hack;
 
@@ -80,7 +43,6 @@ module Judy
      void **_mkj1(){
        void **m =(void**)malloc(sizeof(void*));
        *m=0;
-       std::cout << "Judy1 array at " << m << std::endl;
        return m;
      }
    """;
@@ -371,13 +333,13 @@ var pwres = addr wres;
 10 isset=0
 count=3
 First=1
-res=0
+res=1
 Next=7
-res=0
+res=1
 Next=9
-res=0
+res=1
 Next=23
-res=0
+res=1
 Done J1
 1->11
 23->2323
@@ -394,6 +356,9 @@ Count=2
 8 --> NOT STORED
 9 --> NOT STORED
 10 --> NOT STORED
+First=1 -> 11
+Next=7 -> 77
 Done JL
+s2 -> 22
 @doc()
 
