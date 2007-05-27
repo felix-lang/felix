@@ -524,6 +524,7 @@ class PLUGIN(Plugin):
     EXES = pkgdict.get("host_exes",[])
     LIBS = pkgdict.get("host_exes_require_libs",[])
     INCLUDE_PATH=pkgdict.get("host_include_path",[])
+    MACROS =pkgdict.get("host_macros",[])
 
     if len(CCS)+len(CPPS)+len(EXES)+len(LIBS)>0:
       print "BUILDING HOST TOOLS"
@@ -535,7 +536,7 @@ class PLUGIN(Plugin):
 
         HOST_C.build_static_rtl(vxqt, CCS, 'hostlib' + os.sep + pkglib,
               include_paths=INCLUDE_PATH+["rtl", "elk"],
-              macros=["FLX_STATIC_LINK"],
+              macros=MACROS+["FLX_STATIC_LINK"],
               )
 
       if CPPS:
@@ -544,7 +545,7 @@ class PLUGIN(Plugin):
 
         HOST_CXX.build_static_rtl(vxqt, CPPS, 'hostlib' + os.sep + pkglib,
               include_paths=INCLUDE_PATH+["rtl", "elk"],
-              macros=["FLX_STATIC_LINK"],
+              macros=MACROS+["FLX_STATIC_LINK"],
               )
 
         for x in CCS+CPPS: 
@@ -554,7 +555,7 @@ class PLUGIN(Plugin):
 
       kwds = {\
           'include_paths': INCLUDE_PATH+["rtl", "elk"],
-          'macros': ["FLX_STATIC_LINK"],
+          'macros': HOST_MACROS+["FLX_STATIC_LINK"],
           'CFLAGS': CFLAGS,
           'LDFLAGS': SFLAGS,
           }
@@ -926,6 +927,7 @@ def build_target_rtl_dynamic(pkg, pkgdict):
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   EXTRA_DFLAGS = pkgdict.get("dflags","")
   INCLUDE_PATH = pkgdict.get("include_path",[])
+  MACROS =pkgdict.get("macros",[])
 
   flibs = pkgdict.get("lib_requires",[])
   needs_libs = []
@@ -940,7 +942,7 @@ def build_target_rtl_dynamic(pkg, pkgdict):
       'include_paths': INCLUDE_PATH+['rtl'],
       'optimise': optimise,
       'debug': debug,
-      'macros': ["BUILD_"+BUILD_MACRO],
+      'macros': MACROS+["BUILD_"+BUILD_MACRO],
       'CFLAGS': CFLAGS+EXTRA_CFLAGS,
       }
 
@@ -996,12 +998,13 @@ def build_target_rtl_static(pkg, pkgdict):
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   lib = pkgdict.get("provides_lib","lib"+pkg)
   INCLUDE_PATH = pkgdict.get("include_path",[])
+  MACROS =pkgdict.get("macros",[])
 
   print " ++ "+pkg+" RTL (static)"
 
   kwds = {
       'include_paths': INCLUDE_PATH+["rtl"],
-      'macros': ["FLX_STATIC_LINK"],
+      'macros': MACROS+["FLX_STATIC_LINK"],
       'optimise': optimise,
       'debug': debug,
       'CFLAGS': CFLAGS+EXTRA_CFLAGS,

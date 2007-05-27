@@ -49863,11 +49863,15 @@ cc_ccs = [
   'judy/JudyHS/JudyHS',
   ]
 include_path=['judy/Judy1', 'judy/JudyL', 'judy/JudyCommon', 'judy']
-cflags='-DJU_64BIT'
+if SIZEOF_VOIDP == 8:
+  macros=['JU_64BIT']
+else:
+  macros=['JU_32BIT']
 provides_lib = 'libflx_judy'
 iscr_source = ['lpsrc/flx_judy.pak']
 weaver_directory = 'doc/judy'
 build_macro = 'JUDY'
+
 @head(1,'Judy run time library')
 @select(tangler('config/flx_judy.fpc'))
 @if HAVE_MSVC:
@@ -49876,3 +49880,4 @@ build_macro = 'JUDY'
  else:
    tangle("provides_dlib: -lflx_judy_dynamic")
    tangle("provides_slib: -lflx_judy_static")
+

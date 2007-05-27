@@ -452,7 +452,10 @@ print "  ]"
 
 # this line is a HACK
 print "include_path=['judy/Judy1', 'judy/JudyL', 'judy/JudyCommon', 'judy']"
-print "cflags='-DJU_64BIT'"
+print "if SIZEOF_VOIDP == 8:"
+print "  macros=['JU_64BIT']"
+print "else:"
+print "  macros=['JU_32BIT']"
 
 print "provides_lib = 'libflx_judy'"
 print "iscr_source = ['lpsrc/flx_judy.pak']"
