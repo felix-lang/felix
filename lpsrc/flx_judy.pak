@@ -2,6 +2,18 @@
 @head(1,'Judy')
 @h=tangler('judy/Judy.h')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 #ifndef _JUDY_INCLUDED
 #define _JUDY_INCLUDED
 // _________________
@@ -611,6 +623,18 @@ extern void   JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words.
 
 @h=tangler('judy/JudyCommon/JudyMalloc.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.33 $ $Source: /judy/src/JudyCommon/JudyMalloc.c $
 // ************************************************************************ //
@@ -685,6 +709,18 @@ void JudyFreeVirtual(
 
 @h=tangler('judy/JudyCommon/JudyPrivate1L.h')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 #ifndef _JUDYPRIVATE1L_INCLUDED
 #define _JUDYPRIVATE1L_INCLUDED
 // _________________
@@ -1157,6 +1193,18 @@ void JudyFreeVirtual(
 
 @h=tangler('judy/JudyCommon/JudyPrivateBranch.h')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 #ifndef _JUDY_PRIVATE_BRANCH_INCLUDED
 #define _JUDY_PRIVATE_BRANCH_INCLUDED
 // _________________
@@ -1923,6 +1971,18 @@ FUNCTION main()
 
 @h=tangler('judy/JudyCommon/JudyPrivate.h')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 #ifndef _JUDYPRIVATE_INCLUDED
 #define _JUDYPRIVATE_INCLUDED
 // _________________
@@ -3523,6 +3583,18 @@ static inline int j__udySearchLeafW(Pjlw_t Pjlw, Word_t LeafPop1, Word_t Index)
 
 @h=tangler('judy/Judy1/Judy1ByCount.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.28 $ $Source: /judy/src/JudyCommon/JudyByCount.c $
 //
@@ -3605,9 +3677,9 @@ extern Word_t jlb_downward;
 // See the manual entry.
 
 #ifdef JUDY1
-FUNCTION int Judy1ByCount
+FUNCTION int JUDY_EXTERN Judy1ByCount
 #else
-FUNCTION PPvoid_t JudyLByCount
+FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount
 #endif
         (
         Pcvoid_t  PArray,       // root pointer to first branch/leaf in SM.
@@ -4464,6 +4536,18 @@ Imm7:
 
 @h=tangler('judy/Judy1/Judy1Cascade.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.38 $ $Source: /judy/src/JudyCommon/JudyCascade.c $
 
@@ -6393,6 +6477,18 @@ JUDYLCODE(Pjv_t    Pjv;)        // value area of leaf.
 
 @h=tangler('judy/Judy1/Judy1Count.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.78 $ $Source: /judy/src/JudyCommon/JudyCount.c $
 //
@@ -6499,9 +6595,9 @@ Word_t j__udyJPPop1(const Pjp_t Pjp);
 // simpler; hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1Count
+FUNCTION Word_t JUDY_EXTERN Judy1Count
 #else
-FUNCTION Word_t JudyLCount
+FUNCTION Word_t JUDY_EXTERN JudyLCount
 #endif
         (
         Pcvoid_t  PArray,       // JRP to first branch/leaf in SM.
@@ -7575,6 +7671,18 @@ const   Pjp_t Pjp)              // JP to count.
 
 @h=tangler('judy/Judy1/Judy1CreateBranch.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.26 $ $Source: /judy/src/JudyCommon/JudyCreateBranch.c $
 
@@ -7876,6 +7984,18 @@ FUNCTION int j__udyCreateBranchU(
 
 @h=tangler('judy/Judy1/Judy1Decascade.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.25 $ $Source: /judy/src/JudyCommon/JudyDecascade.c $
 //
@@ -9069,6 +9189,18 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 
 @h=tangler('judy/Judy1/Judy1First.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.12 $ $Source: /judy/src/JudyCommon/JudyFirst.c $
 //
@@ -9097,7 +9229,7 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 #ifdef JUDY1
 FUNCTION int      Judy1First
 #else
-FUNCTION PPvoid_t JudyLFirst
+FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -9144,7 +9276,7 @@ FUNCTION PPvoid_t JudyLFirst
 #ifdef JUDY1
 FUNCTION int      Judy1Last(
 #else
-FUNCTION PPvoid_t JudyLLast(
+FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9187,9 +9319,9 @@ FUNCTION PPvoid_t JudyLLast(
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1FirstEmpty(
+FUNCTION int JUDY_EXTERN Judy1FirstEmpty(
 #else
-FUNCTION int JudyLFirstEmpty(
+FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9231,9 +9363,9 @@ FUNCTION int JudyLFirstEmpty(
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1LastEmpty(
+FUNCTION int JUDY_EXTERN Judy1LastEmpty(
 #else
-FUNCTION int JudyLLastEmpty(
+FUNCTION int JUDY_EXTERN JudyLLastEmpty(
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9269,6 +9401,18 @@ FUNCTION int JudyLLastEmpty(
 
 @h=tangler('judy/Judy1/Judy1FreeArray.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.51 $ $Source: /judy/src/JudyCommon/JudyFreeArray.c $
 //
@@ -9301,9 +9445,9 @@ DBGCODE(extern void JudyCheckPop(Pvoid_t PArray);)
 // simpler.  Hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1FreeArray
+FUNCTION Word_t JUDY_EXTERN Judy1FreeArray
 #else
-FUNCTION Word_t JudyLFreeArray
+FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
 #endif
         (
         PPvoid_t  PPArray,      // array to free.
@@ -9619,6 +9763,18 @@ FUNCTION void j__udyFreeSM(
 
 @h=tangler('judy/Judy1/Judy1.h')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 #ifndef _JUDY1_INCLUDED
 #define _JUDY1_INCLUDED
 // _________________
@@ -10157,6 +10313,18 @@ void    j__udy1FreeSM(   Pjp_t,          Pj1pm_t);      // everything below Pjp.
 
 @h=tangler('judy/Judy1/Judy1InsertBranch.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.17 $ $Source: /judy/src/JudyCommon/JudyInsertBranch.c $
 
@@ -10279,6 +10447,18 @@ FUNCTION int j__udyInsertBranch(
 
 @h=tangler('judy/Judy1/Judy1MallocIF.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.45 $ $Source: /judy/src/JudyCommon/JudyMallocIF.c $
 //
@@ -11048,6 +11228,18 @@ FUNCTION void j__udyLFreeJV(Pjv_t Pjv, Word_t Pop1, Pjpm_t Pjpm)
 
 @h=tangler('judy/Judy1/Judy1MemActive.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.7 $ $Source: /judy/src/JudyCommon/JudyMemActive.c $
 //
@@ -11074,9 +11266,9 @@ FUNCTION static Word_t j__udyGetMemActive(Pjp_t);
 // J U D Y   L   M E M   A C T I V E
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1MemActive
+FUNCTION Word_t JUDY_EXTERN Judy1MemActive
 #else
-FUNCTION Word_t JudyLMemActive
+FUNCTION Word_t JUDY_EXTERN JudyLMemActive
 #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
@@ -11294,6 +11486,18 @@ LeafWords:
 
 @h=tangler('judy/Judy1/Judy1MemUsed.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.5 $ $Source: /judy/src/JudyCommon/JudyMemUsed.c $
 //
@@ -11313,9 +11517,9 @@ LeafWords:
 #include "JudyPrivate1L.h"
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1MemUsed
+FUNCTION Word_t JUDY_EXTERN Judy1MemUsed
 #else  // JUDYL
-FUNCTION Word_t JudyLMemUsed
+FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
@@ -11342,6 +11546,18 @@ FUNCTION Word_t JudyLMemUsed
 
 @h=tangler('judy/Judy1/Judy1Next.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
 //
@@ -11511,15 +11727,15 @@ FUNCTION Word_t JudyLMemUsed
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1Prev
+FUNCTION int JUDY_EXTERN Judy1Prev
 #else
-FUNCTION int Judy1Next
+FUNCTION int JUDY_EXTERN Judy1Next
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JudyLPrev
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
 #else
-FUNCTION PPvoid_t JudyLNext
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
 #endif
 #endif
         (
@@ -13219,6 +13435,18 @@ SM3Imm7:
 
 @h=tangler('judy/Judy1/Judy1NextEmpty.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -13349,15 +13577,15 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1PrevEmpty
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
 #else
-FUNCTION int Judy1NextEmpty
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JudyLPrevEmpty
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
 #else
-FUNCTION int JudyLNextEmpty
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
 #endif
 #endif
         (
@@ -14596,6 +14824,18 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 @h=tangler('judy/Judy1/Judy1Prev.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
 //
@@ -14765,15 +15005,15 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1Prev
+FUNCTION int JUDY_EXTERN Judy1Prev
 #else
-FUNCTION int Judy1Next
+FUNCTION int JUDY_EXTERN Judy1Next
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JudyLPrev
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
 #else
-FUNCTION PPvoid_t JudyLNext
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
 #endif
 #endif
         (
@@ -16473,6 +16713,18 @@ SM3Imm7:
 
 @h=tangler('judy/Judy1/Judy1PrevEmpty.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -16603,15 +16855,15 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1PrevEmpty
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
 #else
-FUNCTION int Judy1NextEmpty
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JudyLPrevEmpty
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
 #else
-FUNCTION int JudyLNextEmpty
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
 #endif
 #endif
         (
@@ -17850,6 +18102,18 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 @h=tangler('judy/Judy1/Judy1SetArray.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // TBD:  It would probably be faster for the caller if the JudyL version took
 // PIndex as an interleaved array of indexes and values rather than just
@@ -18012,9 +18276,9 @@ static bool_t j__udyInsArray(Pjp_t PjpParent, int Level, PWord_t PPop1,
 // Set/Ins calls.
 
 #ifdef JUDY1
-FUNCTION int Judy1SetArray
+FUNCTION int JUDY_EXTERN Judy1SetArray
 #else
-FUNCTION int JudyLInsArray
+FUNCTION int JUDY_EXTERN JudyLInsArray
 #endif
         (
         PPvoid_t  PPArray,      // in which to insert, initially empty.
@@ -19015,6 +19279,18 @@ SetParent:
 
 @h=tangler('judy/Judy1/Judy1Set.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.116 $ $Source: /judy/src/JudyCommon/JudyIns.c $
 //
@@ -20680,9 +20956,9 @@ JudyBranchB:
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1Set
+FUNCTION int JUDY_EXTERN Judy1Set
 #else
-FUNCTION PPvoid_t JudyLIns
+FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 #endif
         (
         PPvoid_t  PPArray,      // in which to insert.
@@ -20875,6 +21151,18 @@ FUNCTION PPvoid_t JudyLIns
 
 @h=tangler('judy/Judy1/Judy1Tables.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
 
@@ -21010,6 +21298,18 @@ j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
 
 @h=tangler('judy/Judy1/Judy1TablesGen.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 
@@ -21293,6 +21593,18 @@ FUNCTION int main()
 
 @h=tangler('judy/Judy1/j__udy1Test.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -21328,7 +21640,7 @@ FUNCTION int main()
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int Judy1Test
+FUNCTION int JUDY_EXTERN Judy1Test
 #endif
 
 #else  // JUDYL
@@ -21336,7 +21648,7 @@ FUNCTION int Judy1Test
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JudyLGet
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
 #endif
 
 #endif // JUDYL
@@ -22374,6 +22686,18 @@ BranchU:
 
 @h=tangler('judy/Judy1/Judy1Test.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -22409,7 +22733,7 @@ BranchU:
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int Judy1Test
+FUNCTION int JUDY_EXTERN Judy1Test
 #endif
 
 #else  // JUDYL
@@ -22417,7 +22741,7 @@ FUNCTION int Judy1Test
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JudyLGet
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
 #endif
 
 #endif // JUDYL
@@ -23455,6 +23779,18 @@ BranchU:
 
 @h=tangler('judy/Judy1/Judy1Unset.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.68 $ $Source: /judy/src/JudyCommon/JudyDel.c $
 //
@@ -25254,9 +25590,9 @@ JUDYLCODE(A_ddr = Pjv[offset];)                                         \
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1Unset 
+FUNCTION int JUDY_EXTERN Judy1Unset 
 #else
-FUNCTION int JudyLDel
+FUNCTION int JUDY_EXTERN JudyLDel
 #endif
         (
         PPvoid_t  PPArray,      // in which to delete.
@@ -25588,6 +25924,18 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 
 @h=tangler('judy/JudyL/JudyLByCount.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.28 $ $Source: /judy/src/JudyCommon/JudyByCount.c $
 //
@@ -25670,9 +26018,9 @@ extern Word_t jlb_downward;
 // See the manual entry.
 
 #ifdef JUDY1
-FUNCTION int Judy1ByCount
+FUNCTION int JUDY_EXTERN Judy1ByCount
 #else
-FUNCTION PPvoid_t JudyLByCount
+FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount
 #endif
         (
         Pcvoid_t  PArray,       // root pointer to first branch/leaf in SM.
@@ -26529,6 +26877,18 @@ Imm7:
 
 @h=tangler('judy/JudyL/JudyLCascade.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.38 $ $Source: /judy/src/JudyCommon/JudyCascade.c $
 
@@ -28458,6 +28818,18 @@ JUDYLCODE(Pjv_t    Pjv;)        // value area of leaf.
 
 @h=tangler('judy/JudyL/JudyLCount.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.78 $ $Source: /judy/src/JudyCommon/JudyCount.c $
 //
@@ -28564,9 +28936,9 @@ Word_t j__udyJPPop1(const Pjp_t Pjp);
 // simpler; hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1Count
+FUNCTION Word_t JUDY_EXTERN Judy1Count
 #else
-FUNCTION Word_t JudyLCount
+FUNCTION Word_t JUDY_EXTERN JudyLCount
 #endif
         (
         Pcvoid_t  PArray,       // JRP to first branch/leaf in SM.
@@ -29640,6 +30012,18 @@ const   Pjp_t Pjp)              // JP to count.
 
 @h=tangler('judy/JudyL/JudyLCreateBranch.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.26 $ $Source: /judy/src/JudyCommon/JudyCreateBranch.c $
 
@@ -29941,6 +30325,18 @@ FUNCTION int j__udyCreateBranchU(
 
 @h=tangler('judy/JudyL/JudyLDecascade.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.25 $ $Source: /judy/src/JudyCommon/JudyDecascade.c $
 //
@@ -31134,6 +31530,18 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 
 @h=tangler('judy/JudyL/JudyLDel.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.68 $ $Source: /judy/src/JudyCommon/JudyDel.c $
 //
@@ -32933,9 +33341,9 @@ JUDYLCODE(A_ddr = Pjv[offset];)                                         \
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1Unset 
+FUNCTION int JUDY_EXTERN Judy1Unset 
 #else
-FUNCTION int JudyLDel
+FUNCTION int JUDY_EXTERN JudyLDel
 #endif
         (
         PPvoid_t  PPArray,      // in which to delete.
@@ -33267,6 +33675,18 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 
 @h=tangler('judy/JudyL/JudyLFirst.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.12 $ $Source: /judy/src/JudyCommon/JudyFirst.c $
 //
@@ -33295,7 +33715,7 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 #ifdef JUDY1
 FUNCTION int      Judy1First
 #else
-FUNCTION PPvoid_t JudyLFirst
+FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -33342,7 +33762,7 @@ FUNCTION PPvoid_t JudyLFirst
 #ifdef JUDY1
 FUNCTION int      Judy1Last(
 #else
-FUNCTION PPvoid_t JudyLLast(
+FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -33385,9 +33805,9 @@ FUNCTION PPvoid_t JudyLLast(
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1FirstEmpty(
+FUNCTION int JUDY_EXTERN Judy1FirstEmpty(
 #else
-FUNCTION int JudyLFirstEmpty(
+FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -33429,9 +33849,9 @@ FUNCTION int JudyLFirstEmpty(
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1LastEmpty(
+FUNCTION int JUDY_EXTERN Judy1LastEmpty(
 #else
-FUNCTION int JudyLLastEmpty(
+FUNCTION int JUDY_EXTERN JudyLLastEmpty(
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -33467,6 +33887,18 @@ FUNCTION int JudyLLastEmpty(
 
 @h=tangler('judy/JudyL/JudyLFreeArray.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.51 $ $Source: /judy/src/JudyCommon/JudyFreeArray.c $
 //
@@ -33499,9 +33931,9 @@ DBGCODE(extern void JudyCheckPop(Pvoid_t PArray);)
 // simpler.  Hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1FreeArray
+FUNCTION Word_t JUDY_EXTERN Judy1FreeArray
 #else
-FUNCTION Word_t JudyLFreeArray
+FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
 #endif
         (
         PPvoid_t  PPArray,      // array to free.
@@ -33817,6 +34249,18 @@ FUNCTION void j__udyFreeSM(
 
 @h=tangler('judy/JudyL/j__udyLGet.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -33852,7 +34296,7 @@ FUNCTION void j__udyFreeSM(
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int Judy1Test
+FUNCTION int JUDY_EXTERN Judy1Test
 #endif
 
 #else  // JUDYL
@@ -33860,7 +34304,7 @@ FUNCTION int Judy1Test
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JudyLGet
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
 #endif
 
 #endif // JUDYL
@@ -34898,6 +35342,18 @@ BranchU:
 
 @h=tangler('judy/JudyL/JudyLGet.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -34933,7 +35389,7 @@ BranchU:
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int Judy1Test
+FUNCTION int JUDY_EXTERN Judy1Test
 #endif
 
 #else  // JUDYL
@@ -34941,7 +35397,7 @@ FUNCTION int Judy1Test
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JudyLGet
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
 #endif
 
 #endif // JUDYL
@@ -35979,6 +36435,18 @@ BranchU:
 
 @h=tangler('judy/JudyL/JudyL.h')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 #ifndef _JUDYL_INCLUDED
 #define _JUDYL_INCLUDED
 // _________________
@@ -36471,6 +36939,18 @@ void    j__udyLFreeSM(   Pjp_t,          PjLpm_t);      // everything below Pjp.
 
 @h=tangler('judy/JudyL/JudyLInsArray.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // TBD:  It would probably be faster for the caller if the JudyL version took
 // PIndex as an interleaved array of indexes and values rather than just
@@ -36633,9 +37113,9 @@ static bool_t j__udyInsArray(Pjp_t PjpParent, int Level, PWord_t PPop1,
 // Set/Ins calls.
 
 #ifdef JUDY1
-FUNCTION int Judy1SetArray
+FUNCTION int JUDY_EXTERN Judy1SetArray
 #else
-FUNCTION int JudyLInsArray
+FUNCTION int JUDY_EXTERN JudyLInsArray
 #endif
         (
         PPvoid_t  PPArray,      // in which to insert, initially empty.
@@ -37636,6 +38116,18 @@ SetParent:
 
 @h=tangler('judy/JudyL/JudyLIns.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.116 $ $Source: /judy/src/JudyCommon/JudyIns.c $
 //
@@ -39301,9 +39793,9 @@ JudyBranchB:
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int Judy1Set
+FUNCTION int JUDY_EXTERN Judy1Set
 #else
-FUNCTION PPvoid_t JudyLIns
+FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 #endif
         (
         PPvoid_t  PPArray,      // in which to insert.
@@ -39496,6 +39988,18 @@ FUNCTION PPvoid_t JudyLIns
 
 @h=tangler('judy/JudyL/JudyLInsertBranch.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.17 $ $Source: /judy/src/JudyCommon/JudyInsertBranch.c $
 
@@ -39618,6 +40122,18 @@ FUNCTION int j__udyInsertBranch(
 
 @h=tangler('judy/JudyL/JudyLMallocIF.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.45 $ $Source: /judy/src/JudyCommon/JudyMallocIF.c $
 //
@@ -40387,6 +40903,18 @@ FUNCTION void j__udyLFreeJV(Pjv_t Pjv, Word_t Pop1, Pjpm_t Pjpm)
 
 @h=tangler('judy/JudyL/JudyLMemActive.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.7 $ $Source: /judy/src/JudyCommon/JudyMemActive.c $
 //
@@ -40413,9 +40941,9 @@ FUNCTION static Word_t j__udyGetMemActive(Pjp_t);
 // J U D Y   L   M E M   A C T I V E
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1MemActive
+FUNCTION Word_t JUDY_EXTERN Judy1MemActive
 #else
-FUNCTION Word_t JudyLMemActive
+FUNCTION Word_t JUDY_EXTERN JudyLMemActive
 #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
@@ -40633,6 +41161,18 @@ LeafWords:
 
 @h=tangler('judy/JudyL/JudyLMemUsed.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.5 $ $Source: /judy/src/JudyCommon/JudyMemUsed.c $
 //
@@ -40652,9 +41192,9 @@ LeafWords:
 #include "JudyPrivate1L.h"
 
 #ifdef JUDY1
-FUNCTION Word_t Judy1MemUsed
+FUNCTION Word_t JUDY_EXTERN Judy1MemUsed
 #else  // JUDYL
-FUNCTION Word_t JudyLMemUsed
+FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
@@ -40681,6 +41221,18 @@ FUNCTION Word_t JudyLMemUsed
 
 @h=tangler('judy/JudyL/JudyLNext.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
 //
@@ -40850,15 +41402,15 @@ FUNCTION Word_t JudyLMemUsed
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1Prev
+FUNCTION int JUDY_EXTERN Judy1Prev
 #else
-FUNCTION int Judy1Next
+FUNCTION int JUDY_EXTERN Judy1Next
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JudyLPrev
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
 #else
-FUNCTION PPvoid_t JudyLNext
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
 #endif
 #endif
         (
@@ -42558,6 +43110,18 @@ SM3Imm7:
 
 @h=tangler('judy/JudyL/JudyLNextEmpty.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -42688,15 +43252,15 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1PrevEmpty
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
 #else
-FUNCTION int Judy1NextEmpty
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JudyLPrevEmpty
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
 #else
-FUNCTION int JudyLNextEmpty
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
 #endif
 #endif
         (
@@ -43935,6 +44499,18 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 @h=tangler('judy/JudyL/JudyLPrev.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
 //
@@ -44104,15 +44680,15 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1Prev
+FUNCTION int JUDY_EXTERN Judy1Prev
 #else
-FUNCTION int Judy1Next
+FUNCTION int JUDY_EXTERN Judy1Next
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JudyLPrev
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
 #else
-FUNCTION PPvoid_t JudyLNext
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
 #endif
 #endif
         (
@@ -45812,6 +46388,18 @@ SM3Imm7:
 
 @h=tangler('judy/JudyL/JudyLPrevEmpty.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -45942,15 +46530,15 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int Judy1PrevEmpty
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
 #else
-FUNCTION int Judy1NextEmpty
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
 #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JudyLPrevEmpty
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
 #else
-FUNCTION int JudyLNextEmpty
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
 #endif
 #endif
         (
@@ -47189,6 +47777,18 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 @h=tangler('judy/JudyL/JudyLTables.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
 
@@ -47411,6 +48011,18 @@ j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
 
 @h=tangler('judy/JudyL/JudyLTablesGen.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 
 // @(#) $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 
@@ -47694,6 +48306,18 @@ FUNCTION int main()
 
 @h=tangler('judy/JudyHS/JudyHS.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 // @(#) $Revision: 4.1 $ $Source: /judy/src/JudyHS/JudyHS.c
 //=======================================================================
 //   Author Douglas L. Baskins, Dec 2003.
@@ -48468,6 +49092,18 @@ JudyHSFreeArray(PPvoid_t PPArray,       // ^ to JudyHashArray struct
 
 @h=tangler('judy/JudyHS/JudyHS.h')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 // ****************************************************************************
 // Quick and dirty header file for use with old Judy.h without JudyHS defs
 // May 2004 (dlb) - No copyright or license -- it is free period.
@@ -48506,6 +49142,18 @@ extern uint32_t JudyHashStr(                void *, Word_t);
 
 @h=tangler('judy/JudySL/JudySL.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the term of the GNU Lesser General Public License as published by the

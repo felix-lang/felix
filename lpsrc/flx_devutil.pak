@@ -244,10 +244,23 @@ cptn = len(cpt)
 
 print "@execfile('config'+os.sep+'config.py')"
 print "@head(1,'Judy')"
+g = open("tmp.tmp","w")
 for fn in files:
   copy = 1
   print "@h=tangler('judy/"+fn+"')"
   print "@select(h)"
+  print "#ifndef JUDY_EXTERN"
+  print "#if defined(_WIN32) && !defined(FLX_STATIC_LINK)"
+  print "#ifdef BUILD_JUDY"
+  print "#define JUDY_EXTERN __declspec(dllexport)"
+  print "#else"
+  print "#define JUDY_EXTERN __declspec(dllimport)"
+  print "#endif"
+  print "#else"
+  print "#define JUDY_EXTERN"
+  print "#endif"
+  print "#endif"
+  print
   f = open(prefix+'/'+fn)
   data = f.readlines()
   f.close()
@@ -256,10 +269,22 @@ for fn in files:
     if line[:cphn]==cph:
       copy = 0
     if copy: 
+      if line[:8]=="FUNCTION":
+        s1 = string.split(line,"(")
+        s2 = string.split(s1[0]," ")
+        if s2[1] in ["Word_t", "int", "PPvoid_t", "Pvoid_t"]:
+          if s2[2][:4]=="Judy":
+            t2 = [s2[0],s2[1],"JUDY_EXTERN"]+s2[2:]
+            t2 = string.join(t2," ")
+            t1 = [t2]+s1[1:]
+            t1 = string.join(t1,"(")
+            g.write(t1)
+            line = t1
       print line,
     if line[:cptn] == cpt:
       copy = 1
   print 
+g.close()
 
 print "@head(1,'Judy wrappers')"
 compile = []
