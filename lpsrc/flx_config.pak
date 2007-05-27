@@ -1418,7 +1418,7 @@ if "target" in PHASES:
     pr(f,"")
     pr(f,"########### DYPGEN EXPERIMENT #########")
     pr(f,"# set to 1 to enable experimental dypgen parser generator support")
-    pr(f,"USE_DYPGEN = 0")
+    pr(f,"USE_DYPGEN = 1")
     pr(f,"########### DYPGEN EXPERIMENT #########")
     pr(f,"")
     pr(f,"# HACK to get all the target variables into global namespace")

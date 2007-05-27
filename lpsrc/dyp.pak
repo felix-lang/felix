@@ -2054,7 +2054,7 @@ let rec revcat a b = match a with
     of the path [p] and the rule_bis [r] in the list [l] at its right place. The
     partial order is the field [po] of the state which is held by the source
     stack node of the first edge of the path [p].
-    The partial order is implemented a 2 dim array of type bool option.
+    The partial order is implemented as a 2 dim array of type bool option.
     The need for this partial order is explained in Scott McPeak's report.
     A better data structure than a list should be used. *)
 let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),(ind,rhs)) =
@@ -2102,14 +2102,14 @@ let print_path sn p =
   let () = List.iter f p in
   Printf.fprintf !log_channel "\n"
 
-let insertLimitedReductions pathList link (*t*) topmost =
+let insertLimitedReductions pathList link t topmost =
   let _,edge_nb = link.edge_label in
   let aux1 (pathList:(('a,'b) path * (int * rhs)) list) sn =
     let v,aut = sn.vertex_label.aut_vertex,sn.vertex_label.pdev in
     let aux2 ind (rhs,dp) tns pathList =
       let (_,len) = rhs in
-      if dp = len (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
-         (TNS.mem dummy_token_name tns) || (rule_kind=Dynamic_rule))*) then
+      if dp = len && (!automaton_kind=LR0 || (TNS.mem t tns) ||
+         (TNS.mem dummy_token_name tns)) (*|| (rule_kind=Dynamic_rule))*) then
         let paths = find_paths sn ind rhs in
         let aux3 pathList (p,tnb) =
           if List.exists (function e -> (snd e.edge_label)=edge_nb) p then
@@ -2124,12 +2124,12 @@ let insertLimitedReductions pathList link (*t*) topmost =
   in
   List.fold_left aux1 pathList topmost
 
-let insertLimitedReductions2 pathList (*t*) sn =
+let insertLimitedReductions2 pathList t sn =
   let v,aut = sn.vertex_label.aut_vertex,sn.vertex_label.pdev in
   let aux2 ind (rhs,dp) tns pathList =
     let (_,len) = rhs in
-    if dp = len (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
-         (TNS.mem dummy_token_name tns) || (rule_kind=Dynamic_rule))*) then
+    if dp = len && (!automaton_kind=LR0 || (TNS.mem t tns) ||
+         (TNS.mem dummy_token_name tns)) (*|| (rule_kind=Dynamic_rule))*) then
       let paths = find_paths sn ind rhs in
       let aux3 pathList (p,tnb) =
         let () = if !dypgen_verbose>2 then print_path sn p else () in
@@ -2181,7 +2181,7 @@ open Lexing
 exception Find_link_failed
 
 let complete_reduction gs pathList topmost leftSib pdev_rightSib
-    v_rightSib new_obj (*t*) nt lexer_pos prio counters data_equal =
+    v_rightSib new_obj t nt lexer_pos prio counters data_equal =
   countred := !countred + 1;
   let prio_imp,b =
     new_prio_imprint pdev_rightSib.prio leftSib.vertex_label.prio_imprint
@@ -2223,7 +2223,7 @@ let complete_reduction gs pathList topmost leftSib pdev_rightSib
 (*       let _ = Printf.fprintf !log_channel "complete_reduction called, Find_link_failed\n" in *)
       let link = Gs.create_e rightSib ([new_obj],counters.counted) leftSib in
       let counters = {counters with counted = counters.counted+1 } in
-      let pathList = insertLimitedReductions pathList link (*t*) topmost in
+      let pathList = insertLimitedReductions pathList link t topmost in
       gs,pathList,topmost,counters
   with
     Find_rightSib_failed ->
@@ -2243,7 +2243,7 @@ let complete_reduction gs pathList topmost leftSib pdev_rightSib
     in
     let gs = rightSib::gs in
     let topmost = rightSib::topmost in
-    let pathList = insertLimitedReductions2 pathList (*t*) rightSib in
+    let pathList = insertLimitedReductions2 pathList t rightSib in
     gs,pathList,topmost,counters
 
 
@@ -2310,11 +2310,11 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
       let new_obj = newSemanticValue in
       let v_rightSib,parsing_device_rightSib =
         if rapf_add=[] && r_remove=[] && newprio==prio_dat then
-          let item_set = start_node.vertex_label.aut_vertex.items in
+          (*let item_set = start_node.vertex_label.aut_vertex.items in
           let tns = IS.find ind (rhs,List.length lit_list) item_set in
           if (TNS.mem t tns = false)&&(TNS.mem dummy_token_name tns = false)
             && !automaton_kind<>LR0 then raise Giveup
-          else
+          else*)
             v_rightSib,{ parsing_device_leftSib with data = newdata ;
             local_data = newlocal_data }
         else
@@ -2326,7 +2326,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
       in
       let gs,pathList,topmost,counters =
         complete_reduction gs pathList topmost leftSib
-        parsing_device_rightSib v_rightSib new_obj (*t*) (nt_of_ind.(ind))
+        parsing_device_rightSib v_rightSib new_obj t (nt_of_ind.(ind))
         symbol_pos prio counters data_equal
       in
       gs,pathList,topmost,(will_shift2 && will_shift),counters
@@ -2345,20 +2345,26 @@ let doReductions (t:token_name) gs (topmost:('a,'b) Gs.vertex list)
     let aux2 ind (rhs,dp) tns pathList =
       let (_,len) = rhs in
       
-      let tns = (* on devrait ne calculer ça que si on sait que len=dp *)
-        try IS.find ind (rhs,dp) item_set
-        with Not_found -> failwith "Not_found in doReductions"
-      in
       
-      if dp = len &&
-        (!automaton_kind=LR0 || t<>dummy_token_name ||
+      if dp = len then
+        let tns = (* on devrait ne calculer ça que si on sait que len=dp *)
+          try IS.find ind (rhs,dp) item_set
+          with Not_found -> failwith "Not_found in doReductions"
+        in
+        if
+          (* (!automaton_kind=LR0 || t<>dummy_token_name ||
           (pdev.non_ter_of_ind.(ind))=entry_point ||
-          (t=dummy_token_name && TNS.mem t tns) ) then
+          (t=dummy_token_name && TNS.mem t tns) )  *)
+          (!automaton_kind=LR0 ||
+          (t<>dummy_token_name && TNS.mem t tns) ||
+          (pdev.non_ter_of_ind.(ind))=entry_point ||
+          (t=dummy_token_name && TNS.mem t tns) )
+        then
       
         let paths = list_map (function (p,tnb) -> sn,p,tnb) (find_paths sn ind rhs) in
         let aux3 pathList p = insert_partially_ordered pathList (p,(ind,rhs)) in
         List.fold_left aux3 pathList paths
-      else pathList
+      else pathList else pathList
     in
     IS.fold aux2 item_set pathList
   in
@@ -2817,7 +2823,7 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) =
     prio_of_ind.(n) <- p;
     nt_of_ind.(n) <- (nt,p,n)
   in
-  for i=0 to newnt_nb-1 do
+  for i=0 to nt_nb-1 do
     Prio_map.iter (f2 i) array_nt_prio.(i)
   done;
   
@@ -3016,7 +3022,7 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) =
     prio_of_ind.(n) <- p;
     lhs_of_ind.(n) <- (nt,p,n)
   in
-  for i=0 to newnt_nb-1 do
+  for i=0 to nt_nb-1 do
     Prio_map.iter (f2 i) array_nt_prio.(i)
   done;
   

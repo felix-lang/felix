@@ -555,7 +555,7 @@ class PLUGIN(Plugin):
 
       kwds = {\
           'include_paths': INCLUDE_PATH+["rtl", "elk"],
-          'macros': HOST_MACROS+["FLX_STATIC_LINK"],
+          'macros': MACROS+["FLX_STATIC_LINK"],
           'CFLAGS': CFLAGS,
           'LDFLAGS': SFLAGS,
           }
