@@ -202,6 +202,8 @@ files = [
   'Judy1/Judy1SetArray.c',
   'Judy1/Judy1Set.c',
   'Judy1/Judy1Tables.c',
+  'Judy1/Judy1Tables32.c',
+  'Judy1/Judy1Tables64.c',
   'Judy1/Judy1TablesGen.c',
   'Judy1/j__udy1Test.c',
   'Judy1/Judy1Test.c',
@@ -229,6 +231,8 @@ files = [
   'JudyL/JudyLPrev.c',
   'JudyL/JudyLPrevEmpty.c',
   'JudyL/JudyLTables.c',
+  'JudyL/JudyLTables32.c',
+  'JudyL/JudyLTables64.c',
   'JudyL/JudyLTablesGen.c',
 
   'JudyHS/JudyHS.c',

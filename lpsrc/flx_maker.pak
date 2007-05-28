@@ -362,7 +362,7 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.dyp') > filetime(file+'.ml'): force = 1
       if force:
-        vxqt("bin/dypgen --pv-obj " + file + ".dyp")
+        vxqt("bin/dypgen --automaton LALR --pv-obj " + file + ".dyp")
 
     if PARSES: # only works on ocamlyacc grammars ..
       plugins['extract_grammar']()
