@@ -945,7 +945,7 @@ let first litl la p first_memo grammar prio_dat array_nt_prio =
         | Some tok -> TNS.add tok tns
         | None -> TNS.add token_epsilon tns
       else match litl.(i) with
-        | Ter ter -> (TNS.add ter TNS.empty)
+        | Ter ter -> TNS.add ter tns
         | Non_ter nt ->
           let tns2 =
             match first_memo.(ind_of_lit nt) with
