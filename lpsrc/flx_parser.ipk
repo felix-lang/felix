@@ -315,8 +315,16 @@ let dfltvs =
 
      in
      let args = aux rhs avl [] in
+     let sname = 
+       let rec aux rhs out = match rhs with
+       | [] -> String.concat " " (rev out)
+       | USER_KEYWORD (_,s)::t -> aux t (s::out)
+       | NAME (_,s)::t -> aux t (("<"^s^">")::out)
+       | h::t -> aux t (Dyp_symbols.str_token h::out)
+       in aux rhs []
+     in
      let ast_term = `Apply_term (`Statement_term statement, args) in
-     `Obj_statement (`AST_user_statement (!srr,"unknownusersyntax",ast_term))
+     `Obj_statement (`AST_user_statement (!srr,"[usersyntax "^sname^"]",ast_term))
    in
    rule,action
 
@@ -686,22 +694,23 @@ code of the compilation unit.
 @head(2,'Statement')
 @select(h)
 statement:
-  | binding_definition { $1 }
-  | declarative { $1 }
-  /*
+  | binding_definition { print_endline "Reducing binding_definition"; $1 }
+  | declarative { print_endline "Reducing declarative"; $1 }
   | executable { print_endline ("Reducing executable " ^ Flx_print.string_of_statement 0 $1); $1 }
-  */
+  /*
   | executable { $1 }
-  | inclusion { $1 }
-  | directive { $1 }
-  | publish { $1}
-  | comment { $1 }
-  | null_statement { $1 }
-  | user_statement { $1 }
-  | cparse { $1 }
+  */
+  | inclusion { print_endline "Reducing inclusion"; $1 }
+  | directive { print_endline ("Reducing directive " ^ Flx_print.string_of_statement 0 $1); $1 }
+  | publish { print_endline "Reducing publish"; $1}
+  | comment { print_endline "Reducing comment"; $1 }
+  | null_statement { print_endline "Reducing null_statement"; $1 }
+  | user_statement { print_endline "Reducing user_statement"; $1 }
+  | cparse { print_endline "Reducing cparse "; $1 }
 @dyp_statement = """\
   | OPEN SYNTAX basic_name_comma_list SEMI
     {
+      print_endline "Opening syntax extensions";
       let sr = rstoken $1 $4 in
       let dssls = map snd $3 in
       let m = dyp.global_data in
