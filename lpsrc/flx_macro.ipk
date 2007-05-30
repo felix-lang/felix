@@ -201,11 +201,12 @@ let rec parse_expr sr s =
     | Flx_parse.HASH_INCLUDE_FILES _ :: tail -> tail 
     | _ -> assert false
   in 
-  let tokens  = Flx_lex1.translate pre_tokens in
+  let tokens  = Flx_lex1.translate pre_tokens @ [Flx_parse.ENDMARKER] in
   let toker = (new Flx_tok.tokeniser tokens) in
+  fst 
   begin try
     dyphack (
-    Flx_parse.expression
+    Flx_parse.exprx
     (toker#token_src)
     (Lexing.from_string "dummy" )
     )

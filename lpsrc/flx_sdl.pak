@@ -131,6 +131,7 @@ if HAVE_SDL:
    'libflx_pthread',
    'libflx',
    'libflx_gc',
+   'libflx_judy',
    ]
 
   drivers = DRIVERS
