@@ -22,7 +22,7 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','d
 cpp_cpps = ['rtl/flx_async']
 provides_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl','flx_gc']
-lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc']
+lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc','libflx_judy']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "ASYNC"
 @doc()
@@ -42,7 +42,7 @@ RTL_CPPS = [
 
 cpp_cpps = RTL_CPPS
 provides_lib = "libflx"
-lib_requires = ['libflx_gc']
+lib_requires = ['libflx_gc','libflx_judy']
 pkg_requires = ['flx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
@@ -63,12 +63,13 @@ DRLIBS = [
   'libflx_pthread',
   'libflx',
   'libflx_gc',
+  'libflx_judy',
   ]
 
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_rtl','flx_pthread','flx_gc']
-lib_requires = ['libdemux','libflx_pthread','libflx']
+lib_requires = ['libdemux','libflx_pthread','libflx','libflx_judy']
 iscr_source = ['lpsrc/flx_rtl.pak']
 @doc()
 
@@ -85,6 +86,7 @@ DRLIBS = [
   'libflx_pthread',
   'libflx',
   'libflx_gc',
+  'libflx_judy',
   ]
 
 drivers = DRIVERS
@@ -398,6 +400,9 @@ T &reinterpret(U const &x) {
   tangle("#define FLX_HAVE_EVTPORTS 1")
  else:
   tangle("#define FLX_HAVE_EVTPORTS 0")
+
+@if USE_JUDYGC:
+  tangle("#define JUDYGC")
 
 //
 #if FLX_HAVE_CGOTO && FLX_HAVE_ASM_LABELS

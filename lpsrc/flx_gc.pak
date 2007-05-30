@@ -43,8 +43,8 @@ to supply a user written allocator.
 @select(h)
 cpp_cpps = ['rtl/flx_gc','rtl/flx_collector']
 provides_lib = "libflx_gc"
-pkg_requires = []
-lib_requires = []
+pkg_requires = ['flx_judy']
+lib_requires = ['flx_judy']
 iscr_source = ['lpsrc/flx_gc.pak']
 build_macro = "FLX_GC"
 weaver_directory = 'doc/rtl/flx_gc/'
@@ -61,6 +61,7 @@ Version: $Id$
    tangle("provides_dlib: -lflx_gc_dynamic")
    tangle("provides_slib: -lflx_gc_static")
 
+Requires: flx_judy
 
 @h=tangler('rtl/flx_gc_config.hpp')
 @select(h)
@@ -589,6 +590,10 @@ void *operator new(
 #include "flx_gc_private.hpp"
 #include <map>
 
+#ifdef JUDYGC
+#include <Judy.h>
+#endif
+
 namespace flx {
 namespace gc {
 namespace collector {
@@ -690,6 +695,12 @@ private:
   rootmap_t roots;
   bool parity;
   allocator_t *allocator;
+
+#ifdef JUDYGC  
+  // JudyL array and error object
+  void *ja;
+  JError_t je;
+#endif
 
   // if compaction is being used this stuff controls
   // the arena. The arena ptr grows DOWN towards the
@@ -836,6 +847,9 @@ flx_collector_t::flx_collector_t(allocator_t *a) :
   to_delete(0),
   parity(false),
   allocator(a),
+#ifdef JUDGC  
+  ja(0),
+#endif
   arena(0),
   arena_high(0),
   arena_ptr(0),
@@ -884,6 +898,11 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
   if(first) first->prev = fp;
   first = fp;
 
+#ifdef JUDYGC  
+  Word_t *p = (Word_t*)(void*)JudyLIns(&ja,(Word_t)(void*)fp,&je);
+  *p = amt;
+#endif
+
   // update statistics
   allocation_count++;
   allocation_amt += amt;
@@ -931,6 +950,11 @@ void flx_collector_t::unlink(frame_t *fp)
   }
   if(fp->next)
     fp->next->prev = fp->prev;
+
+#ifdef JUDYGC
+  JudyLDel(&ja, (Word_t)(void*)fp, &je);
+#endif
+
 }
 
 void flx_collector_t::post_delete(frame_t *fp)
