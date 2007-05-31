@@ -1680,7 +1680,7 @@ and bind_type'
     print_endline ("[bind_type] Matched qualified name " ^ string_of_qualified_name x);
     *)
     if env = [] then print_endline "WOOPS EMPTY ENVIRONMENT!";
-
+    let sr = src_of_qualified_name x in
     begin match lookup_qn_in_env syms env x with
     | {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts},ts ->
       let ts = map bt ts in
@@ -1699,6 +1699,23 @@ and bind_type'
       *)
       let baset = bi i sub_ts in
       (* SHOULD BE CLIENT ERROR not assertion *)
+      if length ts != length spec_vs then begin
+        print_endline ("Qualified name lookup finds index " ^ si i);
+        print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
+        print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
+        print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
+        begin match Hashtbl.find syms.dfns i with
+          | {id=id;vs=vs;symdef=`SYMDEF_typevar _} -> 
+            print_endline (id ^ " is a typevariable, vs=" ^
+              catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
+            )
+          | {id=id} -> print_endline (id ^ " is not a type variable")
+        end;
+        clierr sr
+        ("Wrong number of type variables, expected " ^ si (length spec_vs) ^
+        ", but got " ^ si (length ts))
+      end
+      ;
       assert (length ts = length spec_vs);
       let t = tsubst spec_vs ts baset in
       t

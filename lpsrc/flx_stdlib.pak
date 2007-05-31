@@ -1973,9 +1973,7 @@ module Control
   /*7*/ | svc_sread               of _schannel * &gcaddress
   /*8*/ | svc_swrite              of _schannel * &gcaddress
   /*9*/ | svc_kill                of fthread 
-  /*10*/ | svc_compact
-  /*11*/ | svc_collect
-  /*12*/ | svc_collect_and_compact
+  /*10*/ | svc_collect
   ;
 
   publish "Call Supervisor"

@@ -915,9 +915,7 @@ enum svc_t               // what the dispatch should do
   svc_sread=7,           // synchronous read
   svc_swrite=8,          // synchronous write
   svc_kill=9,           // kill fthread
-  svc_compact=10,        // run compactor
-  svc_collect=11,        // run collector
-  svc_collect_and_compact=12,        // run collector and compactor
+  svc_collect=10,        // run collector
   svc_end
 };
 
@@ -2110,7 +2108,6 @@ RTL_EXTERN char const * get_fpc_desc(fpc_t);
 struct RTL_EXTERN gc_profile_t {
   bool debug_allocations;
   bool debug_collections; 
-  unsigned long compact; 
   unsigned long gc_freq;
   unsigned long gc_counter;
   unsigned long collections;
@@ -2120,7 +2117,6 @@ struct RTL_EXTERN gc_profile_t {
   gc_profile_t (
     bool debug_allocations_, 
     bool debug_collections_, 
-    unsigned long compact_, 
     unsigned long gc_freq_,
     bool finalise_,
     flx::gc::generic::collector_t *collector
@@ -2180,14 +2176,12 @@ RTL_EXTERN char const *get_fpc_desc(fpc_t fpc)
 gc_profile_t::gc_profile_t (
   bool debug_allocations_, 
   bool debug_collections_, 
-  unsigned long compact_, 
   unsigned long gc_freq_,
   bool finalise_,
   flx::gc::generic::collector_t *collector_
 ) :
   debug_allocations(debug_allocations_),
   debug_collections(debug_collections_),
-  compact(compact_),
   gc_freq(gc_freq_),
   gc_counter(0),
   collections(0),
@@ -2250,7 +2244,6 @@ check_collect:
   //  gcp->gc_counter = 0;
   //  gcp->collections++;
   //  unsigned long n = collector->collect();
-  //  if(gcp->compact) collector->compact(true);
   //  if(gcp->debug_collections)fprintf(stderr,"collected %ld objects\n",n);
   //}
     
@@ -2765,14 +2758,6 @@ void doflx (void *data) {
     if (ss.fs == delegated) 
     switch (ss.request->variant)
     {
-      case svc_compact:
-      {
-        // requires fthreads to be immobile
-        if(debug_driver)fprintf(stderr,"svc compact\n");
-        gcp->collector->compact(false);
-      }
-      goto process_active;
-
       case svc_collect:
       {
         // requires fthreads to be immobile
@@ -2787,20 +2772,6 @@ void doflx (void *data) {
           if(debug_driver)fprintf(stderr,"RACE: someone else is collecting, just yield\n");
           thread_control->yield();
         }
-      }
-      goto process_active;
-
-      case svc_collect_and_compact:
-      {
-        // requires fthreads to be immobile
-        if(debug_driver)fprintf(stderr,"svc collect and compact\n");
-        if (thread_control->world_stop())
-        {
-          gcp->collector->collect();
-          gcp->collector->compact(true);
-          thread_control->world_start();
-        }
-        else thread_control->yield();
       }
       goto process_active;
 
@@ -3119,7 +3090,6 @@ int main(int argc, char** argv)
     printf("  FLX_DEBUG_COLLECTIONS   # enable debugging collector (default FLX_DEBUG)\n");
     printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
     printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
-    printf("  FLX_COMPACT=n           # size of compaction arena, 0 to disable (default)\n");
     printf("  FLX_GC_FREQ=n           # how often to call garbage collector (default 1000)\n");
     return 1;
   }
@@ -3180,17 +3150,6 @@ int main(int argc, char** argv)
   if(debug) 
     fprintf(stderr,"[FLX_FINALISE] Finalisation %s\n",finalise? "Enabled" : "Disabled");
 
-  char *compact_env= std::getenv("FLX_COMPACT");
-  unsigned long compact = compact_env?atol(compact_env):0;
-  if(debug)
-  {
-    if(compact)
-      fprintf(stderr,"[FLX_COMPACT] Compacting with arena minimum size = %ldK\n",compact);
-    else
-      fprintf(stderr,"[FLX_COMPACT] Compaction initially OFF\n");
-  }
-  compact = compact * 1024;
-
   char *gc_freq_env= std::getenv("FLX_GC_FREQ");
   unsigned long gc_freq = gc_freq_env?atol(gc_freq_env):1000;
   if (gc_freq < 1) gc_freq = 1;
@@ -3217,17 +3176,9 @@ int main(int argc, char** argv)
     new flx::gc::collector::flx_ts_collector_t(allocator)
   ;
   collector->set_debug(debug_collections);
-  if(compact)
-  {
-    collector->set_min_arena_size(compact);
-    collector->compact(false);
-  }
-
-
   gc_profile_t *gcp = new gc_profile_t(
     debug_allocations, 
     debug_collections, 
-    compact, 
     gc_freq,
     finalise,
     collector
