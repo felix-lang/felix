@@ -328,8 +328,6 @@ typeclass Show [T] {
 @select(h)
 macro val true = case 1 of 2;
 macro val false = case 0 of 2;
-macro fun println (x) = { fprint (cout,x); Stdout::endl cout; };
-macro fun print(x) = { fprint (cout,x); };
 
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
@@ -1511,6 +1509,9 @@ open module Stdout
   proc endl: unit = "std::cout << std::endl;";
   proc space: int = "std::cout << ' ';";
   proc flush: unit = "std::cout.flush(); ";
+
+  proc print  [T with Str[T]] (x:T) { fprint (cout, str x); };
+  proc println[T with Str[T]] (x:T) { fprint (cout, str x); endl cout; };
 }
 
 @#------------- STRING MODULES -------------------
