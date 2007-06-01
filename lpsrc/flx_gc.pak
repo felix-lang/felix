@@ -1074,8 +1074,22 @@ void flx_collector_t::scan_object(frame_t *frame)
       for(unsigned int i=0; i<n_offsets; ++i)
       {
         void **q = (void**)(void*)(p + offsets[i]);
+#ifndef JUDYGC        
         if(*q)
           scan_object(CLIENT_TO_FRAME(*q));
+#else         
+        Word_t cand = (Word_t)*q;
+        if(cand) 
+        {
+          Word_t fp=cand;
+          Word_t *plen = (Word_t*)JudyLLast(ja,&fp,&je);
+          // this is only true for object pointers..
+          // not interior pointers -- FOR TESTING ONLY!
+          assert(fp == (Word_t)CLIENT_TO_FRAME((void*)cand));
+          if(plen && fp<=cand && cand < fp+*plen)
+            scan_object((frame_t*)(void*)fp);
+        }
+#endif          
       }
       p+=obj_size;
     }

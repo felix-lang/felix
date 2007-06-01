@@ -694,19 +694,17 @@ code of the compilation unit.
 @head(2,'Statement')
 @select(h)
 statement:
-  | binding_definition { print_endline "Reducing binding_definition"; $1 }
-  | declarative { print_endline "Reducing declarative"; $1 }
-  | executable { print_endline ("Reducing executable " ^ Flx_print.string_of_statement 0 $1); $1 }
-  /*
-  | executable { $1 }
-  */
-  | inclusion { print_endline "Reducing inclusion"; $1 }
-  | directive { print_endline ("Reducing directive " ^ Flx_print.string_of_statement 0 $1); $1 }
-  | publish { print_endline "Reducing publish"; $1}
-  | comment { print_endline "Reducing comment"; $1 }
-  | null_statement { print_endline "Reducing null_statement"; $1 }
-  | user_statement { print_endline "Reducing user_statement"; $1 }
-  | cparse { print_endline "Reducing cparse "; $1 }
+  | binding_definition { (* print_endline "Reducing binding_definition"; *) $1 
+    }
+  | declarative { (* print_endline "Reducing declarative"; *) $1 }
+  | executable { (* print_endline ("Reducing executable " ^ Flx_print.string_of_statement 0 $1); *) $1 }
+  | inclusion { (* print_endline "Reducing inclusion"; *) $1 }
+  | directive { (* print_endline ("Reducing directive " ^ Flx_print.string_of_statement 0 $1); *) $1 }
+  | publish { (* print_endline "Reducing publish"; *) $1}
+  | comment { (* print_endline "Reducing comment"; *) $1 }
+  | null_statement { (* print_endline "Reducing null_statement"; *) $1 }
+  | user_statement { (* print_endline "Reducing user_statement"; *) $1 }
+  | cparse { (* print_endline "Reducing cparse "; *) $1 }
 @dyp_statement = """\
   | OPEN SYNTAX basic_name_comma_list SEMI
     {
