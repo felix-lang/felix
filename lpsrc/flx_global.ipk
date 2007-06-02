@@ -109,6 +109,11 @@ let exe_uses_gc syms bbdfns exe =
   | `BEXE_jump_direct _ 
   | `BEXE_call_direct _
   | `BEXE_apply_ctor _
+
+  (* Even if the constructor is applied as a stack call, the class object
+     is ALSO built by this statement, and always on the heap ..
+  *)
+  | `BEXE_apply_ctor_stack _
     -> raise Not_found
 
   (* this test is used to trap use of gc by primitives *)

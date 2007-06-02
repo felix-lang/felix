@@ -948,7 +948,7 @@ open FloatAddgrp[dimaginary];
 open FloatAddgrp[limaginary];
 
 open[T in basic_types] Show[T];
-open[bool] Show[bool];
+open Show[bool];
 @doc()
   
 @h=tangler('lib/std.flx','data')
