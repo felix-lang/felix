@@ -917,8 +917,6 @@ Therefore, general cases must be given after specialised
 ones. 
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 #statement#
   whilst expr do statements done ; =>#
   macro {
