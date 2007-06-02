@@ -917,6 +917,7 @@ Therefore, general cases must be given after specialised
 ones. 
 
 @select(env.test('.flx'))
+include "std";
 #statement#
   whilst expr do statements done ; =>#
   macro {
