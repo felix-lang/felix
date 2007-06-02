@@ -239,6 +239,10 @@ Routines to add and remove roots.
     v_remove_root(memory);
   }
 
+  void finalise(frame_t *frame) {
+    v_finalise(frame);
+  }
+
 @doc()
 Integrity check for the data structure being managed.
 @select(h)
@@ -252,6 +256,7 @@ private:
   virtual unsigned long v_get_allocation_amt()const=0;
   virtual void *v_allocate(gc_shape_t *shape, unsigned long)=0;
   virtual void v_deallocate(frame_t *fp)=0;
+  virtual void v_finalise(frame_t *fp)=0;
   virtual unsigned long v_collect()=0;
   virtual void v_add_root(void *memory)=0;
   virtual void v_remove_root(void *memory)=0;
@@ -391,7 +396,6 @@ struct frame_t
 #ifndef JUDYGC
   bool garbage;           // the garbage flag
 #endif
-  bool finalised;         // whether the object is finalised
 };
 
 }}} // end namespaces
@@ -472,8 +476,8 @@ void destroy(void *p)
   if(p)
   {
     frame_t *fp = CLIENT_TO_FRAME(p);
-    if(!fp->finalised)
-      fp->collector->deallocate(fp);
+    fp->collector->finalise(fp);
+    fp->collector->deallocate(fp);
    }
 }
 
@@ -629,7 +633,7 @@ protected:
   unsigned long impl_get_allocation_count()const;
   unsigned long impl_get_root_count()const;
   unsigned long impl_get_allocation_amt()const;
-
+  void impl_finalise(frame_t *fp);
   void impl_check();
 
 private:
@@ -659,6 +663,7 @@ private:
 
  
   void unlink(frame_t *frame);
+  void v_finalise(frame_t *frame);
   void dispose(frame_t *frame);
     // calls post_delete or delete_frame
 
@@ -758,6 +763,10 @@ void flx_collector_t::v_deallocate(frame_t *frame) {
   impl_deallocate(frame);
 }
 
+void flx_collector_t::v_finalise(frame_t *frame) {
+  impl_finalise(frame);
+}
+
 unsigned long flx_collector_t::v_collect() {
   return impl_collect();
 }
@@ -835,7 +844,6 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
 #ifndef JUDYGC
   fp->garbage = parity;
 #endif
-  fp->finalised = false;
   fp->n_objects = nobj;
   fp->n_used = 0;
   fp->collector = this;
@@ -867,17 +875,9 @@ void flx_collector_t::impl_deallocate(frame_t *fp)
   dispose(fp);
 }
 
-void flx_collector_t::unlink(frame_t *fp)
+void flx_collector_t::impl_finalise(frame_t *fp)
 {
-  // check we have a pointer to an object
-  assert(fp);
-
-  // flag the object as finalised, even before
-  // actually calling the finaliser, to
-  // prevent recursion via destroy
-  fp->finalised = true;
-
-  // call the finaliser if there is one
+  assert(fp!=NULL);
   void (*finaliser)(collector_t*, void*) = fp->shape->finaliser;
   if (finaliser)  
   {
@@ -889,8 +889,17 @@ void flx_collector_t::unlink(frame_t *fp)
       (*finaliser)(this,(void*)cp);
       cp += eltsize;
     }
-      
   }
+}
+
+void flx_collector_t::unlink(frame_t *fp)
+{
+  // check we have a pointer to an object
+  assert(fp!=NULL);
+
+  // call the finaliser if there is one
+  impl_finalise(fp);
+
   // unlink the frame from the collectors list
 #ifndef JUDYGC
   if(fp->prev)
