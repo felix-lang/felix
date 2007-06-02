@@ -388,7 +388,9 @@ struct frame_t
   frame_t *prev;          // in the collectors list
 #endif
   collector_t *collector; // the managing collector
+#ifndef JUDYGC
   bool garbage;           // the garbage flag
+#endif
   bool finalised;         // whether the object is finalised
 };
 
@@ -819,6 +821,9 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
   std::size_t amt = nobj * shape->amt * shape->count + FRAMESIZE;
+  //fprintf(stderr, "req amt = %ld\n",amt);
+  if(amt & 1) ++amt; // round up to even number
+  //fprintf(stderr, "rounded req amt = %ld\n",amt);
 
   // allocate a block
   frame_t *fp = (frame_t*)allocator->allocate(amt);
@@ -827,7 +832,9 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
   if(debug)fprintf(stderr,"Allocated %p-0x%x= new %s\n", FRAME_TO_CLIENT(fp),FRAMESIZE,shape->cname);
   // initialise the shape, garbage flag, and refcount
   fp->shape = shape;
+#ifndef JUDYGC
   fp->garbage = parity;
+#endif
   fp->finalised = false;
   fp->n_objects = nobj;
   fp->n_used = 0;
@@ -840,8 +847,10 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
   if(first) first->prev = fp;
   first = fp;
 #else
+  assert((amt & 1) == 0);
   Word_t *p = (Word_t*)(void*)JudyLIns(&ja,(Word_t)(void*)fp,&je);
-  *p = amt;
+  *p = amt | (parity & 1UL);
+  //fprintf(stderr, "Parity=%ld, amt=%ld\n",(long)parity,*p);
 #endif
 
   // update statistics
@@ -961,7 +970,9 @@ unsigned long flx_collector_t::reap ()
 
 unsigned long flx_collector_t::sweep()
 {
-  if(debug)fprintf(stderr,"Collector: Sweep\n");
+  if(debug)
+    fprintf(stderr,"Collector: Sweep\n");
+  unsigned long sweeped = 0;
   collecting=true;
 #ifndef JUDYGC  
   frame_t *current = first;
@@ -972,27 +983,35 @@ unsigned long flx_collector_t::sweep()
       if(debug)fprintf(stderr,"Garbage %p=%s\n",current,current->shape->cname);
       unlink(current);
       post_delete(current);
+      ++ sweeped;
     }
     current = current->next;
   }
 #else
-  Word_t *pval;
   frame_t *current = (frame_t*)NULL;
-  pval = (Word_t*)JudyLFirst(ja,(Word_t*)(void*)&current,&je);
-  while(pval)
+  Word_t *plen = (Word_t*)JudyLFirst(ja,(Word_t*)(void*)&current,&je);
+  while(plen)
   {
-    if(current->garbage == parity)
+    if((*plen & 1) == (parity & 1UL))
     {
-      if(debug)fprintf(stderr,"Garbage %p=%s\n",current,current->shape->cname);
+      if(debug)
+        fprintf(stderr,"Garbage %p=%s\n",current,current->shape->cname);
+      ++ sweeped;
       unlink(current);
       post_delete(current);
     }
-    pval = (Word_t*)JudyLNext(ja,(Word_t*)(void*)&current,&je);
+    else
+      if(debug)
+        fprintf(stderr,"Reachable %p=%s\n",current,current->shape->cname);
+
+    plen = (Word_t*)JudyLNext(ja,(Word_t*)(void*)&current,&je);
   }
 #endif
 
   parity = !parity;
   collecting = false;
+  if(debug)
+    fprintf(stderr,"Sweeped %ld\n",sweeped);
   return reap();
 }
 
@@ -1035,11 +1054,21 @@ void flx_collector_t::impl_remove_root(void *memory)
 
 void flx_collector_t::scan_object(frame_t *frame)
 {
-  if(debug)fprintf(stderr,"Scanning %p\n",frame);
-  if(debug)fprintf(stderr,"Scanning [valid] %p=%s\n",frame,frame->shape->cname);
+  if(debug)
+    fprintf(stderr,"Scanning %p\n",frame);
+  if(debug)
+    fprintf(stderr,"Scanning [valid] %p=%s\n",frame,frame->shape->cname);
+#ifndef JUDYGC
   if(frame->garbage == parity)
   {
-    if(debug){
+#else
+    // NOTE: in Judy, this routine is only called
+    // if the object has not already been reached
+    // and the flag is set to reachable BEFORE
+    // entry to this routine
+#endif
+    if(debug)
+    {
       fprintf(stderr,"Reachable %p\n",frame);
       gc_shape_t * shape = frame->shape;
       fprintf(stderr,"Reachable [valid] %p=%s\n",frame,shape->cname);
@@ -1061,7 +1090,9 @@ void flx_collector_t::scan_object(frame_t *frame)
             offset,p+offset,x);
       }
     }
+#ifndef JUDYGC
     frame->garbage = !parity; // reachable!
+#endif    
     gc_shape_t *shape = frame->shape;
     unsigned long n_used = frame->n_used * shape->count;
     std::size_t obj_size = shape->amt;
@@ -1069,6 +1100,9 @@ void flx_collector_t::scan_object(frame_t *frame)
     std::size_t *offsets = shape->offsets;
     unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
 
+#ifdef JUDYGC
+    Word_t reachable = (parity & 1UL) ^ 1UL;
+#endif    
     for(unsigned long j=0; j<n_used; ++j)
     {
       for(unsigned int i=0; i<n_offsets; ++i)
@@ -1078,36 +1112,72 @@ void flx_collector_t::scan_object(frame_t *frame)
         if(*q)
           scan_object(CLIENT_TO_FRAME(*q));
 #else         
-        Word_t cand = (Word_t)*q;
-        if(cand) 
+        if(*q)
         {
+          Word_t cand = (Word_t)CLIENT_TO_FRAME(*q);
           Word_t fp=cand;
           Word_t *plen = (Word_t*)JudyLLast(ja,&fp,&je);
           // this is only true for object pointers..
           // not interior pointers -- FOR TESTING ONLY!
-          assert(fp == (Word_t)CLIENT_TO_FRAME((void*)cand));
-          if(plen && fp<=cand && cand < fp+*plen)
+          assert(fp == cand);
+          
+          if(
+            plen && 
+            ((*plen & 1UL) != reachable) && 
+            (fp<=cand) && 
+            (cand < fp+(*plen & ~1UL))
+          )
+          {
+            *plen = *plen & ~1UL | reachable;
             scan_object((frame_t*)(void*)fp);
+          }
         }
 #endif          
       }
       p+=obj_size;
     }
+#ifndef JUDYGC
   }
+#endif
 }
 
 void flx_collector_t::mark()
 {
-  if(debug)fprintf(stderr,"Collector: Running mark\n");
+  if(debug)
+    fprintf(stderr,"Collector: Running mark\n");
   assert (root_count == roots.size());
-
+#ifdef JUDYGC
+  Word_t reachable = (parity & 1UL) ^ 1UL;
+  //fprintf(stderr,"Parity (garbage)=%ld, reachable = %ld, count=%ld\n", (long)parity, reachable, allocation_count);
+#endif
   rootmap_t::iterator const end = roots.end();
   for(
     rootmap_t::iterator i = roots.begin();
     i != end;
     ++i
   )
-    scan_object((*i).first);
+  {
+#ifdef JUDYGC
+    Word_t fp = (Word_t)(*i).first;
+    Word_t cand = (Word_t)fp;
+    Word_t *plen = (Word_t*)JudyLLast(ja,(Word_t*)&fp,&je);
+    if(
+      plen && 
+      ((*plen & 1UL) != reachable) && 
+      (fp<=cand) && 
+      (cand < fp+(*plen & ~1UL))
+    )
+    {
+      *plen = *plen & ~1UL | reachable;
+      scan_object((frame_t*)fp);
+    }
+#else
+    frame_t *fp = (*i).first;
+    scan_object(fp);
+#endif    
+  }
+  if(debug)
+    fprintf(stderr,"Mark complete\n");
 }
 
 unsigned long flx_collector_t::impl_collect()
@@ -1115,6 +1185,7 @@ unsigned long flx_collector_t::impl_collect()
   if(debug)fprintf(stderr,"Running collector\n");
   mark();
   unsigned long r = sweep();
+  //fprintf(stderr,"Reapped %ld obj, remaining %ld\n",r,allocation_count);
   if(debug)impl_check();
   return r;
 }
@@ -1132,7 +1203,7 @@ static int vpcompare(void const *a, void const *b) {
 
 void flx_collector_t::impl_check()
 {
-  if(debug)fprintf(stderr,"RUNNING HEAP INTEGRITY CHECK\n");
+  if(debug)fprintf(stderr,"RUNNING HEAP INTEGRITY CHECK on %ld objects\n",allocation_count);
   unsigned long nobj = allocation_count;
   void **ctrl = (void**)malloc(nobj * sizeof(void*));
   unsigned long handled = 0;
@@ -1141,7 +1212,8 @@ void flx_collector_t::impl_check()
   frame_t *lfirst = first;
 #else
   frame_t *lfirst = 0;
-  JudyLFirst(ja,(Word_t*)(void*)&lfirst, &je);
+  void *res = JudyLFirst(ja,(Word_t*)(void*)&lfirst, &je);
+  if(res == NULL) lfirst=NULL;
 #endif
   long outofarena=0L;
   while(lfirst) {
@@ -1155,7 +1227,14 @@ void flx_collector_t::impl_check()
 #ifndef JUDYGC
     lfirst = lfirst->next;
 #else
-    JudyLNext(ja,(Word_t*)(void*)&lfirst,&je);
+    if(size != *(Word_t*)res & !1UL)
+    {
+      fprintf(stderr,"WRONG SIZE: Object %p size %ld type %s, JUDY says %ld\n",lfirst,long(size),shape->cname,*(Word_t*)res & ~1UL);
+      abort();
+    }
+
+    res = JudyLNext(ja,(Word_t*)(void*)&lfirst,&je);
+    if(res == NULL) lfirst=NULL;
 #endif    
   }
 
@@ -1205,7 +1284,7 @@ void flx_collector_t::impl_check()
               "offset #%d->%ld, at address %p,\n"
               "pointer [frame=%p, client=%p] NOT IN GC LIST\n",
               frame, shape->cname,nel,k,offset,loc,address,client_ptr);
-            abort();
+//            abort();
           }
         }
       }
@@ -1233,6 +1312,7 @@ void flx_collector_t::impl_check()
     }
   }
   free(ctrl);
+  fprintf(stderr,"Heap Integrity checked\n");
 }
 
 bool flx_collector_t::check_frame_pointer(frame_t *p)
