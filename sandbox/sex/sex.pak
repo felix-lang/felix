@@ -30,6 +30,7 @@ let upper = ['A'-'Z']
 let letter = lower | upper
 let hichar = ['\128'-'\255']
 let white = space | tab
+let idletter = letter | underscore
 
 (* nasty: form control characters *)
 let form_control = linefeed | carriage_return | vtab | formfeed
@@ -50,7 +51,7 @@ let ordinary = letter | digit | hichar | symchar | lb | rb
 
 let printable = ordinary | quote | dquote
 
-let alphanum = letter | digit
+let alphanum = idletter | digit
 let identifier = letter alphanum *
 let integer = digit +
 let sqstring = quote ordinary * quote
@@ -162,7 +163,7 @@ let rec eval fresh env x =
   print_string "Eval "; Sex_print.sex_print x;
   *)
   match x with
-  | Lst [Id "apply"; f; arg] as term ->
+  | Lst [Id "apply"; f; arg] ->
     (*
     print_endline "Application = "; Sex_print.sex_print term;
     *)
@@ -247,6 +248,172 @@ let rec eval fresh env x =
   | Lst xs -> Lst (map (eval fresh env) xs)
   | x -> x
 
+@select(tangler("sex2flx.ml"))
+open Sex_types
+open Flx_ast
+open Flx_types
+open Flx_typing
+open Flx_typing2
+open List
+
+exception Sex2FlxTypeError of string
+
+let err s = raise (Sex2FlxTypeError s) 
+
+let rec xexpr_t sr fresh env x = 
+  let ex x = xexpr_t sr fresh env x in
+  let xtype t = typecode_of_expr (ex t) in
+  let ii i = int_of_string i in
+  let ss s = String.sub s 1 (String.length s - 2) in
+  let xq qn = qualified_name_of_expr (ex qn) in
+  match x with
+ | Lst [] -> `AST_tuple (sr,[])
+ | Lst [x] -> ex x
+ | Lst [Id "AST_interpolate";  Str s] -> `AST_interpolate (sr,ss s)
+ | Lst [Id "AST_vsprintf";  Str s] -> `AST_vsprintf (sr,ss s)
+ | Lst [Id "AST_noexpand";  e] -> `AST_noexpand (sr,ex e)
+ | Lst [Id "AST_name";  Str s ; Lst ts] -> `AST_name (sr,s,map xtype ts)
+
+ | Lst [Id "AST_the";  e] -> `AST_the (sr, xq e)
+
+ | Lst [Id "AST_index";  Str s ; Int i] -> `AST_index (sr,ss s,ii i)
+
+ | Lst [Id "AST_case_tag";  Int i] -> `AST_case_tag (sr,ii i)
+
+ | Lst [Id "AST_typed_case";  Int i; t] -> `AST_typed_case (sr,ii i,xtype t)
+ | Lst [Id "AST_lookup";  Lst [e; Str s; Lst ts]] -> `AST_lookup (sr,(ex e, ss s,map xtype ts))
+ | Lst [Id "AST_apply";  Lst [e1; e2]] -> `AST_apply(sr,(ex e1, ex e2))
+
+ | Lst [Id "AST_tuple";  Lst es] -> `AST_tuple (sr,map ex es)
+ | Lst [Id "AST_record";  Lst rs] -> 
+   let rs = 
+     map (function 
+     | Lst [Str s; e] -> ss s, ex e 
+     | _ -> err "Error in AST_record"
+     ) 
+     rs 
+   in `AST_record (sr,rs)
+
+ | Lst [Id "AST_record_type"; Lst rs] ->
+   let rs = 
+     map (function 
+     | Lst [Str s; e] -> ss s, xtype e 
+     | _ -> err "Error in AST_record_type"
+     ) 
+     rs 
+   in `AST_record_type (sr,rs)
+
+ | Lst [Id "AST_variant";  Lst [Str s;e]] -> `AST_variant (sr,(ss s, ex e))
+
+ | Lst [Id "AST_variant_type"; Lst rs] ->
+   let rs = 
+     map (function 
+     | Lst [Str s; e] -> ss s, xtype e 
+     | _ -> err "Error in AST_variant_type"
+     ) 
+     rs 
+   in `AST_variant_type (sr,rs)
+
+
+ | Lst [Id "AST_arrayof";  Lst es] -> `AST_arrayof (sr, map ex es)
+ | Lst [Id "AST_coercion";  e; t] ->  `AST_coercion (sr,(ex e, xtype t))
+
+ | Lst [Id "AST_suffix";  Lst [qn;t]] -> `AST_suffix (sr,(xq qn,xtype t))
+
+ | Lst [Id "AST_patvar";  Str s] -> `AST_patvar (sr, ss s)
+ | Id "AST_patany" -> `AST_patany sr
+ | Id "AST_void" -> `AST_void sr
+ | Id "AST_ellipsis" -> `AST_ellipsis sr
+
+ | Lst [Id "AST_product"; Lst es] -> `AST_product (sr, map ex es) 
+ | Lst [Id "AST_sum";  Lst es] -> `AST_sum (sr,map ex es)
+ | Lst [Id "AST_setintersection"; Lst es] -> `AST_setintersection (sr, map ex es)
+ | Lst [Id "AST_setunion"; Lst es] -> `AST_setunion (sr, map ex es)
+ | Lst [Id "AST_orlist"; Lst es] -> `AST_orlist (sr, map ex es)
+ | Lst [Id "AST_andlist"; Lst es] -> `AST_andlist (sr, map ex es)
+ | Lst [Id "AST_arrow";  Lst [e1; e2]] -> `AST_arrow (sr,(ex e1, ex e2))
+ | Lst [Id "AST_longarrow";  Lst [e1; e2]] -> `AST_longarrow (sr,(ex e1, ex e2))
+ | Lst [Id "AST_superscript";  Lst [e1; e2]] -> `AST_superscript (sr,(ex e1, ex e2))
+
+(* 
+ | Lst [Id "AST_literal";  * literal_t -> * literal_t
+*)
+ | Lst [Id "AST_deref"; e] -> `AST_deref (sr,ex e)
+ | Lst [Id "AST_ref"; e] -> `AST_ref (sr,ex e)
+ | Lst [Id "AST_new"; e] -> `AST_new (sr,ex e)
+ | Lst [Id "AST_lvalue"; e] -> `AST_lvalue (sr,ex e)
+ | Lst [Id "AST_callback";  qn] -> `AST_callback (sr,xq qn)
+(*
+ | Lst [Id "AST_method_apply";  * (id_t * expr_t * typecode_t list) -> * (id_t * expr_t * typecode_t list)
+*)
+ | Lst [Id "AST_dot";  Lst [e1; e2]] -> `AST_dot (sr,(ex e1, ex e2))
+(*
+ | Lst [Id "AST_lambda";  * (vs_list_t * params_t list * typecode_t * statement_t list) -> * (vs_list_t * params_t list * typecode_t * statement_t list)
+*)
+ | Lst [Id "AST_match_ctor";  Lst [qn; e]] -> `AST_match_ctor(sr,(xq qn,ex e))
+ | Lst [Id "AST_match_case";  Lst [Int i; e]]-> `AST_match_case (sr,(ii i, ex e))
+
+ | Lst [Id "AST_ctor_arg";  Lst [qn; e]] -> `AST_ctor_arg (sr,(xq qn, ex e))
+
+ | Lst [Id "AST_case_arg"; Lst [Int i; e]] -> `AST_case_arg (sr,(ii i, ex e))
+
+ | Lst [Id "AST_case_index";  e] -> `AST_case_index (sr, ex e)
+(*
+ | Lst [Id "AST_letin";  * (pattern_t * expr_t * expr_t) -> * (pattern_t * expr_t * expr_t)
+*)
+
+ | Lst [Id "AST_get_n";  Lst [Int i; e]] -> `AST_get_n(sr,(ii i, ex e))
+ | Lst [Id "AST_get_named_variable";  Lst [Str s;e]]-> `AST_get_named_variable (sr, (ss s, ex e))
+
+ | Lst [Id "AST_get_named_method";  Lst [Str s; Int i; Lst ts; e]] ->
+   `AST_get_named_method (sr,(ss s, ii i, map xtype ts, ex e))
+
+ | Lst [Id "AST_as";  Lst [e; Str s]] -> `AST_as (sr,(ex e, ss s))
+(*
+ | Lst [Id "AST_match";  * (expr_t * (pattern_t * expr_t) list) -> * (expr_t * (pattern_t * expr_t) list)
+ | Lst [Id "AST_parse";  * expr_t * (range_srcref * production_t * expr_t) list -> * expr_t * (range_srcref * production_t * expr_t) list
+ | Lst [Id "AST_sparse";  * expr_t * Str s * int list -> * expr_t * str s * int list
+
+ | Lst [Id "AST_regmatch";  * (expr_t * expr_t * (regexp_t * expr_t) list) -> * (expr_t * expr_t * (regexp_t * expr_t) list)
+ | Lst [Id "AST_string_regmatch";  * (expr_t * (regexp_t * expr_t) list) -> * (expr_t * (regexp_t * expr_t) list)
+ | Lst [Id "AST_reglex";  * (expr_t * expr_t * (regexp_t * expr_t) list) -> * (expr_t * expr_t * (regexp_t * expr_t) list)
+*)
+ | Lst [Id "AST_typeof";  e] -> `AST_typeof (sr, ex e)
+ | Lst [Id "AST_lift";  e] -> `AST_lift (sr,ex e)
+
+ | Lst [Id "AST_cond";  Lst [e1;e2;e3]] -> `AST_cond (sr,(ex e1, ex e2, ex e3))
+
+ | Lst [Id "AST_expr"; Str s; t] -> `AST_expr (sr, ss s, xtype t)
+
+ | Lst [Id "AST_type_match";  Lst [t; Lst ts]] ->
+   let ts = 
+     map (function 
+       | Lst [t1; t2] -> xtype t1, xtype t2 
+       | _ -> err "AST_typematch typerrror"
+     )
+     ts
+   in `AST_type_match (sr,(xtype t, ts))
+
+ | Lst [Id "AST_macro_ctor";  Lst [Str s; e]] -> `AST_macro_ctor (sr,(ss s, ex e))
+
+(*
+ | Lst [Id "AST_macro_statements";  * statement_t list -> * statement_t list
+
+ | Lst [Id "AST_case";  * expr_t * Str s list * expr_t -> * expr_t * str s list * expr_t
+ | Lst [Id "AST_user_expr";  * Str s * ast_term_t -> * str s * ast_term_t
+*)
+
+  | Id y -> `AST_name (sr,y,[])
+  | Int i -> 
+    let j = Big_int.big_int_of_string i in 
+    `AST_literal (sr, `AST_int ("int",j))
+
+  | x -> 
+    print_endline "Invalid sex";
+    Sex_print.sex_print x;
+    raise Not_found
+
+
 @select(tangler("sex.ml"))
 open Sex_types
 open List
@@ -274,11 +441,30 @@ let main() =
   let sex = Sex_map.eval fresh [] sex in 
   print_endline "Evaluated:";
   Sex_print.sex_print sex
+  ;
 
+  let filename = "test2.sex" in
+  print_endline ("Processing " ^ filename);
+  let file = open_in filename in
+  let lexbuf = Lexing.from_channel file in
+  let sexes = Sex_parse.sex_parse (Sex_lex.sex_lex 1) lexbuf in
+  close_in file;
+  let sex = match sexes with
+  | (sex,_) :: _ -> sex
+  | _ -> assert false (* ambiguous parse not expected! *)
+  in
+  Sex_print.sex_print sex;
+  let sr = "test2.sex",0,0,0,0 in
+  let flxe : Flx_ast.expr_t = Sex2flx.xexpr_t sr 1 [] sex in
+  print_endline ("e=" ^ Flx_print.string_of_expr flxe)
 ;;
 main()
 ;;
 
+@select(tangler("test2.sex"))
+(
+  AST_apply (add (AST_tuple (1 2)))
+)
 @select(tangler("test.sex"))
 (
   "Hello" fred 1 (2 3) (+ 30 (+ 6 4) 2)
@@ -300,6 +486,7 @@ main()
    ('sex_types',''),
    ('sex_print',''),
    ('sex_map',''),
+   ('sex2flx','-I ../../src'),
    ('sex_parse','-I ../../dypgen/dyplib'),
    ('sex_lex','-I ../../dypgen/dyplib'),
  ]
@@ -316,8 +503,8 @@ all:
 @for src,flags in srcs:
   objs = objs + src + '.cmx '
 @tangle('\tocamlopt -a -o sex.cmxa '+objs)
-@tangle('\tocamlopt -c sex.ml')
-@tangle('\tocamlopt -o sex ../../dypgen/dyplib/dyplib.cmxa sex.cmxa sex.cmx')
+@tangle('\tocamlopt -I ../../src -c sex.ml')
+@tangle('\tocamlopt -o sex nums.cmxa ../../dypgen/dyplib/dyplib.cmxa ../../src/flxlib.cmxa sex.cmxa sex.cmx')
 clean:
 @tangle('\trm -f *.a *.o *.cmi *.cmx *.cmxa *.ml *.mli *.dyp *.mll *.cache sex tmp.tmp *.sex')
 
