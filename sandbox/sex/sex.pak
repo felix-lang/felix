@@ -266,6 +266,7 @@ let rec xexpr_t sr fresh env x =
   let ii i = int_of_string i in
   let ss s = String.sub s 1 (String.length s - 2) in
   let xq qn = qualified_name_of_expr (ex qn) in
+  let xp x = xpattern_t sr fresh env x in
   match x with
  | Lst [] -> `AST_tuple (sr,[])
  | Lst [x] -> ex x
@@ -358,9 +359,7 @@ let rec xexpr_t sr fresh env x =
  | Lst [Id "AST_case_arg"; Lst [Int i; e]] -> `AST_case_arg (sr,(ii i, ex e))
 
  | Lst [Id "AST_case_index";  e] -> `AST_case_index (sr, ex e)
-(*
- | Lst [Id "AST_letin";  * (pattern_t * expr_t * expr_t) -> * (pattern_t * expr_t * expr_t)
-*)
+ | Lst [Id "AST_letin";  Lst [p; e1; e2]] -> `AST_letin (sr,(xp p, ex e1, ex e2))
 
  | Lst [Id "AST_get_n";  Lst [Int i; e]] -> `AST_get_n(sr,(ii i, ex e))
  | Lst [Id "AST_get_named_variable";  Lst [Str s;e]]-> `AST_get_named_variable (sr, (ss s, ex e))
@@ -398,8 +397,16 @@ let rec xexpr_t sr fresh env x =
 
 (*
  | Lst [Id "AST_macro_statements";  * statement_t list -> * statement_t list
-
- | Lst [Id "AST_case";  * expr_t * Str s list * expr_t -> * expr_t * str s list * expr_t
+*)
+ | Lst [Id "AST_case";  Lst [e1; Lst ses; e2]] -> 
+   let ses = 
+     map (function 
+       | Str s -> ss s 
+       | _ -> err "AST_case type error") 
+     ses 
+   in
+   `AST_case (sr, ex e1,ses,ex e2)
+(*
  | Lst [Id "AST_user_expr";  * Str s * ast_term_t -> * str s * ast_term_t
 *)
 
@@ -410,6 +417,61 @@ let rec xexpr_t sr fresh env x =
 
   | x -> 
     print_endline "Invalid sex";
+    Sex_print.sex_print x;
+    raise Not_found
+
+and xpattern_t sr fresh env x =
+  let xp x = xpattern_t sr fresh env x in
+  let ex x = xexpr_t sr fresh env x in
+  let xtype t = typecode_of_expr (ex t) in
+  let ii i = int_of_string i in
+  let bi i = Big_int.big_int_of_string i in
+  let ss s = String.sub s 1 (String.length s - 2) in
+  let xq qn = qualified_name_of_expr (ex qn) in
+  match x with
+  | Id "PAT_nan" -> `PAT_nan sr
+  | Id "PAT_none" -> `PAT_none sr
+
+  (* constants *)
+  | Lst [Id "PAT_int"; Str s; Int i] -> `PAT_int (sr,ss s, bi i)
+  | Lst [Id "PAT_string"; Str s] -> `PAT_string (sr,ss s)
+
+  (* ranges *)
+  | Lst [Id "PAT_int_range"; Str s1; Int i1; Str s2; Int i2] ->
+    `PAT_int_range (sr,ss s1, bi i1, ss s2, bi i2)
+
+  | Lst [Id "PAT_string_range"; Str s1; Str s2] ->
+    `PAT_string_range (sr,ss s1, ss s2)
+(*  
+  | `PAT_float_range of range_srcref * float_pat * float_pat 
+*)
+  (* other *)
+  | Lst [Id "PAT_coercion"; p; t] ->
+   `PAT_coercion (sr, xp p, xtype t)
+  
+  | Lst [Id "PAT_name"; Id x] -> `PAT_name (sr, x)
+  | Lst [Id "PAT_tuple"; Lst ps] -> `PAT_tuple (sr, map xp ps)
+
+  | Id "PAT_any" -> `PAT_any sr
+(*
+  | `PAT_regexp of range_srcref * string * id_t list 
+*)  
+  | Lst [Id "PAT_const_ctor"; qn] -> `PAT_const_ctor (sr, xq qn)
+  | Lst [Id "PAT_nonconst_ctor"; qn; p] -> `PAT_nonconst_ctor (sr, xq qn, xp p)
+
+  | Lst [Id "PAT_as"; p; Id s] -> `PAT_as (sr, xp p, s)
+  | Lst [Id "PAT_when"; p; e] -> `PAT_when (sr, xp p, ex e)
+
+  | Lst [Id "PAT_record"; Lst ips] -> 
+    let ips = map (function
+      | Lst [Id id; p] -> id,xp p
+      | _ -> err "PAT_record syntax"
+      )
+      ips
+    in
+    `PAT_record (sr, ips)
+  | x -> 
+    print_endline "Invalid pattern sex";
     Sex_print.sex_print x;
     raise Not_found
 
