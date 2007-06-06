@@ -412,6 +412,12 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
        let lkind = Hashtbl.find label_usage lno in
        if lkind = `Far then raise Not_found
        
+    | `BEXE_goto (_,s) ->
+       let  lno = Hashtbl.find labels s in
+       let lkind = Hashtbl.find label_usage lno in
+       if lkind = `Far then raise Not_found
+ 
+
     | `BEXE_yield _
     | `BEXE_fun_return _ -> assert false
 
@@ -424,7 +430,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     | `BEXE_call_method_stack _
     | `BEXE_halt _
     | `BEXE_comment _
-    | `BEXE_goto _
     | `BEXE_ifgoto _
     | `BEXE_ifnotgoto _
     | `BEXE_assert _
