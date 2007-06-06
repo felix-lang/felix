@@ -260,7 +260,20 @@ exception Sex2FlxTypeError of string
 
 let err s = raise (Sex2FlxTypeError s) 
 
-let rec xexpr_t sr fresh env x = 
+let rec xliteral_t sr fresh env x = 
+  let bi i = Big_int.big_int_of_string i in
+  let ss s = String.sub s 1 (String.length s - 2) in
+  match x with
+  | Lst [Id "AST_int"; Str s; Int i] -> `AST_int (ss s, bi i)
+  | Lst [Id "AST_string"; Str s] -> `AST_string (ss s)
+  | Lst [Id "AST_cstring"; Str s] -> `AST_cstring (ss s)
+  | Lst [Id "AST_wstring"; Str s] -> `AST_wstring (ss s)
+  | Lst [Id "AST_ustring"; Str s] -> `AST_ustring (ss s)
+  | Lst [Id "AST_float "; Str s1; Str s2] -> `AST_float (ss s1, ss s2)
+  | _ -> err "invalid literal"
+
+and xexpr_t sr fresh env x = 
+  let re x = xregexp_t sr fresh env x in
   let ex x = xexpr_t sr fresh env x in
   let xtype t = typecode_of_expr (ex t) in
   let ii i = int_of_string i in
@@ -336,17 +349,15 @@ let rec xexpr_t sr fresh env x =
  | Lst [Id "AST_longarrow";  Lst [e1; e2]] -> `AST_longarrow (sr,(ex e1, ex e2))
  | Lst [Id "AST_superscript";  Lst [e1; e2]] -> `AST_superscript (sr,(ex e1, ex e2))
 
-(* 
- | Lst [Id "AST_literal";  * literal_t -> * literal_t
-*)
+ | Lst [Id "AST_literal";  lit] -> `AST_literal (sr, xliteral_t sr fresh env lit)
+
  | Lst [Id "AST_deref"; e] -> `AST_deref (sr,ex e)
  | Lst [Id "AST_ref"; e] -> `AST_ref (sr,ex e)
  | Lst [Id "AST_new"; e] -> `AST_new (sr,ex e)
  | Lst [Id "AST_lvalue"; e] -> `AST_lvalue (sr,ex e)
  | Lst [Id "AST_callback";  qn] -> `AST_callback (sr,xq qn)
-(*
- | Lst [Id "AST_method_apply";  * (id_t * expr_t * typecode_t list) -> * (id_t * expr_t * typecode_t list)
-*)
+ | Lst [Id "AST_method_apply";  Lst [Id n; e; Lst ts]] -> `AST_method_apply(sr,(n, ex e, map xtype ts))
+
  | Lst [Id "AST_dot";  Lst [e1; e2]] -> `AST_dot (sr,(ex e1, ex e2))
 (*
  | Lst [Id "AST_lambda";  * (vs_list_t * params_t list * typecode_t * statement_t list) -> * (vs_list_t * params_t list * typecode_t * statement_t list)
@@ -368,15 +379,48 @@ let rec xexpr_t sr fresh env x =
    `AST_get_named_method (sr,(ss s, ii i, map xtype ts, ex e))
 
  | Lst [Id "AST_as";  Lst [e; Str s]] -> `AST_as (sr,(ex e, ss s))
+ | Lst [Id "AST_match";  Lst [e; Lst pes]]->
+   let pes = map (function 
+     | Lst [p;e] -> xp p, ex e 
+     | _ -> err "AST_match syntax"
+     )
+     pes
+   in
+   `AST_match (sr, (ex e,pes))
+
 (*
- | Lst [Id "AST_match";  * (expr_t * (pattern_t * expr_t) list) -> * (expr_t * (pattern_t * expr_t) list)
  | Lst [Id "AST_parse";  * expr_t * (range_srcref * production_t * expr_t) list -> * expr_t * (range_srcref * production_t * expr_t) list
  | Lst [Id "AST_sparse";  * expr_t * Str s * int list -> * expr_t * str s * int list
-
- | Lst [Id "AST_regmatch";  * (expr_t * expr_t * (regexp_t * expr_t) list) -> * (expr_t * expr_t * (regexp_t * expr_t) list)
- | Lst [Id "AST_string_regmatch";  * (expr_t * (regexp_t * expr_t) list) -> * (expr_t * (regexp_t * expr_t) list)
- | Lst [Id "AST_reglex";  * (expr_t * expr_t * (regexp_t * expr_t) list) -> * (expr_t * expr_t * (regexp_t * expr_t) list)
 *)
+
+ | Lst [Id "AST_regmatch";  Lst [e1; e2; Lst res]] ->
+   let res = map (function
+     | Lst [r; e] -> re r,ex e
+     | _ -> err "AST_regmatch"
+     )
+     res
+   in
+   `AST_regmatch (sr,(ex e1, ex e2, res))
+
+ | Lst [Id "AST_string_regmatch";  Lst [e; Lst res]] ->
+   let res = map (function
+     | Lst [r; e] -> re r,ex e
+     | _ -> err "AST_string_regmatch"
+     )
+     res
+   in
+   `AST_string_regmatch (sr,(ex e, res))
+  
+ | Lst [Id "AST_reglex";  Lst [e1; e2; Lst res]] ->
+   let res = map (function
+     | Lst [r; e] -> re r,ex e
+     | _ -> err "AST_reglex"
+     )
+     res
+   in
+   `AST_reglex (sr,(ex e1, ex e2, res))
+
+ 
  | Lst [Id "AST_typeof";  e] -> `AST_typeof (sr, ex e)
  | Lst [Id "AST_lift";  e] -> `AST_lift (sr,ex e)
 
@@ -420,6 +464,15 @@ let rec xexpr_t sr fresh env x =
     Sex_print.sex_print x;
     raise Not_found
 
+and xfloat_pat x = 
+  let ss s = String.sub s 1 (String.length s - 2) in
+  match x with
+  | Lst [Id "Float_plus"; Str ty; Str vl] -> Float_plus (ss ty, ss vl)
+  | Lst [Id "Float_minus"; Str ty; Str vl] -> Float_minus (ss ty, ss vl)
+  | Id "Float_inf" -> Float_inf
+  | Id "Float_minus_inf" -> Float_minus_inf
+  | _ -> err "Float_pat syntax error"
+
 and xpattern_t sr fresh env x =
   let xp x = xpattern_t sr fresh env x in
   let ex x = xexpr_t sr fresh env x in
@@ -442,9 +495,9 @@ and xpattern_t sr fresh env x =
 
   | Lst [Id "PAT_string_range"; Str s1; Str s2] ->
     `PAT_string_range (sr,ss s1, ss s2)
-(*  
-  | `PAT_float_range of range_srcref * float_pat * float_pat 
-*)
+  | Lst [Id "PAT_float_range"; p1; p2] -> 
+    `PAT_float_range (sr, xfloat_pat p1, xfloat_pat p2)
+
   (* other *)
   | Lst [Id "PAT_coercion"; p; t] ->
    `PAT_coercion (sr, xp p, xtype t)
@@ -474,6 +527,24 @@ and xpattern_t sr fresh env x =
     print_endline "Invalid pattern sex";
     Sex_print.sex_print x;
     raise Not_found
+
+and xregexp_t sr fresh env x = 
+  let ex x = xexpr_t sr fresh env x in
+  let xq qn = qualified_name_of_expr (ex qn) in
+  let re x = xregexp_t sr fresh env x in
+  let ss s = String.sub s 1 (String.length s - 2) in
+  match x with
+  | Lst [Id "REGEXP_seq"; r1; r2] -> `REGEXP_seq (re r1, re r2)
+  | Lst [Id "REGEXP_alt"; r1; r2] -> `REGEXP_alt (re r1, re r2)
+  | Lst [Id "REGEXP_aster"; r] -> `REGEXP_aster (re r)
+  | Lst [Id "REGEXP_name"; qn] -> `REGEXP_name (xq qn)
+  | Lst [Id "REGEXP_string"; Str s] -> `REGEXP_string (ss s)
+  | Id "REGEXP_epsilon" -> `REGEXP_epsilon
+  | Id "REGEXP_sentinel" -> `REGEXP_sentinel
+  | Lst [Id "REGEXP_code"; e] -> `REGEXP_code (ex e)
+  | Lst [Id "REGEXP_group"; Str s; r] -> `REGEXP_group (ss s, re r)
+  | _ -> err "regexp_t syntax error"
+
 
 
 @select(tangler("sex.ml"))
