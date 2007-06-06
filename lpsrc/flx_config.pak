@@ -502,7 +502,10 @@ except:
     shell("iscr")
     ISCR="iscr "
   except EnvironmentError:
-    ISCR="python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
+    ISCR='PYTHONPATH="%s" python -O %s' % (
+      FLX_DIR,
+      os.path.join(FLX_LPARCHIVE, 'interscript', 'bin', 'iscr.py'),
+    )
   print "Storing Interscript configuration"
   f = cwrite("iscr")
   pr(f,"#Interscript support")
@@ -822,6 +825,7 @@ BUILDCXX=None
 HOSTCXX=None
 TARGETCXX=None
 
+FLX_DIR=os.environ.get("FLX_DIR",os.curdir)
 FLX_LPARCHIVE=os.environ.get("FLX_LPARCHIVE",os.curdir)
 
 ALL_PHASES=["build","host","target","run"]
@@ -961,7 +965,9 @@ if BOOTFILE:
 
 if PREFIX=='': PREFIX=default_prefix
 print "INSTALL PREFIX="+PREFIX
+if FLX_DIR=='': FLX_DIR = os.curdir
 if FLX_LPARCHIVE=='': FLX_LPARCHIVE = os.curdir
+print "FLX_DIR="+FLX_DIR
 print "FLX_LPARCHIVE="+FLX_LPARCHIVE
 
 #---------------------------------------------------
@@ -1047,6 +1053,7 @@ if "build" in PHASES:
     pr(f,'execfile("script/config_support.py")')
 
     pa(f,this,"build_model")
+    pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
     pr(f,"")
  
@@ -1182,6 +1189,7 @@ if "host" in PHASES:
 
     pa(f,this,"build_model")
     pa(f,this,"host_model")
+    pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
     pr(f,"")
 
@@ -1392,6 +1400,7 @@ if "target" in PHASES:
     pa(f,this,"HAVE_PTHREADS")
     pa(f,this,"PTHREAD_SWITCH")
     pa(f,this,"HAVE_PKGCONFIG")
+    pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
     pr(f,"")
 
@@ -1888,10 +1897,3 @@ else:
     sys.exit(1)
 
 tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
-
-@head(1,'Finish up')
-Just cleaning up script now.
-@try:
-   os.system('chmod u+x configure')
-   os.system('chmod u+x boot')
- except:pass

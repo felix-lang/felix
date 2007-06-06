@@ -1390,9 +1390,9 @@ def runISCR(a,force=0):
   a = string.join(z, ' ')
   
   if force:
-    exqt(ISCR + "--nocache " + a)
+    exqt(ISCR + " --nocache " + a)
   else:
-    exqt(ISCR + '--break-on-error ' + a)
+    exqt(ISCR + ' --break-on-error ' + a)
 
 
 @select(tangler('mkplugins/manifest.py'))
@@ -4144,8 +4144,6 @@ post-install:
 @head(1,'Finish up')
 Just cleaning up script now.
 @try:
-   os.system('chmod u+x configure')
    os.system('chmod u+x bin/flx')
    os.system('chmod u+x bin/fishcc')
  except:pass
-

@@ -2,9 +2,15 @@
 # RF: added above line to make configure script tab
 # completable as exe under cygwin/fat32 fs. chmod
 # does NOT work in this case.
-PYTHONPATH=.:$PYTHONPATH
+FLX_DIR=`dirname $0`
+export FLX_DIR
+
+PYTHONPATH=$FLX_DIR:$PYTHONPATH
 export PYTHONPATH
-FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
+
+FLX_LPARCHIVE=${FLX_LPARCHIVE:-$FLX_DIR}
+export FLX_LPARCHIVE
+
 PREFIX=$PREFIX
 ARGS="$*" # save the arguments
 
@@ -54,7 +60,7 @@ echo "Configuring Felix"
 echo FLX_LPARCHIVE at $FLX_LPARCHIVE
 
 rm -f $FLX_LPARCHIVE/lpsrc/*.cache
-python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
+python $FLX_DIR/interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
 if [ $? != 0 ];
 then
   echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
@@ -62,10 +68,9 @@ then
 fi
 
 python -O script/make_config.py --quiet ${ARGS}
-python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
+python $FLX_DIR/interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
 if [ $? != 0 ];
 then
   echo "ERROR EXTRACTING MAKER PROGRAM"
   exit 1
 fi
-
