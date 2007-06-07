@@ -290,6 +290,10 @@ and xexpr_t sr fresh env x =
   let xq qn = qualified_name_of_expr (ex qn) in
   let xp x = xpattern_t sr fresh env x in
   let xpr x = xproduction_t sr fresh env x in
+  let xps x =  xparams_t sr fresh env x in
+  let xvs x = xvs_list_t sr fresh env x in
+  let xs x = xstatement_t sr fresh env x in
+  let xsts x =  lst "statement" xs x in
   match x with
  | Lst [] -> `AST_tuple (sr,[])
  | Lst [x] -> ex x
@@ -369,9 +373,10 @@ and xexpr_t sr fresh env x =
  | Lst [Id "AST_method_apply";  Lst [Id n; e; Lst ts]] -> `AST_method_apply(sr,(n, ex e, map ti ts))
 
  | Lst [Id "AST_dot";  Lst [e1; e2]] -> `AST_dot (sr,(ex e1, ex e2))
-(*
- | Lst [Id "AST_lambda";  * (vs_list_t * params_t list * typecode_t * statement_t list) -> * (vs_list_t * params_t list * typecode_t * statement_t list)
-*)
+ 
+ | Lst [Id "AST_lambda";  Lst [vs; Lst pss; t; sts]] ->
+   `AST_lambda  (sr,(xvs vs, map xps pss, ti t, xsts sts))
+
  | Lst [Id "AST_match_ctor";  Lst [qn; e]] -> `AST_match_ctor(sr,(xq qn,ex e))
  | Lst [Id "AST_match_case";  Lst [Int i; e]]-> `AST_match_case (sr,(ii i, ex e))
 
@@ -461,9 +466,9 @@ and xexpr_t sr fresh env x =
 
  | Lst [Id "AST_macro_ctor";  Lst [Str s; e]] -> `AST_macro_ctor (sr,(ss s, ex e))
 
-(*
- | Lst [Id "AST_macro_statements";  * statement_t list -> * statement_t list
-*)
+ | Lst [Id "AST_macro_statements"; sts] ->
+  `AST_macro_statements (sr, xsts sts)
+
  | Lst [Id "AST_case";  Lst [e1; Lst ses; e2]] -> 
    let ses = 
      map (function 
@@ -762,6 +767,40 @@ and xtlvalue_t sr fresh env x : tlvalue_t =
   | Lst [lv; ot] -> xlv lv, xot ot
   | _ -> err "tlvalue_t"
 
+and xtype_qual_t sr fresh env x : type_qual_t =
+  let ex x = xexpr_t sr fresh env x in
+  let ti t = typecode_of_expr (ex t) in
+  match x with
+  | Id "Incomplete" -> `Incomplete
+  | Id "Pod" -> `Pod
+  | Id "GC_pointer" -> `GC_pointer
+  | Lst [Id "Raw_needs_shape"; t] -> `Raw_needs_shape (ti t)
+  | _ -> err "typequal_t"
+
+and xrequirement_t sr fresh env x : requirement_t =
+  let ex x = xexpr_t sr fresh env x in
+  let xq qn = qualified_name_of_expr (ex qn) in
+  let xct x = xc_t sr fresh env x in
+  let ss s = String.sub s 1 (String.length s - 2) in
+  match x with
+  | Lst [Id "Body_req"; ct] -> `Body_req (xct ct)
+  | Lst [Id "Header_req"; ct] -> `Header_req (xct ct)
+  | Lst [Id "Named_req"; qn] -> `Named_req (xq qn)
+  | Lst [Id "Property_req"; Str s] -> `Property_req (ss s)
+  | Lst [Id "Package_req"; ct] -> `Package_req (xct ct)
+  | _ -> err "requirement_t"
+
+and xraw_req_expr_t sr fresh env x : raw_req_expr_t =
+  let xr x = xrequirement_t sr fresh env x in
+  let xrr x = xraw_req_expr_t sr fresh env x in
+  match x with
+  | Lst [Id "RREQ_atom"; r] -> `RREQ_atom (xr r)
+  | Lst [Id "RREQ_or"; r1; r2] -> `RREQ_or (xrr r1, xrr r2)
+  | Lst [Id "RREQ_and"; r1; r2] -> `RREQ_and (xrr r1, xrr r2)
+  | Id "RREQ_true"-> `RREQ_true
+  | Id "RREQ_false"-> `RREQ_false
+  | _ -> err "raw_req_expr_t"
+
 and xstatement_t sr fresh env x : statement_t =
   let xpvs x = xplain_vs_list_t sr fresh env x in
   let xs x = xstatement_t sr fresh env x in
@@ -783,6 +822,10 @@ and xstatement_t sr fresh env x : statement_t =
   let ii i = int_of_string i in
   let xi = function | Int i -> ii i | _ -> err "int" in
   let xtlv x = xtlvalue_t sr fresh env x in
+  let xtq x = xtype_qual_t sr fresh env x in
+  let xtqs x = lst "typ_equal_t" xtq x in
+  let xc x = xc_t sr fresh env x in
+  let xrr x = xraw_req_expr_t sr fresh env x in
   match x with
   | Lst [Id "AST_cparse"; Str s] -> `AST_cparse (sr, ss s)
   | Lst [Id "AST_include"; Str s] -> `AST_include (sr, ss s)
@@ -930,7 +973,45 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "AST_assert"; e] -> `AST_assert(sr,ex e)
   | Lst [Id "AST_apply_ctor"; Id n; e1; e2] -> `AST_apply_ctor(sr,n,ex e1,ex e2)
   | Lst [Id "AST_init"; Id n; e] -> `AST_init(sr,n,ex e)
+  | Lst [Id "AST_newtype"; Id n; vs; t] -> `AST_newtype(sr,n,xvs vs, ti t)
+  | Lst [Id "AST_abs_decl"; Id n; vs; tqs; ct; req] -> 
+    `AST_abs_decl (sr,n,xvs vs, xtqs tqs, xc ct, xrr req)
 
+  | Lst [Id "AST_ctypes"; Lst ids; tqs; req] -> 
+    let ids = map (function 
+      | Id n -> ("dummy",0,0,0),n
+      | _ -> err "AST_ctypes"
+    ) ids
+    in
+    `AST_ctypes (sr,ids, xtqs tqs, xrr req)
+
+  | Lst [Id "AST_const_decl"; Id n; vs; t; ct; req] -> 
+    `AST_const_decl (sr, n, xvs vs, ti t, xc ct, xrr req)
+
+  | Lst [Id "AST_fun_decl"; Id n; vs; Lst ps; t; ct; req; Str prec] -> 
+    `AST_fun_decl (sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
+
+  | Lst [Id "AST_callback_decl"; Id n; Lst ps; t; req] -> 
+    `AST_callback_decl (sr, n, map ti ps, ti t, xrr req)
+  | Lst [Id "AST_insert"; Id n; vs; ct; ik; req] ->
+    let xik = function 
+     | Id "Header" -> `Header
+     | Id "Body" -> `Body
+     | Id "Package" -> `Package
+     | _ -> err "ikind_t"
+   in
+    `AST_insert (sr, n, xvs vs, xc ct, xik ik, xrr req)
+  | Lst [Id "AST_code"; ct] -> `AST_code (sr, xc ct)
+  | Lst [Id "AST_noreturn_code"; ct] -> `AST_noreturn_code (sr, xc ct)
+  | Lst [Id "AST_export_fun"; sn; Str s] -> 
+    let xsn x = match ex x with
+    | #suffixed_name_t as x -> x
+    | _ -> err "suffixed_name_t"
+    in
+    `AST_export_fun  (sr, xsn sn, ss s)
+
+  | Lst [Id "AST_export_type"; t; Str s] -> 
+    `AST_export_type (sr, ti t, ss s)
 
   | _ -> err "statement"
 
