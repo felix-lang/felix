@@ -716,6 +716,52 @@ and xmacro_parameter_t sr fresh env x : macro_parameter_t =
   | Lst [Id s; m] -> s,xmacro_parameter_type_t sr fresh env m
   | _ -> err "macro_parameter_t"
 
+and xclass_member_t sr fresh env x : class_member_t =
+  let ex x = xexpr_t sr fresh env x in
+  let ti t = typecode_of_expr (ex t) in
+  let ii i = int_of_string i in
+  let xi = function | Int i -> ii i | _ -> err "int" in
+  let xio x = opt "int" xi x in
+  let ct x = opt "c_t" (xc_t sr fresh env) x in
+  let xvs x = xvs_list_t sr fresh env x in
+  match x with
+  | Lst [Id "MemberVal"; Id n; t; cto] -> `MemberVal (n, ti t, ct cto)
+  | Lst [Id "MemberVar"; Id n;  t; cto] -> `MemberVar (n, ti t, ct cto)
+  | Lst [Id "MemberFun"; Id n; io; vs; t; cto] -> `MemberFun (n, xio io, xvs vs, ti t, ct cto)
+  | Lst [Id "MemberProc"; Id n; io; vs; t; cto] -> `MemberProc (n, xio io, xvs vs, ti t, ct cto)
+  | Lst [Id "MemberCtor"; Id n; io; t; cto] -> `MemberCtor (n,xio io, ti t, ct cto)
+  | _ -> err "class_member_t"
+
+and xc_t sr fresh env x : c_t =
+  let ss s = String.sub s 1 (String.length s - 2) in
+  match x with
+  | Lst [Id "StrTemplate"; Str s] -> `StrTemplate (ss s)
+  | Lst [Id "Str"; Str s] -> `Str (ss s)
+  | Id "Virtual" -> `Virtual
+  | Id "Identity" -> `Identity
+  | _ ->  err "c_t"
+
+and xlvalue_t sr fresh env x : lvalue_t = 
+  let ex x = xexpr_t sr fresh env x in
+  let xtlv x = xtlvalue_t sr fresh env x in
+  match x with
+  | Lst [Id "Val"; Str s] -> `Val (sr,s)
+  | Lst [Id "Var"; Str s] -> `Var (sr,s)
+  | Lst [Id "Name"; Str s] -> `Name (sr,s)
+  | Id "Skip" -> `Skip sr
+  | Lst [Id "List"; tl] -> `List (lst "lvalue_t" xtlv tl)
+  | Lst [Id "Expr"; e] -> `Expr (sr,ex e)
+  | _ -> err "lvalue_t"
+
+and xtlvalue_t sr fresh env x : tlvalue_t = 
+  let xlv x = xlvalue_t sr fresh env x in
+  let ex x = xexpr_t sr fresh env x in
+  let ti t = typecode_of_expr (ex t) in
+  let xot x = opt "typecode" ti x in
+  match x with
+  | Lst [lv; ot] -> xlv lv, xot ot
+  | _ -> err "tlvalue_t"
+
 and xstatement_t sr fresh env x : statement_t =
   let xpvs x = xplain_vs_list_t sr fresh env x in
   let xs x = xstatement_t sr fresh env x in
@@ -734,6 +780,9 @@ and xstatement_t sr fresh env x : statement_t =
   let ti t = typecode_of_expr (ex t) in
   let xmps x = lst "macro_parameter_t" (xmacro_parameter_t sr fresh env) x in
   let xid = function | Id n -> n | _ -> err "id" in
+  let ii i = int_of_string i in
+  let xi = function | Int i -> ii i | _ -> err "int" in
+  let xtlv x = xtlvalue_t sr fresh env x in
   match x with
   | Lst [Id "AST_cparse"; Str s] -> `AST_cparse (sr, ss s)
   | Lst [Id "AST_include"; Str s] -> `AST_include (sr, ss s)
@@ -796,6 +845,91 @@ and xstatement_t sr fresh env x : statement_t =
     `AST_macro_vfor (sr,lst "AST_macro_vfor" xid ids, ex e, xsts sts)
   | Lst [Id "AST_seq"; sts] ->
     `AST_seq (sr,xsts sts)
+
+  | Lst [Id "AST_union"; Id n; vs; ucmp] ->
+    let xucmp = function 
+      | Lst [Id c; io; vs; t] -> c,opt "union component" xi io,xvs vs, ti t
+      | _ -> err "union component"
+    in
+    let ucmp = lst "union component" xucmp ucmp in
+    `AST_union (sr,n, xvs vs, ucmp)
+
+  | Lst [Id "AST_struct"; Id n; vs; ucmp] ->
+    let xucmp = function 
+      | Lst [Id c; t] -> c, ti t
+      | _ -> err "struct component"
+    in
+    let ucmp = lst "struct component" xucmp ucmp in
+    `AST_struct (sr,n, xvs vs, ucmp)
+
+  | Lst [Id "AST_cstruct"; Id n; vs; ucmp] ->
+    let xucmp = function 
+      | Lst [Id c; t] -> c, ti t
+      | _ -> err "cstruct component"
+    in
+    let ucmp = lst "cstruct component" xucmp ucmp in
+    `AST_cstruct (sr,n, xvs vs, ucmp)
+
+  | Lst [Id "AST_cclass"; Id n; vs; ucmp] ->
+    let ucmp = lst "cclass component" (xclass_member_t sr fresh env) ucmp in
+    `AST_cclass (sr,n, xvs vs, ucmp)
+
+  | Lst [Id "AST_class"; Id n; vs; sts] ->
+    `AST_class (sr,n, xvs vs, xsts sts)
+
+  | Lst [Id "AST_type_alias"; Id n; vs; t] ->
+    `AST_type_alias (sr,n, xvs vs, ti t)
+
+  | Lst [Id "AST_inherit"; Id n; vs; qn] ->
+    `AST_inherit (sr,n, xvs vs, xq qn)
+
+  | Lst [Id "AST_inherit_fun"; Id n; vs; qn] ->
+    `AST_inherit_fun (sr,n, xvs vs, xq qn)
+
+  | Lst [Id "AST_val_decl"; Id n; vs; ot; oe] ->
+    `AST_val_decl (sr,n, xvs vs, opt "val_decl" ti ot, opt "val_decl" ex oe)
+
+  | Lst [Id "AST_lazy_decl"; Id n; vs; ot; oe] ->
+    `AST_lazy_decl (sr,n, xvs vs, opt "lazy_decl" ti ot, opt "val_decl" ex oe)
+
+  | Lst [Id "AST_var_decl"; Id n; vs; ot; oe] ->
+    `AST_var_decl (sr,n, xvs vs, opt "var_decl" ti ot, opt "val_decl" ex oe)
+
+  | Lst [Id "AST_ref_decl"; Id n; vs; ot; oe] ->
+    `AST_ref_decl (sr,n, xvs vs, opt "ref_decl" ti ot, opt "val_decl" ex oe)
+
+  | Lst [Id "AST_untyped_module"; Id n; vs; sts] ->
+    `AST_untyped_module (sr, n, xvs vs, xsts sts)
+
+  | Lst [Id "AST_namespace"; Id n; vs; sts] ->
+    `AST_namespace (sr, n, xvs vs, xsts sts)
+
+  | Lst [Id "AST_typeclass"; Id n; vs; sts] ->
+    `AST_typeclass(sr, n, xvs vs, xsts sts)
+
+  | Lst [Id "AST_instance"; vs; qn; sts] ->
+    `AST_instance(sr, xvs vs, xq qn, xsts sts)
+
+  | Lst [Id "AST_label"; Id n] -> `AST_label(sr,n)
+  | Lst [Id "AST_goto"; Id n] -> `AST_goto(sr,n)
+  | Lst [Id "AST_ifgoto"; e; Id n] -> `AST_ifgoto(sr,ex e,n)
+  | Lst [Id "AST_ifreturn"; e] -> `AST_ifreturn(sr,ex e)
+  | Lst [Id "AST_ifdo"; e; sts1; sts2] -> `AST_ifdo(sr,ex e, xsts sts1, xsts sts2)
+  | Lst [Id "AST_ifnotgoto"; e; Id n] -> `AST_ifnotgoto(sr,ex e,n)
+  | Lst [Id "AST_call"; f; a] -> `AST_call(sr,ex f,ex a)
+  | Lst [Id "AST_assign"; Id v; tlv; a] -> `AST_assign(sr,v,xtlv tlv,ex a)
+  | Lst [Id "AST_cassign"; e1; e2] -> `AST_cassign(sr,ex e1, ex e2)
+  | Lst [Id "AST_jump"; e1; e2] -> `AST_jump(sr,ex e1, ex e2)
+  | Lst [Id "AST_loop"; Id n; e2] -> `AST_loop(sr,n, ex e2)
+  | Lst [Id "AST_svc"; Id n] -> `AST_svc(sr,n)
+  | Lst [Id "AST_fun_return"; e] -> `AST_fun_return(sr,ex e)
+  | Lst [Id "AST_yield"; e] -> `AST_yield(sr,ex e)
+  | Id "AST_proc_return" -> `AST_proc_return(sr)
+  | Lst [Id "AST_halt"; Str s] -> `AST_halt(sr, ss s)
+  | Lst [Id "AST_nop"; Str s] -> `AST_nop(sr,ss s)
+  | Lst [Id "AST_assert"; e] -> `AST_assert(sr,ex e)
+  | Lst [Id "AST_apply_ctor"; Id n; e1; e2] -> `AST_apply_ctor(sr,n,ex e1,ex e2)
+  | Lst [Id "AST_init"; Id n; e] -> `AST_init(sr,n,ex e)
 
 
   | _ -> err "statement"
