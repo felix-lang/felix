@@ -169,36 +169,6 @@ iscr_source = ['lpsrc/flx_maker.pak']
 
 weaver_directory = 'doc/flx/flx_maker/'
 
-@h = tangler('spkgs/ocs.py')
-@select(h)
-OCS_MODULES = [
-  'ocs_vartable', 
-  'ocs_error', 
-  'ocs_port', 
-  'ocs_types', 
-  'ocs_sym', 
-  'ocs_env',
-  'ocs_char', 
-  'ocs_numaux', 
-  'ocs_complex', 
-  'ocs_num', 
-  'ocs_numstr', 
-  'ocs_lex',
-  'ocs_misc',
-  'ocs_read', 
-  'ocs_eval', 
-  'ocs_list', 
-  'ocs_compile', 
-  'ocs_macro', 
-  'ocs_prim', 
-  'ocs_string',
-  'ocs_vector', 
-  'ocs_print', 
-  'ocs_io', 
-  'ocs_contin', 
-  'ocs_top', 
-]
-
 @h = tangler('umk','data')
 @select(h)
 #!/bin/sh

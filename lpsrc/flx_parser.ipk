@@ -260,6 +260,17 @@ let dfltvs =
          else
          aux t1 t2 (`Keyword_term s1::args)
 
+       | USER10 (_,s1,_),`Obj_USER10 (sr,s2,_) ->
+         setsr sr;
+         if s1 <> s2 then (
+           (*
+           print_endline ("Keyword mismatch req=" ^ s1 ^ ", got=" ^ s2);
+           *)
+           raise Dyp.Giveup 
+         )
+         else
+         aux t1 t2 (`Keyword_term s1::args)
+
        | NAME (_,"statements"),`Obj_statements sts -> 
          (*
          print_endline "Matched statements";
@@ -381,6 +392,18 @@ let dfltvs =
          )
          else
          aux t1 t2 (`Keyword_term s1::args)
+
+       | USER10 (_,s1,_),`Obj_USER10 (sr,s2,_) ->
+         setsr sr;
+         if s1 <> s2 then (
+           (*
+           print_endline "keyword mismatch";
+           *)
+           raise Dyp.Giveup 
+         )
+         else
+         aux t1 t2 (`Keyword_term s1::args)
+
 
        | NAME (_,"statements"),`Obj_statements sts -> 
          (*
@@ -758,6 +781,7 @@ statement:
   | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
   | IDENT { NAME ($1,"identifier") }
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
+  | USER10 { USER10 $1 } /* user terminal */
  """
 @for s,t in flx_keywords:
   if t != "IDENT":

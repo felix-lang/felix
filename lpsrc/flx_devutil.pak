@@ -1428,7 +1428,7 @@ for fn in files:
 import string
 import os
 
-prefix = '/usr/local/src/ocs-1.0/src/'
+prefix = '/home/skaller/scheme/ocs-1.0.2/src/'
 
 files = [
   'ocs_char.ml',
@@ -1442,6 +1442,7 @@ files = [
   'ocs_env.ml',
   'ocs_env.mli',
   'ocs_error.ml',
+  'ocs_error.mli',
   'ocs_eval.ml',
   'ocs_eval.mli',
   'ocs_io.ml',
@@ -1488,11 +1489,54 @@ tgts = []
 for fn in files:
   parts = string.split(fn,'/')
   base = parts[-1]
-  target = 'src/'+base
+  target = 'ocs/'+base
   tgts.append((prefix+fn,target))
   i = string.index(base,'.')
 
 print "@head(1,'OCS')"
+print """
+@@h = tangler('spkgs/ocs.py')
+@@select(h)
+OCS_MODULES = [
+  'ocs/ocs_vartable', 
+  'ocs/ocs_error', 
+  'ocs/ocs_port', 
+  'ocs/ocs_types', 
+  'ocs/ocs_sym', 
+  'ocs/ocs_env',
+  'ocs/ocs_char', 
+  'ocs/ocs_numaux', 
+  'ocs/ocs_complex', 
+  'ocs/ocs_num', 
+  'ocs/ocs_numstr', 
+  'ocs/ocs_lex',
+  'ocs/ocs_misc',
+  'ocs/ocs_read', 
+  'ocs/ocs_eval', 
+  'ocs/ocs_list', 
+  'ocs/ocs_compile', 
+  'ocs/ocs_macro', 
+  'ocs/ocs_prim', 
+  'ocs/ocs_string',
+  'ocs/ocs_vector', 
+  'ocs/ocs_print', 
+  'ocs/ocs_io', 
+  'ocs/ocs_contin', 
+  'ocs/ocs_top', 
+]
+
+caml_raw_interfaces = ['ocs/ocs_types']
+caml_interfaces = OCS_MODULES
+caml_implementations= OCS_MODULES
+caml_include_paths = ['src','ocs']
+caml_provide_lib = 'ocs/ocslib'
+caml_require_libs = ['nums','unix','flx_version','ocslib']
+caml_exes = ['ocs/ocs_main']
+iscr_src= ['lpsrc/ocs.pak']
+weaver_directory='doc/ocs'
+pkg_requires = ['flx_version']
+"""
+
 for fn,tgt in tgts:
   print "@h=tangler('"+tgt+"')"
   print "@select(h)"

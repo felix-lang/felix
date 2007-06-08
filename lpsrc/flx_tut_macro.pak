@@ -1099,7 +1099,7 @@ None
 @env.head(2,"User Macro Statement")
 The syntax extension feature isn't limited to generated
 executable statements or definitions: you can actually
-generated macro statements, and thus extend the macro
+generate macro statements, and thus extend the macro
 processor itself. The example below introduces a 
 macro conditional that accepts some statements as an 
 argument instead of using a macro goto.
