@@ -1601,13 +1601,13 @@ let quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote
 
 (* ----------- BASIC STRING -----------------------------------*)
 
-rule parse_qstring state = parse
+rule parse_qstring state ctor = parse
 | qstring { 
       state#inbody;
-      [STRING (
+      ctor (
         state#get_srcref lexbuf, 
         state#decode decode_qstring (lexeme lexbuf)
-      )] 
+      )
   }
 | _ { 
     [ERRORTOKEN (
@@ -1616,13 +1616,13 @@ rule parse_qstring state = parse
     )] 
   }
 
-and parse_dstring state = parse
+and parse_dstring state ctor = parse
 | dstring {
       state#inbody;
-      [STRING (
+      ctor (
         state#get_srcref lexbuf, 
         state#decode decode_dstring (lexeme lexbuf)
-      )] 
+      )
   }
 | _ { 
     state#inbody; 
@@ -1632,13 +1632,13 @@ and parse_dstring state = parse
     )]
   }
 
-and parse_qqqstring state = parse
+and parse_qqqstring state ctor = parse
 | qqqstring { 
       state#inbody;
-      [STRING (
+      ctor (
         state#get_srcref lexbuf, 
         state#decode decode_qqqstring (lexeme lexbuf)
-      )] 
+      )
   }
 | _ { 
     state#inbody;
@@ -1648,333 +1648,13 @@ and parse_qqqstring state = parse
     )] 
   }
 
-and parse_dddstring state = parse
+and parse_dddstring state ctor = parse
 | dddstring { 
       state#inbody;
-      [STRING (
+       ctor ( 
         state#get_srcref lexbuf,
         state#decode decode_dddstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf,
-      "\"\"\" string"
-    )] 
-  }
-
-(* ----------- FORMAT STRING -----------------------------------*)
-and parse_fqstring state = parse
-| qstring { 
-      state#inbody;
-      [FSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "' string"
-    )] 
-  }
-
-and parse_fdstring state = parse
-| dstring {
-      state#inbody;
-      [FSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_dstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody; 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "\" string"
-    )]
-  }
-
-and parse_fqqqstring state = parse
-| qqqstring { 
-      state#inbody;
-      [FSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qqqstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "''' string"
-    )] 
-  }
-
-and parse_fdddstring state = parse
-| dddstring { 
-      state#inbody;
-      [FSTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_dddstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf,
-      "\"\"\" string"
-    )] 
-  }
-
-(* ----------- INTERPOLATION STRING -----------------------------------*)
-and parse_Qqstring state = parse
-| qstring { 
-      state#inbody;
-      [QSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "' string"
-    )] 
-  }
-
-and parse_Qdstring state = parse
-| dstring {
-      state#inbody;
-      [QSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_dstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody; 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "\" string"
-    )]
-  }
-
-and parse_Qqqqstring state = parse
-| qqqstring { 
-      state#inbody;
-      [QSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qqqstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "''' string"
-    )] 
-  }
-
-and parse_Qdddstring state = parse
-| dddstring { 
-      state#inbody;
-      [QSTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_dddstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf,
-      "\"\"\" string"
-    )] 
-  }
-
-(* ----------- C STRING -----------------------------------*)
-and parse_cqstring state = parse
-| qstring { 
-      state#inbody;
-      [CSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "' string"
-    )] 
-  }
-
-and parse_cdstring state = parse
-| dstring {
-      state#inbody;
-      [CSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_dstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody; 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "\" string"
-    )]
-  }
-
-and parse_cqqqstring state = parse
-| qqqstring { 
-      state#inbody;
-      [CSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qqqstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "''' string"
-    )] 
-  }
-
-and parse_cdddstring state = parse
-| dddstring { 
-      state#inbody;
-      [CSTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_dddstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf,
-      "\"\"\" string"
-    )] 
-  }
-
-(* ----------- WIDE STRING -----------------------------------*)
-and parse_wqstring state = parse
-| qstring { 
-      state#inbody;
-      [WSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "' string"
-    )] 
-  }
-
-and parse_wdstring state = parse
-| dstring {
-      state#inbody;
-      [WSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_dstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody; 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "\" string"
-    )]
-  }
-
-and parse_wqqqstring state = parse
-| qqqstring { 
-      state#inbody;
-      [WSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qqqstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "''' string"
-    )] 
-  }
-
-and parse_wdddstring state = parse
-| dddstring { 
-      state#inbody;
-      [WSTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_dddstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf,
-      "\"\"\" string"
-    )] 
-  }
-
-(* ----------- UNICODE STRING -----------------------------------*)
-and parse_uqstring state = parse
-| qstring { 
-      state#inbody;
-      [WSTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "' string"
-    )] 
-  }
-
-and parse_udstring state = parse
-| dstring {
-      state#inbody;
-      [USTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_dstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody; 
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "\" string"
-    )]
-  }
-
-and parse_uqqqstring state = parse
-| qqqstring { 
-      state#inbody;
-      [USTRING (
-        state#get_srcref lexbuf, 
-        state#decode decode_qqqstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf, 
-      "''' string"
-    )] 
-  }
-
-and parse_udddstring state = parse
-| dddstring { 
-      state#inbody;
-      [USTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_dddstring (lexeme lexbuf)
-      )] 
+      )
   }
 | _ { 
     state#inbody;
@@ -1985,13 +1665,13 @@ and parse_udddstring state = parse
   }
 
 (* ----------- RAW STRING -----------------------------------*)
-and parse_raw_qstring state = parse
+and parse_raw_qstring state ctor = parse
 | raw_qstring { 
       state#inbody;
-      [STRING (
+      ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_qstring (lexeme lexbuf)
-      )] 
+      )
   }
 | _ { 
     state#inbody;
@@ -2000,13 +1680,13 @@ and parse_raw_qstring state = parse
     "raw ' string")] 
   }
 
-and parse_raw_dstring state = parse
+and parse_raw_dstring state ctor = parse
 | raw_dstring { 
       state#inbody;
-      [STRING (
+      ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_dstring (lexeme lexbuf)
-      )]
+      )
   }
 | _ { 
     state#inbody;
@@ -2016,85 +1696,26 @@ and parse_raw_dstring state = parse
     )]
   }
 
-and parse_raw_qqqstring state = parse
+and parse_raw_qqqstring state ctor = parse
 | raw_qqqstring { 
       state#inbody;
-      [STRING (
+      ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_qqqstring (lexeme lexbuf)
-      )]
+      )
   }
 | _ { state#inbody; 
   [ERRORTOKEN (
     state#get_srcref lexbuf,
     "raw ''' string")] }
 
-and parse_raw_dddstring state = parse
+and parse_raw_dddstring state ctor = parse
 | raw_dddstring { 
       state#inbody;
-      [STRING (
+      ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_dddstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-     [ERRORTOKEN (
-       state#get_srcref lexbuf,
-       lexeme lexbuf)
-     ] 
-   }
-
-and parse_raw_cqstring state = parse
-| raw_qstring { 
-      state#inbody;
-      [CSTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_raw_qstring (lexeme lexbuf)
-      )] 
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-     state#get_srcref lexbuf,
-    "raw ' cstring")] 
-  }
-
-and parse_raw_cdstring state = parse
-| raw_dstring { 
-      state#inbody;
-      [STRING (
-        state#get_srcref lexbuf,
-        state#decode decode_raw_dstring (lexeme lexbuf)
-      )]
-  }
-| _ { 
-    state#inbody;
-    [ERRORTOKEN (
-      state#get_srcref lexbuf,
-        "raw \" cstring"
-    )]
-  }
-
-and parse_raw_cqqqstring state = parse
-| raw_qqqstring { 
-      state#inbody;
-      [CSTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_raw_qqqstring (lexeme lexbuf)
-      )]
-  }
-| _ { state#inbody; 
-  [ERRORTOKEN (
-    state#get_srcref lexbuf,
-    "raw ''' cstring")] }
-
-and parse_raw_cdddstring state = parse
-| raw_dddstring { 
-      state#inbody;
-      [CSTRING (
-        state#get_srcref lexbuf,
-        state#decode decode_raw_dddstring (lexeme lexbuf)
-      )] 
+      )
   }
 | _ { 
      [ERRORTOKEN (
@@ -2252,52 +1873,67 @@ and pre_flx_lex state = parse
   }
 
 (* Python strings *)
-| quote  { state#inbody; parse_qstring state lexbuf }
-| qqq    { state#inbody; parse_qqqstring state lexbuf }
-| dquote { state#inbody; parse_dstring state lexbuf }
-| ddd    { state#inbody; parse_dddstring state lexbuf }
-
-(* C strings: type char*  *)
-| ('c'|'C') quote  { state#inbody; parse_cqstring state lexbuf }
-| ('c'|'C') qqq    { state#inbody; parse_cqqqstring state lexbuf }
-| ('c'|'C') dquote { state#inbody; parse_cdstring state lexbuf }
-| ('c'|'C') ddd    { state#inbody; parse_cdddstring state lexbuf }
-
-(* Format strings *)
-| ('f'|'F') quote  { state#inbody; parse_fqstring state lexbuf }
-| ('f'|'F') qqq    { state#inbody; parse_fqqqstring state lexbuf }
-| ('f'|'F') dquote { state#inbody; parse_fdstring state lexbuf }
-| ('f'|'F') ddd    { state#inbody; parse_fdddstring state lexbuf }
-
-(* interpolated strings *)
-| ('q'|'Q') quote  { state#inbody; parse_Qqstring state lexbuf }
-| ('q'|'Q') qqq    { state#inbody; parse_Qqqqstring state lexbuf }
-| ('q'|'Q') dquote { state#inbody; parse_Qdstring state lexbuf }
-| ('q'|'Q') ddd    { state#inbody; parse_Qdddstring state lexbuf }
-
-(* wide strings *)
-| ('w' | 'W') quote  { state#inbody; parse_wqstring state lexbuf }
-| ('w' | 'W') qqq    { state#inbody; parse_wqqqstring state lexbuf }
-| ('w' | 'W') dquote { state#inbody; parse_wdstring state lexbuf }
-| ('w' | 'W') ddd    { state#inbody; parse_wdddstring state lexbuf }
-
-(* UTF32 strings *)
-| ('u' | 'U') quote  { state#inbody; parse_uqstring state lexbuf }
-| ('u' | 'U') qqq    { state#inbody; parse_uqqqstring state lexbuf }
-| ('u' | 'U') dquote { state#inbody; parse_udstring state lexbuf }
-| ('u' | 'U') ddd    { state#inbody; parse_udddstring state lexbuf }
+| quote  { state#inbody; parse_qstring state (fun x -> [STRING x]) lexbuf }
+| qqq    { state#inbody; parse_qqqstring state (fun x -> [STRING x]) lexbuf }
+| dquote { state#inbody; parse_dstring state (fun x -> [STRING x]) lexbuf }
+| ddd    { state#inbody; parse_dddstring state (fun x -> [STRING x]) lexbuf }
 
 (* Python raw strings *)
-| ('r'|'R') quote  { state#inbody; parse_raw_qstring state lexbuf }
-| ('r'|'R') qqq    { state#inbody; parse_raw_qqqstring state lexbuf }
-| ('r'|'R') dquote { state#inbody; parse_raw_dstring state lexbuf }
-| ('r'|'R') ddd    { state#inbody; parse_raw_dddstring state lexbuf }
+| ('r'|'R') quote  { state#inbody; parse_raw_qstring state (fun x -> [STRING x]) lexbuf }
+| ('r'|'R') qqq    { state#inbody; parse_raw_qqqstring state (fun x -> [STRING x]) lexbuf }
+| ('r'|'R') dquote { state#inbody; parse_raw_dstring state (fun x -> [STRING x]) lexbuf }
+| ('r'|'R') ddd    { state#inbody; parse_raw_dddstring state (fun x -> [STRING x]) lexbuf }
+
+
+(* C strings: type char*  *)
+| ('c'|'C') quote  { state#inbody; parse_qstring state (fun x -> [CSTRING x]) lexbuf }
+| ('c'|'C') qqq    { state#inbody; parse_qqqstring state (fun x -> [CSTRING x]) lexbuf }
+| ('c'|'C') dquote { state#inbody; parse_dstring state (fun x -> [CSTRING x]) lexbuf }
+| ('c'|'C') ddd    { state#inbody; parse_dddstring state (fun x -> [CSTRING x]) lexbuf }
 
 (* raw C strings: type char*  *)
-| rqc quote  { state#inbody; parse_cqstring state lexbuf }
-| rqc qqq    { state#inbody; parse_cqqqstring state lexbuf }
-| rqc dquote { state#inbody; parse_cdstring state lexbuf }
-| rqc ddd    { state#inbody; parse_cdddstring state lexbuf }
+| rqc quote  { state#inbody; parse_raw_qstring state (fun x -> [CSTRING x]) lexbuf }
+| rqc qqq    { state#inbody; parse_raw_qqqstring state (fun x -> [CSTRING x]) lexbuf }
+| rqc dquote { state#inbody; parse_raw_dstring state (fun x -> [CSTRING x]) lexbuf }
+| rqc ddd    { state#inbody; parse_raw_dddstring state (fun x -> [CSTRING x]) lexbuf }
+
+
+(* Format strings *)
+| ('f'|'F') quote  { state#inbody; parse_qstring state (fun x -> [FSTRING x]) lexbuf }
+| ('f'|'F') qqq    { state#inbody; parse_qqqstring state (fun x -> [FSTRING x]) lexbuf }
+| ('f'|'F') dquote { state#inbody; parse_dstring state (fun x -> [FSTRING x]) lexbuf }
+| ('f'|'F') ddd    { state#inbody; parse_dddstring state (fun x -> [FSTRING x]) lexbuf }
+
+(* interpolated strings *)
+| ('q'|'Q') quote  { state#inbody; parse_qstring state (fun x -> [QSTRING x]) lexbuf }
+| ('q'|'Q') qqq    { state#inbody; parse_qqqstring state (fun x -> [QSTRING x]) lexbuf }
+| ('q'|'Q') dquote { state#inbody; parse_dstring state (fun x -> [QSTRING x]) lexbuf }
+| ('q'|'Q') ddd    { state#inbody; parse_dddstring state (fun x -> [QSTRING x]) lexbuf }
+
+(* wide strings *)
+| ('w' | 'W') quote  { state#inbody; parse_qstring state (fun x -> [WSTRING x]) lexbuf }
+| ('w' | 'W') qqq    { state#inbody; parse_qqqstring state (fun x -> [WSTRING x]) lexbuf }
+| ('w' | 'W') dquote { state#inbody; parse_dstring state (fun x -> [WSTRING x]) lexbuf }
+| ('w' | 'W') ddd    { state#inbody; parse_dddstring state (fun x -> [WSTRING x]) lexbuf }
+
+(* UTF32 strings *)
+| ('u' | 'U') quote  { state#inbody; parse_qstring state (fun x -> [USTRING x]) lexbuf }
+| ('u' | 'U') qqq    { state#inbody; parse_qqqstring state (fun x -> [USTRING x]) lexbuf }
+| ('u' | 'U') dquote { state#inbody; parse_dstring state (fun x -> [USTRING x]) lexbuf }
+| ('u' | 'U') ddd    { state#inbody; parse_dddstring state (fun x -> [USTRING x]) lexbuf }
+
+(* keyword strings *)
+| ('k' | 'K') quote  { state#inbody; parse_qstring state (fun x -> [USER_KEYWORD x]) lexbuf }
+| ('k' | 'K') qqq    { state#inbody; parse_qqqstring state (fun x -> [USER_KEYWORD x]) lexbuf }
+| ('k' | 'K') dquote { state#inbody; parse_dstring state (fun x -> [USER_KEYWORD x]) lexbuf }
+| ('k' | 'K') ddd    { state#inbody; parse_dddstring state (fun x -> [USER_KEYWORD x]) lexbuf }
+
+(* name strings *)
+| ('n' | 'N') quote  { state#inbody; parse_qstring state (fun x -> [NAME x]) lexbuf }
+| ('n' | 'N') qqq    { state#inbody; parse_qqqstring state (fun x -> [NAME x]) lexbuf }
+| ('n' | 'N') dquote { state#inbody; parse_dstring state (fun x -> [NAME x]) lexbuf }
+| ('n' | 'N') ddd    { state#inbody; parse_dddstring state (fun x -> [NAME x]) lexbuf }
+
 
 (* this MUST be after strings, so raw strings take precedence
   over identifiers, eg r'x' is a string, not an identifier,
