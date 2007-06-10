@@ -1,4 +1,28 @@
 @set_title("Extension Experiment")
+@h = tangler('spkgs/sex.py')
+@select(h)
+SEX_MODULES = [
+  'sex/sex_types',
+  'sex/sex_parse',
+  'sex/sex_lex',
+  'sex/sex_print',
+  'sex/sex_map',
+  'sex/ocs2sex',
+  ]
+
+caml_raw_interfaces = ['sex/sex_types']
+caml_interfaces = ['sex/sex_parse']
+caml_implementations = SEX_MODULES
+caml_lexes = ['sex/sex_lex']
+caml_dyparses = ['sex/sex_parse']
+caml_include_paths = ['src','ocs','dypgen/dyplib','sex']
+caml_provide_lib = 'sex/sexlib'
+caml_require_libs = ['flx_version','dyplib','ocslib','sexlib']
+pkg_requires = ['flx_version','ocs','dypgen']
+caml_exes = ['sex/sex']
+iscr_src = ['lpsrc/sex.pak']
+weaver_directory='doc/sex'
+
 @head(1,"Lexer")
 A simple lexer.
 @select(tangler("sex/sex_lex.mll"))
@@ -256,6 +280,7 @@ let rec ocs2sex (s:sval) : sexp_t =
   match s with
   | Sunbound
   | Seof 
+  | Sreal _
   | Scomplex _
   | Sbigint _
   | Srational _
@@ -323,10 +348,13 @@ let main() =
   | _ -> assert false (* ambiguous parse not expected! *)
   in
   Sex_print.sex_print sex;
+  (*
   let sr = "test2.sex",0,0,0,0 in
   let flxe : Flx_ast.expr_t = Sex2flx.xexpr_t sr 1 [] sex in
   print_endline ("e=" ^ Flx_print.string_of_expr flxe)
+  *)
 ;;
+
 main()
 ;;
 
@@ -355,7 +383,6 @@ main()
    ('sex_types',''),
    ('sex_print',''),
    ('sex_map',''),
-   ('sex2flx','-I ../../src'),
    ('ocs2sex','-I ../../ocs'),
    ('sex_parse','-I ../../dypgen/dyplib'),
    ('sex_lex','-I ../../dypgen/dyplib'),

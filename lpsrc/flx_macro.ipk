@@ -1824,6 +1824,57 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     | _ -> clierr sr "Apply statements requires unit arg"
     end
     
+  | `AST_call (sr, 
+      `AST_name(srn,"_scheme", []),
+      `AST_literal (srl,`AST_string s)
+    ) ->
+    print_endline "DETECTED STATEMENT ENCODED AS SCHEME";
+    let get_port = function 
+      | Ocs_types.Sport p -> p
+      | _ -> failwith "expected port"
+    in
+    let env = Ocs_top.make_env () in
+    let th = Ocs_top.make_thread () in
+    let inp = Ocs_port.string_input_port s in
+    let outp = get_port th.Ocs_types.th_stdout in
+    let lex = Ocs_lex.make_lexer inp "" in
+    let term = ref None in
+    begin try 
+      match Ocs_read.read_expr lex with
+      | Ocs_types.Seof -> print_endline "END OF FILE?"
+      | v -> 
+         let c = Ocs_compile.compile env v in
+         print_endline "COMPILED";
+         Ocs_eval.eval th (function 
+           | Ocs_types.Sunspec -> print_endline "UNSPECIFIED" 
+           | r -> 
+             print_endline "EVALUATED";
+             Ocs_print.print outp false r;
+             Ocs_port.puts outp "\n";
+             Ocs_port.flush outp;
+             term := Some r
+         ) c
+    with 
+      | Ocs_error.Error err 
+      | Ocs_error.ErrorL (_,err) 
+      ->
+        print_endline ("Error " ^ err)
+    end
+    ;
+    begin match !term with
+    | None -> failwith "Scheme term not returned!"
+    | Some r ->
+        let sex = Ocs2sex.ocs2sex r in
+        print_endline "OCS scheme term converted to s-expression:";
+        Sex_print.sex_print sex;
+        let fresh = ref 1 in
+        let env = [] in
+        let flx = Flx_sex2flx.xstatement_t sr fresh env sex in
+        print_endline "s-expression converted to Felix statement!";
+        print_endline (string_of_statement 0 flx);
+        ctack flx
+    end
+
   | `AST_call (sr, e1', e2') ->
     let 
       e1 = me e1' and 

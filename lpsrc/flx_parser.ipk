@@ -1,11 +1,7 @@
 @execfile('config'+os.sep+'flx_data.py')
 
 @head(1,'Parser')
-@if USE_DYPGEN:
-  h = tangler('src/flx_parse.dyp','data')
- else:
-  h = tangler('src/flx_parse.mly','data')
-@#
+@h = tangler('src/flx_parse.dyp','data')
 
 @# define meta operators:
 @#  aster: t*
@@ -53,11 +49,7 @@
 
 @head(2,'Header')
 @select(h)
-@if USE_DYPGEN:
-  tangle('{')
- else:
-  tangle('%{')
-@#
+{
 
 (* parser header *)
 exception EndOfInput
@@ -80,13 +72,11 @@ let rev = List.rev
 let mem = List.mem
 let length = List.length
 
-@if USE_DYPGEN:
-  tangle('module Drules = Map.Make(struct')
-  tangle('  type t = string')
-  tangle('  let compare = compare')
-  tangle('end)')
-  tangle('let global_data = ref Drules.empty')
-@#
+module Drules = Map.Make(struct
+  type t = string
+  let compare = compare
+end)
+let global_data = ref Drules.empty
 
 
 let list_last lst = List.hd (List.rev lst)
@@ -210,8 +200,8 @@ let dfltvs =
   "qualified_name",
   "atom",
   ]
+@#
 
-@extend_syntax = """\
  let define_statement dyp name rhs (statement:statement_t) =
    let lhs = dyp.find_nt name in
    let f o =
@@ -310,16 +300,12 @@ let dfltvs =
          print_endline ("Syntax: Unknown symbol " ^ s);
          failwith ("Syntax: Unknown Symbol " ^ s)
 
- """
 @for s,t in flx_keywords:
   if t != "IDENT":
-    extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
-
+    tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
 @for t,s in flx_syms:
-  extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
-
-@extend_syntax = extend_syntax + """\
-
+  tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
+@#
        | x,_ -> 
          print_endline ("Unknown symbol " ^ Dyp_symbols.str_token x);
          failwith ("Unknown symbol " ^ Dyp_symbols.str_token x);
@@ -422,18 +408,14 @@ let dfltvs =
          *)
          aux t1 t2 (`Statement_term st::args)
 
- """
-@for i in expr_nts: extend_syntax = extend_syntax + \
-  '      | NAME (_,"'+i+'"),obj\n'
-
-@extend_syntax = extend_syntax + """\
+@for i in expr_nts: 
+  tangle('      | NAME (_,"'+i+'"),obj')
+@#
        -> 
          let e = match obj with
- """
-@for i in expr_nts: extend_syntax = extend_syntax + \
-  '        | `Obj_'+i+' e -> e\n'
-
-@extend_syntax = extend_syntax + """\
+@for i in expr_nts: 
+  tangle('        | `Obj_'+i+' e -> e')
+@#
          | _ -> failwith "Expression nonterminal has wrong type"
          in
          (*
@@ -461,16 +443,12 @@ let dfltvs =
          print_endline ("Syntax: Unknown symbol " ^ s);
          failwith ("Syntax: Unknown Symbol " ^ s)
 
- """
 @for s,t in flx_keywords:
   if t != "IDENT":
-    extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
-
+    tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
 @for t,s in flx_syms:
-  extend_syntax = extend_syntax + "      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)\n'
-
-@extend_syntax = extend_syntax + """\
-
+  tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
+@#
        | x,_ -> 
          print_endline ("Unknown symbol " ^ Dyp_symbols.str_token x);
          failwith ("Unknown symbol " ^ Dyp_symbols.str_token x);
@@ -480,18 +458,14 @@ let dfltvs =
      let ast_term = `Apply_term (`Expression_term expr, args) in
      let e = `AST_user_expr (!srr,"unknownusersyntax",ast_term) in
      match name with
- """
-@for i in expr_nts: extend_syntax = extend_syntax + \
-  '    | "'+i+'"-> `Obj_'+i+' e\n'
-  
-@extend_syntax = extend_syntax + """\
+
+@for i in expr_nts: 
+  tangle('    | "'+i+'"-> `Obj_'+i+' e')
+@# 
      | _ -> `Obj_expr e
    in
    rule,action
- """
-@#
 
-@extend_syntax = extend_syntax + """\
  let add_rule dyp dssl rule =
    let m = dyp.global_data in
    let rules = try Drules.find dssl m with Not_found -> [] in
@@ -516,11 +490,9 @@ let dfltvs =
       | "statement" ->
         let rule =(define_statement dyp name rhs stmt) in
         dyp.add_rules <- rule :: dyp.add_rules;
-      """
 
-@for i in expr_nts: extend_syntax = extend_syntax + '    | "' + i + '"'
-@extend_syntax = extend_syntax + """\        
-        ->
+@for i in expr_nts: tangle('    | "' + i + '"')
+      ->
         begin match stmt with
         | `AST_call (sr, proc, arg) -> 
           let expr = match arg with
@@ -565,16 +537,7 @@ let dfltvs =
         failwith ("Syntax extension: unknown non-terminal " ^ name);
         *)
       end
- """
-@#
-
-@if USE_DYPGEN: tangle(extend_syntax)
-
-@if USE_DYPGEN:
-  tangle("}")
- else:
-  tangle("%}")
-@#
+}
 
 @head(2,'Tokens')
 @select(h)

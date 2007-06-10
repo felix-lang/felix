@@ -48,6 +48,7 @@ FLX_MODULES = [
   'src/flx_parse_ctrl',
   'src/flx_dfa',
   'src/flx_pat', 
+  'src/flx_sex2flx', 
   'src/flx_macro', 
   'src/flx_cformat', 
   'src/flx_ciltoflx',
@@ -123,16 +124,10 @@ caml_interfaces = FLX_INTERFACES
 caml_raw_interfaces = FLX_RAW_INTERFACES
 caml_exes = FLX_EXES
 caml_implementations = FLX_IMPLEMENTATIONS
-@if USE_DYPGEN:
-  tangle("caml_require_libs = ['nums','unix','flx_version','dyplib','misclib','cillib','flxcclib','flxlib']")
-  tangle("caml_include_paths = ['src', 'src/cil','dypgen/dyplib']")
-  tangle('caml_dyparses = FLX_PARSES')
- else:
-  tangle("caml_require_libs = ['nums','unix','flx_version','misclib','cillib','flxcclib','flxlib']")
-  tangle("caml_include_paths = ['src', 'src/cil']")
-  tangle('caml_parses = FLX_PARSES')
-@#
-pkg_requires = ['flx_version','dypgen','misc','cil','flxcc_util']
+caml_require_libs = ['nums','unix','flx_version','ocslib','sexlib', 'dyplib','misclib','cillib','flxcclib','flxlib']
+caml_include_paths = ['src', 'ocs', 'sex', 'src/cil','dypgen/dyplib']
+caml_dyparses = FLX_PARSES
+pkg_requires = ['flx_version','ocs','dypgen','sex','misc','cil','flxcc_util']
 caml_provide_lib = 'src/flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
@@ -349,6 +344,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')
 @include_file ('flx_constfld.ipk')
+@include_file ('flx_sex2flx.ipk')
 @include_file ('flx_macro.ipk')
 @include_file ('flx_cformat.ipk')
 @include_file ('flx_ciltoflx.ipk')
