@@ -11,7 +11,7 @@ SEX_MODULES = [
   ]
 
 caml_raw_interfaces = ['sex/sex_types']
-caml_interfaces = ['sex/sex_parse']
+caml_interfaces = ['sex/sex_types', 'sex/sex_parse']
 caml_implementations = SEX_MODULES
 caml_lexes = ['sex/sex_lex']
 caml_dyparses = ['sex/sex_parse']
@@ -128,7 +128,7 @@ sexps:
   | sexp sexps { $1 :: $2 }
   | { [] }
 
-@select(tangler("sex/sex_types.ml"))
+@select(tangler("sex/sex_types.mli"))
 type sexp_t =
   | Int of string
   | Str of string
