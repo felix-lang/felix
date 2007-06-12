@@ -23,28 +23,32 @@ open List
 
 exception Sex2FlxTypeError of string
 
-let err s = raise (Sex2FlxTypeError s) 
+let err x s = 
+  print_string ("ERROR  in " ^ s);
+  Sex_print.sex_print x;
+  raise (Sex2FlxTypeError s) 
 
 let opt s (f:sexp_t->'a) x : 'a option = match x with
   | Id "None" -> None
   | Lst [Id "Some"; e] -> Some (f e)
-  | _ -> err (s^" option")
+  | x -> err x (s^" option")
 
 let lst s (f:sexp_t->'a) x : 'a list = match x with
   | Lst ls -> map f ls
-  | _ -> err (s^ " list")
+  | x -> err x (s^ " list")
 
 let rec xliteral_t sr fresh env x = 
   let bi i = Big_int.big_int_of_string i in
   let ss s = String.sub s 1 (String.length s - 2) in
   match x with
+  | Lst [Id "ast_int"; Str s; Str i] -> `AST_int (ss s, bi (ss i))
   | Lst [Id "ast_int"; Str s; Int i] -> `AST_int (ss s, bi i)
   | Lst [Id "ast_string"; Str s] -> `AST_string (ss s)
   | Lst [Id "ast_cstring"; Str s] -> `AST_cstring (ss s)
   | Lst [Id "ast_wstring"; Str s] -> `AST_wstring (ss s)
   | Lst [Id "ast_ustring"; Str s] -> `AST_ustring (ss s)
   | Lst [Id "ast_float "; Str s1; Str s2] -> `AST_float (ss s1, ss s2)
-  | _ -> err "invalid literal"
+  | x -> err x "invalid literal"
 
 and xexpr_t sr fresh env x = 
   let re x = xregexp_t sr fresh env x in
@@ -65,7 +69,8 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_interpolate";  Str s] -> `AST_interpolate (sr,ss s)
  | Lst [Id "ast_vsprintf";  Str s] -> `AST_vsprintf (sr,ss s)
  | Lst [Id "ast_noexpand";  e] -> `AST_noexpand (sr,ex e)
- | Lst [Id "ast_name";  Str s ; Lst ts] -> `AST_name (sr,s,map ti ts)
+ | Lst [Id "ast_name"; Id s ; Lst ts] -> `AST_name (sr,s,map ti ts)
+ | Lst [Id "ast_name"; Str s ; Lst ts] -> `AST_name (sr,ss s,map ti ts)
 
  | Lst [Id "ast_the";  e] -> `AST_the (sr, xq e)
 
@@ -82,7 +87,7 @@ and xexpr_t sr fresh env x =
    let rs = 
      map (function 
      | Lst [Str s; e] -> ss s, ex e 
-     | _ -> err "Error in AST_record"
+     | x -> err x "Error in AST_record"
      ) 
      rs 
    in `AST_record (sr,rs)
@@ -91,7 +96,7 @@ and xexpr_t sr fresh env x =
    let rs = 
      map (function 
      | Lst [Str s; e] -> ss s, ti e 
-     | _ -> err "Error in AST_record_type"
+     | x -> err x "Error in AST_record_type"
      ) 
      rs 
    in `AST_record_type (sr,rs)
@@ -102,7 +107,7 @@ and xexpr_t sr fresh env x =
    let rs = 
      map (function 
      | Lst [Str s; e] -> ss s, ti e 
-     | _ -> err "Error in AST_variant_type"
+     | x -> err x "Error in AST_variant_type"
      ) 
      rs 
    in `AST_variant_type (sr,rs)
@@ -162,7 +167,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_match";  Lst [e; Lst pes]]->
    let pes = map (function 
      | Lst [p;e] -> xp p, ex e 
-     | _ -> err "ast_match syntax"
+     | x -> err x "ast_match syntax"
      )
      pes
    in
@@ -171,7 +176,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_parse";  e; Lst pes] ->
    let pes = map (function
      | Lst [pr; e] -> sr, xpr pr, ex e
-     | _ -> err "ast_parse syntax error"
+     | x -> err x "ast_parse syntax error"
      ) 
      pes
    in
@@ -180,7 +185,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_sparse";  e; Str s; Lst ints] ->
    let ints = map (function 
      | Int i -> ii i
-     | _ -> err "ast_sparse requires ints here"
+     | x -> err x "ast_sparse requires ints here"
    ) ints
    in
    `AST_sparse (sr,ex e, ss s, ints)
@@ -188,7 +193,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_regmatch";  Lst [e1; e2; Lst res]] ->
    let res = map (function
      | Lst [r; e] -> re r,ex e
-     | _ -> err "ast_regmatch"
+     | x -> err x "ast_regmatch"
      )
      res
    in
@@ -197,7 +202,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_string_regmatch";  Lst [e; Lst res]] ->
    let res = map (function
      | Lst [r; e] -> re r,ex e
-     | _ -> err "ast_string_regmatch"
+     | x -> err x "ast_string_regmatch"
      )
      res
    in
@@ -206,7 +211,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_reglex";  Lst [e1; e2; Lst res]] ->
    let res = map (function
      | Lst [r; e] -> re r,ex e
-     | _ -> err "ast_reglex"
+     | x -> err x "ast_reglex"
      )
      res
    in
@@ -224,7 +229,7 @@ and xexpr_t sr fresh env x =
    let ts = 
      map (function 
        | Lst [t1; t2] -> ti t1, ti t2 
-       | _ -> err "ast_typematch typerrror"
+       | x -> err x "ast_typematch typerrror"
      )
      ts
    in `AST_type_match (sr,(ti t, ts))
@@ -238,7 +243,7 @@ and xexpr_t sr fresh env x =
    let ses = 
      map (function 
        | Str s -> ss s 
-       | _ -> err "ast_case type error") 
+       | x -> err x "ast_case type error") 
      ses 
    in
    `AST_case (sr, ex e1,ses,ex e2)
@@ -252,9 +257,7 @@ and xexpr_t sr fresh env x =
     `AST_literal (sr, `AST_int ("int",j))
 
   | x -> 
-    print_endline "Invalid sex";
-    Sex_print.sex_print x;
-    err "expression"
+    err x "expression"
 
 and xfloat_pat x = 
   let ss s = String.sub s 1 (String.length s - 2) in
@@ -263,7 +266,7 @@ and xfloat_pat x =
   | Lst [Id "Float_minus"; Str ty; Str vl] -> Float_minus (ss ty, ss vl)
   | Id "Float_inf" -> Float_inf
   | Id "Float_minus_inf" -> Float_minus_inf
-  | _ -> err "Float_pat syntax error"
+  | x -> err x "Float_pat syntax error"
 
 and xpattern_t sr fresh env x =
   let xp x = xpattern_t sr fresh env x in
@@ -309,15 +312,13 @@ and xpattern_t sr fresh env x =
   | Lst [Id "PAT_record"; Lst ips] -> 
     let ips = map (function
       | Lst [Id id; p] -> id,xp p
-      | _ -> err "PAT_record syntax"
+      | x -> err x "PAT_record syntax"
       )
       ips
     in
     `PAT_record (sr, ips)
   | x -> 
-    print_endline "Invalid pattern sex";
-    Sex_print.sex_print x;
-    err "pattern"
+    err x "pattern"
 
 and xregexp_t sr fresh env x = 
   let ex x = xexpr_t sr fresh env x in
@@ -334,7 +335,7 @@ and xregexp_t sr fresh env x =
   | Id "REGEXP_sentinel" -> `REGEXP_sentinel
   | Lst [Id "REGEXP_code"; e] -> `REGEXP_code (ex e)
   | Lst [Id "REGEXP_group"; Str s; r] -> `REGEXP_group (ss s, re r)
-  | _ -> err "regexp_t syntax error"
+  | x -> err x "regexp_t syntax error"
 
 and xglr_term_t sr fresh env x = 
   let ex x = xexpr_t sr fresh env x in
@@ -347,7 +348,7 @@ and xglr_term_t sr fresh env x =
   | Lst [Id "GLR_ast"; r] -> `GLR_ast (xg r)
   | Lst [Id "GLR_plus"; r] -> `GLR_plus (xg r)
   | Lst [Id "GLR_opt"; r] -> `GLR_opt (xg r)
-  | _ -> err "glr_term_t syntax error"
+  | x -> err x "glr_term_t syntax error"
 
 and xglr_entry_t sr fresh env x =
   let xg x = xglr_term_t sr fresh env x in
@@ -355,20 +356,20 @@ and xglr_entry_t sr fresh env x =
   match x with
   | Lst [Id "None"; g] -> None,xg g
   | Lst [Lst [Id "Some"; Str s]; g] -> Some (ss s),xg g
-  | _ -> err "glr_entry_t syntax error"
+  | x -> err x "glr_entry_t syntax error"
 
 and xproduction_t sr fresh env p =
   let xge x = xglr_entry_t sr fresh env x in
   match p with
   | Lst xs -> map xge xs
-  | _ -> err "production_t syntax error"
+  | x -> err x "production_t syntax error"
 
 and xraw_typeclass_insts_t sr fresh env x =
   let ex x = xexpr_t sr fresh env x in
   let xq qn = qualified_name_of_expr (ex qn) in
   match x with
   | Lst tcs -> map xq tcs
-  | _ -> err "raw_typeclass_insts_t"
+  | x -> err x "raw_typeclass_insts_t"
 
 and xvs_aux_t sr fresh env x : vs_aux_t =
   let ex x = xexpr_t sr fresh env x in
@@ -376,7 +377,7 @@ and xvs_aux_t sr fresh env x : vs_aux_t =
   let xrtc x = xraw_typeclass_insts_t sr fresh env x in
   match x with
   | Lst [ct; tcr] -> { raw_type_constraint=ti ct; raw_typeclass_reqs=xrtc tcr }
-  | _ -> err "xvs_aux_t"
+  | x -> err x "xvs_aux_t"
 
 and xplain_vs_list_t sr fresh env x : plain_vs_list_t =
   let ex x = xexpr_t sr fresh env x in
@@ -384,23 +385,23 @@ and xplain_vs_list_t sr fresh env x : plain_vs_list_t =
   match x with
   | Lst its -> map (function
     | Lst [Id s; t] -> s,ti t
-    | _ -> err "xplain_vs_list"
+    | x -> err x "xplain_vs_list"
     ) its 
-  | _ -> err "xplain_vs_list"
+  | x -> err x "xplain_vs_list"
 
 and xvs_list_t sr fresh env x : vs_list_t =
   let xpvs x = xplain_vs_list_t sr fresh env x in
   let xaux x = xvs_aux_t sr fresh env x in
   match x with
   | Lst [pvs; aux] -> xpvs pvs, xaux aux
-  | _ -> err "xvs_list_t"
+  | x -> err x "xvs_list_t"
 
 and xaxiom_method_t sr fresh env x : axiom_method_t =
   let ex x = xexpr_t sr fresh env x in
   match x with
   | Lst [Id "Predicate"; e] -> `Predicate (ex e)
   | Lst [Id "Equation"; e1; e2] -> `Equation (ex e1, ex e2)
-  | _ -> err "axiom_method_t"
+  | x -> err x "axiom_method_t"
 
 and xparam_kind_t sr fresh env x : param_kind_t =
   match x with
@@ -408,7 +409,7 @@ and xparam_kind_t sr fresh env x : param_kind_t =
   | Id "PVar" -> `PVar
   | Id "PFun" -> `PFun
   | Id "PRef" -> `PRef
-  | _ -> err "param_kind_t"
+  | x -> err x "param_kind_t"
 
 and xparameter_t sr fresh env x : parameter_t =
   let ex x = xexpr_t sr fresh env x in
@@ -416,21 +417,21 @@ and xparameter_t sr fresh env x : parameter_t =
   let xpk x = xparam_kind_t sr fresh env x in
   match x with
   | Lst [pk; Id s; t] -> xpk pk, s, ti t
-  | _ -> err "parameter_t"
+  | x -> err x "parameter_t"
 
 and xparams_t sr fresh env x : params_t =
   let ex x = xexpr_t sr fresh env x in
   let xpa x = xparameter_t sr fresh env x in
   match x with
   | Lst [Lst ps; eo] -> map xpa ps, opt "params" ex eo
-  | _ -> err "params_t"
+  | x -> err x "params_t"
 
 and xret_t sr fresh env x : typecode_t * expr_t option =
   let ex x = xexpr_t sr fresh env x in
   let ti t = typecode_of_expr (ex t) in
   match x with
   | Lst [t; e] -> ti t, opt "return" ex e
-  | _ -> err "return encoding"
+  | x -> err x "return encoding"
 
 and xproperty_t sr fresh env x : property_t =
   let ss s = String.sub s 1 (String.length s - 2) in
@@ -460,7 +461,7 @@ and xproperty_t sr fresh env x : property_t =
 
   | Id "Uses_gc" -> `Uses_gc             (* requires gc locally *)
   | Id "Virtual" -> `Virtual             (* interface in a typeclass *)
-  | _ -> err "property_t"
+  | x -> err x "property_t"
 
 and xfunkind_t sr fresh env x : funkind_t =
   match x with
@@ -472,25 +473,25 @@ and xfunkind_t sr fresh env x : funkind_t =
   | Id "Virtual" -> `Virtual
   | Id "Ctor" -> `Ctor
   | Id "Generator" -> `Generator
-  | _ -> err "funkind_t"
+  | x -> err x "funkind_t"
 
 and xmacro_parameter_type_t sr fresh env x : macro_parameter_type_t =
   match x with
   | Id "Ident" -> Ident
   | Id "Expr" -> Expr
   | Id "Stmt" -> Stmt
-  | _ -> err "macro_parameter_type_t"
+  | x -> err x "macro_parameter_type_t"
 
 and xmacro_parameter_t sr fresh env x : macro_parameter_t =
   match x with
   | Lst [Id s; m] -> s,xmacro_parameter_type_t sr fresh env m
-  | _ -> err "macro_parameter_t"
+  | x -> err x "macro_parameter_t"
 
 and xclass_member_t sr fresh env x : class_member_t =
   let ex x = xexpr_t sr fresh env x in
   let ti t = typecode_of_expr (ex t) in
   let ii i = int_of_string i in
-  let xi = function | Int i -> ii i | _ -> err "int" in
+  let xi = function | Int i -> ii i | x -> err x "int" in
   let xio x = opt "int" xi x in
   let ct x = opt "c_t" (xc_t sr fresh env) x in
   let xvs x = xvs_list_t sr fresh env x in
@@ -500,7 +501,7 @@ and xclass_member_t sr fresh env x : class_member_t =
   | Lst [Id "MemberFun"; Id n; io; vs; t; cto] -> `MemberFun (n, xio io, xvs vs, ti t, ct cto)
   | Lst [Id "MemberProc"; Id n; io; vs; t; cto] -> `MemberProc (n, xio io, xvs vs, ti t, ct cto)
   | Lst [Id "MemberCtor"; Id n; io; t; cto] -> `MemberCtor (n,xio io, ti t, ct cto)
-  | _ -> err "class_member_t"
+  | x -> err x "class_member_t"
 
 and xc_t sr fresh env x : c_t =
   let ss s = String.sub s 1 (String.length s - 2) in
@@ -509,7 +510,7 @@ and xc_t sr fresh env x : c_t =
   | Lst [Id "Str"; Str s] -> `Str (ss s)
   | Id "Virtual" -> `Virtual
   | Id "Identity" -> `Identity
-  | _ ->  err "c_t"
+  | x ->  err x "c_t"
 
 and xlvalue_t sr fresh env x : lvalue_t = 
   let ex x = xexpr_t sr fresh env x in
@@ -521,7 +522,7 @@ and xlvalue_t sr fresh env x : lvalue_t =
   | Id "Skip" -> `Skip sr
   | Lst [Id "List"; tl] -> `List (lst "lvalue_t" xtlv tl)
   | Lst [Id "Expr"; e] -> `Expr (sr,ex e)
-  | _ -> err "lvalue_t"
+  | x -> err x "lvalue_t"
 
 and xtlvalue_t sr fresh env x : tlvalue_t = 
   let xlv x = xlvalue_t sr fresh env x in
@@ -530,7 +531,7 @@ and xtlvalue_t sr fresh env x : tlvalue_t =
   let xot x = opt "typecode" ti x in
   match x with
   | Lst [lv; ot] -> xlv lv, xot ot
-  | _ -> err "tlvalue_t"
+  | x -> err x "tlvalue_t"
 
 and xtype_qual_t sr fresh env x : type_qual_t =
   let ex x = xexpr_t sr fresh env x in
@@ -540,7 +541,7 @@ and xtype_qual_t sr fresh env x : type_qual_t =
   | Id "Pod" -> `Pod
   | Id "GC_pointer" -> `GC_pointer
   | Lst [Id "Raw_needs_shape"; t] -> `Raw_needs_shape (ti t)
-  | _ -> err "typequal_t"
+  | x -> err x "typequal_t"
 
 and xrequirement_t sr fresh env x : requirement_t =
   let ex x = xexpr_t sr fresh env x in
@@ -553,7 +554,7 @@ and xrequirement_t sr fresh env x : requirement_t =
   | Lst [Id "Named_req"; qn] -> `Named_req (xq qn)
   | Lst [Id "Property_req"; Str s] -> `Property_req (ss s)
   | Lst [Id "Package_req"; ct] -> `Package_req (xct ct)
-  | _ -> err "requirement_t"
+  | x -> err x "requirement_t"
 
 and xraw_req_expr_t sr fresh env x : raw_req_expr_t =
   let xr x = xrequirement_t sr fresh env x in
@@ -564,7 +565,7 @@ and xraw_req_expr_t sr fresh env x : raw_req_expr_t =
   | Lst [Id "RREQ_and"; r1; r2] -> `RREQ_and (xrr r1, xrr r2)
   | Id "RREQ_true"-> `RREQ_true
   | Id "RREQ_false"-> `RREQ_false
-  | _ -> err "raw_req_expr_t"
+  | x -> err x "raw_req_expr_t"
 
 and xstatement_t sr fresh env x : statement_t =
   let xpvs x = xplain_vs_list_t sr fresh env x in
@@ -583,15 +584,16 @@ and xstatement_t sr fresh env x : statement_t =
   let xp x = xproduction_t sr fresh env x in
   let ti t = typecode_of_expr (ex t) in
   let xmps x = lst "macro_parameter_t" (xmacro_parameter_t sr fresh env) x in
-  let xid = function | Id n -> n | _ -> err "id" in
+  let xid = function | Id n -> n | x -> err x "id" in
   let ii i = int_of_string i in
-  let xi = function | Int i -> ii i | _ -> err "int" in
+  let xi = function | Int i -> ii i | x -> err x "int" in
   let xtlv x = xtlvalue_t sr fresh env x in
   let xtq x = xtype_qual_t sr fresh env x in
   let xtqs x = lst "typ_equal_t" xtq x in
   let xc x = xc_t sr fresh env x in
   let xrr x = xraw_req_expr_t sr fresh env x in
   match x with
+  | Lst [] -> `AST_nop(sr,"null")
   | Lst [Id "ast_cparse"; Str s] -> `AST_cparse (sr, ss s)
   | Lst [Id "ast_include"; Str s] -> `AST_include (sr, ss s)
   | Lst [Id "ast_open"; vs; qn] -> `AST_open (sr, xvs vs, xq qn)
@@ -615,7 +617,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_glr"; Id s; t; Lst pl] -> 
     let pl = map (function
       | Lst [p;e] -> sr,xp p, ex e
-      | _ -> err "glr phrase"
+      | x -> err x "glr phrase"
       ) pl
     in
     `AST_glr (sr,s,ti t, pl)
@@ -657,7 +659,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_union"; Id n; vs; ucmp] ->
     let xucmp = function 
       | Lst [Id c; io; vs; t] -> c,opt "union component" xi io,xvs vs, ti t
-      | _ -> err "union component"
+      | x -> err x "union component"
     in
     let ucmp = lst "union component" xucmp ucmp in
     `AST_union (sr,n, xvs vs, ucmp)
@@ -665,7 +667,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_struct"; Id n; vs; ucmp] ->
     let xucmp = function 
       | Lst [Id c; t] -> c, ti t
-      | _ -> err "struct component"
+      | x -> err x "struct component"
     in
     let ucmp = lst "struct component" xucmp ucmp in
     `AST_struct (sr,n, xvs vs, ucmp)
@@ -673,7 +675,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_cstruct"; Id n; vs; ucmp] ->
     let xucmp = function 
       | Lst [Id c; t] -> c, ti t
-      | _ -> err "cstruct component"
+      | x -> err x "cstruct component"
     in
     let ucmp = lst "cstruct component" xucmp ucmp in
     `AST_cstruct (sr,n, xvs vs, ucmp)
@@ -745,7 +747,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_ctypes"; Lst ids; tqs; req] -> 
     let ids = map (function 
       | Id n -> ("dummy",0,0,0),n
-      | _ -> err "ast_ctypes"
+      | x -> err x "ast_ctypes"
     ) ids
     in
     `AST_ctypes (sr,ids, xtqs tqs, xrr req)
@@ -763,7 +765,7 @@ and xstatement_t sr fresh env x : statement_t =
      | Id "Header" -> `Header
      | Id "Body" -> `Body
      | Id "Package" -> `Package
-     | _ -> err "ikind_t"
+     | x -> err x "ikind_t"
    in
     `AST_insert (sr, n, xvs vs, xc ct, xik ik, xrr req)
   | Lst [Id "ast_code"; ct] -> `AST_code (sr, xc ct)
@@ -771,13 +773,13 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_export_fun"; sn; Str s] -> 
     let xsn x = match ex x with
     | #suffixed_name_t as x -> x
-    | _ -> err "suffixed_name_t"
+    | _ -> err  x "suffixed_name_t"
     in
     `AST_export_fun  (sr, xsn sn, ss s)
 
   | Lst [Id "ast_export_type"; t; Str s] -> 
     `AST_export_type (sr, ti t, ss s)
 
-  | _ -> err "statement"
+  | x -> err x "statement"
 
 

@@ -62,6 +62,8 @@ open Flx_print
 open Flx_charset
 open Flx_exceptions
 open Flx_util
+open Ocs_types
+open Sex_types
 
 let map = List.map
 let map2 = List.map2
@@ -537,6 +539,51 @@ let dfltvs =
         failwith ("Syntax extension: unknown non-terminal " ^ name);
         *)
       end
+
+let ocs2flx sr r = 
+  let sex = Ocs2sex.ocs2sex r in
+  print_endline "OCS scheme term converted to s-expression:";
+  Sex_print.sex_print sex;
+  let fresh = ref 1 in
+  let env = [] in
+  let flx = Flx_sex2flx.xstatement_t sr fresh env sex in
+  print_endline "s-expression converted to Felix statement!";
+  print_endline (string_of_statement 0 flx);
+  flx
+
+let scheme_eval (s:sval):sval =
+  let term = ref None in
+  let get_port = function 
+    | Ocs_types.Sport p -> p
+    | _ -> failwith "expected port"
+  in
+  let env = Ocs_top.make_env () in
+  let th = Ocs_top.make_thread () in
+  let outp = get_port th.Ocs_types.th_stdout in
+  begin try
+    let c = Ocs_compile.compile env s in
+    print_endline "COMPILED";
+    Ocs_eval.eval th (function 
+      | Ocs_types.Sunspec -> failwith "UNSPECIFIED" 
+      | r -> 
+         print_endline "EVALUATED";
+         Ocs_print.print outp false r;
+         Ocs_port.puts outp "\n";
+         Ocs_port.flush outp;
+         term := Some r
+    ) c
+  with 
+    | Ocs_error.Error err 
+    | Ocs_error.ErrorL (_,err) 
+      ->
+        failwith ("Error " ^ err)
+  end
+  ;
+  match !term with
+  | None -> failwith "Scheme term not returned!"
+  | Some r -> r
+
+
 }
 
 @head(2,'Tokens')
@@ -589,23 +636,7 @@ let dfltvs =
 @for n,t in flx_keywords+flx_parser_keywords:
   tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
 
-/*
-%type <Flx_ast.range_srcref * Flx_ast.statement_t list> compound
-%type <Flx_ast.statement_t> statement 
-%type <Flx_ast.expr_t> expr
-%type <Flx_ast.expr_t> rvalue
-%type<Flx_ast.tpattern_t> tpattern
-%type <Flx_ast.pattern_t> pattern
-  tangle('%type <Flx_ast.expr_t> qualified_name')
-  tangle('%type <Flx_ast.expr_t> atom')
-  tangle('%type <Flx_ast.expr_t> integer_literal')
-  tangle('%type <Flx_ast.expr_t> float_literal')
-  tangle('%type <Flx_ast.expr_t> string_literal')
-
-
-*/
-
-@if USE_DYPGEN:
+@if 1:
   tangle('%start <(Flx_ast.compilation_unit_t)> compilation_unit')
   tangle('%start <(Flx_ast.statement_t list * token)> statementsx')
   tangle('%start <(Flx_ast.statement_t list)> statements')
@@ -614,25 +645,6 @@ let dfltvs =
   tangle('%start <(Flx_ast.expr_t * token)> exprx')
   tangle('%start <(Flx_ast.expr_t)> expr')
   tangle('%start <(unit)> semi')
- else:
-  tangle('%type <Flx_ast.compilation_unit_t> compilation_unit')
-  tangle('%type <Flx_ast.statement_t list> statements')
-  tangle('%type <Flx_ast.statement_t list * token> statementsx')
-  tangle('%type <Flx_ast.statement_t> statement')
-  tangle('%type <Flx_ast.expr_t> expression')
-  tangle('%type <Flx_ast.expr_t * token> exprx')
-  tangle('%type <Flx_ast.expr_t> expr')
-  tangle('%type <unit> semi')
-
-  tangle('%start compilation_unit')
-  tangle('%start statementsx')
-  tangle('%start statements')
-  tangle('%start statement')
-  tangle('%start expression')
-  tangle('%start exprx')
-  tangle('%start expr')
-  tangle('%start semi')
-@#
 
 %%
 
@@ -691,7 +703,7 @@ statement:
   | null_statement { (* print_endline "Reducing null_statement"; *) $1 }
   | user_statement { (* print_endline "Reducing user_statement"; *) $1 }
   | cparse { (* print_endline "Reducing cparse "; *) $1 }
-@dyp_statement = """\
+  | sstatement { $1 }
   | OPEN SYNTAX basic_name_comma_list SEMI
     {
       print_endline "Opening syntax extensions";
@@ -745,17 +757,116 @@ statement:
   | IDENT { NAME ($1,"identifier") }
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
   | USER10 { USER10 $1 } /* user terminal */
- """
 @for s,t in flx_keywords:
   if t != "IDENT":
-    dyp_statement = dyp_statement + "  | " +t+ " { " + t + " $1 }\n"
+    tangle("  | " +t+ " { " + t + " $1 }")
 @for t,s in flx_syms:
   if t != "PARSE_ACTION":
-    dyp_statement = dyp_statement + "  | " +t+ " { " + t + " $1 }\n"
-@# 
-@if USE_DYPGEN:
-  tangle(dyp_statement)
-@#
+    tangle("  | " +t+ " { " + t + " $1 }")
+
+sstatement:
+  | SCHEME LBRACE sterm RBRACE { let sr = rstoken $1 $4 in ocs2flx sr $3 }
+
+sterm:
+  | { Snull }
+  | CALL sexpr sexpr SEMI { 
+    let call = Ocs_sym.get_symbol "ast_call" in 
+    let x = call :: $2 :: $3 :: [] in
+    let x = Ocs_misc.make_slist Snull (rev x) in
+    x
+    }
+
+sexpr:
+  | NAME 
+    {
+      let sr,x = $1 in
+      let aname = Ocs_sym.get_symbol "ast_name" in 
+      let empty = Ocs_misc.make_slist Snull [] in
+      let x = aname :: Sstring x :: empty :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+    }
+
+  | INTEGER 
+    { 
+      let sr,t,v = $1 in
+      let v = Big_int.string_of_big_int v in
+      let alit = Ocs_sym.get_symbol "ast_literal" in 
+      let aint = Ocs_sym.get_symbol "ast_int" in 
+      let i = aint :: Sstring t :: Sstring v :: [] in
+      let i = Ocs_misc.make_slist Snull (rev i) in
+      let x = alit :: i :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+    }
+
+  | FLOAT   
+    { 
+      let sr,t,v = $1 in
+      let alit = Ocs_sym.get_symbol "ast_literal" in 
+      let afloat = Ocs_sym.get_symbol "ast_float" in 
+      let i = afloat :: Sstring t :: Sstring v :: [] in
+      let i = Ocs_misc.make_slist Snull (rev i) in
+      let x = alit :: i :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+    }
+
+  | STRING  
+    { 
+      let sr,s = $1 in
+      let alit = Ocs_sym.get_symbol "ast_literal" in 
+      let astring = Ocs_sym.get_symbol "ast_string" in 
+      let i = astring :: Sstring s :: [] in
+      let i = Ocs_misc.make_slist Snull (rev i) in
+      let x = alit :: i :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+   }
+
+  | WSTRING  
+    { 
+      let sr,s = $1 in
+      let alit = Ocs_sym.get_symbol "ast_literal" in 
+      let astring = Ocs_sym.get_symbol "ast_wstring" in 
+      let i = astring :: Sstring s :: [] in
+      let i = Ocs_misc.make_slist Snull (rev i) in
+      let x = alit :: i :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+    }
+
+  | USTRING  
+    { 
+      let sr,s = $1 in
+      let alit = Ocs_sym.get_symbol "ast_literal" in 
+      let astring = Ocs_sym.get_symbol "ast_ustring" in 
+      let i = astring :: Sstring s :: [] in
+      let i = Ocs_misc.make_slist Snull (rev i) in
+      let x = alit :: i :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+    }
+
+  | CSTRING  
+    { 
+      let sr,s = $1 in
+      let alit = Ocs_sym.get_symbol "ast_literal" in 
+      let astring = Ocs_sym.get_symbol "ast_cstring" in 
+      let i = astring :: Sstring s :: [] in
+      let i = Ocs_misc.make_slist Snull (rev i) in
+      let x = alit :: i :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+    }
+
+  | LPAR RPAR
+    {
+      let sr = rstoken $1 $2 in
+      let x = Ocs_misc.make_slist Snull [] in 
+      x
+    }
+  | { Snull }
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }
@@ -3792,12 +3903,6 @@ suffixed_name:
       )
     }
 
-@if USE_DYPGEN:
-  pass
- else:
-  tangle('%%')
-  tangle('(* trailer *)')
-@#
 
 @head(1,'Parser object')
 @h = tangler('src/flx_parse_ctrl.ml')
@@ -3807,15 +3912,10 @@ open Flx_ast
 open Flx_exceptions
 open Flx_parse
 
-@if USE_DYPGEN:
-  tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
-  tangle("  match ls with")
-  tangle("  | [x,_] -> x")
-  tangle('  | _ -> failwith "Dypgen parser failed"')
- else:
-  tangle("let dyphack x = x")
-@#
+let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
+  match ls with
+  | [x,_] -> x
+  | _ -> failwith "Dypgen parser failed"
 
 let parse_file 
   (filename : string) 

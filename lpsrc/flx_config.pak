@@ -1601,6 +1601,7 @@ flx_expr_terminator_keywords = [
     ("rename", "RENAME"),
     ("requires", "REQUIRES"),
     ("return", "RETURN"),
+    ("SCHEME", "SCHEME"),
     ("syntax", "SYNTAX"),
     ("struct", "STRUCT"),
     ("then", "THEN"),
