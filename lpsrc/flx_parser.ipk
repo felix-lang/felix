@@ -777,6 +777,18 @@ sterm:
     }
 
 sexpr:
+  | sexpr sexpr 
+    {
+      let aname = Ocs_sym.get_symbol "ast_apply" in 
+      let x = $1 :: $2 :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      let x = aname :: x :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+    }
+  | satom { $1 }
+
+satom:
   | NAME 
     {
       let sr,x = $1 in

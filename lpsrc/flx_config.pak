@@ -1084,12 +1084,6 @@ if "build" in PHASES:
 
 
 if "host" in PHASES:
-  HOST_OCAML = flxbuild.ocaml_class.ocaml()
-  HOST_OCAML.autodetect(shell,get_stdout)
-  HOST_OCAML.report_config()
-  HOST_OCAML.save_options("config/ocaml_config.py")
-
-
   #
   # Now create the host model: the compiler has to run
   # on the build machine, but can cross compile for
@@ -1162,6 +1156,16 @@ if "host" in PHASES:
     HOST_CXX.check_options(shell,get_stdout)
     HOST_CXX.report_config()
   HOST_CXX.save_options("config"+os.sep+"host_cxx.py")
+
+  camllinkopts = ""
+  if HOST_CXX.options.CYGWIN:
+    camllinkopts = '-ccopt "-Wl,--stack -Wl,10485760" '
+  HOST_OCAML = flxbuild.ocaml_class.ocaml()
+  HOST_OCAML.autodetect(shell,get_stdout,linkopts)
+  HOST_OCAML.report_config()
+  HOST_OCAML.save_options("config/ocaml_config.py")
+
+
 
   host_model = HOST_CXX.options.model
   try:

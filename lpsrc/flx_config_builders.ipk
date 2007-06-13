@@ -2194,21 +2194,22 @@ from flxbuild.flxutil import MakeError
 from flxbuild.compiler_base import compiler_base
 
 class ocaml(compiler_base):
-  def autodetect(self, shell, get_stdout, log=None):
+
+  def autodetect(self, shell, get_stdout, linkopts,log=None):
     if log is None: log = sys.stdout
 
     opt = self.options
 
     try: # check if the client bootstrapped the native code compiler
       shell('ocamlopt.opt', log=log)
-      opt.OCAMLCC = 'ocamlopt.opt '
+      opt.OCAMLCC = 'ocamlopt.opt '+linkopts
       opt.OCAMLLEX = 'ocamllex.opt '
       opt.OCAMLYACC = 'ocamlyacc '
       opt.NATIVE_CODE_COMPILER = 1
     except MakeError:
       try: # check if the client has unbootstrapped native code compiler
         shell('ocamlopt', log=log)
-        opt.OCAMLCC = 'ocamlopt '
+        opt.OCAMLCC = 'ocamlopt '+linkopts
         opt.OCAMLLEX = 'ocamllex '
         opt.OCAMLYACC = 'ocamlyacc '
         opt.NATIVE_CODE_COMPILER = 1
