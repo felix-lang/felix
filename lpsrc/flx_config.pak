@@ -1161,7 +1161,7 @@ if "host" in PHASES:
   if HOST_CXX.options.CYGWIN:
     camllinkopts = '-ccopt "-Wl,--stack -Wl,10485760" '
   HOST_OCAML = flxbuild.ocaml_class.ocaml()
-  HOST_OCAML.autodetect(shell,get_stdout,linkopts)
+  HOST_OCAML.autodetect(shell,get_stdout,camllinkopts)
   HOST_OCAML.report_config()
   HOST_OCAML.save_options("config/ocaml_config.py")
 
