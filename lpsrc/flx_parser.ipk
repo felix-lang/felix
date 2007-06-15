@@ -551,13 +551,12 @@ let ocs2flx sr r =
   print_endline (string_of_statement 0 flx);
   flx
 
-let scheme_eval (s:sval):sval =
+let scheme_eval env (s:sval):sval =
   let term = ref None in
   let get_port = function 
     | Ocs_types.Sport p -> p
     | _ -> failwith "expected port"
   in
-  let env = Ocs_top.make_env () in
   let th = Ocs_top.make_thread () in
   let outp = get_port th.Ocs_types.th_stdout in
   begin try
@@ -582,6 +581,13 @@ let scheme_eval (s:sval):sval =
   match !term with
   | None -> failwith "Scheme term not returned!"
   | Some r -> r
+
+let scheme_compile_eval env (s:string):sval = 
+  let inp = Ocs_port.string_input_port s in
+  let lex = Ocs_lex.make_lexer inp "" in
+  match Ocs_read.read_expr lex with
+  | Ocs_types.Seof -> print_endline "END OF FILE?"; Snull
+  | v -> scheme_eval env v
 
 
 }
@@ -768,10 +774,22 @@ sstatement:
   | SCHEME LBRACE sterm RBRACE { let sr = rstoken $1 $4 in ocs2flx sr $3 }
 
 sterm:
-  | { Snull }
-  | CALL sexpr sexpr SEMI { 
+  | CALL sexpr SEMI { 
     let call = Ocs_sym.get_symbol "ast_call" in 
-    let x = call :: $2 :: $3 :: [] in
+    let f,a =
+      let a = $2 in
+      match a with
+      | Spair { car=car; cdr=cdr } -> 
+        if Ocs_misc.test_eqv car (Ocs_sym.get_symbol "ast_apply")
+        then begin
+          match cdr with 
+          | Spair { cdr=Snull; car=Spair { car = f; cdr = Spair { car = a; cdr=Snull } } } -> f,a
+          | _ -> failwith "application wrong no of args"
+        end
+        else a, Snull
+      | _ -> a,Snull
+    in
+    let x = call :: f :: a :: [] in
     let x = Ocs_misc.make_slist Snull (rev x) in
     x
     }
@@ -779,12 +797,27 @@ sterm:
 sexpr:
   | sexpr sexpr 
     {
+    print_endline "DETECTED STATEMENT ENCODED AS SCHEME";
+    let env = Ocs_top.make_env () in
+    let v1:Ocs_types.sval = Ocs_sym.get_symbol "_1" in
+    let v2:Ocs_types.sval = Ocs_sym.get_symbol "_2" in
+    let a1:Ocs_types.sval = $1 (* match $1 with `Obj_sexpr s -> s | _ -> failwith "expected sexpr" *) in
+    let a2:Ocs_types.sval = $2 (* match $2 with `Obj_sexpr s -> s | _ -> failwith "expected sexpr" *) in
+    let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = a1 } in
+    let g2:Ocs_types.vbind = Vglob { g_sym=v2; g_val = a2 } in
+    Ocs_env.bind_name env v1 g1;
+    Ocs_env.bind_name env v2 g2;
+    let s = "`(ast_apply (,_1 ,_2))" in
+    scheme_compile_eval env s
+
+      (*
       let aname = Ocs_sym.get_symbol "ast_apply" in 
       let x = $1 :: $2 :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
       let x = aname :: x :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
       x
+      *)
     }
   | satom { $1 }
 
@@ -878,7 +911,6 @@ satom:
       let x = Ocs_misc.make_slist Snull [] in 
       x
     }
-  | { Snull }
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }
