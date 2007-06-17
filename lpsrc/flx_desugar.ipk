@@ -1562,6 +1562,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   *)
   | `AST_macro_ifor _
   | `AST_macro_vfor _
+  | `AST_scheme_string _
     -> assert false
 
 and handle_glr seq rex sr' p e glr_idx t nt_id =

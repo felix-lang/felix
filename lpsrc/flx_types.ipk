@@ -789,6 +789,7 @@ and statement_t =
   | `AST_export_type of range_srcref * typecode_t * string
 
   | `AST_user_statement of range_srcref * string * ast_term_t
+  | `AST_scheme_string of range_srcref * string 
   ]
 
 
@@ -2215,6 +2216,7 @@ let src_of_stmt e = match e with
   | `AST_glr (s,_,_,_)
   | `AST_seq (s,_)
   | `AST_user_statement (s,_,_)
+  | `AST_scheme_string (s,_)
     -> s
   | `AST_comment _ 
     -> ("Generated",0,0,0,0)
@@ -4133,6 +4135,9 @@ and string_of_statement level s =
   | `AST_user_statement (_,name,term) ->
     let body = string_of_ast_term level term in
     spaces level ^ "User statement " ^ name ^ "\n" ^ body
+
+  | `AST_scheme_string (_,s) ->
+    spaces level ^ "Scheme string " ^ s ^ ";\n"
   
 and string_of_compilation_unit stats =
   catmap "\n" (string_of_statement 0) stats

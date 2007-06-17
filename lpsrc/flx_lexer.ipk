@@ -13,6 +13,7 @@ let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 
 let string_of_token (tok :Flx_parse.token): string =
   match tok with
+  | DUMMY -> "DUMMY"
   | NAME (sr,s) -> s
   | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
   | FLOAT (sr,t,v) -> v
@@ -56,6 +57,7 @@ let string_of_token (tok :Flx_parse.token): string =
 
 let name_of_token (tok :Flx_parse.token): string =
   match tok with
+  | DUMMY -> "DUMMY"
   | NAME (sr,s) -> "NAME"
   | INTEGER (sr,t,i) -> "INTEGER"
   | FLOAT (sr,t,v) -> "FLOAT"
@@ -98,6 +100,7 @@ let name_of_token (tok :Flx_parse.token): string =
   | SLOSH -> "SLOSH"
 
 let src_of_token t = match t with
+  | DUMMY
   | NEWLINE 
   | COMMENT _
   | COMMENT_NEWLINE _
