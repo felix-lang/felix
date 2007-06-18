@@ -687,7 +687,7 @@ let ocs2flx sr r =
   tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
 
 %type <Ocs_types.sval> sname sliteral satom sexpr
-%constructor Obj_sexpr %for sterm sexpr satom sname sliteral 
+%constructor Obj_sexpr %for sterm sexpr satom sname sliteral sinteger
 
 @if 1:
   tangle('%start <(Flx_ast.compilation_unit_t)> compilation_unit')
@@ -866,6 +866,13 @@ satom:
       let x = aname :: Sstring x :: empty :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
       x
+    }
+
+sinteger:
+  | INTEGER 
+    { 
+      let sr,t,v = $1 in
+      Sbigint v
     }
 
 sliteral:

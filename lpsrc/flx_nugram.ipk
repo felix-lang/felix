@@ -1,6 +1,5 @@
 @select(tangler("lib/nugram.flxh"))
 syntax schemer {
-/*
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
   
@@ -15,11 +14,11 @@ syntax schemer {
 
 //  satom := match_expr =># "_1";
 //  satom := compound =># "`(ast_lambda dfltvs (() None) None ,_2)";
-*/
+
   satom := ( sexpr ) =># "_2";
   satom := ( ) =># "'()";
 
-  // todo: cond
+// todo: cond
 
   ssimple_name_parts := sname [ sexpr ] =># "`(,_1 ,_3)";
   ssimple_name_parts := sname           =># "`(,_1 ())";
@@ -66,11 +65,102 @@ syntax schemer {
   sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
   sapplication := macro ctor sname scoercion =># "`ast_macro_ctor (,_3 ,_4))";
 
-  sexpr := sapplication =># "_1";
-  sexpr := sexpr * sexpr =># """
-    `(ast_product (,_1 ,_3))
-  """;
+  srefr := sapplication =># "_1";
+  // todo anonymous union
+  // todo anonymous struct
+  srefr := & srefr =># "`(ast_ref ,_2)";
+  srefr := * srefr =># "`(ast_apply (deref ,_2))";
+  srefr := deref srefr =># "`(ast_deref ,_2)";
+  srefr := new srefr =># "`(ast_new ,_2)";
+
+  ssuperscript := srefr =># "_1"; 
+  ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))"; 
+
+  spower := ssuperscript  =># "_1"; 
+  spower := ssuperscript ** sprefixed =># "`(ast_apply (pow (,_1 ,_3)))"; 
+
+  sprefixed := spower =># "_1";
+  sprefixed := lval spower =># "`(ast_lvalue ,_1)";
+  sprefixed := ! spower =># "`(ast_apply (excl ,_2))";
+  sprefixed := + spower =># "`(ast_apply (pos ,_2))";
+  sprefixed := - spower =># "`(ast_apply (neg ,_2))";
+  sprefixed := ~ spower =># "`(ast_apply (compl ,_2))";
+
+  s_term := sprefixed =># "_1";
+  s_term := s_term / spower =># "`(ast_apply (div (,_1 ,_3)))";
+  s_term := s_term % spower =># "`(ast_apply (mod (,_1 ,_3)))";
+
+  sproduct :=  s_term =># "_1";
+  sproduct := s_term * sproduct_list =># "`(ast_product ,(cons _1 _3))";
+    sproduct_list := s_term * sproduct_list =># "(cons _1 _3)";
+    sproduct_list := s_term =># "`(,_1)";
   
+  ssubtraction := sproduct =># "_1";
+  ssubtraction := ssubtraction - sproduct =># "`(ast_apply (sub (,_1 ,_3)))";
+
+  ssum :=  ssubtraction =># "_1";
+  ssum := ssubtraction + ssum_list =># "`(ast_sum ,(cons _1 _3))";
+    ssum_list := ssubtraction + ssum_list =># "(cons _1 _3)";
+    ssum_list := ssubtraction =># "`(,_1)";
+
+  sshift := ssum =># "_1";
+  sshift := sshift << ssum =># "`(ast_apply (shl (,_1 ,_3)))";
+  sshift := sshift >> ssum =># "`(ast_apply (shr (,_1 ,_3)))";
+
+  sband :=  sshift =># "_1";
+  sband := sband \& sshift =># "`(ast_apply (band (,_1 ,_3)))";
+
+  sbxor := sband =># "_1";
+  sbxor := sbxor \^ sband =># "`(ast_apply (bxor (,_1 ,_3)))";
+
+  sbor := sbxor =># "_1";
+  sbor := sbor \| sbxor =># "`(ast_apply (bor (,_1 ,_3)))";
+
+  scase_literal := sbor =># "_1";
+  scase_literal := case sinteger =># "`(ast_case_tag ,_2))";
+  scase_literal := case sinteger of ssum =># "`(ast_typed_case (,_2 ,_4))";
+  scase_literal := case sname of ssum =># "`(ast_variant (,_2 ,_4))";
+  
+  sarrow := scase_literal =># "_1";
+  sarrow := scase_literal -> sarrow =># "`(ast_arrow (,_1 ,_3))";
+  sarrow := scase_literal --> sarrow =># "`(ast_longarrow (,_1 ,_3))";
+
+  sintersection:= sarrow =># "_1";
+  suser10 := sintersection =># "_1";
+  ssetunion := suser10 =># "_1";
+  sas_expr := ssetunion =># "_1";
+  scomparison:= sas_expr =># "_1";
+
+  snot_condition := scomparison  =># "_1";
+  snot_condition := not snot_condition  =># "`(ast_apply (lnot ,_2))";
+
+  sand_condition := snot_condition =># "_1";
+  sand_condition := snot_condition and sand_list =># "`(ast_andlist ,(cons _1 _3))";
+    sand_list := snot_condition and sand_list =># "(cons _1 _3)";
+    sand_list := snot_condition =># "`(,_1)";
+
+  sor_condition := sand_condition =># "_1";
+  sor_condition := sand_condition or sor_list =># "`(ast_orlist ,(cons _1 _3))";
+    sor_list := and_condition or sor_list =># "(cons _1 _3)";
+    sor_list := and_condition =># "`(,_1)";
+
+  stuple := sor_condition  =># "_1";
+  stuple := sor_condition stuple_suffix =># "`(ast_tuple ,(cons _1 _2))";
+    stuple_suffix:= , sor_condition stuple_suffix =># "(cons _2 _3)";
+    stuple_suffix:= , sor_condition  =># "`(,_2)";
+  
+  sdollar_apply := stuple =># "_1";
+  sdollar_apply := stuple unless sexpr then sdollar_apply =>#
+    "`(ast_cond ((ast_apply (lnot ,_3)) ,_1 ,_5))";
+  sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply (,_1 ,_3))";
+
+  slambda := sdollar_apply =># "_1";
+  // lambda forms here
+
+  srvalue := slambda  =># "_1";
+
+  sexpr := srvalue =># "_1";
+  sexpr := let sexpr = expr in expr =># "`(ast_letin (,_2 ,_4 ,_6))"; 
 }
 
 syntax regexps {

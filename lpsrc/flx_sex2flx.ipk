@@ -251,6 +251,8 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_user_expr";  * Str s * ast_term_t -> * str s * ast_term_t
 *)
 
+  | Lst ls -> `AST_tuple (sr, map ex ls)
+
   | Id y -> `AST_name (sr,y,[])
   | Int i -> 
     let j = Big_int.big_int_of_string i in 
