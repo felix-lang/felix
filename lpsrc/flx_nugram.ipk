@@ -1,0 +1,88 @@
+@select(tangler("lib/nugram.flxh"))
+syntax schemer {
+/*
+  satom := _ =># "'ast_patany";
+  satom := ... =># "'ast_ellipsis";
+  
+  expr_code_prefix := code [ sexpr ] =># "_3";
+  satom := expr_code_prefix sexpr =># "`(ast_expr ,_1 ,_2)";
+
+  satom := callback [ sexpr ] =># "`(ast_callback ,_3)";
+  satom := [| sexpr |] =># "`(ast_arrayof ,_2)";
+  satom := { sexpr } =># """
+    `(ast_lambda dfltvs (() None) None (ast_fun_return ,_2))
+  """;
+
+//  satom := match_expr =># "_1";
+//  satom := compound =># "`(ast_lambda dfltvs (() None) None ,_2)";
+*/
+  satom := ( sexpr ) =># "_2";
+  satom := ( ) =># "'()";
+
+  // todo: cond
+
+  ssimple_name_parts := sname [ sexpr ] =># "`(,_1 ,_3)";
+  ssimple_name_parts := sname           =># "`(,_1 ())";
+
+  squalified_name := squalified_name :: ssimple_name_parts =># 
+    "`(ast_lookup (,_1 ,(car _2) ,(cadr _2))";
+  squalified_name := ssimple_name_parts =># 
+    """
+      (let (
+        (_a (car _1))
+        (_b (cadr _1)))
+      `(ast_name ,_a ,_b))
+    """;
+
+  ssuffixed_name := squalified_name of sfactor =># 
+    "`(ast_suffix (,_1 ,_3))";
+
+  sthe_name := satom =># "_1";
+  sthe_name := the squalified_name =># "`(ast_the ,_2)";
+  sthe_name := noexpand squalified_name =># "`(ast_noexpand ,_2)";
+  sthe_name := ? sname =># "`(ast_patvar ,_2)";
+  sthe_name := squalified_name =># "_1";
+
+  shash_name := sthe_name =># "_1";
+  shash_name := # shash_name =># "`(ast_lift ,_2)";
+
+  sfactor := shash_name =># "_1";
+  sfactor := sfactor .[ sexpr ] =># "`(ast_apply (subscript (,_1 ,_4)))";
+  sfactor := sfactor .[ sexpr to expr ] =># "`(ast_apply (substring (,_1 ,_4 ,_6)))";
+  sfactor := sfactor .[ sexpr to ] =># "`(ast_apply (copyfrom (,_1 ,_4)))";
+  sfactor := sfactor .[ to sexpr ] =># "`(ast_apply (copyto (,_1 ,_5)))";
+  sfactor := sfactor . simple_name_parts =># 
+    "`(ast_dot (,_1 (ast_name ((car ,_3) (cadr ,_3)))))";
+
+  sfactor := sfactor .-> simple_name_parts =># 
+    "`(ast_dot ((ast_apply (deref ,_1)) (ast_name ((car ,_3) (cadr ,_3)))))";
+
+
+  scoercion := sfactor =># "_1";
+  scoercion := scoercion : sfactor =># "`(ast_coercion (,_1 ,_3))";
+
+  sapplication := scoercion =># "_1";
+  sapplication := sapplication scoercion =># "`(ast_apply (,_1 ,_2))";
+  sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
+  sapplication := macro ctor sname scoercion =># "`ast_macro_ctor (,_3 ,_4))";
+
+  sexpr := sapplication =># "_1";
+  sexpr := sexpr * sexpr =># """
+    `(ast_product (,_1 ,_3))
+  """;
+  
+}
+
+syntax regexps {
+  satom := regmatch_expr =># "_1";
+}
+
+syntax parsing {
+  satom := glrparse =># "_1";
+}
+
+syntax typing {
+  satom := typecase_expr =># "_1";
+}
+
+open syntax schemer;

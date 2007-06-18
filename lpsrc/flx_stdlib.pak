@@ -2,6 +2,7 @@
 
 @execfile('config'+os.sep+'flx_data.py')
 @include_file ('flx_stdlib_lex.ipk')
+@include_file ('flx_nugram.ipk')
 
 @select(tangler('spkgs/flx_stdlib.py'))
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio']
