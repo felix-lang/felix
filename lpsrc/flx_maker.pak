@@ -324,7 +324,7 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.dyp') > filetime(file+'.ml'): force = 1
       if force:
-        vxqt("bin/pgen " + file + ".dyp")
+        vxqt("bin" + os.sep + "pgen " + file + ".dyp")
 
     # STEP 3: Generate parsers (dypgen)
     for parse in DYPARSES:
@@ -332,7 +332,7 @@ class PLUGIN(Plugin):
       if not force:
         if filetime(file+'.dyp') > filetime(file+'.ml'): force = 1
       if force:
-        vxqt("bin/dypgen --pv-obj " + file + ".dyp")
+        vxqt("bin" + os.sep + "dypgen --pv-obj " + file + ".dyp")
 
     if PARSES: # only works on ocamlyacc grammars ..
       plugins['extract_grammar']()
