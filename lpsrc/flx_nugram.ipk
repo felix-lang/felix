@@ -12,13 +12,38 @@ syntax schemer {
     `(ast_lambda dfltvs (() None) None (ast_fun_return ,_2))
   """;
 
-//  satom := match_expr =># "_1";
+  satom := match sexpr with smatchings endmatch =># 
+    "`(ast_match (,_2 ,_4))";
+
+    smatchings := smatching =># "`(,_1)";
+    smatchings := smatching smatchings =># "(cons _1 _2)";
+    smatching  := | spattern => sexpr =># "`(,_2 ,_4)";
+    smatching  := | => sexpr =># "`(pat_none ,_4)";
+
 //  satom := compound =># "`(ast_lambda dfltvs (() None) None ,_2)";
 
   satom := ( sexpr ) =># "_2";
   satom := ( ) =># "'()";
 
-// todo: cond
+  satom := if sexpr then sexpr selse_part endif =>#
+    "`(ast_cond (,_2 ,_4 ,_5))";
+
+    selif := elif sexpr then sexpr =># "`(,_2 ,_4)";
+
+    selifs := selif =># "`(,_1)";
+    selifs := selifs selif =># "(cons _2 _1)";
+
+    selse_part:= else sexpr =># "_2";
+    selse_part:= selifs else sexpr =># """
+     (letrec 
+       ((fold_left 
+         (lambda (f acc lst) 
+           (if (null? lst) acc (fold_left f (f acc (car lst)) (cdr lst))))))
+       (let ((f (lambda (result condthn) 
+         (let ((cond (car condthn)) (thn (cadr condthn))) 
+           `(ast_cond (,cond ,thn ,result))))))
+         (fold_left f _3 _1)))
+    """;
 
   ssimple_name_parts := sname [ sexpr ] =># "`(,_1 ,_3)";
   ssimple_name_parts := sname           =># "`(,_1 ())";
@@ -26,12 +51,7 @@ syntax schemer {
   squalified_name := squalified_name :: ssimple_name_parts =># 
     "`(ast_lookup (,_1 ,(car _2) ,(cadr _2))";
   squalified_name := ssimple_name_parts =># 
-    """
-      (let (
-        (_a (car _1))
-        (_b (cadr _1)))
-      `(ast_name ,_a ,_b))
-    """;
+    "`(ast_name ,(car _1) ,(cadr _1))";
 
   ssuffixed_name := squalified_name of sfactor =># 
     "`(ast_suffix (,_1 ,_3))";
@@ -129,7 +149,15 @@ syntax schemer {
   suser10 := sintersection =># "_1";
   ssetunion := suser10 =># "_1";
   sas_expr := ssetunion =># "_1";
+
+  // NOTE: this version doesn't support chains like a < b < c.. too bad
   scomparison:= sas_expr =># "_1";
+  scomparison:= sas_expr < sas_expr =># "`(ast_apply (lt (,_1 ,_3)))";
+  scomparison:= sas_expr <= sas_expr =># "`(ast_apply (le (,_1 ,_3)))";
+  scomparison:= sas_expr == sas_expr =># "`(ast_apply (eq (,_1 ,_3)))";
+  scomparison:= sas_expr != sas_expr =># "`(ast_apply (ne (,_1 ,_3)))";
+  scomparison:= sas_expr >= sas_expr =># "`(ast_apply (ge (,_1 ,_3)))";
+  scomparison:= sas_expr > sas_expr =># "`(ast_apply (gt (,_1 ,_3)))";
 
   snot_condition := scomparison  =># "_1";
   snot_condition := not snot_condition  =># "`(ast_apply (lnot ,_2))";
