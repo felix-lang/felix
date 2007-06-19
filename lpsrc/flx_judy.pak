@@ -9227,7 +9227,7 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int      Judy1First
+FUNCTION int JUDY_EXTERN Judy1First
 #else
 FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
 #endif
