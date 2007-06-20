@@ -44,7 +44,7 @@ to supply a user written allocator.
 cpp_cpps = ['rtl/flx_gc','rtl/flx_collector']
 provides_lib = "libflx_gc"
 pkg_requires = ['flx_judy']
-lib_requires = ['flx_judy']
+lib_requires = ['libflx_judy']
 iscr_source = ['lpsrc/flx_gc.pak']
 build_macro = "FLX_GC"
 weaver_directory = 'doc/rtl/flx_gc/'
