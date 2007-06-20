@@ -991,6 +991,12 @@ sliteral:
       x
     }
 
+suser10token:
+  | USER10 
+    { 
+      let sr,op,fn = $1 in
+      Sstring fn
+    }
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }

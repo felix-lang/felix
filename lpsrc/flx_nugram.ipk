@@ -190,10 +190,22 @@ syntax schemer {
   sarrow := scase_literal -> sarrow =># "`(ast_arrow (,_1 ,_3))";
   sarrow := scase_literal --> sarrow =># "`(ast_longarrow (,_1 ,_3))";
 
-  sintersection:= sarrow =># "_1";
-  suser10 := sintersection =># "_1";
+  ssetintersection:= sarrow =># "_1";
+  ssetintersection := sarrow && ssetintersection_list =># "(cons _1 _3)";
+    ssetintersection_list := sarrow =># "_1";
+    ssetintersection_list := sarrow && ssetintersection_list =># "(cons _1 _3)";
+
+  suser10 := ssetintersection =># "_1";
+  suser10 := suser10 suser10token ssetintersection =># 
+    "`(,_2 (,_1 ,_3)))";
+
   ssetunion := suser10 =># "_1";
+  ssetunion := suser10 || ssetunion_list =># "(cons _1 _3)";
+    ssetunion_list := suser10 =># "_1";
+    ssetunion_list := suser10 || ssetunion_list =># "(cons _1 _3)";
+
   sas_expr := ssetunion =># "_1";
+  sas_expr := sas_expr as sname =># "`(ast_as (,_1 ,_3))";
 
   // NOTE: this version doesn't support chains like a < b < c.. too bad
   scomparison:= sas_expr =># "_1";
