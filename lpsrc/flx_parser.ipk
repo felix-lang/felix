@@ -687,17 +687,16 @@ let ocs2flx sr r =
   tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
 
 %type <Ocs_types.sval> sname sliteral satom sexpr
-%constructor Obj_sexpr %for sterm sexpr satom sname sliteral sinteger
+%constructor Obj_sexpr %for sterm sexpr satom sname sliteral sinteger sfloating sintegral sstring
 
-@if 1:
-  tangle('%start <(Flx_ast.compilation_unit_t)> compilation_unit')
-  tangle('%start <(Flx_ast.statement_t list * token)> statementsx')
-  tangle('%start <(Flx_ast.statement_t list)> statements')
-  tangle('%start <(Flx_ast.statement_t)> statement')
-  tangle('%start <(Flx_ast.expr_t)> expression')
-  tangle('%start <(Flx_ast.expr_t * token)> exprx')
-  tangle('%start <(Flx_ast.expr_t)> expr')
-  tangle('%start <(unit)> semi')
+%start <(Flx_ast.compilation_unit_t)> compilation_unit
+%start <(Flx_ast.statement_t list * token)> statementsx
+%start <(Flx_ast.statement_t list)> statements
+%start <(Flx_ast.statement_t)> statement
+%start <(Flx_ast.expr_t)> expression
+%start <(Flx_ast.expr_t * token)> exprx
+%start <(Flx_ast.expr_t)> expr
+%start <(unit)> semi
 
 %%
 
@@ -874,6 +873,31 @@ sinteger:
       let sr,t,v = $1 in
       Sbigint v
     }
+
+sintegral:
+  | INTEGER 
+    { 
+      let sr,t,v = $1 in
+      let i = Sstring t :: Sbigint v :: [] in
+      let x = Ocs_misc.make_slist Snull (rev i) in
+      x
+    }
+  | MINUS INTEGER 
+    { 
+      let sr,t,v = $2 in
+      let v = Big_int.minus_big_int v in
+      let i = Sstring t :: Sbigint v :: [] in
+      let x = Ocs_misc.make_slist Snull (rev i) in
+      x
+    }
+
+sstring:
+  | STRING
+    { 
+      let sr,s = $1 in
+      Sstring s
+    }
+
 
 sliteral:
   | INTEGER 

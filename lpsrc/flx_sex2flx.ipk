@@ -24,7 +24,7 @@ open List
 exception Sex2FlxTypeError of string
 
 let err x s = 
-  print_string ("ERROR  in " ^ s);
+  print_string ("[sex2flx] ERROR  in " ^ s);
   Sex_print.sex_print x;
   raise (Sex2FlxTypeError s) 
 
@@ -278,43 +278,43 @@ and xpattern_t sr fresh env x =
   let ss s = String.sub s 1 (String.length s - 2) in
   let xq qn = qualified_name_of_expr (ex qn) in
   match x with
-  | Id "PAT_nan" -> `PAT_nan sr
-  | Id "PAT_none" -> `PAT_none sr
+  | Id "pat_nan" -> `PAT_nan sr
+  | Id "pat_none" -> `PAT_none sr
 
   (* constants *)
-  | Lst [Id "PAT_int"; Str s; Int i] -> `PAT_int (sr,ss s, bi i)
-  | Lst [Id "PAT_string"; Str s] -> `PAT_string (sr,ss s)
+  | Lst [Id "pat_int"; Str s; Int i] -> `PAT_int (sr,ss s, bi i)
+  | Lst [Id "pat_string"; Str s] -> `PAT_string (sr,ss s)
 
   (* ranges *)
-  | Lst [Id "PAT_int_range"; Str s1; Int i1; Str s2; Int i2] ->
+  | Lst [Id "pat_int_range"; Str s1; Int i1; Str s2; Int i2] ->
     `PAT_int_range (sr,ss s1, bi i1, ss s2, bi i2)
 
-  | Lst [Id "PAT_string_range"; Str s1; Str s2] ->
+  | Lst [Id "pat_string_range"; Str s1; Str s2] ->
     `PAT_string_range (sr,ss s1, ss s2)
-  | Lst [Id "PAT_float_range"; p1; p2] -> 
+  | Lst [Id "pat_float_range"; p1; p2] -> 
     `PAT_float_range (sr, xfloat_pat p1, xfloat_pat p2)
 
   (* other *)
-  | Lst [Id "PAT_coercion"; p; t] ->
+  | Lst [Id "pat_coercion"; p; t] ->
    `PAT_coercion (sr, xp p, ti t)
   
-  | Lst [Id "PAT_name"; Id x] -> `PAT_name (sr, x)
-  | Lst [Id "PAT_tuple"; Lst ps] -> `PAT_tuple (sr, map xp ps)
+  | Lst [Id "pat_name"; Id x] -> `PAT_name (sr, x)
+  | Lst [Id "pat_tuple"; Lst ps] -> `PAT_tuple (sr, map xp ps)
 
-  | Id "PAT_any" -> `PAT_any sr
+  | Id "pat_any" -> `PAT_any sr
 (*
   | `PAT_regexp of range_srcref * string * id_t list 
 *)  
-  | Lst [Id "PAT_const_ctor"; qn] -> `PAT_const_ctor (sr, xq qn)
-  | Lst [Id "PAT_nonconst_ctor"; qn; p] -> `PAT_nonconst_ctor (sr, xq qn, xp p)
+  | Lst [Id "pat_const_ctor"; qn] -> `PAT_const_ctor (sr, xq qn)
+  | Lst [Id "pat_nonconst_ctor"; qn; p] -> `PAT_nonconst_ctor (sr, xq qn, xp p)
 
-  | Lst [Id "PAT_as"; p; Id s] -> `PAT_as (sr, xp p, s)
-  | Lst [Id "PAT_when"; p; e] -> `PAT_when (sr, xp p, ex e)
+  | Lst [Id "pat_as"; p; Id s] -> `PAT_as (sr, xp p, s)
+  | Lst [Id "pat_when"; p; e] -> `PAT_when (sr, xp p, ex e)
 
-  | Lst [Id "PAT_record"; Lst ips] -> 
+  | Lst [Id "pat_record"; Lst ips] -> 
     let ips = map (function
       | Lst [Id id; p] -> id,xp p
-      | x -> err x "PAT_record syntax"
+      | x -> err x "pat_record syntax"
       )
       ips
     in

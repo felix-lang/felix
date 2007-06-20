@@ -20,6 +20,51 @@ syntax schemer {
     smatching  := | spattern => sexpr =># "`(,_2 ,_4)";
     smatching  := | => sexpr =># "`(pat_none ,_4)";
 
+    satomic_pattern := sstring =># "`(pat_string ,_1)";
+    satomic_pattern := ? sname =># "`(pat_as pat_any ,_2)";
+    satomic_pattern := _ =># "'pat_any";
+    satomic_pattern := ( spattern ) =># "_2";
+    satomic_pattern := struct { spat_assigns } =># "`(pat_record ,_3)";
+      spat_assign := sname = spattern ; =># "`(,_1 ,_3)";
+      spat_assigns := spat_assign =># "`(,_1)";
+      spat_assigns := spat_assign spat_assigns =># "(cons _1 _2)";
+
+    satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_1 ,_2)";
+    satomic_pattern := sctor_name =># "`(pat_const_ctor ,_1)";
+      sctor_name := squalified_name =># "_1";
+      sctor_name := case sinteger =># "`(ast_case_tag ,(cadr _2))";
+
+    satomic_pattern := sstring .. sstring =># "`(pat_string_range ,_1 ,_3)";
+    satomic_pattern := sintegral =># "`(pat_int ,(car _1) ,(cadr _1))";
+    satomic_pattern := sintegral .. sintegral=># 
+      "`(pat_int_range ,(car _1) ,(cadr _1) ,(car _3) ,(cadr _3))";
+
+    satomic_pattern := nan =># "'pat_nan";
+    satomic_pattern := sfloating .. sfloating =># 
+      "`(pat_int ,(car _1) ,(cadr _1))";
+
+      sfloating:= sfloat =># "`(float_plus ,(car _1) ,(cadr _1))";
+      sfloating:= - sfloat =># "`(float_minus ,(car _2) ,(cadr _2))";
+      sfloating:= inf =># "'float_inf";
+      sfloating:= - inf =># "'float_minus_inf";
+
+    scoercive_pattern := satomic_pattern =># "_1";
+    scoercive_pattern := satomic_pattern : sarrow =># "`(pat_coercion ,_1 ,_2)";
+
+    stuple_pattern := scoercive_pattern =># "_1";
+    stuple_pattern := scoercive_pattern stuple_pattern_suffix =># 
+      "`(pat_tuple ,(cons _1 _2))";
+
+      stuple_pattern_suffix := , scoercive_pattern =># "`(,_2)";
+      stuple_pattern_suffix := , scoercive_pattern stuple_pattern_suffix =># 
+        "(cons _1 _2)";
+
+    sas_pattern := stuple_pattern =># "_1";
+    sas_pattern := stuple_pattern as sname =># "`(pat_as ,_1 ,_3)";
+
+    spattern := sas_pattern =># "_1";
+    spattern := sas_pattern when sexpr =># "`(pat_when ,_1 ,_3)";
+
 //  satom := compound =># "`(ast_lambda dfltvs (() None) None ,_2)";
 
   satom := ( sexpr ) =># "_2";
