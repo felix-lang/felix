@@ -21322,23 +21322,6 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 
 @h=tangler('judy/Judy1/Judy1Tables.c')
 @select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
-
-#ifdef _WIN32
-#define JU_WIN
-#endif
-
-
 #ifdef JU_64BIT
 #include "Judy1Tables64.c"
 #else
@@ -21348,24 +21331,6 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 
 @h=tangler('judy/Judy1/Judy1Tables32.c')
 @select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
-
-#ifdef _WIN32
-#define JU_WIN
-#endif
-
-
-#line 21175 "./lpsrc/flx_judy.pak"
 #ifndef JUDY_EXTERN
 #if defined(_WIN32) && !defined(FLX_STATIC_LINK)
 #ifdef BUILD_JUDY
@@ -21454,24 +21419,6 @@ j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
 
 @h=tangler('judy/Judy1/Judy1Tables64.c')
 @select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
-
-#ifdef _WIN32
-#define JU_WIN
-#endif
-
-
-#line 21262 "./lpsrc/flx_judy.pak"
 #ifndef JUDY_EXTERN
 #if defined(_WIN32) && !defined(FLX_STATIC_LINK)
 #ifdef BUILD_JUDY
@@ -48230,23 +48177,6 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 @h=tangler('judy/JudyL/JudyLTables.c')
 @select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
-
-#ifdef _WIN32
-#define JU_WIN
-#endif
-
-
 #ifdef JU_64BIT
 #include "JudyLTables64.c"
 #else
@@ -48272,19 +48202,6 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #define JU_WIN
 #endif
 
-
-#line 47909 "./lpsrc/flx_judy.pak"
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
 
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
@@ -48427,19 +48344,6 @@ j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
 #define JU_WIN
 #endif
 
-
-#line 48045 "./lpsrc/flx_judy.pak"
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
 
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
