@@ -174,7 +174,6 @@ import os
 import sys
 
 prefix = '/home/skaller/judy/Judy-1.0.4/src'
-#prefix = '/Users/gchilds/judy/Judy-1.0.4/src'
 
 files = [
   'Judy.h',
@@ -242,6 +241,66 @@ files = [
   'JudySL/JudySL.c',
   ]
 
+externs = [
+# JUDY1 FUNCTIONS
+  'Judy1Test',
+  'Judy1Set',
+  'Judy1SetArray',
+  'Judy1Unset',
+  'Judy1Count',
+  'Judy1ByCount',
+  'Judy1FreeArray',
+  'Judy1MemUsed',
+  'Judy1MemActive',
+  'Judy1First',
+  'Judy1Next',
+  'Judy1Last',
+  'Judy1Prev',
+  'Judy1FirstEmpty',
+  'Judy1NextEmpty',
+  'Judy1LastEmpty',
+  'Judy1PrevEmpty',
+  'JudyLGet',
+  'JudyLIns',
+  'JudyLInsArray',
+# JUDYL FUNCTIONS
+  'JudyLDel',
+  'JudyLCount',
+  'JudyLByCount',
+  'JudyLFreeArray',
+  'JudyLMemUsed',
+  'JudyLMemActive',
+  'JudyLFirst',
+  'JudyLNext',
+  'JudyLLast',
+  'JudyLPrev',
+  'JudyLFirstEmpty',
+  'JudyLNextEmpty',
+  'JudyLLastEmpty',
+  'JudyLPrevEmpty',
+# JUDYSL FUNCTIONS
+  'JudySLGet',
+  'JudySLIns',
+  'JudySLDel',
+  'JudySLFreeArray',
+  'JudySLFirst',
+  'JudySLNext',
+  'JudySLLast',
+  'JudySLPrev',
+# JUDYHSL FUNCTIONS:
+  'JudyHSGet',
+  'JudyHSIns',
+  'JudyHSDel',
+  'JudyHSFreeArray',
+# JUDY memory interface to malloc
+  'Judy1MallocSizes',
+  'JudyLMallocSizes',
+  'JudyMalloc',
+  'JudyMallocVirtual',
+  'JudyFree',
+  'JudyFreeVirtual',
+]
+
 cph = '// Copyright (C) 2000 - 2002 Hewlett-Packard Company'
 cpt = '// _________________'
 cphn = len(cph)
@@ -266,6 +325,11 @@ for fn in files:
   print "#endif"
   print "#endif"
   print
+  print "#ifdef _WIN32"
+  print "#define JU_WIN"
+  print "#endif"
+  print
+  print
   f = open(prefix+'/'+fn)
   data = f.readlines()
   f.close()
@@ -274,14 +338,22 @@ for fn in files:
     if line[:cphn]==cph:
       copy = 0
     if copy: 
-      # apply also to the extern fns in Judy.h. perhaps should ONLY be
-      # done here.
-      if line[:8]=="FUNCTION" or (line[:6]=="extern" and fn=="Judy.h"):
+      if line[:8]=="FUNCTION":
         s1 = string.split(line,"(")
-        # s2 = string.split(s1[0]," ")
-        s2 = string.split(s1[0],)  # no separator eats whitespace first!
+        s2 = string.split(s1[0])
         if s2[1] in ["Word_t", "int", "PPvoid_t", "Pvoid_t"]:
           if s2[2][:4]=="Judy":
+            t2 = [s2[0],s2[1],"JUDY_EXTERN"]+s2[2:]
+            t2 = string.join(t2," ")
+            t1 = [t2]+s1[1:]
+            t1 = string.join(t1,"(")
+            g.write(t1)
+            line = t1
+      else:
+        s1 = string.split(line,"(")
+        s2 = string.split(s1[0])
+        if len(s2)>=3 and s2[0]=='extern':
+          if s2[2] in externs:
             t2 = [s2[0],s2[1],"JUDY_EXTERN"]+s2[2:]
             t2 = string.join(t2," ")
             t1 = [t2]+s1[1:]
