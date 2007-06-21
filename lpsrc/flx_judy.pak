@@ -226,30 +226,50 @@ typedef struct J_UDY_ERROR_STRUCT
 // JUDY1 FUNCTIONS:
 
 extern int JUDY_EXTERN Judy1Test(       Pcvoid_t  PArray, Word_t   Index,   P_JE);
+
 extern int JUDY_EXTERN Judy1Set(        PPvoid_t PPArray, Word_t   Index,   P_JE);
+
 extern int JUDY_EXTERN Judy1SetArray(   PPvoid_t PPArray, Word_t   Count,
+
                                              const Word_t * const PIndex,
                                                                      P_JE);
 extern int JUDY_EXTERN Judy1Unset(      PPvoid_t PPArray, Word_t   Index,   P_JE);
+
 extern Word_t JUDY_EXTERN Judy1Count(      Pcvoid_t  PArray, Word_t   Index1,
+
                                                    Word_t   Index2,  P_JE);
 extern int JUDY_EXTERN Judy1ByCount(    Pcvoid_t  PArray, Word_t   Count,
+
                                                    Word_t * PIndex,  P_JE);
 extern Word_t JUDY_EXTERN Judy1FreeArray(  PPvoid_t PPArray,                   P_JE);
+
 extern Word_t JUDY_EXTERN Judy1MemUsed(    Pcvoid_t  PArray);
+
 extern Word_t JUDY_EXTERN Judy1MemActive(  Pcvoid_t  PArray);
+
 extern int JUDY_EXTERN Judy1First(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN Judy1Next(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN Judy1Last(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN Judy1Prev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN Judy1FirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN Judy1NextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN Judy1LastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN Judy1PrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
 
+
 extern PPvoid_t JUDY_EXTERN JudyLGet(        Pcvoid_t  PArray, Word_t    Index,  P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudyLIns(        PPvoid_t PPArray, Word_t    Index,  P_JE);
+
 extern int JUDY_EXTERN JudyLInsArray(   PPvoid_t PPArray, Word_t    Count,
+
                                              const Word_t * const PIndex,
                                              const Word_t * const PValue,
 
@@ -257,41 +277,67 @@ extern int JUDY_EXTERN JudyLInsArray(   PPvoid_t PPArray, Word_t    Count,
 // JUDYL FUNCTIONS:
                                                                      P_JE);
 extern int JUDY_EXTERN JudyLDel(        PPvoid_t PPArray, Word_t    Index,  P_JE);
+
 extern Word_t JUDY_EXTERN JudyLCount(      Pcvoid_t  PArray, Word_t    Index1,
+
                                                    Word_t    Index2, P_JE);
 extern PPvoid_t JUDY_EXTERN JudyLByCount(    Pcvoid_t  PArray, Word_t    Count,
+
                                                    Word_t *  PIndex, P_JE);
 extern Word_t JUDY_EXTERN JudyLFreeArray(  PPvoid_t PPArray,                   P_JE);
+
 extern Word_t JUDY_EXTERN JudyLMemUsed(    Pcvoid_t  PArray);
+
 extern Word_t JUDY_EXTERN JudyLMemActive(  Pcvoid_t  PArray);
+
 extern PPvoid_t JUDY_EXTERN JudyLFirst(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudyLNext(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudyLLast(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudyLPrev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN JudyLFirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN JudyLNextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN JudyLLastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 extern int JUDY_EXTERN JudyLPrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+
 
 // ****************************************************************************
 // JUDYSL FUNCTIONS:
 
 extern PPvoid_t JUDY_EXTERN JudySLGet(       Pcvoid_t, const uint8_t * Index, P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudySLIns(       PPvoid_t, const uint8_t * Index, P_JE);
+
 extern int JUDY_EXTERN JudySLDel(       PPvoid_t, const uint8_t * Index, P_JE);
+
 extern Word_t JUDY_EXTERN JudySLFreeArray( PPvoid_t,                        P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudySLFirst(     Pcvoid_t,       uint8_t * Index, P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudySLNext(      Pcvoid_t,       uint8_t * Index, P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudySLLast(      Pcvoid_t,       uint8_t * Index, P_JE);
+
 extern PPvoid_t JUDY_EXTERN JudySLPrev(      Pcvoid_t,       uint8_t * Index, P_JE);
+
 
 // ****************************************************************************
 // JUDYHSL FUNCTIONS:
 
 extern PPvoid_t JUDY_EXTERN JudyHSGet(       Pcvoid_t,  void *, Word_t);
+
 extern PPvoid_t JUDY_EXTERN JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
+
 extern int JUDY_EXTERN JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
+
 extern Word_t JUDY_EXTERN JudyHSFreeArray( PPvoid_t,                  P_JE);
+
 
 extern const char *Judy1MallocSizes;
 extern const char *JudyLMallocSizes;
@@ -300,9 +346,13 @@ extern const char *JudyLMallocSizes;
 // JUDY memory interface to malloc() FUNCTIONS:
 
 extern Word_t JUDY_EXTERN JudyMalloc(Word_t);               // words reqd => words allocd.
+
 extern Word_t JUDY_EXTERN JudyMallocVirtual(Word_t);        // words reqd => words allocd.
+
 extern void JUDY_EXTERN JudyFree(Pvoid_t, Word_t);        // free, size in words.
+
 extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words.
+
 
 #define JLAP_INVALID    0x1     /* flag to mark pointer "not a Judy array" */
 
@@ -3707,8 +3757,10 @@ extern Word_t jlb_downward;
 // See the manual entry.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1ByCount #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount #endif
+FUNCTION int JUDY_EXTERN Judy1ByCount
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount
+#endif
         (
         Pcvoid_t  PArray,       // root pointer to first branch/leaf in SM.
         Word_t    Count,        // ordinal of Index to find, 1..MAX.
@@ -6633,8 +6685,10 @@ Word_t j__udyJPPop1(const Pjp_t Pjp);
 // simpler; hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1Count #else
-FUNCTION Word_t JUDY_EXTERN JudyLCount #endif
+FUNCTION Word_t JUDY_EXTERN Judy1Count
+#else
+FUNCTION Word_t JUDY_EXTERN JudyLCount
+#endif
         (
         Pcvoid_t  PArray,       // JRP to first branch/leaf in SM.
         Word_t    Index1,       // starting Index.
@@ -9278,8 +9332,10 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1First #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst #endif
+FUNCTION int JUDY_EXTERN Judy1First
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
+#endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9324,8 +9380,10 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst #endif
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1Last(
+
 #else
 FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
+
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9369,8 +9427,10 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1FirstEmpty(
+
 #else
 FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
+
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9413,8 +9473,10 @@ FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1LastEmpty(
+
 #else
 FUNCTION int JUDY_EXTERN JudyLLastEmpty(
+
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9499,8 +9561,10 @@ DBGCODE(extern void JudyCheckPop(Pvoid_t PArray);)
 // simpler.  Hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1FreeArray #else
-FUNCTION Word_t JUDY_EXTERN JudyLFreeArray #endif
+FUNCTION Word_t JUDY_EXTERN Judy1FreeArray
+#else
+FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
+#endif
         (
         PPvoid_t  PPArray,      // array to free.
         PJError_t PJError       // optional, for returning error info.
@@ -11338,8 +11402,10 @@ FUNCTION static Word_t j__udyGetMemActive(Pjp_t);
 // J U D Y   L   M E M   A C T I V E
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemActive #else
-FUNCTION Word_t JUDY_EXTERN JudyLMemActive #endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemActive
+#else
+FUNCTION Word_t JUDY_EXTERN JudyLMemActive
+#endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -11592,8 +11658,10 @@ LeafWords:
 #include "JudyPrivate1L.h"
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemUsed #else  // JUDYL
-FUNCTION Word_t JUDY_EXTERN JudyLMemUsed #endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemUsed
+#else  // JUDYL
+FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
+#endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -11805,12 +11873,16 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed #endif
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev #else
-FUNCTION int JUDY_EXTERN Judy1Next #endif
+FUNCTION int JUDY_EXTERN Judy1Prev
+#else
+FUNCTION int JUDY_EXTERN Judy1Next
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -13656,12 +13728,16 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
+#else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
+#else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -15085,12 +15161,16 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev #else
-FUNCTION int JUDY_EXTERN Judy1Next #endif
+FUNCTION int JUDY_EXTERN Judy1Prev
+#else
+FUNCTION int JUDY_EXTERN Judy1Next
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -16936,12 +17016,16 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
+#else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
+#else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -18358,8 +18442,10 @@ static bool_t j__udyInsArray(Pjp_t PjpParent, int Level, PWord_t PPop1,
 // Set/Ins calls.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1SetArray #else
-FUNCTION int JUDY_EXTERN JudyLInsArray #endif
+FUNCTION int JUDY_EXTERN Judy1SetArray
+#else
+FUNCTION int JUDY_EXTERN JudyLInsArray
+#endif
         (
         PPvoid_t  PPArray,      // in which to insert, initially empty.
         Word_t    Count,        // number of indexes (and values) to insert.
@@ -21041,8 +21127,10 @@ JudyBranchB:
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Set #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLIns #endif
+FUNCTION int JUDY_EXTERN Judy1Set
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
+#endif
         (
         PPvoid_t  PPArray,      // in which to insert.
         Word_t    Index,        // to insert.
@@ -22010,14 +22098,16 @@ FUNCTION int main()
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test #endif
+FUNCTION int JUDY_EXTERN Judy1Test
+#endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
+#endif
 
 #endif // JUDYL
         (
@@ -23106,14 +23196,16 @@ BranchU:
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test #endif
+FUNCTION int JUDY_EXTERN Judy1Test
+#endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
+#endif
 
 #endif // JUDYL
         (
@@ -25966,8 +26058,10 @@ JUDYLCODE(A_ddr = Pjv[offset];)                                         \
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Unset #else
-FUNCTION int JUDY_EXTERN JudyLDel #endif
+FUNCTION int JUDY_EXTERN Judy1Unset
+#else
+FUNCTION int JUDY_EXTERN JudyLDel
+#endif
         (
         PPvoid_t  PPArray,      // in which to delete.
         Word_t    Index,        // to delete.
@@ -26397,8 +26491,10 @@ extern Word_t jlb_downward;
 // See the manual entry.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1ByCount #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount #endif
+FUNCTION int JUDY_EXTERN Judy1ByCount
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount
+#endif
         (
         Pcvoid_t  PArray,       // root pointer to first branch/leaf in SM.
         Word_t    Count,        // ordinal of Index to find, 1..MAX.
@@ -29323,8 +29419,10 @@ Word_t j__udyJPPop1(const Pjp_t Pjp);
 // simpler; hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1Count #else
-FUNCTION Word_t JUDY_EXTERN JudyLCount #endif
+FUNCTION Word_t JUDY_EXTERN Judy1Count
+#else
+FUNCTION Word_t JUDY_EXTERN JudyLCount
+#endif
         (
         Pcvoid_t  PArray,       // JRP to first branch/leaf in SM.
         Word_t    Index1,       // starting Index.
@@ -33741,8 +33839,10 @@ JUDYLCODE(A_ddr = Pjv[offset];)                                         \
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Unset #else
-FUNCTION int JUDY_EXTERN JudyLDel #endif
+FUNCTION int JUDY_EXTERN Judy1Unset
+#else
+FUNCTION int JUDY_EXTERN JudyLDel
+#endif
         (
         PPvoid_t  PPArray,      // in which to delete.
         Word_t    Index,        // to delete.
@@ -34116,8 +34216,10 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1First #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst #endif
+FUNCTION int JUDY_EXTERN Judy1First
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
+#endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -34162,8 +34264,10 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst #endif
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1Last(
+
 #else
 FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
+
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -34207,8 +34311,10 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1FirstEmpty(
+
 #else
 FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
+
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -34251,8 +34357,10 @@ FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1LastEmpty(
+
 #else
 FUNCTION int JUDY_EXTERN JudyLLastEmpty(
+
 #endif
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -34337,8 +34445,10 @@ DBGCODE(extern void JudyCheckPop(Pvoid_t PArray);)
 // simpler.  Hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1FreeArray #else
-FUNCTION Word_t JUDY_EXTERN JudyLFreeArray #endif
+FUNCTION Word_t JUDY_EXTERN Judy1FreeArray
+#else
+FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
+#endif
         (
         PPvoid_t  PPArray,      // array to free.
         PJError_t PJError       // optional, for returning error info.
@@ -34705,14 +34815,16 @@ FUNCTION void j__udyFreeSM(
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test #endif
+FUNCTION int JUDY_EXTERN Judy1Test
+#endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
+#endif
 
 #endif // JUDYL
         (
@@ -35801,14 +35913,16 @@ BranchU:
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test #endif
+FUNCTION int JUDY_EXTERN Judy1Test
+#endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
+#endif
 
 #endif // JUDYL
         (
@@ -37533,8 +37647,10 @@ static bool_t j__udyInsArray(Pjp_t PjpParent, int Level, PWord_t PPop1,
 // Set/Ins calls.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1SetArray #else
-FUNCTION int JUDY_EXTERN JudyLInsArray #endif
+FUNCTION int JUDY_EXTERN Judy1SetArray
+#else
+FUNCTION int JUDY_EXTERN JudyLInsArray
+#endif
         (
         PPvoid_t  PPArray,      // in which to insert, initially empty.
         Word_t    Count,        // number of indexes (and values) to insert.
@@ -40216,8 +40332,10 @@ JudyBranchB:
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Set #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLIns #endif
+FUNCTION int JUDY_EXTERN Judy1Set
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
+#endif
         (
         PPvoid_t  PPArray,      // in which to insert.
         Word_t    Index,        // to insert.
@@ -41377,8 +41495,10 @@ FUNCTION static Word_t j__udyGetMemActive(Pjp_t);
 // J U D Y   L   M E M   A C T I V E
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemActive #else
-FUNCTION Word_t JUDY_EXTERN JudyLMemActive #endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemActive
+#else
+FUNCTION Word_t JUDY_EXTERN JudyLMemActive
+#endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -41631,8 +41751,10 @@ LeafWords:
 #include "JudyPrivate1L.h"
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemUsed #else  // JUDYL
-FUNCTION Word_t JUDY_EXTERN JudyLMemUsed #endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemUsed
+#else  // JUDYL
+FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
+#endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -41844,12 +41966,16 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed #endif
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev #else
-FUNCTION int JUDY_EXTERN Judy1Next #endif
+FUNCTION int JUDY_EXTERN Judy1Prev
+#else
+FUNCTION int JUDY_EXTERN Judy1Next
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -43695,12 +43821,16 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
+#else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
+#else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -45124,12 +45254,16 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev #else
-FUNCTION int JUDY_EXTERN Judy1Next #endif
+FUNCTION int JUDY_EXTERN Judy1Prev
+#else
+FUNCTION int JUDY_EXTERN Judy1Next
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
+#else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -46975,12 +47109,16 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty
+#else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty
+#endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty
+#else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty
+#endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -49995,17 +50133,25 @@ JudyHSFreeArray(PPvoid_t PPArray,       // ^ to JudyHashArray struct
 // JUDY memory interface to malloc() FUNCTIONS:
 
 extern Word_t JUDY_EXTERN JudyMalloc(Word_t);               // words reqd => words allocd.
+
 extern Word_t JUDY_EXTERN JudyMallocVirtual(Word_t);        // words reqd => words allocd.
+
 extern void JUDY_EXTERN JudyFree(Pvoid_t, Word_t);        // block to free and its size in words.
+
 extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // block to free and its size in words.
+
 
 // ****************************************************************************
 // JUDYHS FUNCTIONS:
 
 extern PPvoid_t JUDY_EXTERN JudyHSGet(       Pcvoid_t,  void *, Word_t);
+
 extern PPvoid_t JUDY_EXTERN JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
+
 extern int JUDY_EXTERN JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
+
 extern Word_t JUDY_EXTERN JudyHSFreeArray( PPvoid_t,                  P_JE);
+
 
 extern uint32_t JudyHashStr(                void *, Word_t);
 

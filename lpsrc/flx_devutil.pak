@@ -348,7 +348,7 @@ for fn in files:
             t1 = [t2]+s1[1:]
             t1 = string.join(t1,"(")
             g.write(t1)
-            line = t1
+            line = t1+"\n"
       else:
         s1 = string.split(line,"(")
         s2 = string.split(s1[0])
@@ -359,7 +359,7 @@ for fn in files:
             t1 = [t2]+s1[1:]
             t1 = string.join(t1,"(")
             g.write(t1)
-            line = t1
+            line = t1+"\n"
       print line,
     if line[:cptn] == cpt:
       copy = 1

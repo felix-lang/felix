@@ -1,5 +1,5 @@
 @select(tangler("lib/nugram.flxh"))
-syntax schemer {
+syntax expressions {
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
   
@@ -260,4 +260,75 @@ syntax typing {
   satom := typecase_expr =># "_1";
 }
 
-open syntax schemer;
+syntax statements {
+  sstatement:= sbinding_definition =># "_1";
+  sstatement:= sdeclarative =># "_1"; 
+  sstatement:= sexecutable =># "_1"; 
+  sstatement:= sinclusion =># "_1"; 
+  sstatement:= sdirective =># "_1"; 
+  sstatement:= spublish =># "_1"; 
+  sstatement:= scomment =># "_1"; 
+  sstatement:= snull_statement =># "_1"; 
+  //sstatement:= suser_statement =># "_1"; 
+  sstatement:= scparse =># "_1"; 
+
+  scomment := comment sstring ; => "`(ast_nop ,_2)";
+ 
+  sbinding_definition :=  sabstract_type =># "_1";
+  sbinding_definition :=  sconst_def =># "_1";
+  sbinding_definition :=  sbinding_header =># "_1";
+  sbinding_definition :=  sexport_statement =># "_1";
+  
+  spublish := private sdeclarative =># "`(ast_private ,_2)";
+  spublish := private sbinding_definition =># "`(ast_private ,_2)";
+  spublish := private svar_def =># "`(ast_private ,_2)";
+  spublish := private sval_def =># "`(ast_private ,_2)";
+
+  sdeclarative := sfunction_definition =># "_1";
+  sdeclarative := sobject_definition =># "_1";
+  sdeclarative := sprocedure_definition =># "_1";
+  sdeclarative := smodule_definition =># "_1";
+  sdeclarative := sunion_decl =># "_1";
+  sdeclarative := sstruct_decl =># "_1";
+  sdeclarative := stype_alias =># "_1";
+
+  sdirective := sopen_decl =># "_1";
+  sdirective := suse_decl =># "_1";
+  sdirective := sregdef =># "_1";
+  sdirective := sglr_production =># "_1";
+  sdirective := smacro_definition =># "_1";
+
+  sexecutable := svar_def =># "_1";
+  sexecutable := sval_def =># "_1";
+  sexecutable := scall =># "_1";
+  sexecutable := ssvc =># "_1";
+  sexecutable := sreturn =># "_1";
+  sexecutable := sifgoto =># "_1";
+  sexecutable := stodo =># "_1";
+  sexecutable := sassignment =># "_1";
+  sexecutable := sinline_cpp =># "_1";
+  sexecutable := sgoto_statement=># "_1";
+  sexecutable := slabel_statement =># "_1";
+  sexecutable := sassert_statement =># "_1";
+
+  snull_statement := ; =># '''('ast_nop "")''';
+
+  sinclusion := include sstring ; =># "`(ast_include ,_2)";
+  scparse := cparse sstring ; =># "`(ast_cparse ,_2)";
+
+  sdeclname := sdeclname :: sname stvarlist =># "(cons _1 `(,_3 ,_4))";
+  sdeclname := sname stvarlist =># "`(,_1 ,_2)";
+
+  stype_qual := incomplete =># "'incomplete";
+  stype_qual := pod =># "'pod";
+  stype_qual := gc_pointer =># "'gc_pointer";
+  stype_qual := gc_type sexpr =># "`(gc_type ,_2)";
+  stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
+  stype_quals:= =># "()";
+
+  sabstract_type:= stype_quals ctypes sbasic_name_comma_list srequires_clause ; =>#
+    "`(ast_ctypes ,_3 ,_1 ,_4)";
+  sabstract_type 
+}
+
+open syntax expressions, statements;
