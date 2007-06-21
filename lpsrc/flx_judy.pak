@@ -14,6 +14,11 @@
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 #ifndef _JUDY_INCLUDED
 #define _JUDY_INCLUDED
 // _________________
@@ -220,73 +225,73 @@ typedef struct J_UDY_ERROR_STRUCT
 // ****************************************************************************
 // JUDY1 FUNCTIONS:
 
-extern int      Judy1Test(       Pcvoid_t  PArray, Word_t   Index,   P_JE);
-extern int      Judy1Set(        PPvoid_t PPArray, Word_t   Index,   P_JE);
-extern int      Judy1SetArray(   PPvoid_t PPArray, Word_t   Count,
+extern int JUDY_EXTERN Judy1Test(       Pcvoid_t  PArray, Word_t   Index,   P_JE);
+extern int JUDY_EXTERN Judy1Set(        PPvoid_t PPArray, Word_t   Index,   P_JE);
+extern int JUDY_EXTERN Judy1SetArray(   PPvoid_t PPArray, Word_t   Count,
                                              const Word_t * const PIndex,
                                                                      P_JE);
-extern int      Judy1Unset(      PPvoid_t PPArray, Word_t   Index,   P_JE);
-extern Word_t   Judy1Count(      Pcvoid_t  PArray, Word_t   Index1,
+extern int JUDY_EXTERN Judy1Unset(      PPvoid_t PPArray, Word_t   Index,   P_JE);
+extern Word_t JUDY_EXTERN Judy1Count(      Pcvoid_t  PArray, Word_t   Index1,
                                                    Word_t   Index2,  P_JE);
-extern int      Judy1ByCount(    Pcvoid_t  PArray, Word_t   Count,
+extern int JUDY_EXTERN Judy1ByCount(    Pcvoid_t  PArray, Word_t   Count,
                                                    Word_t * PIndex,  P_JE);
-extern Word_t   Judy1FreeArray(  PPvoid_t PPArray,                   P_JE);
-extern Word_t   Judy1MemUsed(    Pcvoid_t  PArray);
-extern Word_t   Judy1MemActive(  Pcvoid_t  PArray);
-extern int      Judy1First(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      Judy1Next(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      Judy1Last(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      Judy1Prev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      Judy1FirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      Judy1NextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      Judy1LastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      Judy1PrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern Word_t JUDY_EXTERN Judy1FreeArray(  PPvoid_t PPArray,                   P_JE);
+extern Word_t JUDY_EXTERN Judy1MemUsed(    Pcvoid_t  PArray);
+extern Word_t JUDY_EXTERN Judy1MemActive(  Pcvoid_t  PArray);
+extern int JUDY_EXTERN Judy1First(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN Judy1Next(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN Judy1Last(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN Judy1Prev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN Judy1FirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN Judy1NextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN Judy1LastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN Judy1PrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
 
-extern PPvoid_t JudyLGet(        Pcvoid_t  PArray, Word_t    Index,  P_JE);
-extern PPvoid_t JudyLIns(        PPvoid_t PPArray, Word_t    Index,  P_JE);
-extern int      JudyLInsArray(   PPvoid_t PPArray, Word_t    Count,
+extern PPvoid_t JUDY_EXTERN JudyLGet(        Pcvoid_t  PArray, Word_t    Index,  P_JE);
+extern PPvoid_t JUDY_EXTERN JudyLIns(        PPvoid_t PPArray, Word_t    Index,  P_JE);
+extern int JUDY_EXTERN JudyLInsArray(   PPvoid_t PPArray, Word_t    Count,
                                              const Word_t * const PIndex,
                                              const Word_t * const PValue,
 
 // ****************************************************************************
 // JUDYL FUNCTIONS:
                                                                      P_JE);
-extern int      JudyLDel(        PPvoid_t PPArray, Word_t    Index,  P_JE);
-extern Word_t   JudyLCount(      Pcvoid_t  PArray, Word_t    Index1,
+extern int JUDY_EXTERN JudyLDel(        PPvoid_t PPArray, Word_t    Index,  P_JE);
+extern Word_t JUDY_EXTERN JudyLCount(      Pcvoid_t  PArray, Word_t    Index1,
                                                    Word_t    Index2, P_JE);
-extern PPvoid_t JudyLByCount(    Pcvoid_t  PArray, Word_t    Count,
+extern PPvoid_t JUDY_EXTERN JudyLByCount(    Pcvoid_t  PArray, Word_t    Count,
                                                    Word_t *  PIndex, P_JE);
-extern Word_t   JudyLFreeArray(  PPvoid_t PPArray,                   P_JE);
-extern Word_t   JudyLMemUsed(    Pcvoid_t  PArray);
-extern Word_t   JudyLMemActive(  Pcvoid_t  PArray);
-extern PPvoid_t JudyLFirst(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern PPvoid_t JudyLNext(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern PPvoid_t JudyLLast(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern PPvoid_t JudyLPrev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      JudyLFirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      JudyLNextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      JudyLLastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-extern int      JudyLPrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern Word_t JUDY_EXTERN JudyLFreeArray(  PPvoid_t PPArray,                   P_JE);
+extern Word_t JUDY_EXTERN JudyLMemUsed(    Pcvoid_t  PArray);
+extern Word_t JUDY_EXTERN JudyLMemActive(  Pcvoid_t  PArray);
+extern PPvoid_t JUDY_EXTERN JudyLFirst(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern PPvoid_t JUDY_EXTERN JudyLNext(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern PPvoid_t JUDY_EXTERN JudyLLast(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern PPvoid_t JUDY_EXTERN JudyLPrev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN JudyLFirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN JudyLNextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN JudyLLastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
+extern int JUDY_EXTERN JudyLPrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
 
 // ****************************************************************************
 // JUDYSL FUNCTIONS:
 
-extern PPvoid_t JudySLGet(       Pcvoid_t, const uint8_t * Index, P_JE);
-extern PPvoid_t JudySLIns(       PPvoid_t, const uint8_t * Index, P_JE);
-extern int      JudySLDel(       PPvoid_t, const uint8_t * Index, P_JE);
-extern Word_t   JudySLFreeArray( PPvoid_t,                        P_JE);
-extern PPvoid_t JudySLFirst(     Pcvoid_t,       uint8_t * Index, P_JE);
-extern PPvoid_t JudySLNext(      Pcvoid_t,       uint8_t * Index, P_JE);
-extern PPvoid_t JudySLLast(      Pcvoid_t,       uint8_t * Index, P_JE);
-extern PPvoid_t JudySLPrev(      Pcvoid_t,       uint8_t * Index, P_JE);
+extern PPvoid_t JUDY_EXTERN JudySLGet(       Pcvoid_t, const uint8_t * Index, P_JE);
+extern PPvoid_t JUDY_EXTERN JudySLIns(       PPvoid_t, const uint8_t * Index, P_JE);
+extern int JUDY_EXTERN JudySLDel(       PPvoid_t, const uint8_t * Index, P_JE);
+extern Word_t JUDY_EXTERN JudySLFreeArray( PPvoid_t,                        P_JE);
+extern PPvoid_t JUDY_EXTERN JudySLFirst(     Pcvoid_t,       uint8_t * Index, P_JE);
+extern PPvoid_t JUDY_EXTERN JudySLNext(      Pcvoid_t,       uint8_t * Index, P_JE);
+extern PPvoid_t JUDY_EXTERN JudySLLast(      Pcvoid_t,       uint8_t * Index, P_JE);
+extern PPvoid_t JUDY_EXTERN JudySLPrev(      Pcvoid_t,       uint8_t * Index, P_JE);
 
 // ****************************************************************************
 // JUDYHSL FUNCTIONS:
 
-extern PPvoid_t JudyHSGet(       Pcvoid_t,  void *, Word_t);
-extern PPvoid_t JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
-extern int      JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
-extern Word_t   JudyHSFreeArray( PPvoid_t,                  P_JE);
+extern PPvoid_t JUDY_EXTERN JudyHSGet(       Pcvoid_t,  void *, Word_t);
+extern PPvoid_t JUDY_EXTERN JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
+extern int JUDY_EXTERN JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
+extern Word_t JUDY_EXTERN JudyHSFreeArray( PPvoid_t,                  P_JE);
 
 extern const char *Judy1MallocSizes;
 extern const char *JudyLMallocSizes;
@@ -294,10 +299,10 @@ extern const char *JudyLMallocSizes;
 // ****************************************************************************
 // JUDY memory interface to malloc() FUNCTIONS:
 
-extern Word_t JudyMalloc(Word_t);               // words reqd => words allocd.
-extern Word_t JudyMallocVirtual(Word_t);        // words reqd => words allocd.
-extern void   JudyFree(Pvoid_t, Word_t);        // free, size in words.
-extern void   JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words.
+extern Word_t JUDY_EXTERN JudyMalloc(Word_t);               // words reqd => words allocd.
+extern Word_t JUDY_EXTERN JudyMallocVirtual(Word_t);        // words reqd => words allocd.
+extern void JUDY_EXTERN JudyFree(Pvoid_t, Word_t);        // free, size in words.
+extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words.
 
 #define JLAP_INVALID    0x1     /* flag to mark pointer "not a Judy array" */
 
@@ -635,6 +640,11 @@ extern void   JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.33 $ $Source: /judy/src/JudyCommon/JudyMalloc.c $
 // ************************************************************************ //
@@ -720,6 +730,11 @@ void JudyFreeVirtual(
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 #ifndef _JUDYPRIVATE1L_INCLUDED
 #define _JUDYPRIVATE1L_INCLUDED
@@ -1204,6 +1219,11 @@ void JudyFreeVirtual(
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 #ifndef _JUDY_PRIVATE_BRANCH_INCLUDED
 #define _JUDY_PRIVATE_BRANCH_INCLUDED
@@ -1982,6 +2002,11 @@ FUNCTION main()
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 #ifndef _JUDYPRIVATE_INCLUDED
 #define _JUDYPRIVATE_INCLUDED
@@ -3595,6 +3620,11 @@ static inline int j__udySearchLeafW(Pjlw_t Pjlw, Word_t LeafPop1, Word_t Index)
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.28 $ $Source: /judy/src/JudyCommon/JudyByCount.c $
 //
@@ -3677,10 +3707,8 @@ extern Word_t jlb_downward;
 // See the manual entry.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1ByCount
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount
-#endif
+FUNCTION int JUDY_EXTERN Judy1ByCount #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount #endif
         (
         Pcvoid_t  PArray,       // root pointer to first branch/leaf in SM.
         Word_t    Count,        // ordinal of Index to find, 1..MAX.
@@ -4547,6 +4575,11 @@ Imm7:
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.38 $ $Source: /judy/src/JudyCommon/JudyCascade.c $
@@ -6489,6 +6522,11 @@ JUDYLCODE(Pjv_t    Pjv;)        // value area of leaf.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.78 $ $Source: /judy/src/JudyCommon/JudyCount.c $
 //
@@ -6595,10 +6633,8 @@ Word_t j__udyJPPop1(const Pjp_t Pjp);
 // simpler; hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1Count
-#else
-FUNCTION Word_t JUDY_EXTERN JudyLCount
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1Count #else
+FUNCTION Word_t JUDY_EXTERN JudyLCount #endif
         (
         Pcvoid_t  PArray,       // JRP to first branch/leaf in SM.
         Word_t    Index1,       // starting Index.
@@ -7683,6 +7719,11 @@ const   Pjp_t Pjp)              // JP to count.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.26 $ $Source: /judy/src/JudyCommon/JudyCreateBranch.c $
 
@@ -7995,6 +8036,11 @@ FUNCTION int j__udyCreateBranchU(
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.25 $ $Source: /judy/src/JudyCommon/JudyDecascade.c $
@@ -9201,6 +9247,11 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.12 $ $Source: /judy/src/JudyCommon/JudyFirst.c $
 //
@@ -9227,10 +9278,8 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1First
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
-#endif
+FUNCTION int JUDY_EXTERN Judy1First #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -9274,7 +9323,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int      Judy1Last(
+FUNCTION int JUDY_EXTERN Judy1Last(
 #else
 FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
 #endif
@@ -9413,6 +9462,11 @@ FUNCTION int JUDY_EXTERN JudyLLastEmpty(
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.51 $ $Source: /judy/src/JudyCommon/JudyFreeArray.c $
 //
@@ -9445,10 +9499,8 @@ DBGCODE(extern void JudyCheckPop(Pvoid_t PArray);)
 // simpler.  Hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1FreeArray
-#else
-FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1FreeArray #else
+FUNCTION Word_t JUDY_EXTERN JudyLFreeArray #endif
         (
         PPvoid_t  PPArray,      // array to free.
         PJError_t PJError       // optional, for returning error info.
@@ -9774,6 +9826,11 @@ FUNCTION void j__udyFreeSM(
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 #ifndef _JUDY1_INCLUDED
 #define _JUDY1_INCLUDED
@@ -10325,6 +10382,11 @@ void    j__udy1FreeSM(   Pjp_t,          Pj1pm_t);      // everything below Pjp.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.17 $ $Source: /judy/src/JudyCommon/JudyInsertBranch.c $
 
@@ -10458,6 +10520,11 @@ FUNCTION int j__udyInsertBranch(
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.45 $ $Source: /judy/src/JudyCommon/JudyMallocIF.c $
@@ -11240,6 +11307,11 @@ FUNCTION void j__udyLFreeJV(Pjv_t Pjv, Word_t Pop1, Pjpm_t Pjpm)
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.7 $ $Source: /judy/src/JudyCommon/JudyMemActive.c $
 //
@@ -11266,10 +11338,8 @@ FUNCTION static Word_t j__udyGetMemActive(Pjp_t);
 // J U D Y   L   M E M   A C T I V E
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemActive
-#else
-FUNCTION Word_t JUDY_EXTERN JudyLMemActive
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemActive #else
+FUNCTION Word_t JUDY_EXTERN JudyLMemActive #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -11498,6 +11568,11 @@ LeafWords:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.5 $ $Source: /judy/src/JudyCommon/JudyMemUsed.c $
 //
@@ -11517,10 +11592,8 @@ LeafWords:
 #include "JudyPrivate1L.h"
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemUsed
-#else  // JUDYL
-FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemUsed #else  // JUDYL
+FUNCTION Word_t JUDY_EXTERN JudyLMemUsed #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -11557,6 +11630,11 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
@@ -11727,16 +11805,12 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev
-#else
-FUNCTION int JUDY_EXTERN Judy1Next
-#endif
+FUNCTION int JUDY_EXTERN Judy1Prev #else
+FUNCTION int JUDY_EXTERN Judy1Next #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -13447,6 +13521,11 @@ SM3Imm7:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -13577,16 +13656,12 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty
-#else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty
-#endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty
-#else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty
-#endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -14836,6 +14911,11 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
 //
@@ -15005,16 +15085,12 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev
-#else
-FUNCTION int JUDY_EXTERN Judy1Next
-#endif
+FUNCTION int JUDY_EXTERN Judy1Prev #else
+FUNCTION int JUDY_EXTERN Judy1Next #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -16725,6 +16801,11 @@ SM3Imm7:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -16855,16 +16936,12 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty
-#else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty
-#endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty
-#else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty
-#endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -18114,6 +18191,11 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // TBD:  It would probably be faster for the caller if the JudyL version took
 // PIndex as an interleaved array of indexes and values rather than just
@@ -18276,10 +18358,8 @@ static bool_t j__udyInsArray(Pjp_t PjpParent, int Level, PWord_t PPop1,
 // Set/Ins calls.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1SetArray
-#else
-FUNCTION int JUDY_EXTERN JudyLInsArray
-#endif
+FUNCTION int JUDY_EXTERN Judy1SetArray #else
+FUNCTION int JUDY_EXTERN JudyLInsArray #endif
         (
         PPvoid_t  PPArray,      // in which to insert, initially empty.
         Word_t    Count,        // number of indexes (and values) to insert.
@@ -19290,6 +19370,11 @@ SetParent:
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.116 $ $Source: /judy/src/JudyCommon/JudyIns.c $
@@ -20956,10 +21041,8 @@ JudyBranchB:
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Set
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
-#endif
+FUNCTION int JUDY_EXTERN Judy1Set #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLIns #endif
         (
         PPvoid_t  PPArray,      // in which to insert.
         Word_t    Index,        // to insert.
@@ -21163,113 +21246,10 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 #endif
 #endif
 
-#ifdef JU_64BIT
-#include "Judy1Tables64.c"
-#else
-#include "Judy1Tables32.c"
+#ifdef _WIN32
+#define JU_WIN
 #endif
 
-
-@h=tangler('judy/Judy1/Judy1Tables32.c')
-@select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
-
-// @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
-//
-
-#include "Judy1.h"
-// Leave the malloc() sizes readable in the binary (via strings(1)):
-const char * Judy1MallocSizes = "Judy1MallocSizes = 3, 5, 7, 11, 15, 23, 32, 47, 64, Leaf1 = 20";
-
-
-//      object uses 64 words
-//      cJU_BITSPERSUBEXPB = 32
-const uint8_t
-j__1_BranchBJPPopToWords[cJU_BITSPERSUBEXPB + 1] =
-{
-         0,
-         3,  5,  7, 11, 11, 15, 15, 23, 
-        23, 23, 23, 32, 32, 32, 32, 32, 
-        47, 47, 47, 47, 47, 47, 47, 64, 
-        64, 64, 64, 64, 64, 64, 64, 64
-};
-
-//      object uses 5 words
-//      cJ1_LEAF1_MAXPOP1 = 20
-const uint8_t
-j__1_Leaf1PopToWords[cJ1_LEAF1_MAXPOP1 + 1] =
-{
-         0,
-         3,  3,  3,  3,  3,  3,  3,  3, 
-         3,  3,  3,  3,  5,  5,  5,  5, 
-         5,  5,  5,  5
-};
-
-//      object uses 32 words
-//      cJ1_LEAF2_MAXPOP1 = 64
-const uint8_t
-j__1_Leaf2PopToWords[cJ1_LEAF2_MAXPOP1 + 1] =
-{
-         0,
-         3,  3,  3,  3,  3,  3,  5,  5, 
-         5,  5,  7,  7,  7,  7, 11, 11, 
-        11, 11, 11, 11, 11, 11, 15, 15, 
-        15, 15, 15, 15, 15, 15, 23, 23, 
-        23, 23, 23, 23, 23, 23, 23, 23, 
-        23, 23, 23, 23, 23, 23, 32, 32, 
-        32, 32, 32, 32, 32, 32, 32, 32, 
-        32, 32, 32, 32, 32, 32, 32, 32
-};
-
-//      object uses 32 words
-//      cJ1_LEAF3_MAXPOP1 = 42
-const uint8_t
-j__1_Leaf3PopToWords[cJ1_LEAF3_MAXPOP1 + 1] =
-{
-         0,
-         3,  3,  3,  3,  5,  5,  7,  7, 
-         7, 11, 11, 11, 11, 11, 15, 15, 
-        15, 15, 15, 15, 23, 23, 23, 23, 
-        23, 23, 23, 23, 23, 23, 32, 32, 
-        32, 32, 32, 32, 32, 32, 32, 32, 
-        32, 32
-};
-
-//      object uses 32 words
-//      cJ1_LEAFW_MAXPOP1 = 31
-const uint8_t
-j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
-{
-         0,
-         3,  3,  5,  5,  7,  7, 11, 11, 
-        11, 11, 15, 15, 15, 15, 23, 23, 
-        23, 23, 23, 23, 23, 23, 32, 32, 
-        32, 32, 32, 32, 32, 32, 32
-};
-
-@h=tangler('judy/Judy1/Judy1Tables64.c')
-@select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
 
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
@@ -21404,6 +21384,278 @@ j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
         32, 32, 32, 32, 32, 32, 32
 };
 
+@h=tangler('judy/Judy1/Judy1Tables32.c')
+@select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
+#line 21175 "./lpsrc/flx_judy.pak"
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+// @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
+//
+
+#include "Judy1.h"
+// Leave the malloc() sizes readable in the binary (via strings(1)):
+const char * Judy1MallocSizes = "Judy1MallocSizes = 3, 5, 7, 11, 15, 23, 32, 47, 64, Leaf1 = 20";
+
+
+//      object uses 64 words
+//      cJU_BITSPERSUBEXPB = 32
+const uint8_t
+j__1_BranchBJPPopToWords[cJU_BITSPERSUBEXPB + 1] =
+{
+         0,
+         3,  5,  7, 11, 11, 15, 15, 23,
+        23, 23, 23, 32, 32, 32, 32, 32,
+        47, 47, 47, 47, 47, 47, 47, 64,
+        64, 64, 64, 64, 64, 64, 64, 64
+};
+
+//      object uses 5 words
+//      cJ1_LEAF1_MAXPOP1 = 20
+const uint8_t
+j__1_Leaf1PopToWords[cJ1_LEAF1_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  3,  3,  3,  3,
+         3,  3,  3,  3,  5,  5,  5,  5,
+         5,  5,  5,  5
+};
+
+//      object uses 32 words
+//      cJ1_LEAF2_MAXPOP1 = 64
+const uint8_t
+j__1_Leaf2PopToWords[cJ1_LEAF2_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  3,  3,  5,  5,
+         5,  5,  7,  7,  7,  7, 11, 11,
+        11, 11, 11, 11, 11, 11, 15, 15,
+        15, 15, 15, 15, 15, 15, 23, 23,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAF3_MAXPOP1 = 42
+const uint8_t
+j__1_Leaf3PopToWords[cJ1_LEAF3_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  5,  5,  7,  7,
+         7, 11, 11, 11, 11, 11, 15, 15,
+        15, 15, 15, 15, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAFW_MAXPOP1 = 31
+const uint8_t
+j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  5,  7,  7, 11, 11,
+        11, 11, 15, 15, 15, 15, 23, 23,
+        23, 23, 23, 23, 23, 23, 32, 32,
+        32, 32, 32, 32, 32, 32, 32
+};
+
+
+@h=tangler('judy/Judy1/Judy1Tables64.c')
+@select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
+#line 21262 "./lpsrc/flx_judy.pak"
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+// @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
+//
+
+#include "Judy1.h"
+// Leave the malloc() sizes readable in the binary (via strings(1)):
+const char * Judy1MallocSizes = "Judy1MallocSizes = 3, 5, 7, 11, 15, 23, 32, 47, 64,";
+
+
+//      object uses 64 words
+//      cJU_BITSPERSUBEXPB = 32
+const uint8_t
+j__1_BranchBJPPopToWords[cJU_BITSPERSUBEXPB + 1] =
+{
+         0,
+         3,  5,  7, 11, 11, 15, 15, 23,
+        23, 23, 23, 32, 32, 32, 32, 32,
+        47, 47, 47, 47, 47, 47, 47, 64,
+        64, 64, 64, 64, 64, 64, 64, 64
+};
+
+//      object uses 32 words
+//      cJ1_LEAF2_MAXPOP1 = 128
+const uint8_t
+j__1_Leaf2PopToWords[cJ1_LEAF2_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  3,  3,  3,  3,
+         3,  3,  3,  3,  5,  5,  5,  5,
+         5,  5,  5,  5,  7,  7,  7,  7,
+         7,  7,  7,  7, 11, 11, 11, 11,
+        11, 11, 11, 11, 11, 11, 11, 11,
+        11, 11, 11, 11, 15, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        15, 15, 15, 15, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAF3_MAXPOP1 = 85
+const uint8_t
+j__1_Leaf3PopToWords[cJ1_LEAF3_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  3,  3,  3,  3,
+         5,  5,  5,  5,  5,  7,  7,  7,
+         7,  7, 11, 11, 11, 11, 11, 11,
+        11, 11, 11, 11, 11, 15, 15, 15,
+        15, 15, 15, 15, 15, 15, 15, 15,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAF4_MAXPOP1 = 64
+const uint8_t
+j__1_Leaf4PopToWords[cJ1_LEAF4_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  3,  3,  5,  5,
+         5,  5,  7,  7,  7,  7, 11, 11,
+        11, 11, 11, 11, 11, 11, 15, 15,
+        15, 15, 15, 15, 15, 15, 23, 23,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAF5_MAXPOP1 = 51
+const uint8_t
+j__1_Leaf5PopToWords[cJ1_LEAF5_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  5,  5,  5,  5,
+         7,  7,  7, 11, 11, 11, 11, 11,
+        11, 15, 15, 15, 15, 15, 15, 15,
+        23, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 23, 23, 32, 32, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAF6_MAXPOP1 = 42
+const uint8_t
+j__1_Leaf6PopToWords[cJ1_LEAF6_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  3,  5,  5,  7,  7,
+         7, 11, 11, 11, 11, 11, 15, 15,
+        15, 15, 15, 15, 23, 23, 23, 23,
+        23, 23, 23, 23, 23, 23, 32, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAF7_MAXPOP1 = 36
+const uint8_t
+j__1_Leaf7PopToWords[cJ1_LEAF7_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  3,  5,  5,  7,  7,  7,
+        11, 11, 11, 11, 15, 15, 15, 15,
+        15, 23, 23, 23, 23, 23, 23, 23,
+        23, 23, 32, 32, 32, 32, 32, 32,
+        32, 32, 32, 32
+};
+
+//      object uses 32 words
+//      cJ1_LEAFW_MAXPOP1 = 31
+const uint8_t
+j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  5,  7,  7, 11, 11,
+        11, 11, 15, 15, 15, 15, 23, 23,
+        23, 23, 23, 23, 23, 23, 32, 32,
+        32, 32, 32, 32, 32, 32, 32
+};
+
+
 @h=tangler('judy/Judy1/Judy1TablesGen.c')
 @select(h)
 #ifndef JUDY_EXTERN
@@ -21417,6 +21669,11 @@ j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
@@ -21713,6 +21970,11 @@ FUNCTION int main()
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -21748,16 +22010,14 @@ FUNCTION int main()
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test
-#endif
+FUNCTION int JUDY_EXTERN Judy1Test #endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
 
 #endif // JUDYL
         (
@@ -22806,6 +23066,11 @@ BranchU:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -22841,16 +23106,14 @@ BranchU:
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test
-#endif
+FUNCTION int JUDY_EXTERN Judy1Test #endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
 
 #endif // JUDYL
         (
@@ -23898,6 +24161,11 @@ BranchU:
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.68 $ $Source: /judy/src/JudyCommon/JudyDel.c $
@@ -25698,10 +25966,8 @@ JUDYLCODE(A_ddr = Pjv[offset];)                                         \
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Unset 
-#else
-FUNCTION int JUDY_EXTERN JudyLDel
-#endif
+FUNCTION int JUDY_EXTERN Judy1Unset #else
+FUNCTION int JUDY_EXTERN JudyLDel #endif
         (
         PPvoid_t  PPArray,      // in which to delete.
         Word_t    Index,        // to delete.
@@ -26044,6 +26310,11 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.28 $ $Source: /judy/src/JudyCommon/JudyByCount.c $
 //
@@ -26126,10 +26397,8 @@ extern Word_t jlb_downward;
 // See the manual entry.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1ByCount
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount
-#endif
+FUNCTION int JUDY_EXTERN Judy1ByCount #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount #endif
         (
         Pcvoid_t  PArray,       // root pointer to first branch/leaf in SM.
         Word_t    Count,        // ordinal of Index to find, 1..MAX.
@@ -26996,6 +27265,11 @@ Imm7:
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.38 $ $Source: /judy/src/JudyCommon/JudyCascade.c $
@@ -28938,6 +29212,11 @@ JUDYLCODE(Pjv_t    Pjv;)        // value area of leaf.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.78 $ $Source: /judy/src/JudyCommon/JudyCount.c $
 //
@@ -29044,10 +29323,8 @@ Word_t j__udyJPPop1(const Pjp_t Pjp);
 // simpler; hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1Count
-#else
-FUNCTION Word_t JUDY_EXTERN JudyLCount
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1Count #else
+FUNCTION Word_t JUDY_EXTERN JudyLCount #endif
         (
         Pcvoid_t  PArray,       // JRP to first branch/leaf in SM.
         Word_t    Index1,       // starting Index.
@@ -30132,6 +30409,11 @@ const   Pjp_t Pjp)              // JP to count.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.26 $ $Source: /judy/src/JudyCommon/JudyCreateBranch.c $
 
@@ -30444,6 +30726,11 @@ FUNCTION int j__udyCreateBranchU(
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.25 $ $Source: /judy/src/JudyCommon/JudyDecascade.c $
@@ -31649,6 +31936,11 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.68 $ $Source: /judy/src/JudyCommon/JudyDel.c $
@@ -33449,10 +33741,8 @@ JUDYLCODE(A_ddr = Pjv[offset];)                                         \
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Unset 
-#else
-FUNCTION int JUDY_EXTERN JudyLDel
-#endif
+FUNCTION int JUDY_EXTERN Judy1Unset #else
+FUNCTION int JUDY_EXTERN JudyLDel #endif
         (
         PPvoid_t  PPArray,      // in which to delete.
         Word_t    Index,        // to delete.
@@ -33795,6 +34085,11 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.12 $ $Source: /judy/src/JudyCommon/JudyFirst.c $
 //
@@ -33821,10 +34116,8 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int      Judy1First
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
-#endif
+FUNCTION int JUDY_EXTERN Judy1First #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
         Word_t *  PIndex,       // starting point and result.
@@ -33868,7 +34161,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
 // See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int      Judy1Last(
+FUNCTION int JUDY_EXTERN Judy1Last(
 #else
 FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
 #endif
@@ -34007,6 +34300,11 @@ FUNCTION int JUDY_EXTERN JudyLLastEmpty(
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.51 $ $Source: /judy/src/JudyCommon/JudyFreeArray.c $
 //
@@ -34039,10 +34337,8 @@ DBGCODE(extern void JudyCheckPop(Pvoid_t PArray);)
 // simpler.  Hope its fast enough.
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1FreeArray
-#else
-FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1FreeArray #else
+FUNCTION Word_t JUDY_EXTERN JudyLFreeArray #endif
         (
         PPvoid_t  PPArray,      // array to free.
         PJError_t PJError       // optional, for returning error info.
@@ -34369,6 +34665,11 @@ FUNCTION void j__udyFreeSM(
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -34404,16 +34705,14 @@ FUNCTION void j__udyFreeSM(
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test
-#endif
+FUNCTION int JUDY_EXTERN Judy1Test #endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
 
 #endif // JUDYL
         (
@@ -35462,6 +35761,11 @@ BranchU:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
@@ -35497,16 +35801,14 @@ BranchU:
 #ifdef JUDYGETINLINE
 FUNCTION int j__udy1Test
 #else
-FUNCTION int JUDY_EXTERN Judy1Test
-#endif
+FUNCTION int JUDY_EXTERN Judy1Test #endif
 
 #else  // JUDYL
 
 #ifdef JUDYGETINLINE
 FUNCTION PPvoid_t j__udyLGet
 #else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLGet
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLGet #endif
 
 #endif // JUDYL
         (
@@ -36555,6 +36857,11 @@ BranchU:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 #ifndef _JUDYL_INCLUDED
 #define _JUDYL_INCLUDED
 // _________________
@@ -37059,6 +37366,11 @@ void    j__udyLFreeSM(   Pjp_t,          PjLpm_t);      // everything below Pjp.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // TBD:  It would probably be faster for the caller if the JudyL version took
 // PIndex as an interleaved array of indexes and values rather than just
@@ -37221,10 +37533,8 @@ static bool_t j__udyInsArray(Pjp_t PjpParent, int Level, PWord_t PPop1,
 // Set/Ins calls.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1SetArray
-#else
-FUNCTION int JUDY_EXTERN JudyLInsArray
-#endif
+FUNCTION int JUDY_EXTERN Judy1SetArray #else
+FUNCTION int JUDY_EXTERN JudyLInsArray #endif
         (
         PPvoid_t  PPArray,      // in which to insert, initially empty.
         Word_t    Count,        // number of indexes (and values) to insert.
@@ -38235,6 +38545,11 @@ SetParent:
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.116 $ $Source: /judy/src/JudyCommon/JudyIns.c $
@@ -39901,10 +40216,8 @@ JudyBranchB:
 // Main entry point.  See the manual entry for details.
 
 #ifdef JUDY1
-FUNCTION int JUDY_EXTERN Judy1Set
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
-#endif
+FUNCTION int JUDY_EXTERN Judy1Set #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLIns #endif
         (
         PPvoid_t  PPArray,      // in which to insert.
         Word_t    Index,        // to insert.
@@ -40108,6 +40421,11 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.17 $ $Source: /judy/src/JudyCommon/JudyInsertBranch.c $
 
@@ -40241,6 +40559,11 @@ FUNCTION int j__udyInsertBranch(
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.45 $ $Source: /judy/src/JudyCommon/JudyMallocIF.c $
@@ -41023,6 +41346,11 @@ FUNCTION void j__udyLFreeJV(Pjv_t Pjv, Word_t Pop1, Pjpm_t Pjpm)
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.7 $ $Source: /judy/src/JudyCommon/JudyMemActive.c $
 //
@@ -41049,10 +41377,8 @@ FUNCTION static Word_t j__udyGetMemActive(Pjp_t);
 // J U D Y   L   M E M   A C T I V E
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemActive
-#else
-FUNCTION Word_t JUDY_EXTERN JudyLMemActive
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemActive #else
+FUNCTION Word_t JUDY_EXTERN JudyLMemActive #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -41281,6 +41607,11 @@ LeafWords:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.5 $ $Source: /judy/src/JudyCommon/JudyMemUsed.c $
 //
@@ -41300,10 +41631,8 @@ LeafWords:
 #include "JudyPrivate1L.h"
 
 #ifdef JUDY1
-FUNCTION Word_t JUDY_EXTERN Judy1MemUsed
-#else  // JUDYL
-FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
-#endif
+FUNCTION Word_t JUDY_EXTERN Judy1MemUsed #else  // JUDYL
+FUNCTION Word_t JUDY_EXTERN JudyLMemUsed #endif
         (
         Pcvoid_t PArray         // from which to retrieve.
         )
@@ -41340,6 +41669,11 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
@@ -41510,16 +41844,12 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev
-#else
-FUNCTION int JUDY_EXTERN Judy1Next
-#endif
+FUNCTION int JUDY_EXTERN Judy1Prev #else
+FUNCTION int JUDY_EXTERN Judy1Next #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -43230,6 +43560,11 @@ SM3Imm7:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -43360,16 +43695,12 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty
-#else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty
-#endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty
-#else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty
-#endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -44619,6 +44950,11 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.54 $ $Source: /judy/src/JudyCommon/JudyPrevNext.c $
 //
@@ -44788,16 +45124,12 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1Prev
-#else
-FUNCTION int JUDY_EXTERN Judy1Next
-#endif
+FUNCTION int JUDY_EXTERN Judy1Prev #else
+FUNCTION int JUDY_EXTERN Judy1Next #endif
 #else
 #ifdef JUDYPREV
-FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev
-#else
-FUNCTION PPvoid_t JUDY_EXTERN JudyLNext
-#endif
+FUNCTION PPvoid_t JUDY_EXTERN JudyLPrev #else
+FUNCTION PPvoid_t JUDY_EXTERN JudyLNext #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -46508,6 +46840,11 @@ SM3Imm7:
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 
 // @(#) $Revision: 4.32 $ $Source: /judy/src/JudyCommon/JudyPrevNextEmpty.c $
 //
@@ -46638,16 +46975,12 @@ SM3Imm7:
 
 #ifdef JUDY1
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN Judy1PrevEmpty
-#else
-FUNCTION int JUDY_EXTERN Judy1NextEmpty
-#endif
+FUNCTION int JUDY_EXTERN Judy1PrevEmpty #else
+FUNCTION int JUDY_EXTERN Judy1NextEmpty #endif
 #else
 #ifdef JUDYPREV
-FUNCTION int JUDY_EXTERN JudyLPrevEmpty
-#else
-FUNCTION int JUDY_EXTERN JudyLNextEmpty
-#endif
+FUNCTION int JUDY_EXTERN JudyLPrevEmpty #else
+FUNCTION int JUDY_EXTERN JudyLNextEmpty #endif
 #endif
         (
         Pcvoid_t  PArray,       // Judy array to search.
@@ -47897,162 +48230,10 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
-#ifdef JU_64BIT
-#include "JudyLTables64.c"
-#else
-#include "JudyLTables32.c"
+#ifdef _WIN32
+#define JU_WIN
 #endif
 
-
-@h=tangler('judy/JudyL/JudyLTables32.c')
-@select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
-
-// @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
-//
-
-#include "JudyL.h"
-// Leave the malloc() sizes readable in the binary (via strings(1)):
-const char * JudyLMallocSizes = "JudyLMallocSizes = 3, 5, 7, 11, 15, 23, 32, 47, 64, Leaf1 = 25";
-
-
-//      object uses 64 words
-//      cJU_BITSPERSUBEXPB = 32
-const uint8_t
-j__L_BranchBJPPopToWords[cJU_BITSPERSUBEXPB + 1] =
-{
-         0,
-         3,  5,  7, 11, 11, 15, 15, 23, 
-        23, 23, 23, 32, 32, 32, 32, 32, 
-        47, 47, 47, 47, 47, 47, 47, 64, 
-        64, 64, 64, 64, 64, 64, 64, 64
-};
-
-//      object uses 32 words
-//      cJL_LEAF1_MAXPOP1 = 25
-const uint8_t
-j__L_Leaf1PopToWords[cJL_LEAF1_MAXPOP1 + 1] =
-{
-         0,
-         3,  3,  5,  5,  7, 11, 11, 11, 
-        15, 15, 15, 15, 23, 23, 23, 23, 
-        23, 23, 32, 32, 32, 32, 32, 32, 
-        32
-};
-const uint8_t
-j__L_Leaf1Offset[cJL_LEAF1_MAXPOP1 + 1] =
-{
-         0,
-         1,  1,  1,  1,  2,  3,  3,  3, 
-         3,  3,  3,  3,  5,  5,  5,  5, 
-         5,  5,  7,  7,  7,  7,  7,  7, 
-         7
-};
-
-//      object uses 63 words
-//      cJL_LEAF2_MAXPOP1 = 42
-const uint8_t
-j__L_Leaf2PopToWords[cJL_LEAF2_MAXPOP1 + 1] =
-{
-         0,
-         3,  3,  5,  7, 11, 11, 11, 15, 
-        15, 15, 23, 23, 23, 23, 23, 32, 
-        32, 32, 32, 32, 32, 47, 47, 47, 
-        47, 47, 47, 47, 47, 47, 47, 63, 
-        63, 63, 63, 63, 63, 63, 63, 63, 
-        63, 63
-};
-const uint8_t
-j__L_Leaf2Offset[cJL_LEAF2_MAXPOP1 + 1] =
-{
-         0,
-         1,  1,  2,  2,  4,  4,  4,  5, 
-         5,  5,  8,  8,  8,  8,  8, 11, 
-        11, 11, 11, 11, 11, 16, 16, 16, 
-        16, 16, 16, 16, 16, 16, 16, 21, 
-        21, 21, 21, 21, 21, 21, 21, 21, 
-        21, 21
-};
-
-//      object uses 63 words
-//      cJL_LEAF3_MAXPOP1 = 36
-const uint8_t
-j__L_Leaf3PopToWords[cJL_LEAF3_MAXPOP1 + 1] =
-{
-         0,
-         3,  5,  7,  7, 11, 11, 15, 15, 
-        23, 23, 23, 23, 23, 32, 32, 32, 
-        32, 32, 47, 47, 47, 47, 47, 47, 
-        47, 47, 63, 63, 63, 63, 63, 63, 
-        63, 63, 63, 63
-};
-const uint8_t
-j__L_Leaf3Offset[cJL_LEAF3_MAXPOP1 + 1] =
-{
-         0,
-         1,  3,  3,  3,  5,  5,  6,  6, 
-        10, 10, 10, 10, 10, 14, 14, 14, 
-        14, 14, 20, 20, 20, 20, 20, 20, 
-        20, 20, 27, 27, 27, 27, 27, 27, 
-        27, 27, 27, 27
-};
-
-//      object uses 63 words
-//      cJL_LEAFW_MAXPOP1 = 31
-const uint8_t
-j__L_LeafWPopToWords[cJL_LEAFW_MAXPOP1 + 1] =
-{
-         0,
-         3,  5,  7, 11, 11, 15, 15, 23, 
-        23, 23, 23, 32, 32, 32, 32, 47, 
-        47, 47, 47, 47, 47, 47, 47, 63, 
-        63, 63, 63, 63, 63, 63, 63
-};
-const uint8_t
-j__L_LeafWOffset[cJL_LEAFW_MAXPOP1 + 1] =
-{
-         0,
-         2,  3,  4,  6,  6,  8,  8, 12, 
-        12, 12, 12, 16, 16, 16, 16, 24, 
-        24, 24, 24, 24, 24, 24, 24, 32, 
-        32, 32, 32, 32, 32, 32, 32
-};
-
-//      object uses 32 words
-//      cJU_BITSPERSUBEXPL = 32
-const uint8_t
-j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
-{
-         0,
-         3,  3,  3,  5,  5,  7,  7, 11, 
-        11, 11, 11, 15, 15, 15, 15, 23, 
-        23, 23, 23, 23, 23, 23, 23, 32, 
-        32, 32, 32, 32, 32, 32, 32, 32
-};
-
-@h=tangler('judy/JudyL/JudyLTables64.c')
-@select(h)
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
 
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
@@ -48274,6 +48455,414 @@ j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
         64, 64, 64, 64, 64, 64, 64, 64
 };
 
+@h=tangler('judy/JudyL/JudyLTables32.c')
+@select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
+#line 47909 "./lpsrc/flx_judy.pak"
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+// @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
+//
+
+#include "JudyL.h"
+// Leave the malloc() sizes readable in the binary (via strings(1)):
+const char * JudyLMallocSizes = "JudyLMallocSizes = 3, 5, 7, 11, 15, 23, 32, 47, 64, Leaf1 = 25";
+
+
+//      object uses 64 words
+//      cJU_BITSPERSUBEXPB = 32
+const uint8_t
+j__L_BranchBJPPopToWords[cJU_BITSPERSUBEXPB + 1] =
+{
+         0,
+         3,  5,  7, 11, 11, 15, 15, 23,
+        23, 23, 23, 32, 32, 32, 32, 32,
+        47, 47, 47, 47, 47, 47, 47, 64,
+        64, 64, 64, 64, 64, 64, 64, 64
+};
+
+//      object uses 32 words
+//      cJL_LEAF1_MAXPOP1 = 25
+const uint8_t
+j__L_Leaf1PopToWords[cJL_LEAF1_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  5,  7, 11, 11, 11,
+        15, 15, 15, 15, 23, 23, 23, 23,
+        23, 23, 32, 32, 32, 32, 32, 32,
+        32
+};
+const uint8_t
+j__L_Leaf1Offset[cJL_LEAF1_MAXPOP1 + 1] =
+{
+         0,
+         1,  1,  1,  1,  2,  3,  3,  3,
+         3,  3,  3,  3,  5,  5,  5,  5,
+         5,  5,  7,  7,  7,  7,  7,  7,
+         7
+};
+
+//      object uses 63 words
+//      cJL_LEAF2_MAXPOP1 = 42
+const uint8_t
+j__L_Leaf2PopToWords[cJL_LEAF2_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  7, 11, 11, 11, 15,
+        15, 15, 23, 23, 23, 23, 23, 32,
+        32, 32, 32, 32, 32, 47, 47, 47,
+        47, 47, 47, 47, 47, 47, 47, 63,
+        63, 63, 63, 63, 63, 63, 63, 63,
+        63, 63
+};
+const uint8_t
+j__L_Leaf2Offset[cJL_LEAF2_MAXPOP1 + 1] =
+{
+         0,
+         1,  1,  2,  2,  4,  4,  4,  5,
+         5,  5,  8,  8,  8,  8,  8, 11,
+        11, 11, 11, 11, 11, 16, 16, 16,
+        16, 16, 16, 16, 16, 16, 16, 21,
+        21, 21, 21, 21, 21, 21, 21, 21,
+        21, 21
+};
+
+//      object uses 63 words
+//      cJL_LEAF3_MAXPOP1 = 36
+const uint8_t
+j__L_Leaf3PopToWords[cJL_LEAF3_MAXPOP1 + 1] =
+{
+         0,
+         3,  5,  7,  7, 11, 11, 15, 15,
+        23, 23, 23, 23, 23, 32, 32, 32,
+        32, 32, 47, 47, 47, 47, 47, 47,
+        47, 47, 63, 63, 63, 63, 63, 63,
+        63, 63, 63, 63
+};
+const uint8_t
+j__L_Leaf3Offset[cJL_LEAF3_MAXPOP1 + 1] =
+{
+         0,
+         1,  3,  3,  3,  5,  5,  6,  6,
+        10, 10, 10, 10, 10, 14, 14, 14,
+        14, 14, 20, 20, 20, 20, 20, 20,
+        20, 20, 27, 27, 27, 27, 27, 27,
+        27, 27, 27, 27
+};
+
+//      object uses 63 words
+//      cJL_LEAFW_MAXPOP1 = 31
+const uint8_t
+j__L_LeafWPopToWords[cJL_LEAFW_MAXPOP1 + 1] =
+{
+         0,
+         3,  5,  7, 11, 11, 15, 15, 23,
+        23, 23, 23, 32, 32, 32, 32, 47,
+        47, 47, 47, 47, 47, 47, 47, 63,
+        63, 63, 63, 63, 63, 63, 63
+};
+const uint8_t
+j__L_LeafWOffset[cJL_LEAFW_MAXPOP1 + 1] =
+{
+         0,
+         2,  3,  4,  6,  6,  8,  8, 12,
+        12, 12, 12, 16, 16, 16, 16, 24,
+        24, 24, 24, 24, 24, 24, 24, 32,
+        32, 32, 32, 32, 32, 32, 32
+};
+
+//      object uses 32 words
+//      cJU_BITSPERSUBEXPL = 32
+const uint8_t
+j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
+{
+         0,
+         3,  3,  3,  5,  5,  7,  7, 11,
+        11, 11, 11, 15, 15, 15, 15, 23,
+        23, 23, 23, 23, 23, 23, 23, 32,
+        32, 32, 32, 32, 32, 32, 32, 32
+};
+
+
+@h=tangler('judy/JudyL/JudyLTables64.c')
+@select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
+#line 48045 "./lpsrc/flx_judy.pak"
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+// @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
+//
+
+#include "JudyL.h"
+// Leave the malloc() sizes readable in the binary (via strings(1)):
+const char * JudyLMallocSizes = "JudyLMallocSizes = 3, 5, 7, 11, 15, 23, 32, 47, 64, Leaf1 = 13";
+
+
+//      object uses 64 words
+//      cJU_BITSPERSUBEXPB = 32
+const uint8_t
+j__L_BranchBJPPopToWords[cJU_BITSPERSUBEXPB + 1] =
+{
+         0,
+         3,  5,  7, 11, 11, 15, 15, 23,
+        23, 23, 23, 32, 32, 32, 32, 32,
+        47, 47, 47, 47, 47, 47, 47, 64,
+        64, 64, 64, 64, 64, 64, 64, 64
+};
+
+//      object uses 15 words
+//      cJL_LEAF1_MAXPOP1 = 13
+const uint8_t
+j__L_Leaf1PopToWords[cJL_LEAF1_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  5,  7,  7, 11, 11,
+        11, 15, 15, 15, 15
+};
+const uint8_t
+j__L_Leaf1Offset[cJL_LEAF1_MAXPOP1 + 1] =
+{
+         0,
+         1,  1,  1,  1,  1,  1,  2,  2,
+         2,  2,  2,  2,  2
+};
+
+//      object uses 64 words
+//      cJL_LEAF2_MAXPOP1 = 51
+const uint8_t
+j__L_Leaf2PopToWords[cJL_LEAF2_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  5,  7, 11, 11, 11,
+        15, 15, 15, 15, 23, 23, 23, 23,
+        23, 23, 32, 32, 32, 32, 32, 32,
+        32, 47, 47, 47, 47, 47, 47, 47,
+        47, 47, 47, 47, 47, 64, 64, 64,
+        64, 64, 64, 64, 64, 64, 64, 64,
+        64, 64, 64
+};
+const uint8_t
+j__L_Leaf2Offset[cJL_LEAF2_MAXPOP1 + 1] =
+{
+         0,
+         1,  1,  1,  1,  2,  3,  3,  3,
+         3,  3,  3,  3,  5,  5,  5,  5,
+         5,  5,  7,  7,  7,  7,  7,  7,
+         7, 10, 10, 10, 10, 10, 10, 10,
+        10, 10, 10, 10, 10, 13, 13, 13,
+        13, 13, 13, 13, 13, 13, 13, 13,
+        13, 13, 13
+};
+
+//      object uses 64 words
+//      cJL_LEAF3_MAXPOP1 = 46
+const uint8_t
+j__L_Leaf3PopToWords[cJL_LEAF3_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  7,  7, 11, 11, 11,
+        15, 15, 23, 23, 23, 23, 23, 23,
+        32, 32, 32, 32, 32, 32, 32, 47,
+        47, 47, 47, 47, 47, 47, 47, 47,
+        47, 47, 64, 64, 64, 64, 64, 64,
+        64, 64, 64, 64, 64, 64
+};
+const uint8_t
+j__L_Leaf3Offset[cJL_LEAF3_MAXPOP1 + 1] =
+{
+         0,
+         1,  1,  2,  2,  2,  3,  3,  3,
+         4,  4,  6,  6,  6,  6,  6,  6,
+         9,  9,  9,  9,  9,  9,  9, 13,
+        13, 13, 13, 13, 13, 13, 13, 13,
+        13, 13, 18, 18, 18, 18, 18, 18,
+        18, 18, 18, 18, 18, 18
+};
+
+//      object uses 63 words
+//      cJL_LEAF4_MAXPOP1 = 42
+const uint8_t
+j__L_Leaf4PopToWords[cJL_LEAF4_MAXPOP1 + 1] =
+{
+         0,
+         3,  3,  5,  7, 11, 11, 11, 15,
+        15, 15, 23, 23, 23, 23, 23, 32,
+        32, 32, 32, 32, 32, 47, 47, 47,
+        47, 47, 47, 47, 47, 47, 47, 63,
+        63, 63, 63, 63, 63, 63, 63, 63,
+        63, 63
+};
+const uint8_t
+j__L_Leaf4Offset[cJL_LEAF4_MAXPOP1 + 1] =
+{
+         0,
+         1,  1,  2,  2,  4,  4,  4,  5,
+         5,  5,  8,  8,  8,  8,  8, 11,
+        11, 11, 11, 11, 11, 16, 16, 16,
+        16, 16, 16, 16, 16, 16, 16, 21,
+        21, 21, 21, 21, 21, 21, 21, 21,
+        21, 21
+};
+
+//      object uses 64 words
+//      cJL_LEAF5_MAXPOP1 = 39
+const uint8_t
+j__L_Leaf5PopToWords[cJL_LEAF5_MAXPOP1 + 1] =
+{
+         0,
+         3,  5,  5,  7, 11, 11, 15, 15,
+        15, 23, 23, 23, 23, 23, 32, 32,
+        32, 32, 32, 47, 47, 47, 47, 47,
+        47, 47, 47, 47, 64, 64, 64, 64,
+        64, 64, 64, 64, 64, 64, 64
+};
+const uint8_t
+j__L_Leaf5Offset[cJL_LEAF5_MAXPOP1 + 1] =
+{
+         0,
+         2,  2,  2,  3,  4,  4,  6,  6,
+         6,  9,  9,  9,  9,  9, 12, 12,
+        12, 12, 12, 18, 18, 18, 18, 18,
+        18, 18, 18, 18, 25, 25, 25, 25,
+        25, 25, 25, 25, 25, 25, 25
+};
+
+//      object uses 63 words
+//      cJL_LEAF6_MAXPOP1 = 36
+const uint8_t
+j__L_Leaf6PopToWords[cJL_LEAF6_MAXPOP1 + 1] =
+{
+         0,
+         3,  5,  7,  7, 11, 11, 15, 15,
+        23, 23, 23, 23, 23, 32, 32, 32,
+        32, 32, 47, 47, 47, 47, 47, 47,
+        47, 47, 63, 63, 63, 63, 63, 63,
+        63, 63, 63, 63
+};
+const uint8_t
+j__L_Leaf6Offset[cJL_LEAF6_MAXPOP1 + 1] =
+{
+         0,
+         1,  3,  3,  3,  5,  5,  6,  6,
+        10, 10, 10, 10, 10, 14, 14, 14,
+        14, 14, 20, 20, 20, 20, 20, 20,
+        20, 20, 27, 27, 27, 27, 27, 27,
+        27, 27, 27, 27
+};
+
+//      object uses 64 words
+//      cJL_LEAF7_MAXPOP1 = 34
+const uint8_t
+j__L_Leaf7PopToWords[cJL_LEAF7_MAXPOP1 + 1] =
+{
+         0,
+         3,  5,  7, 11, 11, 15, 15, 15,
+        23, 23, 23, 23, 32, 32, 32, 32,
+        32, 47, 47, 47, 47, 47, 47, 47,
+        47, 64, 64, 64, 64, 64, 64, 64,
+        64, 64
+};
+const uint8_t
+j__L_Leaf7Offset[cJL_LEAF7_MAXPOP1 + 1] =
+{
+         0,
+         1,  3,  3,  5,  5,  7,  7,  7,
+        11, 11, 11, 11, 15, 15, 15, 15,
+        15, 22, 22, 22, 22, 22, 22, 22,
+        22, 30, 30, 30, 30, 30, 30, 30,
+        30, 30
+};
+
+//      object uses 63 words
+//      cJL_LEAFW_MAXPOP1 = 31
+const uint8_t
+j__L_LeafWPopToWords[cJL_LEAFW_MAXPOP1 + 1] =
+{
+         0,
+         3,  5,  7, 11, 11, 15, 15, 23,
+        23, 23, 23, 32, 32, 32, 32, 47,
+        47, 47, 47, 47, 47, 47, 47, 63,
+        63, 63, 63, 63, 63, 63, 63
+};
+const uint8_t
+j__L_LeafWOffset[cJL_LEAFW_MAXPOP1 + 1] =
+{
+         0,
+         2,  3,  4,  6,  6,  8,  8, 12,
+        12, 12, 12, 16, 16, 16, 16, 24,
+        24, 24, 24, 24, 24, 24, 24, 32,
+        32, 32, 32, 32, 32, 32, 32
+};
+
+//      object uses 64 words
+//      cJU_BITSPERSUBEXPL = 64
+const uint8_t
+j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
+{
+         0,
+         3,  3,  3,  5,  5,  7,  7, 11,
+        11, 11, 11, 15, 15, 15, 15, 23,
+        23, 23, 23, 23, 23, 23, 23, 32,
+        32, 32, 32, 32, 32, 32, 32, 32,
+        47, 47, 47, 47, 47, 47, 47, 47,
+        47, 47, 47, 47, 47, 47, 47, 64,
+        64, 64, 64, 64, 64, 64, 64, 64,
+        64, 64, 64, 64, 64, 64, 64, 64
+};
+
+
 @h=tangler('judy/JudyL/JudyLTablesGen.c')
 @select(h)
 #ifndef JUDY_EXTERN
@@ -48287,6 +48876,11 @@ j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 
 // @(#) $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
@@ -48582,6 +49176,11 @@ FUNCTION int main()
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 // @(#) $Revision: 4.1 $ $Source: /judy/src/JudyHS/JudyHS.c
 //=======================================================================
@@ -49369,6 +49968,11 @@ JudyHSFreeArray(PPvoid_t PPArray,       // ^ to JudyHashArray struct
 #endif
 #endif
 
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
+
 // ****************************************************************************
 // Quick and dirty header file for use with old Judy.h without JudyHS defs
 // May 2004 (dlb) - No copyright or license -- it is free period.
@@ -49390,18 +49994,18 @@ JudyHSFreeArray(PPvoid_t PPArray,       // ^ to JudyHashArray struct
 // ****************************************************************************
 // JUDY memory interface to malloc() FUNCTIONS:
 
-extern Word_t JudyMalloc(Word_t);               // words reqd => words allocd.
-extern Word_t JudyMallocVirtual(Word_t);        // words reqd => words allocd.
-extern void   JudyFree(Pvoid_t, Word_t);        // block to free and its size in words.
-extern void   JudyFreeVirtual(Pvoid_t, Word_t); // block to free and its size in words.
+extern Word_t JUDY_EXTERN JudyMalloc(Word_t);               // words reqd => words allocd.
+extern Word_t JUDY_EXTERN JudyMallocVirtual(Word_t);        // words reqd => words allocd.
+extern void JUDY_EXTERN JudyFree(Pvoid_t, Word_t);        // block to free and its size in words.
+extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // block to free and its size in words.
 
 // ****************************************************************************
 // JUDYHS FUNCTIONS:
 
-extern PPvoid_t JudyHSGet(       Pcvoid_t,  void *, Word_t);
-extern PPvoid_t JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
-extern int      JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
-extern Word_t   JudyHSFreeArray( PPvoid_t,                  P_JE);
+extern PPvoid_t JUDY_EXTERN JudyHSGet(       Pcvoid_t,  void *, Word_t);
+extern PPvoid_t JUDY_EXTERN JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
+extern int JUDY_EXTERN JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
+extern Word_t JUDY_EXTERN JudyHSFreeArray( PPvoid_t,                  P_JE);
 
 extern uint32_t JudyHashStr(                void *, Word_t);
 
@@ -49418,6 +50022,11 @@ extern uint32_t JudyHashStr(                void *, Word_t);
 #define JUDY_EXTERN
 #endif
 #endif
+
+#ifdef _WIN32
+#define JU_WIN
+#endif
+
 
 //
 // This program is free software; you can redistribute it and/or modify it
