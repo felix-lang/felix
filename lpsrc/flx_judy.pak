@@ -14,7 +14,8 @@
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -690,7 +691,8 @@ extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -781,7 +783,8 @@ void JudyFreeVirtual(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -1270,7 +1273,8 @@ void JudyFreeVirtual(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -2053,7 +2057,8 @@ FUNCTION main()
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -3670,7 +3675,8 @@ static inline int j__udySearchLeafW(Pjlw_t Pjlw, Word_t LeafPop1, Word_t Index)
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -4628,7 +4634,8 @@ Imm7:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -6574,7 +6581,8 @@ JUDYLCODE(Pjv_t    Pjv;)        // value area of leaf.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -7773,7 +7781,8 @@ const   Pjp_t Pjp)              // JP to count.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -8091,7 +8100,8 @@ FUNCTION int j__udyCreateBranchU(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -9301,7 +9311,8 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -9524,7 +9535,8 @@ FUNCTION int JUDY_EXTERN JudyLLastEmpty(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -9891,7 +9903,8 @@ FUNCTION void j__udyFreeSM(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -10446,7 +10459,8 @@ void    j__udy1FreeSM(   Pjp_t,          Pj1pm_t);      // everything below Pjp.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -10585,7 +10599,8 @@ FUNCTION int j__udyInsertBranch(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -11371,7 +11386,8 @@ FUNCTION void j__udyLFreeJV(Pjv_t Pjv, Word_t Pop1, Pjpm_t Pjpm)
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -11634,7 +11650,8 @@ LeafWords:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -11699,7 +11716,8 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -13593,7 +13611,8 @@ SM3Imm7:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -14987,7 +15006,8 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -16881,7 +16901,8 @@ SM3Imm7:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -18275,7 +18296,8 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -19457,7 +19479,8 @@ SetParent:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -21322,6 +21345,24 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 
 @h=tangler('judy/Judy1/Judy1Tables.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
+#define JU_WIN
+#endif
+
+
 #ifdef JU_64BIT
 #include "Judy1Tables64.c"
 #else
@@ -21331,6 +21372,25 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 
 @h=tangler('judy/Judy1/Judy1Tables32.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
+#define JU_WIN
+#endif
+
+
+#line 21175 "./lpsrc/flx_judy.pak"
 #ifndef JUDY_EXTERN
 #if defined(_WIN32) && !defined(FLX_STATIC_LINK)
 #ifdef BUILD_JUDY
@@ -21419,6 +21479,25 @@ j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
 
 @h=tangler('judy/Judy1/Judy1Tables64.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
+#define JU_WIN
+#endif
+
+
+#line 21262 "./lpsrc/flx_judy.pak"
 #ifndef JUDY_EXTERN
 #if defined(_WIN32) && !defined(FLX_STATIC_LINK)
 #ifdef BUILD_JUDY
@@ -21579,7 +21658,8 @@ j__1_LeafWPopToWords[cJ1_LEAFW_MAXPOP1 + 1] =
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -21879,7 +21959,8 @@ FUNCTION int main()
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -22977,7 +23058,8 @@ BranchU:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -24075,7 +24157,8 @@ BranchU:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -26225,7 +26308,8 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -27183,7 +27267,8 @@ Imm7:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -29129,7 +29214,8 @@ JUDYLCODE(Pjv_t    Pjv;)        // value area of leaf.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -30328,7 +30414,8 @@ const   Pjp_t Pjp)              // JP to count.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -30646,7 +30733,8 @@ FUNCTION int j__udyCreateBranchU(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -31856,7 +31944,8 @@ JUDYLCODE(Pjv_t Pjv7;)          // source object value area.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -34006,7 +34095,8 @@ JUDYLCODE(PPvoid_t PPvalue;)  // pointer from JudyLGet().
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -34229,7 +34319,8 @@ FUNCTION int JUDY_EXTERN JudyLLastEmpty(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -34596,7 +34687,8 @@ FUNCTION void j__udyFreeSM(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -35694,7 +35786,8 @@ BranchU:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -36792,7 +36885,8 @@ BranchU:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -37301,7 +37395,8 @@ void    j__udyLFreeSM(   Pjp_t,          PjLpm_t);      // everything below Pjp.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -38483,7 +38578,8 @@ SetParent:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -40360,7 +40456,8 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLIns
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -40499,7 +40596,8 @@ FUNCTION int j__udyInsertBranch(
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -41285,7 +41383,8 @@ FUNCTION void j__udyLFreeJV(Pjv_t Pjv, Word_t Pop1, Pjpm_t Pjpm)
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -41548,7 +41647,8 @@ LeafWords:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -41613,7 +41713,8 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -43507,7 +43608,8 @@ SM3Imm7:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -44901,7 +45003,8 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -46795,7 +46898,8 @@ SM3Imm7:
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -48177,6 +48281,24 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 
 @h=tangler('judy/JudyL/JudyLTables.c')
 @select(h)
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
+
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
+#define JU_WIN
+#endif
+
+
 #ifdef JU_64BIT
 #include "JudyLTables64.c"
 #else
@@ -48198,10 +48320,24 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
+
+#line 47909 "./lpsrc/flx_judy.pak"
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
 
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
@@ -48340,10 +48476,24 @@ j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
+
+#line 48045 "./lpsrc/flx_judy.pak"
+#ifndef JUDY_EXTERN
+#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __declspec(dllexport)
+#else
+#define JUDY_EXTERN __declspec(dllimport)
+#endif
+#else
+#define JUDY_EXTERN
+#endif
+#endif
 
 // @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 //
@@ -48580,7 +48730,8 @@ j__L_LeafVPopToWords[cJU_BITSPERSUBEXPL + 1] =
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -48880,7 +49031,8 @@ FUNCTION int main()
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -49671,7 +49823,8 @@ JudyHSFreeArray(PPvoid_t PPArray,       // ^ to JudyHashArray struct
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
@@ -49734,7 +49887,8 @@ extern uint32_t JudyHashStr(                void *, Word_t);
 #endif
 #endif
 
-#ifdef _WIN32
+/* here JU_WIN <=> MSVC CL build */
+#ifdef _MSC_VER
 #define JU_WIN
 #endif
 
