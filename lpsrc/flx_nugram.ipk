@@ -272,7 +272,7 @@ syntax statements {
   //sstatement:= suser_statement =># "_1"; 
   sstatement:= scparse =># "_1"; 
 
-  scomment := comment sstring ; => "`(ast_nop ,_2)";
+  scomment := comment sstring ; =># "`(ast_nop ,_2)";
  
   sbinding_definition :=  sabstract_type =># "_1";
   sbinding_definition :=  sconst_def =># "_1";
@@ -324,7 +324,7 @@ syntax statements {
   stype_qual := gc_pointer =># "'gc_pointer";
   stype_qual := gc_type sexpr =># "`(gc_type ,_2)";
   stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
-  stype_quals:= =># "()";
+  stype_quals:= epsilon =># "()";
 
   sabstract_type:= stype_quals ctypes sbasic_name_comma_list srequires_clause ; =>#
     "`(ast_ctypes ,_3 ,_1 ,_4)";

@@ -64,6 +64,7 @@ open Flx_exceptions
 open Flx_util
 open Ocs_types
 open Sex_types
+open Dyp
 
 let map = List.map
 let map2 = List.map2
@@ -244,11 +245,11 @@ let scheme_compile_eval env (s:string):sval =
 
 
 let define_scheme dyp name rhs (scm:string) =
-  let lhs = dyp.add_nt name in
+  let lhs = dyp.add_nt name "Obj_sexpr" in
   let f o =
     match o with
       | NAME (sr,s) -> 
-          Dyp.Non_ter ((dyp.add_nt s),Dyp.No_priority)
+          Dyp.Non_ter ((dyp.add_nt s "Obj_sexpr"),Dyp.No_priority)
       | s -> 
         let name = Dyp_symbols.str_token s in
         Dyp.Ter (Dyp_symbols.get_token_name s)
@@ -282,12 +283,12 @@ let define_scheme dyp name rhs (scm:string) =
 
 
 let define_statement dyp name rhs (statement:statement_t) =
-  let lhs = dyp.find_nt name in
+  let lhs,_ = dyp.find_nt name in
   let f o =
     match o with
       | NAME (sr,s) -> 
         begin try
-          Dyp.Non_ter ((dyp.find_nt s),Dyp.No_priority)
+          Dyp.Non_ter (fst (dyp.find_nt s),Dyp.No_priority)
         with
         | Not_found ->
           print_endline ("[define_statement] User Syntax: Cannot find non-terminal " ^ s);
@@ -405,7 +406,7 @@ let define_statement dyp name rhs (statement:statement_t) =
   rule,action
 
 let define_expr dyp name rhs (expr:expr_t) =
-  let lhs = dyp.find_nt name in
+  let lhs,_ = dyp.find_nt name in
   (*
   print_endline ("DEFINE "^name^" = " ^ string_of_expr expr);
   *)
@@ -413,7 +414,7 @@ let define_expr dyp name rhs (expr:expr_t) =
     match o with
       | NAME (sr,s) -> 
         begin try
-          Dyp.Non_ter ((dyp.find_nt s),Dyp.No_priority)
+          Dyp.Non_ter (fst (dyp.find_nt s),Dyp.No_priority)
         with
         | Not_found ->
           print_endline ("[define_expr] User Syntax: Cannot find non-terminal " ^ s);
@@ -564,7 +565,7 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
      );
      *)
      (* WE should use a distinct syntax for adding new nonterms .. *)
-     ignore(dyp.add_nt name);
+     ignore(dyp.add_nt name ("Obj_" ^ name));
      begin match name with
      | "statement" ->
        let rule =(define_statement dyp name rhs stmt) in
@@ -4033,6 +4034,7 @@ suffixed_name:
       )
     }
 
+epsilon: | {()}
 
 @head(1,'Parser object')
 @h = tangler('src/flx_parse_ctrl.ml')
