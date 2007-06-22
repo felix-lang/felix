@@ -325,7 +325,8 @@ for fn in files:
   print "#endif"
   print "#endif"
   print
-  print "#ifdef _WIN32"
+  print "/* here JU_WIN <=> MSVC CL build */"
+  print "#ifdef _MSC_VER"
   print "#define JU_WIN"
   print "#endif"
   print
