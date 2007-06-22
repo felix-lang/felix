@@ -93,6 +93,7 @@ sig
     happen. *)
   val token_nb : int
     (** The number of terminal symbols in the grammar. *)
+  val undef_nt : bool
 end
 (** Input signature of the functor [Parser] *)
 
@@ -150,10 +151,53 @@ val add_list_relations : priority_data -> (priority list) -> priority_data
 type lit = (int * non_terminal_priority) pliteral
 type rule = non_ter * (lit list) * priority
 
+type ('obj,'data,'local_data) dypgen_toolbox = {
+  mutable global_data : 'data;
+  mutable local_data : 'local_data;
+  mutable priority_data : priority_data;
+  mutable add_rules : (rule * (
+    ('obj,'data,'local_data) dypgen_toolbox -> 'obj list -> 'obj)) list;
+  mutable remove_rules : rule list;
+  mutable will_shift : bool;
+  mutable next_state : out_channel option;
+  mutable next_grammar : out_channel option;
+  symbol_start : unit -> int;
+  symbol_start_pos : unit -> Lexing.position;
+  symbol_end : unit -> int;
+  symbol_end_pos : unit -> Lexing.position;
+  rhs_start : int -> int;
+  rhs_start_pos : int -> Lexing.position;
+  rhs_end : int -> int;
+  rhs_end_pos : int -> Lexing.position;
+  add_nt : string -> string -> non_ter;
+  find_nt : string -> non_ter * string;
+  print_state : out_channel -> unit;
+  print_grammar : out_channel -> unit;
+}
+
 exception Giveup
 (** This exception can be raised by an action, then the parser gives
 up the current reduction and the parsing along the current path is
 stopped. *)
+
+exception Undefined_nt of string
+(** This exception is raised when there is in the grammar a non
+terminal that is in a right-hand side but never in a left-hand
+side (i.e. it is never defined). The string represents this non
+terminal. *)
+
+exception Bad_constructor of (string * string)
+(** This exception is raised when a value is returned by a user action
+with a bad constructor (not corresponding to the non terminal). This
+can only happen with rules defined dynamically.
+1st string is the rule and can be used to be printed.
+2nd string is the name of the constructor that should have been used. *)
+
+exception Constructor_mismatch of (string * string)
+(** This exception is raised when a nt is added with a constructor cons
+but it already exists with another constructor.
+1st string is the name of the previous constructor,
+2nd string is the name of the constructor one tried to add. *)
 
 exception Syntax_error
 (** This exception is raised by glrParse if the parser is stuck in a
@@ -169,12 +213,12 @@ val keep_newest : 'a list -> 'a -> 'a list
 
 module Dyp_special_types :
 sig
-  type automaton_kind = LR0 | LALR | LR1
+  type automaton_kind = [ `LR0 | `LALR | `LR1 ]
   type datadyn
 
   type debug_infos = {
-    print_state : out_channel -> unit;
-    print_grammar : out_channel -> unit;
+    prt_state : out_channel -> unit;
+    prt_grammar : out_channel -> unit;
   }
 
   type ('obj,'data,'local_data) action =
@@ -194,7 +238,9 @@ sig
     the grammar and a list of rules to be removed from the grammar.
     The boolean tells whether the possibility of a shift must be
     regarded or not. data and priority_data are accessible to the 
-    actions and local_data for the dynamic ones. *)
+    actions and local_data for the dynamic ones.
+    The two (out_channel option) are for displaying the next automaton
+    state and next grammar. *)
 end
 
 
@@ -204,9 +250,10 @@ sig
 
   module Tools :
   sig
-    val add_nt : string -> Dyp_special_types.datadyn ref -> non_ter
-    val find_nt : string -> Dyp_special_types.datadyn -> non_ter
-    val init_datadyn : string list -> Dyp_special_types.datadyn
+    val add_nt : string -> string -> Dyp_special_types.datadyn ref -> non_ter
+    val find_nt : string -> Dyp_special_types.datadyn -> (non_ter * string)
+    val init_datadyn : (string * int * string) list -> string list ->
+      Dyp_special_types.datadyn
     val init_merge_map : ('obj merge_function * int) list ->
       'obj merge_map
     val empty_datadyn : Dyp_special_types.datadyn
@@ -215,6 +262,10 @@ sig
       global_data_equal : 'global_data -> 'global_data -> bool;
       local_data_equal : 'local_data -> 'local_data -> bool }
     val automaton_kind : Dyp_special_types.automaton_kind ref
+    val transform_action :
+      (('obj,'data,'local_data) dypgen_toolbox ->
+        'obj list -> 'obj) ->
+      ('obj,'data,'local_data) Dyp_special_types.action
   end
 
   module type Parser_type =
@@ -228,7 +279,7 @@ sig
       (rule * ('obj,'data,'local_data) Dyp_special_types.action) list ->
       priority_data -> Dyp_special_types.automaton_kind -> 'data ->
       'local_data -> 'obj merge_map -> 'obj merge_function ->
-      Dyp_special_types.datadyn -> string array ->
+      Dyp_special_types.datadyn -> string array -> int array ->
       ('obj,'data,'local_data) parsing_device
       (** Returns the parsing_device which parses strings written with
         the input grammar and assuming the relations between priority
@@ -239,10 +290,12 @@ sig
       'data -> 'local_data -> ('obj,'data,'local_data) parsing_device
 
     val glrParse : ('obj,'data,'local_data) parsing_device ->
-        ('token -> 'obj) -> ('token -> int) -> ('token -> string) -> int ->
-        ('data,'local_data) Tools.data_equal -> ('a -> 'token) ->
-        'a -> ('a -> (Lexing.position * Lexing.position)) ->
-        (('obj * priority) list)
+          ('token -> 'obj) -> ('token -> int) -> ('token -> string) -> int ->
+          ('data,'local_data) Tools.data_equal ->
+          ('obj -> bool) array ->
+          ('a -> 'token) -> 'a ->
+          ('a -> (Lexing.position * Lexing.position)) ->
+          (('obj * priority) list)
     (** Given a parsing_device and a list of tokens (the input string),
         [glrParse] returns the list of the parse objects of the input string.
         If there is no ambiguity there is only one object in the list. The
@@ -264,11 +317,6 @@ let dypgen_verbose = ref 0
 
 let list_append l1 l2 = List.rev_append (List.rev l1) l2
 let (@) l1 l2 = list_append l1 l2
-
-exception Giveup
-exception Syntax_error
-    (** This exception is raised by glrParse if the parser is stuck in a
-    situtation where no shift and no reduction is possible. *)
 
 type token_name = int
 
@@ -318,13 +366,23 @@ The rigthmost int is the number of non terminals in the map *)
 
 module Dyp_special_types =
 struct
-  type automaton_kind = LR0 | LALR | LR1
-  type datadyn = int String_map.t * int
-  (* it is a map from the string of the non terminal to its number. int is the number of non terminals *)
+  type automaton_kind = [ `LR0 | `LALR | `LR1 ]
+  type datadyn = {
+    nt_map : ((int * int * string) String_map.t);
+      (* map from the string of the non ter to the couple
+      of its number and the number of a constructor that should
+      be the constructor of the values returned by this nt.
+      The string is the string of this constructor. *)
+    cons_map : int String_map.t;
+      (* map from the string of the constructor to its number. *)
+    nt_num : int; (* the number of non terminals *)
+    cons_nb : int
+   }
+  (*type datadyn = (int String_map.t) * int*)
 
   type debug_infos = {
-    print_state : out_channel -> unit;
-    print_grammar : out_channel -> unit;
+    prt_state : out_channel -> unit;
+    prt_grammar : out_channel -> unit;
   }
 
   type ('obj,'data,'local_data) action =
@@ -364,6 +422,7 @@ sig
   val nt_of_lit : lit_nt -> non_terminal
   val lit_of_nt : non_terminal -> lit_nt
   val nt_of_lhs : lhs -> non_terminal
+  val fst_of_lhs : lhs -> non_ter
   val ind_of_lhs : lhs -> int
   val ind_of_nt : non_terminal -> int
   val test_array_nt : bool array -> lit_nt -> bool
@@ -384,6 +443,7 @@ sig
   val nt_of_lit : lit_nt -> non_terminal
   val lit_of_nt : non_terminal -> lit_nt
   val nt_of_lhs : lhs -> non_terminal
+  val fst_of_lhs : lhs -> non_ter
   val ind_of_lhs : lhs -> int
   val ind_of_nt : non_terminal -> int
   val test_array_nt : bool array -> lit_nt -> bool
@@ -1044,7 +1104,7 @@ let build_automaton_LR1 (is0:IS.t) (lit0:lit_trans) is_trace first_memo (gram:('
   v0
 *)
 
-(* --------------------------- LALR(1) automaton --------------------------- *)
+(* --------------------------- `LALR(1) automaton --------------------------- *)
 
 
 (*let closure_LR0 (is:item_set) gram_rhs gram_lhs =
@@ -1263,16 +1323,16 @@ let build_automaton automaton_kind (is0:item_set) (lit0:lit_trans) is_trace gram
   count_trans := 0;
   let time1 = Sys.time () in
   let state_list = match automaton_kind with
-    | LR0 ->
+    | `LR0 ->
         let _,state_list =
           build_automaton_LR0 is0 lit0 is_trace gram_rhs gram_lhs
             prio_dat it_nb array_nt_prio lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter
         in state_list
-    | LALR -> build_automaton_LALR is0 lit0 is_trace
+    | `LALR -> build_automaton_LALR is0 lit0 is_trace
         gram_rhs gram_lhs prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind
         lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter
-    | LR1 ->
-        print_endline "LR(1) automaton currently not available, LALR(1) is chosen.";
+    | `LR1 ->
+        print_endline "LR(1) automaton currently not available, `LALR(1) is chosen.";
         build_automaton_LALR is0 lit0 is_trace
         gram_rhs gram_lhs prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind
         lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter
@@ -1280,7 +1340,7 @@ let build_automaton automaton_kind (is0:item_set) (lit0:lit_trans) is_trace gram
   let time2 = Sys.time () in
   if verbose>0 then
     (let str_aut_kind = match automaton_kind with
-      LR0 -> "LR(0)" | LALR -> "LALR(1)" | LR1 -> "LR(1)" in
+      `LR0 -> "LR(0)" | `LALR -> "`LALR(1)" | `LR1 -> "LR(1)" in
     Printf.fprintf !log_channel "%s automaton built, %d states, %d transitions, %.3f sec\n"
     str_aut_kind (!countst+1) (!count_trans+1) (time2-.time1);
     (*let _ = print_aut v0 lhs_of_ind in*)
@@ -1359,6 +1419,7 @@ sig
     happen. *)
   val token_nb : int
     (** The number of terminal symbols in the grammar. *)
+  val undef_nt : bool
 end
 (** Input signature of the functor [Parser] *)
 
@@ -1366,6 +1427,40 @@ let list_map f l = List.rev (List.rev_map f l)
 
 include Automaton
 open Dyp_special_types
+
+type ('obj,'data,'local_data) dypgen_toolbox = {
+  mutable global_data : 'data;
+  mutable local_data : 'local_data;
+  mutable priority_data : priority_data;
+  mutable add_rules : (rule * (
+    ('obj,'data,'local_data) dypgen_toolbox -> 'obj list -> 'obj)) list;
+  mutable remove_rules : rule list;
+  mutable will_shift : bool;
+  mutable next_state : out_channel option;
+  mutable next_grammar : out_channel option;
+  symbol_start : unit -> int;
+  symbol_start_pos : unit -> Lexing.position;
+  symbol_end : unit -> int;
+  symbol_end_pos : unit -> Lexing.position;
+  rhs_start : int -> int;
+  rhs_start_pos : int -> Lexing.position;
+  rhs_end : int -> int;
+  rhs_end_pos : int -> Lexing.position;
+  add_nt : string -> string -> non_ter;
+  find_nt : string -> non_ter * string;
+  print_state : out_channel -> unit;
+  print_grammar : out_channel -> unit;
+}
+
+
+exception Giveup
+exception Undefined_nt of string
+exception Bad_constructor of (string * string)
+exception Constructor_mismatch of (string * string)
+exception Syntax_error
+    (** This exception is raised by glrParse if the parser is stuck in a
+    situtation where no shift and no reduction is possible. *)
+
 
 (** The way this module handles GLR is documented in the following paper :
 Scott McPeak, Elkhound: A fast, practical GLR parser generator, University of 
@@ -1462,33 +1557,111 @@ module NTS = Set.Make(Ordered_non_ter)
 
 module Tools =
 struct
-  let automaton_kind = ref LR0
+  let automaton_kind = ref `LR0
 
   type ('global_data,'local_data) data_equal = {
     global_data_equal : 'global_data -> 'global_data -> bool;
     local_data_equal : 'local_data -> 'local_data -> bool }
 
-  let add_nt (s:string) (datadyn:(Dyp_special_types.datadyn ref)) =
-    let nt_map,n = !datadyn in
+  let add_nt (s:string) (cons:string)
+      (datadyn:(Dyp_special_types.datadyn ref)) =
+    let { nt_map=nt_map; cons_map=cons_map;
+      nt_num=nt_nb; cons_nb=cons_nb } = !datadyn
+    in
     try
-      String_map.find s nt_map
+      let nt,old_cons_i,old_cons =
+        String_map.find s nt_map
+      in
+      if cons<>old_cons
+      then raise (Constructor_mismatch(old_cons,cons))
+      else nt
     with Not_found ->
-      (datadyn := (String_map.add s n nt_map),(n+1); n)
+      (let cons_map,cons_nb,cons_i =
+        try
+          let cons_i = String_map.find cons cons_map in
+          cons_map, cons_nb, cons_i
+        with Not_found ->
+          String_map.add cons cons_nb cons_map,
+          cons_nb+1, cons_nb
+      in
+      datadyn :=
+        { nt_map = String_map.add s (nt_nb,cons_i,cons) nt_map;
+          cons_map = String_map.add cons cons_i cons_map;
+          nt_num = nt_nb+1;
+          cons_nb = cons_nb };
+      nt_nb)
 
   let find_nt s datadyn =
-    String_map.find s (fst datadyn)
+    let nt,_,cons = String_map.find s datadyn.nt_map in nt,cons
 
-  let init_datadyn sl =
-    let aux (dd,n) s = (String_map.add s n dd),(n+1) in
-    List.fold_left aux (String_map.empty,1) sl
+
+  let init_datadyn ntl consl =
+    let aux1 (nt_map,n) (nt,cons_i,cons) =
+      (String_map.add nt (n,cons_i,cons) nt_map),(n+1)
+    in
+    let nt_map, nt_nb =
+      List.fold_left aux1 (String_map.empty,1) ntl
+    in
+    let aux2 (cons_map,i) cons =
+      (String_map.add cons i cons_map),(i+1)
+    in
+    let cons_map, cons_nb =
+      List.fold_left aux2 (String_map.empty,0) consl
+    in
+    { nt_map = nt_map; cons_map = cons_map;
+    nt_num = nt_nb; cons_nb = cons_nb }
+
 
   let init_merge_map (mnl:('obj merge_function * int) list) =
     let aux mm (mf,nt) = Nt_map.add nt mf mm in
     List.fold_left aux Nt_map.empty mnl
 
-  let empty_datadyn = (String_map.empty,0)
+  let empty_datadyn = {
+    nt_map = String_map.empty;
+    cons_map = String_map.empty;
+    nt_num = 1;
+    (* there is always at least one nt : S', which is not in
+    nt_map, but this is not very relevant, empty_datadyn is just
+    used in pgen. *)
+    cons_nb = 0 }
 
   let empty_merge_map = Nt_map.empty
+
+  let rec transform_action a =
+    Dyp_special_types.Dypgen_action(fun av_list symbol_pos
+    position_list data_arg datadyn local_data_arg prio_data debug_infos ->
+      let __dypgen_datadyn = ref datadyn in
+      let dyp = {
+        global_data = data_arg;
+        local_data = local_data_arg;
+        priority_data = prio_data;
+        add_rules = [];
+        remove_rules = [];
+        will_shift = true;
+        next_state = None;
+        next_grammar = None;
+        symbol_start = (fun () -> (fst symbol_pos).Lexing.pos_cnum);
+        symbol_start_pos = (fun () -> fst symbol_pos);
+        symbol_end = (fun () -> (snd symbol_pos).Lexing.pos_cnum);
+        symbol_end_pos = (fun () -> snd symbol_pos);
+        rhs_start = (fun i -> (fst (List.nth position_list (i-1))).Lexing.pos_cnum);
+        rhs_start_pos = (fun i -> fst (List.nth position_list (i-1)));
+        rhs_end = (fun i -> (snd (List.nth position_list (i-1))).Lexing.pos_cnum);
+        rhs_end_pos = (fun i -> snd (List.nth position_list (i-1)));
+        add_nt = (fun nt cons -> add_nt nt cons __dypgen_datadyn);
+        find_nt = (fun (s:string) -> find_nt s !__dypgen_datadyn);
+      print_state =
+        debug_infos.Dyp_special_types.prt_state;
+      print_grammar =
+        debug_infos.Dyp_special_types.prt_grammar
+      }
+      in
+      let new_obj = a dyp av_list in
+      let mapfun (r,ac) = (r,(transform_action ac)) in
+      let add_rules_transformed = List.map mapfun dyp.add_rules in
+      (new_obj,dyp.will_shift,dyp.global_data,!__dypgen_datadyn,
+      dyp.local_data,add_rules_transformed,dyp.remove_rules,
+      dyp.priority_data,dyp.next_state,dyp.next_grammar))
 end
 
 open Tools
@@ -1575,7 +1748,8 @@ type ('obj,'data,'local_data) parsing_device = {
   prio_of_ind : int array;
   nt_of_ind : non_terminal array;
   lhs_of_ind : lhs array;
-  str_non_ter : string array
+  str_non_ter : string array;
+  cons_of_nt : int array
 }
 
 (*type saved_parsing_device = {
@@ -2179,7 +2353,7 @@ let create_parsing_device_with_init gram_rhs gram_lhs lhs_table
     (pcs:priority_data) merge_map global_merge init_is
     lit user_nt_nb po_array it_nb array_nt_prio nt_of_ind
     non_ter_of_ind prio_of_ind lhs_of_ind g_nb ist_nt_nb lhslists
-    nt_to_add str_non_ter =
+    nt_to_add str_non_ter cons_of_nt =
   let state_list,n = create_aut gram_rhs gram_lhs r_L init_is
     lit pcs it_nb array_nt_prio nt_of_ind lhs_of_ind ist_nt_nb
     lhslists lhs_table nt_to_add str_non_ter in
@@ -2198,7 +2372,8 @@ let create_parsing_device_with_init gram_rhs gram_lhs lhs_table
       global_merge = global_merge ; aut_kind = !automaton_kind ;
       nt_nb = Array.length gram_lhs; non_ter_of_ind=non_ter_of_ind;
       prio_of_ind=prio_of_ind; nt_of_ind=nt_of_ind;
-      lhs_of_ind=lhs_of_ind; str_non_ter=str_non_ter }
+      lhs_of_ind=lhs_of_ind; str_non_ter=str_non_ter;
+      cons_of_nt=cons_of_nt }
    in
   parsing_device
 
@@ -2243,7 +2418,8 @@ let create_parsing_device_bis
     actions aut_kind (data:'b) (local_data:'c)
     (pcs:priority_data) merge_map global_merge
     user_nt_nb po_array user_g datadyn array_nt_prio nt_of_ind
-    non_ter_of_ind prio_of_ind lhs_of_ind g_nb ist_nt_nb str_non_ter =
+    non_ter_of_ind prio_of_ind lhs_of_ind g_nb ist_nt_nb str_non_ter
+    cons_of_nt =
     (* gram must already contain the rules S' -> entry_point *)
   automaton_kind := aut_kind;
   let lhslists = lhslists_init ist_nt_nb in
@@ -2270,7 +2446,7 @@ let create_parsing_device_bis
     datadyn local_data pcs merge_map global_merge
     is0 init_lit user_nt_nb
     po_array 0 array_nt_prio nt_of_ind non_ter_of_ind prio_of_ind
-    lhs_of_ind g_nb ist_nt_nb lhslists nt_to_add str_non_ter
+    lhs_of_ind g_nb ist_nt_nb lhslists nt_to_add str_non_ter cons_of_nt
 
 
 let update_parsing_device_data automaton dat ldat =
@@ -2299,11 +2475,15 @@ let update_user_g ral user_g =
   List.fold_left f user_g ral
 
 
+let str_rule rn gram_rhs lhs_table str_non_ter =
+    Printf.sprintf "%s -> %s"
+      (str_lhs lhs_table.(rn) str_non_ter)
+      (str_handle gram_rhs.(rn) (-1) str_non_ter)
+
 let print_grammar chan gram_rhs lhs_table str_non_ter =
   for i=0 to (Array.length lhs_table)-1 do
-    Printf.fprintf chan "rn:%d  %s -> %s\n" i
-      (str_lhs lhs_table.(i) str_non_ter)
-      (str_handle gram_rhs.(i) 0 str_non_ter)
+    Printf.fprintf chan "rn:%d  %s\n" i
+      (str_rule i gram_rhs lhs_table str_non_ter)
   done;
   print_newline ()
 
@@ -2436,7 +2616,7 @@ let make_grammar ral prio_dat str_non_ter =
 
 
 
-let create_parsing_device rapf_list priority_data aut_kind global_data local_data merge_map merge datadyn str_non_ter =
+let create_parsing_device rapf_list priority_data aut_kind global_data local_data merge_map merge datadyn str_non_ter cons_of_nt =
   let gram_lhs,gram_rhs,lhs_table,actions,user_nt_nb,ist_nt_nb,
     po_array,user_g, array_nt_prio,nt_of_ind,non_ter_of_ind,
     prio_of_ind,lhs_of_ind =
@@ -2446,6 +2626,7 @@ let create_parsing_device rapf_list priority_data aut_kind global_data local_dat
     global_data local_data priority_data merge_map merge
     user_nt_nb po_array user_g datadyn array_nt_prio nt_of_ind
     non_ter_of_ind prio_of_ind lhs_of_ind 0 ist_nt_nb str_non_ter
+    cons_of_nt
 
 
 (** UPDATE AUTOMATON used in reduceViaPath to change the grammar and the automaton
@@ -2497,9 +2678,9 @@ let update_parsing_device parsing_device ral_add r_remove newdata newdatadyn
   let user_g = remove_from_user_g r_remove parsing_device.user_g in
   let user_g = update_user_g ral_add user_g in
   
-  let str_non_ter = Array.make (snd newdatadyn) "" in
-  let f str_nt i = str_non_ter.(i) <- str_nt in
-  String_map.iter f (fst newdatadyn);
+  let str_non_ter = Array.make newdatadyn.nt_num "" in
+  let f str_nt (i,_,_) = str_non_ter.(i) <- str_nt in
+  String_map.iter f newdatadyn.nt_map;
   
   let
     g,array_nt_prio,user_nt_nb,ist_nt_nb,
@@ -2554,12 +2735,19 @@ let update_parsing_device parsing_device ral_add r_remove newdata newdatadyn
    the reduction happened. An items set is made with them and
    used as the starting state of a new automaton. *)
   
+  let cons_of_nt = Array.make newdatadyn.nt_num 0 in
+  let aux _ (i,cons_i,_) =
+    cons_of_nt.(i) <- cons_i
+  in
+  String_map.iter aux newdatadyn.nt_map;
+  
   create_parsing_device_with_init gram_rhs gram_lhs lhs_table actions r_L
     user_g newdata newdatadyn newlocal_data parsing_device.prio
     parsing_device.merge_map parsing_device.global_merge
     init_is_updated_parsing_device lit_trans user_nt_nb
     po_array it_nb array_nt_prio nt_of_ind non_ter_of_ind
-    prio_of_ind lhs_of_ind g_nb ist_nt_nb lhslists nt_to_add str_non_ter,
+    prio_of_ind lhs_of_ind g_nb ist_nt_nb lhslists nt_to_add str_non_ter
+    cons_of_nt,
   rn_map
 
 (* ******* CE QUI PRECEDE EST A DEPLACER DANS UN AUTRE FICHIER ****** *)
@@ -3010,7 +3198,7 @@ let position_map p start_node =
   with Failure _ -> [start_node.vertex_label.lexer_pos]
 
 
-let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) Gs.vertex) list)*) pathList (topmost:('a,'b) Gs.vertex list) counters data_equal dummy_token_name =
+let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) Gs.vertex) list)*) pathList (topmost:('a,'b) Gs.vertex list) counters data_equal dummy_token_name test_cons =
   
   if !dypgen_verbose>2 then
     (Printf.fprintf !log_channel "reduceViaPath called, start_node=%d\n  "
@@ -3057,6 +3245,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
   let ac_l = start_node.vertex_label.pdev.actions.(rn) in
   (*let succ = v.succ_states in*)
   (*let v_rightSib = Li_map.find (Non_ter nt_of_ind.(ind)) succ  in*)
+  let non_ter = fst_of_lhs pdev_leftSib.lhs_of_ind.(ind) in
   let ind_1 = ind_of_nt (nt_of_lhs pdev_leftSib.lhs_of_ind.(ind)) in
   let v_rightSib = pdev_leftSib.table.(v).(1).(ind_1) in
   let last_parsing_device = start_node.vertex_label.pdev in
@@ -3090,19 +3279,28 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
               f toPass symbol_pos position_list last_parsing_device.data
               pdev_leftSib.datadyn pdev_leftSib.local_data
               prio_dat
-              { print_state = print_s;
-              print_grammar = print_g }
+              { prt_state = print_s;
+              prt_grammar = print_g }
            with Giveup -> try_actions tl_ac_l)
         | [] -> raise Giveup
       in
-      let newSemanticValue, will_shift2, newdata, newdatadyn, newlocal_data,
+      let new_obj, will_shift2, newdata, newdatadyn, newlocal_data,
         rapf_add, r_remove, newprio, chan_s, chan_g = try_actions ac_l
       in
-      let new_obj = newSemanticValue in
+      let cons_index = pdev_leftSib.cons_of_nt.(non_ter) in
+      if test_cons.(cons_index) new_obj = false then
+        let sr = str_rule rn pdev_leftSib.gram_rhs
+          pdev_leftSib.lhs_table pdev_leftSib.str_non_ter
+        in
+        let (_,cons) = Tools.find_nt
+          pdev_leftSib.str_non_ter.(non_ter) pdev_leftSib.datadyn
+        in
+        raise (Bad_constructor(sr,cons))
+      else ();
       let v_rightSib,pdev_rightSib,counters,(prio_imp_lS,is_lS) =
         if rapf_add=[] && r_remove=[] && newprio==prio_dat then
           if (TNS.mem t tns = false)&&(TNS.mem dummy_token_name tns = false)
-            && !automaton_kind<>LR0 then raise Giveup
+            && !automaton_kind<>`LR0 then raise Giveup
           else
             v_rightSib,{ pdev_leftSib with data = newdata ;
             local_data = newlocal_data },counters,
@@ -3156,7 +3354,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
 (*exception Giveup_shiftreduce*)
 
 let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
-    entry_point counters data_equal dummy_token_name =
+    entry_point counters data_equal dummy_token_name test_cons =
   
 (* let _ = Printf.fprintf !log_channel "(doReductions) longueur topmost : %d\n" (List.length topmost) in *)
 
@@ -3167,7 +3365,7 @@ let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
     let aux2 pathList (rn,tns) =
       let ind = ind_of_lhs pdev.lhs_table.(rn) in
       if
-        (!automaton_kind=LR0 || t<>dummy_token_name ||
+        (!automaton_kind=`LR0 || t<>dummy_token_name ||
         (pdev.non_ter_of_ind.(ind))=entry_point ||
         (t=dummy_token_name && TNS.mem t tns) )
           (*(!automaton_kind=LR0 ||
@@ -3205,7 +3403,7 @@ let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
         let (*gs,*)pathList,topmost,counters =
           let (*gs,*)pathList,topmost,will_shift,counters =
             reduceViaPath pr t (*gs*) tl topmost counters data_equal
-              dummy_token_name
+              dummy_token_name test_cons
           in
           if will_shift = false then
             let (sn,_,_),_,_ = pr in
@@ -3350,7 +3548,8 @@ tries to match all of them and then it selects the entry point it
 is looking for. This may make the parser slower and should be
 addressed in the future. *)
 let glrParse parsing_device get_value get_name str_token
-    (entry_point:non_ter) data_equal (lexfun:('a -> 'token)) (lexbuf:'a)
+    (entry_point:non_ter) data_equal test_cons
+    (lexfun:('a -> 'token)) (lexbuf:'a)
     (lexbuf_position:'a -> (Lexing.position * Lexing.position)) =
   
   let counters = {
@@ -3415,7 +3614,7 @@ let glrParse parsing_device get_value get_name str_token
         (str_token t) (List.length topmost); flush_all ());
     let (*gs,*)topmost,counters =
       doReductions (get_name t) (*gs*) topmost entry_point counters
-        data_equal dummy_token_name
+        data_equal dummy_token_name test_cons
     in
     let counters = { counters with
       count_token = counters.count_token+1 }
@@ -3426,7 +3625,7 @@ let glrParse parsing_device get_value get_name str_token
     in
     let (*gs,*)topmost,counters =
       doReductions dummy_token_name (*gs*) topmost entry_point counters
-        data_equal dummy_token_name in
+        data_equal dummy_token_name test_cons in
       (* tries to reduce to the entry point *)
     if topmost = []
     then ((*if !dypgen_verbose>2 then print_gs (*gs*) title_gs;*)
@@ -3452,7 +3651,7 @@ let glrParse parsing_device get_value get_name str_token
     in
     let (*gs,*)topmost,counters =
       doReductions dummy_token_name (*gs*) topmost entry_point counters
-        data_equal dummy_token_name
+        data_equal dummy_token_name test_cons
     in
     if topmost = []
     then ((*if !dypgen_verbose>2 then print_gs (*gs*) title_gs;*)
@@ -3468,12 +3667,12 @@ let glrParse parsing_device get_value get_name str_token
     else gs,topmost in*)
   let ((*gs,*)successful,counters) =
     try (
-      if !automaton_kind <> LR0
+      if !automaton_kind <> `LR0
       then aux_la (*gs*) topmost (lexfun lexbuf) counters
       else
         let (*gs,*)topmost,counters = (* reduces initial epsilon rules *)
           doReductions dummy_token_name (*gs*) topmost entry_point
-            counters data_equal dummy_token_name
+            counters data_equal dummy_token_name test_cons
         in
         aux_LR0 (*gs*) topmost (lexfun lexbuf) counters)
     with Syntax_error ->
@@ -3513,6 +3712,7 @@ struct
   let nt_of_lit nt = nt
   let lit_of_nt nt = nt
   let nt_of_lhs nt = nt
+  let fst_of_lhs (nt,_,_) = nt
   let ind_of_lhs (_,_,i) = i
   let ind_of_nt (_,_,i) = i
   let test_array_nt array_nt (_,_,i) =
@@ -3544,6 +3744,7 @@ struct
   let nt_of_lit (nt,_) = nt
   let lit_of_nt nt = (nt,No_priority)
   let nt_of_lhs (nt,_,_) = nt
+  let fst_of_lhs (nt,_,_) = nt
   let ind_of_lhs (_,_,i) = i
   let ind_of_nt i = i
   let test_array_nt _ _ = false
@@ -3675,18 +3876,22 @@ let new_rules p_map array_nt_ps array_nt_prio ps ntn litl len prio nt_nb str_non
 
 (* ps is the set of all priorities. *)
 let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) str_non_ter =
+  
   if !dypgen_verbose>1 then
     (let nbr = Urule_map.fold (fun _ _ n -> n+1) user_g 0 in
     Printf.fprintf !log_channel "size of the grammar : %d rules\n" nbr);
+  
   let ps =
     Prio_map.fold (fun p _ pset ->
-      (*output_string !log_channel ("add priority :"^(priority_names.(p))^"\n");*)
+      (*output_string !log_channel
+      ("add priority :"^(priority_names.(p))^"\n");*)
       Prio_set.add p pset) pmap.prd_rel Prio_set.empty
   in
   let ps = Prio_set.add default_priority ps in
   let foldfun user_g (ep,_) =
     Urule_map.add (non_terminal_startprime,[Non_ter (ep,No_priority)],0)
-      [(Dypgen_action(fun x _ _ d ld dd prd _ -> (List.hd x,true,d,ld,dd,[],[],prd,None,None)))] user_g
+      [(Dypgen_action(fun x _ _ d ld dd prd _ ->
+      (List.hd x,true,d,ld,dd,[],[],prd,None,None)))] user_g
   in
   let user_g = List.fold_left foldfun user_g entry_points in
   (*let foldfun3 (nt,_,_) _ non_ter_set = Non_ter_set.add nt non_ter_set in
@@ -3701,8 +3906,30 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) str_
     List.fold_left f2 n litl
   in
   let nt_nb = (Urule_map.fold f1 user_g 0)+1 in
+  
   if !dypgen_verbose>1 then
     Printf.fprintf !log_channel "number of non terminals : %d\n" nt_nb;
+  
+  if E.undef_nt then
+    (let check_nt_def = Array.make nt_nb (false,false) in
+    let rec f4 rhs = match rhs with
+      | (Non_ter (nt,_))::tl ->
+          let b,_ = check_nt_def.(nt) in
+          check_nt_def.(nt) <- (b,true);
+          f4 tl
+      | _::tl -> f4 tl
+      | [] -> ()
+    in
+    let f3 (nt,rhs,_) _ =
+      let _,b = check_nt_def.(nt) in
+      check_nt_def.(nt) <- (true,b);
+      f4 rhs
+    in
+    Urule_map.iter f3 user_g;
+    for i=0 to nt_nb-1 do
+      if check_nt_def.(i) = (false,true) then
+        raise (Undefined_nt(str_non_ter.(i)))
+    done);
   
   let array_nt_ps = Array.make nt_nb Prio_set.empty in
   
@@ -3956,6 +4183,27 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) str_
   if !dypgen_verbose>1 then
     Printf.fprintf !log_channel "number of non terminals : %d\n" nt_nb;
   
+  if E.undef_nt then
+    (let check_nt_def = Array.make nt_nb (false,false) in
+    let rec f4 rhs = match rhs with
+      | (Non_ter (nt,_))::tl ->
+          let b,_ = check_nt_def.(nt) in
+          check_nt_def.(nt) <- (b,true);
+          f4 tl
+      | _::tl -> f4 tl
+      | [] -> ()
+    in
+    let f3 (nt,rhs,_) _ =
+      let _,b = check_nt_def.(nt) in
+      check_nt_def.(nt) <- (true,b);
+      f4 rhs
+    in
+    Urule_map.iter f3 user_g;
+    for i=0 to nt_nb-1 do
+      if check_nt_def.(i) = (false,true) then
+        raise (Undefined_nt(str_non_ter.(i)))
+    done);
+  
   let array_nt_ps = Array.make nt_nb Prio_set.empty in
   
   let iterfun (nt,_,p) _ = array_nt_ps.(nt) <- Prio_set.add p array_nt_ps.(nt) in
@@ -4187,7 +4435,7 @@ sig
     (rule * ('obj,'data,'local_data) Dyp_special_types.action) list ->
     priority_data -> Dyp_special_types.automaton_kind -> 'data ->
     'local_data -> 'obj merge_map -> 'obj merge_function ->
-     Dyp_special_types.datadyn -> string array ->
+     Dyp_special_types.datadyn -> string array -> int array ->
     ('obj,'data,'local_data) parsing_device
     (** Returns the parsing_device which parses strings written with the input
         grammar and assuming the relations between priority classes which
@@ -4198,8 +4446,11 @@ sig
 
   val glrParse : ('obj,'data,'local_data) parsing_device ->
         ('token -> 'obj) -> ('token -> int) -> ('token -> string) -> int ->
-        ('data,'local_data) Tools.data_equal -> ('a -> 'token) -> 'a ->
-        ('a -> (Lexing.position * Lexing.position)) -> (('obj * priority) list)
+        ('data,'local_data) Tools.data_equal ->
+        ('obj -> bool) array ->
+        ('a -> 'token) -> 'a ->
+        ('a -> (Lexing.position * Lexing.position)) ->
+        (('obj * priority) list)
     (** Given a parsing_device and a list of tokens (the input string),
         [glrParse] returns the list of the parse objects of the input string.
         If there is no ambiguity there is only one object in the list. The
@@ -4600,15 +4851,6 @@ let list_arg = [("-v",Arg.Unit process_verbose_mode,"activate verbose mode: give
 let _ = Arg.parse list_arg process_argument "usage: pgen [-v] file_name.dyp"
 let _ = if !string_ref = "" then
   let _ = print_string "usage: pgen [-v] file_name.dyp\n" in exit 0
-let verbose = !verbose_ref
-let out =
-  if verbose = 0 then (open_out "/dev/null")
-  else stdout
-
-
-let out =
-  if verbose = 0 then (open_out "/dev/null")
-  else stdout
 
 let prio = 0
 
@@ -4651,7 +4893,6 @@ let r_pgen_input = (ntn_start,[Non_ter (ntn_optional_code, No_priority); Non_ter
 let a_pgen_input = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
   (match l with
     | [Code c1; Parser_parameters_info (tl,rel,start); _; Grammar g; Code c2; _] ->
-        let _ = fprintf out "action pgen_input\n" in
         Pgen_input (c1,(tl,rel,start),g,c2)
     | _ -> failwith "a_pgen_input"
 ),true,Data_void,dd,ld,[],[],prd,None,None)
@@ -4692,8 +4933,8 @@ let r_optional_code_1 = (ntn_optional_code,[Ter tn_ocaml_code],default_priority)
 
 let a_optional_code = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
   (match l with
-    | [] -> let _ = fprintf out "action optional_code_0\n" in Code ""
-    | [Code c] -> let _ = fprintf out "action optional_code_1\n" in Code c
+    | [] -> Code ""
+    | [Code c] -> Code c
     | _ -> failwith "a_optional_code"
 ),true,Data_void,dd,ld,[],[],prd,None,None)
 
@@ -4750,20 +4991,18 @@ let r_grammar_6 = (ntn_grammar,[Non_ter (ntn_grammar,No_priority);Ter tn_bar; No
 let a_grammar = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
   (match l with
     | [Obj_lident nt;Obj_void;Obj_void;Literal_list ll;Code c;Obj_lident p] ->
-        let _ = fprintf out "action grammar 1\n" in Grammar [(nt,p,List.rev ll,Classic_action c)]
+        Grammar [(nt,p,List.rev ll,Classic_action c)]
     | [Grammar g;Obj_lident nt;Obj_void;Obj_void;Literal_list ll;Code c;Obj_lident p] ->
-        let _ = fprintf out "action grammar 2\n" in Grammar ((nt,p,List.rev ll,Classic_action c)::g)
+        Grammar ((nt,p,List.rev ll,Classic_action c)::g)
     | [Grammar g;Obj_void;Literal_list ll;Code c;Obj_lident p] ->
-        let _ = fprintf out "action grammar 3\n" in 
         let last_rule = List.hd g in
         let lhs_non_terminal,_,_,_ = last_rule in
         Grammar ((lhs_non_terminal,p,List.rev ll,Classic_action c)::g)
     | [Obj_lident nt;Obj_void;Obj_void;Literal_list ll;Obj_void;Code c;Obj_lident p] ->
-        let _ = fprintf out "action grammar 1\n" in Grammar [(nt,p,List.rev ll,Full_action c)]
+        Grammar [(nt,p,List.rev ll,Full_action c)]
     | [Grammar g;Obj_lident nt;Obj_void;Obj_void;Literal_list ll;Obj_void;Code c;Obj_lident p] ->
-        let _ = fprintf out "action grammar 2\n" in Grammar ((nt,p,List.rev ll,Full_action c)::g)
+        Grammar ((nt,p,List.rev ll,Full_action c)::g)
     | [Grammar g;Obj_void;Literal_list ll;Obj_void;Code c;Obj_lident p] ->
-        let _ = fprintf out "action grammar 3\n" in 
         let last_rule = List.hd g in
         let lhs_non_terminal,_,_,_ = last_rule in
         Grammar ((lhs_non_terminal,p,List.rev ll,Full_action c)::g)
@@ -4798,28 +5037,22 @@ let r_literal_list_8 = (ntn_literal_list,[Non_ter (ntn_literal_list,No_priority)
 
 let a_literal_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
   (match l with
-    | [] -> let _ = fprintf out "action literal_list 0\n" in Literal_list []
-    | [Obj_uident tok] -> let _ = fprintf out "action literal_list 1\n" in 
+    | [] -> Literal_list []
+    | [Obj_uident tok] ->
         Literal_list [Obj_terminal tok]
-    | [Obj_lident nt] -> let _ = fprintf out "action literal_list 2\n" in 
+    | [Obj_lident nt] ->
         Literal_list [Obj_non_terminal (nt,"No_priority",false)]
     | [Obj_lident nt; Obj_lparen; Obj_equal; Obj_lident p; Obj_rparen] -> 
-        let _ = fprintf out "action literal_list 3\n" in 
         Literal_list [Obj_non_terminal (nt,p,true)]
     | [Obj_lident nt; Obj_lparen; Obj_lident p; Obj_rparen] -> 
-        let _ = fprintf out "action literal_list 4\n" in 
         Literal_list [Obj_non_terminal (nt,p,false)]
     | [Literal_list ll; Obj_uident tok] -> 
-        let _ = fprintf out "action literal_list 5\n" in 
         Literal_list ((Obj_terminal tok)::ll)
     | [Literal_list ll; Obj_lident nt] ->
-        let _ = fprintf out "action literal_list 6\n" in 
         Literal_list ((Obj_non_terminal (nt,"No_priority",false))::ll)
     | [Literal_list ll; Obj_lident nt; Obj_lparen; Obj_equal; Obj_lident p; Obj_rparen] -> 
-        let _ = fprintf out "action literal_list 7\n" in 
         Literal_list ((Obj_non_terminal (nt,p,true))::ll)
     | [Literal_list ll; Obj_lident nt; Obj_lparen; Obj_lident p; Obj_rparen] -> 
-       let _ = fprintf out "action literal_list 8\n" in 
        Literal_list ((Obj_non_terminal (nt,p,false))::ll)
     | _ -> failwith "a_literal_list"
 ),true,Data_void,dd,ld,[],[],prd,None,None)
@@ -4872,7 +5105,8 @@ let parsing_device = create_parsing_device [
 (r_literal_list_8,a_literal_list);
 (r_priority_0,a_priority);
 (r_priority_1,a_priority)
-] empty_priority_data Dyp_special_types.LR0 Data_void 0 P.Tools.empty_merge_map global_merge P.Tools.empty_datadyn nt_names
+] empty_priority_data `LR0 Data_void 0 P.Tools.empty_merge_map global_merge P.Tools.empty_datadyn nt_names
+(Array.make 11 0)
 
 let input_file = !string_ref
 let output_file = (Filename.chop_extension input_file)^".ml"
@@ -4894,7 +5128,9 @@ let data_equal = {
 P.Tools.global_data_equal = (==);
 P.Tools.local_data_equal = (==) }
 
-let parse_result = glrParse parsing_device get_value get_name str_token ntn_start data_equal Pgen_lexer.token lexbuf (fun _ -> (Lexing.dummy_pos,Lexing.dummy_pos))
+let parse_result = glrParse parsing_device get_value get_name str_token ntn_start data_equal [|fun _ -> true|]
+Pgen_lexer.token lexbuf
+(fun _ -> (Lexing.dummy_pos,Lexing.dummy_pos))
 
 let header_main, token_list, relation, non_terminal_start, start_type,
   grammar, trailer_main = match fst (List.hd parse_result) with
@@ -5201,7 +5437,7 @@ let aux code (p1,p2) =
    i1^","^i2^",true)]\n"
 let code_prio_data = (List.fold_left aux code_prio_data relation)^"\n"
 
-let code_main_2 = "let parsing_device = create_parsing_device rapf_list empty_priority_data Dyp_special_types.LR0 0 0 merge_map merge P.Tools.empty_datadyn nt_names\n"
+let code_main_2 = "let parsing_device = create_parsing_device rapf_list empty_priority_data `LR0 0 0 merge_map merge P.Tools.empty_datadyn nt_names (Array.make (Array.length nt_names) 0)\n"
 
 let code_main_2 = code_main_2^
 "let "^non_terminal_start^" f lexbuf =
@@ -5211,7 +5447,7 @@ let code_main_2 = code_main_2^
   in
   let lexbuf_position lexbuf = (lexbuf.Lexing.lex_curr_p,lexbuf.Lexing.lex_start_p) in
   let pf = glrParse parsing_device __dypgen_get_value get_name str_token "^non_terminal_start^
-  " data_equal f lexbuf lexbuf_position in
+  " data_equal  [|fun _ -> true|] f lexbuf lexbuf_position in
   let aux1 (o,p) = match o with
     | Obj_"^non_terminal_start^" r -> (r,p) | _ -> failwith \"Wrong type for entry result\" in
   List.map aux1 pf\n\n"
@@ -5301,6 +5537,7 @@ let parser_code = parser_param_header^
   (*code_parser_param_info^*)
   "let priority_names = [|\"0\"|]"^
   "let merge_warning = false\n"^
+  "let undef_nt = true\n"^
   "end\n\n"^
 
   code_main_1^
@@ -5348,7 +5585,7 @@ let global_data_equal = (==)
 let local_data_equal = (==)*)
 
 
-
+let undef_nt = true
 
 let tn_lparen = 0
 let tn_rparen = 1
@@ -5418,18 +5655,19 @@ let empty_ppi = {
   start = [];
   generic_merge = [];
   cons = [];
+  additional_cons = [];
   nt_type = [];
   single_nt = [] }
 }
 
-%token LPAREN RPAREN COMMA COLON PERCENTPERCENT LBRACE RBRACE BAR LESS GREATER EQUAL KWD_TOKEN KWD_START KWD_RELATION KWD_MLI KWD_MERGE KWD_CONSTRUCTOR KWD_FOR KWD_TYPE KWD_NON_TERMINAL <string * (int * int)> OCAML_CODE <string> OCAML_TYPE <string * (int * int)> PATTERN <string * (int * int * int)> UIDENT <string * (int * int * int)> LIDENT EOF
+%token LPAREN RPAREN COMMA SEMI COLON PERCENTPERCENT LBRACE RBRACE BAR LESS GREATER EQUAL KWD_TOKEN KWD_START KWD_RELATION KWD_MLI KWD_MERGE KWD_CONSTRUCTOR KWD_FOR KWD_TYPE KWD_NON_TERMINAL <string * (int * int)> OCAML_CODE <string> OCAML_TYPE <string * (int * int)> PATTERN <string * (int * int * int)> UIDENT <string * (int * int * int)> LIDENT EOF
 
 %start <Parse_tree.obj> main
 
 %%
 
-main: | optional_code parser_param_info PERCENTPERCENT grammar optional_trailer optional_mli EOF
-  { ($1,$2,$4,$5,$6) }
+main: | optional_code parser_param_infos PERCENTPERCENT grammar optional_trailer optional_mli EOF
+  { ($1,$2,List.rev $4,$5,$6) }
 
 optional_trailer:
   |                           { ("",(0,0)) }
@@ -5440,27 +5678,37 @@ parser_param_info:
   | token_list                   { {empty_ppi with token_list = $1} }
   | relation                     { {empty_ppi with relation = $1} }
   | KWD_CONSTRUCTOR UIDENT KWD_FOR lident_list
-      { { empty_ppi with cons = [(fst $2,$4)] }  }
+      { { empty_ppi with cons = [(fst $2,List.rev $4)] }  }
+  | KWD_CONSTRUCTOR uident_list
+      { { empty_ppi with additional_cons = List.rev $2 }  }
   | KWD_MERGE LIDENT lident_list
-      { {empty_ppi with generic_merge = [((fst $2),$3)]} }
+      { {empty_ppi with generic_merge = [((fst $2),List.rev $3)]} }
   | KWD_TYPE OCAML_TYPE lident_list
-      { {empty_ppi with nt_type = [$2,$3]} }
+      { {empty_ppi with nt_type = [$2,List.rev $3]} }
   | KWD_NON_TERMINAL lident_list
-      { {empty_ppi with single_nt = $2} }
-  | parser_param_info parser_param_info
+      { {empty_ppi with single_nt = List.rev $2} }
+
+parser_param_infos:
+  | parser_param_info { $1 }
+  | parser_param_infos parser_param_info
     %full {
-      { token_list = ($1.token_list@$2.token_list);
-        relation = $1.relation@$2.relation;
-        start = $1.start@$2.start;
-        generic_merge = $1.generic_merge@$2.generic_merge;
-        cons = $1.cons@$2.cons;
-        nt_type = $1.nt_type@$2.nt_type;
-        single_nt = $1.single_nt@$2.single_nt },
+      { token_list = ($2.token_list@$1.token_list);
+        relation = $2.relation@$1.relation;
+        start = $2.start@$1.start;
+        generic_merge = $2.generic_merge@$1.generic_merge;
+        cons = $2.cons@$1.cons;
+        additional_cons = $2.additional_cons@$1.additional_cons;
+        nt_type = $2.nt_type@$1.nt_type;
+        single_nt = $2.single_nt@$1.single_nt },
         false,$data }
 
 lident_list:
   | LIDENT             { [(fst $1)] }
-  | LIDENT lident_list { (fst $1)::$2 }
+  | lident_list LIDENT { (fst $2)::$1 }
+
+uident_list:
+  | UIDENT             { [(fst $1)] }
+  | uident_list UIDENT { (fst $2)::$1 }
 
 optional_code:
   |            { ("",(0,0)) }
@@ -5478,15 +5726,15 @@ token_list:
 
 relation:
   | KWD_RELATION { [] }
-  | relation relation_list { (Rel_list $2)::$1 }
+  | relation relation_list { (Rel_list (List.rev $2))::$1 }
   | relation LIDENT { (Rel_single (fst $2))::$1 }
 
 relation_list:
-  | LIDENT LESS LIDENT { [(fst $1);(fst $3)] }
-  | LIDENT LESS relation_list { (fst $1)::$3 }
+  | LIDENT LESS LIDENT { [(fst $3);(fst $1)] }
+  | relation_list LESS LIDENT { (fst $3)::$1 }
 
 grammar:
-  | entry_def grammar  { $1@$2 }
+  | grammar entry_def  { $2@$1 }
   | entry_def  { $1 }
 
 entry_def:
@@ -5494,12 +5742,12 @@ entry_def:
   { let f (rl1,rl2) (prio,litl,pa_l,code,add_rules) =
       (fst $1,prio,litl,pa_l,code)::rl1,add_rules@rl2
     in
-    let rl1,rl2 = List.fold_left f ([],[]) $4 in
+    let rl1,rl2 = List.fold_left f ([],[]) (List.rev $4) in
     rl2@rl1 }
 
 rhs_list:
   | rhs { [$1] }
-  | rhs BAR rhs_list { $1::$3 }
+  | rhs_list BAR rhs { $3::$1 }
 
 rhs:
   | literal_list OCAML_CODE priority
@@ -5554,7 +5802,7 @@ nested:
       let f (rl1,rl2) (prio,litl,pa_l,code,add_rules) =
         (nt,prio,litl,pa_l,code)::rl1,add_rules@rl2
       in
-      let rl1,rl2 = List.fold_left f ([],[]) $2 in
+      let rl1,rl2 = List.fold_left f ([],[]) (List.rev $2) in
       ((nt,(0,0,0)),rl2@rl1),true,($data+1) }
 
 priority:
@@ -5595,6 +5843,7 @@ type parser_param_info = {
   start : (string * string) list;
   generic_merge :(string * (string list)) list;
   cons : (string * (string list)) list;
+  additional_cons : string list;
   nt_type : (string * string list) list;
   single_nt : string list }
 type obj = action_desc * parser_param_info * (rule_desc list) * action_desc * action_desc
@@ -5604,7 +5853,7 @@ type obj = action_desc * parser_param_info * (rule_desc list) * action_desc * ac
 let verbose = ref 1
 let merge_warning = ref false
 let lexer = ref "ocamllex"
-let aut_kind = ref "LR0"
+let aut_kind = ref "`LR0"
 let priority_enforcement = ref "PIA"
 let process_verbose_mode () = verbose := 2
 let process_merge_warning () = merge_warning := true
@@ -5631,7 +5880,11 @@ let pv_obj = ref false
 let process_pv_obj () = pv_obj := true
 let pv_token = ref false
 let process_pv_token () = pv_token := true
-let process_version () = print_endline "version 20070531"
+
+let undef_nt = ref true
+let process_no_undef_nt () = undef_nt := false
+
+let process_version () = print_endline "version 20070622"
 
 let list_arg = [
 ("-v",Arg.Unit process_verbose_mode,"activates verbose mode: gives details of the parsing of the input file");
@@ -5648,18 +5901,21 @@ let list_arg = [
 
 ("--pv-obj",Arg.Unit process_pv_obj,"the type constructor obj is made as a sum of polymorphic variants instead of a sum of constructors. This is useful when the maximum number of constructors allowed is reached.");
 ("--pv-token",Arg.Unit process_pv_token,"the type token is made as a sum of polymorphic variants instead of a sum of constructors. This is useful when the maximum number of constructors allowed is reached.");
+
+("--no-undef-nt",Arg.Unit process_no_undef_nt,"prevents the exception Undefined_nt from being raised.");
+
 ("--version",Arg.Unit process_version,"gives the version of dypgen and exit.")
 ]
 
 (*let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--automaton (LR0|LALR|LR1)] [--prio-aut] [--pv-obj] file_name.dyp"*)
 
-let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--prio-pt] [--pv-obj] file_name.dyp"
+let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--prio-pt] [--pv-obj] [--no-bad-cons] [--no-undef-nt] file_name.dyp"
 
 (*let _ = if !string_ref = "" then
   let _ = print_string "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--automaton (LR0|LALR|LR1)] [--prio-aut] [--pv-obj] file_name.dyp\n" in exit 0*)
 
 let _ = if !string_ref = "" then
-  let _ = print_string "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--prio-pt] [--pv-obj] file_name.dyp\n" in exit 0
+  let _ = print_string "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--prio-pt] [--pv-obj] [--no-bad-cons] [--no-undef-nt] file_name.dyp\n" in exit 0
 
 @h=tangler('dypgen/generators/dypgen/dypgen.ml')
 @select(h)
@@ -5772,17 +6028,21 @@ let parse_result =
 
 let (header_main,(header_main_pos,header_main_offset)), token_list, relation,
   non_terminal_start_list, generic_merge, cons_list, nt_type_list,
-  single_nt_list,
+  single_nt_list, add_cons_list,
   grammar, (trailer_main,(trailer_main_pos,trailer_main_offset)),
   (mli_code,(mli_code_pos,mli_code_offset)) =
     let c1,ppi,g,c2,c3 = fst (List.hd parse_result) in
     (c1,ppi.token_list,ppi.relation,ppi.start,
     ppi.generic_merge,ppi.cons,ppi.nt_type,ppi.single_nt,
-    g,c2,c3)
+    ppi.additional_cons,g,c2,c3)
 
 
 let obj_pref = if !Argument.pv_obj then "`" else ""
 let token_pref = if !Argument.pv_token then "`" else ""
+
+
+
+let ($) = Buffer.add_string
 
 
 
@@ -5910,6 +6170,12 @@ let nt_type_map =
 
 
 
+let code_undef_nt =
+  if !Argument.undef_nt then "  let undef_nt = true\n"
+  else "  let undef_nt = false\n"
+
+
+
 let code_type_token, (*code_export_module,*) token_map =
   let lbra,rbra = if !Argument.pv_token then " [","]" else "","" in
   let code_type_token = "type token ="^lbra^"\n" in
@@ -5996,11 +6262,8 @@ let code_get_token_name, code_str_token, code_str_token_name, code_token_name_ar
 
 
 
-let code_non_terminal_decl,code_datadyn,non_terminal_map,non_terminal_set =
+let code_non_terminal_decl, non_terminal_map, non_terminal_set =
   let code_non_terminal_decl = "" in
-  let code_datadyn =
-    "  let datadyn = Dyp_runtime.Tools.init_datadyn "
-  in
   let non_terminal_set =
     let aux1 st_set ld = match ld with
       | (Obj_terminal _),_ -> st_set
@@ -6033,25 +6296,16 @@ let code_non_terminal_decl,code_datadyn,non_terminal_map,non_terminal_set =
     let foldfun2 nt_set nt = String_set.add nt nt_set in
     List.fold_left foldfun2 nt_set single_nt_list
   in
-  let aux nt_string (code1,code2,n,nt_map) = (
+  let aux nt_string (code1,n,nt_map) = (
     code1^"  let "^nt_string^" = "^(string_of_int n)^"\n",
-    (*code2^"  let def_datadyn1 = Dyp_runtime.String_map.add \""^nt_string^"\" "^
-    (string_of_int n)^" def_datadyn1 in\n",*)
-    code2^"\""^nt_string^"\";",
     (n+1),String_map.add nt_string n nt_map)
   in
-  let code_non_terminal_decl, code_nt_name_list, non_terminal_number,
+  let code_non_terminal_decl, non_terminal_number,
     non_terminal_map =
       String_set.fold aux non_terminal_set
-      (code_non_terminal_decl,"[",1,String_map.empty)
+      (code_non_terminal_decl,1,String_map.empty)
   in
-  let string_length = String.length code_nt_name_list in
-  let code_nt_name_list =
-    if code_nt_name_list="" then ""
-    else String.sub code_nt_name_list 0 (string_length-1) in
-  let code_nt_name_list = code_nt_name_list^"]\n" in
-  let code_datadyn = code_datadyn^code_nt_name_list in
-  code_non_terminal_decl,code_datadyn,non_terminal_map,non_terminal_set
+  code_non_terminal_decl,non_terminal_map,non_terminal_set
 
 let nt_cons_map =
   let aux nt ntcm = String_map.add nt ("Obj_"^nt) ntcm in
@@ -6151,7 +6405,6 @@ let code_priority_def,priority_set,code_priority_names =
   code_priority_def,priority_set,code_priority_names^"|]\n"
 
 
-
 let code_global_local_data =
 "let global_data = ref 0
 let local_data = ref 0
@@ -6160,9 +6413,63 @@ let local_data_equal = (==)\n\n"
 
 
 
+let code_test_cons, code_cons_of_nt, cons_of_nt, cons_map, cons_array =
+  let aux1 _ cons s = String_set.add cons s in
+  let s = String_map.fold aux1 nt_cons_map String_set.empty in
+  let aux0 s cons = String_set.add cons s in
+  let s = List.fold_left aux0 s add_cons_list in
+  let cons_array = Array.make (String_set.cardinal s) "" in
+  let aux2 cons (codl,m,n) =
+    cons_array.(n) <- cons;
+    let code_fun =
+      "  (fun x -> match x with "^obj_pref^cons^
+      " _ -> true | _ -> false)" in
+    (";\n"::code_fun::codl,
+    String_map.add cons n m, n+1)
+  in
+  let code_tc = "let test_cons = [|\n" in
+  let code, m, _ =
+    String_set.fold aux2 s ([code_tc],String_map.empty,0)
+  in
+  let code = List.rev ("|]\n"::(List.tl code)) in
+  let code_tc = String.concat "" code in
+  let cons_of_nt =
+    Array.make ((String_set.cardinal non_terminal_set)+1) 0
+  in
+  let aux3 nt cons (l,i) =
+    let cons_i = String_map.find cons m in
+    cons_of_nt.(i) <- cons_i;
+    (";"::(string_of_int cons_i)::l, (i+1))
+  in
+  let code_ntoc = "let cons_of_nt = [|0;" in
+  (* first correspond to S' (which has no constructor anyway). *)
+  let code,_ = String_map.fold aux3 nt_cons_map ([code_ntoc],1) in
+  let code = List.rev ("|]\n"::(List.tl code)) in
+  let code_ntoc = String.concat "" code in
+  code_tc, code_ntoc, cons_of_nt, m, cons_array
 
 
-let code_dypgen_toolbox_type =
+
+let code_datadyn =
+  let code_datadyn =
+    "  let datadyn = Dyp_runtime.Tools.init_datadyn\n["
+  in
+  let aux1 nt_str (codl,nt) =
+    let i = cons_of_nt.(nt) in
+    ";"::("\""^nt_str^"\","^(string_of_int i)^
+    ",\""^cons_array.(i)^"\"")::codl,
+    nt+1
+  in
+  let codl,_ = String_set.fold aux1 non_terminal_set ([code_datadyn],1) in
+  let codl = "]\n["::(List.tl codl) in
+  let aux2 cons _ codl = ";"::("\""^cons^"\"")::codl in
+  let codl = String_map.fold aux2 cons_map codl in
+  let codl = List.rev ("]\n"::(List.tl codl)) in
+  String.concat "" codl
+
+
+
+(*let code_dypgen_toolbox_type =
 "type ('obj,'data,'local_data) dypgen_toolbox = {
   mutable global_data : 'data;
   mutable local_data : 'local_data;
@@ -6181,16 +6488,17 @@ let code_dypgen_toolbox_type =
   rhs_start_pos : int -> Lexing.position;
   rhs_end : int -> int;
   rhs_end_pos : int -> Lexing.position;
-  add_nt : string -> Dyp.non_ter;
-  find_nt : string -> Dyp.non_ter;
+  add_nt : string -> string -> Dyp.non_ter;
+  find_nt : string -> Dyp.non_ter * string;
   print_state : out_channel -> unit;
   print_grammar : out_channel -> unit;
-}\n\n"
+}\n\n"*)
 
 
 
-let code_transform_action =
-"  let rec transform_action a =
+(*let code_transform_action =
+"  open Dyp
+  let rec transform_action a =
     Dyp.Dyp_special_types.Dypgen_action(fun av_list symbol_pos
     position_list data_arg datadyn local_data_arg prio_data debug_infos ->
       let __dypgen_datadyn = ref datadyn in
@@ -6211,12 +6519,12 @@ let code_transform_action =
         rhs_start_pos = (fun i -> fst (List.nth position_list (i-1)));
         rhs_end = (fun i -> (snd (List.nth position_list (i-1))).Lexing.pos_cnum);
         rhs_end_pos = (fun i -> snd (List.nth position_list (i-1)));
-        add_nt = (fun (s:string) -> Dyp_runtime.Tools.add_nt s __dypgen_datadyn);
+        add_nt = (fun nt cons -> Dyp_runtime.Tools.add_nt nt cons __dypgen_datadyn);
         find_nt = (fun (s:string) -> Dyp_runtime.Tools.find_nt s !__dypgen_datadyn);
       print_state =
-        debug_infos.Dyp.Dyp_special_types.print_state;
+        debug_infos.Dyp.Dyp_special_types.prt_state;
       print_grammar =
-        debug_infos.Dyp.Dyp_special_types.print_grammar
+        debug_infos.Dyp.Dyp_special_types.prt_grammar
       }
       in
       let new_obj = a dyp av_list in
@@ -6224,8 +6532,7 @@ let code_transform_action =
       let add_rules_transformed = List.map mapfun dyp.add_rules in
       (new_obj,dyp.will_shift,dyp.global_data,!__dypgen_datadyn,
       dyp.local_data,add_rules_transformed,dyp.remove_rules,
-      dyp.priority_data,dyp.next_state,dyp.next_grammar))\n"
-
+      dyp.priority_data,dyp.next_state,dyp.next_grammar))\n"*)
 
 
 
@@ -6305,9 +6612,10 @@ let code_grammar =
             let str = aux "" n patternl in
             (*code^"`Real_obj ("^obj_pref^"Obj_"^nt^" ("^str^"));",*)
             code^"`Real_obj ("^obj_pref^(String_map.find nt nt_cons_map)^" ("^str^"));",
-            (* The extra parentheses around str are necessary for non terminals
-              generated by partial actions. *)
-            (*code^"`Real_obj ("^obj_pref^(String_map.find nt nt_cons_map)^str^");",*)
+            (* The extra parentheses around str are necessary
+              for non terminals generated by partial actions. *)
+            (*code^"`Real_obj ("^obj_pref^
+            (String_map.find nt nt_cons_map)^str^");",*)
             n+(List.length patternl)
       in
       let c,_ = List.fold_left f ("",1) ld_list in
@@ -6324,33 +6632,41 @@ let code_grammar =
         with Not_found -> "'dypgen__"^
           (String_map.find lhs_nt nt_cons_map)
       in
-        "Dyp_aux_functions.transform_action "^
-        " (fun dyp __dypgen_av_list -> (match (Dyp_aux_functions.transform_av_list "^
-        "__dypgen_av_list) with ["^
-        code_var_list^"] -> "^obj_pref^(String_map.find lhs_nt nt_cons_map)^" "^header_act^
-        (sharp_line_number (lnum-1))^"(\n"^(space_string offset)^
-        "("^action^"):"^typ^")"^
+      String.concat ""
+        ["Dyp_runtime.Tools.transform_action ";
+        " (fun dyp __dypgen_av_list -> (match ";
+        "(Dyp_aux_functions.transform_av_list ";
+        "__dypgen_av_list) with [";
+        code_var_list;"] -> ";obj_pref;
+        (String_map.find lhs_nt nt_cons_map);" ";header_act;
+        (sharp_line_number (lnum-1));"(\n";(space_string offset);
+        "(";action;"):";typ;")";
         (* The extra parentheses around action are useful when the action
         is empty, it converts it to unit. *)
-        insert_line_number^trailer_act^
-        " | _ -> raise Dyp.Giveup))"
+        insert_line_number;trailer_act;" | _ -> raise Dyp.Giveup))"]
     in
     
-    "("^code_rule^","^code_action^")"
+    String.concat "" ["(";code_rule;",";code_action;")"]
   in
   let list_code_rapf = List.map aux grammar in
+  let rec aux res sl = match sl with
+    | [s] -> "let __dypgen_ra_list =\n[\n"::s::res
+    | s::t -> aux ("\n;\n"::s::res) t
+    | [] -> failwith "empty grammar"
+  in
+  let list_code_rapf = aux ["]\n\n"] list_code_rapf in
+  String.concat "" list_code_rapf
 
   (*let code_grammar =*)
-    let rec aux sl = match sl with
+    (*let rec aux sl = match sl with
       | [] -> ""
       | [s] -> s
       | s::t -> s^"\n;\n"^(aux t)
     in "let __dypgen_ra_list =\n[\n"^
-    (aux list_code_rapf)^"]\n\n"
+    (aux list_code_rapf)^"]\n\n"*)
   (*in
   code_grammar^
   "let current_grammar,nt_nb,map_po,user_g = make_grammar rapf_list __dypgen_priority_data\n"*)
-
 
 
 
@@ -6414,8 +6730,8 @@ struct
   let default_datadyn = Datadyn_void
   let default_obj = Obj_void
   let get_value t = Obj_void
-  type automaton_kind = LR1 | LALR
-  let automaton_kind = if automaton_is_lr1 then LR1 else LALR
+  type automaton_kind = `LR1 | `LALR
+  let automaton_kind = if automaton_is_`LR1 then `LR1 else `LALR
   let merge_warning = false
 end
 
@@ -6529,7 +6845,7 @@ let code_main_2 =
     !local_data in
   let pf = Dyp_engine.glrParse automaton Dyp_aux_functions.get_token_value
     Dyp_symbols.get_token_name Dyp_symbols.str_token
-    Dyp_symbols."^nts^" __dypgen_data_equal f lexbuf
+    Dyp_symbols."^nts^" __dypgen_data_equal Dyp_symbols_array.test_cons f lexbuf
     Dyp_aux_functions.lexbuf_position in
   let aux1 (o,p) = match o with
     | "^obj_pref^(String_map.find nts nt_cons_map)^" r -> (r,p)
@@ -6538,8 +6854,8 @@ let code_main_2 =
   in
 (*"let saved_automaton = Marshal.from_string marshaled_automaton 0
 let automaton = complete_automaton saved_automaton current_grammar default_data default_datadyn __dypgen_priority_data merge_map merge\n"^*)
-"let __dypgen_automaton = Dyp_engine.create_parsing_device __dypgen_ra_list Dyp_priority_data.priority_data Dyp.Dyp_special_types."^
-!Argument.aut_kind^" !global_data !local_data __dypgen_merge_map dyp_merge Dyp_aux_functions.datadyn Dyp_symbols_array.str_non_ter\n\n"^
+"let __dypgen_automaton = Dyp_engine.create_parsing_device __dypgen_ra_list Dyp_priority_data.priority_data "^
+!Argument.aut_kind^" !global_data !local_data __dypgen_merge_map dyp_merge Dyp_aux_functions.datadyn Dyp_symbols_array.str_non_ter Dyp_symbols_array.cons_of_nt\n\n"^
   "let __dypgen_data_equal = {\n"^
   "  Dyp_runtime.Tools.global_data_equal = global_data_equal;\n"^
   "  Dyp_runtime.Tools.local_data_equal = local_data_equal }\n\n"^
@@ -6633,64 +6949,68 @@ let code_get_token_value =
 
 
 
-let parser_code =
-  code_type_token^
+let parser_codl = [
+  code_type_token;
 
-  "module Dyp_symbols =\nstruct\n"^
-  code_non_terminal_decl^
-  code_token_name_decl^
-  code_get_token_name^
-  code_str_token^
-  "end\n\n"^
+  "module Dyp_symbols =\nstruct\n";
+  code_non_terminal_decl;
+  code_token_name_decl;
+  code_get_token_name;
+  code_str_token;
+  "end\n\n";
 
-  "module Dyp_symbols_array =\nstruct\n"^
-  code_str_non_ter^
-  code_token_name_array^
-  "end\n\n"^
+  code_type_obj;
 
-  "module Dyp_parameters =\nstruct\n"^
-  code_token_nb^
-  code_nt_functions^
-  code_str_token_name^
-  code_priority_names^
-  code_merge_warning^
-  "end\n\n"^
+  "module Dyp_symbols_array =\nstruct\n";
+  code_str_non_ter;
+  code_token_name_array;
+  code_test_cons;
+  code_cons_of_nt;
+  "end\n\n";
 
-  code_main_1^
+  "module Dyp_parameters =\nstruct\n";
+  code_token_nb;
+  code_undef_nt;
+  code_nt_functions;
+  code_str_token_name;
+  code_priority_names;
+  code_merge_warning;
+  "end\n\n";
 
-  code_type_obj^
-  code_dypgen_toolbox_type^
+  code_main_1;
 
-  "module Dyp_aux_functions =\nstruct\n"^
-  code_datadyn^
-  code_get_token_value^
-  code_lexbuf_position^
-  code_transform_av_list^
-  code_transform_action^
-  "end\n\n"^
+  "module Dyp_aux_functions =\nstruct\n";
+  code_datadyn;
+  code_get_token_value;
+  code_lexbuf_position;
+  code_transform_av_list;
+  "end\n\n";
 
-  "module Dyp_priority_data =\nstruct\n"^
-  code_priority_def^
-  code_prio_data^
-  "end\n\n"^
+  "module Dyp_priority_data =\nstruct\n";
+  code_priority_def;
+  code_prio_data;
+  "end\n\n";
 
-  code_global_local_data^
-  code_merge_functions^
+  code_global_local_data;
+  code_merge_functions;
 
-  header_main^
+  header_main;
 
-  code_grammar^
-  code_merge_map^
-  code_main_2^
-  trailer_main
+  code_grammar;
+  code_merge_map;
+  code_main_2;
+  trailer_main]
 
+let parser_code = String.concat "" parser_codl
 
 
 
 let parser_code_mli =
   let entry_code =
-    if !Argument.lexer = "ocamllex" then " : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> "
-    else if !Argument.lexer = "ulex" then " : (Ulexing.lexbuf -> token) -> Ulexing.lexbuf -> "
+    if !Argument.lexer = "ocamllex"
+    then " : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> "
+    else if !Argument.lexer = "ulex"
+    then " : (Ulexing.lexbuf -> token) -> Ulexing.lexbuf -> "
     else " : ('a -> token) -> 'a -> "
   in
   let aux str (nts,start_type) =
@@ -6733,7 +7053,8 @@ let () = close_out dest_file_mli
 open Dypgen_parser
 open Lexing
 
-let ocaml_code_buffer = ref ""
+let ($) = Buffer.add_string
+let ocaml_code_buffer = Buffer.create 100000
 (*let paren_count = ref 0*)
 let in_string = ref false
 let comment_count = ref 0
@@ -6800,31 +7121,34 @@ rule token = parse
   | "("  { LPAREN }
   | ")"  { RPAREN }
   | "["
-      { ocaml_code_buffer := "";
+      { Buffer.clear ocaml_code_buffer;
         let pos = lexeme_start_p lexbuf in
         start_pattern := pos;
         (*paren_count:=1;*)
         ocaml_code lexbuf;
-        PATTERN (!ocaml_code_buffer,(pos.pos_lnum,pos.pos_cnum-pos.pos_bol))
+        PATTERN (Buffer.contents ocaml_code_buffer,
+          (pos.pos_lnum,pos.pos_cnum-pos.pos_bol))
       }
   | ","  { COMMA }
+  | ";"  { SEMI }
   | ":"  { COLON }
   | ">"  { GREATER }
   | "%%" { look_for_type:=false; PERCENTPERCENT }
   | "<"
       { if !look_for_type=false then LESS
         else
-          (ocaml_code_buffer := "";
+          (Buffer.clear ocaml_code_buffer;
           start_ocaml_type := lexeme_start_p lexbuf;
           ocaml_type lexbuf;
-          OCAML_TYPE (!ocaml_code_buffer))
+          OCAML_TYPE (Buffer.contents ocaml_code_buffer))
       }
   | "{"
-      { ocaml_code_buffer := "";
+      { Buffer.clear ocaml_code_buffer;
         let pos = lexeme_start_p lexbuf in
         start_ocaml_code := pos;
         ocaml_code lexbuf;
-        OCAML_CODE (!ocaml_code_buffer,(pos.pos_lnum,pos.pos_cnum-pos.pos_bol))
+        OCAML_CODE (Buffer.contents ocaml_code_buffer,
+          (pos.pos_lnum,pos.pos_cnum-pos.pos_bol))
       }
   | "/*"
        { (*dypgen_comment := !dypgen_comment+1;*)
@@ -6854,63 +7178,63 @@ and ocaml_code = parse
             match !start_curlyb with
               | [] ->
                 if !start_ocaml_code=dummy_pos then (
-                  ocaml_code_buffer := (!ocaml_code_buffer) ^ "}";
+                  ocaml_code_buffer $ "}";
                   ocaml_code lexbuf)
                 else start_ocaml_code:=dummy_pos
               | _::tl ->
                   start_curlyb:=tl;
-                  ocaml_code_buffer := (!ocaml_code_buffer) ^ "}";
+                  ocaml_code_buffer $ "}";
                   ocaml_code lexbuf
 
             (*if (!paren_count) = 0 then start_ocaml_code := dummy_pos
             else
-              let _ = ocaml_code_buffer := ((!ocaml_code_buffer) ^ 
-                (String.make 1 (Lexing.lexeme_char lexbuf 0))) in
+              let _ = ocaml_code_buffer $
+                (String.make 1 (Lexing.lexeme_char lexbuf 0)) in
               let _ = paren_count := ((!paren_count)-1) in
               ocaml_code lexbuf*)
           end
         else
           begin
-            ocaml_code_buffer := (!ocaml_code_buffer) ^ "}";
+            ocaml_code_buffer $ "}";
             ocaml_code lexbuf
           end
       }
   | "]" { if !in_string=false && !comment_count=0 then (
           match !start_bracket with
             | _::tl -> start_bracket := tl;
-                ocaml_code_buffer := ((!ocaml_code_buffer)^"]");
+                ocaml_code_buffer $ "]";
                 ocaml_code lexbuf
             | [] ->
                 if !start_pattern=dummy_pos then (
-                  ocaml_code_buffer := ((!ocaml_code_buffer)^"]");
+                  ocaml_code_buffer $ "]";
                   ocaml_code lexbuf)
                 else
                   start_pattern:=dummy_pos)
           else (
-            ocaml_code_buffer := ((!ocaml_code_buffer)^"]");
+            ocaml_code_buffer $ "]";
             ocaml_code lexbuf) }
   | "[" { if !in_string=false && !comment_count=0 then
             start_bracket := (lexeme_start_p lexbuf)::(!start_bracket);
-          ocaml_code_buffer := ((!ocaml_code_buffer)^"[");
+          ocaml_code_buffer $ "[";
           ocaml_code lexbuf }
   | "$"
-      { (if !in_string then ocaml_code_buffer := ((!ocaml_code_buffer)^"$")
-      else ocaml_code_buffer := ((!ocaml_code_buffer)^"_"));
+      { (if !in_string then ocaml_code_buffer $ "$"
+      else ocaml_code_buffer $ "_");
         ocaml_code lexbuf
       }
   | "\\\""
-      { ocaml_code_buffer := ((!ocaml_code_buffer) ^ "\\\"");
+      { ocaml_code_buffer $ "\\\"";
         ocaml_code lexbuf
       }
   | "\""
       { 
         if !in_string then (in_string := false; start_string := dummy_pos)
         else (in_string := true; start_string := lexeme_start_p lexbuf);
-        ocaml_code_buffer := (!ocaml_code_buffer) ^ "\"";
+        ocaml_code_buffer $ "\"";
         ocaml_code lexbuf
       }
   | "{"
-      { ocaml_code_buffer := (!ocaml_code_buffer) ^ "{";
+      { ocaml_code_buffer $ "{";
         if !in_string = false && !comment_count = 0 then
           start_curlyb := (lexeme_start_p lexbuf)::!start_curlyb;
           (*paren_count := (!paren_count)+1;*)
@@ -6919,44 +7243,45 @@ and ocaml_code = parse
   | "(*"
       { 
         if !in_string then () else (comment_count := !comment_count + 1;
-          start_ocaml_comment := (lexeme_start_p lexbuf)::(!start_ocaml_comment));
-        ocaml_code_buffer := ((!ocaml_code_buffer) ^ "(*");
+          start_ocaml_comment :=
+            (lexeme_start_p lexbuf)::(!start_ocaml_comment));
+        ocaml_code_buffer $ "(*";
         ocaml_code lexbuf
       }
   | "*)"
       { 
         if !in_string then () else (comment_count := !comment_count - 1;
           start_ocaml_comment := List.tl (!start_ocaml_comment));
-        ocaml_code_buffer := ((!ocaml_code_buffer) ^ "*)");
+        ocaml_code_buffer $ "*)";
         ocaml_code lexbuf
       }
   | newline
       { update_loc lexbuf None 1 false 0;
-        ocaml_code_buffer := ((!ocaml_code_buffer)^
-          (String.make 1 (Lexing.lexeme_char lexbuf 0)));
+        ocaml_code_buffer $
+          (String.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_code lexbuf
       }
   | _
-      { ocaml_code_buffer := ((!ocaml_code_buffer)^
-          (String.make 1 (Lexing.lexeme_char lexbuf 0)));
+      { ocaml_code_buffer $
+          (String.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_code lexbuf
       }
 
 and ocaml_type = parse
   | "->"
-      { ocaml_code_buffer := (!ocaml_code_buffer) ^ "->";
+      { ocaml_code_buffer $ "->";
         ocaml_type lexbuf
       }
   | ">" { start_ocaml_type := dummy_pos; () }
   | newline
       { update_loc lexbuf None 1 false 0;
-        ocaml_code_buffer := ((!ocaml_code_buffer)^
-          (String.make 1 (Lexing.lexeme_char lexbuf 0)));
+        ocaml_code_buffer $
+          (String.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_type lexbuf
       }
   | _
-      { ocaml_code_buffer := ((!ocaml_code_buffer) ^
-          (String.make 1 (Lexing.lexeme_char lexbuf 0)));
+      { ocaml_code_buffer $
+          (String.make 1 (Lexing.lexeme_char lexbuf 0));
         ocaml_type lexbuf
       }
 
