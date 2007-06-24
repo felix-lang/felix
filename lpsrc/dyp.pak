@@ -186,12 +186,13 @@ terminal that is in a right-hand side but never in a left-hand
 side (i.e. it is never defined). The string represents this non
 terminal. *)
 
-exception Bad_constructor of (string * string)
+exception Bad_constructor of (string * string * string)
 (** This exception is raised when a value is returned by a user action
 with a bad constructor (not corresponding to the non terminal). This
 can only happen with rules defined dynamically.
 1st string is the rule and can be used to be printed.
-2nd string is the name of the constructor that should have been used. *)
+2nd string is the name of the constructor that should have been used.
+3rd string is the name of the constructor that has been used. *)
 
 exception Constructor_mismatch of (string * string)
 (** This exception is raised when a nt is added with a constructor cons
@@ -292,7 +293,7 @@ sig
     val glrParse : ('obj,'data,'local_data) parsing_device ->
           ('token -> 'obj) -> ('token -> int) -> ('token -> string) -> int ->
           ('data,'local_data) Tools.data_equal ->
-          ('obj -> bool) array ->
+          ('obj -> bool) array -> ('obj -> string) ->
           ('a -> 'token) -> 'a ->
           ('a -> (Lexing.position * Lexing.position)) ->
           (('obj * priority) list)
@@ -1455,7 +1456,7 @@ type ('obj,'data,'local_data) dypgen_toolbox = {
 
 exception Giveup
 exception Undefined_nt of string
-exception Bad_constructor of (string * string)
+exception Bad_constructor of (string * string * string)
 exception Constructor_mismatch of (string * string)
 exception Syntax_error
     (** This exception is raised by glrParse if the parser is stuck in a
@@ -3198,7 +3199,7 @@ let position_map p start_node =
   with Failure _ -> [start_node.vertex_label.lexer_pos]
 
 
-let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) Gs.vertex) list)*) pathList (topmost:('a,'b) Gs.vertex list) counters data_equal dummy_token_name test_cons =
+let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) Gs.vertex) list)*) pathList (topmost:('a,'b) Gs.vertex list) counters data_equal dummy_token_name test_cons str_cons =
   
   if !dypgen_verbose>2 then
     (Printf.fprintf !log_channel "reduceViaPath called, start_node=%d\n  "
@@ -3295,7 +3296,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
         let (_,cons) = Tools.find_nt
           pdev_leftSib.str_non_ter.(non_ter) pdev_leftSib.datadyn
         in
-        raise (Bad_constructor(sr,cons))
+        raise (Bad_constructor(sr,cons,(str_cons new_obj)))
       else ();
       let v_rightSib,pdev_rightSib,counters,(prio_imp_lS,is_lS) =
         if rapf_add=[] && r_remove=[] && newprio==prio_dat then
@@ -3354,7 +3355,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
 (*exception Giveup_shiftreduce*)
 
 let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
-    entry_point counters data_equal dummy_token_name test_cons =
+    entry_point counters data_equal dummy_token_name test_cons str_cons =
   
 (* let _ = Printf.fprintf !log_channel "(doReductions) longueur topmost : %d\n" (List.length topmost) in *)
 
@@ -3403,7 +3404,7 @@ let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
         let (*gs,*)pathList,topmost,counters =
           let (*gs,*)pathList,topmost,will_shift,counters =
             reduceViaPath pr t (*gs*) tl topmost counters data_equal
-              dummy_token_name test_cons
+              dummy_token_name test_cons str_cons
           in
           if will_shift = false then
             let (sn,_,_),_,_ = pr in
@@ -3548,7 +3549,7 @@ tries to match all of them and then it selects the entry point it
 is looking for. This may make the parser slower and should be
 addressed in the future. *)
 let glrParse parsing_device get_value get_name str_token
-    (entry_point:non_ter) data_equal test_cons
+    (entry_point:non_ter) data_equal test_cons str_cons
     (lexfun:('a -> 'token)) (lexbuf:'a)
     (lexbuf_position:'a -> (Lexing.position * Lexing.position)) =
   
@@ -3614,7 +3615,7 @@ let glrParse parsing_device get_value get_name str_token
         (str_token t) (List.length topmost); flush_all ());
     let (*gs,*)topmost,counters =
       doReductions (get_name t) (*gs*) topmost entry_point counters
-        data_equal dummy_token_name test_cons
+        data_equal dummy_token_name test_cons str_cons
     in
     let counters = { counters with
       count_token = counters.count_token+1 }
@@ -3625,7 +3626,7 @@ let glrParse parsing_device get_value get_name str_token
     in
     let (*gs,*)topmost,counters =
       doReductions dummy_token_name (*gs*) topmost entry_point counters
-        data_equal dummy_token_name test_cons in
+        data_equal dummy_token_name test_cons str_cons in
       (* tries to reduce to the entry point *)
     if topmost = []
     then ((*if !dypgen_verbose>2 then print_gs (*gs*) title_gs;*)
@@ -3651,7 +3652,7 @@ let glrParse parsing_device get_value get_name str_token
     in
     let (*gs,*)topmost,counters =
       doReductions dummy_token_name (*gs*) topmost entry_point counters
-        data_equal dummy_token_name test_cons
+        data_equal dummy_token_name test_cons str_cons
     in
     if topmost = []
     then ((*if !dypgen_verbose>2 then print_gs (*gs*) title_gs;*)
@@ -3672,7 +3673,7 @@ let glrParse parsing_device get_value get_name str_token
       else
         let (*gs,*)topmost,counters = (* reduces initial epsilon rules *)
           doReductions dummy_token_name (*gs*) topmost entry_point
-            counters data_equal dummy_token_name test_cons
+            counters data_equal dummy_token_name test_cons str_cons
         in
         aux_LR0 (*gs*) topmost (lexfun lexbuf) counters)
     with Syntax_error ->
@@ -4447,7 +4448,7 @@ sig
   val glrParse : ('obj,'data,'local_data) parsing_device ->
         ('token -> 'obj) -> ('token -> int) -> ('token -> string) -> int ->
         ('data,'local_data) Tools.data_equal ->
-        ('obj -> bool) array ->
+        ('obj -> bool) array -> ('obj -> string) ->
         ('a -> 'token) -> 'a ->
         ('a -> (Lexing.position * Lexing.position)) ->
         (('obj * priority) list)
@@ -5128,7 +5129,7 @@ let data_equal = {
 P.Tools.global_data_equal = (==);
 P.Tools.local_data_equal = (==) }
 
-let parse_result = glrParse parsing_device get_value get_name str_token ntn_start data_equal [|fun _ -> true|]
+let parse_result = glrParse parsing_device get_value get_name str_token ntn_start data_equal [|fun _ -> true|] (fun _ -> "")
 Pgen_lexer.token lexbuf
 (fun _ -> (Lexing.dummy_pos,Lexing.dummy_pos))
 
@@ -5447,7 +5448,7 @@ let code_main_2 = code_main_2^
   in
   let lexbuf_position lexbuf = (lexbuf.Lexing.lex_curr_p,lexbuf.Lexing.lex_start_p) in
   let pf = glrParse parsing_device __dypgen_get_value get_name str_token "^non_terminal_start^
-  " data_equal  [|fun _ -> true|] f lexbuf lexbuf_position in
+  " data_equal  [|fun _ -> true|] (fun _ -> \"\") f lexbuf lexbuf_position in
   let aux1 (o,p) = match o with
     | Obj_"^non_terminal_start^" r -> (r,p) | _ -> failwith \"Wrong type for entry result\" in
   List.map aux1 pf\n\n"
@@ -6042,7 +6043,10 @@ let token_pref = if !Argument.pv_token then "`" else ""
 
 
 
-let ($) = Buffer.add_string
+let append_string_to_buffer buf str =
+  Buffer.add_string buf str; buf
+
+let ($) = append_string_to_buffer
 
 
 
@@ -6254,7 +6258,7 @@ let code_get_token_name, code_str_token, code_str_token_name, code_token_name_ar
     let dummy_tok_l =
       List.fold_left aux_dummy_tok "" non_terminal_start_list
     in
-    "  let token_name_array = [|\"token_epsilon\";"^dummy_tok_l^
+    "  let token_name_array =\n    [|\"token_epsilon\";"^dummy_tok_l^
     (aux "" token_list)^"|]\n",
     "  let str_token_name t = Dyp_symbols_array.token_name_array.(t)\n"
   in
@@ -6315,10 +6319,10 @@ let code_non_terminal_decl, non_terminal_map, non_terminal_set =
       String_set.fold aux non_terminal_set
       (code_non_terminal_decl,1,String_map.empty)
   in
-  Printf.printf "cardinal non_terminal_set = %d\n"
+  (*Printf.printf "cardinal non_terminal_set = %d\n"
     (String_set.cardinal non_terminal_set);
   Printf.printf "cardinal non_terminal_map = %d\n"
-    (map_card non_terminal_map);
+    (map_card non_terminal_map);*)
   code_non_terminal_decl,non_terminal_map,non_terminal_set
 
 let nt_cons_map =
@@ -6331,7 +6335,7 @@ let nt_cons_map =
     List.fold_left (aux2 cons) ntcm ntl
   in
   let m = List.fold_left aux ntcm cons_list in
-  Printf.printf "cardinal nt_cons_map = %d\n" (map_card m);
+  (*Printf.printf "cardinal nt_cons_map = %d\n" (map_card m);*)
   m
 
 let code_merge_warning =
@@ -6362,7 +6366,7 @@ let code_nt_functions, code_str_non_ter =
   "  let entry_points = ["^nts_list^"]\n"(*^
   "  let str_non_terminal nt =\n    try Dyp_symbols_array.non_ter_array.(nt)\n"^
   "    with Invalid_argument _ -> (\"new_nt_\"^(string_of_int nt))\n"*),
-  "  let str_non_ter = [|\"S'\";"^nt_ar^"|]\n"
+  "  let str_non_ter =\n    [|\"S'\";"^nt_ar^"|]\n"
 
 
 
@@ -6431,7 +6435,7 @@ let local_data_equal = (==)\n\n"
 
 
 
-let code_test_cons, code_cons_of_nt, cons_of_nt, cons_map, cons_array =
+let code_test_cons, code_cons_of_nt, cons_of_nt, cons_map, cons_array, code_str_cons =
   
   let aux1 _ cons s = String_set.add cons s in
   let s = String_map.fold aux1 nt_cons_map String_set.empty in
@@ -6439,16 +6443,26 @@ let code_test_cons, code_cons_of_nt, cons_of_nt, cons_map, cons_array =
   let aux0 s cons = String_set.add cons s in
   let s = List.fold_left aux0 s add_cons_list in
   
+  let buf = Buffer.create 10000 in
+  let _ = buf $ "  let str_cons o = match o with\n" in
+  let aux cons _ =
+    buf $ "    | " $ obj_pref $ cons $ " _ -> \"" $ cons $"\"\n"
+  in
+  let _ = String_set.fold aux s buf in
+  let _ = buf $
+    "    | _ -> failwith \"str_cons, unexpected constructor\"\n" in
+  let code_str_cons = Buffer.contents buf in
+  
   let cons_array = Array.make (String_set.cardinal s) "" in
   let aux2 cons (codl,m,n) =
     cons_array.(n) <- cons;
     let code_fun =
-      "  (fun x -> match x with "^obj_pref^cons^
+      "    (fun x -> match x with "^obj_pref^cons^
       " _ -> true | _ -> false)" in
     (";\n"::code_fun::codl,
     String_map.add cons n m, n+1)
   in
-  let code_tc = "let test_cons = [|\n" in
+  let code_tc = "  let test_cons =  [|\n" in
   let code, m, _ =
     String_set.fold aux2 s ([code_tc],String_map.empty,0)
   in
@@ -6464,12 +6478,12 @@ let code_test_cons, code_cons_of_nt, cons_of_nt, cons_map, cons_array =
     cons_of_nt.(i) <- cons_i;
     (";"::(string_of_int cons_i)::l, (i+1))
   in
-  let code_cont = "let cons_of_nt = [|0;" in
+  let code_cont = "  let cons_of_nt =\n    [|0;" in
   (* first correspond to S' (which has no constructor anyway). *)
   let code,_ = String_map.fold aux3 nt_cons_map ([code_cont],1) in
   let code = List.rev ("|]\n"::(List.tl code)) in
   let code_cont = String.concat "" code in
-  code_tc, code_cont, cons_of_nt, m, cons_array
+  code_tc, code_cont, cons_of_nt, m, cons_array, code_str_cons
 
 
 
@@ -6868,7 +6882,7 @@ let code_main_2 =
     !local_data in
   let pf = Dyp_engine.glrParse automaton Dyp_aux_functions.get_token_value
     Dyp_symbols.get_token_name Dyp_symbols.str_token
-    Dyp_symbols."^nts^" __dypgen_data_equal Dyp_symbols_array.test_cons f lexbuf
+    Dyp_symbols."^nts^" __dypgen_data_equal Dyp_symbols_array.test_cons Dyp_symbols_array.str_cons f lexbuf
     Dyp_aux_functions.lexbuf_position in
   let aux1 (o,p) = match o with
     | "^obj_pref^(String_map.find nts nt_cons_map)^" r -> (r,p)
@@ -6989,6 +7003,7 @@ let parser_codl = [
   code_token_name_array;
   code_test_cons;
   code_cons_of_nt;
+  code_str_cons;
   "end\n\n";
 
   "module Dyp_parameters =\nstruct\n";
