@@ -1,4 +1,11 @@
 @select(tangler("lib/nugram.flxh"))
+
+SCHEME """
+(define fold_left
+  (lambda (f acc lst) 
+    (if (null? lst) acc (fold_left f (f acc (car lst)) (cdr lst)))))
+""";
+
 syntax expressions {
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
@@ -84,6 +91,13 @@ syntax expressions {
 
     selse_part:= else sexpr =># "_2";
     selse_part:= selifs else sexpr =># """
+       (let ((f (lambda (result condthn) 
+         (let ((cond (car condthn)) (thn (cadr condthn))) 
+           `(ast_cond (,cond ,thn ,result))))))
+         (fold_left f _3 _1))
+    """;
+/*    
+    selse_part:= selifs else sexpr =># """
      (letrec 
        ((fold_left 
          (lambda (f acc lst) 
@@ -93,6 +107,7 @@ syntax expressions {
            `(ast_cond (,cond ,thn ,result))))))
          (fold_left f _3 _1)))
     """;
+*/
 
   ssimple_name_parts := sname [ sexpr ] =># "`(,_1 ,_3)";
   ssimple_name_parts := sname           =># "`(,_1 ())";

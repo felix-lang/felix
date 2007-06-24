@@ -79,7 +79,18 @@ module Drules = Map.Make(struct
   type t = string
   let compare = compare
 end)
-let global_data = ref Drules.empty
+
+type rule_t = string * token list * statement_t * range_srcref
+
+type parse_info = {
+  rules : rule_t list Drules.t;
+  env : Ocs_types.env;
+}
+
+let local_data = ref {
+  rules=Drules.empty; 
+  env=Ocs_top.make_env ()
+}
 
 
 let list_last lst = List.hd (List.rev lst)
@@ -217,7 +228,9 @@ let scheme_eval env (s:sval):sval =
     let c = Ocs_compile.compile env s in
     print_endline "COMPILED";
     Ocs_eval.eval th (function 
+(*
       | Ocs_types.Sunspec -> failwith "UNSPECIFIED" 
+*)
       | r -> 
          print_endline "EVALUATED";
          Ocs_print.print outp false r;
@@ -269,7 +282,10 @@ let define_scheme dyp name rhs (scm:string) =
     let dummy = ("dummy",0,0,0,0) in
     let srr = ref dummy in
     let setsr sr = if dummy = !srr then srr := slift sr in
+    (*
     let env = Ocs_top.make_env () in
+    *)
+    let env = Ocs_env.env_copy dyp.local_data.env in
     let rec aux objs syms n = match objs, syms with
     | [],[] -> ()
     | [],_ | _,[] -> assert false
@@ -555,10 +571,15 @@ let define_expr dyp name rhs (expr:expr_t) =
   rule,action
 
 let add_rule dyp dssl rule =
-  let m = dyp.global_data in
-  let rules = try Drules.find dssl m with Not_found -> [] in
-  let m = Drules.add dssl (uniq_add rule rules) m in
-  dyp.global_data <- m
+  let m = dyp.local_data in
+  let rules = try Drules.find dssl m.rules with Not_found -> [] in
+  match rule with
+  | `Felix_rule rule
+  | `Scheme_rule rule ->
+     let m = {m with rules=Drules.add dssl (uniq_add rule rules) m.rules} in
+     dyp.local_data <- m
+
+  | `Scheme_eval s -> failwith ("Not implemented: Scheme eval of " ^ s)
 
 (* create rules for nt* nt+ and nt? *)
 let fixup_rule rhs =
@@ -816,16 +837,27 @@ statement:
   | user_statement { (* print_endline "Reducing user_statement"; *) $1 }
   | cparse { (* print_endline "Reducing cparse "; *) $1 }
   | xsstatement { $1 }
+  | SCHEME STRING SEMI
+    {
+      let sr = rstoken $1 $3 in
+      let s = snd $2 in
+      print_endline ("Evaluating " ^ s);
+      let env = Ocs_env.env_copy dyp.local_data.env in
+      let r = scheme_compile_eval env s in
+      dyp.local_data <- { dyp.local_data with env = env };
+      `AST_nop (sr,"")
+    }
+
   | OPEN SYNTAX basic_name_comma_list SEMI
     {
       print_endline "Opening syntax extensions";
       let sr = rstoken $1 $4 in
       let dssls = map snd $3 in
-      let m = dyp.global_data in
+      let m = dyp.local_data in
       let rules =
         fold_left (fun acc dssl ->
         let rules = 
-          try Drules.find dssl m
+          try Drules.find dssl m.rules
           with Not_found -> failwith ("Can't open syntax " ^ dssl)
         in 
         let rules = map (fun x -> dssl,x) rules in
@@ -853,7 +885,7 @@ statement:
        let rhs = $3 in
        let stmt:statement_t = $5 in
        let sr = rstoken (fst $1) $4 in
-       name,rhs,stmt,sr
+       `Felix_rule (name,rhs,stmt,sr)
      }
 
    | NAME COLONEQUAL rhs PARSE_ACTION STRING SEMI
@@ -863,9 +895,14 @@ statement:
        let sr = rstoken (fst $1) $6 in
        let stmt:statement_t = `AST_scheme_string (sr,snd $5) in
        let sr = rstoken (fst $1) $4 in
-       name,rhs,stmt,sr
+       `Scheme_rule (name,rhs,stmt,sr)
      }
-  
+
+   | SCHEME STRING SEMI
+     {
+       `Scheme_eval (snd $2) 
+     }
+
  dyprods:
    | dyprod dyprods { $1 :: $2 }
    | { [] }
