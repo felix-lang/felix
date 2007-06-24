@@ -12,11 +12,15 @@ syntax expressions {
     `(ast_lambda dfltvs (() None) None (ast_fun_return ,_2))
   """;
 
-  satom := match sexpr with smatchings endmatch =># 
+  satom := match sexpr with smatching+ endmatch =># 
     "`(ast_match (,_2 ,_4))";
 
+    /*
     smatchings := smatching =># "`(,_1)";
     smatchings := smatching smatchings =># "(cons _1 _2)";
+    smatchings := smatching + =># "_1";
+    */
+
     smatching  := | spattern => sexpr =># "`(,_2 ,_4)";
     smatching  := | => sexpr =># "`(pat_none ,_4)";
 
@@ -229,6 +233,8 @@ syntax expressions {
     sor_list := sand_condition or sor_list =># "(cons _1 _3)";
     sor_list := sand_condition =># "`(,_1)";
 
+  stypeexpr:= sor_condition =># "_1";
+
   stuple := sor_condition  =># "_1";
   stuple := sor_condition stuple_suffix =># "`(ast_tuple ,(cons _1 _2))";
     stuple_suffix:= , sor_condition stuple_suffix =># "(cons _2 _3)";
@@ -324,10 +330,76 @@ syntax statements {
   stype_qual := _gc_pointer =># "'gc_pointer";
   stype_qual := _gc_type sexpr =># "`(gc_type ,_2)";
   stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
-  stype_quals:= epsilon =># "()";
+  stype_quals:= sepsilon =># "()";
 
   sabstract_type:= stype_quals ctypes sbasic_name_comma_list srequires_clause ; =>#
     "`(ast_ctypes ,_3 ,_1 ,_4)";
+
+  sbasic_name_comma_list:= sname scomma_name* =># "(cons _1 _2)";
+  scomma_name:= , sname =># "_2";
+
+  srequires_clause := requires srequirements =># "_2";
+  srequires_clause := sepsilon =># "'()";
+
+  scode_spec := sstring =># "`(strtemplate ,_1)";
+  scode_spec := scstring =># "`(str ,_1)";
+  scode_spec := sident =># "'identity";
+
+  srequirement:= squalified_name =># "`(named_req ,_1)";
+  srequirement := body scode_spec =># "`(body_req ,_2)";
+  srequirement := header scode_spec =># "`(header_req ,_2)";
+  srequirement :=  property sstring =># "`(property_req ,_2)";
+  srequirement :=  package scode_spec =># "`(package_req ,_2)";
+
+  srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
+  srequirement_atom:= ( srequirements ) =># "_2";
+
+  srequirement_and:= srequirement_and and srequirement_atom =>#
+    "`(rreq_and ,_1 ,_3)";
+  srequirement_and:= srequirement_atom =># "_1";
+
+  srequirement_or:= srequirement_or or srequirement_and =>#
+    "`(rreq_or ,_1 ,_3)";
+  srequirement_or:= srequirement_and =># "_1";
+
+  srequirements:= srequirements , srequirement_or =>#
+    "`(rreq_and ,_1 ,_3)";
+  srequirements:= srequirement_or =># "_1";
+
+  squalified_name_comma_list:= squalified_name scomma_qualified_name* =>#
+    "(cons _1 _2)";
+  scomma_qualified_name := , squalified_name =># "_2";
+
+  stype_constraint := with squalified_name_comma_list where sexpr =>#
+    "`(,_4 ,_2)";
+  stype_constraint := where sexpr with squalified_name_comma_list =>#
+    "`(,_2 ,_4)";
+  stype_constraint := where sexpr =># "`(,_2 ())";
+  stype_constraint := with squalified_name_comma_list =># "`(() ,_2)";
+
+  sopt_type_constraint := stype_constraint? =># "_1";
+
+  seqorin:= = stypeexpr =># "`(eq ,_2)";
+  seqorin:= in stypeexpr =># "`(in ,_2)";
+  seqorin:= sepsilon =># "'none"; // ambiguous with Some/None?
+
+  stvar := sname seqorin =># "`(,_1 "typ_type" ,_2)";
+  stvar := sname : stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
+
+  stvar_comma_list := stvar scomma_tvar* =># "(cons _1 _2)";
+  stvar_comma_list := sepsilon =># "'()";
+  scomma_tvar := , stvar =># "_2";
+
+  // TODO -- COMPLETE THIS MESSY ONE!
+  stvarlist:= [ stvar_comma_list sopt_type_constraint ] =>#
+    "'()";
+
+  sassert_statement:= assert sexpr ; =># "`(ast_assert ,_2)";
+  slabel_statement := sname :> =># "`(ast_label ,_1)";
+  sgoto_statement := goto sname ; =># "`(ast_goto ,_2)";
+  ssvc := _svc sname ; =># "`(ast_svc ,_2)";
+
+  sinline_cpp:= code scode_spec ; =># "`(ast_code ,_2)";
+  sinline_cpp:= noreturn code scode_spec ; =># "`(ast_noreturn_code ,_3)";
 }
 
-open syntax expressions;

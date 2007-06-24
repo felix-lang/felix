@@ -728,14 +728,24 @@ let ocs2flx sr r =
   tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
 
 %type <Ocs_types.sval> sname sliteral satom sexpr
-/* major non terminals */
-%constructor Obj_sexpr %for sterm sexpr satom sname sliteral
+/* top level entry */
+%constructor Obj_sexpr %for sterm 
+
+/* predefined major non-terminals */
+%constructor Obj_sexpr %for sstatement sexpr satom 
+
+/* low level non terminals */
+%constructor Obj_sexpr %for sname sliteral 
+
 /* literals */
-%constructor Obj_sexpr %for sinteger sfloat sstring
+%constructor Obj_sexpr %for sinteger sfloat sstring scstring
+
 /* patterns */
 %constructor Obj_sexpr %for sintegral
-/* tokens */
-%constructor Obj_sexpr %for star plus quest suser10token
+
+/* tokens replacements for special symbols used in productions */
+%constructor Obj_sexpr %for star plus quest suser10token sident
+
 /* nothing*/
 %constructor Obj_sexpr %for sepsilon
 
@@ -805,7 +815,7 @@ statement:
   | null_statement { (* print_endline "Reducing null_statement"; *) $1 }
   | user_statement { (* print_endline "Reducing user_statement"; *) $1 }
   | cparse { (* print_endline "Reducing cparse "; *) $1 }
-  | sstatement { $1 }
+  | xsstatement { $1 }
   | OPEN SYNTAX basic_name_comma_list SEMI
     {
       print_endline "Opening syntax extensions";
@@ -876,10 +886,17 @@ statement:
   if t != "PARSE_ACTION":
     tangle("  | " +t+ " { " + t + " $1 }")
 
-sstatement:
+
+/* a hack for testing the new Scheme based user specified
+grammar
+*/
+xsstatement:
   | SCHEME LBRACE sterm RBRACE { let sr = rstoken $1 $4 in ocs2flx sr $3 }
 
 sterm:
+  /* a predefined statement, for testing expression part
+     of user defined grammar
+  */
   | CALL sexpr SEMI { 
     let call = Ocs_sym.get_symbol "ast_call" in 
     let f,a =
@@ -899,14 +916,33 @@ sterm:
     let x = Ocs_misc.make_slist Snull (rev x) in
     x
     }
+  /* entry point for user defined statements, will eventually
+    conflict with the 'call' hack above
+  */
+  | sstatement { $1 }
 
+/* nonterminals purely for user extensions */
+sstatement: | DUMMY { Snull }
 sexpr: | DUMMY { Snull }
 
+/* identifiers which aren't keywords */
 sname: NAME { Sstring (snd $1) }
 
+/* 
+replacements for * + and ? to be used in productions,
+since these symbols have special meansings as
+list, non-empty list, and optional respectively
+*/
 star: STAR { Snull }
 plus: PLUS { Snull }
 quest: QUEST { Snull }
+sident: IDENT { Snull }
+
+/* 
+a definite non-terminal for a sequence of no tokens,
+since the production syntax cannot parse an empty
+production at the moment 
+*/
 sepsilon: | {Snull }
 
 satom:
@@ -957,6 +993,14 @@ sintegral:
 
 sstring:
   | STRING
+    { 
+      let sr,s = $1 in
+      Sstring s
+    }
+
+
+scstring:
+  | CSTRING
     { 
       let sr,s = $1 in
       Sstring s

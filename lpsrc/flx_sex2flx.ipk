@@ -551,22 +551,22 @@ and xrequirement_t sr fresh env x : requirement_t =
   let xct x = xc_t sr fresh env x in
   let ss s = String.sub s 1 (String.length s - 2) in
   match x with
-  | Lst [Id "Body_req"; ct] -> `Body_req (xct ct)
-  | Lst [Id "Header_req"; ct] -> `Header_req (xct ct)
-  | Lst [Id "Named_req"; qn] -> `Named_req (xq qn)
-  | Lst [Id "Property_req"; Str s] -> `Property_req (ss s)
-  | Lst [Id "Package_req"; ct] -> `Package_req (xct ct)
+  | Lst [Id "body_req"; ct] -> `Body_req (xct ct)
+  | Lst [Id "header_req"; ct] -> `Header_req (xct ct)
+  | Lst [Id "named_req"; qn] -> `Named_req (xq qn)
+  | Lst [Id "property_req"; Str s] -> `Property_req (ss s)
+  | Lst [Id "package_req"; ct] -> `Package_req (xct ct)
   | x -> err x "requirement_t"
 
 and xraw_req_expr_t sr fresh env x : raw_req_expr_t =
   let xr x = xrequirement_t sr fresh env x in
   let xrr x = xraw_req_expr_t sr fresh env x in
   match x with
-  | Lst [Id "RREQ_atom"; r] -> `RREQ_atom (xr r)
-  | Lst [Id "RREQ_or"; r1; r2] -> `RREQ_or (xrr r1, xrr r2)
-  | Lst [Id "RREQ_and"; r1; r2] -> `RREQ_and (xrr r1, xrr r2)
-  | Id "RREQ_true"-> `RREQ_true
-  | Id "RREQ_false"-> `RREQ_false
+  | Lst [Id "rreq_atom"; r] -> `RREQ_atom (xr r)
+  | Lst [Id "rreq_or"; r1; r2] -> `RREQ_or (xrr r1, xrr r2)
+  | Lst [Id "rreq_and"; r1; r2] -> `RREQ_and (xrr r1, xrr r2)
+  | Id "rreq_true"-> `RREQ_true
+  | Id "rreq_false"-> `RREQ_false
   | x -> err x "raw_req_expr_t"
 
 and xstatement_t sr fresh env x : statement_t =
