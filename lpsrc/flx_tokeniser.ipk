@@ -530,15 +530,10 @@ open List
 open Flx_srcref 
 open Flx_parse
 
-@if USE_DYPGEN:
-  tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
-  tangle("  match ls with")
-  tangle("  | [x,_] -> x")
-  tangle('  | _ -> failwith "Dypgen parser failed"')
- else:
-  tangle("let dyphack x = x")
-@#
+let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
+  match ls with
+  | [x,_] -> x
+  | _ -> failwith "Dypgen parser failed"
 
 let print_pre_token t = 
   let emit t = print_string (Flx_prelex.string_of_token t) in

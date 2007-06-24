@@ -3,8 +3,8 @@ syntax expressions {
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
   
-  expr_code_prefix := code [ sexpr ] =># "_3";
-  satom := expr_code_prefix sexpr =># "`(ast_expr ,_1 ,_2)";
+  sexpr_code_prefix := code [ sexpr ] =># "_3";
+  satom := sexpr_code_prefix sexpr =># "`(ast_expr ,_1 ,_2)";
 
   satom := callback [ sexpr ] =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,_2)";
@@ -21,7 +21,7 @@ syntax expressions {
     smatching  := | => sexpr =># "`(pat_none ,_4)";
 
     satomic_pattern := sstring =># "`(pat_string ,_1)";
-    satomic_pattern := ? sname =># "`(pat_as pat_any ,_2)";
+    satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
     satomic_pattern := _ =># "'pat_any";
     satomic_pattern := ( spattern ) =># "_2";
     satomic_pattern := struct { spat_assigns } =># "`(pat_record ,_3)";
@@ -39,7 +39,7 @@ syntax expressions {
     satomic_pattern := sintegral .. sintegral=># 
       "`(pat_int_range ,(car _1) ,(cadr _1) ,(car _3) ,(cadr _3))";
 
-    satomic_pattern := nan =># "'pat_nan";
+    satomic_pattern := NaN =># "'pat_nan";
     satomic_pattern := sfloating .. sfloating =># 
       "`(pat_int ,(car _1) ,(cadr _1))";
 
@@ -104,7 +104,7 @@ syntax expressions {
   sthe_name := satom =># "_1";
   sthe_name := the squalified_name =># "`(ast_the ,_2)";
   sthe_name := noexpand squalified_name =># "`(ast_noexpand ,_2)";
-  sthe_name := ? sname =># "`(ast_patvar ,_2)";
+  sthe_name := quest sname =># "`(ast_patvar ,_2)";
   sthe_name := squalified_name =># "_1";
 
   shash_name := sthe_name =># "_1";
@@ -112,13 +112,13 @@ syntax expressions {
 
   sfactor := shash_name =># "_1";
   sfactor := sfactor .[ sexpr ] =># "`(ast_apply (subscript (,_1 ,_4)))";
-  sfactor := sfactor .[ sexpr to expr ] =># "`(ast_apply (substring (,_1 ,_4 ,_6)))";
+  sfactor := sfactor .[ sexpr to sexpr ] =># "`(ast_apply (substring (,_1 ,_4 ,_6)))";
   sfactor := sfactor .[ sexpr to ] =># "`(ast_apply (copyfrom (,_1 ,_4)))";
   sfactor := sfactor .[ to sexpr ] =># "`(ast_apply (copyto (,_1 ,_5)))";
-  sfactor := sfactor . simple_name_parts =># 
+  sfactor := sfactor . ssimple_name_parts =># 
     "`(ast_dot (,_1 (ast_name ((car ,_3) (cadr ,_3)))))";
 
-  sfactor := sfactor .-> simple_name_parts =># 
+  sfactor := sfactor .-> ssimple_name_parts =># 
     "`(ast_dot ((ast_apply (deref ,_1)) (ast_name ((car ,_3) (cadr ,_3)))))";
 
 
@@ -134,8 +134,8 @@ syntax expressions {
   // todo anonymous union
   // todo anonymous struct
   srefr := & srefr =># "`(ast_ref ,_2)";
-  srefr := * srefr =># "`(ast_apply (deref ,_2))";
-  srefr := deref srefr =># "`(ast_deref ,_2)";
+  srefr := star srefr =># "`(ast_apply (deref ,_2))";
+  srefr := _deref srefr =># "`(ast_deref ,_2)";
   srefr := new srefr =># "`(ast_new ,_2)";
 
   ssuperscript := srefr =># "_1"; 
@@ -147,7 +147,7 @@ syntax expressions {
   sprefixed := spower =># "_1";
   sprefixed := lval spower =># "`(ast_lvalue ,_1)";
   sprefixed := ! spower =># "`(ast_apply (excl ,_2))";
-  sprefixed := + spower =># "`(ast_apply (pos ,_2))";
+  sprefixed := plus spower =># "`(ast_apply (pos ,_2))";
   sprefixed := - spower =># "`(ast_apply (neg ,_2))";
   sprefixed := ~ spower =># "`(ast_apply (compl ,_2))";
 
@@ -156,16 +156,16 @@ syntax expressions {
   s_term := s_term % spower =># "`(ast_apply (mod (,_1 ,_3)))";
 
   sproduct :=  s_term =># "_1";
-  sproduct := s_term * sproduct_list =># "`(ast_product ,(cons _1 _3))";
-    sproduct_list := s_term * sproduct_list =># "(cons _1 _3)";
+  sproduct := s_term star sproduct_list =># "`(ast_product ,(cons _1 _3))";
+    sproduct_list := s_term star sproduct_list =># "(cons _1 _3)";
     sproduct_list := s_term =># "`(,_1)";
   
   ssubtraction := sproduct =># "_1";
   ssubtraction := ssubtraction - sproduct =># "`(ast_apply (sub (,_1 ,_3)))";
 
   ssum :=  ssubtraction =># "_1";
-  ssum := ssubtraction + ssum_list =># "`(ast_sum ,(cons _1 _3))";
-    ssum_list := ssubtraction + ssum_list =># "(cons _1 _3)";
+  ssum := ssubtraction plus ssum_list =># "`(ast_sum ,(cons _1 _3))";
+    ssum_list := ssubtraction plus ssum_list =># "(cons _1 _3)";
     ssum_list := ssubtraction =># "`(,_1)";
 
   sshift := ssum =># "_1";
@@ -226,8 +226,8 @@ syntax expressions {
 
   sor_condition := sand_condition =># "_1";
   sor_condition := sand_condition or sor_list =># "`(ast_orlist ,(cons _1 _3))";
-    sor_list := and_condition or sor_list =># "(cons _1 _3)";
-    sor_list := and_condition =># "`(,_1)";
+    sor_list := sand_condition or sor_list =># "(cons _1 _3)";
+    sor_list := sand_condition =># "`(,_1)";
 
   stuple := sor_condition  =># "_1";
   stuple := sor_condition stuple_suffix =># "`(ast_tuple ,(cons _1 _2))";
@@ -245,7 +245,7 @@ syntax expressions {
   srvalue := slambda  =># "_1";
 
   sexpr := srvalue =># "_1";
-  sexpr := let sexpr = expr in expr =># "`(ast_letin (,_2 ,_4 ,_6))"; 
+  sexpr := let sexpr = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))"; 
 }
 
 syntax regexps {
@@ -321,14 +321,13 @@ syntax statements {
 
   stype_qual := incomplete =># "'incomplete";
   stype_qual := pod =># "'pod";
-  stype_qual := gc_pointer =># "'gc_pointer";
-  stype_qual := gc_type sexpr =># "`(gc_type ,_2)";
+  stype_qual := _gc_pointer =># "'gc_pointer";
+  stype_qual := _gc_type sexpr =># "`(gc_type ,_2)";
   stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
   stype_quals:= epsilon =># "()";
 
   sabstract_type:= stype_quals ctypes sbasic_name_comma_list srequires_clause ; =>#
     "`(ast_ctypes ,_3 ,_1 ,_4)";
-  sabstract_type 
 }
 
-open syntax expressions, statements;
+open syntax expressions;

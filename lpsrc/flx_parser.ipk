@@ -245,11 +245,19 @@ let scheme_compile_eval env (s:string):sval =
 
 
 let define_scheme dyp name rhs (scm:string) =
-  let lhs = dyp.add_nt name "Obj_sexpr" in
+  let lhs = 
+    try dyp.add_nt name "Obj_sexpr" 
+    with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ name)
+  in
   let f o =
     match o with
       | NAME (sr,s) -> 
-          Dyp.Non_ter ((dyp.add_nt s "Obj_sexpr"),Dyp.No_priority)
+          let nt = 
+            try dyp.add_nt s "Obj_sexpr"
+            with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ s)
+            | Dyp.Bad_constructor _ -> failwith ("BAD CONSTRUCTOR FOR " ^ s)
+          in
+          Dyp.Non_ter (nt,Dyp.No_priority)
       | s -> 
         let name = Dyp_symbols.str_token s in
         Dyp.Ter (Dyp_symbols.get_token_name s)
@@ -549,11 +557,36 @@ let define_expr dyp name rhs (expr:expr_t) =
 let add_rule dyp dssl rule =
   let m = dyp.global_data in
   let rules = try Drules.find dssl m with Not_found -> [] in
-  let m = Drules.add dssl (rule :: rules) m in
+  let m = Drules.add dssl (uniq_add rule rules) m in
   dyp.global_data <- m
 
+(* create rules for nt* nt+ and nt? *)
+let fixup_rule rhs =
+  let rec aux inp out extras = match inp with
+  | [] -> rev out,extras
+  | NAME (sr,s) :: STAR _ :: t -> 
+    let sl = s ^ "__list" in
+    let rule1 = sl,[NAME(sr,s);NAME(sr,sl)],"(cons _1 _2)" in
+    let rule2 = sl,[],"'()" in
+    aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
+
+  | NAME (sr,s) :: PLUS _ :: t -> 
+    let sl = s ^ "__nelist" in
+    let rule1 = sl,[NAME(sr,s);NAME(sr,sl)],"(cons _1 _2)" in
+    let rule2 = sl,[NAME(sr,s)],"`(,_1)" in
+    aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
+
+  | NAME (sr,s) :: QUEST _ :: t -> 
+    let sl = s ^ "__opt" in
+    let rule1 = sl,[NAME (sr,s)],"`(some ,_1)" in
+    let rule2 = sl,[],"none" in
+    aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
+
+
+  | h :: t -> aux t (h::out) extras 
+  in aux rhs [] []
+
 let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
-     (*
      print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
      catmap " " (function 
      | NAME (_,s) -> "<"^s^">"
@@ -563,11 +596,10 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
      "=>#\n" ^
      string_of_statement 0 stmt
      );
-     *)
      (* WE should use a distinct syntax for adding new nonterms .. *)
-     ignore(dyp.add_nt name ("Obj_" ^ name));
      begin match name with
      | "statement" ->
+       ignore(dyp.add_nt name ("Obj_" ^ name));
        let rule =(define_statement dyp name rhs stmt) in
        dyp.add_rules <- rule :: dyp.add_rules;
 
@@ -579,6 +611,7 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
           | `AST_tuple (_,[]) -> proc
           | _ -> `AST_apply (sr,(proc,arg))
           in
+          ignore(dyp.add_nt name ("Obj_" ^ name));
           let rule = define_expr dyp name rhs expr in
           dyp.add_rules <- rule :: dyp.add_rules;
         | _ ->
@@ -597,8 +630,15 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
         *)
         begin match stmt with
         | `AST_scheme_string (sr,s) ->
-          let rule = define_scheme dyp name rhs s in
-          dyp.add_rules <- rule :: dyp.add_rules
+          print_endline ("SCHEME, user action = " ^ s);
+          let prod,extras = fixup_rule rhs in
+          let rule = define_scheme dyp name prod s in
+          dyp.add_rules <- rule :: dyp.add_rules;
+          List.iter (fun (name,prod,s) ->
+            let rule = define_scheme dyp name prod s in
+            dyp.add_rules <- rule :: dyp.add_rules;
+          )
+          extras 
 
         | `AST_call (sr, proc, arg) -> 
           let expr = match arg with
@@ -688,7 +728,14 @@ let ocs2flx sr r =
   tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
 
 %type <Ocs_types.sval> sname sliteral satom sexpr
-%constructor Obj_sexpr %for sterm sexpr satom sname sliteral sinteger sfloating sintegral sstring
+/* major non terminals */
+%constructor Obj_sexpr %for sterm sexpr satom sname sliteral 
+/* literals */
+%constructor Obj_sexpr %for sinteger sfloat sstring
+/* patterns */
+%constructor Obj_sexpr %for s sfloating sintegral
+/* tokens */
+%constructor Obj_sexpr %for star plus quest suser10token
 
 %start <(Flx_ast.compilation_unit_t)> compilation_unit
 %start <(Flx_ast.statement_t list * token)> statementsx
@@ -855,6 +902,10 @@ sexpr: | DUMMY { Snull }
 
 sname: NAME { Sstring (snd $1) }
 
+star: STAR { Snull }
+plus: PLUS { Snull }
+quest: QUEST { Snull }
+
 satom:
   | sliteral { $1 }
 
@@ -873,6 +924,15 @@ sinteger:
     { 
       let sr,t,v = $1 in
       Sbigint v
+    }
+
+sfloat:
+  | FLOAT 
+    { 
+      let sr,t,v = $1 in
+      let x = Sstring t::Sstring v::[] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
     }
 
 sintegral:
@@ -4095,6 +4155,12 @@ let parse_file
           toker#report_syntax_error;
           clierr2 sr1 sr2 ("User Syntax Parse Error " ^ s)
         end
+
+      | Dyp.Bad_constructor (nt,ctor) ->
+          toker#report_syntax_error;
+          let s = "Bad constructor " ^ ctor ^ " for nonterminal " ^ nt in
+          print_endline s;
+          failwith s
 
       | x -> 
         begin

@@ -59,6 +59,9 @@ val hashtable_of_list:
 val fix:
  (('a -> 'b) -> 'a -> 'b) -> 'a -> 'b
 
+(** add element to unique list *)
+val uniq_add: 'a -> 'a list -> 'a list
+
 (** add elements to unique list *)
 val uniq_cat: 'a list -> 'a list -> 'a list
 
@@ -131,6 +134,9 @@ let hashtable_of_list lst =
   t
 
 let rec fix f x = f (fix f) x
+
+let uniq_add elt lst =
+  if mem elt lst then lst else (elt::lst)
 
 let uniq_cat u nu  =
   fold_left 
