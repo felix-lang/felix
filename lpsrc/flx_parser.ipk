@@ -729,13 +729,15 @@ let ocs2flx sr r =
 
 %type <Ocs_types.sval> sname sliteral satom sexpr
 /* major non terminals */
-%constructor Obj_sexpr %for sterm sexpr satom sname sliteral 
+%constructor Obj_sexpr %for sterm sexpr satom sname sliteral
 /* literals */
 %constructor Obj_sexpr %for sinteger sfloat sstring
 /* patterns */
-%constructor Obj_sexpr %for s sfloating sintegral
+%constructor Obj_sexpr %for sintegral
 /* tokens */
 %constructor Obj_sexpr %for star plus quest suser10token
+/* nothing*/
+%constructor Obj_sexpr %for sepsilon
 
 %start <(Flx_ast.compilation_unit_t)> compilation_unit
 %start <(Flx_ast.statement_t list * token)> statementsx
@@ -905,6 +907,7 @@ sname: NAME { Sstring (snd $1) }
 star: STAR { Snull }
 plus: PLUS { Snull }
 quest: QUEST { Snull }
+sepsilon: | {Snull }
 
 satom:
   | sliteral { $1 }
