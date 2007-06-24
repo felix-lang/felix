@@ -1659,7 +1659,11 @@ using namespace std;
   typedef NSModule LIBHANDLE;
   #define FLX_SET_NOLIBRARY(lib) lib=NULL
   #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
-  #define FLX_LIB_EXTENSION ".dylib"
+  // using .so = bundle = programmatically loadable, unbreaks the 10.2 build
+  // I'm not sure why the 10.3 and upwards versions of flx_load_module 
+  // work with .dylib, they really shouldn't shouldn't.
+  // #define FLX_LIB_EXTENSION ".dylib"
+  #define FLX_LIB_EXTENSION ".so"
   #define FLX_DLSYM(x, y) flx::rtl::getmachosym(x,"_"#y)
   #define FLX_SDLSYM(x, y) flx::rtl::getmachosym(x,(string("_")+string(y)).data())
 #else
@@ -1670,7 +1674,10 @@ using namespace std;
   #if FLX_CYGWIN
     #define FLX_LIB_EXTENSION ".dll"
   #elif FLX_MACOSX
-    #define FLX_LIB_EXTENSION ".dylib"
+    // this should never have worked. dylibs can't be programmatically
+    // loaded. perhaps 10.3 and above removed the bundle/dylib distinction.
+    // #define FLX_LIB_EXTENSION ".dylib"
+    #define FLX_LIB_EXTENSION ".so"
   #else
     #define FLX_LIB_EXTENSION ".so"
   #endif
