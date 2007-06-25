@@ -250,11 +250,14 @@ let scheme_eval env (s:sval):sval =
   | Some r -> r
 
 let scheme_compile_eval env (s:string):sval = 
+  try
   let inp = Ocs_port.string_input_port s in
   let lex = Ocs_lex.make_lexer inp "" in
-  match Ocs_read.read_expr lex with
+  begin match Ocs_read.read_expr lex with
   | Ocs_types.Seof -> print_endline "END OF FILE?"; Snull
   | v -> scheme_eval env v
+  end
+  with _ -> failwith ("ERROR EVALUATING SCHEME " ^ s)
 
 
 let define_scheme dyp name rhs (scm:string) =
@@ -766,6 +769,8 @@ let ocs2flx sr r =
 
 /* tokens replacements for special symbols used in productions */
 %constructor Obj_sexpr %for star plus quest suser10token sident
+%constructor Obj_sexpr %for lbrace rbrace lpar rpar lsqb rsqb 
+%constructor Obj_sexpr %for ssemi comma colon 
 
 /* nothing*/
 %constructor Obj_sexpr %for sepsilon
@@ -974,6 +979,15 @@ star: STAR { Snull }
 plus: PLUS { Snull }
 quest: QUEST { Snull }
 sident: IDENT { Snull }
+lbrace: LBRACE { Snull }
+rbrace: RBRACE { Snull }
+lpar: LPAR { Snull }
+rpar: RPAR { Snull }
+ssemi: SEMI { Snull }
+comma: COMMA { Snull }
+lsqb: LSQB { Snull }
+rsqb: RSQB { Snull }
+colon: COLON { Snull }
 
 /* 
 a definite non-terminal for a sequence of no tokens,
