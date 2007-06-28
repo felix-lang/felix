@@ -4818,7 +4818,9 @@ let show_token =
 let rec read_item lex =
   function
     Leof -> Seof
-  | Lident s -> get_symbol (String.lowercase s)
+(* Skaller edit: R5S5 deviation: case sensitive symbols! *)    
+(*  | Lident s -> get_symbol (String.lowercase s) *)
+  | Lident s -> get_symbol s
   | Lstring s -> Sstring s
   | Lnumber s | Lbool s | Lchar s -> s
   | Ltoken '(' -> read_list lex ')'
