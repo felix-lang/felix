@@ -27,9 +27,9 @@ SCHEME """
     (if (eq? (car x) 'ast_apply) 
       (if (pair? (cdr x)) 
         (begin 
-           (display "f=")(display (caadr x))
-           (display " arg=")(display (cadadr x))
-           (display " pair=")(display (cadr x))
+;;           (display "f=")(display (caadr x))
+;;           (display " arg=")(display (cadadr x))
+;;           (display " pair=")(display (cadr x))
            (cadr x))
         (list x ()))
       (list x ()))
@@ -39,7 +39,8 @@ SCHEME """
 
 SCHEME """
 (define mkl (lambda (x)
-  (begin (display "mkl x=")(display x)
+  (begin 
+;;  (display "mkl x=")(display x)
   (if (pair? x) 
     (if (eq? (car x) 'ast_tuple) 
       (if (pair? (cdr x)) (cadr x) (list x))

@@ -45,7 +45,9 @@ let lst s (f:sexp_t->'a) x : 'a list = match x with
 
 let rec xliteral_t sr fresh env x = 
   let bi i = 
+    (*
     print_endline ("Integer to convert is '" ^ i ^ "'");
+    *)
     Big_int.big_int_of_string i in
   let ss s = s in
   match x with
@@ -60,9 +62,13 @@ let rec xliteral_t sr fresh env x =
 
  
 and type_of_sex sr fresh env w = 
+  (*
   print_endline ("Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
+  *)
   let x = xexpr_t sr fresh env w in
+  (*
   print_endline ("Felix expression is " ^ Flx_print.string_of_expr x);
+  *)
   let y =
     match x with
     | `AST_tuple (_,[]) -> `TYP_tuple []
@@ -70,7 +76,9 @@ and type_of_sex sr fresh env w =
     | `AST_name (_,"typ_none",[]) -> `TYP_none
     | x -> typecode_of_expr x 
   in
+  (*
   print_endline ("Felix type is " ^ Flx_print.string_of_typecode y);
+  *)
   y
 
 and xexpr_t sr fresh env x = 
@@ -93,11 +101,9 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_vsprintf";  Str s] -> `AST_vsprintf (sr,ss s)
  | Lst [Id "ast_noexpand";  e] -> `AST_noexpand (sr,ex e)
  | Lst [Id "ast_name"; Id s ; Lst ts] -> 
-   print_endline ("Processing AST_name " ^ s ^"[" ^ Flx_util.catmap "," Sex_print.string_of_sex ts ^ "]");
    `AST_name (sr,s,map ti ts)
 
  | Lst [Id "ast_name"; Str s ; Lst ts] -> 
-   print_endline ("Processing AST_name " ^ ss s ^"[" ^ Flx_util.catmap "," Sex_print.string_of_sex ts ^ "]");
    `AST_name (sr,ss s,map ti ts)
 
  | Lst [Id "ast_the";  e] -> `AST_the (sr, xq e)
@@ -770,9 +776,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_jump"; e1; e2] -> `AST_jump(sr,ex e1, ex e2)
   | Lst [Id "ast_loop"; Str n; e2] -> `AST_loop(sr,n, ex e2)
   | Lst [Id "ast_svc"; Str n] -> `AST_svc(sr,n)
-  | Lst [Id "ast_fun_return"; e] -> 
-    print_endline "converting sex 'ast_fun_return'";
-    `AST_fun_return(sr,ex e)
+  | Lst [Id "ast_fun_return"; e] -> `AST_fun_return(sr,ex e)
 
   | Lst [Id "ast_yield"; e] -> `AST_yield(sr,ex e)
   | Id "ast_proc_return" -> `AST_proc_return(sr)
