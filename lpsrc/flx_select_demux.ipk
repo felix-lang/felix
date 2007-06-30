@@ -193,7 +193,6 @@ select_demuxer::remove_fd(int s)
   svs[s] = NULL;
 }
 
-// virtual functions to be overridden for thread safe descendent
 void
 select_demuxer::copy_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 {

@@ -326,6 +326,7 @@ demux_quitter::quit(demuxer* demux)
    // install self piper, with our callback
    sp.install(demux, this);
    // wake demuxer, getting our callback called, which sets quit flag
+   // NB: this requires that there BE another thread.
    sp.wake(); 
    // wait for quit flag to be signalled by exiting event thread
    finished.wait_until_true();

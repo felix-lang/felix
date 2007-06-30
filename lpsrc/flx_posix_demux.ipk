@@ -191,6 +191,8 @@ posix_demuxer::socket_send(int s, sel_param* pb)
 // get a posix demuxer to quit, that is, get the demuxer's event thread
 // to exit. doesn't return until this has happened. pretty sure that
 // calling this on a demuxer used synchronously would be a bad idea.
+// confirmed, when there is no other thread waiting on the demuxer
+// we wait for ever in quit
 // doesn't throw
 void
 posix_demuxer::async_quit()
@@ -607,7 +609,7 @@ pipe_pair::get_read_end()
 #include <flx_demux_config.hpp>
 namespace flx { namespace demux {
 
-// Shouldn't this all be DEMUX_EXTERN? eh, doesn't happen on win32
+// Shouldn't this all be DEMUX_EXTERN? eh, not actually compiled on win32
 // we'll probably live.
 int create_listener_socket(int* io_port, int q_len);
 int create_async_listener(int* io_port, int q_len);
