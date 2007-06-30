@@ -321,6 +321,9 @@ typeclass Show [T] {
 
 @h=tangler('lib/flx.flxh','data')
 @select(h)
+#import <nugram.flxh>
+open syntax expressions, statements, regexps;
+
 #import <flx_syntax.flxh>
 #import <flx_macros.flxh>
 #import <flx_platform.flxh>
@@ -955,6 +958,9 @@ open Show[bool];
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
+#import <nugram.flxh>
+open syntax expressions, statements, regexps;
+
 #import <flx_syntax.flxh>
 #import <flx_platform.flxh>
 #import <flx_macros.flxh>

@@ -49,7 +49,6 @@ SCHEME """
 ))
 """;
 
-
 syntax expressions {
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
@@ -69,10 +68,10 @@ syntax expressions {
     smatching  := | spattern => sexpr =># "`(,_2 ,_4)";
     smatching  := | => sexpr =># "`(pat_none ,_4)";
 
-  satom := typematch sexpr with stypematching+ endmatch =># 
+  satom := typematch sexpr with stype_matching+ endmatch =># 
     "`(ast_type_match (,_2 ,_4))";
 
-    stypematching  := | sexpr => sexpr =># "`(,_2 ,_4)";
+    stype_matching  := | sexpr => sexpr =># "`(,_2 ,_4)";
 
     satomic_pattern := sstring =># "`(pat_string ,_1)";
     satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
@@ -360,11 +359,11 @@ syntax expressions {
     sparameter_comma_list := sparameter =># "`(,_1)";
 
 
-    sparam_qual := val =># '"PVal"';
-    sparam_qual := var =># '"PVar"';
-    sparam_qual := ref =># '"PRef"';
-    sparam_qual := fun =># '"PFun"';
-    sparam_qual := sepsilon =># '"PVal"';
+    sparam_qual := val =># "'PVal";
+    sparam_qual := var =># "'PVar";
+    sparam_qual := ref =># "'PRef";
+    sparam_qual := fun =># "'PFun";
+    sparam_qual := sepsilon =># "'PVal";
 
   srvalue := slambda  =># "_1";
 
@@ -622,13 +621,45 @@ syntax statements {
   sinline_cpp:= code scode_spec ; =># "`(ast_code ,_2)";
   sinline_cpp:= noreturn code scode_spec ; =># "`(ast_noreturn_code ,_3)";
 
+  stypeparameter:= sname : sarrow =># "`(,_1 ,_3)";
+  stypeparameter:= sname =># "`(,_1 typ_none)";
+  stypeparameter_comma_list := sepsilon =># "()";
+  stypeparameter_comma_list := stypeparameter , stypeparameter_comma_list =># "(cons _1 _3)";
+  stypeparameter_comma_list := stypeparameter =># "`(,_1)";
+
+  stypefun_arg := sname =># "`((,_1 typ_none))";
+  stypefun_arg := ( stypeparameter_comma_list ) =># "`(,_2)";
+  stypefun_args := stypefun_arg+  =># "_1";
+
   stype_alias := typedef sdeclname = sexpr ; =>#
     """
     (mkns 
     `(ast_type_alias (,(caar _2) ,(cadar _2) ,_4))
     (cdr _2))
     """; 
-  // TODO -- typedef function forms
+
+  stype_alias := typedef fun sdeclname stypefun_args : sexpr => sexpr ; =>#
+    """
+    (mkns 
+    `(mktypefun (,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8))
+    (cdr _3))
+    """; 
+
+  stype_alias := typedef fun sdeclname : sexpr => stype_matching+ ; =>#
+    """
+    (if (eq? ('ast_arrow (car _5)))
+      (let (
+        (argt (cadr _5))
+        (ret (caddr _5))
+        (body `(ast_type_match (_a ,_7))))(
+        (let ((args `((_a ,argt))))
+      (mkns 
+      `(mktypefun (,(caar _3) ,(cadar _3) ,args ,ret ,body))
+      (cdr _3)))))
+      ('ERROR)
+    )
+    """; 
+
   stype_alias := rename sdeclname = squalified_name ; =>#
     """
     (mkns 
@@ -665,8 +696,70 @@ syntax statements {
     """;
   suse_decl := use sname = squalified_name ; =># "`(ast_use ,_2 ,_4)";
 
-  sassignment := sexpr = sexpr =># """`(ast_assign "_set" ((Expr ,_1) none) ,_3)""";
-  // TODO more assigments
+  // deprecate: class object construction, use a generator
+  sassignment := var sname <- new sexpr ; =># 
+    "`(ast_apply_ctor ,_2 ,(splitapply ,_5))";
+
+  // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
+  sassignment := sexpr <- sexpr ; =># 
+   """
+   (let ((fl (splitapply ,_3)))
+     (let ((f (car fl))(a (cadr fl)))
+       `(ast_call ,f ,(cons ,_1 a))))
+   """;
+
+  sassignop:= = =># "'_set";
+  sassignop:= := =># "'_init";
+
+  srmwop:= += =># "'pluseq";
+  srmwop:= -= =># "'minuseq";
+  srmwop:= *= =># "'muleq";
+  srmwop:= /= =># "'diveq";
+  srmwop:= %= =># "'modeq";
+  srmwop:= <<= =># "'leftshifteq";
+  srmwop:= >>= =># "'rightshifteq";
+  srmwop:= ^= =># "'bxoreq";
+  srmwop:= |= =># "'boreq";
+  srmwop:= &= =># "'bandeq";
+  srmwop:= ~= =># "'tildeeq";
+
+  sswapop := <-> =># "'_swap";
+
+  spreincrop:= ++ =># "'pre_incr";
+  spreincrop:= -- =># "'pre_decr";
+  spostincrop:= ++ =># "'post_incr";
+  spostincrop:= -- =># "'post_decr";
+
+  slelement := val sname =># "`(Val ,_2)";
+  slelement := var sname =># "`(Var ,_2)";
+  slelement := sname =># "`(Name ,_1)";
+  slelement := _ =># "'Skip";
+  slelement := ( slexprs ) =># "`(List ,_2)";
+
+  stlelement := slelement : sfactor =># "`(,_1 (some ,_3))";
+  stlelement := slelement =># "`(,_1 none)";
+
+  slexprs := stlelement , slexprs =># "(cons ,_1 ,_3)";
+  slexprs := stlelement =># "`(,_1)";
+
+  slexpr := slexprs =># 
+    """
+    (if (null? (cdr _1)) (car _1) `((List ,_1) none))
+    """;
+
+  sassignment := def slexpr = sexpr ; =># "`(ast_assign _set ,_2 _4)";
+
+  sassignment := sexpr sswapop sexpr ; =># 
+    "`(ast_call ,_2 (,_1 ,_3))";
+
+  sassignment := sexpr sassignop sexpr ; =># 
+    "`(ast_assign ,_2 ((Expr ,_1) none) ,_3)";
+
+  sassignment := sexpr srmwop sexpr ; =># 
+    "`(ast_assign ,_2 ((Expr ,_1) none) ,_3)";
+
+  sassignment := sexpr spostincrop ; =># "`(ast_call ,_2 ,_1)";
+  sassignment := spreincrop sexpr ; =># "`(ast_call ,_1 ,_2)";
 
   stodo := todo sstring ; =># "`(ast_nop ,_2)";
   stodo := todo ; =># """`(ast_nop "todo")""";
@@ -804,6 +897,8 @@ syntax statements {
   smacro_definition := macro scompound ; =># "`(ast_macro_block ,_2)";
   smacro_definition := macro forget sbasic_name_comma_list ; =># 
     "`(ast_macro_forget ,_3)";
+  smacro_definition := macro forget; =># 
+    "`(ast_macro_forget ())";
   smacro_definition := macro goto sname ; =># "`(ast_macro_goto ,_3)";
   smacro_definition := macro sname :> =># "`(ast_macro_label ,_3)";
   smacro_definition := macro if sexpr goto sname ; =># 
@@ -844,7 +939,46 @@ syntax statements {
     sopt_equal := sepsilon =># "()";
 
   sprocedure_definition := module sexpr ; =># "TODOIT";
-  sfunction_definition := module sexpr ; =># "TODOIT";
+
+  sfunction_definition := reduce sdeclname sreduce_args : sexpr => sexpr ; =>#
+  """
+    (mkns 
+    `(ast_reduce ,(caar _2) ,(cadar _2) ,_3 ,_5 ,_7)
+    (cdr _2))
+  """;
+
+  sfunction_definition := axiom sdeclname sfun_arg : sexpr; =>#
+  """
+    (mkns 
+    `(ast_axiom ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
+    (cdr _2))
+  """;
+
+  sfunction_definition := axiom sdeclname sfun_arg : sexpr = sexpr ; =>#
+  """
+    (mkns 
+    `(ast_axiom ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
+    (cdr _2))
+  """;
+
+  sfunction_definition := lemma sdeclname sfun_arg : sexpr; =>#
+  """
+    (mkns 
+    `(ast_lemma ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
+    (cdr _2))
+  """;
+
+  sfunction_definition := axiom sdeclname sfun_arg : sexpr = sexpr ; =>#
+  """
+    (mkns 
+    `(ast_lemma ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
+    (cdr _2))
+  """;
+
+
+
+
+
   sobject_definition := module sexpr ; =># "TODOIT";
   sconst_def := module sexpr ; =># "TODOIT";
 }

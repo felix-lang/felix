@@ -149,6 +149,7 @@ let cal_funkind adjs fk =
   | [] -> sr,`Function
   | h :: t -> sr,snd h
   
+(* MOVED TO flx_typing 
 (* handle curried type functions *)
 let mktypefun sr name vs (args: (string * typecode_t) list list) return_type body =
   let argtyp t = match t with
@@ -175,6 +176,7 @@ let mktypefun sr name vs (args: (string * typecode_t) list list) return_type bod
     vs,
     body
   )
+*)
 
 let dfltvs = 
   [],
@@ -216,6 +218,16 @@ let dfltvs =
   ]
 @#
 
+let string_of_ocs r = 
+  let outp = Buffer.create 200 in
+  Ocs_print.print_to_buffer outp false r;
+  Buffer.contents outp
+
+let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
+
+let print_ocs r = 
+  print_endline (string_of_ocs r)
+
 let scheme_eval env (s:sval):sval =
   let term = ref None in
   let get_port = function 
@@ -223,19 +235,22 @@ let scheme_eval env (s:sval):sval =
     | _ -> failwith "expected port"
   in
   let th = Ocs_top.make_thread () in
-  let outp = get_port th.Ocs_types.th_stdout in
   begin try
     let c = Ocs_compile.compile env s in
+    (*
     print_endline "COMPILED";
+    *)
     Ocs_eval.eval th (function 
 (*
       | Ocs_types.Sunspec -> failwith "UNSPECIFIED" 
 *)
       | r -> 
+         (*
          print_endline "EVALUATED";
          Ocs_print.print outp false r;
          Ocs_port.puts outp "\n";
          Ocs_port.flush outp;
+         *)
          term := Some r
     ) c
   with 
@@ -249,7 +264,7 @@ let scheme_eval env (s:sval):sval =
   | None -> failwith "Scheme term not returned!"
   | Some r -> r
 
-let scheme_compile_eval env (s:string):sval = 
+let scheme_compile_eval failwith env (s:string):sval = 
   try
   let inp = Ocs_port.string_input_port s in
   let lex = Ocs_lex.make_lexer inp "" in
@@ -257,7 +272,9 @@ let scheme_compile_eval env (s:string):sval =
   | Ocs_types.Seof -> print_endline "END OF FILE?"; Snull
   | v -> scheme_eval env v
   end
-  with _ -> failwith ("ERROR EVALUATING SCHEME " ^ s)
+  with
+  | Failure e -> failwith ("ERROR EVALUATING SCHEME " ^ s ^", err=" ^ e)
+  | x -> failwith ("ERROR EVALUATING SCHEME " ^ s ^ ", exn=" ^ Printexc.to_string x)
 
 
 let define_scheme dyp name rhs (scm:string) =
@@ -279,9 +296,12 @@ let define_scheme dyp name rhs (scm:string) =
         Dyp.Ter (Dyp_symbols.get_token_name s)
   in
   let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
+  (*
   print_endline ("A Rule for " ^ name ^ " defined, scm="^scm);
+  *)
   let action = fun _ avl ->
-    print_endline ("Reducing Rule for " ^ name ^ ", scm="^scm);
+    let b = Buffer.create 200 in
+    Buffer.add_string b ("Reducing Rule for " ^ name ^ ", scm="^scm^"\n");
     let dummy = ("dummy",0,0,0,0) in
     let srr = ref dummy in
     let setsr sr = if dummy = !srr then srr := slift sr in
@@ -296,6 +316,9 @@ let define_scheme dyp name rhs (scm:string) =
       match h1,h2 with
       | _,`Obj_sexpr s 
         ->
+        Buffer.add_string b ("Arg " ^ string_of_int n ^ " = "); 
+        buffer_add_ocs b s; Buffer.add_string b "\n";
+
         let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
         let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = s } in
         Ocs_env.bind_name env v1 g1;
@@ -303,7 +326,9 @@ let define_scheme dyp name rhs (scm:string) =
       | _ -> aux t1 t2 (n+1)
     in
     aux rhs avl 1;
-    let r = scheme_compile_eval env scm in
+    Buffer.add_string b "End of arguments\n";
+    let failwith x = print_string (Buffer.contents b); failwith x in
+    let r = scheme_compile_eval failwith env scm in
     `Obj_sexpr r
   in
   rule,action
@@ -611,6 +636,7 @@ let fixup_rule rhs =
   in aux rhs [] []
 
 let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
+     (*
      print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
      catmap " " (function 
      | NAME (_,s) -> "<"^s^">"
@@ -620,6 +646,7 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
      "=>#\n" ^
      string_of_statement 0 stmt
      );
+     *)
      (* WE should use a distinct syntax for adding new nonterms .. *)
      begin match name with
      | "statement" ->
@@ -654,7 +681,9 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
         *)
         begin match stmt with
         | `AST_scheme_string (sr,s) ->
+          (*
           print_endline ("SCHEME, user action = " ^ s);
+          *)
           let prod,extras = fixup_rule rhs in
           let rule = define_scheme dyp name prod s in
           dyp.add_rules <- rule :: dyp.add_rules;
@@ -781,7 +810,6 @@ let ocs2flx sr r =
 %start <(Flx_ast.statement_t)> statement
 %start <(Flx_ast.expr_t)> expression
 %start <(Flx_ast.expr_t * token)> exprx
-%start <(Flx_ast.expr_t)> expr
 %start <(unit)> semi
 
 %%
@@ -792,7 +820,7 @@ semi:
   | SEMI {()}
 
 exprx:
-  expr expr_terminator { $1,$2 }
+  | old_expr expr_terminator { $1,$2 }
 
 expr_terminator:
   | SEMI { SEMI $1 }
@@ -816,7 +844,7 @@ compilation_unit:
   | statements ENDMARKER { $1 }
 
 expression:  
-  | expr ENDMARKER { $1 }
+  | old_expr ENDMARKER { $1 }
 
 statements:
  | statement statements { $1 :: $2 }
@@ -846,9 +874,9 @@ statement:
     {
       let sr = rstoken $1 $3 in
       let s = snd $2 in
-      print_endline ("Evaluating " ^ s);
+      let failwith x = print_endline ("Evaluating " ^ s); failwith x in 
       let env = Ocs_env.env_copy dyp.local_data.env in
-      let r = scheme_compile_eval env s in
+      let r = scheme_compile_eval failwith env s in
       dyp.local_data <- { dyp.local_data with env = env };
       `AST_nop (sr,"")
     }
@@ -939,6 +967,7 @@ sterm:
   /* a predefined statement, for testing expression part
      of user defined grammar
   */
+  /*
   | CALL sexpr SEMI { 
     let call = Ocs_sym.get_symbol "ast_call" in 
     let f,a =
@@ -958,6 +987,7 @@ sterm:
     let x = Ocs_misc.make_slist Snull (rev x) in
     x
     }
+  */
   /* entry point for user defined statements, will eventually
     conflict with the 'call' hack above
   */
@@ -1779,7 +1809,7 @@ type_alias:
       let return_type = typecode_of_expr $6 in
       let body = typecode_of_expr $8 in
       let args = List.map snd $4 (* elide srcref *) in
-      let stmt =  mktypefun sr name vs args return_type body in
+      let stmt =  Flx_typing.mktypefun sr name vs args return_type body in
       fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
     }
  
@@ -1793,7 +1823,7 @@ type_alias:
         let args = [["_a",argt]] in 
         let match_expr = `AST_type_match (sr,(`AST_name (sr,"_a",[]),$7)) in
         let body = typecode_of_expr match_expr in
-        let stmt = mktypefun sr name vs args return_type body in
+        let stmt = Flx_typing.mktypefun sr name vs args return_type body in
         fold_left (fun stmt (name,vs) -> `AST_namespace (sr,name,vs,[stmt])) stmt (tl $3)
 
       | _ -> 
@@ -3397,8 +3427,31 @@ glr_parse:
   
 @head(2,'Executable Expressions')
 @select(h)
-expr: 
-  | LET pattern EQUAL expr IN expr 
+expr:  
+  | sexpr 
+    {
+      let sr = "dummy",0,0,0,0 in
+      (*
+      print_endline "GOT SEXPR";
+      *)
+      let r = $1 in
+      let sex = Ocs2sex.ocs2sex r in
+      (*
+      print_endline "OCS scheme sexpr converted to s-expression:";
+      Sex_print.sex_print sex;
+      *)
+      let fresh = ref 1 in
+      let env = [] in
+      let flx = Flx_sex2flx.xexpr_t sr fresh env sex in
+      (*
+      print_endline "s-expression converted to Felix expression!";
+      print_endline (string_of_expr flx);
+      *)
+      flx
+    }
+
+old_expr: 
+  | LET pattern EQUAL old_expr IN old_expr 
     { 
       let sr = rsrange (slift $1) (src_of_expr $6) in
       `AST_letin (sr,($2,$4,$6)) 
@@ -3410,7 +3463,7 @@ rvalue:
 
 /* cannot use fun_args, since ambiguity on the third case (NAME) */
 lambda_fun_arg:
-  | LPAR parameter_comma_list WHEN expr RPAR { rstoken $1 $3,($2,Some $4) }
+  | LPAR parameter_comma_list WHEN old_expr RPAR { rstoken $1 $3,($2,Some $4) }
   | LPAR parameter_comma_list RPAR { rstoken $1 $3,($2,None) }
 
 lambda_fun_args:
@@ -3456,7 +3509,7 @@ lambda:
     }
 
 dollar_apply:
-  | tuple UNLESS expr THEN dollar_apply
+  | tuple UNLESS old_expr THEN dollar_apply
     {
       let sr = rsrange (src_of_expr $1) (src_of_expr $5) in
       let revcond = apl $2 "lnot" $3 in
@@ -3912,10 +3965,10 @@ coercion:
 
 factor:
   | hash_name                        { ($1:>expr_t) }
-  | factor DOT LSQB expr RSQB          { apl2 $3 "subscript" [$1; $4] }
-  | factor DOT LSQB expr TO expr RSQB  { apl2 $3 "substring" [$1; $4; $6] }
-  | factor DOT LSQB expr TO RSQB       { apl2 $3 "copyfrom" [$1; $4] }
-  | factor DOT LSQB TO expr RSQB       { apl2 $3 "copyto" [$1; $5] } 
+  | factor DOT LSQB old_expr RSQB          { apl2 $3 "subscript" [$1; $4] }
+  | factor DOT LSQB old_expr TO old_expr RSQB  { apl2 $3 "substring" [$1; $4; $6] }
+  | factor DOT LSQB old_expr TO RSQB       { apl2 $3 "copyfrom" [$1; $4] }
+  | factor DOT LSQB TO old_expr RSQB       { apl2 $3 "copyto" [$1; $5] } 
   | factor DOT simple_name_parts       
     { 
       let rsr,name,ts = $3 in
@@ -3986,14 +4039,14 @@ qualified_name:
     }
 
 elif:
-  | ELIF expr THEN expr { $2,$4 }
+  | ELIF old_expr THEN old_expr { $2,$4 }
 
 elifs:
   | elifs elif { $2 :: $1 }
   | elif { [$1] }
 
 else_part:
-  | elifs ELSE expr 
+  | elifs ELSE old_expr 
     {
       List.fold_left (* actually a right fold cause list is reversed *)
       (fun result (cond,thn) ->
@@ -4010,16 +4063,16 @@ else_part:
       )
       $3 $1
     }
-  | ELSE expr { $2 }
+  | ELSE old_expr { $2 }
 
 cond:
-  | IF expr THEN expr else_part ENDIF
+  | IF old_expr THEN old_expr else_part ENDIF
     { 
       `AST_cond (rstoken $1 $6,($2,$4,$5))
     }
 
 expr_code_prefix:
-  | CODE LSQB expr RSQB 
+  | CODE LSQB old_expr RSQB 
     {
      $1,
      typecode_of_expr $3
@@ -4055,7 +4108,7 @@ atom:
       `AST_expr (sr,s,t)
     }
 
-  | LSQBAR expr RSQBAR
+  | LSQBAR old_expr RSQBAR
     {
       let sr = rstoken $1 $3 in
       match $2 with
@@ -4063,7 +4116,7 @@ atom:
       | x -> `AST_arrayof (sr,[x])
     }
 
-  | LBRACE expr RBRACE     
+  | LBRACE old_expr RBRACE     
     { 
       let sr = rstoken $1 $3 in
       `AST_lambda 
@@ -4091,7 +4144,7 @@ atom:
       )
     
     }
-  | LPAR expr RPAR      { $2 }
+  | LPAR old_expr RPAR      { $2 }
   | LPAR RPAR           { `AST_tuple (rstoken $1 $2,[]) }
   | literal             { $1 }
   | cond                { $1 }
@@ -4108,7 +4161,7 @@ atom:
       `AST_interpolate (sr,s) 
     }
     
-  | USERLB expr USERRB  
+  | USERLB old_expr USERRB  
     {
       let sr1,fnmap,lsym =$1 and sr2,rsym = $3 in
       let sr = rstoken sr1 sr2 in
@@ -4163,7 +4216,7 @@ string_literal:
     }
 
 simple_name_parts:
-  | NAME LSQB expr RSQB  
+  | NAME LSQB old_expr RSQB  
     { 
       rsrange (slift (fst $1)) (slift $4),
       snd $1,

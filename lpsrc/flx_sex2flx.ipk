@@ -359,11 +359,31 @@ and xpattern_t sr fresh env x =
   | x -> 
     err x "pattern"
 
+and xcharset_t sr fresh env x =
+  let cs x = xcharset_t sr fresh env x in
+  match x with
+  | Lst [Id "charset_of_string"; Str s] -> Flx_charset.charset_of_string s
+  | Lst [Id "charset_of_int_range"; Int i; Int j] -> 
+    Flx_charset.charset_of_int_range (int_of_string i) (int_of_string j)
+
+  | Lst [Id "charset_of_range"; Str i; Str j] -> 
+    Flx_charset.charset_of_range i j
+
+  | Lst [Id "charset_union"; x; y] -> 
+    Flx_charset.charset_union (cs x) (cs y)
+
+  | Lst [Id "charset_inv"; x] -> 
+    Flx_charset.charset_inv (cs x)
+
+  | x ->
+    err x "charset"
+
 and xregexp_t sr fresh env x = 
   let ex x = xexpr_t sr fresh env x in
   let xq qn = qualified_name_of_expr (ex qn) in
   let re x = xregexp_t sr fresh env x in
   let ss s = s in
+  let cs x = xcharset_t sr fresh env x in
   match x with
   | Lst [Id "regexp_seq"; r1; r2] -> `REGEXP_seq (re r1, re r2)
   | Lst [Id "regexp_alt"; r1; r2] -> `REGEXP_alt (re r1, re r2)
@@ -374,6 +394,13 @@ and xregexp_t sr fresh env x =
   | Id "regexp_sentinel" -> `REGEXP_sentinel
   | Lst [Id "regexp_code"; e] -> `REGEXP_code (ex e)
   | Lst [Id "regexp_group"; Str s; r] -> `REGEXP_group (ss s, re r)
+
+  | Id "regexp_underscore" -> Flx_charset.regexp_underscore
+  | Id "regexp_dot" -> Flx_charset.regexp_dot
+
+  | Lst [Id "regexp_of_charset"; x] -> 
+    Flx_charset.regexp_of_charset  (cs x)
+
   | x -> err x "regexp_t syntax error"
 
 and xglr_term_t sr fresh env x = 
@@ -446,10 +473,10 @@ and xaxiom_method_t sr fresh env x : axiom_method_t =
 
 and xparam_kind_t sr fresh env x : param_kind_t =
   match x with
-  | Str "PVal" -> `PVal
-  | Str "PVar" -> `PVar
-  | Str "PFun" -> `PFun
-  | Str "PRef" -> `PRef
+  | Id "PVal" -> `PVal
+  | Id "PVar" -> `PVar
+  | Id "PFun" -> `PFun
+  | Id "PRef" -> `PRef
   | x -> err x "param_kind_t"
 
 and xparameter_t sr fresh env x : parameter_t =
@@ -734,6 +761,21 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_type_alias"; Str n; vs; t] ->
     `AST_type_alias (sr,n, xvs vs, ti t)
 
+  | Lst [Id "mktypefun"; Str name; vs; argss; ret; body] ->
+    let fixarg  arg = match arg with
+    | Lst [Str n; t] -> n,ti t
+    | x -> err x "mktypefun:unpack args1"
+    in
+    let fixargs args = match args with
+    | Lst args -> map fixarg args 
+    | x -> err x "mktypefun:unpack args2"
+    in
+    let argss = match argss with
+    | Lst args -> map fixargs args 
+    | x -> err x "mktypefun:unpack args3"
+    in
+    Flx_typing.mktypefun sr name (xvs vs) argss (ti ret) (ti body)
+
   | Lst [Id "ast_inherit"; Str n; vs; qn] ->
     `AST_inherit (sr,n, xvs vs, xq qn)
 
@@ -771,7 +813,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_ifdo"; e; sts1; sts2] -> `AST_ifdo(sr,ex e, xsts sts1, xsts sts2)
   | Lst [Id "ast_ifnotgoto"; e; Str n] -> `AST_ifnotgoto(sr,ex e,n)
   | Lst [Id "ast_call"; f; a] -> `AST_call(sr,ex f,ex a)
-  | Lst [Id "ast_assign"; Str v; tlv; a] -> `AST_assign(sr,v,xtlv tlv,ex a)
+  | Lst [Id "ast_assign"; Id v; tlv; a] -> `AST_assign(sr,v,xtlv tlv,ex a)
   | Lst [Id "ast_cassign"; e1; e2] -> `AST_cassign(sr,ex e1, ex e2)
   | Lst [Id "ast_jump"; e1; e2] -> `AST_jump(sr,ex e1, ex e2)
   | Lst [Id "ast_loop"; Str n; e2] -> `AST_loop(sr,n, ex e2)
