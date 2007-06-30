@@ -131,6 +131,7 @@ pkg_requires = ['flx_version','ocs','dypgen','sex','misc','cil','flxcc_util']
 caml_provide_lib = 'src/flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
+tmpdir = ['src']
 
 @head(1,'Purpose')
 Felix is a procedural language designed to implement

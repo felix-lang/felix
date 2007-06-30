@@ -142,6 +142,7 @@ cpp_cpps = ELKRTL + SMRTL
 iscr_source = ['lpsrc/sm.pak','lpsrc/ast.pak','lpsrc/elk.pak']
 build_macro = "ELK"
 weaver_directory = "doc/elkhound/"
+tmpdir = ['elk']
 
 @h = tangler('config/elk.fpc')
 @select(h)

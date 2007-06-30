@@ -40,6 +40,7 @@ caml_exes = ['ocs/ocs_main']
 iscr_src= ['lpsrc/ocs.pak']
 weaver_directory='doc/ocs'
 pkg_requires = ['flx_version']
+tmpdir = ['ocs']
 
 @h=tangler('ocs/ocs_char.ml')
 @select(h)

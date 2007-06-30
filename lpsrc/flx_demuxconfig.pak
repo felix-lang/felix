@@ -123,6 +123,7 @@ iscr_source = [
   ]
 build_macro = "DEMUX"
 weaver_directory = 'doc/rtl/flx_demux/'
+tmpdir = ['demux']
 
 @h=tangler('demux/demux_sockety.cpp')
 @select(h)

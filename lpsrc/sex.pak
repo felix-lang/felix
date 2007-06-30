@@ -22,6 +22,7 @@ pkg_requires = ['flx_version','ocs','dypgen']
 caml_exes = ['sex/sex']
 iscr_src = ['lpsrc/sex.pak']
 weaver_directory='doc/sex'
+tmpdir = ['sex']
 
 @head(1,"Lexer")
 A simple lexer.

@@ -39,6 +39,7 @@ iscr_source = ['lpsrc/tre.pak']
 weaver_directory = 'doc/rtl/tre/'
 build_macro = "TRE"
 @tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+tmpdir = ['tre']
 
 @h = tangler('config/tre.fpc')
 @select(h)

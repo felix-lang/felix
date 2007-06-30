@@ -19,6 +19,8 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
 iscr_source = [ 'lpsrc/flx_tutorial.pak' ]
 
 weaver_directory = 'doc/tutorial/introduction/'
+tmpdir = ['tut']
+
 @doc()
 
 @env.head(1,'Basic Felix 101')

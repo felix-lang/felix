@@ -51262,6 +51262,7 @@ provides_lib = 'libflx_judy'
 iscr_source = ['lpsrc/flx_judy.pak']
 weaver_directory = 'doc/judy'
 build_macro = 'JUDY'
+tmpdir = ['judy']
 
 @head(1,'Judy run time library')
 @select(tangler('config/flx_judy.fpc'))

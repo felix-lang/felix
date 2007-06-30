@@ -46,7 +46,7 @@ caml_exes = ['dypgen/generators/pgen/pgen']
 iscr_source = ["lpsrc/dyp.pak"]
 weaver_directory = 'doc/dypgen/'
 pkg_requires = ['flx_version','dyplib']
-
+tmpdir = ['dypgen']
 
 @h = tangler('spkgs/dypgen.py')
 @select(h)

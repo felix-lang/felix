@@ -74,6 +74,7 @@ demos = glob.glob(os.path.join('demos', 'faio', '*.flx'))
 iscr_source = ["lpsrc/flx_faio.pak"]
 build_macro = "FAIO"
 weaver_directory = 'doc/rtl/flx_faio/'
+tmpdir = ['faio']
 
 @h=tangler('rtl/flx_faio_config.hpp')
 @select(h)
