@@ -697,11 +697,11 @@ syntax statements {
 
   suse_decl:= use squalified_name ; =>#
     """
-    (let ((name))
-      (if (eq? (car _2) "ast_lookup") (caddr _2)
-        (if (eq? (car _2 "ast_name") (cadr _2)
+    (let (name
+      (if (eq? (car _2) 'ast_lookup) (caddr _2)
+        (if (eq? (car _2) 'ast_name) (cadr _2)
         ("ERROR"))))
-    `(ast_use ,_name ,_2)
+    `(ast_use ,_name ,_2))
     """;
   suse_decl := use sname = squalified_name ; =># "`(ast_use ,_2 ,_4)";
 
@@ -714,7 +714,7 @@ syntax statements {
    """
    (let ((fl (splitapply ,_3)))
      (let ((f (car fl))(a (cadr fl)))
-       `(ast_call ,f ,(cons ,_1 a))))
+       `(ast_call ,f ,(cons _1 a))))
    """;
 
   sassignop:= = =># "'_set";
@@ -748,7 +748,7 @@ syntax statements {
   stlelement := slelement : sfactor =># "`(,_1 (some ,_3))";
   stlelement := slelement =># "`(,_1 none)";
 
-  slexprs := stlelement , slexprs =># "(cons ,_1 ,_3)";
+  slexprs := stlelement , slexprs =># "(cons _1 _3)";
   slexprs := stlelement =># "`(,_1)";
 
   slexpr := slexprs =># 
@@ -756,7 +756,7 @@ syntax statements {
     (if (null? (cdr _1)) (car _1) `((List ,_1) none))
     """;
 
-  sassignment := def slexpr = sexpr ; =># "`(ast_assign _set ,_2 _4)";
+  sassignment := def slexpr = sexpr ; =># "`(ast_assign _set ,_2 ,_4)";
 
   sassignment := sexpr sswapop sexpr ; =># 
     "`(ast_call ,_2 (,_1 ,_3))";
@@ -776,7 +776,7 @@ syntax statements {
   sifgoto := if sexpr goto sname ; =># "`(ast_ifgoto ,_2 ,_4)";
   sifgoto := if sexpr return ; =># "`(ast_ifreturn ,_2)";
   sifgoto := if sexpr call sexpr ; =># 
-    "`(ast_ifdo ,_2 (ast_call (split_apply ,_4))())";
+    "`(ast_ifdo ,_2 (,(cons 'ast_call (splitapply _4)))())";
   sifgoto := if sexpr do sstatements selse_clause done ; =># 
     "`(ast_ifdo ,_2 ,_4 ,_5)";
   sifgoto := if sexpr do sstatements done ; =># 
@@ -803,6 +803,21 @@ syntax statements {
             `((ast_ifdo ,cond ,thn ,result))))))
         (fold_left f () _1))
     """;
+
+#keyword whilst
+  sifgoto := whilst sexpr do sstatements done; =>#
+  """
+    `( ast_macro_block ,( append `(
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab2" "" )
+      ( ast_label "lab1" ) 
+      ( ast_ifgoto (ast_apply (lnot ,_2)) "lab2" ) )
+      _4  
+      '(( ast_goto "lab1" ) 
+      ( ast_label "lab2" ))
+      )
+    ) 
+  """;
 
   sreturn := yield sexpr ; =># "`(ast_yield ,_2)";
   sreturn := return sexpr ; =># "`(ast_fun_return ,_2)";

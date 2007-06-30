@@ -693,7 +693,7 @@ and xstatement_t sr fresh env x : statement_t =
     in
     `AST_glr (sr,s,ti t, pl)
 
-  | Lst [Id "ast_macro_name"; Str n; Id m] -> `AST_macro_name (sr,n,m)
+  | Lst [Id "ast_macro_name"; Str n; Str m] -> `AST_macro_name (sr,n,m)
   | Lst [Id "ast_macro_names"; Str n; ms] -> 
     `AST_macro_names (sr,n,lst "ast_macro_names" xid ms)
   | Lst [Id "ast_expr_macro"; Str n; mps; e] ->
