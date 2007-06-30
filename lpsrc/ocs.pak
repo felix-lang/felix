@@ -17,6 +17,7 @@ OCS_MODULES = [
   'ocs/ocs_lex',
   'ocs/ocs_misc',
   'ocs/ocs_read',
+  'ocs/ocs_print',
   'ocs/ocs_eval',
   'ocs/ocs_list',
   'ocs/ocs_compile',
@@ -24,7 +25,6 @@ OCS_MODULES = [
   'ocs/ocs_prim',
   'ocs/ocs_string',
   'ocs/ocs_vector',
-  'ocs/ocs_print',
   'ocs/ocs_io',
   'ocs/ocs_contin',
   'ocs/ocs_top',
@@ -1139,7 +1139,7 @@ let chkargs p n =
         ()
       else
         raise (Error (p.prim_name ^ ": wrong number of arguments"))
-  | _ -> raise (Error "apply: not a procedure or primitive")
+  | _ -> raise (Error ("apply: '"^Ocs_print.string_of_ocs p ^"' not a procedure or primitive"))
 ;;
 
 let rec doapply th cc p disp av =
@@ -4799,6 +4799,10 @@ let write_char_to_buffer p c =
 let print_to_buffer p b v =
   store (Buffer.add_char p) (Buffer.add_string p) b v
 
+let string_of_ocs v =
+  let b = Buffer.create 200 in
+  print_to_buffer b false v;
+  Buffer.contents b
 
 @h=tangler('ocs/ocs_print.mli')
 @select(h)
@@ -4817,6 +4821,8 @@ val print : Ocs_port.port -> bool -> sval -> unit
 val write_string_to_buffer : Buffer.t -> string -> unit
 val write_char_to_buffer : Buffer.t -> char -> unit
 val print_to_buffer : Buffer.t -> bool -> sval -> unit
+
+val string_of_ocs: sval -> string
 
 @h=tangler('ocs/ocs_read.ml')
 @select(h)

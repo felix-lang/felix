@@ -49,6 +49,15 @@ SCHEME """
 ))
 """;
 
+SCHEME """
+(define cal_funkind (lambda (adjs fk)
+  (if (eq? fk 'CFunction)'CFunction
+  (if (eq? fk 'Generator)'Generator
+  ;; fk is Function
+  (if (pair? adjs)(car adjs)'Function
+)))))
+""";
+
 syntax expressions {
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
@@ -338,9 +347,9 @@ syntax expressions {
     """;
 
 
-    sadjective := inline =># '"InlineFunction"';
-    sadjective := noinline =># '"NoInlineFunction"';
-    sadjective := virtual =># '"Virtual"';
+    sadjective := inline =># "'InlineFunction";
+    sadjective := noinline =># "'NoInlineFunction";
+    sadjective := virtual =># "'Virtual";
     sadjectives := sadjective* =># "_1";
 
     slambda_fun_arg := ( sparameter_comma_list when sexpr ) =># "`(,_2 (some ,_4))";
@@ -651,11 +660,11 @@ syntax statements {
       (let (
         (argt (cadr _5))
         (ret (caddr _5))
-        (body `(ast_type_match (_a ,_7))))(
+        (body `(ast_type_match (_a ,_7))))
         (let ((args `((_a ,argt))))
       (mkns 
       `(mktypefun (,(caar _3) ,(cadar _3) ,args ,ret ,body))
-      (cdr _3)))))
+      (cdr _3))))
       ('ERROR)
     )
     """; 
@@ -767,7 +776,7 @@ syntax statements {
   sifgoto := if sexpr goto sname ; =># "`(ast_ifgoto ,_2 ,_4)";
   sifgoto := if sexpr return ; =># "`(ast_ifreturn ,_2)";
   sifgoto := if sexpr call sexpr ; =># 
-    "`(ast_ifdo ,_2 (ast_call (split_apply ,_4))))";
+    "`(ast_ifdo ,_2 (ast_call (split_apply ,_4))())";
   sifgoto := if sexpr do sstatements selse_clause done ; =># 
     "`(ast_ifdo ,_2 ,_4 ,_5)";
   sifgoto := if sexpr do sstatements done ; =># 
@@ -782,7 +791,7 @@ syntax statements {
     """      
         (let ((f (lambda (result condthn) 
           (let ((cond (car condthn)) (thn (cadr condthn))) 
-            `(ast_ifdo ,cond ,thn ,result)))))
+            `((ast_ifdo ,cond ,thn ,result))))))
         (fold_left f _3 _1))
     """;
 
@@ -791,12 +800,9 @@ syntax statements {
     """      
         (let ((f (lambda (result condthn) 
           (let ((cond (car condthn)) (thn (cadr condthn))) 
-            `(ast_ifdo ,cond ,thn ,result)))))
+            `((ast_ifdo ,cond ,thn ,result))))))
         (fold_left f () _1))
     """;
-
-
-  // TODO more ifgotos
 
   sreturn := yield sexpr ; =># "`(ast_yield ,_2)";
   sreturn := return sexpr ; =># "`(ast_fun_return ,_2)";
@@ -940,12 +946,18 @@ syntax statements {
 
   sprocedure_definition := module sexpr ; =># "TODOIT";
 
+  sreduce_args := ( stypeparameter_comma_list ) =># "_2";
+
   sfunction_definition := reduce sdeclname sreduce_args : sexpr => sexpr ; =>#
   """
     (mkns 
     `(ast_reduce ,(caar _2) ,(cadar _2) ,_3 ,_5 ,_7)
     (cdr _2))
   """;
+
+  sfun_arg :=  ( sparameter_comma_list when sexpr ) =># "`(,_2 ,_4)";
+  sfun_arg :=  ( sparameter_comma_list ) =># "`(,_2 none)";
+  sfun_arg :=  sname =># "`(((,_1 typ_none)) none)";
 
   sfunction_definition := axiom sdeclname sfun_arg : sexpr; =>#
   """
@@ -975,7 +987,55 @@ syntax statements {
     (cdr _2))
   """;
 
+  sfun_kind := cfun =># "'CFunction";
+  sfun_kind := gen =># "'Generator";
+  sfun_kind := fun =># "'Function";
 
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    sfun_arg* sopt_type_expr => sexpr ; =>#
+  """
+    (let ((body `((ast_fun_return ,_7))))
+    (mkns 
+    `(ast_curry ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
+    (cdr _3)))
+  """;
+
+
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    sfun_arg* sopt_type_expr = scompound ; =>#
+  """
+    (mkns 
+    `(ast_curry ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
+    (cdr _3))
+  """;
+
+  sopt_cstring := = scode_spec =># "`(some ,_2)";
+  sopt_cstring := sepsilon =># "'none";
+
+  sopt_prec := is sname =># "_2";
+  sopt_prec := sepsilon =># '(quote "")';
+
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    sopt_type_expr sopt_cstring sopt_prec srequires_clause ; =>#
+  "'UNIMPLEMENTED_PRIMITIVE_FUNCTION_DEFINITION";
+
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    sopt_type_expr = smatching+ ; =>#
+  """
+    (if (eq? ('ast_arrow (caar _4)))
+      (let (
+        (argt (caadr _4))
+        (ret (cadadr _4))
+        (traint (cadr _3))
+        (body `((ast_fun_return (ast_match _a ,_6)))))
+    (mkns 
+    `(ast_curry ,(caar _3) ,(cadar _3) 
+      (((PVal _a ,argt) none))
+      (,ret ,traint) 
+      ,(cal_funkind _1 _2) ,body)
+    (cdr _3)))
+    ('ERROR))
+  """;
 
 
 

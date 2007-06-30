@@ -120,6 +120,7 @@ make_std_demuxer()
 
 @h=tangler('lib/flx_demux.flx')
 @select(h)
+#import <flx.flxh>
 module Demux
 {
   type demuxer = "flx::demux::flx_demuxer_t*"
