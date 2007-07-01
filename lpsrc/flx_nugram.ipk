@@ -66,7 +66,7 @@ syntax expressions {
   satom := sexpr_code_prefix sexpr =># "`(ast_expr ,_1 ,_2)";
 
   satom := callback [ sexpr ] =># "`(ast_callback ,_3)";
-  satom := [| sexpr |] =># "`(ast_arrayof ,_2)";
+  satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";
   satom := { sexpr } =># """
     `(ast_lambda (,dfltvs ((() none)) typ_none ((ast_fun_return ,_2))))
   """;
@@ -1030,12 +1030,48 @@ syntax statements {
 
   sfunction_definition := sadjectives sfun_kind sdeclname 
     sopt_type_expr sopt_cstring sopt_prec srequires_clause ; =>#
-  "'UNIMPLEMENTED_PRIMITIVE_FUNCTION_DEFINITION";
+  """
+    (let (
+      (name (caar _3))
+      (vs (cadar _3))
+      (kind (cal_funkind _1 _2))
+      (t (car _4))
+      (traint (cadr _4))
+      (prec _6)
+      (reqs (if (memv 'Virtual _1)
+        `(rreq_and ((rreq_atom (Property_req "virtual")) ,_7))
+        _7)
+      )
+      (ct 
+        (if (eq? 'none _5)
+          (if (memv 'Virtual _1)
+            'Virtual 
+             `(StrTemplate ,(string-append (caar _3) "($a)"))
+           )
+           (cadr _5))
+      )
+    )
+    (let (
+      (reqs 
+        (if (eq? 'Generator kind)
+          `(rreq_and ((rreq_atom (Property_req "generator")) ,reqs))
+          reqs))
+    )
+    (if (eq? 'ast_arrow (car t))
+      (let (
+        (argt (caadr t))
+        (ret (cadadr t)))
+      (mkns 
+      `(ast_fun_decl ,name ,vs ,(mkl argt) ,ret ,ct ,reqs ,prec)
+      (cdr _3)))
+      ('ERROR))))
+  """;
+
 
   sfunction_definition := sadjectives sfun_kind sdeclname 
     sopt_type_expr = smatching+ ; =>#
   """
-    (if (eq? ('ast_arrow (caar _4)))
+    (if (eq? 'ast_arrow (caar _4))
       (let (
         (argt (caadr _4))
         (ret (cadadr _4))

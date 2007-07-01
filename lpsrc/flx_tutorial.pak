@@ -5121,6 +5121,7 @@ function is final, and cannot be resolved.
 
 @select(env.test('.flx'))
 @kat("rename directive")
+#import <flx.flxh>
 header "#include <iostream>";
 module X {
   type x_t = "int";
