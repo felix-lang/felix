@@ -959,8 +959,6 @@ syntax statements {
     sopt_equal := = =># "()";
     sopt_equal := sepsilon =># "()";
 
-  sprocedure_definition := module sexpr ; =># "TODOIT";
-
   sreduce_args := ( stypeparameter_comma_list ) =># "_2";
 
   sfunction_definition := reduce sdeclname sreduce_args : sexpr => sexpr ; =>#
@@ -1052,10 +1050,75 @@ syntax statements {
     ('ERROR))
   """;
 
+  sproc_kind := proc =># "'Function";
+  sproc_kind := cproc =># "'CFunction";
 
+  sopt_traint_eq:= expect sexpr = =># "`(some ,_2)";
+  sopt_traint_eq:= sepsilon =># "'none";
 
-  sobject_definition := module sexpr ; =># "TODOIT";
-  sconst_def := module sexpr ; =># "TODOIT";
+  sctor_init := sname ( sexpr ) =># "`(,_1 ,_3)";
+  sctor_init_list := sctor_init , sctor_init_list =># "(cons _1 _3)";
+  sctor_init_list :=  sctor_init =># "`(,_1)";
+  sctor_inits := : sctor_init_list =># "_2";
+  sctor_inits := sepsilon =># "()";
+
+  sprocedure_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
+    sctor_inits scompound =>#
+  """
+  (let (
+    (name '"__constructor__")
+    (vs ,_2)
+    (ret 'ast_void)
+    (traint ,_4)
+    (body ,_6)
+    (inits ,_5)
+    (args ,_3))
+  (let ((f (lambda (ne)`(ast_init ,(car ne),(cadr ne)))))
+  (let ((body (map f (append inits body))))
+  `(ast_curry ,name ,vs ,args (,ret ,traint) 'Ctor ,body))))
+  """;
+
+  sprocedure_definition := sadjectives sproc_kind sdeclname
+    sfun_arg* sopt_traint_eq scompound =>#
+  """
+    (mkns 
+    `(ast_curry ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
+    (cdr _3))
+  """;
+
+  sprocedure_definition := sadjectives sproc_kind sdeclname : sexpr 
+    sopt_cstring srequires_clause ; =>#
+  """
+  ('ERROR)
+  """;
+
+  sobject_definition := obj sdeclname sfun_arg+ scompound =>#
+  """
+    (mkns 
+    `(ast_curry ,(caar _2) ,(cadar _2) ,_3 (typ_none none) 'Object ,_4)
+    (cdr _2))
+  """;
+
+  sconst_def := sadjectives const sdeclname : sexpr = scode_spec srequires_clause ; =>#
+  """
+    (let ((reqs (if (memv 'Virtual _1)
+      `(rreq_and ((rreq_atom (Property_req "virtual")) ,_8))
+      _8)))
+    (mkns 
+    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
+    (cdr _3)))
+  """;
+
+  sconst_def := sadjectives const sdeclname : sexpr srequires_clause ; =>#
+  """
+    (let ((reqs (if (memv 'Virtual _1)
+      `(rreq_and ((rreq_atom (Property_req "virtual")) ,_6))
+      _6)))
+    (mkns 
+    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)
+    (cdr _3)))
+  """;
+
 }
 
 
