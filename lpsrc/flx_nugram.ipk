@@ -68,7 +68,7 @@ syntax expressions {
   satom := callback [ sexpr ] =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,_2)";
   satom := { sexpr } =># """
-    `(ast_lambda (,dfltvs ((() none)) (typ_none none) ((ast_fun_return ,_2))))
+    `(ast_lambda (,dfltvs ((() none)) typ_none ((ast_fun_return ,_2))))
   """;
 
   satom := match sexpr with smatching+ endmatch =># 

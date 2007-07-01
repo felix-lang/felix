@@ -251,7 +251,7 @@ let consider syms bt luqn2 name
     let spec_domain = spec domain in
     let spec_result =
       try spec_bt sr base_result
-      with _ -> clierr sr "Failed to bind candidate return type!"
+      with _ -> clierr sr ("Failed to bind candidate return type! fn='"^name^"', type="^string_of_typecode base_result)
     in
     (*
     print_endline ("BASE Return type of function " ^ id^ "<"^si i^">=" ^ sbt syms.dfns spec_result);
