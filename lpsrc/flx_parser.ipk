@@ -798,6 +798,7 @@ let ocs2flx sr r =
 
 /* tokens replacements for special symbols used in productions */
 %constructor Obj_sexpr %for star plus quest suser10token sident
+%constructor Obj_sexpr %for suserlbtoken suserrbtoken
 %constructor Obj_sexpr %for lbrace rbrace lpar rpar lsqb rsqb 
 %constructor Obj_sexpr %for ssemi comma colon 
 
@@ -1186,6 +1187,30 @@ suser10token:
       let sr,op,fn = $1 in
       Sstring fn
     }
+
+suserlbtoken:
+  | USERLB
+  {
+    let sr, ass, sym = $1 in
+    let ass = List.rev_map (fun (k,f) -> 
+      let x = Sstring k :: Sstring f :: [] in
+      let x = Ocs_misc.make_slist Snull (rev x) in
+      x
+      ) 
+      ass 
+    in
+    let ass = Ocs_misc.make_slist Snull ass in
+    let x = ass :: Sstring sym :: [] in
+    let x = Ocs_misc.make_slist Snull (rev x) in
+    x
+  }
+
+suserrbtoken:
+  | USERRB
+  {
+    Sstring (snd $1)
+  }
+
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }

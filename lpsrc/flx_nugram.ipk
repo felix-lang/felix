@@ -58,6 +58,12 @@ SCHEME """
 )))))
 """;
 
+SCHEME """
+(define myassoc (lambda (elt alst)
+  (let ((r (assoc elt alst)))
+  (if r (cadr r) `(MISMATCHED_BRACKET ,elt ,alst)))))
+""";
+
 syntax expressions {
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
@@ -149,18 +155,9 @@ syntax expressions {
             `(ast_cond (,cond ,thn ,result))))))
         (fold_left f _3 _1))
       """;
-/*    
-    selse_part:= selifs else sexpr =># """
-     (letrec 
-       ((fold_left 
-         (lambda (f acc lst) 
-           (if (null? lst) acc (fold_left f (f acc (car lst)) (cdr lst))))))
-       (let ((f (lambda (result condthn) 
-         (let ((cond (car condthn)) (thn (cadr condthn))) 
-           `(ast_cond (,cond ,thn ,result))))))
-         (fold_left f _3 _1)))
-    """;
-*/
+
+  satom := suserlbtoken sexpr suserrbtoken =>#
+    "`(ast_apply ((ast_name ,(myassoc _3 (car _1)) ()) ,_2))";
 
   ssimple_name_parts := sname           =># "`(,_1 ())";
   ssimple_name_parts := sname [ sexpr ] =># "`(,_1 ,(mkl _3))";
@@ -282,7 +279,7 @@ syntax expressions {
 
   suser10 := ssetintersection =># "_1";
   suser10 := suser10 suser10token ssetintersection =># 
-    "`(,_2 (,_1 ,_3)))";
+    "`(ast_apply ( (ast_name ,_2 ()) (,_1 ,_3)))";
 
   ssetunion := suser10 =># "_1";
   ssetunion := suser10 || ssetunion_list =># "`(ast_setunion ,(cons _1 _3))";
