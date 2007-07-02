@@ -104,12 +104,12 @@ syntax expressions {
 
     satomic_pattern := NaN =># "'pat_nan";
     satomic_pattern := sfloating .. sfloating =># 
-      "`(pat_int ,(car _1) ,(cadr _1))";
+      "`(pat_float_range ,_1 ,_3)";
 
-      sfloating:= sfloat =># "`(float_plus ,(car _1) ,(cadr _1))";
-      sfloating:= - sfloat =># "`(float_minus ,(car _2) ,(cadr _2))";
-      sfloating:= inf =># "'float_inf";
-      sfloating:= - inf =># "'float_minus_inf";
+      sfloating:= sfloat =># "`(Float_plus ,(car _1) ,(cadr _1))";
+      sfloating:= - sfloat =># "`(Float_minus ,(car _2) ,(cadr _2))";
+      sfloating:= inf =># "'Float_inf";
+      sfloating:= - inf =># "'Float_minus_inf";
 
     scoercive_pattern := satomic_pattern =># "_1";
     scoercive_pattern := satomic_pattern : sarrow =># "`(pat_coercion ,_1 ,_2)";
@@ -1126,7 +1126,36 @@ syntax statements {
   sprocedure_definition := sadjectives sproc_kind sdeclname : sexpr 
     sopt_cstring srequires_clause ; =>#
   """
-  ('ERROR)
+    (let (
+      (name (caar _3))
+      (vs (cadar _3))
+      (kind (cal_funkind _1 _2))
+      (t _5)
+      (reqs (if (memv 'Virtual _1)
+        `(rreq_and ((rreq_atom (Property_req "virtual")) ,_7))
+        _7)
+      )
+      (ct 
+        (if (eq? 'none _6)
+          (if (memv 'Virtual _1)
+            'Virtual 
+             `(StrTemplate ,(string-append (caar _3) "($a);"))
+           )
+           (cadr _6))
+      )
+    )
+    (let (
+      (reqs 
+        (if (eq? 'Generator kind)
+          `(rreq_and ((rreq_atom (Property_req "generator")) ,reqs))
+          reqs))
+    )
+    (let (
+      (argt t)
+      (ret 'ast_void))
+      (mkns 
+      `(ast_fun_decl ,name ,vs ,(mkl argt) ,ret ,ct ,reqs "")
+      (cdr _3)))))
   """;
 
   sobject_definition := obj sdeclname sfun_arg+ scompound =>#

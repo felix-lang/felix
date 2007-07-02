@@ -265,11 +265,14 @@ at once. Each Felix name must also be a c identifier
 representing a type in C.
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 header "#include <cstdio>";
-ctypes int, long;
-proc print:int = 'printf("%d\\n",$1);';
-print 1;
-print 2;
+{
+  ctypes int, long;
+  proc print:int = 'printf("%d\\n",$1);';
+  print 1;
+  print 2;
+};
 @doc()
 
 @select(env.expect())
@@ -416,25 +419,17 @@ Here is a simple example illustrating
 generic primitive bindings.
 
 @select(env.test('.flx'))
-
+#import <flx.flxh>
 // include STL vector template
 header """
-#include <iostream>
 #include <vector>
 """;
-
-// declare non-generic primitives int and long
-// and some output procedures
-type int = "int";
-type long = "long";
-proc endl:1= "std::cout << std::endl;";
-proc print: long = "std::cout << $1;";
 
 // define a generic cast
 // here ?2 means the second generic type parameter
 
-fun cast[t1,t2]:t1->t2 = "(?2)($1)";
-print (cast [int,long] 1); endl;
+fun mycast[t1,t2]:t1->t2 = "(?2)($1)";
+print (mycast [int,long] 1); endl;
 
 // declare generic binding for vector
 // ?1 is replaced by the first type argument
@@ -517,6 +512,7 @@ The same tag can be used on more than one code insertion
 statements: this is typically useful on a header-body pair.
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 body printu = 'void print(char *s) { printx("%s\\n",s); }';
@@ -533,6 +529,7 @@ Header and body statements can also have requirements.
 We can reorganise the previous example using this fact.
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 body printu = 'void print(char *s) { printx("%s\\n",s); }' 
@@ -551,6 +548,7 @@ They can define dependencies, or simply specify
 existing tagged requirements are roots.
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 body printu = 'void print(char *s) { printx("%s\\n",s); }';
@@ -569,6 +567,7 @@ You can also use qualified names to refer to tags defined
 inside modules, unless they're marked private of course.
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 module fred {
@@ -626,6 +625,7 @@ Here you can see that insertions can be given
 literally too:
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 proc f: 1 = 'printf("A is used\\n");'
   requires header '#include <stdio.h>';
 
@@ -639,8 +639,7 @@ A is used
 Here's an example demonstrating polymorphic insertions.
 
 @select(env.test('.flx'))
-pod type int="int";
-pod type double="double";
+#import <flx.flxh>
 
 body prb[t] = "void pr(?1 x) { std::cout << x << std::endl; }"
   requires header "#include <iostream>";

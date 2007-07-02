@@ -1949,9 +1949,6 @@ fun eq[T]: T * T -> bool = "$1==$2";
 
 fun eql[T] (x:T) (y:T):bool => eq(x, y);
 
-proc print[T]:T="std::cout << $1;";
-
-
 //-----------------------------------------------------------------------------
 // Double Linked List of T
 //-----------------------------------------------------------------------------
@@ -2054,8 +2051,6 @@ print$ get z; endl;
 @kat_rt("types:recursive")
 @kat_rt("type functions:recursive")
 #import <flx.flxh>
-
-ctypes int, long, float;
 
 typedef fun uncurry(t:TYPE):TYPE =>
   typematch t with
