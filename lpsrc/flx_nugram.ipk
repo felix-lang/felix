@@ -388,7 +388,7 @@ syntax regexps {
   sregmatch_expr := regmatch sexpr with sregmatch_alternatives endmatch =>#
     "`(ast_string_regmatch (,_2 ,_4))";
   
-  sregmatch_alternatives := sregmatch_alternative + =># "_1";
+  sregmatch_alternatives := sregmatch_alternative + =># "(reverse _1)";
   sregmatch_alternative := | sre1 => sexpr =># "`(,_2 ,_4)";
 
   sregdef := regexp sname = sre1 ; =># "`(ast_regdef ,_2 ,_4)";

@@ -2053,6 +2053,7 @@ print$ get z; endl;
 @select(env_rt.test('.flx'))
 @kat_rt("types:recursive")
 @kat_rt("type functions:recursive")
+#import <flx.flxh>
 
 ctypes int, long, float;
 
@@ -2352,11 +2353,7 @@ print $ format (".dynamic_suffix"); endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("typedef")
-type long = "long";
-type string = "string";
-header "#include <iostream>";
-
-proc println: long = "std::cout << $1 << std::endl;";
+#import <flx.flxh>
 
 module X[t] {
   fun f () : t => "khg";
