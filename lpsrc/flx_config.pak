@@ -680,6 +680,14 @@ mkdirs("tmp")
 mkdirs("config")
 mkdirs("doc")
 
+# make sure we have a config/__init__.py so config is importable
+try:
+  f = open('config/__init__.py', 'a+')
+except OSError:
+  pass
+else:
+  f.close()
+
 verbose = 1
 quiet = 0
 force = 0
