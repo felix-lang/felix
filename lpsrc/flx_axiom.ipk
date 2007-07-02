@@ -118,7 +118,9 @@ let verify syms bbdfns csr e =
           | _ -> true
         with 
           Not_found -> 
+          (*
           print_endline "Wha .. can't find axiom's parent";
+          *)
           true 
       in 
       if not ok then () else

@@ -2849,8 +2849,8 @@ Felix functions and procedures can be generic too.
 Here is a simple example.
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 header "#include <iostream>";
-type int = "int";
 proc print[T]:T="std::cout << $1 << std::endl;";
 fun fst[T,U](x:T,y:U): T ={ return x; }
 fun snd[T,U](x:T,y:U): U ={ return y; }
@@ -2878,8 +2878,8 @@ Synthesised type variables are added
 to the type variable list at the end. For example:
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 header "#include <iostream>";
-type int = "int";
 proc print[T]:T="std::cout << $1 << std::endl;";
 fun fst(x,y) = { return x; }
 fun snd(x,y) = { return y; }
@@ -4639,20 +4639,7 @@ is printed and the program aborted if any check fails.
 @select(env.test('.flx'))
 @kat('axioms')
 @kat('reductions')
-type int = "int";
-type string = "std::string";
-
-typedef bool = 2;
-
-fun add: int * int -> int = "$1+$2";
-fun mul: int * int -> int = "$1*$2";
-fun le: int * int -> bool = "$1<=$2";
-fun eq: int * int -> bool = "$1==$2";
-
-header '#include <iostream>';
-header '#include <string>';
-proc print[t]: t = "std::cout<<$1;";
-proc endl: 1 = "std::cout<<std::endl;";
+#import <flx.flxh>
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
@@ -4663,10 +4650,10 @@ print x; endl;
 
 axiom symmetry (x:int,y:int): x + y == y + x;
 axiom associativity (x:int, y:int, z:int): (x + y) + z == x + (y + z);
-reduce additive_unit(x:int): x + 0 => x;
-reduce multiplicative_unit(x:int): x * 0 => 0;
-reduce additive_unit(x:int): 0 + x => x;
-reduce multiplicative_unit(x:int): 0 * x=> 0;
+reduce additive_unit(x:int): x + int 0 => x;
+reduce multiplicative_unit(x:int): x * int 0 => 0;
+reduce additive_unit(x:int): int 0 + x => x;
+reduce multiplicative_unit(x:int): int 0 * x=> int 0;
 
 //axiom wrong(x:int,y:int): x == y;
 fun hh(x:int)=>x;
@@ -5062,17 +5049,19 @@ a prefix).
 
 @select(env.test('.flx'))
 @kat("use directive")
+#import <flx.flxh>
 header "#include <iostream>";
 module X {
-  type int = "int";
-  proc print: int = "std::cout << $1;";
+  type INT = "int";
+  proc print: INT = "std::cout << $1;";
   proc endl: 1 = "std::cout << std::endl;";
+  fun mkINT: int -> INT = "$1";
 }
 
-use X::int;
+use X::INT;
 use eol = X::endl;
 
-val x:int = 1;
+val x:INT = X::mkINT 1;
 use y = x;
 X::print y; eol;
 @doc()
@@ -5187,14 +5176,8 @@ with a name is different for each module.
 
 @select(env.test('.flx'))
 @kat("inherit directive")
-header "#include <iostream>";
+#import <flx.flxh>
 header "#include <string>";
-
-type int = "int";
-type string= "std::string";
-proc print:int = "std::cout << $1;";
-proc print:string= "std::cout << $1;";
-proc endl:1 = "std::cout << std::endl;";
 
 module X { 
   fun f(a:int):int={ return 11; }

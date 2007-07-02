@@ -63,7 +63,8 @@ syntax expressions {
   satom := ... =># "'ast_ellipsis";
   
   sexpr_code_prefix := code [ sexpr ] =># "_3";
-  satom := sexpr_code_prefix sexpr =># "`(ast_expr ,_1 ,_2)";
+  satom := sexpr_code_prefix sstring =># "`(ast_expr ,_2 ,_1)";
+  satom := sexpr_code_prefix sname =># "`(ast_expr ,_2 ,_1)";
 
   satom := callback [ sexpr ] =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";

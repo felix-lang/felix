@@ -143,22 +143,7 @@ test complete
 @select(rt_test2)
 @kat_rt("closures")
 @kat_rt("recursion")
-header r"""
-#include <stdio.h>
-typedef char *charp;
-""";
-
-typedef bool = 2;
-type int = "int";
-type string = "charp";
-
-proc print: string = 'printf("%s",$1);';
-proc print: int = 'printf("%d",$1);';
-
-fun sub: int * int -> int = "$1 - $2";
-fun mul: int * int -> int = "$1 * $2";
-fun gt: int * int -> bool = "$1 > $2";
-fun eq: int * int -> bool = "$1 == $2";
+#import <flx.flxh>
 
 // test some recursion
 fun fact(a:int): int =
@@ -266,7 +251,6 @@ export proc poot of (charp) as "poot";
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("strings")
-// test the string library
 #import <flx.flxh>
 var x = "Hello";
 x += "+";
@@ -307,9 +291,9 @@ dlroW+olleH
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("assert")
-// test the chained comparison
+// chained comparison not implemented in nu grammar
 #import <flx.flxh>
-assert(1<2&<3&<4);
+assert(1<2 and 2<3 and 3<4);
 @doc()
 
 @select(env_rt.expect())
@@ -318,13 +302,7 @@ assert(1<2&<3&<4);
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("recursion:types")
-fun land: 2 * 2 -> 2 = "$1 && $2";
-type int = "int";
-fun eq: int * int -> 2 = "$1 == $2";
-
-type string = "char*";
-proc print: string = 'printf("%s",$1);';
-proc print: int = 'printf("%d",$1);';
+#import <flx.flxh>
 proc eol: 1 = 'printf("\\n");';
 
 val x:int = 1;
@@ -442,10 +420,10 @@ union U
 #import <flx.flxh>
 body "#include <iostream>";
 code 'static int x = 1;';
-type int = "int";
-fun add:int * int -> int = "$1 + $2";
-fun two (): int = { return code[int]x + code[int]'x'; }
-proc print:int = 'std::cout << $1 << std::endl;';
+type INT = "int";
+fun add:INT * INT -> INT = "$1 + $2";
+fun two (): INT = { return code[INT]x + code[INT]'x'; }
+proc print:INT = 'std::cout << $1 << std::endl;';
 print (two());
 @doc()
 
@@ -1044,20 +1022,7 @@ pr$ ff$ 1,2;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['reductions', 'axioms']))
-type int = "int";
-type string = "std::string";
-
-typedef bool = 2;
-
-fun add: int * int -> int = "$1+$2";
-fun mul: int * int -> int = "$1*$2";
-fun le: int * int -> bool = "$1<=$2";
-fun eq: int * int -> bool = "$1==$2";
-
-header '#include <iostream>';
-header '#include <string>';
-proc print[t]: t = "std::cout<<$1;";
-proc endl: 1 = "std::cout<<std::endl;";
+#import <flx.flxh>
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
