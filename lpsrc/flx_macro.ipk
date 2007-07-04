@@ -50,6 +50,7 @@ open Flx_constfld
 open Flx_srcref
 open Flx_typing2 
 open Flx_util
+open Flx_typing2
 
 @if USE_DYPGEN:
   tangle(" (* only with dypgen! *) ")
@@ -805,7 +806,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   (* Name lookup *)
   | `AST_the (sr, qn) -> 
-    let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
+    let qn = qualified_name_of_expr (me (qn:>expr_t)) in
     `AST_the (sr,qn)
 
   (* the name here is just for diagnostics *)
@@ -839,11 +840,11 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map me es)
   | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,mt sr t)) 
   | `AST_suffix (sr, (qn, t)) -> 
-    let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
+    let qn = qualified_name_of_expr (me (qn:>expr_t)) in
     `AST_suffix (sr, (qn,t)) 
 
   | `AST_callback (sr,qn) -> 
-    let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
+    let qn = qualified_name_of_expr (me (qn:>expr_t)) in
     `AST_callback (sr, qn)
 
   | `AST_arrow (sr, (e1, e2)) ->  `AST_arrow (sr,(me e1, me e2))
@@ -994,7 +995,7 @@ and rqmap me reqs =
   | `RREQ_false -> `RREQ_false
   | `RREQ_atom x -> match x with
   |  `Named_req qn ->
-    let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
+    let qn = qualified_name_of_expr (me (qn:>expr_t)) in
     `RREQ_atom (`Named_req qn)
   | x -> `RREQ_atom x
 

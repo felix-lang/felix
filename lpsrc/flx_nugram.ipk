@@ -7,17 +7,22 @@ SCHEME """
 """;
 
 SCHEME """
-(define dfltvs '(() (()())))
+(define dfltvs 
+  '(
+    ()           ;; vs list: name,type,constraint triple 
+    ( () () )    ;; type constraint, typeclass constraint list
+  ) 
+)
 """;
 
 SCHEME """
 (define mkn1 (lambda (stmt nvs) 
-  `(ast_namespace (,(car nvs) ,(cadr nsv) (,stmt)))))
+  `(ast_namespace (,(car nvs) ,(cadr nvs) (,stmt)))))
 """;
 
 SCHEME """
-(define mkns (lambda (stmt nsvl) (
-  fold_left mkn1 stmt nsvl
+(define mkns (lambda (stmt nvsl) (
+  fold_left mkn1 stmt nvsl
   )))
 """;
 
@@ -62,6 +67,61 @@ SCHEME """
 (define myassoc (lambda (elt alst)
   (let ((r (assoc elt alst)))
   (if r (cadr r) `(MISMATCHED_BRACKET ,elt ,alst)))))
+""";
+
+SCHEME """
+(define tvfixup_folder (lambda (vsct vtc)
+  (begin (display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
+  (let* 
+    (
+      (vs (car vsct))
+      (ct (cadr vsct))
+      (v (car vtc))
+      (t (cadr vtc))
+      (c (caddr vtc))
+      (ct2 
+        (cond 
+          ((eq? 'NoConstraint c) ct )
+          ((eq? 'Eq (car c)) ;; type constraint
+            (cons 
+              `(ast_type_match (ast_name ,v ()) ((,(cadr ct) ()))) 
+              ct
+            )
+          )
+          ((eq? 'In (car c)) ;; type constraint
+            (cons `(ast_isin (ast_name ,v ()) ,(cadr c)) ct)
+          )
+        (else (display "ERROR!!!"))
+        )
+      )
+    )
+    (begin 
+      (display "vs=")(display vs)
+      (display "\\nct=")(display ct)
+      (display "\\nv=")(display v)
+      (display "\\nt=")(display t)
+      (display "\\nc=")(display c)
+      (display "\\nct2=")(display ct2)
+      (display "\\n")
+    (list (cons `(,v ,t) vs) ct2))
+))))
+""";
+
+SCHEME """
+(define tvfixup (lambda (tv ct)
+  (begin (display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
+  (let* 
+    (
+      (vscs (fold_left tvfixup_folder '(() ()) tv))
+      (vs (car vscs))
+      (cs (cadr vscs))
+      (rtc (car ct))
+      (rtr (cadr ct))
+      (ct `((ast_intersect ,(cons rtc cs)) ,rtr))
+    )
+    (list (reverse vs) ct)
+  )
+)))
 """;
 
 syntax expressions {
@@ -208,17 +268,23 @@ syntax expressions {
   srefr := star srefr =># "`(ast_apply (deref ,_2))";
   srefr := _deref srefr =># "`(ast_deref ,_2)";
   srefr := new srefr =># "`(ast_new ,_2)";
-  srefr := struct { sstruct_decl* } =># "`(ast_record_type ,_3)";
-    sstruct_decl := sname : sexpr ; =># "`(,_1 ,_3)";
+  srefr := struct { sstruct_mem_decl* } =># "`(ast_record_type ,_3)";
+    sstruct_mem_decl := sname : sexpr ; =># "`(,_1 ,_3)";
   srefr := struct { sstruct_assign* } =># "`(ast_record ,_3)";
     sstruct_assign := sname = sexpr ; =># "`(,_1 ,_3)";
 
-  srefr := union { stype_sum_items2 } =># "`(ast_variant_type ,_3)";
-    stype_sum_item2 := sname of sexpr =># "`(,_1 ,_3)";
-    stype_sum_item2 := sname =># "`(,_1 ast_void)";
-    stype_sum_item2_suffix := | stype_sum_item2 =># "_2";
-    stype_sum_items2 := stype_sum_item2 stype_sum_item2_suffix* =># "(cons _1 _2)";
-    stype_sum_items2 := stype_sum_item2_suffix* =># "_1";
+  srefr := union { stype_sum_item0* } =># "`(ast_variant_type ,_3)";
+    stype_sum_item := sname sopt_value stvarlist of sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
+    stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
+
+    stype_sum_item0 := sname of sexpr =># "`(,_1 none ,_3)";
+    stype_sum_item0 := sname =># "`(,_1 none ast_void)";
+
+    stype_sum_item1 := stype_sum_item ; =># "_1";
+
+    stype_sum_item2 := | stype_sum_item =># "_2";
+    stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
+    stype_sum_items2 := stype_sum_item2* =># "_1";
 
   ssuperscript := srefr =># "_1"; 
   ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))"; 
@@ -491,9 +557,9 @@ syntax statements {
   sdeclname := sdeclname :: sname stvarlist =># "(cons _1 `(,_3 ,_4))";
   sdeclname := sname stvarlist =># "`((,_1 ,_2))";
 
-  stype_qual := incomplete =># "'incomplete";
-  stype_qual := pod =># "'pod";
-  stype_qual := _gc_pointer =># "'gc_pointer";
+  stype_qual := incomplete =># "'Incomplete";
+  stype_qual := pod =># "'Pod";
+  stype_qual := _gc_pointer =># "'GC_pointer";
   stype_qual := _gc_type sexpr =># "`(gc_type ,_2)";
   stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
   stype_quals:= sepsilon =># "()";
@@ -525,9 +591,9 @@ syntax statements {
 
   sabstract_type := callback fun sname : sexpr srequires_clause ; =>#
     """
-    (if (eq? ('ast_arrow (car _5)))
+    (if (eq? 'ast_arrow (car _5))
       (mkns 
-      `(ast_callback_decl ,_3 ,(mkl (cadr _5)) ,(caddr _5) ,_6)
+      `(ast_callback_decl ,_3 ,(mkl (caadr _5)) ,(cadadr _5) ,_6)
       (cdr _3))
       'ERROR
     )
@@ -537,17 +603,17 @@ syntax statements {
   scomma_name:= , sname =># "_2";
 
   srequires_clause := requires srequirements =># "_2";
-  srequires_clause := sepsilon =># "'()";
+  srequires_clause := sepsilon =># "'rreq_true";
 
-  scode_spec := sstring =># "`(strtemplate ,_1)";
-  scode_spec := scstring =># "`(str ,_1)";
-  scode_spec := sident =># "'identity";
+  scode_spec := sstring =># "`(StrTemplate ,_1)";
+  scode_spec := scstring =># "`(Str ,_1)";
+  scode_spec := sident =># "'Identity";
 
-  srequirement:= squalified_name =># "`(named_req ,_1)";
-  srequirement := body scode_spec =># "`(body_req ,_2)";
-  srequirement := header scode_spec =># "`(header_req ,_2)";
-  srequirement :=  property sstring =># "`(property_req ,_2)";
-  srequirement :=  package scode_spec =># "`(package_req ,_2)";
+  srequirement:= squalified_name =># "`(Named_req ,_1)";
+  srequirement := body scode_spec =># "`(Body_req ,_2)";
+  srequirement := header scode_spec =># "`(Header_req ,_2)";
+  srequirement :=  property sstring =># "`(Property_req ,_2)";
+  srequirement :=  package scode_spec =># "`(Package_req ,_2)";
 
   srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
   srequirement_atom:= ( srequirements ) =># "_2";
@@ -587,10 +653,10 @@ syntax statements {
      """; 
  
   sbinding_header := requires srequirements ; =># 
-    """`(ast_insert "_root" ,dfltvs (str "") body ,_2)""";
+    """`(ast_insert "_root" ,dfltvs (Str "") body ,_2)""";
 
   sbinding_header := sname requires srequirements ; =># 
-    """`(ast_insert ,_1 ,dfltvs (str "") body ,_3)""";
+    """`(ast_insert ,_1 ,dfltvs (Str "") body ,_3)""";
 
   squalified_name_comma_list:= squalified_name scomma_qualified_name* =>#
     "(cons _1 _2)";
@@ -602,14 +668,13 @@ syntax statements {
     "`(,_2 ,_4)";
   stype_constraint := where sexpr =># "`(,_2 ())";
   stype_constraint := with squalified_name_comma_list =># "`(() ,_2)";
+  stype_constraint := sepsilon =># "'(()())";
 
-  sopt_type_constraint := stype_constraint? =># "_1";
+  seqorin:= = stypeexpr =># "`(Eq ,_2)";
+  seqorin:= in stypeexpr =># "`(In ,_2)";
+  seqorin:= sepsilon =># "'NoConstraint"; 
 
-  seqorin:= = stypeexpr =># "`(eq ,_2)";
-  seqorin:= in stypeexpr =># "`(in ,_2)";
-  seqorin:= sepsilon =># "'none"; // ambiguous with Some/None?
-
-  stvar := sname seqorin =># "`(,_1 (ast_name typ_type ()) ,_2)";
+  stvar := sname seqorin =># """`(,_1 typ_type ,_2)""";
   stvar := sname : stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
 
   stvar_comma_list := stvar scomma_tvar* =># "(cons _1 _2)";
@@ -617,8 +682,8 @@ syntax statements {
   scomma_tvar := , stvar =># "_2";
 
   stvarlist:= sepsilon =># "dfltvs";
-  stvarlist:= [ stvar_comma_list sopt_type_constraint ] =>#
-    "`(,_2 ,_3)";
+  stvarlist:= [ stvar_comma_list stype_constraint ] =>#
+    "(tvfixup _2 _3)";
 
   sassert_statement:= assert sexpr ; =># "`(ast_assert ,_2)";
   slabel_statement := sname :> =># "`(ast_label ,_1)";
@@ -635,33 +700,33 @@ syntax statements {
   stypeparameter_comma_list := stypeparameter =># "`(,_1)";
 
   stypefun_arg := sname =># "`((,_1 typ_none))";
-  stypefun_arg := ( stypeparameter_comma_list ) =># "`(,_2)";
+  stypefun_arg := ( stypeparameter_comma_list ) =># "_2";
   stypefun_args := stypefun_arg+  =># "_1";
 
   stype_alias := typedef sdeclname = sexpr ; =>#
     """
     (mkns 
-    `(ast_type_alias (,(caar _2) ,(cadar _2) ,_4))
+    `(ast_type_alias ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
     """; 
 
   stype_alias := typedef fun sdeclname stypefun_args : sexpr => sexpr ; =>#
     """
     (mkns 
-    `(mktypefun (,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8))
+    `(mktypefun ,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8)
     (cdr _3))
     """; 
 
-  stype_alias := typedef fun sdeclname : sexpr => stype_matching+ ; =>#
+  stype_alias := typedef fun sdeclname : sexpr = stype_matching+ ; =>#
     """
-    (if (eq? ('ast_arrow (car _5)))
+    (if (eq? 'ast_arrow (car _5))
       (let (
-        (argt (cadr _5))
-        (ret (caddr _5))
+        (argt (caadr _5))
+        (ret (cadadr _5))
         (body `(ast_type_match (_a ,_7))))
-        (let ((args `((_a ,argt))))
+        (let ((args `(((_a ,argt)))))
       (mkns 
-      `(mktypefun (,(caar _3) ,(cadar _3) ,args ,ret ,body))
+      `(mktypefun ,(caar _3) ,(cadar _3) ,args ,ret ,body)
       (cdr _3))))
       ('ERROR)
     )
@@ -670,14 +735,14 @@ syntax statements {
   stype_alias := rename sdeclname = squalified_name ; =>#
     """
     (mkns 
-    `(ast_inherit (,(caar _2) ,(cadar _2) ,_4))
+    `(ast_inherit ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
     """; 
 
   stype_alias := rename fun sdeclname = squalified_name ; =>#
     """
     (mkns 
-    `(ast_inherit (,(caar _3) ,(cadar _3) ,_5))
+    `(ast_inherit_fun ,(caar _3) ,(cadar _3) ,_5)
     (cdr _3))
     """; 
 
@@ -919,7 +984,7 @@ syntax statements {
   smacro_definition := macro forget; =># 
     "`(ast_macro_forget ())";
   smacro_definition := macro goto sname ; =># "`(ast_macro_goto ,_3)";
-  smacro_definition := macro sname :> =># "`(ast_macro_label ,_3)";
+  smacro_definition := macro sname :> =># "`(ast_macro_label ,_2)";
   smacro_definition := macro if sexpr goto sname ; =># 
     "`(ast_macro_ifgoto ,_3 ,_5)";
   smacro_definition := macro for val sbasic_name_comma_list in sexpr do sstatements done ; =># 
@@ -936,12 +1001,89 @@ syntax statements {
 
   sglr_production := parse sexpr ; =># "TODOIT";
   sregdef := regexp sexpr ; =># "TODOIT";
-  sstruct_decl := struct sexpr ; =># "TODOIT";
-  sunion_decl := union sexpr ; =># "TODOIT";
+
+  sstruct_decl := struct sdeclname sopt_equal { sstruct_mem_decl * } =>#
+    """
+    (mkns 
+    `(ast_struct ,(caar _2) ,(cadar _2) ,_5)
+    (cdr _2))
+     """; 
+
+  sstruct_decl := cstruct sdeclname sopt_equal { sstruct_mem_decl * } =>#
+    """
+    (mkns 
+    `(ast_cstruct ,(caar _2) ,(cadar _2) ,_5)
+    (cdr _2))
+     """; 
+
+  sopt_name := sname =># "_1";
+  sopt_name := sepsilon =># '""';
+
+  sclass_component:= var sname : sexpr ; =># "`(MemberVar ,_2 ,_4 none)";
+  sclass_component:= val sname : sexpr ; =># "`(MemberVal ,_2 ,_4 none)";
+  sclass_component:= ctor sopt_name : sexpr sopt_cstring ; =># 
+    "`(MemberCtor ,_2 none ,_4 ,_5)";
+  sclass_component:= fun sname stvarlist  : sexpr sopt_cstring ; =># 
+    "`(MemberFun ,_2 none ,_3 ,_5 ,_6)";
+  sclass_component:= proc sname stvarlist  : sexpr sopt_cstring ; =># 
+    "`(MemberProc ,_2 none ,_3 ,_5 ,_6)";
+
+  sstruct_decl := cclass sdeclname sopt_equal { sclass_component * } =>#
+    """
+    (mkns 
+    `(ast_cclass ,(caar _2) ,(cadar _2) ,_5)
+    (cdr _2))
+     """; 
+
+  sstruct_decl := class sdeclname sopt_equal scompound =>#
+    """
+    (mkns 
+    `(ast_class ,(caar _2) ,(cadar _2) ,_4)
+    (cdr _2))
+     """; 
+
+  sstruct_decl := typeclass sdeclname sopt_equal scompound =>#
+    """
+    (mkns 
+    `(ast_typeclass ,(caar _2) ,(cadar _2) ,_4)
+    (cdr _2))
+     """; 
+
+  sstruct_decl := instance stvarlist squalified_name sopt_equal scompound =>#
+    """
+    `(ast_instance ,_2 ,_3 ,_5)
+     """; 
+
+  sunion_decl := union sdeclname = stype_sum_items2 ; =>#
+    """
+    (mkns 
+    `(ast_union ,(caar _2) ,(cadar _2) ,_4)
+    (cdr _2))
+     """; 
+
+  sunion_decl := union sdeclname { stype_sum_item1* } =>#
+    """
+    (mkns 
+    `(ast_union ,(caar _2) ,(cadar _2) ,_4)
+    (cdr _2))
+     """; 
+
+  sunion_decl := enum sdeclname { senum_item* } =>#
+    """
+    (mkns 
+    `(ast_union ,(caar _2) ,(cadar _2) ,_4)
+    (cdr _2))
+     """; 
+
+  sopt_value := = sinteger =># "(some ,_1)";
+  sopt_value := sepsilon =># "'none";
+  senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs ast_void)";
+
+
   smodule_definition := module sdeclname sopt_equal scompound =>#
     """
     (mkns 
-    `(ast_untyped_module ,(caar _2) ,(cadar _2) ,_5)
+    `(ast_untyped_module ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
@@ -949,9 +1091,9 @@ syntax statements {
     """
     (mkns 
     `(ast_seq (
-      (ast_untyped_module ,(caar _3) ,(cadar _3) ,_6)
-      (ast_open (,dfltvs (ast_name ,(caar _3)())))))
-    (cdr _2))
+      (ast_untyped_module ,(caar _3) ,(cadar _3) ,_5)
+      (ast_open ,dfltvs (ast_name ,(caar _3)()))))
+    (cdr _3))
      """; 
 
     sopt_equal := = =># "()";
@@ -1013,7 +1155,7 @@ syntax statements {
 
 
   sfunction_definition := sadjectives sfun_kind sdeclname 
-    sfun_arg* sopt_type_expr = scompound ; =>#
+    sfun_arg* sopt_type_expr = scompound =>#
   """
     (mkns 
     `(ast_curry ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
@@ -1037,7 +1179,7 @@ syntax statements {
       (traint (cadr _4))
       (prec _6)
       (reqs (if (memv 'Virtual _1)
-        `(rreq_and ((rreq_atom (Property_req "virtual")) ,_7))
+        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
         _7)
       )
       (ct 
@@ -1052,7 +1194,7 @@ syntax statements {
     (let (
       (reqs 
         (if (eq? 'Generator kind)
-          `(rreq_and ((rreq_atom (Property_req "generator")) ,reqs))
+          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
           reqs))
     )
     (if (eq? 'ast_arrow (car t))
@@ -1069,19 +1211,32 @@ syntax statements {
   sfunction_definition := sadjectives sfun_kind sdeclname 
     sopt_type_expr = smatching+ ; =>#
   """
-    (if (eq? 'ast_arrow (caar _4))
-      (let (
-        (argt (caadr _4))
-        (ret (cadadr _4))
-        (traint (cadr _3))
-        (body `((ast_fun_return (ast_match _a ,_6)))))
-    (mkns 
-    `(ast_curry ,(caar _3) ,(cadar _3) 
-      (((PVal _a ,argt) none))
-      (,ret ,traint) 
-      ,(cal_funkind _1 _2) ,body)
-    (cdr _3)))
-    ('ERROR))
+   (let 
+     (
+      (t (car _4))
+      (traint (cadr _4))
+     )
+    (begin (display "ftype=")(display t)(display "\\n")
+    (if (eq? 'ast_arrow (car t))
+      (let 
+        (
+          (argt (caadr t))
+          (ret (cadadr t))
+          (body `((ast_fun_return (ast_match (_a ,_6)))))
+        )
+        (mkns 
+        `(ast_curry ,(caar _3) ,(cadar _3) 
+          ( 
+            (((PVal _a ,argt)) none)
+          )
+          (,ret ,traint) 
+          ,(cal_funkind _1 _2) ,body)
+        (cdr _3))
+      )
+      'ERROR
+     )
+     )
+   )
   """;
 
   sproc_kind := proc =># "'Function";
@@ -1129,7 +1284,7 @@ syntax statements {
       (kind (cal_funkind _1 _2))
       (t _5)
       (reqs (if (memv 'Virtual _1)
-        `(rreq_and ((rreq_atom (Property_req "virtual")) ,_7))
+        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
         _7)
       )
       (ct 
@@ -1144,7 +1299,7 @@ syntax statements {
     (let (
       (reqs 
         (if (eq? 'Generator kind)
-          `(rreq_and ((rreq_atom (Property_req "generator")) ,reqs))
+          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
           reqs))
     )
     (let (
@@ -1165,7 +1320,7 @@ syntax statements {
   sconst_def := sadjectives const sdeclname : sexpr = scode_spec srequires_clause ; =>#
   """
     (let ((reqs (if (memv 'Virtual _1)
-      `(rreq_and ((rreq_atom (Property_req "virtual")) ,_8))
+      `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
       _8)))
     (mkns 
     `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
@@ -1175,7 +1330,7 @@ syntax statements {
   sconst_def := sadjectives const sdeclname : sexpr srequires_clause ; =>#
   """
     (let ((reqs (if (memv 'Virtual _1)
-      `(rreq_and ((rreq_atom (Property_req "virtual")) ,_6))
+      `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
       _6)))
     (mkns 
     `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)

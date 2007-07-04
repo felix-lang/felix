@@ -30,38 +30,13 @@ This routine just loops through
 numbers 1 to 10, and prints if they're odd or even.
 
 @select(env.test('.flx'))
+#import <flx.flxh>
 // dispatcher test
 header r"""
 #include <string>
 #include <stdio.h>
 using namespace std;
 """;
-
-typedef void = 0;
-typedef unit = 1;
-typedef bool = 2;
-fun lnot:bool->bool = "!$1";
-
-proc while (cond:unit->bool) (bdy:unit->void)
-{
-  repeat:>
-    if not (cond()) goto finished;
-    bdy();
-    goto repeat;
-  finished:>
-}
-
-type string = "string";
-proc print: string = 'printf("%s",$1.data());';
-
-// type int
-type int = "int";
-proc print: int = 'printf("%d",$1);';
-proc incr : &int = "(*$1)++;";
-fun eq : int * int -> bool = "$1==$2";
-fun mod: int * int -> int = "$1%$2";
-fun lt : int * int -> bool = "$1<$2";
-proc _set : & int * int = "*$1 = $2;";
 
 union parity = Even | Odd;
 

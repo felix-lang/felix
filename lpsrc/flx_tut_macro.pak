@@ -917,9 +917,9 @@ Therefore, general cases must be given after specialised
 ones. 
 
 @select(env.test('.flx'))
-include "std";
+#import <flx.flxh>
 #statement#
-  whilst expr do statements done ; =>#
+  WHILST expr do statements done ; =>#
   macro {
     macro lab1 is new;
     macro lab2 is new;
@@ -933,12 +933,12 @@ include "std";
 
 {
   var x = 10;
-  whilst x > 0 do print x; print " "; --x; done;
+  WHILST x > 0 do print x; print " "; --x; done;
   endl;
 };
 
 #statement#
-  until expr do statements done; =>#
+  UNTIL expr do statements done; =>#
   macro {
     macro lab1 is new;
     macro lab2 is new;
@@ -952,40 +952,38 @@ include "std";
 
 {
   var x = 10;
-  until x == 0 do print x; print " "; --x; done;
+  UNTIL x == 0 do print x; print " "; --x; done;
   endl;
 };
 
 #statement#
-  forall ident in expr do statements done ; =>#
+  FORALL ident in expr do statements done ; =>#
     macro for val _1 in _3 do _5; done;
 #
 
-forall x in (1," plus ",2," is ",1+2) do print x; done; endl;
+FORALL x in (1," plus ",2," is ",1+2) do print x; done; endl;
 
-#keyword upto
 #statement#
-  forall ident in expr upto expr do statements done ; =>#
+  FORALL ident in expr upto expr do statements done ; =>#
   _1 = _3;
   whilst _1 <= _5 do _7; ++i; done;
 #
 
 {
   var i = 0;
-  forall i in 1 upto 10 do print i; print " "; done; 
+  FORALL i in 1 upto 10 do print i; print " "; done; 
   endl;
 };
 
-#keyword downto
 #statement#
-  forall ident in expr downto expr do statements done ; =>#
+  FORALL ident in expr downto expr do statements done ; =>#
   _1 = _3;
   whilst _1 >= _5 do _7; --i; done;
 #
 
 {
   var i = 0;
-  forall i in 10 downto 1 do print i; print " "; done; 
+  FORALL i in 10 downto 1 do print i; print " "; done; 
   endl;
 };
 @doc()

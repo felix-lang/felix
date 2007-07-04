@@ -41,6 +41,8 @@ provides_slib: -lgmpxx
 
 @h = tangler('lib/flx_gmp.flx','data')
 @select(h)
+#import <flx.flxh>
+
 // THIS WRAPPER IS FFAU .. it is NOT LGPL licenced
 // This is because the wrapper was hand written from
 // scratch .. it was NOT derived from any LGPL headers

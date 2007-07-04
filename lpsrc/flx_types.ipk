@@ -384,10 +384,6 @@ and tpattern_t =
   |  `TPAT_type_tuple of tpattern_t list
   ]
 
-(*
-and vs_list_t = (id_t * tpattern_t) list
-and ivs_list_t = (id_t * int * tpattern_t) list
-*)
 and raw_typeclass_insts_t = qualified_name_t list
 and vs_aux_t = { 
   raw_type_constraint:typecode_t; 
@@ -5547,9 +5543,6 @@ val lift:
 val lower:
   btypecode_t -> btypecode_t
 
-val qualified_name_of_expr:
-  expr_t -> qualified_name_t
-
 module FuntypeSet : Set.S with type elt = typecode_t
 
 module FunInstSet : Set.S with type elt = bid_t * btypecode_t list
@@ -5687,16 +5680,6 @@ let lower t = t (* CHANGE THIS WHEN ABSTRACT TYPES IMPLEMENTED *)
 let flx_bool = `TYP_unitsum 2
 let flx_bbool = `BTYP_unitsum 2
 
-let qualified_name_of_expr e =
-  match e with
-  | #qualified_name_t as x -> x
-  | _ -> 
-    failwith
-    (
-      "Qualified name expected in\n" ^
-      short_string_of_src (src_of_expr e)
-    )
-
 (* Note floats are equal iff they're textually identical,
    we don't make any assumptions about the target machine FP model.
    OTOH, int comparisons are infinite precision, for the same
@@ -5819,6 +5802,8 @@ val typeof_list:
 val paramtype: 
   (param_kind_t * string * typecode_t) list -> typecode_t
 
+val qualified_name_of_expr:
+  expr_t -> qualified_name_t
 
 @h = tangler('src/flx_typing2.ml')
 @select(h)
@@ -5828,6 +5813,18 @@ open Flx_print
 open Flx_srcref
 open Flx_exceptions
 open List
+
+let qualified_name_of_expr e =
+  match e with
+  | #qualified_name_t as x -> x
+  | _ -> 
+    failwith
+    (
+      "Qualified name expected in\n" ^
+      short_string_of_src (src_of_expr e) ^
+      "\nGot " ^ Flx_print.string_of_expr e
+    )
+
 
 let typeof_list = function 
   | [x] -> x 

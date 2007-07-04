@@ -1044,7 +1044,12 @@ let statement_directive state sr toks =
     let sts,_ =
       match t2 with 
       | [] -> [],ENDMARKER
-      | _ -> Flx_tok.parse_tokens (dyphack_parser Flx_parse.statementsx) (t2 @ [ENDMARKER])
+      | _ -> 
+        try 
+          Flx_tok.parse_tokens (dyphack_parser Flx_parse.statementsx) (t2 @ [ENDMARKER])
+        with x -> 
+          print_endline "ERROR IN STATEMENT DIRECTIVE";
+          raise x
     in
     (*
     print_endline ("Action Statements " ^ catmap "\n" (Flx_print.string_of_statement 0) sts);

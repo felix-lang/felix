@@ -628,7 +628,7 @@ let fixup_rule rhs =
   | NAME (sr,s) :: QUEST _ :: t -> 
     let sl = s ^ "__opt" in
     let rule1 = sl,[NAME (sr,s)],"`(some ,_1)" in
-    let rule2 = sl,[],"none" in
+    let rule2 = sl,[],"'none" in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
 
 
@@ -859,6 +859,7 @@ code of the compilation unit.
 @head(2,'Statement')
 @select(h)
 statement:
+  /*
   | binding_definition { (* print_endline "Reducing binding_definition"; *) $1 
     }
   | declarative { (* print_endline "Reducing declarative"; *) $1 }
@@ -870,7 +871,13 @@ statement:
   | null_statement { (* print_endline "Reducing null_statement"; *) $1 }
   | user_statement { (* print_endline "Reducing user_statement"; *) $1 }
   | cparse { (* print_endline "Reducing cparse "; *) $1 }
+  */
   | xsstatement { $1 }
+  | sstatement 
+    {
+      let sr = "dummystatement",0,0,0,0 in ocs2flx sr $1
+    }
+
   | SCHEME STRING SEMI
     {
       let sr = rstoken $1 $3 in
@@ -965,33 +972,6 @@ xsstatement:
   | SCHEME LBRACE sterm RBRACE { let sr = rstoken $1 $4 in ocs2flx sr $3 }
 
 sterm:
-  /* a predefined statement, for testing expression part
-     of user defined grammar
-  */
-  /*
-  | CALL sexpr SEMI { 
-    let call = Ocs_sym.get_symbol "ast_call" in 
-    let f,a =
-      let a = $2 in
-      match a with
-      | Spair { car=car; cdr=cdr } -> 
-        if Ocs_misc.test_eqv car (Ocs_sym.get_symbol "ast_apply")
-        then begin
-          match cdr with 
-          | Spair { cdr=Snull; car=Spair { car = f; cdr = Spair { car = a; cdr=Snull } } } -> f,a
-          | _ -> failwith "application wrong no of args"
-        end
-        else a, Snull
-      | _ -> a,Snull
-    in
-    let x = call :: f :: a :: [] in
-    let x = Ocs_misc.make_slist Snull (rev x) in
-    x
-    }
-  */
-  /* entry point for user defined statements, will eventually
-    conflict with the 'call' hack above
-  */
   | sstatement { $1 }
 
 /* nonterminals purely for user extensions */
@@ -1211,6 +1191,7 @@ suserrbtoken:
     Sstring (snd $1)
   }
 
+/* ******************* OLD STUFF *************************** */
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }
@@ -1437,8 +1418,8 @@ tvarlist:
        let {raw_typeclass_reqs=rtr; raw_type_constraint=rtc} = $3 in
        let ct = 
          {
-           raw_typeclass_reqs=rtr; 
-           raw_type_constraint=`TYP_intersect (rtc::cs) 
+           raw_type_constraint=`TYP_intersect (rtc::cs);
+           raw_typeclass_reqs=rtr
          } 
        in
        rev vs, ct
@@ -1663,14 +1644,6 @@ class_component:
     { `MemberFun (snd $2,None,$3,typecode_of_expr $5,$6) }
   | PROCEDURE NAME tvarlist COLON expr opt_cstring SEMI 
     { `MemberProc (snd $2,None,$3,typecode_of_expr $5,$6) }
-
-@aster("typeclass_component")
-typeclass_component:
-  | FUNCTION NAME COLON expr SEMI 
-    { `TypeClassMemberFun (rstoken $1 $5, snd $2,typecode_of_expr $4) }
-  | PROCEDURE NAME COLON expr SEMI 
-    { `TypeClassMemberProc (rstoken $1 $5, snd $2,typecode_of_expr $4) }
-
 
 @head(3,'Abstract Constant Binding')
 @select(h)
