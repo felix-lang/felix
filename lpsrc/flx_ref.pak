@@ -1814,7 +1814,7 @@ def add(s):
 for k,s in flx_1_char_syms: add(s)
 for k,s in flx_2_char_syms: add(s)
 for k,s in flx_3_char_syms: add(s)
-for n,t in flx_keywords + flx_parser_keywords: add(n)
+for n,t in flx_keywords : add(n)
 end_displayed_code()
 //
 

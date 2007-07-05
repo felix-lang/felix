@@ -4007,6 +4007,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_parse _ 
   | `AST_setunion _
   | `AST_setintersection _
+  | `AST_intersect _
   | `AST_macro_ctor _
   | `AST_macro_statements  _
   | `AST_lift _

@@ -117,6 +117,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_sparse _  
   | `AST_setunion _
   | `AST_setintersection _
+  | `AST_intersect _
   | `AST_macro_ctor _
   | `AST_macro_statements  _
   | `AST_callback _ 

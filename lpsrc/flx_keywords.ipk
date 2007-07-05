@@ -23,28 +23,8 @@ let map_flx_keywords srcref lex_item =
   try (Hashtbl.find flx_keyword_table lex_item) srcref
   with Not_found -> NAME (srcref, lex_item)
 
-let flx_parser_keyword_table =  
-  hash_table_from_list 97 [  
-@for n,t in flx_parser_keywords:
-  tangle('  "'+n+'", (fun s -> '+t+' s);')
-]
 
-let retok_parser_tokens toks = 
-  rev 
-  (rev_map 
-    (function 
-      | NAME (sr,s) as x -> 
-        begin 
-          try (Hashtbl.find flx_parser_keyword_table s) sr
-          with Not_found -> x
-        end
-      | x -> x
-    ) 
-    toks
-  )
-  
 @h = tangler('src/flx_keywords.mli')
 @select(h)
 open Flx_parse
 val map_flx_keywords : Flx_ast.srcref -> string -> token
-val retok_parser_tokens : token list -> token list

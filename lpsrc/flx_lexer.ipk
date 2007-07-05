@@ -27,8 +27,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | USERLB (sr,_,lb) -> lb
   | USERRB (sr,rb) -> rb
   | USER_KEYWORD (sr,s) -> s
-  | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
-  | USER_STATEMENT_DRIVER (sr,s,_) -> s
   | HASH_INCLUDE_FILES fs -> "include_files(" ^ String.concat "," fs ^ ")"
   | TOKEN_LIST ts -> "<<token list>>"
   (*
@@ -44,7 +42,7 @@ let string_of_token (tok :Flx_parse.token): string =
 @for k,s in flx_3_char_syms:
   tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
 
-@for n,t in flx_keywords + flx_parser_keywords: 
+@for n,t in flx_keywords: 
   tangle('  |  '+t+' _ -> "'+n+'"',inhibit_sref=1)
 @#
   | COMMENT s -> s (* C style comment, includes the /* */ pair *)
@@ -71,8 +69,6 @@ let name_of_token (tok :Flx_parse.token): string =
   | USERLB _ -> "USERLB"
   | USERRB _ -> "USERRB"
   | USER_KEYWORD (sr,s) -> s
-  | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
-  | USER_STATEMENT_DRIVER (sr,s,_) -> s
   | HASH_INCLUDE_FILES _ -> "HASH_INCLUDE_FILES"
   | TOKEN_LIST _ -> "TOKEN_LIST"
   (*
@@ -87,10 +83,9 @@ let name_of_token (tok :Flx_parse.token): string =
 @for k,s in flx_3_char_syms:
   tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
 
-@for n,t in flx_keywords + flx_parser_keywords: 
+@for n,t in flx_keywords: 
   tangle('  |  '+t+' _ -> "'+t+'"',inhibit_sref=1)
 @#
-
   | COMMENT s -> "COMMENT"
   | COMMENT_NEWLINE s -> "COMMENT_NEWLINE"
   | WHITE i -> "WHITE"
@@ -124,8 +119,6 @@ let src_of_token t = match t with
   | USERLB (s,_,_)
   | USERRB (s,_)
   | USER_KEYWORD (s,_)
-  | USER_STATEMENT_KEYWORD (s,_,_,_)
-  | USER_STATEMENT_DRIVER (s,_,_)
   (*
   | PARSE_ACTION s
   *)
@@ -140,10 +133,10 @@ let src_of_token t = match t with
 @for k,s in flx_3_char_syms:
   tangle('  | '+k+' s ',inhibit_sref=1)
 
-@for n,t in flx_keywords + flx_parser_keywords: 
+@for n,t in flx_keywords: 
   tangle('  | '+t+' s',inhibit_sref=1)
 @#
-    -> s
+  -> s
 
 @h = tangler('src/flx_lexstate.ml')
 @select(h)
@@ -478,19 +471,6 @@ class lexer_state filename basedir incdirs expand_expr' =
       let elt = s,(fun (sr,_) -> Flx_parse.USER_KEYWORD (sr,s)) in
       keywords.(n) <- elt :: keywords.(n)
      
-    method add_statement_keyword (s:string) (sr:range_srcref) (toks: Flx_parse.token list) (term:ast_term_t) =
-      let n = String.length s in
-      self#adjust_keyword_array n;
-      let tokss =
-        try match (assoc s keywords.(n)) (("",0,0,0), "")  with
-          | Flx_parse.USER_STATEMENT_KEYWORD (_,_,tokss,_) -> (toks,term) :: tokss
-          | _ -> clierr sr "Conflicting meaning of keyword s"
-        with Not_found -> [toks,term]
-      in
-      let elt = s,(fun (sr,_) -> Flx_parse.USER_STATEMENT_KEYWORD (sr,s,tokss,nonterminals)) in
-      keywords.(n) <- elt :: remove_assoc s keywords.(n)
-
-
     method add_nonterminal (s:string) (sr:range_srcref) (toks: Flx_parse.token list) (term:ast_term_t) =
       let productions = try Hashtbl.find nonterminals s with Not_found -> [] in
       Hashtbl.replace nonterminals s ((toks,term)::productions)
@@ -691,9 +671,6 @@ class lexer_state :
     method get_symbols:
       (string * (srcref * string -> token)) list array
     
-    method add_statement_keyword:
-      string -> range_srcref -> token list -> ast_term_t -> unit
-
     method add_nonterminal:
       string -> range_srcref -> token list -> ast_term_t -> unit
 
@@ -1032,52 +1009,6 @@ let action_split t =
   | h :: t -> aux t (h::out)
   in aux t []
 
-let statement_directive state sr toks =
-  let toks = Flx_keywords.retok_parser_tokens toks in
-  match toks with
-  | NAME (sr,tok) :: t 
-  | USER_STATEMENT_KEYWORD (sr,tok,_,_) :: t ->
-    (*
-    print_endline ("Statement directive " ^ tok);
-    *)
-    let t1,t2 = action_split t in
-    let sts,_ =
-      match t2 with 
-      | [] -> [],ENDMARKER
-      | _ -> 
-        try 
-          Flx_tok.parse_tokens (dyphack_parser Flx_parse.statementsx) (t2 @ [ENDMARKER])
-        with x -> 
-          print_endline "ERROR IN STATEMENT DIRECTIVE";
-          raise x
-    in
-    (*
-    print_endline ("Action Statements " ^ catmap "\n" (Flx_print.string_of_statement 0) sts);
-    *)
-    state#add_statement_keyword tok (Flx_srcref.slift sr) t1 (`Statements_term sts);
-    []
-
-  | _ ->
-    clierr sr "#statement directive has syntax #statement kw production"
-
-let nonterminal_directive state sr toks =
-  let toks = Flx_keywords.retok_parser_tokens toks in
-  match toks with
-  | NAME (sr,tok) :: t ->
-    (*
-    print_endline ("Adding nonterminal .." ^ tok);
-    *)
-    let t1,t2 = action_split t in
-    (*
-    print_endline ("Action Tokens: " ^ catmap ", " Flx_prelex.string_of_token t2);
-    *)
-    let expr = Flx_tok.parse_tokens (dyphack_parser Flx_parse.expression) (t2 @ [ENDMARKER]) in
-    state#add_nonterminal tok (Flx_srcref.slift sr) t1 (`Expression_term expr);
-    []
-
-  | _ ->
-    clierr sr "#nonterminal has syntax #nonterminal name production"
-
 let bracket_directive state sr toks =
   match toks with
   | [STRING (sr1,tok1); STRING (sr2,tok2); NAME (sr3,fn)] ->
@@ -1392,12 +1323,6 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
 
     | "keyword" ->
         keyword_directive state sr toks
-
-    | "statement" ->
-        statement_directive state sr toks
-
-    | "nonterminal" ->
-        nonterminal_directive state sr toks
 
     | "bracket" ->
         bracket_directive state sr toks

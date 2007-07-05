@@ -71,7 +71,7 @@ SCHEME """
 
 SCHEME """
 (define tvfixup_folder (lambda (vsct vtc)
-  (begin (display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
+  (begin ;;(display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
   (let* 
     (
       (vs (car vsct))
@@ -96,20 +96,20 @@ SCHEME """
       )
     )
     (begin 
-      (display "vs=")(display vs)
-      (display "\\nct=")(display ct)
-      (display "\\nv=")(display v)
-      (display "\\nt=")(display t)
-      (display "\\nc=")(display c)
-      (display "\\nct2=")(display ct2)
-      (display "\\n")
+      ;;(display "vs=")(display vs)
+      ;;(display "\\nct=")(display ct)
+      ;;(display "\\nv=")(display v)
+      ;;(display "\\nt=")(display t)
+      ;;(display "\\nc=")(display c)
+      ;;(display "\\nct2=")(display ct2)
+      ;;(display "\\n")
     (list (cons `(,v ,t) vs) ct2))
 ))))
 """;
 
 SCHEME """
 (define tvfixup (lambda (tv ct)
-  (begin (display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
+  (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
   (let* 
     (
       (vscs (fold_left tvfixup_folder '(() ()) tv))
@@ -499,16 +499,16 @@ syntax typing {
 }
 
 syntax statements {
-  sstatement:= sbinding_definition =># "_1";
-  sstatement:= sdeclarative =># "_1"; 
-  sstatement:= sexecutable =># "_1"; 
-  sstatement:= sinclusion =># "_1"; 
-  sstatement:= sdirective =># "_1"; 
-  sstatement:= spublish =># "_1"; 
-  sstatement:= scomment =># "_1"; 
-  sstatement:= snull_statement =># "_1"; 
-  //sstatement:= suser_statement =># "_1"; 
-  sstatement:= scparse =># "_1"; 
+  statement:= sbinding_definition =># "_1";
+  statement:= sdeclarative =># "_1"; 
+  statement:= sexecutable =># "_1"; 
+  statement:= sinclusion =># "_1"; 
+  statement:= sdirective =># "_1"; 
+  statement:= spublish =># "_1"; 
+  statement:= scomment =># "_1"; 
+  statement:= snull_statement =># "_1"; 
+  //statement:= suser_statement =># "_1"; 
+  statement:= scparse =># "_1"; 
 
   scomment := comment sstring ; =># "`(ast_nop ,_2)";
  
@@ -521,6 +521,9 @@ syntax statements {
   spublish := private sbinding_definition =># "`(ast_private ,_2)";
   spublish := private svar_def =># "`(ast_private ,_2)";
   spublish := private sval_def =># "`(ast_private ,_2)";
+
+#keyword publish  
+  spublish := publish sstring statement =># "_3";
 
   sdeclarative := sfunction_definition =># "_1";
   sdeclarative := sobject_definition =># "_1";
@@ -560,7 +563,7 @@ syntax statements {
   stype_qual := incomplete =># "'Incomplete";
   stype_qual := pod =># "'Pod";
   stype_qual := _gc_pointer =># "'GC_pointer";
-  stype_qual := _gc_type sexpr =># "`(gc_type ,_2)";
+  stype_qual := _gc_type sexpr =># "`(Raw_needs_shape ,_2)";
   stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
   stype_quals:= sepsilon =># "()";
 
@@ -674,7 +677,7 @@ syntax statements {
   seqorin:= in stypeexpr =># "`(In ,_2)";
   seqorin:= sepsilon =># "'NoConstraint"; 
 
-  stvar := sname seqorin =># """`(,_1 typ_type ,_2)""";
+  stvar := sname seqorin =># """`(,_1 (ast_name "TYPE" ()) ,_2)""";
   stvar := sname : stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
 
   stvar_comma_list := stvar scomma_tvar* =># "(cons _1 _2)";
@@ -840,17 +843,17 @@ syntax statements {
   sifgoto := if sexpr return ; =># "`(ast_ifreturn ,_2)";
   sifgoto := if sexpr call sexpr ; =># 
     "`(ast_ifdo ,_2 (,(cons 'ast_call (splitapply _4)))())";
-  sifgoto := if sexpr do sstatements selse_clause done ; =># 
+  sifgoto := if sexpr do statement* selse_clause done ; =># 
     "`(ast_ifdo ,_2 ,_4 ,_5)";
-  sifgoto := if sexpr do sstatements done ; =># 
+  sifgoto := if sexpr do statement* done ; =># 
     "`(ast_ifdo ,_2 ,_4 ())";
 
-  selif_clause := elif sexpr do sstatements =># "`(,_2 ,_4)";
+  selif_clause := elif sexpr do statement* =># "`(,_2 ,_4)";
   selif_clause := elif sexpr return ; =># "`(,_2 (ast_proc_return))";
   selif_clause := elif sexpr goto sname ; =># "`(,_2 (ast_goto ,_4))";
   selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
   selif_clauses := selif_clause =># "`(,_1)";
-  selse_clause := selif_clauses else sstatements =>#
+  selse_clause := selif_clauses else statement* =>#
     """      
         (let ((f (lambda (result condthn) 
           (let ((cond (car condthn)) (thn (cadr condthn))) 
@@ -858,7 +861,7 @@ syntax statements {
         (fold_left f _3 _1))
     """;
 
-  selse_clause := else sstatements =># "_2";
+  selse_clause := else statement* =># "_2";
   selse_clause := selif_clauses =>#
     """      
         (let ((f (lambda (result condthn) 
@@ -868,7 +871,7 @@ syntax statements {
     """;
 
 #keyword whilst
-  sifgoto := whilst sexpr do sstatements done; =>#
+  sifgoto := whilst sexpr do statement* done; =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
@@ -882,13 +885,50 @@ syntax statements {
     ) 
   """;
 
+#keyword forall
+  statement := forall sname in sexpr do statement* done ; =>#
+    "`(ast_macro_vfor (,_4) ,_6 ,_8)";
+  ;
+
+#keyword upto
+  statement := forall sname in sexpr upto sexpr do statement* done ; =>#
+  """
+    `(ast_macro_block ,( append `(
+      (ast_assign _set ((Expr (ast_name ,_2 ())) none) ,_4)
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab2" "" )
+      ( ast_label "lab1" ) 
+      ( ast_ifgoto (ast_apply (lnot (ast_apply (le ((ast_name ,_2 ()),_6))))) "lab2" ))
+      _8  
+      `((ast_call pre_incr (ast_name ,_2()))
+      ( ast_goto "lab1" ) 
+      ( ast_label "lab2" ))
+     ))
+  """;
+
+#keyword downto
+  statement := forall sname in sexpr downto sexpr do statement* done ; =>#
+  """
+    `(ast_macro_block ,( append `(
+      (ast_assign _set ((Expr (ast_name ,_2 ())) none) ,_4)
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab2" "" )
+      ( ast_label "lab1" ) 
+      ( ast_ifgoto (ast_apply (lnot (ast_apply (ge ((ast_name ,_2 ()) ,_6))))) "lab2" ))
+      _8 
+      `((ast_call pre_decr (ast_name ,_2 ()))
+      ( ast_goto "lab1" ) 
+      ( ast_label "lab2" ))
+     ))
+  """;
+
+
   sreturn := yield sexpr ; =># "`(ast_yield ,_2)";
   sreturn := return sexpr ; =># "`(ast_fun_return ,_2)";
   sreturn := return ; =># "'ast_proc_return";
   sreturn := halt sstring ; =># "`(ast_halt ,_2)";
 
-  sstatements := sstatement* =># "_1";
-  scompound := { sstatements } =># "_2";
+  scompound := { statement* } =># "_2";
   scall := call sexpr ; =># """(cons 'ast_call (splitapply _2))""";
   scall := sexpr ; =># "(cons 'ast_call (splitapply _1))";
 
@@ -961,7 +1001,7 @@ syntax statements {
   smacro_definition := macro sname is sname ; =># "`(ast_macro_name ,_2 ,_4)";
   smacro_definition := macro sname is sbasic_name_comma_list ; =># 
     "`(ast_macro_names ,_2 ,_4)";
-  smacro_definition := macro for sname in sbasic_name_comma_list do sstatements done ; =># 
+  smacro_definition := macro for sname in sbasic_name_comma_list do statement* done ; =># 
     "`(ast_macro_ifor ,_3 ,_5 ,_7)";
   smacro_definition := macro sname is new; =># """`(ast_macro_name ,_2 "")""";
   smacro_definition := macro var sbasic_name_comma_list = sexpr ; =># 
@@ -987,7 +1027,7 @@ syntax statements {
   smacro_definition := macro sname :> =># "`(ast_macro_label ,_2)";
   smacro_definition := macro if sexpr goto sname ; =># 
     "`(ast_macro_ifgoto ,_3 ,_5)";
-  smacro_definition := macro for val sbasic_name_comma_list in sexpr do sstatements done ; =># 
+  smacro_definition := macro for val sbasic_name_comma_list in sexpr do statement* done ; =># 
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
     smac_arg:= sname : fun =># "`(,_1 Expr)"; 
@@ -1000,7 +1040,6 @@ syntax statements {
     smac_arg_list := () =># "()";
 
   sglr_production := parse sexpr ; =># "TODOIT";
-  sregdef := regexp sexpr ; =># "TODOIT";
 
   sstruct_decl := struct sdeclname sopt_equal { sstruct_mem_decl * } =>#
     """
@@ -1068,7 +1107,7 @@ syntax statements {
     (cdr _2))
      """; 
 
-  sunion_decl := enum sdeclname { senum_item* } =>#
+  sunion_decl := enum sdeclname { senum_items } =>#
     """
     (mkns 
     `(ast_union ,(caar _2) ,(cadar _2) ,_4)
@@ -1078,6 +1117,9 @@ syntax statements {
   sopt_value := = sinteger =># "(some ,_1)";
   sopt_value := sepsilon =># "'none";
   senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs ast_void)";
+  senum_items := senum_item , senum_items =># "(cons _1 _3)";
+  senum_items := senum_item =># "`(,_1)";
+  senum_items := sepsilon =># "()";
 
 
   smodule_definition := module sdeclname sopt_equal scompound =>#
@@ -1216,7 +1258,7 @@ syntax statements {
       (t (car _4))
       (traint (cadr _4))
      )
-    (begin (display "ftype=")(display t)(display "\\n")
+    (begin ;;(display "ftype=")(display t)(display "\\n")
     (if (eq? 'ast_arrow (car t))
       (let 
         (

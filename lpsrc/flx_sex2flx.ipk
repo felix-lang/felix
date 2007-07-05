@@ -165,6 +165,7 @@ and xexpr_t sr fresh env x =
 
  | Lst [Id "ast_product"; Lst es] -> `AST_product (sr, map ex es) 
  | Lst [Id "ast_sum";  Lst es] -> `AST_sum (sr,map ex es)
+ | Lst [Id "ast_intersect"; Lst es] -> `AST_intersect (sr, map ex es)
  | Lst [Id "ast_setintersection"; Lst es] -> `AST_setintersection (sr, map ex es)
  | Lst [Id "ast_setunion"; Lst es] -> `AST_setunion (sr, map ex es)
  | Lst [Id "ast_orlist"; Lst es] -> `AST_orlist (sr, map ex es)
@@ -702,8 +703,8 @@ and xstatement_t sr fresh env x : statement_t =
     `AST_curry(sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
   | Lst [Id "ast_object"; Str s; vs; ps; sts] -> 
     `AST_object(sr,ss s,xvs vs, xps ps, xsts sts)
-  | Lst [Id "ast_regdef"; Id s; r] -> `AST_regdef (sr,s,re r)
-  | Lst [Id "ast_glr"; Id s; t; Lst pl] -> 
+  | Lst [Id "ast_regdef"; Str s; r] -> `AST_regdef (sr,s,re r)
+  | Lst [Id "ast_glr"; Str s; t; Lst pl] -> 
     let pl = map (function
       | Lst [p;e] -> sr,xp p, ex e
       | x -> err x "glr phrase"
@@ -819,14 +820,16 @@ and xstatement_t sr fresh env x : statement_t =
     `AST_typeclass(sr, n, xvs vs, xsts sts)
 
   | Lst [Id "ast_instance"; vs; qn; sts] ->
+    (*
     print_endline "Ast instance sts=";
     begin match sts with Lst sts->
     iter
     (fun s -> print_endline ("Stmt=" ^ Sex_print.string_of_sex s))
     sts
-    | _ -> failwith "Bad statements";
+    | _ -> err sts "[ast_instance: Bad statement list]"
     end
     ;
+    *)
     `AST_instance(sr, xvs vs, xq "ast_instance" qn, xsts sts)
 
   | Lst [Id "ast_label"; Str n] -> `AST_label(sr,n)

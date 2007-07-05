@@ -811,6 +811,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   (* the name here is just for diagnostics *)
   | `AST_index (sr, n, i) -> `AST_index (sr,n,i)
+  | `AST_intersect (sr, es) -> `AST_intersect (sr, map me es)
 
   | `AST_lookup (sr, (e1, name,ts)) -> `AST_lookup (sr,(me e1, mi sr name,map (mt sr) ts))
 

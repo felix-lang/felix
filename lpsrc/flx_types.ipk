@@ -443,6 +443,7 @@ and expr_t =
   | `AST_ellipsis of range_srcref
   | `AST_product of range_srcref * expr_t list
   | `AST_sum of range_srcref * expr_t list
+  | `AST_intersect of range_srcref * expr_t list
   | `AST_setintersection of range_srcref * expr_t list
   | `AST_setunion of range_srcref * expr_t list
   | `AST_orlist of range_srcref * expr_t list
@@ -1422,6 +1423,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_sum (sr,es) -> `AST_sum (sr, map f es)
   | `AST_setunion (sr,es) -> `AST_setunion (sr, map f es)
   | `AST_setintersection (sr,es) -> `AST_setintersection (sr, map f es)
+  | `AST_intersect (sr,es) -> `AST_intersect (sr, map f es)
   | `AST_orlist (sr,es) -> `AST_orlist (sr, map f es)
   | `AST_andlist (sr,es) -> `AST_andlist (sr, map f es)
   | `AST_arrow (sr,(a,b)) -> `AST_arrow (sr,(f a, f b))
@@ -1551,6 +1553,7 @@ let iter_expr f (e:expr_t) =
   | `AST_product (_,es)
   | `AST_sum (_,es)
   | `AST_setunion (_,es)
+  | `AST_intersect (_,es)
   | `AST_setintersection (_,es)
   | `AST_orlist (_,es)
   | `AST_andlist (_,es)
@@ -2073,6 +2076,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_product (s,_)
   | `AST_sum (s,_)
   | `AST_setunion (s,_)
+  | `AST_intersect (s,_)
   | `AST_setintersection (s,_)
   | `AST_orlist (s,_)
   | `AST_andlist (s,_)
@@ -2662,6 +2666,9 @@ and string_of_expr (e:expr_t) =
 
   | `AST_setintersection (_,ts) ->
      cat "&&" (map se ts)
+
+  | `AST_intersect (_,ts) ->
+     cat "&" (map se ts)
 
   | `AST_orlist (_,ts) ->
      cat " or " (map se ts)
@@ -5868,6 +5875,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_variant_type (sr,es) -> `TYP_variant es
 
   | `AST_product (_,ts) -> `TYP_tuple (map te ts)
+  | `AST_intersect (_,ts) -> `TYP_intersect (map te ts)
   | `AST_setintersection (_,ts) -> `TYP_setintersection (map te ts)
   | `AST_setunion (_,ts) -> `TYP_setunion (map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)

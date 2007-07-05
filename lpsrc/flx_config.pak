@@ -1662,15 +1662,6 @@ flx_other_keywords = [
     ("_", "UNDERSCORE"),
   ]
 
-flx_parser_keywords = [
-    ("expr","EXPRESSION"),
-    ("float_literal", "FLOAT_LITERAL"),
-    ("integer_literal", "INTEGER_LITERAL"),
-    ("string_literal", "STRING_LITERAL"),
-    ("statement", "STATEMENT"),
-    ("statements", "STATEMENTS"),
-  ]
-
 # symbols that can't be followed by a keyword
 flx_leadin_keywords = [
   "COLONCOLON",

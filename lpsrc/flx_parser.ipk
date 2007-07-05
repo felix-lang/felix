@@ -323,6 +323,10 @@ let define_scheme dyp name rhs (scm:string) =
         let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = s } in
         Ocs_env.bind_name env v1 g1;
         aux t1 t2 (n+1)
+      | USER_KEYWORD (_,s1) , `Obj_USER_KEYWORD (_,s2) ->
+        if s1 <> s2 then raise Giveup;
+        aux t1 t2 (n+1)
+
       | _ -> aux t1 t2 (n+1)
     in
     aux rhs avl 1;
@@ -330,271 +334,6 @@ let define_scheme dyp name rhs (scm:string) =
     let failwith x = print_string (Buffer.contents b); failwith x in
     let r = scheme_compile_eval failwith env scm in
     `Obj_sexpr r
-  in
-  rule,action
-
-
-let define_statement dyp name rhs (statement:statement_t) =
-  let lhs,_ = dyp.find_nt name in
-  let f o =
-    match o with
-      | NAME (sr,s) -> 
-        begin try
-          Dyp.Non_ter (fst (dyp.find_nt s),Dyp.No_priority)
-        with
-        | Not_found ->
-          print_endline ("[define_statement] User Syntax: Cannot find non-terminal " ^ s);
-          failwith ("[define_statement] User syntax: Missing nonterminal " ^ s)
-        end
-      | s -> 
-        (*
-        let name = Flx_prelex.name_of_token s in
-        *)
-        let name = Dyp_symbols.str_token s in
-        (*
-        print_endline ("Processing keyword " ^ name);
-        *)
-        Dyp.Ter (Dyp_symbols.get_token_name s)
-  in
-  let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
-  let truncs e = 
-    let s = string_of_expr e in
-    let n = String.length s in
-    if n > 20 then String.sub s 0 20 else s
-  in
-  let action = fun _ avl ->
-    let dummy = ("dummy",0,0,0,0) in
-    let srr = ref dummy in
-    let setsr sr = if dummy = !srr then srr := slift sr in
-    let rec aux objs syms args = match objs, syms with
-    | [],[] -> rev args
-    | [],_ | _,[] -> assert false
-    | h1::t1,h2::t2 -> 
-      match h1,h2 with
-      | USER_KEYWORD (_,s1),`Obj_USER_KEYWORD (sr,s2) ->
-        setsr sr;
-        if s1 <> s2 then (
-          (*
-          print_endline ("Keyword mismatch req=" ^ s1 ^ ", got=" ^ s2);
-          *)
-          raise Dyp.Giveup 
-        )
-        else
-        aux t1 t2 (`Keyword_term s1::args)
-
-      | USER10 (_,s1,_),`Obj_USER10 (sr,s2,_) ->
-        setsr sr;
-        if s1 <> s2 then (
-          (*
-          print_endline ("Keyword mismatch req=" ^ s1 ^ ", got=" ^ s2);
-          *)
-          raise Dyp.Giveup 
-        )
-        else
-        aux t1 t2 (`Keyword_term s1::args)
-
-      | NAME (_,"statements"),`Obj_statements sts -> 
-        (*
-        print_endline "Matched statements";
-        List.iter
-        (fun st -> print_endline (string_of_statement 0 st))
-        sts
-        ;
-        *)
-        aux t1 t2 (`Statements_term sts:: args)
-
-      | NAME (_,"statement"),`Obj_statement st -> 
-        (*
-        print_endline "Matched statement";
-        print_endline (string_of_statement 0 st);
-        *)
-        aux t1 t2 (`Statement_term st::args)
-
-      | NAME (_,"expr"),`Obj_expr e -> 
-        (*
-        print_endline ("Matched expr " ^ string_of_expr e);
-        *)
-        aux t1 t2 (`Expression_term e::args)
-
-      | NAME (_,"string_literal"),`Obj_string_literal e -> 
-        (*
-        print_endline ("Matched string_literal " ^ truncs e);
-        *)
-        aux t1 t2 (`Expression_term e::args)
-
-      | NAME (_,"identifier"),`Obj_identifier (_,name,[]) -> 
-        (*
-        print_endline ("Matched ident " ^ name);
-        *)
-        aux t1 t2 (`Identifier_term name::args)
-      
-      | NAME (_,s),_ ->
-        print_endline ("Syntax: Unknown symbol " ^ s);
-        failwith ("Syntax: Unknown Symbol " ^ s)
-
-@for s,t in flx_keywords:
-  if t != "IDENT":
-    tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
-@for t,s in flx_syms:
-  tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
-@#
-      | x,_ -> 
-        print_endline ("Unknown symbol " ^ Dyp_symbols.str_token x);
-        failwith ("Unknown symbol " ^ Dyp_symbols.str_token x);
-
-    in
-    let args = aux rhs avl [] in
-    let sname = 
-      let rec aux rhs out = match rhs with
-      | [] -> String.concat " " (rev out)
-      | USER_KEYWORD (_,s)::t -> aux t (s::out)
-      | NAME (_,s)::t -> aux t (("<"^s^">")::out)
-      | h::t -> aux t (Dyp_symbols.str_token h::out)
-      in aux rhs []
-    in
-    let ast_term = `Apply_term (`Statement_term statement, args) in
-    `Obj_statement (`AST_user_statement (!srr,"[usersyntax "^sname^"]",ast_term))
-  in
-  rule,action
-
-let define_expr dyp name rhs (expr:expr_t) =
-  let lhs,_ = dyp.find_nt name in
-  (*
-  print_endline ("DEFINE "^name^" = " ^ string_of_expr expr);
-  *)
-  let f o =
-    match o with
-      | NAME (sr,s) -> 
-        begin try
-          Dyp.Non_ter (fst (dyp.find_nt s),Dyp.No_priority)
-        with
-        | Not_found ->
-          print_endline ("[define_expr] User Syntax: Cannot find non-terminal " ^ s);
-          failwith ("[define_expr] User syntax: Missing nonterminal " ^ s)
-        end
-      | s -> 
-        (*
-        let name = Flx_prelex.name_of_token s in
-        *)
-        let name = Dyp_symbols.str_token s in
-        (*
-        print_endline ("Processing keyword " ^ name);
-        *)
-        Dyp.Ter (Dyp_symbols.get_token_name s)
-  in
-  let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
-  let truncs e = 
-    let s = string_of_expr e in
-    let n = String.length s in
-    if n > 20 then String.sub s 0 20 else s
-  in
-  let action = fun _ avl ->
-    (*
-    print_endline ("REDUCING "^name^" = " ^ string_of_expr expr);
-    *)
-    let dummy = ("dummy",0,0,0,0) in
-    let srr = ref dummy in
-    let setsr sr = if dummy = !srr then srr := slift sr in
-    let rec aux objs syms args = match objs, syms with
-    | [],[] -> rev args
-    | [],_ | _,[] -> assert false
-    | h1::t1,h2::t2 -> 
-      match h1,h2 with
-      | USER_KEYWORD (_,s1),`Obj_USER_KEYWORD (sr,s2) ->
-        setsr sr;
-        if s1 <> s2 then (
-          (*
-          print_endline "keyword mismatch";
-          *)
-          raise Dyp.Giveup 
-        )
-        else
-        aux t1 t2 (`Keyword_term s1::args)
-
-      | USER10 (_,s1,_),`Obj_USER10 (sr,s2,_) ->
-        setsr sr;
-        if s1 <> s2 then (
-          (*
-          print_endline "keyword mismatch";
-          *)
-          raise Dyp.Giveup 
-        )
-        else
-        aux t1 t2 (`Keyword_term s1::args)
-
-
-      | NAME (_,"statements"),`Obj_statements sts -> 
-        (*
-        print_endline "Matched statements";
-        List.iter
-        (fun st -> print_endline (string_of_statement 0 st))
-        sts
-        ;
-        *)
-        aux t1 t2 (`Statements_term sts:: args)
-
-      | NAME (_,"statement"),`Obj_statement st -> 
-        (*
-        print_endline "Matched statement";
-        print_endline (string_of_statement 0 st);
-        *)
-        aux t1 t2 (`Statement_term st::args)
-
-@for i in expr_nts: 
-  tangle('      | NAME (_,"'+i+'"),obj')
-@#
-       -> 
-         let e = match obj with
-@for i in expr_nts: 
-  tangle('        | `Obj_'+i+' e -> e')
-@#
-        | _ -> failwith "Expression nonterminal has wrong type"
-        in
-        (*
-        print_endline ("Matched expr " ^ string_of_expr e);
-        *)
-        aux t1 t2 (`Expression_term e::args)
-
-      | NAME (_,"string_literal"),`Obj_string_literal e -> 
-        (*
-        print_endline ("Matched string_literal " ^ truncs e);
-        *)
-        aux t1 t2 (`Expression_term e::args)
-
-      | NAME (_,"identifier"),`Obj_identifier (_,name,[]) -> 
-        (*
-        print_endline ("Matched ident " ^ name);
-        *)
-        aux t1 t2 (`Identifier_term name::args)
-      
-      (* Unknown nonterminal returning expression *)
-      | NAME (_,s),`Obj_expr e ->
-        aux t1 t2 (`Expression_term e::args)
-
-      | NAME (_,s),_ ->
-        print_endline ("Syntax: Unknown symbol " ^ s);
-        failwith ("Syntax: Unknown Symbol " ^ s)
-
-@for s,t in flx_keywords:
-  if t != "IDENT":
-    tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
-@for t,s in flx_syms:
-  tangle("      | " +t+ ' _,`Obj_'+t+' _ -> aux t1 t2 (`Keyword_term "'+t+'" :: args)')
-@#
-      | x,_ -> 
-        print_endline ("Unknown symbol " ^ Dyp_symbols.str_token x);
-        failwith ("Unknown symbol " ^ Dyp_symbols.str_token x);
-
-    in
-    let args = aux rhs avl [] in
-    let ast_term = `Apply_term (`Expression_term expr, args) in
-    let e = `AST_user_expr (!srr,"unknownusersyntax",ast_term) in
-    match name with
-
-@for i in expr_nts: 
-  tangle('    | "'+i+'"-> `Obj_'+i+' e')
-@# 
-    | _ -> `Obj_expr e
   in
   rule,action
 
@@ -636,96 +375,53 @@ let fixup_rule rhs =
   in aux rhs [] []
 
 let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
-     (*
-     print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
-     catmap " " (function 
-     | NAME (_,s) -> "<"^s^">"
-     | USER_KEYWORD (_,s) -> s
-     | x -> Dyp_symbols.str_token x
-     ) rhs ^ 
-     "=>#\n" ^
-     string_of_statement 0 stmt
-     );
-     *)
-     (* WE should use a distinct syntax for adding new nonterms .. *)
-     begin match name with
-     | "statement" ->
-       ignore(dyp.add_nt name ("Obj_" ^ name));
-       let rule =(define_statement dyp name rhs stmt) in
-       dyp.add_rules <- rule :: dyp.add_rules;
-
-@for i in expr_nts: tangle('    | "' + i + '"')
-      ->
-        begin match stmt with
-        | `AST_call (sr, proc, arg) -> 
-          let expr = match arg with
-          | `AST_tuple (_,[]) -> proc
-          | _ -> `AST_apply (sr,(proc,arg))
-          in
-          ignore(dyp.add_nt name ("Obj_" ^ name));
-          let rule = define_expr dyp name rhs expr in
-          dyp.add_rules <- rule :: dyp.add_rules;
-        | _ ->
-          let s = 
-            "Syntax extension: expression non-terminal " ^ name ^
-            " requires action to be expression!"
-          in
-          print_endline s;
-          clierr sr s
-        end
-
-      | _ ->
+   (*
+   print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
+   catmap " " (function 
+   | NAME (_,s) -> "<"^s^">"
+   | USER_KEYWORD (_,s) -> s
+   | x -> Dyp_symbols.str_token x
+   ) rhs ^ 
+   "=>#\n" ^
+   string_of_statement 0 stmt
+   );
+   *)
+   match stmt with
+   | `AST_scheme_string (sr,s) ->
         (*
-        print_endline ("Syntax extension: unknown non-terminal " ^ name);
-        print_endline ("Syntax extension: ASSUME EXPRESSION " ^ name);
+        print_endline ("SCHEME, user action = " ^ s);
         *)
-        begin match stmt with
-        | `AST_scheme_string (sr,s) ->
-          (*
-          print_endline ("SCHEME, user action = " ^ s);
-          *)
-          let prod,extras = fixup_rule rhs in
+        let prod,extras = fixup_rule rhs in
+        let rule = define_scheme dyp name prod s in
+        dyp.add_rules <- rule :: dyp.add_rules;
+        List.iter (fun (name,prod,s) ->
           let rule = define_scheme dyp name prod s in
           dyp.add_rules <- rule :: dyp.add_rules;
-          List.iter (fun (name,prod,s) ->
-            let rule = define_scheme dyp name prod s in
-            dyp.add_rules <- rule :: dyp.add_rules;
-          )
-          extras 
+        )
+        extras 
 
-        | `AST_call (sr, proc, arg) -> 
-          let expr = match arg with
-          | `AST_tuple (_,[]) -> proc
-          | _ -> `AST_apply (sr,(proc,arg))
-          in
-          let rule = define_expr dyp name rhs expr in
-          dyp.add_rules <- rule :: dyp.add_rules;
-        | _ ->
-          let s = 
-            "Syntax extension: expression non-terminal " ^ name ^
-            " requires action to be expression!"
-          in
-          print_endline s;
-          clierr sr s
-        end
-
-
-        (*
-        failwith ("Syntax extension: unknown non-terminal " ^ name);
-        *)
-      end
+   | _ ->
+     let s = 
+        "Syntax extension: non-terminal " ^ name ^
+        " requires action to be Scheme term!"
+      in
+      print_endline s;
+      clierr sr s
 
 let ocs2flx sr r = 
   let sex = Ocs2sex.ocs2sex r in
+  (*
   print_endline "OCS scheme term converted to s-expression:";
   Sex_print.sex_print sex;
+  *)
   let fresh = ref 1 in
   let env = [] in
   let flx = Flx_sex2flx.xstatement_t sr fresh env sex in
+  (*
   print_endline "s-expression converted to Felix statement!";
   print_endline (string_of_statement 0 flx);
+  *)
   flx
-
 
 }
 
@@ -757,12 +453,6 @@ let ocs2flx sr r =
 %token <(token list)> TOKEN_LIST
 %token DUMMY
 
-/* this has to be defined, but is never seen */
-%token <(Flx_ast.srcref * string * (token list * Flx_ast.ast_term_t) list * (string, (token list * Flx_ast.ast_term_t) list) Hashtbl.t )> USER_STATEMENT_KEYWORD
-
-/* the tokeniser replaces the above with this one */
-%token <(Flx_ast.srcref * string * (unit -> Flx_ast.statement_t) )> USER_STATEMENT_DRIVER
-
 /* user defined symbols */
 %token <(Flx_ast.srcref * string * string)> USER10
 %token <(Flx_ast.srcref * (string * string) list * string)> USERLB
@@ -777,7 +467,7 @@ let ocs2flx sr r =
 @for k,v in flx_3_char_syms:
   tangle("%token <(Flx_ast.srcref)> " + k,inhibit_sref=1)
 
-@for n,t in flx_keywords+flx_parser_keywords:
+@for n,t in flx_keywords: 
   tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
 
 %type <Ocs_types.sval> sname sliteral satom sexpr
@@ -785,7 +475,7 @@ let ocs2flx sr r =
 %constructor Obj_sexpr %for sterm 
 
 /* predefined major non-terminals */
-%constructor Obj_sexpr %for sstatement sexpr satom 
+%constructor Obj_sexpr %for statement sexpr satom 
 
 /* low level non terminals */
 %constructor Obj_sexpr %for sname sliteral 
@@ -808,7 +498,6 @@ let ocs2flx sr r =
 %start <(Flx_ast.compilation_unit_t)> compilation_unit
 %start <(Flx_ast.statement_t list * token)> statementsx
 %start <(Flx_ast.statement_t list)> statements
-%start <(Flx_ast.statement_t)> statement
 %start <(Flx_ast.expr_t)> expression
 %start <(Flx_ast.expr_t * token)> exprx
 %start <(unit)> semi
@@ -848,7 +537,12 @@ expression:
   | old_expr ENDMARKER { $1 }
 
 statements:
- | statement statements { $1 :: $2 }
+ | statement statements 
+   { 
+     let sr = "dummy",0,0,0,0 in 
+     ocs2flx sr $1 :: $2
+   }
+
  | { [] }
 
 @doc()
@@ -858,26 +552,38 @@ code of the compilation unit.
 
 @head(2,'Statement')
 @select(h)
-statement:
-  /*
-  | binding_definition { (* print_endline "Reducing binding_definition"; *) $1 
-    }
-  | declarative { (* print_endline "Reducing declarative"; *) $1 }
-  | executable { (* print_endline ("Reducing executable " ^ Flx_print.string_of_statement 0 $1); *) $1 }
-  | inclusion { (* print_endline "Reducing inclusion"; *) $1 }
-  | directive { (* print_endline ("Reducing directive " ^ Flx_print.string_of_statement 0 $1); *) $1 }
-  | publish { (* print_endline "Reducing publish"; *) $1}
-  | comment { (* print_endline "Reducing comment"; *) $1 }
-  | null_statement { (* print_endline "Reducing null_statement"; *) $1 }
-  | user_statement { (* print_endline "Reducing user_statement"; *) $1 }
-  | cparse { (* print_endline "Reducing cparse "; *) $1 }
-  */
-  | xsstatement { $1 }
-  | sstatement 
-    {
-      let sr = "dummystatement",0,0,0,0 in ocs2flx sr $1
-    }
+dyprod:
+   | NAME COLONEQUAL rhs PARSE_ACTION STRING SEMI
+     {
+       let name = snd $1 in
+       let rhs = $3 in
+       let sr = rstoken (fst $1) $6 in
+       let stmt:statement_t = `AST_scheme_string (sr,snd $5) in
+       let sr = rstoken (fst $1) $4 in
+       `Scheme_rule (name,rhs,stmt,sr)
+     }
 
+dyprods:
+   | dyprod dyprods { $1 :: $2 }
+   | { [] }
+
+rhs:
+  | rhs_term { [$1] }
+  | rhs_term rhs { $1 :: $2 }
+
+rhs_term :
+  | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
+  | IDENT { NAME ($1,"identifier") }
+  | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
+  | USER10 { USER10 $1 } /* user terminal */
+@for s,t in flx_keywords:
+  if t != "IDENT":
+    tangle("  | " +t+ " { " + t + " $1 }")
+@for t,s in flx_syms:
+  if t != "PARSE_ACTION":
+    tangle("  | " +t+ " { " + t + " $1 }")
+
+statement:
   | SCHEME STRING SEMI
     {
       let sr = rstoken $1 $3 in
@@ -886,11 +592,12 @@ statement:
       let env = Ocs_env.env_copy dyp.local_data.env in
       let r = scheme_compile_eval failwith env s in
       dyp.local_data <- { dyp.local_data with env = env };
-      `AST_nop (sr,"")
+      Snull
     }
 
   | OPEN SYNTAX basic_name_comma_list SEMI
     {
+      print_endline "Parsed open of syntax extensions";
       print_endline "Opening syntax extensions";
       let sr = rstoken $1 $4 in
       let dssls = map snd $3 in
@@ -908,74 +615,19 @@ statement:
         dssls
       in
       List.iter (do_dyp_rule dyp) rules;
-      `AST_nop (sr, cat "," dssls)
+      Snull
     }
 
   | SYNTAX NAME LBRACE dyprods RBRACE
     {
+      print_endline ("Parsed syntax extensions " ^ (snd $2));
+      print_endline ("Defining syntax extensions " ^ (snd $2));
       let sr = rstoken $1 $5 in
       let dssl = snd $2 in
       List.iter (add_rule dyp dssl) $4;
-      `AST_nop (sr, dssl)
+      Snull
     }
 
- dyprod:
-   | NAME COLONEQUAL rhs PARSE_ACTION statement
-     {
-       let name = snd $1 in
-       let rhs = $3 in
-       let stmt:statement_t = $5 in
-       let sr = rstoken (fst $1) $4 in
-       `Felix_rule (name,rhs,stmt,sr)
-     }
-
-   | NAME COLONEQUAL rhs PARSE_ACTION STRING SEMI
-     {
-       let name = snd $1 in
-       let rhs = $3 in
-       let sr = rstoken (fst $1) $6 in
-       let stmt:statement_t = `AST_scheme_string (sr,snd $5) in
-       let sr = rstoken (fst $1) $4 in
-       `Scheme_rule (name,rhs,stmt,sr)
-     }
-
-   | SCHEME STRING SEMI
-     {
-       `Scheme_eval (snd $2) 
-     }
-
- dyprods:
-   | dyprod dyprods { $1 :: $2 }
-   | { [] }
-
- rhs:
-  | rhs_term { [$1] }
-  | rhs_term rhs { $1 :: $2 }
-
- rhs_term :
-  | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
-  | IDENT { NAME ($1,"identifier") }
-  | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
-  | USER10 { USER10 $1 } /* user terminal */
-@for s,t in flx_keywords:
-  if t != "IDENT":
-    tangle("  | " +t+ " { " + t + " $1 }")
-@for t,s in flx_syms:
-  if t != "PARSE_ACTION":
-    tangle("  | " +t+ " { " + t + " $1 }")
-
-
-/* a hack for testing the new Scheme based user specified
-grammar
-*/
-xsstatement:
-  | SCHEME LBRACE sterm RBRACE { let sr = rstoken $1 $4 in ocs2flx sr $3 }
-
-sterm:
-  | sstatement { $1 }
-
-/* nonterminals purely for user extensions */
-sstatement: | DUMMY { Snull }
 sexpr: | DUMMY { Snull }
 
 /* identifiers which aren't keywords */
@@ -1257,17 +909,6 @@ executable:
 
 null_statement:
   | SEMI                    { `AST_nop (rstoken $1 $1,"") }
-
-user_statement:
-  | USER_STATEMENT_DRIVER
-    { 
-      let srt, kw, f = $1 in
-      let sr = slift srt in
-      (*
-      print_endline ("USER STATEMENT KEYWORD " ^ kw);
-      *)
-      f ()
-    }
 
 inclusion:
   | INCLUDE STRING SEMI
