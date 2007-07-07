@@ -4094,7 +4094,6 @@ f(0);
 @select(env.expect())
 1
 Zero
-Zero
 @doc()
 
 which is equivalent to a call statement followed by a 
@@ -4140,6 +4139,16 @@ f(10);
 
 @select(env.expect())
 10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+Zero
 @env.head(2,'Conditional Statements')
 Felix supports a traditional procedural if chain.
 Here is a simple if/do/done:

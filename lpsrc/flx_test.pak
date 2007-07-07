@@ -62,7 +62,7 @@ proc fire()
     ;
     print result;
 
-    incr (&i); 
+    ++i; 
   };
 }
 

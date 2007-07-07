@@ -656,18 +656,22 @@ syntax statements {
 
   sabstract_type := callback proc sname : sexpr srequires_clause ; =>#
     """
-    (mkns 
-    `(ast_callback_decl ,_3 ,(mkl2 _5) 'ast_void ,_6)
-    (cdr _3))
+    `(ast_callback_decl ,_3 ,(mkl2 _5) ast_void ,_6)
     """; 
 
 
   sabstract_type := callback fun sname : sexpr srequires_clause ; =>#
     """
     (if (eq? 'ast_arrow (car _5))
-      (mkns 
-      `(ast_callback_decl ,_3 ,(mkl2 (caadr _5)) ,(cadadr _5) ,_6)
-      (cdr _3))
+      (let* 
+        (
+          (ft (cadr _5))
+          (dom (car ft))
+          (cod (cadr ft))
+          (args (mkl2 dom))
+        )
+      `(ast_callback_decl ,_3 ,args ,cod ,_6)
+      )
       'ERROR
     )
     """; 
@@ -963,6 +967,22 @@ syntax statements {
     ) 
   """;
 
+#keyword until
+  sifgoto := until sexpr do statement* done; =>#
+  """
+    `( ast_macro_block ,( append `(
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab2" "" )
+      ( ast_label "lab1" ) 
+      ( ast_ifgoto ,_2 "lab2" ) )
+      _4  
+      '(( ast_goto "lab1" ) 
+      ( ast_label "lab2" ))
+      )
+    ) 
+  """;
+
+
 #keyword forall
   statement := forall sname in sexpr do statement* done ; =>#
     "`(ast_macro_vfor (,_4) ,_6 ,_8)";
@@ -1135,31 +1155,64 @@ syntax statements {
      (fl (splitapply _8))
      (f (car fl))
      (a (cadr fl))
-     (nua (cons `(ast_name ,_3 ()) (mkl a)))
+     (nua (cons `(ast_ref (ast_name ,_3 ())) (mkl a)))
      (call `(ast_call ,f ,nua))
      (vardef `(ast_var_decl ,_3 ,_4 (some ,_6) none))
      (seq `(ast_seq (,vardef ,call))))
      (begin 
-     (display "f=")(display f)
-     (display "\\n_3=")(display _3)
-     (display "\\na=")(display a)
-     (display "\\nnua=")(display nua)
-     (display "\\ncall=")(display call)
-     (display "\\nvardef=")(display vardef)
-     (display "\\nseq=")(display seq)
-     (display "\\n")
+     ;;(display "f=")(display f)
+     ;;(display "\\n_3=")(display _3)
+     ;;(display "\\na=")(display a)
+     ;;(display "\\nnua=")(display nua)
+     ;;(display "\\ncall=")(display call)
+     ;;(display "\\nvardef=")(display vardef)
+     ;;(display "\\nseq=")(display seq)
+     ;;(display "\\n")
      seq))
      """; 
  
 
-  svar_def := var sdeclname : sexpr <- sexpr ; =># "TODOIT";
-
+  svar_def := var sdeclname : sexpr <- sexpr ; =># 
+   """
+   (let* 
+     (
+       (fl (splitapply _6))
+       (f (car fl))
+       (a (cadr fl))
+       (name (caar _2))
+       (vs (cadar _2))
+       (namespace (cdr _2))
+       (typ _4)
+       (nua (cons `(ast_name ,name ()) (mkl a)))
+       (call `(ast_call ,f ,nua))
+       (vardef `(ast_var_decl ,name ,vs (some ,typ) none))
+       (seq `(ast_seq (,vardef ,call)))
+     )
+     (begin 
+     ;;(display "f=")(display f)
+     ;;(display "\\na=")(display a)
+     ;;(display "\\nname=")(display name)
+     ;;(display "\\nvs=")(display vs)
+     ;;(display "\\ntyp=")(display typ)
+     ;;(display "\\nnua=")(display nua)
+     ;;(display "\\ncall=")(display call)
+     ;;(display "\\nvardef=")(display vardef)
+     ;;(display "\\nseq=")(display seq)
+     ;;(display "\\nnamespace=")(display namespace)
+     ;;(display "\\n")
+     (mkns seq namespace)
+     ))
+     """; 
 
   smacro_definition := macro sname is sname ; =># "`(ast_macro_name ,_2 ,_4)";
   smacro_definition := macro sname is sbasic_name_comma_list ; =># 
     "`(ast_macro_names ,_2 ,_4)";
+
   smacro_definition := macro for sname in sbasic_name_comma_list do statement* done ; =># 
     "`(ast_macro_ifor ,_3 ,_5 ,_7)";
+  smacro_definition := macro for sname in lpar sbasic_name_comma_list rpar do statement* done ; =># 
+    "`(ast_macro_ifor ,_3 ,_6 ,_9)";
+
   smacro_definition := macro sname is new; =># """`(ast_macro_name ,_2 "")""";
   smacro_definition := macro var sbasic_name_comma_list = sexpr ; =># 
     "`(ast_macro_var ,_3 ,_5)";
