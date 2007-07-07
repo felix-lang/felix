@@ -569,6 +569,7 @@ and xmacro_parameter_type_t sr fresh env x : macro_parameter_type_t =
 and xmacro_parameter_t sr fresh env x : macro_parameter_t =
   match x with
   | Lst [Id s; m] -> s,xmacro_parameter_type_t sr fresh env m
+  | Lst [Str s; m] -> s,xmacro_parameter_type_t sr fresh env m
   | x -> err x "macro_parameter_t"
 
 and xclass_member_t sr fresh env x : class_member_t =

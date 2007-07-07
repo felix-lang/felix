@@ -100,7 +100,7 @@ SCHEME """
           ((eq? 'NoConstraint c) ct )
           ((eq? 'Eq (car c)) ;; type constraint
             `(ast_intersect
-              ((ast_type_match (ast_name ,v ()) ((,(cadr c) ()))) 
+              ((ast_type_match ((ast_name ,v ()) ((,(cadr c) ())))) 
               ,ct)
             )
           )
@@ -548,13 +548,13 @@ syntax parsing {
   sglr_entry:= sname colon sglr_term =># "`((some ,_1) ,_3)";
   sglr_entry:= sglr_term =># "`(none ,_1)";
 
-  sglr_entries:= sglr_entry sglr_entries =># "(cons ,_1 _2)";
+  sglr_entries:= sglr_entry sglr_entries =># "(cons _1 _2)";
   sglr_entries:= sglr_entry =># "`(,_1)";
 
   sglr_matching:= vbar sglr_entries => sexpr =># "`(,_2 ,_4)";
   sglr_matching:= vbar => sexpr =># "`(() ,_3)";
 
-  sglr_matchings:= sglr_matching sglr_matchings =># "(cons ,_1 ,_3)";
+  sglr_matchings:= sglr_matching sglr_matchings =># "(cons _1 _2)";
   sglr_matchings:= sglr_matching =># "`(,_1)";
 
   sglr_production:= nonterm sname colon sexpr = sglr_matchings ssemi =>#
@@ -843,7 +843,7 @@ syntax statements {
 
   // deprecate: class object construction, use a generator
   sassignment := var sname <- new sexpr ; =># 
-    "`(ast_apply_ctor ,_2 ,(splitapply ,_5))";
+    "(append `(ast_apply_ctor ,_2) (splitapply _5))";
 
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
   sassignment := sexpr <- sexpr ; =># 
@@ -1009,6 +1009,9 @@ syntax statements {
   scompound := { statement* } =># "_2";
   scall := call sexpr ; =># """(cons 'ast_call (splitapply _2))""";
   scall := jump sexpr ; =># """(cons 'ast_jump (splitapply _2))""";
+  scall := loop sname sexpr ; =># "`(ast_loop ,_2 ,_3)";
+  scall := loop sname ; =># "`(ast_loop ,_2 (ast_tuple ()))";
+
   scall := sexpr ; =># "(cons 'ast_call (splitapply _1))";
 
   sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
@@ -1464,17 +1467,19 @@ syntax statements {
   sprocedure_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
     sctor_inits scompound =>#
   """
-  (let (
-    (name '"__constructor__")
-    (vs ,_2)
-    (ret 'ast_void)
-    (traint ,_4)
-    (body ,_6)
-    (inits ,_5)
-    (args ,_3))
-  (let ((f (lambda (ne)`(ast_init ,(car ne),(cadr ne)))))
-  (let ((body (map f (append inits body))))
-  `(ast_curry ,name ,vs ,args (,ret ,traint) 'Ctor ,body))))
+  (let* 
+    (
+      (name "__constructor__")
+      (vs _2)
+      (ret 'ast_void)
+      (traint _4)
+      (body _6)
+      (inits _5)
+      (args _3)
+      (f (lambda (ne)`(ast_init ,(car ne) ,(cadr ne))))
+      (body (append (map f inits) body))
+    )
+    `(ast_curry ,name ,vs ,args (,ret ,traint) Ctor ,body))
   """;
 
   sprocedure_definition := sadjectives sproc_kind sdeclname
