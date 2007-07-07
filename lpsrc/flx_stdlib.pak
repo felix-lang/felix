@@ -333,7 +333,7 @@ macro val false = case 0 of 2;
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
 #import <nugram.flxh>
-open syntax expressions, statements, regexps;
+open syntax expressions, statements, regexps, parsing;
 
 #infix 10 "/\\" wedge
 #infix 10 "\\/" vee

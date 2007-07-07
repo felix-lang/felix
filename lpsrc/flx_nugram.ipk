@@ -476,6 +476,8 @@ syntax expressions {
 
 syntax regexps {
   satom := sregmatch_expr =># "_1";
+  sdirective := sregdef =># "_1";
+
   sregmatch_expr := reglex sexpr to sexpr with sregmatch_alternatives endmatch =>#
     "`(ast_reglex (,_2 ,_4 ,_6))";
   sregmatch_expr := regmatch sexpr with sregmatch_alternatives endmatch =>#
@@ -521,7 +523,45 @@ syntax regexps {
 }
 
 syntax parsing {
-  satom := glrparse =># "_1";
+  satom := sglr_parse =># "_1";
+  sdirective := sglr_production =># "_1";
+
+  sglr_term := squalified_name =># "`(GLR_name ,_1)";
+  sglr_term := lbrace sglr_alternatives rbrace =># "`(GLR_ast ,_2)";
+  sglr_term := lpar sglr_alternatives rpar =># "_2";
+  sglr_term := sglr_term quest =># "`(GLR_opt ,_1)";
+  sglr_term := sglr_term star =># "`(GLR_ast ,_1)";
+  sglr_term := sglr_term plus =># "`(GLR_plus ,_1)";
+
+  sglr_alternatives := sglr_sequence vbar sglr_alts =># "`(GLR_alt ,(cons _1 _3))";
+  sglr_alternatives := sglr_sequence =># "_1";
+
+  sglr_alts := sglr_sequence vbar sglr_alts =># "(cons _1 _3)";
+  sglr_alts := sglr_sequence =># "`(,_1)";
+
+  sglr_sequence:= sglr_term sglr_seqs =># "`(GLR_seq ,(cons _1 _2))";
+  sglr_sequence:= sglr_term =># "_1";
+
+  sglr_seqs := sglr_term sglr_seqs =># "(cons _1 _2)";
+  sglr_seqs := sglr_term =># "`(,_1)";
+
+  sglr_entry:= sname colon sglr_term =># "`((some ,_1) ,_3)";
+  sglr_entry:= sglr_term =># "`(none ,_1)";
+
+  sglr_entries:= sglr_entry sglr_entries =># "(cons ,_1 _2)";
+  sglr_entries:= sglr_entry =># "`(,_1)";
+
+  sglr_matching:= vbar sglr_entries => sexpr =># "`(,_2 ,_4)";
+  sglr_matching:= vbar => sexpr =># "`(() ,_3)";
+
+  sglr_matchings:= sglr_matching sglr_matchings =># "(cons ,_1 ,_3)";
+  sglr_matchings:= sglr_matching =># "`(,_1)";
+
+  sglr_production:= nonterm sname colon sexpr = sglr_matchings ssemi =>#
+  "`(ast_glr ,_2 ,_4 ,_6)";
+
+  sglr_parse:= parse sexpr with sglr_matchings endmatch =>#
+  "`(ast_parse ,_2 ,_4)";
 }
 
 syntax typing {
@@ -565,7 +605,6 @@ syntax statements {
 
   sdirective := sopen_decl =># "_1";
   sdirective := suse_decl =># "_1";
-  sdirective := sregdef =># "_1";
   sdirective := sglr_production =># "_1";
   sdirective := smacro_definition =># "_1";
 
@@ -1023,7 +1062,7 @@ syntax statements {
   svar_def := var sdeclname : sexpr = sexpr ; =>#
     """
     (mkns 
-    `(ast_val_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
+    `(ast_var_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
     (cdr _2))
      """; 
 
@@ -1100,8 +1139,6 @@ syntax statements {
     smac_args := smac_arg =># "`(,_1)";
     smac_arg_list := ( smac_args ) =># "_2";
     smac_arg_list := () =># "()";
-
-  sglr_production := parse sexpr ; =># "TODOIT";
 
   sstruct_decl := struct sdeclname sopt_equal { sstruct_mem_decl * } =>#
     """

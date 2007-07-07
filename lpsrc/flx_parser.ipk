@@ -510,7 +510,7 @@ let dummysr = "Dummy",0,0,0,0
 %constructor Obj_sexpr %for star plus quest suser10token sident
 %constructor Obj_sexpr %for suserlbtoken suserrbtoken
 %constructor Obj_sexpr %for lbrace rbrace lpar rpar lsqb rsqb 
-%constructor Obj_sexpr %for ssemi comma colon 
+%constructor Obj_sexpr %for ssemi comma colon vbar
 
 /* nothing*/
 %constructor Obj_sexpr %for sepsilon
@@ -675,6 +675,7 @@ comma: COMMA { slift $1,Snull }
 lsqb: LSQB { slift $1,Snull }
 rsqb: RSQB { slift $1,Snull }
 colon: COLON { slift $1,Snull }
+vbar: VBAR { slift $1,Snull }
 
 /* 
 a definite non-terminal for a sequence of no tokens,

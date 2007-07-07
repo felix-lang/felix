@@ -1815,6 +1815,10 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
 
   | `AST_macro_block (sr,sts) ->
     let b = subst_statements recursion_limit local_prefix seq reachable [] sts in
+    (* NOTE SPECIAL HACK -- ANY MACROS DEFINED IN A MACRO BLOCK ARE LOST *)
+    let ses ss =
+      special_expand_statements recursion_limit local_prefix seq (ref true) (ref []) macros ss
+    in
     let b = ses b in
     iter ctack b
 
