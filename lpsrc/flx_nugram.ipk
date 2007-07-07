@@ -1011,10 +1011,37 @@ syntax statements {
   scall := jump sexpr ; =># """(cons 'ast_jump (splitapply _2))""";
   scall := sexpr ; =># "(cons 'ast_call (splitapply _1))";
 
-  sval_def := val sname sname_suffix = sexpr ; =># "TODOIT";
-    sname_suffix := , sname sname_suffix =># "(cons _2 _3)";
-    sname_suffix := , sname =># "`((,_2))";
+  sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
+  sname_suffix:= comma sname =># "`(,_2)";
 
+  sval_def := val sname sname_suffix = sexpr ; =># 
+  """
+  (let 
+    (
+      (names (cons _2 _3))
+      (vals (mkl _5))
+    )
+    (begin 
+    ;;(display "names=")(display names)
+    ;;(display "init=")(display vals)
+    ;;(display "\\n")
+    (if (eq? (length names)(length vals))
+      (let  
+        (
+          (f (lambda (n v)`(ast_val_decl ,n ,dfltvs none (some ,v))))
+        )
+        `(ast_seq ,(map f names vals))
+      )
+      (let* 
+        (
+          (f (lambda (n)`((Val ,n) none)))
+          (lexpr (map f names))
+        )
+        `(ast_assign _set ((List ,lexpr) none) ,_5)
+      )
+  )))
+  """;
+ 
   sval_def := val sdeclname = sexpr ; =>#
     """
     (mkns 
@@ -1050,8 +1077,34 @@ syntax statements {
     (cdr _2))
      """; 
 
-  svar_def := var sname sname_suffix = sexpr ; =># "TODOIT";
-
+  svar_def := var sname sname_suffix = sexpr ; =># 
+  """
+  (let 
+    (
+      (names (cons _2 _3))
+      (vals (mkl _5))
+    )
+    (begin 
+    ;;(display "names=")(display names)
+    ;;(display "init=")(display vals)
+    ;;(display "\\n")
+    (if (eq? (length names)(length vals))
+      (let  
+        (
+          (f (lambda (n v)`(ast_var_decl ,n ,dfltvs none (some ,v))))
+        )
+        `(ast_seq ,(map f names vals))
+      )
+      (let* 
+        (
+          (f (lambda (n)`((Var ,n) none)))
+          (lexpr (map f names))
+        )
+        `(ast_assign _set ((List ,lexpr) none) ,_5)
+      )
+  )))
+  """;
+  
   svar_def := var sdeclname = sexpr ; =>#
     """
     (mkns 
