@@ -452,6 +452,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_lift _
   | `AST_setunion  _
   | `AST_intersect _
+  | `AST_isin _
   | `AST_setintersection _
   | `AST_macro_ctor _
   | `AST_macro_statements _
@@ -1340,6 +1341,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     end
       
   | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
+    (* print_endline (string_of_statement 0 st); *)
     let vs,con = vs in
     let props, dcls, reqs = mkreqs sr reqs in
     (* hackery *)

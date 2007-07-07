@@ -444,6 +444,7 @@ and expr_t =
   | `AST_product of range_srcref * expr_t list
   | `AST_sum of range_srcref * expr_t list
   | `AST_intersect of range_srcref * expr_t list
+  | `AST_isin of range_srcref * (expr_t * expr_t)
   | `AST_setintersection of range_srcref * expr_t list
   | `AST_setunion of range_srcref * expr_t list
   | `AST_orlist of range_srcref * expr_t list
@@ -1424,6 +1425,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_setunion (sr,es) -> `AST_setunion (sr, map f es)
   | `AST_setintersection (sr,es) -> `AST_setintersection (sr, map f es)
   | `AST_intersect (sr,es) -> `AST_intersect (sr, map f es)
+  | `AST_isin (sr,(a,b)) -> `AST_isin (sr, (f a, f b))
   | `AST_orlist (sr,es) -> `AST_orlist (sr, map f es)
   | `AST_andlist (sr,es) -> `AST_andlist (sr, map f es)
   | `AST_arrow (sr,(a,b)) -> `AST_arrow (sr,(f a, f b))
@@ -1547,6 +1549,7 @@ let iter_expr f (e:expr_t) =
   | `AST_arrow (_,(a,b)) 
   | `AST_map (_,a,b) 
   | `AST_apply (_,(a,b)) 
+  | `AST_isin (_,(a,b))
     -> f a; f b
 
   | `AST_tuple (_,es) 
@@ -2077,6 +2080,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_sum (s,_)
   | `AST_setunion (s,_)
   | `AST_intersect (s,_)
+  | `AST_isin (s,_)
   | `AST_setintersection (s,_)
   | `AST_orlist (s,_)
   | `AST_andlist (s,_)
@@ -2281,28 +2285,28 @@ let get_lines f context l1' l2' c1 c2 = (* first line is line 1 *)
     let nl() = Buffer.add_char buf '\n' in
     let f = open_in f in
     for i = 1 to l1-1 do ignore(input_line f) done;
+    let too_long = l2'-l1' > 20 in
     begin
       try
         for i = l1 to l2 do 
-          Buffer.add_string buf (fmt i ^": ");
+          let s = input_line f in
+          if too_long && i = l1'+3 then
+            Buffer.add_string buf ("...\n")
+          else if too_long && i > l1'+3 && i< l2'-3 then () else
           begin
-            try
-              Buffer.add_string buf (input_line f)
-            with _ -> 
-              Buffer.add_string buf "<eof>\n"; 
-              raise Not_found
-          end
-          ;
-          nl();
-          if i = l1' && l1' = l2' then
-          begin
-            for i = 1 to n + 2 do spc() done;
-            for i = 1 to c1 - 1 do spc() done;
-            for i = c1 to c2 do star() done;
-            nl()
+            Buffer.add_string buf (fmt i ^": ");
+            Buffer.add_string buf s;
+            nl();
+            if i = l1' && l1' = l2' then
+            begin
+              for i = 1 to n + 2 do spc() done;
+              for i = 1 to c1 - 1 do spc() done;
+              for i = c1 to c2 do star() done;
+              nl()
+            end
           end
         done
-      with Not_found -> ()
+      with _ -> Buffer.add_string buf "<eof>\n"
     end
     ;
     close_in f;
@@ -2669,6 +2673,9 @@ and string_of_expr (e:expr_t) =
 
   | `AST_intersect (_,ts) ->
      cat "&" (map se ts)
+
+  | `AST_isin (_,(a,b)) ->
+     sme a ^ " isin " ^ sme b
 
   | `AST_orlist (_,ts) ->
      cat " or " (map se ts)
@@ -3182,7 +3189,11 @@ and sb dfns depth fixlist counter prec tc =
     | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
     | `BTYP_type i -> 0,"TYPE " ^ si i
     | `BTYP_type_tuple ls ->
-      4, cat ", " (map (sbt 4) ls)
+      begin match ls with
+      | [] -> 0,"UNEXPECTED TYPE TUPLE NO ARGS"
+      | _ -> 4, cat ", " (map (sbt 4) ls)
+      end
+
 
     | `BTYP_typefun (args,ret,body) -> 
        8,
@@ -5870,12 +5881,17 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_ellipsis _ -> `TYP_ellipsis
   | #suffixed_name_t as x -> (x:>typecode_t)
   | `AST_tuple (sr,ls) ->
-    `TYP_type_tuple (map te ls)
+    begin match ls with
+    | [] -> `TYP_tuple [] (* HACK!! *) 
+    | [x] -> failwith "Unexpected one element tuple converting to type tuple"
+    | _ -> `TYP_type_tuple (map te ls)
+    end
   | `AST_record_type (sr,es) -> `TYP_record es
   | `AST_variant_type (sr,es) -> `TYP_variant es
 
   | `AST_product (_,ts) -> `TYP_tuple (map te ts)
   | `AST_intersect (_,ts) -> `TYP_intersect (map te ts)
+  | `AST_isin (_,(a,b)) -> `TYP_isin (te a, te b)
   | `AST_setintersection (_,ts) -> `TYP_setintersection (map te ts)
   | `AST_setunion (_,ts) -> `TYP_setunion (map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)

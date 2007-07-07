@@ -80,7 +80,13 @@ and type_of_sex sr fresh env w =
     | `AST_tuple (_,[]) -> `TYP_tuple []
     | `AST_name (_,"none",[]) -> `TYP_none
     | `AST_name (_,"typ_none",[]) -> `TYP_none
-    | x -> typecode_of_expr x 
+    | x -> 
+      try typecode_of_expr x 
+      with xn ->
+        print_endline ("Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
+        print_endline ("Felix expression is " ^ Flx_print.string_of_expr x);
+        print_endline ("Got error: " ^ Printexc.to_string xn);
+        raise xn
   in
   (*
   print_endline ("Felix type is " ^ Flx_print.string_of_typecode y);
@@ -166,6 +172,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_product"; Lst es] -> `AST_product (sr, map ex es) 
  | Lst [Id "ast_sum";  Lst es] -> `AST_sum (sr,map ex es)
  | Lst [Id "ast_intersect"; Lst es] -> `AST_intersect (sr, map ex es)
+ | Lst [Id "ast_isin"; Lst [a; b]] -> `AST_isin (sr, (ex a, ex b))
  | Lst [Id "ast_setintersection"; Lst es] -> `AST_setintersection (sr, map ex es)
  | Lst [Id "ast_setunion"; Lst es] -> `AST_setunion (sr, map ex es)
  | Lst [Id "ast_orlist"; Lst es] -> `AST_orlist (sr, map ex es)

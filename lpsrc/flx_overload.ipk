@@ -746,10 +746,11 @@ let consider syms bt luqn2 name
           let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
-        | _ -> 
+        | x -> 
           clierr sr 
           ("[overload] Cannot resolve type constraint! " ^
-            sbt syms.dfns type_constraint
+            sbt syms.dfns type_constraint ^
+            "\nReduced to " ^ sbt syms.dfns x
           )
         end
       end

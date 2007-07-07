@@ -7,10 +7,14 @@ SCHEME """
 """;
 
 SCHEME """
+(define dfltaux '( (ast_tuple ()) ()))
+""";
+
+SCHEME """
 (define dfltvs 
-  '(
+  `(
     ()           ;; vs list: name,type,constraint triple 
-    ( () () )    ;; type constraint, typeclass constraint list
+    ,dfltaux
   ) 
 )
 """;
@@ -45,9 +49,21 @@ SCHEME """
 SCHEME """
 (define mkl (lambda (x)
   (begin 
-;;  (display "mkl x=")(display x)
+  ;;(display "mkl x=")(display x)
   (if (pair? x) 
     (if (eq? (car x) 'ast_tuple) 
+      (if (pair? (cdr x)) (cadr x) (list x))
+      (list x))
+    (list x)))
+))
+""";
+
+SCHEME """
+(define mkl2 (lambda (x)
+  (begin 
+  ;;(display "mkl2 x=")(display x)
+  (if (pair? x) 
+    (if (eq? (car x) 'ast_product) 
       (if (pair? (cdr x)) (cadr x) (list x))
       (list x))
     (list x)))
@@ -83,43 +99,57 @@ SCHEME """
         (cond 
           ((eq? 'NoConstraint c) ct )
           ((eq? 'Eq (car c)) ;; type constraint
-            (cons 
-              `(ast_type_match (ast_name ,v ()) ((,(cadr ct) ()))) 
-              ct
+            `(ast_intersect
+              ((ast_type_match (ast_name ,v ()) ((,(cadr c) ()))) 
+              ,ct)
             )
           )
           ((eq? 'In (car c)) ;; type constraint
-            (cons `(ast_isin (ast_name ,v ()) ,(cadr c)) ct)
+            `(ast_intersect
+              ((ast_isin ((ast_name ,v ()) ,(cadr c))) 
+              ,ct)
+            )
           )
         (else (display "ERROR!!!"))
         )
       )
     )
     (begin 
-      ;;(display "vs=")(display vs)
-      ;;(display "\\nct=")(display ct)
-      ;;(display "\\nv=")(display v)
-      ;;(display "\\nt=")(display t)
-      ;;(display "\\nc=")(display c)
-      ;;(display "\\nct2=")(display ct2)
-      ;;(display "\\n")
+    ;;  (display "vs=")(display vs)
+    ;;  (display "\\nct=")(display ct)
+    ;;  (display "\\nv=")(display v)
+    ;;  (display "\\nt=")(display t)
+    ;;  (display "\\nc=")(display c)
+    ;;  (display "\\nct2=")(display ct2)
+    ;;  (display "\\n")
     (list (cons `(,v ,t) vs) ct2))
 ))))
 """;
+
+//
+// rti = rtc:type constraint, rtr:typeclass requirement list
+//
 
 SCHEME """
 (define tvfixup (lambda (tv ct)
   (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
   (let* 
     (
-      (vscs (fold_left tvfixup_folder '(() ()) tv))
+      (vscs (fold_left tvfixup_folder '(() (ast_tuple ())) tv))
       (vs (car vscs))
       (cs (cadr vscs))
       (rtc (car ct))
       (rtr (cadr ct))
-      (ct `((ast_intersect ,(cons rtc cs)) ,rtr))
+      (ct `((ast_intersect (,rtc ,cs)) ,rtr))
     )
-    (list (reverse vs) ct)
+    (begin 
+    ;;  (display "vs=")(display vs)
+    ;;  (display "\\ncs=")(display cs)
+    ;;  (display "\\nrtc=")(display rtc)
+    ;;  (display "\\nrtr=")(display rtr)
+    ;;  (display "\\nct=")(display ct)
+    ;;  (display "\\n")
+    (list (reverse vs) ct))
   )
 )))
 """;
@@ -587,7 +617,7 @@ syntax statements {
   sabstract_type := callback proc sname : sexpr srequires_clause ; =>#
     """
     (mkns 
-    `(ast_callback_decl ,_3 ,(mkl _5) 'ast_void ,_6)
+    `(ast_callback_decl ,_3 ,(mkl2 _5) 'ast_void ,_6)
     (cdr _3))
     """; 
 
@@ -596,7 +626,7 @@ syntax statements {
     """
     (if (eq? 'ast_arrow (car _5))
       (mkns 
-      `(ast_callback_decl ,_3 ,(mkl (caadr _5)) ,(cadadr _5) ,_6)
+      `(ast_callback_decl ,_3 ,(mkl2 (caadr _5)) ,(cadadr _5) ,_6)
       (cdr _3))
       'ERROR
     )
@@ -670,8 +700,8 @@ syntax statements {
   stype_constraint := where sexpr with squalified_name_comma_list =>#
     "`(,_2 ,_4)";
   stype_constraint := where sexpr =># "`(,_2 ())";
-  stype_constraint := with squalified_name_comma_list =># "`(() ,_2)";
-  stype_constraint := sepsilon =># "'(()())";
+  stype_constraint := with squalified_name_comma_list =># "`((ast_tuple()) ,_2)";
+  stype_constraint := sepsilon =># "'((ast_tuple())())";
 
   seqorin:= = stypeexpr =># "`(Eq ,_2)";
   seqorin:= in stypeexpr =># "`(In ,_2)";
@@ -778,9 +808,11 @@ syntax statements {
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
   sassignment := sexpr <- sexpr ; =># 
    """
-   (let ((fl (splitapply ,_3)))
-     (let ((f (car fl))(a (cadr fl)))
-       `(ast_call ,f ,(cons _1 a))))
+   (let* (
+     (fl (splitapply ,_3))
+     (f (car fl))
+     (a (cadr fl)))
+     `(ast_call ,f ,(cons _1 a)))
    """;
 
   sassignop:= = =># "'_set";
@@ -1244,7 +1276,7 @@ syntax statements {
         (argt (caadr t))
         (ret (cadadr t)))
       (mkns 
-      `(ast_fun_decl ,name ,vs ,(mkl argt) ,ret ,ct ,reqs ,prec)
+      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
       (cdr _3)))
       ('ERROR))))
   """;
@@ -1348,7 +1380,7 @@ syntax statements {
       (argt t)
       (ret 'ast_void))
       (mkns 
-      `(ast_fun_decl ,name ,vs ,(mkl argt) ,ret ,ct ,reqs "")
+      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
       (cdr _3)))))
   """;
 
