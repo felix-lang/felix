@@ -21,7 +21,7 @@ SCHEME """
 
 SCHEME """
 (define mkn1 (lambda (stmt nvs) 
-  `(ast_namespace (,(car nvs) ,(cadr nvs) (,stmt)))))
+  `(ast_namespace ,(car nvs) ,(cadr nvs) (,stmt))))
 """;
 
 SCHEME """
@@ -587,7 +587,8 @@ syntax statements {
   sinclusion := include sstring ; =># "`(ast_include ,_2)";
   scparse := cparse sstring ; =># "`(ast_cparse ,_2)";
 
-  sdeclname := sdeclname :: sname stvarlist =># "(cons _1 `(,_3 ,_4))";
+  // note: list is reversed, eg X::Y::name goes to list name, Y, Z
+  sdeclname := sdeclname :: sname stvarlist =># "(cons `(,_3 ,_4) _1)";
   sdeclname := sname stvarlist =># "`((,_1 ,_2))";
 
   stype_qual := incomplete =># "'Incomplete";
@@ -1174,7 +1175,7 @@ syntax statements {
     (cdr _2))
      """; 
 
-  sopt_value := = sinteger =># "`(some ,_1)";
+  sopt_value := = sinteger =># "`(some ,_2)";
   sopt_value := sepsilon =># "'none";
   senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs ast_void)";
   senum_items := senum_item , senum_items =># "(cons _1 _3)";
@@ -1198,6 +1199,22 @@ syntax statements {
     (cdr _3))
      """; 
 
+  smodule_definition := namespace sdeclname sopt_equal scompound =>#
+    """
+    (mkns 
+    `(ast_namespace ,(caar _2) ,(cadar _2) ,_4)
+    (cdr _2))
+     """; 
+
+  smodule_definition := open namespace sdeclname sopt_equal scompound =>#
+    """
+    (mkns 
+    `(ast_seq (
+      (ast_namespace ,(caar _3) ,(cadar _3) ,_5)
+      (ast_open ,dfltvs (ast_name ,(caar _3)()))))
+    (cdr _3))
+     """; 
+
     sopt_equal := = =># "()";
     sopt_equal := sepsilon =># "()";
 
@@ -1212,7 +1229,7 @@ syntax statements {
 
   sfun_arg :=  ( sparameter_comma_list when sexpr ) =># "`(,_2 (some ,_4))";
   sfun_arg :=  ( sparameter_comma_list ) =># "`(,_2 none)";
-  sfun_arg :=  sname =># "`(((,_1 typ_none)) none)";
+  sfun_arg :=  sname =># "`(((PVal ,_1 typ_none)) none)";
 
   sfunction_definition := axiom sdeclname sfun_arg : sexpr; =>#
   """
