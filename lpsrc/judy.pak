@@ -20,7 +20,7 @@ pkg_requires = ['flx_judy']
 // But Felix doesn't support automatic int/address conversions
 // 
 // So we will (later) use a typeset to fix this!
-
+#import <flx.flxh>
 include "std";
 
 module Judy
