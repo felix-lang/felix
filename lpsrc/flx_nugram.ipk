@@ -793,11 +793,11 @@ syntax statements {
 
   suse_decl:= use squalified_name ; =>#
     """
-    (let (name
-      (if (eq? (car _2) 'ast_lookup) (caddr _2)
+    (let ((name
+      (if (eq? (car _2) 'ast_lookup) (cadadr _2)
         (if (eq? (car _2) 'ast_name) (cadr _2)
-        ("ERROR"))))
-    `(ast_use ,_name ,_2))
+        ("ERROR")))))
+    `(ast_use ,name ,_2))
     """;
   suse_decl := use sname = squalified_name ; =># "`(ast_use ,_2 ,_4)";
 
@@ -1174,7 +1174,7 @@ syntax statements {
     (cdr _2))
      """; 
 
-  sopt_value := = sinteger =># "(some ,_1)";
+  sopt_value := = sinteger =># "`(some ,_1)";
   sopt_value := sepsilon =># "'none";
   senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs ast_void)";
   senum_items := senum_item , senum_items =># "(cons _1 _3)";
@@ -1210,7 +1210,7 @@ syntax statements {
     (cdr _2))
   """;
 
-  sfun_arg :=  ( sparameter_comma_list when sexpr ) =># "`(,_2 ,_4)";
+  sfun_arg :=  ( sparameter_comma_list when sexpr ) =># "`(,_2 (some ,_4))";
   sfun_arg :=  ( sparameter_comma_list ) =># "`(,_2 none)";
   sfun_arg :=  sname =># "`(((,_1 typ_none)) none)";
 
@@ -1415,7 +1415,7 @@ syntax statements {
   sobject_definition := obj sdeclname sfun_arg+ scompound =>#
   """
     (mkns 
-    `(ast_curry ,(caar _2) ,(cadar _2) ,_3 (typ_none none) 'Object ,_4)
+    `(ast_curry ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
     (cdr _2))
   """;
 
