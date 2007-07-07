@@ -1029,8 +1029,10 @@ syntax statements {
   scompound := { statement* } =># "_2";
   scall := call sexpr ; =># """(cons 'ast_call (splitapply _2))""";
   scall := jump sexpr ; =># """(cons 'ast_jump (splitapply _2))""";
-  scall := loop sname sexpr ; =># "`(ast_loop ,_2 ,_3)";
-  scall := loop sname ; =># "`(ast_loop ,_2 (ast_tuple ()))";
+  //scall := loop sname sexpr ; =># "`(ast_loop ,_2 ,_3)";
+  //scall := loop sname ; =># "`(ast_loop ,_2 (ast_tuple ()))";
+  scall := loop sname sexpr ; =># "`(ast_jump (ast_name ,_2 ()) ,_3)";
+  scall := loop sname ; =># "`(ast_jump (ast_name ,_2 ()) (ast_tuple ()))";
 
   scall := sexpr ; =># "(cons 'ast_call (splitapply _1))";
 
