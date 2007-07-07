@@ -53,9 +53,12 @@ provides_slib: -lgmpxx
 header "#include <cstdio>";
 header gmpxx_h = """
 #include <gmpxx.h>
+#include <string>
+#include <cstdio>
 namespace flx { namespace gmp {
 extern mpz_class lcm(mpz_class const&,mpz_class const&);
 extern mpz_class gcd(mpz_class const&,mpz_class const&);
+extern std::string flx_mpf_get_str(mpf_class const&);
 }}
 """;
 
@@ -81,6 +84,20 @@ mpz_class gcd(mpz_class const &a, mpz_class const &b)
 }}
 """;
 
+body flx_mpf_get_str_h = """
+namespace flx { namespace gmp {
+string flx_mpf_get_str(mpf_class const &a)
+{
+  mp_exp_t x;
+  std::string s = a.get_str(&x,10,0);
+  char b[100];
+  std::sprintf(b,"e%ld",(long)x);
+  return std::string(".")+s+b;
+}
+}}
+""";
+
+
 @typs = ['mpz', 'mpq', 'mpf']
 @iops = [('add','+'),('sub','-',),('mul','*'),('div','/')]
 module Gmp
@@ -99,13 +116,6 @@ module Gmp
   tangle('  fun sqrt:'+t+'->'+t+'="sqrt($1)";')
   tangle('  fun cmp:'+t+'*'+t+'->int="cmp($1,$2)";')
   tangle('  proc fprint: ostream * '+t+'="*$1<<$2;";')
-  tangle('  fun eq:'+t+'*'+t+'->bool="$1==2";')
-  tangle('  fun ne:'+t+'*'+t+'->bool="$1!=$2";')
-  tangle('  fun lt:'+t+'*'+t+'->bool="$1<$2";')
-  tangle('  fun le:'+t+'*'+t+'->bool="$1<=$2";')
-  tangle('  fun gt:'+t+'*'+t+'->bool="$1>$2";')
-  tangle('  fun ge:'+t+'*'+t+'->bool="$1>=$2";')
-
 fun lcm: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
 fun gcd: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
 fun wedge: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
@@ -115,7 +125,34 @@ fun mod: mpz * mpz -> mpz = "$1%$2";
 fun mpz_of_int: int -> mpz = "mpz_class($1)";
 fun mpq_of_int: int -> mpq = "mpq_class($1)";
 fun mpf_of_double: double -> mpf = "mpf_class($1)";
+
+@for t in typs:
+  tangle("instance Eq["+t+"] {")
+  tangle('  fun eq:'+t+'*'+t+'->bool="$1==2";')
+  tangle('  fun ne:'+t+'*'+t+'->bool="$1!=$2";')
+  tangle("}")
+  tangle("instance Tord["+t+"] {")
+  tangle('  fun lt:'+t+'*'+t+'->bool="$1<$2";')
+  tangle('  fun le:'+t+'*'+t+'->bool="$1<=$2";')
+  tangle('  fun gt:'+t+'*'+t+'->bool="$1>$2";')
+  tangle('  fun ge:'+t+'*'+t+'->bool="$1>=$2";')
+  tangle("}")
+@for t in ['mpz','mpq']:
+  tangle("instance Str["+t+"] {")
+  tangle('  fun str:'+t+'->string="#1($1).get_str(10)";')
+  tangle("}")
+@#
+
+instance Str[mpf] {
+  fun str:mpf->string="flx::gmp::flx_mpf_get_str($1)" requires flx_mpf_get_str_h;
 }
+
+}
+@for t in typs:
+  tangle("open Eq[Gmp::"+t+"];")
+  tangle("open Tord[Gmp::"+t+"];")
+  tangle("open Str[Gmp::"+t+"];")
+@#
 @doc()
 
 @env.head(1,'gmp tests')
@@ -211,12 +248,12 @@ false
 false
 true
 true
-99
-7
-106
-92
-693
-14.1429
+.99e2
+.7e1
+.106e3
+.92e2
+.693e3
+.141428571428571428571e2
 false
 true
 false
