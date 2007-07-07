@@ -2478,7 +2478,7 @@ call:
       
       | proc -> 
         let u = `AST_tuple (slift $3, []) in
-       `AST_call (sr, proc, u)
+       `AST_jump (sr, proc, u)
     }
 
   | LOOP expr SEMI {

@@ -969,6 +969,7 @@ syntax statements {
 
   scompound := { statement* } =># "_2";
   scall := call sexpr ; =># """(cons 'ast_call (splitapply _2))""";
+  scall := jump sexpr ; =># """(cons 'ast_jump (splitapply _2))""";
   scall := sexpr ; =># "(cons 'ast_call (splitapply _1))";
 
   sval_def := val sname sname_suffix = sexpr ; =># "TODOIT";
