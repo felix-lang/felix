@@ -501,7 +501,7 @@ let dummysr = "Dummy",0,0,0,0
 %constructor Obj_sexpr %for sname sliteral 
 
 /* literals */
-%constructor Obj_sexpr %for sinteger sfloat sstring scstring
+%constructor Obj_sexpr %for sinteger sfloat sstring scstring strue sfalse
 
 /* patterns */
 %constructor Obj_sexpr %for sintegral
@@ -676,6 +676,8 @@ lsqb: LSQB { slift $1,Snull }
 rsqb: RSQB { slift $1,Snull }
 colon: COLON { slift $1,Snull }
 vbar: VBAR { slift $1,Snull }
+strue: TRUE { slift $1,Snull }
+sfalse : FALSE { slift $1,Snull }
 
 /* 
 a definite non-terminal for a sequence of no tokens,
@@ -3839,6 +3841,8 @@ literal:
   | integer_literal { $1 }
   | string_literal { $1 }
   | float_literal { $1 }
+  | TRUE { `AST_typed_case (slift $1, 1, `TYP_unitsum 2) }
+  | FALSE { `AST_typed_case (slift $1, 1, `TYP_unitsum 2) }
 
 integer_literal:
   | INTEGER 

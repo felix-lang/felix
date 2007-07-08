@@ -327,83 +327,18 @@ typeclass Show [T] {
 
 @h=tangler('lib/flx_macros.flxh','data')
 @select(h)
-macro val true = case 1 of 2;
-macro val false = case 0 of 2;
 
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
 #import <nugram.flxh>
-open syntax expressions, statements, regexps, parsing;
+open syntax expressions, statements, regexps, parsing, macros;
 
 #infix 10 "/\\" wedge
 #infix 10 "\\/" vee
 #infix 10 ">>=" bind
 
-/*
-syntax syn_ctrl1 {
-#keyword whilst
-  statement := whilst expr do statements done; =># 
-  macro {
-    macro lab1 is new;
-    macro lab2 is new;
-    lab1:>
-      if not _2 goto lab2;
-      _4;
-      goto lab1;
-    lab2:>
-  }
-  ;
-
-#keyword until
-  statement :=
-  until expr do statements done; =>#
-  macro {
-    macro lab1 is new;
-    macro lab2 is new;
-    lab1:>
-      if _2 goto lab2;
-      _4;
-      goto lab1;
-    lab2:>
-  }
-  ;
-
-#keyword forall
-  statement :=
-  forall ident in expr do statements done ; =>#
-    macro for val _2 in _4 do _6; done
-  ;
-}
-
-open syntax syn_ctrl1;
-
-syntax syn_ctrl2 {
-#keyword upto
-  statement :=
-  forall ident in expr upto expr do statements done ; =>#
-  macro {
-  _2 = _4;
-  whilst _2 <= _6 do _8; ++_2; done;
-  }
-  ;
-
-#keyword downto
-  statement :=
-  forall ident in expr downto expr do statements done ; =>#
-  macro {
-  _2 = _4;
-  whilst _2 >= _6 do _8; --_2; done;
-  }
-  ;
-}
-
-open syntax syn_ctrl2, syn_document;
-*/
-
 @h=tangler('lib/flx_platform.flxh','data')
 @select(h)
-#define true case 1 of 2
-#define false case 0 of 2
 
 @plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
 @for i in plats:
@@ -412,9 +347,6 @@ open syntax syn_ctrl2, syn_document;
   else:
     tangle("#define " + i + " false")
 @#
-
-macro val true = case 1 of 2;
-macro val false = case 0 of 2;
 
 @for i in plats:
   x = eval(i)
