@@ -160,10 +160,6 @@ syntax expressions {
   satom := sfalse =># "'(ast_typed_case  0 2)";
   satom := strue =># "'(ast_typed_case  1 2)";
   
-  sexpr_code_prefix := code [ sexpr ] =># "_3";
-  satom := sexpr_code_prefix sstring =># "`(ast_expr ,_2 ,_1)";
-  satom := sexpr_code_prefix sname =># "`(ast_expr ,_2 ,_1)";
-
   satom := callback [ sexpr ] =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";
   satom := { sexpr } =># """
@@ -608,7 +604,6 @@ syntax statements {
 
   sdirective := sopen_decl =># "_1";
   sdirective := suse_decl =># "_1";
-  sdirective := sglr_production =># "_1";
 
   sexecutable := svar_def =># "_1";
   sexecutable := sval_def =># "_1";
@@ -618,7 +613,6 @@ syntax statements {
   sexecutable := sifgoto =># "_1";
   sexecutable := stodo =># "_1";
   sexecutable := sassignment =># "_1";
-  sexecutable := sinline_cpp =># "_1";
   sexecutable := sgoto_statement=># "_1";
   sexecutable := slabel_statement =># "_1";
   sexecutable := sassert_statement =># "_1";
@@ -631,23 +625,6 @@ syntax statements {
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sdeclname :: sname stvarlist =># "(cons `(,_3 ,_4) _1)";
   sdeclname := sname stvarlist =># "`((,_1 ,_2))";
-
-  stype_qual := incomplete =># "'Incomplete";
-  stype_qual := pod =># "'Pod";
-  stype_qual := _gc_pointer =># "'GC_pointer";
-  stype_qual := _gc_type sexpr =># "`(Raw_needs_shape ,_2)";
-  stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
-  stype_quals:= sepsilon =># "()";
-
-  sabstract_type:= stype_quals ctypes sbasic_name_comma_list srequires_clause ; =>#
-    "`(ast_ctypes ,_3 ,_1 ,_4)";
-
-  sabstract_type:= stype_quals type sdeclname = scode_spec srequires_clause ; =>#
-    """
-    (mkns 
-    `(ast_abs_decl ,(caar _3) ,(cadar _3) ,_1 ,_5 ,_6)
-    (cdr _3))
-    """; 
 
   sabstract_type := stype_quals type sdeclname = new sexpr ; =>#
     """
@@ -684,13 +661,7 @@ syntax statements {
   srequires_clause := requires srequirements =># "_2";
   srequires_clause := sepsilon =># "'rreq_true";
 
-  scode_spec := sstring =># "`(StrTemplate ,_1)";
-  scode_spec := scstring =># "`(Str ,_1)";
-  scode_spec := sident =># "'Identity";
-
   srequirement:= squalified_name =># "`(Named_req ,_1)";
-  srequirement := body scode_spec =># "`(Body_req ,_2)";
-  srequirement := header scode_spec =># "`(Header_req ,_2)";
   srequirement :=  property sstring =># "`(Property_req ,_2)";
   srequirement :=  package scode_spec =># "`(Package_req ,_2)";
 
@@ -709,28 +680,7 @@ syntax statements {
     "`(rreq_and ,_1 ,_3)";
   srequirements:= srequirement_or =># "_1";
 
-  sbinding_header:= header scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_2 header ,_3))"""; 
-  sbinding_header:= body scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_2 body ,_3))"""; 
-  sbinding_header:= header = scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_3 header ,_4))"""; 
-  sbinding_header:= body = scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_3 body ,_4))"""; 
-  sbinding_header:= header sdeclname = scode_spec srequires_clause ; =># 
-    """
-    (mkns 
-    `(ast_insert ,(caar _2) ,(cadar _2) ,_4 header ,_5)
-    (cdr _2))
-     """; 
 
-  sbinding_header:= body sdeclname = scode_spec srequires_clause ; =># 
-    """
-    (mkns 
-    `(ast_insert ,(caar _2) ,(cadar _2) ,_4 body ,_5)
-    (cdr _2))
-     """; 
- 
   sbinding_header := requires srequirements ; =># 
     """`(ast_insert "_root" ,dfltvs (Str "") body ,_2)""";
 
@@ -768,9 +718,6 @@ syntax statements {
   slabel_statement := sname :> =># "`(ast_label ,_1)";
   sgoto_statement := goto sname ; =># "`(ast_goto ,_2)";
   ssvc := _svc sname ; =># "`(ast_svc ,_2)";
-
-  sinline_cpp:= code scode_spec ; =># "`(ast_code ,_2)";
-  sinline_cpp:= noreturn code scode_spec ; =># "`(ast_noreturn_code ,_3)";
 
   stypeparameter:= sname : sarrow =># "`(,_1 ,_3)";
   stypeparameter:= sname =># "`(,_1 typ_none)";
@@ -1215,31 +1162,8 @@ syntax statements {
     (cdr _2))
      """; 
 
-  sstruct_decl := cstruct sdeclname sopt_equal { sstruct_mem_decl * } =>#
-    """
-    (mkns 
-    `(ast_cstruct ,(caar _2) ,(cadar _2) ,_5)
-    (cdr _2))
-     """; 
-
   sopt_name := sname =># "_1";
   sopt_name := sepsilon =># '""';
-
-  sclass_component:= var sname : sexpr ; =># "`(MemberVar ,_2 ,_4 none)";
-  sclass_component:= val sname : sexpr ; =># "`(MemberVal ,_2 ,_4 none)";
-  sclass_component:= ctor sopt_name : sexpr sopt_cstring ; =># 
-    "`(MemberCtor ,_2 none ,_4 ,_5)";
-  sclass_component:= fun sname stvarlist  : sexpr sopt_cstring ; =># 
-    "`(MemberFun ,_2 none ,_3 ,_5 ,_6)";
-  sclass_component:= proc sname stvarlist  : sexpr sopt_cstring ; =># 
-    "`(MemberProc ,_2 none ,_3 ,_5 ,_6)";
-
-  sstruct_decl := cclass sdeclname sopt_equal { sclass_component * } =>#
-    """
-    (mkns 
-    `(ast_cclass ,(caar _2) ,(cadar _2) ,_5)
-    (cdr _2))
-     """; 
 
   sstruct_decl := class sdeclname sopt_equal scompound =>#
     """
@@ -1393,45 +1317,6 @@ syntax statements {
   sopt_prec := is sname =># "_2";
   sopt_prec := sepsilon =># '(quote "")';
 
-  sfunction_definition := sadjectives sfun_kind sdeclname 
-    sopt_type_expr sopt_cstring sopt_prec srequires_clause ; =>#
-  """
-    (let (
-      (name (caar _3))
-      (vs (cadar _3))
-      (kind (cal_funkind _1 _2))
-      (t (car _4))
-      (traint (cadr _4))
-      (prec _6)
-      (reqs (if (memv 'Virtual _1)
-        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
-        _7)
-      )
-      (ct 
-        (if (eq? 'none _5)
-          (if (memv 'Virtual _1)
-            'Virtual 
-             `(StrTemplate ,(string-append (caar _3) "($a)"))
-           )
-           (cadr _5))
-      )
-    )
-    (let (
-      (reqs 
-        (if (eq? 'Generator kind)
-          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
-          reqs))
-    )
-    (if (eq? 'ast_arrow (car t))
-      (let (
-        (argt (caadr t))
-        (ret (cadadr t)))
-      (mkns 
-      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
-      (cdr _3)))
-      ('ERROR))))
-  """;
-
 
   sfunction_definition := sadjectives sfun_kind sdeclname 
     sopt_type_expr = smatching+ ; =>#
@@ -1502,66 +1387,11 @@ syntax statements {
     (cdr _3))
   """;
 
-  sprocedure_definition := sadjectives sproc_kind sdeclname : sexpr 
-    sopt_cstring srequires_clause ; =>#
-  """
-    (let (
-      (name (caar _3))
-      (vs (cadar _3))
-      (kind (cal_funkind _1 _2))
-      (t _5)
-      (reqs (if (memv 'Virtual _1)
-        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
-        _7)
-      )
-      (ct 
-        (if (eq? 'none _6)
-          (if (memv 'Virtual _1)
-            'Virtual 
-             `(StrTemplate ,(string-append (caar _3) "($a);"))
-           )
-           (cadr _6))
-      )
-    )
-    (let (
-      (reqs 
-        (if (eq? 'Generator kind)
-          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
-          reqs))
-    )
-    (let (
-      (argt t)
-      (ret 'ast_void))
-      (mkns 
-      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
-      (cdr _3)))))
-  """;
-
   sobject_definition := obj sdeclname sfun_arg+ scompound =>#
   """
     (mkns 
     `(ast_curry ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
     (cdr _2))
-  """;
-
-  sconst_def := sadjectives const sdeclname : sexpr = scode_spec srequires_clause ; =>#
-  """
-    (let ((reqs (if (memv 'Virtual _1)
-      `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
-      _8)))
-    (mkns 
-    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
-    (cdr _3)))
-  """;
-
-  sconst_def := sadjectives const sdeclname : sexpr srequires_clause ; =>#
-  """
-    (let ((reqs (if (memv 'Virtual _1)
-      `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
-      _6)))
-    (mkns 
-    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)
-    (cdr _3)))
   """;
 
 }
@@ -1615,4 +1445,184 @@ syntax macros {
 
   sapplication := macro ctor sname scoercion =># "`ast_macro_ctor (,_3 ,_4))";
 }
+
+syntax cbind {
+  sstruct_decl := cstruct sdeclname sopt_equal { sstruct_mem_decl * } =>#
+    """
+    (mkns 
+    `(ast_cstruct ,(caar _2) ,(cadar _2) ,_5)
+    (cdr _2))
+     """; 
+
+  // note: also needed by typeclasses atm for virtual funs
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    sopt_type_expr sopt_cstring sopt_prec srequires_clause ; =>#
+  """
+    (let (
+      (name (caar _3))
+      (vs (cadar _3))
+      (kind (cal_funkind _1 _2))
+      (t (car _4))
+      (traint (cadr _4))
+      (prec _6)
+      (reqs (if (memv 'Virtual _1)
+        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
+        _7)
+      )
+      (ct 
+        (if (eq? 'none _5)
+          (if (memv 'Virtual _1)
+            'Virtual 
+             `(StrTemplate ,(string-append (caar _3) "($a)"))
+           )
+           (cadr _5))
+      )
+    )
+    (let (
+      (reqs 
+        (if (eq? 'Generator kind)
+          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
+          reqs))
+    )
+    (if (eq? 'ast_arrow (car t))
+      (let (
+        (argt (caadr t))
+        (ret (cadadr t)))
+      (mkns 
+      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+      (cdr _3)))
+      ('ERROR))))
+  """;
+
+  sabstract_type:= stype_quals type sdeclname = scode_spec srequires_clause ; =>#
+    """
+    (mkns 
+    `(ast_abs_decl ,(caar _3) ,(cadar _3) ,_1 ,_5 ,_6)
+    (cdr _3))
+    """; 
+
+  stype_qual := incomplete =># "'Incomplete";
+  stype_qual := pod =># "'Pod";
+  stype_qual := _gc_pointer =># "'GC_pointer";
+  stype_qual := _gc_type sexpr =># "`(Raw_needs_shape ,_2)";
+  stype_quals:= stype_qual stype_quals =># "(cons _1 _2)";
+  stype_quals:= sepsilon =># "()";
+
+  sabstract_type:= stype_quals ctypes sbasic_name_comma_list srequires_clause ; =>#
+    "`(ast_ctypes ,_3 ,_1 ,_4)";
+
+  srequirement := body scode_spec =># "`(Body_req ,_2)";
+  srequirement := header scode_spec =># "`(Header_req ,_2)";
+
+  scode_spec := sstring =># "`(StrTemplate ,_1)";
+  scode_spec := scstring =># "`(Str ,_1)";
+  scode_spec := sident =># "'Identity";
+
+  sbinding_header:= header scode_spec srequires_clause ; =># 
+    """`(ast_insert "_root" ,dfltvs ,_2 header ,_3))"""; 
+  sbinding_header:= body scode_spec srequires_clause ; =># 
+    """`(ast_insert "_root" ,dfltvs ,_2 body ,_3))"""; 
+  sbinding_header:= header = scode_spec srequires_clause ; =># 
+    """`(ast_insert "_root" ,dfltvs ,_3 header ,_4))"""; 
+  sbinding_header:= body = scode_spec srequires_clause ; =># 
+    """`(ast_insert "_root" ,dfltvs ,_3 body ,_4))"""; 
+  sbinding_header:= header sdeclname = scode_spec srequires_clause ; =># 
+    """
+    (mkns 
+    `(ast_insert ,(caar _2) ,(cadar _2) ,_4 header ,_5)
+    (cdr _2))
+     """; 
+
+  sbinding_header:= body sdeclname = scode_spec srequires_clause ; =># 
+    """
+    (mkns 
+    `(ast_insert ,(caar _2) ,(cadar _2) ,_4 body ,_5)
+    (cdr _2))
+     """; 
+
+  sexecutable := sinline_cpp =># "_1";
+  sinline_cpp:= code scode_spec ; =># "`(ast_code ,_2)";
+  sinline_cpp:= noreturn code scode_spec ; =># "`(ast_noreturn_code ,_3)";
+
+  sclass_component:= var sname : sexpr ; =># "`(MemberVar ,_2 ,_4 none)";
+  sclass_component:= val sname : sexpr ; =># "`(MemberVal ,_2 ,_4 none)";
+  sclass_component:= ctor sopt_name : sexpr sopt_cstring ; =># 
+    "`(MemberCtor ,_2 none ,_4 ,_5)";
+  sclass_component:= fun sname stvarlist  : sexpr sopt_cstring ; =># 
+    "`(MemberFun ,_2 none ,_3 ,_5 ,_6)";
+  sclass_component:= proc sname stvarlist  : sexpr sopt_cstring ; =># 
+    "`(MemberProc ,_2 none ,_3 ,_5 ,_6)";
+
+  sstruct_decl := cclass sdeclname sopt_equal { sclass_component * } =>#
+    """
+    (mkns 
+    `(ast_cclass ,(caar _2) ,(cadar _2) ,_5)
+    (cdr _2))
+     """; 
+
+  sexpr_code_prefix := code [ sexpr ] =># "_3";
+  satom := sexpr_code_prefix sstring =># "`(ast_expr ,_2 ,_1)";
+  satom := sexpr_code_prefix sname =># "`(ast_expr ,_2 ,_1)";
+
+  // note: also needed by typeclasses atm for virtual consts
+  sconst_def := sadjectives const sdeclname : sexpr = scode_spec srequires_clause ; =>#
+  """
+    (let ((reqs (if (memv 'Virtual _1)
+      `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
+      _8)))
+    (mkns 
+    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
+    (cdr _3)))
+  """;
+
+  // note: also needed by typeclasses atm for virtual consts
+  sconst_def := sadjectives const sdeclname : sexpr srequires_clause ; =>#
+  """
+    (let ((reqs (if (memv 'Virtual _1)
+      `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
+      _6)))
+    (mkns 
+    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)
+    (cdr _3)))
+  """;
+
+  // note: also needed by typeclasses atm for virtual procs
+  sprocedure_definition := sadjectives sproc_kind sdeclname : sexpr 
+    sopt_cstring srequires_clause ; =>#
+  """
+    (let (
+      (name (caar _3))
+      (vs (cadar _3))
+      (kind (cal_funkind _1 _2))
+      (t _5)
+      (reqs (if (memv 'Virtual _1)
+        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
+        _7)
+      )
+      (ct 
+        (if (eq? 'none _6)
+          (if (memv 'Virtual _1)
+            'Virtual 
+             `(StrTemplate ,(string-append (caar _3) "($a);"))
+           )
+           (cadr _6))
+      )
+    )
+    (let (
+      (reqs 
+        (if (eq? 'Generator kind)
+          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
+          reqs))
+    )
+    (let (
+      (argt t)
+      (ret 'ast_void))
+      (mkns 
+      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
+      (cdr _3)))))
+  """;
+
+ 
+}
+
 

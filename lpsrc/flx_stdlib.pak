@@ -331,7 +331,7 @@ typeclass Show [T] {
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
 #import <nugram.flxh>
-open syntax expressions, statements, regexps, parsing, macros;
+open syntax expressions, statements, regexps, parsing, macros, cbind;
 
 #infix 10 "/\\" wedge
 #infix 10 "\\/" vee
