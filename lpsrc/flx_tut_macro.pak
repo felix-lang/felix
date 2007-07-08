@@ -165,12 +165,9 @@ print "BAD"; endl;
 OK
 @doc()
 
-@h = env.test('.flx')
+@h = env.test('.flxh')
 @select(h)
 #define FIRST 1
-@doc()
-
-@select(env.expect())
 @doc()
 
 @select(env.test('.flx'))
