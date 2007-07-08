@@ -281,6 +281,12 @@ proc forever {
       print "BAD get line: "; print line; endl;
     } endif;
 
+    // we've only read the GET line, so let's flush out the rest of
+    // the http request so we don't get connection reset errors when
+    // we close the socket. shutting down stops cat blocking (?)
+    Faio_posix::shutdown(s, 1); // disallow further sends.
+    cat(s, DEVNULL);
+
     fprint$ cerr,q"closing socket $s\n";
     ioclose(s);
 

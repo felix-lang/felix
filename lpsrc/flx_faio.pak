@@ -675,8 +675,10 @@ instance Flx_stream::TerminalIOByteStream[socket_t]
   proc ioclose (s:socket_t) 
   #if POSIX
     { 
+      // RF: just close, I don't think any of this stuff is necessary.
+      // I think this is an application level problem.
       //fprint (cerr,q"STREAM:Closing socket $s\n");
-      Faio_posix::shutdown(s,2);
+      //Faio_posix::shutdown(s,2);
       //Faio::sleep (Faio::sys_clock,5.0);
       /*
       var len = 1; var eof = false; var buf = C_hack::malloc(1);
