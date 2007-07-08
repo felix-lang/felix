@@ -45,10 +45,10 @@ let () =
   let lexbuf = (Lexing.from_string "dummy" ) in
   let toker = (new Flx_tok.tokeniser tokens) in
   while toker#token_peek lexbuf != Flx_parse .ENDMARKER do
-    let x,tok = 
+    let x = 
         try 
           dyphack (
-          Flx_parse.exprx
+          Flx_parse.expression
           (toker#token_src) 
           lexbuf 
           )
@@ -59,20 +59,6 @@ let () =
     in 
     print_endline (Flx_print.string_of_expr x)
     ;
-    toker#put_back tok
-    ;
-    let _ = 
-        try 
-          dyphack (
-          Flx_parse.semi
-          (toker#token_src) 
-          lexbuf
-          )
-        with _ -> begin
-          toker#report_syntax_error;
-          raise (Flx_exceptions.ParseError "Parsing String")
-        end
-    in ()
   done;
   print_endline "Parsed it"
 ;;

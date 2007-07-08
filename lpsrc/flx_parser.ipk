@@ -516,45 +516,16 @@ let dummysr = "Dummy",0,0,0,0
 %constructor Obj_sexpr %for sepsilon
 
 %start <(Flx_ast.compilation_unit_t)> compilation_unit
-%start <(Flx_ast.statement_t list * token)> statementsx
-%start <(Flx_ast.statement_t list)> statements
 %start <(Flx_ast.expr_t)> expression
-%start <(Flx_ast.expr_t * token)> exprx
-%start <(unit)> semi
-
 %%
 
 @head(2,'Compilation Unit')
 @select(h)
-semi:
-  | SEMI {()}
-
-exprx:
-  | old_expr expr_terminator { $1,$2 }
-
-expr_terminator:
-  | SEMI { SEMI $1 }
-  | USER_KEYWORD { USER_KEYWORD $1 }
-  | VBAR { VBAR $1 }
-  | ENDMARKER { ENDMARKER }
-
-@for n,t in flx_expr_terminator_keywords:
-  tangle("  | "  + t + " { " + t + " $1 }",inhibit_sref=1)
-
-statementsx:
-  | statements statements_terminator { $1, $2 }
-
-statements_terminator:
-  | VBAR { VBAR $1 }
-  | DONE { DONE $1 }
-  | USER_KEYWORD { USER_KEYWORD $1 }
-  | ENDMARKER { ENDMARKER }
- 
-compilation_unit:  
-  | statements ENDMARKER { $1 }
-
 expression:  
   | old_expr ENDMARKER { $1 }
+
+compilation_unit:  
+  | statements ENDMARKER { $1 }
 
 statements:
  | statement statements 
