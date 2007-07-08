@@ -160,9 +160,9 @@ syntax expressions {
   satom := sfalse =># "'(ast_typed_case  0 2)";
   satom := strue =># "'(ast_typed_case  1 2)";
   
-  satom := callback [ sexpr ] =># "`(ast_callback ,_3)";
+  satom := callback lsqb sexpr rsqb =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";
-  satom := { sexpr } =># """
+  satom := lbrace sexpr rbrace =># """
     `(ast_lambda (,dfltvs ((() none)) typ_none ((ast_fun_return ,_2))))
   """;
 
@@ -182,8 +182,8 @@ syntax expressions {
     satomic_pattern := sstring =># "`(pat_string ,_1)";
     satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
     satomic_pattern := _ =># "'pat_any";
-    satomic_pattern := ( spattern ) =># "_2";
-    satomic_pattern := struct { spat_assigns } =># "`(pat_record ,_3)";
+    satomic_pattern := lpar spattern rpar =># "_2";
+    satomic_pattern := struct lbrace spat_assigns rbrace =># "`(pat_record ,_3)";
       spat_assign := sname = spattern ; =># "`(,_1 ,_3)";
       spat_assigns := spat_assign =># "`(,_1)";
       spat_assigns := spat_assign spat_assigns =># "(cons _1 _2)";
@@ -226,8 +226,8 @@ syntax expressions {
 
   satom := scompound =># "`(ast_lambda (,dfltvs ((() none)) none ,_1))";
 
-  satom := ( sexpr ) =># "_2";
-  satom := ( ) =># "'()";
+  satom := lpar sexpr rpar =># "_2";
+  satom := lpar rpar =># "'()";
 
   satom := if sexpr then sexpr selse_part endif =>#
     "`(ast_cond (,_2 ,_4 ,_5))";
@@ -250,7 +250,7 @@ syntax expressions {
     "`(ast_apply ((ast_name ,(myassoc _3 (car _1)) ()) ,_2))";
 
   ssimple_name_parts := sname           =># "`(,_1 ())";
-  ssimple_name_parts := sname [ sexpr ] =># "`(,_1 ,(mkl _3))";
+  ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
 
   squalified_name := squalified_name :: ssimple_name_parts =># 
     "`(ast_lookup (,_1 ,(car _3) ,(cadr _3)))";
@@ -270,10 +270,10 @@ syntax expressions {
   shash_name := # shash_name =># "`(ast_lift ,_2)";
 
   sfactor := shash_name =># "_1";
-  sfactor := sfactor .[ sexpr ] =># "`(ast_apply (subscript (,_1 ,_4)))";
-  sfactor := sfactor .[ sexpr to sexpr ] =># "`(ast_apply (substring (,_1 ,_4 ,_6)))";
-  sfactor := sfactor .[ sexpr to ] =># "`(ast_apply (copyfrom (,_1 ,_4)))";
-  sfactor := sfactor .[ to sexpr ] =># "`(ast_apply (copyto (,_1 ,_5)))";
+  sfactor := sfactor . lsqb sexpr rsqb =># "`(ast_apply (subscript (,_1 ,_4)))";
+  sfactor := sfactor . lsqb sexpr to sexpr rsqb =># "`(ast_apply (substring (,_1 ,_4 ,_6)))";
+  sfactor := sfactor . lsqb sexpr to rsqb =># "`(ast_apply (copyfrom (,_1 ,_4)))";
+  sfactor := sfactor . lsqb to sexpr rsqb =># "`(ast_apply (copyto (,_1 ,_5)))";
   sfactor := sfactor . ssimple_name_parts =># 
     "`(ast_dot (,_1 (ast_name ,(car _3) ,(cadr _3))))";
 
@@ -297,12 +297,12 @@ syntax expressions {
   srefr := star srefr =># "`(ast_apply (deref ,_2))";
   srefr := _deref srefr =># "`(ast_deref ,_2)";
   srefr := new srefr =># "`(ast_new ,_2)";
-  srefr := struct { sstruct_mem_decl* } =># "`(ast_record_type ,_3)";
+  srefr := struct lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
     sstruct_mem_decl := sname : sexpr ; =># "`(,_1 ,_3)";
-  srefr := struct { sstruct_assign* } =># "`(ast_record ,_3)";
+  srefr := struct lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
     sstruct_assign := sname = sexpr ; =># "`(,_1 ,_3)";
 
-  srefr := union { stype_sum_item0* } =># "`(ast_variant_type ,_3)";
+  srefr := union lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
     stype_sum_item := sname sopt_value stvarlist of sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
     stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
 
@@ -439,7 +439,6 @@ syntax expressions {
     `(ast_lambda (,_3 ((() none)) ast_void ,_4))
     """;
 
-
     sadjective := inline =># "'InlineFunction";
     sadjective := noinline =># "'NoInlineFunction";
     sadjective := virtual =># "'Virtual";
@@ -447,7 +446,7 @@ syntax expressions {
 
     slambda_fun_arg := ( sparameter_comma_list when sexpr ) =># "`(,_2 (some ,_4))";
     slambda_fun_arg := ( sparameter_comma_list ) =># "`(,_2 none)";
-    slambda_fun_args := slambda_fun_arg* =># "_1";
+    slambda_fun_args := slambda_fun_arg+ =># "_1";
 
     sopt_type_expr := : sexpr expect sexpr =># "`(,_2 (some ,_4))";
     sopt_type_expr := : sexpr =># "`(,_2 none)";
@@ -503,9 +502,9 @@ syntax regexps {
   sre4 := sstring =># "`(regexp_string ,_1)";
   sre4 := _ =># "'regexp_underscore";
   sre4 := . =># "'regexp_dot";
-  sre4 := ( sre0 ) =># "_2";
-  sre4 := [ scharset ] =># "`(regexp_of_charset ,_2)";
-  sre4 := [ ^ scharset ] =># "`(regexp_of_charset (charset_inv ,_3))";
+  sre4 := lpar sre0 rpar =># "_2";
+  sre4 := lsqb scharset rsqb =># "`(regexp_of_charset ,_2)";
+  sre4 := lsqb ^ scharset rsqb =># "`(regexp_of_charset (charset_inv ,_3))";
   sre4 := sre_name =># "`(regexp_name ,_1)";
 
   sre_name := sre_name :: sname =># "`(ast_lookup (,_1 ,_3 ()))";
@@ -666,7 +665,7 @@ syntax statements {
   srequirement :=  package scode_spec =># "`(Package_req ,_2)";
 
   srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
-  srequirement_atom:= ( srequirements ) =># "_2";
+  srequirement_atom:= lpar srequirements rpar =># "_2";
 
   srequirement_and:= srequirement_and and srequirement_atom =>#
     "`(rreq_and ,_1 ,_3)";
@@ -711,7 +710,7 @@ syntax statements {
   scomma_tvar := , stvar =># "_2";
 
   stvarlist:= sepsilon =># "dfltvs";
-  stvarlist:= [ stvar_comma_list stype_constraint ] =>#
+  stvarlist:= lsqb stvar_comma_list stype_constraint rsqb =>#
     "(tvfixup _2 _3)";
 
   sassert_statement:= assert sexpr ; =># "`(ast_assert ,_2)";
@@ -726,7 +725,7 @@ syntax statements {
   stypeparameter_comma_list := stypeparameter =># "`(,_1)";
 
   stypefun_arg := sname =># "`((,_1 typ_none))";
-  stypefun_arg := ( stypeparameter_comma_list ) =># "_2";
+  stypefun_arg := lpar stypeparameter_comma_list rpar =># "_2";
   stypefun_args := stypefun_arg+  =># "_1";
 
   stype_alias := typedef sdeclname = sexpr ; =>#
@@ -840,7 +839,7 @@ syntax statements {
   slelement := var sname =># "`(Var ,_2)";
   slelement := sname =># "`(Name ,_1)";
   slelement := _ =># "'Skip";
-  slelement := ( slexprs ) =># "`(List ,_2)";
+  slelement := lpar slexprs rpar =># "`(List ,_2)";
 
   stlelement := slelement : sfactor =># "`(,_1 (some ,_3))";
   stlelement := slelement =># "`(,_1 none)";
@@ -975,7 +974,7 @@ syntax statements {
   sreturn := return ; =># "'ast_proc_return";
   sreturn := halt sstring ; =># "`(ast_halt ,_2)";
 
-  scompound := { statement* } =># "_2";
+  scompound := lbrace statement* rbrace =># "_2";
   scall := call sexpr ; =># """(cons 'ast_call (splitapply _2))""";
   scall := jump sexpr ; =># """(cons 'ast_jump (splitapply _2))""";
   //scall := loop sname sexpr ; =># "`(ast_loop ,_2 ,_3)";
@@ -1155,7 +1154,7 @@ syntax statements {
      ))
      """; 
 
-  sstruct_decl := struct sdeclname sopt_equal { sstruct_mem_decl * } =>#
+  sstruct_decl := struct sdeclname sopt_equal lbrace sstruct_mem_decl * rbrace =>#
     """
     (mkns 
     `(ast_struct ,(caar _2) ,(cadar _2) ,_5)
@@ -1191,14 +1190,14 @@ syntax statements {
     (cdr _2))
      """; 
 
-  sunion_decl := union sdeclname { stype_sum_item1* } =>#
+  sunion_decl := union sdeclname lbrace stype_sum_item1* rbrace =>#
     """
     (mkns 
     `(ast_union ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
-  sunion_decl := enum sdeclname { senum_items } =>#
+  sunion_decl := enum sdeclname lbrace senum_items rbrace =>#
     """
     (mkns 
     `(ast_union ,(caar _2) ,(cadar _2) ,_4)
@@ -1355,7 +1354,7 @@ syntax statements {
   sopt_traint_eq:= expect sexpr = =># "`(some ,_2)";
   sopt_traint_eq:= sepsilon =># "'none";
 
-  sctor_init := sname ( sexpr ) =># "`(,_1 ,_3)";
+  sctor_init := sname lpar sexpr rpar =># "`(,_1 ,_3)";
   sctor_init_list := sctor_init , sctor_init_list =># "(cons _1 _3)";
   sctor_init_list :=  sctor_init =># "`(,_1)";
   sctor_inits := : sctor_init_list =># "_2";
@@ -1447,7 +1446,7 @@ syntax macros {
 }
 
 syntax cbind {
-  sstruct_decl := cstruct sdeclname sopt_equal { sstruct_mem_decl * } =>#
+  sstruct_decl := cstruct sdeclname sopt_equal lbrace sstruct_mem_decl * rbrace =>#
     """
     (mkns 
     `(ast_cstruct ,(caar _2) ,(cadar _2) ,_5)
@@ -1553,14 +1552,14 @@ syntax cbind {
   sclass_component:= proc sname stvarlist  : sexpr sopt_cstring ; =># 
     "`(MemberProc ,_2 none ,_3 ,_5 ,_6)";
 
-  sstruct_decl := cclass sdeclname sopt_equal { sclass_component * } =>#
+  sstruct_decl := cclass sdeclname sopt_equal lbrace sclass_component * rbrace =>#
     """
     (mkns 
     `(ast_cclass ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
      """; 
 
-  sexpr_code_prefix := code [ sexpr ] =># "_3";
+  sexpr_code_prefix := code lsqb sexpr rsqb =># "_3";
   satom := sexpr_code_prefix sstring =># "`(ast_expr ,_2 ,_1)";
   satom := sexpr_code_prefix sname =># "`(ast_expr ,_2 ,_1)";
 
