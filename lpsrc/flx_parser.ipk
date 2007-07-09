@@ -1826,7 +1826,7 @@ literal:
   | string_literal { $1 }
   | float_literal { $1 }
   | TRUE { `AST_typed_case (slift $1, 1, `TYP_unitsum 2) }
-  | FALSE { `AST_typed_case (slift $1, 1, `TYP_unitsum 2) }
+  | FALSE { `AST_typed_case (slift $1, 0, `TYP_unitsum 2) }
 
 integer_literal:
   | INTEGER 
