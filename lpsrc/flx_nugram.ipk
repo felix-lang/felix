@@ -169,13 +169,13 @@ syntax expressions {
   satom := match sexpr with smatching+ endmatch =># 
     "`(ast_match (,_2 ,_4))";
 
-    smatching  := | spattern => sexpr =># "`(,_2 ,_4)";
-    smatching  := | => sexpr =># "`(pat_none ,_4)";
+    smatching  := vbar spattern => sexpr =># "`(,_2 ,_4)";
+    smatching  := vbar => sexpr =># "`(pat_none ,_4)";
 
   satom := typematch sexpr with stype_matching+ endmatch =># 
     "`(ast_type_match (,_2 ,_4))";
 
-    stype_matching  := | sexpr => sexpr =># "`(,_2 ,_4)";
+    stype_matching  := vbar sexpr => sexpr =># "`(,_2 ,_4)";
 
     satomic_pattern := strue =># "'(pat_const_ctor (ast_case_tag 1))";
     satomic_pattern := sfalse =># "'(pat_const_ctor (ast_case_tag 0))";
@@ -260,11 +260,13 @@ syntax expressions {
   ssuffixed_name := squalified_name of sfactor =># 
     "`(ast_suffix (,_1 ,_3))";
 
-  sthe_name := satom =># "_1";
-  sthe_name := the squalified_name =># "`(ast_the ,_2)";
-  sthe_name := noexpand squalified_name =># "`(ast_noexpand ,_2)";
-  sthe_name := quest sname =># "`(ast_patvar ,_2)";
-  sthe_name := squalified_name =># "_1";
+  sthe_name := satom;
+  sthe_name := 
+    | the squalified_name =># "`(ast_the ,_2)"
+    | noexpand squalified_name =># "`(ast_noexpand ,_2)"
+    | quest sname =># "`(ast_patvar ,_2)"
+    | squalified_name =># "_1"
+  ;
 
   shash_name := sthe_name =># "_1";
   shash_name := # shash_name =># "`(ast_lift ,_2)";
@@ -280,7 +282,7 @@ syntax expressions {
   sfactor := sfactor .-> ssimple_name_parts =># 
     "`(ast_dot ((ast_apply (deref ,_1)) (ast_name (,(car _3) ,(cadr _3)))))";
 
-  sfactor := sfactor . ( sinteger ) =># "`(ast_get_n (,_4 ,_1))";
+  sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
   scoercion := sfactor =># "_1";
   scoercion := scoercion : sfactor =># "`(ast_coercion (,_1 ,_3))";
@@ -311,7 +313,7 @@ syntax expressions {
 
     stype_sum_item1 := stype_sum_item ; =># "_1";
 
-    stype_sum_item2 := | stype_sum_item =># "_2";
+    stype_sum_item2 := vbar stype_sum_item =># "_2";
     stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
@@ -482,13 +484,13 @@ syntax regexps {
     "`(ast_string_regmatch (,_2 ,_4))";
   
   sregmatch_alternatives := sregmatch_alternative + =># "(reverse _1)";
-  sregmatch_alternative := | sre1 => sexpr =># "`(,_2 ,_4)";
+  sregmatch_alternative := vbar sre1 => sexpr =># "`(,_2 ,_4)";
 
   sregdef := regexp sname = sre1 ; =># "`(ast_regdef ,_2 ,_4)";
   sre0 := sre1 as sname =># "`(regexp_group ,_3 ,_1)";
   sre0 := sre1 =># "_1";
 
-  sre1 := sre1 | sre2 =># "`(regexp_alt ,_1 ,_3)";
+  sre1 := sre1 vbar sre2 =># "`(regexp_alt ,_1 ,_3)";
   sre1 := sre2 =># "_1";
 
   sre2 := sre2 sre3 =># "`(regexp_seq ,_1 ,_2)";

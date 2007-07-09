@@ -543,19 +543,30 @@ code of the compilation unit.
 
 @head(2,'Statement')
 @select(h)
+dyalt:
+   | rhs PARSE_ACTION STRING { $1,slift $2,snd $3 }
+   | NAME { [NAME $1],dummysr,"_1" }
+
+dyaltlist:
+   | { [] }
+   | VBAR dyalt dyaltlist { $2 :: $3 }
+
+dyalts:
+   | dyalt dyaltlist { $1 :: $2 }
+   | VBAR dyalt dyaltlist { $2 :: $3 }
+
 dyprod:
-   | NAME COLONEQUAL rhs PARSE_ACTION STRING SEMI
+   | NAME COLONEQUAL dyalts SEMI
      {
        let name = snd $1 in
-       let rhs = $3 in
-       let sr = rstoken (fst $1) $6 in
-       let stmt:statement_t = `AST_scheme_string (sr,snd $5) in
-       let sr = rstoken (fst $1) $4 in
-       `Scheme_rule (name,rhs,stmt,sr)
+       map (fun (rhs,sr,scm) ->
+         let stmt = `AST_scheme_string (sr,scm) in
+         `Scheme_rule (name,rhs,stmt,sr)
+       ) $3
      }
 
 dyprods:
-   | dyprod dyprods { $1 :: $2 }
+   | dyprod dyprods { $1 @ $2 }
    | { [] }
 
 rhs:
@@ -571,7 +582,7 @@ rhs_term :
   if t != "IDENT":
     tangle("  | " +t+ " { " + t + " $1 }")
 @for t,s in flx_syms:
-  if t != "PARSE_ACTION":
+  if t not in ["PARSE_ACTION","VBAR"]:
     tangle("  | " +t+ " { " + t + " $1 }")
 
 statement:
@@ -622,6 +633,29 @@ statement:
       List.iter (add_rule dyp dssl) $4;
       sr,Snull
     }
+
+expr:  
+  | sexpr 
+    {
+      (*
+      print_endline "GOT SEXPR";
+      *)
+      let sr,r = $1 in
+      let sex = Ocs2sex.ocs2sex r in
+      (*
+      print_endline "OCS scheme sexpr converted to s-expression:";
+      Sex_print.sex_print sex;
+      *)
+      let fresh = ref 1 in
+      let env = [] in
+      let flx = Flx_sex2flx.xexpr_t sr fresh env sex in
+      (*
+      print_endline "s-expression converted to Felix expression!";
+      print_endline (string_of_expr flx);
+      *)
+      flx
+    }
+
 
 sexpr: | DUMMY { dummysr,Snull }
 
@@ -1125,30 +1159,6 @@ type_matching:
   | VBAR tuple_tpattern EQRIGHTARROW expr { $2, typecode_of_expr $4 }
   */
   | VBAR expr EQRIGHTARROW expr { typecode_of_expr $2, typecode_of_expr $4 }
-
-@head(2,'Executable Expressions')
-@select(h)
-expr:  
-  | sexpr 
-    {
-      (*
-      print_endline "GOT SEXPR";
-      *)
-      let sr,r = $1 in
-      let sex = Ocs2sex.ocs2sex r in
-      (*
-      print_endline "OCS scheme sexpr converted to s-expression:";
-      Sex_print.sex_print sex;
-      *)
-      let fresh = ref 1 in
-      let env = [] in
-      let flx = Flx_sex2flx.xexpr_t sr fresh env sex in
-      (*
-      print_endline "s-expression converted to Felix expression!";
-      print_endline (string_of_expr flx);
-      *)
-      flx
-    }
 
 old_expr: 
   | LET pattern EQUAL old_expr IN old_expr 
