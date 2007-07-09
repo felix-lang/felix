@@ -1,5 +1,3 @@
 #!/bin/bash
 echo "DEFAULT FELIX BUILD"
-./configure $*
-./mk extract
-./mk
+`dirname $0`/configure $* && ./mk extract && ./mk
