@@ -82,14 +82,26 @@ end)
 
 type rule_t = string * token list * statement_t * range_srcref
 
+type dssl_t = {
+  rules : rule_t list;
+  deps : string list;
+}
+
+let fresh_dssl = { 
+  rules = [];
+  deps = [];
+}
+
 type parse_info = {
-  rules : rule_t list Drules.t;
+  dssls : dssl_t Drules.t;
   env : Ocs_types.env;
+  loaded_dssls : string list;
 }
 
 let local_data = ref {
-  rules=Drules.empty; 
-  env=Ocs_top.make_env ()
+  dssls=Drules.empty; 
+  env=Ocs_top.make_env ();
+  loaded_dssls = [];
 }
 
 
@@ -358,14 +370,18 @@ let define_scheme dyp name rhs (scm:string) =
 
 let add_rule dyp dssl rule =
   let m = dyp.local_data in
-  let rules = try Drules.find dssl m.rules with Not_found -> [] in
+  let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
   match rule with
-  | `Felix_rule rule
   | `Scheme_rule rule ->
-     let m = {m with rules=Drules.add dssl (uniq_add rule rules) m.rules} in
+     let d: dssl_t = {d with rules = (uniq_add rule d.rules) } in
+     let m = {m with dssls=Drules.add dssl d m.dssls } in
      dyp.local_data <- m
 
-  | `Scheme_eval s -> failwith ("Not implemented: Scheme eval of " ^ s)
+  | `Requires ls ->
+     let d: dssl_t = {d with deps = ls @ d.deps } in
+     let m = {m with dssls=Drules.add dssl d m.dssls } in
+     dyp.local_data <- m
+
 
 (* create rules for nt* nt+ and nt? *)
 let fixup_rule rhs =
@@ -564,6 +580,11 @@ dyprod:
          `Scheme_rule (name,rhs,stmt,sr)
        ) $3
      }
+   | REQUIRES basic_name_comma_list SEMI
+     {
+        let dssls = map snd $2 in
+       [`Requires dssls]
+     }
 
 dyprods:
    | dyprod dyprods { $1 @ $2 }
@@ -606,19 +627,42 @@ statement:
       let sr = rstoken $1 $4 in
       let dssls = map snd $3 in
       let m = dyp.local_data in
+
+      (* calculate the transitive closure of DSSL's required
+         minus those already installed
+      *)
+      let installed = m.loaded_dssls in
+      let to_install = ref [] in
+      let rec cal_install s =
+        if mem s installed or mem s !to_install then ()
+        else begin
+          to_install := s :: !to_install;
+          let d = 
+            try Drules.find s m.dssls
+            with Not_found -> failwith ("Can't open syntax " ^ s)
+          in
+          List.iter cal_install d.deps
+        end
+      in
+      List.iter cal_install dssls
+      ;
+
       let rules =
         fold_left (fun acc dssl ->
         let rules = 
-          try Drules.find dssl m.rules
-          with Not_found -> failwith ("Can't open syntax " ^ dssl)
+          let d = 
+            try Drules.find dssl m.dssls
+            with Not_found -> failwith ("Can't open syntax " ^ dssl)
+          in d.rules
         in 
         let rules = map (fun x -> dssl,x) rules in
         acc @ rules
         )
         []
-        dssls
+        !to_install
       in
       List.iter (do_dyp_rule dyp) rules;
+      dyp.local_data <- { m with loaded_dssls = !to_install @ m.loaded_dssls };
       sr,Snull
     }
 

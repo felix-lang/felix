@@ -475,6 +475,7 @@ syntax expressions {
 }
 
 syntax regexps {
+  requires expressions;
   satom := sregmatch_expr =># "_1";
   sdirective := sregdef =># "_1";
 
@@ -523,6 +524,7 @@ syntax regexps {
 }
 
 syntax parsing {
+  requires expressions, statements;
   satom := sglr_parse =># "_1";
   sdirective := sglr_production =># "_1";
 
@@ -569,6 +571,7 @@ syntax typing {
 }
 
 syntax statements {
+  requires expressions;
   statement:= sbinding_definition =># "_1";
   statement:= sdeclarative =># "_1"; 
   statement:= sexecutable =># "_1"; 
@@ -1398,6 +1401,8 @@ syntax statements {
 }
 
 syntax macros {
+  requires expressions, statements;
+
   sdirective := smacro_definition =># "_1";
   smacro_definition := macro sname is sname ; =># "`(ast_macro_name ,_2 ,_4)";
   smacro_definition := macro sname is sbasic_name_comma_list ; =># 
@@ -1448,6 +1453,8 @@ syntax macros {
 }
 
 syntax cbind {
+  requires expressions, statements;
+
   sstruct_decl := cstruct sdeclname sopt_equal lbrace sstruct_mem_decl * rbrace =>#
     """
     (mkns 
