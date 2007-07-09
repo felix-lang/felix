@@ -1024,7 +1024,9 @@ let if_directive state sr toks =
     let string_of_bool b = if b then "true" else "false" in
     let string_of_tokens tks = catmap " " Flx_prelex.string_of_token tks in
     let result = eval_bool state sr toks in
+    (*
     print_endline ("#if " ^ string_of_tokens toks ^ "evaluates to " ^ string_of_bool result);
+    *)
     match result with
     | true -> `Processing
     | false -> `Skip_to_else
