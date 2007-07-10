@@ -70,6 +70,8 @@ let fixups = [
 let cid_of_flxid s = 
   let n = String.length s in
   let id = Buffer.create (n+10) in
+  (* if the value is prefixed with a number, prepend an underscore *)
+  if n > 1 && s.[0] >= '0' && s.[0] <= '9' then Buffer.add_char id '_';
   for i=0 to n - 1 do
     (* from http://www.w3.org/TR/html4/sgml/entities.html *)
     match s.[i] with
