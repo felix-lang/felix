@@ -556,7 +556,6 @@ code of the compilation unit.
 @select(h)
 dyalt:
    | rhs PARSE_ACTION STRING { $1,slift $2,`Scheme (snd $3) }
-   | rhs PARSE_ACTION sexpr { $1,slift $2, `Expr (snd $3) }
    | NAME { [NAME $1],dummysr,`Scheme "_1" }
 
 dyaltlist:
@@ -576,9 +575,6 @@ dyprod:
          | `Scheme scm ->
            let stmt = `AST_scheme_string (sr,scm) in
            `Scheme_rule (name,rhs,stmt,sr)
-         | `Expr e -> 
-           print_endline ("EXPR =" ^ Ocs_print.string_of_ocs e);
-           failwith "WOOPS, expr!"
        ) $3
      }
    | REQUIRES basic_name_comma_list SEMI
