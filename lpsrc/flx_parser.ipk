@@ -230,15 +230,10 @@ let dfltvs =
   ]
 @#
 
-let string_of_ocs r = 
-  let outp = Buffer.create 200 in
-  Ocs_print.print_to_buffer outp false r;
-  Buffer.contents outp
-
 let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
 
 let print_ocs r = 
-  print_endline (string_of_ocs r)
+  print_endline (Ocs_print.string_of_ocs r)
 
 let scheme_eval env (s:sval):sval =
   let term = ref None in
@@ -560,8 +555,9 @@ code of the compilation unit.
 @head(2,'Statement')
 @select(h)
 dyalt:
-   | rhs PARSE_ACTION STRING { $1,slift $2,snd $3 }
-   | NAME { [NAME $1],dummysr,"_1" }
+   | rhs PARSE_ACTION STRING { $1,slift $2,`Scheme (snd $3) }
+   | rhs PARSE_ACTION sexpr { $1,slift $2, `Expr (snd $3) }
+   | NAME { [NAME $1],dummysr,`Scheme "_1" }
 
 dyaltlist:
    | { [] }
@@ -575,9 +571,14 @@ dyprod:
    | NAME COLONEQUAL dyalts SEMI
      {
        let name = snd $1 in
-       map (fun (rhs,sr,scm) ->
-         let stmt = `AST_scheme_string (sr,scm) in
-         `Scheme_rule (name,rhs,stmt,sr)
+       map (fun (rhs,sr,rule) ->
+         match rule with
+         | `Scheme scm ->
+           let stmt = `AST_scheme_string (sr,scm) in
+           `Scheme_rule (name,rhs,stmt,sr)
+         | `Expr e -> 
+           print_endline ("EXPR =" ^ Ocs_print.string_of_ocs e);
+           failwith "WOOPS, expr!"
        ) $3
      }
    | REQUIRES basic_name_comma_list SEMI
