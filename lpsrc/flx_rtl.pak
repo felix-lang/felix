@@ -530,7 +530,7 @@ namespace flx { namespace rtl {
 
 struct RTL_EXTERN con_t;     // continuation
 struct RTL_EXTERN thread_t; // f-thread
-struct RTL_EXTERN _ref_;     // pointer/reference
+//struct RTL_EXTERN _ref_;     // pointer/reference
 struct RTL_EXTERN _uctor_;   // union constructor
 struct RTL_EXTERN schannel_t;   // synchronous channel type
 struct RTL_EXTERN slist_t;   // singly linked list of void*
@@ -654,6 +654,7 @@ private: // uncopyable
 /// address, despite the name.
 // ********************************************************
 
+/*
 struct RTL_EXTERN _ref_
 {
   void *frame;      ///< Heap frame pointer
@@ -689,6 +690,7 @@ struct RTL_EXTERN _ref_
   { return frame!=x.frame || offset!=x.offset; }
 };
 
+*/
 
 // ********************************************************
 /// VARIANTS. Felix union type
@@ -919,9 +921,16 @@ enum svc_t               // what the dispatch should do
   svc_end
 };
 
+/*
 struct readreq_t {
   schannel_t *chan;
   _ref_ variable;
+};
+*/
+
+struct readreq_t {
+  schannel_t *chan;
+  void *variable;
 };
 
 }} // namespaces
@@ -1485,6 +1494,7 @@ flx::gc::generic::gc_shape_t schannel_ptr_map = {
 // _ref_ implementation
 // ********************************************************
 
+/*
 void _ref_::operator = (_ref_ const& r)
 {
   if (frame != r.frame || offset != r.offset)
@@ -1493,16 +1503,17 @@ void _ref_::operator = (_ref_ const& r)
     offset = r.offset;
   }
 }
+*/
 
 //OFFSETS for _ref_
 static std::size_t _ref_offsets[1]={
-    offsetof(_ref_,frame)
+  0
 };
 
 flx::gc::generic::gc_shape_t _ref_ptr_map = {
   &schannel_ptr_map,
-  "_ref_",
-  1,sizeof(_ref_),
+  "void*",
+  1,sizeof(void*),
   0, // no finaliser
   1,
   _ref_offsets,
@@ -2285,8 +2296,8 @@ check_collect:
         {
           readreq_t * pr = (readreq_t*)request->data;
           readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
-          *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
+          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+          *(void**)pr->variable = *(void**)pw->variable;
           active->push_front(writer);
           collector->add_root(writer);
         }
@@ -2312,8 +2323,8 @@ check_collect:
         {
           readreq_t * pw = (readreq_t*)request->data;
           readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
-          *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
+          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+          *(void**)pr->variable = *(void**)pw->variable;
           active->push_front(reader);
           collector->add_root(reader);
         }
@@ -2851,7 +2862,7 @@ void doflx (void *data) {
           );
         }
         ++async_count;
-        void *dreq =  (((_ref_*)(ss.request->data))->get_data());
+        void *dreq =  *(void**)ss.request->data;
 
         // requests are now ALWAYS considered asynchronous
         // even if the request handler reschedules them immediately

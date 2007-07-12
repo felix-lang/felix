@@ -1031,7 +1031,8 @@ module C_hack
   The pointer may dangle if the collector deletes the 
   frame containing the object. 
   """
-  fun unref[t]: &t->ptr[t] = "(?1*)($1.get_data())";
+  //fun unref[t]: &t->ptr[t] = "(?1*)($1.get_data())";
+  fun unref[t]: &t->ptr[t] = "(?1*)($1)";
 
   publish """
   Function to make Felix reference from C pointer.
@@ -1040,8 +1041,10 @@ module C_hack
   the resulting reference will never be collected
   (because the frame pointer is set to 0)
   """
+  /*
   fun mkref[t]: ptr[t]->&t = "(#0 const&)flx::rtl::_ref_(0,(void*)$1-NULL)";
   fun mkref[t]: gcptr[t]->&t = "(#0 const&)flx::rtl::_ref_(0,(void*)$1-NULL)";
+  */
 
   publish """
   Dereference a C pointer. If the expression is an

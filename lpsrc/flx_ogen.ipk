@@ -116,8 +116,10 @@ let rec get_offsets' syms bbdfns typ : string list =
     
   | `BTYP_lift _ -> assert false
 
-  | `BTYP_pointer t -> 
+  | `BTYP_pointer t -> ["0"]
+    (*
     ["offsetof("^tname^",frame)"]
+    *)
 
   | `BTYP_sum args when not (all_units args) -> 
     ["offsetof("^tname^",data)"]

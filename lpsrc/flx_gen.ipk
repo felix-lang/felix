@@ -198,6 +198,7 @@ let is_gc_pointer syms bbdfns sr t =
   *)
   match t with 
   | `BTYP_function _ -> true 
+  | `BTYP_pointer _ -> true
   | `BTYP_inst (i,_) ->
     let id,sr,parent,entry = 
       try Hashtbl.find bbdfns i 

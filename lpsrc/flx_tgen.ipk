@@ -138,6 +138,7 @@ let gen_record name tn typs =
   type is sliced, since it's nothing more than a type
   correct wrapper for its base
 *)
+(*
 let gen_ref name typ =
   "struct " ^ name ^ ": _ref_ {\n" ^
   "  "^name^"(){}\n" ^
@@ -146,6 +147,7 @@ let gen_ref name typ =
   "  "^typ^" *operator->()const { return ("^typ^"*)get_data(); }\n" ^
   "  "^typ^" &operator*() const { return *("^typ^"*)get_data(); }\n" ^
   "};\n"
+*)
 
 (* this routine generates a typedef (for primitives)
 or struct declaration which names the type. 
@@ -171,7 +173,13 @@ let gen_type_name syms bbdfns (index,typ) =
 
   | `BTYP_tuple [] -> "" (* unit *)
 
-  | `BTYP_pointer _
+  | `BTYP_pointer b -> ""
+    (* NEW *)
+    (*
+    descr ^
+    "typedef " ^ tn b ^ " *"^ tn t ^ ";\n"
+    *)
+
   | `BTYP_tuple _
   | `BTYP_record _
   | `BTYP_array _
@@ -423,9 +431,12 @@ let gen_type syms bbdfns (index,typ) =
      
   | `BTYP_void -> ""
   | `BTYP_pointer t -> 
+    ""
+    (*
     let name = tn typ in
     let t = tn t in
     descr ^ gen_ref name t
+    *)
 
   | `BTYP_array (v,i) ->
     let name = tn typ in

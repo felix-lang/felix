@@ -447,8 +447,16 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     ge' (`BEXPR_name (index,ts),t)
 
   | `BEXPR_deref e -> 
+    (*
     let cast = tn t ^ "*" in
+    *)
+    (*
     ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "get_data()"))
+    *)
+    (*
+    ce_prefix "*" (ce_cast cast (ge' e) )
+    *)
+    ce_prefix "*" (ge' e)
 
   | `BEXPR_new e ->
     let ref_type = tn t in
@@ -818,10 +826,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let ts = map tsub ts' in
     let t = lower t in
     let ref_type = tn (lower t) in
+    (*
     let frame_ptr, var_ptr =
       match t with
       | `BTYP_tuple [] -> "NULL","0"
       | _ ->
+
         let parent = match Hashtbl.find bbdfns index with _,parent,sr,_ -> parent in
         if Some this = parent && 
         (
@@ -842,6 +852,15 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       "(" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
     in
     ce_atom reference
+    *)
+
+    ce_cast ref_type 
+    begin match t with
+      | `BTYP_tuple [] -> ce_atom "0"
+      | _ ->
+        let v = get_var_ref syms bbdfns this index ts in
+        ce_prefix "&" (ce_atom v)
+    end
 
   (* Hackery -- we allow a constructor with no
      arguments to be applied to a unit anyhow

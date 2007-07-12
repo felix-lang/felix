@@ -1128,7 +1128,7 @@ void flx_collector_t::scan_object(frame_t *frame)
           Word_t *plen = (Word_t*)JudyLLast(ja,&fp,&je);
           // this is only true for object pointers..
           // not interior pointers -- FOR TESTING ONLY!
-          assert(fp == cand);
+          //assert(fp == cand);
           
           if(
             plen && 

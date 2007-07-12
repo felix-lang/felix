@@ -173,7 +173,10 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     is always the case for recursion under a pointer
   *)
 
-  | `BTYP_pointer ts -> rnr t; rr ts
+  (* pointer type is no longer registered, just us t* *)
+
+  | `BTYP_pointer t' -> rr t'
+
   | `BTYP_inst (i,ts)->
     iter rr ts;
 

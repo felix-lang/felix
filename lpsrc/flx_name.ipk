@@ -216,7 +216,10 @@ let rec cpp_type_classname syms t =
   | `BTYP_tuple [] -> "unit"
 
   | `BTYP_pointer t' -> 
+    cpp_type_classname syms t' ^ "*"
+    (*
     "_rt" ^ cpp_type_classname syms t' 
+    *)
 
   | `BTYP_function (_,`BTYP_void) -> 
     "_pt" ^ si (tix t) 
