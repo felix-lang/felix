@@ -814,14 +814,14 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_inherit_fun"; Str n; vs; qn] ->
     `AST_inherit_fun (sr,n, xvs vs, xq "ast_inherit_fun" qn)
 
-  | Lst [Id "ast_val_decl"; Str n; vs; ot; oe] ->
-    `AST_val_decl (sr,ss n, xvs vs, opt "val_decl" ti ot, opt "val_decl" ex oe)
+  | Lst [Id "ast_val_decl"; sr; Str n; vs; ot; oe] ->
+    `AST_val_decl (xsr sr,ss n, xvs vs, opt "val_decl" ti ot, opt "val_decl" ex oe)
 
   | Lst [Id "ast_lazy_decl"; Str n; vs; ot; oe] ->
     `AST_lazy_decl (sr,ss n, xvs vs, opt "lazy_decl" ti ot, opt "lazy_decl" ex oe)
 
-  | Lst [Id "ast_var_decl"; Str n; vs; ot; oe] ->
-    `AST_var_decl (sr,ss n, xvs vs, opt "var_decl" ti ot, opt "var_decl" ex oe)
+  | Lst [Id "ast_var_decl"; sr; Str n; vs; ot; oe] ->
+    `AST_var_decl (xsr sr,ss n, xvs vs, opt "var_decl" ti ot, opt "var_decl" ex oe)
 
   | Lst [Id "ast_ref_decl"; Str n; vs; ot; oe] ->
     `AST_ref_decl (sr,ss n, xvs vs, opt "ref_decl" ti ot, opt "ref_decl" ex oe)
@@ -832,10 +832,10 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_namespace"; Str n; vs; sts] ->
     `AST_namespace (sr, ss n, xvs vs, xsts sts)
 
-  | Lst [Id "ast_typeclass"; Str n; vs; sts] ->
-    `AST_typeclass(sr, n, xvs vs, xsts sts)
+  | Lst [Id "ast_typeclass"; sr; Str n; vs; sts] ->
+    `AST_typeclass(xsr sr, n, xvs vs, xsts sts)
 
-  | Lst [Id "ast_instance"; vs; qn; sts] ->
+  | Lst [Id "ast_instance"; sr; vs; qn; sts] ->
     (*
     print_endline "Ast instance sts=";
     begin match sts with Lst sts->
@@ -846,7 +846,7 @@ and xstatement_t sr fresh env x : statement_t =
     end
     ;
     *)
-    `AST_instance(sr, xvs vs, xq "ast_instance" qn, xsts sts)
+    `AST_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts sts)
 
   | Lst [Id "ast_label"; sr; Str n] -> `AST_label(xsr sr,n)
   | Lst [Id "ast_goto"; sr; Str n] -> `AST_goto(xsr sr,n)
@@ -864,28 +864,28 @@ and xstatement_t sr fresh env x : statement_t =
 
   | Lst [Id "ast_yield"; sr; e] -> `AST_yield(xsr sr,ex e)
   | Lst [Id "ast_proc_return"; sr]  -> `AST_proc_return(xsr sr)
-  | Lst [Id "ast_halt"; Str s] -> `AST_halt(sr, ss s)
+  | Lst [Id "ast_halt"; sr; Str s] -> `AST_halt(xsr sr, ss s)
   | Lst [Id "ast_nop"; Str s] -> `AST_nop(sr,ss s)
   | Lst [Id "ast_assert"; sr; e] -> `AST_assert(xsr sr,ex e)
-  | Lst [Id "ast_apply_ctor"; Str n; e1; e2] -> `AST_apply_ctor(sr,n,ex e1,ex e2)
-  | Lst [Id "ast_init"; Str n; e] -> `AST_init(sr,n,ex e)
-  | Lst [Id "ast_newtype"; Str n; vs; t] -> `AST_newtype(sr,n,xvs vs, ti t)
-  | Lst [Id "ast_abs_decl"; Str n; vs; tqs; ct; req] -> 
-    `AST_abs_decl (sr,n,xvs vs, xtqs tqs, xc ct, xrr req)
+  | Lst [Id "ast_apply_ctor"; sr; Str n; e1; e2] -> `AST_apply_ctor(xsr sr,n,ex e1,ex e2)
+  | Lst [Id "ast_init"; sr; Str n; e] -> `AST_init(xsr sr,n,ex e)
+  | Lst [Id "ast_newtype"; sr; Str n; vs; t] -> `AST_newtype(xsr sr,n,xvs vs, ti t)
+  | Lst [Id "ast_abs_decl"; sr; Str n; vs; tqs; ct; req] -> 
+    `AST_abs_decl (xsr sr,n,xvs vs, xtqs tqs, xc ct, xrr req)
 
-  | Lst [Id "ast_ctypes"; Lst ids; tqs; req] -> 
+  | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] -> 
     let ids = map (function 
       | Str n -> ("dummy",0,0,0),n
       | x -> err x "ast_ctypes"
     ) ids
     in
-    `AST_ctypes (sr,ids, xtqs tqs, xrr req)
+    `AST_ctypes (xsr sr,ids, xtqs tqs, xrr req)
 
-  | Lst [Id "ast_const_decl"; Str n; vs; t; ct; req] -> 
-    `AST_const_decl (sr, n, xvs vs, ti t, xc ct, xrr req)
+  | Lst [Id "ast_const_decl"; sr; Str n; vs; t; ct; req] -> 
+    `AST_const_decl (xsr sr, n, xvs vs, ti t, xc ct, xrr req)
 
-  | Lst [Id "ast_fun_decl"; Str n; vs; Lst ps; t; ct; req; Str prec] -> 
-    `AST_fun_decl (sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
+  | Lst [Id "ast_fun_decl"; sr; Str n; vs; Lst ps; t; ct; req; Str prec] -> 
+    `AST_fun_decl (xsr sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
 
   | Lst [Id "ast_callback_decl"; Str n; Lst ps; t; req] -> 
     `AST_callback_decl (sr, n, map ti ps, ti t, xrr req)

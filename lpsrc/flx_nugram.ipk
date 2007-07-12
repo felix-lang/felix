@@ -621,7 +621,7 @@ syntax statements {
   sabstract_type := stype_quals type sdeclname = new sexpr ; =>#
     """
     (mkns 
-    `(ast_newtype ,(caar _3) ,(cadar _3) ,_6)
+    `(ast_newtype ,_sr ,(caar _3) ,(cadar _3) ,_6)
     (cdr _3))
     """; 
 
@@ -709,7 +709,7 @@ syntax statements {
     (if (eq? (length names)(length vals))
       (let  
         (
-          (f (lambda (n v)`(ast_val_decl ,n ,dfltvs none (some ,v))))
+          (f (lambda (n v)`(ast_val_decl ,_sr ,n ,dfltvs none (some ,v))))
         )
         `(ast_seq ,(map f names vals))
       )
@@ -726,21 +726,21 @@ syntax statements {
   sval_def := val sdeclname = sexpr ; =>#
     """
     (mkns 
-    `(ast_val_decl ,(caar _2) ,(cadar _2) none (some ,_4))
+    `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
     (cdr _2))
      """; 
 
   sval_def := val sdeclname : sexpr = sexpr ; =>#
     """
     (mkns 
-    `(ast_val_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
+    `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
     (cdr _2))
      """; 
 
   sval_def := val sdeclname : sexpr ; =>#
     """
     (mkns 
-    `(ast_val_decl ,(caar _2) ,(cadar _2) (some ,_4) none)
+    `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
     (cdr _2))
      """; 
 
@@ -772,7 +772,7 @@ syntax statements {
     (if (eq? (length names)(length vals))
       (let  
         (
-          (f (lambda (n v)`(ast_var_decl ,n ,dfltvs none (some ,v))))
+          (f (lambda (n v)`(ast_var_decl ,_sr ,n ,dfltvs none (some ,v))))
         )
         `(ast_seq ,(map f names vals))
       )
@@ -789,21 +789,21 @@ syntax statements {
   svar_def := var sdeclname = sexpr ; =>#
     """
     (mkns 
-    `(ast_var_decl ,(caar _2) ,(cadar _2) none (some ,_4))
+    `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
     (cdr _2))
      """; 
 
   svar_def := var sdeclname : sexpr = sexpr ; =>#
     """
     (mkns 
-    `(ast_var_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
+    `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
     (cdr _2))
      """; 
 
   svar_def := var sdeclname : sexpr ; =>#
     """
     (mkns 
-    `(ast_var_decl ,(caar _2) ,(cadar _2) (some ,_4) none)
+    `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
     (cdr _2))
      """; 
 
@@ -815,7 +815,7 @@ syntax statements {
      (a (cadr fl))
      (nua (cons `(ast_ref (ast_name ,_3 ())) (mkl a)))
      (call `(ast_call ,_sr ,f ,nua))
-     (vardef `(ast_var_decl ,_3 ,_4 (some ,_6) none))
+     (vardef `(ast_var_decl ,_sr ,_3 ,_4 (some ,_6) none))
      (seq `(ast_seq (,vardef ,call))))
      (begin 
      ;;(display "f=")(display f)
@@ -843,7 +843,7 @@ syntax statements {
        (typ _4)
        (nua (cons `(ast_name ,name ()) (mkl a)))
        (call `(ast_call ,_sr ,f ,nua))
-       (vardef `(ast_var_decl ,name ,vs (some ,typ) none))
+       (vardef `(ast_var_decl ,_sr ,name ,vs (some ,typ) none))
        (seq `(ast_seq (,vardef ,call)))
      )
      (begin 
@@ -950,7 +950,7 @@ syntax statements {
       (body _6)
       (inits _5)
       (args _3)
-      (f (lambda (ne)`(ast_init ,(car ne) ,(cadr ne))))
+      (f (lambda (ne)`(ast_init ,_sr ,(car ne) ,(cadr ne))))
       (body (append (map f inits) body))
     )
     `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
@@ -1085,7 +1085,7 @@ syntax cbind {
         (argt (caadr t))
         (ret (cadadr t)))
       (mkns 
-      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
       (cdr _3)))
       ('ERROR))))
   """;
@@ -1093,7 +1093,7 @@ syntax cbind {
   sabstract_type:= stype_quals type sdeclname = scode_spec srequires_clause ; =>#
     """
     (mkns 
-    `(ast_abs_decl ,(caar _3) ,(cadar _3) ,_1 ,_5 ,_6)
+    `(ast_abs_decl ,_sr ,(caar _3) ,(cadar _3) ,_1 ,_5 ,_6)
     (cdr _3))
     """; 
 
@@ -1105,7 +1105,7 @@ syntax cbind {
   stype_quals:= sepsilon =># "()";
 
   sabstract_type:= stype_quals ctypes sbasic_name_comma_list srequires_clause ; =>#
-    "`(ast_ctypes ,_3 ,_1 ,_4)";
+    "`(ast_ctypes ,_sr ,_3 ,_1 ,_4)";
 
   sexecutable := sinline_cpp =># "_1";
   sinline_cpp:= code scode_spec ; =># "`(ast_code ,_2)";
@@ -1138,7 +1138,7 @@ syntax cbind {
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
       _8)))
     (mkns 
-    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
+    `(ast_const_decl ,_sr ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
     (cdr _3)))
   """;
 
@@ -1149,7 +1149,7 @@ syntax cbind {
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
       _6)))
     (mkns 
-    `(ast_const_decl ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)
+    `(ast_const_decl ,_sr ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)
     (cdr _3)))
   """;
 
@@ -1185,7 +1185,7 @@ syntax cbind {
       (argt t)
       (ret 'ast_void))
       (mkns 
-      `(ast_fun_decl ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
+      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
       (cdr _3)))))
   """;
 
@@ -1210,7 +1210,7 @@ syntax executable {
 
   // deprecate: class object construction, use a generator
   sassignment := var sname <- new sexpr ; =># 
-    "(append `(ast_apply_ctor ,_2) (splitapply _5))";
+    "(append `(ast_apply_ctor ,_sr ,_2) (splitapply _5))";
 
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
   sassignment := sexpr <- sexpr ; =># 
@@ -1284,7 +1284,7 @@ syntax executable {
   sreturn := yield sexpr ; =># "`(ast_yield ,_sr ,_2)";
   sreturn := return sexpr ; =># "`(ast_fun_return ,_sr ,_2)";
   sreturn := return ; =># "`(ast_proc_return ,_sr)";
-  sreturn := halt sstring ; =># "`(ast_halt ,_2)";
+  sreturn := halt sstring ; =># "`(ast_halt ,_sr ,_2)";
 
   scall := call sexpr ; =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
   scall := jump sexpr ; =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
@@ -1510,13 +1510,13 @@ syntax type_declarations {
   sstruct_decl := typeclass sdeclname sopt_equal scompound =>#
     """
     (mkns 
-    `(ast_typeclass ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_typeclass ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
   sstruct_decl := instance stvarlist squalified_name sopt_equal scompound =>#
     """
-    `(ast_instance ,_2 ,_3 ,_5)
+    `(ast_instance ,_sr ,_2 ,_3 ,_5)
      """; 
 
   sunion_decl := union sdeclname = stype_sum_items2 ; =>#
