@@ -34,12 +34,12 @@ SCHEME """
 (define splitapply (lambda (x)
   (if (pair? x) 
     (if (eq? (car x) 'ast_apply) 
-      (if (pair? (cdr x)) 
+      (if (pair? (cddr x)) 
         (begin 
-;;           (display "f=")(display (caadr x))
-;;           (display " arg=")(display (cadadr x))
-;;           (display " pair=")(display (cadr x))
-           (cadr x))
+;;           (display "f=")(display (caaddr x))
+;;           (display " arg=")(display (cadaddr x))
+;;           (display " pair=")(display (caddr x))
+           (caddr x))
         (list x ()))
       (list x ()))
     (list ()))
@@ -164,7 +164,7 @@ syntax expressions {
   satom := callback lsqb sexpr rsqb =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";
   satom := lbrace sexpr rbrace =># """
-    `(ast_lambda (,dfltvs ((() none)) typ_none ((ast_fun_return ,_2))))
+    `(ast_lambda (,dfltvs ((() none)) typ_none ((ast_fun_return ,_sr ,_2))))
   """;
 
   satom := match sexpr with smatching+ endmatch =># 
@@ -248,7 +248,7 @@ syntax expressions {
       """;
 
   satom := suserlbtoken sexpr suserrbtoken =>#
-    "`(ast_apply ((ast_name ,(myassoc _3 (car _1)) ()) ,_2))";
+    "`(ast_apply ,_sr ((ast_name ,(myassoc _3 (car _1)) ()) ,_2))";
 
   ssimple_name_parts := sname           =># "`(,_1 ())";
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
@@ -273,15 +273,15 @@ syntax expressions {
   shash_name := # shash_name =># "`(ast_lift ,_2)";
 
   sfactor := shash_name =># "_1";
-  sfactor := sfactor . lsqb sexpr rsqb =># "`(ast_apply (subscript (,_1 ,_4)))";
-  sfactor := sfactor . lsqb sexpr to sexpr rsqb =># "`(ast_apply (substring (,_1 ,_4 ,_6)))";
-  sfactor := sfactor . lsqb sexpr to rsqb =># "`(ast_apply (copyfrom (,_1 ,_4)))";
-  sfactor := sfactor . lsqb to sexpr rsqb =># "`(ast_apply (copyto (,_1 ,_5)))";
+  sfactor := sfactor . lsqb sexpr rsqb =># "`(ast_apply ,_sr (subscript (,_1 ,_4)))";
+  sfactor := sfactor . lsqb sexpr to sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
+  sfactor := sfactor . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
+  sfactor := sfactor . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
   sfactor := sfactor . ssimple_name_parts =># 
     "`(ast_dot (,_1 (ast_name ,(car _3) ,(cadr _3))))";
 
   sfactor := sfactor .-> ssimple_name_parts =># 
-    "`(ast_dot ((ast_apply (deref ,_1)) (ast_name (,(car _3) ,(cadr _3)))))";
+    "`(ast_dot ((ast_apply ,_sr (deref ,_1)) (ast_name (,(car _3) ,(cadr _3)))))";
 
   sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
@@ -290,14 +290,14 @@ syntax expressions {
   scoercion := ssuffixed_name =># "_1";
 
   sapplication := scoercion =># "_1";
-  sapplication := sapplication scoercion =># "`(ast_apply (,_1 ,_2))";
+  sapplication := sapplication scoercion =># "`(ast_apply ,_sr (,_1 ,_2))";
   sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
 
   srefr := sapplication =># "_1";
   // todo anonymous union
   // todo anonymous struct
   srefr := & srefr =># "`(ast_ref ,_2)";
-  srefr := star srefr =># "`(ast_apply (deref ,_2))";
+  srefr := star srefr =># "`(ast_apply ,_sr (deref ,_2))";
   srefr := _deref srefr =># "`(ast_deref ,_2)";
   srefr := new srefr =># "`(ast_new ,_2)";
   srefr := struct lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
@@ -322,18 +322,18 @@ syntax expressions {
   ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))"; 
 
   spower := ssuperscript  =># "_1"; 
-  spower := ssuperscript ** sprefixed =># "`(ast_apply (pow (,_1 ,_3)))"; 
+  spower := ssuperscript ** sprefixed =># "`(ast_apply ,_sr (pow (,_1 ,_3)))"; 
 
   sprefixed := spower =># "_1";
   sprefixed := lval spower =># "`(ast_lvalue ,_2)";
-  sprefixed := ! spower =># "`(ast_apply (excl ,_2))";
-  sprefixed := plus spower =># "`(ast_apply (pos ,_2))";
-  sprefixed := - spower =># "`(ast_apply (neg ,_2))";
-  sprefixed := ~ spower =># "`(ast_apply (compl ,_2))";
+  sprefixed := ! spower =># "`(ast_apply ,_sr (excl ,_2))";
+  sprefixed := plus spower =># "`(ast_apply ,_sr (pos ,_2))";
+  sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))";
+  sprefixed := ~ spower =># "`(ast_apply ,_sr (compl ,_2))";
 
   s_term := sprefixed =># "_1";
-  s_term := s_term / spower =># "`(ast_apply (div (,_1 ,_3)))";
-  s_term := s_term % spower =># "`(ast_apply (mod (,_1 ,_3)))";
+  s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))";
+  s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))";
 
   sproduct :=  s_term =># "_1";
   sproduct := s_term star sproduct_list =># "`(ast_product ,(cons _1 _3))";
@@ -341,7 +341,7 @@ syntax expressions {
     sproduct_list := s_term =># "`(,_1)";
   
   ssubtraction := sproduct =># "_1";
-  ssubtraction := ssubtraction - sproduct =># "`(ast_apply (sub (,_1 ,_3)))";
+  ssubtraction := ssubtraction - sproduct =># "`(ast_apply ,_sr (sub (,_1 ,_3)))";
 
   ssum :=  ssubtraction =># "_1";
   ssum := ssubtraction plus ssum_list =># "`(ast_sum ,(cons _1 _3))";
@@ -349,17 +349,17 @@ syntax expressions {
     ssum_list := ssubtraction =># "`(,_1)";
 
   sshift := ssum =># "_1";
-  sshift := sshift << ssum =># "`(ast_apply (shl (,_1 ,_3)))";
-  sshift := sshift >> ssum =># "`(ast_apply (shr (,_1 ,_3)))";
+  sshift := sshift << ssum =># "`(ast_apply ,_sr (shl (,_1 ,_3)))";
+  sshift := sshift >> ssum =># "`(ast_apply ,_sr (shr (,_1 ,_3)))";
 
   sband :=  sshift =># "_1";
-  sband := sband \& sshift =># "`(ast_apply (band (,_1 ,_3)))";
+  sband := sband \& sshift =># "`(ast_apply ,_sr (band (,_1 ,_3)))";
 
   sbxor := sband =># "_1";
-  sbxor := sbxor \^ sband =># "`(ast_apply (bxor (,_1 ,_3)))";
+  sbxor := sbxor \^ sband =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))";
 
   sbor := sbxor =># "_1";
-  sbor := sbor \| sbxor =># "`(ast_apply (bor (,_1 ,_3)))";
+  sbor := sbor \| sbxor =># "`(ast_apply ,_sr (bor (,_1 ,_3)))";
 
   scase_literal := sbor =># "_1";
   scase_literal := case sinteger =># "`(ast_case_tag ,_2))";
@@ -377,7 +377,7 @@ syntax expressions {
 
   suser10 := ssetintersection =># "_1";
   suser10 := suser10 suser10token ssetintersection =># 
-    "`(ast_apply ( (ast_name ,_2 ()) (,_1 ,_3)))";
+    "`(ast_apply ,_sr ( (ast_name ,_2 ()) (,_1 ,_3)))";
 
   ssetunion := suser10 =># "_1";
   ssetunion := suser10 || ssetunion_list =># "`(ast_setunion ,(cons _1 _3))";
@@ -389,15 +389,15 @@ syntax expressions {
 
   // NOTE: this version doesn't support chains like a < b < c.. too bad
   scomparison:= sas_expr =># "_1";
-  scomparison:= sas_expr < sas_expr =># "`(ast_apply (lt (,_1 ,_3)))";
-  scomparison:= sas_expr <= sas_expr =># "`(ast_apply (le (,_1 ,_3)))";
-  scomparison:= sas_expr == sas_expr =># "`(ast_apply (eq (,_1 ,_3)))";
-  scomparison:= sas_expr != sas_expr =># "`(ast_apply (ne (,_1 ,_3)))";
-  scomparison:= sas_expr >= sas_expr =># "`(ast_apply (ge (,_1 ,_3)))";
-  scomparison:= sas_expr > sas_expr =># "`(ast_apply (gt (,_1 ,_3)))";
+  scomparison:= sas_expr < sas_expr =># "`(ast_apply ,_sr (lt (,_1 ,_3)))";
+  scomparison:= sas_expr <= sas_expr =># "`(ast_apply ,_sr (le (,_1 ,_3)))";
+  scomparison:= sas_expr == sas_expr =># "`(ast_apply ,_sr (eq (,_1 ,_3)))";
+  scomparison:= sas_expr != sas_expr =># "`(ast_apply ,_sr (ne (,_1 ,_3)))";
+  scomparison:= sas_expr >= sas_expr =># "`(ast_apply ,_sr (ge (,_1 ,_3)))";
+  scomparison:= sas_expr > sas_expr =># "`(ast_apply ,_sr (gt (,_1 ,_3)))";
 
   snot_condition := scomparison  =># "_1";
-  snot_condition := not snot_condition  =># "`(ast_apply (lnot ,_2))";
+  snot_condition := not snot_condition  =># "`(ast_apply ,_sr (lnot ,_2))";
 
   sand_condition := snot_condition =># "_1";
   sand_condition := snot_condition and sand_list =># "`(ast_andlist ,(cons _1 _3))";
@@ -418,8 +418,8 @@ syntax expressions {
   
   sdollar_apply := stuple =># "_1";
   sdollar_apply := stuple unless sexpr then sdollar_apply =>#
-    "`(ast_cond ((ast_apply (lnot ,_3)) ,_1 ,_5))";
-  sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply (,_1 ,_3))";
+    "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
+  sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply ,_sr (,_1 ,_3))";
 
   slambda := sdollar_apply =># "_1";
   slambda := sadjectives fun stvarlist slambda_fun_args sopt_type_expr = scompound =>#
@@ -429,7 +429,7 @@ syntax expressions {
 
   slambda := sadjectives fun stvarlist slambda_fun_args sopt_type_expr => sexpr =>#
     """
-    `(ast_lambda (,_3 ,_4 ,(car _5) ((ast_fun_return ,_7))))
+    `(ast_lambda (,_3 ,_4 ,(car _5) ((ast_fun_return ,_sr ,_7))))
     """;
 
   slambda := sadjectives proc stvarlist slambda_fun_args scompound =>#
@@ -718,7 +718,7 @@ syntax statements {
           (f (lambda (n)`((Val ,n) none)))
           (lexpr (map f names))
         )
-        `(ast_assign _set ((List ,lexpr) none) ,_5)
+        `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
       )
   )))
   """;
@@ -781,7 +781,7 @@ syntax statements {
           (f (lambda (n)`((Var ,n) none)))
           (lexpr (map f names))
         )
-        `(ast_assign _set ((List ,lexpr) none) ,_5)
+        `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
       )
   )))
   """;
@@ -814,7 +814,7 @@ syntax statements {
      (f (car fl))
      (a (cadr fl))
      (nua (cons `(ast_ref (ast_name ,_3 ())) (mkl a)))
-     (call `(ast_call ,f ,nua))
+     (call `(ast_call ,_sr ,f ,nua))
      (vardef `(ast_var_decl ,_3 ,_4 (some ,_6) none))
      (seq `(ast_seq (,vardef ,call))))
      (begin 
@@ -842,7 +842,7 @@ syntax statements {
        (namespace (cdr _2))
        (typ _4)
        (nua (cons `(ast_name ,name ()) (mkl a)))
-       (call `(ast_call ,f ,nua))
+       (call `(ast_call ,_sr ,f ,nua))
        (vardef `(ast_var_decl ,name ,vs (some ,typ) none))
        (seq `(ast_seq (,vardef ,call)))
      )
@@ -873,9 +873,9 @@ syntax statements {
   sfunction_definition := sadjectives sfun_kind sdeclname 
     sfun_arg* sopt_type_expr => sexpr ; =>#
   """
-    (let ((body `((ast_fun_return ,_7))))
+    (let ((body `((ast_fun_return ,_sr ,_7))))
     (mkns 
-    `(ast_curry ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
     (cdr _3)))
   """;
 
@@ -884,7 +884,7 @@ syntax statements {
     sfun_arg* sopt_type_expr = scompound =>#
   """
     (mkns 
-    `(ast_curry ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
     (cdr _3))
   """;
 
@@ -909,10 +909,10 @@ syntax statements {
         (
           (argt (caadr t))
           (ret (cadadr t))
-          (body `((ast_fun_return (ast_match (_a ,_6)))))
+          (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
         )
         (mkns 
-        `(ast_curry ,(caar _3) ,(cadar _3) 
+        `(ast_curry ,_sr ,(caar _3) ,(cadar _3) 
           ( 
             (((PVal _a ,argt)) none)
           )
@@ -953,21 +953,21 @@ syntax statements {
       (f (lambda (ne)`(ast_init ,(car ne) ,(cadr ne))))
       (body (append (map f inits) body))
     )
-    `(ast_curry ,name ,vs ,args (,ret ,traint) Ctor ,body))
+    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
   """;
 
   sprocedure_definition := sadjectives sproc_kind sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
     (mkns 
-    `(ast_curry ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
     (cdr _3))
   """;
 
   sobject_definition := obj sdeclname sfun_arg+ scompound =>#
   """
     (mkns 
-    `(ast_curry ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
+    `(ast_curry ,_sr ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
     (cdr _2))
   """;
 
@@ -1204,9 +1204,9 @@ syntax executable {
   sexecutable := sgoto_statement=># "_1";
   sexecutable := slabel_statement =># "_1";
 
-  slabel_statement := sname :> =># "`(ast_label ,_1)";
-  sgoto_statement := goto sname ; =># "`(ast_goto ,_2)";
-  ssvc := _svc sname ; =># "`(ast_svc ,_2)";
+  slabel_statement := sname :> =># "`(ast_label ,_sr ,_1)";
+  sgoto_statement := goto sname ; =># "`(ast_goto ,_sr ,_2)";
+  ssvc := _svc sname ; =># "`(ast_svc ,_sr ,_2)";
 
   // deprecate: class object construction, use a generator
   sassignment := var sname <- new sexpr ; =># 
@@ -1225,7 +1225,7 @@ syntax executable {
      ;; (display "\\na=")(display a)
      ;; (display "\\nnew a=")(display (cons _1 (mkl a)))
      ;; (display "\\n")
-     `(ast_call ,f ,(cons _1 (mkl a)))))
+     `(ast_call ,_sr ,f ,(cons _1 (mkl a)))))
    """;
 
   sassignop:= = =># "'_set";
@@ -1267,53 +1267,53 @@ syntax executable {
     (if (null? (cdr _1)) (car _1) `((List ,_1) none))
     """;
 
-  sassignment := def slexpr = sexpr ; =># "`(ast_assign _set ,_2 ,_4)";
+  sassignment := def slexpr = sexpr ; =># "`(ast_assign ,_sr _set ,_2 ,_4)";
 
   sassignment := sexpr sswapop sexpr ; =># 
-    "`(ast_call ,_2 (,_1 ,_3))";
+    "`(ast_call ,_sr ,_2 (,_1 ,_3))";
 
   sassignment := sexpr sassignop sexpr ; =># 
-    "`(ast_assign ,_2 ((Expr ,_1) none) ,_3)";
+    "`(ast_assign ,_sr ,_2 ((Expr ,_1) none) ,_3)";
 
   sassignment := sexpr srmwop sexpr ; =># 
-    "`(ast_assign ,_2 ((Expr ,_1) none) ,_3)";
+    "`(ast_assign ,_sr ,_2 ((Expr ,_1) none) ,_3)";
 
-  sassignment := sexpr spostincrop ; =># "`(ast_call ,_2 ,_1)";
-  sassignment := spreincrop sexpr ; =># "`(ast_call ,_1 ,_2)";
+  sassignment := sexpr spostincrop ; =># "`(ast_call ,_sr ,_2 ,_1)";
+  sassignment := spreincrop sexpr ; =># "`(ast_call ,_sr ,_1 ,_2)";
 
-  sreturn := yield sexpr ; =># "`(ast_yield ,_2)";
-  sreturn := return sexpr ; =># "`(ast_fun_return ,_2)";
-  sreturn := return ; =># "'ast_proc_return";
+  sreturn := yield sexpr ; =># "`(ast_yield ,_sr ,_2)";
+  sreturn := return sexpr ; =># "`(ast_fun_return ,_sr ,_2)";
+  sreturn := return ; =># "`(ast_proc_return ,_sr)";
   sreturn := halt sstring ; =># "`(ast_halt ,_2)";
 
-  scall := call sexpr ; =># """(cons 'ast_call (splitapply _2))""";
-  scall := jump sexpr ; =># """(cons 'ast_jump (splitapply _2))""";
-  //scall := loop sname sexpr ; =># "`(ast_loop ,_2 ,_3)";
-  //scall := loop sname ; =># "`(ast_loop ,_2 (ast_tuple ()))";
-  scall := loop sname sexpr ; =># "`(ast_jump (ast_name ,_2 ()) ,_3)";
-  scall := loop sname ; =># "`(ast_jump (ast_name ,_2 ()) (ast_tuple ()))";
+  scall := call sexpr ; =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
+  scall := jump sexpr ; =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
+  //scall := loop sname sexpr ; =># "`(ast_loop ,_sr ,_2 ,_3)";
+  //scall := loop sname ; =># "`(ast_loop ,_sr ,_2 (ast_tuple ()))";
+  scall := loop sname sexpr ; =># "`(ast_jump ,_sr (ast_name ,_2 ()) ,_3)";
+  scall := loop sname ; =># "`(ast_jump ,_sr (ast_name ,_2 ()) (ast_tuple ()))";
 
-  scall := sexpr ; =># "(cons 'ast_call (splitapply _1))";
+  scall := sexpr ; =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
-  sifgoto := if sexpr goto sname ; =># "`(ast_ifgoto ,_2 ,_4)";
-  sifgoto := if sexpr return ; =># "`(ast_ifreturn ,_2)";
+  sifgoto := if sexpr goto sname ; =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  sifgoto := if sexpr return ; =># "`(ast_ifreturn ,_sr ,_2)";
   sifgoto := if sexpr call sexpr ; =># 
-    "`(ast_ifdo ,_2 (,(cons 'ast_call (splitapply _4)))())";
+    "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
   sifgoto := if sexpr do statement* selse_clause done ; =># 
-    "`(ast_ifdo ,_2 ,_4 ,_5)";
+    "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
   sifgoto := if sexpr do statement* done ; =># 
-    "`(ast_ifdo ,_2 ,_4 ())";
+    "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
   selif_clause := elif sexpr do statement* =># "`(,_2 ,_4)";
-  selif_clause := elif sexpr return ; =># "`(,_2 (ast_proc_return))";
-  selif_clause := elif sexpr goto sname ; =># "`(,_2 (ast_goto ,_4))";
+  selif_clause := elif sexpr return ; =># "`(,_2 ((ast_proc_return ,_sr)))";
+  selif_clause := elif sexpr goto sname ; =># "`(,_2 (ast_goto ,_sr ,_4))";
   selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
   selif_clauses := selif_clause =># "`(,_1)";
   selse_clause := selif_clauses else statement* =>#
     """      
         (let ((f (lambda (result condthn) 
           (let ((cond (car condthn)) (thn (cadr condthn))) 
-            `((ast_ifdo ,cond ,thn ,result))))))
+            `((ast_ifdo ,_sr ,cond ,thn ,result))))))
         (fold_left f _3 _1))
     """;
 
@@ -1322,7 +1322,7 @@ syntax executable {
     """      
         (let ((f (lambda (result condthn) 
           (let ((cond (car condthn)) (thn (cadr condthn))) 
-            `((ast_ifdo ,cond ,thn ,result))))))
+            `((ast_ifdo ,_sr ,cond ,thn ,result))))))
         (fold_left f () _1))
     """;
 
@@ -1332,11 +1332,11 @@ syntax executable {
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
-      ( ast_label "lab1" ) 
-      ( ast_ifgoto (ast_apply (lnot ,_2)) "lab2" ) )
+      ( ast_label ,_sr "lab1" ) 
+      ( ast_ifgoto ,_sr (ast_apply ,_sr (lnot ,_2)) "lab2" ) )
       _4  
-      '(( ast_goto "lab1" ) 
-      ( ast_label "lab2" ))
+      `(( ast_goto ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab2" ))
       )
     ) 
   """;
@@ -1347,11 +1347,11 @@ syntax executable {
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
-      ( ast_label "lab1" ) 
-      ( ast_ifgoto ,_2 "lab2" ) )
+      ( ast_label ,_sr "lab1" ) 
+      ( ast_ifgoto ,_sr ,_2 "lab2" ) )
       _4  
-      '(( ast_goto "lab1" ) 
-      ( ast_label "lab2" ))
+      `(( ast_goto ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab2" ))
       )
     ) 
   """;
@@ -1366,15 +1366,15 @@ syntax executable {
   statement := forall sname in sexpr upto sexpr do statement* done ; =>#
   """
     `(ast_macro_block ,( append `(
-      (ast_assign _set ((Expr (ast_name ,_2 ())) none) ,_4)
+      (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
-      ( ast_label "lab1" ) 
-      ( ast_ifgoto (ast_apply (lnot (ast_apply (le ((ast_name ,_2 ()),_6))))) "lab2" ))
+      ( ast_label ,_sr "lab1" ) 
+      ( ast_ifgoto ,_sr (ast_apply ,_sr (lnot (ast_apply ,_sr (le ((ast_name ,_2 ()),_6))))) "lab2" ))
       _8  
-      `((ast_call pre_incr (ast_name ,_2()))
-      ( ast_goto "lab1" ) 
-      ( ast_label "lab2" ))
+      `((ast_call ,_sr pre_incr (ast_name ,_2()))
+      ( ast_goto ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab2" ))
      ))
   """;
 
@@ -1382,15 +1382,15 @@ syntax executable {
   statement := forall sname in sexpr downto sexpr do statement* done ; =>#
   """
     `(ast_macro_block ,( append `(
-      (ast_assign _set ((Expr (ast_name ,_2 ())) none) ,_4)
+      (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
-      ( ast_label "lab1" ) 
-      ( ast_ifgoto (ast_apply (lnot (ast_apply (ge ((ast_name ,_2 ()) ,_6))))) "lab2" ))
+      ( ast_label ,_sr "lab1" ) 
+      ( ast_ifgoto ,_sr (ast_apply ,_sr (lnot (ast_apply ,_sr (ge ((ast_name ,_2 ()) ,_6))))) "lab2" ))
       _8 
-      `((ast_call pre_decr (ast_name ,_2 ()))
-      ( ast_goto "lab1" ) 
-      ( ast_label "lab2" ))
+      `((ast_call ,_sr pre_decr (ast_name ,_2 ()))
+      ( ast_goto ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab2" ))
      ))
   """;
 
@@ -1552,7 +1552,7 @@ syntax type_declarations {
 //------------------------------------------
 syntax assertions {
   sexecutable := sassert_statement =># "_1";
-  sassert_statement:= assert sexpr ; =># "`(ast_assert ,_2)";
+  sassert_statement:= assert sexpr ; =># "`(ast_assert ,_sr ,_2)";
 
   sfunction_definition := axiom sdeclname sfun_arg : sexpr; =>#
   """

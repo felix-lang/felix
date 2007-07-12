@@ -49,6 +49,12 @@ let lst s (f:sexp_t->'a) x : 'a list = match x with
   | Lst ls -> map f ls
   | x -> err x (s^ " list")
 
+let xsr x : range_srcref = 
+  let ii i = int_of_string i in
+  match x with
+  | Lst [Str fn; Int fl; Int fc; Int ll; Int lc] -> fn,ii fl,ii fc,ii ll,ii lc
+  | x -> err x "Invalid source reference"
+
 let rec xliteral_t sr fresh env x = 
   let bi i = 
     (*
@@ -126,7 +132,7 @@ and xexpr_t sr fresh env x =
 
  | Lst [Id "ast_typed_case";  Int i; t] -> `AST_typed_case (sr,ii i,ti t)
  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> `AST_lookup (sr,(ex e, ss s,map ti ts))
- | Lst [Id "ast_apply";  Lst [e1; e2]] -> `AST_apply(sr,(ex e1, ex e2))
+ | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> `AST_apply(xsr sr,(ex e1, ex e2))
 
  | Lst [Id "ast_tuple";  Lst es] -> `AST_tuple (sr,map ex es)
  | Lst [Id "ast_record";  Lst rs] -> 
@@ -707,8 +713,8 @@ and xstatement_t sr fresh env x : statement_t =
     `AST_lemma(sr,ss s,xvs vs, xps ps,xam axm)
   | Lst [Id "ast_function"; Str s; vs; ps; ret; props; sts] -> 
     `AST_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
-  | Lst [Id "ast_curry"; Str s; vs; Lst pss; ret; fk; sts] -> 
-    `AST_curry(sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
+  | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] -> 
+    `AST_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
   | Lst [Id "ast_object"; Str s; vs; ps; sts] -> 
     `AST_object(sr,ss s,xvs vs, xps ps, xsts sts)
   | Lst [Id "ast_regdef"; Str s; r] -> `AST_regdef (sr,s,re r)
@@ -842,25 +848,25 @@ and xstatement_t sr fresh env x : statement_t =
     *)
     `AST_instance(sr, xvs vs, xq "ast_instance" qn, xsts sts)
 
-  | Lst [Id "ast_label"; Str n] -> `AST_label(sr,n)
-  | Lst [Id "ast_goto"; Str n] -> `AST_goto(sr,n)
-  | Lst [Id "ast_ifgoto"; e; Str n] -> `AST_ifgoto(sr,ex e,n)
-  | Lst [Id "ast_ifreturn"; e] -> `AST_ifreturn(sr,ex e)
-  | Lst [Id "ast_ifdo"; e; sts1; sts2] -> `AST_ifdo(sr,ex e, xsts sts1, xsts sts2)
-  | Lst [Id "ast_ifnotgoto"; e; Str n] -> `AST_ifnotgoto(sr,ex e,n)
-  | Lst [Id "ast_call"; f; a] -> `AST_call(sr,ex f,ex a)
-  | Lst [Id "ast_assign"; Id v; tlv; a] -> `AST_assign(sr,v,xtlv tlv,ex a)
-  | Lst [Id "ast_cassign"; e1; e2] -> `AST_cassign(sr,ex e1, ex e2)
-  | Lst [Id "ast_jump"; e1; e2] -> `AST_jump(sr,ex e1, ex e2)
-  | Lst [Id "ast_loop"; Str n; e2] -> `AST_loop(sr,n, ex e2)
-  | Lst [Id "ast_svc"; Str n] -> `AST_svc(sr,n)
-  | Lst [Id "ast_fun_return"; e] -> `AST_fun_return(sr,ex e)
+  | Lst [Id "ast_label"; sr; Str n] -> `AST_label(xsr sr,n)
+  | Lst [Id "ast_goto"; sr; Str n] -> `AST_goto(xsr sr,n)
+  | Lst [Id "ast_ifgoto"; sr; e; Str n] -> `AST_ifgoto(xsr sr,ex e,n)
+  | Lst [Id "ast_ifreturn"; sr; e] -> `AST_ifreturn(xsr sr,ex e)
+  | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> `AST_ifdo(xsr sr,ex e, xsts sts1, xsts sts2)
+  | Lst [Id "ast_ifnotgoto"; sr; e; Str n] -> `AST_ifnotgoto(xsr sr,ex e,n)
+  | Lst [Id "ast_call"; sr; f; a] -> `AST_call(xsr sr,ex f,ex a)
+  | Lst [Id "ast_assign"; sr; Id v; tlv; a] -> `AST_assign(xsr sr,v,xtlv tlv,ex a)
+  | Lst [Id "ast_cassign"; sr; e1; e2] -> `AST_cassign(xsr sr,ex e1, ex e2)
+  | Lst [Id "ast_jump"; sr; e1; e2] -> `AST_jump(xsr sr,ex e1, ex e2)
+  | Lst [Id "ast_loop"; sr; Str n; e2] -> `AST_loop(xsr sr,n, ex e2)
+  | Lst [Id "ast_svc"; sr; Str n] -> `AST_svc(xsr sr,n)
+  | Lst [Id "ast_fun_return"; sr; e] -> `AST_fun_return(xsr sr,ex e)
 
-  | Lst [Id "ast_yield"; e] -> `AST_yield(sr,ex e)
-  | Id "ast_proc_return" -> `AST_proc_return(sr)
+  | Lst [Id "ast_yield"; sr; e] -> `AST_yield(xsr sr,ex e)
+  | Lst [Id "ast_proc_return"; sr]  -> `AST_proc_return(xsr sr)
   | Lst [Id "ast_halt"; Str s] -> `AST_halt(sr, ss s)
   | Lst [Id "ast_nop"; Str s] -> `AST_nop(sr,ss s)
-  | Lst [Id "ast_assert"; e] -> `AST_assert(sr,ex e)
+  | Lst [Id "ast_assert"; sr; e] -> `AST_assert(xsr sr,ex e)
   | Lst [Id "ast_apply_ctor"; Str n; e1; e2] -> `AST_apply_ctor(sr,n,ex e1,ex e2)
   | Lst [Id "ast_init"; Str n; e] -> `AST_init(sr,n,ex e)
   | Lst [Id "ast_newtype"; Str n; vs; t] -> `AST_newtype(sr,n,xvs vs, ti t)
