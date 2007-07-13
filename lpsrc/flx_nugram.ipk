@@ -585,7 +585,7 @@ syntax statements {
   //statement:= suser_statement =># "_1"; 
   statement:= scparse =># "_1"; 
 
-  scomment := comment sstring ; =># "`(ast_nop ,_2)";
+  scomment := comment sstring ; =># "`(ast_nop ,_sr ,_2)";
  
  
   spublish := private sdeclarative =># "`(ast_private ,_2)";
@@ -609,9 +609,9 @@ syntax statements {
 
   sexecutable := svar_def =># "_1";
   sexecutable := sval_def =># "_1";
-  snull_statement := ; =># """'(ast_nop "")""";
+  snull_statement := ; =># """`(ast_nop ,_sr "")""";
 
-  sinclusion := include sstring ; =># "`(ast_include ,_2)";
+  sinclusion := include sstring ; =># "`(ast_include ,_sr ,_2)";
   scparse := cparse sstring ; =># "`(ast_cparse ,_2)";
 
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
@@ -627,7 +627,7 @@ syntax statements {
 
   sabstract_type := callback proc sname : sexpr srequires_clause ; =>#
     """
-    `(ast_callback_decl ,_3 ,(mkl2 _5) ast_void ,_6)
+    `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) ast_void ,_6)
     """; 
 
 
@@ -641,7 +641,7 @@ syntax statements {
           (cod (cadr ft))
           (args (mkl2 dom))
         )
-      `(ast_callback_decl ,_3 ,args ,cod ,_6)
+      `(ast_callback_decl  ,_sr,_3 ,args ,cod ,_6)
       )
       'ERROR
     )
@@ -687,8 +687,8 @@ syntax statements {
   stypefun_arg := lpar stypeparameter_comma_list rpar =># "_2";
   stypefun_args := stypefun_arg+  =># "_1";
 
-  stodo := todo sstring ; =># "`(ast_nop ,_2)";
-  stodo := todo ; =># """`(ast_nop "todo")""";
+  stodo := todo sstring ; =># "`(ast_nop ,_sr ,_2)";
+  stodo := todo ; =># """`(ast_nop ,_sr "todo")""";
 
   scompound := lbrace statement* rbrace =># "_2";
 
@@ -1036,17 +1036,17 @@ syntax cbind {
   sbinding_definition :=  sbinding_header =># "_1";
   sbinding_definition :=  sexport_statement =># "_1";
    sexport_statement := export fun ssuffixed_name as sstring ; =>#
-    "`(ast_export_fun ,_3 ,_5)";
+    "`(ast_export_fun ,_sr ,_3 ,_5)";
   sexport_statement := export proc ssuffixed_name as sstring ; =>#
-    "`(ast_export_fun ,_3 ,_5)";
+    "`(ast_export_fun ,_sr ,_3 ,_5)";
   sexport_statement := export type (sexpr) as sstring ; =>#
-    "`(ast_export_type ,_4 ,_7)";
+    "`(ast_export_type ,_sr ,_4 ,_7)";
 
 
   sstruct_decl := cstruct sdeclname sopt_equal lbrace sstruct_mem_decl * rbrace =>#
     """
     (mkns 
-    `(ast_cstruct ,(caar _2) ,(cadar _2) ,_5)
+    `(ast_cstruct ,_sr ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
      """; 
 
@@ -1108,8 +1108,8 @@ syntax cbind {
     "`(ast_ctypes ,_sr ,_3 ,_1 ,_4)";
 
   sexecutable := sinline_cpp =># "_1";
-  sinline_cpp:= code scode_spec ; =># "`(ast_code ,_2)";
-  sinline_cpp:= noreturn code scode_spec ; =># "`(ast_noreturn_code ,_3)";
+  sinline_cpp:= code scode_spec ; =># "`(ast_code ,_sr ,_2)";
+  sinline_cpp:= noreturn code scode_spec ; =># "`(ast_noreturn_code ,_sr ,_3)";
 
   sclass_component:= var sname : sexpr ; =># "`(MemberVar ,_2 ,_4 none)";
   sclass_component:= val sname : sexpr ; =># "`(MemberVal ,_2 ,_4 none)";
@@ -1123,7 +1123,7 @@ syntax cbind {
   sstruct_decl := cclass sdeclname sopt_equal lbrace sclass_component * rbrace =>#
     """
     (mkns 
-    `(ast_cclass ,(caar _2) ,(cadar _2) ,_5)
+    `(ast_cclass ,_sr ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
      """; 
 
@@ -1424,10 +1424,10 @@ syntax requirements {
 
 
   sbinding_header := requires srequirements ; =># 
-    """`(ast_insert "_root" ,dfltvs (Str "") body ,_2)""";
+    """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
 
   sbinding_header := sname requires srequirements ; =># 
-    """`(ast_insert ,_1 ,dfltvs (Str "") body ,_3)""";
+    """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
 
   srequirement := body scode_spec =># "`(Body_req ,_2)";
   srequirement := header scode_spec =># "`(Header_req ,_2)";
@@ -1437,24 +1437,24 @@ syntax requirements {
   scode_spec := sident =># "'Identity";
 
   sbinding_header:= header scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_2 header ,_3))"""; 
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))"""; 
   sbinding_header:= body scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_2 body ,_3))"""; 
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))"""; 
   sbinding_header:= header = scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_3 header ,_4))"""; 
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 header ,_4))"""; 
   sbinding_header:= body = scode_spec srequires_clause ; =># 
-    """`(ast_insert "_root" ,dfltvs ,_3 body ,_4))"""; 
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))"""; 
   sbinding_header:= header sdeclname = scode_spec srequires_clause ; =># 
     """
     (mkns 
-    `(ast_insert ,(caar _2) ,(cadar _2) ,_4 header ,_5)
+    `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 header ,_5)
     (cdr _2))
      """; 
 
   sbinding_header:= body sdeclname = scode_spec srequires_clause ; =># 
     """
     (mkns 
-    `(ast_insert ,(caar _2) ,(cadar _2) ,_4 body ,_5)
+    `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 body ,_5)
     (cdr _2))
      """; 
 
@@ -1464,14 +1464,14 @@ syntax type_declarations {
   stype_alias := typedef sdeclname = sexpr ; =>#
     """
     (mkns 
-    `(ast_type_alias ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_type_alias ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
     """; 
 
   stype_alias := typedef fun sdeclname stypefun_args : sexpr => sexpr ; =>#
     """
     (mkns 
-    `(mktypefun ,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8)
+    `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8)
     (cdr _3))
     """; 
 
@@ -1484,7 +1484,7 @@ syntax type_declarations {
         (body `(ast_type_match (_a ,_7))))
         (let ((args `(((_a ,argt)))))
       (mkns 
-      `(mktypefun ,(caar _3) ,(cadar _3) ,args ,ret ,body)
+      `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,args ,ret ,body)
       (cdr _3))))
       ('ERROR)
     )
@@ -1493,7 +1493,7 @@ syntax type_declarations {
   sstruct_decl := struct sdeclname sopt_equal lbrace sstruct_mem_decl * rbrace =>#
     """
     (mkns 
-    `(ast_struct ,(caar _2) ,(cadar _2) ,_5)
+    `(ast_struct ,_sr ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
      """; 
 
@@ -1503,7 +1503,7 @@ syntax type_declarations {
   sstruct_decl := class sdeclname sopt_equal scompound =>#
     """
     (mkns 
-    `(ast_class ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_class ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
@@ -1522,21 +1522,21 @@ syntax type_declarations {
   sunion_decl := union sdeclname = stype_sum_items2 ; =>#
     """
     (mkns 
-    `(ast_union ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
   sunion_decl := union sdeclname lbrace stype_sum_item1* rbrace =>#
     """
     (mkns 
-    `(ast_union ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
   sunion_decl := enum sdeclname lbrace senum_items rbrace =>#
     """
     (mkns 
-    `(ast_union ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
@@ -1598,21 +1598,21 @@ syntax namespaces {
   stype_alias := rename sdeclname = squalified_name ; =>#
     """
     (mkns 
-    `(ast_inherit ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_inherit ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
     """; 
 
   stype_alias := rename fun sdeclname = squalified_name ; =>#
     """
     (mkns 
-    `(ast_inherit_fun ,(caar _3) ,(cadar _3) ,_5)
+    `(ast_inherit_fun ,_sr ,(caar _3) ,(cadar _3) ,_5)
     (cdr _3))
     """; 
 
-  stype_alias := inherit squalified_name ; =># "`(ast_inject_module ,_2)";
+  stype_alias := inherit squalified_name ; =># "`(ast_inject_module ,_sr ,_2)";
  
   sopen_decl := open stvarlist squalified_name ; =>#
-    "`(ast_open ,_2 ,_3)";
+    "`(ast_open ,_sr ,_2 ,_3)";
 
   suse_decl:= use squalified_name ; =>#
     """
@@ -1620,14 +1620,14 @@ syntax namespaces {
       (if (eq? (car _2) 'ast_lookup) (cadadr _2)
         (if (eq? (car _2) 'ast_name) (cadr _2)
         ("ERROR")))))
-    `(ast_use ,name ,_2))
+    `(ast_use ,_sr ,name ,_2))
     """;
-  suse_decl := use sname = squalified_name ; =># "`(ast_use ,_2 ,_4)";
+  suse_decl := use sname = squalified_name ; =># "`(ast_use ,_sr ,_2 ,_4)";
 
   smodule_definition := module sdeclname sopt_equal scompound =>#
     """
     (mkns 
-    `(ast_untyped_module ,(caar _2) ,(cadar _2) ,_4)
+    `(ast_untyped_module ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
 
@@ -1635,8 +1635,8 @@ syntax namespaces {
     """
     (mkns 
     `(ast_seq (
-      (ast_untyped_module ,(caar _3) ,(cadar _3) ,_5)
-      (ast_open ,dfltvs (ast_name ,(caar _3)()))))
+      (ast_untyped_module ,_sr ,(caar _3) ,(cadar _3) ,_5)
+      (ast_open ,_sr ,dfltvs (ast_name ,(caar _3)()))))
     (cdr _3))
      """; 
 
@@ -1652,7 +1652,7 @@ syntax namespaces {
     (mkns 
     `(ast_seq (
       (ast_namespace ,(caar _3) ,(cadar _3) ,_5)
-      (ast_open ,dfltvs (ast_name ,(caar _3)()))))
+      (ast_open ,_sr ,dfltvs (ast_name ,(caar _3)()))))
     (cdr _3))
      """; 
 

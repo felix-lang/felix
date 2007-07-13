@@ -699,10 +699,10 @@ and xstatement_t sr fresh env x : statement_t =
   match x with
   | Lst [] -> `AST_nop(sr,"null")
   | Lst [Id "ast_cparse"; Str s] -> `AST_cparse (sr, ss s)
-  | Lst [Id "ast_include"; Str s] -> `AST_include (sr, ss s)
-  | Lst [Id "ast_open"; vs; qn] -> `AST_open (sr, xvs vs, xq "ast_open" qn)
-  | Lst [Id "ast_inject_module"; qn] -> `AST_inject_module (sr, xq "ast_inject_module" qn)
-  | Lst [Id "ast_use"; Str s; qn] -> `AST_use (sr, ss s, xq "ast_use" qn)
+  | Lst [Id "ast_include"; sr; Str s] -> `AST_include (xsr sr, ss s)
+  | Lst [Id "ast_open"; sr; vs; qn] -> `AST_open (xsr sr, xvs vs, xq "ast_open" qn)
+  | Lst [Id "ast_inject_module"; sr; qn] -> `AST_inject_module (xsr sr, xq "ast_inject_module" qn)
+  | Lst [Id "ast_use"; sr; Str s; qn] -> `AST_use (xsr sr, ss s, xq "ast_use" qn)
   | Lst [Id "ast_comment"; Str s] -> `AST_comment(ss s)
   | Lst [Id "ast_private"; x] -> `AST_private (sr, xs x)
   | Lst [Id "ast_reduce"; Str s; vs; spl; e1; e2] -> 
@@ -760,39 +760,39 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_seq"; sts] ->
     `AST_seq (sr,xsts sts)
 
-  | Lst [Id "ast_union"; Str n; vs; ucmp] ->
+  | Lst [Id "ast_union"; sr; Str n; vs; ucmp] ->
     let ucmp = lst "union component" xucmp ucmp in
-    `AST_union (sr,n, xvs vs, ucmp)
+    `AST_union (xsr sr,n, xvs vs, ucmp)
 
-  | Lst [Id "ast_struct"; Str n; vs; ucmp] ->
+  | Lst [Id "ast_struct"; sr; Str n; vs; ucmp] ->
     let xscmp = function 
       | Lst [Id c; t] -> c, ti t
       | Lst [Str c; t] -> c, ti t
       | x -> err x "struct component"
     in
     let ucmp = lst "struct component" xscmp ucmp in
-    `AST_struct (sr,n, xvs vs, ucmp)
+    `AST_struct (xsr sr,n, xvs vs, ucmp)
 
-  | Lst [Id "ast_cstruct"; Str n; vs; ucmp] ->
+  | Lst [Id "ast_cstruct"; sr; Str n; vs; ucmp] ->
     let xscmp = function 
       | Lst [Id c; t] -> c, ti t
       | Lst [Str c; t] -> c, ti t
       | x -> err x "cstruct component"
     in
     let ucmp = lst "cstruct component" xscmp ucmp in
-    `AST_cstruct (sr,n, xvs vs, ucmp)
+    `AST_cstruct (xsr sr,n, xvs vs, ucmp)
 
-  | Lst [Id "ast_cclass"; Str n; vs; ucmp] ->
-    let ucmp = lst "cclass component" (xclass_member_t sr fresh env) ucmp in
-    `AST_cclass (sr,n, xvs vs, ucmp)
+  | Lst [Id "ast_cclass"; sr; Str n; vs; ucmp] ->
+    let ucmp = lst "cclass component" (xclass_member_t (xsr sr) fresh env) ucmp in
+    `AST_cclass (xsr sr,n, xvs vs, ucmp)
 
-  | Lst [Id "ast_class"; Str n; vs; sts] ->
-    `AST_class (sr,n, xvs vs, xsts sts)
+  | Lst [Id "ast_class"; sr; Str n; vs; sts] ->
+    `AST_class (xsr sr,n, xvs vs, xsts sts)
 
-  | Lst [Id "ast_type_alias"; Str n; vs; t] ->
-    `AST_type_alias (sr,n, xvs vs, ti t)
+  | Lst [Id "ast_type_alias"; sr; Str n; vs; t] ->
+    `AST_type_alias (xsr sr,n, xvs vs, ti t)
 
-  | Lst [Id "mktypefun"; Str name; vs; argss; ret; body] ->
+  | Lst [Id "mktypefun"; sr; Str name; vs; argss; ret; body] ->
     let fixarg  arg = match arg with
     | Lst [Str n; t] -> n,ti t
     | Lst [Id n; t] -> n,ti t
@@ -806,13 +806,13 @@ and xstatement_t sr fresh env x : statement_t =
     | Lst args -> map fixargs args 
     | x -> err x "mktypefun:unpack args3"
     in
-    Flx_typing.mktypefun sr name (xvs vs) argss (ti ret) (ti body)
+    Flx_typing.mktypefun (xsr sr) name (xvs vs) argss (ti ret) (ti body)
 
-  | Lst [Id "ast_inherit"; Str n; vs; qn] ->
-    `AST_inherit (sr,n, xvs vs, xq "ast_inherit" qn)
+  | Lst [Id "ast_inherit"; sr; Str n; vs; qn] ->
+    `AST_inherit (xsr sr,n, xvs vs, xq "ast_inherit" qn)
 
-  | Lst [Id "ast_inherit_fun"; Str n; vs; qn] ->
-    `AST_inherit_fun (sr,n, xvs vs, xq "ast_inherit_fun" qn)
+  | Lst [Id "ast_inherit_fun"; sr; Str n; vs; qn] ->
+    `AST_inherit_fun (xsr sr,n, xvs vs, xq "ast_inherit_fun" qn)
 
   | Lst [Id "ast_val_decl"; sr; Str n; vs; ot; oe] ->
     `AST_val_decl (xsr sr,ss n, xvs vs, opt "val_decl" ti ot, opt "val_decl" ex oe)
@@ -826,8 +826,8 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_ref_decl"; Str n; vs; ot; oe] ->
     `AST_ref_decl (sr,ss n, xvs vs, opt "ref_decl" ti ot, opt "ref_decl" ex oe)
 
-  | Lst [Id "ast_untyped_module"; Str n; vs; sts] ->
-    `AST_untyped_module (sr, ss n, xvs vs, xsts sts)
+  | Lst [Id "ast_untyped_module"; sr; Str n; vs; sts] ->
+    `AST_untyped_module (xsr sr, ss n, xvs vs, xsts sts)
 
   | Lst [Id "ast_namespace"; Str n; vs; sts] ->
     `AST_namespace (sr, ss n, xvs vs, xsts sts)
@@ -865,7 +865,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_yield"; sr; e] -> `AST_yield(xsr sr,ex e)
   | Lst [Id "ast_proc_return"; sr]  -> `AST_proc_return(xsr sr)
   | Lst [Id "ast_halt"; sr; Str s] -> `AST_halt(xsr sr, ss s)
-  | Lst [Id "ast_nop"; Str s] -> `AST_nop(sr,ss s)
+  | Lst [Id "ast_nop"; sr; Str s] -> `AST_nop(xsr sr,ss s)
   | Lst [Id "ast_assert"; sr; e] -> `AST_assert(xsr sr,ex e)
   | Lst [Id "ast_apply_ctor"; sr; Str n; e1; e2] -> `AST_apply_ctor(xsr sr,n,ex e1,ex e2)
   | Lst [Id "ast_init"; sr; Str n; e] -> `AST_init(xsr sr,n,ex e)
@@ -887,27 +887,29 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_fun_decl"; sr; Str n; vs; Lst ps; t; ct; req; Str prec] -> 
     `AST_fun_decl (xsr sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
 
-  | Lst [Id "ast_callback_decl"; Str n; Lst ps; t; req] -> 
-    `AST_callback_decl (sr, n, map ti ps, ti t, xrr req)
-  | Lst [Id "ast_insert"; Str n; vs; ct; ik; req] ->
+  | Lst [Id "ast_callback_decl"; sr; Str n; Lst ps; t; req] -> 
+    `AST_callback_decl (xsr sr, n, map ti ps, ti t, xrr req)
+
+  | Lst [Id "ast_insert"; sr; Str n; vs; ct; ik; req] ->
     let xik = function 
      | Id "header" -> `Header
      | Id "body" -> `Body
      | Id "package" -> `Package
      | x -> err x "ikind_t"
    in
-    `AST_insert (sr, n, xvs vs, xc ct, xik ik, xrr req)
-  | Lst [Id "ast_code"; ct] -> `AST_code (sr, xc ct)
-  | Lst [Id "ast_noreturn_code"; ct] -> `AST_noreturn_code (sr, xc ct)
-  | Lst [Id "ast_export_fun"; sn; Str s] -> 
+    `AST_insert (xsr sr, n, xvs vs, xc ct, xik ik, xrr req)
+
+  | Lst [Id "ast_code"; sr; ct] -> `AST_code (xsr sr, xc ct)
+  | Lst [Id "ast_noreturn_code"; sr; ct] -> `AST_noreturn_code (xsr sr, xc ct)
+  | Lst [Id "ast_export_fun"; sr; sn; Str s] -> 
     let xsn x = match ex x with
     | #suffixed_name_t as x -> x
     | _ -> err  x "suffixed_name_t"
     in
-    `AST_export_fun  (sr, xsn sn, ss s)
+    `AST_export_fun  (xsr sr, xsn sn, ss s)
 
-  | Lst [Id "ast_export_type"; t; Str s] -> 
-    `AST_export_type (sr, ti t, ss s)
+  | Lst [Id "ast_export_type"; sr; t; Str s] -> 
+    `AST_export_type (xsr sr, ti t, ss s)
 
   | x -> err x "statement"
 
