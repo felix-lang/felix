@@ -227,14 +227,14 @@ and xexpr_t sr fresh env x =
    in
    `AST_match (sr, (ex e,pes))
 
- | Lst [Id "ast_parse";  e; Lst pes] ->
+ | Lst [Id "ast_parse";  sr; e; Lst pes] ->
    let pes = map (function
-     | Lst [pr; e] -> sr, xpr pr, ex e
+     | Lst [pr; e] -> (xsr sr), xpr pr, ex e
      | x -> err x "ast_parse syntax error"
      ) 
      pes
    in
-   `AST_parse (sr,ex e, pes)
+   `AST_parse (xsr sr,ex e, pes)
 
  | Lst [Id "ast_sparse";  e; Str s; Lst ints] ->
    let ints = map (function 
@@ -698,33 +698,33 @@ and xstatement_t sr fresh env x : statement_t =
   let xucmp x = xunion_component sr fresh env x in
   match x with
   | Lst [] -> `AST_nop(sr,"null")
-  | Lst [Id "ast_cparse"; Str s] -> `AST_cparse (sr, ss s)
+  | Lst [Id "ast_cparse"; sr; Str s] -> `AST_cparse (xsr sr, ss s)
   | Lst [Id "ast_include"; sr; Str s] -> `AST_include (xsr sr, ss s)
   | Lst [Id "ast_open"; sr; vs; qn] -> `AST_open (xsr sr, xvs vs, xq "ast_open" qn)
   | Lst [Id "ast_inject_module"; sr; qn] -> `AST_inject_module (xsr sr, xq "ast_inject_module" qn)
   | Lst [Id "ast_use"; sr; Str s; qn] -> `AST_use (xsr sr, ss s, xq "ast_use" qn)
   | Lst [Id "ast_comment"; Str s] -> `AST_comment(ss s)
   | Lst [Id "ast_private"; x] -> `AST_private (sr, xs x)
-  | Lst [Id "ast_reduce"; Str s; vs; spl; e1; e2] -> 
-    `AST_reduce (sr,ss s,xvs vs, xpvs spl, ex e1, ex e2)
-  | Lst [Id "ast_axiom"; Str s; vs; ps; axm] -> 
-    `AST_axiom (sr,ss s,xvs vs, xps ps,xam axm)
-  | Lst [Id "ast_lemma"; Str s; vs; ps; axm] -> 
-    `AST_lemma(sr,ss s,xvs vs, xps ps,xam axm)
+  | Lst [Id "ast_reduce"; sr; Str s; vs; spl; e1; e2] -> 
+    `AST_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex e1, ex e2)
+  | Lst [Id "ast_axiom"; sr; Str s; vs; ps; axm] -> 
+    `AST_axiom (xsr sr,ss s,xvs vs, xps ps,xam axm)
+  | Lst [Id "ast_lemma"; sr; Str s; vs; ps; axm] -> 
+    `AST_lemma(xsr sr,ss s,xvs vs, xps ps,xam axm)
   | Lst [Id "ast_function"; Str s; vs; ps; ret; props; sts] -> 
     `AST_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
   | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] -> 
     `AST_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
   | Lst [Id "ast_object"; Str s; vs; ps; sts] -> 
     `AST_object(sr,ss s,xvs vs, xps ps, xsts sts)
-  | Lst [Id "ast_regdef"; Str s; r] -> `AST_regdef (sr,s,re r)
-  | Lst [Id "ast_glr"; Str s; t; Lst pl] -> 
+  | Lst [Id "ast_regdef"; sr; Str s; r] -> `AST_regdef (xsr sr,s,re r)
+  | Lst [Id "ast_glr"; sr; Str s; t; Lst pl] -> 
     let pl = map (function
-      | Lst [p;e] -> sr,xp p, ex e
+      | Lst [p;e] -> (xsr sr),xp p, ex e
       | x -> err x "glr phrase"
       ) pl
     in
-    `AST_glr (sr,s,ti t, pl)
+    `AST_glr (xsr sr,s,ti t, pl)
 
   | Lst [Id "ast_macro_name"; Str n; Str m] -> `AST_macro_name (sr,n,m)
   | Lst [Id "ast_macro_names"; Str n; ms] -> 

@@ -489,7 +489,7 @@ syntax regexps {
   sregmatch_alternatives := sregmatch_alternative + =># "(reverse _1)";
   sregmatch_alternative := vbar sre1 => sexpr =># "`(,_2 ,_4)";
 
-  sregdef := regexp sname = sre1 ; =># "`(ast_regdef ,_2 ,_4)";
+  sregdef := regexp sname = sre1 ; =># "`(ast_regdef ,_sr ,_2 ,_4)";
   sre0 := sre1 as sname =># "`(regexp_group ,_3 ,_1)";
   sre0 := sre1 =># "_1";
 
@@ -563,10 +563,10 @@ syntax parsing {
   sglr_matchings:= sglr_matching =># "`(,_1)";
 
   sglr_production:= nonterm sname colon sexpr = sglr_matchings ssemi =>#
-  "`(ast_glr ,_2 ,_4 ,_6)";
+  "`(ast_glr ,_sr ,_2 ,_4 ,_6)";
 
   sglr_parse:= parse sexpr with sglr_matchings endmatch =>#
-  "`(ast_parse ,_2 ,_4)";
+  "`(ast_parse ,_sr ,_2 ,_4)";
 }
 
 syntax typing {
@@ -612,7 +612,7 @@ syntax statements {
   snull_statement := ; =># """`(ast_nop ,_sr "")""";
 
   sinclusion := include sstring ; =># "`(ast_include ,_sr ,_2)";
-  scparse := cparse sstring ; =># "`(ast_cparse ,_2)";
+  scparse := cparse sstring ; =># "`(ast_cparse ,_sr ,_2)";
 
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sdeclname :: sname stvarlist =># "(cons `(,_3 ,_4) _1)";
@@ -1557,28 +1557,28 @@ syntax assertions {
   sfunction_definition := axiom sdeclname sfun_arg : sexpr; =>#
   """
     (mkns 
-    `(ast_axiom ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
+    `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
     (cdr _2))
   """;
 
   sfunction_definition := axiom sdeclname sfun_arg : sexpr = sexpr ; =>#
   """
     (mkns 
-    `(ast_axiom ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
+    `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
     (cdr _2))
   """;
 
   sfunction_definition := lemma sdeclname sfun_arg : sexpr; =>#
   """
     (mkns 
-    `(ast_lemma ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
+    `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
     (cdr _2))
   """;
 
-  sfunction_definition := axiom sdeclname sfun_arg : sexpr = sexpr ; =>#
+  sfunction_definition := lemma sdeclname sfun_arg : sexpr = sexpr ; =>#
   """
     (mkns 
-    `(ast_lemma ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
+    `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
     (cdr _2))
   """;
 
@@ -1587,7 +1587,7 @@ syntax assertions {
   sfunction_definition := reduce sdeclname sreduce_args : sexpr => sexpr ; =>#
   """
     (mkns 
-    `(ast_reduce ,(caar _2) ,(cadar _2) ,_3 ,_5 ,_7)
+    `(ast_reduce ,_sr ,(caar _2) ,(cadar _2) ,_3 ,_5 ,_7)
     (cdr _2))
   """;
 
