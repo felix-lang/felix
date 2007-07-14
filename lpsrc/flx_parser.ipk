@@ -284,6 +284,9 @@ let define_scheme sr dyp name rhs (scm:string) =
   in
   let f o =
     match o with
+      | STRING _ ->
+        Dyp.Ter Dyp_symbols.t_NAME
+
       | NAME (sr,s) -> 
           let nt = 
             try dyp.add_nt s "Obj_sexpr"
@@ -291,6 +294,7 @@ let define_scheme sr dyp name rhs (scm:string) =
             | Dyp.Bad_constructor _ -> failwith ("BAD CONSTRUCTOR FOR " ^ s)
           in
           Dyp.Non_ter (nt,Dyp.No_priority)
+
       | s -> 
         let name = Dyp_symbols.str_token s in
         Dyp.Ter (Dyp_symbols.get_token_name s)
@@ -322,6 +326,11 @@ let define_scheme sr dyp name rhs (scm:string) =
     | [],_ | _,[] -> assert false
     | h1::t1,h2::t2 -> 
       match h1,h2 with
+      | STRING (_,s1),`Obj_NAME (sr,s2) ->
+        if s1 <> s2 then raise Giveup;
+        srs := slift sr :: !srs;
+        aux t1 t2 (n+1)
+
       | _,`Obj_sexpr (sr,s) 
         ->
         srs := sr :: !srs;
@@ -336,7 +345,7 @@ let define_scheme sr dyp name rhs (scm:string) =
         *)
         Ocs_env.set_glob env v1 s;
         aux t1 t2 (n+1)
-      | USER_KEYWORD (sr,s1) , `Obj_USER_KEYWORD (_,s2) ->
+      | USER_KEYWORD (_,s1) , `Obj_USER_KEYWORD (sr,s2) ->
         if s1 <> s2 then raise Giveup;
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
@@ -626,6 +635,7 @@ rhs:
 
 rhs_term :
   | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
+  | STRING { let sr,s = $1 in STRING (sr,s) } /* the string as an identifier */
   | IDENT { NAME ($1,"identifier") }
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
   | USER10 { USER10 $1 } /* user terminal */
