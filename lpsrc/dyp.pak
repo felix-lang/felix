@@ -156,12 +156,13 @@ type rule = non_ter * (lit list) * priority
 type ('obj,'data,'local_data) dypgen_toolbox = {
   mutable global_data : 'data;
   mutable local_data : 'local_data;
+  last_local_data : 'local_data;
   mutable priority_data : priority_data;
   mutable add_rules : (rule * (
     ('obj,'data,'local_data) dypgen_toolbox -> 'obj list -> 'obj)) list;
   mutable remove_rules : rule list;
   mutable will_shift : bool;
-  mutable keep_grammar : [ `First | `Last | `Previous ];
+  mutable keep_grammar : bool;
   mutable next_state : out_channel option;
   mutable next_grammar : out_channel option;
   symbol_start : unit -> int;
@@ -228,8 +229,8 @@ sig
   type ('obj,'data,'local_data) action =
     Dypgen_action of ( 'obj list -> (Lexing.position * Lexing.position) ->
       (Lexing.position * Lexing.position) list -> 'data -> datadyn ->
-      'local_data -> priority_data -> debug_infos ->
-      ('obj * bool * [ `First | `Last | `Previous ] *
+      'local_data -> 'local_data -> priority_data -> debug_infos ->
+      ('obj * bool * bool *
       'data * datadyn * 'local_data *
       ((rule * ('obj,'data,'local_data) action) list)
       * (rule list) * priority_data * (out_channel option)
@@ -393,8 +394,8 @@ struct
   type ('obj,'data,'local_data) action =
     Dypgen_action of ( 'obj list -> (Lexing.position * Lexing.position) ->
       (Lexing.position * Lexing.position) list -> 'data -> datadyn ->
-      'local_data -> priority_data -> debug_infos ->
-      ('obj * bool * [ `First | `Last | `Previous ] *
+      'local_data -> 'local_data -> priority_data -> debug_infos ->
+      ('obj * bool * bool *
       'data * datadyn * 'local_data *
       ((rule * ('obj,'data,'local_data) action) list)
       * (rule list) * priority_data * (out_channel option)
@@ -1439,12 +1440,13 @@ let default_priority = 0
 type ('obj,'data,'local_data) dypgen_toolbox = {
   mutable global_data : 'data;
   mutable local_data : 'local_data;
+  last_local_data : 'local_data;
   mutable priority_data : priority_data;
   mutable add_rules : (rule * (
     ('obj,'data,'local_data) dypgen_toolbox -> 'obj list -> 'obj)) list;
   mutable remove_rules : rule list;
   mutable will_shift : bool;
-  mutable keep_grammar : [ `First | `Last | `Previous ];
+  mutable keep_grammar : bool;
   mutable next_state : out_channel option;
   mutable next_grammar : out_channel option;
   symbol_start : unit -> int;
@@ -1638,16 +1640,18 @@ struct
 
   let rec transform_action a =
     Dyp_special_types.Dypgen_action(fun av_list symbol_pos
-    position_list data_arg datadyn local_data_arg prio_data debug_infos ->
+    position_list data_arg datadyn local_data_arg last_local_data_arg
+    prio_data debug_infos ->
       let __dypgen_datadyn = ref datadyn in
       let dyp = {
         global_data = data_arg;
         local_data = local_data_arg;
+        last_local_data = last_local_data_arg;
         priority_data = prio_data;
         add_rules = [];
         remove_rules = [];
         will_shift = true;
-        keep_grammar = `Previous;
+        keep_grammar = false;
         next_state = None;
         next_grammar = None;
         symbol_start = (fun () -> (fst symbol_pos).Lexing.pos_cnum);
@@ -2563,8 +2567,8 @@ let make_grams_actions g nbr array_nt_prio kernel_nt kernel_t reducible g_lhs g_
   let gram_rhs = Array.make (ir_nb+nbr) [||] in
   let lhs_table = Array.make (ir_nb+nbr) dummy_lhs in
   let new_actions = Array.make (ir_nb+nbr)
-    [Dypgen_action (fun ol _ _ d dd ld pd _ ->
-      (List.hd ol,false,`Previous,d,dd,ld,[],[],pd,None,None))]
+    [Dypgen_action (fun ol _ _ d dd ld _ pd _ ->
+      (List.hd ol,false,false,d,dd,ld,[],[],pd,None,None))]
   in
   
   let correct_rhs rhs =
@@ -3354,7 +3358,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
                 start_node.vertex_label.sn_nb;*)
               let x = f toPass symbol_pos position_list last_parsing_device.data
               pdev_leftSib.datadyn pdev_leftSib.local_data
-              prio_dat
+              last_parsing_device.local_data prio_dat
               { prt_state = print_s;
               prt_grammar = print_g } in
               (*Printf.fprintf !log_channel "f stack node=%d\n"
@@ -3411,14 +3415,18 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
             && !automaton_kind<>`LR0 then raise Giveup else
           match keep_gram,
             left_rec_rule pdev_leftSib.lhs_of_ind.(ind) rhs with
-          | `First, true ->
+          | true, true
+            when snd_node.vertex_label.pdev.g_nb
+            = last_parsing_device.g_nb ->
               snd_node.vertex_label.state_nb,
               { snd_node.vertex_label.pdev
-                with data = newdata ; local_data = newlocal_data },
+                with data = newdata ;
+                local_data = newlocal_data ;
+                datadyn = last_parsing_device.datadyn },
                counters,
               (leftSib.vertex_label.prio_imprint,
               pdev_leftSib.table_it.(v))
-          | `Last, _ ->
+          | true, _ ->
               let pdev_rightSib, rn_map =
                 let is = pdev_leftSib.table_it.(v_rightSib) in
                 let lit_trans = pdev_leftSib.table_lit_trans.(v_rightSib) in
@@ -3429,7 +3437,8 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
                     lhs_table = pdev_leftSib.lhs_table;
                     actions = pdev_leftSib.actions }
                   [] []
-                  newdata last_parsing_device.datadyn newlocal_data newprio lit_trans
+                  newdata last_parsing_device.datadyn newlocal_data
+                  newprio lit_trans
                   (counters.count_g+1) is.kernel_nt is.kernel_t is.reducible)
               in
               0,pdev_rightSib,
@@ -4027,8 +4036,8 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) str_
   let ps = Prio_set.add default_priority ps in
   let foldfun user_g (ep,_) =
     Urule_map.add (non_terminal_startprime,[Non_ter (ep,No_priority)],0)
-      [(Dypgen_action(fun x _ _ d ld dd prd _ ->
-      (List.hd x,true,`Previous,d,ld,dd,[],[],prd,None,None)))] user_g
+      [(Dypgen_action(fun x _ _ d ld _ dd prd _ ->
+      (List.hd x,true,false,d,ld,dd,[],[],prd,None,None)))] user_g
   in
   let user_g = List.fold_left foldfun user_g entry_points in
   (*let foldfun3 (nt,_,_) _ non_ter_set = Non_ter_set.add nt non_ter_set in
@@ -4302,8 +4311,8 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) str_
     Printf.fprintf !log_channel "size of the grammar : %d rules\n" nbr);
   let foldfun user_g (ep,_) =
     Urule_map.add (non_terminal_startprime,[Non_ter (ep,No_priority)],0)
-      [(Dypgen_action(fun x _ _ d ld dd prd _ ->
-          (List.hd x,true,`Previous,d,ld,dd,[],[],prd,None,None)))] user_g
+      [(Dypgen_action(fun x _ _ d ld _ dd prd _ ->
+          (List.hd x,true,false,d,ld,dd,[],[],prd,None,None)))] user_g
   in
   let user_g = List.fold_left foldfun user_g entry_points in
   (*let foldfun3 (nt,_,_) _ non_ter_set = Non_ter_set.add nt non_ter_set in
@@ -5028,21 +5037,21 @@ type obj =
 let r_pgen_input = (ntn_start,[Non_ter (ntn_optional_code, No_priority); Non_ter (ntn_parser_param_info,No_priority); Ter tn_percentpercent; Non_ter (ntn_grammar,No_priority); Non_ter (ntn_optional_code, No_priority); Ter tn_EOF],default_priority)
 (* Start -> optional_code parser_param_inf PercentPercent grammar optional_code Eof *)
 
-let a_pgen_input = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_pgen_input = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [Code c1; Parser_parameters_info (tl,rel,start); _; Grammar g; Code c2; _] ->
         Pgen_input (c1,(tl,rel,start),g,c2)
     | _ -> failwith "a_pgen_input"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_start_def = (ntn_start_def,[Ter tn_kwd_start; Ter tn_ocaml_type; Ter tn_lident],default_priority)
 (* start_def -> Kwd_start Ocaml_type Lident *)
 
-let a_start_def = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_start_def = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [Obj_void; Obj_type t; Obj_lident s] -> Obj_start (s,t)
     | _ -> failwith "a_start_def"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_parser_param_info_0 = (ntn_parser_param_info,[Non_ter (ntn_start_def,No_priority)],default_priority)
 (* parser_param_info -> start_def *)
@@ -5053,7 +5062,7 @@ let r_parser_param_info_3 = (ntn_parser_param_info,[Non_ter (ntn_relation,No_pri
 let r_parser_param_info_4 = (ntn_parser_param_info,[Non_ter (ntn_parser_param_info, No_priority); Non_ter (ntn_parser_param_info, No_priority)],default_priority)
 (* parser_param_info -> parser_param_info parser_param_info *)
 
-let a_parser_param_info = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_parser_param_info = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [Obj_start (st,t)] -> Parser_parameters_info ([],[],(st,t))
     | [Token_list tl] -> Parser_parameters_info (tl,[],("",""))
@@ -5062,19 +5071,19 @@ let a_parser_param_info = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd 
         let st = if fst st2 = "" then st1 else st2 in
         Parser_parameters_info (tl1@tl2,rel1@rel2,st)
     | _ -> failwith "a_parser_param_info"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_optional_code_0 = (ntn_optional_code,[],default_priority)
 (* optional_code -> *)
 let r_optional_code_1 = (ntn_optional_code,[Ter tn_ocaml_code],default_priority)
 (* optional_code -> Ocaml_code *)
 
-let a_optional_code = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_optional_code = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [] -> Code ""
     | [Code c] -> Code c
     | _ -> failwith "a_optional_code"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_token_list_1 = (ntn_token_list,[Ter tn_kwd_token; Ter tn_uident],default_priority)
 (* token_list -> Kwd_token Uident *)
@@ -5085,7 +5094,7 @@ let r_token_list_3 = (ntn_token_list,[Non_ter (ntn_token_list,No_priority); Ter 
 let r_token_list_4 = (ntn_token_list,[Non_ter (ntn_token_list,No_priority); Ter tn_ocaml_type;  Ter tn_uident],default_priority)
 (* token_list -> token_list Ocaml_type Uident *)
 
-let a_token_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_token_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [Obj_void; Obj_uident tok] -> Token_list [(tok,"No_type")]
     | [Obj_void; Obj_type typ; Obj_uident tok] ->
@@ -5094,7 +5103,7 @@ let a_token_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
     | [Token_list tl; Obj_type typ; Obj_uident tok] ->
         Token_list ((tok,typ)::tl)
     | _ -> failwith "a_token_list"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 
 let r_relation_1 = (ntn_relation,[Ter tn_kwd_relation],default_priority) 
@@ -5104,13 +5113,13 @@ let r_relation_2 = (ntn_relation,[Ter tn_kwd_relation; Ter tn_lident; Ter tn_col
 let r_relation_3 = (ntn_relation,[Non_ter (ntn_relation,No_priority); Ter tn_lident; Ter tn_colon; Ter tn_lident],default_priority)
 (* relation -> relation Lident Colon Lident *)
 
-let a_relation = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_relation = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [Obj_void] -> Relation []
     | [Obj_void; Obj_lident p1; Obj_void; Obj_lident p2] -> Relation [(p1,p2)]
     | [Relation rel; Obj_lident p1; Obj_void; Obj_lident p2] -> Relation ((p1,p2)::rel)
     | _ -> failwith "a_relation"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_grammar_1 = (ntn_grammar,[Ter tn_lident; Ter tn_colon; Non_ter (ntn_bar_opt,No_priority); Non_ter (ntn_literal_list,No_priority); Ter tn_ocaml_code; Non_ter (ntn_priority,No_priority)],default_priority)
 (* grammar -> Lident Colon opt_bar literal_list Ocaml_code priority *)
@@ -5126,7 +5135,7 @@ let r_grammar_5 = (ntn_grammar,[Non_ter (ntn_grammar,No_priority); Ter tn_lident
 let r_grammar_6 = (ntn_grammar,[Non_ter (ntn_grammar,No_priority);Ter tn_bar; Non_ter (ntn_literal_list,No_priority); Ter tn_kwd_full; Ter tn_ocaml_code; Non_ter (ntn_priority,No_priority)],default_priority)
 (* grammar -> grammar Bar literal_list KWD_FULL Ocaml_code priority *)
 
-let a_grammar = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_grammar = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [Obj_lident nt;Obj_void;Obj_void;Literal_list ll;Code c;Obj_lident p] ->
         Grammar [(nt,p,List.rev ll,Classic_action c)]
@@ -5145,14 +5154,14 @@ let a_grammar = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
         let lhs_non_terminal,_,_,_ = last_rule in
         Grammar ((lhs_non_terminal,p,List.rev ll,Full_action c)::g)
     | _ -> failwith "a_grammar"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_bar_opt_0 = (ntn_bar_opt,[],default_priority)
 (* bar_opt -> *)
 let r_bar_opt_1 = (ntn_bar_opt,[Ter tn_bar],default_priority)
 (* bar_opt -> Bar *)
 
-let a_bar_opt = Dyp_special_types.Dypgen_action(fun _ _ _ d dd ld prd _ -> Obj_void,true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+let a_bar_opt = Dyp_special_types.Dypgen_action(fun _ _ _ d dd ld _ prd _ -> Obj_void,true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_literal_list_0 = (ntn_literal_list,[],default_priority)
 (* literal_list ->  *)
@@ -5173,7 +5182,7 @@ let r_literal_list_7 = (ntn_literal_list,[Non_ter (ntn_literal_list,No_priority)
 let r_literal_list_8 = (ntn_literal_list,[Non_ter (ntn_literal_list,No_priority); Ter tn_lident; Ter tn_lparen; Ter tn_lident; Ter tn_rparen],default_priority)
 (* literal_list -> literal_list Lident Lparen Lident Rparen *)
 
-let a_literal_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_literal_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [] -> Literal_list []
     | [Obj_uident tok] ->
@@ -5193,17 +5202,17 @@ let a_literal_list = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
     | [Literal_list ll; Obj_lident nt; Obj_lparen; Obj_lident p; Obj_rparen] -> 
        Literal_list ((Obj_non_terminal (nt,p,false))::ll)
     | _ -> failwith "a_literal_list"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let r_priority_0 = (ntn_priority,[],default_priority)
 let r_priority_1 = (ntn_priority,[Ter tn_lident],default_priority)
 
-let a_priority = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld prd _ ->
+let a_priority = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
   (match l with
     | [] -> Obj_lident "default priority"
     | [Obj_lident s] -> Obj_lident s
     | _ -> failwith "a_priority"
-),true,`Previous,Data_void,dd,ld,[],[],prd,None,None)
+),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let prio_data = empty_priority_data
 let global_merge obj_l _ = obj_l
@@ -5545,14 +5554,14 @@ let aux (lhs_nt,p,ld_list,ocaml_code) =
   
   let code_action = match ocaml_code with
     | Classic_action oc_code ->
-        "Dyp_special_types.Dypgen_action(fun action_variable__l _ _ _data _dd _ld _prd _ -> (match action_variable__l with ["^
+        "Dyp_special_types.Dypgen_action(fun action_variable__l _ _ _data _dd _ld _lld _prd _ -> (match action_variable__l with ["^
         code_var_list^"] -> Obj_"^lhs_nt^" ("^oc_code^
-        ") | _ -> failwith \"Invalid number of arguments in action\"),true,`Previous,_data,_dd,_ld,[],[],_prd,None,None)"
+        ") | _ -> failwith \"Invalid number of arguments in action\"),true,false,_data,_dd,_ld,[],[],_prd,None,None)"
     | Full_action oc_code ->
-        "Dyp_special_types.Dypgen_action(fun action_variable__l _ _ _data _dd _ld _prd _ -> (match action_variable__l with ["^
+        "Dyp_special_types.Dypgen_action(fun action_variable__l _ _ _data _dd _ld _lld  _prd _ -> (match action_variable__l with ["^
         code_var_list^"] -> "^
         "let ob,b,d = "^oc_code^
-        " in ((Obj_"^lhs_nt^" ob),b,`Previous,d,_dd,_ld,[],[],_prd,None,None)\n"^
+        " in ((Obj_"^lhs_nt^" ob),b,false,d,_dd,_ld,[],[],_prd,None,None)\n"^
         " | _ -> failwith \"Invalid number or kind of arguments in action\"))"
   in
   "("^code_rule^","^code_action^")"
@@ -6022,7 +6031,7 @@ let process_pv_token () = pv_token := true
 let undef_nt = ref true
 let process_no_undef_nt () = undef_nt := false
 
-let process_version () = print_endline "version 20070627"
+let process_version () = print_endline "version 20070713"
 
 let list_arg = [
 ("-v",Arg.Unit process_verbose_mode,"activates verbose mode: gives details of the parsing of the input file");
@@ -6617,7 +6626,7 @@ let code_test_cons, code_cons_of_nt, cons_of_nt, cons_map, cons_array, code_str_
     (";\n"::(string_of_int cons_i)::"    "::l, (i+1))
   in
   let code_cont = "  let cons_of_nt =\n  [|0;\n" in
-  (* first correspond to S' (which has no constructor anyway). *)
+  (* first corresponds to S' (which has no constructor anyway). *)
   let code,_ = String_map.fold aux3 nt_cons_map ([code_cont],1) in
   let code = List.rev ("|]\n"::(List.tl code)) in
   let code_cont = String.concat "" code in
