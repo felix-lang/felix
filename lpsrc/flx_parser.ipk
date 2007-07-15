@@ -103,7 +103,9 @@ let local_data = ref {
 }
 
 type global_data_t = {
+  counter : int ref;
   env : Ocs_types.env;
+  debug : bool ref;
 }
 
 let init_env () =  
@@ -119,7 +121,9 @@ let init_env () =
   env
  
 let global_data = ref {
+  counter = ref 1;
   env=init_env();
+  debug=ref true;
 }
 
 let list_last lst = List.hd (List.rev lst)
@@ -178,35 +182,6 @@ let cal_funkind adjs fk =
   | [] -> sr,`Function
   | h :: t -> sr,snd h
   
-(* MOVED TO flx_typing 
-(* handle curried type functions *)
-let mktypefun sr name vs (args: (string * typecode_t) list list) return_type body =
-  let argtyp t = match t with
-    | [] -> failwith "Lambda abstraction requires nonunit parameter"
-    | [x] -> x
-    | x -> `TYP_type_tuple x
-  in
-  let body = 
-    let p = ref (List.rev args) in
-    let r = ref return_type in
-    let b = ref body in
-    while !p <> [] do
-      let arg = List.hd !p in
-      p := List.tl !p;
-      b := `TYP_typefun (arg, !r, !b);
-      r := `TYP_function(argtyp (List.map snd (arg)),!r)
-    done;
-    !b
-  in
-  `AST_type_alias
-  (
-    sr,
-    name,
-    vs,
-    body
-  )
-*)
-
 let dfltvs = 
   [],
   {
@@ -278,6 +253,9 @@ let scheme_run sr env (s:string):sval =
   r
 
 let define_scheme sr dyp name rhs (scm:string) =
+  let pr_age = !(dyp.global_data.counter) in 
+  incr (dyp.global_data.counter)
+  ;
   let lhs = 
     try dyp.add_nt name "Obj_sexpr" 
     with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ name)
@@ -309,14 +287,14 @@ let define_scheme sr dyp name rhs (scm:string) =
   in
 
   let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
-  (*
-  print_endline ("A Rule for " ^ name ^ " defined, scm="^scm);
-  *)
+  if !(dyp.global_data.debug) then
+  print_endline ("A Rule "^string_of_int pr_age ^" for " ^ name ^ " defined, scm="^scm);
   let action = fun _ avl ->
+    let age = ref pr_age in
     let b = Buffer.create 200 in
-    (*
+    if !(dyp.global_data.debug) then
     Buffer.add_string b ("Reducing Rule for " ^ name ^ ", scm="^scm^"\n");
-    *)
+
     (* let env = Ocs_env.env_copy dyp.local_data.env in *)
     (* let env = dyp.local_data.env in *)
     let env = dyp.global_data.env in
@@ -331,13 +309,14 @@ let define_scheme sr dyp name rhs (scm:string) =
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
 
-      | _,`Obj_sexpr (sr,s) 
+      | _,`Obj_sexpr (seq,sr,s) 
         ->
+        age := max !age seq;
         srs := sr :: !srs;
-        (*
+        if !(dyp.global_data.debug) then begin
         Buffer.add_string b ("Arg " ^ string_of_int n ^ " = "); 
         buffer_add_ocs b s; Buffer.add_string b "\n";
-        *)
+        end;
 
         let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
         (*
@@ -362,9 +341,8 @@ let define_scheme sr dyp name rhs (scm:string) =
       | _ -> aux t1 t2 (n+1)
     in
     aux rhs avl 1;
-    (*
+    if !(dyp.global_data.debug) then
     Buffer.add_string b "End of arguments\n";
-    *)
     let sr = match !srs with
       | [] -> "dummy:"^name,0,0,0,0
       | sr::_ -> rsrange (hd (rev !srs)) sr
@@ -387,7 +365,7 @@ let define_scheme sr dyp name rhs (scm:string) =
         print_string ("Error "^err^" evaluating " ^ scm);
         failwith "Error evaluating Scheme"
     in
-    `Obj_sexpr (sr,r)
+    `Obj_sexpr (!age,sr,r)
   in
   rule,action
 
@@ -487,6 +465,21 @@ let ocs2flx sr r =
 
 let dummysr = "Dummy",0,0,0,0
 
+let dyp_merge_Obj_sexpr ol o = 
+ match ol,o with
+ | [],(nseq,nsr,nsex as it) -> 
+    (* this case never happens *)
+    assert false (* [it] *)
+
+ | [oseq,osr,osex as oit],(nseq,nsr,nsex as nit) -> 
+   print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
+   if oseq > nseq then [oit]
+   else if nseq > oseq then [nit]
+   else
+     Flx_exceptions.clierr2 osr nsr "AMBIGUITY PARSING, same production!"
+
+ | (oseq,osr,osex)::t,(nseq,nsr,nsex) -> 
+     Flx_exceptions.clierr2 osr nsr "AMBIGUITY PARSING!"
 }
 
 @head(2,'Tokens')
@@ -583,7 +576,7 @@ statement_star:
    { 
      dyp.local_data <- dyp.last_local_data;
      dyp.keep_grammar <- true;
-     let sr,s = $2 in 
+     let _,sr,s = $2 in 
      ocs2flx sr s :: $1
    }
 
@@ -662,7 +655,7 @@ statement:
           print_endline ("Error "^err^" executing " ^s);
           failwith "Error executing SCHEME"
       in
-      sr,Snull
+      0,sr,Snull
     }
 
   | OPEN SYNTAX basic_name_comma_list SEMI
@@ -710,7 +703,7 @@ statement:
       in
       List.iter (do_dyp_rule dyp) rules;
       dyp.local_data <- { m with loaded_dssls = !to_install @ m.loaded_dssls };
-      sr,Snull
+      0,sr,Snull
     }
 
   | SYNTAX NAME LBRACE dyprods RBRACE
@@ -722,7 +715,7 @@ statement:
       let sr = rstoken $1 $5 in
       let dssl = snd $2 in
       List.iter (add_rule dyp dssl) $4;
-      sr,Snull
+      0,sr,Snull
     }
 
 expr:  
@@ -731,7 +724,7 @@ expr:
       (*
       print_endline "GOT SEXPR";
       *)
-      let sr,r = $1 in
+      let _,sr,r = $1 in
       let sex = Ocs2sex.ocs2sex r in
       (*
       print_endline "OCS scheme sexpr converted to s-expression:";
@@ -748,41 +741,41 @@ expr:
     }
 
 
-sexpr: | DUMMY { dummysr,Snull }
+sexpr: | DUMMY { 0,dummysr,Snull }
 
 /* identifiers which aren't keywords */
-sname: NAME { slift (fst $1),Sstring (snd $1) }
+sname: NAME { 0,slift (fst $1),Sstring (snd $1) }
 
 /* 
 replacements for * + and ? to be used in productions,
 since these symbols have special meansings as
 list, non-empty list, and optional respectively
 */
-star: STAR { slift $1,Snull }
-plus: PLUS { slift $1,Snull }
-quest: QUEST { slift $1,Snull }
-sident: IDENT { slift $1,Snull }
+star: STAR { 0,slift $1,Snull }
+plus: PLUS { 0,slift $1,Snull }
+quest: QUEST { 0,slift $1,Snull }
+sident: IDENT { 0,slift $1,Snull }
 
-lbrace: LBRACE { slift $1,Snull }
-rbrace: RBRACE { slift $1,Snull }
-lpar: LPAR { slift $1,Snull }
-rpar: RPAR { slift $1,Snull }
-lsqb: LSQB { slift $1,Snull }
-rsqb: RSQB { slift $1,Snull }
+lbrace: LBRACE { 0,slift $1,Snull }
+rbrace: RBRACE { 0,slift $1,Snull }
+lpar: LPAR { 0,slift $1,Snull }
+rpar: RPAR { 0,slift $1,Snull }
+lsqb: LSQB { 0,slift $1,Snull }
+rsqb: RSQB { 0,slift $1,Snull }
 
-ssemi: SEMI { slift $1,Snull }
-comma: COMMA { slift $1,Snull }
-colon: COLON { slift $1,Snull }
-vbar: VBAR { slift $1,Snull }
-strue: TRUE { slift $1,Snull }
-sfalse : FALSE { slift $1,Snull }
+ssemi: SEMI { 0,slift $1,Snull }
+comma: COMMA { 0,slift $1,Snull }
+colon: COLON { 0,slift $1,Snull }
+vbar: VBAR { 0,slift $1,Snull }
+strue: TRUE { 0,slift $1,Snull }
+sfalse : FALSE { 0,slift $1,Snull }
 
 /* 
 a definite non-terminal for a sequence of no tokens,
 since the production syntax cannot parse an empty
 production at the moment 
 */
-sepsilon: | {dummysr,Snull }
+sepsilon: | {0,dummysr,Snull }
 
 satom:
   | sliteral { $1 }
@@ -794,14 +787,14 @@ satom:
       let empty = Ocs_misc.make_slist Snull [] in
       let x = aname :: Sstring x :: empty :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
 sinteger:
   | INTEGER 
     { 
       let sr,t,v = $1 in
-      slift sr,Sbigint v
+      0,slift sr,Sbigint v
     }
 
 sfloat:
@@ -810,7 +803,7 @@ sfloat:
       let sr,t,v = $1 in
       let x = Sstring t::Sstring v::[] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
 sintegral:
@@ -819,7 +812,7 @@ sintegral:
       let sr,t,v = $1 in
       let i = Sstring t :: Sbigint v :: [] in
       let x = Ocs_misc.make_slist Snull (rev i) in
-      slift sr,x
+      0,slift sr,x
     }
   | MINUS INTEGER 
     { 
@@ -827,14 +820,14 @@ sintegral:
       let v = Big_int.minus_big_int v in
       let i = Sstring t :: Sbigint v :: [] in
       let x = Ocs_misc.make_slist Snull (rev i) in
-      slift sr,x
+      0,slift sr,x
     }
 
 sstring:
   | STRING
     { 
       let sr,s = $1 in
-      slift sr,Sstring s
+      0,slift sr,Sstring s
     }
 
 
@@ -842,7 +835,7 @@ scstring:
   | CSTRING
     { 
       let sr,s = $1 in
-      slift sr,Sstring s
+      0,slift sr,Sstring s
     }
 
 
@@ -857,7 +850,7 @@ sliteral:
       let i = Ocs_misc.make_slist Snull (rev i) in
       let x = alit :: i :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
   | FLOAT   
@@ -869,7 +862,7 @@ sliteral:
       let i = Ocs_misc.make_slist Snull (rev i) in
       let x = alit :: i :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
   | STRING  
@@ -881,7 +874,7 @@ sliteral:
       let i = Ocs_misc.make_slist Snull (rev i) in
       let x = alit :: i :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
    }
 
   | WSTRING  
@@ -893,7 +886,7 @@ sliteral:
       let i = Ocs_misc.make_slist Snull (rev i) in
       let x = alit :: i :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
   | USTRING  
@@ -905,7 +898,7 @@ sliteral:
       let i = Ocs_misc.make_slist Snull (rev i) in
       let x = alit :: i :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
   | CSTRING  
@@ -917,7 +910,7 @@ sliteral:
       let i = Ocs_misc.make_slist Snull (rev i) in
       let x = alit :: i :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
   | QSTRING  
@@ -926,7 +919,7 @@ sliteral:
       let qstring = Ocs_sym.get_symbol "ast_interpolate" in 
       let x = qstring :: Sstring s :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
   | FSTRING  
@@ -935,14 +928,14 @@ sliteral:
       let fstring = Ocs_sym.get_symbol "ast_vsprintf" in 
       let x = fstring :: Sstring s :: [] in
       let x = Ocs_misc.make_slist Snull (rev x) in
-      slift sr,x
+      0,slift sr,x
     }
 
 suser10token:
   | USER10 
     { 
       let sr,op,fn = $1 in
-      slift sr,Sstring fn
+      0,slift sr,Sstring fn
     }
 
 suserlbtoken:
@@ -959,13 +952,13 @@ suserlbtoken:
     let ass = Ocs_misc.make_slist Snull ass in
     let x = ass :: Sstring sym :: [] in
     let x = Ocs_misc.make_slist Snull (rev x) in
-    slift sr,x
+    0,slift sr,x
   }
 
 suserrbtoken:
   | USERRB
   {
-    slift (fst $1),Sstring (snd $1)
+    0,slift (fst $1),Sstring (snd $1)
   }
 
 /* ******************* OLD STUFF *************************** */
