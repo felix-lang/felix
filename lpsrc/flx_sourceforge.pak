@@ -155,26 +155,25 @@ C programming environment. Flxcc cannot currently wrap C++
 headers.
 </P>
 
-<H1>CVS access</H1>
+<H1>Subversion (SVN) access</H1>
 To keep up to date,
-you need to connect to the CVS archive, the CVS
-address is: <STRONG>felix.cvs.sourceforge.net:/cvsroot/felix</STRONG>,
-see
-<A HREF=http://sourceforge.net/cvs/?group_id=28597>CVS web access</A>
-
-The first time you need to so, pressing Enter key for password:
+you need to connect to the SVN archive; the SVN address is
+<STRONG>https://felix.svn.sourceforge.net:/svnroot/felix/felix/trunk</STRONG>.
+<P>
+Subversion web access is available
+<A HREF="http://felix.svn.sourceforge.net/viewvc/felix/">here</A>.
+</P>
 </P><P><CODE>
-make backup<BR>
+make backup # if you have a previous checkout<BR>
 rm -rf lpsrc<BR>
-cvs -d:pserver:anonymous@felix.cvs.sourceforge.net:/cvsroot/felix login<BR>
-cvs -z3 -d:pserver:anonymous@felix.cvs.sourceforge.net:/cvsroot/felix co lpsrc<BR>
+svn co https://felix.svn.sourceforge.net/svnroot/felix/felix/trunk<BR />
 </CODE>
 </P><P>Thereafter you should be able to do:
 
 </P><P><CODE>
 make backup<BR>
 cd lpsrc<BR>
-cvs update<BR>
+svn update<BR>
 cd ..<BR>
 </CODE>
 </P><P>Continue after refreshing the archive with:
@@ -249,12 +248,13 @@ to related projects and other resources.
 <H1>Sourceforge Project Page</H1>
 The felix sourceforge <A HREF=http://sourceforge.net/projects/felix/>project</A> page.
 
-<H1>CVS access</H1>
-The CVS location is
-<STRONG>felix.cvs.sourceforge.net:/cvsroot/felix</STRONG>
+<H1>Subversion (SVN) access</H1>
+The SVN location is
+<STRONG>https://felix.svn.sourceforge.net:/svnroot/felix/felix/trunk</STRONG>
 <P>
-CVS web access <A
-HREF="http://sourceforge.net/cvs/?group_id=28597">here</A>
+Subversion web access is available
+<A HREF="http://felix.svn.sourceforge.net/viewvc/felix/">here</A>.
+</P>
 <P>
 </P>
 </BODY>
