@@ -473,6 +473,7 @@ let dyp_merge_Obj_sexpr ol o =
 
  | [oseq,osr,osex as oit],(nseq,nsr,nsex as nit) -> 
    print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
+   print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ ", nxt=" ^ Ocs_print.string_of_ocs nsex);
    if oseq > nseq then [oit]
    else if nseq > oseq then [nit]
    else
@@ -531,7 +532,7 @@ let dyp_merge_Obj_sexpr ol o =
 %constructor Obj_sexpr %for sterm 
 
 /* predefined major non-terminals */
-%constructor Obj_sexpr %for statement sexpr satom 
+%constructor Obj_sexpr %for statement sexpr 
 
 /* low level non terminals */
 %constructor Obj_sexpr %for sname sliteral 
@@ -776,19 +777,6 @@ since the production syntax cannot parse an empty
 production at the moment 
 */
 sepsilon: | {0,dummysr,Snull }
-
-satom:
-  | sliteral { $1 }
-
-  | NAME 
-    {
-      let sr,x = $1 in
-      let aname = Ocs_sym.get_symbol "ast_name" in 
-      let empty = Ocs_misc.make_slist Snull [] in
-      let x = aname :: Sstring x :: empty :: [] in
-      let x = Ocs_misc.make_slist Snull (rev x) in
-      0,slift sr,x
-    }
 
 sinteger:
   | INTEGER 

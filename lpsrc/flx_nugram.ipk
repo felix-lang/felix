@@ -156,6 +156,7 @@ SCHEME """
 
 //------------------------------------------
 syntax expressions {
+  satom := sliteral;
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
   satom := sfalse =># "'(ast_typed_case  0 2)";
