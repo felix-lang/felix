@@ -1664,7 +1664,7 @@ syntax namespaces {
 
 //------------------------------------------
 
-syntax cstuff {
+syntax csyntax {
   base_type := 
     | "char" =># '`(ast_name "char" ())'
     | "tiny" =># '`(ast_name "tiny" ())'
