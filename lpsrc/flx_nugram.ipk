@@ -1687,18 +1687,26 @@ syntax cstuff {
 
   pointer_type:= 
     | base_type
+    | "void" star =># '`(ast_name "address" ())'
     | pointer_type star =># "`(ast_ref ,_1)"
   ;
 
   sparameter := pointer_type sname =># "`(PVar ,_2 ,_1)";
-
-  mysfunargs := sfun_arg* =># "_1";
+  sparameter := pointer_type const sname =># "`(PVal ,_3 ,_1)";
 
   sprocedure_definition := sadjectives "void" sdeclname
-    mysfunargs sopt_traint_eq scompound =>#
+    sfun_arg* sopt_traint_eq scompound =>#
   """
     (mkns 
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) Function ,_6)
+    (cdr _3))
+  """;
+
+  sfunction_definition := sadjectives pointer_type sdeclname 
+    sfun_arg* sopt_traint_eq scompound =>#
+  """
+    (mkns 
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (,_2 ,_5) Function ,_6)
     (cdr _3))
   """;
 
