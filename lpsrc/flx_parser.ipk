@@ -123,7 +123,7 @@ let init_env () =
 let global_data = ref {
   counter = ref 1;
   env=init_env();
-  debug=ref true;
+  debug=ref false;
 }
 
 let list_last lst = List.hd (List.rev lst)
@@ -385,27 +385,30 @@ let add_rule dyp dssl rule =
 
 
 (* create rules for nt* nt+ and nt? *)
-let fixup_rule rhs =
+let fixup_rule counter rhs =
   let rec aux inp out extras = match inp with
   | [] -> rev out,extras
   | NAME (sr,s) :: STAR _ :: t -> 
-    let slr = s ^ "__rlist" in
-    let sl = s ^ "__list" in
+    let x = string_of_int (!counter) in incr counter;
+    let slr = s ^ "__rlist_"^x in
+    let sl = s ^ "__list_"^x in
     let rule0 = slr,[NAME(sr,sl)],"(reverse _1)" in
     let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)" in
     let rule2 = sl,[],"'()" in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
   | NAME (sr,s) :: PLUS _ :: t -> 
-    let slr = s ^ "__nerlist" in
-    let sl = s ^ "__nelist" in
+    let x = string_of_int (!counter) in incr counter;
+    let slr = s ^ "__nerlist_"^x in
+    let sl = s ^ "__nelist_"^x in
     let rule0 = slr,[NAME(sr,sl)],"(reverse _1)" in
     let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)" in
     let rule2 = sl,[NAME(sr,s)],"`(,_1)" in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
   | NAME (sr,s) :: QUEST _ :: t -> 
-    let sl = s ^ "__opt" in
+    let x = string_of_int (!counter) in incr counter;
+    let sl = s ^ "__opt_"^x in
     let rule1 = sl,[NAME (sr,s)],"`(some ,_1)" in
     let rule2 = sl,[],"'none" in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
@@ -431,7 +434,7 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
         (*
         print_endline ("SCHEME, user action = " ^ s);
         *)
-        let prod,extras = fixup_rule rhs in
+        let prod,extras = fixup_rule dyp.global_data.counter rhs in
         let rule = define_scheme sr dyp name prod s in
         dyp.add_rules <- rule :: dyp.add_rules;
         List.iter (fun (name,prod,s) ->
@@ -472,12 +475,14 @@ let dyp_merge_Obj_sexpr ol o =
     assert false (* [it] *)
 
  | [oseq,osr,osex as oit],(nseq,nsr,nsex as nit) -> 
+   (*
    print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
    print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ ", nxt=" ^ Ocs_print.string_of_ocs nsex);
+   *)
    if oseq > nseq then [oit]
    else if nseq > oseq then [nit]
    else
-     Flx_exceptions.clierr2 osr nsr "AMBIGUITY PARSING, same production!"
+     Flx_exceptions.clierr2 osr nsr ("AMBIGUITY PARSING, same production!,seq = " ^ string_of_int nseq);
 
  | (oseq,osr,osex)::t,(nseq,nsr,nsex) -> 
      Flx_exceptions.clierr2 osr nsr "AMBIGUITY PARSING!"
@@ -592,7 +597,7 @@ code of the compilation unit.
 @select(h)
 dyalt:
    | rhs PARSE_ACTION STRING { $1,slift $2,`Scheme (snd $3) }
-   | NAME { [NAME $1],dummysr,`Scheme "_1" }
+   | NAME { [NAME $1],slift (fst $1),`Scheme "_1" }
 
 dyaltlist:
    | { [] }
@@ -715,7 +720,7 @@ statement:
       *)
       let sr = rstoken $1 $5 in
       let dssl = snd $2 in
-      List.iter (add_rule dyp dssl) $4;
+      List.iter (add_rule dyp dssl) (rev $4);
       0,sr,Snull
     }
 
