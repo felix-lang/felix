@@ -1678,6 +1678,9 @@ syntax csyntax {
     | "uint" =># '`(ast_name "uint" ())'
     | "ulong" =># '`(ast_name "ulong" ())'
     | "uvlong" =># '`(ast_name "uvlong" ())'
+    | "float" =># '`(ast_name "float" ())'
+    | "double" =># '`(ast_name "double" ())'
+    | "ldouble" =># '`(ast_name "ldouble" ())'
 
     | struct sname =># "`(ast_name ,_2 ())"
     | union sname =># "`(ast_name ,_2 ())"
@@ -1691,8 +1694,46 @@ syntax csyntax {
     | pointer_type star =># "`(ast_ref ,_1)"
   ;
 
-  sparameter := pointer_type sname =># "`(PVar ,_2 ,_1)";
-  sparameter := pointer_type const sname =># "`(PVal ,_3 ,_1)";
+  c_type := 
+    | pointer_type
+    | c_type lpar star rpar lpar c_type_list rpar =>#
+      "`(ast_longarrow (,_6 ,_1))"           // cfunction
+  ;
+
+  c_type_suffix := comma c_type =># "_2";
+  c_type_list := 
+    | c_type c_type_suffix+ =># "`(ast_tuple ,(cons _1 _2))"
+    | c_type =># "_1"
+    | sepsilon =># "`(ast_tuple ())"
+  ;
+
+  declarator := 
+    | pointer_type sname =># "`(PVar ,_2 ,_1)"
+    | pointer_type const sname =># "`(PVal ,_3 ,_1)"
+    | c_type lpar sname rpar lpar c_type_list rpar =>#
+      "`(PVar ,_3 (ast_longarrow (,_6 ,_1)))"
+
+    | c_type lpar star sname rpar lpar c_type_list rpar =>#
+      "`(PVar ,_4 (ast_longarrow (,_7 ,_1)))"
+
+    | c_type sname lpar c_type_list rpar =>#
+      "`(PVar ,_2 (ast_longarrow (,_4 ,_1)))"
+  ;
+
+  sparameter := declarator;
+
+  svar_def := declarator = sexpr ; =>#
+    """
+    (let*
+      (
+        (kind (car _1))
+        (name (cadr _1))
+        (type (caddr _1))
+        (dcl (if (eq? kind 'PVal) 'ast_val_decl 'ast_var_decl))
+      )
+    `(,dcl ,_sr ,name ,dfltvs (some ,type) (some ,_3)))
+    """; 
+
 
   sprocedure_definition := sadjectives "void" sdeclname
     sfun_arg* sopt_traint_eq scompound =>#

@@ -306,12 +306,14 @@ let define_scheme sr dyp name rhs (scm:string) =
       match h1,h2 with
       | STRING (_,s1),`Obj_NAME (sr,s2) ->
         if s1 <> s2 then raise Giveup;
+        if (match sr with _,l,_,_ -> l) <> 0 then
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
 
       | _,`Obj_sexpr (seq,sr,s) 
         ->
         age := max !age seq;
+        if (match sr with _,l,_,_,_ -> l) <> 0 then
         srs := sr :: !srs;
         if !(dyp.global_data.debug) then begin
         Buffer.add_string b ("Arg " ^ string_of_int n ^ " = "); 
@@ -326,6 +328,7 @@ let define_scheme sr dyp name rhs (scm:string) =
         aux t1 t2 (n+1)
       | USER_KEYWORD (_,s1) , `Obj_USER_KEYWORD (sr,s2) ->
         if s1 <> s2 then raise Giveup;
+        if (match sr with _,l,_,_ -> l) <> 0 then
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
 @for k,n in flx_syms:
@@ -335,6 +338,7 @@ let define_scheme sr dyp name rhs (scm:string) =
   tangle ("      | _,`Obj_"+k+" sr ")
 @#
         ->
+        if (match sr with _,l,_,_ -> l) <> 0 then
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
          
@@ -435,13 +439,20 @@ let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
         print_endline ("SCHEME, user action = " ^ s);
         *)
         let prod,extras = fixup_rule dyp.global_data.counter rhs in
-        let rule = define_scheme sr dyp name prod s in
-        dyp.add_rules <- rule :: dyp.add_rules;
+
+        (* NOTE: the order is critical. We want the 'extras' defined
+           before the main production, so the 'age' reflects the
+           rule for the main nonterminal, not the ones with magic names
+           invented for x* x+ x? etc, otherwise debugging is too hard!
+        *)
         List.iter (fun (name,prod,s) ->
           let rule = define_scheme sr dyp name prod s in
           dyp.add_rules <- rule :: dyp.add_rules;
         )
-        extras 
+        extras;
+
+        let rule = define_scheme sr dyp name prod s in
+        dyp.add_rules <- rule :: dyp.add_rules;
 
    | _ ->
      let s = 
@@ -481,11 +492,44 @@ let dyp_merge_Obj_sexpr ol o =
    *)
    if oseq > nseq then [oit]
    else if nseq > oseq then [nit]
-   else
-     Flx_exceptions.clierr2 osr nsr ("AMBIGUITY PARSING, same production!,seq = " ^ string_of_int nseq);
+   else begin
+     print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
+     print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ ", nxt=" ^ Ocs_print.string_of_ocs nsex);
+     Flx_exceptions.clierr2 osr nsr ("AMBIGUITY PARSING, same production!,seq = " ^ string_of_int nseq)
+   end
 
  | (oseq,osr,osex)::t,(nseq,nsr,nsex) -> 
      Flx_exceptions.clierr2 osr nsr "AMBIGUITY PARSING!"
+
+let rec elim_common_prefix x y = 
+  match x, y with
+  | a :: ta, b :: tb -> 
+    let eq = try a = b with _ -> false in
+    if eq then elim_common_prefix ta tb
+    else x,y
+
+  | x,y -> x,y
+
+let dyp_merge_Obj_statement_star ol o = 
+ match ol, o with
+ | [],_ -> assert false
+
+ | [xseq,x],(yseq,y) -> 
+   if xseq > yseq then [xseq,x]
+   else if yseq > xseq then [yseq,x]
+   else
+   let xsr = src_of_stmt (hd x) and ysr = src_of_stmt (hd y) in
+   print_endline "Ambiguity parsing statements:";
+   let x = rev x and y = rev y in
+   let x,y = elim_common_prefix x y in
+   print_endline ("Statements 1 = " ^ catmap "\n----\n" (string_of_statement 1) x);
+   print_endline ("Statement 2 = " ^ catmap "\n----\n" (string_of_statement 1) y);
+   Flx_exceptions.clierr2 xsr ysr "AMBIGUITY PARSING TOP LEVEL!"
+
+ | _ -> assert false
+
+
+
 }
 
 @head(2,'Tokens')
@@ -574,7 +618,7 @@ statements:
    {
      dyp.local_data <- dyp.last_local_data;
      dyp.keep_grammar <- true;
-     List.rev $1
+     List.rev (snd $1)
    }
 
 statement_star:
@@ -582,11 +626,12 @@ statement_star:
    { 
      dyp.local_data <- dyp.last_local_data;
      dyp.keep_grammar <- true;
-     let _,sr,s = $2 in 
-     ocs2flx sr s :: $1
+     let seq,sr,s = $2 in
+     let sseq,stmts = $1 in
+     max seq sseq, (ocs2flx sr s :: stmts)
    }
 
- | { [] }
+ | { 0,[] }
 
 @doc()
 A compilation unit is just a sequence of statements.
