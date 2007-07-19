@@ -312,7 +312,7 @@ let define_scheme sr dyp name rhs (scm:string) =
 
       | _,`Obj_sexpr (seq,sr,s) 
         ->
-        age := max !age seq;
+        (* age := max !age seq; *)
         if (match sr with _,l,_,_,_ -> l) <> 0 then
         srs := sr :: !srs;
         if !(dyp.global_data.debug) then begin

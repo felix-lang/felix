@@ -979,10 +979,11 @@ syntax macros {
   requires expressions, statements;
 
   sdirective := smacro_definition =># "_1";
-  smacro_definition := macro sname is sname ; =># "`(ast_macro_name ,_2 ,_4)";
   smacro_definition := macro sname is sbasic_name_comma_list ; =># 
     "`(ast_macro_names ,_2 ,_4)";
 
+  // this MUST be next, overrides case with only one name
+  smacro_definition := macro sname is sname ; =># "`(ast_macro_name ,_2 ,_4)";
   smacro_definition := macro for sname in sbasic_name_comma_list do statement* done ; =># 
     "`(ast_macro_ifor ,_3 ,_5 ,_7)";
   smacro_definition := macro for sname in lpar sbasic_name_comma_list rpar do statement* done ; =># 
