@@ -123,7 +123,7 @@ let init_env () =
 let global_data = ref {
   counter = ref 1;
   env=init_env();
-  debug=ref true;
+  debug=ref false;
 }
 
 let list_last lst = List.hd (List.rev lst)
@@ -473,8 +473,8 @@ let ocs2flx sr r =
   let flx = Flx_sex2flx.xstatement_t sr fresh env sex in
   (*
   print_endline "s-expression converted to Felix statement!";
-  *)
   print_endline (string_of_statement 0 flx);
+  *)
   flx
 
 let dummysr = "Dummy",0,0,0,0
@@ -616,8 +616,10 @@ compilation_unit:
 statements:
  | statement_star 
    {
+     (*
      dyp.local_data <- dyp.last_local_data;
      dyp.keep_grammar <- true;
+     *)
      List.rev (snd $1)
    }
 
