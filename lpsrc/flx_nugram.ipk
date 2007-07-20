@@ -295,8 +295,6 @@ syntax expressions {
   sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
 
   srefr := sapplication =># "_1";
-  // todo anonymous union
-  // todo anonymous struct
   srefr := & srefr =># "`(ast_ref ,_2)";
   srefr := star srefr =># "`(ast_apply ,_sr (deref ,_2))";
   srefr := _deref srefr =># "`(ast_deref ,_2)";
@@ -1721,8 +1719,10 @@ syntax csyntax {
       "`(PVar ,_2 (ast_longarrow (,_4 ,_1)))"
   ;
 
+  // function parameter
   sparameter := declarator;
 
+  // initialised variable
   svar_def := declarator = sexpr ; =>#
     """
     (let*
@@ -1736,6 +1736,7 @@ syntax csyntax {
     """; 
 
 
+  // function
   sprocedure_definition := sadjectives "void" sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
@@ -1744,6 +1745,7 @@ syntax csyntax {
     (cdr _3))
   """;
 
+  // function
   sfunction_definition := sadjectives pointer_type sdeclname 
     sfun_arg* sopt_traint_eq scompound =>#
   """
@@ -1751,6 +1753,20 @@ syntax csyntax {
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (,_2 ,_5) Function ,_6)
     (cdr _3))
   """;
+
+  // union
+  stype_sum_item1 := declarator ; =># """
+    `(,(car _1) none ,dfltvs ,(cadr _1))
+  """;
+
+  // struct, cstruct
+  sstruct_mem_decl := declarator ; =># "`(,(car _1) ,(cadr _1))";
+
+  // typedef
+  stype_alias := typedef declarator ; =>#
+    """
+    `(ast_type_alias ,_sr ,(car _2) ,dfltvs ,(cadr _2))
+    """; 
 
 
 }
@@ -1768,7 +1784,8 @@ syntax felix {
     cbind, 
     regexps, 
     parsing,
-    macros
+    macros,
+    csyntax
   ;
 }
 
