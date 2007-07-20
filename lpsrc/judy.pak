@@ -36,6 +36,7 @@ module Judy
 
   type JError_t = "JError_t*";
   gen _ctor_JError_t : 1 -> JError_t = "(JError_t*)malloc(sizeof(JError_t))";
+  proc free: JError_t = "free($1);";
 
   type J1Array = "void**";
   gen _ctor_J1Array: 1 -> J1Array = "_mkj1()" requires body 
@@ -49,7 +50,10 @@ module Judy
 
   proc free: J1Array = "_j1free($1);" requires body
     """
-      void _j1free(void **p) { Judy1FreeArray(p); free(p); }
+      void _j1free(void **p) {
+        JError_t je;
+        Judy1FreeArray(p, &je); free(p);
+      }
     """;
 
   proc Judy1Set: J1Array * word * JError_t * ptr[int] = 
@@ -360,5 +364,54 @@ First=1 -> 11
 Next=7 -> 77
 Done JL
 s2 -> 22
+@doc()
+
+@select(env.test('.flx'))
+// test Judy1
+#import <flx.flxh>
+
+include "judy";
+open Judy;
+open C_hack;		// ptr...
+
+print "judyable\n";
+
+var j1 = J1Array();  // new bit array, all zero
+var je = JError_t(); // for error info
+
+var res: int;
+var pres = ptr res;
+Judy1Set(j1, word(1977), je, pres);
+
+Judy1Test(j1, word(1977), je, pres);
+print res; endl;
+
+Judy1Test(j1, word(1978), je, pres);
+print res; endl;
+
+Judy1Set(j1, word(1000000009), je, pres);
+
+var first: word;
+var last: word;
+var n: word;
+
+Judy1First(j1, ptr(first), je, pres);
+Judy1Last(j1, ptr(last), je, pres);		// seems to give max uint
+//print "first="; print(int first); endl;
+//print "last="; print(ulong last); endl;
+
+// count 1 bits between range, returning in w.
+Judy1Count(j1, first, last, je, ptr(n));
+print (int n); endl;
+
+free je;
+free j1;
+@doc()
+
+@select(env.expect())
+judyable
+1
+0
+2
 @doc()
 
