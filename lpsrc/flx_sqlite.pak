@@ -1,0 +1,130 @@
+@execfile("flxbuild"+os.sep+"iscrutil.py")
+@env = setup_test('test/sqlite/sqlite-')
+
+@head(1,'Sql lite')
+
+@select(tangler("cpkgs/target/sqlite3.py"))
+execfile("config"+os.sep+"config.py")
+try:
+  cload(globals(),"target_sqlite3")
+except:
+  HAVE_SQLITE3=TARGET_CXX.check_header_exists(xqt,'sqlite3.h')
+  f=cwrite('target_sqlite3')
+  pa(f,locals(),"HAVE_SQLITE3")
+  f.close()
+  cload(globals(),"target_sqlite3")
+
+@h = tangler('spkgs/sqlite3.py')
+@select(h)
+execfile('cpkgs'+os.sep+'target'+os.sep+'sqlite3.py')
+if HAVE_SQLITE3:
+@tangle('  unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+
+iscr_source = ['lpsrc/flx_sqlite.pak']
+weaver_directory = 'doc/sqlite/'
+
+@h = tangler('config/sqlite3.fpc')
+@select(h)
+provides_dlib: -lsqlite3
+provides_slib: -lsqlite3
+
+@h = tangler('lib/flx_sqlite3.flx','data')
+@select(h)
+#import <flx.flxh>
+open C_hack;
+
+module Sqlite3 {
+  header "#include <sqlite3.h>";
+  requires package "sqlite3";
+  type sqlite3_db_t = "sqlite3*";
+  gen sqlite3_open : string * &sqlite3_db_t -> int =
+    "sqlite3_open($1.data(), $2)"
+  ;
+  proc sqlite3_close : sqlite3_db_t = "sqlite3_close($1);";
+  typedef sqlite3_exec_callback_t = address * int * ptr[charp] * ptr[charp] --> int;
+  gen sqlite3_exec : 
+    sqlite3_db_t * string * sqlite3_exec_callback_t * address * &charp -> int =
+    "sqlite3_exec($1,$2.data(),$3,$4,$5)"
+  ;
+}
+
+@doc()
+
+@env.head(1,'sqlite tests')
+@select(env.test('.flx'))
+#import <flx.flxh>
+include "flx_sqlite3";
+open Sqlite3;
+
+fun subscript: & &char * int -> &char = "$1[$2]";
+
+cfun eh(void *data, int ncols, char * *values, char* *names):int =
+{
+  int i = 0;
+  whilst i<ncols do
+    print$ str names.[i] + "=" + str values.[i];
+    if i<ncols-1 do print ", ";  done;
+    ++i;
+  done;
+  println "";
+  return 0;
+}
+
+void run(struct sqlite3_db_t db) {
+  sql :=  
+    "drop table if exists fred;",
+    "create table fred (name, address);",
+    "insert into fred values('joe','wigram');",
+    "insert into fred values('max','gpr');",
+    "insert into fred values('lee','wax');",
+    "insert into fred values('henry','pollen');",
+    "select all name,address from fred;",
+    ""
+  ;
+  char *usr = c"user pointer";
+  char *errm = c"";
+
+  var i = 0;
+  var p = sql.[i]; 
+  whilst p != "" do
+    println p;
+    val cb : sqlite3_exec_callback_t = the eh;
+    res := sqlite3_exec(db,p,cb,cast[address] usr,&errm);
+    if res !=0 do 
+      println$ "exec DB error[abort] " + str res;
+      return;
+    done;
+    ++i;
+    p = sql.[i]; 
+  done;
+}
+
+println "Hello";
+var db : sqlite3_db_t;
+err := sqlite3_open("mydb.db", &db);
+if err != 0 do
+  println$ "open DB error[abort] " + str err;
+  goto finish;
+done;
+
+run(db);
+
+finish:>
+  sqlite3_close(db);
+
+@doc()
+
+@select(env.expect())
+Hello
+drop table if exists fred;
+create table fred (name, address);
+insert into fred values('joe','wigram');
+insert into fred values('max','gpr');
+insert into fred values('lee','wax');
+insert into fred values('henry','pollen');
+select all name,address from fred;
+name=joe, address=wigram
+name=max, address=gpr
+name=lee, address=wax
+name=henry, address=pollen
+@doc()

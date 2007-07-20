@@ -476,7 +476,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     then ce_atom (cstring_of_literal v)
     else
     let t = tn t in
-    ce_atom (t ^ "(" ^ cstring_of_literal v ^ ")")
+    ce_atom ("("^t ^ ")(" ^ cstring_of_literal v ^ ")")
     
   | `BEXPR_case (v,t') ->
     begin match unfold syms.dfns t' with

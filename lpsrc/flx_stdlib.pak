@@ -1018,33 +1018,13 @@ module C_hack
   fun ne: address * address -> bool = "$1!=$2";
 
   publish "Abstract type for C pointer"
-  pod type ptr[t]="?1 *";
+  typedef ptr[t]= &t;
 
   publish "Abstract type for C pointer to const"
   pod type cptr[t]="?1 const *";
 
   publish "Convert pointer to pointer to const"
   fun enconst[t]: ptr[t]->cptr[t] = "(?1 const*)$1";
-
-  publish """
-  Unsafe function to get C pointer from Felix reference.
-  The pointer may dangle if the collector deletes the 
-  frame containing the object. 
-  """
-  //fun unref[t]: &t->ptr[t] = "(?1*)($1.get_data())";
-  fun unref[t]: &t->ptr[t] = "(?1*)($1)";
-
-  publish """
-  Function to make Felix reference from C pointer.
-  This function is only safe if the C pointer
-  was not allocated by the Felix collector:
-  the resulting reference will never be collected
-  (because the frame pointer is set to 0)
-  """
-  /*
-  fun mkref[t]: ptr[t]->&t = "(#0 const&)flx::rtl::_ref_(0,(void*)$1-NULL)";
-  fun mkref[t]: gcptr[t]->&t = "(#0 const&)flx::rtl::_ref_(0,(void*)$1-NULL)";
-  */
 
   publish """
   Dereference a C pointer. If the expression is an
@@ -1900,16 +1880,6 @@ module Control
   proc write[t,CHAN:o_schannel[t]](chan:CHAN,v:t) {
     var ps = cast[gcaddress]$ xnew v;
     svc$ svc_swrite$ cast[_schannel] chan, &ps;
-  }
-
-  publish "Read primitive"
-  // finds the machine address of the read buffer
-  // then does a supervisor read specifying that address
-  // DEPRECATED!
-  proc read[t](x:&t) { 
-    val vadr : address = C_hack::as_address$ C_hack::unref x;
-    req  := svc_read vadr;
-    svc req;
   }
 
   private gen _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
