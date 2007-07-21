@@ -66,6 +66,12 @@ open Ocs_types
 open Sex_types
 open Dyp
 
+let silly_strtoken k = 
+  match k with 
+  | NAME (_,s) -> s
+  | _ -> Dyp_symbols.str_token k
+
+
 let map = List.map
 let map2 = List.map2
 let hd = List.hd
@@ -288,7 +294,9 @@ let define_scheme sr dyp name rhs (scm:string) =
 
   let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
   if !(dyp.global_data.debug) then
-  print_endline ("A Rule "^string_of_int pr_age ^" for " ^ name ^ " defined, scm="^scm);
+  print_endline ("Rule "^string_of_int pr_age ^" " ^ name ^ " := " ^
+  catmap " " silly_strtoken rhs ^
+  " =># "^scm);
   let action = fun _ avl ->
     let age = ref pr_age in
     let b = Buffer.create 200 in
@@ -389,7 +397,7 @@ let add_rule dyp dssl rule =
 
 
 (* create rules for nt* nt+ and nt? *)
-let fixup_rule counter rhs =
+let fixup_suffix counter rhs =
   let rec aux inp out extras = match inp with
   | [] -> rev out,extras
   | NAME (sr,s) :: STAR _ :: t -> 
@@ -420,6 +428,41 @@ let fixup_rule counter rhs =
 
   | h :: t -> aux t (h::out) extras 
   in aux rhs [] []
+
+let rec fixup_group counter rhs =
+  let rec aux inp out extras = match inp with
+  | RPAR _ :: t -> rev out, extras, t
+  | [] -> rev out,extras,[]
+
+  | LPAR sr :: t -> 
+    let x = string_of_int (!counter) in incr counter;
+    let sl = "__grp_"^x in
+    let group,extras',t = fixup_group counter t in
+    let action = 
+      let rn = ref 1 in
+      fold_left (fun acc x -> match x with
+      | NAME _ ->
+        let n = !rn in incr rn;
+        (if acc = "" then "" else acc ^ " ")
+        ^ ",_" ^ string_of_int n 
+      | _ -> incr rn; acc
+      ) "" group
+    in
+    let action = "`(" ^ action ^ ")" in
+    (*
+    print_endline ("Define " ^ sl ^ ":= " ^ catmap " " silly_strtoken group ^ " =># " ^ action); 
+    *)
+    let rule0 = sl,group,action in
+    aux t (NAME (sr,sl)::out) (rule0::extras@extras')
+
+  | h :: t -> aux t (h::out) extras 
+  in aux rhs [] []
+
+let fixup_rule counter rhs =
+  let rhs,extras,tail = fixup_group counter rhs in
+  if tail <> [] then failwith "parsing grammar: extra ) brackets";
+  let rhs,extras' = fixup_suffix counter rhs in
+  rhs,extras@extras'
 
 let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
    (*

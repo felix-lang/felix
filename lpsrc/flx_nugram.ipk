@@ -646,12 +646,21 @@ syntax statements {
     )
     """; 
 
+  /*
   sbasic_name_comma_list:= sname scomma_name* =># "(cons _1 _2)";
   scomma_name:= , sname =># "_2";
+  */
 
+  sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map car _2))";
+
+  /*
   squalified_name_comma_list:= squalified_name scomma_qualified_name* =>#
     "(cons _1 _2)";
   scomma_qualified_name := , squalified_name =># "_2";
+  */
+  squalified_name_comma_list:= squalified_name (, squalified_name)* =>#
+    "(cons _1 (map car _2))";
+
 
   stype_constraint := with squalified_name_comma_list where sexpr =>#
     "`(,_4 ,_2)";
@@ -861,8 +870,8 @@ syntax statements {
      ))
      """; 
 
-  sfun_arg :=  ( sparameter_comma_list when sexpr ) =># "`(,_2 (some ,_4))";
-  sfun_arg :=  ( sparameter_comma_list ) =># "`(,_2 none)";
+  sfun_arg :=  lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
+  sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
   sfun_arg :=  sname =># "`(((PVal ,_1 typ_none)) none)";
 
   sfun_kind := cfun =># "'CFunction";
@@ -1020,8 +1029,8 @@ syntax macros {
     smac_arg:= sname =># "`(,_1 Expr)"; 
     smac_args := smac_arg , smac_args =># "(cons _1 _3)";
     smac_args := smac_arg =># "`(,_1)";
-    smac_arg_list := ( smac_args ) =># "_2";
-    smac_arg_list := () =># "()";
+    smac_arg_list := lpar smac_args rpar =># "_2";
+    smac_arg_list := lpar rpar =># "()";
 
   sapplication := macro ctor sname scoercion =># "`ast_macro_ctor (,_3 ,_4))";
 }
@@ -1039,7 +1048,7 @@ syntax cbind {
     "`(ast_export_fun ,_sr ,_3 ,_5)";
   sexport_statement := export proc ssuffixed_name as sstring ; =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-  sexport_statement := export type (sexpr) as sstring ; =>#
+  sexport_statement := export type lpar sexpr rpar as sstring ; =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
 
@@ -1582,7 +1591,7 @@ syntax assertions {
     (cdr _2))
   """;
 
-  sreduce_args := ( stypeparameter_comma_list ) =># "_2";
+  sreduce_args := lpar stypeparameter_comma_list rpar =># "_2";
 
   sfunction_definition := reduce sdeclname sreduce_args : sexpr => sexpr ; =>#
   """
