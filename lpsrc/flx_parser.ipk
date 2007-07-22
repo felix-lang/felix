@@ -392,6 +392,12 @@ let define_scheme sr dyp name rhs (scm:string) =
   in
   rule,action
 
+let extend_grammar dyp (dssl,(name,prod,action,sr)) =
+  let rule = define_scheme sr dyp name prod action in
+  dyp.add_rules <- rule :: dyp.add_rules
+
+(* ------------------------------------------------------ *)
+
 (* create rules for nt* nt+ and nt? *)
 let fixup_suffix sr counter rhs =
   let rec aux inp out extras = match inp with
@@ -486,10 +492,6 @@ let add_rule dyp dssl rule =
 
 
 
-let extend_grammar dyp (dssl,(name,prod,action,sr)) =
-  let rule = define_scheme sr dyp name prod action in
-  dyp.add_rules <- rule :: dyp.add_rules
-
 let ocs2flx sr r = 
   let sex = Ocs2sex.ocs2sex r in
   (*
@@ -507,27 +509,26 @@ let ocs2flx sr r =
 
 let dummysr = "Dummy",0,0,0,0
 
-let dyp_merge_Obj_sexpr ol o = 
- match ol,o with
- | [],(nseq,nsr,nsex as it) -> 
-    (* this case never happens *)
-    assert false (* [it] *)
-
- | [oseq,osr,osex as oit],(nseq,nsr,nsex as nit) -> 
+let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
    (*
    print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
    print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ ", nxt=" ^ Ocs_print.string_of_ocs nsex);
    *)
-   if oseq > nseq then [oit]
-   else if nseq > oseq then [nit]
+   if oseq > nseq then oit
+   else if nseq > oseq then nit
    else begin
      print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
      print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ ", nxt=" ^ Ocs_print.string_of_ocs nsex);
      Flx_exceptions.clierr2 osr nsr ("AMBIGUITY PARSING, same production!,seq = " ^ string_of_int nseq)
    end
 
- | (oseq,osr,osex)::t,(nseq,nsr,nsex) -> 
-     Flx_exceptions.clierr2 osr nsr "AMBIGUITY PARSING!"
+let dyp_merge_Obj_sexpr ol = 
+ match ol with
+ | []
+ | [_] -> assert false
+ | h :: t -> 
+   match fold_left smerge h t with
+   ntt,gd,ld -> [ntt],gd,ld
 
 let rec elim_common_prefix x y = 
   match x, y with
@@ -538,13 +539,9 @@ let rec elim_common_prefix x y =
 
   | x,y -> x,y
 
-let dyp_merge_Obj_statement_star ol o = 
- match ol, o with
- | [],_ -> assert false
-
- | [xseq,x],(yseq,y) -> 
-   if xseq > yseq then [xseq,x]
-   else if yseq > xseq then [yseq,x]
+let ssmerge ((xseq,x),xgd,xld as xit) ((yseq,y),ygd,yld as yit) =
+   if xseq > yseq then xit
+   else if yseq > xseq then yit
    else
    let xsr = src_of_stmt (hd x) and ysr = src_of_stmt (hd y) in
    print_endline "Ambiguity parsing statements:";
@@ -554,9 +551,14 @@ let dyp_merge_Obj_statement_star ol o =
    print_endline ("Statement 2 = " ^ catmap "\n----\n" (string_of_statement 1) y);
    Flx_exceptions.clierr2 xsr ysr "AMBIGUITY PARSING TOP LEVEL!"
 
- | _ -> assert false
 
-
+let dyp_merge_Obj_statement_star ol = 
+ match ol with
+ | [] 
+ | [_] -> assert false
+ | h::t -> 
+   match fold_left ssmerge h t with
+   | ntt,gd,ld -> [ntt],gd,ld
 
 }
 
@@ -2005,6 +2007,7 @@ suffixed_name:
 
 epsilon: | {()}
 
+%mli { exception Scheme_error of Ocs_types.sval }
 
 @head(1,'Parser object')
 @h = tangler('src/flx_parse_ctrl.ml')

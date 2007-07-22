@@ -208,12 +208,11 @@ exception Syntax_error
 (** This exception is raised by glrParse if the parser is stuck in a
 situtation where no shift and no reduction is possible. *)
 
-type 'obj merge_function = 'obj list -> 'obj -> ('obj list)
-type 'obj merge_map
+type ('obj,'gd,'ld) merge_function =
+  ('obj * 'gd * 'ld) list -> ('obj list * 'gd * 'ld)
 
-val keep_all : 'a list -> 'a -> 'a list
-val keep_one : 'a list -> 'a -> 'a list
-
+val keep_all : ('obj,'gd,'ld) merge_function
+val keep_one : ('obj,'gd,'ld) merge_function
 
 module Dyp_special_types :
 sig
@@ -271,6 +270,7 @@ sig
       (('obj,'data,'local_data) dypgen_toolbox ->
         'obj list -> 'obj) ->
       ('obj,'data,'local_data) Dyp_special_types.action
+    val keep_zero : ('obj,'gd,'ld) merge_function
   end
 
   module type Parser_type =
@@ -298,7 +298,7 @@ sig
           ('token -> 'obj) -> ('token -> int) -> ('token -> string) -> int ->
           ('data,'local_data) Tools.data_equal ->
           ('obj -> bool) array -> ('obj -> string) ->
-          'obj merge_function array ->
+          ('obj,'data,'local_data) merge_function array ->
           ('a -> 'token) -> 'a ->
           ('a -> (Lexing.position * Lexing.position)) ->
           (('obj * priority) list)
@@ -347,14 +347,25 @@ struct
 end
 module Nt_map = Map.Make(Ordered_non_ter)
 
-type 'obj merge_function = 'obj list -> 'obj -> ('obj list)
-type 'obj merge_map = 'obj merge_function Nt_map.t
-let keep_all ol o = o::ol
-(*let keep_oldest ol _ =
-  let rec aux l = match l with [] -> [] | [c] -> [c] | _::t -> aux t in
-  aux ol*)
-let keep_one _ o = [o]
+(*type ('obj,'gd,'ld) merge_result =
+  Merge of ('obj list * 'gd * 'ld) | Dont_merge
+type ('obj,'gd,'ld) merge_function =
+  'obj list -> 'gd -> 'ld -> 'obj -> 'gd -> 'ld ->
+  ('obj,'gd,'ld) merge_result*)
 
+type ('obj,'gd,'ld) merge_function =
+  ('obj * 'gd * 'ld) list -> ('obj list * 'gd * 'ld)
+
+(*let keep_all ol gd ld o _ _ = Merge (o::ol,gd,ld)
+let keep_one _ gd ld o _ _ = Merge ([o],gd,ld)*)
+
+let keep_all l = match l with
+  | (_,gd,ld)::_ -> List.map (fun (o,_,_) -> o) l, gd, ld
+  | [] -> assert false
+
+let keep_one l = match l with
+  | (o,gd,ld)::_ -> [o], gd, ld
+  | [] -> assert false
 
 module Ordered_int =
 struct
@@ -1676,6 +1687,10 @@ struct
       (new_obj,dyp.will_shift,dyp.keep_grammar,dyp.global_data,!__dypgen_datadyn,
       dyp.local_data,add_rules_transformed,dyp.remove_rules,
       dyp.priority_data,dyp.next_state,dyp.next_grammar))
+
+  let keep_zero l = match l with
+    | (o,gd,ld)::_ -> [], gd, ld
+    | [] -> assert false
 end
 
 open Tools
@@ -2871,7 +2886,7 @@ let find_paths (sn:('a,'b) Gs.vertex) ind (rhs:rhs) rn =
   if b = false then [] else
   let rec aux n succ path =
     if n = 0 then match path with
-      | e::_ -> let s = e.dest in [path,(s.vertex_label).first_token]
+      | e::_ -> let s = e.dest in [path,(s.vertex_label).last_token]
       | [] -> [[],-1]
     else
     match succ with
@@ -2912,7 +2927,7 @@ let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),(ind,rhs)
         if tnb1<token_nb then (* yes, this is the good order *)
           revcat result (((start_node,p,token_nb),(ind,rhs),(tns,rn))::l)
         else
-        if tnb1<token_nb
+        if tnb1>token_nb
         then aux (((start1,p1,tnb1),(ind1,rhs1),(tns1,rn1))::result) tl
         else
         let parsing_device1 = start1.vertex_label.pdev in
@@ -3079,7 +3094,8 @@ exception Find_rightSib_failed
     Its purpose is to find in the stack nodes list [snl] a stack node which
     holds the same grammar as [g_leftSib] and which holds a state which has an
     items set equal to [is_rightSib]. *)
-let find_rightSib prio_imp g_nb_leftSib st_nb data_rightSib local_data_rightSib snl data_equal =
+let find_rightSib prio_imp g_nb_rightSib st_nb datadyn_rightSib snl
+  gd ld gd_equal ld_equal =
   let rec aux snl = match snl with
     | [] -> raise Find_rightSib_failed
     | sn::tl ->
@@ -3087,9 +3103,10 @@ let find_rightSib prio_imp g_nb_leftSib st_nb data_rightSib local_data_rightSib 
           sn.vertex_label.state_nb, sn.vertex_label.pdev,
           sn.vertex_label.prio_imprint
         in
-        if v_nb = st_nb && parsing_device.g_nb = g_nb_leftSib &&
-          (data_equal.global_data_equal parsing_device.data data_rightSib) &&
-          (data_equal.local_data_equal parsing_device.local_data local_data_rightSib) &&
+        if v_nb = st_nb && parsing_device.g_nb = g_nb_rightSib &&
+          parsing_device.datadyn == datadyn_rightSib &&
+          gd_equal parsing_device.data gd &&
+          ld_equal parsing_device.local_data ld &&
           (prio_imp_equal prio_imp sn_prio_imp)
         then sn
         else aux tl
@@ -3150,7 +3167,7 @@ exception Find_link_failed
 
 let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
     v_rightSib new_obj t nt lexer_pos prio counters data_equal
-    dummy_token_name prio_imp_lS is_lS first_token merge_array cons_index =
+    dummy_token_name prio_imp_lS is_lS first_token merge_map cons_index =
   countred := !countred + 1;
 (*   let _ = Printf.fprintf !log_channel "complete_reduction called\n" in *)
   let gram_rhs, lhs_table = pdev_rightSib.gram_rhs, pdev_rightSib.lhs_table in
@@ -3179,12 +3196,13 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
     output_string !log_channel "\n";
     print_prio_imp !log_channel gram_rhs lhs_table prio_imp_lS;
     output_string !log_channel "\n";*)
-    (*gs,*)pathList,topmost,counters)
+    (*gs,*)pathList,topmost,counters,merge_map)
   else
   try
     let rightSib =
       find_rightSib prio_imp pdev_rightSib.g_nb v_rightSib
-        pdev_rightSib.data pdev_rightSib.local_data topmost data_equal
+        pdev_rightSib.datadyn topmost 0 0
+        (fun _ _ -> true) (fun _ _ -> true)
     in
     let find_link (*gs*) rightSib leftSib =
       let rec aux el = match el with
@@ -3207,26 +3225,62 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
         (str_non_terminal nt pdev_rightSib.str_non_ter)
         (str_with_priority prio) start_pos.pos_fname start_pos.pos_lnum
         col1 end_pos.pos_lnum col2);
-      let merge = merge_array.(cons_index) in
-      let new_obj_list = merge old_obj_list new_obj in
-      let () = link.edge_label <- (new_obj_list,edge_nb) in
-      (*gs,*)pathList,topmost,counters
+      
+      let merge_item =
+        try
+          let (sn,_,_,objdata_list) = Int_map.find edge_nb merge_map in
+          sn,link,cons_index,
+          (new_obj,rightSib.vertex_label.pdev.data,
+            rightSib.vertex_label.pdev.local_data)::objdata_list
+        with Not_found ->
+          let old_obj = match old_obj_list with
+            | [o] -> o
+            | _ -> assert false
+          in
+          rightSib,link,cons_index,
+          [(new_obj,rightSib.vertex_label.pdev.data,
+            rightSib.vertex_label.pdev.local_data);
+          (old_obj,pdev_rightSib.data,pdev_rightSib.local_data)]
+      in
+      let merge_map = Int_map.add edge_nb merge_item merge_map in
+      
+      (*let merge = merge_array.(cons_index) in
+      let new_obj_list,global_data,local_data = match
+        merge old_obj_list pdev_rightSib.data pdev_rightSib.local_data
+        new_obj rightSib.vertex_label.pdev.data
+        rightSib.vertex_label.pdev.local_data with
+          | Merge merge_res -> merge_res
+          | Dont_merge -> raise Find_rightSib_failed
+      in
+      let () = rightSib.vertex_label <- { rightSib.vertex_label with
+        pdev = { rightSib.vertex_label.pdev with
+          data = global_data ; local_data = local_data }}
+      in
+      let () = link.edge_label <- (new_obj_list,edge_nb) in*)
+      pathList,topmost,counters,merge_map
     with
       Find_link_failed ->
-      (*let _ = Printf.fprintf !log_channel "complete_reduction called, Find_link_failed\n" in*)
+      (*let _ = Printf.fprintf !log_channel
+        "complete_reduction called, Find_link_failed\n" in*)
+      if data_equal.global_data_equal pdev_rightSib.data
+        rightSib.vertex_label.pdev.data &&
+        data_equal.local_data_equal pdev_rightSib.local_data
+        rightSib.vertex_label.pdev.local_data then ()
+        else raise Find_rightSib_failed;
       let link = Gs.create_e rightSib ([new_obj],counters.counted) leftSib in
       if (!dypgen_verbose>2) then
-        Printf.fprintf !log_stack_channel "Link created from <%d> to <%d>\n"
-          rightSib.vertex_label.sn_nb leftSib.vertex_label.sn_nb;
+        Printf.fprintf !log_stack_channel "Edge %d created from <%d> to <%d>\n"
+          counters.counted rightSib.vertex_label.sn_nb leftSib.vertex_label.sn_nb;
       let counters = {counters with counted = counters.counted+1 } in
       let pathList =
         insertLimitedReductions pathList link t topmost
           dummy_token_name
       in
-      (*gs,*)pathList,topmost,counters
+      pathList,topmost,counters,merge_map
   with
     Find_rightSib_failed ->
-    (*let _ = Printf.fprintf !log_channel "complete_reduction called, Find_rightSib_failed\n" in*)
+    (*let _ = Printf.fprintf !log_channel
+      "complete_reduction called, Find_rightSib_failed\n" in*)
     let rightSib = Gs.create_v {
       state_nb = v_rightSib;
       pdev = pdev_rightSib;
@@ -3248,7 +3302,7 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
       insertLimitedReductions2 pathList t rightSib
        dummy_token_name
     in
-    (*gs,*)pathList,topmost,counters
+    pathList,topmost,counters,merge_map
 
 
 
@@ -3270,7 +3324,7 @@ let left_rec_rule lhs rhs =
 
 
 
-let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) Gs.vertex) list)*) pathList (topmost:('a,'b) Gs.vertex list) counters data_equal dummy_token_name test_cons str_cons merge_array =
+let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) Gs.vertex) list)*) pathList (topmost:('a,'b) Gs.vertex list) counters data_equal dummy_token_name test_cons str_cons merge_map =
   
   if !dypgen_verbose>2 then
     (Printf.fprintf !log_channel "reduceViaPath called, start_node=%d\n  "
@@ -3328,7 +3382,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
   let v_rightSib = pdev_leftSib.table.(v).(1).(ind_1) in
   let last_parsing_device = start_node.vertex_label.pdev in
   
-  let foldfun ((*gs,*)pathList,topmost,will_shift,counters) toPass =
+  let foldfun (pathList,topmost,will_shift,counters,merge_map) toPass =
     try
       let rec try_actions ac_l = match ac_l with
         | (Dypgen_action f)::tl_ac_l ->
@@ -3480,19 +3534,98 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
                pdev_rightSib.lhs_table
                pdev_rightSib.str_non_ter);
       
-      let (*gs,*)pathList,topmost,counters =
+      let (*gs,*)pathList,topmost,counters,merge_map =
         complete_reduction (*gs*) pathList topmost leftSib
         pdev_rightSib v_rightSib new_obj t (nt_of_ind.(ind))
         symbol_pos prio counters data_equal dummy_token_name
-        prio_imp_lS is_lS first_token merge_array cons_index
+        prio_imp_lS is_lS first_token merge_map cons_index
       in
-      (*gs,*)pathList,topmost,(will_shift2 && will_shift),counters
-    with Giveup -> ((*gs,*)pathList,topmost,will_shift,counters)
+      (*gs,*)pathList,topmost,(will_shift2 && will_shift),counters,merge_map
+    with Giveup -> ((*gs,*)pathList,topmost,will_shift,counters,merge_map)
   in
-  List.fold_left foldfun ((*gs,*)pathList,topmost,true,counters) obj_ll
+  List.fold_left foldfun (pathList,topmost,true,counters,merge_map) obj_ll
 
 
-(*exception Giveup_shiftreduce*)
+
+let remove_edge edge_nb sn =
+  let rec aux succ_edges res = match succ_edges with
+    | [] -> res
+    | {edge_label = (_,n); dest = _ }::t when n=edge_nb -> res@t
+    | e::t -> aux t (e::res)
+  in
+  sn.succ_edges <- aux sn.succ_edges []
+
+
+
+let remove_path_edge edge_nb pathList =
+  let aux1 e = match e with
+    | { edge_label = (_,n) ; dest = _ } when n=edge_nb -> false
+    | _ -> true
+  in
+  let aux2 ((_,p,_),_,_) = List.for_all aux1 p in
+  List.filter aux2 pathList
+
+
+
+let do_merge merge_map merge_array topmost pathList counters t dummy_token_name =
+  let f edge_nb (sn,link,cons_index,objdata_list)
+  (topmost,pathList,counters) =
+    let obj_list,glo_dat,loc_dat =
+      merge_array.(cons_index) objdata_list
+    in
+    let pdev = sn.vertex_label.pdev in
+    if List.length sn.succ_edges >1 then
+      (remove_edge edge_nb sn;
+      if !dypgen_verbose>2 then Printf.fprintf !log_stack_channel "Edge %d removed\n" edge_nb;
+      (*Printf.fprintf !log_channel "do_merge, nb de link>1, obj_datalist length=%d\n"
+        (List.length objdata_list);*)
+      let pathList = remove_path_edge edge_nb pathList in
+      let rightSib = Gs.create_v { sn.vertex_label with
+        pdev = {pdev with data = glo_dat; local_data = loc_dat };
+        sn_nb = counters.countsn }
+      in
+      let _ = Gs.create_e rightSib (obj_list,counters.counted) link.dest in
+      if !dypgen_verbose>2 then print_sn rightSib;
+      let counters = {counters with
+        countsn = counters.countsn+1;
+        counted = counters.counted+1 }
+      in
+      let topmost = rightSib::topmost in
+      let pathList =
+        insertLimitedReductions2 pathList t rightSib
+         dummy_token_name
+      in
+      topmost,pathList,counters)
+    else
+      (sn.vertex_label <- { sn.vertex_label with pdev = {pdev with
+        data = glo_dat; local_data = loc_dat } };
+      (*Printf.fprintf !log_channel "do_merge, nb de link=1, obj_datalist length=%d\n"
+        (List.length objdata_list);*)
+      link.edge_label <- (obj_list,edge_nb);
+      topmost,pathList,counters)
+  in
+  Int_map.fold f merge_map (topmost,pathList,counters)
+
+
+
+let compare_pr (((start_node,p,token_nb):('a,'b) path),(ind,rhs), (rn,tns))
+    ((start1,p1,tnb1),(ind1,rhs1),(tns1,rn1)) =
+  if tnb1<token_nb then -1
+  else if tnb1>token_nb then 1
+  else
+  let parsing_device1 = start1.vertex_label.pdev in
+  let parsing_device = start_node.vertex_label.pdev in
+  if parsing_device.g_nb <> parsing_device1.g_nb then 0
+  else
+   let non_ter_of_ind = parsing_device.non_ter_of_ind in
+   let rel =
+    match parsing_device.po.(non_ter_of_ind.(ind)).(non_ter_of_ind.(ind1)) with
+    | Some b -> b
+    | None -> assert false
+  in
+  if rel then 1 else 0
+
+
 
 let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
     entry_point counters data_equal dummy_token_name test_cons str_cons
@@ -3538,24 +3671,42 @@ let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
   
   let pathList = List.fold_left aux1 (*Path_queue.empty*) [] topmost in
   
-  let rec aux4 pathList (*gs*) topmost counters =
+  let rec aux4 pathList topmost counters last_pr merge_map =
     match pathList with
-    | [] -> (*gs,*)topmost,counters
-    | pr::tl ->
-        let (*gs,*)pathList,topmost,counters =
-          let (*gs,*)pathList,topmost,will_shift,counters =
-            reduceViaPath pr t (*gs*) tl topmost counters data_equal
-              dummy_token_name test_cons str_cons merge_array
-          in
-          if will_shift = false then
-            let (sn,_,_),_,_ = pr in
-            let topmost = List.filter (function x -> x!=sn) topmost in
-            (*gs,*)pathList,topmost,counters
-          else (*gs,*)pathList,topmost,counters
+    | [] ->
+        let topmost,pathList,counters =
+          do_merge merge_map merge_array topmost pathList counters t dummy_token_name
         in
-        aux4 pathList (*gs*) topmost counters
+        (match pathList with [] -> topmost,counters
+          | _ -> aux4 pathList topmost counters None Int_map.empty)
+    | pr::_ ->
+        let merge_map,topmost,pathList,counters = match last_pr with
+          | None -> merge_map,topmost,pathList,counters
+          | Some pr0 ->
+              if compare_pr pr pr0 = 1 then
+                (let topmost,pathList,counters =
+                  do_merge merge_map merge_array topmost pathList counters t dummy_token_name
+                in
+                Int_map.empty,topmost,pathList,counters)
+              else merge_map,topmost,pathList,counters
+        in
+        (match pathList with
+          | pr::tl ->
+            let pathList,topmost,counters,merge_map =
+              let pathList,topmost,will_shift,counters,merge_map =
+                reduceViaPath pr t tl topmost counters data_equal
+                  dummy_token_name test_cons str_cons merge_map
+              in
+              if will_shift = false then
+                let (sn,_,_),_,_ = pr in
+                let topmost = List.filter (function x -> x!=sn) topmost in
+                pathList,topmost,counters,merge_map
+              else pathList,topmost,counters,merge_map
+            in
+            aux4 pathList topmost counters (Some pr) merge_map
+          | [] -> topmost,counters)
   in
-  aux4 pathList (*gs*) topmost counters
+  aux4 pathList topmost counters None Int_map.empty
 
 
 
@@ -3581,13 +3732,16 @@ let doShifts tok_name tok_value (*gs*) (prevTops:('a,'b) Gs.vertex list)
     if b=false then (*gs,*)topmost,counters else
     try
       let rightSib =
-        find_rightSib prio_imp parsing_device.g_nb next_state
-        parsing_device.data parsing_device.local_data topmost data_equal
+        find_rightSib prio_imp parsing_device.g_nb
+        next_state parsing_device.datadyn topmost
+        parsing_device.data parsing_device.local_data
+        data_equal.global_data_equal
+        data_equal.local_data_equal
       in
       let _ = Gs.create_e rightSib ([tok_value],counters.counted) sn in
       if (!dypgen_verbose>2) then
-        Printf.fprintf !log_stack_channel "Link created from <%d> to <%d>\n"
-          rightSib.vertex_label.sn_nb sn.vertex_label.sn_nb;
+        Printf.fprintf !log_stack_channel "Link %d created from <%d> to <%d>\n"
+          counters.counted rightSib.vertex_label.sn_nb sn.vertex_label.sn_nb;
       let counters = {counters with counted = counters.counted+1 } in
       (*gs,*)topmost,counters
     with Find_rightSib_failed ->
@@ -4594,7 +4748,7 @@ sig
         ('token -> 'obj) -> ('token -> int) -> ('token -> string) -> int ->
         ('data,'local_data) Tools.data_equal ->
         ('obj -> bool) array -> ('obj -> string) ->
-        'obj merge_function array ->
+        ('obj,'data,'local_data) merge_function array ->
         ('a -> 'token) -> 'a ->
         ('a -> (Lexing.position * Lexing.position)) ->
         (('obj * priority) list)
@@ -5215,7 +5369,6 @@ let a_priority = Dyp_special_types.Dypgen_action(fun l _ _ d dd ld _ prd _ ->
 ),true,false,Data_void,dd,ld,[],[],prd,None,None)
 
 let prio_data = empty_priority_data
-let global_merge obj_l _ = obj_l
 
 let parsing_device = create_parsing_device [
 (r_pgen_input,a_pgen_input);
@@ -5275,7 +5428,8 @@ let data_equal = {
 P.Tools.global_data_equal = (==);
 P.Tools.local_data_equal = (==) }
 
-let parse_result = glrParse parsing_device get_value get_name str_token ntn_start data_equal [|fun _ -> true|] (fun _ -> "") [|fun _ o -> [o]|]
+let parse_result = glrParse parsing_device get_value get_name str_token ntn_start data_equal [|fun _ -> true|] (fun _ -> "")
+[|Dyp.keep_one|]
 Pgen_lexer.token lexbuf
 (fun _ -> (Lexing.dummy_pos,Lexing.dummy_pos))
 
@@ -5431,7 +5585,7 @@ let aux nt_string code = code^" | Non_terminal_name_"^nt_string
 let code_non_terminal_decl = String_set.fold aux non_terminal_set code_non_terminal_decl
 let code_non_terminal_decl = code_non_terminal_decl^" | Non_terminal_name_startprime\n"*)
 
-let code_non_terminal_decl,non_terminal_set,merge_function_list =
+let code_non_terminal_decl,non_terminal_set =
   let aux1 st_set ld = match ld with
     | Obj_terminal _ -> st_set
     | Obj_non_terminal (nt,_,_) -> String_set.add nt st_set
@@ -5440,17 +5594,16 @@ let code_non_terminal_decl,non_terminal_set,merge_function_list =
     List.fold_left aux1 (String_set.add lhs_nt st_set) ld_list
   in
   let non_terminal_set = List.fold_left aux2 String_set.empty grammar in
-  let aux nt_string (code1,mfl,n) =
+  let aux nt_string (code1,n) =
     code1^"let "^nt_string^" = "^(string_of_int n)^"\n",
-    (("merge_"^nt_string^","^(string_of_int n))::mfl),
     (n+1)
   in
-  let code_non_terminal_decl,merge_function_list,_ =
+  let code_non_terminal_decl,_ =
     String_set.fold aux non_terminal_set
-     ("",[],1)
+     ("",1)
   in
   code_non_terminal_decl,
-  non_terminal_set,merge_function_list
+  non_terminal_set
 
 
 
@@ -5595,10 +5748,12 @@ let code_main_2 = code_main_2^
   let lexbuf_position lexbuf = (lexbuf.Lexing.lex_curr_p,lexbuf.Lexing.lex_start_p) in
   let pf = glrParse parsing_device __dypgen_get_value get_name str_token "^
   non_terminal_start^
-  " data_equal  [|fun _ -> true|] (fun _ -> \"\")  [|fun _ o -> [o]|]
+  " data_equal  [|fun _ -> true|] (fun _ -> \"\")
+    [|Dyp.keep_one|]
     f lexbuf lexbuf_position in
   let aux1 (o,p) = match o with
-    | Obj_"^non_terminal_start^" r -> (r,p) | _ -> failwith \"Wrong type for entry result\" in
+    | Obj_"^non_terminal_start^
+    " r -> (r,p) | _ -> failwith \"Wrong type for entry result\" in
   List.map aux1 pf\n\n"
 
 let parser_param_header = "
@@ -5695,7 +5850,7 @@ let parser_code = parser_param_header^
   (*code_number_of_tokens^*)
   code_type_obj^
   code_get_value^
-  "let merge ol _ = ol\n"^
+  (*"let merge ol _ = ol\n"^*)
   header_main^
   code_grammar^
   code_prio_data^
@@ -6033,7 +6188,7 @@ let process_pv_token () = pv_token := true
 let undef_nt = ref true
 let process_no_undef_nt () = undef_nt := false
 
-let process_version () = print_endline "version 20070715"
+let process_version () = print_endline "version 20070722"
 
 let list_arg = [
 ("-v",Arg.Unit process_verbose_mode,"activates verbose mode: gives details of the parsing of the input file");
@@ -6415,6 +6570,22 @@ let code_get_token_name, code_str_token, code_str_token_name, code_token_name_ar
 
 
 
+let code_ter_of_string, code_ter_string_list, code_String_ter_map =
+  let code = "  let ter_string_list = [" in
+  let aux str n cl = ");"::(string_of_int n)::("\n      (\""^str^"\",")::cl in
+  let code_list = String_map.fold aux token_name_map [code] in
+  let code_list = List.rev ("]\n"::code_list) in
+  "  let ter_of_string =\n    List.fold_left (fun tsm (s,i) -> String_ter_map.add s i tsm)\n     String_ter_map.empty ter_string_list\n",
+  String.concat "" code_list,
+  "  module Ordered_string =
+  struct
+    type t = string
+    let compare = Pervasives.compare
+  end
+  module String_ter_map = Map.Make(Ordered_string)\n"
+
+
+
 let map_card m =
   String_map.fold (fun _ _ i-> i+1) m 0
 
@@ -6577,8 +6748,8 @@ let code_priority_def,priority_set,code_priority_names =
 
 
 let code_global_local_data =
-"let global_data = ref 0
-let local_data = ref 0
+"let global_data = ref ()
+let local_data = ref ()
 let global_data_equal = (==)
 let local_data_equal = (==)\n\n"
 
@@ -7088,7 +7259,8 @@ let code_type_obj =
 
 
 let code_merge_functions =
-  let aux cons_s _ code = code^"let dyp_merge_"^cons_s^" _ _ = []\n" in
+  let aux cons_s _ code = code^"let dyp_merge_"^cons_s^
+  " = Dyp_runtime.Tools.keep_zero\n" in
   (String_map.fold aux cons_map "")^
   (*"let keep_all ol o = o::ol\n"^
   "let Dyp.keep_oldest ol _ =
@@ -7101,23 +7273,23 @@ let code_merge_array =
   let aux4 gmf gmm nt = String_map.add nt gmf gmm in
   let aux3 gmm (gmf,nt_l) = List.fold_left (aux4 gmf) gmm nt_l in
   let gen_merge_map = List.fold_left aux3 String_map.empty generic_merge in
-  let aux1 cons_s _ code = code^"let dyp_merge_"^cons_s^" ol o =\n"^
+  let aux1 cons_s _ code = code^"let dyp_merge_"^cons_s^
+    " l =\n"^
     try let gen_merge = String_map.find cons_s gen_merge_map in
-      "  "^gen_merge^" ol o\n"
+      "  "^gen_merge^" l\n"
     with Not_found -> (
-      "  let ol2 = dyp_merge_"^cons_s^" ol o in\n"^
-      "  if ol2 = [] then dyp_merge ol o else ol2\n")
+      "  match dyp_merge_"^cons_s^" l with\n"^
+      "    | ([],_,_) -> dyp_merge l\n"^
+      "    | res -> res\n")
   in
-  let aux2 cons_s _ ma = ";\n"::("(fun ol o -> (
-  let f1 o = match o with "^obj_pref^cons_s^
-  " ob -> ob
+  let aux2 cons_s _ ma = ";\n"::("(fun l -> (
+  let f1 (o,gd,ld) = match o with "^obj_pref^cons_s^" ob -> (ob,gd,ld)
     | _ -> failwith \"type error, bad obj in dyp_merge_"^cons_s^"\"
   in
-  let o = f1 o in
-  let ol = List.map f1 ol in
-  let ol = dyp_merge_"^cons_s^" ol o in
+  let l = List.map f1 l in
+  let (ol,gd,ld) = dyp_merge_"^cons_s^" l in
   let f2 o = "^obj_pref^cons_s^" o in
-  List.map f2 ol))")::ma
+  (List.map f2 ol, gd, ld)))")::ma
   in
   let merge_array_l = List.rev
     ("|]\n\n"::(List.tl (String_map.fold aux2 cons_map
@@ -7152,6 +7324,9 @@ let parser_codl = [
   code_token_name_decl;
   code_get_token_name;
   code_str_token;
+  code_ter_string_list;
+  code_String_ter_map;
+  code_ter_of_string;
   "end\n\n";
 
   code_type_obj;
@@ -7421,6 +7596,10 @@ and ocaml_code = parse
   | "$"
       { (if !in_string then ocaml_code_buffer $ "$"
       else ocaml_code_buffer $ "_");
+        ocaml_code lexbuf
+      }
+  | "\\\\"
+      { ocaml_code_buffer $ "\\\\";
         ocaml_code lexbuf
       }
   | "\\\""
