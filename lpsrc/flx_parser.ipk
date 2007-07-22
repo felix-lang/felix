@@ -86,7 +86,7 @@ module Drules = Map.Make(struct
   let compare = compare
 end)
 
-type rule_t = string * token list * statement_t * range_srcref
+type rule_t = string * token list * string * range_srcref
 
 type dssl_t = {
   rules : rule_t list;
@@ -114,8 +114,19 @@ type global_data_t = {
   debug : bool ref;
 }
 
+exception Scheme_error of sval
+
+let giveup () = raise Giveup; Sunspec
+let sraise s  = raise (Scheme_error s); Sunspec
+
+let flx_ocs_init env =
+  Ocs_env.set_pf0 env giveup "giveup";
+  Ocs_env.set_pf1 env sraise "raise"
+
 let init_env () =  
-  let env = Ocs_top.make_env () in          
+  let env = Ocs_top.make_env () in
+  flx_ocs_init env;
+
   let v1:Ocs_types.sval = Ocs_sym.get_symbol "_sr" in
   let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
   Ocs_env.bind_name env v1 g1;
@@ -381,63 +392,52 @@ let define_scheme sr dyp name rhs (scm:string) =
   in
   rule,action
 
-let add_rule dyp dssl rule =
-  let m = dyp.local_data in
-  let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
-  match rule with
-  | `Scheme_rule rule ->
-     let d: dssl_t = {d with rules = (uniq_add rule d.rules) } in
-     let m = {m with dssls=Drules.add dssl d m.dssls } in
-     dyp.local_data <- m
-
-  | `Requires ls ->
-     let d: dssl_t = {d with deps = ls @ d.deps } in
-     let m = {m with dssls=Drules.add dssl d m.dssls } in
-     dyp.local_data <- m
-
-
 (* create rules for nt* nt+ and nt? *)
-let fixup_suffix counter rhs =
+let fixup_suffix sr counter rhs =
   let rec aux inp out extras = match inp with
   | [] -> rev out,extras
   | NAME (sr,s) :: STAR _ :: t -> 
+    let rsr = slift sr in
     let x = string_of_int (!counter) in incr counter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,[NAME(sr,sl)],"(reverse _1)" in
-    let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)" in
-    let rule2 = sl,[],"'()" in
+    let rule0 = slr,[NAME(sr,sl)],"(reverse _1)",rsr in
+    let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
+    let rule2 = sl,[],"'()",rsr in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
   | NAME (sr,s) :: PLUS _ :: t -> 
+    let rsr = slift sr in
     let x = string_of_int (!counter) in incr counter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,[NAME(sr,sl)],"(reverse _1)" in
-    let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)" in
-    let rule2 = sl,[NAME(sr,s)],"`(,_1)" in
+    let rule0 = slr,[NAME(sr,sl)],"(reverse _1)",rsr in
+    let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
+    let rule2 = sl,[NAME(sr,s)],"`(,_1)",rsr in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
   | NAME (sr,s) :: QUEST _ :: t -> 
+    let rsr = slift sr in
     let x = string_of_int (!counter) in incr counter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,[NAME (sr,s)],"`(some ,_1)" in
-    let rule2 = sl,[],"'none" in
+    let rule1 = sl,[NAME (sr,s)],"`(,_1)",rsr in
+    let rule2 = sl,[],"()",rsr in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
 
 
   | h :: t -> aux t (h::out) extras 
   in aux rhs [] []
 
-let rec fixup_group counter rhs =
+let rec fixup_group sr counter rhs =
   let rec aux inp out extras = match inp with
   | RPAR _ :: t -> rev out, extras, t
   | [] -> rev out,extras,[]
 
   | LPAR sr :: t -> 
+    let rsr = slift sr in
     let x = string_of_int (!counter) in incr counter;
     let sl = "__grp_"^x in
-    let group,extras',t = fixup_group counter t in
+    let group,extras',t = fixup_group rsr counter t in
     let action = 
       let rn = ref 1 in
       fold_left (fun acc x -> match x with
@@ -452,58 +452,43 @@ let rec fixup_group counter rhs =
     (*
     print_endline ("Define " ^ sl ^ ":= " ^ catmap " " silly_strtoken group ^ " =># " ^ action); 
     *)
-    let rule0 = sl,group,action in
+    let rule0 = sl,group,action,rsr in
     aux t (NAME (sr,sl)::out) (rule0::extras@extras')
 
   | h :: t -> aux t (h::out) extras 
   in aux rhs [] []
 
-let fixup_rule counter rhs =
-  let rhs,extras,tail = fixup_group counter rhs in
+let fixup_rule sr counter rhs =
+  let rhs,extras,tail = fixup_group sr counter rhs in
   if tail <> [] then failwith "parsing grammar: extra ) brackets";
-  let rhs,extras' = fixup_suffix counter rhs in
+  let rhs,extras' = fixup_suffix sr counter rhs in
   rhs,extras@extras'
 
-let do_dyp_rule dyp (dssl,(name,rhs,stmt,sr)) =
-   (*
-   print_endline ("PROCESSING DEFINITION " ^ name ^ ":= " ^
-   catmap " " (function 
-   | NAME (_,s) -> "<"^s^">"
-   | USER_KEYWORD (_,s) -> s
-   | x -> Dyp_symbols.str_token x
-   ) rhs ^ 
-   "=>#\n" ^
-   string_of_statement 0 stmt
-   );
-   *)
-   match stmt with
-   | `AST_scheme_string (sr,s) ->
-        (*
-        print_endline ("SCHEME, user action = " ^ s);
-        *)
-        let prod,extras = fixup_rule dyp.global_data.counter rhs in
+let add_rule dyp dssl rule =
+  let m = dyp.local_data in
+  let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
+  match rule with
+  | `Scheme_rule (name,rhs,action,sr) ->
+     let rules = 
+        let prod,extras = fixup_rule sr dyp.global_data.counter rhs in
+        ((name,prod,action,sr) :: extras)
+     in
+     let rules = rev rules in
+     let rules = fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
+     let d: dssl_t = {d with rules = rules } in
+     let m = {m with dssls=Drules.add dssl d m.dssls } in
+     dyp.local_data <- m
 
-        (* NOTE: the order is critical. We want the 'extras' defined
-           before the main production, so the 'age' reflects the
-           rule for the main nonterminal, not the ones with magic names
-           invented for x* x+ x? etc, otherwise debugging is too hard!
-        *)
-        List.iter (fun (name,prod,s) ->
-          let rule = define_scheme sr dyp name prod s in
-          dyp.add_rules <- rule :: dyp.add_rules;
-        )
-        extras;
+  | `Requires ls ->
+     let d: dssl_t = {d with deps = ls @ d.deps } in
+     let m = {m with dssls=Drules.add dssl d m.dssls } in
+     dyp.local_data <- m
 
-        let rule = define_scheme sr dyp name prod s in
-        dyp.add_rules <- rule :: dyp.add_rules;
 
-   | _ ->
-     let s = 
-        "Syntax extension: non-terminal " ^ name ^
-        " requires action to be Scheme term!"
-      in
-      print_endline s;
-      clierr sr s
+
+let extend_grammar dyp (dssl,(name,prod,action,sr)) =
+  let rule = define_scheme sr dyp name prod action in
+  dyp.add_rules <- rule :: dyp.add_rules
 
 let ocs2flx sr r = 
   let sex = Ocs2sex.ocs2sex r in
@@ -704,8 +689,7 @@ dyprod:
        map (fun (rhs,sr,rule) ->
          match rule with
          | `Scheme scm ->
-           let stmt = `AST_scheme_string (sr,scm) in
-           `Scheme_rule (name,rhs,stmt,sr)
+           `Scheme_rule (name,rhs,scm,sr)
        ) $3
      }
    | REQUIRES basic_name_comma_list SEMI
@@ -797,7 +781,7 @@ statement:
         []
         !to_install
       in
-      List.iter (do_dyp_rule dyp) rules;
+      List.iter (extend_grammar dyp) rules;
       dyp.local_data <- { m with loaded_dssls = !to_install @ m.loaded_dssls };
       0,sr,Snull
     }
@@ -2020,6 +2004,7 @@ suffixed_name:
     }
 
 epsilon: | {()}
+
 
 @head(1,'Parser object')
 @h = tangler('src/flx_parse_ctrl.ml')
