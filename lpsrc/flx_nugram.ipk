@@ -160,7 +160,7 @@ SCHEME """
 
 //------------------------------------------
 syntax expressions {
-  satom := sliteral;
+  satom := sliteral =># "_1";
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
   satom := sfalse =># "'(ast_typed_case  0 2)";
@@ -208,7 +208,7 @@ syntax expressions {
   ssuffixed_name := squalified_name of sfactor =># 
     "`(ast_suffix (,_1 ,_3))";
 
-  sthe_name := satom;
+  sthe_name := satom =># "_1";
   sthe_name := 
     | the squalified_name =># "`(ast_the ,_2)"
     | noexpand squalified_name =># "`(ast_noexpand ,_2)"
@@ -844,6 +844,7 @@ syntax statements {
 
 //------------------------------------------
 syntax variables {
+  requires statements;
   sval_def := val sname sname_suffix = sexpr ; =># 
   """
   (let 
@@ -1234,6 +1235,7 @@ syntax cbind {
 
 //------------------------------------------
 syntax executable {  
+  requires statements;
   statement:= sexecutable =># "_1"; 
   sexecutable := scall =># "_1";
   sexecutable := ssvc =># "_1";
@@ -1498,6 +1500,7 @@ syntax requirements {
 }
 
 syntax type_declarations {
+  requires statements;
   stype_alias := typedef sdeclname = sexpr ; =>#
     """
     (mkns 
@@ -1588,6 +1591,7 @@ syntax type_declarations {
 
 //------------------------------------------
 syntax assertions {
+  requires statements;
   sexecutable := sassert_statement =># "_1";
   sassert_statement:= assert sexpr ; =># "`(ast_assert ,_sr ,_2)";
 
@@ -1631,6 +1635,7 @@ syntax assertions {
 }
 
 syntax namespaces {  
+  requires statements;
   stype_alias := rename sdeclname = squalified_name ; =>#
     """
     (mkns 
@@ -1700,6 +1705,8 @@ syntax namespaces {
 //------------------------------------------
 
 syntax csyntax {
+  requires statements;
+
   base_type := 
     | "char" =># '`(ast_name "char" ())'
     | "tiny" =># '`(ast_name "tiny" ())'
@@ -1803,8 +1810,6 @@ syntax csyntax {
     """
     `(ast_type_alias ,_sr ,(car _2) ,dfltvs ,(cadr _2))
     """; 
-
-
 }
 
 //------------------------------------------
