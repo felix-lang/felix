@@ -430,6 +430,12 @@ let define_scheme sr dyp name rhs (scm:string) =
         if (match sr with _,l,_,_ -> l) <> 0 then
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
+      | USER10 (_,s1,_) , `Obj_USER10 (sr,s2,_) ->
+        if s1 <> s2 then raise Giveup;
+        if (match sr with _,l,_,_ -> l) <> 0 then
+        srs := slift sr :: !srs;
+        aux t1 t2 (n+1)
+
 @for k,n in flx_syms:
   tangle ("      | _,`Obj_"+k+" sr ")
 
