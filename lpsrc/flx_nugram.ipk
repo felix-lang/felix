@@ -20,6 +20,18 @@ SCHEME """
 """;
 
 SCHEME """
+  (define dfltargs '((() none)))
+""";
+
+SCHEME """
+  (define lazy (lambda (stmts) `(ast_lambda (,dfltvs ,dfltargs typ_none ,stmts))))
+""";
+
+SCHEME """
+  (define call (lambda (f a) `(ast_call ,_sr (ast_name ,f ()) ,a)))
+""";
+
+SCHEME """
 (define mkn1 (lambda (stmt nvs) 
   `(ast_namespace ,(car nvs) ,(cadr nvs) (,stmt))))
 """;
@@ -169,10 +181,10 @@ syntax expressions {
   satom := callback lsqb sexpr rsqb =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";
   satom := lbrace sexpr rbrace =># """
-    `(ast_lambda (,dfltvs ((() none)) typ_none ((ast_fun_return ,_sr ,_2))))
+    (lazy `((ast_fun_return ,_sr ,_2)))
   """;
 
-  satom := scompound =># "`(ast_lambda (,dfltvs ((() none)) none ,_1))";
+  satom := scompound =># "(lazy _1)";
 
   satom := lpar sexpr rpar =># "_2";
   satom := lpar rpar =># "'()";

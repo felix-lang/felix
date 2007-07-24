@@ -769,8 +769,10 @@ statement_star:
      dyp.local_data <- dyp.last_local_data;
      dyp.keep_grammar <- true;
      let seq,sr,s = $2 in
+     match s with Snull -> $1 | _ ->
      let sseq,stmts = $1 in
-     max seq sseq, (ocs2flx sr s :: stmts)
+     let s' = ocs2flx sr s in
+     max seq sseq, (s' :: stmts)
    }
 
  | { 0,[] }
