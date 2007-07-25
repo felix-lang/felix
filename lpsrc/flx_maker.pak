@@ -256,6 +256,23 @@ class PLUGIN(Plugin):
     except:
       pass
 
+@select(tangler('mkplugins/gramdoc.py'))
+class PLUGIN(Plugin):
+  name = 'gramdoc'
+  help = 'make the syntax documentation'
+
+  def runme(self):    
+    print "GENERATING SYNTAX DOCUMENTATION"
+    f = open ("tmp/xx.flx","w")
+    f.write("#import <nugram.flxh>\n")
+    f.write("open syntax felix\n")
+    f.close()
+    try:
+      vxqt("bin/flxp -Ilib --document-grammar tmp/xx")
+    except:
+      pass
+
+
 @select(tangler('mkplugins/copy_mli2ml.py'))
 class PLUGIN(Plugin):
   name = 'copy_mli2ml'
@@ -1849,6 +1866,9 @@ class PLUGIN(Plugin):
 
     print "***** DOXGEN RTL [HACK!] ************"
     plugins['rtldoc']()
+
+    print "***** GRAMMAR DOC [HACK!] ************"
+    plugins['gramdoc']()
 
 @select(tangler('mkplugins/demo.py'))
 class PLUGIN(Plugin):
