@@ -1742,17 +1742,41 @@ syntax csyntax {
     | enum sname =># "`(ast_name ,_2 ())"
   ;
 
+explain base_type """
+<p>Support for basic C types.</p>
+""";
+
+
+explain base_type """
+<p>Although matching only
+Felix names for these types, you can actually use
+the C type name, for example <code>long long<code>
+with be translated by the lexer to <code>ulong</code>.</p>
+""";
+
+
   pointer_type:= 
     | base_type
     | "void" star =># '`(ast_name "address" ())'
     | pointer_type star =># "`(ast_ref ,_1)"
   ;
 
+explain pointer_type """
+<p>Note that pointers to const are not supported.</p>
+""";
+
+
   c_type := 
     | pointer_type
     | c_type lpar star rpar lpar c_type_list rpar =>#
       "`(ast_longarrow (,_6 ,_1))"           // cfunction
   ;
+
+explain c_type """
+<p>Note that function pointer types are C function 
+pointers <code>A--&gt;B</code>.</p>
+""";
+
 
   c_type_suffix := comma c_type =># "_2";
   c_type_list := 
@@ -1774,8 +1798,24 @@ syntax csyntax {
       "`(PVar ,_2 (ast_longarrow (,_4 ,_1)))"
   ;
 
+explain declarator """
+<p>Top level const is supported by passing by <code>val</code>,
+otherwise we pass by <code>var</code></p>
+""";
+
+explain declarator """
+<p>Note that function pointer types are C function 
+pointers <code>A--&gt;B</code>.</p>
+""";
+
+
   // function parameter
   sparameter := declarator;
+
+explain sparameter """
+<p> C style function paramaters like <code>int x</code> mean
+the same as <code>x:int</code></p>
+""";
 
   // initialised variable
   svar_def := declarator = sexpr ; =>#
@@ -1789,6 +1829,12 @@ syntax csyntax {
       )
     `(,dcl ,_sr ,name ,dfltvs (some ,type) (some ,_3)))
     """; 
+
+explain svar_def """
+<p> C style variable definitions like <code>int x=1;</code>
+require initialisers.
+""";
+
 
 
   // function
