@@ -1,17 +1,17 @@
 @head(1,'Lexer')
 @h = tangler('src/flx_prelex.mli')
 @select(h)
-val src_of_token : Flx_parse.token -> Flx_ast.srcref
-val string_of_token : Flx_parse.token -> string
-val name_of_token : Flx_parse.token -> string
+val src_of_token : Flx_token.token -> Flx_ast.srcref
+val string_of_token : Flx_token.token -> string
+val name_of_token : Flx_token.token -> string
 
 @h = tangler('src/flx_prelex.ml')
 @select(h)
-open Flx_parse
+open Flx_token
 
 let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 
-let string_of_token (tok :Flx_parse.token): string =
+let string_of_token (tok :Flx_token.token): string =
   match tok with
   | DUMMY -> "DUMMY"
   | NAME (sr,s) -> s
@@ -53,7 +53,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | ERRORTOKEN (sref,s) -> "<<ERROR '"^ s ^"'>>"
   | SLOSH -> "\\"
 
-let name_of_token (tok :Flx_parse.token): string =
+let name_of_token (tok :Flx_token.token): string =
   match tok with
   | DUMMY -> "DUMMY"
   | NAME (sr,s) -> "NAME"
@@ -141,7 +141,7 @@ let src_of_token t = match t with
 @h = tangler('src/flx_lexstate.ml')
 @select(h)
 open Flx_util
-open Flx_parse
+open Flx_token
 open Flx_string
 open Big_int
 open Flx_exceptions
@@ -222,7 +222,7 @@ class file_control
     (* this is the generator file name, can be set with #line directive *)
     val mutable filename = filename'
     val mutable condition:condition_t list = [`Processing]
-    val macros : (string,string list * Flx_parse.token list) Hashtbl.t = Hashtbl.create 97
+    val macros : (string,string list * Flx_token.token list) Hashtbl.t = Hashtbl.create 97
    
     method incr_lex_counters lexbuf =
       loc.line_no <- loc.line_no + 1;
@@ -305,11 +305,11 @@ class lexer_state filename basedir incdirs expand_expr' =
     val mutable at_line_start = true
 
     val mutable keywords:
-      (string * (srcref * string -> Flx_parse.token)) list array
+      (string * (srcref * string -> Flx_token.token)) list array
       = [| [] |]
 
     val mutable symbols:
-      (string * (srcref * string -> Flx_parse.token)) list array
+      (string * (srcref * string -> Flx_token.token)) list array
       = mk_std_tokens () 
 
     val nonterminals: 
@@ -456,22 +456,22 @@ class lexer_state filename basedir incdirs expand_expr' =
     method add_infix_symbol (prec:int) s f =
       let n = String.length s in
       self#adjust_symbol_array n;
-      let elt = s,(fun (sr,_) -> Flx_parse.USER10 (sr,s,f)) in
+      let elt = s,(fun (sr,_) -> USER10 (sr,s,f)) in
       symbols.(n) <- elt :: symbols.(n)
 
     method add_infix_keyword (prec:int) s f =
       let n = String.length s in
       self#adjust_keyword_array n;
-      let elt = s,(fun (sr,_) -> Flx_parse.USER10 (sr,s,f)) in
+      let elt = s,(fun (sr,_) -> USER10 (sr,s,f)) in
       keywords.(n) <- elt :: keywords.(n)
     
     method add_keyword (s:string) =
       let n = String.length s in
       self#adjust_keyword_array n;
-      let elt = s,(fun (sr,_) -> Flx_parse.USER_KEYWORD (sr,s)) in
+      let elt = s,(fun (sr,_) -> USER_KEYWORD (sr,s)) in
       keywords.(n) <- elt :: keywords.(n)
      
-    method add_nonterminal (s:string) (sr:range_srcref) (toks: Flx_parse.token list) (term:ast_term_t) =
+    method add_nonterminal (s:string) (sr:range_srcref) (toks: Flx_token.token list) (term:ast_term_t) =
       let productions = try Hashtbl.find nonterminals s with Not_found -> [] in
       Hashtbl.replace nonterminals s ((toks,term)::productions)
 
@@ -489,10 +489,10 @@ class lexer_state filename basedir incdirs expand_expr' =
             else aux fnmap t
         in aux [] brackets
       in
-      let elt = tok1,(fun (sr,_) -> Flx_parse.USERLB (sr,rbs,tok1)) in
+      let elt = tok1,(fun (sr,_) -> USERLB (sr,rbs,tok1)) in
       symbols.(n1) <- elt :: symbols.(n1)
       ;
-      let elt = tok2,(fun (sr,_) -> Flx_parse.USERRB (sr,tok2)) in
+      let elt = tok2,(fun (sr,_) -> USERRB (sr,tok2)) in
       symbols.(n1) <- elt :: symbols.(n2)
         
     method tokenise_symbols lexbuf (s:string) : token list =
@@ -525,7 +525,7 @@ end
 @select(h)
 open Flx_ast
 open Flx_string
-open Flx_parse
+open Flx_token
 
 exception Duplicate_macro of string
 
@@ -682,7 +682,7 @@ end
 @h = tangler('src/flx_preproc.mli')
 @select(h)
 open Flx_ast
-open Flx_parse
+open Flx_token
 open Flx_lexstate
 open Lexing
 
@@ -722,7 +722,7 @@ val handle_preprocessor :
 @h = tangler('src/flx_preproc.ml')
 @select(h)
 open Flx_util
-open Flx_parse
+open Flx_token
 open Flx_string
 open Big_int
 open Flx_exceptions
@@ -769,7 +769,7 @@ let pre_tokens_of_lexbuf lexer buf state =
   let rec get lst = 
     let ts = lexer state buf in 
     match ts with
-    | [Flx_parse.ENDMARKER] -> lst
+    | [ENDMARKER] -> lst
     | _ -> 
       match state#get_condition with
       | `Processing | `Subscan ->
@@ -849,7 +849,7 @@ let rec expand' state exclude toks =
         
         | None ->
         match h with
-        | Flx_parse.NAME (sr,s) ->
+        | NAME (sr,s) ->
           begin match state#get_macro s with
           (* not a macro : output it *)
           | None -> aux exclude ts (h :: out) bindings
@@ -1357,7 +1357,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
 @select(h)
 {
 open Flx_util
-open Flx_parse
+open Flx_token
 open Flx_string
 open Big_int
 open Flx_exceptions
@@ -2009,7 +2009,7 @@ and pre_flx_lex state = parse
 val pre_flx_lex : 
   Flx_lexstate.lexer_state -> 
   Lexing.lexbuf -> 
-  Flx_parse.token list
+  Flx_token.token list
 
 val parse_line : 
   Flx_lexstate.lexer_state -> 

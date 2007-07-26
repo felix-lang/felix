@@ -49,6 +49,9 @@
 
 @head(2,'Header')
 @select(h)
+%mltop {
+open Flx_token
+}
 {
 
 (* parser header *)
@@ -148,6 +151,7 @@ let global_data = ref {
 *)
 let document_grammar = ref false
 let grammar_doc = Hashtbl.create 97
+let ntgroups = Hashtbl.create 97
 type gdoc_entry_t = [
   | `Doc of string * string 
   | `Prod of string * string list
@@ -242,6 +246,10 @@ let emit_rule dssl name dyalts =
 let emit_doc dssl nt s =
   let old = try Hashtbl.find grammar_doc nt with Not_found -> [] in
   Hashtbl.replace grammar_doc nt (`Doc (dssl,s) :: old)
+
+let record_group group nts =
+  let old = try Hashtbl.find ntgroups group with Not_found -> [] in
+  Hashtbl.replace ntgroups group (uniq_cat old nts)
 
 
 let list_last lst = List.hd (List.rev lst)
@@ -624,6 +632,7 @@ let add_rule dyp dssl rule =
      dyp.local_data <- m
 
   | `Document (name,s) -> emit_doc dssl name s
+  | `Page (name,nts) -> record_group name nts
 
 let ocs2flx sr r = 
   let sex = Ocs2sex.ocs2sex r in
@@ -697,6 +706,7 @@ let dyp_merge_Obj_statement_star ol =
 
 @head(2,'Tokens')
 @select(h)
+
 /* special */
 %token <(Flx_ast.srcref * string)> ERRORTOKEN
 %token ENDMARKER
@@ -827,6 +837,13 @@ dyprod:
        if snd $1 <> "explain" then raise Giveup;
        `Document ((snd $2),(snd $3))
      }
+
+   | NAME NAME EQUAL basic_name_comma_list SEMI
+     {
+       if snd $1 <> "page" then raise Giveup;
+       `Page ((snd $2),(map snd $4))
+     }
+
 
 
 dyalt:
@@ -2154,6 +2171,10 @@ suffixed_name:
 
 epsilon: | {()}
 
+%mlitop {
+open Flx_token
+}
+
 %mli { 
   exception Scheme_error of Ocs_types.sval 
   val document_grammar : bool ref
@@ -2162,6 +2183,7 @@ epsilon: | {()}
     | `Prod of string * string list
   ]
   val grammar_doc : (string, gdoc_entry_t list) Hashtbl.t
+  val ntgroups : (string, string list) Hashtbl.t
 }
 
 @head(1,'Parser object')
@@ -2169,6 +2191,7 @@ epsilon: | {()}
 @select(h)
 
 open Flx_ast
+open Flx_token
 open Flx_exceptions
 open Flx_parse
 

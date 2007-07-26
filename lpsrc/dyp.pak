@@ -5964,14 +5964,14 @@ let empty_ppi = {
   single_nt = [] }
 }
 
-%token LPAREN RPAREN COMMA SEMI COLON PERCENTPERCENT LBRACE RBRACE BAR LESS GREATER EQUAL KWD_TOKEN KWD_START KWD_RELATION KWD_MLI KWD_MERGE KWD_CONSTRUCTOR KWD_FOR KWD_TYPE KWD_NON_TERMINAL <string * (int * int)> OCAML_CODE <string> OCAML_TYPE <string * (int * int)> PATTERN <string * (int * int * int)> UIDENT <string * (int * int * int)> LIDENT EOF
+%token LPAREN RPAREN COMMA SEMI COLON PERCENTPERCENT LBRACE RBRACE BAR LESS GREATER EQUAL KWD_TOKEN KWD_START KWD_RELATION KWD_MLI KWD_MLITOP KWD_MLTOP KWD_MERGE KWD_CONSTRUCTOR KWD_FOR KWD_TYPE KWD_NON_TERMINAL <string * (int * int)> OCAML_CODE <string> OCAML_TYPE <string * (int * int)> PATTERN <string * (int * int * int)> UIDENT <string * (int * int * int)> LIDENT EOF
 
 %start <Parse_tree.obj> main
 
 %%
 
-main: | optional_code parser_param_infos PERCENTPERCENT grammar optional_trailer optional_mli EOF
-  { ($1,$2,List.rev $4,$5,$6) }
+main: | optional_mltop optional_code parser_param_infos PERCENTPERCENT grammar optional_trailer optional_mlitop optional_mli EOF
+  { ($1,$2,$3, List.rev $5,$6,$7,$8) }
 
 optional_trailer:
   |                           { ("",(0,0)) }
@@ -6021,6 +6021,15 @@ optional_code:
 optional_mli:
   |                    { ("",(0,0)) }
   | KWD_MLI OCAML_CODE { $2 }
+
+optional_mlitop:
+  |                    { ("",(0,0)) }
+  | KWD_MLITOP OCAML_CODE { $2 }
+
+optional_mltop:
+  |                    { ("",(0,0)) }
+  | KWD_MLTOP OCAML_CODE { $2 }
+
 
 token_list:
   | KWD_TOKEN UIDENT             { [((fst $2),"No_type")] }
@@ -6121,6 +6130,7 @@ opt_par_act:
 opt_pattern:
   |         { ("_",(0,0)) }
   | PATTERN { (fst $1,snd $1) }
+
 @h=tangler('dypgen/generators/dypgen/parse_tree.mli')
 @select(h)
 type token_desc = string * string
@@ -6150,7 +6160,7 @@ type parser_param_info = {
   additional_cons : string list;
   nt_type : (string * string list) list;
   single_nt : string list }
-type obj = action_desc * parser_param_info * (rule_desc list) * action_desc * action_desc
+type obj = action_desc * action_desc * parser_param_info * (rule_desc list) * action_desc * action_desc * action_desc
 
 @h=tangler('dypgen/generators/dypgen/argument.ml')
 @select(h)
@@ -6158,6 +6168,7 @@ let verbose = ref 1
 let merge_warning = ref false
 let lexer = ref "ocamllex"
 let aut_kind = ref "`LR0"
+let emit_token_type = ref true
 let priority_enforcement = ref "PIA"
 let process_verbose_mode () = verbose := 2
 let process_merge_warning () = merge_warning := true
@@ -6184,11 +6195,12 @@ let pv_obj = ref false
 let process_pv_obj () = pv_obj := true
 let pv_token = ref false
 let process_pv_token () = pv_token := true
+let process_noemit_token_type () = emit_token_type := false
 
 let undef_nt = ref true
 let process_no_undef_nt () = undef_nt := false
 
-let process_version () = print_endline "version 20070722"
+let process_version () = print_endline "version 20070726"
 
 let list_arg = [
 ("-v",Arg.Unit process_verbose_mode,"activates verbose mode: gives details of the parsing of the input file");
@@ -6205,13 +6217,14 @@ let list_arg = [
 
 ("--pv-obj",Arg.Unit process_pv_obj,"the type constructor obj is made as a sum of polymorphic variants instead of a sum of constructors. This is useful when the maximum number of constructors allowed is reached.");
 ("--pv-token",Arg.Unit process_pv_token,"the type token is made as a sum of polymorphic variants instead of a sum of constructors. This is useful when the maximum number of constructors allowed is reached.");
+("--noemit-token-type",Arg.Unit process_noemit_token_type,"the type token is not emitted in the mli or ml files, it must be provided by the user instead.");
 
 ("--no-undef-nt",Arg.Unit process_no_undef_nt,"prevents the exception Undefined_nt from being raised.");
 
 ("--version",Arg.Unit process_version,"gives the version of dypgen and exit.")
 ]
 
-(*let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--automaton (LR0|LALR|LR1)] [--prio-aut] [--pv-obj] file_name.dyp"*)
+(*let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--noemit-token-type] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--automaton (LR0|LALR|LR1)] [--prio-aut] [--pv-obj] file_name.dyp"*)
 
 let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--prio-pt] [--pv-obj] [--no-bad-cons] [--no-undef-nt] file_name.dyp"
 
@@ -6330,15 +6343,26 @@ let parse_result =
 
 
 
-let (header_main,(header_main_pos,header_main_offset)), token_list, relation,
-  non_terminal_start_list, generic_merge, cons_list, nt_type_list,
-  single_nt_list, add_cons_list,
-  grammar, (trailer_main,(trailer_main_pos,trailer_main_offset)),
-  (mli_code,(mli_code_pos,mli_code_offset)) =
-    let c1,ppi,g,c2,c3 = fst (List.hd parse_result) in
-    (c1,ppi.token_list,ppi.relation,ppi.start,
+let 
+  (topheader_main,(topheader_main_pos,topheader_main_offset)), 
+  (header_main,(header_main_pos,header_main_offset)), 
+  token_list, 
+  relation,
+  non_terminal_start_list, 
+  generic_merge, 
+  cons_list, 
+  nt_type_list,
+  single_nt_list, 
+  add_cons_list,
+  grammar, 
+  (trailer_main,(trailer_main_pos,trailer_main_offset)),
+  (topmli_code,(topmli_code_pos,topmli_code_offset)) ,
+  (mli_code,(mli_code_pos,mli_code_offset)) 
+  =
+    let mltop,c1,ppi,g,c2,mlitop,c3 = fst (List.hd parse_result) in
+    (mltop,c1,ppi.token_list,ppi.relation,ppi.start,
     ppi.generic_merge,ppi.cons,ppi.nt_type,ppi.single_nt,
-    ppi.additional_cons,g,c2,c3)
+    ppi.additional_cons,g,c2,mlitop,c3)
 
 
 let obj_pref = if !Argument.pv_obj then "`" else ""
@@ -6441,16 +6465,21 @@ let sharp_line_number lnum = "\n# "^(string_of_int lnum)^" \""^input_file^"\"\n"
 let space_string n = String.make (max n 0) ' '
 
 
+let topheader_main = if topheader_main="" then "\n" else
+  (sharp_line_number topheader_main_pos)^(space_string topheader_main_offset)^
+  topheader_main^insert_line_number
 let header_main = if header_main="" then "\n" else
   (sharp_line_number header_main_pos)^(space_string header_main_offset)^
   header_main^insert_line_number
 let trailer_main = if trailer_main = "" then ""
   else(sharp_line_number trailer_main_pos)^(space_string trailer_main_offset)^
   trailer_main^insert_line_number
+let topmli_code = if topmli_code = "" then "\n" else
+  (sharp_line_number topmli_code_pos)^(space_string topmli_code_offset)^
+  topmli_code^insert_line_number
 let mli_code = if mli_code = "" then "\n" else
   (sharp_line_number mli_code_pos)^(space_string mli_code_offset)^
   mli_code^insert_line_number
-
 
 
 module Ordered_string =
@@ -6499,7 +6528,7 @@ let code_type_token, (*code_export_module,*) token_map =
   in
   let code_type_token = code_type_token^rbra^"\n"
   in
-  code_type_token,
+  (if !Argument.emit_token_type then code_type_token else ""),
   (*"module Export_type =\nstruct\n"^
   code_type_token ^"end\ninclude Export_type\n\n",*)
   token_map
@@ -7317,6 +7346,7 @@ let code_get_token_value =
 
 
 let parser_codl = [
+  topheader_main;
   code_type_token;
 
   "module Dyp_symbols =\nstruct\n";
@@ -7395,6 +7425,7 @@ let parser_code_mli =
   let aux2 p code = if p="default_priority" then code
     else code^"  val "^p^" : Dyp.priority\n"
   in
+  topmli_code ^
   code_type_token^
   "module Dyp_priority_data :\nsig\n"^
   "  val priority_data : Dyp.priority_data\n"^
@@ -7476,6 +7507,8 @@ rule token = parse
   | "%token" { look_for_type:=true; KWD_TOKEN }
   | "%start" { look_for_type:=true; KWD_START }
   | "%relation" { look_for_type:=false; KWD_RELATION }
+  | "%mlitop" { KWD_MLITOP }
+  | "%mltop" { KWD_MLTOP }
   | "%mli" { KWD_MLI }
   | "%constructor" { KWD_CONSTRUCTOR }
   | "%for" { KWD_FOR }

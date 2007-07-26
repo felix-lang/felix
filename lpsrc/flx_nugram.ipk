@@ -1767,7 +1767,7 @@ explain pointer_type """
 
 
   c_type := 
-    | pointer_type
+    | pointer_type =># "_1"
     | c_type lpar star rpar lpar c_type_list rpar =>#
       "`(ast_longarrow (,_6 ,_1))"           // cfunction
   ;
@@ -1810,7 +1810,7 @@ pointers <code>A--&gt;B</code>.</p>
 
 
   // function parameter
-  sparameter := declarator;
+  sparameter := declarator =># "_1";
 
 explain sparameter """
 <p> C style function paramaters like <code>int x</code> mean

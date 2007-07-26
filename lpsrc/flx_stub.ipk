@@ -44,7 +44,7 @@ let () =
   (* strip EOF *)
   let lexbuf = (Lexing.from_string "dummy" ) in
   let toker = (new Flx_tok.tokeniser tokens) in
-  while toker#token_peek lexbuf != Flx_parse .ENDMARKER do
+  while toker#token_peek lexbuf != Flx_token.ENDMARKER do
     let x = 
         try 
           dyphack (

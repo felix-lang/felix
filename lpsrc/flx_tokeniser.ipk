@@ -37,7 +37,7 @@
 @h = tangler('src/flx_lex1.ml')
 @select(h)
 
-open Flx_parse
+open Flx_token
 open Flx_exceptions
 open List
 open Flx_srcref
@@ -456,13 +456,14 @@ let translate_preprocessor ts =
 
 @h = tangler('src/flx_lex1.mli')
 @select(h)
-val translate : Flx_parse.token list -> Flx_parse.token list
-val translate_preprocessor : Flx_parse.token list -> Flx_parse.token list
+open Flx_token
+val translate : token list -> token list
+val translate_preprocessor : token list -> token list
 
 @head(1,'Pre token printer')
 @h = tangler('src/flx_pretok.ml')
 @select(h)
-open Flx_parse
+open Flx_token
 open Flx_prelex
 open List
 
@@ -507,7 +508,7 @@ let pre_tokens_of_string s filename expand_expr =
 
 @h = tangler('src/flx_pretok.mli')
 @select(h)
-open Flx_parse
+open Flx_token
 open Flx_ast
 
 val pre_tokens_of_filename : 
@@ -527,7 +528,7 @@ open Flx_ast
 open Flx_exceptions
 open List
 open Flx_srcref 
-open Flx_parse
+open Flx_token
 
 let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
   match ls with
@@ -679,11 +680,11 @@ end
 
 
 type 'a parser_t = 
-  (Lexing.lexbuf  -> Flx_parse.token) -> 
+  (Lexing.lexbuf  -> token) -> 
   Lexing.lexbuf -> 
   'a
 
-let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) = 
+let parse_tokens (parser:'a parser_t) (tokens: token list) = 
   let toker = (new tokeniser tokens) in
   try 
     parser (toker#token_src) (Lexing.from_string "dummy" )
@@ -720,7 +721,7 @@ let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) =
 
 @h = tangler('src/flx_tok.mli')
 @select(h)
-open Flx_parse
+open Flx_token
 open Flx_ast
 
 val print_pre_tokens : token list -> unit
@@ -756,8 +757,8 @@ open Flx_flxopt
 open Flx_getopt
 open Flx_types
 open Flx_version
-open Flx_parse
 open Flx_prelex
+open Flx_token
 ;;
 
 let print_elkhound_tokens toks =

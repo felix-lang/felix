@@ -2,7 +2,7 @@
 @h = tangler('src/flx_keywords.ml')
 @select(h)
 
-open Flx_parse
+open Flx_token
 open List
 
 let hash_table_from_list n lst =
@@ -26,5 +26,5 @@ let map_flx_keywords srcref lex_item =
 
 @h = tangler('src/flx_keywords.mli')
 @select(h)
-open Flx_parse
+open Flx_token
 val map_flx_keywords : Flx_ast.srcref -> string -> token

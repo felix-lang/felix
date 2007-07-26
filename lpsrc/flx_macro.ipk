@@ -199,10 +199,10 @@ let rec parse_expr sr s =
   let pre_tokens  = Flx_pretok.pre_tokens_of_string s filename expand_expression in
   let pre_tokens =
     match pre_tokens with
-    | Flx_parse.HASH_INCLUDE_FILES _ :: tail -> tail 
+    | Flx_token.HASH_INCLUDE_FILES _ :: tail -> tail 
     | _ -> assert false
   in 
-  let tokens  = Flx_lex1.translate_preprocessor pre_tokens @ [Flx_parse.ENDMARKER] in
+  let tokens  = Flx_lex1.translate_preprocessor pre_tokens @ [Flx_token.ENDMARKER] in
   let toker = (new Flx_tok.tokeniser tokens) in
   begin try
     dyphack (

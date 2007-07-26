@@ -3,6 +3,7 @@
 @select(h)
 SEX_MODULES = [
   'sex/sex_types',
+  'sex/sex_token',
   'sex/sex_parse',
   'sex/sex_lex',
   'sex/sex_print',
@@ -10,8 +11,8 @@ SEX_MODULES = [
   'sex/ocs2sex',
   ]
 
-caml_raw_interfaces = ['sex/sex_types']
-caml_interfaces = ['sex/sex_types', 'sex/sex_parse']
+caml_raw_interfaces = ['sex/sex_types','sex/sex_token']
+caml_interfaces = ['sex/sex_types', 'sex/sex_token', 'sex/sex_parse']
 caml_implementations = SEX_MODULES
 caml_lexes = ['sex/sex_lex']
 caml_dyparses = ['sex/sex_parse']
@@ -29,6 +30,7 @@ A simple lexer.
 @select(tangler("sex/sex_lex.mll"))
 {
 open Sex_parse
+open Sex_token
 let lexeme = Lexing.lexeme
 let substr = String.sub
 let len = String.length
@@ -99,7 +101,18 @@ rule sex_lex state = parse
 {
 }
 
+@select(tangler("sex/sex_token.mli"))
+type token =
+ | LB
+ | RB
+ | EOF
+ | STR of string
+ | SYM of string
+ | ID of string
+ | INT of string
+
 @select(tangler("sex/sex_parse.dyp"))
+%mltop { open Sex_token }
 {
 open Sex_types
 }
@@ -128,6 +141,8 @@ sexp:
 sexps:
   | sexp sexps { $1 :: $2 }
   | { [] }
+
+%mlitop { open Sex_token }
 
 @select(tangler("sex/sex_types.mli"))
 type sexp_t =

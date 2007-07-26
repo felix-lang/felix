@@ -37,6 +37,7 @@ FLX_MODULES = [
   'src/flx_cexpr',
   'src/flx_csubst', 
   'src/flx_sex2flx', 
+  'src/flx_token',
   'src/flx_parse',
   'src/flx_keywords',
   'src/flx_prelex',
@@ -103,6 +104,7 @@ FLX_MODULES = [
 FLX_RAW_INTERFACES = [
   'src/flx_ast',
   'src/flx_types',
+  'src/flx_token',
 ] 
 
 FLX_INTERFACES = FLX_MODULES
@@ -342,6 +344,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_string.ipk')
 @include_file ('flx_keywords.ipk')
 @include_file ('flx_lexer.ipk')
+@include_file ('flx_token.ipk')
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')
 @include_file ('flx_constfld.ipk')
