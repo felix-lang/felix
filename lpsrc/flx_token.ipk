@@ -1,0 +1,37 @@
+@execfile('config'+os.sep+'flx_data.py')
+@h = tangler('src/flx_token.mli')
+@select(h)
+open Flx_ast
+
+type token = 
+  | ERRORTOKEN of (srcref * string)
+  | ENDMARKER
+  | NEWLINE 
+  | SLOSH
+  | COMMENT of string
+  | COMMENT_NEWLINE of string
+  | WHITE of int
+  | NAME of (srcref * string)
+  | INTEGER of (srcref * string * Flx_ast.bigint)
+  | FLOAT of (srcref * string * string)
+  | STRING of (srcref * string)
+  | CSTRING of (srcref * string)
+  | FSTRING of (srcref * string)
+  | QSTRING of (srcref * string)
+  | WSTRING of (srcref * string)
+  | USTRING of (srcref * string)
+  | USER_KEYWORD of (srcref * string)
+  | HASH_INCLUDE_FILES of string list
+  | TOKEN_LIST of token list
+  | DUMMY
+  | USER10 of (srcref * string * string)
+  | USERLB of (srcref * (string * string) list * string)
+  | USERRB of (srcref * string)
+
+@for k,v in flx_syms:
+  tangle("  | "+k+" of srcref",inhibit_sref=1)
+
+@for n,k in flx_keywords: 
+  tangle("  | "+k+" of srcref",inhibit_sref=1)
+
+
