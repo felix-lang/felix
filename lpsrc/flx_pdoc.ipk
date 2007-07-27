@@ -1,0 +1,149 @@
+@execfile('config'+os.sep+'flx_data.py')
+
+@h = tangler("src/flx_pdoc.mli")
+@select(h)
+open Flx_token
+open Flx_ast
+
+type action_t = [`Scheme of string | `None]
+type symbol_t = [`Atom of token | `Group of dyalt_t list]
+and dyalt_t = symbol_t list * range_srcref * action_t
+type gdoc_entry_t = [
+    | `Doc of string * string 
+    | `Prod of string * string list
+]
+
+val document_grammar: bool ref
+
+val emit_doc: string -> string -> string -> unit
+val record_group : string -> string list -> unit
+val emit_rule : string -> string -> dyalt_t list -> unit
+
+
+val grammar_doc : (string, gdoc_entry_t list) Hashtbl.t
+val ntgroups : (string, string list) Hashtbl.t
+
+@h = tangler("src/flx_pdoc.ml")
+@select(h)
+open Flx_token
+open Flx_ast
+open Flx_util
+
+type action_t = [`Scheme of string | `None]
+type symbol_t = [`Atom of token | `Group of dyalt_t list]
+and dyalt_t = symbol_t list * range_srcref * action_t
+
+type gdoc_entry_t = [
+    | `Doc of string * string 
+    | `Prod of string * string list
+]
+
+let silly_strtoken k = 
+  match k with 
+  | NAME (_,s) -> s
+  | _ -> Flx_prelex.string_of_token k
+
+
+(* This stuff is a hack to emit documentation
+   for the reference manual
+*)
+let document_grammar = ref false
+let grammar_doc = Hashtbl.create 97
+let ntgroups = Hashtbl.create 97
+
+let nt2tok = [
+  "lpar","(";
+  "rpar",")";
+  "lsqb","[";
+  "rsqb","]";
+  "lbrace","{";
+  "rbrace","}";
+  "star","*";
+  "plus","+";
+  "quest","?";
+  "strue","true";
+  "sfalse","false";
+  "colon",":";
+  "ssemi",";";
+  "vbar","|";
+  "sname","<SPAN CLASS=\"predef\">NAME</SPAN>";
+  "sinteger","<SPAN CLASS=\"predef\">INTEGER</SPAN>";
+  "sstring","<SPAN CLASS=\"predef\">STRING</SPAN>";
+  "scstring","<SPAN CLASS=\"predef\">CSTRING</SPAN>";
+  "sepsilon","<SPAN CLASS=\"predef\">epsilon</SPAN>";
+]
+
+let spelling = [
+@for s,t in flx_keywords: tangle('"'+t+'","'+s+'";')
+@for t,s in flx_syms: tangle('"'+t+'","'+s+'";')
+]
+
+let emit_rule dssl name dyalts =
+  let done_space = ref false in
+  let b = Buffer.create 1000 in
+  let emit s = Buffer.add_string b s in
+  let spc () = 
+    if !done_space then () else
+    done_space :=true; emit " "
+  in
+  let semit s = spc(); emit s; done_space := false in
+
+  let emit_ter tok = semit tok in
+  let emit_nt s = semit ("<A HREF=\""^s^".html\">" ^ s ^ "</A>") in
+  let emit_enc s = emit ("<SPAN CLASS=\"metatoken\">"^s^"</SPAN>") in
+  let emit_user_keyword s = 
+    spc(); 
+    emit ("<SPAN CLASS=\"userkeyword\">"^s^"</SPAN>"); 
+    done_space := false 
+  in
+  let rec emit_symbol sym = match sym with
+    | `Group dyalts -> 
+      spc(); emit_enc "("; done_space := false;
+      let first = ref true in
+      List.iter (fun x -> 
+        if not (!first) then emit_enc "|"; 
+        first := false;
+        emit_dyalt x) 
+      dyalts; 
+      emit_enc ")"
+
+    | `Atom a -> match a with
+      | NAME (_,s) -> 
+        begin try 
+          let tok = List.assoc s nt2tok in 
+          emit_ter tok
+        with Not_found -> emit_nt s
+        end
+      | STRING (_,s) -> semit("\"" ^ s ^ "\"")
+      | STAR _ -> emit_enc "*"
+      | QUEST _ -> emit_enc "?"
+      | PLUS _  -> emit_enc "+"
+      | USER_KEYWORD (_,s) -> emit_user_keyword s
+      | x -> 
+        let s =  silly_strtoken x in
+        let s = try List.assoc s spelling with Not_found -> s in
+        semit s
+      
+  and emit_dyalt (rhs,sr,action) = List.iter emit_symbol rhs 
+  in
+  let ss = List.map
+    (fun x->
+      Buffer.clear b;
+      emit "  "; emit_enc "|"; done_space:=false; emit_dyalt x;
+      Buffer.contents b
+    )
+    dyalts 
+  in
+  let old = try Hashtbl.find grammar_doc name with Not_found -> [] in
+  Hashtbl.replace grammar_doc name (`Prod (dssl,ss) :: old)
+
+let emit_doc dssl nt s =
+  let old = try Hashtbl.find grammar_doc nt with Not_found -> [] in
+  Hashtbl.replace grammar_doc nt (`Doc (dssl,s) :: old)
+
+let record_group group nts =
+  let old = try Hashtbl.find ntgroups group with Not_found -> [] in
+  Hashtbl.replace ntgroups group (uniq_cat old nts)
+
+
+

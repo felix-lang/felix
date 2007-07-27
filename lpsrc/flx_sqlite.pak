@@ -65,11 +65,11 @@ fun subscript: & &char * int -> &char = "$1[$2]";
 
 cfun eh(void *data, int ncols, char * *values, char* *names):int =
 {
-  int i = 0;
-  whilst i<ncols do
-    print$ str names.[i] + "=" + str values.[i];
-    if i<ncols-1 do print ", ";  done;
-    ++i;
+  int ii = 0;
+  whilst ii<ncols do
+    print$ str names.[ii] + "=" + str values.[ii];
+    if ii<ncols-1 do print ", ";  done;
+    ++ii;
   done;
   println "";
   return 0;

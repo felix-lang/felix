@@ -38,9 +38,10 @@ FLX_MODULES = [
   'src/flx_csubst', 
   'src/flx_sex2flx', 
   'src/flx_token',
+  'src/flx_prelex',
+  'src/flx_pdoc',
   'src/flx_parse',
   'src/flx_keywords',
-  'src/flx_prelex',
   'src/flx_lex1',
   'src/flx_tok',
   'src/flx_lexstate',
@@ -340,6 +341,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_types.ipk')
 @include_file ('flx_prop.ipk')
 @include_file ('flx_unify.ipk')
+@include_file ('flx_pdoc.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
 @include_file ('flx_keywords.ipk')
