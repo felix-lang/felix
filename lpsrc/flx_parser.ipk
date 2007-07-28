@@ -95,11 +95,13 @@ type rule_t = string * token list * string * range_srcref
 type dssl_t = {
   rules : rule_t list;
   deps : string list;
+  privacy : string Drules.t; (* string -> string *)
 }
 
 let fresh_dssl = { 
   rules = [];
   deps = [];
+  privacy = Drules.empty;
 }
 
 type local_data_t = {
@@ -272,10 +274,11 @@ let scheme_run sr env (s:string):sval =
   let r :sval = scheme_eval c in
   r
 
-let define_scheme sr dyp name rhs (scm:string) =
+let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
+  let mapnt name = try Drules.find name dssl_record.privacy with Not_found -> name in
   let pr_age = !(dyp.global_data.counter) in 
-  incr (dyp.global_data.counter)
-  ;
+  incr (dyp.global_data.counter);
+  let name = mapnt name in
   let lhs = 
     try dyp.add_nt name "Obj_sexpr" 
     with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ name)
@@ -286,8 +289,9 @@ let define_scheme sr dyp name rhs (scm:string) =
         Dyp.Ter Dyp_symbols.t_NAME
 
       | NAME (sr,s) -> 
+          let nt = mapnt s in
           let nt = 
-            try dyp.add_nt s "Obj_sexpr"
+            try dyp.add_nt nt "Obj_sexpr"
             with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ s)
             | Dyp.Bad_constructor _ -> failwith ("BAD CONSTRUCTOR FOR " ^ s)
           in
@@ -402,7 +406,9 @@ let define_scheme sr dyp name rhs (scm:string) =
   rule,action
 
 let extend_grammar dyp (dssl,(name,prod,action,sr)) =
-  let rule = define_scheme sr dyp name prod action in
+  let m = dyp.local_data in
+  let dssl_record = Drules.find dssl m.dssls in
+  let rule = define_scheme sr dyp dssl_record dssl name prod action in
   dyp.add_rules <- rule :: dyp.add_rules
 
 (* ------------------------------------------------------ *)
@@ -508,11 +514,19 @@ let add_rule dyp dssl rule =
   let m = dyp.local_data in
   let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
   match rule with
-  | `Scheme_rule (name,dyalts) ->
+  | `Scheme_rule (privacy,name,dyalts) ->
      if !Flx_pdoc.document_grammar then record_rule dssl name dyalts;
      let rules = fixup_alternatives dyp.global_data.counter name dyalts in
      let rules = fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
-     let d: dssl_t = {d with rules = rules } in
+     let privacy = 
+       match privacy with
+       | `Private -> 
+          let n = !(dyp.global_data.counter) in incr (dyp.global_data.counter);
+          let secret = "_"^name^"_"^string_of_int n in 
+          Drules.add name secret d.privacy
+       | `Public -> d.privacy
+     in 
+     let d: dssl_t = {d with rules = rules;  privacy = privacy} in
      let m = {m with dssls=Drules.add dssl d m.dssls } in
      dyp.local_data <- m
 
@@ -711,11 +725,16 @@ dyprods:
    | dyprod dyprods { $1 :: $2 }
    | { [] }
 
+opt_private:
+  | PRIVATE { `Private }
+  | { `Public }
+
 dyprod:
-   | NAME COLONEQUAL dyalts SEMI
+   | opt_private NAME COLONEQUAL dyalts SEMI
      {
-       `Scheme_rule (snd $1,$3)
+       `Scheme_rule ($1, snd $2,$4)
      }
+
    | REQUIRES basic_name_comma_list SEMI
      {
         let dssls = map snd $2 in
