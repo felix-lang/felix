@@ -297,6 +297,8 @@ syntax expressions {
     stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
+  page exponentials = ssuperscript, spower;
+
   ssuperscript := srefr =># "_1"; 
   ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))"; 
 
@@ -310,11 +312,18 @@ syntax expressions {
   sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))";
   sprefixed := ~ spower =># "`(ast_apply ,_sr (compl ,_2))";
 
+  page arithmetic = 
+    s_term, 
+    sproduct, 
+    sproduct_list, 
+    ssubtraction, 
+    ssum, 
+    ssum_list
+  ;
+
   s_term := sprefixed =># "_1";
   s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))";
   s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))";
-
-  page arithmetic = s_term, sproduct, sproduct_list, ssubtraction, ssum, ssum_list;
 
   sproduct :=  s_term =># "_1";
   sproduct := s_term star sproduct_list =># "`(ast_product ,(cons _1 _3))";
@@ -336,7 +345,7 @@ syntax expressions {
   ssum_list := ssubtraction (plus ssubtraction)* =># "(cons _1 (map cadr _2))";
 
 
-  page bitwise = sshift, sband, sbor;
+  page bitwise = sshift, sband, sbxor, sbor;
 
   sshift := ssum =># "_1";
   sshift := sshift << ssum =># "`(ast_apply ,_sr (shl (,_1 ,_3)))";
@@ -415,6 +424,8 @@ syntax expressions {
 
   stypeexpr:= sor_condition =># "_1";
 
+  page tuples = stuple, stuple_list;
+
   stuple := sor_condition  =># "_1";
   stuple := sor_condition , stuple_list =># "`(ast_tuple ,(cons _1 _3))";
     /*
@@ -436,12 +447,12 @@ syntax expressions {
     slambda_fun_args
  ;
 
-  slambda := sadjectives fun stvarlist slambda_fun_args sopt_type_expr = scompound =>#
+  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type = scompound =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ,_7))
     """;
 
-  slambda := sadjectives fun stvarlist slambda_fun_args sopt_type_expr => sexpr =>#
+  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type => sexpr =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ((ast_fun_return ,_sr ,_7))))
     """;
@@ -456,6 +467,8 @@ syntax expressions {
     `(ast_lambda (,_3 ((() none)) ast_void ,_4))
     """;
 
+  page adjectives = sadjective, sadjectives;
+
     sadjective := inline =># "'InlineFunction";
     sadjective := noinline =># "'NoInlineFunction";
     sadjective := virtual =># "'Virtual";
@@ -465,10 +478,12 @@ syntax expressions {
     slambda_fun_arg := lpar sparameter_comma_list rpar =># "`(,_2 none)";
     slambda_fun_args := slambda_fun_arg+ =># "_1";
 
-    sopt_type_expr := : sexpr expect sexpr =># "`(,_2 (some ,_4))";
-    sopt_type_expr := : sexpr =># "`(,_2 none)";
-    sopt_type_expr := expect sexpr =># "`(typ_none (some ,_2))";
-    sopt_type_expr := sepsilon =># "'(typ_none none)";
+    fun_return_type := : sexpr expect sexpr =># "`(,_2 (some ,_4))";
+    fun_return_type := : sexpr =># "`(,_2 none)";
+    fun_return_type := expect sexpr =># "`(typ_none (some ,_2))";
+    fun_return_type := sepsilon =># "'(typ_none none)";
+
+    page parameters = sparameter, sparameter_comma_list, sparam_qual;
 
     sparameter := sparam_qual sname : sarrow =># "`(,_1 ,_2 ,_4)";
     sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none)";
@@ -577,7 +592,12 @@ syntax regexps {
   satom := sregmatch_expr =># "_1";
   sdirective := sregdef =># "_1";
 
-  page regular_expressions = sregmatch_expr, sregmatch_alternatives, sregdef;
+  page regular_expressions = 
+    sregmatch_expr, 
+    sregmatch_alternatives, 
+    sregmatch_alternative, 
+    sregdef
+  ;
   page regexp_term = sre0, sre1, sre2, sre3, sre4, sre_name;
   page charset = scharset, scharset0;
 
@@ -631,6 +651,23 @@ syntax parsing {
   requires expressions, statements;
   satom := sglr_parse =># "_1";
   sdirective := sglr_production =># "_1";
+
+  page glr_parsing = 
+    sglr_parse,
+    sglr_production
+  ;
+
+  page glr_terms =
+    sglr_matchings,
+    sglr_matching,
+    sglr_entries,
+    sglr_entry,
+    sglr_seqs,
+    sglr_sequence,
+    sglr_alts,
+    sglr_alternatives,
+    sglr_term
+  ;
 
   sglr_term := squalified_name =># "`(GLR_name ,_1)";
   sglr_term := lbrace sglr_alternatives rbrace =># "`(GLR_ast ,_2)";
@@ -764,6 +801,16 @@ syntax statements {
     "(cons _1 (map car _2))";
 
 
+  page type_variables = 
+    stvarlist, 
+    stvar_comma_list, 
+    stvar, 
+    scomma_tvar, 
+    seqorin,
+    stype_constraint
+  ;
+
+
   stype_constraint := with squalified_name_comma_list where sexpr =>#
     "`(,_4 ,_2)";
   stype_constraint := where sexpr with squalified_name_comma_list =>#
@@ -805,6 +852,8 @@ syntax statements {
   sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= comma sname =># "`(,_2)";
 
+  page functions = sfunction_definition, sfun_kind, sfun_arg;
+
   sfun_arg :=  lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
   sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
   sfun_arg :=  sname =># "`(((PVal ,_1 typ_none)) none)";
@@ -814,7 +863,7 @@ syntax statements {
   sfun_kind := fun =># "'Function";
 
   sfunction_definition := sadjectives sfun_kind sdeclname 
-    sfun_arg* sopt_type_expr => sexpr ; =>#
+    sfun_arg* fun_return_type => sexpr ; =>#
   """
     (let ((body `((ast_fun_return ,_sr ,_7))))
     (mkns 
@@ -824,7 +873,7 @@ syntax statements {
 
 
   sfunction_definition := sadjectives sfun_kind sdeclname 
-    sfun_arg* sopt_type_expr = scompound =>#
+    sfun_arg* fun_return_type = scompound =>#
   """
     (mkns 
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
@@ -834,12 +883,8 @@ syntax statements {
   sopt_cstring := = scode_spec =># "`(some ,_2)";
   sopt_cstring := sepsilon =># "'none";
 
-  sopt_prec := is sname =># "_2";
-  sopt_prec := sepsilon =># '(quote "")';
-
-
   sfunction_definition := sadjectives sfun_kind sdeclname 
-    sopt_type_expr = smatching+ ; =>#
+    fun_return_type = smatching+ ; =>#
   """
    (let 
      (
@@ -880,6 +925,12 @@ syntax statements {
   sctor_init_list :=  sctor_init =># "`(,_1)";
   sctor_inits := : sctor_init_list =># "_2";
   sctor_inits := sepsilon =># "()";
+
+  page procedures = 
+    sprocedure_definition, 
+    sproc_kind,
+    sopt_traint_eq,
+  ;
 
   sprocedure_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
     sctor_inits scompound =>#
@@ -1129,6 +1180,8 @@ syntax macros {
   smacro_definition := macro for val sbasic_name_comma_list in sexpr do statement* done ; =># 
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
+  page macro_terms = smac_arg, smac_args, smac_arg_list;
+
     smac_arg:= sname : fun =># "`(,_1 Expr)"; 
     smac_arg:= sname : proc =># "`(,_1 Stmt)"; 
     smac_arg:= sname : sident =># "`(,_1 Stmt)"; 
@@ -1165,9 +1218,12 @@ syntax cbind {
     (cdr _2))
      """; 
 
+  sopt_prec := is sname =># "_2";
+  sopt_prec := sepsilon =># '(quote "")';
+
   // note: also needed by typeclasses atm for virtual funs
   sfunction_definition := sadjectives sfun_kind sdeclname 
-    sopt_type_expr sopt_cstring sopt_prec srequires_clause ; =>#
+    fun_return_type sopt_cstring sopt_prec srequires_clause ; =>#
   """
     (let (
       (name (caar _3))
@@ -1204,6 +1260,8 @@ syntax cbind {
       (cdr _3)))
       ('ERROR))))
   """;
+
+  page abstract_types = stype_qual, stype_quals, sabstract_type;
 
   sabstract_type:= stype_quals type sdeclname = scode_spec srequires_clause ; =>#
     """
@@ -1320,9 +1378,17 @@ syntax executable {
   sexecutable := sgoto_statement=># "_1";
   sexecutable := slabel_statement =># "_1";
 
-  slabel_statement := sname :> =># "`(ast_label ,_sr ,_1)";
-  sgoto_statement := goto sname ; =># "`(ast_goto ,_sr ,_2)";
+  page system_call = ssvc;
   ssvc := _svc sname ; =># "`(ast_svc ,_sr ,_2)";
+
+  page assignments =
+    sassignment, sassignop,
+    srmwop, sswapop,
+    spreincrop, spostincrop,
+    slelement,
+    stlelement,
+    slexprs, slexpr
+  ;
 
   // deprecate: class object construction, use a generator
   sassignment := var sname <- new sexpr ; =># 
@@ -1397,6 +1463,10 @@ syntax executable {
   sassignment := sexpr spostincrop ; =># "`(ast_call ,_sr ,_2 ,_1)";
   sassignment := spreincrop sexpr ; =># "`(ast_call ,_sr ,_1 ,_2)";
 
+  page subroutines = 
+    sreturn, scall
+  ;
+
   sreturn := yield sexpr ; =># "`(ast_yield ,_sr ,_2)";
   sreturn := return sexpr ; =># "`(ast_fun_return ,_sr ,_2)";
   sreturn := return ; =># "`(ast_proc_return ,_sr)";
@@ -1410,6 +1480,15 @@ syntax executable {
   scall := loop sname ; =># "`(ast_jump ,_sr (ast_name ,_2 ()) (ast_tuple ()))";
 
   scall := sexpr ; =># "(cons 'ast_call (cons _sr (splitapply _1)))";
+
+  page gotos =
+    slabel_statement, sgoto_statement,
+    sifgoto, selif_clause, selif_clauses, selse_clause
+  ;
+
+  slabel_statement := sname :> =># "`(ast_label ,_sr ,_1)";
+  sgoto_statement := goto sname ; =># "`(ast_goto ,_sr ,_2)";
+
 
   sifgoto := if sexpr goto sname ; =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
   sifgoto := if sexpr return ; =># "`(ast_ifreturn ,_sr ,_2)";
@@ -1474,12 +1553,12 @@ syntax executable {
 
 
 #keyword forall
-  statement := forall sname in sexpr do statement* done ; =>#
+  sifgoto := forall sname in sexpr do statement* done ; =>#
     "`(ast_macro_vfor (,_4) ,_6 ,_8)";
   ;
 
 #keyword upto
-  statement := forall sname in sexpr upto sexpr do statement* done ; =>#
+  sifgoto := forall sname in sexpr upto sexpr do statement* done ; =>#
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
@@ -1495,7 +1574,7 @@ syntax executable {
   """;
 
 #keyword downto
-  statement := forall sname in sexpr downto sexpr do statement* done ; =>#
+  sifgoto := forall sname in sexpr downto sexpr do statement* done ; =>#
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
@@ -1514,6 +1593,16 @@ syntax executable {
 //------------------------------------------
 syntax requirements {
   srequires_clause := requires srequirements =># "_2";
+
+  page requirement_terms = 
+    srequires_clause, 
+    srequirement, 
+    srequirement_atom,
+    srequirement_and,
+    srequirement_or,
+    srequirements
+  ;
+
   srequires_clause := sepsilon =># "'rreq_true";
 
   srequirement:= squalified_name =># "`(Named_req ,_1)";
@@ -1647,12 +1736,16 @@ syntax type_declarations {
     (cdr _2))
      """; 
 
-  sunion_decl := enum sdeclname lbrace senum_items rbrace =>#
+  sunion_decl := senum_decl =># "_1";
+  
+  senum_decl := enum sdeclname lbrace senum_items rbrace =>#
     """
     (mkns 
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
      """; 
+
+  page enumeration = senum_decl, sopt_value, senum_item, senum_items;
 
   sopt_value := = sinteger =># "`(some ,_2)";
   sopt_value := sepsilon =># "'none";
@@ -1845,6 +1938,14 @@ pointers <code>A--&gt;B</code>.</p>
     | c_type c_type_suffix+ =># "`(ast_tuple ,(cons _1 _2))"
     | c_type =># "_1"
     | sepsilon =># "`(ast_tuple ())"
+  ;
+
+  page c_types = 
+    base_type,
+    pointer_type,
+    c_type,
+    c_type_suffix,
+    c_type_list
   ;
 
   declarator := 

@@ -101,12 +101,23 @@ let uri s =
   try (Hashtbl.find nt2page s ^ ".html") ^ "#"^s
   with Not_found -> s ^ ".html"
 
-let anchor a s =
+let anchor s =
+  "<A NAME=\""^s^"\">"
+
+let href a s =
   "<A HREF=\""^a^"\">" ^ s ^ "</A>"
 
-let anchor_nt s = anchor (uri s) s
+let href_nt s = href (uri s) s
 
-let anchor_page s = anchor (s^".html") s
+let href_page s = href (s^".html") s
+
+let span cl s =
+  "<SPAN CLASS=\""^cl^"\">"^s^"</SPAN>"
+
+let begin_div cl = 
+  "<DIV CLASS=\""^cl^"\">"
+
+let end_div = "</DIV>"
 
 let ljust n s = 
   let s = s ^ String.make n ' ' in
@@ -123,11 +134,11 @@ let emit_rule dssl name dyalts : string list =
   let semit s = spc(); emit s; done_space := false in
 
   let emit_ter tok = semit tok in
-  let emit_nt s = semit (anchor_nt s) in
-  let emit_enc s = emit ("<SPAN CLASS=\"metatoken\">"^s^"</SPAN>") in
+  let emit_nt s = semit (href_nt s) in
+  let emit_enc s = emit (span "metatoken" s) in
   let emit_user_keyword s = 
     spc(); 
-    emit ("<SPAN CLASS=\"userkeyword\">"^s^"</SPAN>"); 
+    emit (span "userkeyword" s); 
     done_space := false 
   in
   let rec emit_symbol sym = match sym with
@@ -216,6 +227,7 @@ let gen_doc () =
       w ("<title>" ^ page ^ "</title>\n");
       w "</head>\n";
       w "<body>";
+      w ("<h1>" ^ page ^ "</h1\n");
       iter (fun nt -> (* all nonterminals *)
         let dfn = 
           (*
@@ -226,7 +238,8 @@ let gen_doc () =
            print_endline ("ERROR, page " ^ page ^ " nonterminal " ^ nt ^ " NOT FOUND");
            []
         in
-        w (" " ^ nt ^ " <SPAN CLASS=\"metatoken\">:=</SPAN> \n</pre></code>");
+        w (begin_div "ntlist");
+        w (" " ^ nt ^ anchor nt ^ span "metatoken" ":=" ^ "\n");
         List.iter (* all separate productions of nonterminal *)
             (fun gd -> match gd with 
             | `Prod (dssl,dyalts) ->
@@ -236,11 +249,11 @@ let gen_doc () =
               | h :: t -> 
               w  "<pre><code>";
               let ds = ljust 20 ("  " ^ dssl) in
-              w ( "<SPAN CLASS=\"dssl\">"^ ds ^ "</SPAN>"^ h ^ "\n");
+              w ( span "dssl" ds ^ h ^ "\n");
               let ds = ljust 20 ""in
               List.iter (* alternatives of a production *)
                 (fun h ->
-                  w ( "<SPAN CLASS=\"dssl\">"^ ds ^ "</SPAN>"^ h ^ "\n")
+                  w (span "dssl" ds ^ h ^ "\n")
                 )
                 t
               ;
@@ -250,6 +263,7 @@ let gen_doc () =
         (rev dfn)
         ;
         w "\n";
+        w end_div;
       )
       (rev nts)
       ;
@@ -273,14 +287,14 @@ let gen_doc () =
     let page_list = List.sort compare page_list in
     List.iter
     (fun name ->
-      w (" " ^ anchor_page name ^ "\n");
+      w (" " ^ href_page name ^ "\n");
     )
     page_list
     ;
     w "<H1>Nonterminal Index</H1>";
     List.iter
     (fun name ->
-      w (" " ^ anchor_nt name ^ "\n");
+      w (" " ^ href_nt name ^ "\n");
     )
     grammar_list
     ;
@@ -291,12 +305,21 @@ let gen_doc () =
 @select(h)
 BODY 
 {
-  font-family: Arial;
+  font-family: Courier;
+  white-space: pre;
   font-size: 12px;
+  text-indent: 0px;
+  line-height: 9px;
+}
+
+DIV.ntlist
+{
+  margin-bottom: 4 px;
 }
 
 P 
 { 
+  font-family: Arial;
   font-weight: normal;
   color: blue
 }
