@@ -10,24 +10,27 @@ type symbol_t = [`Atom of token | `Group of dyalt_t list]
 and dyalt_t = symbol_t list * range_srcref * action_t
 type gdoc_entry_t = [
     | `Doc of string * string 
-    | `Prod of string * string list
+    | `Prod of string * dyalt_t list
 ]
 
 val document_grammar: bool ref
 
-val emit_doc: string -> string -> string -> unit
+val record_doc: string -> string -> string -> unit
 val record_group : string -> string list -> unit
-val emit_rule : string -> string -> dyalt_t list -> unit
+val record_rule : string -> string -> dyalt_t list -> unit
 
 
 val grammar_doc : (string, gdoc_entry_t list) Hashtbl.t
 val ntgroups : (string, string list) Hashtbl.t
+
+val gen_doc : unit -> unit
 
 @h = tangler("src/flx_pdoc.ml")
 @select(h)
 open Flx_token
 open Flx_ast
 open Flx_util
+open List
 
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
@@ -35,7 +38,7 @@ and dyalt_t = symbol_t list * range_srcref * action_t
 
 type gdoc_entry_t = [
     | `Doc of string * string 
-    | `Prod of string * string list
+    | `Prod of string * dyalt_t list
 ]
 
 let silly_strtoken k = 
@@ -50,6 +53,20 @@ let silly_strtoken k =
 let document_grammar = ref false
 let grammar_doc = Hashtbl.create 97
 let ntgroups = Hashtbl.create 97
+
+let record_rule dssl nt dyalts =
+  let old = try Hashtbl.find grammar_doc nt with Not_found -> [] in
+  Hashtbl.replace grammar_doc nt (`Prod (dssl,dyalts) :: old)
+;;
+
+let record_doc dssl nt s =
+  let old = try Hashtbl.find grammar_doc nt with Not_found -> [] in
+  Hashtbl.replace grammar_doc nt (`Doc (dssl,s) :: old)
+
+let record_group group nts =
+  let old = try Hashtbl.find ntgroups group with Not_found -> [] in
+  Hashtbl.replace ntgroups group (uniq_cat old nts)
+
 
 let nt2tok = [
   "lpar","(";
@@ -78,7 +95,24 @@ let spelling = [
 @for t,s in flx_syms: tangle('"'+t+'","'+s+'";')
 ]
 
-let emit_rule dssl name dyalts =
+let nt2page = Hashtbl.create 97 
+
+let uri s = 
+  try (Hashtbl.find nt2page s ^ ".html") ^ "#"^s
+  with Not_found -> s ^ ".html"
+
+let anchor a s =
+  "<A HREF=\""^a^"\">" ^ s ^ "</A>"
+
+let anchor_nt s = anchor (uri s) s
+
+let anchor_page s = anchor (s^".html") s
+
+let ljust n s = 
+  let s = s ^ String.make n ' ' in
+  String.sub s 0 n
+
+let emit_rule dssl name dyalts : string list =
   let done_space = ref false in
   let b = Buffer.create 1000 in
   let emit s = Buffer.add_string b s in
@@ -89,7 +123,7 @@ let emit_rule dssl name dyalts =
   let semit s = spc(); emit s; done_space := false in
 
   let emit_ter tok = semit tok in
-  let emit_nt s = semit ("<A HREF=\""^s^".html\">" ^ s ^ "</A>") in
+  let emit_nt s = semit (anchor_nt s) in
   let emit_enc s = emit ("<SPAN CLASS=\"metatoken\">"^s^"</SPAN>") in
   let emit_user_keyword s = 
     spc(); 
@@ -134,16 +168,162 @@ let emit_rule dssl name dyalts =
     )
     dyalts 
   in
-  let old = try Hashtbl.find grammar_doc name with Not_found -> [] in
-  Hashtbl.replace grammar_doc name (`Prod (dssl,ss) :: old)
+  ss
 
-let emit_doc dssl nt s =
-  let old = try Hashtbl.find grammar_doc nt with Not_found -> [] in
-  Hashtbl.replace grammar_doc nt (`Doc (dssl,s) :: old)
+;;
 
-let record_group group nts =
-  let old = try Hashtbl.find ntgroups group with Not_found -> [] in
-  Hashtbl.replace ntgroups group (uniq_cat old nts)
+let gen_doc () =
+    let _ = try Unix.mkdir "doc" 0o775 with _ -> () in
+    let _ = try Unix.mkdir "doc/gramdoc" 0o775 with _ -> () in
+
+    (* calculate partial nonterminal -> page map *)
+    Hashtbl.iter
+    (fun page nts ->
+      iter 
+        (fun nt -> 
+          (* Note: this is actually OK .. stuff gets documented twice! *)
+          if Hashtbl.mem nt2page nt then 
+            print_endline ("Warning: nonterminal " ^ nt ^ " in two groups!")
+          ;
+          Hashtbl.replace nt2page nt page
+        ) 
+        nts
+    )
+    ntgroups
+    ;
+
+    (* complete the group listing by placing orphans in
+      their own family
+    *)
+    Hashtbl.iter
+    (fun k _ -> 
+      if not (Hashtbl.mem nt2page k) 
+      then Hashtbl.add ntgroups k [k]
+    )
+    grammar_doc
+    ;
+
+    Hashtbl.iter (* all pages *)
+    (fun page nts ->
+      (*
+      print_endline ("PAGE " ^ page );
+      *)
+      let f = open_out ("doc/gramdoc/" ^ page ^ ".html") in
+      let w s = output_string f s in
+      w "<html><head>\n";
+      w "<meta content=\"text/html; charset=utf8\" http-equiv=\"Content-Type\">\n";
+      w "<link rel=stylesheet href=\"gramdoc.css\" type=\"text/css\">\n";
+      w ("<title>" ^ page ^ "</title>\n");
+      w "</head>\n";
+      w "<body>";
+      iter (fun nt -> (* all nonterminals *)
+        let dfn = 
+          (*
+          print_endline ("DOCUMENTING NONTERMINAL " ^ nt );
+          *)
+          try Hashtbl.find grammar_doc nt 
+          with Not_found -> 
+           print_endline ("ERROR, page " ^ page ^ " nonterminal " ^ nt ^ " NOT FOUND");
+           []
+        in
+        w (" " ^ nt ^ " <SPAN CLASS=\"metatoken\">:=</SPAN> \n</pre></code>");
+        List.iter (* all separate productions of nonterminal *)
+            (fun gd -> match gd with 
+            | `Prod (dssl,dyalts) ->
+              let ss = emit_rule dssl nt dyalts in
+              begin match ss with
+              | [] -> assert false
+              | h :: t -> 
+              w  "<pre><code>";
+              let ds = ljust 20 ("  " ^ dssl) in
+              w ( "<SPAN CLASS=\"dssl\">"^ ds ^ "</SPAN>"^ h ^ "\n");
+              let ds = ljust 20 ""in
+              List.iter (* alternatives of a production *)
+                (fun h ->
+                  w ( "<SPAN CLASS=\"dssl\">"^ ds ^ "</SPAN>"^ h ^ "\n")
+                )
+                t
+              ;
+              end
+            | `Doc (dssl,s) -> w s
+          ) 
+        (rev dfn)
+        ;
+        w "\n";
+      )
+      (rev nts)
+      ;
+      w "</body></html>\n";
+      close_out f
+    )
+    ntgroups
+    ;
+    let grammar_list = Hashtbl.fold (fun k _ acc -> k::acc) grammar_doc [] in
+    let grammar_list = List.sort compare grammar_list in
+    let f = open_out ("doc/gramdoc/index.html") in
+    let w s = output_string f s in
+    w "<html><head>\n";
+    w "<meta content=\"text/html; charset=utf8\" http-equiv=\"Content-Type\">\n";
+    w "<link rel=stylesheet href=\"gramdoc.css\" type=\"text/css\">";
+    w ("<title>Felix Grammar</title>\n");
+    w "</head>\n";
+    w "<body><pre><code>\n";
+    w "<H1>Topic Index</H1>";
+    let page_list = Hashtbl.fold (fun k _ acc -> k::acc) ntgroups [] in
+    let page_list = List.sort compare page_list in
+    List.iter
+    (fun name ->
+      w (" " ^ anchor_page name ^ "\n");
+    )
+    page_list
+    ;
+    w "<H1>Nonterminal Index</H1>";
+    List.iter
+    (fun name ->
+      w (" " ^ anchor_nt name ^ "\n");
+    )
+    grammar_list
+    ;
+    w "</code></pre></body></html>\n";
+    close_out f
+
+@h = tangler('doc/gramdoc/gramdoc.css')
+@select(h)
+BODY 
+{
+  font-family: Arial;
+  font-size: 12px;
+}
+
+P 
+{ 
+  font-weight: normal;
+  color: blue
+}
+
+SPAN.predef
+{
+  font-weight: normal;
+  color: #00AA00
+}
+
+SPAN.userkeyword
+{
+  font-weight: normal;
+  color: #77AA44
+}
+
+SPAN.metatoken
+{
+  font-size: larger;
+  font-weight: normal;
+  color: #BB0000
+}
 
 
+SPAN.dssl
+{
+  font-weight: normal;
+  color: #330033 
+}
 

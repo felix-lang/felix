@@ -509,7 +509,7 @@ let add_rule dyp dssl rule =
   let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
   match rule with
   | `Scheme_rule (name,dyalts) ->
-     if !Flx_pdoc.document_grammar then emit_rule dssl name dyalts;
+     if !Flx_pdoc.document_grammar then record_rule dssl name dyalts;
      let rules = fixup_alternatives dyp.global_data.counter name dyalts in
      let rules = fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
      let d: dssl_t = {d with rules = rules } in
@@ -521,7 +521,7 @@ let add_rule dyp dssl rule =
      let m = {m with dssls=Drules.add dssl d m.dssls } in
      dyp.local_data <- m
 
-  | `Document (name,s) -> emit_doc dssl name s
+  | `Document (name,s) -> record_doc dssl name s
   | `Page (name,nts) -> record_group name nts
 
 let ocs2flx sr r = 
@@ -2000,108 +2000,11 @@ let run() =
 
   flush stdout;
 
-  if compiler_options.document_grammar then begin
-    let _ = try Unix.mkdir "doc" 0o775 with _ -> () in
-    let _ = try Unix.mkdir "doc/gramdoc" 0o775 with _ -> () in
-    Hashtbl.iter
-    (fun name dfn ->
-      print_endline ("DOCUMENTING NONTERMINAL " ^ name);
-
-      let f = open_out ("doc/gramdoc/" ^ name ^ ".html") in
-      let w s = output_string f s in
-      w "<html><head>\n";
-      w "<meta content=\"text/html; charset=utf8\" http-equiv=\"Content-Type\">\n";
-      w "<link rel=stylesheet href=\"gramdoc.css\" type=\"text/css\">\n";
-      w ("<title>" ^ name ^ "</title>\n");
-      w "</head>\n";
-      w "<body>";
-      w (" <pre><code>" ^ name ^ " <SPAN CLASS=\"metatoken\">:=</SPAN> \n</pre></code>");
-      List.iter 
-          (fun gd -> match gd with 
-          | `Prod (dssl,h::t) ->
-            w  "<pre><code>";
-            let ds = String.sub ("  " ^ dssl ^ String.make 20 ' ') 0 20 in
-            w ( "<SPAN CLASS=\"dssl\">"^ ds ^ "</SPAN>"^ h ^ "\n");
-            let ds = String.sub (String.make 20 ' ') 0 20 in
-            List.iter 
-              (fun h ->
-                w ( "<SPAN CLASS=\"dssl\">"^ ds ^ "</FONT>"^ h ^ "\n")
-              )
-              t
-            ;
-            w "</code></pre>";
-
-          | `Doc (dssl,s) -> w s
-          | _ -> ()
-        ) 
-        dfn
-      ;
-      w "\n";
-      w "</code></pre></body></html>\n";
-      close_out f
-    )
-    Flx_pdoc.grammar_doc;
-    let grammar_list = Hashtbl.fold (fun k _ acc -> k::acc) Flx_pdoc.grammar_doc [] in
-    let grammar_list = List.sort compare grammar_list in
-    let f = open_out ("doc/gramdoc/index.html") in
-    let w s = output_string f s in
-    w "<html><head>\n";
-    w "<meta content=\"text/html; charset=utf8\" http-equiv=\"Content-Type\">\n";
-    w "<link rel=stylesheet href=\"gramdoc.css\" type=\"text/css\">";
-    w ("<title>Felix Grammar</title>\n");
-    w "</head>\n";
-    w "<body><pre><code>\n";
-    List.iter
-    (fun name ->
-      w (" <A HREF=\"" ^ name ^ ".html\">"^name^"</A>\n");
-    )
-    grammar_list
-    ;
-    w "</code></pre></body></html>\n";
-    close_out f
-  end;
+  if compiler_options.document_grammar then 
+    Flx_pdoc.gen_doc();
 
 in
   run()
 ;;
 
-@h = tangler('doc/gramdoc/gramdoc.css')
-@select(h)
-BODY 
-{
-  font-family: Arial;
-  font-size: 12px;
-}
-
-P 
-{ 
-  font-weight: normal;
-  color: blue
-}
-
-SPAN.predef
-{
-  font-weight: normal;
-  color: #00AA00
-}
-
-SPAN.userkeyword
-{
-  font-weight: normal;
-  color: #77AA44
-}
-
-SPAN.metatoken
-{
-  font-size: larger;
-  font-weight: normal;
-  color: #BB0000
-}
-
-
-SPAN.dssl
-{
-  font-weight: normal;
-  color: #330033 
-}
 

@@ -188,17 +188,20 @@ syntax expressions {
 
   satom := lpar sexpr rpar =># "_2";
   satom := lpar rpar =># "'()";
+  satom := sconditional =># "_1";
 
-  satom := if sexpr then sexpr selse_part endif =>#
+  page conditional = sconditional, selif, selifs, selse_part;
+
+  sconditional := if sexpr then sexpr selse_part endif =>#
     "`(ast_cond (,_2 ,_4 ,_5))";
 
-    selif := elif sexpr then sexpr =># "`(,_2 ,_4)";
+  selif := elif sexpr then sexpr =># "`(,_2 ,_4)";
 
-    selifs := selif =># "`(,_1)";
-    selifs := selifs selif =># "(cons _2 _1)";
+  selifs := selif =># "`(,_1)";
+  selifs := selifs selif =># "(cons _2 _1)";
 
-    selse_part:= else sexpr =># "_2";
-    selse_part:= selifs else sexpr =># 
+  selse_part:= else sexpr =># "_2";
+  selse_part:= selifs else sexpr =># 
       """
         (let ((f (lambda (result condthn) 
           (let ((cond (car condthn)) (thn (cadr condthn))) 
@@ -208,6 +211,12 @@ syntax expressions {
 
   satom := suserlbtoken sexpr suserrbtoken =>#
     "`(ast_apply ,_sr ((ast_name ,(myassoc _3 (car _1)) ()) ,_2))";
+
+  page names = 
+    ssimple_name_parts, 
+    squalified_name, ssuffixed_name, sthe_name,
+    shash_name
+  ;
 
   ssimple_name_parts := sname           =># "`(,_1 ())";
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
@@ -257,12 +266,25 @@ syntax expressions {
   srefr := star srefr =># "`(ast_apply ,_sr (deref ,_2))";
   srefr := _deref srefr =># "`(ast_deref ,_2)";
   srefr := new srefr =># "`(ast_new ,_2)";
-  srefr := struct lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
+  srefr := anon_value =># "_1";
+
+  page structured_values = 
+    anon_value, 
+    sstruct_mem_decl, 
+    sstruct_assign,
+    stype_sum_item, 
+    stype_sum_item0,
+    stype_sum_item1,
+    stype_sum_item2,
+    stype_sum_items2
+  ;
+
+  anon_value := struct lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
     sstruct_mem_decl := sname : sexpr ; =># "`(,_1 ,_3)";
-  srefr := struct lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
+  anon_value := struct lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
     sstruct_assign := sname = sexpr ; =># "`(,_1 ,_3)";
 
-  srefr := union lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
+  anon_value := union lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
     stype_sum_item := sname sopt_value stvarlist of sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
     stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
 
@@ -292,6 +314,8 @@ syntax expressions {
   s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))";
   s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))";
 
+  page arithmetic = s_term, sproduct, sproduct_list, ssubtraction, ssum, ssum_list;
+
   sproduct :=  s_term =># "_1";
   sproduct := s_term star sproduct_list =># "`(ast_product ,(cons _1 _3))";
   /*
@@ -310,6 +334,9 @@ syntax expressions {
     ssum_list := ssubtraction =># "`(,_1)";
     */
   ssum_list := ssubtraction (plus ssubtraction)* =># "(cons _1 (map cadr _2))";
+
+
+  page bitwise = sshift, sband, sbor;
 
   sshift := ssum =># "_1";
   sshift := sshift << ssum =># "`(ast_apply ,_sr (shl (,_1 ,_3)))";
@@ -365,6 +392,8 @@ syntax expressions {
   scomparison:= sas_expr >= sas_expr =># "`(ast_apply ,_sr (ge (,_1 ,_3)))";
   scomparison:= sas_expr > sas_expr =># "`(ast_apply ,_sr (gt (,_1 ,_3)))";
 
+  page logic = snot_condition, sand_condition, sand_list, sor_condition, sor_list;
+
   snot_condition := scomparison  =># "_1";
   snot_condition := not snot_condition  =># "`(ast_apply ,_sr (lnot ,_2))";
 
@@ -400,6 +429,13 @@ syntax expressions {
   sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply ,_sr (,_1 ,_3))";
 
   slambda := sdollar_apply =># "_1";
+
+  page lambda =
+    slambda,
+    slambda_fun_arg,
+    slambda_fun_args
+ ;
+
   slambda := sadjectives fun stvarlist slambda_fun_args sopt_type_expr = scompound =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ,_7))
@@ -455,16 +491,37 @@ syntax expressions {
 
 //------------------------------------------
 syntax patterns {
-  satom := match sexpr with smatching+ endmatch =># 
-    "`(ast_match (,_2 ,_4))";
+  satom := pattern_match =># "_1";
 
-    smatching  := vbar spattern => sexpr =># "`(,_2 ,_4)";
-    smatching  := vbar => sexpr =># "`(pat_none ,_4)";
-
+  // ???
   satom := typematch sexpr with stype_matching+ endmatch =># 
     "`(ast_type_match (,_2 ,_4))";
 
     stype_matching  := vbar sexpr => sexpr =># "`(,_2 ,_4)";
+
+ 
+  page pattern_matching = 
+    pattern_match,
+    smatching
+  ;
+  page patterns =
+    satomic_pattern,
+    spat_assign,
+    spat_assigns,
+    sctor_name,
+    sfloating,
+    scoercive_pattern,
+    stuple_pattern,
+    stuple_pattern_suffix,
+    sas_pattern,
+    spattern
+  ;
+
+  pattern_match := match sexpr with smatching+ endmatch =># 
+    "`(ast_match (,_2 ,_4))";
+
+    smatching  := vbar spattern => sexpr =># "`(,_2 ,_4)";
+    smatching  := vbar => sexpr =># "`(pat_none ,_4)";
 
     satomic_pattern := strue =># "'(pat_const_ctor (ast_case_tag 1))";
     satomic_pattern := sfalse =># "'(pat_const_ctor (ast_case_tag 0))";
@@ -520,6 +577,10 @@ syntax regexps {
   satom := sregmatch_expr =># "_1";
   sdirective := sregdef =># "_1";
 
+  page regular_expressions = sregmatch_expr, sregmatch_alternatives, sregdef;
+  page regexp_term = sre0, sre1, sre2, sre3, sre4, sre_name;
+  page charset = scharset, scharset0;
+
   sregmatch_expr := reglex sexpr to sexpr with sregmatch_alternatives endmatch =>#
     "`(ast_reglex (,_2 ,_4 ,_6))";
   sregmatch_expr := regmatch sexpr with sregmatch_alternatives endmatch =>#
@@ -529,6 +590,7 @@ syntax regexps {
   sregmatch_alternative := vbar sre1 => sexpr =># "`(,_2 ,_4)";
 
   sregdef := regexp sname = sre1 ; =># "`(ast_regdef ,_sr ,_2 ,_4)";
+
   sre0 := sre1 as sname =># "`(regexp_group ,_3 ,_1)";
   sre0 := sre1 =># "_1";
 
