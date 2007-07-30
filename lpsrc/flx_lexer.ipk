@@ -568,7 +568,7 @@ val line_directive :
   token list
 
 val include_directive :
-  bool ->
+  string ->
   lexer_state -> range_srcref -> string ->
   (lexer_state -> lexbuf -> token list) ->
   token list
@@ -975,7 +975,7 @@ let find_include_file state s sr =
     *)
     filename
 
-let include_directive is_import state sr s pre_flx_lex =
+let include_directive kind state sr s pre_flx_lex =
   let filename = find_include_file state s sr in
   state#add_include_file filename;
   let pre_tokens_of_filename filename =
@@ -986,7 +986,7 @@ let include_directive is_import state sr s pre_flx_lex =
     let src = Lexing.from_channel infile in
     let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
       close_in infile; 
-      if is_import then begin
+      if kind = "import" then begin
         try state#add_macros state'
         with Duplicate_macro k -> clierr sr 
         ("Duplicate Macro " ^ k ^ " imported")
@@ -994,7 +994,32 @@ let include_directive is_import state sr s pre_flx_lex =
       iter state#add_include_file state'#get_include_files;
       toks
    in
-   pre_tokens_of_filename filename
+   match kind with
+   | "import"
+   | "include" ->
+     pre_tokens_of_filename filename
+   | "syntax" ->
+     begin 
+       let outfile = filename ^ ".syncache" in 
+       try 
+         let syn_mt = Flx_filesys.filetime filename in
+         let cache_mt = Flx_filesys.filetime outfile in
+         if syn_mt > cache_mt then raise Not_found;
+         let this_version = !Flx_version.version_data in
+         let x =  open_in_bin outfile in
+         let that_version = Marshal.from_channel x in
+         if this_version <> that_version then begin
+           close_in x;
+           raise Not_found
+         end;
+
+         let local_data = Marshal.from_channel x in
+         close_in x;
+         [LOAD_SYNTAX (local_data)]
+       with _ ->
+         pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
+      end
+   | _ -> assert false
 
 let count_newlines s =
   let n = ref 0 in
@@ -1094,12 +1119,12 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     line_directive state sr s' lexbuf
 
   | "include" 
-  | "import" -> 
+  | "import" 
+  | "syntax" -> 
     let result =
-      let is_import = ident = "import" in
       match state#get_condition with
       | `Processing ->
-        include_directive is_import state sr s' pre_flx_lex
+        include_directive ident state sr s' pre_flx_lex
       | _ -> []
     in
      for i = 1 to linecount do state#newline lexbuf done;

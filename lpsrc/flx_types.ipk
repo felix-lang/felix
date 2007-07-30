@@ -5411,6 +5411,11 @@ module PosSet = IntSet
 module PosSetSet = IntSetSet
 module CharSet = IntSet
 
+module Drules = Map.Make(struct
+  type t = string
+  let compare = compare
+end)
+
 @h = tangler('src/flx_mtypes2.mli')
 @select(h)
 open Flx_types
@@ -5482,6 +5487,8 @@ type sym_state_t =
   transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
 }
 
+
+module Drules : Map.S with type key = string
 
 @head(1,'Compile time exceptions')
 @python('//')

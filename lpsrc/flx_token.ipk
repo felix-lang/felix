@@ -2,6 +2,7 @@
 @h = tangler('src/flx_token.mli')
 @select(h)
 open Flx_ast
+open Flx_mtypes2
 
 type token = 
   | ERRORTOKEN of (srcref * string)
@@ -27,12 +28,34 @@ type token =
   | USER10 of (srcref * string * string)
   | USERLB of (srcref * (string * string) list * string)
   | USERRB of (srcref * string)
+  | LOAD_SYNTAX of (local_data_t)
+  | SAVE_SYNTAX of (string)
 
 @for k,v in flx_syms:
   tangle("  | "+k+" of srcref",inhibit_sref=1)
 
 @for n,k in flx_keywords: 
   tangle("  | "+k+" of srcref",inhibit_sref=1)
+
+and rule_t = string * token list * string * Flx_ast.range_srcref
+
+and dssl_t = {
+  rules : rule_t list;
+  deps : string list;
+  privacy : string Drules.t; (* string -> string *)
+}
+
+and local_data_t = {
+  dssls : dssl_t Drules.t;
+  loaded_dssls : string list;
+}
+
+and global_data_t = {
+  pcounter : int ref;
+  env : Ocs_types.env;
+  pdebug : bool ref;
+}
+
 
 @h = tangler('src/flx_prelex.mli')
 @select(h)
@@ -64,17 +87,13 @@ let string_of_token (tok :Flx_token.token): string =
   | USER_KEYWORD (sr,s) -> s
   | HASH_INCLUDE_FILES fs -> "include_files(" ^ String.concat "," fs ^ ")"
   | TOKEN_LIST ts -> "<<token list>>"
+  | LOAD_SYNTAX _ -> "<<load syntax>>"
+  | SAVE_SYNTAX f -> "<<save syntax "^f^">>"
   (*
   | PARSE_ACTION sr -> "=>#"
   *)
   
-@for k,s in flx_1_char_syms:
-  tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
-
-@for k,s in flx_2_char_syms:
-  tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
-
-@for k,s in flx_3_char_syms:
+@for k,s in flx_syms:
   tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
 
 @for n,t in flx_keywords: 
@@ -106,16 +125,12 @@ let name_of_token (tok :Flx_token.token): string =
   | USER_KEYWORD (sr,s) -> s
   | HASH_INCLUDE_FILES _ -> "HASH_INCLUDE_FILES"
   | TOKEN_LIST _ -> "TOKEN_LIST"
+  | LOAD_SYNTAX _ -> "LOAD_SYNTAX"
+  | SAVE_SYNTAX _ -> "SAVE_SYNTAX"
   (*
   | PARSE_ACTION sr -> "PARSE_ACTION"
   *)
-@for k,s in flx_1_char_syms:
-  tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
-
-@for k,s in flx_2_char_syms:
-  tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
-
-@for k,s in flx_3_char_syms:
+@for k,s in flx_syms:
   tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
 
 @for n,t in flx_keywords: 
@@ -139,6 +154,8 @@ let src_of_token t = match t with
   | SLOSH 
   | HASH_INCLUDE_FILES _
   | TOKEN_LIST _
+  | LOAD_SYNTAX _
+  | SAVE_SYNTAX _
     -> ("",0,0,0)
 
   | NAME    (s,_)
@@ -159,13 +176,7 @@ let src_of_token t = match t with
   *)
   | ERRORTOKEN (s,_) 
 
-@for k,s in flx_1_char_syms:
-  tangle('  | '+k+' s ',inhibit_sref=1)
-
-@for k,s in flx_2_char_syms:
-  tangle('  | '+k+' s ',inhibit_sref=1)
-
-@for k,s in flx_3_char_syms:
+@for k,s in flx_syms:
   tangle('  | '+k+' s ',inhibit_sref=1)
 
 @for n,t in flx_keywords: 

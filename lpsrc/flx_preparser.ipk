@@ -183,6 +183,9 @@ let dummysr = "Dummy",0,0,0,0
 %token <(token list)> TOKEN_LIST
 %token DUMMY
 
+%token <local_data_t> LOAD_SYNTAX
+%token <string> SAVE_SYNTAX
+
 /* user defined symbols */
 %token <(Flx_ast.srcref * string * string)> USER10
 %token <(Flx_ast.srcref * (string * string) list * string)> USERLB
