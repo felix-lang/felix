@@ -445,6 +445,15 @@ let fixup_suffix sr counter rhs =
     let rule2 = sl,[],"()",rsr in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
 
+  | other :: QUEST sr :: t -> 
+    let rsr = slift sr in
+    let x = string_of_int (!counter) in incr counter;
+    let sl = "__opt_"^x in
+    let rule1 = sl,[other],"()",rsr in
+    let rule2 = sl,[],"()",rsr in
+    aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
+
+
 
   | h :: t -> aux t (h::out) extras 
   in aux rhs [] []

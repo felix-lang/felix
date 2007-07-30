@@ -227,7 +227,7 @@ let gen_doc () =
       w ("<title>" ^ page ^ "</title>\n");
       w "</head>\n";
       w "<body>";
-      w ("<h1>" ^ page ^ "</h1\n");
+      w ("<h1>" ^ page ^ "</h1>\n");
       iter (fun nt -> (* all nonterminals *)
         let dfn = 
           (*
@@ -247,25 +247,23 @@ let gen_doc () =
               begin match ss with
               | [] -> assert false
               | h :: t -> 
-              w  "<pre><code>";
               let ds = ljust 20 ("  " ^ dssl) in
-              w ( span "dssl" ds ^ h ^ "\n");
+              w ( begin_div "rule" ^ span "dssl" ds ^ span "production" h ^end_div);
               let ds = ljust 20 ""in
               List.iter (* alternatives of a production *)
                 (fun h ->
-                  w (span "dssl" ds ^ h ^ "\n")
+                  w (begin_div "rule" ^span "dssl" ds ^ span "production" h ^ end_div)
                 )
                 t
               ;
               end
             | `Doc (dssl,s) -> w s
           ) 
-        (rev dfn)
+        dfn
         ;
-        w "\n";
         w end_div;
       )
-      (rev nts)
+      (rev nts) (* User specified list of nts on the page, in order *)
       ;
       w "</body></html>\n";
       close_out f
@@ -281,8 +279,9 @@ let gen_doc () =
     w "<link rel=stylesheet href=\"gramdoc.css\" type=\"text/css\">";
     w ("<title>Felix Grammar</title>\n");
     w "</head>\n";
-    w "<body><pre><code>\n";
+    w "<body>\n";
     w "<H1>Topic Index</H1>";
+    w (begin_div "index");
     let page_list = Hashtbl.fold (fun k _ acc -> k::acc) ntgroups [] in
     let page_list = List.sort compare page_list in
     List.iter
@@ -291,37 +290,72 @@ let gen_doc () =
     )
     page_list
     ;
+    w end_div;
     w "<H1>Nonterminal Index</H1>";
+    w (begin_div "index");
     List.iter
     (fun name ->
       w (" " ^ href_nt name ^ "\n");
     )
     grammar_list
     ;
-    w "</code></pre></body></html>\n";
+    w end_div;
+    w "</body></html>\n";
     close_out f
 
 @h = tangler('doc/gramdoc/gramdoc.css')
 @select(h)
 BODY 
 {
+}
+
+DIV.index
+{
   font-family: Courier;
   white-space: pre;
-  font-size: 12px;
+  font-size: 14px;
   text-indent: 0px;
-  line-height: 9px;
+  line-height: normal;
 }
+
 
 DIV.ntlist
 {
+  font-family: Courier;
+  margin-top: 18px;
+  font-size: 14px;
+  text-indent: 0px;
+}
+
+DIV.rule
+{
   margin-bottom: 4 px;
+  font-size: 14px;
+  text-indent: 0px;
+  white-space: pre;
+}
+
+SPAN.dssl
+{
+  color: #330033; 
+}
+
+SPAN.production
+{
+  position:absolute;left:10em;
 }
 
 P 
 { 
   font-family: Arial;
   font-weight: normal;
-  color: blue
+  color: #8b6914;
+  font-size: 14px;
+}
+
+CODE 
+{
+  color : black;
 }
 
 SPAN.predef
@@ -344,9 +378,4 @@ SPAN.metatoken
 }
 
 
-SPAN.dssl
-{
-  font-weight: normal;
-  color: #330033 
-}
 
