@@ -272,12 +272,13 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
 
-@for k,n in flx_syms:
-  tangle ("      | _,`Obj_"+k+" sr ")
-
-@for n,k in flx_keywords:
-  tangle ("      | _,`Obj_"+k+" sr ")
+@#for k,n in flx_syms:
+@#  tangle ("      | _,`Obj_"+k+" sr ")
 @#
+@#for n,k in flx_keywords:
+@#  tangle ("      | _,`Obj_"+k+" sr ")
+@#
+      | _,`Obj_keyword sr
         ->
         if (match sr with _,l,_,_ -> l) <> 0 then
         srs := slift sr :: !srs;
@@ -565,9 +566,11 @@ let dyp_merge_Obj_statement_star ol =
 
 @for k,v in flx_syms:
   tangle("%token <(Flx_ast.srcref)> " + k,inhibit_sref=1)
+  tangle("%constructor Obj_keyword %for " + k,inhibit_sref=1)
 
 @for n,t in flx_keywords: 
   tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
+  tangle("%constructor Obj_keyword %for " + t,inhibit_sref=1)
 
 /* top level entry */
 %constructor Obj_sexpr %for sterm 
@@ -589,6 +592,8 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_sexpr %for suserlbtoken suserrbtoken
 %constructor Obj_sexpr %for lbrace rbrace lpar rpar lsqb rsqb 
 %constructor Obj_sexpr %for ssemi comma colon vbar
+
+
 
 /* nothing*/
 %constructor Obj_sexpr %for sepsilon
