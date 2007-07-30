@@ -114,7 +114,8 @@ let fresh_dssl = {
   deps = [];
   privacy = Drules.empty;
 }
-let local_data = ref {
+
+let local_data = {
   dssls=Drules.empty; 
   loaded_dssls = [];
 }
@@ -142,7 +143,7 @@ let init_env () =
   done;
   env
 
-let global_data = ref {
+let global_data = {
   counter = ref 1;
   env=init_env();
   debug=ref false;
@@ -309,7 +310,7 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
         print_string ("Error "^err^" evaluating " ^ scm);
         failwith "Error evaluating Scheme"
     in
-    `Obj_sexpr (!age,sr,r)
+    `Obj_sexpr (!age,sr,r),[]
   in
   rule,action
 
@@ -785,7 +786,7 @@ statement:
       let mods = 
         (if dyp.global_data != global_data then [Global_data global_data] else []) 
         @
-        (if dyp.local_data != local_data then [Local_data Local_data] else []) 
+        (if dyp.local_data != local_data then [Local_data local_data] else []) 
       in
       (0,sr,Snull),mods
     }

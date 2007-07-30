@@ -48,7 +48,7 @@ let () =
     let x = 
         try 
           dyphack (
-          Flx_parse.expression
+          Flx_preparse.expression
           (toker#token_src) 
           lexbuf 
           )
