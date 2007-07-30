@@ -8,7 +8,7 @@ SVN conversion.
 @h = tangler('spkgs/flx_compiler.py')
 @select(h)
 FLX_LEXS = [ 'src/flx_lex' ]
-FLX_PARSES = [ 'src/flx_parse' ]
+FLX_PARSES = [ 'src/flx_preparse', 'src/flx_parse' ]
 
 FLX_MODULES = [
   'src/inria_table',
@@ -40,6 +40,7 @@ FLX_MODULES = [
   'src/flx_token',
   'src/flx_prelex',
   'src/flx_pdoc',
+  'src/flx_preparse',
   'src/flx_parse',
   'src/flx_keywords',
   'src/flx_lex1',
@@ -342,6 +343,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_prop.ipk')
 @include_file ('flx_unify.ipk')
 @include_file ('flx_pdoc.ipk')
+@include_file ('flx_preparser.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
 @include_file ('flx_keywords.ipk')

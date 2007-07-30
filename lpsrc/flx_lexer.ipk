@@ -725,7 +725,7 @@ let rec expand' state exclude toks =
   in aux [] toks [] []
 
 let eval state toks =
-  let e = Flx_tok.parse_tokens (dyphack_parser Flx_parse.expression) (toks @ [ENDMARKER]) in
+  let e = Flx_tok.parse_tokens (dyphack_parser Flx_preparse.expression) (toks @ [ENDMARKER]) in
   let e = state#get_expand_expr "PREPROC_EVAL" e in
   e
   

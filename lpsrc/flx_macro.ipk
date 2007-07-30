@@ -206,7 +206,7 @@ let rec parse_expr sr s =
   let toker = (new Flx_tok.tokeniser tokens) in
   begin try
     dyphack (
-    Flx_parse.expression
+    Flx_preparse.expression
     (toker#token_src)
     (Lexing.from_string "dummy" )
     )
