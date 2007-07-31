@@ -11,7 +11,7 @@ open List
 
 let special_tokens = 
   [
-@for k,s in flx__syms:
+@for k,s in flx_syms:
   tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
 @#
   ]
