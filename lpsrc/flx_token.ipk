@@ -48,6 +48,7 @@ and dssl_t = {
 and local_data_t = {
   dssls : dssl_t Drules.t;
   loaded_dssls : string list;
+  scm : (range_srcref * string) list;
 }
 
 and global_data_t = {

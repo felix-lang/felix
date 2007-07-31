@@ -330,7 +330,7 @@ typeclass Show [T] {
 
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
-#import <nugram.flxh>
+#syntax <nugram.flxh>
 open syntax felix;
 
 #infix 10 "/\\" wedge

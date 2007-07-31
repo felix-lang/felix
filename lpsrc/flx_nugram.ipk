@@ -726,8 +726,7 @@ syntax statements {
   spublish := private svar_def =># "`(ast_private ,_2)";
   spublish := private sval_def =># "`(ast_private ,_2)";
 
-#keyword publish  
-  spublish := publish sstring statement =># "_3";
+  spublish := "publish" sstring statement =># "_3";
 
   sdeclarative := sfunction_definition =># "_1";
   sdeclarative := sobject_definition =># "_1";
@@ -1527,8 +1526,7 @@ syntax executable {
         (fold_left f () _1))
     """;
 
-#keyword whilst
-  sifgoto := whilst sexpr do statement* done; =>#
+  sifgoto := "whilst" sexpr do statement* done; =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
@@ -1542,8 +1540,7 @@ syntax executable {
     ) 
   """;
 
-#keyword until
-  sifgoto := until sexpr do statement* done; =>#
+  sifgoto := "until" sexpr do statement* done; =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
@@ -1558,13 +1555,11 @@ syntax executable {
   """;
 
 
-#keyword forall
-  sifgoto := forall sname in sexpr do statement* done ; =>#
+  sifgoto := "forall" sname in sexpr do statement* done ; =>#
     "`(ast_macro_vfor (,_4) ,_6 ,_8)";
   ;
 
-#keyword upto
-  sifgoto := forall sname in sexpr upto sexpr do statement* done ; =>#
+  sifgoto := "forall" sname in sexpr "upto" sexpr do statement* done ; =>#
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
@@ -1579,8 +1574,7 @@ syntax executable {
      ))
   """;
 
-#keyword downto
-  sifgoto := forall sname in sexpr downto sexpr do statement* done ; =>#
+  sifgoto := "forall" sname in sexpr "downto" sexpr do statement* done ; =>#
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
