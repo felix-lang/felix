@@ -444,7 +444,14 @@ let translate ts =
     token_expander;
     ] 
   and reverse_apply dat fn = fn dat 
-  in List.fold_left reverse_apply ts filters
+  in 
+  print_endline "// translating tokens ";
+  let trstart_time = (Unix.times()).Unix.tms_utime in
+  let result = List.fold_left reverse_apply ts filters in
+  let trend_time = (Unix.times()).Unix.tms_utime in
+  let elapsed = trstart_time -. trend_time in
+  print_endline ("// TIME translating tokens = "^string_of_float elapsed);
+  result
 
 let translate_preprocessor ts = 
   let filters = [

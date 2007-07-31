@@ -321,21 +321,14 @@ typeclass Show [T] {
 
 @h=tangler('lib/flx.flxh','data')
 @select(h)
-#import <flx_syntax.flxh>
-#import <flx_macros.flxh>
-#import <flx_platform.flxh>
-
-@h=tangler('lib/flx_macros.flxh','data')
-@select(h)
-
-@h=tangler('lib/flx_syntax.flxh','data')
-@select(h)
 #syntax <nugram.flxh>
 open syntax felix;
 
 #infix 10 "/\\" wedge
 #infix 10 "\\/" vee
 #infix 10 ">>=" bind
+
+#import <flx_platform.flxh>
 
 @h=tangler('lib/flx_platform.flxh','data')
 @select(h)
@@ -356,8 +349,6 @@ open syntax felix;
 
 @h=tangler('lib/flx_ctypes.flxh','data')
 @select(h)
-#import <flx_syntax.flxh>
-
 header cctype_hxx = '#include <cctype>';
 header string_hxx = '#include <string>';
 header complex_hxx = '#include <complex>';
@@ -822,9 +813,7 @@ open Show[bool];
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
-#import <flx_syntax.flxh>
-#import <flx_platform.flxh>
-#import <flx_macros.flxh>
+#import <flx.flxh>
 
 header '#include "flx_rtl_config.hpp"';
 

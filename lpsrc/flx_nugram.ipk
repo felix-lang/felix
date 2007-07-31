@@ -715,7 +715,6 @@ syntax statements {
   statement:= spublish =># "_1"; 
   statement:= scomment =># "_1"; 
   statement:= snull_statement =># "_1"; 
-  //statement:= suser_statement =># "_1"; 
   statement:= scparse =># "_1"; 
 
   scomment := comment sstring ; =># "`(ast_nop ,_sr ,_2)";
@@ -739,8 +738,6 @@ syntax statements {
   sdirective := sopen_decl =># "_1";
   sdirective := suse_decl =># "_1";
 
-  sexecutable := svar_def =># "_1";
-  sexecutable := sval_def =># "_1";
   snull_statement := ; =># """`(ast_nop ,_sr "")""";
 
   sinclusion := include sstring ; =># "`(ast_include ,_sr ,_2)";
@@ -941,7 +938,15 @@ syntax statements {
 
 //------------------------------------------
 syntax variables {
-  requires statements;
+  // assignments have lower priority than variable 
+  // definitions to support 'int x = 1;' being
+  // a variable definition not an assignment,
+  // so we have to requires them first: they're
+  // currently defined in executable.. this is fragile ..
+  requires statements, executable;
+
+  sexecutable := svar_def =># "_1";
+  sexecutable := sval_def =># "_1";
   sval_def := val sname sname_suffix = sexpr ; =># 
   """
   (let 

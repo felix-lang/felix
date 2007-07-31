@@ -11,13 +11,7 @@ open List
 
 let special_tokens = 
   [
-@for k,s in flx_1_char_syms:
-  tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
-
-@for k,s in flx_2_char_syms:
-  tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
-
-@for k,s in flx_3_char_syms:
+@for k,s in flx__syms:
   tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
 @#
   ]
@@ -1004,6 +998,10 @@ let include_directive kind state sr s pre_flx_lex =
        try 
          let syn_mt = Flx_filesys.filetime filename in
          let cache_mt = Flx_filesys.filetime outfile in
+         (*
+         print_endline ("Syntax file time = " ^ string_of_float syn_mt);
+         print_endline ("Cache file time = " ^ string_of_float cache_mt);
+         *)
          if syn_mt > cache_mt then raise Not_found;
          let this_version = !Flx_version.version_data in
          let x =  open_in_bin outfile in
@@ -1013,8 +1011,19 @@ let include_directive kind state sr s pre_flx_lex =
            raise Not_found
          end;
 
+         assert(this_version = that_version);
+         assert(this_version.Flx_version.build_time_float < cache_mt);
+
          let local_data = Marshal.from_channel x in
          close_in x;
+         (*
+         print_endline ("// Load Syntax file " ^ outfile ^ 
+           " flxg compile time = " ^ 
+           string_of_float this_version.Flx_version.build_time_float ^
+           " = " ^
+           this_version.Flx_version.build_time
+         );
+         *)
          [LOAD_SYNTAX (local_data)]
        with _ ->
          pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
