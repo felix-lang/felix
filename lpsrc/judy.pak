@@ -129,7 +129,7 @@ module Judy
   proc JudyLCount: JLArray * word * word * JError_t * ptr[word] = 
     "*$5=JudyLCount(*$1,$2,$3,$4);";
 
-  proc JudyLByCount: JLArray * word * ptr[word], JError_t * ptr[ptr[word]] = 
+  proc JudyLByCount: JLArray * word * ptr[word] * JError_t * ptr[ptr[word]] = 
     "*$5=JudyLCount(*$1,$2,$3,$4);";
 
   proc JudyLFreeArray: JLArray * JError_t * ptr[word] = 
