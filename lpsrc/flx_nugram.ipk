@@ -28,6 +28,14 @@ SCHEME """
 """;
 
 SCHEME """
+  (define lazy_proc (lambda (stmts) `(ast_lambda (,dfltvs ,dfltargs ast_void ,stmts))))
+""";
+
+SCHEME """
+  (define (block stmts)`(ast_call ,_sr (,(lazy_proc stmts)())))
+""";
+
+SCHEME """
   (define call (lambda (f a) `(ast_call ,_sr (ast_name ,f ()) ,a)))
 """;
 
@@ -1392,7 +1400,7 @@ syntax executable {
   ssvc := _svc sname ; =># "`(ast_svc ,_sr ,_2)";
 
   page assignments =
-    sassignment, sassignop,
+    sassignment, sassignexpr, sassignop,
     srmwop, sswapop,
     spreincrop, spostincrop,
     slelement,
@@ -1400,12 +1408,15 @@ syntax executable {
     slexprs, slexpr
   ;
 
+
+  sassignment := sassignexpr ; =># "_1";
+
   // deprecate: class object construction, use a generator
-  sassignment := var sname <- new sexpr ; =># 
+  sassignexpr := var sname <- new sexpr =># 
     "(append `(ast_apply_ctor ,_sr ,_2) (splitapply _5))";
 
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
-  sassignment := sexpr <- sexpr ; =># 
+  sassignexpr := sexpr <- sexpr =># 
    """
    (let* (
      (fl (splitapply _3))
@@ -1459,19 +1470,19 @@ syntax executable {
     (if (null? (cdr _1)) (car _1) `((List ,_1) none))
     """;
 
-  sassignment := def slexpr = sexpr ; =># "`(ast_assign ,_sr _set ,_2 ,_4)";
+  sassignexpr := def slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
 
-  sassignment := sexpr sswapop sexpr ; =># 
+  sassignexpr := sexpr sswapop sexpr =># 
     "`(ast_call ,_sr ,_2 (,_1 ,_3))";
 
-  sassignment := sexpr sassignop sexpr ; =># 
+  sassignexpr := sexpr sassignop sexpr =># 
     "`(ast_assign ,_sr ,_2 ((Expr ,_1) none) ,_3)";
 
-  sassignment := sexpr srmwop sexpr ; =># 
+  sassignexpr := sexpr srmwop sexpr =># 
     "`(ast_assign ,_sr ,_2 ((Expr ,_1) none) ,_3)";
 
-  sassignment := sexpr spostincrop ; =># "`(ast_call ,_sr ,_2 ,_1)";
-  sassignment := spreincrop sexpr ; =># "`(ast_call ,_sr ,_1 ,_2)";
+  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 ,_1)";
+  sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 ,_2)";
 
   page subroutines = 
     sreturn, scall
@@ -2050,6 +2061,53 @@ require initialisers.
     """
     `(ast_type_alias ,_sr ,(car _2) ,dfltvs ,(cadr _2))
     """; 
+
+  sifgoto := for lpar statement sexpr ; sassignexpr rpar statement =>#
+  """
+    (let* 
+      (
+        (init _3)
+        (cond _4)
+        (iter _6)
+        (body _8)
+      )
+    `(ast_macro_block ,( append `(
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab2" "" )
+      ,init
+      (ast_label ,_sr "lab1" ) 
+      (ast_ifnotgoto ,_sr ,cond "lab2")
+      ,body
+      ,iter
+      (ast_goto ,_sr "lab1")
+      ( ast_label ,_sr "lab2" ))
+    )))
+  """;
+
+  sifgoto := "while" lpar sexpr rpar statement =>#
+  """
+    `( ast_macro_block ,( append `(
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab2" "" )
+      ( ast_label ,_sr "lab1" ) 
+      ( ast_ifnotgoto ,_sr ,_3 "lab2" )
+      ,_5  
+      ( ast_goto ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab2" )
+    )))
+  """;
+
+  sifgoto := do scompound "until" sexpr ; =>#
+  """
+    `( ast_macro_block ,( append `(
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_label ,_sr "lab1" ) 
+      ( ast_call ,_sr ,(lazy_proc _2) ())
+      ( ast_ifnotgoto ,_sr ,_4 "lab1" )
+    )))
+  """;
+
+
 }
 
 //------------------------------------------

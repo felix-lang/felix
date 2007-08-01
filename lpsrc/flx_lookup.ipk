@@ -4960,6 +4960,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     print_endline ("tf=" ^ sbt syms.dfns tf);
     print_endline ("ta=" ^ sbt syms.dfns ta);
     *)
+    let tf = lstrip syms.dfns tf in
     begin match tf with 
     | `BTYP_cfunction _ -> cal_apply syms sr f a
     | `BTYP_function _ -> 
