@@ -2107,6 +2107,30 @@ require initialisers.
     )))
   """;
 
+  sifgoto := if lpar sexpr rpar statement else statement =>#
+  """
+    `( ast_macro_block ,( append `(
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab2" "" ) 
+      ( ast_ifnotgoto ,_sr ,_3 "lab1" )
+      ,_5
+      (ast_goto ,_sr "lab2")
+      ( ast_label ,_sr "lab1" ) 
+      ,_7
+      ( ast_label ,_sr "lab2" ) 
+    )))
+  """;
+
+  // this must be given first ..
+  sifgoto := if lpar sexpr rpar statement =>#
+  """
+    `( ast_macro_block ,( append `(
+      ( ast_macro_name "lab1" "" ) 
+      ( ast_ifnotgoto ,_sr ,_3 "lab1" )
+      ,_5
+      ( ast_label ,_sr "lab1" ) 
+    )))
+  """;
 
 }
 
