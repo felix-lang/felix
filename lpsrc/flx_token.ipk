@@ -37,9 +37,12 @@ type token =
 @for n,k in flx_keywords: 
   tangle("  | "+k+" of srcref",inhibit_sref=1)
 
-and rule_t = string * token list * string * Flx_ast.range_srcref
+and prio_t = [`Default | `Priority of string]
+
+and rule_t = string * prio_t * token list * string * Flx_ast.range_srcref
 
 and dssl_t = {
+  prios : string list list;
   rules : rule_t list;
   deps : string list;
   privacy : string Drules.t; (* string -> string *)

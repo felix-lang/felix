@@ -87,6 +87,7 @@ let mem = List.mem
 let length = List.length
 
 let fresh_dssl = { 
+  prios = [];
   rules = [];
   deps = [];
   privacy = Drules.empty;
@@ -161,7 +162,7 @@ let scheme_run sr env (s:string):sval =
   let r :sval = scheme_eval c in
   r
 
-let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
+let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:string) =
   let mapnt name = try Drules.find name dssl_record.privacy with Not_found -> name in
   let pr_age = !(dyp.global_data.pcounter) in 
   incr (dyp.global_data.pcounter);
@@ -197,7 +198,13 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
     | Ocs_error.Error err | Ocs_error.ErrorL (_,err) -> failwith ("Error " ^ err ^ " compiling " ^ scm) 
   in
 
-  let rule  = lhs,(List.map f rhs),Dyp_priority_data.default_priority in
+  let priority = match prio with
+  | `Default -> Dyp_priority_data.default_priority
+  | `Priority p -> 
+    try find_priority priority_data p
+    with Not_found -> clierr sr ("Priority " ^ p ^ " not found")
+  in
+  let rule  = lhs,(List.map f rhs),priority in
   if !(dyp.global_data.pdebug) then
   print_endline ("Rule "^string_of_int pr_age ^" " ^ name ^ " := " ^
   catmap " " silly_strtoken rhs ^
@@ -293,10 +300,10 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
   in
   rule,action
 
-let extend_grammar dyp (dssl,(name,prod,action,sr)) =
+let extend_grammar dyp priority_data (dssl,(name,prio,prod,action,sr)) =
   let m = dyp.local_data in
   let dssl_record = Drules.find dssl m.dssls in
-  let rule = define_scheme sr dyp dssl_record dssl name prod action in
+  let rule = define_scheme sr dyp priority_data dssl_record dssl name prio prod action in
   rule
 
 (* ------------------------------------------------------ *)
@@ -310,9 +317,9 @@ let fixup_suffix sr pcounter rhs =
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,[NAME(sr,sl)],"(reverse _1)",rsr in
-    let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
-    let rule2 = sl,[],"'()",rsr in
+    let rule0 = slr,`Default,[NAME(sr,sl)],"(reverse _1)",rsr in
+    let rule1 = sl,`Default,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
+    let rule2 = sl,`Default,[],"'()",rsr in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
   | NAME (sr,s) :: PLUS _ :: t -> 
@@ -320,25 +327,25 @@ let fixup_suffix sr pcounter rhs =
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,[NAME(sr,sl)],"(reverse _1)",rsr in
-    let rule1 = sl,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
-    let rule2 = sl,[NAME(sr,s)],"`(,_1)",rsr in
+    let rule0 = slr,`Default,[NAME(sr,sl)],"(reverse _1)",rsr in
+    let rule1 = sl,`Default,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
+    let rule2 = sl,`Default,[NAME(sr,s)],"`(,_1)",rsr in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
   | NAME (sr,s) :: QUEST _ :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,[NAME (sr,s)],"`(,_1)",rsr in
-    let rule2 = sl,[],"()",rsr in
+    let rule1 = sl,`Default,[NAME (sr,s)],"`(,_1)",rsr in
+    let rule2 = sl,`Default,[],"()",rsr in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
 
   | other :: QUEST sr :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__opt_"^x in
-    let rule1 = sl,[other],"()",rsr in
-    let rule2 = sl,[],"()",rsr in
+    let rule1 = sl,`Default,[other],"()",rsr in
+    let rule2 = sl,`Default,[],"()",rsr in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
 
 
@@ -422,7 +429,7 @@ let rec flatten sr pcounter (rhs: symbol_t list) : token list * rule_t list =
     let sr = unlift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_"^x in
-    let rules : rule_t list = fixup_alternatives pcounter sl dyalts in
+    let rules : rule_t list = fixup_alternatives pcounter sl `Default dyalts in
     aux t (NAME (sr,sl)::out) (rules@extras)
 
   | `Atom h :: t -> aux t (h::out) extras 
@@ -433,13 +440,13 @@ and fixup_rule sr pcounter (rhs:symbol_t list) : token list * rule_t list =
   let rhs,extras' = fixup_suffix sr pcounter rhs in
   rhs,extras@extras'
 
-and fixup_alternatives pcounter name (dyalts:dyalt_t list) : rule_t list =
+and fixup_alternatives pcounter name prio (dyalts:dyalt_t list) : rule_t list =
   let rules = 
     fold_left 
       (fun rules (rhs,sr,action) ->
         let prod,extras = fixup_rule sr pcounter rhs in
         let action : string = cal_action prod action in
-        ((name,prod,action,sr) :: extras) @ rules
+        ((name,prio,prod,action,sr) :: extras) @ rules
       ) 
       [] dyalts
   in
@@ -449,9 +456,9 @@ let add_rule global_data local_data dssl rule =
   let m = local_data in
   let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
   match rule with
-  | `Scheme_rule (privacy,name,dyalts) ->
+  | `Scheme_rule (privacy,name,prio,dyalts) ->
      if !Flx_pdoc.document_grammar then record_rule dssl name dyalts;
-     let rules = fixup_alternatives global_data.pcounter name dyalts in
+     let rules = fixup_alternatives global_data.pcounter name prio dyalts in
      let rules = fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
      let privacy = 
        match privacy with
@@ -472,6 +479,11 @@ let add_rule global_data local_data dssl rule =
 
   | `Document (name,s) -> record_doc dssl name s; global_data,local_data
   | `Page (name,nts) -> record_group name nts; global_data, local_data
+  | `Priorities p -> 
+    let d = { d with prios = p::d.prios } in
+    let m = {m with dssls=Drules.add dssl d m.dssls } in
+    global_data, m
+
 
 let ocs2flx sr r = 
   let sex = Ocs2sex.ocs2sex r in
@@ -662,10 +674,21 @@ opt_private:
   | PRIVATE { `Private }
   | { `Public }
 
+opt_prio:
+  | LSQB NAME RSQB { `Priority (snd $2) }
+  | { `Default }
+
+pri:
+  | NAME { snd $1 }
+
+prilist:
+  | pri LESS prilist { $1 :: $3 }
+  | pri { [$1] }
+
 dyprod:
-   | opt_private NAME COLONEQUAL dyalts SEMI
+   | opt_private NAME opt_prio COLONEQUAL dyalts SEMI
      {
-       `Scheme_rule ($1, snd $2,$4)
+       `Scheme_rule ($1, snd $2,$3,$5)
      }
 
    | REQUIRES basic_name_comma_list SEMI
@@ -684,6 +707,12 @@ dyprod:
      {
        if snd $1 <> "page" then raise Giveup;
        `Page ((snd $2),(map snd $4))
+     }
+
+   | NAME prilist SEMI
+     {
+       if snd $1 <> "priority" then raise Giveup;
+       `Priorities $2
      }
 
 action:
@@ -790,23 +819,38 @@ statement:
       print_endline ("Installing " ^ cat "," to_install);
       *)
 
-      let rules =
-        fold_left (fun acc dssl ->
-        let rules = 
+      let rules,prios =
+        fold_left (fun (acc_rules, acc_prios) dssl ->
+        let rules,prios = 
           let d = 
             try Drules.find dssl m.dssls
             with Not_found -> failwith ("Can't open syntax " ^ dssl)
-          in d.rules
+          in d.rules,d.prios
         in 
         let rules = map (fun x -> dssl,x) rules in
-        acc @ rules
+        acc_rules @ rules, acc_prios @ prios
         )
-        []
+        ([],[])
         to_install
       in
-      let add_rules = List.map (extend_grammar dyp) rules in
+
+      let priority_data =
+        fold_left (fun pd prios -> 
+          let pd,plist = fold_left (fun (pd,plist) pri ->
+            let pd,pr = insert_priority pd pri in 
+            pd,(pr::plist)
+          ) (pd,[]) prios
+          in 
+          match plist with 
+          | [] 
+          | [_] -> pd
+          | _ ->  add_list_relations pd (rev plist)
+        ) dyp.priority_data prios
+      in
+
+      let add_rules = List.map (extend_grammar dyp priority_data) rules in
       let local_data = { m with loaded_dssls = to_install @ m.loaded_dssls } in
-      (0,sr,Snull),[Add_rules add_rules; Local_data local_data]
+      (0,sr,Snull),[Add_rules add_rules; Local_data local_data; Priority_data priority_data]
     }
 
   | SYNTAX NAME LBRACE dyprods RBRACE
