@@ -108,7 +108,7 @@ let init_env () =
   let v1:Ocs_types.sval = Ocs_sym.get_symbol "_sr" in
   let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
   Ocs_env.bind_name env v1 g1;
-  for n = 1 to 100 do
+  for n = 1 to 20 do
     let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
     let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
     Ocs_env.bind_name env v1 g1;
@@ -203,6 +203,10 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
   catmap " " silly_strtoken rhs ^
   " =># "^scm);
   let action = fun _ avl ->
+    match avl,scm with
+    (* optimise special case *)
+    | [`Obj_sexpr (_,sr,s)],"_1" -> `Obj_sexpr (pr_age,sr,s),[]
+    | _ ->
     let age = ref pr_age in
     let b = Buffer.create 200 in
     if !(dyp.global_data.pdebug) then
@@ -217,12 +221,6 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
     | [],_ | _,[] -> assert false
     | h1::t1,h2::t2 -> 
       match h1,h2 with
-      | STRING (_,s1),`Obj_NAME (sr,s2) ->
-        if s1 <> s2 then raise Giveup;
-        if (match sr with _,l,_,_ -> l) <> 0 then
-        srs := slift sr :: !srs;
-        aux t1 t2 (n+1)
-
       | _,`Obj_sexpr (seq,sr,s) 
         ->
         (* age := max !age seq; *)
@@ -239,6 +237,19 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
         *)
         Ocs_env.set_glob env v1 s;
         aux t1 t2 (n+1)
+
+      | _,`Obj_keyword sr
+        ->
+        if (match sr with _,l,_,_ -> l) <> 0 then
+        srs := slift sr :: !srs;
+        aux t1 t2 (n+1)
+
+      | STRING (_,s1),`Obj_NAME (sr,s2) ->
+        if s1 <> s2 then raise Giveup;
+        if (match sr with _,l,_,_ -> l) <> 0 then
+        srs := slift sr :: !srs;
+        aux t1 t2 (n+1)
+
       | USER_KEYWORD (_,s1) , `Obj_USER_KEYWORD (sr,s2) ->
         if s1 <> s2 then raise Giveup;
         if (match sr with _,l,_,_ -> l) <> 0 then
@@ -250,17 +261,6 @@ let define_scheme sr dyp dssl_record dssl name rhs (scm:string) =
         srs := slift sr :: !srs;
         aux t1 t2 (n+1)
 
-@#for k,n in flx_syms:
-@#  tangle ("      | _,`Obj_"+k+" sr ")
-@#
-@#for n,k in flx_keywords:
-@#  tangle ("      | _,`Obj_"+k+" sr ")
-@#
-      | _,`Obj_keyword sr
-        ->
-        if (match sr with _,l,_,_ -> l) <> 0 then
-        srs := slift sr :: !srs;
-        aux t1 t2 (n+1)
          
       | _ -> aux t1 t2 (n+1)
     in
@@ -365,12 +365,50 @@ let dflt_action prod =
   ;
   *)
   action
+
+let user_expr prod fn : string = 
+  (* this is a supreme hack .. but it is mandatory because Marshal
+     cannot save an Ocs.sval because it can contain primitive
+     functions
+  *)
+  let fn = Ocs_print.string_of_ocs fn in
+  (*
+  print_endline ("Rendered Ocs sval as " ^ fn);
+  *)
+  let rn = ref 1 in
+  let arg =
+    fold_left (fun acc x -> match x with
+    | `Atom (NAME _) ->
+      let n = !rn in incr rn;
+      (if acc = "" then "" else acc ^ " ")
+      ^ "(Expression_term ,_" ^ string_of_int n ^ ")"
+    | `Atom (QUEST _ )
+    | `Atom (PLUS _ )
+    | `Atom (STAR _ )
+    | `Group _ ->
+      failwith "Production of user expression can't have meta symbols"
+
+    | `Atom k -> 
+      (* this is really a don't care case .. *)
+      let k = silly_strtoken k in
+      let n = !rn in incr rn;
+      (if acc = "" then "" else acc ^ " ")
+      ^ "(Keyword_term \"" ^ k ^ "\")"
+    ) "" prod 
+  in
+  let action = "(Apply_term (Expression_term " ^ fn ^ ") (" ^ arg ^ "))" in
+  let action = "`(ast_user_expr ,_sr \"dunno\" " ^ action ^ ")" in
+  (*
+  print_endline ("User expression, action=" ^ action);
+  *)
+  action
   
 
 let cal_action prod action =
   match action with 
   | `None -> dflt_action prod
   | `Scheme scm -> scm
+
 
 let unlift (f,l1,c1,l2,c2) = 
   if l1 = l2 then f,l1,c1,c2
@@ -648,10 +686,24 @@ dyprod:
        `Page ((snd $2),(map snd $4))
      }
 
-
+action:
+   | STRING { `Scheme (snd $1) }
+   | LPAR sexpr RPAR { `Expr $2 }
 
 dyalt:
-   | rhs PARSE_ACTION STRING { $1,slift $2,`Scheme (snd $3) }
+   | rhs PARSE_ACTION action 
+     { 
+       let prod = $1 in
+       let action = $3 in
+       let action : action_t =
+         match action with
+         | `Scheme _ as x -> x
+         | `None as x -> x
+         | `Expr (_,_,e) ->
+           `Scheme (user_expr prod e)
+       in
+       prod,slift $2,action
+     }
    | rhs { $1,dummysr,`None }
 
 dyaltlist:
@@ -811,30 +863,6 @@ statement:
       end;
       (0,dummysr,Snull)
     }
-/*
-expr:  
-  | sexpr 
-    {
-      (*
-      print_endline "GOT SEXPR";
-      *)
-      let _,sr,r = $1 in
-      let sex = Ocs2sex.ocs2sex r in
-      (*
-      print_endline "OCS scheme sexpr converted to s-expression:";
-      Sex_print.sex_print sex;
-      *)
-      let fresh = ref 1 in
-      let env = [] in
-      let flx = Flx_sex2flx.xexpr_t sr fresh env sex in
-      (*
-      print_endline "s-expression converted to Felix expression!";
-      print_endline (string_of_expr flx);
-      *)
-      flx
-    }
-
-*/
 sexpr: | DUMMY { 0,dummysr,Snull }
 
 /* identifiers which aren't keywords */
