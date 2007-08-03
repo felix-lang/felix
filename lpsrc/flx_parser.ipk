@@ -71,10 +71,13 @@ open Sex_types
 open Dyp
 open Flx_pdoc
 
-let silly_strtoken k = 
+let silly_strtoken k = Flx_prelex.string_of_token k 
+  (*
   match k with 
   | NAME (_,s) -> s
+  | NONTERMINAL (_,s,p) -> s
   | _ -> Dyp_symbols.str_token k
+  *)
 
 
 let map = List.map
@@ -162,6 +165,19 @@ let scheme_run sr env (s:string):sval =
   let r :sval = scheme_eval c in
   r
 
+let cal_priority priority_data p = 
+  let cp p = 
+    try find_priority priority_data p 
+    with Not_found -> failwith ("Priority " ^ p ^ " not defined!")
+  in
+  match p with
+  | `No_prio -> No_priority
+  | `Eq_prio p -> Eq_priority (cp p)
+  | `Less_prio p -> Less_priority (cp p)
+  | `Lesseq_prio p -> Lesseq_priority (cp p)
+  | `Greater_prio p -> Greater_priority (cp p)
+  | `Greatereq_prio p -> Greatereq_priority (cp p)
+
 let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:string) =
   let mapnt name = try Drules.find name dssl_record.privacy with Not_found -> name in
   let pr_age = !(dyp.global_data.pcounter) in 
@@ -175,6 +191,16 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
     match o with
       | STRING _ ->
         Dyp.Ter Dyp_symbols.t_NAME
+
+      | NONTERMINAL (sr,s,p) -> 
+          let nt = mapnt s in
+          let nt = 
+            try dyp.add_nt nt "Obj_sexpr"
+            with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ s)
+            | Dyp.Bad_constructor _ -> failwith ("BAD CONSTRUCTOR FOR " ^ s)
+          in
+          let ntpri = cal_priority priority_data p in
+          Dyp.Non_ter (nt,ntpri)
 
       | NAME (sr,s) -> 
           let nt = mapnt s in
@@ -312,31 +338,31 @@ let extend_grammar dyp priority_data (dssl,(name,prio,prod,action,sr)) =
 let fixup_suffix sr pcounter rhs =
   let rec aux inp out extras = match inp with
   | [] -> rev out,extras
-  | NAME (sr,s) :: STAR _ :: t -> 
+  | NONTERMINAL (sr,s,p) :: STAR _ :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
     let rule0 = slr,`Default,[NAME(sr,sl)],"(reverse _1)",rsr in
-    let rule1 = sl,`Default,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
+    let rule1 = sl,`Default,[NAME(sr,sl);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
     let rule2 = sl,`Default,[],"'()",rsr in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
-  | NAME (sr,s) :: PLUS _ :: t -> 
+  | NONTERMINAL (sr,s,p) :: PLUS _ :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
     let rule0 = slr,`Default,[NAME(sr,sl)],"(reverse _1)",rsr in
-    let rule1 = sl,`Default,[NAME(sr,sl);NAME(sr,s)],"(cons _2 _1)",rsr in
+    let rule1 = sl,`Default,[NAME(sr,sl);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
     let rule2 = sl,`Default,[NAME(sr,s)],"`(,_1)",rsr in
     aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
 
-  | NAME (sr,s) :: QUEST _ :: t -> 
+  | NONTERMINAL (sr,s,p) :: QUEST _ :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NAME (sr,s)],"`(,_1)",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"`(,_1)",rsr in
     let rule2 = sl,`Default,[],"()",rsr in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
 
@@ -348,15 +374,32 @@ let fixup_suffix sr pcounter rhs =
     let rule2 = sl,`Default,[],"()",rsr in
     aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
 
-
-
   | h :: t -> aux t (h::out) extras 
   in aux rhs [] []
-    
+
+let fixup_prio rhs =
+  let rec aux inp out = match inp with
+  | [] -> rev out
+  | NAME (sr,s) :: LSQB _ :: LESS _ :: NAME (_,p) :: RSQB _ :: t ->
+    aux t (NONTERMINAL (sr,s,`Less_prio p)::out)
+  | NAME (sr,s) :: LSQB _ :: LESSEQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
+    aux t (NONTERMINAL (sr,s,`Lesseq_prio p)::out)
+  | NAME (sr,s) :: LSQB _ :: GREATER _ :: NAME (_,p) :: RSQB _ :: t ->
+    aux t (NONTERMINAL (sr,s,`Greater_prio p)::out)
+  | NAME (sr,s) :: LSQB _ :: GREATEREQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
+    aux t (NONTERMINAL (sr,s,`Greatereq_prio p)::out)
+  | NAME (sr,s) :: LSQB _ :: EQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
+    aux t (NONTERMINAL (sr,s,`Eq_prio p)::out)
+  | NAME (sr,s) ::t ->
+    aux t (NONTERMINAL (sr,s,`No_prio)::out)
+  | h :: t -> aux t (h::out)
+  in aux rhs []
+ 
 let dflt_action prod = 
   let rn = ref 1 in
   let action =
     fold_left (fun acc x -> match x with
+    | NONTERMINAL _ 
     | NAME _ ->
       let n = !rn in incr rn;
       (if acc = "" then "" else acc ^ " ")
@@ -384,24 +427,38 @@ let user_expr prod fn : string =
   *)
   let rn = ref 1 in
   let arg =
-    fold_left (fun acc x -> match x with
-    | `Atom (NAME _) ->
+    let rec aux acc inp = match inp with
+    | [] -> acc
+    | `Atom (NAME _) :: `Atom (LSQB _) :: 
+      `Atom 
+      (
+        EQUAL _ | LESS _ |
+        GREATER _ | LESSEQUAL _ | 
+        GREATEREQUAL _
+      ) :: `Atom (NAME _) :: `Atom (RSQB _) :: t
+
+    | `Atom (NAME _) :: t ->
       let n = !rn in incr rn;
-      (if acc = "" then "" else acc ^ " ")
-      ^ "(Expression_term ,_" ^ string_of_int n ^ ")"
-    | `Atom (QUEST _ )
-    | `Atom (PLUS _ )
-    | `Atom (STAR _ )
-    | `Group _ ->
+      aux 
+      (
+        (if acc = "" then "" else acc ^ " ")
+        ^ "(Expression_term ,_" ^ string_of_int n ^ ")"
+      ) t
+
+    | `Atom (QUEST _ | PLUS _ | STAR _) :: _
+    | `Group _ :: _ ->
       failwith "Production of user expression can't have meta symbols"
 
-    | `Atom k -> 
+    | `Atom k :: t -> 
       (* this is really a don't care case .. *)
       let k = silly_strtoken k in
       let n = !rn in incr rn;
-      (if acc = "" then "" else acc ^ " ")
-      ^ "(Keyword_term \"" ^ k ^ "\")"
-    ) "" prod 
+      aux 
+      (
+        (if acc = "" then "" else acc ^ " ")
+        ^ "(Keyword_term \"" ^ k ^ "\")"
+      ) t
+    in aux "" prod 
   in
   let action = "(Apply_term (Expression_term " ^ fn ^ ") (" ^ arg ^ "))" in
   let action = "`(ast_user_expr ,_sr \"dunno\" " ^ action ^ ")" in
@@ -437,6 +494,10 @@ let rec flatten sr pcounter (rhs: symbol_t list) : token list * rule_t list =
 
 and fixup_rule sr pcounter (rhs:symbol_t list) : token list * rule_t list =
   let rhs,extras = flatten sr pcounter rhs in
+  let rhs, extras = 
+    fixup_prio rhs, 
+    map (fun (name,prio,prod,action,sr) -> name,prio,fixup_prio prod, action,sr) extras
+  in
   let rhs,extras' = fixup_suffix sr pcounter rhs in
   rhs,extras@extras'
 
@@ -576,6 +637,7 @@ let dyp_merge_Obj_statement_star ol =
 
 /* literals */
 %token <(Flx_ast.srcref * string)> NAME
+%token <(Flx_ast.srcref * string * prio_t)> NONTERMINAL
 %token <(Flx_ast.srcref * string * Flx_ast.bigint)> INTEGER
 %token <(Flx_ast.srcref * string * string )> FLOAT
 %token <(Flx_ast.srcref * string)> STRING

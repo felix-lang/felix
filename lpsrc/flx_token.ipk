@@ -4,6 +4,15 @@
 open Flx_ast
 open Flx_mtypes2
 
+type ntprio_t = [
+  | `No_prio
+  | `Eq_prio of string
+  | `Less_prio of string
+  | `Lesseq_prio of string
+  | `Greater_prio of string
+  | `Greatereq_prio of string
+]
+
 type token = 
   | ERRORTOKEN of (srcref * string)
   | ENDMARKER
@@ -13,6 +22,7 @@ type token =
   | COMMENT_NEWLINE of string
   | WHITE of int
   | NAME of (srcref * string)
+  | NONTERMINAL of (srcref * string * ntprio_t)
   | INTEGER of (srcref * string * Flx_ast.bigint)
   | FLOAT of (srcref * string * string)
   | STRING of (srcref * string)
@@ -73,10 +83,19 @@ open Flx_token
 
 let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 
+let sp p = match p with
+  | `No_prio -> ""
+  | `Eq_prio p -> "[="^p^"]"
+  | `Less_prio p -> "[<"^p^"]"
+  | `Lesseq_prio p -> "[<="^p^"]"
+  | `Greater_prio p -> "[>"^p^"]"
+  | `Greatereq_prio p -> "[>="^p^"]"
+
 let string_of_token (tok :Flx_token.token): string =
   match tok with
   | DUMMY -> "DUMMY"
   | NAME (sr,s) -> s
+  | NONTERMINAL (sr,s,p) -> s ^ sp p
   | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
   | FLOAT (sr,t,v) -> v
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
@@ -115,6 +134,7 @@ let name_of_token (tok :Flx_token.token): string =
   match tok with
   | DUMMY -> "DUMMY"
   | NAME (sr,s) -> "NAME"
+  | NONTERMINAL (sr,s,_) -> "NONTERMINAL"
   | INTEGER (sr,t,i) -> "INTEGER"
   | FLOAT (sr,t,v) -> "FLOAT"
   | STRING (sr,s) -> "STRING"
@@ -163,6 +183,7 @@ let src_of_token t = match t with
     -> ("",0,0,0)
 
   | NAME    (s,_)
+  | NONTERMINAL (s,_,_)
   | INTEGER (s,_,_)
   | FLOAT   (s,_,_)
   | STRING  (s,_)

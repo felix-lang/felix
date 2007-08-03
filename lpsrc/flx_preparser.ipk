@@ -170,6 +170,7 @@ let dummysr = "Dummy",0,0,0,0
 
 /* literals */
 %token <(Flx_ast.srcref * string)> NAME
+%token <(Flx_ast.srcref * string * prio_t)> NONTERMINAL
 %token <(Flx_ast.srcref * string * Flx_ast.bigint)> INTEGER
 %token <(Flx_ast.srcref * string * string )> FLOAT
 %token <(Flx_ast.srcref * string)> STRING
