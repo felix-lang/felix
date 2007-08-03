@@ -46,6 +46,10 @@ module Sqlite3 {
     sqlite3_db_t * string * sqlite3_exec_callback_t * address * &charp -> int =
     "sqlite3_exec($1,$2.data(),$3,$4,$5)"
   ;
+  
+  gen sqlite3_errmsg : sqlite3_db_t -> charcp =
+    "sqlite3_errmsg($1)"
+  ;
 }
 
 syntax sql {
@@ -96,7 +100,7 @@ void run(struct sqlite3_db_t db) {
     val cb : sqlite3_exec_callback_t = the eh;
     res := sqlite3_exec(db,p,cb,cast[address] usr,&errm);
     if res !=0 do 
-      println$ "exec DB error[abort] " + str res;
+      println$ "exec DB error[abort]: " + errm;
       return;
     done;
     ++i;
@@ -108,7 +112,8 @@ println "Hello";
 var db : sqlite3_db_t;
 err := sqlite3_open("mydb.db", &db);
 if err != 0 do
-  println$ "open DB error[abort] " + str err;
+  print "open DB error[abort] ";
+  println $ sqlite3_errmsg db;
   goto finish;
 done;
 
