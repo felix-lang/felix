@@ -87,7 +87,7 @@ sig
   (*val str_non_terminal : int -> string*)
     (** Makes possible to display relevant error messages about non terminals'
         names and rules *)
-  val priority_names : string array
+(*   val priority_names : string array *)
   val merge_warning : bool
     (** If set to true then the parser will emits a warning each time a merge
     happen. *)
@@ -319,14 +319,15 @@ type ('gd,'ld) deb_parsing_device = {
   deb_nt_of_ind : deb_non_terminal array;
   deb_lhs_of_ind : deb_lhs array;
   deb_str_non_ter : string array;
-  deb_cons_of_nt : int array
+  deb_cons_of_nt : int array;
+  deb_str_prio : string array
 }
 
     val create_parsing_device :
       (rule * ('obj,'data,'local_data) Dyp_special_types.action) list ->
       priority_data -> Dyp_special_types.automaton_kind -> 'data ->
       'local_data ->
-      Dyp_special_types.datadyn -> string array -> int array ->
+      Dyp_special_types.datadyn -> string array -> int array -> string array ->
     (*('obj,'data,'local_data) parsing_device*)
     ('data,'local_data) deb_parsing_device
       (** Returns the parsing_device which parses strings written with
@@ -468,7 +469,7 @@ sig
   (*val str_token_name : int -> string
   val str_non_terminal : non_terminal -> string*)
   (*val token_epsilon : int*)
-  val str_priority : int -> string
+  (*val str_priority : int -> string*)
   (*val select_rule : priority_data -> lit_nt -> lhs -> bool*)
   (*val select_lhs : lit_nt -> priority_data -> (int Prio_map.t) array -> lhs list*)
   val lhs_list : lit_nt -> priority_data -> (int Prio_map.t) array -> lhs list
@@ -495,8 +496,8 @@ sig
   val get_lhs_prio : lhs -> priority
   val new_rhs_lit : lit_nt -> (int Prio_map.t) array -> int-> lit_nt
   val str_token_name : int -> string
-  val str_non_terminal : non_terminal -> string array -> string
-  val str_lhs : lhs -> string array -> string
+  val str_non_terminal : non_terminal -> string array -> string array -> string
+  val str_lhs : lhs -> string array -> string array -> string
 end
 
 module type Grammar_type =
@@ -540,20 +541,20 @@ sig
   val dummy_item_set : item_set
   val compare_is : item_set -> item_set -> int
   val str_token_name : token_name -> string
-  val str_non_terminal : non_terminal -> string array -> string
-  val str_lhs : lhs -> string array -> string
+  val str_non_terminal : non_terminal -> string array -> string array -> string
+  val str_lhs : lhs -> string array -> string array -> string
   type literal = lit_nt pliteral
-  val str_literal : literal -> string array -> string
-  val str_handle : literal array -> int -> string array -> string
+  val str_literal : literal -> string array -> string array -> string
+  val str_handle : literal array -> int -> string array -> string array -> string
   val str_token_set : TNS.t -> string
   val print_reducible : out_channel -> rhs array -> lhs array ->
-    string array -> (int * TNS.t) -> unit
+    string array -> string array -> (int * TNS.t) -> unit
   val print_kernel : out_channel -> rhs array -> lhs array ->
-    string array -> (int * int) -> unit
+    string array -> string array -> (int * int) -> unit
   val print_non_kernel : out_channel -> rhs array -> lhs array ->
-    string array -> int -> unit
+    string array -> string array -> int -> unit
   val print_item : out_channel -> lhs array -> int ->
-    string array -> (literal array * int) -> unit
+    string array -> string array -> (literal array * int) -> unit
 end
 
 module Grammar_struct(Ntt:Non_terminal_type) =
@@ -640,15 +641,15 @@ struct
     let c = Pervasives.compare is1.non_kernel is2.non_kernel in
     if c<>0 then c else Int_set.compare is1.nt_to_add is2.nt_to_add*)
 
-  let str_literal lit str_non_ter = match lit with
+  let str_literal lit str_non_ter str_prio = match lit with
     | Ter tk -> str_token_name tk
-    | Non_ter nt -> str_non_terminal (nt_of_lit nt) str_non_ter
+    | Non_ter nt -> str_non_terminal (nt_of_lit nt) str_non_ter str_prio
 
-  let str_handle litl dp str_non_ter =
+  let str_handle litl dp str_non_ter str_prio =
     let rec aux i s =
       let s1 = if dp=i then s^"." else s in
       if i=Array.length litl then s1
-      else aux (i+1) (s1^(str_literal litl.(i) str_non_ter)^" ")
+      else aux (i+1) (s1^(str_literal litl.(i) str_non_ter str_prio)^" ")
     in
     aux 0 ""
 
@@ -667,24 +668,24 @@ struct
   (*let print_item ((nt,litl,length),dp) (tns:TNS.t) =
     Printf.fprintf !log_channel "   %s -> %s, (%s) ; length=%d\n" (str_lhs nt)
       (str_handle litl dp) (str_token_set tns) length*)
-  let print_reducible chan gram_rhs lhs_table str_non_ter (rn,tns) =
+  let print_reducible chan gram_rhs lhs_table str_non_ter str_prio (rn,tns) =
     let lhs,rhs = lhs_table.(rn), gram_rhs.(rn) in
     Printf.fprintf chan "   %s -> %s, (%s)\n"
-      (str_lhs lhs str_non_ter)
-      (str_handle rhs (Array.length rhs) str_non_ter) (str_token_set tns)
+      (str_lhs lhs str_non_ter str_prio)
+      (str_handle rhs (Array.length rhs) str_non_ter str_prio) (str_token_set tns)
 
-  let print_kernel chan gram_rhs lhs_table str_non_ter (rn,dp) =
+  let print_kernel chan gram_rhs lhs_table str_non_ter str_prio (rn,dp) =
     let lhs,rhs = lhs_table.(rn), gram_rhs.(rn) in
     Printf.fprintf chan "   %s -> %s\n"
-      (str_lhs lhs str_non_ter) (str_handle rhs dp str_non_ter)
+      (str_lhs lhs str_non_ter str_prio) (str_handle rhs dp str_non_ter str_prio)
 
-  let print_non_kernel chan gram_rhs lhs_table str_non_ter rn =
-    print_kernel chan gram_rhs lhs_table str_non_ter (rn,0)
+  let print_non_kernel chan gram_rhs lhs_table str_non_ter str_prio rn =
+    print_kernel chan gram_rhs lhs_table str_non_ter str_prio (rn,0)
 
-  let print_item chan lhs_of_ind ind str_non_ter (rhs,dp) =
+  let print_item chan lhs_of_ind ind str_non_ter str_prio (rhs,dp) =
     Printf.fprintf chan "   %s -> %s\n"
-      (str_lhs (lhs_of_ind.(ind)) str_non_ter)
-      (str_handle rhs dp str_non_ter)
+      (str_lhs (lhs_of_ind.(ind)) str_non_ter str_prio)
+      (str_handle rhs dp str_non_ter str_prio)
 
 end
 
@@ -825,21 +826,21 @@ priorités. *)
 (** STRING functions used to print the states of the automaton *)
 
 
-let str_literal_trans lit str_non_ter = match lit with
+let str_literal_trans lit str_non_ter str_prio = match lit with
   | Ter tk -> str_token_name tk
-  | Non_ter nt -> str_non_terminal nt str_non_ter
+  | Non_ter nt -> str_non_terminal nt str_non_ter str_prio
 
 let rec str_tok_list ll str_non_ter = match ll with
   | [] -> ""
-  | [tok] -> str_literal (Ter tok) str_non_ter
-  | tok::tl -> (str_literal (Ter tok) str_non_ter)^","^
+  | [tok] -> str_literal (Ter tok) str_non_ter [||]
+  | tok::tl -> (str_literal (Ter tok) str_non_ter [||])^","^
       (str_tok_list tl str_non_ter)
 
 
-let str_state_succ sl str_non_ter =
+let str_state_succ sl str_non_ter str_prio =
   let f str state =
     str^" ["^(string_of_int state.number)^","^
-    (str_literal_trans state.li str_non_ter)^"]"
+    (str_literal_trans state.li str_non_ter str_prio)^"]"
   in
   List.fold_left f "" sl
 
@@ -854,56 +855,62 @@ let str_state_succ sl str_non_ter =
 
 
 
-let print_item_set chan is gram_rhs lhs_table lhs_of_ind str_non_ter =
+let print_item_set chan is gram_rhs lhs_table lhs_of_ind str_non_ter str_prio =
   Printf.fprintf chan "  nb of items: %d\n"
   ((List.length is.reducible)+(List.length is.kernel_nt)+
   (List.length is.kernel_t)+(List.length is.non_kernel));
-  List.iter (print_reducible chan gram_rhs lhs_table str_non_ter)
+  List.iter (print_reducible chan gram_rhs lhs_table str_non_ter str_prio)
     is.reducible;
-  List.iter (print_kernel chan gram_rhs lhs_table str_non_ter) is.kernel_t;
-  List.iter (print_kernel chan gram_rhs lhs_table str_non_ter) is.kernel_nt;
-  List.iter (print_non_kernel chan gram_rhs lhs_table str_non_ter)
-    is.non_kernel(*;
+(*   Printf.fprintf chan "test1\n"; *)
+  List.iter (print_kernel chan gram_rhs lhs_table str_non_ter str_prio) is.kernel_t;
+(*   Printf.fprintf chan "test2\n"; *)
+  List.iter (print_kernel chan gram_rhs lhs_table str_non_ter str_prio) is.kernel_nt;
+(*   Printf.fprintf chan "test3\n"; *)
+  List.iter (print_non_kernel chan gram_rhs lhs_table str_non_ter str_prio)
+    is.non_kernel
+(*   Printf.fprintf chan "test4\n" *)
+    
+    (*;
   Printf.fprintf !log_channel "  nt to add:\n";
   let f i =
     Printf.fprintf !log_channel "   %s\n" (str_lhs lhs_of_ind.(i));
   in
   Int_set.iter f is.nt_to_add*)
 
-let print_state s gram_rhs lhs_table lhs_of_ind str_non_ter =
+let print_state s gram_rhs lhs_table lhs_of_ind str_non_ter str_prio =
   Printf.fprintf !log_channel " State %d\n" s.number;
   Printf.fprintf !log_channel "  li : %s\n"
-    (str_literal_trans s.li str_non_ter);
+    (str_literal_trans s.li str_non_ter str_prio);
   Printf.fprintf !log_channel "  items :\n";
   print_item_set !log_channel s.items gram_rhs lhs_table lhs_of_ind
-    str_non_ter;
+    str_non_ter str_prio;
   Printf.fprintf !log_channel "  next states : %s\n"
-    (str_state_succ s.succ_states str_non_ter)(*;
+    (str_state_succ s.succ_states str_non_ter str_prio)(*;
   Printf.fprintf !log_channel "  previous states : %s\n" (str_state_pred s.pred_states)*)
 
-let rec str_lit_list litl str_non_ter = match litl with
+let rec str_lit_list litl str_non_ter str_prio = match litl with
   | [] -> ""
-  | lit::tl -> (str_literal lit str_non_ter)^" "^
-      (str_lit_list tl str_non_ter)
+  | lit::tl -> (str_literal lit str_non_ter str_prio)^" "^
+      (str_lit_list tl str_non_ter str_prio)
 
-let str_rule (nt,litl,_) str_non_ter =
-  (str_lhs nt str_non_ter)^" -> "^(str_lit_list litl str_non_ter)
+let str_rule (nt,litl,_) str_non_ter str_prio =
+  (str_lhs nt str_non_ter str_prio)^" -> "^(str_lit_list litl str_non_ter str_prio)
 
-let rec print_rule_list rl str_non_ter = match rl with
+let rec print_rule_list rl str_non_ter str_prio = match rl with
   | [] -> ()
   | r::t -> Printf.fprintf !log_channel " %s\n"
-    (str_rule r str_non_ter); print_rule_list t str_non_ter
+    (str_rule r str_non_ter str_prio); print_rule_list t str_non_ter str_prio
 
 
 (** Used to print the content of an automaton. *)
-let print_aut v0 gram_rhs lhs_table lhs_of_ind str_non_ter =
+let print_aut v0 gram_rhs lhs_table lhs_of_ind str_non_ter str_prio =
   output_string !log_channel "\n"; output_string !log_channel "\n";
   output_string !log_channel
 "----------------------------------- Automaton ----------------------------------\n";
   output_string !log_channel "\n";
   let f s visited_v =
     if State_set.mem s visited_v then (visited_v,[]) else
-      (print_state s gram_rhs lhs_table lhs_of_ind str_non_ter;
+      (print_state s gram_rhs lhs_table lhs_of_ind str_non_ter str_prio;
       print_newline ();
       (State_set.add s visited_v,s.succ_states))
   in
@@ -914,10 +921,10 @@ let print_aut v0 gram_rhs lhs_table lhs_of_ind str_non_ter =
   let visited_v,vertex_map = f v0 State_set.empty in
   List.fold_left map_succ visited_v vertex_map
 
-let print_map m gram_rhs lhs_table lhs_of_ind str_non_ter =
+let print_map m gram_rhs lhs_table lhs_of_ind str_non_ter str_prio =
   let f (is,_) s =
     let () = Printf.fprintf !log_channel "state %d\n" (s.number) in
-    print_item_set !log_channel is gram_rhs lhs_table lhs_of_ind str_non_ter
+    print_item_set !log_channel is gram_rhs lhs_table lhs_of_ind str_non_ter str_prio
   in
   Map_is.iter f m
 
@@ -1321,7 +1328,7 @@ let move_LR0 s is_trace gram_rhs gram_lhs r_L prio_dat array_nt_prio lhslists ar
 
 (* on n'a pas besoin de nt_nb, c'est la longueur de gram_lhs  *)
 
-let build_automaton_LR0 (is0:item_set) (lit0:lit_trans) is_trace (gram_rhs:rhs array) (gram_lhs:((int list) * (int option)) array) prio_dat it_nb array_nt_prio lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter =
+let build_automaton_LR0 (is0:item_set) (lit0:lit_trans) is_trace (gram_rhs:rhs array) (gram_lhs:((int list) * (int option)) array) prio_dat it_nb array_nt_prio lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter str_prio =
   
   let array_lt_ter = Array.make token_nb None in
   let array_lt_nt = Array.make ist_nt_nb None in
@@ -1334,7 +1341,7 @@ let build_automaton_LR0 (is0:item_set) (lit0:lit_trans) is_trace (gram_rhs:rhs a
   
   let rec map_succ (is_trace,state_list) v =
     (*Printf.fprintf !log_channel "-state built-\n";
-    print_state v gram_rhs lhs_table lhs_of_ind str_non_ter;
+    print_state v gram_rhs lhs_table lhs_of_ind str_non_ter str_prio;
     Printf.fprintf !log_channel "\n";
     flush_all ();*)
     (*Printf.printf "build state %d\n" v.number;
@@ -1368,7 +1375,7 @@ let build_automaton_LR0 (is0:item_set) (lit0:lit_trans) is_trace (gram_rhs:rhs a
   (*let _ = print_aut v0 gram_rhs lhs_table lhs_of_ind in*)
   is_trace,state_list
 
-let build_automaton_LALR (is0:item_set) (lit0:lit_trans) is_trace gram_rhs gram_lhs prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter =
+let build_automaton_LALR (is0:item_set) (lit0:lit_trans) is_trace gram_rhs gram_lhs prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter str_prio =
   (*let time1 = Sys.time () in
   compute_first first_memo gram nt_nb prio_dat array_nt_prio lhs_of_ind;
   let time2 = Sys.time () in
@@ -1376,13 +1383,13 @@ let build_automaton_LALR (is0:item_set) (lit0:lit_trans) is_trace gram_rhs gram_
   (*flush_all ();*)
   let is_trace,state_list =
     build_automaton_LR0 is0 lit0 is_trace gram_rhs
-    gram_lhs prio_dat it_nb array_nt_prio lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter
+    gram_lhs prio_dat it_nb array_nt_prio lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter str_prio
   in
   
   state_list
 
 
-let build_automaton automaton_kind (is0:item_set) (lit0:lit_trans) is_trace gram_rhs gram_lhs verbose prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter =
+let build_automaton automaton_kind (is0:item_set) (lit0:lit_trans) is_trace gram_rhs gram_lhs verbose prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter str_prio =
   countst := 0;
   count_trans := 0;
   let time1 = Sys.time () in
@@ -1390,16 +1397,16 @@ let build_automaton automaton_kind (is0:item_set) (lit0:lit_trans) is_trace gram
     | `LR0 ->
         let _,state_list =
           build_automaton_LR0 is0 lit0 is_trace gram_rhs gram_lhs
-            prio_dat it_nb array_nt_prio lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter
+            prio_dat it_nb array_nt_prio lhs_of_ind lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter str_prio
         in state_list
     | `LALR -> build_automaton_LALR is0 lit0 is_trace
         gram_rhs gram_lhs prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind
-        lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter
+        lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter str_prio
     | `LR1 ->
         print_endline "LR(1) automaton currently not available, `LALR(1) is chosen.";
         build_automaton_LALR is0 lit0 is_trace
         gram_rhs gram_lhs prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind
-        lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter
+        lhslists r_L lhs_table ist_nt_nb token_nb nt_to_add str_non_ter str_prio
   in
   let time2 = Sys.time () in
   if verbose>0 then
@@ -1476,7 +1483,7 @@ sig
     (** Makes possible to display relevant error messages about non terminals'
         names and rules *)
 
-  val priority_names : string array
+(*   val priority_names : string array *)
 
   val merge_warning : bool
     (** If set to true then the parser will emits a warning each time a merge
@@ -1574,7 +1581,7 @@ type counters = {
   count_token : int;
   count_g : int } (* counts number of grammars *)
 
-open Gs
+(* open Gs *)
 
 let non_terminal_startprime = 0
 
@@ -1617,11 +1624,11 @@ sig
   type item_set
   val new_prio_imprint : priority_data -> prio_imprint -> item_set ->
     (non_terminal pliteral) -> priority -> rhs array -> lhs array ->
-    lhs array -> string array -> (prio_imprint * bool)
+    lhs array -> string array -> string array -> (prio_imprint * bool)
   val change_rn : prio_imprint -> item_set -> int Int_map.t ->
     (prio_imprint * item_set)
   val print_prio_imp : out_channel -> rhs array -> lhs array ->
-    prio_imprint -> string array -> unit
+    prio_imprint -> string array -> string array -> unit
   val default_prio_imp : prio_imprint
   val prio_imp_equal : prio_imprint -> prio_imprint -> bool
   (*val prev_is : item_set -> rhs array -> item_set*)
@@ -1630,7 +1637,7 @@ sig
     non_ter -> prio_imprint -> rhs array ->
     (non_terminal pliteral) -> priority
   val prio_imprint_check : int -> rhs array -> prio_imprint -> bool
-  val str_with_priority : priority -> string
+  val str_with_priority : priority -> string array -> string
 end
 
 module NTS = Set.Make(Ordered_non_ter)
@@ -1806,7 +1813,7 @@ struct
   type non_terminal = Gr.non_terminal
   type lit_nt = Gr.lit_nt
   type lhs = Gr.lhs
-  let str_priority p = priority_names.(p)
+(*   let str_priority p = priority_names.(p) *)
   (*let token_epsilon = E.token_epsilon*)
   (*let select_rule = F.select_rule*)
   (*let select_lhs = F.select_lhs*)
@@ -1877,7 +1884,8 @@ type ('gd,'ld) deb_parsing_device = {
   deb_nt_of_ind : deb_non_terminal array;
   deb_lhs_of_ind : deb_lhs array;
   deb_str_non_ter : string array;
-  deb_cons_of_nt : int array
+  deb_cons_of_nt : int array;
+  deb_str_prio : string array
 }
 
 type ('obj,'data,'local_data) parsing_device = {
@@ -1913,7 +1921,8 @@ type ('obj,'data,'local_data) parsing_device = {
   nt_of_ind : non_terminal array;
   lhs_of_ind : lhs array;
   str_non_ter : string array;
-  cons_of_nt : int array
+  cons_of_nt : int array;
+  str_prio : string array
 }
 
 (*type saved_parsing_device = {
@@ -2359,7 +2368,7 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   (rel_L,r_L)*)
 
 
-let create_aut gram_rhs gram_lhs r_L init_is lit prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind ist_nt_nb lhslists lhs_table nt_to_add str_non_ter =
+let create_aut gram_rhs gram_lhs r_L init_is lit prio_dat it_nb array_nt_prio nt_of_ind lhs_of_ind ist_nt_nb lhslists lhs_table nt_to_add str_non_ter str_prio =
   let () = countst := 0 in
   let is_trace =
     (Array.make E.token_nb Map_is.empty),
@@ -2369,7 +2378,7 @@ let create_aut gram_rhs gram_lhs r_L init_is lit prio_dat it_nb array_nt_prio nt
     build_automaton !automaton_kind init_is lit is_trace
       gram_rhs gram_lhs !dypgen_verbose prio_dat it_nb
       array_nt_prio nt_of_ind lhs_of_ind lhslists r_L lhs_table
-      ist_nt_nb token_nb nt_to_add str_non_ter
+      ist_nt_nb token_nb nt_to_add str_non_ter str_prio
   in
   state_list,n
 
@@ -2454,7 +2463,7 @@ let create_po user_g nt_nb str_non_ter =
 
 
 
-let print_table_state chan i table table_it table_lit_trans gram_rhs lhs_table lhs_of_ind str_non_ter nt_of_ind =
+let print_table_state chan i table table_it table_lit_trans gram_rhs lhs_table lhs_of_ind str_non_ter nt_of_ind str_prio =
   let tnb, ntnb = Array.length table.(0).(0), Array.length table.(0).(1) in
   let f tab len name_fun =
     for i=0 to len-1 do
@@ -2463,21 +2472,21 @@ let print_table_state chan i table table_it table_lit_trans gram_rhs lhs_table l
   in
   Printf.fprintf chan " State %d\n" i;
   Printf.fprintf chan "  li: %s\n  items:\n"
-    (str_literal_trans table_lit_trans.(i) str_non_ter);
+    (str_literal_trans table_lit_trans.(i) str_non_ter str_prio);
   print_item_set chan table_it.(i) gram_rhs lhs_table
-    lhs_of_ind str_non_ter;
+    lhs_of_ind str_non_ter str_prio;
   Printf.fprintf chan "  next states (shift):\n   ";
   f table.(i).(0) tnb E.str_token_name; print_newline ();
   Printf.fprintf chan "  next states (reduction):\n   ";
   f table.(i).(1) ntnb
-    (fun i -> str_non_terminal (nt_of_ind.(i)) str_non_ter);
+    (fun i -> str_non_terminal (nt_of_ind.(i)) str_non_ter str_prio);
   print_newline (); print_newline ()
 
-let print_tables table table_it table_lit_trans gram_rhs lhs_table lhs_of_ind str_non_ter nt_of_ind =
+let print_tables table table_it table_lit_trans gram_rhs lhs_table lhs_of_ind str_non_ter nt_of_ind str_prio =
   Printf.printf "\nTables\n\n";
   for i=0 to (Array.length table)-1 do
     print_table_state !log_channel i table table_it table_lit_trans gram_rhs
-      lhs_table lhs_of_ind str_non_ter nt_of_ind
+      lhs_table lhs_of_ind str_non_ter nt_of_ind str_prio
   done
 
 
@@ -2517,10 +2526,10 @@ let create_parsing_device_with_init gram_rhs gram_lhs lhs_table
     (pcs:priority_data) init_is
     lit user_nt_nb po_array it_nb array_nt_prio nt_of_ind
     non_ter_of_ind prio_of_ind lhs_of_ind g_nb ist_nt_nb lhslists
-    nt_to_add str_non_ter cons_of_nt =
+    nt_to_add str_non_ter cons_of_nt str_prio =
   let state_list,n = create_aut gram_rhs gram_lhs r_L init_is
     lit pcs it_nb array_nt_prio nt_of_ind lhs_of_ind ist_nt_nb
-    lhslists lhs_table nt_to_add str_non_ter in
+    lhslists lhs_table nt_to_add str_non_ter str_prio in
   let table,table_it,table_lit_trans =
     make_table state_list (n+1) ist_nt_nb gram_rhs
       lhs_table lhs_of_ind
@@ -2537,7 +2546,8 @@ let create_parsing_device_with_init gram_rhs gram_lhs lhs_table
       nt_nb = Array.length gram_lhs; non_ter_of_ind=non_ter_of_ind;
       prio_of_ind=prio_of_ind; nt_of_ind=nt_of_ind;
       lhs_of_ind=lhs_of_ind; str_non_ter=str_non_ter;
-      cons_of_nt=cons_of_nt }
+      cons_of_nt=cons_of_nt;
+      str_prio = str_prio }
    in
   parsing_device
 
@@ -2639,48 +2649,48 @@ let update_user_g ral user_g =
   List.fold_left f user_g ral
 
 
-let str_rule rn gram_rhs lhs_table str_non_ter =
+let str_rule rn gram_rhs lhs_table str_non_ter str_prio =
     Printf.sprintf "%s -> %s"
-      (str_lhs lhs_table.(rn) str_non_ter)
-      (str_handle gram_rhs.(rn) (-1) str_non_ter)
+      (str_lhs lhs_table.(rn) str_non_ter str_prio)
+      (str_handle gram_rhs.(rn) (-1) str_non_ter str_prio)
 
-let print_grammar chan gram_rhs lhs_table str_non_ter =
+let print_grammar chan gram_rhs lhs_table str_non_ter str_prio =
   for i=0 to (Array.length lhs_table)-1 do
     Printf.fprintf chan "rn:%d  %s\n" i
-      (str_rule i gram_rhs lhs_table str_non_ter)
+      (str_rule i gram_rhs lhs_table str_non_ter str_prio)
   done;
   print_newline ()
 
 
-let print_gram_lhs gram_lhs lhs_of_ind str_non_ter =
+let print_gram_lhs gram_lhs lhs_of_ind str_non_ter str_prio =
   let f i rn =
-    Printf.printf "lhs:%s  rn:%d\n" (str_lhs lhs_of_ind.(i) str_non_ter) rn
+    Printf.printf "lhs:%s  rn:%d\n" (str_lhs lhs_of_ind.(i) str_non_ter str_prio) rn
   in
   for i=0 to (Array.length gram_lhs)-2 do (
     (match snd gram_lhs.(i) with
     | None ->
         Printf.printf "no epsilon rule for %s\n"
-          (str_lhs (lhs_of_ind.(i)) str_non_ter)
+          (str_lhs (lhs_of_ind.(i)) str_non_ter str_prio)
     | Some rn ->
         Printf.printf "no epsilon rule nb %d for %s\n" rn
-          (str_lhs (lhs_of_ind.(i)) str_non_ter)
+          (str_lhs (lhs_of_ind.(i)) str_non_ter str_prio)
     );
     List.iter (f i) (fst gram_lhs.(i)) )
   done
 
 
-let print_g g lhs_of_ind str_non_ter =
+let print_g g lhs_of_ind str_non_ter str_prio =
   let f i rhs _ =
-    Printf.printf "%s -> %s\n" (str_lhs lhs_of_ind.(i) str_non_ter)
-      (str_handle rhs 0 str_non_ter)
+    Printf.printf "%s -> %s\n" (str_lhs lhs_of_ind.(i) str_non_ter str_prio)
+      (str_handle rhs 0 str_non_ter str_prio)
   in
   for i=0 to (Array.length g)-1 do
     F.Map_rhs.iter (f i) g.(i)
   done
 
-let print_lhs_of_ind lhs_of_ind str_non_ter =
+let print_lhs_of_ind lhs_of_ind str_non_ter str_prio =
   for i=0 to (Array.length lhs_of_ind)-1 do
-    Printf.printf "ind %d = lhs %s\n" i (str_lhs lhs_of_ind.(i) str_non_ter)
+    Printf.printf "ind %d = lhs %s\n" i (str_lhs lhs_of_ind.(i) str_non_ter str_prio)
   done
 
 
@@ -2785,7 +2795,7 @@ let make_grammar ral prio_dat str_non_ter =
 
 
 
-let create_parsing_device rapf_list priority_data aut_kind global_data local_data datadyn str_non_ter cons_of_nt =
+let create_parsing_device rapf_list priority_data aut_kind global_data local_data datadyn str_non_ter cons_of_nt str_prio =
   let gram_lhs,gram_rhs,lhs_table,actions,user_nt_nb,ist_nt_nb,
     po_array,user_g, array_nt_prio,nt_of_ind,non_ter_of_ind,
     prio_of_ind,lhs_of_ind =
@@ -2813,7 +2823,7 @@ let create_parsing_device rapf_list priority_data aut_kind global_data local_dat
   in
   let state_list,n = create_aut gram_rhs gram_lhs r_L is0
     init_lit priority_data 0 array_nt_prio nt_of_ind lhs_of_ind ist_nt_nb
-    lhslists lhs_table nt_to_add str_non_ter in
+    lhslists lhs_table nt_to_add str_non_ter str_prio in
   let table,table_it,table_lit_trans =
     make_table state_list (n+1) ist_nt_nb gram_rhs
       lhs_table lhs_of_ind
@@ -2839,7 +2849,8 @@ let create_parsing_device rapf_list priority_data aut_kind global_data local_dat
       deb_nt_of_ind=nt_of_ind;
       deb_lhs_of_ind=lhs_of_ind;
       deb_str_non_ter=str_non_ter;
-      deb_cons_of_nt=cons_of_nt }
+      deb_cons_of_nt=cons_of_nt;
+      deb_str_prio = str_prio }
   in
   deb_parsing_device
   (*create_parsing_device_bis gram_lhs gram_rhs lhs_table actions aut_kind
@@ -3060,12 +3071,16 @@ let update_parsing_device parsing_device ral_add r_remove newdata newdatadyn
           done;
           print_endline "* end of lhs_of_ind *";*)
   
+  let str_prio = Array.make newprio.prd_nb "" in
+  let str_prio_update name prio = str_prio.(prio) <- name in
+  String_map.iter str_prio_update newprio.prd_strmap;
+  
   create_parsing_device_with_init gram_rhs gram_lhs lhs_table actions r_L
-    user_g newdata newdatadyn newlocal_data parsing_device.prio
+    user_g newdata newdatadyn newlocal_data newprio (*parsing_device.prio*)
     init_is_updated_parsing_device lit_trans user_nt_nb
     po_array it_nb array_nt_prio nt_of_ind non_ter_of_ind
     prio_of_ind lhs_of_ind g_nb ist_nt_nb lhslists nt_to_add str_non_ter
-    cons_of_nt,
+    cons_of_nt str_prio,
   rn_map
 
 (* ******* CE QUI PRECEDE EST A DEPLACER DANS UN AUTRE FICHIER ****** *)
@@ -3073,18 +3088,63 @@ let update_parsing_device parsing_device ral_add r_remove newdata newdatadyn
 
 
 
-
-
-
-type ('obj,'data,'local_data) vertex_lab = {
+type ('obj,'data,'local_data) vertex = {
   state_nb : int;
   pdev : ('obj,'data,'local_data) parsing_device;
   sn_nb : int;
-  first_token : int;
   last_token : int;
   lexer_pos : (Lexing.position * Lexing.position);
-  prio_imprint : F.prio_imprint
+  prio_imprint : F.prio_imprint;
+  mutable succ_edges : (('obj,'data,'local_data) edge) list;
+  mutable det_depth : int; (* deterministic depth, see Elkhound TR sect. 3.1 *)
+  mutable ref_count : int;  (* reference count, see Elkhound TR sect. 3.1 *)
 }
+and ('obj,'data,'local_data) edge = {
+  mutable edge_label : 'obj list * int;
+  mutable dest : ('obj,'data,'local_data) vertex;
+}
+
+let update_depth topmost f =
+  let rec aux g sn =
+    if f sn then match sn.succ_edges with
+      | [e] when sn.ref_count=1 ->
+          let h x = sn.det_depth <- x+1; g (x+1) in
+          aux h e.dest
+      | _ -> sn.det_depth <- 0; g 0
+  in
+  List.iter (aux (fun _ -> ())) topmost
+
+let create_e v1 label v2 f topmost =
+  let new_edge = { edge_label = label; (*source = v1;*) dest = v2 } in
+  v1.succ_edges <- new_edge::(v1.succ_edges);
+  v2.ref_count <- v2.ref_count+1;
+  if v2.ref_count > 2 then
+    update_depth topmost f;
+  new_edge
+
+
+
+let create_v state_nb pdev sn_nb last_token lexer_pos prio_imprint depth = {
+  state_nb = state_nb;
+  pdev = pdev;
+  sn_nb = sn_nb;
+  last_token = last_token;
+  lexer_pos = lexer_pos;
+  prio_imprint = prio_imprint;
+  succ_edges = [];
+  det_depth = depth;
+  ref_count = 0; }
+
+
+
+(*type ('obj,'data,'local_data) vertex_lab = {
+  state_nb : int;
+  pdev : ('obj,'data,'local_data) parsing_device;
+  sn_nb : int;
+  last_token : int;
+  lexer_pos : (Lexing.position * Lexing.position);
+  prio_imprint : F.prio_imprint;
+}*)
 (* sn_nb is the number of the stack node, which is useful to distinguish
 the stack nodes.
 first_token is the number of the first token of the part of the input corresponding to this stack node.
@@ -3102,10 +3162,10 @@ Before being merged, two stack nodes must have the same prio_imprint,
 see the function find_rightSib
 *)
 
-type 'obj edge_lab = 'obj list * int
+(* type 'obj edge_lab = 'obj list * int *)
 
-type ('a,'b) path = ('a,'b) Gs.vertex * (('a,'b) Gs.edge list) * int
-(** Gs.vertex is for the start of the path, int is the token number, i.e.
+type ('a,'b,'c) path = ('a,'b,'c) vertex * (('a,'b,'c) edge list) * int
+(** vertex is for the start of the path, int is the token number, i.e.
 the first token in the part of the input which would be reduced if a reduction
 along this path of the graph-structured stack happens. *)
 
@@ -3123,14 +3183,14 @@ along this path of the graph-structured stack happens. *)
     part of the input which would be reduced by the rule given as argument.
     [find_paths] is used in [doReductions] and in [insertLimitedReductions]
     and in [insertLimitedReductions2]. *)
-let find_paths (sn:('a,'b) Gs.vertex) ind (rhs:rhs) rn =
+let find_paths (sn:('a,'b,'c) vertex) ind (rhs:rhs) rn =
   let b = prio_imprint_check rn
-    sn.vertex_label.pdev.gram_rhs
-    sn.vertex_label.prio_imprint in
+    sn.pdev.gram_rhs
+    sn.prio_imprint in
   if b = false then [] else
   let rec aux n succ path =
     if n = 0 then match path with
-      | e::_ -> let s = e.dest in [path,(s.vertex_label).last_token]
+      | e::_ -> let s = e.dest in [path,s.last_token]
       | [] -> [[],-1]
     else
     match succ with
@@ -3142,7 +3202,7 @@ let find_paths (sn:('a,'b) Gs.vertex) ind (rhs:rhs) rn =
   in
   aux (Array.length rhs) sn.succ_edges []
 
-let stack_node_equal sn1 sn2 = sn1.vertex_label.sn_nb = sn2.vertex_label.sn_nb
+let stack_node_equal sn1 sn2 = sn1.sn_nb = sn2.sn_nb
 
 let edge_equal e1 e2 = (snd e1.edge_label) = (snd e2.edge_label)
 let edge_list_equal el1 el2 = List.for_all2 edge_equal el1 el2
@@ -3160,8 +3220,8 @@ let rec revcat a b = match a with
     The partial order is implemented as a 2 dim array of type bool option.
     The need for this partial order is explained in Scott McPeak's report.
     A better data structure than a list should be used. *)
-let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),(ind,rhs), (rn,tns)) =
-  let parsing_device = start_node.vertex_label.pdev in
+let insert_partially_ordered l (((start_node,p,token_nb):('a,'b,'c) path),(ind,rhs), (rn,tns)) =
+  let parsing_device = start_node.pdev in
   let non_ter_of_ind = parsing_device.non_ter_of_ind in
   if non_ter_of_ind.(ind) = non_terminal_startprime then l (* Do not reduce with S'->S *)
   else
@@ -3174,7 +3234,7 @@ let insert_partially_ordered l (((start_node,p,token_nb):('a,'b) path),(ind,rhs)
         if tnb1>token_nb
         then aux (((start1,p1,tnb1),(ind1,rhs1),(tns1,rn1))::result) tl
         else
-        let parsing_device1 = start1.vertex_label.pdev in
+        let parsing_device1 = start1.pdev in
         if parsing_device.g_nb <> parsing_device1.g_nb
         then aux (((start1,p1,tnb1),(ind1,rhs1),(tns1,rn1))::result) tl
         else
@@ -3202,8 +3262,8 @@ the module Path_queue. (but it seems to be slower) *)
   let ((start1,p1,tnb1),(ind1,rhs1)) = path1 in
   if token_nb<tnb1 then -1
   else if token_nb>tnb1 then 1 else
-  let parsing_device = start_node.vertex_label.pdev in
-  let parsing_device1 = start1.vertex_label.pdev in
+  let parsing_device = start_node.pdev in
+  let parsing_device1 = start1.pdev in
   if parsing_device.g_nb<parsing_device1.g_nb then -1
   else if parsing_device.g_nb>parsing_device1.g_nb then 1
   else
@@ -3222,8 +3282,8 @@ the module Path_queue. (but it seems to be slower) *)
   if rel then 1 else
   let c = Pervasives.compare (ind,rhs) (ind1,rhs1) in
   if c<>0 then c else
-  let c = Pervasives.compare start_node.vertex_label.sn_nb
-    start1.vertex_label.sn_nb in
+  let c = Pervasives.compare start_node.sn_nb
+    start1.sn_nb in
   if c<>0 then c else
   let rec aux l1 l2 = match l1,l2 with
     | [],[] -> 0
@@ -3237,7 +3297,7 @@ the module Path_queue. (but it seems to be slower) *)
 
 let insert_path path path_queue =
   let (start_node,_,_),(ind,_) = path in
-  let pdev = start_node.vertex_label.pdev in
+  let pdev = start_node.pdev in
   let ntoi = pdev.non_ter_of_ind in
   if ntoi.(ind) = non_terminal_startprime then path_queue else
   (* Do not reduce with S'->S *)
@@ -3247,7 +3307,7 @@ let pop_path path_queue =
   Path_queue.pop compare_path path_queue*)
 
 let print_path sn p =
-  let snnb = sn.vertex_label.sn_nb in
+  let snnb = sn.sn_nb in
   let () = Printf.fprintf !log_channel "sn:%d; " snnb in flush_all ();
   let f e =
     let _,ednb = e.edge_label in
@@ -3259,7 +3319,7 @@ let print_path sn p =
 let insertLimitedReductions pathList link t topmost dummy_token_name =
   let _,edge_nb = link.edge_label in
   let aux1 pathList sn =
-    let v,pdev = sn.vertex_label.state_nb,sn.vertex_label.pdev in
+    let v,pdev = sn.state_nb,sn.pdev in
     let aux2 pathList (rn,tns) =
       (*if && (!automaton_kind=LR0 || (TNS.mem t tns) ||
          (TNS.mem dummy_token_name tns)) || (rule_kind=Dynamic_rule)) then*)
@@ -3281,7 +3341,7 @@ let insertLimitedReductions pathList link t topmost dummy_token_name =
 
   (*let _,edge_nb = link.edge_label in
   let aux1 pathList sn =
-    let v,aut = sn.vertex_label.state_nb,sn.vertex_label.pdev in
+    let v,aut = sn.state_nb,sn.pdev in
     let aux2 ind (rhs,dp) tns pathList =
       if dp = Array.length rhs (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
          (TNS.mem dummy_token_name tns)) || (rule_kind=Dynamic_rule))*) then
@@ -3301,7 +3361,7 @@ let insertLimitedReductions pathList link t topmost dummy_token_name =
   List.fold_left aux1 pathList topmost*)
 
 let insertLimitedReductions2 pathList t sn dummy_token_name =
-  let v,pdev = sn.vertex_label.state_nb,sn.vertex_label.pdev in
+  let v,pdev = sn.state_nb,sn.pdev in
   let aux2 pathList (rn,tns) =
     (*if && (!automaton_kind=LR0 || (TNS.mem t tns) ||
          (TNS.mem dummy_token_name tns)) || (rule_kind=Dynamic_rule)) then*)
@@ -3317,7 +3377,7 @@ let insertLimitedReductions2 pathList t sn dummy_token_name =
   in
   List.fold_left aux2 pathList pdev.table_it.(v).reducible
 
-  (*let v,pdev = sn.vertex_label.state_nb,sn.vertex_label.pdev in
+  (*let v,pdev = sn.state_nb,sn.pdev in
   let aux2 ind (rhs,dp) tns pathList =
     if dp = Array.length rhs (*&& (!automaton_kind=LR0 || (TNS.mem t tns) ||
          (TNS.mem dummy_token_name tns)) || (rule_kind=Dynamic_rule))*) then
@@ -3332,6 +3392,11 @@ let insertLimitedReductions2 pathList t sn dummy_token_name =
   in
   IS.fold aux2 v.items pathList*)
 
+
+
+
+
+
 exception Find_rightSib_failed
 
 (** [find_rightSib] is used in [reduceViaPath] and [doShift].
@@ -3344,8 +3409,8 @@ let find_rightSib prio_imp g_nb_rightSib st_nb datadyn_rightSib snl
     | [] -> raise Find_rightSib_failed
     | sn::tl ->
         let (v_nb,parsing_device, sn_prio_imp) =
-          sn.vertex_label.state_nb, sn.vertex_label.pdev,
-          sn.vertex_label.prio_imprint
+          sn.state_nb, sn.pdev,
+          sn.prio_imprint
         in
         if v_nb = st_nb && parsing_device.g_nb = g_nb_rightSib &&
           parsing_device.datadyn == datadyn_rightSib &&
@@ -3371,23 +3436,23 @@ let find_rightSib prio_imp g_nb_rightSib st_nb datadyn_rightSib snl
 let print_sn sn =
   let chan = !log_stack_channel in
   let { state_nb = v; pdev = parsing_device; sn_nb = snnb;
-    first_token = first_token; last_token = last_token;
-    prio_imprint = prio_imp } = sn.vertex_label
+    last_token = last_token; prio_imprint = prio_imp } = sn
   in
   let lhs_of_ind = parsing_device.lhs_of_ind in
   let gram_rhs = parsing_device.gram_rhs in
   let lhs_table = parsing_device.lhs_table in
   let is = parsing_device.table_it.(v) in
   let str_non_ter = parsing_device.str_non_ter in
+  let str_prio = parsing_device.str_prio in
   output_string chan "____________________________________\n";
-  let () = Printf.fprintf chan "STACK NODE <%d>, first token: %d, last token:%d\n" snnb first_token last_token in
+  let () = Printf.fprintf chan "STACK NODE <%d>, last token:%d\n" snnb last_token in
   output_string chan "\n";
   (*let () = print_state v lhs_of_ind in*)
-  print_item_set chan is gram_rhs lhs_table lhs_of_ind str_non_ter;
+  print_item_set chan is gram_rhs lhs_table lhs_of_ind str_non_ter str_prio;
   let () = Printf.fprintf chan "  state number: %d\n" v in
   output_string chan "\n";
   output_string chan " priority imprint:\n";
-  print_prio_imp chan gram_rhs lhs_table prio_imp str_non_ter;
+  print_prio_imp chan gram_rhs lhs_table prio_imp str_non_ter str_prio;
   let f3 f4 ed =
     let _,ednb = ed.edge_label in
     let { state_nb = v; sn_nb = snnb} = f4 ed in
@@ -3399,11 +3464,12 @@ let print_sn sn =
     sn.pred_edges in
   output_string chan "\n";*)
   output_string chan " successor stack nodes :\n";
-  let () = List.iter (f3 (fun e -> e.dest.vertex_label)) sn.succ_edges in
+  let () = List.iter (f3 (fun e -> e.dest)) sn.succ_edges in
   output_string chan "\n"
 
 
-
+let check_last_token last_token vl =
+  vl.last_token >= last_token
 
 open Lexing
 
@@ -3411,7 +3477,7 @@ exception Find_link_failed
 
 let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
     v_rightSib new_obj t nt lexer_pos prio counters data_equal
-    dummy_token_name prio_imp_lS is_lS first_token merge_map cons_index =
+    dummy_token_name prio_imp_lS is_lS merge_map cons_index =
   countred := !countred + 1;
 (*   let _ = Printf.fprintf !log_channel "complete_reduction called\n" in *)
   let gram_rhs, lhs_table = pdev_rightSib.gram_rhs, pdev_rightSib.lhs_table in
@@ -3421,8 +3487,9 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
       is_lS
       (Non_ter nt) prio
       gram_rhs
-      lhs_table leftSib.vertex_label.pdev.lhs_of_ind
-      leftSib.vertex_label.pdev.str_non_ter
+      lhs_table leftSib.pdev.lhs_of_ind
+      leftSib.pdev.str_non_ter
+      leftSib.pdev.str_prio
   in
   (*if !dypgen_verbose>2 then
     (Printf.fprintf !log_channel "new_prio_imprint returned:\n";
@@ -3432,7 +3499,7 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
   then
     ((*Printf.fprintf !log_channel "complete_reduction b=false\n";
     (*Printf.fprintf !log_channel "state nb : %d\n"
-      leftSib.vertex_label.state_nb;*)
+      leftSib.state_nb;*)
     print_prio_imp !log_channel gram_rhs lhs_table prio_imp_lS;
     output_string !log_channel "\n";
     print_item_set !log_channel is_lS gram_rhs lhs_table
@@ -3466,24 +3533,24 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
         let col1 = start_pos.pos_cnum - start_pos.pos_bol in
         let col2 = end_pos.pos_cnum - end_pos.pos_bol in
         Printf.fprintf !log_channel "Warning: parser merges non terminal `%s'%s\nin file \"%s\", from l:%d,c:%d to l:%d,c:%d\n"
-        (str_non_terminal nt pdev_rightSib.str_non_ter)
-        (str_with_priority prio) start_pos.pos_fname start_pos.pos_lnum
+        (str_non_terminal nt pdev_rightSib.str_non_ter pdev_rightSib.str_prio)
+        (str_with_priority prio pdev_rightSib.str_prio) start_pos.pos_fname start_pos.pos_lnum
         col1 end_pos.pos_lnum col2);
       
       let merge_item =
         try
           let (sn,_,_,objdata_list) = Int_map.find edge_nb merge_map in
           sn,link,cons_index,
-          (new_obj,rightSib.vertex_label.pdev.data,
-            rightSib.vertex_label.pdev.local_data)::objdata_list
+          (new_obj,rightSib.pdev.data,
+            rightSib.pdev.local_data)::objdata_list
         with Not_found ->
           let old_obj = match old_obj_list with
             | [o] -> o
             | _ -> assert false
           in
           rightSib,link,cons_index,
-          [(new_obj,rightSib.vertex_label.pdev.data,
-            rightSib.vertex_label.pdev.local_data);
+          [(new_obj,rightSib.pdev.data,
+            rightSib.pdev.local_data);
           (old_obj,pdev_rightSib.data,pdev_rightSib.local_data)]
       in
       let merge_map = Int_map.add edge_nb merge_item merge_map in
@@ -3491,13 +3558,13 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
       (*let merge = merge_array.(cons_index) in
       let new_obj_list,global_data,local_data = match
         merge old_obj_list pdev_rightSib.data pdev_rightSib.local_data
-        new_obj rightSib.vertex_label.pdev.data
-        rightSib.vertex_label.pdev.local_data with
+        new_obj rightSib.pdev.data
+        rightSib.pdev.local_data with
           | Merge merge_res -> merge_res
           | Dont_merge -> raise Find_rightSib_failed
       in
       let () = rightSib.vertex_label <- { rightSib.vertex_label with
-        pdev = { rightSib.vertex_label.pdev with
+        pdev = { rightSib.pdev with
           data = global_data ; local_data = local_data }}
       in
       let () = link.edge_label <- (new_obj_list,edge_nb) in*)
@@ -3507,14 +3574,15 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
       (*let _ = Printf.fprintf !log_channel
         "complete_reduction called, Find_link_failed\n" in*)
       if data_equal.global_data_equal pdev_rightSib.data
-        rightSib.vertex_label.pdev.data &&
+        rightSib.pdev.data &&
         data_equal.local_data_equal pdev_rightSib.local_data
-        rightSib.vertex_label.pdev.local_data then ()
+        rightSib.pdev.local_data then ()
         else raise Find_rightSib_failed;
-      let link = Gs.create_e rightSib ([new_obj],counters.counted) leftSib in
+      let link = create_e rightSib ([new_obj],counters.counted) leftSib
+        (check_last_token leftSib.last_token) topmost in
       if (!dypgen_verbose>2) then
         Printf.fprintf !log_stack_channel "Edge %d created from <%d> to <%d>\n"
-          counters.counted rightSib.vertex_label.sn_nb leftSib.vertex_label.sn_nb;
+          counters.counted rightSib.sn_nb leftSib.sn_nb;
       let counters = {counters with counted = counters.counted+1 } in
       let pathList =
         insertLimitedReductions pathList link t topmost
@@ -3525,16 +3593,12 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
     Find_rightSib_failed ->
     (*let _ = Printf.fprintf !log_channel
       "complete_reduction called, Find_rightSib_failed\n" in*)
-    let rightSib = Gs.create_v {
-      state_nb = v_rightSib;
-      pdev = pdev_rightSib;
-      sn_nb = counters.countsn;
-      first_token = first_token;
-      last_token = counters.count_token;
-      lexer_pos = lexer_pos;
-      prio_imprint = prio_imp }
+    let rightSib =
+      create_v v_rightSib pdev_rightSib counters.countsn
+      counters.count_token lexer_pos prio_imp (leftSib.det_depth+1)
     in
-    let _ = Gs.create_e rightSib ([new_obj],counters.counted) leftSib in
+    let _ = create_e rightSib ([new_obj],counters.counted) leftSib
+      (check_last_token leftSib.last_token) topmost in
     if !dypgen_verbose>2 then print_sn rightSib;
     let counters = { counters with
       countsn = counters.countsn+1;
@@ -3552,11 +3616,11 @@ let complete_reduction (*gs*) pathList topmost leftSib pdev_rightSib
 
 let position_map p start_node =
   let rec aux res l = match l with
-    | [] -> List.rev (start_node.vertex_label.lexer_pos::res)
-    | e::t -> aux (e.dest.vertex_label.lexer_pos::res) t
+    | [] -> List.rev (start_node.lexer_pos::res)
+    | e::t -> aux (e.dest.lexer_pos::res) t
   in
   try aux [] (List.tl p)
-  with Failure _ -> [start_node.vertex_label.lexer_pos]
+  with Failure _ -> [start_node.lexer_pos]
 
 
 
@@ -3568,25 +3632,25 @@ let left_rec_rule lhs rhs =
 
 
 
-let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) Gs.vertex) list)*) pathList (topmost:('a,'b) Gs.vertex list) counters data_equal dummy_token_name test_cons str_cons merge_map =
+let reduceViaPath (((start_node:('a,'b,'c) vertex),(p:('a,'b,'c) edge list),_),(ind,rhs),(rn,tns)) (t:token_name) (*(gs:(('a,'b) vertex) list)*) pathList (topmost:('a,'b,'c) vertex list) counters data_equal dummy_token_name test_cons str_cons merge_map =
   
   if !dypgen_verbose>2 then
     (Printf.fprintf !log_channel "reduceViaPath called, start_node=%d, pathList length=%d\n  "
-      start_node.vertex_label.sn_nb (List.length pathList);
+      start_node.sn_nb (List.length pathList);
     print_path start_node p;
     flush_all ());
   
-  (*let position_map e = e.source.vertex_label.lexer_pos in
+  (*let position_map e = e.source.lexer_pos in
   let position_list = list_map position_map p in*)
-  let first_token = match p with
+  (*let first_token = match p with
     | [] -> counters.count_token
-    | [_] -> start_node.vertex_label.first_token
-    | _::h::_ -> h.dest.vertex_label.first_token
-  in
+    | [_] -> start_node.first_token
+    | _::h::_ -> h.dest.first_token
+  in*)
   let position_list = position_map p start_node in
   let end_node_pos = try fst (List.hd position_list)
     with Failure _ -> Lexing.dummy_pos in
-  let start_node_pos = snd start_node.vertex_label.lexer_pos in
+  let start_node_pos = snd start_node.lexer_pos in
   let symbol_pos = (end_node_pos,start_node_pos) in
   (* ^ this is the good order actually ^ *)
   let leftSib, snd_node = match p with
@@ -3595,7 +3659,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
     | h1::h2::_ -> h1.dest, h2.dest
   in
   let v,pdev_leftSib =
-    leftSib.vertex_label.state_nb,leftSib.vertex_label.pdev in
+    leftSib.state_nb,leftSib.pdev in
   let prio_dat = pdev_leftSib.prio in
   let prio = pdev_leftSib.prio_of_ind.(ind) in
   let nt_of_ind = pdev_leftSib.nt_of_ind in
@@ -3618,13 +3682,13 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
   let obj_ll = collect_objs p in
 
   (*let ac_l = Map_rhs.find rhs pdev_leftSib.g.(ind) in*)
-  let ac_l = start_node.vertex_label.pdev.actions.(rn) in
+  let ac_l = start_node.pdev.actions.(rn) in
   (*let succ = v.succ_states in*)
   (*let v_rightSib = Li_map.find (Non_ter nt_of_ind.(ind)) succ  in*)
   let non_ter = fst_of_lhs pdev_leftSib.lhs_of_ind.(ind) in
   let ind_1 = ind_of_nt (nt_of_lhs pdev_leftSib.lhs_of_ind.(ind)) in
   let v_rightSib = pdev_leftSib.table.(v).(1).(ind_1) in
-  let last_parsing_device = start_node.vertex_label.pdev in
+  let last_parsing_device = start_node.pdev in
   
   let foldfun (pathList,topmost,will_shift,counters,merge_map) toPass =
     try
@@ -3632,7 +3696,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
         | (Dypgen_action f)::tl_ac_l ->
            let print_s outchan =
              print_table_state outchan
-               start_node.vertex_label.state_nb
+               start_node.state_nb
                last_parsing_device.table
                last_parsing_device.table_it
                last_parsing_device.table_lit_trans
@@ -3641,23 +3705,21 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
                last_parsing_device.lhs_of_ind
                last_parsing_device.str_non_ter
                last_parsing_device.nt_of_ind
+               last_parsing_device.str_prio
             in
            let print_g outchan =
              print_grammar outchan
                last_parsing_device.gram_rhs
                last_parsing_device.lhs_table
                last_parsing_device.str_non_ter
+               last_parsing_device.str_prio
            in
            (try
-              (*Printf.fprintf !log_channel "f stack node=%d\n"
-                start_node.vertex_label.sn_nb;*)
               let x = f toPass symbol_pos position_list last_parsing_device.data
               pdev_leftSib.datadyn pdev_leftSib.local_data
               last_parsing_device.local_data prio_dat
               { prt_state = print_s;
               prt_grammar = print_g } in
-              (*Printf.fprintf !log_channel "f stack node=%d\n"
-                start_node.vertex_label.sn_nb;*)
               x
            with Giveup -> try_actions tl_ac_l)
         | [] -> raise Giveup
@@ -3666,42 +3728,16 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
         rapf_add, r_remove, newprio, chan_s, chan_g = try_actions ac_l
       in
       let cons_index = try pdev_leftSib.cons_of_nt.(non_ter)
-        with e -> (Printf.printf "dyp.ml l:1962, error cons_of_nt:%d\n"
+        with e -> (Printf.printf "dyp.ml reduceViaPath, error cons_of_nt:%d\n"
           (Array.length pdev_leftSib.cons_of_nt); raise e)
       in
       if test_cons.(cons_index) new_obj = false then
         let sr = str_rule rn pdev_leftSib.gram_rhs
-          pdev_leftSib.lhs_table pdev_leftSib.str_non_ter
+          pdev_leftSib.lhs_table pdev_leftSib.str_non_ter pdev_leftSib.str_prio
         in
         let (_,cons) = Tools.find_nt
           pdev_leftSib.str_non_ter.(non_ter) pdev_leftSib.datadyn
         in
-        (*let () =
-          Printf.printf "cons_index: %d\nnon_ter: %d\nind: %d\nrn: %d\n"
-            cons_index non_ter ind rn;
-          print_endline "cons_of_nt array:";
-          for i=0 to (Array.length pdev_leftSib.cons_of_nt)-1 do
-            Printf.printf "  %d : %d\n"
-              i pdev_leftSib.cons_of_nt.(i)
-          done;
-          print_endline "* end of cons_of_nt array *";
-          print_endline "str_non_ter:";
-          for i=0 to (Array.length pdev_leftSib.str_non_ter)-1 do
-            Printf.printf "  %d : %s\n" i pdev_leftSib.str_non_ter.(i)
-          done;
-          print_endline " * end of str_non_ter *";
-          print_endline "grammar:";
-          print_grammar stdout pdev_leftSib.gram_rhs
-            pdev_leftSib.lhs_table pdev_leftSib.str_non_ter;
-          print_endline "* end of grammar *";
-          print_endline "lhs_of_ind:";
-          for i=0 to (Array.length pdev_leftSib.lhs_of_ind)-1 do
-            Printf.printf "  %d : %s\n" i
-              (str_lhs pdev_leftSib.lhs_of_ind.(i)
-               pdev_leftSib.str_non_ter)
-          done;
-          print_endline "* end of lhs_of_ind *"
-        in*)
         raise (Bad_constructor(sr,cons,(str_cons new_obj)))
       else ();
       let v_rightSib,pdev_rightSib,counters,(prio_imp_lS,is_lS) =
@@ -3711,15 +3747,15 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
           match keep_gram,
             left_rec_rule pdev_leftSib.lhs_of_ind.(ind) rhs with
           | true, true
-            when snd_node.vertex_label.pdev.g_nb
+            when snd_node.pdev.g_nb
             = last_parsing_device.g_nb ->
-              snd_node.vertex_label.state_nb,
-              { snd_node.vertex_label.pdev
+              snd_node.state_nb,
+              { snd_node.pdev
                 with data = newdata ;
                 local_data = newlocal_data ;
                 datadyn = last_parsing_device.datadyn },
                counters,
-              (leftSib.vertex_label.prio_imprint,
+              (leftSib.prio_imprint,
               pdev_leftSib.table_it.(v))
           | true, _ ->
               let pdev_rightSib, rn_map =
@@ -3738,12 +3774,12 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
               in
               0,pdev_rightSib,
               { counters with count_g = counters.count_g+1 },
-              (change_rn leftSib.vertex_label.prio_imprint
+              (change_rn leftSib.prio_imprint
               pdev_leftSib.table_it.(v) rn_map)
           | _ ,_ ->
               v_rightSib,{ pdev_leftSib with data = newdata ;
               local_data = newlocal_data },counters,
-              (leftSib.vertex_label.prio_imprint,
+              (leftSib.prio_imprint,
               pdev_leftSib.table_it.(v))
         else
           let pdev_rightSib, rn_map =
@@ -3755,7 +3791,7 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
           in
           0,pdev_rightSib,
           { counters with count_g = counters.count_g+1 },
-          (change_rn leftSib.vertex_label.prio_imprint
+          (change_rn leftSib.prio_imprint
           pdev_leftSib.table_it.(v) rn_map)
       in
       (match chan_s with
@@ -3769,20 +3805,22 @@ let reduceViaPath (((start_node:('a,'b) Gs.vertex),(p:('a,'b) Gs.edge list),_),(
                pdev_rightSib.lhs_table
                pdev_rightSib.lhs_of_ind
                pdev_rightSib.str_non_ter
-               pdev_rightSib.nt_of_ind);
+               pdev_rightSib.nt_of_ind
+               pdev_rightSib.str_prio);
       (match chan_g with
         | None -> ()
         | Some chan ->
              print_grammar chan
                pdev_rightSib.gram_rhs
                pdev_rightSib.lhs_table
-               pdev_rightSib.str_non_ter);
+               pdev_rightSib.str_non_ter
+               pdev_rightSib.str_prio);
       
       let (*gs,*)pathList,topmost,counters,merge_map =
         complete_reduction (*gs*) pathList topmost leftSib
         pdev_rightSib v_rightSib new_obj t (nt_of_ind.(ind))
         symbol_pos prio counters data_equal dummy_token_name
-        prio_imp_lS is_lS first_token merge_map cons_index
+        prio_imp_lS is_lS merge_map cons_index
       in
       (*gs,*)pathList,topmost,(will_shift2 && will_shift),counters,merge_map
     with Giveup -> ((*gs,*)pathList,topmost,will_shift,counters,merge_map)
@@ -3817,18 +3855,20 @@ let do_merge merge_map merge_array topmost pathList counters t dummy_token_name 
     let obj_list,glo_dat,loc_dat =
       merge_array.(cons_index) objdata_list
     in
-    let pdev = sn.vertex_label.pdev in
+    let pdev = sn.pdev in
     if List.length sn.succ_edges >1 then
       (remove_edge edge_nb sn;
       if !dypgen_verbose>2 then Printf.fprintf !log_stack_channel "Edge %d removed\n" edge_nb;
       (*Printf.fprintf !log_channel "do_merge, nb de link>1, obj_datalist length=%d\n"
         (List.length objdata_list);*)
       let pathList = remove_path_edge edge_nb pathList in
-      let rightSib = Gs.create_v { sn.vertex_label with
-        pdev = {pdev with data = glo_dat; local_data = loc_dat };
-        sn_nb = counters.countsn }
+      let rightSib = create_v sn.state_nb
+        {pdev with data = glo_dat; local_data = loc_dat }
+        counters.countsn sn.last_token sn.lexer_pos sn.prio_imprint
+        (link.dest.det_depth+1)
       in
-      let _ = Gs.create_e rightSib (obj_list,counters.counted) link.dest in
+      let _ = create_e rightSib (obj_list,counters.counted) link.dest
+        (check_last_token link.dest.last_token) topmost in
       if !dypgen_verbose>2 then print_sn rightSib;
       let counters = {counters with
         countsn = counters.countsn+1;
@@ -3841,8 +3881,12 @@ let do_merge merge_map merge_array topmost pathList counters t dummy_token_name 
       in
       topmost,pathList,counters)
     else
-      (sn.vertex_label <- { sn.vertex_label with pdev = {pdev with
-        data = glo_dat; local_data = loc_dat } };
+      ((*sn <- { sn.vertex_label with pdev = {pdev with
+        data = glo_dat; local_data = loc_dat } };*)
+      let new_sn = { sn with pdev = {pdev with
+        data = glo_dat; local_data = loc_dat } }
+      in
+      let topmost = new_sn::(List.filter (fun x -> x!=sn) topmost) in
       (*Printf.fprintf !log_channel "do_merge, nb de link=1, obj_datalist length=%d\n"
         (List.length objdata_list);*)
       link.edge_label <- (obj_list,edge_nb);
@@ -3852,13 +3896,13 @@ let do_merge merge_map merge_array topmost pathList counters t dummy_token_name 
 
 
 
-let compare_pr (((start_node,p,token_nb):('a,'b) path),(ind,rhs), (rn,tns))
+let compare_pr (((start_node,p,token_nb):('a,'b,'c) path),(ind,rhs), (rn,tns))
     ((start1,p1,tnb1),(ind1,rhs1),(tns1,rn1)) =
   if tnb1<token_nb then -1
   else if tnb1>token_nb then 1
   else
-  let parsing_device1 = start1.vertex_label.pdev in
-  let parsing_device = start_node.vertex_label.pdev in
+  let parsing_device1 = start1.pdev in
+  let parsing_device = start_node.pdev in
   if parsing_device.g_nb <> parsing_device1.g_nb then 0
   else
    let non_ter_of_ind = parsing_device.non_ter_of_ind in
@@ -3871,14 +3915,14 @@ let compare_pr (((start_node,p,token_nb):('a,'b) path),(ind,rhs), (rn,tns))
 
 
 
-let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
+let doReductions (t:token_name) (*gs*) (topmost:('a,'b,'c) vertex list)
     entry_point counters data_equal dummy_token_name test_cons str_cons
     merge_array =
   
 (* let _ = Printf.fprintf !log_channel "(doReductions) longueur topmost : %d\n" (List.length topmost) in *)
 
   let aux1 pathList sn =
-    let st_nb,pdev = sn.vertex_label.state_nb,sn.vertex_label.pdev in
+    let st_nb,pdev = sn.state_nb,sn.pdev in
     
     (*let aux2 ind (rhs,dp) tns pathList =*)
     let aux2 pathList (rn,tns) =
@@ -3955,12 +3999,12 @@ let doReductions (t:token_name) (*gs*) (topmost:('a,'b) Gs.vertex list)
 
 
 
-let doShifts tok_name tok_value (*gs*) (prevTops:('a,'b) Gs.vertex list)
+let doShifts tok_name tok_value (*gs*) (prevTops:('a,'b,'c) vertex list)
     lexbuf_position lexbuf counters data_equal =
 (*   let _ = Printf.fprintf !log_channel "(doShift) longueur prevTops : %d\n" (List.length prevTops) in *)
   let f ((*gs,*)topmost,counters) sn =
     let state_nb,parsing_device =
-      sn.vertex_label.state_nb,sn.vertex_label.pdev
+      sn.state_nb,sn.pdev
     in
     let table = parsing_device.table in
     let table_it = parsing_device.table_it in
@@ -3968,10 +4012,11 @@ let doShifts tok_name tok_value (*gs*) (prevTops:('a,'b) Gs.vertex list)
     if next_state = -1 then (*gs,*)topmost,counters else
     
     let prio_imp,b =
-      new_prio_imprint parsing_device.prio sn.vertex_label.prio_imprint
+      new_prio_imprint parsing_device.prio sn.prio_imprint
         table_it.(state_nb) (Ter tok_name) 0
         parsing_device.gram_rhs parsing_device.lhs_table
         parsing_device.lhs_of_ind parsing_device.str_non_ter
+        parsing_device.str_prio
     in
     if b=false then (*gs,*)topmost,counters else
     try
@@ -3982,23 +4027,20 @@ let doShifts tok_name tok_value (*gs*) (prevTops:('a,'b) Gs.vertex list)
         data_equal.global_data_equal
         data_equal.local_data_equal
       in
-      let _ = Gs.create_e rightSib ([tok_value],counters.counted) sn in
+      let _ = create_e rightSib ([tok_value],counters.counted) sn
+        (check_last_token sn.last_token) topmost in
       if (!dypgen_verbose>2) then
         Printf.fprintf !log_stack_channel "Link %d created from <%d> to <%d>\n"
-          counters.counted rightSib.vertex_label.sn_nb sn.vertex_label.sn_nb;
+          counters.counted rightSib.sn_nb sn.sn_nb;
       let counters = {counters with counted = counters.counted+1 } in
       (*gs,*)topmost,counters
     with Find_rightSib_failed ->
-      let rightSib = Gs.create_v {
-        state_nb = next_state;
-        pdev = parsing_device;
-        sn_nb = counters.countsn;
-        first_token = counters.count_token-1;
-        last_token = counters.count_token;
-        lexer_pos = lexbuf_position lexbuf;
-        prio_imprint = prio_imp }
+      let rightSib =
+        create_v next_state parsing_device counters.countsn counters.count_token
+        (lexbuf_position lexbuf) prio_imp (sn.det_depth+1)
       in
-      let _ = Gs.create_e rightSib ([tok_value],counters.counted) sn in
+      let _ = create_e rightSib ([tok_value],counters.counted) sn
+        (check_last_token sn.last_token) topmost in
       if !dypgen_verbose>2 then print_sn rightSib;
       let counters = { counters with
         countsn = counters.countsn+1;
@@ -4062,16 +4104,16 @@ let doShifts tok_name tok_value (*gs*) (prevTops:('a,'b) Gs.vertex list)
     objects. *)
 let log_parse_forest successful entry_point gram_rhs =
   let f l sn =
-    let prio_imp = sn.vertex_label.prio_imprint in
-    let st_nb = sn.vertex_label.state_nb in
-    let tlt = sn.vertex_label.pdev.table_lit_trans in
+    let prio_imp = sn.prio_imprint in
+    let st_nb = sn.state_nb in
+    let tlt = sn.pdev.table_lit_trans in
     let li = tlt.(st_nb) in
     (*let prio_l,_ = Item_map.find (r,1) prio_imp in*)
     (*let prio = 0 in*) (*List.hd prio_l in*)
     let prio = entry_point_prio entry_point prio_imp gram_rhs li in
     let edges = sn.succ_edges in
     let f2 l e =
-      let snnb = e.dest.vertex_label.sn_nb in
+      let snnb = e.dest.sn_nb in
       if snnb = 0 then
         let ol = fst e.edge_label in
         let f3 o = (o,prio) in
@@ -4131,8 +4173,9 @@ let glrParse deb_p get_value get_name str_token
     lhs_of_ind=deb_p.deb_lhs_of_ind;
     str_non_ter=deb_p.deb_str_non_ter;
     cons_of_nt=deb_p.deb_cons_of_nt ;
+    str_prio = deb_p.deb_str_prio;
     user_g = user_g;
-    actions = actions }
+    actions = actions; }
   in
   
   (*print_endline "parsing begins";*)
@@ -4163,14 +4206,9 @@ let glrParse deb_p get_value get_name str_token
     local_data = local_data }
   in
 
-  let start = Gs.create_v {
-    state_nb = 0;
-    pdev = parsing_device;
-    sn_nb = counters.countsn;
-    first_token = 0;
-    last_token = 0;
-    lexer_pos = lexbuf_position lexbuf;
-    prio_imprint = default_prio_imp }
+  let start =
+    create_v 0 parsing_device counters.countsn 0
+    (lexbuf_position lexbuf) default_prio_imp 0
   in
   let dummy_token_name = Int_map.find entry_point dummy_token_map in
   let counters = { counters with countsn=counters.countsn+1 } in
@@ -4181,8 +4219,8 @@ let glrParse deb_p get_value get_name str_token
     "-------------------------- Topmost Stack Nodes --------------------------\n"
   in*)
   let is_successful sn =
-    let st_nb = sn.vertex_label.state_nb in
-    let tlt = sn.vertex_label.pdev.table_lit_trans in
+    let st_nb = sn.state_nb in
+    let tlt = sn.pdev.table_lit_trans in
     let li = tlt.(st_nb) in
     match li with
       | Non_ter nt when (non_ter_of_nt nt)=entry_point -> true
@@ -4308,13 +4346,21 @@ struct
     with Not_found -> (nt,p,n)
   let get_lhs_prio (_,p,_) = p
   let str_token_name = E.str_token_name
-  let str_non_terminal (nt,p,i) str_non_ter =
+  
+  let str_non_terminal (nt,p,i) str_non_ter str_prio =
     if p = 0 then
+      try
       "("^(str_non_ter.(nt))^":"^(string_of_int nt)^","^(string_of_int i)^")"
+      with Invalid_argument _ -> (Printf.printf "nt=%d\n" nt; failwith "str_non_terminal")
       (*str_non_ter.(nt)*)
     else
+      try
       "("^(str_non_ter.(nt))^
-      ","^(E.priority_names.(p))^ ","^(string_of_int i)^")"
+      (try
+      ","^(str_prio.(p))^ ","^(string_of_int i)^")"
+      with Invalid_argument _ -> (Printf.printf "p=%d\n" p; failwith "str_non_terminal"))
+      with Invalid_argument _ -> (Printf.printf "nt=%d\n" nt; failwith "str_non_terminal")
+  
   let str_lhs = str_non_terminal
 end
 
@@ -4335,13 +4381,13 @@ struct
   let new_rhs_lit nt_lit _ _ = nt_lit
   let get_lhs_prio (_,p,_) = p
   let str_token_name = E.str_token_name
-  let str_non_terminal nt str_non_ter = str_non_ter.(nt)
-  let str_lhs (nt,p,i) str_non_ter =
+  let str_non_terminal nt str_non_ter _ = str_non_ter.(nt)
+  let str_lhs (nt,p,i) str_non_ter str_prio =
     if p = 0 then
       "("^(str_non_ter.(nt))^","^(string_of_int i)^")"
     else
       "("^(str_non_ter.(nt))^
-      ","^(E.priority_names.(p))^ ","^(string_of_int i)^")"
+      ","^(str_prio.(p))^ ","^(string_of_int i)^")"
 end
 
 module Grammar_PrioInAutomaton = Grammar_struct(Ntt_PrioInAutomaton)
@@ -4382,7 +4428,7 @@ let dummy_lhs = (0,0,0)
 type item_set = Grammar_PrioInAutomaton.item_set
 type rule_bis = Grammar_PrioInAutomaton.rule_bis
 type rhs = Grammar_PrioInAutomaton.rhs
-let str_with_priority _ = ""
+let str_with_priority _ _ = ""
 
 let nt_prio_to_prio_set p_map (ps:Prio_set.t) p = match p with
   | No_priority -> ps
@@ -4585,12 +4631,12 @@ let make_real_grammar (user_g:('a,'b,'c) user_grammar) (pmap:priority_data) str_
 
 type prio_imprint = int
 
-let new_prio_imprint _ _ _ _ _ _ _ _ _ = 0,true
+let new_prio_imprint _ _ _ _ _ _ _ _ _ _ = 0,true
 let change_rn pi is _ = pi,is
 let default_prio_imp = 0
 let prio_imprint_check _ _ _ = true
 let prio_imp_equal _ _ = true
-let print_prio_imp _ _ _ _ _ = ()
+let print_prio_imp _ _ _ _ _ _ = ()
 (* let prev_is is _ = is *)
 let entry_point_prio _ _ _ li = match li with
   | Non_ter (_,p,_) -> p
@@ -4615,7 +4661,7 @@ let dummy_lhs = (0,0,0)
 type item_set = Grammar_PrioAtRuntime.item_set
 type rule_bis = Grammar_PrioAtRuntime.rule_bis
 type rhs = Grammar_PrioAtRuntime.rhs
-let str_with_priority p = " with priority `"^(priority_names.(p))^"'"
+let str_with_priority p str_prio = " with priority `"^(str_prio.(p))^"'"
 
 (*let select_rule prio_dat ntn (_,p,_) =
   let nt,nt_p = ntn in
@@ -4867,16 +4913,16 @@ let symb_of_lit lit = match lit with
 
 (*let new_prio_imprint _ _ _ _ = 0,true*)
 
-let print_prio_imp chan gram_rhs lhs_table prio_imp str_non_ter =
+let print_prio_imp chan gram_rhs lhs_table prio_imp str_non_ter str_prio =
   let f (rn,dp) (pl,b) =
-    print_kernel chan gram_rhs lhs_table str_non_ter (rn,dp);
-    let f2 s p = s^(E.priority_names.(p))^" " in
+    print_kernel chan gram_rhs lhs_table str_non_ter str_prio (rn,dp);
+    let f2 s p = s^(str_prio.(p))^" " in
     output_string chan ("  "^(string_of_bool b)^" : ["^(List.fold_left f2 " " pl)^"]\n")
   in
   Item_map.iter f prio_imp
 
 
-let new_prio_imprint priodat prio_imp is symb prio gram_rhs lhs_table lhs_of_ind str_non_ter =
+let new_prio_imprint priodat prio_imp is symb prio gram_rhs lhs_table lhs_of_ind str_non_ter str_prio =
   let f (new_pi,b) (rn,dp) =
     let rhs = gram_rhs.(rn) in
     let lit = rhs.(dp) in
@@ -4898,8 +4944,8 @@ let new_prio_imprint priodat prio_imp is symb prio gram_rhs lhs_table lhs_of_ind
       try Item_map.find (rn,dp) prio_imp
       with Not_found ->
         (
-        print_kernel !log_channel gram_rhs lhs_table str_non_ter (rn,dp);
-        print_prio_imp !log_channel gram_rhs lhs_table prio_imp str_non_ter;
+        print_kernel !log_channel gram_rhs lhs_table str_non_ter str_prio (rn,dp);
+        print_prio_imp !log_channel gram_rhs lhs_table prio_imp str_non_ter str_prio;
         failwith "new_prio_imprint")
     in
     (Item_map.add (rn,dp+1) ((prio::old_prio_l),(b1 && old_b)) new_pi),
@@ -5050,7 +5096,8 @@ type ('gd,'ld) deb_parsing_device = {
   deb_nt_of_ind : deb_non_terminal array;
   deb_lhs_of_ind : deb_lhs array;
   deb_str_non_ter : string array;
-  deb_cons_of_nt : int array
+  deb_cons_of_nt : int array;
+  deb_str_prio : string array
 }
 
 
@@ -5058,7 +5105,7 @@ type ('gd,'ld) deb_parsing_device = {
     (rule * ('obj,'data,'local_data) Dyp_special_types.action) list ->
     priority_data -> Dyp_special_types.automaton_kind -> 'data ->
     'local_data ->
-     Dyp_special_types.datadyn -> string array -> int array ->
+     Dyp_special_types.datadyn -> string array -> int array -> string array ->
     (*('obj,'data,'local_data) parsing_device*)
     ('data,'local_data) deb_parsing_device
     (** Returns the parsing_device which parses strings written with the input
@@ -5143,8 +5190,8 @@ type priority_data = {
   prd_rel : (Prio_set.t * Prio_set.t) Prio_map.t;
   prd_strmap : (int String_map.t);
   prd_nb : int }
-(* This is a map from a priority to a couple of priority set :
-p -> (ps1,ps2) where ps1 is the set of all priorities q s.a. q<p
+(* This is a map from a priority to a couple of priority sets :
+p to (ps1,ps2) where ps1 is the set of all priorities q s.a. q<p
 and ps2 is the set of all priorities r s.a. p<r
 The string_map maps the string of a priority to its int value.
 int is the number of priorities. *)
@@ -5235,6 +5282,8 @@ type
     mutable vertex_label : 'n;
     mutable succ_edges : (('n,'e) edge) list;
     (*mutable pred_edges : (('n,'e) edge) list*)
+    mutable det_depth : int; (* deterministic depth, see Elkhound TR sect. 3.1 *)
+    mutable ref_count : int;  (* reference count, see Elkhound TR sect. 3.1 *)
   }
   and ('n,'e) edge = {
     mutable edge_label : 'e;
@@ -5242,9 +5291,24 @@ type
     (*mutable source : ('n,'e) vertex*)
   }
 
-let create_e v1 label v2 =
-  let new_edge = { edge_label = label; (*source = v1;*) dest = v2} in
+(* let update_depth topmost f = *)
+  
+let update_depth topmost f =
+  let rec aux g sn =
+    if f sn.vertex_label then match sn.succ_edges with
+      | [e] when sn.ref_count=1 ->
+          let h x = sn.det_depth <- x+1; g (x+1) in
+          aux h e.dest
+      | _ -> sn.det_depth <- 0; g 0
+  in
+  List.iter (aux (fun _ -> ())) topmost
+
+let create_e v1 label v2 f topmost =
+  let new_edge = { edge_label = label; (*source = v1;*) dest = v2 } in
   v1.succ_edges <- new_edge::(v1.succ_edges);
+  v2.ref_count <- v2.ref_count+1;
+  if v2.ref_count > 2 then
+    update_depth topmost f;
   (*v2.pred_edges <- new_edge::(v2.pred_edges);*)
   new_edge
 
@@ -5255,8 +5319,9 @@ let create_e v1 label v2 =
   v1.succ_edges <- List.filter f v1.succ_edges;
   v2.pred_edges <- List.filter f v2.pred_edges*)
 
-let create_v label =
-  { vertex_label = label; succ_edges = []; (*pred_edges = []*) }
+let create_v label depth =
+  { vertex_label = label; succ_edges = []; (*pred_edges = []*)
+  det_depth = depth; ref_count = 0; }
 
 
 @h=tangler('dypgen/generators/pgen/pgen_lexer.mll')
@@ -5734,7 +5799,7 @@ let ra_list = [
 (r_priority_1,a_priority)
 ]
 
-let parsing_device = create_parsing_device ra_list empty_priority_data `LR0 Data_void 0 P.Tools.empty_datadyn nt_names (Array.make 11 0)
+let parsing_device = create_parsing_device ra_list empty_priority_data `LR0 Data_void 0 P.Tools.empty_datadyn nt_names (Array.make 11 0) priority_names
 
 let input_file = !string_ref
 let output_file = (Filename.chop_extension input_file)^".ml"
@@ -6066,7 +6131,7 @@ let aux code (p1,p2) =
    i1^","^i2^",true)]\n"
 let code_prio_data = (List.fold_left aux code_prio_data relation)^"\n"
 
-let code_main_2 = "let parsing_device = create_parsing_device rapf_list empty_priority_data `LR0 0 0 P.Tools.empty_datadyn nt_names (Array.make (Array.length nt_names) 0)\n"
+let code_main_2 = "let parsing_device = create_parsing_device rapf_list empty_priority_data `LR0 0 0 P.Tools.empty_datadyn nt_names (Array.make (Array.length nt_names) 0) priority_names\n"
 
 let code_main_2 = code_main_2^
 "let "^non_terminal_start^" f lexbuf =
@@ -6820,6 +6885,7 @@ let grammar =
 
 
 let insert_line_number = "\n# insert-line-number \""^output_file^"\"\n"
+let insert_line_number_mli = "\n# insert-line-number \""^output_file_mli^"\"\n"
 let sharp_line_number lnum = "\n# "^(string_of_int lnum)^" \""^input_file^"\"\n"
 
 let space_string n = String.make (max n 0) ' '
@@ -6836,10 +6902,10 @@ let trailer_main = if trailer_main = "" then ""
   trailer_main^insert_line_number
 let topmli_code = if topmli_code = "" then "\n" else
   (sharp_line_number topmli_code_pos)^(space_string topmli_code_offset)^
-  topmli_code^insert_line_number
+  topmli_code^insert_line_number_mli
 let mli_code = if mli_code = "" then "\n" else
   (sharp_line_number mli_code_pos)^(space_string mli_code_offset)^
-  mli_code^insert_line_number
+  mli_code^insert_line_number_mli
 
 
 module Ordered_string =
@@ -7107,9 +7173,9 @@ let code_main_1 =
 
 
 
-let code_priority_def,priority_set,code_priority_names =
-  let code_priority_names =
-    "  let priority_names = [|\n    \"default_priority\"" in
+let code_priority_def,priority_set,code_str_prio =
+  let code_str_prio =
+    "  let str_prio = [|\n    \"default_priority\"" in
   let aux1 (str_set:String_set.t) rel = match rel with
     | Rel_list l -> List.fold_left (fun set p -> String_set.add p set) str_set l
     | Rel_single p1 -> String_set.add p1 str_set
@@ -7138,13 +7204,13 @@ let code_priority_def,priority_set,code_priority_names =
       code_pn^";\n    \""^p^"\"",
       (n+1))
   in
-  let code_priority_def,code_priority_names,_ =
+  let code_priority_def,code_str_prio,_ =
     String_set.fold aux priority_set
       ("  let priority_data, default_priority =\n"^
       "    Dyp.insert_priority Dyp.empty_priority_data \"default_priority\"\n",
-      code_priority_names,1)
+      code_str_prio,1)
   in
-  code_priority_def,priority_set,code_priority_names^"|]\n"
+  code_priority_def,priority_set,code_str_prio^"|]\n"
 
 
 let code_global_local_data =
@@ -7676,7 +7742,7 @@ let code_main_2 =
 (*"let saved_automaton = Marshal.from_string marshaled_automaton 0
 let automaton = complete_automaton saved_automaton current_grammar default_data default_datadyn __dypgen_priority_data merge_map merge\n"^*)
 "let __dypgen_automaton = Dyp_engine.create_parsing_device __dypgen_ra_list Dyp_priority_data.priority_data "^
-!Argument.aut_kind^" global_data local_data Dyp_aux_functions.datadyn Dyp_symbols_array.str_non_ter Dyp_symbols_array.cons_of_nt\n\n"^
+!Argument.aut_kind^" global_data local_data Dyp_aux_functions.datadyn Dyp_symbols_array.str_non_ter Dyp_symbols_array.cons_of_nt Dyp_symbols_array.str_prio\n\n"^
   "let __dypgen_data_equal = {\n"^
   "  Dyp_runtime.Tools.global_data_equal = global_data_equal;\n"^
   "  Dyp_runtime.Tools.local_data_equal = local_data_equal }\n\n"^
@@ -7838,6 +7904,7 @@ let parser_codl = [
 
   "module Dyp_symbols_array =\nstruct\n";
   code_str_non_ter;
+  code_str_prio;
   code_token_name_array;
   code_cons_of_nt;
   code_str_cons;
@@ -7848,7 +7915,6 @@ let parser_codl = [
   code_undef_nt;
   code_nt_functions;
   code_str_token_name;
-  code_priority_names;
   code_merge_warning;
   "end\n\n";
 
@@ -7910,6 +7976,7 @@ let parser_code_mli =
   "end\n\n"^
   (List.fold_left aux "" non_terminal_start_list)^
   mli_code
+
 
 
 let () = Insert_linenum.buffer := String.copy parser_code
@@ -8215,7 +8282,7 @@ rule insert_linenum = parse
   | "# insert-line-number"
       {
         let pos = Lexing.lexeme_start_p lexbuf in
-        let space = "                    " in
+        let space = String.make 20 ' ' in
         let str = "# "^(string_of_int (pos.pos_lnum+1)) in
         let () = String.blit str 0 space 0 (String.length str) in
         let () = String.blit space 0 !buffer pos.pos_cnum 20 in

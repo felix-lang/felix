@@ -202,14 +202,7 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
           let ntpri = cal_priority priority_data p in
           Dyp.Non_ter (nt,ntpri)
 
-      | NAME (sr,s) -> 
-          let nt = mapnt s in
-          let nt = 
-            try dyp.add_nt nt "Obj_sexpr"
-            with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ s)
-            | Dyp.Bad_constructor _ -> failwith ("BAD CONSTRUCTOR FOR " ^ s)
-          in
-          Dyp.Non_ter (nt,Dyp.No_priority)
+      | NAME (sr,s) -> assert false
 
       | s -> 
         let name = Dyp_symbols.str_token s in
@@ -343,20 +336,20 @@ let fixup_suffix sr pcounter rhs =
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NAME(sr,sl)],"(reverse _1)",rsr in
-    let rule1 = sl,`Default,[NAME(sr,sl);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
     let rule2 = sl,`Default,[],"'()",rsr in
-    aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
+    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: PLUS _ :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NAME(sr,sl)],"(reverse _1)",rsr in
-    let rule1 = sl,`Default,[NAME(sr,sl);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
-    let rule2 = sl,`Default,[NAME(sr,s)],"`(,_1)",rsr in
-    aux t (NAME (sr,slr)::out) (rule0::rule1::rule2::extras)
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
+    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"`(,_1)",rsr in
+    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: QUEST _ :: t -> 
     let rsr = slift sr in
@@ -364,7 +357,7 @@ let fixup_suffix sr pcounter rhs =
     let sl = s ^ "__opt_"^x in
     let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"`(,_1)",rsr in
     let rule2 = sl,`Default,[],"()",rsr in
-    aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
+    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | other :: QUEST sr :: t -> 
     let rsr = slift sr in
@@ -372,7 +365,7 @@ let fixup_suffix sr pcounter rhs =
     let sl = "__opt_"^x in
     let rule1 = sl,`Default,[other],"()",rsr in
     let rule2 = sl,`Default,[],"()",rsr in
-    aux t (NAME (sr,sl)::out) (rule1::rule2::extras)
+    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | h :: t -> aux t (h::out) extras 
   in aux rhs [] []
@@ -399,11 +392,11 @@ let dflt_action prod =
   let rn = ref 1 in
   let action =
     fold_left (fun acc x -> match x with
-    | NONTERMINAL _ 
-    | NAME _ ->
+    | NONTERMINAL _ ->
       let n = !rn in incr rn;
       (if acc = "" then "" else acc ^ " ")
       ^ ",_" ^ string_of_int n 
+    | NAME _ -> assert false
     | _ -> incr rn; acc
     ) "" prod 
   in
@@ -456,7 +449,7 @@ let user_expr prod fn : string =
       aux 
       (
         (if acc = "" then "" else acc ^ " ")
-        ^ "(Keyword_term \"" ^ k ^ "\")"
+        ^ "(Keyword_term " ^ Flx_string.c_quote_of_string k ^ ")"
       ) t
     in aux "" prod 
   in
@@ -487,7 +480,7 @@ let rec flatten sr pcounter (rhs: symbol_t list) : token list * rule_t list =
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_"^x in
     let rules : rule_t list = fixup_alternatives pcounter sl `Default dyalts in
-    aux t (NAME (sr,sl)::out) (rules@extras)
+    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rules@extras)
 
   | `Atom h :: t -> aux t (h::out) extras 
   in aux rhs [] []
