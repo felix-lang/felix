@@ -1741,9 +1741,6 @@ flx_2_char_syms = [
     ("EQRIGHTARROW","=>"),
     ("LEFTARROW","<-"),
 
-    ("LSQANGLE","[<"),
-    ("RSQANGLE",">]"),
-
     ("LSQBAR","[|"),
     ("RSQBAR","|]"),
 

@@ -1278,14 +1278,8 @@ proc print_token()
     match des with
     | Eol => "Eol"
     | Ident => "Id"
-@for k,s in flx_1_char_syms:
+@for k,s in flx_syms:
   tangle('    | ' + k + ' => "'+k+'"',inhibit_sref=1)
-
-@for k,s in flx_2_char_syms:
-  tangle('    | ' + k + ' => "'+s+'"',inhibit_sref=1)
-
-@for k,s in flx_3_char_syms:
-  tangle('    | ' + k + ' => "'+s+'"',inhibit_sref=1)
 @#
     | Preprocessor =>  "Pre"
     | Cpp_comment =>   "Cppc"
@@ -2373,26 +2367,6 @@ White:   " "
 =>:      "=>"
 White:   " "
 Other:   ""<-""
-Eol:     "
-"
-White:   "    "
-VBAR:    "|"
-White:   " "
-Id:      "LSQANGLE"
-White:   " "
-=>:      "=>"
-White:   " "
-Other:   ""[<""
-Eol:     "
-"
-White:   "    "
-VBAR:    "|"
-White:   " "
-Id:      "RSQANGLE"
-White:   " "
-=>:      "=>"
-White:   " "
-Other:   "">]""
 Eol:     "
 "
 White:   "    "

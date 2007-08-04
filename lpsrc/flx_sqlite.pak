@@ -53,6 +53,7 @@ module Sqlite3 {
 }
 
 syntax sql {
+  alteration := "rename" "to" table_name =># "(string-append "rename to " _3)";
   sql_statement := "alter" "table" (database_name . )? table_name alteration; =>#
   "";
 }

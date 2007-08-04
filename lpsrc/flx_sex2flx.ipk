@@ -129,6 +129,7 @@ and xexpr_t sr fresh env x =
   let xsts x =  lst "statement" xs x in
   let xterm x = xast_term_t sr fresh env x in
   match x with
+ | Str s -> `AST_literal (sr, (`AST_string s))
  | Lst [] -> `AST_tuple (sr,[])
  | Lst [x] -> ex x
  | Lst [Id "ast_interpolate";  Str s] -> `AST_interpolate (sr,ss s)

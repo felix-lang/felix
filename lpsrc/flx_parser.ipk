@@ -71,6 +71,9 @@ open Sex_types
 open Dyp
 open Flx_pdoc
 
+let dummysr = "Dummy",0,0,0,0
+
+
 let silly_strtoken k = Flx_prelex.string_of_token k 
   (*
   match k with 
@@ -243,52 +246,35 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
     let env = dyp.global_data.env in
     let srs = ref [] in
     let rec aux objs syms n = match objs, syms with
-    | [],[] -> ()
-    | [],_ | _,[] -> assert false
-    | h1::t1,h2::t2 -> 
-      match h1,h2 with
-      | _,`Obj_sexpr (seq,sr,s) 
-        ->
-        (* age := max !age seq; *)
-        if (match sr with _,l,_,_,_ -> l) <> 0 then
-        srs := sr :: !srs;
+      | [],[] -> ()
+      | [],_ | _,[] -> assert false
+      | h1::t1,h2::t2 -> 
+        let sr,s =
+          match h1,h2 with
+          | _,`Obj_sexpr (seq,sr,s) ->
+            (* age := max !age seq; *)
+            sr,s
+
+          | k,`Obj_keyword sr -> slift sr, Sstring (Flx_prelex.string_of_token k)
+
+          | (STRING (_,s1) | USER_KEYWORD (_,s1) | USER10 (_,s1,_)),
+            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2) | `Obj_USER10 (sr,s2,_))
+            ->
+            if s1 <> s2 then raise Giveup;
+            slift sr,Sstring s1
+             
+          | k , _ -> 
+          print_endline ("Woops, unhandled token=" ^ Flx_prelex.string_of_token k);
+          dummysr, Sstring (Flx_prelex.string_of_token k)
+        in
         if !(dyp.global_data.pdebug) then begin
-        Buffer.add_string b ("Arg " ^ string_of_int n ^ " = "); 
-        buffer_add_ocs b s; Buffer.add_string b "\n";
+          Buffer.add_string b ("Arg " ^ string_of_int n ^ " = "); 
+          buffer_add_ocs b s; Buffer.add_string b "\n";
         end;
-
         let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
-        (*
-        let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = s } in
-        *)
         Ocs_env.set_glob env v1 s;
+        if (match sr with _,l,_,_,_ -> l) <> 0 then srs := sr :: !srs;
         aux t1 t2 (n+1)
-
-      | _,`Obj_keyword sr
-        ->
-        if (match sr with _,l,_,_ -> l) <> 0 then
-        srs := slift sr :: !srs;
-        aux t1 t2 (n+1)
-
-      | STRING (_,s1),`Obj_NAME (sr,s2) ->
-        if s1 <> s2 then raise Giveup;
-        if (match sr with _,l,_,_ -> l) <> 0 then
-        srs := slift sr :: !srs;
-        aux t1 t2 (n+1)
-
-      | USER_KEYWORD (_,s1) , `Obj_USER_KEYWORD (sr,s2) ->
-        if s1 <> s2 then raise Giveup;
-        if (match sr with _,l,_,_ -> l) <> 0 then
-        srs := slift sr :: !srs;
-        aux t1 t2 (n+1)
-      | USER10 (_,s1,_) , `Obj_USER10 (sr,s2,_) ->
-        if s1 <> s2 then raise Giveup;
-        if (match sr with _,l,_,_ -> l) <> 0 then
-        srs := slift sr :: !srs;
-        aux t1 t2 (n+1)
-
-         
-      | _ -> aux t1 t2 (n+1)
     in
     aux rhs avl 1;
     if !(dyp.global_data.pdebug) then
@@ -328,7 +314,7 @@ let extend_grammar dyp priority_data (dssl,(name,prio,prod,action,sr)) =
 (* ------------------------------------------------------ *)
 
 (* create rules for nt* nt+ and nt? *)
-let fixup_suffix sr pcounter rhs =
+let fixup_suffix_scheme sr pcounter rhs =
   let rec aux inp out extras = match inp with
   | [] -> rev out,extras
   | NONTERMINAL (sr,s,p) :: STAR _ :: t -> 
@@ -370,6 +356,53 @@ let fixup_suffix sr pcounter rhs =
   | h :: t -> aux t (h::out) extras 
   in aux rhs [] []
 
+let fixup_suffix_string sr pcounter rhs =
+  let rec aux inp out extras = match inp with
+  | [] -> rev out,extras
+  | NONTERMINAL (sr,s,p) :: STAR _ :: t -> 
+    let rsr = slift sr in
+    let x = string_of_int (!pcounter) in incr pcounter;
+    let slr = s ^ "__rlist_"^x in
+    let sl = s ^ "__list_"^x in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))",rsr in
+    let rule2 = sl,`Default,[],"\"\"",rsr in
+    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
+
+  | NONTERMINAL (sr,s,p) :: PLUS _ :: t -> 
+    let rsr = slift sr in
+    let x = string_of_int (!pcounter) in incr pcounter;
+    let slr = s ^ "__nerlist_"^x in
+    let sl = s ^ "__nelist_"^x in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))",rsr in
+    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"_1",rsr in
+    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
+
+  | NONTERMINAL (sr,s,p) :: QUEST _ :: t -> 
+    let rsr = slift sr in
+    let x = string_of_int (!pcounter) in incr pcounter;
+    let sl = s ^ "__opt_"^x in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"_1",rsr in
+    let rule2 = sl,`Default,[],"\"\"",rsr in
+    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
+
+  | other :: QUEST sr :: t -> 
+    let rsr = slift sr in
+    let x = string_of_int (!pcounter) in incr pcounter;
+    let sl = "__opt_"^x in
+    let rule1 = sl,`Default,[other],"_1",rsr in
+    let rule2 = sl,`Default,[],"\"\"",rsr in
+    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
+
+  | h :: t -> aux t (h::out) extras 
+  in aux rhs [] []
+
+let fixup_suffix sr pcounter kind rhs =
+  match kind with
+  | `Sval -> fixup_suffix_scheme sr pcounter rhs
+  | `String -> fixup_suffix_string sr pcounter rhs
+
 let fixup_prio rhs =
   let rec aux inp out = match inp with
   | [] -> rev out
@@ -388,19 +421,24 @@ let fixup_prio rhs =
   | h :: t -> aux t (h::out)
   in aux rhs []
  
-let dflt_action prod = 
+let dflt_action kind prod = 
   let rn = ref 1 in
-  let action =
-    fold_left (fun acc x -> match x with
-    | NONTERMINAL _ ->
-      let n = !rn in incr rn;
-      (if acc = "" then "" else acc ^ " ")
-      ^ ",_" ^ string_of_int n 
-    | NAME _ -> assert false
-    | _ -> incr rn; acc
-    ) "" prod 
+  let action = 
+    match kind with 
+    | `Sval -> 
+      "`(" ^ 
+      fold_left (fun acc _ -> let n = !rn in incr rn;  
+        (if acc = "" then "" else acc ^ " ") ^ ",_" ^ string_of_int n 
+      ) "" prod 
+      ^ ")" 
+
+    | `String -> 
+      "(strcat `(" ^ 
+      fold_left (fun acc _ -> let n = !rn in incr rn;  
+        (if acc = "" then "" else acc ^ " ") ^ ",_" ^ string_of_int n 
+      ) "" prod 
+      ^ "))"
   in
-  let action = "`(" ^ action ^ ")" in
   (*
   print_endline ("DEFAULT ACTION for " ^ 
     catmap " " silly_strtoken prod ^
@@ -461,9 +499,9 @@ let user_expr prod fn : string =
   action
   
 
-let cal_action prod action =
+let cal_action kind prod action =
   match action with 
-  | `None -> dflt_action prod
+  | `None -> dflt_action kind prod
   | `Scheme scm -> scm
 
 
@@ -471,7 +509,7 @@ let unlift (f,l1,c1,l2,c2) =
   if l1 = l2 then f,l1,c1,c2
   else f,l1,c1,c1
 
-let rec flatten sr pcounter (rhs: symbol_t list) : token list * rule_t list =
+let rec flatten sr pcounter kind (rhs: symbol_t list) : token list * rule_t list =
   let rec aux inp out extras = match inp with
   | [] -> rev out,extras
 
@@ -479,27 +517,27 @@ let rec flatten sr pcounter (rhs: symbol_t list) : token list * rule_t list =
     let sr = unlift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_"^x in
-    let rules : rule_t list = fixup_alternatives pcounter sl `Default dyalts in
+    let rules : rule_t list = fixup_alternatives pcounter kind sl `Default dyalts in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rules@extras)
 
   | `Atom h :: t -> aux t (h::out) extras 
   in aux rhs [] []
 
-and fixup_rule sr pcounter (rhs:symbol_t list) : token list * rule_t list =
-  let rhs,extras = flatten sr pcounter rhs in
+and fixup_rule sr pcounter kind (rhs:symbol_t list) : token list * rule_t list =
+  let rhs,extras = flatten sr pcounter kind rhs in
   let rhs, extras = 
     fixup_prio rhs, 
     map (fun (name,prio,prod,action,sr) -> name,prio,fixup_prio prod, action,sr) extras
   in
-  let rhs,extras' = fixup_suffix sr pcounter rhs in
+  let rhs,extras' = fixup_suffix sr pcounter kind rhs in
   rhs,extras@extras'
 
-and fixup_alternatives pcounter name prio (dyalts:dyalt_t list) : rule_t list =
+and fixup_alternatives pcounter kind name prio (dyalts:dyalt_t list) : rule_t list =
   let rules = 
     fold_left 
       (fun rules (rhs,sr,action) ->
-        let prod,extras = fixup_rule sr pcounter rhs in
-        let action : string = cal_action prod action in
+        let prod,extras = fixup_rule sr pcounter kind rhs in
+        let action : string = cal_action kind prod action in
         ((name,prio,prod,action,sr) :: extras) @ rules
       ) 
       [] dyalts
@@ -510,9 +548,9 @@ let add_rule global_data local_data dssl rule =
   let m = local_data in
   let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
   match rule with
-  | `Scheme_rule (privacy,name,prio,dyalts) ->
+  | `Scheme_rule (privacy,name,prio,kind,dyalts) ->
      if !Flx_pdoc.document_grammar then record_rule dssl name dyalts;
-     let rules = fixup_alternatives global_data.pcounter name prio dyalts in
+     let rules = fixup_alternatives global_data.pcounter kind name prio dyalts in
      let rules = fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
      let privacy = 
        match privacy with
@@ -553,8 +591,6 @@ let ocs2flx sr r =
   print_endline (string_of_statement 0 flx);
   *)
   flx
-
-let dummysr = "Dummy",0,0,0,0
 
 let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
    if !(global_data.pdebug) then 
@@ -671,6 +707,7 @@ let dyp_merge_Obj_statement_star ol =
 
 /* literals */
 %constructor Obj_sexpr %for sinteger sfloat sstring scstring strue sfalse
+%constructor Obj_sexpr %for strint strfloat strstring strtrue strfalse
 
 /* patterns */
 %constructor Obj_sexpr %for sintegral
@@ -685,6 +722,7 @@ let dyp_merge_Obj_statement_star ol =
 
 /* nothing*/
 %constructor Obj_sexpr %for sepsilon
+%constructor Obj_sexpr %for strepsilon
 
 %start <(Flx_ast.compilation_unit_t)> compilation_unit
 %%
@@ -722,7 +760,7 @@ code of the compilation unit.
 @head(2,'Statement')
 @select(h)
 dyprods:
-   | dyprod dyprods { $1 :: $2 }
+   | dyprods dyprod { $2 :: $1 }
    | { [] }
 
 opt_private:
@@ -743,8 +781,16 @@ prilist:
 dyprod:
    | opt_private NAME opt_prio COLONEQUAL dyalts SEMI
      {
-       `Scheme_rule ($1, snd $2,$3,$5)
+       `Scheme_rule ($1, snd $2, $3,`Sval,$5)
      }
+
+   | opt_private NAME opt_prio COLON NAME EQUAL dyalts SEMI
+     {
+       if snd $5 <> "string" then raise Giveup;
+       print_endline "STRING RULE";
+       `Scheme_rule ($1, snd $2,$3,`String,$7)
+     }
+
 
    | REQUIRES basic_name_comma_list SEMI
      {
@@ -816,7 +862,7 @@ rhs_atom:
   if t != "IDENT":
     tangle("  | " +t+ " { " + t + " $1 }")
 @for t,s in flx_syms:
-  if t not in ["PARSE_ACTION","VBAR","LPAR","RPAR"]:
+  if t not in ["PARSE_ACTION","VBAR","LPAR","RPAR","SEMI"]:
     tangle("  | " +t+ " { " + t + " $1 }")
 
 statement:
@@ -910,6 +956,7 @@ statement:
 
   | SYNTAX NAME LBRACE dyprods RBRACE
     @{
+      (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
       (*
       print_endline ("Parsed syntax extensions " ^ (snd $2));
       print_endline ("Defining syntax extensions " ^ (snd $2));
@@ -917,7 +964,7 @@ statement:
       let sr = rstoken $1 $5 in
       let dssl = snd $2 in
       let global_data,local_data = 
-        List.fold_left (fun (g,l) x -> add_rule g l dssl x) (dyp.global_data, dyp.local_data) (rev $4)
+        List.fold_left (fun (g,l) x -> add_rule g l dssl x) (dyp.global_data, dyp.local_data) $4
       in 
       (* This cal tries to avoid gratutions mods to global/local data
          by checking for physical equality. Note changes to any
@@ -991,18 +1038,30 @@ vbar: VBAR { 0,slift $1,Snull }
 strue: TRUE { 0,slift $1,Snull }
 sfalse : FALSE { 0,slift $1,Snull }
 
+strtrue: TRUE { 0,slift $1,Sstring "true" }
+strfalse : FALSE { 0,slift $1,Sstring "false" }
+
 /* 
 a definite non-terminal for a sequence of no tokens,
 since the production syntax cannot parse an empty
 production at the moment 
 */
 sepsilon: | {0,dummysr,Snull }
+strepsilon: | {0,dummysr,Sstring "" }
 
 sinteger:
   | INTEGER 
     { 
       let sr,t,v = $1 in
       0,slift sr,Sbigint v
+    }
+
+strint:
+  | INTEGER 
+    { 
+      let sr,t,v = $1 in
+      let s = Big_int.string_of_big_int v in
+      0,slift sr,Sstring s
     }
 
 sfloat:
@@ -1013,6 +1072,14 @@ sfloat:
       let x = Ocs_misc.make_slist Snull (rev x) in
       0,slift sr,x
     }
+
+strfloat:
+  | FLOAT 
+    { 
+      let sr,t,v = $1 in
+      0,slift sr,Sstring v
+    }
+
 
 sintegral:
   | INTEGER 
@@ -1038,6 +1105,13 @@ sstring:
       0,slift sr,Sstring s
     }
 
+strstring:
+  | STRING
+    { 
+      let sr,s = $1 in
+      let s = Flx_string.c_quote_of_string s in
+      0,slift sr,Sstring s
+    }
 
 scstring:
   | CSTRING
