@@ -3537,6 +3537,7 @@ cpps=""
 cppos=""
 INCLUDE_DIRS=""
 NOSTDLIB=0
+STDOUT=""
 
 while (( "$grab" == "1" ));
 do
@@ -3550,6 +3551,11 @@ do
   x--test)
     TESTMODE=1
     FLX_INSTALL_DIR=.
+    shift
+  ;;
+
+  x--stdout=*)
+    STDOUT=${1:9}
     shift
   ;;
 
@@ -3977,6 +3983,7 @@ then
           else
             cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
           fi
+          if [ $STDOUT != "" ]; then cmd="$cmd > $STDOUT"; fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
         fi
@@ -4010,6 +4017,7 @@ else
           else
             cmd="$STATIC_ENV $base $args"
           fi
+          if [ $STDOUT != "" ]; then cmd="$cmd > $STDOUT"; fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
         fi

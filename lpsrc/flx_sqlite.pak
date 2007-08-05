@@ -89,7 +89,7 @@ syntax sql { // see: http://www.sqlite.org/lang.html
       lpar column_def (, column_def)* (, constraint)?* rpar
   ;
   sql_command : string = "create" ("temp" | "temporary")? "table" (database_name .)? table_name "as" select_statement
-  column_def : string =	name sql_type? (constraint name? column_constraint)*
+  column_def : string =	sname sql_type? (constraint name? column_constraint)*
   sql_type : string = 	typename |
     typename lpar number rpar |
     typename lpar number , number rpar
