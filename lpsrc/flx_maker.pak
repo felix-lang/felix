@@ -4036,23 +4036,36 @@ echo "Felix command is $FLX"
 ok=0
 bad=0
 total=0
-failed=""
+failed[0]=""
 
 for i in test/*/*.flx tut/*/*.flx
 do 
-  rm -rf tmp.out
   expect=`dirname $i`/`basename $i .flx`.expect
   if test -e $expect
   then
     total=$(($total+1))
-    echo "$total -- check $i"
+    echo "$total -- check dynamic $i"
+    rm -rf tmp.out
     $FLX --force --stdout=tmp.out $i
     diff -a -b -y --suppress-common-lines $expect tmp.out
     if [ "$?" != "0" ]
     then
       echo "*********ERROR"
+      failed[$bad]="$total dynamic $i"
       bad=$(($bad+1))
-      failed="$failed\n$i"
+    else
+      ok=$(($ok+1))
+    fi
+    total=$(($total+1))
+    echo "$total -- check static $i"
+    rm -rf tmp.out
+    $FLX --force --static --stdout=tmp.out $i
+    diff -a -b -y --suppress-common-lines $expect tmp.out
+    if [ "$?" != "0" ]
+    then
+      echo "*********ERROR"
+      failed[$bad]="$total static $i"
+      bad=$(($bad+1))
     else
       ok=$(($ok+1))
     fi
@@ -4064,6 +4077,7 @@ then
   echo "============="
   echo "$bad FAILURES"
   echo "============="
+  for ((i=0; i<$bad; i=$i+1)); do echo ${failed[$i]}; done
   echo $failed
   echo
 fi
