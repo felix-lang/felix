@@ -4027,6 +4027,58 @@ else
 fi
 exit $?
 
+@select(tangler('bin/flx-postinstall-check','data'))
+#!/usr/bin/env bash
+FLX=flx
+if [ "x$1" != x ]; then FLX="$1 $2 $3 $4 $5 $6 $7 $8"; fi
+
+echo "Felix command is $FLX"
+ok=0
+bad=0
+total=0
+failed=""
+
+for i in test/*/*.flx tut/*/*.flx
+do 
+  rm -rf tmp.out
+  expect=`dirname $i`/`basename $i .flx`.expect
+  if test -e $expect
+  then
+    total=$(($total+1))
+    echo "$total -- check $i"
+    $FLX --force --stdout=tmp.out $i
+    diff -a -b -y --suppress-common-lines $expect tmp.out
+    if [ "$?" != "0" ]
+    then
+      echo "*********ERROR"
+      bad=$(($bad+1))
+      failed="$failed\n$i"
+    else
+      ok=$(($ok+1))
+    fi
+  fi 
+done
+
+if [ $bad != 0 ]
+then
+  echo "============="
+  echo "$bad FAILURES"
+  echo "============="
+  echo $failed
+  echo
+fi
+echo
+echo "============"
+echo "TEST SUMMARY"
+echo "============"
+echo "GOOD $ok"
+echo "BAD  $bad"
+echo "---------"
+echo "TOTAL $total"
+echo "---------"
+
+exit $bad
+
 @head(1,'Package Manager Meta Info')
 @head(2,'GODI')
 This is the Godiva file originally used to
