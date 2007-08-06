@@ -3,7 +3,7 @@ Scan all exes, replace BEXE_axiom_check e with
 BEXE_assert (axiom e) for each axiom that matches
 the argument e.
 
-@h = tangler("src/flx_axiom.mli")
+@h = tangler("src/compiler/flxlib/flx_axiom.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -15,7 +15,7 @@ val axiom_check:
   fully_bound_symbol_table_t ->
   unit
  
-@h = tangler("src/flx_axiom.ml")
+@h = tangler("src/compiler/flxlib/flx_axiom.ml")
 @select(h)
 open Flx_util
 open Flx_ast

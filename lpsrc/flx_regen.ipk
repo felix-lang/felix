@@ -1,5 +1,5 @@
 @head(1,'Lexer generator')
-@h = tangler('src/flx_regen.mli')
+@h = tangler('src/compiler/flxlib/flx_regen.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -18,7 +18,7 @@ val regen:
   (tbexpr_t -> string) ->
   unit
 
-@h = tangler('src/flx_regen.ml')
+@h = tangler('src/compiler/flxlib/flx_regen.ml')
 @select(h)
 open Flx_ast
 open Flx_types

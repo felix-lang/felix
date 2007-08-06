@@ -1,6 +1,6 @@
 @head(1,'GC shape object generator')
 
-@h = tangler('src/flx_ogen.mli')
+@h = tangler('src/compiler/flxlib/flx_ogen.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -26,7 +26,7 @@ val find_references:
   btypecode_t list ->
   (bid_t * btypecode_t) list
 
-@h = tangler('src/flx_ogen.ml')
+@h = tangler('src/compiler/flxlib/flx_ogen.ml')
 @select(h)
 open Flx_util
 open Flx_ast

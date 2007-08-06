@@ -1,6 +1,6 @@
 @head(1,'Felix specific Utilities')
 @head(2,'Terminal Error handler')
-@h = tangler('src/flx_terminate.mli')
+@h = tangler('src/compiler/flxlib/flx_terminate.mli')
 @select(h)
 (** Misc compiler utilities *)
 
@@ -10,7 +10,7 @@ val terminate:
   unit
 (** terminate the top level program in case of error *)
 
-@h = tangler('src/flx_terminate.ml')
+@h = tangler('src/compiler/flxlib/flx_terminate.ml')
 @select(h)
 open Flx_srcref
 open Flx_exceptions

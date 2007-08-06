@@ -1,7 +1,7 @@
 @head(1,"Elide unused entries")
 Name binding pass 2.
 
-@h = tangler("src/flx_prop.mli")
+@h = tangler("src/compiler/flxlib/flx_prop.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -26,7 +26,7 @@ val get_vs:
   int -> 
   bvs_t
 
-@h = tangler("src/flx_prop.ml")
+@h = tangler("src/compiler/flxlib/flx_prop.ml")
 @select(h)
 open Flx_util
 open Flx_ast

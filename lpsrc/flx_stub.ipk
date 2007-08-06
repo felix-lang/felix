@@ -1,6 +1,6 @@
 @head(1,'Stub mainline')
 Used for misc testing of Ocaml things.
-@h=tangler('src/stub.ml')
+@h=tangler('src/compiler/drivers/stub.ml')
 @select(h)
 open Flx_types
 ;;

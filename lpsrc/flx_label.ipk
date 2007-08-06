@@ -1,5 +1,5 @@
 @head(1,"label management")
-@h = tangler("src/flx_label.mli")
+@h = tangler("src/compiler/flxlib/flx_label.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -49,7 +49,7 @@ val get_label_kind_from_index:
   int ->
   label_kind_t
 
-@h = tangler("src/flx_label.ml")
+@h = tangler("src/compiler/flxlib/flx_label.ml")
 @select(h)
 open Flx_types
 open Flx_ast

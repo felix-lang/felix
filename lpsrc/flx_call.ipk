@@ -1,7 +1,7 @@
 @head(1,"Optimisation stuff")
 Name binding pass 2.
 
-@h = tangler("src/flx_call.mli")
+@h = tangler("src/compiler/flxlib/flx_call.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -48,7 +48,7 @@ val expr_uses:
  tbexpr_t ->
  IntSet.t
 
-@h = tangler("src/flx_call.ml")
+@h = tangler("src/compiler/flxlib/flx_call.ml")
 @select(h)
 open Flx_ast
 open Flx_types

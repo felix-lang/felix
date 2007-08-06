@@ -1,5 +1,5 @@
 @head(1,'C++ Code generator')
-@h = tangler('src/flx_pgen.mli')
+@h = tangler('src/compiler/flxlib/flx_pgen.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -29,7 +29,7 @@ val shape_of:
   btypecode_t ->
   string
   
-@h = tangler('src/flx_pgen.ml')
+@h = tangler('src/compiler/flxlib/flx_pgen.ml')
 @select(h)
 open Flx_util
 open Flx_ast

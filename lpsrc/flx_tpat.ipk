@@ -1,4 +1,4 @@
-@h=tangler("src/flx_tpat.mli")
+@h=tangler("src/compiler/flxlib/flx_tpat.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -22,7 +22,7 @@ val type_of_tpattern:
   (int * string) list *     (* variables for 'as' terms *)
   (int * typecode_t) list   (* variables for as terms *)
 
-@h=tangler("src/flx_tpat.ml")
+@h=tangler("src/compiler/flxlib/flx_tpat.ml")
 @select(h)
 open Flx_ast
 open List

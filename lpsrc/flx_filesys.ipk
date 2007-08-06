@@ -1,12 +1,12 @@
 @head(1,"System dependent path handling")
-@select(tangler('src/flx_filesys.mli'))
+@select(tangler('src/compiler/misclib/flx_filesys.mli'))
 val filetime : string -> float
 val find_file_in_path: 
   string list -> string -> string
 val find_file:
   bool -> string list -> string -> string
 
-@select(tangler('src/flx_filesys.ml'))
+@select(tangler('src/compiler/misclib/flx_filesys.ml'))
 exception Found_file of string
 
 let find_file_in_path incdirs f =
@@ -46,13 +46,14 @@ MISC_PARSES = [ ]
 
 # ocaml modules = interfaces + implementation files
 MISC_MODULES = [
-  'src/flx_filesys',
+  'src/compiler/misclib/flx_filesys',
 ]
 
 MISC_INTERFACES = MISC_MODULES
 
 MISC_IMPLEMENTATIONS = MISC_INTERFACES
 
+caml_provide_lib = 'src/compiler/misclib/misclib'
 caml_interfaces = MISC_INTERFACES
 caml_implementations = MISC_IMPLEMENTATIONS
 

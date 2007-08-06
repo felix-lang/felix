@@ -1387,30 +1387,30 @@ dyplib = """
 @@h = tangler('spkgs/dyplib.py')
 @@select(h)
 caml_interfaces = [
-#  'dypgen/dyplib/sig',
-  'dypgen/dyplib/dyp',
+#  'src/compiler/dyp/dyplib/sig',
+  'src/compiler/dyp/dyplib/dyp',
 ]
 
 caml_implementations = [
-  'dypgen/dyplib/priority_by_relation',
-  'dypgen/dyplib/automaton',
-  'dypgen/dyplib/gs',
-#  'dypgen/dyplib/parser',
-  'dypgen/dyplib/dyp',
+  'src/compiler/dyp/dyplib/priority_by_relation',
+  'src/compiler/dyp/dyplib/automaton',
+  'src/compiler/dyp/dyplib/gs',
+#  'src/compiler/dyp/dyplib/parser',
+  'src/compiler/dyp/dyplib/dyp',
 ]
 
 #caml_pack = [
-#  ("Dyp",'dypgen/dyplib/dyp',[ 
-#    'dypgen/dyplib/sig',
-#    'dypgen/dyplib/gs', 
-#    'dypgen/dyplib/priority_by_relation',
-#    'dypgen/dyplib/automaton',
-#    'dypgen/dyplib/parser'
+#  ("Dyp",'src/compiler/dyp/dyplib/dyp',[ 
+#    'src/compiler/dyp/dyplib/sig',
+#    'src/compiler/dyp/dyplib/gs', 
+#    'src/compiler/dyp/dyplib/priority_by_relation',
+#    'src/compiler/dyp/dyplib/automaton',
+#    'src/compiler/dyp/dyplib/parser'
 #  ])
 #]
 
-caml_include_paths=['dypgen/dyplib']
-caml_provide_lib = 'dypgen/dyplib/dyplib'
+caml_include_paths = ['dypgen/dyplib']
+caml_provide_lib = 'src/compiler/dyp/dyplib/dyplib'
 iscr_source = ["lpsrc/dyp.pak"]
 weaver_directory = 'doc/dypgen/'
 
@@ -1422,10 +1422,10 @@ pgen = """
 caml_include_paths=['src','dypgen/dyplib','dypgen/generators/pgen']
 caml_lexes = ['dypgen/generators/pgen/pgen_lexer']
 caml_implementations=[
-  'dypgen/generators/pgen/pgen_parser_param',
-  'dypgen/generators/pgen/pgen_lexer'
+  'src/compiler/dyp/generators/pgen/pgen_parser_param',
+  'src/compiler/dyp/generators/pgen/pgen_lexer'
 ]
-caml_provide_lib = 'dypgen/generators/pgen/pgen'
+caml_provide_lib = 'src/compiler/dyp/generators/pgen/pgen'
 caml_require_libs = ['flx_version','dyplib','pgen']
 caml_exes = ['dypgen/generators/pgen/pgen']
 iscr_source = ["lpsrc/dyp.pak"]
@@ -1437,23 +1437,23 @@ dypgen = """
 @@h = tangler('spkgs/dypgen.py')
 @@select(h)
 caml_lexes = [
-  'dypgen/generators/dypgen/dypgen_lexer', 
-  'dypgen/generators/dypgen/insert_linenum'
+  'src/compiler/dyp/generators/dypgen/dypgen_lexer', 
+  'src/compiler/dyp/generators/dypgen/insert_linenum'
 ]
 
-caml_pgenparses = ['dypgen/generators/dypgen/dypgen_parser']
+caml_pgenparses = ['src/compiler/dyp/generators/dypgen/dypgen_parser']
 caml_interfaces =[
-  'dypgen/generators/dypgen/parse_tree',
-  'dypgen/generators/dypgen/dypgen_parser',
+  'src/compiler/dyp/generators/dypgen/parse_tree',
+  'src/compiler/dyp/generators/dypgen/dypgen_parser',
 ]
 caml_implementations=[
-  'dypgen/generators/dypgen/argument',
-  'dypgen/generators/dypgen/dypgen_parser',
-  'dypgen/generators/dypgen/dypgen_lexer',
-  'dypgen/generators/dypgen/insert_linenum',
+  'src/compiler/dyp/generators/dypgen/argument',
+  'src/compiler/dyp/generators/dypgen/dypgen_parser',
+  'src/compiler/dyp/generators/dypgen/dypgen_lexer',
+  'src/compiler/dyp/generators/dypgen/insert_linenum',
 ]
 caml_include_paths=['src','dypgen/dyplib','dypgen/generators/dypgen']
-caml_provide_lib = 'dypgen/generators/dypgen/dypgen'
+caml_provide_lib = 'src/compiler/dyp/generators/dypgen/dypgen'
 caml_require_libs = ['flx_version','dyplib','dypgen']
 caml_exes = ['dypgen/generators/dypgen/dypgen']
 iscr_source = ["lpsrc/dyp.pak"]
@@ -1606,7 +1606,7 @@ caml_raw_interfaces = ['ocs/ocs_types']
 caml_interfaces = OCS_MODULES
 caml_implementations= OCS_MODULES
 caml_include_paths = ['src','ocs']
-caml_provide_lib = 'ocs/ocslib'
+caml_provide_lib = 'src/compiler/ocs/ocslib'
 caml_require_libs = ['nums','unix','flx_version','ocslib']
 caml_exes = ['ocs/ocs_main']
 iscr_src= ['lpsrc/ocs.pak']

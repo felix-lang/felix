@@ -1,5 +1,5 @@
 @head(1,'Unification')
-@h=tangler('src/flx_unify.mli')
+@h=tangler('src/compiler/flxlib/flx_unify.mli')
 @select(h)
 (** this module provides type unification
 and utilities
@@ -191,7 +191,7 @@ val expr_term_subst:
   tbexpr_t -> (* variable value *)
   tbexpr_t    (* candidate with index -> value *)
 
-@h=tangler('src/flx_unify.ml')
+@h=tangler('src/compiler/flxlib/flx_unify.ml')
 @select(h)
 open Flx_types
 open Flx_mtypes1

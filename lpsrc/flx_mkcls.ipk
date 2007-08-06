@@ -1,7 +1,7 @@
 @head(1,"Elide unused entries")
 Name binding pass 2.
 
-@h = tangler("src/flx_mkcls.mli")
+@h = tangler("src/compiler/flxlib/flx_mkcls.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -13,7 +13,7 @@ val make_closures:
   sym_state_t ->
   fully_bound_symbol_table_t  -> unit
 
-@h = tangler("src/flx_mkcls.ml")
+@h = tangler("src/compiler/flxlib/flx_mkcls.ml")
 @select(h)
 open Flx_util
 open Flx_ast

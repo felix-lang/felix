@@ -1,5 +1,5 @@
 @head(1,'Generic support')
-@h = tangler('src/flx_generic.mli')
+@h = tangler('src/compiler/flxlib/flx_generic.mli')
 @select(h)
 open Flx_types
 open Flx_mtypes2
@@ -38,7 +38,7 @@ val make_varmap:
   btypecode_t list ->
   (int, btypecode_t) Hashtbl.t
 
-@h = tangler('src/flx_generic.ml')
+@h = tangler('src/compiler/flxlib/flx_generic.ml')
 @select(h)
 open Flx_types
 open Flx_mtypes1

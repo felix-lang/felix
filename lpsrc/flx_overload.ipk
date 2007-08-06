@@ -1,5 +1,5 @@
 @head(1,"overload resolution")
-@h = tangler("src/flx_overload.mli")
+@h = tangler("src/compiler/flxlib/flx_overload.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -25,7 +25,7 @@ val overload:
 
 exception OverloadKindError of range_srcref * string
 
-@h = tangler("src/flx_overload.ml")
+@h = tangler("src/compiler/flxlib/flx_overload.ml")
 @select(h)
 open Flx_util
 open Flx_ast

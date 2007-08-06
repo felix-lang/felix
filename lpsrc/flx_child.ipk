@@ -1,4 +1,4 @@
-@h = tangler("src/flx_child.mli")
+@h = tangler("src/compiler/flxlib/flx_child.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -31,7 +31,7 @@ val cal_children:
   fully_bound_symbol_table_t ->
   child_map_t
  
-@h = tangler("src/flx_child.ml")
+@h = tangler("src/compiler/flxlib/flx_child.ml")
 @select(h)
 open Flx_ast
 open Flx_types

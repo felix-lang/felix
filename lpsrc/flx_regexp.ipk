@@ -1,5 +1,5 @@
 @head(1,'DFA')
-@select(tangler('src/flx_dfa.mli'))
+@select(tangler('src/compiler/flxlib/flx_dfa.mli'))
 open Flx_ast
 open Flx_mtypes2
 
@@ -10,7 +10,7 @@ val process_regexp:
   (int, expr_t) Hashtbl.t            * (* term_codes *)
   (int * int, int) Hashtbl.t             (* transition matrix *)
   
-@select(tangler('src/flx_dfa.ml'))
+@select(tangler('src/compiler/flxlib/flx_dfa.ml'))
 (* build a DFA from a regular expression
 *)
 open Flx_ast

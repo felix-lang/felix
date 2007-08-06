@@ -26,7 +26,7 @@ Note that the types of implicitly declared tuples
 will be caught here, since the only thing you can
 do with a tuple is make it the argument of a function.
 
-@h = tangler("src/flx_treg.mli")
+@h = tangler("src/compiler/flxlib/flx_treg.mli")
 @select(h)
 open Flx_types
 open Flx_ast
@@ -51,7 +51,7 @@ val register_type_r:
   btypecode_t ->
   unit
 
-@h = tangler("src/flx_treg.ml")
+@h = tangler("src/compiler/flxlib/flx_treg.ml")
 @select(h)
 open Flx_types
 open Flx_mtypes2

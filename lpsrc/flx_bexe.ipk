@@ -1,5 +1,5 @@
 @head(1,'Bind executable statements')
-@h = tangler("src/flx_bexe.mli")
+@h = tangler("src/compiler/flxlib/flx_bexe.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -16,7 +16,7 @@ val bind_exes:
   bvs_t ->
   btypecode_t * bexe_t list
 
-@h = tangler("src/flx_bexe.ml")
+@h = tangler("src/compiler/flxlib/flx_bexe.ml")
 @select(h)
 open Flx_util
 open Flx_ast

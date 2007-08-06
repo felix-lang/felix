@@ -1,5 +1,5 @@
 @head(1,"C/C++ typings")
-@h = tangler("src/flx_ctypes.mli")
+@h = tangler("src/compiler/flxcclib/flx_ctypes.mli")
 @select(h)
 
 type cexpr_t =
@@ -66,14 +66,14 @@ type cdecl_type_t =
   | `Cdt_cvref of ctype_t
 ]
 
-@h = tangler("src/flx_ctype.mli")
+@h = tangler("src/compiler/flxcclib/flx_ctype.mli")
 @select(h)
 open Flx_ctypes
 
 val string_of_ctype: ctype_t -> string
 val string_of_cdecl_type: string -> cdecl_type_t -> string
 
-@h = tangler("src/flx_ctype.ml")
+@h = tangler("src/compiler/flxcclib/flx_ctype.ml")
 @select(h)
 open Flx_ctypes
 
@@ -152,7 +152,7 @@ let string_of_cdecl_type n t =
   | `Cdt_vref t -> aux t ("volatile &"^n)
   | `Cdt_cvref t -> aux t ("const volatile &"^n)
  
-@h = tangler("src/flx_cexpr.mli")
+@h = tangler("src/compiler/flxlib/flx_cexpr.mli")
 @select(h)
 open Flx_ast
 open Flx_ctypes
@@ -178,7 +178,7 @@ exception Unknown_prec of prec_t
 
 val genprec: string -> prec_t -> string * prec_t 
 
-@h = tangler("src/flx_cexpr.ml")
+@h = tangler("src/compiler/flxlib/flx_cexpr.ml")
 @select(h)
 open Flx_ctypes
 exception Unknown_prec of string

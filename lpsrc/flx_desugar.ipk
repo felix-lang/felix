@@ -3,7 +3,7 @@ Two routines: one to build interfaces
 from modules, and one to lift lambdas
 and also blocks.
 
-@h = tangler("src/flx_colns.mli")
+@h = tangler("src/compiler/flxlib/flx_colns.mli")
 @select(h)
 open Flx_ast
 
@@ -17,7 +17,7 @@ type nsrec = {
 val collate_namespaces:
   statement_t list -> statement_t list
 
-@h = tangler("src/flx_colns.ml")
+@h = tangler("src/compiler/flxlib/flx_colns.ml")
 @select(h)
 open Flx_ast
 open List
@@ -75,7 +75,7 @@ let rec collate_namespaces sts =
    cn tail nuns
  in cn sts [] 
    
-@h = tangler("src/flx_desugar.mli")
+@h = tangler("src/compiler/flxlib/flx_desugar.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -92,7 +92,7 @@ val include_file:
   bool ->
   statement_t list
 
-@h = tangler("src/flx_desugar.ml")
+@h = tangler("src/compiler/flxlib/flx_desugar.ml")
 @select(h)
 open Flx_version
 open Flx_util
@@ -1810,7 +1810,7 @@ let desugar_program syms name sts =
   *)
   rst syms name `Public dfltvs (`AST_untyped_module (sr,name,dfltvs,sts))
 
-@h = tangler("src/flxd.ml")
+@h = tangler("src/compiler/drivers/flxd.ml")
 @select(h)
 open Flx_util
 open Flx_desugar

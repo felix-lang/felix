@@ -2,14 +2,14 @@
 @h = tangler('spkgs/flx_version.py')
 @select(h)
 caml_interfaces = [
-  'src/flx_version',
+  'src/compiler/flx_version/flx_version',
 ]
 
 caml_implementations = [
-  'src/flx_version',
+  'src/compiler/flx_version/flx_version',
 ]
 
-caml_provide_lib = 'src/flx_version'
+caml_provide_lib = 'src/compiler/flx_version/flx_version'
 iscr_source = ["lpsrc/flx_version.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
 
@@ -29,7 +29,7 @@ initialised. Note that this means the version
 information will not be available until
 the mainline module begins.
 
-@h=tangler('src/flx_version.mli')
+@h=tangler('src/compiler/flx_version/flx_version.mli')
 @select(h)
 type version_data_t =
 {
@@ -41,7 +41,7 @@ type version_data_t =
 
 val version_data: version_data_t ref
 
-@h=tangler('src/flx_version.ml')
+@h=tangler('src/compiler/flx_version/flx_version.ml')
 @select(h)
 type version_data_t =
 {

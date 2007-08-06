@@ -65,13 +65,13 @@ directly.
 Implementation note: both string types are represented
 internally by 8 bit UTF-8 encoded strings.
 
-@h = tangler('src/flx_constfld.mli')
+@h = tangler('src/compiler/flxlib/flx_constfld.mli')
 @select(h)
 open Flx_ast
 val const_fold:
   expr_t -> expr_t
 
-@h = tangler('src/flx_constfld.ml')
+@h = tangler('src/compiler/flxlib/flx_constfld.ml')
 @select(h)
 open Flx_ast
 open Flx_print

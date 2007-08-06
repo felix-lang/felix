@@ -1,7 +1,7 @@
 @head(1,"Make stack calls")
 Name binding pass 2.
 
-@h = tangler("src/flx_stack_calls.mli")
+@h = tangler("src/compiler/flxlib/flx_stack_calls.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -15,7 +15,7 @@ val make_stack_calls:
   label_map_t -> label_usage_t ->
   unit
 
-@h = tangler("src/flx_stack_calls.ml")
+@h = tangler("src/compiler/flxlib/flx_stack_calls.ml")
 @select(h)
 open Flx_util
 open Flx_ast

@@ -1,6 +1,6 @@
 @head(1,'Utilities')
 Generic (non Felix dependent) utilities.
-@h = tangler('src/flx_util.mli')
+@h = tangler('src/compiler/flxlib/flx_util.mli')
 @select(h)
 (** Generic utilities *)
 
@@ -68,7 +68,7 @@ val uniq_cat: 'a list -> 'a list -> 'a list
 (** make a list of unique elements *)
 val uniq_list: 'a list -> 'a list
 
-@h = tangler('src/flx_util.ml')
+@h = tangler('src/compiler/flxlib/flx_util.ml')
 @select(h)
 open List
 let spaces level = String.make (level*2) ' '
@@ -146,7 +146,7 @@ let uniq_cat u nu  =
 
 let uniq_list lst = uniq_cat [] lst
 
-@h = tangler('src/flx_dlst.mli')
+@h = tangler('src/compiler/flxlib/flx_dlst.mli')
 @select(h)
 type direction = Fwd | Rev
 val dir_rev : direction -> direction
@@ -163,7 +163,7 @@ val prepend : 'a dlst -> 'a -> 'a dlst
 val cons : 'a list -> 'a -> 'a list
 val concat : 'a dlst -> 'a dlst -> 'a dlst
 
-@h = tangler('src/flx_dlst.ml')
+@h = tangler('src/compiler/flxlib/flx_dlst.ml')
 @select(h)
 open List
 type direction = Fwd | Rev
@@ -211,7 +211,7 @@ let concat a b = match (a,b) with
     {dir=Rev; lst=fold_left cons (rev l1) l2}
   
 @head(1,'AST')
-@h = tangler('src/flx_ast.mli')
+@h = tangler('src/compiler/flxlib/flx_ast.mli')
 @head(2,'Source Reference')
 Provides a reference to the original source.
 @select(h)
@@ -832,7 +832,7 @@ type compilation_unit_t = statement_t list
 
 
 @head(1,'Types')
-@h = tangler('src/flx_types.mli')
+@h = tangler('src/compiler/flxlib/flx_types.mli')
 These files declare the main data structures used by the compiler,
 and provide routines to dump them to a string for debugging purposes.
 
@@ -1231,7 +1231,7 @@ type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 type type_registry_t = (btypecode_t,int) Hashtbl.t
 
 @head(1,'Mappings')
-@h = tangler('src/flx_maps.mli')
+@h = tangler('src/compiler/flxlib/flx_maps.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -1298,7 +1298,7 @@ val reduce_type:
 
 val scan_expr: expr_t -> range_srcref list
 
-@h = tangler('src/flx_maps.ml')
+@h = tangler('src/compiler/flxlib/flx_maps.ml')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -1961,7 +1961,7 @@ let rec reduce_type t =
 
 @head(1,'Routines to extract source reference from terms')
 Source reference manipulators.
-@h = tangler('src/flx_srcref.mli')
+@h = tangler('src/compiler/flxlib/flx_srcref.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -1984,7 +1984,7 @@ val short_string_of_src: range_srcref -> string
 val long_string_of_src: range_srcref -> string
 
 val dummy_sr: range_srcref
-@h = tangler('src/flx_srcref.ml')
+@h = tangler('src/compiler/flxlib/flx_srcref.ml')
 
 @doc()
 Generic source reference manipulation.
@@ -2322,7 +2322,7 @@ let long_string_of_src (f,l1,c1,l2,c2) =
 
 @head(1,'Print module')
 Routines to print various terms.
-@h = tangler('src/flx_print.mli')
+@h = tangler('src/compiler/flxlib/flx_print.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -2469,7 +2469,7 @@ type felix_term_t = [
 
 val st: symbol_table_t -> felix_term_t -> string
   
-@h = tangler('src/flx_print.ml')
+@h = tangler('src/compiler/flxlib/flx_print.ml')
 @select(h)
 open Flx_util
 open Flx_ast
@@ -5247,7 +5247,7 @@ let string_of_term dfns term = match term with
 
 let st dfns term = string_of_term dfns term
 
-@h = tangler('src/flx_mtypes1.ml')
+@h = tangler('src/compiler/flxlib/flx_mtypes1.ml')
 @select(h)
 module IntHashtbl = Hashtbl.Make(
   struct
@@ -5315,7 +5315,7 @@ let string_of_intset ii =
 let intset_of_list ii =
   List.fold_left (fun ii i -> IntSet.add i ii) IntSet.empty ii
   
-@h = tangler('src/flx_mtypes1.mli')
+@h = tangler('src/compiler/flxlib/flx_mtypes1.mli')
 @select(h)
 module IntHashtbl : Hashtbl.S with type key = int
 module StringMap : Map.S with type key = string
@@ -5331,7 +5331,7 @@ module IntSetSet : Set.S with type elt = IntSet.t
 val string_of_intset : IntSet.t -> string
 val intset_of_list : int list -> IntSet.t
 
-@h = tangler('src/flx_mtypes2.ml')
+@h = tangler('src/compiler/flxlib/flx_mtypes2.ml')
 @select(h)
 open Flx_mtypes1
 open Flx_types
@@ -5416,7 +5416,7 @@ module Drules = Map.Make(struct
   let compare = compare
 end)
 
-@h = tangler('src/flx_mtypes2.mli')
+@h = tangler('src/compiler/flxlib/flx_mtypes2.mli')
 @select(h)
 open Flx_types
 open Flx_mtypes1
@@ -5512,7 +5512,7 @@ exception Free_fixpoint of btypecode_t
 exception Unresolved_return of range_srcref * string
 """
 //
-@h = tangler('src/flx_exceptions.ml')
+@h = tangler('src/compiler/flxlib/flx_exceptions.ml')
 @select(h)
 @tangle(exceptions)
 let clierrn srs s = raise (ClientErrorn (srs,s))
@@ -5523,7 +5523,7 @@ let catch s f = try f() with _ -> failwith s
 let rdp_match_fail sr1 sr2 s = raise (RDP_match_fail (sr1,sr2,s))
 let rdp_alternatives_exhausted sr s = raise (RDP_alternatives_exhausted (sr,s))
 
-@h = tangler('src/flx_exceptions.mli')
+@h = tangler('src/compiler/flxlib/flx_exceptions.mli')
 @select(h)
 @tangle(exceptions)
 val clierrn: range_srcref list -> string -> 'a
@@ -5534,7 +5534,7 @@ val catch: string -> (unit -> 'a) -> 'a
 val rdp_match_fail: range_srcref -> range_srcref -> string -> 'a
 val rdp_alternatives_exhausted: range_srcref -> string -> 'a
 
-@h = tangler('src/flx_typing.mli')
+@h = tangler('src/compiler/flxlib/flx_typing.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -5585,7 +5585,7 @@ val mktypefun:
   typecode_t ->
   statement_t
 
-@h = tangler('src/flx_typing.ml')
+@h = tangler('src/compiler/flxlib/flx_typing.ml')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -5817,7 +5817,7 @@ let rec cmp_tbexpr (a,_) (b,_) =
   | _ -> false
 
  
-@h = tangler('src/flx_typing2.mli')
+@h = tangler('src/compiler/flxlib/flx_typing2.mli')
 @select(h)
 open Flx_ast
 val typecode_of_expr:
@@ -5832,7 +5832,7 @@ val paramtype:
 val qualified_name_of_expr:
   expr_t -> qualified_name_t
 
-@h = tangler('src/flx_typing2.ml')
+@h = tangler('src/compiler/flxlib/flx_typing2.ml')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -6069,7 +6069,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     clierr sr ("Type expression expected, got " ^ string_of_expr e)
     
 @head(1,'Charset')
-@select(tangler('src/flx_charset.mli'))
+@select(tangler('src/compiler/flxlib/flx_charset.mli'))
 open Flx_ast
 type charset_t
 val charset_of_string: string -> charset_t
@@ -6082,7 +6082,7 @@ val regexp_underscore: regexp_t
 val eol: int
 val regexp_dot: regexp_t
 
-@select(tangler('src/flx_charset.ml'))
+@select(tangler('src/compiler/flxlib/flx_charset.ml'))
 open Flx_ast
 type charset_t = bool array
 

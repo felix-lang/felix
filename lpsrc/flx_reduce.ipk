@@ -1,6 +1,6 @@
 @head(1,"Reductions")
 
-@h = tangler("src/flx_reduce.mli")
+@h = tangler("src/compiler/flxlib/flx_reduce.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -19,7 +19,7 @@ val reduce_exes:
   bexe_t list ->
   bexe_t list
 
-@h = tangler("src/flx_reduce.ml")
+@h = tangler("src/compiler/flxlib/flx_reduce.ml")
 @select(h)
 open Flx_ast
 open Flx_types

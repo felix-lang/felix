@@ -15,7 +15,7 @@ Eliding it when not needed
 is a useful optimisation. The third property is the negation
 of the second.
 
-@h = tangler("src/flx_global.mli")
+@h = tangler("src/compiler/flxlib/flx_global.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -33,7 +33,7 @@ val check_global_vars_all_used:
   fully_bound_symbol_table_t -> 
   (bid_t, 'a) Hashtbl.t -> unit
 
-@h = tangler("src/flx_global.ml")
+@h = tangler("src/compiler/flxlib/flx_global.ml")
 @select(h)
 open Flx_util
 open Flx_ast

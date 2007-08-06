@@ -35,7 +35,7 @@ The copyright following applies to this sub-package.
 @end_displayed_code()
 
 
-@h=tangler('src/cil/flx_cil_escape.ml')
+@h=tangler('src/compiler/cil/flx_cil_escape.ml')
 @select(h)
 (** OCaml types used to represent wide characters and strings *)
 type wchar = int64
@@ -95,7 +95,7 @@ let escape_wstring (str : int64 list) =
   List.iter append str;
   Buffer.contents buffer
 
-@h=tangler('src/cil/flx_cil_escape.mli')
+@h=tangler('src/compiler/cil/flx_cil_escape.mli')
 @select(h)
 (*
  * Character and string escaping utilities
@@ -111,7 +111,7 @@ val escape_string : string -> string
 val escape_wchar : wchar -> string
 val escape_wstring : wstring -> string
 
-@h=tangler('src/cil/flx_cil_cabs.mli')
+@h=tangler('src/compiler/cil/flx_cil_cabs.mli')
 @select(h)
 
 (** This file was originally part of Hugues Casee's frontc 2.0, and has been 
@@ -392,7 +392,7 @@ and initwhat =
                                          * optional arguments *)
 and attribute = string * expression list
                                               
-@h = tangler('src/cil/flx_cil_cabs_helper.mli')
+@h = tangler('src/compiler/cil/flx_cil_cabs_helper.mli')
 @select(h)
 val cabslu : Flx_cil_cabs.cabsloc
 val missingFieldDecl :
@@ -407,7 +407,7 @@ val explodeStringToInts : string -> int64 list
 val valueOfDigit : char -> int64
 val d_cabsloc : unit -> Flx_cil_cabs.cabsloc -> Flx_cil_pretty.doc
 
-@h = tangler('src/cil/flx_cil_cabs_helper.ml')
+@h = tangler('src/compiler/cil/flx_cil_cabs_helper.ml')
 @select(h)
 open Flx_cil_cabs
 
@@ -500,7 +500,7 @@ let valueOfDigit chr =
 open Flx_cil_pretty
 let d_cabsloc () cl = 
   text cl.filename ++ text ":" ++ num cl.lineno
-@h=tangler('src/cil/flx_cil_cabsvisit.ml')
+@h=tangler('src/compiler/cil/flx_cil_cabsvisit.ml')
 @select(h)
 
 (* cabsvisit.ml *)
@@ -1037,7 +1037,7 @@ let visit_cabsFile (vis: cabsVisitor) ((fname, f): file) : file =
 
     (* end of file *)
     
-@h=tangler('src/cil/flx_cil_cabsvisit.mli')
+@h=tangler('src/compiler/cil/flx_cil_cabsvisit.mli')
 @select(h)
 
 (* cabsvisit.mli *)
@@ -1118,7 +1118,7 @@ val visit_cabsFile: cabsVisitor -> Flx_cil_cabs.file -> Flx_cil_cabs.file
 
 (** Set by the visitor to the current location *)
 val visitorLocation: Flx_cil_cabs.cabsloc ref
-@h=tangler('src/cil/flx_cil_clexer.mli')
+@h=tangler('src/compiler/cil/flx_cil_clexer.mli')
 @select(h)
 
 
@@ -1148,7 +1148,7 @@ val add_type: string -> unit (* Add a new string as a type name  *)
 val add_identifier: string -> unit (* Add a new string as a variable name  *)
 val pop_context: unit -> unit (* Remove all names added in this context  *)
 
-@h=tangler('src/cil/flx_cil_clexer.mll','data')
+@h=tangler('src/compiler/cil/flx_cil_clexer.mll','data')
 @select(h)
 (* FrontC -- lexical analyzer
 **
@@ -1783,7 +1783,7 @@ and attribute = parse
 
 }
 
-@h=tangler('src/cil/flx_cil_cparser.mly','data')
+@h=tangler('src/compiler/cil/flx_cil_cparser.mly','data')
 @select(h)
 /*
 (**
@@ -3120,7 +3120,7 @@ asmcloberlst_ne:
 
 
 
-@h=tangler('src/cil/flx_cil_cprint.mli')
+@h=tangler('src/compiler/cil/flx_cil_cprint.mli')
 @select(h)
 
 val version : string
@@ -3196,7 +3196,7 @@ val printFile : out_channel -> Flx_cil_cabs.file -> unit
 val set_tab : int -> unit
 val set_width : int -> unit
 
-@h=tangler('src/cil/flx_cil_cprint.ml')
+@h=tangler('src/compiler/cil/flx_cil_cprint.ml')
 @select(h)
 (* cprint -- pretty printer of C program from abstract syntax
 **
@@ -4194,7 +4194,7 @@ let printFile (result : out_channel) ((fname, defs) : file) =
 let set_tab t = tab := t
 let set_width w = width := w
 
-@h=tangler('src/cil/flx_cil_frontc.ml')
+@h=tangler('src/compiler/cil/flx_cil_frontc.ml')
 @select(h)
 
 
@@ -4407,7 +4407,7 @@ let parse fname lang =
     cil
 
 
-@h=tangler('src/cil/flx_cil_frontc.mli')
+@h=tangler('src/compiler/cil/flx_cil_frontc.mli')
 @select(h)
 
 
@@ -4428,7 +4428,7 @@ val args: (string * Arg.spec * string) list
      * convert the AST to CIL. *)
 val parse: string -> Flx_cil_cabs.lang_t -> (unit -> Flx_cil_cil.file)
 
-@h=tangler('src/cil/flx_cil_lexerhack.mli')
+@h=tangler('src/compiler/cil/flx_cil_lexerhack.mli')
 @select(h)
 val get_lang : (unit -> Flx_cil_cabs.lang_t) ref
 val add_identifier : (string -> unit) ref
@@ -4439,7 +4439,7 @@ val push_class: (string-> unit) ref
 val pop_class : (unit -> unit) ref
 val currentPattern : string ref
 
-@h=tangler('src/cil/flx_cil_lexerhack.ml')
+@h=tangler('src/compiler/cil/flx_cil_lexerhack.ml')
 @select(h)
 
 module E = Flx_cil_errormsg

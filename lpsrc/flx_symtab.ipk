@@ -10,7 +10,7 @@ entity with a unique index.
 Types, expressions, and bodies
 of functions remain unbound.
 
-@h = tangler("src/flx_symtab.mli")
+@h = tangler("src/compiler/flxlib/flx_symtab.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -34,7 +34,7 @@ val build_tables:
     dir_t list
   )
 
-@h = tangler("src/flx_symtab.ml")
+@h = tangler("src/compiler/flxlib/flx_symtab.ml")
 @select(h)
 open Flx_util
 open Flx_ast

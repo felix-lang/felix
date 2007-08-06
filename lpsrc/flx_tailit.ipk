@@ -1,4 +1,4 @@
-@h = tangler("src/flx_tailit.mli")
+@h = tangler("src/compiler/flxlib/flx_tailit.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -23,7 +23,7 @@ val exes_get_xclosures:
   bexe_t list ->
   IntSet.t
 
-@h = tangler("src/flx_tailit.ml")
+@h = tangler("src/compiler/flxlib/flx_tailit.ml")
 @select(h)
 open Flx_util
 open Flx_ast

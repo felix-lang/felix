@@ -1,5 +1,5 @@
 @set_title("Extension Experiment")
-@select(tangler("src/flx_sex2flx.mli"))
+@select(tangler("src/compiler/flxlib/flx_sex2flx.mli"))
 open Sex_types
 open Flx_ast
 open Flx_types
@@ -20,7 +20,7 @@ val xexpr_t:
   sexp_t ->
   expr_t
 
-@select(tangler("src/flx_sex2flx.ml"))
+@select(tangler("src/compiler/flxlib/flx_sex2flx.ml"))
 open Sex_types
 open Flx_ast
 open Flx_types

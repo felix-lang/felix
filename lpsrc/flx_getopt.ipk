@@ -1,5 +1,5 @@
 @head(1,'Get options')
-@h=tangler('src/flx_getopt.mli')
+@h=tangler('src/compiler/flxlib/flx_getopt.mli')
 @select(h)
 open Flx_types
 
@@ -36,7 +36,7 @@ val get_keys_values :
   string list ->
   string list
 
-@h=tangler('src/flx_getopt.ml')
+@h=tangler('src/compiler/flxlib/flx_getopt.ml')
 @select(h)
 open List
 open Flx_util
@@ -95,7 +95,7 @@ let get_key_values options key =
 let get_keys_values options keys =
   concat (map (get_key_values options) keys)
 
-@select(tangler('src/flx_flxopt.mli'))
+@select(tangler('src/compiler/flxlib/flx_flxopt.mli'))
 open Flx_types
 open Flx_mtypes2
 
@@ -113,7 +113,7 @@ val print_chosen:
   (string * string) list ->
   unit
 
-@select(tangler('src/flx_flxopt.ml'))
+@select(tangler('src/compiler/flxlib/flx_flxopt.ml'))
 open Flx_types
 open Flx_mtypes1
 open Flx_mtypes2

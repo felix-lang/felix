@@ -1,7 +1,7 @@
 @execfile('config'+os.sep+'flx_data.py')
 
 @head(1,'Preprocessor Parser')
-@h = tangler('src/flx_preparse.dyp','data')
+@h = tangler('src/compiler/flxlib/flx_preparse.dyp','data')
 
 @# define meta operators:
 @#  aster: t*

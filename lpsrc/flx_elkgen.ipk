@@ -1,4 +1,4 @@
-@h = tangler('src/flx_elkgen.mli')
+@h = tangler('src/compiler/flxlib/flx_elkgen.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -31,7 +31,7 @@ val gen_elk_lexer:
   unit
 
 
-@h = tangler('src/flx_elkgen.ml')
+@h = tangler('src/compiler/flxlib/flx_elkgen.ml')
 @select(h)
 open Flx_util
 open Flx_ast

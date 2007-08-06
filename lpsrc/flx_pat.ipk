@@ -1,5 +1,5 @@
 @head(1,"Pattern matching utilities")
-@h = tangler("src/flx_pat.mli")
+@h = tangler("src/compiler/flxlib/flx_pat.mli")
 @select(h)
 open Flx_ast
 
@@ -9,7 +9,7 @@ val validate_patterns:
 val is_universal: 
   pattern_t -> bool
 
-@h = tangler("src/flx_pat.ml")
+@h = tangler("src/compiler/flxlib/flx_pat.ml")
 @select(h)
 open Flx_util
 open Flx_ast

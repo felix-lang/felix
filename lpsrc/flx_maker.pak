@@ -378,7 +378,7 @@ class PLUGIN(Plugin):
         for path, packed, parts in PACKS:
           if interface in parts:
             pack = " -for-pack " + path
-        vxqt(OCAMLC + ' ' + INCLUDES + pack + ' -c ' + file + '.mli')
+        vxqt(OCAMLC + ' ' + INCLUDES + ' -I ' + os.path.dirname(file) + ' ' + pack + ' -c ' + file + '.mli')
 
     # STEP 5: Compile ocaml implementations
     for implementation in IMPLEMENTATIONS:
@@ -391,7 +391,7 @@ class PLUGIN(Plugin):
         for path, packed, parts in PACKS:
           if implementation in parts:
             pack = " -for-pack " + path
-        vxqt(OCAMLOPT + ' '+ INCLUDES + pack + ' -c ' + file +'.ml')
+        vxqt(OCAMLOPT + ' '+ INCLUDES + ' -I ' + os.path.dirname(file) + ' ' + pack + ' -c ' + file +'.ml')
 
     # STEP 5a -- pack
     for path, packed, parts in PACKS:
@@ -401,7 +401,7 @@ class PLUGIN(Plugin):
           xparts = xparts + part + OCAML_OBJECT_EXTENSION + ' '
         elif part in INTERFACES:
           xparts = xparts + part + ".cmi "
-      vxqt(OCAMLOPT + ' '+INCLUDES + ' -pack -o ' + packed + OCAML_OBJECT_EXTENSION + xparts)
+      vxqt(OCAMLOPT + ' ' + INCLUDES + ' -pack -o ' + packed + OCAML_OBJECT_EXTENSION + xparts)
 
 
     return force
@@ -448,8 +448,8 @@ class PLUGIN(Plugin):
   
     for exe in EXES:
       dst = os.path.join("bin", os.path.basename(exe))
-      vxqt(OCAMLOPT + INCLUDES + ' -o ' + dst + \
-          x + ' src/flx_version_hook.ml ' + exe + \
+      vxqt(OCAMLOPT + INCLUDES + ' -I ' + os.path.dirname(exe) + ' -I src/compiler/flx_version -o ' + dst + \
+          x + ' src/compiler/flx_version_hook/flx_version_hook.ml ' + exe + \
           OCAML_OBJECT_EXTENSION)
 @doc()
 
@@ -469,7 +469,7 @@ class PLUGIN(Plugin):
     IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
     PACKS = pkgdict.get("caml_pack", [])
     EXES = pkgdict.get("caml_exes", [])
-    INCLUDES = pkgdict.get("caml_include_paths", ['src'])
+    INCLUDES = pkgdict.get("caml_include_paths", [])
 
     # prepend -I to each include
     if INCLUDES:

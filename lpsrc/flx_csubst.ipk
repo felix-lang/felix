@@ -1,5 +1,5 @@
 @head(1,"Code fragment inliner")
-@h = tangler('src/flx_csubst.mli')
+@h = tangler('src/compiler/flxlib/flx_csubst.mli')
 @select(h)
 open Flx_types
 open Flx_ast
@@ -22,7 +22,7 @@ val csubst:
   string list -> (* shape of generic type arguments as strings *)
   cexpr_t
   
-@h = tangler('src/flx_csubst.ml')
+@h = tangler('src/compiler/flxlib/flx_csubst.ml')
 @select(h)
 open Flx_types
 open Flx_typing

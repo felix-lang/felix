@@ -1,4 +1,4 @@
-@h = tangler('src/flx_tconstraint.mli')
+@h = tangler('src/compiler/flxlib/flx_tconstraint.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -11,7 +11,7 @@ val build_type_constraints:
   (string * int * typecode_t) list -> (* local vs list *)
   btypecode_t
 
-@h = tangler('src/flx_tconstraint.ml')
+@h = tangler('src/compiler/flxlib/flx_tconstraint.ml')
 @select(h)
 open Flx_ast
 open Flx_types

@@ -1,4 +1,4 @@
-@select(tangler("src/inria_cset.mli"))
+@select(tangler("src/compiler/flxlib/inria_cset.mli"))
 (***********************************************************************)
 (*                                                                     *)
 (*                           Objective Caml                            *)
@@ -35,7 +35,7 @@ val env_to_array : (t * 'a) list -> 'a array
 val string_of_characters : t -> string
 
 
-@select(tangler("src/inria_cset.ml"))
+@select(tangler("src/compiler/flxlib/inria_cset.ml"))
 (***********************************************************************)
 (*                                                                     *)
 (*                           Objective Caml                            *)
@@ -138,7 +138,7 @@ let string_of_characters c = match c with
 | [] -> "Empty"
 | (x,_) :: _ -> String.make 1 (Char.chr x)
 
-@select(tangler("src/inria_syntax.mli"))
+@select(tangler("src/compiler/flxlib/inria_syntax.mli"))
 
 (***********************************************************************)
 (*                                                                     *)
@@ -182,7 +182,7 @@ type  lexer_definition =
       entrypoints: ((string list, location) entry) list;
       trailer: location }
 
-@select(tangler("src/inria_syntax.ml"))
+@select(tangler("src/compiler/flxlib/inria_syntax.ml"))
 (***********************************************************************)
 (*                                                                     *)
 (*                           Objective Caml                            *)
@@ -228,7 +228,7 @@ type  lexer_definition =
       entrypoints: ((string list, location) entry) list;
       trailer: location }
 
-@select(tangler("src/inria_table.mli"))
+@select(tangler("src/compiler/flxlib/inria_table.mli"))
 (***********************************************************************)
 (*                                                                     *)
 (*                           Objective Caml                            *)
@@ -251,7 +251,7 @@ exception Error
 val get : 'a t -> int -> 'a
 val size : 'a t -> int
 
-@select(tangler("src/inria_table.ml"))
+@select(tangler("src/compiler/flxlib/inria_table.ml"))
 
 (***********************************************************************)
 (*                                                                     *)
@@ -310,7 +310,7 @@ let iter t f =
 
 let size t = t.next
 
-@select(tangler("src/inria_lexgen.mli"))
+@select(tangler("src/compiler/flxlib/inria_lexgen.mli"))
 
 (***********************************************************************)
 (*                                                                     *)
@@ -371,7 +371,7 @@ val make_dfa :
   ('args, 'action) Inria_syntax.entry list ->
   ('args, 'action) automata_entry list * automata array
 
-@select(tangler("src/inria_lexgen.ml"))
+@select(tangler("src/compiler/flxlib/inria_lexgen.ml"))
 (***********************************************************************)
 (*                                                                     *)
 (*                           Objective Caml                            *)

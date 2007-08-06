@@ -2,15 +2,15 @@
 @execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flxcc.py')
 @select(h)
-FLXCC_EXES = [ 'src/flxcc', ]
+FLXCC_EXES = [ 'src/compiler/drivers/flxcc', ]
 caml_exes = FLXCC_EXES
 caml_require_libs = ['nums','unix','flx_version','misclib','cillib','flxcclib','flxlib']
 pkg_requires = ['cil']
-caml_include_paths = ['src', 'src/cil']
+caml_include_paths = ['src/compiler/cil', 'src/compiler/flxlib', 'src/compiler/flx_version', 'src/compiler/flxcclib', 'src/compiler/misclib']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 weaver_directory = 'doc/flxcc/'
 
-@h= tangler("src/flxcc.ml")
+@h= tangler("src/compiler/drivers/flxcc.ml")
 @select(h)
 open List
 open Flx_util

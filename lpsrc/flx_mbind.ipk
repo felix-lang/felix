@@ -1,7 +1,7 @@
 @head(1,"Name Binding")
 Name binding pass 2.
 
-@h = tangler("src/flx_mbind.mli")
+@h = tangler("src/compiler/flxlib/flx_mbind.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -28,7 +28,7 @@ val gen_extractor:
   expr_t ->
   expr_t
 
-@h = tangler("src/flx_mbind.ml")
+@h = tangler("src/compiler/flxlib/flx_mbind.ml")
 @select(h)
 open Flx_util
 open Flx_ast

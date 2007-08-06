@@ -1,6 +1,6 @@
 @head(1,"Inline exes")
 
-@h = tangler("src/flx_spexes.mli")
+@h = tangler("src/compiler/flxlib/flx_spexes.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -39,7 +39,7 @@ val recal_exes_usage:
   bexe_t list ->
   unit
 
-@h = tangler("src/flx_spexes.ml")
+@h = tangler("src/compiler/flxlib/flx_spexes.ml")
 @select(h)
 open Flx_util
 open Flx_ast

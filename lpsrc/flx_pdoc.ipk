@@ -1,6 +1,6 @@
 @execfile('config'+os.sep+'flx_data.py')
 
-@h = tangler("src/flx_pdoc.mli")
+@h = tangler("src/compiler/flxlib/flx_pdoc.mli")
 @select(h)
 open Flx_token
 open Flx_ast
@@ -25,7 +25,7 @@ val ntgroups : (string, string list) Hashtbl.t
 
 val gen_doc : unit -> unit
 
-@h = tangler("src/flx_pdoc.ml")
+@h = tangler("src/compiler/flxlib/flx_pdoc.ml")
 @select(h)
 open Flx_token
 open Flx_ast

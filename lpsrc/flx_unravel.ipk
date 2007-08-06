@@ -1,5 +1,5 @@
 @head(1,"Expression unraveller")
-@h = tangler("src/flx_unravel.mli")
+@h = tangler("src/compiler/flxlib/flx_unravel.mli")
 @select(h)
 open Flx_types
 open Flx_mtypes2
@@ -11,7 +11,7 @@ val unravel:
   (tbexpr_t * string) list * 
   tbexpr_t
 
-@h = tangler("src/flx_unravel.ml")
+@h = tangler("src/compiler/flxlib/flx_unravel.ml")
 @select(h)
 open Flx_types
 open Flx_mtypes1

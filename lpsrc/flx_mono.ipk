@@ -1,6 +1,6 @@
 @head(1,'Monomorphisation')
 This requires the instantiator to have been run.
-@h = tangler("src/flx_mono.mli")
+@h = tangler("src/compiler/flxlib/flx_mono.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -14,7 +14,7 @@ val monomorphise:
   unit
  
 
-@h = tangler("src/flx_mono.ml")
+@h = tangler("src/compiler/flxlib/flx_mono.ml")
 @select(h)
 open Flx_util
 open Flx_ast

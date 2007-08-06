@@ -91,7 +91,7 @@ it can, by adjusting as the search deepens .. nice!
 Technology: given an index i, find its vs list including
 that of its parents (string -> int) form.
 
-@h = tangler("src/flx_lookup.mli")
+@h = tangler("src/compiler/flxlib/flx_lookup.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -221,7 +221,7 @@ val bind_regdef:
   regexp_t ->
   regexp_t
 
-@h = tangler("src/flx_lookup.ml")
+@h = tangler("src/compiler/flxlib/flx_lookup.ml")
 @select(h)
 open Flx_util
 open Flx_ast

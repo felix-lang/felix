@@ -1,6 +1,6 @@
 @head(1,"Reparenting")
 
-@h = tangler("src/flx_reparent.mli")
+@h = tangler("src/compiler/flxlib/flx_reparent.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -60,7 +60,7 @@ val remap_expr :
   tbexpr_t -> 
   tbexpr_t
 
-@h = tangler("src/flx_reparent.ml")
+@h = tangler("src/compiler/flxlib/flx_reparent.ml")
 @select(h)
 open Flx_util
 open Flx_ast

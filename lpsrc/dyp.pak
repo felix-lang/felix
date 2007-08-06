@@ -3,30 +3,29 @@
 @h = tangler('spkgs/dyplib.py')
 @select(h)
 caml_interfaces = [
-#  'dypgen/dyplib/sig',
-  'dypgen/dyplib/dyp',
+#  'src/compiler/dyp/dyplib/sig',
+  'src/compiler/dyp/dyplib/dyp',
 ]
 
 caml_implementations = [
-  'dypgen/dyplib/priority_by_relation',
-  'dypgen/dyplib/automaton',
-  'dypgen/dyplib/gs',
-#  'dypgen/dyplib/parser',
-  'dypgen/dyplib/dyp',
+  'src/compiler/dyp/dyplib/priority_by_relation',
+  'src/compiler/dyp/dyplib/automaton',
+  'src/compiler/dyp/dyplib/gs',
+#  'src/compiler/dyp/dyplib/parser',
+  'src/compiler/dyp/dyplib/dyp',
 ]
 
 #caml_pack = [
-#  ("Dyp",'dypgen/dyplib/dyp',[
-#    'dypgen/dyplib/sig',
-#    'dypgen/dyplib/gs',
-#    'dypgen/dyplib/priority_by_relation',
-#    'dypgen/dyplib/automaton',
-#    'dypgen/dyplib/parser'
+#  ("Dyp",'src/compiler/dyp/dyplib/dyp',[
+#    'src/compiler/dyp/dyplib/sig',
+#    'src/compiler/dyp/dyplib/gs',
+#    'src/compiler/dyp/dyplib/priority_by_relation',
+#    'src/compiler/dyp/dyplib/automaton',
+#    'src/compiler/dyp/dyplib/parser'
 #  ])
 #]
 
-caml_include_paths=['dypgen/dyplib']
-caml_provide_lib = 'dypgen/dyplib/dyplib'
+caml_provide_lib = 'src/compiler/dyp/dyplib/dyplib'
 iscr_source = ["lpsrc/dyp.pak"]
 weaver_directory = 'doc/dypgen/'
 
@@ -34,15 +33,15 @@ weaver_directory = 'doc/dypgen/'
 
 @h = tangler('spkgs/pgen.py')
 @select(h)
-caml_include_paths=['src','dypgen/dyplib','dypgen/generators/pgen']
-caml_lexes = ['dypgen/generators/pgen/pgen_lexer']
+caml_include_paths = ['src/compiler/dyp/dyplib']
+caml_lexes = ['src/compiler/dyp/generators/pgen/pgen_lexer']
 caml_implementations=[
-  'dypgen/generators/pgen/pgen_parser_param',
-  'dypgen/generators/pgen/pgen_lexer'
+  'src/compiler/dyp/generators/pgen/pgen_parser_param',
+  'src/compiler/dyp/generators/pgen/pgen_lexer'
 ]
-caml_provide_lib = 'dypgen/generators/pgen/pgen'
+caml_provide_lib = 'src/compiler/dyp/generators/pgen/pgen'
 caml_require_libs = ['flx_version','dyplib','pgen']
-caml_exes = ['dypgen/generators/pgen/pgen']
+caml_exes = ['src/compiler/dyp/generators/pgen/pgen']
 iscr_source = ["lpsrc/dyp.pak"]
 weaver_directory = 'doc/dypgen/'
 pkg_requires = ['flx_version','dyplib']
@@ -51,30 +50,30 @@ pkg_requires = ['flx_version','dyplib']
 @h = tangler('spkgs/dypgen.py')
 @select(h)
 caml_lexes = [
-  'dypgen/generators/dypgen/dypgen_lexer',
-  'dypgen/generators/dypgen/insert_linenum'
+  'src/compiler/dyp/generators/dypgen/dypgen_lexer',
+  'src/compiler/dyp/generators/dypgen/insert_linenum'
 ]
 
-caml_pgenparses = ['dypgen/generators/dypgen/dypgen_parser']
+caml_pgenparses = ['src/compiler/dyp/generators/dypgen/dypgen_parser']
 caml_interfaces =[
-  'dypgen/generators/dypgen/parse_tree',
-  'dypgen/generators/dypgen/dypgen_parser',
+  'src/compiler/dyp/generators/dypgen/parse_tree',
+  'src/compiler/dyp/generators/dypgen/dypgen_parser',
 ]
 caml_implementations=[
-  'dypgen/generators/dypgen/argument',
-  'dypgen/generators/dypgen/dypgen_parser',
-  'dypgen/generators/dypgen/dypgen_lexer',
-  'dypgen/generators/dypgen/insert_linenum',
+  'src/compiler/dyp/generators/dypgen/argument',
+  'src/compiler/dyp/generators/dypgen/dypgen_parser',
+  'src/compiler/dyp/generators/dypgen/dypgen_lexer',
+  'src/compiler/dyp/generators/dypgen/insert_linenum',
 ]
-caml_include_paths=['src','dypgen/dyplib','dypgen/generators/dypgen']
-caml_provide_lib = 'dypgen/generators/dypgen/dypgen'
+caml_include_paths = ['src/compiler/dyp/dyplib']
+caml_provide_lib = 'src/compiler/dyp/generators/dypgen/dypgen'
 caml_require_libs = ['flx_version','dyplib','dypgen']
-caml_exes = ['dypgen/generators/dypgen/dypgen']
+caml_exes = ['src/compiler/dyp/generators/dypgen/dypgen']
 iscr_source = ["lpsrc/dyp.pak"]
 pkg_requires = ['flx_version','dyplib','pgen']
 weaver_directory = 'doc/dypgen/'
 
-@h=tangler('dypgen/dyplib/dyp.mli')
+@h=tangler('src/compiler/dyp/dyplib/dyp.mli')
 @select(h)
 module type Dyp_parameters_type =
 sig
@@ -361,7 +360,7 @@ type ('gd,'ld) deb_parsing_device = {
   module Parser_PAR : Parser_type
 end
 
-@h=tangler('dypgen/dyplib/automaton.ml')
+@h=tangler('src/compiler/dyp/dyplib/automaton.ml')
 @select(h)
 let log_channel = ref stdout
 let log_stack_channel = ref stdout
@@ -1469,7 +1468,7 @@ let eq_aut automaton1 automaton2 =
 *)
 end
 
-@h=tangler('dypgen/dyplib/dyp.ml')
+@h=tangler('src/compiler/dyp/dyplib/dyp.ml')
 @select(h)
 module type Dyp_parameters_type =
 sig
@@ -5138,7 +5137,7 @@ end
 end
 
 
-@h=tangler('dypgen/dyplib/priority_by_relation.ml')
+@h=tangler('src/compiler/dyp/dyplib/priority_by_relation.ml')
 @select(h)
 type priority = int
 
@@ -5275,7 +5274,7 @@ let add_list_relations priodat l =
   in
   aux (List.hd l) l priodat*)
 
-@h=tangler('dypgen/dyplib/gs.ml')
+@h=tangler('src/compiler/dyp/dyplib/gs.ml')
 @select(h)
 type
   ('n,'e) vertex = {
@@ -5324,7 +5323,7 @@ let create_v label depth =
   det_depth = depth; ref_count = 0; }
 
 
-@h=tangler('dypgen/generators/pgen/pgen_lexer.mll')
+@h=tangler('src/compiler/dyp/generators/pgen/pgen_lexer.mll')
 @select(h)
 {
 open Pgen_parser_param
@@ -5437,7 +5436,7 @@ and ocaml_type = parse
         ocaml_type lexbuf
       }
 
-@h=tangler('dypgen/generators/pgen/pgen.ml')
+@h=tangler('src/compiler/dyp/generators/pgen/pgen.ml')
 @select(h)
 (*
 pgen: a simple GLR parser generator for Objective Caml,
@@ -6266,7 +6265,7 @@ let dest_file_mli = open_out output_file_mli
 let () = output_string dest_file parser_code
 let () = output_string dest_file_mli parser_code_mli
 
-@h=tangler('dypgen/generators/pgen/pgen_parser_param.ml')
+@h=tangler('src/compiler/dyp/generators/pgen/pgen_parser_param.ml')
 @select(h)
 (*module Prio =
 struct
@@ -6341,7 +6340,7 @@ let priority_names = [|"0"|]
 
 let merge_warning = false
 
-@h=tangler('dypgen/generators/dypgen/dypgen_parser.dyp')
+@h=tangler('src/compiler/dyp/generators/dypgen/dypgen_parser.dyp')
 @select(h)
 {
 open Printf
@@ -6543,7 +6542,7 @@ opt_pattern:
   |         { ("_",(0,0)) }
   | PATTERN { (fst $1,snd $1) }
 
-@h=tangler('dypgen/generators/dypgen/parse_tree.mli')
+@h=tangler('src/compiler/dyp/generators/dypgen/parse_tree.mli')
 @select(h)
 type token_desc = string * string
 (* 2nd string is for type, if no type is mentioned then the string No_type is chosen *)
@@ -6578,7 +6577,7 @@ type parser_param_info = {
   ld_type : string }
 type obj = code_desc * code_desc * parser_param_info * (rule_desc list) * code_desc * code_desc * code_desc
 
-@h=tangler('dypgen/generators/dypgen/argument.ml')
+@h=tangler('src/compiler/dyp/generators/dypgen/argument.ml')
 @select(h)
 let verbose = ref 1
 let merge_warning = ref false
@@ -6650,7 +6649,7 @@ let _ = Arg.parse list_arg process_argument "usage: dypgen [-v] [--merge-warning
 let _ = if !string_ref = "" then
   let _ = print_string "usage: dypgen [-v] [--merge-warning] [--lexer (ocamllex|ulex|other)] [--prio-pt] [--pv-obj] [--no-bad-cons] [--no-undef-nt] file_name.dyp\n" in exit 0
 
-@h=tangler('dypgen/generators/dypgen/dypgen.ml')
+@h=tangler('src/compiler/dyp/generators/dypgen/dypgen.ml')
 @select(h)
 open Parse_tree
 open Lexing
@@ -7997,7 +7996,7 @@ let () = output_string dest_file_mli parser_code_mli
 let () = close_out dest_file
 let () = close_out dest_file_mli
 
-@h=tangler('dypgen/generators/dypgen/dypgen_lexer.mll')
+@h=tangler('src/compiler/dyp/generators/dypgen/dypgen_lexer.mll')
 @select(h)
 {
 open Dypgen_parser
@@ -8251,7 +8250,7 @@ and ocaml_type = parse
         ocaml_type lexbuf
       }
 
-@h=tangler('dypgen/generators/dypgen/insert_linenum.mll')
+@h=tangler('src/compiler/dyp/generators/dypgen/insert_linenum.mll')
 @select(h)
 {
 open Lexing

@@ -1,5 +1,5 @@
 @head(1,"C format string")
-@h = tangler("src/flx_cformat.mli")
+@h = tangler("src/compiler/flxlib/flx_cformat.mli")
 @select(h)
 open Flx_srcref
 open Flx_ast
@@ -9,7 +9,7 @@ val types_of_cformat_string:
   string ->
   string * (int * typecode_t) list
 
-@h = tangler("src/flx_cformat.ml")
+@h = tangler("src/compiler/flxlib/flx_cformat.ml")
 @select(h)
 open String
 open List

@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 (See http://www.opensource.org/licenses/bsd-license.php)
 
-@h = tangler('src/cil/flx_cil_cilversion.mli')
+@h = tangler('src/compiler/cil/flx_cil_cilversion.mli')
 @select(h)
 val cilVersionMajor:int
 val cilVersionMinor:int
@@ -43,14 +43,14 @@ val cilVersionRev:int
 val cilVersion:string
 
 
-@h = tangler('src/cil/flx_cil_cilversion.ml')
+@h = tangler('src/compiler/cil/flx_cil_cilversion.ml')
 @select(h)
 let cilVersionMajor = 1
 let cilVersionMinor = 2
 let cilVersionRev   = 5
 let cilVersion      = "1.2.5"
 
-@h = tangler('src/cil/flx_cil_machdep_type.mli')
+@h = tangler('src/compiler/cil/flx_cil_machdep_type.mli')
 @select(h)
 @ctypes = [
   'bool',
@@ -100,7 +100,7 @@ type mach = {
   little_endian: bool; (* whether the machine is little endian *)
 }
 
-@h = tangler('src/cil/flx_cil_machdep.mli')
+@h = tangler('src/compiler/cil/flx_cil_machdep.mli')
 @select(h)
 open Flx_cil_machdep_type
 val gcc:mach
@@ -109,7 +109,7 @@ val hasMSVC:bool
 val gccHas__builtin_va_list:bool
 val __thread_is_keyword:bool
 
-@h = tangler('src/cil/flx_cil_machdep.ml')
+@h = tangler('src/compiler/cil/flx_cil_machdep.ml')
 @select(h)
 open Flx_cil_machdep_type
 
@@ -154,7 +154,7 @@ let gccHas__builtin_va_list = true
 let __thread_is_keyword = true
 
 
-@h=tangler('src/cil/flx_cil_check.ml')
+@h=tangler('src/compiler/cil/flx_cil_check.ml')
 @select(h)
 
 (* A consistency checker for CIL *)
@@ -1115,7 +1115,7 @@ let checkFile flags fl =
     ignore (E.log "Finished checking file %s\n" fl.fileName);
   !valid
   
-@h=tangler('src/cil/flx_cil_check.mli')
+@h=tangler('src/compiler/cil/flx_cil_check.mli')
 @select(h)
  
     (* Flx_cil_checks the well-formedness of the file. Prints warnings and
@@ -1126,7 +1126,7 @@ type checkFlags =
                         * hash value *) 
  
 val checkFile: checkFlags list -> Flx_cil_cil.file -> bool
-@h=tangler('src/cil/flx_cil_cil.ml')
+@h=tangler('src/compiler/cil/flx_cil_cil.ml')
 @select(h)
 
 open Flx_cil_escape
@@ -6995,7 +6995,7 @@ let d_formatarg () = function
 
 
 
-@h=tangler('src/cil/flx_cil_cil.mli')
+@h=tangler('src/compiler/cil/flx_cil_cil.mli')
 @select(h)
 
 (*
@@ -9323,7 +9323,7 @@ type formatArg =
 (** Flx_cil_pretty-prints a format arg *)
 val d_formatarg: unit -> formatArg -> Flx_cil_pretty.doc
 
-@h=tangler('src/cil/flx_cil_cilutil.mli')
+@h=tangler('src/compiler/cil/flx_cil_cilutil.mli')
 @select(h)
 
 val doFlx_cil_check : bool ref
@@ -9341,7 +9341,7 @@ val printStages : bool ref
 val doCxxPP : bool ref
 val libDir : string ref
 
-@h=tangler('src/cil/flx_cil_cilutil.ml')
+@h=tangler('src/compiler/cil/flx_cil_cilutil.ml')
 @select(h)
 
 (* Keep here the globally-visible flags *)
@@ -9376,7 +9376,7 @@ let doCxxPP = ref false
 
 let libDir = ref ""
 
-@h=tangler('src/cil/flx_cil_clist.ml')
+@h=tangler('src/compiler/cil/flx_cil_clist.ml')
 @select(h)
 
 open Flx_cil_pretty
@@ -9511,7 +9511,7 @@ begin
 
 
 end
-@h=tangler('src/cil/flx_cil_clist.mli')
+@h=tangler('src/compiler/cil/flx_cil_clist.mli')
 @select(h)
 
 (** Flx_cil_utilities for managing "concatenable lists" (clists). We often need to
@@ -9574,7 +9574,7 @@ val rev: 'a clist -> 'a clist
 val docCList: 
     Flx_cil_pretty.doc -> ('a -> Flx_cil_pretty.doc) -> unit -> 'a clist -> Flx_cil_pretty.doc
  
-@h=tangler('src/cil/flx_cil_formatcil.ml')
+@h=tangler('src/compiler/cil/flx_cil_formatcil.ml')
 @select(h)
 open Flx_cil_cil
 open Flx_cil_pretty
@@ -9757,7 +9757,7 @@ let test () =
   ()
   
   
-@h=tangler('src/cil/flx_cil_formatcil.mli')
+@h=tangler('src/compiler/cil/flx_cil_formatcil.mli')
 @select(h)
 
 (** {b An Interpreter for constructing CIL constructs} *)
@@ -9826,7 +9826,7 @@ val noMemoize: bool ref
 (** Just a testing function *)
 val test: unit -> unit
 
-@h=tangler('src/cil/flx_cil_formatlex.mli')
+@h=tangler('src/compiler/cil/flx_cil_formatlex.mli')
 @select(h)
 
 exception Eof
@@ -9848,7 +9848,7 @@ val initial : Lexing.lexbuf -> Flx_cil_formatparse.token
 val comment : Lexing.lexbuf -> unit
 val endline : Lexing.lexbuf -> Flx_cil_formatparse.token
 
-@h=tangler('src/cil/flx_cil_formatlex.mll','data')
+@h=tangler('src/compiler/cil/flx_cil_formatlex.mll','data')
 @select(h)
 (* A simple lexical analyzer for constructing CIL based on format strings *)
 {
@@ -10119,7 +10119,7 @@ and endline = parse
 |       _                       { endline lexbuf}
 
 
-@h=tangler('src/cil/flx_cil_formatparse.mli')
+@h=tangler('src/compiler/cil/flx_cil_formatparse.mli')
 @select(h)
 
 type token =
@@ -10291,7 +10291,7 @@ val stmt_list :
   Flx_cil_cil.location ->
   (string * Flx_cil_cil.formatArg) list -> Flx_cil_cil.stmt list
 
-@h=tangler('src/cil/flx_cil_formatparse.mly','data')
+@h=tangler('src/compiler/cil/flx_cil_formatparse.mly','data')
 @select(h)
 /*(* Parser for constructing CIL from format strings *)
 */
@@ -11704,7 +11704,7 @@ maybe_init:
 ;
 %%
 
-@h=tangler('src/cil/flx_cil_mergecil.ml')
+@h=tangler('src/compiler/cil/flx_cil_mergecil.ml')
 @select(h)
 (* mergecil.ml *)
 (* This module is responsible for merging multiple CIL source trees into
@@ -13415,7 +13415,7 @@ let merge (files: file list) (newname: string) : file =
 
 
 
-@h=tangler('src/cil/flx_cil_mergecil.mli')
+@h=tangler('src/compiler/cil/flx_cil_mergecil.mli')
 @select(h)
 (** Set this to true to ignore the merge conflicts *)
 val ignore_merge_conflicts: bool ref
@@ -13423,7 +13423,7 @@ val ignore_merge_conflicts: bool ref
 (** Merge a number of CIL files *)
 val merge: Flx_cil_cil.file list -> string -> Flx_cil_cil.file
 
-@h=tangler('src/cil/flx_cil_rmtmps.ml')
+@h=tangler('src/compiler/cil/flx_cil_rmtmps.ml')
 @select(h)
 (* rmtmps.ml *)
 (* implementation for rmtmps.mli *)
@@ -14119,7 +14119,7 @@ let rec removeUnusedTemps ?(isRoot : rootsFilter = isDefaultRoot) file =
           ignore (E.warn "%d unused local variables removed:@!%a"
                     count (docList (chr ',' ++ break) text) removedLocals)
     end
-@h=tangler('src/cil/flx_cil_rmtmps.mli')
+@h=tangler('src/compiler/cil/flx_cil_rmtmps.mli')
 @select(h)
 
 (* rmtmps.mli *)
@@ -14166,7 +14166,7 @@ val removeUnusedTemps: ?isRoot:rootsFilter -> Flx_cil_cil.file -> unit
 
 val keepUnused: bool ref (* Set this to true to turn off this module *)
 
-@h=tangler('src/cil/flx_cil_cabs2cil.ml')
+@h=tangler('src/compiler/cil/flx_cil_cabs2cil.ml')
 @select(h)
 (* Type check and elaborate ABS to CIL *)
 
@@ -19808,7 +19808,7 @@ let convFile ((fname : string), (dl : Flx_cil_cabs.definition list)) : Flx_cil_c
     globinitcalled = false;
   } 
 
-@h=tangler('src/cil/flx_cil_cabs2cil.mli')
+@h=tangler('src/compiler/cil/flx_cil_cabs2cil.mli')
 @select(h)
 val convFile: Flx_cil_cabs.file -> Flx_cil_cil.file
 
@@ -19819,7 +19819,7 @@ val nocil: int ref
 (* Indicates whether we're allowed to duplicate small chunks of code. *)
 val allowDuplication: bool ref
 
-@h=tangler('src/cil/flx_cil_patch.ml')
+@h=tangler('src/compiler/cil/flx_cil_patch.ml')
 @select(h)
 
 
@@ -20623,7 +20623,7 @@ end
 
 
 (* end of file *)
-@h=tangler('src/cil/flx_cil_patch.mli')
+@h=tangler('src/compiler/cil/flx_cil_patch.mli')
 @select(h)
 
 
@@ -20631,7 +20631,7 @@ end
 (* interface for patch.ml *)
 
 val applyFlx_cil_patch : Flx_cil_cabs.file -> Flx_cil_cabs.file -> Flx_cil_cabs.file
-@h=tangler('src/cil/flx_cil_errormsg.ml')
+@h=tangler('src/compiler/cil/flx_cil_errormsg.ml')
 @select(h)
 
 open Flx_cil_pretty
@@ -20934,7 +20934,7 @@ let getLocation () =
   { hfile = hf; hline = hl;
     file = f; line = l } 
 
-@h=tangler('src/cil/flx_cil_errormsg.mli')
+@h=tangler('src/compiler/cil/flx_cil_errormsg.mli')
 @select(h)
 (** Flx_cil_utility functions for error-reporting *)
 
@@ -21058,7 +21058,7 @@ val finishParsing: unit -> unit (* Call this function to finish parsing and
                                  * close the input channel *)
 
 
-@h=tangler('src/cil/flx_cil_inthash.mli')
+@h=tangler('src/compiler/cil/flx_cil_inthash.mli')
 @select(h)
 type 'a t = { mutable size : int; mutable data : 'a bucketlist array; }
 and 'a bucketlist = Empty | Cons of int * 'a * 'a bucketlist
@@ -21077,7 +21077,7 @@ val iter : (int -> 'a -> 'b) -> 'a t -> unit
 val fold : (int -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 val memoize : unit t -> int -> (int -> unit) -> unit
 
-@h=tangler('src/cil/flx_cil_inthash.ml')
+@h=tangler('src/compiler/cil/flx_cil_inthash.ml')
 @select(h)
 (** A hash table specialized on integer keys *)
 type 'a t =
@@ -21244,7 +21244,7 @@ let memoize (h: 'a t) (key: int) (f: int -> 'a) : 'a =
   find_in_bucket key h.data.(i)
                   
   
-@h=tangler('src/cil/flx_cil_pretty.ml')
+@h=tangler('src/compiler/cil/flx_cil_pretty.ml')
 @select(h)
 
 (******************************************************************************)
@@ -22008,7 +22008,7 @@ let getAboutString () : string =
   "(Flx_cil_pretty: ALGO=" ^ (getAlgoName algo) ^ ")"
 
 
-@h=tangler('src/cil/flx_cil_pretty.mli')
+@h=tangler('src/compiler/cil/flx_cil_pretty.mli')
 @select(h)
 (** Flx_cil_utility functions for pretty-printing. The major features provided by 
     this module are 
@@ -22233,7 +22233,7 @@ val flushOften   : bool ref  (** If true the it flushes after every print *)
 (** Keep a running count of the taken newlines. You can read and write this 
   * from the client code if you want *)
 val countNewLines : int ref
-@h=tangler('src/cil/flx_cil_stats.ml')
+@h=tangler('src/compiler/cil/flx_cil_stats.ml')
 @select(h)
 (* The following functions are implemented in perfcount.c *) 
 
@@ -22353,7 +22353,7 @@ let time str f arg = repeattime 0.0 str f arg
 
 
 
-@h=tangler('src/cil/flx_cil_stats.mli')
+@h=tangler('src/compiler/cil/flx_cil_stats.mli')
 @select(h)
 (** Flx_cil_utilities for maintaining timing statistics *)
 
@@ -22385,7 +22385,7 @@ val print : out_channel -> string -> unit
 
 
 
-@h=tangler('src/cil/flx_cil_trace.ml')
+@h=tangler('src/compiler/cil/flx_cil_trace.ml')
 @select(h)
 (* Flx_cil_trace module implementation
  * see trace.mli
@@ -22519,7 +22519,7 @@ let traceu (sys : string) (d : Flx_cil_pretty.doc) : unit =
 (trace "maybe" (dprintf "maybe %d\n" 7));
 
 TRASH END *)
-@h=tangler('src/cil/flx_cil_trace.mli')
+@h=tangler('src/compiler/cil/flx_cil_trace.mli')
 @select(h)
 (* Flx_cil_trace module
  * Scott McPeak, 5/4/00
@@ -22592,7 +22592,7 @@ val tracei : string -> Flx_cil_pretty.doc -> unit
 val traceu : string -> Flx_cil_pretty.doc -> unit
 
 
-@h=tangler('src/cil/flx_cil_util.mli')
+@h=tangler('src/compiler/cil/flx_cil_util.mli')
 @select(h)
 (** A bunch of generally useful functions *)
 
@@ -22847,7 +22847,7 @@ val registerSymbolName: string -> symbol
  * first symbol created *)
 val registerSymbolRange: int -> (int -> string) -> symbol
 
-@h=tangler('src/cil/flx_cil_util.ml')
+@h=tangler('src/compiler/cil/flx_cil_util.ml')
 @select(h)
 (** Flx_cil_utility functions for Coolaid *)
 module E = Flx_cil_errormsg

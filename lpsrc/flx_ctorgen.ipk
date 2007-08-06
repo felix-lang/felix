@@ -1,4 +1,4 @@
-@h = tangler("src/flx_ctorgen.mli")
+@h = tangler("src/compiler/flxlib/flx_ctorgen.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -18,7 +18,7 @@ val gen_ctor:
   property_t list ->          (* properties *)
   string
  
-@h = tangler("src/flx_ctorgen.ml")
+@h = tangler("src/compiler/flxlib/flx_ctorgen.ml")
 @select(h)
 open Flx_util
 open Flx_ast

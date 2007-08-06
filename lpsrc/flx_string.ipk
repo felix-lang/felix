@@ -1,5 +1,5 @@
 @head(1,'String handling')
-@h = tangler('src/flx_string.mli')
+@h = tangler('src/compiler/flxlib/flx_string.mli')
 @select(h)
 val bin_char2int : char -> int
 val oct_char2int : char -> int
@@ -30,7 +30,7 @@ val hex2 : int -> string
 val hex4 : int -> string
 val hex8 : int -> string
 
-@h = tangler('src/flx_string.ml')
+@h = tangler('src/compiler/flxlib/flx_string.ml')
 @select(h)
 let hexchar_of_int i = 
   if i < 10 
@@ -484,7 +484,7 @@ let unescape s =
 *)
 
 @head(1,'Internationalised Identifier support')
-@h = tangler('src/flx_id.ml')
+@h = tangler('src/compiler/flxlib/flx_id.ml')
 @select(h)
 
 (* Universal Character Names in identifiers:
@@ -824,7 +824,7 @@ let utf8_to_ucn s =
   done;
   Buffer.contents s'
 
-@h = tangler('src/flx_id.mli')
+@h = tangler('src/compiler/flxlib/flx_id.mli')
 @select(h)
 val ucs_id_ranges : (int * int) list
 val utf8_to_ucn : string -> string

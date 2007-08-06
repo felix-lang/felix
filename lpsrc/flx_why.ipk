@@ -1,7 +1,7 @@
 @head(1,"Why interface")
 Interface to Why program.
 
-@h = tangler("src/flx_why.mli")
+@h = tangler("src/compiler/flxlib/flx_why.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -15,7 +15,7 @@ val emit_whycode:
   int -> (* root for lookup of and/or/not etc *)
   unit
 
-@h = tangler("src/flx_why.ml")
+@h = tangler("src/compiler/flxlib/flx_why.ml")
 @select(h)
 open Flx_util
 open Flx_ast

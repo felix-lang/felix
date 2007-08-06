@@ -1,4 +1,4 @@
-@h = tangler('src/flx_name.mli')
+@h = tangler('src/compiler/flxlib/flx_name.mli')
 @select(h)
 open Flx_types
 open Flx_mtypes2
@@ -36,7 +36,7 @@ val cpp_ltypename :
 val cid_of_flxid:  
  string-> string
 
-@h = tangler('src/flx_name.ml')
+@h = tangler('src/compiler/flxlib/flx_name.ml')
 @select(h)
 open Flx_types
 open Flx_mtypes2

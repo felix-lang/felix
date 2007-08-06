@@ -24,7 +24,7 @@ including macro bodies, but they cannot be used
 to rename macros.
 
 @head(2,'Implementation')
-@h = tangler('src/flx_macro.mli')
+@h = tangler('src/compiler/flxlib/flx_macro.mli')
 @select(h)
 open Flx_ast
 val expand_macros:
@@ -39,7 +39,7 @@ val expand_macros:
 val expand_expression:
   string -> expr_t -> expr_t
   
-@h = tangler('src/flx_macro.ml')
+@h = tangler('src/compiler/flxlib/flx_macro.ml')
 @select(h)
 open Flx_ast
 open Flx_mtypes2
@@ -2186,7 +2186,7 @@ and expand_expression local_prefix e =
 
 
  
-@h = tangler("src/flxm.ml")
+@h = tangler("src/compiler/drivers/flxm.ml")
 @select(h)
 open Flx_util
 open Flx_macro

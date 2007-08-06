@@ -1,7 +1,7 @@
 @head(1,"Downgrade Abstract types")
 Convert newtype abstractions to their representations.
 
-@h = tangler("src/flx_strabs.mli")
+@h = tangler("src/compiler/flxlib/flx_strabs.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -13,7 +13,7 @@ val strabs:
   fully_bound_symbol_table_t ->
   fully_bound_symbol_table_t
 
-@h = tangler("src/flx_strabs.ml")
+@h = tangler("src/compiler/flxlib/flx_strabs.ml")
 @select(h)
 open Flx_util
 open Flx_ast

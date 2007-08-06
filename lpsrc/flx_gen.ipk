@@ -1,5 +1,5 @@
 @head(1,'C++ Code generator')
-@h = tangler('src/flx_gen.mli')
+@h = tangler('src/compiler/flxlib/flx_gen.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -63,7 +63,7 @@ val is_gc_pointer:
   btypecode_t ->
   bool
 
-@h = tangler('src/flx_gen.ml')
+@h = tangler('src/compiler/flxlib/flx_gen.ml')
 @select(h)
 open Flx_util
 open Flx_ast
@@ -2881,7 +2881,7 @@ let gen_biface_headers syms bbdfns bifaces =
 let gen_biface_bodies syms bbdfns bifaces = 
   cat "" (map (gen_biface_body syms bbdfns) bifaces)
 
-@h = tangler('src/flxg.ml')
+@h = tangler('src/compiler/drivers/flxg.ml')
 @select(h)
 open Flx_util
 open Flx_ast

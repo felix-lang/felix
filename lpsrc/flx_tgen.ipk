@@ -1,5 +1,5 @@
 @head(1,'Type generator')
-@h = tangler('src/flx_tgen.mli')
+@h = tangler('src/compiler/flxlib/flx_tgen.mli')
 @select(h)
 open Flx_types
 open Flx_mtypes2
@@ -14,7 +14,7 @@ val gen_type_names :
   fully_bound_symbol_table_t ->
   (int * btypecode_t) list -> string
 
-@h = tangler('src/flx_tgen.ml')
+@h = tangler('src/compiler/flxlib/flx_tgen.ml')
 @select(h)
 open Flx_util
 open Flx_types

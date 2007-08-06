@@ -1,11 +1,11 @@
 @head(1,"Cil to Felix")
-@h = tangler("src/flx_ciltoflx.mli")
+@h = tangler("src/compiler/flxlib/flx_ciltoflx.mli")
 @select(h)
 open Flx_ast
 open Flx_cil_cil
 val handle_global: global -> statement_t list
 
-@h = tangler("src/flx_ciltoflx.ml")
+@h = tangler("src/compiler/flxlib/flx_ciltoflx.ml")
 @select(h)
 
 (* CIL HANDLING .. MOVE ELSEWHERE *)

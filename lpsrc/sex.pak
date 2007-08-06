@@ -2,32 +2,32 @@
 @h = tangler('spkgs/sex.py')
 @select(h)
 SEX_MODULES = [
-  'sex/sex_types',
-  'sex/sex_token',
-  'sex/sex_parse',
-  'sex/sex_lex',
-  'sex/sex_print',
-  'sex/sex_map',
-  'sex/ocs2sex',
+  'src/compiler/sex/sex_types',
+  'src/compiler/sex/sex_token',
+  'src/compiler/sex/sex_parse',
+  'src/compiler/sex/sex_lex',
+  'src/compiler/sex/sex_print',
+  'src/compiler/sex/sex_map',
+  'src/compiler/sex/ocs2sex',
   ]
 
-caml_raw_interfaces = ['sex/sex_types','sex/sex_token']
-caml_interfaces = ['sex/sex_types', 'sex/sex_token', 'sex/sex_parse']
+caml_raw_interfaces = ['src/compiler/sex/sex_types','src/compiler/sex/sex_token']
+caml_interfaces = ['src/compiler/sex/sex_types', 'src/compiler/sex/sex_token', 'src/compiler/sex/sex_parse']
 caml_implementations = SEX_MODULES
-caml_lexes = ['sex/sex_lex']
-caml_dyparses = ['sex/sex_parse']
-caml_include_paths = ['src','ocs','dypgen/dyplib','sex']
-caml_provide_lib = 'sex/sexlib'
+caml_lexes = ['src/compiler/sex/sex_lex']
+caml_dyparses = ['src/compiler/sex/sex_parse']
+caml_include_paths = ['src/compiler/ocs','src/compiler/dyp/dyplib','src/compiler/sex']
+caml_provide_lib = 'src/compiler/sex/sexlib'
 caml_require_libs = ['flx_version','dyplib','ocslib','sexlib']
 pkg_requires = ['flx_version','ocs','dypgen']
-caml_exes = ['sex/sex']
+caml_exes = ['src/compiler/sex/sex']
 iscr_src = ['lpsrc/sex.pak']
 weaver_directory='doc/sex'
 tmpdir = ['sex']
 
 @head(1,"Lexer")
 A simple lexer.
-@select(tangler("sex/sex_lex.mll"))
+@select(tangler("src/compiler/sex/sex_lex.mll"))
 {
 open Sex_parse
 open Sex_token
@@ -101,7 +101,7 @@ rule sex_lex state = parse
 {
 }
 
-@select(tangler("sex/sex_token.mli"))
+@select(tangler("src/compiler/sex/sex_token.mli"))
 type token =
  | LB
  | RB
@@ -111,7 +111,7 @@ type token =
  | ID of string
  | INT of string
 
-@select(tangler("sex/sex_parse.dyp"))
+@select(tangler("src/compiler/sex/sex_parse.dyp"))
 %mltop { open Sex_token }
 {
 open Sex_types
@@ -144,7 +144,7 @@ sexps:
 
 %mlitop { open Sex_token }
 
-@select(tangler("sex/sex_types.mli"))
+@select(tangler("src/compiler/sex/sex_types.mli"))
 type sexp_t =
   | Int of string
   | Str of string
@@ -152,7 +152,7 @@ type sexp_t =
   | Id of string
   | Lst of sexp_t list
 
-@select(tangler("sex/sex_print.ml"))
+@select(tangler("src/compiler/sex/sex_print.ml"))
 open Sex_types
 open List
 
@@ -186,7 +186,7 @@ let string_of_sex s =
   sex_out (Buffer.add_string b) s;
   Buffer.contents b
 
-@select(tangler("sex/sex_map.ml"))
+@select(tangler("src/compiler/sex/sex_map.ml"))
 open Sex_types
 open List
 
@@ -295,7 +295,7 @@ let rec eval fresh env x =
   | Lst xs -> Lst (map (eval fresh env) xs)
   | x -> x
 
-@select(tangler("sex/ocs2sex.ml"))
+@select(tangler("src/compiler/sex/ocs2sex.ml"))
 open Sex_types
 open Ocs_types
 
@@ -344,7 +344,7 @@ let rec ocs2sex (s:sval) : sexp_t =
 
   | Svector a -> Lst (List.map ocs2sex (Array.to_list a))
 
-@select(tangler("sex/sex.ml"))
+@select(tangler("src/compiler/sex/sex.ml"))
 open Sex_types
 open List
 
@@ -394,11 +394,11 @@ let main() =
 main()
 ;;
 
-@select(tangler("sex/test2.sex"))
+@select(tangler("src/compiler/sex/test2.sex"))
 (
   AST_apply (add (AST_tuple (1 2)))
 )
-@select(tangler("sex/test.sex"))
+@select(tangler("src/compiler/sex/test.sex"))
 (
   "Hello" fred 1 (2 3) (+ 30 (+ 6 4) 2)
   (lambda x (+ x x))
@@ -414,7 +414,7 @@ main()
   )
 )
 
-@select(tangler("sex/Makefile"))
+@select(tangler("src/compiler/sex/Makefile"))
 @srcs = [
    ('sex_types',''),
    ('sex_print',''),

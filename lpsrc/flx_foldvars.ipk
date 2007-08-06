@@ -1,5 +1,5 @@
 @head(1,"Fold vars")
-@h = tangler("src/flx_foldvars.mli")
+@h = tangler("src/compiler/flxlib/flx_foldvars.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -19,7 +19,7 @@ val fold_vars:
 val add_use:
   usage_table_t -> int -> int -> range_srcref -> unit
 
-@h = tangler("src/flx_foldvars.ml")
+@h = tangler("src/compiler/flxlib/flx_foldvars.ml")
 @select(h)
 open Flx_util
 open Flx_ast

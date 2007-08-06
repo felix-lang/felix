@@ -22,7 +22,7 @@ they have the same parent.
 Clearly this result extends to any
 child of any parent.
 
-@h = tangler("src/flx_inline.mli")
+@h = tangler("src/compiler/flxlib/flx_inline.mli")
 @select(h)
 open Flx_ast
 open Flx_types
@@ -36,7 +36,7 @@ val heavy_inlining:
   fully_bound_symbol_table_t ->
   unit
  
-@h = tangler("src/flx_inline.ml")
+@h = tangler("src/compiler/flxlib/flx_inline.ml")
 @select(h)
 open Flx_util
 open Flx_ast

@@ -1,4 +1,4 @@
-@h = tangler('src/flx_egen.mli')
+@h = tangler('src/compiler/flxlib/flx_egen.mli')
 @select(h)
 open Flx_ast
 open Flx_types
@@ -43,7 +43,7 @@ val get_ref_ref:
   btypecode_t list ->
   string
 
-@h = tangler('src/flx_egen.ml')
+@h = tangler('src/compiler/flxlib/flx_egen.ml')
 @select(h)
 open Flx_util
 open Flx_ast
