@@ -158,10 +158,7 @@ dispatch begin function
           in
 
           (* try to build the parser if it doesn't exist yet *)
-          List.iter begin function
-            | Outcome.Good o -> ()
-            | Outcome.Bad exn -> raise exn
-          end (build [[dypgen]]);
+          List.iter Outcome.ignore_good (build [[dypgen]]);
 
           Cmd(S[A dypgen; T tags; Px dyp])
         end;
