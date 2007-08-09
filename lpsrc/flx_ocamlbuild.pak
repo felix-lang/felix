@@ -1,0 +1,169 @@
+@select(tangler('src/compiler/_tags'))
+<**/*.ml*>: warn_yzex
+
+@select(tangler('src/compiler/drivers/_tags'))
+<*.{byte,native}>: use_nums, use_unix
+
+@select(tangler('src/compiler/flxlib/_tags'))
+<flx_{,pre}parse.dyp>: pv-obj, no-emit-token-type
+
+@select(tangler('src/compiler/dyp/generators/dypgen/_tags'))
+<dypgen_parser.dyp>: use_pgen
+#<dypgen.{ml,byte,native}>: use_dyplib
+#<dypgen_parser.{ml}>: use_dyplib
+
+@select(tangler('src/compiler/dyp/generators/pgen/_tags'))
+#<pgen.{ml,byte,native}>: use_dyplib
+
+@select(tangler('src/compiler/dyp/dyplib/dyplib.mllib'))
+automaton
+dyp
+gs
+priority_by_relation
+
+@select(tangler('src/compiler/drivers.itarget'))
+drivers/flxb.byte
+drivers/flxd.byte
+drivers/flxg.byte
+drivers/flxl.byte
+drivers/flxm.byte
+drivers/flxp.byte
+drivers/stub.byte
+drivers/flxcc.byte
+drivers/flxb.native
+drivers/flxd.native
+drivers/flxg.native
+drivers/flxl.native
+drivers/flxm.native
+drivers/flxp.native
+drivers/stub.native
+drivers/flxcc.native
+
+@select(tangler('src/compiler/myocamlbuild.ml'))
+open Ocamlbuild_plugin;;
+open Ocamlbuild_pack;;
+open Ocamlbuild_pack.Hygiene;;
+open Command;;
+
+
+(* set up the ocamlbuild search paths for the subdirectories *)
+Pathname.define_context "dyp/generators/pgen" [ "dyp/dyplib" ];; 
+Pathname.define_context "dyp/generators/dypgen" [ "dyp/dyplib" ];;
+Pathname.define_context "sex" [ "ocs"; "dyp/dyplib" ];;
+Pathname.define_context "flxcclib" [ "cil" ];; 
+Pathname.define_context "flx_version_hook" [ "flx_version" ];; 
+
+Pathname.define_context "flxlib" [
+  "cil";
+  "dyp/dyplib";
+  "flxcclib";
+  "flx_version";
+  "misclib";
+  "ocs";
+  "sex";
+];;
+
+Pathname.define_context "drivers" [
+  "cil";
+  "dyp/dyplib";
+  "flxlib";
+  "flxcclib";
+  "flx_version";
+  "ocs";
+];;
+
+
+(* declare all of our libraries *)
+ocaml_lib ~dir:"dyp/dyplib"       "dyp/dyplib/dyplib";;
+ocaml_lib ~dir:"ocs"              "ocs/ocslib";;
+ocaml_lib ~dir:"sex"              "sex/sexlib";;
+ocaml_lib ~dir:"cil"              "cil/cillib";;
+ocaml_lib ~dir:"misclib"          "misclib/misclib";;
+ocaml_lib ~dir:"flx_version"      "flx_version/flx_version";;
+ocaml_lib ~dir:"flx_version_hook" "flx_version_hook/flx_version_hook";;
+ocaml_lib ~dir:"flxcclib"         "flxcclib/flxcclib";;
+ocaml_lib ~dir:"flxlib"           "flxlib/flxlib";;
+
+
+(* declare the extra tags *)
+flag ["ocaml"; "parser"; "dypgen"; "pv-obj"] (A"--pv-obj");;
+flag ["ocaml"; "parser"; "dypgen"; "no-emit-token-type"] (A"--noemit-token-type");;
+flag ["ocaml"; "compile"; "warn_yzex"] (S[A"-w"; A"yzex"]);;
+
+
+let laws = 
+  [
+    { law_name = "Leftover dypgen-generated files";
+    law_rules = [Implies_not(".dyp",".ml"); Implies_not(".dyp",".mli")];
+    law_penalty = Fail }
+  ]
+;;
+
+
+dispatch begin function
+  | Before_rules ->
+      begin
+        let evil = ref false in
+        match !Options.entry with
+        | None -> ();
+        | Some entry -> 
+            match check 
+              ?sanitize:
+                begin
+                  if !Options.sanitize then
+                    Some(!Options.sanitization_script)
+                  else
+                    None
+                end
+              laws entry
+            with
+            | [] -> ()
+            | stuff ->
+                List.iter
+                begin fun (law, msgs) ->
+                  Printf.printf "%s: %s:\n"
+                  (match law.law_penalty with
+                  | Warn -> "Warning"
+                  | Fail ->
+                      if not !evil then
+                        begin
+                          Printf.printf "IMPORTANT: I cannot work with leftover compiled files.\n%!";
+                          evil := true;
+                        end;
+                        "ERROR")
+                  law.law_name;
+                  List.iter (Printf.printf "  %s\n") msgs
+                end
+                stuff;
+                if !evil then raise Fda.Exit_hygiene_failed;
+      end
+
+  | After_rules ->
+      rule "dypgen: .dyp -> .ml & .mli"
+        ~deps:["%.dyp"]
+        ~prods:["%.ml"; "%.mli"]
+        begin fun env build ->
+          let dyp = env "%.dyp" in
+          let tags = tags_of_pathname dyp++"ocaml"++"parser" in
+
+          (* Since pgen and dypgen programs use the same extension, we need
+           * to be able to switch between the two. Do this by tagging the pgen
+           * files with "use_pgen".
+           * I'm not sure how we should do byte/native, so we'll just use the 
+           * native. *)
+          let dypgen, tags = 
+            if Tags.mem "use_pgen" tags 
+            then "dyp/generators/pgen/pgen.native", tags++"pgen"
+            else "dyp/generators/dypgen/dypgen.native", tags++"dypgen"
+          in
+
+          (* try to build the parser if it doesn't exist yet *)
+          List.iter begin function
+            | Outcome.Good o -> ()
+            | Outcome.Bad exn -> raise exn
+          end (build [[dypgen]]);
+
+          Cmd(S[A dypgen; T tags; Px dyp])
+        end;
+  | _ -> ()
+end;;
