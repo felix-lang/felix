@@ -113,28 +113,6 @@ struct GC_EXTERN gc_shape_t
   std::size_t n_offsets;          ///< number of offsets
   std::size_t *offsets;           ///< actual offsets
   gc_shape_flags_t flags;         ///< flags
-#if 0
-  // convenience constructor
-  gc_shape_t(
-    gc_shape_t *ns,
-    char const *cn,
-    std::size_t count_a,
-    std::size_t amt_a,
-    void (*finaliser_a)(collector_t*, void*),
-    std::size_t n_offsets_a,
-    std::size_t *offsets_a
-  );
-  gc_shape_t(
-    gc_shape_t *ns,
-    char const *cn,
-    std::size_t count_a,
-    std::size_t amt_a,
-    void (*finaliser_a)(collector_t*, void*),
-    std::size_t n_offsets_a,
-    std::size_t *offsets_a,
-    gc_shape_flags_t flags_a
-  );
-#endif
 };
 @doc()
 The following template is provided as a standard wrapper
@@ -272,73 +250,7 @@ about.
 
 
 @doc()
-The destroy function unconditionally deletes an object,
-so it must only be used when there are no managed pointers
-to the object. Other pointers might exist, and that is normally
-OK provided they're not dereferenced.
-
-@select(h)
-void GC_EXTERN destroy(void *b);
-
-@doc()
-The following routines are provided to help
-safely manage pointers. The can be used
-to initialise, assign and destroy, and delete 
-pointer variables, where delete implies
-both NULLing out the variable and also deleting
-the object pointed to. 
-@p()
-Each untyped routine has a corresponding
-template to provide a type safe interface.
-
-@select(h)
-void GC_EXTERN _init_ptr(void **a, void *b);
-void GC_EXTERN _set_ptr(void **a, void *b);
-void GC_EXTERN _release_ptr(void **a);
-void GC_EXTERN _destroy_ptr(void **a);
-
-template<class T>
-void init_ptr(T **a, T *b)
-{
-  _init_ptr
-  (
-    reinterpret_cast<void**>(a),
-    reinterpret_cast<void*>(b)
-  );
-}
-
-template<class T>
-void set_ptr(T **a, T *b)
-{
-  _set_ptr
-  (
-    reinterpret_cast<void**>(a),
-    reinterpret_cast<void*>(b)
-  );
-}
-
-template<class T>
-void release_ptr(T **a)
-{
-  _release_ptr
-  (
-    reinterpret_cast<void**>(a)
-  );
-}
-
-template<class T>
-void destroy_ptr(T **a)
-{
-  _destroy_ptr
-  (
-    reinterpret_cast<void**>(a)
-  );
-}
-
-@doc()
-These two routines are used to reset the type
-of object an memory block hold, and reset the
-length of an array, respectively.
+Array management.
 
 @select(h)
 GC_EXTERN void set_used(void *memory, unsigned long); 
@@ -388,14 +300,6 @@ struct frame_t
   gc_shape_t *shape;       // the shape of each object
   unsigned long n_objects; // how many slots max 
   unsigned long n_used;    // how many slots used 
-#ifndef JUDYGC  
-  frame_t *next;          // the next and previous objects
-  frame_t *prev;          // in the collectors list
-#endif
-  collector_t *collector; // the managing collector
-#ifndef JUDYGC
-  bool garbage;           // the garbage flag
-#endif
 };
 
 }}} // end namespaces
@@ -423,96 +327,6 @@ struct frame_t
 namespace flx {
 namespace gc {
 namespace generic {
-
-#if 0
-// create a shape object given an array of offsets
-gc_shape_t::gc_shape_t
-(
-  gc_shape_t *ns,
-  char const *cn,
-  std::size_t count_a,
-  std::size_t amt_a,
-  void (*finaliser_a)(collector_t*, void*),
-  std::size_t n_offsets_a,
-  std::size_t *offsets_a,
-  gc_shape_flags_t flags_a
-)
-  :
-  next_shape(ns),
-  cname(cn),
-  count(count_a),
-  amt(amt_a),
-  finaliser(finaliser_a),
-  n_offsets(n_offsets_a),
-  offsets(offsets_a),
-  flags(flags_a)
-{}
-
-// with flags defaulted
-gc_shape_t::gc_shape_t
-(
-  gc_shape_t *ns,
-  char const *cn,
-  std::size_t count_a,
-  std::size_t amt_a,
-  void (*finaliser_a)(collector_t*, void*),
-  std::size_t n_offsets_a,
-  std::size_t *offsets_a
-)
-  :
-  next_shape(ns),
-  cname(cn),
-  count(count_a),
-  amt(amt_a),
-  finaliser(finaliser_a),
-  n_offsets(n_offsets_a),
-  offsets(offsets_a),
-  flags(gc_flags_default)
-{}
-#endif
-
-void destroy(void *p)
-{
-  if(p)
-  {
-    frame_t *fp = CLIENT_TO_FRAME(p);
-    fp->collector->finalise(fp);
-    fp->collector->deallocate(fp);
-   }
-}
-
-// b may be 0
-void _init_ptr(void **a, void *b)
-{
-  *a = b;
-}
-
-// *a or b may be 0
-void _set_ptr(void **a, void *b)
-{
-  *a = b;
-}
-
-// *a may be 0
-void _release_ptr(void **a)
-{
-  *a = 0;
-}
-
-void _destroy_ptr(void **a)
-{
-  void *b = *a; // save the pointer value
-  *a=0;         // null out the variable
-  destroy(b);
-}
-
-/*
-void reset_shape(void *memory, gc_shape_t &shape)
-{
-  assert(memory);
-  CLIENT_TO_FRAME(memory)->shape = &shape;
-}
-*/
 
 void set_used(void *memory, unsigned long n)
 {
@@ -579,9 +393,7 @@ void *operator new(
 #include "flx_gc_private.hpp"
 #include <map>
 
-#ifdef JUDYGC
 #include <Judy.h>
-#endif
 
 namespace flx {
 namespace gc {
@@ -682,13 +494,10 @@ private:
   bool parity;
   allocator_t *allocator;
 
-#ifdef JUDYGC  
   // JudyL array and error object
   void *ja;
   void *jb;
   JError_t je;
-#endif
-
 };
 
 }}} // end namespaces
@@ -820,10 +629,8 @@ flx_collector_t::flx_collector_t(allocator_t *a) :
   to_delete(0),
   parity(false),
   allocator(a)
-#ifdef JUDYGC  
   ,ja(0)
   ,jb(0)
-#endif
 {}
 
 void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
@@ -841,25 +648,14 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
   if(debug)fprintf(stderr,"Allocated %p-0x%x= new %s\n", FRAME_TO_CLIENT(fp),FRAMESIZE,shape->cname);
   // initialise the shape, garbage flag, and refcount
   fp->shape = shape;
-#ifndef JUDYGC
-  fp->garbage = parity;
-#endif
   fp->n_objects = nobj;
   fp->n_used = 0;
-  fp->collector = this;
+  //fp->collector = this;
 
-#ifndef JUDYGC  
-  // link the frame into the collectors list
-  fp->prev = 0;
-  fp->next = first;
-  if(first) first->prev = fp;
-  first = fp;
-#else
   assert((amt & 1) == 0);
   Word_t *p = (Word_t*)(void*)JudyLIns(&ja,(Word_t)(void*)fp,&je);
   *p = amt | (parity & 1UL);
   //fprintf(stderr, "Parity=%ld, amt=%ld\n",(long)parity,*p);
-#endif
 
   // update statistics
   allocation_count++;
@@ -901,18 +697,7 @@ void flx_collector_t::unlink(frame_t *fp)
   impl_finalise(fp);
 
   // unlink the frame from the collectors list
-#ifndef JUDYGC
-  if(fp->prev)
-    fp->prev->next = fp->next;
-  else {
-    assert(first==fp);
-    first=fp->next;
-  }
-  if(fp->next)
-    fp->next->prev = fp->prev;
-#else
   JudyLDel(&ja, (Word_t)(void*)fp, &je);
-#endif
 
 }
 
@@ -921,12 +706,7 @@ void flx_collector_t::post_delete(frame_t *fp)
   assert(collecting);
   // link into list of objects to delete
   // this list uses the prev pointer!
-#ifndef JUDYGC  
-  fp->prev = to_delete;
-  to_delete = fp;
-#else
   Judy1Set(&jb,(Word_t)fp,&je);
-#endif
 }
 
 void flx_collector_t::dispose(frame_t *fp)
@@ -955,15 +735,6 @@ void flx_collector_t::delete_frame(frame_t *fp)
 unsigned long flx_collector_t::reap ()
 {
   unsigned long count = 0;
-#ifndef JUDYGC  
-  while(to_delete)
-  {
-    frame_t *next = to_delete-> prev;
-    delete_frame(to_delete);
-    to_delete = next;
-    ++count;
-  }
-#else
   Word_t next=(Word_t)NULL;
   int res = Judy1First(jb,&next,&je);
   while(res) {
@@ -972,7 +743,6 @@ unsigned long flx_collector_t::reap ()
     res = Judy1Next(jb,&next,&je);
   }
   Judy1FreeArray(&jb,&je);
-#endif
   return count;
 }
 
@@ -983,20 +753,6 @@ unsigned long flx_collector_t::sweep()
     fprintf(stderr,"Collector: Sweep\n");
   unsigned long sweeped = 0;
   collecting=true;
-#ifndef JUDYGC  
-  frame_t *current = first;
-  while(current)
-  {
-    if(current->garbage == parity)
-    {
-      if(debug)fprintf(stderr,"Garbage %p=%s\n",current,current->shape->cname);
-      unlink(current);
-      post_delete(current);
-      ++ sweeped;
-    }
-    current = current->next;
-  }
-#else
   frame_t *current = (frame_t*)NULL;
   Word_t *plen = (Word_t*)JudyLFirst(ja,(Word_t*)(void*)&current,&je);
   while(plen)
@@ -1015,7 +771,6 @@ unsigned long flx_collector_t::sweep()
 
     plen = (Word_t*)JudyLNext(ja,(Word_t*)(void*)&current,&je);
   }
-#endif
 
   parity = !parity;
   collecting = false;
@@ -1067,15 +822,10 @@ void flx_collector_t::scan_object(frame_t *frame)
     fprintf(stderr,"Scanning %p\n",frame);
   if(debug)
     fprintf(stderr,"Scanning [valid] %p=%s\n",frame,frame->shape->cname);
-#ifndef JUDYGC
-  if(frame->garbage == parity)
-  {
-#else
     // NOTE: in Judy, this routine is only called
     // if the object has not already been reached
     // and the flag is set to reachable BEFORE
     // entry to this routine
-#endif
     if(debug)
     {
       fprintf(stderr,"Reachable %p\n",frame);
@@ -1099,9 +849,6 @@ void flx_collector_t::scan_object(frame_t *frame)
             offset,p+offset,x);
       }
     }
-#ifndef JUDYGC
-    frame->garbage = !parity; // reachable!
-#endif    
     gc_shape_t *shape = frame->shape;
     unsigned long n_used = frame->n_used * shape->count;
     std::size_t obj_size = shape->amt;
@@ -1109,18 +856,12 @@ void flx_collector_t::scan_object(frame_t *frame)
     std::size_t *offsets = shape->offsets;
     unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
 
-#ifdef JUDYGC
     Word_t reachable = (parity & 1UL) ^ 1UL;
-#endif    
     for(unsigned long j=0; j<n_used; ++j)
     {
       for(unsigned int i=0; i<n_offsets; ++i)
       {
         void **q = (void**)(void*)(p + offsets[i]);
-#ifndef JUDYGC        
-        if(*q)
-          scan_object(CLIENT_TO_FRAME(*q));
-#else         
         if(*q)
         {
           Word_t cand = (Word_t)CLIENT_TO_FRAME(*q);
@@ -1141,13 +882,9 @@ void flx_collector_t::scan_object(frame_t *frame)
             scan_object((frame_t*)(void*)fp);
           }
         }
-#endif          
       }
       p+=obj_size;
     }
-#ifndef JUDYGC
-  }
-#endif
 }
 
 void flx_collector_t::mark()
@@ -1155,10 +892,8 @@ void flx_collector_t::mark()
   if(debug)
     fprintf(stderr,"Collector: Running mark\n");
   assert (root_count == roots.size());
-#ifdef JUDYGC
   Word_t reachable = (parity & 1UL) ^ 1UL;
   //fprintf(stderr,"Parity (garbage)=%ld, reachable = %ld, count=%ld\n", (long)parity, reachable, allocation_count);
-#endif
   rootmap_t::iterator const end = roots.end();
   for(
     rootmap_t::iterator i = roots.begin();
@@ -1166,7 +901,6 @@ void flx_collector_t::mark()
     ++i
   )
   {
-#ifdef JUDYGC
     Word_t fp = (Word_t)(*i).first;
     Word_t cand = (Word_t)fp;
     Word_t *plen = (Word_t*)JudyLLast(ja,(Word_t*)&fp,&je);
@@ -1180,10 +914,6 @@ void flx_collector_t::mark()
       *plen = *plen & ~1UL | reachable;
       scan_object((frame_t*)fp);
     }
-#else
-    frame_t *fp = (*i).first;
-    scan_object(fp);
-#endif    
   }
   if(debug)
     fprintf(stderr,"Mark complete\n");
@@ -1217,13 +947,9 @@ void flx_collector_t::impl_check()
   void **ctrl = (void**)malloc(nobj * sizeof(void*));
   unsigned long handled = 0;
   unsigned long allocated = 0;
-#ifndef JUDYGC  
-  frame_t *lfirst = first;
-#else
   frame_t *lfirst = 0;
   void *res = JudyLFirst(ja,(Word_t*)(void*)&lfirst, &je);
   if(res == NULL) lfirst=NULL;
-#endif
   long outofarena=0L;
   while(lfirst) {
     ctrl[handled++]=lfirst;
@@ -1233,9 +959,6 @@ void flx_collector_t::impl_check()
     outofarena++;
     //fprintf(stderr,"Object %p size %ld type %s\n",lfirst,long(size),shape->cname);
     allocated += size;
-#ifndef JUDYGC
-    lfirst = lfirst->next;
-#else
     if(size != *(Word_t*)res & !1UL)
     {
       fprintf(stderr,"WRONG SIZE: Object %p size %ld type %s, JUDY says %ld\n",lfirst,long(size),shape->cname,*(Word_t*)res & ~1UL);
@@ -1244,7 +967,6 @@ void flx_collector_t::impl_check()
 
     res = JudyLNext(ja,(Word_t*)(void*)&lfirst,&je);
     if(res == NULL) lfirst=NULL;
-#endif    
   }
 
   if(handled != nobj)
@@ -1326,17 +1048,7 @@ void flx_collector_t::impl_check()
 
 bool flx_collector_t::check_frame_pointer(frame_t *p)
 {
-#ifndef JUDYGC
-  frame_t *current = first;
-  while(current)
-  {
-    if(current == p) return true;
-    current = current->next;
-  }
-  return false;
-#else
   return NULL != JudyLGet(ja,(Word_t)p,&je);
-#endif
 }
 
 bool flx_collector_t::check_client_pointer(void *p)

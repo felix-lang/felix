@@ -635,64 +635,6 @@ private: // uncopyable
 };
 
 // ********************************************************
-/// REFERENCE. Felix pointer type
-/// note: non-polymorphic, so ctor can be inline
-/// This type is used to represent pointers to variables.
-/// It has two components: a frame pointer and offset.
-/// A whole frame is refered to by setting the offset to 0.
-/// A non-collectable pointer is refered to by setting the frame to 0
-/// References are first class values: they can copied, assigned,
-/// and default constructed. Holding a reference in a location
-/// known to the gc ensures the target variable is not collected:
-/// Such references cannot dangle.
-/// The frame/offset representation was chosen since it fits
-/// well with a copying collector: the price is that finding
-/// the interior pointer requires adding the offset to the frame
-/// pointer. Note that 'frame' points to the CLIENTDATA address
-/// of a frame where user data starts: this is not the lowest
-/// machine address of the frame's allocated memory or FRAME
-/// address, despite the name.
-// ********************************************************
-
-/*
-struct RTL_EXTERN _ref_
-{
-  void *frame;      ///< Heap frame pointer
-  std::ptrdiff_t offset;   ///< Client Data offset
-
-  _ref_() : frame(0),offset(0) {} ///< NULL reference
-  _ref_(void *f, void *d): 
-    frame(f), offset((unsigned char*)d-(unsigned char*)f) {} 
-      ///< init from interior pointer d of a collectable frame f
-  
-  _ref_(void *f, std::ptrdiff_t d): 
-    frame(f), offset(d) {} ///< init from collectable frame f and offset d
-
-  _ref_(_ref_ const& r) : frame(r.frame), offset(r.offset) {} 
-    ///< copy constructor
-
-  void operator = (_ref_ const& r); ///< assignment operator
-
-  void *get_data()const { return (unsigned char*)frame + offset; } 
-    ///< get interior pointer
-    
-  void set_data(void *p) 
-    { offset = (unsigned char*)p - (unsigned char*)frame; } 
-    ///< set interior pointer into same frame
-
-  void set(void *f, void *p) 
-  { frame = f; offset = (unsigned char*)p - (unsigned char*)f; } ///< set from frame f and interior pointer
-
-  bool operator==(_ref_ x) const  ///< compare equal
-  { return frame==x.frame && offset==x.offset; }
-
-  bool operator!=(_ref_ x) const  ///< compare inequal
-  { return frame!=x.frame || offset!=x.offset; }
-};
-
-*/
-
-// ********************************************************
 /// VARIANTS. Felix union type
 /// note: non-polymorphic, so ctor can be inline
 // ********************************************************
@@ -920,13 +862,6 @@ enum svc_t               // what the dispatch should do
   svc_collect=10,        // run collector
   svc_end
 };
-
-/*
-struct readreq_t {
-  schannel_t *chan;
-  _ref_ variable;
-};
-*/
 
 struct readreq_t {
   schannel_t *chan;
