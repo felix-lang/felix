@@ -14,15 +14,10 @@ open Flx_cexpr
 open Flx_ctype
 open List
 
-@if USE_DYPGEN:
-  tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
-  tangle("  match ls with")
-  tangle("  | [x,_] -> x")
-  tangle('  | _ -> failwith "Dypgen parser failed"')
- else:
-  tangle("let dyphack x = x")
-@#
+let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
+  match ls with
+  | [x,_] -> x
+  | _ -> failwith "Dypgen parser failed"
 
 let raw_options = Flx_getopt.parse_options Sys.argv;;
 let compiler_options = Flx_flxopt.get_felix_options raw_options;;

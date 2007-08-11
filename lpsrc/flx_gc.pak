@@ -8,10 +8,10 @@ The abstraction consists of an abstract class collector_t,
 which models the collector,
 an abstract class allocator_t, which models an allocator,
 and two concrete classes:
-shape_t, which defines a type shape descriptor, and frame_t,
+shape_t, which defines a type shape descriptor, and void *,
 which describes an allocated memory block, called a frame.
 @p()
-The frame_t data is stored at the beginning of every block
+The void *data is stored at the beginning of every block
 the collector manages, this is called the header part. 
 The rest of the block is for client data, and is called the client part.
 The collector manages frames in terms of pointers to the whole block,
@@ -91,7 +91,6 @@ namespace gc {
 namespace generic {
 // Here are the types we refer to:
 
-struct GC_EXTERN frame_t;      // the type of all collectable objects
 struct GC_EXTERN gc_shape_t;   // the shape of collectable objects
 struct GC_EXTERN collector_t;  // the collector itself
 struct GC_EXTERN allocator_t;  // the collector itself
@@ -195,10 +194,6 @@ terms of shape objects rather than raw memory amounts.
     return v_allocate(shape,x);
   }
 
-  void deallocate(frame_t *fp) {
-    v_deallocate(fp);
-  }
-
 @doc()
 The mark and sweep collector algorithm.
 @select(h)
@@ -217,28 +212,28 @@ Routines to add and remove roots.
     v_remove_root(memory);
   }
 
-  void finalise(frame_t *frame) {
+  void finalise(void *frame) {
     v_finalise(frame);
   }
 
 @doc()
 Integrity check for the data structure being managed.
 @select(h)
-  void check() {
-    v_check();
-  }
-
+  //array management
+  virtual void set_used(void *memory, unsigned long)=0; 
+  virtual void incr_used(void *memory, unsigned long)=0; 
+  virtual unsigned long get_used(void *memory)=0; 
+  virtual unsigned long get_count(void *memory)=0; 
+  virtual void *create_empty_array( gc_shape_t &shape, unsigned long count)=0;
 private:
   virtual unsigned long v_get_allocation_count()const=0;
   virtual unsigned long v_get_root_count()const=0;
   virtual unsigned long v_get_allocation_amt()const=0;
   virtual void *v_allocate(gc_shape_t *shape, unsigned long)=0;
-  virtual void v_deallocate(frame_t *fp)=0;
-  virtual void v_finalise(frame_t *fp)=0;
+  virtual void v_finalise(void *fp)=0;
   virtual unsigned long v_collect()=0;
   virtual void v_add_root(void *memory)=0;
   virtual void v_remove_root(void *memory)=0;
-  virtual void v_check()=0;
 
 @doc()
 It doesn't make any sense to copy collector objects
@@ -249,19 +244,7 @@ about.
 };
 
 
-@doc()
-Array management.
-
 @select(h)
-GC_EXTERN void set_used(void *memory, unsigned long); 
-GC_EXTERN void incr_used(void *memory, unsigned long); 
-GC_EXTERN unsigned long get_used(void *memory); 
-GC_EXTERN unsigned long get_count(void *memory); 
-GC_EXTERN void *create_empty_array(
-  collector_t &collector,
-  gc_shape_t &shape,
-  unsigned long count
-);
 
 }}} // end namespaces
 
@@ -286,35 +269,10 @@ GC_EXTERN void *operator new
 
 @h=tangler('rtl/flx_gc_private.hpp')
 @select(h)
-// THIS IS A HACK .. required by generic pointer
-// manipulators -- but really should be private to the Felix
-// default collector implementation
-
-namespace flx {
-namespace gc {
-namespace generic { // SHOULD BE NAMESPACE collector
-
-/// Heap Frame header
-struct frame_t
-{
-  gc_shape_t *shape;       // the shape of each object
-  unsigned long n_objects; // how many slots max 
-  unsigned long n_used;    // how many slots used 
-};
-
-}}} // end namespaces
-
 // ----------------------------------------------------
 
 #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
 #define _ALIGN(i) _ROUNDUP(i,FLX_MAX_ALIGN)
-
-#define FRAMESIZE int(_ALIGN(sizeof(flx::gc::generic::frame_t)))
-#define FRAME_TO_CLIENT(p) \
-  ((void*)((unsigned char*)(void*)p + FRAMESIZE))
-#define CLIENT_TO_FRAME(p) \
-  ((frame_t*)(void*)((unsigned char*)p - FRAMESIZE))
-
 
 @h=tangler('rtl/flx_gc.cpp')
 @select(h)
@@ -328,43 +286,7 @@ namespace flx {
 namespace gc {
 namespace generic {
 
-void set_used(void *memory, unsigned long n)
-{
-  assert(memory);
-  assert(n>=0);
-  assert(n<=get_count(memory));
-  CLIENT_TO_FRAME(memory)->n_used = n;
-}
-
-void incr_used(void *memory, unsigned long n)
-{
-  set_used(memory, get_used(memory)+n);
-}
-
-unsigned long get_used(void *memory)
-{
-  assert(memory);
-  return CLIENT_TO_FRAME(memory)->n_used;
-}
-
-unsigned long get_count(void *memory)
-{
-  assert(memory);
-  return CLIENT_TO_FRAME(memory)->n_objects;
-}
-
 collector_t::collector_t() : debug(false) {}
-
-void *create_empty_array(
-  flx::gc::generic::collector_t &collector,
-  flx::gc::generic::gc_shape_t &shape,
-  unsigned long count
-)
-{
-  void *p = collector.allocate(&shape,count);
-  set_used (p, 0);
-  return p;
-}
 
 }}} // end namespaces
 
@@ -382,7 +304,6 @@ void *operator new(
     abort();
   }
   void *p = collector.allocate(&shape,1);
-  flx::gc::generic::set_used (p, 1);
   return p;
 }
 
@@ -418,18 +339,20 @@ struct GC_EXTERN flx_collector_t : public collector_t
   flx_collector_t(allocator_t *);
   ~flx_collector_t();
 
-  // special to this collector ..?
-  bool check_client_pointer(void *);
-  bool check_frame_pointer(frame_t *);
-
   // RF: added to allow implementation of non-leaky drivers.
   void free_all_mem(); // clear all roots, sweep.
+
+  void set_used(void *memory, unsigned long); 
+  void incr_used(void *memory, unsigned long); 
+  unsigned long get_used(void *memory); 
+  unsigned long get_count(void *memory); 
+  void *create_empty_array( gc_shape_t &shape, unsigned long count);
+  gc_shape_t *get_shape(void *memory); 
 
 protected:
 
   /// allocator
   void *impl_allocate(gc_shape_t *ptr_map, unsigned long);
-  void impl_deallocate(frame_t *frame);
 
   /// collector (returns number of objects collected)
   unsigned long impl_collect();
@@ -445,13 +368,11 @@ protected:
   unsigned long impl_get_allocation_count()const;
   unsigned long impl_get_root_count()const;
   unsigned long impl_get_allocation_amt()const;
-  void impl_finalise(frame_t *fp);
-  void impl_check();
+  void impl_finalise(void *fp);
 
 private:
   /// allocator
   void *v_allocate(gc_shape_t *ptr_map, unsigned long);
-  void v_deallocate(frame_t *frame);
 
   /// collector (returns number of objects collected)
   unsigned long v_collect();
@@ -460,43 +381,38 @@ private:
   void v_add_root(void *memory);
   void v_remove_root(void *memory);
 
-  //
-  void v_check();
   // statistics
   unsigned long v_get_allocation_count()const;
   unsigned long v_get_root_count()const;
   unsigned long v_get_allocation_amt()const;
 
 private:
-  bool collecting;
   unsigned long allocation_count;
   unsigned long root_count;
   unsigned long allocation_amt;
 
  
-  void unlink(frame_t *frame);
-  void v_finalise(frame_t *frame);
-  void dispose(frame_t *frame);
-    // calls post_delete or delete_frame
-
-  void post_delete(frame_t *frame);
-  void delete_frame(frame_t *frame);
+  void unlink(void *frame);
+  void v_finalise(void *frame);
+  void post_delete(void *frame);
+  void delete_frame(void *frame);
   unsigned long reap();
 
   void mark();
   unsigned long sweep(); // calls scan_object
-  void scan_object(frame_t *frame);
+  void scan_object(void *memory);
 
-  frame_t *first;
-  frame_t *to_delete;
-  typedef std::map<frame_t*,unsigned long, std::less<frame_t*> > rootmap_t;
+  typedef std::map<void *,unsigned long, std::less<void *> > rootmap_t;
   rootmap_t roots;
   bool parity;
   allocator_t *allocator;
 
   // JudyL array and error object
-  void *ja;
-  void *jb;
+  void *j_shape;
+  void *j_nalloc;
+  void *j_nused;
+
+  void *j_tmp;
   JError_t je;
 };
 
@@ -530,15 +446,8 @@ void *hi_sp = 0;
 void *malloc_free::allocate(std::size_t amt)
 {
   void *p = malloc(amt);
-  if(debug)fprintf(stderr,"Malloc %ld bytes, address = %p\n",amt,p);
-  //++mcount;
-  //void *x = sp;
-  //if (low_sp == NULL) low_sp = x,hi_sp = x;
-  //else { 
-  //  if (x < low_sp) low_sp = x;
-  //  if (x > hi_sp) hi_sp = x;
-  //}
-  //if(mcount%100==0)printf("malloc %p, count=%d,stack size = %ld\n",p,mcount,(char*)hi_sp - (char*)low_sp);
+  if(debug)
+    fprintf(stderr,"Malloc %ld bytes, address = %p\n",amt,p);
   if(p)return p;
   else {
     fprintf(stderr,"Felix: Malloc out of memory, blk=%ld\n",long(amt));
@@ -559,8 +468,8 @@ void *malloc_free::reallocate(void *p, size_t amt)
 
 void malloc_free::deallocate(void *p)
 {
-  //printf("free %p\n",p);
-  if(debug)fprintf(stderr,"Free %p\n",p);
+  if(debug)
+    fprintf(stderr,"Free %p\n",p);
   free(p);
 }
 
@@ -568,11 +477,7 @@ void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
   return impl_allocate(ptr_map, x);
 }
 
-void flx_collector_t::v_deallocate(frame_t *frame) {
-  impl_deallocate(frame);
-}
-
-void flx_collector_t::v_finalise(frame_t *frame) {
+void flx_collector_t::v_finalise(void *frame) {
   impl_finalise(frame);
 }
 
@@ -586,10 +491,6 @@ void flx_collector_t::v_add_root(void *memory) {
 
 void flx_collector_t::v_remove_root(void *memory) {
   impl_remove_root(memory);
-}
-
-void flx_collector_t::v_check() {
-  impl_check();
 }
 
 unsigned long flx_collector_t::v_get_allocation_count()const {
@@ -621,65 +522,113 @@ unsigned long flx_collector_t::impl_get_allocation_amt()const
 
 
 flx_collector_t::flx_collector_t(allocator_t *a) :
-  collecting(false),
   allocation_count(0),
   root_count(0),
   allocation_amt(0),
-  first(0),
-  to_delete(0),
   parity(false),
   allocator(a)
-  ,ja(0)
-  ,jb(0)
+  ,j_shape(0)
+  ,j_nalloc(0)
+  ,j_nused(0)
+  ,j_tmp(0)
 {}
 
 void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
-  std::size_t amt = nobj * shape->amt * shape->count + FRAMESIZE;
+  std::size_t amt = nobj * shape->amt * shape->count;
   //fprintf(stderr, "req amt = %ld\n",amt);
   if(amt & 1) ++amt; // round up to even number
   //fprintf(stderr, "rounded req amt = %ld\n",amt);
 
   // allocate a block
-  frame_t *fp = (frame_t*)allocator->allocate(amt);
+  void *fp = (void *)allocator->allocate(amt);
   assert(fp); // Got some memory!
 
-  if(debug)fprintf(stderr,"Allocated %p-0x%x= new %s\n", FRAME_TO_CLIENT(fp),FRAMESIZE,shape->cname);
-  // initialise the shape, garbage flag, and refcount
-  fp->shape = shape;
-  fp->n_objects = nobj;
-  fp->n_used = 0;
-  //fp->collector = this;
+  if(debug)
+    fprintf(stderr,"Allocated %p, shape=%p = new %s\n", fp,shape,shape->cname);
 
-  assert((amt & 1) == 0);
-  Word_t *p = (Word_t*)(void*)JudyLIns(&ja,(Word_t)(void*)fp,&je);
-  *p = amt | (parity & 1UL);
-  //fprintf(stderr, "Parity=%ld, amt=%ld\n",(long)parity,*p);
+  Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
+  *p = ((Word_t)(void*)shape) | (parity & 1);
+  if (nobj != 1uL) // array
+  {
+    Word_t *p = (Word_t*)(void*)JudyLIns(&j_nalloc,(Word_t)fp,&je);
+    *p = nobj;
+  }
 
   // update statistics
   allocation_count++;
   allocation_amt += amt;
   //fprintf(stderr,"ADDING %ld to allocation amt, result %ld\n",long(amt),long(allocation_amt));
   // return client memory pointer
-  return FRAME_TO_CLIENT(fp);
+  return fp;
 }
 
-void flx_collector_t::impl_deallocate(frame_t *fp)
+void flx_collector_t::set_used(void *fp, unsigned long n)
 {
-  unlink(fp);
-  dispose(fp);
+  //assert(memory);
+  //assert(n>=0);
+  //assert(n<=get_count(memory));
+  Word_t *p = (Word_t*)(void*)JudyLGet(&j_nused,(Word_t)fp,&je);
+  if(p == NULL)
+    p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)fp,&je);
+  *p = (Word_t)n;
 }
 
-void flx_collector_t::impl_finalise(frame_t *fp)
+void flx_collector_t::incr_used(void *memory, unsigned long n)
+{
+  Word_t *p = (Word_t*)(void*)JudyLGet(&j_nused,(Word_t)memory,&je);
+  if(p == NULL)
+  {
+    p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
+    *p = n;
+  }
+  else *p+=n;
+}
+
+unsigned long flx_collector_t::get_used(void *memory)
+{
+  assert(memory);
+  Word_t *p = (Word_t*)(void*)JudyLGet(&j_nused,(Word_t)memory,&je);
+  return p?*p:1;
+}
+
+unsigned long flx_collector_t::get_count(void *memory)
+{
+  assert(memory);
+  void *p= JudyLGet(j_nused,(Word_t)memory,&je);
+  return p?*(Word_t*)p:1;
+}
+
+gc_shape_t *flx_collector_t::get_shape(void *memory)
+{
+  assert(memory);
+  Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
+  if(pshape == NULL) abort();
+  return (gc_shape_t*)(*pshape & (~1ul));
+}
+
+void *flx_collector_t::create_empty_array(
+  flx::gc::generic::gc_shape_t &shape,
+  unsigned long count
+)
+{
+  void *p = allocate(&shape,count);
+  set_used (p, 0);
+  return p;
+}
+
+
+void flx_collector_t::impl_finalise(void *fp)
 {
   assert(fp!=NULL);
-  void (*finaliser)(collector_t*, void*) = fp->shape->finaliser;
+  gc_shape_t *shape = get_shape(fp);
+  void (*finaliser)(collector_t*, void*) = shape->finaliser;
   if (finaliser)  
   {
-    unsigned char *cp = (unsigned char*)FRAME_TO_CLIENT(fp);
-    unsigned long n_used = fp->n_used * fp->shape->count;
-    unsigned long eltsize = fp->shape->amt;
+    unsigned char *cp = (unsigned char*)fp;
+    unsigned long n_used = get_count(fp) * shape->count;
+    unsigned long eltsize = shape->amt;
     for(unsigned long j = 0; j<n_used; ++j)
     {
       (*finaliser)(this,(void*)cp);
@@ -688,7 +637,7 @@ void flx_collector_t::impl_finalise(frame_t *fp)
   }
 }
 
-void flx_collector_t::unlink(frame_t *fp)
+void flx_collector_t::unlink(void *fp)
 {
   // check we have a pointer to an object
   assert(fp!=NULL);
@@ -696,84 +645,84 @@ void flx_collector_t::unlink(frame_t *fp)
   // call the finaliser if there is one
   impl_finalise(fp);
 
-  // unlink the frame from the collectors list
-  JudyLDel(&ja, (Word_t)(void*)fp, &je);
-
-}
-
-void flx_collector_t::post_delete(frame_t *fp)
-{
-  assert(collecting);
-  // link into list of objects to delete
-  // this list uses the prev pointer!
-  Judy1Set(&jb,(Word_t)fp,&je);
-}
-
-void flx_collector_t::dispose(frame_t *fp)
-{
-  if(collecting) post_delete(fp);
-  else delete_frame(fp);
-}
-
-void flx_collector_t::delete_frame(frame_t *fp)
-{
-  // update statistics
   allocation_count--;
-  gc_shape_t *shape = fp->shape;
-  unsigned long nobj = shape -> count * fp -> n_objects;
-  std::size_t size = shape->amt * nobj + FRAMESIZE;
-  //fprintf(stderr,"Raw frame %p size %ld\n",fp,long(size));
-  allocator->deallocate(fp);
-
+  gc_shape_t *shape = get_shape(fp);
+  unsigned long n_objects = get_count(fp);
+  unsigned long nobj = shape -> count * n_objects;
+  std::size_t size = shape->amt * nobj;
   allocation_amt -= size;
-  //fprintf(stderr,"Subtracting %ld result is %ld\n",long(size),long(allocation_amt));
-  //fprintf(stderr, "delete frame %p: nalloc=%ld, alloc=%ld, size = %ld\n",
-  //  fp, allocation_count, allocation_amt,long(size)
-  //);
+
+  // unlink the frame from the collectors list
+  JudyLDel(&j_shape, (Word_t)fp, &je);
+  JudyLDel(&j_nused, (Word_t)fp, &je);
+  JudyLDel(&j_nalloc, (Word_t)fp, &je);
+}
+
+void flx_collector_t::post_delete(void *fp)
+{
+  Judy1Set(&j_tmp,(Word_t)fp,&je);
+}
+
+void flx_collector_t::delete_frame(void *fp)
+{
+  allocator->deallocate(fp);
 }
 
 unsigned long flx_collector_t::reap ()
 {
   unsigned long count = 0;
   Word_t next=(Word_t)NULL;
-  int res = Judy1First(jb,&next,&je);
+  int res = Judy1First(j_tmp,&next,&je);
   while(res) {
-    delete_frame((frame_t*)(void*)next);
+    delete_frame((void *)(void*)next);
     ++count;
-    res = Judy1Next(jb,&next,&je);
+    res = Judy1Next(j_tmp,&next,&je);
   }
-  Judy1FreeArray(&jb,&je);
+  Judy1FreeArray(&j_tmp,&je);
   return count;
 }
+
+void flx_collector_t::mark()
+{
+  if(debug)fprintf(stderr,"Collector: Running mark\n");
+  assert (root_count == roots.size());
+
+  rootmap_t::iterator const end = roots.end();
+  for(
+    rootmap_t::iterator i = roots.begin();
+    i != end;
+    ++i
+  )
+    scan_object((*i).first);
+}
+
 
 
 unsigned long flx_collector_t::sweep()
 {
   if(debug)
-    fprintf(stderr,"Collector: Sweep\n");
+    fprintf(stderr,"Collector: Sweep, garbage bit value=%d\n",(int)parity);
   unsigned long sweeped = 0;
-  collecting=true;
-  frame_t *current = (frame_t*)NULL;
-  Word_t *plen = (Word_t*)JudyLFirst(ja,(Word_t*)(void*)&current,&je);
-  while(plen)
+  void *current = NULL;
+  Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je);
+  while(pshape)
   {
-    if((*plen & 1) == (parity & 1UL))
+    if((*pshape & 1) == (parity & 1UL))
     {
       if(debug)
-        fprintf(stderr,"Garbage %p=%s\n",current,current->shape->cname);
+        fprintf(stderr,"Garbage %p=%s\n",current,((gc_shape_t*)(*pshape & ~1UL))->cname);
       ++ sweeped;
       unlink(current);
       post_delete(current);
     }
     else
       if(debug)
-        fprintf(stderr,"Reachable %p=%s\n",current,current->shape->cname);
+        fprintf(stderr,"Reachable %p=%s\n",current,((gc_shape_t*)(*pshape & ~1UL))->cname);
 
-    plen = (Word_t*)JudyLNext(ja,(Word_t*)(void*)&current,&je);
+    pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je);
   }
 
   parity = !parity;
-  collecting = false;
   if(debug)
     fprintf(stderr,"Sweeped %ld\n",sweeped);
   return reap();
@@ -786,11 +735,10 @@ void flx_collector_t::impl_add_root(void *memory)
     fprintf(stderr, "GC ERROR: ADD NULL ROOT\n");
     abort();
   }
-  frame_t *p =  CLIENT_TO_FRAME(memory);
-  rootmap_t::iterator iter = roots.find(p);
+  rootmap_t::iterator iter = roots.find(memory);
   if(iter == roots.end())
   {
-    std::pair<frame_t *const, unsigned long> entry(p,1UL);
+    std::pair<void *const, unsigned long> entry(memory,1UL);
     roots.insert (entry);
     root_count++;
   }
@@ -800,8 +748,7 @@ void flx_collector_t::impl_add_root(void *memory)
 
 void flx_collector_t::impl_remove_root(void *memory)
 {
-  frame_t *p =  CLIENT_TO_FRAME(memory);
-  rootmap_t::iterator iter = roots.find(p);
+  rootmap_t::iterator iter = roots.find(memory);
   if(iter == roots.end())
   {
     fprintf(stderr, "GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
@@ -816,245 +763,52 @@ void flx_collector_t::impl_remove_root(void *memory)
     --(*iter).second;
 }
 
-void flx_collector_t::scan_object(frame_t *frame)
+void flx_collector_t::scan_object(void *p)
 {
-  if(debug)
-    fprintf(stderr,"Scanning %p\n",frame);
-  if(debug)
-    fprintf(stderr,"Scanning [valid] %p=%s\n",frame,frame->shape->cname);
-    // NOTE: in Judy, this routine is only called
-    // if the object has not already been reached
-    // and the flag is set to reachable BEFORE
-    // entry to this routine
-    if(debug)
-    {
-      fprintf(stderr,"Reachable %p\n",frame);
-      gc_shape_t * shape = frame->shape;
-      fprintf(stderr,"Reachable [valid] %p=%s\n",frame,shape->cname);
-      for(unsigned int i=0; i<shape->n_offsets; ++i)
-      {
-        unsigned long offset = shape->offsets[i];
-        unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
-        void *x = *(void**)(p+offset);
-        if(x) {
-          bool valid = check_client_pointer(x);
-          fprintf(stderr," offset: 0x%04lx %p->[%p-0x%x] %s\n",
-            offset,p+offset,x,FRAMESIZE,
-            valid?"[valid]":"INVALID"
-          );
-          if(!valid) abort();
-        }
-        else
-          fprintf(stderr," offset: 0x%04lx %p->[%p] NULL\n",
-            offset,p+offset,x);
-      }
-    }
-    gc_shape_t *shape = frame->shape;
-    unsigned long n_used = frame->n_used * shape->count;
-    std::size_t obj_size = shape->amt;
-    std::size_t n_offsets = shape->n_offsets;
-    std::size_t *offsets = shape->offsets;
-    unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
-
-    Word_t reachable = (parity & 1UL) ^ 1UL;
-    for(unsigned long j=0; j<n_used; ++j)
-    {
-      for(unsigned int i=0; i<n_offsets; ++i)
-      {
-        void **q = (void**)(void*)(p + offsets[i]);
-        if(*q)
-        {
-          Word_t cand = (Word_t)CLIENT_TO_FRAME(*q);
-          Word_t fp=cand;
-          Word_t *plen = (Word_t*)JudyLLast(ja,&fp,&je);
-          // this is only true for object pointers..
-          // not interior pointers -- FOR TESTING ONLY!
-          //assert(fp == cand);
-          
-          if(
-            plen && 
-            ((*plen & 1UL) != reachable) && 
-            (fp<=cand) && 
-            (cand < fp+(*plen & ~1UL))
-          )
-          {
-            *plen = *plen & ~1UL | reachable;
-            scan_object((frame_t*)(void*)fp);
-          }
-        }
-      }
-      p+=obj_size;
-    }
-}
-
-void flx_collector_t::mark()
-{
-  if(debug)
-    fprintf(stderr,"Collector: Running mark\n");
-  assert (root_count == roots.size());
   Word_t reachable = (parity & 1UL) ^ 1UL;
-  //fprintf(stderr,"Parity (garbage)=%ld, reachable = %ld, count=%ld\n", (long)parity, reachable, allocation_count);
-  rootmap_t::iterator const end = roots.end();
-  for(
-    rootmap_t::iterator i = roots.begin();
-    i != end;
-    ++i
-  )
+  //fprintf(stderr,"Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+  Word_t cand = (Word_t)p;
+  Word_t fp=cand;
+  Word_t *w = (Word_t*)JudyLLast(j_shape,&fp,&je);
+  if(w == NULL) return;              // no lower object
+  //fprintf(stderr,"Found candidate umarked object %p, &shape=%p, shape(1) %p!\n",(void*)fp,(void*)w,(void*)(*w));
+  if(*w & 1UL == reachable) return;   // already handled
+  gc_shape_t *shape = (gc_shape_t*)(*w & ~1UL);
+  //fprintf(stderr,"Found candidate umarked object %p, shape %p!\n",(void*)fp,shape);
+  unsigned long n = get_count((void*)fp) * shape->count * shape->amt;
+  if(cand >= (Word_t)(void*)((unsigned char*)(void*)fp+n)) return; // not interior
+  //fprintf(stderr,"Found reachable umarked object!\n");
+
+  *w = (*w & ~1uL) | reachable;
+
+  unsigned long n_used = get_used((void*)fp) * shape->count;
+  std::size_t n_offsets = shape->n_offsets;
+  std::size_t *offsets = shape->offsets;
+
+  for(unsigned long j=0; j<n_used; ++j)
   {
-    Word_t fp = (Word_t)(*i).first;
-    Word_t cand = (Word_t)fp;
-    Word_t *plen = (Word_t*)JudyLLast(ja,(Word_t*)&fp,&je);
-    if(
-      plen && 
-      ((*plen & 1UL) != reachable) && 
-      (fp<=cand) && 
-      (cand < fp+(*plen & ~1UL))
-    )
+    for(unsigned int i=0; i<n_offsets; ++i)
     {
-      *plen = *plen & ~1UL | reachable;
-      scan_object((frame_t*)fp);
+      void **pq = (void**)(void*)((unsigned char*)p + offsets[i]);
+      void *q = *pq;
+      if(q)scan_object(q);
     }
+    p=(void*)((unsigned char*)p+shape->amt);
   }
-  if(debug)
-    fprintf(stderr,"Mark complete\n");
 }
 
 unsigned long flx_collector_t::impl_collect()
 {
-  if(debug)fprintf(stderr,"Running collector\n");
+  if(debug)
+    fprintf(stderr,"Running collector\n");
+
   mark();
   unsigned long r = sweep();
-  //fprintf(stderr,"Reapped %ld obj, remaining %ld\n",r,allocation_count);
-  if(debug)impl_check();
   return r;
-}
-
-static int vpcompare(void const *a, void const *b) {
-  void *aa = *(void**)a;
-  void *bb = *(void**)b;
-  if (std::less<void*>()(aa,bb)) return -1;
-  if (std::equal_to<void*>()(aa,bb)) return 0;
-  return 1;
 }
 
 // scan all known objects, and check every pointer
 // is either NULL or points to one of them
-
-void flx_collector_t::impl_check()
-{
-  if(debug)fprintf(stderr,"RUNNING HEAP INTEGRITY CHECK on %ld objects\n",allocation_count);
-  unsigned long nobj = allocation_count;
-  void **ctrl = (void**)malloc(nobj * sizeof(void*));
-  unsigned long handled = 0;
-  unsigned long allocated = 0;
-  frame_t *lfirst = 0;
-  void *res = JudyLFirst(ja,(Word_t*)(void*)&lfirst, &je);
-  if(res == NULL) lfirst=NULL;
-  long outofarena=0L;
-  while(lfirst) {
-    ctrl[handled++]=lfirst;
-    gc_shape_t *shape = lfirst->shape;
-    unsigned long n_objects = lfirst->n_objects * shape->count;
-    unsigned long size = n_objects * shape->amt + FRAMESIZE;
-    outofarena++;
-    //fprintf(stderr,"Object %p size %ld type %s\n",lfirst,long(size),shape->cname);
-    allocated += size;
-    if(size != *(Word_t*)res & !1UL)
-    {
-      fprintf(stderr,"WRONG SIZE: Object %p size %ld type %s, JUDY says %ld\n",lfirst,long(size),shape->cname,*(Word_t*)res & ~1UL);
-      abort();
-    }
-
-    res = JudyLNext(ja,(Word_t*)(void*)&lfirst,&je);
-    if(res == NULL) lfirst=NULL;
-  }
-
-  if(handled != nobj)
-  {
-    fprintf(stderr,"Wrong number of objects\n");
-    abort();
-  }
-
-  if(allocated != allocation_amt)
-  {
-    fprintf(stderr,"Wrong allocation amount: recorded as %ld, counted as %ld\n",
-      allocation_amt, allocated
-    );
-    fprintf(stderr, "objects = %ld\n", outofarena);
-    abort();
-  }
-  qsort(ctrl,nobj,sizeof(void*),vpcompare);
-
-  for(unsigned int i = 0; i<nobj; ++i) {
-    frame_t *frame = (frame_t*) ctrl[i];
-    gc_shape_t *shape = frame->shape;
-    unsigned long n_used = frame->n_used * shape->count;
-
-    // scan the frame for pointers and adjust them
-    unsigned char *client = (unsigned char*)FRAME_TO_CLIENT(frame);
-    size_t *offsets = shape -> offsets;
-    for(unsigned int nel = 0; nel < n_used; nel++)
-    {
-      for(unsigned int k = 0; k<shape->n_offsets; ++k) 
-      {
-        size_t offset = offsets[k];
-        void **loc = (void**)(client + offset);
-        void *client_ptr = *loc;
-        if (client_ptr) // leave NULL alone 
-        {
-          void *address= CLIENT_TO_FRAME(client_ptr);
-          void **res = (void**) bsearch(
-            &address,
-            ctrl,nobj,
-            sizeof(void*),
-            vpcompare
-          );
-          if(!res) {
-            fprintf(stderr, 
-              "CHECK: In object frame=%p, type %s, subobject #%d,\n"
-              "offset #%d->%ld, at address %p,\n"
-              "pointer [frame=%p, client=%p] NOT IN GC LIST\n",
-              frame, shape->cname,nel,k,offset,loc,address,client_ptr);
-//            abort();
-          }
-        }
-      }
-      client += shape->amt;
-    }
-  }
-
-  rootmap_t::iterator last = roots.end();
-  for(
-    rootmap_t::iterator iter = roots.begin();
-    iter != last;
-    ++iter
-  )
-  {
-    std::pair<frame_t *const, unsigned long> root_record = *iter;
-    void **res = (void**) bsearch(
-      &root_record.first,
-      ctrl,nobj,
-      sizeof(void*),
-      vpcompare
-    );
-    if(!res) {
-      fprintf(stderr,"CHECK: WOOPS CANNOT FIND ROOT! %p\n",root_record.first);
-      abort();
-    }
-  }
-  free(ctrl);
-  fprintf(stderr,"Heap Integrity checked\n");
-}
-
-bool flx_collector_t::check_frame_pointer(frame_t *p)
-{
-  return NULL != JudyLGet(ja,(Word_t)p,&je);
-}
-
-bool flx_collector_t::check_client_pointer(void *p)
-{
-  return p?check_frame_pointer (CLIENT_TO_FRAME(p)):true;
-}
 
 void flx_collector_t::free_all_mem()
 {
@@ -1095,7 +849,6 @@ struct PTHREAD_EXTERN flx_ts_collector_t :
 private:
   /// allocator
   void *v_allocate(gc_shape_t *ptr_map, unsigned long);
-  void v_deallocate(frame_t *frame);
 
   /// collector (returns number of objects collected)
   unsigned long v_collect();
@@ -1104,8 +857,6 @@ private:
   void v_add_root(void *memory);
   void v_remove_root(void *memory);
 
-  //
-  void v_check();
   // statistics
   unsigned long v_get_allocation_count()const;
   unsigned long v_get_root_count()const;
@@ -1137,11 +888,6 @@ void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
   return impl_allocate(ptr_map,x);
 }
 
-void flx_ts_collector_t::v_deallocate(frame_t *frame) {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  impl_deallocate(frame);
-}
-
 unsigned long flx_ts_collector_t::v_collect() {
   flx::pthread::flx_mutex_locker_t l(mut);
   return impl_collect();
@@ -1155,11 +901,6 @@ void flx_ts_collector_t::v_add_root(void *memory) {
 void flx_ts_collector_t::v_remove_root(void *memory) {
   flx::pthread::flx_mutex_locker_t l(mut);
   impl_remove_root(memory);
-}
-
-void flx_ts_collector_t::v_check() {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  impl_check();
 }
 
 unsigned long flx_ts_collector_t::v_get_allocation_count()const {

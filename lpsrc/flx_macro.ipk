@@ -52,15 +52,10 @@ open Flx_typing2
 open Flx_util
 open Flx_typing2
 
-@if USE_DYPGEN:
-  tangle(" (* only with dypgen! *) ")
-  tangle("let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =")
-  tangle("  match ls with")
-  tangle("  | [x,_] -> x")
-  tangle('  | _ -> failwith "Dypgen parser failed"')
- else:
-  tangle("let dyphack x = x")
-@#
+let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
+  match ls with
+  | [x,_] -> x
+  | _ -> failwith "Dypgen parser failed"
 
 exception Macro_return
 let dfltvs = [],{ raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}

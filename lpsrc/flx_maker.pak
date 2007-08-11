@@ -3983,7 +3983,7 @@ then
           else
             cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
           fi
-          if [ $STDOUT != "" ]; then cmd="$cmd > $STDOUT"; fi
+          if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
         fi
@@ -4017,7 +4017,7 @@ else
           else
             cmd="$STATIC_ENV $base $args"
           fi
-          if [ $STDOUT != "" ]; then cmd="$cmd > $STDOUT"; fi
+          if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
         fi
@@ -4225,3 +4225,5 @@ Just cleaning up script now.
    os.system('chmod u+x bin/flx')
    os.system('chmod u+x bin/fishcc')
  except:pass
+
+
