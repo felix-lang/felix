@@ -289,15 +289,18 @@ Printf.printf "Ack(3,%d): %d\n" n (ack 3 n)
 
 @head(3,'Haskell code')
 @select(tangler('speed/src/haskell/ack.hs','data'))
-import System(getArgs)
+import System.Environment (getArgs)
+import System.IO 
+import Text.Printf (hPrintf)
 
-main = do ~[num] <- getArgs
-  putStrLn ("Ack(3," ++ num ++ "): " ++ (show (ack 3 (read num))))
+main = do (x1:x2:xs) <- getArgs
+          (m,n) <- return (read x1, read x2)
+          hPrintf stdout "Ack(%d,%d): %d\n" m n (ack  m n)
 
 ack :: Int -> Int -> Int
-ack 0 n = n+1
-ack m 0 = ack (m-1) 1
-ack m n = ack (m-1) (ack m (n-1));
+ack 0 n = n + 1
+ack m 0 = ack (m - 1) 1
+ack m n = ack (m - 1) (ack m (n - 1))
 
 @head(3,'Ada code')
 @select(tangler('speed/src/ada/ack.ada','data'))
@@ -433,7 +436,7 @@ let () =
 @select(tangler('speed/src/haskell/takfp.hs','data'))
 import System(getArgs)
 
-main = do n <- getArgs >>= readIO.head
+main = do n <- getArgs >>= readIO . head
           putStrLn (show (tak (3*n) (2*n) n))
 
 tak :: Float -> Float -> Float -> Float
