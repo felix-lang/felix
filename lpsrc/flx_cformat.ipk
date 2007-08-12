@@ -182,6 +182,7 @@ let types_of_cformat_string sr s =
           prec := None;
           sign := ' ';
           dp := ' ';
+          fmt := "";
           begin match !pos with None -> incr argno | Some _ -> () end; 
           pos := None;
         with Not_found ->

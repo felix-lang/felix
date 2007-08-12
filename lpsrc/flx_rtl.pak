@@ -3446,11 +3446,13 @@ namespace flx { namespace rtl { namespace strutil {
     else return "";
   }
 
-#ifdef HAVE_VSNPRINTF  
+#ifdef FLX_HAVE_VSNPRINTF  
   string flx_asprintf(char *fmt,...){
     va_list ap;
     va_start(ap,fmt);
+    //printf("vsnprintf TRIAL\n");
     int n = vsnprintf(NULL,0,fmt,ap);
+    //printf("vsnprintf size=%d\n",n);
     va_end(ap);
     char *res = (char*)malloc(n+1);
     va_start(ap,fmt);
@@ -3464,8 +3466,9 @@ namespace flx { namespace rtl { namespace strutil {
   // THIS IS UNSAFE .. but Windows sucks.
   // It documents vsnprintf .. but doesn't provide it
   string flx_asprintf(char *fmt,...){
+    //printf("vsnprintf EMULATION!\n");
     va_list ap;
-    int n = 1000;
+    int n = 10000; // hack, WILL crash if not enough
     char *res = (char*)malloc(n+1);
     va_start(ap,fmt);
     vsprintf(res,fmt,ap);

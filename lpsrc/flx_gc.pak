@@ -679,6 +679,8 @@ unsigned long flx_collector_t::reap ()
     res = Judy1Next(j_tmp,&next,&je);
   }
   Judy1FreeArray(&j_tmp,&je);
+  if(debug)
+    fprintf(stderr,"Reaped %lu objects\n",count);
   return count;
 }
 
@@ -766,18 +768,23 @@ void flx_collector_t::impl_remove_root(void *memory)
 void flx_collector_t::scan_object(void *p)
 {
   Word_t reachable = (parity & 1UL) ^ 1UL;
-  //fprintf(stderr,"Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+  if(debug)
+    fprintf(stderr,"Scan object %p, reachable bit value = %d\n",p,(int)reachable);
   Word_t cand = (Word_t)p;
   Word_t fp=cand;
   Word_t *w = (Word_t*)JudyLLast(j_shape,&fp,&je);
   if(w == NULL) return;              // no lower object
-  //fprintf(stderr,"Found candidate umarked object %p, &shape=%p, shape(1) %p!\n",(void*)fp,(void*)w,(void*)(*w));
-  if(*w & 1UL == reachable) return;   // already handled
+  if(debug)
+    fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p!\n",(void*)fp,(void*)w,(void*)(*w));
+  if( (*w & 1UL) == reachable) return;   // already handled
+
   gc_shape_t *shape = (gc_shape_t*)(*w & ~1UL);
-  //fprintf(stderr,"Found candidate umarked object %p, shape %p!\n",(void*)fp,shape);
+  if(debug)
+    fprintf(stderr,"Found candidate UNMARKED object %p, shape %p, type=%s\n",(void*)fp,shape,shape->cname);
   unsigned long n = get_count((void*)fp) * shape->count * shape->amt;
   if(cand >= (Word_t)(void*)((unsigned char*)(void*)fp+n)) return; // not interior
-  //fprintf(stderr,"Found reachable umarked object!\n");
+  if(debug)
+    fprintf(stderr,"Found reachable umarked object!\n");
 
   *w = (*w & ~1uL) | reachable;
 
