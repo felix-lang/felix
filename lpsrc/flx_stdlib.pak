@@ -1970,6 +1970,51 @@ module List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
+  // the second list is made the tail of the 
+  // list stored at the location pointed at by the first argument
+  // if the first list is empty, the variable will point
+  // at the second list. This operation is DANGEROUS because
+  // it is a mutator: lists are traditionally purely functional
+
+  // this function is required for efficient joining of lists.
+  // we copy the first list, then splice the second one onto its last element
+
+  // representation dependent: may break!
+  // A Felix list is a _uctor_ which has a variant code and pointer
+  // If the variant is 1, the pointer points at the tuple of type
+  // T * list[T]. There is no way to name this type from C,
+  // so we just create an compatible type and use a cast.
+
+  proc splice[T] : &list[T] * list[T] = 
+    """
+    {
+      struct node_t { ?1 elt; _uctor_ tail; };
+      _uctor_ *p = $1;
+      while(p->variant) p = &((node_t*)p->data)->tail;
+      *p = $2;
+    }
+    """
+  ;
+
+  // in place list reversal
+  proc rev[T] : &list[T] =
+    """
+    {
+      struct node_t { ?1 elt; _uctor_ tail; };
+      _uctor_ nutail = _uctor_(0,0);
+      _uctor_ cur = *$1;
+      while(cur.variant)
+      {
+        _uctor_ oldtail = ((node_t*)cur.data)->tail;
+        ((node_t*)cur.data)->tail = nutail;
+        nutail = cur;
+        cur = oldtail;
+      }
+      *$1 = nutail;
+    }
+    """
+  ;
+
   fun _ctor_list[T] () => Empty[T];
 
   fun _ctor_list[T] (x:T) => Cons(x, Empty[T]);
