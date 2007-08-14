@@ -2533,10 +2533,12 @@ x = conv x;
 Control::collect();
 println q"x=$(x)";
 Control::collect();
+/*
 x = conv x; 
 Control::collect();
 println q"x=$(x)";
 Control::collect();
+*/
 
 var x_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 x;
 var y = map (fun (item:int)=> item * item) x;
