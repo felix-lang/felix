@@ -2509,9 +2509,11 @@ str:  ['a', 'b', 'c']
 repr: ['a', 'b', 'c']
 @doc()
 
-@env_rt.head(3)
-@select(env_rt.test('.flx'))
-@kat_rt("garbage collector")
+@env_nd.head(2,"Non deterministic tests")
+
+@env_nd.head(3)
+@select(env_nd.test('.flx'))
+@kat_nd("garbage collector")
 #import <flx.flxh>;
 open List;
 Control::collect();
@@ -2546,10 +2548,6 @@ var y_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 y;
 
 println q"x_sum=$x_sum, y_sum=$(y_sum)";
 
-@select(env_rt.expect())
-@doc()
-
-@env_nd.head(2,"Non deterministic tests")
 
 @env_nd.head(3)
 @select(env_nd.test('.flx'))
