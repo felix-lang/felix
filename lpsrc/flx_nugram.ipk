@@ -2093,7 +2093,11 @@ require initialisers.
     )))
   """;
 
-  sifgoto := "while" lpar sexpr rpar statement =>#
+  // note: we use sdollar_apply not sexpr here,
+  // otherwise while (fun ()=>x) { } is interpreted
+  // as a C while loop, instead of the while HOF in the library
+
+  sifgoto := "while" lpar sdollar_apply rpar statement =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
@@ -2106,7 +2110,7 @@ require initialisers.
     )))
   """;
 
-  sifgoto := do scompound "until" sexpr ssemi =>#
+  sifgoto := do scompound "until" sdollar_apply ssemi =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
@@ -2116,7 +2120,7 @@ require initialisers.
     )))
   """;
 
-  sifgoto := if lpar sexpr rpar statement else statement =>#
+  sifgoto := if lpar sdollar_apply rpar statement else statement =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
@@ -2131,7 +2135,7 @@ require initialisers.
   """;
 
   // this must be given first ..
-  sifgoto := if lpar sexpr rpar statement =>#
+  sifgoto := if lpar sdollar_apply rpar statement =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" ) 
