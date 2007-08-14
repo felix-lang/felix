@@ -2015,6 +2015,40 @@ module List
     """
   ;
 
+  // in place list reversal, also returns the last element
+  // as a list, empty iff the original list is
+  proc rev_last[T] : &list[T] * &list[T] =
+    """
+    {
+      struct node_t { ?1 elt; _uctor_ tail; };
+      _uctor_ nutail = _uctor_(0,0);
+      _uctor_ cur = *$1;
+      _uctor_ last = cur;
+      while(cur.variant)
+      {
+        _uctor_ oldtail = ((node_t*)cur.data)->tail;
+        ((node_t*)cur.data)->tail = nutail;
+        nutail = cur;
+        cur = oldtail;
+      }
+      *$1 = nutail;
+      *$2 = last;
+    }
+    """
+  ;
+
+  fun copy[T] (x:list[T]):list[T]= {
+    var y = rev x;
+    rev (&y);
+    return y;
+  }
+
+  proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
+    *out = rev inp;
+    rev_last (out, last);
+  }
+
+
   fun _ctor_list[T] () => Empty[T];
 
   fun _ctor_list[T] (x:T) => Cons(x, Empty[T]);
@@ -2126,22 +2160,25 @@ module List
 
   fun range (num:int) => range(0, num, 1);
   
-  noinline fun join[T] (x:list[T]) (y:list[T]):list[T] = 
+  fun join[T] (x:list[T]) (y:list[T]):list[T] = 
   {
-    return
-      match x with
-      | Empty[T] => y
-      | Cons[T] (?h,?t) => Cons (h, join t y)
-      endmatch
-    ;
+    if is_empty x do 
+      return y; 
+    else
+      var z: list[T];
+      var last: list[T];
+      copy_last (x,&z,&last);
+      splice (&last, y);
+      return z;
+    done;
   }
 
   fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
 
-  fun add[T] (x:list[T], y:T):list[T] => Cons (y, x);
+  fun add[T] (x:T, y:list[T]):list[T] => Cons (x, y);
 
   // very slow, adding to end ..
-  noinline fun add[T] (x:T, y:list[T]):list[T] => rev$ Cons (x, rev y);
+  noinline fun add[T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
 
   proc pluseq[T] (x:lvalue[list[T]], y:T) { x = x + y; }
 

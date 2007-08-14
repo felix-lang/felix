@@ -653,7 +653,7 @@ let gen_function_names syms (child_map,bbdfns) =
     | `BBDCL_class (props,vs) -> ()
       (*
       bcat s ("\n//------------------------------\n");
-      bcat s ("//CLASS " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      bcat s ("//CLASS " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       let t = `BTYP_inst (index,ts) in
       let j = try 
         Hashtbl.find syms.registry t with 
@@ -696,11 +696,11 @@ let gen_functions syms (child_map,bbdfns) =
     | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//PURE C FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
         bcat s 
         (gen_C_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
       end else begin
-        bcat s ("//FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
         bcat s 
         (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
       end
@@ -709,9 +709,9 @@ let gen_functions syms (child_map,bbdfns) =
       let instance_no = i in
       bcat s ("\n//------------------------------\n");
       if ret' = `BTYP_void then begin
-        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
@@ -765,30 +765,30 @@ let gen_functions syms (child_map,bbdfns) =
     | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//PURE C PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
         bcat s 
         (gen_C_function syms (child_map,bbdfns) props index id sr vs ps `BTYP_void ts i)
       end else begin
-        bcat s ("//PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
         bcat s 
         (gen_function syms (child_map,bbdfns) props index id sr vs ps `BTYP_void ts i)
       end
 
     | `BBDCL_regmatch (props,vs, (ps,traint), ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
-      bcat s ("//REGMATCH " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      bcat s ("//REGMATCH " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
 
     | `BBDCL_reglex (props, vs, (ps,traint), i, ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
-      bcat s ("//REGLEX " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      bcat s ("//REGLEX " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
 
     | `BBDCL_class (props,vs) ->
       bcat s ("\n//------------------------------\n");
-      bcat s ("//CLASS " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      bcat s ("//CLASS " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       let t = `BTYP_inst (index,ts) in
       let j = try 
         Hashtbl.find syms.registry t with 
@@ -2150,7 +2150,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       )^
       "}\n"
     in
-      let q = qualified_name_of_index syms.dfns index in
+      let q = qualified_name_of_bindex bbdfns syms.dfns index in
       "//FUNC " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
       (
@@ -2257,7 +2257,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
       "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"^
       "}\n"
     in
-      let q = qualified_name_of_index syms.dfns index in
+      let q = qualified_name_of_bindex bbdfns syms.dfns index in
       "//FUNC " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
       (
@@ -2312,7 +2312,7 @@ let gen_class_methods filename syms (child_map,bbdfns)
     in
 
       let q = 
-        try qualified_name_of_index syms.dfns index 
+        try qualified_name_of_bindex bbdfns syms.dfns index 
         with Not_found -> 
           si instance_no ^ "=" ^ 
           id ^ "<" ^si index^">" ^
@@ -2464,7 +2464,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         "}\n"
     in
       let q = 
-        try qualified_name_of_index syms.dfns index 
+        try qualified_name_of_bindex bbdfns syms.dfns index 
         with Not_found -> 
           si instance_no ^ "=" ^ 
           id ^ "<" ^si index^">" ^
@@ -2524,9 +2524,9 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
       in
       bcat s ("\n//------------------------------\n");
       if ret' = `BTYP_void then begin
-        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in

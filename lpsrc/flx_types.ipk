@@ -2365,6 +2365,7 @@ val string_of_bexe : symbol_table_t -> int -> bexe_t -> string
 val sbx: symbol_table_t -> bexe_t -> string
 val string_of_exe : int -> exe_t -> string
 val qualified_name_of_index : symbol_table_t -> int -> string
+val qualified_name_of_bindex : fully_bound_symbol_table_t -> symbol_table_t -> int -> string
 val string_of_bbdcl : 
   symbol_table_t -> 
   bbdcl_t -> 
@@ -3043,10 +3044,25 @@ and qualified_name_of_index' dfns index =
     end ^
     id
 
+and qualified_name_of_bindex' bbdfns dfns index = 
+  match Hashtbl.find bbdfns index with 
+  | id,parent,_,_ ->
+    begin match parent with
+    | Some index' -> qualified_name_of_index_with_vs dfns index' 
+    | None -> ""
+    end ^
+    id
+
+
 and qualified_name_of_index dfns index = 
   try qualified_name_of_index' dfns index ^ "<"^si index ^">"
   with Not_found -> "index_"^ si index
   
+and qualified_name_of_bindex bbdfns dfns index = 
+  try qualified_name_of_bindex' bbdfns dfns index ^ "<"^si index ^">"
+  with Not_found -> "index_"^ si index
+  
+
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
 and get_label i =

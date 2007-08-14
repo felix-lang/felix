@@ -836,31 +836,6 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
         begin match entry with
 
 
-        (* THIS CODE IS PROBABLY IN THE WRONG PLACE! 
-
-           The technique is ALSO probably insecure because
-           it only works with direct applications .. but
-           the overloading works with closures too.
-
-           To make this actually work properly requires a change
-           to the type system.
-
-           In addition, it isn't clear the lifted call is optimised
-           as it should be (it should be inlined of course).
-           In particular, its argument may also include calls
-           needing lifting.
-        *)
-
-        (* This code must ONLY be triggered by an inner (unlifted) application
-           so the detector must not be recursively applied to RHS of initialisation
-           x = f a
-           where f is the generator, since that form is properly lifted ..
-           otherwise we get a chain:
-           x1 = f a
-           x2 = x1
-           x3 = x2 
-           ...
-        *)
         | `BBDCL_fun (props,_,_,_,_,_,_) 
         | `BBDCL_function (props,_,_,_,_) 
           when mem `Generator props 
@@ -936,9 +911,9 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
                 if not (inlining_complete bbdfns callee) then print_endline "Inlining isn't complete in callee ..??";
 
                 if inlining_complete bbdfns callee then begin
-                  (*
                   print_endline ("INLINE " ^ id ^ "<" ^ si callee ^ ">");
                   print_endline ("Special inline " ^ si caller ^" calls " ^ si callee);
+                  (*
                   *)
                   (* GENERAL CASE -- we need to add a variable *)
                   let urv = !(syms.counter) in incr (syms.counter);
@@ -997,7 +972,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
                 else e
               end
           else e
-        *)
+          *)
         | _ -> e
         end
       end else e
