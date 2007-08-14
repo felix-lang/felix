@@ -2056,9 +2056,8 @@ module List
   fun _ctor_list[T, N] (x:Array::array[T, N]) = {
     var o = Empty[T];
     var i:int; forall i in Array::len(x) - 1 downto 0 do
-      o += x.[i];
+      o = Cons (x.[i],o);
     done;
-
     return o;
   }
 
