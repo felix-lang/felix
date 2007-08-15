@@ -40,6 +40,13 @@ open Flx_mtypes2
 open List
 open Flx_util
 
+let hfind msg h k = 
+  try Hashtbl.find h k
+  with Not_found ->
+    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    raise Not_found
+
+
 type child_map_t = 
   (bid_t, bid_t list) Hashtbl.t
 
@@ -54,7 +61,7 @@ let add_child childmap parent child =
   Hashtbl.replace childmap parent (child::kids)
 
 let rec is_ancestor bbdfns child anc =
-  let _,parent,_,_ = Hashtbl.find bbdfns child in
+  let _,parent,_,_ = hfind "is_ancestor" bbdfns child in
   match parent with
   | None -> false
   | Some x -> 

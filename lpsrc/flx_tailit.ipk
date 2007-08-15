@@ -11,6 +11,7 @@ open Flx_child
 val tailit:
   sym_state_t ->
   usage_table_t * child_map_t * fully_bound_symbol_table_t ->
+  string -> 
   bid_t ->
   range_srcref ->
   bparameter_t list ->
@@ -104,7 +105,13 @@ let functions_find_xclosures syms cls bbdfns ii =
   (function_find_xclosure syms cls bbdfns)
   ii
 
-let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list = 
+let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list = 
+  (*
+  print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
+  iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x)) exes;
+  print_endline "======== END BODY ========";
+  *)
+
   let ts' = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
   let pset = fold_left (fun s {pindex=i} -> IntSet.add i s) IntSet.empty ps in
   let parameters = ref [] in
@@ -445,6 +452,15 @@ let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list =
      jump_done := true;
      let res = cal_tail_call a @ res
      in aux tail res
+
+  | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure (i,ts),_),a),_)) as x :: tail 
+    ->
+    (*
+    print_endline ("--> NONSELF? Tail rec apply " ^ si i);
+    print_endline ("This = " ^ si this);
+    *)
+    aux tail (x::res)
+
 
   | (`BEXE_call(sr,(`BEXPR_closure (i,ts),_),a)) as x :: tail  ->
     (*

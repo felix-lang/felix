@@ -382,14 +382,13 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   let rexpr e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in 
   let rreqs rqs = remap_reqs syms bbdfns varmap revariable caller_vars callee_vs_len rqs in
   let id,old_parent,sr,entry = Hashtbl.find bbdfns index in
-  (*
+  if syms.compiler_options.print_flag then
   print_endline 
   (
     "COPYING " ^ id ^ " index " ^ si index ^ " with old parent " ^
     sop old_parent ^ " to index " ^ si k ^ " with new parent " ^
     sop parent
   );
-  *)
   begin match parent with
   | Some p ->
     let old_kids = try Hashtbl.find child_map p with Not_found -> [] in
