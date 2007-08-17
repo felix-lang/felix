@@ -9,11 +9,19 @@ val find_file:
 @select(tangler('src/compiler/misclib/flx_filesys.ml'))
 exception Found_file of string
 
+let fcat fs = match fs with 
+| [] -> Filename.current_dir_name
+| _ -> List.fold_left Filename.concat (List.hd fs) (List.tl fs)
+
+let split_unix f = Str.split (Str.regexp "/") f
+
+let unix2native f = fcat (split_unix f)
+
 let find_file_in_path incdirs f =
   try
     List.iter
     (fun d -> 
-      let f = Filename.concat d f in 
+      let f =  unix2native (d ^ "/" ^ f) in 
       if Sys.file_exists f 
       then raise (Found_file f)
     )
@@ -26,7 +34,7 @@ let find_file lookup incdirs f =
   if String.length f = 0
   then failwith "Empty include file name"
   ;
-  if f.[0] = '/' || not lookup then f 
+  if f.[0] = '/' || not lookup then unix2native f 
   else find_file_in_path incdirs f
 
 let filetime f =
@@ -53,6 +61,7 @@ MISC_INTERFACES = MISC_MODULES
 
 MISC_IMPLEMENTATIONS = MISC_INTERFACES
 
+caml_require_libs = ["str"]
 caml_provide_lib = 'src/compiler/misclib/misclib'
 caml_interfaces = MISC_INTERFACES
 caml_implementations = MISC_IMPLEMENTATIONS
