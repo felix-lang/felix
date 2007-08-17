@@ -1403,7 +1403,7 @@ open module Stdout
 @#------------- STRING MODULES -------------------
 
 @select(std)
-include "string";
+include "std/string";
 @h = tangler("lib/std/string.flx")
 @select(h)
 #import <flx.flxh>
