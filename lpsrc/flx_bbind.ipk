@@ -1015,7 +1015,7 @@ try
     (fun index (name,parent,sr,entry) -> print_endline
       (
         si index ^ " --> " ^
-        string_of_bbdcl syms.dfns entry index
+        string_of_bbdcl syms.dfns bbdfns entry index
       )
     )
     bbdfns

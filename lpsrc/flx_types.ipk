@@ -2333,18 +2333,22 @@ val special_string_of_typecode : typecode_t -> string
 val string_of_expr : expr_t -> string
 val string_of_bound_expression : 
   symbol_table_t -> 
+  fully_bound_symbol_table_t ->
   tbexpr_t -> 
   string
 val string_of_bound_expression_with_type : 
   symbol_table_t -> 
+  fully_bound_symbol_table_t ->
   tbexpr_t -> 
   string
 val sbe: 
   symbol_table_t -> 
+  fully_bound_symbol_table_t ->
   tbexpr_t -> 
   string
 val tsbe: 
   symbol_table_t -> 
+  fully_bound_symbol_table_t ->
   tbexpr_t -> 
   string
 
@@ -2361,13 +2365,17 @@ val string_of_desugared : asm_t list -> string
 val string_of_suffixed_name : suffixed_name_t -> string
 val string_of_qualified_name : qualified_name_t -> string
 val string_of_dcl : int -> id_t -> int option -> vs_list_t -> dcl_t -> string
-val string_of_bexe : symbol_table_t -> int -> bexe_t -> string
-val sbx: symbol_table_t -> bexe_t -> string
+val string_of_bexe : symbol_table_t -> fully_bound_symbol_table_t -> int -> bexe_t -> string
+val sbx: symbol_table_t -> fully_bound_symbol_table_t -> bexe_t -> string
 val string_of_exe : int -> exe_t -> string
 val qualified_name_of_index : symbol_table_t -> int -> string
-val qualified_name_of_bindex : fully_bound_symbol_table_t -> symbol_table_t -> int -> string
+val qualified_name_of_bindex : 
+  symbol_table_t -> 
+  fully_bound_symbol_table_t -> 
+  int -> string
 val string_of_bbdcl : 
   symbol_table_t -> 
+  fully_bound_symbol_table_t ->
   bbdcl_t -> 
   int -> 
   string
@@ -2411,7 +2419,8 @@ val print_functions:
 
 val print_function_body:
   symbol_table_t ->
-  string -> int -> bvs_t -> bexe_t list -> int option ->
+  fully_bound_symbol_table_t ->
+  string -> int -> bvs_t -> bparams_t -> bexe_t list -> int option ->
   unit
 
 val print_function:
@@ -2429,47 +2438,7 @@ val string_of_string: string -> string
 val string_of_bquals: symbol_table_t -> btype_qual_t list -> string
 val print_bvs: bvs_t -> string
 
-type felix_term_t = [
-  | qualified_name_t 
-  | regexp_t 
-  | typecode_t 
-  | tpattern_t 
-  | literal_t 
-  | expr_t 
-  | pattern_t 
-  | statement_t 
-  | exe_t 
-  | btypecode_t 
 
-  (* hack .. the type because tbexpr_t is a pair not a variant *)
-  | bexpr_t 
-  | bexe_t 
-  | ast_term_t 
-
-  (* hack cause we don't know the name *)
-  | symbol_definition_t 
-
-  | bbdcl_t 
-  | param_kind_t 
-  | property_t 
-  | c_t 
-  | dcl_t 
-  | asm_t 
-  | iface_t 
-  | access_t 
-  | biface_t 
-  | btype_qual_t 
-  | type_qual_t 
-  | requirement_t 
-  | ikind_t 
-  | named_req_expr_t 
-  | raw_req_expr_t 
-  | glr_term_t 
-  ]
-
-
-val st: symbol_table_t -> felix_term_t -> string
-  
 @h = tangler('src/compiler/flxlib/flx_print.ml')
 @select(h)
 open Flx_util
@@ -2479,45 +2448,6 @@ open Flx_srcref
 open Big_int
 open Flx_typing
 open List
-
-type felix_term_t = [
-  | qualified_name_t 
-  | regexp_t 
-  | typecode_t 
-  | tpattern_t 
-  | literal_t 
-  | expr_t 
-  | pattern_t 
-  | statement_t 
-  | exe_t 
-  | btypecode_t 
-
-  (* hack .. the type because tbexpr_t is a pair not a variant *)
-  | bexpr_t 
-  | bexe_t 
-  | ast_term_t 
-
-  (* hack cause we don't know the name *)
-  | symbol_definition_t 
-
-  | bbdcl_t 
-  | param_kind_t 
-  | property_t 
-  | c_t 
-  | dcl_t 
-  | asm_t 
-  | iface_t 
-  | access_t 
-  | biface_t 
-  | btype_qual_t 
-  | type_qual_t 
-  | requirement_t 
-  | ikind_t 
-  | named_req_expr_t 
-  | raw_req_expr_t 
-  | glr_term_t 
-  ]
-
 
 let rec string_of_string s = Flx_string.c_quote_of_string s
 
@@ -3044,25 +2974,27 @@ and qualified_name_of_index' dfns index =
     end ^
     id
 
-and qualified_name_of_bindex' bbdfns dfns index = 
-  match Hashtbl.find bbdfns index with 
-  | id,parent,_,_ ->
-    begin match parent with
-    | Some index' -> qualified_name_of_index_with_vs dfns index' 
-    | None -> ""
-    end ^
-    id
-
-
 and qualified_name_of_index dfns index = 
   try qualified_name_of_index' dfns index ^ "<"^si index ^">"
   with Not_found -> "index_"^ si index
-  
-and qualified_name_of_bindex bbdfns dfns index = 
-  try qualified_name_of_bindex' bbdfns dfns index ^ "<"^si index ^">"
-  with Not_found -> "index_"^ si index
-  
 
+and get_name_parent dfns bbdfns index =
+  try 
+    match Hashtbl.find dfns index with 
+    { id=id; vs=vs; parent=parent} -> id, parent
+  with Not_found ->
+  try
+    match Hashtbl.find bbdfns index with 
+    id,parent,_,_ -> id,parent
+  with Not_found -> "index_" ^ string_of_int index,None
+
+
+and qualified_name_of_bindex dfns bbdfns index = 
+  let name,parent = get_name_parent dfns bbdfns index in
+  match parent with
+  | Some index' ->
+    qualified_name_of_bindex dfns bbdfns index' ^ "::" ^ name
+  | None -> name
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
 and get_label i =
@@ -3289,7 +3221,7 @@ and string_of_iparameters dfns ps =
     (map (fun (x,(i,y))-> x ^ "["^si i^"]: "^(string_of_typecode y)) ps)
   ^
   (match traint with
-  | Some x ->  " where " ^ sbe dfns x
+  | Some x ->  " where " ^ sbe dfns bbdfns x
   | None -> ""
   )
 *)
@@ -3297,16 +3229,16 @@ and string_of_iparameters dfns ps =
 and string_of_basic_bparameters dfns ps : string = 
   catmap ","
   (fun {pid=x; pkind=kind; pindex=i; ptyp=y}-> 
-    x ^ "["^si i^"]: "^(string_of_btypecode dfns y)
+    string_of_param_kind kind ^ " " ^ x ^ "<"^si i^">: "^(string_of_btypecode dfns y)
   ) 
   ps
 
-and string_of_bparameters dfns ps : string = 
+and string_of_bparameters dfns bbdfns ps : string = 
   let ps, traint = ps in
   string_of_basic_bparameters dfns ps
   ^
   (match traint with
-  | Some x -> " where " ^ sbe dfns x
+  | Some x -> " where " ^ sbe dfns bbdfns x
   | None -> ""
   )
 
@@ -3650,9 +3582,9 @@ and string_of_axiom_method a = match a with
   | `Predicate e -> string_of_expr e
   | `Equation (l,r) -> string_of_expr l ^ " = " ^ string_of_expr r
 
-and string_of_baxiom_method dfns a = match a with
+and string_of_baxiom_method dfns bbdfns a = match a with
   | `BPredicate e -> string_of_expr e
-  | `BEquation (l,r) -> sbe dfns l ^ " = " ^ sbe dfns r
+  | `BEquation (l,r) -> sbe dfns bbdfns l ^ " = " ^ sbe dfns bbdfns r
 
 and string_of_statement level s = 
   let se e = string_of_expr e in
@@ -4455,18 +4387,21 @@ and string_of_exe level s =
   | `EXE_assign (l,r) -> spc ^ 
     se l ^ " = " ^ se r ^ ";"
 
-and sbe dfns e = string_of_bound_expression dfns e 
-and tsbe dfns e = string_of_bound_expression_with_type dfns e 
+and sbe dfns bbdfns e = string_of_bound_expression dfns bbdfns e 
+and tsbe dfns bbdfns e = string_of_bound_expression_with_type dfns bbdfns e 
 
-and string_of_bound_expression_with_type dfns ((e',t) as e) = 
-  string_of_bound_expression' dfns (tsbe dfns) e ^ ":" ^
+and string_of_bound_expression_with_type dfns bbdfns ((e',t) as e) = 
+  string_of_bound_expression' dfns bbdfns (tsbe dfns bbdfns) e ^ ":" ^
   sbt dfns t
 
-and string_of_bound_expression dfns e = 
-  string_of_bound_expression' dfns (sbe dfns) e
+and string_of_bound_expression dfns bbdfns e = 
+  string_of_bound_expression' dfns bbdfns (sbe dfns bbdfns) e
 
-and string_of_bound_expression' dfns se e = 
-  let sid n = qualified_name_of_index dfns n in
+and string_of_bound_expression' dfns bbdfns se e = 
+  (*
+  let sid n = qualified_name_of_bindex dfns bbdfns n in
+  *)
+  let sid n = fst (get_name_parent dfns bbdfns n) in
   match fst e with
    
   | `BEXPR_parse (e,ii) -> "parse " ^ se e ^ " with <nt> endmatch"
@@ -4545,9 +4480,9 @@ and string_of_bound_expression' dfns se e =
 
   | `BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode dfns t
 
-and string_of_biface dfns level s = 
+and string_of_biface dfns bbdfns level s = 
   let spc = spaces level in
-  let se e = string_of_bound_expression dfns e in
+  let se e = string_of_bound_expression dfns bbdfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
   | `BIFACE_export_fun (_,index,cpp_name) ->
@@ -4558,12 +4493,12 @@ and string_of_biface dfns level s =
     spc ^ "export type (" ^ string_of_btypecode dfns btyp ^ 
     ") as \"" ^ cpp_name ^ "\";"
 
-and sbx dfns s =  string_of_bexe dfns 0 s 
+and sbx dfns bbdfns s =  string_of_bexe dfns bbdfns 0 s 
 
-and string_of_bexe dfns level s = 
+and string_of_bexe dfns bbdfns level s = 
   let spc = spaces level in
-  let se e = string_of_bound_expression dfns e in
-  let sid n = qualified_name_of_index dfns n in
+  let se e = string_of_bound_expression dfns bbdfns e in
+  let sid n = qualified_name_of_bindex dfns bbdfns n in
   match s with
   | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
@@ -4946,27 +4881,27 @@ and string_of_bglr_entry dfns (name,symbol) =
   | `Nonterm [] -> "<Undefined nonterminal>"
   )
 
-and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string = 
+and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string = 
   let name = qualified_name_of_index dfns index in
   let sobt t = string_of_btypecode dfns t in
-  let se e = string_of_bound_expression dfns e in
+  let se e = string_of_bound_expression dfns bbdfns e in
   let un = `BTYP_tuple [] in 
   match bbdcl with
   | `BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
     "fun " ^ name ^ print_bvs vs ^
-    "("^ (string_of_bparameters dfns ps)^"): "^(sobt res) ^
+    "("^ (string_of_bparameters dfns bbdfns ps)^"): "^(sobt res) ^
     "{\n" ^
-    cat "\n" (map (string_of_bexe dfns 1) es) ^
+    cat "\n" (map (string_of_bexe dfns bbdfns 1) es) ^
     "}"
 
   
   | `BBDCL_procedure (props,vs,ps,es) ->
     string_of_properties props ^
     "proc " ^ name ^ print_bvs vs ^
-    "("^ (string_of_bparameters dfns ps)^")" ^
+    "("^ (string_of_bparameters dfns bbdfns ps)^")" ^
     "{\n" ^
-    cat "\n" (map (string_of_bexe dfns 1) es) ^
+    cat "\n" (map (string_of_bexe dfns bbdfns 1) es) ^
     "}"
 
   | `BBDCL_val (vs,ty) ->
@@ -5104,7 +5039,7 @@ and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string =
     "   | " ^
     string_of_bproduction dfns p ^
     " => " ^
-    cat "\n" (map (string_of_bexe dfns 1) bexes) ^
+    cat "\n" (map (string_of_bexe dfns bbdfns 1) bexes) ^
     ";"
   
   | `BBDCL_regmatch (props,vs,ps,t,regargs) -> "regmatch.."
@@ -5194,74 +5129,37 @@ let print_env_short e =
   in 
   List.iter print_level e
 
-let print_function_body dfns id i (bvs:bvs_t) exes parent =
+let print_function_body dfns bbdfns id i (bvs:bvs_t) ps exes parent =
   print_endline "";
   print_endline ("BODY OF " ^ id ^ "<" ^ si i ^ "> [" ^
   catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
   "] parent " ^ 
-    match parent with None -> "NONE" | Some k -> si k
+    (match parent with None -> "NONE" | Some k -> si k)
+    ^
+    "(" ^ string_of_bparameters dfns bbdfns ps ^ ")"
   );
   iter 
-  (fun exe -> print_endline (string_of_bexe dfns 1 exe)) 
+  (fun exe -> print_endline (string_of_bexe dfns bbdfns 1 exe)) 
   exes
 
 let print_function dfns bbdfns i =
   match Hashtbl.find bbdfns i with (id,parent,_,entry) -> 
   match entry with
-  | `BBDCL_function (_,bvs,_,_,exes) 
-  | `BBDCL_procedure (_,bvs,_,exes) ->
-    print_function_body dfns id i bvs exes parent
+  | `BBDCL_function (_,bvs,ps,_,exes) 
+  | `BBDCL_procedure (_,bvs,ps,exes) ->
+    print_function_body dfns bbdfns id i bvs ps exes parent
   | _ -> ()
 
 let print_functions dfns (bbdfns:fully_bound_symbol_table_t) =
   Hashtbl.iter
   (fun i (id,parent,_,entry) -> match entry with
-  | `BBDCL_function (_,bvs,_,_,exes) 
-  | `BBDCL_procedure (_,bvs,_,exes) ->
-    print_function_body dfns id i bvs exes parent
+  | `BBDCL_function (_,bvs,ps,_,exes) 
+  | `BBDCL_procedure (_,bvs,ps,exes) ->
+    print_function_body dfns bbdfns id i bvs ps exes parent
 
   | _ -> ()
   )
   bbdfns
-
-let string_of_term dfns term = match term with
-  | #qualified_name_t as x -> string_of_qualified_name x
-  | #regexp_t as x -> string_of_re x
-  | #typecode_t as x -> string_of_typecode x
-  | #tpattern_t as x -> string_of_tpattern x
-  | #literal_t as x -> string_of_literal x
-  | #expr_t as x -> string_of_expr x
-  | #pattern_t as x -> string_of_pattern x
-  | #statement_t as x -> string_of_statement 0 x
-  | #exe_t as x -> string_of_exe 0 x
-  | #btypecode_t as x -> string_of_btypecode dfns x
-
-  (* hack .. the type because tbexpr_t is a pair not a variant *)
-  | #bexpr_t as x -> string_of_bound_expression dfns (x,`BTYP_void)
-  | #bexe_t as x -> string_of_bexe dfns 0 x
-  | #ast_term_t as x -> string_of_ast_term 0 x
-
-  (* hack cause we don't know the name *)
-  | #symbol_definition_t as x -> string_of_symdef x "unk" dfltivs 
-
-  | #bbdcl_t as x -> string_of_bbdcl dfns x 0
-  | #param_kind_t as x -> string_of_param_kind x
-  | #property_t as x -> string_of_property x
-  | #c_t as x -> string_of_code_spec x
-  | #dcl_t as x -> string_of_dcl 0 "unk" (Some 0) dfltivs x
-  | #asm_t as x -> string_of_asm 0 x
-  | #iface_t as x -> string_of_iface 0 x
-  | #access_t as x -> string_of_access x
-  | #biface_t as x -> string_of_biface dfns 0 x
-  | #btype_qual_t as x -> string_of_bqual dfns x
-  | #type_qual_t as x -> string_of_qual x
-  | #requirement_t as x -> string_of_raw_req x
-  | #ikind_t as x -> string_of_ikind x
-  | #named_req_expr_t as x -> string_of_named_req_expr x
-  | #raw_req_expr_t as x -> string_of_raw_req_expr x
-  | #glr_term_t as x -> string_of_glr_term x
-
-let st dfns term = string_of_term dfns term
 
 @h = tangler('src/compiler/flxlib/flx_mtypes1.ml')
 @select(h)

@@ -653,7 +653,7 @@ let gen_function_names syms (child_map,bbdfns) =
     | `BBDCL_class (props,vs) -> ()
       (*
       bcat s ("\n//------------------------------\n");
-      bcat s ("//CLASS " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+      bcat s ("//CLASS " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       let t = `BTYP_inst (index,ts) in
       let j = try 
         Hashtbl.find syms.registry t with 
@@ -696,11 +696,11 @@ let gen_functions syms (child_map,bbdfns) =
     | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//PURE C FUNCTION " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
         bcat s 
         (gen_C_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
       end else begin
-        bcat s ("//FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//FUNCTION " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
         bcat s 
         (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
       end
@@ -709,9 +709,9 @@ let gen_functions syms (child_map,bbdfns) =
       let instance_no = i in
       bcat s ("\n//------------------------------\n");
       if ret' = `BTYP_void then begin
-        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
@@ -765,30 +765,30 @@ let gen_functions syms (child_map,bbdfns) =
     | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//PURE C PROC " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
         bcat s 
         (gen_C_function syms (child_map,bbdfns) props index id sr vs ps `BTYP_void ts i)
       end else begin
-        bcat s ("//PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//PROC " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
         bcat s 
         (gen_function syms (child_map,bbdfns) props index id sr vs ps `BTYP_void ts i)
       end
 
     | `BBDCL_regmatch (props,vs, (ps,traint), ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
-      bcat s ("//REGMATCH " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+      bcat s ("//REGMATCH " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
 
     | `BBDCL_reglex (props, vs, (ps,traint), i, ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
-      bcat s ("//REGLEX " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+      bcat s ("//REGLEX " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
 
     | `BBDCL_class (props,vs) ->
       bcat s ("\n//------------------------------\n");
-      bcat s ("//CLASS " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+      bcat s ("//CLASS " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       let t = `BTYP_inst (index,ts) in
       let j = try 
         Hashtbl.find syms.registry t with 
@@ -845,10 +845,10 @@ let gen_exe filename syms
     ", got ts=" ^ 
     si (length ts)
   );
-  let src_str = string_of_bexe syms.dfns 0 exe in
+  let src_str = string_of_bexe syms.dfns bbdfns 0 exe in
   let with_comments = syms.compiler_options.with_comments in
   (*
-  print_endline ("generating exe " ^ string_of_bexe syms.dfns 0 exe);
+  print_endline ("generating exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (string_of_btypecode syms.dfns) ts);
   *)
@@ -1054,7 +1054,7 @@ let gen_exe filename syms
       failwith 
       (
         "[gen_exe] Expected '"^id^"' to be procedure constant, got " ^
-        string_of_bbdcl syms.dfns entry index 
+        string_of_bbdcl syms.dfns bbdfns entry index 
       )
     end
   in
@@ -1091,7 +1091,7 @@ let gen_exe filename syms
   in
   let rec gexe exe = 
     (*
-    print_endline (string_of_bexe syms.dfns 0 exe);
+    print_endline (string_of_bexe syms.dfns bbdfns 0 exe);
     *)
     match exe with
     | `BEXE_axiom_check _ -> assert false
@@ -1794,7 +1794,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
         gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no true
       with x -> 
         print_endline (Printexc.to_string x);
-        print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
+        print_endline (catmap "\n" (string_of_bexe syms.dfns bbdfns 1) exes);
         print_endline "Can't gen exes ..";
         raise x
     in
@@ -1934,7 +1934,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
       with x -> 
         (*
         print_endline (Printexc.to_string x);
-        print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
+        print_endline (catmap "\n" (string_of_bexe syms.dfns bbdfns 1) exes);
         print_endline "Can't gen exes ..";
         *)
         raise x
@@ -2084,7 +2084,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       with x -> 
         (*
         print_endline (Printexc.to_string x);
-        print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
+        print_endline (catmap "\n" (string_of_bexe syms.dfns bbdfns 1) exes);
         print_endline "Can't gen exes ..";
         *)
         raise x
@@ -2150,7 +2150,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       )^
       "}\n"
     in
-      let q = qualified_name_of_bindex bbdfns syms.dfns index in
+      let q = qualified_name_of_bindex syms.dfns bbdfns index in
       "//FUNC " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
       (
@@ -2257,7 +2257,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
       "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"^
       "}\n"
     in
-      let q = qualified_name_of_bindex bbdfns syms.dfns index in
+      let q = qualified_name_of_bindex syms.dfns bbdfns index in
       "//FUNC " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
       (
@@ -2312,7 +2312,7 @@ let gen_class_methods filename syms (child_map,bbdfns)
     in
 
       let q = 
-        try qualified_name_of_bindex bbdfns syms.dfns index 
+        try qualified_name_of_bindex syms.dfns bbdfns index 
         with Not_found -> 
           si instance_no ^ "=" ^ 
           id ^ "<" ^si index^">" ^
@@ -2464,7 +2464,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         "}\n"
     in
       let q = 
-        try qualified_name_of_bindex bbdfns syms.dfns index 
+        try qualified_name_of_bindex syms.dfns bbdfns index 
         with Not_found -> 
           si instance_no ^ "=" ^ 
           id ^ "<" ^si index^">" ^
@@ -2524,9 +2524,9 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
       in
       bcat s ("\n//------------------------------\n");
       if ret' = `BTYP_void then begin
-        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_bindex bbdfns syms.dfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
@@ -3118,6 +3118,11 @@ try
   let () = Flx_use.find_roots syms bbdfns root_proc syms.bifaces in
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = Flx_child.cal_children syms bbdfns in
+  (*
+  DISABLE TEMPORARILY DUE TO BUG
+  while Flx_uncurry.uncurry_gen syms (child_map,bbdfns) > 0 do () done;
+  *)
+
 
   let bbdfns = if compiler_options.max_inline_length > 0 then
   begin

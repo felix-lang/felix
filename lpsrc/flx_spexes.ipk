@@ -430,7 +430,10 @@ let gen_body syms (uses,child_map,bbdfns) id
             (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
             | `BEXPR_tuple ls,_ ->
               begin try nth ls (!n) 
-              with _ -> failwith "Woops, tuple wrong length?"
+              with _ -> 
+                failwith (
+                  "[gen_body1] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
+                ) 
               end
             | _ -> `BEXPR_get_n (!n,p),prjt  
           in
@@ -514,7 +517,10 @@ let gen_body syms (uses,child_map,bbdfns) id
           (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
           | `BEXPR_tuple ls,_ ->
             begin try nth ls (!n) 
-            with _ -> failwith "Woops, tuple wrong length?"
+            with _ -> 
+                failwith (
+                  "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
+                ) 
             end
           | p -> `BEXPR_get_n (!n,p),prjt  
         in

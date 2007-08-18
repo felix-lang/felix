@@ -35,6 +35,7 @@ val reparent_children :
   (string, string) Hashtbl.t ->    (* relabel *)
   (int, btypecode_t) Hashtbl.t ->  (* varmap *)
   bool ->                          (* rescan flag *)
+  int list ->                      (* any extra symbols to remap *)
   (int, bid_t) Hashtbl.t           (* returns revariable map *)
 
 val specialise_symbol:
@@ -194,7 +195,7 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
 
 let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len exe =
   (*
-  print_endline ("remap_exe " ^ string_of_bexe syms.dfns 0 exe);
+  print_endline ("remap_exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
   *)
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -306,7 +307,7 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
   | x -> map_bexe revar ge ident relab relab x
   in 
   (*
-  print_endline ("remapped_exe " ^ string_of_bexe syms.dfns 0 exe);
+  print_endline ("remapped_exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
   *)
   exe
 
@@ -399,6 +400,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | None -> ()
   end
   ;
+  let id = id ^ "_clone_" ^ si index in
   match entry with
   | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
@@ -568,7 +570,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add bbdfns k (id,parent,sr,entry)
   *)
 
-  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl syms.dfns entry index)
+  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl syms.dfns bbdfns entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent
@@ -579,7 +581,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
 *)
 
 let reparent_children syms (uses,child_map,bbdfns) 
-  caller_vs callee_vs_len index parent relabel varmap rescan_flag
+  caller_vs callee_vs_len index parent relabel varmap rescan_flag extras
 =
   let pp p = match p with None -> "NONE" | Some i -> si i in
   (*
@@ -593,11 +595,12 @@ let reparent_children syms (uses,child_map,bbdfns)
   *)
   let closure = descendants child_map index in
   assert (not (IntSet.mem index closure));
+  let revariable = fold_left (fun acc i -> IntSet.add i acc) closure extras in
   (*
   let cl = ref [] in IntSet.iter (fun i -> cl := i :: !cl) closure;
   print_endline ("Closure is " ^ catmap " " si !cl);
   *)
-  let revariable = mk_remap syms.counter closure in
+  let revariable = mk_remap syms.counter revariable in
   IntSet.iter
   (fun i -> 
     let old_parent = 
@@ -665,7 +668,7 @@ let specialise_symbol syms (uses,child_map,bbdfns)
     let k = !(syms.counter) in incr (syms.counter);
     let revariable = 
        reparent_children syms (uses,child_map,bbdfns) 
-       caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag
+       caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []
     in
     reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
       relabel varmap revariable 

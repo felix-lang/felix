@@ -304,7 +304,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   match t with
   | `BTYP_tuple [] -> 
       clierr sr 
-     ("[egen] In "^sbe syms.dfns (e,t)^":\nunit value required, should have been eliminated")
+     ("[egen] In "^sbe syms.dfns bbdfns (e,t)^":\nunit value required, should have been eliminated")
 
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
@@ -406,7 +406,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           let cname = cpp_instance_name syms bbdfns n ts in
           ce_arrow (ge' e) cname
         end
-      | _ -> clierr sr ("[gen_expr'] Expecting "^si i^" to be class, got " ^ string_of_bbdcl syms.dfns entry i)
+      | _ -> clierr sr ("[gen_expr'] Expecting "^si i^" to be class, got " ^ string_of_bbdcl syms.dfns bbdfns entry i)
       end
       *)
     | _ -> assert false
@@ -714,7 +714,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       failwith 
       (
         "[gen_expr: apply_method_stack] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry meth
+        string_of_bbdcl syms.dfns bbdfns entry meth
       )
    end
 
@@ -757,7 +757,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       failwith 
       (
         "[gen_expr: apply_method_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry meth
+        string_of_bbdcl syms.dfns bbdfns entry meth
       )
     end
 
@@ -958,7 +958,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_apply_prim (index,ts,(arg,argt as a)) ->
     (*
-    print_endline ("Prim apply, arg=" ^ sbe syms.dfns a);
+    print_endline ("Prim apply, arg=" ^ sbe syms.dfns bbdfns a);
     *)
     let argt = tsub argt in
     let id,parent,sr2,entry = 
@@ -1037,7 +1037,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       failwith 
       (
         "[gen_expr: apply prim] Expected '"^id^"' to be primitive function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry index 
+        string_of_bbdcl syms.dfns bbdfns entry index 
       )
     end
 
@@ -1164,7 +1164,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       failwith 
       (
         "[gen_expr: apply_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry index 
+        string_of_bbdcl syms.dfns bbdfns entry index 
       )
     end
 
@@ -1216,7 +1216,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
             begin match a with
             | `BEXPR_tuple xs,_ ->
               (*
-              print_endline ("Arg to C function is tuple " ^ sbe syms.dfns a);
+              print_endline ("Arg to C function is tuple " ^ sbe syms.dfns bbdfns a);
               *)
               fold_left2 
               (fun s ((x,t) as xt) {pindex=ix} ->
@@ -1281,7 +1281,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       failwith 
       (
         "[gen_expr: apply_stack] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry index 
+        string_of_bbdcl syms.dfns bbdfns entry index 
       )
     end
 
@@ -1326,7 +1326,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_tuple es ->
     (*
-    print_endline ("Eval tuple " ^ sbe syms.dfns (e,t));
+    print_endline ("Eval tuple " ^ sbe syms.dfns bbdfns (e,t));
     *)
     (* just apply the tuple type ctor to the arguments *)
     begin match t with
@@ -1381,7 +1381,7 @@ and gen_expr syms bbdfns this e vs ts sr =
   let s = 
     try gen_expr' syms bbdfns this e vs ts sr  
     with Unknown_prec p -> clierr sr 
-    ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe syms.dfns e)
+    ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe syms.dfns bbdfns e)
   in
   string_of_cexpr s
 

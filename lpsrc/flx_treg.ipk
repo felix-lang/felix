@@ -258,7 +258,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       clierr sr 
       (
         "[register_type_r] expected type declaration, got " ^
-        string_of_bbdcl syms.dfns entry i
+        string_of_bbdcl syms.dfns bbdfns entry i
       )
     end
 

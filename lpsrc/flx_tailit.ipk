@@ -59,7 +59,7 @@ let isfun bbdfns i =
 
 let add_xclosure syms cls e = 
   (*
-  print_endline ("chk cls for " ^ sbe syms.dfns e);
+  print_endline ("chk cls for " ^ sbe syms.dfns bbdfns e);
   *)
   match e with
   | `BEXPR_closure (i,ts),t -> cls := IntSet.add i !cls
@@ -185,7 +185,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       begin match e with
       | `BEXPR_tuple ls,_ ->
         (*
-        print_endline ("TUPLE ASSGN " ^ sbe syms.dfns e);
+        print_endline ("TUPLE ASSGN " ^ sbe syms.dfns bbdfns e);
         *)
         (* Parallel Assignment algorithm.
            Given a set of assignments, xi = ei,
@@ -274,7 +274,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         (*
         iter
         (fun (i,(name,t,e,u)) -> 
-          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e);
+          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns bbdfns e);
           print_string "  Depends: "; 
             IntSet.iter (fun i -> print_string (si i ^ ", ")) u;
           print_endline "";
@@ -307,21 +307,21 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
           print_endline "HEAD:";
           iter
           (fun (i,(name,t,e,u)) -> 
-            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns bbdfns e)
           )
           h;
 
           print_endline "MIDDLE:";
           iter
           (fun (i,(name,t,e,u)) -> 
-            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns bbdfns e)
           )
           m;
 
           print_endline "TAIL:";
           iter
           (fun (i,(name,t,e,u)) -> 
-            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns bbdfns e)
           )
           t
         in
@@ -363,7 +363,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         print_endline "FINAL SPLIT UP:";
         iter
         (fun (i,(name,t,e,u)) -> 
-          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns bbdfns e)
         )
         m;
         *)

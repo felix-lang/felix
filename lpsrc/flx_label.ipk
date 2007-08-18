@@ -145,7 +145,7 @@ let cal_usage syms bbdfns label_map caller exes usage =
       begin match find_label bbdfns label_map caller label with
       | `Unreachable -> 
         syserr sr ("[flx_label] Caller "^si caller^" Jump to unreachable label " ^ label ^ "\n" ^
-        (catmap "\n" (string_of_bexe syms.dfns 2) exes))
+        (catmap "\n" (string_of_bexe syms.dfns bbdfns 2) exes))
       | `Local lix ->
         begin match get_label_kind_from_index usage lix with
         | `Unused -> Hashtbl.replace usage lix `Near

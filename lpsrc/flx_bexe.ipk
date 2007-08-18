@@ -33,6 +33,12 @@ open Flx_exceptions
 open List
 open Flx_maps
 
+(* 
+  THIS IS A DUMMY BOUND SYMBOL TABLE 
+  REQUIRED FOR THE PRINTING OF BOUND EXPRESSIONS
+*)
+let bbdfns = Hashtbl.create 97
+
 let rec check_if_parent syms child parent =
   if child = parent then true
   else
@@ -71,11 +77,11 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
       clierr sr
       (
         "[cal_call] Procedure " ^
-        sbe syms.dfns tbe1 ^
+        sbe syms.dfns bbdfns tbe1 ^
         "\nof type " ^
         sbt syms.dfns pt ^
         "\napplied to argument " ^
-        sbe syms.dfns tbe2 ^
+        sbe syms.dfns bbdfns tbe2 ^
         "\n of type " ^
         sbt syms.dfns argt ^
         "\nwhich doesn't agree with parameter type\n" ^
@@ -84,7 +90,7 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
 
   | _ -> 
     clierr sr ("[cal_call] call non procedure, "^
-    sbe syms.dfns (p,pt)
+    sbe syms.dfns bbdfns (p,pt)
     ^"\ntype=" ^ sbt syms.dfns pt)
 
 let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
@@ -107,17 +113,17 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
       | _ -> 
         clierr sr (
           "[cal_loop] Expected procedure closure, got "^
-          string_of_bound_expression syms.dfns (p,pt)
+          sbe syms.dfns bbdfns (p,pt)
         )
     else
       clierr sr
       (
         "[cal_loop] Procedure " ^
-        sbe syms.dfns tbe1 ^
+        sbe syms.dfns bbdfns tbe1 ^
         "\nof type " ^
         sbt syms.dfns pt ^
         "\napplied to argument " ^
-        sbe syms.dfns tbe2 ^
+        sbe syms.dfns bbdfns tbe2 ^
         "\n of type " ^
         sbt syms.dfns argt ^
         "\nwhich doesn't agree with parameter type\n" ^
@@ -126,7 +132,7 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
 
   | _ -> 
     clierr sr ("[cal_loop] loop to non procedure, "^
-    string_of_bound_expression syms.dfns (p,pt)
+    sbe syms.dfns bbdfns (p,pt)
     ^"\ntype=" ^ string_of_btypecode syms.dfns pt)
 
 exception Found of int
@@ -361,7 +367,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         clierr sr ("Class constructor must name class, and we got a closure (which is right but unexpected ..)")
 
       | _ -> 
-        clierr sr ("Class constructor must name class, got " ^ sbe syms.dfns cls)
+        clierr sr ("Class constructor must name class, got " ^ sbe syms.dfns bbdfns cls)
       end
 
     | `EXE_svc s ->          

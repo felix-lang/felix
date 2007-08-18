@@ -152,7 +152,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
 
         let id,_,_,_ = Hashtbl.find bbdfns j in
         (*
-        print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.dfns y);
+        print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.dfns bbdfns y);
         *)
         (* does uses include initialisations or not ..?? *)
 
@@ -195,7 +195,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
         let delete_var () =
           let id,_,_,_ = Hashtbl.find bbdfns j in
           if syms.compiler_options.print_flag then
-            print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.dfns y);
+            print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.dfns bbdfns y);
 
           (* remove the variable *)
           Hashtbl.remove bbdfns j;
@@ -243,7 +243,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
               | `BEXPR_get_n (k, (`BEXPR_name(i,_),_) ),_ 
                 when j = i ->
                 (*
-                print_endline ("Replacing " ^ sbe syms.dfns e);
+                print_endline ("Replacing " ^ sbe syms.dfns bbdfns e);
                 *)
                 incr rplcnt; nth ys k
               | x -> x

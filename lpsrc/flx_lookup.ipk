@@ -241,6 +241,12 @@ open Flx_name
 open Flx_overload
 open Flx_tpat
 
+(* 
+  THIS IS A DUMMY BOUND SYMBOL TABLE 
+  REQUIRED FOR THE PRINTING OF BOUND EXPRESSIONS
+*)
+let bbdfns = Hashtbl.create 97
+
 let dummy_sr = "[flx_lookup] generated", 0,0,0,0
 
 let unit_t = `BTYP_tuple []
@@ -1007,7 +1013,6 @@ and bind_type'
   sr t (params: (string * btypecode_t) list) 
   mkenv
 : btypecode_t =
-  let st x = st syms.dfns x in
   let btp t params = bind_type' syms env 
     {rs with depth = rs.depth+1}
     sr t params mkenv
@@ -1733,7 +1738,7 @@ and bind_type'
     | _  -> clierr sr 
       (
         "[typecode_of_expr] Type expected, got: " ^
-        sbe syms.dfns result
+        sbe syms.dfns bbdfns result
       )
     end
   in
@@ -2428,7 +2433,7 @@ and inner_typeofindex
 
 and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   (*
-  print_endline ("Cal apply of " ^ sbe syms.dfns tbe1 ^ " to " ^ sbe syms.dfns tbe2);
+  print_endline ("Cal apply of " ^ sbe syms.dfns bbdfns tbe1 ^ " to " ^ sbe syms.dfns bbdfns tbe2);
   *)
   let ((re,rt) as r) = cal_apply' syms sr tbe1 tbe2 in
   (*
@@ -2449,11 +2454,11 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
         clierr sr
         (
           "[cal_apply] Function " ^
-          sbe syms.dfns tbe1 ^
+          sbe syms.dfns bbdfns tbe1 ^
           "\nof type " ^
           sbt syms.dfns t1 ^
           "\napplied to argument " ^
-          sbe syms.dfns tbe2 ^
+          sbe syms.dfns bbdfns tbe2 ^
           "\n of type " ^
           sbt syms.dfns t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
@@ -2480,11 +2485,11 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       clierr sr
       (
         "Attempt to apply non-function\n" ^
-        sbe syms.dfns tbe1 ^ 
+        sbe syms.dfns bbdfns tbe1 ^ 
         "\nof type\n" ^
         sbt syms.dfns t1 ^
         "\nto argument of type\n" ^
-        sbe syms.dfns tbe2
+        sbe syms.dfns bbdfns tbe2
       )
   in
   (*
@@ -2503,11 +2508,11 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     clierr sr
     (
       "[cal_apply] Function " ^
-      sbe syms.dfns tbe1 ^
+      sbe syms.dfns bbdfns tbe1 ^
       "\nof type " ^
       sbt syms.dfns t1 ^
       "\napplied to argument " ^
-      sbe syms.dfns tbe2 ^
+      sbe syms.dfns bbdfns tbe2 ^
       "\n of type " ^
       sbt syms.dfns t2 ^
       "\nreturns void"
@@ -2527,11 +2532,11 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     clierr sr
     (
       "[cal_apply] Type variable in return type applying\n" ^
-        sbe syms.dfns tbe1 ^ 
+        sbe syms.dfns bbdfns tbe1 ^ 
         "\nof type\n" ^
         sbt syms.dfns t1 ^
         "\nto argument of type\n" ^
-        sbe syms.dfns tbe2
+        sbe syms.dfns bbdfns tbe2
     )
   ;
   *)
@@ -3460,7 +3465,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
               (*
               print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
               print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
-              print_endline ("Instantiated closure value is " ^ sbe syms.dfns tb);
+              print_endline ("Instantiated closure value is " ^ sbe syms.dfns bbdfns tb);
               print_endline ("type is " ^ sbt syms.dfns tt);
               *)
               Some tb 
@@ -3532,7 +3537,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           (*
           print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns (mkentry syms dfltvs index));
           print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
-          print_endline ("Instantiated closure value is " ^ sbe syms.dfns tb);
+          print_endline ("Instantiated closure value is " ^ sbe syms.dfns bbdfns tb);
           print_endline ("type is " ^ sbt syms.dfns tt);
           *)
           Some tb 
@@ -3704,7 +3709,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
               (*
               print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
               print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
-              print_endline ("Instantiated closure value is " ^ sbe syms.dfns tb);
+              print_endline ("Instantiated closure value is " ^ sbe syms.dfns bbdfns tb);
               print_endline ("type is " ^ sbt syms.dfns tt);
               *)
               Some tb 
@@ -4266,7 +4271,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         clierr sr
          (
          "Record coercion dst requires subset of fields of src:\n" ^
-         sbe syms.dfns x' ^ " has type " ^ sbt syms.dfns t' ^
+         sbe syms.dfns bbdfns x' ^ " has type " ^ sbt syms.dfns t' ^
         "\nwhereas annotation requires " ^ sbt syms.dfns t''
         )
       end
@@ -4298,7 +4303,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         clierr sr
          (
          "Variant coercion src requires subset of fields of dst:\n" ^
-         sbe syms.dfns x' ^ " has type " ^ sbt syms.dfns t' ^
+         sbe syms.dfns bbdfns x' ^ " has type " ^ sbt syms.dfns t' ^
         "\nwhereas annotation requires " ^ sbt syms.dfns t''
         )
       end
@@ -4306,7 +4311,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       clierr sr 
       (
         "Wrong type in coercion:\n" ^
-        sbe syms.dfns x' ^ " has type " ^ sbt syms.dfns t' ^
+        sbe syms.dfns bbdfns x' ^ " has type " ^ sbt syms.dfns t' ^
         "\nwhereas annotation requires " ^ sbt syms.dfns t''
       )
     end 

@@ -222,7 +222,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   let uis i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
   let ui i = uis i ts in
   (*
-  print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
+  print_endline ("processing exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
   print_endline ("With ts = " ^ catmap "," (sbt syms.dfns) ts);
   *)
   (* TODO: replace with a map *)
@@ -287,7 +287,14 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
      ue sr e2
 
   | `BEXE_init (sr,i,e) -> 
+    print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe syms.dfns bbdfns e);
     let vs' = get_vs bbdfns i in
+    print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs');
+    print_endline ("Input ts = " ^ catmap "," (sbt syms.dfns) ts);
+    print_endline ("Varmap = " ^ Hashtbl.fold 
+      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt syms.dfns k ) 
+      hvarmap ""
+    );
     let ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts; (* this is wrong?: initialisation is not use .. *)

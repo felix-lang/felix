@@ -233,7 +233,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     match Hashtbl.find bbdfns i with
     | _,_,_,`BBDCL_glr (_,_,_,(p,_)) -> p
     | id,_,_,entry -> failwith
-      ("Expected "^si i^"->BBDCL_glr, got " ^ string_of_bbdcl syms.dfns entry i)
+      ("Expected "^si i^"->BBDCL_glr, got " ^ string_of_bbdcl syms.dfns bbdfns entry i)
     
     with Not_found -> failwith ("Can't find BBDCL_glr " ^ si i)
   in

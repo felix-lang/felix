@@ -337,7 +337,7 @@ let gen_type_name syms bbdfns (index,typ) =
       failwith 
       (
         "[gen_type_name] Expected definition "^si i^" to be generic primitive, got " ^ 
-        string_of_bbdcl syms.dfns entry i ^
+        string_of_bbdcl syms.dfns bbdfns entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
@@ -519,7 +519,7 @@ let gen_type syms bbdfns (index,typ) =
       failwith 
       (
         "[gen_type] Expected definition "^si i^" to be generic primitive, got " ^ 
-        string_of_bbdcl syms.dfns entry i ^
+        string_of_bbdcl syms.dfns bbdfns entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
