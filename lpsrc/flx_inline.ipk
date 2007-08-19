@@ -898,27 +898,53 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
 
 
           (*
-          print_endline ("Consider inlining " ^ id);
-          if is_child child_map caller callee then
-            print_endline ("Callee "^si callee ^" is child of caller " ^ si caller ^ " EXCLUDE LEN= " ^ si (length excludes))
+          print_endline ("Consider inlining " ^ id ^ "<" ^ si callee ^ "> into " ^ si caller);
+          print_endline ("  Child? " ^
+            if is_child child_map caller callee then "YES" else "NO")
+          ;
+          print_endline ("  Recursive? " ^ 
+            if Flx_call.is_recursive_call uses callee callee then "YES" else "NO")
+          ;
+          print_endline ("  Recursive Call? " ^ 
+            if Flx_call.is_recursive_call uses caller callee then "YES" else "NO")
+          ;
+          print_endline ("  Can_inline flag? " ^
+            if can_inline then "YES" else "NO")
+          ;
+          print_endline ("  Short enough? " ^
+            if length exes <= syms.compiler_options.max_inline_length then "YES" else "NO")
+          ;
+          print_endline ("  Noinline property? " ^
+            if mem `NoInline props then "YES" else "NO")
+          ;
+          print_endline ("  Inline property? " ^
+            if mem `Inline props then "YES" else "NO")
           ;
           *)
-          if can_inline &&
-            not (mem `NoInline props) &&
-            (
-              mem `Inline props ||
-              length exes <= syms.compiler_options.max_inline_length
-            ) &&
-           (
-              (* only inline a recursive call to a child *)
-              not (Flx_call.is_recursive_call uses caller callee) &&
-              (* also exclude recursive functions because specialisation
-                "unrecurses" them!
-              *)
-              not (Flx_call.is_recursive_call uses callee callee) 
-              ||
-              is_child child_map caller callee
-           )
+          let inline_choice =
+            can_inline &&
+              not (mem `NoInline props) &&
+              (
+                mem `Inline props ||
+                length exes <= syms.compiler_options.max_inline_length
+              ) &&
+             (
+                (* only inline a recursive call to a child *)
+                not (Flx_call.is_recursive_call uses caller callee) &&
+                (* also exclude recursive functions because specialisation
+                  "unrecurses" them!
+                *)
+                not (Flx_call.is_recursive_call uses callee callee) 
+                ||
+                is_child child_map caller callee
+             )
+          in
+          (*
+          print_endline ("  Inline decision: " ^
+            if inline_choice then "YES" else "NO")
+          ;
+          *)
+          if inline_choice
           then 
               begin
                 (*
@@ -983,9 +1009,21 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
                     let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type 0)) caller_vs in
                     `BEXPR_name (urv,ts),t
                 end
-                else e
+                else 
+                begin
+                  (*
+                  print_endline ("***> Didn't inline " ^ id);
+                  *)
+                  e
+                end
               end
-          else e
+          else 
+          begin
+            (*
+            print_endline ("***> Didn't inline " ^ id);
+            *)
+            e
+          end
         | _ -> e
         end
       end else e

@@ -400,7 +400,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | None -> ()
   end
   ;
-  let id = id ^ "_clone_" ^ si index in
+  let id2 = id ^ "_clone_" ^ si index in
   match entry with
   | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
