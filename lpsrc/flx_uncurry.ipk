@@ -157,7 +157,9 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
     | [`BEXE_fun_return (sr2,(`BEXPR_closure (f,ts),_))] 
       when is_child child_map i f && vs_is_ts vs ts
       ->
+      (*
       print_endline ("Detected curried function " ^ id ^ "<" ^ si i ^"> ret child= " ^ si f);
+      *)
       let k = !(syms.counter) in incr (syms.counter);
       Hashtbl.add uncurry_map i (f,k,0)
 
@@ -191,7 +193,9 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
   Hashtbl.iter
   (fun i (c,k,n) -> if n = 0 then () else
     incr nufuns;
+    (*
     print_endline ("Orig " ^ si i ^ " ret child " ^ si c ^ " synth " ^ si k ^ " count=" ^ si n);
+    *)
     let idm,parent,sr,bbdcl = Hashtbl.find bbdfns i in
     let idc,parentc,src,bbdclc = Hashtbl.find bbdfns c in
     assert (parentc = Some i);
@@ -219,8 +223,11 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
           | `PVar -> `BBDCL_var (vs,t)
           | _ -> failwith "Unimplemented curried fun param not var or val"
           in
+          (*
           print_endline ("New param " ^ s ^ " " ^ si n ^ " <-- " ^ si i);
-          Hashtbl.add bbdfns n (s ^ "_uncurry",Some k,sr,bbdcl)
+          *)
+          Hashtbl.add bbdfns n (s ^ "_uncurry",Some k,sr,bbdcl);
+          Flx_child.add_child child_map k n
         ) 
         ps 
       ;

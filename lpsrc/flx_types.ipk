@@ -2417,6 +2417,11 @@ val print_functions:
   fully_bound_symbol_table_t ->
   unit
 
+val print_symbols: 
+  symbol_table_t -> 
+  fully_bound_symbol_table_t ->
+  unit
+
 val print_function_body:
   symbol_table_t ->
   fully_bound_symbol_table_t ->
@@ -5160,6 +5165,31 @@ let print_functions dfns (bbdfns:fully_bound_symbol_table_t) =
   | _ -> ()
   )
   bbdfns
+
+let print_symbols dfns (bbdfns:fully_bound_symbol_table_t) =
+  Hashtbl.iter
+  (fun i (id,parent,_,entry) -> match entry with
+  | `BBDCL_function (_,bvs,ps,_,exes) 
+  | `BBDCL_procedure (_,bvs,ps,exes) ->
+    print_function_body dfns bbdfns id i bvs ps exes parent
+  | `BBDCL_var (bvs,t) ->
+    print_endline ("VARIABLE " ^ id ^ "<" ^ si i ^ "> [" ^
+      catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
+      "] parent " ^ 
+      (match parent with None -> "NONE" | Some k -> si k) ^
+      " type " ^ sbt dfns t
+    )
+  | `BBDCL_val (bvs,t) ->
+    print_endline ("VALUE " ^ id ^ "<" ^ si i ^ "> [" ^
+      catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
+      "] parent " ^ 
+      (match parent with None -> "NONE" | Some k -> si k) ^
+      " type " ^ sbt dfns t
+    )
+  | _ -> ()
+  )
+  bbdfns
+
 
 @h = tangler('src/compiler/flxlib/flx_mtypes1.ml')
 @select(h)

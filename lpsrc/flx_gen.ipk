@@ -3007,7 +3007,7 @@ try
       let file_name = 
         if Filename.check_suffix file ".flx" then file else file ^ ".flx"
       in
-      if compiler_options.print_flag or length files > 1 
+      if compiler_options.print_flag  
       then print_endline ("//Parsing Implementation " ^ file_name);
       let sts = Flx_desugar.include_file syms file_name true in
       concat [tree; sts]
@@ -3120,8 +3120,8 @@ try
   let child_map = Flx_child.cal_children syms bbdfns in
   (*
   DISABLE TEMPORARILY DUE TO BUG
-  while Flx_uncurry.uncurry_gen syms (child_map,bbdfns) > 0 do () done;
   *)
+  while Flx_uncurry.uncurry_gen syms (child_map,bbdfns) > 0 do () done;
 
 
   let bbdfns = if compiler_options.max_inline_length > 0 then
@@ -3132,7 +3132,7 @@ try
       print_endline "INPUT TO OPTIMISATION PASS";
       print_endline "---------------------------";
       print_endline "";
-      print_functions syms.dfns bbdfns
+      print_symbols syms.dfns bbdfns
    end;
 
     syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
@@ -3147,7 +3147,7 @@ try
       print_endline "POST PHASE 1 FUNCTION SET";
       print_endline "---------------------------";
       print_endline "";
-      print_functions syms.dfns bbdfns
+      print_symbols syms.dfns bbdfns
     end;
 
     let bbdfns = Flx_use.copy_used syms bbdfns in
@@ -3180,7 +3180,7 @@ try
       print_endline "POST MONOMORPHISATION FUNCTION SET";
       print_endline "---------------------------";
       print_endline "";
-      print_functions syms.dfns bbdfns
+      print_symbols syms.dfns bbdfns
     end;
 
     if compiler_options.print_flag then
@@ -3196,7 +3196,7 @@ try
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     (*
     print_endline "INLINING DONE: RESULT:";
-    print_functions syms.dfns bbdfns;
+    print_symbols syms.dfns bbdfns;
     *)
     bbdfns
   end
@@ -3207,7 +3207,7 @@ try
 
   (*
   print_endline "Discarding crud .. left with:";
-  print_functions syms.dfns bbdfns;
+  print_symbols syms.dfns bbdfns;
   *)
 
 
@@ -3263,7 +3263,7 @@ try
 
 
   (*
-  print_functions syms.dfns bbdfns;
+  print_symbols syms.dfns bbdfns;
   *)
 
   Flx_typeclass.fixup_typeclass_instances syms bbdfns;
@@ -3301,7 +3301,7 @@ try
   let child_map = Flx_child.cal_children syms bbdfns in
 
   (*
-  print_functions syms.dfns bbdfns;
+  print_symbols syms.dfns bbdfns;
   *)
 
   if compiler_options.print_flag 

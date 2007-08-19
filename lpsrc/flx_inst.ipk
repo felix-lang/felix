@@ -287,14 +287,18 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
      ue sr e2
 
   | `BEXE_init (sr,i,e) -> 
+    (*
     print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe syms.dfns bbdfns e);
+    *)
     let vs' = get_vs bbdfns i in
+    (*
     print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs');
     print_endline ("Input ts = " ^ catmap "," (sbt syms.dfns) ts);
     print_endline ("Varmap = " ^ Hashtbl.fold 
       (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt syms.dfns k ) 
       hvarmap ""
     );
+    *)
     let ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts; (* this is wrong?: initialisation is not use .. *)
@@ -402,6 +406,15 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
       ) 
       ps
     ;
+    (*
+    print_endline ("Instantiating function " ^ id);
+    print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs);
+    print_endline ("Input ts = " ^ catmap "," (sbt syms.dfns) ts);
+    print_endline ("Varmap = " ^ Hashtbl.fold 
+      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt syms.dfns k ) 
+      hvarmap ""
+    );
+    *)
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
  
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
