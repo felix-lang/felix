@@ -1424,7 +1424,13 @@ let heavy_inlining syms
   done;
 
   Hashtbl.iter
-    (fun i _ -> try heavily_inline_bbdcl syms (uses,child_map,bbdfns) [i] i with _ -> ())
+    (fun i _ -> 
+      try heavily_inline_bbdcl syms (uses,child_map,bbdfns) [i] i 
+      with exn -> 
+        print_endline ("*** ERROR OPTIMISING [ignored?] " ^ si i);
+        print_endline (Printexc.to_string exn);
+        ()
+    )
   bbdfns
 
 

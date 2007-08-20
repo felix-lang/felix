@@ -166,6 +166,17 @@ let gen_body syms (uses,child_map,bbdfns) id
     so we have to switch to eager evaluation if ANY
     of the parameters is a var.
   *)
+
+  (*
+  print_endline ("Inline " ^ id ^ ", input inline method = " ^ match inline_method with
+  | `Eager -> "Eager"
+  | `Lazy -> "Lazy"
+  );
+
+  print_endline ("Recursive? " ^ if Flx_call.is_recursive uses callee then "YES" else "NO");
+  print_endline ("Tailed? " ^ if is_tailed psis exes then "YES" else "NO");
+  *)
+
   let inline_method = match inline_method with
   | `Lazy -> 
     if 
@@ -187,21 +198,18 @@ let gen_body syms (uses,child_map,bbdfns) id
   (* HACKERY *)
   
   (*
-  let inline_method = `Eager in
-  *)
-  
-  (*
   print_endline ("Inlining " ^ si callee ^ " into " ^ si caller);
   *)
-  (*
+  if syms.compiler_options.print_flag then
   begin match inline_method with
   | `Eager ->
-    print_endline ("Eager INLINING " ^ id ^ "<"^si callee^">("^sbe syms.dfns argument^") into " ^ si caller ^ " .. INPUT:");
+    print_endline ("Eager INLINING " ^ id ^ "<"^si callee^">("^sbe syms.dfns bbdfns argument^") into " ^ si caller ^ " .. INPUT:");
   | `Lazy ->
-    print_endline ("Lazy INLINING " ^ id ^ "<"^si callee^">("^sbe syms.dfns argument^") into " ^ si caller ^ " .. INPUT:");
+    print_endline ("Lazy INLINING " ^ id ^ "<"^si callee^">("^sbe syms.dfns bbdfns argument^") into " ^ si caller ^ " .. INPUT:");
   end
   ;
-  iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x)) exes;
+  (*
+  iter (fun x -> print_endline (string_of_bexe syms.dfns bbdfns 0 x)) exes;
   *)
   let paramtype  =
     let pt = 
@@ -373,7 +381,7 @@ let gen_body syms (uses,child_map,bbdfns) id
     let b = 
       ref 
       (
-        if source = "" && id <> "_init_" then 
+        if syms.compiler_options.print_flag && source = "" && id <> "_init_" then 
           [`BEXE_comment (sr,(kind ^ "inline call to " ^ id ^source))] 
         else []
       ) 

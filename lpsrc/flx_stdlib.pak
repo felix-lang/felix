@@ -2137,13 +2137,21 @@ module List
     | _ => false
   ;
 
-  fun map[T,U] (_f:T->U) (x:list[T]): list[U] = {
-    return
-      match x with
-      | Empty[T] => Empty[U]
-      | Cons[T] (?h, ?t) => Cons (_f(h), map[T,U] _f t)
+  fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
+    fun aux (inp:list[T]) (out:list[U]) : list[U] =>
+      match inp with
+      | Empty[T] => out
+      | Cons[T] (?h, ?t) => aux t (Cons (_f(h), out))
       endmatch
     ;
+    return aux x Empty[U];
+  }
+
+  fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
+  {
+    var r = rev_map _f x;
+    rev$ &r;
+    return r;
   }
 
   noinline fun rev[T] (x:list[T]):list[T]= {
@@ -2169,22 +2177,24 @@ module List
 
   fun fold_left[T,U] (_f:U->T->U) (init:U) (x:list[T]):U =
   {
-    return
+    fun aux (init:U) (x:list[T]):U =>
       match x with
       | Empty[T] => init
-      | Cons[T] (?h,?t) => fold_left _f (_f init h) t
+      | Cons[T] (?h,?t) => aux (_f init h) t
       endmatch
     ;
+    return aux init x;
   }
 
   fun fold_right[T,U] (_f:T->U->U) (x:list[T]) (init:U):U =
   {
-    return
+    fun aux (x:list[T]) (init:U):U =>
       match x with
       | Empty[T] => init
-      | Cons[T] (?h,?t) => _f h (fold_right _f t init)
+      | Cons[T] (?h,?t) => _f h (aux t init)
       endmatch
     ;
+    return aux x init;
   }
 
   fun range (low:int, high:int, step:int) =
