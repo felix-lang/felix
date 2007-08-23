@@ -929,13 +929,12 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
                 length exes <= syms.compiler_options.max_inline_length
               ) &&
              (
-                (* only inline a recursive call to a child *)
-                not (Flx_call.is_recursive_call uses caller callee) &&
-                (* also exclude recursive functions because specialisation
-                  "unrecurses" them!
-                *)
+                (* inline a non-recursive function *)
                 not (Flx_call.is_recursive_call uses callee callee) 
                 ||
+
+                (* inline a recursive call to a recursive child *)
+                Flx_call.is_recursive_call uses caller callee && 
                 is_child child_map caller callee
              )
           in
@@ -1423,13 +1422,18 @@ let heavy_inlining syms
     heavily_inline_bbdcl syms (uses,child_map,bbdfns) [i] i
   done;
 
+  (* This code is here to attempt to optimise closures (and clones?)
+     which aren't handled by the above loop.
+  *)
   Hashtbl.iter
     (fun i _ -> 
       try heavily_inline_bbdcl syms (uses,child_map,bbdfns) [i] i 
-      with exn -> 
+      with exn ->  ()
+      (*
         print_endline ("*** ERROR OPTIMISING [ignored?] " ^ si i);
         print_endline (Printexc.to_string exn);
-        ()
+        raise exn 
+      *)
     )
   bbdfns
 

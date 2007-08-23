@@ -3001,6 +3001,10 @@ and qualified_name_of_bindex dfns bbdfns index =
     qualified_name_of_bindex dfns bbdfns index' ^ "::" ^ name
   | None -> name
 
+and bound_name_of_bindex dfns bbdfns index =
+  let name,parent = get_name_parent dfns bbdfns index in
+  name ^ "<" ^ si index ^ ">"
+
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
 and get_label i =
   if i = 0 then "" 
@@ -4405,8 +4409,9 @@ and string_of_bound_expression dfns bbdfns e =
 and string_of_bound_expression' dfns bbdfns se e = 
   (*
   let sid n = qualified_name_of_bindex dfns bbdfns n in
-  *)
   let sid n = fst (get_name_parent dfns bbdfns n) in
+  *)
+  let sid n = bound_name_of_bindex dfns bbdfns n in
   match fst e with
    
   | `BEXPR_parse (e,ii) -> "parse " ^ se e ^ " with <nt> endmatch"
@@ -4503,7 +4508,7 @@ and sbx dfns bbdfns s =  string_of_bexe dfns bbdfns 0 s
 and string_of_bexe dfns bbdfns level s = 
   let spc = spaces level in
   let se e = string_of_bound_expression dfns bbdfns e in
-  let sid n = qualified_name_of_bindex dfns bbdfns n in
+  let sid n = bound_name_of_bindex dfns bbdfns n in
   match s with
   | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 

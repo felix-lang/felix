@@ -45,7 +45,12 @@ let cal_parent syms bbdfns i' ts' =
   | Some i -> 
     let vsc = get_vs bbdfns i' in
     assert (length vsc = length ts');
-    if not (Hashtbl.mem bbdfns i) then None else
+    if not (Hashtbl.mem bbdfns i) then 
+    (
+      print_endline ("WHA?? Parent " ^ si i ^ " of " ^ si i' ^ " does not exist??");
+      None 
+    )
+    else
     let vsp = get_vs bbdfns i in
     let n = length vsp in
     assert (n <= length vsc);

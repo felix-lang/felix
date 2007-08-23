@@ -3133,7 +3133,16 @@ try
   (*
   DISABLE TEMPORARILY DUE TO BUG
   *)
-  while Flx_uncurry.uncurry_gen syms (child_map,bbdfns) > 0 do () done;
+  let bbdfns = ref bbdfns in
+  let child_map = ref child_map in
+  let counter = ref 0 in
+  while Flx_uncurry.uncurry_gen syms (!child_map,!bbdfns) > 0 do  
+    incr counter;
+    if !counter > 10 then failwith "uncurry exceeded 10 passes";
+    bbdfns := Flx_use.copy_used syms !bbdfns;
+    child_map := Flx_child.cal_children syms !bbdfns;
+  done;
+  let bbdfns = !bbdfns and child_map = !child_map in
 
 
   let bbdfns = if compiler_options.max_inline_length > 0 then
@@ -3149,7 +3158,12 @@ try
 
     syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
+    let bbdfns = Flx_use.copy_used syms bbdfns in
+    let child_map = Flx_child.cal_children syms bbdfns in
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
+    let bbdfns = Flx_use.copy_used syms bbdfns in
+    let child_map = Flx_child.cal_children syms bbdfns in
+
     if compiler_options.print_flag then 
       print_endline "PHASE 1 INLINING COMPLETE"
     ;
@@ -3162,8 +3176,6 @@ try
       print_symbols syms.dfns bbdfns
     end;
 
-    let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children syms bbdfns in
     Hashtbl.iter
     (fun i _ -> 
       Flx_prop.rem_prop bbdfns `Inlining_started i;
@@ -3185,6 +3197,7 @@ try
     then print_endline "//MONOMORPHISING DONE";
 
     let bbdfns = Flx_use.copy_used syms bbdfns in
+    let child_map = Flx_child.cal_children syms bbdfns in
 
     if compiler_options.print_flag then begin
       print_endline "";
@@ -3204,6 +3217,7 @@ try
     print_endline "//INLINING";
 
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
+    let bbdfns = Flx_use.copy_used syms bbdfns in
     let child_map = Flx_child.cal_children syms bbdfns in
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     (*
