@@ -30,7 +30,7 @@ val cal_children:
   sym_state_t ->
   fully_bound_symbol_table_t ->
   child_map_t
- 
+
 @h = tangler("src/compiler/flxlib/flx_child.ml")
 @select(h)
 open Flx_ast
@@ -43,7 +43,7 @@ open Flx_util
 let hfind msg h k = 
   try Hashtbl.find h k
   with Not_found ->
-    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    print_endline ("flx_child Hashtbl.find failed " ^ msg);
     raise Not_found
 
 
@@ -60,14 +60,21 @@ let add_child childmap parent child =
   let kids = find_children childmap parent in
   Hashtbl.replace childmap parent (child::kids)
 
-let rec is_ancestor bbdfns child anc =
-  let _,parent,_,_ = hfind "is_ancestor" bbdfns child in
-  match parent with
-  | None -> false
-  | Some x -> 
-    if x = anc then true 
-    else is_ancestor bbdfns x anc
-  
+let is_ancestor bbdfns child anc =
+  let rec is_anc child anc =
+    let _,parent,_,_ = hfind ("is_ancestor " ^ si child) bbdfns child in
+    match parent with
+    | None -> false
+    | Some x -> 
+      if x = anc then true 
+      else is_anc x anc
+  in
+  try 
+    is_anc child anc 
+    with Not_found -> 
+      print_endline ("Can't find some ancestor of " ^ si child ^ " ..instance typeclass?");
+      false
+    
 let remove_child childmap parent child =
   let kids = find_children childmap parent in
   let kids = filter (fun i -> i <> child) kids in
