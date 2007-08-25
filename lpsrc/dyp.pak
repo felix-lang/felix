@@ -1336,7 +1336,7 @@ let build_automaton_LR0 (is0:item_set) (lit0:lit_trans) is_trace (gram_rhs:rhs a
   
   let array_nt = Array.make (array_nt_size ist_nt_nb) false in
   let array_lhs = Array.make (Array.length gram_lhs) false in
-  (* May be replaced by array of int 31 times shorter *)
+  (* May be replaced by array of int 30 times shorter *)
   
   let rec map_succ (is_trace,state_list) v =
     (*Printf.fprintf !log_channel "-state built-\n";
@@ -2045,7 +2045,7 @@ let print_r_L r_L =
 let print_rel_L rel_L width n =
   let str_bin bin =
     let rec aux c i =
-      if i=31 then c else
+      if i=30 then c else
       aux (c^(string_of_int ((bin lsr i) mod 2))) (i+1)
     in
     aux "" 0
@@ -2065,10 +2065,10 @@ let print_rel_L rel_L width n =
   (* n is the number of lhs in the grammar (nt_nb) *)
   
   let n = Array.length gram_lhs in
-  let width = (n+30)/31 in
-  let ba = Array.make 31 0 in
+  let width = (n+29)/30 in
+  let ba = Array.make 30 0 in
   let all_one = ref 0 in
-  for i=0 to 30 do
+  for i=0 to 29 do
     (ba.(i) <- 1 lsl i;
     all_one := !all_one + ba.(i))
   done;
@@ -2085,7 +2085,7 @@ let print_rel_L rel_L width n =
       | Non_ter nt ->
           let l = comp_lhslist nt lhslists prio_dat array_nt_prio in
           let g j =
-            let w1,w2 = i/31, i mod 31 in
+            let w1,w2 = i/30, i mod 30 in
             let k = ind_of_lhs j in
             rel_L.(dim+k+n*w1) <- rel_L.(dim+k+n*w1) lor ba.(w2)
           in
@@ -2094,7 +2094,7 @@ let print_rel_L rel_L width n =
   in
   
   for i=0 to n-1 do
-    (let w1,w2 = i/31, i mod 31 in
+    (let w1,w2 = i/30, i mod 30 in
     rel_L.(dim+i+n*w1) <- rel_L.(dim+i+n*w1) lor ba.(w2);
     let rn_l = fst gram_lhs.(i) in
     let g rn =
@@ -2109,7 +2109,7 @@ let print_rel_L rel_L width n =
       for j=0 to n-1 do
         let l0,l1 = (k+1) mod 2, k mod 2 in
         let b =
-          if (rel_L.(l0*dim+j+n*(k/31)) lsr (k mod 31)) mod 2 = 0
+          if (rel_L.(l0*dim+j+n*(k/30)) lsr (k mod 30)) mod 2 = 0
           then 0 else !all_one
         in
         rel_L.(l1*dim+j+n*i) <- rel_L.(l0*dim+j+n*i) lor
@@ -2120,14 +2120,14 @@ let print_rel_L rel_L width n =
   
   let l = (n-1) mod 2 in
   
-  let r_L = Array.make (n+30) [] in
+  let r_L = Array.make (n+29) [] in
   
   for i=0 to width-1 do
     for j=0 to n-1 do
-      for k=0 to 30 do
+      for k=0 to 29 do
         if (rel_L.(l*dim+j+n*i) lsr k) mod 2 = 1
         then
-          let m = i*31+k in
+          let m = i*30+k in
           r_L.(m) <- j::r_L.(m)
         else ()
       done
@@ -2141,10 +2141,10 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   (* n is the number of lhs in the grammar (nt_nb) *)
   
   let n = Array.length gram_lhs in
-  let width = (n+30)/31 in
-  let ba = Array.make 31 0 in
+  let width = (n+29)/30 in
+  let ba = Array.make 30 0 in
   let all_one = ref 0 in
-  for i=0 to 30 do
+  for i=0 to 29 do
     (ba.(i) <- 1 lsl i;
     all_one := !all_one + ba.(i))
   done;
@@ -2159,16 +2159,16 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
       | Non_ter nt ->
           let l = comp_lhslist nt lhslists prio_dat array_nt_prio in
           let g j =
-            let ind = dim+(ind_of_lhs j)+n*(i/31) in
-            rel_L.(ind) <- rel_L.(ind) lor ba.(i mod 31)
+            let ind = dim+(ind_of_lhs j)+n*(i/30) in
+            rel_L.(ind) <- rel_L.(ind) lor ba.(i mod 30)
           in
           List.iter g l
       | Ter _ -> ()
   in
   
   for i=0 to n-1 do
-    (let ind = dim+i+n*(i/31) in
-    rel_L.(ind) <- rel_L.(ind) lor ba.(i mod 31);
+    (let ind = dim+i+n*(i/30) in
+    rel_L.(ind) <- rel_L.(ind) lor ba.(i mod 30);
     let rn_l = fst gram_lhs.(i) in
     let g rn =
       f i gram_rhs.(rn)
@@ -2180,8 +2180,8 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
     (*Printf.printf "k=%d\n" k; flush_all ();*)
     let l0 = ((k+1) mod 2)*dim in
     let l1 = (k mod 2)*dim in
-    let k0 = n*(k/31) in
-    let k1 = k mod 31 in
+    let k0 = n*(k/30) in
+    let k1 = k mod 30 in
     for i=0 to width-1 do
       let i0 = n*i in
       for j=0 to n-1 do
@@ -2197,13 +2197,13 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   
   let l = ((n-1) mod 2)*dim in
   
-  let r_L = Array.make (n+30) [] in
+  let r_L = Array.make (n+29) [] in
   
   for i=0 to width-1 do
     let i0 = n*i in
-    let i1 = i*31 in
+    let i1 = i*30 in
     for j=0 to n-1 do
-      for k=0 to 30 do
+      for k=0 to 29 do
         if (rel_L.(l+j+i0) lsr k) mod 2 = 1
         then
           let m = i1+k in
@@ -2220,10 +2220,10 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   (* n is the number of lhs in the grammar (nt_nb) *)
   
   let n = Array.length gram_lhs in
-  let width = (n+30)/31 in
-  let ba = Array.make 31 0 in
+  let width = (n+29)/30 in
+  let ba = Array.make 30 0 in
   let all_one = ref 0 in
-  for i=0 to 30 do
+  for i=0 to 29 do
     (ba.(i) <- 1 lsl i;
     all_one := !all_one + ba.(i))
   done;
@@ -2238,7 +2238,7 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
       | Non_ter nt ->
           let l = comp_lhslist nt lhslists prio_dat array_nt_prio in
           let g j =
-            let w1,w2 = i/31, i mod 31 in
+            let w1,w2 = i/30, i mod 30 in
             let k = ind_of_lhs j in
             rel_L.(dim+k+n*w1) <- rel_L.(dim+k+n*w1) lor ba.(w2)
           in
@@ -2247,7 +2247,7 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   in
   
   for i=0 to n-1 do
-    (let w1,w2 = i/31, i mod 31 in
+    (let w1,w2 = i/30, i mod 30 in
     rel_L.(dim+i+n*w1) <- rel_L.(dim+i+n*w1) lor ba.(w2);
     let rn_l = fst gram_lhs.(i) in
     let g rn =
@@ -2262,7 +2262,7 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
       for j=0 to n-1 do
         let l0,l1 = (k+1) mod 2, k mod 2 in
         let b =
-          if (rel_L.(l0*dim+j+n*(k/31)) lsr (k mod 31)) mod 2 = 0
+          if (rel_L.(l0*dim+j+n*(k/30)) lsr (k mod 30)) mod 2 = 0
           then 0 else !all_one
         in
         rel_L.(l1*dim+j+n*i) <- rel_L.(l0*dim+j+n*i) lor
@@ -2273,14 +2273,14 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   
   let l = (n-1) mod 2 in
   
-  let r_L = Array.make (n+30) [] in
+  let r_L = Array.make (n+29) [] in
   
   for i=0 to width-1 do
     for j=0 to n-1 do
-      for k=0 to 30 do
+      for k=0 to 29 do
         if (rel_L.(l*dim+j+n*i) lsr k) mod 2 = 1
         then
-          let m = i*31+k in
+          let m = i*30+k in
           r_L.(m) <- j::r_L.(m)
         else ()
       done
@@ -2294,10 +2294,10 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   (* n is the number of lhs in the grammar (nt_nb) *)
   
   let n = Array.length gram_lhs in
-  let width = (n+30)/31 in
-  let ba = Array.make 31 0 in
+  let width = (n+29)/30 in
+  let ba = Array.make 30 0 in
   let all_one = ref 0 in
-  for i=0 to 30 do
+  for i=0 to 29 do
     (ba.(i) <- 1 lsl i;
     all_one := !all_one + ba.(i))
   done;
@@ -2315,7 +2315,7 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
       | Non_ter nt ->
           let l = comp_lhslist nt lhslists prio_dat array_nt_prio in
           let g j =
-            let w1,w2 = i/31, i mod 31 in
+            let w1,w2 = i/30, i mod 30 in
             let k = ind_of_lhs j in
             rel_L.(1).(w1).(k) <- rel_L.(1).(w1).(k) lor ba.(w2)
           in
@@ -2324,7 +2324,7 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   in
   
   for i=0 to n-1 do
-    (let w1,w2 = i/31, i mod 31 in
+    (let w1,w2 = i/30, i mod 30 in
     rel_L.(1).(w1).(i) <- rel_L.(1).(w1).(i) lor ba.(w2);
     let rn_l = fst gram_lhs.(i) in
     let g rn =
@@ -2339,7 +2339,7 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
       for j=0 to n-1 do
         let l0,l1 = (k+1) mod 2, k mod 2 in
         let b =
-          if (rel_L.(l0).(k/31).(j) lsr (k mod 31)) mod 2 = 0
+          if (rel_L.(l0).(k/30).(j) lsr (k mod 30)) mod 2 = 0
           then 0 else !all_one
         in
         rel_L.(l1).(i).(j) <- rel_L.(l0).(i).(j) lor
@@ -2350,14 +2350,14 @@ let compute_L gram_rhs gram_lhs lhslists prio_dat array_nt_prio first_memo =
   
   let l = (n-1) mod 2 in
   
-  let r_L = Array.make (n+30) [] in
+  let r_L = Array.make (n+29) [] in
   
   for i=0 to width-1 do
     for j=0 to n-1 do
-      for k=0 to 30 do
+      for k=0 to 29 do
         if (rel_L.(l).(i).(j) lsr k) mod 2 = 1
         then
-          let m = i*31+k in
+          let m = i*30+k in
           r_L.(m) <- j::r_L.(m)
         else ()
       done
