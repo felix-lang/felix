@@ -963,8 +963,13 @@ statement:
       *)
       let sr = rstoken $1 $5 in
       let dssl = snd $2 in
+      let m = dyp.local_data in
+      let m = 
+        if Drules.mem dssl m.dssls then m 
+        else {m with dssls=Drules.add dssl fresh_dssl m.dssls}
+      in
       let global_data,local_data = 
-        List.fold_left (fun (g,l) x -> add_rule g l dssl x) (dyp.global_data, dyp.local_data) $4
+        List.fold_left (fun (g,l) x -> add_rule g l dssl x) (dyp.global_data, m) $4
       in 
       (* This cal tries to avoid gratutions mods to global/local data
          by checking for physical equality. Note changes to any
