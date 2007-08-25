@@ -13,7 +13,14 @@ let fcat fs = match fs with
 | [] -> Filename.current_dir_name
 | _ -> List.fold_left Filename.concat (List.hd fs) (List.tl fs)
 
-let split_unix f = Str.split (Str.regexp "/") f
+let split_unix f = 
+  let rec aux f accum =                                              
+    let d = Filename.dirname f in
+    if d = f                                                         
+    then f :: accum
+    else aux d (Filename.basename f :: accum)
+  in
+  aux f []
 
 let unix2native f = fcat (split_unix f)
 
