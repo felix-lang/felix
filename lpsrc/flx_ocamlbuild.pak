@@ -2,7 +2,7 @@
 <**/*.ml*>: warn_yzex
 
 @select(tangler('src/compiler/drivers/_tags'))
-<*.{byte,native}>: use_nums, use_unix
+<*.{byte,native}>: use_nums, use_unix, use_str
 
 @select(tangler('src/compiler/flxlib/_tags'))
 <flx_{,pre}parse.dyp>: pv-obj, no-emit-token-type
