@@ -505,6 +505,10 @@ syntax expressions {
     sparameter := sparam_qual sname : sarrow =># "`(,_1 ,_2 ,_4)";
     sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none)";
 
+    explain sparameter """
+    <p>If the type is elided, a fresh type variable is used.</p>
+    """;
+
     sparameter_comma_list := sepsilon =># "()";
     sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map cadr _2))";
 
@@ -514,6 +518,25 @@ syntax expressions {
     sparam_qual := ref =># "'PRef";
     sparam_qual := fun =># "'PFun";
     sparam_qual := sepsilon =># "'PVal";
+
+    explain sparam_qual """
+    <p>Parameter qualifiers have the following meaning:
+    <dl>
+    <dt>val</dt><dd>The default: Pass by name or value, may be inlined (lazy evaluation), and maybe not.</dd>
+    <dt>var</dt><dd>Pass by value, assign to local variable (eager evaluation, copying).</dd>
+    <dt>ref</dt><dd>Enforced Lazy evaluation. 
+      Pass a pointer to the specified type by value. 
+      Automatically dereferenced in function body. 
+      Caller will usually explicitly take address, eg <code>&amp;x</code>.
+      </dd>
+    <dt>fun</dt><dd>Enforced Lazy evaluation. 
+      Pass a closure of a function of unit argument returning the specified value. 
+      Automatically called in function body. 
+      Caller will usually explicitly wrap, eg <code>{ 42 }</code>.
+      </dd>
+    </dl>
+    </P>
+    """;
 
   srvalue := slambda  =># "_1";
 
@@ -838,7 +861,7 @@ syntax statements {
   sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= comma sname =># "`(,_2)";
 
-  page functions = sfunction_definition, sfun_kind, sfun_arg;
+  page functions = sfunction_definition, sfun_kind, sfun_arg, fun_return_type;
 
   sfun_arg :=  lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
   sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
@@ -847,6 +870,32 @@ syntax statements {
   sfun_kind := cfun =># "'CFunction";
   sfun_kind := gen =># "'Generator";
   sfun_kind := fun =># "'Function";
+
+  explain sfun_kind """
+  <p>The function kinds have the following semantics:
+  <dl>
+  <dt>fun</dt><dd>An ordinary Felix function. Must not have side-effects.
+    The representation is indeterminate, and may be a C++ class with an
+    <code>apply()</code> method, an ordinary C function, or nothing if all applications
+    are inlined away.
+  </dd>
+  <dt>cfun</dt><dd>Enforces creation of a C style function.</dd>
+  <dt>gen</dt><dd>Create a generator. A generator is a 
+    function with side-effects, which includes any kind of
+    object creation (such as a C++ string), or function which
+    impacts external state such as <code>malloc()</code> 
+    or <code>random()</code>.
+    <p>Generator applications are
+    always lifted out of expressions and the result of the
+    application assigned to a temporary variable, which
+    replaces the application in the original expression.
+    This ensures a generator application is evaluated exactly
+    one if the enclosing expression is evaluated. This feature
+    is similar to C sequence points.
+  </dd>
+  </dl>
+  </p>
+  """;
 
   sfunction_definition := sadjectives sfun_kind sdeclname 
     sfun_arg* fun_return_type => sexpr ssemi =>#
@@ -1218,6 +1267,21 @@ syntax cbind {
 
   sopt_prec := is sname =># "_2";
   sopt_prec := sepsilon =># '(quote "")';
+
+  explain sopt_prec """
+    <p>This attribute is used to specify the precedence of a C expression
+    so that the code generator can place parenthesis around it if it
+    is embedded in a context with higher precedence.</p>
+    <p>Felix automatically calculates the predence for tightly 
+    packed encodings of all C operators; for example there is no
+    need to specify the precedence of <code>"$1+$2"</code>.</p>
+    <p>Otherwise, if the precedence is omitted, the expression is
+    assumed to be low, and parenthesis is always added.<p>
+    <p> The precedence must be one of the following identifiers:
+    <ol>
+@for i in cprecedence: tangle ('<li>'+i+'</li>')
+    </ol></p>
+  """;
 
   // note: also needed by typeclasses atm for virtual funs
   sfunction_definition := sadjectives sfun_kind sdeclname 

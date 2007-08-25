@@ -1,3 +1,4 @@
+@execfile('config'+os.sep+'flx_data.py')
 @head(1,"C/C++ typings")
 @h = tangler("src/compiler/flxcclib/flx_ctypes.mli")
 @select(h)
@@ -190,27 +191,8 @@ let strcat = String.concat
 let add = Hashtbl.add
 
 let precedence = [
-"atom";
-"primary";
-"postfix";
-"unary";
-"cast";
-"pm";
-"mult";
-"add";
-"shift";
-"rel";
-"eq";
-"band";
-"bxor";
-"bor";
-"and";
-"xor";
-"or";
-"cond";
-"assign";
-"comma";
-"expr"
+@for i in cprecedence: tangle ('"'+i+'";',inhibit_sref=1)
+@#
 ]
 
 let postfix_cops = [

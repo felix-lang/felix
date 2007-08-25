@@ -1463,6 +1463,30 @@ if "target" in PHASES:
 import os
 execfile("config"+os.sep+"config.py")
 
+cprecedence = [
+  "atom",
+  "primary",
+  "postfix",
+  "unary",
+  "cast",
+  "pm",
+  "mult",
+  "add",
+  "shift",
+  "rel",
+  "eq",
+  "band",
+  "bxor",
+  "bor",
+  "and",
+  "xor",
+  "or",
+  "cond",
+  "assign",
+  "comma",
+  "expr"
+]
+
 cpp_keywords = [
   'asm',
   'auto',

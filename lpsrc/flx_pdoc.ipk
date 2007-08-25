@@ -169,7 +169,15 @@ let emit_rule dssl name dyalts : string list =
         let s = try List.assoc s spelling with Not_found -> s in
         semit s
       
-  and emit_dyalt (rhs,sr,action) = List.iter emit_symbol rhs 
+  and emit_dyalt (rhs,sr,action) = 
+    List.iter emit_symbol rhs;
+    match action with
+    | `Scheme s when String.length s > 1->
+      if s.[0] == '\'' then
+      emit (span "assocfun" (String.sub s 1 (String.length s - 1)))
+
+    | _ -> ()
+
   in
   let ss = List.map
     (fun x->
@@ -307,6 +315,8 @@ let gen_doc () =
 @select(h)
 BODY 
 {
+margin-left:2em;
+margin-right:4em;
 }
 
 DIV.index
@@ -377,5 +387,21 @@ SPAN.metatoken
   color: #BB0000
 }
 
+SPAN.assocfun
+{
+  position:absolute;left:15em;
+  font-weight: normal;
+  color: #BB0088
+}
 
+DT
+{
+  font-weight: bold;
+  color: #770044;
+}
+DD
+{
+  font-weight: normal;
+  color: #770000;
+}
 
