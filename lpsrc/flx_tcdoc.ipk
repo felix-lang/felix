@@ -36,6 +36,7 @@ let begin_div cl =
 
 let end_div = "</DIV>"
 
+let st t = Flx_print.string_of_typecode t
 
 let gen_doc () =
     let _ = try Unix.mkdir "doc" 0o775 with _ -> () in
@@ -52,6 +53,44 @@ let gen_doc () =
       w "</head>\n";
       w "<body>";
       w ("<h1>" ^ name ^ "</h1>\n");
+      w (begin_div "rule" ^ ("typeclass " ^ name ^ Flx_print.print_vs vs) ^ end_div);
+      iter (fun stmt -> match stmt with
+
+      | `AST_inject_module (sr,qn) ->
+        begin match qn with
+        | `AST_name (_,name,ts) ->
+          w (begin_div "element" ^ 
+            "   inherit " ^ href_page name ^ "["^ catmap "," st ts^"]" ^
+            end_div
+          )
+        | _ ->
+          w (begin_div "element" ^ 
+            "   inherit " ^ Flx_print.string_of_qualified_name qn ^
+            end_div
+          )
+        end
+
+      | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec) 
+        when code = `Virtual ->
+        begin match result with
+        | `AST_void _ ->
+          w (begin_div "element" ^ 
+            "   virtual proc " ^ name ^ Flx_print.print_vs vs ^ ": " ^
+            catmap "*" st args ^ 
+            end_div
+          )
+        | _ ->
+          w (begin_div "element" ^ 
+            "   virtual fun " ^ name ^ Flx_print.print_vs vs ^ ": " ^
+            catmap "*" st args ^ " -> " ^ st result ^
+            end_div
+          )
+        end
+
+      | x -> w (begin_div "element" ^ (Flx_print.string_of_statement 4 x) ^ end_div) 
+      )
+      sts
+      ;
       w "</body></html>\n";
       close_out f
     )
@@ -97,14 +136,6 @@ DIV.index
 }
 
 
-DIV.ntlist
-{
-  font-family: Courier;
-  margin-top: 18px;
-  font-size: 14px;
-  text-indent: 0px;
-}
-
 DIV.rule
 {
   margin-bottom: 4 px;
@@ -113,14 +144,12 @@ DIV.rule
   white-space: pre;
 }
 
-SPAN.dssl
+DIV.element
 {
-  color: #330033; 
-}
-
-SPAN.production
-{
-  position:absolute;left:10em;
+  margin-bottom: 4 px;
+  font-size: 12px;
+  text-indent: 0px;
+  white-space: pre;
 }
 
 P 
@@ -134,49 +163,5 @@ P
 CODE 
 {
   color : black;
-}
-
-SPAN.predef
-{
-  font-weight: normal;
-  color: #00AA00
-}
-
-SPAN.userkeyword
-{
-  font-weight: normal;
-  color: #77AA44
-}
-
-SPAN.metatoken
-{
-  font-size: larger;
-  font-weight: normal;
-  color: #BB0000
-}
-
-SPAN.assocfun
-{
-  position:absolute;left:18em;
-  font-weight: normal;
-  color: #BB0088
-}
-
-SPAN.anote
-{
-  position:absolute;left:18em;
-  font-weight: normal;
-  color: #BB0088
-}
-
-DT
-{
-  font-weight: bold;
-  color: #770044;
-}
-DD
-{
-  font-weight: normal;
-  color: #770000;
 }
 

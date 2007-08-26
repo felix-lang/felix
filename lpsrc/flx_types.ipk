@@ -3386,7 +3386,8 @@ and string_of_maybe_tpattern = function
 and print_tconstraint = function
   | `TYP_tuple [] -> ""
   | `TYP_intersect [`TYP_tuple []] -> ""
-  | t -> " where " ^ string_of_typecode t
+  | t -> let x = string_of_typecode t in
+    if x <> "unit" then " where " ^ x else ""
 
 and print_tclass_req qn = string_of_qualified_name qn
   
