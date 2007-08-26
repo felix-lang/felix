@@ -4,6 +4,8 @@
 open Flx_ast
 open Flx_mtypes2
 
+type anote_t = string
+
 type ntprio_t = [
   | `No_prio
   | `Eq_prio of string
@@ -49,7 +51,7 @@ type token =
 
 and prio_t = [`Default | `Priority of string]
 
-and rule_t = string * prio_t * token list * string * Flx_ast.range_srcref
+and rule_t = string * prio_t * token list * string * anote_t * Flx_ast.range_srcref
 
 and dssl_t = {
   prios : string list list;

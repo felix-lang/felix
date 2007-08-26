@@ -5304,6 +5304,7 @@ type felix_compiler_options_t =
   force_recompile : bool;
   with_comments : bool;
   document_grammar: bool;
+  document_typeclass: bool;
   mangle_names : bool;
   elkhound : string;
   generate_axiom_checks : bool;
@@ -5403,6 +5404,7 @@ type felix_compiler_options_t =
   force_recompile : bool;
   with_comments : bool;
   document_grammar: bool;
+  document_typeclass: bool;
   mangle_names : bool;
   elkhound : string;
   generate_axiom_checks : bool;

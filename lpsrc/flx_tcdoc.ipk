@@ -1,0 +1,182 @@
+@execfile('config'+os.sep+'flx_data.py')
+
+@h = tangler("src/compiler/flxlib/flx_tcdoc.mli")
+@select(h)
+open Flx_token
+open Flx_ast
+
+val record_tc: string -> vs_list_t * statement_t list -> unit
+val gen_doc : unit -> unit
+
+@h = tangler("src/compiler/flxlib/flx_tcdoc.ml")
+@select(h)
+open Flx_token
+open Flx_ast
+open Flx_util
+open List
+
+let tc_doc = Hashtbl.create 97
+
+let record_tc name (vs,sts) =
+  Hashtbl.add tc_doc name (vs,sts)
+
+let anchor s =
+  "<A NAME=\""^s^"\">"
+
+let href a s =
+  "<A HREF=\""^a^"\">" ^ s ^ "</A>"
+
+let href_page s = href (s^".html") s
+
+let span cl s =
+  "<SPAN CLASS=\""^cl^"\">"^s^"</SPAN>"
+
+let begin_div cl = 
+  "<DIV CLASS=\""^cl^"\">"
+
+let end_div = "</DIV>"
+
+
+let gen_doc () =
+    let _ = try Unix.mkdir "doc" 0o775 with _ -> () in
+    let _ = try Unix.mkdir "doc/typeclassdoc" 0o775 with _ -> () in
+
+    Hashtbl.iter (* all pages *)
+    (fun name (vs,sts) ->
+      let f = open_out ("doc/typeclassdoc/" ^ name ^ ".html") in
+      let w s = output_string f s in
+      w "<html><head>\n";
+      w "<meta content=\"text/html; charset=utf8\" http-equiv=\"Content-Type\">\n";
+      w "<link rel=stylesheet href=\"typeclassdoc.css\" type=\"text/css\">\n";
+      w ("<title>" ^ name^ "</title>\n");
+      w "</head>\n";
+      w "<body>";
+      w ("<h1>" ^ name ^ "</h1>\n");
+      w "</body></html>\n";
+      close_out f
+    )
+    tc_doc
+    ;
+    let tc_list = Hashtbl.fold (fun k _ acc -> k::acc) tc_doc [] in
+    let tc_list = List.sort compare tc_list in
+    let f = open_out ("doc/typeclassdoc/index.html") in
+    let w s = output_string f s in
+    w "<html><head>\n";
+    w "<meta content=\"text/html; charset=utf8\" http-equiv=\"Content-Type\">\n";
+    w "<link rel=stylesheet href=\"typeclassdoc.css\" type=\"text/css\">";
+    w ("<title>Felix Typeclasses</title>\n");
+    w "</head>\n";
+    w "<body>\n";
+    w "<H1>Typeclass Index</H1>";
+    w (begin_div "index");
+    List.iter
+    (fun name ->
+      w (" " ^ href_page name ^ "\n");
+    )
+    tc_list
+    ;
+    w end_div;
+    w "</body></html>\n";
+    close_out f
+
+@h = tangler('doc/typeclassdoc/typeclassdoc.css')
+@select(h)
+BODY 
+{
+margin-left:2em;
+margin-right:4em;
+}
+
+DIV.index
+{
+  font-family: Courier;
+  white-space: pre;
+  font-size: 14px;
+  text-indent: 0px;
+  line-height: normal;
+}
+
+
+DIV.ntlist
+{
+  font-family: Courier;
+  margin-top: 18px;
+  font-size: 14px;
+  text-indent: 0px;
+}
+
+DIV.rule
+{
+  margin-bottom: 4 px;
+  font-size: 14px;
+  text-indent: 0px;
+  white-space: pre;
+}
+
+SPAN.dssl
+{
+  color: #330033; 
+}
+
+SPAN.production
+{
+  position:absolute;left:10em;
+}
+
+P 
+{ 
+  font-family: Arial;
+  font-weight: normal;
+  color: #8b6914;
+  font-size: 14px;
+}
+
+CODE 
+{
+  color : black;
+}
+
+SPAN.predef
+{
+  font-weight: normal;
+  color: #00AA00
+}
+
+SPAN.userkeyword
+{
+  font-weight: normal;
+  color: #77AA44
+}
+
+SPAN.metatoken
+{
+  font-size: larger;
+  font-weight: normal;
+  color: #BB0000
+}
+
+SPAN.assocfun
+{
+  position:absolute;left:18em;
+  font-weight: normal;
+  color: #BB0088
+}
+
+SPAN.anote
+{
+  position:absolute;left:18em;
+  font-weight: normal;
+  color: #BB0088
+}
+
+DT
+{
+  font-weight: bold;
+  color: #770044;
+}
+DD
+{
+  font-weight: normal;
+  color: #770000;
+}
+

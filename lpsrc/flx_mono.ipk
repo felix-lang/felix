@@ -47,7 +47,9 @@ let cal_parent syms bbdfns i' ts' =
     assert (length vsc = length ts');
     if not (Hashtbl.mem bbdfns i) then 
     (
+      (*
       print_endline ("WHA?? Parent " ^ si i ^ " of " ^ si i' ^ " does not exist??");
+      *)
       None 
     )
     else

@@ -56,6 +56,7 @@ FLX_MODULES = [
   'src/compiler/flxlib/flx_cformat', 
   'src/compiler/flxlib/flx_ciltoflx',
   'src/compiler/flxlib/flx_colns', 
+  'src/compiler/flxlib/flx_tcdoc',
   'src/compiler/flxlib/flx_desugar', 
   'src/compiler/flxlib/flx_mbind', 
   'src/compiler/flxlib/flx_symtab', 
@@ -357,6 +358,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_macro.ipk')
 @include_file ('flx_cformat.ipk')
 @include_file ('flx_ciltoflx.ipk')
+@include_file ('flx_tcdoc.ipk')
 @include_file ('flx_desugar.ipk')
 @include_file ('flx_symtab.ipk')
 @include_file ('flx_beta.ipk')

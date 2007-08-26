@@ -7,8 +7,11 @@
 Reference Manual (interscript):
 @cite_url("refman/en_flx_ref_top.html")
 @p()
-Grammar Reference (flxp --document_grammar):
+Grammar Reference (flxp --document-grammar):
 @cite_url("gramdoc/index.html")
+@p()
+Typeclass Reference (flxd --document-typeclass):
+@cite_url("typeclassdoc/index.html")
 @p()
 Basic Tutorial (interscript):
 @cite_url("tutorial/introduction/en_flx_tutorial_top.html")

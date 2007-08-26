@@ -192,252 +192,148 @@ syntax expressions {
   sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))"; 
   sexpr := slambda =># "_1";
 
-  page lambda =
-    slambda,
-    slambda_fun_arg,
-    slambda_fun_args
- ;
-
-  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type = scompound =>#
-    """
-    `(ast_lambda (,_3 ,_4 ,(car _5) ,_7))
-    """;
-
-  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type => sexpr =>#
-    """
-    `(ast_lambda (,_3 ,_4 ,(car _5) ((ast_fun_return ,_sr ,_7))))
-    """;
-
-  slambda := sadjectives proc stvarlist slambda_fun_args scompound =>#
-    """
-    `(ast_lambda (,_3 ,_4 ast_void ,_5))
-    """;
-
-  slambda := sadjectives proc stvarlist scompound =>#
-    """
-    `(ast_lambda (,_3 ((() none)) ast_void ,_4))
-    """;
-
-  page adjectives = sadjective, sadjectives;
-
-    sadjective := inline =># "'InlineFunction";
-    sadjective := noinline =># "'NoInlineFunction";
-    sadjective := virtual =># "'Virtual";
-    sadjectives := sadjective* =># "_1";
-
-    slambda_fun_arg := lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
-    slambda_fun_arg := lpar sparameter_comma_list rpar =># "`(,_2 none)";
-    slambda_fun_args := slambda_fun_arg+ =># "_1";
-
-    fun_return_type := : stypeexpr expect sexpr =># "`(,_2 (some ,_4))";
-    fun_return_type := : stypeexpr =># "`(,_2 none)";
-    fun_return_type := expect sexpr =># "`(typ_none (some ,_2))";
-    fun_return_type := sepsilon =># "'(typ_none none)";
-
-  explain fun_return_type """
-  <p>A function return specification consists of an optional type
-  and an optional expected postcondition. The special identifier
-  <code>result</code> can be used in the postcondition to denote
-  the returned value. If the postcondition is omitted it is 
-  quivalent to <code>true</code>, otherwise the postcondition
-  is check after every application.</p>
-  <p>If the return type is not specified, the compiler will
-  try to calculate it from the function definition. Occasionally
-  this will fail for recursive functions due to the interaction
-  with overloading and recursive types. Reusable library functions 
-  should always provide an explicit return type annotation.</p>
-  """;
-
-    page parameters = sparameter, sparameter_comma_list, sparam_qual;
-
-    sparameter := sparam_qual sname : sarrow =># "`(,_1 ,_2 ,_4)";
-    sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none)";
-
-    explain sparameter """
-    <p>If the type is elided, a fresh type variable is used.</p>
-    """;
-
-    sparameter_comma_list := sepsilon =># "()";
-    sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map cadr _2))";
-
-
-    sparam_qual := val =># "'PVal";
-    sparam_qual := var =># "'PVar";
-    sparam_qual := ref =># "'PRef";
-    sparam_qual := fun =># "'PFun";
-    sparam_qual := sepsilon =># "'PVal";
-
-    explain sparam_qual """
-    <p>Parameter qualifiers have the following meaning:
-    <dl>
-    <dt>val</dt><dd>The default: Pass by name or value, may be inlined (lazy evaluation), and maybe not.</dd>
-    <dt>var</dt><dd>Pass by value, assign to local variable (eager evaluation, copying).</dd>
-    <dt>ref</dt><dd>Enforced Lazy evaluation. 
-      Pass a pointer to the specified type by value. 
-      Automatically dereferenced in function body. 
-      Caller will usually explicitly take address, eg <code>&amp;x</code>.
-      </dd>
-    <dt>fun</dt><dd>Enforced Lazy evaluation. 
-      Pass a closure of a function of unit argument returning the specified value. 
-      Automatically called in function body. 
-      Caller will usually explicitly wrap, eg <code>{ 42 }</code>.
-      </dd>
-    </dl>
-    </P>
-    """;
-
-
   stypeexpr:= sor_condition =># "_1";
-
   slambda := sdollar_apply =># "_1";
 
-  page tuples = stuple, stuple_list;
-
+  page tuples = sdollar_apply, stuple, stuple_list;
  
-  sdollar_apply := stuple =># "_1";
   sdollar_apply := stuple unless sexpr then sdollar_apply =>#
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply ,_sr (,_1 ,_3))";
+  sdollar_apply := stuple =># "_1";
 
   stuple := sor_condition  =># "_1";
   stuple := sor_condition , stuple_list =># "`(ast_tuple ,(cons _1 _3))";
-    /*
-    stuple_suffix:= , sor_condition stuple_suffix =># "(cons _2 _3)";
-    stuple_suffix:= , sor_condition  =># "`(,_2)";
-    */
   stuple_list := sor_condition ( , sor_condition)* =># "(cons _1 (map cadr _2))";
  
-  // NOTE: this version doesn't support chains like a < b < c.. too bad
-  scomparison:= sas_expr =># "_1";
-  scomparison:= sas_expr < sas_expr =># "`(ast_apply ,_sr (lt (,_1 ,_3)))";
-  scomparison:= sas_expr <= sas_expr =># "`(ast_apply ,_sr (le (,_1 ,_3)))";
-  scomparison:= sas_expr == sas_expr =># "`(ast_apply ,_sr (eq (,_1 ,_3)))";
-  scomparison:= sas_expr != sas_expr =># "`(ast_apply ,_sr (ne (,_1 ,_3)))";
-  scomparison:= sas_expr >= sas_expr =># "`(ast_apply ,_sr (ge (,_1 ,_3)))";
-  scomparison:= sas_expr > sas_expr =># "`(ast_apply ,_sr (gt (,_1 ,_3)))";
-
-  page logic = snot_condition, sand_condition, sand_list, sor_condition, sor_list;
+  page logic = 
+    sor_condition, 
+    sor_list, 
+    sand_condition, 
+    sand_list, 
+    snot_condition, 
+    scomparison,
+    sas_expr,
+    ssetunion,
+    suser10,
+    ssetintersection,
+    sarrow,
+    scase_literal
+  ;
 
   sor_condition := sand_condition =># "_1";
-  sor_condition := sand_condition or sor_list =># "`(ast_orlist ,(cons _1 _3))";
-    /*
-    sor_list := sand_condition or sor_list =># "(cons _1 _3)";
-    sor_list := sand_condition =># "`(,_1)";
-    */
+  sor_condition := sand_condition or sor_list =># "`(ast_orlist ,(cons _1 _3))" note "lor";
   sor_list := sand_condition ( or sand_condition)* =># "(cons _1 (map cadr _2))";
 
   sand_condition := snot_condition =># "_1";
-  sand_condition := snot_condition and sand_list =># "`(ast_andlist ,(cons _1 _3))";
-    /*
-    sand_list := snot_condition and sand_list =># "(cons _1 _3)";
-    sand_list := snot_condition =># "`(,_1)";
-    */
+  sand_condition := snot_condition and sand_list =># "`(ast_andlist ,(cons _1 _3))" note "land";
   sand_list := snot_condition ( and snot_condition)* =># "(cons _1 (map cadr _2))";
 
+  snot_condition := not snot_condition  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
   snot_condition := scomparison  =># "_1";
-  snot_condition := not snot_condition  =># "`(ast_apply ,_sr (lnot ,_2))";
 
- 
-  sarrow := scase_literal =># "_1";
+  // NOTE: this version doesn't support chains like a < b < c.. too bad
+  scomparison:= sas_expr < sas_expr =># "`(ast_apply ,_sr (lt (,_1 ,_3)))" note "lt";
+  scomparison:= sas_expr <= sas_expr =># "`(ast_apply ,_sr (le (,_1 ,_3)))" note "le";
+  scomparison:= sas_expr == sas_expr =># "`(ast_apply ,_sr (eq (,_1 ,_3)))" note "eq";
+  scomparison:= sas_expr != sas_expr =># "`(ast_apply ,_sr (ne (,_1 ,_3)))" note "ne";
+  scomparison:= sas_expr >= sas_expr =># "`(ast_apply ,_sr (ge (,_1 ,_3)))" note "ge";
+  scomparison:= sas_expr > sas_expr =># "`(ast_apply ,_sr (gt (,_1 ,_3)))" note "gt";
+  scomparison:= sas_expr =># "_1";
+
+  sas_expr := sas_expr as sname =># "`(ast_as (,_1 ,_3))";
+  sas_expr := ssetunion =># "_1";
+
+  ssetunion := suser10 || ssetunion_list =># "`(ast_setunion ,(cons _1 _3))";
+  ssetunion_list := suser10 ( || suser10)* =># "(cons _1 (map cadr _2))";
+  ssetunion := suser10 =># "_1";
+
+  suser10 := suser10 suser10token ssetintersection =># 
+    "`(ast_apply ,_sr ( (ast_name ,_2 ()) (,_1 ,_3)))";
+  suser10 := ssetintersection =># "_1";
+
+  ssetintersection := sarrow && ssetintersection_list =># "`(ast_setintersection ,(cons _1 _3))";
+  ssetintersection_list := sarrow (&& sarrow)* =># "(cons _1 (map cadr _2))";
+  ssetintersection:= sarrow =># "_1";
+
   sarrow := scase_literal -> sarrow =># "`(ast_arrow (,_1 ,_3))";
   sarrow := scase_literal --> sarrow =># "`(ast_longarrow (,_1 ,_3))";
+  sarrow := scase_literal =># "_1";
 
-  scase_literal := sbor =># "_1";
   scase_literal := case sinteger =># "`(ast_case_tag ,_2))";
   scase_literal := case sinteger of ssum =># "`(ast_typed_case ,_2 ,_4)";
   scase_literal := case sname of ssum =># "`(ast_variant (,_2 ,_4))";
- 
-  ssetunion := suser10 =># "_1";
-  ssetunion := suser10 || ssetunion_list =># "`(ast_setunion ,(cons _1 _3))";
-    /*
-    ssetunion_list := suser10 =># "`(,_1)";
-    ssetunion_list := suser10 || ssetunion_list =># "(cons _1 _3)";
-    */
-  ssetunion_list := suser10 ( || suser10)* =># "(cons _1 (map cadr _2))";
+  scase_literal := sbor =># "_1";
 
-  suser10 := ssetintersection =># "_1";
-  suser10 := suser10 suser10token ssetintersection =># 
-    "`(ast_apply ,_sr ( (ast_name ,_2 ()) (,_1 ,_3)))";
+  explain case_literal """<p>Next: bitwise</p>""";
 
-  ssetintersection:= sarrow =># "_1";
-  ssetintersection := sarrow && ssetintersection_list =># "`(ast_setintersection ,(cons _1 _3))";
-    /*
-    ssetintersection_list := sarrow =># "`(,_1)";
-    ssetintersection_list := sarrow && ssetintersection_list =># "(cons _1 _3)";
-    */
-  ssetintersection_list := sarrow (&& sarrow)* =># "(cons _1 (map cadr _2))";
-
-  sas_expr := ssetunion =># "_1";
-  sas_expr := sas_expr as sname =># "`(ast_as (,_1 ,_3))";
-
-
-  page bitwise = sshift, sband, sbxor, sbor;
+  page bitwise = sbor, sbxor, sband, sshift;
+  sbor := sbor \| sbxor =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
   sbor := sbxor =># "_1";
-  sbor := sbor \| sbxor =># "`(ast_apply ,_sr (bor (,_1 ,_3)))";
 
+  sbxor := sbxor \^ sband =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
   sbxor := sband =># "_1";
-  sbxor := sbxor \^ sband =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))";
 
+  sband := sband \& sshift =># "`(ast_apply ,_sr (band (,_1 ,_3)))" note "band";
   sband :=  sshift =># "_1";
-  sband := sband \& sshift =># "`(ast_apply ,_sr (band (,_1 ,_3)))";
 
+  sshift := sshift << ssum =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
+  sshift := sshift >> ssum =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
   sshift := ssum =># "_1";
-  sshift := sshift << ssum =># "`(ast_apply ,_sr (shl (,_1 ,_3)))";
-  sshift := sshift >> ssum =># "`(ast_apply ,_sr (shr (,_1 ,_3)))";
 
+  explain sshift """<p>Next: arithmetic</p>""";
+ 
   page arithmetic = 
-    s_term, 
+    ssum, 
+    ssum_list,
+    ssubtraction, 
     sproduct, 
     sproduct_list, 
-    ssubtraction, 
-    ssum, 
-    ssum_list
+    s_term,
+    sprefixed
   ;
 
-  ssum :=  ssubtraction =># "_1";
-  ssum := ssubtraction plus ssum_list =># "`(ast_sum ,(cons _1 _3))";
-    /*
-    ssum_list := ssubtraction plus ssum_list =># "(cons _1 _3)";
-    ssum_list := ssubtraction =># "`(,_1)";
-    */
+  ssum := ssubtraction plus ssum_list =># "`(ast_sum ,(cons _1 _3))" note "add";
   ssum_list := ssubtraction (plus ssubtraction)* =># "(cons _1 (map cadr _2))";
+  ssum :=  ssubtraction =># "_1";
 
+  ssubtraction := ssubtraction - sproduct =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
   ssubtraction := sproduct =># "_1";
-  ssubtraction := ssubtraction - sproduct =># "`(ast_apply ,_sr (sub (,_1 ,_3)))";
 
-  sproduct :=  s_term =># "_1";
-  sproduct := s_term star sproduct_list =># "`(ast_product ,(cons _1 _3))";
-  /*
-    sproduct_list := s_term star sproduct_list =># "(cons _1 _3)";
-    sproduct_list := s_term =># "`(,_1)";
-  */
+  sproduct := s_term star sproduct_list =># "`(ast_product ,(cons _1 _3))" note "mul";
   sproduct_list := s_term (star s_term)* =># "(cons _1 (map cadr _2))";
+  sproduct :=  s_term =># "_1";
   
+  s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
+  s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
   s_term := sprefixed =># "_1";
-  s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))";
-  s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))";
 
-  page exponentials = ssuperscript, spower, sprefixed, srefr;
-
-  ssuperscript := srefr =># "_1"; 
-  ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))"; 
-
-  spower := ssuperscript  =># "_1"; 
-  spower := ssuperscript ** sprefixed =># "`(ast_apply ,_sr (pow (,_1 ,_3)))"; 
-
-  sprefixed := spower =># "_1";
   sprefixed := lval spower =># "`(ast_lvalue ,_2)";
-  sprefixed := ! spower =># "`(ast_apply ,_sr (excl ,_2))";
-  sprefixed := plus spower =># "`(ast_apply ,_sr (pos ,_2))";
-  sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))";
-  sprefixed := ~ spower =># "`(ast_apply ,_sr (compl ,_2))";
+  sprefixed := ! spower =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
+  sprefixed := plus spower =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
+  sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))" note "neg";
+  sprefixed := ~ spower =># "`(ast_apply ,_sr (compl ,_2))" note "compl";
+  sprefixed := spower =># "_1";
 
-  srefr := sapplication =># "_1";
+
+  explain sprefixed """<p>Next: exponentials</p>""";
+
+  page exponentials = spower, ssuperscript, srefr;
+
+  spower := ssuperscript ** sprefixed =># "`(ast_apply ,_sr (pow (,_1 ,_3)))" note "pow"; 
+  spower := ssuperscript  =># "_1"; 
+
+  ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))"; 
+  ssuperscript := srefr =># "_1"; 
+
   srefr := & srefr =># "`(ast_ref ,_2)";
-  srefr := star srefr =># "`(ast_apply ,_sr (deref ,_2))";
+  srefr := star srefr =># "`(ast_apply ,_sr (deref ,_2))" note "deref";
   srefr := _deref srefr =># "`(ast_deref ,_2)";
   srefr := new srefr =># "`(ast_new ,_2)";
   srefr := anon_value =># "_1";
+  srefr := sapplication =># "_1";
+
+  explain srefr """<p>Next: applications</p>""";
 
   page structured_values = 
     anon_value, 
@@ -469,8 +365,23 @@ syntax expressions {
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
   sapplication := scoercion =># "_1";
-  sapplication := sapplication scoercion =># "`(ast_apply ,_sr (,_1 ,_2))";
+  sapplication := sapplication scoercion =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
   sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
+
+  explain sapplication """
+  <p>The system automatically handles application of values of function type.
+  However the user can provide overloaded applicators for a value of 
+  type <code>d</code> to a value of type <code>c</code> by defining 
+  a function named <code>apply</code> of type <code>d -> c</code>.</p>
+  <p>In addition, a constructor for a named type <code>t</code> can be
+  defined by a function with the name <code>_ctor_t</code>.
+  This function will be invisible if the type already has a constructor
+  defined by the system, for example a <code>struct</code>. In fact there
+  is no requirement that the function return the specified type: this
+  feature is purely syntactic sugar which is used when a function is
+  expected and a named type is found. Algebraic types can be used
+  via a typedef name.</p>
+  """;
 
   scoercion := sfactor =># "_1";
   scoercion := scoercion : sfactor =># "`(ast_coercion (,_1 ,_3))";
@@ -643,6 +554,239 @@ syntax patterns {
 }
 
 //------------------------------------------
+syntax functions {
+  requires expressions;
+  sdeclarative := sfunction_definition =># "_1";
+  sdeclarative := sobject_definition =># "_1";
+  sdeclarative := sprocedure_definition =># "_1";
+
+  page functions = sfunction_definition, sfun_kind, sfun_arg, fun_return_type;
+  page procedures = sprocedure_definition, sproc_kind, sopt_traint_eq;
+
+  page adjectives = sadjective, sadjectives;
+  page parameters = sparameter, sparameter_comma_list, sparam_qual;
+  page lambda = slambda, slambda_fun_arg, slambda_fun_args;
+
+  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type = scompound =>#
+    """
+    `(ast_lambda (,_3 ,_4 ,(car _5) ,_7))
+    """;
+
+  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type => sexpr =>#
+    """
+    `(ast_lambda (,_3 ,_4 ,(car _5) ((ast_fun_return ,_sr ,_7))))
+    """;
+
+  slambda := sadjectives proc stvarlist slambda_fun_args scompound =>#
+    """
+    `(ast_lambda (,_3 ,_4 ast_void ,_5))
+    """;
+
+  slambda := sadjectives proc stvarlist scompound =>#
+    """
+    `(ast_lambda (,_3 ((() none)) ast_void ,_4))
+    """;
+
+    sadjective := inline =># "'InlineFunction";
+    sadjective := noinline =># "'NoInlineFunction";
+    sadjective := virtual =># "'Virtual";
+    sadjectives := sadjective* =># "_1";
+
+    slambda_fun_arg := lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
+    slambda_fun_arg := lpar sparameter_comma_list rpar =># "`(,_2 none)";
+    slambda_fun_args := slambda_fun_arg+ =># "_1";
+
+    fun_return_type := : stypeexpr expect sexpr =># "`(,_2 (some ,_4))";
+    fun_return_type := : stypeexpr =># "`(,_2 none)";
+    fun_return_type := expect sexpr =># "`(typ_none (some ,_2))";
+    fun_return_type := sepsilon =># "'(typ_none none)";
+
+  explain fun_return_type """
+  <p>A function return specification consists of an optional type
+  and an optional expected postcondition. The special identifier
+  <code>result</code> can be used in the postcondition to denote
+  the returned value. If the postcondition is omitted it is 
+  quivalent to <code>true</code>, otherwise the postcondition
+  is check after every application.</p>
+  <p>If the return type is not specified, the compiler will
+  try to calculate it from the function definition. Occasionally
+  this will fail for recursive functions due to the interaction
+  with overloading and recursive types. Reusable library functions 
+  should always provide an explicit return type annotation.</p>
+  """;
+
+    sparameter := sparam_qual sname : sarrow =># "`(,_1 ,_2 ,_4)";
+    sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none)";
+
+    explain sparameter """
+    <p>If the type is elided, a fresh type variable is used.</p>
+    """;
+
+    sparameter_comma_list := sepsilon =># "()";
+    sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map cadr _2))";
+
+
+    sparam_qual := val =># "'PVal";
+    sparam_qual := var =># "'PVar";
+    sparam_qual := ref =># "'PRef";
+    sparam_qual := fun =># "'PFun";
+    sparam_qual := sepsilon =># "'PVal";
+
+    explain sparam_qual """
+    <p>Parameter qualifiers have the following meaning:
+    <dl>
+    <dt>val</dt><dd>The default: Pass by name or value, may be inlined (lazy evaluation), and maybe not.</dd>
+    <dt>var</dt><dd>Pass by value, assign to local variable (eager evaluation, copying).</dd>
+    <dt>ref</dt><dd>Enforced Lazy evaluation. 
+      Pass a pointer to the specified type by value. 
+      Automatically dereferenced in function body. 
+      Caller will usually explicitly take address, eg <code>&amp;x</code>.
+      </dd>
+    <dt>fun</dt><dd>Enforced Lazy evaluation. 
+      Pass a closure of a function of unit argument returning the specified value. 
+      Automatically called in function body. 
+      Caller will usually explicitly wrap, eg <code>{ 42 }</code>.
+      </dd>
+    </dl>
+    </P>
+    """;
+
+  sfun_arg :=  lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
+  sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
+  sfun_arg :=  sname =># "`(((PVal ,_1 typ_none)) none)";
+
+  sfun_kind := cfun =># "'CFunction";
+  sfun_kind := gen =># "'Generator";
+  sfun_kind := fun =># "'Function";
+
+  explain sfun_kind """
+  <p>The function kinds have the following semantics:
+  <dl>
+  <dt>fun</dt><dd>An ordinary Felix function. Must not have side-effects.
+    The representation is indeterminate, and may be a C++ class with an
+    <code>apply()</code> method, an ordinary C function, or nothing if all applications
+    are inlined away.
+  </dd>
+  <dt>cfun</dt><dd>Enforces creation of a C style function.</dd>
+  <dt>gen</dt><dd>Create a generator. A generator is a 
+    function with side-effects, which includes any kind of
+    object creation (such as a C++ string), or function which
+    impacts external state such as <code>malloc()</code> 
+    or <code>random()</code>.
+    <p>Generator applications are
+    always lifted out of expressions and the result of the
+    application assigned to a temporary variable, which
+    replaces the application in the original expression.
+    This ensures a generator application is evaluated exactly
+    one if the enclosing expression is evaluated. This feature
+    is similar to C sequence points.
+  </dd>
+  </dl>
+  </p>
+  """;
+
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    sfun_arg* fun_return_type => sexpr ssemi =>#
+  """
+    (let ((body `((ast_fun_return ,_sr ,_7))))
+    (mkns 
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
+    (cdr _3)))
+  """;
+
+
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    sfun_arg* fun_return_type = scompound =>#
+  """
+    (mkns 
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
+    (cdr _3))
+  """;
+
+  sopt_cstring := = scode_spec =># "`(some ,_2)";
+  sopt_cstring := sepsilon =># "'none";
+
+  sfunction_definition := sadjectives sfun_kind sdeclname 
+    fun_return_type = smatching+ ssemi =>#
+  """
+   (let 
+     (
+      (t (car _4))
+      (traint (cadr _4))
+     )
+    (begin ;;(display "ftype=")(display t)(display "\\n")
+    (if (eq? 'ast_arrow (car t))
+      (let 
+        (
+          (argt (caadr t))
+          (ret (cadadr t))
+          (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
+        )
+        (mkns 
+        `(ast_curry ,_sr ,(caar _3) ,(cadar _3) 
+          ( 
+            (((PVal _a ,argt)) none)
+          )
+          (,ret ,traint) 
+          ,(cal_funkind _1 _2) ,body)
+        (cdr _3))
+      )
+      'ERROR
+     )
+     )
+   )
+  """;
+
+  sproc_kind := proc =># "'Function";
+  sproc_kind := cproc =># "'CFunction";
+
+  sopt_traint_eq:= expect sexpr = =># "`(some ,_2)";
+  sopt_traint_eq:= sepsilon =># "'none";
+
+  sctor_init := sname lpar sexpr rpar =># "`(,_1 ,_3)";
+  sctor_init_list := sctor_init , sctor_init_list =># "(cons _1 _3)";
+  sctor_init_list :=  sctor_init =># "`(,_1)";
+  sctor_inits := : sctor_init_list =># "_2";
+  sctor_inits := sepsilon =># "()";
+
+  // only used by classes
+  sprocedure_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
+    sctor_inits scompound =>#
+  """
+  (let* 
+    (
+      (name "__constructor__")
+      (vs _2)
+      (ret 'ast_void)
+      (traint _4)
+      (body _6)
+      (inits _5)
+      (args _3)
+      (f (lambda (ne)`(ast_init ,_sr ,(car ne) ,(cadr ne))))
+      (body (append (map f inits) body))
+    )
+    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
+  """;
+
+  sprocedure_definition := sadjectives sproc_kind sdeclname
+    sfun_arg* sopt_traint_eq scompound =>#
+  """
+    (mkns 
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
+    (cdr _3))
+  """;
+
+  sobject_definition := obj sdeclname sfun_arg+ scompound =>#
+  """
+    (mkns 
+    `(ast_curry ,_sr ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
+    (cdr _2))
+  """;
+
+}
+
+
+//------------------------------------------
 syntax regexps {
   requires expressions;
   satom := sregmatch_expr =># "_1";
@@ -783,9 +927,6 @@ syntax statements {
 
   spublish := "publish" sstring statement =># "_3";
 
-  sdeclarative := sfunction_definition =># "_1";
-  sdeclarative := sobject_definition =># "_1";
-  sdeclarative := sprocedure_definition =># "_1";
   sdeclarative := smodule_definition =># "_1";
   sdeclarative := sunion_decl =># "_1";
   sdeclarative := sstruct_decl =># "_1";
@@ -810,18 +951,8 @@ syntax statements {
     (cdr _3))
     """; 
 
-  /*
-  sbasic_name_comma_list:= sname scomma_name* =># "(cons _1 _2)";
-  scomma_name:= , sname =># "_2";
-  */
-
   sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map cadr _2))";
 
-  /*
-  squalified_name_comma_list:= squalified_name scomma_qualified_name* =>#
-    "(cons _1 _2)";
-  scomma_qualified_name := , squalified_name =># "_2";
-  */
   squalified_name_comma_list:= squalified_name (, squalified_name)* =>#
     "(cons _1 (map cadr _2))";
 
@@ -876,145 +1007,6 @@ syntax statements {
 
   sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= comma sname =># "`(,_2)";
-
-  page functions = sfunction_definition, sfun_kind, sfun_arg, fun_return_type;
-
-  sfun_arg :=  lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
-  sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
-  sfun_arg :=  sname =># "`(((PVal ,_1 typ_none)) none)";
-
-  sfun_kind := cfun =># "'CFunction";
-  sfun_kind := gen =># "'Generator";
-  sfun_kind := fun =># "'Function";
-
-  explain sfun_kind """
-  <p>The function kinds have the following semantics:
-  <dl>
-  <dt>fun</dt><dd>An ordinary Felix function. Must not have side-effects.
-    The representation is indeterminate, and may be a C++ class with an
-    <code>apply()</code> method, an ordinary C function, or nothing if all applications
-    are inlined away.
-  </dd>
-  <dt>cfun</dt><dd>Enforces creation of a C style function.</dd>
-  <dt>gen</dt><dd>Create a generator. A generator is a 
-    function with side-effects, which includes any kind of
-    object creation (such as a C++ string), or function which
-    impacts external state such as <code>malloc()</code> 
-    or <code>random()</code>.
-    <p>Generator applications are
-    always lifted out of expressions and the result of the
-    application assigned to a temporary variable, which
-    replaces the application in the original expression.
-    This ensures a generator application is evaluated exactly
-    one if the enclosing expression is evaluated. This feature
-    is similar to C sequence points.
-  </dd>
-  </dl>
-  </p>
-  """;
-
-  sfunction_definition := sadjectives sfun_kind sdeclname 
-    sfun_arg* fun_return_type => sexpr ssemi =>#
-  """
-    (let ((body `((ast_fun_return ,_sr ,_7))))
-    (mkns 
-    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
-    (cdr _3)))
-  """;
-
-
-  sfunction_definition := sadjectives sfun_kind sdeclname 
-    sfun_arg* fun_return_type = scompound =>#
-  """
-    (mkns 
-    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
-    (cdr _3))
-  """;
-
-  sopt_cstring := = scode_spec =># "`(some ,_2)";
-  sopt_cstring := sepsilon =># "'none";
-
-  sfunction_definition := sadjectives sfun_kind sdeclname 
-    fun_return_type = smatching+ ssemi =>#
-  """
-   (let 
-     (
-      (t (car _4))
-      (traint (cadr _4))
-     )
-    (begin ;;(display "ftype=")(display t)(display "\\n")
-    (if (eq? 'ast_arrow (car t))
-      (let 
-        (
-          (argt (caadr t))
-          (ret (cadadr t))
-          (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
-        )
-        (mkns 
-        `(ast_curry ,_sr ,(caar _3) ,(cadar _3) 
-          ( 
-            (((PVal _a ,argt)) none)
-          )
-          (,ret ,traint) 
-          ,(cal_funkind _1 _2) ,body)
-        (cdr _3))
-      )
-      'ERROR
-     )
-     )
-   )
-  """;
-
-  sproc_kind := proc =># "'Function";
-  sproc_kind := cproc =># "'CFunction";
-
-  sopt_traint_eq:= expect sexpr = =># "`(some ,_2)";
-  sopt_traint_eq:= sepsilon =># "'none";
-
-  sctor_init := sname lpar sexpr rpar =># "`(,_1 ,_3)";
-  sctor_init_list := sctor_init , sctor_init_list =># "(cons _1 _3)";
-  sctor_init_list :=  sctor_init =># "`(,_1)";
-  sctor_inits := : sctor_init_list =># "_2";
-  sctor_inits := sepsilon =># "()";
-
-  page procedures = 
-    sprocedure_definition, 
-    sproc_kind,
-    sopt_traint_eq,
-  ;
-
-  sprocedure_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
-    sctor_inits scompound =>#
-  """
-  (let* 
-    (
-      (name "__constructor__")
-      (vs _2)
-      (ret 'ast_void)
-      (traint _4)
-      (body _6)
-      (inits _5)
-      (args _3)
-      (f (lambda (ne)`(ast_init ,_sr ,(car ne) ,(cadr ne))))
-      (body (append (map f inits) body))
-    )
-    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
-  """;
-
-  sprocedure_definition := sadjectives sproc_kind sdeclname
-    sfun_arg* sopt_traint_eq scompound =>#
-  """
-    (mkns 
-    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
-    (cdr _3))
-  """;
-
-  sobject_definition := obj sdeclname sfun_arg+ scompound =>#
-  """
-    (mkns 
-    `(ast_curry ,_sr ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
-    (cdr _2))
-  """;
 
 }
 
@@ -1700,6 +1692,7 @@ syntax requirements {
   srequires_clause := requires srequirements =># "_2";
 
   page requirement_terms = 
+    sbinding_header,
     srequires_clause, 
     srequirement, 
     srequirement_atom,
@@ -1709,6 +1702,40 @@ syntax requirements {
   ;
 
   srequires_clause := sepsilon =># "'rreq_true";
+
+  explain srequires_clause """
+  <p>A requires clause is used to establish a dependency between
+  a named C binding, particularly abstract types, and resources 
+  such as C code needed to define the subject of the binding, particularly
+  C header files, so that the specified resource is loaded
+  if, and only if, one of the dependent C bindings is used.</p>
+
+  <p>This not only makes it possible to minimise the header files 
+  read by the C++ compiler processing the output of Felix, but also
+  to provide Felix libraries binding to C libraries which are not
+  installed without breaking the compilation process, provided
+  the library is not actually used.</p>
+
+  <p>The requirement mechanism is also responsible for triggering
+  the emission of a run or link time resource requirements list which in
+  turn is used to search for and link external C libraries, without
+  user command line intervention.</p>
+
+  <p>Requirements may be polymorphic, in which case an instance for
+  each combination of type variable instances is emitted.</p>
+
+  <p>Requirements can be named, and may depend on other requirements.
+  Those dependencies may be recursive. Felix emits C code resources
+  in order of writing, independently of the dependencies.</p>
+
+  <p>A resource which is C text to be emitted in the header or body
+  file generated by Felix is known as a <em>floating insertion</em>.
+  </p>
+
+  <p>The name of a requirement is sometimes called a <em>tag name</em>,
+  however unlike C struct tags, tag names live in the same unified
+  namespace as other declarations.</p>
+  """;
 
   srequirement:= squalified_name =># "`(Named_req ,_1)";
   srequirement :=  property sstring =># "`(Property_req ,_2)";
@@ -1730,18 +1757,18 @@ syntax requirements {
   srequirements:= srequirement_or =># "_1";
 
 
-  sbinding_header := requires srequirements ssemi =># 
-    """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
-
-  sbinding_header := sname requires srequirements ssemi =># 
-    """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
-
   srequirement := body scode_spec =># "`(Body_req ,_2)";
   srequirement := header scode_spec =># "`(Header_req ,_2)";
 
   scode_spec := sstring =># "`(StrTemplate ,_1)";
   scode_spec := scstring =># "`(Str ,_1)";
   scode_spec := sident =># "'Identity";
+
+  sbinding_header := requires srequirements ssemi =># 
+    """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
+
+  sbinding_header := sname requires srequirements ssemi =># 
+    """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
 
   sbinding_header:= header scode_spec srequires_clause ssemi =># 
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))"""; 
@@ -1994,7 +2021,7 @@ syntax csyntax {
   requires statements;
 
   base_type := 
-    | "char" =># '`(ast_name "char" ())'
+    | "char" =># '`(ast_name "char" ())' note "C character"
     | "tiny" =># '`(ast_name "tiny" ())'
     | "short" =># '`(ast_name "short" ())'
     | "int" =># '`(ast_name "int" ())'
@@ -2238,6 +2265,7 @@ syntax felix {
       namespaces,
     requirements,
     expressions, 
+    functions,
     patterns,
     cbind, 
     regexps, 

@@ -284,14 +284,36 @@ We'll find out exactly why later, but here is a hint:
 there is no while statement in Felix!
 
 @env.head(2,'Lvalue patterns')
+It is sometimes useful to simultaneously assign variables
+from the components of a tuple, which can done as shown below.
+@p()
+We may also wish to initialise multiple values, also shown below.
+@p()
+More generally, you may wish to assign one component to an
+existing variable, create a new value binding for the second component,
+and a new variable for the third. This can be done with the 'def'
+keyword as illustrated.
+@p()
+The patterns of vals and vars on the left hand side of of such
+a statement is called an lvalue pattern. (Also sometime known
+as a tie).
 
 @select(env.test('.flx'))
 #import <flx.flxh>
+
+// multiple initialisation
+r,(s,t) := 1,(2,3);
+
+print r; print " ";
+print s; print " ";
+print t; print " ";
+endl;
 
 var a:int;
 var b:int;
 var c:int;
 
+// multiple assignment
 a,(b,c) = 1,(2,3);
 
 print a; print " ";
@@ -303,6 +325,7 @@ def a = 1;
 def val x = 2;
 def var y = 3;
 
+// mixed multiple assignment and initialisation
 def (a, val d), var e = (9,8),7;
 
 print a; print " ";
@@ -312,6 +335,7 @@ endl;
 @doc()
 
 @select(env.expect())
+1 2 3 
 1 2 3 
 9 8 7 
 @doc()

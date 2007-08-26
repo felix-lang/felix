@@ -7,7 +7,7 @@ open Flx_ast
 
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
-and dyalt_t = symbol_t list * range_srcref * action_t
+and dyalt_t = symbol_t list * range_srcref * action_t * anote_t
 type gdoc_entry_t = [
     | `Doc of string * string 
     | `Prod of string * dyalt_t list
@@ -34,7 +34,7 @@ open List
 
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
-and dyalt_t = symbol_t list * range_srcref * action_t
+and dyalt_t = symbol_t list * range_srcref * action_t * anote_t
 
 type gdoc_entry_t = [
     | `Doc of string * string 
@@ -169,12 +169,15 @@ let emit_rule dssl name dyalts : string list =
         let s = try List.assoc s spelling with Not_found -> s in
         semit s
       
-  and emit_dyalt (rhs,sr,action) = 
+  and emit_dyalt (rhs,sr,action,anote) = 
     List.iter emit_symbol rhs;
     match action with
     | `Scheme s when String.length s > 1->
+      if anote <> "" then
+      emit (span "anote" anote)
+      else
       if s.[0] == '\'' then
-      emit (span "assocfun" (String.sub s 1 (String.length s - 1)))
+      emit (span "assocfun" (String.sub s 1 (String.length s - 1)));
 
     | _ -> ()
 
@@ -389,7 +392,14 @@ SPAN.metatoken
 
 SPAN.assocfun
 {
-  position:absolute;left:15em;
+  position:absolute;left:18em;
+  font-weight: normal;
+  color: #BB0088
+}
+
+SPAN.anote
+{
+  position:absolute;left:18em;
   font-weight: normal;
   color: #BB0088
 }

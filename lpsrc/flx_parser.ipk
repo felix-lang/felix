@@ -305,7 +305,7 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
   in
   rule,action
 
-let extend_grammar dyp priority_data (dssl,(name,prio,prod,action,sr)) =
+let extend_grammar dyp priority_data (dssl,(name,prio,prod,action,anote,sr)) =
   let m = dyp.local_data in
   let dssl_record = Drules.find dssl m.dssls in
   let rule = define_scheme sr dyp priority_data dssl_record dssl name prio prod action in
@@ -322,9 +322,9 @@ let fixup_suffix_scheme sr pcounter rhs =
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
-    let rule2 = sl,`Default,[],"'()",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",rsr in
+    let rule2 = sl,`Default,[],"'()","",rsr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: PLUS _ :: t -> 
@@ -332,25 +332,25 @@ let fixup_suffix_scheme sr pcounter rhs =
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)",rsr in
-    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"`(,_1)",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",rsr in
+    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"`(,_1)","",rsr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: QUEST _ :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"`(,_1)",rsr in
-    let rule2 = sl,`Default,[],"()",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"`(,_1)","",rsr in
+    let rule2 = sl,`Default,[],"()","",rsr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | other :: QUEST sr :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__opt_"^x in
-    let rule1 = sl,`Default,[other],"()",rsr in
-    let rule2 = sl,`Default,[],"()",rsr in
+    let rule1 = sl,`Default,[other],"()","",rsr in
+    let rule2 = sl,`Default,[],"()","",rsr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | h :: t -> aux t (h::out) extras 
@@ -364,9 +364,9 @@ let fixup_suffix_string sr pcounter rhs =
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))",rsr in
-    let rule2 = sl,`Default,[],"\"\"",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",rsr in
+    let rule2 = sl,`Default,[],"\"\"","",rsr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: PLUS _ :: t -> 
@@ -374,25 +374,25 @@ let fixup_suffix_string sr pcounter rhs =
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))",rsr in
-    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"_1",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",rsr in
+    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"_1","",rsr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: QUEST _ :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"_1",rsr in
-    let rule2 = sl,`Default,[],"\"\"",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"_1","",rsr in
+    let rule2 = sl,`Default,[],"\"\"","",rsr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | other :: QUEST sr :: t -> 
     let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__opt_"^x in
-    let rule1 = sl,`Default,[other],"_1",rsr in
-    let rule2 = sl,`Default,[],"\"\"",rsr in
+    let rule1 = sl,`Default,[other],"_1","",rsr in
+    let rule2 = sl,`Default,[],"\"\"","",rsr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | h :: t -> aux t (h::out) extras 
@@ -527,7 +527,7 @@ and fixup_rule sr pcounter kind (rhs:symbol_t list) : token list * rule_t list =
   let rhs,extras = flatten sr pcounter kind rhs in
   let rhs, extras = 
     fixup_prio rhs, 
-    map (fun (name,prio,prod,action,sr) -> name,prio,fixup_prio prod, action,sr) extras
+    map (fun (name,prio,prod,action,anote,sr) -> name,prio,fixup_prio prod, action,anote,sr) extras
   in
   let rhs,extras' = fixup_suffix sr pcounter kind rhs in
   rhs,extras@extras'
@@ -535,10 +535,10 @@ and fixup_rule sr pcounter kind (rhs:symbol_t list) : token list * rule_t list =
 and fixup_alternatives pcounter kind name prio (dyalts:dyalt_t list) : rule_t list =
   let rules = 
     fold_left 
-      (fun rules (rhs,sr,action) ->
+      (fun rules (rhs,sr,action,anote) ->
         let prod,extras = fixup_rule sr pcounter kind rhs in
         let action : string = cal_action kind prod action in
-        ((name,prio,prod,action,sr) :: extras) @ rules
+        ((name,prio,prod,action,anote,sr) :: extras) @ rules
       ) 
       [] dyalts
   in
@@ -820,9 +820,18 @@ action:
    | STRING { `Scheme (snd $1) }
    | LPAR sexpr RPAR { `Expr $2 }
 
+note:
+   | NAME STRING 
+     {
+       if snd $1 <> "note" then raise Giveup;
+       snd $2
+     }
+   | { "" }
+
 dyalt:
-   | rhs PARSE_ACTION action 
+   | rhs PARSE_ACTION action note
      { 
+       let anote = $4 in
        let prod = $1 in
        let action = $3 in
        let action : action_t =
@@ -832,9 +841,9 @@ dyalt:
          | `Expr (_,_,e) ->
            `Scheme (user_expr prod e)
        in
-       prod,slift $2,action
+       prod,slift $2,action,anote
      }
-   | rhs { $1,dummysr,`None }
+   | rhs { $1,dummysr,`None,"" }
 
 dyaltlist:
    | { [] }
