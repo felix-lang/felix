@@ -272,6 +272,19 @@ class PLUGIN(Plugin):
     except:
       pass
 
+@select(tangler('mkplugins/typeclassdoc.py'))
+class PLUGIN(Plugin):
+  name = 'typeclassdoc'
+  help = 'make the typeclass documentation'
+
+  def runme(self):    
+    print "GENERATING TYPECLASS DOCUMENTATION"
+    try:
+      vxqt("bin/flxd -Ilib --document-typeclass lib/std")
+    except:
+      pass
+
+
 
 @select(tangler('mkplugins/copy_mli2ml.py'))
 class PLUGIN(Plugin):
@@ -1869,6 +1882,10 @@ class PLUGIN(Plugin):
 
     print "***** GRAMMAR DOC [HACK!] ************"
     plugins['gramdoc']()
+
+    print "***** TYPECLASS DOC [HACK!] ************"
+    plugins['typeclassdoc']()
+
 
 @select(tangler('mkplugins/demo.py'))
 class PLUGIN(Plugin):

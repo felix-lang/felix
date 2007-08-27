@@ -15,13 +15,19 @@ type gdoc_entry_t = [
 
 val document_grammar: bool ref
 
+type page_entry_t = [ 
+  | `Nt of string 
+  | `Subpage of string * page_entry_t list
+]
+
 val record_doc: string -> string -> string -> unit
-val record_group : string -> string list -> unit
+val record_group : string -> page_entry_t list -> unit
 val record_rule : string -> string -> dyalt_t list -> unit
 
 
 val grammar_doc : (string, gdoc_entry_t list) Hashtbl.t
-val ntgroups : (string, string list) Hashtbl.t
+
+val ntgroups : (string, page_entry_t list) Hashtbl.t
 
 val gen_doc : unit -> unit
 
@@ -40,6 +46,12 @@ type gdoc_entry_t = [
     | `Doc of string * string 
     | `Prod of string * dyalt_t list
 ]
+
+type page_entry_t = [ 
+  | `Nt of string 
+  | `Subpage of string * page_entry_t list
+]
+
 
 let silly_strtoken k = 
   match k with 
@@ -65,7 +77,7 @@ let record_doc dssl nt s =
 
 let record_group group nts =
   let old = try Hashtbl.find ntgroups group with Not_found -> [] in
-  Hashtbl.replace ntgroups group (uniq_cat old nts)
+  Hashtbl.replace ntgroups group (concat [old; nts])
 
 
 let nt2tok = [
@@ -194,22 +206,80 @@ let emit_rule dssl name dyalts : string list =
 
 ;;
 
+let rec get_nts entry : string list = match entry with 
+  | `Nt nt -> [nt]
+  | `Subpage (_,entries) -> concat (map get_nts entries)
+
+
+let make_ntdoc w page nt =
+  let dfn = 
+    (*
+    print_endline ("DOCUMENTING NONTERMINAL " ^ nt );
+    *)
+    try Hashtbl.find grammar_doc nt 
+    with Not_found -> 
+     print_endline ("ERROR, page " ^ page ^ " nonterminal " ^ nt ^ " NOT FOUND");
+     []
+  in
+  w (begin_div "ntlist");
+  w (" " ^ nt ^ anchor nt ^ span "metatoken" ":=" ^ "\n");
+  List.iter (* all separate productions of nonterminal *)
+      (fun gd -> match gd with 
+      | `Prod (dssl,dyalts) ->
+        let ss = emit_rule dssl nt dyalts in
+        begin match ss with
+        | [] -> assert false
+        | h :: t -> 
+        let ds = ljust 20 ("  " ^ dssl) in
+        w ( begin_div "rule" ^ span "dssl" ds ^ span "production" h ^end_div);
+        let ds = ljust 20 ""in
+        List.iter (* alternatives of a production *)
+          (fun h ->
+            w (begin_div "rule" ^span "dssl" ds ^ span "production" h ^ end_div)
+          )
+          t
+        ;
+        end
+      | `Doc (dssl,s) -> w s
+    ) 
+  dfn
+  ;
+  w end_div
+
+let rec make_body w page level heading entries =      
+      w (
+        "<h"^string_of_int level^">" ^ heading ^ 
+        "</h"^string_of_int level^">\n"
+      );
+      iter 
+      (fun entry -> 
+        match entry with
+        | `Nt nt -> make_ntdoc w page nt
+        | `Subpage (subhead,entries) -> make_body w page (level+1) subhead entries
+      )
+      entries
+
 let gen_doc () =
     let _ = try Unix.mkdir "doc" 0o775 with _ -> () in
     let _ = try Unix.mkdir "doc/gramdoc" 0o775 with _ -> () in
 
     (* calculate partial nonterminal -> page map *)
     Hashtbl.iter
-    (fun page nts ->
+    (fun page entries ->
       iter 
-        (fun nt -> 
-          (* Note: this is actually OK .. stuff gets documented twice! *)
-          if Hashtbl.mem nt2page nt then 
-            print_endline ("Warning: nonterminal " ^ nt ^ " in two groups!")
-          ;
-          Hashtbl.replace nt2page nt page
+        (fun entry -> 
+          let nts2 = get_nts entry in
+          iter 
+          (fun nt ->
+            (* Note: this is actually OK .. stuff gets documented twice! *)
+            if Hashtbl.mem nt2page nt then 
+              print_endline ("Warning: nonterminal " ^ nt ^ " in two groups!")
+            ;
+            Hashtbl.replace nt2page nt page
+           )
+           nts2
         ) 
-        nts
+        entries 
     )
     ntgroups
     ;
@@ -220,13 +290,13 @@ let gen_doc () =
     Hashtbl.iter
     (fun k _ -> 
       if not (Hashtbl.mem nt2page k) 
-      then Hashtbl.add ntgroups k [k]
+      then Hashtbl.add ntgroups k [(`Nt k :> page_entry_t)]
     )
     grammar_doc
     ;
 
     Hashtbl.iter (* all pages *)
-    (fun page nts ->
+    (fun page entries ->
       (*
       print_endline ("PAGE " ^ page );
       *)
@@ -238,44 +308,7 @@ let gen_doc () =
       w ("<title>" ^ page ^ "</title>\n");
       w "</head>\n";
       w "<body>";
-      w ("<h1>" ^ page ^ "</h1>\n");
-      iter (fun nt -> (* all nonterminals *)
-        let dfn = 
-          (*
-          print_endline ("DOCUMENTING NONTERMINAL " ^ nt );
-          *)
-          try Hashtbl.find grammar_doc nt 
-          with Not_found -> 
-           print_endline ("ERROR, page " ^ page ^ " nonterminal " ^ nt ^ " NOT FOUND");
-           []
-        in
-        w (begin_div "ntlist");
-        w (" " ^ nt ^ anchor nt ^ span "metatoken" ":=" ^ "\n");
-        List.iter (* all separate productions of nonterminal *)
-            (fun gd -> match gd with 
-            | `Prod (dssl,dyalts) ->
-              let ss = emit_rule dssl nt dyalts in
-              begin match ss with
-              | [] -> assert false
-              | h :: t -> 
-              let ds = ljust 20 ("  " ^ dssl) in
-              w ( begin_div "rule" ^ span "dssl" ds ^ span "production" h ^end_div);
-              let ds = ljust 20 ""in
-              List.iter (* alternatives of a production *)
-                (fun h ->
-                  w (begin_div "rule" ^span "dssl" ds ^ span "production" h ^ end_div)
-                )
-                t
-              ;
-              end
-            | `Doc (dssl,s) -> w s
-          ) 
-        dfn
-        ;
-        w end_div;
-      )
-      (rev nts) (* User specified list of nts on the page, in order *)
-      ;
+      make_body w page 1 page entries;
       w "</body></html>\n";
       close_out f
     )

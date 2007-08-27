@@ -265,7 +265,7 @@ syntax expressions {
   scase_literal := case sname of ssum =># "`(ast_variant (,_2 ,_4))";
   scase_literal := sbor =># "_1";
 
-  explain case_literal """<p>Next: bitwise</p>""";
+  explain scase_literal """<p>Next: bitwise</p>""";
 
   page bitwise = sbor, sbxor, sband, sshift;
   sbor := sbor \| sbxor =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
@@ -401,22 +401,32 @@ syntax expressions {
   sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
   page names = 
+    shash_name,
+    sthe_name,
+    ssuffixed_name, 
+    squalified_name, 
     ssimple_name_parts, 
-    squalified_name, ssuffixed_name, sthe_name,
-    shash_name
+    qualified_name_comma_list,
+    basic_name_comma_list
   ;
 
-  shash_name := sthe_name =># "_1";
-  shash_name := # shash_name =># "`(ast_lift ,_2)";
+  // these are weirdos
+  sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map cadr _2))";
 
-  sthe_name := satom =># "_1";
+  squalified_name_comma_list:= squalified_name (, squalified_name)* =>#
+    "(cons _1 (map cadr _2))";
+
+
+  shash_name := # shash_name =># "`(ast_lift ,_2)";
+  shash_name := sthe_name =># "_1";
+
   sthe_name := 
     | the squalified_name =># "`(ast_the ,_2)"
     | noexpand squalified_name =># "`(ast_noexpand ,_2)"
     | quest sname =># "`(ast_patvar ,_2)"
     | squalified_name =># "_1"
   ;
-
+  sthe_name := satom =># "_1";
 
   squalified_name := squalified_name :: ssimple_name_parts =># 
     "`(ast_lookup (,_1 ,(car _3) ,(cadr _3)))";
@@ -475,28 +485,20 @@ syntax expressions {
 syntax patterns {
   satom := pattern_match =># "_1";
 
-  // ???
-  satom := typematch sexpr with stype_matching+ endmatch =># 
-    "`(ast_type_match (,_2 ,_4))";
 
-    stype_matching  := vbar sexpr => sexpr =># "`(,_2 ,_4)";
-
- 
   page pattern_matching = 
     pattern_match,
-    smatching
-  ;
-  page patterns =
-    satomic_pattern,
+    smatching,
+    spattern,
     spat_assign,
     spat_assigns,
     sctor_name,
-    sfloating,
-    scoercive_pattern,
     stuple_pattern,
     stuple_pattern_suffix,
+    scoercive_pattern,
     sas_pattern,
-    spattern
+    satomic_pattern,
+    sfloating
   ;
 
   pattern_match := match sexpr with smatching+ endmatch =># 
@@ -796,10 +798,10 @@ syntax regexps {
     sregmatch_expr, 
     sregmatch_alternatives, 
     sregmatch_alternative, 
-    sregdef
+    sregdef,
+    sre0, sre1, sre2, sre3, sre4, sre_name,
+    scharset, scharset0
   ;
-  page regexp_term = sre0, sre1, sre2, sre3, sre4, sre_name;
-  page charset = scharset, scharset0;
 
   sregmatch_expr := reglex sexpr to sexpr with sregmatch_alternatives endmatch =>#
     "`(ast_reglex (,_2 ,_4 ,_6))";
@@ -854,10 +856,7 @@ syntax parsing {
 
   page glr_parsing = 
     sglr_parse,
-    sglr_production
-  ;
-
-  page glr_terms =
+    sglr_production,
     sglr_matching,
     sglr_entry,
     sglr_seq,
@@ -933,7 +932,6 @@ syntax statements {
   sdeclarative := stype_alias =># "_1";
 
   sdirective := sopen_decl =># "_1";
-  sdirective := suse_decl =># "_1";
 
   snull_statement := ssemi =># """`(ast_nop ,_sr "")""";
 
@@ -950,12 +948,6 @@ syntax statements {
     `(ast_newtype ,_sr ,(caar _3) ,(cadar _3) ,_6)
     (cdr _3))
     """; 
-
-  sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map cadr _2))";
-
-  squalified_name_comma_list:= squalified_name (, squalified_name)* =>#
-    "(cons _1 (map cadr _2))";
-
 
   page type_variables = 
     stvarlist, 
@@ -1794,8 +1786,21 @@ syntax requirements {
 
 }
 
-syntax type_declarations {
+syntax type_decls {
   requires statements;
+
+  satom := stypematch =># "_1";
+
+  page type_decls = 
+    stype_alias,
+    stype_match,
+    stype_matching,
+    stypefun_arg,
+    stypefun_args,
+    stypeparameter,
+    stypeparameter_comma_list
+  ;
+
   stype_alias := typedef sdeclname = sexpr ssemi =>#
     """
     (mkns 
@@ -1825,6 +1830,11 @@ syntax type_declarations {
     )
     """; 
 
+  stype_matching  := vbar sexpr => sexpr =># "`(,_2 ,_4)";
+
+  stypematch := typematch sexpr with stype_matching+ endmatch =># 
+    "`(ast_type_match (,_2 ,_4))";
+ 
   sstruct_decl := struct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
     (mkns 
@@ -1892,6 +1902,13 @@ syntax type_declarations {
 syntax assertions {
   requires statements;
   sexecutable := sassert_statement =># "_1";
+
+  page assertions =
+    sassert_statement,
+    sassertion,
+    sreduce_args
+  ;
+
   sassert_statement:= assert sexpr ssemi =># "`(ast_assert ,_sr ,_2)";
 
   sdeclarative := sassertion =># "_1";
@@ -1903,9 +1920,9 @@ syntax assertions {
     (cdr _2))
   """;
 
-explain sassertion """<p>An axiom using a general predicate
-to specify semantics.</p>
-""";
+  explain sassertion """<p>An axiom using a general predicate
+  to specify semantics.</p>
+  """;
 
   sassertion := axiom sdeclname sfun_arg : sexpr = sexpr ssemi =>#
   """
@@ -1914,7 +1931,7 @@ to specify semantics.</p>
     (cdr _2))
   """;
 
-explain sassertion """<p>An axiom using equality to specify semantics.</p>""";
+  explain sassertion """<p>An axiom using equality to specify semantics.</p>""";
 
 
   sassertion := lemma sdeclname sfun_arg : sexpr ssemi =>#
@@ -1931,8 +1948,9 @@ explain sassertion """<p>An axiom using equality to specify semantics.</p>""";
     (cdr _2))
   """;
 
-explain sassertion """<p>A lemma is a proposition which can be 
-derived from axioms by an automatic theorem prover.</p>""";
+  explain sassertion """<p>A lemma is a proposition which can be 
+  derived from axioms by an automatic theorem prover.</p>
+  """;
 
 
   sreduce_args := lpar stypeparameter_comma_list rpar =># "_2";
@@ -1944,34 +1962,34 @@ derived from axioms by an automatic theorem prover.</p>""";
     (cdr _2))
   """;
 
-explain sassertion """<p>A reduction is an axiom or lemma
-specified as a rewriting rule. Rewriting rules are applied
-exhaustively to eliminate left hand side terms globally.<p>
-""";
+  explain sassertion """<p>A reduction is an axiom or lemma
+  specified as a rewriting rule. Rewriting rules are applied
+  exhaustively to eliminate left hand side terms globally.</p>
+  """;
 }
 
 syntax namespaces {  
   requires statements;
-  stype_alias := rename sdeclname = squalified_name ssemi =>#
+  sopen_decl := rename sdeclname = squalified_name ssemi =>#
     """
     (mkns 
     `(ast_inherit ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
     """; 
 
-  stype_alias := rename fun sdeclname = squalified_name ssemi =>#
+  sopen_decl := rename fun sdeclname = squalified_name ssemi =>#
     """
     (mkns 
     `(ast_inherit_fun ,_sr ,(caar _3) ,(cadar _3) ,_5)
     (cdr _3))
     """; 
 
-  stype_alias := inherit squalified_name ssemi =># "`(ast_inject_module ,_sr ,_2)";
+  sopen_decl := inherit squalified_name ssemi =># "`(ast_inject_module ,_sr ,_2)";
  
   sopen_decl := open stvarlist squalified_name ssemi =>#
     "`(ast_open ,_sr ,_2 ,_3)";
 
-  suse_decl:= use squalified_name ssemi =>#
+  sopen_decl := use squalified_name ssemi =>#
     """
     (let ((name
       (if (eq? (car _2) 'ast_lookup) (cadadr _2)
@@ -1979,7 +1997,7 @@ syntax namespaces {
         ("ERROR")))))
     `(ast_use ,_sr ,name ,_2))
     """;
-  suse_decl := use sname = squalified_name ssemi =># "`(ast_use ,_sr ,_2 ,_4)";
+  sopen_decl := use sname = squalified_name ssemi =># "`(ast_use ,_sr ,_2 ,_4)";
 
   smodule_definition := module sdeclname = ? scompound =>#
     """
@@ -2258,7 +2276,7 @@ require initialisers.
 syntax felix {
   requires 
     statements, 
-      type_declarations,
+      type_decls,
       variables,
       executable, 
       assertions,

@@ -570,7 +570,7 @@ let add_rule global_data local_data dssl rule =
      global_data,m
 
   | `Document (name,s) -> record_doc dssl name s; global_data,local_data
-  | `Page (name,nts) -> record_group name nts; global_data, local_data
+  | `Page (name,entries) -> record_group name entries; global_data, local_data
   | `Priorities p -> 
     let d = { d with prios = p::d.prios } in
     let m = {m with dssls=Drules.add dssl d m.dssls } in
@@ -804,10 +804,10 @@ dyprod:
        `Document ((snd $2),(snd $3))
      }
 
-   | NAME NAME EQUAL basic_name_comma_list SEMI
+   | NAME NAME EQUAL subpage_entries SEMI
      {
        if snd $1 <> "page" then raise Giveup;
-       `Page ((snd $2),(map snd $4))
+       `Page ((snd $2),$4)
      }
 
    | NAME prilist SEMI
@@ -815,6 +815,14 @@ dyprod:
        if snd $1 <> "priority" then raise Giveup;
        `Priorities $2
      }
+
+subpage_entry:
+  | NAME EQUAL LPAR subpage_entries RPAR { `Subpage ((snd $1),$4) } 
+  | NAME { `Nt (snd $1) }
+
+subpage_entries:
+  | subpage_entry COMMA subpage_entries { $1 :: $3 }
+  | subpage_entry { [$1] }
 
 action:
    | STRING { `Scheme (snd $1) }
