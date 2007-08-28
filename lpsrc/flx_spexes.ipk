@@ -381,8 +381,8 @@ let gen_body syms (uses,child_map,bbdfns) id
     let b = 
       ref 
       (
-        if syms.compiler_options.print_flag && source = "" && id <> "_init_" then 
-          [`BEXE_comment (sr,(kind ^ "inline call to " ^ id ^source))] 
+        if source = "" && id <> "_init_" then 
+          [`BEXE_comment (sr,(kind ^ "inline call to " ^ id ^"<"^si callee^">"^source))] 
         else []
       ) 
     in

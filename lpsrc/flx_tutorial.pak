@@ -4148,10 +4148,11 @@ endl;
 @env.head(2,"Lexing and parsing example")
 @doc()
 
-@select(env.test('flx.'))
+@select(env.test('.flx'))
 #import <flx.flxh>
 
 open List;
+open Lexer;
 
 union token_t =
   | TOK_EOF
@@ -4214,6 +4215,7 @@ try_parse();
 @doc()
 
 @select(env.expect())
+1+2+3
 6
 @doc()
 

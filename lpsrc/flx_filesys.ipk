@@ -9,26 +9,35 @@ val find_file:
 @select(tangler('src/compiler/misclib/flx_filesys.ml'))
 exception Found_file of string
 
-let fcat fs = match fs with 
-| [] -> Filename.current_dir_name
-| _ -> List.fold_left Filename.concat (List.hd fs) (List.tl fs)
+(* Note: empty list of components is not allowed *)
+let fcat fs = 
+  if fs = [] then failwith "Empty include filename not permitted";
+  List.fold_left Filename.concat (List.hd fs) (List.tl fs)
 
-let split_unix f = 
-  let rec aux f accum =                                              
-    let d = Filename.dirname f in
-    if d = f                                                         
-    then f :: accum
-    else aux d (Filename.basename f :: accum)
-  in
-  aux f []
+(* Note: a Felix include filename should be a lower case
+   C identifier, or a sequence of such separated by /
+   character, possible followed by an extension . and
+   lower case alphanumerics. These names come from
+   Felix source code.
 
+   The include dir path can contain any directory names
+   for the local OS.
+
+   A native filename is calculated by translating the
+   Felix name to native format, and using native
+   concatenation.
+*)
+
+let slosh = Str.regexp "/"
+let split_unix f =  Str.split slosh f
 let unix2native f = fcat (split_unix f)
 
 let find_file_in_path incdirs f =
+  let f = unix2native f in
   try
     List.iter
     (fun d -> 
-      let f =  unix2native (d ^ "/" ^ f) in 
+      let f =  Filename.concat d f in 
       if Sys.file_exists f 
       then raise (Found_file f)
     )
