@@ -2558,7 +2558,11 @@ and string_of_expr (e:expr_t) =
   | `AST_vsprintf (sr,s) -> "f"^string_of_string s
   | `AST_interpolate (sr,s) -> "q"^string_of_string s
   | `AST_ellipsis _ -> "..."
+  (*
   | `AST_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
+  *)
+  (* because 'noexpand' is too ugly .. *)
+  | `AST_noexpand (sr,e) -> string_of_expr e
 
   | `AST_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_letpat pat ^ " = " ^ se e1 ^ " in " ^ se e2
@@ -3835,8 +3839,10 @@ and string_of_statement level s =
     | None -> ""
     | Some x -> " when " ^ string_of_expr x
     )^
-    "\n" ^
-    string_of_compound level ss
+    begin match ss with
+    | [`AST_fun_return (_,e)] -> " => " ^ se e ^ ";\n"
+    | _ -> "\n" ^ string_of_compound level ss
+    end
 
   | `AST_curry (_,name, vs, pss, (res,traint) , kind, ss) -> 
     spaces level ^ 
@@ -3863,8 +3869,11 @@ and string_of_statement level s =
     | None -> ""
     | Some x -> " when " ^ string_of_expr x
     )^
-    "\n" ^
-    string_of_compound level ss
+    begin match ss with
+    | [`AST_fun_return (_,e)] -> " => " ^ se e ^ ";\n"
+    | _ -> "\n" ^ string_of_compound level ss
+    end
+
 
   | `AST_object (_,name, vs, ps, ss) -> 
     spaces level ^ 

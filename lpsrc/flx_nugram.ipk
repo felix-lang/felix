@@ -1,3 +1,4 @@
+@execfile('config'+os.sep+'flx_data.py')
 @select(tangler("lib/nugram.flxh"))
 
 SCHEME """
@@ -187,6 +188,18 @@ SCHEME """
   (define (strcat ls)(fold_left strap "" ls))
 """;
 
+// chain 'and (x) yields just x, 
+// chain 'and (x y) yields ('and (x y))
+SCHEME """
+  (define (chain op hd tl)
+    (
+      if (equal? tl ())
+      hd
+      `(,op ,(cons hd (map cadr tl)))
+    )
+  )
+""";
+
 //------------------------------------------
 syntax expressions {
   sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))"; 
@@ -195,22 +208,18 @@ syntax expressions {
   stypeexpr:= sor_condition =># "_1";
   slambda := sdollar_apply =># "_1";
 
-  page tuples = sdollar_apply, stuple, stuple_list;
+  page tuples = sdollar_apply, stuple;
  
   sdollar_apply := stuple unless sexpr then sdollar_apply =>#
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply ,_sr (,_1 ,_3))";
   sdollar_apply := stuple =># "_1";
 
-  stuple := sor_condition  =># "_1";
-  stuple := sor_condition , stuple_list =># "`(ast_tuple ,(cons _1 _3))";
-  stuple_list := sor_condition ( , sor_condition)* =># "(cons _1 (map cadr _2))";
+  stuple := sor_condition ( , sor_condition)* =># "(chain 'ast_tuple _1 _2)";
  
   page logic = 
     sor_condition, 
-    sor_list, 
     sand_condition, 
-    sand_list, 
     snot_condition, 
     scomparison,
     sas_expr,
@@ -221,14 +230,8 @@ syntax expressions {
     scase_literal
   ;
 
-  sor_condition := sand_condition =># "_1";
-  sor_condition := sand_condition or sor_list =># "`(ast_orlist ,(cons _1 _3))" note "lor";
-  sor_list := sand_condition ( or sand_condition)* =># "(cons _1 (map cadr _2))";
-
-  sand_condition := snot_condition =># "_1";
-  sand_condition := snot_condition and sand_list =># "`(ast_andlist ,(cons _1 _3))" note "land";
-  sand_list := snot_condition ( and snot_condition)* =># "(cons _1 (map cadr _2))";
-
+  sor_condition := sand_condition ( or sand_condition)* =># "(chain 'ast_orlist _1 _2)" note "lor";
+  sand_condition := snot_condition ( and snot_condition)* =># "(chain 'ast_andlist _1 _2)" note "land";
   snot_condition := not snot_condition  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
   snot_condition := scomparison  =># "_1";
 
@@ -244,17 +247,13 @@ syntax expressions {
   sas_expr := sas_expr as sname =># "`(ast_as (,_1 ,_3))";
   sas_expr := ssetunion =># "_1";
 
-  ssetunion := suser10 || ssetunion_list =># "`(ast_setunion ,(cons _1 _3))";
-  ssetunion_list := suser10 ( || suser10)* =># "(cons _1 (map cadr _2))";
-  ssetunion := suser10 =># "_1";
+  ssetunion := suser10 ( || suser10)* =># "(chain 'ast_setunion _1 _2)" note "setunion";
 
   suser10 := suser10 suser10token ssetintersection =># 
     "`(ast_apply ,_sr ( (ast_name ,_2 ()) (,_1 ,_3)))";
   suser10 := ssetintersection =># "_1";
 
-  ssetintersection := sarrow && ssetintersection_list =># "`(ast_setintersection ,(cons _1 _3))";
-  ssetintersection_list := sarrow (&& sarrow)* =># "(cons _1 (map cadr _2))";
-  ssetintersection:= sarrow =># "_1";
+  ssetintersection := sarrow (&& sarrow)* =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
 
   sarrow := scase_literal -> sarrow =># "`(ast_arrow (,_1 ,_3))";
   sarrow := scase_literal --> sarrow =># "`(ast_longarrow (,_1 ,_3))";
@@ -285,24 +284,17 @@ syntax expressions {
  
   page arithmetic = 
     ssum, 
-    ssum_list,
     ssubtraction, 
     sproduct, 
-    sproduct_list, 
     s_term,
     sprefixed
   ;
 
-  ssum := ssubtraction plus ssum_list =># "`(ast_sum ,(cons _1 _3))" note "add";
-  ssum_list := ssubtraction (plus ssubtraction)* =># "(cons _1 (map cadr _2))";
-  ssum :=  ssubtraction =># "_1";
-
+  ssum := ssubtraction (plus ssubtraction)* =># "(chain 'ast_sum _1 _2)" note "add";
   ssubtraction := ssubtraction - sproduct =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
   ssubtraction := sproduct =># "_1";
 
-  sproduct := s_term star sproduct_list =># "`(ast_product ,(cons _1 _3))" note "mul";
-  sproduct_list := s_term (star s_term)* =># "(cons _1 (map cadr _2))";
-  sproduct :=  s_term =># "_1";
+  sproduct := s_term (star s_term)* =># "(chain 'ast_product _1 _2)" note "mul";
   
   s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
   s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
@@ -364,6 +356,8 @@ syntax expressions {
     stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
+  page basic_expr = sapplication, scoercion, sfactor;
+
   sapplication := scoercion =># "_1";
   sapplication := sapplication scoercion =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
   sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
@@ -406,8 +400,8 @@ syntax expressions {
     ssuffixed_name, 
     squalified_name, 
     ssimple_name_parts, 
-    qualified_name_comma_list,
-    basic_name_comma_list
+    squalified_name_comma_list,
+    sbasic_name_comma_list
   ;
 
   // these are weirdos
@@ -479,6 +473,8 @@ syntax expressions {
   satom := suserlbtoken sexpr suserrbtoken =>#
     "`(ast_apply ,_sr ((ast_name ,(myassoc _3 (car _1)) ()) ,_2))";
 
+  page atomic = satom, sexpr_code_prefix;
+
 }
 
 //------------------------------------------
@@ -494,7 +490,6 @@ syntax patterns {
     spat_assigns,
     sctor_name,
     stuple_pattern,
-    stuple_pattern_suffix,
     scoercive_pattern,
     sas_pattern,
     satomic_pattern,
@@ -538,18 +533,11 @@ syntax patterns {
       sfloating:= - inf =># "'Float_minus_inf";
 
     scoercive_pattern := satomic_pattern =># "_1";
-    scoercive_pattern := satomic_pattern : sarrow =># "`(pat_coercion ,_1 ,_2)";
+    scoercive_pattern := satomic_pattern : sarrow =># "`(pat_coercion ,_1 ,_3)";
 
-    stuple_pattern := scoercive_pattern =># "_1";
-    stuple_pattern := scoercive_pattern stuple_pattern_suffix =># 
-      "`(pat_tuple ,(cons _1 _2))";
-
-      stuple_pattern_suffix := , scoercive_pattern =># "`(,_2)";
-      stuple_pattern_suffix := , scoercive_pattern stuple_pattern_suffix =># 
-        "(cons _2 _3)";
-
-    sas_pattern := stuple_pattern =># "_1";
+    stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
     sas_pattern := stuple_pattern as sname =># "`(pat_as ,_1 ,_3)";
+    sas_pattern := stuple_pattern =># "_1";
 
     spattern := sas_pattern =># "_1";
     spattern := sas_pattern when sexpr =># "`(pat_when ,_1 ,_3)";
@@ -901,9 +889,6 @@ to the unit argument.</p>
 
 }
 
-syntax typing {
-  satom := typecase_expr =># "_1";
-}
 
 //------------------------------------------
 syntax statements {
@@ -967,9 +952,34 @@ syntax statements {
   stype_constraint := with squalified_name_comma_list =># "`((ast_tuple()) ,_2)";
   stype_constraint := sepsilon =># "'((ast_tuple())())";
 
+  explain stype_constraint 
+  """<p>A <code>with</code> clause is a side constraint 
+  on the set of type variables, it specifies a list
+  of typeclass specialisations, requiring suitable instances
+  exist, but also allowing functions of the typeclass to
+  be applied to the specified types in the body of the
+  definition.</p>
+  <p>A <code>where</code> constraint is an arbitrary
+  predicate on type variables, which must resolve to true for 
+  any use of the symbol being defined. It is typically an
+  equation, but may also be a type match. In the case of
+  a function or procedure, failed predicative constraints
+  exclude the function from any overload set.</p>
+  """;
+
   seqorin:= = stypeexpr =># "`(Eq ,_2)";
   seqorin:= in stypeexpr =># "`(In ,_2)";
   seqorin:= sepsilon =># "'NoConstraint"; 
+
+  explain seqorin 
+  """<p>An <code>=</code> assignment suffix on a type variable is used
+  to add a dependent type variable to the list of type variables.
+  </p>
+  <p>An <code>in</code> suffix specifies that a type variable
+  is a member of a typeset. in the case of a function
+  or procedure, failure of this constraint excludes the function
+  from any overload set.</p>
+  """;
 
   stvar := sname seqorin =># """`(,_1 (ast_name "TYPE" ()) ,_2)""";
   stvar := sname : stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
@@ -1793,7 +1803,7 @@ syntax type_decls {
 
   page type_decls = 
     stype_alias,
-    stype_match,
+    stypematch,
     stype_matching,
     stypefun_arg,
     stypefun_args,
