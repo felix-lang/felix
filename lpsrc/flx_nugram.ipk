@@ -8,7 +8,7 @@ SCHEME """
 """;
 
 SCHEME """
-(define dfltaux '( (ast_tuple ()) ()))
+(define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
 """;
 
 SCHEME """
@@ -73,7 +73,7 @@ SCHEME """
   ;;(display "mkl x=")(display x)
   (if (pair? x) 
     (if (eq? (car x) 'ast_tuple) 
-      (if (pair? (cdr x)) (cadr x) (list x))
+      (if (pair? (cddr x)) (caddr x) (list x))
       (list x))
     (list x)))
 ))
@@ -85,7 +85,7 @@ SCHEME """
   ;;(display "mkl2 x=")(display x)
   (if (pair? x) 
     (if (eq? (car x) 'ast_product) 
-      (if (pair? (cdr x)) (cadr x) (list x))
+      (if (pair? (cddr x)) (caddr x) (list x))
       (list x))
     (list x)))
 ))
@@ -156,7 +156,7 @@ SCHEME """
   (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
   (let* 
     (
-      (vscs (fold_left tvfixup_folder '(() (ast_tuple ())) tv))
+      (vscs (fold_left tvfixup_folder `(() (ast_tuple ,_sr ())) tv))
       (vs (car vscs))
       (cs (cadr vscs))
       (rtc (car ct))
@@ -189,13 +189,13 @@ SCHEME """
 """;
 
 // chain 'and (x) yields just x, 
-// chain 'and (x y) yields ('and (x y))
+// chain 'and (x y) yields ('and _sr (x y))
 SCHEME """
   (define (chain op hd tl)
     (
       if (equal? tl ())
       hd
-      `(,op ,(cons hd (map cadr tl)))
+      `(,op ,_sr ,(cons hd (map cadr tl)))
     )
   )
 """;
@@ -502,6 +502,17 @@ syntax patterns {
     smatching  := vbar spattern => sexpr =># "`(,_2 ,_4)";
     smatching  := vbar => sexpr =># "`(pat_none ,_4)";
 
+    spattern := sas_pattern when sexpr =># "`(pat_when ,_1 ,_3)";
+    spattern := sas_pattern =># "_1";
+
+    sas_pattern := stuple_pattern as sname =># "`(pat_as ,_1 ,_3)";
+    sas_pattern := stuple_pattern =># "_1";
+
+    stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
+
+    scoercive_pattern := satomic_pattern : sarrow =># "`(pat_coercion ,_1 ,_3)";
+    scoercive_pattern := satomic_pattern =># "_1";
+
     satomic_pattern := strue =># "'(pat_const_ctor (ast_case_tag 1))";
     satomic_pattern := sfalse =># "'(pat_const_ctor (ast_case_tag 0))";
     satomic_pattern := sstring =># "`(pat_string ,_1)";
@@ -532,15 +543,7 @@ syntax patterns {
       sfloating:= inf =># "'Float_inf";
       sfloating:= - inf =># "'Float_minus_inf";
 
-    scoercive_pattern := satomic_pattern =># "_1";
-    scoercive_pattern := satomic_pattern : sarrow =># "`(pat_coercion ,_1 ,_3)";
 
-    stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
-    sas_pattern := stuple_pattern as sname =># "`(pat_as ,_1 ,_3)";
-    sas_pattern := stuple_pattern =># "_1";
-
-    spattern := sas_pattern =># "_1";
-    spattern := sas_pattern when sexpr =># "`(pat_when ,_1 ,_3)";
 }
 
 //------------------------------------------
@@ -949,8 +952,8 @@ syntax statements {
   stype_constraint := where sexpr with squalified_name_comma_list =>#
     "`(,_2 ,_4)";
   stype_constraint := where sexpr =># "`(,_2 ())";
-  stype_constraint := with squalified_name_comma_list =># "`((ast_tuple()) ,_2)";
-  stype_constraint := sepsilon =># "'((ast_tuple())())";
+  stype_constraint := with squalified_name_comma_list =># "`((ast_tuple,_sr()) ,_2)";
+  stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
 
   explain stype_constraint 
   """<p>A <code>with</code> clause is a side constraint 
@@ -1579,9 +1582,9 @@ syntax executable {
   scall := call sexpr ssemi =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
   scall := jump sexpr ssemi =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
   //scall := loop sname sexpr ssemi =># "`(ast_loop ,_sr ,_2 ,_3)";
-  //scall := loop sname ssemi =># "`(ast_loop ,_sr ,_2 (ast_tuple ()))";
+  //scall := loop sname ssemi =># "`(ast_loop ,_sr ,_2 (ast_tuple,_sr ()))";
   scall := loop sname sexpr ssemi =># "`(ast_jump ,_sr (ast_name ,_2 ()) ,_3)";
-  scall := loop sname ssemi =># "`(ast_jump ,_sr (ast_name ,_2 ()) (ast_tuple ()))";
+  scall := loop sname ssemi =># "`(ast_jump ,_sr (ast_name ,_2 ()) (ast_tuple,_sr ()))";
 
   scall := sexpr ssemi =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
@@ -2109,9 +2112,9 @@ pointers <code>A--&gt;B</code>.</p>
 
   c_type_suffix := comma c_type =># "_2";
   c_type_list := 
-    | c_type c_type_suffix+ =># "`(ast_tuple ,(cons _1 _2))"
+    | c_type c_type_suffix+ =># "`(ast_tuple,_sr ,(cons _1 _2))"
     | c_type =># "_1"
-    | sepsilon =># "`(ast_tuple ())"
+    | sepsilon =># "`(ast_tuple,_sr ())"
   ;
 
   page c_types = 

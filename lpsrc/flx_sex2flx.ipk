@@ -151,7 +151,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> `AST_lookup (sr,(ex e, ss s,map ti ts))
  | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> `AST_apply(xsr sr,(ex e1, ex e2))
 
- | Lst [Id "ast_tuple";  Lst es] -> `AST_tuple (sr,map ex es)
+ | Lst [Id "ast_tuple";  sr; Lst es] -> `AST_tuple (xsr sr,map ex es)
  | Lst [Id "ast_record";  Lst rs] -> 
    let rs = 
      map (function 
@@ -192,14 +192,14 @@ and xexpr_t sr fresh env x =
  | Id "ast_void" -> `AST_void sr
  | Id "ast_ellipsis" -> `AST_ellipsis sr
 
- | Lst [Id "ast_product"; Lst es] -> `AST_product (sr, map ex es) 
- | Lst [Id "ast_sum";  Lst es] -> `AST_sum (sr,map ex es)
+ | Lst [Id "ast_product"; sr; Lst es] -> `AST_product (xsr sr, map ex es) 
+ | Lst [Id "ast_sum";  sr; Lst es] -> `AST_sum (xsr sr,map ex es)
  | Lst [Id "ast_intersect"; Lst es] -> `AST_intersect (sr, map ex es)
  | Lst [Id "ast_isin"; Lst [a; b]] -> `AST_isin (sr, (ex a, ex b))
- | Lst [Id "ast_setintersection"; Lst es] -> `AST_setintersection (sr, map ex es)
- | Lst [Id "ast_setunion"; Lst es] -> `AST_setunion (sr, map ex es)
- | Lst [Id "ast_orlist"; Lst es] -> `AST_orlist (sr, map ex es)
- | Lst [Id "ast_andlist"; Lst es] -> `AST_andlist (sr, map ex es)
+ | Lst [Id "ast_setintersection"; sr; Lst es] -> `AST_setintersection (xsr sr, map ex es)
+ | Lst [Id "ast_setunion"; sr; Lst es] -> `AST_setunion (xsr sr, map ex es)
+ | Lst [Id "ast_orlist"; sr; Lst es] -> `AST_orlist (xsr sr, map ex es)
+ | Lst [Id "ast_andlist"; sr; Lst es] -> `AST_andlist (xsr sr, map ex es)
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> `AST_arrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> `AST_longarrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> `AST_superscript (sr,(ex e1, ex e2))
@@ -371,7 +371,7 @@ and xpattern_t sr fresh env x =
   
   | Lst [Id "pat_name"; Id x] -> `PAT_name (sr, x)
   | Lst [Id "pat_name"; Str x] -> `PAT_name (sr, ss x)
-  | Lst [Id "pat_tuple"; Lst ps] -> `PAT_tuple (sr, map xp ps)
+  | Lst [Id "pat_tuple"; sr; Lst ps] -> `PAT_tuple (xsr sr, map xp ps)
 
   | Id "pat_any" -> `PAT_any sr
 (*
