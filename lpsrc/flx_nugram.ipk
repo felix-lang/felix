@@ -487,7 +487,6 @@ syntax patterns {
     smatching,
     spattern,
     spat_assign,
-    spat_assigns,
     sctor_name,
     stuple_pattern,
     scoercive_pattern,
@@ -519,10 +518,8 @@ syntax patterns {
     satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
     satomic_pattern := _ =># "'pat_any";
     satomic_pattern := lpar spattern rpar =># "_2";
-    satomic_pattern := struct lbrace spat_assigns rbrace =># "`(pat_record ,_3)";
+    satomic_pattern := struct lbrace spat_assign+ rbrace =># "`(pat_record ,_3)";
       spat_assign := sname = spattern ssemi =># "`(,_1 ,_3)";
-      spat_assigns := spat_assign =># "`(,_1)";
-      spat_assigns := spat_assign spat_assigns =># "(cons _1 _2)";
 
     satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_1 ,_2)";
     satomic_pattern := sctor_name =># "`(pat_const_ctor ,_1)";
@@ -552,9 +549,18 @@ syntax functions {
   sdeclarative := sfunction_definition =># "_1";
   sdeclarative := sobject_definition =># "_1";
   sdeclarative := sprocedure_definition =># "_1";
+  sdeclarative := sctor_definition =># "_1";
 
   page functions = sfunction_definition, sfun_kind, sfun_arg, fun_return_type;
-  page procedures = sprocedure_definition, sproc_kind, sopt_traint_eq;
+  page procedures = 
+    sprocedure_definition, 
+    sproc_kind, 
+    sopt_traint_eq, 
+    class_constructor= 
+     (
+       sctor_definition, sctor_init, sctor_inits
+     )
+  ;
 
   page adjectives = sadjective, sadjectives;
   page parameters = sparameter, sparameter_comma_list, sparam_qual;
@@ -737,13 +743,11 @@ syntax functions {
   sopt_traint_eq:= sepsilon =># "'none";
 
   sctor_init := sname lpar sexpr rpar =># "`(,_1 ,_3)";
-  sctor_init_list := sctor_init , sctor_init_list =># "(cons _1 _3)";
-  sctor_init_list :=  sctor_init =># "`(,_1)";
-  sctor_inits := : sctor_init_list =># "_2";
+  sctor_inits := : sctor_init (, sctor_init)* =># "(cons _2 _3)";
   sctor_inits := sepsilon =># "()";
 
   // only used by classes
-  sprocedure_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
+  sctor_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
     sctor_inits scompound =>#
   """
   (let* 
@@ -1336,7 +1340,7 @@ syntax cbind {
       ('ERROR))))
   """;
 
-  page abstract_types = stype_qual, sabstract_type;
+  page abstract_types = sabstract_type, stype_qual;
 
   sabstract_type:= stype_qual* type sdeclname = scode_spec srequires_clause ssemi =>#
     """

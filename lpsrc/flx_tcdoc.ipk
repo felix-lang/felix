@@ -75,13 +75,13 @@ let gen_doc () =
         begin match result with
         | `AST_void _ ->
           w (begin_div "element" ^ 
-            "   virtual proc " ^ name ^ Flx_print.print_vs vs ^ ": " ^
+            span "category" "   virtual proc " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
             catmap "*" st args ^ 
             end_div
           )
         | _ ->
           w (begin_div "element" ^ 
-            "   virtual fun " ^ name ^ Flx_print.print_vs vs ^ ": " ^
+            span "category" "   virtual fun " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
             catmap "*" st args ^ " -> " ^ st result ^
             end_div
           )
@@ -147,9 +147,19 @@ DIV.rule
 DIV.element
 {
   margin-bottom: 4 px;
-  font-size: 12px;
+  font-size: 14px;
   text-indent: 0px;
   white-space: pre;
+}
+
+SPAN.category
+{
+  color: #BB0033;
+}
+
+SPAN.ident
+{
+  color: #1100AA;
 }
 
 P 
