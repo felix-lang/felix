@@ -387,10 +387,10 @@ syntax expressions {
   sfactor := sfactor . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
   sfactor := sfactor . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
   sfactor := sfactor . ssimple_name_parts =># 
-    "`(ast_dot (,_1 (ast_name ,(car _3) ,(cadr _3))))";
+    "`(ast_dot ,_sr (,_1 (ast_name ,(car _3) ,(cadr _3))))";
 
   sfactor := sfactor .-> ssimple_name_parts =># 
-    "`(ast_dot ((ast_apply ,_sr (deref ,_1)) (ast_name (,(car _3) ,(cadr _3)))))";
+    "`(ast_dot ,_sr ((ast_apply ,_sr (deref ,_1)) (ast_name (,(car _3) ,(cadr _3)))))";
 
   sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 

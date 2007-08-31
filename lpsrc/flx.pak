@@ -78,6 +78,7 @@ FLX_MODULES = [
   'src/compiler/flxlib/flx_cflow', 
   'src/compiler/flxlib/flx_call', 
   'src/compiler/flxlib/flx_use', 
+  'src/compiler/flxlib/flx_passign', 
   'src/compiler/flxlib/flx_tailit', 
   'src/compiler/flxlib/flx_reparent', 
   'src/compiler/flxlib/flx_uncurry', 
@@ -380,6 +381,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_call.ipk')
 @include_file ('flx_use.ipk')
 @include_file ('flx_child.ipk')
+@include_file ('flx_passign.ipk')
 @include_file ('flx_tailit.ipk')
 @include_file ('flx_spexes.ipk')
 @include_file ('flx_reparent.ipk')

@@ -5163,7 +5163,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           be (`AST_method_apply (sr,(get_name,e,ts)))
 
         | _ -> 
-          failwith ("operator . Expected nominal type to be"^
+          failwith ("[lookup] operator . Expected nominal type to be"^
           " struct, cstruct or abstract primitive, got " ^ 
           sbt syms.dfns tt')
 
@@ -5188,9 +5188,9 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         ^ "but RHS is simple name: should overload somehow?")
 
       | `BTYP_tuple _ ->
-        failwith ("Expected nominal type! Got tuple ! " ^ sbt syms.dfns tt')
+        failwith ("[lookup:AST_dot] Expected nominal type! Got tuple ! " ^ sbt syms.dfns tt')
 
-      | _ -> failwith ("Expected nominal type! Got " ^ sbt syms.dfns tt')
+      | _ -> failwith ("[lookup:AST_dot] Expected nominal type! Got " ^ sbt syms.dfns tt')
       end
 
     | _ -> failwith "AST_dot, arg not name not handled yet"

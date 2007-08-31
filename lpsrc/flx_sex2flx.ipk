@@ -213,7 +213,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_callback";  qn] -> `AST_callback (sr,xq "ast_callback" qn)
  | Lst [Id "ast_method_apply";  Lst [Str n; e; Lst ts]] -> `AST_method_apply(sr,(n, ex e, map ti ts))
 
- | Lst [Id "ast_dot";  Lst [e1; e2]] -> `AST_dot (sr,(ex e1, ex e2))
+ | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> `AST_dot (xsr sr,(ex e1, ex e2))
  
  | Lst [Id "ast_lambda";  Lst [vs; Lst pss; t; sts]] ->
    `AST_lambda  (sr,(xvs vs, map xps pss, ti t, xsts sts))

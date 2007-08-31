@@ -69,11 +69,11 @@ let ematch syms bbdfns changed (name,bvs,bps,e1,e2) tvars evars e =
   match Flx_unify.expr_maybe_matches syms.dfns tvars evars e1 e with
   | Some (tmgu,emgu) -> 
     changed := true;
-    (*
+      (*
       print_endline ("REDUCTION: FOUND A MATCH, candidate " ^ sbe syms.dfns bbdfns e^" with reduced LHS " ^ sbe syms.dfns bbdfns e1); 
       print_endline ("EMGU=" ^catmap ", " (fun (i,e')-> si i ^ " --> " ^ sbe syms.dfns bbdfns e') emgu);
       print_endline ("TMGU=" ^catmap ", " (fun (i,t')-> si i ^ " --> " ^ sbt syms.dfns t') tmgu);
-    *)
+      *)
     let e = fold_left (fun e (i,e') -> Flx_unify.expr_term_subst e i e') e2 emgu in
     let rec s e = map_tbexpr id s (list_subst tmgu) e in
     let e' = s e in
@@ -92,7 +92,7 @@ let rec reduce_exe syms bbdfns reductions count exe =
   let exe = fold_left
     (fun exe (name,bvs,bps,e1,e2 as red,tvars,evars) ->
       (*
-      print_endline ("Check reduction rule " ^ name ^ " on " ^ string_of_bexe syms.dfns 0 exe);
+      print_endline ("Check reduction rule " ^ name ^ " on " ^ string_of_bexe syms.dfns bbdfns 0 exe);
       *)
       let em e = ematch syms bbdfns changed red tvars evars e in
       (* apply reduction top down AND bottom up *)

@@ -515,12 +515,15 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       end
 
     | `EXE_assign (l,r) -> 
+      tack (`BEXE_assign (sr,be l, be r))
+      (*
       let (_,lt) as bel = be l in
       begin match lt with 
       |  `BTYP_lvalue _ ->
          tack (`BEXE_assign (sr,bel, be r))
       | _ -> clierr sr "LHS must be lvalue"
       end
+      *)
 
 
   in 

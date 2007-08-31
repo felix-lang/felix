@@ -358,6 +358,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | `BEXPR_get_n (n,(e',t as e)) -> 
     begin match rt t with
     | `BTYP_array (_,`BTYP_unitsum _) -> 
+      begin match e with
+      | `BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
+      | _ -> ()
+      end;
       ce_dot (ge' e) ("data["^si n^"]")
     | `BTYP_record es ->
       let field_name,_ = 

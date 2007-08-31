@@ -1467,7 +1467,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
             | `AST_name (_,n,[]) ->
               [`AST_val_decl (sr,n,dfltvs,t,Some r)]
-            | _ -> clierr sr "identifier required in val init"
+            | x -> clierr sr ("identifier required in val init, got " ^ string_of_expr x)
           else
             [assign sr fid e r]
         end
