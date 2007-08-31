@@ -2521,6 +2521,24 @@ open module Array
   }
 }
 
+instance[T,N with Show[T]] Str[array[T, N]] {
+  fun str (xs:array[T,N]) = {
+    var o = '(';
+    var i : int;
+
+    if len(xs) > 0 do
+      o += repr xs.[0];
+
+      forall i in 1 upto len(xs) - 1 do
+        o += ', ' + repr xs.[i];
+      done;
+    done;
+
+    return o + ')';
+  }
+}
+
+
 @select(std)
 include "std/varray";
 @h = tangler("lib/std/varray.flx")

@@ -831,6 +831,8 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
   print_endline (" ... Special inline subexpr: " ^ sbe syms.dfns bbdfns e);
   *)
   match map_tbexpr id aux id e with
+  | `BEXPR_get_n (n,(`BEXPR_tuple ls,_)),_ -> nth ls n
+
   | `BEXPR_closure (callee,_),_ as x ->
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       x
