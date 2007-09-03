@@ -111,7 +111,11 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
       *)
       let ts = map vs ts in
       ui i ts
-    | _ -> assert false
+    | _ -> 
+      syserr sr (
+        "[flx_inst:process_expr:BEXPR_get_named] unexpected object type " ^ 
+        sbt syms.dfns ot
+      )
     end
 
   | `BEXPR_apply_prim (index,ts,a)

@@ -390,7 +390,7 @@ syntax expressions {
     "`(ast_dot ,_sr (,_1 (ast_name ,(car _3) ,(cadr _3))))";
 
   sfactor := sfactor .-> ssimple_name_parts =># 
-    "`(ast_dot ,_sr ((ast_apply ,_sr (deref ,_1)) (ast_name (,(car _3) ,(cadr _3)))))";
+    "`(ast_dot ,_sr ((ast_apply ,_sr (deref ,_1)) (ast_name ,(car _3) ,(cadr _3))))";
 
   sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 

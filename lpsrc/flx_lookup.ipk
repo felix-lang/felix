@@ -5050,25 +5050,48 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   *)
   | `AST_dot (sr,(e,e2)) ->
 
-    (* Analyse LHS *)
-    let (_,tt') as te = be e in (* polymorphic! *)
-    let is_lvalue = match tt' with 
-      | `BTYP_lvalue _ -> true 
-      | _ -> false 
+    (* Analyse LHS. 
+      If it is a pointer, dereference it transparently.
+      The component lookup is an lvalue if the argument
+      is an lvalue or a pointer, unless an apply method
+      is used, in which case the user function result
+      determines the lvalueness.
+    *)
+    let ttt,e,te,lmap =
+      let (_,tt') as te = be e in (* polymorphic! *)
+      let lmap t = 
+        let is_lvalue = match tt' with 
+          | `BTYP_lvalue _  
+          | `BTYP_pointer _ -> true 
+          | _ -> false 
+        in
+        if is_lvalue then lvalify t else t 
+      in
+      let rec aux n t = match t with
+        | `BTYP_pointer t -> aux (n+1) t
+        | _ -> n,t
+      in 
+      let np,ttt = aux 0 (rt tt') in
+      let rec dref n x = match n with
+          | 0 -> x 
+          | _ -> dref (n-1) (`AST_deref (sr,x))
+      in
+      let e = dref np e in
+      let e',t' = be e in
+      let te = e',lmap t' in
+      ttt,e,te,lmap
     in
-    let lmap t = if is_lvalue then `BTYP_lvalue t else t in
-    let tt' = rt tt' in
-
 
     begin match e2 with
     | `AST_name (_,name,ts) ->
-      begin match tt' with
+      begin match ttt with
       | `BTYP_inst (i,ts') ->
         begin match Hashtbl.find syms.dfns i with
         | {id=id; vs=vs; symdef=`SYMDEF_struct ls } -> 
+          begin try
           let cidx,ct = 
             let rec scan i = function
-            | [] -> failwith "Can't find struct component"
+            | [] -> raise Not_found
             | (vn,vat)::_ when vn = name -> i,vat
             | _:: t -> scan (i+1) t
             in scan 0 ls
@@ -5082,6 +5105,18 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let ct = tsubst vs' ts' ct in
           (* propagate lvalueness to struct component *)
           `BEXPR_get_n (cidx,te),lmap ct
+          with Not_found ->
+            let get_name = "get_" ^ name in
+            begin try be (`AST_method_apply (sr,(get_name,e,ts)))
+            with _ -> try be (`AST_apply (sr,(e2,e)))
+            with exn ->
+            failwith (
+              "AST_dot: cstruct type: koenig apply "^get_name ^ 
+              ", AND apply " ^ name ^
+              " failed with " ^ Printexc.to_string exn
+              )
+            end
+          end
 
         | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } -> 
           (* NOTE: we try $1.name binding using get_n first,
@@ -5113,8 +5148,17 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             print_endline ("Synth get method .. (1) " ^ name);
             *)
             let get_name = "get_" ^ name in
-            be (`AST_method_apply (sr,(get_name,e,ts)))
-          end
+            begin try be (`AST_method_apply (sr,(get_name,e,ts)))
+            with _ -> try be (`AST_apply (sr,(e2,e)))
+            with exn ->
+            failwith (
+              "AST_dot: cstruct type: koenig apply "^get_name ^ 
+              ", AND apply " ^ name ^
+              " failed with " ^ Printexc.to_string exn
+              )
+            end
+
+           end
 
         | {id=id; pubmap=pubtab; symdef = `SYMDEF_class } ->
           (*
@@ -5152,7 +5196,16 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             print_endline ("Synth get method .. (3) " ^ name);
             *)
           let get_name = "get_" ^ name in
-          be (`AST_method_apply (sr,(get_name,e,ts)))
+          begin try be (`AST_method_apply (sr,(get_name,e,ts)))
+          with _ -> try be (`AST_apply (sr,(e2,e)))
+          with exn ->
+          failwith (
+            "AST_dot: cclass type: koenig apply "^get_name ^ 
+            ", AND apply " ^ name ^
+            " failed with " ^ Printexc.to_string exn
+            )
+          end
+
           
         (* abstract type binding *)
         | {id=id; symdef=`SYMDEF_abs _ } ->
@@ -5160,12 +5213,20 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             print_endline ("Synth get method .. (4) " ^ name);
             *)
           let get_name = "get_" ^ name in
-          be (`AST_method_apply (sr,(get_name,e,ts)))
+          begin try be (`AST_method_apply (sr,(get_name,e,ts)))
+          with _ -> try be (`AST_apply (sr,(e2,e)))
+          with exn ->
+          failwith (
+            "AST_dot: Abstract type: koenig apply "^get_name ^ 
+            ", AND apply " ^ name ^
+            " failed with " ^ Printexc.to_string exn
+            )
+          end
 
         | _ -> 
-          failwith ("[lookup] operator . Expected nominal type to be"^
+          failwith ("[lookup] operator . Expected LHS nominal type to be"^
           " struct, cstruct or abstract primitive, got " ^ 
-          sbt syms.dfns tt')
+          sbt syms.dfns ttt)
 
         end
 
@@ -5179,7 +5240,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
            (
              "Field " ^ field_name ^ 
              " is not a member of anonymous structure type " ^ 
-             sbt syms.dfns tt'
+             sbt syms.dfns ttt
             )
         end
 
@@ -5188,12 +5249,19 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         ^ "but RHS is simple name: should overload somehow?")
 
       | `BTYP_tuple _ ->
-        failwith ("[lookup:AST_dot] Expected nominal type! Got tuple ! " ^ sbt syms.dfns tt')
+        failwith ("[lookup:AST_dot] Expected nominal type! Got tuple ! " ^ sbt syms.dfns ttt)
 
-      | _ -> failwith ("[lookup:AST_dot] Expected nominal type! Got " ^ sbt syms.dfns tt')
+      | _ -> failwith ("[lookup:AST_dot] Expected nominal type! Got " ^ sbt syms.dfns ttt)
       end
 
-    | _ -> failwith "AST_dot, arg not name not handled yet"
+    | _ -> 
+      try be (`AST_apply (sr,(e2,e)))
+      with exn ->
+      failwith (
+        "AST_dot, arg "^ string_of_expr e2^ 
+        " is not simple name, and attempt to apply it failed with " ^
+        Printexc.to_string exn
+        )
   end
 
   | `AST_match_case (sr,(v,e)) ->
