@@ -694,13 +694,6 @@ factor:
       let sr = rsrange (src_of_expr $1) rsr in
       `AST_dot (sr, ($1, `AST_name (sr,name,ts))) 
     }
-  | factor DOTRIGHTARROW simple_name_parts       
-    { 
-      let rsr,name,ts = $3 in
-      let sr = rsrange (src_of_expr $1) rsr in
-      let x = apl $2 "deref" $1 in
-      `AST_dot (sr, (x, `AST_name (sr,name,ts))) 
-    }
   | factor DOT LPAR INTEGER RPAR
     { 
       match $4 with
