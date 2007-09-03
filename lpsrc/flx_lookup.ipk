@@ -4971,7 +4971,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | `BTYP_function _ -> 
       (* print_endline "Function .. cal apply"; *) 
       cal_apply syms sr f a
-    | _ ->
+    | t ->
+      (*
+      print_endline ("Expected f to be function, got " ^ sbt syms.dfns t);
+      *)
       let apl name =
         be 
         (

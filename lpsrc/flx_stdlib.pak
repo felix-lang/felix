@@ -2519,22 +2519,22 @@ open module Array
 
     return o;  
   }
-}
 
-instance[T,N with Show[T]] Str[array[T, N]] {
-  fun str (xs:array[T,N]) = {
-    var o = '(';
-    var i : int;
+  instance[T,N with Show[T]] Str[array[T, N]] {
+    fun str (xs:array[T,N]) = {
+      var o = '(';
+      var i : int;
 
-    if len(xs) > 0 do
-      o += repr xs.[0];
+      if len(xs) > 0 do
+        o += repr xs.[0];
 
-      forall i in 1 upto len(xs) - 1 do
-        o += ', ' + repr xs.[i];
+        forall i in 1 upto len(xs) - 1 do
+          o += ', ' + repr xs.[i];
+        done;
       done;
-    done;
 
-    return o + ')';
+      return o + ')';
+    }
   }
 }
 
