@@ -1178,6 +1178,8 @@ publish "System Interface"
 module System
 {
   const argc:int = "ptf->argc";
+  const _argv:&charp= "ptf->argv";
+
   fun argv:int -> string = 'std::string($1<0||$1>=ptf->argc??"":ptf->argv[$1])';
   fun args () => List::map (the argv) (List::range argc);
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
