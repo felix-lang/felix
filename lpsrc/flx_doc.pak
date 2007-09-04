@@ -10,6 +10,9 @@ Reference Manual (interscript):
 Grammar Reference (flxp --document-grammar):
 @cite_url("gramdoc/index.html")
 @p()
+Module Reference (flxd --document-typeclass lib/std.flx):
+@cite_url("moduledoc/index.html")
+@p()
 Typeclass Reference (flxd --document-typeclass lib/std.flx):
 @cite_url("typeclassdoc/index.html")
 @p()

@@ -278,7 +278,10 @@ class PLUGIN(Plugin):
   help = 'make the typeclass documentation'
 
   def runme(self):    
-    print "GENERATING TYPECLASS DOCUMENTATION"
+    print "GENERATING TYPECLASS and MODULE DOCUMENTATION"
+    filecopy2dir( os.path.join('misc', 'plus.gif'), os.path.join("doc", "moduledoc"))
+    filecopy2dir( os.path.join('misc', 'minus.gif'), os.path.join("doc", "moduledoc"))
+    filecopy2dir( os.path.join('misc', 'dot.gif'), os.path.join("doc", "moduledoc"))
     try:
       vxqt("bin/flxd -Ilib --document-typeclass lib/std")
     except:

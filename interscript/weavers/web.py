@@ -586,7 +586,7 @@ function toggle(button,id)
       self.emit_contents_line(level, hnum, href, text, level<next_level, target)
       divid = 'h'+hnum+'d'
       # note the additional DIV element hack to force a linebreak
-      w('<DIV></DIV><DIV ID='+divid+' style="display:">')
+      w('<DIV></DIV><DIV ID='+divid+' style="display:none">')
       last_level = level
     for i in range(1, len(self.toc)):
       level, hnum, href, text = self.toc[i][:4]
@@ -597,7 +597,7 @@ function toggle(button,id)
         last_level = last_level - 1
       self.emit_contents_line(level, hnum, href, text, level<next_level, target)
       divid = 'h'+hnum+'d'
-      w('<DIV></DIV><DIV ID='+divid+' style="display:">')
+      w('<DIV></DIV><DIV ID='+divid+' style="display:none">')
       last_level = level
     while 1 <= last_level:
       w('</DIV>')

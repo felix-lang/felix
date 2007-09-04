@@ -1401,6 +1401,12 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_namespace _ -> assert false
 
   | `AST_untyped_module (sr,name', vs', sts) -> 
+    if syms.compiler_options.document_typeclass then
+    begin
+      print_endline ("DOCUMENT MODULE " ^ name');
+      Flx_tcdoc.record_module name' (vs',sts);
+    end
+    ;
     let asms = rsts name' (merge_vs parent_vs vs') `Public sts in
     let asms = bridge name' sr :: asms in
     let mdcl =
@@ -1891,12 +1897,12 @@ try
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
   let deblocked = desugar_program syms module_name parse_tree in
-  print_endline (Flx_print.string_of_desugared deblocked);
-  print_endline "//----------------------------";
-
   if syms.compiler_options.document_typeclass then
     Flx_tcdoc.gen_doc()
-  ;
+  else begin
+    print_endline (Flx_print.string_of_desugared deblocked);
+    print_endline "//----------------------------"
+  end
 
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;

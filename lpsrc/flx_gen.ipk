@@ -2944,6 +2944,44 @@ let format_time tm =
   si tm.Unix.tm_min ^ ":" ^
   si tm.Unix.tm_sec 
 ;;
+
+type file_state_t = [`NeverOpened | `Open of out_channel | `Closed ]
+
+type out_file_t = {
+  out_filename : string;
+  mutable out_chan: file_state_t;
+}
+
+let force_open f =
+  match f.out_chan with
+  | `Open chan -> chan
+  | _ ->
+    let chan = open_out f.out_filename in
+    f.out_chan <- `Open chan;
+    chan
+
+let ensure_closed f =
+  match f.out_chan with
+  | `NeverOpened | `Closed -> ()
+  | `Open chan ->
+    close_out chan;
+    f.out_chan <- `Closed 
+
+let was_used f =
+  match f.out_chan with
+  | `NeverOpened -> false
+  | _ -> true
+
+let ws f x = 
+  let chan = force_open f in
+  output_string chan x
+
+let wl f x = ws f (x ^ "\n")
+
+let mkf f = { out_filename=f; out_chan=`NeverOpened }
+
+;;
+
 try
   (* Time initialisation *)
   let compile_start = Unix.time () in
@@ -2992,15 +3030,20 @@ try
 
   let filename = hd (rev files) in
   let filebase = filename in
-  let input_file_name = filebase ^ ".flx" 
+
+  let input_file_name = filebase ^ ".flx"
+  (*
   and iface_file_name = filebase ^ ".fix"
-  and header_file_name = filebase ^ ".hpp"
-  and body_file_name = filebase ^ ".cpp" 
-  and body_file_name2 = filebase ^ "_ctors.cpp" 
-  and package_file_name = filebase ^ ".resh" 
-  and rtti_file_name = filebase ^ ".rtti" 
-  and report_file_name = filebase ^ ".xref" 
+  *)
   and why_file_name = filebase ^ ".why"
+
+  and header_file = mkf (filebase ^ ".hpp")
+  and body_file = mkf (filebase ^ ".cpp")
+  and ctors_file = mkf (filebase ^ "_ctors.cpp")
+  and package_file = mkf (filebase ^ ".resh")
+  and rtti_file = mkf (filebase ^ ".rtti")
+  and report_file = mkf (filebase ^ ".xref")
+
   and module_name = 
     let n = String.length filebase in 
     let i = ref (n-1) in
@@ -3314,9 +3357,9 @@ try
 
   if compiler_options.print_flag then 
   begin
-    let f = open_out report_file_name in
+    let f = force_open report_file in
     Flx_call.print_call_report syms bbdfns f;
-    close_out f
+    ensure_closed report_file
   end
   ;
 
@@ -3458,15 +3501,11 @@ try
   syms.lexers 
   ;
   
-  let hf = open_out header_file_name in
-  let bf = open_out body_file_name in 
-  let bf2 = open_out body_file_name2 in 
-  let pf = open_out package_file_name in 
-  let rf = open_out rtti_file_name in 
-  let psh s = output_string hf s in
-  let psb s = output_string bf s in
-  let psp s = output_string pf s in
-  let psr s = output_string rf s in
+  let psh s = ws header_file s in
+  let psb s = ws body_file s in
+  let psp s = ws package_file s in
+  let psr s = ws rtti_file s in
+
   let plh s = psh s; psh  "\n" in
   let plb s = psb s; psb "\n" in
   let plr s = psr s; psr "\n" in
@@ -3792,13 +3831,6 @@ try
 
 
 
-  plb "\n//-----------------------------------------";
-  plb "//DEFINE OFFSET tables for GC";
-  plb ("#include \""^module_name^".rtti\"");
-  plr "//DEFINE OFFSET tables for GC";
-
-  plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
-
   begin
     let header_emitted = ref false in
     Hashtbl.iter
@@ -3849,7 +3881,15 @@ try
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";
   plb ("#include \"" ^module_name ^ "_ctors.cpp\"");
-  gen_execute_methods body_file_name syms (child_map,bbdfns) label_info syms.counter bf bf2;
+  gen_execute_methods body_file.out_filename syms (child_map,bbdfns) label_info syms.counter (force_open body_file) (force_open ctors_file);
+
+  plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
+  ensure_closed rtti_file;
+  if was_used rtti_file then begin
+    plb "\n//-----------------------------------------";
+    plb "//DEFINE OFFSET tables for GC";
+    plb ("#include \""^module_name^".rtti\"");
+  end;
 
   if compiler_options.print_flag then print_endline "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
@@ -3908,13 +3948,12 @@ try
   plh "//header complete";
   plh "#endif";
   plb "//body complete";
-  close_out hf;
-  close_out bf;
-  close_out bf2;
+  ensure_closed header_file;
+  ensure_closed body_file;
+  ensure_closed ctors_file;
   plp "flx";
   plp "flx_gc";  (* RF: flx apps now need flx_gc. is this the way to do it? *)
-  close_out pf;
-  close_out rf;
+  ensure_closed package_file;
   let code_generation_time = tim() in
   if compiler_options.print_flag then 
   print_endline ("//code generation time " ^ string_of_float code_generation_time);
