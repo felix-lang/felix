@@ -2442,7 +2442,8 @@ val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string
 val string_of_bquals: symbol_table_t -> btype_qual_t list -> string
 val print_bvs: bvs_t -> string
-
+val string_of_code_spec: c_t -> string
+val string_of_raw_reqs: raw_req_expr_t -> string
 
 @h = tangler('src/compiler/flxlib/flx_print.ml')
 @select(h)

@@ -159,21 +159,46 @@ let gen_mdoc () =
           )
         end
 
+      | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec)  ->
+        let seq = !counter in incr counter;
+        let id = "ref_"^string_of_int seq in
+        begin match result with
+        | `AST_void _ ->
+          w (begin_div "element" ^ 
+            span "category" "proc " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
+            catmap "*" st args
+          )
+        | _ ->
+          w (begin_div "element" ^ 
+            span "category" "fun " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
+            catmap "*" st args ^ " -> " ^ st result
+          )
+        end
+        ;
+        w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
+        " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
+        " <DIV CLASS=implementation ID="^id^" style=\"display:none\">");
+        w (string_of_code_spec code ^ "\n");
+        w (string_of_raw_reqs reqs ^ "\n");
+        w "</DIV>";
+        w end_div;
+
+
       | `AST_curry (_,name, vs, pss, (res,traint) , kind, ss) -> 
         let s = 
-          "    " ^ 
+          span "category"
           (match kind with 
-          | `Function -> "fun " 
-          | `CFunction -> "cfun " 
+          | `Function -> (match res with `AST_void _ -> "proc " | _ -> "fun ")
+          | `CFunction -> (match res with `AST_void _ -> "cproc " | _ -> "cfun ")
           | `Object -> "obj " 
-          | `InlineFunction -> "inline fun "
-          | `NoInlineFunction -> "noinline fun "
-          | `Virtual -> "virtual fun "
+          | `InlineFunction -> (match res with `AST_void _ -> "inline proc " | _ -> "inline fun ")
+          | `NoInlineFunction -> (match res with `AST_void _ -> "noinline proc " | _ -> "noinline fun ")
+          | `Virtual -> (match res with `AST_void _ -> "virtual proc " | _ -> "virtual fun ")
           | `Ctor -> "ctor "
           | `Generator -> "generator "
           )
           ^ 
-          name ^ print_vs vs ^ 
+          span "ident" name ^ print_vs vs ^ 
           catmap " " 
           (fun ps ->
             "("^string_of_parameters ps^")"
@@ -188,24 +213,41 @@ let gen_mdoc () =
         in
 
         w (begin_div "element");
+        let seq = !counter in incr counter;
+        let id = "ref_"^string_of_int seq in
         begin match ss with
         | [`AST_fun_return (_,e)] -> 
-          w (s ^ " => " ^ string_of_expr e ^ ";\n")
-
-        | _ -> 
-          let seq = !counter in incr counter;
-          let id = "ref_"^string_of_int seq in
           w s;
           w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
           " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
           " <DIV CLASS=implementation ID="^id^" style=\"display:none\">");
-          iter (fun s -> w (string_of_statement 6 s ^ "\n")) ss;
+          w (" => " ^ string_of_expr e ^ ";\n");
+          w "</DIV>"
+
+        | _ -> 
+          w s;
+          w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
+          " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
+          " <DIV CLASS=implementation ID="^id^" style=\"display:none\">");
+          iter (fun s -> w (string_of_statement 0 s ^ "\n")) ss;
           w "</DIV>"
         end;
         w end_div;
 
+      | `AST_instance (_,vs,name, sts) -> 
+        w (begin_div "element");
+        let seq = !counter in incr counter;
+        let id = "ref_"^string_of_int seq in
+        w (span "category" "instance " ^ print_vs vs ^ " " ^
+        span "ident" (string_of_qualified_name name) ^ " = ");
+        w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
+        " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
+        " <DIV CLASS=implementation ID="^id^" style=\"display:none\">");
+        iter (fun s -> w (string_of_statement 0 s ^ "\n")) sts;
+        w "</DIV>";
+        w end_div;
 
-      | x -> w (begin_div "element" ^ (Flx_print.string_of_statement 4 x) ^ end_div) 
+      | x -> w (begin_div "element" ^ (Flx_print.string_of_statement 0 x) ^ end_div) 
       )
       sts
       ;
@@ -330,15 +372,17 @@ DIV.element
   font-size: 14px;
   text-indent: 0px;
   white-space: pre;
+  margin-left:2em;
 }
 
 DIV.implementation
 {
   margin-bottom: 4 px;
-  font-size: 14px;
+  font-size: 12px;
   text-indent: 0px;
   white-space: pre;
   color: #0000FF;
+  margin-left:5em;
 }
 
 SPAN.category
