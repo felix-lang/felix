@@ -3829,7 +3829,13 @@ try
   "{}"
   ];
 
-
+  plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
+  ensure_closed rtti_file;
+  if was_used rtti_file then begin
+    plb "\n//-----------------------------------------";
+    plb "//DEFINE OFFSET tables for GC";
+    plb ("#include \""^module_name^".rtti\"");
+  end;
 
   begin
     let header_emitted = ref false in
@@ -3882,14 +3888,6 @@ try
   plb "//DEFINE FUNCTION CLASS METHODS";
   plb ("#include \"" ^module_name ^ "_ctors.cpp\"");
   gen_execute_methods body_file.out_filename syms (child_map,bbdfns) label_info syms.counter (force_open body_file) (force_open ctors_file);
-
-  plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
-  ensure_closed rtti_file;
-  if was_used rtti_file then begin
-    plb "\n//-----------------------------------------";
-    plb "//DEFINE OFFSET tables for GC";
-    plb ("#include \""^module_name^".rtti\"");
-  end;
 
   if compiler_options.print_flag then print_endline "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
