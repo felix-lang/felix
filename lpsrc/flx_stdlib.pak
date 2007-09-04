@@ -1727,7 +1727,7 @@ open module Ustring
     "flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
   fun copyto: ustring * int -> ustring = 
     "flx::rtl::strutil::substr($1,0,$2)" requires flx_strutil;
-  fun subustring: ustring * int * int -> ustring = 
+  fun substring: ustring * int * int -> ustring = 
     "flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
 
   // comparisons
@@ -2550,6 +2550,8 @@ publish "Bounded Variable length arrays"
 
 open module Varray
 {
+  comment "Variable length arrays";
+
   _gc_pointer _gc_type t type varray[t] = "?1*";
 
   gen _ctor_varray[t]: ulong -> varray[t] = 

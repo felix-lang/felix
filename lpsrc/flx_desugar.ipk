@@ -1129,7 +1129,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     [`Dir (DIR_open ((vs,aux),name))]
   | `AST_inject_module (sr,name) -> [`Dir (DIR_inject_module name)]
   | `AST_use (sr,n,qn) -> [`Dir (DIR_use (n,qn))]
-  | `AST_comment s -> [`Exe (generated,`EXE_comment s)]
+  | `AST_comment (sr,s) -> [`Exe (sr,`EXE_comment s)]
 
   (* objects *)
   | `AST_export_fun (sr,name,cpp_name) ->

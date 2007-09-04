@@ -720,7 +720,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_open"; sr; vs; qn] -> `AST_open (xsr sr, xvs vs, xq "ast_open" qn)
   | Lst [Id "ast_inject_module"; sr; qn] -> `AST_inject_module (xsr sr, xq "ast_inject_module" qn)
   | Lst [Id "ast_use"; sr; Str s; qn] -> `AST_use (xsr sr, ss s, xq "ast_use" qn)
-  | Lst [Id "ast_comment"; Str s] -> `AST_comment(ss s)
+  | Lst [Id "ast_comment"; sr; Str s] -> `AST_comment(xsr sr, ss s)
   | Lst [Id "ast_private"; x] -> `AST_private (sr, xs x)
   | Lst [Id "ast_reduce"; sr; Str s; vs; spl; e1; e2] -> 
     `AST_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex e1, ex e2)

@@ -689,7 +689,7 @@ and statement_t =
   | `AST_open of range_srcref * vs_list_t * qualified_name_t
   | `AST_inject_module of range_srcref * qualified_name_t
   | `AST_use of range_srcref * id_t * qualified_name_t
-  | `AST_comment of string (* for documenting generated code *)
+  | `AST_comment of range_srcref * string (* for documenting generated code *)
   (*
   | `AST_public of range_srcref * string * statement_t
   *)
@@ -2228,8 +2228,8 @@ let src_of_stmt e = match e with
   | `AST_user_statement (s,_,_)
   | `AST_scheme_string (s,_)
     -> s
-  | `AST_comment _ 
-    -> ("Generated",0,0,0,0)
+  | `AST_comment (s,_) -> s
+
 
 let src_of_pat e = match e with
   | `PAT_coercion (s,_,_)
@@ -3640,7 +3640,7 @@ and string_of_statement level s =
   | `AST_init (_,v,e) ->
     spaces level ^ v ^ " := " ^ se e ^ ";"
 
-  | `AST_comment s -> spaces level ^ "// " ^ s
+  | `AST_comment (_,s) -> spaces level ^ "// " ^ s
 
   | `AST_open (_,vs,n) -> 
     spaces level ^ "open" ^ print_vs vs ^ " " ^ sqn n ^ ";"

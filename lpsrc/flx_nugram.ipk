@@ -25,15 +25,15 @@ SCHEME """
 """;
 
 SCHEME """
-  (define lazy (lambda (stmts) `(ast_lambda (,dfltvs ,dfltargs typ_none ,stmts))))
+  (define (lazy stmts) `(ast_lambda (,dfltvs ,dfltargs typ_none ,stmts)))
 """;
 
 SCHEME """
-  (define lazy_proc (lambda (stmts) `(ast_lambda (,dfltvs ,dfltargs ast_void ,stmts))))
+  (define (lazy_proc stmts) `(ast_lambda (,dfltvs ,dfltargs ast_void ,stmts)))
 """;
 
 SCHEME """
-  (define (block stmts)`(ast_call ,_sr (,(lazy_proc stmts)())))
+  (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ())))
 """;
 
 SCHEME """
@@ -41,18 +41,18 @@ SCHEME """
 """;
 
 SCHEME """
-(define mkn1 (lambda (stmt nvs) 
-  `(ast_namespace ,(car nvs) ,(cadr nvs) (,stmt))))
+(define (mkn1 stmt nvs) 
+  `(ast_namespace ,(car nvs) ,(cadr nvs) (,stmt)))
 """;
 
 SCHEME """
-(define mkns (lambda (stmt nvsl) (
+(define (mkns stmt nvsl) (
   fold_left mkn1 stmt nvsl
-  )))
+  ))
 """;
 
 SCHEME """
-(define splitapply (lambda (x)
+(define (splitapply x)
   (if (pair? x) 
     (if (eq? (car x) 'ast_apply) 
       (if (pair? (cddr x)) 
@@ -64,11 +64,11 @@ SCHEME """
         (list x ()))
       (list x ()))
     (list ()))
-))
+)
 """;
 
 SCHEME """
-(define mkl (lambda (x)
+(define (mkl x)
   (begin 
   ;;(display "mkl x=")(display x)
   (if (pair? x) 
@@ -76,11 +76,11 @@ SCHEME """
       (if (pair? (cddr x)) (caddr x) (list x))
       (list x))
     (list x)))
-))
+)
 """;
 
 SCHEME """
-(define mkl2 (lambda (x)
+(define (mkl2 x)
   (begin 
   ;;(display "mkl2 x=")(display x)
   (if (pair? x) 
@@ -88,26 +88,26 @@ SCHEME """
       (if (pair? (cddr x)) (caddr x) (list x))
       (list x))
     (list x)))
-))
+)
 """;
 
 SCHEME """
-(define cal_funkind (lambda (adjs fk)
+(define (cal_funkind adjs fk)
   (if (eq? fk 'CFunction)'CFunction
   (if (eq? fk 'Generator)'Generator
   ;; fk is Function
   (if (pair? adjs)(car adjs)'Function
-)))))
+))))
 """;
 
 SCHEME """
-(define myassoc (lambda (elt alst)
+(define (myassoc elt alst)
   (let ((r (assoc elt alst)))
-  (if r (cadr r) `(MISMATCHED_BRACKET ,elt ,alst)))))
+  (if r (cadr r) `(MISMATCHED_BRACKET ,elt ,alst))))
 """;
 
 SCHEME """
-(define tvfixup_folder (lambda (vsct vtc)
+(define (tvfixup_folder vsct vtc)
   (begin ;;(display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
   (let* 
     (
@@ -152,7 +152,7 @@ SCHEME """
 //
 
 SCHEME """
-(define tvfixup (lambda (tv ct)
+(define (tvfixup tv ct)
   (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
   (let* 
     (
@@ -172,11 +172,11 @@ SCHEME """
     ;;  (display "\\n")
     (list (reverse vs) ct))
   )
-)))
+))
 """;
 
 SCHEME """
-  (define maybe (lambda (k)(if (null? k)'none `(some ,(car k)))))
+  (define (maybe k)(if (null? k)'none `(some ,(car k))))
 """;
 
 SCHEME """
@@ -910,7 +910,7 @@ syntax statements {
   statement:= snull_statement =># "_1"; 
   statement:= scparse =># "_1"; 
 
-  scomment := comment sstring ssemi =># "`(ast_nop ,_sr ,_2)";
+  scomment := comment sstring ssemi =># "`(ast_comment ,_sr ,_2)";
  
  
   spublish := private sdeclarative =># "`(ast_private ,_2)";
@@ -2215,6 +2215,10 @@ require initialisers.
     `(ast_type_alias ,_sr ,(car _2) ,dfltvs ,(cadr _2))
     """; 
 
+  sifgoto := "break" ssemi =># '`(ast_goto ,_sr "break_label")';
+  sifgoto := "continue" ssemi =># '`(ast_goto ,_sr "continue_label")';
+  sifgoto := "redo" ssemi =># '`(ast_goto ,_sr "redo_label")';
+
   sifgoto := for lpar statement sexpr ssemi sassignexpr rpar statement =>#
   """
     (let* 
@@ -2224,16 +2228,15 @@ require initialisers.
         (iter _6)
         (body _8)
       )
-    `(ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" ) 
-      ( ast_macro_name "lab2" "" )
+    (block ( append `(
       ,init
-      (ast_label ,_sr "lab1" ) 
-      (ast_ifnotgoto ,_sr ,cond "lab2")
+      (ast_label ,_sr "redo_label" ) 
+      (ast_ifnotgoto ,_sr ,cond "break_label")
       ,body
+      (ast_label ,_sr "continue_label" ) 
       ,iter
-      (ast_goto ,_sr "lab1")
-      ( ast_label ,_sr "lab2" ))
+      (ast_goto ,_sr "redo_label")
+      ( ast_label ,_sr "break_label" ))
     )))
   """;
 
@@ -2243,24 +2246,22 @@ require initialisers.
 
   sifgoto := "while" lpar sdollar_apply rpar statement =>#
   """
-    `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" ) 
-      ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" ) 
-      ( ast_ifnotgoto ,_sr ,_3 "lab2" )
+    ( block ( append `(
+      ( ast_label ,_sr "continue_label" )
+      ( ast_ifnotgoto ,_sr ,_3 "break_label" )
       ,_5  
-      ( ast_goto ,_sr "lab1" ) 
-      ( ast_label ,_sr "lab2" )
+      ( ast_goto ,_sr "continue_label" ) 
+      ( ast_label ,_sr "break_label" )
     )))
   """;
 
   sifgoto := do scompound "until" sdollar_apply ssemi =>#
   """
-    `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" ) 
-      ( ast_label ,_sr "lab1" ) 
-      ( ast_call ,_sr ,(lazy_proc _2) ())
-      ( ast_ifnotgoto ,_sr ,_4 "lab1" )
+    ( block ( append `(
+      ( ast_label ,_sr "continue_label" ) 
+      ,( block _2)
+      ( ast_ifnotgoto ,_sr ,_4 "continue_label" )
+      ( ast_label ,_sr "break_label" ) 
     )))
   """;
 
