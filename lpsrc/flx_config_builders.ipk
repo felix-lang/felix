@@ -2200,6 +2200,13 @@ class ocaml(compiler_base):
 
     opt = self.options
 
+    try: # check if ocamlbuild exists
+      shell('ocamlbuild', log=log)
+      opt.OCAMLBUILD = 'ocamlbuild -classic-display '
+      opt.HAVE_OCAMLBUILD = 1
+    except MakeError:
+      opt.HAVE_OCAMLBUILD = 0
+
     try: # check if the client bootstrapped the native code compiler
       shell('ocamlopt.opt', log=log)
       opt.OCAMLCC = 'ocamlopt.opt '+linkopts

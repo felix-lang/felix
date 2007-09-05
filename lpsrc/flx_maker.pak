@@ -526,6 +526,28 @@ class PLUGIN(Plugin):
     return force
 @doc()
 
+@select(tangler('mkplugins/build_ocamlbuild.py'))
+class PLUGIN(Plugin):
+  name = 'build_ocamlbuild'
+
+  def runme(self, pkg, pkgdict):
+    EXES = pkgdict.get('caml_exes', [])
+
+    for exe in EXES:
+      if BYTECODE:
+        bin = exe + '.byte'
+      else:
+        bin = exe + '.native'
+
+      vxqt(OCAMLBUILD + bin)
+
+      mkdirs('bin')
+      filecopy(
+        os.path.join('_build', bin), 
+        os.path.join('bin', os.path.basename(exe)))
+
+@doc()
+
 @select(tangler('mkplugins/build_host_tools.py'))
 class PLUGIN(Plugin):
   name = 'build_host_tools'
@@ -1608,7 +1630,10 @@ class PLUGIN(Plugin):
         plugins['copy_mli2ml'](MLIS)
         plugins['copy_hpp2rtl'](HPPS)
 
-        ocaml_sequencer = plugins['build_ocamls'](pkg, pkgdict, ocaml_sequencer)
+        if HAVE_OCAMLBUILD:
+          plugins['build_ocamlbuild'](pkg, pkgdict)
+        else:
+          ocaml_sequencer = plugins['build_ocamls'](pkg, pkgdict, ocaml_sequencer)
 
         plugins['build_host_tools'](pkg, pkgdict)
 

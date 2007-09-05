@@ -317,15 +317,20 @@ def erasedir(d):
   except EnvironmentError: pass
 
 def filecopy(a,b):
-  f = open(a)
-  g = open(b,"w")
-  g.write(f.read())
-  g.close()
-  f.close()
+  try:
+    import shutil
+  except ImportError:
+    f = open(a)
+    g = open(b,"w")
+    g.write(f.read())
+    g.close()
+    f.close()
+  else:
+    shutil.copy2(a,b)
 
 def filecopy2dir(a,d):
   mkdirs(d)
-  base = string.split(a,os.sep)[-1]
+  base = os.path.basename(a)
   filecopy(a,d+os.sep+base)
 
 def get_stdout(x):

@@ -1,3 +1,6 @@
+@select(tangler('_tags'))
+<{elk,tools,hostlib,judy,rtl,test,tmp,tut}>: not_hygienic
+
 @select(tangler('src/compiler/_tags'))
 <**/*.ml*>: warn_yzex
 
@@ -21,6 +24,9 @@ dyp
 gs
 priority_by_relation
 
+@select(tangler('src/compiler/ocs/_tags'))
+<ocs_main.{byte,native}>: use_nums, use_unix
+
 @select(tangler('src/compiler/drivers.itarget'))
 drivers/flxb.byte
 drivers/flxd.byte
@@ -39,7 +45,7 @@ drivers/flxp.native
 drivers/stub.native
 drivers/flxcc.native
 
-@select(tangler('src/compiler/myocamlbuild.ml'))
+@select(tangler('myocamlbuild.ml'))
 open Ocamlbuild_plugin;;
 open Ocamlbuild_pack;;
 open Ocamlbuild_pack.Hygiene;;
@@ -47,42 +53,42 @@ open Command;;
 
 
 (* set up the ocamlbuild search paths for the subdirectories *)
-Pathname.define_context "dyp/generators/pgen" [ "dyp/dyplib" ];; 
-Pathname.define_context "dyp/generators/dypgen" [ "dyp/dyplib" ];;
-Pathname.define_context "sex" [ "ocs"; "dyp/dyplib" ];;
-Pathname.define_context "flxcclib" [ "cil" ];; 
-Pathname.define_context "flx_version_hook" [ "flx_version" ];; 
+Pathname.define_context "src/compiler/dyp/generators/pgen" [ "src/compiler/dyp/dyplib" ];;
+Pathname.define_context "src/compiler/dyp/generators/dypgen" [ "src/compiler/dyp/dyplib" ];;
+Pathname.define_context "src/compiler/sex" [ "src/compiler/ocs"; "src/compiler/dyp/dyplib" ];;
+Pathname.define_context "src/compiler/flxcclib" [ "src/compiler/cil" ];;
+Pathname.define_context "src/compiler/flx_version_hook" [ "src/compiler/flx_version" ];;
 
-Pathname.define_context "flxlib" [
-  "cil";
-  "dyp/dyplib";
-  "flxcclib";
-  "flx_version";
-  "misclib";
-  "ocs";
-  "sex";
+Pathname.define_context "src/compiler/flxlib" [
+  "src/compiler/cil";
+  "src/compiler/dyp/dyplib";
+  "src/compiler/flxcclib";
+  "src/compiler/flx_version";
+  "src/compiler/misclib";
+  "src/compiler/ocs";
+  "src/compiler/sex";
 ];;
 
-Pathname.define_context "drivers" [
-  "cil";
-  "dyp/dyplib";
-  "flxlib";
-  "flxcclib";
-  "flx_version";
-  "ocs";
+Pathname.define_context "src/compiler/drivers" [
+  "src/compiler/cil";
+  "src/compiler/dyp/dyplib";
+  "src/compiler/flxlib";
+  "src/compiler/flxcclib";
+  "src/compiler/flx_version";
+  "src/compiler/ocs";
 ];;
 
 
 (* declare all of our libraries *)
-ocaml_lib ~dir:"dyp/dyplib"       "dyp/dyplib/dyplib";;
-ocaml_lib ~dir:"ocs"              "ocs/ocslib";;
-ocaml_lib ~dir:"sex"              "sex/sexlib";;
-ocaml_lib ~dir:"cil"              "cil/cillib";;
-ocaml_lib ~dir:"misclib"          "misclib/misclib";;
-ocaml_lib ~dir:"flx_version"      "flx_version/flx_version";;
-ocaml_lib ~dir:"flx_version_hook" "flx_version_hook/flx_version_hook";;
-ocaml_lib ~dir:"flxcclib"         "flxcclib/flxcclib";;
-ocaml_lib ~dir:"flxlib"           "flxlib/flxlib";;
+ocaml_lib ~dir:"src/compiler/dyp/dyplib"       "src/compiler/dyp/dyplib/dyplib";;
+ocaml_lib ~dir:"src/compiler/ocs"              "src/compiler/ocs/ocslib";;
+ocaml_lib ~dir:"src/compiler/sex"              "src/compiler/sex/sexlib";;
+ocaml_lib ~dir:"src/compiler/cil"              "src/compiler/cil/cillib";;
+ocaml_lib ~dir:"src/compiler/misclib"          "src/compiler/misclib/misclib";;
+ocaml_lib ~dir:"src/compiler/flx_version"      "src/compiler/flx_version/flx_version";;
+ocaml_lib ~dir:"src/compiler/flx_version_hook" "src/compiler/flx_version_hook/flx_version_hook";;
+ocaml_lib ~dir:"src/compiler/flxcclib"         "src/compiler/flxcclib/flxcclib";;
+ocaml_lib ~dir:"src/compiler/flxlib"           "src/compiler/flxlib/flxlib";;
 
 
 (* declare the extra tags *)
@@ -153,8 +159,8 @@ dispatch begin function
            * native. *)
           let dypgen, tags = 
             if Tags.mem "use_pgen" tags 
-            then "dyp/generators/pgen/pgen.native", tags++"pgen"
-            else "dyp/generators/dypgen/dypgen.native", tags++"dypgen"
+            then "src/compiler/dyp/generators/pgen/pgen.native", tags++"pgen"
+            else "src/compiler/dyp/generators/dypgen/dypgen.native", tags++"dypgen"
           in
 
           (* try to build the parser if it doesn't exist yet *)
