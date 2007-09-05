@@ -98,7 +98,7 @@ syn keyword felixStatement goto
 syn keyword felixStatement interface inf
 syn keyword felixStatement jump
 syn keyword felixStatement lambda loop
-syn keyword felixStatement module
+syn keyword felixStatement namespace module
 syn keyword felixStatement NaN
 syn keyword felixStatement obj of
 syn keyword felixStatement proc cproc
