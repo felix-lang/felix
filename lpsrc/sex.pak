@@ -29,6 +29,7 @@ tmpdir = ['sex']
 A simple lexer.
 @select(tangler("src/compiler/sex/sex_lex.mll"))
 {
+open Sex_token
 open Sex_parse
 let lexeme = Lexing.lexeme
 let substr = String.sub
@@ -111,6 +112,7 @@ type token =
  | INT of string
 
 @select(tangler("src/compiler/sex/sex_parse.dyp"))
+%mltop { open Sex_token }
 {
 open Sex_types
 }
