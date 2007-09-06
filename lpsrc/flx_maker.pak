@@ -291,12 +291,48 @@ class PLUGIN(Plugin):
 @select(tangler('misc/ldoc.flx'))
 #import <flx.flxh>
 include "std";
-include "flx_gmp";
 include "judy";
 include "pthread";
-include "glob";
-include "flx_faio";
 include "flx_demux";
+include "flx_faio";
+include "flx_stream";
+include "tre";
+
+include "mmap";
+
+include "glob";
+include "flx_gmp";
+
+include "mpi/mpi";
+
+include "SDL/SDL_active";
+include "SDL/SDL_audio";
+include "SDL/SDL_cdrom";
+include "SDL/SDL_endian";
+include "SDL/SDL_error";
+include "SDL/SDL_events";
+include "SDL/SDL";
+include "SDL/SDL_framerate";
+include "SDL/SDL_gfxPrimitives";
+include "SDL/SDL_gfxPrimitives_font";
+include "SDL/SDL_imageFilter";
+include "SDL/SDL_image";
+include "SDL/SDL_joystick";
+include "SDL/SDL_keyboard";
+include "SDL/SDL_keysym";
+include "SDL/SDL_mixer";
+include "SDL/SDL_mouse";
+include "SDL/SDL_mutex";
+include "SDL/SDL_net";
+include "SDL/SDL_opengl";
+include "SDL/SDL_rotozoom";
+include "SDL/SDL_rwops";
+include "SDL/SDL_sound";
+include "SDL/SDL_timer";
+include "SDL/SDL_ttf";
+include "SDL/SDL_types";
+include "SDL/SDL_version";
+include "SDL/SDL_video";
 
 @select(tangler('mkplugins/copy_mli2ml.py'))
 class PLUGIN(Plugin):

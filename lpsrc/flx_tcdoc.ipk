@@ -159,13 +159,63 @@ let gen_mdoc () =
           )
         end
 
+      | `AST_const_decl (sr,name,vs,typ,code,reqs) ->
+        let seq = !counter in incr counter;
+        let id = "ref_"^string_of_int seq in
+        w (begin_div "element" ^
+          span "category" "const " ^ span "ident" name ^
+          Flx_print.print_vs vs ^
+          ": " ^ string_of_typecode typ 
+        );
+        w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
+        " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
+        " <DIV CLASS=implementation ID="^id^" style=\"display:none\">");
+        w (string_of_code_spec code ^ "\n");
+        w (string_of_raw_reqs reqs ^ "\n");
+        w "</DIV>";
+        w end_div;
+
+      | `AST_insert (_,name,vs,code, ikind, reqs) ->
+        let seq = !counter in incr counter;
+        let id = "ref_"^string_of_int seq in
+        w (begin_div "element" ^
+          span "category" (string_of_ikind ikind) ^ 
+          span "ident" name ^
+          Flx_print.print_vs vs
+        );
+        w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
+        " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
+        " <DIV CLASS=implementation ID="^id^" style=\"display:none\">");
+        w (string_of_code_spec code ^ "\n");
+        w (string_of_raw_reqs reqs ^ "\n");
+        w "</DIV>";
+        w end_div;
+
+      | `AST_abs_decl (_,name,vs, quals, code, reqs) -> 
+        let seq = !counter in incr counter;
+        let id = "ref_"^string_of_int seq in
+        w (begin_div "element" ^
+          (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
+          span "category" "type " ^ 
+          span "ident" name ^
+          print_vs vs
+        );
+        w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
+        " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
+        " <DIV CLASS=implementation ID="^id^" style=\"display:none\">");
+        w (string_of_code_spec code ^ "\n");
+        w (string_of_raw_reqs reqs ^ "\n");
+        w "</DIV>";
+        w end_div;
+
       | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec)  ->
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         begin match result with
         | `AST_void _ ->
           w (begin_div "element" ^ 
-            span "category" "proc " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
+            span "category" "proc " ^ span "ident" name ^ 
+            Flx_print.print_vs vs ^ ": " ^
             catmap "*" st args
           )
         | _ ->

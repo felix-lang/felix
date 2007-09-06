@@ -34,6 +34,8 @@ if HAVE_MPI:
   weaver_directory = 'doc/rtl/mpi/'
 
 @select(tangler("lib/mpi/mpi.flx"))
+#import <flx.flxh>
+
 //Module        : usr_lib_mpich_include_mpi_h
 //Timestamp     : 2006/8/29 15:42:8 UTC
 //Timestamp     : 2006/8/30 1:42:8 (local)
@@ -42,7 +44,6 @@ if HAVE_MPI:
 //Input file: mpi.flxcc.i
 //Flxcc Control : mpi.flxcc
 //Felix Version : 1.1.3_rc1
-include 'std';
 
 //#define PMPI_Init( a, b ) PMPI_Init_vcheck( a, b, MPICH_VERSION )
 //#define MPI_Init( a, b ) MPI_Init_vcheck( a, b, MPICH_VERSION )

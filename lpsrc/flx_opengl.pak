@@ -18,6 +18,8 @@ pkg_requires = ['glu']
 
 @h = tangler("lib/GL/gl_lib.flx")
 @select(h)
+#import <flx.flxh>
+
 //Module        : GL_gl_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)
@@ -26,7 +28,6 @@ pkg_requires = ['glu']
 //Input file: gl.flxcc.i
 //Flxcc Control : gl.flxcc
 //Felix Version : 1.1.2_rc1
-include 'std';
 
 //INCLUDES
 include "GL/glext_lib";
@@ -1592,6 +1593,8 @@ module GL_gl_h
 
 @h = tangler("lib/GL/glu_lib.flx")
 @select(h)
+#import <flx.flxh>
+
 //Module        : GL_glu_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)
@@ -1600,7 +1603,6 @@ module GL_gl_h
 //Input file: gl.flxcc.i
 //Flxcc Control : gl.flxcc
 //Felix Version : 1.1.2_rc1
-include 'std';
 
 //INCLUDES
 include "GL/gl_lib";
@@ -1857,6 +1859,8 @@ module GL_glu_h
 }
 @h = tangler("lib/GL/glut_lib.flx")
 @select(h)
+#import <flx.flxh>
+
 //Module        : GL_freeglut_std_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)
@@ -1865,7 +1869,7 @@ module GL_glu_h
 //Input file: gl.flxcc.i
 //Flxcc Control : gl.flxcc
 //Felix Version : 1.1.2_rc1
-include 'std';
+
 //INCLUDES
 include "GL/gl_lib";
 include "GL/glu_lib";
@@ -2220,6 +2224,8 @@ module GL_glut_h
 }
 @h = tangler("lib/GL/glext_lib.flx")
 @select(h)
+#import <flx.flxh>
+
 //Module        : GL_glext_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)
@@ -2228,7 +2234,6 @@ module GL_glut_h
 //Input file: gl.flxcc.i
 //Flxcc Control : gl.flxcc
 //Felix Version : 1.1.2_rc1
-include 'std';
 
 // This package seems to provide ALL the available
 // extensions. This is almost certainly WRONG,
