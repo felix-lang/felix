@@ -302,10 +302,11 @@ let rec cpp_type_classname syms t =
     )
 
 
-let cpp_typename syms t = 
+let rec cpp_typename syms t = 
   match unfold syms.dfns (lstrip syms.dfns t) with
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
   | `BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
+  | `BTYP_pointer t -> cpp_typename syms t ^ "*"
   (*
   | `BTYP_inst (i,ts) -> 
     begin match

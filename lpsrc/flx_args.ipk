@@ -13,6 +13,8 @@ val get_ps:
 
 val unpack:
   sym_state_t ->
+  fully_bound_symbol_table_t ->
+  int ->
   bparameter_t list ->
   tbexpr_t ->
   tbexpr_t list
@@ -65,7 +67,7 @@ let get_ps bbdfns f =
   | _,_,_,`BBDCL_procedure (_,_,(ps,_),_) -> ps
   | _ -> assert false
 
-let unpack syms ps a : tbexpr_t list = 
+let unpack syms bbdfns f ps a : tbexpr_t list = 
   match ps with
   | [] -> []   (* arg should be unit *)
   | [_] -> [a] (* one param, one arg *)
@@ -91,20 +93,23 @@ let unpack syms ps a : tbexpr_t list =
     map (fun i -> `BEXPR_get_n (i,a),t) (nlist k)
 
   | x,t -> 
-    print_endline ("Unexpected non tuple type " ^ sbt syms.dfns t);
-    assert false (* argument isn't a tuple type! *)
+    print_endline ("Function " ^ si f);
+    print_endline ("Unexpected non tuple arg type " ^ sbt syms.dfns t);
+    print_endline ("Parameters = " ^ catmap ", " (fun {pid=s;pindex=i} -> s ^ "<" ^ si i ^ ">") ps);
+    print_endline ("Argument " ^ sbe syms.dfns bbdfns a);
+    assert false (* argument isn't a tuple type .. but there are multiple parameters!  *)
 
 let merge_args syms bbdfns f c a b =
   let psf = get_ps bbdfns f in
   let psc = get_ps bbdfns c in
-  let args = unpack syms psf a @ unpack syms psc b in
+  let args = unpack syms bbdfns f psf a @ unpack syms bbdfns c psc b in
   match args with
   | [x] -> x
   | _ -> `BEXPR_tuple args,`BTYP_tuple (map snd args)
 
 let append_args syms bbdfns f a b =
   let psf = get_ps bbdfns f in
-  let args = unpack syms psf a @ b in
+  let args = unpack syms bbdfns f psf a @ b in
   match args with
   | [x] -> x
   | _ -> `BEXPR_tuple args,`BTYP_tuple (map snd args)

@@ -60,9 +60,16 @@ let add_child childmap parent child =
   let kids = find_children childmap parent in
   Hashtbl.replace childmap parent (child::kids)
 
+(* failure to find a parent shouldn't happen, 
+  except perhaps for typeclass methods,
+  but it seems to and appear harmless ..??
+*)
 let is_ancestor bbdfns child anc =
   let rec is_anc child anc =
+    (*
     let _,parent,_,_ = hfind ("is_ancestor " ^ si child) bbdfns child in
+    *)
+    let _,parent,_,_ = Hashtbl.find bbdfns child in
     match parent with
     | None -> false
     | Some x -> 
@@ -72,7 +79,9 @@ let is_ancestor bbdfns child anc =
   try 
     is_anc child anc 
     with Not_found -> 
+      (*
       print_endline ("Can't find some ancestor of " ^ si child ^ " ..instance typeclass?");
+      *)
       false
     
 let remove_child childmap parent child =

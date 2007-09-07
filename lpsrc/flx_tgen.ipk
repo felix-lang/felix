@@ -423,7 +423,7 @@ let gen_type syms bbdfns (index,typ) =
   | `BTYP_tuple [] -> "" 
   | `BTYP_tuple ts -> 
      descr ^
-     gen_tuple (cn typ) tn ts
+     gen_tuple (tn typ) tn ts
 
   | `BTYP_record ts -> 
      descr ^
