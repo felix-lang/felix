@@ -6,8 +6,9 @@ open Flx_types
 open Flx_mtypes1
 open Flx_mtypes2
 
-val mkprocs:
+val mkproc_gen:
   sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   int
  
@@ -43,7 +44,30 @@ let ident x = x
 
 let intset_of_list ls = 
   fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
-  
+
+(* THIS CODE JUST COUNTS APPLICATIONS *)
+let find_mkproc_expr mkproc_map e =
+  let aux e = match e with
+  | `BEXPR_apply 
+    (
+      (`BEXPR_closure (f,ts),_),
+      a
+    )
+    ,ret 
+    when Hashtbl.mem mkproc_map f ->
+    let p,n = Hashtbl.find mkproc_map f in
+    Hashtbl.replace mkproc_map f (p,n+1)
+
+  | x -> ()
+  in 
+  iter_tbexpr ignore aux ignore e
+
+let find_mkproc_exe mkproc_map exe =
+  iter_bexe ignore (find_mkproc_expr mkproc_map) ignore ignore ignore exe
+
+let find_mkproc_exes mkproc_map exes =
+  iter (find_mkproc_exe mkproc_map) exes
+
 (* THIS CODE REPLACES APPLICATIONS WITH CALLS *)
 let mkproc_expr syms bbdfns sr this mkproc_map vs e =
   let exes = ref [] in
@@ -107,23 +131,114 @@ let mkproc_exe syms bbdfns sr this mkproc_map vs exe =
 let mkproc_exes syms bbdfns sr this mkproc_map vs exes = 
   List.concat (map (mkproc_exe syms bbdfns sr this mkproc_map vs) exes)
 
-let mkprocs syms bbdfns =
+let mkproc_gen syms (child_map,bbdfns) =
 
   let nuprocs = ref 0 in
   let mkproc_map = Hashtbl.create 97 in
 
+  (* make the funproc map *)
+  Hashtbl.iter
+  (fun i (id,parent,sr,bbdcl) -> match bbdcl with
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    let k = !(syms.counter) in incr (syms.counter);
+    Hashtbl.add mkproc_map i (k,0);
+    if syms.compiler_options.print_flag then
+    print_endline ("Detected function to make into a proc? " ^ id ^ "<" ^ si i ^"> synth= " ^ si k)
+
+  | _ -> ()
+  )
+  bbdfns
+  ;
+
+  (* count direct applications of these functions *)
+  Hashtbl.iter
+  (fun i (id,parent,sr,bbdcl) -> match bbdcl with
+  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+    find_mkproc_exes mkproc_map exes
+
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    find_mkproc_exes mkproc_map exes
+  | _ -> ()
+  )
+  bbdfns
+  ;
+
+  if syms.compiler_options.print_flag then
+  Hashtbl.iter
+  (fun i (k,n) ->
+     print_endline ("MAYBE MAKE PROC: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
+  )
+  mkproc_map
+  ;
+
+  (* make a list of the ones actually applied directly *)
+  let to_mkproc = ref [] in
+  Hashtbl.iter 
+  (fun i (_,n) -> 
+    if n > 0 then to_mkproc := i :: !to_mkproc
+  ) 
+  mkproc_map
+  ;
+
+  (* remove any function which is an ancestor of any other:
+     keep the children (arbitrary choice)
+  *)
+  let isnot_asc adult = 
+    fold_left 
+    (fun acc child -> acc && not (Flx_child.is_ancestor bbdfns child adult))
+    true !to_mkproc
+  in
+
+  let to_mkproc = filter isnot_asc (!to_mkproc) in
+
+  let nu_mkproc_map = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun i j -> 
+    if mem i to_mkproc 
+    then begin 
+      Hashtbl.add nu_mkproc_map i j
+      (*
+      ; 
+      print_endline ("Keeping " ^ si i)
+      *)
+    end else begin
+      (*
+      print_endline ("Discarding (ancestor) " ^ si i)
+      *)
+    end
+  )
+  mkproc_map;
+
+  let mkproc_map = nu_mkproc_map in
+
+  if syms.compiler_options.print_flag then
+  Hashtbl.iter
+  (fun i (k,n) ->
+     print_endline ("ACTUALLY UNCURRY: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
+  )
+  mkproc_map
+  ;
+
+
   (* replace applications *)
+  (* DISABLE MODIFICATIONS DURING INITIAL DEPLOYMENT *)
   Hashtbl.iter
   (fun i (id, parent, sr, bbdcl) -> match bbdcl with
   | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = mkproc_exes syms bbdfns sr i mkproc_map vs exes in
+    ()
+    (*
     Hashtbl.replace bbdfns i
       (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
+    *)
 
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = mkproc_exes syms bbdfns sr i mkproc_map vs exes in
+    ()
+    (*
     Hashtbl.replace bbdfns i 
       (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
+    *)
 
   | _ -> ()
   )

@@ -3271,6 +3271,18 @@ try
   end
   else bbdfns
   in
+
+  let bbdfns = ref bbdfns in
+  let child_map = ref child_map in
+  let counter = ref 0 in
+  while Flx_mkproc.mkproc_gen syms (!child_map,!bbdfns) > 0 do  
+    incr counter;
+    if !counter > 10 then failwith "mkproc exceeded 10 passes";
+    bbdfns := Flx_use.copy_used syms !bbdfns;
+    child_map := Flx_child.cal_children syms !bbdfns;
+  done;
+  let bbdfns = !bbdfns and child_map = !child_map in
+
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = Flx_child.cal_children syms bbdfns in
 
