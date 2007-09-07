@@ -3272,6 +3272,7 @@ try
   else bbdfns
   in
 
+  (*
   let bbdfns = ref bbdfns in
   let child_map = ref child_map in
   let counter = ref 0 in
@@ -3282,6 +3283,7 @@ try
     child_map := Flx_child.cal_children syms !bbdfns;
   done;
   let bbdfns = !bbdfns and child_map = !child_map in
+  *)
 
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = Flx_child.cal_children syms bbdfns in

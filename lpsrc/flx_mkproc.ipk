@@ -163,7 +163,9 @@ let mkproc_gen syms (child_map,bbdfns) =
   bbdfns
   ;
 
+  (*
   if syms.compiler_options.print_flag then
+  *)
   Hashtbl.iter
   (fun i (k,n) ->
      print_endline ("MAYBE MAKE PROC: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
@@ -211,7 +213,9 @@ let mkproc_gen syms (child_map,bbdfns) =
 
   let mkproc_map = nu_mkproc_map in
 
+  (*
   if syms.compiler_options.print_flag then
+  *)
   Hashtbl.iter
   (fun i (k,n) ->
      print_endline ("ACTUALLY UNCURRY: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
