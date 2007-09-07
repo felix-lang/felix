@@ -81,7 +81,9 @@ FLX_MODULES = [
   'src/compiler/flxlib/flx_passign', 
   'src/compiler/flxlib/flx_tailit', 
   'src/compiler/flxlib/flx_reparent', 
+  'src/compiler/flxlib/flx_args', 
   'src/compiler/flxlib/flx_uncurry', 
+  'src/compiler/flxlib/flx_mkproc', 
   'src/compiler/flxlib/flx_spexes', 
   'src/compiler/flxlib/flx_reduce',
   'src/compiler/flxlib/flx_foldvars', 
@@ -375,7 +377,9 @@ Flx_version.version_data := version_data
 @include_file ('flx_strabs.ipk')
 @include_file ('flx_typeclass.ipk')
 @include_file ('flx_axiom.ipk')
+@include_file ('flx_args.ipk')
 @include_file ('flx_uncurry.ipk')
+@include_file ('flx_mkproc.ipk')
 @include_file ('flx_label.ipk')
 @include_file ('flx_cflow.ipk')
 @include_file ('flx_call.ipk')

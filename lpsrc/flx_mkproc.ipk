@@ -1,0 +1,133 @@
+@head(1,"mkproc")
+@h = tangler("src/compiler/flxlib/flx_mkproc.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+
+val mkprocs:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  int
+ 
+@h = tangler("src/compiler/flxlib/flx_mkproc.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_maps
+open Flx_exceptions
+open Flx_use
+open Flx_child
+open Flx_reparent
+open Flx_spexes
+open Flx_args
+
+let hfind msg h k = 
+  try Hashtbl.find h k
+  with Not_found ->
+    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    raise Not_found
+
+module BidSet = IntSet
+
+let ident x = x
+
+let intset_of_list ls = 
+  fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
+  
+(* THIS CODE REPLACES APPLICATIONS WITH CALLS *)
+let mkproc_expr syms bbdfns sr this mkproc_map vs e =
+  let exes = ref [] in
+  let rec aux e = match map_tbexpr ident aux ident e with
+  | `BEXPR_apply 
+    (
+      (`BEXPR_closure (f,ts),_),
+      a
+    )
+    ,ret 
+    when Hashtbl.mem mkproc_map f ->
+
+    let e = 
+      (* count replacements *)
+      let p,n = Hashtbl.find mkproc_map f in
+      Hashtbl.replace mkproc_map f (p,n+1);
+
+      (* create a new variable *)
+      let k = !(syms.counter) in incr (syms.counter);
+      let vid = "_mkp_" ^ si k in
+      let vardecl = `BBDCL_var (vs,ret) in
+      Hashtbl.add bbdfns k (vid,Some this,sr,vardecl);
+
+      (* append a pointer to this variable to the argument *)
+      let ptr = `BEXPR_ref (k,ts),`BTYP_pointer ret in
+      let (_,at') as a' = append_args syms bbdfns this a [ptr] in
+
+      (* create a call instruction to the mapped procedure *)
+      let call : bexe_t = 
+        `BEXE_call (sr,
+          (`BEXPR_closure (p,ts),`BTYP_function (at',`BTYP_void)),
+          a'
+        )
+      in
+
+      (* record the procedure call *)
+      exes := call :: !exes;
+
+      (* replace the original expression with the variable *)
+      `BEXPR_name (k,ts),ret
+    in e
+  | x -> x
+  in 
+  let e = aux e in
+  e,rev !exes
+
+let mkproc_exe syms bbdfns sr this mkproc_map vs exe =
+  print_endline ("Unravelling exe=" ^ string_of_bexe syms.dfns bbdfns 0 exe);
+  let exes = ref [] in
+  let tocall e =
+    let e,xs = mkproc_expr syms bbdfns sr this mkproc_map vs e in
+    exes := xs @ !exes;
+    e
+  in
+  let exe = map_bexe ident tocall ident ident ident exe in
+  let exes = !exes @ [exe] in
+  print_endline ("Unravelled exes =");
+  iter (fun exe -> print_endline (string_of_bexe syms.dfns bbdfns 2 exe)) exes;
+  exes
+
+let mkproc_exes syms bbdfns sr this mkproc_map vs exes = 
+  List.concat (map (mkproc_exe syms bbdfns sr this mkproc_map vs) exes)
+
+let mkprocs syms bbdfns =
+
+  let nuprocs = ref 0 in
+  let mkproc_map = Hashtbl.create 97 in
+
+  (* replace applications *)
+  Hashtbl.iter
+  (fun i (id, parent, sr, bbdcl) -> match bbdcl with
+  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+    let exes = mkproc_exes syms bbdfns sr i mkproc_map vs exes in
+    Hashtbl.replace bbdfns i
+      (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
+
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    let exes = mkproc_exes syms bbdfns sr i mkproc_map vs exes in
+    Hashtbl.replace bbdfns i 
+      (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
+
+  | _ -> ()
+  )
+  bbdfns
+  ;
+  !nuprocs
+

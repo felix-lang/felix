@@ -35,6 +35,7 @@ open Flx_child
 open Flx_reparent
 open Flx_spexes
 open Flx_foldvars
+open Flx_args
 
 
 let hfind msg h k = 
@@ -96,49 +97,6 @@ let find_uncurry_exe syms bbdfns uncurry_map vs exe =
 
 let find_uncurry_exes syms bbdfns uncurry_map vs exes = 
   iter (find_uncurry_exe syms bbdfns uncurry_map vs) exes
-
-let get_ps bbdfns f = 
-  match hfind "get_ps" bbdfns f with
-  | _,_,_,`BBDCL_function (_,_,(ps,_),_,_) 
-  | _,_,_,`BBDCL_procedure (_,_,(ps,_),_) -> ps
-  | _ -> assert false
-
-let unpack syms ps a : tbexpr_t list = 
-  match ps with
-  | [] -> []   (* arg should be unit *)
-  | [_] -> [a] (* one param, one arg *)
-  | _ ->       (* multiple params *)
-  match a with
-  | `BEXPR_tuple ls,`BTYP_tuple ts ->
-    assert (length ts = length ps);
-    assert (length ls = length ts);
-    ls
-
-  | `BEXPR_tuple ls,`BTYP_array (t,`BTYP_unitsum k) ->
-    assert (k = length ps);
-    assert (length ls = k);
-    ls
-
-  | x,`BTYP_tuple ts ->
-    assert (length ts = length ps);
-    let xs = map (fun i -> `BEXPR_get_n (i,a)) (nlist (length ts)) in
-    combine xs ts
-
-  | x,`BTYP_array (t,`BTYP_unitsum k) ->
-    assert (k = length ps);
-    map (fun i -> `BEXPR_get_n (i,a),t) (nlist k)
-
-  | x,t -> 
-    print_endline ("Unexpected non tuple type " ^ sbt syms.dfns t);
-    assert false (* argument isn't a tuple type! *)
-
-let merge_args syms bbdfns f c a b =
-  let psf = get_ps bbdfns f in
-  let psc = get_ps bbdfns c in
-  let args = unpack syms psf a @ unpack syms psc b in
-  match args with
-  | [x] -> x
-  | _ -> `BEXPR_tuple args,`BTYP_tuple (map snd args)
 
 let uncurry_expr syms bbdfns uncurry_map vs e = 
   let rec aux e = match map_tbexpr id aux id e with
