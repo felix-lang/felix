@@ -105,6 +105,22 @@ let functions_find_xclosures syms cls bbdfns ii =
   (function_find_xclosure syms cls bbdfns)
   ii
 
+let rec check_ahead i n ls res : (int * int * btypecode_t) list = 
+  if n = 0 then rev res else match ls with 
+  | [] -> []
+  | h :: t ->  match h with
+  | `BEXE_init (_,k, ( `BEXPR_get_n (p,(`BEXPR_name (j,[]),_)),typ)) 
+
+  | `BEXE_assign (_,(`BEXPR_name (k,[]),_), ( `BEXPR_get_n (p,(`BEXPR_name (j,[]),_)),typ)) 
+    when i = j -> check_ahead i (n-1) t ((k,p,typ)::res)
+
+  | _ -> []
+  
+let rec drop n ls = 
+  if n = 0 then ls else match ls with
+  | h :: t -> drop (n-1) t
+  | [] -> assert false
+
 let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list = 
   (*
   print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
@@ -197,7 +213,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
           ps ls
         in
         let tmps,exes = Flx_passign.passign syms bbdfns pinits ts' sr in
-        parameters := tmps;
+        parameters := tmps @ !parameters;
         let result = ref exes in
         result :=  `BEXE_goto (sr,start_label) :: !result;
         (*
@@ -293,6 +309,71 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
     aux tail (x::res)
     
   | [] -> rev res (* forward order *)
+  | `BEXE_init (sr,i,(`BEXPR_tuple ls,t)) as h :: tail ->
+    if syms.compiler_options.print_flag then begin
+      print_endline ("flx_tailit found possible parallel assignment opportunity in:");
+      print_endline (string_of_bexe syms.dfns bbdfns 0 h);
+    end;
+    let n = length ls in
+    let pas = check_ahead i n tail [] in
+    if syms.compiler_options.print_flag then begin
+      print_endline (if length pas = n then "CAN OPTIMISE!" else "Cannot optimise");
+    end;
+
+    if length pas = n then begin
+      if syms.compiler_options.print_flag then begin
+        let rec p n ls = if n > 0 then match ls with
+        | h :: t -> 
+           print_endline (string_of_bexe syms.dfns bbdfns 0 h);
+           p (n-1) t
+        | [] -> assert false
+        in 
+        p n tail;
+        print_endline "Assigns are:";
+        let rec pr xs = match xs with
+        | (k,p,t) :: tl -> 
+           print_endline (
+             "var " ^ si k ^ " : " ^sbt syms.dfns t^
+             " = var " ^ si i^ ".(" ^ si p ^") = " ^ 
+             sbe syms.dfns bbdfns (nth ls p)
+           );
+           pr tl
+        | [] -> ()
+        in 
+        pr pas;
+      end;
+
+      (* vset is the restriction set applied to the usage closure to
+        restrict attention to the LHS variables
+      *)
+      let vset = fold_left (fun acc (k,_,_) ->IntSet.add k acc) IntSet.empty pas in
+      let asgns = map 
+        (fun (k,p,t) -> 
+          let name = "DUNNO_" ^ si k in
+          let e = nth ls p in
+          let d = expr_uses syms descend uses vset e in
+          k, (name,t,e,d)
+        ) 
+        pas 
+      in
+        let tmps,exes = Flx_passign.passign syms bbdfns asgns ts' sr in
+        parameters := tmps @ !parameters;
+        if syms.compiler_options.print_flag then begin
+          print_endline "CALCULATED ACTUAL PARALLEL ASSIGNMENTS!";
+          iter (fun x -> 
+            print_endline (string_of_bexe syms.dfns bbdfns 0 x)
+          )
+          (rev exes)
+          ;
+        end;
+        (* NOTE: we have to KEEP the tuple variable in case
+          it is used elsewhere .. it should get dropped by later
+          garbage collection if it isn't used!
+        *)
+        aux (drop n tail) (exes @ h :: res)
+    end
+    else aux tail (h::res)
+
   | h :: t  -> aux t (h::res)
   in 
     let exes = aux exes [] in
