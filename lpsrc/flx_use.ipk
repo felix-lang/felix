@@ -122,11 +122,21 @@ and uses_exe syms used bbdfns count_inits (exe:bexe_t) =
   (*
   print_endline ("EXE=" ^ string_of_bexe syms.dfns 0 exe);
   *)
+  (* check is a term is a tuple projection of a variable *)
+  let rec is_proj e = match e with
+    | `BEXPR_name _,_ -> true
+    | `BEXPR_get_n (_,e),_ -> is_proj e
+    | _ -> false
+  in
   let ue e = uses_tbexpr syms used bbdfns count_inits e in
   let ui i = uses syms used bbdfns count_inits i in
   let ut t = uses_type syms used bbdfns count_inits t in
   match exe,count_inits with
   | `BEXE_init (_,i,e),false -> ue e
+  | `BEXE_assign (_,lhs,rhs),_ ->
+     if count_inits or not (is_proj lhs) 
+     then ue lhs;
+     ue rhs
   | _ -> 
     iter_bexe ui ue ut nop nop exe
 

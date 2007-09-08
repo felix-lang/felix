@@ -309,24 +309,25 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
     aux tail (x::res)
     
   | [] -> rev res (* forward order *)
-  | `BEXE_init (sr,i,(`BEXPR_tuple ls,t)) as h :: tail ->
-    if syms.compiler_options.print_flag then begin
+  | `BEXE_init (sr,i,(`BEXPR_tuple ls,t)) as h :: tail 
+  | (`BEXE_assign (sr,(`BEXPR_name (i,[]),_),(`BEXPR_tuple ls,t)) as h) :: tail 
+    ->
+    if syms.compiler_options.print_flag then 
+    begin
       print_endline ("flx_tailit found possible parallel assignment opportunity in:");
       print_endline (string_of_bexe syms.dfns bbdfns 0 h);
     end;
+
     let n = length ls in
     let pas = check_ahead i n tail [] in
-    if syms.compiler_options.print_flag then begin
-      print_endline (if length pas = n then "CAN OPTIMISE!" else "Cannot optimise");
-    end;
-
     if length pas = n then begin
       if syms.compiler_options.print_flag then begin
+        print_endline "FULLY OPTIMISE";
         let rec p n ls = if n > 0 then match ls with
-        | h :: t -> 
-           print_endline (string_of_bexe syms.dfns bbdfns 0 h);
-           p (n-1) t
-        | [] -> assert false
+          | h :: t -> 
+             print_endline (string_of_bexe syms.dfns bbdfns 0 h);
+             p (n-1) t
+          | [] -> assert false
         in 
         p n tail;
         print_endline "Assigns are:";
@@ -372,7 +373,44 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         *)
         aux (drop n tail) (exes @ h :: res)
     end
-    else aux tail (h::res)
+    else 
+      let d = 
+        fold_left (fun acc e ->
+          let u = expr_uses syms descend uses (IntSet.singleton i) e in
+          IntSet.union acc u 
+        ) IntSet.empty ls
+      in
+      if d = IntSet.empty 
+      then begin
+        if syms.compiler_options.print_flag then 
+        begin
+          print_endline ("SEMI OPTIMISE!");
+        end;
+        let exes = 
+          map2 
+          (fun (e,t' as x) j -> 
+            `BEXE_assign 
+            (
+              sr,
+              (`BEXPR_get_n (j,(`BEXPR_name (i,[]),t)),t'), 
+              x
+            )
+          )
+          ls 
+          (nlist (length ls))
+        in 
+        (* the 'rev' here is not necessary, but it preserves the
+           order of writing by the user, i.e. from lowest index
+           to highest index
+        *)
+        aux tail (rev exes @ res)
+      end 
+      else begin 
+        assert (d = IntSet.singleton i);
+        if syms.compiler_options.print_flag then 
+          print_endline ("UNOPTIMISED");
+        aux tail (h::res)
+      end
 
   | h :: t  -> aux t (h::res)
   in 
