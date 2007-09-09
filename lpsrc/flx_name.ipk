@@ -111,6 +111,10 @@ let cid_of_flxid s =
     | x    -> Buffer.add_char id x
   done;
   let name = Buffer.contents id in
+  let name = match name with
+    | "errno" -> "__errno_"
+    | _ -> name
+  in
   try assoc name fixups with Not_found -> name
 
 (* basic name mangler *)
