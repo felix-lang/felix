@@ -2,6 +2,8 @@
 @execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/cil.py')
 @select(h)
+iscr_source = ['lpsrc/cil.pak']
+
 CIL_LEXS = [ 'src/compiler/cil/flx_cil_clexer', 'src/compiler/cil/flx_cil_formatlex', ]
 CIL_PARSES = [ 'src/compiler/cil/flx_cil_cparser', 'src/compiler/cil/flx_cil_formatparse', ]
 
