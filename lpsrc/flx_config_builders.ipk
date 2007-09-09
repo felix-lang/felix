@@ -968,6 +968,22 @@ int main(int argc, char** argv) {
 
 
   def detect_isnan(self, shell, get_stdout):
+    # find if we have C99 isnan in <math.h> 
+    try:
+      self.build_string_program(shell, r"""
+#include <math.h>
+
+int main(int argc,char** argv) { 
+  float f = 0.0;
+  isnan(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_math')
+      self.options.HAVE_C99_ISNAN_IN_MATH = 1
+      print "C99 isnan found in <math.h>"
+    except EnvironmentError:
+      self.options.HAVE_C99_ISNAN_IN_MATH = 0
+
     # find if we have BSD isnanf in <math.h> (NAUGHTY!)
     try:
       self.build_string_program(shell, r"""
@@ -979,10 +995,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_ISNAN_IN_CMATH = 1
+      self.options.HAVE_BSD_ISNAN_IN_MATH = 1
       print "Isnan found in <math.h>"
     except EnvironmentError:
-      self.options.HAVE_ISNAN_IN_CMATH = 0
+      self.options.HAVE_BSD_ISNAN_IN_MATH = 0
 
     # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
     try:
@@ -995,10 +1011,106 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_ieeefp')
-      self.options.HAVE_ISNAN_IN_IEEEFP = 1
+      self.options.HAVE_BSD_ISNAN_IN_IEEEFP = 1
       print "Isnan found in <ieeefp.h>"
     except EnvironmentError:
-      self.options.HAVE_ISNAN_IN_IEEEFP = 0
+      self.options.HAVE_BSD_ISNAN_IN_IEEEFP = 0
+
+    # find if we have C99 isinf in <math.h> 
+    try:
+      self.build_string_program(shell, r"""
+#include <math.h>
+
+int main(int argc,char** argv) { 
+  float f = 0.0;
+  isinf(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_math')
+      self.options.HAVE_C99_ISINF_IN_MATH = 1
+      print "C99 isnan found in <math.h>"
+    except EnvironmentError:
+      self.options.HAVE_C99_ISINF_IN_MATH = 0
+
+    # find if we have BSD isinff in <math.h> (NAUGHTY!)
+    try:
+      self.build_string_program(shell, r"""
+#include <math.h>
+
+int main(int argc,char** argv) { 
+  float f = 0.0;
+  isinff(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_math')
+      self.options.HAVE_BSD_ISINF_IN_MATH = 1
+      print "BSD isinf found in <math.h>"
+    except EnvironmentError:
+      self.options.HAVE_BSD_ISINF_IN_MATH = 0
+
+    # find if we have BSD isinff in <ieeefp.h> (NAUGHTY!)
+    try:
+      self.build_string_program(shell, r"""
+#include <ieeefp.h>
+
+int main(int argc,char** argv) { 
+  float f = 0.0;
+  isinff(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_ieeefp')
+      self.options.HAVE_BSD_ISINF_IN_IEEEFP = 1
+      print "BSD isinf found in <ieeefp.h>"
+    except EnvironmentError:
+      self.options.HAVE_BSD_ISINF_IN_IEEEFP = 0
+
+    # find if we have C99 isfinite in <math.h> 
+    try:
+      self.build_string_program(shell, r"""
+#include <math.h>
+
+int main(int argc,char** argv) { 
+  float f = 0.0;
+  isfinite(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_math')
+      self.options.HAVE_C99_ISFINITE_IN_MATH = 1
+      print "C99 isfinite found in <math.h>"
+    except EnvironmentError:
+      self.options.HAVE_C99_ISFINITE_IN_MATH = 0
+
+    # find if we have BSD finitef in <math.h> (NAUGHTY!)
+    try:
+      self.build_string_program(shell, r"""
+#include <math.h>
+
+int main(int argc,char** argv) { 
+  float f = 0.0;
+  finitef(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_math')
+      self.options.HAVE_BSD_FINITE_IN_MATH = 1
+      print "BSD finitef found in <math.h>"
+    except EnvironmentError:
+      self.options.HAVE_BSD_FINITE_IN_MATH = 0
+
+    # find if we have BSD isfinitef in <ieeefp.h> (NAUGHTY!)
+    try:
+      self.build_string_program(shell, r"""
+#include <ieeefp.h>
+
+int main(int argc,char** argv) { 
+  float f = 0.0;
+  finitef(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_ieeefp')
+      self.options.HAVE_BSD_FINITE_IN_IEEEFP = 1
+      print "BSD finitef found in <ieeefp.h>"
+    except EnvironmentError:
+      self.options.HAVE_BSD_FINITE_IN_IEEEFP = 0
 
 
   def detect_vsnprintf(self, shell, get_stdout):
@@ -1106,10 +1218,14 @@ class c_base(c_cxx_base):
   def report_isnan(self):
     opt = self.options
 
-    if opt.HAVE_ISNAN_IN_IEEEFP:
-      print "NaN Support in                          : <ieeefp.h>"
-    if not opt.HAVE_ISNAN_IN_IEEEFP:
-      print "NaN                                     : NOT SUPPORTED"
+    if opt.HAVE_C99_ISNAN_IN_MATH:
+      print "C99 NaN Support in                      : <math.h>"
+    elif opt.HAVE_BSD_ISNAN_IN_MATH:
+      print "BSD NaN Support in                      : <math.h>"
+    elif opt.HAVE_BSD_ISNAN_IN_IEEEFP:
+      print "BSD NaN Support in                      : <ieeefp.h>"
+    else:
+      print "NaN                                     : EMULATED"
 
 
 @h = tangler("flxbuild/cxx_base.py")
@@ -1147,7 +1263,7 @@ int main(int argc, char** argv) {
 
 
   def detect_cmath_isnan(self, shell):
-    self.options.HAVE_ISNAN_IN_CMATH = 0
+    self.options.HAVE_CXX_ISNAN_IN_CMATH = 0
     # find if we have BSD isnan in <cmath> (NAUGHTY!)
     try:
       self.build_string_program(shell, r"""
@@ -1159,12 +1275,28 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_cmath')
-      self.options.HAVE_ISNAN_IN_CMATH = 1
+      self.options.HAVE_CXX_ISNAN_IN_CMATH = 1
       print "Isnan found in <cmath>"
     except EnvironmentError:
-      self.options.HAVE_ISNAN_IN_CMATH = 0
+      self.options.HAVE_CXX_ISNAN_IN_CMATH = 0
   
+    self.options.HAVE_CXX_ISINF_IN_CMATH = 0
+    # find if we have BSD isinf in <cmath> (NAUGHTY!)
+    try:
+      self.build_string_program(shell, r"""
+#include <cmath>
 
+int main(int argc, char** argv) { 
+  float f = 0.0;
+  std::isinf(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_cmath')
+      self.options.HAVE_CXX_ISINF_IN_CMATH = 1
+      print "Isnan found in <cmath>"
+    except EnvironmentError:
+      self.options.HAVE_CXX_ISINF_IN_CMATH = 0
+ 
   def check_options(self, shell, get_stdout):
     c_cxx_base.check_options(self, shell, get_stdout)
 
@@ -1174,13 +1306,10 @@ int main(int argc, char** argv) {
   def report_isnan(self):
     opt = self.options
 
-    if opt.HAVE_ISNAN_IN_CMATH:
-      print "NaN Support in                          : <cmath>"
-    if opt.HAVE_ISNAN_IN_IEEEFP:
-      print "NaN Support in                          : <ieeefp.h>"
-    if not opt.HAVE_ISNAN_IN_IEEEFP and not opt.HAVE_ISNAN_IN_CMATH:
-      print "NaN                                     : NOT SUPPORTED"
-
+    if opt.HAVE_CXX_ISNAN_IN_CMATH:
+      print "C++ NaN Support in                          : <cmath>"
+    if opt.HAVE_CXX_ISINF_IN_CMATH:
+      print "C++ Inf Support in                          : <cmath>"
 
 @h = tangler("flxbuild/gnu_mixin.py")
 @select(h)
@@ -2147,8 +2276,6 @@ class msvc_mixin:
       print "NaN Support in                          : <cmath>"
     if opt.HAVE_ISNAN_IN_IEEEFP:
       print "NaN Support in                          : <ieeefp.h>"
-    if not opt.HAVE_ISNAN_IN_IEEEFP and not opt.HAVE_ISNAN_IN_CMATH:
-      print "NaN                                     : NOT SUPPORTED"
     print "**********************************************"
 
 
