@@ -1251,6 +1251,12 @@ val iter_b0type:
 val iter_btype:
   (btypecode_t -> unit) -> btypecode_t -> unit
   
+val flat_iter_tbexpr:
+  (bid_t -> unit) ->
+  (tbexpr_t -> unit) -> 
+  (btypecode_t -> unit) ->
+  tbexpr_t -> unit
+
 val iter_tbexpr:
   (bid_t -> unit) ->
   (tbexpr_t -> unit) -> 
@@ -1679,9 +1685,11 @@ let iter_btype f = function
 
 (* type invariant mapping *)
 
-let rec iter_tbexpr fi fe ft ((x,t) as e) = 
-  fe e; ft t;
-  let fe e = iter_tbexpr fi fe ft e in
+(* this routine applies arguments HOFs to SUB components only, not
+   to the actual argument. It isn't recursive, so the argument HOF
+   can be.
+*)
+let flat_iter_tbexpr fi fe ft ((x,t) as e) = 
   match x with 
   | `BEXPR_parse (e,iis) -> fe e; iter fi iis
   | `BEXPR_deref e -> fe e
@@ -1715,6 +1723,15 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_expr (s,t1) -> ft t1
   | `BEXPR_range_check (e1,e2,e3) -> fe e1; fe e2; fe e3
   | `BEXPR_coerce (e,t) -> fe e; ft t
+
+(* this is a self-recursing version of the above routine: the argument
+   to this routine must NOT recursively apply itself!
+*)
+let rec iter_tbexpr fi fe ft ((x,t) as e) = 
+  fe e; ft t;
+  let fe e = iter_tbexpr fi fe ft e in
+  flat_iter_tbexpr fi fe ft e
+
 
 let map_tbexpr fi fe ft e = match e with 
   | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t

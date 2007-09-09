@@ -45,6 +45,13 @@ open Flx_use
 open Flx_child
 open Flx_call
 
+let hfind msg h k = 
+  try Hashtbl.find h k
+  with Not_found ->
+    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    raise Not_found
+
+
 let isvariable bbdfns i = 
   let id,_,_,entry = Hashtbl.find bbdfns i in match entry with 
   | `BBDCL_var _ | `BBDCL_val _ -> 
@@ -120,6 +127,52 @@ let rec drop n ls =
   if n = 0 then ls else match ls with
   | h :: t -> drop (n-1) t
   | [] -> assert false
+
+
+(* This routine checks the only use of i is to get its n'th projection *)
+exception BadUse
+let rec check_proj_wrap_expr n i e = match e with
+  | `BEXPR_name (i',_),_ when i = i' -> raise BadUse
+  | `BEXPR_get_n (n', (`BEXPR_name (i',_),_)),_
+     when i = i' && n = n' ->  ()
+
+  | x -> flat_iter_tbexpr ignore (check_proj_wrap_expr n i) ignore x
+
+let check_proj_wrap_exe syms bbdfns n i x = 
+  try
+    iter_bexe ignore (check_proj_wrap_expr n i) ignore ignore ignore x
+  with BadUse ->
+    (*
+    print_endline ("Bad use of " ^ si i ^ ".(" ^ si n ^") in " ^
+      string_of_bexe syms.dfns bbdfns 0 x
+    );
+    *)
+    raise BadUse
+
+let check_proj_wrap_exes syms bbdfns n i xs =
+  iter (check_proj_wrap_exe syms bbdfns n i) xs
+
+let check_proj_wrap_entry syms bbdfns n i k =
+  let id,_,_,entry = hfind "check_proj_wrap_entry" bbdfns k in
+  match entry with
+  | `BBDCL_function (_,_,_,_,exes)
+  | `BBDCL_procedure (_,_,_,exes) -> 
+    (*
+    print_endline ("Check use  of " ^ si i ^ ".(" ^ si n ^") in " ^ id);
+    *)
+    check_proj_wrap_exes syms bbdfns n i exes
+  | _ -> ()
+
+let check_proj_wrap_closure syms bbdfns descend usage n i e = 
+  (*
+  print_endline ("Check use  of " ^ si i ^ ".(" ^ si n ^") in expr=" ^ sbe syms.dfns bbdfns e);
+  *)
+  check_proj_wrap_expr n i e;
+  (*
+  print_endline "Now, check in dependents";
+  *)
+  let u = expr_uses_unrestricted syms descend usage e in
+  IntSet.iter (check_proj_wrap_entry syms bbdfns n i) u
 
 let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list = 
   (*
@@ -318,11 +371,25 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       print_endline (string_of_bexe syms.dfns bbdfns 0 h);
     end;
 
+    (* the descendants of the variables parents! *)
+    let parent = 
+      match hfind "parallel assign" bbdfns i with 
+      | _,parent,_,_ -> parent 
+    in
+    let descend = match parent with
+      | Some parent -> descendants child_map parent
+      | None -> 
+        let d = ref IntSet.empty in 
+        Hashtbl.iter (fun i _ -> d := IntSet.add i !d) child_map;
+        !d
+    in
+
     let n = length ls in
     let pas = check_ahead i n tail [] in
     if length pas = n then begin
+      if syms.compiler_options.print_flag then
+      print_endline "FULLY OPTIMISE";
       if syms.compiler_options.print_flag then begin
-        print_endline "FULLY OPTIMISE";
         let rec p n ls = if n > 0 then match ls with
           | h :: t -> 
              print_endline (string_of_bexe syms.dfns bbdfns 0 h);
@@ -373,7 +440,8 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         *)
         aux (drop n tail) (exes @ h :: res)
     end
-    else 
+    else begin 
+      (*
       let d = 
         fold_left (fun acc e ->
           let u = expr_uses syms descend uses (IntSet.singleton i) e in
@@ -381,7 +449,21 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         ) IntSet.empty ls
       in
       if d = IntSet.empty 
-      then begin
+      *)
+      let can_opt = 
+        try
+          let counter = ref 0 in
+          iter (fun e ->
+            let n = !counter in incr counter;
+            check_proj_wrap_closure syms bbdfns descend uses n i e
+          )
+          ls;
+          true
+        with 
+          BadUse -> false
+      in
+      if can_opt then 
+      begin
         if syms.compiler_options.print_flag then 
         begin
           print_endline ("SEMI OPTIMISE!");
@@ -406,11 +488,14 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         aux tail (rev exes @ res)
       end 
       else begin 
+        (*
         assert (d = IntSet.singleton i);
+        *)
         if syms.compiler_options.print_flag then 
           print_endline ("UNOPTIMISED");
         aux tail (h::res)
       end
+    end
 
   | h :: t  -> aux t (h::res)
   in 

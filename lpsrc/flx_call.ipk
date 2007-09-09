@@ -48,6 +48,13 @@ val expr_uses:
  tbexpr_t ->
  IntSet.t
 
+val expr_uses_unrestricted:
+ sym_state_t ->
+ IntSet.t ->
+ usage_table_t ->
+ tbexpr_t ->
+ IntSet.t
+
 @h = tangler("src/compiler/flxlib/flx_call.ml")
 @select(h)
 open Flx_ast
@@ -354,7 +361,7 @@ let print_call_report syms bbdfns f =
   let usage = call_data syms bbdfns in
   print_call_report' syms bbdfns usage f
 
-let expr_uses syms descend usage restrict e = 
+let expr_uses_unrestricted syms descend usage e = 
   let u = ref IntSet.empty in
   let add u i = u := IntSet.add i !u in
   iter_tbexpr (add u) ignore ignore e;
@@ -383,12 +390,11 @@ let expr_uses syms descend usage restrict e =
     ))
     !u
     !u
-  in let u = IntSet.inter restrict u in
-  (*
-  print_string ("Restricted usage of expr " ^ sbe syms.dfns e ^ ": ");
-  IntSet.iter (fun i -> print_string (si i^" ")) u;
-  print_endline "";
-  *)
+  in 
   u
+
+let expr_uses syms descend usage restrict e = 
+  let u = expr_uses_unrestricted syms descend usage e in
+  IntSet.inter restrict u 
 
  
