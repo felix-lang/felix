@@ -1263,7 +1263,6 @@ int main(int argc, char** argv) {
 
 
   def detect_cmath_isnan(self, shell):
-    self.options.HAVE_CXX_ISNAN_IN_CMATH = 0
     # find if we have BSD isnan in <cmath> (NAUGHTY!)
     try:
       self.build_string_program(shell, r"""
@@ -1276,11 +1275,10 @@ int main(int argc, char** argv) {
 }
 """, 'tmp' + os.sep + 'nan_cmath')
       self.options.HAVE_CXX_ISNAN_IN_CMATH = 1
-      print "Isnan found in <cmath>"
+      print "C++ isnan found in <cmath>"
     except EnvironmentError:
       self.options.HAVE_CXX_ISNAN_IN_CMATH = 0
   
-    self.options.HAVE_CXX_ISINF_IN_CMATH = 0
     # find if we have BSD isinf in <cmath> (NAUGHTY!)
     try:
       self.build_string_program(shell, r"""
@@ -1293,10 +1291,28 @@ int main(int argc, char** argv) {
 }
 """, 'tmp' + os.sep + 'nan_cmath')
       self.options.HAVE_CXX_ISINF_IN_CMATH = 1
-      print "Isnan found in <cmath>"
+      print "C++ isinf found in <cmath>"
     except EnvironmentError:
       self.options.HAVE_CXX_ISINF_IN_CMATH = 0
+
+    # find if we have BSD isinf in <cmath> (NAUGHTY!)
+    try:
+      self.build_string_program(shell, r"""
+#include <cmath>
+
+int main(int argc, char** argv) { 
+  float f = 0.0;
+  std::isfinite(f);
+  return 0;
+}
+""", 'tmp' + os.sep + 'nan_cmath')
+      self.options.HAVE_CXX_ISFINITE_IN_CMATH = 1
+      print "C++ isfinite found in <cmath>"
+    except EnvironmentError:
+      self.options.HAVE_CXX_ISFINITE_IN_CMATH = 0
  
+
+
   def check_options(self, shell, get_stdout):
     c_cxx_base.check_options(self, shell, get_stdout)
 

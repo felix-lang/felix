@@ -312,7 +312,7 @@ typeclass Show [T] {
 
 @def gen_nan(t):
   if HAVE_CXX_ISNAN_IN_CMATH:
-    tangle('  fun isnan: '+t+' -> bool = "syd::isnan($1)" is postfix requires cmath;')
+    tangle('  fun isnan: '+t+' -> bool = "std::isnan($1)" is postfix requires cmath;')
   elif HAVE_C99_ISNAN_IN_MATH:
     tangle('  fun isnan: '+t+' -> bool = "isnan($1)" is postfix requires math_h;')
   elif HAVE_BSD_ISNAN_IN_MATH:
@@ -333,8 +333,8 @@ typeclass Show [T] {
   else:
     tangle('  fun isinf: '+t+' -> bool = "($1==$1 && $1+$1+1.0==$1)" is unary;')
 
-  if HAVE_CXX_ISINF_IN_CMATH:
-    tangle('  fun isinf: '+t+' -> bool = "std::isfinite($1)" is postfix requires cmath;')
+  if HAVE_CXX_ISFINITE_IN_CMATH:
+    tangle('  fun isfinite: '+t+' -> bool = "std::isfinite($1)" is postfix requires cmath;')
   elif HAVE_C99_ISFINITE_IN_MATH:
     tangle('  fun isfinite: '+t+' -> bool = "isfinite($1)" is postfix requires math_h;')
   elif HAVE_BSD_FINITE_IN_MATH:
@@ -667,8 +667,41 @@ instance Str[utiny] {
   fun str: utiny -> string = "flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;
 }
 
-instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong||float||double||ldouble] Str[T] {
+instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong] Str[T] {
   fun str: T -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+}
+
+instance Str[float] {
+  fun xstr: float -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str(x:float):string =>
+    if Float::isnan x then "nan"
+    elif Float::isinf x then 
+      if x > 0.0f then "+inf" else "-inf" endif
+    else xstr x
+    endif
+  ;
+}
+
+instance Str[double] {
+  fun xstr: double -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str(x:double):string =>
+    if Double::isnan x then "nan"
+    elif Double::isinf x then 
+      if x > 0.0 then "+inf" else "-inf" endif
+    else xstr x
+    endif
+  ;
+}
+
+instance Str[ldouble] {
+  fun xstr: ldouble -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str(x:ldouble):string =>
+    if Ldouble::isnan x then "nan"
+    elif Ldouble::isinf x then 
+      if x > 0.0l then "+inf" else "-inf" endif
+    else xstr x
+    endif
+  ;
 }
 
 instance Repr[tiny]   { fun repr[with Str[tiny]]   (t:tiny)   : string => (str t) + "t";  }
