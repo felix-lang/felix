@@ -847,7 +847,7 @@ header '#include "flx_rtl_config.hpp"';
 
 header iostream = "#include <iostream>";
 header cmath = "#include <cmath>";
-header math_h = "#include "<math.h>";
+header math_h = "#include <math.h>";
 header ieeefp_h = """
 extern "C" {
 #include <ieeefp.h>
