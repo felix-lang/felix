@@ -1227,6 +1227,14 @@ class c_base(c_cxx_base):
     else:
       print "NaN                                     : EMULATED"
 
+    if opt.HAVE_C99_ISINF_IN_MATH:
+      print "C99 INF Support in                      : <math.h>"
+    elif opt.HAVE_BSD_ISINF_IN_MATH:
+      print "BSD INF Support in                      : <math.h>"
+    elif opt.HAVE_BSD_ISINF_IN_IEEEFP:
+      print "BSD INF Support in                      : <ieeefp.h>"
+    else:
+      print "INF                                     : EMULATED"
 
 @h = tangler("flxbuild/cxx_base.py")
 @select (h)
@@ -1323,9 +1331,16 @@ int main(int argc, char** argv) {
     opt = self.options
 
     if opt.HAVE_CXX_ISNAN_IN_CMATH:
-      print "C++ NaN Support in                          : <cmath>"
+      print "C++ isnan Support in                        : <cmath>"
+    else:
+      print "C++ isnan                                   : EMULATED"
+
     if opt.HAVE_CXX_ISINF_IN_CMATH:
-      print "C++ Inf Support in                          : <cmath>"
+      print "C++ isinf Support in                        : <cmath>"
+    elif opt.HAVE_CXX_ISFINITE_IN_CMATH:
+      print "C++ isfinite Support in                     : <cmath>"
+    else:
+      print "C++ isinf                                   : EMULATED"
 
 @h = tangler("flxbuild/gnu_mixin.py")
 @select(h)
@@ -2288,12 +2303,7 @@ class msvc_mixin:
       print "Dynamic Loading                         : NOT SUPPORTED"
 
     print
-    if opt.HAVE_ISNAN_IN_CMATH:
-      print "NaN Support in                          : <cmath>"
-    if opt.HAVE_ISNAN_IN_IEEEFP:
-      print "NaN Support in                          : <ieeefp.h>"
-    print "**********************************************"
-
+    self.report_isnan()
 
 @h = tangler("flxbuild/msvcc_class.py")
 @select(h)
