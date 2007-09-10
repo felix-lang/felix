@@ -1,76 +1,63 @@
-#!/bin/sh
-# RF: added above line to make configure script tab
-# completable as exe under cygwin/fat32 fs. chmod
-# does NOT work in this case.
-FLX_DIR=`dirname $0`
-export FLX_DIR
+#!/usr/bin/env python
+import os
+import sys
+import glob
 
-PYTHONPATH=$FLX_DIR:$PYTHONPATH
-export PYTHONPATH
+def run(*args):
+    cmd = ' '.join(args)
+    print 'RUNNING', cmd
+    return os.system('%s %s' % (sys.executable, cmd))
 
-FLX_LPARCHIVE=${FLX_LPARCHIVE:-$FLX_DIR}
-export FLX_LPARCHIVE
+def main():
+    flx_dir = os.path.dirname(sys.argv[0])
+    lparchive = os.environ.get('FLX_LPARCHIVE', flx_dir)
 
-PREFIX=$PREFIX
-ARGS="$*" # save the arguments
+    i = 0
+    while i < len(sys.argv):
+        arg = sys.argv[i]
 
-while :; do
-  if [ $# -lt 1 ]; then
-    break
-  fi
+        if arg.startswith('--lparchive='):
+            lparchive = arg[9:]
+        elif arg == '--lparchive':
+            lparchive = sys.argv[i+1]
+            i += 1
+        elif arg == '--help':
+            print "Usage: configure [options]"
+            print
+            print "Options are:"
+            print "  --prefix path:      set path for installation"
+            print "  --lparchive path:   the location of the lpsrc directory"
+            print "  --help:             display this message and exit"
+            print
+            return 0
+        elif arg == '--':
+            # respect request to stop parsing args
+            break
+        i += 1
 
-  case $1 in
-  --prefix=*)
-    PREFIX="`echo \"$1\" | sed 's/^--prefix=\(.*\)/\\1/'`"
-  ;;
+    os.environ['FLX_DIR'] = flx_dir
+    os.environ['PYTHONPATH'] = flx_dir + os.pathsep + os.environ.get('PYTHONPATH', '')
+    os.environ['FLX_LPARCHIVE'] = lparchive
 
-  --prefix)
-    shift
-    PREFIX="$1"
-  ;;
+    print 'Configuring Felix'
+    print 'FLX_LPARCHIVE at', lparchive
 
-  --lparchive=*)
-    FLX_LPARCHIVE="`echo \"$1\" | sed 's/^--lparchive=\(.*\)/\\1/'`"
-  ;;
+    lpsrc = os.path.join(lparchive, 'lpsrc')
+    iscr = os.path.join(flx_dir, 'interscript', 'bin', 'iscr.py')
 
-  --lparchive)
-    shift
-    FLX_LPARCHIVE="$1"
-  ;;
+    if run(iscr, '--nocache', '--break-on-error', os.path.join(lpsrc, 'flx_config.pak')):
+        print >> sys.stderr, 'ERROR EXTRACTING CONFIGURATION PROGRAM'
+        return 1
 
-  --help)
-    echo "Usage: configure [options]"
-    echo 
-    echo "Options are:"
-    echo "  --prefix path:      set path for installation"
-    echo "  --lparchive path:   the location of the lpsrc directory"
-    echo "  --help:             display this message and exit"
-    echo
-    exit 0
-  ;;
+    if run(os.path.join('script', 'make_config.py', *sys.argv[1:])):
+        print >> sys.stderr, 'ERROR CONFIGURING'
+        return 1
 
-  --)
-    break # respect request to stop parsing args
-  ;;
-  esac
-  shift
-done
+    if run(iscr, '--nocache', '--break-on-error', os.path.join(lpsrc, 'flx_maker.pak')):
+        print >> sys.stderr, 'ERROR EXTRACTING MAKER PROGRAM'
+        return 1
 
-echo "Configuring Felix"
-echo FLX_LPARCHIVE at $FLX_LPARCHIVE
+    return 0
 
-rm -f $FLX_LPARCHIVE/lpsrc/*.cache
-python $FLX_DIR/interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
-if [ $? != 0 ];
-then
-  echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
-  exit 1
-fi
-
-python -O script/make_config.py --quiet ${ARGS}
-python $FLX_DIR/interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
-if [ $? != 0 ];
-then
-  echo "ERROR EXTRACTING MAKER PROGRAM"
-  exit 1
-fi
+if __name__ == '__main__':
+    sys.exit(main())

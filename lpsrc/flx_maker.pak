@@ -4,7 +4,15 @@
 @execfile(os.path.join('config', 'flx_data.py'))
 @execfile(os.path.join('cpkgs', 'build', 'interscript.py'))
 
-@h = tangler('script/bin2hex.py','python')
+@def make_executable(path):
+   import stat
+   try:
+     mode = os.stat(path).st_mode
+     os.chmod(path, mode | stat.S_IXUSR)
+   except OSError, e:
+     print e
+
+@h = tangler('script/bin2hex.py')
 @select(h)
 # convert a binary file to hex 
 import sys
@@ -169,37 +177,40 @@ iscr_source = ['lpsrc/flx_maker.pak']
 
 weaver_directory = 'doc/flx/flx_maker/'
 
-@h = tangler('umk','data')
+@h = tangler('umk','python')
 @select(h)
-#!/bin/sh
-python script/maker $*
-ec1=$?
-if [ $ec1 != 0 ]; then
-  exit $ec1
-fi
-@os.system("chmod u+x umk")
+#!/usr/bin/env python
+import os
+import sys
 
-@h = tangler('mk','data')
-@select(h)
-#!/bin/sh
-LOGFILE=mk_`date +"%Y-%m-%d-%H%M"`.log
-echo "Saving transcript to $LOGFILE" | tee -a $LOGFILE
+os.execl(
+    sys.executable,
+    sys.executable,
+    os.path.join('script', 'maker'),
+    *sys.argv[1:])
+@make_executable('umk')
 
-exec 3>&1
-eval `exec 4>&1 >&3 3>&-
-{
-	(./umk $*) 4>&-; echo "ec1=$?;" >&4 
-} 2>&1 | tee -a $LOGFILE
-echo "ec2=$?;" >&4
-`
-if [ $ec1 != 0 ]; then
-  exit $ec1
-fi
-@os.system("chmod u+x mk")
+@select(tangler('mk','python'))
+#!/usr/bin/env python
+import os
+import sys
+import time
 
-@h = tangler('mk.bat','data')
-@select(h)
-python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
+from flxbuild.flxutil import Tee, tee_cmd
+
+def main():
+    cmd = [sys.executable, 'umk'] + sys.argv[1:]
+    stdout = Tee()
+    try:
+        return tee_cmd(cmd, stdout)
+    finally:
+        f = open('mk_' + time.strftime('%Y-%m-%d-%H%M') + '.log', 'w')
+        print >> f, stdout.getvalue()
+
+if __name__ == '__main__':
+    sys.exit(main())
+@make_executable('mk')
+
 @select(tangler('mkplugins/man.py'))
 class PLUGIN(Plugin):
   name = 'man'
@@ -394,7 +405,13 @@ class PLUGIN(Plugin):
         if filetime(file+'.mly') > filetime(file+'.ml'): force = 1
       if force:
         vxqt(OCAMLYACC + ' -v '+ file + '.mly')
-        nxqt(ENV + ' ' + GREP + " conflict " + file + ".output")
+        f = open(file + '.output')
+        try:
+          for line in f:
+            if 'conflict' in line:
+              raise MakeError('conflict in grammar!')
+        finally:
+          f.close()
 
     # STEP 3: Generate parsers (pgen)
     for parse in PGENPARSES:
@@ -751,13 +768,11 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/diff_env.py'))
 if os.name == 'nt': # build system is Windows Python
   DIFF = "FC /L /W"
-  GREP = "#grep"
 else:
   #DIFF = "diff -a -b " # build system is Unix Python
   # RF - trying out args that work on solaris (-a = not cool)
   # could use that sys type stuff here?
   DIFF = "diff -b" # build system is Unix Python
-  GREP = "grep"
 
 
 @select(tangler('mkplugins/build.py'))
@@ -1420,15 +1435,16 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/xqt.py'))
-if os.name=="nt":
-  ENV="set PATH=bin;%PATH%&&"
+ENV = ''
+if os.name == "nt":
+  pass
 else:
   if CYGWIN or WIN32:
-    ENV = 'env PATH=bin:"$PATH" PYTHONPATH=.:"$PYTHONPATH" '
+    pass
   elif MACOSX:
-    ENV = 'PATH=bin:"$PATH" DYLD_LIBRARY_PATH=rtl:"$DYLD_LIBRARY_PATH" '
+    os.environ['DYLD_LIBRARY_PATH'] = os.environ.get('DYLD_LIBRARY_PATH', '') + os.pathsep + 'rtl'
   else:
-    ENV = 'PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
+    os.environ['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '') + os.pathsep + 'rtl'
 
 
 def vxqt(x, **kwds):
@@ -1452,17 +1468,25 @@ def flxg(x, **kwds):
 
 
 #interscript command (now built in part of Felix package)
-def runISCR(a,force=0):
+def runISCR(a,force=0, break_on_error=None):
+  if break_on_error is None:
+    break_on_error = not force
+
   x = string.split(a, ' ')
   z = []
   for i in x:
     z.append('"' + i + '"')
   a = string.join(z, ' ')
+
+  cmd = sys.executable + ' ' + ISCR
   
   if force:
-    exqt(ISCR + " --nocache " + a)
-  else:
-    exqt(ISCR + ' --break-on-error ' + a)
+    cmd = cmd + " --nocache"
+
+  if break_on_error:
+    cmd = cmd + " --break-on-error"
+
+  exqt(cmd + ' ' + a)
 
 
 @select(tangler('mkplugins/manifest.py'))
@@ -2104,6 +2128,11 @@ except:
   print "       this is done automatically by 'make boot'"
   sys.exit(1)
 
+# add the felix directory to the search paths
+os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
+sys.path.append(FLX_DIR)
+os.environ['PYTHONPATH'] = FLX_DIR + os.pathsep + os.environ.get('PYTHONPATH', '')
+
 execfile(os.path.join("cpkgs", "build", "interscript.py"))
 execfile(os.path.join("mkplugins", "xqt.py"))
 
@@ -2154,17 +2183,13 @@ else:
 
 paks = glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.pak"))
 
-if "force_extract" in options:    
-  print "FORCE EXTRACTING SOURCES: remove caches"
-  for p in paks:
-    cache = p + ".cache"
-    if os.path.exists(cache):
-      os.remove(cache)
-
 if "extract" in options or "force_extract" in options:
   for p in paks:
     print "EXTRACTING",p,"from",FLX_LPARCHIVE
-    runISCR(p)
+    if "force_extract" in options:
+      runISCR(p, force=1, break_on_error=1)
+    else:
+      runISCR(p)
   # this is a hack
   filecopy(
     os.path.join('misc', 'interscript.css'),
@@ -4311,9 +4336,5 @@ post-install:
 
 @head(1,'Finish up')
 Just cleaning up script now.
-@try:
-   os.system('chmod u+x bin/flx')
-   os.system('chmod u+x bin/fishcc')
- except:pass
-
-
+@make_executable(os.path.join('bin', 'flx'))
+@make_executable(os.path.join('bin', 'fishcc'))

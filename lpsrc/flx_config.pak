@@ -439,6 +439,34 @@ class Tee:
   def getvalue(self):
     return self.file.getvalue()
 
+def tee_cmd(cmd, stdout, bufsize=1024):
+  # we try to use subprocess because we can get the exit code on windows
+  try:
+    import subprocess
+  except ImportError:
+    p = os.popen(' '.join(cmd), 'r', bufsize)
+    while 1:
+      buf = os.read(p.fileno(), bufsize)
+      if buf:
+        stdout.write(buf)
+      else:
+        break
+    return p.close()
+  else:
+    p = subprocess.Popen(cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=bufsize)
+    while True:
+      buf = os.read(p.stdout.fileno(), bufsize)
+      if buf:
+        stdout.write(buf)
+      else:
+        break
+
+    return p.wait()
+
+
 class MakeError(EnvironmentError): 
   def __init__(self, command=None, stdout=[], stderr=[]):
     self.command = command
@@ -507,10 +535,7 @@ except:
     shell("iscr")
     ISCR="iscr "
   except EnvironmentError:
-    ISCR='PYTHONPATH="%s" python -O %s' % (
-      FLX_DIR,
-      os.path.join(FLX_LPARCHIVE, 'interscript', 'bin', 'iscr.py'),
-    )
+    ISCR= os.path.join(FLX_LPARCHIVE, 'interscript', 'bin', 'iscr.py')
   print "Storing Interscript configuration"
   f = cwrite("iscr")
   pr(f,"#Interscript support")
