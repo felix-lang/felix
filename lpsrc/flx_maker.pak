@@ -2306,17 +2306,17 @@ if os.name != 'nt': # requires posix
     tkind = "std"
     if "inline" in options: tkind="inline"
     elif "noinline" in options: tkind="noinline"
-    stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
+    stats = sys.executable + ' script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
     exqt(stats)
-    stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
+    stats = sys.executable + ' script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
     exqt(stats)
 
   if "pfcount" in options:
-    stats = 'python script/pfcount.py misc/fcounts.stats'
+    stats = sys.executable + ' script/pfcount.py misc/fcounts.stats'
     exqt(stats)
 
   if "pfcount_all" in options:
-    stats = 'python script/pfcount.py misc/fcounts.stats all'
+    stats = sys.executable + ' script/pfcount.py misc/fcounts.stats all'
     exqt(stats)
 
 print
@@ -2441,7 +2441,7 @@ We have no idea if it continues copying.
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
 @tangle('DOC_DIR=${INSTALL_DIR}')
-@tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
+@tangle('BUILTIN_ISCR=%s -O interscript/bin/iscr.py --nocache' % sys.executable)
 @tangle('')
 @tangle('all: config/config.py script/maker')
 @tangle('\t./mk extract ')
@@ -2460,7 +2460,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('config/config.py: lpsrc/flx_config.pak')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_config.pak')
-@tangle('\tenv PYTHONPATH=. python -O script/make_config.py --quiet --prefix=${PREFIX} ${CONFIG_ARGS}')
+@tangle('\tenv PYTHONPATH=. %s -O script/make_config.py --quiet --prefix=${PREFIX} ${CONFIG_ARGS}' % sys.executable)
 @tangle('')
 @tangle('script/maker: config/config.py lpsrc/flx_maker.pak')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_maker.pak')
@@ -2519,12 +2519,12 @@ We have no idea if it continues copying.
 @tangle('\t./mk tutorial')
 @tangle('')
 @tangle('grammar: dummy')
-@tangle('\tenv PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar')
-@tangle('\tenv PYTHONPATH=. python script/get_grammar src/cil/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
-#@tangle('\tenv PYTHONPATH=. python script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr')
-@tangle('\tenv PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
-#@tangle('\tenv PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
-@tangle('\tenv PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
+@tangle('\tenv PYTHONPATH=. %s script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar' % sys.executable)
+@tangle('\tenv PYTHONPATH=. %s script/get_grammar src/cil/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar' % sys.executable)
+#@tangle('\tenv PYTHONPATH=. %s script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr' % sys.executable)
+@tangle('\tenv PYTHONPATH=. %s script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx' % sys.executable)
+#@tangle('\tenv PYTHONPATH=. %s script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc' % sys.executable)
+@tangle('\tenv PYTHONPATH=. %s script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx' % sys.executable)
 @tangle('')
 @tangle('compiler: dummy')
 @tangle('\t./mk --pkg=flx_compiler')
@@ -2644,16 +2644,16 @@ We have no idea if it continues copying.
 @tangle('\t./mk bagley')
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
-@tangle('\tenv PYTHONPATH=. python script/mk_expect bagley/felix > lpsrc/flx_bagley_expect.ipk')
+@tangle('\tenv PYTHONPATH=. %s script/mk_expect bagley/felix > lpsrc/flx_bagley_expect.ipk' % sys.executable)
 @tangle('')
 @tangle('expect: clean')
 @tangle('\t./mk bagley')
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\t./mk test log_output')
-@tangle('\tenv PYTHONPATH=. python script/mk_expect tut/examples > lpsrc/flx_tut_expect.ipk')
-@tangle('\tenv PYTHONPATH=. python script/mk_expect test > lpsrc/flx_test_expect.ipk')
-@tangle('\tenv PYTHONPATH=. python script/mk_expect bagley/felix > lpsrc/flx_bagley_expect.ipk')
+@tangle('\tenv PYTHONPATH=. %s script/mk_expect tut/examples > lpsrc/flx_tut_expect.ipk' % sys.executable)
+@tangle('\tenv PYTHONPATH=. %s script/mk_expect test > lpsrc/flx_test_expect.ipk' % sys.executable)
+@tangle('\tenv PYTHONPATH=. %s script/mk_expect bagley/felix > lpsrc/flx_bagley_expect.ipk' % sys.executable)
 @tangle('')
 @tangle('drivers: dummy')
 @tangle('\t./mk drivers')
