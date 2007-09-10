@@ -112,7 +112,7 @@ let cid_of_flxid s =
   done;
   let name = Buffer.contents id in
   let name = match name with
-    | "errno" -> "__errno_"
+    | "errno" -> "__flx_errno_"
     | _ -> name
   in
   try assoc name fixups with Not_found -> name
