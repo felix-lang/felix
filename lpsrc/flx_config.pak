@@ -525,25 +525,6 @@ else:
 print "Pthread model according to linuxy getconf=",PTHREAD_MODEL
 
 
-@select(tangler("cpkgs/build/interscript.py"))
-execfile("config"+os.sep+"build_config.py")
-# see if we have interscript
-try:
-  cload(globals(),"iscr")
-except:
-  try:
-    shell("iscr")
-    ISCR="iscr "
-  except EnvironmentError:
-    ISCR= os.path.join(FLX_LPARCHIVE, 'interscript', 'bin', 'iscr.py')
-  print "Storing Interscript configuration"
-  f = cwrite("iscr")
-  pr(f,"#Interscript support")
-  pa(f,locals(),"ISCR")
-  f.close()
-  cload(globals(),"iscr")
-
-
 @select(tangler("cpkgs/host/pkgconfig.py"))
 # see if we have pkg-config
 try:

@@ -2,7 +2,6 @@
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
 @execfile(os.path.join('config', 'flx_data.py'))
-@execfile(os.path.join('cpkgs', 'build', 'interscript.py'))
 
 @def make_executable(path):
    import stat
@@ -1478,7 +1477,7 @@ def runISCR(a,force=0, break_on_error=None):
     z.append('"' + i + '"')
   a = string.join(z, ' ')
 
-  cmd = sys.executable + ' ' + ISCR
+  cmd = sys.executable + ' ' + os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py')
   
   if force:
     cmd = cmd + " --nocache"
@@ -2133,7 +2132,6 @@ os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
 sys.path.append(FLX_DIR)
 os.environ['PYTHONPATH'] = FLX_DIR + os.pathsep + os.environ.get('PYTHONPATH', '')
 
-execfile(os.path.join("cpkgs", "build", "interscript.py"))
 execfile(os.path.join("mkplugins", "xqt.py"))
 
 FLXFLAGS = ""
