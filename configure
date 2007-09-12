@@ -45,7 +45,7 @@ def main():
     lpsrc = os.path.join(lparchive, 'lpsrc')
     iscr = os.path.join(flx_dir, 'interscript', 'bin', 'iscr.py')
 
-    if run(iscr, '--nocache', '--break-on-error', os.path.join(lpsrc, 'flx_config.pak')):
+    if run(iscr, '--cache-prefix=lpsrc-cache', '--break-on-error', os.path.join(lpsrc, 'flx_config.pak')):
         print >> sys.stderr, 'ERROR EXTRACTING CONFIGURATION PROGRAM'
         return 1
 
@@ -53,7 +53,7 @@ def main():
         print >> sys.stderr, 'ERROR CONFIGURING'
         return 1
 
-    if run(iscr, '--nocache', '--break-on-error', os.path.join(lpsrc, 'flx_maker.pak')):
+    if run(iscr, '--cache-prefix=lpsrc-cache', '--break-on-error', os.path.join(lpsrc, 'flx_maker.pak')):
         print >> sys.stderr, 'ERROR EXTRACTING MAKER PROGRAM'
         return 1
 

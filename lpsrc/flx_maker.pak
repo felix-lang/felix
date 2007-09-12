@@ -1478,6 +1478,7 @@ def runISCR(a,force=0, break_on_error=None):
   a = string.join(z, ' ')
 
   cmd = sys.executable + ' ' + os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py')
+  cmd += ' --cache-prefix=lpsrc-cache'
   
   if force:
     cmd = cmd + " --nocache"

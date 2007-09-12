@@ -146,6 +146,7 @@ def getoption_frames(args): # note: has side effects!
   frame.title = None
   frame.languages = []
   frame.inhibit_sref = 0
+  frame.cache_prefix = None
   for opts,filename in parsed:
     for opt,value in opts:
       try:
@@ -177,6 +178,7 @@ def getoption_frames(args): # note: has side effects!
         elif opt == 'language': frame.languages.append(value)
         elif opt == 'encoding': frame.encoding=value
         elif opt == 'trace': process_options.trace.append(value)
+        elif opt == 'cache-prefix': frame.cache_prefix = value
         elif opt == 'html-eol':
           if sys.platform == 'Win32':
             print 'CRLF kludge ignored for Win32'

@@ -4,6 +4,7 @@ from interscript.drivers.sources.disk import parse_source_filename
 from interscript.languages.interscript_languages import add_translation
 import pickle
 import types
+import os
 
 class master_frame:
   "Once per document master frame"
@@ -49,8 +50,12 @@ class master_frame:
     self.cache_age = 1 # very old :-)
     os = self.platform.os
     if self.usecache:
+      source_prefix = self.source_prefix
+      if self.cache_prefix is not None:
+        source_prefix = self.cache_prefix + os.sep
+        
       self.cache_name =self.platform.map_filename(
-        self.source_prefix, self.filename+'.cache')
+        source_prefix, self.filename+'.cache')
       try:
         if 'cache' in self.process.trace:
           print 'CACHE NAME=',self.cache_name
@@ -181,6 +186,10 @@ class master_frame:
     if self.usecache:
       try:
         #print 'WRITING CACHE'
+        try:
+          os.makedirs(os.path.dirname(self.cache_name))
+        except OSError:
+          pass
         cache = self.platform.open(self.cache_name,'w')
         pickle.dump(self.persistent_frames, cache)
         cache.close()

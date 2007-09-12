@@ -14,7 +14,7 @@ def main():
     if run(configure, *sys.argv[1:]):
         return 1
 
-    if run('"%s"' % os.path.join(os.getcwd(), 'mk'), 'force_extract'):
+    if run('"%s"' % os.path.join(os.getcwd(), 'mk'), 'extract'):
         return 1
 
     if run('"%s"' % os.path.join(os.getcwd(), 'mk')):
