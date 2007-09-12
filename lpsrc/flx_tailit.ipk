@@ -308,6 +308,50 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         ]
       end
   in
+  let cal_asgn1 pas ls =
+    let n = length pas in
+    (* vset is the restriction set applied to the usage closure to
+      restrict attention to the LHS variables
+    *)
+    let vset = fold_left (fun acc (k,_,_) ->IntSet.add k acc) IntSet.empty pas in
+    let asgns = map 
+      (fun (k,p,t) -> 
+        let name = "DUNNO_" ^ si k in
+        let e = nth ls p in
+        let d = expr_uses syms descend uses vset e in
+        k, (name,t,e,d)
+      ) 
+      pas 
+    in
+      let tmps,exes = Flx_passign.passign syms bbdfns asgns ts' sr in
+      parameters := tmps @ !parameters;
+      if syms.compiler_options.print_flag then begin
+        print_endline "CALCULATED ACTUAL PARALLEL ASSIGNMENTS!";
+        iter (fun x -> 
+          print_endline (string_of_bexe syms.dfns bbdfns 0 x)
+        )
+        (rev exes)
+        ;
+      end;
+      (* NOTE: we have to KEEP the tuple variable in case
+        it is used elsewhere .. it should get dropped by later
+        garbage collection if it isn't used!
+      *)
+    exes
+  in
+  let asgn2 i t ls =            
+    map2 
+    (fun (e,t' as x) j -> 
+      `BEXE_assign 
+      (
+        sr,
+        (`BEXPR_get_n (j,(`BEXPR_name (i,[]),t)),t'), 
+        x
+      )
+    )
+    ls 
+    (nlist (length ls))
+  in
   let rec aux inp res = 
     let cal_par i t ls h tail =   
       if syms.compiler_options.print_flag then 
@@ -367,45 +411,11 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
           pr pas;
         end;
 
-        (* vset is the restriction set applied to the usage closure to
-          restrict attention to the LHS variables
-        *)
-        let vset = fold_left (fun acc (k,_,_) ->IntSet.add k acc) IntSet.empty pas in
-        let asgns = map 
-          (fun (k,p,t) -> 
-            let name = "DUNNO_" ^ si k in
-            let e = nth ls p in
-            let d = expr_uses syms descend uses vset e in
-            k, (name,t,e,d)
-          ) 
-          pas 
-        in
-          let tmps,exes = Flx_passign.passign syms bbdfns asgns ts' sr in
-          parameters := tmps @ !parameters;
-          if syms.compiler_options.print_flag then begin
-            print_endline "CALCULATED ACTUAL PARALLEL ASSIGNMENTS!";
-            iter (fun x -> 
-              print_endline (string_of_bexe syms.dfns bbdfns 0 x)
-            )
-            (rev exes)
-            ;
-          end;
-          (* NOTE: we have to KEEP the tuple variable in case
-            it is used elsewhere .. it should get dropped by later
-            garbage collection if it isn't used!
-          *)
-          aux (drop n tail) (exes @ h :: res)
+        let exes = cal_asgn1 pas ls in
+        aux (drop n tail) (exes @ h :: res)
       end
-      else begin 
-        (*
-        let d = 
-          fold_left (fun acc e ->
-            let u = expr_uses syms descend uses (IntSet.singleton i) e in
-            IntSet.union acc u 
-          ) IntSet.empty ls
-        in
-        if d = IntSet.empty 
-        *)
+      else  (* length pas <> n *)
+      begin
         let can_opt = 
           try
             let counter = ref 0 in
@@ -424,19 +434,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
           begin
             print_endline ("SEMI OPTIMISE!");
           end;
-          let exes = 
-            map2 
-            (fun (e,t' as x) j -> 
-              `BEXE_assign 
-              (
-                sr,
-                (`BEXPR_get_n (j,(`BEXPR_name (i,[]),t)),t'), 
-                x
-              )
-            )
-            ls 
-            (nlist (length ls))
-          in 
+          let exes = asgn2 i t ls in
           (* the 'rev' here is not necessary, but it preserves the
              order of writing by the user, i.e. from lowest index
              to highest index

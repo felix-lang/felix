@@ -1083,24 +1083,25 @@ module glob {
   };
   private proc post_incr[t]: lvalue[ptr[t]] = "$1++;";
 
-  proc glob: string * ptr[glob_t] = "::glob($1.data(),0,NULL,$2);";
+  gen glob: string * ptr[glob_t] -> bool = "0==glob($1.data(),0,NULL,$2)";
   proc globfree: ptr[glob_t] = "globfree($1);";
 
   gen glob (pat:string): stl_vector[string] =
   {
-    var glob_data: glob_t; glob_data.gl_offs=0;
-    glob(pat,addr glob_data);
-    var n = glob_data.gl_pathc;
-    var p = glob_data.gl_pathv;
-    var pfile = *p;
     var files: stl_vector[string];
-    whilst not isNULL(pfile) do
-      var file = str(pfile);
-      push_back (files, file);
-      p++;
-      pfile = *p;
+    var glob_data: glob_t; glob_data.gl_offs=0;
+    if glob(pat,addr glob_data) do
+      var n = glob_data.gl_pathc;
+      var p = glob_data.gl_pathv;
+      var pfile = *p;
+      whilst not isNULL(pfile) do
+        var file = str(pfile);
+        push_back (files, file);
+        p++;
+        pfile = *p;
+      done;
+      globfree(addr glob_data);
     done;
-    globfree(addr glob_data);
     return files;
   }
 }
