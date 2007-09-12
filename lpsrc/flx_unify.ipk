@@ -1299,6 +1299,9 @@ let rec expr_unification dfns
         teqns := (t,t') :: !teqns;
         eqns := (e,e') :: !eqns
 
+      | `BEXPR_get_n (n1,e1),`BEXPR_get_n (n2,e2) when n1 = n2 ->
+        eqns := (e1,e2) :: !eqns
+
       | (`BEXPR_tuple ls1, `BEXPR_tuple ls2) 
         when length ls1 = length ls2 ->
         begin
