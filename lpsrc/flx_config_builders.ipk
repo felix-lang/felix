@@ -2358,7 +2358,7 @@ class ocaml(compiler_base):
       opt.HAVE_OCAMLBUILD = 0
     else:
       try: # check if ocamlbuild exists
-        shell('ocamlbuild -v', log=log)
+        shell('ocamlbuild -version', log=log)
         opt.OCAMLBUILD = 'ocamlbuild -classic-display '
         opt.HAVE_OCAMLBUILD = 1
       except MakeError:
