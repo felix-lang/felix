@@ -34,11 +34,11 @@ caml_raw_interfaces = ['src/compiler/ocs/ocs_types']
 caml_interfaces = OCS_MODULES
 caml_implementations= OCS_MODULES
 caml_provide_lib = 'src/compiler/ocs/ocslib'
-caml_require_libs = ['nums','unix','flx_version','ocslib']
+caml_require_libs = ['nums','unix','ocslib']
 caml_exes = ['src/compiler/ocs/ocs_main']
 iscr_src= ['lpsrc/ocs.pak']
 weaver_directory='doc/ocs'
-pkg_requires = ['flx_version']
+pkg_requires = []
 tmpdir = ['ocs']
 
 @h=tangler('src/compiler/ocs/ocs_char.ml')

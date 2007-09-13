@@ -762,6 +762,7 @@ open Flx_version
 open Flx_prelex
 open Flx_token
 ;;
+Flx_version_hook.set_version ();;
 
 let print_elkhound_tokens toks =
   let nt x = name_of_token x in

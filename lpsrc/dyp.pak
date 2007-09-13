@@ -40,11 +40,11 @@ caml_implementations=[
   'src/compiler/dyp/generators/pgen/pgen_lexer'
 ]
 caml_provide_lib = 'src/compiler/dyp/generators/pgen/pgen'
-caml_require_libs = ['flx_version','dyplib','pgen']
+caml_require_libs = ['dyplib','pgen']
 caml_exes = ['src/compiler/dyp/generators/pgen/pgen']
 iscr_source = ["lpsrc/dyp.pak"]
 weaver_directory = 'doc/dypgen/'
-pkg_requires = ['flx_version','dyplib']
+pkg_requires = ['dyplib']
 
 
 @h = tangler('spkgs/dypgen.py')
@@ -67,10 +67,10 @@ caml_implementations=[
 ]
 caml_include_paths = ['src/compiler/dyp/dyplib']
 caml_provide_lib = 'src/compiler/dyp/generators/dypgen/dypgen'
-caml_require_libs = ['flx_version','dyplib','dypgen']
+caml_require_libs = ['dyplib','dypgen']
 caml_exes = ['src/compiler/dyp/generators/dypgen/dypgen']
 iscr_source = ["lpsrc/dyp.pak"]
-pkg_requires = ['flx_version','dyplib','pgen']
+pkg_requires = ['dyplib','pgen']
 weaver_directory = 'doc/dypgen/'
 
 @h=tangler('src/compiler/dyp/dyplib/dyp.mli')

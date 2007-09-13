@@ -525,8 +525,8 @@ class PLUGIN(Plugin):
   
     for exe in EXES:
       dst = os.path.join("bin", os.path.basename(exe))
-      vxqt(OCAMLOPT + INCLUDES + ' -I ' + os.path.dirname(exe) + ' -I src/compiler/flx_version -o ' + dst + \
-          x + ' src/compiler/flx_version_hook/flx_version_hook.ml ' + exe + \
+      vxqt(OCAMLOPT + INCLUDES + ' -I ' + os.path.dirname(exe) + ' -o ' + dst + \
+          x + ' ' + exe + \
           OCAML_OBJECT_EXTENSION)
 @doc()
 

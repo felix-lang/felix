@@ -1833,6 +1833,9 @@ open Flx_flxopt
 open Flx_version
 open Flx_mtypes1
 open Flx_mtypes2
+;;
+
+Flx_version_hook.set_version ();;
 
 let print_help () = print_options(); exit(0)
 ;;

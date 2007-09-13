@@ -133,14 +133,56 @@ caml_interfaces = FLX_INTERFACES
 caml_raw_interfaces = FLX_RAW_INTERFACES
 caml_exes = FLX_EXES
 caml_implementations = FLX_IMPLEMENTATIONS
-caml_require_libs = ['str','nums','unix','flx_version','ocslib','sexlib', 'dyplib','misclib','cillib','flxcclib','flxlib']
-caml_include_paths = ['src/compiler/flxlib', 'src/compiler/ocs', 'src/compiler/sex', 'src/compiler/cil','src/compiler/dyp/dyplib', 'src/compiler/flxcclib', 'src/compiler/misclib', 'src/compiler/flx_version']
+caml_require_libs = [
+  'str',
+  'nums',
+  'unix',
+  'flx_version',
+  'ocslib',
+  'sexlib', 
+  'dyplib',
+  'misclib',
+  'cillib',
+  'flxcclib',
+  'flxlib',
+  'flx_version_hook']
+
+caml_include_paths = [
+  'src/compiler/flxlib', 
+  'src/compiler/ocs', 
+  'src/compiler/sex', 
+  'src/compiler/cil',
+  'src/compiler/dyp/dyplib', 
+  'src/compiler/flxcclib', 
+  'src/compiler/misclib', 
+  'src/compiler/flx_version',
+  'src/compiler/flx_version_hook'
+  ]
+
 caml_dyparses = FLX_PARSES
-pkg_requires = ['flx_version','ocs','dypgen','sex','misc','cil','flxcc_util']
+pkg_requires = [
+  'flx_version',
+  'ocs',
+  'dypgen',
+  'sex',
+  'misc',
+  'cil',
+  'flxcc_util',
+  'flx_version_hook'
+  ]
 caml_provide_lib = 'src/compiler/flxlib/flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
 tmpdir = ['src']
+
+@h = tangler('spkgs/flx_version_hook.py')
+@select(h)
+pkg_requires = ['flx_version']
+
+caml_provide_lib = 'src/compiler/flx_version_hook/flx_version_hook'
+tmpdir = ['src']
+caml_implementations = ['src/compiler/flx_version_hook/flx_version_hook']
+caml_include_paths = ['src/compiler/flx_version','src/compiler/flx_version_hook']
 
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
@@ -335,7 +377,8 @@ let version_data: version_data_t =
 @f.close()
 } 
 ;;
-Flx_version.version_data := version_data
+let set_version () =
+  Flx_version.version_data := version_data
 ;;
 
 @execfile('config'+os.sep+'flx_data.py')

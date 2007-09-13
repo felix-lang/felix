@@ -60,6 +60,7 @@ Pathname.define_context "src/compiler/flxcclib" [ "src/compiler/cil" ];;
 Pathname.define_context "src/compiler/flx_version_hook" [ "src/compiler/flx_version" ];;
 
 Pathname.define_context "src/compiler/flxlib" [
+  "src/compiler/flx_version";
   "src/compiler/cil";
   "src/compiler/dyp/dyplib";
   "src/compiler/flxcclib";
@@ -70,12 +71,14 @@ Pathname.define_context "src/compiler/flxlib" [
 ];;
 
 Pathname.define_context "src/compiler/drivers" [
+  "src/compiler/flx_version";
   "src/compiler/cil";
   "src/compiler/dyp/dyplib";
   "src/compiler/flxlib";
   "src/compiler/flxcclib";
   "src/compiler/flx_version";
   "src/compiler/ocs";
+  "src/compiler/flx_version_hook";
 ];;
 
 

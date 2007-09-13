@@ -1405,6 +1405,8 @@ open Flx_getopt
 open Flx_token
 ;;
 
+Flx_version_hook.set_version ();;
+
 let print_help () = print_options(); exit(0)
 ;;
 

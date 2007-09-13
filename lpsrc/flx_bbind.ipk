@@ -897,6 +897,7 @@ open Flx_mtypes2
 open Flx_use
 open Flx_typing
 ;;
+Flx_version_hook.set_version ();;
 
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
