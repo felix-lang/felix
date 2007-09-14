@@ -163,6 +163,93 @@ for line in data:
   f.write(line)
 f.close()
 
+@h = tangler('script/mkshoot.py','python')
+@select(h)
+import os
+import sys
+import glob
+import string
+root = "/home/skaller/shoot/shootout-scm-2007-05-14/shootout/bench"
+
+dirs = glob.glob(root+"/*")
+rejects = [
+  "report.txt","LICENSE","Makefile","Makefile.mb","done.txt","Include","CVS",
+  "tcprequest"]
+
+def basename (f): return string.split(f,"/")[-1]
+
+k = []
+for f in dirs:
+  base = basename (f)
+  if base not in rejects:
+    k.append(base)
+
+k.sort()
+#for d in k: print d
+
+exts = [("gcc","c","c"),("ocaml","ml","ocaml"),("felix","flx","felix"),("gnat","ada","ada")]
+
+print r"""
+@def showgraph(machine,test,title):
+  get_weaver()._write(
+    '''<P></P><TABLE BORDER=2 ALIGN=center>
+   <CAPTION>'''+title+'''</CAPTION>
+   <TR><TD>
+   <IMG ALT="'''+title+'''" SRC="machine/'''+machine+'''/images/'''+test+'''.jpg">
+   </TD></TR></TABLE><P></P>
+   ''')
+
+@def showdata(fn):
+  begin_displayed_code()
+  try:
+    f = open(fn)
+    data = f.read()
+    f.close()
+    lines = string.split(data,'\n')
+    for line in lines: weave(line+'\n')
+  except:
+    weave(fn+" not available\n")
+  end_displayed_code()
+
+
+@import glob
+@raw_machs = glob.glob("speed/machine/*")
+@machs = []
+@for i in raw_machs: machs.append(i[14:])
+
+"""
+
+for d in k:
+  #print "Bench = "+d
+  print "@head(1,'["+d+"]')" 
+  print "@for i in machs:"
+  print "  showgraph(i,'ack','"+d+" on '+i)"
+  print "  showdata('speed/machine/'+i+'/rankings/"+d+".txt')"
+  print
+  print "@select(tangler('speed/specs/"+d+".py'))"
+  print "descr='"+d+"'"
+  print "min=5"
+  print "max=10"
+  print
+
+  for tag,ext,dir in exts:
+    #print "  Tag = " + tag+ ", ext = " + ext
+    fls = glob.glob(root+"/"+d+"/*."+tag)
+    for fn in fls:
+      base = basename(fn)
+      #print "    file = " + base
+      bn = string.split(base,".")
+      if len (bn) == 2:
+        print "@select(tangler('speed/src/"+dir+"/"+bn[0]+"."+ext+"'))"
+        fi = open(fn)
+        lines = fi.read()
+        print lines
+        fi.close()
+
+
+
+
+
 @h = tangler('script/mkjudy.py','python')
 @select(h)
 #
