@@ -513,6 +513,106 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       ->
        cal_par i t ls h tail
 
+    | (`BEXE_assign (sr,x,(`BEXPR_tuple ls,t)) as h) :: tail 
+      ->
+      let rec unproj e = match map_tbexpr ident unproj ident e with
+      | `BEXPR_get_n (k,(`BEXPR_tuple ls,_)),_ -> nth ls k
+      | x -> x
+      in
+      let ls = map unproj ls in
+      (*
+      print_endline "DETECTED PARALLEL ASSIGN WITH LHS EXPR";
+      print_endline (string_of_bexe syms.dfns bbdfns 0 h);
+      *)
+      let i = !(syms.counter) in incr (syms.counter);
+      let n = length ls in 
+      let pbase = !(syms.counter) in syms.counter := !(syms.counter) + n;
+      let me e = match expr_maybe_matches syms.dfns [] [] x e with
+        | Some ([],[]) -> true
+        | None -> false
+        | _ -> assert false
+      in
+      let rec repl e = match map_tbexpr ident repl ident e with
+        | x when me x -> `BEXPR_name (i,[]),t
+        | `BEXPR_get_n (k,(`BEXPR_name (j,[]),t)),t' when i = j->
+          `BEXPR_name (pbase+k,[]),t'
+        | x -> x
+      in
+      let check = me x in
+      (*
+      print_endline (if check then "MATCHES SELF" else "DOES'T MATCH SELF");
+      *)
+      if check then begin
+        let ls' = map repl ls in
+        (*
+        let j = ref 0 in
+        iter2 (fun x x' ->
+          print_endline ("Recoded " ^ 
+            sbe syms.dfns bbdfns x ^
+            "\nas var " ^ si (!j+pbase) ^ "=" ^
+            sbe syms.dfns bbdfns x' ^
+            "\n"
+          );
+          incr j
+        )
+        ls ls'
+        ;
+        *)
+        let vset = fold_left (fun acc k ->IntSet.add (k+pbase) acc) IntSet.empty (nlist n) in
+        let asgns = map 
+          (fun k -> 
+          let name = "DUNNO_" ^ si (k+pbase) in
+          let e = nth ls' k in
+          let _,t = e in
+          let d = expr_uses syms descend uses vset e in
+          (*
+          print_endline ("var " ^ si (k+pbase) ^ " = " ^ 
+            sbe syms.dfns bbdfns e ^ " USES " ^ string_of_intset d);
+          *)
+          k+pbase, (name,t,e,d)
+        ) 
+        (nlist n)
+        in
+        let tmps,exes = Flx_passign.passign syms bbdfns asgns ts' sr in
+        parameters := tmps @ !parameters;
+        if syms.compiler_options.print_flag then 
+        begin
+          print_endline "PARALLEL ASSIGNMENTS (before unsub) =";
+          iter (fun x -> 
+            print_endline (string_of_bexe syms.dfns bbdfns 0 x)
+          )
+          (rev exes)
+          ;
+        end;
+        let rec undo_expr e = match map_tbexpr ident undo_expr ident e with
+        | `BEXPR_name (j,[]),t when i = j  -> x
+        | `BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> `BEXPR_get_n (j-pbase,x),t
+        | x -> x
+        in
+        let undo_st st = match st with
+        | `BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
+          let k = j - pbase in
+          let _,t' = nth ls k in
+          `BEXE_assign (sr,(`BEXPR_get_n (k,x),t'),undo_expr e)
+
+        | x -> map_bexe ident undo_expr ident ident ident x 
+        in
+        let exes = map undo_st exes in
+        if syms.compiler_options.print_flag then 
+        begin
+          print_endline "PARALLEL ASSIGNMENTS (after unsub) = ";
+          iter (fun x -> 
+            print_endline (string_of_bexe syms.dfns bbdfns 0 x)
+          )
+          (rev exes)
+          ;
+        end;
+        aux tail (exes @ res)
+      end
+      else
+      aux tail (h::res)
+
+
     | h :: t  -> aux t (h::res)
     in 
       let exes = aux exes [] in

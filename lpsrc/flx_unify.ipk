@@ -1299,8 +1299,15 @@ let rec expr_unification dfns
         teqns := (t,t') :: !teqns;
         eqns := (e,e') :: !eqns
 
+      | `BEXPR_get_named (n1,e1),`BEXPR_get_named (n2,e2) 
       | `BEXPR_get_n (n1,e1),`BEXPR_get_n (n2,e2) when n1 = n2 ->
         eqns := (e1,e2) :: !eqns
+
+      | `BEXPR_deref e1,`BEXPR_deref e2  ->
+        eqns := (e1,e2) :: !eqns
+
+      (* CHEAT HERE .. ignore ts .. fix later *)
+      | `BEXPR_ref (i1,ts1),`BEXPR_ref (i2,ts2) when i1 = i2 -> ()
 
       | (`BEXPR_tuple ls1, `BEXPR_tuple ls2) 
         when length ls1 = length ls2 ->
