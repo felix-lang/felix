@@ -1020,99 +1020,110 @@ while time.time() - start_time < max_test_time:
   fst,lst = xlt.get((test,xl), (fst,lst))
   xlt[(test,xl)] = (fst,lst)
 
-  # pick an integer between fst and lst inclusive
-  n = random.randint(fst,lst)
+  if fst != -1: # -1 means failed ..
 
-  test_file = "speed/exes/"+xl+"/"+test
-  test_arg = "%d" % n
+    # pick an integer between fst and lst inclusive
+    n = random.randint(fst,lst)
 
-  print test_file,test_arg
-  sys.stdout.flush()
-  start = time.time()
-  pid = os.spawnl(os.P_NOWAIT,test_file,"DUMMY",test_arg)
-  spid = os.spawnlp(os.P_NOWAIT,"sleep","DUMMY","%d" % int(sleep_time))
-  pidx,status = os.wait()
-  finish = time.time()
-  elapsed = finish - start
+    test_file = "speed/exes/"+xl+"/"+test
+    test_arg = "%d" % n
 
-  if pidx == spid:
-    os.kill(pid,signal.SIGKILL)
-    print "TIMEOUT"
-    assert (elapsed > maxtime)
-  else:
-    os.kill(spid,signal.SIGKILL)
-  os.wait()
+    print test_file,test_arg
+    sys.stdout.flush()
+    start = time.time()
+    pid = os.spawnl(os.P_NOWAIT,test_file,"DUMMY",test_arg)
+    spid = os.spawnlp(os.P_NOWAIT,"sleep","DUMMY","%d" % int(sleep_time))
+    pidx,status = os.wait()
+    finish = time.time()
+    elapsed = finish - start
 
-
-  if  pidx == pid:
-    signalled = os.WIFSIGNALED(status)
-    exited = os.WIFEXITED(status)
-    if not (signalled or exited):
-      print "WHAT?? Neither exited nor signalled?"
-      exit(2)
-
-    # Killed by signal, possibly timeout, no result
-    # can be recorded
-    if signalled:
-      sig = os.WTERMSIG(status)
-      if sig == signal.SIGINT:
-        raise KeyboardInterrupt
-
-      if sig == signal.SIGSEGV:
-        print "SEGMENTATION FAULT, TERMINATING"
-        sys.exit(1)
-
-      if sig != 0:
-        print "UNKNOWN SIGNAL",sig,": TERMINATING"
-        sys.exit(1)
+    if pidx == spid:
+      os.kill(pid,signal.SIGKILL)
+      print "TIMEOUT"
+      assert (elapsed > maxtime)
     else:
-      # the process terminated correctly, record a result even
-      # if it is out of range
-      if status == 0:
-        x = hostname + " " + "p"+str(process_count)+" "+date + " %s %s %d %6.4f" % (xl,test,n,elapsed)
-        print "#"+str(tofork),x
-        f.write(x+"\n")
-        f.flush()
+      os.kill(spid,signal.SIGKILL)
+    os.wait()
+
+
+    if  pidx == pid:
+      signalled = os.WIFSIGNALED(status)
+      exited = os.WIFEXITED(status)
+      if not (signalled or exited):
+        print "WHAT?? Neither exited nor signalled?"
+        exit(2)
+
+      # Killed by signal, possibly timeout, no result
+      # can be recorded
+      if signalled:
+        sig = os.WTERMSIG(status)
+        if sig == signal.SIGINT:
+          raise KeyboardInterrupt
+
+        if sig == signal.SIGSEGV:
+          print "SEGMENTATION FAULT, TERMINATING"
+          ok = 0
+          #sys.exit(1)
+
+        elif sig != 0:
+          print "UNKNOWN SIGNAL",sig,": TERMINATING"
+          ok = 0
+          #sys.exit(1)
       else:
-        # the process terminated by gave an error
-        # exit because this should not happen
-        ret = os.WEXITSTATUS(status)
-        if ret != 0:
-          print "TEST RETURNED ERROR CODE ",ret,": TERMINATING"
-          sys.exit(1)
+        # the process terminated correctly, record a result even
+        # if it is out of range
+        if status == 0:
+          ok = 1
+          x = hostname + " " + "p"+str(process_count)+" "+date + " %s %s %d %6.4f" % (xl,test,n,elapsed)
+          print "#"+str(tofork),x
+          f.write(x+"\n")
+          f.flush()
         else:
-          print "WHAT?? Exit code is 0 and not 0?"
-          sys.exit(2)
+          # the process terminated by gave an error
+          # exit because this should not happen
+          ret = os.WEXITSTATUS(status)
+          if ret != 0:
+            print "TEST RETURNED ERROR CODE ",ret,": TERMINATING"
+            ok = 0
+            #sys.exit(1)
+          else:
+            print "WHAT?? Exit code is 0 and not 0?"
+            sys.exit(2)
 
-  # overtime
-  if elapsed > maxtime: 
-    lst = n - 1 
-    if lst < fst: fst = lst
-    print 'OVERTIME: CUT max to',lst
 
-  # undertime
-  elif elapsed < mintime: 
-    fst = n + 1
-    if lst < fst: lst = fst
-    print 'UNDERTIME: BOOSTED min to',fst
+    # overtime
+    if ok:
+      if elapsed > maxtime: 
+        lst = n - 1 
+        if lst < fst: fst = lst
+        print 'OVERTIME: CUT max to',lst
 
-  #minimum n too high
-  elif n == fst:
-    fst = fst - 1
-    if lst < fst: lst = fst
-    print "BORDERLINE min: CUT min down to",fst
+      # undertime
+      elif elapsed < mintime: 
+        fst = n + 1
+        if lst < fst: lst = fst
+        print 'UNDERTIME: BOOSTED min to',fst
 
-  # maximum n too low
-  elif n == lst:
-    lst = lst + 1
-    if lst < fst: fst = lst
-    print "BORDERLINE max: BOOSTED max up to",lst
-    
-  if lst < 1: lst = 1
-  if fst < 1: fst = 1
-  if fst > lst: fst = lst
-  xlt[test,xl] = (fst,lst)
-  sys.stdout.flush()
+      #minimum n too high
+      elif n == fst:
+        fst = fst - 1
+        if lst < fst: lst = fst
+        print "BORDERLINE min: CUT min down to",fst
+
+      # maximum n too low
+      elif n == lst:
+        lst = lst + 1
+        if lst < fst: fst = lst
+        print "BORDERLINE max: BOOSTED max up to",lst
+        
+      if lst < 1: lst = 1
+      if fst < 1: fst = 1
+      if fst > lst: fst = lst
+      xlt[test,xl] = (fst,lst)
+    else:
+      xlt[test,xl] = (-1,-1)
+      
+    sys.stdout.flush()
 
 f.close()
 
@@ -1282,12 +1293,12 @@ fi.close()
 @head(2,'Standard Build commands')
 @select(tangler('speed/xlators/gcc.py','python'))
 def mk(k,p):
-  return "gcc -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+  return "gcc -lm -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
 lang="c"
 
 @select(tangler('speed/xlators/gccopt.py','python'))
 def mk(k,p):
-  x = "gcc -O3 -fomit-frame-pointer -funroll-loops "
+  x = "gcc -lm -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
 lang="c"
