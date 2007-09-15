@@ -1,5 +1,5 @@
 @select(tangler('_tags'))
-<{elk,tools,hostlib,judy,rtl,test,tmp,tut}>: not_hygienic
+<{elk,hostlib,judy,rtl,speed,test,tmp,tools,tut}>: not_hygienic
 
 @select(tangler('src/compiler/_tags'))
 <**/*.ml*>: warn_yzex
