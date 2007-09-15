@@ -1,4 +1,3 @@
-
 @def showgraph(machine,test,title):
   get_weaver()._write(
     '''<P></P><TABLE BORDER=2 ALIGN=center>
@@ -32,7 +31,7 @@
   showgraph(i,'ack','ackermann on '+i)
   showdata('speed/machine/'+i+'/rankings/ackermann.txt')
 
-@select(tangler('speed/specs/ackermann.py'))
+@select(tangler('speed/specs/ackermann.disable'))
 descr='ackermann'
 min=5
 max=10
@@ -124,7 +123,7 @@ end Ack_F;
   showgraph(i,'ack','ary on '+i)
   showdata('speed/machine/'+i+'/rankings/ary.txt')
 
-@select(tangler('speed/specs/ary.py'))
+@select(tangler('speed/specs/ary.disable'))
 descr='ary'
 min=5
 max=10
@@ -259,7 +258,7 @@ end Ary;
   showgraph(i,'ack','binarytrees on '+i)
   showdata('speed/machine/'+i+'/rankings/binarytrees.txt')
 
-@select(tangler('speed/specs/binarytrees.py'))
+@select(tangler('speed/specs/binarytrees.disable'))
 descr='binarytrees'
 min=5
 max=10
@@ -581,7 +580,7 @@ end Treenodes;
   showgraph(i,'ack','chameneos on '+i)
   showdata('speed/machine/'+i+'/rankings/chameneos.txt')
 
-@select(tangler('speed/specs/chameneos.py'))
+@select(tangler('speed/specs/chameneos.disable'))
 descr='chameneos'
 min=5
 max=10
@@ -768,7 +767,7 @@ let _ =
   showgraph(i,'ack','dispatch on '+i)
   showdata('speed/machine/'+i+'/rankings/dispatch.txt')
 
-@select(tangler('speed/specs/dispatch.py'))
+@select(tangler('speed/specs/dispatch.disable'))
 descr='dispatch'
 min=5
 max=10
@@ -778,7 +777,7 @@ max=10
   showgraph(i,'ack','echo on '+i)
   showdata('speed/machine/'+i+'/rankings/echo.txt')
 
-@select(tangler('speed/specs/echo.py'))
+@select(tangler('speed/specs/echo.disable'))
 descr='echo'
 min=5
 max=10
@@ -1002,7 +1001,7 @@ echo_server n
   showgraph(i,'ack','except on '+i)
   showdata('speed/machine/'+i+'/rankings/except.txt')
 
-@select(tangler('speed/specs/except.py'))
+@select(tangler('speed/specs/except.disable'))
 descr='except'
 min=5
 max=10
@@ -1195,7 +1194,7 @@ end Except;
   showgraph(i,'ack','fannkuch on '+i)
   showdata('speed/machine/'+i+'/rankings/fannkuch.txt')
 
-@select(tangler('speed/specs/fannkuch.py'))
+@select(tangler('speed/specs/fannkuch.disable'))
 descr='fannkuch'
 min=5
 max=10
@@ -1464,7 +1463,7 @@ end Fannkuch;
   showgraph(i,'ack','fasta on '+i)
   showdata('speed/machine/'+i+'/rankings/fasta.txt')
 
-@select(tangler('speed/specs/fasta.py'))
+@select(tangler('speed/specs/fasta.disable'))
 descr='fasta'
 min=5
 max=10
@@ -1793,7 +1792,7 @@ end Fasta;
   showgraph(i,'ack','fibo on '+i)
   showdata('speed/machine/'+i+'/rankings/fibo.txt')
 
-@select(tangler('speed/specs/fibo.py'))
+@select(tangler('speed/specs/fibo.disable'))
 descr='fibo'
 min=5
 max=10
@@ -1899,7 +1898,7 @@ end Pck_Fibo;
   showgraph(i,'ack','harmonic on '+i)
   showdata('speed/machine/'+i+'/rankings/harmonic.txt')
 
-@select(tangler('speed/specs/harmonic.py'))
+@select(tangler('speed/specs/harmonic.disable'))
 descr='harmonic'
 min=5
 max=10
@@ -1976,7 +1975,7 @@ end Harmonic;
   showgraph(i,'ack','hash on '+i)
   showdata('speed/machine/'+i+'/rankings/hash.txt')
 
-@select(tangler('speed/specs/hash.py'))
+@select(tangler('speed/specs/hash.disable'))
 descr='hash'
 min=5
 max=10
@@ -2079,7 +2078,7 @@ print c; endl;
   showgraph(i,'ack','hash2 on '+i)
   showdata('speed/machine/'+i+'/rankings/hash2.txt')
 
-@select(tangler('speed/specs/hash2.py'))
+@select(tangler('speed/specs/hash2.disable'))
 descr='hash2'
 min=5
 max=10
@@ -2183,7 +2182,7 @@ print h2.["foo_1"]; print " "; print h2.["foo_9999"]; endl;
   showgraph(i,'ack','health on '+i)
   showdata('speed/machine/'+i+'/rankings/health.txt')
 
-@select(tangler('speed/specs/health.py'))
+@select(tangler('speed/specs/health.disable'))
 descr='health'
 min=5
 max=10
@@ -2421,7 +2420,7 @@ let () =
   showgraph(i,'ack','heapsort on '+i)
   showdata('speed/machine/'+i+'/rankings/heapsort.txt')
 
-@select(tangler('speed/specs/heapsort.py'))
+@select(tangler('speed/specs/heapsort.disable'))
 descr='heapsort'
 min=5
 max=10
@@ -2740,7 +2739,7 @@ end Heapsort;
   showgraph(i,'ack','hello on '+i)
   showdata('speed/machine/'+i+'/rankings/hello.txt')
 
-@select(tangler('speed/specs/hello.py'))
+@select(tangler('speed/specs/hello.disable'))
 descr='hello'
 min=5
 max=10
@@ -2792,7 +2791,7 @@ end Hello;
   showgraph(i,'ack','implicitode on '+i)
   showdata('speed/machine/'+i+'/rankings/implicitode.txt')
 
-@select(tangler('speed/specs/implicitode.py'))
+@select(tangler('speed/specs/implicitode.disable'))
 descr='implicitode'
 min=5
 max=10
@@ -2961,7 +2960,7 @@ let () =
   showgraph(i,'ack','knucleotide on '+i)
   showdata('speed/machine/'+i+'/rankings/knucleotide.txt')
 
-@select(tangler('speed/specs/knucleotide.py'))
+@select(tangler('speed/specs/knucleotide.disable'))
 descr='knucleotide'
 min=5
 max=10
@@ -3591,7 +3590,7 @@ end KNucleotide;
   showgraph(i,'ack','lists on '+i)
   showdata('speed/machine/'+i+'/rankings/lists.txt')
 
-@select(tangler('speed/specs/lists.py'))
+@select(tangler('speed/specs/lists.disable'))
 descr='lists'
 min=5
 max=10
@@ -4462,23 +4461,12 @@ begin
 end Listoperations;
 
 
-
-@head(1,'[magicsquares]')
-@for i in machs:
-  showgraph(i,'ack','magicsquares on '+i)
-  showdata('speed/machine/'+i+'/rankings/magicsquares.txt')
-
-@select(tangler('speed/specs/magicsquares.py'))
-descr='magicsquares'
-min=5
-max=10
-
 @head(1,'[mandelbrot]')
 @for i in machs:
   showgraph(i,'ack','mandelbrot on '+i)
   showdata('speed/machine/'+i+'/rankings/mandelbrot.txt')
 
-@select(tangler('speed/specs/mandelbrot.py'))
+@select(tangler('speed/specs/mandelbrot.disable'))
 descr='mandelbrot'
 min=5
 max=10
@@ -4549,7 +4537,7 @@ let () =
   showgraph(i,'ack','matrix on '+i)
   showdata('speed/machine/'+i+'/rankings/matrix.txt')
 
-@select(tangler('speed/specs/matrix.py'))
+@select(tangler('speed/specs/matrix.disable'))
 descr='matrix'
 min=5
 max=10
@@ -4803,7 +4791,7 @@ end Matrix;
   showgraph(i,'ack','message on '+i)
   showdata('speed/machine/'+i+'/rankings/message.txt')
 
-@select(tangler('speed/specs/message.py'))
+@select(tangler('speed/specs/message.disable'))
 descr='message'
 min=5
 max=10
@@ -4992,7 +4980,7 @@ end Message;
   showgraph(i,'ack','meteor on '+i)
   showdata('speed/machine/'+i+'/rankings/meteor.txt')
 
-@select(tangler('speed/specs/meteor.py'))
+@select(tangler('speed/specs/meteor.disable'))
 descr='meteor'
 min=5
 max=10
@@ -5002,7 +4990,7 @@ max=10
   showgraph(i,'ack','methcall on '+i)
   showdata('speed/machine/'+i+'/rankings/methcall.txt')
 
-@select(tangler('speed/specs/methcall.py'))
+@select(tangler('speed/specs/methcall.disable'))
 descr='methcall'
 min=5
 max=10
@@ -5267,7 +5255,7 @@ end MethCall;
   showgraph(i,'ack','moments on '+i)
   showdata('speed/machine/'+i+'/rankings/moments.txt')
 
-@select(tangler('speed/specs/moments.py'))
+@select(tangler('speed/specs/moments.disable'))
 descr='moments'
 min=5
 max=10
@@ -5769,7 +5757,7 @@ end Moments;
   showgraph(i,'ack','nbody on '+i)
   showdata('speed/machine/'+i+'/rankings/nbody.txt')
 
-@select(tangler('speed/specs/nbody.py'))
+@select(tangler('speed/specs/nbody.disable'))
 descr='nbody'
 min=5
 max=10
@@ -6230,7 +6218,7 @@ end Nbody;
   showgraph(i,'ack','nestedloop on '+i)
   showdata('speed/machine/'+i+'/rankings/nestedloop.txt')
 
-@select(tangler('speed/specs/nestedloop.py'))
+@select(tangler('speed/specs/nestedloop.disable'))
 descr='nestedloop'
 min=5
 max=10
@@ -6356,7 +6344,7 @@ end NestedLoop;
   showgraph(i,'ack','nsieve on '+i)
   showdata('speed/machine/'+i+'/rankings/nsieve.txt')
 
-@select(tangler('speed/specs/nsieve.py'))
+@select(tangler('speed/specs/nsieve.disable'))
 descr='nsieve'
 min=5
 max=10
@@ -6452,7 +6440,7 @@ end Nsieve;
   showgraph(i,'ack','nsievebits on '+i)
   showdata('speed/machine/'+i+'/rankings/nsievebits.txt')
 
-@select(tangler('speed/specs/nsievebits.py'))
+@select(tangler('speed/specs/nsievebits.disable'))
 descr='nsievebits'
 min=5
 max=10
@@ -6528,7 +6516,7 @@ usage:		fprintf(stderr, "usage: nsieve N\n");
   showgraph(i,'ack','objinst on '+i)
   showdata('speed/machine/'+i+'/rankings/objinst.txt')
 
-@select(tangler('speed/specs/objinst.py'))
+@select(tangler('speed/specs/objinst.disable'))
 descr='objinst'
 min=5
 max=10
@@ -6841,7 +6829,7 @@ end ObjInst;
   showgraph(i,'ack','partialsums on '+i)
   showdata('speed/machine/'+i+'/rankings/partialsums.txt')
 
-@select(tangler('speed/specs/partialsums.py'))
+@select(tangler('speed/specs/partialsums.disable'))
 descr='partialsums'
 min=5
 max=10
@@ -6993,7 +6981,7 @@ let () =
   showgraph(i,'ack','pidigits on '+i)
   showdata('speed/machine/'+i+'/rankings/pidigits.txt')
 
-@select(tangler('speed/specs/pidigits.py'))
+@select(tangler('speed/specs/pidigits.disable'))
 descr='pidigits'
 min=5
 max=10
@@ -7273,7 +7261,7 @@ end pidigits;
   showgraph(i,'ack','process on '+i)
   showdata('speed/machine/'+i+'/rankings/process.txt')
 
-@select(tangler('speed/specs/process.py'))
+@select(tangler('speed/specs/process.disable'))
 descr='process'
 min=5
 max=10
@@ -7359,7 +7347,7 @@ end Process;
   showgraph(i,'ack','prodcons on '+i)
   showdata('speed/machine/'+i+'/rankings/prodcons.txt')
 
-@select(tangler('speed/specs/prodcons.py'))
+@select(tangler('speed/specs/prodcons.disable'))
 descr='prodcons'
 min=5
 max=10
@@ -7614,7 +7602,7 @@ end ProdCons;
   showgraph(i,'ack','random on '+i)
   showdata('speed/machine/'+i+'/rankings/random.txt')
 
-@select(tangler('speed/specs/random.py'))
+@select(tangler('speed/specs/random.disable'))
 descr='random'
 min=5
 max=10
@@ -7749,7 +7737,7 @@ end Random;
   showgraph(i,'ack','recursive on '+i)
   showdata('speed/machine/'+i+'/rankings/recursive.txt')
 
-@select(tangler('speed/specs/recursive.py'))
+@select(tangler('speed/specs/recursive.disable'))
 descr='recursive'
 min=5
 max=10
@@ -7892,7 +7880,7 @@ end Recursive;
   showgraph(i,'ack','regexdna on '+i)
   showdata('speed/machine/'+i+'/rankings/regexdna.txt')
 
-@select(tangler('speed/specs/regexdna.py'))
+@select(tangler('speed/specs/regexdna.disable'))
 descr='regexdna'
 min=5
 max=10
@@ -7902,7 +7890,7 @@ max=10
   showgraph(i,'ack','regexmatch on '+i)
   showdata('speed/machine/'+i+'/rankings/regexmatch.txt')
 
-@select(tangler('speed/specs/regexmatch.py'))
+@select(tangler('speed/specs/regexmatch.disable'))
 descr='regexmatch'
 min=5
 max=10
@@ -8180,7 +8168,7 @@ done;
   showgraph(i,'ack','revcomp on '+i)
   showdata('speed/machine/'+i+'/rankings/revcomp.txt')
 
-@select(tangler('speed/specs/revcomp.py'))
+@select(tangler('speed/specs/revcomp.disable'))
 descr='revcomp'
 min=5
 max=10
@@ -8356,7 +8344,7 @@ end Revcomp;
   showgraph(i,'ack','reversefile on '+i)
   showdata('speed/machine/'+i+'/rankings/reversefile.txt')
 
-@select(tangler('speed/specs/reversefile.py'))
+@select(tangler('speed/specs/reversefile.disable'))
 descr='reversefile'
 min=5
 max=10
@@ -8558,7 +8546,7 @@ end Reversefile;
   showgraph(i,'ack','sieve on '+i)
   showdata('speed/machine/'+i+'/rankings/sieve.txt')
 
-@select(tangler('speed/specs/sieve.py'))
+@select(tangler('speed/specs/sieve.disable'))
 descr='sieve'
 min=5
 max=10
@@ -8713,7 +8701,7 @@ end Sieve;
   showgraph(i,'ack','spectralnorm on '+i)
   showdata('speed/machine/'+i+'/rankings/spectralnorm.txt')
 
-@select(tangler('speed/specs/spectralnorm.py'))
+@select(tangler('speed/specs/spectralnorm.disable'))
 descr='spectralnorm'
 min=5
 max=10
@@ -8923,7 +8911,7 @@ end SpectralNorm;
   showgraph(i,'ack','spellcheck on '+i)
   showdata('speed/machine/'+i+'/rankings/spellcheck.txt')
 
-@select(tangler('speed/specs/spellcheck.py'))
+@select(tangler('speed/specs/spellcheck.disable'))
 descr='spellcheck'
 min=5
 max=10
@@ -9151,7 +9139,7 @@ end Dictionnary_Mgr;
   showgraph(i,'ack','strcat on '+i)
   showdata('speed/machine/'+i+'/rankings/strcat.txt')
 
-@select(tangler('speed/specs/strcat.py'))
+@select(tangler('speed/specs/strcat.disable'))
 descr='strcat'
 min=5
 max=10
@@ -9239,7 +9227,7 @@ print (len str); endl;
   showgraph(i,'ack','sumcol on '+i)
   showdata('speed/machine/'+i+'/rankings/sumcol.txt')
 
-@select(tangler('speed/specs/sumcol.py'))
+@select(tangler('speed/specs/sumcol.disable'))
 descr='sumcol'
 min=5
 max=10
@@ -9328,7 +9316,7 @@ end SumCol;
   showgraph(i,'ack','takfp on '+i)
   showdata('speed/machine/'+i+'/rankings/takfp.txt')
 
-@select(tangler('speed/specs/takfp.py'))
+@select(tangler('speed/specs/takfp.disable'))
 descr='takfp'
 min=5
 max=10
@@ -9443,7 +9431,7 @@ end Takfp;
   showgraph(i,'ack','tcpecho on '+i)
   showdata('speed/machine/'+i+'/rankings/tcpecho.txt')
 
-@select(tangler('speed/specs/tcpecho.py'))
+@select(tangler('speed/specs/tcpecho.disable'))
 descr='tcpecho'
 min=5
 max=10
@@ -9717,7 +9705,7 @@ end TCPEcho;
   showgraph(i,'ack','tcpsocket on '+i)
   showdata('speed/machine/'+i+'/rankings/tcpsocket.txt')
 
-@select(tangler('speed/specs/tcpsocket.py'))
+@select(tangler('speed/specs/tcpsocket.disable'))
 descr='tcpsocket'
 min=5
 max=10
@@ -9727,7 +9715,7 @@ max=10
   showgraph(i,'ack','tcpstream on '+i)
   showdata('speed/machine/'+i+'/rankings/tcpstream.txt')
 
-@select(tangler('speed/specs/tcpstream.py'))
+@select(tangler('speed/specs/tcpstream.disable'))
 descr='tcpstream'
 min=5
 max=10
@@ -10001,7 +9989,7 @@ end TCPStream;
   showgraph(i,'ack','wc on '+i)
   showdata('speed/machine/'+i+'/rankings/wc.txt')
 
-@select(tangler('speed/specs/wc.py'))
+@select(tangler('speed/specs/wc.disable'))
 descr='wc'
 min=5
 max=10
@@ -10290,7 +10278,7 @@ end wc;
   showgraph(i,'ack','wordfreq on '+i)
   showdata('speed/machine/'+i+'/rankings/wordfreq.txt')
 
-@select(tangler('speed/specs/wordfreq.py'))
+@select(tangler('speed/specs/wordfreq.disable'))
 descr='wordfreq'
 min=5
 max=10
