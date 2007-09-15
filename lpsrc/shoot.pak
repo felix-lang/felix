@@ -149,17 +149,17 @@ int
 main(int argc, char *argv[]) {
     int n = ((argc == 2) ? atoi(argv[1]) : 1);
     int i, k, *x, *y;
-	
+        
     x = (int *) calloc(n, sizeof(int));
     y = (int *) calloc(n, sizeof(int));
 
     for (i = 0; i < n; i++) {
-	x[i] = i + 1;
+        x[i] = i + 1;
     }
     for (k=0; k<1000; k++) {
-	for (i = n-1; i >= 0; i--) {
-	    y[i] += x[i];
-	}
+        for (i = n-1; i >= 0; i--) {
+            y[i] += x[i];
+        }
     }
 
     fprintf(stdout, "%d %d\n", y[0], y[n-1]);
@@ -245,7 +245,7 @@ begin
 
       for Iter in 1 .. 1000 loop
          for K in reverse Vect'Range loop
-	    Y(K) := Y(K) + X(K);
+            Y(K) := Y(K) + X(K);
          end loop;
       end loop;
       Text_IO.Put_Line (L_Trim (Integer'Image (Y (1))) &
@@ -691,7 +691,7 @@ int main (int argc, char *argv[])
     {
       sprintf (theArgs[i], "%d %d", i, tabColor[i]);
       pthread_create (&tabPid[i], NULL, (void *(*)(void *)) chameneosCode,
-		      theArgs[i]);
+                      theArgs[i]);
     }
   for (i = 0; i < 4; i++)
     pthread_join (tabPid[i], NULL);
@@ -727,20 +727,20 @@ let meet =
     fun creature cont ->
       if !n <= 0 then (cont Faded)
       else match !first with
-	  None -> 
-	    first := Some (creature, cont)
-	| Some (creature',cont') -> 
-	    decr n;
-	    first := None;
-	    cont creature';
-	    cont' creature
-	  
+          None -> 
+            first := Some (creature, cont)
+        | Some (creature',cont') -> 
+            decr n;
+            first := None;
+            cont creature';
+            cont' creature
+          
 let wait,step = 
   let q = ref [] in
   (fun cont -> q := cont :: !q),
   (fun _ -> let q' = !q in q := [] ;
      match q' with
-	 [] -> false
+         [] -> false
        | _ -> List.iter (fun c -> c ()) q';true)
     
       
@@ -748,9 +748,9 @@ let rec creature stop color =
   let rec body n color = 
     meet color 
       (function Faded -> stop n
-	 | color' ->
-	     let color = compl color color' in      
-	       wait (fun _ -> body (succ n) color)
+         | color' ->
+             let color = compl color color' in      
+               wait (fun _ -> body (succ n) color)
       )
   in
     body 0 color
@@ -814,15 +814,15 @@ genericSock(int port,SOCKACTION_P action,char *actionExceptionText) {
     int ss, optval = 1;
     struct sockaddr_in sin;
     if ((ss = socket(PF_INET, SOCK_STREAM, 0)) == -1)
-	sysabort("socket");
+        sysabort("socket");
     if (setsockopt(ss, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
-	sysabort("setsockopt");
+        sysabort("setsockopt");
     memset(&sin,0,sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     sin.sin_port = port; 
     if (action(ss, (struct sockaddr *)&sin,(socklen_t)sizeof(sin)) == -1)
-	sysabort(actionExceptionText);
+        sysabort(actionExceptionText);
 
     return(ss);
 }
@@ -843,7 +843,7 @@ get_port (int sock) {
     struct sockaddr_in sin;
     socklen_t slen = sizeof(sin);
     if (getsockname(sock, (struct sockaddr *)&sin, &slen) == -1)
-	sysabort("server/getsockname");
+        sysabort("server/getsockname");
     return(sin.sin_port);
 }    
 
@@ -857,27 +857,27 @@ echo_client (int n, int port) {
     strcpy(obuf, DATA);
     olen = strlen(obuf);
     for (i=0; i<n; i++) {
-	len = olen;
-	offset = obuf;
-	while (len > 0) {
-	    if ((nwritten = write(sock, offset, len)) == -1)
-		sysabort("client/write");
-	    offset += nwritten;
-	    len -= nwritten;
-	}
-	offset = ibuf;
-	while ((nread = read(sock, offset, (end - offset))) > 0) {
-	    offset += nread;
-	    if (*(offset-1) == '\n') break;
-	}
-	if (nread == -1)
-	    sysabort("client/read");
-	*offset = 0;
-	if ((strcmp(obuf, ibuf)) != 0) {
-	    char mbuf[128];
-	    sprintf(mbuf, "client: \"%s\" ne \"%s\"", obuf, ibuf);
-	    myabort(mbuf);
-	}
+        len = olen;
+        offset = obuf;
+        while (len > 0) {
+            if ((nwritten = write(sock, offset, len)) == -1)
+                sysabort("client/write");
+            offset += nwritten;
+            len -= nwritten;
+        }
+        offset = ibuf;
+        while ((nread = read(sock, offset, (end - offset))) > 0) {
+            offset += nread;
+            if (*(offset-1) == '\n') break;
+        }
+        if (nread == -1)
+            sysabort("client/read");
+        *offset = 0;
+        if ((strcmp(obuf, ibuf)) != 0) {
+            char mbuf[128];
+            sprintf(mbuf, "client: \"%s\" ne \"%s\"", obuf, ibuf);
+            myabort(mbuf);
+        }
     }
     close(sock);
 }
@@ -894,30 +894,30 @@ echo_server (int n) {
     ssock = server_sock();
     signal(SIGCHLD, reaper);
     if ((pid = fork()) == -1)
-	sysabort("server/fork");
+        sysabort("server/fork");
     if (pid) {
-	/* parent is server */
-	if ((csock = accept(ssock, (struct sockaddr *)&sin, &slen)) == -1)
-	    sysabort("server/accept");
-	total_bytes = 0;
-	while ((len = read(csock, buf, sizeof(buf))) > 0) {
-	    if (sigchld) myabort("server/sigchld");
-	    offset = buf;
-	    total_bytes += len;
-	    while (len > 0) {
-		if ((nwritten = write(csock, offset, len)) == -1)
-		    sysabort("server/write");
-		offset += nwritten;
-		len -= nwritten;
-	    }
-	}
-	if (len == -1)
-	    sysabort("server/read");
-	close(csock);
-	fprintf(stdout, "server processed %d bytes\n", total_bytes);
+        /* parent is server */
+        if ((csock = accept(ssock, (struct sockaddr *)&sin, &slen)) == -1)
+            sysabort("server/accept");
+        total_bytes = 0;
+        while ((len = read(csock, buf, sizeof(buf))) > 0) {
+            if (sigchld) myabort("server/sigchld");
+            offset = buf;
+            total_bytes += len;
+            while (len > 0) {
+                if ((nwritten = write(csock, offset, len)) == -1)
+                    sysabort("server/write");
+                offset += nwritten;
+                len -= nwritten;
+            }
+        }
+        if (len == -1)
+            sysabort("server/read");
+        close(csock);
+        fprintf(stdout, "server processed %d bytes\n", total_bytes);
     } else {
-	/* child is client */
-	echo_client(n, get_port(ssock));
+        /* child is client */
+        echo_client(n, get_port(ssock));
     }
     wait(&status);
 }
@@ -1023,25 +1023,25 @@ static jmp_buf Lo_exception;
 
 void blowup (int n) {
     if (n & 1) {
-	longjmp(Lo_exception, 1);
+        longjmp(Lo_exception, 1);
     } else {
-	longjmp(Hi_exception, 1);
+        longjmp(Hi_exception, 1);
     }
 }
 
 void lo_function (volatile int n) {
     if (setjmp(Lo_exception) != 0) {
-	LO++;
+        LO++;
     } else {
-	blowup(n);
+        blowup(n);
     }
 }
 
 void hi_function (volatile int n) {
     if (setjmp(Hi_exception) != 0) {
-	HI++;
+        HI++;
     } else {
-	lo_function(n);
+        lo_function(n);
     }
 }
 
@@ -1054,7 +1054,7 @@ main(int argc, char *argv[]) {
     int volatile N = ((argc == 2) ? atoi(argv[1]) : 1);
 
     while (N) {
-	some_function(N--);
+        some_function(N--);
     }
     printf("Exceptions: HI=%d / LO=%d\n", HI, LO);
     return(0);
@@ -1205,7 +1205,7 @@ max=10
  * http://shootout.alioth.debian.org/
  * Contributed by Heiner Marxen
  *
- * "fannkuch"	for C gcc
+ * "fannkuch"   for C gcc
  *
  * $Id: fannkuch.gcc,v 1.5 2005-12-04 23:58:38 igouy-guest Exp $
  */
@@ -1213,22 +1213,22 @@ max=10
 #include <stdio.h>
 #include <stdlib.h>
 
-#define Int	int
-#define Aint	int
+#define Int     int
+#define Aint    int
 
     static long
 fannkuch( int n )
 {
-    Aint*	perm;
-    Aint*	perm1;
-    Aint*	count;
-    long	flips;
-    long	flipsMax;
-    Int		r;
-    Int		i;
-    Int		k;
-    Int		didpr;
-    const Int	n1	= n - 1;
+    Aint*       perm;
+    Aint*       perm1;
+    Aint*       count;
+    long        flips;
+    long        flipsMax;
+    Int         r;
+    Int         i;
+    Int         k;
+    Int         didpr;
+    const Int   n1      = n - 1;
 
     if( n < 1 ) return 0;
 
@@ -1236,71 +1236,71 @@ fannkuch( int n )
     perm1 = calloc(n, sizeof(*perm1));
     count = calloc(n, sizeof(*count));
 
-    for( i=0 ; i<n ; ++i ) perm1[i] = i;	/* initial (trivial) permu */
+    for( i=0 ; i<n ; ++i ) perm1[i] = i;        /* initial (trivial) permu */
 
     r = n; didpr = 0; flipsMax = 0;
     for(;;) {
-	if( didpr < 30 ) {
-	    for( i=0 ; i<n ; ++i ) printf("%d", (int)(1+perm1[i]));
-	    printf("\n");
-	    ++didpr;
-	}
-	for( ; r!=1 ; --r ) {
-	    count[r-1] = r;
-	}
+        if( didpr < 30 ) {
+            for( i=0 ; i<n ; ++i ) printf("%d", (int)(1+perm1[i]));
+            printf("\n");
+            ++didpr;
+        }
+        for( ; r!=1 ; --r ) {
+            count[r-1] = r;
+        }
 
-#define XCH(x,y)	{ Aint t_mp; t_mp=(x); (x)=(y); (y)=t_mp; }
+#define XCH(x,y)        { Aint t_mp; t_mp=(x); (x)=(y); (y)=t_mp; }
 
-	if( ! (perm1[0]==0 || perm1[n1]==n1) ) {
-	    flips = 0;
-	    for( i=1 ; i<n ; ++i ) {	/* perm = perm1 */
-		perm[i] = perm1[i];
-	    }
-	    k = perm1[0];		/* cache perm[0] in k */
-	    do {			/* k!=0 ==> k>0 */
-		Int	j;
-		for( i=1, j=k-1 ; i<j ; ++i, --j ) {
-		    XCH(perm[i], perm[j])
-		}
-		++flips;
-		/*
-		 * Now exchange k (caching perm[0]) and perm[k]... with care!
-		 * XCH(k, perm[k]) does NOT work!
-		 */
-		j=perm[k]; perm[k]=k ; k=j;
-	    }while( k );
-	    if( flipsMax < flips ) {
-		flipsMax = flips;
-	    }
-	}
+        if( ! (perm1[0]==0 || perm1[n1]==n1) ) {
+            flips = 0;
+            for( i=1 ; i<n ; ++i ) {    /* perm = perm1 */
+                perm[i] = perm1[i];
+            }
+            k = perm1[0];               /* cache perm[0] in k */
+            do {                        /* k!=0 ==> k>0 */
+                Int     j;
+                for( i=1, j=k-1 ; i<j ; ++i, --j ) {
+                    XCH(perm[i], perm[j])
+                }
+                ++flips;
+                /*
+                 * Now exchange k (caching perm[0]) and perm[k]... with care!
+                 * XCH(k, perm[k]) does NOT work!
+                 */
+                j=perm[k]; perm[k]=k ; k=j;
+            }while( k );
+            if( flipsMax < flips ) {
+                flipsMax = flips;
+            }
+        }
 
-	for(;;) {
-	    if( r == n ) {
-		return flipsMax;
-	    }
-	    /* rotate down perm[0..r] by one */
-	    {
-		Int	perm0 = perm1[0];
-		i = 0;
-		while( i < r ) {
-		    k = i+1;
-		    perm1[i] = perm1[k];
-		    i = k;
-		}
-		perm1[r] = perm0;
-	    }
-	    if( (count[r] -= 1) > 0 ) {
-		break;
-	    }
-	    ++r;
-	}
+        for(;;) {
+            if( r == n ) {
+                return flipsMax;
+            }
+            /* rotate down perm[0..r] by one */
+            {
+                Int     perm0 = perm1[0];
+                i = 0;
+                while( i < r ) {
+                    k = i+1;
+                    perm1[i] = perm1[k];
+                    i = k;
+                }
+                perm1[r] = perm0;
+            }
+            if( (count[r] -= 1) > 0 ) {
+                break;
+            }
+            ++r;
+        }
     }
 }
 
     int
 main( int argc, char* argv[] )
 {
-    int		n = (argc>1) ? atoi(argv[1]) : 0;
+    int         n = (argc>1) ? atoi(argv[1]) : 0;
 
     printf("Pfannkuchen(%d) = %ld\n", n, fannkuch(n));
     return 0;
@@ -1337,8 +1337,8 @@ if a 0 then
    let rec y m= let x=s.(0)-1 in 
    if x=0 then m 
    else (for i=0 to((x-1) lsr 1)do
-	   let t=s.(i)in let o = x-i in s.(i)<-s.(o);
-	   s.(o)<-t done;y(m+1)) 
+           let t=s.(i)in let o = x-i in s.(i)<-s.(o);
+           s.(o)<-t done;y(m+1)) 
    in y m) else 0
   
 (*building new permutations*)
@@ -1351,9 +1351,9 @@ let _ = let rec f i m z= (* printing loop *)
   if i <=n && z>0 
   then(q();x i;f(a 2)(max m(w 0))(z-1))
   else (if z>0 then q();g i m)
-	and g i m= if i <=n (* non printing loop *)
-	then(x i; g(a 2)(max m(w 0)))
-	else m in
+        and g i m= if i <=n (* non printing loop *)
+        then(x i; g(a 2)(max m(w 0)))
+        else m in
 printf "Pfannkuchen(%i) = %i\n" n (f (a 2) 0 30)
 
 @select(tangler('speed/src/ada/fannkuch.ada'))
@@ -1994,17 +1994,17 @@ max=10
 int main(int argc, char *argv[]) {
     int i, c=0, n = ((argc == 2) ? atoi(argv[1]) : 1);
     char buf[32];
-	
+        
     struct ht_ht *ht = ht_create(n);
     
     for (i=1; i<=n; i++) {
-	sprintf(buf, "%x", i);
-	(ht_find_new(ht, buf))->val = i;
+        sprintf(buf, "%x", i);
+        (ht_find_new(ht, buf))->val = i;
     }
 
     for (i=n; i>0; i--) {
-	sprintf(buf, "%d", i);
-	if (ht_find(ht, buf)) c++;
+        sprintf(buf, "%d", i);
+        if (ht_find(ht, buf)) c++;
     }
 
     ht_destroy(ht);
@@ -2102,21 +2102,21 @@ int main(int argc, char *argv[]) {
     struct ht_node *node;
 
     for (i=0; i<=9999; ++i) {
-	sprintf(buf, "foo_%d", i);
-	ht_find_new(ht1, buf)->val = i;
+        sprintf(buf, "foo_%d", i);
+        ht_find_new(ht1, buf)->val = i;
     }
 
     for (i=0; i<n; ++i) {
-	for (node=ht_first(ht1); node; node=ht_next(ht1)) {
-	    ht_find_new(ht2, node->key)->val += node->val;
-	}
+        for (node=ht_first(ht1); node; node=ht_next(ht1)) {
+            ht_find_new(ht2, node->key)->val += node->val;
+        }
     }
 
     printf("%d %d %d %d\n",
-	   (ht_find(ht1, "foo_1"))->val,
-	   (ht_find(ht1, "foo_9999"))->val,
-	   (ht_find(ht2, "foo_1"))->val,
-	   (ht_find(ht2, "foo_9999"))->val);
+           (ht_find(ht1, "foo_1"))->val,
+           (ht_find(ht1, "foo_9999"))->val,
+           (ht_find(ht2, "foo_1"))->val,
+           (ht_find(ht2, "foo_9999"))->val);
 
     ht_destroy(ht1);
     ht_destroy(ht2);
@@ -2337,9 +2337,9 @@ struct
     let treat p =
       p.remaining_time <- p.remaining_time - 1;
       if p.remaining_time > 0 then true else (
-	h.available_staff <- h.available_staff + 1;
-	h.discharged <- add_patient h.discharged p;
-	false
+        h.available_staff <- h.available_staff + 1;
+        h.discharged <- add_patient h.discharged p;
+        false
       ) in
     L.filter treat h.treatement
 
@@ -2347,27 +2347,27 @@ struct
     let examine p =
       p.remaining_time <- p.remaining_time - 1;
       if p.remaining_time > 0 then true else (
-	if random h 1.0 > 0.1 || h.has_no_regional_hospital then (
-	  (* Treat patient -- no transfer *)
-	  L.add p h.treatement;
-	  patient_stay p 10;
-	)
-	else (
-	  (* Transfer to regional hospital *)
-	  h.available_staff <- h.available_staff + 1;
-	  L.add p h.transfers;
-	);
-	false
+        if random h 1.0 > 0.1 || h.has_no_regional_hospital then (
+          (* Treat patient -- no transfer *)
+          L.add p h.treatement;
+          patient_stay p 10;
+        )
+        else (
+          (* Transfer to regional hospital *)
+          h.available_staff <- h.available_staff + 1;
+          L.add p h.transfers;
+        );
+        false
       ) in
     L.filter examine h.examination
 
   let triage_patients h =
     let triage p =
       if h.available_staff > 0 then (
-	h.available_staff <- h.available_staff - 1;
-	L.add p h.examination;
-	patient_stay p 3;
-	false
+        h.available_staff <- h.available_staff - 1;
+        L.add p h.examination;
+        patient_stay p 3;
+        false
       )
       else (p.hospital_time <- p.hospital_time + 1;  true) in
     L.filter triage h.triage
@@ -2391,7 +2391,7 @@ let districts = 4
 let rec create_health_care level seed1 seed2 =
   let create i = create_health_care (level - 1) (4 * seed1 + i + 1) seed2 in
   Region(Hospital.make (level = levels) level (seed1 * seed2),
-	 Array.init (if level <= 1 then 0 else districts) create)
+         Array.init (if level <= 1 then 0 else districts) create)
 
 let rec transfer_patients (Region(h, districts)) =
   let transfer d =
@@ -2453,28 +2453,28 @@ heapsort(int n, double *ra) {
     double rra;
 
     for (;;) {
-	if (l > 1) {
-	    rra = ra[--l];
-	} else {
-	    rra = ra[ir];
-	    ra[ir] = ra[1];
-	    if (--ir == 1) {
-		ra[1] = rra;
-		return;
-	    }
-	}
-	i = l;
-	j = l << 1;
-	while (j <= ir) {
-	    if (j < ir && ra[j] < ra[j+1]) { ++j; }
-	    if (rra < ra[j]) {
-		ra[i] = ra[j];
-		j += (i = j);
-	    } else {
-		j = ir + 1;
-	    }
-	}
-	ra[i] = rra;
+        if (l > 1) {
+            rra = ra[--l];
+        } else {
+            rra = ra[ir];
+            ra[ir] = ra[1];
+            if (--ir == 1) {
+                ra[1] = rra;
+                return;
+            }
+        }
+        i = l;
+        j = l << 1;
+        while (j <= ir) {
+            if (j < ir && ra[j] < ra[j+1]) { ++j; }
+            if (rra < ra[j]) {
+                ra[i] = ra[j];
+                j += (i = j);
+            } else {
+                j = ir + 1;
+            }
+        }
+        ra[i] = rra;
     }
 }
 
@@ -2487,7 +2487,7 @@ main(int argc, char *argv[]) {
     /* create an array of N random doubles */
     ary = (double *)malloc((N+1) * sizeof(double));
     for (i=1; i<=N; i++) {
-	ary[i] = gen_random(1);
+        ary[i] = gen_random(1);
     }
 
     heapsort(N, ary);
@@ -2855,7 +2855,7 @@ module C(F : SCALAR) = struct
   let ( + ) a b = { re = a.re + b.re;  im = a.im + b.im }
   and ( - ) a b = { re = a.re - b.re;  im = a.im - b.im }
   and ( * ) a b = { re = a.re * b.re - a.im * b.im;
-		    im = a.re * b.im + a.im * b.re }
+                    im = a.re * b.im + a.im * b.re }
   and ( / ) a b =
     let mag = b.re * b.re + b.im * b.im in
     { re = (a.re * b.re + a.im * b.im) / mag;
@@ -2872,7 +2872,7 @@ module Functions(F : SCALAR) = struct
 
   open F
   let rat x = ((f2 * x + f3 * x**2 + f7 * x**6 + f5 * x**11 + f1)
-	       / (f5 * x - f6 * x**3 - f3 * x**7 + f2))
+               / (f5 * x - f6 * x**3 - f3 * x**7 + f2))
 
   (* Automatic differentiation type on the field [F]. *)
   module AD = struct
@@ -2889,8 +2889,8 @@ module Functions(F : SCALAR) = struct
     let newton x0 n g =
       let x = ref x0 in
       for i = 1 to n do
-	let v = g(vr !x f1) in
-	x := F.(-) !x (F.(/) v.x v.dx)
+        let v = g(vr !x f1) in
+        x := F.(-) !x (F.(/) v.x v.dx)
       done; !x
 
     let trapezoid_method_rooter gad gf y0 t0 t1 =
@@ -2903,8 +2903,8 @@ module Functions(F : SCALAR) = struct
     let trapezoid_method t0 dt y0 gad gf numsteps =
       let y = ref y0 and t = ref t0 in
       for i = 1 to numsteps do
-	y := newton !y 10 (trapezoid_method_rooter gad gf !y !t (F.(+) !t dt));
-	t := F.(+) !t dt;
+        y := newton !y 10 (trapezoid_method_rooter gad gf !y !t (F.(+) !t dt));
+        t := F.(+) !t dt;
       done; !y
   end
 end
@@ -2933,10 +2933,10 @@ let mysqrt x = AD.(-) (ADFuns.sqr x) (AD.mk 2)
 let () =
   let f1 = FL64.mk 1 in
   print_string("rational_taylor_series: " ^
-		 (AD.pr (ADFuns.rat (AD.vr (FL64.mf 0.25) f1))) ^ "\n");
+                 (AD.pr (ADFuns.rat (AD.vr (FL64.mf 0.25) f1))) ^ "\n");
   print_string("newton-sqrt_2: " ^ (FL64.pr (AD.newton f1 10 mysqrt)) ^ "\n");
   print_string("newton-rat: " ^
-		 (FL64.pr (AD.newton (FL64.mk (-1)) 6 ADFuns.rat)) ^ "\n")
+                 (FL64.pr (AD.newton (FL64.mk (-1)) 6 ADFuns.rat)) ^ "\n")
 
 let n = int_of_string(Array.get Sys.argv 1)
 let pfl64 = FL64.mf 0.02
@@ -3052,11 +3052,11 @@ write_frequencies (int fl, char *buffer, long buflen)
   for (i = 0; i < size - 1; i++)
     for (j = i + 1; j < size; j++)
       if (s[i].num < s[j].num)
-	{
-	  memcpy (&tmp, &(s[i]), sizeof (sorter));
-	  memcpy (&(s[i]), &(s[j]), sizeof (sorter));
-	  memcpy (&(s[j]), &tmp, sizeof (sorter));
-	}
+        {
+          memcpy (&tmp, &(s[i]), sizeof (sorter));
+          memcpy (&(s[i]), &(s[j]), sizeof (sorter));
+          memcpy (&(s[j]), &tmp, sizeof (sorter));
+        }
   for (i = 0; i < size; i++)
     printf ("%s %.3f\n", s[i].string, 100 * (float) s[i].num / total);
   printf ("\n");
@@ -3103,29 +3103,29 @@ main ()
     {
       linelen = strlen (x);
       if (linelen)
-	{
-	  if (x[linelen - 1] == '\n')
-	    linelen--;
-	  c = x[0];
-	  if (c == '>')
-	    break;
-	  else if (c != ';')
-	    {
-	      seqlen = seqlen + linelen;
-	      if (seqlen + 512 >= buflen)
-		{
-		  buflen = buflen + 10240;
-		  tmp = realloc (buffer, buflen + 1);
-		  if (tmp == NULL)
-		    return -1;
-		  buffer = tmp;
-		  x = &(buffer[seqlen]);
-		}
-	      else
-		x = &(x[linelen]);
-	      x[0] = 0;
-	    }
-	}
+        {
+          if (x[linelen - 1] == '\n')
+            linelen--;
+          c = x[0];
+          if (c == '>')
+            break;
+          else if (c != ';')
+            {
+              seqlen = seqlen + linelen;
+              if (seqlen + 512 >= buflen)
+                {
+                  buflen = buflen + 10240;
+                  tmp = realloc (buffer, buflen + 1);
+                  if (tmp == NULL)
+                    return -1;
+                  buffer = tmp;
+                  x = &(buffer[seqlen]);
+                }
+              else
+                x = &(x[linelen]);
+              x[0] = 0;
+            }
+        }
     }
   for (i = 0; i < seqlen; i++)
     buffer[i] = toupper (buffer[i]);
@@ -3612,8 +3612,8 @@ max=10
 // the head node is special, it's val is length of list
 typedef struct DLL {
     int val;
-    struct DLL *next;	/* points to next or head (if at tail) */
-    struct DLL *prev;	/* points to prev or tail (if at head) */
+    struct DLL *next;   /* points to next or head (if at tail) */
+    struct DLL *prev;   /* points to prev or tail (if at head) */
 } DLL;
 
 inline int list_length(DLL *head) { return(head->val); }
@@ -3664,7 +3664,7 @@ int list_equal(DLL *x, DLL *y) {
     DLL *xp, *yp;
     // first val's checked will be list lengths
     for (xp=x, yp=y; xp->next != x; xp=xp->next, yp=yp->next) {
-	if (xp->val != yp->val) return(0);
+        if (xp->val != yp->val) return(0);
     }
     if (xp->val != yp->val) return(0);
     return(yp->next == y);
@@ -3676,8 +3676,8 @@ void list_print(char *msg, DLL *x) {
     fputs(msg, stdout);
     printf("length: %d\n", list_length(x));
     for (xp=x->next; xp->next != first; xp=xp->next) {
-	printf("i:%3d  v:%3d  n:%3d  p:%3d\n", ++i,
-	       xp->val, xp->next->val, xp->prev->val);
+        printf("i:%3d  v:%3d  n:%3d  p:%3d\n", ++i,
+               xp->val, xp->next->val, xp->prev->val);
     }
     printf("[last entry points to list head]\n");
     printf("[val of next of tail is:  %d]\n", xp->next->val);
@@ -3696,15 +3696,15 @@ DLL *list_sequence(int from, int to) {
     int size, tmp, i, j;
     DLL *l;
     if (from > to) {
-	tmp = from; from = to; to = tmp;
+        tmp = from; from = to; to = tmp;
     }
     size = to - from + 1;
     l = (DLL *)malloc((size+1) * sizeof(DLL));
     from--;
     for (i=0, j=1; i<size; ++i, ++j) {
-	l[i].next = &l[i+1];
-	l[j].prev = &l[j-1];
-	l[i].val = from++;
+        l[i].next = &l[i+1];
+        l[j].prev = &l[j-1];
+        l[i].val = from++;
     }
     l[0].prev = &l[size];
     l[size].next = &l[0];
@@ -3718,9 +3718,9 @@ DLL *list_copy(DLL *x) {
     int i, j, size = list_length(x);
     DLL *xp, *l = (DLL *)malloc((size+1) * sizeof(DLL));
     for (i=0, j=1, xp=x; i<size; i++, j++, xp=xp->next) {
-	l[i].next = &l[j];
-	l[j].prev = &l[i];
-	l[i].val = xp->val;
+        l[i].next = &l[j];
+        l[j].prev = &l[i];
+        l[i].val = xp->val;
     }
     l[0].prev = &l[size];
     l[size].next = &l[0];
@@ -3731,10 +3731,10 @@ DLL *list_copy(DLL *x) {
 void list_reverse (DLL *head) {
     DLL *tmp, *p = head;
     do {
-	tmp = p->next;
-	p->next = p->prev;
-	p->prev = tmp;
-	p = tmp;
+        tmp = p->next;
+        p->next = p->prev;
+        p->prev = tmp;
+        p = tmp;
     } while (p != head);
 }
 
@@ -3749,63 +3749,63 @@ int test_lists() {
     DLL *li3 = list_new();
     // compare li2 and li1 for equality
     if (!list_equal(li2, li1)) {
-	fprintf(stderr, "li2 and li1 are not equal\n");
-	exit(1);
+        fprintf(stderr, "li2 and li1 are not equal\n");
+        exit(1);
     }
     while (!list_empty(li2)) {
-	list_push_tail(li3, list_pop_head(li2));
+        list_push_tail(li3, list_pop_head(li2));
     }
     // li2 must now be empty
     if (!list_empty(li2)) {
-	fprintf(stderr, "li2 should be empty now\n");
-	exit(1);
+        fprintf(stderr, "li2 should be empty now\n");
+        exit(1);
     }
     // remove each individual item from right side of li3 and
     // append to right side of li2 (reversing list)
     while (!list_empty(li3)) {
-	list_push_tail(li2, list_pop_tail(li3));
+        list_push_tail(li2, list_pop_tail(li3));
     }
     // li3 must now be empty
     if (!list_empty(li3)) {
-	fprintf(stderr, "li3 should be empty now\n");
-	exit(1);
+        fprintf(stderr, "li3 should be empty now\n");
+        exit(1);
     }
     // reverse li1 in place
     list_reverse(li1);
     // check that li1's first item is now SIZE
     if (list_first(li1)->val != SIZE) {
-	fprintf(stderr, "li1 first value wrong, wanted %d, got %d\n",
-		SIZE, list_first(li1)->val);
-	exit(1);
+        fprintf(stderr, "li1 first value wrong, wanted %d, got %d\n",
+                SIZE, list_first(li1)->val);
+        exit(1);
     }
     // check that li1's last item is now 1
     if (list_last(li1)->val != 1) {
-	fprintf(stderr, "last value wrong, wanted %d, got %d\n",
-		SIZE, list_last(li1)->val);
-	exit(1);
+        fprintf(stderr, "last value wrong, wanted %d, got %d\n",
+                SIZE, list_last(li1)->val);
+        exit(1);
     }
     // check that li2's first item is now SIZE
     if (list_first(li2)->val != SIZE) {
-	fprintf(stderr, "li2 first value wrong, wanted %d, got %d\n",
-		SIZE, list_first(li2)->val);
-	exit(1);
+        fprintf(stderr, "li2 first value wrong, wanted %d, got %d\n",
+                SIZE, list_first(li2)->val);
+        exit(1);
     }
     // check that li2's last item is now 1
     if (list_last(li2)->val != 1) {
-	fprintf(stderr, "last value wrong, wanted %d, got %d\n",
-		SIZE, list_last(li2)->val);
-	exit(1);
+        fprintf(stderr, "last value wrong, wanted %d, got %d\n",
+                SIZE, list_last(li2)->val);
+        exit(1);
     }
     // check that li1's length is still SIZE
     if (list_length(li1) != SIZE) {
-	fprintf(stderr, "li1 size wrong, wanted %d, got %d\n",
-		SIZE, list_length(li1));
-	exit(1);
+        fprintf(stderr, "li1 size wrong, wanted %d, got %d\n",
+                SIZE, list_length(li1));
+        exit(1);
     }
     // compare li1 and li2 for equality
     if (!list_equal(li1, li2)) {
-	fprintf(stderr, "li1 and li2 are not equal\n");
-	exit(1);
+        fprintf(stderr, "li1 and li2 are not equal\n");
+        exit(1);
     }
     len = list_length(li1);
     free(li1);
@@ -4472,7 +4472,7 @@ min=5
 max=10
 
 @select(tangler('speed/src/ocaml/mandelbrot.ml'))
-(*								-*tuareg-*-
+(*                                                              -*tuareg-*-
  * The Great Computer Language Shootout
  * http://shootout.alioth.debian.org/
  *
@@ -4552,16 +4552,14 @@ max=10
 #include <stdlib.h>
 #include <unistd.h>
 
-#define SIZE 30
-
 int **mkmatrix(int rows, int cols) {
     int i, j, count = 1;
     int **m = (int **) malloc(rows * sizeof(int *));
     for (i=0; i<rows; i++) {
-	m[i] = (int *) malloc(cols * sizeof(int));
-	for (j=0; j<cols; j++) {
-	    m[i][j] = count++;
-	}
+        m[i] = (int *) malloc(cols * sizeof(int));
+        for (j=0; j<cols; j++) {
+            m[i][j] = count++;
+        }
     }
     return(m);
 }
@@ -4569,8 +4567,8 @@ int **mkmatrix(int rows, int cols) {
 void zeromatrix(int rows, int cols, int **m) {
     int i, j;
     for (i=0; i<rows; i++)
-	for (j=0; j<cols; j++)
-	    m[i][j] = 0;
+        for (j=0; j<cols; j++)
+            m[i][j] = 0;
 }
 
 void freematrix(int rows, int **m) {
@@ -4581,27 +4579,25 @@ void freematrix(int rows, int **m) {
 int **mmult(int rows, int cols, int **m1, int **m2, int **m3) {
     int i, j, k, val;
     for (i=0; i<rows; i++) {
-	for (j=0; j<cols; j++) {
-	    val = 0;
-	    for (k=0; k<cols; k++) {
-		val += m1[i][k] * m2[k][j];
-	    }
-	    m3[i][j] = val;
-	}
+        for (j=0; j<cols; j++) {
+            val = 0;
+            for (k=0; k<cols; k++) {
+                val += m1[i][k] * m2[k][j];
+            }
+            m3[i][j] = val;
+        }
     }
     return(m3);
 }
 
 int main(int argc, char *argv[]) {
     int i, n = ((argc == 2) ? atoi(argv[1]) : 1);
-	
-    int **m1 = mkmatrix(SIZE, SIZE);
-    int **m2 = mkmatrix(SIZE, SIZE);
-    int **mm = mkmatrix(SIZE, SIZE);
+        
+    int **m1 = mkmatrix(n, n);
+    int **m2 = mkmatrix(n, n);
+    int **mm = mkmatrix(n, n);
 
-    for (i=0; i<n; i++) {
-	mm = mmult(SIZE, SIZE, m1, m2, mm);
-    }
+    mm = mmult(SIZE, SIZE, m1, m2, mm);
     printf("%d %d %d %d\n", mm[0][0], mm[2][3], mm[3][2], mm[4][4]);
 
     freematrix(SIZE, m1);
@@ -4807,7 +4803,7 @@ max=10
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
-#include <pthread.h>	// -lpthread
+#include <pthread.h>    // -lpthread
 #include <semaphore.h>
 
 #define THREADS 500
@@ -4820,67 +4816,67 @@ sem_t *s;
 void
 semwaitlocked(sem_t *sem) // profiling shows this is the bottleneck
 {
-	int v;
-	for (sem_getvalue(sem, &v);
-		v > 0;
-		usleep(SWL_SLEEP),
-		sem_getvalue(sem, &v));
+        int v;
+        for (sem_getvalue(sem, &v);
+                v > 0;
+                usleep(SWL_SLEEP),
+                sem_getvalue(sem, &v));
 }
 
 void *
 work(void *a)
 {
-	for (;;) {
-		/*
-		 * sem_wait() can get interrupted, just call it again
-		 * TODO: see sys/kern/uipc_sem.c:618 in FreeBSD
-		 */
-		for (; sem_wait(s) != 0; pthread_yield());
-		semwaitlocked(s);
-	}
-	return NULL;
+        for (;;) {
+                /*
+                 * sem_wait() can get interrupted, just call it again
+                 * TODO: see sys/kern/uipc_sem.c:618 in FreeBSD
+                 */
+                for (; sem_wait(s) != 0; pthread_yield());
+                semwaitlocked(s);
+        }
+        return NULL;
 }
 
 int
 main(int argc, char *argv[])
 {
-	unsigned int times;
-	assert(argc == 2 && sscanf(argv[1], "%u", &times) == 1);
-	
-	int sum = 0;
-	pthread_attr_t attr;
-	pthread_t t[THREADS];
-	int i, j;
+        unsigned int times;
+        assert(argc == 2 && sscanf(argv[1], "%u", &times) == 1);
+        
+        int sum = 0;
+        pthread_attr_t attr;
+        pthread_t t[THREADS];
+        int i, j;
 
-	s = malloc(sizeof(sem_t));
-	assert(s != NULL);
-	assert(sem_init(s, 0, 0) == 0);
-	assert(pthread_attr_init(&attr) == 0);
-	//size_t sztmp;
-	//assert(pthread_attr_getstacksize(&attr, &sztmp) == 0);
-	//printf("default stack size: %ub\n", (unsigned int)sztmp);
-	assert(pthread_attr_setstacksize(&attr, STACKSZ) == 0);
-	for (i = 0; i < THREADS; i++) {
-		assert(pthread_create(&t[i], &attr, work, NULL) == 0);
-	}
-	for (j = 0; j < times; j++) {
-		for (i = 0; i < THREADS; i++) {
-			/*
-			 * from sem_post(3) in freebsd:
-			 * > If there are threads blocked on the semaphore
-			 * > when sem_post() is called, then the highest
-			 * > priority thread that has been blocked the
-			 * > longest on the semaphore will be allowed to
-			 * > return from sem_wait().
-			 */
-			sem_post(s);
-		}
-		semwaitlocked(s);
-		sum += THREADS;
-	}
-	printf("%d\n", sum);
+        s = malloc(sizeof(sem_t));
+        assert(s != NULL);
+        assert(sem_init(s, 0, 0) == 0);
+        assert(pthread_attr_init(&attr) == 0);
+        //size_t sztmp;
+        //assert(pthread_attr_getstacksize(&attr, &sztmp) == 0);
+        //printf("default stack size: %ub\n", (unsigned int)sztmp);
+        assert(pthread_attr_setstacksize(&attr, STACKSZ) == 0);
+        for (i = 0; i < THREADS; i++) {
+                assert(pthread_create(&t[i], &attr, work, NULL) == 0);
+        }
+        for (j = 0; j < times; j++) {
+                for (i = 0; i < THREADS; i++) {
+                        /*
+                         * from sem_post(3) in freebsd:
+                         * > If there are threads blocked on the semaphore
+                         * > when sem_post() is called, then the highest
+                         * > priority thread that has been blocked the
+                         * > longest on the semaphore will be allowed to
+                         * > return from sem_wait().
+                         */
+                        sem_post(s);
+                }
+                semwaitlocked(s);
+                sum += THREADS;
+        }
+        printf("%d\n", sum);
 
-	exit(0);
+        exit(0);
 }
 
 @select(tangler('speed/src/ocaml/message.ml'))
@@ -5045,8 +5041,8 @@ typedef struct NthToggle {
 
 NthToggle *nth_toggle_activate(NthToggle *this) {
     if (++this->counter >= this->count_max) {
-	this->state = !this->state;
-	this->counter = 0;
+        this->state = !this->state;
+        this->counter = 0;
     }
     return(this);
 }
@@ -5071,7 +5067,7 @@ int main(int argc, char *argv[]) {
 
     tog = new_Toggle(true);
     for (i=0; i<n; i++) {
-	val = tog->activate(tog)->value(tog);
+        val = tog->activate(tog)->value(tog);
     }
     fputs(val ? "true\n" : "false\n", stdout);
     DESTROY(tog);
@@ -5079,7 +5075,7 @@ int main(int argc, char *argv[]) {
     val = true;
     ntog = new_NthToggle(val, 3);
     for (i=0; i<n; i++) {
-	val = ntog->activate(ntog)->value(ntog);
+        val = ntog->activate(ntog)->value(ntog);
     }
     fputs(val ? "true\n" : "false\n", stdout);
     DESTROY(ntog);
@@ -5276,51 +5272,51 @@ max=10
 /* kmedian permutes elements of a to get
    a[i]<=a[k] for i<k
    a[i]>=a[k] for i>k
-	See. N. Wirth, Algorithms+data structures = Programs
+        See. N. Wirth, Algorithms+data structures = Programs
 */
 
 void kmedian(double *a, int n, int k) 
 {
-	while (1){
-		int j=random()%n; 
-		double b = a[j];
-		int i=0;
-        	j = n-1;
-        	while(1) {
-        	    while( a[i]<b ) i++;
-        	    while( a[j]>b ) j--;
-        	    if(i<j) {
-                	double tmp=a[i];
-                	a[i]=a[j];
-                	a[j]=tmp;
-                	i++;
-                	j--;
-       		    } else {
-                	if(a[j]<b) j++;
-                	if(a[i]>b) i--;
-			break;
-        	    }
-        	}
-		if(i<k) {
-			k-=i+1;
-			n-=i+1;
-			a+=i+1;
-		} else if (j>k) { 
-			n=j;
-		} else return;
-	}
+        while (1){
+                int j=random()%n; 
+                double b = a[j];
+                int i=0;
+                j = n-1;
+                while(1) {
+                    while( a[i]<b ) i++;
+                    while( a[j]>b ) j--;
+                    if(i<j) {
+                        double tmp=a[i];
+                        a[i]=a[j];
+                        a[j]=tmp;
+                        i++;
+                        j--;
+                    } else {
+                        if(a[j]<b) j++;
+                        if(a[i]>b) i--;
+                        break;
+                    }
+                }
+                if(i<k) {
+                        k-=i+1;
+                        n-=i+1;
+                        a+=i+1;
+                } else if (j>k) { 
+                        n=j;
+                } else return;
+        }
 }
 
 double max(double *a, int n)
 {
-	int j;
-	double temp=a[0];
-	for(j=1;j<n;j++) { 
-		if(a[j]>temp) {
-			temp=a[j];
-		}
-	}
-	return temp;
+        int j;
+        double temp=a[0];
+        for(j=1;j<n;j++) { 
+                if(a[j]>temp) {
+                        temp=a[j];
+                }
+        }
+        return temp;
 }
 
 
@@ -5342,29 +5338,29 @@ main() {
     double *nums = (double *)malloc(array_size * sizeof(double));
 
     while (fgets(line, MAXLINELEN, stdin)) {
-	sum += (nums[n++] = atof(line));
-	if (n == array_size) {
-	    array_size *= 2;
-	    nums = (double *)realloc(nums, array_size * sizeof(double));
-	}
+        sum += (nums[n++] = atof(line));
+        if (n == array_size) {
+            array_size *= 2;
+            nums = (double *)realloc(nums, array_size * sizeof(double));
+        }
     }
     mean = sum/n;
     for (i=0; i<n; i++) {
-	double dev = nums[i] - mean;
-	double dev2=dev*dev;
-	double dev3=dev2*dev;
-	double dev4=dev3*dev;
-	average_deviation += fabs(dev);
-	variance += dev2 /*pow(deviation,2)*/;
-	skew += dev3 /* pow(deviation,3) */;
-	kurtosis += dev4 /* pow(deviation,4) */;
+        double dev = nums[i] - mean;
+        double dev2=dev*dev;
+        double dev3=dev2*dev;
+        double dev4=dev3*dev;
+        average_deviation += fabs(dev);
+        variance += dev2 /*pow(deviation,2)*/;
+        skew += dev3 /* pow(deviation,3) */;
+        kurtosis += dev4 /* pow(deviation,4) */;
     }
     average_deviation /= n;
     variance /= (n - 1);
     standard_deviation = sqrt(variance);
     if (variance) {
-	skew /= (n * variance * standard_deviation);
-	kurtosis = (kurtosis/(n * variance * variance)) - 3.0;
+        skew /= (n * variance * standard_deviation);
+        kurtosis = (kurtosis/(n * variance * variance)) - 3.0;
     }
     mid = (n/2);
     kmedian(nums, n, mid); 
@@ -6237,14 +6233,14 @@ int
 main(int argc, char *argv[]) {
     int n = ((argc == 2) ? atoi(argv[1]) : 1);
     int a, b, c, d, e, f, x=0;
-	
+        
     for (a=0; a<n; a++)
-	for (b=0; b<n; b++)
-	    for (c=0; c<n; c++)
-		for (d=0; d<n; d++)
-		    for (e=0; e<n; e++)
-			for (f=0; f<n; f++)
-			    x++;
+        for (b=0; b<n; b++)
+            for (c=0; c<n; c++)
+                for (d=0; d<n; d++)
+                    for (e=0; e<n; e++)
+                        for (f=0; f<n; f++)
+                            x++;
 
     printf("%d\n", x);
     return(0);
@@ -6461,54 +6457,54 @@ max=10
 #include <string.h>
 
 typedef uint_fast8_t bits;
-#define	NBITS	(CHAR_BIT * sizeof(bits))
+#define NBITS   (CHAR_BIT * sizeof(bits))
 
 static uintmax_t
 nsieve(uintmax_t m)
 {
-	uintmax_t count, i, j;
-	bits a[m / NBITS];
+        uintmax_t count, i, j;
+        bits a[m / NBITS];
 
-	memset(a, (1 << CHAR_BIT) - 1, sizeof(a));
-	count = 0;
-	for (i = 2; i < m; ++i)
-		if (a[i / NBITS] & (1 << i % NBITS)) {
-			for (j = i + i; j < m; j += i)
-				a[j / NBITS] &= ~(1 << j % NBITS);
-			++count;
-		}
-	return (count);
+        memset(a, (1 << CHAR_BIT) - 1, sizeof(a));
+        count = 0;
+        for (i = 2; i < m; ++i)
+                if (a[i / NBITS] & (1 << i % NBITS)) {
+                        for (j = i + i; j < m; j += i)
+                                a[j / NBITS] &= ~(1 << j % NBITS);
+                        ++count;
+                }
+        return (count);
 }
 
 static void
 test(unsigned long n)
 {
-	uintmax_t count, m;
+        uintmax_t count, m;
 
-	m = (1 << n) * 10000;
-	count = nsieve(m);
-	printf("Primes up to %8ju %8ju\n", m, count);
+        m = (1 << n) * 10000;
+        count = nsieve(m);
+        printf("Primes up to %8ju %8ju\n", m, count);
 }
 
 int
 main(int ac, char **av)
 {
-	unsigned long n;
-	char *cp;
+        unsigned long n;
+        char *cp;
 
-	if (ac < 2) {
-usage:		fprintf(stderr, "usage: nsieve N\n");
-		exit(2);
-	}
-	n = strtoul(av[1], &cp, 10);
-	if (*av[1] == '\0' || *cp != '\0' || n == ULONG_MAX)
-		goto usage;
-	test(n);
-	if (n >= 1)
-		test(n - 1);
-	if (n >= 2)
-		test(n - 2);
-	exit(0);
+        if (ac < 2) {
+usage:          fprintf(stderr, "usage: nsieve N\n");
+                exit(2);
+        }
+        n = strtoul(av[1], &cp, 10);
+        if (*av[1] == '\0' || *cp != '\0' || n == ULONG_MAX)
+                goto usage;
+        test(n);
+        if (n >= 1)
+                test(n - 1);
+        if (n >= 2)
+                test(n - 2);
+        exit(0);
 }
 
 @head(1,'[objinst]')
@@ -6571,8 +6567,8 @@ typedef struct NthToggle {
 
 NthToggle *nth_toggle_activate(NthToggle *this) {
     if (++this->counter >= this->count_max) {
-	this->state = !this->state;
-	this->counter = 0;
+        this->state = !this->state;
+        this->counter = 0;
     }
     return(this);
 }
@@ -6596,24 +6592,24 @@ int main(int argc, char *argv[]) {
 
     tog = new_Toggle(true);
     for (i=0; i<5; i++) {
-	fputs((tog->activate(tog)->value(tog)) ? "true\n" : "false\n", stdout);
+        fputs((tog->activate(tog)->value(tog)) ? "true\n" : "false\n", stdout);
     }
     DESTROY(tog);
     for (i=0; i<n; i++) {
-	tog = new_Toggle(true);
-	DESTROY(tog);
+        tog = new_Toggle(true);
+        DESTROY(tog);
     }
     
     fputs("\n", stdout);
 
     ntog = new_NthToggle(true, 3);
     for (i=0; i<8; i++) {
-	fputs((ntog->activate(ntog)->value(ntog)) ? "true\n" : "false\n", stdout);
+        fputs((ntog->activate(ntog)->value(ntog)) ? "true\n" : "false\n", stdout);
     }
     DESTROY(ntog);
     for (i=0; i<n; i++) {
-	ntog = new_NthToggle(true, 3);
-	DESTROY(ntog);
+        ntog = new_NthToggle(true, 3);
+        DESTROY(ntog);
     }
     return 0;
 }
@@ -7000,10 +6996,10 @@ max=10
 #include <gmp.h>
 
 typedef struct ctx_s {
-  mpz_t q, r, s, t;	/* Transformation matrix components. */
-  mpz_t u, v, w;	/* Temporary numbers. */
-  int d, i, n;		/* Counters. */
-  char digits[10+1];	/* Accumulated digits for one line. */
+  mpz_t q, r, s, t;     /* Transformation matrix components. */
+  mpz_t u, v, w;        /* Temporary numbers. */
+  int d, i, n;          /* Counters. */
+  char digits[10+1];    /* Accumulated digits for one line. */
 } ctx_t;
 
 /* Compose matrix with numbers on the right. */
@@ -7382,22 +7378,22 @@ main(int argc, char *argv[]) {
     count = data = consumed = produced = 0;
 
     if (pthread_mutex_init(&mutex, NULL)) {
-	perror("pthread_mutex_init");
-	exit(1);
+        perror("pthread_mutex_init");
+        exit(1);
     }
     if (pthread_cond_init(&control, NULL)) {
-	perror("pthread_cond_init");
-	exit(1);
+        perror("pthread_cond_init");
+        exit(1);
     }
     if (pthread_create(&t1, (pthread_attr_t *)NULL,
-		       (void * (*)(void *))producer, (void *)&n)) {
-	perror("pthread_create");
-	exit(1);
+                       (void * (*)(void *))producer, (void *)&n)) {
+        perror("pthread_create");
+        exit(1);
     }
     if (pthread_create(&t2, (pthread_attr_t *)NULL,
-		       (void * (*)(void *))consumer, (void *)&n)) {
-	perror("pthread_create");
-	exit(1);
+                       (void * (*)(void *))consumer, (void *)&n)) {
+        perror("pthread_create");
+        exit(1);
     }
   
     pthread_join(t1, NULL);
@@ -7410,15 +7406,15 @@ main(int argc, char *argv[]) {
 void producer(int *arg) {
     int i, n = *arg;
     for (i=1; i<=n; i++) {
-	pthread_mutex_lock(&mutex);
-	while (count == 1) {
-	    pthread_cond_wait(&control, &mutex);
-	}
-	data = i;
-	count = 1;
-	pthread_cond_signal(&control);
-	pthread_mutex_unlock(&mutex);
-	produced++;
+        pthread_mutex_lock(&mutex);
+        while (count == 1) {
+            pthread_cond_wait(&control, &mutex);
+        }
+        data = i;
+        count = 1;
+        pthread_cond_signal(&control);
+        pthread_mutex_unlock(&mutex);
+        produced++;
     }
 }
  
@@ -7426,16 +7422,16 @@ void producer(int *arg) {
 void consumer(int *arg) {
     int i = 0, n = *arg;
     while (1) {
-	pthread_mutex_lock(&mutex);
-	while (count == 0) {
-	    pthread_cond_wait(&control, &mutex);
-	}
-	i = data;
-	count = 0;
-	pthread_cond_signal(&control);
-	pthread_mutex_unlock(&mutex);
-	consumed++;
-	if (i == n) return;
+        pthread_mutex_lock(&mutex);
+        while (count == 0) {
+            pthread_cond_wait(&control, &mutex);
+        }
+        i = data;
+        count = 0;
+        pthread_cond_signal(&control);
+        pthread_mutex_unlock(&mutex);
+        consumed++;
+        if (i == n) return;
     }
 }
 
@@ -7632,7 +7628,7 @@ int main(int argc, char *argv[]) {
     int N = ((argc == 2) ? atoi(argv[1]) : 1) - 1;
     
     while (N--) {
-	gen_random(100.0);
+        gen_random(100.0);
     }
     printf("%.9f\n", gen_random(100.0));
     return(0);
@@ -7912,15 +7908,15 @@ max=10
 #define MAXLINELEN 132
 
 char *pattern = 
-"(?:^|[^\\d\\(])"		/* must be preceeded by non-digit */
-"(\\()?"			/* match 1: possible initial left paren */
-"(\\d\\d\\d)"			/* match 2: area code is 3 digits */
-"(?(1)\\))"			/* if match1 then match right paren */
-"[ ]"				/* area code followed by one space */
-"(\\d\\d\\d)"			/* match 3: prefix of 3 digits */
-"[ -]"				/* separator is either space or dash */
-"(\\d\\d\\d\\d)"		/* match 4: last 4 digits */
-"\\D"				/* must be followed by a non-digit */
+"(?:^|[^\\d\\(])"               /* must be preceeded by non-digit */
+"(\\()?"                        /* match 1: possible initial left paren */
+"(\\d\\d\\d)"                   /* match 2: area code is 3 digits */
+"(?(1)\\))"                     /* if match1 then match right paren */
+"[ ]"                           /* area code followed by one space */
+"(\\d\\d\\d)"                   /* match 3: prefix of 3 digits */
+"[ -]"                          /* separator is either space or dash */
+"(\\d\\d\\d\\d)"                /* match 4: last 4 digits */
+"\\D"                           /* must be followed by a non-digit */
 ;
 
 
@@ -7943,88 +7939,88 @@ main(int argc, char *argv[]) {
 
     phones = (char **)malloc(MAXLINES * sizeof(char *));
     if (!phones) {
-	fprintf(stderr, "malloc for phones array failed\n");
-	exit(1);
+        fprintf(stderr, "malloc for phones array failed\n");
+        exit(1);
     }
     lines = 0;
     while (cptr) {
-	phones[lines] = (char *)malloc(MAXLINELEN);
-	if (!phones[lines]) {
-	    fprintf(stderr, "malloc to hold line #%d failed\n", lines);
-	    exit(1);
-	}
-	cptr = fgets(phones[lines], MAXLINELEN, stdin);
-	lines++;
-	if (lines > MAXLINES) {
-	    fprintf(stderr, "MAXLINES is too small\n");
-	    exit(1);
-	}
+        phones[lines] = (char *)malloc(MAXLINELEN);
+        if (!phones[lines]) {
+            fprintf(stderr, "malloc to hold line #%d failed\n", lines);
+            exit(1);
+        }
+        cptr = fgets(phones[lines], MAXLINELEN, stdin);
+        lines++;
+        if (lines > MAXLINES) {
+            fprintf(stderr, "MAXLINES is too small\n");
+            exit(1);
+        }
     }
 
     re = pcre_compile(pattern, 0, &errptr, &erroffset, NULL);
     if (!re) {
-	fprintf(stderr, "can't open compile regexp\n");
-	exit(1);
+        fprintf(stderr, "can't open compile regexp\n");
+        exit(1);
     }
 
     study = pcre_study(re, 0, &errptr);
 
     if (pcre_fullinfo(re, NULL, PCRE_INFO_CAPTURECOUNT, &nmatches) != 0) {
-	fprintf(stderr, "pcre_fullinfo failed\n");
-	exit(1);
+        fprintf(stderr, "pcre_fullinfo failed\n");
+        exit(1);
     }
-    nmatches++;			/* add match of entire pattern */
+    nmatches++;                 /* add match of entire pattern */
 
     ovecsize = sizeof(int) * nmatches * 3;
     ovec = (int *)malloc(ovecsize);
     if (!ovec) {
-	fprintf(stderr, "malloc for ovec array failed\n");
-	exit(1);
+        fprintf(stderr, "malloc for ovec array failed\n");
+        exit(1);
     }
 
     count = 0;
     while (NUM--) {
-	for (i=0; i<lines; i++) {
-	    n = pcre_exec(re, study,
-			  phones[i], strlen(phones[i]), 0,
-			  0, ovec, ovecsize);
-	    if (n == nmatches) {
-		/* stuff the match into the buffer "num" */
-		k = 2*2;	/* initial offset into ovec */
-		/* areacode */
-		j = 0;
-		num[j++] = '(';
-		matchoffset = phones[i] + ovec[k];
-		matchlen = ovec[k+1] - ovec[k];
-		strncpy(num+j, matchoffset, matchlen);
-		j += matchlen; k += 2;
-		num[j++] = ')';
-		/* space separator */
-		num[j++] = ' ';
-		/* exchange */
-		matchoffset = phones[i] + ovec[k];
-		matchlen = ovec[k+1] - ovec[k];
-		strncpy(num+j, matchoffset, matchlen);
-		j += matchlen; k += 2;
-		/* dash */
-		num[j++] = '-';
-		/* last 4 digits */
-		matchoffset = phones[i] + ovec[k];
-		matchlen = ovec[k+1] - ovec[k];
-		strncpy(num+j, matchoffset, matchlen);
-		j += matchlen; k += 2;
-		/* with a cherry on top */
-		num[j] = 0;
-		if (0 == NUM) {
-		    count++;
-		    printf("%d: %s\n", count, num);
-		}
-	    }
-	}
+        for (i=0; i<lines; i++) {
+            n = pcre_exec(re, study,
+                          phones[i], strlen(phones[i]), 0,
+                          0, ovec, ovecsize);
+            if (n == nmatches) {
+                /* stuff the match into the buffer "num" */
+                k = 2*2;        /* initial offset into ovec */
+                /* areacode */
+                j = 0;
+                num[j++] = '(';
+                matchoffset = phones[i] + ovec[k];
+                matchlen = ovec[k+1] - ovec[k];
+                strncpy(num+j, matchoffset, matchlen);
+                j += matchlen; k += 2;
+                num[j++] = ')';
+                /* space separator */
+                num[j++] = ' ';
+                /* exchange */
+                matchoffset = phones[i] + ovec[k];
+                matchlen = ovec[k+1] - ovec[k];
+                strncpy(num+j, matchoffset, matchlen);
+                j += matchlen; k += 2;
+                /* dash */
+                num[j++] = '-';
+                /* last 4 digits */
+                matchoffset = phones[i] + ovec[k];
+                matchlen = ovec[k+1] - ovec[k];
+                strncpy(num+j, matchoffset, matchlen);
+                j += matchlen; k += 2;
+                /* with a cherry on top */
+                num[j] = 0;
+                if (0 == NUM) {
+                    count++;
+                    printf("%d: %s\n", count, num);
+                }
+            }
+        }
     }
 
     for (i=0; i<MAXLINES; i++) {
-	free(phones[i]);
+        free(phones[i]);
     }
     free(phones);
     free(ovec);
@@ -8065,7 +8061,7 @@ let check_phone must_print count line =
     and prefix = Str.matched_group 2 line
     and digits = Str.matched_group 3 line in
     let num = (if area.[0] = '(' then sprintf "%s %s-%s"
-	       else sprintf "(%s) %s-%s") area prefix digits in
+               else sprintf "(%s) %s-%s") area prefix digits in
     if must_print then (incr count; printf "%i: %s\n" !count num)
   )
 
@@ -8186,10 +8182,10 @@ max=10
 let complement =
   let cplt = Array.init 256 (fun i -> Char.chr i) in
   List.iter (fun (c1, c2) ->
-	       cplt.(Char.code c1) <- c2;
-	       cplt.(Char.code c2) <- c1;
-	       cplt.(Char.code(Char.lowercase c1)) <- c2;
-	       cplt.(Char.code(Char.lowercase c2)) <- c1;  )
+               cplt.(Char.code c1) <- c2;
+               cplt.(Char.code c2) <- c1;
+               cplt.(Char.code(Char.lowercase c1)) <- c2;
+               cplt.(Char.code(Char.lowercase c2)) <- c1;  )
     [ ('A','T'); ('C','G'); ('B','V'); ('D','H'); ('K','M'); ('R','Y') ];
   cplt
 
@@ -8568,19 +8564,19 @@ main(int argc, char *argv[]) {
     int count = 0;
 
     while (NUM--) {
-	count = 0; 
-	for (i=2; i <= 8192; i++) {
-	    flags[i] = 1;
-	}
-	for (i=2; i <= 8192; i++) {
-	    if (flags[i]) {
-		// remove all multiples of prime: i
-		for (k=i+i; k <= 8192; k+=i) {
-		    flags[k] = 0;
-		}
-		count++;
-	    }
-	}
+        count = 0; 
+        for (i=2; i <= 8192; i++) {
+            flags[i] = 1;
+        }
+        for (i=2; i <= 8192; i++) {
+            if (flags[i]) {
+                // remove all multiples of prime: i
+                for (k=i+i; k <= 8192; k+=i) {
+                    flags[k] = 0;
+                }
+                count++;
+            }
+        }
     }
     printf("Count: %d\n", count);
     return(0);
@@ -8943,21 +8939,21 @@ int handleInput(FILE *input,void (*hashManipFn)(char *))
         return(fprintf(stderr,"malloc\n"),0);
 
     while (fgets(line, MAXLINELEN, input))
-	for (cp=line; *cp > 0; cp++) {
-	    if (isspace(*cp)) {
-		if (i) {
-		    wordbuf[i] = '\0';
+        for (cp=line; *cp > 0; cp++) {
+            if (isspace(*cp)) {
+                if (i) {
+                    wordbuf[i] = '\0';
                     hashManipFn(wordbuf);
-		    i = 0;
-		}
-	    } else {
-		wordbuf[i++] = *cp;
-		if (i == wordbufsize) {
-		    wordbufsize *= 2;
-		    if((wordbuf = realloc(wordbuf, wordbufsize + 1)) == NULL)
+                    i = 0;
+                }
+            } else {
+                wordbuf[i++] = *cp;
+                if (i == wordbufsize) {
+                    wordbufsize *= 2;
+                    if((wordbuf = realloc(wordbuf, wordbufsize + 1)) == NULL)
                         return(fprintf(stderr, "realloc\n"), 0);
-		}
-	    }
+                }
+            }
         }
 
     free(wordbuf);
@@ -9167,15 +9163,15 @@ main(int argc, char *argv[]) {
 
     if (!strbuf) { perror("calloc strbuf"); exit(1); }
     for (i=0; i<n; i++) {
-	if (((strbuf+buflen)-strend) < (stufflen+1)) {
-	    buflen = 2*buflen;
-	    strbuf = realloc(strbuf, buflen);
-	    if (!strbuf) { perror("realloc strbuf"); exit(1); }
-	    strend = strbuf + strlen(strbuf);
-	}
-	/* much faster to strcat to strend than to strbuf */
-	strcat(strend, STUFF);
-	strend += stufflen;
+        if (((strbuf+buflen)-strend) < (stufflen+1)) {
+            buflen = 2*buflen;
+            strbuf = realloc(strbuf, buflen);
+            if (!strbuf) { perror("realloc strbuf"); exit(1); }
+            strend = strbuf + strlen(strbuf);
+        }
+        /* much faster to strcat to strend than to strbuf */
+        strcat(strend, STUFF);
+        strend += stufflen;
     }
     fprintf(stdout, "%d\n", strlen(strbuf));
     free(strbuf);
@@ -9249,7 +9245,7 @@ main() {
     char line[MAXLINELEN];
 
     while (fgets(line, MAXLINELEN, stdin)) {
-	sum += atoi(line);
+        sum += atoi(line);
     }
     printf("%d\n", sum);
     return(0);
@@ -9460,104 +9456,104 @@ max=10
 
 void server()
 {
-	int sock;
-	int conn;
-	struct sockaddr_in servaddr;
-	struct sockaddr_in cliaddr;
-	unsigned int cliaddr_len;
-	char* reply = malloc(REPLY_SIZE);
-	char* buf = malloc(BUFFER_SIZE);
+        int sock;
+        int conn;
+        struct sockaddr_in servaddr;
+        struct sockaddr_in cliaddr;
+        unsigned int cliaddr_len;
+        char* reply = malloc(REPLY_SIZE);
+        char* buf = malloc(BUFFER_SIZE);
 
-	memset(reply, '<', REPLY_SIZE);
+        memset(reply, '<', REPLY_SIZE);
 
-	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-		exit(10);
+        if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+                exit(10);
 
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	servaddr.sin_port = htons(PORT_NUMBER);
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        servaddr.sin_port = htons(PORT_NUMBER);
 
-	if (bind(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
-		exit(11);
+        if (bind(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
+                exit(11);
 
-	if (listen(sock, 1) < 0)
-		exit(12);
+        if (listen(sock, 1) < 0)
+                exit(12);
 
-	if ((conn = accept(sock, (struct sockaddr *) &cliaddr, &cliaddr_len)) < 0)
-		exit(13);
+        if ((conn = accept(sock, (struct sockaddr *) &cliaddr, &cliaddr_len)) < 0)
+                exit(13);
 
-	while (recv(conn, buf, BUFFER_SIZE, 0) > 0) {
-		if (send(conn, reply, REPLY_SIZE, 0) != REPLY_SIZE)
-			exit(14);
-	}
+        while (recv(conn, buf, BUFFER_SIZE, 0) > 0) {
+                if (send(conn, reply, REPLY_SIZE, 0) != REPLY_SIZE)
+                        exit(14);
+        }
 
-	close(conn);
-	close(sock);
+        close(conn);
+        close(sock);
 
-	free(buf);
+        free(buf);
 }
 
 void client(int n)
 {
-	int sock;
-	struct sockaddr_in servaddr;
-	char* request = malloc(REQUEST_SIZE);
-	char* buf = malloc(BUFFER_SIZE);
-	int tmpbytes;
-	int bytes = 0;
-	int replies = 0;
+        int sock;
+        struct sockaddr_in servaddr;
+        char* request = malloc(REQUEST_SIZE);
+        char* buf = malloc(BUFFER_SIZE);
+        int tmpbytes;
+        int bytes = 0;
+        int replies = 0;
 
-	memset(request, '>', REQUEST_SIZE);
+        memset(request, '>', REQUEST_SIZE);
 
-	sleep(2); //wait for server to start
+        sleep(2); //wait for server to start
 
-	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) 
-		exit(2);
+        if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) 
+                exit(2);
 
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	servaddr.sin_port = htons(PORT_NUMBER);
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        servaddr.sin_port = htons(PORT_NUMBER);
 
-	if (connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
-		exit(3);
+        if (connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
+                exit(3);
 
-	while (n-- > 0) {
-		tmpbytes = 0;
+        while (n-- > 0) {
+                tmpbytes = 0;
 
-		if (send(sock, request, REQUEST_SIZE, 0) != REQUEST_SIZE)
-			exit(4);
+                if (send(sock, request, REQUEST_SIZE, 0) != REQUEST_SIZE)
+                        exit(4);
 
-		while (tmpbytes < REPLY_SIZE)
-			tmpbytes += recv(sock, buf, BUFFER_SIZE - 1, 0);
-		bytes += tmpbytes;
-		replies++;
-	}
-	close(sock);
+                while (tmpbytes < REPLY_SIZE)
+                        tmpbytes += recv(sock, buf, BUFFER_SIZE - 1, 0);
+                bytes += tmpbytes;
+                replies++;
+        }
+        close(sock);
 
-	printf("replies: %d\tbytes: %d\n", replies, bytes);
+        printf("replies: %d\tbytes: %d\n", replies, bytes);
 
-	free(request);
-	free(buf);
+        free(request);
+        free(buf);
 }
 
 int main (int argc, char** argv)
-{	
-	int pid;
-	int n;
+{       
+        int pid;
+        int n;
 
-	n = (argc == 2 ? atoi(argv[1]) : 1);
+        n = (argc == 2 ? atoi(argv[1]) : 1);
 
-	if ((pid = fork()) < 0) {
-		return 1;
-	}
-	if (pid == 0) {
-		client(M * n);
-	} else {
-		server();
-	}
-	return 0;
+        if ((pid = fork()) < 0) {
+                return 1;
+        }
+        if (pid == 0) {
+                client(M * n);
+        } else {
+                server();
+        }
+        return 0;
 }
 
 @select(tangler('speed/src/ocaml/tcpecho.ml'))
@@ -9573,7 +9569,7 @@ let m = 6400 and reply_size = 64  (* tcp-echo *)
 
 let request_size = 64
 let buffer_size  = 4096
-let port	 = 11000
+let port         = 11000
 
 let reply   = String.create reply_size
 let request = String.create request_size
@@ -9584,7 +9580,7 @@ let min i j = if (i:int) < j then i else j
 (* Return [false] if EOF is reached *)
 let rec read sock buf n =
   n <= 0 || (let r = Unix.read sock buf 0 (min n buffer_size) in
-	     r > 0 && read sock buf (n - r))
+             r > 0 && read sock buf (n - r))
 
 let server sock =
   let b = String.create buffer_size in
@@ -9744,104 +9740,104 @@ max=10
 
 void server()
 {
-	int sock;
-	int conn;
-	struct sockaddr_in servaddr;
-	struct sockaddr_in cliaddr;
-	unsigned int cliaddr_len;
-	char* reply = malloc(REPLY_SIZE);
-	char* buf = malloc(BUFFER_SIZE);
+        int sock;
+        int conn;
+        struct sockaddr_in servaddr;
+        struct sockaddr_in cliaddr;
+        unsigned int cliaddr_len;
+        char* reply = malloc(REPLY_SIZE);
+        char* buf = malloc(BUFFER_SIZE);
 
-	memset(reply, '<', REPLY_SIZE);
+        memset(reply, '<', REPLY_SIZE);
 
-	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-		exit(10);
+        if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+                exit(10);
 
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	servaddr.sin_port = htons(PORT_NUMBER);
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        servaddr.sin_port = htons(PORT_NUMBER);
 
-	if (bind(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
-		exit(11);
+        if (bind(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
+                exit(11);
 
-	if (listen(sock, 1) < 0)
-		exit(12);
+        if (listen(sock, 1) < 0)
+                exit(12);
 
-	if ((conn = accept(sock, (struct sockaddr *) &cliaddr, &cliaddr_len)) < 0)
-		exit(13);
+        if ((conn = accept(sock, (struct sockaddr *) &cliaddr, &cliaddr_len)) < 0)
+                exit(13);
 
-	while (recv(conn, buf, BUFFER_SIZE, 0) > 0) {
-		if (send(conn, reply, REPLY_SIZE, 0) != REPLY_SIZE)
-			exit(14);
-	}
+        while (recv(conn, buf, BUFFER_SIZE, 0) > 0) {
+                if (send(conn, reply, REPLY_SIZE, 0) != REPLY_SIZE)
+                        exit(14);
+        }
 
-	close(conn);
-	close(sock);
+        close(conn);
+        close(sock);
 
-	free(buf);
+        free(buf);
 }
 
 void client(int n)
 {
-	int sock;
-	struct sockaddr_in servaddr;
-	char* request = malloc(REQUEST_SIZE);
-	char* buf = malloc(BUFFER_SIZE);
-	int tmpbytes;
-	int bytes = 0;
-	int replies = 0;
+        int sock;
+        struct sockaddr_in servaddr;
+        char* request = malloc(REQUEST_SIZE);
+        char* buf = malloc(BUFFER_SIZE);
+        int tmpbytes;
+        int bytes = 0;
+        int replies = 0;
 
-	memset(request, '>', REQUEST_SIZE);
+        memset(request, '>', REQUEST_SIZE);
 
-	sleep(2); //wait for server to start
+        sleep(2); //wait for server to start
 
-	if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) 
-		exit(2);
+        if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) 
+                exit(2);
 
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	servaddr.sin_port = htons(PORT_NUMBER);
+        memset(&servaddr, 0, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        servaddr.sin_port = htons(PORT_NUMBER);
 
-	if (connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
-		exit(3);
+        if (connect(sock, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
+                exit(3);
 
-	while (n-- > 0) {
-		tmpbytes = 0;
+        while (n-- > 0) {
+                tmpbytes = 0;
 
-		if (send(sock, request, REQUEST_SIZE, 0) != REQUEST_SIZE)
-			exit(4);
+                if (send(sock, request, REQUEST_SIZE, 0) != REQUEST_SIZE)
+                        exit(4);
 
-		while (tmpbytes < REPLY_SIZE)
-			tmpbytes += recv(sock, buf, BUFFER_SIZE - 1, 0);
-		bytes += tmpbytes;
-		replies++;
-	}
-	close(sock);
+                while (tmpbytes < REPLY_SIZE)
+                        tmpbytes += recv(sock, buf, BUFFER_SIZE - 1, 0);
+                bytes += tmpbytes;
+                replies++;
+        }
+        close(sock);
 
-	printf("replies: %d\tbytes: %d\n", replies, bytes);
+        printf("replies: %d\tbytes: %d\n", replies, bytes);
 
-	free(request);
-	free(buf);
+        free(request);
+        free(buf);
 }
 
 int main (int argc, char** argv)
-{	
-	int pid;
-	int n;
+{       
+        int pid;
+        int n;
 
-	n = (argc == 2 ? atoi(argv[1]) : 1);
+        n = (argc == 2 ? atoi(argv[1]) : 1);
 
-	if ((pid = fork()) < 0) {
-		return 1;
-	}
-	if (pid == 0) {
-		client(M * n);
-	} else {
-		server();
-	}
-	return 0;
+        if ((pid = fork()) < 0) {
+                return 1;
+        }
+        if (pid == 0) {
+                client(M * n);
+        } else {
+                server();
+        }
+        return 0;
 }
 
 @select(tangler('speed/src/ocaml/tcpstream.ml'))
@@ -9857,7 +9853,7 @@ let m = 1 and reply_size = 409600 (* tcp-stream *)
 
 let request_size = 64
 let buffer_size  = 4096
-let port	 = 11000
+let port         = 11000
 
 let reply   = String.create reply_size
 let request = String.create request_size
@@ -9868,7 +9864,7 @@ let min i j = if (i:int) < j then i else j
 (* Return [false] if EOF is reached *)
 let rec read sock buf n =
   n <= 0 || (let r = Unix.read sock buf 0 (min n buffer_size) in
-	     r > 0 && read sock buf (n - r))
+             r > 0 && read sock buf (n - r))
 
 let server sock =
   let b = String.create buffer_size in
@@ -10020,26 +10016,26 @@ int main(void) {
     /* Fill tables */
     for (cnt = 0; cnt <= UCHAR_MAX; cnt++) {
          ws[cnt] =  (cnt == ' ' || cnt == '\n' || cnt == '\t') + (0x10000L & -(cnt == '\n'));
-	nws[cnt] = !(cnt == ' ' || cnt == '\n' || cnt == '\t') +  0x10000L;
+        nws[cnt] = !(cnt == ' ' || cnt == '\n' || cnt == '\t') +  0x10000L;
     }
 
     
     /* Main loop */
     while (0 != (cnt = read (0, buff, BSIZ))) {
         unsigned long vect_count = 0;
-	unsigned char *pp, *pe;
+        unsigned char *pp, *pe;
 
-	b_cnt += cnt;
-	pe = buff + cnt;
-	pp = buff;
+        b_cnt += cnt;
+        pe = buff + cnt;
+        pp = buff;
 
-	while (pp < pe) {
-	    vect_count +=  ws[*pp] & prev_nws;
-	    prev_nws    = nws[*pp];
-	    pp ++;
-	}
-	w_cnt += vect_count  & 0xFFFFL;
-	l_cnt += vect_count >> 16;
+        while (pp < pe) {
+            vect_count +=  ws[*pp] & prev_nws;
+            prev_nws    = nws[*pp];
+            pp ++;
+        }
+        w_cnt += vect_count  & 0xFFFFL;
+        l_cnt += vect_count >> 16;
     }
 
     w_cnt += 1 & prev_nws;
