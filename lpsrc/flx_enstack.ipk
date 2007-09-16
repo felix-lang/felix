@@ -15,6 +15,13 @@ val make_stack_calls:
   label_map_t -> label_usage_t ->
   unit
 
+val can_stack_func:
+  (btypecode_t, [`Recurse | `Safe | `Unsafe] ) Hashtbl.t ->
+  sym_state_t -> 
+  child_map_t * fully_bound_symbol_table_t ->
+  int -> 
+  bool
+
 @h = tangler("src/compiler/flxlib/flx_stack_calls.ml")
 @select(h)
 open Flx_util

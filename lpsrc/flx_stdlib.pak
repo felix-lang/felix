@@ -2651,6 +2651,17 @@ open module Varray
   """
     requires property "needs_gc"
   ;
+
+  proc pop[t] : varray[t] = """
+    {
+      ?1 * _p = $1;
+      unsigned long n = PTF gc->get_used(_p);
+      PTF gc->incr_used(_p,-1L);
+      destroy(_p+n-1);
+    }
+  """
+    requires property "needs_gc"
+  ;
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {

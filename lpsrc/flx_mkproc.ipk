@@ -160,6 +160,15 @@ let mkproc_gen syms (child_map,bbdfns) =
   let rl = Hashtbl.create 97 in (* dummy relabel *)
   let mkproc_map = Hashtbl.create 97 in
 
+  let cache = Hashtbl.create 97 in
+  let unstackable i = 
+    let csf = Flx_stack_calls.can_stack_func cache syms (child_map,bbdfns) i in
+    (*
+    print_endline ("Function " ^ si i ^ " is " ^ (if csf then "stackable" else "unstackable"));
+    *)
+    not csf
+  in
+
   (* make the funproc map *)
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
@@ -214,6 +223,7 @@ let mkproc_gen syms (child_map,bbdfns) =
   in
 
   let to_mkproc = filter isnot_asc (!to_mkproc) in
+  let to_mkproc = filter unstackable to_mkproc in
 
   let nu_mkproc_map = Hashtbl.create 97 in
   Hashtbl.iter
