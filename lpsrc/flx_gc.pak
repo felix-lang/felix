@@ -224,7 +224,7 @@ Integrity check for the data structure being managed.
   virtual void incr_used(void *memory, unsigned long)=0; 
   virtual unsigned long get_used(void *memory)=0; 
   virtual unsigned long get_count(void *memory)=0; 
-  virtual void *create_empty_array( gc_shape_t &shape, unsigned long count)=0;
+  virtual void *create_empty_array( gc_shape_t *shape, unsigned long count)=0;
 private:
   virtual unsigned long v_get_allocation_count()const=0;
   virtual unsigned long v_get_root_count()const=0;
@@ -346,7 +346,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
   void incr_used(void *memory, unsigned long); 
   unsigned long get_used(void *memory); 
   unsigned long get_count(void *memory); 
-  void *create_empty_array( gc_shape_t &shape, unsigned long count);
+  void *create_empty_array( gc_shape_t *shape, unsigned long count);
   gc_shape_t *get_shape(void *memory); 
 
 protected:
@@ -564,20 +564,31 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
   return fp;
 }
 
-void flx_collector_t::set_used(void *fp, unsigned long n)
+void flx_collector_t::set_used(void *memory, unsigned long n)
 {
-  //assert(memory);
-  //assert(n>=0);
-  //assert(n<=get_count(memory));
-  Word_t *p = (Word_t*)(void*)JudyLGet(&j_nused,(Word_t)fp,&je);
+  assert(memory);
+  assert(n>=0);
+
+  // this check is expensive, but set_used is not used often
+  assert(n<=get_count(memory)); 
+  //fprintf(stderr,"Set used of %p to %ld\n",memory,n);
+  Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(p == NULL)
-    p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)fp,&je);
+  {
+    //fprintf(stderr,"No recorded usage! Creating store for data\n");
+    p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
+  }
+  //fprintf(stderr,"Slot for %p usage is address %p\n",memory,p);
   *p = (Word_t)n;
 }
 
 void flx_collector_t::incr_used(void *memory, unsigned long n)
 {
-  Word_t *p = (Word_t*)(void*)JudyLGet(&j_nused,(Word_t)memory,&je);
+  assert(memory);
+  assert(n>=0);
+  //fprintf(stderr,"Incr used of %p by %ld\n",memory,n);
+  assert(get_used(memory) + n <= get_count(memory));
+  Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(p == NULL)
   {
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
@@ -586,18 +597,24 @@ void flx_collector_t::incr_used(void *memory, unsigned long n)
   else *p+=n;
 }
 
+// actual number of used slots in an array
 unsigned long flx_collector_t::get_used(void *memory)
 {
   assert(memory);
-  Word_t *p = (Word_t*)(void*)JudyLGet(&j_nused,(Word_t)memory,&je);
-  return p?*p:1;
+  //fprintf(stderr, "Get used of %p\n",memory);
+  Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+  //fprintf(stderr, "Used slot at address %p\n",memory);
+  unsigned long z = p?*p:1; // defaults to 1 for non-array support
+  //fprintf(stderr,"Used of %p is %ld\n",memory,z);
+  return z;
 }
 
+// max number of available slots in an array
 unsigned long flx_collector_t::get_count(void *memory)
 {
   assert(memory);
-  void *p= JudyLGet(j_nused,(Word_t)memory,&je);
-  return p?*(Word_t*)p:1;
+  void *p= JudyLGet(j_nalloc,(Word_t)memory,&je);
+  return p?*(Word_t*)p:1; // defaults to 1 for non-array support
 }
 
 gc_shape_t *flx_collector_t::get_shape(void *memory)
@@ -609,12 +626,14 @@ gc_shape_t *flx_collector_t::get_shape(void *memory)
 }
 
 void *flx_collector_t::create_empty_array(
-  flx::gc::generic::gc_shape_t &shape,
+  flx::gc::generic::gc_shape_t *shape,
   unsigned long count
 )
 {
-  void *p = allocate(&shape,count);
-  set_used (p, 0);
+  //fprintf(stderr,"create empty array length %ld\n",count);
+  void *p = allocate(shape,count);
+  set_used (p, 0); // make sure to override default 1 slot usage
+  //fprintf(stderr,"Array at %p, used = %ld, max=%ld\n",p,get_used(p), get_count(p));
   return p;
 }
 

@@ -864,6 +864,8 @@ let () =
   Printf.printf "%.9f\n" (energy bodies);
   for i = 1 to n do advance bodies 0.01 done;
   Printf.printf "%.9f\n" (energy bodies)
+
+@head(3,'Ada code')
 @select(tangler('speed/src/ada/nbody.ada'))
 -- The Great Computer Language Shootout
 -- http://shootout.alioth.debian.org
