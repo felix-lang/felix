@@ -178,11 +178,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
   tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
   tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
-  tangle('    fun fold[i] (f:i->t->i) (var acc:i) (x:'+c+'):i= {')
-  tangle('      var s = begin x; var e = end x;')
-  tangle('      whilst s != e do acc = f acc (*s); ++s; done;')
-  tangle('      return acc;')
-  tangle('    }')
   tangle('  }')
 
 @def tcmkrseq(n):
@@ -193,11 +188,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('  instance Reversible_Sequence['+c+','+it+','+rit+',t] {')
   tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
   tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
-  tangle('    fun rfold[i] (f:i->t->i) (var acc:i) (x:'+c+'):i= {')
-  tangle('      var s = rbegin x; var e = rend x;')
-  tangle('      whilst s != e do acc = f acc (*s); ++s; done;')
-  tangle('      return acc;')
-  tangle('    }')
   tangle('  }')
 
 @def tcmkass(n):
@@ -218,11 +208,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    proc erase : lvalue['+c+'] * '+it+' = "$1.erase($1);";')
   tangle('    proc erase_between : lvalue['+c+'] * '+it+' * '+it+' = "$1.erase($1,$2);";')
   tangle('    proc clear : lvalue['+c+'] = "$1.clear();";')
-  tangle('    fun fold[i] (f:i->k*v->i) (var acc:i) (x:'+c+') :i= {')
-  tangle('      var s = begin x; var e = end x;')
-  tangle('      whilst s != e do acc = f acc (*s); ++s; done;')
-  tangle('      return acc;')
-  tangle('    }')
   tangle('  }')
 
   rit = n+'_reverse_iterator[k,v]'
@@ -230,11 +215,6 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('  instance Reversible_Sequence['+c+','+it+','+rit+',k*v] {')
   tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
   tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
-  tangle('    fun rfold[i] (f:i->k*v->i) (var acc:i) (x:'+c+'):i= {')
-  tangle('      var s = rbegin x; var e = rend x;')
-  tangle('      whilst s != e do acc = f acc (*s); ++s; done;')
-  tangle('      return acc;')
-  tangle('    }')
   tangle('  }')
 
 module Stl 

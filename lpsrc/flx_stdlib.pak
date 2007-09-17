@@ -278,7 +278,11 @@ typeclass Sequence[c,it,v] {
   virtual proc erase: lvalue[c] * it;
   virtual proc erase_between: lvalue[c] * it * it;
   virtual proc clear: lvalue[c];
-  virtual fun fold[i]: (i->v->i) -> i -> c -> i;
+  virtual fun fold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = begin x; var e = end x;
+    whilst s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
 }
 
 typeclass Reversible_Sequence[c,it,rit,v] {
@@ -287,7 +291,11 @@ typeclass Reversible_Sequence[c,it,rit,v] {
   inherit Bidirectional_iterator[rit,v];
   virtual gen rbegin: c -> rit;
   virtual gen rend: c -> rit;
-  virtual fun rfold[i]: (i->v->i) -> i -> c -> i;
+  virtual fun rfold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = rbegin x; var e = rend x;
+    whilst s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
 }
 
 typeclass Monad [M: TYPE->TYPE] {
