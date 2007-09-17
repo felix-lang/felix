@@ -387,6 +387,7 @@ private:
   unsigned long v_get_allocation_amt()const;
 
 private:
+  void judyerror(char*);
   unsigned long allocation_count;
   unsigned long root_count;
   unsigned long allocation_amt;
@@ -533,6 +534,12 @@ flx_collector_t::flx_collector_t(allocator_t *a) :
   ,j_tmp(0)
 {}
 
+void flx_collector_t::judyerror(char *loc)
+{
+  fprintf(stderr, "JUDY ERROR %d in %s\n",je.je_Errno,loc);
+  abort();
+}
+
 void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
@@ -573,7 +580,8 @@ void flx_collector_t::set_used(void *memory, unsigned long n)
   assert(n<=get_count(memory)); 
   //fprintf(stderr,"Set used of %p to %ld\n",memory,n);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
-  if(p==NULL||p == (Word_t*)(void*)PPJERR)
+  if(p==(Word_t*)PPJERR)judyerror("set_used");
+  if(p==NULL)
   {
     //fprintf(stderr,"No recorded usage! Creating store for data\n");
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
@@ -589,7 +597,8 @@ void flx_collector_t::incr_used(void *memory, unsigned long n)
   //fprintf(stderr,"Incr used of %p by %ld\n",memory,n);
   assert(get_used(memory) + n <= get_count(memory));
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
-  if(p==NULL||p == (Word_t*)(void*)PPJERR)
+  if(p==(Word_t*)PPJERR)judyerror("incr_used");
+  if(p==NULL)
   {
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
     *p = n;
@@ -603,8 +612,9 @@ unsigned long flx_collector_t::get_used(void *memory)
   assert(memory);
   //fprintf(stderr, "Get used of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+  if(p==(Word_t*)PPJERR)judyerror("get_used");
   //fprintf(stderr, "Used slot at address %p\n",memory);
-  unsigned long z = p!=NULL&&p!=(Word_t*)(void*)PPJERR?*p:1; // defaults to 1 for non-array support
+  unsigned long z = p!=NULL?*p:1; // defaults to 1 for non-array support
   //fprintf(stderr,"Used of %p is %ld\n",memory,z);
   return z;
 }
@@ -613,15 +623,17 @@ unsigned long flx_collector_t::get_used(void *memory)
 unsigned long flx_collector_t::get_count(void *memory)
 {
   assert(memory);
-  void *p= JudyLGet(j_nalloc,(Word_t)memory,&je);
-  return p!=NULL&&p!=PPJERR?*(Word_t*)p:1; // defaults to 1 for non-array support
+  Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)memory,&je);
+  if(p==(Word_t*)PPJERR)judyerror("get_count");
+  return p!=NULL?*p:1; // defaults to 1 for non-array support
 }
 
 gc_shape_t *flx_collector_t::get_shape(void *memory)
 {
   assert(memory);
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
-  if(pshape==NULL||pshape == (Word_t*)(void*)PPJERR) abort();
+  if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
+  if(pshape==NULL) abort();
   return (gc_shape_t*)(*pshape & (~1ul));
 }
 
@@ -726,7 +738,9 @@ unsigned long flx_collector_t::sweep()
   unsigned long sweeped = 0;
   void *current = NULL;
   Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je);
-  while(pshape!=NULL&&pshape!=(Word_t*)(void*)PPJERR)
+  if(pshape==(Word_t*)PPJERR)judyerror("sweep");
+  
+  while(pshape!=NULL)
   {
     if((*pshape & 1) == (parity & 1UL))
     {
@@ -792,7 +806,8 @@ void flx_collector_t::scan_object(void *p)
   Word_t cand = (Word_t)p;
   Word_t fp=cand;
   Word_t *w = (Word_t*)JudyLLast(j_shape,&fp,&je);
-  if(w == NULL || w == (Word_t*)(void*)PPJERR) return; // no lower object
+  if(p==(Word_t*)PPJERR)judyerror("scan_object");
+  if(w == NULL) return; // no lower object
   if(debug)
     fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p!\n",(void*)fp,(void*)w,(void*)(*w));
   if( (*w & 1UL) == reachable) return;   // already handled
