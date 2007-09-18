@@ -512,31 +512,24 @@ struct Body { pos:vec; vel:vec; mass: double; };
 proc Advance(dt: double){
    var i: int; var j:int; 
    forall i in 0 upto nbodies-1 do
-      var pi = addr bodies.[i];
-      bimass := pi.mass;
+      bimass := bodies.[i].mass;
       var delta = 0.0,0.0,0.0;
       forall j in i+1 upto nbodies-1 do
-         var pj = addr bodies.[j];
-         var bjmass = pj.mass;
-         var d = pi.pos - pj.pos;
+         var bjmass = bodies.[j].mass;
+         var d = bodies.[i].pos - bodies.[j].pos;
          var d2 = sqr d;
          var distance = sqrt d2;
-         var mag = dt / (distance * d2);
-         var jm = bjmass * mag;
-         var im = bimass * mag;
 
-         delta = delta + d * jm;
-         pj.vel = pj.vel + d * im;
+         delta = delta + d * bjmass * dt / (distance * d2);
+         bodies.[j].vel = bodies.[j].vel + d * bimass * dt / (distance * d2);
       done;
-      pi.vel = pi.vel - delta;
+      bodies.[i].vel = bodies.[i].vel - delta;
    done;
 
    forall i in 0 upto nbodies-1 do
-      pi = addr bodies.[i];
-      pi.pos = pi.pos + dt * pi.vel;
+      bodies.[i].pos = bodies.[i].pos + dt * bodies.[i].vel;
    done;
 }
-
 
 fun Energy(): double = 
 {

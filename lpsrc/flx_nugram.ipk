@@ -557,6 +557,7 @@ syntax functions {
   page procedures = 
     sprocedure_definition, 
     sproc_kind, 
+    sopt_traint, 
     sopt_traint_eq, 
     class_constructor= 
      (
@@ -744,6 +745,10 @@ syntax functions {
   sopt_traint_eq:= expect sexpr = =># "`(some ,_2)";
   sopt_traint_eq:= sepsilon =># "'none";
 
+  sopt_traint:= expect sexpr =># "`(some ,_2)";
+  sopt_traint:= sepsilon =># "'none";
+
+
   sctor_init := sname lpar sexpr rpar =># "`(,_1 ,_3)";
   sctor_inits := : sctor_init (, sctor_init)* =># "(cons _2 _3)";
   sctor_inits := sepsilon =># "()";
@@ -765,6 +770,36 @@ syntax functions {
       (body (append (map f inits) body))
     )
     `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
+  """;
+
+  sctor_definition := ctor stvarlist sname sfun_arg+ sopt_traint_eq 
+    scompound =>#
+  """
+  (let* 
+    (
+      (name (string-append "_ctor_" _3))
+      (vs _2)
+      (ret `(ast_name ,_3 ()))
+      (traint _5)
+      (body _6)
+      (args _4)
+    )
+    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
+  """;
+
+  sctor_definition := ctor stvarlist sname sfun_arg+ 
+    sopt_traint => sexpr ssemi =>#
+  """
+  (let* 
+    (
+      (name (string-append "_ctor_" _3))
+      (vs _2)
+      (ret `(ast_name ,_3 ()))
+      (traint _5)
+      (body `((ast_fun_return ,_sr ,_7)))
+      (args _4)
+    )
+    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
   """;
 
   sprocedure_definition := sadjectives sproc_kind sdeclname
@@ -1342,6 +1377,29 @@ syntax cbind {
       ('ERROR))))
   """;
 
+  sfunction_definition := 
+    ctor stvarlist sname : stypeexpr 
+    sopt_cstring sopt_prec srequires_clause ssemi =>#
+  """
+  (let* 
+    (
+      (name (string-append "_ctor_" _3))
+      (vs _2)
+      (ret `(ast_name ,_3 ()))
+      (argt _5)
+      (ct 
+        (if (eq? 'none _6)
+          `(StrTemplate ,(string-append _3 "($a)"))
+          (cadr _6)
+        )
+      )
+      (prec _7)
+      (reqs _8)
+    )
+    `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+  )
+  """;
+  
   page abstract_types = sabstract_type, stype_qual;
 
   sabstract_type:= stype_qual* type sdeclname = scode_spec srequires_clause ssemi =>#
