@@ -1083,7 +1083,7 @@ module glob {
   };
   private proc post_incr[t]: lvalue[ptr[t]] = "$1++;";
 
-  gen glob: string * ptr[glob_t] -> bool = "0==glob($1.data(),0,NULL,$2)";
+  gen glob: string * ptr[glob_t] -> bool = "0==::glob($1.data(),0,NULL,$2)";
   proc globfree: ptr[glob_t] = "globfree($1);";
 
   gen glob (pat:string): stl_vector[string] =
