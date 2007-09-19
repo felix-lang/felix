@@ -343,6 +343,11 @@ syntax expressions {
   anon_value := struct lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
     sstruct_assign := sname = sexpr ssemi =># "`(,_1 ,_3)";
 
+  anon_value := lpar rassign (, rassign )* rpar =># 
+    "`(ast_record ,(cons _2 (map cadr _3)))"
+  ;
+    rassign := sname = sor_condition =># "`(,_1 ,_3)";
+
   anon_value := union lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
     stype_sum_item := sname sopt_value stvarlist of sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
     stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
