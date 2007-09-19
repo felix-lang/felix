@@ -2659,17 +2659,15 @@ and lookup_qn_with_sig'
       | `SYMDEF_reglex _
       | `SYMDEF_cstruct _ 
       | `SYMDEF_struct _ ->
-        (*
+        let sign = try hd signs with _ -> assert false in
+        let t = typeofindex_with_ts syms sr index ts in
         print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
-        *)
 (*
 print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
 *)
         (*
         let ts = adjust_ts syms sr index ts in
         *)
-        let sign = try hd signs with _ -> assert false in
-        let t = typeofindex_with_ts syms sr index ts in
         begin match t with
         | `BTYP_function (a,_) ->
           if not (type_match syms.dfns a sign) then
@@ -2934,11 +2932,11 @@ and lookup_type_qn_with_sig'
 
       | `SYMDEF_cstruct _ 
       | `SYMDEF_struct _ ->
+        let sign = try hd signs with _ -> assert false in
+        let t = typeofindex_with_ts syms sr index ts in
         (*
         print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt syms.dfns t);
         *)
-        let sign = try hd signs with _ -> assert false in
-        let t = typeofindex_with_ts syms sr index ts in
         begin match t with
         | `BTYP_function (a,_) ->
           if not (type_match syms.dfns a sign) then
@@ -3407,6 +3405,23 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_inherit_fun _ -> 
       clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
+    | `SYMDEF_cstruct _
+    | `SYMDEF_struct _
+      when 
+        (match t2 with
+        | [`BTYP_record _] -> true
+        | _ -> false
+        )
+      ->
+        (*
+        print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
+        print_endline ("Record Argument type is " ^ catmap "," (sbt syms.dfns) t2);
+        *)
+        Some (`BEXPR_closure (sye index,ts),`BTYP_inst (sye index,ts))
+        (*
+        failwith "NOT IMPLEMENTED YET"
+        *)
+
     | `SYMDEF_regmatch _
     | `SYMDEF_reglex _
     | `SYMDEF_cstruct _
@@ -3414,7 +3429,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_nonconst_ctor _
       ->
         (*
-        print_endline "lookup_name_in_table_dirs_with_sig finds struct constructor";
+        print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
+        print_endline ("Argument types are " ^ catmap "," (sbt syms.dfns) t2);
         *)
         let ro = 
           resolve_overload'
@@ -4971,6 +4987,52 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | `BTYP_function _ -> 
       (* print_endline "Function .. cal apply"; *) 
       cal_apply syms sr f a
+    | `BTYP_inst (i,_) when 
+      (
+        match Hashtbl.find syms.dfns i with 
+        | {symdef=`SYMDEF_struct _}
+        | {symdef=`SYMDEF_cstruct _} -> 
+          (match ta with | `BTYP_record _ -> true | _ -> false)
+        | _ -> false
+      )
+      ->
+      (*
+      print_endline "struct applied to record .. ";
+      *)
+      let fls = match Hashtbl.find syms.dfns i with
+        | {symdef=`SYMDEF_struct ls}
+        | {symdef=`SYMDEF_cstruct ls} -> ls
+        | _ -> assert false
+      in
+      let alst = match ta with 
+        |`BTYP_record ts -> ts 
+        | _ -> assert false 
+      in
+      let nf = length fls in
+      let na = length alst in
+      if nf <> na then clierr sr 
+        (
+          "Wrong number of components matching record argument to struct"
+        )
+      else 
+        let alst = sort (fun (a,_) (b,_) -> compare a b) alst in
+        let ialst = map2 (fun (k,t) i -> k,(t,i)) alst (nlist na) in
+        let a:tbexpr_t list  = 
+          map (fun (name,_)-> 
+            let (t,j) = 
+              try assoc name ialst 
+              with Not_found -> clierr sr ("struct component " ^ name ^ " not provided by record")
+            in
+            `BEXPR_get_n (j,a),t
+          )
+          fls 
+        in
+        let cts = map snd a in
+        let t:btypecode_t = match cts with [t]->t | _ -> `BTYP_tuple cts in
+        let a: bexpr_t = match a with [x,_]->x | _ -> `BEXPR_tuple a in 
+        let a:tbexpr_t = a,t in
+        cal_apply syms sr f a
+
     | t ->
       (*
       print_endline ("Expected f to be function, got " ^ sbt syms.dfns t);
