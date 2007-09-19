@@ -4987,7 +4987,9 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | `BTYP_function _ -> 
       (* print_endline "Function .. cal apply"; *) 
       cal_apply syms sr f a
-    | `BTYP_inst (i,_) when 
+
+    (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
+    | `BTYP_inst (i,ts') when 
       (
         match Hashtbl.find syms.dfns i with 
         | {symdef=`SYMDEF_struct _}
@@ -4999,9 +5001,9 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       (*
       print_endline "struct applied to record .. ";
       *)
-      let fls = match Hashtbl.find syms.dfns i with
-        | {symdef=`SYMDEF_struct ls}
-        | {symdef=`SYMDEF_cstruct ls} -> ls
+      let id,vs,fls = match Hashtbl.find syms.dfns i with
+        | {id=id; vs=vs; symdef=`SYMDEF_struct ls } 
+        | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } -> id,vs,ls
         | _ -> assert false
       in
       let alst = match ta with 
@@ -5014,16 +5016,29 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         (
           "Wrong number of components matching record argument to struct"
         )
-      else 
+      else begin
+        let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
+        let env' = build_env syms (Some i) in
+        let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
         let alst = sort (fun (a,_) (b,_) -> compare a b) alst in
         let ialst = map2 (fun (k,t) i -> k,(t,i)) alst (nlist na) in
         let a:tbexpr_t list  = 
-          map (fun (name,_)-> 
+          map (fun (name,ct)-> 
             let (t,j) = 
               try assoc name ialst 
               with Not_found -> clierr sr ("struct component " ^ name ^ " not provided by record")
             in
-            `BEXPR_get_n (j,a),t
+            (* NOTE THIS IS WRONG .. need to bind in context 
+            of struct defn .. fix this next 
+            *)
+          let ct = bind_type' syms env' rsground sr ct bvs mkenv in
+          let ct = tsubst vs' ts' ct in
+            if type_eq syms.dfns ct t then
+              `BEXPR_get_n (j,a),t
+            else clierr sr ("Component " ^ name ^ 
+              " struct component type " ^ sbt syms.dfns ct ^ 
+              "\ndoesn't match record type " ^ sbt syms.dfns t
+            )
           )
           fls 
         in
@@ -5032,6 +5047,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         let a: bexpr_t = match a with [x,_]->x | _ -> `BEXPR_tuple a in 
         let a:tbexpr_t = a,t in
         cal_apply syms sr f a
+      end
 
     | t ->
       (*
