@@ -2509,6 +2509,84 @@ str:  ['a', 'b', 'c']
 repr: ['a', 'b', 'c']
 @doc()
 
+@env_rt.head(3)
+@namespace_test = env_rt.test('.flx')
+@select(namespace_test)
+@kat_rt("namespace")
+#import <flx.flxh>
+
+namespace Foo      { val a = 1; }
+namespace Foo      { val b = 2; }
+module    Foo::Bar { val c = 3; }
+
+println Foo::a;
+println Foo::b;
+println Foo::Bar::c;
+
+open Foo;
+println a;
+println b;
+println Bar::c;
+
+open Foo::Bar;
+println c;
+@doc()
+
+@select(env_rt.expect())
+1
+2
+3
+1
+2
+3
+3
+@doc()
+
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt("namespace")
+#import <flx.flxh>
+@tangle('include ' + repr(unix2native(os.path.splitext(namespace_test.sink.name)[0])) + ';')
+
+namespace Foo      { val d = 4; }
+module    Foo::Baz { val e = 5; }
+
+println Foo::a;
+println Foo::b;
+println Foo::Bar::c;
+println Foo::d;
+println Foo::Baz::e;
+
+open Foo;
+println a;
+println b;
+println Bar::c;
+println d;
+println Baz::e;
+
+open Foo::Bar;
+println c;
+
+open Foo::Baz;
+println e;
+@doc()
+
+@select(env_rt.expect())
+1
+2
+3
+4
+5
+1
+2
+3
+4
+5
+3
+5
+@doc()
+
+
 @env_nd.head(2,"Non deterministic tests")
 
 @env_nd.head(3)
@@ -2737,6 +2815,19 @@ fun f(x:int):int =
   if  x == 1 do return 1; done;
 }
 print (f 1); endl;
+@doc()
+
+@env_bt.head(3)
+@select(env_bt.test('.flx'))
+@kat_rt('namespace')
+#import <flx.flxh>
+
+namespace Foo      { val a = 1; }
+namespace Foo      { val b = 2; }
+module    Foo::Bar { val c = 3; }
+
+open Foo::Bar;
+println a;
 @doc()
 
 @env_kf.head(2,'Known failure tests')
