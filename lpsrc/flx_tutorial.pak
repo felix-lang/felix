@@ -795,6 +795,7 @@ The order of fields is irrelevant.
 A record can be coerced to a record with less fields.
 
 @select(env.test('.flx'))
+@kat('Records')
 #import <flx.flxh>
 open Float;
 
@@ -814,6 +815,43 @@ f (b:small);
 @select(env.expect())
 6
 3.1
+@doc()
+
+[New 2007-09-20] Record values can also be written in the simpler form:
+@begin_displayed_code()
+  (a=1,b=2)
+@end_displayed_code()
+Furthermore, structs can be initialised by a record with
+the same set of components, meaning the name and type agree.
+
+@select(env.test('.flx'))
+@kat('Records')
+@kat('Struct:initialised by record')
+#import <flx.flxh>
+
+var x = struct {a=1; b=2; };
+println q"a=$(x.a), b=$(x.b)";
+var y = (a=3, b=4);
+println q"a=$(y.a), b=$(y.b)";
+
+struct X { aa:int; bb:int; };
+
+val k = X (1,2);
+println q"aa=$(k.aa), bb=$(k.bb)";
+
+val j = X (bb=11,aa=22);
+println q"aa=$(j.aa), bb=$(j.bb)";
+
+val r = (bb=88,aa=99);
+val q = X r;
+println q"aa=$(q.aa), bb=$(q.bb)";
+
+@select(env.expect())
+a=1, b=2
+a=3, b=4
+aa=1, bb=2
+aa=22, bb=11
+aa=99, bb=88
 @doc()
 
 @env.head(2,'Arrays')
@@ -844,6 +882,7 @@ the component has, and the actual component.
 Here are some examples of unions.
 
 @select(env.test('.flx'))
+@kat("unions")
 #import <flx.flxh>
 
 union parity =
@@ -912,6 +951,8 @@ The only way to get at the current component
 of a union is by pattern matching. Here is an example: 
 
 @select(env.test('.flx'))
+@kat("pattern match:union")
+@kat("unions:pattern match")
 #import <flx.flxh>
 union int_option =
   | iSome of int
@@ -965,6 +1006,7 @@ returns a procedure which could print something.
 Felix supports the conditional expression as shown:
 
 @select(env.test('.flx'))
+@kat("conditional")
 #import <flx.flxh>
 
 fun sign1(x:int):int = 
