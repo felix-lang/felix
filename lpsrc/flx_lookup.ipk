@@ -2693,7 +2693,9 @@ and lookup_qn_with_sig'
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
         let t = typeofindex_with_ts syms sr index ts in
+        (*
         print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
+        *)
 (*
 print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
 *)
