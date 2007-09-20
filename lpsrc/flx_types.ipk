@@ -556,7 +556,7 @@ Statements; that is, the procedural sequence control system.
 @select(h)
 and param_kind_t = [`PVal | `PVar | `PFun | `PRef ]
 and simple_parameter_t = id_t * typecode_t
-and parameter_t = param_kind_t * id_t * typecode_t
+and parameter_t = param_kind_t * id_t * typecode_t * expr_t option
 and macro_parameter_type_t = 
   | Ident 
   | Expr 
@@ -3235,9 +3235,10 @@ and string_of_parameters (ps:params_t) =
   cat 
     ", " 
     (map 
-      (fun (k,x,y)-> 
+      (fun (k,x,y,d)-> 
         string_of_param_kind k^ " " ^ 
-        x ^ ": "^(string_of_typecode y)
+        x ^ ": "^(string_of_typecode y) ^
+        (match d with None -> "" | Some e -> "="^ string_of_expr e)
       ) 
       ps
      )
@@ -4336,7 +4337,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
       `TYP_function 
       (
         (
-          match map (fun (x,y,z) -> z) ps with
+          match map (fun (x,y,z,d) -> z) ps with
           | [x] -> x
           | x -> `TYP_tuple x
         )
@@ -5537,7 +5538,7 @@ val type_of_argtypes :
   typecode_t list -> 
   typecode_t
   
-val funparamtype : 'a * 'b * 't -> 't
+val funparamtype : 'a * 'b * 't * 'd -> 't
 
 val typeoflist:
   btypecode_t list ->
@@ -5644,7 +5645,7 @@ let type_of_argtypes ls = match ls with
  | [x] -> x
  | _ -> `TYP_tuple ls
 
-let funparamtype (_,_,t) = t
+let funparamtype (_,_,t,_) = t
 
 module FuntypeSet = Set.Make(
   struct type t=typecode_t let compare = compare end
@@ -5809,7 +5810,7 @@ val typeof_list:
   typecode_t list -> typecode_t
 
 val paramtype: 
-  (param_kind_t * string * typecode_t) list -> typecode_t
+  (param_kind_t * string * typecode_t * expr_t option) list -> typecode_t
 
 val qualified_name_of_expr:
   expr_t -> qualified_name_t
@@ -5842,7 +5843,7 @@ let typeof_list = function
 let paramtype params = 
   let typlist params = 
     map 
-    (fun (k,_,t) ->
+    (fun (k,_,t,_) ->
       match k with 
       | `PRef -> `TYP_pointer t 
       | `PFun -> `TYP_function (`TYP_tuple [],t)
@@ -6018,7 +6019,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
              | [[],None],`TYP_none -> 
               `TYP_function (`TYP_tuple [],t)
              | _ ->
-             let params = map (fun (x,y,z)-> y,z) params in
+             let params = map (fun (x,y,z,d)-> y,z) params in
              `TYP_typefun 
              ( 
                params,

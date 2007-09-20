@@ -522,8 +522,8 @@ and xparameter_t sr fresh env x : parameter_t =
   let xpk x = xparam_kind_t sr fresh env x in
   let ss s = s in
   match x with
-  | Lst [pk; Id s; t] -> xpk pk, s, ti t
-  | Lst [pk; Str s; t] -> xpk pk,ss s, ti t
+  | Lst [pk; Id s; t; e] -> xpk pk, s, ti t,opt "dflt_arg" ex e
+  | Lst [pk; Str s; t; e] -> xpk pk,ss s, ti t,opt "dflt_arg" ex e
   | x -> err x "parameter_t"
 
 and xparams_t sr fresh env x : params_t =

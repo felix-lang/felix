@@ -238,7 +238,7 @@ let bbind_sym syms bbdfns i {
     print_endline ("******Binding " ^ name);
     *)
     let bind_basic_ps ps = 
-      List.map (fun (k,s,t) -> 
+      List.map (fun (k,s,t,_) -> 
         let i = find_param name_map s in
         {pid=s; pindex=i;pkind=k; ptyp=bt t}
       ) 

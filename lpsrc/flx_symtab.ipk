@@ -453,11 +453,11 @@ let rec build_tables syms name inherit_vs
                         (fun t -> 
                           let i = !cnt in incr cnt; 
                           let pname = "_" ^ si i in
-                          (`PVal,pname,t)
+                          (`PVal,pname,t,None)
                         ) 
                         argts
                       in
-                      let args = map (fun(_,n,_)->n) params in
+                      let args = map (fun(_,n,_,_)->n) params in
                       let arg = `AST_tuple (sr, map (fun n -> `AST_name (sr,n,[])) (obj_name::args)) in
                       let asms = 
                         [
@@ -527,7 +527,7 @@ let rec build_tables syms name inherit_vs
                   id=get_name;sr=sr;parent=parent;
                   vs=merge_ivs vs mvs;pubmap=pubtab;privmap=privtab;dirs=dirs;
                   symdef=`SYMDEF_function (
-                    ([`PVal,obj_name,stype],None), rett, props, exes
+                    ([`PVal,obj_name,stype,None],None), rett, props, exes
                   )
                 };
                 let xvs = merge_ivs vs mvs in
@@ -597,7 +597,7 @@ let rec build_tables syms name inherit_vs
                   add_unique funtab objname objix;
                   *)
                   full_add_unique syms sr dfltvs funtab objname objix;
-                  let ps = [`PVal,"obj",stype],None in
+                  let ps = [`PVal,"obj",stype,None],None in
                   let exes = [sr,
                     `EXE_fun_return (`AST_get_named_variable (sr,
                       (component_name,`AST_index (sr,"obj",objix))
@@ -648,7 +648,7 @@ let rec build_tables syms name inherit_vs
                   add_unique funtab objname objix;
                   *)
                   full_add_unique syms sr dfltvs funtab objname objix;
-                  let ps = [`PVal,"obj",`TYP_lvalue stype],None in
+                  let ps = [`PVal,"obj",`TYP_lvalue stype,None],None in
                   let exes = [sr,
                     `EXE_fun_return (`AST_get_named_variable (sr,
                       (component_name,`AST_index (sr,"obj",objix))
@@ -705,7 +705,7 @@ let rec build_tables syms name inherit_vs
             symdef=`SYMDEF_parameter (`PVal,ptyp)
           };
 
-          let ps = [`PVal,"lexeme_start",ptyp; `PVal,"buffer_end",ptyp],None in
+          let ps = [`PVal,"lexeme_start",ptyp,None; `PVal,"buffer_end",ptyp,None],None in
 
 
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;
@@ -748,7 +748,7 @@ let rec build_tables syms name inherit_vs
             symdef=`SYMDEF_var ptyp
           };
 
-          let ps = [`PVal,"lexeme_start",ptyp; `PVal,"buffer_end",ptyp],None in
+          let ps = [`PVal,"lexeme_start",ptyp,None; `PVal,"buffer_end",ptyp,None],None in
 
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;
             vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];
@@ -774,7 +774,7 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (`PVal,name,typ) :: !ips 
+            ips := (`PVal,name,typ,None) :: !ips 
           ) ps
           ; 
           Hashtbl.add dfns fun_index {
@@ -788,7 +788,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_axiom ((ps,pre),e1) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (k,name,typ) -> 
+          iter (fun (k,name,typ,dflt) -> 
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -799,7 +799,7 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (k,name,typ) :: !ips 
+            ips := (k,name,typ,dflt) :: !ips 
           ) ps
           ; 
           Hashtbl.add dfns fun_index {
@@ -813,7 +813,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_lemma ((ps,pre),e1) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (k,name,typ) -> 
+          iter (fun (k,name,typ,dflt) -> 
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -824,7 +824,7 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (k,name,typ) :: !ips 
+            ips := (k,name,typ,dflt) :: !ips 
           ) ps
           ; 
           Hashtbl.add dfns fun_index {
@@ -872,7 +872,7 @@ let rec build_tables syms name inherit_vs
             (Some fun_index) parent root false asms 
           in
           let ips = ref [] in
-          iter (fun (k,name,typ) -> 
+          iter (fun (k,name,typ,dflt) -> 
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -883,7 +883,7 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (k,name,typ) :: !ips 
+            ips := (k,name,typ,dflt) :: !ips 
           ) ps
           ; 
           Hashtbl.add dfns fun_index {
@@ -1155,7 +1155,7 @@ let rec build_tables syms name inherit_vs
             | `SYMDEF_val t -> sts := `MemberVal (id,t,None) :: ! sts
             | `SYMDEF_function (ps,ret,props,_) ->
               if mem `Ctor props then () else
-              let ps = map (fun(_,_,t)->t)(fst ps) in
+              let ps = map (fun(_,_,t,_)->t)(fst ps) in
               let a = match ps with 
                 | [x] -> x 
                 | x -> `TYP_tuple x 

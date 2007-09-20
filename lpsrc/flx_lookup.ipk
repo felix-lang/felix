@@ -2312,7 +2312,7 @@ and inner_typeofindex
     end
 
   | `SYMDEF_function ((ps,_), rt,props,_) -> 
-    let pts = map (fun(_,_,t)->t) ps in
+    let pts = map (fun(_,_,t,_)->t) ps in
     let rt' = 
       try Hashtbl.find syms.varmap index with Not_found ->
       cal_ret_type syms { rs with idx_fixlist = index::rs.idx_fixlist}
@@ -2457,7 +2457,7 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
           (* a bit of a hack .. *)
           | `BTYP_record rs ->
             begin let pnames = match Hashtbl.find syms.dfns i with
-            | {symdef=`SYMDEF_function (ps,_,_,_)} -> map (fun (_,name,_)->name) (fst ps)
+            | {symdef=`SYMDEF_function (ps,_,_,_)} -> map (fun (_,name,_,_)->name) (fst ps)
             | _ -> assert false
             in
             let n = length rs in

@@ -119,7 +119,7 @@ let sig_of_symdef symdef sr name i = match symdef with
     *)
 
     | _ ->
-      paramtype p,r,Some (map (fun (_,name,_)->name) p)
+      paramtype p,r,Some (map (fun (_,name,_,_)->name) p)
     end
 
   | `SYMDEF_cstruct ls

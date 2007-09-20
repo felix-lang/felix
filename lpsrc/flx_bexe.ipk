@@ -82,7 +82,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
           (* a bit of a hack .. *)
           | `BTYP_record rs ->
             begin let pnames = match Hashtbl.find syms.dfns i with
-            | {symdef=`SYMDEF_function (ps,_,_,_)} -> map (fun (_,name,_)->name) (fst ps)
+            | {symdef=`SYMDEF_function (ps,_,_,_)} -> map (fun (_,name,_,_)->name) (fst ps)
             | _ -> assert false
             in
             let n = length rs in
