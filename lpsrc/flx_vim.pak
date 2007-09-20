@@ -195,20 +195,15 @@ syn keyword felixType carray
 syn keyword felixType list
 
 " strings -- make special exception to handle identifiers with quotes in them
-syn region felixString          start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\='+ end=+'+ skip=+\\\\\|\\'+ contains=felixEscape
-syn region felixString          start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\="+ end=+"+ skip=+\\\\\|\\"+ contains=felixEscape
-syn region felixString          start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\="""+ end=+"""+ contains=felixEscape
-syn region felixString          start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\='''+ end=+'''+ contains=felixEscape
+syn region felixString          start=+\(^\|[^0-9A-Za-z_']\)\@<=\(\|[uU]\|[cC]\|[fF]\|[qQ]\|[wW]\|[uU]\|[kK]\|[nN]\)'+ end=+'+ skip=+\\\\\|\\'+ contains=felixEscape
+syn region felixString          start=+\(^\|[^0-9A-Za-z_"]\)\@<=\(\|[uU]\|[cC]\|[fF]\|[qQ]\|[wW]\|[uU]\|[kK]\|[nN]\)"+ end=+"+ skip=+\\\\\|\\"+ contains=felixEscape
+syn region felixString          start=+\(^\|[^0-9A-Za-z_"]\)\@<=\(\|[uU]\|[cC]\|[fF]\|[qQ]\|[wW]\|[uU]\|[kK]\|[nN]\)"""+ end=+"""+ contains=felixEscape
+syn region felixString          start=+\(^\|[^0-9A-Za-z_']\)\@<=\(\|[uU]\|[cC]\|[fF]\|[qQ]\|[wW]\|[uU]\|[kK]\|[nN]\)'''+ end=+'''+ contains=felixEscape
 
-syn region felixRawString       start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\=[rR]'+ end=+'+ skip=+\\\\\|\\'+
-syn region felixRawString       start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\=[rR]"+ end=+"+ skip=+\\\\\|\\"+
-syn region felixRawString       start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\=[rR]"""+ end=+"""+
-syn region felixRawString       start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\=[rR]'''+ end=+'''+
-
-syn region felixFormatString    start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\=[fF]'+ end=+'+ skip=+\\\\\|\\'+
-syn region felixFormatString    start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\=[fF]"+ end=+"+ skip=+\\\\\|\\"+
-syn region felixFormatString    start=+\(^\|[^0-9A-Za-z_"]\)\@<=[uU]\=[fF]"""+ end=+"""+
-syn region felixFormatString    start=+\(^\|[^0-9A-Za-z_']\)\@<=[uU]\=[fF]'''+ end=+'''+
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_']\)\@<=\([rR]\|[cC][rR]\|[rR][cC]\)'+ end=+'+ skip=+\\\\\|\\'+
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_"]\)\@<=\([rR]\|[cC][rR]\|[rR][cC]\)"+ end=+"+ skip=+\\\\\|\\"+
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_"]\)\@<=\([rR]\|[cC][rR]\|[rR][cC]\)"""+ end=+"""+
+syn region felixRawString       start=+\(^\|[^0-9A-Za-z_']\)\@<=\([rR]\|[cC][rR]\|[rR][cC]\)'''+ end=+'''+
 
 syn match  felixEscape          +\\[abfnrtv'"\\]+ contained
 syn match  felixEscape          "\\\o\{1,3}" contained
@@ -336,9 +331,10 @@ if version >= 508 || !exists("did_flx_syn_inits")
   HiLink felixFloat             Float
   HiLink felixConstant          Constant
   HiLink felixType              Function
+
   HiLink felixString            String
   HiLink felixRawString         String
-  HiLink felixFormatString      String
+  HiLink felixEscape            Special
 
   HiLink felixInclude           Include
   HiLink felixPreProc           PreProc
