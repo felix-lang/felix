@@ -100,7 +100,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         | Some perm ->
           let xs: tbexpr_t list = map (fun (j,t) -> `BEXPR_get_n (j,tbe2),t) perm in
           begin match xs with
-          | [_]-> tbe2
+          | [x]-> x
           | _ -> `BEXPR_tuple xs,`BTYP_tuple (map snd xs)
           end
         | None ->

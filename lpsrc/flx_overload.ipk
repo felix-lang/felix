@@ -180,24 +180,33 @@ let consider syms bt luqn2 name
     let arg_types =
       match arg_types with
         | `BTYP_record rs :: tail ->
+          let n = length rs in
           begin match pnames with
           | None -> arg_types
           | Some ps ->
-            if length ps <> length ps then arg_types else
+            if n <> length ps then arg_types else
             match base_domain with
-            | `TYP_tuple ls ->
+            | `TYP_record _ -> arg_types
+            | `TYP_tuple [] -> arg_types (* lazy *)
+            | _ ->
+               begin match base_domain with
+               | `TYP_tuple ls -> assert (length ls = n)
+               | _ -> assert (n = 1)
+               end;
               (* fudge the first argument type to be a tuple type,
                 with components aligned with the record type by name
               *)
-              begin try
-              let ats = map (fun name-> assoc name rs) ps in
-              (*
-              print_endline "FUDGED ARGUMENT TYPE!";
-              *)
-              `BTYP_tuple ats :: tail
-              with Not_found -> arg_types
+              begin 
+                try
+                  let ats = map (fun name-> assoc name rs) ps in
+                  let t = match ats with
+                    | [] -> assert false
+                    | [x] -> x
+                    | _ -> `BTYP_tuple ats 
+                  in
+                  t :: tail
+                with Not_found -> arg_types
               end
-            | _ -> arg_types
           end
 
         | _ -> arg_types

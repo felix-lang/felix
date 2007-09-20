@@ -2584,7 +2584,7 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   | Some perm ->
     let xs: tbexpr_t list = map (fun (j,t) -> `BEXPR_get_n (j,tbe2),t) perm in
     match xs with
-    | [_]-> tbe2
+    | [x]-> x
     | _ -> `BEXPR_tuple xs,`BTYP_tuple (map snd xs)
   in
   `BEXPR_apply ((be1,t1), x2),rest
