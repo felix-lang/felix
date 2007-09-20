@@ -46,13 +46,13 @@ let rec check_if_parent syms child parent =
       | {parent=Some parent} -> check_if_parent syms child parent
       | {parent=None} -> false
 
-let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
-  match unfold syms.dfns pt with
+let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
+  match unfold syms.dfns t1 with
   | `BTYP_lvalue (`BTYP_cfunction (t, `BTYP_void))
   | `BTYP_cfunction (t, `BTYP_void) 
   | `BTYP_lvalue (`BTYP_function (t, `BTYP_void))
   | `BTYP_function (t, `BTYP_void) -> 
-    if type_match syms.dfns t argt 
+    if type_match syms.dfns t t2
     then 
       ( 
         (*
@@ -71,27 +71,59 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
           end
         | _ -> 
         *)
-          `BEXE_call (sr,(p,lower pt), tbe2)
+          `BEXE_call (sr,tbe1, tbe2)
       )
-    else
-      clierr sr
-      (
-        "[cal_call] Procedure " ^
-        sbe syms.dfns bbdfns tbe1 ^
-        "\nof type " ^
-        sbt syms.dfns pt ^
-        "\napplied to argument " ^
-        sbe syms.dfns bbdfns tbe2 ^
-        "\n of type " ^
-        sbt syms.dfns argt ^
-        "\nwhich doesn't agree with parameter type\n" ^
-        sbt syms.dfns t 
-      )
+    else 
+    begin 
+      let reorder: ((int * btypecode_t) list) option = 
+        match be1 with 
+        | `BEXPR_closure (i,ts) ->
+          begin match t2 with 
+          (* a bit of a hack .. *)
+          | `BTYP_record rs ->
+            begin let pnames = match Hashtbl.find syms.dfns i with
+            | {symdef=`SYMDEF_function (ps,_,_,_)} -> map (fun (_,name,_)->name) (fst ps)
+            | _ -> assert false
+            in
+            let n = length rs in
+            let rs= sort (fun (a,_) (b,_) -> compare a b) rs in
+            let rs = map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
+            try Some (map (fun name -> assoc name rs) pnames)
+            with Not_found -> None
+            end
+
+          | _ -> None
+          end
+        | _ -> None
+      in 
+      let x2 = match reorder with
+        | Some perm ->
+          let xs: tbexpr_t list = map (fun (j,t) -> `BEXPR_get_n (j,tbe2),t) perm in
+          begin match xs with
+          | [_]-> tbe2
+          | _ -> `BEXPR_tuple xs,`BTYP_tuple (map snd xs)
+          end
+        | None ->
+          clierr sr
+          (
+            "[cal_call] Procedure " ^
+            sbe syms.dfns bbdfns tbe1 ^
+            "\nof type " ^
+            sbt syms.dfns t1 ^
+            "\napplied to argument " ^
+            sbe syms.dfns bbdfns tbe2 ^
+            "\n of type " ^
+            sbt syms.dfns t2 ^
+            "\nwhich doesn't agree with parameter type\n" ^
+            sbt syms.dfns t 
+          )
+      in `BEXE_call (sr,tbe1,x2)
+    end
 
   | _ -> 
     clierr sr ("[cal_call] call non procedure, "^
-    sbe syms.dfns bbdfns (p,pt)
-    ^"\ntype=" ^ sbt syms.dfns pt)
+    sbe syms.dfns bbdfns tbe1
+    ^"\ntype=" ^ sbt syms.dfns t1)
 
 let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
   match unfold syms.dfns pt with
