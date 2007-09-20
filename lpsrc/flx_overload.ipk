@@ -70,11 +70,11 @@ let get_data table index : symbol_data_t =
 
 let sig_of_symdef symdef sr name i = match symdef with 
   | `SYMDEF_match_check (_) 
-    -> `TYP_tuple[],`TYP_sum [`TYP_tuple[];`TYP_tuple[]] (* bool *)
+    -> `TYP_tuple[],`TYP_sum [`TYP_tuple[];`TYP_tuple[]],None (* bool *)
 
   (* primitives *)
   | `SYMDEF_fun (_,ps,r,_,_,_)
-    -> typeof_list ps,r
+    -> typeof_list ps,r,None
 
   | `SYMDEF_callback (_,ts_orig,r,_)
     -> 
@@ -105,7 +105,7 @@ let sig_of_symdef symdef sr name i = match symdef with
         ) 
         ts_orig 
       in
-      typeof_list ts_cf,r
+      typeof_list ts_cf,r,None
 
   | `SYMDEF_function (ps,r,_,_)
     -> 
@@ -119,19 +119,19 @@ let sig_of_symdef symdef sr name i = match symdef with
     *)
 
     | _ ->
-      paramtype p,r
+      paramtype p,r,Some (map (fun (_,name,_)->name) p)
     end
 
   | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
-    typeof_list (map snd ls),`AST_index (sr,name,i)
+    typeof_list (map snd ls),`AST_index (sr,name,i),Some (map fst ls)
 
-  | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r
-  | `SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r
+  | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
+  | `SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
   | `SYMDEF_type_alias t ->
     begin match t with
-    | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r
-    | `TYP_case _ -> `TYP_type,`TYP_type
+    | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r,None
+    | `TYP_case _ -> `TYP_type,`TYP_type,None
     | symdef -> 
       raise (OverloadKindError (sr,
         "[sig_of_symdef] Expected "^
@@ -155,8 +155,8 @@ let resolve syms i =
   let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} = 
     find_split_vs syms i 
   in
-  let t,r = sig_of_symdef symdef sr id i in
-  id,sr,parent,vs,pvs,con,rtcr,t,r
+  let t,r,pnames = sig_of_symdef symdef sr id i in
+  id,sr,parent,vs,pvs,con,rtcr,t,r,pnames
 
 let rec unravel_ret tin dts = 
   match tin with
@@ -174,8 +174,34 @@ let consider syms bt luqn2 name
   input_ts arg_types call_sr 
 : overload_result option =
     let bt sr t = bt sr i t in
-    let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result = resolve syms i in
+    let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames = 
+      resolve syms i 
+    in
+    let arg_types =
+      match arg_types with
+        | `BTYP_record rs :: tail ->
+          begin match pnames with
+          | None -> arg_types
+          | Some ps ->
+            if length ps <> length ps then arg_types else
+            match base_domain with
+            | `TYP_tuple ls ->
+              (* fudge the first argument type to be a tuple type,
+                with components aligned with the record type by name
+              *)
+              begin try
+              let ats = map (fun name-> assoc name rs) ps in
+              (*
+              print_endline "FUDGED ARGUMENT TYPE!";
+              *)
+              `BTYP_tuple ats :: tail
+              with Not_found -> arg_types
+              end
+            | _ -> arg_types
+          end
 
+        | _ -> arg_types
+    in
     (*
     if length rtcr > 0 then begin
       (*
