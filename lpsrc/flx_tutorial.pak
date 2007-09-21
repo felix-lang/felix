@@ -823,6 +823,11 @@ f (b:small);
 @end_displayed_code()
 Furthermore, structs can be initialised by a record with
 the same set of components, meaning the name and type agree.
+@p()
+Also, records can be used as arguments to functions
+by specifying the parameter names.
+@p()
+Also parameters can have default values.
 
 @select(env.test('.flx'))
 @kat('Records')
@@ -846,12 +851,59 @@ val r = (bb=88,aa=99);
 val q = X r;
 println q"aa=$(q.aa), bb=$(q.bb)";
 
+fun f(a:int, b:int)=> a + 2* b;
+fun f(x:int, y:int)=> 2 * x + 5* y;
+
+var d = f(b=1,a=2); // 4
+println q"d=$(d)";
+
+d = f(x=1,y=2); // 12
+println q"d=$(d)";
+
+
+fun g(xx:X)=> xx.aa+xx.bb;
+println$ g (X (aa=1,bb=2));
+
+
+proc p(a:int, b:string) 
+{
+  println$ b + " " + str a;
+}
+
+p$ 1,"Hi";
+p (a=1,b="HIHI");
+
+fun f(a:int)=> 3 * a;
+println$ f 2;
+println$ f (a=4);
+
+fun g(x:struct {a:int;})=>9 * x.a;
+println$ g (a=2);
+
+fun df(a:int=1,b:long)=> long a + b;
+println$ df (1,2L);
+
+println$ df (b=2L); // a should default to 1
+
+fun df2(a:int=1,b:long=2L)=> long a + b;
+println$ df2 (); // should default both 1 and 2
 @select(env.expect())
 a=1, b=2
 a=3, b=4
 aa=1, bb=2
 aa=22, bb=11
 aa=99, bb=88
+d=4
+d=12
+3
+Hi 1
+HIHI 1
+6
+12
+18
+3
+3
+3
 @doc()
 
 @env.head(2,'Arrays')
