@@ -2432,16 +2432,18 @@ and inner_typeofindex
   end
 
 and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
+  let mkenv i = build_env syms (Some i) in
+  let be i e = bind_expression syms (mkenv i) e in
   (*
   print_endline ("Cal apply of " ^ sbe syms.dfns bbdfns tbe1 ^ " to " ^ sbe syms.dfns bbdfns tbe2);
   *)
-  let ((re,rt) as r) = cal_apply' syms sr tbe1 tbe2 in
+  let ((re,rt) as r) = cal_apply' syms be sr tbe1 tbe2 in
   (*
   print_endline ("Cal_apply, ret type=" ^ sbt syms.dfns rt);
   *)
   r
   
-and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
+and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest,reorder =
     match unfold syms.dfns t1 with
     | `BTYP_lvalue (`BTYP_function (argt,rest))
@@ -2450,20 +2452,34 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     | `BTYP_cfunction (argt,rest) ->
       if type_match syms.dfns argt t2
       then rest, None
-      else let reorder: ((int * btypecode_t) list) option = 
+      else let reorder: tbexpr_t list option = 
         match be1 with 
         | `BEXPR_closure (i,ts) ->
           begin match t2 with 
           (* a bit of a hack .. *)
           | `BTYP_record rs ->
             begin let pnames = match Hashtbl.find syms.dfns i with
-            | {symdef=`SYMDEF_function (ps,_,_,_)} -> map (fun (_,name,_,_)->name) (fst ps)
+            | {symdef=`SYMDEF_function (ps,_,_,_)} -> 
+              map (fun (_,name,_,d)->
+                name, 
+                match d with None -> None | Some e -> Some (be i e)
+              ) (fst ps)
             | _ -> assert false
             in
             let n = length rs in
             let rs= sort (fun (a,_) (b,_) -> compare a b) rs in
             let rs = map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
-            try Some (map (fun name -> assoc name rs) pnames)
+            try Some (map 
+              (fun (name,d) -> 
+                try (match assoc name rs with 
+                | j,t-> `BEXPR_get_n (j,tbe2),t)
+                with Not_found ->
+                match d with 
+                | Some d ->d
+                | None -> raise Not_found
+              ) 
+              pnames
+            )
             with Not_found -> None
             end
 
@@ -2581,8 +2597,7 @@ and cal_apply' syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   *)
   let x2 = match reorder with
   | None -> be2,t2
-  | Some perm ->
-    let xs: tbexpr_t list = map (fun (j,t) -> `BEXPR_get_n (j,tbe2),t) perm in
+  | Some xs ->
     match xs with
     | [x]-> x
     | _ -> `BEXPR_tuple xs,`BTYP_tuple (map snd xs)
@@ -5886,9 +5901,12 @@ and resolve_overload'
   let bt sr i t =
     bind_type syms (env i) sr t
   in
+  let be i e =
+    bind_expression syms (env i) e
+  in
   let luqn2 i qn = lookup_qn_in_env2 syms (env i) qn in
   let fs = trclose syms rs sr fs in
-  let result : overload_result option = overload syms bt luqn2 sr fs name sufs ts in
+  let result : overload_result option = overload syms bt be luqn2 sr fs name sufs ts in
   begin match result with 
   | None -> () 
   | Some (index,sign,ret,mgu,ts) ->

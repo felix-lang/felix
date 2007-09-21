@@ -14,7 +14,8 @@ type overload_result =
 
 val overload:
   sym_state_t -> 
-  (range_srcref  -> int -> typecode_t -> btypecode_t) ->
+  (range_srcref  -> int -> typecode_t -> btypecode_t) -> (* bind type *)
+  (int -> expr_t -> tbexpr_t) -> (* bind expression in context of i *)
   (int -> qualified_name_t -> entry_set_t * typecode_t list) ->
   range_srcref ->
   entry_kind_t list ->
@@ -119,12 +120,13 @@ let sig_of_symdef symdef sr name i = match symdef with
     *)
 
     | _ ->
-      paramtype p,r,Some (map (fun (_,name,_,_)->name) p)
+      paramtype p,r,Some (map (fun (_,name,_,d)->name,d) p)
     end
 
   | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
-    typeof_list (map snd ls),`AST_index (sr,name,i),Some (map fst ls)
+    typeof_list (map snd ls),`AST_index (sr,name,i),
+     Some (map (fun (p,_) -> p,None) ls)
 
   | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
   | `SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
@@ -169,7 +171,7 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 (* Note this bt must bind types in the base context *)
-let consider syms bt luqn2 name 
+let consider syms bt be luqn2 name 
   ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
   input_ts arg_types call_sr 
 : overload_result option =
@@ -180,33 +182,48 @@ let consider syms bt luqn2 name
     let arg_types =
       match arg_types with
         | `BTYP_record rs :: tail ->
-          let n = length rs in
           begin match pnames with
-          | None -> arg_types
-          | Some ps ->
-            if n <> length ps then arg_types else
+            | None -> arg_types
+            | Some ps ->
+            match 
+              begin try 
+                iter (fun (name,_)->ignore (assoc name ps)) rs; 
+                true
+              with Not_found -> false
+              end
+            with false -> arg_types
+            | _ ->
             match base_domain with
             | `TYP_record _ -> arg_types
             | `TYP_tuple [] -> arg_types (* lazy *)
             | _ ->
-               begin match base_domain with
-               | `TYP_tuple ls -> assert (length ls = n)
-               | _ -> assert (n = 1)
-               end;
-              (* fudge the first argument type to be a tuple type,
-                with components aligned with the record type by name
-              *)
-              begin 
-                try
-                  let ats = map (fun name-> assoc name rs) ps in
-                  let t = match ats with
-                    | [] -> assert false
-                    | [x] -> x
-                    | _ -> `BTYP_tuple ats 
-                  in
-                  t :: tail
-                with Not_found -> arg_types
-              end
+            let ps = 
+              map (fun (name,e) -> 
+                name, 
+                match e with 
+                | None -> None 
+                | Some e -> Some (be i e)
+              )
+              ps
+            in
+            begin 
+              try
+                let ats = map (fun (name,d)-> 
+                  try assoc name rs
+                  with Not_found ->
+                  match d with (* ok to skip if there is a default *)
+                  | Some (e,t) -> t
+                  | None -> raise Not_found
+                ) ps 
+                in
+                let t = match ats with
+                  | [] -> assert false
+                  | [x] -> x
+                  | _ -> `BTYP_tuple ats 
+                in
+                t :: tail
+              with Not_found -> arg_types
+            end
           end
 
         | _ -> arg_types
@@ -798,7 +815,7 @@ let consider syms bt luqn2 name
  
 let overload 
   syms 
-  bt 
+  bt be 
   luqn2
   call_sr 
   (fs : entry_kind_t list)
@@ -816,7 +833,7 @@ let overload
   *)
   (* HACK for the moment *)
   let aux i =  
-    match consider syms bt luqn2 name i ts sufs call_sr with
+    match consider syms bt be luqn2 name i ts sufs call_sr with
     | Some x -> Unique x
     | None -> Fail
   in
