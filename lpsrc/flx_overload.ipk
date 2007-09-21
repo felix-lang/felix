@@ -179,54 +179,56 @@ let consider syms bt be luqn2 name
     let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames = 
       resolve syms i 
     in
+    let fixup_argtypes argt rs =
+      begin match pnames with
+        | None -> argt
+        | Some ps ->
+        match 
+          begin try 
+            iter (fun (name,_)->ignore (assoc name ps)) rs; 
+            true
+          with Not_found -> false
+          end
+        with false -> argt
+        | _ ->
+        match base_domain with
+        | `TYP_record _ -> argt
+        | `TYP_tuple [] -> argt (* lazy *)
+        | _ ->
+        let ps = 
+          map (fun (name,e) -> 
+            name, 
+            match e with 
+            | None -> None 
+            | Some e -> Some (be i e)
+          )
+          ps
+        in
+        begin 
+          try
+            let ats = map (fun (name,d)-> 
+              try assoc name rs
+              with Not_found ->
+              match d with (* ok to skip if there is a default *)
+              | Some (e,t) -> t
+              | None -> raise Not_found
+            ) ps 
+            in
+            let t = match ats with
+              | [] -> assert false
+              | [x] -> x
+              | _ -> `BTYP_tuple ats 
+            in
+            t 
+          with Not_found -> argt
+        end
+      end
+    in
     let arg_types =
       match arg_types with
-        | `BTYP_record rs :: tail ->
-          begin match pnames with
-            | None -> arg_types
-            | Some ps ->
-            match 
-              begin try 
-                iter (fun (name,_)->ignore (assoc name ps)) rs; 
-                true
-              with Not_found -> false
-              end
-            with false -> arg_types
-            | _ ->
-            match base_domain with
-            | `TYP_record _ -> arg_types
-            | `TYP_tuple [] -> arg_types (* lazy *)
-            | _ ->
-            let ps = 
-              map (fun (name,e) -> 
-                name, 
-                match e with 
-                | None -> None 
-                | Some e -> Some (be i e)
-              )
-              ps
-            in
-            begin 
-              try
-                let ats = map (fun (name,d)-> 
-                  try assoc name rs
-                  with Not_found ->
-                  match d with (* ok to skip if there is a default *)
-                  | Some (e,t) -> t
-                  | None -> raise Not_found
-                ) ps 
-                in
-                let t = match ats with
-                  | [] -> assert false
-                  | [x] -> x
-                  | _ -> `BTYP_tuple ats 
-                in
-                t :: tail
-              with Not_found -> arg_types
-            end
-          end
-
-        | _ -> arg_types
+      | `BTYP_record rs as argt :: tail -> fixup_argtypes argt rs :: tail
+      | `BTYP_tuple [] as argt :: tail -> fixup_argtypes argt [] :: tail
+      | _ -> arg_types
     in
     (*
     if length rtcr > 0 then begin

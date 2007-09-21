@@ -41,6 +41,17 @@ val nlist: int -> int list
 (** first n elements of a list *)
 val list_prefix: 'a list -> int -> 'a list
 
+(* remaining elements of a list after first n removed,
+   the second list must be long enough or an exception is thrown
+*)
+val list_tail: 'a list -> int -> 'a list
+
+(* the first list with the tail of the second list
+   appended. If the second list isn't long enough return
+   just the first list (routine cannot fail)
+*)
+val splice_tail: 'a list -> 'a list -> 'a list
+
 (** synonym for string_of_int *)
 val si: int -> string
 
@@ -89,6 +100,17 @@ let list_prefix lst n =
     if n>0 then aux (tl ol) (hd ol :: nl) (n-1)
     else rev nl
   in aux lst [] n
+
+let list_tail lst n = 
+  let rec aux ol il n =
+    if n > 0 then aux (hd il::ol) (tl il) (n-1)
+    else rev ol
+  in aux [] lst n
+
+let splice_tail hlst tlst =
+  let n = length hlst in
+  if n >= length tlst then hlst else
+  hlst @ list_tail tlst n
 
 let rec list_index l x = 
  let rec aux l i =

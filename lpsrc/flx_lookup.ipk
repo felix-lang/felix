@@ -2452,12 +2452,18 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     | `BTYP_cfunction (argt,rest) ->
       if type_match syms.dfns argt t2
       then rest, None
-      else let reorder: tbexpr_t list option = 
+      else 
+      let reorder: tbexpr_t list option = 
         match be1 with 
         | `BEXPR_closure (i,ts) ->
           begin match t2 with 
           (* a bit of a hack .. *)
-          | `BTYP_record rs ->
+          | `BTYP_record _ | `BTYP_tuple [] ->
+            let rs = match t2 with
+              | `BTYP_record rs -> rs
+              | `BTYP_tuple [] -> []
+              | _ -> assert false
+            in
             begin let pnames = match Hashtbl.find syms.dfns i with
             | {symdef=`SYMDEF_function (ps,_,_,_)} -> 
               map (fun (_,name,_,d)->
