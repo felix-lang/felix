@@ -1648,6 +1648,7 @@ syntax executable {
   sreturn := return sexpr ssemi =># "`(ast_fun_return ,_sr ,_2)";
   sreturn := return ssemi =># "`(ast_proc_return ,_sr)";
   sreturn := halt sstring ssemi =># "`(ast_halt ,_sr ,_2)";
+  sreturn := "trace" sname sstring ssemi =># "`(ast_trace ,_sr ,_2 ,_3)";
 
   scall := call sexpr ssemi =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
   scall := jump sexpr ssemi =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";

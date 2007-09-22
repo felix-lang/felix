@@ -509,6 +509,7 @@ let expand_exe syms bbdfns u exe =
     | `BEXE_comment _
     | `BEXE_nop _
     | `BEXE_halt _
+    | `BEXE_trace _
     | `BEXE_begin
     | `BEXE_end
       -> [exe]

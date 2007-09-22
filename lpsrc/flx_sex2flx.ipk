@@ -882,6 +882,7 @@ and xstatement_t sr fresh env x : statement_t =
   | Lst [Id "ast_yield"; sr; e] -> `AST_yield(xsr sr,ex e)
   | Lst [Id "ast_proc_return"; sr]  -> `AST_proc_return(xsr sr)
   | Lst [Id "ast_halt"; sr; Str s] -> `AST_halt(xsr sr, ss s)
+  | Lst [Id "ast_trace"; sr; Str n; Str s] -> `AST_trace(xsr sr, ss n, ss s)
   | Lst [Id "ast_nop"; sr; Str s] -> `AST_nop(xsr sr,ss s)
   | Lst [Id "ast_assert"; sr; e] -> `AST_assert(xsr sr,ex e)
   | Lst [Id "ast_apply_ctor"; sr; Str n; e1; e2] -> `AST_apply_ctor(xsr sr,n,ex e1,ex e2)

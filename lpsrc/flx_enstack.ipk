@@ -436,6 +436,7 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     | `BEXE_call_stack _ (* cool *)
     | `BEXE_call_method_stack _
     | `BEXE_halt _
+    | `BEXE_trace _
     | `BEXE_comment _
     | `BEXE_ifgoto _
     | `BEXE_ifnotgoto _

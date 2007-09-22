@@ -359,6 +359,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_comment (sr,s) as x -> [x]
   | `BEXE_nop (sr,s) as x -> [x]
   | `BEXE_halt (sr,s) as x -> [x]
+  | `BEXE_trace (sr,v,s) as x -> [x]
   | `BEXE_label (sr,lab) -> [`BEXE_label (sr, relab lab)]
   | `BEXE_begin as x -> [x]
   | `BEXE_end as x -> [x]

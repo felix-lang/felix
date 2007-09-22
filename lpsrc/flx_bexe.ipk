@@ -458,6 +458,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       reachable := false;
       tack (`BEXE_halt (sr,s))
 
+    | `EXE_trace (v,s) ->
+      incr proc_return_count;
+      tack (`BEXE_trace (sr,v,s))
+
+
     | `EXE_fun_return e ->        
       reachable := false;
       incr return_count;

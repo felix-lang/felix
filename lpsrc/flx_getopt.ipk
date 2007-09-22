@@ -194,6 +194,7 @@ let print_options () =
   print_endline "  -q, --quiet: no stdout";
   print_endline "  -c, --compile-only: no code generation";
   print_endline "  -Idir, --include=dir : append dir to include path";
+  print_endline "  --import=file.flxh : automatically #import <file.flxh>";
   print_endline "  --inline, --noinline, --optimise";
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";

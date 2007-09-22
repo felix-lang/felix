@@ -1155,6 +1155,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_svc (sr, id) ->  ctack (`AST_svc (sr, mi sr id))
   | `AST_proc_return (sr)  ->  ctack st; reachable := false
   | `AST_halt (sr,s)  ->  ctack st; reachable := false
+  | `AST_trace (sr,v,s)  ->  ctack st
   | `AST_nop (sr, s) ->  ()
 
   | `AST_reduce (sr, id, vs, ps, e1, e2) ->

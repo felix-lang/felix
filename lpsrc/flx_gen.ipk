@@ -1139,6 +1139,16 @@ let gen_exe filename syms
       in
        "      FLX_HALT(" ^ s ^ "," ^ msg ^ ");\n"
 
+    | `BEXE_trace (sr,v,msg) -> 
+      let msg = Flx_print.string_of_string ("TRACE: " ^ msg) in
+      let f,sl,sc,el,ec = sr in
+      let s = Flx_print.string_of_string f ^"," ^ 
+        si sl ^ "," ^ si sc ^ "," ^
+        si el ^ "," ^ si ec
+      in
+       "      FLX_TRACE(" ^ v ^"," ^ s ^ "," ^ msg ^ ");\n"
+
+
     | `BEXE_goto (sr,s) -> 
       begin match find_label bbdfns label_map this s with
       | `Local _ -> "      goto " ^ cid_of_flxid s ^ ";\n"

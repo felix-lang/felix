@@ -292,6 +292,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | `BEXE_nonreturn_code _
           | `BEXE_comment _
           | `BEXE_halt _ 
+          | `BEXE_trace _ 
              -> exe
 
           (* conditional, check if y depends on init (tail rec) *)

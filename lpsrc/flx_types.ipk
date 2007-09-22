@@ -793,6 +793,7 @@ and statement_t =
   | `AST_yield of range_srcref * expr_t
   | `AST_proc_return of range_srcref 
   | `AST_halt of range_srcref  * string
+  | `AST_trace of range_srcref  * id_t * string
   | `AST_nop of range_srcref * string
   | `AST_assert of range_srcref * expr_t
   | `AST_apply_ctor of range_srcref * id_t * expr_t * expr_t
@@ -836,6 +837,7 @@ and exe_t =
   | `EXE_yield of expr_t
   | `EXE_proc_return
   | `EXE_halt of string
+  | `EXE_trace of id_t * string
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
   | `EXE_iinit of (id_t * int) * expr_t 
@@ -1036,6 +1038,7 @@ and bexe_t =
   | `BEXE_label of range_srcref * string
   | `BEXE_comment of range_srcref * string (* for documenting generated code *)
   | `BEXE_halt of range_srcref * string  (* for internal use only *)
+  | `BEXE_trace of range_srcref * string * string  (* for internal use only *)
   | `BEXE_goto of range_srcref * string  (* for internal use only *)
   | `BEXE_ifgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
   | `BEXE_ifnotgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
@@ -1850,6 +1853,7 @@ let iter_bexe fi fe ft fl fldef exe =
     -> fi i
     
   | `BEXE_halt _
+  | `BEXE_trace _
   | `BEXE_code _
   | `BEXE_nonreturn_code _
   | `BEXE_proc_return _
@@ -1933,6 +1937,7 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
     `BEXE_svc (sr,fi i)  
     
   | `BEXE_halt _
+  | `BEXE_trace _
   | `BEXE_code _
   | `BEXE_nonreturn_code _
   | `BEXE_proc_return _
@@ -2064,6 +2069,7 @@ let src_of_bexe = function
   | `BEXE_assert2 (sr,_,_,_)
   | `BEXE_axiom_check (sr,_)
   | `BEXE_halt (sr,_)
+  | `BEXE_trace (sr,_,_)
   | `BEXE_ifgoto (sr,_,_)
   | `BEXE_ifnotgoto (sr,_,_)
   | `BEXE_label (sr,_)
@@ -2227,6 +2233,7 @@ let src_of_stmt e = match e with
   | `AST_yield (s, _) 
   | `AST_proc_return s 
   | `AST_halt (s,_)
+  | `AST_trace (s,_,_)
   | `AST_ifgoto (s,_,_)
   | `AST_ifreturn (s,_)
   | `AST_ifdo (s,_,_,_)
@@ -4159,7 +4166,10 @@ and string_of_statement level s =
 
   | `AST_halt (_,s) -> 
     spaces level ^ "halt "^string_of_string s^";"
-    
+
+  | `AST_trace (_,v,s) -> 
+    spaces level ^ "trace "^v^ ", msg="^string_of_string s^";"
+  
   | `AST_svc (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
   
@@ -4432,6 +4442,10 @@ and string_of_exe level s =
   | `EXE_halt s -> spc ^ 
     "halt "^string_of_string s^";"
 
+  | `EXE_trace (v,s) -> spc ^ 
+    "trace "^v^"="^string_of_string s^";"
+
+
   | `EXE_nop s -> spc ^ 
     "/*" ^ s ^ "*/"
 
@@ -4574,6 +4588,7 @@ and string_of_bexe dfns bbdfns level s =
   | `BEXE_axiom_check (_,e) -> spc ^ "axiom_check " ^ se e ^ ";"
 
   | `BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
+  | `BEXE_trace(_,v,s) -> spc ^ "trace " ^ s ^ ";"
 
   | `BEXE_ifgoto (_,e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"

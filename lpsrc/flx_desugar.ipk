@@ -1124,6 +1124,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_label (sr,s) -> [`Exe (sr,`EXE_label s)]
   | `AST_proc_return sr -> [`Exe (sr,`EXE_proc_return)]
   | `AST_halt (sr,s) -> [`Exe (sr,`EXE_halt s)]
+  | `AST_trace (sr,v,s) -> [`Exe (sr,`EXE_trace (v,s))]
   | `AST_goto (sr,s) -> [`Exe (sr,`EXE_goto s)]
   | `AST_open (sr,(vs,aux),name) -> 
     let vs = map (fun (n,t)->let i = seq() in n,i,t) vs in
