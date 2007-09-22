@@ -31,7 +31,6 @@ There is no better introduction to a programming
 language than the infamous hello world program
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 print "Hello World\n";
 @doc()
 
@@ -71,7 +70,6 @@ world program. You can compile and run the
 program as before, just change the example number.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 print "Hello World ";
 print 42;
 print "\n";
@@ -100,7 +98,6 @@ used facility]. There are no bitwise operators,
 because both & and | have different uses.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 // arith
 print (1 + 1); endl; print (add (1,2)); endl;
 print (1 - 1); endl; print (sub (1,2)); endl;
@@ -165,7 +162,6 @@ Felix allows values to be declared using the 'val'
 keyword.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 val i = 40;
 val j = 2;
 val k = i + j;
@@ -190,7 +186,6 @@ if you want: the following program is equivalent
 to the one above:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 val i : int = 40;
 val j : int = 2;
 val k : int = i + j;
@@ -216,7 +211,6 @@ There is a shortcut form for declaring variables
 using the := operator:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 a := 1; 
 b:int := 2; 
 
@@ -239,7 +233,6 @@ Felix also support mutable variables, which are
 declared with the 'var' keyword.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 var i = 1;
 var j : int;
 while {i < 10}
@@ -299,7 +292,6 @@ a statement is called an lvalue pattern. (Also sometime known
 as a tie).
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 // multiple initialisation
 r,(s,t) := 1,(2,3);
@@ -346,7 +338,6 @@ these being assignment operators and counting operators.
 Below is a list of operators and equivalent procedure names.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 open Uint;
 
 var i:int;
@@ -388,7 +379,6 @@ although the syntax is different from C.
 Here is an example:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
@@ -417,7 +407,6 @@ function is clearly given, it is not necessary,
 as illustrated by the next example:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 fun mid(a:int, b:int) =
 {
   val c = (a + b) / 2;
@@ -438,7 +427,6 @@ must be given.
 Functions can be given preconditions:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 fun guarded_div(a:int, b:int when b!=0) =
 {
   return a/b;
@@ -453,7 +441,6 @@ print (guarded_div(2,4)); print "\n";
 Functions can also be given postconditions:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 fun abs_div(a:int, b:int when b!=0) expect result >=0 =
 {
   return abs(a/b);
@@ -487,7 +474,6 @@ Here is an example of a procedure definition
 and use:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 proc print_newline (a:int)
 {
   print a;
@@ -505,7 +491,6 @@ with unit argument: if the procedure is called
 by its name, the () can be elided:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 print 1; endl();
 print 2; endl;
 @doc()
@@ -527,7 +512,6 @@ at the point of writing.
 Procedures may also have pre and post conditions.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 var x = 7;
 var y = x;
 
@@ -571,7 +555,6 @@ to the Functions example.
 @ref_anchor('Functions')
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
@@ -623,7 +606,6 @@ You can get at tuple components using a suffixed
 dot followed a zero origin integer in brackets:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 val x = (0,1,(3,4));
 print x.(0); print " ";
 print x.(1); print " ";
@@ -646,7 +628,6 @@ It is also possible to pattern match tuples.
 Here is an example:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 val v = 1,2,(3,4);
 match (v) with
   | (?x,_,?z) =>
@@ -683,7 +664,6 @@ operator + is the type combinator used
 to denote them. The number is zero origin.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 open Long;
 
 typedef three = unit +  unit + unit;
@@ -744,7 +724,6 @@ Struct members can be used with C style dot notation.
 Here is an example:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 struct XY {
   x : int;
@@ -769,7 +748,6 @@ from a tuple consisting of values to initialise
 the members in sequence. For example:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 struct XY = {
   x : int;
@@ -796,7 +774,6 @@ A record can be coerced to a record with less fields.
 
 @select(env.test('.flx'))
 @kat('Records')
-#import <flx.flxh>
 open Float;
 
 typedef big = struct { a:int; b: long; c: float; };
@@ -832,7 +809,6 @@ Also parameters can have default values.
 @select(env.test('.flx'))
 @kat('Records')
 @kat('Struct:initialised by record')
-#import <flx.flxh>
 
 var x = struct {a=1; b=2; };
 println q"a=$(x.a), b=$(x.b)";
@@ -935,7 +911,6 @@ Here are some examples of unions.
 
 @select(env.test('.flx'))
 @kat("unions")
-#import <flx.flxh>
 
 union parity =
   | Odd
@@ -1005,7 +980,6 @@ of a union is by pattern matching. Here is an example:
 @select(env.test('.flx'))
 @kat("pattern match:union")
 @kat("unions:pattern match")
-#import <flx.flxh>
 union int_option =
   | iSome of int
   | iNone
@@ -1059,7 +1033,6 @@ Felix supports the conditional expression as shown:
 
 @select(env.test('.flx'))
 @kat("conditional")
-#import <flx.flxh>
 
 fun sign1(x:int):int = 
 {
@@ -1160,7 +1133,6 @@ are taken as methods. Implicit functions such as blocks
 are not taken.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 obj a(x:int) {
   var v = x;
   fun fetch ():int = { return v; }
@@ -1220,7 +1192,6 @@ Note that a char is represented by a one character string.
 
 @h = env.test('.flx')
 @select(h)
-#import <flx.flxh>
 regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
 regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 regexp digit = ["0123456789"];
@@ -1293,7 +1264,6 @@ values of type iterator: lexeme_start, lexeme_end and
 buffer_end.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 open Lexer;
 
 regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
@@ -1357,7 +1327,6 @@ There is a function which is so useful, there
 is a special syntax for it: the lazy expression.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 var x = 1;
 var y = 2;
 
@@ -1388,7 +1357,6 @@ You can also put statements inside curly brackets
 to define a lazy function:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 val x = 1;
 val f = { val y = x + 1; return y; };
 val eol = { endl; };
@@ -1410,7 +1378,6 @@ is a special syntax for it, as described above in
 the section on lazy things: the block.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 var x = 1;
 val p1 = { print x; };
 proc p2() { print x; }; // equivalent to p1 (almost)
@@ -1443,7 +1410,6 @@ Felix functions and procedures can be generic too.
 Here is a simple example.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 header "#include <iostream>";
 proc print[T]:T="std::cout << $1 << std::endl;";
 fun fst[T,U](x:T,y:U): T ={ return x; }
@@ -1472,7 +1438,6 @@ Synthesised type variables are added
 to the type variable list at the end. For example:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 header "#include <iostream>";
 proc print[T]:T="std::cout << $1 << std::endl;";
 fun fst(x,y) = { return x; }
@@ -1506,7 +1471,6 @@ type subscripts must be given explicity, because they cannot
 be deduced from the argument. 
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 fun pair1 x y = { return x,y; }
 fun pair2[t,u] (x:t) (y:u) = { return x,y; }
 fun diag x = { return x,x; }
@@ -1544,7 +1508,6 @@ Felix structs and unions can be generic too.
 Here is a simple example.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 union list[T] = 
   | Cons of T * list[T] 
   | Empty
@@ -1576,7 +1539,6 @@ the example: Felix deduces the value
 of the type variables from function arguments.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 union list[T] =
   | Cons of T * list[T]
   | Empty
@@ -1670,7 +1632,6 @@ arguments of the parent of a function are fully
 determined by its child.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 module X[t] {
   fun f[k]: t * k  -> t = "1";
@@ -1723,7 +1684,6 @@ Felix supports inductive types such as lists.
 Here is a list of ints.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 union float_list =
   | Empty
@@ -1760,7 +1720,6 @@ Here, we use a recursive routine to build the list,
 and an iterative routine to reverse it.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 union int_list =
   | Empty
@@ -1839,7 +1798,6 @@ contains quite a lot of subtle features!
 
 @select(env.test('.flx'))
 @kat('functions:higher order')
-#import <flx.flxh>
 
 var j = 2;
 
@@ -1934,7 +1892,6 @@ you mean that function.
 
 @select(env.test('.flx'))
 @kat('the:keyword')
-#import <flx.flxh>
 
 fun f(x:int):int=>x*x;
 fun apply[s,d] (f:s->d) (x:s) : d => f x;
@@ -1951,7 +1908,6 @@ Consider the following example:
 
 @select(env.test('.flx'))
 @kat('currying')
-#import <flx.flxh>
 
 fun f4(i4:int): int->int->int->int = {
   fun f3(i3:int): int->int->int = {
@@ -2023,7 +1979,6 @@ Here is the equivalent code, using this sugar:
 
 @select(env.test('.flx'))
 @kat('currying')
-#import <flx.flxh>
 
 fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
   return i1+i2+i3+i4;
@@ -2052,7 +2007,6 @@ print (curry 3 4); endl;
 @select(env.test('.flx'))
 @kat('currying')
 // contrib: Jonathan Kelly
-#import <flx.flxh>
 
 fun f4a (d:int) (c:int) (b:int) (a:int) : int = {
   return a*1000+b*100+c*10+d;
@@ -2122,7 +2076,6 @@ leave the first free.
 
 @select(env.test('.flx'))
 @kat('list:inductive')
-#import <flx.flxh>
 open List;
 val x : list[int] = 
   Cons (1, Cons (2, Cons (3, Empty[int])));
@@ -2171,7 +2124,6 @@ is no exception. Basic module use is quite simple:
 
 @select(env.test('.flx'))
 @kat('modules')
-#import <flx.flxh>
 val top = 1;
 module A {
   val a = top + 1;
@@ -2252,7 +2204,6 @@ each use of the namespace.
 
 @select(env.test('.flx'))
 @kat('namespaces')
-#import <flx.flxh>
 namespace A { var x = 1; }
 namespace B { var x = 1; }
 namespace A { var y = x+1; }
@@ -2279,7 +2230,6 @@ in most definitions.
 
 @select(env.test('.flx'))
 @kat('namespaces')
-#import <flx.flxh>
 
 print "b4 fred"; endl;
 
@@ -2329,7 +2279,6 @@ Consider the following example:
 @select(env.test('.flx'))
 @kat('lookup:koenig')
 @kat('lookup:dependent')
-#import <flx.flxh>
 
 module A {
   struct X {
@@ -2473,7 +2422,6 @@ Here is an example:
 
 @select(env.test('.flx'))
 @kat('modules:initialisation')
-#import <flx.flxh>
 
 fun pone (): &int = 
 {
@@ -2510,7 +2458,6 @@ and provides a conditional and unconditional goto statement.
 @select(env.test('.flx'))
 @kat('goto')
 @kat('labels')
-#import <flx.flxh>
 print "start"; endl;
 var i = 1;
 start_loop:>
@@ -2553,7 +2500,6 @@ But first consider the following example:
 
 @select(env.test('.flx'))
 @kat('goto:nonlocal')
-#import <flx.flxh>
 
 var x = 1;
 proc run()
@@ -2621,7 +2567,6 @@ at the end of the procedure:
 @select(env.test('.flx'))
 @kat('labels')
 @kat('return:procedure')
-#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2647,7 +2592,6 @@ involves the procedural return statement:
 
 @select(env.test('.flx'))
 @kat('return:procedure')
-#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2671,7 +2615,6 @@ This can also be shortened by using a the jump statement:
 
 @select(env.test('.flx'))
 @kat('return:procedure')
-#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2719,7 +2662,6 @@ may also be used:
 
 @select(env.test('.flx'))
 @kat('loops')
-#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2749,7 +2691,6 @@ Here is a simple if/do/done:
 
 @select(env.test('.flx'))
 @kat('conditional:functional')
-#import <flx.flxh>
 // procedural if
 proc f(x:int) {
   if x == 1 do print "ONE"; endl; done;
@@ -2767,7 +2708,6 @@ You can also have an else clause:
 
 @select(env.test('.flx'))
 @kat('conditional:procedural')
-#import <flx.flxh>
 // procedural if/else
 proc f(x:int) {
   if x == 1 do print "ONE"; endl; 
@@ -2788,7 +2728,6 @@ and even elif clauses:
 
 @select(env.test('.flx'))
 @kat('conditional:procedural')
-#import <flx.flxh>
 // procedural if/do/elif/else
 proc f(x:int) {
   if x == 1 do print "ONE"; endl; 
@@ -2814,7 +2753,6 @@ of the do part:
 
 @select(env.test('.flx'))
 @kat('conditional:procedural')
-#import <flx.flxh>
 // procedural if
 proc f(x:int) {
   if x == 1 do print "ONE "; endl; 
@@ -2846,7 +2784,6 @@ so adding extra labels and gotos is possible.
 
 @select(env.test('.flx'))
 @kat('conditional:procedural')
-#import <flx.flxh>
 
 inline proc f(x:int) (y:int) {
   print "NOT ONE"; endl;
@@ -2892,7 +2829,6 @@ so that f1 and f2 below are equivalent:
 
 @select(env.test('.flx'))
 @kat('conditional:functional')
-#import <flx.flxh>
 
 proc f1(x:int) {
   if x == 1 then { print 1; endl; } 
@@ -2924,7 +2860,6 @@ choose between two declarations.
 
 @select(env.test('.flx'))
 @kat('conditional:folding')
-#import <flx.flxh>
 macro val x = 1;
 if x == 1 do val y = 1; else val y = "ONE"; done;
 print y; endl;
@@ -2944,7 +2879,6 @@ it can be caught by the driver).
 @select(env.test('.flx'))
 @kat('termination:failure')
 @kat('program:abort')
-#import <flx.flxh>
 // uncomment to test 
 //fail "Aborted";
 @doc()
@@ -2958,7 +2892,6 @@ exception handling. Consider the following example:
 
 @select(env.test('.flx'))
 @kat('exceptions')
-#import <flx.flxh>
 
 proc bad_calc(err: int -> void) 
 {
@@ -2999,7 +2932,6 @@ exception handling. Consider the following example:
 
 @select(env.test('.flx'))
 @kat('exceptions')
-#import <flx.flxh>
 
 proc main
 {
@@ -3038,7 +2970,6 @@ they're called lambdas, after the lambda calculus:
 
 @select(env.test('.flx'))
 @kat('closures:procedural')
-#import <flx.flxh>
 val f = fun(a:int):int = { return a * a; };
 
 print (f 1); 
@@ -3108,7 +3039,6 @@ to avoid a clash:
 
 @select(env.test('.flx'))
 @kat('procedures:higher order')
-#import <flx.flxh>
 proc While (cond:unit->bool) (bdy:unit->void)
 {
   repeatx:>
@@ -3165,7 +3095,6 @@ this is called a lambda expression:
 @select(env.test('.flx'))
 @kat('functions:anonymous')
 @kat('functions:lambda')
-#import <flx.flxh>
 var x = 10;
 while 
   (fun ():bool = { return x>0; })
@@ -3193,7 +3122,6 @@ may have arguments:
 @select(env.test('.flx'))
 @kat('functions:anonymous')
 @kat('functions:lambda')
-#import <flx.flxh>
 fun f(g:int->int,x:int) = { return g x; }
 print 
 (
@@ -3242,7 +3170,6 @@ is printed and the program aborted if any check fails.
 @select(env.test('.flx'))
 @kat('axioms')
 @kat('reductions')
-#import <flx.flxh>
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
@@ -3336,7 +3263,6 @@ that 010 is decimal ten in Felix!
 @select(env.test('.flx'))
 @kat('lexemes:integer')
 @kat('literals:integer')
-#import <flx.flxh>
 
 // radix
 {
@@ -3445,7 +3371,6 @@ of the string and the ISO-10646 code point the integer represents.
 Note that if the string is 8 bit, UTF-8 encoding will be applied.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 var s = "Hello" 32; // add a space after "Hello"
 s = s s; // says "Hello Hello "
 print s; endl;
@@ -3462,7 +3387,6 @@ ranges is too ugly ..]
 @select(env.test('.flx'))
 @kat('match:float')
 @kat('nan')
-#import <flx.flxh>
 
 match (1.0) with
   | NaN => { print "Not a Number"; }
@@ -3535,7 +3459,6 @@ X's are hex digits. Felix normalises all such
 encodings so identifiers match properly.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 val x_y_7' = 1;
 val Y_can't_U_do_this_in_C'' : double = 2.0;
@@ -3556,7 +3479,6 @@ Here's a simple example:
 
 @select(env.test('.flx'))
 @kat("open directive")
-#import <flx.flxh>
 module X {
   proc print_endl (a:int) { print a; endl; }
   fun square (a:int):int = { return a * a; }
@@ -3607,7 +3529,6 @@ a qualified name.
 
 @select(env.test('.flx'))
 @kat("open directive")
-#import <flx.flxh>
 module X1 {
   proc printme() { print "X1"; endl; }
 }
@@ -3652,7 +3573,6 @@ a prefix).
 
 @select(env.test('.flx'))
 @kat("use directive")
-#import <flx.flxh>
 header "#include <iostream>";
 module X {
   type INT = "int";
@@ -3713,7 +3633,6 @@ function is final, and cannot be resolved.
 
 @select(env.test('.flx'))
 @kat("rename directive")
-#import <flx.flxh>
 header "#include <iostream>";
 module X {
   type x_t = "int";
@@ -3779,7 +3698,6 @@ with a name is different for each module.
 
 @select(env.test('.flx'))
 @kat("inherit directive")
-#import <flx.flxh>
 header "#include <string>";
 
 module X { 
@@ -3845,7 +3763,6 @@ the lowest precedence.
 
 @select(env.test('.flx'))
 @kat("let")
-#import <flx.flxh>
 print (match 1 with | ?x =>  x + x endmatch); endl;
 print (let ?z = 1 in z + z); endl;
 print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
@@ -3896,7 +3813,6 @@ and type expresssions (though each imposes constraints).
 
 @select(env.test('.flx'))
 @kat("metatypes")
-#import <flx.flxh>
 open Long;
 
 typedef fun list (elt:TYPE):TYPE => 1 + elt * list elt;
@@ -3955,7 +3871,6 @@ dependent and so can't be automatically checked
 by the Felix build system.)
 
 @begin_displayed_code()
-#import <flx.flxh>
 open System;
 print "argc="; print argc; endl;
 
@@ -4025,7 +3940,6 @@ pick between the parses.
 
 @select(env.test('.flx'))
 @kat("parser generator")
-#import <flx.flxh>
  
 // a type for tokens
 union token_t =
@@ -4088,7 +4002,6 @@ endl;
 
 @select(env.test('.flx'))
 @kat("parser generator")
-#import <flx.flxh>
 
 union token_t = 
   | TOK_EOF
@@ -4175,7 +4088,6 @@ Note: restriction: all the anonymous symbols must have attributes.
 
 @select(env.test('.flx'))
 @kat("parser generator")
-#import <flx.flxh>
  
 // the input string
 data := "1+22+33$";
@@ -4243,7 +4155,6 @@ endl;
 @doc()
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 open List;
 open Lexer;
@@ -4317,7 +4228,6 @@ try_parse();
 
 @select(env.test('.flx'))
 @kat("type constraints")
-#import <flx.flxh>
 open MixedInt;
 
 var x = 1;
@@ -4332,7 +4242,6 @@ print$ x + y; endl;
 
 @select(env.test('.flx'))
 @kat("classes")
-#import <flx.flxh>
 open Long;
 
 class Y {
@@ -4410,7 +4319,6 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 @select(env.test('.flx'))
 @kat("polymorphism")
 @kat("classes")
-#import <flx.flxh>
 open Long;
 
 class Y[t] {
@@ -4504,7 +4412,6 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 @select(env.test('.flx'))
 @kat("polymorphism")
 @kat("classes")
-#import <flx.flxh>
 open Long;
 
 class Y[t] {
@@ -4578,7 +4485,6 @@ This is how you do printf-style string formatting.
 
 @select(env.test('.flx'))
 @kat("formatting:printf style")
-#import <flx.flxh>
 print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
 @doc()
 
@@ -4591,7 +4497,6 @@ This is how you do string interpolation:
 
 @select(env.test('.flx'))
 @kat("formatting:interpolation")
-#import <flx.flxh>
 
 var x = "Hello";
 var y = "World";
@@ -4634,7 +4539,6 @@ or single quote mark.
 Felix has typeclasses similar to Haskell.
 @select(env.test('.flx'))
 @kat("typeclasses")
-#import <flx.flxh>
 
 typeclass XStr[T] {
   virtual fun str2: T->string;
@@ -4663,7 +4567,6 @@ print$ foo x; endl;
 in a module:
 @select(env.test('.flx'))
 @kat("typeclasses")
-#import <flx.flxh>
 
 open List;
 
@@ -4698,7 +4601,6 @@ print$ Foo::foo$ list(1,2,3,4); endl;
 
 @select(env.test('.flx'))
 @kat("typeclasses:monad")
-#import <flx.flxh>
 
 typedef fun Maybe (t:TYPE):TYPE=>opt[t];
 

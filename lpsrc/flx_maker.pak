@@ -658,16 +658,6 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_test'
 
-  def check_hack(self, file):
-    f = open(file)
-    lines = f.read() 
-    f.close()
-    pos = string.find(lines,"#import <flx.flxh>")
-    if pos == -1:
-      return ""
-    else:
-      return "std "
-
   def runme(self, testfile, log, quiet):
     if log is None: log = Tee()
 
@@ -682,7 +672,7 @@ class PLUGIN(Plugin):
     resfilename = basename + ".resh"
     indir,infile = os.path.split(basename)
     try:
-      flxg('-Ilib ' + self.check_hack(testfile)+ FLXFLAGS + basename, log=log)
+      flxg('-Ilib --import=flx.flxh std '+ FLXFLAGS + basename, log=log)
     except MakeError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
       erasefile(basename+'.cpp')
@@ -1200,7 +1190,7 @@ def build_target_felix_tools(pkg, pkgdict):
     fsflags = pkgdict.get("felix_requires_linkflags","")
     for src,exe in FLXS:
       # added 'std' here so flx_pkgconfig builds
-      flxg("-Ilib std " + src)
+      flxg("-Ilib --import=flx.flxh std " + src)
       TARGET_CXX.build_felix_static(
         vxqt,
         src,
@@ -3561,7 +3551,7 @@ SHIFT
 GOTO DOARGS
 )
 
-"%FID%\BIN\FLXG" -I"%FID%\LIB" %1 >"%1.LOG"
+"%FID%\BIN\FLXG" -I"%FID%\LIB" --import:flx.flxh std %1 >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 if %STATIC% EQU 0 (
 %FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:cflags @%1.resh >%1_cflags.txt
@@ -3652,10 +3642,23 @@ cppos=""
 INCLUDE_DIRS=""
 NOSTDLIB=0
 STDOUT=""
+STDIMPORT="--import=flx.flxh"
+IMPORTS=""
 
 while (( "$grab" == "1" ));
 do
   case x$1 in
+
+  x--nostdimport)
+    STDIMPORT=""
+    shift
+  ;;
+
+  x--import=*)
+   IMPORTS="$IMPORTS --import=${1:9}"
+   shift
+ ;;
+
   x--test=*)
     TESTMODE=1
     FLX_INSTALL_DIR=${1:7}
@@ -4074,7 +4077,7 @@ if [ $STATIC = 0 ]
 then
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDLIB $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi
@@ -4107,7 +4110,7 @@ then
 else
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDLIB $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi

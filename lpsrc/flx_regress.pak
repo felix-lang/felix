@@ -77,7 +77,6 @@ Tests by category keyword.
 @rt_test1 = env_rt.test('.flx')
 @select(rt_test1)
 @kat_rt("integer math")
-#import <flx.flxh>
 open Tiny;
 open Short;
 open Long;
@@ -143,7 +142,6 @@ test complete
 @select(rt_test2)
 @kat_rt("closures")
 @kat_rt("recursion")
-#import <flx.flxh>
 
 // test some recursion
 fun fact(a:int): int =
@@ -214,7 +212,6 @@ module A print int=1
 @rt_test3 = env_rt.test('.flx')
 @select(rt_test3)
 @kat_rt("laziness")
-#import <flx.flxh>
 // test lazy functions and procedures
 print "lazy expr eval test\n";
 var x = 1;
@@ -237,7 +234,6 @@ lazy expr eval test
 @kat_rt("export")
 // The following program gets me c++ compilation errors when "print s" is
 // commented out:
-#import <flx.flxh>
 
 proc poot(s: charp) {
   // print s;
@@ -251,7 +247,6 @@ export proc poot of (charp) as "poot";
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("strings")
-#import <flx.flxh>
 var x = "Hello";
 x += "+";
 x += "World";
@@ -292,7 +287,6 @@ dlroW+olleH
 @select(env_rt.test('.flx'))
 @kat_rt("assert")
 // chained comparison not implemented in nu grammar
-#import <flx.flxh>
 assert(1<2 and 2<3 and 3<4);
 @doc()
 
@@ -302,7 +296,6 @@ assert(1<2 and 2<3 and 3<4);
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("recursion:types")
-#import <flx.flxh>
 proc eol: 1 = 'printf("\\n");';
 
 val x:int = 1;
@@ -352,7 +345,6 @@ false
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("closures")
-#import <flx.flxh>
 // closure formation test
 
 // primitive function
@@ -417,7 +409,6 @@ union U
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("insertions")
-#import <flx.flxh>
 body "#include <iostream>";
 code 'static int x = 1;';
 type INT = "int";
@@ -436,7 +427,6 @@ multiple assignment
 
 @select(env_rt.test('.flx'))
 @kat_rt("statements:def")
-#import <flx.flxh>
 var a:int;
 var b:int;
 var c:int;
@@ -468,7 +458,6 @@ endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("type operators")
-#import <flx.flxh>
 open Long;
 
 // test dual
@@ -510,7 +499,6 @@ print two; endl;
 @kat_rt("functors")
 @kat_rt("polymorphism")
 @kat_rt("types:higher order")
-#import <flx.flxh>
 
 typedef fun pair (t:TYPE):TYPE => t * t;
 typedef Pair[t] = t * t;
@@ -543,7 +531,6 @@ generics inlining/call lifting tests
 
 @select(env_rt.test('.flx'))
 @kat_rt("polymorphism")
-#import <flx.flxh>
 
 proc f[k] (z:k, pr:k->void) {
   fun diag[t] (x:t):t*t = { return x,x; }
@@ -565,7 +552,6 @@ f[int] (1, the pr);
 call inlining
 @select(env_rt.test('.flx'))
 @kat_rt("inlining")
-#import <flx.flxh>
 proc g[t]()
 {
   proc h()
@@ -633,7 +619,6 @@ call inlining
 
 @select(env_rt.test('.flx'))
 @kat_rt("inlining")
-#import <flx.flxh>
 
 val x = 1;
 if x == 1 then 
@@ -661,7 +646,6 @@ more generic stuff
 
 @select(env_rt.test('.flx'))
 @kat_rt("polymorphism")
-#import <flx.flxh>
 open List;
 
 fun snd(x,y)=>y;
@@ -712,7 +696,6 @@ iter
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
-#import <flx.flxh>
 // self-tail rec test (inspect output)
 // (requires --inline atm)
 var x = 4;
@@ -738,7 +721,6 @@ recur();
 non-self-tail rec test (inspect output) (requires --inline atm)
 
 @select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
-#import <flx.flxh>
 var x = 4;
 proc recur2 ()
 {
@@ -764,7 +746,6 @@ recur2();
 self-tail rec test (inspect output) (requires --inline atm)
 
 @select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
-#import <flx.flxh>
 fun g(x:int):int = {
   if x == 0 goto endoff;
   return g(x-1);
@@ -781,7 +762,6 @@ print (g 10); endl;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['recursion', 'tail call optimisation']))
-#import <flx.flxh>
 // non-self-tail rec test (inspect output)
 // (requires --inline atm)
 
@@ -801,7 +781,6 @@ print (f 10); endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['lvalues']))
 // lvalue decay if function called thru variable
-#import <flx.flxh>
 
 proc f(g:int->void) { var x=1; g x; }
 proc g(x:int) { }
@@ -814,7 +793,6 @@ f g of (int);
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['regmatch']))
 // contrib by Valery, mod by Skaller
-#import <flx.flxh>
 
 // emulate command line arguments
 arguments := "--test", "words", "more words";
@@ -849,7 +827,6 @@ Warning: result is dependent on implementation
 detail (order of execution after read/write matchup)
 
 @select(env_rt.test('.flx', categories=['fibres', 'channels']))
-#import <flx.flxh>
 
 var y = ();
 proc f() { print "Hello"; endl; }
@@ -885,7 +862,6 @@ W2
 @doc()
 
 @select(env_rt.test('.flx', categories=['fibres', 'channels']))
-#import <flx.flxh>
 open Control;
  
 var chin,chout = mk_ioschannel_pair[int] ();
@@ -921,7 +897,6 @@ spawn_fthread {
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['type constraints']))
-#import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
 // basic type constraints
@@ -946,7 +921,6 @@ print$ f$ 1,2.0; endl; // 999
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['type constraints']))
-#import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
 
@@ -974,7 +948,6 @@ k px;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['type constraints']))
-#import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
 proc pr[t]:t="std::cout<<$1<<std::endl;";
@@ -1022,7 +995,6 @@ pr$ ff$ 1,2;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['reductions', 'axioms']))
-#import <flx.flxh>
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
@@ -1066,7 +1038,6 @@ Cheat
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['member count']))
-#import <flx.flxh>
 // HACK!
 // NOTE: who_cares is now in the library! 
 // See Typing::memcount.
@@ -1089,7 +1060,6 @@ f2 x;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['arrays', 'array iterators']))
-#import <flx.flxh>
 
 open List;
 
@@ -1120,7 +1090,6 @@ iter (the foo) z;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
-#import <flx.flxh>
 var z = 0;
 noinline proc f
   (a:unit ->int)
@@ -1138,7 +1107,6 @@ print z; endl;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
-#import <flx.flxh>
 
 union U =
 | A of (unit -> void)
@@ -1164,7 +1132,6 @@ hello
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['laziness', 'lazy variables']))
-#import <flx.flxh>
 
 var v = 1;
 
@@ -1183,7 +1150,6 @@ print$ x; endl;
 
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['ref semantics']))
-#import <flx.flxh>
 
 noinline proc f(var x:int, val y:int)
 {
@@ -1294,7 +1260,6 @@ k { a +1 };
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("lexing:keywords")
-#import <flx.flxh>
 #
 module X {
   fun f(x:int)=> x + x;
@@ -1312,7 +1277,6 @@ print$ X::f 22; endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("applicative types")
-#import <flx.flxh>
 
 open module Foo
 {
@@ -1338,7 +1302,6 @@ print z; endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("generators")
-#import <flx.flxh>
 
 var cheat : int = 0;
 gen f():int = {
@@ -1385,7 +1348,6 @@ C 4=4
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("generators")
-#import <flx.flxh>
 
 gen f(init:int)(inc:int):int = {
   var counter = init;
@@ -1419,7 +1381,6 @@ print$ x(10); endl; // 64
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("generators")
-#import <flx.flxh>
 
 union tree = TEmpty | Leaf of int | Node of tree * tree;
 
@@ -1522,7 +1483,6 @@ visiting leaf 5
 
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
-#import <flx.flxh>
 
 module Foo
 {
@@ -1547,7 +1507,6 @@ a
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("lexing:comments")
-#import <flx.flxh>
 
 //test
 // test
@@ -1616,7 +1575,6 @@ print "should not see this"; endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("types:nested")
-#import <flx.flxh>
 
 fun f(x:int)= {
   union x_t = | X of int;
@@ -1643,7 +1601,6 @@ print$ d v; endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("goto:nonlocal")
-#import <flx.flxh>
 
 proc f () {
   val x = { goto foo; };
@@ -1674,7 +1631,6 @@ here
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("generators")
-#import <flx.flxh>
  
 gen f ():int = {
   var i:int; forall i in 0 upto 5 do
@@ -1700,7 +1656,6 @@ print$ g (); endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("type constraints")
-#import <flx.flxh>
 open C_hack;
 header '#include <iostream>';
 proc pr[t]:t="std::cout<<$1<<std::endl;";
@@ -1755,7 +1710,6 @@ pr$ ff$ 1,2;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("typeclasses")
-#import <flx.flxh>
 proc pr[t]:t="std::cout<<$1<<std::endl;" requires iostream;
 
 typeclass XEq[t,u] {
@@ -1794,7 +1748,6 @@ zzz 1;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("typeclasses")
-#import <flx.flxh>
 
 open List;
 
@@ -1827,7 +1780,6 @@ print$ str2$ list(1,2,3,4); endl;
 @select(env_rt.test('.flx'))
 @kat_rt("typeclasses:inheritance")
 @kat_rt("inherit:specialisation")
-#import <flx.flxh>
 header '#include <iostream>';
 
 typeclass XEq[t] {
@@ -1889,7 +1841,6 @@ false
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("typeclasses:polymorphic methods")
-#import <flx.flxh>
 
 typeclass X[u] {
   virtual fun f[v]: u * v -> int;
@@ -1911,7 +1862,6 @@ print$ g$ 1,2L; endl;
 @select(env_rt.test('.flx'))
 @kat_rt("typeclasses:imbue module")
 @kat_rt("typeclasses:polymorphic methods")
-#import <flx.flxh>
 header '#include <iostream>';
 
 
@@ -2008,7 +1958,6 @@ false
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("type:abstract")
-#import <flx.flxh>
 
 module X {
   open C_hack;
@@ -2050,7 +1999,6 @@ print$ get z; endl;
 @select(env_rt.test('.flx'))
 @kat_rt("types:recursive")
 @kat_rt("type functions:recursive")
-#import <flx.flxh>
 
 typedef fun uncurry(t:TYPE):TYPE =>
   typematch t with
@@ -2203,7 +2151,6 @@ B(3)
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("axiom checks:integer")
-#import <flx.flxh>
 axiom_check(-1);
 axiom_check(0);
 axiom_check(1);
@@ -2226,7 +2173,6 @@ axiom_check(0,-8,9);
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("axiom checks:float")
-#import <flx.flxh>
 axiom_check(-1.0);
 axiom_check(0.0);
 axiom_check(1.0);
@@ -2249,7 +2195,6 @@ axiom_check(-0.1,0.4,0.7);
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("export")
-#import <flx.flxh>
 
 include "flx_faio";
 
@@ -2269,7 +2214,6 @@ export proc foo of (int*int) as "foo";
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("export")
-#import <flx.flxh>
 
 proc foo(x: int, y: int) { print x; print y; endl; }
 proc foo(a:int) { print a; }
@@ -2286,7 +2230,6 @@ export proc foo of (1) as "foo0";
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("export")
-#import <flx.flxh>
 
 proc foo(x: int, y: int) {
     print y; endl;
@@ -2301,7 +2244,6 @@ export proc foo of (int*int) as "foo";
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("reglex")
-#import <flx.flxh>
 
 open Lexer;
 
@@ -2332,7 +2274,6 @@ foo
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("regmatch")
-#import <flx.flxh>
 
 fun format (suffix:string) : string =>
   regmatch "1" with
@@ -2348,7 +2289,6 @@ print $ format (".dynamic_suffix"); endl;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("typedef")
-#import <flx.flxh>
 
 module X[t] {
   fun f () : t => "khg";
@@ -2365,7 +2305,6 @@ println$ x;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("show typeclass")
-#import <flx.flxh>
 
 proc p[T with Show[T]] (t:T) {
   var x = t;
@@ -2513,7 +2452,6 @@ repr: ['a', 'b', 'c']
 @namespace_test = env_rt.test('.flx')
 @select(namespace_test)
 @kat_rt("namespace")
-#import <flx.flxh>
 
 namespace Foo      { val a = 1; }
 namespace Foo      { val b = 2; }
@@ -2545,7 +2483,6 @@ println c;
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("namespace")
-#import <flx.flxh>
 @tangle('include ' + repr(unix2native(os.path.splitext(namespace_test.sink.name)[0])) + ';')
 
 namespace Foo      { val d = 4; }
@@ -2631,7 +2568,6 @@ println q"x_sum=$x_sum, y_sum=$(y_sum)";
 @select(env_nd.test('.flx'))
 @kat_nd("pthreads")
 @kat_nd("pchannels")
-#import <flx.flxh>
 open System;
 
 include "flx_faio";
@@ -2687,7 +2623,6 @@ done;
 // plugin loader test
 
 @select(env_drt.test('.flx'))
-#import <flx.flxh>
 
 print "Starting .. "; endl;
 @tangle('Dynlink::run_lib("./' + \
@@ -2713,11 +2648,13 @@ the return code parity.
 
 @env_bt.head(3)
 @select(env_bt.test('.flx'))
+#import <flx.flxh>
 basic parser error
 @doc()
 
 @env_bt.head(3)
 @select(env_bt.test('.flx'))
+#import <flx.flxh>
 module X { proc p(){} }
 module Y { proc p(){} }
 open X;
@@ -2727,8 +2664,8 @@ p; // ambiguous
 
 @env_bt.head(3)
 @select(env_bt.test('.flx'))
-// open depends on self
 #import <flx.flxh>
+// open depends on self
 interface I { proc print_endl:int; }
 module X {
   module M { proc print_endl (a:int) { print a; endl; } }
@@ -2749,6 +2686,7 @@ val bb = aa + 1;
 
 @env_bt.head(3)
 @select(env_bt.test('.flx'))
+#import <flx.flxh>
 // impossible recursion
 type int = "int";
 fun neg(a:int) = { return -a; }
@@ -2756,8 +2694,8 @@ fun neg(a:int) = { return -a; }
 
 @env_bt.head(3)
 @select(env_bt.test('.flx'))
-// privacy violation
 #import <flx.flxh>
+// privacy violation
 
 module X 
 {
@@ -2786,6 +2724,7 @@ val x = f 1;
 
 @env_bt.head(3)
 @select(env_bt.test('.flx'))
+#import <flx.flxh>
 // this should give an error at felix time
 // but we only get one at C++ compile time
 
@@ -2808,8 +2747,8 @@ ctypes int;
 
 @env_bt.head(3)
 @select(env_bt.test('.flx'))
-// function drops off end
 #import <flx.flxh>
+// function drops off end
 fun f(x:int):int =
 {
   if  x == 1 do return 1; done;
@@ -2859,7 +2798,6 @@ they are not currently checked.
 
 @env_wt.head(3)
 @select(env_wt.test('.flx'))
-#import <flx.flxh>
 
 if (len s > 3) do
   print s;
@@ -2869,7 +2807,6 @@ done;
 
 @env_wt.head(3)
 @select(env_wt.test('.flx'))
-#import <flx.flxh>
 
 proc foo (x:int) = {
   print 'here'; endl;
