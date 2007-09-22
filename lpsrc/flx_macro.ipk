@@ -2240,6 +2240,7 @@ try
       (Filename.dirname input_file_name)
       compiler_options.include_dirs
       expand_expression
+      compiler_options.auto_imports
   in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";

@@ -32,6 +32,7 @@ let () =
     (Filename.dirname input_file_name) 
     [] 
     Flx_macro.expand_expression
+    compiler_options.Flx_mtypes2.auto_imports
   in
   Flx_tok.print_pre_tokens pre_tokens;
   let tokens  = Flx_lex1.translate pre_tokens in

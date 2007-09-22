@@ -1300,6 +1300,7 @@ let parse_file
   (basedir :string) 
   (include_dirs : string list) 
   expand_expr
+  auto_imports
 = 
   let pre_tokens  = 
     Flx_pretok.pre_tokens_of_filename 
@@ -1307,6 +1308,7 @@ let parse_file
       basedir
       include_dirs 
       expand_expr
+      auto_imports
   in
   let tokens  = Flx_lex1.translate pre_tokens in
   let hash_include_files, tokens = match tokens with
@@ -1383,9 +1385,10 @@ open Flx_ast
 
 val parse_file : 
   string -> (* filenames *)
-  string ->
-  string list ->
-  (string -> expr_t -> expr_t) ->
+  string -> (* base dir *)
+  string list -> (* include files *)
+  (string -> expr_t -> expr_t) -> (* expand expr *)
+  string list -> (* auto imports *)
   string list * compilation_unit_t
 
 val parse_string : 
@@ -1452,6 +1455,7 @@ let run() =
     (Filename.dirname input_file_name)
     compiler_options.include_dirs
     Flx_macro.expand_expression
+    compiler_options.auto_imports
   in
     print_endline (Flx_print.string_of_compilation_unit parse_tree);
 

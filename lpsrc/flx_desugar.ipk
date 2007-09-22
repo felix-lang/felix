@@ -166,6 +166,7 @@ let include_file syms inspec lookup =
         (Filename.dirname tf)
         include_dirs 
         expand_expression
+        syms.compiler_options.auto_imports
     in
       let local_prefix = Filename.basename basename in
       let tree = expand_macros local_prefix 5000 sts in

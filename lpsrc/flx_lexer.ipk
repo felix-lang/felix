@@ -970,7 +970,18 @@ let find_include_file state s sr =
     filename
 
 let include_directive kind state sr s pre_flx_lex =
+  (*
+  print_endline ("#" ^ kind ^ " " ^ s);
+  *)
   let filename = find_include_file state s sr in
+  if mem filename state#get_include_files then begin
+    (*
+    print_endline ("WARNING: duplicate #import/include of " ^ filename);
+    print_endline ("In " ^ Flx_srcref.long_string_of_src sr);
+    print_endline "SKIPPED";
+    *)
+    []
+  end else begin
   state#add_include_file filename;
   let pre_tokens_of_filename filename =
     let incdirs = state#get_incdirs in
@@ -987,13 +998,13 @@ let include_directive kind state sr s pre_flx_lex =
       end;
       iter state#add_include_file state'#get_include_files;
       toks
-   in
-   match kind with
-   | "import"
-   | "include" ->
-     pre_tokens_of_filename filename
-   | "syntax" ->
-     begin 
+  in
+  match kind with
+  | "import"
+  | "include" ->
+    pre_tokens_of_filename filename
+  | "syntax" ->
+    begin 
        let outfile = filename ^ ".syncache" in 
        try 
          let syn_mt = Flx_filesys.filetime filename in
@@ -1028,7 +1039,8 @@ let include_directive kind state sr s pre_flx_lex =
        with _ ->
          pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
       end
-   | _ -> assert false
+  | _ -> assert false
+  end
 
 let count_newlines s =
   let n = ref 0 in
