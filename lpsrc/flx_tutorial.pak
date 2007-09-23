@@ -347,7 +347,7 @@ Felix allows C style variable declarations too:
 
 @select(env.test('.flx'))
 int i = 1;
-int j;
+int j = 0;
 
 while (i < 10)
 {
@@ -355,6 +355,7 @@ while (i < 10)
   print j; print "\n";
   ++i;
 };
+@doc()
 
 Note a C style while loop can also be used, however
 the trailing semi-colon is required.
@@ -844,6 +845,8 @@ that 010 is decimal ten in Felix!
   val x6 : double = 2.2e4;
   val x7 : float = 2.2e4f;
 };
+@select(env.expect())
+@doc()
 
 @env.head(2,"Mixed Mode Arithmetic")
 Felix by default only supports arithmetic on integers
@@ -993,11 +996,12 @@ X's are hex digits. Felix normalises all such
 encodings so identifiers match properly.
 
 @select(env.test('.flx'))
-
 val x_y_7' = 1;
 val Y_can't_U_do_this_in_C'' : double = 2.0;
 val x\u05d0= 1; // x,Hebrew  aleph
 val zz = x\U000005D0; // x,Hebrew aleph
+@doc()
+@select(env.expect())
 @doc()
 
 @env.head(2,"C formatting")
@@ -1830,7 +1834,7 @@ class Y {
 
   // accessor procedures
   proc yprint() {
-    print "This is a Y object, with x = "; 
+    print "THIS is a Y object, with x = "; 
     print x; print ", y = "; print y;
     print ", and c = "; print c; endl;
   }
@@ -1881,8 +1885,8 @@ ncl;
 2
 3
 20000
-This is a Y object, with x = 22, y = 3, and c = 20000
-This is a Y object, with x = 12, y = 33, and c = 20000
+THIS is a Y object, with x = 22, y = 3, and c = 20000
+THIS is a Y object, with x = 12, y = 33, and c = 20000
 13
 1142
 @doc()
@@ -2302,7 +2306,7 @@ class Y[t] {
 
   // accessor procedures
   proc yprint(xprint:t->0) {
-    print "This is a Y object, with x = "; 
+    print "This IS a Y object, with x = "; 
     xprint x; print ", y = "; print y;
     print ", and c = "; print c; endl;
   }
@@ -2369,8 +2373,8 @@ var aint <- new A[int]();
 2
 3
 20000
-This is a Y object, with x = 22, y = 3, and c = 20000
-This is a Y object, with x = 12, y = 33, and c = 20000
+This IS a Y object, with x = 22, y = 3, and c = 20000
+This IS a Y object, with x = 12, y = 33, and c = 20000
 13
 1142
 @doc()
