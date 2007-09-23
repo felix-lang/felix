@@ -1594,14 +1594,14 @@ void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char *file, int line, char
     tr->count++;
     if(tr->enable_trace) 
     {
-      fprintf(::stderr,"%ld : %s\n",tr->count,msg);
-      print_loc(::stderr,sr,file,line);
+      fprintf(stderr,"%ld : %s\n",tr->count,msg);
+      print_loc(stderr,sr,file,line);
     }
   }
   else
   {
-    fprintf(::stderr,"%ld : %s\n",flx_global_trace_count,msg);
-    print_loc(::stderr,sr,file,line);
+    fprintf(stderr,"%ld : %s\n",flx_global_trace_count,msg);
+    print_loc(stderr,sr,file,line);
   }
 }
 
