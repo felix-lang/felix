@@ -7,15 +7,8 @@ and also blocks.
 @select(h)
 open Flx_ast
 
-type nsrec = { 
-  name:string; 
-  sr:range_srcref; 
-  vs:vs_list_t; 
-  sts:statement_t list ref 
-}
-
 val collate_namespaces:
-  statement_t list -> statement_t list
+  int ref -> statement_t list -> statement_t list
 
 @h = tangler("src/compiler/flxlib/flx_colns.ml")
 @select(h)
@@ -23,57 +16,67 @@ open Flx_ast
 open List
 open Flx_exceptions
 open Flx_srcref
+open Flx_util
 
 type nsrec = { 
   name:string; 
   sr:range_srcref; 
   vs:vs_list_t; 
-  sts:statement_t list ref 
+  fudges:string list ref 
 }
 
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
-let appns sr name vs sts nslist =
+let appns sr name vs fudge_name nslist =
   try
     match assoc name nslist with 
-    { sr=sr'; vs=vs'; sts=rsts } ->
+    { sr=sr'; vs=vs'; fudges=fudges' } ->
     if vs <> vs' then
       clierr2 sr' sr "namespace type variables/constraints don't agree"
     ;
-    rsts := rev sts @ !rsts
+    fudges' := fudge_name :: !fudges'
     ;
     nslist
       
     
   with Not_found ->
-   ( name,{name=name; sr=sr; vs=vs; sts=ref (rev sts) }) :: nslist
+   ( name,{name=name; sr=sr; vs=vs; fudges=ref [fudge_name] }) :: nslist
 
 (* very inefficient .. fixme! *)
 let rev_concat lss = rev (concat lss)
-    
-let rec collate_namespaces sts =
- let rec cn stsin nslist = match stsin with
+
+let map_vs sr (vs,_) = map (fun (s,_)->`AST_name (sr,s,[])) vs
+
+let rec collate_namespaces counter sts =
+ let rec cn stsin stsout nslist = match stsin with
  | [] -> 
-   rev_concat
-   (
-   map
-     (fun (_,{name=name; sr=sr; vs=vs; sts=sts}) ->
-       if name="" then !sts 
-       else [`AST_untyped_module (sr,name,vs,rev !sts)]
-     )
-     nslist
+   rev_map (* faster, order doesn't matter here *)
+   (fun (_,{name=name; sr=sr; vs=vs; fudges=fudges}) ->
+     let sts = 
+       rev_map 
+       (fun fudge -> `AST_inject_module (sr,`AST_name (sr,fudge,map_vs sr vs)))
+       !fudges
+     in
+     `AST_untyped_module (sr,name,vs,sts)
    )
+   nslist
+   @
+   rev stsout
    
  | `AST_namespace (sr,name,vs,sts) :: tail ->
-   let nuns = appns sr name vs (collate_namespaces sts) nslist in
-   cn tail nuns
+   let n = !counter in incr counter;
+   let fudge_name = "_" ^ name ^ "_" ^ si n in
+   let inh = `AST_inject_module (sr, `AST_name (sr,name, map_vs sr vs)) in
+   let sts = inh :: sts in
+   let fudge_module = `AST_untyped_module (sr,fudge_name,vs,sts) in
+   let nslist = appns sr name vs fudge_name nslist in
+   cn tail (fudge_module::stsout) nslist
 
  | head:: tail -> 
-   let sr = src_of_stmt head in
-   let nuns = appns sr "" dfltvs [head] nslist in
-   cn tail nuns
- in cn sts [] 
+   cn tail (head::stsout) nslist
+
+ in cn sts [] []
    
 @h = tangler("src/compiler/flxlib/flx_desugar.mli")
 @select(h)
@@ -426,7 +429,7 @@ let find_methods seq sr sts =
 
 let rec rex syms name (e:expr_t) : asm_t list * expr_t = 
   let rex e = rex syms name e in
-  let rsts sts = concat (map (rst syms name `Private dfltvs) (collate_namespaces sts)) in
+  let rsts sts = concat (map (rst syms name `Private dfltvs) (collate_namespaces syms.counter sts)) in
   let sr = src_of_expr e in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
@@ -1085,7 +1088,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   let map_req n = if n = "_root" then "_rqs_" ^ name else n in
 
   let rex x = rex syms name x in
-  let rsts name vs access sts = concat (map (rst syms name access vs) (collate_namespaces sts)) in
+  let rsts name vs access sts = concat (map (rst syms name access vs) (collate_namespaces syms.counter sts)) in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity

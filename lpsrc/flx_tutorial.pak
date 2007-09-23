@@ -642,14 +642,9 @@ has to be defined in one place. There is an open form of modules
 called namespaces, illustrated below. Namespace can be built
 up incrementally thru the program.
 @p()
-Executable code in a namespace is executed after all code
-not in namespaces. All the code in one namespace is
-executed before that of another. The order in which
-code of a namespace is executed is the order of
-writing of the first use of each namespace.
-@p()
 The concatenated contents of a namespace is equivalent
-to a module.
+to a module, however code in a namespace is executed
+in order of writing.
 @p()
 Namespace can be polymorphic and have constraints just
 like modules. The text specifying the type variables
@@ -694,7 +689,7 @@ namespace fred {
   print "fred1 end"; endl;
 }
 
-print "between freds <not!>"; endl;
+print "between freds"; endl;
 
 namespace fred {
   print "fred2 start"; endl;
@@ -714,16 +709,16 @@ f(); g(); h();
 
 @select(env.expect())
 b4 fred
-between freds <not!>
+fred1 start
+fred1 end
+between freds
+fred2 start
+fred2 end
 after freds
-0 0
+1 1
 f
 g
 h
-fred1 start
-fred1 end
-fred2 start
-fred2 end
 @doc()
 
 

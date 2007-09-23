@@ -709,6 +709,8 @@ and statement_t =
   | `AST_cparse of range_srcref * string
   | `AST_include of range_srcref * string 
   | `AST_open of range_srcref * vs_list_t * qualified_name_t
+
+  (* the keyword for this one is 'inherit' *)
   | `AST_inject_module of range_srcref * qualified_name_t
   | `AST_use of range_srcref * id_t * qualified_name_t
   | `AST_comment of range_srcref * string (* for documenting generated code *)
@@ -3696,7 +3698,7 @@ and string_of_statement level s =
     spaces level ^ "open" ^ print_vs vs ^ " " ^ sqn n ^ ";"
 
   | `AST_inject_module (_,n) -> 
-    spaces level ^ "include " ^ sqn n ^ ";"
+    spaces level ^ "inherit " ^ sqn n ^ ";"
 
   | `AST_include (_,s) -> 
     spaces level ^ "include " ^ s ^ ";"
@@ -4919,7 +4921,7 @@ and string_of_dir level s =
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
 
   | DIR_inject_module (qn) ->
-    spaces level ^ "include " ^ sqn qn ^ ";"
+    spaces level ^ "inherit " ^ sqn qn ^ ";"
 
 and string_of_breq dfns (i,ts) = "rq<"^si i^">" ^ print_inst dfns ts
 and string_of_breqs dfns reqs = catmap ", " (string_of_breq dfns) reqs
