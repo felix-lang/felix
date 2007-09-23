@@ -3075,7 +3075,7 @@ try
       in
       if compiler_options.print_flag  
       then print_endline ("//Parsing Implementation " ^ file_name);
-      let sts = Flx_desugar.include_file syms file_name true in
+      let sts = Flx_colns.include_file syms file_name true in
       concat [tree; sts]
     )
     []
