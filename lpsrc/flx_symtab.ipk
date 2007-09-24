@@ -1514,6 +1514,10 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
+          (*
+          print_endline ("Got a struct " ^ id);
+          print_endline ("Members=" ^ catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
+          *)
           if is_class then clierr sr "(c)struct not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in

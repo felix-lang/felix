@@ -2159,7 +2159,7 @@ with be translated by the lexer to <code>ulong</code>.</p>
 
 
   pointer_type:= 
-    | base_type
+    | base_type =># "_1"
     | "void" star =># '`(ast_name "address" ())'
     | pointer_type star =># "`(ast_ref ,_1)"
   ;
@@ -2242,11 +2242,18 @@ the same as <code>x:int</code></p>
     `(,dcl ,_sr ,name ,dfltvs (some ,type) (some ,_3)))
     """; 
 
-explain svar_def """
-<p> C style variable definitions like <code>int x=1;</code>
-require initialisers.
-""";
-
+  // uninitialised variable (RISKY)
+  svar_def := declarator ssemi =>#
+    """
+    (let*
+      (
+        (kind (car _1))
+        (name (cadr _1))
+        (type (caddr _1))
+        (dcl (if (eq? kind 'PVal) 'ast_val_decl 'ast_var_decl))
+      )
+    `(,dcl ,_sr ,name ,dfltvs (some ,type) none))
+    """; 
 
 
   // function
@@ -2273,7 +2280,13 @@ require initialisers.
   """;
 
   // struct, cstruct
-  sstruct_mem_decl := declarator ssemi =># "`(,(car _1) ,(cadr _1))";
+  sstruct_mem_decl := declarator ssemi =># """
+    ;;(begin (display "\\ndeclarator=")(display _1)
+    ;;(display "\\nvariable=")(display (cadr _1))
+    ;;(display "\\ntype=")(display (caddr _1))
+    `(,(cadr _1) ,(caddr _1))
+    ;;)
+  """;
 
   // typedef
   stype_alias := typedef declarator ssemi =>#

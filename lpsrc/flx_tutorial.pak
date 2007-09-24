@@ -1436,6 +1436,22 @@ HIHI 1
 3
 @doc()
 
+@select(env.test('.flx'))
+@kat('Records')
+@kat('operator dot')
+@kat('parameter names')
+proc flooreach (name:string) (x:string) 
+  {println$ name  " (name)="  x; }
+
+proc flooreach (prompt:string) (x:string) 
+  {println$ prompt  "(prompt)="  x; }
+
+(name="hi") . flooreach "john";
+(prompt="bye") . flooreach "erick";
+@select(env.expect())
+hi (name)=john
+bye(prompt)=erick
+@doc()
 @env.head(2,'Arrays')
 Felix provides arrays of constant length.
 The type notation
