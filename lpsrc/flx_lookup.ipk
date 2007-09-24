@@ -5009,7 +5009,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | `AST_map (sr,f,a) ->
     handle_map sr (be f) (be a)
-  
+
   | `AST_apply (sr,(f',a')) ->
     (*
     print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
@@ -5216,10 +5216,16 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     in
 
     begin match e2 with
+
+    (* RHS IS A SIMPLE NAME *)
     | `AST_name (_,name,ts) ->
       begin match ttt with
+
+      (* LHS IS A NOMINAL TYPE *)
       | `BTYP_inst (i,ts') ->
         begin match Hashtbl.find syms.dfns i with
+
+        (* STRUCT *)
         | {id=id; vs=vs; symdef=`SYMDEF_struct ls } -> 
           begin try
           let cidx,ct = 
@@ -5251,6 +5257,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             end
           end
 
+        (* LHS CSTRUCT *)
         | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } -> 
           (* NOTE: we try $1.name binding using get_n first,
           but if we can't find a component we treat the
@@ -5293,6 +5300,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
            end
 
+        (* LHS CLASS *)
         | {id=id; pubmap=pubtab; symdef = `SYMDEF_class } ->
           (*
           print_endline "AST_get_named finds a class .. ";
@@ -5324,6 +5332,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
           end
           
+        (* LHS CCLASS *)
         | {id=id; symdef=`SYMDEF_cclass _} -> 
             (*
             print_endline ("Synth get method .. (3) " ^ name);
@@ -5340,7 +5349,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           end
 
           
-        (* abstract type binding *)
+        (* LHS PRIMITIVE TYPE *)
         | {id=id; symdef=`SYMDEF_abs _ } ->
             (*
             print_endline ("Synth get method .. (4) " ^ name);
@@ -5358,39 +5367,70 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
         | _ -> 
           failwith ("[lookup] operator . Expected LHS nominal type to be"^
-          " struct, cstruct or abstract primitive, got " ^ 
+          " (c)struct, (c)class, or abstract primitive, got " ^ 
           sbt syms.dfns ttt)
 
         end
 
+      (* LHS RECORD *)
       | `BTYP_record es ->
         let rcmp (s1,_) (s2,_) = compare s1 s2 in
         let es = sort rcmp es in
         let field_name = name in
         begin match list_index (map fst es) field_name with
         | Some n -> `BEXPR_get_n (n,te),lmap (assoc field_name es)
-        | None -> clierr sr 
-           (
-             "Field " ^ field_name ^ 
-             " is not a member of anonymous structure type " ^ 
-             sbt syms.dfns ttt
-            )
+        | None -> 
+          try be (`AST_apply (sr,(e2,e)))
+          with exn ->
+          clierr sr 
+          (
+            "[bind_expression] operator dot: Field " ^ field_name ^ 
+            " is not a member of anonymous structure type " ^ 
+             sbt syms.dfns ttt ^ 
+             "\n and trying " ^ field_name ^ 
+             " as a function also failed"
+          )
         end
 
+      (* LHS FUNCTION TYPE *)
       | `BTYP_function (d,c) ->
-        failwith ("LHS of operator . has a function type\n"
-        ^ "but RHS is simple name: should overload somehow?")
+        begin try be (`AST_apply (sr,(e2,e)))
+        with exn ->
+        clierr sr (
+        "AST_dot, arg "^ string_of_expr e2^ 
+        " is simple name, and attempt to apply it failed with " ^
+        Printexc.to_string exn
+        )
+        end
 
+      (* LHS TUPLE TYPE *)
       | `BTYP_tuple _ ->
-        failwith ("[lookup:AST_dot] Expected nominal type! Got tuple ! " ^ sbt syms.dfns ttt)
+        begin try be (`AST_apply (sr,(e2,e)))
+        with exn ->
+        clierr sr (
+        "AST_dot, arg "^ string_of_expr e2^ 
+        " is simple name, and attempt to apply it failed with " ^
+        Printexc.to_string exn
+        )
+        end
 
-      | _ -> failwith ("[lookup:AST_dot] Expected nominal type! Got " ^ sbt syms.dfns ttt)
+      (* LHS OTHER ALGEBRAIC TYPE *)
+      | _ -> 
+        begin try be (`AST_apply (sr,(e2,e)))
+        with exn ->
+        clierr sr (
+        "AST_dot, arg "^ string_of_expr e2^ 
+        " is not simple name, and attempt to apply it failed with " ^
+        Printexc.to_string exn
+        )
+        end
       end
 
+    (* RHS NOT A SIMPLE NAME: reverse application *)
     | _ -> 
       try be (`AST_apply (sr,(e2,e)))
       with exn ->
-      failwith (
+      clierr sr (
         "AST_dot, arg "^ string_of_expr e2^ 
         " is not simple name, and attempt to apply it failed with " ^
         Printexc.to_string exn
