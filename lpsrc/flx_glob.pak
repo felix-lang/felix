@@ -1111,7 +1111,7 @@ module glob {
 include "stl";
 include "glob";
 
-var files = glob::glob("lpsrc/*.pak");
+var files = glob::glob("lib/*.flx");
 open Reversible_Sequence[
   Stl::Vector::stl_vector[string], 
   Stl::Vector::stl_vector_iterator[string],
@@ -1120,8 +1120,8 @@ open Reversible_Sequence[
 ];
 
 var p = begin files; whilst p != end files do
-  basename := (*p).[6 to];
-  if basename == "flx_glob.pak" do print "true"; endl; done;
+  basename := (*p).[4 to];
+  if basename == "std.flx" do print "true"; endl; done;
   ++p;
 done;
 @doc()
