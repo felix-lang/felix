@@ -12,6 +12,7 @@
 from Tkinter import *
 import os
 import sys
+import glob
 
 def get_stdout(x):
   """We're screwed if popen doesn't work .."""
@@ -27,11 +28,26 @@ def get_stdout(x):
     result = fout.close()
   return result,output
 
+def refine(all,prefix):
+  res = []
+  l = len(prefix)
+  for line in all:
+    if line[:l]==prefix: res.append(line)
+  res.sort()
+  return res
+
+def find_next(all,x):
+  n = len(all)
+  if n == 0: return x
+  for i in range(0,n-1):
+    if all[i] > x: return all[i]
+  return all[0]
 
 class App:
 
     def __init__(self, master,initfile):
-
+        self.history = []
+        self.history_pos = -1
         self.frame = Frame(master,bd=20,bg="blue",height=900)
         self.frame.pack(fill=BOTH,expand=1)
         
@@ -59,6 +75,10 @@ class App:
 
         self.filename_tag = Label(self.frame_top,text="Filename")
         self.filename = Entry(self.frame_top)
+        self.filename.bind("<Up>",self.filename_up)
+        self.filename.bind("<Down>",self.filename_down)
+        self.filename.bind("<Tab>",self.filename_tab)
+
         self.runme = Button(self.frame_top, text="run",command=self.run)
         self.loadme = Button(self.frame_top,text="load", command=self.load)
         self.saveme = Button(self.frame_top,text="save", command=self.save)
@@ -89,15 +109,17 @@ class App:
         f.close()
         self.flxin.delete("0.0",END)
         self.flxin.insert(END,text)
+        self.add_history(filename)
         return 1
       except:
         print "FILE "+filename+"NOT FOUND"
         return 0
 
-    def save(self):
-      text = self.flxin.get("0.0",END)
-      filename = self.filename.get()
+    def save(self,filename=None):
+      if filename==None:
+        filename = self.filename.get()
       print "Saving file="+filename
+      text = self.flxin.get("0.0",END)
       try:
         f = open(filename,"w")
         f.write(text)
@@ -106,14 +128,48 @@ class App:
         print "CANT WRITE FILE "+filename
 
     def run(self):
-      filename = self.filename.get()
-      self.save()
-      print "Running "+filename
-      cmd = "bin/flx --test " + filename
+      self.save("tmp.flx")
+      print "Running tmp.flx"
+      cmd = "bin/flx --test tmp.flx"
       result,text = get_stdout(cmd)
       self.flxout.delete("0.0",END)
       for line in text:
         self.flxout.insert(END,line)
+
+    def add_history(self,filename):
+      if len(self.history)==0 or self.history[-1] != filename:
+        self.history.append(filename)
+        self.history_pos = len(self.history) - 1
+
+    def filename_up(self,e):
+      if self.history_pos > 0:
+        self.history_pos = self.history_pos - 1
+        filename = self.history[self.history_pos]
+        self.filename.delete("0",END)
+        self.filename.insert(END,filename)
+
+
+    def filename_down(self,e):
+      if self.history_pos < len(self.history) - 1:
+        self.history_pos = self.history_pos + 1
+        filename = self.history[self.history_pos]
+        self.filename.delete("0",END)
+        self.filename.insert(END,filename)
+
+    def filename_tab(self,e):
+      pos = self.filename.index(INSERT)
+      print "Tab at x=" + str(pos)
+      filename = self.filename.get()
+      prefix = filename[:pos]
+      suffix = filename[pos:]
+      all = glob.glob(prefix+"*")
+      all = refine(all,prefix)
+      next = find_next(all,filename)
+      if next!=filename:
+        self.filename.delete(INSERT,END)
+        self.filename.insert(INSERT,next[pos:])
+        self.filename.icursor(pos)
+      return "break"
 
     def todo(self):
       print "to do .. :"
