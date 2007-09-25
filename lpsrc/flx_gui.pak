@@ -13,6 +13,7 @@ from Tkinter import *
 import os
 import sys
 import glob
+import string
 
 def get_stdout(x,outit=None):
   """We're screwed if popen doesn't work .."""
@@ -52,36 +53,140 @@ def find_next(all,x):
 
 class ConfigDialog:
   def __init__(self,parent,app):
+    self.recurse = 1
     top = self.top = Toplevel(parent)
-    Label(top, text="Run command").grid(row=0,column=0)
-    self.runcmdentry = Entry(top,text="run command", textvariable=app.runcmd)
-    self.runcmdentry.grid(row=0,column=1)
-
-    Label(top,text="Debug").grid(row=1,column=0)
+    self.echo=StringVar()
     self.debug=StringVar()
-    self.debugbox=Checkbutton(top,variable=self.debug,onvalue="--debug ",offvalue="")
-    self.debugbox.grid(row=1,column=1)
-
-    Label(top,text="Static").grid(row=1,column=0)
     self.static=StringVar()
-    self.staticbox=Checkbutton(top,variable=self.debug,onvalue="--static ",offvalue="")
-    self.staticbox.grid(row=1,column=1)
-
-    Label(top,text="Felix").grid(row=2,column=0)
     self.felix=StringVar()
-    self.felixbox=Checkbutton(top,variable=self.felix,onvalue="",offvalue="--nofelix ")
-    self.felixbox.grid(row=2,column=1)
-
-    Label(top,text="C++").grid(row=3,column=0)
-    self.cpp=StringVar()
-    self.cppbox=Checkbutton(top,variable=self.cpp,onvalue="",offvalue="--nocpp ")
-    self.cppbox.grid(row=3,column=1)
-
-    Label(top,text="Execute").grid(row=4,column=0)
+    self.optimise=StringVar()
+    self.force=StringVar()
     self.runit=StringVar()
-    self.runitbox=Checkbutton(top,variable=self.runit,onvalue="",offvalue="-c ")
-    self.runitbox.grid(row=4,column=1)
 
+    top.grid_columnconfigure(1,weight=1)
+    Label(top, text="Run command").grid(row=0,column=0)
+    self.runcmdentry = Entry(top,
+      width=60,
+      textvariable=app.runcmd)
+    self.runcmdentry.grid(row=0,column=1)
+    app.runcmd.trace("w",self.setbuttons)
+
+    row=0
+
+    row=row + 1 # echo
+    Label(top,text="Echo").grid(row=row,column=0)
+    self.echobox=Checkbutton(top,variable=self.echo,onvalue="--echo ",offvalue="",command=self.setcmd)
+    self.echobox.grid(row=row,column=1)
+
+    row=row + 1 # debug
+    Label(top,text="Debug").grid(row=row,column=0)
+    self.debugbox=Checkbutton(top,variable=self.debug,onvalue="--debug ",offvalue="",command=self.setcmd)
+    self.debugbox.grid(row=row,column=1)
+
+    row = row + 1 # static
+    Label(top,text="Static").grid(row=row,column=0)
+    self.staticbox=Checkbutton(top,variable=self.debug,onvalue="--static ",offvalue="",command=self.setcmd)
+    self.staticbox.grid(row=row,column=1)
+
+    row = row + 1 # nofelix
+    Label(top,text="Felix").grid(row=row,column=0)
+    self.felixbox=Checkbutton(top,variable=self.felix,onvalue="",offvalue="--nofelix ",command=self.setcmd)
+    self.felixbox.grid(row=row,column=1)
+
+    row = row + 1 # optimise
+    Label(top,text="optimise").grid(row=row,column=0)
+    self.optimisebox=Checkbutton(top,variable=self.optimise,onvalue="--optimise ",offvalue="",command=self.setcmd)
+    self.optimisebox.grid(row=row,column=1)
+
+    row=row + 1 # force
+    Label(top,text="Force").grid(row=row,column=0)
+    self.forcebox=Checkbutton(top,variable=self.force,onvalue="--force ",offvalue="",command=self.setcmd)
+    self.forcebox.grid(row=row,column=1)
+
+    row = row + 1 # execute
+    Label(top,text="Execute").grid(row=row,column=0)
+    self.runitbox=Checkbutton(top,variable=self.runit,onvalue="",offvalue="-c ",command=self.setcmd)
+    self.runitbox.grid(row=row,column=1)
+
+    self.recurse = 0
+    self.buttonsfromcmd()
+
+
+  def setcmd(self):
+    if self.recurse==1: return
+    self.recurse=1
+    self.cmdfrombuttons()
+    self.recurse=0
+
+  def setbuttons(self,x,y,z):
+    if self.recurse==1: return
+    self.recurse=1
+    self.buttonsfromcmd()
+    self.recurse=0
+    return 1
+
+  def buttonsfromcmd(self):
+    cmd = app.runcmd.get()
+    cmdw = string.split(cmd)
+
+    if "--force" in cmdw: 
+      self.force.set("--force ")
+    else:
+      self.force.set("")
+
+    if "--nofelix" in cmdw: 
+      self.felix.set("--nofelix ")
+    else:
+      self.felix.set("")
+
+    if "-c" in cmdw: 
+      self.runit.set("-c ")
+    else:
+      self.runit.set("")
+
+    if "--static" in cmdw: 
+      self.static.set("--static ")
+    else:
+      self.static.set("")
+
+    if "--echo" in cmdw: 
+      self.echo.set("--echo ")
+    else:
+      self.echo.set("")
+
+    if "--debug" in cmdw: 
+      self.debug.set("--debug ")
+    else:
+      self.debug.set("")
+
+  def cmdfrombuttons(self):
+    cmd = app.runcmd.get()
+    cmdw = string.split(cmd)
+    cmdx = cmdw[0]
+    cmdw = cmdw[1:]
+    cmdw2 = []
+    for option in cmdw:
+      if option not in [
+        "--nofelix",
+        "-c",
+        "--static",
+        "--debug",
+        "--force",
+        "--echo",
+        "--optimise",
+        "--optimize"
+      ]:
+        cmdw2.append(option)
+    opts = ( 
+      self.echo.get() + 
+      self.debug.get() + 
+      self.felix.get() +
+      self.optimise.get() +
+      self.static.get() + 
+      self.runit.get() + 
+      self.force.get())
+    cmd = cmdx+' '+opts+string.join(cmdw2," ")
+    app.runcmd.set(cmd)
 
 class App:
   def __init__(self, master,initfile):
@@ -176,9 +281,9 @@ class App:
 
 
   def run(self):
-    self.save("tmp.flx")
-    print "Running tmp.flx"
-    cmd = self.runcmd.get() % "tmp.flx"
+    self.save("./flxtmp.flx")
+    print "Running flxtmp.flx"
+    cmd = self.runcmd.get() % "./flxtmp.flx"
     self.flxout.delete("0.0",END)
     print "cmd="+cmd
     result,text = get_stdout(cmd,self.append_flxout)
@@ -229,7 +334,7 @@ class App:
     #print "State=" + state
     if state in ["withdrawn","iconic"]:
       self.configdialog.top.deiconify()
-    #self.configdialog.top.grab_set()
+    self.configdialog.top.lift()
       
 
 root = Tk()
