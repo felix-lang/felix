@@ -1,4 +1,4 @@
-@head(1,"A GUI interface for Felix using Pything and Tkinter")
+@execfile('config'+os.sep+'flx_data.py')
 @def make_executable(path):
    import stat
    try:
@@ -7,6 +7,7 @@
    except OSError, e:
      print e
 
+@head(1,"A GUI interface for Felix using Pything and Tkinter")
 @select(tangler("bin/gflx.py"))
 #!/usr/bin/env python
 from Tkinter import *
@@ -14,6 +15,9 @@ import os
 import sys
 import glob
 import string
+
+@keywords = map ((lambda (a,b):a),flx_keywords)
+@tangle('keywords='+repr(keywords))
 
 def get_stdout(x,outit=None):
   """We're screwed if popen doesn't work .."""
@@ -195,7 +199,7 @@ class App:
     self.history_pos = -1
 
     self.runcmd = StringVar(master,name="runcmd", value="bin/flx --test %s")
-    self.frame = Frame(master,bd=20,bg="blue",height=900)
+    self.frame = Frame(master,bd=20,bg="blue",height=900,width=600)
     self.frame.pack(fill=BOTH,expand=1)
     
     self.menu1 = Menu()
@@ -205,6 +209,7 @@ class App:
     filemenu.add_command(label="New", command=self.todo)
     filemenu.add_command(label="Open...", command=self.todo)
     filemenu.add_command(label="Config", command=self.config)
+    filemenu.add_command(label="Colour", command=self.colour)
     filemenu.add_separator()
     filemenu.add_command(label="Exit", command=self.frame.quit)
 
@@ -226,6 +231,7 @@ class App:
     self.filename.bind("<Up>",self.filename_up)
     self.filename.bind("<Down>",self.filename_down)
     self.filename.bind("<Tab>",self.filename_tab)
+    self.filename.bind("<Return>",self.load)
 
     self.runme = Button(self.frame_top, text="run",command=self.run)
     self.loadme = Button(self.frame_top,text="load", command=self.load)
@@ -240,15 +246,15 @@ class App:
     self.quit.pack(side=LEFT)
 
     self.filename.insert(END,initfile)
-    self.flxin = Text(self.frame_left,bg="yellow",bd=5)
+    self.flxin = Text(self.frame_left,bd=5,width=20,spacing1=1,spacing2=1)
     self.flxin.pack(expand=1,fill=BOTH)
     self.flxin.insert(END, "println 'Hello World';")
 
-    self.flxout = Text(self.frame_right)
+    self.flxout = Text(self.frame_right,width=20,spacing1=1,spacing2=1)
     self.flxout.pack(expand=1,fill=BOTH)
     self.load()
 
-  def load(self):
+  def load(self,event=None):
     filename = self.filename.get()
     print "Loading file="+filename
     try:
@@ -259,6 +265,7 @@ class App:
       self.flxin.insert(END,text)
       self.add_history(filename)
       self.master.title(filename)
+      self.colour()
       return 1
     except:
       print "FILE "+filename+"NOT FOUND"
@@ -289,7 +296,7 @@ class App:
     result,text = get_stdout(cmd,self.append_flxout)
 
   def add_history(self,filename):
-    if len(self.history)==0 or self.history[-1] != filename:
+    if filename not in self.history:
       self.history.append(filename)
       self.history_pos = len(self.history) - 1
 
@@ -336,8 +343,53 @@ class App:
       self.configdialog.top.deiconify()
     self.configdialog.top.lift()
       
+  def colour(self):
+    font1 = ("Helvetica",10,"bold")
+    strregexp="'.*'|\".*\""
+    numregexp="[0-9]+|[0-9]*\.0-9"
 
+    self.flxin.tag_config("ident",foreground="blue")
+    self.flxin.tag_config("keyword",foreground="#336699",font=font1)
+    self.flxin.tag_config("string",foreground="#007777")
+    self.flxin.tag_config("num",foreground="#007700")
+
+    self.flxin.tag_remove("keyword","0.0",END)
+    self.flxin.tag_remove("string","0.0",END)
+    self.flxin.tag_remove("num","0.0",END)
+    self.flxin.tag_remove("ident","0.0",END)
+    self.scan(numregexp,"num")
+    self.scan(strregexp,"string")
+    self.idents()
+
+  def idents(self):
+    idregexp="[a-zA-Z_][a-zA-Z0-9_]*"
+    loc="0.0"
+    lvar = IntVar()
+    loc=self.flxin.search(idregexp,loc,stopindex=END,regexp=1,count=lvar)
+    while loc != "":
+      eloc=loc+"+"+str(lvar.get())+" chars"
+      lex = self.flxin.get(loc,eloc)
+      tag = "ident"
+      if lex in keywords: tag = "keyword"
+      self.flxin.tag_add(tag,loc,eloc)
+      loc=self.flxin.search(idregexp,eloc,stopindex=END,regexp=1,count=lvar)
+
+
+  def scan(self,regexp,tag):
+    loc="0.0"
+    lvar = IntVar()
+    loc=self.flxin.search(regexp,loc,stopindex=END,regexp=1,count=lvar)
+    while loc != "":
+      eloc=loc+"+"+str(lvar.get())+" chars"
+      self.flxin.tag_add(tag,loc,eloc)
+      loc=self.flxin.search(regexp,eloc,stopindex=END,regexp=1,count=lvar)
+
+    
 root = Tk()
+root.option_add("*Label*font","Helvetica 10 bold")
+root.option_add("*Button*font","Helvetica 10 bold")
+root.option_add("*Text*font","Helvetica 10")
+root.geometry("800x700+0+0")
 argc=len(sys.argv)
 initfile="hello.flx"
 if argc>1:
