@@ -15,6 +15,7 @@ import os
 import sys
 import glob
 import string
+import stat
 
 @keywords = map ((lambda (a,b):a),flx_keywords)
 @tangle('keywords='+repr(keywords))
@@ -48,10 +49,19 @@ def refine(all,prefix):
   res.sort()
   return res
 
+def dirfilt(all):
+  res = []
+  for line in all:
+    st = os.stat(line)
+    dir = stat.S_ISDIR(st.st_mode)
+    if dir: res.append(line+"/")
+  res.sort()
+  return res
+  
 def find_next(all,x):
   n = len(all)
   if n == 0: return x
-  for i in range(0,n-1):
+  for i in range(0,n):
     if all[i] > x: return all[i]
   return all[0]
 
@@ -70,7 +80,7 @@ class ConfigDialog:
     top.grid_columnconfigure(1,weight=1)
     Label(top, text="Run command").grid(row=0,column=0)
     self.runcmdentry = Entry(top,
-      width=60,
+      width=20,
       textvariable=app.runcmd)
     self.runcmdentry.grid(row=0,column=1)
     app.runcmd.trace("w",self.setbuttons)
@@ -199,7 +209,7 @@ class App:
     self.history_pos = -1
 
     self.runcmd = StringVar(master,name="runcmd", value="bin/flx --test %s")
-    self.frame = Frame(master,bd=20,bg="blue",height=900,width=600)
+    self.frame = Frame(master,bd=2)
     self.frame.pack(fill=BOTH,expand=1)
     
     self.menu1 = Menu()
@@ -218,40 +228,62 @@ class App:
     helpmenu.add_command(label="About...", command=self.todo)
 
 
-    self.frame_top = Frame(self.frame)
-    self.frame_left = Frame(self.frame,bg="red",bd=10)
-    self.frame_right = Frame(self.frame,bg="cyan",bd=10)
+    self.frame_top = Frame(self.frame,bd=4,background="gray80")
+    self.panes = PanedWindow(self.frame,orient=HORIZONTAL,bd=4,background="gray80")
 
-    self.frame_top.pack(side=TOP, fill=X)
-    self.frame_left.pack(side=LEFT, expand=1,fill=BOTH)
-    self.frame_right.pack(side=RIGHT, expand=1,fill=BOTH)
+    self.frame_left = Frame(self.panes,bd=4)
+    self.frame_right = Frame(self.panes,bd=4)
+    self.scroll_left = Scrollbar(self.frame_left)
+    self.scroll_right = Scrollbar(self.frame_right)
+
+    self.frame_top.pack(side=TOP, fill=X,expand=0)
+    self.panes.pack(side=BOTTOM, expand=1,fill=BOTH)
+    self.panes.add(self.frame_left)
+    self.panes.add(self.frame_right)
+    #self.frame_left.pack(side=LEFT, expand=1,fill=BOTH)
+    #self.frame_right.pack(side=RIGHT, expand=1,fill=BOTH)
 
     self.filename_tag = Label(self.frame_top,text="Filename")
-    self.filename = Entry(self.frame_top)
+    self.filename = Entry(self.frame_top,width=20)
     self.filename.bind("<Up>",self.filename_up)
     self.filename.bind("<Down>",self.filename_down)
     self.filename.bind("<Tab>",self.filename_tab)
     self.filename.bind("<Return>",self.load)
+    self.filename.bind("/",self.dirname_tab)
 
     self.runme = Button(self.frame_top, text="run",command=self.run)
     self.loadme = Button(self.frame_top,text="load", command=self.load)
     self.saveme = Button(self.frame_top,text="save", command=self.save)
+    self.saveas = Button(self.frame_top,text="save-as", command=self.saveas)
     self.quit = Button(self.frame_top,text="quit",fg="red", command=self.frame.quit)
 
     self.filename_tag.pack(side=LEFT)
-    self.filename.pack(side=LEFT)
-    self.runme.pack(side=LEFT)
-    self.loadme.pack(side=LEFT)
-    self.saveme.pack(side=LEFT)
-    self.quit.pack(side=LEFT)
+    self.filename.pack(side=LEFT,fill=X,expand=1)
+    self.quit.pack(side=RIGHT)
+    self.saveas.pack(side=RIGHT)
+    self.saveme.pack(side=RIGHT)
+    self.loadme.pack(side=RIGHT)
+    self.runme.pack(side=RIGHT)
 
     self.filename.insert(END,initfile)
-    self.flxin = Text(self.frame_left,bd=5,width=20,spacing1=1,spacing2=1)
-    self.flxin.pack(expand=1,fill=BOTH)
+    self.flxin = Text(self.frame_left,
+      bd=5,width=60,spacing1=1,spacing2=1,
+      padx=4,pady=2,
+      yscrollcommand=self.scroll_left.set
+      )
+    self.flxin.pack(side=LEFT,expand=1,fill=BOTH)
     self.flxin.insert(END, "println 'Hello World';")
+    self.scroll_left.pack(side=RIGHT,fill=Y)
+    self.scroll_left.config(command=self.flxin.yview)
 
-    self.flxout = Text(self.frame_right,width=20,spacing1=1,spacing2=1)
-    self.flxout.pack(expand=1,fill=BOTH)
+    self.flxout = Text(self.frame_right,
+      width=10,spacing1=1,spacing2=1,
+      yscrollcommand=self.scroll_right.set
+      )
+    self.flxout.pack(side=LEFT,expand=1,fill=BOTH)
+    self.scroll_right.pack(side=RIGHT,fill=Y)
+    self.scroll_right.config(command=self.flxout.yview)
+
     self.load()
 
   def load(self,event=None):
@@ -265,15 +297,21 @@ class App:
       self.flxin.insert(END,text)
       self.add_history(filename)
       self.master.title(filename)
+      self.curfile = filename
       self.colour()
       return 1
-    except:
-      print "FILE "+filename+"NOT FOUND"
+    except IOError:
+      print "FILE '"+filename+"' NOT FOUND"
       return 0
+
+  def saveas(self):
+    filename = self.filename.get()
+    self.save(filename)
+    self.curfile=filename
 
   def save(self,filename=None):
     if filename==None:
-      filename = self.filename.get()
+      filename = self.curfile
     print "Saving file="+filename
     text = self.flxin.get("0.0",END)
     try:
@@ -320,7 +358,23 @@ class App:
     filename = self.filename.get()
     prefix = filename[:pos]
     suffix = filename[pos:]
+    all = glob.glob(prefix+"*.flx")
+    all = refine(all,prefix)
+    next = find_next(all,filename)
+    if next!=filename:
+      self.filename.delete(INSERT,END)
+      self.filename.insert(INSERT,next[pos:])
+      self.filename.icursor(pos)
+      self.load()
+    return "break"
+
+  def dirname_tab(self,e):
+    pos = self.filename.index(INSERT)
+    filename = self.filename.get()
+    prefix = filename[:pos]
+    suffix = filename[pos:]
     all = glob.glob(prefix+"*")
+    all = dirfilt(all)
     all = refine(all,prefix)
     next = find_next(all,filename)
     if next!=filename:
@@ -345,21 +399,26 @@ class App:
       
   def colour(self):
     font1 = ("Helvetica",10,"bold")
+    font2 = ("Helvetica",10,"italic")
     strregexp="'.*'|\".*\""
     numregexp="[0-9]+|[0-9]*\.0-9"
+    cppcomregexp="//.*$"
 
     self.flxin.tag_config("ident",foreground="blue")
     self.flxin.tag_config("keyword",foreground="#336699",font=font1)
     self.flxin.tag_config("string",foreground="#007777")
     self.flxin.tag_config("num",foreground="#007700")
+    self.flxin.tag_config("cppcom",foreground="#aa1122",font=font2)
 
     self.flxin.tag_remove("keyword","0.0",END)
     self.flxin.tag_remove("string","0.0",END)
     self.flxin.tag_remove("num","0.0",END)
     self.flxin.tag_remove("ident","0.0",END)
+    self.flxin.tag_remove("cppcom","0.0",END)
     self.scan(numregexp,"num")
     self.scan(strregexp,"string")
     self.idents()
+    self.scan(cppcomregexp,"cppcom")
 
   def idents(self):
     idregexp="[a-zA-Z_][a-zA-Z0-9_]*"
@@ -388,7 +447,7 @@ class App:
 root = Tk()
 root.option_add("*Label*font","Helvetica 10 bold")
 root.option_add("*Button*font","Helvetica 10 bold")
-root.option_add("*Text*font","Helvetica 10")
+root.option_add("*Text*font","Courier 10")
 root.geometry("800x700+0+0")
 argc=len(sys.argv)
 initfile="hello.flx"
