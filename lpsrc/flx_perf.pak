@@ -477,6 +477,162 @@ begin
    New_Line;
 end Takfp;
 
+@head(2,'[spectral] spectral norm problem')
+A mix of loop index and floating point optimisation issues.
+@for i in machs:
+  showgraph(i,'spectralnorm',"Spectral-Norm on "+i)
+  showdata("speed/machine/"+i+"/rankings/spectralnorm.txt")
+
+@select(tangler('speed/specs/spectralnorm.py','data'))
+descr="Spectral-Norm problem"
+min=1
+max=3
+
+@head(3,'Felix code')
+@select(tangler('speed/src/felix/spectralnorm.flx','data'))
+@flx_setup()
+open Carray;
+
+typedef V = carray[double];
+
+fun eval_A(int i, int j)=>1.0/double((i+j)*(i+j+1)/2+i+1);
+
+proc eval_A_times_u(int N, u:V, Au:V)
+{
+  int i; int j;
+  for(i=0;i<N;i++)
+    {
+      Au.[i]=0;
+      for(j=0;j<N;j++) Au.[i]+=eval_A(i,j)*u.[j];
+    };
+};
+
+proc eval_At_times_u(int N, u:V, Au:V)
+{
+  int i; int j;
+  for(i=0;i<N;i++)
+    {
+      Au.[i]=0;
+      for(j=0;j<N;j++) Au.[i]+=eval_A(j,i)*u.[j];
+    };
+};
+
+
+proc eval_AtA_times_u(int N, u:V, AtAu:V)
+{ eval_A_times_u(N,u,tmp); eval_At_times_u(N,tmp,AtAu); };
+
+int i;
+int N = n * 1000;
+
+u:V := array_alloc[double] N;
+v:V := array_alloc[double] N;
+tmp:V := array_alloc[double] N;
+
+double vBv;
+double vv;
+
+for(i=0;i<N;i++) u.[i]=1;
+for(i=0;i<10;i++)
+  {
+    eval_AtA_times_u(N,u,v);
+    eval_AtA_times_u(N,v,u);
+  }
+;
+
+vBv=0.0;
+vv=0.0;
+for(i=0;i<N;i++) { vBv+=u.[i]*v.[i]; vv+=v.[i]*v.[i]; };
+print$ f"%0.9f\n"$ sqrt(vBv/vv);
+
+
+@head(3,'C code')
+@select(tangler('speed/src/c/spectralnorm.c','data'))
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+double eval_A(int i, int j) { return 1.0/((i+j)*(i+j+1)/2+i+1); }
+
+void eval_A_times_u(int N, const double u[], double Au[])
+{
+  int i,j;
+  for(i=0;i<N;i++)
+    {
+      Au[i]=0;
+      for(j=0;j<N;j++) Au[i]+=eval_A(i,j)*u[j];
+    }
+}
+
+void eval_At_times_u(int N, const double u[], double Au[])
+{
+  int i,j;
+  for(i=0;i<N;i++)
+    {
+      Au[i]=0;
+      for(j=0;j<N;j++) Au[i]+=eval_A(j,i)*u[j];
+    }
+}
+
+void eval_AtA_times_u(int N, const double u[], double AtAu[])
+{ double v[N]; eval_A_times_u(N,u,v); eval_At_times_u(N,v,AtAu); }
+
+int main(int argc, char *argv[])
+{
+  int i;
+  int N = ((argc == 2) ? atoi(argv[1]) : 2) * 1000;
+  double u[N],v[N],vBv,vv;
+  for(i=0;i<N;i++) u[i]=1;
+  for(i=0;i<10;i++)
+    {
+      eval_AtA_times_u(N,u,v);
+      eval_AtA_times_u(N,v,u);
+    }
+  vBv=vv=0;
+  for(i=0;i<N;i++) { vBv+=u[i]*v[i]; vv+=v[i]*v[i]; }
+  printf("%0.9f\n",sqrt(vBv/vv));
+  return 0;
+}
+
+@head(3,'Ocaml code')
+@select(tangler('speed/src/ocaml/spectralnorm.ml','data'))
+let eval_A i j = 1. /. float((i+j)*(i+j+1)/2+i+1)
+
+let eval_A_times_u u v =
+  let n = Array.length u - 1 in
+  for i = 0 to n do
+    let vi = ref 0.0 in
+    for j = 0 to n do
+      vi := !vi +. eval_A i j *. Array.unsafe_get u j
+    done;
+    v.(i) <- !vi
+  done
+
+
+let eval_At_times_u u v =
+  let n = Array.length v -1 in
+  for i = 0 to n do
+    v.(i) <- 0.0;
+    for j = 0 to n do v.(i) <- v.(i) +. eval_A j i *. u.(j) done;
+  done
+
+let eval_AtA_times_u u v =
+  let w = Array.make (Array.length u) 0.0 in
+  eval_A_times_u u w; eval_At_times_u w v
+
+let () =
+  let n = 1000 * (try int_of_string(Array.get Sys.argv 1) with _ ->  2) in
+  let u = Array.make n 1.0  and  v = Array.make n 0.0 in
+  for i = 0 to 9 do
+    eval_AtA_times_u u v; eval_AtA_times_u v u
+  done;
+
+  let vv = ref 0.0  and  vBv = ref 0.0 in
+  for i=0 to n-1 do
+    vv := !vv +. v.(i) *. v.(i);
+    vBv := !vBv +. u.(i) *. v.(i)
+  done;
+  Printf.printf "%0.9f\n" (sqrt(!vBv /. !vv))
+
 @head(2,'[nbody] N-body problem')
 A mix of loop index and floating point optimisation issues.
 @for i in machs:
@@ -1503,7 +1659,7 @@ lang="ocaml"
 
 @select(tangler('speed/xlators/felix.py','python'))
 def mk(k,p):
-  x = "bin/flx --test --force --static --optimise -c -DFLX_PTF_STATIC_POINTER "
+  x = "bin/flx --test --force --static --optimise --inline=100 -c -DFLX_PTF_STATIC_POINTER "
   x = x + "speed/src/felix/%s && " % p
   x = x + "mv speed/src/felix/%s speed/exes/%s/%s" % (p,k,p)
   return x

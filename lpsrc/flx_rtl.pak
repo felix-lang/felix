@@ -977,7 +977,7 @@ static void x##_finaliser(collector_t *, void *p){\
 #define _PTF _ptf->
 #define _PTFV
 #define FLX_PASS_PTF 0
-#define FLX_EAT
+#define FLX_EAT_PTF(x)
 #define FLX_DEF_THREAD_FRAME thread_frame_t *ptf=0;
 #else
 #define FLX_FMEM_INIT_ONLY : ptf(_ptf)
