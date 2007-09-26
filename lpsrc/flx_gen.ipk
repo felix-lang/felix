@@ -3751,7 +3751,6 @@ try
   "  FILE *flx_stderr;";
   "  collector_t *gc;";
   "  thread_frame_t(";
-  "    collector_t*";
   "  );";
   ]
   ;
@@ -3837,7 +3836,7 @@ try
   let topfuns = List.map fst topfuns in
   let topinits =
     [
-      "  gc(gc_a)"
+      "  gc(0)"
     ]
     @
     List.map
@@ -3852,7 +3851,6 @@ try
   List.iter plb
   [
   "thread_frame_t::thread_frame_t(";
-  "  collector_t *gc_a";
   ") :";
   topinits;
   "{}"

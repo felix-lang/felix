@@ -1253,10 +1253,10 @@ include "std/system";
 publish "System Interface"
 module System
 {
-  const argc:int = "ptf->argc";
-  const _argv:&charp= "ptf->argv";
+  const argc:int = "PTF argc";
+  const _argv:&charp= "PTF argv";
 
-  fun argv:int -> string = 'std::string($1<0||$1>=ptf->argc??"":ptf->argv[$1])';
+  fun argv:int -> string = 'std::string($1<0||$1>=PTF argc??"":PTF argv[$1])';
   fun args () => List::map (the argv) (List::range argc);
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
   fun system: string -> int = "std::system($1.data())"
@@ -1264,11 +1264,7 @@ module System
   proc exit: int = "std::exit($1);";
   proc abort: 1 = "std::abort($1);";
   type ptf_t = "thread_frame_t*";
-  const ptf:ptf_t = "ptf"; 
-    // note this will NOT work if ptf is a struct,
-    // then we'd need (&ptf) instead ..
-    // however this model isn't supported fully yet and probably never will be
-    // we may, however, make ptf a machine register
+  const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME"; 
 }
 
 @#------------- Environment -------------------

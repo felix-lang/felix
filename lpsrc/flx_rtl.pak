@@ -472,29 +472,37 @@ right type by client drivers.
 @select(tangler("rtl/flx_rtl.hpp"))
 #ifndef __FLX_RTL_H__
 #define __FLX_RTL_H__
+
+#if defined(FLX_PTF_STATIC_STRUCT) && defined(FLX_PTF_STATIC_PTR)
+#error defined(FLX_PTF_STATIC_STRUCT) && defined(FLX_PTF_STATIC_PTR)
+#endif
+
 #include "flx_rtl_config.hpp"
 #include "flx_meta.hpp"
 #include "flx_gc.hpp"
 #include <string>
 #include <functional>
 
-#if FLX_PTF_STATIC_STRUCT
+#if defined(FLX_PTF_STATIC_STRUCT)
 #define PTF ptf.
-#elif FLX_PTF_STATIC_POINTER
+#define FLX_POINTER_TO_THREAD_FRAME (&ptf)
+#elif defined(FLX_PTF_STATIC_POINTER)
 #define PTF ptf->
+#define FLX_POINTER_TO_THREAD_FRAME ptf
 #else
 #define PTF ptf->
+#define FLX_POINTER_TO_THREAD_FRAME ptf
 #endif
 
 // for declarations in header file 
-#if FLX_PTF_STATIC_STRUCT
+#if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_FMEM_DECL
 #define FLX_FPAR_DECL_ONLY
 #define FLX_FPAR_DECL
 #define FLX_APAR_DECL_ONLY
 #define FLX_APAR_DECL
 #define FLX_DCL_THREAD_FRAME extern thread_frame_t ptf;
-#elif FLX_PTF_STATIC_POINTER
+#elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_FMEM_DECL
 #define FLX_FPAR_DECL_ONLY
 #define FLX_FPAR_DECL
@@ -955,7 +963,7 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_REGPARM
 #endif
 
-#if FLX_PTF_STATIC_STRUCT
+#if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_FMEM_INIT_ONLY
 #define FLX_FMEM_INIT :
 #define FLX_FPAR_PASS_ONLY
@@ -967,7 +975,7 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_PASS_PTF 0
 #define FLX_EAT_PTF(x)
 #define FLX_DEF_THREAD_FRAME thread_frame_t ptf;
-#elif FLX_PTF_STATIC_POINTER
+#elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_FMEM_INIT_ONLY
 #define FLX_FMEM_INIT :
 #define FLX_FPAR_PASS_ONLY
@@ -993,7 +1001,7 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_DEF_THREAD_FRAME
 #endif
 
-#if FLX_PTF_STATIC_STRUCT
+#if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
   collector_t *gc\
@@ -1001,12 +1009,13 @@ extern "C" thread_frame_t *create_thread_frame(\
   ptf.gc = gc;\
   return &ptf;\
 }
-#elif FLX_PTF_STATIC_POINTER
+#elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
   collector_t *gc\
 ) {\
-  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map) mname::thread_frame_t(gc);\
+  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map) mname::thread_frame_t();\
+  p->gc = gc;\
   ptf = p;\
   return p;\
 }
@@ -1015,12 +1024,13 @@ extern "C" thread_frame_t *create_thread_frame(\
 extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
   collector_t *gc\
 ) {\
-  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map) mname::thread_frame_t(gc);\
+  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map) mname::thread_frame_t();\
+  p->gc = gc;\
   return p;\
 }
 #endif
 
-#if FLX_PTF_STATIC_STRUCT
+#if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1038,7 +1048,7 @@ extern "C" con_t *flx_start(\
   return (new(*ptf->gc,mname::x##_ptr_map) \
     mname::x()) ->call(0);\
 }
-#elif FLX_PTF_STATIC_POINTER
+#elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1076,7 +1086,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 }
 #endif
 
-#if FLX_PTF_STATIC_STRUCT
+#if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_STACK_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1094,7 +1104,7 @@ extern "C" con_t *flx_start(\
   mname::x().stack_call();\
   return 0;\
 }
-#elif FLX_PTF_STATIC_POINTER
+#elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_STACK_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1132,7 +1142,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 }
 #endif
 
-#if FLX_PTF_STATIC_STRUCT
+#if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_C_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
@@ -1150,7 +1160,7 @@ extern "C" con_t *flx_start(\
   mname::x();\
   return 0;\
 }
-#elif FLX_PTF_STATIC_POINTER
+#elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_C_START_WRAPPER(mname,x)\
 extern "C" con_t *flx_start(\
   mname::thread_frame_t *ptf,\
