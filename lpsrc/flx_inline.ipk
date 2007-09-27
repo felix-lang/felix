@@ -453,10 +453,6 @@ let expand_exe syms bbdfns u exe =
       let e,xs = u sr e in
       `BEXE_ifgoto (sr,e,lab) :: xs
 
-    | `BEXE_ifnotgoto (sr,e,lab) ->
-      let e,xs = u sr e in
-      `BEXE_ifnotgoto (sr,e,lab) :: xs
-   
     (* preserve tail call pattern -- used by both
        tail-rec eliminator 
        and by call lifter (which converts returns to calls)

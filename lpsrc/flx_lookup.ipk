@@ -4886,6 +4886,9 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     )
   *)
 
+  | `AST_likely (srr,e) ->  let (_,t) as x = be e in `BEXPR_likely x,t
+  | `AST_unlikely (srr,e) ->  let (_,t) as x = be e in `BEXPR_unlikely x,t
+
   | `AST_ref (srr,e) -> 
     let e',t' = be e in 
     begin match e' with

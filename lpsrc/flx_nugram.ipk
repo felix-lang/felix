@@ -366,6 +366,8 @@ syntax expressions {
   sapplication := scoercion =># "_1";
   sapplication := sapplication scoercion =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
   sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
+  sapplication := "likely" scoercion =># "`(ast_likely ,_2)";
+  sapplication := "unlikely" scoercion =># "`(ast_unlikely ,_2)";
 
   explain sapplication """
   <p>The system automatically handles application of values of function type.
@@ -1705,7 +1707,7 @@ syntax executable {
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
-      ( ast_ifgoto ,_sr (ast_apply ,_sr (lnot ,_2)) "lab2" ) )
+      ( ast_unlikely_ifnotgoto ,_sr ,_2 "lab2" ))
       _4  
       `(( ast_goto ,_sr "lab1" ) 
       ( ast_label ,_sr "lab2" ))
@@ -1719,7 +1721,7 @@ syntax executable {
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
-      ( ast_ifgoto ,_sr ,_2 "lab2" ) )
+      ( ast_unlikely_ifgoto ,_sr ,_2 "lab2" ))
       _4  
       `(( ast_goto ,_sr "lab1" ) 
       ( ast_label ,_sr "lab2" ))
@@ -1739,7 +1741,10 @@ syntax executable {
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
-      ( ast_ifgoto ,_sr (ast_apply ,_sr (lnot (ast_apply ,_sr (le ((ast_name ,_2 ()),_6))))) "lab2" ))
+      ( ast_unlikely_ifnotgoto ,_sr 
+        (ast_apply ,_sr (le ((ast_name ,_2 ()),_6)))
+        "lab2"
+      ))
       _8  
       `((ast_call ,_sr pre_incr (ast_name ,_2()))
       ( ast_goto ,_sr "lab1" ) 
@@ -1754,7 +1759,10 @@ syntax executable {
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
-      ( ast_ifgoto ,_sr (ast_apply ,_sr (lnot (ast_apply ,_sr (ge ((ast_name ,_2 ()) ,_6))))) "lab2" ))
+      ( ast_unlikely_ifnotgoto ,_sr 
+        (ast_apply ,_sr (ge ((ast_name ,_2 ()) ,_6))) 
+        "lab2" 
+      ))
       _8 
       `((ast_call ,_sr pre_decr (ast_name ,_2 ()))
       ( ast_goto ,_sr "lab1" ) 
@@ -2310,7 +2318,7 @@ the same as <code>x:int</code></p>
     (block ( append `(
       ,init
       (ast_label ,_sr "redo_label" ) 
-      (ast_ifnotgoto ,_sr ,cond "break_label")
+      (ast_unlikely_ifnotgoto ,_sr ,cond "break_label")
       ,body
       (ast_label ,_sr "continue_label" ) 
       ,iter
@@ -2327,7 +2335,7 @@ the same as <code>x:int</code></p>
   """
     ( block ( append `(
       ( ast_label ,_sr "continue_label" )
-      ( ast_ifnotgoto ,_sr ,_3 "break_label" )
+      ( ast_unlikely_ifnotgoto ,_sr ,_3 "break_label" )
       ,_5  
       ( ast_goto ,_sr "continue_label" ) 
       ( ast_label ,_sr "break_label" )
@@ -2339,7 +2347,7 @@ the same as <code>x:int</code></p>
     ( block ( append `(
       ( ast_label ,_sr "continue_label" ) 
       ,( block _2)
-      ( ast_ifnotgoto ,_sr ,_4 "continue_label" )
+      ( ast_likely_ifnotgoto ,_sr ,_4 "continue_label" )
       ( ast_label ,_sr "break_label" ) 
     )))
   """;

@@ -205,7 +205,10 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     print_endline "ts done";
     *)
 
+  | `BEXPR_not e -> ue e
   | `BEXPR_new e -> ue e
+  | `BEXPR_likely e -> ue e
+  | `BEXPR_unlikely e -> ue e
    
   | `BEXPR_method_closure (e,i,ts) ->
     (*
@@ -279,7 +282,6 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_assert (sr,e)
   | `BEXE_loop (sr,_,e)
   | `BEXE_ifgoto (sr,e,_)
-  | `BEXE_ifnotgoto (sr,e,_)
   | `BEXE_fun_return (sr,e) 
   | `BEXE_yield (sr,e) 
     -> 

@@ -309,7 +309,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 @if HAVE_GNU_BUILTIN_EXPECT:
   # only use these with proper predicates!
   tangle('#define FLX_UNLIKELY(x) __builtin_expect(long(x),0)')
-  tangle('#define FLX_LIKELY(x) !__builtin_expect(!long(x),0)')
+  tangle('#define FLX_LIKELY(x) __builtin_expect(long(x),1)')
  else:
   tangle('#define FLX_UNLIKELY(x) x')
   tangle('#define FLX_LIKELY(x) x')

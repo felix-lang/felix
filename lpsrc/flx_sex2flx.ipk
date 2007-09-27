@@ -209,6 +209,8 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_deref"; e] -> `AST_deref (sr,ex e)
  | Lst [Id "ast_ref"; e] -> `AST_ref (sr,ex e)
  | Lst [Id "ast_new"; e] -> `AST_new (sr,ex e)
+ | Lst [Id "ast_likely"; e] -> `AST_likely (sr,ex e)
+ | Lst [Id "ast_unlikely"; e] -> `AST_unlikely (sr,ex e)
  | Lst [Id "ast_lvalue"; e] -> `AST_lvalue (sr,ex e)
  | Lst [Id "ast_callback";  qn] -> `AST_callback (sr,xq "ast_callback" qn)
  | Lst [Id "ast_method_apply";  Lst [Str n; e; Lst ts]] -> `AST_method_apply(sr,(n, ex e, map ti ts))
@@ -713,6 +715,7 @@ and xstatement_t sr fresh env x : statement_t =
   let xc x = xc_t sr fresh env x in
   let xrr x = xraw_req_expr_t sr fresh env x in
   let xucmp x = xunion_component sr fresh env x in
+  let lnot sr x = `AST_apply (sr,(`AST_name (sr,"lnot",[]),x)) in
   match x with
   | Lst [] -> `AST_nop(sr,"null")
   | Lst [Id "ast_cparse"; sr; Str s] -> `AST_cparse (xsr sr, ss s)
@@ -866,11 +869,26 @@ and xstatement_t sr fresh env x : statement_t =
     `AST_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts sts)
 
   | Lst [Id "ast_label"; sr; Str n] -> `AST_label(xsr sr,n)
+
   | Lst [Id "ast_goto"; sr; Str n] -> `AST_goto(xsr sr,n)
   | Lst [Id "ast_ifgoto"; sr; e; Str n] -> `AST_ifgoto(xsr sr,ex e,n)
+  | Lst [Id "ast_likely_ifgoto"; sr; e; Str n] -> 
+    `AST_ifgoto(xsr sr,`AST_likely (xsr sr,ex e),n)
+
+  | Lst [Id "ast_unlikely_ifgoto"; sr; e; Str n] -> 
+    `AST_ifgoto(xsr sr,`AST_unlikely (xsr sr,ex e),n)
+
+  | Lst [Id "ast_ifnotgoto"; sr; e; Str n] -> 
+    `AST_ifgoto(xsr sr,lnot (xsr sr) (ex e),n)
+
+  | Lst [Id "ast_likely_ifnotgoto"; sr; e; Str n] -> 
+    `AST_ifgoto(xsr sr,`AST_likely (xsr sr,lnot (xsr sr) (ex e)),n)
+
+  | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; Str n] -> 
+    `AST_ifgoto(xsr sr,`AST_unlikely(xsr sr,lnot (xsr sr) (ex e)),n)
+
   | Lst [Id "ast_ifreturn"; sr; e] -> `AST_ifreturn(xsr sr,ex e)
   | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> `AST_ifdo(xsr sr,ex e, xsts sts1, xsts sts2)
-  | Lst [Id "ast_ifnotgoto"; sr; e; Str n] -> `AST_ifnotgoto(xsr sr,ex e,n)
   | Lst [Id "ast_call"; sr; f; a] -> `AST_call(xsr sr,ex f,ex a)
   | Lst [Id "ast_assign"; sr; Id v; tlv; a] -> `AST_assign(xsr sr,v,xtlv tlv,ex a)
   | Lst [Id "ast_cassign"; sr; e1; e2] -> `AST_cassign(xsr sr,ex e1, ex e2)

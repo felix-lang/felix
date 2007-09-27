@@ -339,7 +339,6 @@ let gen_body syms (uses,child_map,bbdfns) id
     [`BEXE_assert2 (sr, sr2, e1,ge e2)]
 
   | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
-  | `BEXE_ifnotgoto (sr,e,lab) -> [`BEXE_ifnotgoto (sr,ge e, relab lab)]
   | `BEXE_fun_return (sr,e) -> [`BEXE_fun_return (sr, ge e)]
   | `BEXE_yield (sr,e) -> [`BEXE_yield (sr, ge e)]
   | `BEXE_assign (sr,e1,e2) -> [`BEXE_assign (sr, ge e1, ge e2)]

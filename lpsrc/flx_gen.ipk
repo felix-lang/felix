@@ -1181,27 +1181,6 @@ let gen_exe filename syms
         clierr sr ("Conditional Jump to unreachable label " ^ s)
       end
 
-    | `BEXE_ifnotgoto (sr,e,s) ->
-      begin match find_label bbdfns label_map this s with
-      | `Local _ -> 
-        (*
-        let not_e = ce_prefix "!" (ge' sr e) in
-        let not_e = string_of_cexpr not_e in
-        "      if("^not_e^") goto " ^ cid_of_flxid s ^ ";\n" 
-        *)
-        "      ifnot(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"
-
-      | `Nonlocal (pc,frame) ->
-        let skip = "_" ^ si !(syms.counter) in
-        incr syms.counter;
-        "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid skip ^ ";\n" ^
-        gen_nonlocal_goto pc frame  s ^
-        "    " ^ cid_of_flxid skip ^ ":;\n"
-
-      | `Unreachable -> 
-        clierr sr ("Conditional Jump to unreachable label " ^ s)
-      end 
-      
     (* Hmmm .. stack calls ?? *)
     | `BEXE_call_stack (sr,index,ts,a)  -> 
       let id,parent,sr2,entry = 
@@ -3779,7 +3758,6 @@ try
   ;
 
   plb "#define comma ,";
-  plb "#define ifnot(x) if(!(x))";
   plb "\n//-----------------------------------------";
   plb "//EMIT USER BODY CODE";
   (* These must be in order: build a list and sort it *)

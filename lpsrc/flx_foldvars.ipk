@@ -322,7 +322,6 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
            
           (* return modified instr *)
           | `BEXE_ifgoto _
-          | `BEXE_ifnotgoto _
           | `BEXE_assert _
           | `BEXE_assert2 _
              -> elimi exe

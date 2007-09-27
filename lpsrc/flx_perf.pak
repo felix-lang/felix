@@ -495,7 +495,7 @@ open Carray;
 
 typedef V = carray[double];
 
-fun eval_A(int i, int j)=>1.0/double((i+j)*(i+j+1)/2+i+1);
+fun eval_A(int i, int j)=>1.0/double(((i+j)*(i+j+1))/2+i+1);
 
 proc eval_A_times_u(int N, u:V, Au:V)
 {
@@ -1659,7 +1659,7 @@ lang="ocaml"
 
 @select(tangler('speed/xlators/felix.py','python'))
 def mk(k,p):
-  x = "bin/flx --test --force --static --optimise --inline=100 -c -DFLX_PTF_STATIC_POINTER "
+  x = "bin/flx --test --force --static -c -DFLX_PTF_STATIC_POINTER "
   x = x + "speed/src/felix/%s && " % p
   x = x + "mv speed/src/felix/%s speed/exes/%s/%s" % (p,k,p)
   return x

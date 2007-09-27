@@ -478,6 +478,8 @@ and expr_t =
   | `AST_literal of range_srcref * literal_t
   | `AST_deref of range_srcref * expr_t
   | `AST_ref of range_srcref * expr_t
+  | `AST_likely of range_srcref * expr_t
+  | `AST_unlikely of range_srcref * expr_t
   | `AST_new of range_srcref * expr_t
   | `AST_lvalue of range_srcref * expr_t
   | `AST_callback of range_srcref * qualified_name_t
@@ -784,7 +786,6 @@ and statement_t =
   | `AST_ifgoto of range_srcref * expr_t *id_t
   | `AST_ifreturn of range_srcref * expr_t
   | `AST_ifdo of range_srcref * expr_t * statement_t list * statement_t list
-  | `AST_ifnotgoto of range_srcref * expr_t * id_t
   | `AST_call of range_srcref * expr_t * expr_t 
   | `AST_assign of range_srcref * string * tlvalue_t * expr_t 
   | `AST_cassign of range_srcref * expr_t * expr_t 
@@ -830,7 +831,6 @@ and exe_t =
   | `EXE_label of string (* for internal use only *)
   | `EXE_goto of string  (* for internal use only *)
   | `EXE_ifgoto of expr_t * string  (* for internal use only *)
-  | `EXE_ifnotgoto of expr_t * string  (* for internal use only *)
   | `EXE_call of expr_t * expr_t 
   | `EXE_jump of expr_t * expr_t 
   | `EXE_loop of id_t * expr_t 
@@ -1043,7 +1043,6 @@ and bexe_t =
   | `BEXE_trace of range_srcref * string * string  (* for internal use only *)
   | `BEXE_goto of range_srcref * string  (* for internal use only *)
   | `BEXE_ifgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
-  | `BEXE_ifnotgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
   | `BEXE_call of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_call_direct of range_srcref * bid_t * btypecode_t list * tbexpr_t 
   | `BEXE_call_method_direct of range_srcref * tbexpr_t * bid_t * btypecode_t list * tbexpr_t 
@@ -1103,7 +1102,10 @@ and bexpr_t =
   | `BEXPR_deref of tbexpr_t
   | `BEXPR_name of bid_t * btypecode_t list
   | `BEXPR_ref of bid_t * btypecode_t list
+  | `BEXPR_likely of tbexpr_t
+  | `BEXPR_unlikely of tbexpr_t
   | `BEXPR_new of tbexpr_t 
+  | `BEXPR_not of tbexpr_t 
   | `BEXPR_literal of literal_t 
   | `BEXPR_apply of tbexpr_t * tbexpr_t 
   | `BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t 
@@ -1468,6 +1470,8 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_literal _ -> e
   | `AST_deref (sr,x) -> `AST_deref (sr,f x)
   | `AST_ref (sr,x) -> `AST_ref (sr, f x)
+  | `AST_likely (sr,x) -> `AST_likely (sr, f x)
+  | `AST_unlikely (sr,x) -> `AST_unlikely (sr, f x)
   | `AST_new (sr,x) -> `AST_new (sr, f x)
   | `AST_lvalue (sr,x) -> `AST_lvalue (sr, f x)
   | `AST_lift (sr,x) -> `AST_lift (sr, f x)
@@ -1567,6 +1571,8 @@ let iter_expr f (e:expr_t) =
   | `AST_method_apply (_,(_,x,_))
   | `AST_deref (_,x) 
   | `AST_ref (_,x) 
+  | `AST_likely (_,x) 
+  | `AST_unlikely (_,x) 
   | `AST_new (_,x)
   | `AST_lvalue (_,x)
   | `AST_lookup (_,(x,_,_))
@@ -1721,7 +1727,10 @@ let flat_iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_parse (e,iis) -> fe e; iter fi iis
   | `BEXPR_deref e -> fe e
   | `BEXPR_ref (i,ts) -> fi i; iter ft ts
+  | `BEXPR_likely e -> fe e
+  | `BEXPR_unlikely e -> fe e
   | `BEXPR_new e -> fe e
+  | `BEXPR_not e -> fe e
 
   | `BEXPR_apply (e1,e2) -> fe e1; fe e2
 
@@ -1765,6 +1774,9 @@ let map_tbexpr fi fe ft e = match e with
   | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
   | `BEXPR_ref (i,ts),t -> `BEXPR_ref (fi i, map ft ts), ft t
   | `BEXPR_new e,t -> `BEXPR_new (fe e), ft t
+  | `BEXPR_not e,t -> `BEXPR_not (fe e), ft t
+  | `BEXPR_likely e,t -> `BEXPR_likely (fe e), ft t
+  | `BEXPR_unlikely e,t -> `BEXPR_unlikely (fe e), ft t
 
   | `BEXPR_apply (e1,e2),t -> `BEXPR_apply (fe e1, fe e2), ft t
 
@@ -1824,7 +1836,6 @@ let iter_bexe fi fe ft fl fldef exe =
     -> fi i; fe e
     
   | `BEXE_ifgoto (sr,e,lab) 
-  | `BEXE_ifnotgoto (sr,e,lab) 
     -> fe e; fl lab
 
   | `BEXE_label (sr,lab) 
@@ -1906,9 +1917,6 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
     
   | `BEXE_ifgoto (sr,e,lab)  ->
     `BEXE_ifgoto (sr,fe e,fl lab)
-
-  | `BEXE_ifnotgoto (sr,e,lab) ->
-    `BEXE_ifnotgoto (sr,fe e,fl lab) 
 
   | `BEXE_label (sr,lab) ->
     `BEXE_label (sr,fldef lab) 
@@ -2073,7 +2081,6 @@ let src_of_bexe = function
   | `BEXE_halt (sr,_)
   | `BEXE_trace (sr,_,_)
   | `BEXE_ifgoto (sr,_,_)
-  | `BEXE_ifnotgoto (sr,_,_)
   | `BEXE_label (sr,_)
   | `BEXE_comment (sr,_)
   | `BEXE_call (sr,_,_)
@@ -2142,6 +2149,8 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_deref (s,_) 
   | `AST_new (s,_) 
   | `AST_ref  (s,_) 
+  | `AST_likely (s,_) 
+  | `AST_unlikely (s,_) 
   | `AST_lvalue (s,_) 
   | `AST_lift (s,_) 
   | `AST_literal  (s,_) 
@@ -2243,7 +2252,6 @@ let src_of_stmt e = match e with
   | `AST_whilst (s,_,_)
   | `AST_until (s,_,_)
   *)
-  | `AST_ifnotgoto (s,_,_)
   | `AST_abs_decl (s,_,_, _,_,_) 
   | `AST_newtype (s,_,_,_) 
   | `AST_ctypes (s,_,_,_) 
@@ -2644,6 +2652,8 @@ and string_of_expr (e:expr_t) =
   | `AST_lvalue (_,e) -> "lvalue" ^ "(" ^ se e ^ ")"
   | `AST_lift (_,t) -> "lift " ^ "(" ^ se t ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
+  | `AST_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
+  | `AST_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
   | `AST_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
   | `AST_literal (_,e) -> string_of_literal e
   | `AST_apply  (_,(fn, arg)) -> "(" ^ 
@@ -4153,10 +4163,6 @@ and string_of_statement level s =
     catmap "\n" (string_of_statement (level+1)) ss2 ^
     spaces level ^ "done;"
     
-  | `AST_ifnotgoto (_,e,lab) ->
-    spaces level ^
-    "if not("^string_of_expr e^")goto " ^ lab
-
   | `AST_fun_return (_,e) -> 
     spaces level ^ "return " ^ (se e) ^ ";"
 
@@ -4406,9 +4412,6 @@ and string_of_exe level s =
   | `EXE_ifgoto (e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
-  | `EXE_ifnotgoto (e,s) -> spc ^ 
-     "if(not(" ^ se e ^ "))goto " ^ s ^ ";"
-
   | `EXE_label s -> s ^ ":"
 
   | `EXE_comment s -> spc ^ 
@@ -4495,6 +4498,9 @@ and string_of_bound_expression' dfns bbdfns se e =
   | `BEXPR_method_closure (e,i,ts) -> se e ^ "." ^ sid i ^ print_inst dfns ts
   | `BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
   | `BEXPR_new e -> "new " ^ se e 
+  | `BEXPR_not e -> "not " ^ se e 
+  | `BEXPR_likely e -> "likely(" ^ se e ^")"
+  | `BEXPR_unlikely e -> "unlikely(" ^ se e ^")"
 
   | `BEXPR_literal e -> string_of_literal e
   | `BEXPR_apply  (fn, arg) -> "(" ^ 
@@ -4594,9 +4600,6 @@ and string_of_bexe dfns bbdfns level s =
 
   | `BEXE_ifgoto (_,e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
-
-  | `BEXE_ifnotgoto (_,e,s) -> spc ^ 
-     "if(not(" ^ se e ^ "))goto " ^ s ^ ";"
 
   | `BEXE_label (_,s) -> s ^ ":"
 
@@ -5750,7 +5753,7 @@ let cmp_literal (l:literal_t) (l':literal_t) = match l, l' with
   independent type calculation
 *)
 
-let rec cmp_tbexpr (a,_) (b,_) = 
+let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) = 
   let ecmp = cmp_tbexpr in match a,b with
   | `BEXPR_parse (e,ii), `BEXPR_parse (e',ii') ->
     ecmp e e' && ii = ii'
@@ -5782,6 +5785,13 @@ let rec cmp_tbexpr (a,_) (b,_) =
     not sure what is really needed here
   *)
   | `BEXPR_new e1,`BEXPR_new e2 -> false
+  | `BEXPR_not e1,`BEXPR_not e2 -> false
+
+  | _,`BEXPR_likely e2
+  | _,`BEXPR_unlikely e2 -> ecmp xa e2
+
+  | `BEXPR_likely e1,_
+  | `BEXPR_unlikely e1,_ -> ecmp e1 xb
  
   | `BEXPR_method_closure (e,i,ts),`BEXPR_method_closure (e',i',ts') ->
      ecmp e e' &&

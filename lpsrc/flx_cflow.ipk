@@ -48,8 +48,7 @@ let rec tailable exes exclude tail =
         | None -> false
         | Some tail -> tailable exes (label::exclude) tail
         end
-    | `BEXE_ifgoto (_,_,label)
-    | `BEXE_ifnotgoto (_,_,label) ->
+    | `BEXE_ifgoto (_,_,label) ->
       if mem label exclude then false (* infinite loop *)
       else
         begin match find_label exes label with
@@ -146,30 +145,6 @@ let rec retarget exes exe exclude : bexe_t =
         | _ -> exe
     end
 
-  | `BEXE_ifnotgoto (sr,e,label) ->
-    (*
-    print_endline ("Checking label " ^ label);
-    *)
-    begin match find_label exes label with
-    | None -> exe
-    | Some tail -> 
-      match skip_white tail with
-      | [] -> exe
-      | h :: t -> 
-        match h with
-        | `BEXE_goto (_,s) -> 
-          (*
-          print_endline ("[ifnotgoto] Retargetting " ^ label ^ " to " ^ s);
-          *)
-          if mem s exclude then `BEXE_halt (sr,"infinite loop")
-          else retarget exes (`BEXE_ifnotgoto (sr,e,s)) (s::exclude)
-        | `BEXE_label (_,s) ->
-          (*
-          print_endline ("[ifnotgoto] Retargetting " ^ label ^ " to " ^ s);
-          *)
-          retarget exes (`BEXE_ifnotgoto (sr,e,s)) (s::exclude)
-        | _ -> exe
-    end
   | _ -> exe
 
 let chain_gotos' exes = 
@@ -188,7 +163,6 @@ let fix_dropthrus syms exes =
     | 
     ( `BEXE_goto (_,s) 
     | `BEXE_ifgoto (_,_,s) 
-    | `BEXE_ifnotgoto (_,_,s)
     ) as h :: t -> 
       if can_drop s t
       then aux t out 

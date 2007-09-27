@@ -140,8 +140,7 @@ let cal_usage syms bbdfns label_map caller exes usage =
   iter
   (function 
     | `BEXE_goto (sr,label)
-    | `BEXE_ifgoto (sr,_,label)
-    | `BEXE_ifnotgoto (sr,_,label) ->
+    | `BEXE_ifgoto (sr,_,label) ->
       begin match find_label bbdfns label_map caller label with
       | `Unreachable -> 
         syserr sr ("[flx_label] Caller "^si caller^" Jump to unreachable label " ^ label ^ "\n" ^

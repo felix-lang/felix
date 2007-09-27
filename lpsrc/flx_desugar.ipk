@@ -492,6 +492,14 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e in
     l1, `AST_ref (sr,x1)
 
+  | `AST_likely (sr,e) ->
+    let l1,x1 = rex e in
+    l1, `AST_likely (sr,x1)
+
+  | `AST_unlikely (sr,e) ->
+    let l1,x1 = rex e in
+    l1, `AST_unlikely (sr,x1)
+
   | `AST_new (sr,e) ->
     let l1,x1 = rex e in
     l1, `AST_new (sr,x1)
@@ -875,15 +883,22 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
           `Exe 
           (
             patsrc,
-            `EXE_ifnotgoto 
+            `EXE_ifgoto 
             (
               `AST_apply 
               (
                 patsrc,
                 (
-                  match_checker,
-                  `AST_tuple (patsrc,[])
-                )
+                  `AST_name (patsrc,"lnot",[]),
+                  `AST_apply 
+                  (
+                    patsrc,
+                    (
+                      match_checker,
+                      `AST_tuple (patsrc,[])
+                    )
+                  )
+                )  
               ), 
               "_ml" ^ si n2
             )
@@ -1561,11 +1576,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let d,x = rex e in
     d @ [`Exe (sr,`EXE_ifgoto (x,lab))]
 
-  | `AST_ifnotgoto (sr,e,lab)->
-    let d,x = rex e in
-    d @ [`Exe (sr,`EXE_ifnotgoto (x,lab))]
-
-   
+  
   | `AST_svc (sr,name) ->  [`Exe (sr,`EXE_svc name)]
   | `AST_code (sr,s) -> [`Exe (sr,`EXE_code s)]
   | `AST_noreturn_code (sr,s) -> [`Exe (sr,`EXE_noreturn_code s)]

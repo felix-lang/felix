@@ -255,18 +255,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           string_of_btypecode syms.dfns t
         )
 
-    | `EXE_ifnotgoto (e,s) -> 
-      let e',t = be e in
-      if lstrip syms.dfns t = flx_bbool
-      then tack (`BEXE_ifnotgoto (sr,(e',t), s))
-      else 
-        clierr (src_of_expr e)
-        (
-          "[bind_exes:ifnotgoto] Conditional requires bool argument, got " ^
-          string_of_btypecode syms.dfns t ^ " in\n" ^
-          short_string_of_src sr
-        )
-
     | `EXE_loop (n,e2) ->
       let be2,t2 = be e2 in
       let tbe1 =
