@@ -3,7 +3,7 @@
 @execfile('config/flx_data.py')
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
-@env = setup_test('tut/tutorial/tut-')
+@env = setup_test('tut/tutorial/tut-',zfill_pattern=[2,2,2])
 @def kat(code):
   env.kat(get_tangler(),code)
 

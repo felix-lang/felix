@@ -12,6 +12,7 @@
 #!/usr/bin/env python
 from Tkinter import *
 import os
+import os.path
 import sys
 import glob
 import string
@@ -64,6 +65,12 @@ def find_next(all,x):
   for i in range(0,n):
     if all[i] > x: return all[i]
   return all[0]
+
+def set_ext(p,ext):
+  h,t = os.path.split(p)
+  bs = string.split(t,'.')
+  t = string.join(bs[:-1],'.')+ext
+  return os.path.join(h,t)
 
 class ConfigDialog:
   def __init__(self,parent,app):
@@ -215,13 +222,61 @@ class ConfigDialog:
     cmd = cmdx+' '+opts+string.join(cmdw2," ")
     app.runcmd.set(cmd)
 
+#--------------------------
+class Appstate:
+  def __init__(self):
+    self.__dict__["mydict"] = {}
+    self.history = []
+    self.history_pos = -1
+    self.curfile = None
+    self.runstring = "bin/flx --test %s"
+    self.load()
+
+  def __getattr__(self,a):
+    return self.mydict[a]
+
+  def __setattr__(self,a,v):
+    self.__dict__["mydict"][a]=v
+
+  def save(self):
+    f = open(".gflx.profile","w")
+    data =repr(self.__dict__["mydict"]) 
+    f.write(data)
+    f.close()
+    print "Save profile"
+    #print self.__dict__["mydict"]
+
+
+  def load(self):
+    try:
+      f = open(".gflx.profile","r")
+      data = f.read()
+      f.close()
+      d = eval(data)
+      self.__dict__["mydict"].update(d)
+      print "Load profile"
+    except:
+      pass
+    #print self.__dict__["mydict"]
+
+#--------------------------
 class App:
   def __init__(self, master,initfile):
     self.master=master
-    self.history = []
-    self.history_pos = -1
 
-    self.runcmd = StringVar(master,name="runcmd", value="bin/flx --test %s")
+    # try to load last used file
+    self.appstate = Appstate()
+
+    # if command line arg given, override it
+    if initfile:
+      self.appstate.curfile = initfile
+
+    # if still no file, start with hello.flx
+    if not self.appstate.curfile:
+      self.appstate.curfile = "hello.flx"
+
+    self.runcmd = StringVar(master,name="runcmd", 
+      value=self.appstate.runstring)
     self.frame = Frame(master,bd=2)
     self.frame.pack(fill=BOTH,expand=1)
     
@@ -234,7 +289,7 @@ class App:
     filemenu.add_command(label="Config", command=self.config)
     filemenu.add_command(label="Colour", command=self.colour)
     filemenu.add_separator()
-    filemenu.add_command(label="Exit", command=self.frame.quit)
+    filemenu.add_command(label="Exit", command=self.doquit)
 
     helpmenu = Menu(self.menu1)
     self.menu1.add_cascade(label="Help", menu=helpmenu)
@@ -242,6 +297,7 @@ class App:
 
 
     self.frame_top = Frame(self.frame,bd=4,background="gray80")
+    self.frame_top2 = Frame(self.frame,bd=4,background="gray80")
     self.panes = PanedWindow(self.frame,orient=HORIZONTAL,bd=4,background="gray80")
 
     self.frame_left = Frame(self.panes,bd=4)
@@ -250,6 +306,7 @@ class App:
     self.scroll_right = Scrollbar(self.frame_right)
 
     self.frame_top.pack(side=TOP, fill=X,expand=0)
+    self.frame_top2.pack(side=TOP, fill=X,expand=0)
     self.panes.pack(side=BOTTOM, expand=1,fill=BOTH)
     self.panes.add(self.frame_left)
     self.panes.add(self.frame_right)
@@ -268,7 +325,10 @@ class App:
     self.loadme = Button(self.frame_top,text="load", command=self.load)
     self.saveme = Button(self.frame_top,text="save", command=self.save)
     self.saveas = Button(self.frame_top,text="save-as", command=self.saveas)
-    self.quit = Button(self.frame_top,text="quit",fg="red", command=self.frame.quit)
+    self.quit = Button(self.frame_top,text="quit",fg="red", command=self.doquit)
+
+    self.colourize= Button(self.frame_top2,text="colour",command=self.colour)
+    self.cppme= Button(self.frame_top2,text="C++",command=self.cpp)
 
     self.filename_tag.pack(side=LEFT)
     self.filename.pack(side=LEFT,fill=X,expand=1)
@@ -277,8 +337,10 @@ class App:
     self.saveme.pack(side=RIGHT)
     self.loadme.pack(side=RIGHT)
     self.runme.pack(side=RIGHT)
+    self.colourize.pack(side=RIGHT)
+    self.cppme.pack(side=RIGHT)
 
-    self.filename.insert(END,initfile)
+    self.filename.insert(END,self.appstate.curfile)
     self.flxin = Text(self.frame_left,
       bd=5,width=60,spacing1=1,spacing2=1,
       padx=4,pady=2,
@@ -302,29 +364,31 @@ class App:
   def load(self,event=None):
     filename = self.filename.get()
     print "Loading file="+filename
+    self.flxin.delete("0.0",END)
     try:
       f = open(filename)
       text = f.read()
       f.close()
-      self.flxin.delete("0.0",END)
       self.flxin.insert(END,text)
-      self.add_history(filename)
-      self.master.title(filename)
-      self.curfile = filename
-      self.colour()
-      return 1
+      result = 1
     except IOError:
       print "FILE '"+filename+"' NOT FOUND"
-      return 0
+      result = 0
+
+    self.add_history(filename)
+    self.master.title(filename)
+    self.appstate.curfile = filename
+    self.colour()
+    return result
 
   def saveas(self):
     filename = self.filename.get()
     self.save(filename)
-    self.curfile=filename
+    self.appstate.curfile=filename
 
   def save(self,filename=None):
     if filename==None:
-      filename = self.curfile
+      filename = self.appstate.curfile
     print "Saving file="+filename
     text = self.flxin.get("0.0",END)
     try:
@@ -333,38 +397,54 @@ class App:
       f.close()
     except:
       print "CANT WRITE FILE "+filename
+    self.append_history(filename)
 
   def append_flxout(self,line):
     self.flxout.insert(END,line)
 
-
   def run(self):
-    self.save("./flxtmp.flx")
-    print "Running flxtmp.flx"
-    cmd = self.runcmd.get() % "./flxtmp.flx"
+    self.save()
+    cmd = self.runcmd.get() % self.appstate.curfile
     self.flxout.delete("0.0",END)
     print "cmd="+cmd
     result,text = get_stdout(cmd,self.append_flxout)
 
+  def cpp(self):
+    self.save()
+    cmd = self.runcmd.get() % "-c " + self.appstate.curfile
+    print "cmd="+cmd
+    result,text = get_stdout(cmd,self.append_flxout)
+    filename=set_ext(self.filename.get(),".cpp")
+    self.filename.delete("0",END)
+    self.filename.insert(END,filename)
+    self.load()
+
   def add_history(self,filename):
-    if filename not in self.history:
-      self.history.append(filename)
-      self.history_pos = len(self.history) - 1
+    if filename not in self.appstate.history:
+      self.appstate.history.append(filename)
+      self.appstate.history_pos = len(self.appstate.history) - 1
+
+  def append_history(self,filename):
+    if filename in self.appstate.history:
+      del self.appstate.history[self.appstate.history.index(filename)]
+    self.appstate.history.append(filename)
+    self.appstate.history_pos = len(self.appstate.history) - 1
 
   def filename_up(self,e):
-    if self.history_pos > 0:
-      self.history_pos = self.history_pos - 1
-      filename = self.history[self.history_pos]
+    if self.appstate.history_pos > 0:
+      self.appstate.history_pos = self.appstate.history_pos - 1
+      filename = self.appstate.history[self.appstate.history_pos]
       self.filename.delete("0",END)
       self.filename.insert(END,filename)
-
+      self.load()
 
   def filename_down(self,e):
-    if self.history_pos < len(self.history) - 1:
-      self.history_pos = self.history_pos + 1
-      filename = self.history[self.history_pos]
+    if self.appstate.history_pos < len(self.appstate.history) - 1:
+      self.appstate.history_pos = self.appstate.history_pos + 1
+      filename = self.appstate.history[self.appstate.history_pos]
       self.filename.delete("0",END)
       self.filename.insert(END,filename)
+      self.load()
 
   def filename_tab(self,e):
     pos = self.filename.index(INSERT)
@@ -413,14 +493,14 @@ class App:
   def colour(self):
     font1 = ("Helvetica",10,"bold")
     font2 = ("Helvetica",10,"italic")
-    strregexp="'.*'|\".*\""
+    strregexp="'.*'|\".*\"|'''.*'''"+'|""".*"""'
     numregexp="[0-9]+|[0-9]*\.0-9"
-    cppcomregexp="//.*$"
+    cppcomregexp="//.*$" +'|/\\*.*\\*/'
 
+    self.flxin.tag_config("num",foreground="#007700")
     self.flxin.tag_config("ident",foreground="blue")
     self.flxin.tag_config("keyword",foreground="#336699",font=font1)
     self.flxin.tag_config("string",foreground="#007777")
-    self.flxin.tag_config("num",foreground="#007700")
     self.flxin.tag_config("cppcom",foreground="#aa1122",font=font2)
 
     self.flxin.tag_remove("keyword","0.0",END)
@@ -456,18 +536,23 @@ class App:
       self.flxin.tag_add(tag,loc,eloc)
       loc=self.flxin.search(regexp,eloc,stopindex=END,regexp=1,count=lvar)
 
-    
+  def doquit(self):
+    self.appstate.runstring = self.runcmd.get()
+    self.appstate.save()
+    self.frame.quit()
+
 root = Tk()
 root.option_add("*Label*font","Helvetica 10 bold")
 root.option_add("*Button*font","Helvetica 10 bold")
 root.option_add("*Text*font","Courier 10")
 root.geometry("800x700+0+0")
 argc=len(sys.argv)
-initfile="hello.flx"
+initfile=None
 if argc>1:
   initfile=sys.argv[1]
 app = App(root,initfile)
 
+root.protocol("WM_DELETE_WINDOW",app.doquit)
 root.mainloop()
 
 @make_executable("bin/gflx.py")
