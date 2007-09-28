@@ -72,6 +72,14 @@ def set_ext(p,ext):
   t = string.join(bs[:-1],'.')+ext
   return os.path.join(h,t)
 
+def get_ext(p):
+  h,t = os.path.split(p)
+  bs = string.split(t,'.')
+  if len (bs) > 0:
+    return bs[-1]
+  else:
+    return None
+
 class ConfigDialog:
   def __init__(self,parent,app):
     self.recurse = 1
@@ -223,6 +231,16 @@ class ConfigDialog:
     app.runcmd.set(cmd)
 
 #--------------------------
+class closure:
+  def __init__(self,fn,*args,**kwds):
+    self.fn = fn
+    self.args = args
+    self.kwds = kwds
+
+  def __call__(self):
+    return apply(self.fn,self.args,self.kwds)
+
+#--------------------------
 class Appstate:
   def __init__(self):
     self.__dict__["mydict"] = {}
@@ -230,6 +248,13 @@ class Appstate:
     self.history_pos = -1
     self.curfile = None
     self.runstring = "bin/flx --test %s"
+    self.execlist = [
+      # filetype, button, command
+       ("flx","run","bin/flx --test %s"),
+      # ("flx","C++","bin/flx --test -c %s"),
+       ("cpp","run","bin/flx --test --nofelix --force %s"),
+       ("py","run","python %s.py")
+      ]
     self.load()
 
   def __getattr__(self,a):
@@ -321,7 +346,6 @@ class App:
     self.filename.bind("<Return>",self.load)
     self.filename.bind("/",self.dirname_tab)
 
-    self.runme = Button(self.frame_top, text="run",command=self.run)
     self.loadme = Button(self.frame_top,text="load", command=self.load)
     self.saveme = Button(self.frame_top,text="save", command=self.save)
     self.saveas = Button(self.frame_top,text="save-as", command=self.saveas)
@@ -336,9 +360,14 @@ class App:
     self.saveas.pack(side=RIGHT)
     self.saveme.pack(side=RIGHT)
     self.loadme.pack(side=RIGHT)
-    self.runme.pack(side=RIGHT)
     self.colourize.pack(side=RIGHT)
     self.cppme.pack(side=RIGHT)
+
+    buttons = []
+    for ft,but,cmd in self.appstate.execlist:
+      if but not in buttons: buttons.append(but)
+    for but in buttons:
+      Button(self.frame_top2,text=but,command=closure(self.doexec,but)).pack(side=RIGHT)
 
     self.filename.insert(END,self.appstate.curfile)
     self.flxin = Text(self.frame_left,
@@ -401,13 +430,33 @@ class App:
 
   def append_flxout(self,line):
     self.flxout.insert(END,line)
+    self.flxout.see(END)
+    self.master.update_idletasks()
+    self.master.update()
 
-  def run(self):
-    self.save()
-    cmd = self.runcmd.get() % self.appstate.curfile
-    self.flxout.delete("0.0",END)
-    print "cmd="+cmd
-    result,text = get_stdout(cmd,self.append_flxout)
+  def doexec(self,but):
+    print "exec something for " + but
+    filename = self.filename.get()
+    ext = get_ext(filename)
+    action = None
+    for f,b,a in self.appstate.execlist:
+      if b == but and f == ext: action = a
+    if type(action)==type(""):
+      self.save()
+      cmd = action % set_ext(self.appstate.curfile,"")
+      self.flxout.delete("0.0",END)
+      print "cmd="+cmd
+      result,text = get_stdout(cmd,self.append_flxout)
+      self.say_result(result)
+    else:
+      action()
+
+  def say_result(self,result):
+    print "result=",result
+    if result == None:
+      self.frame_right.configure(background="green")
+    else:
+      self.frame_right.configure(background="red")
 
   def cpp(self):
     self.save()
@@ -451,7 +500,8 @@ class App:
     filename = self.filename.get()
     prefix = filename[:pos]
     suffix = filename[pos:]
-    all = glob.glob(prefix+"*.flx")
+    ext = get_ext(filename)
+    all = glob.glob(prefix+"*."+ext)
     all = refine(all,prefix)
     next = find_next(all,filename)
     if next!=filename:
