@@ -87,20 +87,22 @@ def write_val(f,v,level):
   elif type(v) == type([]):
     write_list(f,v,level)
   else:
-    f.write(spaces+"  "+repr(v)+",\n")
+    f.write(spaces+repr(v))
 
 def write_list(f,d,level):
   spaces = " " * (level * 2)
-  f.write(spaces+"(\n")
-  for v in d: write_val(f,v,level+1)
-  f.write(spaces+")\n")
+  f.write(spaces+"[\n")
+  for v in d: 
+    write_val(f,v,level+1)
+    f.write(",\n")
+  f.write(spaces+"]")
 
 def write_dict(f,d,level):
   spaces = " " * (level * 2)
   f.write(spaces+"{\n")
   for k in d:
     v = d[k]
-    f.write(spaces+"  "+k+":")
+    f.write(spaces+"  "+repr(k)+":")
     write_val(f,v,level+1)
     f.write(spaces+",\n")
   f.write(spaces+"}\n")
@@ -278,7 +280,8 @@ class Appstate:
        ("flx","run","bin/flx --test %s"),
       # ("flx","C++","bin/flx --test -c %s"),
        ("cpp","run","bin/flx --test --nofelix --force %s"),
-       ("py","run","python %s.py")
+       ("py","run","python %s.py"),
+       ("pak","run","python interscript/bin/iscr.py %s.pak")
       ]
     self.load()
 
@@ -292,6 +295,7 @@ class Appstate:
     f = open(".gflx.profile","w")
     d = self.__dict__["mydict"]
     write_dict(f,d,0)
+    f.write("\n")
     f.close()
     print "Save profile"
     #print self.__dict__["mydict"]
