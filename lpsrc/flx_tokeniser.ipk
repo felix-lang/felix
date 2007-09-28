@@ -500,11 +500,11 @@ let pre_tokens_of_lexbuf buf state =
    which recursively parses.
 *)
 
-let rec pre_tokens_of_filename filename dirname incdirs expand_expr auto_imports =
+let rec pre_tokens_of_filename filename dirname incdirs cache_dir expand_expr auto_imports =
   (*
   print_endline ("tokenising " ^ filename);
   *)
-  let state = new Flx_lexstate.lexer_state filename dirname incdirs expand_expr in
+  let state = new Flx_lexstate.lexer_state filename dirname incdirs cache_dir expand_expr in
   let tokss =
     (map 
       (fun fn-> 
@@ -539,7 +539,7 @@ let rec pre_tokens_of_filename filename dirname incdirs expand_expr auto_imports
   toks
 
 let pre_tokens_of_string s filename expand_expr =
-  let state = new Flx_lexstate.lexer_state filename "" [] expand_expr in
+  let state = new Flx_lexstate.lexer_state filename "" [] None expand_expr in
   pre_tokens_of_lexbuf (Lexing.from_string s) state
 
 
@@ -550,6 +550,7 @@ open Flx_ast
 
 val pre_tokens_of_filename : 
   string -> string -> string list -> 
+  string option -> 
   (string -> expr_t -> expr_t) -> 
   string list -> (* auto imports *)
   token list
@@ -880,6 +881,7 @@ let run() =
     input_file_name 
     (Filename.dirname input_file_name) 
     compiler_options.include_dirs
+    compiler_options.cache_dir
     Flx_macro.expand_expression
     compiler_options.auto_imports
   in

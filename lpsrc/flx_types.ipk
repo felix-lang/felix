@@ -5383,6 +5383,7 @@ type felix_compiler_options_t =
   elkhound : string;
   generate_axiom_checks : bool;
   auto_imports : string list;
+  cache_dir : string option;
 }
 
 
@@ -5483,6 +5484,7 @@ type felix_compiler_options_t =
   elkhound : string;
   generate_axiom_checks : bool;
   auto_imports : string list;
+  cache_dir : string option;
 }
 
 

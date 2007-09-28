@@ -56,15 +56,26 @@ let include_file syms inspec lookup =
   in
   let include_dirs = syms.compiler_options.include_dirs in
   let tf = find_file lookup include_dirs (basename ^ ".flx") in
-  let pf = find_file lookup include_dirs (basename ^ ".par") in
+  let pf = find_file lookup
+    (match syms.compiler_options.cache_dir with 
+    | None -> include_dirs 
+    | Some d -> d::include_dirs 
+    )
+    (basename ^ ".par") 
+  in
   let tf_mt = filetime tf in
   let pf_mt = filetime pf in
   let cbt = this_version.build_time_float in
   let saveit hash_include_files sts =
       let pf = 
-        if pf = "" then 
-          (try Filename.chop_extension tf with | _ -> tf) ^ ".par"
-        else pf
+        match syms.compiler_options.cache_dir with
+        | None ->
+          if pf = "" then 
+            (try Filename.chop_extension tf with | _ -> tf) ^ ".par"
+          else pf
+        | Some d -> (Filename.concat d 
+          (try Filename.chop_extension basename with _ -> basename)
+          ) ^ ".par"
       in
         let x = try Some (open_out_bin pf) with _ -> None in
         match x with 
@@ -84,6 +95,7 @@ let include_file syms inspec lookup =
         tf
         (Filename.dirname tf)
         include_dirs 
+        syms.compiler_options.cache_dir
         Flx_macro.expand_expression
         syms.compiler_options.auto_imports
     in

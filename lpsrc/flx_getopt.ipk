@@ -152,6 +152,7 @@ let get_felix_options options =
     raw_options = options;
     reverse_return_parity = check_key options "e"; 
     force_recompile = check_keys options ["force"];
+    cache_dir = get_key_value options "cache_dir";
     max_inline_length = 
       begin
         let inline =
@@ -196,6 +197,7 @@ let print_options () =
   print_endline "  -Idir, --include=dir : append dir to include path";
   print_endline "  --import=file.flxh : automatically #import <file.flxh>";
   print_endline "  --inline, --noinline, --optimise";
+  print_endline "  --cache_dir=<none>: .par and .syncache directory";
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
   print_endline "  --mangle-names : generate code with fully mangled names";

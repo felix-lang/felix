@@ -13,6 +13,7 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_ctype
 open List
+open Flx_mtypes2
 
 let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
   match ls with
@@ -31,8 +32,9 @@ let () =
     input_file_name 
     (Filename.dirname input_file_name) 
     [] 
+    syms.compiler_options.cache_dir
     Flx_macro.expand_expression
-    compiler_options.Flx_mtypes2.auto_imports
+    compiler_options.auto_imports
   in
   Flx_tok.print_pre_tokens pre_tokens;
   let tokens  = Flx_lex1.translate pre_tokens in

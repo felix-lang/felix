@@ -149,8 +149,9 @@ class file_control
     method condition_stack_length = List.length condition
   end
 
-class lexer_state filename basedir incdirs expand_expr' = 
+class lexer_state filename basedir incdirs cache_dir expand_expr' = 
   object (self)
+    method get_cache_dir : string option = cache_dir
     val expand_expr: string -> expr_t -> expr_t = expand_expr'
 
     val mutable include_files: string list = []
@@ -452,8 +453,10 @@ class lexer_state :
   string ->
   string ->
   string list ->
+  string option ->
   (string -> expr_t->expr_t) ->
   object
+    method get_cache_dir : string option
     val expand_expr : string -> expr_t -> expr_t
     val comment_ctrl : comment_control
     val file_ctrl : file_control
@@ -630,7 +633,7 @@ let pre_tokens_of_lexbuf lexer buf state =
     rev (get [])
 
 let pre_tokens_of_string lexer s filename expand_expr =
-  let state = new lexer_state filename "" [] expand_expr in
+  let state = new lexer_state filename "" [] None expand_expr in
   pre_tokens_of_lexbuf lexer (Lexing.from_string s) state
 
 let line_directive state sr s lexbuf =
@@ -969,6 +972,38 @@ let find_include_file state s sr =
     *)
     filename
 
+(* throw if the file isn't found or is bad *)
+let load_syntax filename outfile =
+   let syn_mt = Flx_filesys.filetime filename in
+   let cache_mt = Flx_filesys.filetime outfile in
+   (*
+   print_endline ("Syntax file time = " ^ string_of_float syn_mt);
+   print_endline ("Cache file time = " ^ string_of_float cache_mt);
+   *)
+   if syn_mt > cache_mt then raise Not_found;
+   let this_version = !Flx_version.version_data in
+   let x =  open_in_bin outfile in
+   let that_version = Marshal.from_channel x in
+   if this_version <> that_version then begin
+     close_in x;
+     raise Not_found
+   end;
+
+   assert(this_version = that_version);
+   assert(this_version.Flx_version.build_time_float < cache_mt);
+
+   let local_data = Marshal.from_channel x in
+   close_in x;
+   (*
+   print_endline ("// Load Syntax file " ^ outfile ^ 
+     " flxg compile time = " ^ 
+     string_of_float this_version.Flx_version.build_time_float ^
+     " = " ^
+     this_version.Flx_version.build_time
+   );
+   *)
+   [LOAD_SYNTAX (local_data)]
+
 let include_directive kind state sr s pre_flx_lex =
   (*
   print_endline ("#" ^ kind ^ " " ^ s);
@@ -986,7 +1021,7 @@ let include_directive kind state sr s pre_flx_lex =
   let pre_tokens_of_filename filename =
     let incdirs = state#get_incdirs in
     let basedir = Filename.dirname filename in
-    let state' = new lexer_state filename basedir incdirs state#get_expand_expr in
+    let state' = new lexer_state filename basedir incdirs state#get_cache_dir state#get_expand_expr in
     let infile = open_in filename in
     let src = Lexing.from_channel infile in
     let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
@@ -1005,40 +1040,15 @@ let include_directive kind state sr s pre_flx_lex =
     pre_tokens_of_filename filename
   | "syntax" ->
     begin 
-       let outfile = filename ^ ".syncache" in 
-       try 
-         let syn_mt = Flx_filesys.filetime filename in
-         let cache_mt = Flx_filesys.filetime outfile in
-         (*
-         print_endline ("Syntax file time = " ^ string_of_float syn_mt);
-         print_endline ("Cache file time = " ^ string_of_float cache_mt);
-         *)
-         if syn_mt > cache_mt then raise Not_found;
-         let this_version = !Flx_version.version_data in
-         let x =  open_in_bin outfile in
-         let that_version = Marshal.from_channel x in
-         if this_version <> that_version then begin
-           close_in x;
-           raise Not_found
-         end;
-
-         assert(this_version = that_version);
-         assert(this_version.Flx_version.build_time_float < cache_mt);
-
-         let local_data = Marshal.from_channel x in
-         close_in x;
-         (*
-         print_endline ("// Load Syntax file " ^ outfile ^ 
-           " flxg compile time = " ^ 
-           string_of_float this_version.Flx_version.build_time_float ^
-           " = " ^
-           this_version.Flx_version.build_time
-         );
-         *)
-         [LOAD_SYNTAX (local_data)]
-       with _ ->
-         pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
-      end
+      let outfile = filename ^ ".syncache" in 
+      try load_syntax filename outfile with _ ->
+      match state#get_cache_dir with
+      | None -> pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
+      | Some d -> 
+        let outfile = Filename.concat d (Filename.basename outfile) in
+        try load_syntax filename outfile with _ ->
+        pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
+    end
   | _ -> assert false
   end
 
