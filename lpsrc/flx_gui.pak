@@ -80,6 +80,31 @@ def get_ext(p):
   else:
     return None
 
+def write_val(f,v,level):
+  spaces = " " * (level * 2)
+  if type(v) == type({}):
+    write_dict(f,d,level+1)
+  elif type(v) == type([]):
+    write_list(f,v,level)
+  else:
+    f.write(spaces+"  "+repr(v)+",\n")
+
+def write_list(f,d,level):
+  spaces = " " * (level * 2)
+  f.write(spaces+"(\n")
+  for v in d: write_val(f,v,level+1)
+  f.write(spaces+")\n")
+
+def write_dict(f,d,level):
+  spaces = " " * (level * 2)
+  f.write(spaces+"{\n")
+  for k in d:
+    v = d[k]
+    f.write(spaces+"  "+k+":")
+    write_val(f,v,level+1)
+    f.write(spaces+",\n")
+  f.write(spaces+"}\n")
+
 class ConfigDialog:
   def __init__(self,parent,app):
     self.recurse = 1
@@ -265,8 +290,8 @@ class Appstate:
 
   def save(self):
     f = open(".gflx.profile","w")
-    data =repr(self.__dict__["mydict"]) 
-    f.write(data)
+    d = self.__dict__["mydict"]
+    write_dict(f,d,0)
     f.close()
     print "Save profile"
     #print self.__dict__["mydict"]
@@ -349,6 +374,7 @@ class App:
     self.loadme = Button(self.frame_top,text="load", command=self.load)
     self.saveme = Button(self.frame_top,text="save", command=self.save)
     self.saveas = Button(self.frame_top,text="save-as", command=self.saveas)
+    self.profile = Button(self.frame_top2,text="profile", command=self.doprofile)
     self.quit = Button(self.frame_top,text="quit",fg="red", command=self.doquit)
 
     self.colourize= Button(self.frame_top2,text="colour",command=self.colour)
@@ -360,6 +386,7 @@ class App:
     self.saveas.pack(side=RIGHT)
     self.saveme.pack(side=RIGHT)
     self.loadme.pack(side=RIGHT)
+    self.profile.pack(side=RIGHT)
     self.colourize.pack(side=RIGHT)
     self.cppme.pack(side=RIGHT)
 
@@ -433,6 +460,12 @@ class App:
     self.flxout.see(END)
     self.master.update_idletasks()
     self.master.update()
+
+  def doprofile(self):
+    self.appstate.save()
+    self.filename.delete("0",END)
+    self.filename.insert(END,".gflx.profile")
+    self.load()
 
   def doexec(self,but):
     print "exec something for " + but
