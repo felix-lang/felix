@@ -329,8 +329,8 @@ class App:
     if not self.appstate.curfile:
       self.appstate.curfile = "hello.flx"
 
-    self.runcmd = StringVar(master,name="runcmd", 
-      value=self.appstate.runstring)
+    self.runcmd = StringVar(master)
+    self.runcmd.set(self.appstate.runstring)
     self.frame = Frame(master,bd=2)
     self.frame.pack(fill=BOTH,expand=1)
     
