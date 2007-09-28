@@ -40,6 +40,13 @@ open Flx_generic
 open Flx_maps
 open Flx_exceptions
 
+let hfind msg h k = 
+  try Hashtbl.find h k
+  with Not_found ->
+    print_endline ("flx_stack_calls Hashtbl.find failed " ^ msg);
+    raise Not_found
+
+
 (* first approximation: we can stack functions that have no
   function or procedure children AND no variables: later
   we will check the return type, for now just check
@@ -327,7 +334,7 @@ let has_ptr_fn cache syms bbdfns children e =
           raise Unsafe
 
   in try aux e; false with Unsafe -> true
-    
+
 let can_stack_func cache syms (child_map,bbdfns) i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
@@ -345,6 +352,8 @@ let can_stack_func cache syms (child_map,bbdfns) i =
     -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
+exception Unstackable
+
 let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i recstop =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
@@ -361,7 +370,13 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     match exe with
 
     | `BEXE_axiom_check _ -> assert false
-    | `BEXE_svc _ -> raise Not_found
+    | `BEXE_svc _ -> 
+      begin
+        (*
+        print_endline (id ^ "Does service call");
+        *)
+        raise Unstackable
+      end
     | `BEXE_call (_,(`BEXPR_closure (j,_),_),_)
     | `BEXE_call_direct (_,j,_,_) 
     | `BEXE_call_method_direct (_,_,j,_,_)
@@ -375,7 +390,7 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
         (*
         print_endline (id ^ " calls unstackable proc " ^ si j);
         *)
-        raise Not_found
+        raise Unstackable
       end
 
     (* assignments to a local variable are safe *)
@@ -392,37 +407,52 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
       (*
       print_endline (id ^ " does foreign init/assignment");
       *)
-      raise Not_found
+      raise Unstackable
 
     | `BEXE_call _
        -> 
        (*
        print_endline (id ^ " does nasty call");
        *)
-       raise Not_found
+       raise Unstackable
+
     | `BEXE_jump _
     | `BEXE_jump_direct _ 
        ->
        (*
        print_endline (id ^ " does jump");
        *)
-       raise Not_found
+       raise Unstackable
     | `BEXE_loop _
        -> 
        (*
        print_endline (id ^ " has loop?");
        *)
-       raise Not_found
+       raise Unstackable
 
     | `BEXE_label (_,s) ->
-       let  lno = Hashtbl.find labels s in
-       let lkind = Hashtbl.find label_usage lno in
-       if lkind = `Far then raise Not_found
+       let  lno = hfind "labels" labels s in
+       let lkind = 
+         Flx_label.get_label_kind_from_index label_usage lno 
+       in
+       if lkind = `Far then 
+       begin 
+         print_endline (id ^ " has non-local label");
+         raise Unstackable
+       end
        
     | `BEXE_goto (_,s) ->
-       let  lno = Hashtbl.find labels s in
-       let lkind = Hashtbl.find label_usage lno in
-       if lkind = `Far then raise Not_found
+       let  lno = hfind "labels" labels s in
+       let lkind = 
+         Flx_label.get_label_kind_from_index label_usage lno 
+       in
+       if lkind = `Far then 
+       begin 
+         (*
+         print_endline (id ^ " does non-local goto");
+         *)
+         raise Unstackable
+       end
  
 
     | `BEXE_yield _
@@ -452,11 +482,13 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     print_endline (id ^ " is stackable");
     *)
     true
-    with Not_found -> 
+    with Unstackable -> 
       (*
       print_endline (id ^ " cannot be stacked ..");
       *)
       false
+    | Not_found -> 
+      failwith "Not_found error unexpected!"
     end
 
   | _ -> assert false

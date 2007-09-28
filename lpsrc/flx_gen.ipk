@@ -765,6 +765,10 @@ let gen_functions syms (child_map,bbdfns) =
 
     | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
       bcat s ("\n//------------------------------\n");
+      (*
+      print_endline ("Procedure " ^ qualified_name_of_bindex syms.dfns bbdfns index);
+      print_endline ("properties: " ^ string_of_properties props);
+      *)
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C PROC <"^si index^">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
         bcat s 
