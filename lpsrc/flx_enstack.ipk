@@ -442,18 +442,16 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
        end
        
     | `BEXE_goto (_,s) ->
-       let  lno = hfind "labels" labels s in
-       let lkind = 
-         Flx_label.get_label_kind_from_index label_usage lno 
-       in
-       if lkind = `Far then 
-       begin 
-         (*
-         print_endline (id ^ " does non-local goto");
-         *)
-         raise Unstackable
-       end
- 
+      begin 
+        match Flx_label.find_label bbdfns label_map i s with
+        | `Nonlocal _ ->
+          (*
+          print_endline (id ^ " does non-local goto");
+          *)
+          raise Unstackable
+        | `Unreachable -> assert false
+        | `Local _ -> ()
+      end
 
     | `BEXE_yield _
     | `BEXE_fun_return _ -> assert false
