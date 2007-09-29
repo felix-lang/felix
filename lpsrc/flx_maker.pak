@@ -3586,7 +3586,7 @@ EXIT /B 1
 ENDLOCAL
 
 @select(tangler('bin/flx.py','data'))
-#!/usr/bin/env bash
+#!/usr/bin/env python
 # flx.py - felix script harness (python version)
 import os
 import os.path
@@ -3600,7 +3600,7 @@ FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR",INSTALL_ROOT)
 @tangle("WIN32="+str(WIN32))
 @tangle("MACOSX="+str(MACOSX))
 @tangle("HAVE_GNU="+str(HAVE_GNU))
-@tangle("HAVE_MSVC='"+str(HAVE_MSVC))
+@tangle("HAVE_MSVC="+str(HAVE_MSVC))
 @tangle('CCOBJ_DLLIB="'+CCOBJ_DYNAMIC_FLX+'"')
 @tangle('CCLINK_DLLIB="'+CCLINK_DYNAMIC_FLX+'"')
 @tangle('CCOBJ_STATIC_LIB="'+CCOBJ_STATIC_FLX+'"')
@@ -3629,6 +3629,7 @@ INLINE=100
 ECHO=0
 TIME=0
 NOOPTIMISE=0
+TIMECMD="time -p"
 
 @if DEFAULT_LINK_MODEL=="dynamic":
    tangle("STATIC=0")
@@ -3649,6 +3650,10 @@ STDOUT=""
 STDIMPORT="--import=flx.flxh"
 IMPORTS=""
 
+def join(*args): return string.join(args)
+def system(cmd):
+  if ECHO==1: print cmd
+  return os.system(cmd)
 argno=1
 def prefix(arg,key):
   return arg[:len(key)]==key
@@ -3656,11 +3661,16 @@ def prefix(arg,key):
 compile_exts = ['cpp','cxx']
 linkexts = ['o','obj','lib','dll','a','so']
 
-while grab == 1 && argno<len(sys.argv):
+while grab == 1 and argno<len(sys.argv):
   arg = sys.argv[argno]
+  #print "ARGNO="+str(argno)+", arg='"+arg+"'"
   path,ext = os.path.splitext(arg)
   dir,base = os.path.split(path)
-  if ext != "flx":
+  #print "path="+path+", ext="+ext+",dir="+dir+",base="+base
+  #print "cpps="+cpps
+  #print "cppos="+cppos
+  #print "arg='"+arg+"'"
+  if ext != "flx" and ext != "":
     if ext in compile_exts:
       cpps = cpps + " " + arg
       cppos = cppos + " " + path + "." + EXT_OBJ
@@ -3677,7 +3687,7 @@ while grab == 1 && argno<len(sys.argv):
     TESTMODE=1
     FLX_INSTALL_DIR=arg[7:]
 
-  elif arg=="--test"
+  elif arg=="--test":
     TESTMODE=1
     FLX_INSTALL_DIR="."
 
@@ -3710,13 +3720,17 @@ while grab == 1 && argno<len(sys.argv):
   elif arg == "--noinline":
     INLINE=0
 
-  elif arg = "--version":
+  elif arg == "--version":
+    print "version .."
     print VERSION
     sys.exit(0)
 
-  elif arg = "--where":
+  elif arg == "--where":
     print FLX_INSTALL_DIR
     sys.exit(0)
+
+  elif arg == "--time":
+    TIME=1
 
   elif arg == "--help":
     os.system("man flx")
@@ -3732,7 +3746,7 @@ while grab == 1 && argno<len(sys.argv):
     FELIX=0
 
   elif prefix(arg,"-l") or prefix(arg,"-L"):
-   LINKER_SWITCHES=$LINKER_SWITCHES + " " + arg
+   LINKER_SWITCHES=LINKER_SWITCHES + " " + arg
 
   elif prefix(arg,"-D"):
    MACROS=MACROS + " " + arg
@@ -3740,23 +3754,37 @@ while grab == 1 && argno<len(sys.argv):
   elif prefix(arg,"--pkg="):
     pkgs= pkgs + " " + arg[6:]
 
+  elif prefix(arg,"--"):
+    print "Unknown option '"+ arg+"'"
+    sys.exit(1)
+
 # the main filename -- subsequent args are args to flx_run
   else:
     grab=0
   argno = argno + 1
  
+if grab == 1 and argno == len(sys.argv):
+  print "usage: flx [options] filename"
+  sys.exit(1)
+
+#print "#--------"
+#print "DONE, option index = "+str(argno)
+#print "path="+path+", ext="+ext+",dir="+dir+",base="+base
+#print "cpps="+cpps
+#print "cppos="+cppos
+
 if NOOPTIMISE == 0:
   CCFLAGS=CCFLAGS+" " + OPTIMISE
 
 @if HAVE_MSVC:
-  tangle('DLINK_STRING="/link /LIBPATH:${FLX_INSTALL_DIR}\\\\bin "')
-  tangle('SLINK_STRING="/link /LIBPATH:${FLX_INSTALL_DIR}\\\\bin "')
+  tangle('DLINK_STRING="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\bin "')
+  tangle('SLINK_STRING="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\bin "')
  elif CYGWIN or WIN32:
-  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/bin "')
-  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
+  tangle('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin "')
+  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/rtl "')
  else:
-  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
-  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
+  tangle('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/rtl "')
+  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/rtl "')
 
 
 PKGCONFIG=os.path.join(FLX_INSTALL_DIR,"bin","flx_pkgconfig")
@@ -3771,7 +3799,7 @@ CONFIG_DIR = os.path.join(FLX_INSTALL_DIR,'config')
 PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+FLX_INSTALL_DIR+"/config --field=cflags "
 
 # find external dynload libraries
-PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+FLX_INSTALL_DIR"+"/config --field=provides_dlib --field=requires_dlibs "
+PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+FLX_INSTALL_DIR+"/config --field=provides_dlib --field=requires_dlibs "
 
 # find external static libraries
 PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+FLX_INSTALL_DIR+"/config --field=provides_slib --field=requires_slibs "
@@ -3784,11 +3812,7 @@ PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+FLX_INSTALL_DIR+"/config --field=flx_requ
 if STATIC == 0:
   EXT_OBJ=EXT_SHARED_OBJ
 else:
-  EXT_OBJ=$EXT_STATIC_OBJ
-
-if argno = len(sys.argv):
-  print "usage: flx [options] filename"
-  sys.exit(1)
+  EXT_OBJ=EXT_STATIC_OBJ
 
 # Strip trailing .flx or .so
 # users should type 'flx file' without extension,
@@ -3824,20 +3848,24 @@ def get_stdout(x,outit=None):
 def xqt(cmd,dflt=None):
   if ECHO == 1: print cmd
   result,output = get_stdout(cmd)
-  if result == None: return output
-  if dflt=None:
+  if result == None: 
+     output=output[0][:-1] # first line excluding newline
+     if ECHO==1:print "output="+output
+     return output
+  if dflt==None:
     sys.stderr.write("Error "+repr(result)+" executing command " + cmd+"\n")
     sys.exit(result)
   else: return dflt
 
 def calpackages ():
+  global INCLUDE_DIRS, DRIVER_PKG, DRIVER, LINK_STRING
   # find all include directories
 
   x = xqt(PKGCONFIG_CFLAGS+ " @"+path+".resh")
   INCLUDE_DIRS=INCLUDE_DIRS +" " + x
 
   # find the driver package
-  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+path++".resh")
+  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+path+".resh")
   if DRIVER_PKG == "":
     DRIVER_PKG="flx_run"
 
@@ -3862,29 +3890,29 @@ def calpackages ():
     print "#RESOURCE FILE="+path+".resh"
     print "#INCLUDE_DIRS="+INCLUDE_DIRS
     print "#DRIVER="+DRIVER
-    print "#LINK_STRING="+LINK_STRING"
+    print "#LINK_STRING="+LINK_STRING
 
 # grab program arguments
 grab=1
 args=string.join(sys.argv[argno:], " ")
 
 INCLUDE_DIR="-I"+FLX_INSTALL_DIR+"/rtl"
-FLXLIB="-I+"FLX_INSTALL_DIR+"/lib"
+FLXLIB="-I"+FLX_INSTALL_DIR+"/lib"
 STDLIB="std"
 if NOSTDLIB == 1:
   FLXLIB=""
   STDLIB=""
 
-FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR/bin/flxg"
-  # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if MACOSX == 1:
-    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$DYLD_LIBRARY_PATH "
-  else:
-    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$LD_LIBRARY_PATH "
+FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg"
+# the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+if MACOSX == 1:
+  FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$DYLD_LIBRARY_PATH "
+else:
+  FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$LD_LIBRARY_PATH "
 ELKHOUND="--elkhound="+FLX_INSTALL_DIR+"/bin/flx_elkhound"
 
 DEBUGSWITCH=""
-if $DEBUG" == 1: DEBUGSWITCH=" --debug"
+if DEBUG == 1: DEBUGSWITCH=" --debug"
 
 STATIC_ENV=""
 if DEBUG == 1: STATIC_ENV="env FLX_DEBUG=1 "
@@ -3896,25 +3924,17 @@ def filetime(f):
     t = 0
   return t
 
-# No need to compile, just run it
-if STATIC == 0:
-  if RECOMPILE == 0 and filetime(path+EXT_SHLIB)>0 or (
-    filetime(path+".flx")==0 or 
-    filetime(path+EXT_SHLIB) > filetime (path+".flx")):
-    if RUNIT == 1:
+if RECOMPILE == 0 and RUNIT == 1:
+  # not (--force or -c)
+  if STATIC == 0:
+    if (filetime(path+EXT_SHLIB) > filetime (path+".flx")):
       calpackages()
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ path+EXT_SHLIB+" "+args
-      if ECHO == 1: print cmd
-      sys.exit(os.system(cmd))
-else
-  if RECOMPILE == 0 and filetime(path+EXT_EXE) or (
-    filetime(path+".flx") > filetime(path+EXT_EXE)):
-  then
-    if RUNIT == 1:
-    then
+      sys.exit(system(cmd))
+  else:
+    if (filetime(path+EXT_EXE) > filetime(path+".flx")):
       cmd=STATIC_ENV+" "+path+" "+args
-      if ECHO = 1: print cmd
-      sys.exit(os.system(cmd))
+      sys.exit(system(cmd))
 
 # Need Felix and c++ compile, then run it
 
@@ -3924,84 +3944,79 @@ if DEBUG == 1:
 else:
   VERBOSE="-q"
 
-FLXFLAGS="--inline="+INLINE
+FLXFLAGS="--inline="+str(INLINE)
+
+result = 0
 
 if STATIC == 0:
   if FELIX == 1:
-    FCMD=string.join(
+    FCMD=join(
       FLXG,
       VERBOSE, FLXFLAGS, ELKHOUND, FLXLIB, 
       INCLUDE_DIRS, STDIMPORT, IMPORTS, 
       STDLIB, path)
-    if ECHO == 1: print FCMD
-    result=os.system(FCMD)
-    if result != None: sys.exit(result)
+    result=system(FCMD)
+    if result != 0: sys.exit(result)
     calpackages()
-    CCMD=string.join(
+    CCMD=join(
       CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
       INCLUDE_DIR, INCLUDE_DIRS, MACROS,
       cpps, path+".cpp",
       SPEC_OBJ_FILENAME+path+EXT_OBJ)
-    LCMD=string.join(
+    LCMD=join(
       CCLINK_DLLIB, CCFLAGS,
       cppos, path+EXT_OBJ,
       SPEC_EXE_FILENAME+path+EXT_SHLIB,
       LINK_STRING)
-    if ECHO == 1: print CCMD"
-    result = os.system(ccmd)
-    if result == None: 
-      if ECHO == 1: print LCMD
-      result = os.system(LCMD)
-      if result == None:
+    result = system(CCMD)
+    if result == 0: 
+      result = system(LCMD)
+      if result == 0:
         if RUNIT == 1:
           if TIME == 1:
-            cmd=string.join(
-              "time",
+            cmd=join(
+              TIMECMD,
               FLXRUN+DRIVER+DEBUGSWITCH,
               path+EXT_SHLIB, args)
           else:
-            cmd=string.join(
+            cmd=join(
               FLXRUN+DRIVER+DEBUGSWITCH,
               path+EXT_SHLIB, args)
           if STDOUT != "": cmd=cmd+" > " +STDOUT
-          if ECHO == 1: print cmd
-          sys.exit(os.system(cmd)
+          sys.exit(system(cmd))
 else:
-  if [ $FELIX = 1 ]
-  then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
-    if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-    eval $FCMD
-  fi
-  if [ $? = 0 ]
-  then
-    calpackages
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
-    if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-    if `echo $CCMD`
-    then
-      if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-      if `echo $LCMD`
-      then
+  if FELIX == 1:
+    FCMD=join(
+      FLXG, VERBOSE, FLXFLAGS, ELKHOUND,
+      FLXLIB, INCLUDE_DIRS, STDIMPORT,
+      IMPORTS, STDLIB, path)
+    result=system(FCMD)
+  if result == 0:
+    calpackages()
+    CCMD=join(
+      CCOBJ_STATIC_LIB,
+      CCFLAGS, "-DTARGET_BUILD",
+      "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
+      MACROS, cpps, path+".cpp",
+      SPEC_OBJ_FILENAME+base+EXT_OBJ)
+    LCMD=join(
+      CCLINK_STATIC, SPEC_EXE_FILENAME+path+EXT_EXE,
+      path+EXT_OBJ, DRIVER, cppos, LINK_STRING)
+    result=system(CCMD)
+    if result == 0:
+      result=system(LCMD)
+      if result == 0:
         # rm -f "$base.cpp"
-        if [ $RUNIT = 1 ]
-        then
-          if [ $TIME = 1 ]
-          then
-            cmd="time $STATIC_ENV $base $args"
-          else
-            cmd="$STATIC_ENV $base $args"
-          fi
-          if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
-          if [ $ECHO = 1 ]; then echo $cmd; fi
-          eval $cmd
-        fi
-      fi
-    fi
-  fi
-fi
-exit $?
+        if RUNIT == 1:
+          if TIME == 1:
+            cmd=join(
+              TIMECMD, STATIC_ENV, path, args)
+          else:
+            cmd=join(
+              STATIC_ENV, path,args)
+          if STDOUT != "": cmd=cmd + " > "+STDOUT
+          sys.exit(system(cmd))
+sys.exit(result)
 
 @select(tangler('bin/flx','data'))
 #!/usr/bin/env bash
@@ -4731,4 +4746,7 @@ post-install:
 @head(1,'Finish up')
 Just cleaning up script now.
 @make_executable(os.path.join('bin', 'flx'))
+@make_executable(os.path.join('bin', 'flx.py'))
 @make_executable(os.path.join('bin', 'fishcc'))
+
+
