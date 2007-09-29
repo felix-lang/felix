@@ -273,6 +273,8 @@ class Appstate:
     self.__dict__["mydict"] = {}
     self.history = []
     self.history_pos = -1
+    self.command_history = []
+    self.command_history_pos = -1
     self.curfile = None
     self.runstring = "bin/flx --test %s"
     self.execlist = [
@@ -369,11 +371,18 @@ class App:
 
     self.filename_tag = Label(self.frame_top,text="Filename")
     self.filename = Entry(self.frame_top,width=20)
+
     self.filename.bind("<Up>",self.filename_up)
     self.filename.bind("<Down>",self.filename_down)
     self.filename.bind("<Tab>",self.filename_tab)
     self.filename.bind("<Return>",self.load)
     self.filename.bind("/",self.dirname_tab)
+
+    self.command_tag = Label(self.frame_top2,text="Shell")
+    self.command = Entry(self.frame_top2,width=20)
+    self.command.bind("<Up>",self.command_up)
+    self.command.bind("<Down>",self.command_down)
+    self.command.bind("<Return>",self.command_run)
 
     self.loadme = Button(self.frame_top,text="load", command=self.load)
     self.saveme = Button(self.frame_top,text="save", command=self.save)
@@ -393,6 +402,9 @@ class App:
     self.profile.pack(side=RIGHT)
     self.colourize.pack(side=RIGHT)
     self.cppme.pack(side=RIGHT)
+
+    self.command_tag.pack(side=LEFT)
+    self.command.pack(side=LEFT,fill=X,expand=1)
 
     buttons = []
     for ft,but,cmd in self.appstate.execlist:
@@ -531,6 +543,37 @@ class App:
       self.filename.delete("0",END)
       self.filename.insert(END,filename)
       self.load()
+
+  def command_up(self,e):
+    if self.appstate.command_history_pos > 0:
+      self.appstate.command_history_pos = self.appstate.command_history_pos - 1
+      command = self.appstate.command_history[self.appstate.command_history_pos]
+      self.command.delete("0",END)
+      self.command.insert(END,command)
+
+  def command_down(self,e):
+    if self.appstate.command_history_pos < len(self.appstate.command_history) - 1:
+      self.appstate.command_history_pos = self.appstate.command_history_pos + 1
+      command = self.appstate.command_history[self.appstate.command_history_pos]
+      self.command.delete("0",END)
+      self.command.insert(END,command)
+
+  def command_run(self,e):
+    cmd = self.command.get()
+    if cmd in self.appstate.command_history:
+      del self.appstate.command_history[self.appstate.command_history.index(cmd)]
+    self.appstate.command_history.append(cmd)
+    self.appstate.command_history_pos = len(self.appstate.command_history) - 1
+
+    try:
+      cmd = cmd % set_ext(self.appstate.curfile,"")
+    except:
+      pass
+    self.flxout.delete("0.0",END)
+    print "cmd="+cmd
+    result,text = get_stdout(cmd,self.append_flxout)
+    self.say_result(result)
+
 
   def filename_tab(self,e):
     pos = self.filename.index(INSERT)
