@@ -3589,7 +3589,10 @@ ENDLOCAL
 #!/usr/bin/env bash
 # flx.py - felix script harness (python version)
 import os
+import os.path
 import string
+import sys
+import stat
 
 @tangle("INSTALL_ROOT='"+PREFIX+"/lib/felix/felix-"+flx_version+"'")
 FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR",INSTALL_ROOT)
@@ -3865,113 +3868,105 @@ def calpackages ():
 grab=1
 args=string.join(sys.argv[argno:], " ")
 
-INCLUDE_DIR="-I$FLX_INSTALL_DIR/rtl"
-FLXLIB="-I$FLX_INSTALL_DIR/lib"
+INCLUDE_DIR="-I"+FLX_INSTALL_DIR+"/rtl"
+FLXLIB="-I+"FLX_INSTALL_DIR+"/lib"
 STDLIB="std"
-if [ "$NOSTDLIB" = "1" ]
-then
+if NOSTDLIB == 1:
   FLXLIB=""
   STDLIB=""
-fi
 
-if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
-then
-  # bash is a heap of crap! The escaped quotes here are
-  # required in case the PATH has a filename with spaces
-  # However this actually fails on Linux!
-  FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
-  FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" "
-else
-  FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
+FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR/bin/flxg"
   # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if [ "$MACOSX" = "1" ]
-  then
-    FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$DYLD_LIBRARY_PATH "
-  else
-    FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH "
-  fi
-fi
-ELKHOUND="--elkhound=$FLX_INSTALL_DIR/bin/flx_elkhound"
+  if MACOSX == 1:
+    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$DYLD_LIBRARY_PATH "
+  else:
+    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$LD_LIBRARY_PATH "
+ELKHOUND="--elkhound="+FLX_INSTALL_DIR+"/bin/flx_elkhound"
 
 DEBUGSWITCH=""
-if [ "$DEBUG" = "1" ]; then DEBUGSWITCH=" --debug"; fi
+if $DEBUG" == 1: DEBUGSWITCH=" --debug"
+
 STATIC_ENV=""
-if [ "$DEBUG" = "1" ]; then STATIC_ENV="env FLX_DEBUG=1 "; fi
+if DEBUG == 1: STATIC_ENV="env FLX_DEBUG=1 "
+
+def filetime(f):
+  try:
+    t = os.stat(f)[stat.ST_MTIME]
+  except EnvironmentError:
+    t = 0
+  return t
 
 # No need to compile, just run it
-if [ $STATIC = 0 ]
-then
-  if [ $RECOMPILE = 0 -a -r "$base$EXT_SHLIB" -a "(" ! -r "$base.flx" -o "$base$EXT_SHLIB" -nt "$base.flx" ")" ]
-  then
-    if [ $RUNIT = 1 ]
-    then
-      calpackages
-      cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-      if [ $ECHO = 1 ]; then echo $cmd; fi
-      eval $cmd
-      exit $?
-    fi
-  fi
+if STATIC == 0:
+  if RECOMPILE == 0 and filetime(path+EXT_SHLIB)>0 or (
+    filetime(path+".flx")==0 or 
+    filetime(path+EXT_SHLIB) > filetime (path+".flx")):
+    if RUNIT == 1:
+      calpackages()
+      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ path+EXT_SHLIB+" "+args
+      if ECHO == 1: print cmd
+      sys.exit(os.system(cmd))
 else
-  if [ $RECOMPILE = 0 -a -r "$base$EXT_EXE" -a "(" ! -r "$base.flx" -o "$base$EXT_EXE" -nt "$base.flx" ")" ]
+  if RECOMPILE == 0 and filetime(path+EXT_EXE) or (
+    filetime(path+".flx") > filetime(path+EXT_EXE)):
   then
-    if [ $RUNIT = 1 ]
+    if RUNIT == 1:
     then
-      cmd="$STATIC_ENV $base $args"
-      if [ $ECHO = 1 ]; then echo $cmd; fi
-      eval $cmd
-      exit $?
-    fi
-  fi
-fi
+      cmd=STATIC_ENV+" "+path+" "+args
+      if ECHO = 1: print cmd
+      sys.exit(os.system(cmd))
 
 # Need Felix and c++ compile, then run it
 
-if [ $DEBUG = 1 ]
-then
+if DEBUG == 1:
   VERBOSE="-v"
-  CCFLAGS="$CCFLAGS$DEBUG_FLAGS"
-else
+  CCFLAGS=CCFLAGS+DEBUG_FLAGS
+else:
   VERBOSE="-q"
-fi
 
-FLXFLAGS="--inline=$INLINE"
+FLXFLAGS="--inline="+INLINE
 
-if [ $STATIC = 0 ]
-then
-  if [ $FELIX = 1 ]
-  then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
-    if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-    eval $FCMD
-  fi
-  if [ $? = 0 ]
-  then
-    calpackages
-    CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING "
-    if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-    if `echo $CCMD`
-    then
-      if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-      if `echo $LCMD`
-      then
-        if [ $RUNIT = 1 ]
-        then
-          if [ $TIME = 1 ]
-          then
-            cmd="time $FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-          else
-            cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-          fi
-          if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
-          if [ $ECHO = 1 ]; then echo $cmd; fi
-          eval $cmd
-        fi
-      fi
-    fi
-  fi
-else
+if STATIC == 0:
+  if FELIX == 1:
+    FCMD=string.join(
+      FLXG,
+      VERBOSE, FLXFLAGS, ELKHOUND, FLXLIB, 
+      INCLUDE_DIRS, STDIMPORT, IMPORTS, 
+      STDLIB, path)
+    if ECHO == 1: print FCMD
+    result=os.system(FCMD)
+    if result != None: sys.exit(result)
+    calpackages()
+    CCMD=string.join(
+      CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
+      INCLUDE_DIR, INCLUDE_DIRS, MACROS,
+      cpps, path+".cpp",
+      SPEC_OBJ_FILENAME+path+EXT_OBJ)
+    LCMD=string.join(
+      CCLINK_DLLIB, CCFLAGS,
+      cppos, path+EXT_OBJ,
+      SPEC_EXE_FILENAME+path+EXT_SHLIB,
+      LINK_STRING)
+    if ECHO == 1: print CCMD"
+    result = os.system(ccmd)
+    if result == None: 
+      if ECHO == 1: print LCMD
+      result = os.system(LCMD)
+      if result == None:
+        if RUNIT == 1:
+          if TIME == 1:
+            cmd=string.join(
+              "time",
+              FLXRUN+DRIVER+DEBUGSWITCH,
+              path+EXT_SHLIB, args)
+          else:
+            cmd=string.join(
+              FLXRUN+DRIVER+DEBUGSWITCH,
+              path+EXT_SHLIB, args)
+          if STDOUT != "": cmd=cmd+" > " +STDOUT
+          if ECHO == 1: print cmd
+          sys.exit(os.system(cmd)
+else:
   if [ $FELIX = 1 ]
   then
     FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
