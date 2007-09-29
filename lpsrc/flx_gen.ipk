@@ -4019,6 +4019,7 @@ try
   ;
   exit (if compiler_options.reverse_return_parity then 1 else 0)
 
-with x -> Flx_terminate.terminate !reverse_return_parity x
+with x -> 
+  Flx_terminate.terminate !reverse_return_parity x
 ;;
 

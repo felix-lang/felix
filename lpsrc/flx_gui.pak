@@ -17,6 +17,7 @@ import sys
 import glob
 import string
 import stat
+import popen2
 
 @keywords = map ((lambda (a,b):a),flx_keywords)
 @tangle('keywords='+repr(keywords))
@@ -32,14 +33,16 @@ def get_stdout(x,outit=None):
       for line in output: outit(line)
     fout.close()
   else:
-    fout = os.popen(x+" 2>&1 ","r")
+    handle = popen2.Popen4(x,80)
     output = []
     try:
-      for line in fout:
+      for line in handle.fromchild:
         output.append(line)
         if outit: outit(line)
     finally:
-      result = fout.close()
+      result=handle.wait()
+      handle.fromchild.close()
+      handle.tochild.close()
   return result,output
 
 def refine(all,prefix):
@@ -276,14 +279,13 @@ class Appstate:
     self.command_history = []
     self.command_history_pos = -1
     self.curfile = None
-    self.runstring = "bin/flx --test %s"
+    self.runstring = "bin/flx.py --test %s"
     self.execlist = [
       # filetype, button, command
-       ("flx","run","bin/flx --test %s"),
-      # ("flx","C++","bin/flx --test -c %s"),
-       ("cpp","run","bin/flx --test --nofelix --force %s"),
+       ("flx","run","bin/flx.py --test %s %s"),
+       ("cpp","run","bin/flx.py --test --nofelix --force %s %s"),
        ("py","run","python %s.py"),
-       ("pak","run","python interscript/bin/iscr.py %s.pak")
+       ("pak","run","python interscript/bin/iscr.py %s.pak %s")
       ]
     self.load()
 
@@ -451,6 +453,7 @@ class App:
     self.master.title(filename)
     self.appstate.curfile = filename
     self.colour()
+    self.flxout.delete("0.0",END)
     return result
 
   def saveas(self):
@@ -470,6 +473,8 @@ class App:
     except:
       print "CANT WRITE FILE "+filename
     self.append_history(filename)
+    if filename==".gflx.profile":
+      self.appstate.load()
 
   def append_flxout(self,line):
     self.flxout.insert(END,line)
@@ -485,16 +490,22 @@ class App:
 
   def doexec(self,but):
     print "exec something for " + but
-    filename = self.filename.get()
+    s = self.filename.get()
+    ss = string.split(s)
+    filename = ss[0]
+    args = string.join(ss[1:])
     ext = get_ext(filename)
     action = None
     for f,b,a in self.appstate.execlist:
       if b == but and f == ext: action = a
     if type(action)==type(""):
       self.save()
-      cmd = action % set_ext(self.appstate.curfile,"")
+      cmd = action % (set_ext(filename,""),args)
       self.flxout.delete("0.0",END)
       print "cmd="+cmd
+      self.command.delete("0",END)
+      self.command.insert(END,cmd)
+      self.command.update_idletasks()
       result,text = get_stdout(cmd,self.append_flxout)
       self.say_result(result)
     else:
@@ -502,7 +513,7 @@ class App:
 
   def say_result(self,result):
     print "result=",result
-    if result == None:
+    if result ==0:
       self.frame_right.configure(background="green")
     else:
       self.frame_right.configure(background="red")

@@ -3653,7 +3653,10 @@ IMPORTS=""
 def join(*args): return string.join(args)
 def system(cmd):
   if ECHO==1: print cmd
-  return os.system(cmd)
+  result = os.system(cmd)
+  if ECHO==1: print "Result code " + str(result)
+  return result
+
 argno=1
 def prefix(arg,key):
   return arg[:len(key)]==key
@@ -3956,7 +3959,7 @@ if STATIC == 0:
       INCLUDE_DIRS, STDIMPORT, IMPORTS, 
       STDLIB, path)
     result=system(FCMD)
-    if result != 0: sys.exit(result)
+    if result != 0: sys.exit(0!=result)
     calpackages()
     CCMD=join(
       CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
@@ -3983,7 +3986,7 @@ if STATIC == 0:
               FLXRUN+DRIVER+DEBUGSWITCH,
               path+EXT_SHLIB, args)
           if STDOUT != "": cmd=cmd+" > " +STDOUT
-          sys.exit(system(cmd))
+          sys.exit(0!=system(cmd))
 else:
   if FELIX == 1:
     FCMD=join(
@@ -4015,8 +4018,8 @@ else:
             cmd=join(
               STATIC_ENV, path,args)
           if STDOUT != "": cmd=cmd + " > "+STDOUT
-          sys.exit(system(cmd))
-sys.exit(result)
+          sys.exit(0!=system(cmd))
+sys.exit(0!=result)
 
 @select(tangler('bin/flx','data'))
 #!/usr/bin/env bash
