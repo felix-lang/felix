@@ -18,13 +18,21 @@ import glob
 import string
 import stat
 import popen2
+import re
+import time
+
+reloc = re.compile(r"Felix location: ([^ ]*) (\d+)\[\d+\]-\d+\[\d+\]")
 
 @keywords = map ((lambda (a,b):a),flx_keywords)
 @tangle('keywords='+repr(keywords))
 
+kill_flag = 0
+parity = 0
+class Death: pass
+
 def get_stdout(x,outit=None):
   """We're screwed if popen doesn't work .."""
-
+  global kill_flag
   if os.name == "nt": # popen doesn't work on Windows
     result = os.system(x + " >tmp.out")
     fout = open("tmp.out")
@@ -37,8 +45,13 @@ def get_stdout(x,outit=None):
     output = []
     try:
       for line in handle.fromchild:
+        if kill_flag:
+          os.kill(handle.pid,9)
+          kill_flag = 0
+          raise Death 
         output.append(line)
         if outit: outit(line)
+    except Death: pass
     finally:
       result=handle.wait()
       handle.fromchild.close()
@@ -390,6 +403,7 @@ class App:
     self.saveme = Button(self.frame_top,text="save", command=self.save)
     self.saveas = Button(self.frame_top,text="save-as", command=self.saveas)
     self.profile = Button(self.frame_top2,text="profile", command=self.doprofile)
+    self.kill = Button(self.frame_top,text="kill",fg="red", command=self.dokill)
     self.quit = Button(self.frame_top,text="quit",fg="red", command=self.doquit)
 
     self.colourize= Button(self.frame_top2,text="colour",command=self.colour)
@@ -397,6 +411,7 @@ class App:
 
     self.filename_tag.pack(side=LEFT)
     self.filename.pack(side=LEFT,fill=X,expand=1)
+    self.kill.pack(side=RIGHT)
     self.quit.pack(side=RIGHT)
     self.saveas.pack(side=RIGHT)
     self.saveme.pack(side=RIGHT)
@@ -420,6 +435,8 @@ class App:
       padx=4,pady=2,
       yscrollcommand=self.scroll_left.set
       )
+    self.flxin.tag_config("trace0",background="#bb9999")
+    self.flxin.tag_config("trace1",background="#99bbbb")
     self.flxin.pack(side=LEFT,expand=1,fill=BOTH)
     self.flxin.insert(END, "println 'Hello World';")
     self.scroll_left.pack(side=RIGHT,fill=Y)
@@ -482,6 +499,34 @@ class App:
     self.master.update_idletasks()
     self.master.update()
 
+  def trace_append_flxout(self,line):
+    global parity
+    res = reloc.match(line)
+    #print line
+    #print "search result " + str(res)
+    if res:
+      file = res.group(1)
+      lno = int(res.group(2))
+      print "Location " + file + "[" + str(lno)+"]"
+      if self.filename.get()!=file:
+        self.filename.delete("0",END)
+        self.filename.insert(END,file)
+        self.load()
+      self.flxin.yview(max(0,lno-10))
+      self.flxin.tag_remove("trace0","0.0",END)
+      self.flxin.tag_remove("trace1","0.0",END)
+      tracer = "trace"+str(parity)
+      parity = (parity + 1) % 2
+      self.flxin.tag_add(tracer,str(lno)+".0",str(lno)+".end")
+      time.sleep(1)
+
+    self.append_flxout(line)
+
+  def dokill(self):
+    global kill_flag
+    print "killing .."
+    kill_flag = 1
+
   def doprofile(self):
     self.appstate.save()
     self.filename.delete("0",END)
@@ -489,6 +534,7 @@ class App:
     self.load()
 
   def doexec(self,but):
+    global kill_flag
     print "exec something for " + but
     s = self.filename.get()
     ss = string.split(s)
@@ -506,7 +552,8 @@ class App:
       self.command.delete("0",END)
       self.command.insert(END,cmd)
       self.command.update_idletasks()
-      result,text = get_stdout(cmd,self.append_flxout)
+      kill_flag = 0
+      result,text = get_stdout(cmd,self.trace_append_flxout)
       self.say_result(result)
     else:
       action()
@@ -522,7 +569,7 @@ class App:
     self.save()
     cmd = self.runcmd.get() % "-c " + self.appstate.curfile
     print "cmd="+cmd
-    result,text = get_stdout(cmd,self.append_flxout)
+    result,text = get_stdout(cmd,self.trace_append_flxout)
     filename=set_ext(self.filename.get(),".cpp")
     self.filename.delete("0",END)
     self.filename.insert(END,filename)
@@ -582,7 +629,7 @@ class App:
       pass
     self.flxout.delete("0.0",END)
     print "cmd="+cmd
-    result,text = get_stdout(cmd,self.append_flxout)
+    result,text = get_stdout(cmd,self.trace_append_flxout)
     self.say_result(result)
 
 
