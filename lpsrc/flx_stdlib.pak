@@ -2351,29 +2351,26 @@ module List
     ;
   }
 
-  fun mem[T] (eq:T -> bool) (x:list[T]) : bool =>
-    match x with
-      | Empty => false
-      | Cons (?h,?t) => if eq(h) then true else mem eq t endif
+  fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
+    match xs with
+    | Empty => false
+    | Cons (?h,?t) => if eq(h) then true else mem eq t endif
     endmatch
   ;
 
-  fun mem[T, U] (eq:T * U -> bool) (x:list[T]) (e:U) : bool =>
-    mem (fun (i:T) => eq(i, e)) x
+  fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool =>
+    mem (fun (x:T) => eq(x, e)) xs
   ;
 
-  fun find[T, U] (eq:T * U -> bool) (x:list[T]) (e:U) : opt[T] =>
-    match x with
-      | Empty => None[T]
-      | Cons (?h,?t) => if eq(h, e) then Some h else find eq t e endif
+  fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
+    match xs with
+    | Empty => None[T]
+    | Cons (?h,?t) => if eq(h) then Some h else find eq t endif
     endmatch
   ;
 
-  fun find[T] (eq:T -> bool) (x:list[T]) : opt[T] =>
-    match x with
-      | Empty => None[T]
-      | Cons (?h,?t) => if eq(h) then Some h else find eq t endif
-    endmatch
+  fun find[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : opt[T] =>
+    find (fun (x:T) => eq(x, e)) xs;
   ;
 
   noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T] = 
@@ -2433,7 +2430,26 @@ instance[T with Show[T]] Str[List::list[T]] {
 publish "Association Lists (lists of pairs)"
 module Assoc_list
 {
-  typedef assoc_list[A,B] = List::list[(A,B)];
+  typedef assoc_list[A,B] = List::list[A*B];
+
+  fun mem[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : bool =>
+    List::mem (fun (a:A, b:B) => eq a) xs;
+  ;
+
+  fun mem[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : bool =>
+    mem (fun (a:A) => eq(a, e)) xs;
+  ;
+
+  fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : B =>
+    match xs with
+    | Empty => None[B]
+    | Cons ((?a, ?b), ?t) => if eq(a) then Some b else find eq t endif
+    endmatch
+  ;
+
+  fun find[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : B =>
+    find (fun (a:A) => eq (a, e)) xs;
+  ;
 }
 
 @#------------- Array -------------------

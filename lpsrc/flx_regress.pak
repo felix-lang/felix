@@ -2530,6 +2530,35 @@ println e;
 5
 @doc()
 
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+@kat_rt('assoc_list')
+open List;
+open Assoc_list;
+
+val xs = list((1,"a"), (3, "c"), (5, "e"));
+
+println $ mem (fun (a:int) => a == 1) xs;
+println $ mem (fun (a:int) => a == 2) xs;
+println $ mem (eq of (int*int)) xs 3;
+println $ mem (eq of (int*int)) xs 4;
+
+println $ find (fun (a:int) => a == 1) xs;
+println $ find (fun (a:int) => a == 2) xs;
+println $ find (eq of (int*int)) xs 3;
+println $ find (eq of (int*int)) xs 4;
+@doc()
+
+@select(env_rt.expect())
+true
+false
+true
+false
+Some a
+None
+Some c
+None
+@doc()
 
 @env_nd.head(2,"Non deterministic tests")
 
