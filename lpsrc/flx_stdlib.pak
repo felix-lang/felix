@@ -2695,7 +2695,7 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
     if Varray::len(xs) > 0ul do
       o += repr xs.[0];
 
-      forall i in 1 upto Varray::len(xs) - 1ul do
+      forall i in 1ul upto Varray::len(xs) - 1ul do
         o += ', ' + repr xs.[i];
       done;
     done;

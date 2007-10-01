@@ -543,7 +543,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           | `SYMDEF_ref _ -> `BTYP_pointer lhst
           | _ -> lhst
         in
-         if type_match syms.dfns lhst rhst
+        if type_match syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
@@ -559,17 +559,31 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       end
 
     | `EXE_assign (l,r) -> 
-      tack (`BEXE_assign (sr,be l, be r))
-      (*
-      let (_,lt) as bel = be l in
-      begin match lt with 
-      |  `BTYP_lvalue _ ->
-         tack (`BEXE_assign (sr,bel, be r))
-      | _ -> clierr sr "LHS must be lvalue"
+      let _,lhst as lx = be l in
+      let _,rhst as rx = be r in
+      let lhst = reduce_type lhst in
+      let rhst = reduce_type rhst in
+      begin 
+        match lhst with
+        | `BTYP_lvalue t -> ()
+        | t -> 
+          print_endline "WARNING: LHS of assignment is not an lvalue";
+          print_endline (sbe syms.dfns bbdfns lx ^ " = " ^ sbe syms.dfns bbdfns rx);
       end
-      *)
-
-
+      ;
+      let lhst = lstrip syms.dfns lhst in
+      let rhst = lstrip syms.dfns rhst in
+      let lhst = minimise syms.dfns lhst in)
+      let rhst = minimise syms.dfns rhst in 
+      if type_match syms.dfns lhst rhst
+      then tack (`BEXE_assign (sr,lx, rx))
+      else clierr sr
+      (
+        "[bind_exe: assign ] LHS "^sbe syms.dfns bbdfns lx^":\n"^
+        string_of_btypecode syms.dfns lhst^
+        "\n of assignment must have same type as RHS:\n"^
+        string_of_btypecode syms.dfns rhst
+      )
   in 
   List.iter bind_exe exes;
   let bound_exes = List.rev !bound_exes in 
