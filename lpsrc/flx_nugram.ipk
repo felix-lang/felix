@@ -37,7 +37,7 @@ SCHEME """
 """;
 
 SCHEME """
-  (define call (lambda (f a) `(ast_call ,_sr (ast_name ,f ()) ,a)))
+  (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
 """;
 
 SCHEME """
@@ -121,13 +121,13 @@ SCHEME """
           ((eq? 'NoConstraint c) ct )
           ((eq? 'Eq (car c)) ;; type constraint
             `(ast_intersect
-              ((ast_type_match ((ast_name ,v ()) ((,(cadr c) ())))) 
+              ((ast_type_match ((ast_name ,_sr ,v ()) ((,(cadr c) ())))) 
               ,ct)
             )
           )
           ((eq? 'In (car c)) ;; type constraint
             `(ast_intersect
-              ((ast_isin ((ast_name ,v ()) ,(cadr c))) 
+              ((ast_isin ((ast_name ,_sr ,v ()) ,(cadr c))) 
               ,ct)
             )
           )
@@ -250,7 +250,7 @@ syntax expressions {
   ssetunion := suser10 ( || suser10)* =># "(chain 'ast_setunion _1 _2)" note "setunion";
 
   suser10 := suser10 suser10token ssetintersection =># 
-    "`(ast_apply ,_sr ( (ast_name ,_2 ()) (,_1 ,_3)))";
+    "`(ast_apply ,_sr ( (ast_name ,_sr ,_2 ()) (,_1 ,_3)))";
   suser10 := ssetintersection =># "_1";
 
   ssetintersection := sarrow (&& sarrow)* =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
@@ -398,7 +398,7 @@ syntax expressions {
 
   /*
   sfactor := sfactor .-> ssimple_name_parts =># 
-    "`(ast_dot ,_sr ((ast_apply ,_sr (deref ,_1)) (ast_name ,(car _3) ,(cadr _3))))";
+    "`(ast_dot ,_sr ((ast_apply ,_sr (deref ,_1)) (ast_name ,_sr ,(car _3) ,(cadr _3))))";
   */
 
   sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
@@ -434,7 +434,7 @@ syntax expressions {
   squalified_name := squalified_name :: ssimple_name_parts =># 
     "`(ast_lookup (,_1 ,(car _3) ,(cadr _3)))";
   squalified_name := ssimple_name_parts =># 
-    "`(ast_name ,(car _1) ,(cadr _1))";
+    "`(ast_name ,_sr ,(car _1) ,(cadr _1))";
 
   ssuffixed_name := squalified_name of sfactor =># 
     "`(ast_suffix (,_1 ,_3))";
@@ -480,7 +480,7 @@ syntax expressions {
       """;
 
   satom := suserlbtoken sexpr suserrbtoken =>#
-    "`(ast_apply ,_sr ((ast_name ,(myassoc _3 (car _1)) ()) ,_2))";
+    "`(ast_apply ,_sr ((ast_name ,_sr ,(myassoc _3 (car _1)) ()) ,_2))";
 
   page atomic = satom, sexpr_code_prefix;
 
@@ -787,7 +787,7 @@ syntax functions {
     (
       (name (string-append "_ctor_" _3))
       (vs _2)
-      (ret `(ast_name ,_3 ()))
+      (ret `(ast_name ,_sr ,_3 ()))
       (traint _5)
       (body _6)
       (args _4)
@@ -802,7 +802,7 @@ syntax functions {
     (
       (name (string-append "_ctor_" _3))
       (vs _2)
-      (ret `(ast_name ,_3 ()))
+      (ret `(ast_name ,_sr ,_3 ()))
       (traint _5)
       (body `((ast_fun_return ,_sr ,_7)))
       (args _4)
@@ -876,7 +876,7 @@ syntax regexps {
   sre4 := sre_name =># "`(regexp_name ,_1)";
 
   sre_name := sre_name :: sname =># "`(ast_lookup (,_1 ,_3 ()))";
-  sre_name := sname =># "`(ast_name ,_1 ())";
+  sre_name := sname =># "`(ast_name ,_sr ,_1 ())";
 
   scharset0:= sinteger - sinteger =># "`(charset_of_int_range ,_1 ,_3)";
   scharset0:= sstring - sstring =># "`(charset_of_range ,_1 ,_3)";
@@ -1033,7 +1033,7 @@ syntax statements {
   from any overload set.</p>
   """;
 
-  stvar := sname seqorin =># """`(,_1 (ast_name "TYPE" ()) ,_2)""";
+  stvar := sname seqorin =># """`(,_1 (ast_name ,_sr "TYPE" ()) ,_2)""";
   stvar := sname : stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
 
   stvar_comma_list := stvar scomma_tvar* =># "(cons _1 _2)";
@@ -1197,7 +1197,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
      (fl (splitapply _8))
      (f (car fl))
      (a (cadr fl))
-     (nua (cons `(ast_ref (ast_name ,_3 ())) (mkl a)))
+     (nua (cons `(ast_ref (ast_name ,_sr ,_3 ())) (mkl a)))
      (call `(ast_call ,_sr ,f ,nua))
      (vardef `(ast_var_decl ,_sr ,_3 ,_4 (some ,_6) none))
      (seq `(ast_seq (,vardef ,call))))
@@ -1225,7 +1225,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
        (vs (cadar _2))
        (namespace (cdr _2))
        (typ _4)
-       (nua (cons `(ast_name ,name ()) (mkl a)))
+       (nua (cons `(ast_name ,_sr ,name ()) (mkl a)))
        (call `(ast_call ,_sr ,f ,nua))
        (vardef `(ast_var_decl ,_sr ,name ,vs (some ,typ) none))
        (seq `(ast_seq (,vardef ,call)))
@@ -1393,7 +1393,7 @@ syntax cbind {
     (
       (name (string-append "_ctor_" _3))
       (vs _2)
-      (ret `(ast_name ,_3 ()))
+      (ret `(ast_name ,_sr ,_3 ()))
       (argt _5)
       (ct 
         (if (eq? 'none _6)
@@ -1656,8 +1656,8 @@ syntax executable {
   scall := jump sexpr ssemi =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
   //scall := loop sname sexpr ssemi =># "`(ast_loop ,_sr ,_2 ,_3)";
   //scall := loop sname ssemi =># "`(ast_loop ,_sr ,_2 (ast_tuple,_sr ()))";
-  scall := loop sname sexpr ssemi =># "`(ast_jump ,_sr (ast_name ,_2 ()) ,_3)";
-  scall := loop sname ssemi =># "`(ast_jump ,_sr (ast_name ,_2 ()) (ast_tuple,_sr ()))";
+  scall := loop sname sexpr ssemi =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+  scall := loop sname ssemi =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
 
   scall := sexpr ssemi =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
@@ -1737,16 +1737,16 @@ syntax executable {
   sifgoto := "forall" sname in sexpr "upto" sexpr do statement* done ssemi =>#
   """
     `(ast_macro_block ,( append `(
-      (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
+      (ast_assign ,_sr _set ((Expr (ast_name ,_sr ,_2 ())) none) ,_4)
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
       ( ast_unlikely_ifnotgoto ,_sr 
-        (ast_apply ,_sr (le ((ast_name ,_2 ()),_6)))
+        (ast_apply ,_sr (le ((ast_name ,_sr ,_2 ()),_6)))
         "lab2"
       ))
       _8  
-      `((ast_call ,_sr pre_incr (ast_name ,_2()))
+      `((ast_call ,_sr pre_incr (ast_name ,_sr ,_2()))
       ( ast_goto ,_sr "lab1" ) 
       ( ast_label ,_sr "lab2" ))
      ))
@@ -1755,16 +1755,16 @@ syntax executable {
   sifgoto := "forall" sname in sexpr "downto" sexpr do statement* done ssemi =>#
   """
     `(ast_macro_block ,( append `(
-      (ast_assign ,_sr _set ((Expr (ast_name ,_2 ())) none) ,_4)
+      (ast_assign ,_sr _set ((Expr (ast_name ,_sr ,_2 ())) none) ,_4)
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
       ( ast_unlikely_ifnotgoto ,_sr 
-        (ast_apply ,_sr (ge ((ast_name ,_2 ()) ,_6))) 
+        (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6))) 
         "lab2" 
       ))
       _8 
-      `((ast_call ,_sr pre_decr (ast_name ,_2 ()))
+      `((ast_call ,_sr pre_decr (ast_name ,_sr ,_2 ()))
       ( ast_goto ,_sr "lab1" ) 
       ( ast_label ,_sr "lab2" ))
      ))
@@ -2103,7 +2103,7 @@ syntax namespaces {
     (mkns 
     `(ast_seq (
       (ast_untyped_module ,_sr ,(caar _3) ,(cadar _3) ,_5)
-      (ast_open ,_sr ,dfltvs (ast_name ,(caar _3)()))))
+      (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
     (cdr _3))
      """; 
 
@@ -2119,7 +2119,7 @@ syntax namespaces {
     (mkns 
     `(ast_seq (
       (ast_namespace ,(caar _3) ,(cadar _3) ,_5)
-      (ast_open ,_sr ,dfltvs (ast_name ,(caar _3)()))))
+      (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
     (cdr _3))
      """; 
 
@@ -2131,26 +2131,26 @@ syntax csyntax {
   requires statements;
 
   base_type := 
-    | "char" =># '`(ast_name "char" ())' note "C character"
-    | "tiny" =># '`(ast_name "tiny" ())'
-    | "short" =># '`(ast_name "short" ())'
-    | "int" =># '`(ast_name "int" ())'
-    | "long" =># '`(ast_name "long" ())'
-    | "vlong" =># '`(ast_name "vlong" ())'
-    | "utiny" =># '`(ast_name "utiny" ())'
-    | "uchar" =># '`(ast_name "utiny" ())'
-    | "ushort" =># '`(ast_name "ushort" ())'
-    | "uint" =># '`(ast_name "uint" ())'
-    | "ulong" =># '`(ast_name "ulong" ())'
-    | "uvlong" =># '`(ast_name "uvlong" ())'
-    | "float" =># '`(ast_name "float" ())'
-    | "double" =># '`(ast_name "double" ())'
-    | "ldouble" =># '`(ast_name "ldouble" ())'
+    | "char" =># '`(ast_name ,_sr "char" ())' note "C character"
+    | "tiny" =># '`(ast_name ,_sr "tiny" ())'
+    | "short" =># '`(ast_name ,_sr "short" ())'
+    | "int" =># '`(ast_name ,_sr "int" ())'
+    | "long" =># '`(ast_name ,_sr "long" ())'
+    | "vlong" =># '`(ast_name ,_sr "vlong" ())'
+    | "utiny" =># '`(ast_name ,_sr "utiny" ())'
+    | "uchar" =># '`(ast_name ,_sr "utiny" ())'
+    | "ushort" =># '`(ast_name ,_sr "ushort" ())'
+    | "uint" =># '`(ast_name ,_sr "uint" ())'
+    | "ulong" =># '`(ast_name ,_sr "ulong" ())'
+    | "uvlong" =># '`(ast_name ,_sr "uvlong" ())'
+    | "float" =># '`(ast_name ,_sr "float" ())'
+    | "double" =># '`(ast_name ,_sr "double" ())'
+    | "ldouble" =># '`(ast_name ,_sr "ldouble" ())'
 
-    | struct sname =># "`(ast_name ,_2 ())"
-    | union sname =># "`(ast_name ,_2 ())"
-    | class sname =># "`(ast_name ,_2 ())"
-    | enum sname =># "`(ast_name ,_2 ())"
+    | struct sname =># "`(ast_name ,_sr ,_2 ())"
+    | union sname =># "`(ast_name ,_sr ,_2 ())"
+    | class sname =># "`(ast_name ,_sr ,_2 ())"
+    | enum sname =># "`(ast_name ,_sr ,_2 ())"
   ;
 
 explain base_type """
@@ -2168,7 +2168,7 @@ with be translated by the lexer to <code>ulong</code>.</p>
 
   pointer_type:= 
     | base_type =># "_1"
-    | "void" star =># '`(ast_name "address" ())'
+    | "void" star =># '`(ast_name ,_sr "address" ())'
     | pointer_type star =># "`(ast_ref ,_1)"
   ;
 

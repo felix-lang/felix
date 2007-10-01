@@ -135,11 +135,11 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_interpolate";  Str s] -> `AST_interpolate (sr,ss s)
  | Lst [Id "ast_vsprintf";  Str s] -> `AST_vsprintf (sr,ss s)
  | Lst [Id "ast_noexpand";  e] -> `AST_noexpand (sr,ex e)
- | Lst [Id "ast_name"; Id s ; Lst ts] -> 
-   `AST_name (sr,s,map ti ts)
+ | Lst [Id "ast_name"; sr; Id s ; Lst ts] -> 
+   `AST_name (xsr sr,s,map ti ts)
 
- | Lst [Id "ast_name"; Str s ; Lst ts] -> 
-   `AST_name (sr,ss s,map ti ts)
+ | Lst [Id "ast_name"; sr; Str s ; Lst ts] -> 
+   `AST_name (xsr sr,ss s,map ti ts)
 
  | Lst [Id "ast_the";  e] -> `AST_the (sr, xq "ast_the" e)
 

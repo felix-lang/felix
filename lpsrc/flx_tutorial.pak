@@ -2329,7 +2329,7 @@ class Y[t] {
 
   // constructors
   ctor () {}
-  ctor (a:int): c(20000) { x = a; }
+  ctor (a:t): c(20000) { x = a; }
 };
 
 var ob <- new Y[int](99);
@@ -2424,7 +2424,7 @@ class Y[t] {
 
   // constructors
   ctor () {}
-  ctor (a:int): c(20000) { x = a; }
+  ctor (a:t): c(20000) { x = a; }
 
   // polymorphic method
   fun p[u](a:u, add:t * u ->int):int => x + a;
