@@ -2291,7 +2291,6 @@ print $ format (".dynamic_suffix"); endl;
 @kat_rt("typedef")
 
 module X[t] {
-  fun f () : t => "khg";
   typedef mytype = t;
 }
 

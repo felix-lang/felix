@@ -456,39 +456,15 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       incr return_count;
       let e',t' as e = be e in
       let t' = minimise syms.dfns t' in
-      begin
-        ignore(do_unify syms !ret_type t');
-        let ret_type = varmap_subst syms.varmap !ret_type in
-        if type_match syms.dfns ret_type t'
-        then ()
-        else print_endline 
-      (
-        "[bind_exe: run_return ] return of  "^sbe syms.dfns bbdfns e ^":\n"^
-        "fun return type:\n" ^ string_of_btypecode syms.dfns ret_type^
-        "\nmust have same type as return expression:\n"^
-        string_of_btypecode syms.dfns t'
-      )
-      end;
-
-      if do_unify syms !ret_type t' then begin
-        ret_type := varmap_subst syms.varmap !ret_type;
-        if type_match syms.dfns !ret_type t' then
-          tack (`BEXE_fun_return (sr,(e',lower t')))
-        else clierr sr
+      ignore(do_unify syms !ret_type t');
+      ret_type := varmap_subst syms.varmap !ret_type;
+      if type_match syms.dfns !ret_type t' then
+        tack (`BEXE_fun_return (sr,(e',lower t')))
+      else clierr sr
         (
           "[bind_exe: fun_return ] return of  "^sbe syms.dfns bbdfns e ^":\n"^
           "fun return type:\n" ^ string_of_btypecode syms.dfns !ret_type^
           "\nmust have same type as return expression:\n"^
-          string_of_btypecode syms.dfns t'
-        )
-      end 
-      else
-        clierr sr
-        (
-          "In " ^ string_of_exe 0 x ^ "\n" ^
-          "Wrong return type,\nexpected : " ^ 
-          string_of_btypecode syms.dfns !ret_type ^
-          "\nbut we got " ^
           string_of_btypecode syms.dfns t'
         )
 
@@ -496,10 +472,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       incr return_count;
       let e',t' = be e in
       let t' = minimise syms.dfns t' in
-      if do_unify syms !ret_type t' then begin
-        ret_type := varmap_subst syms.varmap !ret_type;
+      ignore(do_unify syms !ret_type t');
+      ret_type := varmap_subst syms.varmap !ret_type;
+      if type_match syms.dfns !ret_type t' then
         tack (`BEXE_yield (sr,(e',lower t')))
-      end 
       else
         clierr sr
         (
