@@ -30,6 +30,9 @@ kill_flag = 0
 parity = 0
 class Death: pass
 
+def file_exists(f):
+  return os.path.isfile(f)
+
 def get_stdout(x,outit=None):
   """We're screwed if popen doesn't work .."""
   global kill_flag
@@ -292,6 +295,7 @@ class Appstate:
     self.command_history = []
     self.command_history_pos = -1
     self.curfile = None
+    self.lib_search_path = ["lib"];
     self.runstring = "bin/flx.py --test %s"
     self.execlist = [
       # filetype, button, command
@@ -684,13 +688,17 @@ class App:
     strregexp="'.*'|\".*\"|'''.*'''"+'|""".*"""'
     numregexp="[0-9]+|[0-9]*\.0-9"
     cppcomregexp="//.*$" +'|/\\*.*\\*/'
+    includeregexp = "include +"+strregexp+' *;'
 
     self.flxin.tag_config("num",foreground="#007700")
     self.flxin.tag_config("ident",foreground="blue")
     self.flxin.tag_config("keyword",foreground="#336699",font=font1)
     self.flxin.tag_config("string",foreground="#007777")
     self.flxin.tag_config("cppcom",foreground="#aa1122",font=font2)
+    self.flxin.tag_config("include")
+    self.flxin.tag_bind("include","<Button-3>",self.include_handler)
 
+    self.flxin.tag_remove("include","0.0",END)
     self.flxin.tag_remove("keyword","0.0",END)
     self.flxin.tag_remove("string","0.0",END)
     self.flxin.tag_remove("num","0.0",END)
@@ -700,6 +708,7 @@ class App:
     self.scan(strregexp,"string")
     self.idents()
     self.scan(cppcomregexp,"cppcom")
+    self.scan(includeregexp,"include")
 
   def idents(self):
     idregexp="[a-zA-Z_][a-zA-Z0-9_]*"
@@ -723,6 +732,31 @@ class App:
       eloc=loc+"+"+str(lvar.get())+" chars"
       self.flxin.tag_add(tag,loc,eloc)
       loc=self.flxin.search(regexp,eloc,stopindex=END,regexp=1,count=lvar)
+
+  def include_handler(self,e):
+    print "got include .."
+    print "x="+str(e.x) + " y=" + str(e.y)
+    d = self.flxin.get(CURRENT+" linestart", CURRENT+" lineend")
+    print d
+    i = d.index("include")
+    d = d[7:]
+    while d[0]==' ': d = d[1:]
+    print d
+    while d[0] in '"\'': d = d[1:]
+    x = ''
+    while d[0] not in '"\'': 
+      x = x + d[0:1]
+      d = d[1:]
+    print x
+    for path in self.appstate.lib_search_path:
+      cand = os.path.join(path, x+".flx")
+      print "cand="+cand
+      if file_exists(cand):
+        self.append_history(self.filename.get())
+        self.filename.delete("0",END)
+        self.filename.insert(END,cand)
+        self.load()
+        break
 
   def doquit(self):
     self.appstate.runstring = self.runcmd.get()

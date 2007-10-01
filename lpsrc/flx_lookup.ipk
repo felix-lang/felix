@@ -5252,7 +5252,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             begin try be (`AST_method_apply (sr,(get_name,e,ts)))
             with _ -> try be (`AST_apply (sr,(e2,e)))
             with exn ->
-            failwith (
+            clierr sr (
               "AST_dot: cstruct type: koenig apply "^get_name ^ 
               ", AND apply " ^ name ^
               " failed with " ^ Printexc.to_string exn
@@ -5294,7 +5294,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             begin try be (`AST_method_apply (sr,(get_name,e,ts)))
             with _ -> try be (`AST_apply (sr,(e2,e)))
             with exn ->
-            failwith (
+            clierr sr (
               "AST_dot: cstruct type: koenig apply "^get_name ^ 
               ", AND apply " ^ name ^
               " failed with " ^ Printexc.to_string exn
@@ -5344,7 +5344,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           begin try be (`AST_method_apply (sr,(get_name,e,ts)))
           with _ -> try be (`AST_apply (sr,(e2,e)))
           with exn ->
-          failwith (
+          clierr sr (
             "AST_dot: cclass type: koenig apply "^get_name ^ 
             ", AND apply " ^ name ^
             " failed with " ^ Printexc.to_string exn
@@ -5359,12 +5359,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             *)
           let get_name = "get_" ^ name in
           begin try be (`AST_method_apply (sr,(get_name,e,ts)))
-          with _ -> try be (`AST_apply (sr,(e2,e)))
-          with exn ->
-          failwith (
-            "AST_dot: Abstract type: koenig apply "^get_name ^ 
-            ", AND apply " ^ name ^
-            " failed with " ^ Printexc.to_string exn
+          with exn1 -> try be (`AST_apply (sr,(e2,e)))
+          with exn2 ->
+          clierr sr (
+            "AST_dot: Abstract type "^id^"="^sbt syms.dfns ttt ^ 
+            ":\nKoenig apply "^get_name ^ 
+            " failed with " ^ Printexc.to_string exn1 ^ 
+            "\nAND apply " ^ name ^
+            " failed with " ^ Printexc.to_string exn2
             )
           end
 

@@ -2655,36 +2655,36 @@ open SDL_events;
 
 proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:uint8)
 {
-    color := SDL_MapRGB(screen.->format, R, G, B);
+    color := SDL_MapRGB(screen.format, R, G, B);
 
     if SDL_MUSTLOCK(screen) do
         if SDL_LockSurface(screen) < 0 return;
     done;
 
-    match screen.->format.->BytesPerPixel with
+    match screen.format.BytesPerPixel with
     | 1 => 
       { /* Assuming 8-bpp */
-        bufp := cast[ptr[uint8]] screen.->pixels + y*screen.->pitch + x;
+        bufp := cast[ptr[uint8]] screen.pixels + y*screen.pitch + x;
         *bufp = color;
       }
 
     | 2 => 
       { /* Probably 15-bpp or 16-bpp */
-        bufp := cast[ptr[uint16]] screen.->pixels + y*screen.->pitch/2 + x;
+        bufp := cast[ptr[uint16]] screen.pixels + y*screen.pitch/2 + x;
         *bufp = color;
       }
 
     | 3 => 
       { /* Slow 24-bpp mode, usually not used */
-        bufp := cast[ptr[uint8]] screen.->pixels + y*screen.->pitch + x;
-        *(bufp+screen.->format.->Rshift/8) = R;
-        *(bufp+screen.->format.->Gshift/8) = G;
-        *(bufp+screen.->format.->Bshift/8) = B;
+        bufp := cast[ptr[uint8]] screen.pixels + y*screen.pitch + x;
+        *(bufp+screen.format.Rshift/8) = R;
+        *(bufp+screen.format.Gshift/8) = G;
+        *(bufp+screen.format.Bshift/8) = B;
       }
 
     | 4 => 
       { /* Probably 32-bpp */
-        bufp := cast[ptr[uint32]] screen.->pixels + y*screen.->pitch/4 + x;
+        bufp := cast[ptr[uint32]] screen.pixels + y*screen.pitch/4 + x;
         *bufp = color;
       }
     endmatch;
@@ -2708,7 +2708,7 @@ if isNULL screen do
 done;
 
 print "yo, we're off: ";
-print screen.->format.->BytesPerPixel;
+print screen.format.BytesPerPixel;
 print " bytes per pixel\n";
 
 var i = 10i32; until i == 50i32 do
@@ -2844,7 +2844,7 @@ var s: ptr[SDL_Surface] ^ 16;
 var rcDest : SDL_Rect;
 SDL_GetClipRect(screen,addr rcDest);
 
-black := SDL_MapRGB(screen.->format, 0u8, 0u8, 0u8);
+black := SDL_MapRGB(screen.format, 0u8, 0u8, 0u8);
 
 val clock = Faio::mk_alarm_clock();
 proc waitt(t:double) (f:schannel[uint8]) {
@@ -2870,7 +2870,7 @@ proc poll_event(e: &SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
-  var result = SDL_PollEvent(unref e);
+  var result = SDL_PollEvent(e);
   if result > 0 do
     //print "Got event"; endl;
     return;
@@ -3104,14 +3104,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if  videoInfo.->hw_available != 0 do
+if  videoInfo.hw_available != 0 do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if videoInfo.->blit_hw != 0 do
+if videoInfo.blit_hw != 0 do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -3222,7 +3222,7 @@ proc poll_event(e: &SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
-  var result = SDL_PollEvent(unref e);
+  var result = SDL_PollEvent(e);
   if result > 0 do
     //print "Got event"; endl;
     return;
@@ -3503,14 +3503,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if  videoInfo.->hw_available != 0 do
+if  videoInfo.hw_available != 0 do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if videoInfo.->blit_hw != 0 do
+if videoInfo.blit_hw != 0 do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -3620,7 +3620,7 @@ proc poll_event(e: &SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
-  var result = SDL_PollEvent(unref e);
+  var result = SDL_PollEvent(e);
   if result > 0 do
     //print "Got event"; endl;
     return;
@@ -3893,9 +3893,9 @@ proc LoadGLTextures( )
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.->pixels 
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
+    TextureImage.h, 0, GL_RGB,
+    GL_UNSIGNED_BYTE, TextureImage.pixels 
   );
 
   /* Linear Filtering */
@@ -4006,14 +4006,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if  videoInfo.->hw_available != 0 do
+if  videoInfo.hw_available != 0 do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if videoInfo.->blit_hw != 0 do
+if videoInfo.blit_hw != 0 do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -4124,7 +4124,7 @@ proc poll_event(e: &SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
-  var result = SDL_PollEvent(unref e);
+  var result = SDL_PollEvent(e);
   if result > 0 do
     //print "Got event"; endl;
     return;
@@ -4392,9 +4392,9 @@ proc LoadGLTextures( )
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.->pixels 
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
+    TextureImage.h, 0, GL_RGB,
+    GL_UNSIGNED_BYTE, TextureImage.pixels 
   );
 
   /* Linear Filtering */
@@ -4408,9 +4408,9 @@ proc LoadGLTextures( )
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, cast[uint] GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.->pixels 
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
+    TextureImage.h, 0, cast[uint] GL_RGB,
+    GL_UNSIGNED_BYTE, TextureImage.pixels 
   );
 
   glBindTexture( GL_TEXTURE_2D, texture.[2] );
@@ -4422,9 +4422,9 @@ proc LoadGLTextures( )
   /* Generate The MipMapped Texture ( NEW ) */
   ignore(gluBuild2DMipmaps( 
     GL_TEXTURE_2D, 3, 
-    TextureImage.->w, TextureImage.->h, 
+    TextureImage.w, TextureImage.h, 
     GL_RGB, GL_UNSIGNED_BYTE, 
-    cast[caddress] TextureImage.->pixels 
+    cast[caddress] TextureImage.pixels 
   ));
 
   /* Free up any memory we may have used */
@@ -4567,14 +4567,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if  videoInfo.->hw_available != 0 do
+if  videoInfo.hw_available != 0 do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if videoInfo.->blit_hw != 0 do
+if videoInfo.blit_hw != 0 do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -4736,7 +4736,7 @@ proc poll_event(e: &SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
-  var result = SDL_PollEvent(unref e);
+  var result = SDL_PollEvent(e);
   if result > 0 do
     //print "Got event"; endl;
     return;
@@ -5013,9 +5013,9 @@ proc LoadGLTextures( )
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.->pixels 
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
+    TextureImage.h, 0, GL_RGB,
+    GL_UNSIGNED_BYTE, TextureImage.pixels 
   );
 
   /* Linear Filtering */
@@ -5177,14 +5177,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if  videoInfo.->hw_available != 0 do
+if  videoInfo.hw_available != 0 do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if videoInfo.->blit_hw != 0 do
+if videoInfo.blit_hw != 0 do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -5319,7 +5319,7 @@ proc poll_event(e: &SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
-  var result = SDL_PollEvent(unref e);
+  var result = SDL_PollEvent(e);
   if result > 0 do
     //print "Got event"; endl;
     return;

@@ -3650,6 +3650,13 @@ STDOUT=""
 STDIMPORT="--import=flx.flxh"
 IMPORTS=""
 
+def splitext(p):
+  if p[-5:-1] == ".flx":
+    return p[:-5],".flx"
+  elif p[-5:-1] == ".cpp":
+    return p[:-5],".cpp"
+  return p,""
+
 def join(*args): return string.join(args)
 def system(cmd):
   if ECHO==1: print cmd
@@ -3666,10 +3673,10 @@ linkexts = ['o','obj','lib','dll','a','so']
 
 while grab == 1 and argno<len(sys.argv):
   arg = sys.argv[argno]
-  #print "ARGNO="+str(argno)+", arg='"+arg+"'"
-  path,ext = os.path.splitext(arg)
+  print "ARGNO="+str(argno)+", arg='"+arg+"'"
+  path,ext = splitext(arg)
   dir,base = os.path.split(path)
-  #print "path="+path+", ext="+ext+",dir="+dir+",base="+base
+  print "path="+path+", ext="+ext+",dir="+dir+",base="+base
   #print "cpps="+cpps
   #print "cppos="+cppos
   #print "arg='"+arg+"'"
@@ -3763,9 +3770,11 @@ while grab == 1 and argno<len(sys.argv):
 
 # the main filename -- subsequent args are args to flx_run
   else:
+    print "FILENAME="+ arg
     grab=0
   argno = argno + 1
- 
+
+#print grab,argno,len(sys.argv)
 if grab == 1 and argno == len(sys.argv):
   print "usage: flx [options] filename"
   sys.exit(1)

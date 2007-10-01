@@ -1226,12 +1226,15 @@ module Carray
   proc pluseq[T]: lvalue[carray[T]] * int = '$1+=$2;'; 
   proc minuseq[T]: lvalue[carray[T]] * int = '$1-=$2;'; 
 
+  /* carray is alias for a pointer .. */
+  /*
   fun eq[T]: carray[T] * carray[T] -> bool = '$1==$2';
   fun ne[T]: carray[T] * carray[T] -> bool = '$1!=$2';
   fun lt[T]: carray[T] * carray[T] -> bool = '$1<$2';
   fun le[T]: carray[T] * carray[T] -> bool = '$1<=$2';
   fun gt[T]: carray[T] * carray[T] -> bool = '$1>$2';
   fun ge[T]: carray[T] * carray[T] -> bool = '$1>=$2';
+  */
 
   publish "Convert C array to Felix array"
   fun array_of[T,N]: carray[T] -> ptr[array[T,N]] = "*(#0*)(void*)$1";
