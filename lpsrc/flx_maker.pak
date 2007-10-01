@@ -3673,10 +3673,10 @@ linkexts = ['o','obj','lib','dll','a','so']
 
 while grab == 1 and argno<len(sys.argv):
   arg = sys.argv[argno]
-  print "ARGNO="+str(argno)+", arg='"+arg+"'"
+  #print "ARGNO="+str(argno)+", arg='"+arg+"'"
   path,ext = splitext(arg)
   dir,base = os.path.split(path)
-  print "path="+path+", ext="+ext+",dir="+dir+",base="+base
+  #print "path="+path+", ext="+ext+",dir="+dir+",base="+base
   #print "cpps="+cpps
   #print "cppos="+cppos
   #print "arg='"+arg+"'"
