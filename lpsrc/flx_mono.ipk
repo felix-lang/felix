@@ -299,7 +299,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let ret = mt ret in
     (*
     let fi i ts = fi i (map mt ts) in
@@ -316,7 +316,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
       let k = fst (fi i ts) in
       let u = mt t in
@@ -338,7 +338,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
 
   | `BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = `BBDCL_val ([],t) in
     let parent = cal_parent syms bbdfns i ts in
@@ -346,7 +346,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
 
   | `BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = `BBDCL_var ([],t) in
     let parent = cal_parent syms bbdfns i ts in
@@ -354,7 +354,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
 
   | `BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = `BBDCL_ref ([],t) in
     let parent = cal_parent syms bbdfns i ts in
@@ -362,7 +362,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
 
   | `BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = `BBDCL_tmp ([],t) in
     let parent = cal_parent syms bbdfns i ts in
@@ -383,7 +383,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   *)
   | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let argtypes = map mt argtypes in
     let ret = mt ret in
     let entry = `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
@@ -392,14 +392,14 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
 
   | `BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let argtypes = map mt argtypes in
     let entry = `BBDCL_proc (props,vs,argtypes,ct,reqs) in
     Hashtbl.replace bbdfns i (id,parent, sr, entry)
 
   | `BBDCL_const (props,vs,t,`Str "#this",reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst vars t))) in
+    let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = `BBDCL_const(props,[],t,`Str "#this",reqs) in
     let parent = cal_parent syms bbdfns i ts in
@@ -407,7 +407,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
 
   | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
+    let mt t = list_subst syms.counter vars t in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
       {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps 
@@ -428,39 +428,39 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   (*
   | `BBDCL_glr (props,vs,ret, (p,exes)) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
+    let mt t = list_subst syms.counter vars t in
     let ret = mt ret in
     let exes = fixup_exes syms bbdfns mt exes in
     `BBDCL_glr (props,[],ret,(p,exes))
 
   | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
+    let mt t = list_subst syms.counter vars t in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns mt x) in
     let ret = mt ret in
     `BBDCL_reglex (props,[],(ps,traint),le,ret,(alpha,states,h,mx)) 
 
   | `BBDCL_union (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
+    let mt t = list_subst syms.counter vars t in
     let ps = map (fun (i,j,t) -> i,j,mt t) ps in
     `BBDCL_union ([],ps) 
 
   | `BBDCL_struct (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
+    let mt t = list_subst syms.counter vars t in
     let ps = map (fun (i,t) -> i,mt t) ps in
     `BBDCL_struct ([],ps) 
 
   | `BBDCL_cstruct (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
+    let mt t = list_subst syms.counter vars t in
     let ps = map (fun (i,t) -> i,mt t) ps in
     `BBDCL_cstruct ([],ps) 
 
   | `BBDCL_newtype (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst vars t in
+    let mt t = list_subst syms.counter vars t in
     let t = mt t in
     `BBDCL_newtype ([],t) 
 

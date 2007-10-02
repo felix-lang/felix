@@ -527,7 +527,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       let i = !(syms.counter) in incr (syms.counter);
       let n = length ls in 
       let pbase = !(syms.counter) in syms.counter := !(syms.counter) + n;
-      let me e = match expr_maybe_matches syms.dfns [] [] x e with
+      let me e = match expr_maybe_matches syms.counter syms.dfns [] [] x e with
         | Some ([],[]) -> true
         | None -> false
         | _ -> assert false

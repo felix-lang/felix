@@ -220,6 +220,10 @@ and fixup syms ps body =
       It doesn't fixup this function.
       *)
 
+      (*
+      print_endline "OOPS >> no alpha conversion?";
+      *) 
+
       `BTYP_typefun (a, fx b, aux c (depth + 2))
    | x -> x
  in 
@@ -270,19 +274,47 @@ and beta_reduce syms sr t1 =
   let t2 = 
   try
   beta_reduce' syms sr [] t1
-  with Failure s -> failwith ("beta-reduce failed in " ^ sbt syms.dfns t1 ^ "msg: " ^ s)
+  with
+    | Not_found -> failwith  ("Beta reduce failed with Not_found in " ^ sbt syms.dfns t1)
+    | Failure s -> failwith ("beta-reduce failed in " ^ sbt syms.dfns t1 ^ "\nmsg: " ^ s)
   in
   (*
   print_endline ("============  reduced= " ^ sbt syms.dfns t2);
-  if t1 <> t2 then print_endline "!!!!!!!!!!!! CHANGED";
   *)
   t2
 
+and type_list_index syms ls t =
+  (*
+  print_endline ("Comparing : " ^ sbt syms.dfns t ^ " with ..");
+  *)
+  let rec aux ls n = match ls with
+  | [] -> None
+  | hd :: tl ->
+    (*
+    print_endline ("Candidate : " ^ sbt syms.dfns hd);
+    *)
+    if 
+      begin try type_eq syms.counter syms.dfns hd t 
+      with x -> 
+        print_endline ("Exception: " ^ Printexc.to_string x);
+        false 
+      end
+    then Some n
+    else aux tl (n+1)
+  in aux ls 0
+
 and beta_reduce' syms sr termlist t = 
   (*
-  print_endline (spc ^ "BETA REDUCE " ^ string_of_btypecode syms.dfns t);
+  print_endline ("BETA REDUCE " ^ sbt syms.dfns t ^ "\ntrail length = " ^ si (length termlist));
   *)
-  match list_index termlist t with
+  if length termlist > 20 
+  then begin
+    print_endline ("Trail=" ^ catmap "\n" (sbt syms.dfns) termlist);
+    failwith  ("Trail overflow, infinite expansion: BETA REDUCE " ^ 
+    sbt syms.dfns t ^ "\ntrail length = " ^ si (length termlist))
+  end;
+
+  match type_list_index syms termlist t with
   | Some j -> 
         (*
         print_endline "+++Trail:";
@@ -309,11 +341,13 @@ and beta_reduce' syms sr termlist t =
   | `BTYP_fix _ -> t
   | `BTYP_var (i,_) -> t 
 
-  | `BTYP_typefun (p,r,b) ->
+  | `BTYP_typefun (p,r,b) -> t
+  (*
     let b = fixup syms p b in
     let b' = beta_reduce' syms sr (t::termlist) b in
     let t = `BTYP_typefun (p, br r, b') in
     t
+  *)
 
   | `BTYP_inst (i,ts) -> 
     let ts = map br ts in
@@ -472,15 +506,16 @@ and beta_reduce' syms sr termlist t =
             else List.map2 (fun (i,_) t -> i, t) ps ts
       in
       (*
-      print_endline ("Body before subs" ^ sbt syms.dfns body);
+      print_endline ("Body before subs    = " ^ sbt syms.dfns body);
+      print_endline ("Parameters= " ^ catmap "," (fun (i,t) -> "T"^si i ^ "=>" ^ sbt syms.dfns t) params');
       *)
-      let t' = list_subst params' body in
+      let t' = list_subst syms.counter params' body in
       (*
-      print_endline ("Body after subs" ^ sbt syms.dfns t');
+      print_endline ("Body after subs     = " ^ sbt syms.dfns t');
       *)
       let t' = beta_reduce' syms sr (t::termlist) t' in
       (*
-      print_endline ("Body after reduction" ^ sbt syms.dfns t');
+      print_endline ("Body after reduction = " ^ sbt syms.dfns t');
       *)
       let t' = adjust t' in
       t'
@@ -510,7 +545,7 @@ and beta_reduce' syms sr termlist t =
           pattern_vars=dvars;
         }, t'
       in
-      match maybe_unification syms.dfns [p,tt] with
+      match maybe_unification syms.counter syms.dfns [p,tt] with
       | Some _ -> new_matches := x :: !new_matches
       | None -> 
         (*
@@ -526,11 +561,11 @@ and beta_reduce' syms sr termlist t =
       failwith "[beta-reduce] typematch failure"
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try 
-        let mgu = unification false syms.dfns [p', tt] dvars in
+        let mgu = unification false syms.counter syms.dfns [p', tt] dvars in
         (*
         print_endline "Typematch success";
         *)
-        let t' = list_subst (mgu @ eqns) t' in
+        let t' = list_subst syms.counter (mgu @ eqns) t' in
         let t' = br t' in
         (*
         print_endline ("type match reduction result=" ^ sbt syms.dfns t');

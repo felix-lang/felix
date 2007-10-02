@@ -37,6 +37,12 @@ open Flx_generic
 open Flx_tpat
 open Inria_syntax
 
+let hfind msg h k = 
+  try Hashtbl.find h k
+  with Not_found ->
+    print_endline ("flx_bbind Hashtbl.find failed " ^ msg);
+    raise Not_found
+
 let find_param name_map s =
   match Hashtbl.find name_map s with
   | `NonFunctionEntry (i) -> sye i
@@ -102,7 +108,7 @@ let bind_regex syms env sr be ret_type cls : regular_args_t =
   (fun i c -> 
     let sr = src_of_expr c in
     let e,t as bt = be c in
-    let t = minimise syms.dfns t in
+    let t = minimise syms.counter syms.dfns t in
     Hashtbl.add bcode i (e,t);
     if do_unify syms !ret_type t then
       ret_type := varmap_subst syms.varmap !ret_type
@@ -124,7 +130,7 @@ let rec find_true_parent dfns child parent =
   match parent with 
   | None -> None
   | Some parent ->
-    match Hashtbl.find dfns parent with
+    match hfind "find_true_parent" dfns parent with
     | {id=id; parent=grandparent; symdef=bdcl} ->
       match bdcl with 
       | `SYMDEF_module 
@@ -311,7 +317,7 @@ let bbind_sym syms bbdfns i {
             then `BTYP_cfunction (d,brt')
             else `BTYP_function (d,brt')
           in
-          let t = fold syms.dfns ft in
+          let t = fold syms.counter syms.dfns ft in
           Hashtbl.add syms.ticache i t
         end
         ;
@@ -333,7 +339,7 @@ let bbind_sym syms bbdfns i {
       begin match parent with 
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
-        match Hashtbl.find syms.dfns ip with
+        match hfind "bbind" syms.dfns ip with
         | {symdef=`SYMDEF_reduce _} 
         | {symdef=`SYMDEF_axiom _} 
         | {symdef=`SYMDEF_lemma _} 
@@ -381,7 +387,7 @@ let bbind_sym syms bbdfns i {
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool)) in
+        let t = fold syms.counter syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -406,7 +412,7 @@ let bbind_sym syms bbdfns i {
       ;
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
+        let t = fold syms.counter syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -424,7 +430,7 @@ let bbind_sym syms bbdfns i {
       ;
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
+        let t = fold syms.counter syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -448,7 +454,7 @@ let bbind_sym syms bbdfns i {
         match luqn2 q with 
         | `FunctionEntry [i],[] -> 
           let i = sye i in
-          begin match Hashtbl.find syms.dfns i with
+          begin match hfind "bbind" syms.dfns i with
           | {symdef=`SYMDEF_glr _ } -> `Nonterm [i]
           | {symdef=`SYMDEF_nonconst_ctor _} -> `Term i
           | _ -> clierr sr "Expected nonterminal or union constructor"
@@ -456,7 +462,7 @@ let bbind_sym syms bbdfns i {
         | `FunctionEntry ii,[] -> 
           let ii = map sye ii in
           let i = hd ii in
-          begin match Hashtbl.find syms.dfns i with
+          begin match hfind "bbind" syms.dfns i with
           | {symdef=`SYMDEF_glr _ } -> `Nonterm ii
           | {symdef=`SYMDEF_nonconst_ctor _} -> 
             clierr sr "Expected unique union constructor (it's overloaded)"
@@ -479,7 +485,7 @@ let bbind_sym syms bbdfns i {
       print_endline ("Binding const ctor " ^ name);
       *)
       let unit_sum = 
-        match Hashtbl.find syms.dfns uidx with
+        match hfind "bbind" syms.dfns uidx with
         | {symdef=`SYMDEF_union its} ->
           fold_left 
           (fun v (_,_,_,t) -> 
@@ -591,7 +597,7 @@ let bbind_sym syms bbdfns i {
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.dfns (`BTYP_function (typeoflist ts,bret)) in
+        let t = fold syms.counter syms.dfns (`BTYP_function (typeoflist ts,bret)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -689,7 +695,7 @@ let bbind_sym syms bbdfns i {
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.dfns (`BTYP_cfunction (typeoflist ts_cf,bret)) in
+        let t = fold syms.counter syms.dfns (`BTYP_cfunction (typeoflist ts_cf,bret)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -799,7 +805,7 @@ let bbind_sym syms bbdfns i {
 
 let bbind_index syms bbdfns i =
   if Hashtbl.mem bbdfns i then ()
-  else let entry = Hashtbl.find syms.dfns i in
+  else let entry = hfind "bbind" syms.dfns i in
   bbind_sym syms bbdfns i entry
 
 let bbind syms = 
@@ -821,7 +827,7 @@ let bbind syms =
         begin try
           (*
           begin
-            try match Hashtbl.find syms.dfns !i with {id=id} ->
+            try match hfind "bbind" syms.dfns !i with {id=id} ->
               print_endline (" Trying to bind "^id^" index " ^ si !i)
             with Not_found ->
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
@@ -830,8 +836,8 @@ let bbind syms =
           *)
           bbind_sym syms bbdfns !i entry
         with Not_found -> 
-          try match Hashtbl.find syms.dfns !i with {id=id} ->
-            failwith ("Binding error "^id^" index " ^ si !i)
+          try match hfind "bbind" syms.dfns !i with {id=id} ->
+            failwith ("Binding error, cannot find in table: "^id^" index " ^ si !i)
           with Not_found ->
             failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
         end

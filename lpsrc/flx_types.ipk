@@ -3134,7 +3134,7 @@ and sb dfns depth fixlist counter prec tc =
 
     | `BTYP_record ls -> 
       begin match ls with 
-      | [] -> 0,"unit" 
+      | [] -> 0,"record_unit" 
       | _ -> 0,"struct {"^catmap "" (fun (s,t)->s^":"^sbt 0 t^";") ls ^"}"
       end
 

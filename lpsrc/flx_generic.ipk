@@ -49,6 +49,12 @@ open Flx_exceptions
 open Flx_print
 open Flx_ast
 
+let hfind msg h k = 
+  try Hashtbl.find h k
+  with Not_found ->
+    print_endline ("flx_generic Hashtbl.find failed " ^ msg);
+    raise Not_found
+
 (* Adjustment of type argument lists works much
 like the activation record display, so well call
 it the type display: it is just a list of all
@@ -108,14 +114,14 @@ let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
 
 (* finds the complete vs list *)
 let rec find_vs syms i : ivs_list_t =
-  match Hashtbl.find syms.dfns i with
+  match hfind "find_vs" syms.dfns i with
   {parent=parent;vs=vs} ->
   match parent with
   | Some i -> merge_ivs (find_vs syms i) vs
   | None -> vs
 
 let rec find_func_vs syms vs j =
-  match Hashtbl.find syms.dfns j with
+  match hfind "find_func_vs" syms.dfns j with
   | {parent=parent; vs=vs'; symdef=`SYMDEF_module } 
   | {parent=parent; vs=vs'; symdef=`SYMDEF_typeclass } 
     ->
@@ -136,7 +142,7 @@ let rec find_func_vs syms vs j =
 *)
 
 let find_split_vs syms i =
-  match Hashtbl.find syms.dfns i with
+  match hfind "find_split_vs" syms.dfns i with
   {symdef=`SYMDEF_typevar _} -> [],[],dfltvs_aux
   
   | {parent=parent; vs=vs} ->
@@ -153,7 +159,7 @@ let adjust_ts syms sr index ts =
   let m = length vs in 
   let n = length ts in
   if n>m then begin
-    match Hashtbl.find syms.dfns index with {id=id} ->
+    match hfind "adjust_ts" syms.dfns index with {id=id} ->
     clierr sr 
     (
       "For "^ id^ "<" ^ si index ^ 
@@ -165,7 +171,7 @@ let adjust_ts syms sr index ts =
     )
   end;
   if n<m then begin
-    match Hashtbl.find syms.dfns index with {id=id} ->
+    match hfind "adjust_ts" syms.dfns index with {id=id} ->
     clierr sr 
     (
       "For "^id^"<" ^ si index ^ 

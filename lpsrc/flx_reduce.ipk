@@ -66,7 +66,7 @@ let ematch syms bbdfns changed (name,bvs,bps,e1,e2) tvars evars e =
   (*
   print_endline ("Matching " ^ sbe syms.dfns bbdfns e ^ " with " ^ sbe syms.dfns bbdfns e1);
   *)
-  match Flx_unify.expr_maybe_matches syms.dfns tvars evars e1 e with
+  match Flx_unify.expr_maybe_matches syms.counter syms.dfns tvars evars e1 e with
   | Some (tmgu,emgu) -> 
     changed := true;
       (*
@@ -75,7 +75,7 @@ let ematch syms bbdfns changed (name,bvs,bps,e1,e2) tvars evars e =
       print_endline ("TMGU=" ^catmap ", " (fun (i,t')-> si i ^ " --> " ^ sbt syms.dfns t') tmgu);
       *)
     let e = fold_left (fun e (i,e') -> Flx_unify.expr_term_subst e i e') e2 emgu in
-    let rec s e = map_tbexpr id s (list_subst tmgu) e in
+    let rec s e = map_tbexpr id s (list_subst syms.counter tmgu) e in
     let e' = s e in
     (*
     print_endline ("RESULT OF SUBSTITUTION into RHS: " ^ sbe syms.dfns bbdfns e2 ^ " is " ^ sbe syms.dfns bbdfns e); 

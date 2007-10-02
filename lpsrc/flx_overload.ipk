@@ -396,7 +396,7 @@ let consider syms bt be luqn2 name
     (*
     print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt syms.dfns) curry_domains);
     *)
-    let curry_domains = map (fun t -> list_subst eqnsi t) curry_domains in 
+    let curry_domains = map (fun t -> list_subst syms.counter eqnsi t) curry_domains in 
 
     (*
     print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt syms.dfns) curry_domains);
@@ -428,7 +428,7 @@ let consider syms bt be luqn2 name
     print_endline "...";
     *)
 
-    let mgu = maybe_specialisation syms.dfns eqns in
+    let mgu = maybe_specialisation syms.counter syms.dfns eqns in
     (* 
     (* doesn't work .. fails to solve for some vars
        which aren't local vs of the fun .. this case:
@@ -524,7 +524,7 @@ let consider syms bt be luqn2 name
 *)      
       begin
         (* convert mgu from spec vars to base vars *)
-        let basemap = map2 (fun (_,i,_) t -> i,list_subst !mgu t) base_vs sub_ts in
+        let basemap = map2 (fun (_,i,_) t -> i,list_subst syms.counter !mgu t) base_vs sub_ts in
         (*
         print_endline ("New basemap: " ^ catmap "," 
           (fun (i,t) -> si i ^ "->" ^ sbt syms.dfns t)
@@ -545,7 +545,7 @@ let consider syms bt be luqn2 name
             type_of_tpattern syms tp
            in
            let et = spec_bt sr et in
-           let et = list_subst !mgu et in
+           let et = list_subst syms.counter !mgu et in
            let et = beta_reduce syms sr et in
            (*
            print_endline ("After substitution of mgu, Reduced type is:\n  " ^ 
@@ -656,10 +656,10 @@ let consider syms bt be luqn2 name
         | `BTYP_intersect cons -> iter xcons cons
         | `BTYP_type_match (arg,[{pattern=pat},`BTYP_tuple[]]) ->
           let arg = spec arg in
-          let arg = list_subst !mgu arg in
+          let arg = list_subst syms.counter !mgu arg in
           let arg = beta_reduce syms sr arg in
           let pat = spec pat in
-          let pat = list_subst !mgu pat in
+          let pat = list_subst syms.counter !mgu pat in
           let pat = beta_reduce syms sr pat in
           extra_eqns := (arg, pat)::!extra_eqns
         | _ -> ()
@@ -678,7 +678,7 @@ let consider syms bt be luqn2 name
         );
         *)
         let maybe_extra_mgu = 
-          try Some (unification false syms.dfns !extra_eqns !dvars)
+          try Some (unification false syms.counter syms.dfns !extra_eqns !dvars)
           with Not_found -> None
         in
         match maybe_extra_mgu with
@@ -722,7 +722,7 @@ let consider syms bt be luqn2 name
         let ok = ref true in
         iter 
         (fun sign ->
-          if sign <> list_subst !mgu sign then
+          if sign <> list_subst syms.counter !mgu sign then
           begin
             ok := false;
             (*
@@ -758,7 +758,7 @@ let consider syms bt be luqn2 name
           substituting away the view vs
         *)
        
-        let base_ts = map (list_subst !mgu) sub_ts in
+        let base_ts = map (list_subst syms.counter !mgu) sub_ts in
 
         (*
         print_endline ("Matched candidate " ^ si i ^ "\n" ^
@@ -894,7 +894,7 @@ let overload
          (*
          print_endline (" .. comparing with " ^ sbt syms.dfns typ);
          *)
-         begin match compare_sigs syms.dfns typ c with
+         begin match compare_sigs syms.counter syms.dfns typ c with
          | `Less -> 
            (*
            print_endline "Candidate is more general, discard it, retain whole list";
@@ -903,8 +903,8 @@ let overload
          | `Equal -> 
            (* same function .. *)
            if i = j then aux lhs t else
-           let sr = match Hashtbl.find syms.dfns i with {sr=sr} -> sr in
-           let sr2 = match Hashtbl.find syms.dfns j with {sr=sr} -> sr in
+           let sr = match (try Hashtbl.find syms.dfns i with Not_found -> failwith "ovrload BUGGED") with {sr=sr} -> sr in
+           let sr2 = match (try Hashtbl.find syms.dfns j with Not_found -> failwith "overload Bugged") with {sr=sr} -> sr in
            clierrn [call_sr; sr2; sr]
            (
              "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^

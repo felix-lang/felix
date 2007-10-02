@@ -33,6 +33,12 @@ open Flx_exceptions
 open List
 open Flx_maps
 
+let hfind msg h k = 
+  try Hashtbl.find h k
+  with Not_found ->
+    print_endline ("flx_bexe Hashtbl.find failed " ^ msg);
+    raise Not_found
+
 (* 
   THIS IS A DUMMY BOUND SYMBOL TABLE 
   REQUIRED FOR THE PRINTING OF BOUND EXPRESSIONS
@@ -42,7 +48,7 @@ let bbdfns = Hashtbl.create 97
 let rec check_if_parent syms child parent =
   if child = parent then true
   else
-      match Hashtbl.find syms.dfns child with
+      match hfind "bexe" syms.dfns child with
       | {parent=Some parent} -> check_if_parent syms child parent
       | {parent=None} -> false
 
@@ -53,13 +59,13 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   | `BTYP_cfunction (t, `BTYP_void) 
   | `BTYP_lvalue (`BTYP_function (t, `BTYP_void))
   | `BTYP_function (t, `BTYP_void) -> 
-    if type_match syms.dfns t t2
+    if type_match syms.counter syms.dfns t t2
     then 
       ( 
         (*
         match p with 
         | `BEXPR_closure (i,ts) -> 
-          begin match Hashtbl.find syms.dfns i with
+          begin match hfind "bexe" syms.dfns i with
           | {symdef=`SYMDEF_fun _ } 
           | {symdef=`SYMDEF_callback _ } 
             -> 
@@ -87,7 +93,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
               | `BTYP_tuple [] -> []
               | _ -> assert false
             in
-            begin let pnames = match Hashtbl.find syms.dfns i with
+            begin let pnames = match hfind "bexe" syms.dfns i with
             | {symdef=`SYMDEF_function (ps,_,_,_)} -> 
               map (fun (_,name,_,d)->
                 name, 
@@ -357,7 +363,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | `BEXPR_name (class_idx,ts),_ ->
         begin 
           match 
-            try Hashtbl.find syms.dfns class_idx
+            try hfind "bexe" syms.dfns class_idx
             with Not_found ->
               syserr sr ("[bexe][EXE_apply_ctor] Weird, can't find class index " ^ si class_idx)
           with 
@@ -413,7 +419,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       begin match lun sr s with
       | `NonFunctionEntry (index) -> 
         let index = sye index in
-        let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
+        let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
         begin match entry with
         | `SYMDEF_var _ -> ()
         | `SYMDEF_val _ -> clierr sr ("Can't svc into value " ^ id)
@@ -455,10 +461,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       reachable := false;
       incr return_count;
       let e',t' as e = be e in
-      let t' = minimise syms.dfns t' in
+      let t' = minimise syms.counter syms.dfns t' in
       ignore(do_unify syms !ret_type t');
       ret_type := varmap_subst syms.varmap !ret_type;
-      if type_match syms.dfns !ret_type t' then
+      if type_match syms.counter syms.dfns !ret_type t' then
         tack (`BEXE_fun_return (sr,(e',lower t')))
       else clierr sr
         (
@@ -471,10 +477,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_yield e ->        
       incr return_count;
       let e',t' = be e in
-      let t' = minimise syms.dfns t' in
+      let t' = minimise syms.counter syms.dfns t' in
       ignore(do_unify syms !ret_type t');
       ret_type := varmap_subst syms.varmap !ret_type;
-      if type_match syms.dfns !ret_type t' then
+      if type_match syms.counter syms.dfns !ret_type t' then
         tack (`BEXE_yield (sr,(e',lower t')))
       else
         clierr sr
@@ -505,10 +511,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_iinit ((s,index),e) -> 
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
-        let rhst = minimise syms.dfns rhst in
+        let rhst = minimise syms.counter syms.dfns rhst in
         let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
         let lhst = reduce_type lhst in
-        if type_match syms.dfns lhst rhst
+        if type_match syms.counter syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
@@ -529,19 +535,19 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let index = sye index in
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
-        let rhst = minimise syms.dfns rhst in
+        let rhst = minimise syms.counter syms.dfns rhst in
         let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
         let lhst = reduce_type lhst in
         (*
         print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
         *)
         let lhst =
-          let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
+          let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
           match entry with
           | `SYMDEF_ref _ -> `BTYP_pointer lhst
           | _ -> lhst
         in
-        if type_match syms.dfns lhst rhst
+        if type_match syms.counter syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
@@ -571,9 +577,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       ;
       let lhst = lstrip syms.dfns lhst in
       let rhst = lstrip syms.dfns rhst in
-      let lhst = minimise syms.dfns lhst in
-      let rhst = minimise syms.dfns rhst in 
-      if type_match syms.dfns lhst rhst
+      let lhst = minimise syms.counter syms.dfns lhst in
+      let rhst = minimise syms.counter syms.dfns rhst in 
+      if type_match syms.counter syms.dfns lhst rhst
       then tack (`BEXE_assign (sr,lx, rx))
       else clierr sr
       (

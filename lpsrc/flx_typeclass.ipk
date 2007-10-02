@@ -370,7 +370,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      );
      *)
      let mgu = 
-       try Some (unification false syms.dfns eqns vset) 
+       try Some (unification false syms.counter syms.dfns eqns vset) 
        with Not_found -> None
      in
      begin match mgu with 
@@ -398,7 +398,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
        (*
        print_endline ("instance constraint: " ^ sbt syms.dfns inst_constraint);
        *)
-       let con = list_subst mgu inst_constraint in
+       let con = list_subst syms.counter mgu inst_constraint in
        let con = reduce_type (Flx_beta.beta_reduce syms sr con) in
        match con with
        | `BTYP_tuple [] ->

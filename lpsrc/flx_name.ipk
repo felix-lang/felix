@@ -212,7 +212,7 @@ let tix syms t =
 
 let rec cpp_type_classname syms t = 
   let tix t = tix syms t in
-  let t = fold syms.dfns (lstrip syms.dfns t) in
+  let t = fold syms.counter syms.dfns (lstrip syms.dfns t) in
   try match unfold syms.dfns t with
   | `BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.dfns mt) 
   | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"

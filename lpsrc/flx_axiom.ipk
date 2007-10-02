@@ -57,7 +57,7 @@ let verify syms bbdfns csr e =
     in
     let tvars = map (fun (_,i) -> i) bvs in
     let evars = map (fun {pindex=i} -> i) bpl in
-    let result = expr_maybe_matches syms.dfns tvars evars param e in
+    let result = expr_maybe_matches syms.counter syms.dfns tvars evars param e in
     match result with
     | None -> ()
     | Some (tmgu, emgu) ->
@@ -125,7 +125,7 @@ let verify syms bbdfns csr e =
       in 
       if not ok then () else
       let xsub x = fold_left (fun x (i,e) -> expr_term_subst x i e) x emgu in
-      let tsub t = list_subst tmgu t in
+      let tsub t = list_subst syms.counter tmgu t in
       (*
       print_endline ("tmgu= " ^ catmap ", " (fun (i,t) -> si i ^ "->" ^ sbt syms.dfns t) tmgu);
       *)
