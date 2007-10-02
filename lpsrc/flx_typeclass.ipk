@@ -423,55 +423,119 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
 
  
 let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
-   let entries = 
+  let entries = 
     try Hashtbl.find syms.typeclass_to_instance i 
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
-   in
-   let sr = 
+  in
+  let sr = 
      try match Hashtbl.find syms.dfns i with {sr=sr} -> sr 
      with Not_found -> dummy_sr
-   in
-   let entries = fold_left (fun acc x -> match tcinst_chk syms allow_fail i ts sr x with
+  in
+  let entries = fold_left (fun acc x -> match tcinst_chk syms allow_fail i ts sr x with
      | None -> acc
-     | Some x -> x::acc
+     | Some jts -> (jts,x)::acc
      ) [] entries
-   in
-   match entries with
-   | [] -> i,ts
-   | [j,ts] -> 
+  in
+  match entries with
+  | [] -> i,ts
+  | [(j,ts),_] -> 
      (*
      print_endline ("Found instance " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
      *)
      j,ts
-   | ls ->
-     let id,parent,sr,entry = 
+
+  | candidates ->
+    let id,parent,sr,entry = 
        try Hashtbl.find bbdcls i 
        with Not_found -> failwith ("Woops can't find virtual function index "  ^ si i)
-     in
-     print_endline
-     ("Unimplemented: Multiple matching instances for typeclass virtual instance\n" 
+    in
+    (*
+    print_endline
+    ("Unimplemented: Multiple matching instances for typeclass virtual instance\n" 
      ^id^"<"^ si i^">["^ catmap "," (sbt syms.dfns) ts ^"]"
-     )
-     ;
-     iter
-     (fun (j,ts) ->
+    )
+    ;
+    iter
+    (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
        let id,parent,sr,entry = 
          try Hashtbl.find bbdcls j 
          with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
        in
        let parent = match parent with Some k -> k | None -> assert false in
-       print_endline ("Function " ^ si j ^ " instance parent " ^ si parent);
-       let id,parent,sr,entry = 
-         try Hashtbl.find bbdcls parent 
-         with Not_found -> failwith ("Woops can't find instance "  ^ si parent)
-       in
-       ()
-       (* FINISH ME! *)
-     ) 
-     ls
-     ;
-   failwith "can't handle overlapping instances yet"
+       print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+       print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]");
+       print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
+    ) 
+    candidates 
+    ;
+    *)
+    let candidates = fold_left
+    (fun oc (((j,ts),(inst_vs,con,inst_ts,k)) as r) ->
+       let c = `BTYP_type_tuple inst_ts in 
+       (*
+       print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
+       *)
+       let rec aux lhs rhs =
+         match rhs with
+         | [] -> 
+           (*
+           print_endline "return elements plus candidate";
+           *)
+           r::lhs (* return all non-greater elements plus candidate *)
+         | (((j,ts),(inst_vs,con,inst_ts,k)) as x)::tail ->
+           let c' = `BTYP_type_tuple inst_ts in 
+           (*
+           print_endline (" .. comparing with " ^ sbt syms.dfns c');
+           *)
+           begin match compare_sigs syms.counter syms.dfns c' c with
+           | `Less -> 
+             (*
+             print_endline "Candidate is more general, discard it, retain whole list";
+             *)
+             lhs @ rhs (* keep whole list, discard c *) 
+           | `Equal -> 
+             aux (x::lhs) tail (* keep element *)
 
+           | `Greater -> 
+             (*
+             print_endline "Candidate is less general: discard this element";
+             *)
+             aux lhs tail (* discard greater element *)
+           | `Incomparable -> 
+             (*
+             print_endline "Candidate is comparable, retail element";
+             *)
+             aux (x::lhs) tail (* keep element *)
+         end
+       in aux [] oc
+    )
+    []
+    candidates 
+    in
+    match candidates with
+    | [] -> i,ts
+    | [(j,ts),(inst_vs,con,inst_ts,k)] -> 
+       (*
+       print_endline ("Found most specialised instance " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+       print_endline (" instance [" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]");
+       *)
+       j,ts
+
+    | candidates ->
+      iter
+      (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
+         let id,parent,sr,entry = 
+           try Hashtbl.find bbdcls j 
+           with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
+         in
+         let parent = match parent with Some k -> k | None -> assert false in
+         print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
+         print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]");
+         print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
+      ) 
+      candidates 
+      ;
+      clierr sr "No most specialised instance!"
 
 let id x = x
 
