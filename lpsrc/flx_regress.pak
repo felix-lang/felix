@@ -2559,6 +2559,44 @@ Some c
 None
 @doc()
 
+@env_rt.head(3)
+@select(env_rt.test('.flx'))
+// cheats, uses fun instead of gen.. may break later
+fun fold_file[a,b]
+              (read_func: 1->opt[a])
+              (elem_func: a->b->b)
+              (seed: b) :b =
+{              
+  fun aux (prev_val:b) :b =>
+      match read_func () with
+      | Some ?input => aux (elem_func input prev_val)
+      | None => prev_val
+      endmatch
+  ;
+  return aux seed;
+}
+
+include "std/textio";
+open Text_file;
+
+fun line_count (filename:string) : int =
+{
+   f := fopen_input filename;
+   fun counter (x:string) (count:int)=> count + 1;
+   fun readline () => match readln f with | ""=>None[string] | ?x => Some x endmatch;
+   return fold_file the readline the counter 0;
+}
+
+println$ line_count "test/regress/data/somelines.txt";
+
+@select(env_rt.expect())
+30
+@doc()
+
+@select(tangler("test/regress/data/somelines.txt"))
+@for i in range(1,31): tangle(str(i))
+@doc()
+
 @env_nd.head(2,"Non deterministic tests")
 
 @env_nd.head(3)
