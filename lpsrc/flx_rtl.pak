@@ -950,7 +950,8 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char *file, int
   return tmp; \
 }
 
-#define FLX_NEWP(x) new(*PTF gc,x##_ptr_map)x
+#define FLX_NEWP(x) new(*PTF gc,x##_ptr_map,false)x
+#define FLX_NEWPA(x) new(*PTF gc,x##_ptr_map,false)x
 
 #define FLX_FINALISER(x) \
 static void x##_finaliser(collector_t *, void *p){\
@@ -1014,7 +1015,7 @@ extern "C" thread_frame_t *create_thread_frame(\
 extern "C" thread_frame_t *create_thread_frame(\
   collector_t *gc\
 ) {\
-  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map) mname::thread_frame_t();\
+  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
   p->gc = gc;\
   ptf = p;\
   return p;\
@@ -1024,7 +1025,7 @@ extern "C" thread_frame_t *create_thread_frame(\
 extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
   collector_t *gc\
 ) {\
-  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map) mname::thread_frame_t();\
+  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
   p->gc = gc;\
   return p;\
 }
@@ -1045,7 +1046,7 @@ extern "C" con_t *flx_start(\
   ptf->flx_stdin = stdin_;\
   ptf->flx_stdout = stdout_;\
   ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gc,mname::x##_ptr_map) \
+  return (new(*ptf->gc,mname::x##_ptr_map,false) \
     mname::x()) ->call(0);\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
@@ -1063,7 +1064,7 @@ extern "C" con_t *flx_start(\
   ptf->flx_stdin = stdin_;\
   ptf->flx_stdout = stdout_;\
   ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gc,mname::x##_ptr_map) \
+  return (new(*ptf->gc,mname::x##_ptr_map,false) \
     mname::x()) ->call(0);\
 }
 #else 
@@ -1081,7 +1082,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
   ptf->flx_stdin = stdin_;\
   ptf->flx_stdout = stdout_;\
   ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gc,mname::x##_ptr_map) \
+  return (new(*ptf->gc,mname::x##_ptr_map,false) \
     mname::x(ptf)) ->call(0);\
 }
 #endif
@@ -1258,7 +1259,7 @@ bool slist_t::isempty()const { return head == 0; }
 
 void slist_t::push(void *data) 
 {
-  head = new(*gc,slist_node_ptr_map) slist_node_t(head,data);
+  head = new(*gc,slist_node_ptr_map,true) slist_node_t(head,data);
 }
 
 // note: never fails, return NULL pointer if the list is empty
@@ -1409,8 +1410,8 @@ flx::gc::generic::gc_shape_t _fthread_ptr_map = {
 schannel_t::schannel_t (gc::generic::collector_t *gc) : 
   waiting_to_read(0), waiting_to_write(0) 
 {
-  waiting_to_read = new (*gc, slist_ptr_map) slist_t(gc);
-  waiting_to_write = new (*gc, slist_ptr_map) slist_t(gc);
+  waiting_to_read = new (*gc, slist_ptr_map,false) slist_t(gc);
+  waiting_to_write = new (*gc, slist_ptr_map,false) slist_t(gc);
 }
 
 // uncopyable object but implementation needed for linker
@@ -2920,7 +2921,7 @@ int run_felix_pthread(
     con_t *top = instance->main_proc;
     if(top)
     {
-      flx_main = new (*collector,_fthread_ptr_map) fthread_t(top);
+      flx_main = new (*collector,_fthread_ptr_map,false) fthread_t(top);
       collector->add_root(flx_main);
       active->push_front(flx_main);
     }
@@ -2928,7 +2929,7 @@ int run_felix_pthread(
 
   {
     con_t *top = instance->start_proc;
-    fthread_t *ft = new (*collector,_fthread_ptr_map) fthread_t(top);
+    fthread_t *ft = new (*collector,_fthread_ptr_map,false) fthread_t(top);
     collector->add_root(ft);
     active->push_front(ft);
   }

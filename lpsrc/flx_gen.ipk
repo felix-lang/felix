@@ -2140,7 +2140,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       (if mem `Generator props then
       "  return this;\n"
       else
-      "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"
+      "  return new(*PTF gc,"^name^"_ptr_map,false) "^name^"(*this);\n"
       )^
       "}\n"
     in
@@ -2250,7 +2250,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
       "}\n"
     and clone =
       "  " ^ name ^ "* "^name^"::clone(){\n"^
-      "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"^
+      "  return new(*PTF gc,"^name^"_ptr_map,false) "^name^"(*this);\n"^
       "}\n"
     in
       let q = qualified_name_of_bindex syms.dfns bbdfns index in
@@ -2456,7 +2456,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         "}\n" 
     and clone =
       "  " ^name^"* "^name^"::clone(){\n" ^
-        "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n" ^
+        "  return new(*PTF gc,"^name^"_ptr_map,false) "^name^"(*this);\n" ^
         "}\n"
     in
       let q = 
@@ -2774,7 +2774,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       )
       ^cat ", " (map (fun {pid=id}->id) ps) ^ ");\n"
       else
-      "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
+      "  return (new(*_PTF gc,"^class_name^"_ptr_map,false)\n" ^
       "    " ^ class_name ^ "(_PTFV)\n" ^
       "    ->apply(" ^ cat ", " (map (fun{pid=id}->id) ps) ^ ");\n" 
       )^
@@ -2867,7 +2867,7 @@ let gen_biface_body syms bbdfns biface = match biface with
         ^
         "  return 0;\n"
         else
-        "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
+        "  return (new(*_PTF gc,"^class_name^"_ptr_map,false)\n" ^
         "    " ^ class_name ^ "(_PTFV))" ^
         "\n      ->call(" ^ strargs ^ ");\n" 
       )

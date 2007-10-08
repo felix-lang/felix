@@ -1965,7 +1965,7 @@ module Control
 
   private _gc_pointer type _schannel = "flx::rtl::schannel_t*";
   gen mk_schannel[t]: 1->schannel[t] = 
-    "new(*PTF gc,flx::rtl::schannel_ptr_map) flx::rtl::schannel_t(PTF gc)"
+    "new(*PTF gc,flx::rtl::schannel_ptr_map,false) flx::rtl::schannel_t(PTF gc)"
     requires property "needs_gc"
   ; 
 
@@ -2010,7 +2010,7 @@ module Control
   private fun _start0: (1->0)->cont = "$1->clone()->call(0)";
   gen start (p:1->0) = { return _start0 (p); }
 
-  gen mk_thread: cont->fthread = "new(*PTF gc,_fthread_ptr_map) flx::rtl::fthread_t($1)";
+  gen mk_thread: cont->fthread = "new(*PTF gc,_fthread_ptr_map,false) flx::rtl::fthread_t($1)";
 
   proc spawn_fthread(p:1->0)
   {

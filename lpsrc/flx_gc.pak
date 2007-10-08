@@ -263,7 +263,8 @@ GC_EXTERN void *operator new
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
-  flx::gc::generic::gc_shape_t &
+  flx::gc::generic::gc_shape_t &,
+  bool
 );
 #endif
 
@@ -294,7 +295,8 @@ collector_t::collector_t() : debug(false) {}
 void *operator new(
   std::size_t amt,
   flx::gc::generic::collector_t &collector,
-  flx::gc::generic::gc_shape_t &shape
+  flx::gc::generic::gc_shape_t &shape,
+  bool allow_gc
 )
 {
   if (amt != shape.amt)

@@ -499,7 +499,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let pname = shape_of syms bbdfns tn t' in
     let typ = tn t' in
     let frame_ptr = 
-      "new(*PTF gc,"^pname^") " ^
+      "new(*PTF gc,"^pname^",false) " ^
       typ ^ "("^ge e ^")" 
     in
     let reference = ref_type ^ "(" ^ frame_ptr ^ ")" in
@@ -910,7 +910,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     let aval = 
        if isclass bbdfns t' then ge_arg e else
-      "new (*PTF gc, "^arg_typename^"_ptr_map) " ^
+      "new (*PTF gc, "^arg_typename^"_ptr_map,false) " ^
       arg_typename ^ "(" ^ ge_arg e ^ ")"
     in 
     let ls = match t with
@@ -965,7 +965,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
        in
        let aval = 
          if isclass bbdfns t'' then ge_arg (a,t'') else
-         "new (*PTF gc, "^arg_typename^"_ptr_map) " ^
+         "new (*PTF gc, "^arg_typename^"_ptr_map,false) " ^
          arg_typename ^ "(" ^ ge_arg (a,t'') ^ ")"
        in
        let uval = 
@@ -1128,7 +1128,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         let ctt = tn ct in
         let ptrmap = shape_of syms bbdfns tn ct in 
         let txt =
-           "_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
+           "_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^",false)"^
            ctt ^"("^ ge a ^"))"
         in
         ce_atom txt
