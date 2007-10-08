@@ -303,15 +303,15 @@ var pwres = addr wres;
 
   s1 := "Hello";
   JudyHSIns(ja,address s1,word (len s1),je, ppv);
-  *pv = 101;
+  *pv = word 101;
 
   s2 := "World";
   JudyHSIns(ja,address s2,word (len s2),je,ppv);
-  *pv = 22;
+  *pv = word 22;
 
   s3 := "Silly";
   JudyHSIns(ja,address s3,word (len s3),je,ppv);
-  *pv = 303;
+  *pv = word 303;
 
   JudyHSGet(ja,address s2, word (len s2),je, ppv);
   println$ "s2 -> " + str (int(*pv));

@@ -584,9 +584,7 @@ let ocs2flx sr r =
   print_endline "OCS scheme term converted to s-expression:";
   Sex_print.sex_print sex;
   *)
-  let fresh = ref 1 in
-  let env = [] in
-  let flx = Flx_sex2flx.xstatement_t sr fresh env sex in
+  let flx = Flx_sex2flx.xstatement_t sr sex in
   (*
   print_endline "s-expression converted to Felix statement!";
   print_endline (string_of_statement 0 flx);

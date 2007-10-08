@@ -1095,7 +1095,7 @@ syntax variables {
       )
       (let* 
         (
-          (f (lambda (n)`((Val ,n) none)))
+          (f (lambda (n)`((Val ,_sr ,n) none)))
           (lexpr (map f names))
         )
         `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
@@ -1162,7 +1162,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
       )
       (let* 
         (
-          (f (lambda (n)`((Var _sr ,n) none)))
+          (f (lambda (n)`((Var ,_sr ,n) none)))
           (lexpr (map f names))
         )
         `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
