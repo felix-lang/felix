@@ -204,7 +204,7 @@ and xexpr_t sr fresh env x =
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> `AST_longarrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> `AST_superscript (sr,(ex e1, ex e2))
 
- | Lst [Id "ast_literal";  lit] -> `AST_literal (sr, xliteral_t sr fresh env lit)
+ | Lst [Id "ast_literal";  sr; lit] -> `AST_literal (xsr sr, xliteral_t sr fresh env lit)
 
  | Lst [Id "ast_deref"; e] -> `AST_deref (sr,ex e)
  | Lst [Id "ast_ref"; e] -> `AST_ref (sr,ex e)
@@ -626,12 +626,12 @@ and xlvalue_t sr fresh env x : lvalue_t =
   let ex x = xexpr_t sr fresh env x in
   let xtlv x = xtlvalue_t sr fresh env x in
   match x with
-  | Lst [Id "Val"; Str s] -> `Val (sr,s)
-  | Lst [Id "Var"; Str s] -> `Var (sr,s)
-  | Lst [Id "Name"; Str s] -> `Name (sr,s)
-  | Id "Skip" -> `Skip sr
+  | Lst [Id "Val"; sr; Str s] -> `Val (xsr sr,s)
+  | Lst [Id "Var"; sr; Str s] -> `Var (xsr sr,s)
+  | Lst [Id "Name"; sr; Str s] -> `Name (xsr sr,s)
+  | Lst [Id "Skip"; sr]  -> `Skip (xsr sr)
   | Lst [Id "List"; tl] -> `List (lst "lvalue_t" xtlv tl)
-  | Lst [Id "Expr"; e] -> `Expr (sr,ex e)
+  | Lst [Id "Expr"; sr; e] -> `Expr (xsr sr,ex e)
   | x -> err x "lvalue_t"
 
 and xtlvalue_t sr fresh env x : tlvalue_t = 
@@ -777,8 +777,8 @@ and xstatement_t sr fresh env x : statement_t =
     `AST_macro_ifor (sr,n,  lst "ast_macro_ifor" xid ids, xsts sts)
   | Lst [Id "ast_macro_vfor";ids; e; sts] ->
     `AST_macro_vfor (sr,lst "ast_macro_vfor" xid ids, ex e, xsts sts)
-  | Lst [Id "ast_seq"; sts] ->
-    `AST_seq (sr,xsts sts)
+  | Lst [Id "ast_seq"; sr; sts] ->
+    `AST_seq (xsr sr,xsts sts)
 
   | Lst [Id "ast_union"; sr; Str n; vs; ucmp] ->
     let ucmp = lst "union component" xucmp ucmp in

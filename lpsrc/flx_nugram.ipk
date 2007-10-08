@@ -1091,7 +1091,7 @@ syntax variables {
         (
           (f (lambda (n v)`(ast_val_decl ,_sr ,n ,dfltvs none (some ,v))))
         )
-        `(ast_seq ,(map f names vals))
+        `(ast_seq ,_sr ,(map f names vals))
       )
       (let* 
         (
@@ -1158,11 +1158,11 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
         (
           (f (lambda (n v)`(ast_var_decl ,_sr ,n ,dfltvs none (some ,v))))
         )
-        `(ast_seq ,(map f names vals))
+        `(ast_seq ,_sr ,(map f names vals))
       )
       (let* 
         (
-          (f (lambda (n)`((Var ,n) none)))
+          (f (lambda (n)`((Var _sr ,n) none)))
           (lexpr (map f names))
         )
         `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
@@ -1200,7 +1200,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
      (nua (cons `(ast_ref (ast_name ,_sr ,_3 ())) (mkl a)))
      (call `(ast_call ,_sr ,f ,nua))
      (vardef `(ast_var_decl ,_sr ,_3 ,_4 (some ,_6) none))
-     (seq `(ast_seq (,vardef ,call))))
+     (seq `(ast_seq ,_sr (,vardef ,call))))
      (begin 
      ;;(display "f=")(display f)
      ;;(display "\\n_3=")(display _3)
@@ -1228,7 +1228,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
        (nua (cons `(ast_name ,_sr ,name ()) (mkl a)))
        (call `(ast_call ,_sr ,f ,nua))
        (vardef `(ast_var_decl ,_sr ,name ,vs (some ,typ) none))
-       (seq `(ast_seq (,vardef ,call)))
+       (seq `(ast_seq ,_sr (,vardef ,call)))
      )
      (begin 
      ;;(display "f=")(display f)
@@ -1611,10 +1611,10 @@ syntax executable {
   spostincrop:= ++ =># "'post_incr";
   spostincrop:= -- =># "'post_decr";
 
-  slelement := val sname =># "`(Val ,_2)";
-  slelement := var sname =># "`(Var ,_2)";
-  slelement := sname =># "`(Name ,_1)";
-  slelement := _ =># "'Skip";
+  slelement := val sname =># "`(Val ,_sr ,_2)";
+  slelement := var sname =># "`(Var ,_sr ,_2)";
+  slelement := sname =># "`(Name ,_sr ,_1)";
+  slelement := _ =># "`(Skip ,_sr)";
   slelement := lpar slexprs rpar =># "`(List ,_2)";
 
   stlelement := slelement : sfactor =># "`(,_1 (some ,_3))";
@@ -1634,10 +1634,10 @@ syntax executable {
     "`(ast_call ,_sr ,_2 (,_1 ,_3))";
 
   sassignexpr := sexpr sassignop sexpr =># 
-    "`(ast_assign ,_sr ,_2 ((Expr ,_1) none) ,_3)";
+    "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
   sassignexpr := sexpr srmwop sexpr =># 
-    "`(ast_assign ,_sr ,_2 ((Expr ,_1) none) ,_3)";
+    "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
   sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 ,_1)";
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 ,_2)";
@@ -1737,7 +1737,7 @@ syntax executable {
   sifgoto := "forall" sname in sexpr "upto" sexpr do statement* done ssemi =>#
   """
     `(ast_macro_block ,( append `(
-      (ast_assign ,_sr _set ((Expr (ast_name ,_sr ,_2 ())) none) ,_4)
+      (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
@@ -1755,7 +1755,7 @@ syntax executable {
   sifgoto := "forall" sname in sexpr "downto" sexpr do statement* done ssemi =>#
   """
     `(ast_macro_block ,( append `(
-      (ast_assign ,_sr _set ((Expr (ast_name ,_sr ,_2 ())) none) ,_4)
+      (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
       ( ast_macro_name "lab1" "" ) 
       ( ast_macro_name "lab2" "" )
       ( ast_label ,_sr "lab1" ) 
@@ -2101,7 +2101,7 @@ syntax namespaces {
   smodule_definition := open module sdeclname = ? scompound =>#
     """
     (mkns 
-    `(ast_seq (
+    `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(caar _3) ,(cadar _3) ,_5)
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
     (cdr _3))
@@ -2117,7 +2117,7 @@ syntax namespaces {
   smodule_definition := open namespace sdeclname = ? scompound =>#
     """
     (mkns 
-    `(ast_seq (
+    `(ast_seq ,_sr (
       (ast_namespace ,(caar _3) ,(cadar _3) ,_5)
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
     (cdr _3))
