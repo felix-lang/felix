@@ -471,7 +471,7 @@ proc connect(s: &socket_t, addr: charp, port: int)
 type accept_request = "flx::faio::accept_request";
 
 fun mk_accept: demuxer * socket_t -> accept_request = 'flx::faio::accept_request($1,$2)';
-fun get_socket: accept_request -> int = '$1.accepted';
+fun get_socket: accept_request -> socket_t = '$1.accepted';
 
 // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
 proc cmk_listener: lvalue[socket_t]*lvalue[int]*int
