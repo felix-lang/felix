@@ -1299,20 +1299,20 @@ module Dynlink
   // this is a procedure, so maybe the caller is too
   // which means the thread frame must be available
   proc create: flx_library * flx_instance = 
-    "_create($1,$2,PTF gc,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
+    "_create($1,$2,PTF gcp,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
     requires property "needs_gc",
     body """
     void _create
     (
       flx::rtl::flx_dynlink_t *library,
       flx::rtl::flx_libinit_t *instance,
-      flx::gc::generic::collector_t *gc,
+      flx::gc::generic::gc_profile_t *gcp,
       flx::rtl::main_t main_sym,
       int argc, char **argv, 
       FILE *stdin_, FILE *stdout_, FILE *stderr_
     )
     { 
-      instance->create(library,gc,main_sym,argc,argv,stdin_,stdout_,stderr_); 
+      instance->create(library,gcp,main_sym,argc,argv,stdin_,stdout_,stderr_); 
     }
     """;
   
@@ -1965,7 +1965,7 @@ module Control
 
   private _gc_pointer type _schannel = "flx::rtl::schannel_t*";
   gen mk_schannel[t]: 1->schannel[t] = 
-    "new(*PTF gc,flx::rtl::schannel_ptr_map,false) flx::rtl::schannel_t(PTF gc)"
+    "new(*PTF gcp,flx::rtl::schannel_ptr_map,false) flx::rtl::schannel_t(PTF gcp)"
     requires property "needs_gc"
   ; 
 
@@ -2010,7 +2010,7 @@ module Control
   private fun _start0: (1->0)->cont = "$1->clone()->call(0)";
   gen start (p:1->0) = { return _start0 (p); }
 
-  gen mk_thread: cont->fthread = "new(*PTF gc,_fthread_ptr_map,false) flx::rtl::fthread_t($1)";
+  gen mk_thread: cont->fthread = "new(*PTF gcp,_fthread_ptr_map,false) flx::rtl::fthread_t($1)";
 
   proc spawn_fthread(p:1->0)
   {
@@ -2090,11 +2090,11 @@ module Control
   """
   proc collect() { svc svc_collect; }
 
-  fun gc_get_allocation_amt : 1 -> ulong = "PTF gc->get_allocation_amt()"
+  fun gc_get_allocation_amt : 1 -> ulong = "PTF gcp->gc->get_allocation_amt()"
     requires property "needs_gc";
-  fun gc_get_allocation_count : 1 -> ulong = "PTF gc->get_allocation_count()"
+  fun gc_get_allocation_count : 1 -> ulong = "PTF gcp->gc->get_allocation_count()"
     requires property "needs_gc";
-  fun gc_get_root_count : 1 -> ulong = "PTF gc->get_root_count()"
+  fun gc_get_root_count : 1 -> ulong = "PTF gcp->gc->get_root_count()"
     requires property "needs_gc";
 }
 
@@ -2644,31 +2644,31 @@ open module Varray
   _gc_pointer _gc_type t type varray[t] = "?1*";
 
   gen _ctor_varray[t]: ulong -> varray[t] =
-    "(?1*)(PTF gc->create_empty_array(&@?1,$1))"
+    "(?1*)(PTF gcp->gc->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
   ;
   private proc set_used[t]: varray[t] * ulong =
-    "PTF gc->set_used($1,$2);"
+    "PTF gcp->gc->set_used($1,$2);"
     requires property "needs_gc"
   ;
 
   fun subscript[t]: varray[t] * !ints -> lvalue[t] = "$1[$2]";
 
   fun len[t]: varray[t] -> ulong = 
-    "PTF gc->get_used($1)" 
+    "PTF gcp->gc->get_used($1)" 
     requires property "needs_gc"
   ;
 
   fun maxlen[t]: varray[t] -> ulong = 
-    "PTF gc->get_count($1)"
+    "PTF gcp->gc->get_count($1)"
     requires property "needs_gc"
   ;
 
   proc pluseq[t] : varray[t] * t = """
     {
       ?1 * _p = $1;
-      unsigned long n = PTF gc->get_used(_p);
-      PTF gc->incr_used(_p,1L);
+      unsigned long n = PTF gcp->gc->get_used(_p);
+      PTF gcp->gc->incr_used(_p,1L);
       new(_p+n) ?1($2);
     }
   """
@@ -2678,8 +2678,8 @@ open module Varray
   proc pop[t] : varray[t] = """
     {
       ?1 * _p = $1;
-      unsigned long n = PTF gc->get_used(_p);
-      PTF gc->incr_used(_p,-1L);
+      unsigned long n = PTF gcp->gc->get_used(_p);
+      PTF gcp->gc->incr_used(_p,-1L);
       destroy(_p+n-1);
     }
   """

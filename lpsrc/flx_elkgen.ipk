@@ -126,7 +126,7 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   pe ("  // constructor");
   pe ctor_dcl;
   pe ("  " ^ get_token_fun_type ^ " get_token; // client token generator");
-  pe ("  collector_t &gc; // Felix garbage collector");
+  pe ("  gc_profile_t &gcp; // Felix garbage collector");
   pe "  void setToken();  //fetch next token ";
   pe ("  "^lexer_name^" *init(); //prime the lexer");
   pe "";
@@ -150,7 +150,7 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   pe "";
   (* FUDGE PROPERTY LIST *)
   let props : property_t list = [`Uses_gc; `Requires_ptf] in
-  pe (gen_ctor syms bbdfns lexer_name display [] [get_token_fun_type,"get_token"] ["gc(*PTF gc)"] [] props);
+  pe (gen_ctor syms bbdfns lexer_name display [] [get_token_fun_type,"get_token"] ["gcp(*PTF gcp)"] [] props);
   pe ("sm_string " ^ lexer_name ^ "::tokenDesc() const { return tokenKindDesc(type); }");
   pe "";
   pe ("sm_string " ^ lexer_name ^ "::tokenKindDesc(int kind) const {");
@@ -354,7 +354,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe frame_dcls;
         ps display_string;
         pe ctor_dcl;
-        pe ("  collector_t &gc;");
+        pe ("  gc_profile_t &gcp;");
         pe 
         (
           (if t = `BTYP_tuple [] then "int" else "_uctor_") ^
@@ -363,7 +363,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "};";
         pe "";
         pe "impl_verbatim {";
-        pe (gen_ctor syms bbdfns ("Elk"^parser_name) display [] [] ["gc(*PTF gc)"] [] props);
+        pe (gen_ctor syms bbdfns ("Elk"^parser_name) display [] [] ["gcp(*PTF gcp)"] [] props);
         pe "}";
         pe "";
         pe "impl_verbatim {";
@@ -391,7 +391,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "  return result.variant;";
         end else begin
         pe ("    result.data =");
-        pe ("      new(gc,"^shape_of syms bbdfns tn t^",false)");
+        pe ("      new(gcp,"^shape_of syms bbdfns tn t^",false)");
         pe ("      "^result_type^"(*("^result_type^"*)(void*)p)");
         pe ("  ;");
         pe ("  delete ("^result_type^"*)(void*)p;");

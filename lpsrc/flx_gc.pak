@@ -244,6 +244,26 @@ about.
 };
 
 
+struct GC_EXTERN gc_profile_t {
+  bool debug_allocations;
+  bool debug_collections; 
+  unsigned long gc_freq;
+  unsigned long gc_counter;
+  unsigned long collections;
+  bool finalise;
+  flx::gc::generic::collector_t *collector;
+
+  gc_profile_t (
+    bool debug_allocations_, 
+    bool debug_collections_, 
+    unsigned long gc_freq_,
+    bool finalise_,
+    flx::gc::generic::collector_t *collector
+  );
+  ~gc_profile_t();
+};
+
+
 @select(h)
 
 }}} // end namespaces
@@ -262,7 +282,7 @@ compiler on Mac OS.
 GC_EXTERN void *operator new
 (
   std::size_t, 
-  flx::gc::generic::collector_t &, 
+  flx::gc::generic::gc_profile_t &, 
   flx::gc::generic::gc_shape_t &,
   bool
 );
@@ -289,12 +309,33 @@ namespace generic {
 
 collector_t::collector_t() : debug(false) {}
 
+gc_profile_t::gc_profile_t (
+  bool debug_allocations_, 
+  bool debug_collections_, 
+  unsigned long gc_freq_,
+  bool finalise_,
+  flx::gc::generic::collector_t *collector_
+) :
+  debug_allocations(debug_allocations_),
+  debug_collections(debug_collections_),
+  gc_freq(gc_freq_),
+  gc_counter(0),
+  collections(0),
+  finalise(finalise_),
+  collector(collector_)
+{
+}
+
+gc_profile_t::~gc_profile_t() { }
+
+
+
 }}} // end namespaces
 
 // in global namespace now ..
 void *operator new(
   std::size_t amt,
-  flx::gc::generic::collector_t &collector,
+  flx::gc::generic::gc_profile_t &gcp,
   flx::gc::generic::gc_shape_t &shape,
   bool allow_gc
 )
@@ -305,7 +346,7 @@ void *operator new(
     fprintf(stderr,"Shape %s size = %ld\n",shape.cname,shape.amt);
     abort();
   }
-  void *p = collector.allocate(&shape,1);
+  void *p = gcp.collector->allocate(&shape,1);
   return p;
 }
 

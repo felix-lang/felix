@@ -590,10 +590,10 @@ struct RTL_EXTERN con_t ///< abstract base for mutable continuations
 // ********************************************************
 
 struct RTL_EXTERN slist_t {
-  gc::generic::collector_t *gc;
+  gc::generic::gc_profile_t *gcp;
   struct slist_node_t *head;
 
-  slist_t (gc::generic::collector_t *); ///< create empty list
+  slist_t (gc::generic::gc_profile_t*); ///< create empty list
   slist_t (slist_t const &);            ///< shallow copy
 
   void push(void *data);                ///< push a gc pointer
@@ -627,7 +627,7 @@ struct RTL_EXTERN schannel_t
 {
   slist_t *waiting_to_read;             ///< fthreads waiting for a writer
   slist_t *waiting_to_write;            ///< fthreads waiting for a reader
-  schannel_t(gc::generic::collector_t*);
+  schannel_t(gc::generic::gc_profile_t*);
   void push_reader(fthread_t *);        ///< add a reader
   fthread_t *pop_reader();              ///< pop a reader, NULL if none
   void push_writer(fthread_t *);        ///< add a writer
@@ -950,8 +950,8 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char *file, int
   return tmp; \
 }
 
-#define FLX_NEWP(x) new(*PTF gc,x##_ptr_map,false)x
-#define FLX_NEWPA(x) new(*PTF gc,x##_ptr_map,false)x
+#define FLX_NEWP(x) new(*PTF gcp,x##_ptr_map,false)x
+#define FLX_NEWPA(x) new(*PTF gcp,x##_ptr_map,false)x
 
 #define FLX_FINALISER(x) \
 static void x##_finaliser(collector_t *, void *p){\
@@ -1005,28 +1005,28 @@ static void x##_finaliser(collector_t *, void *p){\
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
-  collector_t *gc\
+  gc_profile_t *gcp\
 ) {\
-  ptf.gc = gc;\
+  ptf.gcp = gcp;\
   return &ptf;\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
-  collector_t *gc\
+  gc_profile_t *gcp\
 ) {\
-  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
-  p->gc = gc;\
+  mname::thread_frame_t *p = new(*gcp,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
+  p->gcp = gcp;\
   ptf = p;\
   return p;\
 }
 #else
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
-  collector_t *gc\
+  gc_profile_t *gcp\
 ) {\
-  mname::thread_frame_t *p = new(*gc,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
-  p->gc = gc;\
+  mname::thread_frame_t *p = new(*gcp,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
+  p->gcp = gcp;\
   return p;\
 }
 #endif
@@ -1046,7 +1046,7 @@ extern "C" con_t *flx_start(\
   ptf->flx_stdin = stdin_;\
   ptf->flx_stdout = stdout_;\
   ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gc,mname::x##_ptr_map,false) \
+  return (new(*ptf->gcp,mname::x##_ptr_map,false) \
     mname::x()) ->call(0);\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
@@ -1064,7 +1064,7 @@ extern "C" con_t *flx_start(\
   ptf->flx_stdin = stdin_;\
   ptf->flx_stdout = stdout_;\
   ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gc,mname::x##_ptr_map,false) \
+  return (new(*ptf->gcp,mname::x##_ptr_map,false) \
     mname::x()) ->call(0);\
 }
 #else 
@@ -1082,7 +1082,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
   ptf->flx_stdin = stdin_;\
   ptf->flx_stdout = stdout_;\
   ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gc,mname::x##_ptr_map,false) \
+  return (new(*ptf->gcp,mname::x##_ptr_map,false) \
     mname::x(ptf)) ->call(0);\
 }
 #endif
@@ -1252,14 +1252,14 @@ flx::gc::generic::gc_shape_t slist_node_ptr_map = {
 };
 
 
-slist_t::slist_t(gc::generic::collector_t *_gc) : gc (_gc), head(0) {}
-slist_t::slist_t(slist_t const &r) : gc (r.gc), head(r.head) {}
+slist_t::slist_t(gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
+slist_t::slist_t(slist_t const &r) : gcp (r.gcp), head(r.head) {}
 
 bool slist_t::isempty()const { return head == 0; }
 
 void slist_t::push(void *data) 
 {
-  head = new(*gc,slist_node_ptr_map,true) slist_node_t(head,data);
+  head = new(*gcp,slist_node_ptr_map,true) slist_node_t(head,data);
 }
 
 // note: never fails, return NULL pointer if the list is empty
@@ -1407,11 +1407,11 @@ flx::gc::generic::gc_shape_t _fthread_ptr_map = {
 // schannel_t implementation
 // ********************************************************
 
-schannel_t::schannel_t (gc::generic::collector_t *gc) : 
+schannel_t::schannel_t (gc::generic::gc_profile_t *gcp) : 
   waiting_to_read(0), waiting_to_write(0) 
 {
-  waiting_to_read = new (*gc, slist_ptr_map,false) slist_t(gc);
-  waiting_to_write = new (*gc, slist_ptr_map,false) slist_t(gc);
+  waiting_to_read = new (*gcp, slist_ptr_map,false) slist_t(gcp);
+  waiting_to_write = new (*gcp, slist_ptr_map,false) slist_t(gcp);
 }
 
 // uncopyable object but implementation needed for linker
@@ -1757,7 +1757,7 @@ flx_load_module(char const *fname);
 
 typedef thread_frame_t *(*thread_frame_creator_t)
 (
-  flx::gc::generic::collector_t*
+  flx::gc::generic::gc_profile_t*
 );
 
 /// library initialisation routine.
@@ -1814,11 +1814,11 @@ struct RTL_EXTERN flx_libinit_t
   con_t *start_proc;
   con_t *main_proc;
   flx_dynlink_t *lib;
-  flx::gc::generic::collector_t *collector;
+  flx::gc::generic::gc_profile_t *gcp;
   void create
   (
     flx_dynlink_t *lib_a, 
-    flx::gc::generic::collector_t *collector_a,
+    flx::gc::generic::gc_profile_t *gcp_a,
     main_t main_sym,
     int argc,
     char **argv,
@@ -2054,7 +2054,7 @@ flx_libinit_t::flx_libinit_t() :
   start_proc (NULL),
   main_proc (NULL),
   lib (NULL),
-  collector(NULL) 
+  gcp(NULL) 
 {}
 
 flx_libinit_t::flx_libinit_t(flx_libinit_t const&){}
@@ -2063,7 +2063,7 @@ void flx_libinit_t::operator=(flx_libinit_t const&){}
 void flx_libinit_t::create
 (
   flx_dynlink_t *lib_a, 
-  flx::gc::generic::collector_t *collector_a,
+  flx::gc::generic::gc_profile_t *gcp_a,
   main_t main_sym,
   int argc,
   char **argv,
@@ -2073,13 +2073,13 @@ void flx_libinit_t::create
 )
 {
   lib = lib_a;
-  collector = collector_a;
+  gcp = gcp_a;
   thread_frame = lib->thread_frame_creator(
-    collector 
+    gcp 
   );
   //fprintf(stderr,"Incrementing refcnt\n");
   ++lib->refcnt;
-  collector->add_root(thread_frame);
+  gcp->collector->add_root(thread_frame);
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
   main_proc = main_sym?main_sym(thread_frame):0;
   usr_create();
@@ -2089,7 +2089,7 @@ void flx_libinit_t::usr_create(){}
 
 void flx_libinit_t::destroy () {
   usr_destroy();
-  collector->remove_root(thread_frame);
+  gcp->collector->remove_root(thread_frame);
   //fprintf(stderr,"Decrementing refcnt\n");
   //fprintf(stderr,"Ref cnt=%ld\n",lib->refcnt);
   --lib->refcnt;
@@ -2123,28 +2123,9 @@ enum fpc_t { next_fthread_pos, next_request_pos };
 RTL_EXTERN char const * get_fstate_desc(fstate_t);
 RTL_EXTERN char const * get_fpc_desc(fpc_t);
 
-struct RTL_EXTERN gc_profile_t {
-  bool debug_allocations;
-  bool debug_collections; 
-  unsigned long gc_freq;
-  unsigned long gc_counter;
-  unsigned long collections;
-  bool finalise;
-  flx::gc::generic::collector_t *collector;
-
-  gc_profile_t (
-    bool debug_allocations_, 
-    bool debug_collections_, 
-    unsigned long gc_freq_,
-    bool finalise_,
-    flx::gc::generic::collector_t *collector
-  );
-  ~gc_profile_t();
-};
-
 struct RTL_EXTERN sync_state_t {
   bool debug_driver;
-  gc_profile_t *gcp;
+  flx::gc::generic::gc_profile_t *gcp;
   std::list<flx::rtl::fthread_t*> *active;
   flx::rtl::fthread_t *ft;
   flx::rtl::_uctor_ *request;
@@ -2152,7 +2133,7 @@ struct RTL_EXTERN sync_state_t {
   fstate_t fs;
   sync_state_t (
     bool debug_driver_,
-    gc_profile_t *gcp_,
+    flx::gc::generic::gc_profile_t *gcp_,
     std::list<flx::rtl::fthread_t*> *active_
   );
   void frun();
@@ -2191,28 +2172,9 @@ RTL_EXTERN char const *get_fpc_desc(fpc_t fpc)
 }
 
 
-gc_profile_t::gc_profile_t (
-  bool debug_allocations_, 
-  bool debug_collections_, 
-  unsigned long gc_freq_,
-  bool finalise_,
-  flx::gc::generic::collector_t *collector_
-) :
-  debug_allocations(debug_allocations_),
-  debug_collections(debug_collections_),
-  gc_freq(gc_freq_),
-  gc_counter(0),
-  collections(0),
-  finalise(finalise_),
-  collector(collector_)
-{
-}
-
-gc_profile_t::~gc_profile_t() { }
-
 sync_state_t::sync_state_t (
   bool debug_driver_,
-  gc_profile_t *gcp_,
+  flx::gc::generic::gc_profile_t *gcp_,
   std::list<fthread_t*> *active_
 ) : 
   debug_driver(debug_driver_),
@@ -2632,7 +2594,7 @@ static void *sp = 0;
 
 int do_final_cleanup(
   bool debug_driver, 
-  gc_profile_t *gcp,
+  flx::gc::generic::gc_profile_t *gcp,
   flx_dynlink_t *library,
   flx_libinit_t *instance
 );
@@ -2715,10 +2677,10 @@ public:
 struct doflx_data 
 {
   bool debug_driver;
-  gc_profile_t *gcp;
+  flx::gc::generic::gc_profile_t *gcp;
   std::list<fthread_t*> *active;
   thread_control_t *thread_control;
-  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a, thread_control_t *tc)
+  doflx_data(bool d, flx::gc::generic::gc_profile_t *g, std::list<fthread_t*> *a, thread_control_t *tc)
    : debug_driver(d), gcp(g), active(a), thread_control(tc) {}
 };
 
@@ -2728,7 +2690,7 @@ create_async_hooker_t *ptr_create_async_hooker = NULL;
 void doflx (void *data) {
   doflx_data *d = (doflx_data*)data;
   bool debug_driver = d->debug_driver;
-  gc_profile_t *gcp = d-> gcp;
+  flx::gc::generic::gc_profile_t *gcp = d-> gcp;
   std::list<fthread_t*> *active = d->active;
   thread_control_t *thread_control=d->thread_control;
   delete d;
@@ -2908,7 +2870,7 @@ void doflx (void *data) {
 
 int run_felix_pthread(
   bool debug_driver, 
-  gc_profile_t *gcp,
+  flx::gc::generic::gc_profile_t *gcp,
   flx_dynlink_t *library,
   flx_libinit_t *instance
 )
@@ -2921,7 +2883,7 @@ int run_felix_pthread(
     con_t *top = instance->main_proc;
     if(top)
     {
-      flx_main = new (*collector,_fthread_ptr_map,false) fthread_t(top);
+      flx_main = new (*gcp,_fthread_ptr_map,false) fthread_t(top);
       collector->add_root(flx_main);
       active->push_front(flx_main);
     }
@@ -2929,7 +2891,7 @@ int run_felix_pthread(
 
   {
     con_t *top = instance->start_proc;
-    fthread_t *ft = new (*collector,_fthread_ptr_map,false) fthread_t(top);
+    fthread_t *ft = new (*gcp,_fthread_ptr_map,false) fthread_t(top);
     collector->add_root(ft);
     active->push_front(ft);
   }
@@ -2967,7 +2929,7 @@ int run_felix_pthread(
 
 int do_final_cleanup(
   bool debug_driver, 
-  gc_profile_t *gcp,
+  flx::gc::generic::gc_profile_t *gcp,
   flx_dynlink_t *library,
   flx_libinit_t *instance
 )
@@ -3025,7 +2987,7 @@ int do_final_cleanup(
 // MAINLINE, ONLY DONE ONCE
 int run_felix(
   bool debug_driver, 
-  gc_profile_t *gcp,
+  flx::gc::generic::gc_profile_t *gcp,
   char *filename, 
   int flx_argc, 
   char **flx_argv
@@ -3041,7 +3003,7 @@ int run_felix(
 
     flx::gc::generic::collector_t *collector = gcp->collector;
 
-    instance.create(&library, collector,library.main_sym,flx_argc,flx_argv,stdin,stdout,stderr);
+    instance.create(&library, gcp,library.main_sym,flx_argc,flx_argv,stdin,stdout,stderr);
 
     if(debug_driver){
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
@@ -3182,7 +3144,7 @@ int main(int argc, char** argv)
     new flx::gc::collector::flx_ts_collector_t(allocator)
   ;
   collector->set_debug(debug_collections);
-  gc_profile_t *gcp = new gc_profile_t(
+  flx::gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
     debug_allocations, 
     debug_collections, 
     gc_freq,
@@ -3260,7 +3222,14 @@ int main(int argc, char** argv)
   library.link(argc>1?argv[1]:"<static>");
   gc::collector::malloc_free allocator;
   gc::collector::flx_collector_t collector(&allocator);
-  instance.create(&library, &collector,library.main_sym,argc,argv,stdin,stdout,stderr);
+  gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
+    false, 
+    false, 
+    0,
+    true,
+    &collector
+  );
+  instance.create(&library, gcp,library.main_sym,argc,argv,stdin,stdout,stderr);
   rtl::con_t *top = instance.start_proc;
   while( top ) top = top->resume();
   return 0;
@@ -3389,7 +3358,7 @@ namespace flx { namespace rtl { namespace ioutil {
     else return "";
   }
 
-  // includes newline if present
+  // includes ewline if present
   // null string indicates end of file
   string readln (FILE *fi)
   {
