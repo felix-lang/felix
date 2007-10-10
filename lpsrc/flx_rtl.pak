@@ -563,6 +563,7 @@ RTL_EXTERN extern flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
 // ********************************************************
 
 struct RTL_EXTERN flx_exception_t;
+struct RTL_EXTERN flx_out_of_memory_t;
 struct RTL_EXTERN flx_exec_failure_t;
 struct RTL_EXTERN flx_range_srcref_t;
 struct RTL_EXTERN flx_match_failure_t;
@@ -741,6 +742,16 @@ bool operator >= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
 
 struct RTL_EXTERN flx_exception_t {
   virtual ~flx_exception_t()=0;
+};
+
+// ********************************************************
+/// EXCEPTION: Out of Memory.
+/// Thrown when out of memory or memory bound exceeded.
+// ********************************************************
+
+struct RTL_EXTERN flx_out_of_memory_t : flx_exception_t {
+  flx_out_of_memory_t();
+  virtual ~flx_out_of_memory_t();
 };
 
 // ********************************************************
@@ -1545,6 +1556,8 @@ flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string
   what(w) 
 {}
 
+flx_out_of_memory_t::flx_out_of_memory_t(){}
+flx_out_of_memory_t::~flx_out_of_memory_t(){}
 flx_exec_failure_t::~flx_exec_failure_t(){}
 
 flx_range_srcref_t::flx_range_srcref_t() : 
@@ -2526,10 +2539,17 @@ int flx::rtl::flx_exception_handler (flx_exception_t *e)
     print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
     return 3;
   }
+  else
   if (flx_range_failure_t *x = dynamic_cast<flx_range_failure_t*>(e))
   {
     fprintf(stderr,"Range Check Failure\n");
     print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_out_of_memory_t *x = dynamic_cast<flx_out_of_memory_t*>(e))
+  {
+    fprintf(stderr,"Felix Out of Malloc or Specified Max allocation Exceeded");
     return 3;
   }
   else
@@ -3124,6 +3144,27 @@ int main(int argc, char** argv)
   if(debug)
     fprintf(stderr,"[FLX_GC_FREQ] call gc every %lu iterations\n",gc_freq);
 
+  // default min mem is 10 Meg, parameter given in Megs
+  char *min_mem_env= std::getenv("FLX_MIN_MEM");
+  unsigned long min_mem = (unsigned long)(min_mem_env?atof(min_mem_env)/1000000.0:10000000.0);
+  if (min_mem < 1) min_mem = 1;
+  if(debug)
+    fprintf(stderr,"[FLX_MIN_MEM] call gc only if more than %lu heap used\n",min_mem);
+
+  // default max mem is unlimited
+  char *max_mem_env= std::getenv("FLX_MAX_MEM");
+  unsigned long max_mem = (unsigned long)(min_mem_env?atof(min_mem_env)/1000000.0:-1.0);
+  if (max_mem == 0) max_mem = (unsigned long)-1;
+  if(debug)
+    fprintf(stderr,"[FLX_MAX_MEM] terminate if more than %lu heap used\n",max_mem);
+
+  // default free factor is 10%, this is also the minimum allowed
+  char *free_factor_env= std::getenv("FLX_FREE_FACTOR");
+  double free_factor = (free_factor_env?atof(free_factor_env)/1000000.0:-1.0);
+  if (free_factor < 0.1) free_factor = 0.1;
+  if(debug)
+    fprintf(stderr,"[FLX_FREE_FACTOR] reset gc trigger %4.2f%% above use after collection\n",free_factor*100.0);
+
 #if FLX_HAVE_GNU
     if(debug)fprintf(stderr, "Compiled by g++\n");
     static void *init_sp = sp;
@@ -3148,6 +3189,9 @@ int main(int argc, char** argv)
     debug_allocations, 
     debug_collections, 
     gc_freq,
+    min_mem,
+    max_mem,
+    free_factor,
     finalise,
     collector
   );
@@ -3226,6 +3270,9 @@ int main(int argc, char** argv)
     false, 
     false, 
     0,
+    -1,
+    -1,
+    0.2,
     true,
     &collector
   );

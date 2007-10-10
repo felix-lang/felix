@@ -243,20 +243,42 @@ about.
   collector_t(collector_t const&);
 };
 
+@doc()
+The gc_profile_t is a grab bag of controls related to the collector.
+
+@select(h)
 
 struct GC_EXTERN gc_profile_t {
-  bool debug_allocations;
-  bool debug_collections; 
-  unsigned long gc_freq;
-  unsigned long gc_counter;
-  unsigned long collections;
-  bool finalise;
+  bool debug_allocations;     ///< allocator debug on/off
+  bool debug_collections;     ///< collector debug on/off
+
+  unsigned long gc_freq;      ///< how often to collect
+  unsigned long gc_counter;   ///< counter to check if time to collect
+
+  unsigned long min_mem;      ///< min memory before collection
+  unsigned long max_mem;      ///< throw out of memory if above here
+  unsigned long threshhold;   ///< collection trigger point
+  double free_factor;         ///< reset threshhold to used memory 
+                              ///< by this factor after collection
+
+  unsigned long collections;  ///< number of collections done
+  bool finalise;              ///< whether Felix should collect on exit
   flx::gc::generic::collector_t *collector;
+
+  unsigned long maybe_collect(); ///< function which maybe collects
+  void *allocate(
+    flx::gc::generic::gc_shape_t *shape, 
+    unsigned long count, 
+    bool allow_gc
+  );
 
   gc_profile_t (
     bool debug_allocations_, 
     bool debug_collections_, 
     unsigned long gc_freq_,
+    unsigned long min_mem_,
+    unsigned long max_mem_,
+    double free_factor_,
     bool finalise_,
     flx::gc::generic::collector_t *collector
   );
@@ -299,6 +321,8 @@ GC_EXTERN void *operator new
 @select(h)
 
 #include "flx_gc.hpp"
+#include "flx_rtl.hpp"
+#include <cstdlib>
 #include <cstdio>
 #include <cassert>
 #include "flx_gc_private.hpp"
@@ -313,6 +337,9 @@ gc_profile_t::gc_profile_t (
   bool debug_allocations_, 
   bool debug_collections_, 
   unsigned long gc_freq_,
+  unsigned long min_mem_,
+  unsigned long max_mem_,
+  double free_factor_,
   bool finalise_,
   flx::gc::generic::collector_t *collector_
 ) :
@@ -320,6 +347,10 @@ gc_profile_t::gc_profile_t (
   debug_collections(debug_collections_),
   gc_freq(gc_freq_),
   gc_counter(0),
+  min_mem(min_mem_),
+  max_mem(max_mem_),
+  threshhold(min_mem_),
+  free_factor(free_factor),
   collections(0),
   finalise(finalise_),
   collector(collector_)
@@ -328,7 +359,35 @@ gc_profile_t::gc_profile_t (
 
 gc_profile_t::~gc_profile_t() { }
 
+unsigned long gc_profile_t::maybe_collect() {
+  ++gc_counter;
+  if (gc_counter < gc_freq) return 0;
+  if(collector->get_allocation_amt() < threshhold) return 0;
+  gc_counter = 0;
+  unsigned long collected = collector-> collect();
+  unsigned long allocated = collector->get_allocation_amt();
+  if (allocated > max_mem) throw flx::rtl::flx_out_of_memory_t();
+  threshhold = std::max ( min_mem, 
+    (unsigned long) (free_factor * (double)allocated))
+  ;
+  return collected;
+}
 
+void *gc_profile_t::allocate(
+  flx::gc::generic::gc_shape_t *shape, 
+  unsigned long amt, 
+  bool allow_gc
+) 
+{
+  if (allow_gc) (void) maybe_collect();
+  try {
+    return collector -> allocate(shape,amt);
+  }
+  catch (flx::rtl::flx_out_of_memory_t&) {
+    maybe_collect();
+    return collector -> allocate(shape,amt);
+  }
+}
 
 }}} // end namespaces
 
@@ -346,7 +405,7 @@ void *operator new(
     fprintf(stderr,"Shape %s size = %ld\n",shape.cname,shape.amt);
     abort();
   }
-  void *p = gcp.collector->allocate(&shape,1);
+  void *p = gcp.allocate(&shape,1,allow_gc);
   return p;
 }
 
@@ -472,6 +531,7 @@ private:
 #include <cstddef>
 #include "flx_rtl_config.hpp"
 #include "flx_collector.hpp"
+#include "flx_rtl.hpp"
 namespace flx {
 namespace gc {
 namespace collector {
@@ -495,7 +555,7 @@ void *malloc_free::allocate(std::size_t amt)
   if(p)return p;
   else {
     fprintf(stderr,"Felix: Malloc out of memory, blk=%ld\n",long(amt));
-    abort();
+    throw flx::rtl::flx_out_of_memory_t();
   }
 }
 
