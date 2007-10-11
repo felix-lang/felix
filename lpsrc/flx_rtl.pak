@@ -2619,88 +2619,13 @@ int do_final_cleanup(
   flx_libinit_t *instance
 );
 
-class thread_control_t
-{
-    unsigned int thread_counter;
-    bool do_world_stop;
-    flx_condv_t stop_guard;
-    flx_mutex_t stop_mutex;
-public: 
-    thread_control_t () : do_world_stop(false), thread_counter(0) 
-    {
-      //fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
-    }
-
-    int thread_count() {
-      flx_mutex_locker_t m(stop_mutex);
-      return thread_counter;
-    }
-
-    void add_thread() {
-      flx_mutex_locker_t m(stop_mutex);
-      //fprintf(stderr, "Adding thread\n");
-      ++thread_counter; 
-      stop_guard.broadcast();
-    }
-    void remove_thread() { 
-      flx_mutex_locker_t m(stop_mutex);
-      //fprintf(stderr, "Removing thread\n");
-      --thread_counter; 
-      stop_guard.broadcast();
-    }
-
-    // stop the world!
-    bool world_stop() {
-      flx_mutex_locker_t m(stop_mutex);
-      //fprintf(stderr,"Stopping world\n");
-      if (do_world_stop) return false; // race! Someone else beat us
-      do_world_stop = true;
-      --thread_counter;
-      while(thread_counter>0) stop_guard.wait(&stop_mutex);
-      //fprintf(stderr,"World STOPPED\n");
-      return true; // we stopped the world
-    }
-
-    // used by mainline to wait for other threads to die
-    void join_all() 
-    {
-      flx_mutex_locker_t m(stop_mutex);
-      while(do_world_stop || thread_counter>0) stop_guard.wait(&stop_mutex);
-      //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
-    }
-
-    // restart the world
-    void world_start() {
-      flx_mutex_locker_t m(stop_mutex);
-      //fprintf(stderr,"Restarting world\n");
-      ++thread_counter;
-      do_world_stop = false;
-      stop_guard.broadcast();
-    }
-
-   void yield() {
-      flx_mutex_locker_t m(stop_mutex);
-      if (do_world_stop)
-      {
-        //fprintf(stderr,"Yield found world stop!\n");
-        --thread_counter;
-        //fprintf(stderr,"Yield thread count now %d\n",thread_counter);
-        stop_guard.broadcast();
-        while(do_world_stop) stop_guard.wait(&stop_mutex);
-        ++thread_counter;
-        //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
-      }
-   }
-};
-
-
 struct doflx_data 
 {
   bool debug_driver;
   flx::gc::generic::gc_profile_t *gcp;
   std::list<fthread_t*> *active;
-  thread_control_t *thread_control;
-  doflx_data(bool d, flx::gc::generic::gc_profile_t *g, std::list<fthread_t*> *a, thread_control_t *tc)
+  flx::pthread::thread_control_t *thread_control;
+  doflx_data(bool d, flx::gc::generic::gc_profile_t *g, std::list<fthread_t*> *a, flx::pthread::thread_control_t *tc)
    : debug_driver(d), gcp(g), active(a), thread_control(tc) {}
 };
 
@@ -2712,7 +2637,7 @@ void doflx (void *data) {
   bool debug_driver = d->debug_driver;
   flx::gc::generic::gc_profile_t *gcp = d-> gcp;
   std::list<fthread_t*> *active = d->active;
-  thread_control_t *thread_control=d->thread_control;
+  flx::pthread::thread_control_t *thread_control=d->thread_control;
   delete d;
 
   unsigned long async_count = 0;
@@ -2748,18 +2673,7 @@ void doflx (void *data) {
     {
       case svc_collect:
       {
-        // requires fthreads to be immobile
-        if(debug_driver)fprintf(stderr,"svc collect\n");
-        if (thread_control->world_stop())
-        {
-          if(debug_driver)fprintf(stderr,"ACTUALLY COLLECTING\n");
-          gcp->collector->collect();
-          thread_control->world_start();
-        }
-        else {
-          if(debug_driver)fprintf(stderr,"RACE: someone else is collecting, just yield\n");
-          thread_control->yield();
-        }
+          gcp->actually_collect();
       }
       goto process_active;
 
@@ -2891,6 +2805,7 @@ void doflx (void *data) {
 int run_felix_pthread(
   bool debug_driver, 
   flx::gc::generic::gc_profile_t *gcp,
+  flx::pthread::thread_control_t *thread_control,
   flx_dynlink_t *library,
   flx_libinit_t *instance
 )
@@ -2917,13 +2832,12 @@ int run_felix_pthread(
   }
 
   {
-    thread_control_t thread_control;
-    thread_control.add_thread();
+    thread_control->add_thread();
     
-    doflx(new doflx_data(debug_driver, gcp, active, &thread_control)); // deletes active for us!
+    doflx(new doflx_data(debug_driver, gcp, active, thread_control)); // deletes active for us!
   
     if(debug_driver)fprintf(stderr,"MAIN THREAD FINISHED: waiting for other threads\n");
-    thread_control.join_all();
+    thread_control->join_all();
     if(debug_driver)fprintf(stderr,"ALL THREADS DEAD: mainline cleanup!\n");
 
     if(debug_driver){
@@ -3008,6 +2922,7 @@ int do_final_cleanup(
 int run_felix(
   bool debug_driver, 
   flx::gc::generic::gc_profile_t *gcp,
+  flx::pthread::thread_control_t *thread_control,
   char *filename, 
   int flx_argc, 
   char **flx_argv
@@ -3031,7 +2946,7 @@ int run_felix(
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
       fprintf(stderr,"main continuation at %p\n",instance.main_proc);
     } 
-    run_felix_pthread(debug_driver,gcp,&library,&instance);
+    run_felix_pthread(debug_driver,gcp,thread_control,&library,&instance);
 
     if(gcp->finalise)
     {
@@ -3146,24 +3061,24 @@ int main(int argc, char** argv)
 
   // default min mem is 10 Meg, parameter given in Megs
   char *min_mem_env= std::getenv("FLX_MIN_MEM");
-  unsigned long min_mem = (unsigned long)(min_mem_env?atof(min_mem_env)/1000000.0:10000000.0);
+  unsigned long min_mem = (unsigned long)(min_mem_env?atof(min_mem_env)*1000000.0:10000000.0);
   if (min_mem < 1) min_mem = 1;
   if(debug)
-    fprintf(stderr,"[FLX_MIN_MEM] call gc only if more than %lu heap used\n",min_mem);
+    fprintf(stderr,"[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n",min_mem/1000000);
 
   // default max mem is unlimited
   char *max_mem_env= std::getenv("FLX_MAX_MEM");
-  unsigned long max_mem = (unsigned long)(min_mem_env?atof(min_mem_env)/1000000.0:-1.0);
+  unsigned long max_mem = (unsigned long)(max_mem_env?atof(max_mem_env)*1000000.0:-1.0);
   if (max_mem == 0) max_mem = (unsigned long)-1;
   if(debug)
-    fprintf(stderr,"[FLX_MAX_MEM] terminate if more than %lu heap used\n",max_mem);
+    fprintf(stderr,"[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n",max_mem/1000000);
 
   // default free factor is 10%, this is also the minimum allowed
   char *free_factor_env= std::getenv("FLX_FREE_FACTOR");
-  double free_factor = (free_factor_env?atof(free_factor_env)/1000000.0:-1.0);
-  if (free_factor < 0.1) free_factor = 0.1;
+  double free_factor = (free_factor_env?atof(free_factor_env):1.1);
+  if (free_factor < 1.1) free_factor = 1.1;
   if(debug)
-    fprintf(stderr,"[FLX_FREE_FACTOR] reset gc trigger %4.2f%% above use after collection\n",free_factor*100.0);
+    fprintf(stderr,"[FLX_FREE_FACTOR] reset gc trigger %4.2f times heap used after collection\n",free_factor);
 
 #if FLX_HAVE_GNU
     if(debug)fprintf(stderr, "Compiled by g++\n");
@@ -3181,8 +3096,10 @@ int main(int argc, char** argv)
   ;
   allocator->set_debug(debug_allocations);
 
+  flx::pthread::thread_control_t thread_control;
+
   flx::gc::collector::flx_collector_t *collector =
-    new flx::gc::collector::flx_ts_collector_t(allocator)
+    new flx::gc::collector::flx_ts_collector_t(allocator, &thread_control)
   ;
   collector->set_debug(debug_collections);
   flx::gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
@@ -3198,6 +3115,7 @@ int main(int argc, char** argv)
   error_exit_code = run_felix(
     debug_driver,
     gcp,
+    &thread_control,
     filename,flx_argc,flx_argv
   );
 

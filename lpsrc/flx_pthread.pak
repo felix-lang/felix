@@ -40,6 +40,7 @@ PTHREADRTL_INTERFACES = [
  'pthread/pthread_monitor.hpp',       # portable
  'pthread/pthread_sleep_queue.hpp',   # portable
  'pthread/pthread_work_fifo.hpp',     # portable
+ 'pthread/pthread_control.hpp',       # portable
 ]
 
 PTHREAD_CPPS = [
@@ -52,6 +53,7 @@ PTHREAD_CPPS = [
   "pthread/pthread_monitor",
   "pthread/pthread_sleep_queue",
   "pthread/pthread_work_fifo",
+  "pthread/pthread_control",
   "rtl/flx_ts_collector",
 ]
 
@@ -191,6 +193,118 @@ public:
 
 }}
 #endif
+
+@h=tangler('pthread/pthread_control.hpp')
+@select(h)
+#ifndef __FLX_PTHREAD_CONTROL_H__
+#define __FLX_PTHREAD_CONTROL_H__
+#include "pthread_mutex.hpp"
+#include "pthread_condv.hpp"
+
+namespace flx { namespace pthread {
+
+class PTHREAD_EXTERN thread_control_t
+{
+    bool do_world_stop;
+    unsigned int thread_counter;
+    flx_condv_t stop_guard;
+    flx_mutex_t stop_mutex;
+public: 
+    thread_control_t ();
+    int thread_count();
+    void add_thread();
+    void remove_thread();
+    bool world_stop();
+    void join_all() ;
+    void world_start();
+    void yield();
+};
+
+}}
+#endif
+
+@h=tangler('pthread/pthread_control.cpp')
+@select(h)
+#include "pthread_control.hpp"
+
+namespace flx { namespace pthread {
+
+thread_control_t::thread_control_t () : 
+  do_world_stop(false), thread_counter(0) 
+  {
+    //fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
+  }
+
+int thread_control_t::thread_count() 
+  {
+    flx_mutex_locker_t m(stop_mutex);
+    return thread_counter;
+  }
+
+void thread_control_t::add_thread() 
+  {
+    flx_mutex_locker_t m(stop_mutex);
+    //fprintf(stderr, "Adding thread\n");
+    ++thread_counter; 
+    stop_guard.broadcast();
+  }
+
+void thread_control_t::remove_thread() 
+  { 
+    flx_mutex_locker_t m(stop_mutex);
+    //fprintf(stderr, "Removing thread\n");
+    --thread_counter; 
+    stop_guard.broadcast();
+  }
+
+// stop the world!
+bool thread_control_t::world_stop() 
+  {
+    flx_mutex_locker_t m(stop_mutex);
+    //fprintf(stderr,"Stopping world\n");
+    if (do_world_stop) return false; // race! Someone else beat us
+    do_world_stop = true;
+    --thread_counter;
+    while(thread_counter>0) stop_guard.wait(&stop_mutex);
+    //fprintf(stderr,"World STOPPED\n");
+    return true; // we stopped the world
+  }
+
+// used by mainline to wait for other threads to die
+void thread_control_t::join_all() 
+  {
+    flx_mutex_locker_t m(stop_mutex);
+    while(do_world_stop || thread_counter>0) stop_guard.wait(&stop_mutex);
+    //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
+  }
+
+// restart the world
+void thread_control_t::world_start() 
+  {
+    flx_mutex_locker_t m(stop_mutex);
+    //fprintf(stderr,"Restarting world\n");
+    ++thread_counter;
+    do_world_stop = false;
+    stop_guard.broadcast();
+  }
+
+void thread_control_t::yield() 
+  {
+    flx_mutex_locker_t m(stop_mutex);
+    if (do_world_stop)
+    {
+      //fprintf(stderr,"Yield found world stop!\n");
+      --thread_counter;
+      //fprintf(stderr,"Yield thread count now %d\n",thread_counter);
+      stop_guard.broadcast();
+      while(do_world_stop) stop_guard.wait(&stop_mutex);
+      ++thread_counter;
+      //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
+    }
+  }
+
+}}
+
 
 @h=tangler('pthread/pthread_posix_thread.cpp')
 @select(h)

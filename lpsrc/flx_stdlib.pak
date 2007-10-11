@@ -2090,11 +2090,11 @@ module Control
   """
   proc collect() { svc svc_collect; }
 
-  fun gc_get_allocation_amt : 1 -> ulong = "PTF gcp->gc->get_allocation_amt()"
+  fun gc_get_allocation_amt : 1 -> ulong = "PTF gcp->collector->get_allocation_amt()"
     requires property "needs_gc";
-  fun gc_get_allocation_count : 1 -> ulong = "PTF gcp->gc->get_allocation_count()"
+  fun gc_get_allocation_count : 1 -> ulong = "PTF gcp->collector->get_allocation_count()"
     requires property "needs_gc";
-  fun gc_get_root_count : 1 -> ulong = "PTF gcp->gc->get_root_count()"
+  fun gc_get_root_count : 1 -> ulong = "PTF gcp->collector->get_root_count()"
     requires property "needs_gc";
 }
 

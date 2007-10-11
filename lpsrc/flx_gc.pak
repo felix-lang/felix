@@ -266,6 +266,8 @@ struct GC_EXTERN gc_profile_t {
   flx::gc::generic::collector_t *collector;
 
   unsigned long maybe_collect(); ///< function which maybe collects
+  unsigned long actually_collect(); ///< function which actually collects
+
   void *allocate(
     flx::gc::generic::gc_shape_t *shape, 
     unsigned long count, 
@@ -363,6 +365,10 @@ unsigned long gc_profile_t::maybe_collect() {
   ++gc_counter;
   if (gc_counter < gc_freq) return 0;
   if(collector->get_allocation_amt() < threshhold) return 0;
+  return actually_collect();
+}
+
+unsigned long gc_profile_t::actually_collect() {
   gc_counter = 0;
   unsigned long collected = collector-> collect();
   unsigned long allocated = collector->get_allocation_amt();
@@ -370,6 +376,7 @@ unsigned long gc_profile_t::maybe_collect() {
   threshhold = std::max ( min_mem, 
     (unsigned long) (free_factor * (double)allocated))
   ;
+  fprintf(stderr, "actually collected %ld bytes\n",collected);
   return collected;
 }
 
@@ -379,14 +386,19 @@ void *gc_profile_t::allocate(
   bool allow_gc
 ) 
 {
-  if (allow_gc) (void) maybe_collect();
-  try {
-    return collector -> allocate(shape,amt);
-  }
-  catch (flx::rtl::flx_out_of_memory_t&) {
+  if (allow_gc) 
+  {
     maybe_collect();
-    return collector -> allocate(shape,amt);
+    try {
+      return collector -> allocate(shape,amt);
+    }
+    catch (flx::rtl::flx_out_of_memory_t&) {
+      actually_collect();
+      return collector -> allocate(shape,amt);
+    }
   }
+  else
+    return collector -> allocate(shape,amt);
 }
 
 }}} // end namespaces
@@ -978,6 +990,7 @@ flx_collector_t::~flx_collector_t()
 #define __FLX_TS_COLLECTOR_H__
 #include "flx_collector.hpp"
 #include "pthread_mutex.hpp"
+#include "pthread_control.hpp"
 
 namespace flx {
 namespace gc {
@@ -987,7 +1000,7 @@ namespace collector {
 struct PTHREAD_EXTERN flx_ts_collector_t : 
   public flx::gc::collector::flx_collector_t
 {
-  flx_ts_collector_t(allocator_t *);
+  flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *);
   ~flx_ts_collector_t();
 
 private:
@@ -1008,7 +1021,9 @@ private:
 
 private:
   mutable flx::pthread::flx_mutex_t mut;
+  flx::pthread::thread_control_t *thread_control;
 };
+
 
 }}} // end namespaces
 #endif
@@ -1021,8 +1036,8 @@ namespace flx {
 namespace gc {
 namespace collector {
 
-flx_ts_collector_t::flx_ts_collector_t(allocator_t *a) : 
-  flx_collector_t(a) 
+flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *t) : 
+  flx_collector_t(a),thread_control(t)
 {}
 
 flx_ts_collector_t::~flx_ts_collector_t(){}
@@ -1033,8 +1048,19 @@ void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
 }
 
 unsigned long flx_ts_collector_t::v_collect() {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  return impl_collect();
+  if (thread_control->world_stop())
+  {
+    //flx::pthread::flx_mutex_locker_t l(mut);
+    unsigned long collected = impl_collect();
+    thread_control->world_start();
+    return collected;
+  }
+  else {
+    if(debug)
+      fprintf(stderr,"RACE: someone else is collecting, just yield\n");
+    thread_control->yield();
+    return 0ul;
+  }
 }
 
 void flx_ts_collector_t::v_add_root(void *memory) {
@@ -1061,6 +1087,7 @@ unsigned long flx_ts_collector_t::v_get_allocation_amt()const {
   flx::pthread::flx_mutex_locker_t l(mut);
   return impl_get_allocation_amt();
 }
+
 
 }}} // end namespaces
 
