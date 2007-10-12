@@ -2360,7 +2360,11 @@ class ocaml(compiler_base):
       try: # check if ocamlbuild exists
         shell('ocamlbuild -version', log=log)
         opt.OCAMLBUILD = 'ocamlbuild -classic-display '
-        opt.HAVE_OCAMLBUILD = 1
+        #opt.HAVE_OCAMLBUILD = 1
+        # ocaml build doesn't work properly at the moment
+        # due to hygiene checks or something .. so i have
+        # to disable it
+        opt.HAVE_OCAMLBUILD = 0
       except MakeError:
         opt.HAVE_OCAMLBUILD = 0
 
