@@ -399,6 +399,11 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
  else:
   tangle("#define FLX_HAVE_EVTPORTS 0")
 
+@if HAVE_OPENMP:
+  tangle("#define FLX_HAVE_OPENMP 1")
+ else:
+  tangle("#define FLX_HAVE_OPENMP 0")
+
 //
 #if FLX_HAVE_CGOTO && FLX_HAVE_ASM_LABELS
 #define FLX_CGOTO 1

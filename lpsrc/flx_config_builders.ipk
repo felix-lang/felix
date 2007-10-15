@@ -1569,6 +1569,19 @@ int main(int argc, char** argv) {
       opt.HAVE_ASM_LABELS = 0
 
 
+  def detect_openmp(self, shell, get_stdout):
+    # find if we can use -fopenmp without a warning
+    try:
+      self.compile_dummy_main(shell, CFLAGS="-Werror -fopenmp")
+      self.options.openmp= "-fopenmp "
+      print "OpenMP based parallel programming supported"
+      self.options.HAVE_OPENMP = 1
+    except EnvironmentError:
+      self.options.openmp = ""
+      self.options.HAVE_OPENMP = 0 
+      print "OpenMP based parallel programming not supported"
+
+
   def detect_PIC(self, shell, get_stdout):
     # find if we can use -fPIC without a warning
     # if a warning is generated it will say something like 
@@ -1609,6 +1622,9 @@ int main(int argc, char** argv) {
       LINK_DYNAMIC_FLX = "-shared "
 
     COM = opt.COM
+
+    if opt.openmp:
+      COM = COM + opt.openmp
 
     opt.CCOBJ_DYNAMIC_FLX = COM + COMPILE_DYNAMIC_FLX
     opt.CCLINK_DYNAMIC_FLX = COM + LINK_DYNAMIC_FLX
@@ -2020,6 +2036,7 @@ main(int argc, char** argv) {
   def detect_compiler_options(self, shell, get_stdout):
     self.detect_warning_flags(shell, get_stdout)
     self.detect_PIC(shell, get_stdout)
+    self.detect_openmp(shell, get_stdout)
     self.construct_compiler_commands(shell, get_stdout)
     self.detect_dynamic_loading(shell, get_stdout)
 

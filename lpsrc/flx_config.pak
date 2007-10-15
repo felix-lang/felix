@@ -1335,6 +1335,7 @@ if "target" in PHASES:
     HAVE_POLL = 0
     HAVE_EPOLL = 0
     HAVE_EVTPORTS = 0
+    HAVE_OPENMP = 0
   else:
     FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
     HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
@@ -1344,6 +1345,7 @@ if "target" in PHASES:
     HAVE_POLL = TARGET_CXX.options.HAVE_POLL
     HAVE_EPOLL = TARGET_CXX.options.HAVE_EPOLL
     HAVE_EVTPORTS = TARGET_CXX.options.HAVE_EVTPORTS
+    HAVE_OPENMP = TARGET_CXX.options.HAVE_OPENMP
     
     HAVE_MSVC = 0
     HAVE_GNU = 1
@@ -1412,6 +1414,7 @@ if "target" in PHASES:
     pa(f,this,"HAVE_POLL")
     pa(f,this,"HAVE_EPOLL")
     pa(f,this,"HAVE_EVTPORTS")
+    pa(f,this,"HAVE_OPENMP")
     pa(f,this,"WIN32")
     pa(f,this,"WIN64")
     pa(f,this,"POSIX")
