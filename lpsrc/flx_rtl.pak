@@ -777,12 +777,12 @@ struct RTL_EXTERN flx_exec_failure_t : flx_exception_t {
 // ********************************************************
 
 struct RTL_EXTERN flx_range_srcref_t {
-  char *filename;  ///< source file name
+  char const *filename;  ///< source file name
   int startline;   ///< first line (1 origin)
   int startcol;    ///< first column (1 origin)
   int endline;     ///< last line
   int endcol;      ///< last column
-  flx_range_srcref_t(char *f,int sl, int sc, int el, int ec);
+  flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec);
   flx_range_srcref_t();
 };
 
@@ -794,9 +794,9 @@ struct RTL_EXTERN flx_range_srcref_t {
 struct RTL_EXTERN flx_halt_t : flx_exception_t {
   std::string reason;         ///< halt argument
   flx_range_srcref_t flx_loc; ///< location in Felix file
-  char *cxx_srcfile;          ///< C++ file name
+  char const *cxx_srcfile;          ///< C++ file name
   int cxx_srcline;            ///< C++ line number
-  flx_halt_t(flx_range_srcref_t ff, char *cf, int cl, std::string reason);
+  flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string reason);
   virtual ~flx_halt_t();
 };
 
@@ -808,9 +808,9 @@ struct RTL_EXTERN flx_halt_t : flx_exception_t {
 
 struct RTL_EXTERN flx_match_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
-  char *cxx_srcfile;          ///< C++ file name
+  char const *cxx_srcfile;          ///< C++ file name
   int cxx_srcline;            ///< C++ line number
-  flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl);
+  flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
   virtual ~flx_match_failure_t();
 };
 
@@ -821,18 +821,18 @@ struct RTL_EXTERN flx_match_failure_t : flx_exception_t {
 
 struct RTL_EXTERN flx_assert_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
-  char *cxx_srcfile;          ///< C++ file
+  char const *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
-  flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl);
+  flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
   virtual ~flx_assert_failure_t();
 };
 
 struct RTL_EXTERN flx_assert2_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   flx_range_srcref_t flx_loc2; ///< second location in Felix file
-  char *cxx_srcfile;          ///< C++ file
+  char const *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
-  flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char *cf, int cl);
+  flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
   virtual ~flx_assert2_failure_t();
 };
 
@@ -843,13 +843,13 @@ struct RTL_EXTERN flx_assert2_failure_t : flx_exception_t {
 
 struct RTL_EXTERN flx_range_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
-  char *cxx_srcfile;          ///< C++ file
+  char const *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
-  flx_range_failure_t(flx_range_srcref_t ff, char *cf, int cl);
+  flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
   virtual ~flx_range_failure_t();
 };
 
-RTL_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char *cf, int cl);
+RTL_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
 
 
 // ********************************************************
@@ -887,7 +887,7 @@ struct readreq_t {
   void *variable;
 };
 
-RTL_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl);
+RTL_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl);
 
 struct flx_trace_t 
 {
@@ -897,7 +897,7 @@ struct flx_trace_t
 
 extern RTL_EXTERN int flx_enable_trace;
 
-RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char *file, int line, char *msg);
+RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line, char const *msg);
 
 }} // namespaces
 
@@ -1567,38 +1567,38 @@ flx_exec_failure_t::~flx_exec_failure_t(){}
 
 flx_range_srcref_t::flx_range_srcref_t() : 
     filename(""),startline(0),startcol(0),endline(0),endcol(0){}
-flx_range_srcref_t::flx_range_srcref_t(char *f,int sl, int sc, int el, int ec) :
+flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
     filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
 
-flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char *cf, int cl, std::string r) :
+flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string r) :
    reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_halt_t::~flx_halt_t(){}
 
-flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
+flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_match_failure_t::~flx_match_failure_t(){}
 
-flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
+flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert_failure_t::~flx_assert_failure_t(){}
 
-flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char *cf, int cl) :
+flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
    flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert2_failure_t::~flx_assert2_failure_t(){}
 
-flx_range_failure_t::flx_range_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
+flx_range_failure_t::flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_range_failure_t::~flx_range_failure_t(){}
 
 flx_switch_failure_t::~flx_switch_failure_t(){}
 
-long range_check (long l, long x, long h, flx_range_srcref_t sref, char *cf, int cl) 
+long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl) 
 {
   if (x>=l && x<h) return x;
   throw flx::rtl::flx_range_failure_t (sref,cf,cl);
 }
 
-void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
+void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
 {
   fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
     x.filename,
@@ -1614,7 +1614,7 @@ void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
 int flx_enable_trace=1;
 unsigned long flx_global_trace_count=0uL;
 
-void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char *file, int line, char *msg)
+void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line, char const *msg)
 {
   if(!flx_enable_trace)return;
   flx_global_trace_count++;
@@ -2476,7 +2476,7 @@ async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
 #include "flx_rtl.hpp"
 
 namespace flx { namespace rtl {
-void RTL_EXTERN print_loc(FILE *ef,flx::rtl::flx_range_srcref_t x,char *cf, int cl);
+void RTL_EXTERN print_loc(FILE *ef,flx::rtl::flx_range_srcref_t x,char const *cf, int cl);
 int RTL_EXTERN std_exception_handler (std::exception *e);
 int RTL_EXTERN flx_exception_handler (flx::rtl::flx_exception_t *e);
 }}
