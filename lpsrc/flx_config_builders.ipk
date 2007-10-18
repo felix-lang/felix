@@ -2198,6 +2198,7 @@ class msvc_mixin:
 
   def detect_compiler_options(self, shell, get_stdout):
     self.detect_warning_flags(shell)
+    self.detect_openmp(shell)
     self.construct_compiler_commands(shell, get_stdout)
 
 
@@ -2240,6 +2241,18 @@ class msvc_mixin:
     opt.SHLIB_DIR = "bin"
     print "rtl located in bin directory"
   
+  def detect_openmp(self, shell, get_stdout):
+    # find if we can use /openmp without a warning
+    try:
+      self.compile_dummy_main(shell, CFLAGS="/openmp ")
+      self.options.openmp= "/openmp "
+      print "OpenMP based parallel programming supported"
+      self.options.HAVE_OPENMP = 1
+    except EnvironmentError:
+      self.options.openmp = ""
+      self.options.HAVE_OPENMP = 0 
+      print "OpenMP based parallel programming not supported"
+
 
   def detect_warning_flags(self, shell):
     # RF: silencing all warnings /w has masked some really insidious bugs
@@ -2269,6 +2282,19 @@ class msvc_mixin:
     # static libs (folks like me), but I'm using nocygwin, so, yknow, eh.
     # P.S. Erick, if ever again you checkin any changes to this that you
     # haven't first tested, I'll kill you.
+
+    # JS: openmp support now detected, and the right compiler option applied
+    # Windows prof. ed. 2005 supports openMP for dynamic link only
+    # Express doesn't support openMP
+    # Xbox also supports static link, but we don't handle that here
+    #
+    # So far, we don't link the right library.. can't see at present how
+    # to get the library in, and not sure that /openmp doesn't link it
+    # automatically.
+    # It's called vcomp.lib/vcomp.dll.
+    # this has to specified with LDFLAGS to go after the 'link' directive
+    # assuming the /openmp switch doesn't force the right linkage
+
     COMPILE_DYNAMIC_RTL = "/MD /c /EHs "
     LINK_DYNAMIC_RTL = "/MD /LD "
       
@@ -2284,15 +2310,15 @@ class msvc_mixin:
     opt.CCOBJ_DYNAMIC_RTL = COM + COMPILE_DYNAMIC_RTL
     opt.CCLINK_DYNAMIC_RTL = COM + LINK_DYNAMIC_RTL
 
-    opt.CCOBJ_DYNAMIC_MAIN = COM + COMPILE_DYNAMIC_MAIN
+    opt.CCOBJ_DYNAMIC_MAIN = COM + COMPILE_DYNAMIC_MAIN + opt.openmp
     opt.CCLINK_DYNAMIC_MAIN = COM + LINK_DYNAMIC_MAIN
 
     opt.CCOBJ_STATIC_FLX = COM + "/MD /EHs /c "
     opt.CCOBJ_STATIC_RTL = COM + "/MD /EHs /c "
     opt.CCOBJ_STATIC_MAIN = COM + "/MD /EHs /c "
 
-    opt.CCOBJ_DYNAMIC_RTL = opt.CCOBJ_DYNAMIC_RTL + opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCOBJ_DYNAMIC_FLX = opt.CCOBJ_DYNAMIC_FLX + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_DYNAMIC_RTL = opt.CCOBJ_DYNAMIC_RTL + opt.NO_INVALID_OFFSETOF_WARNING + opt.openmp
+    opt.CCOBJ_DYNAMIC_FLX = opt.CCOBJ_DYNAMIC_FLX + opt.NO_INVALID_OFFSETOF_WARNING + opt.openmp
     opt.CCOBJ_STATIC_RTL = opt.CCOBJ_STATIC_RTL + opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_STATIC_FLX = opt.CCOBJ_STATIC_FLX + opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCLINK_STATIC = COM + "/MD "
