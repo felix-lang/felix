@@ -251,6 +251,7 @@ The gc_profile_t is a grab bag of controls related to the collector.
 struct GC_EXTERN gc_profile_t {
   bool debug_allocations;     ///< allocator debug on/off
   bool debug_collections;     ///< collector debug on/off
+  bool allow_collection_anywhere; ///< enable collect on allocate
 
   unsigned long gc_freq;      ///< how often to collect
   unsigned long gc_counter;   ///< counter to check if time to collect
@@ -277,6 +278,7 @@ struct GC_EXTERN gc_profile_t {
   gc_profile_t (
     bool debug_allocations_, 
     bool debug_collections_, 
+    bool allow_collection_anywhere_, 
     unsigned long gc_freq_,
     unsigned long min_mem_,
     unsigned long max_mem_,
@@ -338,6 +340,7 @@ collector_t::collector_t() : debug(false) {}
 gc_profile_t::gc_profile_t (
   bool debug_allocations_, 
   bool debug_collections_, 
+  bool allow_collection_anywhere_,
   unsigned long gc_freq_,
   unsigned long min_mem_,
   unsigned long max_mem_,
@@ -347,6 +350,7 @@ gc_profile_t::gc_profile_t (
 ) :
   debug_allocations(debug_allocations_),
   debug_collections(debug_collections_),
+  allow_collection_anywhere(allow_collection_anywhere_),
   gc_freq(gc_freq_),
   gc_counter(0),
   min_mem(min_mem_),
@@ -363,12 +367,14 @@ gc_profile_t::~gc_profile_t() { }
 
 unsigned long gc_profile_t::maybe_collect() {
   ++gc_counter;
+  if(debug_collections) fprintf(stderr,"Maybe collect?\n");
   if (gc_counter < gc_freq) return 0;
   if(collector->get_allocation_amt() < threshhold) return 0;
   return actually_collect();
 }
 
 unsigned long gc_profile_t::actually_collect() {
+  if(debug_collections) fprintf(stderr,"Actually collect\n");
   gc_counter = 0;
   unsigned long collected = collector-> collect();
   unsigned long allocated = collector->get_allocation_amt();
@@ -386,7 +392,7 @@ void *gc_profile_t::allocate(
   bool allow_gc
 ) 
 {
-  if (allow_gc) 
+  if (allow_collection_anywhere && allow_gc) 
   {
     maybe_collect();
     try {
@@ -501,7 +507,7 @@ private:
   unsigned long v_get_allocation_amt()const;
 
 private:
-  void judyerror(char*);
+  void judyerror(char const*);
   unsigned long allocation_count;
   unsigned long root_count;
   unsigned long allocation_amt;
@@ -649,7 +655,7 @@ flx_collector_t::flx_collector_t(allocator_t *a) :
   ,j_tmp(0)
 {}
 
-void flx_collector_t::judyerror(char *loc)
+void flx_collector_t::judyerror(char const *loc)
 {
   fprintf(stderr, "JUDY ERROR %d in %s\n",je.je_Errno,loc);
   abort();

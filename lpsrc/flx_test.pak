@@ -221,6 +221,7 @@ int main(int argc, char** argv)
     gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
       false, 
       false, 
+      false,
       0,
       -1,
       -1,

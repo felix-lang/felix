@@ -851,6 +851,7 @@ class PLUGIN(Plugin):
         os.path.join("misc", "lua"),
         os.path.join("misc", "jedit"),
         "misc",
+        "lpsrc-cache",
         "mkplugin",
         "oldebian",
         "pkg",
@@ -2725,6 +2726,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf doc_out libdoc tools doxydoc')
 @tangle('\trm -rf meta licences')
 @tangle('\trm -rf lpsrc/*.cache')
+@tangle('\trm -rf lpsrc-cache')
 @tangle('\trm -rf interscript/*.pyo')
 @tangle('\trm -rf interscript/*/*.pyo')
 @tangle('\trm -rf interscript/*/*/*.pyo')

@@ -144,7 +144,7 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   let pe s = output_string f (s ^ "\n") in
   pe ("#include \""^module_name^"_lexer_"^si n^".hpp\"");
   pe ("//token type = " ^ token_type_name);
-  pe ("static char *"^token_id^"_desc["^si (length cts)^"]={");
+  pe ("static char const *"^token_id^"_desc["^si (length cts)^"]={");
   iter (fun (nm,_,_) -> pe ("   \""^nm^"\",")) cts;
   pe ("};");
   pe "";

@@ -966,8 +966,7 @@ RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *fil
   return tmp; \
 }
 
-#define FLX_NEWP(x) new(*PTF gcp,x##_ptr_map,false)x
-#define FLX_NEWPA(x) new(*PTF gcp,x##_ptr_map,false)x
+#define FLX_NEWP(x) new(*PTF gcp,x##_ptr_map,true)x
 
 #define FLX_FINALISER(x) \
 static void x##_finaliser(collector_t *, void *p){\
@@ -3067,7 +3066,7 @@ int main(int argc, char** argv)
   // default min mem is 10 Meg, parameter given in Megs
   char *min_mem_env= std::getenv("FLX_MIN_MEM");
   unsigned long min_mem = (unsigned long)(min_mem_env?atof(min_mem_env)*1000000.0:10000000.0);
-  if (min_mem < 1) min_mem = 1;
+  if (min_mem < 0) min_mem = 0;
   if(debug)
     fprintf(stderr,"[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n",min_mem/1000000);
 
@@ -3084,6 +3083,17 @@ int main(int argc, char** argv)
   if (free_factor < 1.1) free_factor = 1.1;
   if(debug)
     fprintf(stderr,"[FLX_FREE_FACTOR] reset gc trigger %4.2f times heap used after collection\n",free_factor);
+
+  // experimental flag to allow collection anywhere
+  // later, we default this one to true if we can 
+  // find all the thread stacks, which should be possible
+  // with gcc and probably msvc++
+
+  char *allow_collection_anywhere_env = std::getenv("FLX_ALLOW_COLLECTION_ANYWHERE");
+  bool allow_collection_anywhere = allow_collection_anywhere != 0;
+  if(debug)
+    fprintf(stderr,"[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n",allow_collection_anywhere?"True":"False");
+
 
 #if FLX_HAVE_GNU
     if(debug)fprintf(stderr, "Compiled by g++\n");
@@ -3110,6 +3120,7 @@ int main(int argc, char** argv)
   flx::gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
     debug_allocations, 
     debug_collections, 
+    allow_collection_anywhere,
     gc_freq,
     min_mem,
     max_mem,
@@ -3192,6 +3203,7 @@ int main(int argc, char** argv)
   gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
     false, 
     false, 
+    false,
     0,
     -1,
     -1,
@@ -3426,7 +3438,7 @@ namespace flx { namespace rtl { namespace strutil {
   }
 
   RTL_EXTERN string atostr(char const *a);
-  RTL_EXTERN string flx_asprintf(char *fmt,...);
+  RTL_EXTERN string flx_asprintf(char const *fmt,...);
 
 }}}
 @doc()
@@ -3442,7 +3454,7 @@ namespace flx { namespace rtl { namespace strutil {
   }
 
 #ifdef FLX_HAVE_VSNPRINTF  
-  string flx_asprintf(char *fmt,...){
+  string flx_asprintf(char const *fmt,...){
     va_list ap;
     va_start(ap,fmt);
     //printf("vsnprintf TRIAL\n");
@@ -3460,7 +3472,7 @@ namespace flx { namespace rtl { namespace strutil {
 #else
   // THIS IS UNSAFE .. but Windows sucks.
   // It documents vsnprintf .. but doesn't provide it
-  string flx_asprintf(char *fmt,...){
+  string flx_asprintf(char const *fmt,...){
     //printf("vsnprintf EMULATION!\n");
     va_list ap;
     int n = 10000; // hack, WILL crash if not enough
