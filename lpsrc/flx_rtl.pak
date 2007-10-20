@@ -3090,7 +3090,7 @@ int main(int argc, char** argv)
   // with gcc and probably msvc++
 
   char *allow_collection_anywhere_env = std::getenv("FLX_ALLOW_COLLECTION_ANYWHERE");
-  bool allow_collection_anywhere = allow_collection_anywhere != 0;
+  bool allow_collection_anywhere = allow_collection_anywhere_env != 0;
   if(debug)
     fprintf(stderr,"[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n",allow_collection_anywhere?"True":"False");
 

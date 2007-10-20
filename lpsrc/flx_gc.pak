@@ -392,6 +392,11 @@ void *gc_profile_t::allocate(
   bool allow_gc
 ) 
 {
+  /* 
+  fprintf(stderr,"gc_profile_t::allocate(): allow_collection_anywhere=%s, allow_gc=%s\n",
+    (allow_collection_anywhere?"True":"False"), (allow_gc?"True":"false")
+  );
+  */
   if (allow_collection_anywhere && allow_gc) 
   {
     maybe_collect();
