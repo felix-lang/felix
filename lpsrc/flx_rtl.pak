@@ -22,9 +22,20 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','d
 cpp_cpps = ['rtl/flx_async']
 provides_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl','flx_gc']
-lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc','libflx_judy']
+lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc','libflx_judy', 'libflx_exceptions']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "ASYNC"
+@doc()
+
+@select(tangler('spkgs/flx_exceptions.py'))
+cpp_cpps = [
+  "rtl/flx_exceptions",
+]
+
+provides_lib = "libflx_exceptions"
+iscr_source = ['lpsrc/flx_rtl.pak']
+build_macro = "FLX_EXCEPTIONS"
+weaver_directory = 'doc/rtl/flx_exceptions/'
 @doc()
 
 @select(tangler('spkgs/flx_rtl.py'))
@@ -42,8 +53,8 @@ RTL_CPPS = [
 
 cpp_cpps = RTL_CPPS
 provides_lib = "libflx"
-lib_requires = ['libflx_gc','libflx_judy']
-pkg_requires = ['flx_gc']
+lib_requires = ['libflx_exceptions','libflx_gc','libflx_judy']
+pkg_requires = ['flx_exceptions','flx_gc']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
 weaver_directory = 'doc/rtl/flx_rtl/'
@@ -68,8 +79,8 @@ DRLIBS = [
 
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
-pkg_requires = ['flx_rtl','flx_pthread','flx_gc']
-lib_requires = ['libdemux','libflx_pthread','libflx','libflx_judy']
+pkg_requires = ['flx_rtl','flx_pthread','flx_gc', 'flx_exceptions']
+lib_requires = ['libdemux','libflx_pthread','libflx','libflx_judy', 'libflx_exceptions']
 iscr_source = ['lpsrc/flx_rtl.pak']
 @doc()
 
@@ -87,12 +98,24 @@ DRLIBS = [
   'libflx',
   'libflx_gc',
   'libflx_judy',
+  'libflx_exceptions',
   ]
 
 drivers = DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_gc','flx_rtl','flx_pthread','flx_async','demux','faio']
 iscr_source = ['lpsrc/flx_rtl.pak']
+@doc()
+
+@select(tangler('config/flx_exceptions.fpc', 'data'))
+Name: flx
+Description: Felix exceptions 
+@if HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:libflx_exceptions_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:libflx_exceptions_static")
+ else:
+   tangle("provides_dlib: -lflx_exceptions_dynamic")
+   tangle("provides_slib: -lflx_exceptions_static")
 @doc()
 
 @select(tangler('config/flx.fpc', 'data'))
@@ -105,7 +128,7 @@ Version: $Id$
  else:
    tangle("provides_dlib: -lflx_dynamic")
    tangle("provides_slib: -lflx_static")
-Requires: flx_gc
+Requires: flx_gc flx_exceptions
 @doc()
 
 @select(tangler('config/flx_arun.fpc', 'data'))
@@ -474,6 +497,215 @@ is the continuation class. Note the message pointer
 is an abstract address and must be cast to the
 right type by client drivers.
 
+@select(tangler("rtl/flx_exceptions.hpp"))
+#ifndef __FLX_EXCEPTIONS_HPP__
+#define __FLX_EXCEPTIONS_HPP__
+#include "flx_rtl_config.hpp"
+#include <string>
+
+namespace flx { namespace rtl {
+// ********************************************************
+// Standard C++ Exceptions
+// ********************************************************
+
+struct RTL_EXTERN flx_exception_t;
+struct RTL_EXTERN flx_out_of_memory_t;
+struct RTL_EXTERN flx_exec_failure_t;
+struct RTL_EXTERN flx_range_srcref_t;
+struct RTL_EXTERN flx_match_failure_t;
+struct RTL_EXTERN flx_assert_failure_t;
+struct RTL_EXTERN flx_assert2_failure_t;
+struct RTL_EXTERN flx_switch_failure_t;
+
+// ********************************************************
+/// EXCEPTION: Felix exception base abstraction.
+/// Mainly used to convert catches into subroutine
+/// calls which then dispatch on RTTI manually.
+// ********************************************************
+
+struct RTL_EXTERN flx_exception_t {
+  virtual ~flx_exception_t()=0;
+};
+
+// ********************************************************
+/// EXCEPTION: Out of Memory.
+/// Thrown when out of memory or memory bound exceeded.
+// ********************************************************
+
+struct RTL_EXTERN flx_out_of_memory_t : flx_exception_t {
+  flx_out_of_memory_t();
+  virtual ~flx_out_of_memory_t();
+};
+
+// ********************************************************
+/// EXCEPTION: EXEC protocol failure.
+/// Thrown when trying to run a dead procedure
+// ********************************************************
+
+struct RTL_EXTERN flx_exec_failure_t : flx_exception_t {
+  std::string filename;  ///< dll filename
+  std::string operation; ///< faulty operation
+  std::string what;      ///< error description
+  flx_exec_failure_t(std::string f, std::string o, std::string w);
+  virtual ~flx_exec_failure_t();
+};
+
+// ********************************************************
+/// SOURCE REFERENCE: to track places in user source code.
+// ********************************************************
+
+struct RTL_EXTERN flx_range_srcref_t {
+  char const *filename;  ///< source file name
+  int startline;   ///< first line (1 origin)
+  int startcol;    ///< first column (1 origin)
+  int endline;     ///< last line
+  int endcol;      ///< last column
+  flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec);
+  flx_range_srcref_t();
+};
+
+// ********************************************************
+/// EXCEPTION: HALT.
+/// Thrown by halt command
+// ********************************************************
+
+struct RTL_EXTERN flx_halt_t : flx_exception_t {
+  std::string reason;         ///< halt argument
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
+  flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string reason);
+  virtual ~flx_halt_t();
+};
+
+// ********************************************************
+/// EXCEPTION: MATCH failure.
+/// Thrown when no match cases match the argument of a match,
+/// regmatch, or reglex
+// ********************************************************
+
+struct RTL_EXTERN flx_match_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
+  flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_match_failure_t();
+};
+
+// ********************************************************
+/// EXCEPTION: ASSERT failure.
+/// Thrown when user assertion fails
+// ********************************************************
+
+struct RTL_EXTERN flx_assert_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_assert_failure_t();
+};
+
+struct RTL_EXTERN flx_assert2_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  flx_range_srcref_t flx_loc2; ///< second location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
+  virtual ~flx_assert2_failure_t();
+};
+
+// ********************************************************
+/// EXCEPTION: RANGE failure.
+/// Thrown when a range check fails
+// ********************************************************
+
+struct RTL_EXTERN flx_range_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_range_failure_t();
+};
+
+RTL_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
+
+
+// ********************************************************
+/// EXCEPTION: SWITCH failure. this is a system failure!
+// ********************************************************
+
+struct RTL_EXTERN flx_switch_failure_t : flx_exception_t {
+  virtual ~flx_switch_failure_t();
+};
+}}
+#endif
+
+@select(tangler("rtl/flx_exceptions.cpp"))
+#include "flx_exceptions.hpp"
+
+namespace flx { namespace rtl {
+// ********************************************************
+// standard exceptions -- implementation
+// ********************************************************
+flx_exception_t::~flx_exception_t(){}
+
+flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string w) : 
+  filename(f), 
+  operation(o), 
+  what(w) 
+{}
+
+flx_out_of_memory_t::flx_out_of_memory_t(){}
+flx_out_of_memory_t::~flx_out_of_memory_t(){}
+flx_exec_failure_t::~flx_exec_failure_t(){}
+
+flx_range_srcref_t::flx_range_srcref_t() : 
+    filename(""),startline(0),startcol(0),endline(0),endcol(0){}
+flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
+    filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
+
+flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string r) :
+   reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_halt_t::~flx_halt_t(){}
+
+flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_match_failure_t::~flx_match_failure_t(){}
+
+flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_assert_failure_t::~flx_assert_failure_t(){}
+
+flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
+   flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_assert2_failure_t::~flx_assert2_failure_t(){}
+
+flx_range_failure_t::flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_range_failure_t::~flx_range_failure_t(){}
+
+flx_switch_failure_t::~flx_switch_failure_t(){}
+
+long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl) 
+{
+  if (x>=l && x<h) return x;
+  throw flx::rtl::flx_range_failure_t (sref,cf,cl);
+}
+
+void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
+{
+  fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
+    x.filename,
+    x.startline,
+    x.startcol,
+    x.endline,
+    x.endcol
+  );
+  fprintf(ef,"C++ location  : %s %d\n", cf, cl);
+}
+
+}}
+
 @select(tangler("rtl/flx_rtl.hpp"))
 #ifndef __FLX_RTL_H__
 #define __FLX_RTL_H__
@@ -484,6 +716,7 @@ right type by client drivers.
 
 #include "flx_rtl_config.hpp"
 #include "flx_meta.hpp"
+#include "flx_exceptions.hpp"
 #include "flx_gc.hpp"
 #include <string>
 #include <functional>
@@ -563,18 +796,6 @@ RTL_EXTERN extern flx::gc::generic::gc_shape_t unit_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t slist_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
 
-// ********************************************************
-// Standard C++ Exceptions
-// ********************************************************
-
-struct RTL_EXTERN flx_exception_t;
-struct RTL_EXTERN flx_out_of_memory_t;
-struct RTL_EXTERN flx_exec_failure_t;
-struct RTL_EXTERN flx_range_srcref_t;
-struct RTL_EXTERN flx_match_failure_t;
-struct RTL_EXTERN flx_assert_failure_t;
-struct RTL_EXTERN flx_assert2_failure_t;
-struct RTL_EXTERN flx_switch_failure_t;
 // ********************************************************
 /// CONTINUATION.
 // ********************************************************
@@ -738,127 +959,6 @@ bool operator >= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
   return std::greater_equal<void const*>()(a-> data, b->data);
 }
 
-
-// ********************************************************
-/// EXCEPTION: Felix exception base abstraction.
-/// Mainly used to convert catches into subroutine
-/// calls which then dispatch on RTTI manually.
-// ********************************************************
-
-struct RTL_EXTERN flx_exception_t {
-  virtual ~flx_exception_t()=0;
-};
-
-// ********************************************************
-/// EXCEPTION: Out of Memory.
-/// Thrown when out of memory or memory bound exceeded.
-// ********************************************************
-
-struct RTL_EXTERN flx_out_of_memory_t : flx_exception_t {
-  flx_out_of_memory_t();
-  virtual ~flx_out_of_memory_t();
-};
-
-// ********************************************************
-/// EXCEPTION: EXEC protocol failure.
-/// Thrown when trying to run a dead procedure
-// ********************************************************
-
-struct RTL_EXTERN flx_exec_failure_t : flx_exception_t {
-  std::string filename;  ///< dll filename
-  std::string operation; ///< faulty operation
-  std::string what;      ///< error description
-  flx_exec_failure_t(std::string f, std::string o, std::string w);
-  virtual ~flx_exec_failure_t();
-};
-
-// ********************************************************
-/// SOURCE REFERENCE: to track places in user source code.
-// ********************************************************
-
-struct RTL_EXTERN flx_range_srcref_t {
-  char const *filename;  ///< source file name
-  int startline;   ///< first line (1 origin)
-  int startcol;    ///< first column (1 origin)
-  int endline;     ///< last line
-  int endcol;      ///< last column
-  flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec);
-  flx_range_srcref_t();
-};
-
-// ********************************************************
-/// EXCEPTION: HALT.
-/// Thrown by halt command
-// ********************************************************
-
-struct RTL_EXTERN flx_halt_t : flx_exception_t {
-  std::string reason;         ///< halt argument
-  flx_range_srcref_t flx_loc; ///< location in Felix file
-  char const *cxx_srcfile;          ///< C++ file name
-  int cxx_srcline;            ///< C++ line number
-  flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string reason);
-  virtual ~flx_halt_t();
-};
-
-// ********************************************************
-/// EXCEPTION: MATCH failure.
-/// Thrown when no match cases match the argument of a match,
-/// regmatch, or reglex
-// ********************************************************
-
-struct RTL_EXTERN flx_match_failure_t : flx_exception_t {
-  flx_range_srcref_t flx_loc; ///< location in Felix file
-  char const *cxx_srcfile;          ///< C++ file name
-  int cxx_srcline;            ///< C++ line number
-  flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
-  virtual ~flx_match_failure_t();
-};
-
-// ********************************************************
-/// EXCEPTION: ASSERT failure.
-/// Thrown when user assertion fails
-// ********************************************************
-
-struct RTL_EXTERN flx_assert_failure_t : flx_exception_t {
-  flx_range_srcref_t flx_loc; ///< location in Felix file
-  char const *cxx_srcfile;          ///< C++ file
-  int cxx_srcline;            ///< __LINE__ macro
-  flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
-  virtual ~flx_assert_failure_t();
-};
-
-struct RTL_EXTERN flx_assert2_failure_t : flx_exception_t {
-  flx_range_srcref_t flx_loc; ///< location in Felix file
-  flx_range_srcref_t flx_loc2; ///< second location in Felix file
-  char const *cxx_srcfile;          ///< C++ file
-  int cxx_srcline;            ///< __LINE__ macro
-  flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
-  virtual ~flx_assert2_failure_t();
-};
-
-// ********************************************************
-/// EXCEPTION: RANGE failure.
-/// Thrown when a range check fails
-// ********************************************************
-
-struct RTL_EXTERN flx_range_failure_t : flx_exception_t {
-  flx_range_srcref_t flx_loc; ///< location in Felix file
-  char const *cxx_srcfile;          ///< C++ file
-  int cxx_srcline;            ///< __LINE__ macro
-  flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
-  virtual ~flx_range_failure_t();
-};
-
-RTL_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
-
-
-// ********************************************************
-/// EXCEPTION: SWITCH failure. this is a system failure!
-// ********************************************************
-
-struct RTL_EXTERN flx_switch_failure_t : flx_exception_t {
-  virtual ~flx_switch_failure_t();
-};
 
 
 // ********************************************************
@@ -1221,6 +1321,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 #include "flx_rtl.hpp"
 #include <cstdio>
 #include <cassert>
+#include "flx_exceptions.hpp"
 
 namespace flx { namespace rtl {
 
@@ -1549,67 +1650,6 @@ flx::gc::generic::gc_shape_t unit_ptr_map = {
   gc::generic::gc_flags_default
 };
                                                                                 
-// ********************************************************
-// standard exceptions -- implementation
-// ********************************************************
-flx_exception_t::~flx_exception_t(){}
-
-flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string w) : 
-  filename(f), 
-  operation(o), 
-  what(w) 
-{}
-
-flx_out_of_memory_t::flx_out_of_memory_t(){}
-flx_out_of_memory_t::~flx_out_of_memory_t(){}
-flx_exec_failure_t::~flx_exec_failure_t(){}
-
-flx_range_srcref_t::flx_range_srcref_t() : 
-    filename(""),startline(0),startcol(0),endline(0),endcol(0){}
-flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
-    filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
-
-flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string r) :
-   reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-flx_halt_t::~flx_halt_t(){}
-
-flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
-   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-flx_match_failure_t::~flx_match_failure_t(){}
-
-flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
-   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-flx_assert_failure_t::~flx_assert_failure_t(){}
-
-flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
-   flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
-flx_assert2_failure_t::~flx_assert2_failure_t(){}
-
-flx_range_failure_t::flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
-   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-flx_range_failure_t::~flx_range_failure_t(){}
-
-flx_switch_failure_t::~flx_switch_failure_t(){}
-
-long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl) 
-{
-  if (x>=l && x<h) return x;
-  throw flx::rtl::flx_range_failure_t (sref,cf,cl);
-}
-
-void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
-{
-  fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
-    x.filename,
-    x.startline,
-    x.startcol,
-    x.endline,
-    x.endcol
-  );
-  fprintf(ef,"C++ location  : %s %d\n", cf, cl);
-}
-
-
 int flx_enable_trace=1;
 unsigned long flx_global_trace_count=0uL;
 
@@ -2472,7 +2512,7 @@ async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
 #ifndef __FLX_EH_H__
 #define __FLX_EH_H__
 #include "flx_rtl_config.hpp"
-#include "flx_rtl.hpp"
+#include "flx_exceptions.hpp"
 
 namespace flx { namespace rtl {
 void RTL_EXTERN print_loc(FILE *ef,flx::rtl::flx_range_srcref_t x,char const *cf, int cl);
@@ -2486,6 +2526,7 @@ int RTL_EXTERN flx_exception_handler (flx::rtl::flx_exception_t *e);
 #include <stdio.h>
 #include "flx_rtl.hpp"
 #include "flx_dynlink.hpp"
+#include "flx_exceptions.hpp"
 #include "flx_eh.hpp"
 using namespace flx::rtl;
 
@@ -2691,8 +2732,8 @@ void doflx (void *data) {
         void *data = new doflx_data(debug_driver, gcp, pactive, thread_control);
         flx_detached_thread_t dummy;
         if(debug_driver)fprintf(stderr,"Starting new pthread, thread counter= %ld\n",thread_control->thread_count());
-        thread_control->add_thread();
-        dummy.init( doflx,data);
+        //thread_control->add_thread();
+        dummy.init( doflx,data, thread_control);
       }
       goto process_active;
 
@@ -2836,7 +2877,8 @@ int run_felix_pthread(
   }
 
   {
-    thread_control->add_thread();
+    void *stack_base = __builtin_frame_address(0);
+    thread_control->add_thread(stack_base);
     
     doflx(new doflx_data(debug_driver, gcp, active, thread_control)); // deletes active for us!
   

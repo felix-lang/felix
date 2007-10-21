@@ -93,7 +93,7 @@ posix_timer_queue::posix_timer_queue()
     //fprintf(stderr,"initing timer sleep thread\n");
     
     // NEED'S TO CHECK RETURN VAL AND HANDLE ERROR
-    if(sleep_thread.init(thread_start, this))
+    if(sleep_thread.init(thread_start, this, NULL))
       fprintf(stderr, "failed to create posix timer queue thread!\n");
 }
 

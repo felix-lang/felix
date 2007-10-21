@@ -40,7 +40,6 @@ PTHREADRTL_INTERFACES = [
  'pthread/pthread_monitor.hpp',       # portable
  'pthread/pthread_sleep_queue.hpp',   # portable
  'pthread/pthread_work_fifo.hpp',     # portable
- 'pthread/pthread_control.hpp',       # portable
 ]
 
 PTHREAD_CPPS = [
@@ -53,7 +52,6 @@ PTHREAD_CPPS = [
   "pthread/pthread_monitor",
   "pthread/pthread_sleep_queue",
   "pthread/pthread_work_fifo",
-  "pthread/pthread_control",
   "rtl/flx_ts_collector",
 ]
 
@@ -95,10 +93,10 @@ if SOLARIS:
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES
-lib_requires = ['libflx_gc']
+lib_requires = ['libflx_exceptions','libflx_gc']
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
-pkg_requires = ['flx_rtl', 'flx_gc'] # flx_rtl provides flx_rtl_config.hpp
+pkg_requires = ['flx_exceptions','flx_rtl', 'flx_gc'] # flx_rtl provides flx_rtl_config.hpp
 iscr_source = ["lpsrc/flx_pthread.pak"]
 build_macro = "PTHREAD"
 weaver_directory = 'doc/rtl/flx_pthread/'
@@ -144,6 +142,13 @@ threads.
 // seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
 // with 4.0.1 when printfing to stdout. Nasty.
 
+#include "pthread_mutex.hpp"
+#include "pthread_condv.hpp"
+
+// NON PORTABLE TEMPORARY HACK
+#include <pthread.h>
+//#include <map>
+
 namespace flx { namespace pthread {
 
 // ********************************************************
@@ -157,6 +162,35 @@ typedef HANDLE flx_native_thread_t;
 typedef pthread_t flx_native_thread_t;
 #endif
 
+
+struct thread_data_t { 
+  thread_data_t(void *b) : stack_base(b), stack_top(0) {}
+  void *stack_base;
+  void *stack_top;
+};
+
+//typedef std::pair<xflx_native_thread_t const, thread_data_t> thread_entry_t;
+//typedef std::map<xflx_native_thread_t, thread_data_t, std::less<flx_native_thread_t> > thread_registry_t;
+
+class PTHREAD_EXTERN thread_control_t
+{
+    bool do_world_stop;
+    unsigned int thread_counter;
+    flx_condv_t stop_guard;
+    flx_mutex_t stop_mutex;
+    //thread_registry_t threads;
+public: 
+    thread_control_t ();
+    int thread_count();
+    void add_thread(void*);
+    void remove_thread();
+    bool world_stop();
+    void join_all() ;
+    void world_start();
+    void yield();
+};
+
+
 // a class for threads that can't be joined. upon exit all their resources
 // are freed. they just evaporate. probably the best type of thread.
 class PTHREAD_EXTERN flx_detached_thread_t {
@@ -166,7 +200,7 @@ class PTHREAD_EXTERN flx_detached_thread_t {
 public:
   flx_detached_thread_t();
   ~flx_detached_thread_t();
-  int init(void (*start)(void*), void* udat);
+  int init(void (*start)(void*), void* udat, thread_control_t*);
 };
 
 // rf: joinable threads. is it an error to not join joinable threads?
@@ -177,7 +211,7 @@ class PTHREAD_EXTERN flx_thread_t {
 public:
   flx_thread_t();
   ~flx_thread_t();
-  int init(void (*start)(void*), void* udat);
+  int init(void (*start)(void*), void* udat, thread_control_t*);
   void join();  
 };
 
@@ -188,46 +222,128 @@ class PTHREAD_EXTERN flx_thread_wrapper_t {
   void operator=(flx_thread_wrapper_t const&); // uncopyable
 public:
   ~flx_thread_wrapper_t();
-  flx_thread_wrapper_t(void (*start)(void*), void* udat);
+  flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_t *tc);
 };
 
 }}
 #endif
 
-@h=tangler('pthread/pthread_control.hpp')
+@h=tangler('pthread/pthread_posix_thread.cpp')
 @select(h)
-#ifndef __FLX_PTHREAD_CONTROL_H__
-#define __FLX_PTHREAD_CONTROL_H__
-#include "pthread_mutex.hpp"
-#include "pthread_condv.hpp"
+#include "pthread_thread.hpp"
+#include <stdio.h>
+#include <string.h>  // strerror
+#include <cstdlib>
 
 namespace flx { namespace pthread {
 
-class PTHREAD_EXTERN thread_control_t
+struct tstart_t
 {
-    bool do_world_stop;
-    unsigned int thread_counter;
-    flx_condv_t stop_guard;
-    flx_mutex_t stop_mutex;
-public: 
-    thread_control_t ();
-    int thread_count();
-    void add_thread();
-    void remove_thread();
-    bool world_stop();
-    void join_all() ;
-    void world_start();
-    void yield();
+  void (*sr)(void*);
+  void *cd;
+  thread_control_t *tc;
+  tstart_t(void (*s)(void*),void* c,thread_control_t *t) 
+    : sr(s), cd(c), tc(t) 
+  {}
 };
 
-}}
-#endif
+extern "C" void *flx_pthread_start_wrapper(void *e)
+{
+  #ifdef __GNUC__
+  void *stack_base = __builtin_frame_address(0);
+  #else
+  #error "Routine to find stack pointer for non-gcc compiler is required!"
+  #endif
+  fprintf(stderr,"Thread %lu start stack base = %p\n",(unsigned long)pthread_self(),stack_base);
+  tstart_t *ehd = (tstart_t*)e;
+  thread_control_t *tc = ehd -> tc;
+  if(tc)tc->add_thread(stack_base);
+  void (*sr)(void*)=ehd->sr;
+  void *cd = ehd->cd;
+  delete ehd;
+  try { 
+    (*sr)(cd);
+  }
+  catch (...) {
+    fprintf(stderr,"Uncaught exception in thread\n");
+    std::exit(1);
+  }
+  return NULL;
+}
 
-@h=tangler('pthread/pthread_control.cpp')
-@select(h)
-#include "pthread_control.hpp"
 
-namespace flx { namespace pthread {
+// ---- detached threads ----------
+
+flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
+void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
+
+int 
+flx_detached_thread_t::init(void (*start)(void*), void* udat, thread_control_t *tc)
+{
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  int res = pthread_create(&thr, &attr, flx_pthread_start_wrapper, new tstart_t(start, udat, tc));
+  if(res)
+  {
+     fprintf(stderr, "WARNING: flx_detached_thread_t: pthread_create failed: %s\n",
+       strerror(res));
+  }
+  pthread_attr_destroy(&attr);
+  return res;
+}
+
+flx_detached_thread_t::~flx_detached_thread_t() { }
+flx_detached_thread_t::flx_detached_thread_t() { }
+
+// ---- joinable threads ----------
+flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
+void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
+
+int 
+flx_thread_t::init(void (*start)(void*), void* udat, thread_control_t*tc)
+{
+  int res = pthread_create(&thr, NULL, flx_pthread_start_wrapper, new tstart_t(start, udat, tc));
+  if(res)
+  {
+     fprintf(stderr, "WARNING: flx_thread_t: pthread_create failed: %s\n",
+       strerror(res));
+  }
+  return res;
+}
+
+void flx_thread_t::join() { 
+  int res = pthread_join(thr, NULL); 
+  if(res)
+  {
+     fprintf(stderr, "flx_thread_t: FATAL: pthread_join failed: %s\n",
+       strerror(res));
+     std::exit(1);
+  }
+}
+
+flx_thread_t::~flx_thread_t() { }
+flx_thread_t::flx_thread_t() { }
+
+// ---- joinable thread wrapper ----------
+
+flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
+void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable
+
+flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_t*tc)
+{
+  int res = thread.init(start,udat,tc);
+  {
+    if(res)
+    {
+       fprintf(stderr, "FATAL: flx_thread_wapper_t: flx_thread_t.init failed: %s\n",
+         strerror(res));
+       exit(1);
+    }
+  }
+}
+
+flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
 thread_control_t::thread_control_t () : 
   do_world_stop(false), thread_counter(0) 
@@ -241,10 +357,17 @@ int thread_control_t::thread_count()
     return thread_counter;
   }
 
-void thread_control_t::add_thread() 
+void thread_control_t::add_thread(void *stack_base) 
   {
-    flx_mutex_locker_t m(stop_mutex);
+    // NEW DESIGN: the caller has to hold the mutex already.
+    // This routine is now called by the spawned thread,
+    // NOT the spawning thread.
+
+    //flx_mutex_locker_t m(stop_mutex);
     //fprintf(stderr, "Adding thread\n");
+
+    flx_native_thread_t id = pthread_self();
+    //threads.insert (std::make_pair(id, thread_data_t (stack_base)));
     ++thread_counter; 
     stop_guard.broadcast();
   }
@@ -302,115 +425,6 @@ void thread_control_t::yield()
       //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
     }
   }
-
-}}
-
-
-@h=tangler('pthread/pthread_posix_thread.cpp')
-@select(h)
-#include "pthread_thread.hpp"
-#include <stdio.h>
-#include <string.h>  // strerror
-#include <cstdlib>
-
-namespace flx { namespace pthread {
-
-struct tstart_t
-{
-  void (*sr)(void*);
-  void *cd;
-  tstart_t(void (*s)(void*),void* c) : sr(s), cd(c) {}
-};
-
-extern "C" void *flx_pthread_start_wrapper(void *e)
-{
-  tstart_t *ehd = (tstart_t*)e;
-  void (*sr)(void*)=ehd->sr;
-  void *cd = ehd->cd;
-  delete ehd;
-  try { 
-    (*sr)(cd);
-  }
-  catch (...) {
-    fprintf(stderr,"Uncaught exception in thread\n");
-    std::exit(1);
-  }
-  return NULL;
-}
-
-
-// ---- detached threads ----------
-
-flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
-void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
-
-int 
-flx_detached_thread_t::init(void (*start)(void*), void* udat)
-{
-  pthread_attr_t attr;
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  int res = pthread_create(&thr, &attr, flx_pthread_start_wrapper, new tstart_t(start, udat));
-  if(res)
-  {
-     fprintf(stderr, "WARNING: flx_detached_thread_t: pthread_create failed: %s\n",
-       strerror(res));
-  }
-  pthread_attr_destroy(&attr);
-  return res;
-}
-
-flx_detached_thread_t::~flx_detached_thread_t() { }
-flx_detached_thread_t::flx_detached_thread_t() { }
-
-// ---- joinable threads ----------
-flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
-void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
-
-int 
-flx_thread_t::init(void (*start)(void*), void* udat)
-{
-  int res = pthread_create(&thr, NULL, flx_pthread_start_wrapper, new tstart_t(start, udat));
-  if(res)
-  {
-     fprintf(stderr, "WARNING: flx_thread_t: pthread_create failed: %s\n",
-       strerror(res));
-  }
-  return res;
-}
-
-void flx_thread_t::join() { 
-  int res = pthread_join(thr, NULL); 
-  if(res)
-  {
-     fprintf(stderr, "flx_thread_t: FATAL: pthread_join failed: %s\n",
-       strerror(res));
-     std::exit(1);
-  }
-}
-
-flx_thread_t::~flx_thread_t() { }
-flx_thread_t::flx_thread_t() { }
-
-// ---- joinable thread wrapper ----------
-
-flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
-void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable
-
-flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat)
-{
-  int res = thread.init(start,udat);
-  {
-    if(res)
-    {
-       fprintf(stderr, "FATAL: flx_thread_wapper_t: flx_thread_t.init failed: %s\n",
-         strerror(res));
-       exit(1);
-    }
-  }
-}
-
-flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
 }}
 
@@ -1532,7 +1546,7 @@ void worker_fifo::start_worker_thread()
 {
   ++nthreads;
   //fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
-  flx_detached_thread_t().init(thread_start, this);
+  flx_detached_thread_t().init(thread_start, this,NULL);
 }
 
 worker_fifo::worker_fifo(int n, int m) : nthreads(0), fifo(n)

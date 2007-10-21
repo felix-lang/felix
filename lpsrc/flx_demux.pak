@@ -109,7 +109,7 @@ make_std_demuxer()
 {     
   flx_demuxer_t *d = new flx_demuxer_t();
   pthread::flx_thread_t ethread;
-  if(ethread.init(pthread_thread, d) == -1) 
+  if(ethread.init(pthread_thread, d, NULL) == -1) 
   {
     fprintf(stderr,"Proto_async thread init failure\n");
     exit(1);

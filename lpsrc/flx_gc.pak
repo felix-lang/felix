@@ -1001,7 +1001,7 @@ flx_collector_t::~flx_collector_t()
 #define __FLX_TS_COLLECTOR_H__
 #include "flx_collector.hpp"
 #include "pthread_mutex.hpp"
-#include "pthread_control.hpp"
+#include "pthread_thread.hpp"
 
 namespace flx {
 namespace gc {
