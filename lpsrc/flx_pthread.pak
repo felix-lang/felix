@@ -147,7 +147,8 @@ threads.
 
 // NON PORTABLE TEMPORARY HACK
 #include <pthread.h>
-//#include <map>
+#include <utility>
+#include <map>
 
 namespace flx { namespace pthread {
 
@@ -169,8 +170,8 @@ struct thread_data_t {
   void *stack_top;
 };
 
-//typedef std::pair<xflx_native_thread_t const, thread_data_t> thread_entry_t;
-//typedef std::map<xflx_native_thread_t, thread_data_t, std::less<flx_native_thread_t> > thread_registry_t;
+typedef std::pair<flx_native_thread_t const, thread_data_t> thread_entry_t;
+typedef std::map<flx_native_thread_t, thread_data_t, std::less<flx_native_thread_t> > thread_registry_t;
 
 class PTHREAD_EXTERN thread_control_t
 {
@@ -178,7 +179,7 @@ class PTHREAD_EXTERN thread_control_t
     unsigned int thread_counter;
     flx_condv_t stop_guard;
     flx_mutex_t stop_mutex;
-    //thread_registry_t threads;
+    thread_registry_t threads;
 public: 
     thread_control_t ();
     int thread_count();
@@ -254,7 +255,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   #else
   #error "Routine to find stack pointer for non-gcc compiler is required!"
   #endif
-  fprintf(stderr,"Thread %lu start stack base = %p\n",(unsigned long)pthread_self(),stack_base);
+  fprintf(stderr,"Thread %lx start stack base = %p\n",pthread_self(),stack_base);
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
   if(tc)tc->add_thread(stack_base);
@@ -268,6 +269,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
     fprintf(stderr,"Uncaught exception in thread\n");
     std::exit(1);
   }
+  if(tc)tc->remove_thread();
   return NULL;
 }
 
@@ -359,15 +361,10 @@ int thread_control_t::thread_count()
 
 void thread_control_t::add_thread(void *stack_base) 
   {
-    // NEW DESIGN: the caller has to hold the mutex already.
-    // This routine is now called by the spawned thread,
-    // NOT the spawning thread.
-
-    //flx_mutex_locker_t m(stop_mutex);
-    //fprintf(stderr, "Adding thread\n");
-
+    flx_mutex_locker_t m(stop_mutex);
     flx_native_thread_t id = pthread_self();
-    //threads.insert (std::make_pair(id, thread_data_t (stack_base)));
+    fprintf(stderr, "Adding thread %lx base %p\n", id, stack_base);
+    threads.insert (std::make_pair(id, thread_data_t (stack_base)));
     ++thread_counter; 
     stop_guard.broadcast();
   }
@@ -375,7 +372,12 @@ void thread_control_t::add_thread(void *stack_base)
 void thread_control_t::remove_thread() 
   { 
     flx_mutex_locker_t m(stop_mutex);
-    //fprintf(stderr, "Removing thread\n");
+    flx_native_thread_t id = pthread_self();
+    fprintf(stderr, "Removing thread %lx\n", id);
+    if (threads.erase(id) == 0)
+    {
+      fprintf(stderr, "Remove thread %lx which is not registered\n", id);
+    }
     --thread_counter; 
     stop_guard.broadcast();
   }
@@ -384,7 +386,7 @@ void thread_control_t::remove_thread()
 bool thread_control_t::world_stop() 
   {
     flx_mutex_locker_t m(stop_mutex);
-    //fprintf(stderr,"Stopping world\n");
+    fprintf(stderr,"Stopping world\n");
     if (do_world_stop) return false; // race! Someone else beat us
     do_world_stop = true;
     --thread_counter;
@@ -416,7 +418,15 @@ void thread_control_t::yield()
     flx_mutex_locker_t m(stop_mutex);
     if (do_world_stop)
     {
-      //fprintf(stderr,"Yield found world stop!\n");
+      flx_native_thread_t id = pthread_self();
+      void *stack_pointer = __builtin_frame_address(0);
+      fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
+      thread_registry_t::iterator it = threads.find(id);
+      if(it == threads.end()) {
+        fprintf(stderr,"Cannot find thread %lx in registry\n",id);
+      }
+      (*it).second.stack_top = stack_pointer;
+      fprintf(stderr,"Stack size = *ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
       --thread_counter;
       //fprintf(stderr,"Yield thread count now %d\n",thread_counter);
       stop_guard.broadcast();

@@ -2839,8 +2839,6 @@ void doflx (void *data) {
   }
   catch (...) { fprintf(stderr,"Unknown exception deleting async!\n"); }
 
-  // if this fails the whole system is corrupted
-  thread_control->remove_thread();
 }
 
 // RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
@@ -2883,6 +2881,7 @@ int run_felix_pthread(
     doflx(new doflx_data(debug_driver, gcp, active, thread_control)); // deletes active for us!
   
     if(debug_driver)fprintf(stderr,"MAIN THREAD FINISHED: waiting for other threads\n");
+    thread_control->remove_thread();
     thread_control->join_all();
     if(debug_driver)fprintf(stderr,"ALL THREADS DEAD: mainline cleanup!\n");
 
