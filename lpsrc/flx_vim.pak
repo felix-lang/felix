@@ -102,7 +102,7 @@ syn keyword felixStatement namespace module
 syn keyword felixStatement NaN
 syn keyword felixStatement obj of
 syn keyword felixStatement proc cproc
-syn keyword felixStatement raise read ref regexp return
+syn keyword felixStatement raise ref regexp return
 syn keyword felixStatement struct
 syn keyword felixStatement to type typedef typeof
 syn keyword felixStatement union
