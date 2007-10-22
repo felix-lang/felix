@@ -93,10 +93,10 @@ if SOLARIS:
 
 cpp_cpps = PTHREAD_CPPS
 rtl_interfaces = PTHREADRTL_INTERFACES
-lib_requires = ['libflx_exceptions','libflx_gc']
+lib_requires = ['libflx_exceptions']
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
-pkg_requires = ['flx_exceptions','flx_rtl', 'flx_gc'] # flx_rtl provides flx_rtl_config.hpp
+pkg_requires = ['flx_exceptions','flx_rtl_config'] 
 iscr_source = ["lpsrc/flx_pthread.pak"]
 build_macro = "PTHREAD"
 weaver_directory = 'doc/rtl/flx_pthread/'
