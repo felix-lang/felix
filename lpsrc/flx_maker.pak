@@ -691,7 +691,7 @@ class PLUGIN(Plugin):
         flush()
  
         dlibs = vxqtq(os.path.join("bin", 
-          "flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename),
+          "flx_pkgconfig -r --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename),
           log=log)
         dlibs = string.strip(dlibs[0]) + " "
   
