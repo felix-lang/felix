@@ -166,10 +166,22 @@ is the continuation class. Note the message pointer
 is an abstract address and must be cast to the
 right type by client drivers.
 
+@h=tangler('rtl/flx_exceptions_config.hpp')
+@select(h)
+#ifndef __FLX_EXCEPTIONS_CONFIG_H__
+#define __FLX_EXCEPTIONS_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_FLX_EXCEPTIONS
+#define FLX_EXCEPTIONS_EXTERN FLX_EXPORT
+#else
+#define FLX_EXCEPTIONS_EXTERN FLX_IMPORT
+#endif
+#endif
+
 @select(tangler("rtl/flx_exceptions.hpp"))
 #ifndef __FLX_EXCEPTIONS_HPP__
 #define __FLX_EXCEPTIONS_HPP__
-#include "flx_rtl_config.hpp"
+#include "flx_exceptions_config.hpp"
 #include <string>
 
 namespace flx { namespace rtl {
@@ -177,14 +189,14 @@ namespace flx { namespace rtl {
 // Standard C++ Exceptions
 // ********************************************************
 
-struct RTL_EXTERN flx_exception_t;
-struct RTL_EXTERN flx_out_of_memory_t;
-struct RTL_EXTERN flx_exec_failure_t;
-struct RTL_EXTERN flx_range_srcref_t;
-struct RTL_EXTERN flx_match_failure_t;
-struct RTL_EXTERN flx_assert_failure_t;
-struct RTL_EXTERN flx_assert2_failure_t;
-struct RTL_EXTERN flx_switch_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_exception_t;
+struct FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t;
+struct FLX_EXCEPTIONS_EXTERN flx_exec_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t;
+struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t;
 
 // ********************************************************
 /// EXCEPTION: Felix exception base abstraction.
@@ -192,7 +204,7 @@ struct RTL_EXTERN flx_switch_failure_t;
 /// calls which then dispatch on RTTI manually.
 // ********************************************************
 
-struct RTL_EXTERN flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_exception_t {
   virtual ~flx_exception_t()=0;
 };
 
@@ -201,7 +213,7 @@ struct RTL_EXTERN flx_exception_t {
 /// Thrown when out of memory or memory bound exceeded.
 // ********************************************************
 
-struct RTL_EXTERN flx_out_of_memory_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t : flx_exception_t {
   flx_out_of_memory_t();
   virtual ~flx_out_of_memory_t();
 };
@@ -211,7 +223,7 @@ struct RTL_EXTERN flx_out_of_memory_t : flx_exception_t {
 /// Thrown when trying to run a dead procedure
 // ********************************************************
 
-struct RTL_EXTERN flx_exec_failure_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_exec_failure_t : flx_exception_t {
   std::string filename;  ///< dll filename
   std::string operation; ///< faulty operation
   std::string what;      ///< error description
@@ -223,7 +235,7 @@ struct RTL_EXTERN flx_exec_failure_t : flx_exception_t {
 /// SOURCE REFERENCE: to track places in user source code.
 // ********************************************************
 
-struct RTL_EXTERN flx_range_srcref_t {
+struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t {
   char const *filename;  ///< source file name
   int startline;   ///< first line (1 origin)
   int startcol;    ///< first column (1 origin)
@@ -238,7 +250,7 @@ struct RTL_EXTERN flx_range_srcref_t {
 /// Thrown by halt command
 // ********************************************************
 
-struct RTL_EXTERN flx_halt_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_halt_t : flx_exception_t {
   std::string reason;         ///< halt argument
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char const *cxx_srcfile;          ///< C++ file name
@@ -253,7 +265,7 @@ struct RTL_EXTERN flx_halt_t : flx_exception_t {
 /// regmatch, or reglex
 // ********************************************************
 
-struct RTL_EXTERN flx_match_failure_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char const *cxx_srcfile;          ///< C++ file name
   int cxx_srcline;            ///< C++ line number
@@ -266,7 +278,7 @@ struct RTL_EXTERN flx_match_failure_t : flx_exception_t {
 /// Thrown when user assertion fails
 // ********************************************************
 
-struct RTL_EXTERN flx_assert_failure_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char const *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
@@ -274,7 +286,7 @@ struct RTL_EXTERN flx_assert_failure_t : flx_exception_t {
   virtual ~flx_assert_failure_t();
 };
 
-struct RTL_EXTERN flx_assert2_failure_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   flx_range_srcref_t flx_loc2; ///< second location in Felix file
   char const *cxx_srcfile;          ///< C++ file
@@ -288,7 +300,7 @@ struct RTL_EXTERN flx_assert2_failure_t : flx_exception_t {
 /// Thrown when a range check fails
 // ********************************************************
 
-struct RTL_EXTERN flx_range_failure_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_range_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char const *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
@@ -296,14 +308,14 @@ struct RTL_EXTERN flx_range_failure_t : flx_exception_t {
   virtual ~flx_range_failure_t();
 };
 
-RTL_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
+FLX_EXCEPTIONS_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
 
 
 // ********************************************************
 /// EXCEPTION: SWITCH failure. this is a system failure!
 // ********************************************************
 
-struct RTL_EXTERN flx_switch_failure_t : flx_exception_t {
+struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t : flx_exception_t {
   virtual ~flx_switch_failure_t();
 };
 }}
