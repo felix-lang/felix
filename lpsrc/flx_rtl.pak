@@ -2881,7 +2881,6 @@ int run_felix_pthread(
     doflx(new doflx_data(debug_driver, gcp, active, thread_control)); // deletes active for us!
   
     if(debug_driver)fprintf(stderr,"MAIN THREAD FINISHED: waiting for other threads\n");
-    thread_control->remove_thread();
     thread_control->join_all();
     if(debug_driver)fprintf(stderr,"ALL THREADS DEAD: mainline cleanup!\n");
 
@@ -2896,6 +2895,7 @@ int run_felix_pthread(
 
   if(gcp->finalise)
     do_final_cleanup(debug_driver, gcp, library, instance);
+  thread_control->remove_thread();
   return 0;
 }
 
@@ -3240,7 +3240,7 @@ int main(int argc, char** argv)
   rtl::flx_libinit_t instance;
   library.link(argc>1?argv[1]:"<static>");
   gc::collector::malloc_free allocator;
-  gc::collector::flx_collector_t collector(&allocator);
+  gc::collector::flx_collector_t collector(&allocator, NULL);
   gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
     false, 
     false, 

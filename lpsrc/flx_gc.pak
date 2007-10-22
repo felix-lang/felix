@@ -438,7 +438,7 @@ void *operator new(
 #include "flx_gc.hpp"
 #include "flx_gc_private.hpp"
 #include <map>
-
+#include "pthread_thread.hpp"
 #include <Judy.h>
 
 namespace flx {
@@ -461,7 +461,7 @@ struct GC_EXTERN malloc_free : public virtual allocator_t
 /// Naive Mark and Sweep Collector.
 struct GC_EXTERN flx_collector_t : public collector_t
 {
-  flx_collector_t(allocator_t *);
+  flx_collector_t(allocator_t *, flx::pthread::thread_control_t *);
   ~flx_collector_t();
 
   // RF: added to allow implementation of non-leaky drivers.
@@ -532,6 +532,7 @@ private:
   rootmap_t roots;
   bool parity;
   allocator_t *allocator;
+  flx::pthread::thread_control_t *thread_control;
 
   // JudyL array and error object
   void *j_shape;
@@ -609,6 +610,7 @@ void flx_collector_t::v_finalise(void *frame) {
 }
 
 unsigned long flx_collector_t::v_collect() {
+  // NO MUTEX
   return impl_collect();
 }
 
@@ -648,12 +650,13 @@ unsigned long flx_collector_t::impl_get_allocation_amt()const
 }
 
 
-flx_collector_t::flx_collector_t(allocator_t *a) :
-  allocation_count(0),
-  root_count(0),
-  allocation_amt(0),
-  parity(false),
-  allocator(a)
+flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_t *tc) 
+  :allocation_count(0)
+  ,root_count(0)
+  ,allocation_amt(0)
+  ,parity(false)
+  ,allocator(a)
+  ,thread_control(tc)
   ,j_shape(0)
   ,j_nalloc(0)
   ,j_nused(0)
@@ -966,12 +969,22 @@ void flx_collector_t::scan_object(void *p)
 
 unsigned long flx_collector_t::impl_collect()
 {
-  if(debug)
-    fprintf(stderr,"Running collector\n");
-
-  mark();
-  unsigned long r = sweep();
-  return r;
+  fprintf(stderr,"Request to collect, thread %lx\n", pthread_self());
+  if (thread_control == NULL || thread_control->world_stop())
+  {
+    //if(debug)
+      fprintf(stderr,"Running collector\n");
+    mark();
+    unsigned long collected = sweep();
+    if(thread_control) thread_control->world_start();
+    return collected;
+  }
+  else {
+    if(debug)
+      fprintf(stderr,"RACE: someone else is collecting, just yield\n");
+    thread_control->yield();
+    return 0ul;
+  }
 }
 
 // scan all known objects, and check every pointer
@@ -1032,7 +1045,6 @@ private:
 
 private:
   mutable flx::pthread::flx_mutex_t mut;
-  flx::pthread::thread_control_t *thread_control;
 };
 
 
@@ -1047,8 +1059,8 @@ namespace flx {
 namespace gc {
 namespace collector {
 
-flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *t) : 
-  flx_collector_t(a),thread_control(t)
+flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *tc) : 
+  flx_collector_t(a,tc)
 {}
 
 flx_ts_collector_t::~flx_ts_collector_t(){}
@@ -1059,19 +1071,8 @@ void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
 }
 
 unsigned long flx_ts_collector_t::v_collect() {
-  if (thread_control->world_stop())
-  {
-    //flx::pthread::flx_mutex_locker_t l(mut);
-    unsigned long collected = impl_collect();
-    thread_control->world_start();
-    return collected;
-  }
-  else {
-    if(debug)
-      fprintf(stderr,"RACE: someone else is collecting, just yield\n");
-    thread_control->yield();
-    return 0ul;
-  }
+  // NO MUTEX
+  return impl_collect();
 }
 
 void flx_ts_collector_t::v_add_root(void *memory) {

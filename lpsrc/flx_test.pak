@@ -217,7 +217,7 @@ int main(int argc, char** argv)
 
     library.link(argv[1]);
     malloc_free allocator;
-    flx_collector_t collector(&allocator);
+    flx_collector_t collector(&allocator, NULL);
     gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
       false, 
       false, 
