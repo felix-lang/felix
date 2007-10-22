@@ -41,7 +41,7 @@ to supply a user written allocator.
 @execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flx_gc.py')
 @select(h)
-cpp_cpps = ['rtl/flx_gc','rtl/flx_collector']
+cpp_cpps = ['rtl/flx_gc','rtl/flx_collector', 'rtl/flx_ts_collector]
 provides_lib = "libflx_gc"
 pkg_requires = ['flx_judy', 'flx_exceptions', 'flx_pthread']
 lib_requires = ['libflx_judy', 'libflx_exceptions', 'libflx_pthread']

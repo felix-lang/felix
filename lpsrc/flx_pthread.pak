@@ -52,7 +52,6 @@ PTHREAD_CPPS = [
   "pthread/pthread_monitor",
   "pthread/pthread_sleep_queue",
   "pthread/pthread_work_fifo",
-  "rtl/flx_ts_collector",
 ]
 
 POSIX_PTHREAD_CPPS = [
