@@ -367,6 +367,7 @@ void thread_control_t::add_thread(void *stack_base)
     ++thread_counter; 
     fprintf(stderr, "Adding thread %lx base %p, count=%d\n", id, stack_base, thread_counter);
     stop_guard.broadcast();
+    unsafe_stop_check();
   }
 
 void thread_control_t::remove_thread() 
@@ -385,9 +386,12 @@ void thread_control_t::remove_thread()
 // stop the world!
 bool thread_control_t::world_stop() 
   {
-    flx_mutex_locker_t m(stop_mutex);
+    stop_mutex.lock();
     fprintf(stderr,"Thread %lx Stopping world, threads=%d\n", pthread_self(), thread_counter);
-    if (do_world_stop) return false; // race! Someone else beat us
+    if (do_world_stop) {
+      stop_mutex.unlock();
+      return false; // race! Someone else beat us
+    }
     do_world_stop = true;
     while(thread_counter>1) { 
       fprintf(stderr,"Stopping world: begin wait, threads=%d\n", thread_counter);
@@ -413,9 +417,9 @@ void thread_control_t::join_all()
 // restart the world
 void thread_control_t::world_start() 
   {
-    flx_mutex_locker_t m(stop_mutex);
     fprintf(stderr,"Thread %lx Restarting world\n", pthread_self());
     do_world_stop = false;
+    stop_mutex.unlock();
     stop_guard.broadcast();
   }
 
