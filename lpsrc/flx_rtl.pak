@@ -2526,6 +2526,8 @@ void doflx (void *data) {
 //
 // CURRENTLY ONLY CALLED ONCE IN MAIN THREAD
 
+static void *get_stack_pointer() { unsigned long x; return &x; }
+
 int run_felix_pthread(
   bool debug_driver, 
   flx::gc::generic::gc_profile_t *gcp,
@@ -2556,7 +2558,7 @@ int run_felix_pthread(
   }
 
   {
-    void *stack_base = __builtin_frame_address(0);
+    void *stack_base = get_stack_pointer();
     thread_control->add_thread(stack_base);
     
     doflx(new doflx_data(debug_driver, gcp, active, thread_control)); // deletes active for us!

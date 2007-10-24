@@ -235,6 +235,7 @@ public:
 #include <stdio.h>
 #include <string.h>  // strerror
 #include <cstdlib>
+#include <setjmp.h> 
 
 namespace flx { namespace pthread {
 
@@ -248,13 +249,11 @@ struct tstart_t
   {}
 };
 
+static void *get_stack_pointer() { unsigned long x; return &x; }
+
 extern "C" void *flx_pthread_start_wrapper(void *e)
 {
-  #ifdef __GNUC__
-  void *stack_base = __builtin_frame_address(0);
-  #else
-  #error "Routine to find stack pointer for non-gcc compiler is required!"
-  #endif
+  void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
   fprintf(stderr,"Spawned Thread %lx start stack base = %p, tc=%p\n",pthread_self(),stack_base, tc);
@@ -429,7 +428,9 @@ void thread_control_t::unsafe_stop_check()
     if (do_world_stop)
     {
       flx_native_thread_t id = pthread_self();
-      void *stack_pointer = __builtin_frame_address(0);
+      jmp_buf reg_save_on_stack;
+      setjmp (reg_save_on_stack);
+      void *stack_pointer = get_stack_pointer();
       fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
       thread_registry_t::iterator it = threads.find(id);
       if(it == threads.end()) {
