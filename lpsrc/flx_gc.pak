@@ -524,7 +524,7 @@ private:
   void delete_frame(void *frame);
   unsigned long reap();
 
-  void mark();
+  void mark(pthread::memory_ranges_t*);
   unsigned long sweep(); // calls scan_object
   void scan_object(void *memory);
 
@@ -844,10 +844,31 @@ unsigned long flx_collector_t::reap ()
   return count;
 }
 
-void flx_collector_t::mark()
+void flx_collector_t::mark(pthread::memory_ranges_t *px)
 {
-  if(debug)fprintf(stderr,"Collector: Running mark\n");
+  //if(debug)
+    fprintf(stderr,"Collector: Running mark\n");
   assert (root_count == roots.size());
+
+  if(px)
+  {
+    std::vector<pthread::memory_range_t>::iterator end = (*px).end();
+    for(
+      std::vector<pthread::memory_range_t>::iterator i = (*px).begin();
+      i != end;
+      ++i
+    )
+    {
+      pthread::memory_range_t range = *i;
+      fprintf(stderr, "Conservate scan of memory %p->%p\n",range.b, range.e);
+      void *end = range.e;
+      for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
+      {
+        fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
+        scan_object(*(void**)i);
+      }
+    }
+  }
 
   rootmap_t::iterator const end = roots.end();
   for(
@@ -974,7 +995,9 @@ unsigned long flx_collector_t::impl_collect()
   {
     //if(debug)
       fprintf(stderr,"Running collector\n");
-    mark();
+    pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
+    mark(mr);
+    delete mr;
     unsigned long collected = sweep();
     if(thread_control) thread_control->world_start();
     return collected;

@@ -148,6 +148,8 @@ threads.
 #include <pthread.h>
 #include <utility>
 #include <map>
+#include <vector>
+#include <functional>
 
 namespace flx { namespace pthread {
 
@@ -169,8 +171,15 @@ struct thread_data_t {
   void *stack_top;
 };
 
+struct memory_range_t {
+  memory_range_t(void *b_, void *e_) : b(b_), e(e_) {}
+  void *b;
+  void *e;
+};
+
 typedef std::pair<flx_native_thread_t const, thread_data_t> thread_entry_t;
 typedef std::map<flx_native_thread_t, thread_data_t, std::less<flx_native_thread_t> > thread_registry_t;
+typedef std::vector<memory_range_t> memory_ranges_t;
 
 class PTHREAD_EXTERN thread_control_t
 {
@@ -189,6 +198,7 @@ public:
     void join_all() ;
     void world_start();
     void yield();
+    memory_ranges_t *get_block_list(); // called owns result and should delete it
 };
 
 
@@ -236,6 +246,8 @@ public:
 #include <string.h>  // strerror
 #include <cstdlib>
 #include <setjmp.h> 
+#include <functional> // less
+#include <assert.h>
 
 namespace flx { namespace pthread {
 
@@ -397,6 +409,21 @@ bool thread_control_t::world_stop()
       stop_guard.wait(&stop_mutex);
       fprintf(stderr,"Stopping world: checking threads=%d\n", thread_counter);
     }
+    // this code has to be copied here, we cannot use 'yield' because
+    // it would deadlock ourself
+    {
+      flx_native_thread_t id = pthread_self();
+      jmp_buf reg_save_on_stack;
+      setjmp (reg_save_on_stack);
+      void *stack_pointer = get_stack_pointer();
+      fprintf(stderr,"World stop thread=%lx, stack=%p!\n",id, stack_pointer);
+      thread_registry_t::iterator it = threads.find(id);
+      if(it == threads.end()) {
+        fprintf(stderr,"Cannot find thread %lx in registry\n",id);
+      }
+      (*it).second.stack_top = stack_pointer;
+      fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
+    }
     fprintf(stderr,"World STOPPED\n");
     return true; // we stopped the world
   }
@@ -421,6 +448,24 @@ void thread_control_t::world_start()
     stop_mutex.unlock();
     stop_guard.broadcast();
   }
+
+memory_ranges_t *thread_control_t::get_block_list()
+{
+  memory_ranges_t *v = new std::vector<memory_range_t>;
+  thread_registry_t::iterator end = threads.end();
+  for(thread_registry_t::iterator i = threads.begin();
+    i != end;
+    ++i
+  ) 
+  {
+    thread_data_t const &td = (*i).second;
+    // !(base < top) means top <= base, i.e. stack grows downwards
+    assert(!std::less<void*>()(td.stack_base,td.stack_top));
+    // from top upto base..
+    v->push_back(memory_range_t(td.stack_top, td.stack_base));
+  }
+  return v;
+}
 
 // mutex already held
 void thread_control_t::unsafe_stop_check()
