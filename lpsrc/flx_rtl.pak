@@ -2619,10 +2619,10 @@ int do_final_cleanup(
   {
     if(debug_driver || gcp->debug_collections)
       fprintf(stderr,"Finalisation: pass 2 Final collection starts ..\n");
-    unsigned long n = collector->collect();
+    collector->free_all_mem();
     unsigned long a = collector->get_allocation_count();
     if(debug_driver || gcp->debug_collections)
-      fprintf(stderr,"Collected %ld objects, %ld left (should be 0)\n",n,a);
+      fprintf(stderr,"Remaining %ld objects (should be 0)\n",a);
     if(a!=0){
       fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
       return 5;
@@ -2631,7 +2631,7 @@ int do_final_cleanup(
 
   // dump the DLL
 
-  if(debug_driver)
+  //if(debug_driver)
     fprintf(stderr,"Libref cnt = %ld\n",library->refcnt);
   if(library->refcnt >0)
   {

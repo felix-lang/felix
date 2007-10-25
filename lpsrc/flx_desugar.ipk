@@ -296,7 +296,7 @@ let cal_props = function
   | `InlineFunction -> `Inline::[]
   | `NoInlineFunction -> `NoInline::[]
   | `Ctor -> `Ctor::[]
-  | `Generator -> `NoInline::`Generator::[]
+  | `Generator -> (* `NoInline:: *) `Generator::[]
   | `Virtual -> `Virtual::[]
   | _ -> []
 

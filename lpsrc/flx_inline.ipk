@@ -848,7 +848,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
 
 
         | `BBDCL_fun (props,_,_,_,_,_,_) 
-        | `BBDCL_function (props,_,_,_,_) 
+(*        | `BBDCL_function (props,_,_,_,_)  *)
           when mem `Generator props 
           ->
           (*

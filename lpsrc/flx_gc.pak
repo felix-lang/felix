@@ -212,6 +212,10 @@ Routines to add and remove roots.
     v_remove_root(memory);
   }
 
+  void free_all_mem() {
+    v_free_all_mem();
+  }
+
   void finalise(void *frame) {
     v_finalise(frame);
   }
@@ -234,6 +238,7 @@ private:
   virtual unsigned long v_collect()=0;
   virtual void v_add_root(void *memory)=0;
   virtual void v_remove_root(void *memory)=0;
+  virtual void v_free_all_mem()=0;
 
 @doc()
 It doesn't make any sense to copy collector objects
@@ -505,6 +510,7 @@ private:
   // add and remove roots
   void v_add_root(void *memory);
   void v_remove_root(void *memory);
+  void v_free_all_mem();
 
   // statistics
   unsigned long v_get_allocation_count()const;
@@ -620,6 +626,10 @@ void flx_collector_t::v_add_root(void *memory) {
 
 void flx_collector_t::v_remove_root(void *memory) {
   impl_remove_root(memory);
+}
+
+void flx_collector_t::v_free_all_mem() {
+  free_all_mem();
 }
 
 unsigned long flx_collector_t::v_get_allocation_count()const {
