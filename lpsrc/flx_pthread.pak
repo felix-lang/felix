@@ -1717,10 +1717,10 @@ module Pthread
 
   proc _read[t]: pchannel[t] * ptr[ptr[t]] = "*$2 = (?1*)($1->dequeue());";
 
-  proc read[t](v:&t,chan:pchannel[t]) {
+  gen read[t] (chan:pchannel[t]) = {
     var p : ptr[t];
     _read (chan, addr p);
-    *v = *p;
+    return *p;
   }
 
   proc _write[t]: pchannel[t] * ptr[t] = "$1->enqueue((void*)$2);";
@@ -1756,19 +1756,19 @@ proc flx_main
   spawn_pthread { thr 6; write (chan,6); };
   spawn_pthread { thr 7; write (chan,7); };
   print "Spawned\n";
-  &dummy <- read chan; // 1
+  dummy = read chan; // 1
   print "joined "; print dummy; endl;
-  &dummy <- read chan; // 2
+  dummy = read chan; // 2
   print "joined "; print dummy; endl;
-  &dummy <- read chan; // 3
+  dummy = read chan; // 3
   print "joined "; print dummy; endl;
-  &dummy <- read chan; // 4
+  dummy = read chan; // 4
   print "joined "; print dummy; endl;
-  &dummy <- read chan; // 5
+  dummy = read chan; // 5
   print "joined "; print dummy; endl;
-  &dummy <- read chan; // 6
+  dummy = read chan; // 6
   print "joined "; print dummy; endl;
-  &dummy <- read chan; // 7
+  dummy = read chan; // 7
   print "joined "; print dummy; endl;
   print "Joined all\n";
 }

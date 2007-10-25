@@ -2904,7 +2904,7 @@ proc waittk() {
   var w = mk_schannel[uint8] ();
   spawn_fthread { waitt 15.0 w; };
   spawn_fthread { waitk w; };
-  var &i: uint8 <- read w;
+  var i = read w;
 }
 
 
@@ -2925,7 +2925,7 @@ print "Press any key"; endl;
 {
   var x = mk_schannel[uint8] ();
   spawn_fthread { waitk x; };
-  var &i : uint8 <- read x;
+  var i = read x;
 };
 
 Quit 0;
@@ -3045,7 +3045,7 @@ proc initGL()
 }
 
 /* These are to calculate our fps */
-var T0     = 0;
+var T0     = 0u;
 var Frames = 0;
 
 
@@ -3188,31 +3188,28 @@ proc draw(drawing: 1->0) {
 proc keychan(x:schannel[SDL_keysym])
 {
   whilst true do
-    var &k : SDL_keysym <- read x;
-    handle_key k;
+    handle_key$ read x;
   done;
 }
 
 proc activechan(x:schannel[SDL_ActiveEvent])
 {
   whilst true do
-    var &k : SDL_ActiveEvent <- read x;
-    handle_active k;
+    handle_active$ read x;
   done;
 }
 
 proc resizechan(x:schannel[SDL_ResizeEvent])
 {
   whilst true do
-    var &k : SDL_ResizeEvent <- read x;
-    handle_resize k;
+    handle_resize$ read x;
   done;
 }
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     draw drawing;
   done;
 }
@@ -3433,7 +3430,7 @@ proc initGL()
 }
 
 /* These are to calculate our fps */
-var T0     = 0;
+var T0     = 0u;
 var Frames = 0;
 
 var rtri = 0.0f; /* Triangle Rotation ( NEW ) */
@@ -3578,31 +3575,28 @@ proc draw(drawing: 1->0) {
 proc keychan(x:schannel[SDL_keysym])
 {
   whilst true do
-    var &k : SDL_keysym <- read x;
-    handle_key k;
+    handle_key$ read x;
   done;
 }
 
 proc activechan(x:schannel[SDL_ActiveEvent])
 {
   whilst true do
-    var &k : SDL_ActiveEvent <- read x;
-    handle_active k;
+    handle_active$ read x;
   done;
 }
 
 proc resizechan(x:schannel[SDL_ResizeEvent])
 {
   whilst true do
-    var &k : SDL_ResizeEvent <- read x;
-    handle_resize k;
+    handle_resize$ read x;
   done;
 }
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     draw drawing;
   done;
 }
@@ -3610,7 +3604,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 proc execute(x:schannel[int], something:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     something();
   done;
 }
@@ -3932,7 +3926,7 @@ proc initGL()
 }
 
 /* These are to calculate our fps */
-var T0     = 0;
+var T0     = 0u;
 var Frames = 0;
 
 var xrot = 0.0f; /* X Rotation ( NEW ) */
@@ -4082,31 +4076,28 @@ proc draw(drawing: 1->0) {
 proc keychan(x:schannel[SDL_keysym])
 {
   whilst true do
-    var &k : SDL_keysym <- read x;
-    handle_key k;
+    handle_key$ read x;
   done;
 }
 
 proc activechan(x:schannel[SDL_ActiveEvent])
 {
   whilst true do
-    var &k : SDL_ActiveEvent <- read x;
-    handle_active k;
+    handle_active$ read x;
   done;
 }
 
 proc resizechan(x:schannel[SDL_ResizeEvent])
 {
   whilst true do
-    var &k : SDL_ResizeEvent <- read x;
-    handle_resize k;
+    handle_resize$ read x;
   done;
 }
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     draw drawing;
   done;
 }
@@ -4114,7 +4105,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 proc execute(x:schannel[int], something:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     something();
   done;
 }
@@ -4475,7 +4466,7 @@ proc initGL()
 }
 
 /* These are to calculate our fps */
-var T0     = 0;
+var T0     = 0u;
 var Frames = 0;
 
 var xrot = 0.0f; /* X Rotation ( NEW ) */
@@ -4694,31 +4685,28 @@ proc draw(drawing: 1->0) {
 proc keychan(x:schannel[SDL_keysym])
 {
   whilst true do
-    var &k : SDL_keysym <- read x;
-    handle_key k;
+    handle_key$ read x;
   done;
 }
 
 proc activechan(x:schannel[SDL_ActiveEvent])
 {
   whilst true do
-    var &k : SDL_ActiveEvent <- read x;
-    handle_active k;
+    handle_active$ read x;
   done;
 }
 
 proc resizechan(x:schannel[SDL_ResizeEvent])
 {
   whilst true do
-    var &k : SDL_ResizeEvent <- read x;
-    handle_resize k;
+    handle_resize$ read x;
   done;
 }
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     draw drawing;
   done;
 }
@@ -4726,7 +4714,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 proc execute(x:schannel[int], something:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     something();
   done;
 }
@@ -5086,7 +5074,7 @@ proc initGL()
 }
 
 /* These are to calculate our fps */
-var T0     = 0;
+var T0     = 0u;
 var Frames = 0;
 var spin = 0.0f;
 
@@ -5277,31 +5265,28 @@ proc draw(drawing: 1->0) {
 proc keychan(x:schannel[SDL_keysym])
 {
   whilst true do
-    var &k : SDL_keysym <- read x;
-    handle_key k;
+    handle_key$ read x;
   done;
 }
 
 proc activechan(x:schannel[SDL_ActiveEvent])
 {
   whilst true do
-    var &k : SDL_ActiveEvent <- read x;
-    handle_active k;
+    handle_active$ read x;
   done;
 }
 
 proc resizechan(x:schannel[SDL_ResizeEvent])
 {
   whilst true do
-    var &k : SDL_ResizeEvent <- read x;
-    handle_resize k;
+    handle_resize$ read x;
   done;
 }
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     draw drawing;
   done;
 }
@@ -5309,7 +5294,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 proc execute(x:schannel[int], something:1->0)
 {
   whilst true do 
-    var &k : int <- read x;
+    var k = read x;
     something();
   done;
 }

@@ -1989,21 +1989,18 @@ module Control
   typedef i_schannel[t] = typesetof(ischannel[t], schannel[t]);
   typedef o_schannel[t] = typesetof(oschannel[t], schannel[t]);
 
-  proc _read[t](chan:schannel[t],loc:&gcptr[t]) {
+  gen read[T] (chan:schannel[T]) = {
+    var loc: gcptr[T];
     svc$ svc_sread$ cast[_schannel] chan, reinterpret[&gcaddress] loc;
+    return *loc;
   }
+  gen read[T] (chan:ischannel[T]) => read$ cast[schannel[T]] chan;
 
-
-  proc read[t,CHAN:i_schannel[t]](v:&t,chan:CHAN) {
-    var x: gcptr[t];
-    _read(cast[schannel[t]] chan,&x);
-    *v = *x;
-  }
-
-  proc write[t,CHAN:o_schannel[t]](chan:CHAN,v:t) {
+  proc write[T] (chan:schannel[T], v:T) {
     var ps = cast[gcaddress]$ xnew v;
     svc$ svc_swrite$ cast[_schannel] chan, &ps;
   }
+  proc write[T] (chan:oschannel[T], v:T) { write (cast[schannel[T]] chan, v); }
 
   private gen _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
   gen start[t] (p:t->0) (x:t) = { return _start (p,x); }

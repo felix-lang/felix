@@ -836,7 +836,7 @@ var x = mk_schannel[unit]();
 
 proc reader() {
   print "R1"; endl;
-  var &u:unit <- read x;
+  var u = read x;
   print "R2"; endl;
 }
 
@@ -877,7 +877,7 @@ spawn_fthread {
 spawn_fthread { 
   var x = 1; 
   whilst x < 10 do 
-    read$ &x,chin; print x; endl; 
+    x = read chin; print x; endl; 
   done; 
 };
 @doc()
@@ -2657,11 +2657,11 @@ print$ f"%d threads, %d jobs\n"$ nthreads,njobs;
 // read delay, and wait that long, exit on 0
 proc worker(i:int, chan:pchannel[int])(){
  print$ f"Starting pthread %d\n" i;
- var &delay:int <- read chan; 
+ var delay = read chan; 
  whilst delay != 0 do
    print$ f"Thread %i, Delay %d\n"$ i,delay;
    sleep$ clock,double delay;
-   &delay <- read chan; 
+   delay = read chan; 
  done;
 }
 
