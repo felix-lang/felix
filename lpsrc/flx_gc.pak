@@ -213,6 +213,7 @@ Routines to add and remove roots.
   }
 
   void free_all_mem() {
+    //fprintf(stderr,"Dispatching to free all mem\n");
     v_free_all_mem();
   }
 
@@ -387,7 +388,8 @@ unsigned long gc_profile_t::actually_collect() {
   threshhold = std::max ( min_mem, 
     (unsigned long) (free_factor * (double)allocated))
   ;
-  fprintf(stderr, "actually collected %ld bytes\n",collected);
+  if(debug_collections)
+    fprintf(stderr, "actually collected %ld bytes\n",collected);
   return collected;
 }
 
@@ -470,7 +472,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
   ~flx_collector_t();
 
   // RF: added to allow implementation of non-leaky drivers.
-  void free_all_mem(); // clear all roots, sweep.
+  void impl_free_all_mem(); // clear all roots, sweep.
 
   void set_used(void *memory, unsigned long); 
   void incr_used(void *memory, unsigned long); 
@@ -629,7 +631,8 @@ void flx_collector_t::v_remove_root(void *memory) {
 }
 
 void flx_collector_t::v_free_all_mem() {
-  free_all_mem();
+  //fprintf(stderr, "Dispatching to impl free all mem\n");
+  impl_free_all_mem();
 }
 
 unsigned long flx_collector_t::v_get_allocation_count()const {
@@ -856,7 +859,7 @@ unsigned long flx_collector_t::reap ()
 
 void flx_collector_t::mark(pthread::memory_ranges_t *px)
 {
-  //if(debug)
+  if(debug)
     fprintf(stderr,"Collector: Running mark\n");
   assert (root_count == roots.size());
 
@@ -870,23 +873,35 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
     )
     {
       pthread::memory_range_t range = *i;
-      fprintf(stderr, "Conservate scan of memory %p->%p\n",range.b, range.e);
+      if(debug)
+        fprintf(stderr, "Conservate scan of memory %p->%p\n",range.b, range.e);
       void *end = range.e;
       for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
       {
-        fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
+        if(debug)
+          fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
         scan_object(*(void**)i);
       }
+      if(debug)
+        fprintf(stderr, "DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
     }
   }
 
+  if(debug)
+    fprintf(stderr, "Scanning roots\n");
   rootmap_t::iterator const end = roots.end();
   for(
     rootmap_t::iterator i = roots.begin();
     i != end;
     ++i
   )
+  {
+    if (debug)
+      fprintf(stderr, "Scanning root %p\n", (*i).first);
     scan_object((*i).first);
+  }
+  if(debug)
+    fprintf(stderr, "Done Scanning roots\n");
 }
 
 
@@ -968,8 +983,13 @@ void flx_collector_t::scan_object(void *p)
   Word_t *w = (Word_t*)JudyLLast(j_shape,&fp,&je);
   if(p==(Word_t*)PPJERR)judyerror("scan_object");
   if(w == NULL) return; // no lower object
+  /*
   if(debug)
-    fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p!\n",(void*)fp,(void*)w,(void*)(*w));
+  {
+    fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
+    fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~1UL))->cname);
+  }
+  */
   if( (*w & 1UL) == reachable) return;   // already handled
 
   gc_shape_t *shape = (gc_shape_t*)(*w & ~1UL);
@@ -1000,10 +1020,11 @@ void flx_collector_t::scan_object(void *p)
 
 unsigned long flx_collector_t::impl_collect()
 {
-  fprintf(stderr,"Request to collect, thread %lx\n", pthread_self());
+  if(debug)
+    fprintf(stderr,"Request to collect, thread %lx\n", pthread_self());
   if (thread_control == NULL || thread_control->world_stop())
   {
-    //if(debug)
+    if(debug)
       fprintf(stderr,"Running collector\n");
     pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
     mark(mr);
@@ -1020,13 +1041,12 @@ unsigned long flx_collector_t::impl_collect()
   }
 }
 
-// scan all known objects, and check every pointer
-// is either NULL or points to one of them
-
-void flx_collector_t::free_all_mem()
+void flx_collector_t::impl_free_all_mem()
 {
+  //fprintf(stderr,"impl_free_all_mem -- freeing roots\n");
   roots.clear();
   root_count = 0;
+  //fprintf(stderr,"freeing all heap with sweep()\n");
   sweep();
 }
 

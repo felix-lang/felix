@@ -190,7 +190,8 @@ class PTHREAD_EXTERN thread_control_t
     thread_registry_t threads;
     void unsafe_stop_check();
 public: 
-    thread_control_t ();
+    bool debug;
+    thread_control_t (bool);
     int thread_count();
     void add_thread(void*);
     void remove_thread();
@@ -268,7 +269,8 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
-  fprintf(stderr,"Spawned Thread %lx start stack base = %p, tc=%p\n",pthread_self(),stack_base, tc);
+  if(tc && tc->debug)
+    fprintf(stderr,"Spawned Thread %lx start stack base = %p, tc=%p\n",pthread_self(),stack_base, tc);
   if(tc)tc->add_thread(stack_base);
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;
@@ -358,10 +360,11 @@ flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thr
 
 flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
-thread_control_t::thread_control_t () : 
-  do_world_stop(false), thread_counter(0) 
+thread_control_t::thread_control_t (bool d) : 
+  do_world_stop(false), thread_counter(0), debug(d)
   {
-    //fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
+    if(debug)
+      fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
   }
 
 int thread_control_t::thread_count() 
@@ -376,7 +379,8 @@ void thread_control_t::add_thread(void *stack_base)
     flx_native_thread_t id = pthread_self();
     threads.insert (std::make_pair(id, thread_data_t (stack_base)));
     ++thread_counter; 
-    fprintf(stderr, "Adding thread %lx base %p, count=%d\n", id, stack_base, thread_counter);
+    if(debug)
+      fprintf(stderr, "Adding thread %lx base %p, count=%d\n", id, stack_base, thread_counter);
     stop_guard.broadcast();
     unsafe_stop_check();
   }
@@ -390,7 +394,8 @@ void thread_control_t::remove_thread()
       fprintf(stderr, "Remove thread %lx which is not registered\n", id);
     }
     --thread_counter; 
-    fprintf(stderr, "Removed thread %lx, count=%d\n", id, thread_counter);
+    if(debug)
+      fprintf(stderr, "Removed thread %lx, count=%d\n", id, thread_counter);
     stop_guard.broadcast();
   }
 
@@ -398,16 +403,19 @@ void thread_control_t::remove_thread()
 bool thread_control_t::world_stop() 
   {
     stop_mutex.lock();
-    fprintf(stderr,"Thread %lx Stopping world, threads=%d\n", pthread_self(), thread_counter);
+    if(debug)
+      fprintf(stderr,"Thread %lx Stopping world, threads=%d\n", pthread_self(), thread_counter);
     if (do_world_stop) {
       stop_mutex.unlock();
       return false; // race! Someone else beat us
     }
     do_world_stop = true;
     while(thread_counter>1) { 
-      fprintf(stderr,"Stopping world: begin wait, threads=%d\n", thread_counter);
+      if(debug)
+        fprintf(stderr,"Stopping world: begin wait, threads=%d\n", thread_counter);
       stop_guard.wait(&stop_mutex);
-      fprintf(stderr,"Stopping world: checking threads=%d\n", thread_counter);
+      if(debug)
+        fprintf(stderr,"Stopping world: checking threads=%d\n", thread_counter);
     }
     // this code has to be copied here, we cannot use 'yield' because
     // it would deadlock ourself
@@ -416,15 +424,18 @@ bool thread_control_t::world_stop()
       jmp_buf reg_save_on_stack;
       setjmp (reg_save_on_stack);
       void *stack_pointer = get_stack_pointer();
-      fprintf(stderr,"World stop thread=%lx, stack=%p!\n",id, stack_pointer);
+      if(debug)
+        fprintf(stderr,"World stop thread=%lx, stack=%p!\n",id, stack_pointer);
       thread_registry_t::iterator it = threads.find(id);
       if(it == threads.end()) {
         fprintf(stderr,"Cannot find thread %lx in registry\n",id);
       }
       (*it).second.stack_top = stack_pointer;
-      fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
+      if(debug)
+        fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
     }
-    fprintf(stderr,"World STOPPED\n");
+    if(debug)
+      fprintf(stderr,"World STOPPED\n");
     return true; // we stopped the world
   }
 
@@ -432,18 +443,21 @@ bool thread_control_t::world_stop()
 void thread_control_t::join_all() 
   {
     flx_mutex_locker_t m(stop_mutex);
-    fprintf(stderr,"Thread %lx Joining all\n", pthread_self());
+    if(debug)
+      fprintf(stderr,"Thread %lx Joining all\n", pthread_self());
     while(do_world_stop || thread_counter>1) {
       unsafe_stop_check();
       stop_guard.wait(&stop_mutex);
     }
-    //fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
+    if(debug)
+      fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
   }
 
 // restart the world
 void thread_control_t::world_start() 
   {
-    fprintf(stderr,"Thread %lx Restarting world\n", pthread_self());
+    if(debug)
+      fprintf(stderr,"Thread %lx Restarting world\n", pthread_self());
     do_world_stop = false;
     stop_mutex.unlock();
     stop_guard.broadcast();
@@ -476,19 +490,24 @@ void thread_control_t::unsafe_stop_check()
       jmp_buf reg_save_on_stack;
       setjmp (reg_save_on_stack);
       void *stack_pointer = get_stack_pointer();
-      fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
+      if(debug)
+        fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
       thread_registry_t::iterator it = threads.find(id);
       if(it == threads.end()) {
-        fprintf(stderr,"Cannot find thread %lx in registry\n",id);
+        if(debug)
+          fprintf(stderr,"Cannot find thread %lx in registry\n",id);
       }
       (*it).second.stack_top = stack_pointer;
-      fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
+      if(debug)
+        fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
       --thread_counter;
-      //fprintf(stderr,"Yield thread count now %d\n",thread_counter);
+      if(debug)
+        fprintf(stderr,"Yield thread count now %d\n",thread_counter);
       stop_guard.broadcast();
       while(do_world_stop) stop_guard.wait(&stop_mutex);
       ++thread_counter;
-      fprintf(stderr,"Thread %lx resumed, count= %d\n",pthread_self(),thread_counter);
+      if(debug)
+        fprintf(stderr,"Thread %lx resumed, count= %d\n",pthread_self(),thread_counter);
     }
 }
 

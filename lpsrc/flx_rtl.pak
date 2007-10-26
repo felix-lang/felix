@@ -1772,12 +1772,12 @@ void flx_dynlink_t::unlink()
 #ifndef FLX_STATIC_LINK
 //#if FLX_WIN32 || FLX_CYGWIN
 #if FLX_WIN32
-    FreeLibrary(library);
+    //FreeLibrary(library);
 #else
   #if FLX_MACOSX_NODLCOMPAT
-    NSUnLinkModule(library, NSUNLINKMODULE_OPTION_NONE);
+    //NSUnLinkModule(library, NSUNLINKMODULE_OPTION_NONE);
   #else
-    dlclose(library);
+    //dlclose(library);
   #endif
 #endif
 #endif
@@ -1828,10 +1828,11 @@ void flx_libinit_t::usr_create(){}
 void flx_libinit_t::destroy () {
   usr_destroy();
   gcp->collector->remove_root(thread_frame);
+  //fprintf(stderr,"[flx_libinit::destroy()] Removed thread frame %p as root\n", thread_frame);
   //fprintf(stderr,"Decrementing refcnt\n");
-  //fprintf(stderr,"Ref cnt=%ld\n",lib->refcnt);
+  //fprintf(stderr,"Start        Ref cnt=%ld\n",lib->refcnt);
   --lib->refcnt;
-  //fprintf(stderr,"Ref cnt=%ld\n",lib->refcnt);
+  //fprintf(stderr,"After decr:  Ref cnt=%ld\n",lib->refcnt);
 }
 
 void flx_libinit_t::usr_destroy (){}
@@ -2631,7 +2632,7 @@ int do_final_cleanup(
 
   // dump the DLL
 
-  //if(debug_driver)
+  if(debug_driver)
     fprintf(stderr,"Libref cnt = %ld\n",library->refcnt);
   if(library->refcnt >0)
   {
@@ -2719,9 +2720,11 @@ int main(int argc, char** argv)
     printf("  FLX_DEBUG               # enable debugging traces (default off)\n");
     printf("  FLX_DEBUG_ALLOCATIONS   # enable debugging allocator (default FLX_DEBUG)\n");
     printf("  FLX_DEBUG_COLLECTIONS   # enable debugging collector (default FLX_DEBUG)\n");
+    printf("  FLX_DEBUG_THREADS       # enable debugging collector (default FLX_DEBUG)\n");
     printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
     printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
     printf("  FLX_GC_FREQ=n           # how often to call garbage collector (default 1000)\n");
+    printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default no, will be yes soon)\n");
     return 1;
   }
   char *filename = argv[1];
@@ -2753,6 +2756,12 @@ int main(int argc, char** argv)
   if(debug)
   {
     fprintf(stderr,"[FLX_DEBUG] Debug enabled for %s link program\n",static_link?"static":"dynamic");
+  }
+
+  bool debug_threads = debug || std::getenv("FLX_DEBUG_THREADS") !=0;
+  if(debug_threads)
+  {
+    fprintf(stderr,"[FLX_DEBUG_THREADS] Threads debug enabled\n");
   }
 
   bool debug_allocations = debug || std::getenv("FLX_DEBUG_ALLOCATIONS") !=0;
@@ -2835,7 +2844,7 @@ int main(int argc, char** argv)
   ;
   allocator->set_debug(debug_allocations);
 
-  flx::pthread::thread_control_t thread_control;
+  flx::pthread::thread_control_t thread_control(debug_threads);
 
   flx::gc::collector::flx_collector_t *collector =
     new flx::gc::collector::flx_ts_collector_t(allocator, &thread_control)

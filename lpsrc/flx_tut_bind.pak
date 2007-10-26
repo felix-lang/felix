@@ -514,8 +514,8 @@ statements: this is typically useful on a header-body pair.
 @select(env.test('.flx'))
 #import <flx.flxh>
 body "#include <stdio.h>";
-body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
-body printu = 'void print(char *s) { printx("%s\\n",s); }';
+body xprint = "void printx(char const *fmt, char const *s) { printf(fmt,s);}";
+body printu = 'void print(char const *s) { printx("%s\\n",s); }';
 
 proc hello:1='print("Hello");' requires xprint, printu;
 hello;
@@ -531,8 +531,8 @@ We can reorganise the previous example using this fact.
 @select(env.test('.flx'))
 #import <flx.flxh>
 body "#include <stdio.h>";
-body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
-body printu = 'void print(char *s) { printx("%s\\n",s); }' 
+body xprint = "void printx(char const*fmt, char const*s) { printf(fmt,s);}";
+body printu = 'void print(char const*s) { printx("%s\\n",s); }' 
   requires xprint;
 
 proc hello:1='print("Hello");' requires printu;
@@ -550,8 +550,8 @@ existing tagged requirements are roots.
 @select(env.test('.flx'))
 #import <flx.flxh>
 body "#include <stdio.h>";
-body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
-body printu = 'void print(char *s) { printx("%s\\n",s); }';
+body xprint = "void printx(char const*fmt, char const*s) { printf(fmt,s);}";
+body printu = 'void print(char const*s) { printx("%s\\n",s); }';
 requires xprint;
 xxxx requires printu;
 
@@ -569,9 +569,9 @@ inside modules, unless they're marked private of course.
 @select(env.test('.flx'))
 #import <flx.flxh>
 body "#include <stdio.h>";
-body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body xprint = "void printx(char const*fmt, char const*s) { printf(fmt,s);}";
 module fred {
-  body printu = 'void print(char *s) { printx("%s\\n",s); }';
+  body printu = 'void print(char const*s) { printx("%s\\n",s); }';
 }
 requires xprint;
 

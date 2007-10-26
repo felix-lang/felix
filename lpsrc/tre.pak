@@ -647,7 +647,7 @@ regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
   size_t err_len;
 
   if (errcode >= 0
-      && errcode < (sizeof(tre_error_messages) / sizeof(*tre_error_messages)))
+      && (unsigned int)errcode < (sizeof(tre_error_messages) / sizeof(*tre_error_messages)))
     err = gettext(tre_error_messages[errcode]);
   else
     err = gettext("Unknown error");
@@ -7235,7 +7235,7 @@ int tre_isupper_func(tre_cint_t c) { return tre_isupper(c); }
 int tre_isxdigit_func(tre_cint_t c) { return tre_isxdigit(c); }
 
 struct {
-  char *name;
+  char const *name;
   int (*func)(tre_cint_t);
 } tre_ctype_map[] = {
   { "alnum", &tre_isalnum_func },
