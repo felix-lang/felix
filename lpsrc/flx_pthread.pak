@@ -1707,6 +1707,12 @@ header semaphore_hxx = '#include "pthread_semaphore.hpp"';
 header monitor_hxx = '#include "pthread_monitor.hpp"';
 header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
 
+publish """
+This module provides access to the operating system's native
+threading routines. On systems with multiple cpus, this may
+increase performance as the operating system may schedule
+threads on different processors.
+"""
 module Pthread
 {
   requires package "flx_pthread";
@@ -1723,7 +1729,7 @@ module Pthread
       svc$ svc_spawn_pthread fthr;
   }
 
-  type mutex = "flx_mutex_t" requires mutex_hxx;
+  type mutex = "flx::pthread::flx_mutex_t" requires mutex_hxx;
   proc lock: lvalue[mutex] = "$1.lock();";
   proc unlock: lvalue[mutex] = "$1.unlock();";
   proc lock (m:&mutex) { lock$ *m; }
@@ -1734,7 +1740,7 @@ module Pthread
 
   fun mk_pchannel[t]: 1->pchannel[t] = 
     "new flx::pthread::monitor_t()"
-  ; 
+  ;
 
   proc _read[t]: pchannel[t] * ptr[ptr[t]] = "*$2 = (?1*)($1->dequeue());";
 
