@@ -4277,7 +4277,7 @@ fi
   tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
 
 
-PKGCONFIG=$FLX_INSTALL_DIR/bin/flx_pkgconfig
+PKGCONFIG="env FLX_DEBUG=0 FLX_ALLOW_COLLECTION_ANYWHERE=0 $FLX_INSTALL_DIR/bin/flx_pkgconfig"
 
 if [ "$ECHO" = "1" ]
 then

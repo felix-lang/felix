@@ -981,7 +981,7 @@ void flx_collector_t::scan_object(void *p)
   Word_t cand = (Word_t)p;
   Word_t fp=cand;
   Word_t *w = (Word_t*)JudyLLast(j_shape,&fp,&je);
-  if(p==(Word_t*)PPJERR)judyerror("scan_object");
+  if(w==(Word_t*)PPJERR)judyerror("scan_object");
   if(w == NULL) return; // no lower object
   /*
   if(debug)

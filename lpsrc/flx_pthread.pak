@@ -428,7 +428,8 @@ bool thread_control_t::world_stop()
         fprintf(stderr,"World stop thread=%lx, stack=%p!\n",id, stack_pointer);
       thread_registry_t::iterator it = threads.find(id);
       if(it == threads.end()) {
-        fprintf(stderr,"Cannot find thread %lx in registry\n",id);
+        fprintf(stderr,"MAIN THREAD: Cannot find thread %lx in registry\n",id);
+        abort();
       }
       (*it).second.stack_top = stack_pointer;
       if(debug)
@@ -495,7 +496,8 @@ void thread_control_t::unsafe_stop_check()
       thread_registry_t::iterator it = threads.find(id);
       if(it == threads.end()) {
         if(debug)
-          fprintf(stderr,"Cannot find thread %lx in registry\n",id);
+          fprintf(stderr,"Yield::Cannot find thread %lx in registry\n",id);
+          abort();
       }
       (*it).second.stack_top = stack_pointer;
       if(debug)
