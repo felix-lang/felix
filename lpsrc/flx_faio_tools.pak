@@ -39,52 +39,37 @@ macro fun dbg(x) = { fprint (cerr,x); };
 // read new sockets off it ..
 open TerminalIByteStream[socket_t]; 
 
-header = """
-string
-getline_to_url(const string& get)
-{
-    // chomp off "GET " (should check it)
-    if(get.length() < 4) return "";
+fun getline_to_url (get:string) =>
+  if not startswith get "GET " then
+    ""
+  else
+    match find (get, ' ', 4) with
+    | None[int] => ""
+    | Some ?pos => get.[4 to pos]
+    endmatch
+  endif
+;
 
-    std::size_t pos = get.substr(4).find(' ');
-
-    if(pos == string::npos) return "";
-
-    return get.substr(4, pos);
-}
-
-// split url into base and file name http://foo.com/file.html
-// -> http://foo.com + file.html. failure returns nothing.
-bool
-split_url(const string& inurl, string& base, string& file)
-{
-    // munch leading http:// if present
-    string url;
-    if(inurl.length() >= 7 && inurl.substr(0, 7) == "http://")
-      url = inurl.substr(7);
+fun split_url (inurl:string): opt[string*string] = {
+  val url = 
+    if startswith inurl "http://" then
+      inurl.[to 7]
     else
-      url = inurl; 
+      inurl
+    endif
+  ;
 
-    std::size_t pos = url.find('/');
-
-    if(string::npos == pos)  return false;       // all bad
-
-    base = url.substr(0, pos);
-    file = url.substr(pos+1);
-    return true;            // all good
+  return
+    match find (url, '/') with
+    | None[int] => None[string*string]
+    | Some ?pos => Some$ url.[0 to pos], url.[pos + 1 to]
+    endmatch
+  ;
 }
 
-bool
-split_getline(const string& get, string& base, string& file)
-{
-    return split_url(getline_to_url(get), base, file);
-}
-""";
-
-proc parse_get_line: string*lvalue[bool]*lvalue[string]*lvalue[string]
- = '$2 = split_getline($1, $3, $4);';
-
-fun substr: string*int -> string = "$1.substr($2)";
+fun parse_get_line (get:string): opt[string*string] =>
+  split_url$ getline_to_url get
+;
 
 // TODO: fill in that length field, stream back the requested jpeg,
 // get port from argv.
@@ -128,23 +113,6 @@ PAGE NOT FOUND:
 """;
 
 
-proc substitute(s: string, a: char, b: char, res: &string)
-{
-  var s2: string;
-  var slen = len s;
-  var i: int;
-
-  for_each{i=0;}{i<slen}{i++;}
-  {
-     if s.[i] == a then
-     { s2 += b; } else
-     { s2 += s.[i]; } endif;
-
-  };
-
-  *res = s2;
-}
-
 proc serve_file(infname: string, s: socket_t)
 {
   var fname: string;
@@ -162,25 +130,24 @@ proc serve_file(infname: string, s: socket_t)
   // sent faithfully over the wire. of course doesn't work for jpegs and other
   // binary formats.
 
-  var suffix: string;
-  var dotpos = stl_rfind(fname, char ".");
-  // print "dotpos = "; print dotpos; endl;
-  if stl_npos != dotpos then { suffix = substr(fname, dotpos+1); }
-  else {} endif;
+  val suffix = 
+    match rfind (fname, ".") with
+    | None[int] => ""
+    | Some ?pos => fname.[pos + 1 to]
+    endmatch
+  ;
 
   print "suffix is "; print suffix; endl;
 
 #if WIN32
-  var wname: string;
-
   // quick 'n' dirty unix -> dos style pathnames
-  substitute(fname, char '/', char '\\', &wname);
+  val wname = map (fun (a:char) => if a == char '/' then char '\\' else a endif) fname;
   print "mapped "; print fname; print " -> "; print wname; endl;
   // send header
   // TransmitFile
-  var wf: WFILE <- OpenFile(wname);
+  var wf: WFILE <- Faio_win32::OpenFile(wname);
 
-  if wf == INVALID_HANDLE_VALUE then
+  if wf == Faio_win32::INVALID_HANDLE_VALUE then
   {
     print "BUGGER: OpenFile failed: "; print (GetLastError()); endl;
   } else {
@@ -242,7 +209,7 @@ var p = webby_port;
 var listener: socket_t;
 mk_listener(&listener, &p, 10);
 
-proc forever {
+forever {
   var s: socket_t;
   accept(listener, &s);  // blocking
   dbg q"got connection $s\n";  // error check here
@@ -255,31 +222,22 @@ proc forever {
     var line: string;
     get_line(s, &line);  // should be the GET line.
 
-    val poo = 
-    if "GET " == line.[0 to 4] then line.[4 to ] else "" endif;
-    print ("poo="poo); endl;
-
-  //print ("blah " line.[0 to 4]); endl;
     print "got line: "; print line; endl;
 
     // now I need to parse the GET line, get a file name out of its url
     // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
-    var succ: bool;
-    var base: string;
-    var file: string;
+    match parse_get_line line with
+    | None[string*string] => {
+        print "BAD get line: "; print line; endl;
+      }
+    | Some (?base, ?file) => {
+        print "well formed get...\n";
+        print "base="; print base; endl;
+        print "file="; print file; endl;
 
-    parse_get_line(line, succ, base, file);
-    // print "succ="; print succ; endl;
-
-    if succ then {
-      print "well formed get...\n";
-      print "base="; print base; endl;
-      print "file="; print file; endl;
-
-      serve_file(file, s);
-    } else {
-      print "BAD get line: "; print line; endl;
-    } endif;
+        serve_file(file, s);
+      }
+    endmatch;
 
     // we've only read the GET line, so let's flush out the rest of
     // the http request so we don't get connection reset errors when
@@ -292,9 +250,7 @@ proc forever {
 
   };
   collect();
-  forever;
 };
-forever;
 
 iclose(listener);
 
