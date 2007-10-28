@@ -1500,11 +1500,11 @@ open module String
   open Bool;
   open Char;
   open Int;
+
   proc pluseq: lvalue[string] * string = "$1.append($2);";
   proc pluseq: lvalue[string] * charcp = "$1.append($2);";
   proc pluseq: lvalue[string] * charp = "$1.append($2);";
   proc pluseq: lvalue[string] * char = "$1 += $2;";
-
 
   // we need to cast to an int so that c++ won't complain
   fun len: string -> int = "static_cast<int>($1.size())";
@@ -1546,6 +1546,19 @@ open module String
     | Slice_one (?index) => string x.[index]
     endmatch
   ;
+
+  proc store: lvalue[string] * int * char = "$1[$2] = $3;";
+
+  fun map (f:char->char) (var x:string): string = {
+    var i:int; forall i in 0 upto (len x) - 1 do
+      // FIXME: The statement below currently doesn't compile correctly.
+      //x.[i] = _f x.[i];
+
+      store(x, i, f x.[i]);
+    done;
+
+    return x;
+  }
 
   // comparisons
   //gen_cmp string;
@@ -1609,39 +1622,21 @@ open module String
   fun startswith (x:string) (e:char) : bool => x.[0] == e;
   fun endswith (x:string) (e:char) : bool => x.[len x - 1] == e;
 
-  fun ltrim (x:string) (e:string) : string =
-  {
-    if len x < len e do
-      return x;
-    done;
+  fun ltrim (x:string) (e:string) : string =>
+    if startswith x e then
+      x.[len e to]
+    else
+      x
+    endif
+  ;
 
-    var i: int; forall i in 0 upto (len e) - 1 do
-      if e.[i] != x.[i] do
-        // failed to find the substring, so just return the first string
-        return x;
-      done;
-    done;
-
-    return x.[len e to];
-  }
-
-  fun rtrim (x:string) (e:string) : string =
-  {
-    val len_x = len x;
-    val len_e = len e;
-
-    if len_x < len_e do
-      return x;
-    done;
-
-    var i: int; forall i in 0 upto (len_e) - 1 do
-      if e.[len_e - i - 1] != x.[len_x - i - 1] do
-        return x;
-      done;
-    done;
-
-    return x.[to len_x - len_e];
-  }
+  fun rtrim (x:string) (e:string) : string =>
+    if endswith x e then
+      x.[to (len x) - (len e)]
+    else
+      x
+    endif
+  ;
 
   fun trim (x:string) (e:string) : string => ltrim (rtrim x e) e;
 
