@@ -443,6 +443,12 @@ void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
 #define __FLX_COMPILER_SUPPORT_BODIES_H__
 #include "flx_compiler_support_headers.hpp"
 
+
+#define FLX_SAVE_REGS \
+  jmp_buf reg_save_on_stack; \
+  setjmp (reg_save_on_stack)
+
+
 #define FLX_EXEC_FAILURE(f,op,what) \
   throw flx::rtl::flx_exec_failure_t (f,op,what)
 
@@ -1837,8 +1843,12 @@ void flx_libinit_t::create
   //fprintf(stderr,"Incrementing refcnt\n");
   ++lib->refcnt;
   gcp->collector->add_root(thread_frame);
+  //fprintf(stderr, "CREATING start_proc\n");
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
+  //fprintf(stderr, "start_proc CREATED\n");
+  //fprintf(stderr, "CREATING main_proc\n");
   main_proc = main_sym?main_sym(thread_frame):0;
+  //fprintf(stderr, "main_proc CREATED\n");
   usr_create();
 }
 

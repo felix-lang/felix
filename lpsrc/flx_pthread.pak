@@ -189,6 +189,8 @@ class PTHREAD_EXTERN thread_control_t
     flx_mutex_t stop_mutex;
     thread_registry_t threads;
     void unsafe_stop_check();
+    void unsafe_suspend();
+    void unsafe_resume();
 public: 
     bool debug;
     thread_control_t (bool);
@@ -199,6 +201,8 @@ public:
     void join_all() ;
     void world_start();
     void yield();
+    void suspend();
+    void resume();
     memory_ranges_t *get_block_list(); // called owns result and should delete it
 };
 
@@ -400,6 +404,9 @@ void thread_control_t::remove_thread()
   }
 
 // stop the world!
+
+// NOTE: ON EXIT, THE MUTEX REMAINS LOCKED
+
 bool thread_control_t::world_stop() 
   {
     stop_mutex.lock();
@@ -421,8 +428,7 @@ bool thread_control_t::world_stop()
     // it would deadlock ourself
     {
       flx_native_thread_t id = pthread_self();
-      jmp_buf reg_save_on_stack;
-      setjmp (reg_save_on_stack);
+      FLX_SAVE_REGS;
       void *stack_pointer = get_stack_pointer();
       if(debug)
         fprintf(stderr,"World stop thread=%lx, stack=%p!\n",id, stack_pointer);
@@ -482,34 +488,58 @@ memory_ranges_t *thread_control_t::get_block_list()
   return v;
 }
 
+void thread_control_t::suspend()
+{
+  flx_mutex_locker_t m(stop_mutex);
+  unsafe_suspend();
+}
+
+void thread_control_t::resume()
+{
+  flx_mutex_locker_t m(stop_mutex);
+  unsafe_resume();
+}
+
+
+void thread_control_t::unsafe_suspend()
+{
+  void *stack_pointer = get_stack_pointer();
+  flx_native_thread_t id = pthread_self();
+  if(debug)
+    fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
+  thread_registry_t::iterator it = threads.find(id);
+  if(it == threads.end()) {
+    if(debug)
+      fprintf(stderr,"Yield::Cannot find thread %lx in registry\n",id);
+      abort();
+  }
+  (*it).second.stack_top = stack_pointer;
+  if(debug)
+    fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
+  --thread_counter;
+  if(debug)
+    fprintf(stderr,"Yield thread count now %d\n",thread_counter);
+}
+
+void thread_control_t::unsafe_resume()
+{
+  stop_guard.broadcast();
+  while(do_world_stop) stop_guard.wait(&stop_mutex);
+  ++thread_counter;
+  if(debug) {
+    flx_native_thread_t id = pthread_self();
+    fprintf(stderr,"Thread %lx resumed, count= %d\n",pthread_self(),thread_counter);
+  }
+}
+
 // mutex already held
 void thread_control_t::unsafe_stop_check()
 {
     if (do_world_stop)
     {
-      flx_native_thread_t id = pthread_self();
-      jmp_buf reg_save_on_stack;
-      setjmp (reg_save_on_stack);
-      void *stack_pointer = get_stack_pointer();
-      if(debug)
-        fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
-      thread_registry_t::iterator it = threads.find(id);
-      if(it == threads.end()) {
-        if(debug)
-          fprintf(stderr,"Yield::Cannot find thread %lx in registry\n",id);
-          abort();
-      }
-      (*it).second.stack_top = stack_pointer;
-      if(debug)
-        fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
-      --thread_counter;
-      if(debug)
-        fprintf(stderr,"Yield thread count now %d\n",thread_counter);
-      stop_guard.broadcast();
-      while(do_world_stop) stop_guard.wait(&stop_mutex);
-      ++thread_counter;
-      if(debug)
-        fprintf(stderr,"Thread %lx resumed, count= %d\n",pthread_self(),thread_counter);
+      FLX_SAVE_REGS;
+      unsafe_suspend();
+      unsafe_resume();
     }
 }
 
@@ -1742,7 +1772,21 @@ module Pthread
     "new flx::pthread::monitor_t()"
   ;
 
-  proc _read[t]: pchannel[t] * ptr[ptr[t]] = "*$2 = (?1*)($1->dequeue());";
+  // NOTE: read/write on pchannels uses suspend/resume
+  // to tell any pending collector it is safe to proceed
+  // whilst it is doing the I/O (which may block),
+  // to block returning from the I/O during a collection
+  // AND, if the I/O completed before the collection got
+  // going, to yield at this point. 
+
+  proc _read[t]: pchannel[t] * ptr[ptr[t]] = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    *$2 = (?1*)($1->dequeue());
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """;
 
   gen read[t] (chan:pchannel[t]) = {
     var p : ptr[t];
@@ -1750,7 +1794,15 @@ module Pthread
     return *p;
   }
 
-  proc _write[t]: pchannel[t] * ptr[t] = "$1->enqueue((void*)$2);";
+  proc _write[t]: pchannel[t] * ptr[t] = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    $1->enqueue((void*)$2);
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """;
+
   proc write[t](chan:pchannel[t], v:t) {
     var ps = cast[ptr[t]]$ xnew v;
     _write (chan,ps);

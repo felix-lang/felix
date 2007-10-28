@@ -82,6 +82,7 @@ Requires: flx_judy
 
 #include <cstdlib>
 #include "flx_gc_config.hpp"
+#include "pthread_thread.hpp"
 
 // we use an STL set to hold the collection of roots
 #include <set>
@@ -170,6 +171,7 @@ struct GC_EXTERN collector_t
   void set_debug(bool d){debug=d;}
   collector_t();
   virtual ~collector_t(){}
+  virtual flx::pthread::thread_control_t *get_thread_control()const =0;
 
 @doc()
 These routines just provide statistics.
@@ -198,7 +200,10 @@ terms of shape objects rather than raw memory amounts.
 The mark and sweep collector algorithm.
 @select(h)
   unsigned long collect() { 
-    return v_collect(); 
+    //fprintf(stderr, "Collecting\n");
+    unsigned long x = v_collect(); 
+    //fprintf(stderr, "Collecting DONE\n");
+    return x;
   }
 
 @doc()
@@ -399,11 +404,9 @@ void *gc_profile_t::allocate(
   bool allow_gc
 ) 
 {
-  /* 
-  fprintf(stderr,"gc_profile_t::allocate(): allow_collection_anywhere=%s, allow_gc=%s\n",
-    (allow_collection_anywhere?"True":"False"), (allow_gc?"True":"false")
-  );
-  */
+  //fprintf(stderr,"gc_profile_t::allocate(): allow_collection_anywhere=%s, allow_gc=%s\n",
+  //  (allow_collection_anywhere?"True":"False"), (allow_gc?"True":"false")
+  //);
   if (allow_collection_anywhere && allow_gc) 
   {
     maybe_collect();
@@ -480,6 +483,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
   unsigned long get_count(void *memory); 
   void *create_empty_array( gc_shape_t *shape, unsigned long count);
   gc_shape_t *get_shape(void *memory); 
+  flx::pthread::thread_control_t *get_thread_control()const;
 
 protected:
 
@@ -541,6 +545,7 @@ private:
   bool parity;
   allocator_t *allocator;
   flx::pthread::thread_control_t *thread_control;
+
 
   // JudyL array and error object
   void *j_shape;
@@ -675,6 +680,11 @@ flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_t *tc)
   ,j_nused(0)
   ,j_tmp(0)
 {}
+
+flx::pthread::thread_control_t *flx_collector_t::get_thread_control()const
+{
+  return thread_control;
+}
 
 void flx_collector_t::judyerror(char const *loc)
 {
@@ -878,8 +888,8 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       void *end = range.e;
       for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
       {
-        if(debug)
-          fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
+        //if(debug)
+        //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
         scan_object(*(void**)i);
       }
       if(debug)
@@ -993,12 +1003,10 @@ void flx_collector_t::scan_object(void *p)
   if( (*w & 1UL) == reachable) return;   // already handled
 
   gc_shape_t *shape = (gc_shape_t*)(*w & ~1UL);
-  if(debug)
-    fprintf(stderr,"Found candidate UNMARKED object %p, shape %p, type=%s\n",(void*)fp,shape,shape->cname);
   unsigned long n = get_count((void*)fp) * shape->count * shape->amt;
   if(cand >= (Word_t)(void*)((unsigned char*)(void*)fp+n)) return; // not interior
   if(debug)
-    fprintf(stderr,"Found reachable umarked object!\n");
+    fprintf(stderr,"MARKING object %p, shape %p, type=%s\n",(void*)fp,shape,shape->cname);
 
   *w = (*w & ~1uL) | reachable;
 
@@ -1020,17 +1028,18 @@ void flx_collector_t::scan_object(void *p)
 
 unsigned long flx_collector_t::impl_collect()
 {
-  if(debug)
+  //if(debug)
     fprintf(stderr,"Request to collect, thread %lx\n", pthread_self());
   if (thread_control == NULL || thread_control->world_stop())
   {
-    if(debug)
-      fprintf(stderr,"Running collector\n");
+    //if(debug)
+      fprintf(stderr,"Collecting, thread %lx\n", pthread_self());
     pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
     mark(mr);
     delete mr;
     unsigned long collected = sweep();
     if(thread_control) thread_control->world_start();
+    fprintf(stderr,"FINISHED collect, thread %lx\n", pthread_self());
     return collected;
   }
   else {
