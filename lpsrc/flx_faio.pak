@@ -101,17 +101,17 @@ tmpdir = ['faio']
 
 namespace flx { namespace faio {
 
-struct FAIO_EXTERN finote_t 
+struct FAIO_EXTERN finote_t
 {
   virtual void signal()=0;
   virtual ~finote_t(){}
 };
 
-class FAIO_EXTERN wakeup_fthread_t : public finote_t 
+class FAIO_EXTERN wakeup_fthread_t : public finote_t
 {
   rtl::fthread_t *f;
   pthread::sleep_queue_t *q;
-public:  
+public:
   wakeup_fthread_t(pthread::sleep_queue_t *q_a, rtl::fthread_t *f_a) : f(f_a), q(q_a) {}
   void signal () { q->enqueue(f); }
 };
@@ -121,13 +121,13 @@ class FAIO_EXTERN flx_driver_request_base {
     finote_t *fn;
     virtual bool start_async_op_impl() = 0;
 public:
-    flx_driver_request_base() : fn(0) {} 
+    flx_driver_request_base() : fn(0) {}
     virtual ~flx_driver_request_base() {}       // so destructors work
 
     // returns finished flag (async may fail or immediately finish)
     void start_async_op(finote_t *fn_a);
     void notify_finished();
-};  
+};
 
 }} // namespace faio, flx
 #endif  // __ASYNCIO__
@@ -145,7 +145,7 @@ void flx_driver_request_base:: start_async_op(finote_t *fn_a)
   //fprintf(stderr,"start async op %p, set fn = %p\n",this,fn_a);
   fn = fn_a;
   bool completed =  start_async_op_impl();
-  if(completed) 
+  if(completed)
   {
     //fprintf(stderr,"instant complete\n");
     notify_finished();
@@ -157,13 +157,13 @@ void flx_driver_request_base:: start_async_op(finote_t *fn_a)
 }
 
 void flx_driver_request_base:: notify_finished()
-{ 
+{
   //fprintf(stderr, "faio_req=%p, Notify %p\n", this,fn);
   assert(fn!=0);
   finote_t *fin = fn;
   fn=0;
-  fin->signal(); 
-  delete fin; 
+  fin->signal();
+  delete fin;
   //fprintf(stderr, "faio_req=%p, FINISHED\n",this);
 }
 
@@ -218,53 +218,51 @@ void FAIO_EXTERN sigpipe_ignorer()
 #import <flx.flxh>
 
 module Faio {
-requires package "demux";
-requires package "faio";
+  requires package "demux";
+  requires package "faio";
 
-open C_hack;
+  open C_hack;
 
-proc faio_req[t](x:&t) {
-  val y : &address = reinterpret[&address] x;
-  svc (svc_general y);
-}
+  proc faio_req[t](x:&t) {
+    val y : &address = reinterpret[&address] x;
+    svc (svc_general y);
+  }
 
-proc get_thread(thread: ptr[fthread]) {
-    svc (svc_get_fthread thread );
-}
+  proc get_thread(thread: ptr[fthread]) {
+      svc (svc_get_fthread thread );
+  }
 
-header stdlib_h = '#include <stdlib.h>';            // malloc, free
-header = '#include "faio_asyncio.hpp"';
-header faio_timer_h = '#include "faio_timer.hpp"';
+  header stdlib_h = '#include <stdlib.h>';            // malloc, free
+  header = '#include "faio_asyncio.hpp"';
+  header faio_timer_h = '#include "faio_timer.hpp"';
 
-type sel_param = "flx::demux::sel_param";
-type sel_param_ptr = "flx::demux::sel_param*";
+  type sel_param = "flx::demux::sel_param";
+  type sel_param_ptr = "flx::demux::sel_param*";
 
-fun get_bytes_done : sel_param_ptr -> int = '$1->bytes_written';
-proc init_pb : sel_param*address*int
-= '{$1.buffer=(char*)$2;$1.buffer_size=$3;$1.bytes_written=0;}';
+  fun get_bytes_done : sel_param_ptr -> int = '$1->bytes_written';
+  proc init_pb : sel_param*address*int
+  = '{$1.buffer=(char*)$2;$1.buffer_size=$3;$1.bytes_written=0;}';
 
-proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
-{
-    var bytes_done = pb.bytes_done;
-    *eof = (bytes_done != *len);
-    *len = bytes_done;
-}
+  proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
+  {
+      var bytes_done = pb.bytes_done;
+      *eof = (bytes_done != *len);
+      *len = bytes_done;
+  }
 
-type sleep_request = 'flx::faio::sleep_request' requires faio_timer_h;
-type alarm_clock = 'flx::demux::timer_queue*' requires faio_timer_h;
+  type sleep_request = 'flx::faio::sleep_request' requires faio_timer_h;
+  type alarm_clock = 'flx::demux::timer_queue*' requires faio_timer_h;
 
-fun mk_alarm_clock: 1 -> alarm_clock = 'flx::demux::mk_timer_queue()';
-fun mk_sleep_request: alarm_clock * double -> sleep_request = 'flx::faio::sleep_request($1,$2)';
+  fun mk_alarm_clock: 1 -> alarm_clock = 'flx::demux::mk_timer_queue()';
+  fun mk_sleep_request: alarm_clock * double -> sleep_request = 'flx::faio::sleep_request($1,$2)';
 
-var sys_clock = mk_alarm_clock();
+  var sys_clock = mk_alarm_clock();
 
-proc sleep(clock: alarm_clock, delta: double)
-{
-  var sr = mk_sleep_request$ clock,delta;
-  faio_req$ &sr;
-}
-
-
+  proc sleep(clock: alarm_clock, delta: double)
+  {
+    var sr = mk_sleep_request$ clock,delta;
+    faio_req$ &sr;
+  }
 } // module faio
 
 @h = tangler("lib/flx_stream.flx")
@@ -279,287 +277,285 @@ include "flx_faio_win32";
 #endif
 
 module Flx_stream {
-requires package "demux";
-requires package "faio";
+  requires package "demux";
+  requires package "faio";
 
-open Faio; 
+  open Faio;
 
-#if POSIX
-open Faio_posix;
-typedef fd_t = Faio_posix::fd_t;
-#elif WIN32
-open Faio_win32;
-#endif
-
-union devnull_t = DEVNULL;
-
-typeclass IByteStream[s] { 
-  virtual proc read: s * &int * address * &bool; 
-}
-
-typeclass OByteStream[s] { 
-  virtual proc write: s * &int * address * &bool; 
-}
-
-typeclass IOByteStream[s] { 
-  inherit IByteStream[s];
-  inherit OByteStream[s];
-}
-
-typeclass TerminalIByteStream[s] { 
-  inherit IByteStream[s];
-  virtual proc iclose: s; 
-}
-
-typeclass TerminalOByteStream[s] { 
-  inherit OByteStream[s];
-  virtual proc oclose: s; 
-}
-
-typeclass TerminalIOByteStream[s] { 
-  inherit TerminalIByteStream[s];
-  inherit TerminalOByteStream[s];
-  virtual proc ioclose: s;
-}
-
-//
-// devnull_t
-//
-instance IByteStream[devnull_t]
-{
-  proc read(strm: devnull_t, len: &int, buf: address, eof: &bool)
-    { *len = 0; *eof = true; }
-}
-
-instance OByteStream[devnull_t]
-{
-  proc write(strm: devnull_t, len: &int, buf: address, eof: &bool)
-    { *eof = false; }
-}
-
-instance IOByteStream[devnull_t] {}
-instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) { } } 
-instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) { } }
-instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) { } }
-
-
-//
-// fd_t -- native file handle (disk file)
-//
-instance IByteStream[fd_t]
-{
-  proc read(s: fd_t, len: &int, buf: address, eof: &bool)
   #if POSIX
-    { faio_read(s, len, buf, eof); }
+  open Faio_posix;
+  typedef fd_t = Faio_posix::fd_t;
   #elif WIN32
-    { ReadFile(s, len, buf, eof); }
+  open Faio_win32;
   #endif
-}
 
-instance OByteStream[fd_t]
-{
-  proc write(s: fd_t, len: &int, buf: address, eof: &bool)
-  #if POSIX
-    { faio_write(s, len, buf, eof); }
-  #elif WIN32
-    { WriteFile(s, len, buf, eof); }
-  #endif
-}
+  union devnull_t = DEVNULL;
 
-instance IOByteStream[fd_t] {}
+  typeclass IByteStream[s] {
+    virtual proc read: s * &int * address * &bool;
+  }
 
-instance TerminalIByteStream[fd_t]
-{
-  proc iclose (f:fd_t)
-  #if POSIX
-    { close f; }
-  #elif WIN32
-    { CloseFile f; }
-  #endif
-}
+  typeclass OByteStream[s] {
+    virtual proc write: s * &int * address * &bool;
+  }
 
-instance TerminalOByteStream[fd_t]
-{
-  proc oclose (f:fd_t)
-  #if POSIX
-    { close f; }
-  #elif WIN32
-    { CloseFile f; }
-  #endif
-}
+  typeclass IOByteStream[s] {
+    inherit IByteStream[s];
+    inherit OByteStream[s];
+  }
 
-instance TerminalIOByteStream[fd_t]
-{
-  proc ioclose (f:fd_t)
-  #if POSIX
-    { close f; }
-  #elif WIN32
-    { CloseFile f; }
-  #endif
-}
+  typeclass TerminalIByteStream[s] {
+    inherit IByteStream[s];
+    virtual proc iclose: s;
+  }
 
-proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-(infd: istr , outfd: ostr, buf: address, bufsize: int) 
-{
-    var eof = false;
-    var weof = false;
-    var len: int;
+  typeclass TerminalOByteStream[s] {
+    inherit OByteStream[s];
+    virtual proc oclose: s;
+  }
 
-    // if we finish input, stop. if output eofs, don't keep hammering on it!
-    while{not(eof) and not(weof)} {
-        len = bufsize;
-        read(infd, &len, buf, &eof);
-        //fprint$ cerr,q"catted in $len bytes, eof=$eof\n";
-        //fprint$ cerr, string(C_hack::cast[charp] buf,len);
-        write(outfd, &len, buf, &weof);
-        //fprint$ cerr,q"catted out $len bytes, eof=$weof\n";
-    };
-}
+  typeclass TerminalIOByteStream[s] {
+    inherit TerminalIByteStream[s];
+    inherit TerminalOByteStream[s];
+    virtual proc ioclose: s;
+  }
 
-// It's very unfortunate that memcmp doesn't return the position
-// of the first non-equality
+  //
+  // devnull_t
+  //
+  instance IByteStream[devnull_t]
+  {
+    proc read(strm: devnull_t, len: &int, buf: address, eof: &bool)
+      { *len = 0; *eof = true; }
+  }
 
-proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]]
-(fd1: istr1 , fd2: istr2, buf1: address, buf2: address, bufsize: int, sign: &int) 
-{
-  var eof1 = false;
-  var eof2 = false;
-  var len1: int;
-  var len2: int;
-  var terminated = false;
-  var cmp = 0;
+  instance OByteStream[devnull_t]
+  {
+    proc write(strm: devnull_t, len: &int, buf: address, eof: &bool)
+      { *eof = false; }
+  }
 
-  while{cmp == 0 and not terminated} {
-    len1 = bufsize; read(fd1, &len1, buf1, &eof1);
-    len2 = bufsize; read(fd2, &len2, buf2, &eof2);
-//print "Len1="; print len1; endl;
-//print "Len2="; print len2; endl;
+  instance IOByteStream[devnull_t] {}
+  instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) { } }
+  instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) { } }
+  instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) { } }
 
-    len  := min(len1,len2);
-    cmp = Carray::memcmp(buf1, buf2, size len);
 
-    if cmp == 0 do 
-      cmp = len1 - len2;
+  //
+  // fd_t -- native file handle (disk file)
+  //
+  instance IByteStream[fd_t]
+  {
+    proc read(s: fd_t, len: &int, buf: address, eof: &bool)
+    #if POSIX
+      { faio_read(s, len, buf, eof); }
+    #elif WIN32
+      { ReadFile(s, len, buf, eof); }
+    #endif
+  }
+
+  instance OByteStream[fd_t]
+  {
+    proc write(s: fd_t, len: &int, buf: address, eof: &bool)
+    #if POSIX
+      { faio_write(s, len, buf, eof); }
+    #elif WIN32
+      { WriteFile(s, len, buf, eof); }
+    #endif
+  }
+
+  instance IOByteStream[fd_t] {}
+
+  instance TerminalIByteStream[fd_t]
+  {
+    proc iclose (f:fd_t)
+    #if POSIX
+      { close f; }
+    #elif WIN32
+      { CloseFile f; }
+    #endif
+  }
+
+  instance TerminalOByteStream[fd_t]
+  {
+    proc oclose (f:fd_t)
+    #if POSIX
+      { close f; }
+    #elif WIN32
+      { CloseFile f; }
+    #endif
+  }
+
+  instance TerminalIOByteStream[fd_t]
+  {
+    proc ioclose (f:fd_t)
+    #if POSIX
+      { close f; }
+    #elif WIN32
+      { CloseFile f; }
+    #endif
+  }
+
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
+  (infd: istr , outfd: ostr, buf: address, bufsize: int)
+  {
+      var eof = false;
+      var weof = false;
+      var len: int;
+
+      // if we finish input, stop. if output eofs, don't keep hammering on it!
+      while{not(eof) and not(weof)} {
+          len = bufsize;
+          read(infd, &len, buf, &eof);
+          //fprint$ cerr,q"catted in $len bytes, eof=$eof\n";
+          //fprint$ cerr, string(C_hack::cast[charp] buf,len);
+          write(outfd, &len, buf, &weof);
+          //fprint$ cerr,q"catted out $len bytes, eof=$weof\n";
+      };
+  }
+
+  // It's very unfortunate that memcmp doesn't return the position
+  // of the first non-equality
+
+  proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]]
+  (fd1: istr1 , fd2: istr2, buf1: address, buf2: address, bufsize: int, sign: &int)
+  {
+    var eof1 = false;
+    var eof2 = false;
+    var len1: int;
+    var len2: int;
+    var terminated = false;
+    var cmp = 0;
+
+    while{cmp == 0 and not terminated} {
+      len1 = bufsize; read(fd1, &len1, buf1, &eof1);
+      len2 = bufsize; read(fd2, &len2, buf2, &eof2);
+  //print "Len1="; print len1; endl;
+  //print "Len2="; print len2; endl;
+
+      len  := min(len1,len2);
+      cmp = Carray::memcmp(buf1, buf2, size len);
+
       if cmp == 0 do
-        terminated = eof1 and eof2;
-        cmp = 
-          // ugg: false = case 0, true = case 1
-          match eof1, eof2 with
-          | case 1, case 1 => 0
-          | case 0, case 0 => 0
-          | case 0, case 1 => 1
-          | case 1, case 0 => -1
-          endmatch
-        ;
+        cmp = len1 - len2;
+        if cmp == 0 do
+          terminated = eof1 and eof2;
+          cmp =
+            // ugg: false = case 0, true = case 1
+            match eof1, eof2 with
+            | case 1, case 1 => 0
+            | case 0, case 0 => 0
+            | case 0, case 1 => 1
+            | case 1, case 0 => -1
+            endmatch
+          ;
+        done;
+      done;
+    };
+    *sign = cmp;
+  }
+
+
+  proc cmp
+    [istr1, istr2 with IByteStream[istr1], IByteStream[istr2]]
+    (i1: istr1, i2: istr2, res: &int)
+  {
+    val BUFSIZE = 100000;
+    var buf1 = C_hack::malloc(BUFSIZE);
+    var buf2 = C_hack::malloc(BUFSIZE);
+    stream_cmp(i1, i2, buf1, buf2, BUFSIZE, res);
+    C_hack::free(buf1);
+    C_hack::free(buf2);
+  }
+
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
+  (infd: istr, outfd: ostr)
+  {
+      val BUFSIZE = 100000;
+      var buf = C_hack::malloc(BUFSIZE);
+
+      // that's some nice error checking
+      cat(infd, outfd, buf, BUFSIZE);
+      C_hack::free(buf);
+  }
+
+  open List;
+
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
+  (in_fds: list[istr], outfd: ostr,
+      buf: address, bufsize: int)
+  {
+      match in_fds with
+      | Empty[istr] => {}                     // finished
+      | Cons[istr] (?fd, ?l) =>
+          {
+              cat(fd, outfd, buf, bufsize);   // cat first
+              cat(l, outfd, buf, bufsize);    // cat the rest
+          }
+      endmatch
+      ;
+  }
+
+  proc echo[iostr with IOByteStream[iostr]]
+  (fd: iostr, buf: address, bufsize: int)
+  {
+      // echo a = cat a a. that's deep, man.
+      cat(fd, fd, buf, bufsize);
+  };
+
+  proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]]
+  (infd: istr, outfd: ostr, outfd2: ostr)
+  {
+      var eof = false;
+      var weof = false;
+      var weof2 = false;
+      var len: int;
+
+      val BUFSIZE = 10*1024;
+      var buf = C_hack::malloc(BUFSIZE);
+
+      // don't hammer!
+      while{not(eof) and not(weof) and not(weof2)} {
+          len = BUFSIZE;
+          read(infd, &len, buf, &eof);
+          write(outfd, &len, buf, &weof);
+          write(outfd2, &len, buf, &weof2);
+      };
+      C_hack::free buf;
+  }
+
+  // highly inefficient!
+  proc get_line[istr with IByteStream[istr]]
+  (strm: istr, s: &string)
+  {
+    var c: char;
+    val ac = C_hack::cast[address]$ C_hack::addr c;
+    var st: string;
+    var finished = false;
+
+    whilst not finished do
+      var len = 1;
+      var eof: bool;
+
+      read(strm, &len, ac, &eof);
+
+      if eof or c == char '\n' do
+        finished = true;
+      else
+        st += c;
       done;
     done;
-  };
-  *sign = cmp;
-}
+    *s = st;  // pass back result
+  }
 
-
-proc cmp
-  [istr1, istr2 with IByteStream[istr1], IByteStream[istr2]]
-  (i1: istr1, i2: istr2, res: &int)
-{
-  val BUFSIZE = 100000;
-  var buf1 = C_hack::malloc(BUFSIZE);
-  var buf2 = C_hack::malloc(BUFSIZE);
-  stream_cmp(i1, i2, buf1, buf2, BUFSIZE, res);
-  C_hack::free(buf1);
-  C_hack::free(buf2);
-}
-
-proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-(infd: istr, outfd: ostr)
-{
-    val BUFSIZE = 100000;
-    var buf = C_hack::malloc(BUFSIZE);
-
-    // that's some nice error checking
-    cat(infd, outfd, buf, BUFSIZE);
-    C_hack::free(buf);
-}
-
-open List;
-
-proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-(in_fds: list[istr], outfd: ostr,
-    buf: address, bufsize: int)
-{
-    match in_fds with
-    | Empty[istr] => {}                     // finished
-    | Cons[istr] (?fd, ?l) =>
-        {
-            cat(fd, outfd, buf, bufsize);   // cat first
-            cat(l, outfd, buf, bufsize);    // cat the rest
-        }
-    endmatch
-    ;
-}
-
-proc echo[iostr with IOByteStream[iostr]]
-(fd: iostr, buf: address, bufsize: int)
-{
-    // echo a = cat a a. that's deep, man.
-    cat(fd, fd, buf, bufsize);
-};
-
-proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-(infd: istr, outfd: ostr, outfd2: ostr)
-{
-    var eof = false;
-    var weof = false;
-    var weof2 = false;
-    var len: int;
-
-    val BUFSIZE = 10*1024;
-    var buf = C_hack::malloc(BUFSIZE);
-
-    // don't hammer!
-    while{not(eof) and not(weof) and not(weof2)} {
-        len = BUFSIZE;
-        read(infd, &len, buf, &eof);
-        write(outfd, &len, buf, &weof);
-        write(outfd2, &len, buf, &weof2);
-    };
-    C_hack::free buf;
-}
-
-// highly inefficient!
-proc get_line[istr with IByteStream[istr]] 
-(strm: istr, s: &string)
-{
-  var c: char;
-  val ac = C_hack::cast[address]$ C_hack::addr c;
-  var st: string;
-  var finished = false;
-
-  whilst not finished do
-    var len = 1;
+  proc write_string[ostr with OByteStream[ostr]]
+  (sk: ostr, var s: string)
+  {
+    var slen = len s;
+    var a = C_hack::cast[address]$ cstr s;
     var eof: bool;
-
-    read(strm, &len, ac, &eof);
-
-    if eof or c == char '\n' do
-      finished = true;
-    else
-      st += c;
-    done;
-  done;
-  *s = st;  // pass back result
-}
-
-proc write_string[ostr with OByteStream[ostr]]
-(sk: ostr, var s: string)
-{
-  var slen = len s;
-  var a = C_hack::cast[address]$ cstr s; 
-  var eof: bool;
-  write(sk, &slen, a, &eof);
-}
-
-
+    write(sk, &slen, a, &eof);
+  }
 } // module Flx_stream
 
 @h = tangler("lib/flx_socket.flx")
@@ -576,123 +572,122 @@ include "flx_faio_win32";
 
 module Flx_socket {
 
-#if POSIX
-typedef socket_t = Faio_posix::socket_t;
-#elif WIN32
-typedef socket_t = Faio_win32::socket_t;
-#endif
-
-
-proc mk_listener(l: &socket_t, port: &int, qlen: int)
-{
-#if POSIX
-  Faio_posix::mk_listener(l,port, qlen);
-#elif WIN32
-  Faio_win32::mk_listener(l, port, qlen);
-#endif
-}
-
-proc accept(l: socket_t, s: &socket_t)
-{
-#if POSIX
-  Faio_posix::accept(s, l);  // success or not? error checking
-#elif WIN32
-  var success: bool;
-  Faio_win32::mk_socket(s);  // error check?
-  Faio_win32::Accept(&success, l, *s);
-  if not success do
-    fprint (cout, "Accept failed! num?\n");
-  done;
-#endif
-}
-
-proc shutdown(s: socket_t, how: int)
-{
-#if POSIX
-  Faio_posix::shutdown(s, how);
-#elif WIN32
-  Faio_win32::shutdown(s, how);
-#endif
-}
-
-proc connect(s: &socket_t, addr: charp, port: int)
-{   
-#if POSIX 
-    Faio_posix::connect(s, addr, port );
-#elif WIN32
-    Faio_win32::Connect( s, addr, port );
-#endif
-}
-
-
-//
-// socket_t
-//
-instance Flx_stream::IByteStream[socket_t]
-{
-  proc read(s: socket_t, len: &int, buf: address, eof: &bool)
   #if POSIX
-    { Faio_posix::async_read(s, len, buf, eof); }
+    typedef socket_t = Faio_posix::socket_t;
   #elif WIN32
-    { Faio_win32::WSARecv(s, len, buf, eof); }
+    typedef socket_t = Faio_win32::socket_t;
   #endif
-}
 
-instance Flx_stream::OByteStream[socket_t]
-{
-  proc write(s: socket_t, len: &int, buf: address, eof: &bool)
+
+  proc mk_listener(l: &socket_t, port: &int, qlen: int)
+  {
   #if POSIX
-    { Faio_posix::async_write(s, len, buf, eof); }
+    Faio_posix::mk_listener(l,port, qlen);
   #elif WIN32
-    { Faio_win32::WSASend(s, len, buf, eof); }
+    Faio_win32::mk_listener(l, port, qlen);
   #endif
-}
+  }
 
-instance Flx_stream::IOByteStream[socket_t] {}
-
-instance Flx_stream::TerminalIByteStream[socket_t]
-{
-  proc iclose (s:socket_t)
+  proc accept(l: socket_t, s: &socket_t)
+  {
   #if POSIX
-    { Faio_posix::shutdown (s,0); Faio_posix::close s; }
-  #else
-    { Faio_win32::closesocket s; }
-  #endif
-}
-
-instance Flx_stream::TerminalOByteStream[socket_t]
-{
-  proc oclose (s:socket_t) 
-  #if POSIX
-    { Faio_posix::shutdown (s,1); Faio_posix::close s; }
+    Faio_posix::accept(s, l);  // success or not? error checking
   #elif WIN32
-    { Faio_win32::closesocket s; }
+    var success: bool;
+    Faio_win32::mk_socket(s);  // error check?
+    Faio_win32::Accept(&success, l, *s);
+    if not success do
+      fprint (cout, "Accept failed! num?\n");
+    done;
   #endif
-}
+  }
 
-instance Flx_stream::TerminalIOByteStream[socket_t]
-{
-  proc ioclose (s:socket_t) 
+  proc shutdown(s: socket_t, how: int)
+  {
   #if POSIX
-    { 
-      // RF: just close, I don't think any of this stuff is necessary.
-      // I think this is an application level problem.
-      //fprint (cerr,q"STREAM:Closing socket $s\n");
-      //Faio_posix::shutdown(s,2);
-      //Faio::sleep (Faio::sys_clock,5.0);
-      /*
-      var len = 1; var eof = false; var buf = C_hack::malloc(1);
-      Faio_posix::async_read(s, &len, buf, &eof);
-      fprint (cerr,q"STREAM:socket $s, eof=$eof\n");
-      Faio_posix::shutdown(s,0);
-      */
-      Faio_posix::close s; 
-    }
+    Faio_posix::shutdown(s, how);
   #elif WIN32
-    { Faio_win32::closesocket s; }
+    Faio_win32::shutdown(s, how);
   #endif
-}
+  }
 
+  proc connect(s: &socket_t, addr: charp, port: int)
+  {
+  #if POSIX
+      Faio_posix::connect(s, addr, port );
+  #elif WIN32
+      Faio_win32::Connect( s, addr, port );
+  #endif
+  }
+
+
+  //
+  // socket_t
+  //
+  instance Flx_stream::IByteStream[socket_t]
+  {
+    proc read(s: socket_t, len: &int, buf: address, eof: &bool)
+    #if POSIX
+      { Faio_posix::async_read(s, len, buf, eof); }
+    #elif WIN32
+      { Faio_win32::WSARecv(s, len, buf, eof); }
+    #endif
+  }
+
+  instance Flx_stream::OByteStream[socket_t]
+  {
+    proc write(s: socket_t, len: &int, buf: address, eof: &bool)
+    #if POSIX
+      { Faio_posix::async_write(s, len, buf, eof); }
+    #elif WIN32
+      { Faio_win32::WSASend(s, len, buf, eof); }
+    #endif
+  }
+
+  instance Flx_stream::IOByteStream[socket_t] {}
+
+  instance Flx_stream::TerminalIByteStream[socket_t]
+  {
+    proc iclose (s:socket_t)
+    #if POSIX
+      { Faio_posix::shutdown (s,0); Faio_posix::close s; }
+    #else
+      { Faio_win32::closesocket s; }
+    #endif
+  }
+
+  instance Flx_stream::TerminalOByteStream[socket_t]
+  {
+    proc oclose (s:socket_t)
+    #if POSIX
+      { Faio_posix::shutdown (s,1); Faio_posix::close s; }
+    #elif WIN32
+      { Faio_win32::closesocket s; }
+    #endif
+  }
+
+  instance Flx_stream::TerminalIOByteStream[socket_t]
+  {
+    proc ioclose (s:socket_t)
+    #if POSIX
+      {
+        // RF: just close, I don't think any of this stuff is necessary.
+        // I think this is an application level problem.
+        //fprint (cerr,q"STREAM:Closing socket $s\n");
+        //Faio_posix::shutdown(s,2);
+        //Faio::sleep (Faio::sys_clock,5.0);
+        /*
+        var len = 1; var eof = false; var buf = C_hack::malloc(1);
+        Faio_posix::async_read(s, &len, buf, &eof);
+        fprint (cerr,q"STREAM:socket $s, eof=$eof\n");
+        Faio_posix::shutdown(s,0);
+        */
+        Faio_posix::close s;
+      }
+    #elif WIN32
+      { Faio_win32::closesocket s; }
+    #endif
+  }
 }
 
 @head(1,"Felix Async IO tests")
@@ -914,13 +909,13 @@ open Faio_win32;
 var pname = r"\\.\pipe\flx_pipe";
 
 // CreateNamedPipe binding (put in a library somewhere)
-// duplex, byte stream, one instance, 
+// duplex, byte stream, one instance,
 // guessing 256 bytes for input and output buffers
 // 0 default timeout (not using default wait, shouldn't matter)
 // default security attributes
 // associating with the iocp doesn't work, the pipe must be created with
 // FILE_FLAG_OVERLAPPED set in dwOpenMode. Otherwise OVERLAPPED calls block.
-proc CreateNamedPipe: lvalue[WFILE]*string = 
+proc CreateNamedPipe: lvalue[WFILE]*string =
  '$1 = CreateNamedPipe($2.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,\
      PIPE_TYPE_BYTE, 1, 256, 256, 0, NULL);';
 
@@ -995,7 +990,6 @@ public:
            fprintf(stderr, "ConnectNamedPipe FAILED (%i)\\n", err);
          break;
       }
-      
     }
 
     return false;  // let's not get woken, packet still to come (??)
