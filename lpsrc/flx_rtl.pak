@@ -2446,7 +2446,18 @@ void doflx (void *data) {
         void *data = new doflx_data(debug_driver, gcp, pactive, thread_control);
         flx_detached_thread_t dummy;
         if(debug_driver)fprintf(stderr,"Starting new pthread, thread counter= %ld\n",thread_control->thread_count());
-        dummy.init( doflx,data, thread_control);
+        {
+          flx_mutex_t spawner_lock;
+          flx_condv_t spawner_cond;
+          bool spawner_flag = false;
+          flx_mutex_locker_t locktite(spawner_lock);
+          dummy.init( doflx,data, thread_control, 
+            &spawner_lock, &spawner_cond,
+            &spawner_flag
+          );
+          while (!spawner_flag)
+            spawner_cond.wait(&spawner_lock);
+        }
       }
       goto process_active;
 
