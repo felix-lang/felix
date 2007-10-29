@@ -41,6 +41,9 @@ iscr_source = ['lpsrc/flx_pkgconfig.pak']
 @h = tangler("tools/flx_pkgconfig.flx","data")
 @select(h)
 #import <flx.flxh>
+proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;";
+kludge();
+
 open String;
 open List;
 open System;
