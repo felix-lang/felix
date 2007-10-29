@@ -46,6 +46,8 @@ pkg_requires = ['flx_exceptions','flx_gc','flx_pthread']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
 weaver_directory = 'doc/rtl/flx_rtl/'
+xfiles = ["FORCE"]
+
 @doc()
 
 @select(tangler('spkgs/flx.py'))

@@ -1557,13 +1557,23 @@ class PLUGIN(Plugin):
       for pkg in pkgd.keys():
         pkgdict = pkgd[pkg]
     
-        latest_src_time = get_latest_src_time(pkgdict)
-        if latest_src_time == 0:
+        pkg_src_time = get_latest_src_time(pkgdict)
+        #print "LP Pak %-20s changed: %s" % (pkg,fmtime(pkg_src_time))
+
+        # at this stage, extra source files need to be considered
+        xfiles = pkgdict.get("xfiles",[])
+        #print "XFILES="+str(xfiles)
+        xfiles_time = newest_filetime(xfiles)
+        #print "XFILES %-20s changed: %s" % (pkg,fmtime(xfiles_time))
+
+        latest_src_time = max(xfiles_time, pkg_src_time)
+
+        if pkg == 0:
           print "Pak %-20s (virtual)" % pkg
         else:
-          src_time_s = fmtime(latest_src_time)
-          print "Pak %-20s changed: %s" % (pkg,src_time_s)
-    
+          print "Pak %-20s changed: %s" % (pkg,fmtime(latest_src_time))
+
+
         host_stamp=os.path.join("pkg-stamps", pkg+".host")
         latest_host_build_time = filetime(host_stamp)
         if latest_host_build_time == 0:
