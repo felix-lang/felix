@@ -2198,7 +2198,7 @@ class msvc_mixin:
 
   def detect_compiler_options(self, shell, get_stdout):
     self.detect_warning_flags(shell)
-    self.detect_openmp(shell)
+    self.detect_openmp(shell, get_stdout)
     self.construct_compiler_commands(shell, get_stdout)
 
 
