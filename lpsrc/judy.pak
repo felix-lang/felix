@@ -391,8 +391,8 @@ print res; endl;
 
 Judy1Set(j1, word(1000000009), je, pres);
 
-var first: word;
-var last: word;
+var first: word = word 0;
+var last: word = word (-1);
 var n: word;
 
 Judy1First(j1, ptr(first), je, pres);
