@@ -309,6 +309,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_range_failure_t : flx_exception_t {
 };
 
 FLX_EXCEPTIONS_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
+FLX_EXCEPTIONS_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl);
 
 
 // ********************************************************
@@ -1003,8 +1004,6 @@ struct readreq_t {
   schannel_t *chan;
   void *variable;
 };
-
-RTL_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl);
 
 struct flx_trace_t 
 {
@@ -2559,7 +2558,7 @@ void doflx (void *data) {
 
 static void *get_stack_pointer() { unsigned long x; return &x; }
 
-int run_felix_pthread(
+void run_felix_pthread(
   bool debug_driver, 
   flx::gc::generic::gc_profile_t *gcp,
   flx::pthread::thread_control_t *thread_control,

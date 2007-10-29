@@ -342,6 +342,10 @@ GC_EXTERN void *operator new
 #include <cassert>
 #include "flx_gc_private.hpp"
 
+#ifdef max
+#undef max
+#endif
+
 namespace flx {
 namespace gc {
 namespace generic {
@@ -1026,20 +1030,22 @@ void flx_collector_t::scan_object(void *p)
   }
 }
 
+
+
 unsigned long flx_collector_t::impl_collect()
 {
   //if(debug)
-    fprintf(stderr,"Request to collect, thread %lx\n", pthread_self());
+    fprintf(stderr,"Request to collect, thread %lx\n", flx::pthread::get_current_native_thread());
   if (thread_control == NULL || thread_control->world_stop())
   {
     //if(debug)
-      fprintf(stderr,"Collecting, thread %lx\n", pthread_self());
+      fprintf(stderr,"Collecting, thread %lx\n", flx::pthread::get_current_native_thread());
     pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
     mark(mr);
     delete mr;
     unsigned long collected = sweep();
     if(thread_control) thread_control->world_start();
-    fprintf(stderr,"FINISHED collect, thread %lx\n", pthread_self());
+    fprintf(stderr,"FINISHED collect, thread %lx\n", flx::pthread::get_current_native_thread());
     return collected;
   }
   else {
@@ -1083,7 +1089,7 @@ namespace gc {
 namespace collector {
 
 /// Naive thread safe Mark and Sweep Collector.
-struct PTHREAD_EXTERN flx_ts_collector_t : 
+struct GC_EXTERN flx_ts_collector_t : 
   public flx::gc::collector::flx_collector_t
 {
   flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *);

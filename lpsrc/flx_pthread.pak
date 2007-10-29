@@ -52,6 +52,7 @@ PTHREAD_CPPS = [
   "pthread/pthread_monitor",
   "pthread/pthread_sleep_queue",
   "pthread/pthread_work_fifo",
+  "pthread/pthread_thread_control",
 ]
 
 POSIX_PTHREAD_CPPS = [
@@ -144,8 +145,6 @@ threads.
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
 
-// NON PORTABLE TEMPORARY HACK
-#include <pthread.h>
 #include <utility>
 #include <map>
 #include <vector>
@@ -164,6 +163,7 @@ typedef HANDLE flx_native_thread_t;
 typedef pthread_t flx_native_thread_t;
 #endif
 
+flx_native_thread_t PTHREAD_EXTERN get_current_native_thread();
 
 struct thread_data_t { 
   thread_data_t(void *b) : stack_base(b), stack_top(0) {}
@@ -256,6 +256,8 @@ public:
 
 namespace flx { namespace pthread {
 
+flx_native_thread_t get_current_native_thread() { return pthread_self(); }
+
 struct tstart_t
 {
   void (*sr)(void*);
@@ -274,7 +276,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
   if(tc && tc->debug)
-    fprintf(stderr,"Spawned Thread %lx start stack base = %p, tc=%p\n",pthread_self(),stack_base, tc);
+    fprintf(stderr,"Spawned Thread %lx start stack base = %p, tc=%p\n",get_current_native_thread(),stack_base, tc);
   if(tc)tc->add_thread(stack_base);
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;
@@ -363,6 +365,17 @@ flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thr
 }
 
 flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
+}}
+
+@select(tangler('pthread/pthread_thread_control.cpp'))
+#include "pthread_thread.hpp"
+#include <stdio.h>
+#include <cstdlib>
+#include <cassert>
+
+namespace flx { namespace pthread {
+
+static void *get_stack_pointer() { unsigned long x; return &x; }
 
 thread_control_t::thread_control_t (bool d) : 
   do_world_stop(false), thread_counter(0), debug(d)
@@ -380,7 +393,7 @@ int thread_control_t::thread_count()
 void thread_control_t::add_thread(void *stack_base) 
   {
     flx_mutex_locker_t m(stop_mutex);
-    flx_native_thread_t id = pthread_self();
+    flx_native_thread_t id = get_current_native_thread();
     threads.insert (std::make_pair(id, thread_data_t (stack_base)));
     ++thread_counter; 
     if(debug)
@@ -392,7 +405,7 @@ void thread_control_t::add_thread(void *stack_base)
 void thread_control_t::remove_thread() 
   { 
     flx_mutex_locker_t m(stop_mutex);
-    flx_native_thread_t id = pthread_self();
+    flx_native_thread_t id = get_current_native_thread();
     if (threads.erase(id) == 0)
     {
       fprintf(stderr, "Remove thread %lx which is not registered\n", id);
@@ -411,7 +424,7 @@ bool thread_control_t::world_stop()
   {
     stop_mutex.lock();
     if(debug)
-      fprintf(stderr,"Thread %lx Stopping world, threads=%d\n", pthread_self(), thread_counter);
+      fprintf(stderr,"Thread %lx Stopping world, threads=%d\n", get_current_native_thread(), thread_counter);
     if (do_world_stop) {
       stop_mutex.unlock();
       return false; // race! Someone else beat us
@@ -427,7 +440,7 @@ bool thread_control_t::world_stop()
     // this code has to be copied here, we cannot use 'yield' because
     // it would deadlock ourself
     {
-      flx_native_thread_t id = pthread_self();
+      flx_native_thread_t id = get_current_native_thread();
       FLX_SAVE_REGS;
       void *stack_pointer = get_stack_pointer();
       if(debug)
@@ -451,7 +464,7 @@ void thread_control_t::join_all()
   {
     flx_mutex_locker_t m(stop_mutex);
     if(debug)
-      fprintf(stderr,"Thread %lx Joining all\n", pthread_self());
+      fprintf(stderr,"Thread %lx Joining all\n", get_current_native_thread());
     while(do_world_stop || thread_counter>1) {
       unsafe_stop_check();
       stop_guard.wait(&stop_mutex);
@@ -464,7 +477,7 @@ void thread_control_t::join_all()
 void thread_control_t::world_start() 
   {
     if(debug)
-      fprintf(stderr,"Thread %lx Restarting world\n", pthread_self());
+      fprintf(stderr,"Thread %lx Restarting world\n", get_current_native_thread());
     do_world_stop = false;
     stop_mutex.unlock();
     stop_guard.broadcast();
@@ -504,7 +517,7 @@ void thread_control_t::resume()
 void thread_control_t::unsafe_suspend()
 {
   void *stack_pointer = get_stack_pointer();
-  flx_native_thread_t id = pthread_self();
+  flx_native_thread_t id = get_current_native_thread();
   if(debug)
     fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
   thread_registry_t::iterator it = threads.find(id);
@@ -527,8 +540,8 @@ void thread_control_t::unsafe_resume()
   while(do_world_stop) stop_guard.wait(&stop_mutex);
   ++thread_counter;
   if(debug) {
-    flx_native_thread_t id = pthread_self();
-    fprintf(stderr,"Thread %lx resumed, count= %d\n",pthread_self(),thread_counter);
+    flx_native_thread_t id = get_current_native_thread();
+    fprintf(stderr,"Thread %lx resumed, count= %d\n",get_current_native_thread(),thread_counter);
   }
 }
 
@@ -559,16 +572,28 @@ void thread_control_t::yield()
 
 namespace flx { namespace pthread {
 
+flx_native_thread_t get_current_native_thread() { return GetCurrentThread(); }
+
 struct tstart_t
 {
   void (*sr)(void*);
   void *cd;
-  tstart_t(void (*s)(void*),void* c) : sr(s), cd(c) {}
+  thread_control_t *tc;
+  tstart_t(void (*s)(void*),void* c,thread_control_t *t) 
+    : sr(s), cd(c), tc(t) 
+  {}
 };
+
+static void *get_stack_pointer() { unsigned long x; return &x; }
 
 DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
 {
+  void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
+  thread_control_t *tc = ehd -> tc;
+  if(tc && tc->debug)
+    fprintf(stderr,"Spawned Thread %lx start stack base = %p, tc=%p\n",GetCurrentThreadId(),stack_base, tc);
+  if(tc)tc->add_thread(stack_base);
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;
   delete ehd;
@@ -579,6 +604,7 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
     fprintf(stderr,"Uncaught exception in thread\n");
     std::exit(1);
   }
+  if(tc)tc->remove_thread();
   return 0;
 }
 
@@ -590,12 +616,12 @@ void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopya
 
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int 
-flx_detached_thread_t::init(void (*fn)(void*), void *lParam)
+flx_detached_thread_t::init(void (*fn)(void*), void *lParam, thread_control_t *tc)
 {
   DWORD thread_id = 0;
   thr = (HANDLE)CreateThread(NULL, 0, 
     (LPTHREAD_START_ROUTINE)flx_pthread_start_wrapper, 
-    new tstart_t(fn,lParam), 0,
+    new tstart_t(fn,lParam, tc), 0,
     &thread_id
   );  
 
@@ -644,12 +670,12 @@ flx_thread_t::join()
 
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int
-flx_thread_t::init(void (*fn)(void*), void *lParam)
+flx_thread_t::init(void (*fn)(void*), void *lParam, thread_control_t *tc)
 {
   DWORD thread_id = 0;
   thr= (HANDLE)CreateThread(NULL, 0, 
     (LPTHREAD_START_ROUTINE)flx_pthread_start_wrapper, 
-    new tstart_t(fn,lParam), 0,
+    new tstart_t(fn,lParam, tc), 0,
     &thread_id
   );  
 
@@ -664,9 +690,9 @@ flx_thread_t::init(void (*fn)(void*), void *lParam)
 }
 
 // ---- joinable thread wrapper ----------
-flx_thread_wrapper_t::flx_thread_wrapper_t(void (*f)(void*), void *lParam)
+flx_thread_wrapper_t::flx_thread_wrapper_t(void (*f)(void*), void *lParam, thread_control_t*tc)
 {
-  int res = thread.init(f,lParam);
+  int res = thread.init(f,lParam,tc);
   if(res)
   {
     fprintf(stderr,"flx_thread_wrapper_t: FATAL: flx_thread_t.init failed\n");
