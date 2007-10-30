@@ -148,7 +148,7 @@ message_t read_message()
     xcounter2++; 
     if(xcounter2>=niter) run = false;
   }
-  sprintf(buffer, "%d %d TEXT", xcounter & ~1, xcounter); 
+  snprintf(buffer, 30, "%d %d TEXT", xcounter & ~1, xcounter); 
   return buffer;
 }
 
@@ -204,9 +204,13 @@ int main(int argc, char** argv)
   }
   if(argc==3)
   {
-    int tmp = 0;
-    sscanf(argv[2],"%d",&tmp);
-    niter = tmp ; // each loop is 1K transactions
+    // each loop is 1K transactions
+    char* endptr = NULL;
+    niter = strtol(argv[2], &endptr, 0);
+    if (!(endptr && *endptr == '\0')) {
+      printf("invalid number of iterations: '%s'\n", argv[2]);
+      exit(1);
+    }
   }
   try 
   {

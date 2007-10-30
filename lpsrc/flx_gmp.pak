@@ -91,7 +91,7 @@ string flx_mpf_get_str(mpf_class const &a)
   mp_exp_t x;
   std::string s = a.get_str(&x,10,0);
   char b[100];
-  std::sprintf(b,"e%ld",(long)x);
+  std::snprintf(b,100,"e%ld",(long)x);
   return std::string(".")+s+b;
 }
 }}

@@ -1464,7 +1464,7 @@ open Stl::HashMap;
 requires ext_string_hash;
 
 body hexer = """ 
-string hex(int x) { char buf[20]; sprintf(buf,"%x",x); return buf; }
+string hex(int x) { char buf[20]; snprintf(buf,20,"%x",x); return buf; }
 """;
 
 fun hex: int -> string requires hexer;

@@ -51,7 +51,14 @@ int get_cpu_nr()
    while (fgets(line, 16, fp) != NULL) {
 
       if (strncmp(line, "cpu ", 4) && !strncmp(line, "cpu", 3)) {
-         sscanf(line + 3, "%d", &proc_nb);
+         char* entptr = NULL;
+         proc_nb = strtol(line + 3, &endptr, 0);
+
+         if (!(endptr && *endptr == '\0')) {
+           fprinf(stderr, "unable to parse '%s' as an integer in %s\n", line + 3, STAT);
+           exit(1);
+         }
+
          if (proc_nb > cpu_nr)
             cpu_nr = proc_nb;
       }

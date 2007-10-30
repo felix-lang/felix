@@ -1510,10 +1510,10 @@ struct RTL_EXTERN flx_link_failure_t : flx_exception_t {
 };
 
 RTL_EXTERN LIBHANDLE
-flx_load_library(char const *fname);
+flx_load_library(const std::string& filename);
 
 RTL_EXTERN LIBHANDLE
-flx_load_module(char const *fname);
+flx_load_module(const std::string& filename);
 
 /// frame creators.
 
@@ -1550,7 +1550,7 @@ struct RTL_EXTERN flx_dynlink_t
   long refcnt;
 
   // routines
-  void link(char const *filename) throw(flx_link_failure_t);
+  void link(const std::string& filename) throw(flx_link_failure_t);
   void unlink();
   virtual ~flx_dynlink_t();
   flx_dynlink_t();
@@ -1664,7 +1664,7 @@ flx_dynlink_t::flx_dynlink_t() :
 {}
 
 LIBHANDLE
-flx_load_library(char const *filename)
+flx_load_library(const std::string& filename)
 {
   LIBHANDLE library;
   FLX_SET_NOLIBRARY(library);
@@ -1674,7 +1674,7 @@ flx_load_library(char const *filename)
 #if FLX_WIN32
   // stop windows showing err dialogues, ignoring error code.
   (void)SetErrorMode(SEM_NOOPENFILEERRORBOX);  
-  library = LoadLibrary(filename);
+  library = LoadLibrary(filename.c_str());
   if(FLX_CHECK_NOLIBRARY(library)) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
 #else
@@ -1720,7 +1720,7 @@ flx_load_library(char const *filename)
 
     unsigned long link_flags;
     link_flags = NSLINKMODULE_OPTION_PRIVATE | NSLINKMODULE_OPTION_RETURN_ON_ERROR;
-    library = NSLinkModule(bndl_img, filename, link_flags);
+    library = NSLinkModule(bndl_img, filename.c_str(), link_flags);
 
     // even if link failed, we do this
     NSDestroyObjectFileImage(bndl_img);
@@ -1730,7 +1730,7 @@ flx_load_library(char const *filename)
       throw flx_link_failure_t(filename, "NSLinkModule", "failed to link");
 
   #else
-    library = dlopen(filename,RTLD_NOW);
+    library = dlopen(filename.c_str(),RTLD_NOW);
     if(FLX_CHECK_NOLIBRARY(library))
       throw flx_link_failure_t(filename,"dlopen",dlerror());
   #endif
@@ -1740,22 +1740,16 @@ flx_load_library(char const *filename)
 }
 
 LIBHANDLE
-flx_load_module(char const *fname)
+flx_load_module(const std::string& filename)
 {
-  int n = std::strlen(fname)+strlen(FLX_LIB_EXTENSION)+1;
-  char *f = (char*)std::malloc(n);
-  std::strcpy(f,fname);
-  std::strcat(f,FLX_LIB_EXTENSION);
-  LIBHANDLE lib = flx_load_library(f);
-  std::free(f);
-  return lib;
+  return flx_load_library(filename + FLX_LIB_EXTENSION);
 }
 
-void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
+void flx_dynlink_t::link(const std::string& fname) throw(flx_link_failure_t)
 {
   filename=fname;
   library = flx_load_library(fname);
-  //fprintf(stderr,"File %s dlopened at %p ok\n",fname,library);
+  //fprintf(stderr,"File %s dlopened at %p ok\n",fname.c_str(),library);
 
   thread_frame_creator = (thread_frame_creator_t)
     DLSYM(library,create_thread_frame);
@@ -2305,7 +2299,7 @@ int flx::rtl::flx_exception_handler (flx_exception_t *e)
     return 3;
   }
   else
-  if (flx_out_of_memory_t *x = dynamic_cast<flx_out_of_memory_t*>(e))
+  if (dynamic_cast<flx_out_of_memory_t*>(e))
   {
     fprintf(stderr,"Felix Out of Malloc or Specified Max allocation Exceeded");
     return 3;
