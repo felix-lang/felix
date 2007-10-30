@@ -2229,7 +2229,6 @@ async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
 #include "flx_exceptions.hpp"
 
 namespace flx { namespace rtl {
-void RTL_EXTERN print_loc(FILE *ef,flx::rtl::flx_range_srcref_t x,char const *cf, int cl);
 int RTL_EXTERN std_exception_handler (std::exception *e);
 int RTL_EXTERN flx_exception_handler (flx::rtl::flx_exception_t *e);
 }}
