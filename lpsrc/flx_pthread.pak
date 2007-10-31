@@ -286,9 +286,12 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   void *cd = ehd->cd;
   if(ehd->spawner_lock)
   {
-    flx_mutex_locker_t (*ehd->spawner_lock);
+    fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", pthread_self());
+    flx_mutex_locker_t dummy(*ehd->spawner_lock);
+    fprintf(stderr,"Thread %p acquired mutex\n", pthread_self());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->broadcast();
+    fprintf(stderr,"Thread %p releasing mutex\n", pthread_self());
   }
   delete ehd;
   try { 
@@ -1509,7 +1512,10 @@ waitable_bool::wait_until_true()
 void
 waitable_bool::signal_true()
 {
-  finished = true;
+  { // the mutex is required for the memory barrier..
+    flx::pthread::flx_mutex_locker_t    locker(cv_lock);
+    finished = true;
+  }
   finished_cond.signal();
   // do absolutely NOTHING here as a typical use of this class is to 
   // wait for a thread exit and then destruct its resources, which could

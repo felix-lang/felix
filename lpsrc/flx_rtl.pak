@@ -2448,8 +2448,10 @@ void doflx (void *data) {
             &spawner_lock, &spawner_cond,
             &spawner_flag
           );
+          fprintf(stderr,"Thread %p waiting for spawned thread to register itself\n", pthread_self());
           while (!spawner_flag)
             spawner_cond.wait(&spawner_lock);
+          fprintf(stderr,"Thread %p notes spawned thread has registered itself\n", pthread_self());
         }
       }
       goto process_active;
