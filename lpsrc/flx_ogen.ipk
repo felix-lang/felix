@@ -791,21 +791,32 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   bcat s ("\n");
   bcat  s "//ELKHOUND LEXERS\n";
   Hashtbl.iter
-  (fun _ n -> 
+  (fun (parent,e) n ->
+    let display = Flx_display.cal_display syms bbdfns (Some parent) in
+    let display_names =
+      map
+      (fun (i, vslen) -> 
+       try
+       let instname = cpp_instance_name syms bbdfns i [] in
+       "ptr" ^ instname 
+       with _ -> failwith "Can't cal display name"
+       )
+      display
+    in
     let name = "ElkLex_" ^ si n in
     let this_ptr_map = name ^ "_ptr_map" in
     let old_ptr_map = !last_ptr_map in
     last_ptr_map := "&"^this_ptr_map;
-    bcat s ("// DO OFFSETS FOR THIS STUFF!\n");
-    let m = 1 in
-    let offsets = ["offsetof("^name^",get_token)"] in
-    bcat s ("static std::size_t " ^ name ^ "_offsets["^si m^"]={\n  ");
-    bcat s ("  " ^ cat ",\n  " offsets);
+    let offsets = "get_token"::display_names in
+    let offsets = map (fun n-> "offsetof("^name^","^n^")") offsets in
+    bcat s ("static std::size_t " ^ name ^ "_offsets[FLX_PASS_PTF+"^si (length offsets)^"]={\n");
+    bcat s ("  " ^("FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)\n  ")  ^ cat ",\n  " offsets);
     bcat s "\n};\n";
     bcat s ("static gc_shape_t "^name^"_ptr_map ={\n");
     bcat s ("  " ^ old_ptr_map ^ ",\n");
     bcat s ("  \"" ^ name ^ "\",\n");
-    bcat s ("  1,sizeof("^name^"),0,0,"^name^"_offsets,gc_flags_default\n");
+    bcat s ("  1,sizeof("^name^"),0,\n");
+    bcat s ("  FLX_PASS_PTF+"^si (length offsets-1)^","^name^"_offsets,gc_flags_default\n");
     bcat s "};\n"
   )
   syms.lexers 
