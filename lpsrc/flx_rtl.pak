@@ -2415,7 +2415,7 @@ void doflx (void *data) {
     if (ss.fs == terminated) goto cleanup;
 
     //fprintf(stderr, "Thread yielding ..");
-    thread_control->yield();
+    //thread_control->yield();
     //fprintf(stderr, "..Thread resuming!\n");
 
     if (ss.fs == blocked) goto do_async;

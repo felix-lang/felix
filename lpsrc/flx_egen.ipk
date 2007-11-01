@@ -329,7 +329,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let ldisplay = strd (the_display @[ge e]) [`Requires_ptf] in
     let callstr = 
     "(Elk_" ^ si pn ^ pdisplay ^
-    ".apply((new ElkLex_" ^ si ln^ldisplay^")->init()))"
+    ".apply((FLX_NEWP( ElkLex_" ^ si ln^")"^ldisplay^")->init()))"
     in
       (*
       print_endline ("Parse call : " ^ callstr);

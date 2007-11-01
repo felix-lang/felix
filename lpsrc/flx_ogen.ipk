@@ -789,6 +789,43 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   allocable_types
   ;
   bcat s ("\n");
+  bcat  s "//ELKHOUND LEXERS\n";
+  Hashtbl.iter
+  (fun _ n -> 
+    let name = "ElkLex_" ^ si n in
+    let this_ptr_map = name ^ "_ptr_map" in
+    let old_ptr_map = !last_ptr_map in
+    last_ptr_map := "&"^this_ptr_map;
+    bcat s ("// DO OFFSETS FOR THIS STUFF!\n");
+    let m = 1 in
+    let offsets = ["offsetof("^name^",get_token)"] in
+    bcat s ("static std::size_t " ^ name ^ "_offsets["^si m^"]={\n  ");
+    bcat s ("  " ^ cat ",\n  " offsets);
+    bcat s "\n};\n";
+    bcat s ("static gc_shape_t "^name^"_ptr_map ={\n");
+    bcat s ("  " ^ old_ptr_map ^ ",\n");
+    bcat s ("  \"" ^ name ^ "\",\n");
+    bcat s ("  1,sizeof("^name^"),0,0,"^name^"_offsets,gc_flags_default\n");
+    bcat s "};\n"
+  )
+  syms.lexers 
+  ;
+  bcat  s "//ELKHOUND PARSERS\n";
+  Hashtbl.iter
+  (fun _ n -> 
+    let name = "Elk_" ^ si n in
+    let this_ptr_map = name ^ "_ptr_map" in
+    let old_ptr_map = !last_ptr_map in
+    last_ptr_map := "&"^this_ptr_map;
+    bcat s ("// DO OFFSETS PROPERLY! FOR THIS STUFF!\n");
+    bcat s ("static gc_shape_t "^name^"_ptr_map ={\n");
+    bcat s ("  " ^ old_ptr_map ^ ",\n");
+    bcat s ("  \"" ^ name ^ "\",\n");
+    bcat s ("  1,sizeof("^name^"),0,0,0,gc_flags_default\n");
+    bcat s "};\n"
+  )
+  syms.parsers
+  ;
   bcat s ("// Head of shape list\n");
   bcat s ("extern \"C\" FLX_EXPORT gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
   bcat s ("gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
