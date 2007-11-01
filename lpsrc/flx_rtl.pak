@@ -46,7 +46,7 @@ pkg_requires = ['flx_exceptions','flx_gc','flx_pthread']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
 weaver_directory = 'doc/rtl/flx_rtl/'
-xfiles = ["FORCE"]
+xfiles = []
 
 @doc()
 
@@ -2438,7 +2438,8 @@ void doflx (void *data) {
         pactive->push_front(ftx);
         void *data = new doflx_data(debug_driver, gcp, pactive, thread_control);
         flx_detached_thread_t dummy;
-        if(debug_driver)fprintf(stderr,"Starting new pthread, thread counter= %ld\n",thread_control->thread_count());
+        if(debug_driver)
+          fprintf(stderr,"Starting new pthread, thread counter= %ld\n",thread_control->thread_count());
         {
           flx_mutex_t spawner_lock;
           flx_condv_t spawner_cond;
@@ -2448,10 +2449,12 @@ void doflx (void *data) {
             &spawner_lock, &spawner_cond,
             &spawner_flag
           );
-          fprintf(stderr,"Thread %p waiting for spawned thread to register itself\n", pthread_self());
+          if(debug_driver)
+            fprintf(stderr,"Thread %p waiting for spawned thread to register itself\n", pthread_self());
           while (!spawner_flag)
             spawner_cond.wait(&spawner_lock);
-          fprintf(stderr,"Thread %p notes spawned thread has registered itself\n", pthread_self());
+          if (debug_driver)
+            fprintf(stderr,"Thread %p notes spawned thread has registered itself\n", pthread_self());
         }
       }
       goto process_active;

@@ -166,9 +166,10 @@ typedef pthread_t flx_native_thread_t;
 flx_native_thread_t PTHREAD_EXTERN get_current_native_thread();
 
 struct thread_data_t { 
-  thread_data_t(void *b) : stack_base(b), stack_top(0) {}
+  thread_data_t(void *b) : stack_base(b), stack_top(0), active(true) {}
   void *stack_base;
   void *stack_top;
+  bool active;
 };
 
 struct memory_range_t {
@@ -286,12 +287,12 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   void *cd = ehd->cd;
   if(ehd->spawner_lock)
   {
-    fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", pthread_self());
     flx_mutex_locker_t dummy(*ehd->spawner_lock);
-    fprintf(stderr,"Thread %p acquired mutex\n", pthread_self());
+    //fprintf(stderr,"Thread %lx acquired mutex\n", pthread_self());
+    //fprintf(stderr,"Thread %lx notifying spawner it has registered itself\n", pthread_self());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->broadcast();
-    fprintf(stderr,"Thread %p releasing mutex\n", pthread_self());
+    //fprintf(stderr,"Thread %lx releasing mutex\n", pthread_self());
   }
   delete ehd;
   try { 
@@ -423,6 +424,7 @@ void thread_control_t::remove_thread()
     if (threads.erase(id) == 0)
     {
       fprintf(stderr, "Remove thread %lx which is not registered\n", id);
+      std::abort();
     }
     --thread_counter; 
     if(debug)
@@ -444,12 +446,22 @@ bool thread_control_t::world_stop()
       return false; // race! Someone else beat us
     }
     do_world_stop = true;
-    while(thread_counter>1) { 
+    stop_guard.broadcast();
+    while(thread_counter>1) {
       if(debug)
-        fprintf(stderr,"Stopping world: begin wait, threads=%d\n", thread_counter);
+        for(
+          thread_registry_t::iterator it = threads.begin();
+          it != threads.end();
+          ++it
+        )
+        {
+          fprintf(stderr, "Thread = %lx is %s\n",(*it).first, (*it).second.active? "ACTIVE": "SUSPENDED");
+        }
+      if(debug)
+        fprintf(stderr,"Thread %lx Stopping world: begin wait, threads=%d\n",  get_current_native_thread(), thread_counter);
       stop_guard.wait(&stop_mutex);
       if(debug)
-        fprintf(stderr,"Stopping world: checking threads=%d\n", thread_counter);
+        fprintf(stderr,"Thread %lx Stopping world: checking threads=%d\n", get_current_native_thread(), thread_counter);
     }
     // this code has to be copied here, we cannot use 'yield' because
     // it would deadlock ourself
@@ -518,12 +530,16 @@ memory_ranges_t *thread_control_t::get_block_list()
 void thread_control_t::suspend()
 {
   flx_mutex_locker_t m(stop_mutex);
+  if(debug)
+    fprintf(stderr,"suspend %lx\n", pthread_self());
   unsafe_suspend();
 }
 
 void thread_control_t::resume()
 {
   flx_mutex_locker_t m(stop_mutex);
+  if(debug)
+    fprintf(stderr,"resume %lx\n", pthread_self());
   unsafe_resume();
 }
 
@@ -533,48 +549,65 @@ void thread_control_t::unsafe_suspend()
   void *stack_pointer = get_stack_pointer();
   flx_native_thread_t id = get_current_native_thread();
   if(debug)
-    fprintf(stderr,"Yield found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
+    fprintf(stderr,"Suspend found world stop, thread=%lx, stack=%p!\n",id, stack_pointer);
   thread_registry_t::iterator it = threads.find(id);
   if(it == threads.end()) {
     if(debug)
-      fprintf(stderr,"Yield::Cannot find thread %lx in registry\n",id);
+      fprintf(stderr,"Suspend::Cannot find thread %lx in registry\n",id);
       abort();
   }
   (*it).second.stack_top = stack_pointer;
+  (*it).second.active = false;
   if(debug)
     fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
   --thread_counter;
   if(debug)
-    fprintf(stderr,"Yield thread count now %d\n",thread_counter);
+    fprintf(stderr,"Suspend: thread count now %d\n",thread_counter);
+  stop_guard.broadcast();
 }
 
 void thread_control_t::unsafe_resume()
 {
+  if(debug)
+    fprintf(stderr,"Unsafe resume %lx\n", pthread_self());
   stop_guard.broadcast();
   while(do_world_stop) stop_guard.wait(&stop_mutex);
   ++thread_counter;
+  flx_native_thread_t id = get_current_native_thread();
+  thread_registry_t::iterator it = threads.find(id);
+  if(it == threads.end()) {
+    if(debug)
+      fprintf(stderr,"Suspend::Cannot find thread %lx in registry\n",id);
+      abort();
+  }
+  (*it).second.active = true;
   if(debug) {
     flx_native_thread_t id = get_current_native_thread();
     fprintf(stderr,"Thread %lx resumed, count= %d\n",get_current_native_thread(),thread_counter);
   }
+  stop_guard.broadcast();
 }
 
 // mutex already held
 void thread_control_t::unsafe_stop_check()
 {
-    if (do_world_stop)
-    {
-      FLX_SAVE_REGS;
-      unsafe_suspend();
-      unsafe_resume();
-    }
+  if (do_world_stop)
+  {
+    if(debug)
+      fprintf(stderr,"Thread %lx Unsafe stop check (world_stop detected) \n", pthread_self());
+    FLX_SAVE_REGS;
+    unsafe_suspend();
+    unsafe_resume();
+  }
 }
 
 void thread_control_t::yield() 
-  {
-    flx_mutex_locker_t m(stop_mutex);
-    unsafe_stop_check();
-  }
+{
+  flx_mutex_locker_t m(stop_mutex);
+  if(debug)
+    fprintf(stderr,"Yield %lx\n", pthread_self());
+  unsafe_stop_check();
+}
 
 }}
 
@@ -1826,7 +1859,9 @@ module Pthread
     {
     FLX_SAVE_REGS;
     PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"READ:DQ\\n");
     *$2 = (?1*)($1->dequeue());
+    //fprintf(stderr,"DONE READ:DQ\\n");
     PTF gcp->collector->get_thread_control()->resume();
     }
   """;
@@ -1841,7 +1876,9 @@ module Pthread
     {
     FLX_SAVE_REGS;
     PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"WRITE:NQ\\n");
     $1->enqueue((void*)$2);
+    //fprintf(stderr,"DONE WRITE:NQ\\n");
     PTF gcp->collector->get_thread_control()->resume();
     }
   """;
