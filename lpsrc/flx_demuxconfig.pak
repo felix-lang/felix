@@ -30,26 +30,27 @@ flx_requires_driver: flx_arun
 @select(h)
 
 DEMUXRTL_INTERFACES = [
- 'demux/flx_demux.hpp',       # portable
- 'demux/demux_demuxer.hpp',       # portable
- 'demux/demux_posix_demuxer.hpp', # posix
- 'demux/demux_timer_queue.hpp',   # portable
- 'demux/demux_quitter.hpp',       # portable
- 'demux/demux_posix_timer_queue.hpp',   # posix
- 'demux/demux_pfileio.hpp',       # posix
- 'demux/demux_select_demuxer.hpp',# posix
- 'demux/demux_iocp_demuxer.hpp',  # win32 (monolithic)
- 'demux/demux_overlapped.hpp',    # win32
- 'demux/demux_win_timer_queue.hpp',  # win32
- 'demux/demux_kqueue_demuxer.hpp',# osx(10.3 onwards)/bsd
- 'demux/demux_evtport_demuxer.hpp',# solaris (9 onwards?)
- 'demux/demux_epoll_demuxer.hpp',# linux (>= 2.6)
- 'demux/demux_sockety.hpp',       # posix
- 'demux/demux_self_piper.hpp',    # posix
- 'demux/demux_wself_piper.hpp',   # win32
+ 'demux/flx_demux_config.hpp',        # portable
+ 'demux/flx_demux.hpp',               # portable
+ 'demux/demux_demuxer.hpp',           # portable
+ 'demux/demux_posix_demuxer.hpp',     # posix
+ 'demux/demux_timer_queue.hpp',       # portable
+ 'demux/demux_quitter.hpp',           # portable
+ 'demux/demux_posix_timer_queue.hpp', # posix
+ 'demux/demux_pfileio.hpp',           # posix
+ 'demux/demux_select_demuxer.hpp',    # posix
+ 'demux/demux_iocp_demuxer.hpp',      # win32 (monolithic)
+ 'demux/demux_overlapped.hpp',        # win32
+ 'demux/demux_win_timer_queue.hpp',   # win32
+ 'demux/demux_kqueue_demuxer.hpp',    # osx(10.3 onwards)/bsd
+ 'demux/demux_evtport_demuxer.hpp',   # solaris (9 onwards?)
+ 'demux/demux_epoll_demuxer.hpp',     # linux (>= 2.6)
+ 'demux/demux_sockety.hpp',           # posix
+ 'demux/demux_self_piper.hpp',        # posix
+ 'demux/demux_wself_piper.hpp',       # win32
  'demux/demux_ts_select_demuxer.hpp',
- 'demux/demux_poll_demuxer.hpp',  # linux, 10.3 (select impl), 10.4 real.
- 'demux/demux_ts_poll_demuxer.hpp',  # idem
+ 'demux/demux_poll_demuxer.hpp',      # linux, 10.3 (select impl), 10.4 real.
+ 'demux/demux_ts_poll_demuxer.hpp',   # idem
 ]
 
 DEMUX_CPPS = [

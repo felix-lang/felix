@@ -317,6 +317,7 @@ def erasedir(d):
   except EnvironmentError: pass
 
 def filecopy(a,b):
+  mkdirs(os.path.dirname(b))
   try:
     import shutil
   except ImportError:
@@ -846,6 +847,7 @@ TARGETCXX=None
 
 FLX_DIR=os.environ.get("FLX_DIR",os.curdir)
 FLX_LPARCHIVE=os.environ.get("FLX_LPARCHIVE",os.curdir)
+FLX_RTL_DIR=os.path.join('lib', 'rtl')
 
 ALL_PHASES=["build","host","target","run"]
 
@@ -988,6 +990,7 @@ if FLX_DIR=='': FLX_DIR = os.curdir
 if FLX_LPARCHIVE=='': FLX_LPARCHIVE = os.curdir
 print "FLX_DIR="+FLX_DIR
 print "FLX_LPARCHIVE="+FLX_LPARCHIVE
+print "FLX_RTL_DIR="+FLX_RTL_DIR
 
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
@@ -1074,6 +1077,7 @@ if "build" in PHASES:
     pa(f,this,"build_model")
     pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
+    pa(f,this,"FLX_RTL_DIR")
     pr(f,"")
  
     print "WRITE STEP 2"
@@ -1214,6 +1218,7 @@ if "host" in PHASES:
     pa(f,this,"host_model")
     pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
+    pa(f,this,"FLX_RTL_DIR")
     pr(f,"")
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
@@ -1428,6 +1433,7 @@ if "target" in PHASES:
     pa(f,this,"HAVE_PKGCONFIG")
     pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
+    pa(f,this,"FLX_RTL_DIR")
     pr(f,"")
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")

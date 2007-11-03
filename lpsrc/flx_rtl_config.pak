@@ -3,6 +3,14 @@
 @execfile('config'+os.sep+'flx_data.py')
 
 @select(tangler('spkgs/flx_rtl_config.py'))
+RTL_INTERFACES = [
+  "rtl/flx_rtl_config.hpp",
+  "rtl/flx_host_config.hpp",
+  "rtl/flx_meta.hpp",
+]
+
+rtl_interfaces = RTL_INTERFACES
+
 iscr_source = ['lpsrc/flx_rtl_config.pak']
 weaver_directory = 'doc/rtl/flx_rtl/'
 @doc()

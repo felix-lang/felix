@@ -33,7 +33,7 @@ if WIN32:
 else:
   GLOB_CPPS = []
 
-GLOB_INTERFACES = ['unixem/flx_glob.hpp']
+GLOB_INTERFACES = ['unixem/flx_glob_config.hpp', 'unixem/flx_glob.hpp']
 
 cpp_cpps = GLOB_CPPS 
 rtl_interfaces = GLOB_INTERFACES
@@ -44,7 +44,7 @@ build_macro = "GLOB"
 weaver_directory = 'doc/rtl/flx_glob/'
 @tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
-@h=tangler('rtl/flx_glob_config.hpp')
+@h=tangler('unixem/flx_glob_config.hpp')
 @select(h)
 #ifndef __FLX_GLOB_CONFIG_H__
 #define __FLX_GLOB_CONFIG_H__

@@ -6718,7 +6718,7 @@ void trashingDeleteArr(void *blk, size_t size);
 // to which a void* can be cast so the result can be
 // input to a hashing function
 
-#include "../rtl/flx_elk_config.hpp"
+#include "flx_elk_config.hpp"
 typedef FLX_RAWADDRESS SM_RAWADDRESS;
 
 // byte

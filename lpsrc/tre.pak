@@ -8,6 +8,7 @@
 @select(h)
 
 rtl_interfaces = [
+  'tre/flx_target_tre_config.hpp',
   'tre/tre_gettext.hpp',
   'tre/tre_regex.hpp',
   'tre/tre_ast.hpp',
@@ -109,7 +110,7 @@ module Tre
   }
 }
 
-@h=tangler('rtl/flx_target_tre_config.hpp')
+@h=tangler('tre/flx_target_tre_config.hpp')
 @select(h)
 #ifndef __FLX_TARGET_TRE_CONFIG_H__
 #define __FLX_TARGET_TRE_CONFIG_H__
@@ -3957,7 +3958,11 @@ tre_version(void)
   if (str[0] == 0)
     {
       tre_config(TRE_CONFIG_VERSION, &version);
+#ifdef _WIN32
+      _snprintf(str, 256, "TRE %s (GPL)", version);
+#else
       snprintf(str, 256, "TRE %s (GPL)", version);
+#endif
     }
   return str;
 }

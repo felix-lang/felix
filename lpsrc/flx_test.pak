@@ -118,6 +118,7 @@ messages.
 #include <map>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 #include "flx_rtl.hpp"
 #include "flx_collector.hpp"
@@ -140,16 +141,15 @@ int xcounter2 = 0;
 bool run = true;
 message_t read_message() 
 {
-  char buffer[30];
-  memset(buffer,0,30);
   ++ xcounter;
   if (xcounter > 1000) { 
     xcounter = 1; 
     xcounter2++; 
     if(xcounter2>=niter) run = false;
   }
-  snprintf(buffer, 30, "%d %d TEXT", xcounter & ~1, xcounter); 
-  return buffer;
+  stringstream ss;
+  ss << (xcounter & ~1) << " " << xcounter << " TEXT";
+  return ss.str();
 }
 
 

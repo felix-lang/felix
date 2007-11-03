@@ -120,9 +120,11 @@ weaver_directory = "doc/sdl/"
 @select(tangler('spkgs/sdl_drivers.py'))
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
-  DRIVERS = [
-    ('static','rtl/flx_arun','bin/flx_arun',[]),
-    ('dynamic','rtl/flx_arun','bin/flx_arun',[]),
+  STATIC_DRIVERS = [
+    ('rtl/flx_arun','lib'),
+  ]
+  DYNAMIC_DRIVERS = [
+    ('rtl/flx_arun','bin/flx_arun'),
   ]
   DRLIBS = [
    'libflx_async',
@@ -134,7 +136,8 @@ if HAVE_SDL:
    'libflx_judy',
    ]
 
-  drivers = DRIVERS
+  static_drivers = STATIC_DRIVERS
+  dynamic_drivers = DYNAMIC_DRIVERS
   drivers_require_libs = DRLIBS
   pkg_requires = ['flx_rtl','flx_async','faio','demux','flx_pthread','sdl']
   cflags = SDL_CFLAGS

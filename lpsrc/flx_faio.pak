@@ -34,11 +34,12 @@ Requires: demux
 @h = tangler('spkgs/faio.py')
 @select(h)
 FAIORTL_INTERFACES = [
- 'faio/faio_asyncio.hpp',
- 'faio/faio_job.hpp',
- 'faio/faio_timer.hpp',
- 'faio/faio_posixio.hpp',
- 'faio/faio_winio.hpp',
+  'faio/flx_faio_config.hpp',
+  'faio/faio_asyncio.hpp',
+  'faio/faio_job.hpp',
+  'faio/faio_timer.hpp',
+  'faio/faio_posixio.hpp',
+  'faio/faio_winio.hpp',
 ]
 
 FAIO_CPPS = [
@@ -76,7 +77,7 @@ build_macro = "FAIO"
 weaver_directory = 'doc/rtl/flx_faio/'
 tmpdir = ['faio']
 
-@h=tangler('rtl/flx_faio_config.hpp')
+@h=tangler('faio/flx_faio_config.hpp')
 @select(h)
 #ifndef __FLX_FAIO_CONFIG_H__
 #define __FLX_FAIO_CONFIG_H__

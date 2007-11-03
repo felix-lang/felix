@@ -30,16 +30,17 @@ Requires: flx_gc
 @select(h)
 
 PTHREADRTL_INTERFACES = [
- 'pthread/pthread_thread.hpp',        # portable
- 'pthread/pthread_win_posix_condv_emul.hpp',         # win32 and posix
- 'pthread/pthread_mutex.hpp',         # portable
- 'pthread/pthread_counter.hpp',       # portable
- 'pthread/pthread_waitable_bool.hpp', # portable
- 'pthread/pthread_condv.hpp',         # portable
- 'pthread/pthread_semaphore.hpp',     # portable
- 'pthread/pthread_monitor.hpp',       # portable
- 'pthread/pthread_sleep_queue.hpp',   # portable
- 'pthread/pthread_work_fifo.hpp',     # portable
+  'pthread/flx_pthread_config.hpp',           # portable
+  'pthread/pthread_thread.hpp',               # portable
+  'pthread/pthread_win_posix_condv_emul.hpp', # win32 and posix
+  'pthread/pthread_mutex.hpp',                # portable
+  'pthread/pthread_counter.hpp',              # portable
+  'pthread/pthread_waitable_bool.hpp',        # portable
+  'pthread/pthread_condv.hpp',                # portable
+  'pthread/pthread_semaphore.hpp',            # portable
+  'pthread/pthread_monitor.hpp',              # portable
+  'pthread/pthread_sleep_queue.hpp',          # portable
+  'pthread/pthread_work_fifo.hpp',            # portable
 ]
 
 PTHREAD_CPPS = [
@@ -102,7 +103,7 @@ build_macro = "PTHREAD"
 weaver_directory = 'doc/rtl/flx_pthread/'
 tmpdir = ['pthread']
 
-@h=tangler('rtl/flx_pthread_config.hpp')
+@h=tangler('pthread/flx_pthread_config.hpp')
 @select(h)
 #ifndef __FLX_PTHREAD_CONFIG_H__
 #define __FLX_PTHREAD_CONFIG_H__
@@ -207,6 +208,19 @@ public:
     memory_ranges_t *get_block_list(); // called owns result and should delete it
 };
 
+struct tstart_t
+{
+  void (*sr)(void*);
+  void *cd;
+  thread_control_t *tc;
+  flx_mutex_t *spawner_lock;
+  flx_condv_t *spawner_cond;
+  bool *spawner_flag;
+
+  tstart_t(void (*s)(void*),void* c,thread_control_t *t, flx_mutex_t *sl, flx_condv_t *sc, bool *sf) 
+    : sr(s), cd(c), tc(t), spawner_lock(sl), spawner_cond(sc), spawner_flag(sf)
+  {}
+};
 
 // a class for threads that can't be joined. upon exit all their resources
 // are freed. they just evaporate. probably the best type of thread.
@@ -259,20 +273,6 @@ namespace flx { namespace pthread {
 
 flx_native_thread_t get_current_native_thread() { return pthread_self(); }
 
-struct tstart_t
-{
-  void (*sr)(void*);
-  void *cd;
-  thread_control_t *tc;
-  flx_mutex_t *spawner_lock;
-  flx_condv_t *spawner_cond;
-  bool *spawner_flag;
-
-  tstart_t(void (*s)(void*),void* c,thread_control_t *t, flx_mutex_t *sl, flx_condv_t *sc, bool *sf) 
-    : sr(s), cd(c), tc(t), spawner_lock(sl), spawner_cond(sc), spawner_flag(sf)
-  {}
-};
-
 static void *get_stack_pointer() { unsigned long x; return &x; }
 
 extern "C" void *flx_pthread_start_wrapper(void *e)
@@ -288,11 +288,11 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   if(ehd->spawner_lock)
   {
     flx_mutex_locker_t dummy(*ehd->spawner_lock);
-    //fprintf(stderr,"Thread %lx acquired mutex\n", pthread_self());
-    //fprintf(stderr,"Thread %lx notifying spawner it has registered itself\n", pthread_self());
+    //fprintf(stderr,"Thread %lx acquired mutex\n", get_current_native_thread());
+    //fprintf(stderr,"Thread %lx notifying spawner it has registered itself\n", get_current_native_thread());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->broadcast();
-    //fprintf(stderr,"Thread %lx releasing mutex\n", pthread_self());
+    //fprintf(stderr,"Thread %lx releasing mutex\n", get_current_native_thread());
   }
   delete ehd;
   try { 
@@ -319,7 +319,8 @@ flx_detached_thread_t::init(void (*start)(void*), void* udat, thread_control_t *
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  int res = pthread_create(&thr, &attr, flx_pthread_start_wrapper, new tstart_t(start, udat, tc, m,c,flag));
+  int res = pthread_create(&thr, &attr, flx_pthread_start_wrapper, 
+    new tstart_t(start, udat, tc, m,c,flag));
   if(res)
   {
      fprintf(stderr, "WARNING: flx_detached_thread_t: pthread_create failed: %s\n",
@@ -339,7 +340,8 @@ void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 int 
 flx_thread_t::init(void (*start)(void*), void* udat, thread_control_t*tc)
 {
-  int res = pthread_create(&thr, NULL, flx_pthread_start_wrapper, new tstart_t(start, udat, tc,NULL,NULL,NULL));
+  int res = pthread_create(&thr, NULL, flx_pthread_start_wrapper, 
+    new tstart_t(start, udat, tc,NULL,NULL,NULL));
   if(res)
   {
      fprintf(stderr, "WARNING: flx_thread_t: pthread_create failed: %s\n",
@@ -531,7 +533,7 @@ void thread_control_t::suspend()
 {
   flx_mutex_locker_t m(stop_mutex);
   if(debug)
-    fprintf(stderr,"suspend %lx\n", pthread_self());
+    fprintf(stderr,"suspend %lx\n", get_current_native_thread());
   unsafe_suspend();
 }
 
@@ -539,7 +541,7 @@ void thread_control_t::resume()
 {
   flx_mutex_locker_t m(stop_mutex);
   if(debug)
-    fprintf(stderr,"resume %lx\n", pthread_self());
+    fprintf(stderr,"resume %lx\n", get_current_native_thread());
   unsafe_resume();
 }
 
@@ -569,7 +571,7 @@ void thread_control_t::unsafe_suspend()
 void thread_control_t::unsafe_resume()
 {
   if(debug)
-    fprintf(stderr,"Unsafe resume %lx\n", pthread_self());
+    fprintf(stderr,"Unsafe resume %lx\n", get_current_native_thread());
   stop_guard.broadcast();
   while(do_world_stop) stop_guard.wait(&stop_mutex);
   ++thread_counter;
@@ -594,7 +596,7 @@ void thread_control_t::unsafe_stop_check()
   if (do_world_stop)
   {
     if(debug)
-      fprintf(stderr,"Thread %lx Unsafe stop check (world_stop detected) \n", pthread_self());
+      fprintf(stderr,"Thread %lx Unsafe stop check (world_stop detected) \n", get_current_native_thread());
     FLX_SAVE_REGS;
     unsafe_suspend();
     unsafe_resume();
@@ -605,7 +607,7 @@ void thread_control_t::yield()
 {
   flx_mutex_locker_t m(stop_mutex);
   if(debug)
-    fprintf(stderr,"Yield %lx\n", pthread_self());
+    fprintf(stderr,"Yield %lx\n", get_current_native_thread());
   unsafe_stop_check();
 }
 
@@ -620,16 +622,6 @@ void thread_control_t::yield()
 namespace flx { namespace pthread {
 
 flx_native_thread_t get_current_native_thread() { return GetCurrentThread(); }
-
-struct tstart_t
-{
-  void (*sr)(void*);
-  void *cd;
-  thread_control_t *tc;
-  tstart_t(void (*s)(void*),void* c,thread_control_t *t) 
-    : sr(s), cd(c), tc(t) 
-  {}
-};
 
 static void *get_stack_pointer() { unsigned long x; return &x; }
 
@@ -663,12 +655,13 @@ void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopya
 
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int 
-flx_detached_thread_t::init(void (*fn)(void*), void *lParam, thread_control_t *tc)
+flx_detached_thread_t::init(void (*start)(void*), void *lParam, thread_control_t *tc,
+  flx_mutex_t * m,flx_condv_t *c,bool *flag)
 {
   DWORD thread_id = 0;
   thr = (HANDLE)CreateThread(NULL, 0, 
     (LPTHREAD_START_ROUTINE)flx_pthread_start_wrapper, 
-    new tstart_t(fn,lParam, tc), 0,
+    new tstart_t(start,lParam, tc, m, c, flag), 0,
     &thread_id
   );  
 
@@ -722,7 +715,7 @@ flx_thread_t::init(void (*fn)(void*), void *lParam, thread_control_t *tc)
   DWORD thread_id = 0;
   thr= (HANDLE)CreateThread(NULL, 0, 
     (LPTHREAD_START_ROUTINE)flx_pthread_start_wrapper, 
-    new tstart_t(fn,lParam, tc), 0,
+    new tstart_t(fn,lParam, tc,NULL,NULL,NULL), 0,
     &thread_id
   );  
 

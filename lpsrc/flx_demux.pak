@@ -6,7 +6,7 @@
 #// a few of the demuxers.
 ##define DEMUX_EXTERN
 
-@h=tangler('rtl/flx_demux_config.hpp')
+@h=tangler('demux/flx_demux_config.hpp')
 @select(h)
 #ifndef __FLX_DEMUX_CONFIG_H__
 #define __FLX_DEMUX_CONFIG_H__

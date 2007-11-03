@@ -19,6 +19,11 @@ cpp_cpps = [
   "rtl/flx_exceptions",
 ]
 
+rtl_interfaces = [
+  'rtl/flx_exceptions_config.hpp',
+  'rtl/flx_exceptions.hpp',
+]
+
 pkg_requires = ['flx_rtl_config']
 provides_lib = "libflx_exceptions"
 iscr_source = ['lpsrc/flx_rtl.pak']
@@ -39,7 +44,19 @@ RTL_CPPS = [
   "rtl/flx_main",
 ]
 
+RTL_INTERFACES = [
+  "rtl/flx_rtl.hpp",
+	'rtl/flx_compiler_support_headers.hpp',
+	'rtl/flx_compiler_support_bodies.hpp',
+  'rtl/flx_dynlink.hpp',
+	'rtl/flx_i18n.hpp',
+	'rtl/flx_ioutil.hpp',
+	'rtl/flx_strutil.hpp',
+	'rtl/flx_executil.hpp',
+]
+
 cpp_cpps = RTL_CPPS
+rtl_interfaces = RTL_INTERFACES
 provides_lib = "libflx"
 lib_requires = ['libflx_exceptions','libflx_gc','libflx_judy','libflx_pthread']
 pkg_requires = ['flx_exceptions','flx_gc','flx_pthread']
@@ -64,13 +81,16 @@ build_macro = "ASYNC"
 @doc()
 
 @select(tangler('spkgs/flx_drivers.py'))
-DRIVERS = [
-  ('static','rtl/flx_run','',[]),
-  ('dynamic','rtl/flx_run','bin/flx_run',[]),
-  ('static','test/drivers/flx_perf_drv1','',[]),
-  ('dynamic','test/drivers/flx_perf_drv1','test/drivers/flx_perf_drv1',[]),
-  ('static','test/drivers/mickey_mouse','',[]),
-  ('dynamic','test/drivers/mickey_mouse','bin/mickey_mouse',[]),
+STATIC_DRIVERS = [
+  ('rtl/flx_run', 'lib'),
+  ('test/drivers/flx_perf_drv1', ''),
+  ('test/drivers/mickey_mouse', ''),
+]
+
+DYNAMIC_DRIVERS = [
+  ('rtl/flx_run','bin/flx_run'),
+  ('test/drivers/flx_perf_drv1','test/drivers/flx_perf_drv1'),
+  ('test/drivers/mickey_mouse','bin/mickey_mouse'),
 ]
 
 DRLIBS = [
@@ -80,7 +100,8 @@ DRLIBS = [
   'libflx_judy',
   ]
 
-drivers = DRIVERS
+static_drivers = STATIC_DRIVERS
+dynamic_drivers = DYNAMIC_DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_rtl','flx_pthread','flx_gc', 'flx_exceptions']
 lib_requires = ['libdemux','libflx_pthread','libflx','libflx_judy', 'libflx_exceptions']
@@ -88,9 +109,12 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 @doc()
 
 @select(tangler('spkgs/flx_async_drivers.py'))
-DRIVERS = [
-  ('static','rtl/flx_arun','',[]),
-  ('dynamic','rtl/flx_arun','bin/flx_arun',[]),
+STATIC_DRIVERS = [
+  ('rtl/flx_arun',''),
+]
+
+DYNAMIC_DRIVERS = [
+  ('rtl/flx_arun','bin/flx_arun'),
 ]
 
 DRLIBS = [
@@ -104,7 +128,8 @@ DRLIBS = [
   'libflx_exceptions',
   ]
 
-drivers = DRIVERS
+static_drivers = STATIC_DRIVERS
+dynamic_drivers = DYNAMIC_DRIVERS
 drivers_require_libs = DRLIBS
 pkg_requires = ['flx_gc','flx_rtl','flx_pthread','flx_async','demux','faio']
 iscr_source = ['lpsrc/flx_rtl.pak']
@@ -2450,11 +2475,11 @@ void doflx (void *data) {
             &spawner_flag
           );
           if(debug_driver)
-            fprintf(stderr,"Thread %p waiting for spawned thread to register itself\n", pthread_self());
+            fprintf(stderr,"Thread %p waiting for spawned thread to register itself\n", get_current_native_thread());
           while (!spawner_flag)
             spawner_cond.wait(&spawner_lock);
           if (debug_driver)
-            fprintf(stderr,"Thread %p notes spawned thread has registered itself\n", pthread_self());
+            fprintf(stderr,"Thread %p notes spawned thread has registered itself\n", get_current_native_thread());
         }
       }
       goto process_active;

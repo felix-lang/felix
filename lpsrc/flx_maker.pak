@@ -357,81 +357,36 @@ class PLUGIN(Plugin):
         if not quiet: print("filecopy "+src+" -> "+dst)
         filecopy(src,dst)
 
-@select(tangler('mkplugins/copy_hpp2rtl.py'))
-class PLUGIN(Plugin):
-  name = 'copy_hpp2rtl'
-
-  def runme(self, HPPS):
-    for f in HPPS:
-      dst = os.path.join('rtl', os.path.basename(f))
-      src = string.replace(f,"/",os.sep)
-      if filetime(src) > filetime (dst):
-        if not quiet: print("filecopy "+src+" -> "+dst)
-        filecopy(src,dst)
-
 @select(tangler('mkplugins/build_ocaml_grammar.py'))
 class PLUGIN(Plugin):
   name = 'build_ocaml_grammar'
 
-  def runme(self, pkg, LEXS, PARSES, PGENPARSES,DYPARSES, force):
+  def runme(self, pkg, LEXS, PARSES, PGENPARSES,DYPARSES):
     if not (LEXS or PARSES or PGENPARSES or DYPARSES):
-      return force
+      return
 
     print "CAML BUILDING GRAMMAR", pkg
 
-    # STEP 2: Generate lexers
-    for lex in LEXS:
-      file = string.replace(lex,'/',os.sep)
-      if not force:
+    if LEXS:
+      HOST_OCAML.gen_lexer(vxqt, LEXS,
+          outdir='build')
 
-        #print "Checking lexer time stamps"
-        #print file+".mll time=",filetime(file+'.mll')
-        #print file+".ml time=",filetime(file+'.ml')
-        #if filetime(file+'.mll') > filetime(file+'.ml'):
-        #  print file+".mll is NEWER: run ocamllex"
-        #else:
-        #  print file+".mll is OLDER: nothing to do"
+    if PARSES:
+      HOST_OCAML.gen_parser(vxqt, PARSES,
+          outdir='build')
 
-        if filetime(file+'.mll') > filetime(file+'.ml'): force = 1
-      else:
-        print "Lexer build FORCED"
-      if force: vxqt(OCAMLLEX + file + '.mll')
+    if PGENPARSES:
+      HOST_OCAML.gen_pgen_parser(vxqt, PGENPARSES,
+          outdir='build')
 
-    # STEP 3: Generate parsers
-    for parse in PARSES:
-      file = string.replace(parse,'/',os.sep)
-      if not force:
-        if filetime(file+'.mly') > filetime(file+'.ml'): force = 1
-      if force:
-        vxqt(OCAMLYACC + ' -v '+ file + '.mly')
-        f = open(file + '.output')
-        try:
-          for line in f:
-            if 'conflict' in line:
-              raise MakeError('conflict in grammar!')
-        finally:
-          f.close()
+    if DYPARSES:
+      HOST_OCAML.gen_dypgen_parser(vxqt, DYPARSES,
+          FLAGS=['--prio-pt', '--pv-obj', '--noemit-token-type'],
+          outdir='build')
 
-    # STEP 3: Generate parsers (pgen)
-    for parse in PGENPARSES:
-      file = string.replace(parse,'/',os.sep)
-      if not force:
-        if filetime(file+'.dyp') > filetime(file+'.ml'): force = 1
-      if force:
-        vxqt("bin" + os.sep + "pgen " + file + ".dyp")
-
-    # STEP 3: Generate parsers (dypgen)
-    for parse in DYPARSES:
-      file = string.replace(parse,'/',os.sep)
-      if not force:
-        if filetime(file+'.dyp') > filetime(file+'.ml'): force = 1
-      if force:
-        vxqt("bin" + os.sep + "dypgen --prio-pt --pv-obj --noemit-token-type " + file + ".dyp")
 
     if PARSES: # only works on ocamlyacc grammars ..
       plugins['extract_grammar']()
-
-    return force
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_modules.py'))
@@ -439,49 +394,29 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_ocaml_modules'
     
-  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES, force):
+  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES):
     if not (INTERFACES or IMPLEMENTATIONS):
-      return force
+      return []
 
     print "CAML COMPILING", pkg
 
-    # STEP 4: Compile ocaml interfaces
-    for interface in INTERFACES:
-      file = string.replace(interface,'/',os.sep)
-      if not force:
-        if filetime(file+'.mli') > filetime(file+'.cmi'): force = 1
-      if force:
-        pack = ""
-        for path, packed, parts in PACKS:
-          if interface in parts:
-            pack = " -for-pack " + path
-        vxqt(OCAMLC + ' ' + INCLUDES + ' -I ' + os.path.dirname(file) + ' ' + pack + ' -c ' + file + '.mli')
+    kwds = dict(
+      outdir='build',
+      include_paths=[os.path.join('build', i) for i in INCLUDES],
+      packs=PACKS,
+      debug=debug or "debug" in options,
+      profile="profile" in options,
+      optimise="optimise_felix" in options,
+    )
 
-    # STEP 5: Compile ocaml implementations
-    for implementation in IMPLEMENTATIONS:
-      file = string.replace(implementation,'/',os.sep)
-      if not force:
-        if filetime(file+'.ml') > filetime(file + OCAML_OBJECT_EXTENSION): 
-          force = 1
-      if force:
-        pack = ""
-        for path, packed, parts in PACKS:
-          if implementation in parts:
-            pack = " -for-pack " + path
-        vxqt(OCAMLOPT + ' '+ INCLUDES + ' -I ' + os.path.dirname(file) + ' ' + pack + ' -c ' + file +'.ml')
+    HOST_OCAML.compile_interface(vxqt, INTERFACES, **kwds)
 
-    # STEP 5a -- pack
-    for path, packed, parts in PACKS:
-      xparts = ' '
-      for part in parts:
-        if part in IMPLEMENTATIONS:
-          xparts = xparts + part + OCAML_OBJECT_EXTENSION + ' '
-        elif part in INTERFACES:
-          xparts = xparts + part + ".cmi "
-      vxqt(OCAMLOPT + ' ' + INCLUDES + ' -pack -o ' + packed + OCAML_OBJECT_EXTENSION + xparts)
+    if 'bytecode' in options:
+      compiler = HOST_OCAML.compile_bytecode
+    else:
+      compiler = HOST_OCAML.compile_native
 
-
-    return force
+    return compiler(vxqt, IMPLEMENTATIONS, **kwds)
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_libraries.py'))
@@ -489,23 +424,17 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_ocaml_libraries'
 
-  def runme(self, IMPLEMENTATIONS, lib, force):
+  def runme(self, IMPLEMENTATIONS, lib):
     if not IMPLEMENTATIONS:
-      return force
+      return 
 
     print "CAML CREATING LIBRARY", lib
+    if 'bytecode' in options:
+      linker = HOST_OCAML.link_bytecode_lib
+    else:
+      linker = HOST_OCAML.link_native_lib
 
-    # STEP 6: Build Ocaml Library
-    object_library_name = lib + OCAML_LIB_EXTENSION
-    linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
-    library_filetime = filetime(object_library_name)
-
-    force = 1
-    for implementation in IMPLEMENTATIONS:
-      linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
-    vxqt(linkstring)
-
-    return force
+    return linker(vxqt, IMPLEMENTATIONS, lib, outdir='build')
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_exes.py'))
@@ -513,34 +442,45 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_ocaml_exes'
 
-  def runme(self, EXES, OLIBRARIES, INCLUDES, force):
+  def runme(self, EXES, OLIBRARIES, INCLUDES):
     # finally, mainline *.cmx or cma files to link to executables
     if not EXES:
       return
 
     print "CAML LINKING EXECUTABLES"
-    x = ''
-    for library in OLIBRARIES:
-      x = x + ' ' + library + OCAML_LIB_EXTENSION
-  
+    output_exes = []
     for exe in EXES:
-      dst = os.path.join("bin", os.path.basename(exe))
-      vxqt(OCAMLOPT + INCLUDES + ' -I ' + os.path.dirname(exe) + ' -o ' + dst + \
-          x + ' ' + exe + \
-          OCAML_OBJECT_EXTENSION)
+      if 'bytecode' in options:
+        linker = HOST_OCAML.link_bytecode_exe
+      else:
+        linker = HOST_OCAML.link_native_exe
+
+      dst = os.path.join('bin', os.path.basename(exe))
+      output_exe = linker(vxqt, [exe + '.ml'], dst + EXT_EXE,
+        include_paths=[os.path.join('build', os.path.dirname(exe))] + \
+          [os.path.join('build', i) for i in INCLUDES],
+        libs=OLIBRARIES,
+      )
+
+      output_exes.append(output_exe)
+
+    return output_exes
 @doc()
 
 @select(tangler('mkplugins/build_ocamls.py'))
 class PLUGIN(Plugin):
   name = 'build_ocamls'
    
-  def runme(self, pkg, pkgdict, force):
+  def runme(self, pkg, pkgdict):
+    RAW_INTERFACES = pkgdict.get('caml_raw_interfaces', [])
+    plugins['copy_mli2ml'](RAW_INTERFACES)
+
     LEXS = pkgdict.get("caml_lexes", [])
     PARSES = pkgdict.get("caml_parses", [])
     PGENPARSES = pkgdict.get("caml_pgenparses", [])
     DYPARSES = pkgdict.get("caml_dyparses", [])
 
-    force = plugins['build_ocaml_grammar'].runme(pkg, LEXS, PARSES, PGENPARSES,DYPARSES, force)
+    plugins['build_ocaml_grammar'].runme(pkg, LEXS, PARSES, PGENPARSES, DYPARSES)
 
     INTERFACES = pkgdict.get("caml_interfaces", [])
     IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
@@ -548,34 +488,14 @@ class PLUGIN(Plugin):
     EXES = pkgdict.get("caml_exes", [])
     INCLUDES = pkgdict.get("caml_include_paths", [])
 
-    # prepend -I to each include
-    if INCLUDES:
-      for i in range(len(INCLUDES)):
-        INCLUDES[i] = '-I ' + INCLUDES[i]
-    INCLUDES = string.join(INCLUDES)
 
-    force = plugins['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS + EXES, PACKS, INCLUDES, force)
+    objects = plugins['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES)
 
     lib = pkgdict.get('caml_provide_lib', 'src'+os.sep+pkg+"lib")
-
-    implementations = []
-    for path,packed,parts in PACKS:
-      implementations.append(packed)
-    for implementation in IMPLEMENTATIONS:
-      found = 0
-      for path,packed,parts in PACKS:
-        if implementation in parts: 
-          found = 1
-      if not found:
-        implementations.append(implementation)
-
-    force = plugins['build_ocaml_libraries'].runme(implementations, lib, force)
-
+    plugins['build_ocaml_libraries'].runme(objects, lib)
     OLIBRARIES = pkgdict.get("caml_require_libs", [])
 
-    plugins['build_ocaml_exes'].runme(EXES, OLIBRARIES, INCLUDES, force)
-  
-    return force
+    plugins['build_ocaml_exes'].runme(EXES, OLIBRARIES, INCLUDES)
 @doc()
 
 @select(tangler('mkplugins/build_ocamlbuild.py'))
@@ -583,6 +503,9 @@ class PLUGIN(Plugin):
   name = 'build_ocamlbuild'
 
   def runme(self, pkg, pkgdict):
+    RAW_INTERFACES = pkgdict.get('caml_raw_interfaces', [])
+    plugins['copy_mli2ml'](RAW_INTERFACES)
+
     EXES = pkgdict.get('caml_exes', [])
 
     for exe in EXES:
@@ -604,7 +527,25 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'build_host_tools'
     
+  def copy_hpp2rtl(self, HPPS):
+    for path in HPPS:
+      f = os.path.join(FLX_DIR, path)
+      if os.path.exists(f):
+        src = f
+      else:
+        src = path
+      src = src.replace('/', os.sep)
+      dst = os.path.join(FLX_RTL_DIR, os.path.basename(path))
+
+      if filetime(src) > filetime (dst):
+        if not quiet: print("filecopy "+src+" -> "+dst)
+        filecopy(src,dst)
+
+
   def runme(self, pkg, pkgdict):
+    HPPS = pkgdict.get("rtl_interfaces",[])
+    self.copy_hpp2rtl(HPPS)
+
     CCS = pkgdict.get("host_cc_ccs",[])
     CPPS = pkgdict.get("host_cpp_cpps",[])
     EXES = pkgdict.get("host_exes",[])
@@ -612,46 +553,50 @@ class PLUGIN(Plugin):
     INCLUDE_PATH=pkgdict.get("host_include_path",[])
     MACROS =pkgdict.get("host_macros",[])
 
-    if len(CCS)+len(CPPS)+len(EXES)+len(LIBS)>0:
-      print "BUILDING HOST TOOLS"
-      pkglib = None
+    if len(CCS)+len(CPPS)+len(EXES)+len(LIBS) == 0:
+      return
 
-      if CCS:
-        print "HOST C COMPILING", pkg
-        pkglib = "lib"+pkg+"_host_static"
+    print "BUILDING HOST TOOLS"
+    pkglib = None
 
-        HOST_C.build_static_rtl(vxqt, CCS, 'hostlib' + os.sep + pkglib,
-              include_paths=INCLUDE_PATH+["rtl", "elk"],
-              macros=MACROS+["FLX_STATIC_LINK"],
-              )
+    if CCS:
+      print "HOST C COMPILING", pkg
+      pkglib = "lib"+pkg+"_host_static"
 
-      if CPPS:
-        print "HOST C++ COMPILING", pkg
-        pkglib = "lib"+pkg+"_host_static"
+      HOST_C.build_static_rtl(vxqt, CCS, 'hostlib' + os.sep + pkglib,
+        outdir='build',
+        include_paths=INCLUDE_PATH+[FLX_RTL_DIR, "elk"],
+        macros=MACROS+["FLX_STATIC_LINK"],
+      )
 
-        HOST_CXX.build_static_rtl(vxqt, CPPS, 'hostlib' + os.sep + pkglib,
-              include_paths=INCLUDE_PATH+["rtl", "elk"],
-              macros=MACROS+["FLX_STATIC_LINK"],
-              )
+    if CPPS:
+      print "HOST C++ COMPILING", pkg
+      pkglib = "lib"+pkg+"_host_static"
 
-        for x in CCS+CPPS: 
-          f = x + EXT_STATIC_OBJ
-          if verbose: print "Removing", f
-          deletefile(f) # delete the object files
+      HOST_CXX.build_static_rtl(vxqt, CPPS, 'hostlib' + os.sep + pkglib,
+        outdir='build',
+        include_paths=INCLUDE_PATH+[FLX_RTL_DIR, "elk"],
+        macros=MACROS+["FLX_STATIC_LINK"],
+      )
 
-      kwds = {\
-          'include_paths': INCLUDE_PATH+["rtl", "elk"],
-          'macros': MACROS+["FLX_STATIC_LINK"],
-          'CFLAGS': CFLAGS,
-          'LDFLAGS': SFLAGS,
-          }
+    for x in CCS+CPPS: 
+      f = x + EXT_STATIC_OBJ
+      if verbose: print "Removing", f
+      deletefile(f) # delete the object files
+
+    kwds = {\
+      'include_paths': INCLUDE_PATH+[FLX_RTL_DIR, "elk"],
+      'macros': MACROS+["FLX_STATIC_LINK"],
+      'CFLAGS': CFLAGS,
+      'LDFLAGS': SFLAGS,
+    }
          
-      if pkglib:
-        kwds['lib_paths'] = ['hostlib']
-        kwds['libs'] = [pkglib]
+    if pkglib:
+      kwds['lib_paths'] = ['hostlib']
+      kwds['libs'] = [pkglib]
 
-      for src, bin in EXES:
-        apply(HOST_CXX.build_static_program, (vxqt, src, bin), kwds)
+    for src, bin in EXES:
+      HOST_CXX.build_static_program(vxqt, src, bin, **kwds)
 @doc()
 
 @select(tangler('mkplugins/build_testfile.py'))
@@ -698,7 +643,8 @@ class PLUGIN(Plugin):
         TARGET_CXX.build_shared_dll(
             vxqt,
             basename,
-            include_paths=["rtl"],
+            outdir='build',
+            include_paths=[FLX_RTL_DIR],
             optimise=optimise_c,
             debug=debug,
             CFLAGS=CFLAGS+" "+cflags,
@@ -726,20 +672,20 @@ class PLUGIN(Plugin):
         slibs = string.strip(slibs[0])
         #log.write("slibs=%s\n" % slibs)
 
-        driver = driver + EXT_STATIC_OBJ
-        driver = os.path.join("rtl",driver)
+        driver = os.path.join(FLX_RTL_DIR, driver + EXT_STATIC_OBJ)
         #log.write('static driver =%s\n' % driver)
 
         TARGET_CXX.build_felix_static(
           vxqt,
           basename,
+          outdir='build',
           objects=[driver],
-          include_paths=["rtl"],
+          include_paths=[FLX_RTL_DIR],
           optimise=optimise_c,
           debug=debug,
           macros=["FLX_STATIC_LINK"],
           CFLAGS=CFLAGS+" "+cflags,
-          lib_paths=["rtl"],
+          lib_paths=[FLX_RTL_DIR],
           libs=[],
           LDFLAGS=SFLAGS+slibs,
           log=log)
@@ -770,7 +716,7 @@ class PLUGIN(Plugin):
   help = 'build the sources'
 
   def __init__(self, *args, **kwds):
-    apply(Plugin.__init__, (self,) + args, kwds)
+    super(PLUGIN, self).__init__(*args, **kwds)
  
     if "extract" in options or "force_extract" in options: 
       if "build" not in phases: phases.append("build")
@@ -953,7 +899,7 @@ class PLUGIN(Plugin):
   name = 'mkdoc'
 
   def __init__(self, *args, **kwds):
-    apply(Plugin.__init__, (self,) + args, kwds)
+    super(PLUGIN, self).__init__(*args, **kwds)
 
     self.already_generated = {}
 
@@ -991,218 +937,228 @@ DFLAGS = ""
 EXTRA_LIBS = []
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
-def build_target_rtl_dynamic(pkg, pkgdict):
-  CCS = pkgdict.get("cc_ccs",[])
-  CPPS = pkgdict.get("cpp_cpps",[])
+class PLUGIN(Plugin):
+  name='build_target_rtl_dynamic'
 
-  if not CCS and not CPPS:
-    return
+  def runme(self, pkg, pkgdict):
+    CCS = pkgdict.get("cc_ccs",[])
+    CPPS = pkgdict.get("cpp_cpps",[])
 
-  BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
-  EXTRA_CFLAGS = pkgdict.get("cflags","")
-  EXTRA_DFLAGS = pkgdict.get("dflags","")
-  INCLUDE_PATH = pkgdict.get("include_path",[])
-  MACROS =pkgdict.get("macros",[])
+    if not CCS and not CPPS:
+      return
 
-  flibs = pkgdict.get("lib_requires",[])
-  needs_libs = []
-  for i in flibs:
-    needs_libs.append(i+"_dynamic")
+    BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
+    EXTRA_CFLAGS = pkgdict.get("cflags","")
+    EXTRA_DFLAGS = pkgdict.get("dflags","")
+    INCLUDE_PATH = pkgdict.get("include_path",[])
+    MACROS =pkgdict.get("macros",[])
 
-  lib = pkgdict.get("provides_lib","lib"+pkg)
+    flibs = pkgdict.get("lib_requires",[])
+    needs_libs = []
+    for i in flibs:
+      needs_libs.append(i+"_dynamic")
 
-  print " ++ "+pkg+" RTL (dynamic)"
+    lib = pkgdict.get("provides_lib","lib"+pkg)
 
-  compile_kwds = {
-      'include_paths': INCLUDE_PATH+['rtl'],
-      'optimise': optimise,
-      'debug': debug,
-      'macros': MACROS+["BUILD_"+BUILD_MACRO],
-      'CFLAGS': CFLAGS+EXTRA_CFLAGS,
-      }
+    print " ++ "+pkg+" RTL (dynamic)"
 
-  link_kwds = {
-      'lib_paths': [SHLIB_DIR],
-      'libs': EXTRA_LIBS+needs_libs,
-      'LDFLAGS': DFLAGS+EXTRA_DFLAGS,
-      }
+    compile_kwds = {
+        'outdir': 'build',
+        'include_paths': INCLUDE_PATH+[FLX_RTL_DIR],
+        'optimise': optimise,
+        'debug': debug,
+        'macros': MACROS+["BUILD_"+BUILD_MACRO],
+        'CFLAGS': CFLAGS+EXTRA_CFLAGS,
+        }
 
-  if CCS:
-    # RF: THIS SHOULD BE TARGET_CC AND THE OUTPUT DIR SHOULD BE THAT OF
-    # THE TARGET.
-    objects = apply(TARGET_CC.compile_shared_rtl, (vxqt, CCS), 
-        compile_kwds)
+    link_kwds = {
+        'lib_paths': [SHLIB_DIR],
+        'libs': EXTRA_LIBS+needs_libs,
+        'LDFLAGS': DFLAGS+EXTRA_DFLAGS,
+        }
 
-    apply(TARGET_CC.link_shared_rtl, 
-      (vxqt, objects, TARGET_CC.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
-      link_kwds)
+    if CCS:
+      # RF: THIS SHOULD BE TARGET_CC AND THE OUTPUT DIR SHOULD BE THAT OF
+      # THE TARGET.
+      objects = TARGET_CC.compile_shared_rtl(vxqt, CCS, **compile_kwds)
+      library = TARGET_CC.options.SHLIB_DIR+os.sep+lib+'_dynamic'
 
-    if EXT_DYLIB != EXT_SHLIB:
-      apply(TARGET_CC.link_shared_dll, 
-        (vxqt, objects, TARGET_CC.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
-        link_kwds)
+      TARGET_CC.link_shared_rtl(vxqt, objects, library, **link_kwds)
 
-  if CPPS:
-    # RF: THIS SHOULD BE TARGET_CXX AND THE OUTPUT DIR SHOULD BE THAT OF
-    # THE TARGET.
-    objects = apply(TARGET_CXX.compile_shared_rtl, (vxqt, CPPS), 
-        compile_kwds)
+      if EXT_DYLIB != EXT_SHLIB:
+        TARGET_CC.link_shared_dll(vxqt, objects, library,
+          **link_kwds)
 
-    apply(TARGET_CXX.link_shared_rtl, 
-      (vxqt, objects, TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
-      link_kwds)
+    if CPPS:
+      # RF: THIS SHOULD BE TARGET_CXX AND THE OUTPUT DIR SHOULD BE THAT OF
+      # THE TARGET.
+      objects = TARGET_CXX.compile_shared_rtl(vxqt, CPPS, **compile_kwds)
+      library = TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic'
 
-    if EXT_DYLIB != EXT_SHLIB:
-      apply(TARGET_CXX.link_shared_dll, 
-        (vxqt, objects, TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic'),
-        link_kwds)
+      TARGET_CXX.link_shared_rtl(vxqt, objects, library, **link_kwds)
 
-    for x in CCS + CPPS: 
-      f = x + EXT_SHARED_OBJ
-      if verbose: print "Removing",f
-      deletefile(f) # delete the .o files
+      if EXT_DYLIB != EXT_SHLIB:
+        TARGET_CXX.link_shared_dll(vxqt, objects, library, **link_kwds)
+
+      for x in CCS + CPPS:
+        f = x + EXT_SHARED_OBJ
+        if verbose: print "Removing",f
+        deletefile(f) # delete the .o files
 
 @select(tangler('mkplugins/build_target_rtl_static.py'))
-def build_target_rtl_static(pkg, pkgdict):
-  CCS = pkgdict.get("cc_ccs",[])
-  CPPS = pkgdict.get("cpp_cpps",[])
+class PLUGIN(Plugin):
+  name = 'build_target_rtl_static'
 
-  if not CCS and not CPPS:
-    return
+  def runme(self, pkg, pkgdict):
+    CCS = pkgdict.get("cc_ccs",[])
+    CPPS = pkgdict.get("cpp_cpps",[])
 
-  EXTRA_CFLAGS = pkgdict.get("cflags","")
-  lib = pkgdict.get("provides_lib","lib"+pkg)
-  INCLUDE_PATH = pkgdict.get("include_path",[])
-  MACROS =pkgdict.get("macros",[])
+    if not CCS and not CPPS:
+      return
 
-  print " ++ "+pkg+" RTL (static)"
+    EXTRA_CFLAGS = pkgdict.get("cflags","")
+    lib = pkgdict.get("provides_lib","lib"+pkg)
+    INCLUDE_PATH = pkgdict.get("include_path",[])
+    MACROS =pkgdict.get("macros",[])
 
-  kwds = {
-      'include_paths': INCLUDE_PATH+["rtl"],
-      'macros': MACROS+["FLX_STATIC_LINK"],
-      'optimise': optimise,
-      'debug': debug,
-      'CFLAGS': CFLAGS+EXTRA_CFLAGS,
-      }
+    print " ++ "+pkg+" RTL (static)"
 
-  if CCS:
-    apply(TARGET_CC.build_static_rtl,
-        (vxqt, CCS, "rtl"+os.sep+lib+"_static"),
-        kwds)
+    kwds = {
+        'outfile': os.path.join(FLX_RTL_DIR, lib + "_static"),
+        'outdir': 'build',
+        'include_paths': INCLUDE_PATH+[FLX_RTL_DIR],
+        'macros': MACROS+["FLX_STATIC_LINK"],
+        'optimise': optimise,
+        'debug': debug,
+        'CFLAGS': CFLAGS+EXTRA_CFLAGS,
+        }
 
-  if CPPS:
-    apply(TARGET_CXX.build_static_rtl,
-        (vxqt, CPPS, "rtl"+os.sep+lib+"_static"),
-        kwds)
+    if CCS:
+      TARGET_CC.build_static_rtl(vxqt, CCS, **kwds)
 
-    for x in CCS + CPPS: 
+    if CPPS:
+      TARGET_CXX.build_static_rtl(vxqt, CPPS, **kwds)
+
+    for x in CCS + CPPS:
       f = x + EXT_STATIC_OBJ
       if verbose: print "Removing", f
       deletefile(f) # delete the object files
 
 
 @select(tangler('mkplugins/build_felix_static_drivers.py'))
-def build_felix_static_drivers(pkg, pkgdict):
-  DRIVERS = pkgdict.get("drivers",[])
-  cflags = pkgdict.get("cflags","")
-  if len(DRIVERS)>0:
-    print "COMPILING DRIVERS (static)"
+class PLUGIN(Plugin):
+  name = 'build_felix_static_drivers'
 
-    for mode, src, bin, macros in DRIVERS:
-      if mode=='static':
-        if verbose: print 'static Compiling driver object', src
-        TARGET_CXX.compile_static_main(
-          vxqt,
-          [src],
-          include_paths=["rtl"],
-          macros=["FLX_STATIC_LINK"]+macros,
-          optimise=optimise,
-          debug=debug,
-          CFLAGS=CFLAGS+cflags)
+  def runme(self, pkg, pkgdict):
+    DRIVERS = pkgdict.get("static_drivers",[])
+    if not DRIVERS:
+      return
+
+    print "COMPILING DRIVERS (static)"
+    cflags = pkgdict.get("cflags","")
+
+    for src, outdir in DRIVERS:
+      if verbose: print 'static Compiling driver object', src
+      TARGET_CXX.compile_static_main(vxqt, [src],
+        outdir=outdir,
+        include_paths=[FLX_RTL_DIR],
+        macros=["FLX_STATIC_LINK"],
+        optimise=optimise,
+        debug=debug,
+        CFLAGS=CFLAGS+cflags)
+
+    
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
-def build_felix_dynamic_drivers(pkg, pkgdict):
-  DRIVERS = pkgdict.get("drivers",[])
-  cflags = pkgdict.get("cflags","")
-  if len(DRIVERS)>0:
+class PLUGIN(Plugin):
+  name = 'build_felix_dynamic_drivers'
+
+  def runme(self, pkg, pkgdict):
+    DRIVERS = pkgdict.get("dynamic_drivers",[])
+    if not DRIVERS:
+      return
+
     print "COMPILING DRIVERS (dynamic)"
+    cflags = pkgdict.get("cflags","")
     dflags = pkgdict.get("dflags","")
     LIBS = pkgdict.get("drivers_require_libs",[])
     libs = []
     for lib in LIBS:
       libs.append(lib+"_dynamic")
 
-    for mode, src, bin, macros in DRIVERS:
+    for src, bin in DRIVERS:
       # this is a gross HACK! Don't make dynamic versions
       # of drivers with extra macros, they're for static
       # link of driver without async support
-      if mode=='dynamic':
-        if verbose: print 'dynamic Compiling driver object', src
+      if verbose: print 'dynamic Compiling driver object', src
 
-        TARGET_CXX.build_shared_program(
-            vxqt,
-            src,
-            bin,
-            include_paths=["rtl"],
-            optimise=optimise,
-            debug=debug,
-            macros=macros,
-            CFLAGS=CFLAGS+cflags,
-            lib_paths=[SHLIB_DIR],
-            libs=libs,
-            LDFLAGS=DFLAGS+dflags)
+      TARGET_CXX.build_shared_program(vxqt, src, bin,
+          include_paths=[FLX_RTL_DIR],
+          optimise=optimise,
+          debug=debug,
+          CFLAGS=CFLAGS+cflags,
+          lib_paths=[SHLIB_DIR],
+          libs=libs,
+          LDFLAGS=DFLAGS+dflags)
 
         #deletefile(src + EXT_SHARED_OBJ)
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
-def build_target_cpp_tools(pkg, pkgdict):
-  EXES = pkgdict.get("exes",[])
-  esflags = pkgdict.get("exes_require_linkflags","")
-  if len(EXES)>0:
-    print "BUILDING C++ TARGET TOOLS"
-    LIBS = pkgdict.get("exes_require_libs",[])
-    libs = []
-    for lib in LIBS: libs.append(lib+"_static")
-    for src,bin in EXES:
-      dir = os.path.dirname(src)
-      TARGET_CXX.build_static_main(
-        vxqt,
-        src,
-        dir,
-        bin,
-        include_paths=["rtl"],
-        macros=["FLX_STATIC_LINK"],
-        CFLAGS=CFLAGS,
-        lib_paths=[dir],
-        libs=libs,
-        LDFLAGS=SFLAGS+esflags)
+class PLUGIN(Plugin):
+  name = 'build_target_cpp_tools'
 
-      deletefile(src + EXT_STATIC_OBJ)
+  def runme(self, pkg, pkgdict):
+    EXES = pkgdict.get("exes",[])
+    esflags = pkgdict.get("exes_require_linkflags","")
+    if len(EXES)>0:
+      print "BUILDING C++ TARGET TOOLS"
+      LIBS = pkgdict.get("exes_require_libs",[])
+      libs = []
+      for lib in LIBS: libs.append(lib+"_static")
+      for src,bin in EXES:
+        dir = os.path.dirname(src)
+        TARGET_CXX.build_static_main(
+          vxqt,
+          src,
+          dir,
+          bin,
+          outdir='build',
+          include_paths=[FLX_RTL_DIR],
+          macros=["FLX_STATIC_LINK"],
+          CFLAGS=CFLAGS,
+          lib_paths=[dir],
+          libs=libs,
+          LDFLAGS=SFLAGS+esflags)
+
+        deletefile(src + EXT_STATIC_OBJ)
 
 @select(tangler('mkplugins/build_target_felix_tools.py'))
 # TARGET TOOLS : FELIX
-def build_target_felix_tools(pkg, pkgdict):
-  FLXS = pkgdict.get("felix_tools",[])
-  if len(FLXS)>0:
-    print "BUILDING FELIX TARGET TOOLS"
-    LIBS = pkgdict.get("exes_require_libs",[])
-    libs = []
-    for lib in LIBS: libs.append(lib+"_static")
-    fsflags = pkgdict.get("felix_requires_linkflags","")
-    for src,exe in FLXS:
-      # added 'std' here so flx_pkgconfig builds
-      flxg("-Ilib --import=flx.flxh std " + src)
-      TARGET_CXX.build_felix_static(
-        vxqt,
-        src,
-        exe,
-        objects=['rtl' + os.sep + 'flx_run' + EXT_STATIC_OBJ],
-        include_paths=['rtl'],
-        macros=["FLX_STATIC_LINK"],
-        CFLAGS=CFLAGS,
-        lib_paths=['rtl'],
-        libs=libs,
-        LDFLAGS=SFLAGS+fsflags)
+class PLUGIN(Plugin):
+  name = 'build_target_felix_tools'
+
+  def runme(self, pkg, pkgdict):
+    FLXS = pkgdict.get("felix_tools",[])
+    if len(FLXS)>0:
+      print "BUILDING FELIX TARGET TOOLS"
+      LIBS = pkgdict.get("exes_require_libs",[])
+      libs = []
+      for lib in LIBS: libs.append(lib+"_static")
+      fsflags = pkgdict.get("felix_requires_linkflags","")
+      for src,exe in FLXS:
+        # added 'std' here so flx_pkgconfig builds
+        flxg("-Ilib --import=flx.flxh std " + src)
+        TARGET_CXX.build_felix_static(
+          vxqt,
+          src,
+          exe,
+          objects=[os.path.join(FLX_RTL_DIR, 'flx_run' + EXT_STATIC_OBJ)],
+          include_paths=[FLX_RTL_DIR],
+          macros=["FLX_STATIC_LINK"],
+          CFLAGS=CFLAGS,
+          lib_paths=[FLX_RTL_DIR],
+          libs=libs,
+          LDFLAGS=SFLAGS+fsflags)
 
 @select(tangler('mkplugins/performance.py'))
 SPECIAL_TESTS = [
@@ -1432,29 +1388,33 @@ else:
   if CYGWIN or WIN32:
     pass
   elif MACOSX:
-    os.environ['DYLD_LIBRARY_PATH'] = os.environ.get('DYLD_LIBRARY_PATH', '') + os.pathsep + 'rtl'
+    os.environ['DYLD_LIBRARY_PATH'] = \
+        os.environ.get('DYLD_LIBRARY_PATH', '') + os.pathsep + \
+        FLX_RTL_DIR
   else:
-    os.environ['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '') + os.pathsep + 'rtl'
+    os.environ['LD_LIBRARY_PATH'] = \
+        os.environ.get('LD_LIBRARY_PATH', '') + os.pathsep + \
+        FLX_RTL_DIR
 
 
 def vxqt(x, **kwds):
   kwds['verbose'] = kwds.get('verbose', verbose)
   kwds['quiet'] = kwds.get('quiet', quiet)
-  return apply(xqt, (x,), kwds)
+  return xqt(x, **kwds)
 
 
 def vxqtq(x, **kwds):
   kwds['verbose'] = kwds.get('verbose', verbose)
-  return apply(xqtq, (x,), kwds)
+  return xqtq(x, **kwds)
 
 
 def exqt(x, **kwds): 
-  return apply(vxqt, (ENV+x,), kwds)
+  return vxqt(ENV + x, **kwds)
 
 
 def flxg(x, **kwds):
   x = os.path.join('bin', 'flxg ' + x)
-  return apply(exqt, (x,), kwds)
+  return exqt(x, **kwds)
 
 
 #interscript command (now built in part of Felix package)
@@ -1672,7 +1632,6 @@ class PLUGIN(Plugin):
     check_stamp = "force" not in options
 
     if "host" in phases:
-      ocaml_sequencer = "force" in options
       for pkg in host_selected_pkgs:
         pkgdict = pkgd[pkg]
         print "***** Host MAKING PACKAGE "+pkg+" ************"
@@ -1685,16 +1644,11 @@ class PLUGIN(Plugin):
           if not quiet: print "REExtracting",pkg,"from",src
           runISCR(os.path.join(FLX_LPARCHIVE, src))
 
-        MLIS = pkgdict.get("caml_raw_interfaces",[])
-        HPPS = pkgdict.get("rtl_interfaces",[])
-
-        plugins['copy_mli2ml'](MLIS)
-        plugins['copy_hpp2rtl'](HPPS)
 
         if HAVE_OCAMLBUILD:
           plugins['build_ocamlbuild'](pkg, pkgdict)
         else:
-          ocaml_sequencer = plugins['build_ocamls'](pkg, pkgdict, ocaml_sequencer)
+          plugins['build_ocamls'](pkg, pkgdict)
 
         plugins['build_host_tools'](pkg, pkgdict)
 
@@ -1708,19 +1662,19 @@ class PLUGIN(Plugin):
         stamp=os.path.join("pkg-stamps", pkg+".target")
         erasefile(stamp)
         if SUPPORT_DYNAMIC_LOADING:
-          build_target_rtl_dynamic(pkg, pkgdict)
+          plugins['build_target_rtl_dynamic'](pkg, pkgdict)
   
         if SUPPORT_STATIC_LINKAGE:
-          build_target_rtl_static(pkg, pkgdict)
+          plugins['build_target_rtl_static'](pkg, pkgdict)
       
         if SUPPORT_DYNAMIC_LOADING:
-          build_felix_dynamic_drivers(pkg, pkgdict)
+          plugins['build_felix_dynamic_drivers'](pkg, pkgdict)
 
         if SUPPORT_STATIC_LINKAGE:
-          build_felix_static_drivers(pkg, pkgdict)
+          plugins['build_felix_static_drivers'](pkg, pkgdict)
   
-        build_target_cpp_tools(pkg, pkgdict)
-        build_target_felix_tools(pkg, pkgdict)
+        plugins['build_target_cpp_tools'](pkg, pkgdict)
+        plugins['build_target_felix_tools'](pkg, pkgdict)
 
         # only stamp if we've passed the tests
         if plugins['run_failure_tests'](pkg, pkgdict, quiet, check_stamp):
@@ -1746,7 +1700,7 @@ class PLUGIN(Plugin):
  
 
 @select(tangler('flxbuild/pluginutil.py'))
-class Plugin:
+class Plugin(object):
   name = None
   help = ''
   priority = None
@@ -1759,7 +1713,7 @@ class Plugin:
 
   def __call__(self,*args,**kwds):
     self.used = 1
-    return apply(self.runme,args,kwds)
+    return self.runme(*args, **kwds)
 
 
 class TestPlugin(Plugin):
@@ -1923,7 +1877,7 @@ class PLUGIN(Plugin):
   help = 'regression and tutorial combined'
 
   def __init__(self, *args, **kwds):
-    apply(Plugin.__init__, (self,) + args, kwds)
+    super(PLUGIN, self).__init__(*args, **kwds)
 
     if "test" in options: 
       if "run" not in phases: phases.append("run")
@@ -2129,12 +2083,12 @@ except:
   print "       this is done automatically by 'make boot'"
   sys.exit(1)
 
+execfile(os.path.join("mkplugins", "xqt.py"))
+
 # add the felix directory to the search paths
 os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
 sys.path.append(FLX_DIR)
 os.environ['PYTHONPATH'] = FLX_DIR + os.pathsep + os.environ.get('PYTHONPATH', '')
-
-execfile(os.path.join("mkplugins", "xqt.py"))
 
 FLXFLAGS = ""
 
@@ -3930,9 +3884,9 @@ if NOSTDLIB == 1:
 FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg"
 # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
 if MACOSX == 1:
-  FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$DYLD_LIBRARY_PATH "
+  FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH "
 else:
-  FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/rtl:$LD_LIBRARY_PATH "
+  FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH "
 ELKHOUND="--elkhound="+FLX_INSTALL_DIR+"/bin/flx_elkhound"
 
 DEBUGSWITCH=""
@@ -4281,10 +4235,10 @@ fi
   tangle('SLINK_STRING="/link /LIBPATH:${FLX_INSTALL_DIR}\\\\bin "')
  elif CYGWIN or WIN32:
   tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/bin "')
-  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
+  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/lib/rtl "')
  else:
-  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
-  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/rtl "')
+  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/lib/rtl "')
+  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/lib/rtl "')
 
 
 PKGCONFIG="env FLX_DEBUG=0 FLX_ALLOW_COLLECTION_ANYWHERE=0 $FLX_INSTALL_DIR/bin/flx_pkgconfig"
@@ -4383,7 +4337,7 @@ function calpackages () {
     DRIVER=$FLX_INSTALL_DIR/bin/$DRIVER_PKG$EXT_EXE
   else
     # static linkage: the driver object file
-    DRIVER=$FLX_INSTALL_DIR/rtl/$DRIVER_PKG$EXT_STATIC_OBJ
+    DRIVER=$FLX_INSTALL_DIR/lib/rtl/$DRIVER_PKG$EXT_STATIC_OBJ
   fi
 
   if [ $STATIC = 0 ]
@@ -4432,7 +4386,7 @@ do
  esac
 done
 
-INCLUDE_DIR="-I$FLX_INSTALL_DIR/rtl"
+INCLUDE_DIR="-I$FLX_INSTALL_DIR/lib/rtl"
 FLXLIB="-I$FLX_INSTALL_DIR/lib"
 STDLIB="std"
 if [ "$NOSTDLIB" = "1" ]
@@ -4453,9 +4407,9 @@ else
   # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
   if [ "$MACOSX" = "1" ]
   then
-    FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$DYLD_LIBRARY_PATH "
+    FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/lib/rtl:\$DYLD_LIBRARY_PATH "
   else
-    FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH "
+    FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/lib/rtl:\$LD_LIBRARY_PATH "
   fi
 fi
 ELKHOUND="--elkhound=$FLX_INSTALL_DIR/bin/flx_elkhound"

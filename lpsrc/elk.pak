@@ -114,6 +114,9 @@ ELKRTL = [
 ]
 
 ELKRTL_INTERFACES = [
+  'elk/flx_elk_config.hpp',
+  'elk/flx_host_elk_config.hpp',
+  'elk/flx_target_elk_config.hpp',
   'elk/sm_array.h',
   'elk/sm_objpool.h',
   'elk/sm_sobjlist.h',
@@ -156,7 +159,7 @@ Version: 1
    tangle("provides_dlib: -lelk_dynamic")
    tangle("provides_slib: -lelk_static")
 
-@h=tangler('rtl/flx_target_elk_config.hpp')
+@h=tangler('elk/flx_target_elk_config.hpp')
 @select(h)
 #ifndef __FLX_TARGET_ELK_CONFIG_H__
 #define __FLX_TARGET_ELK_CONFIG_H__
@@ -168,7 +171,7 @@ Version: 1
 #endif
 #endif
 
-@h=tangler('rtl/flx_host_elk_config.hpp')
+@h=tangler('elk/flx_host_elk_config.hpp')
 @select(h)
 #ifndef __FLX_HOST_ELK_CONFIG_H__
 #define __FLX_HOST_ELK_CONFIG_H__
@@ -180,7 +183,7 @@ Version: 1
 #endif
 #endif
 
-@h=tangler('rtl/flx_elk_config.hpp')
+@h=tangler('elk/flx_elk_config.hpp')
 @select(h)
 #ifndef __FLX_ELK_CONFIG_H__
 #define __FLX_ELK_CONFIG_H__
