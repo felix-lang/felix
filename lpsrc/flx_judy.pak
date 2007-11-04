@@ -34204,9 +34204,9 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
         }
 #else
         {
-            PPvoid_t PValue;
+            PPvoid_t PValue = JudyLGet(PArray, *PIndex, PJError);
 
-            if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
+            if (PValue == PPJERR)
                 return(PPJERR);
 
             if (PValue != (PPvoid_t) NULL) return(PValue);  // found *PIndex.

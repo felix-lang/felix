@@ -295,6 +295,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
     //fprintf(stderr,"Thread %lx releasing mutex\n", get_current_native_thread());
   }
   delete ehd;
+  if(tc)tc->yield();
   try { 
     (*sr)(cd);
   }
@@ -416,7 +417,6 @@ void thread_control_t::add_thread(void *stack_base)
     if(debug)
       fprintf(stderr, "Adding thread %lx base %p, count=%d\n", id, stack_base, thread_counter);
     stop_guard.broadcast();
-    unsafe_stop_check();
   }
 
 void thread_control_t::remove_thread() 
@@ -636,6 +636,7 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;
   delete ehd;
+  if(tc)tc->yield();
   try { 
     (*sr)(cd);
   }
