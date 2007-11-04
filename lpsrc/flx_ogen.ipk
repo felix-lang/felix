@@ -807,7 +807,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     let this_ptr_map = name ^ "_ptr_map" in
     let old_ptr_map = !last_ptr_map in
     last_ptr_map := "&"^this_ptr_map;
-    let offsets = "get_token"::display_names in
+    let offsets = "sval"::"get_token"::display_names in
     let offsets = map (fun n-> "offsetof("^name^","^n^")") offsets in
     bcat s ("static std::size_t " ^ name ^ "_offsets[FLX_PASS_PTF+"^si (length offsets)^"]={\n");
     bcat s ("  " ^("FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)\n  ")  ^ cat ",\n  " offsets);
@@ -821,6 +821,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   )
   syms.lexers 
   ;
+  (*
   bcat  s "//ELKHOUND PARSERS\n";
   Hashtbl.iter
   (fun _ n -> 
@@ -837,6 +838,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   )
   syms.parsers
   ;
+  *)
   bcat s ("// Head of shape list\n");
   bcat s ("extern \"C\" FLX_EXPORT gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
   bcat s ("gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");

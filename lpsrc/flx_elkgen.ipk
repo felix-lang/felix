@@ -159,6 +159,7 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   pe "";
   pe ("void " ^ lexer_name ^ "::setToken() {");
   pe ("  _uctor_ token = get_token->apply();");
+  pe ("  if(token.data) gcp.collector->add_root(token.data);");
   pe ("  type = token.variant;");
   pe ("  sval =  (SemanticValue)token.data;");
   pe ("}");
@@ -209,14 +210,14 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
       pe "    {";
       pe ("       "^tname^" *_x = new(gcp,"^shape_of syms bbdfns tn t^",true)");
       pe ("       "^tname^"(" ^ ge_arg this e ^ ");");
-      (*
+      pe ("       gcp.collector->add_root(_x);");
       iter 
       (function 
-        | Some n, `Nonterm _ -> pe ("       delete " ^ n^";")
+        (* | Some n, `Nonterm _ -> pe ("       gcp.collector->remove_root(" ^ n^");") *)
+        | Some n, _ -> pe ("       gcp.collector->remove_root(" ^ n^");")
         | _ -> ()
       )
       p;
-      *)
       pe ("       return _x;");
       pe "    }";
     | _ -> assert false 
@@ -269,8 +270,9 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     | `BBDCL_glr (_,_,t,(p,xs)) ->
       let tt = tn t in
       pe ("nonterm("^tt^"*) "^cid_of_flxid id^" {");
-      pe ("  fun dup(x) { return new(gcp,"^shape_of syms bbdfns tn t^ ",true)" ^ tt ^ "(*x); }");
-      pe ("  fun del(x) { /* delete x; */ }");
+      pe ("  fun dup(x) { "^tn t^" *d = new(gcp,"^shape_of syms bbdfns tn t^ ",true)" ^ tt ^ "(*x);");
+      pe ("  gcp.collector->add_root(d); return d; }");
+      pe ("  fun del(x) { gcp.collector->remove_root(x); }");
       IntSet.iter (fun i ->
         let id,parent,sr'',entry = Hashtbl.find bbdfns i in
         match entry with
@@ -390,18 +392,14 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "  if(result.variant==1)";
         
         if t = `BTYP_tuple [] then begin
-        (*
-        pe "  delete (void*)p;";
-        *)
+        pe "  gcp.collector->remove_root((void*)p);";
         pe "  return result.variant;";
         end else begin
         pe ("    result.data =");
         pe ("      new(gcp,"^shape_of syms bbdfns tn t^",true)");
         pe ("     "^result_type^"(*("^result_type^"*)(void*)p)");
         pe ("  ;");
-        (*
-        pe ("  delete ("^result_type^"*)(void*)p;");
-        *)
+        pe ("  gcp.collector->remove_root((void*)p);");
         pe "  return result;";
         end;
         pe "}";
