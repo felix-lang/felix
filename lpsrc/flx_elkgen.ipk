@@ -202,18 +202,21 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
   let print_production (this,p,xs) =
     match xs with
     | [`BEXE_fun_return (_,((_,t) as e))] ->
-      let t = tn t in
+      let tname = tn t in
       ps ("  -> ");
       ps (catmap " " string_of_bprod p);
       pe "";
       pe "    {";
-      pe ("       "^t^" *_x = new "^t^"(" ^ ge_arg this e ^ ");");
+      pe ("       "^tname^" *_x = new(gcp,"^shape_of syms bbdfns tn t^",true)");
+      pe ("       "^tname^"(" ^ ge_arg this e ^ ");");
+      (*
       iter 
       (function 
         | Some n, `Nonterm _ -> pe ("       delete " ^ n^";")
         | _ -> ()
       )
       p;
+      *)
       pe ("       return _x;");
       pe "    }";
     | _ -> assert false 
@@ -266,8 +269,8 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     | `BBDCL_glr (_,_,t,(p,xs)) ->
       let tt = tn t in
       pe ("nonterm("^tt^"*) "^cid_of_flxid id^" {");
-      pe ("  fun dup(x) { return new " ^ tt ^ "(*x); }");
-      pe ("  fun del(x) { delete x; }");
+      pe ("  fun dup(x) { return new(gcp,"^shape_of syms bbdfns tn t^ ",true)" ^ tt ^ "(*x); }");
+      pe ("  fun del(x) { /* delete x; */ }");
       IntSet.iter (fun i ->
         let id,parent,sr'',entry = Hashtbl.find bbdfns i in
         match entry with
@@ -387,14 +390,18 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "  if(result.variant==1)";
         
         if t = `BTYP_tuple [] then begin
+        (*
         pe "  delete (void*)p;";
+        *)
         pe "  return result.variant;";
         end else begin
         pe ("    result.data =");
-        pe ("      new(gcp,"^shape_of syms bbdfns tn t^",false)");
-        pe ("      "^result_type^"(*("^result_type^"*)(void*)p)");
+        pe ("      new(gcp,"^shape_of syms bbdfns tn t^",true)");
+        pe ("     "^result_type^"(*("^result_type^"*)(void*)p)");
         pe ("  ;");
+        (*
         pe ("  delete ("^result_type^"*)(void*)p;");
+        *)
         pe "  return result;";
         end;
         pe "}";

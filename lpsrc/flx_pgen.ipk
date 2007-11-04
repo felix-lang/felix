@@ -65,6 +65,10 @@ let shape_of syms bbdfns tn t =
       cpp_instance_name syms bbdfns i ts ^ "_ptr_map"
     | _ -> tn t ^ "_ptr_map"
     end
+  | `BTYP_sum cpts ->
+      if all_units cpts then "_int_ptr_map"
+      else "_uctor_ptr_map"
+
   | `BTYP_pointer _ -> "_ref_ptr_map"
   | _ -> tn t ^ "_ptr_map"
  
