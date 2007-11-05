@@ -3759,10 +3759,10 @@ if NOOPTIMISE == 0:
   tangle('SLINK_STRING="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\bin "')
  elif CYGWIN or WIN32:
   tangle('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin "')
-  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/rtl "')
+  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
  else:
-  tangle('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/rtl "')
-  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/rtl "')
+  tangle('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
+  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
 
 
 PKGCONFIG=os.path.join(FLX_INSTALL_DIR,"bin","flx_pkgconfig")
@@ -3853,7 +3853,7 @@ def calpackages ():
     DRIVER=FLX_INSTALL_DIR+"/bin/"+DRIVER_PKG+EXT_EXE
   else:
     # static linkage: the driver object file
-    DRIVER=FLX_INSTALL_DIR+"/rtl/"+DRIVER_PKG+EXT_STATIC_OBJ
+    DRIVER=FLX_INSTALL_DIR+"/lib/rtl/"+DRIVER_PKG+EXT_STATIC_OBJ
 
   if STATIC == 0:
     # dynamic linkage: all the libraries required by the application
@@ -3874,7 +3874,7 @@ def calpackages ():
 grab=1
 args=string.join(sys.argv[argno:], " ")
 
-INCLUDE_DIR="-I"+FLX_INSTALL_DIR+"/rtl"
+INCLUDE_DIR="-I"+FLX_INSTALL_DIR+"/lib/rtl"
 FLXLIB="-I"+FLX_INSTALL_DIR+"/lib"
 STDLIB="std"
 if NOSTDLIB == 1:
