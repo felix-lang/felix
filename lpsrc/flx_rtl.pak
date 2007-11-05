@@ -29,6 +29,10 @@ provides_lib = "libflx_exceptions"
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "FLX_EXCEPTIONS"
 weaver_directory = 'doc/rtl/flx_exceptions/'
+xfiles = [
+  'rtl/flx_exceptions.hpp',
+  'rtl/flx_exceptions.cpp',
+  ]
 @doc()
 
 @select(tangler('spkgs/flx_rtl.py'))
@@ -63,7 +67,41 @@ pkg_requires = ['flx_exceptions','flx_gc','flx_pthread']
 iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
 weaver_directory = 'doc/rtl/flx_rtl/'
-xfiles = []
+xfiles = [
+  'rtl/flx_arun.cxx',
+  'rtl/flx_async.cpp',
+  'rtl/flx_async.hpp',
+  'rtl/flx_collector.cpp',
+  'rtl/flx_collector.hpp',
+  'rtl/flx_compiler_support_bodies.hpp',
+  'rtl/flx_compiler_support_headers.hpp',
+  'rtl/flx_dynlink.cpp',
+  'rtl/flx_dynlink.hpp',
+  'rtl/flx_eh.cpp',
+  'rtl/flx_eh.hpp',
+  'rtl/flx_executil.cpp',
+  'rtl/flx_executil.hpp',
+  'rtl/flx_gc.hpp',
+  'rtl/flx_gc_private.hpp',
+  'rtl/flx_i18n.cpp',
+  'rtl/flx_i18n.hpp',
+  'rtl/flx_ioutil.cpp',
+  'rtl/flx_ioutil.hpp',
+  'rtl/flx_main.cpp',
+  'rtl/flx_meta.hpp',
+  'rtl/flx_rtl.cpp',
+  'rtl/flx_rtl.hpp',
+  'rtl/flx_run.cxx',
+  'rtl/flx_run.include',
+  'rtl/flx_strutil.cpp',
+  'rtl/flx_strutil.hpp',
+  'rtl/flx_sync.cpp',
+  'rtl/flx_sync.hpp',
+  'rtl/flx_ts_collector.cpp',
+  'rtl/flx_ts_collector.hpp',
+  'rtl/plat_linux.cpp',
+  'rtl/plat_linux.hpp',
+  ]
 
 @doc()
 
