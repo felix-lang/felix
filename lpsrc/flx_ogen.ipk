@@ -289,7 +289,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props 
     )
     @
     (match ret with 
-      | `BTYP_void -> [ ("offsetof(" ^ name ^ ",_caller),")  ] 
+      | `BTYP_void -> [ ("offsetof(" ^ name ^ ",p_svc),");("offsetof(" ^ name ^ ",_caller),")    ] 
       | _ -> []
     ) 
     @
@@ -611,7 +611,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
       gen_offset_data s n name offsets false [] None last_ptr_map
 
-    (* This is just a _ref_, the offset data is in the system library *)
+    (* This is a pointer, the offset data is in the system library *)
     | `BTYP_pointer t -> ()
     
     (* for an array, we only have offsets for the first element *)

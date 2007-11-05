@@ -834,9 +834,9 @@ struct RTL_EXTERN unit {};   // unit
 
 RTL_EXTERN extern flx::gc::generic::gc_shape_t _fthread_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t schannel_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t _ref_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t _uctor_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t _int_ptr_map;
+RTL_EXTERN extern flx::gc::generic::gc_shape_t _address_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t unit_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t slist_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
@@ -1301,36 +1301,6 @@ flx::gc::generic::gc_shape_t schannel_ptr_map = {
 };
 
 // ********************************************************
-// _ref_ implementation
-// ********************************************************
-
-/*
-void _ref_::operator = (_ref_ const& r)
-{
-  if (frame != r.frame || offset != r.offset)
-  {
-    frame = r.frame;
-    offset = r.offset;
-  }
-}
-*/
-
-//OFFSETS for _ref_
-static std::size_t _ref_offsets[1]={
-  0
-};
-
-flx::gc::generic::gc_shape_t _ref_ptr_map = {
-  &schannel_ptr_map,
-  "void*",
-  1,sizeof(void*),
-  0, // no finaliser
-  1,
-  _ref_offsets,
-  gc::generic::gc_flags_default
-};
-
-// ********************************************************
 // _uctor_ implementation
 // ********************************************************
 
@@ -1340,7 +1310,7 @@ static std::size_t _uctor_offsets[1]= {
 };
 
 flx::gc::generic::gc_shape_t _uctor_ptr_map = {
-  &_ref_ptr_map,
+  &schannel_ptr_map,
   "_uctor_",
   1,
   sizeof(_uctor_),
@@ -1366,11 +1336,30 @@ flx::gc::generic::gc_shape_t _int_ptr_map = {
 };
 
 // ********************************************************
+// pointer implementation
+// ********************************************************
+
+//OFFSETS for address
+static std::size_t _address_offsets[1]={ 0 };
+
+flx::gc::generic::gc_shape_t _address_ptr_map = {
+  &_int_ptr_map,
+  "address",
+  1,
+  sizeof(void*),
+  0,
+  1,
+  _address_offsets,
+  gc::generic::gc_flags_default
+};
+
+
+// ********************************************************
 // unit implementation
 // ********************************************************
 
 flx::gc::generic::gc_shape_t unit_ptr_map = {
-  &_int_ptr_map,
+  &_address_ptr_map,
   "unit",
   1,
   sizeof(unit),
@@ -2077,8 +2066,10 @@ check_collect:
           readreq_t * pr = (readreq_t*)reader->get_svc()->data;
           if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
           *(void**)pr->variable = *(void**)pw->variable;
-          active->push_front(reader);
+          // NEW: ESSENTIAL! Reader must continue on, not writer!
+          active->push_front(ft);
           collector->add_root(reader);
+          ft=reader;
         }
       }
       goto next_request;

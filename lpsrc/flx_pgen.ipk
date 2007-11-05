@@ -69,7 +69,7 @@ let shape_of syms bbdfns tn t =
       if all_units cpts then "_int_ptr_map"
       else "_uctor_ptr_map"
 
-  | `BTYP_pointer _ -> "_ref_ptr_map"
+  | `BTYP_pointer _ -> "_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
  
 let gen_prim_call 
