@@ -102,6 +102,31 @@ iscr_source = ["lpsrc/flx_pthread.pak"]
 build_macro = "PTHREAD"
 weaver_directory = 'doc/rtl/flx_pthread/'
 tmpdir = ['pthread']
+xfiles= [
+  'src/pthread
+  'src/pthread/pthread_condv.cpp',
+  'src/pthread/pthread_condv.hpp',
+  'src/pthread/pthread_counter.cpp',
+  'src/pthread/pthread_counter.hpp',
+  'src/pthread/pthread_monitor.cpp',
+  'src/pthread/pthread_monitor.hpp',
+  'src/pthread/pthread_mutex.cpp',
+  'src/pthread/pthread_mutex.hpp',
+  'src/pthread/pthread_posix_thread.cpp',
+  'src/pthread/pthread_semaphore.cpp',
+  'src/pthread/pthread_semaphore.hpp',
+  'src/pthread/pthread_sleep_queue.cpp',
+  'src/pthread/pthread_sleep_queue.hpp',
+  'src/pthread/pthread_thread.hpp',
+  'src/pthread/pthread_thread_control.cpp',
+  'src/pthread/pthread_waitable_bool.cpp',
+  'src/pthread/pthread_waitable_bool.hpp',
+  'src/pthread/pthread_win_posix_condv_emul.cpp',
+  'src/pthread/pthread_win_posix_condv_emul.hpp',
+  'src/pthread/pthread_win_thread.cpp',
+  'src/pthread/pthread_work_fifo.cpp',
+  'src/pthread/pthread_work_fifo.hpp',
+  ]
 
 @h=tangler('pthread/target/flx_pthread_config.hpp')
 @select(h)
