@@ -284,7 +284,7 @@ struct alignment_of
     >::value));
 };
 
-template<std::size_t L, std::size_t A> 
+template<std::size_t L, std::size_t A>
 struct aligned_storage
 {
   union type
@@ -295,16 +295,16 @@ struct aligned_storage
 };
 
 template<typename T>
-struct store_of 
+struct store_of
 {
   typedef typename aligned_storage<sizeof(T), alignment_of<T>::value>::type type;
 };
 
 // convert an rvalue to an lvalue
-template<typename T> 
-T const &lvalue(T const &x) 
-{ 
-  return x; 
+template<typename T>
+T const &lvalue(T const &x)
+{
+  return x;
 }
 
 // this reinterpret cast works with rvalues too
