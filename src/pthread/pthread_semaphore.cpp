@@ -1,4 +1,3 @@
-#line 1372 "./lpsrc/flx_pthread.pak"
 #include "pthread_semaphore.hpp"
 #include <stdio.h>        // printf debugging
 #include <assert.h>

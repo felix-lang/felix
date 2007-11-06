@@ -1,4 +1,3 @@
-#line 618 "./lpsrc/flx_pthread.pak"
 #include "pthread_thread.hpp"
 #include <stdio.h>
 #include <cstdlib>

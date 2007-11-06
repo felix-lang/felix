@@ -1,4 +1,3 @@
-#line 1516 "./lpsrc/flx_pthread.pak"
 #include "pthread_waitable_bool.hpp"
 
 namespace flx { namespace pthread {

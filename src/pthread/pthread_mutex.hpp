@@ -1,4 +1,3 @@
-#line 1105 "./lpsrc/flx_pthread.pak"
 #ifndef __FLX_PTHREAD_MUTEX_H__
 #define __FLX_PTHREAD_MUTEX_H__
 #include "flx_pthread_config.hpp"

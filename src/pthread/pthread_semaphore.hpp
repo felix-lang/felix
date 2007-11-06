@@ -1,7 +1,6 @@
-#line 1338 "./lpsrc/flx_pthread.pak"
 #ifndef __FLX_PTHREAD_SEMAPHORE_H__
 #define __FLX_PTHREAD_SEMAPHORE_H__
-#include <flx_pthread_config.hpp>
+#include "flx_pthread_config.hpp"
 #include "pthread_mutex.hpp"
 
 #include "pthread_win_posix_condv_emul.hpp"

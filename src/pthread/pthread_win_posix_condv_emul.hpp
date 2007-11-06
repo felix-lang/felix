@@ -1,4 +1,3 @@
-#line 751 "./lpsrc/flx_pthread.pak"
 #ifndef __FLX_PTHREAD_WIN_POSIX_CONDV_EMUL_H__
 #define __FLX_PTHREAD_WIN_POSIX_CONDV_EMUL_H__
 // Note: no namespaces here!

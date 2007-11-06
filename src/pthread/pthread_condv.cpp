@@ -1,4 +1,3 @@
-#line 1314 "./lpsrc/flx_pthread.pak"
 #include "pthread_condv.hpp"
 #include <stdio.h>        // printf debugging
 #include <assert.h>

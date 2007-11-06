@@ -1,7 +1,6 @@
-#line 1165 "./lpsrc/flx_pthread.pak"
 #ifndef __FLX_PTHREAD_COUNTER_H__
 #define __FLX_PTHREAD_COUNTER_H__
-#include <flx_pthread_config.hpp>
+#include "flx_pthread_config.hpp"
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
 

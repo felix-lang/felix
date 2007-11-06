@@ -1,4 +1,3 @@
-#line 1722 "./lpsrc/flx_pthread.pak"
 #include <stdio.h>    // printf
 #include "pthread_work_fifo.hpp"
 namespace flx { namespace pthread {

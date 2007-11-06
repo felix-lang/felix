@@ -1,4 +1,3 @@
-#line 827 "./lpsrc/flx_pthread.pak"
 #include "pthread_win_posix_condv_emul.hpp"
 #include <assert.h>
 #if FLX_WIN32

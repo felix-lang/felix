@@ -1,4 +1,3 @@
-#line 1141 "./lpsrc/flx_pthread.pak"
 #include "pthread_mutex.hpp"
 #include <stdio.h>
 #include <assert.h>

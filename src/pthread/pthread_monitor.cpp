@@ -1,4 +1,3 @@
-#line 1437 "./lpsrc/flx_pthread.pak"
 #include "pthread_monitor.hpp"
 #include <queue>        // stl to the bloated rescue
 #include <string.h>       // strerror

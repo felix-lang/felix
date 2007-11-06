@@ -1,7 +1,6 @@
-#line 128 "./lpsrc/flx_pthread.pak"
 #ifndef __FLX_PTHREAD_THREAD_H__
 #define __FLX_PTHREAD_THREAD_H__
-#include <flx_pthread_config.hpp>
+#include "flx_pthread_config.hpp"
 
 #if FLX_WIN32
 #include <windows.h>

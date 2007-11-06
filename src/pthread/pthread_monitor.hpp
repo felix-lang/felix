@@ -1,7 +1,6 @@
-#line 1388 "./lpsrc/flx_pthread.pak"
 #ifndef __FLX_PTHREAD_MONITOR_H__
 #define __FLX_PTHREAD_MONITOR_H__
-#include <flx_pthread_config.hpp>
+#include "flx_pthread_config.hpp"
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
 #include "pthread_semaphore.hpp"
