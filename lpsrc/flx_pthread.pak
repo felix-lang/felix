@@ -103,7 +103,6 @@ build_macro = "PTHREAD"
 weaver_directory = 'doc/rtl/flx_pthread/'
 tmpdir = ['pthread']
 xfiles= [
-  'src/pthread
   'src/pthread/pthread_condv.cpp',
   'src/pthread/pthread_condv.hpp',
   'src/pthread/pthread_counter.cpp',
