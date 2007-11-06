@@ -30,34 +30,34 @@ Requires: flx_gc
 @select(h)
 
 PTHREADRTL_INTERFACES = [
-  'pthread/flx_pthread_config.hpp',           # portable
-  'pthread/pthread_thread.hpp',               # portable
-  'pthread/pthread_win_posix_condv_emul.hpp', # win32 and posix
-  'pthread/pthread_mutex.hpp',                # portable
-  'pthread/pthread_counter.hpp',              # portable
-  'pthread/pthread_waitable_bool.hpp',        # portable
-  'pthread/pthread_condv.hpp',                # portable
-  'pthread/pthread_semaphore.hpp',            # portable
-  'pthread/pthread_monitor.hpp',              # portable
-  'pthread/pthread_sleep_queue.hpp',          # portable
-  'pthread/pthread_work_fifo.hpp',            # portable
+  'src/pthread/flx_pthread_config.hpp',           # portable
+  'src/pthread/pthread_thread.hpp',               # portable
+  'src/pthread/pthread_win_posix_condv_emul.hpp', # win32 and posix
+  'src/pthread/pthread_mutex.hpp',                # portable
+  'src/pthread/pthread_counter.hpp',              # portable
+  'src/pthread/pthread_waitable_bool.hpp',        # portable
+  'src/pthread/pthread_condv.hpp',                # portable
+  'src/pthread/pthread_semaphore.hpp',            # portable
+  'src/pthread/pthread_monitor.hpp',              # portable
+  'src/pthread/pthread_sleep_queue.hpp',          # portable
+  'src/pthread/pthread_work_fifo.hpp',            # portable
 ]
 
 PTHREAD_CPPS = [
-  "pthread/pthread_win_posix_condv_emul", # portability hackery
-  "pthread/pthread_mutex", 
-  "pthread/pthread_condv",
-  "pthread/pthread_counter",
-  "pthread/pthread_waitable_bool",
-  "pthread/pthread_semaphore",
-  "pthread/pthread_monitor",
-  "pthread/pthread_sleep_queue",
-  "pthread/pthread_work_fifo",
-  "pthread/pthread_thread_control",
+  "src/pthread/pthread_win_posix_condv_emul", # portability hackery
+  "src/pthread/pthread_mutex", 
+  "src/pthread/pthread_condv",
+  "src/pthread/pthread_counter",
+  "src/pthread/pthread_waitable_bool",
+  "src/pthread/pthread_semaphore",
+  "src/pthread/pthread_monitor",
+  "src/pthread/pthread_sleep_queue",
+  "src/pthread/pthread_work_fifo",
+  "src/pthread/pthread_thread_control",
 ]
 
 POSIX_PTHREAD_CPPS = [
-  'pthread/pthread_posix_thread', 
+  'src/pthread/pthread_posix_thread', 
 ]
 
 LINUX_PTHREAD_CPPS = [
@@ -67,7 +67,7 @@ SOLARIS_PTHREAD_CPPS = [
 ]
 
 WINDOWS_PTHREAD_CPPS = [
-  'pthread/pthread_win_thread', 
+  'src/pthread/pthread_win_thread', 
 ]
 
 BSD_PTHREAD_CPPS = [
