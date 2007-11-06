@@ -1,4 +1,3 @@
-#line 3236 "./lpsrc/flx_rtl.pak"
 #include "flx_strutil.hpp"
 
 namespace flx { namespace rtl { namespace strutil {

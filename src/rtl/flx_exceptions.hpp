@@ -1,4 +1,3 @@
-#line 209 "./lpsrc/flx_rtl.pak"
 #ifndef __FLX_EXCEPTIONS_HPP__
 #define __FLX_EXCEPTIONS_HPP__
 #include "flx_exceptions_config.hpp"
@@ -141,4 +140,3 @@ struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t : flx_exception_t {
 };
 }}
 #endif
-

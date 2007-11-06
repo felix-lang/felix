@@ -1,4 +1,3 @@
-#line 573 "./lpsrc/flx_gc.pak"
 #include <cstdlib>
 #include <map>
 #include <limits.h>
@@ -512,4 +511,3 @@ flx_collector_t::~flx_collector_t()
 }
 
 }}} // end namespaces
-

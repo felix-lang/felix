@@ -1,4 +1,3 @@
-#line 31 "./lpsrc/flx_linux.pak"
 #define STAT "/proc/stat"
 #include <stdio.h>
 #include <errno.h>
@@ -39,4 +38,3 @@ int get_cpu_nr()
 
    return (cpu_nr + 1);
 }
-

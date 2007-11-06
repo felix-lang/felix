@@ -1,4 +1,3 @@
-#line 1889 "./lpsrc/flx_rtl.pak"
 #ifndef __FLX_SYNC_H__
 #define __FLX_SYNC_H__
 

@@ -1,4 +1,3 @@
-#line 3096 "./lpsrc/flx_rtl.pak"
 #include <cstdio>
 #include <string>
 #include "flx_ioutil.hpp"

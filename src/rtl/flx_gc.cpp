@@ -1,5 +1,3 @@
-#line 343 "./lpsrc/flx_gc.pak"
-
 #include "flx_gc.hpp"
 #include "flx_rtl.hpp"
 #include <cstdlib>
@@ -110,4 +108,3 @@ void *operator new(
   void *p = gcp.allocate(&shape,1,allow_gc);
   return p;
 }
-

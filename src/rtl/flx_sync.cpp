@@ -1,5 +1,5 @@
-#line 1927 "./lpsrc/flx_rtl.pak"
 #include "flx_sync.hpp"
+
 using namespace flx::rtl;
 
 namespace flx { namespace run {

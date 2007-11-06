@@ -1,4 +1,3 @@
-#line 470 "./lpsrc/flx_rtl.pak"
 #ifndef __FLX_COMPILER_SUPPORT_BODIES_H__
 #define __FLX_COMPILER_SUPPORT_BODIES_H__
 #include "flx_compiler_support_headers.hpp"
@@ -323,4 +322,3 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 #endif
 
 #endif
-

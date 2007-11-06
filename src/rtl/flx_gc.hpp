@@ -1,4 +1,3 @@
-#line 86 "./lpsrc/flx_gc.pak"
 #ifndef __FLX_GC_H__
 #define __FLX_GC_H__
 
@@ -36,14 +35,32 @@ struct GC_EXTERN gc_shape_t
   std::size_t *offsets;           ///< actual offsets
   gc_shape_flags_t flags;         ///< flags
 };
-#line 147 "./lpsrc/flx_gc.pak"
+
+/*
+ * The following template is provided as a standard wrapper
+ * for C++ class destructors. The term std_finaliser<T>
+ * denotes a function pointer to the wrapper for the destructor
+ * of class T, which can be used as a finaliser in the shape
+ * descriptor of a T. The client is cautioned than the order
+ * of finalisation may not be what is expected. Finalisers
+ * should be provided for all C++ objects managed by the Felix
+ * collector and not refering to Felix objects,
+ * but which contain pointers to other objects that need
+ * to be deleted when the main object is destroyed;
+ * for example a string class managing an array of char
+ * requires its destructor be invoked to delete the managed
+ * array, and so a finaliser wrapping the destructor must
+ * be provided.
+ *
+ * C data types may, of course, also require destruction,
+ * and Felix therefore can provide programmers with
+ * the convenience of C++ destructors, even for C data types.
+ */
 template<class T>
 void std_finaliser(collector_t*, void *t)
 {
   static_cast<T*>(t) -> ~T();
 }
-
-#line 156 "./lpsrc/flx_gc.pak"
 
 /// Allocator abstraction.
 
@@ -57,8 +74,6 @@ struct allocator_t {
   void set_debug(bool d){debug=d;}
 };
 
-#line 172 "./lpsrc/flx_gc.pak"
-
 /// Collector abstraction.
 struct GC_EXTERN collector_t
 {
@@ -68,7 +83,7 @@ struct GC_EXTERN collector_t
   virtual ~collector_t(){}
   virtual flx::pthread::thread_control_t *get_thread_control()const =0;
 
-#line 185 "./lpsrc/flx_gc.pak"
+  // These routines just provide statistics.
   unsigned long get_allocation_count()const {
     return v_get_allocation_count();
   }
@@ -81,12 +96,13 @@ struct GC_EXTERN collector_t
     return v_get_allocation_amt();
   }
 
-#line 201 "./lpsrc/flx_gc.pak"
+  // Hooks for the supplied allocator, which operate in
+  // terms of shape objects rather than raw memory amounts.
   void *allocate(gc_shape_t *shape, unsigned long x) {
     return v_allocate(shape,x);
   }
 
-#line 208 "./lpsrc/flx_gc.pak"
+  // The mark and sweep collector algorithm.
   unsigned long collect() {
     //fprintf(stderr, "Collecting\n");
     unsigned long x = v_collect();
@@ -94,7 +110,7 @@ struct GC_EXTERN collector_t
     return x;
   }
 
-#line 218 "./lpsrc/flx_gc.pak"
+  // Routines to add and remove roots.
   void add_root(void *memory) {
     v_add_root(memory);
   }
@@ -112,8 +128,8 @@ struct GC_EXTERN collector_t
     v_finalise(frame);
   }
 
-#line 238 "./lpsrc/flx_gc.pak"
-  //array management
+  // Integrity check for the data structure being managed.
+  // array management
   virtual void set_used(void *memory, unsigned long)=0;
   virtual void incr_used(void *memory, unsigned long)=0;
   virtual unsigned long get_used(void *memory)=0;
@@ -130,13 +146,13 @@ private:
   virtual void v_remove_root(void *memory)=0;
   virtual void v_free_all_mem()=0;
 
-#line 259 "./lpsrc/flx_gc.pak"
+  // It doesn't make any sense to copy collector objects
+  // about.
   void operator=(collector_t const&);
   collector_t(collector_t const&);
 };
 
-#line 267 "./lpsrc/flx_gc.pak"
-
+// The gc_profile_t is a grab bag of controls related to the collector.
 struct GC_EXTERN gc_profile_t {
   bool debug_allocations;     ///< allocator debug on/off
   bool debug_collections;     ///< collector debug on/off
@@ -178,13 +194,17 @@ struct GC_EXTERN gc_profile_t {
   ~gc_profile_t();
 };
 
-
-#line 311 "./lpsrc/flx_gc.pak"
-
 }}} // end namespaces
 
-#line 324 "./lpsrc/flx_gc.pak"
-/// Allocate collectable object
+/*
+ * The following two routines are used to provide
+ * C++ type safe heap allocation. There are no corresponding
+ * delete routines, please use the destroy function.
+ *
+ * Note these routines are now placed
+ * in the global namespace to accomodate Metrowerks
+ * compiler on Mac OS.
+ */
 GC_EXTERN void *operator new
 (
   std::size_t,
@@ -193,4 +213,3 @@ GC_EXTERN void *operator new
   bool
 );
 #endif
-

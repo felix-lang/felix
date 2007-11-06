@@ -1,4 +1,3 @@
-#line 3023 "./lpsrc/flx_rtl.pak"
 #include "flx_i18n.hpp"
 namespace flx { namespace rtl { namespace i18n {
   std::string utf8(unsigned long i)

@@ -1,4 +1,3 @@
-#line 1051 "./lpsrc/flx_rtl.pak"
 #include "flx_rtl.hpp"
 #include <cstdio>
 #include <cassert>
@@ -342,6 +341,5 @@ void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line
     print_loc(stderr,sr,file,line);
   }
 }
-
 
 }}

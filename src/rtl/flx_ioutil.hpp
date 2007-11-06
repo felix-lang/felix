@@ -1,4 +1,3 @@
-#line 3079 "./lpsrc/flx_rtl.pak"
 #ifndef FLX_IOUTIL
 #define FLX_IOUTIL
 #include <string>

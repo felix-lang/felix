@@ -1,4 +1,3 @@
-#line 1130 "./lpsrc/flx_gc.pak"
 #include "flx_rtl_config.hpp"
 #include "flx_ts_collector.hpp"
 
@@ -49,5 +48,3 @@ unsigned long flx_ts_collector_t::v_get_allocation_amt()const {
 
 
 }}} // end namespaces
-
-

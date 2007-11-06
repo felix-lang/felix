@@ -1,4 +1,3 @@
-#line 3295 "./lpsrc/flx_rtl.pak"
 #include "flx_executil.hpp"
 namespace flx { namespace rtl { namespace executil {
 void run(flx::rtl::con_t *p)
@@ -11,4 +10,3 @@ void run(flx::rtl::con_t *p)
 }
 
 }}}
-

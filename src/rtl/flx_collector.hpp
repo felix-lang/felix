@@ -1,4 +1,3 @@
-#line 456 "./lpsrc/flx_gc.pak"
 #ifndef __FLX_COLLECTOR_H__
 #define __FLX_COLLECTOR_H__
 #include "flx_gc.hpp"
@@ -114,4 +113,3 @@ private:
 
 }}} // end namespaces
 #endif
-

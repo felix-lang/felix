@@ -1,4 +1,3 @@
-#line 353 "./lpsrc/flx_rtl.pak"
 #include "flx_exceptions.hpp"
 
 namespace flx { namespace rtl {
@@ -63,4 +62,3 @@ void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
 }
 
 }}
-

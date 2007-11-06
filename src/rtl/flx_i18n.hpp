@@ -1,4 +1,3 @@
-#line 3011 "./lpsrc/flx_rtl.pak"
 #ifndef __FLX_I18N_H__
 #define __FLX_I18N_H__
 #include <string>

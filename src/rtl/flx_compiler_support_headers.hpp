@@ -1,4 +1,3 @@
-#line 419 "./lpsrc/flx_rtl.pak"
 #ifndef __FLX_COMPILER_SUPPORT_HEADERS_H__
 #define __FLX_COMPILER_SUPPORT_HEADERS_H__
 #include "flx_rtl_config.hpp"
@@ -48,4 +47,3 @@
 #endif
 
 #endif
-
