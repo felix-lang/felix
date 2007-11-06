@@ -50,13 +50,13 @@ RTL_CPPS = [
 
 RTL_INTERFACES = [
   "src/rtl/flx_rtl.hpp",
-	'src/rtl/flx_compiler_support_headers.hpp',
-	'src/rtl/flx_compiler_support_bodies.hpp',
+  'src/rtl/flx_compiler_support_headers.hpp',
+  'src/rtl/flx_compiler_support_bodies.hpp',
   'src/rtl/flx_dynlink.hpp',
-	'src/rtl/flx_i18n.hpp',
-	'src/rtl/flx_ioutil.hpp',
-	'src/rtl/flx_strutil.hpp',
-	'src/rtl/flx_executil.hpp',
+  'src/rtl/flx_i18n.hpp',
+  'src/rtl/flx_ioutil.hpp',
+  'src/rtl/flx_strutil.hpp',
+  'src/rtl/flx_executil.hpp',
 ]
 
 cpp_cpps = RTL_CPPS
@@ -113,7 +113,7 @@ build_macro = "ASYNC"
 
 @select(tangler('spkgs/flx_drivers.py'))
 STATIC_DRIVERS = [
-  ('src/rtl/flx_run', 'lib'),
+  ('src/rtl/flx_run', 'lib/rtl'),
   ('test/drivers/flx_perf_drv1', ''),
   ('test/drivers/mickey_mouse', ''),
 ]

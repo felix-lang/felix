@@ -1059,14 +1059,16 @@ class PLUGIN(Plugin):
 
     for src, outdir in DRIVERS:
       if verbose: print 'static Compiling driver object', src
-      TARGET_CXX.compile_static_main(vxqt, [src],
-        outdir=outdir,
+      dst = TARGET_CXX.compile_static_main(vxqt, [src],
         include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
         macros=["FLX_STATIC_LINK"],
         optimise=optimise,
         debug=debug,
         CFLAGS=CFLAGS+cflags)
 
+      if outdir:
+        print 'copying file %s -> %s' % (dst[0], outdir)
+        filecopy2dir(dst[0], outdir)
     
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
@@ -1521,7 +1523,7 @@ class PLUGIN(Plugin):
         #print "LP Pak %-20s changed: %s" % (pkg,fmtime(pkg_src_time))
 
         # at this stage, extra source files need to be considered
-        xfiles = pkgdict.get("xfiles",[])
+        xfiles = [os.path.join(FLX_DIR, p) for p in pkgdict.get("xfiles",[])]
         #print "XFILES="+str(xfiles)
         xfiles_time = newest_filetime(xfiles)
         #print "XFILES %-20s changed: %s" % (pkg,fmtime(xfiles_time))

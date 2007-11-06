@@ -121,10 +121,10 @@ weaver_directory = "doc/sdl/"
 execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
   STATIC_DRIVERS = [
-    ('rtl/flx_arun','lib'),
+    ('src/rtl/flx_arun','lib/rtl'),
   ]
   DYNAMIC_DRIVERS = [
-    ('rtl/flx_arun','bin/flx_arun'),
+    ('src/rtl/flx_arun','bin/flx_arun'),
   ]
   DRLIBS = [
    'libflx_async',

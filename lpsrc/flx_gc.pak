@@ -65,9 +65,9 @@ xfiles = [
   'src/rtl/flx_gc.cpp', 
   'src/rtl/flx_gc_private.hpp', 
   'src/rtl/flx_collector.hpp', 
-  'src/rtl/flx_collector.cpp'
+  'src/rtl/flx_collector.cpp',
   'src/rtl/flx_ts_collector.hpp', 
-  'src/rtl/flx_ts_collector.cpp'
+  'src/rtl/flx_ts_collector.cpp',
   ]
 
 @h = tangler('config/flx_gc.fpc')
