@@ -1443,7 +1443,6 @@ if "target" in PHASES:
     pa(f,this,"FLX_RTL_DIR")
     pa(f,this,"FLX_HOST_CONFIG_DIR")
     pa(f,this,"FLX_TARGET_CONFIG_DIR")
-    pa(f,this,"FLX_HOST_CONFIG_DIR")
     pr(f,"")
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
