@@ -16,12 +16,12 @@ in namespace flx::rtl, except as noted.
 
 @select(tangler('spkgs/flx_exceptions.py'))
 cpp_cpps = [
-  "rtl/flx_exceptions",
+  "src/rtl/flx_exceptions",
 ]
 
 rtl_interfaces = [
-  'rtl/flx_exceptions_config.hpp',
-  'rtl/flx_exceptions.hpp',
+  'src/rtl/flx_exceptions_config.hpp',
+  'src/rtl/flx_exceptions.hpp',
 ]
 
 pkg_requires = ['flx_rtl_config']
@@ -30,33 +30,33 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "FLX_EXCEPTIONS"
 weaver_directory = 'doc/rtl/flx_exceptions/'
 xfiles = [
-  'rtl/flx_exceptions.hpp',
-  'rtl/flx_exceptions.cpp',
+  'src/rtl/flx_exceptions.hpp',
+  'src/rtl/flx_exceptions.cpp',
   ]
 @doc()
 
 @select(tangler('spkgs/flx_rtl.py'))
 RTL_CPPS = [
-  "rtl/flx_rtl",
-  "rtl/flx_dynlink",
-  "rtl/flx_sync",
-  "rtl/flx_eh",
-  "rtl/flx_i18n",
-  "rtl/flx_ioutil",
-  "rtl/flx_strutil",
-  "rtl/flx_executil",
-  "rtl/flx_main",
+  "src/rtl/flx_rtl",
+  "src/rtl/flx_dynlink",
+  "src/rtl/flx_sync",
+  "src/rtl/flx_eh",
+  "src/rtl/flx_i18n",
+  "src/rtl/flx_ioutil",
+  "src/rtl/flx_strutil",
+  "src/rtl/flx_executil",
+  "src/rtl/flx_main",
 ]
 
 RTL_INTERFACES = [
-  "rtl/flx_rtl.hpp",
-	'rtl/flx_compiler_support_headers.hpp',
-	'rtl/flx_compiler_support_bodies.hpp',
-  'rtl/flx_dynlink.hpp',
-	'rtl/flx_i18n.hpp',
-	'rtl/flx_ioutil.hpp',
-	'rtl/flx_strutil.hpp',
-	'rtl/flx_executil.hpp',
+  "src/rtl/flx_rtl.hpp",
+	'src/rtl/flx_compiler_support_headers.hpp',
+	'src/rtl/flx_compiler_support_bodies.hpp',
+  'src/rtl/flx_dynlink.hpp',
+	'src/rtl/flx_i18n.hpp',
+	'src/rtl/flx_ioutil.hpp',
+	'src/rtl/flx_strutil.hpp',
+	'src/rtl/flx_executil.hpp',
 ]
 
 cpp_cpps = RTL_CPPS
@@ -68,32 +68,32 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "RTL"
 weaver_directory = 'doc/rtl/flx_rtl/'
 xfiles = [
-  'rtl/flx_arun.cxx',
-  'rtl/flx_async.cpp',
-  'rtl/flx_async.hpp',
-  'rtl/flx_compiler_support_bodies.hpp',
-  'rtl/flx_compiler_support_headers.hpp',
-  'rtl/flx_dynlink.cpp',
-  'rtl/flx_dynlink.hpp',
-  'rtl/flx_eh.cpp',
-  'rtl/flx_eh.hpp',
-  'rtl/flx_executil.cpp',
-  'rtl/flx_executil.hpp',
-  'rtl/flx_i18n.cpp',
-  'rtl/flx_i18n.hpp',
-  'rtl/flx_ioutil.cpp',
-  'rtl/flx_ioutil.hpp',
-  'rtl/flx_main.cpp',
-  'rtl/flx_rtl.cpp',
-  'rtl/flx_rtl.hpp',
-  'rtl/flx_run.cxx',
-  'rtl/flx_run.include',
-  'rtl/flx_strutil.cpp',
-  'rtl/flx_strutil.hpp',
-  'rtl/flx_sync.cpp',
-  'rtl/flx_sync.hpp',
-  'rtl/plat_linux.cpp',
-  'rtl/plat_linux.hpp',
+  'src/rtl/flx_arun.cxx',
+  'src/rtl/flx_async.cpp',
+  'src/rtl/flx_async.hpp',
+  'src/rtl/flx_compiler_support_bodies.hpp',
+  'src/rtl/flx_compiler_support_headers.hpp',
+  'src/rtl/flx_dynlink.cpp',
+  'src/rtl/flx_dynlink.hpp',
+  'src/rtl/flx_eh.cpp',
+  'src/rtl/flx_eh.hpp',
+  'src/rtl/flx_executil.cpp',
+  'src/rtl/flx_executil.hpp',
+  'src/rtl/flx_i18n.cpp',
+  'src/rtl/flx_i18n.hpp',
+  'src/rtl/flx_ioutil.cpp',
+  'src/rtl/flx_ioutil.hpp',
+  'src/rtl/flx_main.cpp',
+  'src/rtl/flx_rtl.cpp',
+  'src/rtl/flx_rtl.hpp',
+  'src/rtl/flx_run.cxx',
+  'src/rtl/flx_run.include',
+  'src/rtl/flx_strutil.cpp',
+  'src/rtl/flx_strutil.hpp',
+  'src/rtl/flx_sync.cpp',
+  'src/rtl/flx_sync.hpp',
+  'src/rtl/plat_linux.cpp',
+  'src/rtl/plat_linux.hpp',
   ]
 
 @doc()
@@ -103,7 +103,7 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','d
 @doc()
 
 @select(tangler('spkgs/flx_async.py'))
-cpp_cpps = ['rtl/flx_async']
+cpp_cpps = ['src/rtl/flx_async']
 provides_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl','flx_gc']
 lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc','libflx_judy', 'libflx_exceptions']
@@ -113,13 +113,13 @@ build_macro = "ASYNC"
 
 @select(tangler('spkgs/flx_drivers.py'))
 STATIC_DRIVERS = [
-  ('rtl/flx_run', 'lib'),
+  ('src/rtl/flx_run', 'lib'),
   ('test/drivers/flx_perf_drv1', ''),
   ('test/drivers/mickey_mouse', ''),
 ]
 
 DYNAMIC_DRIVERS = [
-  ('rtl/flx_run','bin/flx_run'),
+  ('src/rtl/flx_run','bin/flx_run'),
   ('test/drivers/flx_perf_drv1','test/drivers/flx_perf_drv1'),
   ('test/drivers/mickey_mouse','bin/mickey_mouse'),
 ]
@@ -141,11 +141,11 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 
 @select(tangler('spkgs/flx_async_drivers.py'))
 STATIC_DRIVERS = [
-  ('rtl/flx_arun',''),
+  ('src/rtl/flx_arun',''),
 ]
 
 DYNAMIC_DRIVERS = [
-  ('rtl/flx_arun','bin/flx_arun'),
+  ('src/rtl/flx_arun','bin/flx_arun'),
 ]
 
 DRLIBS = [

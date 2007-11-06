@@ -848,6 +848,8 @@ TARGETCXX=None
 FLX_DIR=os.environ.get("FLX_DIR",os.curdir)
 FLX_LPARCHIVE=os.environ.get("FLX_LPARCHIVE",os.curdir)
 FLX_RTL_DIR=os.path.join('lib', 'rtl')
+FLX_TARGET_CONFIG_DIR=os.path.join('config', 'target')
+FLX_HOST_CONFIG_DIR=os.path.join('config', 'host')
 
 ALL_PHASES=["build","host","target","run"]
 
@@ -991,6 +993,8 @@ if FLX_LPARCHIVE=='': FLX_LPARCHIVE = os.curdir
 print "FLX_DIR="+FLX_DIR
 print "FLX_LPARCHIVE="+FLX_LPARCHIVE
 print "FLX_RTL_DIR="+FLX_RTL_DIR
+print "FLX_TARGET_CONFIG_DIR="+FLX_TARGET_CONFIG_DIR
+print "FLX_HOST_CONFIG_DIR="+FLX_HOST_CONFIG_DIR
 
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
@@ -1078,6 +1082,8 @@ if "build" in PHASES:
     pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
     pa(f,this,"FLX_RTL_DIR")
+    pa(f,this,"FLX_TARGET_CONFIG_DIR")
+    pa(f,this,"FLX_HOST_CONFIG_DIR")
     pr(f,"")
  
     print "WRITE STEP 2"
@@ -1219,6 +1225,7 @@ if "host" in PHASES:
     pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
     pa(f,this,"FLX_RTL_DIR")
+    pa(f,this,"FLX_HOST_CONFIG_DIR")
     pr(f,"")
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
@@ -1434,6 +1441,7 @@ if "target" in PHASES:
     pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
     pa(f,this,"FLX_RTL_DIR")
+    pa(f,this,"FLX_TARGET_CONFIG_DIR")
     pr(f,"")
 
     pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")

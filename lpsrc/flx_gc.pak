@@ -41,13 +41,19 @@ to supply a user written allocator.
 @execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flx_gc.py')
 @select(h)
-cpp_cpps = ['rtl/flx_gc','rtl/flx_collector', 'rtl/flx_ts_collector']
+cpp_cpps = [
+  'src/rtl/flx_gc',
+  'src/rtl/flx_collector', 
+  'src/rtl/flx_ts_collector'
+  ]
+
 rtl_interfaces = [
-  'rtl/flx_gc_config.hpp',
-  'rtl/flx_gc.hpp',
-  'rtl/flx_collector.hpp',
-  'rtl/flx_gc_private.hpp',
+  'src/rtl/flx_gc_config.hpp',
+  'src/rtl/flx_gc.hpp',
+  'src/rtl/flx_collector.hpp',
+  'src/rtl/flx_gc_private.hpp',
 ]
+
 provides_lib = "libflx_gc"
 pkg_requires = ['flx_judy', 'flx_exceptions', 'flx_pthread']
 lib_requires = ['libflx_judy', 'libflx_exceptions', 'libflx_pthread']
@@ -55,13 +61,13 @@ iscr_source = ['lpsrc/flx_gc.pak']
 build_macro = "FLX_GC"
 weaver_directory = 'doc/rtl/flx_gc/'
 xfiles = [
-  'rtl/flx_gc.hpp', 
-  'rtl/flx_gc.cpp', 
-  'rtl/flx_gc_private.hpp', 
-  'rtl/flx_collector.hpp', 
-  'rtl/flx_collector.cpp'
-  'rtl/flx_ts_collector.hpp', 
-  'rtl/flx_ts_collector.cpp'
+  'src/rtl/flx_gc.hpp', 
+  'src/rtl/flx_gc.cpp', 
+  'src/rtl/flx_gc_private.hpp', 
+  'src/rtl/flx_collector.hpp', 
+  'src/rtl/flx_collector.cpp'
+  'src/rtl/flx_ts_collector.hpp', 
+  'src/rtl/flx_ts_collector.cpp'
   ]
 
 @h = tangler('config/flx_gc.fpc')
@@ -78,7 +84,7 @@ Version: $Id$
 
 Requires: flx_judy
 
-@h=tangler('rtl/flx_gc_config.hpp')
+@h=tangler('config/target/flx_gc_config.hpp')
 @select(h)
 #ifndef __FLX_GC_CONFIG_H__
 #define __FLX_GC_CONFIG_H__

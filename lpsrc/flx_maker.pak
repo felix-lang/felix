@@ -565,7 +565,7 @@ class PLUGIN(Plugin):
 
       HOST_C.build_static_rtl(vxqt, CCS, 'hostlib' + os.sep + pkglib,
         outdir='build',
-        include_paths=INCLUDE_PATH+[FLX_RTL_DIR, "elk"],
+        include_paths=INCLUDE_PATH+[FLX_RTL_DIR, FLX_HOST_CONFIG_DIR, "elk"],
         macros=MACROS+["FLX_STATIC_LINK"],
       )
 
@@ -575,7 +575,7 @@ class PLUGIN(Plugin):
 
       HOST_CXX.build_static_rtl(vxqt, CPPS, 'hostlib' + os.sep + pkglib,
         outdir='build',
-        include_paths=INCLUDE_PATH+[FLX_RTL_DIR, "elk"],
+        include_paths=INCLUDE_PATH+[FLX_RTL_DIR, FLX_HOST_CONFIG_DIR, "elk"],
         macros=MACROS+["FLX_STATIC_LINK"],
       )
 
@@ -585,7 +585,7 @@ class PLUGIN(Plugin):
       deletefile(f) # delete the object files
 
     kwds = {\
-      'include_paths': INCLUDE_PATH+[FLX_RTL_DIR, "elk"],
+      'include_paths': INCLUDE_PATH+[FLX_RTL_DIR, FLX_HOST_CONFIG_DIR, "elk"],
       'macros': MACROS+["FLX_STATIC_LINK"],
       'CFLAGS': CFLAGS,
       'LDFLAGS': SFLAGS,
@@ -644,7 +644,7 @@ class PLUGIN(Plugin):
             vxqt,
             basename,
             outdir='build',
-            include_paths=[FLX_RTL_DIR],
+            include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
             optimise=optimise_c,
             debug=debug,
             CFLAGS=CFLAGS+" "+cflags,
@@ -680,7 +680,7 @@ class PLUGIN(Plugin):
           basename,
           outdir='build',
           objects=[driver],
-          include_paths=[FLX_RTL_DIR],
+          include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
           optimise=optimise_c,
           debug=debug,
           macros=["FLX_STATIC_LINK"],
@@ -964,7 +964,7 @@ class PLUGIN(Plugin):
 
     compile_kwds = {
         'outdir': 'build',
-        'include_paths': INCLUDE_PATH+[FLX_RTL_DIR],
+        'include_paths': INCLUDE_PATH+[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
         'optimise': optimise,
         'debug': debug,
         'macros': MACROS+["BUILD_"+BUILD_MACRO],
@@ -1026,7 +1026,7 @@ class PLUGIN(Plugin):
     kwds = {
         'outfile': os.path.join(FLX_RTL_DIR, lib + "_static"),
         'outdir': 'build',
-        'include_paths': INCLUDE_PATH+[FLX_RTL_DIR],
+        'include_paths': INCLUDE_PATH+[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
         'macros': MACROS+["FLX_STATIC_LINK"],
         'optimise': optimise,
         'debug': debug,
@@ -1061,7 +1061,7 @@ class PLUGIN(Plugin):
       if verbose: print 'static Compiling driver object', src
       TARGET_CXX.compile_static_main(vxqt, [src],
         outdir=outdir,
-        include_paths=[FLX_RTL_DIR],
+        include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
         macros=["FLX_STATIC_LINK"],
         optimise=optimise,
         debug=debug,
@@ -1093,7 +1093,7 @@ class PLUGIN(Plugin):
       if verbose: print 'dynamic Compiling driver object', src
 
       TARGET_CXX.build_shared_program(vxqt, src, bin,
-          include_paths=[FLX_RTL_DIR],
+          include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
           optimise=optimise,
           debug=debug,
           CFLAGS=CFLAGS+cflags,
@@ -1123,7 +1123,7 @@ class PLUGIN(Plugin):
           dir,
           bin,
           outdir='build',
-          include_paths=[FLX_RTL_DIR],
+          include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
           macros=["FLX_STATIC_LINK"],
           CFLAGS=CFLAGS,
           lib_paths=[dir],
@@ -1153,7 +1153,7 @@ class PLUGIN(Plugin):
           src,
           exe,
           objects=[os.path.join(FLX_RTL_DIR, 'flx_run' + EXT_STATIC_OBJ)],
-          include_paths=[FLX_RTL_DIR],
+          include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
           macros=["FLX_STATIC_LINK"],
           CFLAGS=CFLAGS,
           lib_paths=[FLX_RTL_DIR],
