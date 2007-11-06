@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <cassert>
+#include "flx_compiler_support_bodies.hpp"
 
 namespace flx { namespace pthread {
 

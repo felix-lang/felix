@@ -30,7 +30,6 @@ Requires: flx_gc
 @select(h)
 
 PTHREADRTL_INTERFACES = [
-  'src/pthread/flx_pthread_config.hpp',           # portable
   'src/pthread/pthread_thread.hpp',               # portable
   'src/pthread/pthread_win_posix_condv_emul.hpp', # win32 and posix
   'src/pthread/pthread_mutex.hpp',                # portable

@@ -97,7 +97,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 #endif
 @doc()
 
-@select(tangler("rtl/flx_host_config.hpp"))
+@select(tangler("config/host/flx_host_config.hpp"))
 #ifndef __FLX_HOST_CONFIG_H__
 #define __FLX_HOST_CONFIG_H__
 
@@ -146,7 +146,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 
 #endif
 
-@select(tangler("rtl/flx_rtl_config.hpp"))
+@select(tangler("config/target/flx_rtl_config.hpp"))
 #ifndef __FLX_RTL_CONFIG_H__
 #define __FLX_RTL_CONFIG_H__
 
