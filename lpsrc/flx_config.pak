@@ -73,7 +73,7 @@ class setup_test:
     self.testcount = 0
     self.argcount = 0
 
-    while len(self.levels) < level: 
+    while len(self.levels) < level:
       self.levels.append(0)
 
     self.levels[level - 1] = self.levels[level - 1] + 1
@@ -102,7 +102,7 @@ class setup_test:
     return self.root + self.level_str()
 
 
-  def tangler(self, name, 
+  def tangler(self, name,
       extension='',
       filetype=interscript.frames.inputf.deduce):
 
@@ -123,7 +123,7 @@ class setup_test:
   def test(self, *args, **kwds):
     name = '%s-%s' % (self.filename(), self.testcount)
 
-    
+
     # if categories are specified, write them out
     categories = []
     if 'categories' in kwds:
@@ -133,7 +133,7 @@ class setup_test:
     # construct the tangler
     tangler = apply(self.tangler, (name,) + args, kwds)
     for cat in categories: self.kat(tangler,cat)
-      
+
     self.testcount = self.testcount + 1
     return tangler
 
@@ -181,7 +181,7 @@ class setup_test:
     v = self.registry_out.get(code,[])
     if ff not in v:
       set_anchor(ff)
-      v.append(ff) 
+      v.append(ff)
       self.registry_out[code]=v
 
 
@@ -199,7 +199,7 @@ class setup_test:
         ref_anchor(i)
     end_list()
 
-    
+
   def write_katfile(self):
     dirname = os.path.split(self.katfile)[0]
     if not os.path.exists(dirname):
@@ -240,7 +240,7 @@ def newest_filetime(fs):
   for f in fs:
     x = filetime(f)
     if x == 0: return time.time()+1000.0
-    m = max(m,x) 
+    m = max(m,x)
   return m
 
 # returns the time of the oldest file of a set
@@ -252,7 +252,7 @@ def oldest_filetime(fs):
   for f in fs:
     x = filetime(f)
     if x == 0: raise MakeError # missing files not allowed
-    m = max(m,x) 
+    m = max(m,x)
   return m
 
 def fmtime(t):
@@ -271,12 +271,12 @@ def closure1(d,i,o):
       if k not in o:
         o = closure1(d,k,o)
   return o
- 
+
 # d is a dictionary T -> T list
 # s is a list
 # closure (d,s) returns the closure of s wrt d
 #
-# normally d is a dependency map for packages 
+# normally d is a dependency map for packages
 # and s is set of root packages to be rebuilt
 # result is the all the packages that need rebuild
 
@@ -303,7 +303,7 @@ def erasefile(f):
 def unix2native(f):
   return string.join(string.split(f,"/"),os.sep)
 
-def deletefile(f): 
+def deletefile(f):
   erasefile(unix2native(f))
 
 def mkdirs(x):
@@ -352,18 +352,18 @@ def get_stdout(x):
 get_stdouterr = get_stdout
 
 def flush():
-  try: 
+  try:
     sys.stdin.flush()
-  except: 
+  except:
     pass
 
   sys.stdout.flush()
   sys.stderr.flush()
 
-def xqt(x, 
-    verbose=0, 
-    quiet=0, 
-    invert_result=0, 
+def xqt(x,
+    verbose=0,
+    quiet=0,
+    invert_result=0,
     log=None):
   if log is None: log = sys.stdout
 
@@ -468,7 +468,7 @@ def tee_cmd(cmd, stdout, bufsize=1024):
     return p.wait()
 
 
-class MakeError(EnvironmentError): 
+class MakeError(EnvironmentError):
   def __init__(self, command=None, stdout=[], stderr=[]):
     self.command = command
     self.stdout = string.join(stdout, "")
@@ -486,7 +486,7 @@ class MakeError(EnvironmentError):
       s.append('STDERR:\n' + self.stderr)
 
     return string.join(s, "\n")
-  
+
 @select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
 #    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
@@ -543,7 +543,7 @@ except:
   f.close()
   cload(globals(),"pkgconfig")
 
- 
+
 @select(tangler("cpkgs/build/python_misc.py"))
 try:
   cload(globals(),"filename")
@@ -630,13 +630,13 @@ def locate_file(fname):
         candidates.append(candidate[0:-n])
     if len(candidates) == 0:
       print "Cannot find directory containing file",fname
-      return None 
+      return None
     if len(candidates) == 1:
       print "Found unique directory ",candidates[0],"containing file",fname
       return candidates[0]
     else:
       print "Found multiple directories containing file",fname
-      s = candidates[0] 
+      s = candidates[0]
       for k in candidates:
         print "Dir: ",k
         if len(k) < len(s): s = k
@@ -660,7 +660,7 @@ import string
 import time
 import glob
 import getopt
-import signal # try to force ctrl-C to this process 
+import signal # try to force ctrl-C to this process
 this = globals()
 
 if '' not in sys.path: sys.path = [''] + sys.path
@@ -774,7 +774,7 @@ try:
   build_model = archmap[output]
   print "Build platform: " + build_model
 # RF: EnvironmentError was not catching the the failed archmap[] lookup,
-# halting the configure. What's the EnvironmentError stuff for, Erick? 
+# halting the configure. What's the EnvironmentError stuff for, Erick?
 # ET: the lookup error is for the get_stdout, which should throw something
 # derived from EnvironmentError, namely IOError, OSError, and MakeError.
 # I just missed catching LookupError (which is a superclass of IndexError and
@@ -788,12 +788,12 @@ except (EnvironmentError, LookupError):
 #
 # uname -s: kernel name "linux" on linux
 # uname -n: network node name "rosella" on JS box
-# uname -r: kernel-release "2.6.12-10-amd64-k8" on JS box 
+# uname -r: kernel-release "2.6.12-10-amd64-k8" on JS box
 # uname -v: kernel-version " #1 Thu Dec 22 11:12:06 UTC 2005" on JS box
 # uname -m: machine hardware name: "x86_64" on JS box
 # uname -o: operating system: "GNU/Linux" on JS box
 # uname -p: OSX only? on osx reports broad cpu type (e.g. powerpc)
-# not sure what it reports on intel macs. 
+# not sure what it reports on intel macs.
 # machine command reports very specific cpu type, e.g. ppc7450, ppc7400
 
 result,output = get_stdout("uname -m")
@@ -856,15 +856,15 @@ ALL_PHASES=["build","host","target","run"]
 PHASES = []
 
 try:
-  opts, args = getopt.getopt(sys.argv[1:], 'hvq', 
-      ['help', 'verbose', 'quiet', 'force', 'refresh', 'upgrade', 
-      'prefix=', 'set-int=', 'set-string=', 
+  opts, args = getopt.getopt(sys.argv[1:], 'hvq',
+      ['help', 'verbose', 'quiet', 'force', 'refresh', 'upgrade',
+      'prefix=', 'set-int=', 'set-string=',
       'include_paths=', 'lib_paths=',
       'build=', 'host=', 'target=', 'run=',
       'buildcc=', 'hostcc=', 'targetcc=', 'targetcxx=',
-      'boot=', 'save-config=', 
+      'boot=', 'save-config=',
       'load-config=', 'lparchive=', 'phase='])
-      #'set-int', 
+      #'set-int',
 except getopt.error, e:
   sys.stderr.write(str(e) + '\n')
   sys.exit(1)
@@ -984,7 +984,7 @@ if BOOTFILE:
     print "Loaded",BOOTFILE
   except:
     print "Cannot execute specified bootstrap file: ", BOOTFILE
-    sys.exit(1) 
+    sys.exit(1)
 
 if PREFIX=='': PREFIX=default_prefix
 print "INSTALL PREFIX="+PREFIX
@@ -1007,7 +1007,7 @@ import flxbuild.msvcxx_class
 
 #
 # Detect the native build model
-# 
+#
 # This model has two uses: first, to build any build time
 # tools needed to assist in generating the sources
 # and second, to aid in selecting the options to cross-compile
@@ -1015,7 +1015,7 @@ import flxbuild.msvcxx_class
 #
 
 if "build" in PHASES:
-  print 
+  print
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print "Checking BUILD MODEL",build_model
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -1085,9 +1085,9 @@ if "build" in PHASES:
     pa(f,this,"FLX_TARGET_CONFIG_DIR")
     pa(f,this,"FLX_HOST_CONFIG_DIR")
     pr(f,"")
- 
+
     print "WRITE STEP 2"
-   
+
     cc = BUILD_CC.__class__.__name__
     pr(f,"BUILD_CC=flxbuild."+cc+"_class."+cc+"()")
     pr(f,"BUILD_CC.load_options("+repr('config'+os.sep+'build_cc.py')+")")
@@ -1123,15 +1123,15 @@ if "host" in PHASES:
   #
 
 
-  if not host_model: 
+  if not host_model:
     host_model=build_model
     print "Defaulting host model to build model",host_model
-  if not target_model: 
+  if not target_model:
     target_model = host_model
     print "Defaulting target model to host model:",target_model
 
 
-  print 
+  print
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print "Checking HOST MODEL",host_model
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -1260,14 +1260,14 @@ if "target" in PHASES:
   #
   # Now create the target model: the compiler has to run
   # on the build machine, but can cross compile for
-  # the target 
+  # the target
   #
   # cross compilation of C++ generated by Felix allows us to
   # check the generated code compiles, but not that it runs
   # [but the output is largely portable so we can still try]
   #
 
-  print 
+  print
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print "Checking TARGET MODEL",target_model
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -1330,7 +1330,7 @@ if "target" in PHASES:
     print 'using the HOST_CXX options for the TARGET_CXX'
     TARGET_CXX.load_options("config"+os.sep+"host_cxx.py")
     TARGET_CXX.options.use = "target"
-     
+
   else:
     TARGET_CXX.check_options(shell,get_stdout)
     TARGET_CXX.report_config()
@@ -1358,7 +1358,7 @@ if "target" in PHASES:
     HAVE_EPOLL = TARGET_CXX.options.HAVE_EPOLL
     HAVE_EVTPORTS = TARGET_CXX.options.HAVE_EVTPORTS
     HAVE_OPENMP = TARGET_CXX.options.HAVE_OPENMP
-    
+
     HAVE_MSVC = 0
     HAVE_GNU = 1
 
@@ -1373,7 +1373,7 @@ if "target" in PHASES:
   BSD =  TARGET_CXX.options.BSD
 
   target_model = TARGET_CXX.options.model
-  if not run_model: 
+  if not run_model:
     run_model = target_model
     print "Defaulting run model to target model:",run_model
 
@@ -1825,7 +1825,7 @@ tmap = {
   "address"   : "void *",
   "offset"    : "ptrdiff_t",
   "ptrdiff"   : "ptrdiff_t",
-  
+
   #characters
   "char"    : "char",
   "wchar"   : "wchar_t",
@@ -1916,7 +1916,7 @@ if TARGET_CXX.options.HAVE_STDINT:
 else:
   tmap["int8"]="signed char"
   tmap["uint8"]="unsigned char"
-  sizes = { 
+  sizes = {
     TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
     TARGET_CXX.options.SIZEOF_INT*8: "int",
     TARGET_CXX.options.SIZEOF_LONG*8 : "long",

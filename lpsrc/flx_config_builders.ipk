@@ -2646,7 +2646,7 @@ class ocaml(compiler_base):
 
   def link_bytecode_lib(self, shell, objects, outfile, *args, **kwds):
     return self.link_thing(
-        self.options.OCAMLB + ' -a', '.cma', shell, objects, outfile + '.cma', 
+        self.options.OCAMLB + ' -a', '.cma', shell, objects, outfile + '.cma',
         *args, **kwds)
 
   def link_native_lib(self, shell, objects, outfile, *args, **kwds):
@@ -2654,7 +2654,7 @@ class ocaml(compiler_base):
       return self.link_bytecode(*args, **kwds)
 
     return self.link_thing(
-        self.options.OCAMLC + ' -a', '.cmxa', shell, objects, outfile + '.cmxa', 
+        self.options.OCAMLC + ' -a', '.cmxa', shell, objects, outfile + '.cmxa',
         *args, **kwds)
 
   def link_bytecode_exe(self, *args, **kwds):
