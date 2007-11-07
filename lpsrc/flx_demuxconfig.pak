@@ -32,55 +32,55 @@ flx_requires_driver: flx_arun
 DEMUXRTL_INTERFACES = [
  'demux/flx_demux_config.hpp',        # portable
  'demux/flx_demux.hpp',               # portable
- 'demux/demux_demuxer.hpp',           # portable
- 'demux/demux_posix_demuxer.hpp',     # posix
- 'demux/demux_timer_queue.hpp',       # portable
- 'demux/demux_quitter.hpp',           # portable
- 'demux/demux_posix_timer_queue.hpp', # posix
- 'demux/demux_pfileio.hpp',           # posix
- 'demux/demux_select_demuxer.hpp',    # posix
- 'demux/demux_iocp_demuxer.hpp',      # win32 (monolithic)
- 'demux/demux_overlapped.hpp',        # win32
- 'demux/demux_win_timer_queue.hpp',   # win32
- 'demux/demux_kqueue_demuxer.hpp',    # osx(10.3 onwards)/bsd
- 'demux/demux_evtport_demuxer.hpp',   # solaris (9 onwards?)
- 'demux/demux_epoll_demuxer.hpp',     # linux (>= 2.6)
- 'demux/demux_sockety.hpp',           # posix
- 'demux/demux_self_piper.hpp',        # posix
- 'demux/demux_wself_piper.hpp',       # win32
- 'demux/demux_ts_select_demuxer.hpp',
- 'demux/demux_poll_demuxer.hpp',      # linux, 10.3 (select impl), 10.4 real.
- 'demux/demux_ts_poll_demuxer.hpp',   # idem
+ 'src/demux/demux_demuxer.hpp',           # portable
+ 'src/demux/demux_posix_demuxer.hpp',     # posix
+ 'src/demux/demux_timer_queue.hpp',       # portable
+ 'src/demux/demux_quitter.hpp',           # portable
+ 'src/demux/demux_posix_timer_queue.hpp', # posix
+ 'src/demux/demux_pfileio.hpp',           # posix
+ 'src/demux/demux_select_demuxer.hpp',    # posix
+ 'src/demux/demux_iocp_demuxer.hpp',      # win32 (monolithic)
+ 'src/demux/demux_overlapped.hpp',        # win32
+ 'src/demux/demux_win_timer_queue.hpp',   # win32
+ 'src/demux/demux_kqueue_demuxer.hpp',    # osx(10.3 onwards)/bsd
+ 'src/demux/demux_evtport_demuxer.hpp',   # solaris (9 onwards?)
+ 'src/demux/demux_epoll_demuxer.hpp',     # linux (>= 2.6)
+ 'src/demux/demux_sockety.hpp',           # posix
+ 'src/demux/demux_self_piper.hpp',        # posix
+ 'src/demux/demux_wself_piper.hpp',       # win32
+ 'src/demux/demux_ts_select_demuxer.hpp',
+ 'src/demux/demux_poll_demuxer.hpp',      # linux, 10.3 (select impl), 10.4 real.
+ 'src/demux/demux_ts_poll_demuxer.hpp',   # idem
 ]
 
 DEMUX_CPPS = [
   "demux/flx_demux",
-  "demux/demux_demuxer",
-  "demux/demux_quitter",
+  "src/demux/demux_demuxer",
+  "src/demux/demux_quitter",
 ]
 
 POSIX_DEMUX_CPPS = [
-  "demux/demux_posix_demuxer",      # posix
-  "demux/demux_select_demuxer",     # posix
-  "demux/demux_posix_timer_queue",  # posix
-  "demux/demux_sockety",            # posix
-  "demux/demux_self_piper",         # posix
-  "demux/demux_pfileio",            # posix
-  'demux/demux_ts_select_demuxer',  # posix
+  "src/demux/demux_posix_demuxer",      # posix
+  "src/demux/demux_select_demuxer",     # posix
+  "src/demux/demux_posix_timer_queue",  # posix
+  "src/demux/demux_sockety",            # posix
+  "src/demux/demux_self_piper",         # posix
+  "src/demux/demux_pfileio",            # posix
+  'src/demux/demux_ts_select_demuxer',  # posix
 ]
 
 POLL_DEMUX_CPPS = [
    # I've seen poll on linux and osx10.4 systems. 
    # conditionally compiled and used.
-  'demux/demux_poll_demuxer',       # I've seen this on linux and osx10.4
-  'demux/demux_ts_poll_demuxer',    # ditto
+  'src/demux/demux_poll_demuxer',       # I've seen this on linux and osx10.4
+  'src/demux/demux_ts_poll_demuxer',    # ditto
 ]
 
 WINDOWS_DEMUX_CPPS = [
-  "demux/demux_iocp_demuxer",       # windows
-  "demux/demux_overlapped",         # windows
-  "demux/demux_wself_piper",        # windows
-  "demux/demux_win_timer_queue",    # windows
+  "src/demux/demux_iocp_demuxer",       # windows
+  "src/demux/demux_overlapped",         # windows
+  "src/demux/demux_wself_piper",        # windows
+  "src/demux/demux_win_timer_queue",    # windows
 ]
 
 EXTRA_SYS_LIBS = ""
@@ -97,16 +97,16 @@ if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
 
 if HAVE_KQUEUE_DEMUXER:
-  DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_kqueue_demuxer" ]
+  DEMUX_CPPS = DEMUX_CPPS + [ "src/demux/demux_kqueue_demuxer" ]
 
 if HAVE_POLL:
   DEMUX_CPPS = DEMUX_CPPS + POLL_DEMUX_CPPS
 
 if HAVE_EPOLL:
-  DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_epoll_demuxer" ] # Linux 2.6 +
+  DEMUX_CPPS = DEMUX_CPPS + [ "src/demux/demux_epoll_demuxer" ] # Linux 2.6 +
 
 if HAVE_EVTPORTS:
-  DEMUX_CPPS = DEMUX_CPPS + [ "demux/demux_evtport_demuxer"] # solaris 10
+  DEMUX_CPPS = DEMUX_CPPS + [ "src/demux/demux_evtport_demuxer"] # solaris 10
 
 if SOLARIS:
   # RF: this might not be necessary anymore. 
