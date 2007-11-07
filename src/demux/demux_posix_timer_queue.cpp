@@ -1,49 +1,4 @@
-
-@h=tangler('demux/demux_posix_timer_queue.hpp')
-@select(h)
-#ifndef __FLX_DEMUX_POSIX_TIMER_QUEUE_H__
-#define __FLX_DEMUX_POSIX_TIMER_QUEUE_H__
-
-#include "pthread_thread.hpp"  // flx_thread_t
-#include "pthread_mutex.hpp"  // flx_mutex_t
-#include "pthread_condv.hpp"  // flx_condv_t
-#include "demux_timer_queue.hpp" // base class
-#include <sys/time.h>        // timespecs, gettimeofday
-
-namespace flx { namespace demux {
-
-// looks like a worker queue, but couldn't quite mash it into one
-class DEMUX_EXTERN posix_timer_queue : public timer_queue
-{
-    flx::pthread::flx_mutex_t lock; // factor to prio queue?
-    flx::pthread::flx_condv_t sleep_cond;
-    flx::pthread::flx_thread_t sleep_thread; // joinable, we join later
-    void*        opaque_prio_queue;        // less fat
-
-    static void thread_start(void*);    // passed "this"
-    bool thread_loop_body();
-
-
-    void wakeup_thread();                // we can do this!
-
-    void add_sleep_request(sleep_task* st, timespec* abs);
-public:
-    posix_timer_queue();
-    ~posix_timer_queue();
-
-    // thread safe.
-    virtual void add_sleep_request(sleep_task* st, double delta);
-
-    // in seconds, relative to same base as timer::get_time.
-    virtual void add_abs_sleep_request(sleep_task* st, double when);
-};
-
-}}
-
-#endif // __POSIX_TIMER_QUEUE__
-
-@h=tangler('demux/demux_posix_timer_queue.cpp')
-@select(h)
+#line 47 "../lpsrc/flx_posixtimer_demux.ipk"
 #include "demux_posix_timer_queue.hpp"
 
 // a prio queue that executes tasks in a given order
@@ -71,7 +26,7 @@ using namespace std;
 class future_evt
 {
 public:
-    timespec    when;    
+    timespec    when;
     sleep_task*    task;
 
     // ignore the direction, just trying to sort with smallest first
@@ -91,7 +46,7 @@ posix_timer_queue::posix_timer_queue()
 {
     opaque_prio_queue = new void_prio_queue;    // a.k.a. PRIOQ
     //fprintf(stderr,"initing timer sleep thread\n");
-    
+
     // NEED'S TO CHECK RETURN VAL AND HANDLE ERROR
     if(sleep_thread.init(thread_start, this, NULL))
       fprintf(stderr, "failed to create posix timer queue thread!\n");
@@ -107,7 +62,7 @@ posix_timer_queue::~posix_timer_queue()
     // I actually don't need to do anything special to bring the thread
     // down because all pthread_cond_*wait* are cancel aware. Or so they
     // should be. As far as I can tell only the 64bit osx10.4.2 is, so
-    // for now the explicit cancel + wakeup followed by explicit 
+    // for now the explicit cancel + wakeup followed by explicit
     // cancel test stays.
 
     // fprintf(stderr, "asking timer thread to quit\n");
@@ -158,7 +113,7 @@ calc_when(timespec* when, double delta)
     // long    wait_musec = (long)(delta*MIL);
     // timespec    delay = { wait_musec / MIL, (wait_musec % MIL)*1000 };
     SEC2TIMESPEC(delay, delta);
-    
+
     // (10^6-1)*1000 = 3B9AC618 = max usec -> nsec fits in a 32bit long.
     when->tv_sec = now.tv_sec + delay.tv_sec;
     when->tv_nsec = now.tv_nsec + delay.tv_nsec;
@@ -279,10 +234,10 @@ posix_timer_queue::thread_loop_body()
             //    evt.when.tv_sec, evt.when.tv_nsec);
             (void)sleep_cond.timedwait(&lock, &evt.when);
 
-            // if using posix abstime timed wait we make get EINVAL here for 
+            // if using posix abstime timed wait we make get EINVAL here for
             // abstimes in the past. must handle this.
             //JS: It's handled now, waiting for a time in the past is OK
- 
+
             // fprintf(stderr,"pthread_cond_timedwait woke up! (%i)\n", res);
         }
     }
@@ -309,7 +264,7 @@ timer_queue::get_time(double& t)
                         // to timespec (sec, nsec). could skip that
                         // and call directly, avoiding conversion
     t = now.tv_sec + (now.tv_nsec*BIL);
-}  
+}
 
 }}
 

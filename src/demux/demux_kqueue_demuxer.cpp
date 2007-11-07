@@ -1,39 +1,4 @@
-@h=tangler('demux/demux_kqueue_demuxer.hpp')
-@select(h)
-#ifndef __FLX_DEMUX_KQUEUE_DEMUXER_H__
-#define __FLX_DEMUX_KQUEUE_DEMUXER_H__
-
-#include "demux_posix_demuxer.hpp"
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// kqueue demuxer for osx'n'BSD and at least 1 linux
-// ********************************************************
-class DEMUX_EXTERN kqueue_demuxer : public posix_demuxer {
-  int   kq;
-protected:
-  // this could just be passed the socket_wakeup, if it stored
-  // the flags. Those flags are also set, though, which would
-  // create a race condition. In and out flags?
-
-  int add_kqueue_filter(socket_wakeup* sv, short filter);
-  int remove_kqueue_filter(int s, short filter);
-
-  int remove_socket_wakeup(int s, int flags);
-  void get_evts(bool poll);
-public:
-  kqueue_demuxer();
-  virtual ~kqueue_demuxer();
-
-  virtual int add_socket_wakeup(socket_wakeup* sv, int flags);
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_kqueue_demuxer.cpp')
-@select(h)
+#line 37 "../lpsrc/flx_kqueue_demux.ipk"
 // kqueue demuxer for bsd/os x
 // N.B. calling close on a file descriptor will remove any kevents that
 // reference that descriptor. that would explain remove complaining from
@@ -71,7 +36,7 @@ kqueue_demuxer::~kqueue_demuxer()
   // to block! this happens on 10.4. Hard to say on 10.3 as close simply
   // fails there. we need to wake the waiting thread, so we'll use that
   // handy self pipe waker. Luckily, kqueues are responsive to new fds,
-  // otherwise we'd need the self pipe waker to be there from the start 
+  // otherwise we'd need the self pipe waker to be there from the start
   // p.s. it's also bad form to destruct a demuxer while a thread waits
   // on it. top marks to kqueues for making this obvious, passing fail
   // to me for not applying the same to the other async demuxers.
@@ -85,7 +50,7 @@ kqueue_demuxer::~kqueue_demuxer()
 
 
 // Events of interest to us ERead, EWrite.
-// ERead has fflags: NOTE_LOWAT, NOTE_EOF. ident is a descriptor (any?) 
+// ERead has fflags: NOTE_LOWAT, NOTE_EOF. ident is a descriptor (any?)
 
 // if you're using the kqueue_demuxer to do a single biderectional wakeup,
 // be aware that it currently breaks the "one shot" rule, that is you
@@ -118,7 +83,7 @@ kqueue_demuxer::add_kqueue_filter(socket_wakeup* sv, short filter)
 {
   int       s = sv->s;
   struct kevent evt;
-  
+
   // this works just like select if the s is a listening socket
   // *except* works with all types of fds, including pipes, files & fifos
   // can set low water mark for reads with NOTE_LOWAT in fflags and size
@@ -127,10 +92,10 @@ kqueue_demuxer::add_kqueue_filter(socket_wakeup* sv, short filter)
   // returns a possible socket err in fflags
   // should that be EV_ENABLE | EV_ADD. fflags zero cos I don't know what
   // to put there. pass pb in udata
-  
+
   // adding EV_ONESHOT to save me removing on wakeup (a syscall).
   // I now require that during the evt be removed before wakeup fn.
-  
+
   EV_SET(&evt, s, filter, EV_ADD | EV_ONESHOT, 0, 0, sv);
   // trying to detect when have reached eof with async file io using kq
   //EV_SET(&evt, s, EVFILT_READ, EV_ADD, | EV_ONESHOT NOTE_LOWAT, 16*1024, sv);
@@ -204,7 +169,7 @@ kqueue_demuxer::get_evts(bool poll)
   int       nevts;
 
   struct timespec timeout, *tptr = NULL;
-  
+
   if(poll)
   {
     timeout.tv_sec = 0;   // effectuate a poll
@@ -241,7 +206,7 @@ kqueue_demuxer::get_evts(bool poll)
     // can chunk up on accepts. nice one kqueue
     if(NULL == sv)      // => listener
     {
-      int backlog = (int)ev.data;   
+      int backlog = (int)ev.data;
       // fprintf(stderr,"kq listen backlog: %i\n", backlog);
       for(int i = 0; i < backlog; i++) handle_connection();
     }

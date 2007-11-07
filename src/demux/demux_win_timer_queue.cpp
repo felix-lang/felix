@@ -1,40 +1,9 @@
-@h=tangler('demux/demux_win_timer_queue.hpp')
-@select(h)
-#ifndef __FLX_DEMUX_WIN_TIMER_QUEUE_H__
-#define __FLX_DEMUX_WIN_TIMER_QUEUE_H__
-
-#include "flx_demux_config.hpp"
-#include <Windows.h>
-
-#include "demux_timer_queue.hpp"
-
-namespace flx { namespace demux {
-
-class DEMUX_EXTERN win_timer_queue : public timer_queue
-{
-  HANDLE    timer_queue;
-
-  static VOID CALLBACK timer_callback(PVOID, BOOLEAN);
-public:
-  win_timer_queue();
-  ~win_timer_queue();
-
-  virtual void add_sleep_request(sleep_task* st, double delta);
-  virtual void add_abs_sleep_request(sleep_task* st, double when);
-
-};
-
-}}
-
-#endif // __SLEEP_TASK__
-
-@h=tangler('demux/demux_win_timer_queue.cpp')
-@select(h)
+#line 33 "../lpsrc/flx_wintimer_demux.ipk"
 #include "flx_demux_config.hpp"
 #include <Windows.h>
 #include <assert.h>
 
-// simply wrapped windows timer queue. requires windows 5.00, which is 
+// simply wrapped windows timer queue. requires windows 5.00, which is
 // quite high (xp?) because I couldn't get the waitable timers to work.
 // must be careful with this stuff lest it create millions of threads.
 #include "demux_win_timer_queue.hpp"
@@ -125,7 +94,7 @@ VOID CALLBACK
 win_timer_queue::timer_callback(PVOID udat, BOOLEAN timer_or_wait_fired)
 {
   timer_cookie*  tc = (timer_cookie*)udat;
-  
+
   // fprintf(stderr, "timer queue callback fired: %p, %i\n",
   //  tc, timer_or_wait_fired);
 

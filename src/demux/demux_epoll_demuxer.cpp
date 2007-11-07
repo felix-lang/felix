@@ -1,41 +1,4 @@
-@h=tangler('demux/demux_epoll_demuxer.hpp')
-@select(h)
-#ifndef __FLX_DEMUX_EPOLL_DEMUXER_H__
-#define __FLX_DEMUX_EPOLL_DEMUXER_H__
-
-#include <flx_demux_config.hpp>
-#include "demux_posix_demuxer.hpp"
-
-namespace flx { namespace demux {
-// epoll allows only one event per socket - it does not differentiate
-// on the awaited operation (read/write), however it does let you wait
-// on any combination (I think)
-
-// ********************************************************
-/// epoll based demuxer
-// ********************************************************
-
-class DEMUX_EXTERN epoll_demuxer : public posix_demuxer {
-  int   epoll_fd;
-
-  // be careful of this - don't let it create race conditions
-  // should probably only be called by wait = in one thread only (check)
-  // this removes ALL outstanding events for s.
-  void  remove_wakeup(int s);
-
-  virtual void  get_evts(bool poll);
-public:
-  epoll_demuxer();
-  virtual ~epoll_demuxer();
-  
-  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_epoll_demuxer.cpp')
-@select(h)
+#line 39 "../lpsrc/flx_epoll_demux.ipk"
 // epoll interface. does epoll support ordinary files in addition to sockets?
 // EPOLLET to make epoll edgetriggered. I guess the default is level triggered.
 
@@ -79,7 +42,7 @@ epoll_demuxer::epoll_demuxer()
 
 epoll_demuxer::~epoll_demuxer()
 {
-  async_quit(); // get waiting thread to exit. 
+  async_quit(); // get waiting thread to exit.
 
   if(-1 != epoll_fd)
   {
@@ -102,7 +65,7 @@ epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
   // would have been a pain as epoll doesn't tell you which fd had the event
   // this way we can get away with not knowing & not losing our user cookie
   evt.events = 0;
-  
+
   if(flags & PDEMUX_READ) evt.events |= EPOLLIN;
   if(flags & PDEMUX_WRITE) evt.events |= EPOLLOUT;
 
@@ -124,7 +87,7 @@ epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
   if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, s, &evt) == -1)
   {
     // EPOLL_CTL_MOD cannot help us do bidirection io on one socket,
-    // the mod will overwrite the old user cookie and direction. 
+    // the mod will overwrite the old user cookie and direction.
     // It seems that only kqueues, select and iocps allow that.
     // Will need a wakeup that can do both, oneshot that indicates
     // the available direction.
@@ -141,7 +104,7 @@ epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
     }
 #endif
     perror("epoll_ctl (add)");
-    
+
     return -1;
   }
   return 0;
@@ -183,7 +146,7 @@ epoll_demuxer::get_evts(bool poll)
   }
 
   socket_wakeup* sv = (socket_wakeup*)evt.data.ptr;
-  
+
   // not seeing timeouts as they're filtered by the switching.
   // assuming that sv is good
   // fprintf(stderr,"wakeup (sv=%p, sv->s=%i evt.events=%x)!\n",
@@ -193,7 +156,7 @@ epoll_demuxer::get_evts(bool poll)
   sv->wakeup_flags = 0;
 
   bool  wake = false;
-  
+
   // it might be possible to get both a read & write event...
   // in which case I should take out the else below
   if(evt.events & EPOLLIN)                // I think this is how you do it

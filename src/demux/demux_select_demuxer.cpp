@@ -1,94 +1,4 @@
-@h=tangler('demux/demux_select_demuxer.hpp')
-@select(h)
-#ifndef __FLX_DEMUX_SELECT_DEMUXER_H__
-#define __FLX_DEMUX_SELECT_DEMUXER_H__
-
-#include "demux_posix_demuxer.hpp"
-#include <sys/types.h>    // for sys/select.h on osx
-#include <sys/select.h>   // for fd_set
-#include <sys/time.h>     // GUSI WTF?
-#include <unistd.h>       // for bsd
-
-// Unlike the other demuxers, this one is NOT thread safe, so wait and
-// add socket wakeup must only be called from the same thread.
-// if you're looking for the thread safe version, try ts_select_demuxer
-
-namespace flx { namespace demux {
-
-class DEMUX_EXTERN select_demuxer : public posix_demuxer {
-  void  remove_fd(int s);
-  
-  // thanks Beej!
-  fd_set      master_read_set;    // fd watched for reading
-  fd_set      master_write_set;   // for writing
-  fd_set      master_except_set;    // for exceptions
-
-  // read sveglias - note we only have one set, so currently this demuxer
-  // cannot have separate wakeups for the same file descriptor. this
-  // fits in fine with the "undefined" nature of doing that.
-  socket_wakeup*  svs[FD_SETSIZE];    // read sveglias
-  //socket_wakeup*  write_svs[FD_SETSIZE];  // write wakeups
-
-  int       fdmax;          // high watermark for select
-
-protected:
-  virtual void  get_evts(bool poll);
-
-public:
-  // get_evts broken into pieces for thread safe implementations
-  void copy_sets(fd_set& rset, fd_set& wset, fd_set& exset);
-  // returns true if process_sets should be called.
-  bool select(fd_set& rset, fd_set& wset, fd_set& exset, bool poll);
-  // these could be consts
-  void process_sets(fd_set& rset, fd_set& wset, fd_set& exset);
-
-  select_demuxer();
-
-  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
-};
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_ts_select_demuxer.hpp')
-@select(h)
-#ifndef __FLX_DEMUX_TS_SELECT_DEMUXER_H__
-#define __FLX_DEMUX_TS_SELECT_DEMUXER_H__
-
-#include "demux_select_demuxer.hpp"
-#include "demux_self_piper.hpp"
-#include "pthread_mutex.hpp"
-
-namespace flx { namespace demux {
-
-// thread safe version of select demuxer
-
-class DEMUX_EXTERN ts_select_demuxer : public posix_demuxer {
-  // lock
-  flx::pthread::flx_mutex_t      ham_fist;   
-  // protects this little fella here.
-  select_demuxer  demux;
-
-  // self pipe trick for waking waiting thread when we like.
-  // for demuxer responsiveness.
-  self_piper sp;
-protected:
-  virtual void    get_evts(bool poll);
-public:
-  ts_select_demuxer();
-  ~ts_select_demuxer();
-
-  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
-
-  // pass it on to composed non-threadsafe demuxer
-  virtual demux_quit_flag* get_quit_flag() { return demux.get_quit_flag(); }
-  virtual void set_quit_flag(demux_quit_flag* f) { demux.set_quit_flag(f); }
-};
-}} // namespace demux, flx
-
-#endif
-
-@h=tangler('demux/demux_select_demuxer.cpp')
-@select(h)
+#line 92 "../lpsrc/flx_select_demux.ipk"
 // P.S. for current impl don't need the pthreads. WHOO!!!
 
 // A very light wrapper around select, that allows the addition
@@ -144,7 +54,7 @@ select_demuxer::get_evts(bool poll)
   fd_set  read_set, write_set, except_set;
 
   copy_sets(read_set, write_set, except_set);
-  
+
   if(select(read_set, write_set, except_set, poll))
     process_sets(read_set, write_set, except_set);
 }
@@ -185,7 +95,7 @@ select_demuxer::remove_fd(int s)
   assert(s >= 0 && s < FD_SETSIZE);
   assert(svs[s] != NULL);         // there should be something there
 
-  // clear them all regardless. 
+  // clear them all regardless.
   FD_CLR(s, &master_read_set);
   FD_CLR(s, &master_write_set);
   FD_CLR(s, &master_except_set);
@@ -214,7 +124,7 @@ select_demuxer::select(fd_set& rset, fd_set& wset, fd_set& exset, bool poll)
     tv.tv_usec = 0;
     tp = &tv;
   }
-  
+
   // the return value here actually has significance
   // sometimes I have to try again, or weed out bad fds.
   //if(select(fdmax+1, &read_set, &write_set, &except_set, &tv) == -1)
@@ -264,7 +174,7 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
     if(FD_ISSET(i, &rset)) flags |= PDEMUX_READ;
 
     if(FD_ISSET(i, &wset)) flags |= PDEMUX_WRITE;
-  
+
     // sorta suggests that I ought to call the wakeup and pass
     // an error flag on to it.
     if(FD_ISSET(i, &exset))
@@ -299,7 +209,7 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
     if(flags)
     {
       socket_wakeup*  sv = svs[i];
-      // remove before wakeup so wakeup can add itself back, 
+      // remove before wakeup so wakeup can add itself back,
       // if necessary.
       remove_fd(i);
 
@@ -317,74 +227,4 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 }
 
 }} // flx, demux
-
-@h=tangler('demux/demux_ts_select_demuxer.cpp')
-@select(h)
-#include "demux_ts_select_demuxer.hpp"
-
-// #include <stdio.h>
-
-namespace flx { namespace demux {
-
-ts_select_demuxer::ts_select_demuxer()
-{
-  // fprintf(stderr, "creating pipe for self-pipe trick\n");
-  // install self pipe trick
-  sp.install(&demux);
-}
-
-ts_select_demuxer::~ts_select_demuxer()
-{
-  async_quit(); // wake thread, ask to leave.
-}
-
-void
-ts_select_demuxer::get_evts(bool poll)
-{
-  fd_set  rset, wset, exset;
-
-  // copy args under lock
-  {
-    flx::pthread::flx_mutex_locker_t locker(ham_fist);
-    demux.copy_sets(rset, wset, exset);
-  }
-  
-  // process arg set under lock. note that the select demuxer is passed
-  // to wakeups, so no recursive lock is needed. also, because any 
-  // readditions caused by the callback are done to the naive demuxer,
-  // no selfpipe writes are required either. the only thing to remember
-  // is that the wakeup recipient should not be surprised to see a demuxer
-  // in its callback different to the one it originally added to.
-  if(demux.select(rset, wset, exset, poll))
-  {
-    flx::pthread::flx_mutex_locker_t locker(ham_fist);
-    demux.process_sets(rset, wset, exset);
-  }
-}
-
-// thread safe overloaded functions follow. all acquire the lock
-// then call the unthreadsafe version of the function. nice!
-int
-ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
-{
-  // fprintf(stderr, "ts_select::add: %p->%i (%s), %x\n",
-  //  sv, s, (s == self_pipe_fds[0]) ? "self pipe" : "socket", flags);
-  flx::pthread::flx_mutex_locker_t locker(ham_fist);
-
-  int res = demux.add_socket_wakeup(sv, flags);
-  // I wouldn't touch the sv after this.
-
-  // we have a new socket, so wake the event waiting thread
-  // for great responsiveness.
-  if(-1 != res) sp.wake();
-
-  return res;
-
-// we need to wake a blocking get_evts call here else we'll have bad
-// performance or even a lockup. the question is do we need to do it under
-// the tutelage of the lock?
-}
-
-}}
-
 
