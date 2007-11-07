@@ -1,10 +1,5 @@
+@execfile('config'+os.sep+'config.py')
 @head(1,'demux')
-#@h=tangler('tmp/flx_demux_config.hpp')
-#@select(h)
-#// This is a fake flx_demux_config.h to be used at config time, before
-#// the rtl proper exists. It contains just enough info to compile
-#// a few of the demuxers.
-##define DEMUX_EXTERN
 
 @h=tangler('config/target/flx_demux_config.hpp')
 @select(h)
@@ -16,7 +11,173 @@
 #else
 #define DEMUX_EXTERN FLX_IMPORT
 #endif
+@tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
 #endif
+
+@h = tangler('config/demux.fpc')
+@select(h)
+Name: demux
+Description: Event handling
+Version: $Id$
+
+@if HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:libdemux_dynamic")
+   tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+   tangle("provides_slib: /DEFAULTLIB:libdemux_static")
+   tangle("requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+ elif WIN32:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("requires_dlibs: -lws2_32 -lmswsock")
+   tangle("provides_slib: -ldemux_static")
+   tangle("requires_slibs: -lws2_32 -lmswsock")
+ elif SOLARIS:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static -lsocket -lnsl")
+ else:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static")
+
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+
+@h = tangler('spkgs/demux.py')
+@select(h)
+
+DEMUXRTL_INTERFACES = [
+ 'src/demux/flx_demux_config.hpp',        # portable
+ 'src/demux/flx_demux.hpp',               # portable
+ 'src/demux/demux_demuxer.hpp',           # portable
+ 'src/demux/demux_posix_demuxer.hpp',     # posix
+ 'src/demux/demux_timer_queue.hpp',       # portable
+ 'src/demux/demux_quitter.hpp',           # portable
+ 'src/demux/demux_posix_timer_queue.hpp', # posix
+ 'src/demux/demux_pfileio.hpp',           # posix
+ 'src/demux/demux_select_demuxer.hpp',    # posix
+ 'src/demux/demux_iocp_demuxer.hpp',      # win32 (monolithic)
+ 'src/demux/demux_overlapped.hpp',        # win32
+ 'src/demux/demux_win_timer_queue.hpp',   # win32
+ 'src/demux/demux_kqueue_demuxer.hpp',    # osx(10.3 onwards)/bsd
+ 'src/demux/demux_evtport_demuxer.hpp',   # solaris (9 onwards?)
+ 'src/demux/demux_epoll_demuxer.hpp',     # linux (>= 2.6)
+ 'src/demux/demux_sockety.hpp',           # posix
+ 'src/demux/demux_self_piper.hpp',        # posix
+ 'src/demux/demux_wself_piper.hpp',       # win32
+ 'src/demux/demux_ts_select_demuxer.hpp',
+ 'src/demux/demux_poll_demuxer.hpp',      # linux, 10.3 (select impl), 10.4 real.
+ 'src/demux/demux_ts_poll_demuxer.hpp',   # idem
+]
+
+DEMUX_CPPS = [
+  "demux/flx_demux",
+  "src/demux/demux_demuxer",
+  "src/demux/demux_quitter",
+]
+
+POSIX_DEMUX_CPPS = [
+  "src/demux/demux_posix_demuxer",      # posix
+  "src/demux/demux_select_demuxer",     # posix
+  "src/demux/demux_posix_timer_queue",  # posix
+  "src/demux/demux_sockety",            # posix
+  "src/demux/demux_self_piper",         # posix
+  "src/demux/demux_pfileio",            # posix
+  'src/demux/demux_ts_select_demuxer',  # posix
+]
+
+POLL_DEMUX_CPPS = [
+   # I've seen poll on linux and osx10.4 systems. 
+   # conditionally compiled and used.
+  'src/demux/demux_poll_demuxer',       # I've seen this on linux and osx10.4
+  'src/demux/demux_ts_poll_demuxer',    # ditto
+]
+
+WINDOWS_DEMUX_CPPS = [
+  "src/demux/demux_iocp_demuxer",       # windows
+  "src/demux/demux_overlapped",         # windows
+  "src/demux/demux_wself_piper",        # windows
+  "src/demux/demux_win_timer_queue",    # windows
+]
+
+EXTRA_SYS_LIBS = ""
+if WIN32:
+  DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
+  if HAVE_MSVC:
+    EXTRA_SYS_LIBS = "/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock "
+  else:
+    # mingw
+    EXTRA_SYS_LIBS = "-lws2_32 -lmswsock "
+
+
+if POSIX:
+  DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
+
+if HAVE_KQUEUE_DEMUXER:
+  DEMUX_CPPS = DEMUX_CPPS + [ "src/demux/demux_kqueue_demuxer" ]
+
+if HAVE_POLL:
+  DEMUX_CPPS = DEMUX_CPPS + POLL_DEMUX_CPPS
+
+if HAVE_EPOLL:
+  DEMUX_CPPS = DEMUX_CPPS + [ "src/demux/demux_epoll_demuxer" ] # Linux 2.6 +
+
+if HAVE_EVTPORTS:
+  DEMUX_CPPS = DEMUX_CPPS + [ "src/demux/demux_evtport_demuxer"] # solaris 10
+
+if SOLARIS:
+  # RF: this might not be necessary anymore. 
+  EXTRA_SYS_LIBS = "-lsocket -lnsl "
+
+cpp_cpps = DEMUX_CPPS
+rtl_interfaces = DEMUXRTL_INTERFACES
+pkg_requires = ['flx_pthread', 'flx_rtl'] # flx_rtl for config .hpp
+lib_requires = ['libflx_pthread']  # however libflx not needed
+dflags = EXTRA_SYS_LIBS
+sflags = EXTRA_SYS_LIBS
+iscr_source = [
+  "lpsrc/flx_demux.pak",
+  "lpsrc/flx_demuxconfig.pak",
+  ]
+build_macro = "DEMUX"
+weaver_directory = 'doc/rtl/flx_demux/'
+tmpdir = ['demux']
+xfiles = [
+  'src/demux/demux_demuxer.cpp',
+  'src/demux/demux_demuxer.hpp',
+  'src/demux/demux_epoll_demuxer.cpp',
+  'src/demux/demux_epoll_demuxer.hpp',
+  'src/demux/demux_evtport_demuxer.cpp',
+  'src/demux/demux_evtport_demuxer.hpp',
+  'src/demux/demux_iocp_demuxer.cpp',
+  'src/demux/demux_iocp_demuxer.hpp',
+  'src/demux/demux_kqueue_demuxer.cpp',
+  'src/demux/demux_kqueue_demuxer.hpp',
+  'src/demux/demux_overlapped.cpp',
+  'src/demux/demux_overlapped.hpp',
+  'src/demux/demux_pfileio.cpp',
+  'src/demux/demux_pfileio.hpp',
+  'src/demux/demux_poll_demuxer.cpp',
+  'src/demux/demux_poll_demuxer.hpp',
+  'src/demux/demux_posix_demuxer.cpp',
+  'src/demux/demux_posix_demuxer.hpp',
+  'src/demux/demux_posix_timer_queue.cpp',
+  'src/demux/demux_posix_timer_queue.hpp',
+  'src/demux/demux_quitter.cpp',
+  'src/demux/demux_quitter.hpp',
+  'src/demux/demux_select_demuxer.cpp',
+  'src/demux/demux_select_demuxer.hpp',
+  'src/demux/demux_self_piper.cpp',
+  'src/demux/demux_self_piper.hpp',
+  'src/demux/demux_sockety.hpp',
+  'src/demux/demux_sockety.cpp',
+  'src/demux/demux_timer_queue.hpp',
+  'src/demux/demux_ts_poll_demuxer.cpp',
+  'src/demux/demux_ts_poll_demuxer.hpp',
+  'src/demux/demux_ts_select_demuxer.cpp',
+  'src/demux/demux_ts_select_demuxer.hpp',
+  'src/demux/demux_win_timer_queue.cpp',
+  'src/demux/demux_win_timer_queue.hpp',
+  'src/demux/demux_wself_piper.cpp',
+  ]
+
 
 @h=tangler('lib/flx_demux.flx')
 @select(h)
