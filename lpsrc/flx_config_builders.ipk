@@ -1,9 +1,7 @@
 @h = tangler("flxbuild/compiler_base.py")
 @select (h)
-import flxbuild
 import os
 import sys
-import string
 
 class compiler_base(object):
   def __init__(self):
@@ -11,6 +9,8 @@ class compiler_base(object):
       pass
     self.options = Options()
 
+  def set_options(self):
+    pass
 
   def save_options(self, filename):
     f = open(filename, "w")
@@ -46,7 +46,6 @@ class compiler_base(object):
 @select (h)
 import os
 import sys
-import string
 
 from flxbuild.flxutil import mkdirs, MakeError
 from flxbuild.compiler_base import compiler_base
@@ -65,7 +64,9 @@ class c_cxx_base(compiler_base):
       use="generic",
       include_paths=None,
       lib_paths=None,
-      ):
+      **kwds):
+    super(c_cxx_base, self).set_options(**kwds)
+
     opt = self.options
 
     # RF: this looks like in most cases it replaces None with None...
@@ -1359,7 +1360,6 @@ int main(int argc, char** argv) {
 
 @h = tangler("flxbuild/gnu_mixin.py")
 @select(h)
-import string
 import os
 import sys
 import flxbuild
@@ -2136,7 +2136,6 @@ class gcc(gnu_mixin, c_base):
 
 @h = tangler("flxbuild/gxx_class.py")
 @select(h)
-import string
 import os
 import sys
 import flxbuild
@@ -2174,7 +2173,6 @@ int main(int argc,char** argv) {
 
 @h = tangler("flxbuild/msvc_mixin.py")
 @select(h)
-import string
 import os
 import sys
 
@@ -2399,7 +2397,6 @@ class msvcxx(msvc_mixin, cxx_base):
 # discover which ocaml compilers are available
 import os
 import sys
-import string
 
 from flxbuild.flxutil import mkdirs, filecopy, MakeError
 from flxbuild.compiler_base import compiler_base
@@ -2492,8 +2489,8 @@ class ocaml(compiler_base):
       print "Woops, Can't run",opt.OCAMLB
       sys.exit(1)
     x=x[0][0:-1]
-    opt.OCAMLB_DESCRIPTION,y = string.split(x,",")
-    y = string.strip(y)
+    opt.OCAMLB_DESCRIPTION,y = x.split(",")
+    y = y.strip()
     opt.OCAML_VERSION=y
 
     result,x = get_stdout(opt.OCAMLC + " -v")
@@ -2501,8 +2498,8 @@ class ocaml(compiler_base):
       print "Woops, Can't run",opt.OCAMLC
       sys.exit(1)
     x=x[0][0:-1]
-    opt.OCAMLC_DESCRIPTION,y = string.split(x,",")
-    y = string.strip(y)
+    opt.OCAMLC_DESCRIPTION,y = x.split(",")
+    y = y.strip()
     if opt.OCAML_VERSION <> y:
       print "Inconsistent Ocaml tool versions"
       print "Ocaml: bytecode compiler",opt.OCAML_VERSION
@@ -2595,7 +2592,7 @@ class ocaml(compiler_base):
     if kwds.pop('profile', False):
       return self.compile_thing(self.options.OCAMLCP, *args, **kwds)
     else:
-      return self.compile_thing(self.options.OCAMLC, *args, **kwds)
+      return self.compile_thing(self.options.OCAMLB, *args, **kwds)
 
 
   def compile_native_thing(self, *args, **kwds):

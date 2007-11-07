@@ -93,9 +93,9 @@ class setup_test:
       except IndexError:
         z = self.zfill_default
 
-      levels.append(string.zfill(str(self.levels[i]), z))
+      levels.append(str(self.levels[i]).zfill(z))
 
-    return string.join(levels, '.')
+    return '.'.join(levels)
 
 
   def filename(self):
@@ -177,7 +177,7 @@ class setup_test:
     inp = get_input_frame()
     tangler.writeline("//Check " + code,inp.original_filename,inp.original_count)
     f = tangler.sink.filename
-    ff = string.split(f,'/')[-1][:-4]
+    ff = f.split('/')[-1][:-4]
     v = self.registry_out.get(code,[])
     if ff not in v:
       set_anchor(ff)
@@ -219,7 +219,6 @@ import os
 import sys
 import glob
 import stat
-import string
 import time
 import StringIO
 
@@ -301,7 +300,7 @@ def erasefile(f):
   except EnvironmentError: pass
 
 def unix2native(f):
-  return string.join(string.split(f,"/"),os.sep)
+  return os.path.join(*f.split('/'))
 
 def deletefile(f):
   erasefile(unix2native(f))
@@ -390,7 +389,7 @@ def xqt(x,
       if not verbose: log.write('%s failed!\n' % x)
 
     if stdout and (result or (verbose and not quiet)):
-      log.write(string.join(stdout, ""))
+      log.write(''.join(stdout))
 
     if result and not invert_result:
       log.write("  .. ERROR CODE %s: %s\n" % (hex(result), x))
@@ -471,8 +470,8 @@ def tee_cmd(cmd, stdout, bufsize=1024):
 class MakeError(EnvironmentError):
   def __init__(self, command=None, stdout=[], stderr=[]):
     self.command = command
-    self.stdout = string.join(stdout, "")
-    self.stderr = string.join(stderr, "")
+    self.stdout = ''.join(stdout)
+    self.stderr = ''.join(stderr)
 
   def __str__(self):
     s = []
@@ -485,7 +484,7 @@ class MakeError(EnvironmentError):
     if self.stderr:
       s.append('STDERR:\n' + self.stderr)
 
-    return string.join(s, "\n")
+    return '\n'.join(s)
 
 @select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
@@ -516,9 +515,9 @@ else:
 # on Darwin (Mac OS X), "getconf _POSIX_THREADS" returns 200112
 # result,output = get_stdout("getconf GNU_LIBPTHREAD_VERSION")
 result,output = get_stdout("getconf _POSIX_THREADS")
-if result: 			# getconf failed
+if result:          # getconf failed
   PTHREAD_MODEL = "Unknown"
-elif int(string.strip(output[0])) != 0:
+elif int(output[0].strip()) != 0:
   PTHREAD_MODEL = "POSIX"
 else:
   PTHREAD_MODEL = "Unknown"
@@ -598,7 +597,7 @@ def pne(f,s):
 
 def gs(x):
   r,o = get_stdout(x)
-  try: o = string.strip(o[0])
+  try: o = o[0].strip()
   except IndexError: pass
   return r,o
 
@@ -625,7 +624,7 @@ def locate_file(fname):
   if not result:
     candidates = []
     for line in lines:
-      candidate = string.strip(line)
+      candidate = line.strip()
       if candidate[-n:] == fname:
         candidates.append(candidate[0:-n])
     if len(candidates) == 0:
@@ -656,7 +655,6 @@ import sys
 import os
 import os.path
 import traceback
-import string
 import time
 import glob
 import getopt
@@ -770,7 +768,7 @@ try:
   print result,output
   if result: # uname -s failed
     output = [os.name] # so use Python's idea
-  output = string.lower(string.strip(output[0]))
+  output = output[0].strip().lower()
   build_model = archmap[output]
   print "Build platform: " + build_model
 # RF: EnvironmentError was not catching the the failed archmap[] lookup,
@@ -798,7 +796,7 @@ except (EnvironmentError, LookupError):
 
 result,output = get_stdout("uname -m")
 if not result:
-  ARCH = string.lower(string.strip(output[0]))
+  ARCH = output[0].strip().lower()
 else:
   ARCH = "unknown"
 print "CPU=",ARCH
@@ -808,7 +806,7 @@ if build_model == 'osx':
 else:
   result,output = get_stdout("uname -o")
 if not result:
-  OS = string.lower(string.strip(output[0]))
+  OS = output[0].strip().lower()
 else:
   OS = "unknown"
 
@@ -917,10 +915,10 @@ flags:
   elif o in ['--prefix']:
     PREFIX = a
   elif o in ['--set-int']:
-    v, a = string.split(a, '=', 1)
+    v, a = a.split('=', 1)
     overrides[v] = int(a)
   elif o in ['--set-string']:
-    v, a = string.split(a, '=', 1)
+    v, a = a.split('=', 1)
     overrides[v] = a
   elif o in ['--include_paths']:
     include_paths.append(a)
@@ -1106,7 +1104,7 @@ if "build" in PHASES:
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"build"+os.sep+"*.py")
   for cpkgf in cpkgs:
-    cpkg = string.split(cpkgf,os.sep)[2][:-3]
+    cpkg = cpkgf.split(os.sep)[2][:-3]
     print "build CONFIGURING",cpkg
     execfile(cpkgf)
 
@@ -1250,7 +1248,7 @@ if "host" in PHASES:
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"host"+os.sep+"*.py")
   for cpkgf in cpkgs:
-    cpkg = string.split(cpkgf,os.sep)[2][:-3]
+    cpkg = cpkgf.split(os.sep)[2][:-3]
     print "host CONFIGURING",cpkg
     execfile(cpkgf)
 
@@ -1483,7 +1481,7 @@ if "target" in PHASES:
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"target"+os.sep+"*.py")
   for cpkgf in cpkgs:
-    cpkg = string.split(cpkgf,os.sep)[2][:-3]
+    cpkg = cpkgf.split(os.sep)[2][:-3]
     print "target CONFIGURING",cpkg
     execfile(cpkgf)
 

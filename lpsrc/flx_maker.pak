@@ -350,7 +350,7 @@ class PLUGIN(Plugin):
 
   def runme(self, MLIS):
     for f in MLIS:
-      f = string.replace(f,"/",os.sep)
+      f = f.replace("/",os.sep)
       src = f+'.mli'
       dst = f+'.ml'
       if filetime(src) > filetime (dst):
@@ -627,7 +627,7 @@ class PLUGIN(Plugin):
     cflags = vxqtq(os.path.join( "bin", 
       "flx_pkgconfig --path=config --field=cflags @"+resfilename),
       log=log)
-    cflags = string.strip(cflags[0]) + " "
+    cflags = cflags[0].strip() + " "
 
     #log.write('Compiling generated code of %s\n' % testfile)
     try:
@@ -638,7 +638,7 @@ class PLUGIN(Plugin):
         dlibs = vxqtq(os.path.join("bin", 
           "flx_pkgconfig -r --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename),
           log=log)
-        dlibs = string.strip(dlibs[0]) + " "
+        dlibs = dlibs[0].strip() + " "
   
         TARGET_CXX.build_shared_dll(
             vxqt,
@@ -661,7 +661,7 @@ class PLUGIN(Plugin):
           "flx_pkgconfig -r --keeprightmost --path=config "
           "--field=flx_requires_driver @"+resfilename),
           log=log)
-        driver = string.strip(driver[0])
+        driver = driver[0].strip()
         if driver == '': driver = 'flx_run'
 
         slibs = vxqtq(os.path.join(
@@ -669,7 +669,7 @@ class PLUGIN(Plugin):
           "flx_pkgconfig -r --keeprightmost --path=config "
           "--field=provides_slib --field=requires_slibs "+driver+" @"+resfilename),
           log=log)
-        slibs = string.strip(slibs[0])
+        slibs = slibs[0].strip()
         #log.write("slibs=%s\n" % slibs)
 
         driver = os.path.join(FLX_RTL_DIR, driver + EXT_STATIC_OBJ)
@@ -1069,7 +1069,7 @@ class PLUGIN(Plugin):
       if outdir:
         print 'copying file %s -> %s' % (dst[0], outdir)
         filecopy2dir(dst[0], outdir)
-    
+
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
 class PLUGIN(Plugin):
@@ -1424,11 +1424,11 @@ def runISCR(a,force=0, break_on_error=None):
   if break_on_error is None:
     break_on_error = not force
 
-  x = string.split(a, ' ')
+  x = a.split(' ')
   z = []
   for i in x:
     z.append('"' + i + '"')
-  a = string.join(z, ' ')
+  a = ' '.join(z)
 
   cmd = sys.executable + ' ' + os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py')
   cmd += ' --cache-prefix=lpsrc-cache'
@@ -1449,7 +1449,7 @@ def make_manifest(pkg):
   base = os.path.basename(os.path.splitext(pkg)[0])
   print "Make Manifest of",base
   fname = os.path.join("manifests", base+".log")
-  runISCR("--nocache --trace=sources --trace=changes --new-logfile="+fname+" "+pkg)
+  runISCR("--nocache --trace=sources --trace=changes --new-logfile=%s %s" % (fname, pkg))
   deps = []
   f = open(fname)
   for line in f.readlines():
@@ -1467,7 +1467,7 @@ def get_deps(base):
   f = open(os.path.join("manifests", base+".deps"))
   data = f.read()
   f.close()
-  files = string.split(string.strip(data),"\n")
+  files = data.strip().split('\n')
   return files
 
 def mk_manifests():
@@ -1530,13 +1530,13 @@ class PLUGIN(Plugin):
 
         latest_src_time = max(xfiles_time, pkg_src_time)
 
-        if pkg == 0:
+        if latest_src_time == 0:
           print "Pak %-20s (virtual)" % pkg
         else:
           print "Pak %-20s changed: %s" % (pkg,fmtime(latest_src_time))
 
 
-        host_stamp=os.path.join("pkg-stamps", pkg+".host")
+        host_stamp=os.path.join("pkg-stamps", "%s.host" % pkg)
         latest_host_build_time = filetime(host_stamp)
         if latest_host_build_time == 0:
           print "  ** Host UNBUILT"
@@ -1547,7 +1547,7 @@ class PLUGIN(Plugin):
             print "  ** REQUIRES REBUILD due to changed sources"
             if pkg not in host_packages: host_packages.append(pkg)
     
-        target_stamp=os.path.join("pkg-stamps", pkg+".target")
+        target_stamp=os.path.join("pkg-stamps", "%s.target" % pkg)
         latest_target_build_time = filetime(target_stamp)
         if latest_target_build_time == 0:
           print "  ** Target UNBUILT"
@@ -1558,7 +1558,7 @@ class PLUGIN(Plugin):
             print "  ** REQUIRES REBUILD due to changed sources"
             if pkg not in target_packages: target_packages.append(pkg)
     
-        run_stamp=os.path.join("pkg-stamps", pkg+".run")
+        run_stamp=os.path.join("pkg-stamps", "%s.run" % pkg)
         latest_run_build_time = filetime(run_stamp)
         if latest_run_build_time == 0:
           print "  ** Run UNBUILT"
@@ -1569,7 +1569,7 @@ class PLUGIN(Plugin):
             print "  ** REQUIRES REBUILD due to changed sources"
             if pkg not in run_packages: run_packages.append(pkg)
 
-        doc_stamp=os.path.join("pkg-stamps", pkg+".doc")
+        doc_stamp=os.path.join("pkg-stamps", "%s.doc" % pkg)
         latest_doc_build_time = filetime(doc_stamp)
         if latest_doc_build_time == 0:
           print "  ** Doc UNBUILT"
@@ -1580,7 +1580,6 @@ class PLUGIN(Plugin):
             print "  ** REQUIRES REBUILD due to changed sources"
             if pkg not in doc_packages: doc_packages.append(pkg)
 
-    
       # doesn't work so well if both deps and reqs specified!
       # would work better, if reqs was already reduced to
       # what actually needed o be rebuilt
@@ -1596,11 +1595,11 @@ class PLUGIN(Plugin):
       target_packages = closure(pkgreqs,target_packages)
       run_packages = closure(pkgreqs,run_packages)
       doc_packages = closure(pkgreqs,doc_packages)
-  
-    host_selected_pkgs = filter(lambda x: x in host_packages,pkgs)
-    target_selected_pkgs = filter(lambda x: x in target_packages,pkgs)
-    run_selected_pkgs = filter(lambda x: x in run_packages,pkgs)
-    doc_selected_pkgs = filter(lambda x: x in doc_packages,pkgs)
+
+    host_selected_pkgs   = [x for x in pkgs if x in host_packages]
+    target_selected_pkgs = [x for x in pkgs if x in target_packages]
+    run_selected_pkgs    = [x for x in pkgs if x in run_packages]
+    doc_selected_pkgs    = [x for x in pkgs if x in doc_packages]
   
     if "all" in options: 
       if not quiet: print "SELECTING ALL PACKAGES"
@@ -1611,10 +1610,10 @@ class PLUGIN(Plugin):
   
     if not quiet:
       #print "AVAILABLE SOURCES",paks
-      print "Host SELECTED PACKAGES ARE ",host_selected_pkgs
-      print "Target SELECTED PACKAGES ARE ",target_selected_pkgs
-      print "Run SELECTED PACKAGES ARE ",run_selected_pkgs
-      print "Doc SELECTED PACKAGES ARE ",doc_selected_pkgs
+      print "Host SELECTED PACKAGES ARE ",   ','.join([str(p) for p in host_selected_pkgs])
+      print "Target SELECTED PACKAGES ARE ", ','.join([str(p) for p in target_selected_pkgs])
+      print "Run SELECTED PACKAGES ARE ",    ','.join([str(p) for p in run_selected_pkgs])
+      print "Doc SELECTED PACKAGES ARE ",    ','.join([str(p) for p in doc_selected_pkgs])
       print "SELECTED PHASES ARE   ",phases
       print "Build model  ",build_model
       print "Host model   ",host_model
@@ -1636,14 +1635,14 @@ class PLUGIN(Plugin):
     if "host" in phases:
       for pkg in host_selected_pkgs:
         pkgdict = pkgd[pkg]
-        print "***** Host MAKING PACKAGE "+pkg+" ************"
+        print "***** Host MAKING PACKAGE", pkg, "************"
 
-        stamp=os.path.join("pkg-stamps", pkg+".host")
+        stamp=os.path.join("pkg-stamps", "%s.host" % pkg)
         erasefile(stamp)
         srcs = pkgdict.get("iscr_source",[])      
         for src in srcs:
           src = unix2native(src)
-          if not quiet: print "REExtracting",pkg,"from",src
+          if not quiet: print "REExtracting", pkg, "from", src
           runISCR(os.path.join(FLX_LPARCHIVE, src))
 
 
@@ -1659,9 +1658,9 @@ class PLUGIN(Plugin):
     if "target" in phases:
       for pkg in target_selected_pkgs:
         pkgdict = pkgd[pkg]
-        print "***** Target MAKING PACKAGE "+pkg+" ************"
+        print "***** Target MAKING PACKAGE", pkg, "************"
 
-        stamp=os.path.join("pkg-stamps", pkg+".target")
+        stamp=os.path.join("pkg-stamps", "%s.target" % pkg)
         erasefile(stamp)
         if SUPPORT_DYNAMIC_LOADING:
           plugins['build_target_rtl_dynamic'](pkg, pkgdict)
@@ -1685,9 +1684,9 @@ class PLUGIN(Plugin):
     if "run" in phases:
       for pkg in run_selected_pkgs:
         pkgdict = pkgd[pkg]
-        print "***** Run MAKING PACKAGE "+pkg+" ************"
+        print "***** Run MAKING PACKAGE", pkg, "************"
 
-        stamp=os.path.join("pkg-stamps", pkg+".run")
+        stamp=os.path.join("pkg-stamps", "%s.run" % pkg)
         erasefile(stamp)
 
         # only stamp if we've passed the tests
@@ -1773,7 +1772,7 @@ class TestPlugin(Plugin):
                 " --path=config --field=flx_requires_driver --rec @" + resfilename,
                 log=log)
   
-              driver = string.strip(driver[0])
+              driver = driver[0].strip()
               if driver =='': driver = "flx_run"
               driver = os.path.join("bin", driver)
               #log.write("Driver: %s\n" % driver)
@@ -1822,7 +1821,7 @@ class TestPlugin(Plugin):
 
       f = open(basename + '.output', 'w')
       try:
-        f.write(string.join(output, ""))
+        f.write(''.join(output))
       finally:
         f.close()
 
@@ -1835,7 +1834,7 @@ class TestPlugin(Plugin):
         # read the arguments fromm the file
         f = open(argfile)
         try:
-          args = string.strip(f.read())
+          args = f.read().strip()
         finally:
           f.close()
 
@@ -1843,7 +1842,7 @@ class TestPlugin(Plugin):
 
         f = open('%s-%s.argoutput' % (basename, argcount), 'w')
         try:
-          f.write(string.join(output, ""))
+          f.write(''.join(output))
         finally:
           f.close()
 
@@ -1869,7 +1868,7 @@ class PLUGIN(Plugin):
     items.sort()
 
     for name, help in items:
-      print '%s %s' % (string.ljust(name, max_len), help)
+      print '%s %s' % (name.ljust(max_len), help)
     
     sys.exit(0)
 
@@ -1919,9 +1918,9 @@ class PLUGIN(Plugin):
 
     for pkg in doc_selected_pkgs:
       pkgdict = pkgd[pkg]
-      print "***** DOCUMENT PACKAGE "+pkg+" ************"
+      print "***** DOCUMENT PACKAGE", pkg, "************"
 
-      stamp=os.path.join("pkg-stamps", pkg+".doc")
+      stamp=os.path.join("pkg-stamps", "%s.doc" % pkg)
       erasefile(stamp)
 
       plugins['mkdoc'](pkg, pkgdict)
@@ -1950,7 +1949,7 @@ class PLUGIN(Plugin):
     print "##### DEMONSTRATE ALL PACKAGES ##################"
     for pkg in pkgs:
       pkgdict = pkgd[pkg]
-      print "***** DEMO PACKAGE "+pkg+" ************"
+      print "***** DEMO PACKAGE", pkg, "************"
       plugins['run_demos'](pkg, pkgdict)
 
 @h = tangler('script/maker','python')
@@ -1965,7 +1964,6 @@ import os.path
 import getopt
 import glob
 import stat
-import string
 import sys
 import re
 import traceback
@@ -2059,13 +2057,6 @@ for o, a in opts:
   else:
     sys.stderr.write('unknown option: %s %s\n' % (o, a))
     sys.exit(1)
-
-host_packages = list(packages)
-target_packages = list(packages)
-run_packages = list(packages)
-doc_packages = list(packages)
-
-if not quiet: print "USER SELECTED PACKAGES",packages
 
 # ------------------------------------------------
 # Load the initial config
@@ -2177,7 +2168,7 @@ for i in raw_pkgs:
 def addpkg_r(pkg):
   if pkg not in pkgs:
     if pkg not in pkgd.keys():
-      print "Unknown package",pkg
+      print "Unknown package", pkg
       print "Please extract!"
       sys.exit(1)
     else:
@@ -2189,6 +2180,13 @@ def addpkg_r(pkg):
 
 for pkg in unsorted_pkgs:
   addpkg_r(pkg)
+
+if not quiet: print "USER SELECTED PACKAGES", packages
+
+host_packages   = list(packages)
+target_packages = list(packages)
+run_packages    = list(packages)
+doc_packages    = list(packages)
 
 # make sure we delete the pkg so that we don't leak
 # references to them
@@ -2206,7 +2204,7 @@ if "help" in options:
   for k in ks:
     length = max(len(k), length)
   for k in ks:
-    print "  ",string.ljust(k,length),pkgreqs[k]
+    print "  ", k.ljust(length), pkgreqs[k]
    
   print
   print "DEPS: "
@@ -2216,7 +2214,7 @@ if "help" in options:
   for k in ks:
     length = max(len(k), length)
   for k in ks:
-    print "  ",string.ljust(k,length),pkgdeps[k]
+    print "  ", k.ljust(length), pkgdeps[k]
 
 # -------------------------------------------------
 # LOAD PLUGINS
@@ -2370,7 +2368,7 @@ if failed:
           if emitted == 0 and line[0:5] == '#line':
             comment = line
           elif line [0:8] == "//Check ":
-            kat = string.strip(line[8:])
+            kat = line[8:].strip()
             l = kats.get(kat,[])
             l.append(file)
             kats[kat]=l
@@ -2382,7 +2380,7 @@ if failed:
               comment = ""
             eat = 0
           if line != "":
-            print '      %-35s %s' % (fstring, string.strip(comment))
+            print '      %-35s %s' % (fstring, comment.strip())
             emitted = 1
         if emitted == 0:
           print '      %s' % file
@@ -2753,7 +2751,7 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('dummy:')
-@no_dollars = string.replace(FLX_MAKER_CVS_ID,"$","")
+@no_dollars = FLX_MAKER_CVS_ID.replace("$","")
 @tangle('\t#'+no_dollars)
 @tangle('')
 @tangle('.PHONY: dummy')
@@ -3558,7 +3556,6 @@ ENDLOCAL
 # flx.py - felix script harness (python version)
 import os
 import os.path
-import string
 import sys
 import stat
 
@@ -3625,7 +3622,6 @@ def splitext(p):
     return p[:-5],".cpp"
   return p,""
 
-def join(*args): return string.join(args)
 def system(cmd):
   if ECHO==1: print cmd
   result = os.system(cmd)
@@ -3874,7 +3870,7 @@ def calpackages ():
 
 # grab program arguments
 grab=1
-args=string.join(sys.argv[argno:], " ")
+args=' '.join(sys.argv[argno:])
 
 INCLUDE_DIR="-I"+FLX_INSTALL_DIR+"/lib/rtl"
 FLXLIB="-I"+FLX_INSTALL_DIR+"/lib"
@@ -3930,58 +3926,58 @@ result = 0
 
 if STATIC == 0:
   if FELIX == 1:
-    FCMD=join(
+    FCMD=' '.join([
       FLXG,
       VERBOSE, FLXFLAGS, ELKHOUND, FLXLIB, 
       INCLUDE_DIRS, STDIMPORT, IMPORTS, 
-      STDLIB, path)
+      STDLIB, path])
     result=system(FCMD)
     if result != 0: sys.exit(0!=result)
     calpackages()
-    CCMD=join(
+    CCMD=' '.join([
       CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
       INCLUDE_DIR, INCLUDE_DIRS, MACROS,
       cpps, path+".cpp",
-      SPEC_OBJ_FILENAME+path+EXT_OBJ)
-    LCMD=join(
+      SPEC_OBJ_FILENAME+path+EXT_OBJ])
+    LCMD=' '.join([
       CCLINK_DLLIB, CCFLAGS,
       cppos, path+EXT_OBJ,
       SPEC_EXE_FILENAME+path+EXT_SHLIB,
-      LINK_STRING)
+      LINK_STRING])
     result = system(CCMD)
     if result == 0: 
       result = system(LCMD)
       if result == 0:
         if RUNIT == 1:
           if TIME == 1:
-            cmd=join(
+            cmd=' '.join([
               TIMECMD,
               FLXRUN+DRIVER+DEBUGSWITCH,
-              path+EXT_SHLIB, args)
+              path+EXT_SHLIB, args])
           else:
-            cmd=join(
+            cmd=' '.join([
               FLXRUN+DRIVER+DEBUGSWITCH,
-              path+EXT_SHLIB, args)
+              path+EXT_SHLIB, args])
           if STDOUT != "": cmd=cmd+" > " +STDOUT
           sys.exit(0!=system(cmd))
 else:
   if FELIX == 1:
-    FCMD=join(
+    FCMD=' '.join([
       FLXG, VERBOSE, FLXFLAGS, ELKHOUND,
       FLXLIB, INCLUDE_DIRS, STDIMPORT,
-      IMPORTS, STDLIB, path)
+      IMPORTS, STDLIB, path])
     result=system(FCMD)
   if result == 0:
     calpackages()
-    CCMD=join(
+    CCMD=' '.join([
       CCOBJ_STATIC_LIB,
       CCFLAGS, "-DTARGET_BUILD",
       "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
       MACROS, cpps, path+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ)
-    LCMD=join(
+      SPEC_OBJ_FILENAME+base+EXT_OBJ])
+    LCMD=' '.join([
       CCLINK_STATIC, SPEC_EXE_FILENAME+path+EXT_EXE,
-      path+EXT_OBJ, DRIVER, cppos, LINK_STRING)
+      path+EXT_OBJ, DRIVER, cppos, LINK_STRING])
     result=system(CCMD)
     if result == 0:
       result=system(LCMD)
@@ -3989,11 +3985,11 @@ else:
         # rm -f "$base.cpp"
         if RUNIT == 1:
           if TIME == 1:
-            cmd=join(
-              TIMECMD, STATIC_ENV, path, args)
+            cmd=' '.join([
+              TIMECMD, STATIC_ENV, path, args])
           else:
-            cmd=join(
-              STATIC_ENV, path,args)
+            cmd=' '.join([
+              STATIC_ENV, path,args])
           if STDOUT != "": cmd=cmd + " > "+STDOUT
           sys.exit(0!=system(cmd))
 sys.exit(0!=result)
