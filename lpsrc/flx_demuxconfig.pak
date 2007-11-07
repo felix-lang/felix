@@ -125,8 +125,46 @@ iscr_source = [
 build_macro = "DEMUX"
 weaver_directory = 'doc/rtl/flx_demux/'
 tmpdir = ['demux']
+xfiles = [
+  'src/demux/demux_demuxer.cpp',
+  'src/demux/demux_demuxer.hpp',
+  'src/demux/demux_epoll_demuxer.cpp',
+  'src/demux/demux_epoll_demuxer.hpp',
+  'src/demux/demux_evtport_demuxer.cpp',
+  'src/demux/demux_evtport_demuxer.hpp',
+  'src/demux/demux_iocp_demuxer.cpp',
+  'src/demux/demux_iocp_demuxer.hpp',
+  'src/demux/demux_kqueue_demuxer.cpp',
+  'src/demux/demux_kqueue_demuxer.hpp',
+  'src/demux/demux_overlapped.cpp',
+  'src/demux/demux_overlapped.hpp',
+  'src/demux/demux_pfileio.cpp',
+  'src/demux/demux_pfileio.hpp',
+  'src/demux/demux_poll_demuxer.cpp',
+  'src/demux/demux_poll_demuxer.hpp',
+  'src/demux/demux_posix_demuxer.cpp',
+  'src/demux/demux_posix_demuxer.hpp',
+  'src/demux/demux_posix_timer_queue.cpp',
+  'src/demux/demux_posix_timer_queue.hpp',
+  'src/demux/demux_quitter.cpp',
+  'src/demux/demux_quitter.hpp',
+  'src/demux/demux_select_demuxer.cpp',
+  'src/demux/demux_select_demuxer.hpp',
+  'src/demux/demux_self_piper.cpp',
+  'src/demux/demux_self_piper.hpp',
+  'src/demux/demux_sockety.hpp',
+  'src/demux/demux_timer_queue.hpp',
+  'src/demux/demux_ts_poll_demuxer.cpp',
+  'src/demux/demux_ts_poll_demuxer.hpp',
+  'src/demux/demux_ts_select_demuxer.cpp',
+  'src/demux/demux_ts_select_demuxer.hpp',
+  'src/demux/demux_win_timer_queue.cpp',
+  'src/demux/demux_win_timer_queue.hpp',
+  'src/demux/demux_wself_piper.cpp',
+  ]
 
-@h=tangler('demux/demux_sockety.cpp')
+
+@h=tangler('src/demux/demux_sockety.cpp')
 @select(h)
 #include "demux_sockety.hpp" /* for this stuff */
 
