@@ -30,8 +30,8 @@ flx_requires_driver: flx_arun
 @select(h)
 
 DEMUXRTL_INTERFACES = [
- 'demux/flx_demux_config.hpp',        # portable
- 'demux/flx_demux.hpp',               # portable
+ 'src/demux/flx_demux_config.hpp',        # portable
+ 'src/demux/flx_demux.hpp',               # portable
  'src/demux/demux_demuxer.hpp',           # portable
  'src/demux/demux_posix_demuxer.hpp',     # posix
  'src/demux/demux_timer_queue.hpp',       # portable
