@@ -11,7 +11,7 @@
 #else
 #define DEMUX_EXTERN FLX_IMPORT
 #endif
-@tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
+@tangle("#define FLX_SOCKLEN_T " + FLX_SOCKLEN_T)
 #endif
 
 @h = tangler('config/demux.fpc')
