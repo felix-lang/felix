@@ -126,7 +126,7 @@ xfiles= [
   'src/pthread/pthread_work_fifo.hpp',
   ]
 
-@h=tangler('pthread/target/flx_pthread_config.hpp')
+@h=tangler('config/target/flx_pthread_config.hpp')
 @select(h)
 #ifndef __FLX_PTHREAD_CONFIG_H__
 #define __FLX_PTHREAD_CONFIG_H__
