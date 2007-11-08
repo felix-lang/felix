@@ -44,7 +44,7 @@ PTHREADRTL_INTERFACES = [
 
 PTHREAD_CPPS = [
   "src/pthread/pthread_win_posix_condv_emul", # portability hackery
-  "src/pthread/pthread_mutex", 
+  "src/pthread/pthread_mutex",
   "src/pthread/pthread_condv",
   "src/pthread/pthread_counter",
   "src/pthread/pthread_waitable_bool",
@@ -56,7 +56,7 @@ PTHREAD_CPPS = [
 ]
 
 POSIX_PTHREAD_CPPS = [
-  'src/pthread/pthread_posix_thread', 
+  'src/pthread/pthread_posix_thread',
 ]
 
 LINUX_PTHREAD_CPPS = [
@@ -66,7 +66,7 @@ SOLARIS_PTHREAD_CPPS = [
 ]
 
 WINDOWS_PTHREAD_CPPS = [
-  'src/pthread/pthread_win_thread', 
+  'src/pthread/pthread_win_thread',
 ]
 
 BSD_PTHREAD_CPPS = [
@@ -92,16 +92,21 @@ if SOLARIS:
 @tangle('completion_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 cpp_cpps = PTHREAD_CPPS
-rtl_interfaces = PTHREADRTL_INTERFACES
 lib_requires = ['libflx_exceptions']
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
-pkg_requires = ['flx_exceptions','flx_rtl_config'] 
-iscr_source = ["lpsrc/flx_pthread.pak"]
 build_macro = "PTHREAD"
+
+rtl_interfaces = PTHREADRTL_INTERFACES
+felix_rtl = ['src/pthread/pthread.flx']
+
+pkg_requires = ['flx_exceptions','flx_rtl_config']
+iscr_source = ["lpsrc/flx_pthread.pak"]
 weaver_directory = 'doc/rtl/flx_pthread/'
 tmpdir = ['pthread']
 xfiles= [
+  'src/pthread/pthread.flx',
+
   'src/pthread/pthread_condv.cpp',
   'src/pthread/pthread_condv.hpp',
   'src/pthread/pthread_counter.cpp',
@@ -142,96 +147,8 @@ xfiles= [
 Note WE say pthread means 'pre-emptive thread' not
 merely Posix thread. Confusing on Solaris especially.
 However it fits with name fthread for felix threads
-which are actually s- (synchronous) or np- (non-preemptive) 
+which are actually s- (synchronous) or np- (non-preemptive)
 threads.
-
-@h=tangler('lib/pthread.flx')
-@select(h)
-#import <flx.flxh>
-
-header pthread_hxx = '#include "pthread_thread.hpp"';
-header mutex_hxx = '#include "pthread_mutex.hpp"';
-header condv_hxx = '#include "pthread_condv.hpp"';
-header counter_hxx = '#include "pthread_counter.hpp"';
-header semaphore_hxx = '#include "pthread_semaphore.hpp"';
-header monitor_hxx = '#include "pthread_monitor.hpp"';
-header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
-
-publish """
-This module provides access to the operating system's native
-threading routines. On systems with multiple cpus, this may
-increase performance as the operating system may schedule
-threads on different processors.
-"""
-module Pthread
-{
-  requires package "flx_pthread";
-  open C_hack;
-
-  type job_queue = "flx::pthread::worker_fifo*" requires work_fifo_hxx;
-
-  gen mk_job_queue: int * int -> job_queue = "new flx::pthread::worker_fifo($1,$2)";
-  
-  proc spawn_pthread(p:1->0)
-  {
-      var con = start p;              // get continuation of p
-      var fthr = mk_thread con;
-      svc$ svc_spawn_pthread fthr;
-  }
-
-  type mutex = "flx::pthread::flx_mutex_t" requires mutex_hxx;
-  proc lock: lvalue[mutex] = "$1.lock();";
-  proc unlock: lvalue[mutex] = "$1.unlock();";
-  proc lock (m:&mutex) { lock$ *m; }
-  proc unlock (m:&mutex) { unlock$ *m; }
-
-  // pre-emptive thread channels (monitor)
-  type pchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
-
-  fun mk_pchannel[t]: 1->pchannel[t] = 
-    "new flx::pthread::monitor_t()"
-  ;
-
-  // NOTE: read/write on pchannels uses suspend/resume
-  // to tell any pending collector it is safe to proceed
-  // whilst it is doing the I/O (which may block),
-  // to block returning from the I/O during a collection
-  // AND, if the I/O completed before the collection got
-  // going, to yield at this point. 
-
-  proc _read[t]: pchannel[t] * ptr[ptr[t]] = """
-    {
-    FLX_SAVE_REGS;
-    PTF gcp->collector->get_thread_control()->suspend();
-    //fprintf(stderr,"READ:DQ\\n");
-    *$2 = (?1*)($1->dequeue());
-    //fprintf(stderr,"DONE READ:DQ\\n");
-    PTF gcp->collector->get_thread_control()->resume();
-    }
-  """;
-
-  gen read[t] (chan:pchannel[t]) = {
-    var p : ptr[t];
-    _read (chan, addr p);
-    return *p;
-  }
-
-  proc _write[t]: pchannel[t] * ptr[t] = """
-    {
-    FLX_SAVE_REGS;
-    PTF gcp->collector->get_thread_control()->suspend();
-    //fprintf(stderr,"WRITE:NQ\\n");
-    $1->enqueue((void*)$2);
-    //fprintf(stderr,"DONE WRITE:NQ\\n");
-    PTF gcp->collector->get_thread_control()->resume();
-    }
-  """;
-
-  proc write[t](chan:pchannel[t], v:t) {
-    var ps = cast[ptr[t]]$ xnew v;
-    _write (chan,ps);
-  }
-}
 
 @env.head(1,'pthread tests')
 @env.head(2)
@@ -304,7 +221,7 @@ proc randprint(n:int)
     print$ "Thread "+str n +" Sleep #"+str i+" for "+str d+" sec"; endl;
     --i;
     Faio::sleep (clock,d);
-  done; 
+  done;
   print$ "Finish Thread number "+str(n); endl;
 }
 

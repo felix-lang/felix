@@ -1,7 +1,3 @@
-@head(1,'Posix Sockets')
-@h=tangler('lib/flx_faio_posix.flx')
-@select(h)
-#import <flx.flxh>
 // contains posix async socket io & copipes, all wrapped up streams
 
 include "pthread";

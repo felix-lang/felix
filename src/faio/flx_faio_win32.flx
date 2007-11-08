@@ -1,7 +1,3 @@
-@head(1,"Windows I/O")
-@h=tangler('lib/flx_faio_win32.flx')
-@select(h)
-#import <flx.flxh>
 include "flx_faio";     // defines copipes & some driver interaction
 include "flx_demux";
 

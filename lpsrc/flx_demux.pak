@@ -97,18 +97,24 @@ if SOLARIS:
   EXTRA_SYS_LIBS = '-lsocket -lnsl '
 
 cpp_cpps = DEMUX_CPPS
-rtl_interfaces = DEMUXRTL_INTERFACES
-pkg_requires = ['flx_pthread', 'flx_rtl'] # flx_rtl for config .hpp
 lib_requires = ['libflx_pthread']  # however libflx not needed
+pkg_requires = ['flx_pthread', 'flx_rtl'] # flx_rtl for config .hpp
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
+build_macro = 'DEMUX'
+
+rtl_interfaces = DEMUXRTL_INTERFACES
+felix_rtl = ['src/demux/flx_demux.flx']
+
 iscr_source = [
   'lpsrc/flx_demux.pak',
-  ]
-build_macro = 'DEMUX'
+]
+
 weaver_directory = 'doc/rtl/flx_demux/'
 tmpdir = ['demux']
 xfiles = [
+  'src/demux/flx_demux.flx',
+
   'src/demux/demux_demuxer.cpp',
   'src/demux/demux_demuxer.hpp',
   'src/demux/demux_quitter.cpp',
@@ -147,8 +153,8 @@ xfiles = [
   'src/demux/epoll/demux_epoll_demuxer.hpp',
   'src/demux/evtport/demux_evtport_demuxer.cpp',
   'src/demux/evtport/demux_evtport_demuxer.hpp',
-  'src/demux/kqueues/demux_kqueue_demuxer.cpp',
-  'src/demux/kqueues/demux_kqueue_demuxer.hpp',
+  'src/demux/kqueue/demux_kqueue_demuxer.cpp',
+  'src/demux/kqueue/demux_kqueue_demuxer.hpp',
 ]
 
 @h = tangler('config/demux.fpc')
@@ -195,15 +201,3 @@ flx_requires_driver: flx_arun
 
 @tangle('typedef %s FLX_SOCKLEN_T;' % FLX_SOCKLEN_T)
 #endif
-
-@h=tangler('lib/flx_demux.flx')
-@select(h)
-#import <flx.flxh>
-module Demux
-{
-  type demuxer = "flx::demux::flx_demuxer_t*"
-    requires header '#include "flx_demux.hpp"'
-  ;
-  gen mk_sys_demux: 1->demuxer = "flx::demux::make_std_demuxer()";
-  val sys_demux =  mk_sys_demux();
-}

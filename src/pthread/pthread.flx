@@ -1,0 +1,83 @@
+header pthread_hxx = '#include "pthread_thread.hpp"';
+header mutex_hxx = '#include "pthread_mutex.hpp"';
+header condv_hxx = '#include "pthread_condv.hpp"';
+header counter_hxx = '#include "pthread_counter.hpp"';
+header semaphore_hxx = '#include "pthread_semaphore.hpp"';
+header monitor_hxx = '#include "pthread_monitor.hpp"';
+header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
+
+publish """
+This module provides access to the operating system's native
+threading routines. On systems with multiple cpus, this may
+increase performance as the operating system may schedule
+threads on different processors.
+"""
+module Pthread
+{
+  requires package "flx_pthread";
+  open C_hack;
+
+  type job_queue = "flx::pthread::worker_fifo*" requires work_fifo_hxx;
+
+  gen mk_job_queue: int * int -> job_queue = "new flx::pthread::worker_fifo($1,$2)";
+
+  proc spawn_pthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_pthread fthr;
+  }
+
+  type mutex = "flx::pthread::flx_mutex_t" requires mutex_hxx;
+  proc lock: lvalue[mutex] = "$1.lock();";
+  proc unlock: lvalue[mutex] = "$1.unlock();";
+  proc lock (m:&mutex) { lock$ *m; }
+  proc unlock (m:&mutex) { unlock$ *m; }
+
+  // pre-emptive thread channels (monitor)
+  type pchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+
+  fun mk_pchannel[t]: 1->pchannel[t] =
+    "new flx::pthread::monitor_t()"
+  ;
+
+  // NOTE: read/write on pchannels uses suspend/resume
+  // to tell any pending collector it is safe to proceed
+  // whilst it is doing the I/O (which may block),
+  // to block returning from the I/O during a collection
+  // AND, if the I/O completed before the collection got
+  // going, to yield at this point.
+
+  proc _read[t]: pchannel[t] * ptr[ptr[t]] = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"READ:DQ\\n");
+    *$2 = (?1*)($1->dequeue());
+    //fprintf(stderr,"DONE READ:DQ\\n");
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """;
+
+  gen read[t] (chan:pchannel[t]) = {
+    var p : ptr[t];
+    _read (chan, addr p);
+    return *p;
+  }
+
+  proc _write[t]: pchannel[t] * ptr[t] = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"WRITE:NQ\\n");
+    $1->enqueue((void*)$2);
+    //fprintf(stderr,"DONE WRITE:NQ\\n");
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """;
+
+  proc write[t](chan:pchannel[t], v:t) {
+    var ps = cast[ptr[t]]$ xnew v;
+    _write (chan,ps);
+  }
+}

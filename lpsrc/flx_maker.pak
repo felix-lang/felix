@@ -1134,33 +1134,53 @@ class PLUGIN(Plugin):
 
         deletefile(src + EXT_STATIC_OBJ)
 
+@select(tangler('mkplugins/build_target_felix_rtl.py'))
+class PLUGIN(Plugin):
+  name = 'build_target_felix_rtl'
+
+  def runme(self, pkg, pkgdict):
+    flxs = pkgdict.get('felix_rtl', [])
+    if not flxs:
+      return
+
+    for path in flxs:
+      f = os.path.join(FLX_DIR, path)
+      if os.path.exists(f):
+        src = f
+      else:
+        src = path
+      src = src.replace('/', os.sep)
+      dst = os.path.join('lib', os.path.basename(path))
+
+      if filetime(src) > filetime(dst):
+        if not quiet: print('filecopy %s -> %s' % (src, dst))
+        filecopy(src, dst)
+
 @select(tangler('mkplugins/build_target_felix_tools.py'))
 # TARGET TOOLS : FELIX
 class PLUGIN(Plugin):
   name = 'build_target_felix_tools'
 
   def runme(self, pkg, pkgdict):
-    FLXS = pkgdict.get("felix_tools",[])
-    if len(FLXS)>0:
-      print "BUILDING FELIX TARGET TOOLS"
-      LIBS = pkgdict.get("exes_require_libs",[])
-      libs = []
-      for lib in LIBS: libs.append(lib+"_static")
-      fsflags = pkgdict.get("felix_requires_linkflags","")
-      for src,exe in FLXS:
-        # added 'std' here so flx_pkgconfig builds
-        flxg("-Ilib --import=flx.flxh std " + src)
-        TARGET_CXX.build_felix_static(
-          vxqt,
-          src,
-          exe,
-          objects=[os.path.join(FLX_RTL_DIR, 'flx_run' + EXT_STATIC_OBJ)],
-          include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
-          macros=["FLX_STATIC_LINK"],
-          CFLAGS=CFLAGS,
-          lib_paths=[FLX_RTL_DIR],
-          libs=libs,
-          LDFLAGS=SFLAGS+fsflags)
+    flxs = pkgdict.get("felix_tools",[])
+    if not flxs:
+      return
+
+    print "BUILDING FELIX TARGET TOOLS"
+    libs = [l+'_static' for l in pkgdict.get("exes_require_libs",[])]
+    fsflags = pkgdict.get("felix_requires_linkflags","")
+    for src,exe in flxs:
+      # added 'std' here so flx_pkgconfig builds
+      flxg("-Ilib --import=flx.flxh std " + src)
+      TARGET_CXX.build_felix_static(vxqt, src, exe,
+        objects=[os.path.join(FLX_RTL_DIR, 'flx_run' + EXT_STATIC_OBJ)],
+        include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
+        macros=["FLX_STATIC_LINK"],
+        CFLAGS=CFLAGS,
+        lib_paths=[FLX_RTL_DIR],
+        libs=libs,
+        LDFLAGS=SFLAGS+fsflags
+      )
 
 @select(tangler('mkplugins/performance.py'))
 SPECIAL_TESTS = [
@@ -1675,6 +1695,7 @@ class PLUGIN(Plugin):
           plugins['build_felix_static_drivers'](pkg, pkgdict)
   
         plugins['build_target_cpp_tools'](pkg, pkgdict)
+        plugins['build_target_felix_rtl'](pkg, pkgdict)
         plugins['build_target_felix_tools'](pkg, pkgdict)
 
         # only stamp if we've passed the tests
