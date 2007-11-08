@@ -1,4 +1,3 @@
-#line 205 "../lpsrc/flx_demux.pak"
 #ifndef __FLX_DEMUX_TIMER_QUEUE_H__
 #define __FLX_DEMUX_TIMER_QUEUE_H__
 
@@ -37,4 +36,3 @@ DEMUX_EXTERN timer_queue *mk_timer_queue();
 }} // namespace demux, flx
 
 #endif
-

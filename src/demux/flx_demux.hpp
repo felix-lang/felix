@@ -1,4 +1,3 @@
-#line 24 "../lpsrc/flx_demux.pak"
 #ifndef __FLX_DEMUX_H__
 #define __FLX_DEMUX_H__
 #include <flx_demux_config.hpp>
@@ -44,4 +43,3 @@ DEMUX_EXTERN flx_demuxer_t * make_std_demuxer();
 }}
 
 #endif
-

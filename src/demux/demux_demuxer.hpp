@@ -1,4 +1,3 @@
-#line 135 "../lpsrc/flx_demux.pak"
 #ifndef __FLX_DEMUX_DEMUXER_H__
 #define __FLX_DEMUX_DEMUXER_H__
 #include <flx_demux_config.hpp>
@@ -66,4 +65,3 @@ public:
 
 }} // namespace demux, flx
 #endif  /* __DEMUXER__ */
-

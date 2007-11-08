@@ -1,4 +1,3 @@
-#line 72 "../lpsrc/flx_demux.pak"
 #include "flx_demux.hpp"
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,4 +46,3 @@ make_std_demuxer()
   return d;
 }
 }}
-

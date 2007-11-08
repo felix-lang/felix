@@ -1,4 +1,3 @@
-#line 291 "../lpsrc/flx_demux.pak"
 #include "demux_quitter.hpp"
 #include <stdio.h>
 
@@ -45,5 +44,4 @@ demux_quitter::quit(demuxer* demux)
    // event thread exited
 }
 
-} }
-
+}}

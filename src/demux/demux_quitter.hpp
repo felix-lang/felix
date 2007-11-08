@@ -1,5 +1,3 @@
-#line 252 "../lpsrc/flx_demux.pak"
-
 #ifndef __FLX_DEMUX_QUITTER_H__
 #define __FLX_DEMUX_QUITTER_H__
 
@@ -32,7 +30,6 @@ public:
   void quit(demuxer* demux); // blocks until event thread exits
 };
 
-} }
+}}
 
 #endif
-
