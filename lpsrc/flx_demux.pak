@@ -104,7 +104,6 @@ dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
 iscr_source = [
   'lpsrc/flx_demux.pak',
-  'lpsrc/flx_demuxconfig.pak',
   ]
 build_macro = 'DEMUX'
 weaver_directory = 'doc/rtl/flx_demux/'
