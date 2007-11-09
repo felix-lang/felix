@@ -70,7 +70,6 @@ struct allocator_t {
   allocator_t():debug(false){}
   virtual void *allocate(std::size_t)=0;
   virtual void deallocate(void *)=0;
-  virtual void *reallocate(void *, std::size_t)=0;
   virtual ~allocator_t(){};
   void set_debug(bool d){debug=d;}
 };
