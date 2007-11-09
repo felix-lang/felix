@@ -458,7 +458,7 @@ int main(int argc, char** argv)
     printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
     printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
     printf("  FLX_GC_FREQ=n           # how often to call garbage collector (default 1000)\n");
-    printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default no, will be yes soon)\n");
+    printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)\n");
     return 1;
   }
   char *filename = argv[1];
@@ -548,7 +548,7 @@ int main(int argc, char** argv)
   // find all the thread stacks, which should be possible
   // with gcc and probably msvc++
 
-  bool allow_collection_anywhere = egetv("FLX_ALLOW_COLLECTION_ANYWHERE",0);
+  bool allow_collection_anywhere = egetv("FLX_ALLOW_COLLECTION_ANYWHERE",1);
   if(debug)
     fprintf(stderr,"[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n",allow_collection_anywhere?"True":"False");
 
