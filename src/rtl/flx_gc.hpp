@@ -20,7 +20,8 @@ struct GC_EXTERN allocator_t;  // the collector itself
 enum gc_shape_flags_t {
   gc_flags_default    = 0,            //< collectable and mobile
   gc_flags_immobile   = 1,            //< cannot be moved
-  gc_flags_persistent = 2             //< cannot be deallocated
+  gc_flags_persistent = 2,            //< cannot be deallocated
+  gc_flags_conservative = 4           //< scan whole object conservatively
 };
 
 /// Describes runtime object shape.

@@ -12,15 +12,6 @@ namespace gc {
 namespace collector {
 
 static int mcount FLX_UNUSED = 0;
-#if FLX_HAVE_GNU_X86
-register void *sp __asm__("esp");
-#else
-// this was getting us unused variable warnings
-// static void *sp = 0;
-#endif
-
-void *low_sp = 0;
-void *hi_sp = 0;
 
 void *malloc_free::allocate(std::size_t amt)
 {
@@ -31,17 +22,6 @@ void *malloc_free::allocate(std::size_t amt)
   else {
     fprintf(stderr,"Felix: Malloc out of memory, blk=%ld\n",long(amt));
     throw flx::rtl::flx_out_of_memory_t();
-  }
-}
-
-
-void *malloc_free::reallocate(void *p, size_t amt)
-{
-  void *q = realloc(p,amt);
-  if(q) return p;
-  else {
-    fprintf(stderr,"Felix: Realloc out of memory, blk=%ld\n",long(amt));
-    abort();
   }
 }
 
@@ -452,15 +432,32 @@ void flx_collector_t::scan_object(void *p)
   std::size_t n_offsets = shape->n_offsets;
   std::size_t *offsets = shape->offsets;
 
-  for(unsigned long j=0; j<n_used; ++j)
-  {
-    for(unsigned int i=0; i<n_offsets; ++i)
+  if(shape->flags & gc_flags_conservative)
+  { 
+    // end of object, rounded down to size of a void*
+    void **end = (void**)(
+      (unsigned char*)(void*)fp + 
+      n_used * n / sizeof(void*) * sizeof(void*)
+    ); 
+    for ( void **i = (void**)p; i != end; i = i+1)
     {
-      void **pq = (void**)(void*)((unsigned char*)p + offsets[i]);
-      void *q = *pq;
-      if(q)scan_object(q);
+      //if(debug)
+      //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
+      scan_object(*i);
     }
-    p=(void*)((unsigned char*)p+shape->amt);
+  }
+  else
+  {
+    for(unsigned long j=0; j<n_used; ++j)
+    {
+      for(unsigned int i=0; i<n_offsets; ++i)
+      {
+        void **pq = (void**)(void*)((unsigned char*)p + offsets[i]);
+        void *q = *pq;
+        if(q)scan_object(q);
+      }
+      p=(void*)((unsigned char*)p+shape->amt);
+    }
   }
 }
 

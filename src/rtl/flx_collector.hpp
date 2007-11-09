@@ -18,7 +18,6 @@ struct GC_EXTERN flx_collector_t;
 struct GC_EXTERN malloc_free : public virtual allocator_t
 {
   void *allocate(std::size_t);
-  void *reallocate(void *, std::size_t);
   void deallocate(void *);
 };
 
