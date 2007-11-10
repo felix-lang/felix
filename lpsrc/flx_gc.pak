@@ -48,7 +48,6 @@ cpp_cpps = [
   ]
 
 rtl_interfaces = [
-  'src/gc/flx_gc_config.hpp',
   'src/gc/flx_gc.hpp',
   'src/gc/flx_collector.hpp',
   'src/gc/flx_gc_private.hpp',
