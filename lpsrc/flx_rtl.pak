@@ -16,12 +16,12 @@ in namespace flx::rtl, except as noted.
 
 @select(tangler('spkgs/flx_exceptions.py'))
 cpp_cpps = [
-  "src/rtl/flx_exceptions",
+  "src/exceptions/flx_exceptions",
 ]
 
 rtl_interfaces = [
-  'src/rtl/flx_exceptions_config.hpp',
-  'src/rtl/flx_exceptions.hpp',
+  'src/exceptions/flx_exceptions_config.hpp',
+  'src/exceptions/flx_exceptions.hpp',
 ]
 
 pkg_requires = ['flx_rtl_config']
@@ -30,8 +30,8 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 build_macro = "FLX_EXCEPTIONS"
 weaver_directory = 'doc/rtl/flx_exceptions/'
 xfiles = [
-  'src/rtl/flx_exceptions.hpp',
-  'src/rtl/flx_exceptions.cpp',
+  'src/exceptions/flx_exceptions.hpp',
+  'src/exceptions/flx_exceptions.cpp',
   ]
 @doc()
 
