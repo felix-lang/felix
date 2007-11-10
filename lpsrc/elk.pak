@@ -149,10 +149,11 @@ build_macro = "ELK"
 weaver_directory = "doc/elkhound/"
 tmpdir = ['elk']
 
-xfiles = \
-  glob.glob(os.path.join(FLX_DIR, 'src', 'smbase', '*')) + \
-  glob.glob(os.path.join(FLX_DIR, 'src', 'ast', '*')) + \
-  glob.glob(os.path.join(FLX_DIR, 'src', 'elkhound', '*'))
+xfiles = [
+  os.path.join('src', 'smbase', '*'),
+  os.path.join('src', 'ast', '*'),
+  os.path.join('src', 'elkhound', '*'),
+]
 
 @h = tangler('config/elk.fpc')
 @select(h)

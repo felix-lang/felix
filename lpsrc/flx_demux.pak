@@ -113,48 +113,13 @@ iscr_source = [
 weaver_directory = 'doc/rtl/flx_demux/'
 tmpdir = ['demux']
 xfiles = [
-  'src/demux/flx_demux.flx',
-
-  'src/demux/demux_demuxer.cpp',
-  'src/demux/demux_demuxer.hpp',
-  'src/demux/demux_quitter.cpp',
-  'src/demux/demux_quitter.hpp',
-  'src/demux/demux_timer_queue.hpp',
-
-  'src/demux/win/demux_iocp_demuxer.cpp',
-  'src/demux/win/demux_iocp_demuxer.hpp',
-  'src/demux/win/demux_overlapped.cpp',
-  'src/demux/win/demux_overlapped.hpp',
-  'src/demux/win/demux_win_timer_queue.cpp',
-  'src/demux/win/demux_win_timer_queue.hpp',
-  'src/demux/win/demux_wself_piper.cpp',
-
-  'src/demux/posix/demux_pfileio.cpp',
-  'src/demux/posix/demux_pfileio.hpp',
-  'src/demux/posix/demux_posix_demuxer.cpp',
-  'src/demux/posix/demux_posix_demuxer.hpp',
-  'src/demux/posix/demux_posix_timer_queue.cpp',
-  'src/demux/posix/demux_posix_timer_queue.hpp',
-  'src/demux/posix/demux_select_demuxer.cpp',
-  'src/demux/posix/demux_select_demuxer.hpp',
-  'src/demux/posix/demux_self_piper.cpp',
-  'src/demux/posix/demux_self_piper.hpp',
-  'src/demux/posix/demux_sockety.hpp',
-  'src/demux/posix/demux_sockety.cpp',
-  'src/demux/posix/demux_ts_select_demuxer.cpp',
-  'src/demux/posix/demux_ts_select_demuxer.hpp',
-
-  'src/demux/poll/demux_poll_demuxer.cpp',
-  'src/demux/poll/demux_poll_demuxer.hpp',
-  'src/demux/poll/demux_ts_poll_demuxer.cpp',
-  'src/demux/poll/demux_ts_poll_demuxer.hpp',
-
-  'src/demux/epoll/demux_epoll_demuxer.cpp',
-  'src/demux/epoll/demux_epoll_demuxer.hpp',
-  'src/demux/evtport/demux_evtport_demuxer.cpp',
-  'src/demux/evtport/demux_evtport_demuxer.hpp',
-  'src/demux/kqueue/demux_kqueue_demuxer.cpp',
-  'src/demux/kqueue/demux_kqueue_demuxer.hpp',
+  os.path.join('src', 'demux', '*'),
+  os.path.join('src', 'demux', 'epoll', '*'),
+  os.path.join('src', 'demux', 'evtport', '*'),
+  os.path.join('src', 'demux', 'kqueue', '*'),
+  os.path.join('src', 'demux', 'poll', '*'),
+  os.path.join('src', 'demux', 'posix', '*'),
+  os.path.join('src', 'demux', 'win', '*'),
 ]
 
 @h = tangler('config/demux.fpc')

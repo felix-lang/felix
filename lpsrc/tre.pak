@@ -41,34 +41,7 @@ weaver_directory = 'doc/rtl/tre/'
 build_macro = "TRE"
 @tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 tmpdir = ['tre']
-
-xfiles = [
-  'src/tre/tre_ast.cpp',
-  'src/tre/tre_ast.hpp',
-  'src/tre/tre_compile.cpp',
-  'src/tre/tre_compile.hpp',
-  'src/tre/tre_config.hpp',
-  'src/tre/tre_filter.cpp',
-  'src/tre/tre_filter.hpp',
-  'src/tre/tre_gettext.hpp',
-  'src/tre/tre_internal.hpp',
-  'src/tre/tre_match-approx.cpp',
-  'src/tre/tre_match-backtrack.cpp',
-  'src/tre/tre_match-parallel.cpp',
-  'src/tre/tre_match-utils.hpp',
-  'src/tre/tre_mem.cpp',
-  'src/tre/tre_mem.hpp',
-  'src/tre/tre_parse.cpp',
-  'src/tre/tre_parse.hpp',
-  'src/tre/tre_regcomp.cpp',
-  'src/tre/tre_regerror.cpp',
-  'src/tre/tre_regexec.cpp',
-  'src/tre/tre_regex.hpp',
-  'src/tre/tre_stack.cpp',
-  'src/tre/tre_stack.hpp',
-  'src/tre/tre_xmalloc.cpp',
-  'src/tre/tre_xmalloc.hpp',
-  ]
+xfiles = [os.path.join('src', 'tre', '*')]
 
 @h = tangler('config/tre.fpc')
 @select(h)

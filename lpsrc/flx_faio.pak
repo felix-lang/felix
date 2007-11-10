@@ -83,24 +83,7 @@ demos = glob.glob(os.path.join('demos', 'faio', '*.flx'))
 iscr_source = ["lpsrc/flx_faio.pak"]
 weaver_directory = 'doc/rtl/flx_faio/'
 tmpdir = ['faio']
-xfiles = [
-  'src/faio/faio_asyncio.cpp',
-  'src/faio/faio_asyncio.hpp',
-  'src/faio/faio_drv.hpp',
-  'src/faio/faio_job.cpp',
-  'src/faio/faio_job.hpp',
-  'src/faio/faio_posixio.cpp',
-  'src/faio/faio_posixio.hpp',
-  'src/faio/faio_timer.cpp',
-  'src/faio/faio_timer.hpp',
-  'src/faio/faio_winio.cpp',
-  'src/faio/faio_winio.hpp',
-  'src/faio/flx_faio.flx',
-  'src/faio/flx_faio_posix.flx',
-  'src/faio/flx_faio_win32.flx',
-  'src/faio/flx_socket.flx',
-  'src/faio/flx_stream.flx' ,
-]
+xfiles = [os.path.join('src', 'faio', '*')]
 
 @h=tangler('config/target/flx_faio_config.hpp')
 @select(h)

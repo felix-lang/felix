@@ -1546,7 +1546,10 @@ class PLUGIN(Plugin):
         #print "LP Pak %-20s changed: %s" % (pkg,fmtime(pkg_src_time))
 
         # at this stage, extra source files need to be considered
-        xfiles = [os.path.join(FLX_DIR, p) for p in pkgdict.get("xfiles",[])]
+        xfiles = []
+        for xfile in pkgdict.get('xfiles', []):
+          xfiles.extend(glob.glob(os.path.join(FLX_DIR, xfile)))
+
         #print "XFILES="+str(xfiles)
         xfiles_time = newest_filetime(xfiles)
         #print "XFILES %-20s changed: %s" % (pkg,fmtime(xfiles_time))

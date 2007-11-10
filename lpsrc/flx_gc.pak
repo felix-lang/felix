@@ -60,15 +60,7 @@ lib_requires = ['libflx_judy', 'libflx_exceptions', 'libflx_pthread']
 iscr_source = ['lpsrc/flx_gc.pak']
 build_macro = "FLX_GC"
 weaver_directory = 'doc/rtl/flx_gc/'
-xfiles = [
-  'src/gc/flx_gc.hpp', 
-  'src/gc/flx_gc.cpp', 
-  'src/gc/flx_gc_private.hpp', 
-  'src/gc/flx_collector.hpp', 
-  'src/gc/flx_collector.cpp',
-  'src/gc/flx_ts_collector.hpp', 
-  'src/gc/flx_ts_collector.cpp',
-  ]
+xfiles = [os.path.join('src', 'gc', '*')]
 
 @h = tangler('config/flx_gc.fpc')
 @select(h)
