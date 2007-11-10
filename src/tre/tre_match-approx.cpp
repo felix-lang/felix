@@ -1,4 +1,3 @@
-#line 4519 "../lpsrc/tre.pak"
 /*
   tre-match-approx.c - TRE approximate regex matching engine
 

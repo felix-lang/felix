@@ -1,4 +1,3 @@
-#line 1303 "../lpsrc/tre.pak"
 /*
   tre-ast.c - Abstract syntax tree (AST) routines
 

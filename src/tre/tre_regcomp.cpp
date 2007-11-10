@@ -1,4 +1,3 @@
-#line 448 "../lpsrc/tre.pak"
 /*
   regcomp.c - TRE POSIX compatible regex compilation functions.
 

@@ -1,4 +1,3 @@
-#line 4062 "../lpsrc/tre.pak"
 
 /* RF: need this for TRE_EXTERN */
 #include "flx_target_tre_config.hpp"

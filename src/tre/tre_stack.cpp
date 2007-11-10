@@ -1,4 +1,3 @@
-#line 8788 "../lpsrc/tre.pak"
 /*
   tre-stack.c - Simple stack implementation
 

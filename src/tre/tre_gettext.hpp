@@ -1,4 +1,3 @@
-#line 377 "../lpsrc/tre.pak"
 /* Convenience header for conditional use of GNU <libintl.h>.
    Copyright (C) 1995-1998, 2000-2002 Free Software Foundation, Inc.
 

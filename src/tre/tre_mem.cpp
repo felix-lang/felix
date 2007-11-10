@@ -1,4 +1,3 @@
-#line 6769 "../lpsrc/tre.pak"
 /*
   tre-mem.c - TRE memory allocator
 

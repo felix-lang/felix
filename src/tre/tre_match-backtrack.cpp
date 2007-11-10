@@ -1,4 +1,3 @@
-#line 5356 "../lpsrc/tre.pak"
 /*
   tre-match-backtrack.c - TRE backtracking regex matching engine
 

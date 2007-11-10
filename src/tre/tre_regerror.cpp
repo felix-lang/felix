@@ -1,4 +1,3 @@
-#line 589 "../lpsrc/tre.pak"
 /*
   regerror.c - POSIX regerror() implementation for TRE.
 

@@ -1,4 +1,3 @@
-#line 6552 "../lpsrc/tre.pak"
 
 /*
   tre-match-utils.h - TRE matcher helper definitions

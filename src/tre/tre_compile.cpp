@@ -1,4 +1,3 @@
-#line 1682 "../lpsrc/tre.pak"
 /*
   tre-compile.c - TRE regex compiler
 

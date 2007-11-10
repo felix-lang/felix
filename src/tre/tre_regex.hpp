@@ -1,4 +1,3 @@
-#line 1049 "../lpsrc/tre.pak"
 /*
   regex.h - POSIX.2 compatible regexp interface and TRE extensions
 

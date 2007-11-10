@@ -1,4 +1,3 @@
-#line 4112 "../lpsrc/tre.pak"
 /*
   tre-filter.c: Histogram filter to quickly find regexp match candidates
 

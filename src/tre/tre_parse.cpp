@@ -1,4 +1,3 @@
-#line 7016 "../lpsrc/tre.pak"
 /*
   tre-parse.c - Regexp parser
 

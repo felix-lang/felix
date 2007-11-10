@@ -1,4 +1,3 @@
-#line 6023 "../lpsrc/tre.pak"
 /*
   tre-match-parallel.c - TRE parallel regex matching engine
 

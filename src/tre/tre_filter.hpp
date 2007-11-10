@@ -1,7 +1,3 @@
-#line 4197 "../lpsrc/tre.pak"
-
-
-
 
 typedef struct {
   unsigned char ch;

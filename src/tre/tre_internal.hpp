@@ -1,4 +1,3 @@
-#line 4218 "../lpsrc/tre.pak"
 /*
   tre-internal.h - TRE internal definitions
 

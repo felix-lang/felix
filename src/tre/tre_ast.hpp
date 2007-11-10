@@ -1,4 +1,3 @@
-#line 1541 "../lpsrc/tre.pak"
 /*
   tre-ast.h - Abstract syntax tree (AST) definitions
 

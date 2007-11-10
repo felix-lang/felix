@@ -1,4 +1,3 @@
-#line 9078 "../lpsrc/tre.pak"
 /*
   xmalloc.c - Simple malloc debugger library implementation
 

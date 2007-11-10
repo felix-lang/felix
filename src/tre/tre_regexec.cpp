@@ -1,4 +1,3 @@
-#line 675 "../lpsrc/tre.pak"
 /*
   regexec.c - TRE POSIX compatible matching functions (and more).
 

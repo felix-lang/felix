@@ -1,4 +1,3 @@
-#line 4022 "../lpsrc/tre.pak"
 /*
   tre-compile.h: Regex compilation definitions
 

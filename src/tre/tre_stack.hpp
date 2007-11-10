@@ -1,4 +1,3 @@
-#line 8907 "../lpsrc/tre.pak"
 /*
   tre-stack.h: Stack definitions
 
