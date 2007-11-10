@@ -80,7 +80,7 @@ xfiles = [
    tangle("provides_dlib: -ltre_dynamic")
    tangle("provides_slib: -ltre_static")
 
-@h=tangler('config/target/flx_tre_config.hpp')
+@h=tangler('config/target/flx_target_tre_config.hpp')
 @select(h)
 #ifndef __FLX_TARGET_TRE_CONFIG_H__
 #define __FLX_TARGET_TRE_CONFIG_H__
