@@ -267,6 +267,10 @@ flx::gc::generic::gc_shape_t unit_ptr_map = {
   gc::generic::gc_flags_default
 };
 
+// ********************************************************
+// trace feature
+// ********************************************************
+
 int flx_enable_trace=1;
 unsigned long flx_global_trace_count=0uL;
 
