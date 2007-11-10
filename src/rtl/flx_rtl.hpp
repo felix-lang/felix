@@ -20,12 +20,10 @@ namespace flx { namespace rtl {
 // ********************************************************
 
 struct RTL_EXTERN con_t;     // continuation
-struct RTL_EXTERN thread_t; // f-thread
-//struct RTL_EXTERN _ref_;     // pointer/reference
+struct RTL_EXTERN fthread_t; // f-thread
 struct RTL_EXTERN _uctor_;   // union constructor
 struct RTL_EXTERN schannel_t;   // synchronous channel type
 struct RTL_EXTERN slist_t;   // singly linked list of void*
-struct RTL_EXTERN _root_ptr_t;   // singly linked list of void*
 
 struct RTL_EXTERN unit {};   // unit
   // INLINE DEFINITION, PROBLEMATIC!!
@@ -44,7 +42,6 @@ RTL_EXTERN extern flx::gc::generic::gc_shape_t _int_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t _address_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t unit_ptr_map;
 RTL_EXTERN extern flx::gc::generic::gc_shape_t slist_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
 
 // ********************************************************
 /// CONTINUATION.
@@ -127,88 +124,6 @@ struct RTL_EXTERN _uctor_
   _uctor_(int i, void *d) : variant(i), data(d) {}
   _uctor_(int *a, _uctor_ x) : variant(a[x.variant]), data(x.data) {}
 };
-
-// ********************************************************
-/// ROOT POINTER.
-/// Use to chain pseudo roots together. Generally scannable
-/// but not collectable.
-// ********************************************************
-
-struct RTL_EXTERN _root_ptr_t
-{
-  _root_ptr_t();
-  _root_ptr_t(void *x);
-  _root_ptr_t(_root_ptr_t const&);
-  void operator=(_root_ptr_t const&);
-  ~_root_ptr_t();
-
-  _root_ptr_t *next;
-  _root_ptr_t *prev;
-  void *data;
-
-private:
-  void insert_after (_root_ptr_t*);
-  void erase();
-};
-
-// INLINE! All casts
-template<class T>
-struct root_ptr_t : _root_ptr_t {
-  root_ptr_t(){}
-  root_ptr_t(root_ptr_t<T> const&){}
-  root_ptr_t<T>& operator=(root_ptr_t<T> const &a){
-    return reinterpret_cast<root_ptr_t<T>&>(_root_ptr_t::operator=(a));
-  }
- ~root_ptr_t(){}
-
-  root_ptr_t(T const *a) : _root_ptr_t (const_cast<T*>(a)) {}
-
-  T *operator->() { return (T*)data; }
-  T const *operator->() const { return (T const*)data; }
-  T &operator*() { return *(T*)data; }
-  T const &operator*() const { return *(T const*)data; }
-};
-
-template<class T>
-bool operator == (root_ptr_t<T> a, root_ptr_t<T> b)
-{
-  return a-> data == b->data;
-}
-
-template<class T>
-bool operator != (root_ptr_t<T> a, root_ptr_t<T> b)
-{
-  return a-> data != b->data;
-}
-
-template<class T>
-bool operator < (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
-{
-  // we use this because it enforces a total order
-  return std::less<void const*>()(a-> data, b->data);
-}
-
-template<class T>
-bool operator <= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
-{
-  // we use this because it enforces a total order
-  return std::less_equal<void const*>()(a-> data, b->data);
-}
-
-template<class T>
-bool operator > (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
-{
-  // we use this because it enforces a total order
-  return std::greater<void const*>()(a-> data, b->data);
-}
-
-template<class T>
-bool operator >= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
-{
-  // we use this because it enforces a total order
-  return std::greater_equal<void const*>()(a-> data, b->data);
-}
-
 
 
 // ********************************************************

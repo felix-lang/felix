@@ -85,58 +85,6 @@ flx::gc::generic::gc_shape_t slist_ptr_map = {
 };
 
 // ********************************************************
-// _root_ptr_t implementation
-// ********************************************************
-
-_root_ptr_t::_root_ptr_t() : next(0), prev(0), data(0) {}
-_root_ptr_t::_root_ptr_t(void *x) : next(0), prev(0), data(x) {}
-_root_ptr_t::~_root_ptr_t() { erase(); }
-
-void _root_ptr_t::insert_after(_root_ptr_t *a) {
-  prev = a;
-  next = prev->next;
-  prev->next = this;
-  if(next)next->prev = this;
-  data = next->data;
-}
-
-_root_ptr_t::_root_ptr_t(_root_ptr_t const &a) {
-  insert_after(const_cast<_root_ptr_t*>(&a));
-}
-
-void _root_ptr_t::operator=(_root_ptr_t const &a) {
-  if (&a != this)
-  {
-    erase();
-    insert_after(const_cast<_root_ptr_t*>(&a));
-  }
-}
-
-//OFFSETS for root_ptr_t
-static std::size_t _root_ptr_offsets[3]={
-    offsetof(_root_ptr_t,next),
-    offsetof(_root_ptr_t,prev),
-    offsetof(_root_ptr_t,data)
-};
-
-flx::gc::generic::gc_shape_t _root_ptr_ptr_map = {
-  &slist_ptr_map,
-  "_root_ptr_t",
-  1,sizeof(_root_ptr_t),
-  0, // no finaliser
-  1,
-  _root_ptr_offsets,
-  gc::generic::gc_flags_default
-};
-
-void _root_ptr_t::erase() {
-  next->prev = prev;
-  prev->next = next;
-  next = 0; prev = 0;
-  data = 0;
-}
-
-// ********************************************************
 // fthread_t implementation
 // ********************************************************
 
@@ -190,7 +138,7 @@ static std::size_t _fthread_offsets[1]={
 };
 
 flx::gc::generic::gc_shape_t _fthread_ptr_map = {
-  &_root_ptr_ptr_map,
+  &slist_ptr_map,
   "fthread_t",
   1,sizeof(fthread_t),
   0,
