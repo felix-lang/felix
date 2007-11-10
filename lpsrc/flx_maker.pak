@@ -550,8 +550,9 @@ class PLUGIN(Plugin):
     CPPS = pkgdict.get("host_cpp_cpps",[])
     EXES = pkgdict.get("host_exes",[])
     LIBS = pkgdict.get("host_exes_require_libs",[])
-    INCLUDE_PATH=pkgdict.get("host_include_path",[])
     MACROS =pkgdict.get("host_macros",[])
+    INCLUDES=pkgdict.get("host_include_path",[])
+    INCLUDE_PATH=[os.path.join(FLX_DIR, i) for i in INCLUDES]
 
     if len(CCS)+len(CPPS)+len(EXES)+len(LIBS) == 0:
       return
@@ -950,7 +951,8 @@ class PLUGIN(Plugin):
     BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
     EXTRA_CFLAGS = pkgdict.get("cflags","")
     EXTRA_DFLAGS = pkgdict.get("dflags","")
-    INCLUDE_PATH = pkgdict.get("include_path",[])
+    INCLUDES=pkgdict.get("include_path",[])
+    INCLUDE_PATH=[os.path.join(FLX_DIR, i) for i in INCLUDES]
     MACROS =pkgdict.get("macros",[])
 
     flibs = pkgdict.get("lib_requires",[])
@@ -1018,7 +1020,8 @@ class PLUGIN(Plugin):
 
     EXTRA_CFLAGS = pkgdict.get("cflags","")
     lib = pkgdict.get("provides_lib","lib"+pkg)
-    INCLUDE_PATH = pkgdict.get("include_path",[])
+    INCLUDES=pkgdict.get("include_path",[])
+    INCLUDE_PATH=[os.path.join(FLX_DIR, i) for i in INCLUDES]
     MACROS =pkgdict.get("macros",[])
 
     print " ++ "+pkg+" RTL (static)"
