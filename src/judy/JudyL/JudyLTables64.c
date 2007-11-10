@@ -1,4 +1,3 @@
-#line 48471 "../lpsrc/flx_judy.pak"
 #ifndef JUDY_EXTERN
 #if defined(_WIN32) && !defined(FLX_STATIC_LINK)
 #ifdef BUILD_JUDY
@@ -17,7 +16,6 @@
 #endif
 
 
-#line 48045 "./lpsrc/flx_judy.pak"
 #ifndef JUDY_EXTERN
 #if defined(_WIN32) && !defined(FLX_STATIC_LINK)
 #ifdef BUILD_JUDY
