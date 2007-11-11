@@ -4,8 +4,11 @@
 @env = setup_test('test/tre/tre-')
 
 @head(1,'tre')
-@h = tangler('spkgs/tre.py')
-@select(h)
+@select(tangler('spkgs/tre.py'))
+iscr_source = ['lpsrc/tre.pak']
+weaver_directory = 'doc/rtl/tre/'
+
+xfiles = [os.path.join('src', 'tre', '*')]
 
 rtl_interfaces = [
   'config/target/flx_tre_config.hpp',
@@ -18,9 +21,13 @@ rtl_interfaces = [
   'src/tre/tre_match-utils.hpp',
   'src/tre/tre_mem.hpp',
   'src/tre/tre_parse.hpp',
-  ]
+]
 
-TRE_CPPS = [
+felix_rtl = [
+  'src/tre/tre.flx',
+]
+
+cpp_cpps = [
   'src/tre/tre_regcomp',
   'src/tre/tre_regerror',
   'src/tre/tre_regexec',
@@ -33,15 +40,11 @@ TRE_CPPS = [
   'src/tre/tre_mem',
   'src/tre/tre_parse',
   'src/tre/tre_stack'
-  ]
+]
 
-cpp_cpps = TRE_CPPS
-iscr_source = ['lpsrc/tre.pak']
-weaver_directory = 'doc/rtl/tre/'
 build_macro = "TRE"
+
 @tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
-tmpdir = ['tre']
-xfiles = [os.path.join('src', 'tre', '*')]
 
 @h = tangler('config/tre.fpc')
 @select(h)
@@ -315,64 +318,6 @@ xfiles = [os.path.join('src', 'tre', '*')]
 /* #undef inline */
 #endif
 
-
-@h=tangler('lib/tre.flx')
-@select(h)
-#import <flx.flxh>
-
-module Tre 
-{
-  open C_hack;
-  requires package 'tre';
-  header '#include "tre_regex.hpp"';
-  type tre_regex_t = "regex_t";
-
-  const tre_version: string = "tre_version()";
-  
-  private fun _tre_regcomp: ptr[tre_regex_t] * string  -> int =
-    "regncomp($1,$2.data(),$2.size(),REG_EXTENDED)"
-  ;
-  
-  fun tre_regcomp (x:string): opt[tre_regex_t] = {
-    var cr: tre_regex_t;
-    var res = _tre_regcomp(addr cr, x);
-    return 
-      if res == 0 then Some cr else None[tre_regex_t] endif
-    ;
-  }
-
-  fun nsub: ptr[tre_regex_t] -> int = "$1->re_nsub+1";
-  
-  ctypes regoff_t;
-  cstruct regmatch_t {
-    rm_so: regoff_t;
-    rm_eo: regoff_t;
-  }
-  
-  fun add: ptr[char] * regoff_t -> ptr[char] = "$1+$2";
-  fun sub: regoff_t * regoff_t -> int = "(int)($1-$2)";
-  fun _ctor_int : regoff_t -> int = "int($1)";
-
-  private fun _tre_regexec: 
-    ptr[tre_regex_t] *     // the compiled regex
-    string *               // string to search
-    int *                  // number of matches to return
-    ptr[regmatch_t]        // array to hold matches
-    -> int
-  =
-    "regnexec($1,$2.data(),$2.size(),$3,$4,0);"
-  ;
-  
-  fun tre_regexec (re_in: tre_regex_t) (x:string): int * int * ptr[regmatch_t] =
-  {
-    var re = re_in;
-    val nmatches = nsub$ addr re;
-    var matches = Carray::array_alloc[regmatch_t] nmatches;
-    var res = _tre_regexec(addr re, x, nmatches, matches);
-    return res,nmatches,matches;
-  }
-}
-
 @head(1, 'Tre tests')
 @env.head(2)
 @select(env.test('.flx'))
@@ -387,21 +332,21 @@ print$ "Using tre " tre_version; endl;
 var r = tre_regcomp("(a|b)*abb");
 print "Done tre compile"; endl;
 
-print 
+print
   match r with
   | Some _ => "Compiled"
-  | None => "failed" 
+  | None => "failed"
   endmatch
 ;
 endl;
 
 
-var re : tre_regex_t = 
-  match r with 
-  | Some ?re => re 
+var re : tre_regex_t =
+  match r with
+  | Some ?re => re
   | None => re // HACK!
   endmatch
-;  
+;
 
 var s = "aabbabababb";
 res,n,a := tre_regexec re s;
@@ -413,7 +358,7 @@ for_each { i=0; } { i<n } { ++i; }
   {
     if int(a.[i].rm_so) == -1 do
       print i; print " -> nomatch\n";
-    else 
+    else
       print i; print "-> match '";
       start := int(a.[i].rm_so);
       finish := int(a.[i].rm_eo);

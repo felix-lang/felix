@@ -23,33 +23,25 @@ Version: $Id$
 
 @h = tangler('spkgs/flx_glob.py')
 @select(h)
+iscr_source = ["lpsrc/flx_glob.pak"]
+weaver_directory = 'doc/rtl/flx_glob/'
+xfiles = [os.path.join('src', 'unixem', '*')]
 
+rtl_interfaces = ['src/unixem/flx_glob_config.hpp', 'src/unixem/flx_glob.hpp']
+felix_rtl = ['src/unixem/glob.flx']
+
+cpp_cpps = []
 if WIN32:
-  GLOB_CPPS = [
+  cpp_cpps.extend([
     'src/unixem/flx_glob',
     'src/unixem/unixem_util',
+  ])
 
-    ]
-else:
-  GLOB_CPPS = []
-
-GLOB_INTERFACES = ['src/unixem/flx_glob_config.hpp', 'src/unixem/flx_glob.hpp']
-
-cpp_cpps = GLOB_CPPS 
-rtl_interfaces = GLOB_INTERFACES
 lib_requires = ['libflx_gc']
 pkg_requires = ['flx_rtl'] # flx_rtl provides flx_rtl_config.hpp
-iscr_source = ["lpsrc/flx_glob.pak"]
 build_macro = "GLOB"
-weaver_directory = 'doc/rtl/flx_glob/'
+
 @tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
-xfiles = [
-  'src/flx_glob.hpp',
-  'src/flx_glob.cpp',
-  'src/flx_unistd.hpp',
-  'src/unixem_util.hpp',
-  'src/unixem_util.cpp'
-  ]
 
 @h=tangler('unixem/flx_glob_config.hpp')
 @select(h)
@@ -77,11 +69,11 @@ xfiles = [
  * Copyright (c) 2002-2006, Matthew Wilson and Synesis Software
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without 
+ * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
  * - Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer. 
+ *   list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice,
  *   this list of conditions and the following disclaimer in the documentation
  *   and/or other materials provided with the distribution.
@@ -104,59 +96,16 @@ xfiles = [
  * ////////////////////////////////////////////////////////////////////////// */
 
 @env.head(1,'glob tests')
-@h=tangler("lib/glob.flx")
-@select(h)
-#import <flx.flxh>
-include "stl";
-
-open Stl::Vector;
-open C_hack;
-
-module glob {
-  // glob
-  header '#include "flx_glob.hpp"';
-  requires package "flx_glob";
-  cstruct glob_t {
-    gl_pathc: size;
-    gl_pathv: ptr[charp];
-    gl_offs: size;
-  };
-  private proc post_incr[t]: lvalue[ptr[t]] = "$1++;";
-
-  gen glob: string * ptr[glob_t] -> bool = "0==::glob($1.data(),0,NULL,$2)";
-  proc globfree: ptr[glob_t] = "globfree($1);";
-
-  gen glob (pat:string): stl_vector[string] =
-  {
-    var files: stl_vector[string];
-    var glob_data: glob_t; glob_data.gl_offs=0ul;
-    if glob(pat,addr glob_data) do
-      var n = glob_data.gl_pathc;
-      var p = glob_data.gl_pathv;
-      var pfile = *p;
-      whilst not isNULL(pfile) do
-        var file = str(pfile);
-        push_back (files, file);
-        p++;
-        pfile = *p;
-      done;
-      globfree(addr glob_data);
-    done;
-    return files;
-  }
-}
-
 @select(env.test('.flx'))
-#import <flx.flxh>
 include "stl";
 include "glob";
 
 var files = glob::glob("lib/*.flx");
 open Reversible_Sequence[
-  Stl::Vector::stl_vector[string], 
+  Stl::Vector::stl_vector[string],
   Stl::Vector::stl_vector_iterator[string],
   Stl::Vector::stl_vector_reverse_iterator[string],
-  string 
+  string
 ];
 
 var p = begin files; whilst p != end files do
