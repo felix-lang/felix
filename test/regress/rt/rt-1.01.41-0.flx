@@ -1,0 +1,20 @@
+#line 1577 "../lpsrc/flx_regress.pak"
+//Check types:nested
+
+fun f(x:int)= {
+  union x_t = | X of int;
+  fun pr(a:x_t): int = {
+    return
+      match a with
+      | X ?i => i
+      | _ => 0
+      endmatch
+    ;
+  }
+  val a = X x;
+  return a,the pr;
+}
+
+val v,d = f 1;
+
+print$ d v; endl;

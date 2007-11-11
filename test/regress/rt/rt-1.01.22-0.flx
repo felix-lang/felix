@@ -1,0 +1,23 @@
+#line 794 "../lpsrc/flx_regress.pak"
+//Check regmatch
+// contrib by Valery, mod by Skaller
+
+// emulate command line arguments
+arguments := "--test", "words", "more words";
+argc := 3;
+fun argv (i:int):string =>
+  match i with
+  | 0 .. 2 => arguments.[i]
+  | _ => ""
+  endmatch
+;
+
+var i = 0;
+whilst i < argc do
+  print "checking arg "; print i; print "="; print (argv i); endl;
+  regmatch (argv i) with
+  | "--test" => { print "test"; endl; }
+  | _*       => { print "terminating"; endl; i = argc; }
+  endmatch;
+  i++;
+done;

@@ -1,0 +1,10 @@
+#line 2276 "../lpsrc/flx_regress.pak"
+//Check regmatch
+
+fun format (suffix:string) : string =>
+  regmatch "1" with
+  | "1" => ".static_suffix" + suffix
+  endmatch
+;
+
+print $ format (".dynamic_suffix"); endl;

@@ -1,0 +1,9 @@
+#line 411 "../lpsrc/flx_regress.pak"
+//Check insertions
+body "#include <iostream>";
+code 'static int x = 1;';
+type INT = "int";
+fun add:INT * INT -> INT = "$1 + $2";
+fun two (): INT = { return code[INT]x + code[INT]'x'; }
+proc print:INT = 'std::cout << $1 << std::endl;';
+print (two());

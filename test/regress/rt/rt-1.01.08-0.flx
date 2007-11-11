@@ -1,0 +1,50 @@
+#line 347 "../lpsrc/flx_regress.pak"
+//Check closures
+// closure formation test
+
+// primitive function
+fun appl(x:int, f:int * int -> int):int = {
+  return f (x,x);
+}
+
+print "closure of add primitive ";
+print (appl (2, add of (int*int))); endl;
+
+// struct as function
+struct X { x:int; }
+fun execX(p:int->X):X = { return p(1); }
+proc xprint(x:X){ print "struct X"; }
+xprint (execX (X of (int))); endl;
+xprint (execX (X)); endl;
+
+// struct get projection as function
+fun execx(p:X->int,a:X):int => p a;
+proc pprint(x:int){ print "struct X: x get projection "; print x; }
+
+// note: old get_x method not supported now!
+fun getx(a:X):int=>a.x;
+pprint (execx (getx of (X), X(42))); endl;
+
+// C struct as function
+header """
+struct CX {int x; };
+""";
+
+cstruct CX { x:int; }
+fun execCX(p:int->CX):CX = { return p(1); }
+proc xprint(x:CX){ print "struct CX"; }
+xprint (execCX (CX of (int))); endl;
+xprint (execCX (CX)); endl;
+
+
+// anonymous variant type constructor as function
+typedef Y = 1 + int;
+fun exec2(y2:int->Y,a:int):Y= { return  y2 a; }
+proc yprint(y:Y) { print "union Y"; }
+yprint (exec2(case 1 of Y, 1)); endl;
+
+// named variant type constructor as function
+union U = | A | B of int;
+fun exec3(y2:int->U,a:int):U= { return  y2 a; }
+proc xprint(y:U) { print "union U"; }
+xprint (exec3(B of (int), 1)); endl;

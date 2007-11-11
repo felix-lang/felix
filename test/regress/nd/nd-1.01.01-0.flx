@@ -1,0 +1,37 @@
+#line 2604 "../lpsrc/flx_regress.pak"
+//Check garbage collector
+#import <flx.flxh>;
+open List;
+Control::collect();
+var a = list(1,2,3,4);
+fun conv (a:list[int])=>
+  fold_left
+    (fun (acc: list[int]) (item2:int)=>
+      acc + map (fun (item1:int)=> item1+item2) a
+    )
+    Empty[int]
+    a
+;
+
+var x = conv a;
+Control::collect();
+println q"x=$(x)";
+Control::collect();
+x = conv x;
+Control::collect();
+println q"x=$(x)";
+Control::collect();
+/*
+x = conv x;
+Control::collect();
+println q"x=$(x)";
+Control::collect();
+*/
+
+var x_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 x;
+var y = map (fun (item:int)=> item * item) x;
+var y_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 y;
+
+println q"x_sum=$x_sum, y_sum=$(y_sum)";
+
+

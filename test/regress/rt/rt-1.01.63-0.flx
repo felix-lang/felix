@@ -1,0 +1,18 @@
+#line 2453 "../lpsrc/flx_regress.pak"
+//Check namespace
+
+namespace Foo      { val a = 1; }
+namespace Foo      { val b = 2; }
+module    Foo::Bar { val c = 3; }
+
+println Foo::a;
+println Foo::b;
+println Foo::Bar::c;
+
+open Foo;
+println a;
+println b;
+println Bar::c;
+
+open Foo::Bar;
+println c;

@@ -1,0 +1,7 @@
+#line 2883 "../lpsrc/flx_regress.pak"
+
+proc foo (x:int) = {
+  print 'here'; endl;
+}
+
+proc bar (x:int) => foo x;

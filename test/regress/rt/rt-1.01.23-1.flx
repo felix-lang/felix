@@ -1,0 +1,22 @@
+#line 864 "../lpsrc/flx_regress.pak"
+//Check fibres
+#line 864 "../lpsrc/flx_regress.pak"
+//Check channels
+open Control;
+
+var chin,chout = mk_ioschannel_pair[int] ();
+
+spawn_fthread {
+  var x = 1;
+  whilst x <= 10 do
+    write$ chout,x;
+    ++x;
+  done;
+};
+
+spawn_fthread {
+  var x = 1;
+  whilst x < 10 do
+    x = read chin; print x; endl;
+  done;
+};

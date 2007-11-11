@@ -1,0 +1,13 @@
+#line 1134 "../lpsrc/flx_regress.pak"
+//Check laziness
+#line 1134 "../lpsrc/flx_regress.pak"
+//Check lazy variables
+
+var v = 1;
+
+fun x => v;
+fun y : int => 1; // just check syntax here
+
+print$ x; endl;
+v = 2;
+print$ x; endl;

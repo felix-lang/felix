@@ -1,0 +1,58 @@
+#line 1894 "../lpsrc/flx_regress.pak"
+#import <flx.flxh>;
+open List;
+
+
+fun eq[T]: T * T -> bool = "$1==$2";
+
+fun eql[T] (x:T) (y:T):bool => eq(x, y);
+
+//-----------------------------------------------------------------------------
+// Double Linked List of T
+//-----------------------------------------------------------------------------
+
+class DLL_List[T] {
+    var next : DLL_List[T];
+    var prev : DLL_List[T];
+    var item : T;
+
+    ctor (n:T)
+    {
+        item = n;
+    }
+
+    proc add_Link (nxt:DLL_List[T])
+    {
+        nxt.prev = this;
+        nxt.next = next;
+        nxt.next.prev = nxt;
+        next = nxt;
+    }
+
+    proc pr_list()
+    {
+        proc aux(head:DLL_List[T], been: list[DLL_List[T]])
+        {
+            print "Listn(";
+            print[T] item;
+            print ")->";
+            if (mem (eql this) been) == false do
+                aux (next, Cons[DLL_List[T]](this, been));
+            else
+                print "Loop\n";
+            done;
+        }
+        aux(this,Empty[DLL_List[T]]);
+    }
+}
+var lst1 <- new DLL_List[int](11);
+var lst2 <- new DLL_List[int](11);
+
+lst1.pr_list();
+endl;
+var xx = (eql lst1);
+print (xx lst1);
+endl;
+print (xx lst2);
+endl;
+

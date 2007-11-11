@@ -1,0 +1,10 @@
+#line 1093 "../lpsrc/flx_regress.pak"
+var z = 0;
+noinline proc f
+  (a:unit ->int)
+  (b:unit ->int)
+{ z = a() + b(); }
+
+noinline proc g() { f {1} {2} ; };
+g();
+print z; endl;

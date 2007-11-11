@@ -1,0 +1,9 @@
+#line 2232 "../lpsrc/flx_regress.pak"
+//Check export
+
+proc foo(x: int, y: int) {
+    print y; endl;
+    spawn_fthread { print "fibre\n"; };
+}
+
+export proc foo of (int*int) as "foo";

@@ -1,0 +1,16 @@
+#line 698 "../lpsrc/flx_regress.pak"
+//Check recursion
+#line 698 "../lpsrc/flx_regress.pak"
+//Check tail call optimisation
+// self-tail rec test (inspect output)
+// (requires --inline atm)
+var x = 4;
+proc recur ()
+{
+  if x == 0 goto endoff;
+  print x; endl;
+  --x;
+  recur();
+endoff:>
+}
+recur();

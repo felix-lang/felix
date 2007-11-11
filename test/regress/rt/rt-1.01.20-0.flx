@@ -1,0 +1,14 @@
+#line 764 "../lpsrc/flx_regress.pak"
+//Check recursion
+#line 764 "../lpsrc/flx_regress.pak"
+//Check tail call optimisation
+// non-self-tail rec test (inspect output)
+// (requires --inline atm)
+
+fun f(x:int)=>
+  if(x == 0) then 1
+  else f(x-1)
+  endif
+;
+
+print (f 10); endl;

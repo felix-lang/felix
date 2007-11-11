@@ -1,0 +1,8 @@
+#line 2823 "../lpsrc/flx_regress.pak"
+#import <flx.flxh>
+// function drops off end
+fun f(x:int):int =
+{
+  if  x == 1 do return 1; done;
+}
+print (f 1); endl;

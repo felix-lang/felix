@@ -1,0 +1,18 @@
+#line 621 "../lpsrc/flx_regress.pak"
+//Check inlining
+
+val x = 1;
+if x == 1 then
+{
+  if x == 1
+  then { print "ONE\n"; }
+  else { print "IMPOSSIBLE"; }
+  endif
+  ;
+}
+else
+{
+  print "TWO\n";
+}
+endif
+;

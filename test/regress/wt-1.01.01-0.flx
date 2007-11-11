@@ -1,0 +1,6 @@
+#line 2874 "../lpsrc/flx_regress.pak"
+
+if (len s > 3) do
+  print s;
+  s := "12345\n";
+done;

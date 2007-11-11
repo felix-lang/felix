@@ -1,0 +1,11 @@
+#line 2770 "../lpsrc/flx_regress.pak"
+#import <flx.flxh>
+// privacy violation
+
+module X
+{
+  private fun f:int -> int = "$1";
+  val x = f 1;
+}
+open X;
+val x = f 1;

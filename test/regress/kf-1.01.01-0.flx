@@ -1,0 +1,13 @@
+#line 2851 "../lpsrc/flx_regress.pak"
+#import <flx.flxh>
+
+proc foo(x, y:int)
+{
+}
+
+proc foo(x)
+{
+  foo (0, x);
+}
+
+foo 0;

@@ -1,0 +1,20 @@
+#line 1062 "../lpsrc/flx_regress.pak"
+//Check arrays
+#line 1062 "../lpsrc/flx_regress.pak"
+//Check array iterators
+
+open List;
+
+proc foo (x:int) {
+  print x;
+  endl;
+}
+
+var x = [|1,2,3|];
+var y = list(x);
+var z = list(4,5,6);
+
+Array::iter[int, 3] (the foo) x;
+iter (the foo) y;
+iter (the foo) z;
+

@@ -1,0 +1,11 @@
+#line 234 "../lpsrc/flx_regress.pak"
+//Check export
+// The following program gets me c++ compilation errors when "print s" is
+// commented out:
+
+proc poot(s: charp) {
+  // print s;
+}
+
+export proc poot of (charp) as "poot";
+

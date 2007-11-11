@@ -1,0 +1,16 @@
+#line 1486 "../lpsrc/flx_regress.pak"
+
+module Foo
+{
+  union foo = | A | B;
+
+  fun _ctor_foo (x:int):foo => A;
+}
+
+val x = Foo::foo 5;
+
+print$ match x with
+| Foo::A => "a"
+| Foo::B => "b"
+endmatch;
+endl;

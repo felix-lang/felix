@@ -1,0 +1,7 @@
+#line 782 "../lpsrc/flx_regress.pak"
+//Check lvalues
+// lvalue decay if function called thru variable
+
+proc f(g:int->void) { var x=1; g x; }
+proc g(x:int) { }
+f g of (int);

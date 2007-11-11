@@ -1,0 +1,13 @@
+#line 2197 "../lpsrc/flx_regress.pak"
+//Check export
+
+include "flx_faio";
+
+var clock = Faio::mk_alarm_clock();
+
+proc foo(x: int, y: int) {
+    print x; endl; print y; endl;
+    Faio::sleep (clock,1.0);
+}
+
+export proc foo of (int*int) as "foo";

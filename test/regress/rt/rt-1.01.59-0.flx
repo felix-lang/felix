@@ -1,0 +1,25 @@
+#line 2246 "../lpsrc/flx_regress.pak"
+//Check reglex
+
+open Lexer;
+
+module Foo
+{
+  regexp space = ' ';
+  regexp tab = '\t';
+  regexp white = space | tab;
+}
+
+fun f (start:iterator, finish:iterator) =>
+  reglex start to finish with
+  | Foo::white => "foo"
+  endmatch
+;
+
+var s = " ";
+val start = start_iterator s;
+val finish = end_iterator s;
+
+val x, y = f (start, finish);
+
+print y; endl;

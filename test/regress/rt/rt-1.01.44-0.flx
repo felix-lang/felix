@@ -1,0 +1,41 @@
+#line 1658 "../lpsrc/flx_regress.pak"
+//Check type constraints
+open C_hack;
+header '#include <iostream>';
+proc pr[t]:t="std::cout<<$1<<std::endl;";
+fun f: !fast_ints * !fast_ints -> int = "$1+$2";
+
+print$ f$ 1,2L; endl;
+
+var x = 1;
+var px:ptr[int] = addr x;
+
+module X {
+  proc h[t,u=ptr[t]]: u  * t = '*$1=$2; std::cout <<*$1<<","<<$2<<std::endl;';
+  h(px,1);
+
+  fun adr[t,u=ptr[t]]: lvalue[t]->u = "&$1";
+  fun drf[t,u=ptr[t]]:  u -> t = "*$1";
+//h(px,1.1);
+}
+
+open X[int]; // only specifies 1 variable
+h(px,1);
+//h(px,1.1);
+pr$ drf px;
+pr$ drf$ adr x;
+pr$ X::drf px;
+pr$ X::drf$ X::adr x;
+
+proc h2[t,u=ptr[t]]: u  * t = "*$1=$2;";
+h2(px,1);
+
+proc k[t,u=ptr[t]]: u = "std::cout << *$1 <<std::endl;";
+k px;
+
+fun ff[t,k where t==k ]: t * k -> t = "$1+$2";
+
+
+pr$ ff$ 1,2;
+//pr$ ff$ 1,2.0;
+

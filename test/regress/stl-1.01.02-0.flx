@@ -1,0 +1,35 @@
+#line 556 "../lpsrc/flx_stl.pak"
+//Check stl:Vector
+//Check stl:Map
+#import <flx.flxh>
+include "stl";
+
+typedef ii = Vector::iterator[int];
+
+var v = Vector::create[int]();
+push_back (v,1);
+push_back (v,2);
+push_back (v,3);
+
+var j = 0; until j==3 do
+  print v.[j]; endl;
+  ++j;
+done;
+
+
+var m = Map::create[int,int]();
+
+insert(m,0,2);
+insert(m,1,23);
+insert(m,2,423);
+
+j = 0; until j==3 do
+  print m.[j]; endl;
+  ++j;
+done;
+
+
+var i = begin m; until i == end m do
+  def val k, val vl = deref i;
+  print k; print " -> "; print vl; endl; ++i;
+done;

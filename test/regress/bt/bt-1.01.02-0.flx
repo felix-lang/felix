@@ -1,0 +1,7 @@
+#line 2730 "../lpsrc/flx_regress.pak"
+#import <flx.flxh>
+module X { proc p(){} }
+module Y { proc p(){} }
+open X;
+open Y;
+p; // ambiguous
