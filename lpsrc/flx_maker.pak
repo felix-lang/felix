@@ -616,8 +616,9 @@ class PLUGIN(Plugin):
     mkdirs("build/test")
     basename = os.path.splitext(testfile)[0]
     indir,infile = os.path.split(basename)
-    cppfilename = os.path.join("build","test",infile+ ".cpp")
-    resfilename = os.path.join("build","test",infile+".resh")
+    outbase = os.path.join("build","test",infile)
+    cppfilename = outbase+ ".cpp"
+    resfilename = outbase+".resh"
     try:
       flxg('-Ilib --cache_dir=build/test --output_dir=build/test --import=flx.flxh std '+ FLXFLAGS + basename, log=log)
     except MakeError, e:
@@ -643,8 +644,8 @@ class PLUGIN(Plugin):
 
         TARGET_CXX.build_shared_dll(
             vxqt,
-            basename,
-            outdir='build',
+            outbase,
+            #outdir='build',
             include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
             optimise=optimise_c,
             debug=debug,
@@ -678,8 +679,8 @@ class PLUGIN(Plugin):
 
         TARGET_CXX.build_felix_static(
           vxqt,
-          basename,
-          outdir='build',
+          outbase,
+          #outdir='build',
           objects=[driver],
           include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
           optimise=optimise_c,
@@ -1783,16 +1784,17 @@ class TestPlugin(Plugin):
 
         # build the felix code
         try:
-          basename = plugins['build_test'](testfile, log, quiet)
+          inbase = plugins['build_test'](testfile, log, quiet)
         except MakeError, e:
           failed = 1
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
         else:
-          path = os.path.join(os.curdir, basename)
+          xdir,xbase=os.path.split(inbase)
+          outbase = os.path.join("build","test", xbase)
 
           # run the dynamic tests
           if dynamic and SUPPORT_DYNAMIC_LOADING:
-            resfilename = basename + ".resh"
+            resfilename = outbase + ".resh"
 
             try:
               driver = vxqtq(os.path.join("bin", "flx_pkgconfig") +
@@ -1803,19 +1805,19 @@ class TestPlugin(Plugin):
               if driver =='': driver = "flx_run"
               driver = os.path.join("bin", driver)
               #log.write("Driver: %s\n" % driver)
-              testscript = driver + ' ' + path + EXT_SHLIB
+              testscript = driver + ' ' + outbase + EXT_SHLIB
 
-              self.run_test(log, testscript, basename, deterministic, quiet,check_stamp)
+              self.run_test(log, testscript, inbase, outbase, deterministic, quiet,check_stamp)
             except MakeError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
 
           # run the static tests
           if static and SUPPORT_STATIC_LINKAGE:
-            testscript = path + EXT_EXE
+            testscript = outbase + EXT_EXE
 
             try:
-              self.run_test(log, testscript, basename, deterministic, quiet, check_stamp)
+              self.run_test(log, testscript, inbase, outbase,deterministic, quiet, check_stamp)
             except MakeError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
@@ -1836,24 +1838,24 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, basename, deterministic, quiet,check_stamp):
+  def run_test(self, log, testscript, inbase,outbase, deterministic, quiet,check_stamp):
     log.write('EXECUTING TEST CODE %s\n' % testscript, quiet)
     flush()
 
     # FIXME
-    argfiles = glob.glob(basename + '*.args')
+    argfiles = glob.glob(inbase + '*.args')
 
     if not argfiles:
       output = vxqt(ENV + testscript, verbose=1, log=log)
 
-      f = open(basename + '.output', 'w')
+      f = open(outbase+ '.output', 'w')
       try:
         f.write(''.join(output))
       finally:
         f.close()
 
       if deterministic:
-        output = vxqt('%s %s.expect %s.output' % (DIFF, basename, basename),
+        output = vxqt('%s %s.expect %s.output' % (DIFF, inbase, outbase),
             verbose=1, log=log)
 
     else:
@@ -1867,7 +1869,7 @@ class TestPlugin(Plugin):
 
         output = vxqt(ENV + testscript + ' ' + args, verbose=1, log=log)
 
-        f = open('%s-%s.argoutput' % (basename, argcount), 'w')
+        f = open('%s-%s.argoutput' % (outbase, argcount), 'w')
         try:
           f.write(''.join(output))
         finally:
@@ -1875,7 +1877,7 @@ class TestPlugin(Plugin):
 
         if deterministic:
            output = vxqtq('%s %s-%s.argexpect %s-%s.argoutput' % \
-                   (DIFF, basename, argcount, basename, argcount),
+                   (DIFF, inbase, argcount, outbase, argcount),
                    verbose=1, log=log)
 
 
