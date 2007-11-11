@@ -67,7 +67,7 @@ weaver_directory = 'doc/test/'
 
 @select(tangler('spkgs/flx_regression_tests_kf.py'))
 # these are supposed to fail!
-@tangle('known_failed_tests = glob.glob('+repr(unix2native(test/regress/kf*.flx"))+')')
+@tangle('known_failed_tests = glob.glob('+repr(unix2native("test/regress/kf*.flx"))+')')
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
