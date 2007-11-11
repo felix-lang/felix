@@ -4,9 +4,13 @@
 @execfile("config"+os.sep+"config.py")
 @execfile("flxbuild"+os.sep+"iscrutil.py")
 
+@def magic(n,f):
+  toglob= os.path.join(FLX_DIR,unix2native(f))
+  tangle(n+' = glob.glob('+ repr(toglob)+')')
+  
 @head(1, 'Packages')
 @select(tangler('spkgs/flx_regression_tests_rt.py'))
-@tangle('unit_tests = glob.glob('+repr(unix2native("test/regress/rt/"+"*.flx"))+')')
+@magic('unit_tests',"test/regress/rt/*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -16,7 +20,7 @@ weaver_directory = 'doc/test/regress'
 
 
 @select(tangler('spkgs/flx_regression_tests_srt.py'))
-@tangle('static_unit_tests = glob.glob('+repr(unix2native("test/regress/srt*.flx"))+')')
+@magic('static_unit_tests',"test/regress/srt*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -26,7 +30,7 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_drt.py'))
-@tangle('dynamic_unit_tests = glob.glob('+repr(unix2native("test/regress/drt*.flx"))+')')
+@magic('dynamic_unit_tests',"test/regress/drt*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -36,7 +40,7 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_nd.py'))
-@tangle('completion_tests = glob.glob('+repr(unix2native("test/regress/nd*.flx"))+')')
+@magic('completion_tests',"test/regress/nd/nd*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -46,7 +50,7 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_pt.py'))
-@tangle('perform_tests = glob.glob('+repr(unix2native("pt*.flx"))+')')
+@magic('perform_tests',"test/regress/pt*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -57,7 +61,7 @@ weaver_directory = 'doc/test/'
 
 @select(tangler('spkgs/flx_regression_tests_bt.py'))
 # these are supposed to fail!
-@tangle('failure_tests = glob.glob('+repr(unix2native("test/regress/bt/bt*.flx"))+')')
+@magic('failure_tests',"test/regress/bt/bt*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -67,14 +71,12 @@ weaver_directory = 'doc/test/'
 
 @select(tangler('spkgs/flx_regression_tests_kf.py'))
 # these are supposed to fail!
-@tangle('known_failed_tests = glob.glob('+repr(unix2native("test/regress/kf*.flx"))+')')
+@magic('known_failed_tests',"test/regress/kf*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
 
 weaver_directory = 'doc/test/'
-@doc()
-
 
 @select(tangler('spkgs/flx_regression_tests.py'))
 pkg_requires = [
@@ -85,6 +87,4 @@ iscr_source = ['lpsrc/flx_regress.pak']
 
 weaver_directory = 'doc/test/'
 tmpdir = ['test']
-
-@doc()
 

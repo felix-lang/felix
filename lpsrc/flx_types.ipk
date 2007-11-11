@@ -5384,6 +5384,7 @@ type felix_compiler_options_t =
   generate_axiom_checks : bool;
   auto_imports : string list;
   cache_dir : string option;
+  output_dir : string option;
 }
 
 
@@ -5485,6 +5486,7 @@ type felix_compiler_options_t =
   generate_axiom_checks : bool;
   auto_imports : string list;
   cache_dir : string option;
+  output_dir : string option;
 }
 
 

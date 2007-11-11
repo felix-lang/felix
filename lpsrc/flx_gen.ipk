@@ -3023,26 +3023,31 @@ try
   if length files = 0 then print_help();
 
   let filename = hd (rev files) in
-  let filebase = filename in
+  let inbase = filename in
 
-  let input_file_name = filebase ^ ".flx"
+  let input_file_name = inbase ^ ".flx" in
   (*
   and iface_file_name = filebase ^ ".fix"
   *)
-  and why_file_name = filebase ^ ".why"
+  let outbase = 
+    match compiler_options.output_dir with
+    | None -> filename
+    | Some d -> Filename.concat d (Filename.basename filename)
+  in
+  let why_file_name = outbase ^ ".why"
 
-  and header_file = mkf (filebase ^ ".hpp")
-  and body_file = mkf (filebase ^ ".cpp")
-  and ctors_file = mkf (filebase ^ "_ctors.cpp")
-  and package_file = mkf (filebase ^ ".resh")
-  and rtti_file = mkf (filebase ^ ".rtti")
-  and report_file = mkf (filebase ^ ".xref")
+  and header_file = mkf (outbase ^ ".hpp")
+  and body_file = mkf (outbase ^ ".cpp")
+  and ctors_file = mkf (outbase ^ "_ctors.cpp")
+  and package_file = mkf (outbase ^ ".resh")
+  and rtti_file = mkf (outbase ^ ".rtti")
+  and report_file = mkf (outbase ^ ".xref")
 
   and module_name =
-    let n = String.length filebase in
+    let n = String.length inbase in
     let i = ref (n-1) in
-    while !i <> -1 && filebase.[!i] <> '/' && filebase.[!i] <> '\\' do decr i done;
-    String.sub filebase (!i+1) (n - !i - 1)
+    while !i <> -1 && inbase.[!i] <> '/' && inbase.[!i] <> '\\' do decr i done;
+    String.sub inbase (!i+1) (n - !i - 1)
   in
 
   let include_dirs =  Filename.current_dir_name :: compiler_options.include_dirs in
@@ -3504,12 +3509,12 @@ try
 
   let sr = ("unknown",0,0,0,0) in
   Hashtbl.iter
-  (fun (this,t',ii) n ->  gen_elk_parser filebase module_name syms bbdfns this sr t' n ii)
+  (fun (this,t',ii) n ->  gen_elk_parser outbase module_name syms bbdfns this sr t' n ii)
   syms.parsers
   ;
 
   Hashtbl.iter
-  (fun (this,e) n ->  gen_elk_lexer filebase module_name syms bbdfns this sr e n)
+  (fun (this,e) n ->  gen_elk_lexer outbase module_name syms bbdfns this sr e n)
   syms.lexers
   ;
 

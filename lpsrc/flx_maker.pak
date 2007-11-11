@@ -613,16 +613,16 @@ class PLUGIN(Plugin):
 
     log.write('TRANSLATING %s\n' % testfile,quiet)
 
+    mkdirs("build/test")
     basename = os.path.splitext(testfile)[0]
-    cppfilename = basename + ".cpp"
-    resfilename = basename + ".resh"
     indir,infile = os.path.split(basename)
+    cppfilename = os.path.join("build","test",infile+ ".cpp")
+    resfilename = os.path.join("build","test",infile+".resh")
     try:
-      flxg('-Ilib --import=flx.flxh std '+ FLXFLAGS + basename, log=log)
+      flxg('-Ilib --cache_dir=build/test --output_dir=build/test --import=flx.flxh std '+ FLXFLAGS + basename, log=log)
     except MakeError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
-      erasefile(basename+'.cpp')
-      erasefile(basename+'.hpp')
+      erasefile(cppfilename)
       raise e
 
     cflags = vxqtq(os.path.join( "bin",

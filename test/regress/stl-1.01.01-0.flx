@@ -1,4 +1,3 @@
-#line 462 "../lpsrc/flx_stl.pak"
 //Check STL::vector
 #import <flx.flxh>
 include "stl";

@@ -1,9 +1,4 @@
-#line 2699 "../lpsrc/flx_regress.pak"
-
 print "Starting .. "; endl;
-#line 2704 "../lpsrc/flx_regress.pak"
 Dynlink::run_lib("./test/regress/rt-1.01.02-0.so");
-#line 2707 "../lpsrc/flx_regress.pak"
 Dynlink::run_lib("./test/regress/rt-1.01.03-0.so");
-#line 2707 "../lpsrc/flx_regress.pak"
 print "Its run"; endl;
