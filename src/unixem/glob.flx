@@ -20,7 +20,8 @@ module glob {
   gen glob (pat:string): stl_vector[string] =
   {
     var files: stl_vector[string];
-    var glob_data: glob_t; glob_data.gl_offs=0ul;
+    var glob_data: glob_t; 
+    glob_data.gl_offs = size 0;
     if glob(pat,addr glob_data) do
       var n = glob_data.gl_pathc;
       var p = glob_data.gl_pathv;
