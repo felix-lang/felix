@@ -8,7 +8,7 @@ val unravel:
   sym_state_t ->
   fully_bound_symbol_table_t ->
   tbexpr_t ->
-  (tbexpr_t * string) list * 
+  (tbexpr_t * string) list *
   tbexpr_t
 
 @h = tangler("src/compiler/flxlib/flx_unravel.ml")
@@ -21,9 +21,9 @@ open Flx_maps
 open Flx_util
 open Flx_print
 
-let rec eassoc x l = match l with 
+let rec eassoc x l = match l with
   | [] -> raise Not_found
-  | (a,b) ::t -> 
+  | (a,b) ::t ->
     if Flx_typing.cmp_tbexpr x a then b else eassoc x t
 
 (* Unravel an expression into 'three address code',
@@ -33,21 +33,21 @@ let rec eassoc x l = match l with
 let unravel syms bbdfns e =
   let urn = 4 in
   let sube = ref [] in
-  let get e = 
-    try eassoc e !sube 
+  let get e =
+    try eassoc e !sube
     with Not_found ->
       let n = !(syms.counter) in incr (syms.counter);
       let name = "_tmp" ^ si n in
       sube := (e,name) :: !sube;
       name
-    
+
   in
-  let refer ((_,t) as e) = 
+  let refer ((_,t) as e) =
     `BEXPR_expr (get e,t),t
   in
   let idt t = t in
-  let e' = 
-    let rec aux n e = 
+  let e' =
+    let rec aux n e =
       let n = n - 1 in
       match e with
       | `BEXPR_apply ((`BEXPR_name _,_) as f, b),t ->
@@ -59,14 +59,14 @@ let unravel syms bbdfns e =
         `BEXPR_apply_prim (i, ts, aux n b),t
       *)
 
-      | `BEXPR_apply_direct (i,ts,b),t 
+      | `BEXPR_apply_direct (i,ts,b),t
       | `BEXPR_apply ((`BEXPR_closure (i,ts),_), b),t ->
-      
+
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
-        begin match entry with 
+        begin match entry with
         | `BBDCL_regmatch _
         | `BBDCL_reglex _
-        | `BBDCL_struct _ 
+        | `BBDCL_struct _
         | `BBDCL_fun _ -> `BEXPR_apply_direct (i, ts, aux n b),t
         | `BBDCL_function _ -> refer (`BEXPR_apply_direct (i,ts, aux urn b),t)
 
@@ -79,12 +79,12 @@ let unravel syms bbdfns e =
       | (`BEXPR_literal (`AST_int _ )),t as x -> x
       | (`BEXPR_literal (`AST_float _ )),t as x -> x
       | x -> refer x
-    in 
+    in
       aux urn e
   in
   let sube = rev !sube in
   (*
-  print_endline 
+  print_endline
   (
     "Unravelled " ^ sbe syms.dfns e ^ "-->" ^ sbe syms.dfns e' ^
     " where:\n" ^

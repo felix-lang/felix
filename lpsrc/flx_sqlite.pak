@@ -42,11 +42,11 @@ module Sqlite3 {
   ;
   proc sqlite3_close : sqlite3_db_t = "sqlite3_close($1);";
   typedef sqlite3_exec_callback_t = address * int * ptr[charp] * ptr[charp] --> int;
-  gen sqlite3_exec : 
+  gen sqlite3_exec :
     sqlite3_db_t * string * sqlite3_exec_callback_t * address * &charp -> int =
     "sqlite3_exec($1,$2.data(),$3,$4,$5)"
   ;
-  
+
   gen sqlite3_errmsg : sqlite3_db_t -> charcp =
     "sqlite3_errmsg($1)"
   ;
@@ -69,13 +69,13 @@ syntax sql { // see: http://www.sqlite.org/lang.html
   sql_statement :string = "analyse" ((database_name .)? table_name)?;
 
   sql_statement : string = "attach" "database"? database_filename "as" database_name;
-  sql_statement : string = "begin" 
+  sql_statement : string = "begin"
     ("deferred" | "immediate" | "exclusive" | "transaction" sname?)?;
 
   sql_statement : string = "end" ("transaction" sname?)?;
   sql_statement : string = "commit" ("transaction" sname?)?;
   sql_statement : string = "rollback" ("transaction" sname?)?;
- 
+
   sql_statement : string = "copy" ("or" conflict_algorithm)? (database_name .)? table_name
     "from" filename ("using" "delimiters" delim);
 
@@ -84,8 +84,8 @@ syntax sql { // see: http://www.sqlite.org/lang.html
   column_name := sname ("collate" collation_name) ("asc" | "desc")?;
 
   sql_command : string = 	
-    "create" ("temp" | "temporary")? table 
-      ("if" "not" "exists")? (database_name .)? table_name 
+    "create" ("temp" | "temporary")? table
+      ("if" "not" "exists")? (database_name .)? table_name
       lpar column_def (, column_def)* (, constraint)?* rpar
   ;
   sql_command : string = "create" ("temp" | "temporary")? "table" (database_name .)? table_name "as" select_statement
@@ -94,7 +94,7 @@ syntax sql { // see: http://www.sqlite.org/lang.html
     typename lpar number rpar |
     typename lpar number , number rpar
   ;
-  column_constraint : string = 
+  column_constraint : string =
     "not" "null" conflict_clause? |
     "primary" "key" sort_order? conflict_clause? "autoincrement"? |
     "unique" conflict_clause? |
@@ -132,7 +132,7 @@ cfun eh(void *data, int ncols, char * *values, char* *names):int =
 }
 
 void run(struct sqlite3_db_t db) {
-  sql :=  
+  sql :=
     "drop table if exists fred;",
     "create table fred (name, address);",
     "insert into fred values('joe','wigram');",
@@ -146,17 +146,17 @@ void run(struct sqlite3_db_t db) {
   char *errm = c"";
 
   var i = 0;
-  var p = sql.[i]; 
+  var p = sql.[i];
   whilst p != "" do
     println p;
     val cb : sqlite3_exec_callback_t = the eh;
     res := sqlite3_exec(db,p,cb,cast[address] usr,&errm);
-    if res !=0 do 
+    if res !=0 do
       println$ "exec DB error[abort]: " + errm;
       return;
     done;
     ++i;
-    p = sql.[i]; 
+    p = sql.[i];
   done;
 }
 

@@ -14,31 +14,31 @@ val typeclass_instance_check:
   unit
 
 val fixup_typeclass_instance:
-  sym_state_t -> 
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   int ->
   btypecode_t list ->
   int * btypecode_t list
 
 val maybe_fixup_typeclass_instance:
-  sym_state_t -> 
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   int ->
   btypecode_t list ->
   int * btypecode_t list
 
 val fixup_typeclass_instances:
-  sym_state_t -> 
-  fully_bound_symbol_table_t -> 
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
   unit
- 
+
 val tcinst_chk:
-  sym_state_t -> 
+  sym_state_t ->
   bool ->
   int ->
   btypecode_t list ->
   range_srcref ->
-  bvs_t * btypecode_t * btypecode_t list * int -> 
+  bvs_t * btypecode_t * btypecode_t list * int ->
   (int * btypecode_t list) option
 
 @h = tangler("src/compiler/flxlib/flx_typeclass.ml")
@@ -61,17 +61,17 @@ open Flx_exceptions
 open Flx_use
 open Flx_child
 open Flx_beta
-     
+
 let dummy_sr = "[typeclass] generated",0,0,0,0
 
 let vs2ts vs = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs
 
 (* drop first n elements of list l *)
-let rec drop l n = 
+let rec drop l n =
   if n = 0 then l else drop (tl l) (n-1)
 
 let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map_t)
-  (inst:int) (inst_id: string) inst_vs inst_constraint inst_sr inst_props tc inst_ts 
+  (inst:int) (inst_id: string) inst_vs inst_constraint inst_sr inst_props tc inst_ts
 =
   let tc_id, _, tc_sr, tc_entry = Hashtbl.find bbdfns tc in
   match tc_entry with
@@ -81,12 +81,12 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
     "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" ^
     " to be instance of typeclass " ^ tc_id ^ "<"^si tc^">")
     ;
-    print_endline ("Typeclass vs = " ^ 
+    print_endline ("Typeclass vs = " ^
       catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs
     );
     *)
     if length tc_bvs <> length inst_ts then
-      clierr2 inst_sr tc_sr 
+      clierr2 inst_sr tc_sr
       (
         "Instance " ^
         "["^catmap "," (fun (s,j) -> s^"<"^si j^">") inst_vs^"] " ^
@@ -103,7 +103,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
     print_endline ("Typeclass kids " ^ catmap "," si tc_kids);
     print_endline ("Instance kids " ^ catmap "," si inst_kids);
     *)
-    let inst_map = fold_left (fun acc i-> 
+    let inst_map = fold_left (fun acc i->
       let id,_,_,entry = Hashtbl.find bbdfns i in
       match entry with
       | `BBDCL_fun (_,bvs,params,ret,_,_,_) ->
@@ -115,22 +115,22 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         let argt  : btypecode_t= typeoflist params in
         let qt = bvs,`BTYP_function (argt,`BTYP_void) in
         (id,(i,qt)) :: acc
-        
+
       | `BBDCL_procedure (_,bvs,bps,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
         let qt = bvs,`BTYP_function (argt,`BTYP_void) in
         (id,(i,qt)) :: acc
 
-      | `BBDCL_function (_,bvs,bps,ret,_) -> 
+      | `BBDCL_function (_,bvs,bps,ret,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
         let qt = bvs,`BTYP_function (argt,ret) in
         (id,(i,qt)) :: acc
 
-      | `BBDCL_const (_,bvs,ret,_,_) -> 
+      | `BBDCL_const (_,bvs,ret,_,_) ->
         let qt = bvs,ret in
         (id,(i,qt)) :: acc
 
-      | `BBDCL_val (bvs,ret) -> 
+      | `BBDCL_val (bvs,ret) ->
         let qt = bvs,ret in
         (id,(i,qt)) :: acc
 
@@ -141,15 +141,15 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
     let check_binding force tck sr id tck_bvs tctype =
       let entries = filter (fun (name,x) -> name = id) inst_map in
       match entries with
-      | [] -> 
-         if force then 
+      | [] ->
+         if force then
          clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
 
-      | [_,(i,(inst_funbvs,t))] -> 
+      | [_,(i,(inst_funbvs,t))] ->
         let t = reduce_type t in
         (*
         print_endline ("Typeclass " ^ tc_id ^ "<" ^ si tc ^">" ^ print_bvs tc_bvs);
-        print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^ 
+        print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^
           print_bvs tck_bvs ^ ":" ^ sbt syms.dfns tctype
         );
 
@@ -172,16 +172,16 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         if inst_ptv <> tc_ptv then
         clierr sr ("Wrong number of type parameters in instance fun!\n" ^
           "Expected " ^ si tc_ptv ^ "\n" ^
-          "Got " ^ si inst_ptv 
+          "Got " ^ si inst_ptv
         );
 
         let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (length inst_vs)) in
-        
+
         assert (length tck_bvs = length inst_funts);
 
         let tct = reduce_type (beta_reduce syms sr (tsubst tck_bvs inst_funts tctype)) in
         (*
-        print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^ 
+        print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^
           ":" ^ sbt syms.dfns tct
         );
         *)
@@ -192,15 +192,15 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
            not trivial equality.
         *)
         let matches =  tct = t in
-        if matches then 
+        if matches then
           (*
           print_endline "Matches!";
           *)
           ()
-        else begin 
+        else begin
           print_endline "Warning: Sole instance doesn't match virtual";
           print_endline ("Typeclass " ^ tc_id ^ "<" ^ si tc ^">" ^ print_bvs tc_bvs);
-          print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^ 
+          print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^
             print_bvs tck_bvs ^ ":" ^ sbt syms.dfns tctype
           );
 
@@ -208,14 +208,14 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
           print_endline ("Instance ts = " ^ catmap "," (sbt syms.dfns) inst_ts);
           print_endline ("Instance function " ^ id ^ "<"^si i^">" ^ print_bvs inst_funbvs ^
           ":" ^ sbt syms.dfns t);
-          print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^ 
+          print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^
             ":" ^ sbt syms.dfns tct
           );
         end
-        ; 
+        ;
         *)
-        let old = 
-          try Hashtbl.find syms.typeclass_to_instance tck 
+        let old =
+          try Hashtbl.find syms.typeclass_to_instance tck
           with Not_found -> []
         in
         let entry = inst_vs , inst_constraint, inst_ts , i in
@@ -223,7 +223,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
           clierr sr "Instance already registered??"
         else
           Hashtbl.replace syms.typeclass_to_instance tck (entry :: old);
-        
+
         (*
         print_endline ("Register mapping " ^ si tck ^ " vs=" ^
           print_bvs inst_vs ^
@@ -235,7 +235,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
     iter
-    (fun tck -> 
+    (fun tck ->
       let tckid,tckparent,tcksr,tckentry = Hashtbl.find bbdfns tck in
       match tckentry with
       | `BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
@@ -247,13 +247,13 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         *)
 
       | `BBDCL_proc (props,bvs,params,ct,breq) ->
-        if ct == `Virtual then 
+        if ct == `Virtual then
           let ft = `BTYP_function (typeoflist params,`BTYP_void) in
           check_binding true tck tcksr tckid bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
         *)
-        
+
       | `BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
         let ft = `BTYP_function (argt,ret) in
@@ -269,7 +269,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
 
 
       | `BBDCL_insert _ -> ()
-      | _ -> 
+      | _ ->
         (*
         clierr tcksr "Typeclass entry must be virtual function or procedure"
         *)
@@ -278,19 +278,19 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
     tc_kids
 
 
-  | _ -> 
+  | _ ->
     clierr2 inst_sr tc_sr ("Expected " ^ inst_id ^ "<"^si inst ^ ">" ^
     "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]" ^
     " to be typeclass instance, but" ^ tc_id ^ "<"^si tc^">, " ^
-    "is not a typeclass" 
+    "is not a typeclass"
     )
-  
-let typeclass_instance_check syms bbdfns child_map = 
+
+let typeclass_instance_check syms bbdfns child_map =
 Hashtbl.iter
 (fun i (id,_,sr,entry) -> match entry with
   | `BBDCL_instance (props, vs, cons, tc, ts) ->
-     let iss = 
-       try Hashtbl.find syms.instances_of_typeclass tc 
+     let iss =
+       try Hashtbl.find syms.instances_of_typeclass tc
        with Not_found -> []
      in
      let entry = i,(vs,cons,ts) in
@@ -329,20 +329,20 @@ bbdfns
 
   For technical reasons we do this backwards. We alpha convert
   the inst_vs in the inst_ts away, solve for the new set
-  of variables, and then modify the solution back to 
+  of variables, and then modify the solution back to
   the old set .. this is easier because the dependent
   variables are just integers, so the remapping
   doens't penetrate any type terms.
 *)
 
-  
-let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  = 
+
+let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      (*
-     print_endline 
+     print_endline
      ("virtual " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
      if length inst_ts > length ts then
        failwith (
-         "Not enough ts given, expected at least " ^ 
+         "Not enough ts given, expected at least " ^
          si (length inst_ts) ^ ", got " ^ si (length ts)
        )
      ;
@@ -351,7 +351,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      let v0 = !(syms.counter) in
      let n = length inst_vs in
      let vis =  (* list of ints from v0 to v0+n-1 *)
-       let rec aux i o = match i with 
+       let rec aux i o = match i with
        | 0 -> o
        | _ -> aux (i-1) ((v0+i-1)::o)
        in aux n []
@@ -369,23 +369,23 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
        catmap "\n" (fun (a,b) -> sbt syms.dfns a ^ " = " ^ sbt syms.dfns b ) eqns
      );
      *)
-     let mgu = 
-       try Some (unification false syms.counter syms.dfns eqns vset) 
+     let mgu =
+       try Some (unification false syms.counter syms.dfns eqns vset)
        with Not_found -> None
      in
-     begin match mgu with 
+     begin match mgu with
      | None -> None
      | Some mgu ->
        let mgu =
          let goback = combine vis (map (fun (_,i)->i) inst_vs) in
          map (fun (i,t) -> assoc i goback, t) mgu
        in
-       let tsv = 
-         map 
+       let tsv =
+         map
          (fun (s,i) ->
            if not (mem_assoc i mgu) then
              failwith ("Didn't solve for instance type variable " ^ s)
-           else 
+           else
            (
              (*
              print_endline ("Solved " ^ s ^"<"^si i^">" ^ "-> " ^ sbt syms.dfns (assoc i mgu));
@@ -409,10 +409,10 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
          *)
          Some (j,ts)
        | `BTYP_void -> (* print_endline "constraint reduce failure"; *) None
-       | _ -> 
-         if not allow_fail then 
+       | _ ->
+         if not allow_fail then
          failwith ("Unable to reduce type constraint: " ^ sbt syms.dfns con)
-         else 
+         else
          (
            (*
            print_endline ("Unable to reduce type constraint! " ^ sbt syms.dfns con);
@@ -421,14 +421,14 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
          )
      end
 
- 
+
 let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
-  let entries = 
-    try Hashtbl.find syms.typeclass_to_instance i 
+  let entries =
+    try Hashtbl.find syms.typeclass_to_instance i
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
   in
-  let sr = 
-     try match Hashtbl.find syms.dfns i with {sr=sr} -> sr 
+  let sr =
+     try match Hashtbl.find syms.dfns i with {sr=sr} -> sr
      with Not_found -> dummy_sr
   in
   let entries = fold_left (fun acc x -> match tcinst_chk syms allow_fail i ts sr x with
@@ -438,70 +438,70 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
   in
   match entries with
   | [] -> i,ts
-  | [(j,ts),_] -> 
+  | [(j,ts),_] ->
      (*
      print_endline ("Found instance " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
      *)
      j,ts
 
   | candidates ->
-    let id,parent,sr,entry = 
-       try Hashtbl.find bbdcls i 
+    let id,parent,sr,entry =
+       try Hashtbl.find bbdcls i
        with Not_found -> failwith ("Woops can't find virtual function index "  ^ si i)
     in
     (*
     print_endline
-    ("Unimplemented: Multiple matching instances for typeclass virtual instance\n" 
+    ("Unimplemented: Multiple matching instances for typeclass virtual instance\n"
      ^id^"<"^ si i^">["^ catmap "," (sbt syms.dfns) ts ^"]"
     )
     ;
     iter
     (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
-       let id,parent,sr,entry = 
-         try Hashtbl.find bbdcls j 
+       let id,parent,sr,entry =
+         try Hashtbl.find bbdcls j
          with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
        in
        let parent = match parent with Some k -> k | None -> assert false in
        print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
        print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]");
        print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
-    ) 
-    candidates 
+    )
+    candidates
     ;
     *)
     let candidates = fold_left
     (fun oc (((j,ts),(inst_vs,con,inst_ts,k)) as r) ->
-       let c = `BTYP_type_tuple inst_ts in 
+       let c = `BTYP_type_tuple inst_ts in
        (*
        print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
        *)
        let rec aux lhs rhs =
          match rhs with
-         | [] -> 
+         | [] ->
            (*
            print_endline "return elements plus candidate";
            *)
            r::lhs (* return all non-greater elements plus candidate *)
          | (((j,ts),(inst_vs,con,inst_ts,k)) as x)::tail ->
-           let c' = `BTYP_type_tuple inst_ts in 
+           let c' = `BTYP_type_tuple inst_ts in
            (*
            print_endline (" .. comparing with " ^ sbt syms.dfns c');
            *)
            begin match compare_sigs syms.counter syms.dfns c' c with
-           | `Less -> 
+           | `Less ->
              (*
              print_endline "Candidate is more general, discard it, retain whole list";
              *)
-             lhs @ rhs (* keep whole list, discard c *) 
-           | `Equal -> 
+             lhs @ rhs (* keep whole list, discard c *)
+           | `Equal ->
              aux (x::lhs) tail (* keep element *)
 
-           | `Greater -> 
+           | `Greater ->
              (*
              print_endline "Candidate is less general: discard this element";
              *)
              aux lhs tail (* discard greater element *)
-           | `Incomparable -> 
+           | `Incomparable ->
              (*
              print_endline "Candidate is comparable, retail element";
              *)
@@ -510,11 +510,11 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
        in aux [] oc
     )
     []
-    candidates 
+    candidates
     in
     match candidates with
     | [] -> i,ts
-    | [(j,ts),(inst_vs,con,inst_ts,k)] -> 
+    | [(j,ts),(inst_vs,con,inst_ts,k)] ->
        (*
        print_endline ("Found most specialised instance " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
        print_endline (" instance [" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]");
@@ -524,22 +524,22 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
     | candidates ->
       iter
       (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
-         let id,parent,sr,entry = 
-           try Hashtbl.find bbdcls j 
+         let id,parent,sr,entry =
+           try Hashtbl.find bbdcls j
            with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
          in
          let parent = match parent with Some k -> k | None -> assert false in
          print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
          print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt syms.dfns) inst_ts ^ "]");
          print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
-      ) 
-      candidates 
+      )
+      candidates
       ;
       clierr sr "No most specialised instance!"
 
 let id x = x
 
-let fixup_expr syms bbdfns e = 
+let fixup_expr syms bbdfns e =
   (*
   print_endline ("Check expr " ^ sbe syms.dfns e);
   *)
@@ -558,8 +558,8 @@ let fixup_expr syms bbdfns e =
     let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"); *)
       fixup_typeclass_instance' syms bbdfns true i ts in
     (*
-    if j <> i then 
-      print_endline ("[prim] instantiate virtual as " ^ 
+    if j <> i then
+      print_endline ("[prim] instantiate virtual as " ^
         si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"
       )
     ;
@@ -584,7 +584,7 @@ let fixup_exe syms bbdfns exe = match exe with
     `BEXE_call_direct (sr,j,ts,a)
   | x ->
     map_bexe id (fixup_expr syms bbdfns) id id id x
-  
+
 let fixup_exes syms bbdfns exes = map (fixup_exe syms bbdfns) exes
 
 let fixup_typeclass_instances syms bbdfns =
@@ -602,14 +602,14 @@ let fixup_typeclass_instances syms bbdfns =
   bbdfns
 
 (* this routine doesn't allow constraint reduction failure
-  and should only be run at instantiation time 
+  and should only be run at instantiation time
 *)
 let fixup_typeclass_instance syms bbdcls i ts =
   fixup_typeclass_instance' syms bbdcls false i ts
 
 (* this routine allows failure, only use for early
-  instantiation for optimisation 
+  instantiation for optimisation
 *)
 let maybe_fixup_typeclass_instance syms bbdcls i ts =
   fixup_typeclass_instance' syms bbdcls true i ts
-  
+

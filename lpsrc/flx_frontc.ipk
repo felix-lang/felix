@@ -7,28 +7,28 @@ The copyright following applies to this sub-package.
  *  George C. Necula        necula@cs.berkeley.edu
  *  Scott McPeak        smcpeak@cs.berkeley.edu
  *  Wes Weimer          weimer@cs.berkeley.edu
- *   
+ *
  * All rights reserved.  Permission to use, copy, modify and distribute
- * this software for research purposes only is hereby granted, 
- * provided that the following conditions are met: 
- * 1. Redistributions of source code must retain the above copyright notice, 
- * this list of conditions and the following disclaimer. 
- * 2. Redistributions in binary form must reproduce the above copyright notice, 
- * this list of conditions and the following disclaimer in the documentation 
- * and/or other materials provided with the distribution. 
- * 3. The name of the authors may not be used to endorse or promote products 
- * derived from  this software without specific prior written permission. 
+ * this software for research purposes only is hereby granted,
+ * provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * 3. The name of the authors may not be used to endorse or promote products
+ * derived from  this software without specific prior written permission.
  *
  * DISCLAIMER:
- * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
- * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS 
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *)
@@ -114,8 +114,8 @@ val escape_wstring : wstring -> string
 @h=tangler('src/compiler/cil/flx_cil_cabs.mli')
 @select(h)
 
-(** This file was originally part of Hugues Casee's frontc 2.0, and has been 
- * extensively changed since. 
+(** This file was originally part of Hugues Casee's frontc 2.0, and has been
+ * extensively changed since.
 **
 ** 1.0  3.22.99 Hugues Cassé    First version.
 ** 2.0  George Necula 12/12/00: Many extensions
@@ -130,7 +130,7 @@ type cabsloc = {
  filename: string;
  byteno: int;
 
-}                                                                     
+}
 
 type lang_t = [`C | `Cxx]
 
@@ -149,7 +149,7 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | Tcomplex
   | Timaginary
   | Tnamed of string
-  (* each of the following three kinds of specifiers contains a field 
+  (* each of the following three kinds of specifiers contains a field
    * or item list iff it corresponds to a definition (as opposed to
    * a forward declaration or simple reference to the type); they
    * also have a list of __attribute__s that appeared between the
@@ -163,7 +163,7 @@ type typeSpecifier = (* Merge all specifiers into one type *)
 and storage =
     NO_STORAGE | AUTO | STATIC | EXTERN | REGISTER
 
-and funspec = 
+and funspec =
     INLINE | VIRTUAL | EXPLICIT
 
 and cvspec =
@@ -175,7 +175,7 @@ and cvspec =
 (* on to the compiler.  Thus, we can represent e.g. 'int long float x' even *)
 (* though the compiler will of course choke. *)
 and spec_elem =
-    SpecTypedef          
+    SpecTypedef
   | SpecCV of cvspec            (* const/volatile *)
   | SpecAttr of attribute       (* __attribute__ *)
   | SpecStorage of storage
@@ -206,7 +206,7 @@ and decl_type =
                                           (* Prints "decl [ attrs exp ]".
                                            * decl is never a PTR. *)
  | PTR of attribute list * decl_type      (* Prints "* attrs decl" *)
- | PROTO of decl_type * single_name list * bool 
+ | PROTO of decl_type * single_name list * bool
                                           (* Prints "decl (args[, ...])".
                                            * decl is never a PTR.*)
 
@@ -243,10 +243,10 @@ and enum_item = string * expression * cabsloc
 ** Declaration definition (at toplevel)
 *)
 and base_spec = [
-  | `Public of string 
+  | `Public of string
   | `Protected of string
   | `Private of string
-  | `Public_virtual of string 
+  | `Public_virtual of string
   | `Protected_virtual of string
   | `Private_virtual of string
 ]
@@ -259,7 +259,7 @@ and definition =
  | GLOBASM of string * cabsloc
  | PRAGMA of expression * cabsloc
  | LINKAGE of string * cabsloc * definition list (* extern "C" { ... } *)
- | NAMESPACE of string * cabsloc * definition list 
+ | NAMESPACE of string * cabsloc * definition list
  (* toplevel form transformer, from the first definition to the *)
  (* second group of definitions *)
  | TRANSFORMER of definition * definition list * cabsloc
@@ -275,13 +275,13 @@ and file = string * definition list
 ** statements
 *)
 
-(* A block contains a list of local label declarations ( GCC's ({ __label__ 
+(* A block contains a list of local label declarations ( GCC's ({ __label__
  * l1, l2; ... }) ) , a list of definitions and a list of statements  *)
-and block = 
+and block =
     { blabels: string list;
       battrs: attribute list;
       bstmts: statement list
-    } 
+    }
 
 and statement =
    NOP of cabsloc
@@ -306,7 +306,7 @@ and statement =
 
  | ASM of attribute list * (* typically only volatile and const *)
          string list * (* template *)
-       (string * expression) list * (* list of constraints and expressions for 
+       (string * expression) list * (* list of constraints and expressions for
                                    * outputs *)
        (string * expression) list * (* same for inputs *)
        string list * (* clobbered registers *)
@@ -315,8 +315,8 @@ and statement =
    (** MS SEH *)
  | TRY_EXCEPT of block * expression * block * cabsloc
  | TRY_FINALLY of block * block * cabsloc
- 
-and for_clause = 
+
+and for_clause =
    FC_EXP of expression
  | FC_DECL of definition
 
@@ -347,7 +347,7 @@ and expression =
   | CAST of (specifier * decl_type) * init_expression
 
     (* There is a special form of CALL in which the function called is
-       __builtin_va_arg and the second argument is sizeof(T). This 
+       __builtin_va_arg and the second argument is sizeof(T). This
        should be printed as just T *)
   | CALL of expression * expression list
   | COMMA of expression list
@@ -369,12 +369,12 @@ and constant =
   | CONST_CHAR of int64 list
   | CONST_WCHAR of int64 list
   | CONST_STRING of string
-  | CONST_WSTRING of int64 list 
+  | CONST_WSTRING of int64 list
     (* ww: wstrings are stored as an int64 list at this point because
-     * we might need to feed the wide characters piece-wise into an 
+     * we might need to feed the wide characters piece-wise into an
      * array initializer (e.g., wchar_t foo[] = L"E\xabcd";). If that
      * doesn't happen we will convert it to an (escaped) string before
-     * passing it to Flx_cil_cil. *) 
+     * passing it to Flx_cil_cil. *)
 
 and init_expression =
   | NO_INIT
@@ -386,12 +386,12 @@ and initwhat =
   | INFIELD_INIT of string * initwhat
   | ATINDEX_INIT of expression * initwhat
   | ATINDEXRANGE_INIT of expression * expression
- 
+
 
                                         (* Each attribute has a name and some
                                          * optional arguments *)
 and attribute = string * expression list
-                                              
+
 @h = tangler('src/compiler/cil/flx_cil_cabs_helper.mli')
 @select(h)
 val cabslu : Flx_cil_cabs.cabsloc
@@ -480,25 +480,25 @@ begin
 end
 
 
-let explodeStringToInts (s: string) : int64 list =  
-  let rec allChars i acc = 
+let explodeStringToInts (s: string) : int64 list =
+  let rec allChars i acc =
     if i < 0 then acc
     else allChars (i - 1) (Int64.of_int (Char.code (String.get s i)) :: acc)
   in
   allChars (-1 + String.length s) []
 
 let valueOfDigit chr =
-  let int_value = 
+  let int_value =
     match chr with
       '0'..'9' -> (Char.code chr) - (Char.code '0')
     | 'a'..'z' -> (Char.code chr) - (Char.code 'a') + 10
     | 'A'..'Z' -> (Char.code chr) - (Char.code 'A') + 10
     | _ -> Flx_cil_errormsg.s (Flx_cil_errormsg.bug "not a digit") in
   Int64.of_int int_value
-  
-    
+
+
 open Flx_cil_pretty
-let d_cabsloc () cl = 
+let d_cabsloc () cl =
   text cl.filename ++ text ":" ++ num cl.lineno
 @h=tangler('src/compiler/cil/flx_cil_cabsvisit.ml')
 @select(h)
@@ -515,38 +515,38 @@ module E = Flx_cil_errormsg
 (* basic interface for a visitor object *)
 
 (* Different visiting actions. 'a will be instantiated with exp, instr, etc. *)
-type 'a visitAction = 
-    SkipChildren                        (* Do not visit the children. Return 
+type 'a visitAction =
+    SkipChildren                        (* Do not visit the children. Return
                                          * the node as it is *)
-  | ChangeTo of 'a                      (* Replace the expression with the 
+  | ChangeTo of 'a                      (* Replace the expression with the
                                          * given one *)
-  | DoChildren                          (* Continue with the children of this 
-                                         * node. Rebuild the node on return 
-                                         * if any of the children changes 
+  | DoChildren                          (* Continue with the children of this
+                                         * node. Rebuild the node on return
+                                         * if any of the children changes
                                          * (use == test) *)
-  | ChangeDoChildrenPost of 'a * ('a -> 'a) (* First consider that the entire 
-                                          * exp is replaced by the first 
-                                          * paramenter. Then continue with 
-                                          * the children. On return rebuild 
-                                          * the node if any of the children 
-                                          * has changed and then apply the 
+  | ChangeDoChildrenPost of 'a * ('a -> 'a) (* First consider that the entire
+                                          * exp is replaced by the first
+                                          * paramenter. Then continue with
+                                          * the children. On return rebuild
+                                          * the node if any of the children
+                                          * has changed and then apply the
                                           * function on the node *)
 
-type nameKind = 
-    NVar                                (* Variable or function prototype 
+type nameKind =
+    NVar                                (* Variable or function prototype
                                            name *)
   | NFun                                (* A function definition name *)
   | NField                              (* The name of a field *)
   | NType                               (* The name of a type *)
 
-(* All visit methods are called in preorder! (but you can use 
+(* All visit methods are called in preorder! (but you can use
  * ChangeDoChildrenPost to change the order) *)
 class type cabsVisitor = object
   method vexpr: expression -> expression visitAction   (* expressions *)
-  method vinitexpr: init_expression -> init_expression visitAction   
+  method vinitexpr: init_expression -> init_expression visitAction
   method vstmt: statement -> statement list visitAction
   method vblock: block -> block visitAction
-  method vvar: string -> string                  (* use of a variable 
+  method vvar: string -> string                  (* use of a variable
                                                         * names *)
   method vdef: definition -> definition list visitAction
   method vtypespec: typeSpecifier -> typeSpecifier visitAction
@@ -560,19 +560,19 @@ class type cabsVisitor = object
   method vEnterScope: unit -> unit
   method vExitScope: unit -> unit
 end
-    
+
 let visitorLocation = ref { filename = ""; lineno = -1; byteno = -1; }
-    
+
         (* a default visitor which does nothing to the tree *)
 class nopFlx_cil_cabsVisitor : cabsVisitor = object
   method vexpr (e:expression) = DoChildren
   method vinitexpr (e:init_expression) = DoChildren
-  method vstmt (s: statement) = 
+  method vstmt (s: statement) =
     visitorLocation := get_statementloc s;
     DoChildren
   method vblock (b: block) = DoChildren
   method vvar (s: string) = s
-  method vdef (d: definition) = 
+  method vdef (d: definition) =
     visitorLocation := get_definitionloc d;
     DoChildren
   method vtypespec (ts: typeSpecifier) = DoChildren
@@ -580,37 +580,37 @@ class nopFlx_cil_cabsVisitor : cabsVisitor = object
   method vname k (s:specifier) (n: name) = DoChildren
   method vspec (s:specifier) = DoChildren
   method vattr (a: attribute) = DoChildren
-      
+
   method vEnterScope () = ()
   method vExitScope () = ()
 end
-        
+
         (* Map but try not to copy the list unless necessary *)
 let rec mapNoCopy (f: 'a -> 'a) = function
     [] -> []
-  | (i :: resti) as li -> 
+  | (i :: resti) as li ->
       let i' = f i in
       let resti' = mapNoCopy f resti in
-      if i' != i || resti' != resti then i' :: resti' else li 
-        
+      if i' != i || resti' != resti then i' :: resti' else li
+
 let rec mapNoCopyList (f: 'a -> 'a list) = function
     [] -> []
-  | (i :: resti) as li -> 
+  | (i :: resti) as li ->
       let il' = f i in
       let resti' = mapNoCopyList f resti in
       match il' with
         [i'] when i' == i && resti' == resti -> li
       | _ -> il' @ resti'
-                     
+
 let doVisit (vis: cabsVisitor)
-    (startvisit: 'a -> 'a visitAction) 
-    (children: cabsVisitor -> 'a -> 'a) 
-    (node: 'a) : 'a = 
+    (startvisit: 'a -> 'a visitAction)
+    (children: cabsVisitor -> 'a -> 'a)
+    (node: 'a) : 'a =
   let action = startvisit node in
   match action with
     SkipChildren -> node
   | ChangeTo node' -> node'
-  | _ ->  
+  | _ ->
       let nodepre = match action with
         ChangeDoChildrenPost (node', _) -> node'
       | _ -> node
@@ -619,17 +619,17 @@ let doVisit (vis: cabsVisitor)
       match action with
         ChangeDoChildrenPost (_, f) -> f nodepost
       | _ -> nodepost
-            
+
 (* A visitor for lists *)
 let doVisitList (vis: cabsVisitor)
                 (startvisit: 'a -> 'a list visitAction)
                 (children: cabsVisitor -> 'a -> 'a)
-                (node: 'a) : 'a list = 
+                (node: 'a) : 'a list =
   let action = startvisit node in
   match action with
     SkipChildren -> [node]
   | ChangeTo nodes' -> nodes'
-  | _ -> 
+  | _ ->
       let nodespre = match action with
         ChangeDoChildrenPost (nodespre, _) -> nodespre
       | _ -> [node]
@@ -639,16 +639,16 @@ let doVisitList (vis: cabsVisitor)
         ChangeDoChildrenPost (_, f) -> f nodespost
       | _ -> nodespost
 
-            
-let rec visit_cabsTypeSpecifier (vis: cabsVisitor) (ts: typeSpecifier) = 
+
+let rec visit_cabsTypeSpecifier (vis: cabsVisitor) (ts: typeSpecifier) =
   doVisit vis vis#vtypespec childrenTypeSpecifier ts
-    
-and childrenTypeSpecifier vis ts = 
-  let childrenFieldGroup ((s, nel) as input) = 
+
+and childrenTypeSpecifier vis ts =
+  let childrenFieldGroup ((s, nel) as input) =
     let s' = visit_cabsSpecifier vis s in
-    let doOneField ((n, eo) as input) = 
+    let doOneField ((n, eo) as input) =
       let n' = visit_cabsName vis NField s' n in
-      let eo' = 
+      let eo' =
         match eo with
           None -> None
         | Some e -> let e' = visit_cabsExpression vis e in
@@ -677,15 +677,15 @@ and childrenTypeSpecifier vis ts =
       vis#vExitScope();
       if ei' != ei then Tenum( n, Some ei', extraAttrs) else ts
   | TtypeofE e ->
-      let e' = visit_cabsExpression vis e in   
+      let e' = visit_cabsExpression vis e in
       if e' != e then TtypeofE e' else ts
-  | TtypeofT (s, dt) -> 
+  | TtypeofT (s, dt) ->
       let s' = visit_cabsSpecifier vis s in
       let dt' = visit_cabsDeclType vis false dt in
       if s != s' || dt != dt' then TtypeofT (s', dt') else ts
   | ts -> ts
-        
-and childrenSpecElem (vis: cabsVisitor) (se: spec_elem) : spec_elem = 
+
+and childrenSpecElem (vis: cabsVisitor) (se: spec_elem) : spec_elem =
   match se with
     SpecTypedef | SpecInline | SpecStorage _ | SpecPattern _ -> se
   | SpecCV _ -> se    (* cop out *)
@@ -696,32 +696,32 @@ and childrenSpecElem (vis: cabsVisitor) (se: spec_elem) : spec_elem =
       | [a''] -> SpecAttr a''
       | _ -> E.s (E.unimp "childrenSpecElem: visit_cabsAttribute returned a list")
   end
-  | SpecType ts -> 
+  | SpecType ts ->
       let ts' = visit_cabsTypeSpecifier vis ts in
       if ts' != ts then SpecType ts' else se
-        
-and visit_cabsSpecifier (vis: cabsVisitor) (s: specifier) : specifier = 
-  doVisit vis vis#vspec childrenSpec s
-and childrenSpec vis s = mapNoCopy (childrenSpecElem vis) s 
-    
 
-and visit_cabsDeclType vis (isfundef: bool) (dt: decl_type) : decl_type = 
+and visit_cabsSpecifier (vis: cabsVisitor) (s: specifier) : specifier =
+  doVisit vis vis#vspec childrenSpec s
+and childrenSpec vis s = mapNoCopy (childrenSpecElem vis) s
+
+
+and visit_cabsDeclType vis (isfundef: bool) (dt: decl_type) : decl_type =
   doVisit vis vis#vdecltype (childrenDeclType isfundef) dt
-and childrenDeclType isfundef vis dt = 
+and childrenDeclType isfundef vis dt =
   match dt with
     JUSTBASE -> dt
-  | PARENTYPE (prea, dt1, posta) -> 
+  | PARENTYPE (prea, dt1, posta) ->
       let prea' = mapNoCopyList (visit_cabsAttribute vis)  prea in
       let dt1' = visit_cabsDeclType vis isfundef dt1 in
       let posta'= mapNoCopyList (visit_cabsAttribute vis)  posta in
-      if prea' != prea || dt1' != dt1 || posta' != posta then 
+      if prea' != prea || dt1' != dt1 || posta' != posta then
         PARENTYPE (prea', dt1', posta') else dt
-  | ARRAY (dt1, al, e) -> 
+  | ARRAY (dt1, al, e) ->
       let dt1' = visit_cabsDeclType vis isfundef dt1 in
       let al' = mapNoCopy (childrenAttribute vis) al in
       let e'= visit_cabsExpression vis e in
       if dt1' != dt1 || al' != al || e' != e then ARRAY(dt1', al', e') else dt
-  | PTR (al, dt1) -> 
+  | PTR (al, dt1) ->
       let al' = mapNoCopy (childrenAttribute vis) al in
       let dt1' = visit_cabsDeclType vis isfundef dt1 in
       if al' != al || dt1' != dt1 then PTR(al', dt1') else dt
@@ -733,94 +733,94 @@ and childrenDeclType isfundef vis dt =
       (* Exit the scope only if not in a function definition *)
       let _ = if not isfundef then vis#vExitScope () in
       if dt1' != dt1 || snl' != snl then PROTO(dt1', snl', b) else dt
-         
 
-and childrenNameGroup vis (kind: nameKind) ((s, nl) as input) = 
+
+and childrenNameGroup vis (kind: nameKind) ((s, nl) as input) =
   let s' = visit_cabsSpecifier vis s in
   let nl' = mapNoCopy (visit_cabsName vis kind s') nl in
   if s' != s || nl' != nl then (s', nl') else input
 
-    
-and childrenInitNameGroup vis ((s, inl) as input) = 
+
+and childrenInitNameGroup vis ((s, inl) as input) =
   let s' = visit_cabsSpecifier vis s in
   let inl' = mapNoCopy (childrenInitName vis s') inl in
   if s' != s || inl' != inl then (s', inl') else input
-    
-and visit_cabsName vis (k: nameKind) (s: specifier) 
-                      (n: name) : name = 
+
+and visit_cabsName vis (k: nameKind) (s: specifier)
+                      (n: name) : name =
   doVisit vis (vis#vname k s) (childrenName s k) n
-and childrenName (s: specifier) (k: nameKind) vis (n: name) : name = 
+and childrenName (s: specifier) (k: nameKind) vis (n: name) : name =
   let (sn, dt, al, loc) = n in
   let dt' = visit_cabsDeclType vis (k = NFun) dt in
   let al' = mapNoCopy (childrenAttribute vis) al in
   if dt' != dt || al' != al then (sn, dt', al', loc) else n
-    
-and childrenInitName vis (s: specifier) (inn: init_name) : init_name = 
+
+and childrenInitName vis (s: specifier) (inn: init_name) : init_name =
   let (n, ie) = inn in
   let n' = visit_cabsName vis NVar s n in
   let ie' = visit_cabsInitExpression vis ie in
   if n' != n || ie' != ie then (n', ie') else inn
-    
+
 and childrenSingleName vis (k: nameKind) (sn: single_name) : single_name =
   let s, n = sn in
   let s' = visit_cabsSpecifier vis s in
   let n' = visit_cabsName vis k s' n in
   if s' != s || n' != n then (s', n') else sn
-    
-and visit_cabsDefinition vis (d: definition) : definition list = 
+
+and visit_cabsDefinition vis (d: definition) : definition list =
   doVisitList vis vis#vdef childrenDefinition d
-and childrenDefinition vis d = 
-  match d with 
-    FUNDEF (sn, b, l, lend) -> 
+and childrenDefinition vis d =
+  match d with
+    FUNDEF (sn, b, l, lend) ->
       let sn' = childrenSingleName vis NFun sn in
       let b' = visit_cabsBlock vis b in
       (* End the scope that was started by childrenFunctionName *)
       vis#vExitScope ();
       if sn' != sn || b' != b then FUNDEF (sn', b', l, lend) else d
-        
-  | DECDEF ((s, inl), l) -> 
+
+  | DECDEF ((s, inl), l) ->
       let s' = visit_cabsSpecifier vis s in
       let inl' = mapNoCopy (childrenInitName vis s') inl in
       if s' != s || inl' != inl then DECDEF ((s', inl'), l) else d
-  | TYPEDEF (ng, l) -> 
+  | TYPEDEF (ng, l) ->
       let ng' = childrenNameGroup vis NType ng in
       if ng' != ng then TYPEDEF (ng', l) else d
-  | ONLYTYPEDEF (s, l) -> 
+  | ONLYTYPEDEF (s, l) ->
       let s' = visit_cabsSpecifier vis s in
       if s' != s then ONLYTYPEDEF (s', l) else d
   | GLOBASM _ -> d
-  | PRAGMA (e, l) -> 
+  | PRAGMA (e, l) ->
       let e' = visit_cabsExpression vis e in
       if e' != e then PRAGMA (e', l) else d
-  | LINKAGE (n, l, dl) -> 
+  | LINKAGE (n, l, dl) ->
       let dl' = mapNoCopyList (visit_cabsDefinition vis) dl in
       if dl' != dl then LINKAGE (n, l, dl') else d
 
-  | NAMESPACE (n, l, dl) -> 
+  | NAMESPACE (n, l, dl) ->
       let dl' = mapNoCopyList (visit_cabsDefinition vis) dl in
       if dl' != dl then NAMESPACE (n, l, dl') else d
 
   | TRANSFORMER _ -> d
   | EXPRTRANSFORMER _ -> d
-        
-and visit_cabsBlock vis (b: block) : block = 
+
+and visit_cabsBlock vis (b: block) : block =
   doVisit vis vis#vblock childrenBlock b
 
-and childrenBlock vis (b: block) : block = 
+and childrenBlock vis (b: block) : block =
   let _ = vis#vEnterScope () in
   let battrs' = mapNoCopyList (visit_cabsAttribute vis) b.battrs in
   let bstmts' = mapNoCopyList (visit_cabsStatement vis) b.bstmts in
   let _ = vis#vExitScope () in
-  if battrs' != b.battrs || bstmts' != b.bstmts then 
+  if battrs' != b.battrs || bstmts' != b.bstmts then
     { blabels = b.blabels; battrs = battrs'; bstmts = bstmts' }
   else
     b
-    
-and visit_cabsStatement vis (s: statement) : statement list = 
+
+and visit_cabsStatement vis (s: statement) : statement list =
   doVisitList vis vis#vstmt childrenStatement s
-and childrenStatement vis s = 
+and childrenStatement vis s =
   let ve e = visit_cabsExpression vis e in
-  let vs l s = 
+  let vs l s =
     match visit_cabsStatement vis s with
       [s'] -> s'
     | sl -> BLOCK ({blabels = []; battrs = []; bstmts = sl }, l)
@@ -830,35 +830,35 @@ and childrenStatement vis s =
   | COMPUTATION (e, l) ->
       let e' = ve e in
       if e' != e then COMPUTATION (e', l) else s
-  | BLOCK (b, l) -> 
+  | BLOCK (b, l) ->
       let b' = visit_cabsBlock vis b in
       if b' != b then BLOCK (b', l) else s
-  | SEQUENCE (s1, s2, l) -> 
+  | SEQUENCE (s1, s2, l) ->
       let s1' = vs l s1 in
       let s2' = vs l s2 in
       if s1' != s1 || s2' != s2 then SEQUENCE (s1', s2', l) else s
-  | IF (e, s1, s2, l) -> 
+  | IF (e, s1, s2, l) ->
       let e' = ve e in
       let s1' = vs l s1 in
       let s2' = vs l s2 in
       if e' != e || s1' != s1 || s2' != s2 then IF (e', s1', s2', l) else s
-  | WHILE (e, s1, l) -> 
+  | WHILE (e, s1, l) ->
       let e' = ve e in
       let s1' = vs l s1 in
       if e' != e || s1' != s1 then WHILE (e', s1', l) else s
-  | DOWHILE (e, s1, l) -> 
+  | DOWHILE (e, s1, l) ->
       let e' = ve e in
       let s1' = vs l s1 in
       if e' != e || s1' != s1 then DOWHILE (e', s1', l) else s
-  | FOR (fc1, e2, e3, s4, l) -> 
+  | FOR (fc1, e2, e3, s4, l) ->
       let _ = vis#vEnterScope () in
-      let fc1' = 
+      let fc1' =
         match fc1 with
-          FC_EXP e1 -> 
+          FC_EXP e1 ->
             let e1' = ve e1 in
             if e1' != e1 then FC_EXP e1' else fc1
-        | FC_DECL d1 -> 
-            let d1' = 
+        | FC_DECL d1 ->
+            let d1' =
               match visit_cabsDefinition vis d1 with
                 [d1'] -> d1'
               | _ -> E.s (E.unimp "visit_cabs: for can have only one definition")
@@ -869,25 +869,25 @@ and childrenStatement vis s =
       let e3' = ve e3 in
       let s4' = vs l s4 in
       let _ = vis#vExitScope () in
-      if fc1' != fc1 || e2' != e2 || e3' != e3 || s4' != s4 
+      if fc1' != fc1 || e2' != e2 || e3' != e3 || s4' != s4
       then FOR (fc1', e2', e3', s4', l) else s
   | BREAK _ | CONTINUE _ | GOTO _ -> s
   | RETURN (e, l) ->
       let e' = ve e in
       if e' != e then RETURN (e', l) else s
-  | SWITCH (e, s1, l) -> 
+  | SWITCH (e, s1, l) ->
       let e' = ve e in
       let s1' = vs l s1 in
       if e' != e || s1' != s1 then SWITCH (e', s1', l) else s
-  | CASE (e, s1, l) -> 
+  | CASE (e, s1, l) ->
       let e' = ve e in
       let s1' = vs l s1 in
       if e' != e || s1' != s1 then CASE (e', s1', l) else s
-  | CASERANGE (e1, e2, s3, l) -> 
+  | CASERANGE (e1, e2, s3, l) ->
       let e1' = ve e1 in
       let e2' = ve e2 in
       let s3' = vs l s3 in
-      if e1' != e1 || e2' != e2 || s3' != s3 then 
+      if e1' != e1 || e2' != e2 || s3' != s3 then
         CASERANGE (e1', e2', s3', l) else s
   | DEFAULT (s1, l) ->
       let s1' = vs l s1 in
@@ -895,7 +895,7 @@ and childrenStatement vis s =
   | LABEL (n, s1, l) ->
       let s1' = vs l s1 in
       if s1' != s1 then LABEL (n, s1', l) else s
-  | COMPGOTO (e, l) -> 
+  | COMPGOTO (e, l) ->
       let e' = ve e in
       if e' != e then COMPGOTO (e', l) else s
   | DEFINITION d -> begin
@@ -905,138 +905,138 @@ and childrenStatement vis s =
           let dl' = List.map (fun d' -> DEFINITION d') dl in
           BLOCK ({blabels = []; battrs = []; bstmts = dl' }, l)
     end
-  | ASM (sl, b, inl, outl, clobs, l) -> 
-      let childrenStringExp ((s, e) as input) = 
+  | ASM (sl, b, inl, outl, clobs, l) ->
+      let childrenStringExp ((s, e) as input) =
         let e' = ve e in
         if e' != e then (s, e') else input
       in
       let inl' = mapNoCopy childrenStringExp inl in
       let outl' = mapNoCopy childrenStringExp outl in
-      if inl' != inl || outl' != outl then 
+      if inl' != inl || outl' != outl then
         ASM (sl, b, inl', outl', clobs, l) else s
-  | TRY_FINALLY (b1, b2, l) -> 
+  | TRY_FINALLY (b1, b2, l) ->
       let b1' = visit_cabsBlock vis b1 in
       let b2' = visit_cabsBlock vis b2 in
       if b1' != b1 || b2' != b2 then TRY_FINALLY(b1', b2', l) else s
-  | TRY_EXCEPT (b1, e, b2, l) -> 
+  | TRY_EXCEPT (b1, e, b2, l) ->
       let b1' = visit_cabsBlock vis b1 in
       let e' = visit_cabsExpression vis e in
       let b2' = visit_cabsBlock vis b2 in
       if b1' != b1 || e' != e || b2' != b2 then TRY_EXCEPT(b1', e', b2', l) else s
-      
-          
-and visit_cabsExpression vis (e: expression) : expression = 
+
+
+and visit_cabsExpression vis (e: expression) : expression =
   doVisit vis vis#vexpr childrenExpression e
-and childrenExpression vis e = 
+and childrenExpression vis e =
   let ve e = visit_cabsExpression vis e in
-  match e with 
+  match e with
     NOTHING | LABELADDR _ -> e
-  | UNARY (uo, e1) -> 
+  | UNARY (uo, e1) ->
       let e1' = ve e1 in
       if e1' != e1 then UNARY (uo, e1') else e
-  | BINARY (bo, e1, e2) -> 
+  | BINARY (bo, e1, e2) ->
       let e1' = ve e1 in
       let e2' = ve e2 in
       if e1' != e1 || e2' != e2 then BINARY (bo, e1', e2') else e
-  | QUESTION (e1, e2, e3) -> 
+  | QUESTION (e1, e2, e3) ->
       let e1' = ve e1 in
       let e2' = ve e2 in
       let e3' = ve e3 in
-      if e1' != e1 || e2' != e2 || e3' != e3 then 
+      if e1' != e1 || e2' != e2 || e3' != e3 then
         QUESTION (e1', e2', e3') else e
-  | CAST ((s, dt), ie) -> 
+  | CAST ((s, dt), ie) ->
       let s' = visit_cabsSpecifier vis s in
       let dt' = visit_cabsDeclType vis false dt in
       let ie' = visit_cabsInitExpression vis ie in
       if s' != s || dt' != dt || ie' != ie then CAST ((s', dt'), ie') else e
-  | CALL (f, el) -> 
+  | CALL (f, el) ->
       let f' = ve f in
       let el' = mapNoCopy ve el in
       if f' != f || el' != el then CALL (f', el') else e
-  | COMMA el -> 
+  | COMMA el ->
       let el' = mapNoCopy ve el in
       if el' != el then COMMA (el') else e
   | CONSTANT _ -> e
-  | VARIABLE s -> 
+  | VARIABLE s ->
       let s' = vis#vvar s in
       if s' != s then VARIABLE s' else e
-  | EXPR_SIZEOF (e1) -> 
+  | EXPR_SIZEOF (e1) ->
       let e1' = ve e1 in
       if e1' != e1 then EXPR_SIZEOF (e1') else e
-  | TYPE_SIZEOF (s, dt) -> 
+  | TYPE_SIZEOF (s, dt) ->
       let s' = visit_cabsSpecifier vis s in
       let dt' = visit_cabsDeclType vis false dt in
       if s' != s || dt' != dt then TYPE_SIZEOF (s' ,dt') else e
-  | EXPR_ALIGNOF (e1) -> 
+  | EXPR_ALIGNOF (e1) ->
       let e1' = ve e1 in
       if e1' != e1 then EXPR_ALIGNOF (e1') else e
-  | TYPE_ALIGNOF (s, dt) -> 
+  | TYPE_ALIGNOF (s, dt) ->
       let s' = visit_cabsSpecifier vis s in
       let dt' = visit_cabsDeclType vis false dt in
       if s' != s || dt' != dt then TYPE_ALIGNOF (s' ,dt') else e
-  | INDEX (e1, e2) -> 
+  | INDEX (e1, e2) ->
       let e1' = ve e1 in
       let e2' = ve e2 in
       if e1' != e1 || e2' != e2 then INDEX (e1', e2') else e
-  | MEMBEROF (e1, n) -> 
+  | MEMBEROF (e1, n) ->
       let e1' = ve e1 in
       if e1' != e1 then MEMBEROF (e1', n) else e
-  | MEMBEROFPTR (e1, n) -> 
+  | MEMBEROFPTR (e1, n) ->
       let e1' = ve e1 in
       if e1' != e1 then MEMBEROFPTR (e1', n) else e
-  | GNU_BODY b -> 
+  | GNU_BODY b ->
       let b' = visit_cabsBlock vis b in
       if b' != b then GNU_BODY b' else e
   | EXPR_PATTERN _ -> e
-        
-and visit_cabsInitExpression vis (ie: init_expression) : init_expression = 
+
+and visit_cabsInitExpression vis (ie: init_expression) : init_expression =
   doVisit vis vis#vinitexpr childrenInitExpression ie
-and childrenInitExpression vis ie = 
-  let rec childrenInitWhat iw = 
+and childrenInitExpression vis ie =
+  let rec childrenInitWhat iw =
     match iw with
       NEXT_INIT -> iw
-    | INFIELD_INIT (n, iw1) -> 
+    | INFIELD_INIT (n, iw1) ->
         let iw1' = childrenInitWhat iw1 in
         if iw1' != iw1 then INFIELD_INIT (n, iw1') else iw
-    | ATINDEX_INIT (e, iw1) -> 
+    | ATINDEX_INIT (e, iw1) ->
         let e' = visit_cabsExpression vis e in
         let iw1' = childrenInitWhat iw1 in
         if e' != e || iw1' != iw1 then ATINDEX_INIT (e', iw1') else iw
-    | ATINDEXRANGE_INIT (e1, e2) -> 
+    | ATINDEXRANGE_INIT (e1, e2) ->
         let e1' = visit_cabsExpression vis e1 in
         let e2' = visit_cabsExpression vis e2 in
         if e1' != e1 || e2' != e2 then ATINDEXRANGE_INIT (e1, e2) else iw
   in
-  match ie with 
+  match ie with
     NO_INIT -> ie
-  | SINGLE_INIT e -> 
+  | SINGLE_INIT e ->
       let e' = visit_cabsExpression vis e in
       if e' != e then SINGLE_INIT e' else ie
-  | COMPOUND_INIT il -> 
-      let childrenOne ((iw, ie) as input) = 
+  | COMPOUND_INIT il ->
+      let childrenOne ((iw, ie) as input) =
         let iw' = childrenInitWhat iw in
         let ie' = visit_cabsInitExpression vis ie in
         if iw' != iw || ie' != ie then (iw', ie') else input
       in
       let il' = mapNoCopy childrenOne il in
       if il' != il then COMPOUND_INIT il' else ie
-        
 
-and visit_cabsAttribute vis (a: attribute) : attribute list = 
+
+and visit_cabsAttribute vis (a: attribute) : attribute list =
   doVisitList vis vis#vattr childrenAttribute a
 
-and childrenAttribute vis ((n, el) as input) = 
+and childrenAttribute vis ((n, el) as input) =
   let el' = mapNoCopy (visit_cabsExpression vis) el in
   if el' != el then (n, el') else input
-    
-and visit_cabsAttributes vis (al: attribute list) : attribute list = 
+
+and visit_cabsAttributes vis (al: attribute list) : attribute list =
   mapNoCopyList (visit_cabsAttribute vis) al
 
-let visit_cabsFile (vis: cabsVisitor) ((fname, f): file) : file =  
+let visit_cabsFile (vis: cabsVisitor) ((fname, f): file) : file =
   (fname, mapNoCopyList (visit_cabsDefinition vis) f)
 
     (* end of file *)
-    
+
 @h=tangler('src/compiler/cil/flx_cil_cabsvisit.mli')
 @select(h)
 
@@ -1044,39 +1044,39 @@ let visit_cabsFile (vis: cabsVisitor) ((fname, f): file) : file =
 (* interface for cabsvisit.ml *)
 
 (* Different visiting actions. 'a will be instantiated with exp, instr, etc. *)
-type 'a visitAction = 
-    SkipChildren                        (* Do not visit the children. Return 
+type 'a visitAction =
+    SkipChildren                        (* Do not visit the children. Return
                                          * the node as it is *)
-  | ChangeTo of 'a                      (* Replace the expression with the 
+  | ChangeTo of 'a                      (* Replace the expression with the
                                          * given one *)
-  | DoChildren                          (* Continue with the children of this 
-                                         * node. Rebuild the node on return 
-                                         * if any of the children changes 
+  | DoChildren                          (* Continue with the children of this
+                                         * node. Rebuild the node on return
+                                         * if any of the children changes
                                          * (use == test) *)
-  | ChangeDoChildrenPost of 'a * ('a -> 'a) (* First consider that the entire 
-                                          * exp is replaced by the first 
-                                          * paramenter. Then continue with 
-                                          * the children. On return rebuild 
-                                          * the node if any of the children 
-                                          * has changed and then apply the 
+  | ChangeDoChildrenPost of 'a * ('a -> 'a) (* First consider that the entire
+                                          * exp is replaced by the first
+                                          * paramenter. Then continue with
+                                          * the children. On return rebuild
+                                          * the node if any of the children
+                                          * has changed and then apply the
                                           * function on the node *)
 
-type nameKind = 
-    NVar                                (** Variable or function prototype 
+type nameKind =
+    NVar                                (** Variable or function prototype
                                            name *)
   | NFun                                (** Function definition name *)
   | NField                              (** The name of a field *)
   | NType                               (** The name of a type *)
 
 
-(* All visit methods are called in preorder! (but you can use 
+(* All visit methods are called in preorder! (but you can use
  * ChangeDoChildrenPost to change the order) *)
 class type cabsVisitor = object
   method vexpr: Flx_cil_cabs.expression -> Flx_cil_cabs.expression visitAction   (* expressions *)
-  method vinitexpr: Flx_cil_cabs.init_expression -> Flx_cil_cabs.init_expression visitAction   
+  method vinitexpr: Flx_cil_cabs.init_expression -> Flx_cil_cabs.init_expression visitAction
   method vstmt: Flx_cil_cabs.statement -> Flx_cil_cabs.statement list visitAction
   method vblock: Flx_cil_cabs.block -> Flx_cil_cabs.block visitAction
-  method vvar: string -> string                  (* use of a variable 
+  method vvar: string -> string                  (* use of a variable
                                                         * names *)
   method vdef: Flx_cil_cabs.definition -> Flx_cil_cabs.definition list visitAction
   method vtypespec: Flx_cil_cabs.typeSpecifier -> Flx_cil_cabs.typeSpecifier visitAction
@@ -1096,21 +1096,21 @@ end
 class nopFlx_cil_cabsVisitor: cabsVisitor
 
 
-val visit_cabsTypeSpecifier: cabsVisitor -> 
+val visit_cabsTypeSpecifier: cabsVisitor ->
                             Flx_cil_cabs.typeSpecifier -> Flx_cil_cabs.typeSpecifier
 val visit_cabsSpecifier: cabsVisitor -> Flx_cil_cabs.specifier -> Flx_cil_cabs.specifier
 
-(** Visits a decl_type. The bool argument is saying whether we are ina 
-  * function definition and thus the scope in a PROTO should extend until the 
+(** Visits a decl_type. The bool argument is saying whether we are ina
+  * function definition and thus the scope in a PROTO should extend until the
   * end of the function *)
 val visit_cabsDeclType: cabsVisitor -> bool -> Flx_cil_cabs.decl_type -> Flx_cil_cabs.decl_type
 val visit_cabsDefinition: cabsVisitor -> Flx_cil_cabs.definition -> Flx_cil_cabs.definition list
 val visit_cabsBlock: cabsVisitor -> Flx_cil_cabs.block -> Flx_cil_cabs.block
 val visit_cabsStatement: cabsVisitor -> Flx_cil_cabs.statement -> Flx_cil_cabs.statement list
 val visit_cabsExpression: cabsVisitor -> Flx_cil_cabs.expression -> Flx_cil_cabs.expression
-val visit_cabsAttributes: cabsVisitor -> Flx_cil_cabs.attribute list 
+val visit_cabsAttributes: cabsVisitor -> Flx_cil_cabs.attribute list
                                      -> Flx_cil_cabs.attribute list
-val visit_cabsName: cabsVisitor -> nameKind 
+val visit_cabsName: cabsVisitor -> nameKind
                    -> Flx_cil_cabs.specifier -> Flx_cil_cabs.name -> Flx_cil_cabs.name
 val visit_cabsFile: cabsVisitor -> Flx_cil_cabs.file -> Flx_cil_cabs.file
 
@@ -1122,21 +1122,21 @@ val visitorLocation: Flx_cil_cabs.cabsloc ref
 @select(h)
 
 
-(* This interface is generated manually. The corresponding .ml file is 
- * generated automatically and is placed in ../obj/clexer.ml. The reason we 
- * want this interface is to avoid confusing make with freshly generated 
+(* This interface is generated manually. The corresponding .ml file is
+ * generated automatically and is placed in ../obj/clexer.ml. The reason we
+ * want this interface is to avoid confusing make with freshly generated
  * interface files *)
 
 
 val init: filename:string -> lang:Flx_cil_cabs.lang_t -> Lexing.lexbuf
 
-val init_from_string: 
-  filename:string -> 
-  line:int-> 
-  lang:Flx_cil_cabs.lang_t -> 
+val init_from_string:
+  filename:string ->
+  line:int->
+  lang:Flx_cil_cabs.lang_t ->
   ins:string ->
   Lexing.lexbuf
-  
+
 val finish: unit -> unit
 
 (* This is the main parser function *)
@@ -1163,17 +1163,17 @@ exception InternalError of string
 module E = Flx_cil_errormsg
 module H = Hashtbl
 
-let currentLoc () = 
+let currentLoc () =
   let l, f, c = E.getPosition () in
   { Flx_cil_cabs.lineno   = l;
     Flx_cil_cabs.filename = f;
     Flx_cil_cabs.byteno   = c; }
 
 (* Some debugging support for line numbers *)
-let dbgToken (t: token) = 
+let dbgToken (t: token) =
   if false then begin
     ignore (E.log "%a" insert
-              (match t with 
+              (match t with
                 IDENT (n, l) -> dprintf "IDENT(%s,%d)\n" n l.Flx_cil_cabs.lineno
               | LBRACE l -> dprintf "LBRACE(%d)\n" l.Flx_cil_cabs.lineno
               | RBRACE l -> dprintf "RBRACE(%d)\n" l.Flx_cil_cabs.lineno
@@ -1190,7 +1190,7 @@ let dbgToken (t: token) =
 *)
 
 let c_keywords =
-    [ 
+    [
       ("_Bool", fun loc -> BOOL loc);
       ("_Imaginary", fun loc -> IMAGINARY loc);
       ("_Complex", fun loc -> COMPLEX loc);
@@ -1221,20 +1221,20 @@ let c_keywords =
       ("union", fun loc -> UNION loc);
       ("break", fun loc -> BREAK loc);
       ("continue", fun loc -> CONTINUE loc);
-      ("goto", fun loc -> GOTO loc); 
+      ("goto", fun loc -> GOTO loc);
       ("return", fun loc -> dbgToken (RETURN loc));
       ("switch", fun loc -> dbgToken (SWITCH loc));
-      ("case", fun loc -> CASE loc); 
+      ("case", fun loc -> CASE loc);
       ("default", fun loc -> DEFAULT loc);
-      ("while", fun loc -> WHILE loc);  
-      ("do", fun loc -> DO loc);  
+      ("while", fun loc -> WHILE loc);
+      ("do", fun loc -> DO loc);
       ("for", fun loc -> FOR loc);
       ("if", fun loc -> dbgToken (IF loc));
       ("else", fun _ -> ELSE);
       (*** Implementation specific keywords ***)
       ("__signed__", fun loc -> SIGNED loc);
       ("__inline__", fun loc -> INLINE loc);
-      ("inline", fun loc -> INLINE loc); 
+      ("inline", fun loc -> INLINE loc);
       ("__inline", fun loc -> INLINE loc);
       ("_inline", fun loc -> INLINE loc);
       ("__attribute__", fun loc -> ATTRIBUTE loc);
@@ -1245,7 +1245,7 @@ let c_keywords =
       ("asm", fun loc -> ASM loc);
       ("__typeof__", fun loc -> TYPEOF loc);
       ("__typeof", fun loc -> TYPEOF loc);
-      ("typeof", fun loc -> TYPEOF loc); 
+      ("typeof", fun loc -> TYPEOF loc);
       ("__alignof", fun loc -> ALIGNOF loc);
       ("__alignof__", fun loc -> ALIGNOF loc);
       ("__volatile__", fun loc -> VOLATILE loc);
@@ -1262,29 +1262,29 @@ let c_keywords =
       (**** MS VC ***)
       ("__int64", fun _ -> INT64 (currentLoc ()));
       ("__int32", fun loc -> INT loc);
-      ("_cdecl",  fun _ -> MSATTR ("_cdecl", currentLoc ())); 
+      ("_cdecl",  fun _ -> MSATTR ("_cdecl", currentLoc ()));
       ("__cdecl", fun _ -> MSATTR ("__cdecl", currentLoc ()));
-      ("_stdcall", fun _ -> MSATTR ("_stdcall", currentLoc ())); 
+      ("_stdcall", fun _ -> MSATTR ("_stdcall", currentLoc ()));
       ("__stdcall", fun _ -> MSATTR ("__stdcall", currentLoc ()));
-      ("_fastcall", fun _ -> MSATTR ("_fastcall", currentLoc ())); 
+      ("_fastcall", fun _ -> MSATTR ("_fastcall", currentLoc ()));
       ("__fastcall", fun _ -> MSATTR ("__fastcall", currentLoc ()));
       ("__w64", fun _ -> MSATTR("__w64", currentLoc ()));
       ("__declspec", fun loc -> DECLSPEC loc);
-      ("__forceinline", fun loc -> INLINE loc); (* !! we turn forceinline 
+      ("__forceinline", fun loc -> INLINE loc); (* !! we turn forceinline
                                                  * into inline *)
       ("__try", fun loc -> TRY loc);
       ("__except", fun loc -> EXCEPT loc);
       ("__finally", fun loc -> FINALLY loc);
       (* weimer: some files produced by 'GCC -E' expect this type to be
        * defined *)
-      ("__builtin_va_list", 
+      ("__builtin_va_list",
        fun _ -> NAMED_TYPE ("__builtin_va_list", currentLoc ()));
       ("__builtin_va_arg", fun loc -> BUILTIN_VA_ARG loc);
       (* On some versions of GCC __thread is a regular identifier *)
-      ("__thread", fun loc -> 
-                      if Flx_cil_machdep.__thread_is_keyword then 
+      ("__thread", fun loc ->
+                      if Flx_cil_machdep.__thread_is_keyword then
                          THREAD loc
-                       else 
+                       else
                          IDENT ("__thread", loc));
     ]
 
@@ -1301,16 +1301,16 @@ let cxx_extra_keywords = [
 ]
 
 let lexicon = H.create 211
-let class_list = ref [""] 
+let class_list = ref [""]
 
 let init_lexicon (langind : Flx_cil_cabs.lang_t) =
   H.clear lexicon;
-  List.iter 
+  List.iter
     (fun (key, builder) -> H.add lexicon key builder)
     c_keywords
   ;
   if langind = `Cxx then
-   List.iter 
+   List.iter
     (fun (key, builder) -> H.add lexicon key builder)
     cxx_extra_keywords
   ;
@@ -1319,7 +1319,7 @@ let init_lexicon (langind : Flx_cil_cabs.lang_t) =
 let push_class s = class_list := s :: !class_list
 let pop_class () = class_list := List.tl !class_list
 
-(* Mark an identifier as a type name. The old mapping is preserved and will 
+(* Mark an identifier as a type name. The old mapping is preserved and will
  * be reinstated when we exit this context *)
 let add_type name =
    (* ignore (print_string ("adding type name " ^ name ^ "\n"));  *)
@@ -1329,16 +1329,16 @@ let context : string list list ref = ref []
 
 let push_context _ = context := []::!context
 
-let pop_context _ = 
+let pop_context _ =
   match !context with
     [] -> raise (InternalError "Empty context stack")
   | con::sub ->
                 (context := sub;
-                List.iter (fun name -> 
+                List.iter (fun name ->
                            (* ignore (print_string ("removing lexicon for " ^ name ^ "\n")); *)
                             H.remove lexicon name) con)
 
-(* Mark an identifier as a variable name. The old mapping is preserved and 
+(* Mark an identifier as a variable name. The old mapping is preserved and
  * will be reinstated when we exit this context  *)
 let add_identifier name =
   match !context with
@@ -1346,7 +1346,7 @@ let add_identifier name =
   | con::sub ->
       (context := (name::con)::sub;
        (*                print_string ("adding IDENT for " ^ name ^ "\n"); *)
-       H.add lexicon name (fun loc -> 
+       H.add lexicon name (fun loc ->
          dbgToken (IDENT (name, loc))))
 
 
@@ -1368,8 +1368,8 @@ let scan_ident id =
 (*
 ** Buffer processor
 *)
- 
-let attribDepth = ref 0 (* Remembers the nesting level when parsing 
+
+let attribDepth = ref 0 (* Remembers the nesting level when parsing
                          * attributes *)
 
 
@@ -1390,17 +1390,17 @@ let init ~(filename: string) ~(lang: Flx_cil_cabs.lang_t) : Lexing.lexbuf =
   init_lexer lang;
   E.startParsing filename
 
-let init_from_string 
+let init_from_string
   ~(filename: string)
   ~(line: int)
-  ~(lang: Flx_cil_cabs.lang_t) 
-  ~(ins: string) : Lexing.lexbuf 
+  ~(lang: Flx_cil_cabs.lang_t)
+  ~(ins: string) : Lexing.lexbuf
 =
   init_lexer lang;
   E.startParsingFromString ~file:filename ~line:line ins
 
 
-let finish () = 
+let finish () =
   E.finishParsing ()
 
 (*** Error handling ***)
@@ -1419,10 +1419,10 @@ let scan_escape (char: char) : int64 =
   | 'v' -> '\011'  (* ASCII code 11 *)
   | 'a' -> '\007'  (* ASCII code 7 *)
   | 'e' -> '\027'  (* ASCII code 27. This is a GCC extension *)
-  | '\'' -> '\''    
+  | '\'' -> '\''
   | '"'-> '"'     (* '"' *)
   | '?' -> '?'
-  | '\\' -> '\\' 
+  | '\\' -> '\\'
   | other -> error ("Unrecognized escape sequence: \\" ^ (String.make 1 other))
   in
   Int64.of_int (Char.code result)
@@ -1478,13 +1478,13 @@ let make_char (i:int64):char =
 
 
 (* ISO standard locale-specific function to convert a wide character
- * into a sequence of normal characters. Here we work on strings. 
- * We convert L"Hi" to "H\000i\000" 
+ * into a sequence of normal characters. Here we work on strings.
+ * We convert L"Hi" to "H\000i\000"
   matth: this seems unused.
 let wbtowc wstr =
-  let len = String.length wstr in 
-  let dest = String.make (len * 2) '\000' in 
-  for i = 0 to len-1 do 
+  let len = String.length wstr in
+  let dest = String.make (len * 2) '\000' in
+  for i = 0 to len-1 do
     dest.[i*2] <- wstr.[i] ;
   done ;
   dest
@@ -1529,8 +1529,8 @@ let fraction  = '.' decdigit+
 let decfloat = (intnum? fraction)
               |(intnum exponent)
               |(intnum? fraction exponent)
-              | (intnum '.') 
-              | (intnum '.' exponent) 
+              | (intnum '.')
+              | (intnum '.' exponent)
 
 let hexfraction = hexdigit* '.' hexdigit+ | hexdigit+
 let binexponent = ['p' 'P'] ['+' '-']? decdigit+
@@ -1540,25 +1540,25 @@ let hexfloat = hexprefix hexfraction binexponent
 let floatsuffix = ['f' 'F' 'l' 'L']
 let floatnum = (decfloat | hexfloat) floatsuffix?
 
-let ident = (letter|'_')(letter|decdigit|'_')* 
+let ident = (letter|'_')(letter|decdigit|'_')*
 let attribident = (letter|'_')(letter|decdigit|'_'|':')
 let blank = [' ' '\t' '\012' '\r']+
 let spaces = [' ' '\t' '\012' '\r']*
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
-let oct_escape = '\\' octdigit octdigit? octdigit? 
-let sym = 
-  "<<=" | ">>=" | 
-  "<<" | ">>" | "==" | "!=" | "<=" | ">=" | 
+let oct_escape = '\\' octdigit octdigit? octdigit?
+let sym =
+  "<<=" | ">>=" |
+  "<<" | ">>" | "==" | "!=" | "<=" | ">=" |
   "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "->" |
   "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "!" | "~" | "="
-  
+
 
 let operator = "operator" spaces sym
 let oident = operator | ident
 let qualified_name = ("::" spaces)?oident (spaces "::" spaces oident)*
 
-rule initial = parse   
+rule initial = parse
 | "/*"                    { let _ = comment lexbuf in initial lexbuf}
 |               "//"                    { endline lexbuf }
 |               blank                   {initial lexbuf}
@@ -1576,20 +1576,20 @@ rule initial = parse
 |               "L'"                    { CST_WCHAR (chr lexbuf, currentLoc ()) }
 |               '"'                     { (* '"' *)
 (* matth: BUG:  this could be either a regular string or a wide string.
- *  e.g. if it's the "world" in 
+ *  e.g. if it's the "world" in
  *     L"Hello, " "world"
  *  then it should be treated as wide even though there's no L immediately
  *  preceding it.  See test/small1/wchar5.c for a failure case. *)
                                           try CST_STRING (str lexbuf, currentLoc ())
-                                          with e -> 
-                                             raise (InternalError 
-                                                     ("str: " ^ 
+                                          with e ->
+                                             raise (InternalError
+                                                     ("str: " ^
                                                       Printexc.to_string e))}
 |               "L\""                   { (* weimer: wchar_t string literal *)
                                           try CST_WSTRING(str lexbuf, currentLoc ())
-                                          with e -> 
-                                             raise (InternalError 
-                                                     ("wide string: " ^ 
+                                          with e ->
+                                             raise (InternalError
+                                                     ("wide string: " ^
                                                       Printexc.to_string e))}
 |               floatnum                {CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
 |               hexnum                  {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
@@ -1633,7 +1633,7 @@ rule initial = parse
 |               '?'                             {QUEST}
 |               ':'                             {COLON}
 |               '~'                    {TILDE (currentLoc ())}
-        
+
 |               '{'                    {dbgToken (LBRACE (currentLoc ()))}
 |               '}'                    {dbgToken (RBRACE (currentLoc ()))}
 |               '['                             {LBRACKET}
@@ -1644,11 +1644,11 @@ rule initial = parse
 |               ','                             {COMMA}
 |               '.'                             {DOT}
 |               "sizeof"                {SIZEOF (currentLoc ())}
-|               "__asm"                 { if !Flx_cil_cprint.msvcMode then 
-                                             MSASM (msasm lexbuf, currentLoc ()) 
+|               "__asm"                 { if !Flx_cil_cprint.msvcMode then
+                                             MSASM (msasm lexbuf, currentLoc ())
                                           else (ASM (currentLoc ())) }
 (* jms: a hack to change unsigned int to plain unsigned to fix
-an shift/reduce parsing problem 
+an shift/reduce parsing problem
 with C++ class base list/unnamed bitfield *)
 
 |              "unsigned" (' '|'\t')+ "int" {UNSIGNED (currentLoc())}
@@ -1663,7 +1663,7 @@ with C++ class base list/unnamed bitfield *)
 (* __extension__ is a black. The parser runs into some conflicts if we let it
  * pass *)
 |               "__extension__"         {initial lexbuf }
-|              qualified_name 
+|              qualified_name
                {
                  scan_ident (Lexing.lexeme lexbuf)
                }
@@ -1674,7 +1674,7 @@ with C++ class base list/unnamed bitfield *)
                                                 (Lexing.lexeme_end lexbuf);
                                                 initial lexbuf}
 and comment =
-    parse       
+    parse
       "*/"                              { () }
 |     '\n'                              { E.newline (); comment lexbuf }
 |               _                       { comment lexbuf }
@@ -1683,13 +1683,13 @@ and comment =
 and hash = parse
   '\n'          { E.newline (); initial lexbuf}
 | blank         { hash lexbuf}
-| intnum        { (* We are seeing a line number. This is the number for the 
+| intnum        { (* We are seeing a line number. This is the number for the
                    * next line *)
                   E.setCurrentLine (int_of_string (Lexing.lexeme lexbuf) - 1);
                   (* A file name must follow *)
                   file lexbuf }
 | "line"        { hash lexbuf } (* MSVC line number info *)
-                (* MSVC warning pragmas have very irregular syntax. We parse 
+                (* MSVC warning pragmas have very irregular syntax. We parse
                  * them as a whole line. *)
 | "pragma" blank "warning" { let here = currentLoc () in
                              PRAGMA_LINE ("warning" ^ pragma lexbuf, here)
@@ -1700,27 +1700,27 @@ and hash = parse
 | "pragma"      { pragmaLine := true; PRAGMA (currentLoc ()) }
 | _             { endline lexbuf}
 
-and file =  parse 
+and file =  parse
         '\n'                    {E.newline (); initial lexbuf}
 |       blank                   {file lexbuf}
 |       '"' [^ '\012' '\t' '"']* '"'    { (* '"' *)
                                    let n = Lexing.lexeme lexbuf in
-                                   let n1 = String.sub n 1 
+                                   let n1 = String.sub n 1
                                        ((String.length n) - 2) in
                                    E.setCurrentFile n1;
                                  endline lexbuf}
 
 |       _                       {endline lexbuf}
 
-and endline = parse 
+and endline = parse
         '\n'                    { E.newline (); initial lexbuf}
 |   eof                         { EOF }
 |       _                       { endline lexbuf}
 
 and pragma = parse
    '\n'                 { E.newline (); "" }
-|   _                   { let cur = Lexing.lexeme lexbuf in 
-                          cur ^ (pragma lexbuf) }  
+|   _                   { let cur = Lexing.lexeme lexbuf in
+                          cur ^ (pragma lexbuf) }
 
 and str = parse
         '"'             {[]} (* no nul terminiation in CST_STRING *)
@@ -1735,25 +1735,25 @@ and chr =  parse
 |       oct_escape      {lex_oct_escape chr lexbuf}
 |       escape          {lex_simple_escape chr lexbuf}
 |       _               {lex_unescaped chr lexbuf}
-        
+
 and msasm = parse
     blank               { msasm lexbuf }
 |   '{'                 { msasminbrace lexbuf }
-|   _                   { let cur = Lexing.lexeme lexbuf in 
+|   _                   { let cur = Lexing.lexeme lexbuf in
                           cur ^ (msasmnobrace lexbuf) }
 
 and msasminbrace = parse
     '}'                 { "" }
-|   _                   { let cur = Lexing.lexeme lexbuf in 
-                          cur ^ (msasminbrace lexbuf) }  
+|   _                   { let cur = Lexing.lexeme lexbuf in
+                          cur ^ (msasminbrace lexbuf) }
 and msasmnobrace = parse
-   ['}' ';' '\n']       { lexbuf.Lexing.lex_curr_pos <- 
+   ['}' ';' '\n']       { lexbuf.Lexing.lex_curr_pos <-
                                lexbuf.Lexing.lex_curr_pos - 1;
                           "" }
-|  "__asm"              { lexbuf.Lexing.lex_curr_pos <- 
+|  "__asm"              { lexbuf.Lexing.lex_curr_pos <-
                                lexbuf.Lexing.lex_curr_pos - 5;
                           "" }
-|  _                    { let cur = Lexing.lexeme lexbuf in 
+|  _                    { let cur = Lexing.lexeme lexbuf in
 
                           cur ^ (msasmnobrace lexbuf) }
 
@@ -1771,7 +1771,7 @@ and attribute = parse
 |  '\''                 { CST_CHAR (chr lexbuf, currentLoc ())}
 |  '"'                  { (* '"' *)
                                           try CST_STRING (str lexbuf, currentLoc ())
-                                          with e -> 
+                                          with e ->
                                              raise (InternalError "str")}
 |  floatnum             {CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
 |  hexnum               {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
@@ -1802,7 +1802,7 @@ let parse_error msg : unit =       (* sm: c++-mode highlight hack: -> ' <- *)
 let print = print_string
 
 
-let currentLoc () = 
+let currentLoc () =
   let l, f, c = E.getPosition () in
   { lineno   = l; filename = f; byteno   = c; }
 
@@ -1819,15 +1819,15 @@ let smooth_expression lst =
 
 
 let currentFunctionName = ref "<outside any function>"
-    
+
 let announceFunctionName ((n, decl, _, _):name) =
   !Flx_cil_lexerhack.add_identifier n;
-  (* Start a context that includes the parameter names and the whole body. 
+  (* Start a context that includes the parameter names and the whole body.
    * Will pop when we finish parsing the function body *)
   !Flx_cil_lexerhack.push_context ();
   (* Go through all the parameter names and mark them as identifiers *)
   let rec findProto = function
-      PROTO (d, args, _) when isJUSTBASE d -> 
+      PROTO (d, args, _) when isJUSTBASE d ->
         List.iter (fun (_, (an, _, _, _)) -> !Flx_cil_lexerhack.add_identifier an) args
 
     | PROTO (d, _, _) -> findProto d
@@ -1835,7 +1835,7 @@ let announceFunctionName ((n, decl, _, _):name) =
     | PTR (_, d) -> findProto d
     | ARRAY (d, _, _) -> findProto d
     | _ -> parse_error "Cannot find the prototype in a function definition";
-           raise Parsing.Parse_error 
+           raise Parsing.Parse_error
 
   and isJUSTBASE = function
       JUSTBASE -> true
@@ -1847,8 +1847,8 @@ let announceFunctionName ((n, decl, _, _):name) =
 
 
 
-let applyPointer (ptspecs: attribute list list) (dt: decl_type)  
-       : decl_type = 
+let applyPointer (ptspecs: attribute list list) (dt: decl_type)
+       : decl_type =
   (* Outer specification first *)
   let rec loop = function
       [] -> dt
@@ -1856,7 +1856,7 @@ let applyPointer (ptspecs: attribute list list) (dt: decl_type)
   in
   loop ptspecs
 
-let doDeclaration (loc: cabsloc) (specs: spec_elem list) (nl: init_name list) : definition = 
+let doDeclaration (loc: cabsloc) (specs: spec_elem list) (nl: init_name list) : definition =
   if isTypedef specs then begin
     (* Tell the lexer about the new type names *)
     List.iter (fun ((n, _, _, _), _) -> !Flx_cil_lexerhack.add_type n) nl;
@@ -1867,21 +1867,21 @@ let doDeclaration (loc: cabsloc) (specs: spec_elem list) (nl: init_name list) : 
     else begin
       (* Tell the lexer about the new variable names *)
       List.iter (fun ((n, _, _, _), _) -> !Flx_cil_lexerhack.add_identifier n) nl;
-      DECDEF ((specs, nl), loc)  
+      DECDEF ((specs, nl), loc)
     end
 
 
 let doFunctionDef (loc: cabsloc)
                   (lend: cabsloc)
-                  (specs: spec_elem list) 
-                  (n: name) 
-                  (b: block) : definition = 
+                  (specs: spec_elem list)
+                  (n: name)
+                  (b: block) : definition =
   let fname = (specs, n) in
   FUNDEF (fname, b, loc, lend)
 
 
 let doOldParDecl (names: string list)
-                 ((pardefs: name_group list), (isva: bool)) 
+                 ((pardefs: name_group list), (isva: bool))
     : single_name list * bool =
   let findOneName n =
     (* Search in pardefs for the definition for this parameter *)
@@ -1916,15 +1916,15 @@ let rec intlist_to_string (str: int64 list):string =
   match str with
     [] -> ""  (* add nul-termination *)
   | value::rest ->
-      let this_char = 
-        if (compare value (Int64.of_int 255) > 0) 
+      let this_char =
+        if (compare value (Int64.of_int 255) > 0)
            || (compare value Int64.zero < 0)
         then begin
           let msg = Printf.sprintf "cparser:intlist_to_string: character 0x%Lx too big" value in
           parse_error msg;
           raise Parsing.Parse_error
-        end 
-        else 
+        end
+        else
           String.make 1 (Char.chr (Int64.to_int value))
       in
       this_char ^ (intlist_to_string rest)
@@ -1957,7 +1957,7 @@ let mkflds accessible ls =
 
 /* Each character is its own list element, and the terminating nul is not
    included in this list. */
-%token <int64 list * Flx_cil_cabs.cabsloc> CST_STRING   
+%token <int64 list * Flx_cil_cabs.cabsloc> CST_STRING
 %token <int64 list * Flx_cil_cabs.cabsloc> CST_WSTRING
 
 %token EOF
@@ -1966,7 +1966,7 @@ let mkflds accessible ls =
 %token<Flx_cil_cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
 %token<Flx_cil_cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
 %token<Flx_cil_cabs.cabsloc> THREAD
-%token<Flx_cil_cabs.cabsloc> CLASS NAMESPACE USING 
+%token<Flx_cil_cabs.cabsloc> CLASS NAMESPACE USING
 %token<Flx_cil_cabs.cabsloc> TYPENAME TEMPLATENAME
 %token<Flx_cil_cabs.cabsloc> PUBLIC PRIVATE PROTECTED VIRTUAL
 
@@ -1986,7 +1986,7 @@ let mkflds accessible ls =
 %token INF_INF SUP_SUP
 %token<Flx_cil_cabs.cabsloc> PLUS_PLUS MINUS_MINUS
 
-%token RPAREN 
+%token RPAREN
 %token<Flx_cil_cabs.cabsloc> LPAREN RBRACE
 %token<Flx_cil_cabs.cabsloc> LBRACE
 %token LBRACKET RBRACKET
@@ -1998,7 +1998,7 @@ let mkflds accessible ls =
 %token<Flx_cil_cabs.cabsloc> SWITCH CASE DEFAULT
 %token<Flx_cil_cabs.cabsloc> WHILE DO FOR
 %token<Flx_cil_cabs.cabsloc> IF TRY EXCEPT FINALLY
-%token ELSE 
+%token ELSE
 
 %token<Flx_cil_cabs.cabsloc> ATTRIBUTE INLINE ASM TYPEOF FUNCTION__ PRETTY_FUNCTION__
 %token LABEL__
@@ -2059,7 +2059,7 @@ let mkflds accessible ls =
 %type <Flx_cil_cabs.expression list * cabsloc> paren_comma_expression
 %type <Flx_cil_cabs.expression list> arguments
 %type <Flx_cil_cabs.expression list> bracket_comma_expression
-%type <int64 list * cabsloc> string_list 
+%type <int64 list * cabsloc> string_list
 %type <int64 list * cabsloc> wstring_list
 
 %type <Flx_cil_cabs.initwhat * Flx_cil_cabs.init_expression> initializer
@@ -2116,21 +2116,21 @@ location:
 /*** Global Definition ***/
 global:
 | declaration                           { $1 }
-| function_def                          { $1 } 
-/*(* Some C header files ar shared with the C++ compiler and have linkage 
+| function_def                          { $1 }
+/*(* Some C header files ar shared with the C++ compiler and have linkage
    * specification *)*/
 | EXTERN string_constant declaration    { LINKAGE (fst $2, snd $2, [ $3 ]) }
-| EXTERN string_constant LBRACE globals RBRACE 
+| EXTERN string_constant LBRACE globals RBRACE
   { LINKAGE (fst $2, snd $2, $4)  }
 
-| NAMESPACE IDENT LBRACE globals RBRACE 
+| NAMESPACE IDENT LBRACE globals RBRACE
   { NAMESPACE (fst $2, snd $2, $4)  }
 
 | ASM LPAREN string_constant RPAREN SEMICOLON
                                         { GLOBASM (fst $3, $1) }
 | PRAGMA attr PRAGMA_EOL                { PRAGMA ($2, $1) }
 | PRAGMA attr SEMICOLON PRAGMA_EOL      { PRAGMA ($2, $1) }
-| PRAGMA_LINE                           { PRAGMA (VARIABLE (fst $1), 
+| PRAGMA_LINE                           { PRAGMA (VARIABLE (fst $1),
                                                   snd $1) }
 /* (* Old-style function prototype. This should be somewhere else, like in
     * "declaration". For now we keep it at global scope only because in local
@@ -2138,7 +2138,7 @@ global:
 
 | IDENT LPAREN old_parameter_list_ne RPAREN old_pardef_list SEMICOLON
                            { (* Convert pardecl to new style *)
-                             let pardecl, isva = doOldParDecl $3 $5 in 
+                             let pardecl, isva = doOldParDecl $3 $5 in
                              (* Make the function declarator *)
                              doDeclaration (snd $1) []
                                [((fst $1, PROTO(JUSTBASE, pardecl,isva), [], cabslu),
@@ -2223,7 +2223,7 @@ expression:
                         {CALL (fst $1, $3), snd $1}
 |               BUILTIN_VA_ARG LPAREN expression COMMA type_name RPAREN
                         { let b, d = $5 in
-                          CALL (VARIABLE "__builtin_va_arg", 
+                          CALL (VARIABLE "__builtin_va_arg",
                                 [fst $3; TYPE_SIZEOF (b, d)]), $1 }
 |               expression bracket_comma_expression
                         {INDEX (fst $1, smooth_expression $2), snd $1}
@@ -2283,7 +2283,7 @@ expression:
                         {BINARY(BOR_ASSIGN, fst $1, fst $3), snd $1}
 |               expression CIRC_EQ expression
                         {BINARY(XOR_ASSIGN, fst $1, fst $3), snd $1}
-|               expression INF_INF_EQ expression        
+|               expression INF_INF_EQ expression
                         {BINARY(SHL_ASSIGN, fst $1, fst $3), snd $1}
 |               expression SUP_SUP_EQ expression
                         {BINARY(SHR_ASSIGN, fst $1, fst $3), snd $1}
@@ -2328,13 +2328,13 @@ wstring_list:
 /* Only the first string in the list needs an L, so L"a" "b" is the same
  * as L"ab" or L"a" L"b". */
 
-one_string: 
+one_string:
 |   CST_STRING                          {$1}
-|   FUNCTION__                          {(Flx_cil_cabs_helper.explodeStringToInts 
+|   FUNCTION__                          {(Flx_cil_cabs_helper.explodeStringToInts
                                             !currentFunctionName), $1}
-|   PRETTY_FUNCTION__                   {(Flx_cil_cabs_helper.explodeStringToInts 
+|   PRETTY_FUNCTION__                   {(Flx_cil_cabs_helper.explodeStringToInts
                                             !currentFunctionName), $1}
-;    
+;
 
 init_expression:
 |    expression         { SINGLE_INIT (fst $1) }
@@ -2342,7 +2342,7 @@ init_expression:
                         { COMPOUND_INIT $2}
 
 /* ISO 6.7.8. Allow a trailing COMMA */
-initializer_list:    
+initializer_list:
 |   initializer                             { [$1] }
 |   initializer COMMA initializer_list_opt  { $1 :: $3 }
 ;
@@ -2350,34 +2350,34 @@ initializer_list_opt:
 |   /* empty */                             { [] }
 |   initializer_list                        { $1 }
 ;
-initializer: 
+initializer:
 |   init_designators eq_opt init_expression { ($1, $3) }
 |   gcc_init_designators init_expression { ($1, $2) }
 |                       init_expression { (NEXT_INIT, $1) }
 ;
-eq_opt: 
+eq_opt:
 |  EQ                        { () }
    /*(* GCC allows missing = *)*/
 |  /*(* empty *)*/               { () }
 ;
-init_designators: 
+init_designators:
 |   DOT id_or_typename init_designators_opt      { INFIELD_INIT($2, $3) }
 |   LBRACKET  expression RBRACKET init_designators_opt
                                         { ATINDEX_INIT(fst $2, $4) }
 |   LBRACKET  expression ELLIPSIS expression RBRACKET
                                         { ATINDEXRANGE_INIT(fst $2, fst $4) }
-;         
+;
 init_designators_opt:
 |  /* empty */                          { NEXT_INIT }
 |  init_designators                     { $1 }
 ;
 
 /*(* GCC supports these strange things *)*/
-gcc_init_designators:    
+gcc_init_designators:
 | id_or_typename COLON                 { INFIELD_INIT($1, NEXT_INIT) }
 ;
 
-arguments: 
+arguments:
 |               /* empty */         { [] }
 |               comma_expression    { fst $1 }
 ;
@@ -2413,14 +2413,14 @@ bracket_comma_expression:
 
 /*** statements ***/
 /* ISO 6.8.2 */
-block: 
+block:
 |   block_begin local_labels block_attrs block_element_list RBRACE
                                          {!Flx_cil_lexerhack.pop_context();
                                           { blabels = $2;
                                             battrs = $3;
                                             bstmts = $4 },
                                             $1, $5
-                                         } 
+                                         }
 |   error location RBRACE                { { blabels = [];
                                              battrs  = [];
                                              bstmts  = [] },
@@ -2443,7 +2443,7 @@ block_element_list:
 |   declaration block_element_list       { DEFINITION($1) :: $2 }
 |   statement block_element_list         { $1 :: $2 }
 /*(* GCC accepts a label at the end of a block *)*/
-|   IDENT COLON                          { [ LABEL (fst $1, NOP (snd $1), 
+|   IDENT COLON                          { [ LABEL (fst $1, NOP (snd $1),
                                                     snd $1)] }
 ;
 
@@ -2451,7 +2451,7 @@ local_labels:
 |  /* empty */                                       { [] }
 |  LABEL__ local_label_names SEMICOLON local_labels  { $2 @ $4 }
 ;
-local_label_names: 
+local_label_names:
 |  IDENT                                 { [ fst $1 ] }
 |  IDENT COMMA local_label_names         { fst $1 :: $3 }
 ;
@@ -2491,7 +2491,7 @@ statement:
 |   CONTINUE SEMICOLON   {CONTINUE $1}
 |   GOTO IDENT SEMICOLON
                                  {GOTO (fst $2, $1)}
-|   GOTO STAR comma_expression SEMICOLON 
+|   GOTO STAR comma_expression SEMICOLON
                                  { COMPGOTO (smooth_expression (fst $3), $1) }
 |   ASM asmattr LPAREN asmtemplate asmoutputs RPAREN SEMICOLON
                         { let (outs,ins,clobs) = $5 in
@@ -2500,13 +2500,13 @@ statement:
 |   TRY block EXCEPT paren_comma_expression block
                         { let b, _, _ = $2 in
                           let h, _, _ = $5 in
-                          if not !Flx_cil_cprint.msvcMode then 
+                          if not !Flx_cil_cprint.msvcMode then
                             parse_error "try/except in GCC code";
                           TRY_EXCEPT (b, COMMA (fst $4), h, $1) }
-|   TRY block FINALLY block 
+|   TRY block FINALLY block
                         { let b, _, _ = $2 in
                           let h, _, _ = $4 in
-                          if not !Flx_cil_cprint.msvcMode then 
+                          if not !Flx_cil_cprint.msvcMode then
                             parse_error "try/finally in GCC code";
                           TRY_FINALLY (b, h, $1) }
 
@@ -2514,20 +2514,20 @@ statement:
 ;
 
 
-for_clause: 
+for_clause:
 |   opt_expression SEMICOLON     { FC_EXP $1 }
 |   declaration                  { FC_DECL $1 }
 ;
 
 /* ISO 6.7.*/
-declaration:                                
+declaration:
 |   decl_spec_list init_declarator_list SEMICOLON
                                        { doDeclaration (snd $1) (fst $1) $2 }
 |   decl_spec_list SEMICOLON           { doDeclaration (snd $1) (fst $1) [] }
 ;
 
 /* ISO 6.7 */
-init_declarator_list:                       
+init_declarator_list:
 |   init_declarator                              { [$1] }
 |   init_declarator COMMA init_declarator_list   { $1 :: $3 }
 
@@ -2543,7 +2543,7 @@ init_declarator:
 /* ISO 6.7 */
 decl_spec_list:
                                         /* ISO 6.7.1 */
-|   TYPEDEF decl_spec_list_opt          { SpecTypedef :: $2, $1  }    
+|   TYPEDEF decl_spec_list_opt          { SpecTypedef :: $2, $1  }
 |   EXTERN decl_spec_list_opt           { SpecStorage EXTERN :: $2, $1 }
 |   STATIC  decl_spec_list_opt          { SpecStorage STATIC :: $2, $1 }
 |   AUTO   decl_spec_list_opt           { SpecStorage AUTO :: $2, $1 }
@@ -2557,17 +2557,17 @@ decl_spec_list:
 /* specifier pattern variable (must be last in spec list) */
 |   AT_SPECIFIER LPAREN IDENT RPAREN    { [ SpecPattern(fst $3) ], $1 }
 ;
-/* (* In most cases if we see a NAMED_TYPE we must shift it. Thus we declare 
+/* (* In most cases if we see a NAMED_TYPE we must shift it. Thus we declare
     * NAMED_TYPE to have right associativity  *) */
-decl_spec_list_opt: 
+decl_spec_list_opt:
 |   /* empty */                         { [] } %prec NAMED_TYPE
 |   decl_spec_list                      { fst $1 }
 ;
-/* (* We add this separate rule to handle the special case when an appearance 
-    * of NAMED_TYPE should not be considered as part of the specifiers but as 
+/* (* We add this separate rule to handle the special case when an appearance
+    * of NAMED_TYPE should not be considered as part of the specifiers but as
     * part of the declarator. IDENT has higher precedence than NAMED_TYPE  *)
  */
-decl_spec_list_opt_no_named: 
+decl_spec_list_opt_no_named:
 |   /* empty */                         { [] } %prec IDENT
 |   decl_spec_list                      { fst $1 }
 ;
@@ -2600,7 +2600,7 @@ int_spec:
 |   UNSIGNED        { Tunsigned, $1 }
 
 /* ISO 6.7.2 */
-type_spec:   
+type_spec:
 |   int_spec        { $1 }
 |   VOID            { Tvoid, $1}
 |   BOOL            { Tbool, $1 }
@@ -2611,9 +2611,9 @@ type_spec:
 
 |   STRUCT id_or_typename
     { Tstruct ($2, None,    []), $1 }
-|   STRUCT id_or_typename LBRACE struct_decl_list RBRACE 
+|   STRUCT id_or_typename LBRACE struct_decl_list RBRACE
     { Tstruct ($2, mkflds true $4, []), $1 }
-|   STRUCT id_or_typename COLON bases LBRACE struct_decl_list RBRACE 
+|   STRUCT id_or_typename COLON bases LBRACE struct_decl_list RBRACE
     { Tstruct ($2, mkflds true $6, []), $1 }
 |   STRUCT LBRACE struct_decl_list RBRACE
     { Tstruct ("", mkflds true $3, []), $1 }
@@ -2641,15 +2641,15 @@ type_spec:
 
 |   UNION id_or_typename
     { Tunion  ($2, None,    []), $1 }
-|   UNION id_or_typename LBRACE struct_decl_list RBRACE 
+|   UNION id_or_typename LBRACE struct_decl_list RBRACE
     { Tunion  ($2, mkflds true $4, []), $1 }
-|   UNION id_or_typename COLON bases LBRACE struct_decl_list RBRACE 
+|   UNION id_or_typename COLON bases LBRACE struct_decl_list RBRACE
     { Tunion  ($2, mkflds true  $6, []), $1 }
 |   UNION LBRACE struct_decl_list RBRACE
     { Tunion  ("", mkflds true $3, []), $1 }
-|   UNION just_attributes id_or_typename LBRACE struct_decl_list RBRACE 
+|   UNION just_attributes id_or_typename LBRACE struct_decl_list RBRACE
     { Tunion  ($3, mkflds true $5, $2), $1 }
-|   UNION just_attributes id_or_typename COLON bases LBRACE struct_decl_list RBRACE 
+|   UNION just_attributes id_or_typename COLON bases LBRACE struct_decl_list RBRACE
     { Tunion  ($3, mkflds true $7, $2), $1 }
 |   UNION just_attributes LBRACE struct_decl_list RBRACE
     { Tunion  ("", mkflds true $4, $2), $1 }
@@ -2670,10 +2670,10 @@ type_spec:
                                           TtypeofT (s, d), $1 }
 ;
 
-/* (* ISO 6.7.2. Except that we allow empty structs. We 
+/* (* ISO 6.7.2. Except that we allow empty structs. We
  * also allow missing field names. *)
  */
-struct_decl_list: 
+struct_decl_list:
 |  /* empty */                           { [] }
 
 |  decl_spec_list                 SEMICOLON struct_decl_list
@@ -2689,14 +2689,14 @@ struct_decl_list:
 /* this is a hack allowing 'int : 2' */
 
 |  int_spec COLON expression SEMICOLON struct_decl_list
-   { 
-     let ts: Flx_cil_cabs.spec_elem = SpecType (fst $1) in 
-     let fld 
-       : Flx_cil_cabs.name * Flx_cil_cabs.expression option 
-       = missingFieldDecl,Some (fst $3) 
+   {
+     let ts: Flx_cil_cabs.spec_elem = SpecType (fst $1) in
+     let fld
+       : Flx_cil_cabs.name * Flx_cil_cabs.expression option
+       = missingFieldDecl,Some (fst $3)
      in
      let x = `Fields ([ts],[fld]) in
-     x :: $5 
+     x :: $5
    }
 
 
@@ -2704,19 +2704,19 @@ struct_decl_list:
 | PROTECTED COLON struct_decl_list { `Access_protected :: $3 }
 | PRIVATE COLON struct_decl_list {`Access_private :: $3 }
 |  error                          SEMICOLON struct_decl_list
-   { $3 } 
+   { $3 }
 ;
 
 /* (* ISO 6.7.2 *) */
-field_decl_list: 
+field_decl_list:
 |   field_decl                           { [$1] }
 |   field_decl COMMA field_decl_list     { $1 :: $3 }
 ;
 
 /* (* ISO 6.7.2. Except that we allow unnamed fields. *) */
-field_decl: 
+field_decl:
 |   declarator                      { ($1, None) }
-|   declarator COLON expression     { ($1, Some (fst $3)) }    
+|   declarator COLON expression     { ($1, Some (fst $3)) }
 
 /* This construction can't be allowed in C++ because
 there is a conflict here
@@ -2733,29 +2733,29 @@ of type struct X, length Y
 ;
 
 /* (* ISO 6.7.2.2 *) */
-enum_list: 
+enum_list:
 |   enumerator                          {[$1]}
 |   enum_list COMMA enumerator          {$1 @ [$3]}
-|   enum_list COMMA error               { $1 } 
+|   enum_list COMMA error               { $1 }
 ;
-enumerator:     
+enumerator:
 |   IDENT                       {(fst $1, NOTHING, snd $1)}
 |   IDENT EQ expression         {(fst $1, fst $3, snd $1)}
 ;
 
 
 /* (* ISO 6.7.5. Plus Microsoft declarators.*) */
-declarator:  
+declarator:
 |  pointer_opt direct_decl attributes_with_asm
-    { 
+    {
       let (n, decl) = $2 in
-      (n, applyPointer (fst $1) decl, $3, snd $1) 
+      (n, applyPointer (fst $1) decl, $3, snd $1)
     }
 ;
 
 
 /* (* ISO 6.7.5 *) */
-direct_decl: 
+direct_decl:
                                    /* (* We want to be able to redefine named
                                     * types as variable names *) */
 |   id_or_typename                 { ($1, JUSTBASE) }
@@ -2777,31 +2777,31 @@ direct_decl:
                                      (n, PROTO(decl, params, isva))
                                    }
 ;
-parameter_list_startscope: 
+parameter_list_startscope:
 |   LPAREN                         { !Flx_cil_lexerhack.push_context () }
 ;
 rest_par_list:
 |   /* empty */                    { ([], false) }
-|   parameter_decl rest_par_list1  { let (params, isva) = $2 in 
-                                     ($1 :: params, isva) 
+|   parameter_decl rest_par_list1  { let (params, isva) = $2 in
+                                     ($1 :: params, isva)
                                    }
 ;
-rest_par_list1: 
+rest_par_list1:
 |   /* empty */                         { ([], false) }
 |   COMMA ELLIPSIS                      { ([], true) }
-|   COMMA parameter_decl rest_par_list1 { let (params, isva) = $3 in 
+|   COMMA parameter_decl rest_par_list1 { let (params, isva) = $3 in
                                           ($2 :: params, isva)
-                                        }  
-;    
+                                        }
+;
 
 
 /* (* ISO 6.7.5 *) */
-parameter_decl: 
+parameter_decl:
 |  decl_spec_list declarator              { (fst $1, $2) }
 |  decl_spec_list abstract_decl           { let d, a = $2 in
                                             (fst $1, ("", d, a, cabslu)) }
 |  decl_spec_list                         { (fst $1, ("", JUSTBASE, [], cabslu)) }
-|  LPAREN parameter_decl RPAREN           { $2 } 
+|  LPAREN parameter_decl RPAREN           { $2 }
 ;
 
 /* (* Old style prototypes. Like a declarator *) */
@@ -2827,25 +2827,25 @@ old_parameter_list_ne:
                                                  (fst $1 :: rest) }
 ;
 
-old_pardef_list: 
+old_pardef_list:
 |  /* empty */                            { ([], false) }
 |  decl_spec_list old_pardef SEMICOLON ELLIPSIS
-                                          { ([(fst $1, $2)], true) }  
-|  decl_spec_list old_pardef SEMICOLON old_pardef_list  
+                                          { ([(fst $1, $2)], true) }
+|  decl_spec_list old_pardef SEMICOLON old_pardef_list
                                           { let rest, isva = $4 in
-                                            ((fst $1, $2) :: rest, isva) 
+                                            ((fst $1, $2) :: rest, isva)
                                           }
 ;
 
-old_pardef: 
+old_pardef:
 |  declarator                             { [$1] }
 |  declarator COMMA old_pardef            { $1 :: $3 }
 |  error                                  { [] }
 ;
 
 
-/* (* ISO 6.7.5 *) */ 
-pointer: 
+/* (* ISO 6.7.5 *) */
+pointer:
 |  STAR attributes pointer_opt  { $2 :: fst $3, $1 }
 ;
 pointer_opt:
@@ -2854,13 +2854,13 @@ pointer_opt:
 ;
 
 /* (* ISO 6.7.6 *) */
-type_name: 
+type_name:
 | decl_spec_list abstract_decl { let d, a = $2 in
                                  if a <> [] then begin
                                    parse_error "attributes in type name";
                                    raise Parsing.Parse_error
                                  end;
-                                 (fst $1, d) 
+                                 (fst $1, d)
                                }
 | decl_spec_list               { (fst $1, JUSTBASE) }
 ;
@@ -2869,17 +2869,17 @@ abstract_decl: /* (* ISO 6.7.6. *) */
 | pointer                                 { applyPointer (fst $1) JUSTBASE, [] }
 ;
 
-abs_direct_decl: /* (* ISO 6.7.6. We do not support optional declarator for 
-                     * functions. Plus Microsoft attributes. See the 
+abs_direct_decl: /* (* ISO 6.7.6. We do not support optional declarator for
+                     * functions. Plus Microsoft attributes. See the
                      * discussion for declarator. *) */
 |   LPAREN attributes abstract_decl RPAREN
                                    { let d, a = $3 in
                                      PARENTYPE ($2, d, a)
                                    }
-            
+
 |   LPAREN error RPAREN
-                                   { JUSTBASE } 
-            
+                                   { JUSTBASE }
+
 |   abs_direct_decl_opt LBRACKET comma_expression_opt RBRACKET
                                    { ARRAY($1, [], $3) }
 /*(* The next shoudl be abs_direct_decl_opt but we get conflicts *)*/
@@ -2887,37 +2887,37 @@ abs_direct_decl: /* (* ISO 6.7.6. We do not support optional declarator for
                                    { let (params, isva) = $3 in
                                      !Flx_cil_lexerhack.pop_context ();
                                      PROTO ($1, params, isva)
-                                   } 
+                                   }
 ;
 abs_direct_decl_opt:
 |   abs_direct_decl                 { $1 }
 |   /* empty */                     { JUSTBASE }
 ;
 function_def:  /* (* ISO 6.9.1 *) */
-| function_def_start block   
+| function_def_start block
           { let (loc, specs, decl) = $1 in
             currentFunctionName := "<__FUNCTION__ used outside any functions>";
-            !Flx_cil_lexerhack.pop_context (); (* The context pushed by 
+            !Flx_cil_lexerhack.pop_context (); (* The context pushed by
                                     * announceFunctionName *)
             doFunctionDef loc (trd3 $2) specs decl (fst3 $2)
-          } 
+          }
 
 
 function_def_start:  /* (* ISO 6.9.1 *) */
-| decl_spec_list declarator   
+| decl_spec_list declarator
                             { announceFunctionName $2;
                               (snd $1, fst $1, $2)
-                            } 
+                            }
 
 /* (* Old-style function prototype *) */
-| decl_spec_list old_proto_decl 
+| decl_spec_list old_proto_decl
                             { announceFunctionName $2;
                               (snd $1, fst $1, $2)
-                            } 
+                            }
 /* (* New-style function that does not have a return type *) */
-| IDENT parameter_list_startscope rest_par_list RPAREN 
+| IDENT parameter_list_startscope rest_par_list RPAREN
                            { let (params, isva) = $3 in
-                             let fdec = 
+                             let fdec =
                                (fst $1, PROTO(JUSTBASE, params, isva), [], snd $1) in
                              announceFunctionName fdec;
                              (* Default is int type *)
@@ -2931,18 +2931,18 @@ function_def_start:  /* (* ISO 6.9.1 *) */
                              let pardecl, isva = doOldParDecl $3 $5 in
                              (* Make the function declarator *)
                              let fdec = (fst $1,
-                                         PROTO(JUSTBASE, pardecl,isva), 
+                                         PROTO(JUSTBASE, pardecl,isva),
                                          [], snd $1) in
                              announceFunctionName fdec;
                              (* Default is int type *)
                              let defSpec = [SpecType Tint] in
-                             (snd $1, defSpec, fdec) 
+                             (snd $1, defSpec, fdec)
                             }
 /* (* No return type and no parameters *) */
 | IDENT LPAREN                      RPAREN
                            { (* Make the function declarator *)
                              let fdec = (fst $1,
-                                         PROTO(JUSTBASE, [], false), 
+                                         PROTO(JUSTBASE, [], false),
                                          [], snd $1) in
                              announceFunctionName fdec;
                              (* Default is int type *)
@@ -2964,19 +2964,19 @@ attributes:
 |   attribute attributes                { fst $1 :: $2 }
 ;
 
-/* (* In some contexts we can have an inline assembly to specify the name to 
+/* (* In some contexts we can have an inline assembly to specify the name to
     * be used for a global. We treat this as a name attribute *) */
 attributes_with_asm:
 |   /* empty */                         { [] }
 |   attribute attributes_with_asm       { fst $1 :: $2 }
-|   ASM LPAREN string_constant RPAREN attributes        
-                                        { ("__asm__", 
+|   ASM LPAREN string_constant RPAREN attributes
+                                        { ("__asm__",
                                            [CONSTANT(CONST_STRING (fst $3))]) :: $5 }
 ;
 
 /* things like __attribute__, but no const/volatile */
 attribute_nocv:
-|   ATTRIBUTE LPAREN paren_attr_list_ne RPAREN  
+|   ATTRIBUTE LPAREN paren_attr_list_ne RPAREN
                                         { ("__attribute__", $3), $1 }
 |   DECLSPEC paren_attr_list_ne         { ("__declspec", $2), $1 }
 |   MSATTR                              { (fst $1, []), snd $1 }
@@ -2993,7 +2993,7 @@ attribute:
 ;
 
 /* (* sm: I need something that just includes __attribute__ and nothing more,
- *  to support them appearing between the 'struct' keyword and the type name. 
+ *  to support them appearing between the 'struct' keyword and the type name.
  * Actually, a declspec can appear there as well (on MSVC) *)  */
 just_attribute:
     ATTRIBUTE LPAREN paren_attr_list_ne RPAREN
@@ -3009,24 +3009,24 @@ just_attributes:
 ;
 
 /** (* PRAGMAS and ATTRIBUTES *) ***/
-/* (* We want to allow certain strange things that occur in pragmas, so we 
-    * cannot use directly the language of expressions *) */ 
-attr: 
+/* (* We want to allow certain strange things that occur in pragmas, so we
+    * cannot use directly the language of expressions *) */
+attr:
 |   id_or_typename                       { VARIABLE $1 }
 |   IDENT IDENT                          { CALL(VARIABLE (fst $1), [VARIABLE (fst $2)]) }
 |   IDENT COLON CST_INT                  { VARIABLE (fst $1 ^ ":" ^ fst $3) }
 
-|   CST_INT COLON CST_INT                { VARIABLE (fst $1 ^ ":" ^ fst $3) } 
+|   CST_INT COLON CST_INT                { VARIABLE (fst $1 ^ ":" ^ fst $3) }
 |   DEFAULT COLON CST_INT                { VARIABLE ("default:" ^ fst $3) }
-                                         /* (* use a VARIABLE "" so that the 
+                                         /* (* use a VARIABLE "" so that the
                                              * parentheses are printed *) */
 |   IDENT LPAREN  RPAREN                 { CALL(VARIABLE (fst $1), [VARIABLE ""]) }
 |   IDENT paren_attr_list_ne             { CALL(VARIABLE (fst $1), $2) }
 
 |   CST_INT                              { CONSTANT(CONST_INT (fst $1)) }
 |   string_constant                      { CONSTANT(CONST_STRING (fst $1)) }
-                                           /*(* Const when it appears in 
-                                            * attribute lists, is translated 
+                                           /*(* Const when it appears in
+                                            * attribute lists, is translated
                                             * to aconst *)*/
 |   CONST                                { VARIABLE "aconst" }
 |   SIZEOF expression                     {EXPR_SIZEOF (fst $2)}
@@ -3042,7 +3042,7 @@ attr:
                                         {UNARY (ADDROF, fst $2)}
 |   EXCLAM expression                   {UNARY (NOT, fst $2)}
 |   TILDE expression                    {UNARY (BNOT, fst $2)}
-|   attr PLUS attr                      {BINARY(ADD ,$1 , $3)} 
+|   attr PLUS attr                      {BINARY(ADD ,$1 , $3)}
 |   attr MINUS attr                     {BINARY(SUB ,$1 , $3)}
 |   attr STAR expression                {BINARY(MUL ,$1 , fst $3)}
 |   attr SLASH attr                     {BINARY(DIV ,$1 , $3)}
@@ -3060,9 +3060,9 @@ attr:
 |   attr SUP_EQ attr                    {BINARY(GE ,$1 , $3)}
 |   attr INF_INF attr                   {BINARY(SHL ,$1 , $3)}
 |   attr SUP_SUP attr                   {BINARY(SHR ,$1 , $3)}
-|   attr ARROW id_or_typename           {MEMBEROFPTR ($1, $3)} 
-|   attr DOT id_or_typename             {MEMBEROF ($1, $3)}  
-|   LPAREN attr RPAREN                  { $2 } 
+|   attr ARROW id_or_typename           {MEMBEROFPTR ($1, $3)}
+|   attr DOT id_or_typename             {MEMBEROF ($1, $3)}
+|   LPAREN attr RPAREN                  { $2 }
 ;
 
 attr_list_ne:
@@ -3070,7 +3070,7 @@ attr_list_ne:
 |  attr COMMA attr_list_ne               { $1 :: $3 }
 |  error COMMA attr_list_ne              { $3 }
 ;
-paren_attr_list_ne: 
+paren_attr_list_ne:
 |  LPAREN attr_list_ne RPAREN            { $2 }
 |  LPAREN error RPAREN                   { [] }
 ;
@@ -3078,13 +3078,13 @@ paren_attr_list_ne:
 asmattr:
 |    /* empty */                        { [] }
 |    VOLATILE  asmattr                  { ("volatile", []) :: $2 }
-|    CONST asmattr                      { ("const", []) :: $2 } 
+|    CONST asmattr                      { ("const", []) :: $2 }
 ;
-asmtemplate: 
+asmtemplate:
     one_string_constant                          { [$1] }
 |   one_string_constant asmtemplate              { $1 :: $2 }
 ;
-asmoutputs: 
+asmoutputs:
 | /* empty */           { ([], [], []) }
 | COLON asmoperands asminputs
                         { let (ins, clobs) = $3 in
@@ -3100,9 +3100,9 @@ asmoperandsne:
 ;
 asmoperand:
 |    string_constant LPAREN expression RPAREN    { (fst $1, fst $3) }
-|    string_constant LPAREN error RPAREN         { (fst $1, NOTHING ) } 
-; 
-asminputs: 
+|    string_constant LPAREN error RPAREN         { (fst $1, NOTHING ) }
+;
+asminputs:
 | /* empty */                { ([], []) }
 | COLON asmoperands asmclobber
                         { ($2, $3) }
@@ -3115,7 +3115,7 @@ asmcloberlst_ne:
 |  one_string_constant                           { [$1] }
 |  one_string_constant COMMA asmcloberlst_ne     { $1 :: $3 }
 ;
-  
+
 %%
 
 
@@ -3291,8 +3291,8 @@ let addline () =
   curLoc := {lineno = !curLoc.lineno+1;
               filename = !curLoc.filename;
               byteno = -1; (*sfg: can we do better than this?*) }
-       
-       
+
+
 let new_line _ =
   commit ();
   if !line <> "" then begin
@@ -3301,14 +3301,14 @@ let new_line _ =
     output_char !out '\n'
   end;
   follow := 0
-       
+
 let force_new_line _ =
   commit ();
   flush ();
   addline();
   output_char !out '\n';
   follow := 0
-       
+
 let indent _ =
   new_line ();
   spaces := !spaces + !tab;
@@ -3316,14 +3316,14 @@ let indent _ =
     spaces := !tab;
     roll := !roll + 1
   end
-      
+
 let indentline _ =
   new_line ();
   if !spaces >= !max_indent then begin
     spaces := !tab;
     roll := !roll + 1
   end
-      
+
 let unindent _ =
   new_line ();
   spaces := !spaces - !tab;
@@ -3331,7 +3331,7 @@ let unindent _ =
     spaces := ((!max_indent - 1) / !tab) * !tab;
     roll := !roll - 1
   end
-      
+
 let space _ = commit ()
 
 let print str =
@@ -3351,8 +3351,8 @@ let print_unescaped_string str = print str
 
 let setLoc (l : cabsloc) =
   let tempcur = current in
-  if !printLn then  
-    if (l.lineno <> !curLoc.lineno) || l.filename <> !curLoc.filename then 
+  if !printLn then
+    if (l.lineno <> !curLoc.lineno) || l.filename <> !curLoc.filename then
       begin
         let oldspaces = !spaces in
         (* sm: below, we had '//#' instead of '#', which means printLnComment was disregarded *)
@@ -3373,7 +3373,7 @@ let setLoc (l : cabsloc) =
 (*
 ** Useful primitives
 *)
-let print_list print_sep print_elt lst = 
+let print_list print_sep print_elt lst =
   let _ = List.fold_left
       (fun com elt ->
         if com then print_sep ();
@@ -3385,7 +3385,7 @@ let print_list print_sep print_elt lst =
 
 let print_commas nl fct lst =
   print_list (fun () -> print ","; if nl then new_line() else space()) fct lst
-        
+
 let print_string (s:string) =
   print ("\"" ^ escape_string s ^ "\"")
 
@@ -3408,7 +3408,7 @@ let rec print_specifiers (specs: spec_elem list) =
         | STATIC -> "static "
         | EXTERN -> "extern "
         | REGISTER -> "register ")
-    | SpecCV cv -> 
+    | SpecCV cv ->
         print (match cv with
         | CV_CONST -> "const "
         | CV_VOLATILE -> "volatile "
@@ -3466,10 +3466,10 @@ begin
 end
 
 
-(* This is the main printer for declarations. It is easy bacause the 
+(* This is the main printer for declarations. It is easy bacause the
  * declarations are laid out as they need to be printed. *)
 and print_decl (n: string) = function
-    JUSTBASE -> if n <> "___missing_field_name" then 
+    JUSTBASE -> if n <> "___missing_field_name" then
                   print n
                 else
                   comprint "missing field name"
@@ -3528,11 +3528,11 @@ and print_enum_items items =
     print "} ";
   end
 
-  
+
 and print_onlytype (specs, dt) =
   print_specifiers specs;
   print_decl "" dt
-    
+
 and print_name ((n, decl, attrs, _) : name) =
   print_decl n decl;
   space ();
@@ -3545,26 +3545,26 @@ and print_init_name ((n, i) : init_name) =
     print "= ";
     print_init_expression i
   end
-            
+
 and print_name_group (specs, names) =
   print_specifiers specs;
   print_commas false print_name names
-    
+
 and print_field_group (specs, fields) =
   print_specifiers specs;
   print_commas false print_field fields
-    
 
-and print_field (name, widtho) = 
+
+and print_field (name, widtho) =
   print_name name;
-  (match widtho with 
+  (match widtho with
     None -> ()
   | Some w -> print " : ";  print_expression w)
 
 and print_init_name_group (specs, names) =
   print_specifiers specs;
   print_commas false print_init_name names
-    
+
 and print_single_name (specs, name) =
   print_specifiers specs;
   print_name name
@@ -3572,11 +3572,11 @@ and print_single_name (specs, name) =
 and print_params (pars : single_name list) (ell : bool) =
   print_commas false print_single_name pars;
   if ell then print (if pars = [] then "..." else ", ...") else ()
-    
+
 and print_old_params pars ell =
   print_commas false (fun id -> print id) pars;
   if ell then print (if pars = [] then "..." else ", ...") else ()
-    
+
 
 (*
 ** Expression printing
@@ -3597,7 +3597,7 @@ and print_old_params pars ell =
 **              3       ||
 **              2       ? :
 **              1       = ?=
-**              0       ,                               
+**              0       ,
 *)
 and get_operator exp =
   match exp with
@@ -3664,31 +3664,31 @@ and get_operator exp =
 
 and print_comma_exps exps =
   print_commas false print_expression exps
-    
-and print_init_expression (iexp: init_expression) : unit = 
-  match iexp with 
+
+and print_init_expression (iexp: init_expression) : unit =
+  match iexp with
     NO_INIT -> ()
   | SINGLE_INIT e -> print_expression e
   | COMPOUND_INIT  initexps ->
       let doinitexp = function
           NEXT_INIT, e -> print_init_expression e
-        | i, e -> 
+        | i, e ->
             let rec doinit = function
                 NEXT_INIT -> ()
               | INFIELD_INIT (fn, i) -> print ("." ^ fn); doinit i
-              | ATINDEX_INIT (e, i) -> 
+              | ATINDEX_INIT (e, i) ->
                   print "[";
                   print_expression e;
                   print "]";
                   doinit i
-              | ATINDEXRANGE_INIT (s, e) -> 
-                  print "["; 
+              | ATINDEXRANGE_INIT (s, e) ->
+                  print "[";
                   print_expression s;
                   print " ... ";
                   print_expression e;
                   print "]"
                 in
-            doinit i; print " = "; 
+            doinit i; print " = ";
             print_init_expression e
       in
       print "{";
@@ -3718,7 +3718,7 @@ and print_expression_level (lvl: int) (exp : expression) =
       print txt;
       space ();
                         (*print_expression exp2 (if op = SUB then (lvl' + 1) else lvl');*)
-      print_expression_level (lvl' + 1) exp2 
+      print_expression_level (lvl' + 1) exp2
                         (*if (op = SUB) && (lvl <= lvl') then print ")"*)
   | QUESTION (exp1, exp2, exp3) ->
       print_expression_level 2 exp1;
@@ -3731,17 +3731,17 @@ and print_expression_level (lvl: int) (exp : expression) =
   | CAST (typ, iexp) ->
       print "(";
       print_onlytype typ;
-      print ")"; 
-     (* Always print parentheses. In a small number of cases when we print 
+      print ")";
+     (* Always print parentheses. In a small number of cases when we print
       * constants we don't need them  *)
       (match iexp with
         SINGLE_INIT e -> print_expression_level 15 e
-      | COMPOUND_INIT _ -> (* print "("; *) 
-          print_init_expression iexp 
+      | COMPOUND_INIT _ -> (* print "("; *)
+          print_init_expression iexp
           (* ; print ")" *)
       | NO_INIT -> print "<NO_INIT in cast. Should never arise>")
 
-  | CALL (VARIABLE "__builtin_va_arg", [arg; TYPE_SIZEOF (bt, dt)]) -> 
+  | CALL (VARIABLE "__builtin_va_arg", [arg; TYPE_SIZEOF (bt, dt)]) ->
       comprint "variable";
       print "__builtin_va_arg";
       print "(";
@@ -3802,7 +3802,7 @@ and print_expression_level (lvl: int) (exp : expression) =
       print ("@expr(" ^ name ^ ") ")
   in
   if lvl > lvl' then print ")" else ()
-    
+
 
 (*
 ** Statement printing
@@ -3919,7 +3919,7 @@ and print_statement stat =
       setLoc(loc);
       print ("goto " ^ name ^ ";");
       new_line ()
-  | COMPGOTO (exp, loc) -> 
+  | COMPGOTO (exp, loc) ->
       setLoc(loc);
       print ("goto *"); print_expression exp; print ";"; new_line ()
   | DEFINITION d ->
@@ -3934,7 +3934,7 @@ and print_statement stat =
         print_list (fun () -> new_line()) print tlist; (* templates *)
         print "};"
       end else begin
-        print "__asm__ "; 
+        print "__asm__ ";
         print_attributes attrs;
         print "(";
         print_list (fun () -> new_line()) print_string tlist; (* templates *)
@@ -3947,27 +3947,27 @@ and print_statement stat =
             if clobs <> [] then begin
               print ":"; space ();
               print_commas false print_string clobs
-            end;                          
+            end;
           end
-        end;      
+        end;
         print ");"
       end;
       new_line ()
-  | TRY_FINALLY (b, h, loc) -> 
+  | TRY_FINALLY (b, h, loc) ->
       setLoc loc;
       print "__try ";
       print_block b;
       print "__finally ";
       print_block h
 
-  | TRY_EXCEPT (b, e, h, loc) -> 
+  | TRY_EXCEPT (b, e, h, loc) ->
       setLoc loc;
       print "__try ";
       print_block b;
       print "__except("; print_expression e; print ")";
       print_block h
-      
-and print_block blk = 
+
+and print_block blk =
   new_line();
   print "{";
   indent ();
@@ -3985,7 +3985,7 @@ and print_block blk =
   unindent ();
   print "}";
   new_line ()
-  
+
 and print_substatement stat =
   match stat with
     IF _
@@ -4009,10 +4009,10 @@ and print_substatement stat =
 (*
 ** GCC Attributes
 *)
-and print_attribute (name,args) = 
+and print_attribute (name,args) =
   if args = [] then print (
-    match name with 
-      "restrict" -> "__restrict" 
+    match name with
+      "restrict" -> "__restrict"
       (* weimer: Fri Dec  7 17:12:35  2001
        * must not print 'restrict' and the code below does allows some
        * plain 'restrict's to slip though! *)
@@ -4114,7 +4114,7 @@ and print_def def =
       width := oldwidth;
       force_new_line ()
 
-  | LINKAGE (n, loc, dl) -> 
+  | LINKAGE (n, loc, dl) ->
       setLoc (loc);
       force_new_line ();
       print "extern "; print_string n; print_string "  {";
@@ -4122,7 +4122,7 @@ and print_def def =
       print_string "}";
       force_new_line ()
 
-  | NAMESPACE (n, loc, dl) -> 
+  | NAMESPACE (n, loc, dl) ->
       setLoc (loc);
       force_new_line ();
       print "namespace "; print n; print_string "  {";
@@ -4278,7 +4278,7 @@ begin
 
   (* now parse the file we came here to parse *)
   let cabs = parse_to_cabs_inner fname lang in
-  if !E.hadErrors then 
+  if !E.hadErrors then
     E.s (E.error "There were parsing errors in %s\n" fname);
 
   (* and apply the patch file, return transformed file *)
@@ -4294,7 +4294,7 @@ begin
         (trace "patch" (dprintf "newpatching %s\n" fname));
         let result = (Flx_cil_stats.time "newpatch" (Flx_cil_patch.applyFlx_cil_patch pf) cabs) in
 
-        if (!printFlx_cil_patchedFiles) then begin                              
+        if (!printFlx_cil_patchedFiles) then begin
           let outFname:string = fname ^ ".patched" in
           (trace "patch" (dprintf "printing patched version of %s to %s\n"
                                   fname outFname));
@@ -4355,7 +4355,7 @@ and parse_to_cabs_inner (fname : string) (lang : Flx_cil_cabs.lang_t) =
       raise e
   end
 
-  
+
 (* print to safec.proto.h the prototypes of all functions that are defined *)
 let printPrototypes ((fname, file) : Flx_cil_cabs.file) : unit =
 begin
@@ -4372,7 +4372,7 @@ begin
     | Flx_cil_cabs.FUNDEF(name, _, loc, _) -> (
         match name with
         | (_, (funcname, Flx_cil_cabs.PROTO(_,_,_), _, _)) -> (
-            incr counter;          
+            incr counter;
             ignore (fprintf chan "\n/* %s from %s:%d */\n"
                                  funcname loc.Flx_cil_cabs.filename loc.Flx_cil_cabs.lineno);
             flush chan;
@@ -4424,7 +4424,7 @@ exception Flx_cil_cabsOnly
     (* additional command line arguments *)
 val args: (string * Arg.spec * string) list
 
-    (* the main command to parse a file. Return a thunk that can be used to 
+    (* the main command to parse a file. Return a thunk that can be used to
      * convert the AST to CIL. *)
 val parse: string -> Flx_cil_cabs.lang_t -> (unit -> Flx_cil_cil.file)
 
@@ -4444,29 +4444,29 @@ val currentPattern : string ref
 
 module E = Flx_cil_errormsg
 
-(* We provide here a pointer to a function. It will be set by the lexer and 
- * used by the parser. In Ocaml lexers depend on parsers, so we we have put 
+(* We provide here a pointer to a function. It will be set by the lexer and
+ * used by the parser. In Ocaml lexers depend on parsers, so we we have put
  * such functions in a separate module. *)
-let add_identifier: (string -> unit) ref = 
-  ref (fun _ -> E.s (E.bug "You called an uninitialized add_identifier")) 
+let add_identifier: (string -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized add_identifier"))
 
-let add_type: (string -> unit) ref = 
-  ref (fun _ -> E.s (E.bug "You called an uninitialized add_type")) 
+let add_type: (string -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized add_type"))
 
-let push_context: (unit -> unit) ref = 
-  ref (fun _ -> E.s (E.bug "You called an uninitialized push_context")) 
+let push_context: (unit -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized push_context"))
 
-let pop_context: (unit -> unit) ref = 
-  ref (fun _ -> E.s (E.bug "You called an uninitialized pop_context")) 
+let pop_context: (unit -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized pop_context"))
 
-let push_class: (string -> unit) ref = 
-  ref (fun _ -> E.s (E.bug "You called an uninitialized push_class")) 
+let push_class: (string -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized push_class"))
 
-let pop_class : (unit -> unit) ref = 
-  ref (fun _ -> E.s (E.bug "You called an uninitialized pop_class")) 
+let pop_class : (unit -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized pop_class"))
 
 let get_lang: (unit -> Flx_cil_cabs.lang_t) ref =
-  ref (fun _ -> E.s (E.bug "You called an uninitialized get_lang")) 
+  ref (fun _ -> E.s (E.bug "You called an uninitialized get_lang"))
 
 (* Keep here the current pattern for formatparse *)
 let currentPattern = ref ""

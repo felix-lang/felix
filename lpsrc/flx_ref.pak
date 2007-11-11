@@ -33,7 +33,7 @@ to be extended in future releases than modified.
 The key distinction between Abstract and Concrete semantics
 is manifest in a set of extensions to the Abstract Language,
 in which binding constructions bridging the Felix/C++ interfaces
-are provided. These constructions are a core part of the 
+are provided. These constructions are a core part of the
 implementation: they're not only used to provide some
 of the required abstract semantics, they're also available
 for end users to extend, modify, or even largely replace
@@ -57,7 +57,7 @@ as procedure continuations.
 
 @item("2. Standard Library Types")
 These are standard types provided by the library. They include
-primitives such as boolean, integral and floating numeric types, 
+primitives such as boolean, integral and floating numeric types,
 algebraic types including lists, arrays, and options,
 and various containers.
 
@@ -108,14 +108,14 @@ Felix function closure types are denoted by:
 @end_displayed_code()
 where D is the domain and C the codomain types. The binary
 combinator -> is left associative. Values of such a type
-are constructed by forming closures of function classes 
-which are denoted by a function definition. 
+are constructed by forming closures of function classes
+which are denoted by a function definition.
 @p()
 Closures bind to the instance of their environment
 denoted by lexical scoping together with control flow rules,
 and remain live at least while there is a live reference to them.
 The local part of a closure denoted by a function is called
-the stack frame for historical reasons, and the list of stack 
+the stack frame for historical reasons, and the list of stack
 frames comprising that of the function and its ancestors
 is known as the display, also for historical reasons.
 @p()
@@ -153,7 +153,7 @@ Note that C function closures certainly exist, however they bind
 only to their primitive static environment.
 
 @head(3,"Procedure Types",nospawn=1)
-A procedure is a subroutine which may and generally should have 
+A procedure is a subroutine which may and generally should have
 side-effects and which does not return a value. Procedures
 have types denoted by one of:
 @begin_displayed_code()
@@ -168,7 +168,7 @@ forming the closure of a procedure class. Procedures are quite
 distinct from functions, since they may participate in synchronous
 multithreading, whereas functions may not. See
 @ref_anchor("sync")
-for details on synchronous threading. See 
+for details on synchronous threading. See
 @ref_anchor("procdef")
 for details of defining procedure classes.
 
@@ -183,7 +183,7 @@ indicies. n-ary tuples exist for all non-negative values of n
 other than 1. Tuples of one component of type T are identified
 with type T. The nullary tuple type is denoted by
 @begin_displayed_code()
-  1 
+  1
   unit
 @end_displayed_code()
 where 'unit' is aliased to 1 in the standard library. The sole value
@@ -200,7 +200,7 @@ and values are denoted:
   v0, v1, v2, ...
 @end_displayed_code()
 You should note that the chain operator * is not associative,
-although it is associative up to isomorphism. 
+although it is associative up to isomorphism.
 @p()
 Tuples support two destructors. The form
 @begin_displayed_code()
@@ -220,9 +220,9 @@ You can also use a tuple pattern in a match expression
 A tuple of 2 more or more components, all of which are
 the same type T, is known as an array. The special sugar
 @begin_displayed_code()
-  T ^ n 
+  T ^ n
 @end_displayed_code()
-may be used for arrays of manifestly fixed length, where n is a 
+may be used for arrays of manifestly fixed length, where n is a
 literally given integer constant. Array values are the same
 as tuple values, since arrays are just special cases of
 tuples. However the special notation like:
@@ -233,7 +233,7 @@ can be used for arrays, which results in a compile time
 error if the component values are not all the same type.
 
 @head(3,"Record Types",nospawn=1)
-A record type is a variant on a tuple, in which the 
+A record type is a variant on a tuple, in which the
 components are named rather than numbered. The types
 are denoted like:
 @begin_displayed_code()
@@ -254,7 +254,7 @@ and values are constructed like:
 Record types support a generic coercion operation
 which allows the formation of a new record with
 a subset of the fields of the argument record,
-the type of this record is a subtype. See 
+the type of this record is a subtype. See
 @ref_anchor("record coercion")
 .
 @p()
@@ -292,9 +292,9 @@ In addition, a sum of n units has the special name:
 where n is an non-negative integral constant.
 Three of these have standard names given by these typedefs:
 @begin_displayed_code()
-  typedef void = 0; 
-  typedef unit = 1; 
-  typedef bool = 2; 
+  typedef void = 0;
+  typedef unit = 1;
+  typedef bool = 2;
 @end_displayed_code()
 These two variants have standard names:
 @begin_displayed_code()
@@ -313,7 +313,7 @@ Note that sum type constructors can also be used as functions,
 like Haskell but unlike Ocaml. The compiler generates a wrapper
 function to form the closure automatically on such usage.
 @p()
-The standard function caseno can be used to obtain the 
+The standard function caseno can be used to obtain the
 zero origin ariant index:
 @begin_displayed_code()
   var x : int = caseno (case 1 of 2); // x is 1
@@ -376,13 +376,13 @@ in order:
   var x = X(1,2L);
 @end_displayed_code()
 This construction is efficient: tuple and all struct types with
-the same sequence of components always have the members 
+the same sequence of components always have the members
 at the same offsets, and thus are representation compatible.
 
 @head(3,"Union Types",nospawn=1)
 Felix union type definitions come in two flavours: the ML form:
 @begin_displayed_code()
-  union X = 
+  union X =
     | a of int
     | b of long
   ;
@@ -394,10 +394,10 @@ and the C form:
     b : long;
   };
 @end_displayed_code()
-These flavours are equivalent. However the ML form 
+These flavours are equivalent. However the ML form
 also supports constructors without arguments:
 @begin_displayed_code()
-  union X = 
+  union X =
     | a of int
     | b of long
     | c
@@ -443,7 +443,7 @@ Felix classes are defined like:
 class Y {
   val c : int;
   private var x : int;
-  
+
   fun fetchc():int =>c+1;
   private fun fetchx():int =>x;
   proc setx(a:int) { x = a; }
@@ -453,7 +453,7 @@ class Y {
 Classes may contain, val, var, fun and proc definitions.
 Val's may be initialised in constructors but not otherwise
 modified. The special function introduced by the ctor
-keyword introduces a constructor, with C++ style member 
+keyword introduces a constructor, with C++ style member
 initialiser list.
 @p()
 Class members are all public by default. Var, val, proc
@@ -488,20 +488,20 @@ Felix:
 Such definitions provide the user a way to introduce
 new primitive types into Felix. Such types are
 considered abstract. The C++ type must be allocable,
-default and copy constructible, copy assignable, 
+default and copy constructible, copy assignable,
 and destructible, that is, they must be first class data types.
 @p()
-It is also possible to introduce non-first class types, 
+It is also possible to introduce non-first class types,
 with the adjective incomplete:
 @begin_displayed_code()
   incomplete type myvoid = "void";
 @end_displayed_code()
 Such types can only be used as the argument of some kind
-of pointer type constructor, or to instantiate a 
+of pointer type constructor, or to instantiate a
 type variable in binding context for which it is
 suitable.
 @p()
-See 
+See
 @ref_anchor("bindings")
  for more information on bindings.
 
@@ -605,7 +605,7 @@ just uses an alias.]
 Arithmetic types support the same operations as ISO C99.
 For the purpose of specifying bitwise operations on signed
 types, they use a full two's complement representation.
-Systems on machines with other representations must 
+Systems on machines with other representations must
 provide the appropriate glue logic.
 @p()
 Overflow of operations on signed types is undefined
@@ -724,7 +724,7 @@ which is short hand for
 
 Similarly, the first form also supports this extension.
 @p()
-The final form is 
+The final form is
 @begin_displayed_code()
   fun f: u -> int  =
     | Empty => 0
@@ -795,7 +795,7 @@ Function names can be overloaded, and lookup choses
 the right function to use in an application based
 on the function argument.
 @p()
-Variable names, even if used applicatively, 
+Variable names, even if used applicatively,
 do not participate in overload resolution.
 @p()
 Felix also allows functions to provide pre-conditions
@@ -807,9 +807,9 @@ and post-conditions. Here is an example:
     return x + y;
   }
 @end_displayed_code()
-The special identifier result is used to denote the 
+The special identifier result is used to denote the
 value returned by the function. Pre and post conditions are
-part of the intuitive function type, but they are not part of the 
+part of the intuitive function type, but they are not part of the
 formal type. Instead, pre and post conditions are checked prior
 to and after function application, respectively, and abort the
 program if the conditions are not met.
@@ -845,7 +845,7 @@ argument t, it accepts a single argument of tuple type t * int.
 This form supports an extension to curry form:
 
 @begin_displayed_code()
-  proc f[t] (x:t) (y:int) 
+  proc f[t] (x:t) (y:int)
   {
     print y; h x;
   }
@@ -911,7 +911,7 @@ Here is an example:
 @head(1,"Bindings")
 Felix provides extensive support for binding C/C++.
 Whilst many languages provide an FFI (Foreign Function
-Interface) which allows glue logic to be written in C, 
+Interface) which allows glue logic to be written in C,
 Felix uses the C/C++ object model directly, and provides
 the ability to bind to C/C++ data types and functions
 directly in the language. In most cases these bindings
@@ -931,7 +931,7 @@ named at once:
 @end_displayed_code()
 The type must be a first class type, that is,
 allocable, default initialisable, copy constructible,
-copy assignable, and destructible. 
+copy assignable, and destructible.
 @p()
 Non-first class type may also be introduced with
 the keyword incomplete:
@@ -940,7 +940,7 @@ the keyword incomplete:
   incomplete type myvoid = "void";
 @end_displayed_code()
 
-and may only be used as the argument of a pointer 
+and may only be used as the argument of a pointer
 type constructor or argument to a binding construction
 for which the type makes sense in C/C++ context.
 For example:
@@ -983,13 +983,13 @@ Type abstractions can be polymorphic. For example:
   type vector[t] = "vector<?1>";
 @end_displayed_code()
 Here the special encoding ?1 refers to the first
-type parameter. 
+type parameter.
 @p()
 Type bindings may also have a requirements clause:
 @begin_displayed_code()
   type vector[t] = "vector<?1>" requires vector_h;
 @end_displayed_code()
-See 
+See
 @ref_anchor("requirements")
  for more details.
 
@@ -1004,13 +1004,13 @@ into Felix:
 When the target and source names are the same,
 the source string can be elided.
 @p()
-When used in an expression, the Felix symbol is 
+When used in an expression, the Felix symbol is
 replaced by the correspondong C code, with substitution
 of type variables if necessary.
 @p()
 The const declaration is a short form for a function
 with no arguments. Const definitions can also have
-requirements clauses. See 
+requirements clauses. See
 @ref_anchor("requirements")
  for more details.
 
@@ -1018,10 +1018,10 @@ requirements clauses. See
 
 @head(1,"Expressions",key="expr")
 The principal syntactic combinator used to construct expressions
-are application and pattern matching, however Felix 
+are application and pattern matching, however Felix
 also has a rich set of builtin operator patterns, and there
 is support for extensible grammar productions which allow
-arbitrary bracket operators, and binary operators at 
+arbitrary bracket operators, and binary operators at
 pre-determined precedences. See also
 @ref_anchor("preprocessor")
  for more details on syntax extensions.
@@ -1051,7 +1051,7 @@ pre-determined precedences. See also
 @end_table()
 @p()
 An integer consists of a prefix, numeric form and suffix.
-Either the size indicator or signedness indicator 'u' or 'i' 
+Either the size indicator or signedness indicator 'u' or 'i'
 can be wholly capitalised (but note that lL is not allowed).
 The prefix denotes the radix as in the table below:
 @begin_table("Prefix","Radix", "name", "Allowed digits")
@@ -1067,7 +1067,7 @@ underscore must be between two digits.
 @p()
 In addition an single underscore is allowed between a non-empty
 prefix and the numeric form, or the numeric form and a non-empty
-suffix. Underscores have no semantics and can be used to improve 
+suffix. Underscores have no semantics and can be used to improve
 spacing.
 
 
@@ -1239,8 +1239,8 @@ is equivalent to
 @head(2,"Record Coercions",key="record coercion")
 
 @begin_displayed_code()
-  typedef isd = 
-    struct 
+  typedef isd =
+    struct
     {
       a:int;
       b:string;
@@ -1248,8 +1248,8 @@ is equivalent to
     }
   ;
 
-  typedef id = 
-    struct 
+  typedef id =
+    struct
     {
       a:int;
       c:double;
@@ -1375,7 +1375,7 @@ There is also a conditional call:
 @begin_displayed_code()
   if cond call f x;
 @end_displayed_code()
-The argument of call, and the shortened forms 
+The argument of call, and the shortened forms
 have the syntax of an expression. If the expression is
 an application, it is taken as a call applying the
 first argument of the application to the second,
@@ -1399,7 +1399,7 @@ is a special tail call, subject to the constraint that
 f must be the name of this procedure, or one of its ascendants,
 which is explicitly a tail recursive call. Felix optimised both
 kinds of tail calls, however they are recognized even if the
-explict tail call syntax is not used. 
+explict tail call syntax is not used.
 @p()
 If the first projection of the argument of a procedure
 which is a tuple type is a pointer type, then the procedure
@@ -1446,7 +1446,7 @@ Felix supports two assignment operators:
   lval <-> lval;
 @end_displayed_code()
 The first form is a traditional assignment. The LHS must
-be an lvalue pattern matching the RHS. The semantics are value 
+be an lvalue pattern matching the RHS. The semantics are value
 preserving for Felix types, and use C++ assignment for C++ types.
 @p()
 The second form requires two lvalues patterns, and exchanges
@@ -1527,12 +1527,12 @@ evaluate to false.
 
 @head(4,"postcondition",nospawn=1)
 @begin_displayed_code()
-  fun f(x:int,y:int when y>0 and x>0): int 
+  fun f(x:int,y:int when y>0 and x>0): int
     expect if y>1 then result <= x else result == x endif
     => x/y
   ;
 @end_displayed_code()
-A postcondition may be given after a function 
+A postcondition may be given after a function
 optional return type or procedure argument list.
 For functions (only) the magic name result refers to
 the value the function is returning.
@@ -1551,7 +1551,7 @@ of the current scope.
 @head(3,"Condition chain",nospawn=1)
 The standard conditional chain looks like:
 @begin_displayed_code()
-  if expr do 
+  if expr do
     statement;
     ...
   elif expr do
@@ -1572,7 +1572,7 @@ The whilst loop has the form:
   whilst cond do statement; .. done;
 @end_displayed_code()
 which tests cond, then executes the statements
-between do and done and repeats, provided the 
+between do and done and repeats, provided the
 condition is true.
 @p()
 The until loop has the form:
@@ -1588,9 +1588,9 @@ The counting loops:
   forall id in e1 upto e2 do statement; .. done;
   forall id in e2 downto e1 do statement; .. done;
 @end_displayed_code()
-execute statements for all values of the integer 
+execute statements for all values of the integer
 variable id between e1 and e2 inclusively, differing
-only in the order of iteration. The terminal expression 
+only in the order of iteration. The terminal expression
 is re-evaluated every pass of the loop.
 
 @head(3,"Standard Control Procedures",nospawn=1)
@@ -1627,7 +1627,7 @@ The function for_each emulates a C for loop:
 @end_displayed_code()
 It executes the initial condition first.
 Then it tests the condition, then if the
-condition is true, executes the body, then executes the 
+condition is true, executes the body, then executes the
 increment and repeats.
 
 @head(1,"Processing Phases")
@@ -1679,7 +1679,7 @@ and syntactic kind, so that, for example, the result of
 macros in a subexpression are restricted to that subexpression,
 and the result is an expression.
 @p()
-In particular, syntax macros 
+In particular, syntax macros
 also respect block scope and file scope. Therefore, if you
 prepare syntax macros in a separate file, you must
 #import or #include the file, to export the macros. Macros defined in
@@ -1688,11 +1688,11 @@ within that file (after other phases of processing of course).
 
 @item("Desugarer")
 The desugarer is responsible for mapping some higher
-level constructions of the grammar to lower level 
+level constructions of the grammar to lower level
 primitives, and also for recognizing certain special
 identifiers in certain contexts, and performing
 rewriting operations, thus avoiding the introduction
-of too many keywords. 
+of too many keywords.
 @p()
 It also handles elision of
 conditional constructions nased on constant conditions,
@@ -1702,7 +1702,7 @@ by include directives. The include facility caches
 the results of syntax macro processing, and inclusion
 is subject to time-stamp checking to relieve the
 compiler from expensive front end processing.
-The caches have the extension ".par". 
+The caches have the extension ".par".
 @p()
 Desugaring
 is also responsible for splitting scoped entities
@@ -1741,19 +1741,19 @@ are subsequently processed by the C++ compiler.
 The code generator also applies the instantiator,
 which is used to instantiate polymorphic entities.
 This instantiation is transient and purely functional:
-no instantiated definitions are ever created, 
+no instantiated definitions are ever created,
 except in the ouput C++ code.
 
 @item("C++ Compilation")
 This phase invokes the client C++ compiler and linker
 to generate object files, libraries, shared libraries
-and/or programs. It may include or link to 
+and/or programs. It may include or link to
 standard Felix run time library (RTL) support code,
 and/or standard Felix driver routines.
 
 @item("Execution")
 The binaries generated by C++ compilation are finally
-executed. If dynamic linkage was chose in the 
+executed. If dynamic linkage was chose in the
 C++ compile/link phase, this phase includes loading
 of the support code, and loading of the user application
 code by the chosen driver.
@@ -1796,7 +1796,7 @@ keywords, statements and expressions.
 @head(3,'User defined Statements',nospawn=1)
 @head(3,'User defined Operators',nospawn=1)
 @head(2,'Tokens',nospawn=1)
-@python('//') 
+@python('//')
 begin_displayed_code()
 l = "  "
 def add(s):
@@ -1831,9 +1831,9 @@ This is actually a shortcut for:
 @end_displayed_code()
 which generates:
 @begin_displayed_code()
-  print 1; endl; 
-  print 2; endl; 
-  print 3; endl; 
+  print 1; endl;
+  print 2; endl;
+  print 3; endl;
 @end_displayed_code()
 The generic iterator is built from a combination
 of user defined syntax and the syntax macro processor.
@@ -1866,7 +1866,7 @@ to synchronise and control flow in one or more fibres.
 A fibre is created by the spawn_fthread procedure
 which accepts a procedure of type
 @begin_displayed_code()
-  1 -> 0 
+  1 -> 0
 @end_displayed_code()
 as an argument. It is typically used like:
 @begin_displayed_code()
@@ -1882,7 +1882,7 @@ read and write operations have types:
   proc read: &t * schannel[t];
   proc write: schannel[t] * t;
 @end_displayed_code()
-  
+
 
 @head(1,"First order polymorphism",key="poly1")
 All Felix nominal types support first order
@@ -1909,7 +1909,7 @@ is simply shorthand for a unit schema:
 @end_displayed_code()
 @p()
 In addition, modules may also have type schema, however
-this is just sugar. The semantics are to prepend the schema to the 
+this is just sugar. The semantics are to prepend the schema to the
 schema of every definition in the module:
 @begin_displayed_code()
   module X[T] {
@@ -1956,8 +1956,8 @@ with the usual precedence.
 This section summaries all the magic names Felix uses.
 A magic name is a special operator or other
 symbol for which a normal identifier or perhaps
-a string is used syntactically where a keyword 
-would be more appropriate semantically. 
+a string is used syntactically where a keyword
+would be more appropriate semantically.
 @p()
 Magic names are used because it simplifies parsing.
 

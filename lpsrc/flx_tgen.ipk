@@ -41,9 +41,9 @@ hashtable. We also mangle c++ abstract type names.
 let gen_tuple name tn typs =
   let n = length typs in
   "struct " ^ name ^ " {\n" ^
-  catmap "" 
-  (fun (t,i) -> 
-    if t = `BTYP_tuple [] 
+  catmap ""
+  (fun (t,i) ->
+    if t = `BTYP_tuple []
     then "  // elided mem_" ^ si i ^ "(type unit)\n"
     else "  "^tn t^ " mem_" ^ si i ^ ";\n"
   )
@@ -52,31 +52,31 @@ let gen_tuple name tn typs =
   "  " ^ name ^ "(){}\n" (* default constructor *)
   ^
   (
-    if fold_left (fun r t -> r && t = `BTYP_tuple []) true typs 
-    then "" 
+    if fold_left (fun r t -> r && t = `BTYP_tuple []) true typs
+    then ""
     else
     "  " ^ name ^ "(" ^
-    fold_left 
-    (fun s (t,i) -> 
-      if t = `BTYP_tuple [] then s 
-      else 
-        s ^ 
+    fold_left
+    (fun s (t,i) ->
+      if t = `BTYP_tuple [] then s
+      else
+        s ^
         (if String.length s > 0 then ", " else "") ^
         tn t^" a" ^ si i
-    ) 
+    )
     ""
     (combine typs (nlist n))
     ^
-    "):\n    " 
-    ^ 
+    "):\n    "
+    ^
     fold_left
-    (fun s (t,i) -> 
-      if t = `BTYP_tuple [] then s 
+    (fun s (t,i) ->
+      if t = `BTYP_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
         "mem_"^si i ^ "(a" ^ si i^")"
-    ) 
+    )
     ""
     (combine typs (nlist n))
     ^
@@ -88,9 +88,9 @@ let gen_tuple name tn typs =
 let gen_record name tn typs =
   let n = length typs in
   "struct " ^ name ^ " {\n" ^
-  catmap "" 
-  (fun (n,t) -> 
-    if t = `BTYP_tuple [] 
+  catmap ""
+  (fun (n,t) ->
+    if t = `BTYP_tuple []
     then "  // elided " ^ n ^ "(type unit)\n"
     else "  "^tn t^ " " ^ n ^ ";\n"
   )
@@ -99,31 +99,31 @@ let gen_record name tn typs =
   "  " ^ name ^ "(){}\n" (* default constructor *)
   ^
   (
-    if fold_left (fun r (n,t) -> r && t = `BTYP_tuple []) true typs 
-    then "" 
+    if fold_left (fun r (n,t) -> r && t = `BTYP_tuple []) true typs
+    then ""
     else
     "  " ^ name ^ "(" ^
-    fold_left 
-    (fun s (n,t) -> 
-      if t = `BTYP_tuple [] then s 
-      else 
-        s ^ 
+    fold_left
+    (fun s (n,t) ->
+      if t = `BTYP_tuple [] then s
+      else
+        s ^
         (if String.length s > 0 then ", " else "") ^
         tn t^" _" ^ n ^ "_a"
-    ) 
+    )
     ""
-    typs 
+    typs
     ^
-    "):\n    " 
-    ^ 
+    "):\n    "
+    ^
     fold_left
-    (fun s (n,t) -> 
-      if t = `BTYP_tuple [] then s 
+    (fun s (n,t) ->
+      if t = `BTYP_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
         n ^ "(_" ^ n ^"_a)"
-    ) 
+    )
     ""
     typs
     ^
@@ -132,7 +132,7 @@ let gen_record name tn typs =
   ^
   "};\n"
 
-(* copy ctor, assignment, and destructor are generated; 
+(* copy ctor, assignment, and destructor are generated;
   we have to supply the pointer constructor and default
   constructor though. Note that it matters not if this
   type is sliced, since it's nothing more than a type
@@ -150,21 +150,21 @@ let gen_ref name typ =
 *)
 
 (* this routine generates a typedef (for primitives)
-or struct declaration which names the type. 
+or struct declaration which names the type.
 *)
 
 let gen_type_name syms bbdfns (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE NAME " ^
-    si index^": " ^ 
+    si index^": " ^
     sbt syms.dfns typ
   );
   *)
   let cn t = cpp_type_classname syms t in
   let tn t = cpp_typename syms t in
-  let descr = 
-    "\n//TYPE "^si index^": " ^ sbt syms.dfns typ ^ "\n" 
+  let descr =
+    "\n//TYPE "^si index^": " ^ sbt syms.dfns typ ^ "\n"
   in
   let t = unfold syms.dfns typ in
   match t with
@@ -199,7 +199,7 @@ let gen_type_name syms bbdfns (index,typ) =
     let t = `Ct_fun (ctn c,map ctn ds) in
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
-    
+
   | `BTYP_unitsum k ->
       "typedef int " ^ tn typ ^ ";\n"
 
@@ -216,30 +216,30 @@ let gen_type_name syms bbdfns (index,typ) =
 
   | `BTYP_void -> ""
 
-  | `BTYP_inst (i,ts) -> 
-    let id,parent,sr,entry = 
+  | `BTYP_inst (i,ts) ->
+    let id,parent,sr,entry =
       try Hashtbl.find bbdfns i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_abs (vs,quals,ct,_) -> 
+    | `BBDCL_abs (vs,quals,ct,_) ->
       let complete = not (mem `Incomplete quals) in
-      let descr = 
+      let descr =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
-        "PRIMITIVE "^si i ^" INSTANCE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+        "PRIMITIVE "^si i ^" INSTANCE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
       let instance_name = cn typ in
       let tss = map tn ts in
-      let instance = 
+      let instance =
         match ct with
         | `Virtual -> clierr sr "Instantiate virtual type!"
         | `Identity -> syserr sr "Idendity type is nonsense!"
         | `Str c -> c
         | `StrTemplate c ->
-        try sc "expr" (csubst sr sr c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"]) 
+        try sc "expr" (csubst sr sr c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"])
         with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
       in
 
@@ -248,7 +248,7 @@ let gen_type_name syms bbdfns (index,typ) =
       an alias
       *)
       (if instance = instance_name
-      then descr ^ "//" 
+      then descr ^ "//"
       else descr
       )
       ^
@@ -257,11 +257,11 @@ let gen_type_name syms bbdfns (index,typ) =
     | `BBDCL_newtype (_,t') -> ""
 
     | `BBDCL_cstruct _ -> if ts = [] then "" else
-      let descr = 
-        "\n//CSTRUCT "^si i ^" INSTANCE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+      let descr =
+        "\n//CSTRUCT "^si i ^" INSTANCE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
       let instance_name = cn typ in
       let instance = id ^ "<" ^ catmap "," cn ts ^"> " in
@@ -269,35 +269,35 @@ let gen_type_name syms bbdfns (index,typ) =
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
 
-    | `BBDCL_class _ ->  
+    | `BBDCL_class _ ->
       begin
         (*
         print_endline "[gen_type_name] CLASS TYPE INSTANCE";
         *)
         let type_instance_name = cn typ in
         let class_name = cpp_instance_name syms bbdfns i ts in
-        let class_instance = 
+        let class_instance =
           try Hashtbl.find syms.instances (i,ts)
           with Not_found -> assert false
         in
-        let descr = 
-          "\n//CLASS "^si i ^" TYPE INSTANCE " ^ 
-          si index^": " ^ 
-          sbt syms.dfns typ ^ 
+        let descr =
+          "\n//CLASS "^si i ^" TYPE INSTANCE " ^
+          si index^": " ^
+          sbt syms.dfns typ ^
           ", CLASS INSTANCE " ^ si class_instance ^
-          "\n" 
+          "\n"
         in
         descr ^
         "struct " ^ class_name ^"; // class instance \n"  ^
-        "typedef " ^ class_name ^" *"^type_instance_name^"; // type instance\n" 
+        "typedef " ^ class_name ^" *"^type_instance_name^"; // type instance\n"
       end
 
     | `BBDCL_cclass _ ->  if ts = [] then "" else
-      let descr = 
-        "\n//CCLASS "^si i ^" INSTANCE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+      let descr =
+        "\n//CCLASS "^si i ^" INSTANCE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
       let instance_name = cn typ in
       let instance = id ^ "<" ^ catmap "," cn ts ^"> " in
@@ -305,21 +305,21 @@ let gen_type_name syms bbdfns (index,typ) =
       "typedef " ^ instance ^ " *" ^ instance_name ^ ";\n"
 
     | `BBDCL_struct _ ->
-      let descr = 
-        "\n//STRUCT "^si i ^" INSTANCE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+      let descr =
+        "\n//STRUCT "^si i ^" INSTANCE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
       let name = cn typ in
       descr ^ "struct " ^ name ^ ";\n"
 
     | `BBDCL_union (vs,ls) ->
-      let descr = 
-        "\n//UNION "^si i ^" INSTANCE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+      let descr =
+        "\n//UNION "^si i ^" INSTANCE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
       let name = cn typ in
       descr ^
@@ -333,10 +333,10 @@ let gen_type_name syms bbdfns (index,typ) =
         "typedef _uctor_ " ^ name ^ "; //ncases="^len^"\n"
 
 
-    | _ -> 
-      failwith 
+    | _ ->
+      failwith
       (
-        "[gen_type_name] Expected definition "^si i^" to be generic primitive, got " ^ 
+        "[gen_type_name] Expected definition "^si i^" to be generic primitive, got " ^
         string_of_bbdcl syms.dfns bbdfns entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
@@ -346,7 +346,7 @@ let gen_type_name syms bbdfns (index,typ) =
 
   | _ -> failwith ("Unexpected metatype "^ sbt syms.dfns t ^ " in gen_type_name")
 
-let mk_listwise_ctor syms i name typ cts ctss = 
+let mk_listwise_ctor syms i name typ cts ctss =
   if length cts = 1 then
   let ctn,ctt = hd ctss in
     "  " ^ name ^ "("^ ctt ^ " const & _a): " ^
@@ -359,16 +359,16 @@ let gen_type syms bbdfns (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE " ^
-    si index^": " ^ 
+    si index^": " ^
     sbt syms.dfns typ
   );
   *)
   let tn t = cpp_typename syms t in
   let cn t = cpp_type_classname syms t in
-  let descr = 
-    "\n//TYPE "^ si index^ ": " ^ 
-    sbt syms.dfns typ ^ 
-    "\n" 
+  let descr =
+    "\n//TYPE "^ si index^ ": " ^
+    sbt syms.dfns typ ^
+    "\n"
   in
   let t = unfold syms.dfns typ in
   match t with
@@ -380,7 +380,7 @@ let gen_type syms bbdfns (index,typ) =
 
   | `BTYP_function (a,`BTYP_void) ->
     descr ^
-    let name = cn typ  
+    let name = cn typ
     and argtype = tn a
     and unitproc = a = `BTYP_tuple[] or a = `BTYP_void
     in
@@ -388,7 +388,7 @@ let gen_type syms bbdfns (index,typ) =
     ": con_t {\n" ^
     "  typedef void rettype;\n" ^
     "  typedef " ^ (if unitproc then "void" else argtype) ^ " argtype;\n" ^
-    (if unitproc 
+    (if unitproc
     then
     "  virtual con_t *call(con_t *)=0;\n"
     else
@@ -401,7 +401,7 @@ let gen_type syms bbdfns (index,typ) =
   (* FUNCTION *)
   | `BTYP_function (a,r) ->
     descr ^
-    let name = cn typ  
+    let name = cn typ
     and argtype = tn a
     and rettype = tn r
     and unitfun = a = `BTYP_tuple[] or a = `BTYP_void
@@ -420,17 +420,17 @@ let gen_type syms bbdfns (index,typ) =
   | `BTYP_sum _ -> "" (* union typedef *)
   | `BTYP_variant _ -> ""
 
-  | `BTYP_tuple [] -> "" 
-  | `BTYP_tuple ts -> 
+  | `BTYP_tuple [] -> ""
+  | `BTYP_tuple ts ->
      descr ^
      gen_tuple (tn typ) tn ts
 
-  | `BTYP_record ts -> 
+  | `BTYP_record ts ->
      descr ^
      gen_record (cn typ) tn ts
-     
+
   | `BTYP_void -> ""
-  | `BTYP_pointer t -> 
+  | `BTYP_pointer t ->
     ""
     (*
     let name = tn typ in
@@ -449,21 +449,21 @@ let gen_type syms bbdfns (index,typ) =
     "  typedef " ^ v ^ " element_type;\n" ^
     "  " ^ v ^ " data[" ^ si n ^ "];\n" ^
     "};\n"
-  
+
 
   | `BTYP_inst (i,ts) ->
-    let id,parent,sr,entry = 
+    let id,parent,sr,entry =
       try Hashtbl.find bbdfns i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_newtype (vs,t') -> 
+    | `BBDCL_newtype (vs,t') ->
       let t' = reduce_type t' in
-      let descr = 
-        "\n//NEWTYPE "^si i ^" INSTANCE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+      let descr =
+        "\n//NEWTYPE "^si i ^" INSTANCE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
       let instance_name = cn typ in
       let instance = cn t' in
@@ -473,7 +473,7 @@ let gen_type syms bbdfns (index,typ) =
     | `BBDCL_abs (vs,quals,ct,_) -> ""
     | `BBDCL_cstruct (vs,cts) -> ""
     | `BBDCL_cclass (vs,cts) -> ""
-    | `BBDCL_class vs -> 
+    | `BBDCL_class vs ->
       (*
       print_endline "[gen_type] FOUND CLASS TYPE INSTANCE (doing nothing)";
       *)
@@ -481,11 +481,11 @@ let gen_type syms bbdfns (index,typ) =
 
       (*
       let name = cn typ in
-      let descr = 
-        "\n//GENERIC CLASS "^si i ^" INSTANCE TYPE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+      let descr =
+        "\n//GENERIC CLASS "^si i ^" INSTANCE TYPE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
       descr ^ "//see " ^ name ^ ";\n"
       *)
@@ -495,30 +495,30 @@ let gen_type syms bbdfns (index,typ) =
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
       let name = cn typ in
       let listwise_ctor = mk_listwise_ctor syms i name typ cts ctss in
-      let descr = 
-        "\n//GENERIC STRUCT "^si i ^" INSTANCE " ^ 
-        si index^": " ^ 
-        sbt syms.dfns typ ^ 
-        "\n" 
+      let descr =
+        "\n//GENERIC STRUCT "^si i ^" INSTANCE " ^
+        si index^": " ^
+        sbt syms.dfns typ ^
+        "\n"
       in
-      descr ^ "struct " ^ name ^ " {\n" 
+      descr ^ "struct " ^ name ^ " {\n"
       ^
       catmap ""
       (fun (name,typ) -> "  " ^ typ ^ " " ^ name ^ ";\n")
       ctss
-      ^ 
+      ^
       "  " ^ name ^ "(){}\n" ^
       listwise_ctor
       ^
       "};\n"
-      
+
 
     | `BBDCL_union _ -> ""
 
-    | _ -> 
-      failwith 
+    | _ ->
+      failwith
       (
-        "[gen_type] Expected definition "^si i^" to be generic primitive, got " ^ 
+        "[gen_type] Expected definition "^si i^" to be generic primitive, got " ^
         string_of_bbdcl syms.dfns bbdfns entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
@@ -536,37 +536,37 @@ So we have to check the name at this point, because this special
 trick is based on the representation.
 *)
 
-let gen_type_names syms bbdfns ts = 
+let gen_type_names syms bbdfns ts =
   (* print_endline "GENERATING TYPE NAMES"; *)
   let s = Buffer.create 100 in
   let handled = ref [] in
-  iter 
-  (fun (i,t) -> 
+  iter
+  (fun (i,t) ->
     try
       let name = cpp_typename syms t in
       if mem name !handled then
         () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
       else (
-        handled := name :: !handled; 
+        handled := name :: !handled;
         Buffer.add_string s (gen_type_name syms bbdfns (i,t))
       )
-    with Not_found -> 
+    with Not_found ->
       failwith ("Can't gen type name " ^ si i ^ "=" ^ sbt syms.dfns t)
   )
   ts;
   Buffer.contents s
 
-let gen_types syms bbdfns ts = 
+let gen_types syms bbdfns ts =
   (* print_endline "GENERATING TYPES"; *)
   let handled = ref [] in
   let s = Buffer.create 100 in
-  iter 
-  (fun ((i,t) as t') -> 
+  iter
+  (fun ((i,t) as t') ->
     let name = cpp_typename syms t in
     if mem name !handled then
       () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
     else (
-      handled := name :: !handled; 
+      handled := name :: !handled;
       Buffer.add_string s (gen_type syms bbdfns t')
     )
   )

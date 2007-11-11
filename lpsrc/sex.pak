@@ -156,7 +156,7 @@ type sexp_t =
 open Sex_types
 open List
 
-let emit p () = 
+let emit p () =
   let maxcol = 40 in
   let col = ref 0 in
   let newline () = p "\n"; col := 0 in
@@ -175,13 +175,13 @@ let sex_out p sex =
   | Id s -> emit s
   | Str s -> emit ("\"" ^ s ^ "\"")
   | Lst sex -> emit "("; iter pr sex; emit ")"
-  in 
+  in
   pr sex;
   p "\n"
 
 let sex_print sex = sex_out print_string sex
 
-let string_of_sex s = 
+let string_of_sex s =
   let b = Buffer.create 200 in
   sex_out (Buffer.add_string b) s;
   Buffer.contents b
@@ -190,14 +190,14 @@ let string_of_sex s =
 open Sex_types
 open List
 
-let rec sex_map f (x:sexp_t): sexp_t = 
+let rec sex_map f (x:sexp_t): sexp_t =
   match x with
   | Lst xs -> f (Lst (map (sex_map f) xs))
   | x -> f x
 
-let rec subst fresh env x = 
+let rec subst fresh env x =
   match x with
-  | Lst [Id "lambda"; Id name; y] -> 
+  | Lst [Id "lambda"; Id name; y] ->
     let z = Id ("_" ^ string_of_int (fresh())) in
     Lst [Id "lambda"; z; subst fresh ((name,z)::env) y]
 
@@ -205,7 +205,7 @@ let rec subst fresh env x =
   | Lst xs -> Lst (map (subst fresh env) xs)
   | x -> x
 
-let rec eval fresh env x = 
+let rec eval fresh env x =
   (*
   print_string "Eval "; Sex_print.sex_print x;
   *)
@@ -217,8 +217,8 @@ let rec eval fresh env x =
     let f = subst fresh env f in
     let arg = subst fresh env arg in
     (*
-    print_string "f = "; Sex_print.sex_print f; 
-    print_string "a = "; Sex_print.sex_print arg; 
+    print_string "f = "; Sex_print.sex_print f;
+    print_string "a = "; Sex_print.sex_print arg;
     *)
     begin match f with
     | Lst [Id "lambda"; Id name; body] ->
@@ -247,9 +247,9 @@ let rec eval fresh env x =
     eval fresh env r
 
   | Lst (Sym "+" :: t) as x ->
-    begin try Int (string_of_int (fold_left 
-      (fun acc x -> match eval fresh env x with 
-        | Int y -> acc + int_of_string y 
+    begin try Int (string_of_int (fold_left
+      (fun acc x -> match eval fresh env x with
+        | Int y -> acc + int_of_string y
         | _ -> raise Not_found
       )
       0 t
@@ -258,12 +258,12 @@ let rec eval fresh env x =
     end
 
   | Lst (Sym "-" :: h :: t1 :: tt) as x ->
-    let h = eval fresh env h in 
+    let h = eval fresh env h in
     begin match h with
     | Int h ->
-    begin try Int (string_of_int (fold_left 
-      (fun acc x -> match eval fresh env x with 
-        | Int y -> acc - int_of_string y 
+    begin try Int (string_of_int (fold_left
+      (fun acc x -> match eval fresh env x with
+        | Int y -> acc - int_of_string y
         | _ -> raise Not_found
       )
       (int_of_string h) (t1::tt)
@@ -277,12 +277,12 @@ let rec eval fresh env x =
     Int (string_of_int (- (int_of_string s)))
 
   | Lst (Sym "*" :: h :: t) as x ->
-    let h = eval fresh env h in 
+    let h = eval fresh env h in
     begin match h with
     | Int h ->
-    begin try Int (string_of_int (fold_left 
-      (fun acc x -> match eval fresh env x with 
-        | Int y -> acc * int_of_string y 
+    begin try Int (string_of_int (fold_left
+      (fun acc x -> match eval fresh env x with
+        | Int y -> acc * int_of_string y
         | _ -> raise Not_found
       )
       (int_of_string h) t
@@ -303,7 +303,7 @@ let rec ocs2sex (s:sval) : sexp_t =
   match s with
   | Sunbound
     -> failwith "unmapped ocs type Sunbound"
-  | Seof 
+  | Seof
     -> failwith "unmapped ocs type Seof"
   | Sreal _
     -> failwith "unmapped ocs type Sreal"
@@ -333,11 +333,11 @@ let rec ocs2sex (s:sval) : sexp_t =
   | Snull -> Lst []
   | Strue -> Id "true"
   | Sfalse -> Id "false"
-  | Sstring s -> Str s 
+  | Sstring s -> Str s
   | Ssymbol s -> Id s
   | Sint i -> Int (string_of_int i)
   | Sbigint i -> Int (Big_int.string_of_big_int i)
-  | Spair _ -> 
+  | Spair _ ->
     let svs = Ocs_misc.list_to_caml s in
     let sexs = List.map ocs2sex svs in
     Lst sexs
@@ -349,8 +349,8 @@ open Sex_types
 open List
 
 let main() =
-  let mk_fresh () = 
-    let counter = ref 0 in 
+  let mk_fresh () =
+    let counter = ref 0 in
     fun x -> let y = !counter in incr counter; y
   in
   let fresh = mk_fresh () in
@@ -368,7 +368,7 @@ let main() =
   Sex_print.sex_print sex;
   print_endline "Done"
   ;
-  let sex = Sex_map.eval fresh [] sex in 
+  let sex = Sex_map.eval fresh [] sex in
   print_endline "Evaluated:";
   Sex_print.sex_print sex
   ;
@@ -403,9 +403,9 @@ main()
   "Hello" fred 1 (2 3) (+ 30 (+ 6 4) 2)
   (lambda x (+ x x))
   (apply (lambda x (+ x x)) 42)
-  (defin fact 
-    (lambda x 
-      (ifelse x 
+  (defin fact
+    (lambda x
+      (ifelse x
         (* x (apply fact (- x 1)))
         1
       )

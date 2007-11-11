@@ -35,10 +35,10 @@ open Flx_maps
 let id x = x
 
 let remove_useless_reductions syms bbdfns reductions =
-  List.filter 
+  List.filter
   (fun (id,bvs,bps,e1,_) ->
     let psi = map (fun {pindex=i} -> i) bps in
-    let ui i = 
+    let ui i =
       let used = List.mem i psi or Hashtbl.mem bbdfns i in
       if not used then begin
         if syms.compiler_options.print_flag then
@@ -46,15 +46,15 @@ let remove_useless_reductions syms bbdfns reductions =
         raise Not_found
       end
     in
-    begin 
+    begin
       try
         Flx_maps.iter_tbexpr ui ignore ignore e1;
         if syms.compiler_options.print_flag then
         print_endline ("Keep " ^ id (* ^ " matching " ^ sbe syms.dfns bbdfns e1 *));
 
         true
-      with 
-      | Not_found -> 
+      with
+      | Not_found ->
         if syms.compiler_options.print_flag then
         print_endline ("Discard " ^ id (* ^ " matching " ^ sbe syms.dfns bbdfns e1 *));
         false
@@ -62,15 +62,15 @@ let remove_useless_reductions syms bbdfns reductions =
   )
   reductions
 
-let ematch syms bbdfns changed (name,bvs,bps,e1,e2) tvars evars e = 
+let ematch syms bbdfns changed (name,bvs,bps,e1,e2) tvars evars e =
   (*
   print_endline ("Matching " ^ sbe syms.dfns bbdfns e ^ " with " ^ sbe syms.dfns bbdfns e1);
   *)
   match Flx_unify.expr_maybe_matches syms.counter syms.dfns tvars evars e1 e with
-  | Some (tmgu,emgu) -> 
+  | Some (tmgu,emgu) ->
     changed := true;
       (*
-      print_endline ("REDUCTION: FOUND A MATCH, candidate " ^ sbe syms.dfns bbdfns e^" with reduced LHS " ^ sbe syms.dfns bbdfns e1); 
+      print_endline ("REDUCTION: FOUND A MATCH, candidate " ^ sbe syms.dfns bbdfns e^" with reduced LHS " ^ sbe syms.dfns bbdfns e1);
       print_endline ("EMGU=" ^catmap ", " (fun (i,e')-> si i ^ " --> " ^ sbe syms.dfns bbdfns e') emgu);
       print_endline ("TMGU=" ^catmap ", " (fun (i,t')-> si i ^ " --> " ^ sbt syms.dfns t') tmgu);
       *)
@@ -78,7 +78,7 @@ let ematch syms bbdfns changed (name,bvs,bps,e1,e2) tvars evars e =
     let rec s e = map_tbexpr id s (list_subst syms.counter tmgu) e in
     let e' = s e in
     (*
-    print_endline ("RESULT OF SUBSTITUTION into RHS: " ^ sbe syms.dfns bbdfns e2 ^ " is " ^ sbe syms.dfns bbdfns e); 
+    print_endline ("RESULT OF SUBSTITUTION into RHS: " ^ sbe syms.dfns bbdfns e2 ^ " is " ^ sbe syms.dfns bbdfns e);
     *)
     if syms.compiler_options.print_flag then
       print_endline ("//Reduction " ^ sbe syms.dfns bbdfns e ^ " => " ^ sbe syms.dfns bbdfns e');
@@ -106,7 +106,7 @@ let rec reduce_exe syms bbdfns reductions count exe =
   else exe
 
 let reduce_exes syms bbdfns reductions exes =
-  let xreds = map 
+  let xreds = map
   (fun ((name,bvs,bps,e1,e2) as red) ->
     let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
     let evars = map (fun {pindex=eidx} -> eidx) bps in

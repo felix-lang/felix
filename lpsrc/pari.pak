@@ -237,7 +237,7 @@ module paricom_h
   header '#include "paricom.h"';
   open C_hack;
   open parigen_h;
-  
+
   //VARIABLES
   const DEBUGLEVEL: long = 'DEBUGLEVEL';
   const polx: ptr[GEN] = 'polx';
@@ -284,7 +284,7 @@ module paridecl_h
   open C_hack;
   open parigen_h;
   open paristio_h;
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef GEN (*paridecl_h_cft_8)(long,  long);''';
   type paridecl_h_cft_8 = 'paridecl_h_cft_8';
@@ -302,7 +302,7 @@ module paridecl_h
   type paridecl_h_cft_3 = 'paridecl_h_cft_3';
   header '''typedef GEN (*paridecl_h_cft_4)(GEN);''';
   type paridecl_h_cft_4 = 'paridecl_h_cft_4';
-  
+
   //PROCEDURES
   proc Fp_intersect: long * GEN * GEN * GEN * ptr[GEN] * ptr[GEN] * GEN * GEN;
   proc affir: GEN * GEN;
@@ -410,7 +410,7 @@ module paridecl_h
   proc texe: GEN * char * long;
   proc voir: GEN * long;
   proc vpariputs: ptr[char] * va_list;
-  
+
   //FUNCTIONS
   fun FpM_mul: GEN * GEN * GEN -> GEN;
   fun FpX_nbroots: GEN * GEN -> long;
@@ -1515,7 +1515,7 @@ module parierr_h
   requires package "pari";
   header '#include "parierr.h"';
   open C_hack;
-  
+
   //ENUMERATION CONSTANTS
   const arither2: int = 'arither2';
   const negexper: int = 'negexper';
@@ -1756,11 +1756,11 @@ module parigen_h
   requires package "pari";
   header '#include "parigen.h"';
   open C_hack;
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*parigen_h_cft_1)(void const *,  void const *);''';
   type parigen_h_cft_1 = 'parigen_h_cft_1';
-  
+
   //TYPE ALIASES
   typedef GEN = ptr[long];
   typedef QSCOMP = parigen_h_cft_1;
@@ -1797,11 +1797,11 @@ module pariinl_h
   header '#include "pariinl.h"';
   open C_hack;
   open parigen_h;
-  
+
   //VARIABLES
   const overflow: ulong = 'overflow';
   const hiremainder: ulong = 'hiremainder';
-  
+
   //PROCEDURES
   proc addsii: long * GEN * GEN;
   proc addssz: long * long * GEN;
@@ -1820,7 +1820,7 @@ module pariinl_h
   proc mulsii: long * GEN * GEN;
   proc mulssz: long * long * GEN;
   proc resiiz: GEN * GEN * GEN;
-  
+
   //FUNCTIONS
   fun addll: ulong * ulong -> long;
   fun addllx: ulong * ulong -> long;
@@ -1909,8 +1909,8 @@ module paristio_h
   requires package "pari";
   header '#include "paristio.h"';
   open C_hack;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct pariFILE {
     file: ptr[FILE];
     type_: int;
@@ -1941,7 +1941,7 @@ module paristio_h
     avma: long;
     memused: long;
   }
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*paristio_h_cft_1)(char);''';
   type paristio_h_cft_1 = 'paristio_h_cft_1';
@@ -1949,16 +1949,16 @@ module paristio_h
   type paristio_h_cft_3 = 'paristio_h_cft_3';
   header '''typedef void (*paristio_h_cft_2)(char *);''';
   type paristio_h_cft_2 = 'paristio_h_cft_2';
-  
+
   //STRUCT or UNION TAG ALIASES
-  
+
   //TYPE ALIASES
   typedef byteptr = ptr[utiny];
   typedef _struct_pariFILE = pariFILE;
   typedef _struct_entree = entree;
   typedef _struct_stackzone = stackzone;
   typedef _struct_PariOUT = PariOUT;
-  
+
   //VARIABLES
   const diffptr: byteptr = 'diffptr';
   const pariOut: ptr[PariOUT] = 'pariOut';

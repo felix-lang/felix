@@ -12,12 +12,12 @@ iscr_source = [ 'lpsrc/flx_tut_macro.pak' ]
 weaver_directory = 'doc/tutorial/macros/'
 
 @env.head(1,'The PreProcessor')
-Felix provides a C like pre-processor. Note that 
+Felix provides a C like pre-processor. Note that
 whilst it is C like in appearance, it isn't the same.
 Preprocessor directives start with a # in column 1,
 followed by a keyword denoting the directive.
 @p()
-The syntax and semantics of directives are 
+The syntax and semantics of directives are
 described below.
 
 @env.head(2,'Include directive')
@@ -116,7 +116,7 @@ contain Felix literals and Felix identifiers.
 The line is then expanded by macro substitution.
 The result is then parsed as an expression and
 constant folded and must yield a boolean constant.
-Note that every name encountered must name a 
+Note that every name encountered must name a
 preprocessor macro.
 
 @select(env.test('.flx'))
@@ -210,8 +210,8 @@ Yes
 
 @env.head(1,'The Syntax Macro Processor')
 @env.head(2,'Expression Macro Facility')
-Felix provides an powerful and dangerous 
-expression macro facility. Felix macros 
+Felix provides an powerful and dangerous
+expression macro facility. Felix macros
 generally respect scope, so any definitions
 nested in a function or module, for example,
 will not be visible outside that scope.
@@ -240,7 +240,7 @@ print mx2; endl; // 102
 print mx1; endl; // 101
 print mx2; endl; // 102
 
-// illustration of rescanning 
+// illustration of rescanning
 macro val r1 = y1;
 macro val r2 = y2;
 macro val y1 = print;
@@ -342,7 +342,7 @@ a() 1;
 // call {print 1; endl; } ();
 
 // finally: recursion
-macro fun j(i) = 
+macro fun j(i) =
    if(i>0) then i + j(i-1)
    else 0 endif;
 print  (j 5); // 5 + 4 + 3 + 2 + 1 = 16
@@ -372,7 +372,7 @@ not token pasting or string manipulation.
 
 @env.head(2,'Constant Expression Folding')
 The Felix macro processor also performs constant folding;
-that is, evaluation of certain expressions involving 
+that is, evaluation of certain expressions involving
 only literals. The following operations are folded:
 @begin_table("op","descr")
 @table_row('+int','')
@@ -447,14 +447,14 @@ fun dlopen:string -> address = 'dlopen($1.data())';
 fun LoadLibrary:string -> int = 'LoadLibrary($.data())';
 fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\\n",$1.data())';
 
-macro val openlib = 
-  if Unix then dlopen 
-  elif Windows then LoadLibrary 
+macro val openlib =
+  if Unix then dlopen
+  elif Windows then LoadLibrary
   else testhook endif
 ;
 
-macro val ext = 
-  if Unix then ".so" 
+macro val ext =
+  if Unix then ".so"
   elif Windows then ".DLL"
   else ".lib_ext" endif
 ;
@@ -583,7 +583,7 @@ of itself.
 
 @select(env.test('.flx'))
 #import <flx.flxh>
-macro proc print_alot () 
+macro proc print_alot ()
 {
   macro var count = 10;
   macro start:>
@@ -647,7 +647,7 @@ macro x is x; // blocks x
 @doc()
 
 @env.head(2,'Identifier Macros')
-A identifier macros represent names. They replace names 
+A identifier macros represent names. They replace names
 in expressions and most declarations, including the
 name of a function or variable being defined.
 Names are not replaced in type expressions, patterns,
@@ -694,7 +694,7 @@ print vold; endl;
 @env.head(3,'Forgetting Macros')
 You can forget macros defined in the current scope with
 the forget statement. If no arguments are given,
-all macros defined in the current scope are forgotten. 
+all macros defined in the current scope are forgotten.
 
 @select(env.test('.flx'))
 #import <flx.flxh>
@@ -726,26 +726,26 @@ Felix provides two for loops which iterate over tuples.
 
 @select(env.test('.flx'))
 #import <flx.flxh>
-macro for val i in ("Hello","World",42) do 
+macro for val i in ("Hello","World",42) do
   print i; print " ";
 done;
 endl;
 
-macro for i in (a,b,c) do 
+macro for i in (a,b,c) do
   var i = 1;
   print$ Debug::repr_expr i; print "="; print i; endl;
 done;
 @doc()
 
 @select(env.expect())
-Hello World 42 
+Hello World 42
 PTF a:int=1
 PTF b:int=1
 PTF c:int=1
 @doc()
 
 @env.head(3,"Unpacking Tuples")
-Tuples can be unpacked by macro assignment, 
+Tuples can be unpacked by macro assignment,
 macro val, macro var, and macro for val statements.
 
 @select(env.test('.flx'))
@@ -762,8 +762,8 @@ endl;
 @doc()
 
 @select(env.expect())
-1 2 2 3 
-(1,2) (3,4) 
+1 2 2 3
+(1,2) (3,4)
 @doc()
 
 @env.head(3,"String representation")
@@ -793,14 +793,14 @@ The for val construction can be used to iterate over
 list contents. Two primitive macro functions are provided
 for constructing tuples.
 @p()
-The _tuple function takes one argument and makes a 
+The _tuple function takes one argument and makes a
 one element tuple. Note that the main Felix programming
 language does not allow one element tuples. The macro
 processor does though.
 @p()
 The _tuple_cons function takes two arguments, an element
 and a tuple, and constructs a single tuple starting
-with the first argument followed by the elements of the 
+with the first argument followed by the elements of the
 second argument: this is the usual list cons function of
 functional programming languages.
 @p()
@@ -817,7 +817,7 @@ macro for val i in x do print i; print " "; done; endl;
 @doc()
 
 @select(env.expect())
-3 2 1 
+3 2 1
 @doc()
 
 @env.head(1,"User defined syntax")
@@ -827,10 +827,10 @@ allows the programmer to extend its syntax.
 @env.head(2,"User defined operators")
 The programmer may add infix operators at a particular
 precedence level. Infix operators are any sequence
-of the special characters ~!@#$%^&*.?/\=(){}[], or, any identifier. 
+of the special characters ~!@#$%^&*.?/\=(){}[], or, any identifier.
 @p()
-Matching special characters is done greedily, 
-the longest left prefix is considered first. 
+Matching special characters is done greedily,
+the longest left prefix is considered first.
 Currently the precedence level is ignored,
 and all operators are at level 10 binding just more
 tightly than ||.

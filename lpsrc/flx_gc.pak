@@ -12,14 +12,14 @@ shape_t, which defines a type shape descriptor, and void *,
 which describes an allocated memory block, called a frame.
 @p()
 The void *data is stored at the beginning of every block
-the collector manages, this is called the header part. 
+the collector manages, this is called the header part.
 The rest of the block is for client data, and is called the client part.
 The collector manages frames in terms of pointers to the whole block,
 which are also pointers to the header. The client only sees a pointer
 to the client part.
 @p()
-The header contains links to other frames, so the collector can navigate 
-the set of blocks, and a pointer to a shape object, 
+The header contains links to other frames, so the collector can navigate
+the set of blocks, and a pointer to a shape object,
 which describes where in the client part pointers reside, so that the
 collector can chase down all the reachable blocks.
 @p()
@@ -32,7 +32,7 @@ Note that the collector is a 'world stop' synchronous collector.
 Collection only occurs when you call the collect() method of the
 collector object.
 @p()
-Note the Felix allocator abstraction is not compatible with 
+Note the Felix allocator abstraction is not compatible with
 the C++ allocator concept; instead, it is a simple wrapper
 around the malloc/free interface. It is provided primarily
 to allow instrumentation of allocations, although it is possible
@@ -43,7 +43,7 @@ to supply a user written allocator.
 @select(h)
 cpp_cpps = [
   'src/gc/flx_gc',
-  'src/gc/flx_collector', 
+  'src/gc/flx_collector',
   'src/gc/flx_ts_collector'
   ]
 

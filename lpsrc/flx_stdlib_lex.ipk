@@ -44,8 +44,8 @@ module Flx_lex
   regexp printable = ordinary | quote | dquote | slosh;
 
   /* identifiers */
-  regexp ucn = 
-      "\\u" hexdigit hexdigit hexdigit hexdigit 
+  regexp ucn =
+      "\\u" hexdigit hexdigit hexdigit hexdigit
     | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
   ;
 
@@ -58,7 +58,7 @@ module Flx_lex
   regexp oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
   regexp dec_lit  = ('0' ('d' | 'D'))? digit (underscore? digit) *;
   regexp hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
-  regexp type_suffix = 
+  regexp type_suffix =
     't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
     | "i8" | "i16" | "i32" | "i64"
     | "u8" | "u16" | "u32" | "u64"
@@ -73,12 +73,12 @@ module Flx_lex
   regexp decimal_string = digit (underscore? digit) *;
   regexp hexadecimal_string = hexdigit (underscore? hexdigit) *;
 
-  regexp decimal_fractional_constant = 
+  regexp decimal_fractional_constant =
     decimal_string '.' decimal_string?
     | '.' decimal_string
-  ; 
+  ;
 
-  regexp hexadecimal_fractional_constant = 
+  regexp hexadecimal_fractional_constant =
     ("0x" |"0X")
     (hexadecimal_string '.' hexadecimal_string?
     | '.' hexadecimal_string)
@@ -88,7 +88,7 @@ module Flx_lex
   regexp binary_exponent = ('P'|'p') ('+'|'-')? decimal_string;
 
   regexp floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd';
-  regexp floating_literal = 
+  regexp floating_literal =
     (
       decimal_fractional_constant decimal_exponent? |
       hexadecimal_fractional_constant binary_exponent?
@@ -134,7 +134,7 @@ module Flx_lex
   regexp uqqq_string = qqq_string;
   regexp ud_string = d_string;
   regexp uddd_string = ddd_string;
- 
+
   regexp q_quote = quote;
   regexp d_quote = dquote;
   regexp qqq_quote = qqq;
@@ -181,15 +181,15 @@ module Flx_lex
 
   fun to_eol(s:Lexer::iterator, e:Lexer::iterator) =
   {
-    return 
-      match 
+    return
+      match
         reglex s to e with
         | .* "\n" => ()
         endmatch
-      with 
+      with
       | ?p,_ => p
       endmatch
-    ; 
+    ;
   }
 
   fun to_end_c_comment(s:Lexer::iterator, e:Lexer::iterator) =
@@ -198,7 +198,7 @@ module Flx_lex
     var again = true;
     while { again }
     {
-      match 
+      match
         reglex j to e with
         | "*" "/" => "end"
         | "*" => "chars"
@@ -227,17 +227,17 @@ module Flx_lex
     | White
     | Eol
     | Error
-    
+
     | qQuote
     | qqqQuote
     | dQuote
     | dddQuote
-    
+
     | wqQuote
     | wqqqQuote
     | wdQuote
     | wdddQuote
-    
+
     | uqQuote
     | uqqqQuote
     | udQuote
@@ -253,7 +253,7 @@ module Flx_lex
 @for k,s in flx_3_char_syms: tangle('    | ' +k,inhibit_sref=1)
 
   ;
-    
+
   fun pre_flx_lex(s:Lexer::iterator, e:Lexer::iterator) =
   {
     return reglex s to e with
@@ -290,7 +290,7 @@ module Flx_lex
 @for k,s in flx_1_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
 @for k,s in flx_2_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
 @for k,s in flx_3_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
- 
+
     /* whitespace */
     | white + => White
 

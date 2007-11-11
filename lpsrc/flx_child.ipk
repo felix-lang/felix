@@ -5,7 +5,7 @@ open Flx_types
 open Flx_mtypes1
 open Flx_mtypes2
 
-type child_map_t = 
+type child_map_t =
   (bid_t, bid_t list) Hashtbl.t
 
 val find_children:
@@ -14,10 +14,10 @@ val find_children:
 val is_child:
   child_map_t -> bid_t -> bid_t -> bool
 
-val add_child: 
+val add_child:
   child_map_t -> bid_t -> bid_t -> unit
 
-val remove_child: 
+val remove_child:
   child_map_t -> bid_t -> bid_t -> unit
 
 val is_ancestor:
@@ -40,14 +40,14 @@ open Flx_mtypes2
 open List
 open Flx_util
 
-let hfind msg h k = 
+let hfind msg h k =
   try Hashtbl.find h k
   with Not_found ->
     print_endline ("flx_child Hashtbl.find failed " ^ msg);
     raise Not_found
 
 
-type child_map_t = 
+type child_map_t =
   (bid_t, bid_t list) Hashtbl.t
 
 let find_children childmap parent =
@@ -60,7 +60,7 @@ let add_child childmap parent child =
   let kids = find_children childmap parent in
   Hashtbl.replace childmap parent (child::kids)
 
-(* failure to find a parent shouldn't happen, 
+(* failure to find a parent shouldn't happen,
   except perhaps for typeclass methods,
   but it seems to and appear harmless ..??
 *)
@@ -72,18 +72,18 @@ let is_ancestor bbdfns child anc =
     let _,parent,_,_ = Hashtbl.find bbdfns child in
     match parent with
     | None -> false
-    | Some x -> 
-      if x = anc then true 
+    | Some x ->
+      if x = anc then true
       else is_anc x anc
   in
-  try 
-    is_anc child anc 
-    with Not_found -> 
+  try
+    is_anc child anc
+    with Not_found ->
       (*
       print_endline ("Can't find some ancestor of " ^ si child ^ " ..instance typeclass?");
       *)
       false
-    
+
 let remove_child childmap parent child =
   let kids = find_children childmap parent in
   let kids = filter (fun i -> i <> child) kids in
@@ -94,7 +94,7 @@ let rec descendants child_map index =
   let d = ref IntSet.empty in
   let children = find_children child_map index in
   iter
-  (fun i -> 
+  (fun i ->
     if not (IntSet.mem i !d) then
     begin
       d := IntSet.add i !d;

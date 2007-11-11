@@ -5,7 +5,7 @@ open Flx_ast
 open Flx_types
 open Flx_mtypes2
 
-type overload_result = 
+type overload_result =
  int *  (* index of function *)
  btypecode_t * (* type of function signature *)
  btypecode_t * (* type of function return *)
@@ -13,7 +13,7 @@ type overload_result =
  btypecode_t list (* ts *)
 
 val overload:
-  sym_state_t -> 
+  sym_state_t ->
   (range_srcref  -> int -> typecode_t -> btypecode_t) -> (* bind type *)
   (int -> expr_t -> tbexpr_t) -> (* bind expression in context of i *)
   (int -> qualified_name_t -> entry_set_t * typecode_t list) ->
@@ -49,14 +49,14 @@ open Flx_maps
 
 exception OverloadKindError of range_srcref * string
 
-type overload_result = 
+type overload_result =
  int *  (* index of function *)
  btypecode_t * (* type of function signature *)
  btypecode_t * (* type of function return *)
  (int * btypecode_t) list * (* mgu *)
  btypecode_t list (* ts *)
 
-type result = 
+type result =
   | Unique of overload_result
   | Fail
 
@@ -64,13 +64,13 @@ let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
 
-let get_data table index : symbol_data_t = 
+let get_data table index : symbol_data_t =
   try Hashtbl.find table index
-  with Not_found -> 
+  with Not_found ->
     failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
 
-let sig_of_symdef symdef sr name i = match symdef with 
-  | `SYMDEF_match_check (_) 
+let sig_of_symdef symdef sr name i = match symdef with
+  | `SYMDEF_match_check (_)
     -> `TYP_tuple[],`TYP_sum [`TYP_tuple[];`TYP_tuple[]],None (* bool *)
 
   (* primitives *)
@@ -78,14 +78,14 @@ let sig_of_symdef symdef sr name i = match symdef with
     -> typeof_list ps,r,None
 
   | `SYMDEF_callback (_,ts_orig,r,_)
-    -> 
-      let ts_f = 
-        filter 
-        (function 
+    ->
+      let ts_f =
+        filter
+        (function
           | `AST_name (_,id,[]) when id = name -> false
           | t -> true
-        ) 
-        ts_orig 
+        )
+        ts_orig
       in
       let tf_args = match ts_f with
         | [x] -> x
@@ -100,16 +100,16 @@ let sig_of_symdef symdef sr name i = match symdef with
       *)
       let ts_cf =
         map
-        (function 
+        (function
           | `AST_name (_,id,[]) when id = name -> tf
           | t -> t
-        ) 
-        ts_orig 
+        )
+        ts_orig
       in
       typeof_list ts_cf,r,None
 
   | `SYMDEF_function (ps,r,_,_)
-    -> 
+    ->
     let p = fst ps in
     begin match p,r with
     (*
@@ -134,7 +134,7 @@ let sig_of_symdef symdef sr name i = match symdef with
     begin match t with
     | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r,None
     | `TYP_case _ -> `TYP_type,`TYP_type,None
-    | symdef -> 
+    | symdef ->
       raise (OverloadKindError (sr,
         "[sig_of_symdef] Expected "^
         name
@@ -142,8 +142,8 @@ let sig_of_symdef symdef sr name i = match symdef with
         string_of_typecode t
       ))
     end
-  
-  | symdef -> 
+
+  | symdef ->
     raise (OverloadKindError (sr,
       "[sig_of_symdef] Expected "^
       name
@@ -152,15 +152,15 @@ let sig_of_symdef symdef sr name i = match symdef with
     ))
 
 let resolve syms i =
-  match get_data syms.dfns i with 
+  match get_data syms.dfns i with
   {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
-  let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} = 
-    find_split_vs syms i 
+  let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} =
+    find_split_vs syms i
   in
   let t,r,pnames = sig_of_symdef symdef sr id i in
   id,sr,parent,vs,pvs,con,rtcr,t,r,pnames
 
-let rec unravel_ret tin dts = 
+let rec unravel_ret tin dts =
   match tin with
   | `BTYP_function (a,b) -> unravel_ret b (a::dts)
   | _ -> rev dts
@@ -171,21 +171,21 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 (* Note this bt must bind types in the base context *)
-let consider syms bt be luqn2 name 
+let consider syms bt be luqn2 name
   ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
-  input_ts arg_types call_sr 
+  input_ts arg_types call_sr
 : overload_result option =
     let bt sr t = bt sr i t in
-    let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames = 
-      resolve syms i 
+    let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames =
+      resolve syms i
     in
     let fixup_argtypes argt rs =
       begin match pnames with
         | None -> argt
         | Some ps ->
-        match 
-          begin try 
-            iter (fun (name,_)->ignore (assoc name ps)) rs; 
+        match
+          begin try
+            iter (fun (name,_)->ignore (assoc name ps)) rs;
             true
           with Not_found -> false
           end
@@ -195,31 +195,31 @@ let consider syms bt be luqn2 name
         | `TYP_record _ -> argt
         | `TYP_tuple [] -> argt (* lazy *)
         | _ ->
-        let ps = 
-          map (fun (name,e) -> 
-            name, 
-            match e with 
-            | None -> None 
+        let ps =
+          map (fun (name,e) ->
+            name,
+            match e with
+            | None -> None
             | Some e -> Some (be i e)
           )
           ps
         in
-        begin 
+        begin
           try
-            let ats = map (fun (name,d)-> 
+            let ats = map (fun (name,d)->
               try assoc name rs
               with Not_found ->
               match d with (* ok to skip if there is a default *)
               | Some (e,t) -> t
               | None -> raise Not_found
-            ) ps 
+            ) ps
             in
             let t = match ats with
               | [] -> assert false
               | [x] -> x
-              | _ -> `BTYP_tuple ats 
+              | _ -> `BTYP_tuple ats
             in
-            t 
+            t
           with Not_found -> argt
         end
       end
@@ -233,7 +233,7 @@ let consider syms bt be luqn2 name
     (*
     if length rtcr > 0 then begin
       (*
-      print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^ 
+      print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^
       catmap "," string_of_qualified_name rtcr);
       *)
       iter
@@ -251,26 +251,26 @@ let consider syms bt be luqn2 name
     (*
     print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
     begin
-      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs); 
-      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs); 
-      print_endline ("sub TS=" ^ catmap "," (sbt syms.dfns) sub_ts); 
-      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs); 
-      print_endline ("input TS=" ^ catmap "," (sbt syms.dfns) input_ts); 
+      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
+      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
+      print_endline ("sub TS=" ^ catmap "," (sbt syms.dfns) sub_ts);
+      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs);
+      print_endline ("input TS=" ^ catmap "," (sbt syms.dfns) input_ts);
     end
     ;
     *)
-    (* these are wrong .. ? or is it just shitty table? 
+    (* these are wrong .. ? or is it just shitty table?
        or is the mismatch due to unresolved variables?
     *)
-    if (length base_vs != length sub_ts) then 
+    if (length base_vs != length sub_ts) then
     begin
       print_endline "WARN: VS != SUB_TS";
       print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
-      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs); 
-      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs); 
-      print_endline ("sub TS=" ^ catmap "," (sbt syms.dfns) sub_ts); 
-      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs); 
-      print_endline ("input TS=" ^ catmap "," (sbt syms.dfns) input_ts); 
+      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
+      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
+      print_endline ("sub TS=" ^ catmap "," (sbt syms.dfns) sub_ts);
+      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs);
+      print_endline ("input TS=" ^ catmap "," (sbt syms.dfns) input_ts);
     end
     ;
     (*
@@ -299,7 +299,7 @@ let consider syms bt be luqn2 name
       let t = spec t in
       t
     in
-      
+
     let con = bt sr con in
     let domain = bt sr base_domain in
     let spec_domain = spec domain in
@@ -311,10 +311,10 @@ let consider syms bt be luqn2 name
     print_endline ("BASE Return type of function " ^ id^ "<"^si i^">=" ^ sbt syms.dfns spec_result);
     *)
 
-    (* unravel function a->b->c->d->..->z into domains a,b,c,..y 
+    (* unravel function a->b->c->d->..->z into domains a,b,c,..y
       to match curry argument list
     *)
-    let curry_domains = 
+    let curry_domains =
       try unravel_ret spec_result []
       with _ -> print_endline "Failed to unravel candidate return type!"; []
     in
@@ -339,7 +339,7 @@ let consider syms bt be luqn2 name
        (b) signatures with arguments
 
        which hopefully produces mgu with all the spec_vs variables
-      
+
        If this succeeds, we plug these into the sub_ts to get
        assignments for base_vs, eliminating the spec vs and
        base vs variables. The parent variables must not be
@@ -353,12 +353,12 @@ let consider syms bt be luqn2 name
        can be the same as the base variables of the called
        function, but they have to be treated like constants.
        for example here:
-    
+
        fun f[t] ... => .... f[g t]
 
        the 't' in f[g t] has to be treated like a constant.
 
-       So the base_vs variables are renamed in the 
+       So the base_vs variables are renamed in the
        function signature where they're dependent.
 
        The spec vs variables don't need renaming
@@ -372,8 +372,8 @@ let consider syms bt be luqn2 name
     (* Step1: make equations for the ts *)
 
     let n_parent_vs = length parent_vs in
-    let n_base_vs = length base_vs in 
-    let n_spec_vs = length spec_vs in 
+    let n_base_vs = length base_vs in
+    let n_spec_vs = length spec_vs in
     let n_sub_ts = length sub_ts in
     let n_input_ts = length input_ts in
 
@@ -396,7 +396,7 @@ let consider syms bt be luqn2 name
     (*
     print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt syms.dfns) curry_domains);
     *)
-    let curry_domains = map (fun t -> list_subst syms.counter eqnsi t) curry_domains in 
+    let curry_domains = map (fun t -> list_subst syms.counter eqnsi t) curry_domains in
 
     (*
     print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt syms.dfns) curry_domains);
@@ -429,7 +429,7 @@ let consider syms bt be luqn2 name
     *)
 
     let mgu = maybe_specialisation syms.counter syms.dfns eqns in
-    (* 
+    (*
     (* doesn't work .. fails to solve for some vars
        which aren't local vs of the fun .. this case:
 
@@ -439,13 +439,13 @@ let consider syms bt be luqn2 name
        sure why it should tho .. w should be fixed
        already by the instance match .. hmm ..
     *)
-    let mgu = 
+    let mgu =
       try Some (unification true syms.dfns eqns !dvars)
       with Not_found -> None
     in
     *)
     match mgu with
-    | Some mgu -> 
+    | Some mgu ->
       (*
       print_endline "Specialisation detected";
       print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
@@ -456,7 +456,7 @@ let consider syms bt be luqn2 name
 
         THIS CANNOT HAPPEN NOW!
         JS: 13/3/2006 .. oh yes it can!
-        
+
       *)
       (* Below algorithm is changed! We now make list
          of unresolved dependent variables, and see
@@ -469,7 +469,7 @@ let consider syms bt be luqn2 name
       print_endline "Check for unresolved";
       *)
       let unresolved = ref (
-        fold_left2 
+        fold_left2
         (fun acc (s,i) k ->
           if not (mem_assoc i !mgu) then (s,i,`TYP_type,k)::acc else acc
         )
@@ -477,14 +477,14 @@ let consider syms bt be luqn2 name
       )
       in
 
-      let th i = match i with 
+      let th i = match i with
         | 0 -> "first"
         | 1 -> "second"
         | 2 -> "third"
         | _ -> si (i+1) ^ "'th"
       in
 
-      let report_unresolved = 
+      let report_unresolved =
         (*
         let maybe_tp tp = match tp with
           | `TPAT_any -> ""
@@ -506,27 +506,27 @@ let consider syms bt be luqn2 name
         "WARNING: experimental feature coming up\n" ^
         "Below would be an error, but we try now to do more work\n" ^
         (* clierr call_sr ( *)
-          "[resolve_overload] In application of " ^ id ^ 
+          "[resolve_overload] In application of " ^ id ^
           " cannot resolve:\n" ^
-          report_unresolved ^ 
+          report_unresolved ^
          "Try using explicit subscript" ^
-         "\nMost General Unifier(mgu)=\n" ^ string_of_varlist syms.dfns !mgu 
+         "\nMost General Unifier(mgu)=\n" ^ string_of_varlist syms.dfns !mgu
         )
       ;
       *)
-(*      
+(*
       if length !unresolved > 0 then None else
 *)
 
       (* HACKERY to try to get more values from type patterns*)
-(*      
-      if length !unresolved > 0 then 
-*)      
+(*
+      if length !unresolved > 0 then
+*)
       begin
         (* convert mgu from spec vars to base vars *)
         let basemap = map2 (fun (_,i,_) t -> i,list_subst syms.counter !mgu t) base_vs sub_ts in
         (*
-        print_endline ("New basemap: " ^ catmap "," 
+        print_endline ("New basemap: " ^ catmap ","
           (fun (i,t) -> si i ^ "->" ^ sbt syms.dfns t)
           basemap
         );
@@ -534,21 +534,21 @@ let consider syms bt be luqn2 name
 
         let extra_eqns = ref [] in
         let dvars = ref IntSet.empty in
-        iter (fun (_,i)-> 
+        iter (fun (_,i)->
           if not (mem_assoc i !mgu) then (* mgu vars get eliminated *)
           dvars := IntSet.add i !dvars
-        ) 
+        )
         spec_vs;
 
         iter (fun (s,j',tp) ->
-           let et,explicit_vars1,any_vars1, as_vars1, eqns1 = 
+           let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
             type_of_tpattern syms tp
            in
            let et = spec_bt sr et in
            let et = list_subst syms.counter !mgu et in
            let et = beta_reduce syms sr et in
            (*
-           print_endline ("After substitution of mgu, Reduced type is:\n  " ^ 
+           print_endline ("After substitution of mgu, Reduced type is:\n  " ^
              sbt syms.dfns et)
            ;
            *)
@@ -556,8 +556,8 @@ let consider syms bt be luqn2 name
            (* tp is a metatype .. it could be a pattern-like thing, which is
            a constraint. But it could also be an actual meta-type! In that
            case it is a constraint too, but not the right kind of constraint.
-           EG in 
-           
+           EG in
+
               j' -> fun (x:TYPE):TYPE=>x : TYPE->TYP
 
            the TYPE->TYPE is a constraint only in the sense that it
@@ -566,7 +566,7 @@ let consider syms bt be luqn2 name
            to a typing constraint .. and no additional constraint.
 
            So we have to eliminate these from consideration
-           
+
            *)
 
            (*
@@ -586,24 +586,24 @@ let consider syms bt be luqn2 name
              *)
              extra_eqns := (t1,t2) :: !extra_eqns
            end
-           ; 
+           ;
 
            (* THIS CODE DOES NOT WORK RIGHT YET *)
            if length explicit_vars1 > 0 then
-           print_endline ("Explicit ?variables: " ^ 
+           print_endline ("Explicit ?variables: " ^
              catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") explicit_vars1)
            ;
            iter
-           (fun (i,s) -> 
+           (fun (i,s) ->
              let coupled = filter (fun (s',_,_) -> s = s') base_vs in
              match coupled with
              | [] -> ()
-             | [s',k,pat] -> 
+             | [s',k,pat] ->
                 print_endline (
-                    "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^ 
+                    "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^
                   " pat=" ^ string_of_typecode pat);
-             let t1 = `BTYP_var (i,`BTYP_type 0) in 
-             let t2 = `BTYP_var (k,`BTYP_type 0) in 
+             let t1 = `BTYP_var (i,`BTYP_type 0) in
+             let t2 = `BTYP_var (k,`BTYP_type 0) in
              print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
              extra_eqns := (t1,t2) :: !extra_eqns;
              (*
@@ -617,7 +617,7 @@ let consider syms bt be luqn2 name
            ;
 
            if length as_vars1 > 0 then begin
-             print_endline ("As variables: " ^ 
+             print_endline ("As variables: " ^
                catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
              ;
              print_endline "RECURSIVE?? AS VARS NOT HANDLED YET"
@@ -625,25 +625,25 @@ let consider syms bt be luqn2 name
 
            (*
            if length any_vars1 > 0 then
-           print_endline ("Wildcard variables: " ^ 
+           print_endline ("Wildcard variables: " ^
              catmap "," (fun i -> "<" ^ si i ^ ">") any_vars1)
            ;
            *)
 
            (* add wildcards to dependent variable set ?? *)
            iter (fun i-> dvars := IntSet.add i !dvars) any_vars1;
- 
+
            (* add 'as' equations from patterns like
               t as v
            *)
            iter (fun (i,t) -> let t2 = bt sr t in
-             let t1 = `BTYP_var (i,`BTYP_type 0) in 
+             let t1 = `BTYP_var (i,`BTYP_type 0) in
              extra_eqns := (t1,t2) :: !extra_eqns
            ) eqns1;
 
            (*
            if length eqns1 > 0 then
-           print_endline ("Equations for as terms (unbound): " ^ 
+           print_endline ("Equations for as terms (unbound): " ^
              catmap "\n" (fun (i,t) -> si i ^ " -> " ^ string_of_typecode t) eqns1)
            ;
            *)
@@ -677,35 +677,35 @@ let consider syms bt be luqn2 name
           (IntSet.fold (fun i l-> i::l) !dvars [])
         );
         *)
-        let maybe_extra_mgu = 
+        let maybe_extra_mgu =
           try Some (unification false syms.counter syms.dfns !extra_eqns !dvars)
           with Not_found -> None
         in
         match maybe_extra_mgu with
         | None -> () (* print_endline "COULDN'T RESOLVE EQUATIONS"  *)
-        | Some extra_mgu -> 
+        | Some extra_mgu ->
            (*
            print_endline ("Resolved equations with mgu:\n  " ^
               string_of_varlist syms.dfns extra_mgu)
            ;
            *)
-           let ur = !unresolved in 
+           let ur = !unresolved in
            unresolved := [];
-           iter (fun ((s,i,_,k) as u) -> 
+           iter (fun ((s,i,_,k) as u) ->
              (*
              let j = base + k in
              *)
              let j = i in
-             if mem_assoc j extra_mgu 
+             if mem_assoc j extra_mgu
              then begin
-                let t = assoc j extra_mgu in 
+                let t = assoc j extra_mgu in
                 (*
-                print_endline ("CAN NOW RESOLVE " ^ 
+                print_endline ("CAN NOW RESOLVE " ^
                   th k ^ " vs term " ^ s ^ "<"^ si i^"> ---> " ^ sbt syms.dfns t)
                 ;
                 *)
                 mgu := (j,t) :: !mgu
-             end 
+             end
              else begin
                (*
                print_endline ("STILL CANNOT RESOLVE " ^ th k ^ " vs term " ^ s ^ "<"^si i^">");
@@ -720,7 +720,7 @@ let consider syms bt be luqn2 name
 
       if length !unresolved > 0 then None else begin
         let ok = ref true in
-        iter 
+        iter
         (fun sign ->
           if sign <> list_subst syms.counter !mgu sign then
           begin
@@ -728,13 +728,13 @@ let consider syms bt be luqn2 name
             (*
             print_endline ("At " ^ short_string_of_src call_sr);
             (*
-            clierr call_sr 
+            clierr call_sr
             *)
             print_endline
             (
-              "[resolve_overload] Unification of function " ^ 
+              "[resolve_overload] Unification of function " ^
               id ^ "<" ^ si i ^ "> signature " ^
-              sbt syms.dfns domain ^ 
+              sbt syms.dfns domain ^
               "\nwith argument type " ^ sbt syms.dfns sign ^
               "\nhas mgu " ^ string_of_varlist syms.dfns !mgu ^
               "\nwhich specialises a variable of the argument type"
@@ -742,22 +742,22 @@ let consider syms bt be luqn2 name
             *)
           end
         )
-        arg_types 
+        arg_types
         ;
-        if not (!ok) then None else 
+        if not (!ok) then None else
         (*
         print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns !mgu);
         *)
         (* RIGHT! *)
-(*        
+(*
         let ts = map (fun i -> assoc (base+i) !mgu) (nlist (m+k)) in
-*)        
+*)
         (* The above ts is for plugging into the view, but we
           have to return the elements to plug into the base
           vs list, this is the sub_ts with the above ts plugged in,
           substituting away the view vs
         *)
-       
+
         let base_ts = map (list_subst syms.counter !mgu) sub_ts in
 
         (*
@@ -791,17 +791,17 @@ let consider syms bt be luqn2 name
         print_endline ("Reduced type constraint " ^ sbt syms.dfns reduced_constraint);
         *)
         begin match reduced_constraint with
-        | `BTYP_void -> 
+        | `BTYP_void ->
           (*
           print_endline "Constraint failure, rejecting candidate";
           *)
           None
-        | `BTYP_tuple [] -> 
+        | `BTYP_tuple [] ->
           let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
-        | x -> 
-          clierr sr 
+        | x ->
+          clierr sr
           ("[overload] Cannot resolve type constraint! " ^
             sbt syms.dfns type_constraint ^
             "\nReduced to " ^ sbt syms.dfns x
@@ -809,23 +809,23 @@ let consider syms bt be luqn2 name
         end
       end
 
-    | None -> 
+    | None ->
       (*
-      print_endline "No match"; 
+      print_endline "No match";
       *)
       None
- 
-let overload 
-  syms 
-  bt be 
+
+let overload
+  syms
+  bt be
   luqn2
-  call_sr 
+  call_sr
   (fs : entry_kind_t list)
   (name: string)
-  (sufs : btypecode_t list) 
-  (ts:btypecode_t list) 
-: 
-  overload_result option 
+  (sufs : btypecode_t list)
+  (ts:btypecode_t list)
+:
+  overload_result option
 =
   (*
   print_endline ("Overload " ^ name);
@@ -834,18 +834,18 @@ let overload
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
   *)
   (* HACK for the moment *)
-  let aux i =  
+  let aux i =
     match consider syms bt be luqn2 name i ts sufs call_sr with
     | Some x -> Unique x
     | None -> Fail
   in
   let fun_defs = List.map aux fs in
-  let candidates = 
-    List.filter 
+  let candidates =
+    List.filter
     (fun result -> match result with
       | Unique _ -> true
       | Fail -> false
-    ) 
+    )
     fun_defs
   in
     (*
@@ -878,29 +878,29 @@ let overload
 
   let candidates = fold_left
   (fun oc r ->
-     match r with Unique (j,c,_,_,_) -> 
+     match r with Unique (j,c,_,_,_) ->
      (*
      print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
      *)
      let rec aux lhs rhs =
        match rhs with
-       | [] -> 
+       | [] ->
          (*
          print_endline "return elements plus candidate";
          *)
          r::lhs (* return all non-greater elements plus candidate *)
-       | (Unique(i,typ,rtyp,mgu,ts) as x)::t 
+       | (Unique(i,typ,rtyp,mgu,ts) as x)::t
        ->
          (*
          print_endline (" .. comparing with " ^ sbt syms.dfns typ);
          *)
          begin match compare_sigs syms.counter syms.dfns typ c with
-         | `Less -> 
+         | `Less ->
            (*
            print_endline "Candidate is more general, discard it, retain whole list";
            *)
-           lhs @ rhs (* keep whole list, discard c *) 
-         | `Equal -> 
+           lhs @ rhs (* keep whole list, discard c *)
+         | `Equal ->
            (* same function .. *)
            if i = j then aux lhs t else
            let sr = match (try Hashtbl.find syms.dfns i with Not_found -> failwith "ovrload BUGGED") with {sr=sr} -> sr in
@@ -912,12 +912,12 @@ let overload
              "\n(2) fun " ^ si j^ ":"^ sbt syms.dfns c
            )
 
-         | `Greater -> 
+         | `Greater ->
            (*
            print_endline "Candidate is less general: discard this element";
            *)
            aux lhs t (* discard greater element *)
-         | `Incomparable -> 
+         | `Incomparable ->
            (*
            print_endline "Candidate is comparable, retail element";
            *)
@@ -930,27 +930,27 @@ let overload
   []
   candidates in
   match candidates with
-  | [Unique (i,t,rtyp,mgu,ts)] -> 
+  | [Unique (i,t,rtyp,mgu,ts)] ->
     (*
     print_endline ("[overload] Got unique result " ^ si i);
     *)
     Some (i,t,rtyp,mgu,ts)
 
   | [] -> None
-  | _ -> 
-    clierr call_sr 
+  | _ ->
+    clierr call_sr
     (
       "Too many candidates match in overloading " ^ name ^
       " with argument types " ^ catmap "," (sbt syms.dfns) sufs ^
       "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
-      catmap "\n" (function 
+      catmap "\n" (function
         | Unique (i,t,_,_,_) ->
-          qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ 
+          qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^
           sbt syms.dfns t
         | Fail -> assert false
-      ) 
+      )
       candidates
-      ^ 
+      ^
       "\nPerhaps you need to define a function more specialised than all these?"
     )
 
@@ -958,7 +958,7 @@ let overload
 NEEDS TO BE MODIFIED TO FIND **ALL** FUNCTIONS .. alternatively,
 keep the results from overload resolution for each scope, and resubmit
 in a deeper scope: then if there is a conflict between signatures
-(equal or unordered) the closest is taken if that resolves the 
+(equal or unordered) the closest is taken if that resolves the
 conflict
 *)
 

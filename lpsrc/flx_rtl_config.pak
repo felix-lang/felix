@@ -56,7 +56,7 @@ struct alignment_of
     >::value));
 };
 
-template<std::size_t L, std::size_t A> 
+template<std::size_t L, std::size_t A>
 struct aligned_storage
 {
   union type
@@ -67,16 +67,16 @@ struct aligned_storage
 };
 
 template<typename T>
-struct store_of 
+struct store_of
 {
   typedef typename aligned_storage<sizeof(T), alignment_of<T>::value>::type type;
 };
 
 // convert an rvalue to an lvalue
-template<typename T> 
-T const &lvalue(T const &x) 
-{ 
-  return x; 
+template<typename T>
+T const &lvalue(T const &x)
+{
+  return x;
 }
 
 // this reinterpret cast works with rvalues too
@@ -195,7 +195,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
   tangle("#define FLX_USE_REGPARM3 1")
  else:
   tangle("#define FLX_USE_REGPARM3 0")
-  
+
 @if HAVE_ASM_LABELS:
   tangle("#define FLX_HAVE_ASM_LABELS 1")
  else:
@@ -328,9 +328,9 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 #define FLX_UNUSED __attribute__((unused))
 #else
 #define FLX_ALWAYS_INLINE
-#define FLX_NOINLINE 
+#define FLX_NOINLINE
 #define FLX_CONST
-#define FLX_PURE 
+#define FLX_PURE
 #define FLX_GXX_PARSER_HACK
 #define FLX_UNUSED
 #endif

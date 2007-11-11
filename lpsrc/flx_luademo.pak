@@ -48,15 +48,15 @@ module Lua
   const LUA_ERRMEM      : int; // 4
   const LUA_ERRERR      : int; // 5
 
-  const LUA_IDSIZE      : int; 
+  const LUA_IDSIZE      : int;
   const LUA_NUMBER_FMT  : charp;
   const LUA_NUMBER_SCAN : charp;
 
-  const LUA_REFNIL      : int; 
-  const LUA_NOREF       : int; 
+  const LUA_REFNIL      : int;
+  const LUA_NOREF       : int;
 
-  const LUA_MINSTACK    : int; 
-  const LUA_GLOBALSINDEX  :int; 
+  const LUA_MINSTACK    : int;
+  const LUA_GLOBALSINDEX  :int;
   const LUA_REGISTRYINDEX : int;
   const LUA_MULTRET     :int;
 
@@ -65,8 +65,8 @@ module Lua
   const LUA_COPYRIGHT   :charp;
   const LUA_VERSION     :charp;
 
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct luaL_reg {
     name: cptr[char];
     func: lua_CFunction;
@@ -78,8 +78,8 @@ module Lua
     L: lua_t;
     buffer: ptr[char];
   }
-   
-  
+
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*lua_lua_h_cft_3)(lua_State *, void const *,  size_t, void *);''';
   type lua_lua_h_cft_3 = 'lua_lua_h_cft_3';
@@ -88,7 +88,7 @@ module Lua
 
   ctypes lua_CFunction;
   type lua_t = "lua_State*";
-  
+
   //TYPE ALIASES
   typedef lua_Chunkwriter = lua_lua_h_cft_3;
   typedef lua_Hook = lua_lua_h_cft_4;
@@ -133,13 +133,13 @@ module Lua
 
 
   comment "3.4 - Querying the Stack";
-  fun lua_isnoneornil: lua_t * int -> bool; 
-  fun lua_isnone: lua_t * int -> bool;      
-  fun lua_isboolean: lua_t * int -> bool;  
-  fun lua_isnil: lua_t * int -> bool;     
-  fun lua_islightuserdata: lua_t * int -> bool; 
-  fun lua_istable: lua_t * int -> bool;       
-  fun lua_isfunction: lua_t * int -> bool;   
+  fun lua_isnoneornil: lua_t * int -> bool;
+  fun lua_isnone: lua_t * int -> bool;
+  fun lua_isboolean: lua_t * int -> bool;
+  fun lua_isnil: lua_t * int -> bool;
+  fun lua_islightuserdata: lua_t * int -> bool;
+  fun lua_istable: lua_t * int -> bool;
+  fun lua_isfunction: lua_t * int -> bool;
   fun lua_iscfunction: lua_t * int -> int;
   fun lua_isnumber: lua_t * int -> int;
   fun lua_isstring: lua_t * int -> int;
@@ -172,7 +172,7 @@ module Lua
 
   comment "3.6 Pushing Values onto the Stack";
   proc lua_pushboolean: lua_t * int;
-  proc lua_pushcfunction: lua_t * lua_CFunction; 
+  proc lua_pushcfunction: lua_t * lua_CFunction;
   proc lua_pushcclosure: lua_t * lua_CFunction * int;
   proc lua_pushlightuserdata: lua_t * address;
   proc lua_pushlstring: lua_t * cptr[char] * size;
@@ -208,12 +208,12 @@ module Lua
 
   publish "Load chunk using C chunkreader function"
   fun lua_load: lua_t * lua_Chunkreader_p * address * cptr[char] -> int;
-  
+
   comment """
     Felix callback wrapper for lua chunkreader type.
     This target callback type just returns a string.
   """;
-  
+
   // the wrapper for the Felix callback, has type lua_Chunkreader
   header fcbw_chrd_dcl =
   '''
@@ -242,11 +242,11 @@ module Lua
       // return the data to Lua
       return data;
     }
-  ''' 
+  '''
     requires fcbw_chrd_dcl;
 
   // make the C wrapper available to Felix
-  const _fcbw_chrd: lua_Chunkreader_p = "_fcbw_chrd" 
+  const _fcbw_chrd: lua_Chunkreader_p = "_fcbw_chrd"
     requires fcbw_chrd_def;
 
   // The wrapper for load accepts a Felix callback
@@ -256,10 +256,10 @@ module Lua
   publish "Felix wrapper for lua_load"
   fun wrapper_lua_load
   (
-    a1: lua_t, 
-    a2: lua_t -> string, 
+    a1: lua_t,
+    a2: lua_t -> string,
     a4: string
-  ): int= 
+  ): int=
   {
     return lua_load(a1, _fcbw_chrd, C_hack::cast[address]a2, C_hack::enconst (cstr a4));
   }
@@ -347,7 +347,7 @@ module Lua
   fun luaopen_math: lua_t -> int;
   fun luaopen_string: lua_t -> int;
   fun luaopen_table: lua_t -> int;
- 
+
   comment "Verson";
   fun lua_version: 1 -> cptr[char];
 
@@ -362,7 +362,7 @@ module Lua
 //#define lua_unboxpointer(L,i)   (*(void **)(lua_touserdata(L, i)))
 //#define lua_boxpointer(L,u) \
   fun lua_upvalueindex:int->int;
- 
+
   comment "LuaL";
   fun luaL_argerror: lua_t * int * cptr[char] -> int;
   fun luaL_callmeta: lua_t * int * cptr[char] -> int;
@@ -399,7 +399,7 @@ module Lua
   proc luaL_setn: lua_t * int * int;
   proc luaL_unref: lua_t * int * int;
   proc luaL_where: lua_t * int;
- 
+
 }
 
 @head(1,'Lua Demo: lua Parser')
@@ -525,7 +525,7 @@ module Lua_parse
 
   union lua_token_t =
   // mandatory terminal, code 0
-  | TOK_EOF 
+  | TOK_EOF
 
   // keywords
   | DO
@@ -534,7 +534,7 @@ module Lua_parse
   | THEN
   | ELSE
   | ELSEIF
-  | WHILE 
+  | WHILE
   | REPEAT
   | UNTIL
   | RETURN
@@ -570,7 +570,7 @@ module Lua_parse
   // punctuation
   | DOT
   | COLON
-  | COMMA 
+  | COMMA
   | SEMICOLON
 
   // brackets
@@ -588,7 +588,7 @@ module Lua_parse
   // identifier
   |  NAME of string
 
-  // whitespace 
+  // whitespace
   | WHITE
   | NEWLINE
   | DASHDASH_COMMENT
@@ -654,12 +654,12 @@ module Lua_parse
     ('false',FALSE),
     ("",TOK_EOF)
   ;
-  
-  fun find_keyword(k:string) = 
+
+  fun find_keyword(k:string) =
   {
     var i=0;
     var key = keywords.[i];
-    until key.(0) == k or key.(0) == "" do 
+    until key.(0) == k or key.(0) == "" do
       ++i;
       key = keywords.[i];
     done;
@@ -673,7 +673,7 @@ module Lua_parse
     | ?x => x
     endmatch
   ;
-    
+
   fun numof(s:Lexer::iterator, e:Lexer::iterator) =>
     let ?lexeme = Lexer::string_between (s,e) in
     NUMBER (atof lexeme)
@@ -710,7 +710,7 @@ module Lua_parse
     // punctuation
     | "." => DOT
     | ":" => COLON
-    | "," => COMMA 
+    | "," => COMMA
     | ";" => SEMICOLON
 
     // brackets
@@ -736,7 +736,7 @@ module Lua_parse
     | stat => ()
   ;
 
-  nonterm stat : unit = 
+  nonterm stat : unit =
     | varlist1 EQ explist1  => ()
     | functioncall  => ()
     | DO block END  => ()
@@ -760,7 +760,7 @@ module Lua_parse
     | ELSE block => ()
   ;
 
-  nonterm funcname : unit = 
+  nonterm funcname : unit =
     | NAME DOT_NAME* COLON_NAME? => ()
   ;
 
@@ -780,15 +780,15 @@ module Lua_parse
     | COMMA vari => ()
   ;
 
-  nonterm varlist1 : unit = 
+  nonterm varlist1 : unit =
     | vari COMMA_vari* => ()
   ;
 
-  nonterm namelist : unit = 
+  nonterm namelist : unit =
     | NAME COMMA_NAME* => ()
   ;
 
-  nonterm init : unit = 
+  nonterm init : unit =
     | EQ explist1 => ()
   ;
 
@@ -796,7 +796,7 @@ module Lua_parse
     | COMMA exp => ()
   ;
 
-  nonterm explist1 : unit = 
+  nonterm explist1 : unit =
     | exp COMMA_exp* => ()
   ;
 
@@ -811,33 +811,33 @@ module Lua_parse
     | FUNCTION funcbody => ()
   ;
 
-  nonterm funcbody : unit = 
+  nonterm funcbody : unit =
     | LPAREN parlist1 RPAREN block END => ()
     | LPAREN RPAREN block END => ()
   ;
 
-  nonterm parlist1 : unit = 
+  nonterm parlist1 : unit =
     | namelist COMMA DOTDOTDOT => ()
     | namelist => ()
     | DOTDOTDOT => ()
   ;
 
-  nonterm tableconstructor : unit = 
-    | LBRACE fieldlist RBRACE => () 
+  nonterm tableconstructor : unit =
+    | LBRACE fieldlist RBRACE => ()
     | LBRACE RBRACE => ()
   ;
 
-  nonterm fieldlist : unit = 
+  nonterm fieldlist : unit =
     | field {fieldsep field} fieldsep? => ()
   ;
 
-  nonterm field : unit = 
+  nonterm field : unit =
     | LSQ exp RSQ EQ exp  => ()
     | NAME EQ exp  => ()
     | exp  => ()
   ;
 
-  nonterm fieldsep : unit = 
+  nonterm fieldsep : unit =
     | COMMA => ()
     | SEMICOLON => ()
   ;
@@ -853,7 +853,7 @@ module Lua_parse
     | lland AND comparison => ()
     | comparison => ()
   ;
-    
+
   nonterm comparison : unit =
     | comparison LT cat => ()
     | comparison LE cat => ()
@@ -863,36 +863,36 @@ module Lua_parse
     | comparison NE cat => ()
     | cat => ()
   ;
-  
+
   nonterm cat : unit =
     | sum DOTDOT cat => ()
     | sum => ()
   ;
-  
+
   nonterm sum : unit =
     | sum PLUS factor => ()
     | sum MINUS factor => ()
     | factor => ()
   ;
-  
+
   nonterm factor : unit =
     | factor STAR unary => ()
     | factor SLASH unary => ()
     | unary => ()
   ;
 
-  nonterm unary : unit = 
+  nonterm unary : unit =
     | MINUS unary => ()
     | TILDE unary => ()
     | NOT unary => ()
     | power => ()
   ;
-  
+
   nonterm power : unit =
     | atom CARET power => ()
     | atom  => ()
   ;
-  
+
   nonterm atom : unit =
     | NIL => ()
     | FALSE => ()
@@ -910,7 +910,7 @@ module Lua_parse
     | LPAREN exp RPAREN => ()
   ;
 
-  nonterm vari : unit = 
+  nonterm vari : unit =
     | NAME  => ()
     | prefixexp LSQ exp RSQ => ()
     | prefixexp DOT_NAME => ()
@@ -947,16 +947,16 @@ fun get_token(): lua_token_t =
   start = j;
   return
     match t with
-    | WHITE => get_token() 
-    | NEWLINE => get_token() 
-    | DASHDASH_COMMENT => get_token() 
-    | SQUARE_COMMENT => get_token() 
+    | WHITE => get_token()
+    | NEWLINE => get_token()
+    | DASHDASH_COMMENT => get_token()
+    | SQUARE_COMMENT => get_token()
     | _ => t
     endmatch
   ;
 }
 
-var x = 
+var x =
   parse the get_token with
   | block  => ()
   endmatch
@@ -968,10 +968,10 @@ d :=
   | case 2 _ => "Successful"
   endmatch
 ;
-   
+
 print (d " parse of " filename); endl;
 
-exit_code := 
+exit_code :=
   match x with
   | case 1 => 1
   | case 2 _ => 0
@@ -1293,7 +1293,7 @@ for c0=-20,50-1,10 do
                 io.write(string.format("%3.0f ",c))
         end
         io.write("\n")
-        
+
         io.write("F ")
         for c=c0,c0+10-1 do
                 f=(9/5)*c+32
@@ -1417,7 +1417,7 @@ while 1 do
  io.write(string.format("%08X  ",offset))
  string.gsub(s,"(.)",function (c) io.write(string.format("%02X ",string.byte(c))) end)
  io.write(string.rep(" ",3*(16-string.len(s))))
- io.write(" ",string.gsub(s,"%c","."),"\n") 
+ io.write(" ",string.gsub(s,"%c","."),"\n")
  offset=offset+16
 end
 @h=tangler('misc/lua/fibfor.lua','data')

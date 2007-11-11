@@ -16,7 +16,7 @@ val gen_elk_parser:
   range_srcref ->
   btypecode_t ->
   int ->
-  int list -> 
+  int list ->
   unit
 
 val gen_elk_lexer:
@@ -65,14 +65,14 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   let get_token_fun_type = tn t' in
 
   let display = cal_display syms bbdfns (Some this) in
-  let frame_dcls = 
+  let frame_dcls =
     "  FLX_FMEM_DECL\n"
   in
-  let display_string = 
-    cat "" 
+  let display_string =
+    cat ""
     (
       map
-      (fun (i, vslen) -> 
+      (fun (i, vslen) ->
        try
        let instname = cpp_instance_name syms bbdfns i [] in
        "  " ^ instname ^ " *ptr" ^ instname ^ ";\n"
@@ -80,25 +80,25 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
        )
       display
     )
-  and ctor_dcl =  
+  and ctor_dcl =
     "  "^lexer_name ^ "(\n" ^
     "    FLX_FPAR_DECL\n" ^
     cat ""
     (
-      map 
+      map
       (
-        fun (i,vslen) -> 
+        fun (i,vslen) ->
         let instname = cpp_instance_name syms bbdfns i [] in
         "    " ^ instname ^ "*,\n"
       )
       display
     )^
-    "    "^get_token_fun_type ^"\n  );\n" 
+    "    "^get_token_fun_type ^"\n  );\n"
   in
   let filename = filebase ^ "_lexer_" ^ si n ^ ".hpp" in
   if syms.compiler_options.print_flag then
   print_endline ("Generating Elkhound lexer " ^ lexer_name ^ " in " ^ filename);
-  
+
   let f = open_out filename in
   let pe s = output_string f (s ^ "\n") in
 
@@ -184,15 +184,15 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
   let f = open_out filename in
   let pe s = output_string f (s ^ "\n") in
   let ps s = output_string f s in
-  let ge_arg this ((x,t) as e) = 
+  let ge_arg this ((x,t) as e) =
     match t with
     | `BTYP_tuple [] -> ""
-    | _ -> gen_expr syms bbdfns this e [] [] sr 
+    | _ -> gen_expr syms bbdfns this e [] [] sr
   in
   let tn t = cpp_typename syms (reduce_type t) in
   let string_of_bprod (n,g) =
     (match n with | None -> "" | Some n -> cid_of_flxid n ^ ":") ^
-    (match g with 
+    (match g with
     | `Term k ->
       (match Hashtbl.find syms.dfns k with {id=id}->cid_of_flxid id)
     | `Nonterm (k::_) ->
@@ -211,8 +211,8 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
       pe ("       "^tname^" *_x = new(gcp,"^shape_of syms bbdfns tn t^",true)");
       pe ("       "^tname^"(" ^ ge_arg this e ^ ");");
       pe ("       gcp.collector->add_root(_x);");
-      iter 
-      (function 
+      iter
+      (function
         (* | Some n, `Nonterm _ -> pe ("       gcp.collector->remove_root(" ^ n^");") *)
         | Some n, _ -> pe ("       gcp.collector->remove_root(" ^ n^");")
         | _ -> ()
@@ -220,17 +220,17 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
       p;
       pe ("       return _x;");
       pe "    }";
-    | _ -> assert false 
+    | _ -> assert false
   in
   let set_of_list ii : IntSet.t = fold_left (fun s elt ->IntSet.add elt s) IntSet.empty ii in
-  let nts_of_prod p : IntSetSet.t = 
+  let nts_of_prod p : IntSetSet.t =
     fold_left
     (fun x (_,k) -> match k with
       | `Nonterm ii -> IntSetSet.add (set_of_list ii) x
       | `Term _ -> x
-    ) 
-    IntSetSet.empty 
-    p 
+    )
+    IntSetSet.empty
+    p
   in
   let prod_of_glr i =
     try
@@ -238,19 +238,19 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     | _,_,_,`BBDCL_glr (_,_,_,(p,_)) -> p
     | id,_,_,entry -> failwith
       ("Expected "^si i^"->BBDCL_glr, got " ^ string_of_bbdcl syms.dfns bbdfns entry i)
-    
+
     with Not_found -> failwith ("Can't find BBDCL_glr " ^ si i)
   in
   let nts_of_glr i : IntSetSet.t = nts_of_prod (prod_of_glr i) in
-  let nt_uses x : IntSetSet.t = 
-    IntSet.fold 
+  let nt_uses x : IntSetSet.t =
+    IntSet.fold
     (fun i nts ->
       IntSetSet.union nts (nts_of_glr i)
     )
-    x 
-    IntSetSet.empty 
+    x
+    IntSetSet.empty
   in
-  let make_closure ii = 
+  let make_closure ii =
     let been_done = ref (IntSetSet.singleton (set_of_list ii)) in
     let to_do = ref (nt_uses (set_of_list ii)) in
     while not (IntSetSet.is_empty !to_do) do
@@ -263,8 +263,8 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     done;
     !been_done
   in
-  let print_nonterm x = 
-    let j = IntSet.choose x in 
+  let print_nonterm x =
+    let j = IntSet.choose x in
     let id,parent,sr'',entry = Hashtbl.find bbdfns j in
     begin match entry with
     | `BBDCL_glr (_,_,t,(p,xs)) ->
@@ -285,14 +285,14 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     end
   in
   let display = cal_display syms bbdfns (Some this) in
-  let frame_dcls = 
+  let frame_dcls =
     "  FLX_FMEM_DECL"
   in
-  let display_string = 
-    cat "" 
+  let display_string =
+    cat ""
     (
       map
-      (fun (i,vslen) -> 
+      (fun (i,vslen) ->
        try
        let instname = cpp_instance_name syms bbdfns i [] in
        "  " ^ instname ^ " *ptr" ^ instname ^ ";\n"
@@ -300,24 +300,24 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
        )
       display
     )
-  and ctor_dcl =  
+  and ctor_dcl =
     "  Elk" ^parser_name^
-    (if length display = 0 
+    (if length display = 0
     then "(FLX_FPAR_DECL_ONLY);\n"
     else (
     "  (\n" ^
     "    FLX_FPAR_DECL\n " ^
     cat ",\n"
       (
-        map 
+        map
         (
-          fun (i,vslen) -> 
+          fun (i,vslen) ->
           let instname = cpp_instance_name syms bbdfns i [] in
           "    " ^ instname ^ "*"
         )
         display
       )^
-      "\n  );\n" 
+      "\n  );\n"
     ))
   in
     begin match t' with
@@ -327,7 +327,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
       let token_type_name = tn token_type in
       begin match entry with
       | `BBDCL_union ([],cts) ->
-        let j = hd ii in 
+        let j = hd ii in
         let id,parent,sr'',entry = Hashtbl.find bbdfns j in
         begin match entry with
         | `BBDCL_glr (props,_,t,(p,xs)) ->
@@ -336,22 +336,22 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
           pe ("//Token type " ^ token_id ^ " -> " ^ token_type_name);
           pe "terminals {";
           let i = ref 0 in
-          iter (fun (id,j,t) -> 
+          iter (fun (id,j,t) ->
             pe ("  " ^ si j^" : "^ cid_of_flxid id ^ ";")
-          ) 
+          )
           cts;
-        
+
         pe "";
-        iter (fun (id,_,t) -> 
+        iter (fun (id,_,t) ->
           if t <> `BTYP_void then begin
             pe ("  token("^tn t^"*) " ^ cid_of_flxid id ^ "{");
             pe ("    fun dup(x) { return x; }");
             pe ("    fun del(x) {}");
             pe ("}");
-          end 
+          end
         )
         cts;
-        
+
         pe "}";
         pe "";
         pe ("context_class Elk"^parser_name^": public UserActions {");
@@ -360,7 +360,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         ps display_string;
         pe ctor_dcl;
         pe ("  gc_profile_t &gcp;");
-        pe 
+        pe
         (
           (if t = `BTYP_tuple [] then "int" else "_uctor_") ^
           " apply(LexerInterface *lex);"
@@ -377,8 +377,8 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "// case 0- Parse failed";
         pe "// case 1- Argument contains parser result";
         pe ("// Type of parser result is " ^ sbt syms.dfns t);
-        
-        pe 
+
+        pe
         (
           (if t = `BTYP_tuple [] then "int" else "_uctor_") ^
           " Elk"^parser_name^"::apply(LexerInterface *lex) {"
@@ -390,7 +390,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "  result.variant = glr.glrParse(*lex,p);";
         pe "";
         pe "  if(result.variant==1)";
-        
+
         if t = `BTYP_tuple [] then begin
         pe "  gcp.collector->remove_root((void*)p);";
         pe "  return result.variant;";
@@ -424,12 +424,12 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
       | _ -> assert false (* must be glr *)
       end
 
-    | _ -> 
-      clierr sr 
+    | _ ->
+      clierr sr
       "Parser function must have unit domain and return a non-polymorphic union"
     end
-  | _ -> 
-    clierr sr 
+  | _ ->
+    clierr sr
     "Parser function must have unit domain and return a non-polymorphic union"
   end
   ;

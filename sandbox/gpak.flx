@@ -125,12 +125,12 @@ yellow := green + blue;
 fun mul (a: GdkColor, x: double) =>
   GdkColor(
     nopix,
-    cast[uint16](double(a.red) * x), 
-    cast[uint16](double(a.green) * x), 
+    cast[uint16](double(a.red) * x),
+    cast[uint16](double(a.green) * x),
     cast[uint16](double(a.blue) * x)
   )
 ;
-  
+
 fun add (a: GdkColor, b: GdkColor) : GdkColor =>
   GdkColor (nopix,a.red + b.red, a.green + b.green, a.blue + b.blue)
 ;
@@ -212,13 +212,13 @@ gen gtk_hscrollbar_new: GtkAdjustment -> GtkWidget;
 gen gtk_notebook_new: 1 -> GtkWidget;
 gen gtk_label_new: string -> GtkWidget = "gtk_label_new($1.data())";
 gen gtk_text_view_new : 1 -> GtkWidget;
-gen gtk_button_new_with_label: string -> GtkWidget= 
+gen gtk_button_new_with_label: string -> GtkWidget=
   "gtk_button_new_with_label($1.data())"
 ;
 gen gtk_menu_bar_new: 1 -> GtkWidget;
 gen gtk_menu_new: 1 -> GtkWidget;
 gen gtk_menu_item_new: 1 -> GtkWidget;
-gen gtk_menu_item_new_with_label: string -> GtkWidget = 
+gen gtk_menu_item_new_with_label: string -> GtkWidget =
   "gtk_menu_item_new_with_label($1.data())"
 ;
 
@@ -249,10 +249,10 @@ const gtk_widget_destroy_fun: GCallback = "G_CALLBACK(gtk_widget_destroy)";
 
 //-------------------------------------------------------
 
-cfun delete_event ( 
-  widget: GtkWidget, 
-  event: GdkEvent, 
-  data: gpointer 
+cfun delete_event (
+  widget: GtkWidget,
+  event: GdkEvent,
+  data: gpointer
 ) : bool =
 {
     /* If you return FALSE in the "delete_event" signal handler,
@@ -308,10 +308,10 @@ var tabbox = gtk_vbox_new(false,4); // table
 var files = glob::glob("lpsrc/*.pak");
 
 open Reversible_Sequence[
-  Stl::Vector::stl_vector[string], 
+  Stl::Vector::stl_vector[string],
   Stl::Vector::stl_vector_iterator[string],
   Stl::Vector::stl_vector_reverse_iterator[string],
-  string 
+  string
 ];
 
 // for a pak, the file manifests/pakname.deps records
@@ -325,7 +325,7 @@ open Reversible_Sequence[
 //
 // Otherwise, if there is a log file is newer than
 // all the dependencies, the button is coloured GREEN
-// otherwise it is coloured yellow to indicate an 
+// otherwise it is coloured yellow to indicate an
 // extract is required. For this purpose a missing dependency
 // is considered very new, that is, it has 'maxtime' value.
 
@@ -356,7 +356,7 @@ proc display_files() {
       log_time := filetime$ "manifests/" + pak + ".log";
       //print$ f"%s %d Deps, change time %d, log time %d\n"$ cstr pak, len deps, int(change_time), int(log_time);
       var buttonx = gtk_button_new_with_label(pak);
-      def var descr, var color = 
+      def var descr, var color =
         if change_time > log_time then "CHANGED" , red
         elif log_time == eternity then "NOT EXTRACTED", yellow
         else "UP TO DATE", green
@@ -375,7 +375,7 @@ proc display_files() {
     ++p;
     ++i;
     ++nfiles;
-  done;    
+  done;
   // the table
   gtk_box_pack_start(GTK_BOX(tabbox),table,true,true,1);
   gtk_widget_show(table);
@@ -467,9 +467,9 @@ gtk_container_add(GTK_CONTAINER(window),topbox);
 gtk_widget_show(topbox);
 gtk_widget_show(window);
 
-spawn_pthread { 
+spawn_pthread {
   gdk_threads_enter();
-  gtk_main(); 
+  gtk_main();
   gdk_threads_leave();
 };
 

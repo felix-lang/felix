@@ -27,11 +27,11 @@ val cal_expr_usage:
   sym_state_t -> usage_table_t -> int -> range_srcref -> tbexpr_t -> unit
 
 val cal_param_usage:
-  sym_state_t -> 
-  usage_table_t -> 
-  range_srcref -> 
-  int -> 
-  bparameter_t -> 
+  sym_state_t ->
+  usage_table_t ->
+  range_srcref ->
+  int ->
+  bparameter_t ->
   unit
 
 val use_closure:
@@ -74,25 +74,25 @@ open Flx_mtypes2
 type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
-let add (h:usage_table_t) k j sr = 
+let add (h:usage_table_t) k j sr =
   (*
   print_endline ("Adding use of " ^ si j ^ " in " ^ si k);
   *)
   Hashtbl.replace h k
   (
-    (j,sr) 
+    (j,sr)
     ::
     (
-      try Hashtbl.find h k 
+      try Hashtbl.find h k
       with Not_found -> []
     )
   )
 
-let rec uses_type h k sr t = 
-  let ut t = uses_type h k sr t in 
+let rec uses_type h k sr t =
+  let ut t = uses_type h k sr t in
   match t with
   | `BTYP_inst (i,ts)
-    -> 
+    ->
       add h k i sr;
       iter ut ts
 
@@ -133,23 +133,23 @@ let uses_production h k sr p =
 
 let cal_param_usage syms uses sr parent {pindex=child;ptyp=t} =
   uses_type uses parent sr t;
-  add uses parent child sr 
+  add uses parent child sr
 
 let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   let uses = Hashtbl.create 97 in
   let usedby = Hashtbl.create 97 in
   let usage = uses,usedby in
-  let cal_req_usage sr parent reqs = 
-    let ur (j,ts) = 
-      if j = 0 then faulty_req syms parent 
+  let cal_req_usage sr parent reqs =
+    let ur (j,ts) =
+      if j = 0 then faulty_req syms parent
       else add uses parent j sr
     in
-    iter ur reqs 
+    iter ur reqs
   in
   Hashtbl.iter
-  (fun k (_,_,sr,entry) -> 
+  (fun k (_,_,sr,entry) ->
   let ut t = uses_type uses k sr t in
-  
+
   match entry with
   | `BBDCL_typeclass _ -> ()
 
@@ -161,9 +161,9 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   | `BBDCL_glr (_,_,_,(p,exes)) ->
     iter (cal_exe_usage syms uses k) exes;
     uses_production uses k sr p
-  
+
   | `BBDCL_regmatch (_,_,(ps,_),_,(_,_,h,_))
-  | `BBDCL_reglex (_,_,(ps,_),_,_,(_,_,h,_)) -> 
+  | `BBDCL_reglex (_,_,(ps,_),_,_,(_,_,h,_)) ->
     iter (cal_param_usage syms uses sr k) ps;
     Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
 
@@ -173,30 +173,30 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   | `BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps
   | `BBDCL_fun (_,_,ps,ret,_, reqs,_)  -> cal_req_usage sr k reqs; iter ut ps; ut ret
   | `BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
-  | `BBDCL_instance (_,_,cons,i,ts) -> 
+  | `BBDCL_instance (_,_,cons,i,ts) ->
     (* we dont add the type constraint, since it
     is only used for instance selection
     *)
     add uses k i sr; iter ut ts
 
-  | `BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) -> 
+  | `BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
     ut unt; ut ct
-    
+
   | `BBDCL_union _  -> ()
 
-  | `BBDCL_struct (_,ps) 
+  | `BBDCL_struct (_,ps)
   | `BBDCL_cstruct (_,ps)  ->
     iter ut (map snd ps)
 
   | `BBDCL_class _ -> ()
   | `BBDCL_cclass _ -> ()
-  | `BBDCL_val (_,t) 
-  | `BBDCL_var (_,t) 
+  | `BBDCL_val (_,t)
+  | `BBDCL_var (_,t)
   | `BBDCL_tmp (_,t) -> ut t
   | `BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
-  | `BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) -> 
-    iter ut ps_cf; 
-    iter ut ps_c; 
+  | `BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
+    iter ut ps_cf;
+    iter ut ps_c;
     ut ret; cal_req_usage sr k reqs
 
   )
@@ -204,7 +204,7 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   ;
   (* invert uses table to get usedby table *)
   Hashtbl.iter
-  (fun k ls -> 
+  (fun k ls ->
     iter
     (fun (i,sr) -> add usedby i k sr)
     ls
@@ -217,7 +217,7 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
 let cls h i =
   let c = ref IntSet.empty in
   let rec add j =
-    if not (IntSet.mem j !c) then 
+    if not (IntSet.mem j !c) then
     begin
       c := IntSet.add j !c;
       let x = try Hashtbl.find h j with Not_found -> [] in
@@ -274,17 +274,17 @@ let use_closure h i = cls h i
   The problem is that the assumption "calls outside
   the child tree of f are not tracked since they can't
   call any children of f" is wrong. A call outside
-  the tree can still execute something inside 
+  the tree can still execute something inside
   the tree via a closure .. however how does the
   closure get out .. it has to be 'made' by someon
   who can see it ..
-  
+
 *)
 
 let child_use_closure k h i =
   let c = ref IntSet.empty in
   let rec add j =
-    if not (IntSet.mem j !c) && IntSet.mem j k then 
+    if not (IntSet.mem j !c) && IntSet.mem j k then
     begin
       c := IntSet.add j !c;
       let x = try Hashtbl.find h j with Not_found -> [] in
@@ -317,9 +317,9 @@ let call_report syms bbdfns (uses,usedby) f k =
   w (id ^ " uses: ");
   let u = try Hashtbl.find uses k with Not_found -> [] in
   let x = ref [] in
-  iter 
-  (fun (i,_) -> 
-    if not (mem i !x) then 
+  iter
+  (fun (i,_) ->
+    if not (mem i !x) then
     try match Hashtbl.find bbdfns i with
       | _,_,_,`BBDCL_procedure _
       | _,_,_,`BBDCL_function _
@@ -327,7 +327,7 @@ let call_report syms bbdfns (uses,usedby) f k =
       | _,_,_,`BBDCL_val _ -> x := i::!x
       | _ -> ()
     with Not_found -> ()
-  ) 
+  )
   u;
   let u = sort compare !x in
   w (catmap "," si u);
@@ -361,23 +361,23 @@ let print_call_report syms bbdfns f =
   let usage = call_data syms bbdfns in
   print_call_report' syms bbdfns usage f
 
-let expr_uses_unrestricted syms descend usage e = 
+let expr_uses_unrestricted syms descend usage e =
   let u = ref IntSet.empty in
   let add u i = u := IntSet.add i !u in
   iter_tbexpr (add u) ignore ignore e;
-  
+
 
   (*
   print_string ("Direct usage of expr " ^ sbe syms.dfns e ^ ": ");
   IntSet.iter (fun i -> print_string (si i^" ")) !u;
   print_endline "";
-  
+
 
   print_string ("Restrict =  ");
   IntSet.iter (fun i -> print_string (si i^" ")) restrict;
   print_endline "";
   *)
- 
+
   let u = IntSet.fold
     (fun i cls -> IntSet.union cls (
      let cl = child_use_closure descend usage i in
@@ -390,11 +390,11 @@ let expr_uses_unrestricted syms descend usage e =
     ))
     !u
     !u
-  in 
+  in
   u
 
-let expr_uses syms descend usage restrict e = 
+let expr_uses syms descend usage restrict e =
   let u = expr_uses_unrestricted syms descend usage e in
-  IntSet.inter restrict u 
+  IntSet.inter restrict u
 
- 
+

@@ -33,16 +33,16 @@ to get some times.
   ('strcat',' 8'),
   ('takfp',' 10'),
   ('sumcol',' < bagley/data/sumcol.data'),
-  ('wc',' < bagley/data/phone_numbers.data'), 
+  ('wc',' < bagley/data/phone_numbers.data'),
  ]
 
 @if not CYGWIN and not WIN32:
   # hangs for unknown reason on Cygwin
-  # HashSet not available on Windows 
+  # HashSet not available on Windows
   sbags.append(('spellcheck',' < bagley/data/spellcheck.data'))
 
 @if not WIN32:
-  # HashMap not available on Windows 
+  # HashMap not available on Windows
   sbags.append(('wordfreq',' 1 < bagley/data/wordfreq.data'))
 
 @dbags = [
@@ -87,7 +87,7 @@ import sys
 import string
 
 cmd = (
-  '/usr/bin/time -p 2>tmp.time bin/flx --test %s %s >%s.output' % 
+  '/usr/bin/time -p 2>tmp.time bin/flx --test %s %s >%s.output' %
   (sys.argv[1],string.join(sys.argv[2:]),sys.argv[1])
   )
 
@@ -168,7 +168,7 @@ print "Ack(3,"; print n; print "): "; print v; endl;
 @select(tangler('bagley/felix/fibo.flx','data'))
 @setup()
 
-fun fib(n:int):int => 
+fun fib(n:int):int =>
   if n < 2 then 1 else fib (n - 2) + fib (n - 1) endif
 ;
 
@@ -207,24 +207,24 @@ free y;
 @setup()
 var x = 0;
 
-var a=0; 
+var a=0;
 whilst a<n do
-  var b=0; 
+  var b=0;
   whilst b<n do
-    var c=0; 
+    var c=0;
     whilst c<n do
-      var d=0; 
+      var d=0;
       whilst d<n do
-        var e=0; 
+        var e=0;
         whilst e<n do
-          var f=0; 
+          var f=0;
           whilst f<n do
             x++;
             ++f;
           done;
           ++e;
         done;
-        ++d; 
+        ++d;
       done;
       ++c;
     done;
@@ -279,16 +279,16 @@ nine := ord("9".[0]);
 // Felix regular matching currently only supports
 // actual regular sets of strings -- it does not support
 // lookback or lookahead because they're not regular
-// 
+//
 // So we have to hand code the context check.
 //
 fun check_context(start: iterator, finish: iterator): string =
 {
   prior :=  ord(deref(start-1));
   next := ord(deref(finish));
-  return 
-    if zero <= prior &<= nine 
-    or zero <= next &<= nine 
+  return
+    if zero <= prior &<= nine
+    or zero <= next &<= nine
     then ""
     else string_between(start, finish)
     endif
@@ -312,7 +312,7 @@ finish := Lexer::end_iterator data;
 var i=n;
 var current: iterator;
 var s: string;
-whilst i>1 do 
+whilst i>1 do
   current = first;
   until current == finish do
     current, s = lexit(current, finish);
@@ -325,8 +325,8 @@ proc print_phone(x:string, j:int) {
   var s = "";
   var i = 0;
   whilst i<n do
-    if zero <= ord(x.[i]) &<= nine do 
-      s = s + ord(x.[i]); 
+    if zero <= ord(x.[i]) &<= nine do
+      s = s + ord(x.[i]);
     done;
     ++i;
   done;
@@ -417,7 +417,7 @@ proc kmedian(v: stl_vector[double], mid:int)
         if a.[j] < b do j++; done;
         if a.[i] > b do i--; done;
         flag = false;
-      done; 
+      done;
     done;
 
     if i<k do
@@ -428,7 +428,7 @@ proc kmedian(v: stl_vector[double], mid:int)
       n=j;
     else return;
     done;
-  done; 
+  done;
 }
 
 fun max(a:stl_vector[double], n:int):double =
@@ -479,14 +479,14 @@ done;
 average_deviation /= double_of m;
 variance /= double_of (m - 1);
 standard_deviation = sqrt variance;
-if variance != 0.0 do 
+if variance != 0.0 do
   skew /= double_of m * variance * standard_deviation;
   kurtosis = kurtosis/(double_of m * variance * variance) - 3.0;
 done;
 
 mid := m / 2;
 kmedian(nums, mid);
-median = 
+median =
   if m % 2 == 1 then nums.[mid]          // odd
   else (nums.[mid] + max (nums,mid))/2.0 // even
   endif
@@ -537,7 +537,7 @@ var x = Empty[string];
 var s = readln stdin;
 until s == "" do
   x = Cons (s,x);
-  s = readln stdin; 
+  s = readln stdin;
 done;
 
 proc plist(x:list[string]){
@@ -547,7 +547,7 @@ proc plist(x:list[string]){
   endmatch;
 };
 
-plist x; 
+plist x;
 
 @head(2,'Matrix multiplication')
 @select(tangler('bagley/felix/matrix.flx','data'))
@@ -608,9 +608,9 @@ until i == 0 do
   --i;
 done;
 
-print (get(mm,0,0)); print " "; 
-print (get(mm,2,3)); print " "; 
-print (get(mm,3,2)); print " "; 
+print (get(mm,0,0)); print " ";
+print (get(mm,2,3)); print " ";
+print (get(mm,3,2)); print " ";
 print (get(mm,4,4)); endl;
 
 freematrix(SIZE, m1);
@@ -658,9 +658,9 @@ until m == 0 do
   whilst i <= 8192 do
     if prime.[i] do
       k=i+i;
-      whilst k <= 8192 do 
-        prime.[k] = false; 
-        k+=i; 
+      whilst k <= 8192 do
+        prime.[k] = false;
+        k+=i;
       done;
       count++;
     done;
@@ -861,7 +861,7 @@ proc test_lists() {
     whilst non_empty li3 do
         x = pop_tail li3;
         push_tail(li2, x);
-    done; 
+    done;
 
     check (empty li3) "li3 should be empty now";
 
@@ -938,8 +938,8 @@ proc check(t: toggle, k:int) {
   var tt = t;
   var i=k;
   until i == 0 do
-    activate tt; 
-    tprint tt; endl; 
+    activate tt;
+    tprint tt; endl;
     --i;
   done;
   del t;
@@ -950,7 +950,7 @@ check(new_toggle true,5);
 {
   var i = n;
   until i == 0 do
-    del (new_toggle true); 
+    del (new_toggle true);
     --i;
   done;
   endl;
@@ -961,7 +961,7 @@ check (new_ntoggle(true, 3), 8);
 {
   var i = n;
   until i == 0 do
-    del (new_ntoggle (true, 3)); 
+    del (new_ntoggle (true, 3));
     --i;
   done;
 };
@@ -1013,10 +1013,10 @@ proc check (t:toggle) {
   var tt = t;
   var v = true;
   var i = n;
-  until i == 0 do 
-    activate tt; 
-    v = value tt; 
-    --i; 
+  until i == 0 do
+    activate tt;
+    v = value tt;
+    --i;
   done;
   print v; endl;
   del t;
@@ -1130,13 +1130,13 @@ fun neg: ulong -> ulong = "-$1";
 
 const buff: iterator = "buff";
 
-fun iswhite(ch:int) => 
+fun iswhite(ch:int) =>
   ch == sp or ch == tab or ch == lf;
 
 fun islf(ch:int)=> ch == lf;
 
 fun ul(x:bool)=> C_hack::cast[ulong]x;
- 
+
 /* Fill tables */
 {
   var ch = UCHAR_MAX; until ch < 0 do
@@ -1184,7 +1184,7 @@ print l_cnt; print " "; print w_cnt; print " "; print b_cnt; endl;
 @setup()
 // stolen from C implementation
 
-fun gen_random: double -> double 
+fun gen_random: double -> double
   requires body """
     #define IM 139968
     #define IA   3877
@@ -1210,7 +1210,7 @@ proc heapsort(n:int, ra: darray) {
     var rra:double;
 
     until cows_jump_over_moon do
-        if l > 1 do 
+        if l > 1 do
             --l;
             rra = ra.[l];
         else
@@ -1226,7 +1226,7 @@ proc heapsort(n:int, ra: darray) {
         j = l * 2;
         whilst j <= ir do
             if j < ir and ra.[j] < ra.[j+1] do ++j; done;
-            if rra < ra.[j] do 
+            if rra < ra.[j] do
                 ra.[i] = ra.[j];
                 i = j;
                 j *= 2;
@@ -1288,7 +1288,7 @@ val m = len plugin_com.input_line;
 var sum = 0;
 
 // do it n times
-var repeat_count = n; 
+var repeat_count = n;
 until repeat_count == 0 do
 
   // starting at start of string
@@ -1296,12 +1296,12 @@ until repeat_count == 0 do
   until plugin_com.string_pos == m do
 
     // trying each plugin
-    var remaining_plugins = plugins; 
+    var remaining_plugins = plugins;
     plugin_com.success = false;
     until plugin_com.success do
-    
+
       match remaining_plugins with
-      | Empty => 
+      | Empty =>
         {
           print "Can't find a suitable plugin"; endl;
           print "Position "; print plugin_com.string_pos; endl;
@@ -1314,7 +1314,7 @@ until repeat_count == 0 do
           Dynlink::run_proc(plug_lib,"plugin",ptr_plugin_com);
           if plugin_com.success do
             sum += plugin_com.decoded_num;
-          else 
+          else
             remaining_plugins = tail;
           done;
           Dynlink::destroy_lib plug_lib;
@@ -1322,7 +1322,7 @@ until repeat_count == 0 do
       endmatch;
     done;
   done;
-  --repeat_count; 
+  --repeat_count;
 done;
 
 print sum; endl;
@@ -1356,7 +1356,7 @@ proc plugin (p:address) {
     r.success = true;
     r.decoded_num = acc;
     r.string_pos = k;
-  else 
+  else
     r.success = false;
   done;
   C_hack::deref q = r;
@@ -1398,7 +1398,7 @@ proc plugin (p:address) {
       r.success = true;
       r.decoded_num = acc;
       r.string_pos = k;
-    else 
+    else
       r.success = false;
     done;
   else
@@ -1443,7 +1443,7 @@ proc plugin (p:address) {
       r.success = true;
       r.decoded_num = acc;
       r.string_pos = k;
-    else 
+    else
       r.success = false;
     done;
   else
@@ -1463,7 +1463,7 @@ open Stl::HashMap;
 
 requires ext_string_hash;
 
-body hexer = """ 
+body hexer = """
 string hex(int x) { char buf[20]; snprintf(buf,20,"%x",x); return buf; }
 """;
 
@@ -1471,20 +1471,20 @@ fun hex: int -> string requires hexer;
 
 var hm = HashMap::create[string,int]();
 
-var i = n; until i == 0 do 
-  insert(hm,hex i,i); 
-  --i; 
+var i = n; until i == 0 do
+  insert(hm,hex i,i);
+  --i;
 done;
 
 var c = 0;
-i = n; until i == 0 do 
+i = n; until i == 0 do
   if mem (hm,str i) do c++; done;
   --i;
 done;
 
 print c; endl;
 
- 
+
 @select(tangler('bagley/felix/hash2.flx','data'))
 @setup()
 include "stl";
@@ -1494,7 +1494,7 @@ open Stl::HashMap;
 requires ext_string_hash;
 
 var h1 = HashMap::create[string,int]();
-   
+
 var i = 1; until i == 10000 do
   s := "foo_" + str i;
   insert (h1, s, i);
@@ -1506,14 +1506,14 @@ var h2 = HashMap::create[string,int]();
 i=n; until i == 0 do
   var j = begin h1; until j == end h1 do
     k, v := deref j;
-    //h2.[k] = h2.[k] + v; 
-    h2.[k] += v; 
+    //h2.[k] = h2.[k] + v;
+    h2.[k] += v;
     ++j;
   done;
   --i;
 done;
 
-print h1.["foo_1"]; print " "; print h1.["foo_9999"]; print " " ; 
+print h1.["foo_1"]; print " "; print h1.["foo_9999"]; print " " ;
 print h2.["foo_1"]; print " "; print h2.["foo_9999"]; endl;
 
 @select(tangler('bagley/felix/spellcheck.flx','data'))
@@ -1558,14 +1558,14 @@ open Lexer;
 
 body lt_cmp[t] = """
   namespace std {
-    template<> 
+    template<>
     bool less<?1> :: operator()(?1 const &a, ?1 const &b)const {
      return a.mem_0 == b.mem_0 ?? a.mem_1 < b.mem_1 : a.mem_0 > b.mem_0;
     }
   }
 """;
 
-proc tolower : lvalue[string] = "tol($1);" requires 
+proc tolower : lvalue[string] = "tol($1);" requires
   body """
     void tol(std::string &x) {
       std::string::iterator e = x.end();
@@ -1598,7 +1598,7 @@ proc add_word(s:iterator, e:iterator)
   p := find (dict,word);
   if p == end dict do
     insert (dict,word,1);
-  else 
+  else
     k,j := deref p;
     (deref p).(1) ++;
   done;
@@ -1615,11 +1615,11 @@ proc add_word(s:iterator, e:iterator)
     var isword : bool;
     until current == last do
       next, isword = lexit(current, last);
-      if isword do 
-        add_word(current,next); 
-        current = next; 
-      else 
-        ++current; 
+      if isword do
+        add_word(current,next);
+        current = next;
+      else
+        ++current;
       done;
     done;
     data = readln stdin;
@@ -1663,7 +1663,7 @@ proc consumer() {
 proc producer() {
   var i = 1;
   until produced == n do
-    ++produced; 
+    ++produced;
     send[int] (&con) i;
     ++i;
   done;
@@ -1692,7 +1692,7 @@ fun Tak (x:float, y:float, z:float): float =>
   else Tak(Tak(x-1.0f,y,z), Tak(y-1.0f,z,x), Tak(z-1.0f,x,y))
   endif
 ;
- 
+
 w := float_of n;
 print1 (Tak(w*3.0f, w*2.0f, w*1.0f));
 @doc()
@@ -1704,10 +1704,10 @@ print1 (Tak(w*3.0f, w*2.0f, w*1.0f));
 @head(2,"bagley/felix/procinst")
 @select(tangler('bagley/felix/procinst.flx','data'))
 @setup()
-thread_max := n;  
+thread_max := n;
 message_max := atoi(System::argv 2);
 
-var thread_count = thread_max; 
+var thread_count = thread_max;
 var message_count = message_max;
 
 proc final() {
@@ -1726,7 +1726,7 @@ proc final() {
 proc agent() {
   us := thread_count;
   --thread_count;
-  var next = 
+  var next =
     if us > 1 then start the agent
     else start the final endif
   ;
@@ -1737,7 +1737,7 @@ proc agent() {
   done;
 }
 
-var first = start the agent; 
+var first = start the agent;
 
 whilst message_count >0 do
   --message_count;

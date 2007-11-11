@@ -4,8 +4,8 @@ import os
 class PLUGIN(Plugin):
   name = 'extract_grammar'
   help = 'extract the grammar as a text file from ocamlyacc src'
-    
-  def runme(self):    
+
+  def runme(self):
     print "GENERATING GRAMMAR"
     try:
       os.mkdir('misc')

@@ -34,7 +34,7 @@ flx_run harness.
 Each good test should generate output which,
 when compared with a known good run, should
 be much the same. Good tests typically have
-several things tested. 
+several things tested.
 @item('dt')
 Bad tests check the compiler issues
 a diagnostic. Usually, they have just one
@@ -123,10 +123,10 @@ open Uint64;
 @for x in xs:
   for y in ys:
     tname = "tst_"+x+y
-    tangle("//noinline is needed to stop gcc dropping dead") 
+    tangle("//noinline is needed to stop gcc dropping dead")
     tangle("noinline proc "+tname+" () {")
     for s in ss:
-      tangle("  assert(int_of("+x+s+" + "+y+s+")==42);") 
+      tangle("  assert(int_of("+x+s+" + "+y+s+")==42);")
     tangle("}")
     tangle(tname+";")
 print "test complete"; endl;
@@ -147,7 +147,7 @@ test complete
 fun fact(a:int): int =
 {
   fun f (a:int, p:int) : int = {
-    return 
+    return
       if a>1 then f(a-1, p*a) else p endif;
   }
   return f(a,1);
@@ -183,7 +183,7 @@ val x = X(1,2);
 printX x;
 
 // test special procedure overloading
-proc t1() 
+proc t1()
 {
   proc print: int = 'printf("int=%d",$1);';
   print "Not hidden: ";
@@ -192,7 +192,7 @@ proc t1()
 }
 t1();
 
-module A 
+module A
 {
   proc print:int='printf("module A print int=%d",$1);';
   print 1;
@@ -451,8 +451,8 @@ endl;
 @doc()
 
 @select(env_rt.expect())
-1 2 3 
-9 8 7 
+1 2 3
+9 8 7
 @doc()
 
 @env_rt.head(3)
@@ -621,17 +621,17 @@ call inlining
 @kat_rt("inlining")
 
 val x = 1;
-if x == 1 then 
-{ 
-  if x == 1 
-  then { print "ONE\n"; } 
-  else { print "IMPOSSIBLE"; } 
+if x == 1 then
+{
+  if x == 1
+  then { print "ONE\n"; }
+  else { print "IMPOSSIBLE"; }
   endif
   ;
 }
-else 
-{ 
-  print "TWO\n"; 
+else
+{
+  print "TWO\n";
 }
 endif
 ;
@@ -660,7 +660,7 @@ fun index[t] (l:list[t]) = {
   return
     rev (snd ( fold_left
       f of (int * list[int *t])
-      (0, Empty[int * t]) 
+      (0, Empty[int * t])
       l
     ))
   ;
@@ -675,7 +675,7 @@ x = Cons(55,x);
 x = Cons(66,x);
 
 val z = index x;
-iter 
+iter
   (proc (x:int,y:int)
     {
       print x; print " -> "; print y; endl;
@@ -724,7 +724,7 @@ non-self-tail rec test (inspect output) (requires --inline atm)
 var x = 4;
 proc recur2 ()
 {
-  if x > 0 then 
+  if x > 0 then
   {
     print x; endl;
     --x;
@@ -752,7 +752,7 @@ fun g(x:int):int = {
 endoff:>
   return 1;
 }
- 
+
 print (g 10); endl;
 @doc()
 
@@ -770,7 +770,7 @@ fun f(x:int)=>
   else f(x-1)
   endif
 ;
- 
+
 print (f 10); endl;
 @doc()
 
@@ -803,7 +803,7 @@ fun argv (i:int):string =>
   | _ => ""
   endmatch
 ;
- 
+
 var i = 0;
 whilst i < argc do
   print "checking arg "; print i; print "="; print (argv i); endl;
@@ -863,22 +863,22 @@ W2
 
 @select(env_rt.test('.flx', categories=['fibres', 'channels']))
 open Control;
- 
+
 var chin,chout = mk_ioschannel_pair[int] ();
 
-spawn_fthread { 
-  var x = 1; 
-  whilst x <= 10 do 
-    write$ chout,x; 
+spawn_fthread {
+  var x = 1;
+  whilst x <= 10 do
+    write$ chout,x;
     ++x;
-  done; 
+  done;
 };
 
-spawn_fthread { 
-  var x = 1; 
-  whilst x < 10 do 
-    x = read chin; print x; endl; 
-  done; 
+spawn_fthread {
+  var x = 1;
+  whilst x < 10 do
+    x = read chin; print x; endl;
+  done;
 };
 @doc()
 
@@ -979,7 +979,7 @@ pr$ X::drf$ X::adr x;
 
 fun ff[t,k where t==k ]: t * k -> t = "$1+$2";
 
-pr$ ff$ 1,2; 
+pr$ ff$ 1,2;
 //pr$ ff$ 1,2.0; // should fail
 @doc()
 
@@ -1017,13 +1017,13 @@ reduce silly (x:int): hh x => x;
 
 axiom_check (1,2,3);
 
-var i:int=1; 
+var i:int=1;
 lab:>
-  axiom_check (i,2); 
+  axiom_check (i,2);
   i=i+1;
   if i <= 5  goto lab;
 
-axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
+axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t):
   sym(x,y) == sym(y,x)
 ;
 
@@ -1039,7 +1039,7 @@ Cheat
 @env_rt.head(3)
 @select(env_rt.test('.flx', categories=['member count']))
 // HACK!
-// NOTE: who_cares is now in the library! 
+// NOTE: who_cares is now in the library!
 // See Typing::memcount.
 //
 const who_cares[t] : int = "#memcount";
@@ -1095,7 +1095,7 @@ noinline proc f
   (a:unit ->int)
   (b:unit ->int)
 { z = a() + b(); }
-  
+
 noinline proc g() { f {1} {2} ; };
 g();
 print z; endl;
@@ -1361,7 +1361,7 @@ again:>
 var x = f(40);
 print$ x(2); endl; // 42
 print$ x(999); endl; // 43
-print$ x(2); endl; // 44 
+print$ x(2); endl; // 44
 print$ x(999); endl; // 45
 print$ x(10); endl; // 54
 print$ x(999); endl; // 55
@@ -1384,8 +1384,8 @@ print$ x(10); endl; // 64
 
 union tree = TEmpty | Leaf of int | Node of tree * tree;
 
-var example = 
-  Node 
+var example =
+  Node
   (
     Node
     (
@@ -1429,8 +1429,8 @@ gen visitor(x:tree) () : int =
   var con =
     match x with
     | Leaf ?a => { print "visiting leaf "; print a; endl; yield a; return -1; }
-    | Node (?a,?b) => 
-      { 
+    | Node (?a,?b) =>
+      {
         print "visiting node: left\n";
         var it = visitor(a);
         var v = it();
@@ -1521,34 +1521,34 @@ print "should not see this"; endl;
 */
 print/*
 print "should not see this"; endl;
-*/"5"; endl; 
+*/"5"; endl;
 print /*
 print "should not see this"; endl;
-*/"6"; endl; 
+*/"6"; endl;
 print/*
 print "should not see this"; endl;
-*/ "7"; endl; 
+*/ "7"; endl;
 print /*
 print "should not see this"; endl;
-*/ "8"; endl; 
+*/ "8"; endl;
 
 print /*
 print "should not see this"; endl;/*
 print "should not see this"; endl;
 */print "should not see this"; endl;
-*/ "9"; endl; 
+*/ "9"; endl;
 
 print /*
 print "should not see this"; endl; /*
 print "should not see this"; endl;
 */print "should not see this"; endl;
-*/ "10"; endl; 
+*/ "10"; endl;
 
 print /*
 print "should not see this"; endl;/*
 print "should not see this"; endl;
 */ print "should not see this"; endl;
-*/ "11"; endl; 
+*/ "11"; endl;
 
 print /*
 print "should not see this"; endl; /*
@@ -1631,7 +1631,7 @@ here
 @env_rt.head(3)
 @select(env_rt.test('.flx'))
 @kat_rt("generators")
- 
+
 gen f ():int = {
   var i:int; forall i in 0 upto 5 do
     yield i;
@@ -1692,7 +1692,7 @@ k px;
 fun ff[t,k where t==k ]: t * k -> t = "$1+$2";
 
 
-pr$ ff$ 1,2; 
+pr$ ff$ 1,2;
 //pr$ ff$ 1,2.0;
 
 @select(env_rt.expect())
@@ -1734,8 +1734,8 @@ fun keq[t with XEq[t,t]] (x:t,y:t)=> jeq(x,y);
 fun peq[t with XEq[t,t]] (x:t,y:t)=> keq(x,y);
 proc zzz[t with XEq[t,t]] (x:t) { ppp x; }
 
-pr$ peq$ 1,2; 
-pr$ peq$ 1,1; 
+pr$ peq$ 1,2;
+pr$ peq$ 1,1;
 
 zzz 1;
 @doc()
@@ -1796,8 +1796,8 @@ typeclass XCmp[t] {
 }
 
 instance XEq[int] {
-  fun xeq: int * int -> bool = "$1==$2";  
-  fun xne: int * int -> bool = "$1!=$2";  
+  fun xeq: int * int -> bool = "$1==$2";
+  fun xne: int * int -> bool = "$1!=$2";
 }
 
 instance XCmp[int] {
@@ -1818,14 +1818,14 @@ module Fred[t]
   proc pr: t = "std::cout<<$1<<endl;";
 }
 
-Fred::pr 1; 
+Fred::pr 1;
 
 module Joe
 {
   inherit Fred[int];
 }
 
-Joe::pr 1; 
+Joe::pr 1;
 
 open Joe;
 pr 1;
@@ -1871,8 +1871,8 @@ typeclass XEq[t] {
 }
 
 instance XEq[int] {
-  fun xeq: int * int -> bool = "$1==$2";  
-  fun xne: int * int -> bool = "$1!=$2";  
+  fun xeq: int * int -> bool = "$1==$2";
+  fun xne: int * int -> bool = "$1!=$2";
 }
 
 module Joe[with XEq[int]] {
@@ -1965,7 +1965,7 @@ module X {
   fun fst(x:pi):int => (_repr_ x).(0);
   fun snd(x:pi):int => (_repr_ x).(1);
   fun mkpi(x:int,y:int):pi=>_make_pi(x,y);
-  
+
   type pif = new int * double;
   fun fst(x:pif):int => (_repr_ x).(0);
   fun snd(x:pif):double => (_repr_ x).(1);
@@ -2566,7 +2566,7 @@ fun fold_file[a,b]
               (read_func: 1->opt[a])
               (elem_func: a->b->b)
               (seed: b) :b =
-{              
+{
   fun aux (prev_val:b) :b =>
       match read_func () with
       | Some ?input => aux (elem_func input prev_val)
@@ -2606,11 +2606,11 @@ println$ line_count "test/regress/data/somelines.txt";
 open List;
 Control::collect();
 var a = list(1,2,3,4);
-fun conv (a:list[int])=> 
-  fold_left 
+fun conv (a:list[int])=>
+  fold_left
     (fun (acc: list[int]) (item2:int)=>
       acc + map (fun (item1:int)=> item1+item2) a
-    ) 
+    )
     Empty[int]
     a
 ;
@@ -2619,12 +2619,12 @@ var x = conv a;
 Control::collect();
 println q"x=$(x)";
 Control::collect();
-x = conv x; 
+x = conv x;
 Control::collect();
 println q"x=$(x)";
 Control::collect();
 /*
-x = conv x; 
+x = conv x;
 Control::collect();
 println q"x=$(x)";
 Control::collect();
@@ -2657,11 +2657,11 @@ print$ f"%d threads, %d jobs\n"$ nthreads,njobs;
 // read delay, and wait that long, exit on 0
 proc worker(i:int, chan:pchannel[int])(){
  print$ f"Starting pthread %d\n" i;
- var delay = read chan; 
+ var delay = read chan;
  whilst delay != 0 do
    print$ f"Thread %i, Delay %d\n"$ i,delay;
    sleep$ clock,double delay;
-   delay = read chan; 
+   delay = read chan;
  done;
 }
 
@@ -2679,12 +2679,12 @@ spawn_workers 1;
 whilst njobs > 0 do
   var delay = Cstdlib::rand () % 10 + 1;
   print$ f"Dispatch job %d\n" delay;
-  write$ chan, delay; 
+  write$ chan, delay;
   --njobs;
 done;
 
 // terminate workers
-whilst nthreads > 0 do 
+whilst nthreads > 0 do
   write$ chan, 0;
   --nthreads;
 done;
@@ -2708,14 +2708,14 @@ print "Its run"; endl;
 @doc()
 
 @select(env_drt.expect())
-Starting .. 
+Starting ..
 @tangle(open(rt_expect2.sink.name).read()[:-1])
 @tangle(open(rt_expect3.sink.name).read()[:-1])
-Its run 
+Its run
 @doc()
 
 @env_bt.head(2,'Bad tests')
-All these should fail gracefully at (felix) compile time. 
+All these should fail gracefully at (felix) compile time.
 Run the compiler with the -e option to invert
 the return code parity.
 
@@ -2770,7 +2770,7 @@ fun neg(a:int) = { return -a; }
 #import <flx.flxh>
 // privacy violation
 
-module X 
+module X
 {
   private fun f:int -> int = "$1";
   val x = f 1;
@@ -2963,8 +2963,8 @@ weaver_directory = 'doc/test/'
 
 @select(tangler('spkgs/flx_regression_tests.py'))
 pkg_requires = [
-  'flx_regression_tests_rt', 'flx_regression_tests_drt', 
-  'flx_regression_tests_nd', 'flx_regression_tests_bt', 
+  'flx_regression_tests_rt', 'flx_regression_tests_drt',
+  'flx_regression_tests_nd', 'flx_regression_tests_bt',
   'flx_regression_tests_kf']
 iscr_source = ['lpsrc/flx_regress.pak']
 

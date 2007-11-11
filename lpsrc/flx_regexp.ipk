@@ -9,7 +9,7 @@ val process_regexp:
   int                                * (* state count *)
   (int, expr_t) Hashtbl.t            * (* term_codes *)
   (int * int, int) Hashtbl.t             (* transition matrix *)
-  
+
 @select(tangler('src/compiler/flxlib/flx_dfa.ml'))
 (* build a DFA from a regular expression
 *)
@@ -17,19 +17,19 @@ open Flx_ast
 open Flx_print
 open Flx_mtypes2
 
-let hashtbl_length h = 
+let hashtbl_length h =
   let n = ref 0 in
   Hashtbl.iter (fun _ _ -> incr n) h;
   !n
 
 let augment re = `REGEXP_seq (re,`REGEXP_sentinel)
 
-type annotation_t = 
- { 
+type annotation_t =
+ {
    nullable: bool;
    firstpos: PosSet.t;
    lastpos: PosSet.t
- } 
+ }
 
 let fp_get followpos i =
   try Hashtbl.find followpos i
@@ -48,15 +48,15 @@ let rec annotate counter followpos posmap codemap re =
   | `REGEXP_name _ -> failwith "Unbound regular expresion name"
   | `REGEXP_seq (r1,r2) ->
     let a1 = a r1 and a2 = a r2 in
-    let au = 
+    let au =
     {
       nullable = a1.nullable && a2.nullable;
-      firstpos = 
-        if a1.nullable 
+      firstpos =
+        if a1.nullable
         then PosSet.union a1.firstpos a2.firstpos
         else a1.firstpos;
-      lastpos = 
-        if a2.nullable 
+      lastpos =
+        if a2.nullable
         then PosSet.union a1.lastpos a2.lastpos
         else a2.lastpos;
     }
@@ -71,15 +71,15 @@ let rec annotate counter followpos posmap codemap re =
     let a1 = a r1 and a2 = a r2 in
     {
       nullable = a1.nullable || a2.nullable;
-      firstpos = 
+      firstpos =
         PosSet.union a1.firstpos a2.firstpos;
-      lastpos = 
+      lastpos =
         PosSet.union a1.lastpos a2.lastpos
     }
 
   | `REGEXP_aster r1 ->
     let a1 = a r1 in
-    let au = 
+    let au =
     {
       nullable = true;
       firstpos = a1.firstpos;
@@ -96,7 +96,7 @@ let rec annotate counter followpos posmap codemap re =
     let n = String.length s in
     if n = 0
     then (a `REGEXP_epsilon)
-    else 
+    else
       begin
         let start = !counter in
         counter := start + n;
@@ -127,24 +127,24 @@ let rec annotate counter followpos posmap codemap re =
 
   | `REGEXP_code s ->
     Hashtbl.add codemap !counter s;
-    let u = 
+    let u =
     {
       nullable = false;
       firstpos = PosSet.singleton !counter;
       lastpos = PosSet.singleton !counter
     }
-    in 
+    in
       incr counter;
       u
 
   | `REGEXP_sentinel ->
-    let u = 
+    let u =
     {
       nullable = false;
       firstpos = PosSet.singleton !counter;
       lastpos = PosSet.singleton !counter;
     }
-    in  
+    in
       Hashtbl.add followpos !counter PosSet.empty;
       u
 
@@ -163,7 +163,7 @@ let string_of_set x =
 
 let print_followpos followpos =
   Hashtbl.iter
-  (fun i fp -> 
+  (fun i fp ->
     print_endline (
       (string_of_int i) ^
       " -> " ^
@@ -174,7 +174,7 @@ let print_followpos followpos =
 
 let print_int_set s =
   print_string "{";
-  PosSet.iter 
+  PosSet.iter
   (fun i -> print_string (string_of_int i ^ ", "))
   s
   ;
@@ -196,8 +196,8 @@ let process_regexp re =
     let posarray = Array.make !counter 0 in
     let alphabet = ref CharSet.empty in
     Hashtbl.iter
-    (fun i c -> 
-      posarray.(i-1) <- c; 
+    (fun i c ->
+      posarray.(i-1) <- c;
       alphabet := CharSet.add c !alphabet
     )
     posmap;
@@ -207,12 +207,12 @@ let process_regexp re =
     print_endline ("Charpos '" ^ posarray ^ "'");
     print_endline ("Codepos: ");
     Hashtbl.iter
-    (fun i c -> 
+    (fun i c ->
       print_endline ((string_of_int i) ^ " -> " ^ c)
     )
     codemap
     ;
-    print_string "alphabet '"; 
+    print_string "alphabet '";
     CharSet.iter
     (fun c -> print_char c)
     !alphabet;
@@ -221,8 +221,8 @@ let process_regexp re =
     let marked_dstates = ref PosSetSet.empty in
     let unmarked_dstates = ref (PosSetSet.singleton root.firstpos) in
     let find_char c t =
-      try 
-        PosSet.iter 
+      try
+        PosSet.iter
         (fun i -> if posarray.(i-1) = c then raise (Found i))
         t
         ;
@@ -247,7 +247,7 @@ let process_regexp re =
       let t = PosSetSet.choose !unmarked_dstates in
       unmarked_dstates := PosSetSet.remove t !unmarked_dstates;
       marked_dstates := PosSetSet.add t !marked_dstates;
-      let src_state_index = 
+      let src_state_index =
         try
           let state_index = Hashtbl.find inv_state_map t in
           (*
@@ -264,17 +264,17 @@ let process_regexp re =
       (fun c ->
         let u = ref (PosSet.empty) in
         PosSet.iter
-        (fun i -> 
-          if posarray.(i-1) = c 
+        (fun i ->
+          if posarray.(i-1) = c
           then begin
-            u := PosSet.union !u (try Hashtbl.find followpos i with 
+            u := PosSet.union !u (try Hashtbl.find followpos i with
             Not_found -> failwith ("Can't find followpos of index " ^ string_of_int i))
           end
         )
         t
         ;
         if not (PosSet.is_empty !u)
-        then 
+        then
           let dst_state_index =
             if not (PosSetSet.mem !u !marked_dstates)
             && not (PosSetSet.mem !u !unmarked_dstates)
@@ -294,7 +294,7 @@ let process_regexp re =
               assert(n1 <> PosSetSet.cardinal !unmarked_dstates);
               state_index
             end
-            else 
+            else
               try Hashtbl.find inv_state_map !u with Not_found -> failwith "ERROR 2"
           in
           Hashtbl.add dtran (c,src_state_index) dst_state_index
@@ -311,18 +311,18 @@ let process_regexp re =
 
     print_endline "states:";
     Hashtbl.iter
-    (fun idx state -> 
+    (fun idx state ->
       print_string (string_of_int idx ^ " -> ");
       print_int_set state;
       print_endline ""
     )
-    state_map 
+    state_map
     ;
     *)
 
     let term_codes = Hashtbl.create 97 in
     Hashtbl.iter
-    (fun idx state -> 
+    (fun idx state ->
       try
         PosSet.iter
         (fun i ->
@@ -332,13 +332,13 @@ let process_regexp re =
         state
         ;
         raise Not_found
-      with 
-      | Found i -> 
+      with
+      | Found i ->
         let code = Hashtbl.find codemap i in
         Hashtbl.add term_codes idx code
       |  Not_found -> ()
     )
-    state_map 
+    state_map
     ;
 
     !alphabet,!state_counter, term_codes, dtran

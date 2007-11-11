@@ -4,7 +4,7 @@ Name binding, pass 1.
 This module is responsible for converting
 the AST into a symbol table, type 1.
 This table represents the raw information,
-nesting structure, and associates each 
+nesting structure, and associates each
 entity with a unique index.
 @p()
 Types, expressions, and bodies
@@ -27,9 +27,9 @@ val build_tables:
   bool -> (* true if parent is a class, false otherwise *)
   asm_t list ->
   (
-    name_map_t *  
-    name_map_t *  
-    sexe_t list * 
+    name_map_t *
+    name_map_t *
+    sexe_t list *
     (range_srcref * iface_t * int option) list *
     dir_t list
   )
@@ -47,13 +47,13 @@ open List
 open Flx_lookup
 open Flx_exceptions
 
-let null_tab = Hashtbl.create 3 
+let null_tab = Hashtbl.create 3
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
 
 (* use fresh variables, but preserve names *)
-let mkentry syms (vs:ivs_list_t) i = 
+let mkentry syms (vs:ivs_list_t) i =
   let n = length (fst vs) in
   let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
   let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
@@ -66,11 +66,11 @@ let mkentry syms (vs:ivs_list_t) i =
   *)
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
-let merge_ivs 
-  (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1}) 
-  (vs2,{raw_type_constraint=con2; raw_typeclass_reqs=rtcr2}) 
+let merge_ivs
+  (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1})
+  (vs2,{raw_type_constraint=con2; raw_typeclass_reqs=rtcr2})
 :ivs_list_t =
-  let t = 
+  let t =
     match con1,con2 with
     | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
     | `TYP_tuple[],b -> b
@@ -79,32 +79,32 @@ let merge_ivs
     | `TYP_intersect a, b -> `TYP_intersect (a @[b])
     | a,`TYP_intersect b -> `TYP_intersect (a::b)
     | a,b -> `TYP_intersect [a;b]
-  and 
-    rtcr = uniq_list (rtcr1 @ rtcr2) 
+  and
+    rtcr = uniq_list (rtcr1 @ rtcr2)
   in
-  vs1 @ vs2, 
+  vs1 @ vs2,
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
 
 
 
-let split_asms asms : 
-  (range_srcref * id_t * int option * access_t * vs_list_t * dcl_t) list * 
+let split_asms asms :
+  (range_srcref * id_t * int option * access_t * vs_list_t * dcl_t) list *
   sexe_t list *
   (range_srcref * iface_t) list *
   dir_t list
-= 
+=
   let rec aux asms dcls exes ifaces dirs =
     match asms with
     | [] -> (dcls,exes,ifaces, dirs)
-    | h :: t -> 
-      match h with 
+    | h :: t ->
+      match h with
       | `Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
       | `Dcl (sr,id,seq,access,vs,dcl) -> aux t ((sr,id,seq,access,vs,dcl) :: dcls) exes ifaces dirs
       | `Iface (sr,iface) -> aux t dcls exes ((sr,iface) :: ifaces) dirs
       | `Dir dir -> aux t dcls exes ifaces (dir::dirs)
-  in 
+  in
     aux asms [] [] [] []
- 
+
 let dump_name_to_int_map level name name_map =
   let spc = spaces level in
   print_endline (spc ^ "//Name to int map for " ^ name);
@@ -112,57 +112,57 @@ let dump_name_to_int_map level name name_map =
   Hashtbl.iter
   (
     fun id n ->
-      print_endline ( "//" ^ spc ^ id ^ ": " ^ si n) 
-  ) 
+      print_endline ( "//" ^ spc ^ id ^ ": " ^ si n)
+  )
   name_map
   ;
   print_endline ""
 
-let strp = function | Some x -> si x | None -> "none" 
- 
+let strp = function | Some x -> si x | None -> "none"
+
 let full_add_unique syms sr (vs:ivs_list_t) table key value =
-  try 
+  try
     let entry = Hashtbl.find table key in
-    match entry with 
-    | `NonFunctionEntry (idx) 
+    match entry with
+    | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.dfns (sye idx)  with 
+       (match Hashtbl.find syms.dfns (sye idx)  with
        | { sr=sr2 } ->
-         clierr2 sr sr2 
+         clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
        )
      | `FunctionEntry [] -> assert false
-  with Not_found -> 
+  with Not_found ->
     Hashtbl.add table key (`NonFunctionEntry (mkentry syms vs value))
 
 let full_add_typevar syms sr table key value =
-  try 
+  try
     let entry = Hashtbl.find table key in
-    match entry with 
-    | `NonFunctionEntry (idx) 
+    match entry with
+    | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.dfns (sye idx)  with 
+       (match Hashtbl.find syms.dfns (sye idx)  with
        | { sr=sr2 } ->
-         clierr2 sr sr2 
+         clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
        )
      | `FunctionEntry [] -> assert false
-  with Not_found -> 
+  with Not_found ->
     Hashtbl.add table key (`NonFunctionEntry (mkentry syms dfltvs value))
 
 
 let full_add_function syms sr (vs:ivs_list_t) table key value =
-  try 
+  try
     match Hashtbl.find table key with
-    | `NonFunctionEntry entry -> 
+    | `NonFunctionEntry entry ->
       begin
         match Hashtbl.find syms.dfns ( sye entry ) with
         { id=id; sr=sr2 } ->
         clierr2 sr sr2
         (
-          "[build_tables] Cannot overload " ^ 
+          "[build_tables] Cannot overload " ^
           key ^ "<" ^ si value ^ ">" ^
-          " with non-function " ^ 
+          " with non-function " ^
           id ^ "<" ^ si (sye entry) ^ ">"
         )
       end
@@ -170,7 +170,7 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
     | `FunctionEntry fs ->
       Hashtbl.remove table key;
       Hashtbl.add table key (`FunctionEntry (mkentry syms vs value :: fs))
-  with Not_found -> 
+  with Not_found ->
     Hashtbl.add table key (`FunctionEntry [mkentry syms vs value])
 
 (* this routine takes a partially filled unbound definition table,
@@ -190,19 +190,19 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
 *)
 
 
-let rec build_tables syms name inherit_vs 
-  level parent grandparent root is_class asms 
-= 
+let rec build_tables syms name inherit_vs
+  level parent grandparent root is_class asms
+=
   (*
   print_endline ("//Building tables for " ^ name);
   *)
-  let 
+  let
     print_flag = syms.compiler_options.print_flag and
     dfns = syms.dfns and
     counter = syms.counter
   in
   let dcls,exes,ifaces,export_dirs = split_asms asms in
-  let dcls,exes,ifaces,export_dirs = 
+  let dcls,exes,ifaces,export_dirs =
     rev dcls,rev exes,rev ifaces, rev export_dirs
   in
   let ifaces = map (fun (i,j)-> i,j,parent) ifaces in
@@ -212,7 +212,7 @@ let rec build_tables syms name inherit_vs
   let priv_name_map = Hashtbl.create 97 in
 
   (* check root index *)
-  if level = 0 
+  if level = 0
   then begin
     if root <> !counter
     then failwith "Wrong value for root index";
@@ -221,24 +221,24 @@ let rec build_tables syms name inherit_vs
     | _ -> failwith "Expected top level to contain exactly one module declaration"
     end
     ;
-    if name <> "root" 
-    then failwith 
+    if name <> "root"
+    then failwith
       ("Expected top level to be called root, got " ^ name)
   end
-  else 
-    if name = "root" 
+  else
+    if name = "root"
     then failwith ("Can't name non-toplevel module 'root'")
     else
       Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry syms dfltvs root))
   ;
-  begin 
+  begin
     iter
     (
-      fun (sr,id,seq,access,vs',dcl) -> 
+      fun (sr,id,seq,access,vs',dcl) ->
         let pubtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
         let privtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
-        let n = match seq with 
-          | Some n -> (* print_endline ("SPECIAL " ^ id ^ si n); *) n 
+        let n = match seq with
+          | Some n -> (* print_endline ("SPECIAL " ^ id ^ si n); *) n
           | None -> let n = !counter in incr counter; n
         in
         if print_flag then begin
@@ -253,23 +253,23 @@ let rec build_tables syms name inherit_vs
           | `DCL_var _ -> "(var) "
           | `DCL_val _ -> "(val) "
           | _ -> ""
-          in 
+          in
           let vss = catmap "," fst (fst vs') in
           let vss = if vss <> "" then "["^vss^"]" else "" in
-          print_endline 
+          print_endline
           (
-            "//" ^ spc ^ si n ^ " -> " ^ id ^ vss ^ 
+            "//" ^ spc ^ si n ^ " -> " ^ id ^ vss ^
             " " ^ kind ^ short_string_of_src sr
           )
         end;
-        let make_vs (vs',con) : ivs_list_t = 
-          map 
+        let make_vs (vs',con) : ivs_list_t =
+          map
           (
-            fun (tid,tpat)-> let n = !counter in incr counter; 
-            if print_flag then 
+            fun (tid,tpat)-> let n = !counter in incr counter;
+            if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ tid^ " (type variable)");
             tid,n,tpat
-          ) 
+          )
           vs'
           ,
           con
@@ -279,31 +279,31 @@ let rec build_tables syms name inherit_vs
         (*
         begin
           match vs with (_,{raw_typeclass_reqs=rtcr})->
-          match rtcr  with 
-          | _::_ -> 
+          match rtcr  with
+          | _::_ ->
             print_endline (id^": TYPECLASS REQUIREMENTS " ^
             catmap "," string_of_qualified_name rtcr);
           | [] -> ();
         end;
         let rec addtc tcin dirsout = match tcin with
           | [] -> rev dirsout
-          | h::t -> 
+          | h::t ->
             addtc t (DIR_typeclass_req h :: dirsout);
         in
-        let typeclass_dirs = 
+        let typeclass_dirs =
           match vs with (_,{raw_typeclass_reqs=rtcr})-> addtc rtcr []
         in
         *)
 
         let add_unique table id idx = full_add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_function table id idx = full_add_function syms sr (merge_ivs vs inherit_vs) table id idx in
-        let add_tvars' parent table vs =        
+        let add_tvars' parent table vs =
           iter
           (fun (tvid,i,tpat) ->
-            let mt = match tpat with 
+            let mt = match tpat with
               | `AST_patany _ -> `TYP_type (* default/unspecified *)
               (*
-              | #suffixed_name_t as name -> 
+              | #suffixed_name_t as name ->
                 print_endline ("Decoding type variable " ^ si i ^ " kind");
                 print_endline ("Hacking suffixed kind name " ^ string_of_suffixed_name name ^ " to TYPE");
                 `TYP_type (* HACK *)
@@ -311,12 +311,12 @@ let rec build_tables syms name inherit_vs
 
               | `TYP_none -> `TYP_type
               | `TYP_ellipsis -> clierr sr "Ellipsis ... as metatype"
-              | _ -> tpat 
+              | _ -> tpat
             in
-            Hashtbl.add dfns i 
+            Hashtbl.add dfns i
             {
-              id=tvid; 
-              sr=sr; 
+              id=tvid;
+              sr=sr;
               parent=parent;
               vs=dfltvs;
               pubmap=null_tab;
@@ -324,13 +324,13 @@ let rec build_tables syms name inherit_vs
               dirs=[];
               symdef=`SYMDEF_typevar mt
             };
-            full_add_typevar syms sr table tvid i 
+            full_add_typevar syms sr table tvid i
           )
           (fst vs)
         in
         let add_tvars table = add_tvars' (Some n) table vs in
 
-        let handle_class class_kind classno sts tvars stype = 
+        let handle_class class_kind classno sts tvars stype =
           if print_flag then
           print_endline ("//Interfaces for class " ^ si classno);
           (* projections *)
@@ -355,10 +355,10 @@ let rec build_tables syms name inherit_vs
             begin
               let ctor_index = !(syms.counter) in incr (syms.counter);
               let ctor_name = "_ctor_" ^ id in
-              let ct = 
-                match vs with 
-                | [],_ -> `StrTemplate("new "^ id^"($a)") 
-                | _ -> `StrTemplate("new "^ id^"<?a>($a)") 
+              let ct =
+                match vs with
+                | [],_ -> `StrTemplate("new "^ id^"($a)")
+                | _ -> `StrTemplate("new "^ id^"<?a>($a)")
               in
               let argst = match t with
                 | `TYP_tuple ls -> ls
@@ -379,11 +379,11 @@ let rec build_tables syms name inherit_vs
 
             if (kind = `Fun || kind = `Proc) then
             begin
-              let domain,codomain = 
+              let domain,codomain =
                 match t with
-                | `TYP_function (domain,codomain) when kind = `Fun -> 
+                | `TYP_function (domain,codomain) when kind = `Fun ->
                   domain,codomain
-                | domain when kind = `Proc -> 
+                | domain when kind = `Proc ->
                   domain,`AST_void sr
                 | _ -> clierr sr "Accessor method must have function type"
               in
@@ -407,7 +407,7 @@ let rec build_tables syms name inherit_vs
                  (* make applicator method. This precisely the function:
 
                        fun get_f(x:X) (a:arg_t): result_t => exec_f (x,a);
-                       
+
                        which reduces to
 
                        fun get_f(x:X): arg_t -> result_t = {
@@ -419,7 +419,7 @@ let rec build_tables syms name inherit_vs
                        }
 
                   *)
-                   
+
                     (* make the execute method *)
                     let argts = match domain with
                       | `TYP_tuple ls -> ls
@@ -429,11 +429,11 @@ let rec build_tables syms name inherit_vs
                     (* The exec method *)
                     let execn = !counter in incr counter;
                     let exec_name = "exec_" ^ component_name in
-                    let exec_asm = 
-                      let cc = 
+                    let exec_asm =
+                      let cc =
                         match cc with Some cc -> cc | None ->
-                        let trail =  
-                          (match codomain with `AST_void _ -> ";" | _ -> "") 
+                        let trail =
+                          (match codomain with `AST_void _ -> ";" | _ -> "")
                         in
                           `StrTemplate("$1->" ^ component_name^"($b)" ^ trail)
                       in
@@ -448,21 +448,21 @@ let rec build_tables syms name inherit_vs
                     let do_asm =
                       let f = `AST_index (sr,exec_name,execn)  in
                       let cnt = ref 1 in
-                      let params = 
-                        map 
-                        (fun t -> 
-                          let i = !cnt in incr cnt; 
+                      let params =
+                        map
+                        (fun t ->
+                          let i = !cnt in incr cnt;
                           let pname = "_" ^ si i in
                           (`PVal,pname,t,None)
-                        ) 
+                        )
                         argts
                       in
                       let args = map (fun(_,n,_,_)->n) params in
                       let arg = `AST_tuple (sr, map (fun n -> `AST_name (sr,n,[])) (obj_name::args)) in
-                      let asms = 
+                      let asms =
                         [
-                          `Exe (sr, 
-                            (match codomain with 
+                          `Exe (sr,
+                            (match codomain with
                             | `AST_void _ -> `EXE_call (f,arg)
                             | _ -> `EXE_fun_return (`AST_apply(sr,(f,arg)))
                             )
@@ -474,35 +474,35 @@ let rec build_tables syms name inherit_vs
                         `DCL_function ((params,None),codomain,[],asms)
                       )
                     in
-                    let get_asms = 
+                    let get_asms =
                       [
                         `Exe (sr,`EXE_fun_return (`AST_index (sr,do_name,don)));
                         do_asm
-                      ] 
+                      ]
                     in
                     get_asms
                 end else begin
                   match component_index with
                   | None -> assert false
                   | Some mix ->
-                  let get_asms = 
+                  let get_asms =
                       [
-                        `Exe 
+                        `Exe
                         (
                           sr,
-                          `EXE_fun_return 
+                          `EXE_fun_return
                           (
-                            `AST_get_named_method 
+                            `AST_get_named_method
                             (
                               sr,
                               (
-                                component_name, mix,mtvars, 
+                                component_name, mix,mtvars,
                                 `AST_index (sr,obj_name,objidx)
                               )
                             )
                           )
                         )
-                      ] 
+                      ]
                   in
                   get_asms
                 end
@@ -510,9 +510,9 @@ let rec build_tables syms name inherit_vs
               begin
                 if print_flag then
                 print_endline ("//Building tables for " ^ get_name);
-                let pubtab,privtab, exes, ifaces,dirs =  
-                  build_tables syms get_name dfltvs (level+1) 
-                 (Some getn) parent root false get_asms 
+                let pubtab,privtab, exes, ifaces,dirs =
+                  build_tables syms get_name dfltvs (level+1)
+                 (Some getn) parent root false get_asms
                 in
                 (* print_endline "Making fresh type variables"; *)
                 let vs = make_vs vs' in
@@ -560,11 +560,11 @@ let rec build_tables syms name inherit_vs
 
                 interfaces := !interfaces @ ifaces
                 ;
-                if print_flag then 
+                if print_flag then
                 print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
               end
             end
-            ; 
+            ;
             if kind = `Var || kind = `Val then
             begin
               if print_flag then
@@ -579,12 +579,12 @@ let rec build_tables syms name inherit_vs
               print_endline ("//Adding get method " ^ get_name ^ " with vs=" ^
                   print_ivs_with_index vs ^ ", parent = " ^ strp parent
               );
-              let get_dcl = 
+              let get_dcl =
                 if class_kind = `CClass then
                   `SYMDEF_fun ([],[stype],t,
                     `StrTemplate("$1->" ^ component_name),
                     `NREQ_true,"primary"
-                  ) 
+                  )
                 else
                   let objix = !(syms.counter) in incr syms.counter;
                   let objname = "obj" in
@@ -602,9 +602,9 @@ let rec build_tables syms name inherit_vs
                     `EXE_fun_return (`AST_get_named_variable (sr,
                       (component_name,`AST_index (sr,"obj",objix))
                     ))
-                  ] 
-                  in 
-                  `SYMDEF_function (ps,t,[`Inline],exes) 
+                  ]
+                  in
+                  `SYMDEF_function (ps,t,[`Inline],exes)
               in
               (* the get function, lives outside class *)
               Hashtbl.add dfns getn {
@@ -618,10 +618,10 @@ let rec build_tables syms name inherit_vs
               (*
               print_endline ("Added " ^ get_name ^ " to class parent");
               *)
-              if print_flag then 
+              if print_flag then
               print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
             end
-            ; 
+            ;
             (* LVALUE VARIATION *)
             if kind = `Var then
             begin
@@ -630,12 +630,12 @@ let rec build_tables syms name inherit_vs
               let get_name = "get_" ^ component_name in
               let vs = make_vs vs' in
               add_tvars' (Some getn) funtab vs;
-              let get_dcl = 
+              let get_dcl =
                 if class_kind = `CClass then
                  `SYMDEF_fun ([],[`TYP_lvalue stype],`TYP_lvalue t,
                    `StrTemplate ("$1->" ^ component_name),
                    `NREQ_true,"primary"
-                 ) 
+                 )
                 else
                   let objix = !(syms.counter) in incr syms.counter;
                   let objname = "obj" in
@@ -653,9 +653,9 @@ let rec build_tables syms name inherit_vs
                     `EXE_fun_return (`AST_get_named_variable (sr,
                       (component_name,`AST_index (sr,"obj",objix))
                     ))
-                  ] 
-                  in 
-                  `SYMDEF_function (ps,`TYP_lvalue t,[`Inline],exes) 
+                  ]
+                  in
+                  `SYMDEF_function (ps,`TYP_lvalue t,[`Inline],exes)
               in
               Hashtbl.add dfns getn {
                 id=get_name;sr=sr;parent=parent;vs=vs;
@@ -665,7 +665,7 @@ let rec build_tables syms name inherit_vs
               if access = `Public then add_function pub_name_map get_name getn;
               add_function priv_name_map get_name getn
               ;
-              if print_flag then 
+              if print_flag then
               print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name ^ " [lvalue]")
             end
 
@@ -763,7 +763,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_reduce (ps,e1,e2) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (name,typ) -> 
+          iter (fun (name,typ) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -774,9 +774,9 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (`PVal,name,typ,None) :: !ips 
+            ips := (`PVal,name,typ,None) :: !ips
           ) ps
-          ; 
+          ;
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
@@ -788,7 +788,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_axiom ((ps,pre),e1) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (k,name,typ,dflt) -> 
+          iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -799,9 +799,9 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (k,name,typ,dflt) :: !ips 
+            ips := (k,name,typ,dflt) :: !ips
           ) ps
-          ; 
+          ;
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
@@ -813,7 +813,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_lemma ((ps,pre),e1) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (k,name,typ,dflt) -> 
+          iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -824,9 +824,9 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (k,name,typ,dflt) :: !ips 
+            ips := (k,name,typ,dflt) :: !ips
           ) ps
-          ; 
+          ;
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
@@ -836,27 +836,27 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
 
-        | `DCL_function ((ps,pre),t,props,asms) ->   
+        | `DCL_function ((ps,pre),t,props,asms) ->
           let is_ctor =  mem `Ctor props in
 
-          if is_ctor && id <> "__constructor__" 
-          then syserr sr 
+          if is_ctor && id <> "__constructor__"
+          then syserr sr
             "Function with constructor property not named __constructor__"
           ;
 
-          if is_ctor && not is_class 
-          then clierr sr 
+          if is_ctor && not is_class
+          then clierr sr
             "Constructors must be defined directly inside a class"
           ;
-         
+
           if is_ctor then
             begin match t with
             | `AST_void _ -> ()
-            | _ -> syserr sr 
+            | _ -> syserr sr
               "Constructor should return type void"
             end
           ;
-         
+
           (* change the name of a constructor to the class name
             prefixed by _ctor_
           *)
@@ -867,12 +867,12 @@ let rec build_tables syms name inherit_vs
           *)
           let fun_index = n in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
-          let pubtab,privtab, exes, ifaces,dirs =  
-            build_tables syms id dfltvs (level+1) 
-            (Some fun_index) parent root false asms 
+          let pubtab,privtab, exes, ifaces,dirs =
+            build_tables syms id dfltvs (level+1)
+            (Some fun_index) parent root false asms
           in
           let ips = ref [] in
-          iter (fun (k,name,typ,dflt) -> 
+          iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -883,9 +883,9 @@ let rec build_tables syms name inherit_vs
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (k,name,typ,dflt) :: !ips 
+            ips := (k,name,typ,dflt) :: !ips
           ) ps
-          ; 
+          ;
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;
@@ -926,8 +926,8 @@ let rec build_tables syms name inherit_vs
           print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
           print_endline "VARIABLES ARE";
           Hashtbl.iter (fun vname (sr,extractor) ->
-            let component = 
-              Flx_mbind.gen_extractor extractor (`AST_index (sr,mvname,match_var_index)) 
+            let component =
+              Flx_mbind.gen_extractor extractor (`AST_index (sr,mvname,match_var_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
           ) vars;
@@ -936,15 +936,15 @@ let rec build_tables syms name inherit_vs
           let new_asms = ref asms in
           Hashtbl.iter
           (fun vname (sr,extractor) ->
-            let component = 
-              Flx_mbind.gen_extractor extractor 
-              (`AST_index (sr,mvname,match_var_index)) 
+            let component =
+              Flx_mbind.gen_extractor extractor
+              (`AST_index (sr,mvname,match_var_index))
             in
-            let dcl = 
+            let dcl =
               `Dcl (sr, vname, None,`Private, dfltvs,
                 `DCL_val (`TYP_typeof (component))
-              ) 
-            and instr = `Exe (sr, `EXE_init (vname, component)) 
+              )
+            and instr = `Exe (sr, `EXE_init (vname, component))
             in
               new_asms := dcl :: instr :: !new_asms;
           )
@@ -953,9 +953,9 @@ let rec build_tables syms name inherit_vs
           print_endline ("asms are" ^ string_of_desugared !new_asms);
           *)
           let fun_index = n in
-          let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id dfltvs (level+1) 
-            (Some fun_index) parent root false !new_asms 
+          let pubtab,privtab, exes,ifaces,dirs =
+            build_tables syms id dfltvs (level+1)
+            (Some fun_index) parent root false !new_asms
           in
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
@@ -963,7 +963,7 @@ let rec build_tables syms name inherit_vs
             dirs=dirs;
             symdef=`SYMDEF_function (([],None),`TYP_var fun_index, [`Generated "symtab:match handler" ; `Inline],exes)
           };
-          if access = `Public then 
+          if access = `Public then
             add_function pub_name_map id fun_index;
           add_function priv_name_map id fun_index;
           interfaces := !interfaces @ ifaces
@@ -980,8 +980,8 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_module asms ->
           if is_class then clierr sr "Module not allowed in class";
-          let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (merge_ivs inherit_vs vs) 
+          let pubtab,privtab, exes,ifaces,dirs =
+            build_tables syms id (merge_ivs inherit_vs vs)
             (level+1) (Some n) parent root false
             asms
           in
@@ -1007,7 +1007,7 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
 
-        | `DCL_typeclass asms -> 
+        | `DCL_typeclass asms ->
           (*
           let symdef = `SYMDEF_typeclass in
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
@@ -1015,8 +1015,8 @@ let rec build_tables syms name inherit_vs
           *)
           if is_class then clierr sr "typeclass not allowed in class";
 
-          let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (merge_ivs inherit_vs vs) 
+          let pubtab,privtab, exes,ifaces,dirs =
+            build_tables syms id (merge_ivs inherit_vs vs)
             (level+1) (Some n) parent root false
             asms
           in
@@ -1025,7 +1025,7 @@ let rec build_tables syms name inherit_vs
           (*
           print_endline ("Strip " ^ si vsl ^ " vs");
           *)
-          let drop vs = 
+          let drop vs =
             let keep = length vs - vsl in
             if keep >= 0 then rev (list_prefix (rev vs) keep)
             else failwith "WEIRD CASE"
@@ -1033,16 +1033,16 @@ let rec build_tables syms name inherit_vs
           let nts = map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
           (* fudge the private view to remove the vs *)
           let show { base_sym=i; spec_vs=vs; sub_ts=ts } =
-          si i ^ " |-> " ^ 
+          si i ^ " |-> " ^
             "vs= " ^catmap "," (fun (s,i) -> s^"<" ^si i^">") vs^
             "ts =" ^catmap  "," (sbt syms.dfns) ts
           in
           let fixup ({ base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
             let e' = {
-              base_sym=i; 
-              spec_vs=drop vs; 
-              sub_ts=nts @ drop ts 
-              } 
+              base_sym=i;
+              spec_vs=drop vs;
+              sub_ts=nts @ drop ts
+              }
             in
             (*
             print_endline (show e ^ " ===> " ^ show e');
@@ -1054,12 +1054,12 @@ let rec build_tables syms name inherit_vs
             (*
             print_endline ("Entry " ^ s );
             *)
-            let nues = 
+            let nues =
               if s = "root" then es else
               match es with
-              | `NonFunctionEntry e -> 
+              | `NonFunctionEntry e ->
                  `NonFunctionEntry (fixup e)
-              | `FunctionEntry es -> 
+              | `FunctionEntry es ->
                 `FunctionEntry (map fixup es)
              in
              Hashtbl.add fudged_privtab s nues
@@ -1081,8 +1081,8 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_instance (qn,asms) ->
           if is_class then clierr sr "instance not allowed in class";
-          let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id dfltvs 
+          let pubtab,privtab, exes,ifaces,dirs =
+            build_tables syms id dfltvs
             (level+1) (Some n) parent root false
             asms
           in
@@ -1102,7 +1102,7 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_class asms ->
           if is_class then clierr sr "class not allowed in class";
-          let pubtab,privtab, exes,ifaces,dirs = 
+          let pubtab,privtab, exes,ifaces,dirs =
             build_tables syms id dfltvs (level+1) (Some n) parent root true
             asms
           in
@@ -1138,15 +1138,15 @@ let rec build_tables syms name inherit_vs
 
           (* THIS IS A SUPERIOR HACK!!!! *)
           let sts = ref [] in
-          let detail {base_sym=idx} = 
-            match 
-              try Hashtbl.find syms.dfns idx 
-              with Not_found -> 
+          let detail {base_sym=idx} =
+            match
+              try Hashtbl.find syms.dfns idx
+              with Not_found ->
                 (*
                 print_endline ("Wah! Can't find entry " ^ si idx);
                 *)
                 raise Not_found
-                
+
             with
             | {id=id; vs=vs;symdef=symdef} ->
             let vs : vs_list_t = map (fun (s,i,pat) -> s,pat) (fst vs),snd vs in
@@ -1156,9 +1156,9 @@ let rec build_tables syms name inherit_vs
             | `SYMDEF_function (ps,ret,props,_) ->
               if mem `Ctor props then () else
               let ps = map (fun(_,_,t,_)->t)(fst ps) in
-              let a = match ps with 
-                | [x] -> x 
-                | x -> `TYP_tuple x 
+              let a = match ps with
+                | [x] -> x
+                | x -> `TYP_tuple x
               in
               begin match ret with
               | `AST_void _ -> sts := `MemberProc (id,Some idx,vs,a,None) :: !sts
@@ -1166,8 +1166,8 @@ let rec build_tables syms name inherit_vs
               end
             | _ -> ()
           in
-          let detail x = try detail x with Not_found -> () in 
-          Hashtbl.iter 
+          let detail x = try detail x with Not_found -> () in
+          Hashtbl.iter
           (fun id entry -> match entry with
           | `NonFunctionEntry idx -> detail idx
           | `FunctionEntry idxs -> iter detail idxs
@@ -1175,7 +1175,7 @@ let rec build_tables syms name inherit_vs
           privtab
           ;
           handle_class `Class n (!sts) tvars stype
- 
+
         | `DCL_val t ->
           let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_val (t)}
@@ -1185,7 +1185,7 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
 
-        | `DCL_var t ->       
+        | `DCL_var t ->
           let t = if t = `TYP_none then `TYP_var n else t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_var (`TYP_lvalue t)}
           ;
@@ -1194,7 +1194,7 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
 
-        | `DCL_lazy (t,e) ->       
+        | `DCL_lazy (t,e) ->
           let t = if t = `TYP_none then `TYP_var n else t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_lazy (t,e)}
           ;
@@ -1241,7 +1241,7 @@ let rec build_tables syms name inherit_vs
              type variables.
 
              Consequently, for a type function with a type
-             function as a parameter, the parameter name is being 
+             function as a parameter, the parameter name is being
              overloaded when it is applied, which is wrong.
 
              We need to do what we do with ordinary function:
@@ -1250,7 +1250,7 @@ let rec build_tables syms name inherit_vs
              both function set results and non-function results.
           *)
           begin match t with
-          | `TYP_typefun _ 
+          | `TYP_typefun _
           | `TYP_case _ ->
             if access = `Public then add_function pub_name_map id n;
             add_function priv_name_map id n
@@ -1259,9 +1259,9 @@ let rec build_tables syms name inherit_vs
             add_unique priv_name_map id n
           end;
           add_tvars privtab
-         
+
         | `DCL_inherit qn ->
-          Hashtbl.add dfns n 
+          Hashtbl.add dfns n
           {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
           privmap=privtab;dirs=[];symdef=`SYMDEF_inherit qn}
           ;
@@ -1272,7 +1272,7 @@ let rec build_tables syms name inherit_vs
 
          | `DCL_inherit_fun qn ->
           if is_class then clierr sr "inherit clause not allowed in class";
-          Hashtbl.add dfns n 
+          Hashtbl.add dfns n
           {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
           privmap=privtab;dirs=[];symdef=`SYMDEF_inherit_fun qn}
           ;
@@ -1280,7 +1280,7 @@ let rec build_tables syms name inherit_vs
           add_function priv_name_map id n
           ;
           add_tvars privtab
-        
+
         | `DCL_newtype t ->
           if is_class then clierr sr "Type abstraction not allowed in class";
           Hashtbl.add dfns n {
@@ -1294,7 +1294,7 @@ let rec build_tables syms name inherit_vs
           Hashtbl.add dfns n_repr {
             id="_repr_";sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_fun ([],[piname],t,`Identity,`NREQ_true,"expr") 
+            symdef=`SYMDEF_fun ([],[piname],t,`Identity,`NREQ_true,"expr")
           }
           ;
           add_function priv_name_map "_repr_" n_repr
@@ -1303,7 +1303,7 @@ let rec build_tables syms name inherit_vs
           Hashtbl.add dfns n_make {
             id="_make_"^id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_fun ([],[t],piname,`Identity,`NREQ_true,"expr") 
+            symdef=`SYMDEF_fun ([],[t],piname,`Identity,`NREQ_true,"expr")
           }
           ;
           add_function priv_name_map ("_make_"^id) n_make
@@ -1341,14 +1341,14 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_glr (t,(p,e)) ->
           if is_class then clierr sr "GLR parsing not allowed in class";
-          let fun_index = n in 
+          let fun_index = n in
           let asms = [`Exe (sr,`EXE_fun_return e)] in
-          let pubtab,privtab, exes, ifaces,dirs =  
-            build_tables syms id dfltvs (level+1) 
-            (Some fun_index) parent root false asms 
+          let pubtab,privtab, exes, ifaces,dirs =
+            build_tables syms id dfltvs (level+1)
+            (Some fun_index) parent root false asms
           in
           let ips = ref [] in
-          iter (fun (name,typ) -> 
+          iter (fun (name,typ) ->
             match name with
             | None -> ()
             | Some name ->
@@ -1369,9 +1369,9 @@ let rec build_tables syms name inherit_vs
             *)
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
-            ips := (name,typ) :: !ips 
+            ips := (name,typ) :: !ips
           ) p
-          ; 
+          ;
 
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=dirs;
@@ -1415,16 +1415,16 @@ let rec build_tables syms name inherit_vs
           if is_class then clierr sr "Union not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let utype = `AST_name(sr,id, tvars) in
-          let its = 
+          let its =
             let ccount = ref 0 in (* count component constructors *)
             map (fun (component_name,v,vs,t) ->
               (* ctor sequence in union *)
               let ctor_idx = match v with
-                | None ->  !ccount 
+                | None ->  !ccount
                 | Some i -> ccount := i; i
-              in 
+              in
               incr ccount
-              ; 
+              ;
               component_name,ctor_idx,vs,t
             )
             its
@@ -1440,10 +1440,10 @@ let rec build_tables syms name inherit_vs
           add_unique priv_name_map id n
           ;
 
-          let unit_sum = 
-            fold_left 
+          let unit_sum =
+            fold_left
             (fun v (_,_,_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
-            true 
+            true
             its
           in
           iter
@@ -1479,7 +1479,7 @@ let rec build_tables syms name inherit_vs
                   `SYMDEF_nonconst_ctor (n,utype,ctor_idx,evs,t)
             in
 
-            if print_flag then print_endline ("//  " ^ spc ^ si dfn_idx ^ " -> " ^ component_name); 
+            if print_flag then print_endline ("//  " ^ spc ^ si dfn_idx ^ " -> " ^ component_name);
             Hashtbl.add dfns dfn_idx {
               id=component_name;sr=sr;parent=parent;
               vs=vs;
@@ -1492,8 +1492,8 @@ let rec build_tables syms name inherit_vs
           its
           ;
           add_tvars privtab
- 
-        | `DCL_cclass (sts) -> 
+
+        | `DCL_cclass (sts) ->
           if is_class then clierr sr "cclass not allowed in class";
           let symdef = `SYMDEF_cclass sts in
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
@@ -1525,11 +1525,11 @@ let rec build_tables syms name inherit_vs
             id=id;sr=sr;parent=parent;
             vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];
             symdef=(
-              match dcl with 
+              match dcl with
               | `DCL_struct _ -> `SYMDEF_struct (sts)
               | `DCL_cstruct _ -> `SYMDEF_cstruct (sts)
               | _ -> assert false
-            ) 
+            )
           }
           ;
           if access = `Public then add_unique pub_name_map id n;
@@ -1544,7 +1544,7 @@ let rec build_tables syms name inherit_vs
               let get_name = "get_" ^ component_name in
               let get_dcl = `SYMDEF_fun ([],[stype],t,
                 `StrTemplate("$1." ^ component_name),
-                `NREQ_true,"primary") 
+                `NREQ_true,"primary")
               in
               Hashtbl.add dfns getn {
                 id=get_name;sr=sr;parent=parent;vs=vs;
@@ -1556,7 +1556,7 @@ let rec build_tables syms name inherit_vs
               ;
               if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
             end
-            ; 
+            ;
             (* LVALUE VARIATION *)
             begin
               let getn = !counter in incr counter;
@@ -1564,7 +1564,7 @@ let rec build_tables syms name inherit_vs
               let get_dcl = `SYMDEF_fun ([],[`TYP_lvalue stype],
                 `TYP_lvalue t,
                 `StrTemplate ("$1." ^ component_name),
-                `NREQ_true,"primary") 
+                `NREQ_true,"primary")
               in
               Hashtbl.add dfns getn {
                 id=get_name;sr=sr;parent=parent;vs=vs;
@@ -1576,7 +1576,7 @@ let rec build_tables syms name inherit_vs
               ;
               if print_flag then print_endline ("//[lvalue]  " ^ spc ^ si getn ^ " -> " ^ get_name)
             end
-            ; 
+            ;
 
           )
           sts
@@ -1584,12 +1584,12 @@ let rec build_tables syms name inherit_vs
           *)
           add_tvars privtab
 
-          (* NOTE: we don't add a type constructor for struct, because 
+          (* NOTE: we don't add a type constructor for struct, because
           it would have the same name as the struct type ..
-          we just check this case as required 
+          we just check this case as required
           *)
         end
-    ) 
+    )
     dcls
   end
   ;

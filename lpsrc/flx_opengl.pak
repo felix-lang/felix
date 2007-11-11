@@ -869,7 +869,7 @@ module GL_gl_h
 //#define OPENSTEP
 //#define __gl_h_
 
- 
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*GL_gl_h_cft_55)(GLenum, GLenum);''';
   type GL_gl_h_cft_55 = 'GL_gl_h_cft_55';
@@ -981,7 +981,7 @@ module GL_gl_h
   type GL_gl_h_cft_2 = 'GL_gl_h_cft_2';
   header '''typedef void (*GL_gl_h_cft_1)(GLenum, GLuint, GLuint,  GLsizei, GLenum,  GLvoid const *);''';
   type GL_gl_h_cft_1 = 'GL_gl_h_cft_1';
-  
+
   //TYPE ALIASES
   typedef PFNGLGETCOLORTABLEPARAMETERFVPROC = GL_gl_h_cft_12;
   typedef PFNGLMULTITEXCOORD4FVPROC = GL_gl_h_cft_28;
@@ -1118,7 +1118,7 @@ module GL_gl_h
   typedef PFNGLBLENDEQUATIONSEPARATEATIPROC = GL_gl_h_cft_55;
   typedef PFNGLMULTITEXCOORD2DPROC = GL_gl_h_cft_33;
   typedef PFNGLCONVOLUTIONPARAMETERFVPROC = GL_gl_h_cft_8;
-  
+
   //PROCEDURES
   proc glAccum: uint * float;
   proc glActiveTexture: uint;
@@ -1579,7 +1579,7 @@ module GL_gl_h
   proc glVertex4sv: cptr[short];
   proc glVertexPointer: int * uint * int * address;
   proc glViewport: int * int * int * int;
-  
+
   //FUNCTIONS
   fun glAreTexturesResident: int * cptr[uint] * ptr[utiny] -> utiny;
   fun glGenLists: int -> uint;
@@ -1772,28 +1772,28 @@ module GL_glu_h
 //#define GLAPIENTRYP GLAPIENTRY *
 //#define GLAPIENTRY
 //#define __glu_h__
- 
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*GL_glu_h_cft_1)();''';
   type GL_glu_h_cft_1 = 'GL_glu_h_cft_1';
-  
+
   //PURE INCOMPLETE TYPES
   type _struct_GLUnurbs = 'struct GLUnurbs'; //local
   type _struct_GLUquadric = 'struct GLUquadric'; //local
   type _struct_GLUtesselator = 'struct GLUtesselator'; //local
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef GLUtesselator = _struct_GLUtesselator;
   typedef GLUquadric = _struct_GLUquadric;
   typedef GLUnurbs = _struct_GLUnurbs;
-  
+
   //TYPE ALIASES
   typedef _GLUfuncptr = GL_glu_h_cft_1;
   typedef GLUtesselatorObj = GLUtesselator;
   typedef GLUnurbsObj = GLUnurbs;
   typedef GLUquadricObj = GLUquadric;
   typedef GLUtriangulatorObj = GLUtesselator;
-  
+
   //PROCEDURES
   proc gluBeginCurve: ptr[GLUnurbs];
   proc gluBeginPolygon: ptr[GLUtesselator];
@@ -1838,7 +1838,7 @@ module GL_glu_h
   proc gluTessNormal: ptr[GLUtesselator] * GLdouble * GLdouble * GLdouble;
   proc gluTessProperty: ptr[GLUtesselator] * GLenum * GLdouble;
   proc gluTessVertex: ptr[GLUtesselator] * ptr[GLdouble] * ptr[GLvoid];
-  
+
   //FUNCTIONS
   fun gluBuild1DMipmapLevels: GLenum * GLint * GLsizei * GLenum * GLenum * GLint * GLint * GLint * caddress -> GLint;
   fun gluBuild1DMipmaps: GLenum * GLint * GLsizei * GLenum * GLenum * caddress -> GLint;
@@ -2076,7 +2076,7 @@ module GL_glut_h
 //#define FGAPI
 //#define WINDOWS
 
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*GL_freeglut_std_h_cft_5)(int, int);''';
   type GL_freeglut_std_h_cft_5 = 'GL_freeglut_std_h_cft_5';
@@ -2092,7 +2092,7 @@ module GL_glut_h
   type GL_freeglut_std_h_cft_1 = 'GL_freeglut_std_h_cft_1';
   header '''typedef void (*GL_freeglut_std_h_cft_2)(void);''';
   type GL_freeglut_std_h_cft_2 = 'GL_freeglut_std_h_cft_2';
-  
+
   //VARIABLES
   const glutBitmap8By13: address = 'glutBitmap8By13';
   const glutBitmap9By15: address = 'glutBitmap9By15';
@@ -2103,7 +2103,7 @@ module GL_glut_h
   const glutBitmapHelvetica12: address = 'glutBitmapHelvetica12';
   const glutBitmapHelvetica18: address = 'glutBitmapHelvetica18';
   const glutBitmapTimesRoman24: address = 'glutBitmapTimesRoman24';
-  
+
   //PROCEDURES
   proc glutAddMenuEntry: cptr[char] * int;
   proc glutAddSubMenu: cptr[char] * int;
@@ -2201,7 +2201,7 @@ module GL_glut_h
   proc glutWireTeapot: GLdouble;
   proc glutWireTetrahedron: 1;
   proc glutWireTorus: GLdouble * GLdouble * GLint * GLint;
-  
+
   //FUNCTIONS
   fun glutBitmapLength: address * cptr[utiny] -> int;
   fun glutBitmapWidth: address * int -> int;
@@ -4703,7 +4703,7 @@ module GL_glext_h
   const WIN32_LEAN_AND_MEAN : int;
 //#define __glext_h_
 
- 
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*GL_glext_h_cft_255)(GLenum, GLenum, GLenum,  GLuint, GLint, GLint);''';
   type GL_glext_h_cft_255 = 'GL_glext_h_cft_255';
@@ -5215,7 +5215,7 @@ module GL_glext_h
   type GL_glext_h_cft_28 = 'GL_glext_h_cft_28';
   header '''typedef void (*GL_glext_h_cft_9)(GLenum, GLfloat);''';
   type GL_glext_h_cft_9 = 'GL_glext_h_cft_9';
-  
+
   //TYPE ALIASES
   typedef PFNGLGETHISTOGRAMPARAMETERFVEXTPROC = GL_glext_h_cft_55;
   typedef PFNGLMATRIXINDEXUSVARBPROC = GL_glext_h_cft_99;

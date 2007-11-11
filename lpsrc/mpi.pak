@@ -40,7 +40,7 @@ if HAVE_MPI:
 //Timestamp     : 2006/8/29 15:42:8 UTC
 //Timestamp     : 2006/8/30 1:42:8 (local)
 //Raw Header    : /usr/lib/mpich/include/mpi.h
-//Preprocessor  : gcc -E 
+//Preprocessor  : gcc -E
 //Input file: mpi.flxcc.i
 //Flxcc Control : mpi.flxcc
 //Felix Version : 1.1.3_rc1
@@ -193,22 +193,22 @@ module mpi_h
   const MPI_IDENT : int;
   const MPI_MAX_PORT_NAME : int;
 
- 
+
   //ABSTRACT TYPES
   type MPI_Handler_function = 'MPI_Handler_function';
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gridftp_params {
     partner_rank: int;
     nsocket_pairs: int;
     max_outstanding_writes: int;
     tcp_buffsize: int;
   }
-  
+
   //PURE INCOMPLETE TYPES
   type _struct_MPIR_Info = 'struct MPIR_Info'; //local
   type _union_MPIR_HANDLE = ' union MPIR_HANDLE'; //local
-  
+
   //TYPE ALIASES
   typedef MPI_Delete_function = int * int * address * address -> int;
   typedef MPI_Errhandler = int;
@@ -221,14 +221,14 @@ module mpi_h
   typedef MPI_Comm = int;
   typedef MPI_Info = ptr[_struct_MPIR_Info];
   typedef MPI_Datatype = int;
-  
+
   //VARIABLES
   const MPICHX_TOPOLOGY_DEPTHS: int = 'MPICHX_TOPOLOGY_DEPTHS';
   const MPICHX_QOS_BANDWIDTH: int = 'MPICHX_QOS_BANDWIDTH';
   const MPICHX_QOS_PARAMETERS: int = 'MPICHX_QOS_PARAMETERS';
   const MPICHX_PARALLELSOCKETS_PARAMETERS: int = 'MPICHX_PARALLELSOCKETS_PARAMETERS';
   const MPICHX_TOPOLOGY_COLORS: int = 'MPICHX_TOPOLOGY_COLORS';
-  
+
   //FUNCTIONS
   fun MPIR_dup_fn: int * int * address * address * address * ptr[int] -> int;
   fun MPIR_null_copy_fn: int * int * address * address * address * ptr[int] -> int;

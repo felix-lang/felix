@@ -11,7 +11,7 @@ val mkproc_gen:
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   int
- 
+
 @h = tangler("src/compiler/flxlib/flx_mkproc.ml")
 @select(h)
 open Flx_util
@@ -32,7 +32,7 @@ open Flx_reparent
 open Flx_spexes
 open Flx_args
 
-let hfind msg h k = 
+let hfind msg h k =
   try Hashtbl.find h k
   with Not_found ->
     print_endline ("flx_inline Hashtbl.find failed " ^ msg);
@@ -42,24 +42,24 @@ module BidSet = IntSet
 
 let ident x = x
 
-let intset_of_list ls = 
+let intset_of_list ls =
   fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
 
 (* THIS CODE JUST COUNTS APPLICATIONS *)
 let find_mkproc_expr mkproc_map e =
   let aux e = match e with
-  | `BEXPR_apply 
+  | `BEXPR_apply
     (
       (`BEXPR_closure (f,ts),_),
       a
     )
-    ,ret 
+    ,ret
     when Hashtbl.mem mkproc_map f ->
     let p,n = Hashtbl.find mkproc_map f in
     Hashtbl.replace mkproc_map f (p,n+1)
 
   | x -> ()
-  in 
+  in
   iter_tbexpr ignore aux ignore e
 
 let find_mkproc_exe mkproc_map exe =
@@ -72,15 +72,15 @@ let find_mkproc_exes mkproc_map exes =
 let mkproc_expr syms bbdfns sr this mkproc_map vs e =
   let exes = ref [] in
   let rec aux e = match map_tbexpr ident aux ident e with
-  | `BEXPR_apply 
+  | `BEXPR_apply
     (
       (`BEXPR_closure (f,ts),_),
       a
     )
-    ,ret 
+    ,ret
     when Hashtbl.mem mkproc_map f ->
 
-    let e = 
+    let e =
       (* count replacements *)
       let p,n = Hashtbl.find mkproc_map f in
       Hashtbl.replace mkproc_map f (p,n+1);
@@ -96,7 +96,7 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
       let (_,at') as a' = append_args syms bbdfns f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
-      let call : bexe_t = 
+      let call : bexe_t =
         `BEXE_call (sr,
           (`BEXPR_closure (p,ts),`BTYP_function (at',`BTYP_void)),
           a'
@@ -110,7 +110,7 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
       `BEXPR_name (k,ts),ret
     in e
   | x -> x
-  in 
+  in
   let e = aux e in
   e,rev !exes
 
@@ -123,7 +123,7 @@ let mkproc_exe syms bbdfns sr this mkproc_map vs exe =
   in
   let exe' = map_bexe ident tocall ident ident ident exe in
   let exes = !exes @ [exe'] in
-  if syms.compiler_options.print_flag then 
+  if syms.compiler_options.print_flag then
   begin
     if length exes > 1 then begin
       print_endline ("Unravelling exe=\n" ^ string_of_bexe syms.dfns bbdfns 2 exe);
@@ -133,7 +133,7 @@ let mkproc_exe syms bbdfns sr this mkproc_map vs exe =
   end;
   exes
 
-let mkproc_exes syms bbdfns sr this mkproc_map vs exes = 
+let mkproc_exes syms bbdfns sr this mkproc_map vs exes =
   List.concat (map (mkproc_exe syms bbdfns sr this mkproc_map vs) exes)
 
 
@@ -142,7 +142,7 @@ let proc_exe k exe = match exe with
      -> [`BEXE_assign (sr,k,e); `BEXE_proc_return sr]
 
   | `BEXE_yield (sr,e)
-     -> 
+     ->
      (* yea, this is indeed quite funny .. since yield is just a return which
         doesn't wipe out the continuation address .. i.e. the pc variable..
      *)
@@ -153,7 +153,7 @@ let proc_exe k exe = match exe with
   | x -> [x]
 
 let proc_exes syms bbdfns k exes = concat (map (proc_exe k) exes)
-  
+
 let mkproc_gen syms (child_map,bbdfns) =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
   let vm = Hashtbl.create 97 in (* dummy varmap *)
@@ -161,7 +161,7 @@ let mkproc_gen syms (child_map,bbdfns) =
   let mkproc_map = Hashtbl.create 97 in
 
   let cache = Hashtbl.create 97 in
-  let unstackable i = 
+  let unstackable i =
     let csf = Flx_stack_calls.can_stack_func cache syms (child_map,bbdfns) i in
     (*
     print_endline ("Function " ^ si i ^ " is " ^ (if csf then "stackable" else "unstackable"));
@@ -206,18 +206,18 @@ let mkproc_gen syms (child_map,bbdfns) =
 
   (* make a list of the ones actually applied directly *)
   let to_mkproc = ref [] in
-  Hashtbl.iter 
-  (fun i (_,n) -> 
+  Hashtbl.iter
+  (fun i (_,n) ->
     if n > 0 then to_mkproc := i :: !to_mkproc
-  ) 
+  )
   mkproc_map
   ;
 
   (* remove any function which is an ancestor of any other:
      keep the children (arbitrary choice)
   *)
-  let isnot_asc adult = 
-    fold_left 
+  let isnot_asc adult =
+    fold_left
     (fun acc child -> acc && not (Flx_child.is_ancestor bbdfns child adult))
     true !to_mkproc
   in
@@ -227,12 +227,12 @@ let mkproc_gen syms (child_map,bbdfns) =
 
   let nu_mkproc_map = Hashtbl.create 97 in
   Hashtbl.iter
-  (fun i j -> 
-    if mem i to_mkproc 
-    then begin 
+  (fun i j ->
+    if mem i to_mkproc
+    then begin
       Hashtbl.add nu_mkproc_map i j
       (*
-      ; 
+      ;
       print_endline ("Keeping " ^ si i)
       *)
     end else begin
@@ -256,19 +256,19 @@ let mkproc_gen syms (child_map,bbdfns) =
   (* synthesise the new functions *)
   let nuprocs = ref 0 in
   Hashtbl.iter
-  (fun i (k,n) -> 
+  (fun i (k,n) ->
       incr nuprocs;
       if syms.compiler_options.print_flag then
       print_endline ("MKPROC: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
 
       let idm,parent,sr,bbdcl = Hashtbl.find bbdfns i in
-      let props, vs, ps, traint, ret, exes = 
+      let props, vs, ps, traint, ret, exes =
         match bbdcl with
-        | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes 
+        | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
         | _ -> assert false
       in
 
-      if syms.compiler_options.print_flag then 
+      if syms.compiler_options.print_flag then
       begin
         print_endline "OLD FUNCTION BODY ****************";
         iter (fun exe -> print_endline (string_of_bexe syms.dfns bbdfns 2 exe)) exes;
@@ -279,9 +279,9 @@ let mkproc_gen syms (child_map,bbdfns) =
         (* reparent all the children of i to k *)
         let extras = map (fun {pindex=i}->i) ps in
         let revariable =
-          Flx_reparent.reparent_children syms 
-          (ut,child_map,bbdfns) 
-          vs (length vs) 
+          Flx_reparent.reparent_children syms
+          (ut,child_map,bbdfns)
+          vs (length vs)
           i (Some k) rl vm true extras
         in
         let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -296,8 +296,8 @@ let mkproc_gen syms (child_map,bbdfns) =
         let ps = ps @ [{pindex=vix; pkind=`PVal; ptyp=`BTYP_pointer ret; pid=vid}] in
 
         (* clone old parameters, also happens to create our new one *)
-        iter 
-          (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} -> 
+        iter
+          (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
             let n = revar pi in
             let bbdcl = match pk with
             | `PVal -> `BBDCL_val (vs,t)
@@ -308,8 +308,8 @@ let mkproc_gen syms (child_map,bbdfns) =
             print_endline ("New param " ^ s ^ " " ^ si n ^ " <-- " ^ si pi ^ ", parent " ^ si k ^ " <-- " ^ si i);
             Hashtbl.add bbdfns n (s ^ "_mkproc",Some k,sr,bbdcl);
             Flx_child.add_child child_map k n
-          ) 
-          ps 
+          )
+          ps
         ;
 
         (* rename parameter list *)
@@ -340,7 +340,7 @@ let mkproc_gen syms (child_map,bbdfns) =
       let bbdcl = `BBDCL_procedure (props,vs,(ps,traint), exes) in
       Hashtbl.add bbdfns k (idm^"_mkproc",parent,sr,bbdcl);
 
-      if syms.compiler_options.print_flag then 
+      if syms.compiler_options.print_flag then
       begin
         print_endline "NEW PROCEDURE BODY ****************";
         iter (fun exe -> print_endline (string_of_bexe syms.dfns bbdfns 2 exe)) exes;
@@ -368,7 +368,7 @@ let mkproc_gen syms (child_map,bbdfns) =
     (*
     ()
     *)
-    Hashtbl.replace bbdfns i 
+    Hashtbl.replace bbdfns i
       (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
 
   | _ -> ()

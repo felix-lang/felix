@@ -25,10 +25,10 @@ open Flx_util
 
 (* A type constraint written in a vs list is a simplification.
    The form
-   
+
    v:p
 
-   is short for 
+   is short for
 
    typematch v with | p -> 1 | _ -> 0 endmatch
 
@@ -36,14 +36,14 @@ open Flx_util
    (in which case it is constraint that v be a member of the
    metatype p, without other constraints!)
 *)
-   
+
 let build_constraint_element syms bt sr i p1 =
   (* special case, no constraint, represent by just 'true' (unit type) *)
-  match p1 with 
-  | `AST_patany _ 
+  match p1 with
+  | `AST_patany _
   | `TYP_type
   | `TYP_function _
-    -> `BTYP_tuple [] 
+    -> `BTYP_tuple []
   | _ ->
 
   (* more general cases *)
@@ -57,23 +57,23 @@ let build_constraint_element syms bt sr i p1 =
     it is tricky because they'd have to be introduced 'in scope':
   *)
   (*
-  if eqns1 <> [] then clierr sr 
+  if eqns1 <> [] then clierr sr
     "Type variable constraint may not have 'as' terms"
   ;
   if explicit_vars1 <> [] then clierr sr
     "Type variable constraint may not have named pattern variables"
   ;
   *)
-  let varset1 = 
-    fold_left (fun s i -> IntSet.add i s) 
+  let varset1 =
+    fold_left (fun s i -> IntSet.add i s)
     IntSet.empty any_vars1
   in
-    let varset1 = 
-    fold_left (fun s (i,_) -> IntSet.add i s) 
+    let varset1 =
+    fold_left (fun s (i,_) -> IntSet.add i s)
     varset1 as_vars1
   in
-  let varset1 = 
-    fold_left (fun s (i,_) -> IntSet.add i s) 
+  let varset1 =
+    fold_left (fun s (i,_) -> IntSet.add i s)
     varset1 explicit_vars1
   in
   let un = `BTYP_tuple [] in (* the 'true' value of the type system *)
@@ -91,13 +91,13 @@ let build_constraint_element syms bt sr i p1 =
     let un = `BTYP_tuple [] in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
     let fresh = !(syms.counter) in incr (syms.counter);
-    let dflt = 
+    let dflt =
       {
-        pattern=`BTYP_var (fresh,`BTYP_type 0); 
+        pattern=`BTYP_var (fresh,`BTYP_type 0);
         pattern_vars = IntSet.singleton fresh;
         assignments=[]
       },
-      `BTYP_void 
+      `BTYP_void
     in
     let lss = rev (dflt :: lss) in
     `BTYP_type_match (elt, lss)
@@ -106,20 +106,20 @@ let build_constraint_element syms bt sr i p1 =
     (* print_endline ("Bound typematch is " ^ sbt syms.dfns tm); *)
     tm
 
-let build_type_constraints syms bt sr vs = 
-  let type_constraints = 
-    map (fun (s,i,tp) -> 
+let build_type_constraints syms bt sr vs =
+  let type_constraints =
+    map (fun (s,i,tp) ->
       let tp = build_constraint_element syms bt sr i tp in
       (*
       if tp <> `BTYP_tuple [] then
         print_endline (
-        " vs entry " ^ s ^ ", var " ^ si i ^ 
+        " vs entry " ^ s ^ ", var " ^ si i ^
         " constraint " ^ sbt syms.dfns tp)
       ;
       *)
       tp
     )
-    vs 
+    vs
   in
     `BTYP_intersect type_constraints
 

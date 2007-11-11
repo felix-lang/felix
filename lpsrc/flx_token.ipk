@@ -15,10 +15,10 @@ type ntprio_t = [
   | `Greatereq_prio of string
 ]
 
-type token = 
+type token =
   | ERRORTOKEN of (srcref * string)
   | ENDMARKER
-  | NEWLINE 
+  | NEWLINE
   | SLOSH
   | COMMENT of string
   | COMMENT_NEWLINE of string
@@ -46,7 +46,7 @@ type token =
 @for k,v in flx_syms:
   tangle("  | "+k+" of srcref",inhibit_sref=1)
 
-@for n,k in flx_keywords: 
+@for n,k in flx_keywords:
   tangle("  | "+k+" of srcref",inhibit_sref=1)
 
 and prio_t = [`Default | `Priority of string]
@@ -100,12 +100,12 @@ let string_of_token (tok :Flx_token.token): string =
   | NONTERMINAL (sr,s,p) -> s ^ sp p
   | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
   | FLOAT (sr,t,v) -> v
-  | STRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | FSTRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | QSTRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | STRING (sr,s) -> Flx_string.c_quote_of_string s
+  | CSTRING (sr,s) -> Flx_string.c_quote_of_string s
+  | FSTRING (sr,s) -> Flx_string.c_quote_of_string s
+  | QSTRING (sr,s) -> Flx_string.c_quote_of_string s
+  | WSTRING (sr,s) -> Flx_string.c_quote_of_string s
+  | USTRING (sr,s) -> Flx_string.c_quote_of_string s
   | USER10 (sr,op,fn) -> "op10 " ^ op
   | USERLB (sr,_,lb) -> lb
   | USERRB (sr,rb) -> rb
@@ -117,11 +117,11 @@ let string_of_token (tok :Flx_token.token): string =
   (*
   | PARSE_ACTION sr -> "=>#"
   *)
-  
+
 @for k,s in flx_syms:
   tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
 
-@for n,t in flx_keywords: 
+@for n,t in flx_keywords:
   tangle('  |  '+t+' _ -> "'+n+'"',inhibit_sref=1)
 @#
   | COMMENT s -> s (* C style comment, includes the /* */ pair *)
@@ -159,7 +159,7 @@ let name_of_token (tok :Flx_token.token): string =
 @for k,s in flx_syms:
   tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
 
-@for n,t in flx_keywords: 
+@for n,t in flx_keywords:
   tangle('  |  '+t+' _ -> "'+t+'"',inhibit_sref=1)
 @#
   | COMMENT s -> "COMMENT"
@@ -172,12 +172,12 @@ let name_of_token (tok :Flx_token.token): string =
 
 let src_of_token t = match t with
   | DUMMY
-  | NEWLINE 
+  | NEWLINE
   | COMMENT _
   | COMMENT_NEWLINE _
-  | WHITE _ 
+  | WHITE _
   | ENDMARKER
-  | SLOSH 
+  | SLOSH
   | HASH_INCLUDE_FILES _
   | TOKEN_LIST _
   | LOAD_SYNTAX _
@@ -201,12 +201,12 @@ let src_of_token t = match t with
   (*
   | PARSE_ACTION s
   *)
-  | ERRORTOKEN (s,_) 
+  | ERRORTOKEN (s,_)
 
 @for k,s in flx_syms:
   tangle('  | '+k+' s ',inhibit_sref=1)
 
-@for n,t in flx_keywords: 
+@for n,t in flx_keywords:
   tangle('  | '+t+' s',inhibit_sref=1)
 @#
   -> s

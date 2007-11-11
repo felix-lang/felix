@@ -6,33 +6,33 @@ open Flx_types
 val parse_option: string -> (string * string) list
 val parse_options: string array -> (string * string) list
 
-val check_key_value : 
-  (string * string) list -> 
+val check_key_value :
+  (string * string) list ->
   string-> string ->
   bool
 
-val check_key: 
-  (string * string) list -> 
+val check_key:
+  (string * string) list ->
   string ->
   bool
 
-val check_keys: 
-  (string * string) list -> 
+val check_keys:
+  (string * string) list ->
   string list ->
   bool
 
-val get_key_value : 
-  (string * string) list -> 
+val get_key_value :
+  (string * string) list ->
   string ->
   string option
 
-val get_key_values : 
-  (string * string) list -> 
+val get_key_values :
+  (string * string) list ->
   string ->
   string list
 
-val get_keys_values : 
-  (string * string) list -> 
+val get_keys_values :
+  (string * string) list ->
   string list ->
   string list
 
@@ -44,35 +44,35 @@ open Flx_types
 
 let parse_option s =
   let n = String.length s in
-  if n > 1 && s.[0]='-' then 
-    if n > 2 && s.[1]='-' then 
+  if n > 1 && s.[0]='-' then
+    if n > 2 && s.[1]='-' then
     begin
       let j = ref 2 in
       while !j < n && s.[!j]<>'=' do incr j done;
       let key = String.sub s 2 (!j - 2) in
-      let value = 
-        if !j<n && s.[!j]='=' then 
+      let value =
+        if !j<n && s.[!j]='=' then
           String.sub s (!j+1) (n - !j - 1)
-        else 
+        else
           ""
       in
         [key,value]
-    end 
+    end
     else
       [String.sub s 1 1, String.sub s 2 (n-2)]
   else ["",s]
 
-let parse_options argv = 
+let parse_options argv =
   concat (map parse_option (List.tl (Array.to_list argv)))
 
-let get_key_value options key = 
+let get_key_value options key =
   catch_all (assoc key) options
 
-let check_key options key = 
+let check_key options key =
   is_some (get_key_value options key)
 
-let check_keys options keys = 
-  fold_left 
+let check_keys options keys =
+  fold_left
     (fun b key -> b || (check_key options key) )
     false keys
 
@@ -87,7 +87,7 @@ let get_key_values options key =
   let values = ref [] in
   let rec aux  = function
   | [] ->  !values
-  | (key',value) :: t -> 
+  | (key',value) :: t ->
     if key=key' then values := value :: !values;
     aux t
   in rev (aux options)
@@ -100,7 +100,7 @@ open Flx_types
 open Flx_mtypes2
 
 val get_felix_options:
-  (string * string) list -> 
+  (string * string) list ->
   felix_compiler_options_t
 
 val make_syms:
@@ -120,19 +120,19 @@ open Flx_mtypes2
 open Flx_getopt
 
 let print_chosen options =
-  print_endline 
-  (String.concat ", " 
-    (List.map 
-      (fun (a, b) -> 
+  print_endline
+  (String.concat ", "
+    (List.map
+      (fun (a, b) ->
         a ^ "=" ^ b
       )
       options
     )
   )
- 
+
 let get_felix_options options =
   {
-    elkhound    = 
+    elkhound    =
       begin match get_key_value options "elkhound" with
       | Some s -> s
       | None -> "flx_elkhound"
@@ -150,29 +150,29 @@ let get_felix_options options =
     trace       = check_keys options ["trace" ];
     files       = get_key_values options "";
     raw_options = options;
-    reverse_return_parity = check_key options "e"; 
+    reverse_return_parity = check_key options "e";
     force_recompile = check_keys options ["force"];
     cache_dir = get_key_value options "cache_dir";
-    max_inline_length = 
+    max_inline_length =
       begin
         let inline =
-          match get_key_value options "inline" with 
-          | Some i -> 
+          match get_key_value options "inline" with
+          | Some i ->
             (
               if i = "none" then 0 else
               if i = "" then 50 else
-                try 
-                  int_of_string i 
-                with _ -> 
+                try
+                  int_of_string i
+                with _ ->
                   failwith ("Invalid value for inline: '" ^ i^"'")
             )
-          | None -> 
+          | None ->
             begin match check_key options "noinline" with
             | true -> 0
-            | false -> 
+            | false ->
               begin match check_keys options ["inline";"opt";"optimise"] with
-              | true -> 50 
-              | false -> 5 
+              | true -> 50
+              | false -> 5
               end
             end
         in
@@ -180,7 +180,7 @@ let get_felix_options options =
           if inline < 1 then 1 else inline
       end
     ;
-    auto_imports = 
+    auto_imports =
       List.map (fun s -> "<" ^ s ^ ">" ) (get_key_values options "import")
     ;
 
@@ -203,7 +203,7 @@ let print_options () =
   print_endline "  --mangle-names : generate code with fully mangled names";
   print_endline "  --elkhound=flx_elkhound : set pathname of elkhound executable"
 
-let make_syms options = 
+let make_syms options =
   {
     registry = Hashtbl.create 97;
     counter = ref 1;

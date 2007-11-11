@@ -6,7 +6,7 @@ open Flx_types
 open Flx_mtypes1
 open Flx_mtypes2
 
-val get_ps: 
+val get_ps:
   fully_bound_symbol_table_t ->
   int ->
   bparameter_t list
@@ -55,19 +55,19 @@ open Flx_spexes
 open Flx_foldvars
 
 
-let hfind msg h k = 
+let hfind msg h k =
   try Hashtbl.find h k
   with Not_found ->
     print_endline ("flx_inline Hashtbl.find failed " ^ msg);
     raise Not_found
 
-let get_ps bbdfns f = 
+let get_ps bbdfns f =
   match hfind "get_ps" bbdfns f with
-  | _,_,_,`BBDCL_function (_,_,(ps,_),_,_) 
+  | _,_,_,`BBDCL_function (_,_,(ps,_),_,_)
   | _,_,_,`BBDCL_procedure (_,_,(ps,_),_) -> ps
   | _ -> assert false
 
-let unpack syms bbdfns f ps a : tbexpr_t list = 
+let unpack syms bbdfns f ps a : tbexpr_t list =
   match ps with
   | [] -> []   (* arg should be unit *)
   | [_] -> [a] (* one param, one arg *)
@@ -92,7 +92,7 @@ let unpack syms bbdfns f ps a : tbexpr_t list =
     assert (k = length ps);
     map (fun i -> `BEXPR_get_n (i,a),t) (nlist k)
 
-  | x,t -> 
+  | x,t ->
     print_endline ("Function " ^ si f);
     print_endline ("Unexpected non tuple arg type " ^ sbt syms.dfns t);
     print_endline ("Parameters = " ^ catmap ", " (fun {pid=s;pindex=i} -> s ^ "<" ^ si i ^ ">") ps);

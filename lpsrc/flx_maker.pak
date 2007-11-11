@@ -13,7 +13,7 @@
 
 @h = tangler('script/bin2hex.py')
 @select(h)
-# convert a binary file to hex 
+# convert a binary file to hex
 import sys
 fn = sys.argv[1]
 f = open(fn)
@@ -129,7 +129,7 @@ for k in skeys:
     v = pkgdict.get(t,-1)
     if v == -1:
       v = ""
-    elif (v == 1 or v == 0) and t == "inline" and only_nonopt: 
+    elif (v == 1 or v == 0) and t == "inline" and only_nonopt:
       discard = 1
       break
     else:
@@ -169,7 +169,7 @@ iscr_source = [
   'lpsrc/flx_tut_bind',
   'lpsrc/flx_tut_migrate',
   ]
-  
+
 @h = tangler('spkgs/flx_maker.py')
 @select(h)
 iscr_source = ['lpsrc/flx_maker.pak']
@@ -215,7 +215,7 @@ class PLUGIN(Plugin):
   name = 'man'
   help = 'make the man pages'
 
-  def runme(self):    
+  def runme(self):
     print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
     MAN_PAGES = []
@@ -229,7 +229,7 @@ class PLUGIN(Plugin):
       for file in MAN_PAGES:
         basename = os.path.splitext(file)[0]
         vxqt(
-          "man2html man/man1/" + file + 
+          "man2html man/man1/" + file +
           '| sed -e "s%<A HREF=\\"[^<]*cgi-bin/man/man2html?1+\(.*\)\\">%<A HREF=\\"\\1_1.html\\">%"' +
           '| sed -e "7d"' +
           '| sed -e "1,3d"' +
@@ -237,13 +237,13 @@ class PLUGIN(Plugin):
           ' >' + "doc/htmlman/" + basename+'_1.html',
         )
     except:pass
-  
+
 @select(tangler('mkplugins/impldoc.py'))
 class PLUGIN(Plugin):
   name = 'impldoc'
   help = 'make the ocaml compiler documentation'
-    
-  def runme(self):    
+
+  def runme(self):
     print "GENERATING OCAMLDOCS"
     erasedir('doc/impldoc')
     os.mkdir('doc/impldoc')
@@ -251,7 +251,7 @@ class PLUGIN(Plugin):
       vxqt('ocamldoc -I src -d doc/impldoc src/*.mli -html')
       vxqt('ocamldoc -I src -o doc/impldoc/flx_impl.tex src/*.mli -latex')
       vxqt('(cd doc/impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
-    except: 
+    except:
      pass # well ocamldoc is full of bugs ..
 
 @select(tangler('mkplugins/rtldoc.py'))
@@ -259,7 +259,7 @@ class PLUGIN(Plugin):
   name = 'rtldoc'
   help = 'make the runtime language documentation'
 
-  def runme(self):    
+  def runme(self):
     print "GENERATING RTLDOCS"
     try:
       vxqt("doxygen misc/doxconf.dox")
@@ -271,7 +271,7 @@ class PLUGIN(Plugin):
   name = 'gramdoc'
   help = 'make the syntax documentation'
 
-  def runme(self):    
+  def runme(self):
     print "GENERATING SYNTAX DOCUMENTATION"
     f = open ("tmp/xx.flx","w")
     f.write("#import <nugram.flxh>\n")
@@ -287,7 +287,7 @@ class PLUGIN(Plugin):
   name = 'typeclassdoc'
   help = 'make the typeclass documentation'
 
-  def runme(self):    
+  def runme(self):
     print "GENERATING TYPECLASS and MODULE DOCUMENTATION"
     filecopy2dir( os.path.join('misc', 'plus.gif'), os.path.join("doc", "moduledoc"))
     filecopy2dir( os.path.join('misc', 'minus.gif'), os.path.join("doc", "moduledoc"))
@@ -393,7 +393,7 @@ class PLUGIN(Plugin):
 #ocaml compilation
 class PLUGIN(Plugin):
   name = 'build_ocaml_modules'
-    
+
   def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES):
     if not (INTERFACES or IMPLEMENTATIONS):
       return []
@@ -426,7 +426,7 @@ class PLUGIN(Plugin):
 
   def runme(self, IMPLEMENTATIONS, lib):
     if not IMPLEMENTATIONS:
-      return 
+      return
 
     print "CAML CREATING LIBRARY", lib
     if 'bytecode' in options:
@@ -470,7 +470,7 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_ocamls.py'))
 class PLUGIN(Plugin):
   name = 'build_ocamls'
-   
+
   def runme(self, pkg, pkgdict):
     RAW_INTERFACES = pkgdict.get('caml_raw_interfaces', [])
     plugins['copy_mli2ml'](RAW_INTERFACES)
@@ -518,7 +518,7 @@ class PLUGIN(Plugin):
 
       mkdirs('bin')
       filecopy(
-        os.path.join('_build', bin), 
+        os.path.join('_build', bin),
         os.path.join('bin', os.path.basename(exe)))
 
 @doc()
@@ -526,7 +526,7 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_host_tools.py'))
 class PLUGIN(Plugin):
   name = 'build_host_tools'
-    
+
   def copy_hpp2rtl(self, HPPS):
     for path in HPPS:
       f = os.path.join(FLX_DIR, path)
@@ -580,7 +580,7 @@ class PLUGIN(Plugin):
         macros=MACROS+["FLX_STATIC_LINK"],
       )
 
-    for x in CCS+CPPS: 
+    for x in CCS+CPPS:
       f = x + EXT_STATIC_OBJ
       if verbose: print "Removing", f
       deletefile(f) # delete the object files
@@ -591,7 +591,7 @@ class PLUGIN(Plugin):
       'CFLAGS': CFLAGS,
       'LDFLAGS': SFLAGS,
     }
-         
+
     if pkglib:
       kwds['lib_paths'] = ['hostlib']
       kwds['libs'] = [pkglib]
@@ -624,8 +624,8 @@ class PLUGIN(Plugin):
       erasefile(basename+'.cpp')
       erasefile(basename+'.hpp')
       raise e
-  
-    cflags = vxqtq(os.path.join( "bin", 
+
+    cflags = vxqtq(os.path.join( "bin",
       "flx_pkgconfig --path=config --field=cflags @"+resfilename),
       log=log)
     cflags = cflags[0].strip() + " "
@@ -635,12 +635,12 @@ class PLUGIN(Plugin):
       if SUPPORT_DYNAMIC_LOADING:
         log.write("COMPILING GENERATED C++ TEST CODE: %s (dynamic)\n" % mode,quiet)
         flush()
- 
-        dlibs = vxqtq(os.path.join("bin", 
+
+        dlibs = vxqtq(os.path.join("bin",
           "flx_pkgconfig -r --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename),
           log=log)
         dlibs = dlibs[0].strip() + " "
-  
+
         TARGET_CXX.build_shared_dll(
             vxqt,
             basename,
@@ -652,7 +652,7 @@ class PLUGIN(Plugin):
             lib_paths=[SHLIB_DIR],
             LDFLAGS=DFLAGS+dlibs,
             log=log)
-  
+
       if SUPPORT_STATIC_LINKAGE:
         log.write("COMPILING GENERATED C++ TEST CODE: %s (static)\n" % mode,quiet)
         flush()
@@ -697,9 +697,9 @@ class PLUGIN(Plugin):
       erasefile(basename+EXT_SHLIB)
       erasefile(basename+EXT_EXE)
       raise e
-  
+
     return basename
-  
+
 
 @select(tangler('mkplugins/diff_env.py'))
 if os.name == 'nt': # build system is Windows Python
@@ -718,12 +718,12 @@ class PLUGIN(Plugin):
 
   def __init__(self, *args, **kwds):
     super(PLUGIN, self).__init__(*args, **kwds)
- 
-    if "extract" in options or "force_extract" in options: 
+
+    if "extract" in options or "force_extract" in options:
       if "build" not in phases: phases.append("build")
 
   def runme(self):
-    global phases 
+    global phases
 
     if "build" not in phases: phases.append("build")
     if "host" not in phases: phases.append("host")
@@ -735,7 +735,7 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'virgin'
   help = 'clean and remove all the sources'
- 
+
   def runme(self):
     for d in [ \
         os.path.join("judy", "JudyCommon"),
@@ -748,9 +748,9 @@ class PLUGIN(Plugin):
         os.path.join("bagley", "felix"),
         "bagley",
         "bin",
-        os.path.join("cpkgs", "build"), 
-        os.path.join("cpkgs", "host"), 
-        os.path.join("cpkgs", "target"), 
+        os.path.join("cpkgs", "build"),
+        os.path.join("cpkgs", "host"),
+        os.path.join("cpkgs", "target"),
         "cpkgs",
         os.path.join("demos", "faio"),
         os.path.join("demos", "sdl"),
@@ -785,14 +785,14 @@ class PLUGIN(Plugin):
         os.path.join("lib", "gsl"),
         os.path.join("lib", "mpi"),
         os.path.join("lib", "pari"),
-        os.path.join("lib", "GL"), 
-        os.path.join("lib", "SDL"), 
+        os.path.join("lib", "GL"),
+        os.path.join("lib", "SDL"),
         "lib",
         os.path.join("man", "man1"),
         "man",
         "manifests",
-        os.path.join("meta", "godi"), 
-        os.path.join("meta", "godiva"), 
+        os.path.join("meta", "godi"),
+        os.path.join("meta", "godiva"),
         "meta",
         os.path.join("misc", "vim"),
         os.path.join("misc", "lua"),
@@ -838,7 +838,7 @@ class PLUGIN(Plugin):
         os.path.join("test", "tre"),
         "test",
         "tmp",
-        os.path.join("tools", "lua"), 
+        os.path.join("tools", "lua"),
         "tools",
         "tre",
         os.path.join("tut", "embedding"),
@@ -854,28 +854,28 @@ class PLUGIN(Plugin):
       for f in glob.glob(os.path.join(d, "*")):
         print "Del",f
         erasefile(f)
-      try: 
+      try:
         if os.path.exists(d):
           os.rmdir(d)
           print "Rmdir",d
-      except: 
+      except:
         print "FAILED Rmdir",d
     for f in glob.glob(os.path.join(FLX_LPARCHIVE, "lpsrc", "*.cache")):
       erasefile(f)
     runISCR(os.path.join(FLX_LPARCHIVE, 'lpsrc', 'flx_config.pak'),1)
     sys.exit(0)
-  
+
 @select(tangler('mkplugins/clean.py'))
 # cleans products, but not extracted sources
 class PLUGIN(Plugin):
   name = 'clean'
   help = 'remove generated C++ and binaries from test locations'
- 
+
   def runme(self):
     for d in glob.glob(os.path.join("pkg-stamps", "*")):
       erasefile(d)
 
-    for d in [ 
+    for d in [
       os.path.join("tut", "examples"),
       os.path.join("bagley", "felix"),
       "src","elk","demux","faio","lib","lpsrc","rtl","bin","test",
@@ -1223,9 +1223,9 @@ class PLUGIN(Plugin):
 if not globals().get("ocaml_env",None):
   ocaml_env = 1
 
-  BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options 
+  BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options
   if BYTECODE:
-    if "profile" in options: 
+    if "profile" in options:
       OCAMLOPT = OCAMLCP
       OCAMLC = OCAMLCP
     else: OCAMLOPT = OCAMLB
@@ -1283,7 +1283,7 @@ if not globals().get("link_model_env",None):
 class PLUGIN(Plugin):
   name = 'run_failure_tests'
   help = 'run tests meant to fail'
-  
+
   def runme(self,pkg, pkgdict, quiet, check_stamp):
     bad_tests = pkgdict.get("failure_tests",[])
     bad_tests.sort()
@@ -1321,7 +1321,7 @@ class PLUGIN(Plugin):
 class PLUGIN(TestPlugin):
   name = 'run_static_unit_tests'
   help = 'run static unit tests'
-  
+
   def runme(self, pkg, pkgdict, quiet, check_stamp):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
     static_unit_tests.sort()
@@ -1334,8 +1334,8 @@ class PLUGIN(TestPlugin):
 class PLUGIN(TestPlugin):
   name = 'run_dynamic_unit_tests'
   help = 'run dynamic unit tests'
-  
-  def runme(self, pkg, pkgdict, quiet, check_stamp):    
+
+  def runme(self, pkg, pkgdict, quiet, check_stamp):
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
     dynamic_unit_tests.sort()
 
@@ -1347,14 +1347,14 @@ class PLUGIN(TestPlugin):
 class PLUGIN(TestPlugin):
   name = 'run_unit_tests'
   help = 'run unit tests'
-  
-  def runme(self,pkg, pkgdict, quiet, check_stamp):    
+
+  def runme(self,pkg, pkgdict, quiet, check_stamp):
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
     return self.run_tests(pkg, pkgdict, unit_tests, 1, 1, 1, check_stamp,
       "*** UNIT TESTING %s : %%s ****\n" % pkg, quiet)
-         
+
 
 @select(tangler('mkplugins/run_completion_tests.py'))
 # these tests are units tests with non-deterministic results
@@ -1374,8 +1374,8 @@ class PLUGIN(TestPlugin):
 class PLUGIN(Plugin):
   name = 'run_known_failed_tests'
   help = 'mark tests failed that are known to fail without running'
-  
-  def __init__(self): 
+
+  def __init__(self):
     Plugin.__init__(self)
     self.dummy = 1
 
@@ -1433,7 +1433,7 @@ def vxqtq(x, **kwds):
   return xqtq(x, **kwds)
 
 
-def exqt(x, **kwds): 
+def exqt(x, **kwds):
   return vxqt(ENV + x, **kwds)
 
 
@@ -1455,7 +1455,7 @@ def runISCR(a,force=0, break_on_error=None):
 
   cmd = sys.executable + ' ' + os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py')
   cmd += ' --cache-prefix=lpsrc-cache'
-  
+
   if force:
     cmd = cmd + " --nocache"
 
@@ -1541,7 +1541,7 @@ class PLUGIN(Plugin):
     else:
       for pkg in pkgd.keys():
         pkgdict = pkgd[pkg]
-    
+
         pkg_src_time = get_latest_src_time(pkgdict)
         #print "LP Pak %-20s changed: %s" % (pkg,fmtime(pkg_src_time))
 
@@ -1572,7 +1572,7 @@ class PLUGIN(Plugin):
             print "  ** Host build:",fmtime(latest_host_build_time)
             print "  ** REQUIRES REBUILD due to changed sources"
             if pkg not in host_packages: host_packages.append(pkg)
-    
+
         target_stamp=os.path.join("pkg-stamps", "%s.target" % pkg)
         latest_target_build_time = filetime(target_stamp)
         if latest_target_build_time == 0:
@@ -1583,7 +1583,7 @@ class PLUGIN(Plugin):
             print "  ** Target build:",fmtime(latest_target_build_time)
             print "  ** REQUIRES REBUILD due to changed sources"
             if pkg not in target_packages: target_packages.append(pkg)
-    
+
         run_stamp=os.path.join("pkg-stamps", "%s.run" % pkg)
         latest_run_build_time = filetime(run_stamp)
         if latest_run_build_time == 0:
@@ -1609,13 +1609,13 @@ class PLUGIN(Plugin):
       # doesn't work so well if both deps and reqs specified!
       # would work better, if reqs was already reduced to
       # what actually needed o be rebuilt
-    
+
     if "deps" in options:
       host_packages = closure(pkgdeps,host_packages)
       target_packages = closure(pkgdeps,target_packages)
       run_packages = closure(pkgdeps,run_packages)
       doc_packages = closure(pkgdeps,doc_packages)
-  
+
     if "reqs" in options:
       host_packages = closure(pkgreqs,host_packages)
       target_packages = closure(pkgreqs,target_packages)
@@ -1626,14 +1626,14 @@ class PLUGIN(Plugin):
     target_selected_pkgs = [x for x in pkgs if x in target_packages]
     run_selected_pkgs    = [x for x in pkgs if x in run_packages]
     doc_selected_pkgs    = [x for x in pkgs if x in doc_packages]
-  
-    if "all" in options: 
+
+    if "all" in options:
       if not quiet: print "SELECTING ALL PACKAGES"
       host_selected_pkgs = pkgs
       target_selected_pkgs = pkgs
       run_selected_pkgs = pkgs
       doc_selected_pkgs = pkgs
-  
+
     if not quiet:
       #print "AVAILABLE SOURCES",paks
       print "Host SELECTED PACKAGES ARE ",   ','.join([str(p) for p in host_selected_pkgs])
@@ -1665,7 +1665,7 @@ class PLUGIN(Plugin):
 
         stamp=os.path.join("pkg-stamps", "%s.host" % pkg)
         erasefile(stamp)
-        srcs = pkgdict.get("iscr_source",[])      
+        srcs = pkgdict.get("iscr_source",[])
         for src in srcs:
           src = unix2native(src)
           if not quiet: print "REExtracting", pkg, "from", src
@@ -1690,16 +1690,16 @@ class PLUGIN(Plugin):
         erasefile(stamp)
         if SUPPORT_DYNAMIC_LOADING:
           plugins['build_target_rtl_dynamic'](pkg, pkgdict)
-  
+
         if SUPPORT_STATIC_LINKAGE:
           plugins['build_target_rtl_static'](pkg, pkgdict)
-      
+
         if SUPPORT_DYNAMIC_LOADING:
           plugins['build_felix_dynamic_drivers'](pkg, pkgdict)
 
         if SUPPORT_STATIC_LINKAGE:
           plugins['build_felix_static_drivers'](pkg, pkgdict)
-  
+
         plugins['build_target_cpp_tools'](pkg, pkgdict)
         plugins['build_target_felix_rtl'](pkg, pkgdict)
         plugins['build_target_felix_tools'](pkg, pkgdict)
@@ -1725,7 +1725,7 @@ class PLUGIN(Plugin):
                 and plugins['run_completion_tests'](pkg, pkgdict, quiet, check_stamp) \
                 and plugins['run_known_failed_tests'](pkg, pkgdict, quiet, check_stamp):
           enstamp(stamp)
- 
+
 
 @select(tangler('flxbuild/pluginutil.py'))
 class Plugin(object):
@@ -1765,7 +1765,7 @@ class TestPlugin(Plugin):
       if find_test(self.failures, pkg,testfile): continue
 
       stamp = os.path.join("pkg-stamps", testfile + '.test')
-      
+
       # run the tests
       stamptime = filetime(stamp)
       if check_stamp and latest_src_time < stamptime:
@@ -1789,31 +1789,31 @@ class TestPlugin(Plugin):
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
         else:
           path = os.path.join(os.curdir, basename)
-  
+
           # run the dynamic tests
           if dynamic and SUPPORT_DYNAMIC_LOADING:
             resfilename = basename + ".resh"
-  
+
             try:
               driver = vxqtq(os.path.join("bin", "flx_pkgconfig") +
                 " --path=config --field=flx_requires_driver --rec @" + resfilename,
                 log=log)
-  
+
               driver = driver[0].strip()
               if driver =='': driver = "flx_run"
               driver = os.path.join("bin", driver)
               #log.write("Driver: %s\n" % driver)
               testscript = driver + ' ' + path + EXT_SHLIB
-  
+
               self.run_test(log, testscript, basename, deterministic, quiet,check_stamp)
             except MakeError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
-              
+
           # run the static tests
           if static and SUPPORT_STATIC_LINKAGE:
             testscript = path + EXT_EXE
-  
+
             try:
               self.run_test(log, testscript, basename, deterministic, quiet, check_stamp)
             except MakeError, e:
@@ -1853,7 +1853,7 @@ class TestPlugin(Plugin):
         f.close()
 
       if deterministic:
-        output = vxqt('%s %s.expect %s.output' % (DIFF, basename, basename), 
+        output = vxqt('%s %s.expect %s.output' % (DIFF, basename, basename),
             verbose=1, log=log)
 
     else:
@@ -1875,7 +1875,7 @@ class TestPlugin(Plugin):
 
         if deterministic:
            output = vxqtq('%s %s-%s.argexpect %s-%s.argoutput' % \
-                   (DIFF, basename, argcount, basename, argcount), 
+                   (DIFF, basename, argcount, basename, argcount),
                    verbose=1, log=log)
 
 
@@ -1896,7 +1896,7 @@ class PLUGIN(Plugin):
 
     for name, help in items:
       print '%s %s' % (name.ljust(max_len), help)
-    
+
     sys.exit(0)
 
 @select(tangler('mkplugins/test.py'))
@@ -1907,7 +1907,7 @@ class PLUGIN(Plugin):
   def __init__(self, *args, **kwds):
     super(PLUGIN, self).__init__(*args, **kwds)
 
-    if "test" in options: 
+    if "test" in options:
       if "run" not in phases: phases.append("run")
 
   def runme(self):
@@ -1941,7 +1941,7 @@ class PLUGIN(Plugin):
       print "##### DOCUMENT SELECTED PACKAGES ##################"
     else:
       print "##### DOCUMENT ALL PACKAGES ##################"
-      doc_selected_pkgs = pkgs 
+      doc_selected_pkgs = pkgs
 
     for pkg in doc_selected_pkgs:
       pkgdict = pkgd[pkg]
@@ -1971,7 +1971,7 @@ class PLUGIN(Plugin):
 class PLUGIN(Plugin):
   name = 'demo'
   help = 'build and run the demos'
-    
+
   def runme(self):
     print "##### DEMONSTRATE ALL PACKAGES ##################"
     for pkg in pkgs:
@@ -2045,7 +2045,7 @@ flags:
 
 plugins:
   run a custom plugin. run "mk help" to get a list of plugins to run
-  """ 
+  """
 
 for o, a in opts:
   if o in ['-h', '--help']:
@@ -2191,7 +2191,7 @@ for i in raw_pkgs:
       v = X.__dict__[k]
       d[k]=v
   pkgd[pkg]=d
-   
+
 def addpkg_r(pkg):
   if pkg not in pkgs:
     if pkg not in pkgd.keys():
@@ -2232,7 +2232,7 @@ if "help" in options:
     length = max(len(k), length)
   for k in ks:
     print "  ", k.ljust(length), pkgreqs[k]
-   
+
   print
   print "DEPS: "
   ks = pkgdeps.keys()
@@ -2381,7 +2381,7 @@ if failed:
         # grab the first line of the file to see if it
         # has a #line number to print out as well, so we can
         # localize the error to the interscript file location
-        
+
         emitted = 0
         f = open(file)
         eat = 1
@@ -2938,12 +2938,12 @@ FrontC/CIL which is has BSD licence.
 @head(1,'ChangeLog')
 @select(tangler('ChangeLog'))
 Well, this file shouldn't be here, it should
-be generated by something .. 
+be generated by something ..
 
 @head(1,'NEWS')
 @select(tangler('NEWS'))
 Well, this file shouldn't be here, it should
-be generated by something .. 
+be generated by something ..
 
 
 @head(1,'CONTENTS')
@@ -2952,10 +2952,10 @@ The tarball contains the literate programmed original sources,
 all the sources derived from that by running interscript,
 including Ocaml sources for the compiler, C++ sources for
 the run time components, build scripts, documentation,
-the tutorial, and all the examples and regression tests, 
+the tutorial, and all the examples and regression tests,
 the codes generated by running Felix against the examples,
 and finally, a linux binary version of the compiler
-and program driver. 
+and program driver.
 
 Top level files:
 
@@ -2974,9 +2974,9 @@ Top level files:
             it may not exist when you start,
             the script/maker script creates it
             when necessary
- 
+
   Makefile   the makefile, mainly hooks into script/maker
- 
+
   script/maker  This is the main make script, written in Python
 
 The directories are:
@@ -3011,7 +3011,7 @@ The directories are:
 is free for any use, provided the authors
 are not misrepresented in any way.
 
-Parts of this code, included in the file 
+Parts of this code, included in the file
 
 
 lpsrc/flx_frontc.ipk
@@ -3024,28 +3024,28 @@ are covered by a BSD Licence, here is the copyright notice:
  *  George C. Necula        necula@cs.berkeley.edu
  *  Scott McPeak        smcpeak@cs.berkeley.edu
  *  Wes Weimer          weimer@cs.berkeley.edu
- *   
+ *
  * All rights reserved.  Permission to use, copy, modify and distribute
- * this software for research purposes only is hereby granted, 
- * provided that the following conditions are met: 
- * 1. Redistributions of source code must retain the above copyright notice, 
- * this list of conditions and the following disclaimer. 
- * 2. Redistributions in binary form must reproduce the above copyright notice, 
- * this list of conditions and the following disclaimer in the documentation 
- * and/or other materials provided with the distribution. 
- * 3. The name of the authors may not be used to endorse or promote products 
- * derived from  this software without specific prior written permission. 
+ * this software for research purposes only is hereby granted,
+ * provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * 3. The name of the authors may not be used to endorse or promote products
+ * derived from  this software without specific prior written permission.
  *
  * DISCLAIMER:
- * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
- * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS 
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *)
@@ -3070,7 +3070,7 @@ FULL BUILD.
 
 3. Download the Felix tarball (this package)
    and unpack it in your workspace
-   
+
 @tangle('   tar -zxvf flx_'+flx_version+'_src.tgz')
 @tangle('   cd felix_'+flx_version)
 
@@ -3094,11 +3094,11 @@ again to reset to the defaults.
 
 5. Build the compiler
 
-   make 
+   make
 
 6. Build the documentation and tutorial
 
-   make doc 
+   make doc
 
 7. Install the compiler
 
@@ -3132,8 +3132,8 @@ in a game.
 LOST THE MAKEFILE?
 ------------------
 
-  env PYTHONPATH=. python interscript/bin/iscr.py lpsrc/flx.pak 
-  
+  env PYTHONPATH=. python interscript/bin/iscr.py lpsrc/flx.pak
+
                      -- re-extract sources
 
 HOW TO USE IT
@@ -3146,7 +3146,7 @@ make a sample program mytest.flx:
   print "It works!"; endl;
 
 and then run it:
-  
+
   flx -Ilib mytest
 
 @head(1,'W3C Cascading Style Sheets')
@@ -3556,7 +3556,7 @@ del %1.lib
 del %1_cflags.txt
 del %1_linkflags.txt
 IF %RUNIT% EQU 1 (
-"%FID%\bin\flx_arun" %1.dll %2 %3 %4 %5 %6 %7 %8 %9  
+"%FID%\bin\flx_arun" %1.dll %2 %3 %4 %5 %6 %7 %8 %9
 )
 ) else (
 %FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:cflags @%1.resh >%1_cflags.txt
@@ -3851,7 +3851,7 @@ def get_stdout(x,outit=None):
 def xqt(cmd,dflt=None):
   if ECHO == 1: print cmd
   result,output = get_stdout(cmd)
-  if result == None: 
+  if result == None:
      output=output[0][:-1] # first line excluding newline
      if ECHO==1:print "output="+output
      return output
@@ -3955,8 +3955,8 @@ if STATIC == 0:
   if FELIX == 1:
     FCMD=' '.join([
       FLXG,
-      VERBOSE, FLXFLAGS, ELKHOUND, FLXLIB, 
-      INCLUDE_DIRS, STDIMPORT, IMPORTS, 
+      VERBOSE, FLXFLAGS, ELKHOUND, FLXLIB,
+      INCLUDE_DIRS, STDIMPORT, IMPORTS,
       STDLIB, path])
     result=system(FCMD)
     if result != 0: sys.exit(0!=result)
@@ -3972,7 +3972,7 @@ if STATIC == 0:
       SPEC_EXE_FILENAME+path+EXT_SHLIB,
       LINK_STRING])
     result = system(CCMD)
-    if result == 0: 
+    if result == 0:
       result = system(LCMD)
       if result == 0:
         if RUNIT == 1:
@@ -4366,7 +4366,7 @@ function calpackages () {
   fi
 
   if [ $STATIC = 0 ]
-  then 
+  then
     if [ "$ECHO" = "1" ]
     then
      echo "$PKGCONFIG_DLIBS @$base.resh"
@@ -4391,7 +4391,7 @@ function calpackages () {
     echo "#DRIVER=$DRIVER"
     echo "#LINK_STRING=$LINK_STRING"
   fi
-  
+
 }
 
 # grab arguments
@@ -4566,7 +4566,7 @@ total=0
 failed[0]=""
 
 for i in test/*/*.flx tut/*/*.flx
-do 
+do
   expect=`dirname $i`/`basename $i .flx`.expect
   if test -e $expect
   then
@@ -4596,7 +4596,7 @@ do
     else
       ok=$(($ok+1))
     fi
-  fi 
+  fi
 done
 
 if [ $bad != 0 ]
@@ -4634,7 +4634,7 @@ Package: apps-felix
 @tangle('Version: '+flx_version)
 Revision: 0
 Depends:
-Build-Depends: godi-ocaml (> 3.08) 
+Build-Depends: godi-ocaml (> 3.08)
 @tangle('Sources: http://felix.sf.net/flx_'+flx_version+'_src.tgz')
 @tangle('Unpacks-To: flx_'+flx_version)
 Bytecode-Target: all
@@ -4665,7 +4665,7 @@ options= [`configure];
 short_desc = "Felix Compiler";
 long_desc = "Felix Compiler";
 confopts = [
-  { 
+  {
     name = "SUPPORT_DYNAMIC_LOADING";
     default = "1";
     description = "Whether to support dlopen loading";
@@ -4690,7 +4690,7 @@ it should be generated).
 
 @tangle('VERSION=        '+flx_version)
 PKGNAME=        apps-felix-${VERSION}
-@tangle('PKGREVISION=    '+godi_revision) 
+@tangle('PKGREVISION=    '+godi_revision)
 @tangle('DISTNAME=       flx_'+flx_version)
 @tangle('DISTFILES=      flx_'+flx_version+'_src.tgz')
 CATEGORIES=     apps
@@ -4704,7 +4704,7 @@ COMMENT=        Felix Compiler
 
 AUTOGENERATE_PLIST = yes
 PKG  =          apps-felix
-MAKE_FLAGS=     PREFIX=${PREFIX}  
+MAKE_FLAGS=     PREFIX=${PREFIX}
 
 
 
@@ -4740,7 +4740,7 @@ ALL_TARGET=     all
 
 post-install:
 	mkdir -p ${PREFIX}/doc/${PKG}
-.	for DOC in 
+.	for DOC in
 	    install -m 0644 ${WRKSRC}/${DOC} ${PREFIX}/doc/${PKG}
 .	endfor
 

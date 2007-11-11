@@ -9,7 +9,7 @@ open Flx_exceptions
 open Flx_ast
 open List
 
-let special_tokens = 
+let special_tokens =
   [
 @for k,s in flx_syms:
   tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
@@ -18,7 +18,7 @@ let special_tokens =
 
 let mk_std_tokens () =
   let tk = Array.make 4 [] in
-  iter  (fun (s,f) -> 
+  iter  (fun (s,f) ->
     let n = String.length s in
     assert (n >0 && n <= 3);
     tk.(n) <- (s,f) :: tk.(n)
@@ -29,7 +29,7 @@ let mk_std_tokens () =
 
 exception Duplicate_macro of string
 
-class comment_control = 
+class comment_control =
   object (self)
     val mutable nesting_level = 0
     val mutable text = ""
@@ -52,18 +52,18 @@ type condition_t = [
  | `Subscan
 ]
 
-type location = {    
+type location = {
     mutable buf_pos : int;
     mutable last_buf_pos : int;
     mutable line_no : int;
     mutable original_line_no : int;
 }
 
-class file_control 
-  (filename' : string) 
-  (basedir': string) 
-  (incdirs': string list) 
-= 
+class file_control
+  (filename' : string)
+  (basedir': string)
+  (incdirs': string list)
+=
   object(self)
     val mutable loc : location = { buf_pos = 0; last_buf_pos = 0; line_no = 1; original_line_no = 1; }
     method get_loc = loc
@@ -78,7 +78,7 @@ class file_control
     val mutable filename = filename'
     val mutable condition:condition_t list = [`Processing]
     val macros : (string,string list * Flx_token.token list) Hashtbl.t = Hashtbl.create 97
-   
+
     method incr_lex_counters lexbuf =
       loc.line_no <- loc.line_no + 1;
       loc.original_line_no <- loc.original_line_no + 1;
@@ -87,23 +87,23 @@ class file_control
 
     method set_buf_pos x = loc.buf_pos <- x
     method get_buf_pos = loc.buf_pos
-    method get_srcref lexbuf = 
-      filename, 
-      loc.line_no, 
-      Lexing.lexeme_start lexbuf - loc.buf_pos + 1, 
-      Lexing.lexeme_end lexbuf - loc.buf_pos 
+    method get_srcref lexbuf =
+      filename,
+      loc.line_no,
+      Lexing.lexeme_start lexbuf - loc.buf_pos + 1,
+      Lexing.lexeme_end lexbuf - loc.buf_pos
 
-    method get_physical_srcref lexbuf = 
-      original_filename, 
-      loc.original_line_no, 
-      Lexing.lexeme_start lexbuf - loc.buf_pos + 1, 
-      Lexing.lexeme_end lexbuf - loc.buf_pos 
+    method get_physical_srcref lexbuf =
+      original_filename,
+      loc.original_line_no,
+      Lexing.lexeme_start lexbuf - loc.buf_pos + 1,
+      Lexing.lexeme_end lexbuf - loc.buf_pos
 
-    method incr n = 
+    method incr n =
       loc.line_no <- loc.line_no + n;
       loc.original_line_no <- loc.original_line_no + n
 
-    method set_line n lexbuf = 
+    method set_line n lexbuf =
       loc.line_no <- n;
       loc.last_buf_pos <- loc.buf_pos;
       loc.buf_pos <- Lexing.lexeme_end lexbuf;
@@ -111,34 +111,34 @@ class file_control
       loc.original_line_no <- loc.original_line_no + 1
 
     method set_filename f = filename <- f
-    method get_relative f = 
+    method get_relative f =
       let fn = Filename.concat basedir f in
       if not (Sys.file_exists fn) then
         failwith ("Relative include file \""^f^ "\" not found in "^basedir)
       else fn
-      
-    method get_absolute f = 
+
+    method get_absolute f =
       try
         List.iter
-        (fun d -> 
-          let f = Filename.concat d f in 
-          if Sys.file_exists f 
+        (fun d ->
+          let f = Filename.concat d f in
+          if Sys.file_exists f
           then raise (Found_file f)
         )
         incdirs
         ;
         failwith ("Library File <" ^ f ^ "> not found in path")
-      with Found_file s -> s 
+      with Found_file s -> s
 
-    method store_macro name params body = 
+    method store_macro name params body =
       Hashtbl.add macros name (params,body)
-      
+
     method undef_macro name = Hashtbl.remove macros name
 
-    method get_macro name = 
+    method get_macro name =
       try Some (Hashtbl.find macros name)
       with Not_found -> None
-    
+
     method get_macros = macros
 
     method get_incdirs = incdirs
@@ -149,7 +149,7 @@ class file_control
     method condition_stack_length = List.length condition
   end
 
-class lexer_state filename basedir incdirs cache_dir expand_expr' = 
+class lexer_state filename basedir incdirs cache_dir expand_expr' =
   object (self)
     method get_cache_dir : string option = cache_dir
     val expand_expr: string -> expr_t -> expr_t = expand_expr'
@@ -157,7 +157,7 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
     val mutable include_files: string list = []
 
     val comment_ctrl = new comment_control
-    val file_ctrl = new file_control filename basedir incdirs 
+    val file_ctrl = new file_control filename basedir incdirs
     val mutable at_line_start = true
 
     val mutable keywords:
@@ -166,10 +166,10 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
 
     val mutable symbols:
       (string * (srcref * string -> Flx_token.token)) list array
-      = mk_std_tokens () 
+      = mk_std_tokens ()
 
-    val nonterminals: 
-      (string, (token list * ast_term_t) list) Hashtbl.t 
+    val nonterminals:
+      (string, (token list * ast_term_t) list) Hashtbl.t
       = Hashtbl.create 97
 
     val mutable brackets: ((string * string) * string) list = []
@@ -205,23 +205,23 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
     method get_comment = comment_ctrl#get_comment
 
     (* line counting *)
-    method newline lexbuf = 
+    method newline lexbuf =
       at_line_start <- true;
       file_ctrl#incr_lex_counters lexbuf
 
     (* string decoders *)
-    method decode decoder (s : string) : string = 
-      let lfcount s = 
+    method decode decoder (s : string) : string =
+      let lfcount s =
         let n = ref 0 in
         for i = 0 to (String.length s) - 1 do
           if s.[i] = '\n' then incr n
         done;
         !n
-      in 
-        file_ctrl#incr (lfcount s); 
+      in
+        file_ctrl#incr (lfcount s);
         decoder s
 
-    method set_line n lexbuf = 
+    method set_line n lexbuf =
       file_ctrl#set_line n lexbuf;
       at_line_start <- true
 
@@ -232,25 +232,25 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
     method get_incdirs = file_ctrl#get_incdirs
     method get_relative f = file_ctrl#get_relative f
     method get_absolute f = file_ctrl#get_absolute f
-    
-    method get_condition = file_ctrl#get_condition 
+
+    method get_condition = file_ctrl#get_condition
     method push_condition c = file_ctrl#push_condition c
     method pop_condition = file_ctrl#pop_condition
     method set_condition c = file_ctrl#set_condition c
     method condition_stack_length = file_ctrl#condition_stack_length
-    
+
     method store_macro name parms body = file_ctrl#store_macro name parms body
     method undef_macro name = file_ctrl#undef_macro name
     method get_macro name = file_ctrl#get_macro name
     method get_macros = file_ctrl#get_macros
 
-    method add_macros (s:lexer_state) = 
+    method add_macros (s:lexer_state) =
       let h = self#get_macros in
-      Hashtbl.iter 
-      (fun k v -> 
-        if Hashtbl.mem h k 
-        then raise (Duplicate_macro k) 
-        else Hashtbl.add h k v 
+      Hashtbl.iter
+      (fun k v ->
+        if Hashtbl.mem h k
+        then raise (Duplicate_macro k)
+        else Hashtbl.add h k v
       )
       s#get_macros
       ;
@@ -281,7 +281,7 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
      done
      ;
 
-     brackets <- s#get_brackets @ brackets 
+     brackets <- s#get_brackets @ brackets
 
      ;
      Hashtbl.iter
@@ -320,13 +320,13 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
       self#adjust_keyword_array n;
       let elt = s,(fun (sr,_) -> USER10 (sr,s,f)) in
       keywords.(n) <- elt :: keywords.(n)
-    
+
     method add_keyword (s:string) =
       let n = String.length s in
       self#adjust_keyword_array n;
       let elt = s,(fun (sr,_) -> USER_KEYWORD (sr,s)) in
       keywords.(n) <- elt :: keywords.(n)
-     
+
     method add_nonterminal (s:string) (sr:range_srcref) (toks: Flx_token.token list) (term:ast_term_t) =
       let productions = try Hashtbl.find nonterminals s with Not_found -> [] in
       Hashtbl.replace nonterminals s ((toks,term)::productions)
@@ -337,10 +337,10 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
       let n = max n1 n2 in
       self#adjust_symbol_array n;
       brackets <- ((tok1,tok2),f) :: brackets;
-      let rbs = 
-        let rec aux fnmap brs = match brs with 
+      let rbs =
+        let rec aux fnmap brs = match brs with
           | [] -> rev fnmap
-          | ((l,r),f) :: t -> 
+          | ((l,r),f) :: t ->
             if l = tok1 then aux ((r,f)::fnmap) t
             else aux fnmap t
         in aux [] brackets
@@ -350,7 +350,7 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
       ;
       let elt = tok2,(fun (sr,_) -> USERRB (sr,tok2)) in
       symbols.(n1) <- elt :: symbols.(n2)
-        
+
     method tokenise_symbols lexbuf (s:string) : token list =
       (* temporary hack *)
       let sr = self#get_srcref lexbuf in
@@ -358,22 +358,22 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
         let m = String.length s in
         let rec aux n =
           if n = 0 then (* cannot match even first char *)
-           tk (ERRORTOKEN (sr,String.sub s 0 1)::tks) (String.sub s 1 (m-1)) 
+           tk (ERRORTOKEN (sr,String.sub s 0 1)::tks) (String.sub s 1 (m-1))
           else
-          let f = 
+          let f =
             try Some (assoc (String.sub s 0 n) symbols.(n))
             with Not_found -> None
           in
           match f with
           | None -> aux (n-1)
-          | Some f -> 
+          | Some f ->
             (* next token *)
             tk (f (sr,String.sub s 0 n) :: tks) (String.sub s n (m-n))
-        in 
+        in
         let n = String.length s in
         if n = 0 then rev tks
         else aux (min n (Array.length symbols - 1))
-      in 
+      in
         tk [] s
 end
 
@@ -404,7 +404,7 @@ type condition_t = [
  | `Subscan
 ]
 
-type location = {    
+type location = {
     mutable buf_pos : int;
     mutable last_buf_pos : int;
     mutable line_no : int;
@@ -420,8 +420,8 @@ class file_control :
     val mutable loc: location
     val filename : string
     val mutable condition : condition_t list
-    val macros : (string,string list * token list) Hashtbl.t 
-    
+    val macros : (string,string list * token list) Hashtbl.t
+
     method get_loc : location
     method set_loc : location -> unit
 
@@ -437,7 +437,7 @@ class file_control :
     method get_incdirs : string list
     method get_absolute : string -> string
 
-    method get_condition : condition_t 
+    method get_condition : condition_t
     method push_condition : condition_t -> unit
     method pop_condition : unit
     method set_condition : condition_t -> unit
@@ -446,7 +446,7 @@ class file_control :
     method store_macro : string -> string list -> token list -> unit
     method undef_macro : string -> unit
     method get_macro : string -> (string list * token list) option
-    method get_macros : (string,string list * token list) Hashtbl.t 
+    method get_macros : (string,string list * token list) Hashtbl.t
   end
 
 class lexer_state :
@@ -493,7 +493,7 @@ class lexer_state :
     method get_relative : string -> string
     method get_absolute : string -> string
 
-    method get_condition : condition_t 
+    method get_condition : condition_t
     method push_condition : condition_t -> unit
     method pop_condition : unit
     method set_condition : condition_t -> unit
@@ -504,13 +504,13 @@ class lexer_state :
     method store_macro : string -> string list -> token list -> unit
     method undef_macro : string -> unit
     method get_macro : string -> (string list * token list) option
-    method get_macros : (string,string list * token list) Hashtbl.t 
+    method get_macros : (string,string list * token list) Hashtbl.t
     method add_macros : lexer_state -> unit
     method adjust_symbol_array : int -> unit
     method add_infix_symbol:
       int -> string -> string -> unit
 
-    method get_keywords: 
+    method get_keywords:
       (string * (srcref * string -> token)) list array
 
     method adjust_keyword_array : int -> unit
@@ -525,10 +525,10 @@ class lexer_state :
 
     method get_nonterminals:
       (string, (token list *ast_term_t) list) Hashtbl.t
-    
+
     method get_symbols:
       (string * (srcref * string -> token)) list array
-    
+
     method add_nonterminal:
       string -> range_srcref -> token list -> ast_term_t -> unit
 
@@ -549,14 +549,14 @@ val is_white : char -> bool
 val is_digit : char -> bool
 val strip_us : string -> string
 
-val pre_tokens_of_lexbuf : 
+val pre_tokens_of_lexbuf :
    (lexer_state -> lexbuf -> token list) ->
-  lexbuf -> lexer_state -> 
+  lexbuf -> lexer_state ->
   token list
 
 val pre_tokens_of_string :
   (lexer_state -> lexbuf -> token list) ->
-  string -> string -> 
+  string -> string ->
   (string -> expr_t -> expr_t) ->
   token list
 
@@ -598,20 +598,20 @@ let substr = String.sub
 let len = String.length
 
 let is_in_string s ch =
-  try 
+  try
     ignore(String.index s ch);
-    true 
-  with Not_found -> 
+    true
+  with Not_found ->
     false
 
 let is_white = is_in_string " \t"
 let is_digit = is_in_string "0123456789"
 
-let strip_us s = 
+let strip_us s =
   let n = String.length s in
   let x = Buffer.create n in
   for i=0 to n - 1 do
-    match s.[i] with 
+    match s.[i] with
     | '_' -> ()
     | c -> Buffer.add_char x c
   done;
@@ -619,17 +619,17 @@ let strip_us s =
 
 
 let pre_tokens_of_lexbuf lexer buf state =
-  let rec get lst = 
-    let ts = lexer state buf in 
+  let rec get lst =
+    let ts = lexer state buf in
     match ts with
     | [ENDMARKER] -> lst
-    | _ -> 
+    | _ ->
       match state#get_condition with
       | `Processing | `Subscan ->
         get (rev_append ts lst)
       | _ ->
         get lst
-  in 
+  in
     rev (get [])
 
 let pre_tokens_of_string lexer s filename expand_expr =
@@ -638,7 +638,7 @@ let pre_tokens_of_string lexer s filename expand_expr =
 
 let line_directive state sr s lexbuf =
   let i = ref 0 in
-  let a = 
+  let a =
     let a = ref 0 in
     while is_digit s.[!i] do
       a := !a * 10 + dec_char2int s.[!i];
@@ -646,7 +646,7 @@ let line_directive state sr s lexbuf =
     done;
     !a
   in
-  if !i = 0 
+  if !i = 0
   then clierr sr "digits required after #line"
   else begin
     while is_white s.[!i] do incr i done;
@@ -677,13 +677,13 @@ let line_directive state sr s lexbuf =
 
 (* output expansion of input in reverse order with exclusions *)
 let rec expand' state exclude toks =
-  (* output expansion of input 
-    in reverse order 
-    with bindings and 
+  (* output expansion of input
+    in reverse order
+    with bindings and
     with exclusions,
     this function is tail rec and used as a loop
   *)
-  let rec aux exclude inp out bindings = 
+  let rec aux exclude inp out bindings =
     match inp with
     | [] -> out
     | h :: ts ->
@@ -692,14 +692,14 @@ let rec expand' state exclude toks =
       then aux exclude ts (h :: out) bindings
       else
         (* if it is a parameter name, replace by argument *)
-        let b = 
+        let b =
           try Some (assoc h bindings)
           with Not_found -> None
         in match b with
         | Some x ->
           (* note binding body is in reverse order *)
           aux exclude ts (x @ out) bindings
-        
+
         | None ->
         match h with
         | NAME (sr,s) ->
@@ -710,10 +710,10 @@ let rec expand' state exclude toks =
           (* argumentless macro : output expansion of body,
             current bindings are ignored
           *)
-          | Some ([], body) -> 
+          | Some ([], body) ->
             let body = expand' state (h::exclude) body
             in aux exclude ts (body @ out) bindings
-            
+
           | Some (params,body) ->
             failwith "Can't handle macros with arguments yet"
           end
@@ -725,7 +725,7 @@ let eval state toks =
   let e = Flx_tok.parse_tokens (dyphack_parser Flx_preparse.expression) (toks @ [ENDMARKER]) in
   let e = state#get_expand_expr "PREPROC_EVAL" e in
   e
-  
+
 let expand state toks = rev (expand' state [] toks)
 
 let eval_bool state sr toks =
@@ -735,8 +735,8 @@ let eval_bool state sr toks =
   | `AST_typed_case (sr,v,`TYP_unitsum 2) ->
     v = 1
 
-  | x -> 
-    clierr sr 
+  | x ->
+    clierr sr
     (
       "Preprocessor constant expression of boolean type required\n" ^
       "Actually got:\n" ^
@@ -753,12 +753,12 @@ let rec parse_params sr toks = match toks with
 
   | RPAR _ :: ts -> [], ts
 
-  | h :: _ -> 
+  | h :: _ ->
     let sr = Flx_srcref.slift (Flx_prelex.src_of_token h) in
     clierr sr "Malformed #define directive"
   | [] ->
     clierr sr "Malformed #define directive"
-   
+
 let parse_macro_function state sr name toks =
   let args, body = parse_params sr toks in
   state#store_macro name args body
@@ -767,7 +767,7 @@ let parse_macro_body state sr name toks =
   match toks with
   | LPAR _ :: ts -> parse_macro_function state sr name ts
   | _ -> state#store_macro name [] toks
-  
+
 let undef_directive state sr toks =
   iter
   begin function
@@ -779,14 +779,14 @@ let undef_directive state sr toks =
   toks
   ;
   []
- 
+
 let define_directive state sr toks =
   match toks with
-  | NAME (sr,name) :: ts -> 
+  | NAME (sr,name) :: ts ->
     let sr = Flx_srcref.slift sr in
     begin match state#get_macro name with
     | None ->
-      parse_macro_body state sr name ts; 
+      parse_macro_body state sr name ts;
       []
     | Some _ -> clierr sr ("Duplicate Macro definition for " ^ name)
     end
@@ -831,7 +831,7 @@ let infix_directive state sr toks =
      in the dypgen system it isn't relevant if the symbol is
      used as a keyword other than an operator.
 
-     NOTE: such symbols are USER10 encoded not USER_KEYWORD encoded 
+     NOTE: such symbols are USER10 encoded not USER_KEYWORD encoded
   *)
   | [STRING (sr2,tok)] ->
     state#add_infix_symbol 10 tok tok;
@@ -870,9 +870,9 @@ let bracket_directive state sr toks =
 
   | _ ->
     clierr sr "#bracket directive has syntax #bracket \"lb\" \"rb\" fname"
-  
+
 let if_directive state sr toks =
-  state#push_condition 
+  state#push_condition
   (
     let string_of_bool b = if b then "true" else "false" in
     let string_of_tokens tks = catmap " " Flx_prelex.string_of_token tks in
@@ -908,7 +908,7 @@ let ifndef_directive state sr toks =
     end
   | _ -> clierr sr "#ifndef requires identifier"
   end
-  ; 
+  ;
   []
 
 let else_directive state sr =
@@ -925,8 +925,8 @@ let elif_directive state sr toks =
   begin match state#get_condition with
   | `Processing -> state#set_condition `Skip_to_endif
   | `Skip_to_endif -> ()
-  | `Skip_to_else -> 
-    state#set_condition 
+  | `Skip_to_else ->
+    state#set_condition
     (
       match eval_bool state sr toks with
       | true -> `Processing
@@ -940,7 +940,7 @@ let elif_directive state sr toks =
 
 let endif_directive state sr =
   if state#condition_stack_length < 2
-  then 
+  then
     clierr sr "Unmatched endif"
   else
     state#pop_condition;
@@ -962,10 +962,10 @@ let find_include_file state s sr =
   let filename = String.sub s j (!i-j) in
   let filename=
     if rquote = '"'
-    then state#get_relative filename 
+    then state#get_relative filename
     else state#get_absolute filename
   in
-    (* 
+    (*
       print_endline (
       "//Resolved in path: \"" ^ filename ^ "\""
     );
@@ -995,8 +995,8 @@ let load_syntax filename outfile =
    let local_data = Marshal.from_channel x in
    close_in x;
    (*
-   print_endline ("// Load Syntax file " ^ outfile ^ 
-     " flxg compile time = " ^ 
+   print_endline ("// Load Syntax file " ^ outfile ^
+     " flxg compile time = " ^
      string_of_float this_version.Flx_version.build_time_float ^
      " = " ^
      this_version.Flx_version.build_time
@@ -1025,10 +1025,10 @@ let include_directive kind state sr s pre_flx_lex =
     let infile = open_in filename in
     let src = Lexing.from_channel infile in
     let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
-      close_in infile; 
+      close_in infile;
       if kind = "import" then begin
         try state#add_macros state'
-        with Duplicate_macro k -> clierr sr 
+        with Duplicate_macro k -> clierr sr
         ("Duplicate Macro " ^ k ^ " imported")
       end;
       iter state#add_include_file state'#get_include_files;
@@ -1039,12 +1039,12 @@ let include_directive kind state sr s pre_flx_lex =
   | "include" ->
     pre_tokens_of_filename filename
   | "syntax" ->
-    begin 
-      let outfile = filename ^ ".syncache" in 
+    begin
+      let outfile = filename ^ ".syncache" in
       try load_syntax filename outfile with _ ->
       match state#get_cache_dir with
       | None -> pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
-      | Some d -> 
+      | Some d ->
         let outfile = Filename.concat d (Filename.basename outfile) in
         try load_syntax filename outfile with _ ->
         pre_tokens_of_filename filename @ [SAVE_SYNTAX outfile]
@@ -1056,7 +1056,7 @@ let count_newlines s =
   let n = ref 0 in
   let len = ref 0 in
   let last_len = ref 0 in
-  for i = 0 to String.length s - 1 do 
+  for i = 0 to String.length s - 1 do
     if s.[i] = '\n' then begin incr n; last_len := !len; len := 0; end
     else incr len
   done;
@@ -1076,24 +1076,24 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
   print_endline ("PREPROCESSING: " ^ Flx_srcref.long_string_of_src sr);
   print_endline ("Trailing buf pos = " ^ si saved_buf_pos);
   *)
-  let ident,s' = 
+  let ident,s' =
 
     (* .. note the string WILL end with a newline .. *)
 
     (* skip spaces *)
     let i = ref 0 in
-    while is_white s.[!i] && (s.[!i] <> '\n') do incr i done; 
+    while is_white s.[!i] && (s.[!i] <> '\n') do incr i done;
 
     (* scan non-spaces, stop at #, white, or newline *)
-    let n = ref 0 in 
-    while 
-      not (is_white s.[!i + !n]) &&       
+    let n = ref 0 in
+    while
+      not (is_white s.[!i + !n]) &&
       not (s.[!i + !n]='\n') &&
       not (s.[!i + !n]='#')
     do incr n done;
 
     (* grab the preprocessor directive name *)
-    let ident = String.sub s !i !n in     
+    let ident = String.sub s !i !n in
 
     (* scan for next non-white *)
     let j = ref (!i + !n) in
@@ -1118,7 +1118,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
      CANNOT HANDLE NORMAL TOKENISATION
   *)
   (* print a warning *)
-  | "error" -> 
+  | "error" ->
     begin match state#get_condition with
     | `Processing ->
       print_endline ("#error " ^ s');
@@ -1126,7 +1126,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     | _ -> []
     end
 
-  | "warn" -> 
+  | "warn" ->
     let result =
       match state#get_condition with
       | `Processing ->
@@ -1142,16 +1142,16 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
         print_endline "";
         [NEWLINE]
       | _ -> []
-    in 
+    in
       for i = 1 to linecount do state#newline lexbuf done;
       result
-     
+
   | "line" ->
     line_directive state sr s' lexbuf
 
-  | "include" 
-  | "import" 
-  | "syntax" -> 
+  | "include"
+  | "import"
+  | "syntax" ->
     let result =
       match state#get_condition with
       | `Processing ->
@@ -1166,7 +1166,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
   let result =
     let src = Lexing.from_string s in
     (*
-    print_endline ("Start buf pos = " ^ si (start_position.Lexing.pos_cnum)); 
+    print_endline ("Start buf pos = " ^ si (start_position.Lexing.pos_cnum));
     print_endline ("Start loc = " ^ si (start_location.buf_pos));
     *)
     state#push_condition `Subscan;
@@ -1176,15 +1176,15 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     (*
     print_endline ("Hacking column position to " ^ si b);
     *)
-    state#set_loc { 
-      buf_pos = b; 
-      last_buf_pos = b; 
+    state#set_loc {
+      buf_pos = b;
+      last_buf_pos = b;
       line_no = line1;
       original_line_no = line1';
     };
 
     let toks = pre_tokens_of_lexbuf pre_flx_lex src state in
-   
+
     state#pop_condition;
 
     (* use the special preprocessor token filter *)
@@ -1197,15 +1197,15 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     )
     toks;
     *)
-   
+
     match toks with
     | [] -> [] (* DUMMY *)
     | h :: toks ->
     let h = Flx_prelex.string_of_token h in
     if h <> ident then
       failwith (
-        "WOOPS, mismatch on directive name: ident=" ^ 
-        ident ^ ", head token = " ^ 
+        "WOOPS, mismatch on directive name: ident=" ^
+        ident ^ ", head token = " ^
         h
       )
     ;
@@ -1218,7 +1218,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     | "else" -> else_directive state sr
     | "elif" -> elif_directive state sr toks
     | "endif" -> endif_directive state sr
-     
+
     | _ -> match state#get_condition with
     | `Skip_to_else
     | `Skip_to_endif -> []
@@ -1228,14 +1228,14 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     | `Processing ->
     match h with
 
-    | "define" -> 
+    | "define" ->
         define_directive state sr toks
 
-    | "undef" -> 
+    | "undef" ->
         undef_directive state sr toks
 
-   
-    | "symbol" 
+
+    | "symbol"
     | "infix" ->
         infix_directive state sr toks
 
@@ -1245,20 +1245,20 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     | "bracket" ->
         bracket_directive state sr toks
 
-    | _ -> 
+    | _ ->
       print_endline (state#string_of_srcref lexbuf);
-      print_endline 
+      print_endline
       (
         "LEXICAL ERROR: IGNORING UNKNOWN PREPROCESSOR DIRECTIVE \"" ^
         ident ^ "\""
       );
       [NEWLINE]
-  in 
+  in
 
   (* restore the location to the start of the next line *)
-  state#set_loc { 
-    buf_pos = saved_buf_pos; 
-    last_buf_pos = saved_buf_pos; 
+  state#set_loc {
+    buf_pos = saved_buf_pos;
+    last_buf_pos = saved_buf_pos;
     line_no = next_line;
     original_line_no = next_line'
   };
@@ -1284,14 +1284,14 @@ let substr = String.sub
 let len = String.length
 
 (* string parsers *)
-let decode_qstring s = let n = len s in unescape (substr s 0 (n-1)) 
-let decode_dstring s = let n = len s in unescape (substr s 0 (n-1)) 
-let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3)) 
-let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3)) 
+let decode_qstring s = let n = len s in unescape (substr s 0 (n-1))
+let decode_dstring s = let n = len s in unescape (substr s 0 (n-1))
+let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3))
+let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3))
 
-let decode_raw_qstring s = let n = len s in substr s 0 (n-1) 
-let decode_raw_dstring s = let n = len s in substr s 0 (n-1) 
-let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
+let decode_raw_qstring s = let n = len s in substr s 0 (n-1)
+let decode_raw_dstring s = let n = len s in substr s 0 (n-1)
+let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3)
 let decode_raw_dddstring s = let n = len s in substr s 0 (n-3)
 
 exception Ok of int
@@ -1302,7 +1302,7 @@ exception SlashAst of int
    is adjutsed
 *)
 
-} 
+}
 
 (* ====================== REGULAR DEFINITIONS ============================ *)
 (* special characters *)
@@ -1319,7 +1319,7 @@ let underscore = '_'
 
 (* character sets *)
 let bindigit = ['0'-'1']
-let octdigit = ['0'-'7'] 
+let octdigit = ['0'-'7']
 let digit = ['0'-'9']
 let hexdigit = digit | ['A'-'F'] | ['a'-'f']
 let lower = ['a'-'z']
@@ -1357,13 +1357,13 @@ let symchar =
 let printable = ordinary | quote | dquote | slosh | hash
 
 (* identifiers *)
-let ucn = 
-    "\\u" hexdigit hexdigit hexdigit hexdigit 
+let ucn =
+    "\\u" hexdigit hexdigit hexdigit hexdigit
   | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
 
 let prime = '\''
 let idletter = letter | underscore | hichar | ucn
-let identifier = idletter (idletter | digit | prime )* 
+let identifier = idletter (idletter | digit | prime )*
 
 (* integers *)
 let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
@@ -1379,9 +1379,9 @@ let exactint_type_suffix =
 
 let signind = 'u' | 'U'
 
-let suffix = 
-    '_'? exactint_type_suffix 
-  | ('_'? fastint_type_suffix)? ('_'? signind)? 
+let suffix =
+    '_'? exactint_type_suffix
+  | ('_'? fastint_type_suffix)? ('_'? signind)?
   | ('_'? signind)? ('_'? fastint_type_suffix)?
 
 let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
@@ -1390,11 +1390,11 @@ let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
 let decimal_string = digit (underscore? digit) *
 let hexadecimal_string = hexdigit (underscore? hexdigit) *
 
-let decimal_fractional_constant = 
+let decimal_fractional_constant =
   decimal_string '.' decimal_string?
   | '.' decimal_string
-  
-let hexadecimal_fractional_constant = 
+
+let hexadecimal_fractional_constant =
   ("0x" |"0X")
   (hexadecimal_string '.' hexadecimal_string?
   | '.' hexadecimal_string)
@@ -1403,7 +1403,7 @@ let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
 let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
 
 let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
-let floating_literal = 
+let floating_literal =
   (
     decimal_fractional_constant decimal_exponent? |
     hexadecimal_fractional_constant binary_exponent?
@@ -1412,9 +1412,9 @@ let floating_literal =
 
 (* Python strings *)
 let qqq = quote quote quote
-let ddd = dquote dquote dquote 
+let ddd = dquote dquote dquote
 
-let escape = slosh _ 
+let escape = slosh _
 
 let dddnormal = ordinary | hash | quote | escape | white | newline
 let dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal
@@ -1453,93 +1453,93 @@ let quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote
 (* ----------- BASIC STRING -----------------------------------*)
 
 rule parse_qstring state ctor = parse
-| qstring { 
+| qstring {
       state#inbody;
       ctor (
-        state#get_srcref lexbuf, 
+        state#get_srcref lexbuf,
         state#decode decode_qstring (lexeme lexbuf)
       )
   }
-| _ { 
+| _ {
     [ERRORTOKEN (
-      state#get_srcref lexbuf, 
+      state#get_srcref lexbuf,
       "' string"
-    )] 
+    )]
   }
 
 and parse_dstring state ctor = parse
 | dstring {
       state#inbody;
       ctor (
-        state#get_srcref lexbuf, 
+        state#get_srcref lexbuf,
         state#decode decode_dstring (lexeme lexbuf)
       )
   }
-| _ { 
-    state#inbody; 
+| _ {
+    state#inbody;
     [ERRORTOKEN (
-      state#get_srcref lexbuf, 
+      state#get_srcref lexbuf,
       "\" string"
     )]
   }
 
 and parse_qqqstring state ctor = parse
-| qqqstring { 
+| qqqstring {
       state#inbody;
       ctor (
-        state#get_srcref lexbuf, 
+        state#get_srcref lexbuf,
         state#decode decode_qqqstring (lexeme lexbuf)
       )
   }
-| _ { 
+| _ {
     state#inbody;
     [ERRORTOKEN (
-      state#get_srcref lexbuf, 
+      state#get_srcref lexbuf,
       "''' string"
-    )] 
+    )]
   }
 
 and parse_dddstring state ctor = parse
-| dddstring { 
+| dddstring {
       state#inbody;
-       ctor ( 
+       ctor (
         state#get_srcref lexbuf,
         state#decode decode_dddstring (lexeme lexbuf)
       )
   }
-| _ { 
+| _ {
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf,
       "\"\"\" string"
-    )] 
+    )]
   }
 
 (* ----------- RAW STRING -----------------------------------*)
 and parse_raw_qstring state ctor = parse
-| raw_qstring { 
+| raw_qstring {
       state#inbody;
       ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_qstring (lexeme lexbuf)
       )
   }
-| _ { 
+| _ {
     state#inbody;
     [ERRORTOKEN (
      state#get_srcref lexbuf,
-    "raw ' string")] 
+    "raw ' string")]
   }
 
 and parse_raw_dstring state ctor = parse
-| raw_dstring { 
+| raw_dstring {
       state#inbody;
       ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_dstring (lexeme lexbuf)
       )
   }
-| _ { 
+| _ {
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf,
@@ -1548,34 +1548,34 @@ and parse_raw_dstring state ctor = parse
   }
 
 and parse_raw_qqqstring state ctor = parse
-| raw_qqqstring { 
+| raw_qqqstring {
       state#inbody;
       ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_qqqstring (lexeme lexbuf)
       )
   }
-| _ { state#inbody; 
+| _ { state#inbody;
   [ERRORTOKEN (
     state#get_srcref lexbuf,
     "raw ''' string")] }
 
 and parse_raw_dddstring state ctor = parse
-| raw_dddstring { 
+| raw_dddstring {
       state#inbody;
       ctor (
         state#get_srcref lexbuf,
         state#decode decode_raw_dddstring (lexeme lexbuf)
       )
   }
-| _ { 
+| _ {
      [ERRORTOKEN (
        state#get_srcref lexbuf,
        lexeme lexbuf)
-     ] 
+     ]
    }
 
-and parse_hashbang state = parse 
+and parse_hashbang state = parse
 | not_newline * newline {
     begin
       state#newline lexbuf;
@@ -1588,10 +1588,10 @@ and parse_hashbang state = parse
         state#get_srcref lexbuf,
   lexeme lexbuf)] }
 
-and parse_C_comment state = parse 
-| "/*" { 
+and parse_C_comment state = parse
+| "/*" {
       state#append_comment (lexeme lexbuf);
-      state#incr_comment; 
+      state#incr_comment;
       parse_C_comment state lexbuf
   }
 | newline {
@@ -1599,32 +1599,32 @@ and parse_C_comment state = parse
       state#append_comment (lexeme lexbuf);
       parse_C_comment state lexbuf
   }
-| "*/" { 
-      state#append_comment (lexeme lexbuf); 
-      state#decr_comment; 
-      if state#comment_level > 0 
-      then parse_C_comment state lexbuf 
+| "*/" {
+      state#append_comment (lexeme lexbuf);
+      state#decr_comment;
+      if state#comment_level > 0
+      then parse_C_comment state lexbuf
       else ()
       ;
       state#inbody
   }
 | _ {
       state#append_comment (lexeme lexbuf);
-      parse_C_comment state lexbuf 
+      parse_C_comment state lexbuf
   }
 
 and parse_line state = parse
 | not_newline * (newline | eof)
-  { 
+  {
     state#newline lexbuf;
     lexeme lexbuf
   }
 
 and parse_preprocessor state start_location start_position = parse
-| ( not_newline* slosh space* newline)* not_newline* newline 
+| ( not_newline* slosh space* newline)* not_newline* newline
 | ( not_newline* hash space* newline) (not_hash_or_newline not_newline* newline)+
   {
-    let toks = handle_preprocessor state lexbuf 
+    let toks = handle_preprocessor state lexbuf
       (lexeme lexbuf) pre_flx_lex start_location start_position
     in
     toks
@@ -1640,19 +1640,19 @@ and pre_flx_lex state = parse
       [COMMENT_NEWLINE  (String.sub lex 2 (n-3))]
   }
 
-| "/*" { 
+| "/*" {
       state#set_comment (lexeme lexbuf);
-      parse_C_comment state lexbuf; 
+      parse_C_comment state lexbuf;
       [COMMENT (state#get_comment)]
   }
 
-| int_lit { 
+| int_lit {
       state#inbody;
       let sr = state#get_srcref lexbuf in
       let s = lexeme lexbuf in
       let n = String.length s in
       let converter, first =
-        if n>1 && s.[0]='0' 
+        if n>1 && s.[0]='0'
         then
           match s.[1] with
           | 'b' | 'B' -> binbig_int_of_string,2
@@ -1686,14 +1686,14 @@ and pre_flx_lex state = parse
         else begin
           let sign = ref "" in
           let typ = ref "int" in
-          begin try while !k>first do 
-            (match s.[!k] with  
+          begin try while !k>first do
+            (match s.[!k] with
             | 'u' | 'U' -> sign := "u"
             | 't' | 'T' -> typ := "tiny"
             | 's' | 'S' -> typ := "short"
             | 'i' | 'I' -> typ := "int"
-            | 'l' | 'L' -> 
-              typ := 
+            | 'l' | 'L' ->
+              typ :=
                 if !typ = "long" then "vlong" else "long"
             | 'v' | 'V' -> typ := "vlong"
             | _ -> raise Not_found
@@ -1709,7 +1709,7 @@ and pre_flx_lex state = parse
         [INTEGER (sr, t, v)]
   }
 
-| floating_literal { 
+| floating_literal {
     state#inbody;
     let str = lexeme lexbuf in
     let n = String.length str in
@@ -1790,7 +1790,7 @@ and pre_flx_lex state = parse
   over identifiers, eg r'x' is a string, not an identifier,
   but x'x' is an identifier .. yucky ..
 *)
-| identifier { 
+| identifier {
       state#inbody;
       let s = lexeme lexbuf in
       let s' = Flx_id.utf8_to_ucn s in
@@ -1804,10 +1804,10 @@ and pre_flx_lex state = parse
       ]
       with Not_found ->
       [Flx_keywords.map_flx_keywords src s']
-  } 
+  }
 
 (* whitespace *)
-| white + { 
+| white + {
       (* we do NOT say 'inbody' here: we want to accept
          #directives with leading spaces
       *)
@@ -1822,9 +1822,9 @@ and pre_flx_lex state = parse
       [WHITE  (!column)]
   }
 
-| slosh { [SLOSH] } 
+| slosh { [SLOSH] }
 
-| symchar + { 
+| symchar + {
     let s = lexeme lexbuf in
     let n = String.length s in
     let s',con,lim =
@@ -1836,24 +1836,24 @@ and pre_flx_lex state = parse
           end
         done;
         raise (Ok n)
-      with 
+      with
       | SlashSlash i -> String.sub s 0 i,`SlashSlash,i
       | SlashAst i -> String.sub s 0 i,`SlashAst,i
       | Ok i -> String.sub s 0 i,`Ok,i
-    in 
+    in
     let atstart = state#is_at_line_start in
-    state#inbody; 
+    state#inbody;
     let toks = state#tokenise_symbols  lexbuf s' in
     let toks =
       match toks,atstart with
-      | [HASH _],true -> 
+      | [HASH _],true ->
         let x = state#get_loc in
         let y = lexbuf.Lexing.lex_curr_p in
-        parse_preprocessor state 
-          { x with buf_pos = x.buf_pos } 
+        parse_preprocessor state
+          { x with buf_pos = x.buf_pos }
           { y with Lexing.pos_fname = y.Lexing.pos_fname }
           lexbuf
-      | [HASHBANG _ | HASHBANGSLASH _ ],true  -> 
+      | [HASHBANG _ | HASHBANGSLASH _ ],true  ->
         (*
         print_endline "IGNORING HASHBANG";
         *)
@@ -1877,36 +1877,36 @@ and pre_flx_lex state = parse
         *)
         let lead = String.sub s (lim+2) (n-lim-2) in
         state#set_comment lead;
-        parse_C_comment state lexbuf; 
+        parse_C_comment state lexbuf;
         toks @ [COMMENT (state#get_comment)]
 
       | _ -> toks
-    in toks 
+    in toks
   }
 
 (* end of line *)
 | newline {
-      state#newline lexbuf; 
+      state#newline lexbuf;
       [NEWLINE ]
   }
 
 (* end of file *)
-| eof { 
+| eof {
   if state#get_condition = `Subscan then [ENDMARKER] else
   if state#condition_stack_length <> 1
-  then 
+  then
     let sr = state#get_srcref lexbuf in
     let sr = Flx_srcref.slift sr in
     Flx_exceptions.clierr sr "Unmatched #if at end of file"
   else
-    [ENDMARKER] 
+    [ENDMARKER]
   }
-  
+
 (* Anything else is an error *)
-| _ { 
-    state#inbody; 
+| _ {
+    state#inbody;
     [
-      ERRORTOKEN 
+      ERRORTOKEN
       (
         state#get_srcref lexbuf, lexeme lexbuf
       )
@@ -1918,13 +1918,13 @@ and pre_flx_lex state = parse
 
 @h = tangler('src/compiler/flxlib/flx_lex.mli')
 @select(h)
-val pre_flx_lex : 
-  Flx_lexstate.lexer_state -> 
-  Lexing.lexbuf -> 
+val pre_flx_lex :
+  Flx_lexstate.lexer_state ->
+  Lexing.lexbuf ->
   Flx_token.token list
 
-val parse_line : 
-  Flx_lexstate.lexer_state -> 
-  Lexing.lexbuf -> 
+val parse_line :
+  Flx_lexstate.lexer_state ->
+  Lexing.lexbuf ->
   string
 

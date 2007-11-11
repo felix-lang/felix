@@ -28,21 +28,21 @@ Tests by category keyword.
 @kat("arrays")
 #import <flx.flxh>
 val x2 = (3, 4);
-print$ x2.[0]; 
-print$ x2.[1]; 
+print$ x2.[0];
+print$ x2.[1];
 endl;
 
 val x3 = (5, 6, 7);
-print$ x3.[0]; 
-print$ x3.[1]; 
-print$ x3.[2]; 
+print$ x3.[0];
+print$ x3.[1];
+print$ x3.[2];
 endl;
 
 val x4 = (8, 9, 10, 11);
-print$ x4.[0]; 
-print$ x4.[1]; 
-print$ x4.[2]; 
-print$ x4.[3]; 
+print$ x4.[0];
+print$ x4.[1];
+print$ x4.[2];
+print$ x4.[3];
 endl;
 @doc()
 
@@ -59,21 +59,21 @@ endl;
 @kat("arrays")
 #import <flx.flxh>
 val x2 = [|3, 4|];
-print$ x2.[0]; 
-print$ x2.[1]; 
+print$ x2.[0];
+print$ x2.[1];
 endl;
 
 val x3 = [|5, 6, 7|];
-print$ x3.[0]; 
-print$ x3.[1]; 
-print$ x3.[2]; 
+print$ x3.[0];
+print$ x3.[1];
+print$ x3.[2];
 endl;
 
 val x4 = [|8, 9, 10, 11|];
-print$ x4.[0]; 
-print$ x4.[1]; 
-print$ x4.[2]; 
-print$ x4.[3]; 
+print$ x4.[0];
+print$ x4.[1];
+print$ x4.[2];
+print$ x4.[3];
 endl;
 @doc()
 
@@ -90,21 +90,21 @@ endl;
 @kat("arrays")
 #import <flx.flxh>
 val x2 = array(3, 4);
-print$ x2.[0]; 
-print$ x2.[1]; 
+print$ x2.[0];
+print$ x2.[1];
 endl;
 
 val x3 = array(5, 6, 7);
-print$ x3.[0]; 
-print$ x3.[1]; 
-print$ x3.[2]; 
+print$ x3.[0];
+print$ x3.[1];
+print$ x3.[2];
 endl;
 
 val x4 = array(8, 9, 10, 11);
-print$ x4.[0]; 
-print$ x4.[1]; 
-print$ x4.[2]; 
-print$ x4.[3]; 
+print$ x4.[0];
+print$ x4.[1];
+print$ x4.[2];
+print$ x4.[3];
 endl;
 @doc()
 
@@ -138,7 +138,7 @@ print$ len$ array(7, 8, 9, 10); endl;
 @kat("arrays")
 #import <flx.flxh>
 val x2 = array(5, 6);
-print$ x2.[0]; 
+print$ x2.[0];
 print$ x2.[1];
 endl;
 
@@ -463,7 +463,7 @@ print$ rtrim "hello how are you" "you"; endl;
 print$ rtrim "hello how are you" "me"; endl;
 
 @select(env.expect())
-hello how are 
+hello how are
 hello how are you
 @doc()
 
@@ -483,8 +483,8 @@ print$ trim "hello how are hello" "goodbye"; endl;
 @select(env.expect())
 hello how are you
  how are you
-hello how are 
- how are 
+hello how are
+ how are
 hello how are hello
 @doc()
 
@@ -499,8 +499,8 @@ print$ lstrip "a b c  "; endl;
 @doc()
 
 @select(env.expect())
-a b c  
-a b c  
+a b c
+a b c
 @doc()
 
 

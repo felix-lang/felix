@@ -16,7 +16,7 @@ class PLUGIN(Plugin):
       raise MakeError
 
 
-  def runme(self):    
+  def runme(self):
     runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
     self.run("python speed/measure.py")
     self.run("python speed/panal.py")
@@ -42,13 +42,13 @@ The scripting language with static typing and high
 performance, offers functional and procedural
 programming with microthreading, and a simple
 interface to C/C++. Versions prior to 1.1 offered
-extremely poor performance, however 1.1 now 
+extremely poor performance, however 1.1 now
 appears to outperform all other translators
 tested.
 
 @item("C")
 The traditional systems programming language. We test two
-translators: gcc with optimisation switches, 
+translators: gcc with optimisation switches,
 a plain gcc command is also tested as a baseline.
 GNU's C compiler is in widespread use, but has
 not been noted for good performance in the past.
@@ -58,7 +58,7 @@ recognizes tail calls sometimes.
 
 @item("C++")
 The popular extension of C to include overloading,
-classes, templates and exceptions. Represented by 
+classes, templates and exceptions. Represented by
 the GNU g++ compiler. Felix itself generates C++
 code compiled by g++ with the same optimisation switches.
 
@@ -83,7 +83,7 @@ in performance.
 Ocaml is an ML family language with rapidly increasing
 popularity. It provides eager functional, imperative,
 and object oriented programming. The bytecode compiler
-is available on a wide variety of platforms, and 
+is available on a wide variety of platforms, and
 on major platforms a native code compiler is available.
 Ocaml is a landmark system in that it clearly
 demonstrates an 'academic' functional language can
@@ -133,7 +133,7 @@ interpreter.
 @item("C#")
 Microsofts answer to Java, C# is a better language,
 but only marginally. C# had generics right
-from the start, and it provides superior integration 
+from the start, and it provides superior integration
 via the .NET platform languages. I haven't figured out
 how to get a version yet (my Debian based Ubuntu system
 provides a C# compiler but it depends on Mono, which
@@ -141,14 +141,14 @@ is not in the archive)
 
 @item("Pascal")
 Originally designed for teaching, extended by Borland
-in their famous Turbo Pascal system, then again 
+in their famous Turbo Pascal system, then again
 in their Delphi system. We're testing both the
 GNU pascal front end of gcc and the free pascal compiler.
 
 @end_list()
 @p()
 We currently generate gnuplot command files to plot
-the results as jpg files for our website.  The data can be 
+the results as jpg files for our website.  The data can be
 viewed in an interactive graphics console by running
 gnuplot without arguments, then typing
 @begin_displayed_code()
@@ -189,13 +189,13 @@ where 'ack' is replaced by the name of the test.
 @for i in raw_machs: machs.append(i[14:])
 
 @head(3,'Rosella: x86-64')
-This is my main work machine, an AMD64 K8 3200 with 
+This is my main work machine, an AMD64 K8 3200 with
 1G Ram and an ASUS motherboard running nVidia chipset,
 budget price cache memory, 200G SATA drive,
 Ubuntu Dapper Linux distribution.
 
 @head(3,'Budgie: x86-64x2 (dual core)')
-This is my main work machine, an AMD64x2 K8 3800 with 
+This is my main work machine, an AMD64x2 K8 3800 with
 2G Ram and an ASUS motherboard running nVidia chipset,
 budget price cache memory, 200G SATA drive,
 Ubuntu Breezy Linux distribution.
@@ -229,7 +229,7 @@ print "Ack(3,"; print n; print "): "; print v; endl;
 #include <stdio.h>
 #include <stdlib.h>
 
-int Ack(int M, int N) { 
+int Ack(int M, int N) {
   if (M==0) return N +1;
   else if(N==0) return Ack(M-1,1);
   else return Ack(M-1, Ack(M,N-1));
@@ -268,8 +268,8 @@ public class ack {
     System.out.println("Ack(3," + num + "): " + Ack(3, num));
   }
   public static int Ack(int m, int n) {
-    return 
-      (m == 0) ? (n + 1) : 
+    return
+      (m == 0) ? (n + 1) :
       ((n == 0) ? Ack(m-1, 1) : Ack(m-1, Ack(m, n - 1)))
     ;
   }
@@ -290,7 +290,7 @@ Printf.printf "Ack(3,%d): %d\n" n (ack 3 n)
 @head(3,'Haskell code')
 @select(tangler('speed/src/haskell/ack.hs','data'))
 import System.Environment (getArgs)
-import System.IO 
+import System.IO
 import Text.Printf (hPrintf)
 import GHC.Exts
 
@@ -666,7 +666,7 @@ fun addr: Body -> &Body = "&$1";
 struct Body { pos:vec; vel:vec; mass: double; };
 
 proc Advance(dt: double){
-   var i: int; var j:int; 
+   var i: int; var j:int;
    forall i in 0 upto nbodies-1 do
       bimass := bodies.[i].mass;
       var delta = 0.0,0.0,0.0;
@@ -687,7 +687,7 @@ proc Advance(dt: double){
    done;
 }
 
-fun Energy(): double = 
+fun Energy(): double =
 {
    var i: int; var j: int;
    var e = 0.0;
@@ -1310,13 +1310,13 @@ print "--------------------"
 for xl,mk,src in xlators:
   for test in tests.keys():
     descr,fst,last = tests[test]
-    cmd = mk(xl,test) 
+    cmd = mk(xl,test)
     print "Try compiling",xl,src,test
     print cmd
     sys.stdout.flush()
     # won't work on Win98, result always 0 for command.com
     result = os.system(cmd)
-    if result <> 0: 
+    if result <> 0:
       print "COMPILE FAILURE",xl,src,test
     else:
       print "Compile OK",xl,src,test
@@ -1333,7 +1333,7 @@ for xlat,f,src,tst in wxlats:
 
 tofork = process_count - 1
 while tofork > 0:
-  if os.fork() == 0: 
+  if os.fork() == 0:
     print "PROCESS",tofork,"FORKED"
     random.seed() # reseed the random number generator
     break
@@ -1434,13 +1434,13 @@ while time.time() - start_time < max_test_time:
 
     # overtime
     if ok:
-      if elapsed > maxtime: 
-        lst = n - 1 
+      if elapsed > maxtime:
+        lst = n - 1
         if lst < fst: fst = lst
         print 'OVERTIME: CUT max to',lst
 
       # undertime
-      elif elapsed < mintime: 
+      elif elapsed < mintime:
         fst = n + 1
         if lst < fst: lst = fst
         print 'UNDERTIME: BOOSTED min to',fst
@@ -1456,14 +1456,14 @@ while time.time() - start_time < max_test_time:
         lst = lst + 1
         if lst < fst: fst = lst
         print "BORDERLINE max: BOOSTED max up to",lst
-        
+
       if lst < 1: lst = 1
       if fst < 1: fst = 1
       if fst > lst: fst = lst
       xlt[test,xl] = (fst,lst)
     else:
       xlt[test,xl] = (-1,-1)
-      
+
     sys.stdout.flush()
 
 f.close()
@@ -1483,15 +1483,15 @@ mintime = 0.5
 mindata = 3
 pload = "p1"
 
-try: 
+try:
   mintime = float(args[0])
 except:pass
 
-try: 
+try:
   mindata = int(args[1])
 except:pass
 
-try: 
+try:
   pload = args[1]
 except:pass
 
@@ -1503,7 +1503,7 @@ args = args[3:]
 
 def chkxl(x):
   return args == [] or x in args
-  
+
 def mkdir(p):
   os.system('rm -rf ' + p)
   os.mkdir(p)
@@ -1603,13 +1603,13 @@ for h,d in hostsd.iteritems():
       fp.close()
 
       fi.write('set output "'+root+'images/'+t+'.jpg"\n')
-      fi.write('load "'+root+'plotters/'+t+'.gpl"\n') 
+      fi.write('load "'+root+'plotters/'+t+'.gpl"\n')
 
     keys = summary.keys()
     keys.sort()
 
     prlimit = 10
-    i = 0 
+    i = 0
     print "Rankings for",t,"on",h
     for m,a in keys:
       xl,count,edev = summary[m,a]
@@ -1620,7 +1620,7 @@ for h,d in hostsd.iteritems():
     except: pass
     rf = open(root+'rankings/'+t+'.txt','w')
     prlimit = 10
-    i = 0 
+    i = 0
     rf.write("Rankings for "+t+' on '+h+'\n')
     for m,a in keys:
       xl,count,edev = summary[m,a]
@@ -1631,7 +1631,7 @@ for h,d in hostsd.iteritems():
 fi.close()
 
 # the client can view individual plots in an x11 console
-# with the command 'gnuplot' and then 
+# with the command 'gnuplot' and then
 # type 'load "filename"'
 
 @head(2,'Standard Build commands')

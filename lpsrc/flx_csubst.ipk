@@ -21,7 +21,7 @@ val csubst:
   string list -> (* display EXCLUDING thread frame *)
   string list -> (* shape of generic type arguments as strings *)
   cexpr_t
-  
+
 @h = tangler('src/compiler/flxlib/flx_csubst.ml')
 @select(h)
 open Flx_types
@@ -43,13 +43,13 @@ open Flx_cexpr
    #n: type of n'th component of argument tuple (1 origin)
    #0: return type
    @n: reference to shape object
-   
+
    $t: pass a tuple argument 'as a tuple'
    $Tn: pass argument n expanded into an argument list (varargs)
    #t: the type of the argument tuple
    @t: the shape of the argument tuple
    @dn: expands to first n components of display, excluding thread frame
-   
+
    ??: expands to ?
    ?n: the n'th generic type argument ..
    @?n: the n'th generic type argument shape ..
@@ -82,10 +82,10 @@ open Flx_cexpr
   'Escape'
  ]
 
-type mode_t = 
+type mode_t =
 @for m in modes: tangle(' | ' + m)
 
-let pr = function 
+let pr = function
 @for m in modes: tangle(' | ' + m + ' -> "'+m+'"')
 
 let is_idletter ch =
@@ -96,8 +96,8 @@ let is_idletter ch =
 
 (* identifier or integer *)
 let is_atomic s =
-  try 
-    for i = 0 to String.length s - 1 do 
+  try
+    for i = 0 to String.length s - 1 do
       if not (is_idletter s.[i]) then raise Not_found
     done;
     true
@@ -114,7 +114,7 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
   print_endline ("OUTPUT ct,prec=" ^ ct ^ " is " ^ prec);
   *)
   let n = length args in
-  assert (n = length typs); 
+  assert (n = length typs);
   (* print_endline ("CSUBST " ^ ct ^ ", count="^si n^", result prec=" ^ prec); *)
   let len = String.length ct in
   let buf = Buffer.create (n * 2 + 20) in
@@ -123,7 +123,7 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
   let mode = ref Normal in
   let precname = ref "" in
   let digits = ref 0 in
-  let serr i msg = 
+  let serr i msg =
     let spc k = String.make k ' ' in
     clierr2 sr sr2
     (
@@ -133,14 +133,14 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
   in
   let rec trans i ch =
     match !mode with
-    | Normal -> 
+    | Normal ->
       begin match ch with
       | '$' -> mode := Dollar
       | '`' -> mode := Backquote
       | '#' -> mode := Hash
       | '@' -> mode := Earhole
       | '?' -> mode := Quest
-      | '\\' -> mode := Escape 
+      | '\\' -> mode := Escape
       | '"' -> chcat ch; mode := CString
       | '\'' -> chcat ch; mode := CChar
       | _ -> chcat ch
@@ -163,12 +163,12 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
       | _ -> chcat ch
       end
 
-    | CStringBackslash -> 
-      chcat ch; 
+    | CStringBackslash ->
+      chcat ch;
       mode := CString
 
-    | CCharBackslash -> 
-      chcat ch; 
+    | CCharBackslash ->
+      chcat ch;
       mode := CChar
 
     | Dollar ->
@@ -191,8 +191,8 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
       | 'T' ->
         mode := Varargs
 
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0'; 
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0';
         mode := DollarDigits
 
       | _ -> serr i "Expected 't' or digit after $"
@@ -200,17 +200,17 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
 
     | Varargs ->
       begin match ch with
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0'; 
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0';
         mode := VarargsDigits
 
       | _ -> serr i "Expected digits after $T"
       end
-      
+
     | Backquote ->
       begin match ch with
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0'; 
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0';
         mode := BackquoteDigits
 
       | _ -> serr i "Expected digit after `"
@@ -223,7 +223,7 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
         mode := Normal
 
       | '0' .. '9' ->
-        digits := Char.code ch - Char.code '0'; 
+        digits := Char.code ch - Char.code '0';
         mode := QuestDigits
 
       | 'a' ->
@@ -239,16 +239,16 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
         bcat ( argshape );
         mode := Normal
 
-      | 'd' -> 
+      | 'd' ->
         digits := 0;
         mode := EarholeDisplayDigits
-     
-     | '?' -> 
+
+     | '?' ->
         digits := 0;
         mode := EarholeQuestDigits
-      
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0'; 
+
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0';
         mode := EarholeDigits
 
       | _ -> serr i "Expected 't' or digit after @"
@@ -256,8 +256,8 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
 
     | EarholeDisplayDigits ->
       begin match ch with
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0' 
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0'
 
       | _ ->
         let d = String.concat "," (list_prefix display !digits) in
@@ -268,8 +268,8 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
 
     | EarholeQuestDigits ->
       begin match ch with
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0' 
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0'
 
       | _ ->
         if !digits> List.length gargs
@@ -290,8 +290,8 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
         bcat argtyp;
         mode := Normal
 
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0'; 
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0';
         mode := HashDigits
 
       | x -> chcat '#'; chcat x; mode:= Normal
@@ -299,16 +299,16 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
 
     | DollarDigits ->
       begin match ch with
-      | '0' .. '9' -> 
+      | '0' .. '9' ->
         digits := !digits * 10 + Char.code ch - Char.code '0'
 
       | ':' when i+1<len && islower (ct.[i+1]) ->
         precname := "";
         mode := DollarDigitsPrec
-        
-      | _ -> 
+
+      | _ ->
         if !digits> List.length args
-        then serr i 
+        then serr i
           ("Parameter $" ^ string_of_int !digits ^ " > number of arguments, only got " ^ si (length args))
         else if !digits<=0 then serr i ("Negative $" ^ string_of_int !digits)
         else begin
@@ -324,15 +324,15 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
     | DollarDigitsPrec ->
       begin match ch with
       | 'a'..'z' -> precname := !precname ^ String.make 1 ch
-      | _ -> 
+      | _ ->
         if !digits> List.length args
-        then serr i 
+        then serr i
           ("Parameter $" ^ string_of_int !digits ^ " > number of arguments, only got " ^ si (length args))
         else if !digits<=0 then serr i ("Negative $" ^ string_of_int !digits)
         else
           let s' = nth args (!digits-1) in
-          let s' = 
-            try sc !precname s' 
+          let s' =
+            try sc !precname s'
             with Unknown_prec s-> clierr2 sr sr2 ("Unknown precedence " ^ s)
           in
           bcat s';
@@ -342,10 +342,10 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
 
     | VarargsDigits ->
       begin match ch with
-      | '0' .. '9' -> 
+      | '0' .. '9' ->
         digits := !digits * 10 + Char.code ch - Char.code '0'
 
-      | _ -> 
+      | _ ->
         if !digits> List.length args
         then serr i ("Parameter no $T" ^ string_of_int !digits ^ " too large")
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
@@ -353,13 +353,13 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
           let s' = nth args (!digits-1) in
           let s' = string_of_cexpr s' in
           let n = String.length s' in
-          begin 
-            try 
+          begin
+            try
               let start = String.index s' '('
               and fin = String.rindex s' ')'
-              in 
+              in
               let s' = String.sub s' (start+1) (fin-start-1)
-              in 
+              in
                 (* WE SHOULD CHECK THE # of args agrees with
                 the type of the tuple .. but there is no
                 way to do that since we only get a string
@@ -369,7 +369,7 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
                 bcat s';
                 mode := Normal;
                 trans i ch
-            with Not_found -> 
+            with Not_found ->
               (* serr i "Varargs requires  literal tuple" *)
               bcat s';
               mode := Normal;
@@ -379,10 +379,10 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
 
     | BackquoteDigits ->
       begin match ch with
-      | '0' .. '9' -> 
+      | '0' .. '9' ->
         digits := !digits * 10 + Char.code ch - Char.code '0'
 
-      | _ -> 
+      | _ ->
         if !digits> List.length args
         then serr i ("Parameter `" ^ string_of_int !digits ^ " too large")
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
@@ -404,7 +404,7 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
           bcat (argshape);
           mode := Normal;
           trans i ch
-            
+
     | HashDigits ->
         if !digits> List.length args
         then serr i ("Paramater #" ^ string_of_int !digits ^ " too large")
@@ -412,7 +412,7 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
         else
           bcat
           (
-            if !digits = 0 
+            if !digits = 0
             then retyp
             else nth typs (!digits-1)
           );

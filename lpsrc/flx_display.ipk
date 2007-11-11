@@ -17,7 +17,7 @@ val cal_display:
   bid_t option ->
   (bid_t * int) list
 
-val strd: 
+val strd:
   string list -> property_t list -> string
 
 @h = tangler('src/compiler/flxlib/flx_display.ml')
@@ -37,20 +37,20 @@ open Flx_mtypes2
   with the inner most ancestor towards at head of list,
   in particular the parent is always at the head of
   the list if it is empty, and the most global scope
-  is at the end of the list. 
-  
-  Note this is the reverse? of the order used to actually pass 
-  the display entries to constructors, which start with 
+  is at the end of the list.
+
+  Note this is the reverse? of the order used to actually pass
+  the display entries to constructors, which start with
   the thread frame (definitely) and work inwards (I think, maybe?? ..)
   Hmmm .. should check ..
 *)
 
 let cal_display syms bbdfns parent : (bid_t *int) list =
   let rec aux parent display =
-    match parent with 
+    match parent with
     | None -> rev display
     | Some parent ->
-    match 
+    match
       try Some (Hashtbl.find bbdfns parent)
       with Not_found ->  None
     with
@@ -67,7 +67,7 @@ let cal_display syms bbdfns parent : (bid_t *int) list =
     | Some (_,parent',sr,`BBDCL_typeclass _ ) -> rev display
     | None ->
       begin
-        try  
+        try
           match Hashtbl.find syms.dfns parent with
           (* instances have to be top level *)
           | {id=id; symdef=`SYMDEF_instance _} -> rev display
@@ -92,4 +92,4 @@ let strd the_display props =
   (if mem `Requires_ptf props then "(FLX_FPAR_PASS_ONLY)" else "()")
   else
   (if mem `Requires_ptf props then "(FLX_FPAR_PASS " else "(") ^ cat ", " the_display ^ ")"
- 
+

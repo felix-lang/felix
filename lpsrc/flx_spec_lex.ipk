@@ -1,5 +1,5 @@
 @head(1,'Character Set')
-Felix source is specified as a finite 
+Felix source is specified as a finite
 stream of integers of value 0-2^20-1.
 @p()
 In this document, glyphs represent code points
@@ -113,9 +113,9 @@ and hyphens in the names are replaced by an underscore.
   U+7e ~ TILDE
 @end_displayed_code()
 The basic characters of the language consist of the
-basic textual characters together with 
+basic textual characters together with
 the code point U+20 called SPACE, and the control
-characters 
+characters
 @begin_displayed_code()
 U+00 NUL
 U+09 HT

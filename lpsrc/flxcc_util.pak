@@ -2,7 +2,7 @@
 @execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flxcc_util.py')
 @select(h)
-FLXCC_UTIL_MODULES = [ 
+FLXCC_UTIL_MODULES = [
   'src/compiler/flxcclib/flx_ctypes',
   'src/compiler/flxcclib/flx_ctype',
   'src/compiler/flxcclib/flxcc_util'
@@ -71,11 +71,11 @@ and einame {ename=ename} = ename
 and viname {vname=vname} = vname
 
 let pci ci = match ci with
-{cname=cname; cstruct=cstruct} -> 
+{cname=cname; cstruct=cstruct} ->
 (if cstruct then "_struct_" else "_union_") ^ cname
 
 let pcci ci = match ci with
-{cname=cname; cstruct=cstruct} -> 
+{cname=cname; cstruct=cstruct} ->
 (if cstruct then "struct " else " union ") ^ cname
 
 let pei ei = match ei with
@@ -115,12 +115,12 @@ let sof = function
 | CDouble -> "dcomplex"
 | CLongDouble -> "lcomplex"
 
-let cvqual a = 
+let cvqual a =
   let const = ref false
   and volatile = ref false
   in
   List.iter
-  (fun (Attr (s,_)) -> 
+  (fun (Attr (s,_)) ->
     if s = "const" then const := true
     else if s = "volatile" then volatile := true
   )
@@ -133,15 +133,15 @@ let cvqual a =
 
 let attrof = function
 | TVoid a
-| TInt (_,a) 
+| TInt (_,a)
 | TFloat (_,a)
 | TPtr (_,a)
 | TArray (_,_,a)
-| TFun (_,_,_,a) 
+| TFun (_,_,_,a)
 | TNamed (_,a)
-| TComp (_,a) 
-| TEnum (_,a) 
-| TBuiltin_va_list a 
+| TComp (_,a)
+| TEnum (_,a)
+| TBuiltin_va_list a
 -> a
 
 let c_name = function
@@ -158,12 +158,12 @@ let c_name = function
   | GText _ -> None
 ;;
 
-let achk x = 
+let achk x =
   let a = "__anon" in
   let n = String.length a in
   String.length x > n &&
-  a = String.sub x 0 n 
-  
+  a = String.sub x 0 n
+
 
 let rec isanont t =  match t with
 | TVoid _
@@ -171,7 +171,7 @@ let rec isanont t =  match t with
 | TFloat _ -> false
 | TPtr (t,_) -> isanont t
 | TArray (t,_,_) -> isanont t
-| TFun (t,Some ps,_,_) -> 
+| TFun (t,Some ps,_,_) ->
   fold_left (fun b (_,t,_)-> b || isanont t ) (isanont t) ps
 
 | TFun (t,None,_,_) -> isanont t
@@ -179,7 +179,7 @@ let rec isanont t =  match t with
 | TComp ({cname=cname},_) -> achk cname
 | TEnum _ -> false
 | TBuiltin_va_list _ -> false
-  
+
 let isanon = function
   | GType ({tname=tname},_) -> achk tname
   | GCompTag ({cname=cname},_) -> achk cname
@@ -198,20 +198,20 @@ let isanon = function
 let is_cstruct_field t =  match t with
 | TVoid _
 | TInt _
-| TFloat _  
+| TFloat _
 | TNamed _
 | TPtr _
 | TArray _
 | TComp _
-| TEnum _ 
+| TEnum _
   -> true
 
 | TFun _
-| TBuiltin_va_list _ 
+| TBuiltin_va_list _
   -> false
 
-let ispublic s = 
- String.length s < 2 || String.sub s 0 2 <> "__" 
+let ispublic s =
+ String.length s < 2 || String.sub s 0 2 <> "__"
 
 (* pure name *)
 let flx_name' = function

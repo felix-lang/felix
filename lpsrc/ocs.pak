@@ -51,7 +51,7 @@ open Ocs_env
 
 (* Character name equivalents (long).  *)
 let char_long_names =
-  [| 
+  [|
     "space",            ' ';
     "newline",          '\n';
 
@@ -568,7 +568,7 @@ and mkdo e args =
                           let _ = bind_var ne sym in init) vv in
     let body =
       Cif (compile ne test, compileseq ne result,
-           mkseq 
+           mkseq
             (Array.append
               (Array.map (fun x -> compile ne x)
                          (Array.sub args 2 (Array.length args - 2)))
@@ -2743,7 +2743,7 @@ val bind_macro : env -> unit
 open Ocs_types
 open Ocs_error
 
-let main () = 
+let main () =
   let loadf = ref [] in
   let addf x = loadf := !loadf @ [x] in
   let argspec = [
@@ -3121,7 +3121,7 @@ let rec negate =
 
 let add2 a b =
   match (a, b) with
-    (Sint i1, Sint i2) -> 
+    (Sint i1, Sint i2) ->
       let r = i1 + i2 in
         if (i1 lxor i2) lor (i1 lxor (r lxor (-1))) < 0
         then Sint r
@@ -4655,7 +4655,7 @@ let null_env _ =
 ;;
 
 let interact_env e =
-  fun () -> Sesym (e, Ssymbol "") 
+  fun () -> Sesym (e, Ssymbol "")
 ;;
 
 let init e =
@@ -4780,7 +4780,7 @@ and store putc puts disp =
 ;;
 
 
-let write_string p s = 
+let write_string p s =
   store_string (Ocs_port.putc p) (Ocs_port.puts p) s
 
 let write_char p c =
@@ -4789,7 +4789,7 @@ let write_char p c =
 let print p b v =
   store (Ocs_port.putc p) (Ocs_port.puts p) b v
 
-let write_string_to_buffer p s = 
+let write_string_to_buffer p s =
   store_string (Buffer.add_char p) (Buffer.add_string p) s
 
 let write_char_to_buffer p c =
@@ -4851,7 +4851,7 @@ let show_token =
 let rec read_item lex =
   function
     Leof -> Seof
-(* Skaller edit: R5S5 deviation: case sensitive symbols! *)    
+(* Skaller edit: R5S5 deviation: case sensitive symbols! *)
 (*  | Lident s -> get_symbol (String.lowercase s) *)
   | Lident s -> get_symbol s
   | Lstring s -> Sstring s
@@ -4935,7 +4935,7 @@ open Ocs_error
 open Ocs_env
 
 let make_string =
-  function 
+  function
     [| Sint k |] -> Sstring (String.create k)
   | [| Sint k; Schar c |] -> Sstring (String.make k c)
   | _ -> raise (Error "make-string: bad args")
@@ -5286,7 +5286,7 @@ open Ocs_vartable
 (* We have to declare most types here to avoid cross-dependencies between
    compilation units.  *)
 
-type sval = 
+type sval =
   (* Global variables are set to Sunbound when referenced but not assigned.  *)
     Sunbound
 
@@ -5499,7 +5499,7 @@ let vt_inherit vt =
   { vt_global =
       if vt.vt_global = None then Some vt
       else vt.vt_global;
-    vt_bindings = vt.vt_bindings } 
+    vt_bindings = vt.vt_bindings }
 ;;
 
 let vt_global vt =

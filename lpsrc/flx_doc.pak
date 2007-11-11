@@ -83,7 +83,7 @@ To run this code you need to download and unpack the tarball:
 in the development directory. Then ./mk demo should run
 the examples in sequence.
 @p()
-Async I/O demos: 
+Async I/O demos:
 @cite_url("tools/en_flx_faio_tools.html")
 Includes a file copy tool, file compare tool,
 and mini webserver.

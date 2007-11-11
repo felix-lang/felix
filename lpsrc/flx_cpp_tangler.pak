@@ -151,8 +151,8 @@ opdict = {
   }
 
 py_punct_tokens = [
-  COLON, 
-  COMMA, 
+  COLON,
+  COMMA,
   SEMI,
   ]
 

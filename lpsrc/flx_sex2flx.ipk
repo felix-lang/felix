@@ -6,12 +6,12 @@ open Flx_types
 
 exception Sex2FlxTypeError of string * sexp_t
 
-val xstatement_t: 
+val xstatement_t:
   range_srcref ->
   sexp_t ->
   statement_t
 
-val xexpr_t: 
+val xexpr_t:
   range_srcref ->
   sexp_t ->
   expr_t
@@ -26,9 +26,9 @@ open List
 
 exception Sex2FlxTypeError of string * sexp_t
 
-let err x s = 
+let err x s =
   print_string ("[sex2flx] ERROR in " ^ s ^ " in " ^ Sex_print.string_of_sex x);
-  raise (Sex2FlxTypeError (s,x)) 
+  raise (Sex2FlxTypeError (s,x))
 
 let qne ex s e' =
   let e = ex e' in
@@ -45,14 +45,14 @@ let lst s (f:sexp_t->'a) x : 'a list = match x with
   | Lst ls -> map f ls
   | x -> err x (s^ " list")
 
-let xsr x : range_srcref = 
+let xsr x : range_srcref =
   let ii i = int_of_string i in
   match x with
   | Lst [Str fn; Int fl; Int fc; Int ll; Int lc] -> fn,ii fl,ii fc,ii ll,ii lc
   | x -> err x "Invalid source reference"
 
-let rec xliteral_t sr x = 
-  let bi i = 
+let rec xliteral_t sr x =
+  let bi i =
     (*
     print_endline ("Integer to convert is '" ^ i ^ "'");
     *)
@@ -69,7 +69,7 @@ let rec xliteral_t sr x =
   | x -> err x "invalid literal"
 
 
-and xast_term_t sr x = 
+and xast_term_t sr x =
   let ex x = xexpr_t sr x in
   let xs x = xstatement_t sr x in
   let xsts x =  lst "statement" xs x in
@@ -80,11 +80,11 @@ and xast_term_t sr x =
   | Lst [Id "Statements_term"; sts] -> `Statements_term (xsts sts)
   | Lst [Id "Identifier_term"; Str s] -> `Identifier_term s
   | Lst [Id "Keyword_term"; Str s] -> `Keyword_term s
-  | Lst [Id "Apply_term"; fn; args] -> 
+  | Lst [Id "Apply_term"; fn; args] ->
     `Apply_term (xterm fn, lst "ast_term" xterm args)
   | x -> err x "invalid ast_term_t"
 
-and type_of_sex sr w = 
+and type_of_sex sr w =
   (*
   print_endline ("Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
   *)
@@ -97,8 +97,8 @@ and type_of_sex sr w =
     | `AST_tuple (_,[]) -> `TYP_tuple []
     | `AST_name (_,"none",[]) -> `TYP_none
     | `AST_name (_,"typ_none",[]) -> `TYP_none
-    | x -> 
-      try typecode_of_expr x 
+    | x ->
+      try typecode_of_expr x
       with xn ->
         print_endline ("Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
         print_endline ("Felix expression is " ^ Flx_print.string_of_expr x);
@@ -110,7 +110,7 @@ and type_of_sex sr w =
   *)
   y
 
-and xexpr_t sr x = 
+and xexpr_t sr x =
   let re x = xregexp_t sr x in
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
@@ -131,10 +131,10 @@ and xexpr_t sr x =
  | Lst [Id "ast_interpolate";  Str s] -> `AST_interpolate (sr,ss s)
  | Lst [Id "ast_vsprintf";  Str s] -> `AST_vsprintf (sr,ss s)
  | Lst [Id "ast_noexpand";  e] -> `AST_noexpand (sr,ex e)
- | Lst [Id "ast_name"; sr; Id s ; Lst ts] -> 
+ | Lst [Id "ast_name"; sr; Id s ; Lst ts] ->
    `AST_name (xsr sr,s,map ti ts)
 
- | Lst [Id "ast_name"; sr; Str s ; Lst ts] -> 
+ | Lst [Id "ast_name"; sr; Str s ; Lst ts] ->
    `AST_name (xsr sr,ss s,map ti ts)
 
  | Lst [Id "ast_the";  e] -> `AST_the (sr, xq "ast_the" e)
@@ -148,33 +148,33 @@ and xexpr_t sr x =
  | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> `AST_apply(xsr sr,(ex e1, ex e2))
 
  | Lst [Id "ast_tuple";  sr; Lst es] -> `AST_tuple (xsr sr,map ex es)
- | Lst [Id "ast_record";  Lst rs] -> 
-   let rs = 
-     map (function 
-     | Lst [Str s; e] -> ss s, ex e 
+ | Lst [Id "ast_record";  Lst rs] ->
+   let rs =
+     map (function
+     | Lst [Str s; e] -> ss s, ex e
      | x -> err x "Error in AST_record"
-     ) 
-     rs 
+     )
+     rs
    in `AST_record (sr,rs)
 
  | Lst [Id "ast_record_type"; Lst rs] ->
-   let rs = 
-     map (function 
-     | Lst [Str s; e] -> ss s, ti e 
+   let rs =
+     map (function
+     | Lst [Str s; e] -> ss s, ti e
      | x -> err x "Error in AST_record_type"
-     ) 
-     rs 
+     )
+     rs
    in `AST_record_type (sr,rs)
 
  | Lst [Id "ast_variant";  Lst [Str s;e]] -> `AST_variant (sr,(ss s, ex e))
 
  | Lst [Id "ast_variant_type"; Lst rs] ->
-   let rs = 
-     map (function 
-     | Lst [Str s; e] -> ss s, ti e 
+   let rs =
+     map (function
+     | Lst [Str s; e] -> ss s, ti e
      | x -> err x "Error in AST_variant_type"
-     ) 
-     rs 
+     )
+     rs
    in `AST_variant_type (sr,rs)
 
 
@@ -188,7 +188,7 @@ and xexpr_t sr x =
  | Id "ast_void" -> `AST_void sr
  | Id "ast_ellipsis" -> `AST_ellipsis sr
 
- | Lst [Id "ast_product"; sr; Lst es] -> `AST_product (xsr sr, map ex es) 
+ | Lst [Id "ast_product"; sr; Lst es] -> `AST_product (xsr sr, map ex es)
  | Lst [Id "ast_sum";  sr; Lst es] -> `AST_sum (xsr sr,map ex es)
  | Lst [Id "ast_intersect"; Lst es] -> `AST_intersect (sr, map ex es)
  | Lst [Id "ast_isin"; Lst [a; b]] -> `AST_isin (sr, (ex a, ex b))
@@ -212,7 +212,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_method_apply";  Lst [Str n; e; Lst ts]] -> `AST_method_apply(sr,(n, ex e, map ti ts))
 
  | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> `AST_dot (xsr sr,(ex e1, ex e2))
- 
+
  | Lst [Id "ast_lambda";  Lst [vs; Lst pss; t; sts]] ->
    `AST_lambda  (sr,(xvs vs, map xps pss, ti t, xsts sts))
 
@@ -234,8 +234,8 @@ and xexpr_t sr x =
 
  | Lst [Id "ast_as";  Lst [e; Str s]] -> `AST_as (sr,(ex e, ss s))
  | Lst [Id "ast_match";  Lst [e; Lst pes]]->
-   let pes = map (function 
-     | Lst [p;e] -> xp p, ex e 
+   let pes = map (function
+     | Lst [p;e] -> xp p, ex e
      | x -> err x "ast_match syntax"
      )
      pes
@@ -246,13 +246,13 @@ and xexpr_t sr x =
    let pes = map (function
      | Lst [pr; e] -> (xsr sr), xpr pr, ex e
      | x -> err x "ast_parse syntax error"
-     ) 
+     )
      pes
    in
    `AST_parse (xsr sr,ex e, pes)
 
  | Lst [Id "ast_sparse";  e; Str s; Lst ints] ->
-   let ints = map (function 
+   let ints = map (function
      | Int i -> ii i
      | x -> err x "ast_sparse requires ints here"
    ) ints
@@ -276,7 +276,7 @@ and xexpr_t sr x =
      res
    in
    `AST_string_regmatch (sr,(ex e, res))
-  
+
  | Lst [Id "ast_reglex";  Lst [e1; e2; Lst res]] ->
    let res = map (function
      | Lst [r; e] -> re r,ex e
@@ -286,7 +286,7 @@ and xexpr_t sr x =
    in
    `AST_reglex (sr,(ex e1, ex e2, res))
 
- 
+
  | Lst [Id "ast_typeof";  e] -> `AST_typeof (sr, ex e)
  | Lst [Id "ast_lift";  e] -> `AST_lift (sr,ex e)
 
@@ -295,9 +295,9 @@ and xexpr_t sr x =
  | Lst [Id "ast_expr"; Str s; t] -> `AST_expr (sr, ss s, ti t)
 
  | Lst [Id "ast_type_match";  Lst [t; Lst ts]] ->
-   let ts = 
-     map (function 
-       | Lst [t1; t2] -> ti t1, ti t2 
+   let ts =
+     map (function
+       | Lst [t1; t2] -> ti t1, ti t2
        | x -> err x "ast_typematch typerrror"
      )
      ts
@@ -308,12 +308,12 @@ and xexpr_t sr x =
  | Lst [Id "ast_macro_statements"; sts] ->
   `AST_macro_statements (sr, xsts sts)
 
- | Lst [Id "ast_case";  Lst [e1; Lst ses; e2]] -> 
-   let ses = 
-     map (function 
-       | Str s -> ss s 
-       | x -> err x "ast_case type error") 
-     ses 
+ | Lst [Id "ast_case";  Lst [e1; Lst ses; e2]] ->
+   let ses =
+     map (function
+       | Str s -> ss s
+       | x -> err x "ast_case type error")
+     ses
    in
    `AST_case (sr, ex e1,ses,ex e2)
 
@@ -323,14 +323,14 @@ and xexpr_t sr x =
   | Lst ls -> `AST_tuple (sr, map ex ls)
 
   | Id y -> `AST_name (sr,y,[])
-  | Int i -> 
-    let j = Big_int.big_int_of_string i in 
+  | Int i ->
+    let j = Big_int.big_int_of_string i in
     `AST_literal (sr, `AST_int ("int",j))
 
-  | x -> 
+  | x ->
     err x "expression"
 
-and xfloat_pat x = 
+and xfloat_pat x =
   let ss s = s in
   match x with
   | Lst [Id "Float_plus"; Str ty; Str vl] -> Float_plus (ss ty, ss vl)
@@ -360,21 +360,21 @@ and xpattern_t sr x =
 
   | Lst [Id "pat_string_range"; Str s1; Str s2] ->
     `PAT_string_range (sr,ss s1, ss s2)
-  | Lst [Id "pat_float_range"; p1; p2] -> 
+  | Lst [Id "pat_float_range"; p1; p2] ->
     `PAT_float_range (sr, xfloat_pat p1, xfloat_pat p2)
 
   (* other *)
   | Lst [Id "pat_coercion"; p; t] ->
    `PAT_coercion (sr, xp p, ti t)
-  
+
   | Lst [Id "pat_name"; Id x] -> `PAT_name (sr, x)
   | Lst [Id "pat_name"; Str x] -> `PAT_name (sr, ss x)
   | Lst [Id "pat_tuple"; sr; Lst ps] -> `PAT_tuple (xsr sr, map xp ps)
 
   | Id "pat_any" -> `PAT_any sr
 (*
-  | `PAT_regexp of range_srcref * string * id_t list 
-*)  
+  | `PAT_regexp of range_srcref * string * id_t list
+*)
   | Lst [Id "pat_const_ctor"; qn] -> `PAT_const_ctor (sr, xq "pat_const_ctor" qn)
   | Lst [Id "pat_nonconst_ctor"; qn; p] -> `PAT_nonconst_ctor (sr, xq "pat_nonconst_ctor" qn, xp p)
 
@@ -382,7 +382,7 @@ and xpattern_t sr x =
   | Lst [Id "pat_as"; p; Str s] -> `PAT_as (sr, xp p, ss s)
   | Lst [Id "pat_when"; p; e] -> `PAT_when (sr, xp p, ex e)
 
-  | Lst [Id "pat_record"; Lst ips] -> 
+  | Lst [Id "pat_record"; Lst ips] ->
     let ips = map (function
       | Lst [Id id; p] -> id,xp p
       | Lst [Str id; p] -> ss id,xp p
@@ -391,29 +391,29 @@ and xpattern_t sr x =
       ips
     in
     `PAT_record (sr, ips)
-  | x -> 
+  | x ->
     err x "pattern"
 
 and xcharset_t sr x =
   let cs x = xcharset_t sr x in
   match x with
   | Lst [Id "charset_of_string"; Str s] -> Flx_charset.charset_of_string s
-  | Lst [Id "charset_of_int_range"; Int i; Int j] -> 
+  | Lst [Id "charset_of_int_range"; Int i; Int j] ->
     Flx_charset.charset_of_int_range (int_of_string i) (int_of_string j)
 
-  | Lst [Id "charset_of_range"; Str i; Str j] -> 
+  | Lst [Id "charset_of_range"; Str i; Str j] ->
     Flx_charset.charset_of_range i j
 
-  | Lst [Id "charset_union"; x; y] -> 
+  | Lst [Id "charset_union"; x; y] ->
     Flx_charset.charset_union (cs x) (cs y)
 
-  | Lst [Id "charset_inv"; x] -> 
+  | Lst [Id "charset_inv"; x] ->
     Flx_charset.charset_inv (cs x)
 
   | x ->
     err x "charset"
 
-and xregexp_t sr x = 
+and xregexp_t sr x =
   let ex x = xexpr_t sr x in
   let xq m qn = qne ex m qn in
   let re x = xregexp_t sr x in
@@ -433,12 +433,12 @@ and xregexp_t sr x =
   | Id "regexp_underscore" -> Flx_charset.regexp_underscore
   | Id "regexp_dot" -> Flx_charset.regexp_dot
 
-  | Lst [Id "regexp_of_charset"; x] -> 
+  | Lst [Id "regexp_of_charset"; x] ->
     Flx_charset.regexp_of_charset  (cs x)
 
   | x -> err x "regexp_t syntax error"
 
-and xglr_term_t sr x = 
+and xglr_term_t sr x =
   let ex x = xexpr_t sr x in
   let xq m qn = qne ex m qn in
   let xg x = xglr_term_t sr x in
@@ -489,7 +489,7 @@ and xplain_vs_list_t sr x : plain_vs_list_t =
     | Lst [Id s; t] -> s,ti t
     | Lst [Str s; t] -> ss s,ti t
     | x -> err x "xplain_vs_list"
-    ) its 
+    ) its
   | x -> err x "xplain_vs_list"
 
 and xvs_list_t sr x : vs_list_t =
@@ -618,7 +618,7 @@ and xc_t sr x : c_t =
   | Id "Identity" -> `Identity
   | x ->  err x "c_t"
 
-and xlvalue_t sr x : lvalue_t = 
+and xlvalue_t sr x : lvalue_t =
   let ex x = xexpr_t sr x in
   let xtlv x = xtlvalue_t sr x in
   match x with
@@ -630,7 +630,7 @@ and xlvalue_t sr x : lvalue_t =
   | Lst [Id "Expr"; sr; e] -> `Expr (xsr sr,ex e)
   | x -> err x "lvalue_t"
 
-and xtlvalue_t sr x : tlvalue_t = 
+and xtlvalue_t sr x : tlvalue_t =
   let xlv x = xlvalue_t sr x in
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
@@ -675,7 +675,7 @@ and xraw_req_expr_t sr x : raw_req_expr_t =
   | x -> err x "raw_req_expr_t"
 
 
-and xunion_component sr x = 
+and xunion_component sr x =
   let xvs x = xvs_list_t sr x in
   let ii i = int_of_string i in
   let xi = function | Int i -> ii i | x -> err x "int" in
@@ -721,20 +721,20 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_use"; sr; Str s; qn] -> `AST_use (xsr sr, ss s, xq "ast_use" qn)
   | Lst [Id "ast_comment"; sr; Str s] -> `AST_comment(xsr sr, ss s)
   | Lst [Id "ast_private"; x] -> `AST_private (sr, xs x)
-  | Lst [Id "ast_reduce"; sr; Str s; vs; spl; e1; e2] -> 
+  | Lst [Id "ast_reduce"; sr; Str s; vs; spl; e1; e2] ->
     `AST_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex e1, ex e2)
-  | Lst [Id "ast_axiom"; sr; Str s; vs; ps; axm] -> 
+  | Lst [Id "ast_axiom"; sr; Str s; vs; ps; axm] ->
     `AST_axiom (xsr sr,ss s,xvs vs, xps ps,xam axm)
-  | Lst [Id "ast_lemma"; sr; Str s; vs; ps; axm] -> 
+  | Lst [Id "ast_lemma"; sr; Str s; vs; ps; axm] ->
     `AST_lemma(xsr sr,ss s,xvs vs, xps ps,xam axm)
-  | Lst [Id "ast_function"; Str s; vs; ps; ret; props; sts] -> 
+  | Lst [Id "ast_function"; Str s; vs; ps; ret; props; sts] ->
     `AST_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
-  | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] -> 
+  | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] ->
     `AST_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
-  | Lst [Id "ast_object"; Str s; vs; ps; sts] -> 
+  | Lst [Id "ast_object"; Str s; vs; ps; sts] ->
     `AST_object(sr,ss s,xvs vs, xps ps, xsts sts)
   | Lst [Id "ast_regdef"; sr; Str s; r] -> `AST_regdef (xsr sr,s,re r)
-  | Lst [Id "ast_glr"; sr; Str s; t; Lst pl] -> 
+  | Lst [Id "ast_glr"; sr; Str s; t; Lst pl] ->
     let pl = map (function
       | Lst [p;e] -> (xsr sr),xp p, ex e
       | x -> err x "glr phrase"
@@ -743,7 +743,7 @@ and xstatement_t sr x : statement_t =
     `AST_glr (xsr sr,s,ti t, pl)
 
   | Lst [Id "ast_macro_name"; Str n; Str m] -> `AST_macro_name (sr,n,m)
-  | Lst [Id "ast_macro_names"; Str n; ms] -> 
+  | Lst [Id "ast_macro_names"; Str n; ms] ->
     `AST_macro_names (sr,n,lst "ast_macro_names" xid ms)
   | Lst [Id "ast_expr_macro"; Str n; mps; e] ->
     `AST_expr_macro (sr,n, xmps mps, ex e)
@@ -781,7 +781,7 @@ and xstatement_t sr x : statement_t =
     `AST_union (xsr sr,n, xvs vs, ucmp)
 
   | Lst [Id "ast_struct"; sr; Str n; vs; ucmp] ->
-    let xscmp = function 
+    let xscmp = function
       | Lst [Id c; t] -> c, ti t
       | Lst [Str c; t] -> c, ti t
       | x -> err x "struct component"
@@ -790,7 +790,7 @@ and xstatement_t sr x : statement_t =
     `AST_struct (xsr sr,n, xvs vs, ucmp)
 
   | Lst [Id "ast_cstruct"; sr; Str n; vs; ucmp] ->
-    let xscmp = function 
+    let xscmp = function
       | Lst [Id c; t] -> c, ti t
       | Lst [Str c; t] -> c, ti t
       | x -> err x "cstruct component"
@@ -815,11 +815,11 @@ and xstatement_t sr x : statement_t =
     | x -> err x "mktypefun:unpack args1"
     in
     let fixargs args = match args with
-    | Lst args -> map fixarg args 
+    | Lst args -> map fixarg args
     | x -> err x "mktypefun:unpack args2"
     in
     let argss = match argss with
-    | Lst args -> map fixargs args 
+    | Lst args -> map fixargs args
     | x -> err x "mktypefun:unpack args3"
     in
     Flx_typing.mktypefun (xsr sr) name (xvs vs) argss (ti ret) (ti body)
@@ -868,19 +868,19 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_goto"; sr; Str n] -> `AST_goto(xsr sr,n)
   | Lst [Id "ast_ifgoto"; sr; e; Str n] -> `AST_ifgoto(xsr sr,ex e,n)
-  | Lst [Id "ast_likely_ifgoto"; sr; e; Str n] -> 
+  | Lst [Id "ast_likely_ifgoto"; sr; e; Str n] ->
     `AST_ifgoto(xsr sr,`AST_likely (xsr sr,ex e),n)
 
-  | Lst [Id "ast_unlikely_ifgoto"; sr; e; Str n] -> 
+  | Lst [Id "ast_unlikely_ifgoto"; sr; e; Str n] ->
     `AST_ifgoto(xsr sr,`AST_unlikely (xsr sr,ex e),n)
 
-  | Lst [Id "ast_ifnotgoto"; sr; e; Str n] -> 
+  | Lst [Id "ast_ifnotgoto"; sr; e; Str n] ->
     `AST_ifgoto(xsr sr,lnot (xsr sr) (ex e),n)
 
-  | Lst [Id "ast_likely_ifnotgoto"; sr; e; Str n] -> 
+  | Lst [Id "ast_likely_ifnotgoto"; sr; e; Str n] ->
     `AST_ifgoto(xsr sr,`AST_likely (xsr sr,lnot (xsr sr) (ex e)),n)
 
-  | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; Str n] -> 
+  | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; Str n] ->
     `AST_ifgoto(xsr sr,`AST_unlikely(xsr sr,lnot (xsr sr) (ex e)),n)
 
   | Lst [Id "ast_ifreturn"; sr; e] -> `AST_ifreturn(xsr sr,ex e)
@@ -902,28 +902,28 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_apply_ctor"; sr; Str n; e1; e2] -> `AST_apply_ctor(xsr sr,n,ex e1,ex e2)
   | Lst [Id "ast_init"; sr; Str n; e] -> `AST_init(xsr sr,n,ex e)
   | Lst [Id "ast_newtype"; sr; Str n; vs; t] -> `AST_newtype(xsr sr,n,xvs vs, ti t)
-  | Lst [Id "ast_abs_decl"; sr; Str n; vs; tqs; ct; req] -> 
+  | Lst [Id "ast_abs_decl"; sr; Str n; vs; tqs; ct; req] ->
     `AST_abs_decl (xsr sr,n,xvs vs, xtqs tqs, xc ct, xrr req)
 
-  | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] -> 
-    let ids = map (function 
+  | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] ->
+    let ids = map (function
       | Str n -> ("dummy",0,0,0),n
       | x -> err x "ast_ctypes"
     ) ids
     in
     `AST_ctypes (xsr sr,ids, xtqs tqs, xrr req)
 
-  | Lst [Id "ast_const_decl"; sr; Str n; vs; t; ct; req] -> 
+  | Lst [Id "ast_const_decl"; sr; Str n; vs; t; ct; req] ->
     `AST_const_decl (xsr sr, n, xvs vs, ti t, xc ct, xrr req)
 
-  | Lst [Id "ast_fun_decl"; sr; Str n; vs; Lst ps; t; ct; req; Str prec] -> 
+  | Lst [Id "ast_fun_decl"; sr; Str n; vs; Lst ps; t; ct; req; Str prec] ->
     `AST_fun_decl (xsr sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
 
-  | Lst [Id "ast_callback_decl"; sr; Str n; Lst ps; t; req] -> 
+  | Lst [Id "ast_callback_decl"; sr; Str n; Lst ps; t; req] ->
     `AST_callback_decl (xsr sr, n, map ti ps, ti t, xrr req)
 
   | Lst [Id "ast_insert"; sr; Str n; vs; ct; ik; req] ->
-    let xik = function 
+    let xik = function
      | Id "header" -> `Header
      | Id "body" -> `Body
      | Id "package" -> `Package
@@ -933,14 +933,14 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_code"; sr; ct] -> `AST_code (xsr sr, xc ct)
   | Lst [Id "ast_noreturn_code"; sr; ct] -> `AST_noreturn_code (xsr sr, xc ct)
-  | Lst [Id "ast_export_fun"; sr; sn; Str s] -> 
+  | Lst [Id "ast_export_fun"; sr; sn; Str s] ->
     let xsn x = match ex x with
     | #suffixed_name_t as x -> x
     | _ -> err  x "suffixed_name_t"
     in
     `AST_export_fun  (xsr sr, xsn sn, ss s)
 
-  | Lst [Id "ast_export_type"; sr; t; Str s] -> 
+  | Lst [Id "ast_export_type"; sr; t; Str s] ->
     `AST_export_type (xsr sr, ti t, ss s)
 
   | x -> err x "statement"

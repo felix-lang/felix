@@ -5,8 +5,8 @@
 (** Misc compiler utilities *)
 
 val terminate:
-  bool -> 
-  exn -> 
+  bool ->
+  exn ->
   unit
 (** terminate the top level program in case of error *)
 
@@ -79,13 +79,13 @@ let terminate rrp = let return_parity = not rrp in function
     exit (if return_parity then 1 else 0)
 
 
-  | Failure s -> 
+  | Failure s ->
     flush stdout; print_endline "SYSTEM FAILURE";
     print_endline s;
     exit (if return_parity then 1 else 0)
 
-  | x -> 
-    flush stdout; print_endline "EXCEPTION"; 
+  | x ->
+    flush stdout; print_endline "EXCEPTION";
     print_endline (Printexc.to_string x);
     exit (if return_parity then 1 else 0)
 

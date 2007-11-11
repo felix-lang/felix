@@ -65,7 +65,7 @@ module gsl_blas_h
   open gsl_vector_complex_float_h;
   open gsl_vector_double_h;
   open gsl_vector_float_h;
-  
+
   //PROCEDURES
   proc gsl_blas_cscal: gsl_complex_float * ptr[gsl_vector_complex_float];
   proc gsl_blas_csscal: float * ptr[gsl_vector_complex_float];
@@ -73,7 +73,7 @@ module gsl_blas_h
   proc gsl_blas_sscal: float * ptr[gsl_vector_float];
   proc gsl_blas_zdscal: double * ptr[gsl_vector_complex];
   proc gsl_blas_zscal: gsl_complex * ptr[gsl_vector_complex];
-  
+
   //FUNCTIONS
   fun gsl_blas_caxpy: gsl_complex_float * cptr[gsl_vector_complex_float] * ptr[gsl_vector_complex_float] -> int;
   fun gsl_blas_ccopy: cptr[gsl_vector_complex_float] * ptr[gsl_vector_complex_float] -> int;
@@ -194,7 +194,7 @@ header '#include "gsl/gsl_blas_types.h"';
 module gsl_blas_types_h
 {
   open C_hack;
-  
+
   //TYPE ALIASES
   typedef CBLAS_ORDER_t = int;
   typedef CBLAS_SIDE_t = int;
@@ -202,7 +202,7 @@ module gsl_blas_types_h
   typedef CBLAS_INDEX_t = size;
   typedef CBLAS_TRANSPOSE_t = int;
   typedef CBLAS_DIAG_t = int;
-  
+
   //ENUMERATION CONSTANTS
   const CblasConjTrans: int = 'CblasConjTrans';
   const CblasRight: int = 'CblasRight';
@@ -238,22 +238,22 @@ module gsl_block_char_h
 {
   open C_hack;
   open gsl_block_char_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_char_struct {
     size: size;
     data: ptr[char];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_char = gsl_block_char_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_char_struct = gsl_block_char_struct;
-  
+
   //PROCEDURES
   proc gsl_block_char_free: ptr[gsl_block_char];
-  
+
   //FUNCTIONS
   fun gsl_block_char_alloc: size -> ptr[gsl_block_char];
   fun gsl_block_char_calloc: size -> ptr[gsl_block_char];
@@ -308,22 +308,22 @@ module gsl_block_complex_double_h
 {
   open C_hack;
   open gsl_block_complex_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_complex_struct {
     size: size;
     data: ptr[double];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_complex = gsl_block_complex_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_complex_struct = gsl_block_complex_struct;
-  
+
   //PROCEDURES
   proc gsl_block_complex_free: ptr[gsl_block_complex];
-  
+
   //FUNCTIONS
   fun gsl_block_complex_alloc: size -> ptr[gsl_block_complex];
   fun gsl_block_complex_calloc: size -> ptr[gsl_block_complex];
@@ -360,22 +360,22 @@ module gsl_block_complex_float_h
 {
   open C_hack;
   open gsl_block_complex_float_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_complex_float_struct {
     size: size;
     data: ptr[float];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_complex_float = gsl_block_complex_float_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_complex_float_struct = gsl_block_complex_float_struct;
-  
+
   //PROCEDURES
   proc gsl_block_complex_float_free: ptr[gsl_block_complex_float];
-  
+
   //FUNCTIONS
   fun gsl_block_complex_float_alloc: size -> ptr[gsl_block_complex_float];
   fun gsl_block_complex_float_calloc: size -> ptr[gsl_block_complex_float];
@@ -456,22 +456,22 @@ module gsl_block_complex_long_double_h
 {
   open C_hack;
   open gsl_block_complex_long_double_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_complex_long_double_struct {
     size: size;
     data: ptr[ldouble];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_complex_long_double = gsl_block_complex_long_double_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_complex_long_double_struct = gsl_block_complex_long_double_struct;
-  
+
   //PROCEDURES
   proc gsl_block_complex_long_double_free: ptr[gsl_block_complex_long_double];
-  
+
   //FUNCTIONS
   fun gsl_block_complex_long_double_alloc: size -> ptr[gsl_block_complex_long_double];
   fun gsl_block_complex_long_double_calloc: size -> ptr[gsl_block_complex_long_double];
@@ -544,22 +544,22 @@ module gsl_block_double_h
 {
   open C_hack;
   open gsl_block_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_struct {
     size: size;
     data: ptr[double];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block = gsl_block_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_struct = gsl_block_struct;
-  
+
   //PROCEDURES
   proc gsl_block_free: ptr[gsl_block];
-  
+
   //FUNCTIONS
   fun gsl_block_alloc: size -> ptr[gsl_block];
   fun gsl_block_calloc: size -> ptr[gsl_block];
@@ -596,22 +596,22 @@ module gsl_block_float_h
 {
   open C_hack;
   open gsl_block_float_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_float_struct {
     size: size;
     data: ptr[float];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_float = gsl_block_float_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_float_struct = gsl_block_float_struct;
-  
+
   //PROCEDURES
   proc gsl_block_float_free: ptr[gsl_block_float];
-  
+
   //FUNCTIONS
   fun gsl_block_float_alloc: size -> ptr[gsl_block_float];
   fun gsl_block_float_calloc: size -> ptr[gsl_block_float];
@@ -666,22 +666,22 @@ module gsl_block_int_h
 {
   open C_hack;
   open gsl_block_int_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_int_struct {
     size: size;
     data: ptr[int];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_int = gsl_block_int_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_int_struct = gsl_block_int_struct;
-  
+
   //PROCEDURES
   proc gsl_block_int_free: ptr[gsl_block_int];
-  
+
   //FUNCTIONS
   fun gsl_block_int_alloc: size -> ptr[gsl_block_int];
   fun gsl_block_int_calloc: size -> ptr[gsl_block_int];
@@ -755,22 +755,22 @@ module gsl_block_long_double_h
 {
   open C_hack;
   open gsl_block_long_double_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_long_double_struct {
     size: size;
     data: ptr[ldouble];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_long_double = gsl_block_long_double_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_long_double_struct = gsl_block_long_double_struct;
-  
+
   //PROCEDURES
   proc gsl_block_long_double_free: ptr[gsl_block_long_double];
-  
+
   //FUNCTIONS
   fun gsl_block_long_double_alloc: size -> ptr[gsl_block_long_double];
   fun gsl_block_long_double_calloc: size -> ptr[gsl_block_long_double];
@@ -825,22 +825,22 @@ module gsl_block_long_h
 {
   open C_hack;
   open gsl_block_long_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_long_struct {
     size: size;
     data: ptr[long];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_long = gsl_block_long_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_long_struct = gsl_block_long_struct;
-  
+
   //PROCEDURES
   proc gsl_block_long_free: ptr[gsl_block_long];
-  
+
   //FUNCTIONS
   fun gsl_block_long_alloc: size -> ptr[gsl_block_long];
   fun gsl_block_long_calloc: size -> ptr[gsl_block_long];
@@ -895,22 +895,22 @@ module gsl_block_short_h
 {
   open C_hack;
   open gsl_block_short_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_short_struct {
     size: size;
     data: ptr[short];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_short = gsl_block_short_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_short_struct = gsl_block_short_struct;
-  
+
   //PROCEDURES
   proc gsl_block_short_free: ptr[gsl_block_short];
-  
+
   //FUNCTIONS
   fun gsl_block_short_alloc: size -> ptr[gsl_block_short];
   fun gsl_block_short_calloc: size -> ptr[gsl_block_short];
@@ -983,22 +983,22 @@ module gsl_block_uchar_h
 {
   open C_hack;
   open gsl_block_uchar_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_uchar_struct {
     size: size;
     data: ptr[utiny];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_uchar = gsl_block_uchar_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_uchar_struct = gsl_block_uchar_struct;
-  
+
   //PROCEDURES
   proc gsl_block_uchar_free: ptr[gsl_block_uchar];
-  
+
   //FUNCTIONS
   fun gsl_block_uchar_alloc: size -> ptr[gsl_block_uchar];
   fun gsl_block_uchar_calloc: size -> ptr[gsl_block_uchar];
@@ -1053,22 +1053,22 @@ module gsl_block_uint_h
 {
   open C_hack;
   open gsl_block_uint_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_uint_struct {
     size: size;
     data: ptr[uint];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_uint = gsl_block_uint_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_uint_struct = gsl_block_uint_struct;
-  
+
   //PROCEDURES
   proc gsl_block_uint_free: ptr[gsl_block_uint];
-  
+
   //FUNCTIONS
   fun gsl_block_uint_alloc: size -> ptr[gsl_block_uint];
   fun gsl_block_uint_calloc: size -> ptr[gsl_block_uint];
@@ -1123,22 +1123,22 @@ module gsl_block_ulong_h
 {
   open C_hack;
   open gsl_block_ulong_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_ulong_struct {
     size: size;
     data: ptr[ulong];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_ulong = gsl_block_ulong_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_ulong_struct = gsl_block_ulong_struct;
-  
+
   //PROCEDURES
   proc gsl_block_ulong_free: ptr[gsl_block_ulong];
-  
+
   //FUNCTIONS
   fun gsl_block_ulong_alloc: size -> ptr[gsl_block_ulong];
   fun gsl_block_ulong_calloc: size -> ptr[gsl_block_ulong];
@@ -1193,22 +1193,22 @@ module gsl_block_ushort_h
 {
   open C_hack;
   open gsl_block_ushort_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_block_ushort_struct {
     size: size;
     data: ptr[ushort];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block_ushort = gsl_block_ushort_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_block_ushort_struct = gsl_block_ushort_struct;
-  
+
   //PROCEDURES
   proc gsl_block_ushort_free: ptr[gsl_block_ushort];
-  
+
   //FUNCTIONS
   fun gsl_block_ushort_alloc: size -> ptr[gsl_block_ushort];
   fun gsl_block_ushort_calloc: size -> ptr[gsl_block_ushort];
@@ -1260,14 +1260,14 @@ header '#include "gsl/gsl_cblas.h"';
 module gsl_cblas_h
 {
   open C_hack;
-  
+
   //TYPE ALIASES
   typedef CBLAS_ORDER = int;
   typedef CBLAS_TRANSPOSE = int;
   typedef CBLAS_DIAG = int;
   typedef CBLAS_SIDE = int;
   typedef CBLAS_UPLO = int;
-  
+
   //ENUMERATION CONSTANTS
   const CblasConjTrans: int = 'CblasConjTrans';
   const CblasRight: int = 'CblasRight';
@@ -1280,7 +1280,7 @@ module gsl_cblas_h
   const CblasNoTrans: int = 'CblasNoTrans';
   const CblasNonUnit: int = 'CblasNonUnit';
   const CblasLeft: int = 'CblasLeft';
-  
+
   //PROCEDURES
   proc cblas_caxpy: int * caddress * caddress * int * address * int;
   proc cblas_ccopy: int * caddress * int * address * int;
@@ -1409,7 +1409,7 @@ module gsl_cblas_h
   proc cblas_ztrmv: int * int * int * int * int * caddress * int * address * int;
   proc cblas_ztrsm: int * int * int * int * int * int * int * caddress * caddress * int * address * int;
   proc cblas_ztrsv: int * int * int * int * int * caddress * int * address * int;
-  
+
   //FUNCTIONS
   fun cblas_dasum: int * cptr[double] * int -> double;
   fun cblas_ddot: int * cptr[double] * int * cptr[double] * int -> double;
@@ -1446,7 +1446,7 @@ header '#include "gsl/gsl_cdf.h"';
 module gsl_cdf_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_cdf_beta_P: double * double * double -> double;
   fun gsl_cdf_beta_Q: double * double * double -> double;
@@ -1563,8 +1563,8 @@ module gsl_chebyshev_h
   open gsl_cheb_series_struct_h;
   open gsl_math_h;
   open gsl_mode_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_cheb_series_struct {
     c: ptr[double];
     order: size;
@@ -1573,16 +1573,16 @@ module gsl_chebyshev_h
     order_sp: size;
     f: ptr[double];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_cheb_series = gsl_cheb_series_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_cheb_series_struct = gsl_cheb_series_struct;
-  
+
   //PROCEDURES
   proc gsl_cheb_free: ptr[gsl_cheb_series];
-  
+
   //FUNCTIONS
   fun gsl_cheb_alloc: size -> ptr[gsl_cheb_series];
   fun gsl_cheb_calc_deriv: ptr[gsl_cheb_series] * cptr[gsl_cheb_series] -> int;
@@ -1615,7 +1615,7 @@ header '#include "gsl/gsl_check_range.h"';
 module gsl_check_range_h
 {
   open C_hack;
-  
+
   //VARIABLES
   const gsl_check_range: int = 'gsl_check_range';
 }
@@ -1641,25 +1641,25 @@ module gsl_combination_h
 {
   open C_hack;
   open gsl_combination_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_combination_struct {
     n: size;
     k: size;
     data: ptr[size];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_combination = gsl_combination_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_combination_struct = gsl_combination_struct;
-  
+
   //PROCEDURES
   proc gsl_combination_free: ptr[gsl_combination];
   proc gsl_combination_init_first: ptr[gsl_combination];
   proc gsl_combination_init_last: ptr[gsl_combination];
-  
+
   //FUNCTIONS
   fun gsl_combination_alloc: size * size -> ptr[gsl_combination];
   fun gsl_combination_calloc: size * size -> ptr[gsl_combination];
@@ -1722,12 +1722,12 @@ header '#include "gsl/gsl_complex.h"';
 module gsl_complex_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_complex = 'gsl_complex';
   type gsl_complex_float = 'gsl_complex_float';
   type gsl_complex_long_double = 'gsl_complex_long_double';
-  
+
   //TYPE ALIASES
   typedef gsl_complex_packed = ptr[double];
   typedef gsl_const_complex_packed_long_double = cptr[ldouble];
@@ -1773,7 +1773,7 @@ module gsl_complex_math_h
 {
   open C_hack;
   open gsl_complex_h;
-  
+
   //FUNCTIONS
   fun gsl_complex_abs: gsl_complex -> double;
   fun gsl_complex_abs2: gsl_complex -> double;
@@ -2385,7 +2385,7 @@ module gsl_deriv_h
 {
   open C_hack;
   open gsl_math_h;
-  
+
   //FUNCTIONS
   fun gsl_deriv_backward: cptr[gsl_function] * double * double * ptr[double] * ptr[double] -> int;
   fun gsl_deriv_central: cptr[gsl_function] * double * double * ptr[double] * ptr[double] -> int;
@@ -2413,7 +2413,7 @@ module gsl_dft_complex_float_h
 {
   open C_hack;
   open gsl_fft_h;
-  
+
   //FUNCTIONS
   fun gsl_dft_complex_float_backward: cptr[float] * size * size * ptr[float] -> int;
   fun gsl_dft_complex_float_forward: cptr[float] * size * size * ptr[float] -> int;
@@ -2442,7 +2442,7 @@ module gsl_dft_complex_h
 {
   open C_hack;
   open gsl_fft_h;
-  
+
   //FUNCTIONS
   fun gsl_dft_complex_backward: cptr[double] * size * size * ptr[double] -> int;
   fun gsl_dft_complex_forward: cptr[double] * size * size * ptr[double] -> int;
@@ -2471,8 +2471,8 @@ module gsl_dht_h
 {
   open C_hack;
   open gsl_dht_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_dht_struct {
     size: size;
     nu: double;
@@ -2482,16 +2482,16 @@ module gsl_dht_h
     Jjj: ptr[double];
     J2: ptr[double];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_dht = gsl_dht_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_dht_struct = gsl_dht_struct;
-  
+
   //PROCEDURES
   proc gsl_dht_free: ptr[gsl_dht];
-  
+
   //FUNCTIONS
   fun gsl_dht_alloc: size -> ptr[gsl_dht];
   fun gsl_dht_apply: cptr[gsl_dht] * ptr[double] * ptr[double] -> int;
@@ -2540,7 +2540,7 @@ module gsl_diff_h
 {
   open C_hack;
   open gsl_math_h;
-  
+
   //FUNCTIONS
   fun gsl_diff_backward: cptr[gsl_function] * double * ptr[double] * ptr[double] -> int;
   fun gsl_diff_central: cptr[gsl_function] * double * ptr[double] * ptr[double] -> int;
@@ -2572,26 +2572,26 @@ module gsl_eigen_h
   open gsl_matrix_complex_double_h;
   open gsl_matrix_double_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_eigen_symmv_workspace = 'gsl_eigen_symmv_workspace';
   type gsl_eigen_herm_workspace = 'gsl_eigen_herm_workspace';
   type gsl_eigen_sort_t = 'gsl_eigen_sort_t';
   type gsl_eigen_symm_workspace = 'gsl_eigen_symm_workspace';
   type gsl_eigen_hermv_workspace = 'gsl_eigen_hermv_workspace';
-  
+
   //ENUMERATION CONSTANTS
   const GSL_EIGEN_SORT_ABS_DESC: int = 'GSL_EIGEN_SORT_ABS_DESC';
   const GSL_EIGEN_SORT_VAL_DESC: int = 'GSL_EIGEN_SORT_VAL_DESC';
   const GSL_EIGEN_SORT_VAL_ASC: int = 'GSL_EIGEN_SORT_VAL_ASC';
   const GSL_EIGEN_SORT_ABS_ASC: int = 'GSL_EIGEN_SORT_ABS_ASC';
-  
+
   //PROCEDURES
   proc gsl_eigen_herm_free: ptr[gsl_eigen_herm_workspace];
   proc gsl_eigen_hermv_free: ptr[gsl_eigen_hermv_workspace];
   proc gsl_eigen_symm_free: ptr[gsl_eigen_symm_workspace];
   proc gsl_eigen_symmv_free: ptr[gsl_eigen_symmv_workspace];
-  
+
   //FUNCTIONS
   fun gsl_eigen_herm: ptr[gsl_matrix_complex] * ptr[gsl_vector] * ptr[gsl_eigen_herm_workspace] -> int;
   fun gsl_eigen_herm_alloc: size -> ptr[gsl_eigen_herm_workspace];
@@ -2635,11 +2635,11 @@ header '#include "gsl/gsl_errno.h"';
 module gsl_errno_h
 {
   open C_hack;
-  
+
   //TYPE ALIASES
   typedef gsl_error_handler_t = cptr[char] * cptr[char] * int * int -> void_t;
   typedef gsl_stream_handler_t = cptr[char] * cptr[char] * int * cptr[char] -> void_t;
-  
+
   //ENUMERATION CONSTANTS
   const GSL_FAILURE: int = 'GSL_FAILURE';
   const GSL_ETOLF: int = 'GSL_ETOLF';
@@ -2676,11 +2676,11 @@ module gsl_errno_h
   const GSL_ERANGE: int = 'GSL_ERANGE';
   const GSL_EBADLEN: int = 'GSL_EBADLEN';
   const GSL_CONTINUE: int = 'GSL_CONTINUE';
-  
+
   //PROCEDURES
   proc gsl_error: cptr[char] * cptr[char] * int * int;
   proc gsl_stream_printf: cptr[char] * cptr[char] * int * cptr[char];
-  
+
   //FUNCTIONS
   fun gsl_set_error_handler: ptr[gsl_error_handler_t] -> ptr[gsl_error_handler_t];
   fun gsl_set_error_handler_off: 1 -> ptr[gsl_error_handler_t];
@@ -2712,15 +2712,15 @@ module gsl_fft_complex_float_h
   open C_hack;
   open gsl_complex_h;
   open gsl_fft_h;
-  
+
   //ABSTRACT TYPES
   type gsl_fft_complex_workspace_float = 'gsl_fft_complex_workspace_float';
   type gsl_fft_complex_wavetable_float = 'gsl_fft_complex_wavetable_float';
-  
+
   //PROCEDURES
   proc gsl_fft_complex_wavetable_float_free: ptr[gsl_fft_complex_wavetable_float];
   proc gsl_fft_complex_workspace_float_free: ptr[gsl_fft_complex_workspace_float];
-  
+
   //FUNCTIONS
   fun gsl_fft_complex_float_backward: gsl_complex_packed_array_float * size * size * cptr[gsl_fft_complex_wavetable_float] * ptr[gsl_fft_complex_workspace_float] -> int;
   fun gsl_fft_complex_float_forward: gsl_complex_packed_array_float * size * size * cptr[gsl_fft_complex_wavetable_float] * ptr[gsl_fft_complex_workspace_float] -> int;
@@ -2762,15 +2762,15 @@ module gsl_fft_complex_h
   open C_hack;
   open gsl_complex_h;
   open gsl_fft_h;
-  
+
   //ABSTRACT TYPES
   type gsl_fft_complex_wavetable = 'gsl_fft_complex_wavetable';
   type gsl_fft_complex_workspace = 'gsl_fft_complex_workspace';
-  
+
   //PROCEDURES
   proc gsl_fft_complex_wavetable_free: ptr[gsl_fft_complex_wavetable];
   proc gsl_fft_complex_workspace_free: ptr[gsl_fft_complex_workspace];
-  
+
   //FUNCTIONS
   fun gsl_fft_complex_backward: gsl_complex_packed_array * size * size * cptr[gsl_fft_complex_wavetable] * ptr[gsl_fft_complex_workspace] -> int;
   fun gsl_fft_complex_forward: gsl_complex_packed_array * size * size * cptr[gsl_fft_complex_wavetable] * ptr[gsl_fft_complex_workspace] -> int;
@@ -2810,13 +2810,13 @@ module gsl_fft_halfcomplex_float_h
 {
   open C_hack;
   open gsl_fft_real_float_h;
-  
+
   //ABSTRACT TYPES
   type gsl_fft_halfcomplex_wavetable_float = 'gsl_fft_halfcomplex_wavetable_float';
-  
+
   //PROCEDURES
   proc gsl_fft_halfcomplex_wavetable_float_free: ptr[gsl_fft_halfcomplex_wavetable_float];
-  
+
   //FUNCTIONS
   fun gsl_fft_halfcomplex_float_backward: ptr[float] * size * size * cptr[gsl_fft_halfcomplex_wavetable_float] * ptr[gsl_fft_real_workspace_float] -> int;
   fun gsl_fft_halfcomplex_float_inverse: ptr[float] * size * size * cptr[gsl_fft_halfcomplex_wavetable_float] * ptr[gsl_fft_real_workspace_float] -> int;
@@ -2850,13 +2850,13 @@ module gsl_fft_halfcomplex_h
 {
   open C_hack;
   open gsl_fft_real_h;
-  
+
   //ABSTRACT TYPES
   type gsl_fft_halfcomplex_wavetable = 'gsl_fft_halfcomplex_wavetable';
-  
+
   //PROCEDURES
   proc gsl_fft_halfcomplex_wavetable_free: ptr[gsl_fft_halfcomplex_wavetable];
-  
+
   //FUNCTIONS
   fun gsl_fft_halfcomplex_backward: ptr[double] * size * size * cptr[gsl_fft_halfcomplex_wavetable] * ptr[gsl_fft_real_workspace] -> int;
   fun gsl_fft_halfcomplex_inverse: ptr[double] * size * size * cptr[gsl_fft_halfcomplex_wavetable] * ptr[gsl_fft_real_workspace] -> int;
@@ -2886,10 +2886,10 @@ header '#include "gsl/gsl_fft.h"';
 module gsl_fft_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_fft_direction = 'gsl_fft_direction';
-  
+
   //ENUMERATION CONSTANTS
   const backward: int = 'backward';
   const forward: int = 'forward';
@@ -2912,15 +2912,15 @@ header '#include "gsl/gsl_fft_real_float.h"';
 module gsl_fft_real_float_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_fft_real_workspace_float = 'gsl_fft_real_workspace_float';
   type gsl_fft_real_wavetable_float = 'gsl_fft_real_wavetable_float';
-  
+
   //PROCEDURES
   proc gsl_fft_real_wavetable_float_free: ptr[gsl_fft_real_wavetable_float];
   proc gsl_fft_real_workspace_float_free: ptr[gsl_fft_real_workspace_float];
-  
+
   //FUNCTIONS
   fun gsl_fft_real_float_radix2_transform: ptr[float] * size * size -> int;
   fun gsl_fft_real_float_transform: ptr[float] * size * size * cptr[gsl_fft_real_wavetable_float] * ptr[gsl_fft_real_workspace_float] -> int;
@@ -2946,15 +2946,15 @@ header '#include "gsl/gsl_fft_real.h"';
 module gsl_fft_real_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_fft_real_workspace = 'gsl_fft_real_workspace';
   type gsl_fft_real_wavetable = 'gsl_fft_real_wavetable';
-  
+
   //PROCEDURES
   proc gsl_fft_real_wavetable_free: ptr[gsl_fft_real_wavetable];
   proc gsl_fft_real_workspace_free: ptr[gsl_fft_real_workspace];
-  
+
   //FUNCTIONS
   fun gsl_fft_real_radix2_transform: ptr[double] * size * size -> int;
   fun gsl_fft_real_transform: ptr[double] * size * size * cptr[gsl_fft_real_wavetable] * ptr[gsl_fft_real_workspace] -> int;
@@ -2980,7 +2980,7 @@ header '#include "gsl/gsl_fit.h"';
 module gsl_fit_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_fit_linear: cptr[double] * size * cptr[double] * size * size * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] -> int;
   fun gsl_fit_linear_est: double * double * double * double * double * double * ptr[double] * ptr[double] -> int;
@@ -3061,17 +3061,17 @@ header '#include "gsl/gsl_heapsort.h"';
 module gsl_heapsort_h
 {
   open C_hack;
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*gsl_heapsort_h_cft_1)(void const *,  void const *);''';
   type gsl_heapsort_h_cft_1 = 'gsl_heapsort_h_cft_1';
-  
+
   //TYPE ALIASES
   typedef gsl_comparison_fn_t = gsl_heapsort_h_cft_1;
-  
+
   //PROCEDURES
   proc gsl_heapsort: address * size * size * gsl_heapsort_h_cft_1;
-  
+
   //FUNCTIONS
   fun gsl_heapsort_index: ptr[size] * caddress * size * size * gsl_heapsort_h_cft_1 -> int;
 }
@@ -3095,18 +3095,18 @@ header '#include "gsl/gsl_histogram2d.h"';
 module gsl_histogram2d_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_histogram2d_pdf = 'gsl_histogram2d_pdf';
   type gsl_histogram2d = 'gsl_histogram2d';
-  
+
   //PROCEDURES
   proc gsl_histogram2d_free: ptr[gsl_histogram2d];
   proc gsl_histogram2d_max_bin: cptr[gsl_histogram2d] * ptr[size] * ptr[size];
   proc gsl_histogram2d_min_bin: cptr[gsl_histogram2d] * ptr[size] * ptr[size];
   proc gsl_histogram2d_pdf_free: ptr[gsl_histogram2d_pdf];
   proc gsl_histogram2d_reset: ptr[gsl_histogram2d];
-  
+
   //FUNCTIONS
   fun gsl_histogram2d_accumulate: ptr[gsl_histogram2d] * double * double * double -> int;
   fun gsl_histogram2d_add: ptr[gsl_histogram2d] * cptr[gsl_histogram2d] -> int;
@@ -3171,16 +3171,16 @@ header '#include "gsl/gsl_histogram.h"';
 module gsl_histogram_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_histogram = 'gsl_histogram';
   type gsl_histogram_pdf = 'gsl_histogram_pdf';
-  
+
   //PROCEDURES
   proc gsl_histogram_free: ptr[gsl_histogram];
   proc gsl_histogram_pdf_free: ptr[gsl_histogram_pdf];
   proc gsl_histogram_reset: ptr[gsl_histogram];
-  
+
   //FUNCTIONS
   fun gsl_histogram_accumulate: ptr[gsl_histogram] * double * double -> int;
   fun gsl_histogram_add: ptr[gsl_histogram] * cptr[gsl_histogram] -> int;
@@ -3240,11 +3240,11 @@ header '#include "gsl/gsl_ieee_utils.h"';
 module gsl_ieee_utils_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_ieee_float_rep = 'gsl_ieee_float_rep';
   type gsl_ieee_double_rep = 'gsl_ieee_double_rep';
-  
+
   //ENUMERATION CONSTANTS
   const GSL_IEEE_ROUND_TO_NEAREST: int = 'GSL_IEEE_ROUND_TO_NEAREST';
   const GSL_IEEE_MASK_UNDERFLOW: int = 'GSL_IEEE_MASK_UNDERFLOW';
@@ -3265,7 +3265,7 @@ module gsl_ieee_utils_h
   const GSL_IEEE_TYPE_NAN: int = 'GSL_IEEE_TYPE_NAN';
   const GSL_IEEE_MASK_INVALID: int = 'GSL_IEEE_MASK_INVALID';
   const GSL_IEEE_ROUND_DOWN: int = 'GSL_IEEE_ROUND_DOWN';
-  
+
   //PROCEDURES
   proc gsl_ieee_double_to_rep: cptr[double] * ptr[gsl_ieee_double_rep];
   proc gsl_ieee_env_setup: 1;
@@ -3274,7 +3274,7 @@ module gsl_ieee_utils_h
   proc gsl_ieee_fprintf_float: ptr[FILE] * cptr[float];
   proc gsl_ieee_printf_double: cptr[double];
   proc gsl_ieee_printf_float: cptr[float];
-  
+
   //FUNCTIONS
   fun gsl_ieee_read_mode_string: cptr[char] * ptr[int] * ptr[int] * ptr[int] -> int;
   fun gsl_ieee_set_mode: int * int * int -> int;
@@ -3301,16 +3301,16 @@ module gsl_integration_h
 {
   open C_hack;
   open gsl_math_h;
-  
+
   //ABSTRACT TYPES
   type gsl_integration_qaws_table = 'gsl_integration_qaws_table';
   type gsl_integration_workspace = 'gsl_integration_workspace';
   type gsl_integration_qawo_table = 'gsl_integration_qawo_table';
-  
+
   //TYPE ALIASES
   typedef gsl_integration_rule = cptr[gsl_function] * double * double * ptr[double] * ptr[double] * ptr[double] * ptr[double] -> void_t;
   typedef gsl_integration_qawo_enum = int;
-  
+
   //ENUMERATION CONSTANTS
   const GSL_INTEG_GAUSS15: int = 'GSL_INTEG_GAUSS15';
   const GSL_INTEG_COSINE: int = 'GSL_INTEG_COSINE';
@@ -3320,7 +3320,7 @@ module gsl_integration_h
   const GSL_INTEG_GAUSS41: int = 'GSL_INTEG_GAUSS41';
   const GSL_INTEG_GAUSS51: int = 'GSL_INTEG_GAUSS51';
   const GSL_INTEG_GAUSS61: int = 'GSL_INTEG_GAUSS61';
-  
+
   //PROCEDURES
   proc gsl_integration_qawo_table_free: ptr[gsl_integration_qawo_table];
   proc gsl_integration_qaws_table_free: ptr[gsl_integration_qaws_table];
@@ -3333,7 +3333,7 @@ module gsl_integration_h
   proc gsl_integration_qk51: cptr[gsl_function] * double * double * ptr[double] * ptr[double] * ptr[double] * ptr[double];
   proc gsl_integration_qk61: cptr[gsl_function] * double * double * ptr[double] * ptr[double] * ptr[double] * ptr[double];
   proc gsl_integration_workspace_free: ptr[gsl_integration_workspace];
-  
+
   //FUNCTIONS
   fun gsl_integration_qag: cptr[gsl_function] * double * double * double * double * size * int * ptr[gsl_integration_workspace] * ptr[double] * ptr[double] -> int;
   fun gsl_integration_qagi: ptr[gsl_function] * double * double * size * ptr[gsl_integration_workspace] * ptr[double] * ptr[double] -> int;
@@ -3371,12 +3371,12 @@ header '#include "gsl/gsl_interp.h"';
 module gsl_interp_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_interp_accel = 'gsl_interp_accel';
   type gsl_interp_type = 'gsl_interp_type';
   type gsl_interp = 'gsl_interp';
-  
+
   //VARIABLES
   const gsl_interp_linear: cptr[gsl_interp_type] = 'gsl_interp_linear';
   const gsl_interp_akima_periodic: cptr[gsl_interp_type] = 'gsl_interp_akima_periodic';
@@ -3384,11 +3384,11 @@ module gsl_interp_h
   const gsl_interp_akima: cptr[gsl_interp_type] = 'gsl_interp_akima';
   const gsl_interp_cspline_periodic: cptr[gsl_interp_type] = 'gsl_interp_cspline_periodic';
   const gsl_interp_cspline: cptr[gsl_interp_type] = 'gsl_interp_cspline';
-  
+
   //PROCEDURES
   proc gsl_interp_accel_free: ptr[gsl_interp_accel];
   proc gsl_interp_free: ptr[gsl_interp];
-  
+
   //FUNCTIONS
   fun gsl_interp_accel_alloc: 1 -> ptr[gsl_interp_accel];
   fun gsl_interp_accel_find: ptr[gsl_interp_accel] * cptr[double] * size * double -> size;
@@ -3441,15 +3441,15 @@ module gsl_linalg_h
   open gsl_permutation_h;
   open gsl_vector_complex_double_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_linalg_matrix_mod_t = 'gsl_linalg_matrix_mod_t';
-  
+
   //ENUMERATION CONSTANTS
   const GSL_LINALG_MOD_CONJUGATE: int = 'GSL_LINALG_MOD_CONJUGATE';
   const GSL_LINALG_MOD_TRANSPOSE: int = 'GSL_LINALG_MOD_TRANSPOSE';
   const GSL_LINALG_MOD_NONE: int = 'GSL_LINALG_MOD_NONE';
-  
+
   //FUNCTIONS
   fun gsl_linalg_HH_solve: ptr[gsl_matrix] * cptr[gsl_vector] * ptr[gsl_vector] -> int;
   fun gsl_linalg_HH_svx: ptr[gsl_matrix] * ptr[gsl_vector] -> int;
@@ -3679,8 +3679,8 @@ module gsl_math_h
   open gsl_function_fdf_struct_h;
   open gsl_function_struct_h;
   open gsl_function_vec_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_function_struct {
     function: gsl_math_h_cft_1;
     params: address;
@@ -3695,7 +3695,7 @@ module gsl_math_h
     fdf: gsl_math_h_cft_2;
     params: address;
   }
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*gsl_math_h_cft_2)(double, void *, double *,  double *);''';
   type gsl_math_h_cft_2 = 'gsl_math_h_cft_2';
@@ -3703,17 +3703,17 @@ module gsl_math_h
   type gsl_math_h_cft_3 = 'gsl_math_h_cft_3';
   header '''typedef double (*gsl_math_h_cft_1)(double, void *);''';
   type gsl_math_h_cft_1 = 'gsl_math_h_cft_1';
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_function = gsl_function_struct;
   typedef gsl_function_vec = gsl_function_vec_struct;
   typedef gsl_function_fdf = gsl_function_fdf_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_function_vec_struct = gsl_function_vec_struct;
   typedef _struct_gsl_function_struct = gsl_function_struct;
   typedef _struct_gsl_function_fdf_struct = gsl_function_fdf_struct;
-  
+
   //FUNCTIONS
   fun gsl_max: double * double -> double;
   fun gsl_min: double * double -> double;
@@ -3742,16 +3742,16 @@ module gsl_matrix_char_h
   open C_hack;
   open gsl_block_char_h;
   open gsl_vector_char_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_char = 'gsl_matrix_char';
   type _gsl_matrix_char_const_view = '_gsl_matrix_char_const_view';
   type _gsl_matrix_char_view = '_gsl_matrix_char_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_char_view = _gsl_matrix_char_view;
   typedef gsl_matrix_char_const_view = _gsl_matrix_char_const_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_char_free: ptr[gsl_matrix_char];
   proc gsl_matrix_char_max_index: cptr[gsl_matrix_char] * ptr[size] * ptr[size];
@@ -3762,7 +3762,7 @@ module gsl_matrix_char_h
   proc gsl_matrix_char_set_all: ptr[gsl_matrix_char] * char;
   proc gsl_matrix_char_set_identity: ptr[gsl_matrix_char];
   proc gsl_matrix_char_set_zero: ptr[gsl_matrix_char];
-  
+
   //FUNCTIONS
   fun gsl_matrix_char_add: ptr[gsl_matrix_char] * cptr[gsl_matrix_char] -> int;
   fun gsl_matrix_char_add_constant: ptr[gsl_matrix_char] * double -> int;
@@ -3845,23 +3845,23 @@ module gsl_matrix_complex_double_h
   open gsl_block_complex_double_h;
   open gsl_complex_h;
   open gsl_vector_complex_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_complex = 'gsl_matrix_complex';
   type _gsl_matrix_complex_const_view = '_gsl_matrix_complex_const_view';
   type _gsl_matrix_complex_view = '_gsl_matrix_complex_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_complex_view = _gsl_matrix_complex_view;
   typedef gsl_matrix_complex_const_view = _gsl_matrix_complex_const_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_complex_free: ptr[gsl_matrix_complex];
   proc gsl_matrix_complex_set: ptr[gsl_matrix_complex] * size * size * gsl_complex;
   proc gsl_matrix_complex_set_all: ptr[gsl_matrix_complex] * gsl_complex;
   proc gsl_matrix_complex_set_identity: ptr[gsl_matrix_complex];
   proc gsl_matrix_complex_set_zero: ptr[gsl_matrix_complex];
-  
+
   //FUNCTIONS
   fun gsl_matrix_complex_add: ptr[gsl_matrix_complex] * cptr[gsl_matrix_complex] -> int;
   fun gsl_matrix_complex_add_constant: ptr[gsl_matrix_complex] * gsl_complex -> int;
@@ -3942,23 +3942,23 @@ module gsl_matrix_complex_float_h
   open gsl_block_complex_float_h;
   open gsl_complex_h;
   open gsl_vector_complex_float_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_complex_float = 'gsl_matrix_complex_float';
   type _gsl_matrix_complex_float_const_view = '_gsl_matrix_complex_float_const_view';
   type _gsl_matrix_complex_float_view = '_gsl_matrix_complex_float_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_complex_float_view = _gsl_matrix_complex_float_view;
   typedef gsl_matrix_complex_float_const_view = _gsl_matrix_complex_float_const_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_complex_float_free: ptr[gsl_matrix_complex_float];
   proc gsl_matrix_complex_float_set: ptr[gsl_matrix_complex_float] * size * size * gsl_complex_float;
   proc gsl_matrix_complex_float_set_all: ptr[gsl_matrix_complex_float] * gsl_complex_float;
   proc gsl_matrix_complex_float_set_identity: ptr[gsl_matrix_complex_float];
   proc gsl_matrix_complex_float_set_zero: ptr[gsl_matrix_complex_float];
-  
+
   //FUNCTIONS
   fun gsl_matrix_complex_float_add: ptr[gsl_matrix_complex_float] * cptr[gsl_matrix_complex_float] -> int;
   fun gsl_matrix_complex_float_add_constant: ptr[gsl_matrix_complex_float] * gsl_complex_float -> int;
@@ -4039,23 +4039,23 @@ module gsl_matrix_complex_long_double_h
   open gsl_block_complex_long_double_h;
   open gsl_complex_h;
   open gsl_vector_complex_long_double_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_matrix_complex_long_double_view = '_gsl_matrix_complex_long_double_view';
   type _gsl_matrix_complex_long_double_const_view = '_gsl_matrix_complex_long_double_const_view';
   type gsl_matrix_complex_long_double = 'gsl_matrix_complex_long_double';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_complex_long_double_const_view = _gsl_matrix_complex_long_double_const_view;
   typedef gsl_matrix_complex_long_double_view = _gsl_matrix_complex_long_double_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_complex_long_double_free: ptr[gsl_matrix_complex_long_double];
   proc gsl_matrix_complex_long_double_set: ptr[gsl_matrix_complex_long_double] * size * size * gsl_complex_long_double;
   proc gsl_matrix_complex_long_double_set_all: ptr[gsl_matrix_complex_long_double] * gsl_complex_long_double;
   proc gsl_matrix_complex_long_double_set_identity: ptr[gsl_matrix_complex_long_double];
   proc gsl_matrix_complex_long_double_set_zero: ptr[gsl_matrix_complex_long_double];
-  
+
   //FUNCTIONS
   fun gsl_matrix_complex_long_double_add: ptr[gsl_matrix_complex_long_double] * cptr[gsl_matrix_complex_long_double] -> int;
   fun gsl_matrix_complex_long_double_add_constant: ptr[gsl_matrix_complex_long_double] * gsl_complex_long_double -> int;
@@ -4134,16 +4134,16 @@ module gsl_matrix_double_h
   open C_hack;
   open gsl_block_double_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_matrix_const_view = '_gsl_matrix_const_view';
   type gsl_matrix = 'gsl_matrix';
   type _gsl_matrix_view = '_gsl_matrix_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_const_view = _gsl_matrix_const_view;
   typedef gsl_matrix_view = _gsl_matrix_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_free: ptr[gsl_matrix];
   proc gsl_matrix_max_index: cptr[gsl_matrix] * ptr[size] * ptr[size];
@@ -4154,7 +4154,7 @@ module gsl_matrix_double_h
   proc gsl_matrix_set_all: ptr[gsl_matrix] * double;
   proc gsl_matrix_set_identity: ptr[gsl_matrix];
   proc gsl_matrix_set_zero: ptr[gsl_matrix];
-  
+
   //FUNCTIONS
   fun gsl_matrix_add: ptr[gsl_matrix] * cptr[gsl_matrix] -> int;
   fun gsl_matrix_add_constant: ptr[gsl_matrix] * double -> int;
@@ -4235,16 +4235,16 @@ module gsl_matrix_float_h
   open C_hack;
   open gsl_block_float_h;
   open gsl_vector_float_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_matrix_float_const_view = '_gsl_matrix_float_const_view';
   type gsl_matrix_float = 'gsl_matrix_float';
   type _gsl_matrix_float_view = '_gsl_matrix_float_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_float_view = _gsl_matrix_float_view;
   typedef gsl_matrix_float_const_view = _gsl_matrix_float_const_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_float_free: ptr[gsl_matrix_float];
   proc gsl_matrix_float_max_index: cptr[gsl_matrix_float] * ptr[size] * ptr[size];
@@ -4255,7 +4255,7 @@ module gsl_matrix_float_h
   proc gsl_matrix_float_set_all: ptr[gsl_matrix_float] * float;
   proc gsl_matrix_float_set_identity: ptr[gsl_matrix_float];
   proc gsl_matrix_float_set_zero: ptr[gsl_matrix_float];
-  
+
   //FUNCTIONS
   fun gsl_matrix_float_add: ptr[gsl_matrix_float] * cptr[gsl_matrix_float] -> int;
   fun gsl_matrix_float_add_constant: ptr[gsl_matrix_float] * double -> int;
@@ -4336,16 +4336,16 @@ module gsl_matrix_int_h
   open C_hack;
   open gsl_block_int_h;
   open gsl_vector_int_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_matrix_int_const_view = '_gsl_matrix_int_const_view';
   type gsl_matrix_int = 'gsl_matrix_int';
   type _gsl_matrix_int_view = '_gsl_matrix_int_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_int_const_view = _gsl_matrix_int_const_view;
   typedef gsl_matrix_int_view = _gsl_matrix_int_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_int_free: ptr[gsl_matrix_int];
   proc gsl_matrix_int_max_index: cptr[gsl_matrix_int] * ptr[size] * ptr[size];
@@ -4356,7 +4356,7 @@ module gsl_matrix_int_h
   proc gsl_matrix_int_set_all: ptr[gsl_matrix_int] * int;
   proc gsl_matrix_int_set_identity: ptr[gsl_matrix_int];
   proc gsl_matrix_int_set_zero: ptr[gsl_matrix_int];
-  
+
   //FUNCTIONS
   fun gsl_matrix_int_add: ptr[gsl_matrix_int] * cptr[gsl_matrix_int] -> int;
   fun gsl_matrix_int_add_constant: ptr[gsl_matrix_int] * double -> int;
@@ -4456,16 +4456,16 @@ module gsl_matrix_long_double_h
   open C_hack;
   open gsl_block_long_double_h;
   open gsl_vector_long_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_long_double = 'gsl_matrix_long_double';
   type _gsl_matrix_long_double_const_view = '_gsl_matrix_long_double_const_view';
   type _gsl_matrix_long_double_view = '_gsl_matrix_long_double_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_long_double_view = _gsl_matrix_long_double_view;
   typedef gsl_matrix_long_double_const_view = _gsl_matrix_long_double_const_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_long_double_free: ptr[gsl_matrix_long_double];
   proc gsl_matrix_long_double_max_index: cptr[gsl_matrix_long_double] * ptr[size] * ptr[size];
@@ -4476,7 +4476,7 @@ module gsl_matrix_long_double_h
   proc gsl_matrix_long_double_set_all: ptr[gsl_matrix_long_double] * ldouble;
   proc gsl_matrix_long_double_set_identity: ptr[gsl_matrix_long_double];
   proc gsl_matrix_long_double_set_zero: ptr[gsl_matrix_long_double];
-  
+
   //FUNCTIONS
   fun gsl_matrix_long_double_add: ptr[gsl_matrix_long_double] * cptr[gsl_matrix_long_double] -> int;
   fun gsl_matrix_long_double_add_constant: ptr[gsl_matrix_long_double] * double -> int;
@@ -4557,16 +4557,16 @@ module gsl_matrix_long_h
   open C_hack;
   open gsl_block_long_h;
   open gsl_vector_long_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_long = 'gsl_matrix_long';
   type _gsl_matrix_long_view = '_gsl_matrix_long_view';
   type _gsl_matrix_long_const_view = '_gsl_matrix_long_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_long_view = _gsl_matrix_long_view;
   typedef gsl_matrix_long_const_view = _gsl_matrix_long_const_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_long_free: ptr[gsl_matrix_long];
   proc gsl_matrix_long_max_index: cptr[gsl_matrix_long] * ptr[size] * ptr[size];
@@ -4577,7 +4577,7 @@ module gsl_matrix_long_h
   proc gsl_matrix_long_set_all: ptr[gsl_matrix_long] * long;
   proc gsl_matrix_long_set_identity: ptr[gsl_matrix_long];
   proc gsl_matrix_long_set_zero: ptr[gsl_matrix_long];
-  
+
   //FUNCTIONS
   fun gsl_matrix_long_add: ptr[gsl_matrix_long] * cptr[gsl_matrix_long] -> int;
   fun gsl_matrix_long_add_constant: ptr[gsl_matrix_long] * double -> int;
@@ -4658,16 +4658,16 @@ module gsl_matrix_short_h
   open C_hack;
   open gsl_block_short_h;
   open gsl_vector_short_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_short = 'gsl_matrix_short';
   type _gsl_matrix_short_const_view = '_gsl_matrix_short_const_view';
   type _gsl_matrix_short_view = '_gsl_matrix_short_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_short_const_view = _gsl_matrix_short_const_view;
   typedef gsl_matrix_short_view = _gsl_matrix_short_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_short_free: ptr[gsl_matrix_short];
   proc gsl_matrix_short_max_index: cptr[gsl_matrix_short] * ptr[size] * ptr[size];
@@ -4678,7 +4678,7 @@ module gsl_matrix_short_h
   proc gsl_matrix_short_set_all: ptr[gsl_matrix_short] * short;
   proc gsl_matrix_short_set_identity: ptr[gsl_matrix_short];
   proc gsl_matrix_short_set_zero: ptr[gsl_matrix_short];
-  
+
   //FUNCTIONS
   fun gsl_matrix_short_add: ptr[gsl_matrix_short] * cptr[gsl_matrix_short] -> int;
   fun gsl_matrix_short_add_constant: ptr[gsl_matrix_short] * double -> int;
@@ -4759,16 +4759,16 @@ module gsl_matrix_uchar_h
   open C_hack;
   open gsl_block_uchar_h;
   open gsl_vector_uchar_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_uchar = 'gsl_matrix_uchar';
   type _gsl_matrix_uchar_const_view = '_gsl_matrix_uchar_const_view';
   type _gsl_matrix_uchar_view = '_gsl_matrix_uchar_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_uchar_const_view = _gsl_matrix_uchar_const_view;
   typedef gsl_matrix_uchar_view = _gsl_matrix_uchar_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_uchar_free: ptr[gsl_matrix_uchar];
   proc gsl_matrix_uchar_max_index: cptr[gsl_matrix_uchar] * ptr[size] * ptr[size];
@@ -4779,7 +4779,7 @@ module gsl_matrix_uchar_h
   proc gsl_matrix_uchar_set_all: ptr[gsl_matrix_uchar] * utiny;
   proc gsl_matrix_uchar_set_identity: ptr[gsl_matrix_uchar];
   proc gsl_matrix_uchar_set_zero: ptr[gsl_matrix_uchar];
-  
+
   //FUNCTIONS
   fun gsl_matrix_uchar_add: ptr[gsl_matrix_uchar] * cptr[gsl_matrix_uchar] -> int;
   fun gsl_matrix_uchar_add_constant: ptr[gsl_matrix_uchar] * double -> int;
@@ -4860,16 +4860,16 @@ module gsl_matrix_uint_h
   open C_hack;
   open gsl_block_uint_h;
   open gsl_vector_uint_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_uint = 'gsl_matrix_uint';
   type _gsl_matrix_uint_const_view = '_gsl_matrix_uint_const_view';
   type _gsl_matrix_uint_view = '_gsl_matrix_uint_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_uint_view = _gsl_matrix_uint_view;
   typedef gsl_matrix_uint_const_view = _gsl_matrix_uint_const_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_uint_free: ptr[gsl_matrix_uint];
   proc gsl_matrix_uint_max_index: cptr[gsl_matrix_uint] * ptr[size] * ptr[size];
@@ -4880,7 +4880,7 @@ module gsl_matrix_uint_h
   proc gsl_matrix_uint_set_all: ptr[gsl_matrix_uint] * uint;
   proc gsl_matrix_uint_set_identity: ptr[gsl_matrix_uint];
   proc gsl_matrix_uint_set_zero: ptr[gsl_matrix_uint];
-  
+
   //FUNCTIONS
   fun gsl_matrix_uint_add: ptr[gsl_matrix_uint] * cptr[gsl_matrix_uint] -> int;
   fun gsl_matrix_uint_add_constant: ptr[gsl_matrix_uint] * double -> int;
@@ -4961,16 +4961,16 @@ module gsl_matrix_ulong_h
   open C_hack;
   open gsl_block_ulong_h;
   open gsl_vector_ulong_h;
-  
+
   //ABSTRACT TYPES
   type gsl_matrix_ulong = 'gsl_matrix_ulong';
   type _gsl_matrix_ulong_const_view = '_gsl_matrix_ulong_const_view';
   type _gsl_matrix_ulong_view = '_gsl_matrix_ulong_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_ulong_const_view = _gsl_matrix_ulong_const_view;
   typedef gsl_matrix_ulong_view = _gsl_matrix_ulong_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_ulong_free: ptr[gsl_matrix_ulong];
   proc gsl_matrix_ulong_max_index: cptr[gsl_matrix_ulong] * ptr[size] * ptr[size];
@@ -4981,7 +4981,7 @@ module gsl_matrix_ulong_h
   proc gsl_matrix_ulong_set_all: ptr[gsl_matrix_ulong] * ulong;
   proc gsl_matrix_ulong_set_identity: ptr[gsl_matrix_ulong];
   proc gsl_matrix_ulong_set_zero: ptr[gsl_matrix_ulong];
-  
+
   //FUNCTIONS
   fun gsl_matrix_ulong_add: ptr[gsl_matrix_ulong] * cptr[gsl_matrix_ulong] -> int;
   fun gsl_matrix_ulong_add_constant: ptr[gsl_matrix_ulong] * double -> int;
@@ -5062,16 +5062,16 @@ module gsl_matrix_ushort_h
   open C_hack;
   open gsl_block_ushort_h;
   open gsl_vector_ushort_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_matrix_ushort_const_view = '_gsl_matrix_ushort_const_view';
   type gsl_matrix_ushort = 'gsl_matrix_ushort';
   type _gsl_matrix_ushort_view = '_gsl_matrix_ushort_view';
-  
+
   //TYPE ALIASES
   typedef gsl_matrix_ushort_const_view = _gsl_matrix_ushort_const_view;
   typedef gsl_matrix_ushort_view = _gsl_matrix_ushort_view;
-  
+
   //PROCEDURES
   proc gsl_matrix_ushort_free: ptr[gsl_matrix_ushort];
   proc gsl_matrix_ushort_max_index: cptr[gsl_matrix_ushort] * ptr[size] * ptr[size];
@@ -5082,7 +5082,7 @@ module gsl_matrix_ushort_h
   proc gsl_matrix_ushort_set_all: ptr[gsl_matrix_ushort] * ushort;
   proc gsl_matrix_ushort_set_identity: ptr[gsl_matrix_ushort];
   proc gsl_matrix_ushort_set_zero: ptr[gsl_matrix_ushort];
-  
+
   //FUNCTIONS
   fun gsl_matrix_ushort_add: ptr[gsl_matrix_ushort] * cptr[gsl_matrix_ushort] -> int;
   fun gsl_matrix_ushort_add_constant: ptr[gsl_matrix_ushort] * double -> int;
@@ -5160,10 +5160,10 @@ header '#include "gsl/gsl_message.h"';
 module gsl_message_h
 {
   open C_hack;
-  
+
   //VARIABLES
   const gsl_message_mask: uint = 'gsl_message_mask';
-  
+
   //ENUMERATION CONSTANTS
   const GSL_MESSAGE_MASK_A: int = 'GSL_MESSAGE_MASK_A';
   const GSL_MESSAGE_MASK_B: int = 'GSL_MESSAGE_MASK_B';
@@ -5173,7 +5173,7 @@ module gsl_message_h
   const GSL_MESSAGE_MASK_F: int = 'GSL_MESSAGE_MASK_F';
   const GSL_MESSAGE_MASK_G: int = 'GSL_MESSAGE_MASK_G';
   const GSL_MESSAGE_MASK_H: int = 'GSL_MESSAGE_MASK_H';
-  
+
   //PROCEDURES
   proc gsl_message: cptr[char] * cptr[char] * int * uint;
 }
@@ -5199,25 +5199,25 @@ module gsl_min_h
 {
   open C_hack;
   open gsl_math_h;
-  
+
   //ABSTRACT TYPES
   type gsl_min_fminimizer = 'gsl_min_fminimizer';
   type gsl_min_fminimizer_type = 'gsl_min_fminimizer_type';
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*gsl_min_h_cft_1)(gsl_function *, double *,  double *, double *, double *,  double *, double *, size_t);''';
   type gsl_min_h_cft_1 = 'gsl_min_h_cft_1';
-  
+
   //TYPE ALIASES
   typedef gsl_min_bracketing_function = gsl_min_h_cft_1;
-  
+
   //VARIABLES
   const gsl_min_fminimizer_brent: cptr[gsl_min_fminimizer_type] = 'gsl_min_fminimizer_brent';
   const gsl_min_fminimizer_goldensection: cptr[gsl_min_fminimizer_type] = 'gsl_min_fminimizer_goldensection';
-  
+
   //PROCEDURES
   proc gsl_min_fminimizer_free: ptr[gsl_min_fminimizer];
-  
+
   //FUNCTIONS
   fun gsl_min_find_bracket: ptr[gsl_function] * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] * size -> int;
   fun gsl_min_fminimizer_alloc: cptr[gsl_min_fminimizer_type] -> ptr[gsl_min_fminimizer];
@@ -5257,7 +5257,7 @@ header '#include "gsl/gsl_mode.h"';
 module gsl_mode_h
 {
   open C_hack;
-  
+
   //TYPE ALIASES
   typedef gsl_mode_t = uint;
 }
@@ -5302,21 +5302,21 @@ module gsl_monte_h
 {
   open C_hack;
   open gsl_monte_function_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_monte_function_struct {
     f: gsl_monte_h_cft_1;
     dim: size;
     params: address;
   }
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef double (*gsl_monte_h_cft_1)(double *, size_t, void *);''';
   type gsl_monte_h_cft_1 = 'gsl_monte_h_cft_1';
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_monte_function = gsl_monte_function_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_monte_function_struct = gsl_monte_function_struct;
 }
@@ -5344,13 +5344,13 @@ module gsl_monte_miser_h
   open C_hack;
   open gsl_monte_h;
   open gsl_rng_h;
-  
+
   //ABSTRACT TYPES
   type gsl_monte_miser_state = 'gsl_monte_miser_state';
-  
+
   //PROCEDURES
   proc gsl_monte_miser_free: ptr[gsl_monte_miser_state];
-  
+
   //FUNCTIONS
   fun gsl_monte_miser_alloc: size -> ptr[gsl_monte_miser_state];
   fun gsl_monte_miser_init: ptr[gsl_monte_miser_state] -> int;
@@ -5380,13 +5380,13 @@ module gsl_monte_plain_h
   open C_hack;
   open gsl_monte_h;
   open gsl_rng_h;
-  
+
   //ABSTRACT TYPES
   type gsl_monte_plain_state = 'gsl_monte_plain_state';
-  
+
   //PROCEDURES
   proc gsl_monte_plain_free: ptr[gsl_monte_plain_state];
-  
+
   //FUNCTIONS
   fun gsl_monte_plain_alloc: size -> ptr[gsl_monte_plain_state];
   fun gsl_monte_plain_init: ptr[gsl_monte_plain_state] -> int;
@@ -5416,18 +5416,18 @@ module gsl_monte_vegas_h
   open C_hack;
   open gsl_monte_h;
   open gsl_rng_h;
-  
+
   //ABSTRACT TYPES
   type gsl_monte_vegas_state = 'gsl_monte_vegas_state';
-  
+
   //ENUMERATION CONSTANTS
   const GSL_VEGAS_MODE_IMPORTANCE: int = 'GSL_VEGAS_MODE_IMPORTANCE';
   const GSL_VEGAS_MODE_IMPORTANCE_ONLY: int = 'GSL_VEGAS_MODE_IMPORTANCE_ONLY';
   const GSL_VEGAS_MODE_STRATIFIED: int = 'GSL_VEGAS_MODE_STRATIFIED';
-  
+
   //PROCEDURES
   proc gsl_monte_vegas_free: ptr[gsl_monte_vegas_state];
-  
+
   //FUNCTIONS
   fun gsl_monte_vegas_alloc: size -> ptr[gsl_monte_vegas_state];
   fun gsl_monte_vegas_init: ptr[gsl_monte_vegas_state] -> int;
@@ -5493,13 +5493,13 @@ module gsl_multifit_h
   open C_hack;
   open gsl_matrix_double_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_multifit_linear_workspace = 'gsl_multifit_linear_workspace';
-  
+
   //PROCEDURES
   proc gsl_multifit_linear_free: ptr[gsl_multifit_linear_workspace];
-  
+
   //FUNCTIONS
   fun gsl_multifit_linear: cptr[gsl_matrix] * cptr[gsl_vector] * ptr[gsl_vector] * ptr[gsl_matrix] * ptr[double] * ptr[gsl_multifit_linear_workspace] -> int;
   fun gsl_multifit_linear_alloc: size * size -> ptr[gsl_multifit_linear_workspace];
@@ -5537,14 +5537,14 @@ module gsl_multifit_nlin_h
   open gsl_multifit_function_fdf_struct_h;
   open gsl_multifit_function_struct_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_multifit_fdfsolver = 'gsl_multifit_fdfsolver';
   type gsl_multifit_fdfsolver_type = 'gsl_multifit_fdfsolver_type';
   type gsl_multifit_fsolver = 'gsl_multifit_fsolver';
   type gsl_multifit_fsolver_type = 'gsl_multifit_fsolver_type';
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_multifit_function_struct {
     f: gsl_multifit_nlin_h_cft_1;
     n: size;
@@ -5559,7 +5559,7 @@ module gsl_multifit_nlin_h
     p: size;
     params: address;
   }
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*gsl_multifit_nlin_h_cft_3)(gsl_vector const *,  void *, gsl_vector *,  gsl_matrix *);''';
   type gsl_multifit_nlin_h_cft_3 = 'gsl_multifit_nlin_h_cft_3';
@@ -5567,23 +5567,23 @@ module gsl_multifit_nlin_h
   type gsl_multifit_nlin_h_cft_2 = 'gsl_multifit_nlin_h_cft_2';
   header '''typedef int (*gsl_multifit_nlin_h_cft_1)(gsl_vector const *,  void *, gsl_vector *);''';
   type gsl_multifit_nlin_h_cft_1 = 'gsl_multifit_nlin_h_cft_1';
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_multifit_function = gsl_multifit_function_struct;
   typedef gsl_multifit_function_fdf = gsl_multifit_function_fdf_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_multifit_function_fdf_struct = gsl_multifit_function_fdf_struct;
   typedef _struct_gsl_multifit_function_struct = gsl_multifit_function_struct;
-  
+
   //VARIABLES
   const gsl_multifit_fdfsolver_lmsder: cptr[gsl_multifit_fdfsolver_type] = 'gsl_multifit_fdfsolver_lmsder';
   const gsl_multifit_fdfsolver_lmder: cptr[gsl_multifit_fdfsolver_type] = 'gsl_multifit_fdfsolver_lmder';
-  
+
   //PROCEDURES
   proc gsl_multifit_fdfsolver_free: ptr[gsl_multifit_fdfsolver];
   proc gsl_multifit_fsolver_free: ptr[gsl_multifit_fsolver];
-  
+
   //FUNCTIONS
   fun gsl_multifit_covar: cptr[gsl_matrix] * double * ptr[gsl_matrix] -> int;
   fun gsl_multifit_fdfsolver_alloc: cptr[gsl_multifit_fdfsolver_type] * size * size -> ptr[gsl_multifit_fdfsolver];
@@ -5666,14 +5666,14 @@ module gsl_multimin_h
   open gsl_multimin_function_fdf_struct_h;
   open gsl_multimin_function_struct_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_multimin_fminimizer = 'gsl_multimin_fminimizer';
   type gsl_multimin_fdfminimizer = 'gsl_multimin_fdfminimizer';
   type gsl_multimin_fdfminimizer_type = 'gsl_multimin_fdfminimizer_type';
   type gsl_multimin_fminimizer_type = 'gsl_multimin_fminimizer_type';
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_multimin_function_fdf_struct {
     f: gsl_multimin_h_cft_1;
     df: gsl_multimin_h_cft_2;
@@ -5686,7 +5686,7 @@ module gsl_multimin_h
     n: size;
     params: address;
   }
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*gsl_multimin_h_cft_3)(gsl_vector const *,  void *, double *,  gsl_vector *);''';
   type gsl_multimin_h_cft_3 = 'gsl_multimin_h_cft_3';
@@ -5694,26 +5694,26 @@ module gsl_multimin_h
   type gsl_multimin_h_cft_2 = 'gsl_multimin_h_cft_2';
   header '''typedef double (*gsl_multimin_h_cft_1)(gsl_vector const *,  void *);''';
   type gsl_multimin_h_cft_1 = 'gsl_multimin_h_cft_1';
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_multimin_function = gsl_multimin_function_struct;
   typedef gsl_multimin_function_fdf = gsl_multimin_function_fdf_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_multimin_function_struct = gsl_multimin_function_struct;
   typedef _struct_gsl_multimin_function_fdf_struct = gsl_multimin_function_fdf_struct;
-  
+
   //VARIABLES
   const gsl_multimin_fdfminimizer_conjugate_pr: cptr[gsl_multimin_fdfminimizer_type] = 'gsl_multimin_fdfminimizer_conjugate_pr';
   const gsl_multimin_fdfminimizer_steepest_descent: cptr[gsl_multimin_fdfminimizer_type] = 'gsl_multimin_fdfminimizer_steepest_descent';
   const gsl_multimin_fminimizer_nmsimplex: cptr[gsl_multimin_fminimizer_type] = 'gsl_multimin_fminimizer_nmsimplex';
   const gsl_multimin_fdfminimizer_conjugate_fr: cptr[gsl_multimin_fdfminimizer_type] = 'gsl_multimin_fdfminimizer_conjugate_fr';
   const gsl_multimin_fdfminimizer_vector_bfgs: cptr[gsl_multimin_fdfminimizer_type] = 'gsl_multimin_fdfminimizer_vector_bfgs';
-  
+
   //PROCEDURES
   proc gsl_multimin_fdfminimizer_free: ptr[gsl_multimin_fdfminimizer];
   proc gsl_multimin_fminimizer_free: ptr[gsl_multimin_fminimizer];
-  
+
   //FUNCTIONS
   fun gsl_multimin_diff: cptr[gsl_multimin_function] * cptr[gsl_vector] * ptr[gsl_vector] -> int;
   fun gsl_multimin_fdfminimizer_alloc: cptr[gsl_multimin_fdfminimizer_type] * size -> ptr[gsl_multimin_fdfminimizer];
@@ -5803,14 +5803,14 @@ module gsl_multiroots_h
   open gsl_multiroot_function_fdf_struct_h;
   open gsl_multiroot_function_struct_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type gsl_multiroot_fsolver = 'gsl_multiroot_fsolver';
   type gsl_multiroot_fdfsolver_type = 'gsl_multiroot_fdfsolver_type';
   type gsl_multiroot_fsolver_type = 'gsl_multiroot_fsolver_type';
   type gsl_multiroot_fdfsolver = 'gsl_multiroot_fdfsolver';
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_multiroot_function_struct {
     f: gsl_multiroots_h_cft_1;
     n: size;
@@ -5823,7 +5823,7 @@ module gsl_multiroots_h
     n: size;
     params: address;
   }
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*gsl_multiroots_h_cft_3)(gsl_vector const *,  void *, gsl_vector *,  gsl_matrix *);''';
   type gsl_multiroots_h_cft_3 = 'gsl_multiroots_h_cft_3';
@@ -5831,15 +5831,15 @@ module gsl_multiroots_h
   type gsl_multiroots_h_cft_2 = 'gsl_multiroots_h_cft_2';
   header '''typedef int (*gsl_multiroots_h_cft_1)(gsl_vector const *,  void *, gsl_vector *);''';
   type gsl_multiroots_h_cft_1 = 'gsl_multiroots_h_cft_1';
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_multiroot_function = gsl_multiroot_function_struct;
   typedef gsl_multiroot_function_fdf = gsl_multiroot_function_fdf_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_multiroot_function_struct = gsl_multiroot_function_struct;
   typedef _struct_gsl_multiroot_function_fdf_struct = gsl_multiroot_function_fdf_struct;
-  
+
   //VARIABLES
   const gsl_multiroot_fsolver_hybrids: cptr[gsl_multiroot_fsolver_type] = 'gsl_multiroot_fsolver_hybrids';
   const gsl_multiroot_fdfsolver_newton: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_newton';
@@ -5849,11 +5849,11 @@ module gsl_multiroots_h
   const gsl_multiroot_fdfsolver_hybridj: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_hybridj';
   const gsl_multiroot_fdfsolver_hybridsj: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_hybridsj';
   const gsl_multiroot_fdfsolver_gnewton: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_gnewton';
-  
+
   //PROCEDURES
   proc gsl_multiroot_fdfsolver_free: ptr[gsl_multiroot_fdfsolver];
   proc gsl_multiroot_fsolver_free: ptr[gsl_multiroot_fsolver];
-  
+
   //FUNCTIONS
   fun gsl_multiroot_fdfsolver_alloc: cptr[gsl_multiroot_fdfsolver_type] * size -> ptr[gsl_multiroot_fdfsolver];
   fun gsl_multiroot_fdfsolver_dx: cptr[gsl_multiroot_fdfsolver] -> ptr[gsl_vector];
@@ -5925,12 +5925,12 @@ module gsl_ntuple_h
 {
   open C_hack;
   open gsl_histogram_h;
-  
+
   //ABSTRACT TYPES
   type gsl_ntuple_select_fn = 'gsl_ntuple_select_fn';
   type gsl_ntuple_value_fn = 'gsl_ntuple_value_fn';
   type gsl_ntuple = 'gsl_ntuple';
-  
+
   //FUNCTIONS
   fun gsl_ntuple_bookdata: ptr[gsl_ntuple] -> int;
   fun gsl_ntuple_close: ptr[gsl_ntuple] -> int;
@@ -5963,7 +5963,7 @@ header '#include "gsl/gsl_odeiv.h"';
 module gsl_odeiv_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_odeiv_control = 'gsl_odeiv_control';
   type gsl_odeiv_step = 'gsl_odeiv_step';
@@ -5971,7 +5971,7 @@ module gsl_odeiv_h
   type gsl_odeiv_system = 'gsl_odeiv_system';
   type gsl_odeiv_control_type = 'gsl_odeiv_control_type';
   type gsl_odeiv_step_type = 'gsl_odeiv_step_type';
-  
+
   //VARIABLES
   const gsl_odeiv_step_gear1: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_gear1';
   const gsl_odeiv_step_gear2: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_gear2';
@@ -5984,12 +5984,12 @@ module gsl_odeiv_h
   const gsl_odeiv_step_rk2imp: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rk2imp';
   const gsl_odeiv_step_bsimp: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_bsimp';
   const gsl_odeiv_step_rkck: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rkck';
-  
+
   //PROCEDURES
   proc gsl_odeiv_control_free: ptr[gsl_odeiv_control];
   proc gsl_odeiv_evolve_free: ptr[gsl_odeiv_evolve];
   proc gsl_odeiv_step_free: ptr[gsl_odeiv_step];
-  
+
   //FUNCTIONS
   fun gsl_odeiv_control_alloc: cptr[gsl_odeiv_control_type] -> ptr[gsl_odeiv_control];
   fun gsl_odeiv_control_hadjust: ptr[gsl_odeiv_control] * ptr[gsl_odeiv_step] * cptr[double] * cptr[double] * cptr[double] * ptr[double] -> int;
@@ -6030,24 +6030,24 @@ module gsl_permutation_h
 {
   open C_hack;
   open gsl_permutation_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_permutation_struct {
     size: size;
     data: ptr[size];
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_permutation = gsl_permutation_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_permutation_struct = gsl_permutation_struct;
-  
+
   //PROCEDURES
   proc gsl_permutation_free: ptr[gsl_permutation];
   proc gsl_permutation_init: ptr[gsl_permutation];
   proc gsl_permutation_reverse: ptr[gsl_permutation];
-  
+
   //FUNCTIONS
   fun gsl_permutation_alloc: size -> ptr[gsl_permutation];
   fun gsl_permutation_calloc: size -> ptr[gsl_permutation];
@@ -6107,7 +6107,7 @@ header '#include "gsl/gsl_permute_char.h"';
 module gsl_permute_char_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_char: cptr[size] * ptr[char] * size * size -> int;
   fun gsl_permute_char_inverse: cptr[size] * ptr[char] * size * size -> int;
@@ -6130,7 +6130,7 @@ header '#include "gsl/gsl_permute_complex_double.h"';
 module gsl_permute_complex_double_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_complex: cptr[size] * ptr[double] * size * size -> int;
   fun gsl_permute_complex_inverse: cptr[size] * ptr[double] * size * size -> int;
@@ -6153,7 +6153,7 @@ header '#include "gsl/gsl_permute_complex_float.h"';
 module gsl_permute_complex_float_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_complex_float: cptr[size] * ptr[float] * size * size -> int;
   fun gsl_permute_complex_float_inverse: cptr[size] * ptr[float] * size * size -> int;
@@ -6176,7 +6176,7 @@ header '#include "gsl/gsl_permute_complex_long_double.h"';
 module gsl_permute_complex_long_double_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_complex_long_double: cptr[size] * ptr[ldouble] * size * size -> int;
   fun gsl_permute_complex_long_double_inverse: cptr[size] * ptr[ldouble] * size * size -> int;
@@ -6199,7 +6199,7 @@ header '#include "gsl/gsl_permute_double.h"';
 module gsl_permute_double_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute: cptr[size] * ptr[double] * size * size -> int;
   fun gsl_permute_inverse: cptr[size] * ptr[double] * size * size -> int;
@@ -6222,7 +6222,7 @@ header '#include "gsl/gsl_permute_float.h"';
 module gsl_permute_float_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_float: cptr[size] * ptr[float] * size * size -> int;
   fun gsl_permute_float_inverse: cptr[size] * ptr[float] * size * size -> int;
@@ -6245,7 +6245,7 @@ header '#include "gsl/gsl_permute_int.h"';
 module gsl_permute_int_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_int: cptr[size] * ptr[int] * size * size -> int;
   fun gsl_permute_int_inverse: cptr[size] * ptr[int] * size * size -> int;
@@ -6287,7 +6287,7 @@ header '#include "gsl/gsl_permute_long_double.h"';
 module gsl_permute_long_double_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_long_double: cptr[size] * ptr[ldouble] * size * size -> int;
   fun gsl_permute_long_double_inverse: cptr[size] * ptr[ldouble] * size * size -> int;
@@ -6310,7 +6310,7 @@ header '#include "gsl/gsl_permute_long.h"';
 module gsl_permute_long_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_long: cptr[size] * ptr[long] * size * size -> int;
   fun gsl_permute_long_inverse: cptr[size] * ptr[long] * size * size -> int;
@@ -6333,7 +6333,7 @@ header '#include "gsl/gsl_permute_short.h"';
 module gsl_permute_short_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_short: cptr[size] * ptr[short] * size * size -> int;
   fun gsl_permute_short_inverse: cptr[size] * ptr[short] * size * size -> int;
@@ -6356,7 +6356,7 @@ header '#include "gsl/gsl_permute_uchar.h"';
 module gsl_permute_uchar_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_uchar: cptr[size] * ptr[utiny] * size * size -> int;
   fun gsl_permute_uchar_inverse: cptr[size] * ptr[utiny] * size * size -> int;
@@ -6379,7 +6379,7 @@ header '#include "gsl/gsl_permute_uint.h"';
 module gsl_permute_uint_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_uint: cptr[size] * ptr[uint] * size * size -> int;
   fun gsl_permute_uint_inverse: cptr[size] * ptr[uint] * size * size -> int;
@@ -6402,7 +6402,7 @@ header '#include "gsl/gsl_permute_ulong.h"';
 module gsl_permute_ulong_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_ulong: cptr[size] * ptr[ulong] * size * size -> int;
   fun gsl_permute_ulong_inverse: cptr[size] * ptr[ulong] * size * size -> int;
@@ -6425,7 +6425,7 @@ header '#include "gsl/gsl_permute_ushort.h"';
 module gsl_permute_ushort_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_permute_ushort: cptr[size] * ptr[ushort] * size * size -> int;
   fun gsl_permute_ushort_inverse: cptr[size] * ptr[ushort] * size * size -> int;
@@ -6454,7 +6454,7 @@ module gsl_permute_vector_char_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_char_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_char: cptr[gsl_permutation] * ptr[gsl_vector_char] -> int;
   fun gsl_permute_vector_char_inverse: cptr[gsl_permutation] * ptr[gsl_vector_char] -> int;
@@ -6483,7 +6483,7 @@ module gsl_permute_vector_complex_double_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_complex_double_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_complex: cptr[gsl_permutation] * ptr[gsl_vector_complex] -> int;
   fun gsl_permute_vector_complex_inverse: cptr[gsl_permutation] * ptr[gsl_vector_complex] -> int;
@@ -6512,7 +6512,7 @@ module gsl_permute_vector_complex_float_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_complex_float_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_complex_float: cptr[gsl_permutation] * ptr[gsl_vector_complex_float] -> int;
   fun gsl_permute_vector_complex_float_inverse: cptr[gsl_permutation] * ptr[gsl_vector_complex_float] -> int;
@@ -6541,7 +6541,7 @@ module gsl_permute_vector_complex_long_double_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_complex_long_double_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_complex_long_double: cptr[gsl_permutation] * ptr[gsl_vector_complex_long_double] -> int;
   fun gsl_permute_vector_complex_long_double_inverse: cptr[gsl_permutation] * ptr[gsl_vector_complex_long_double] -> int;
@@ -6570,7 +6570,7 @@ module gsl_permute_vector_double_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_double_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector: cptr[gsl_permutation] * ptr[gsl_vector] -> int;
   fun gsl_permute_vector_inverse: cptr[gsl_permutation] * ptr[gsl_vector] -> int;
@@ -6599,7 +6599,7 @@ module gsl_permute_vector_float_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_float_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_float: cptr[gsl_permutation] * ptr[gsl_vector_float] -> int;
   fun gsl_permute_vector_float_inverse: cptr[gsl_permutation] * ptr[gsl_vector_float] -> int;
@@ -6628,7 +6628,7 @@ module gsl_permute_vector_int_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_int_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_int: cptr[gsl_permutation] * ptr[gsl_vector_int] -> int;
   fun gsl_permute_vector_int_inverse: cptr[gsl_permutation] * ptr[gsl_vector_int] -> int;
@@ -6676,7 +6676,7 @@ module gsl_permute_vector_long_double_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_long_double_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_long_double: cptr[gsl_permutation] * ptr[gsl_vector_long_double] -> int;
   fun gsl_permute_vector_long_double_inverse: cptr[gsl_permutation] * ptr[gsl_vector_long_double] -> int;
@@ -6705,7 +6705,7 @@ module gsl_permute_vector_long_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_long_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_long: cptr[gsl_permutation] * ptr[gsl_vector_long] -> int;
   fun gsl_permute_vector_long_inverse: cptr[gsl_permutation] * ptr[gsl_vector_long] -> int;
@@ -6734,7 +6734,7 @@ module gsl_permute_vector_short_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_short_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_short: cptr[gsl_permutation] * ptr[gsl_vector_short] -> int;
   fun gsl_permute_vector_short_inverse: cptr[gsl_permutation] * ptr[gsl_vector_short] -> int;
@@ -6763,7 +6763,7 @@ module gsl_permute_vector_uchar_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_uchar_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_uchar: cptr[gsl_permutation] * ptr[gsl_vector_uchar] -> int;
   fun gsl_permute_vector_uchar_inverse: cptr[gsl_permutation] * ptr[gsl_vector_uchar] -> int;
@@ -6792,7 +6792,7 @@ module gsl_permute_vector_uint_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_uint_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_uint: cptr[gsl_permutation] * ptr[gsl_vector_uint] -> int;
   fun gsl_permute_vector_uint_inverse: cptr[gsl_permutation] * ptr[gsl_vector_uint] -> int;
@@ -6821,7 +6821,7 @@ module gsl_permute_vector_ulong_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_ulong_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_ulong: cptr[gsl_permutation] * ptr[gsl_vector_ulong] -> int;
   fun gsl_permute_vector_ulong_inverse: cptr[gsl_permutation] * ptr[gsl_vector_ulong] -> int;
@@ -6850,7 +6850,7 @@ module gsl_permute_vector_ushort_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_ushort_h;
-  
+
   //FUNCTIONS
   fun gsl_permute_vector_ushort: cptr[gsl_permutation] * ptr[gsl_vector_ushort] -> int;
   fun gsl_permute_vector_ushort_inverse: cptr[gsl_permutation] * ptr[gsl_vector_ushort] -> int;
@@ -6877,13 +6877,13 @@ module gsl_poly_h
 {
   open C_hack;
   open gsl_complex_h;
-  
+
   //ABSTRACT TYPES
   type gsl_poly_complex_workspace = 'gsl_poly_complex_workspace';
-  
+
   //PROCEDURES
   proc gsl_poly_complex_workspace_free: ptr[gsl_poly_complex_workspace];
-  
+
   //FUNCTIONS
   fun gsl_poly_complex_solve: cptr[double] * size * ptr[gsl_poly_complex_workspace] * gsl_complex_packed_ptr -> int;
   fun gsl_poly_complex_solve_cubic: double * double * double * ptr[gsl_complex] * ptr[gsl_complex] * ptr[gsl_complex] -> int;
@@ -6914,7 +6914,7 @@ header '#include "gsl/gsl_pow_int.h"';
 module gsl_pow_int_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_pow_2: double -> double;
   fun gsl_pow_3: double -> double;
@@ -6945,10 +6945,10 @@ header '#include "gsl/gsl_precision.h"';
 module gsl_precision_h
 {
   open C_hack;
-  
+
   //TYPE ALIASES
   typedef gsl_prec_t = uint;
-  
+
   //VARIABLES
   const gsl_prec_eps: cptr[double] = 'gsl_prec_eps';
   const gsl_prec_root3_eps: cptr[double] = 'gsl_prec_root3_eps';
@@ -6975,19 +6975,19 @@ header '#include "gsl/gsl_qrng.h"';
 module gsl_qrng_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_qrng_type = 'gsl_qrng_type';
   type gsl_qrng = 'gsl_qrng';
-  
+
   //VARIABLES
   const gsl_qrng_niederreiter_2: cptr[gsl_qrng_type] = 'gsl_qrng_niederreiter_2';
   const gsl_qrng_sobol: cptr[gsl_qrng_type] = 'gsl_qrng_sobol';
-  
+
   //PROCEDURES
   proc gsl_qrng_free: ptr[gsl_qrng];
   proc gsl_qrng_init: ptr[gsl_qrng];
-  
+
   //FUNCTIONS
   fun gsl_qrng_alloc: cptr[gsl_qrng_type] * uint -> ptr[gsl_qrng];
   fun gsl_qrng_clone: cptr[gsl_qrng] -> ptr[gsl_qrng];
@@ -7019,10 +7019,10 @@ module gsl_randist_h
 {
   open C_hack;
   open gsl_rng_h;
-  
+
   //ABSTRACT TYPES
   type gsl_ran_discrete_t = 'gsl_ran_discrete_t';
-  
+
   //PROCEDURES
   proc gsl_ran_bivariate_gaussian: cptr[gsl_rng] * double * double * double * ptr[double] * ptr[double];
   proc gsl_ran_dir_2d: cptr[gsl_rng] * ptr[double] * ptr[double];
@@ -7035,7 +7035,7 @@ module gsl_randist_h
   proc gsl_ran_poisson_array: cptr[gsl_rng] * size * ptr[uint] * double;
   proc gsl_ran_sample: cptr[gsl_rng] * address * size * address * size * size;
   proc gsl_ran_shuffle: cptr[gsl_rng] * address * size * size;
-  
+
   //FUNCTIONS
   fun gsl_ran_bernoulli: cptr[gsl_rng] * double -> uint;
   fun gsl_ran_bernoulli_pdf: uint * double -> double;
@@ -7137,11 +7137,11 @@ header '#include "gsl/gsl_rng.h"';
 module gsl_rng_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_rng_type = 'gsl_rng_type';
   type gsl_rng = 'gsl_rng';
-  
+
   //VARIABLES
   const gsl_rng_mrg: cptr[gsl_rng_type] = 'gsl_rng_mrg';
   const gsl_rng_uni: cptr[gsl_rng_type] = 'gsl_rng_uni';
@@ -7206,12 +7206,12 @@ module gsl_rng_h
   const gsl_rng_randu: cptr[gsl_rng_type] = 'gsl_rng_randu';
   const gsl_rng_zuf: cptr[gsl_rng_type] = 'gsl_rng_zuf';
   const gsl_rng_random_libc5: cptr[gsl_rng_type] = 'gsl_rng_random_libc5';
-  
+
   //PROCEDURES
   proc gsl_rng_free: ptr[gsl_rng];
   proc gsl_rng_print_state: cptr[gsl_rng];
   proc gsl_rng_set: cptr[gsl_rng] * ulong;
-  
+
   //FUNCTIONS
   fun gsl_rng_alloc: cptr[gsl_rng_type] -> ptr[gsl_rng];
   fun gsl_rng_clone: cptr[gsl_rng] -> ptr[gsl_rng];
@@ -7252,13 +7252,13 @@ module gsl_roots_h
 {
   open C_hack;
   open gsl_math_h;
-  
+
   //ABSTRACT TYPES
   type gsl_root_fdfsolver = 'gsl_root_fdfsolver';
   type gsl_root_fsolver_type = 'gsl_root_fsolver_type';
   type gsl_root_fdfsolver_type = 'gsl_root_fdfsolver_type';
   type gsl_root_fsolver = 'gsl_root_fsolver';
-  
+
   //VARIABLES
   const gsl_root_fdfsolver_steffenson: cptr[gsl_root_fdfsolver_type] = 'gsl_root_fdfsolver_steffenson';
   const gsl_root_fdfsolver_secant: cptr[gsl_root_fdfsolver_type] = 'gsl_root_fdfsolver_secant';
@@ -7266,11 +7266,11 @@ module gsl_roots_h
   const gsl_root_fsolver_falsepos: cptr[gsl_root_fsolver_type] = 'gsl_root_fsolver_falsepos';
   const gsl_root_fsolver_bisection: cptr[gsl_root_fsolver_type] = 'gsl_root_fsolver_bisection';
   const gsl_root_fsolver_brent: cptr[gsl_root_fsolver_type] = 'gsl_root_fsolver_brent';
-  
+
   //PROCEDURES
   proc gsl_root_fdfsolver_free: ptr[gsl_root_fdfsolver];
   proc gsl_root_fsolver_free: ptr[gsl_root_fsolver];
-  
+
   //FUNCTIONS
   fun gsl_root_fdfsolver_alloc: cptr[gsl_root_fdfsolver_type] -> ptr[gsl_root_fdfsolver];
   fun gsl_root_fdfsolver_iterate: ptr[gsl_root_fdfsolver] -> int;
@@ -7312,7 +7312,7 @@ module gsl_sf_airy_h
   open C_hack;
   open gsl_mode_h;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_airy_Ai: double * gsl_mode_t -> double;
   fun gsl_sf_airy_Ai_deriv: double * gsl_mode_t -> double;
@@ -7363,7 +7363,7 @@ module gsl_sf_bessel_h
   open C_hack;
   open gsl_mode_h;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_bessel_I0: double -> double;
   fun gsl_sf_bessel_I0_e: double * ptr[gsl_sf_result] -> int;
@@ -7488,7 +7488,7 @@ module gsl_sf_clausen_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_clausen: double -> double;
   fun gsl_sf_clausen_e: double * ptr[gsl_sf_result] -> int;
@@ -7515,7 +7515,7 @@ module gsl_sf_coulomb_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_coulomb_CL_array: double * int * double * ptr[double] -> int;
   fun gsl_sf_coulomb_CL_e: double * double * ptr[gsl_sf_result] -> int;
@@ -7551,7 +7551,7 @@ module gsl_sf_coupling_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_coupling_3j: int * int * int * int * int * int -> double;
   fun gsl_sf_coupling_3j_e: int * int * int * int * int * int * ptr[gsl_sf_result] -> int;
@@ -7586,7 +7586,7 @@ module gsl_sf_dawson_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_dawson: double -> double;
   fun gsl_sf_dawson_e: double * ptr[gsl_sf_result] -> int;
@@ -7613,7 +7613,7 @@ module gsl_sf_debye_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_debye_1: double -> double;
   fun gsl_sf_debye_1_e: double * ptr[gsl_sf_result] -> int;
@@ -7646,7 +7646,7 @@ module gsl_sf_dilog_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_complex_dilog_e: double * double * ptr[gsl_sf_result] * ptr[gsl_sf_result] -> int;
   fun gsl_sf_complex_dilog_xy_e: double * double * ptr[gsl_sf_result] * ptr[gsl_sf_result] -> int;
@@ -7676,7 +7676,7 @@ module gsl_sf_elementary_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_multiply: double * double -> double;
   fun gsl_sf_multiply_e: double * double * ptr[gsl_sf_result] -> int;
@@ -7706,7 +7706,7 @@ module gsl_sf_ellint_h
   open C_hack;
   open gsl_mode_h;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_ellint_D: double * double * double * gsl_mode_t -> double;
   fun gsl_sf_ellint_D_e: double * double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
@@ -7747,7 +7747,7 @@ header '#include "gsl/gsl_sf_elljac.h"';
 module gsl_sf_elljac_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_sf_elljac_e: double * double * ptr[double] * ptr[double] * ptr[double] -> int;
 }
@@ -7773,7 +7773,7 @@ module gsl_sf_erf_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_erf: double -> double;
   fun gsl_sf_erf_Q: double -> double;
@@ -7810,7 +7810,7 @@ module gsl_sf_expint_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_Chi: double -> double;
   fun gsl_sf_Chi_e: double * ptr[gsl_sf_result] -> int;
@@ -7859,7 +7859,7 @@ module gsl_sf_exp_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_exp: double -> double;
   fun gsl_sf_exp_e: double * ptr[gsl_sf_result] -> int;
@@ -7902,7 +7902,7 @@ module gsl_sf_fermi_dirac_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_fermi_dirac_0: double -> double;
   fun gsl_sf_fermi_dirac_0_e: double * ptr[gsl_sf_result] -> int;
@@ -7946,7 +7946,7 @@ module gsl_sf_gamma_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_beta: double * double -> double;
   fun gsl_sf_beta_e: double * double * ptr[gsl_sf_result] -> int;
@@ -8014,7 +8014,7 @@ module gsl_sf_gegenbauer_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_gegenpoly_1: double * double -> double;
   fun gsl_sf_gegenpoly_1_e: double * double * ptr[gsl_sf_result] -> int;
@@ -8048,7 +8048,7 @@ module gsl_sf_hyperg_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_hyperg_0F1: double * double -> double;
   fun gsl_sf_hyperg_0F1_e: double * double * ptr[gsl_sf_result] -> int;
@@ -8095,7 +8095,7 @@ module gsl_sf_laguerre_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_laguerre_1: double * double -> double;
   fun gsl_sf_laguerre_1_e: double * double * ptr[gsl_sf_result] -> int;
@@ -8128,7 +8128,7 @@ module gsl_sf_lambert_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_lambert_W0: double -> double;
   fun gsl_sf_lambert_W0_e: double * ptr[gsl_sf_result] -> int;
@@ -8157,7 +8157,7 @@ module gsl_sf_legendre_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_conicalP_0: double * double -> double;
   fun gsl_sf_conicalP_0_e: double * double * ptr[gsl_sf_result] -> int;
@@ -8245,7 +8245,7 @@ module gsl_sf_log_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_complex_log_e: double * double * ptr[gsl_sf_result] * ptr[gsl_sf_result] -> int;
   fun gsl_sf_log: double -> double;
@@ -8279,7 +8279,7 @@ module gsl_sf_pow_int_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_pow_int: double * int -> double;
   fun gsl_sf_pow_int_e: double * int * ptr[gsl_sf_result] -> int;
@@ -8306,7 +8306,7 @@ module gsl_sf_psi_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_psi: double -> double;
   fun gsl_sf_psi_1: double -> double;
@@ -8364,8 +8364,8 @@ module gsl_sf_result_h
   open C_hack;
   open gsl_sf_result_e10_struct_h;
   open gsl_sf_result_struct_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct gsl_sf_result_e10_struct {
     val_: double;
     err: double;
@@ -8375,15 +8375,15 @@ module gsl_sf_result_h
     val_: double;
     err: double;
   }
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef gsl_sf_result = gsl_sf_result_struct;
   typedef gsl_sf_result_e10 = gsl_sf_result_e10_struct;
-  
+
   //TYPE ALIASES
   typedef _struct_gsl_sf_result_e10_struct = gsl_sf_result_e10_struct;
   typedef _struct_gsl_sf_result_struct = gsl_sf_result_struct;
-  
+
   //FUNCTIONS
   fun gsl_sf_result_smash_e: cptr[gsl_sf_result_e10] * ptr[gsl_sf_result] -> int;
 }
@@ -8427,7 +8427,7 @@ module gsl_sf_synchrotron_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_synchrotron_1: double -> double;
   fun gsl_sf_synchrotron_1_e: double * ptr[gsl_sf_result] -> int;
@@ -8456,7 +8456,7 @@ module gsl_sf_transport_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_transport_2: double -> double;
   fun gsl_sf_transport_2_e: double * ptr[gsl_sf_result] -> int;
@@ -8489,7 +8489,7 @@ module gsl_sf_trig_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_angle_restrict_pos: double -> double;
   fun gsl_sf_angle_restrict_pos_e: ptr[double] -> int;
@@ -8539,7 +8539,7 @@ module gsl_sf_zeta_h
 {
   open C_hack;
   open gsl_sf_result_h;
-  
+
   //FUNCTIONS
   fun gsl_sf_eta: double -> double;
   fun gsl_sf_eta_e: double * ptr[gsl_sf_result] -> int;
@@ -8578,10 +8578,10 @@ module gsl_siman_h
 {
   open C_hack;
   open gsl_rng_h;
-  
+
   //ABSTRACT TYPES
   type gsl_siman_params_t = 'gsl_siman_params_t';
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*gsl_siman_h_cft_2)(gsl_rng const *, void *,  double);''';
   type gsl_siman_h_cft_2 = 'gsl_siman_h_cft_2';
@@ -8595,7 +8595,7 @@ module gsl_siman_h
   type gsl_siman_h_cft_4 = 'gsl_siman_h_cft_4';
   header '''typedef double (*gsl_siman_h_cft_1)(void *);''';
   type gsl_siman_h_cft_1 = 'gsl_siman_h_cft_1';
-  
+
   //TYPE ALIASES
   typedef gsl_siman_Efunc_t = gsl_siman_h_cft_1;
   typedef gsl_siman_step_t = gsl_siman_h_cft_2;
@@ -8604,7 +8604,7 @@ module gsl_siman_h
   typedef gsl_siman_destroy_t = gsl_siman_h_cft_4;
   typedef gsl_siman_print_t = gsl_siman_h_cft_4;
   typedef gsl_siman_copy_construct_t = gsl_siman_h_cft_6;
-  
+
   //PROCEDURES
   proc gsl_siman_solve: cptr[gsl_rng] * address * gsl_siman_h_cft_1 * gsl_siman_h_cft_2 * gsl_siman_h_cft_3 * gsl_siman_h_cft_4 * gsl_siman_h_cft_5 * gsl_siman_h_cft_6 * gsl_siman_h_cft_4 * size * gsl_siman_params_t;
   proc gsl_siman_solve_many: cptr[gsl_rng] * address * gsl_siman_h_cft_1 * gsl_siman_h_cft_2 * gsl_siman_h_cft_3 * gsl_siman_h_cft_4 * size * gsl_siman_params_t;
@@ -8627,11 +8627,11 @@ header '#include "gsl/gsl_sort_char.h"';
 module gsl_sort_char_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_char: ptr[char] * size * size;
   proc gsl_sort_char_index: ptr[size] * cptr[char] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_char_largest: ptr[char] * size * cptr[char] * size * size -> int;
   fun gsl_sort_char_largest_index: ptr[size] * size * cptr[char] * size * size -> int;
@@ -8656,11 +8656,11 @@ header '#include "gsl/gsl_sort_double.h"';
 module gsl_sort_double_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort: ptr[double] * size * size;
   proc gsl_sort_index: ptr[size] * cptr[double] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_largest: ptr[double] * size * cptr[double] * size * size -> int;
   fun gsl_sort_largest_index: ptr[size] * size * cptr[double] * size * size -> int;
@@ -8685,11 +8685,11 @@ header '#include "gsl/gsl_sort_float.h"';
 module gsl_sort_float_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_float: ptr[float] * size * size;
   proc gsl_sort_float_index: ptr[size] * cptr[float] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_float_largest: ptr[float] * size * cptr[float] * size * size -> int;
   fun gsl_sort_float_largest_index: ptr[size] * size * cptr[float] * size * size -> int;
@@ -8714,11 +8714,11 @@ header '#include "gsl/gsl_sort_int.h"';
 module gsl_sort_int_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_int: ptr[int] * size * size;
   proc gsl_sort_int_index: ptr[size] * cptr[int] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_int_largest: ptr[int] * size * cptr[int] * size * size -> int;
   fun gsl_sort_int_largest_index: ptr[size] * size * cptr[int] * size * size -> int;
@@ -8762,11 +8762,11 @@ header '#include "gsl/gsl_sort_long_double.h"';
 module gsl_sort_long_double_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_long_double: ptr[ldouble] * size * size;
   proc gsl_sort_long_double_index: ptr[size] * cptr[ldouble] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_long_double_largest: ptr[ldouble] * size * cptr[ldouble] * size * size -> int;
   fun gsl_sort_long_double_largest_index: ptr[size] * size * cptr[ldouble] * size * size -> int;
@@ -8791,11 +8791,11 @@ header '#include "gsl/gsl_sort_long.h"';
 module gsl_sort_long_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_long: ptr[long] * size * size;
   proc gsl_sort_long_index: ptr[size] * cptr[long] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_long_largest: ptr[long] * size * cptr[long] * size * size -> int;
   fun gsl_sort_long_largest_index: ptr[size] * size * cptr[long] * size * size -> int;
@@ -8820,11 +8820,11 @@ header '#include "gsl/gsl_sort_short.h"';
 module gsl_sort_short_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_short: ptr[short] * size * size;
   proc gsl_sort_short_index: ptr[size] * cptr[short] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_short_largest: ptr[short] * size * cptr[short] * size * size -> int;
   fun gsl_sort_short_largest_index: ptr[size] * size * cptr[short] * size * size -> int;
@@ -8849,11 +8849,11 @@ header '#include "gsl/gsl_sort_uchar.h"';
 module gsl_sort_uchar_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_uchar: ptr[utiny] * size * size;
   proc gsl_sort_uchar_index: ptr[size] * cptr[utiny] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_uchar_largest: ptr[utiny] * size * cptr[utiny] * size * size -> int;
   fun gsl_sort_uchar_largest_index: ptr[size] * size * cptr[utiny] * size * size -> int;
@@ -8878,11 +8878,11 @@ header '#include "gsl/gsl_sort_uint.h"';
 module gsl_sort_uint_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_uint: ptr[uint] * size * size;
   proc gsl_sort_uint_index: ptr[size] * cptr[uint] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_uint_largest: ptr[uint] * size * cptr[uint] * size * size -> int;
   fun gsl_sort_uint_largest_index: ptr[size] * size * cptr[uint] * size * size -> int;
@@ -8907,11 +8907,11 @@ header '#include "gsl/gsl_sort_ulong.h"';
 module gsl_sort_ulong_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_ulong: ptr[ulong] * size * size;
   proc gsl_sort_ulong_index: ptr[size] * cptr[ulong] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_ulong_largest: ptr[ulong] * size * cptr[ulong] * size * size -> int;
   fun gsl_sort_ulong_largest_index: ptr[size] * size * cptr[ulong] * size * size -> int;
@@ -8936,11 +8936,11 @@ header '#include "gsl/gsl_sort_ushort.h"';
 module gsl_sort_ushort_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_sort_ushort: ptr[ushort] * size * size;
   proc gsl_sort_ushort_index: ptr[size] * cptr[ushort] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_sort_ushort_largest: ptr[ushort] * size * cptr[ushort] * size * size -> int;
   fun gsl_sort_ushort_largest_index: ptr[size] * size * cptr[ushort] * size * size -> int;
@@ -8971,10 +8971,10 @@ module gsl_sort_vector_char_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_char_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_char: ptr[gsl_vector_char];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_char_index: ptr[gsl_permutation] * cptr[gsl_vector_char] -> int;
   fun gsl_sort_vector_char_largest: ptr[char] * size * cptr[gsl_vector_char] -> int;
@@ -9006,10 +9006,10 @@ module gsl_sort_vector_double_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_double_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector: ptr[gsl_vector];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_index: ptr[gsl_permutation] * cptr[gsl_vector] -> int;
   fun gsl_sort_vector_largest: ptr[double] * size * cptr[gsl_vector] -> int;
@@ -9041,10 +9041,10 @@ module gsl_sort_vector_float_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_float_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_float: ptr[gsl_vector_float];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_float_index: ptr[gsl_permutation] * cptr[gsl_vector_float] -> int;
   fun gsl_sort_vector_float_largest: ptr[float] * size * cptr[gsl_vector_float] -> int;
@@ -9076,10 +9076,10 @@ module gsl_sort_vector_int_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_int_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_int: ptr[gsl_vector_int];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_int_index: ptr[gsl_permutation] * cptr[gsl_vector_int] -> int;
   fun gsl_sort_vector_int_largest: ptr[int] * size * cptr[gsl_vector_int] -> int;
@@ -9130,10 +9130,10 @@ module gsl_sort_vector_long_double_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_long_double_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_long_double: ptr[gsl_vector_long_double];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_long_double_index: ptr[gsl_permutation] * cptr[gsl_vector_long_double] -> int;
   fun gsl_sort_vector_long_double_largest: ptr[ldouble] * size * cptr[gsl_vector_long_double] -> int;
@@ -9165,10 +9165,10 @@ module gsl_sort_vector_long_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_long_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_long: ptr[gsl_vector_long];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_long_index: ptr[gsl_permutation] * cptr[gsl_vector_long] -> int;
   fun gsl_sort_vector_long_largest: ptr[long] * size * cptr[gsl_vector_long] -> int;
@@ -9200,10 +9200,10 @@ module gsl_sort_vector_short_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_short_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_short: ptr[gsl_vector_short];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_short_index: ptr[gsl_permutation] * cptr[gsl_vector_short] -> int;
   fun gsl_sort_vector_short_largest: ptr[short] * size * cptr[gsl_vector_short] -> int;
@@ -9235,10 +9235,10 @@ module gsl_sort_vector_uchar_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_uchar_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_uchar: ptr[gsl_vector_uchar];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_uchar_index: ptr[gsl_permutation] * cptr[gsl_vector_uchar] -> int;
   fun gsl_sort_vector_uchar_largest: ptr[utiny] * size * cptr[gsl_vector_uchar] -> int;
@@ -9270,10 +9270,10 @@ module gsl_sort_vector_uint_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_uint_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_uint: ptr[gsl_vector_uint];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_uint_index: ptr[gsl_permutation] * cptr[gsl_vector_uint] -> int;
   fun gsl_sort_vector_uint_largest: ptr[uint] * size * cptr[gsl_vector_uint] -> int;
@@ -9305,10 +9305,10 @@ module gsl_sort_vector_ulong_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_ulong_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_ulong: ptr[gsl_vector_ulong];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_ulong_index: ptr[gsl_permutation] * cptr[gsl_vector_ulong] -> int;
   fun gsl_sort_vector_ulong_largest: ptr[ulong] * size * cptr[gsl_vector_ulong] -> int;
@@ -9340,10 +9340,10 @@ module gsl_sort_vector_ushort_h
   open C_hack;
   open gsl_permutation_h;
   open gsl_vector_ushort_h;
-  
+
   //PROCEDURES
   proc gsl_sort_vector_ushort: ptr[gsl_vector_ushort];
-  
+
   //FUNCTIONS
   fun gsl_sort_vector_ushort_index: ptr[gsl_permutation] * cptr[gsl_vector_ushort] -> int;
   fun gsl_sort_vector_ushort_largest: ptr[ushort] * size * cptr[gsl_vector_ushort] -> int;
@@ -9392,13 +9392,13 @@ module gsl_spline_h
 {
   open C_hack;
   open gsl_interp_h;
-  
+
   //ABSTRACT TYPES
   type gsl_spline = 'gsl_spline';
-  
+
   //PROCEDURES
   proc gsl_spline_free: ptr[gsl_spline];
-  
+
   //FUNCTIONS
   fun gsl_spline_alloc: cptr[gsl_interp_type] * size -> ptr[gsl_spline];
   fun gsl_spline_eval: cptr[gsl_spline] * double * ptr[gsl_interp_accel] -> double;
@@ -9429,11 +9429,11 @@ header '#include "gsl/gsl_statistics_char.h"';
 module gsl_statistics_char_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_char_minmax: ptr[char] * ptr[char] * cptr[char] * size * size;
   proc gsl_stats_char_minmax_index: ptr[size] * ptr[size] * cptr[char] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_char_absdev: cptr[char] * size * size -> double;
   fun gsl_stats_char_absdev_m: cptr[char] * size * size * double -> double;
@@ -9479,11 +9479,11 @@ header '#include "gsl/gsl_statistics_double.h"';
 module gsl_statistics_double_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_minmax: ptr[double] * ptr[double] * cptr[double] * size * size;
   proc gsl_stats_minmax_index: ptr[size] * ptr[size] * cptr[double] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_absdev: cptr[double] * size * size -> double;
   fun gsl_stats_absdev_m: cptr[double] * size * size * double -> double;
@@ -9542,11 +9542,11 @@ header '#include "gsl/gsl_statistics_float.h"';
 module gsl_statistics_float_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_float_minmax: ptr[float] * ptr[float] * cptr[float] * size * size;
   proc gsl_stats_float_minmax_index: ptr[size] * ptr[size] * cptr[float] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_float_absdev: cptr[float] * size * size -> double;
   fun gsl_stats_float_absdev_m: cptr[float] * size * size * double -> double;
@@ -9605,11 +9605,11 @@ header '#include "gsl/gsl_statistics_int.h"';
 module gsl_statistics_int_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_int_minmax: ptr[int] * ptr[int] * cptr[int] * size * size;
   proc gsl_stats_int_minmax_index: ptr[size] * ptr[size] * cptr[int] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_int_absdev: cptr[int] * size * size -> double;
   fun gsl_stats_int_absdev_m: cptr[int] * size * size * double -> double;
@@ -9674,11 +9674,11 @@ header '#include "gsl/gsl_statistics_long_double.h"';
 module gsl_statistics_long_double_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_long_double_minmax: ptr[ldouble] * ptr[ldouble] * cptr[ldouble] * size * size;
   proc gsl_stats_long_double_minmax_index: ptr[size] * ptr[size] * cptr[ldouble] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_long_double_absdev: cptr[ldouble] * size * size -> double;
   fun gsl_stats_long_double_absdev_m: cptr[ldouble] * size * size * double -> double;
@@ -9737,11 +9737,11 @@ header '#include "gsl/gsl_statistics_long.h"';
 module gsl_statistics_long_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_long_minmax: ptr[long] * ptr[long] * cptr[long] * size * size;
   proc gsl_stats_long_minmax_index: ptr[size] * ptr[size] * cptr[long] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_long_absdev: cptr[long] * size * size -> double;
   fun gsl_stats_long_absdev_m: cptr[long] * size * size * double -> double;
@@ -9787,11 +9787,11 @@ header '#include "gsl/gsl_statistics_short.h"';
 module gsl_statistics_short_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_short_minmax: ptr[short] * ptr[short] * cptr[short] * size * size;
   proc gsl_stats_short_minmax_index: ptr[size] * ptr[size] * cptr[short] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_short_absdev: cptr[short] * size * size -> double;
   fun gsl_stats_short_absdev_m: cptr[short] * size * size * double -> double;
@@ -9837,11 +9837,11 @@ header '#include "gsl/gsl_statistics_uchar.h"';
 module gsl_statistics_uchar_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_uchar_minmax: ptr[utiny] * ptr[utiny] * cptr[utiny] * size * size;
   proc gsl_stats_uchar_minmax_index: ptr[size] * ptr[size] * cptr[utiny] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_uchar_absdev: cptr[utiny] * size * size -> double;
   fun gsl_stats_uchar_absdev_m: cptr[utiny] * size * size * double -> double;
@@ -9887,11 +9887,11 @@ header '#include "gsl/gsl_statistics_uint.h"';
 module gsl_statistics_uint_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_uint_minmax: ptr[uint] * ptr[uint] * cptr[uint] * size * size;
   proc gsl_stats_uint_minmax_index: ptr[size] * ptr[size] * cptr[uint] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_uint_absdev: cptr[uint] * size * size -> double;
   fun gsl_stats_uint_absdev_m: cptr[uint] * size * size * double -> double;
@@ -9937,11 +9937,11 @@ header '#include "gsl/gsl_statistics_ulong.h"';
 module gsl_statistics_ulong_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_ulong_minmax: ptr[ulong] * ptr[ulong] * cptr[ulong] * size * size;
   proc gsl_stats_ulong_minmax_index: ptr[size] * ptr[size] * cptr[ulong] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_ulong_absdev: cptr[ulong] * size * size -> double;
   fun gsl_stats_ulong_absdev_m: cptr[ulong] * size * size * double -> double;
@@ -9987,11 +9987,11 @@ header '#include "gsl/gsl_statistics_ushort.h"';
 module gsl_statistics_ushort_h
 {
   open C_hack;
-  
+
   //PROCEDURES
   proc gsl_stats_ushort_minmax: ptr[ushort] * ptr[ushort] * cptr[ushort] * size * size;
   proc gsl_stats_ushort_minmax_index: ptr[size] * ptr[size] * cptr[ushort] * size * size;
-  
+
   //FUNCTIONS
   fun gsl_stats_ushort_absdev: cptr[ushort] * size * size -> double;
   fun gsl_stats_ushort_absdev_m: cptr[ushort] * size * size * double -> double;
@@ -10037,15 +10037,15 @@ header '#include "gsl/gsl_sum.h"';
 module gsl_sum_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_sum_levin_utrunc_workspace = 'gsl_sum_levin_utrunc_workspace';
   type gsl_sum_levin_u_workspace = 'gsl_sum_levin_u_workspace';
-  
+
   //PROCEDURES
   proc gsl_sum_levin_u_free: ptr[gsl_sum_levin_u_workspace];
   proc gsl_sum_levin_utrunc_free: ptr[gsl_sum_levin_utrunc_workspace];
-  
+
   //FUNCTIONS
   fun gsl_sum_levin_u_accel: cptr[double] * size * ptr[gsl_sum_levin_u_workspace] * ptr[double] * ptr[double] -> int;
   fun gsl_sum_levin_u_alloc: size -> ptr[gsl_sum_levin_u_workspace];
@@ -10074,7 +10074,7 @@ header '#include "gsl/gsl_sys.h"';
 module gsl_sys_h
 {
   open C_hack;
-  
+
   //FUNCTIONS
   fun gsl_acosh: double -> double;
   fun gsl_asinh: double -> double;
@@ -10141,16 +10141,16 @@ module gsl_vector_char_h
 {
   open C_hack;
   open gsl_block_char_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_char_const_view = '_gsl_vector_char_const_view';
   type gsl_vector_char = 'gsl_vector_char';
   type _gsl_vector_char_view = '_gsl_vector_char_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_char_view = _gsl_vector_char_view;
   typedef gsl_vector_char_const_view = _gsl_vector_char_const_view;
-  
+
   //PROCEDURES
   proc gsl_vector_char_free: ptr[gsl_vector_char];
   proc gsl_vector_char_minmax: cptr[gsl_vector_char] * ptr[char] * ptr[char];
@@ -10158,7 +10158,7 @@ module gsl_vector_char_h
   proc gsl_vector_char_set: ptr[gsl_vector_char] * size * char;
   proc gsl_vector_char_set_all: ptr[gsl_vector_char] * char;
   proc gsl_vector_char_set_zero: ptr[gsl_vector_char];
-  
+
   //FUNCTIONS
   fun gsl_vector_char_add: ptr[gsl_vector_char] * cptr[gsl_vector_char] -> int;
   fun gsl_vector_char_add_constant: ptr[gsl_vector_char] * double -> int;
@@ -10222,22 +10222,22 @@ module gsl_vector_complex_double_h
   open gsl_block_complex_double_h;
   open gsl_complex_h;
   open gsl_vector_double_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_complex_view = '_gsl_vector_complex_view';
   type gsl_vector_complex = 'gsl_vector_complex';
   type _gsl_vector_complex_const_view = '_gsl_vector_complex_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_complex_const_view = _gsl_vector_complex_const_view;
   typedef gsl_vector_complex_view = _gsl_vector_complex_view;
-  
+
   //PROCEDURES
   proc gsl_vector_complex_free: ptr[gsl_vector_complex];
   proc gsl_vector_complex_set: ptr[gsl_vector_complex] * size * gsl_complex;
   proc gsl_vector_complex_set_all: ptr[gsl_vector_complex] * gsl_complex;
   proc gsl_vector_complex_set_zero: ptr[gsl_vector_complex];
-  
+
   //FUNCTIONS
   fun gsl_vector_complex_alloc: size -> ptr[gsl_vector_complex];
   fun gsl_vector_complex_alloc_from_block: ptr[gsl_block_complex] * size * size * size -> ptr[gsl_vector_complex];
@@ -10295,22 +10295,22 @@ module gsl_vector_complex_float_h
   open gsl_block_complex_float_h;
   open gsl_complex_h;
   open gsl_vector_float_h;
-  
+
   //ABSTRACT TYPES
   type gsl_vector_complex_float = 'gsl_vector_complex_float';
   type _gsl_vector_complex_float_view = '_gsl_vector_complex_float_view';
   type _gsl_vector_complex_float_const_view = '_gsl_vector_complex_float_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_complex_float_const_view = _gsl_vector_complex_float_const_view;
   typedef gsl_vector_complex_float_view = _gsl_vector_complex_float_view;
-  
+
   //PROCEDURES
   proc gsl_vector_complex_float_free: ptr[gsl_vector_complex_float];
   proc gsl_vector_complex_float_set: ptr[gsl_vector_complex_float] * size * gsl_complex_float;
   proc gsl_vector_complex_float_set_all: ptr[gsl_vector_complex_float] * gsl_complex_float;
   proc gsl_vector_complex_float_set_zero: ptr[gsl_vector_complex_float];
-  
+
   //FUNCTIONS
   fun gsl_vector_complex_float_alloc: size -> ptr[gsl_vector_complex_float];
   fun gsl_vector_complex_float_alloc_from_block: ptr[gsl_block_complex_float] * size * size * size -> ptr[gsl_vector_complex_float];
@@ -10394,22 +10394,22 @@ module gsl_vector_complex_long_double_h
   open gsl_block_complex_long_double_h;
   open gsl_complex_h;
   open gsl_vector_long_double_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_complex_long_double_view = '_gsl_vector_complex_long_double_view';
   type gsl_vector_complex_long_double = 'gsl_vector_complex_long_double';
   type _gsl_vector_complex_long_double_const_view = '_gsl_vector_complex_long_double_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_complex_long_double_const_view = _gsl_vector_complex_long_double_const_view;
   typedef gsl_vector_complex_long_double_view = _gsl_vector_complex_long_double_view;
-  
+
   //PROCEDURES
   proc gsl_vector_complex_long_double_free: ptr[gsl_vector_complex_long_double];
   proc gsl_vector_complex_long_double_set: ptr[gsl_vector_complex_long_double] * size * gsl_complex_long_double;
   proc gsl_vector_complex_long_double_set_all: ptr[gsl_vector_complex_long_double] * gsl_complex_long_double;
   proc gsl_vector_complex_long_double_set_zero: ptr[gsl_vector_complex_long_double];
-  
+
   //FUNCTIONS
   fun gsl_vector_complex_long_double_alloc: size -> ptr[gsl_vector_complex_long_double];
   fun gsl_vector_complex_long_double_alloc_from_block: ptr[gsl_block_complex_long_double] * size * size * size -> ptr[gsl_vector_complex_long_double];
@@ -10463,16 +10463,16 @@ module gsl_vector_double_h
 {
   open C_hack;
   open gsl_block_double_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_view = '_gsl_vector_view';
   type gsl_vector = 'gsl_vector';
   type _gsl_vector_const_view = '_gsl_vector_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_const_view = _gsl_vector_const_view;
   typedef gsl_vector_view = _gsl_vector_view;
-  
+
   //PROCEDURES
   proc gsl_vector_free: ptr[gsl_vector];
   proc gsl_vector_minmax: cptr[gsl_vector] * ptr[double] * ptr[double];
@@ -10480,7 +10480,7 @@ module gsl_vector_double_h
   proc gsl_vector_set: ptr[gsl_vector] * size * double;
   proc gsl_vector_set_all: ptr[gsl_vector] * double;
   proc gsl_vector_set_zero: ptr[gsl_vector];
-  
+
   //FUNCTIONS
   fun gsl_vector_add: ptr[gsl_vector] * cptr[gsl_vector] -> int;
   fun gsl_vector_add_constant: ptr[gsl_vector] * double -> int;
@@ -10540,16 +10540,16 @@ module gsl_vector_float_h
 {
   open C_hack;
   open gsl_block_float_h;
-  
+
   //ABSTRACT TYPES
   type gsl_vector_float = 'gsl_vector_float';
   type _gsl_vector_float_view = '_gsl_vector_float_view';
   type _gsl_vector_float_const_view = '_gsl_vector_float_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_float_const_view = _gsl_vector_float_const_view;
   typedef gsl_vector_float_view = _gsl_vector_float_view;
-  
+
   //PROCEDURES
   proc gsl_vector_float_free: ptr[gsl_vector_float];
   proc gsl_vector_float_minmax: cptr[gsl_vector_float] * ptr[float] * ptr[float];
@@ -10557,7 +10557,7 @@ module gsl_vector_float_h
   proc gsl_vector_float_set: ptr[gsl_vector_float] * size * float;
   proc gsl_vector_float_set_all: ptr[gsl_vector_float] * float;
   proc gsl_vector_float_set_zero: ptr[gsl_vector_float];
-  
+
   //FUNCTIONS
   fun gsl_vector_float_add: ptr[gsl_vector_float] * cptr[gsl_vector_float] -> int;
   fun gsl_vector_float_add_constant: ptr[gsl_vector_float] * double -> int;
@@ -10617,16 +10617,16 @@ module gsl_vector_int_h
 {
   open C_hack;
   open gsl_block_int_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_int_view = '_gsl_vector_int_view';
   type gsl_vector_int = 'gsl_vector_int';
   type _gsl_vector_int_const_view = '_gsl_vector_int_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_int_view = _gsl_vector_int_view;
   typedef gsl_vector_int_const_view = _gsl_vector_int_const_view;
-  
+
   //PROCEDURES
   proc gsl_vector_int_free: ptr[gsl_vector_int];
   proc gsl_vector_int_minmax: cptr[gsl_vector_int] * ptr[int] * ptr[int];
@@ -10634,7 +10634,7 @@ module gsl_vector_int_h
   proc gsl_vector_int_set: ptr[gsl_vector_int] * size * int;
   proc gsl_vector_int_set_all: ptr[gsl_vector_int] * int;
   proc gsl_vector_int_set_zero: ptr[gsl_vector_int];
-  
+
   //FUNCTIONS
   fun gsl_vector_int_add: ptr[gsl_vector_int] * cptr[gsl_vector_int] -> int;
   fun gsl_vector_int_add_constant: ptr[gsl_vector_int] * double -> int;
@@ -10713,16 +10713,16 @@ module gsl_vector_long_double_h
 {
   open C_hack;
   open gsl_block_long_double_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_long_double_const_view = '_gsl_vector_long_double_const_view';
   type _gsl_vector_long_double_view = '_gsl_vector_long_double_view';
   type gsl_vector_long_double = 'gsl_vector_long_double';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_long_double_view = _gsl_vector_long_double_view;
   typedef gsl_vector_long_double_const_view = _gsl_vector_long_double_const_view;
-  
+
   //PROCEDURES
   proc gsl_vector_long_double_free: ptr[gsl_vector_long_double];
   proc gsl_vector_long_double_minmax: cptr[gsl_vector_long_double] * ptr[ldouble] * ptr[ldouble];
@@ -10730,7 +10730,7 @@ module gsl_vector_long_double_h
   proc gsl_vector_long_double_set: ptr[gsl_vector_long_double] * size * ldouble;
   proc gsl_vector_long_double_set_all: ptr[gsl_vector_long_double] * ldouble;
   proc gsl_vector_long_double_set_zero: ptr[gsl_vector_long_double];
-  
+
   //FUNCTIONS
   fun gsl_vector_long_double_add: ptr[gsl_vector_long_double] * cptr[gsl_vector_long_double] -> int;
   fun gsl_vector_long_double_add_constant: ptr[gsl_vector_long_double] * double -> int;
@@ -10790,16 +10790,16 @@ module gsl_vector_long_h
 {
   open C_hack;
   open gsl_block_long_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_long_const_view = '_gsl_vector_long_const_view';
   type gsl_vector_long = 'gsl_vector_long';
   type _gsl_vector_long_view = '_gsl_vector_long_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_long_view = _gsl_vector_long_view;
   typedef gsl_vector_long_const_view = _gsl_vector_long_const_view;
-  
+
   //PROCEDURES
   proc gsl_vector_long_free: ptr[gsl_vector_long];
   proc gsl_vector_long_minmax: cptr[gsl_vector_long] * ptr[long] * ptr[long];
@@ -10807,7 +10807,7 @@ module gsl_vector_long_h
   proc gsl_vector_long_set: ptr[gsl_vector_long] * size * long;
   proc gsl_vector_long_set_all: ptr[gsl_vector_long] * long;
   proc gsl_vector_long_set_zero: ptr[gsl_vector_long];
-  
+
   //FUNCTIONS
   fun gsl_vector_long_add: ptr[gsl_vector_long] * cptr[gsl_vector_long] -> int;
   fun gsl_vector_long_add_constant: ptr[gsl_vector_long] * double -> int;
@@ -10867,16 +10867,16 @@ module gsl_vector_short_h
 {
   open C_hack;
   open gsl_block_short_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_short_view = '_gsl_vector_short_view';
   type _gsl_vector_short_const_view = '_gsl_vector_short_const_view';
   type gsl_vector_short = 'gsl_vector_short';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_short_view = _gsl_vector_short_view;
   typedef gsl_vector_short_const_view = _gsl_vector_short_const_view;
-  
+
   //PROCEDURES
   proc gsl_vector_short_free: ptr[gsl_vector_short];
   proc gsl_vector_short_minmax: cptr[gsl_vector_short] * ptr[short] * ptr[short];
@@ -10884,7 +10884,7 @@ module gsl_vector_short_h
   proc gsl_vector_short_set: ptr[gsl_vector_short] * size * short;
   proc gsl_vector_short_set_all: ptr[gsl_vector_short] * short;
   proc gsl_vector_short_set_zero: ptr[gsl_vector_short];
-  
+
   //FUNCTIONS
   fun gsl_vector_short_add: ptr[gsl_vector_short] * cptr[gsl_vector_short] -> int;
   fun gsl_vector_short_add_constant: ptr[gsl_vector_short] * double -> int;
@@ -10944,16 +10944,16 @@ module gsl_vector_uchar_h
 {
   open C_hack;
   open gsl_block_uchar_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_uchar_view = '_gsl_vector_uchar_view';
   type _gsl_vector_uchar_const_view = '_gsl_vector_uchar_const_view';
   type gsl_vector_uchar = 'gsl_vector_uchar';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_uchar_view = _gsl_vector_uchar_view;
   typedef gsl_vector_uchar_const_view = _gsl_vector_uchar_const_view;
-  
+
   //PROCEDURES
   proc gsl_vector_uchar_free: ptr[gsl_vector_uchar];
   proc gsl_vector_uchar_minmax: cptr[gsl_vector_uchar] * ptr[utiny] * ptr[utiny];
@@ -10961,7 +10961,7 @@ module gsl_vector_uchar_h
   proc gsl_vector_uchar_set: ptr[gsl_vector_uchar] * size * utiny;
   proc gsl_vector_uchar_set_all: ptr[gsl_vector_uchar] * utiny;
   proc gsl_vector_uchar_set_zero: ptr[gsl_vector_uchar];
-  
+
   //FUNCTIONS
   fun gsl_vector_uchar_add: ptr[gsl_vector_uchar] * cptr[gsl_vector_uchar] -> int;
   fun gsl_vector_uchar_add_constant: ptr[gsl_vector_uchar] * double -> int;
@@ -11021,16 +11021,16 @@ module gsl_vector_uint_h
 {
   open C_hack;
   open gsl_block_uint_h;
-  
+
   //ABSTRACT TYPES
   type gsl_vector_uint = 'gsl_vector_uint';
   type _gsl_vector_uint_view = '_gsl_vector_uint_view';
   type _gsl_vector_uint_const_view = '_gsl_vector_uint_const_view';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_uint_const_view = _gsl_vector_uint_const_view;
   typedef gsl_vector_uint_view = _gsl_vector_uint_view;
-  
+
   //PROCEDURES
   proc gsl_vector_uint_free: ptr[gsl_vector_uint];
   proc gsl_vector_uint_minmax: cptr[gsl_vector_uint] * ptr[uint] * ptr[uint];
@@ -11038,7 +11038,7 @@ module gsl_vector_uint_h
   proc gsl_vector_uint_set: ptr[gsl_vector_uint] * size * uint;
   proc gsl_vector_uint_set_all: ptr[gsl_vector_uint] * uint;
   proc gsl_vector_uint_set_zero: ptr[gsl_vector_uint];
-  
+
   //FUNCTIONS
   fun gsl_vector_uint_add: ptr[gsl_vector_uint] * cptr[gsl_vector_uint] -> int;
   fun gsl_vector_uint_add_constant: ptr[gsl_vector_uint] * double -> int;
@@ -11098,16 +11098,16 @@ module gsl_vector_ulong_h
 {
   open C_hack;
   open gsl_block_ulong_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_ulong_view = '_gsl_vector_ulong_view';
   type _gsl_vector_ulong_const_view = '_gsl_vector_ulong_const_view';
   type gsl_vector_ulong = 'gsl_vector_ulong';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_ulong_view = _gsl_vector_ulong_view;
   typedef gsl_vector_ulong_const_view = _gsl_vector_ulong_const_view;
-  
+
   //PROCEDURES
   proc gsl_vector_ulong_free: ptr[gsl_vector_ulong];
   proc gsl_vector_ulong_minmax: cptr[gsl_vector_ulong] * ptr[ulong] * ptr[ulong];
@@ -11115,7 +11115,7 @@ module gsl_vector_ulong_h
   proc gsl_vector_ulong_set: ptr[gsl_vector_ulong] * size * ulong;
   proc gsl_vector_ulong_set_all: ptr[gsl_vector_ulong] * ulong;
   proc gsl_vector_ulong_set_zero: ptr[gsl_vector_ulong];
-  
+
   //FUNCTIONS
   fun gsl_vector_ulong_add: ptr[gsl_vector_ulong] * cptr[gsl_vector_ulong] -> int;
   fun gsl_vector_ulong_add_constant: ptr[gsl_vector_ulong] * double -> int;
@@ -11175,16 +11175,16 @@ module gsl_vector_ushort_h
 {
   open C_hack;
   open gsl_block_ushort_h;
-  
+
   //ABSTRACT TYPES
   type _gsl_vector_ushort_view = '_gsl_vector_ushort_view';
   type _gsl_vector_ushort_const_view = '_gsl_vector_ushort_const_view';
   type gsl_vector_ushort = 'gsl_vector_ushort';
-  
+
   //TYPE ALIASES
   typedef gsl_vector_ushort_const_view = _gsl_vector_ushort_const_view;
   typedef gsl_vector_ushort_view = _gsl_vector_ushort_view;
-  
+
   //PROCEDURES
   proc gsl_vector_ushort_free: ptr[gsl_vector_ushort];
   proc gsl_vector_ushort_minmax: cptr[gsl_vector_ushort] * ptr[ushort] * ptr[ushort];
@@ -11192,7 +11192,7 @@ module gsl_vector_ushort_h
   proc gsl_vector_ushort_set: ptr[gsl_vector_ushort] * size * ushort;
   proc gsl_vector_ushort_set_all: ptr[gsl_vector_ushort] * ushort;
   proc gsl_vector_ushort_set_zero: ptr[gsl_vector_ushort];
-  
+
   //FUNCTIONS
   fun gsl_vector_ushort_add: ptr[gsl_vector_ushort] * cptr[gsl_vector_ushort] -> int;
   fun gsl_vector_ushort_add_constant: ptr[gsl_vector_ushort] * double -> int;
@@ -11249,7 +11249,7 @@ header '#include "gsl/gsl_version.h"';
 module gsl_version_h
 {
   open C_hack;
-  
+
   //VARIABLES
   const gsl_version: cptr[char] = 'gsl_version';
 }
@@ -11277,7 +11277,7 @@ module gsl_wavelet2d_h
   open C_hack;
   open gsl_matrix_double_h;
   open gsl_wavelet_h;
-  
+
   //FUNCTIONS
   fun gsl_wavelet2d_nstransform: cptr[gsl_wavelet] * ptr[double] * size * size * size * gsl_wavelet_direction * ptr[gsl_wavelet_workspace] -> int;
   fun gsl_wavelet2d_nstransform_forward: cptr[gsl_wavelet] * ptr[double] * size * size * size * ptr[gsl_wavelet_workspace] -> int;
@@ -11310,13 +11310,13 @@ header '#include "gsl/gsl_wavelet.h"';
 module gsl_wavelet_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type gsl_wavelet_workspace = 'gsl_wavelet_workspace';
   type gsl_wavelet_type = 'gsl_wavelet_type';
   type gsl_wavelet_direction = 'gsl_wavelet_direction';
   type gsl_wavelet = 'gsl_wavelet';
-  
+
   //VARIABLES
   const gsl_wavelet_haar_centered: cptr[gsl_wavelet_type] = 'gsl_wavelet_haar_centered';
   const gsl_wavelet_daubechies_centered: cptr[gsl_wavelet_type] = 'gsl_wavelet_daubechies_centered';
@@ -11324,15 +11324,15 @@ module gsl_wavelet_h
   const gsl_wavelet_bspline_centered: cptr[gsl_wavelet_type] = 'gsl_wavelet_bspline_centered';
   const gsl_wavelet_bspline: cptr[gsl_wavelet_type] = 'gsl_wavelet_bspline';
   const gsl_wavelet_haar: cptr[gsl_wavelet_type] = 'gsl_wavelet_haar';
-  
+
   //ENUMERATION CONSTANTS
   const backward___0: int = 'backward___0';
   const forward___0: int = 'forward___0';
-  
+
   //PROCEDURES
   proc gsl_wavelet_free: ptr[gsl_wavelet];
   proc gsl_wavelet_workspace_free: ptr[gsl_wavelet_workspace];
-  
+
   //FUNCTIONS
   fun gsl_wavelet_alloc: cptr[gsl_wavelet_type] * size -> ptr[gsl_wavelet];
   fun gsl_wavelet_name: cptr[gsl_wavelet] -> cptr[char];

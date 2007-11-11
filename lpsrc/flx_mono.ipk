@@ -12,7 +12,7 @@ val monomorphise:
   sym_state_t ->
   fully_bound_symbol_table_t ->
   unit
- 
+
 
 @h = tangler("src/compiler/flxlib/flx_mono.ml")
 @select(h)
@@ -42,15 +42,15 @@ let cal_parent syms bbdfns i' ts' =
   let id,parent,sr,_ = Hashtbl.find bbdfns i' in
   match parent with
   | None -> None
-  | Some i -> 
+  | Some i ->
     let vsc = get_vs bbdfns i' in
     assert (length vsc = length ts');
-    if not (Hashtbl.mem bbdfns i) then 
+    if not (Hashtbl.mem bbdfns i) then
     (
       (*
       print_endline ("WHA?? Parent " ^ si i ^ " of " ^ si i' ^ " does not exist??");
       *)
-      None 
+      None
     )
     else
     let vsp = get_vs bbdfns i in
@@ -59,11 +59,11 @@ let cal_parent syms bbdfns i' ts' =
     let ts = list_prefix ts' n in
     let k =
        try (Hashtbl.find syms.instances (i,ts))
-       with Not_found -> 
-        print_endline ("Wah? Not found parent of " ^ 
+       with Not_found ->
+        print_endline ("Wah? Not found parent of " ^
           id ^ "<" ^ si i' ^ ">" ^
           "[" ^ catmap "," (sbt syms.dfns) ts ^ "]\n" ^
-          "Which should be " ^ si i ^ 
+          "Which should be " ^ si i ^
           "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"
         )
         ;
@@ -77,7 +77,7 @@ let cal_parent syms bbdfns i' ts' =
 
 let fixup_type' syms bbdfns fi t =
   match t with
-  | `BTYP_inst (i,ts) -> 
+  | `BTYP_inst (i,ts) ->
     let i,ts = fi i ts in
     `BTYP_inst (i,ts)
   | x -> x
@@ -87,7 +87,7 @@ let rec fixup_type syms bbdfns fi t =
   let ft' t = fixup_type' syms bbdfns fi t in
   let t = map_btype ft t in
   ft' t
- 
+
 let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
   (*
   print_endline ("FIXUP EXPR(up) " ^ sbe syms.dfns (e,`BTYP_void));
@@ -114,11 +114,11 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
 
   | `BEXPR_apply_method_direct (obj,i,ts,a) ->
     let i,ts = fi i ts in
-    `BEXPR_apply_method_direct (obj,i,ts,a) 
+    `BEXPR_apply_method_direct (obj,i,ts,a)
 
   | `BEXPR_apply_method_stack (obj,i,ts,a) ->
     let i,ts = fi i ts in
-    `BEXPR_apply_method_stack (obj,i,ts,a) 
+    `BEXPR_apply_method_stack (obj,i,ts,a)
 
   | `BEXPR_ref (i,ts)  ->
     let i,ts = fi i ts in
@@ -137,7 +137,7 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
   | `BEXPR_closure (i,ts) ->
     let i,ts = fi i ts in
     `BEXPR_closure (i,ts)
-   
+
   | `BEXPR_method_closure (e,i,ts) ->
     let i,ts = fi i ts in
     `BEXPR_method_closure (e,i,ts)
@@ -148,7 +148,7 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
   *)
   x
 
-let id x = x 
+let id x = x
 
 let rec fixup_expr syms bbdfns fi mt e =
   (*
@@ -169,7 +169,7 @@ let rec fixup_expr syms bbdfns fi mt e =
     print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
     *)
     begin match t with
-    | `BTYP_inst (j,ts) 
+    | `BTYP_inst (j,ts)
     | `BTYP_lvalue (`BTYP_inst (j,ts)) ->
       (*
       print_endline ("type=" ^ si j ^ ", ts = " ^ catmap "," (sbt syms.dfns) ts);
@@ -185,8 +185,8 @@ let rec fixup_expr syms bbdfns fi mt e =
   in
   let e = map_tbexpr id fe mt e in
   fe' e
-  
-let fixup_exe syms bbdfns fi mt exe = 
+
+let fixup_exe syms bbdfns fi mt exe =
   (*
   print_endline ("FIXUP EXE[In] =" ^ string_of_bexe syms.dfns 0 exe);
   *)
@@ -288,15 +288,15 @@ let fixup_exe syms bbdfns fi mt exe =
   *)
   result
 
-  
+
 let fixup_exes syms bbdfns fi mt exes =
   map (fixup_exe syms bbdfns fi mt) exes
 
 let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-   
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
+
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
@@ -304,20 +304,20 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     (*
     let fi i ts = fi i (map mt ts) in
     *)
-    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
-      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps 
+    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
+      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps
     in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
     let exes = fixup_exes syms bbdfns fi mt exes in
     let entry = `BBDCL_function (props,[],(ps,traint),ret,exes) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
- 
+
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
-    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
+    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
       let k = fst (fi i ts) in
       let u = mt t in
       (*
@@ -325,7 +325,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
         sbt syms.dfns t ^
       ")to " ^ si k ^ " type " ^ sbt syms.dfns u);
       *)
-      {pkind=pk;pid=s;pindex=k;ptyp=u}) ps 
+      {pkind=pk;pid=s;pindex=k;ptyp=u}) ps
     in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
     (*
@@ -409,12 +409,12 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = list_subst syms.counter vars t in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
-    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} -> 
-      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps 
+    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
+      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps
     in
     let ret = mt ret in
     let h2 = Hashtbl.create 97 in
-    Hashtbl.iter (fun j e -> 
+    Hashtbl.iter (fun j e ->
       let e = fixup_expr syms bbdfns fi mt e in
       Hashtbl.add h2 j e
     )
@@ -438,67 +438,67 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let mt t = list_subst syms.counter vars t in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns mt x) in
     let ret = mt ret in
-    `BBDCL_reglex (props,[],(ps,traint),le,ret,(alpha,states,h,mx)) 
+    `BBDCL_reglex (props,[],(ps,traint),le,ret,(alpha,states,h,mx))
 
   | `BBDCL_union (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = list_subst syms.counter vars t in
     let ps = map (fun (i,j,t) -> i,j,mt t) ps in
-    `BBDCL_union ([],ps) 
+    `BBDCL_union ([],ps)
 
   | `BBDCL_struct (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = list_subst syms.counter vars t in
     let ps = map (fun (i,t) -> i,mt t) ps in
-    `BBDCL_struct ([],ps) 
+    `BBDCL_struct ([],ps)
 
   | `BBDCL_cstruct (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = list_subst syms.counter vars t in
     let ps = map (fun (i,t) -> i,mt t) ps in
-    `BBDCL_cstruct ([],ps) 
+    `BBDCL_cstruct ([],ps)
 
   | `BBDCL_newtype (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = list_subst syms.counter vars t in
     let t = mt t in
-    `BBDCL_newtype ([],t) 
+    `BBDCL_newtype ([],t)
 
   | `BBDCL_cclass (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_cclass ([],ps) 
+    `BBDCL_cclass ([],ps)
 
   | `BBDCL_const (props,vs,t,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_const (props,[],t,ct,reqs) 
- 
-  | `BBDCL_insert (vs,s,ikind,reqs) -> 
+    `BBDCL_const (props,[],t,ct,reqs)
+
+  | `BBDCL_insert (vs,s,ikind,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_insert ([],s,ikind,reqs)  
+    `BBDCL_insert ([],s,ikind,reqs)
 
 
   | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     `BBDCL_callback (props,[],argtypes_cf,argtypes_c,k,ret,reqs,prec)
 
-  | `BBDCL_abs (vs,tqual,ct,reqs) -> 
+  | `BBDCL_abs (vs,tqual,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_abs ([],tqual,ct,reqs)  
+    `BBDCL_abs ([],tqual,ct,reqs)
 
   | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     `BBDCL_nonconst_ctor ([],uidx,udt, ctor_idx, ctor_argt, evs, etraint)
- 
+
   | `BBDCL_typeclass (props,vs) ->  entry
     (*
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_typeclass (props,[])  
+    `BBDCL_typeclass (props,[])
     *)
 
   | `BBDCL_instance (props,vs,con,tc,ts) ->  entry
     (*
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_instance (props,[],con,tc,ts) -> 
+    `BBDCL_instance (props,[],con,tc,ts) ->
     *)
   *)
 
@@ -517,7 +517,7 @@ let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
   | `BBDCL_const (_,_,_,`Str "#this",_) -> true
   | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  -> true
 
- 
+
   | `BBDCL_glr (props,vs,ret, (p,exes)) -> false
   | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) -> false
   | `BBDCL_union (vs,ps) -> false
@@ -534,26 +534,26 @@ let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
   | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> false
   | `BBDCL_typeclass (props,vs) ->  false
   | `BBDCL_instance (props,vs,con,tc,ts) ->  false
-  
+
 (* monomorphic instances are already equal to their indices ..
   replace some polymorphic instances with monomorphic ones
 *)
 let monomorphise syms bbdfns =
   let polyinst = Hashtbl.create 97 in
   Hashtbl.iter
-  (fun (i,ts) n -> 
+  (fun (i,ts) n ->
    if ts = [] then assert (i = n )
-   else 
-     if chk_mono syms bbdfns i 
+   else
+     if chk_mono syms bbdfns i
      then begin
        (*
-       print_endline ("polyinst " ^ si n ^ " = " ^ 
+       print_endline ("polyinst " ^ si n ^ " = " ^
        si i ^ "["^catmap "," (sbt syms.dfns) ts^"]");
        *)
        Hashtbl.add polyinst (i,ts) n
      end else begin
        (*
-       print_endline ("*** NO polyinst " ^ si n ^ " = " ^ 
+       print_endline ("*** NO polyinst " ^ si n ^ " = " ^
        si i ^ "["^catmap "," (sbt syms.dfns) ts^"]");
        *)
      end
@@ -562,7 +562,7 @@ let monomorphise syms bbdfns =
   syms.instances
   ;
 
-  let fi polyinst i ts = 
+  let fi polyinst i ts =
     let ts = map reduce_type ts in
     let i,ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bbdfns i ts in
     try Hashtbl.find polyinst (i,ts),[]
@@ -585,13 +585,13 @@ let monomorphise syms bbdfns =
   let fi i ts = fi polyinst2 i ts in
 
   Hashtbl.iter
-  (fun (i,ts) n -> 
+  (fun (i,ts) n ->
     if syms.compiler_options.print_flag then begin
       if (n <> i) then print_endline (
-         "[monomorphise] Adding instance " ^ si n ^ " = " ^ 
+         "[monomorphise] Adding instance " ^ si n ^ " = " ^
          si i ^ "["^catmap "," (sbt syms.dfns) ts^"]"
       ) else print_endline (
-         "[monomorphise] Process instance " ^ si n ^ " = " ^ 
+         "[monomorphise] Process instance " ^ si n ^ " = " ^
          si i ^ "["^catmap "," (sbt syms.dfns) ts^"]"
       );
     end;
@@ -602,10 +602,10 @@ let monomorphise syms bbdfns =
   syms.instances
   ;
 
-  Hashtbl.iter (fun (i,ts) n -> 
+  Hashtbl.iter (fun (i,ts) n ->
     Hashtbl.remove syms.instances (i,ts);
     Hashtbl.add syms.instances (n,[]) n;
   )
   polyinst
   ;
- 
+

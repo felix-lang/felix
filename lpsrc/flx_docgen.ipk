@@ -17,13 +17,13 @@ div.topentry div.desc { color : Purple; margin-bottom : 5px; margin-left: 20px }
 .keywordsign { color : #C04600 }
 .superscript { font-size : 4 }
 .subscript { font-size : 4 }
-.comment { font-size : 14pt ;  border: 1px solid #000000;  
-  margin-top: 5px; margin-bottom: 2px; 
+.comment { font-size : 14pt ;  border: 1px solid #000000;
+  margin-top: 5px; margin-bottom: 2px;
   margin-left -20px;
   margin-right 20px;
-  text-align: left; 
-  background-color: #90EDFF; 
-  padding: 2px; 
+  text-align: left;
+  background-color: #90EDFF;
+  padding: 2px;
   padding-left: 20px;
 }
 
@@ -85,25 +85,25 @@ fun chop_extension (s:string)=
   return s;
 }
 
-keywords := 
+keywords :=
 @for k,t in flx_keywords:
   tangle('("'+k+'",TOK_'+t+'),',inhibit_sref=1)
 @#
   ("",TOK_EOF) // terminal
 ;
 
-fun find_keyword(k:string) = 
+fun find_keyword(k:string) =
 {
   var i=0;
   var key = keywords.[i];
-  until key.(0) == k or key.(0) == "" do 
+  until key.(0) == k or key.(0) == "" do
     ++i;
     key = keywords.[i];
   done;
   return key.(1);
 }
 
-fun get_pretoken() = 
+fun get_pretoken() =
 {
   open Flx_lex;
   def var j, var des = pre_flx_lex (i1, i2);
@@ -126,7 +126,7 @@ fun get_pretoken() =
   return
     match des with
     | Eol => TOK_EOF
-    | Ident => 
+    | Ident =>
       match find_keyword lexeme with
       | TOK_EOF => TOK_NAME lexeme
       | ?k => k
@@ -155,7 +155,7 @@ fun get_pretoken() =
     | rdQuote => TOK_STRING lexeme.[1 to -1]
     | rdddQuote => TOK_STRING lexeme.[3 to -3]
 
-   
+
 @for k,s in flx_1_char_syms:
   tangle('    | ' + k + ' => TOK_'+k,inhibit_sref=1)
 
@@ -228,7 +228,7 @@ proc handle_file(filename: string)
 
   i2 = Lexer::end_iterator data;
   i1 = Lexer::start_iterator data;
-  var x = 
+  var x =
     parse the get_token with
     | cu: flx_grammar::top => cu
     endmatch
@@ -240,15 +240,15 @@ proc handle_file(filename: string)
     | case 2 _ => "Success"
     endmatch
   ;
-   
+
   print d; endl;
 
   if caseno x == 0 return;
 
-  statements := 
-    match x with 
-    | case 2 ?cu => 
-      match cu with 
+  statements :=
+    match x with
+    | case 2 ?cu =>
+      match cu with
       | compilation_unit_1 ?sts => sts
       endmatch
     endmatch
@@ -260,7 +260,7 @@ proc handle_file(filename: string)
   writeln (f, start_page basename);
   writeln (f,"<H1>"+filename+"</H1>");
   writeln (mf,
-    '<div class="toc_entry">' 
+    '<div class="toc_entry">'
     (keywrd 'File ') '<A HREF="' basename '_flx.html">' filename '</A>'
     '</div>'
   );
@@ -269,14 +269,14 @@ proc handle_file(filename: string)
   fclose f;
 }
 
-fun get_token(): flx_token_t = 
+fun get_token(): flx_token_t =
 {
 retry:>
   if i1 == i2 do
-    if eof do 
-      return TOK_EOF; 
+    if eof do
+      return TOK_EOF;
     else
-      eof = true; 
+      eof = true;
       return TOK_ENDMARKER;
     done;
   else
@@ -306,7 +306,7 @@ fun keywrd (kwd:string) =>
 ;
 
 
-proc handle_statements (f:text_file, sts:statement_aster_t) 
+proc handle_statements (f:text_file, sts:statement_aster_t)
 {
   match sts with
   | statement_aster_1 (?s,?sts) =>
@@ -314,7 +314,7 @@ proc handle_statements (f:text_file, sts:statement_aster_t)
       handle_statement (f,s,"");
       handle_statements (f,sts);
     }
-    
+
   | statement_aster_2 => {}
   endmatch
   ;
@@ -323,32 +323,32 @@ proc handle_statements (f:text_file, sts:statement_aster_t)
 
 proc handle_statement (f:text_file, s:statement_t,desc:string) {
   match s with
-  | statement_1 ?s => 
-    { 
+  | statement_1 ?s =>
+    {
       writeln(f,'<div class="topentry">');
-      handle_binding_definition (f,s,desc); 
+      handle_binding_definition (f,s,desc);
       writeln(f,'</div>');
      }
-  | statement_2 ?s => 
-    { 
+  | statement_2 ?s =>
+    {
       writeln(f,'<div class="topentry">');
-      handle_declarative (f,s,desc); 
+      handle_declarative (f,s,desc);
       writeln(f,'</div>');
     }
   | statement_3 ?s => {}
-  | statement_4 ?s => 
-    let inclusion_1 ?s = s in 
-    { 
+  | statement_4 ?s =>
+    let inclusion_1 ?s = s in
+    {
       writeln(f,'<div class="topentry">');
-      writeln(f, keywrd "include "+ s); 
+      writeln(f, keywrd "include "+ s);
       writeln(f,'</div>');
     }
 
 
   | statement_5 ?s => { handle_directive (f,s); }
   | statement_6 ?s => { handle_publish (f,s); }
-  | statement_7 ?s => 
-    let comment_1 ?s = s in 
+  | statement_7 ?s =>
+    let comment_1 ?s = s in
     { writeln(f,'<div class="comment">' s '</div>'); }
 
   | statement_8 ?s => {} // null
@@ -358,16 +358,16 @@ proc handle_statement (f:text_file, s:statement_t,desc:string) {
 proc handle_publish(f:text_file, p:publish_t)
 {
   match p with
-  | publish_1  (?desc,?bd) => 
-    { 
+  | publish_1  (?desc,?bd) =>
+    {
       writeln(f,'<div class="topentry">');
-      handle_binding_definition (f,bd,desc); 
+      handle_binding_definition (f,bd,desc);
       writeln(f,'</div>');
     }
-  | publish_2 (?desc,?dcl) => 
-    { 
+  | publish_2 (?desc,?dcl) =>
+    {
       writeln(f,'<div class="topentry">');
-      handle_declarative (f,dcl,desc); 
+      handle_declarative (f,dcl,desc);
       writeln(f,'</div>');
     }
   | publish_3 ?dcl  => {} // private
@@ -387,16 +387,16 @@ proc handle_directive (f:text_file, t:directive_t)
   match t with
   | directive_1 _ => {}
   | directive_2 _ => {}
-  | directive_3 ?r => 
-    { 
+  | directive_3 ?r =>
+    {
       writeln(f,'<div class="topentry">');
-      handle_regdef (f,r); 
+      handle_regdef (f,r);
       writeln(f,'</div>');
    }
-  | directive_4 ?g => 
-    { 
+  | directive_4 ?g =>
+    {
       writeln(f,'<div class="topentry">');
-      handle_glr_production (f,g); 
+      handle_glr_production (f,g);
       writeln(f,'</div>');
     }
   | directive_5 ?m => {}
@@ -411,20 +411,20 @@ proc handle_glr_production(f:text_file, t:glr_production_t)
     | glr_matching_1 (?ges,_) =>
       {
         writeln(f,
-          '<div class="subentry">' + 
+          '<div class="subentry">' +
           keywrd "| " +
           str ges +
           '</div>'
-        ); 
+        );
       }
-    | glr_matching_2 _ => 
+    | glr_matching_2 _ =>
       {
         writeln(f,
           '<div class="subentry">'
           (keywrd "| ")
           '<span class="desc">epsilon</span>'
           '</div>'
-        ); 
+        );
       }
     endmatch;
   }
@@ -432,22 +432,22 @@ proc handle_glr_production(f:text_file, t:glr_production_t)
   proc handle_glr_matchings (t:glr_matchings_t)
   {
     match t with
-    | glr_matchings_1 (?g,?gs) => 
-      { 
-        handle_glr_matching g; 
+    | glr_matchings_1 (?g,?gs) =>
+      {
+        handle_glr_matching g;
         handle_glr_matchings gs;
       }
-    | glr_matchings_2 ?g => 
+    | glr_matchings_2 ?g =>
       {
-        handle_glr_matching g; 
+        handle_glr_matching g;
       }
     endmatch;
   }
 
   match t with
   | glr_production_1 (?nt, ?t,?ms) =>
-    { 
-      writeln (f,keywrd "nonterm "+ dcl nt+' : ' + str t+" = "); 
+    {
+      writeln (f,keywrd "nonterm "+ dcl nt+' : ' + str t+" = ");
       handle_glr_matchings ms;
     }
   endmatch;
@@ -455,9 +455,9 @@ proc handle_glr_production(f:text_file, t:glr_production_t)
 
 proc handle_regdef (f:text_file, t:regdef_t)
 {
-  match t with 
-  | regdef_1 (?name,?re) => 
-    { 
+  match t with
+  | regdef_1 (?name,?re) =>
+    {
       writeln (f,keywrd "regexp "+ dcl name+' = ' + str re);
     }
   endmatch;
@@ -511,7 +511,7 @@ proc handle_const_def (f:text_file, t:const_def_t)
   match t with
   | const_def_1 (?name,?tvs,?typ,?ct,_) =>
     { handle_const (f,name,tvs,typ); }
-    
+
   | const_def_2 (?name,?tvs,?typ,_) =>
     { handle_const (f,name,tvs,typ); }
   endmatch;
@@ -542,19 +542,19 @@ proc handle_type_alias (f:text_file, t:type_alias_t)
   match t with
   | type_alias_1 (?name, ?tvs,?typ) =>
     { handle_typedef (f,name,tvs,typ); }
-    
+
   | type_alias_2 (?name, ?tvs, ?args,?rt,?te) =>
     { handle_typefun (f,name,tvs,args,rt,te); }
-    
-  | type_alias_3 (?name, ?tvs, ?qn) => 
+
+  | type_alias_3 (?name, ?tvs, ?qn) =>
     { handle_rename(f,name,tvs,qn); }
 
   | type_alias_4 (?name,?tvs,?qn) =>
     { handle_fun_rename(f,name,tvs,qn); }
 
-  | type_alias_5 ?qn => 
+  | type_alias_5 ?qn =>
     { handle_inherit(f,qn); }
-  
+
   endmatch;
 }
 
@@ -564,7 +564,7 @@ proc handle_typedef (f:text_file, name:string, tvs:tvarlist_t,typ:type_expr_t)
   writeln(f,s);
 }
 
-// WARNING: hacked, the function value is expressed using 
+// WARNING: hacked, the function value is expressed using
 // parameter names that aren't printed ..
 proc handle_typefun (f:text_file, name:string, tvs:tvarlist_t, args:fun_args_t, rt:type_expr_t, typ:type_expr_t)
 {
@@ -592,7 +592,7 @@ proc handle_inherit (f:text_file, qn:qualified_name_t)
 proc handle_union (f:text_file, t:union_decl_t)
 {
   match t with
-  | union_decl_1 (?name,?es) => 
+  | union_decl_1 (?name,?es) =>
     {
       writeln(f,keywrd "enum " + dcl name);
       handle_enum_items (f,es);
@@ -652,7 +652,7 @@ proc handle_struct_item (f:text_file, t:struct_component_t)
   | struct_component_1 (?s,?t) =>
     {
       writeln(f,
-        '<div class="subentry">' + 
+        '<div class="subentry">' +
         keywrd "var " + (dcl s)+" : "+str t +
         '</div>'
      );
@@ -668,7 +668,7 @@ proc handle_enum_items (f:text_file, t:enum_items_t)
     {
       handle_enum_items(f,es);
       writeln(f,
-        '<div class="subentry">' + 
+        '<div class="subentry">' +
         keywrd "| " + (dcl name) +
         '</div>'
       );
@@ -677,7 +677,7 @@ proc handle_enum_items (f:text_file, t:enum_items_t)
     let enum_item_1 ?name = e in
     {
       writeln(f,
-        '<div class="subentry">' + 
+        '<div class="subentry">' +
         keywrd "| " + (dcl name) +
         '</div>'
       );
@@ -706,7 +706,7 @@ proc handle_sum_item(f:text_file, t:type_sum_item_t)
   | type_sum_item_1 (?name,?typ) =>
     {
       writeln(f,
-        '<div class="subentry">' + 
+        '<div class="subentry">' +
         keywrd "| " + (dcl name)+" of " + str typ +
         '</div>'
       );
@@ -715,7 +715,7 @@ proc handle_sum_item(f:text_file, t:type_sum_item_t)
   | type_sum_item_2 ?name =>
     {
       writeln(f,
-        '<div class="subentry">' + 
+        '<div class="subentry">' +
         keywrd "| " + (dcl name) +
         '</div>'
       );
@@ -728,10 +728,10 @@ proc handle_function_definition (f:text_file, t:function_definition_t)
   match t with
   | function_definition_1 (?adjs,?name,?tvs,?args,?ote,_) =>
     { handle_felix_function (f,adjs,name,tvs,args,ote); }
-    
+
   | function_definition_2 (?adjs,?name,?tvs,?args,?ote,_) =>
     { handle_felix_function (f,adjs,name,tvs,args,ote); }
-   
+
   | function_definition_3 (?adjs,?name,?tvs,?t,_,_,_) =>
     { handle_primitive_function (f,adjs,name,tvs,t); }
 
@@ -746,22 +746,22 @@ proc handle_procedure_definition (f:text_file, t:procedure_definition_t)
   | procedure_definition_1 (?name, ?tvs,?oargs,_) =>
     let ?adjs = adjectives_2 in
     { handle_felix_procedure (f,adjs,name,tvs,oargs); }
-    
+
   | procedure_definition_2 (?adj,?name,?tvs,_) =>
     let ?adjs = adjectives_1 (adj,adjectives_2) in
     let ?oargs = opt_fun_args_2 in
     { handle_felix_procedure (f,adjs,name,tvs,oargs); }
 
-  | procedure_definition_3 (?name,?tvs,?t,_,_) => 
+  | procedure_definition_3 (?name,?tvs,?t,_,_) =>
     { handle_primitive_procedure (f,name,tvs,t); }
-    
+
   endmatch;
 }
 
-proc handle_felix_function 
+proc handle_felix_function
 (
   f:text_file,
-  adjs:adjectives_t, 
+  adjs:adjectives_t,
   name:string,
   tvs:tvarlist_t,
   args:fun_args_t,
@@ -775,7 +775,7 @@ proc handle_felix_function
 proc handle_felix_procedure
 (
   f:text_file,
-  adjs:adjectives_t, 
+  adjs:adjectives_t,
   name:string,
   tvs:tvarlist_t,
   oargs:opt_fun_args_t
@@ -785,10 +785,10 @@ proc handle_felix_procedure
   writeln(f,s);
 }
 
-proc handle_primitive_function 
+proc handle_primitive_function
 (
   f:text_file,
-  adjs:adjectives_t, 
+  adjs:adjectives_t,
   name:string,
   tvs:tvarlist_t,
   t:type_expr_t
@@ -830,10 +830,10 @@ proc handle_module (f:text_file, m:module_definition_t, desc:string)
 proc handle_abstract_type (f:text_file, s: abstract_type_t)
 {
   match s with
-  | abstract_type_1 (?qs, ?bncl, ?rqs) => 
+  | abstract_type_1 (?qs, ?bncl, ?rqs) =>
     { handle_ctypes (f,qs,bncl); }
-  
-  | abstract_type_2 (?qs, ?name, ?tvl, ?ct,?rqs) => 
+
+  | abstract_type_2 (?qs, ?name, ?tvl, ?ct,?rqs) =>
     { handle_ctype (f,qs,name,tvl); }
 
   endmatch;
@@ -843,7 +843,7 @@ proc handle_ctypes (f:text_file, qs:type_quals_t, bncl: basic_name_comma_list_t)
 {
   sqs := str qs;
 
-  proc handle_inner_ctype (name:basic_name_t) 
+  proc handle_inner_ctype (name:basic_name_t)
   {
     s := sqs "  " kctype (dcl (str name));
     writeln(f,s);
@@ -852,7 +852,7 @@ proc handle_ctypes (f:text_file, qs:type_quals_t, bncl: basic_name_comma_list_t)
   proc handle_bncl(bncl: basic_name_comma_list_t)
   {
     match bncl with
-    | basic_name_comma_list_1 (?name,?bncl') => 
+    | basic_name_comma_list_1 (?name,?bncl') =>
       {
         handle_inner_ctype name;
         handle_bncl bncl';
@@ -868,7 +868,7 @@ proc handle_ctypes (f:text_file, qs:type_quals_t, bncl: basic_name_comma_list_t)
   handle_bncl bncl;
 }
 
-proc handle_ctype (f:text_file, qs:type_quals_t,name:string,tvl:tvarlist_t) 
+proc handle_ctype (f:text_file, qs:type_quals_t,name:string,tvl:tvarlist_t)
 {
   sqs := str qs;
   s:= sqs " " ktype (dcl name) + (str tvl);
@@ -903,7 +903,7 @@ fun str : lambda_t -> string =
   | lambda_2 _ => "(fun ...)"
   | lambda_3 _ => "(fun ...)"
   | lambda_4 _ => "(fun ...)"
-  | lambda_5 ?c => "{ ... }" 
+  | lambda_5 ?c => "{ ... }"
 ;
 
 fun str: dollar_apply_t -> string =
@@ -913,7 +913,7 @@ fun str: dollar_apply_t -> string =
 
 fun str : tuple_t -> string =
   | tuple_1 (?o,?t) => str o + str t
-  | tuple_2 ?o => str o 
+  | tuple_2 ?o => str o
 ;
 
 fun str : tuple_suffix_t -> string =
@@ -943,7 +943,7 @@ fun str : and_list_t -> string =
 
 fun str : not_condition_t -> string =
   | not_condition_1 (_,?a) => " not "+ str a
-  | not_condition_2 ?a => str a 
+  | not_condition_2 ?a => str a
 ;
 
 fun str (t:comparison_t)=> 'comparison .. endcomparison';
@@ -1003,7 +1003,7 @@ fun str : term_t -> string =
 
 fun str : power_t -> string =
   | power_1( ?ss, ?pr) => str ss + " ** " + str pr
-  | power_2 ?ss => str ss 
+  | power_2 ?ss => str ss
 ;
 
 fun str : prefixed_t -> string =
@@ -1033,7 +1033,7 @@ fun str : application_t -> string =
 
 fun str : coercion_t -> string =
   | coercion_1 (?c,?f) => str c + " : " + str f
-  | coercion_2 ?sn => str sn 
+  | coercion_2 ?sn => str sn
   | coercion_3 ?f => str f
 ;
 
@@ -1115,10 +1115,10 @@ fun str: opt_fun_args_t -> string =
   | opt_fun_args_1 ?a => str a
   | opt_fun_args_2 => "()"
 ;
-  
+
 fun str: fun_args_t -> string =
   | fun_args_1 (?a,?args) => "(" (str a)  ") &rarr; " + str args
-  | fun_args_2 ?a =>  str a 
+  | fun_args_2 ?a =>  str a
 ;
 
 fun str: fun_arg_t -> string =
@@ -1155,7 +1155,7 @@ fun str (name:basic_name_t): string =>
 ;
 
 fun str :  basic_name_comma_list_t -> string =
-  | basic_name_comma_list_1 (?name,?bncl) => 
+  | basic_name_comma_list_1 (?name,?bncl) =>
         str name + ", " + str bncl
   | basic_name_comma_list_2 ?name => str name
   | basic_name_comma_list_3 => ""
@@ -1167,13 +1167,13 @@ fun str : tvar_t -> string =
 ;
 
 fun str :  tvar_comma_list_t -> string =
-  | tvar_comma_list_1 (?name,?bncl) => 
+  | tvar_comma_list_1 (?name,?bncl) =>
         str name + ", " + str bncl
   | tvar_comma_list_2 ?name => str name
   | tvar_comma_list_3 => ""
 ;
 
-fun str : tvarlist_t -> string = 
+fun str : tvarlist_t -> string =
   | tvarlist_1 ?bncl => "[" + str bncl + "]"
   | tvarlist_2 => ""
 ;

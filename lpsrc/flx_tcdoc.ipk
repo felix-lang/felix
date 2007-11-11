@@ -37,7 +37,7 @@ let href_page s = href (s^".html") s
 let span cl s =
   "<SPAN CLASS=\""^cl^"\">"^s^"</SPAN>"
 
-let begin_div cl = 
+let begin_div cl =
   "<DIV CLASS=\""^cl^"\">"
 
 let end_div = "</DIV>"
@@ -65,35 +65,35 @@ let gen_tcdoc () =
       | `AST_inject_module (sr,qn) ->
         begin match qn with
         | `AST_name (_,name,ts) ->
-          w (begin_div "element" ^ 
+          w (begin_div "element" ^
             "   inherit " ^ href_page name ^ "["^ catmap "," st ts^"]" ^
             end_div
           )
         | _ ->
-          w (begin_div "element" ^ 
+          w (begin_div "element" ^
             "   inherit " ^ Flx_print.string_of_qualified_name qn ^
             end_div
           )
         end
 
-      | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec) 
+      | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec)
         when code = `Virtual ->
         begin match result with
         | `AST_void _ ->
-          w (begin_div "element" ^ 
+          w (begin_div "element" ^
             span "category" "   virtual proc " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
-            catmap "*" st args ^ 
+            catmap "*" st args ^
             end_div
           )
         | _ ->
-          w (begin_div "element" ^ 
+          w (begin_div "element" ^
             span "category" "   virtual fun " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
             catmap "*" st args ^ " -> " ^ st result ^
             end_div
           )
         end
 
-      | x -> w (begin_div "element" ^ (Flx_print.string_of_statement 4 x) ^ end_div) 
+      | x -> w (begin_div "element" ^ (Flx_print.string_of_statement 4 x) ^ end_div)
       )
       sts
       ;
@@ -124,7 +124,7 @@ let gen_tcdoc () =
     w "</body></html>\n";
     close_out f
 
-let counter = ref 0 
+let counter = ref 0
 
 let gen_mdoc () =
     let _ = try Unix.mkdir "doc" 0o775 with _ -> () in
@@ -148,12 +148,12 @@ let gen_mdoc () =
       | `AST_inject_module (sr,qn) ->
         begin match qn with
         | `AST_name (_,name,ts) ->
-          w (begin_div "element" ^ 
+          w (begin_div "element" ^
             "   inherit " ^ href_page name ^ "["^ catmap "," st ts^"]" ^
             end_div
           )
         | _ ->
-          w (begin_div "element" ^ 
+          w (begin_div "element" ^
             "   inherit " ^ Flx_print.string_of_qualified_name qn ^
             end_div
           )
@@ -165,7 +165,7 @@ let gen_mdoc () =
         w (begin_div "element" ^
           span "category" "const " ^ span "ident" name ^
           Flx_print.print_vs vs ^
-          ": " ^ string_of_typecode typ 
+          ": " ^ string_of_typecode typ
         );
         w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
         " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
@@ -179,7 +179,7 @@ let gen_mdoc () =
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         w (begin_div "element" ^
-          span "category" (string_of_ikind ikind) ^ 
+          span "category" (string_of_ikind ikind) ^
           span "ident" name ^
           Flx_print.print_vs vs
         );
@@ -191,12 +191,12 @@ let gen_mdoc () =
         w "</DIV>";
         w end_div;
 
-      | `AST_abs_decl (_,name,vs, quals, code, reqs) -> 
+      | `AST_abs_decl (_,name,vs, quals, code, reqs) ->
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         w (begin_div "element" ^
           (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-          span "category" "type " ^ 
+          span "category" "type " ^
           span "ident" name ^
           print_vs vs
         );
@@ -213,13 +213,13 @@ let gen_mdoc () =
         let id = "ref_"^string_of_int seq in
         begin match result with
         | `AST_void _ ->
-          w (begin_div "element" ^ 
-            span "category" "proc " ^ span "ident" name ^ 
+          w (begin_div "element" ^
+            span "category" "proc " ^ span "ident" name ^
             Flx_print.print_vs vs ^ ": " ^
             catmap "*" st args
           )
         | _ ->
-          w (begin_div "element" ^ 
+          w (begin_div "element" ^
             span "category" "fun " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
             catmap "*" st args ^ " -> " ^ st result
           )
@@ -234,27 +234,27 @@ let gen_mdoc () =
         w end_div;
 
 
-      | `AST_curry (_,name, vs, pss, (res,traint) , kind, ss) -> 
-        let s = 
+      | `AST_curry (_,name, vs, pss, (res,traint) , kind, ss) ->
+        let s =
           span "category"
-          (match kind with 
+          (match kind with
           | `Function -> (match res with `AST_void _ -> "proc " | _ -> "fun ")
           | `CFunction -> (match res with `AST_void _ -> "cproc " | _ -> "cfun ")
-          | `Object -> "obj " 
+          | `Object -> "obj "
           | `InlineFunction -> (match res with `AST_void _ -> "inline proc " | _ -> "inline fun ")
           | `NoInlineFunction -> (match res with `AST_void _ -> "noinline proc " | _ -> "noinline fun ")
           | `Virtual -> (match res with `AST_void _ -> "virtual proc " | _ -> "virtual fun ")
           | `Ctor -> "ctor "
           | `Generator -> "generator "
           )
-          ^ 
-          span "ident" name ^ print_vs vs ^ 
-          catmap " " 
+          ^
+          span "ident" name ^ print_vs vs ^
+          catmap " "
           (fun ps ->
             "("^string_of_parameters ps^")"
           )
           pss
-          ^ 
+          ^
           ": "^string_of_typecode res^
           (match traint with
           | None -> ""
@@ -266,7 +266,7 @@ let gen_mdoc () =
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         begin match ss with
-        | [`AST_fun_return (_,e)] -> 
+        | [`AST_fun_return (_,e)] ->
           w s;
           w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
           " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
@@ -274,7 +274,7 @@ let gen_mdoc () =
           w (" => " ^ string_of_expr e ^ ";\n");
           w "</DIV>"
 
-        | _ -> 
+        | _ ->
           w s;
           w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
           " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
@@ -284,7 +284,7 @@ let gen_mdoc () =
         end;
         w end_div;
 
-      | `AST_instance (_,vs,name, sts) -> 
+      | `AST_instance (_,vs,name, sts) ->
         w (begin_div "element");
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
@@ -297,7 +297,7 @@ let gen_mdoc () =
         w "</DIV>";
         w end_div;
 
-      | x -> w (begin_div "element" ^ (Flx_print.string_of_statement 0 x) ^ end_div) 
+      | x -> w (begin_div "element" ^ (Flx_print.string_of_statement 0 x) ^ end_div)
       )
       sts
       ;
@@ -335,7 +335,7 @@ let gen_doc() =
 
 @h = tangler('doc/typeclassdoc/typeclassdoc.css')
 @select(h)
-BODY 
+BODY
 {
 margin-left:2em;
 margin-right:4em;
@@ -377,22 +377,22 @@ SPAN.ident
   color: #1100AA;
 }
 
-P 
-{ 
+P
+{
   font-family: Arial;
   font-weight: normal;
   color: #8b6914;
   font-size: 14px;
 }
 
-CODE 
+CODE
 {
   color : black;
 }
 
 @h = tangler('doc/moduledoc/moduledoc.css')
 @select(h)
-BODY 
+BODY
 {
 margin-left:2em;
 margin-right:4em;
@@ -445,15 +445,15 @@ SPAN.ident
   color: #1100AA;
 }
 
-P 
-{ 
+P
+{
   font-family: Arial;
   font-weight: normal;
   color: #8b6914;
   font-size: 14px;
 }
 
-CODE 
+CODE
 {
   color : black;
 }

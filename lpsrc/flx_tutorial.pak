@@ -67,8 +67,8 @@ This produces many files, including:
 @end_table()
 @p()
 Felix is both a scripting language and statically type-checked
-fully compiled to native code high performance application 
-development language. 
+fully compiled to native code high performance application
+development language.
 @p()
 It provides the simple usage model of scripting languages
 like Python, Perl, PHP, and Ruby, with the early error
@@ -79,16 +79,16 @@ calculating dependencies, recompiling stale dependents,
 and linking in libraries.
 @p()
 It is not only the fastest scripting language
-available, it competes very well with compiled languages, 
+available, it competes very well with compiled languages,
 and is often faster than C.
 @p()
 Felix provides platform independence like
-Java without using a bytecode interpreter or 
+Java without using a bytecode interpreter or
 interpreted virtual machine, by mapping abstracted
 concepts onto the platform specific technologies
 at the source code level.
 @p()
-The Felix code generator itself produces platform 
+The Felix code generator itself produces platform
 independent C++ code which should compile on any
 platform with any modern C++ compiler.
 @p()
@@ -98,8 +98,8 @@ like the JNI (Java native code interface), using
 binding technology directly supported in the language
 to map C and C++ functions and data types directly
 into Felix. Felix uses the C++ object model, and so
-can bind to most C and C++ libraries without any 
-needed for glue logic. 
+can bind to most C and C++ libraries without any
+needed for glue logic.
 @p()
 Lightweight glue is required to map types and names
 across the boundary, but is simple and suitable
@@ -146,14 +146,14 @@ Here you can see that there are two procedures,
 one to print strings, and one to print ints,
 but they're both called 'print'.
 @p()
-Felix allows procedures and functions to be 
+Felix allows procedures and functions to be
 overloaded, as does C++. However, unlike C++,
 Felix has no automatic conversions, and
 overload matching must be exact.
 
 @env.head(2,'Expressions')
 Felix provides many of the operators found
-in C. Here is are some examples with equivalent 
+in C. Here is are some examples with equivalent
 function calls. Note: there are no shift operators,
 although there are equivalent functions.
 [The symbols are too useful to waste for an infrequently
@@ -171,13 +171,13 @@ print (1.2 ** 1.2); endl;
 print (pow  (1.2,1.2)); endl;
 
 // boolean
-print (not false); endl;      
+print (not false); endl;
 print (lnot false); endl;
 
-print (true and false); endl; 
+print (true and false); endl;
 print (land (true,false)); endl;
 
-print (true or false); endl; 
+print (true or false); endl;
 print (lor  (true,false)); endl;
 
 // comparison
@@ -275,8 +275,8 @@ There is a shortcut form for declaring values
 using the := operator:
 
 @select(env.test('.flx'))
-a := 1; 
-b:int := 2; 
+a := 1;
+b:int := 2;
 
 c:int,(d,e) := 3,(4,5);
 
@@ -289,7 +289,7 @@ endl;
 @doc()
 
 @select(env.expect())
-1 2 3 4 5 
+1 2 3 4 5
 @doc()
 
 @env.head(3,'Variable declaration')
@@ -424,13 +424,13 @@ endl;
 @doc()
 
 @select(env.expect())
-1 2 3 
-1 2 3 
-9 8 7 
+1 2 3
+1 2 3
+9 8 7
 @doc()
 
 @env.head(3,'Other Mutators')
-Felix provides a range of mutators, 
+Felix provides a range of mutators,
 these being assignment operators and counting operators.
 Below is a list of operators and equivalent procedure names.
 
@@ -603,7 +603,7 @@ This example illustrates the simple use of modules,
 including module nesting, and use of qualified names
 to access module components.
 @p()
-You can put anything except export declarations in 
+You can put anything except export declarations in
 modules that you can put at the top level, and for a
 very simple reason: the top level is, in fact,
 a module itself.
@@ -634,7 +634,7 @@ This is much like the 'rewriting rule' for C++ class member
 functions. Note, however, that executable code
 is still sequential! Thus, the order of value and variable
 definition does matter: initialisations are executed
-in order of writing. 
+in order of writing.
 
 @env.head(2,'Namespaces')
 Modules are closed: everything in a module
@@ -662,7 +662,7 @@ namespace A { print y; endl; }
 namespace B { print y; endl; }
 
 var A::z = y;
-var B::z = y; 
+var B::z = y;
 
 namespace A { print A::y; endl; }
 namespace B { print B::y; endl; }
@@ -725,7 +725,7 @@ h
 
 @env.head(1,'Primitive types')
 Here is a more comprehensive set of examples
-of Felix standard types and numeric lexicology. 
+of Felix standard types and numeric lexicology.
 @p()
 The types:
 @begin_displayed_code()
@@ -733,7 +733,7 @@ The types:
   void unit
 
   // addressing
-  byte size address offset 
+  byte size address offset
 
   // logic
   bool
@@ -788,14 +788,14 @@ that 010 is decimal ten in Felix!
 
 // underscores
 {
-  val i1 = 123_456; 
+  val i1 = 123_456;
   val i2 = 0x_FF_FFu;
 };
 
 // normal signed integers
 {
   val i1 : tiny = 1t;
-  val i2 : short = 1s;       
+  val i2 : short = 1s;
   val i3 : int = 1; // default
   val i4 : int = 1i;
   val i5 : long = 1l;
@@ -817,7 +817,7 @@ that 010 is decimal ten in Felix!
 // exact signed integers
 {
   val i1 : int8 = 1i8;
-  val i2 : int16 = 1i16;       
+  val i2 : int16 = 1i16;
   val i3 : int32 = 1i32;
   val i4 : int64 = 1i64;
 };
@@ -825,7 +825,7 @@ that 010 is decimal ten in Felix!
 // exact unsigned integers
 {
   val i1 : uint8 = 1u8; // 1iu8 not allowed
-  val i2 : uint16 = 1u16;       
+  val i2 : uint16 = 1u16;
   val i3 : uint32 = 1u32;
   val i4 : uint64 = 1u64;
 };
@@ -866,7 +866,7 @@ Felix provides two kinds of strings: 8-bit and 32-bit,
 denoted by string and ustring respectively.
 @p()
 Both kinds of string are intended to provide a universal
-representation of human readable text using the 
+representation of human readable text using the
 ISO-10646/Unicode character set.
 @p()
 Both kinds of string encode 32-bit values representing
@@ -875,8 +875,8 @@ use UCS-4.
 @p()
 Both kinds of string literals are replaced where they
 occur with named constants with internal linkage
-of types basic_string<char>, and 
-basic_string<uint32_t>. 
+of types basic_string<char>, and
+basic_string<uint32_t>.
 @p()
 String literals are output in the C files as C string
 literals with all UTF-8 encoding expressed with hex
@@ -888,7 +888,7 @@ by decoding UTF-8 sequences.
 @p()
 Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
 as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
-for slosh (backslash), quote, double quote, return, newline, tab, 
+for slosh (backslash), quote, double quote, return, newline, tab,
 bell, vertical tab, and form feed, respectively.
 @p()
 Octal and hex escapes are NOT allowed: strings are
@@ -909,7 +909,7 @@ print s; endl;
 @doc()
 
 @select(env.expect())
-Hello Hello 
+Hello Hello
 @env.head(2,'Floating matches')
 Felix provides special matching for
 floating point. Here are some examples:
@@ -928,7 +928,7 @@ match (1.0) with
 endmatch;
 endl;
 
-match (1.0) with 
+match (1.0) with
   | 0.999 .. 1.001 => { print "one"; }
 endmatch;
 endl;
@@ -970,7 +970,7 @@ or underscore, subsequent characters may be one of a
 letter, underscore, apostrophe or digit.
 @p()
 Certain identifiers are reserved as keywords.
-Identifiers beginning with an underscore are 
+Identifiers beginning with an underscore are
 reserved to Felix. Identifiers containing
 more than one underscore in a row are
 reserved to Felix. Reserved identifiers may
@@ -1017,7 +1017,7 @@ caught by the compiler. However, the format strings cannot
 be dynamically constructed.
 @p()
 Felix also provides dynamic string based formatting,
-see 
+see
 @cite_url("../../moduledoc/String.html")
 
 @doc()
@@ -1063,13 +1063,13 @@ in particular quote marks, so this form does not
 allow you to embed another string containing an
 unbalanced bracket.
 @p()
-The expression may begin with a double quote, 
+The expression may begin with a double quote,
 single quote, or backtick, in which case it
 consists of the text up to the next occurence
 of the same kind of quote mark.
 @p()
 Finally, you can just write a Felix identifier,
-starting with a letter or underscore, and 
+starting with a letter or underscore, and
 continuing with any letter, underscore, digit,
 or single quote mark.
 
@@ -1084,7 +1084,7 @@ to a string.
 @env.head(1,'Structured types')
 @env.head(2,'Tuples')
 As you might guess from the title, Felix has
-tuples. A tuple is a value consisting of an ordered sequence of 
+tuples. A tuple is a value consisting of an ordered sequence of
 two or more values, not necessarily of the same type.
 Here are some examples of tuples:
 @begin_displayed_code()
@@ -1098,7 +1098,7 @@ While brackets are not always necessary, the comma
 operator has a low precedence so tuples usually
 appear in brackets. Notice there is a special
 unique empty tuple '()'. There are no tuples
-with one component: for all values 'a', '(a)' is 
+with one component: for all values 'a', '(a)' is
 equivalent.
 @p()
 Now perhaps you have guessed what I meant earlier
@@ -1186,15 +1186,15 @@ val v = 1,2,(3,4);
 match (v) with
   | (?x,_,?z) =>
   {
-    print x; 
+    print x;
     print ", ";
     match (z) with
       | (?a,?b) =>
       {
         print "(";
-        print a; 
+        print a;
         print ", ";
-        print b; 
+        print b;
         print ")";
       }
     endmatch;
@@ -1212,7 +1212,7 @@ something without naming it. The ?x designation
 in a pattern introduces a variable.
 
 @env.head(2,'Numbered unions')
-Numbered unions are algebraic types used to 
+Numbered unions are algebraic types used to
 represent alternative cases. The infix
 operator + is the type combinator used
 to denote them. The number is zero origin.
@@ -1250,7 +1250,7 @@ proc f(x:nu) {
   endmatch;
   print "\n";
 }
- 
+
 val i1 = (case 0 of nu) 33;
 val i2 = (case 1 of nu) 3.3;
 val i3 = (case 2 of nu) 33L;
@@ -1271,8 +1271,8 @@ case 2 33
 @env.head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
 is a categorical product type. Unlike a tuple,
-a struct is named, its members are named, and 
-its members are mutable. 
+a struct is named, its members are named, and
+its members are mutable.
 @p()
 Struct members can be used with C style dot notation.
 Here is an example:
@@ -1395,7 +1395,7 @@ fun g(xx:X)=> xx.aa+xx.bb;
 println$ g (X (aa=1,bb=2));
 
 
-proc p(a:int, b:string) 
+proc p(a:int, b:string)
 {
   println$ b + " " + str a;
 }
@@ -1440,10 +1440,10 @@ HIHI 1
 @kat('Records')
 @kat('operator dot')
 @kat('parameter names')
-proc flooreach (name:string) (x:string) 
+proc flooreach (name:string) (x:string)
   {println$ name  " (name)="  x; }
 
-proc flooreach (prompt:string) (x:string) 
+proc flooreach (prompt:string) (x:string)
   {println$ prompt  "(prompt)="  x; }
 
 (name="hi") . flooreach "john";
@@ -1525,7 +1525,7 @@ example is very similar to a C enumeration.
 The names of the union components are
 called constructors by convention.
 They have two roles: they represent the
-constant value of the tag indicating 
+constant value of the tag indicating
 which component we're talking about:
 tags values are assigned sequentially,
 starting at 0.
@@ -1545,7 +1545,7 @@ The enum form only permits constant constructors
 
 @env.head(2,'Pattern Matching Unions')
 The only way to get at the current component
-of a union is by pattern matching. Here is an example: 
+of a union is by pattern matching. Here is an example:
 
 @select(env.test('.flx'))
 @kat("pattern match:union")
@@ -1557,15 +1557,15 @@ union int_option =
 
 val y = iSome 1;
 
-match y with 
+match y with
   | iSome ?i =>
     {
-      print "Some "; 
-      print i; 
+      print "Some ";
+      print i;
     }
   | iNone =>
     {
-      print "None"; 
+      print "None";
     }
 endmatch;
 endl;
@@ -1582,7 +1582,7 @@ Notice that the value 'i' in the line
 can be used in the handler for that case.
 This is how we get the 'int' out of the Some option.
 The 'i' is scoped so it can only be seen inside
-the handler for the Some case. 
+the handler for the Some case.
 The question mark is used to indicate a pattern
 variable, its type is deduced from the pattern context
 and match argument type.
@@ -1590,7 +1590,7 @@ and match argument type.
 By the way, match/endmatch is an expression.
 It happens in the example above that each handler
 is a procedure value taking a unit argument, and the match
-expression returns one of these values depending on the 
+expression returns one of these values depending on the
 argument exprssion. Oh, and it happens that the semi-colon
 after the 'endmatch' keyword then executes this procedure.
 @p()
@@ -1604,7 +1604,7 @@ Felix supports the conditional expression as shown:
 @select(env.test('.flx'))
 @kat("conditional")
 
-fun sign1(x:int):int = 
+fun sign1(x:int):int =
 {
   return
     if x < 0 then -1
@@ -1620,7 +1620,7 @@ print (sign1 (-20)); endl;
 print (sign1 0); endl;
 print (sign1 20); endl;
 
-fun sign2(x:int):int = 
+fun sign2(x:int):int =
 {
   return
     if x < 0 then -1
@@ -1635,7 +1635,7 @@ print (sign2 0); endl;
 print (sign2 20); endl;
 
 
-fun sign3(x:int):int = 
+fun sign3(x:int):int =
 {
   return
     match x < 0 with
@@ -1680,7 +1680,7 @@ third sign function.
 Felix provides a way of making objects from functions.
 An object is just a struct whose members are functions
 nested in the scope of the object constructor function.
-Variables in the constructor are hidden. 
+Variables in the constructor are hidden.
 @p()
 Note: the type of a member function must not depend
 on a name or type defined in the object (this constraint is
@@ -1695,7 +1695,7 @@ Note: The name of the type of an object with constructor 'x' is
 Note: you can change the methods of an object by assigning
 a new functional value to the structure component.
 @p()
-Note: the type of the object is not part of a method 
+Note: the type of the object is not part of a method
 signature: their type is as written.
 @p()
 Note: only explicitly declared non-private functions (and procedures)
@@ -1775,9 +1775,9 @@ time instead of Felix compilation time. Be warned!
 @p()
 Note that all Felix primitives must be C++ assignable
 and implicitly default constructible,
-since in the generated code all values and variables 
-are first declared without an initialiser and 
-then assigned to. 
+since in the generated code all values and variables
+are first declared without an initialiser and
+then assigned to.
 @p()
 It is important to note that in Felix,
 you can take the address of any variable,
@@ -1797,7 +1797,7 @@ Here is an example:
 @select(env.test('.flx'))
 @kat('modules:initialisation')
 
-fun pone (): &int = 
+fun pone (): &int =
 {
   var x : int = 1;
   return &x;
@@ -1835,7 +1835,7 @@ class Y {
   val c : int;
   var x : int;
   var y : long;
-  
+
   // accessor methods
   fun fetchc():int =>c;
 
@@ -1845,7 +1845,7 @@ class Y {
 
   // accessor procedures
   proc yprint() {
-    print "THIS is a Y object, with x = "; 
+    print "THIS is a Y object, with x = ";
     print x; print ", y = "; print y;
     print ", and c = "; print c; endl;
   }
@@ -1911,7 +1911,7 @@ regular expressions are not strings: instead a first class
 syntax is used to define them.
 @p()
 NOTE: Felix also provides a conventional string based regular
-expression library based on Ville Laurikaris Tagged Regular Expression 
+expression library based on Ville Laurikaris Tagged Regular Expression
 library TRE.
 @cite_url("../../moduledoc/Tre.html")
 @p()
@@ -1963,29 +1963,29 @@ If more than one pattern matches the string, the first
 one is used.
 
 @select(h)
-print 
+print
   regmatch "identifier" with
   | digit+ => "Number"
   | id =>  "Identifier"
   endmatch
-; 
+;
 endl;
 
-print 
+print
   regmatch "9999" with
   | digit+ => "Number"
   | id =>  "Identifier"
   endmatch
-; 
+;
 endl;
 
-print 
+print
   regmatch "999xxx" with
   | digit+ => "Number"
   | id =>  "Identifier"
   | _* => "Neither"
   endmatch
-; 
+;
 endl;
 @doc()
 
@@ -2011,8 +2011,8 @@ here is the generated code for the inner loop of a regmatch:
 
 @env.head(2,'Lexing')
 Felix provides a mechanism for constructing lexers.
-The reglex construction matches a prefix of the string. 
-Of all possible matches, reglex chooses the longest match. 
+The reglex construction matches a prefix of the string.
+Of all possible matches, reglex chooses the longest match.
 As for regmatch, if
 more than one regexp matches, the first written is used.
 @p()
@@ -2030,19 +2030,19 @@ regexp alpha = lower | upper | "_";
 regexp space = " ";
 regexp white = space +;
 
-fun lexit(start:iterator, finish:iterator): 
+fun lexit(start:iterator, finish:iterator):
   iterator * (string * string)
 =
 {
-  return 
+  return
     reglex start to finish with
-    | digit+ => "Number", 
+    | digit+ => "Number",
       string_between(lexeme_start,lexeme_end)
-      
-    | alpha+ =>  "Identifier", 
+
+    | alpha+ =>  "Identifier",
       string_between(lexeme_start,lexeme_end)
-      
-    | white =>  "White", 
+
+    | white =>  "White",
       string_between(lexeme_start,lexeme_end)
     endmatch
   ;
@@ -2070,11 +2070,11 @@ print "Done.\n";
 
 @select(env.expect())
 Identifier: A
-White:  
+White:
 Identifier: string
-White:  
+White:
 Number: 2
-White:  
+White:
 Identifier: lex
 Done.
 @doc()
@@ -2155,15 +2155,15 @@ print x; endl;
 
 The block is a procedure taking a unit argument.
 So when you write one as a statement, it just gets
-called: note that unlike C, that thing in 
-curly braces is an expression, and you must 
+called: note that unlike C, that thing in
+curly braces is an expression, and you must
 make a statement by adding a semi-colon,
 which has the effect of invoking it due to the
 short cut rule.
 
 
 @env.head(1,'Generics')
-There are 3 kinds of genericity in Felix: ad hoc polymorphism 
+There are 3 kinds of genericity in Felix: ad hoc polymorphism
 in the form of overloading, parametric polymophism using
 type schema or families of entities indexed by types,
 and specialisations modelled with apparently parametric
@@ -2198,7 +2198,7 @@ pp[int] (snd[int,int] x);
 When declaring a generic function or procedure,
 if one of the parameters has the type of a type
 variable which is not used elsewhere, you can leave
-out the type variable, and one will be synthesised for you. 
+out the type variable, and one will be synthesised for you.
 Synthesised type variables are added
 to the type variable list at the end. For example:
 
@@ -2226,14 +2226,14 @@ pp[int] (snd[int,int] x);
 Note in this example, the return type cannot
 be stated since it depends on a synthesised type variable.
 @p()
-When there is only one argument which has a type 
+When there is only one argument which has a type
 which is a type variable, then if the type variable
 is omitted, the parentheses can also be omitted.
 This is particularly useful with curried declarations.
 @p()
 Note carefully that in the call to pair below, both the
 type subscripts must be given explicity, because they cannot
-be deduced from the argument. 
+be deduced from the argument.
 
 @select(env.test('.flx'))
 fun pair1 x y = { return x,y; }
@@ -2273,12 +2273,12 @@ Felix structs and unions can be generic too.
 Here is a simple example.
 
 @select(env.test('.flx'))
-union list[T] = 
-  | Cons of T * list[T] 
+union list[T] =
+  | Cons of T * list[T]
   | Empty
 ;
 
-struct pair[T,U] = 
+struct pair[T,U] =
 {
   fst : T;
   snd : U;
@@ -2307,7 +2307,7 @@ class Y[t] {
   val c : int;
   var x : t;
   var y : long;
-  
+
   // accessor methods
   fun fetchc():int =>c;
 
@@ -2317,7 +2317,7 @@ class Y[t] {
 
   // accessor procedures
   proc yprint(xprint:t->0) {
-    print "This IS a Y object, with x = "; 
+    print "This IS a Y object, with x = ";
     xprint x; print ", y = "; print y;
     print ", and c = "; print c; endl;
   }
@@ -2402,7 +2402,7 @@ class Y[t] {
   val c : int;
   var x : t;
   var y : long;
-  
+
   // accessor methods
   fun fetchc():int =>c;
 
@@ -2412,7 +2412,7 @@ class Y[t] {
 
   // accessor procedures
   proc yprint(xprint:t->0) {
-    print "This is a Y object, with x = "; 
+    print "This is a Y object, with x = ";
     xprint x; print ", y = "; print y;
     print ", and c = "; print c; endl;
   }
@@ -2496,7 +2496,7 @@ val y = pair(1,2);
 print y.fst; print ","; print y.snd; endl;
 
 
-// check nested generics now 
+// check nested generics now
 
 module F[T] {
   fun id1(x:T):T = { return x; }
@@ -2627,14 +2627,14 @@ val nxt = (100.1,t0);
 val t1 = Cons nxt;
 val t2 = Cons (200.2,t1);
 
-proc xprint (a: float_list) 
+proc xprint (a: float_list)
 {
-  match a with 
+  match a with
   | Empty => { print "[]"; }
   | Cons (?i, ?tail) =>
     {
-      print i; 
-      print " "; 
+      print i;
+      print " ";
       xprint tail;
     }
   endmatch;
@@ -2658,14 +2658,14 @@ union int_list =
   | Cons of int * int_list
 ;
 
-proc xprint (a: int_list) 
+proc xprint (a: int_list)
 {
   match a with
   | Empty => { print "[]"; }
   | Cons (?i,?tail) =>
     {
-      print i; 
-      print " "; 
+      print i;
+      print " ";
       xprint tail;
     }
   endmatch;
@@ -2673,7 +2673,7 @@ proc xprint (a: int_list)
 
 fun mk(i: int, tl:int_list):int_list =
 {
-  return 
+  return
     if(i>0) then mk(i-1,Cons(i,tl))
     else tl
     endif
@@ -2692,7 +2692,7 @@ fun rev(lst:int_list):int_list =
     | Empty => {}
     | Cons (?head,?tail) =>
       {
-        result = Cons(head,result); 
+        result = Cons(head,result);
         aux(tail);
       }
     endmatch;
@@ -2757,7 +2757,7 @@ The function return type is given as
 @end_displayed_code()
 
 This is the notation for a procedure type accepting
-a unit argument. 
+a unit argument.
 @p()
 Notice also that the return value is
 
@@ -2765,12 +2765,12 @@ Notice also that the return value is
   print of (unit)
 @end_displayed_code()
 
-This is the name of the function called 'print' 
+This is the name of the function called 'print'
 which accepts a unit argument. Felix can perform
 overload resolution when a function name is applied
 to an argument, by inspecting the type of the argument.
 In other circumstances, you have to specify the type
-of the argument. 
+of the argument.
 @p()
 There is a subtle point of the overloading system
 here. The procedure 'print of (unit)' actually
@@ -2789,7 +2789,7 @@ in the designated scope). [I may change this!]
 Another thing to notice is that
 the call to print_i cannot be abbreviated by leaving
 the () off. This is because print_i is a function
-value, not the name of a function. 
+value, not the name of a function.
 @p()
 More precisely, the function specification for p of (unit)
 is used to build a function closure: this consists of the
@@ -3009,17 +3009,17 @@ leave the first free.
 @select(env.test('.flx'))
 @kat('list:inductive')
 open List;
-val x : list[int] = 
+val x : list[int] =
   Cons (1, Cons (2, Cons (3, Empty[int])));
 val y = rev x;
 iter (proc (x:int) { print x; print ", "; }) x; endl;
 iter (proc (x:int) { print x; print ", "; }) y; endl;
 
-proc print (x:list[int]) 
+proc print (x:list[int])
 {
   match x with
   | Empty[int] => { print "[]"; }
-  | Cons[int] (?h,?t) => 
+  | Cons[int] (?h,?t) =>
     {
       print "["; print h;
       iter (proc (x:int) { print ","; print x; }) t;
@@ -3041,8 +3041,8 @@ print y_r_total; endl;
 @doc()
 
 @select(env.expect())
-1, 2, 3, 
-3, 2, 1, 
+1, 2, 3,
+3, 2, 1,
 6
 6
 6
@@ -3090,7 +3090,7 @@ for the method name, called Koenig Lookup,
 after its inventor, Andrew Koenig.
 @p()
 Koenig lookup works by searching the module
-in which the type of the expression e is 
+in which the type of the expression e is
 defined: in Felix the type must be generative,
 which means it must be a declared type
 such as a named struct or union
@@ -3115,7 +3115,7 @@ scope is initialised. The top level module's
 initialisation routine must be called manually
 by the driver program.
 @p()
-Modules can be nested in functions or procedures. 
+Modules can be nested in functions or procedures.
 In this case the data lives in the function
 or procedure stack frame, and the module is
 initialised every time the function is called.
@@ -3155,7 +3155,7 @@ finished
 @doc()
 
 Note that labels require a terminating :> rather
-that C's plain :. 
+that C's plain :.
 @p()
 Goto is not recommended programming style,
 but it is an essential primitive, and it is used
@@ -3206,7 +3206,7 @@ goto: a jump into an enclosing procedure. Such jumps
 are quite OK.
 @p()
 What you can't do is jump out of a function,
-that is, across a function boundary. 
+that is, across a function boundary.
 [the reason will become clear much later]
 @p()
 There is another interesting fact. A procedure
@@ -3223,7 +3223,7 @@ because it mightn't be active at the time the other
 procedure is called.
 
 @p()
-[This may change: a better model would be a that a 
+[This may change: a better model would be a that a
 module returns the enities exported
 from it as a tuple: the procedures would
 then be nested in the initialisation routine.
@@ -3239,7 +3239,7 @@ at the end of the procedure:
 @kat('labels')
 @kat('return:procedure')
 
-proc f(x:int) 
+proc f(x:int)
 {
   if x == 0 goto zero;
   print x; endl;
@@ -3264,7 +3264,7 @@ involves the procedural return statement:
 @select(env.test('.flx'))
 @kat('return:procedure')
 
-proc f(x:int) 
+proc f(x:int)
 {
   if x == 0 goto zero;
   print x; endl;
@@ -3287,7 +3287,7 @@ This can also be shortened by using a the jump statement:
 @select(env.test('.flx'))
 @kat('return:procedure')
 
-proc f(x:int) 
+proc f(x:int)
 {
   if x == 0 goto zero;
   print x; jump endl;
@@ -3304,13 +3304,13 @@ f(0);
 Zero
 @doc()
 
-which is equivalent to a call statement followed by a 
+which is equivalent to a call statement followed by a
 return, which in turn is equivalent to a call
 followed by a goto the end of the procedure.
 
 @env.head(2,'Loops')
 The final call in a procedure is known as a tail call,
-and and can be indicated by a jump statement as 
+and and can be indicated by a jump statement as
 described in the previous section, though it isn't
 necessary: tail calls are detected by the compiler.
 @p()
@@ -3334,7 +3334,7 @@ may also be used:
 @select(env.test('.flx'))
 @kat('loops')
 
-proc f(x:int) 
+proc f(x:int)
 {
   if x == 0 goto zero;
   print x; endl; loop f(x-1);
@@ -3381,7 +3381,7 @@ You can also have an else clause:
 @kat('conditional:procedural')
 // procedural if/else
 proc f(x:int) {
-  if x == 1 do print "ONE"; endl; 
+  if x == 1 do print "ONE"; endl;
   else print "Not a one .."; endl;
   done;
 }
@@ -3401,8 +3401,8 @@ and even elif clauses:
 @kat('conditional:procedural')
 // procedural if/do/elif/else
 proc f(x:int) {
-  if x == 1 do print "ONE"; endl; 
-  elif x == 2 do print "TWO"; endl; 
+  if x == 1 do print "ONE"; endl;
+  elif x == 2 do print "TWO"; endl;
   else print "Not a one .."; endl;
   done;
 }
@@ -3426,7 +3426,7 @@ of the do part:
 @kat('conditional:procedural')
 // procedural if
 proc f(x:int) {
-  if x == 1 do print "ONE "; endl; 
+  if x == 1 do print "ONE "; endl;
   elif x == 2 return;
   else print "Weird ";
   done;
@@ -3440,7 +3440,7 @@ endl;
 @doc()
 
 @select(env.expect())
-ONE 
+ONE
 FoundWeird Found
 @doc()
 
@@ -3458,15 +3458,15 @@ so adding extra labels and gotos is possible.
 
 inline proc f(x:int) (y:int) {
   print "NOT ONE"; endl;
-  if x == 1 do 
+  if x == 1 do
     print 1; print " ";
     if y == 20 goto twenty;
     if y == 10 do print "TEN"; else done;
-  elif x == 2 do 
+  elif x == 2 do
     print 2; print " ";
-    if y == 20 do 
-twenty:> 
-      print "TWENTY"; 
+    if y == 20 do
+twenty:>
+      print "TWENTY";
     done;
   else print "Dunno .. ";
   done;
@@ -3486,14 +3486,14 @@ NOT ONE
 NOT ONE
 1 TWENTY
 NOT ONE
-1 
+1
 NOT ONE
 2 TWENTY
 NOT ONE
-Dunno .. 
+Dunno ..
 @doc()
 
-Conditionals are primarily a convenient shorthand for 
+Conditionals are primarily a convenient shorthand for
 conditional expressions with procedural arguments.
 Conditional expresssions always have an else part,
 so that f1 and f2 below are equivalent:
@@ -3502,7 +3502,7 @@ so that f1 and f2 below are equivalent:
 @kat('conditional:functional')
 
 proc f1(x:int) {
-  if x == 1 then { print 1; endl; } 
+  if x == 1 then { print 1; endl; }
   else {} endif;
 }
 
@@ -3550,7 +3550,7 @@ it can be caught by the driver).
 @select(env.test('.flx'))
 @kat('termination:failure')
 @kat('program:abort')
-// uncomment to test 
+// uncomment to test
 //fail "Aborted";
 @doc()
 
@@ -3564,7 +3564,7 @@ exception handling. Consider the following example:
 @select(env.test('.flx'))
 @kat('exceptions')
 
-proc bad_calc(err: int -> void) 
+proc bad_calc(err: int -> void)
 {
   // do some work, detect an error
   err 1; // throw exception
@@ -3572,7 +3572,7 @@ proc bad_calc(err: int -> void)
 
 proc main
 {
-  proc err(errno:int) 
+  proc err(errno:int)
   {
     print "error "; print errno;
     print " -- aborting"; endl;
@@ -3610,7 +3610,7 @@ proc main
 
   // raise err1
   err 1; goto resume;
- 
+
   // do something else
 
   // exception handlers
@@ -3633,7 +3633,7 @@ error handled, continuing
 @doc()
 
 @env.head(2,'Procedure Values Again')
-We've seen the advantages of higher order 
+We've seen the advantages of higher order
 functions and procedures. It is possible
 to define anonymous procedure and function values
 literally, as in the next example,
@@ -3643,14 +3643,14 @@ they're called lambdas, after the lambda calculus:
 @kat('closures:procedural')
 val f = fun(a:int):int = { return a * a; };
 
-print (f 1); 
+print (f 1);
 endl;
 
-print 
+print
 (
   (fun(a:int):int = { return a * a; })
   1
-); 
+);
 endl;
 
 proc thrice(p:unit->void) { p(); p(); p(); }
@@ -3691,12 +3691,12 @@ procedure taking unit, and a semicolon ;
 is a shortcut for a call:
 @begin_displayed_code()
   { print 1; }; // is a shortcut for ..
-  { print 1; } (); 
+  { print 1; } ();
 @end_displayed_code()
 much the same as
 @begin_displayed_code()
   endl; // is a shortcut for ..
-  endl (); 
+  endl ();
 @end_displayed_code()
 Now, remember those ugly semicolons at the end
 of the while statement? Are you getting a glimmer?
@@ -3741,7 +3741,7 @@ of the lazy expression syntax, block syntax,
 and currying are.
 @p()
 Felix actually only has a three
-procedural control structures: 
+procedural control structures:
 label/goto, procedure call/return,
 and raise/attempt/catch; and even the latter
 is only supported by the compiler for syntactic
@@ -3767,7 +3767,7 @@ this is called a lambda expression:
 @kat('functions:anonymous')
 @kat('functions:lambda')
 var x = 10;
-while 
+while
   (fun ():bool = { return x>0; })
   { print x; endl; x = x - 1; };
 @doc()
@@ -3794,7 +3794,7 @@ may have arguments:
 @kat('functions:anonymous')
 @kat('functions:lambda')
 fun f(g:int->int,x:int) = { return g x; }
-print 
+print
 (
   f
   (
@@ -3838,13 +3838,13 @@ print (abs_div(2,4)); print "\n";
 0
 @doc()
 
-Note the special identifier 'result' may be used to 
-refer to the function result. 
+Note the special identifier 'result' may be used to
+refer to the function result.
 @p()
 If a pre- or post- condition is not met, a C++ exception
 is thrown. Typically this will result in a diagnostic
 error being printed the thread terminated by the driver.
-However, it is driver dependent. 
+However, it is driver dependent.
 @p()
 At present (Felix 1.1.1) recovery is not possible,
 nor is it possible to catch the exception.
@@ -3923,13 +3923,13 @@ reduce silly (x:int): hh x => x;
 
 axiom_check (1,2,3);
 
-var i:int=1; 
+var i:int=1;
 lab:>
-  axiom_check (i,2); 
+  axiom_check (i,2);
   i=i+1;
   if i <= 5  goto lab;
 
-axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
+axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t):
   sym(x,y) == sym(y,x)
 ;
 
@@ -4072,7 +4072,7 @@ You can see the two forms of the use directive:
   use qualified_name;
   use new_name = old_qualified_name;
 @end_displayed_code()
-The first form requires a proper qualified name and is 
+The first form requires a proper qualified name and is
 equivalent to the second form, where the new_name is the
 last component of the qualified_name.
 
@@ -4093,7 +4093,7 @@ There are two forms of the rename statement,
 one for functions and one for non-functions.
 @p()
 The non-function form injects a reference to
-a single non-function entity. 
+a single non-function entity.
 @p()
 The function form injects a complete overload set.
 Additional overloads can be added to the set,
@@ -4174,10 +4174,10 @@ with a name is different for each module.
 @kat("inherit directive")
 header "#include <string>";
 
-module X { 
+module X {
   fun f(a:int):int={ return 11; }
 }
-module Y { 
+module Y {
   fun g(a:int):int={ return 22; }
 }
 module Z { inherit X; inherit Y; }
@@ -4202,8 +4202,8 @@ module R {
   print (R::ff 1); print " "; print (R::gg 1); endl;
 }
 
-module W { 
-  module J { val a:int = 1;} 
+module W {
+  module J { val a:int = 1;}
   inherit J;
   print a; endl;
 }
@@ -4233,7 +4233,7 @@ is equivalent to
   match expr1 with letpat => expr2 endmatch
 @end_displayed_code()
 The let expression is, in effect, a prefix operator with
-the lowest precedence. 
+the lowest precedence.
 
 @select(env.test('.flx'))
 @kat("let")
@@ -4260,7 +4260,7 @@ and their type is TYPE, type functions are also
 values, with type TYPE->TYPE. Our calculus
 also supports type tuples of types such as
 @begin_displayed_code()
-TYPE * TYPE 
+TYPE * TYPE
 @end_displayed_code()
 and values such as
 @begin_displayed_code()
@@ -4268,17 +4268,17 @@ and values such as
 @end_displayed_code()
 Note that (unfortunately) in the abstraction form
 @begin_displayed_code()
-  fun (t:TYPE):TYPE = 
-  { 
+  fun (t:TYPE):TYPE =
+  {
     t * t
-  } 
+  }
 @end_displayed_code()
 the curly braces are required, and you can even write:
 @begin_displayed_code()
-  fun (t:TYPE):TYPE = 
-  { 
+  fun (t:TYPE):TYPE =
+  {
     return t * t;
-  } 
+  }
 @end_displayed_code()
 as for an ordinary function. This is because Felix uses
 precisely the same syntax for type functions and ordinary ones;
@@ -4316,7 +4316,7 @@ typedef fun twoup (x:TYPE):TYPE => x * x;
 // (twoup int) * int = (int * int) * int
 val x3 : (f (int,twoup of (TYPE)) (int)) = ((1,2),3);
 match x3 with
-| ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
+| ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; }
 endmatch;
 @doc()
 
@@ -4328,7 +4328,7 @@ endmatch;
 3
 @env.head(1,'Felix threads -- Cooperative Multitasking')
 Felix supports event driven programming with
-a threading interface. 
+a threading interface.
 
 [SECTION TO BE REPLACED]
 
@@ -4366,12 +4366,12 @@ resolution strategies.
 @p()
 The Felix system is based on Scott McPeak's Elkhound,
 which is a Generalised LR, or GLR, parser. This system
-support all grammars, whilst parsing SLR grammars 
+support all grammars, whilst parsing SLR grammars
 just as efficiently as Yacc (namely, in linear space
 and time).
 @p()
 GLR handles ambiguity by spawning multiple concurrent
-threads for all alternatives wherever the SLR(1) 
+threads for all alternatives wherever the SLR(1)
 prediction is inadequate. These threads process the
 token stream synchronously, so there is never any backtracking.
 Instead, alternatives which would be tried in sequence
@@ -4414,18 +4414,18 @@ pick between the parses.
 
 @select(env.test('.flx'))
 @kat("parser generator")
- 
+
 // a type for tokens
 union token_t =
   | TOK_EOF
   | TOK_PLUS
   | TOK_INT of int
 ;
- 
+
 // a token stream generator
 gen get_token (s:string) ():token_t = {
   var i: int; forall i in 0 upto (len s) - 1 do
-    yield 
+    yield
       match s.[i to i+1] with
       | "+" => TOK_PLUS
       | "1" => TOK_INT 1
@@ -4436,32 +4436,32 @@ gen get_token (s:string) ():token_t = {
   done;
   return TOK_EOF;
 }
- 
+
 // a type for expression terms
 union expr_t =
   | Integr of int
 ;
- 
+
 // a grammar for expressions
 nonterm eexpr : expr_t =
 | xx:eexpr TOK_PLUS y:TOK_INT =>
   match xx with
   | Integr ?i => Integr (i+y)
   endmatch
- 
+
 | y:TOK_INT => Integr y
 ;
 
 // the input string
 data := "1+2+3";
- 
+
 // a parser for our example
 var z : 1 + int =
   parse get_token data with
   | e: eexpr => match e with | Integr ?i => i endmatch
   endmatch
 ;
- 
+
 // print the result
 match z with
 | case 0 => { print "Error"; }
@@ -4477,7 +4477,7 @@ endl;
 @select(env.test('.flx'))
 @kat("parser generator")
 
-union token_t = 
+union token_t =
   | TOK_EOF
   | TOK_PLUS
   | TOK_INT of int
@@ -4486,7 +4486,7 @@ union token_t =
 // a token stream generator
 gen get_token (s:string) ():token_t = {
   var i: int; forall i in 0 upto (len s) - 1 do
-    yield 
+    yield
       match s.[i to i+1] with
       | "+" => TOK_PLUS
       | "1" => TOK_INT 1
@@ -4498,13 +4498,13 @@ gen get_token (s:string) ():token_t = {
   return TOK_EOF;
 }
 
-union expr_t = 
+union expr_t =
   | Integr of int
 ;
 
-nonterm eexpr : expr_t = 
-| xx:eexpr TOK_PLUS y:TOK_INT => 
-  match xx with 
+nonterm eexpr : expr_t =
+| xx:eexpr TOK_PLUS y:TOK_INT =>
+  match xx with
   | Integr ?i => Integr (i+y)
   endmatch
 
@@ -4515,8 +4515,8 @@ proc try_parse() {
   // the input string
   data := "1+2+3";
 
-  var z : 1 + int = 
-    parse get_token data with 
+  var z : 1 + int =
+    parse get_token data with
     | e: eexpr => match e with | Integr ?i => i endmatch
     endmatch
   ;
@@ -4541,7 +4541,7 @@ You can have an anonymous sequence
 of symbols or set of alternatives,
 simply by enclosing them in parentheses.
 The implementation declares a dummy nonterminal
-for such groups, and replaces the group with 
+for such groups, and replaces the group with
 the name of the dummy non-terminal.
 @p()
 You can also apply the postfix operators "*", "+" and "?"
@@ -4562,17 +4562,17 @@ Note: restriction: all the anonymous symbols must have attributes.
 
 @select(env.test('.flx'))
 @kat("parser generator")
- 
+
 // the input string
 data := "1+22+33$";
- 
+
 // a type for tokens
 union token_t =
   | TOK_EOF
   | TOK_PLUS
   | TOK_INT of int
 ;
- 
+
 // a token stream generator
 var i = 0;
 fun get_token():token_t =
@@ -4590,7 +4590,7 @@ fun get_token():token_t =
   ;
   return tok;
 }
- 
+
 // a type for expression terms
 union expr_t =
   | Integr of int
@@ -4602,17 +4602,17 @@ nonterm eexpr : expr_t =
   match xx with
   | Integr ?i => let case 1 (?j,_) = y in Integr (i+j)
   endmatch
- 
+
 | y:TOK_INT => Integr y
 ;
- 
+
 // a parser for our example
 var z : 1 + int =
   parse (the get_token) with
   | e: eexpr => match e with | Integr ?i => i endmatch
   endmatch
 ;
- 
+
 // print the result
 match z with
 | case 0 => { print "Error"; }

@@ -91,7 +91,7 @@ syn keyword felixDefine self
 " statement keywords
 syn keyword felixStatement all as attempt
 syn keyword felixStatement call case caseno code const class ctypes
-syn keyword felixStatement def 
+syn keyword felixStatement def
 syn keyword felixStatement endattempt except exceptions export
 syn keyword felixStatement finally fork functor fun cfun
 syn keyword felixStatement goto
@@ -114,10 +114,10 @@ syn keyword felixStatement _
 syn keyword felixOperator and not or xor
 
 " Enclosing delimiters
-syn region felixEncl transparent matchgroup=felixKeyword start="(" matchgroup=felixKeyword end=")" 
-syn region felixEncl transparent matchgroup=felixKeyword start="{" matchgroup=felixKeyword end="}"  
-syn region felixEncl transparent matchgroup=felixKeyword start="\[" matchgroup=felixKeyword end="\]" 
-syn region felixEncl transparent matchgroup=felixKeyword start="\[|" matchgroup=felixKeyword end="|\]" 
+syn region felixEncl transparent matchgroup=felixKeyword start="(" matchgroup=felixKeyword end=")"
+syn region felixEncl transparent matchgroup=felixKeyword start="{" matchgroup=felixKeyword end="}"
+syn region felixEncl transparent matchgroup=felixKeyword start="\[" matchgroup=felixKeyword end="\]"
+syn region felixEncl transparent matchgroup=felixKeyword start="\[|" matchgroup=felixKeyword end="|\]"
 
 " conditionals
 syn keyword felixConditional if
@@ -145,7 +145,7 @@ syn keyword felixType unit
 syn keyword felixType void
 syn keyword felixType bool
 
-syn keyword felixType byte 
+syn keyword felixType byte
 syn keyword felixType address
 syn keyword felixType offset
 
@@ -373,12 +373,12 @@ elseif exists("b:current_syntax") && b:current_syntax != "interscript"
 endif
 
 
-syn match   iscrOther /^@.*$/ 
-syn match   iscrHead /^@head.*$/ 
-syn match   iscrHead /^@set_title.*$/ 
-syn match   iscrInclude /^@include.*$/ 
+syn match   iscrOther /^@.*$/
+syn match   iscrHead /^@head.*$/
+syn match   iscrHead /^@set_title.*$/
+syn match   iscrInclude /^@include.*$/
 syn region  iscrSelect start=/^@select.*$/ end=/^@/me=e-1 contains=iscrCodeContainer
-syn region  iscrCodeContainer start=/@select.*$/ms=e+1 end=/^@/me=e-1 contained 
+syn region  iscrCodeContainer start=/@select.*$/ms=e+1 end=/^@/me=e-1 contained
 syn sync    minlines=200
 
 if !exists("did_iscr_syntax_inits")

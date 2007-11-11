@@ -37,13 +37,13 @@ let sr  = "[flx_why]dummy",0,0,0,0
 
 (* Hackery to find logic functions in the library *)
 let find_function syms env name =
-  let entries = 
+  let entries =
     try Some (lookup_name_in_env syms env sr name)
-    with _ -> None 
+    with _ -> None
   in
-  let entries = match entries with 
-    | Some (`FunctionEntry ls) -> ls 
-    | Some (`NonFunctionEntry _ ) -> 
+  let entries = match entries with
+    | Some (`FunctionEntry ls) -> ls
+    | Some (`NonFunctionEntry _ ) ->
       print_endline ("[flx_why] Expected '" ^ name ^ "' to be function");
       []
     | None ->
@@ -51,11 +51,11 @@ let find_function syms env name =
       print_endline ("[flx_why] Can't find logic function '" ^ name ^ "' ");
       []
   in
-  let entries = 
-    filter (fun {base_sym=i} -> 
-      match 
-        try Some (Hashtbl.find syms.dfns i) 
-        with Not_found -> None 
+  let entries =
+    filter (fun {base_sym=i} ->
+      match
+        try Some (Hashtbl.find syms.dfns i)
+        with Not_found -> None
       with
       | Some {symdef=`SYMDEF_fun (_,args,res,ct,_,_) } ->
         begin match name,args,res with
@@ -64,14 +64,14 @@ let find_function syms env name =
         | _ -> false
         end
       | _ -> false
-    ) 
+    )
     entries
   in
   match entries with
   | [{base_sym=i}] -> i
-  | [] -> 
+  | [] ->
      if syms.compiler_options.print_flag then
-     print_endline ("WARNING: flx_why cannot find '" ^ name ^ "'"); 
+     print_endline ("WARNING: flx_why cannot find '" ^ name ^ "'");
      0
   | _ -> print_endline ("WARNING: flx_why found too many '" ^ name ^ "'"); 0
 
@@ -85,7 +85,7 @@ let find_logics syms root =
     ff "eq", "<->";
     ff "lnot", "not"
   ]
-  
+
 let mn s = Flx_name.cid_of_flxid s
 
 let getname syms bbdfns i =
@@ -96,7 +96,7 @@ let getname syms bbdfns i =
 
 let flx_bool = `BTYP_unitsum 2
 
-let isbool2 t = 
+let isbool2 t =
   reduce_type t = `BTYP_array (flx_bool, flx_bool)
 
 let rec why_expr syms bbdfns (e: tbexpr_t) =
@@ -104,7 +104,7 @@ let rec why_expr syms bbdfns (e: tbexpr_t) =
   match e with
   | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b),_ ->
     let id = getname syms bbdfns i in
-    id ^ "_" ^ si i ^ "(" ^ 
+    id ^ "_" ^ si i ^ "(" ^
     (
       match b with
       | `BEXPR_tuple [],_ -> "void"
@@ -136,7 +136,7 @@ let rec why_expr syms bbdfns (e: tbexpr_t) =
     end
   | _ -> "UNKEXPR"
 
-  
+
 let rec why_prop syms bbdfns logics (e: tbexpr_t) =
   let ee e = why_expr syms bbdfns e in
   let ep e = why_prop syms bbdfns logics e in
@@ -144,7 +144,7 @@ let rec why_prop syms bbdfns logics (e: tbexpr_t) =
   | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b),_ ->
     let op = try assoc i logics with Not_found -> "" in
     begin match op with
-    | "and" 
+    | "and"
     | "or"
     | "->" ->
       begin match b with
@@ -159,7 +159,7 @@ let rec why_prop syms bbdfns logics (e: tbexpr_t) =
       | `BEXPR_tuple [x;y],t when isbool2 t ->
         ep x ^ " " ^ op ^ " " ^ ep y
 
-      | _ -> "true=" ^ ee e 
+      | _ -> "true=" ^ ee e
       end
 
 
@@ -173,43 +173,43 @@ let rec why_prop syms bbdfns logics (e: tbexpr_t) =
 
 let cal_bvs bvs =
   let tps = match bvs with
-    | [] -> "" 
+    | [] -> ""
     | [s,_] -> "'" ^ s ^ " "
     | ss -> "('" ^ catmap ", '" fst ss ^ ") "
   in tps
 
-let emit_type syms bbdfns f index name sr bvs = 
+let emit_type syms bbdfns f index name sr bvs =
   let srt = Flx_srcref.short_string_of_src sr in
   output_string f ("(* type " ^ name ^ ", at "^srt^" *)\n");
 
   (* NOTE BUG: needs namespace qualifier mangled in! *)
-  if name = "int" then 
+  if name = "int" then
     output_string f ("(* type int" ^ " -- USE why's builtin *)\n\n")
   else
     let tps = cal_bvs bvs in
     output_string f ("type " ^ tps ^ name ^ "\n\n")
 
-let rec cal_type syms bbdfns t = 
+let rec cal_type syms bbdfns t =
   let ct t = cal_type syms bbdfns t in
   match t with
   | `BTYP_lvalue t -> ct t ^ " lvalue "
   | `BTYP_tuple [] -> "unit"
   | `BTYP_void -> "unit" (* cheat *)
   | `BTYP_unitsum 2 -> "bool"
-  | `BTYP_function (a,b) -> 
+  | `BTYP_function (a,b) ->
     "(" ^ ct a ^ ", " ^ ct b ^ ") fn"
 
-  | `BTYP_inst (index,ts) -> 
+  | `BTYP_inst (index,ts) ->
     let id,sr,parent,entry = Hashtbl.find bbdfns index in
     (* HACK! *)
     let ts = match ts with
       | [] -> ""
       | [t] -> cal_type syms bbdfns t ^ " "
       | ts -> "(" ^ catmap ", " ct ts ^ ")"
-    in 
+    in
     ts ^ id
   | `BTYP_var (index,_) ->
-    begin try 
+    begin try
       let id,sr,parent,entry = Hashtbl.find bbdfns index
       in "'" ^ id
     with Not_found -> "'T" ^ si index
@@ -220,15 +220,15 @@ let rec cal_type syms bbdfns t =
 let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bps,e) =
   if k <> kind then () else
   let srt = Flx_srcref.short_string_of_src sr in
-  let tkind,ykind = 
-    match kind with 
-    | `Axiom -> "axiom","axiom" 
+  let tkind,ykind =
+    match kind with
+    | `Axiom -> "axiom","axiom"
     | `Lemma -> "lemma","goal"
   in
   output_string f ("(* "^tkind^" " ^ name ^ ", at "^srt^" *)\n\n");
   output_string f (ykind ^ " " ^ name ^ ":\n");
-  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} -> 
-    output_string f 
+  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
+    output_string f
     ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bbdfns ptyp ^ ".\n")
   )
   (fst bps)
@@ -238,8 +238,8 @@ let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bp
     output_string f ("    " ^ why_prop syms bbdfns logics e)
 
   | `BEquation (l,r) ->
-    output_string f ("  " ^ 
-      why_expr syms bbdfns l ^ " = " ^ 
+    output_string f ("  " ^
+      why_expr syms bbdfns l ^ " = " ^
       why_expr syms bbdfns r
     )
 
@@ -249,8 +249,8 @@ let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bp
 let emit_reduction syms bbdfns logics f (name,bvs,bps,el,er) =
   output_string f ("(* reduction " ^ name ^ " *)\n\n");
   output_string f ("axiom " ^ name ^ ":\n");
-  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} -> 
-    output_string f 
+  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
+    output_string f
     ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bbdfns ptyp ^ ".\n")
   )
   bps
@@ -259,28 +259,28 @@ let emit_reduction syms bbdfns logics f (name,bvs,bps,el,er) =
   output_string f ("\n  = " ^ why_expr syms bbdfns er);
   output_string f "\n\n"
 
-    
+
 let emit_function syms (bbdfns:fully_bound_symbol_table_t) f index id sr bvs ps ret =
   let srt = Flx_srcref.short_string_of_src sr in
   output_string f ("(* function " ^ id ^ ", at "^srt^" *)\n");
   let name = mn id ^ "_" ^ si index in
-  let dom = match ps with 
-    | [] -> "unit" 
-    | _ -> catmap ", " (cal_type syms bbdfns) ps 
+  let dom = match ps with
+    | [] -> "unit"
+    | _ -> catmap ", " (cal_type syms bbdfns) ps
   in
   let cod = cal_type syms bbdfns ret in
   output_string f ("logic " ^ name ^ ": " ^ dom ^ " -> " ^ cod ^ "\n\n")
 
-let calps ps = 
+let calps ps =
   let ps = fst ps in (* elide constraint *)
-  let ps = 
-    map 
+  let ps =
+    map
     (* again a bit of a hack! *)
     (fun {pkind=pk; pid=name; pindex=pidx; ptyp=t} -> t)
     ps
   in ps
 
-let unitt = `BTYP_tuple [] 
+let unitt = `BTYP_tuple []
 
 let emit_whycode filename syms bbdfns root =
   let logics = find_logics syms root in
@@ -296,7 +296,7 @@ let emit_whycode filename syms bbdfns root =
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | `BBDCL_abs (bvs,qual,ct,breqs) ->
-    emit_type syms bbdfns f index id sr bvs 
+    emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
   bbdfns
@@ -306,7 +306,7 @@ let emit_whycode filename syms bbdfns root =
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | `BBDCL_union (bvs,variants) ->
-    emit_type syms bbdfns f index id sr bvs 
+    emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
   bbdfns
@@ -317,7 +317,7 @@ let emit_whycode filename syms bbdfns root =
   (fun index (id,parent,sr,entry) -> match entry with
   | `BBDCL_cstruct (bvs,variants)
   | `BBDCL_struct (bvs,variants) ->
-    emit_type syms bbdfns f index id sr bvs 
+    emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
   bbdfns
@@ -328,7 +328,7 @@ let emit_whycode filename syms bbdfns root =
   (fun index (id,parent,sr,entry) -> match entry with
   | `BBDCL_class (_,bvs)
   | `BBDCL_cclass (bvs,_) ->
-    emit_type syms bbdfns f index id sr bvs 
+    emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
   bbdfns

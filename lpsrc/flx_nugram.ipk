@@ -3,7 +3,7 @@
 
 SCHEME """
 (define fold_left
-  (lambda (f acc lst) 
+  (lambda (f acc lst)
     (if (null? lst) acc (fold_left f (f acc (car lst)) (cdr lst)))))
 """;
 
@@ -12,11 +12,11 @@ SCHEME """
 """;
 
 SCHEME """
-(define dfltvs 
+(define dfltvs
   `(
-    ()           ;; vs list: name,type,constraint triple 
+    ()           ;; vs list: name,type,constraint triple
     ,dfltaux
-  ) 
+  )
 )
 """;
 
@@ -41,7 +41,7 @@ SCHEME """
 """;
 
 SCHEME """
-(define (mkn1 stmt nvs) 
+(define (mkn1 stmt nvs)
   `(ast_namespace ,(car nvs) ,(cadr nvs) (,stmt)))
 """;
 
@@ -53,10 +53,10 @@ SCHEME """
 
 SCHEME """
 (define (splitapply x)
-  (if (pair? x) 
-    (if (eq? (car x) 'ast_apply) 
-      (if (pair? (cddr x)) 
-        (begin 
+  (if (pair? x)
+    (if (eq? (car x) 'ast_apply)
+      (if (pair? (cddr x))
+        (begin
 ;;           (display "f=")(display (caaddr x))
 ;;           (display " arg=")(display (cadaddr x))
 ;;           (display " pair=")(display (caddr x))
@@ -69,10 +69,10 @@ SCHEME """
 
 SCHEME """
 (define (mkl x)
-  (begin 
+  (begin
   ;;(display "mkl x=")(display x)
-  (if (pair? x) 
-    (if (eq? (car x) 'ast_tuple) 
+  (if (pair? x)
+    (if (eq? (car x) 'ast_tuple)
       (if (pair? (cddr x)) (caddr x) (list x))
       (list x))
     (list x)))
@@ -81,10 +81,10 @@ SCHEME """
 
 SCHEME """
 (define (mkl2 x)
-  (begin 
+  (begin
   ;;(display "mkl2 x=")(display x)
-  (if (pair? x) 
-    (if (eq? (car x) 'ast_product) 
+  (if (pair? x)
+    (if (eq? (car x) 'ast_product)
       (if (pair? (cddr x)) (caddr x) (list x))
       (list x))
     (list x)))
@@ -109,25 +109,25 @@ SCHEME """
 SCHEME """
 (define (tvfixup_folder vsct vtc)
   (begin ;;(display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
-  (let* 
+  (let*
     (
       (vs (car vsct))
       (ct (cadr vsct))
       (v (car vtc))
       (t (cadr vtc))
       (c (caddr vtc))
-      (ct2 
-        (cond 
+      (ct2
+        (cond
           ((eq? 'NoConstraint c) ct )
           ((eq? 'Eq (car c)) ;; type constraint
             `(ast_intersect
-              ((ast_type_match ((ast_name ,_sr ,v ()) ((,(cadr c) ())))) 
+              ((ast_type_match ((ast_name ,_sr ,v ()) ((,(cadr c) ()))))
               ,ct)
             )
           )
           ((eq? 'In (car c)) ;; type constraint
             `(ast_intersect
-              ((ast_isin ((ast_name ,_sr ,v ()) ,(cadr c))) 
+              ((ast_isin ((ast_name ,_sr ,v ()) ,(cadr c)))
               ,ct)
             )
           )
@@ -135,7 +135,7 @@ SCHEME """
         )
       )
     )
-    (begin 
+    (begin
     ;;  (display "vs=")(display vs)
     ;;  (display "\\nct=")(display ct)
     ;;  (display "\\nv=")(display v)
@@ -154,7 +154,7 @@ SCHEME """
 SCHEME """
 (define (tvfixup tv ct)
   (begin ;;(display "tvfixup tv=")(display tv)(display ", ct=")(display ct)(display "\\n")
-  (let* 
+  (let*
     (
       (vscs (fold_left tvfixup_folder `(() (ast_tuple ,_sr ())) tv))
       (vs (car vscs))
@@ -163,7 +163,7 @@ SCHEME """
       (rtr (cadr ct))
       (ct `((ast_intersect (,rtc ,cs)) ,rtr))
     )
-    (begin 
+    (begin
     ;;  (display "vs=")(display vs)
     ;;  (display "\\ncs=")(display cs)
     ;;  (display "\\nrtc=")(display rtc)
@@ -183,12 +183,12 @@ SCHEME """
   (define (strap a b)
   (if(null? b)a(if(equal? b "")a(if(equal? a "")b(string-append a " " b)))))
 """;
-    
+
 SCHEME """
   (define (strcat ls)(fold_left strap "" ls))
 """;
 
-// chain 'and (x) yields just x, 
+// chain 'and (x) yields just x,
 // chain 'and (x y) yields ('and _sr (x y))
 SCHEME """
   (define (chain op hd tl)
@@ -202,25 +202,25 @@ SCHEME """
 
 //------------------------------------------
 syntax expressions {
-  sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))"; 
+  sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))";
   sexpr := slambda =># "_1";
 
   stypeexpr:= sor_condition =># "_1";
   slambda := sdollar_apply =># "_1";
 
   page tuples = sdollar_apply, stuple;
- 
+
   sdollar_apply := stuple unless sexpr then sdollar_apply =>#
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply ,_sr (,_1 ,_3))";
   sdollar_apply := stuple =># "_1";
 
   stuple := sor_condition ( , sor_condition)* =># "(chain 'ast_tuple _1 _2)";
- 
-  page logic = 
-    sor_condition, 
-    sand_condition, 
-    snot_condition, 
+
+  page logic =
+    sor_condition,
+    sand_condition,
+    snot_condition,
     scomparison,
     sas_expr,
     ssetunion,
@@ -249,7 +249,7 @@ syntax expressions {
 
   ssetunion := suser10 ( || suser10)* =># "(chain 'ast_setunion _1 _2)" note "setunion";
 
-  suser10 := suser10 suser10token ssetintersection =># 
+  suser10 := suser10 suser10token ssetintersection =>#
     "`(ast_apply ,_sr ( (ast_name ,_sr ,_2 ()) (,_1 ,_3)))";
   suser10 := ssetintersection =># "_1";
 
@@ -281,11 +281,11 @@ syntax expressions {
   sshift := ssum =># "_1";
 
   explain sshift """<p>Next: arithmetic</p>""";
- 
-  page arithmetic = 
-    ssum, 
-    ssubtraction, 
-    sproduct, 
+
+  page arithmetic =
+    ssum,
+    ssubtraction,
+    sproduct,
     s_term,
     sprefixed
   ;
@@ -295,7 +295,7 @@ syntax expressions {
   ssubtraction := sproduct =># "_1";
 
   sproduct := s_term (star s_term)* =># "(chain 'ast_product _1 _2)" note "mul";
-  
+
   s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
   s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
   s_term := sprefixed =># "_1";
@@ -312,11 +312,11 @@ syntax expressions {
 
   page exponentials = spower, ssuperscript, srefr;
 
-  spower := ssuperscript ** sprefixed =># "`(ast_apply ,_sr (pow (,_1 ,_3)))" note "pow"; 
-  spower := ssuperscript  =># "_1"; 
+  spower := ssuperscript ** sprefixed =># "`(ast_apply ,_sr (pow (,_1 ,_3)))" note "pow";
+  spower := ssuperscript  =># "_1";
 
-  ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))"; 
-  ssuperscript := srefr =># "_1"; 
+  ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))";
+  ssuperscript := srefr =># "_1";
 
   srefr := & srefr =># "`(ast_ref ,_2)";
   srefr := star srefr =># "`(ast_apply ,_sr (deref ,_2))" note "deref";
@@ -327,11 +327,11 @@ syntax expressions {
 
   explain srefr """<p>Next: applications</p>""";
 
-  page structured_values = 
-    anon_value, 
-    sstruct_mem_decl, 
+  page structured_values =
+    anon_value,
+    sstruct_mem_decl,
     sstruct_assign,
-    stype_sum_item, 
+    stype_sum_item,
     stype_sum_item0,
     stype_sum_item1,
     stype_sum_item2,
@@ -343,7 +343,7 @@ syntax expressions {
   anon_value := struct lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
     sstruct_assign := sname = sexpr ssemi =># "`(,_1 ,_3)";
 
-  satom := lpar rassign (, rassign )* rpar =># 
+  satom := lpar rassign (, rassign )* rpar =>#
     "`(ast_record ,(cons _2 (map cadr _3)))"
   ;
     rassign := sname = sor_condition =># "`(,_1 ,_3)";
@@ -371,8 +371,8 @@ syntax expressions {
 
   explain sapplication """
   <p>The system automatically handles application of values of function type.
-  However the user can provide overloaded applicators for a value of 
-  type <code>d</code> to a value of type <code>c</code> by defining 
+  However the user can provide overloaded applicators for a value of
+  type <code>d</code> to a value of type <code>c</code> by defining
   a function named <code>apply</code> of type <code>d -> c</code>.</p>
   <p>In addition, a constructor for a named type <code>t</code> can be
   defined by a function with the name <code>_ctor_t</code>.
@@ -393,22 +393,22 @@ syntax expressions {
   sfactor := sfactor . lsqb sexpr to sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
   sfactor := sfactor . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
   sfactor := sfactor . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
-  sfactor := sfactor . shash_name =># 
+  sfactor := sfactor . shash_name =>#
     "`(ast_dot ,_sr (,_1 ,_3))))";
 
   /*
-  sfactor := sfactor .-> ssimple_name_parts =># 
+  sfactor := sfactor .-> ssimple_name_parts =>#
     "`(ast_dot ,_sr ((ast_apply ,_sr (deref ,_1)) (ast_name ,_sr ,(car _3) ,(cadr _3))))";
   */
 
   sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
-  page names = 
+  page names =
     shash_name,
     sthe_name,
-    ssuffixed_name, 
-    squalified_name, 
-    ssimple_name_parts, 
+    ssuffixed_name,
+    squalified_name,
+    ssimple_name_parts,
     squalified_name_comma_list,
     sbasic_name_comma_list
   ;
@@ -423,7 +423,7 @@ syntax expressions {
   shash_name := # shash_name =># "`(ast_lift ,_2)";
   shash_name := sthe_name =># "_1";
 
-  sthe_name := 
+  sthe_name :=
     | the squalified_name =># "`(ast_the ,_2)"
     | noexpand squalified_name =># "`(ast_noexpand ,_2)"
     | quest sname =># "`(ast_patvar ,_2)"
@@ -431,12 +431,12 @@ syntax expressions {
   ;
   sthe_name := satom =># "_1";
 
-  squalified_name := squalified_name :: ssimple_name_parts =># 
+  squalified_name := squalified_name :: ssimple_name_parts =>#
     "`(ast_lookup (,_1 ,(car _3) ,(cadr _3)))";
-  squalified_name := ssimple_name_parts =># 
+  squalified_name := ssimple_name_parts =>#
     "`(ast_name ,_sr ,(car _1) ,(cadr _1))";
 
-  ssuffixed_name := squalified_name of sfactor =># 
+  ssuffixed_name := squalified_name of sfactor =>#
     "`(ast_suffix (,_1 ,_3))";
 
   ssimple_name_parts := sname           =># "`(,_1 ())";
@@ -447,7 +447,7 @@ syntax expressions {
   satom := ... =># "'ast_ellipsis";
   satom := sfalse =># "'(ast_typed_case  0 2)";
   satom := strue =># "'(ast_typed_case  1 2)";
-  
+
   satom := callback lsqb sexpr rsqb =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";
   satom := lbrace sexpr rbrace =># """
@@ -471,10 +471,10 @@ syntax expressions {
   selifs := selifs selif =># "(cons _2 _1)";
 
   selse_part:= else sexpr =># "_2";
-  selse_part:= selifs else sexpr =># 
+  selse_part:= selifs else sexpr =>#
       """
-        (let ((f (lambda (result condthn) 
-          (let ((cond (car condthn)) (thn (cadr condthn))) 
+        (let ((f (lambda (result condthn)
+          (let ((cond (car condthn)) (thn (cadr condthn)))
             `(ast_cond (,cond ,thn ,result))))))
         (fold_left f _3 _1))
       """;
@@ -491,7 +491,7 @@ syntax patterns {
   satom := pattern_match =># "_1";
 
 
-  page pattern_matching = 
+  page pattern_matching =
     pattern_match,
     smatching,
     spattern,
@@ -504,7 +504,7 @@ syntax patterns {
     sfloating
   ;
 
-  pattern_match := match sexpr with smatching+ endmatch =># 
+  pattern_match := match sexpr with smatching+ endmatch =>#
     "`(ast_match (,_2 ,_4))";
 
     smatching  := vbar spattern => sexpr =># "`(,_2 ,_4)";
@@ -537,11 +537,11 @@ syntax patterns {
 
     satomic_pattern := sstring .. sstring =># "`(pat_string_range ,_1 ,_3)";
     satomic_pattern := sintegral =># "`(pat_int ,(car _1) ,(cadr _1))";
-    satomic_pattern := sintegral .. sintegral=># 
+    satomic_pattern := sintegral .. sintegral=>#
       "`(pat_int_range ,(car _1) ,(cadr _1) ,(car _3) ,(cadr _3))";
 
     satomic_pattern := NaN =># "'pat_nan";
-    satomic_pattern := sfloating .. sfloating =># 
+    satomic_pattern := sfloating .. sfloating =>#
       "`(pat_float_range ,_1 ,_3)";
 
       sfloating:= sfloat =># "`(Float_plus ,(car _1) ,(cadr _1))";
@@ -561,12 +561,12 @@ syntax functions {
   sdeclarative := sctor_definition =># "_1";
 
   page functions = sfunction_definition, sfun_kind, sfun_arg, fun_return_type;
-  page procedures = 
-    sprocedure_definition, 
-    sproc_kind, 
-    sopt_traint, 
-    sopt_traint_eq, 
-    class_constructor= 
+  page procedures =
+    sprocedure_definition,
+    sproc_kind,
+    sopt_traint,
+    sopt_traint_eq,
+    class_constructor=
      (
        sctor_definition, sctor_init, sctor_inits
      )
@@ -614,13 +614,13 @@ syntax functions {
   <p>A function return specification consists of an optional type
   and an optional expected postcondition. The special identifier
   <code>result</code> can be used in the postcondition to denote
-  the returned value. If the postcondition is omitted it is 
+  the returned value. If the postcondition is omitted it is
   quivalent to <code>true</code>, otherwise the postcondition
   is check after every application.</p>
   <p>If the return type is not specified, the compiler will
   try to calculate it from the function definition. Occasionally
   this will fail for recursive functions due to the interaction
-  with overloading and recursive types. Reusable library functions 
+  with overloading and recursive types. Reusable library functions
   should always provide an explicit return type annotation.</p>
   """;
 
@@ -647,14 +647,14 @@ syntax functions {
     <dl>
     <dt>val</dt><dd>The default: Pass by name or value, may be inlined (lazy evaluation), and maybe not.</dd>
     <dt>var</dt><dd>Pass by value, assign to local variable (eager evaluation, copying).</dd>
-    <dt>ref</dt><dd>Enforced Lazy evaluation. 
-      Pass a pointer to the specified type by value. 
-      Automatically dereferenced in function body. 
+    <dt>ref</dt><dd>Enforced Lazy evaluation.
+      Pass a pointer to the specified type by value.
+      Automatically dereferenced in function body.
       Caller will usually explicitly take address, eg <code>&amp;x</code>.
       </dd>
-    <dt>fun</dt><dd>Enforced Lazy evaluation. 
-      Pass a closure of a function of unit argument returning the specified value. 
-      Automatically called in function body. 
+    <dt>fun</dt><dd>Enforced Lazy evaluation.
+      Pass a closure of a function of unit argument returning the specified value.
+      Automatically called in function body.
       Caller will usually explicitly wrap, eg <code>{ 42 }</code>.
       </dd>
     </dl>
@@ -678,10 +678,10 @@ syntax functions {
     are inlined away.
   </dd>
   <dt>cfun</dt><dd>Enforces creation of a C style function.</dd>
-  <dt>gen</dt><dd>Create a generator. A generator is a 
+  <dt>gen</dt><dd>Create a generator. A generator is a
     function with side-effects, which includes any kind of
     object creation (such as a C++ string), or function which
-    impacts external state such as <code>malloc()</code> 
+    impacts external state such as <code>malloc()</code>
     or <code>random()</code>.
     <p>Generator applications are
     always lifted out of expressions and the result of the
@@ -695,20 +695,20 @@ syntax functions {
   </p>
   """;
 
-  sfunction_definition := sadjectives sfun_kind sdeclname 
+  sfunction_definition := sadjectives sfun_kind sdeclname
     sfun_arg* fun_return_type => sexpr ssemi =>#
   """
     (let ((body `((ast_fun_return ,_sr ,_7))))
-    (mkns 
+    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
     (cdr _3)))
   """;
 
 
-  sfunction_definition := sadjectives sfun_kind sdeclname 
+  sfunction_definition := sadjectives sfun_kind sdeclname
     sfun_arg* fun_return_type = scompound =>#
   """
-    (mkns 
+    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
     (cdr _3))
   """;
@@ -716,28 +716,28 @@ syntax functions {
   sopt_cstring := = scode_spec =># "`(some ,_2)";
   sopt_cstring := sepsilon =># "'none";
 
-  sfunction_definition := sadjectives sfun_kind sdeclname 
+  sfunction_definition := sadjectives sfun_kind sdeclname
     fun_return_type = smatching+ ssemi =>#
   """
-   (let 
+   (let
      (
       (t (car _4))
       (traint (cadr _4))
      )
     (begin ;;(display "ftype=")(display t)(display "\\n")
     (if (eq? 'ast_arrow (car t))
-      (let 
+      (let
         (
           (argt (caadr t))
           (ret (cadadr t))
           (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
         )
-        (mkns 
-        `(ast_curry ,_sr ,(caar _3) ,(cadar _3) 
-          ( 
+        (mkns
+        `(ast_curry ,_sr ,(caar _3) ,(cadar _3)
+          (
             (((PVal _a ,argt none)) none)
           )
-          (,ret ,traint) 
+          (,ret ,traint)
           ,(cal_funkind _1 _2) ,body)
         (cdr _3))
       )
@@ -762,10 +762,10 @@ syntax functions {
   sctor_inits := sepsilon =># "()";
 
   // only used by classes
-  sctor_definition := ctor stvarlist sfun_arg* sopt_traint_eq 
+  sctor_definition := ctor stvarlist sfun_arg* sopt_traint_eq
     sctor_inits scompound =>#
   """
-  (let* 
+  (let*
     (
       (name "__constructor__")
       (vs _2)
@@ -780,10 +780,10 @@ syntax functions {
     `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
   """;
 
-  sctor_definition := ctor stvarlist sname sfun_arg+ sopt_traint_eq 
+  sctor_definition := ctor stvarlist sname sfun_arg+ sopt_traint_eq
     scompound =>#
   """
-  (let* 
+  (let*
     (
       (name (string-append "_ctor_" _3))
       (vs _2)
@@ -795,10 +795,10 @@ syntax functions {
     `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
   """;
 
-  sctor_definition := ctor stvarlist sname sfun_arg+ 
+  sctor_definition := ctor stvarlist sname sfun_arg+
     sopt_traint => sexpr ssemi =>#
   """
-  (let* 
+  (let*
     (
       (name (string-append "_ctor_" _3))
       (vs _2)
@@ -813,14 +813,14 @@ syntax functions {
   sprocedure_definition := sadjectives sproc_kind sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
-    (mkns 
+    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
     (cdr _3))
   """;
 
   sobject_definition := obj sdeclname sfun_arg+ scompound =>#
   """
-    (mkns 
+    (mkns
     `(ast_curry ,_sr ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
     (cdr _2))
   """;
@@ -834,10 +834,10 @@ syntax regexps {
   satom := sregmatch_expr =># "_1";
   sdirective := sregdef =># "_1";
 
-  page regular_expressions = 
-    sregmatch_expr, 
-    sregmatch_alternatives, 
-    sregmatch_alternative, 
+  page regular_expressions =
+    sregmatch_expr,
+    sregmatch_alternatives,
+    sregmatch_alternative,
     sregdef,
     sre0, sre1, sre2, sre3, sre4, sre_name,
     scharset, scharset0
@@ -847,7 +847,7 @@ syntax regexps {
     "`(ast_reglex (,_2 ,_4 ,_6))";
   sregmatch_expr := regmatch sexpr with sregmatch_alternatives endmatch =>#
     "`(ast_string_regmatch (,_2 ,_4))";
-  
+
   sregmatch_alternatives := sregmatch_alternative + =># "(reverse _1)";
   sregmatch_alternative := vbar sre1 => sexpr =># "`(,_2 ,_4)";
 
@@ -882,7 +882,7 @@ syntax regexps {
   scharset0:= sstring - sstring =># "`(charset_of_range ,_1 ,_3)";
   scharset0:= sstring =># "`(charset_of_string ,_1)";
   scharset0:= sinteger =># "`(charset_of_int_range ,_1 ,_1)";
- 
+
   scharset:= scharset scharset0 =># "`(charset_union ,_1 ,_2)";
   scharset:= scharset0 =># "_1";
 
@@ -894,7 +894,7 @@ syntax parsing {
   satom := sglr_parse =># "_1";
   sdirective := sglr_production =># "_1";
 
-  page glr_parsing = 
+  page glr_parsing =
     sglr_parse,
     sglr_production,
     sglr_matching,
@@ -927,7 +927,7 @@ syntax parsing {
   "`(ast_glr ,_sr ,_2 ,_4 ,_6)";
 
 explain sglr_production """<p>A nonterm directive defines
-nonterminal as a sequence of symbols and a user 
+nonterminal as a sequence of symbols and a user
 action.<p>""";
 
   sglr_parse:= parse sexpr with sglr_matching+ endmatch =>#
@@ -945,17 +945,17 @@ to the unit argument.</p>
 //------------------------------------------
 syntax statements {
   requires expressions;
-  statement:= sdeclarative =># "_1"; 
-  statement:= sinclusion =># "_1"; 
-  statement:= sdirective =># "_1"; 
-  statement:= spublish =># "_1"; 
-  statement:= scomment =># "_1"; 
-  statement:= snull_statement =># "_1"; 
-  statement:= scparse =># "_1"; 
+  statement:= sdeclarative =># "_1";
+  statement:= sinclusion =># "_1";
+  statement:= sdirective =># "_1";
+  statement:= spublish =># "_1";
+  statement:= scomment =># "_1";
+  statement:= snull_statement =># "_1";
+  statement:= scparse =># "_1";
 
   scomment := comment sstring ssemi =># "`(ast_comment ,_sr ,_2)";
- 
- 
+
+
   spublish := private sdeclarative =># "`(ast_private ,_2)";
   spublish := private sbinding_definition =># "`(ast_private ,_2)";
   spublish := private svar_def =># "`(ast_private ,_2)";
@@ -981,16 +981,16 @@ syntax statements {
 
   sabstract_type := stype_qual* type sdeclname = new sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_newtype ,_sr ,(caar _3) ,(cadar _3) ,_6)
     (cdr _3))
-    """; 
+    """;
 
-  page type_variables = 
-    stvarlist, 
-    stvar_comma_list, 
-    stvar, 
-    scomma_tvar, 
+  page type_variables =
+    stvarlist,
+    stvar_comma_list,
+    stvar,
+    scomma_tvar,
     seqorin,
     stype_constraint
   ;
@@ -1004,15 +1004,15 @@ syntax statements {
   stype_constraint := with squalified_name_comma_list =># "`((ast_tuple,_sr()) ,_2)";
   stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
 
-  explain stype_constraint 
-  """<p>A <code>with</code> clause is a side constraint 
+  explain stype_constraint
+  """<p>A <code>with</code> clause is a side constraint
   on the set of type variables, it specifies a list
   of typeclass specialisations, requiring suitable instances
   exist, but also allowing functions of the typeclass to
   be applied to the specified types in the body of the
   definition.</p>
   <p>A <code>where</code> constraint is an arbitrary
-  predicate on type variables, which must resolve to true for 
+  predicate on type variables, which must resolve to true for
   any use of the symbol being defined. It is typically an
   equation, but may also be a type match. In the case of
   a function or procedure, failed predicative constraints
@@ -1021,9 +1021,9 @@ syntax statements {
 
   seqorin:= = stypeexpr =># "`(Eq ,_2)";
   seqorin:= in stypeexpr =># "`(In ,_2)";
-  seqorin:= sepsilon =># "'NoConstraint"; 
+  seqorin:= sepsilon =># "'NoConstraint";
 
-  explain seqorin 
+  explain seqorin
   """<p>An <code>=</code> assignment suffix on a type variable is used
   to add a dependent type variable to the list of type variables.
   </p>
@@ -1066,7 +1066,7 @@ syntax statements {
 
 //------------------------------------------
 syntax variables {
-  // assignments have lower priority than variable 
+  // assignments have lower priority than variable
   // definitions to support 'int x = 1;' being
   // a variable definition not an assignment,
   // so we have to requires them first: they're
@@ -1075,25 +1075,25 @@ syntax variables {
 
   sexecutable := svar_def =># "_1";
   sexecutable := sval_def =># "_1";
-  sval_def := val sname sname_suffix = sexpr ssemi =># 
+  sval_def := val sname sname_suffix = sexpr ssemi =>#
   """
-  (let 
+  (let
     (
       (names (cons _2 _3))
       (vals (mkl _5))
     )
-    (begin 
+    (begin
     ;;(display "names=")(display names)
     ;;(display "init=")(display vals)
     ;;(display "\\n")
     (if (eq? (length names)(length vals))
-      (let  
+      (let
         (
           (f (lambda (n v)`(ast_val_decl ,_sr ,n ,dfltvs none (some ,v))))
         )
         `(ast_seq ,_sr ,(map f names vals))
       )
-      (let* 
+      (let*
         (
           (f (lambda (n)`((Val ,_sr ,n) none)))
           (lexpr (map f names))
@@ -1102,65 +1102,65 @@ syntax variables {
       )
   )))
   """;
- 
+
   sval_def := val sdeclname = sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
     (cdr _2))
-     """; 
+     """;
 
   sval_def := val sdeclname : stypeexpr = sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
     (cdr _2))
-     """; 
+     """;
 
 explain sval_def """<p>Value definition requires an initialiser.</p>""";
 
   sval_def := val sdeclname : stypeexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
     (cdr _2))
-     """; 
+     """;
 
 explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
 
   sval_def := ref sdeclname <- sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_ref_decl ,(caar _2) ,(cadar _2) none (some ,_4))
     (cdr _2))
-     """; 
+     """;
 
   sval_def := ref sdeclname : stypeexpr <- sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_ref_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
     (cdr _2))
-     """; 
+     """;
 
-  svar_def := var sname sname_suffix = sexpr ssemi =># 
+  svar_def := var sname sname_suffix = sexpr ssemi =>#
   """
-  (let 
+  (let
     (
       (names (cons _2 _3))
       (vals (mkl _5))
     )
-    (begin 
+    (begin
     ;;(display "names=")(display names)
     ;;(display "init=")(display vals)
     ;;(display "\\n")
     (if (eq? (length names)(length vals))
-      (let  
+      (let
         (
           (f (lambda (n v)`(ast_var_decl ,_sr ,n ,dfltvs none (some ,v))))
         )
         `(ast_seq ,_sr ,(map f names vals))
       )
-      (let* 
+      (let*
         (
           (f (lambda (n)`((Var ,_sr ,n) none)))
           (lexpr (map f names))
@@ -1169,29 +1169,29 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
       )
   )))
   """;
-  
+
   svar_def := var sdeclname = sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
     (cdr _2))
-     """; 
+     """;
 
   svar_def := var sdeclname : stypeexpr = sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
     (cdr _2))
-     """; 
+     """;
 
   svar_def := var sdeclname : stypeexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
     (cdr _2))
-     """; 
+     """;
 
-  svar_def := var & sname stvarlist : stypeexpr <- sexpr ssemi =># 
+  svar_def := var & sname stvarlist : stypeexpr <- sexpr ssemi =>#
      """
    (let* (
      (fl (splitapply _8))
@@ -1201,7 +1201,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
      (call `(ast_call ,_sr ,f ,nua))
      (vardef `(ast_var_decl ,_sr ,_3 ,_4 (some ,_6) none))
      (seq `(ast_seq ,_sr (,vardef ,call))))
-     (begin 
+     (begin
      ;;(display "f=")(display f)
      ;;(display "\\n_3=")(display _3)
      ;;(display "\\na=")(display a)
@@ -1211,12 +1211,12 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
      ;;(display "\\nseq=")(display seq)
      ;;(display "\\n")
      seq))
-     """; 
- 
+     """;
 
-  svar_def := var sdeclname : stypeexpr <- sexpr ssemi =># 
+
+  svar_def := var sdeclname : stypeexpr <- sexpr ssemi =>#
    """
-   (let* 
+   (let*
      (
        (fl (splitapply _6))
        (f (car fl))
@@ -1230,7 +1230,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
        (vardef `(ast_var_decl ,_sr ,name ,vs (some ,typ) none))
        (seq `(ast_seq ,_sr (,vardef ,call)))
      )
-     (begin 
+     (begin
      ;;(display "f=")(display f)
      ;;(display "\\na=")(display a)
      ;;(display "\\nname=")(display name)
@@ -1244,7 +1244,7 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
      ;;(display "\\n")
      (mkns seq namespace)
      ))
-     """; 
+     """;
 }
 
 //------------------------------------------
@@ -1252,49 +1252,49 @@ syntax macros {
   requires expressions, statements;
 
   sdirective := smacro_definition =># "_1";
-  smacro_definition := macro sname is sbasic_name_comma_list ssemi =># 
+  smacro_definition := macro sname is sbasic_name_comma_list ssemi =>#
     "`(ast_macro_names ,_2 ,_4)";
 
   // this MUST be next, overrides case with only one name
   smacro_definition := macro sname is sname ssemi =># "`(ast_macro_name ,_2 ,_4)";
-  smacro_definition := macro for sname in sbasic_name_comma_list do statement* done ssemi =># 
+  smacro_definition := macro for sname in sbasic_name_comma_list do statement* done ssemi =>#
     "`(ast_macro_ifor ,_3 ,_5 ,_7)";
-  smacro_definition := macro for sname in lpar sbasic_name_comma_list rpar do statement* done ssemi =># 
+  smacro_definition := macro for sname in lpar sbasic_name_comma_list rpar do statement* done ssemi =>#
     "`(ast_macro_ifor ,_3 ,_6 ,_9)";
 
   smacro_definition := macro sname is new ssemi =># """`(ast_macro_name ,_2 "")""";
-  smacro_definition := macro var sbasic_name_comma_list = sexpr ssemi =># 
+  smacro_definition := macro var sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_var ,_3 ,_5)";
-  smacro_definition := macro val sbasic_name_comma_list = sexpr ssemi =># 
+  smacro_definition := macro val sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_val ,_3 ,_5)";
-  smacro_definition := macro sbasic_name_comma_list = sexpr ssemi =># 
+  smacro_definition := macro sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_assign ,_2 ,_4)";
-  smacro_definition := macro val sname is sexpr ssemi =># 
+  smacro_definition := macro val sname is sexpr ssemi =>#
     "`(ast_macro_vals ,_3 ,(mkl _5))";
-  smacro_definition := macro fun sname smac_arg_list = sexpr ssemi =># 
+  smacro_definition := macro fun sname smac_arg_list = sexpr ssemi =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := macro fun sname smac_arg_list => sexpr ssemi =># 
+  smacro_definition := macro fun sname smac_arg_list => sexpr ssemi =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := macro proc sname smac_arg_list scompound =># 
+  smacro_definition := macro proc sname smac_arg_list scompound =>#
     "`(ast_stmt_macro ,_3 ,_4 ,_5)";
   smacro_definition := macro scompound ssemi =># "`(ast_macro_block ,_2)";
-  smacro_definition := macro forget sbasic_name_comma_list ssemi =># 
+  smacro_definition := macro forget sbasic_name_comma_list ssemi =>#
     "`(ast_macro_forget ,_3)";
-  smacro_definition := macro forget ssemi =># 
+  smacro_definition := macro forget ssemi =>#
     "`(ast_macro_forget ())";
   smacro_definition := macro goto sname ssemi =># "`(ast_macro_goto ,_3)";
   smacro_definition := macro sname :> =># "`(ast_macro_label ,_2)";
-  smacro_definition := macro if sexpr goto sname ssemi =># 
+  smacro_definition := macro if sexpr goto sname ssemi =>#
     "`(ast_macro_ifgoto ,_3 ,_5)";
-  smacro_definition := macro for val sbasic_name_comma_list in sexpr do statement* done ssemi =># 
+  smacro_definition := macro for val sbasic_name_comma_list in sexpr do statement* done ssemi =>#
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
   page macro_terms = smac_arg, smac_args, smac_arg_list;
 
-    smac_arg:= sname : fun =># "`(,_1 Expr)"; 
-    smac_arg:= sname : proc =># "`(,_1 Stmt)"; 
-    smac_arg:= sname : sident =># "`(,_1 Stmt)"; 
-    smac_arg:= sname =># "`(,_1 Expr)"; 
+    smac_arg:= sname : fun =># "`(,_1 Expr)";
+    smac_arg:= sname : proc =># "`(,_1 Stmt)";
+    smac_arg:= sname : sident =># "`(,_1 Stmt)";
+    smac_arg:= sname =># "`(,_1 Expr)";
     smac_args := smac_arg , smac_args =># "(cons _1 _3)";
     smac_args := smac_arg =># "`(,_1)";
     smac_arg_list := lpar smac_args rpar =># "_2";
@@ -1322,10 +1322,10 @@ syntax cbind {
 
   sstruct_decl := cstruct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
-    (mkns 
+    (mkns
     `(ast_cstruct ,_sr ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
-     """; 
+     """;
 
   sopt_prec := is sname =># "_2";
   sopt_prec := sepsilon =># '(quote "")';
@@ -1334,7 +1334,7 @@ syntax cbind {
     <p>This attribute is used to specify the precedence of a C expression
     so that the code generator can place parenthesis around it if it
     is embedded in a context with higher precedence.</p>
-    <p>Felix automatically calculates the predence for tightly 
+    <p>Felix automatically calculates the predence for tightly
     packed encodings of all C operators; for example there is no
     need to specify the precedence of <code>"$1+$2"</code>.</p>
     <p>Otherwise, if the precedence is omitted, the expression is
@@ -1346,7 +1346,7 @@ syntax cbind {
   """;
 
   // note: also needed by typeclasses atm for virtual funs
-  sfunction_definition := sadjectives sfun_kind sdeclname 
+  sfunction_definition := sadjectives sfun_kind sdeclname
     fun_return_type sopt_cstring sopt_prec srequires_clause ssemi =>#
   """
     (let (
@@ -1360,17 +1360,17 @@ syntax cbind {
         `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
         _7)
       )
-      (ct 
+      (ct
         (if (eq? 'none _5)
           (if (memv 'Virtual _1)
-            'Virtual 
+            'Virtual
              `(StrTemplate ,(string-append (caar _3) "($a)"))
            )
            (cadr _5))
       )
     )
     (let (
-      (reqs 
+      (reqs
         (if (eq? 'Generator kind)
           `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
           reqs))
@@ -1379,23 +1379,23 @@ syntax cbind {
       (let (
         (argt (caadr t))
         (ret (cadadr t)))
-      (mkns 
+      (mkns
       `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
       (cdr _3)))
       ('ERROR))))
   """;
 
-  sfunction_definition := 
-    ctor stvarlist sname : stypeexpr 
+  sfunction_definition :=
+    ctor stvarlist sname : stypeexpr
     sopt_cstring sopt_prec srequires_clause ssemi =>#
   """
-  (let* 
+  (let*
     (
       (name (string-append "_ctor_" _3))
       (vs _2)
       (ret `(ast_name ,_sr ,_3 ()))
       (argt _5)
-      (ct 
+      (ct
         (if (eq? 'none _6)
           `(StrTemplate ,(string-append _3 "($a)"))
           (cadr _6)
@@ -1407,26 +1407,26 @@ syntax cbind {
     `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
   )
   """;
-  
+
   page abstract_types = sabstract_type, stype_qual;
 
   sabstract_type:= stype_qual* type sdeclname = scode_spec srequires_clause ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_abs_decl ,_sr ,(caar _3) ,(cadar _3) ,_1 ,_5 ,_6)
     (cdr _3))
-    """; 
+    """;
 
   sabstract_type := callback proc sname : stypeexpr srequires_clause ssemi =>#
     """
     `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) ast_void ,_6)
-    """; 
+    """;
 
 
   sabstract_type := callback fun sname : stypeexpr srequires_clause ssemi =>#
     """
     (if (eq? 'ast_arrow (car _5))
-      (let* 
+      (let*
         (
           (ft (cadr _5))
           (dom (car ft))
@@ -1437,7 +1437,7 @@ syntax cbind {
       )
       'ERROR
     )
-    """; 
+    """;
 
 
   stype_qual := incomplete =># "'Incomplete";
@@ -1454,19 +1454,19 @@ syntax cbind {
 
   sclass_component:= var sname : stypeexpr ssemi =># "`(MemberVar ,_2 ,_4 none)";
   sclass_component:= val sname : stypeexpr ssemi =># "`(MemberVal ,_2 ,_4 none)";
-  sclass_component:= ctor sopt_name : stypeexpr sopt_cstring ssemi =># 
+  sclass_component:= ctor sopt_name : stypeexpr sopt_cstring ssemi =>#
     "`(MemberCtor ,_2 none ,_4 ,_5)";
-  sclass_component:= fun sname stvarlist  : stypeexpr sopt_cstring ssemi =># 
+  sclass_component:= fun sname stvarlist  : stypeexpr sopt_cstring ssemi =>#
     "`(MemberFun ,_2 none ,_3 ,_5 ,_6)";
-  sclass_component:= proc sname stvarlist  : stypeexpr sopt_cstring ssemi =># 
+  sclass_component:= proc sname stvarlist  : stypeexpr sopt_cstring ssemi =>#
     "`(MemberProc ,_2 none ,_3 ,_5 ,_6)";
 
   sstruct_decl := cclass sdeclname = ? lbrace sclass_component * rbrace =>#
     """
-    (mkns 
+    (mkns
     `(ast_cclass ,_sr ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
-     """; 
+     """;
 
   sexpr_code_prefix := code lsqb stypeexpr rsqb =># "_3";
   satom := sexpr_code_prefix sstring =># "`(ast_expr ,_2 ,_1)";
@@ -1478,7 +1478,7 @@ syntax cbind {
     (let ((reqs (if (memv 'Virtual _1)
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
       _8)))
-    (mkns 
+    (mkns
     `(ast_const_decl ,_sr ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
     (cdr _3)))
   """;
@@ -1494,7 +1494,7 @@ is usually a constant value, any expression can be used.<p>""";
     (let ((reqs (if (memv 'Virtual _1)
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
       _6)))
-    (mkns 
+    (mkns
     `(ast_const_decl ,_sr ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)
     (cdr _3)))
   """;
@@ -1503,7 +1503,7 @@ explain sconst_def """<p>A short form const definition maps
 a Felix name onto the same C name.<p>""";
 
   // note: also needed by typeclasses atm for virtual procs
-  sprocedure_definition := sadjectives sproc_kind sdeclname : stypeexpr 
+  sprocedure_definition := sadjectives sproc_kind sdeclname : stypeexpr
     sopt_cstring srequires_clause ssemi =>#
   """
     (let (
@@ -1515,17 +1515,17 @@ a Felix name onto the same C name.<p>""";
         `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
         _7)
       )
-      (ct 
+      (ct
         (if (eq? 'none _6)
           (if (memv 'Virtual _1)
-            'Virtual 
+            'Virtual
              `(StrTemplate ,(string-append (caar _3) "($a);"))
            )
            (cadr _6))
       )
     )
     (let (
-      (reqs 
+      (reqs
         (if (eq? 'Generator kind)
           `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
           reqs))
@@ -1533,18 +1533,18 @@ a Felix name onto the same C name.<p>""";
     (let (
       (argt t)
       (ret 'ast_void))
-      (mkns 
+      (mkns
       `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
       (cdr _3)))))
   """;
 
- 
+
 }
 
 //------------------------------------------
-syntax executable {  
+syntax executable {
   requires statements;
-  statement:= sexecutable =># "_1"; 
+  statement:= sexecutable =># "_1";
   sexecutable := scall =># "_1";
   sexecutable := ssvc =># "_1";
   sexecutable := sreturn =># "_1";
@@ -1570,17 +1570,17 @@ syntax executable {
   sassignment := sassignexpr ssemi =># "_1";
 
   // deprecate: class object construction, use a generator
-  sassignexpr := var sname <- new sexpr =># 
+  sassignexpr := var sname <- new sexpr =>#
     "(append `(ast_apply_ctor ,_sr ,_2) (splitapply _5))";
 
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
-  sassignexpr := sexpr <- sexpr =># 
+  sassignexpr := sexpr <- sexpr =>#
    """
    (let* (
      (fl (splitapply _3))
      (f (car fl))
      (a (cadr fl)))
-     (begin 
+     (begin
      ;; (display "f=")(display f)
      ;; (display "\\n_1=")(display _1)
      ;; (display "\\na=")(display a)
@@ -1623,26 +1623,26 @@ syntax executable {
   slexprs := stlelement , slexprs =># "(cons _1 _3)";
   slexprs := stlelement =># "`(,_1)";
 
-  slexpr := slexprs =># 
+  slexpr := slexprs =>#
     """
     (if (null? (cdr _1)) (car _1) `((List ,_1) none))
     """;
 
   sassignexpr := def slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
 
-  sassignexpr := sexpr sswapop sexpr =># 
+  sassignexpr := sexpr sswapop sexpr =>#
     "`(ast_call ,_sr ,_2 (,_1 ,_3))";
 
-  sassignexpr := sexpr sassignop sexpr =># 
+  sassignexpr := sexpr sassignop sexpr =>#
     "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
-  sassignexpr := sexpr srmwop sexpr =># 
+  sassignexpr := sexpr srmwop sexpr =>#
     "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
   sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 ,_1)";
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 ,_2)";
 
-  page subroutines = 
+  page subroutines =
     sreturn, scall
   ;
 
@@ -1672,11 +1672,11 @@ syntax executable {
 
   sifgoto := if sexpr goto sname ssemi =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
   sifgoto := if sexpr return ssemi =># "`(ast_ifreturn ,_sr ,_2)";
-  sifgoto := if sexpr call sexpr ssemi =># 
+  sifgoto := if sexpr call sexpr ssemi =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
-  sifgoto := if sexpr do statement* selse_clause done ssemi =># 
+  sifgoto := if sexpr do statement* selse_clause done ssemi =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
-  sifgoto := if sexpr do statement* done ssemi =># 
+  sifgoto := if sexpr do statement* done ssemi =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
   selif_clause := elif sexpr do statement* =># "`(,_2 ,_4)";
@@ -1685,18 +1685,18 @@ syntax executable {
   selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
   selif_clauses := selif_clause =># "`(,_1)";
   selse_clause := selif_clauses else statement* =>#
-    """      
-        (let ((f (lambda (result condthn) 
-          (let ((cond (car condthn)) (thn (cadr condthn))) 
+    """
+        (let ((f (lambda (result condthn)
+          (let ((cond (car condthn)) (thn (cadr condthn)))
             `((ast_ifdo ,_sr ,cond ,thn ,result))))))
         (fold_left f _3 _1))
     """;
 
   selse_clause := else statement* =># "_2";
   selse_clause := selif_clauses =>#
-    """      
-        (let ((f (lambda (result condthn) 
-          (let ((cond (car condthn)) (thn (cadr condthn))) 
+    """
+        (let ((f (lambda (result condthn)
+          (let ((cond (car condthn)) (thn (cadr condthn)))
             `((ast_ifdo ,_sr ,cond ,thn ,result))))))
         (fold_left f () _1))
     """;
@@ -1704,29 +1704,29 @@ syntax executable {
   sifgoto := "whilst" sexpr do statement* done ssemi =>#
   """
     `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab1" "" )
       ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab1" )
       ( ast_unlikely_ifnotgoto ,_sr ,_2 "lab2" ))
-      _4  
-      `(( ast_goto ,_sr "lab1" ) 
+      _4
+      `(( ast_goto ,_sr "lab1" )
       ( ast_label ,_sr "lab2" ))
       )
-    ) 
+    )
   """;
 
   sifgoto := "until" sexpr do statement* done ssemi =>#
   """
     `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab1" "" )
       ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab1" )
       ( ast_unlikely_ifgoto ,_sr ,_2 "lab2" ))
-      _4  
-      `(( ast_goto ,_sr "lab1" ) 
+      _4
+      `(( ast_goto ,_sr "lab1" )
       ( ast_label ,_sr "lab2" ))
       )
-    ) 
+    )
   """;
 
 
@@ -1738,16 +1738,16 @@ syntax executable {
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab1" "" )
       ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" ) 
-      ( ast_unlikely_ifnotgoto ,_sr 
+      ( ast_label ,_sr "lab1" )
+      ( ast_unlikely_ifnotgoto ,_sr
         (ast_apply ,_sr (le ((ast_name ,_sr ,_2 ()),_6)))
         "lab2"
       ))
-      _8  
+      _8
       `((ast_call ,_sr pre_incr (ast_name ,_sr ,_2()))
-      ( ast_goto ,_sr "lab1" ) 
+      ( ast_goto ,_sr "lab1" )
       ( ast_label ,_sr "lab2" ))
      ))
   """;
@@ -1756,16 +1756,16 @@ syntax executable {
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab1" "" )
       ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" ) 
-      ( ast_unlikely_ifnotgoto ,_sr 
-        (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6))) 
-        "lab2" 
+      ( ast_label ,_sr "lab1" )
+      ( ast_unlikely_ifnotgoto ,_sr
+        (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6)))
+        "lab2"
       ))
-      _8 
+      _8
       `((ast_call ,_sr pre_decr (ast_name ,_sr ,_2 ()))
-      ( ast_goto ,_sr "lab1" ) 
+      ( ast_goto ,_sr "lab1" )
       ( ast_label ,_sr "lab2" ))
      ))
   """;
@@ -1775,10 +1775,10 @@ syntax executable {
 syntax requirements {
   srequires_clause := requires srequirements =># "_2";
 
-  page requirement_terms = 
+  page requirement_terms =
     sbinding_header,
-    srequires_clause, 
-    srequirement, 
+    srequires_clause,
+    srequirement,
     srequirement_atom,
     srequirement_and,
     srequirement_or,
@@ -1789,12 +1789,12 @@ syntax requirements {
 
   explain srequires_clause """
   <p>A requires clause is used to establish a dependency between
-  a named C binding, particularly abstract types, and resources 
+  a named C binding, particularly abstract types, and resources
   such as C code needed to define the subject of the binding, particularly
   C header files, so that the specified resource is loaded
   if, and only if, one of the dependent C bindings is used.</p>
 
-  <p>This not only makes it possible to minimise the header files 
+  <p>This not only makes it possible to minimise the header files
   read by the C++ compiler processing the output of Felix, but also
   to provide Felix libraries binding to C libraries which are not
   installed without breaking the compilation process, provided
@@ -1848,33 +1848,33 @@ syntax requirements {
   scode_spec := scstring =># "`(Str ,_1)";
   scode_spec := sident =># "'Identity";
 
-  sbinding_header := requires srequirements ssemi =># 
+  sbinding_header := requires srequirements ssemi =>#
     """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
 
-  sbinding_header := sname requires srequirements ssemi =># 
+  sbinding_header := sname requires srequirements ssemi =>#
     """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
 
-  sbinding_header:= header scode_spec srequires_clause ssemi =># 
-    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))"""; 
-  sbinding_header:= body scode_spec srequires_clause ssemi =># 
-    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))"""; 
-  sbinding_header:= header = scode_spec srequires_clause ssemi =># 
-    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 header ,_4))"""; 
-  sbinding_header:= body = scode_spec srequires_clause ssemi =># 
-    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))"""; 
-  sbinding_header:= header sdeclname = scode_spec srequires_clause ssemi =># 
+  sbinding_header:= header scode_spec srequires_clause ssemi =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
+  sbinding_header:= body scode_spec srequires_clause ssemi =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
+  sbinding_header:= header = scode_spec srequires_clause ssemi =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 header ,_4))""";
+  sbinding_header:= body = scode_spec srequires_clause ssemi =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))""";
+  sbinding_header:= header sdeclname = scode_spec srequires_clause ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 header ,_5)
     (cdr _2))
-     """; 
+     """;
 
-  sbinding_header:= body sdeclname = scode_spec srequires_clause ssemi =># 
+  sbinding_header:= body sdeclname = scode_spec srequires_clause ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 body ,_5)
     (cdr _2))
-     """; 
+     """;
 
 }
 
@@ -1883,7 +1883,7 @@ syntax type_decls {
 
   satom := stypematch =># "_1";
 
-  page type_decls = 
+  page type_decls =
     stype_alias,
     stypematch,
     stype_matching,
@@ -1895,17 +1895,17 @@ syntax type_decls {
 
   stype_alias := typedef sdeclname = sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_type_alias ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-    """; 
+    """;
 
   stype_alias := typedef fun sdeclname stypefun_args : stypeexpr => sexpr ssemi =>#
     """
-    (mkns 
+    (mkns
     `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8)
     (cdr _3))
-    """; 
+    """;
 
   stype_alias := typedef fun sdeclname : stypeexpr = stype_matching+ ssemi =>#
     """
@@ -1915,69 +1915,69 @@ syntax type_decls {
         (ret (cadadr _5))
         (body `(ast_type_match (_a ,_7))))
         (let ((args `(((_a ,argt)))))
-      (mkns 
+      (mkns
       `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,args ,ret ,body)
       (cdr _3))))
       ('ERROR)
     )
-    """; 
+    """;
 
   stype_matching  := vbar sexpr => sexpr =># "`(,_2 ,_4)";
 
-  stypematch := typematch sexpr with stype_matching+ endmatch =># 
+  stypematch := typematch sexpr with stype_matching+ endmatch =>#
     "`(ast_type_match (,_2 ,_4))";
- 
+
   sstruct_decl := struct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
-    (mkns 
+    (mkns
     `(ast_struct ,_sr ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
-     """; 
+     """;
 
   sopt_name := sname =># "_1";
   sopt_name := sepsilon =># '""';
 
   sstruct_decl := class sdeclname = ? scompound =>#
     """
-    (mkns 
+    (mkns
     `(ast_class ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-     """; 
+     """;
 
   sstruct_decl := typeclass sdeclname = ? scompound =>#
     """
-    (mkns 
+    (mkns
     `(ast_typeclass ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-     """; 
+     """;
 
   sstruct_decl := instance stvarlist squalified_name = ? scompound =>#
     """
     `(ast_instance ,_sr ,_2 ,_3 ,_5)
-     """; 
+     """;
 
   sunion_decl := union sdeclname = stype_sum_items2 ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-     """; 
+     """;
 
   sunion_decl := union sdeclname lbrace stype_sum_item1* rbrace =>#
     """
-    (mkns 
+    (mkns
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-     """; 
+     """;
 
   sunion_decl := senum_decl =># "_1";
-  
+
   senum_decl := enum sdeclname lbrace senum_items rbrace =>#
     """
-    (mkns 
+    (mkns
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-     """; 
+     """;
 
   page enumeration = senum_decl, sopt_value, senum_item, senum_items;
 
@@ -2007,7 +2007,7 @@ syntax assertions {
 
   sassertion := axiom sdeclname sfun_arg : sexpr ssemi =>#
   """
-    (mkns 
+    (mkns
     `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
     (cdr _2))
   """;
@@ -2018,7 +2018,7 @@ syntax assertions {
 
   sassertion := axiom sdeclname sfun_arg : sexpr = sexpr ssemi =>#
   """
-    (mkns 
+    (mkns
     `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
     (cdr _2))
   """;
@@ -2028,19 +2028,19 @@ syntax assertions {
 
   sassertion := lemma sdeclname sfun_arg : sexpr ssemi =>#
   """
-    (mkns 
+    (mkns
     `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
     (cdr _2))
   """;
 
   sassertion := lemma sdeclname sfun_arg : sexpr = sexpr ssemi =>#
   """
-    (mkns 
+    (mkns
     `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
     (cdr _2))
   """;
 
-  explain sassertion """<p>A lemma is a proposition which can be 
+  explain sassertion """<p>A lemma is a proposition which can be
   derived from axioms by an automatic theorem prover.</p>
   """;
 
@@ -2049,7 +2049,7 @@ syntax assertions {
 
   sassertion := reduce sdeclname sreduce_args : sexpr => sexpr ssemi =>#
   """
-    (mkns 
+    (mkns
     `(ast_reduce ,_sr ,(caar _2) ,(cadar _2) ,_3 ,_5 ,_7)
     (cdr _2))
   """;
@@ -2060,24 +2060,24 @@ syntax assertions {
   """;
 }
 
-syntax namespaces {  
+syntax namespaces {
   requires statements;
   sopen_decl := rename sdeclname = squalified_name ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_inherit ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-    """; 
+    """;
 
   sopen_decl := rename fun sdeclname = squalified_name ssemi =>#
     """
-    (mkns 
+    (mkns
     `(ast_inherit_fun ,_sr ,(caar _3) ,(cadar _3) ,_5)
     (cdr _3))
-    """; 
+    """;
 
   sopen_decl := inherit squalified_name ssemi =># "`(ast_inject_module ,_sr ,_2)";
- 
+
   sopen_decl := open stvarlist squalified_name ssemi =>#
     "`(ast_open ,_sr ,_2 ,_3)";
 
@@ -2093,35 +2093,35 @@ syntax namespaces {
 
   smodule_definition := module sdeclname = ? scompound =>#
     """
-    (mkns 
+    (mkns
     `(ast_untyped_module ,_sr ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-     """; 
+     """;
 
   smodule_definition := open module sdeclname = ? scompound =>#
     """
-    (mkns 
+    (mkns
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(caar _3) ,(cadar _3) ,_5)
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
     (cdr _3))
-     """; 
+     """;
 
   smodule_definition := namespace sdeclname = ? scompound =>#
     """
-    (mkns 
+    (mkns
     `(ast_namespace ,(caar _2) ,(cadar _2) ,_4)
     (cdr _2))
-     """; 
+     """;
 
   smodule_definition := open namespace sdeclname = ? scompound =>#
     """
-    (mkns 
+    (mkns
     `(ast_seq ,_sr (
       (ast_namespace ,(caar _3) ,(cadar _3) ,_5)
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
     (cdr _3))
-     """; 
+     """;
 
 }
 
@@ -2130,7 +2130,7 @@ syntax namespaces {
 syntax csyntax {
   requires statements;
 
-  base_type := 
+  base_type :=
     | "char" =># '`(ast_name ,_sr "char" ())' note "C character"
     | "tiny" =># '`(ast_name ,_sr "tiny" ())'
     | "short" =># '`(ast_name ,_sr "short" ())'
@@ -2166,7 +2166,7 @@ with be translated by the lexer to <code>ulong</code>.</p>
 """;
 
 
-  pointer_type:= 
+  pointer_type:=
     | base_type =># "_1"
     | "void" star =># '`(ast_name ,_sr "address" ())'
     | pointer_type star =># "`(ast_ref ,_1)"
@@ -2177,26 +2177,26 @@ explain pointer_type """
 """;
 
 
-  c_type := 
+  c_type :=
     | pointer_type =># "_1"
     | c_type lpar star rpar lpar c_type_list rpar =>#
       "`(ast_longarrow (,_6 ,_1))"           // cfunction
   ;
 
 explain c_type """
-<p>Note that function pointer types are C function 
+<p>Note that function pointer types are C function
 pointers <code>A--&gt;B</code>.</p>
 """;
 
 
   c_type_suffix := comma c_type =># "_2";
-  c_type_list := 
+  c_type_list :=
     | c_type c_type_suffix+ =># "`(ast_tuple,_sr ,(cons _1 _2))"
     | c_type =># "_1"
     | sepsilon =># "`(ast_tuple,_sr ())"
   ;
 
-  page c_types = 
+  page c_types =
     base_type,
     pointer_type,
     c_type,
@@ -2204,7 +2204,7 @@ pointers <code>A--&gt;B</code>.</p>
     c_type_list
   ;
 
-  declarator := 
+  declarator :=
     | pointer_type sname =># "`(PVar ,_2 ,_1)"
     | pointer_type const sname =># "`(PVal ,_3 ,_1)"
     | c_type lpar sname rpar lpar c_type_list rpar =>#
@@ -2223,7 +2223,7 @@ otherwise we pass by <code>var</code></p>
 """;
 
 explain declarator """
-<p>Note that function pointer types are C function 
+<p>Note that function pointer types are C function
 pointers <code>A--&gt;B</code>.</p>
 """;
 
@@ -2248,7 +2248,7 @@ the same as <code>x:int</code></p>
         (dcl (if (eq? kind 'PVal) 'ast_val_decl 'ast_var_decl))
       )
     `(,dcl ,_sr ,name ,dfltvs (some ,type) (some ,_3)))
-    """; 
+    """;
 
   // uninitialised variable (RISKY)
   svar_def := declarator ssemi =>#
@@ -2261,23 +2261,23 @@ the same as <code>x:int</code></p>
         (dcl (if (eq? kind 'PVal) 'ast_val_decl 'ast_var_decl))
       )
     `(,dcl ,_sr ,name ,dfltvs (some ,type) none))
-    """; 
+    """;
 
 
   // function
   sprocedure_definition := sadjectives "void" sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
-    (mkns 
+    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) Function ,_6)
     (cdr _3))
   """;
 
   // function
-  sfunction_definition := sadjectives pointer_type sdeclname 
+  sfunction_definition := sadjectives pointer_type sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
-    (mkns 
+    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (,_2 ,_5) Function ,_6)
     (cdr _3))
   """;
@@ -2300,7 +2300,7 @@ the same as <code>x:int</code></p>
   stype_alias := typedef declarator ssemi =>#
     """
     `(ast_type_alias ,_sr ,(car _2) ,dfltvs ,(cadr _2))
-    """; 
+    """;
 
   sifgoto := "break" ssemi =># '`(ast_goto ,_sr "break_label")';
   sifgoto := "continue" ssemi =># '`(ast_goto ,_sr "continue_label")';
@@ -2308,7 +2308,7 @@ the same as <code>x:int</code></p>
 
   sifgoto := for lpar statement sexpr ssemi sassignexpr rpar statement =>#
   """
-    (let* 
+    (let*
       (
         (init _3)
         (cond _4)
@@ -2317,10 +2317,10 @@ the same as <code>x:int</code></p>
       )
     (block ( append `(
       ,init
-      (ast_label ,_sr "redo_label" ) 
+      (ast_label ,_sr "redo_label" )
       (ast_unlikely_ifnotgoto ,_sr ,cond "break_label")
       ,body
-      (ast_label ,_sr "continue_label" ) 
+      (ast_label ,_sr "continue_label" )
       ,iter
       (ast_goto ,_sr "redo_label")
       ( ast_label ,_sr "break_label" ))
@@ -2336,8 +2336,8 @@ the same as <code>x:int</code></p>
     ( block ( append `(
       ( ast_label ,_sr "continue_label" )
       ( ast_unlikely_ifnotgoto ,_sr ,_3 "break_label" )
-      ,_5  
-      ( ast_goto ,_sr "continue_label" ) 
+      ,_5
+      ( ast_goto ,_sr "continue_label" )
       ( ast_label ,_sr "break_label" )
     )))
   """;
@@ -2345,24 +2345,24 @@ the same as <code>x:int</code></p>
   sifgoto := do scompound "until" sdollar_apply ssemi =>#
   """
     ( block ( append `(
-      ( ast_label ,_sr "continue_label" ) 
+      ( ast_label ,_sr "continue_label" )
       ,( block _2)
       ( ast_likely_ifnotgoto ,_sr ,_4 "continue_label" )
-      ( ast_label ,_sr "break_label" ) 
+      ( ast_label ,_sr "break_label" )
     )))
   """;
 
   sifgoto := if lpar sdollar_apply rpar statement else statement =>#
   """
     `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" ) 
-      ( ast_macro_name "lab2" "" ) 
+      ( ast_macro_name "lab1" "" )
+      ( ast_macro_name "lab2" "" )
       ( ast_ifnotgoto ,_sr ,_3 "lab1" )
       ,_5
       (ast_goto ,_sr "lab2")
-      ( ast_label ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab1" )
       ,_7
-      ( ast_label ,_sr "lab2" ) 
+      ( ast_label ,_sr "lab2" )
     )))
   """;
 
@@ -2370,10 +2370,10 @@ the same as <code>x:int</code></p>
   sifgoto := if lpar sdollar_apply rpar statement =>#
   """
     `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" ) 
+      ( ast_macro_name "lab1" "" )
       ( ast_ifnotgoto ,_sr ,_3 "lab1" )
       ,_5
-      ( ast_label ,_sr "lab1" ) 
+      ( ast_label ,_sr "lab1" )
     )))
   """;
 
@@ -2381,19 +2381,19 @@ the same as <code>x:int</code></p>
 
 //------------------------------------------
 syntax felix {
-  requires 
-    statements, 
+  requires
+    statements,
       type_decls,
       variables,
-      executable, 
+      executable,
       assertions,
       namespaces,
     requirements,
-    expressions, 
+    expressions,
     functions,
     patterns,
-    cbind, 
-    regexps, 
+    cbind,
+    regexps,
     parsing,
     macros,
     csyntax

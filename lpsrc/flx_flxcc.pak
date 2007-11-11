@@ -22,16 +22,16 @@ open Flx_cil_cil
 open Flxcc_util
 ;;
 
-let force_open_in place f = 
-  try 
-    open_in f 
-  with 
+let force_open_in place f =
+  try
+    open_in f
+  with
   |  _ -> failwith ("[" ^ place ^ "] Can't open " ^ f ^ " for input")
 
-let force_open_out place f = 
-  try 
-    open_out f 
-  with 
+let force_open_out place f =
+  try
+    open_out f
+  with
   |  _ -> failwith ("[" ^ place ^ "] Can't open " ^ f ^ " for output")
 
 type stab_t = {
@@ -130,8 +130,8 @@ let control = {
 
 (* map the name of a #include file which is
   intended to be a physical part of another
-  into that filename. 
-  
+  into that filename.
+
   The mapping is used to prevent
   a Felix include file or module being
   created for definitions in this file,
@@ -152,45 +152,45 @@ let rec glob dir recurse level =
   try
     let f = Unix.opendir dir in
     control.raw_include_dirs <- StringSet.add dir control.raw_include_dirs;
-    begin 
-      try 
+    begin
+      try
         while true do let m = Unix.readdir f in
           let path = Filename.concat dir m in
-          let st = 
+          let st =
             try Unix.lstat path
             with _ -> failwith ("Can't lstat " ^ path)
           in
           match st.Unix.st_kind with
           | Unix.S_REG ->
-            if not (mem path control.root_excludes) 
+            if not (mem path control.root_excludes)
             then begin
               control.raw_includes <- StringSet.add path control.raw_includes;
               control.files <- StringSet.add path control.files
             end
-            
+
           | Unix.S_DIR ->
             if recurse then
             if not (isprefix "." m) then
             begin
               glob path recurse (level + 1)
             end
-            
+
           | _ -> ()
-        done 
+        done
       with End_of_file -> Unix.closedir f
     end
   with Unix.Unix_error _ ->
     failwith ("Can't find directory " ^ dir)
 ;;
 
-let pattern = ref "*.h" 
+let pattern = ref "*.h"
 ;;
 
 let rec parse_control_file filename =
-  let f = force_open_in "parse_control_file" filename 
+  let f = force_open_in "parse_control_file" filename
   in
   let rec aux () =
-    try 
+    try
       let line = input_line f in
       let n = String.length line in
       let i = ref 0 in
@@ -247,7 +247,7 @@ let rec parse_control_file filename =
             let j = !i in
             while !i < n && line.[!i]<>' ' do incr i done;
             let x = String.sub line j (!i-j) in
-            control.language <- 
+            control.language <-
               (
                 match x with
                 | "C" | "c" -> `C
@@ -256,7 +256,7 @@ let rec parse_control_file filename =
               )
             ;
             raise Next
-          
+
           | "flx_compiler" ->
             while !i < n && line.[!i]=' ' do incr i done;
             let j = !i in
@@ -335,7 +335,7 @@ let rec parse_control_file filename =
 
             while !i < n && line.[!i]=' ' do incr i done;
             let fn2 =
-              if !i = n then "" 
+              if !i = n then ""
               else begin
                 let j = !i in
                 while !i < n && line.[!i]<>' ' do incr i done;
@@ -358,11 +358,11 @@ let rec parse_control_file filename =
             while !i < n && line.[!i]<>' ' do incr i done;
             let fn2 = String.sub line j (!i-j) in
             control.merge_files <- (fn1,fn2) :: control.merge_files;
-            let x = 
-              try Hashtbl.find control.rev_merge_files fn2 
-              with Not_found -> [] 
+            let x =
+              try Hashtbl.find control.rev_merge_files fn2
+              with Not_found -> []
             in Hashtbl.replace control.rev_merge_files fn2 (fn1::x)
-            ; 
+            ;
             raise Next
 
           | "rename" ->
@@ -408,7 +408,7 @@ let rec parse_control_file filename =
 
       with Next -> aux()
     with End_of_file -> ()
-  in 
+  in
     aux ();
     close_in f
 ;;
@@ -426,15 +426,15 @@ control.root_rec_includes
 ;;
 
 let autocreate x =
-  try open_out x 
+  try open_out x
   with | _ ->
   let rec mkpath x  =
     let d = Filename.dirname x in
     if d <> "" then begin
-      try Unix.mkdir d 0o777 
-      with _ -> 
+      try Unix.mkdir d 0o777
+      with _ ->
         mkpath d;
-        try Unix.mkdir d 0o777 
+        try Unix.mkdir d 0o777
         with _ -> failwith ("[autocreate] Can't create (p=0777) directory " ^ d)
     end
   in
@@ -444,7 +444,7 @@ let autocreate x =
 ;;
 
 let f = autocreate control.prein_filename in
-StringSet.iter 
+StringSet.iter
 (fun s ->
   output_string f ("#include \"" ^ s ^ "\"\n")
 )
@@ -453,7 +453,7 @@ control.raw_includes
 close_out f
 ;;
 
-let precmd = 
+let precmd =
   let path = ref "" in
   (*
   StringSet.iter
@@ -461,20 +461,20 @@ let precmd =
   control.raw_include_dirs
   ;
   *)
-  path := 
+  path :=
   (
-    String.concat " " 
+    String.concat " "
     (
-      map 
+      map
       (fun s-> "-I"^s^" ")
       control.include_path
     )
   ) ^ " " ^ !path
   ;
-  
-  control.preprocessor ^ " " ^ 
+
+  control.preprocessor ^ " " ^
   !path ^ " " ^
-  control.prein_filename ^ 
+  control.prein_filename ^
   " >" ^control.preout_filename
 ;;
 
@@ -485,20 +485,20 @@ print_endline precmd
 Unix.system precmd
 ;;
 
-let format_time tm = 
+let format_time tm =
   si (tm.Unix.tm_year + 1900) ^ "/" ^
   si (tm.Unix.tm_mon + 1) ^ "/" ^
   si tm.Unix.tm_mday ^ " " ^
   si tm.Unix.tm_hour ^ ":" ^
   si tm.Unix.tm_min ^ ":" ^
-  si tm.Unix.tm_sec 
+  si tm.Unix.tm_sec
 ;;
 
-let compile_start = Unix.time () 
-let compile_start_gm = Unix.gmtime compile_start 
-let compile_start_local = Unix.localtime compile_start 
-let compile_start_gm_string = format_time compile_start_gm ^ " UTC" 
-let compile_start_local_string = format_time compile_start_local ^ " (local)" 
+let compile_start = Unix.time ()
+let compile_start_gm = Unix.gmtime compile_start
+let compile_start_local = Unix.localtime compile_start
+let compile_start_gm_string = format_time compile_start_gm ^ " UTC"
+let compile_start_local_string = format_time compile_start_local ^ " (local)"
 ;;
 
 Flx_cil_cil.initCIL()
@@ -519,14 +519,14 @@ let ns (s,_,_,_) = s
 let is_def = function | Some _ -> "complete" | None -> "incomplete"
 ;;
 let type_of_se = function
-| SpecType ts -> 
+| SpecType ts ->
   begin match ts with
   | Tnamed s -> print_endline ("type " ^ s)
-  | Tstruct (s,fglo,_) -> 
+  | Tstruct (s,fglo,_) ->
     print_endline ("struct " ^ s ^ " " ^ is_def fglo)
-  | Tunion (s,fglo,_) -> 
+  | Tunion (s,fglo,_) ->
     print_endline ("union " ^ s ^ " " ^ is_def fglo)
-  | Tenum (s,fglo,_) -> 
+  | Tenum (s,fglo,_) ->
     print_endline ("enum " ^ s ^ " " ^ is_def fglo)
   | _ -> ()
   end
@@ -552,14 +552,14 @@ let excludes : string list ref = ref
 ]
 ;;
 
-let rpltname s = 
-  try Hashtbl.find control.replacements s 
+let rpltname s =
+  try Hashtbl.find control.replacements s
   with Not_found -> s
 
-let rplname s = 
-  try Hashtbl.find control.nontype_replacements s 
-  with Not_found -> 
-  try Hashtbl.find control.replacements s 
+let rplname s =
+  try Hashtbl.find control.nontype_replacements s
+  with Not_found ->
+  try Hashtbl.find control.replacements s
   with Not_found -> s
 
 let strexp n = "0" (* cheat *)
@@ -572,17 +572,17 @@ let remove_pnames t = match t with
 | _ -> t
 
 (* strip multiple spaces and newlines out *)
-let reformatc s = 
+let reformatc s =
   let s' = ref "" in
   let n = String.length s in
   for i=0 to n - 1 do
-    let 
-      ch = s.[i] and 
-      ch2 = if i < n-2 then s.[i+1] else '\000' 
+    let
+      ch = s.[i] and
+      ch2 = if i < n-2 then s.[i+1] else '\000'
     in
-    if 
-      ch = ' ' && 
-        (ch2=' ' ||ch2=',' || ch2=';' || ch2=')' || ch2='\n') 
+    if
+      ch = ' ' &&
+        (ch2=' ' ||ch2=',' || ch2=';' || ch2=')' || ch2='\n')
     then ()
     else if ch='\n' then s' := !s' ^ " "
     else s' := !s' ^ String.make 1 ch
@@ -610,10 +610,10 @@ let choose_alias stab s =
   (* just pick the shortest name *)
   let s = s :: !ss in
   let s = map (fun x -> String.length x,x) s in
-  let s = sort compare s in 
+  let s = sort compare s in
   let _,p = hd s in
   p
-  
+
 let prefered_alias stab s = choose_alias stab s
 
 
@@ -624,7 +624,7 @@ let rec sot stab t = match t with
 | TPtr (TVoid a',a) -> (cvqual a')^"address"
 | TPtr (TFun _,a) ->
   let t' = typeSig t in
-  begin try 
+  begin try
     fst (Hashtbl.find stab.registry t')
   with
     Not_found ->
@@ -640,36 +640,36 @@ let rec sot stab t = match t with
     Hashtbl.add stab.registry t' (name,s);
     name
   end
-   
+
 | TPtr (t',a) -> cvqual (attrof t') ^ "ptr[" ^ sot stab t'^ "]"
-| TArray (t',Some n,a)-> 
+| TArray (t',Some n,a)->
   cvqual (attrof t') ^ "ptr[" ^ sot stab t'^ "]"
 
-| TArray (t',None,a)-> 
+| TArray (t',None,a)->
   cvqual (attrof t') ^ "ptr[" ^ sot stab t' ^ "]"
 
 | TFun (t',Some ps,false,a) ->
   let ret = sot stab t'
-  and args = 
-    if length ps = 0 then "1" 
-    else String.concat " * " (List.map (soa stab) ps) 
+  and args =
+    if length ps = 0 then "1"
+    else String.concat " * " (List.map (soa stab) ps)
   in args ^ " -> " ^ ret
-    
-| TFun (t',None,false,a) -> 
+
+| TFun (t',None,false,a) ->
   let ret = sot stab t'
   and args = "1"
   in args ^ " -> " ^ ret
 
 | TFun (t',_,_,a) -> "CANT HANDLE THIS FUN"
 
-| TNamed (ti,a) -> 
-  let name = ptname ti in 
+| TNamed (ti,a) ->
+  let name = ptname ti in
   let name = prefered_alias stab name in
   Hashtbl.add stab.used_types name ();
   rpltname name
-  
-| TComp (ci,a) ->  
-  let name = pci ci in 
+
+| TComp (ci,a) ->
+  let name = pci ci in
   let name = prefered_alias stab name in
   Hashtbl.add stab.used_types name ();
   rpltname name
@@ -690,22 +690,22 @@ let pe x = print_endline x
 ;;
 
 (* name with replacement *)
-let flx_name x = match flx_name' x with 
+let flx_name x = match flx_name' x with
 | Some x -> Some (rplname x)
 | None -> None
 
 (* type name with replacement *)
-let flx_tname x = match flx_name' x with 
+let flx_tname x = match flx_name' x with
 | Some x -> rpltname x
 | None -> "error!!"
 
 let can_gen_ctype cstruct cfields =  cstruct &&
-  fold_left 
-  (fun t {fname=fname; ftype=ftype} -> 
+  fold_left
+  (fun t {fname=fname; ftype=ftype} ->
     t && not (isanont ftype) && ispublic fname &&
     is_cstruct_field ftype
   )
-  true cfields 
+  true cfields
 
 let chop_extension f =
   let b = Filename.basename f in
@@ -725,7 +725,7 @@ let replace_prefix x ls =
   ls
   ;
   !x
-let map_filename f = 
+let map_filename f =
   let f = replace_prefix f control.merge_files in
   f
 
@@ -747,7 +747,7 @@ let srepl s c1 c2 =
   done
 ;;
 
-let module_of_cfilename s = 
+let module_of_cfilename s =
   let module_of_filename fname =
     let x = String.copy fname in
     let fixup x =
@@ -758,10 +758,10 @@ let module_of_cfilename s =
       srepl x '+' '_';
       srepl x ':' '_';
     in
-    let mname = 
-      try 
+    let mname =
+      try
         let x = (chop_extension x) in
-        let x = 
+        let x =
           let m = String.length x in
           if m>0 && x.[0] = '/' then String.sub x 1 (m-1) else x
         in
@@ -779,7 +779,7 @@ let module_of_cfilename s =
 
 ;;
 
-let mk_stab cfile = 
+let mk_stab cfile =
 {
   stab_cfile = cfile;
   stab_flxfile = flxfile_of_cfile cfile;
@@ -808,7 +808,7 @@ let mk_stab cfile =
 }
 ;;
 
-let getstab s = 
+let getstab s =
   let lfn = map_filename s in
   try Hashtbl.find control.stabs lfn
   with Not_found ->
@@ -816,7 +816,7 @@ let getstab s =
     Hashtbl.add control.stabs lfn x;
     x
 
-let getreg {file=s} = getstab s 
+let getreg {file=s} = getstab s
 
 let oplist = [
   "+","add";
@@ -867,65 +867,65 @@ List.iter
 oplist
 ;;
 
-let fixsym k = 
+let fixsym k =
   try  (* hackery .. won't work with qualified names *)
-    Hashtbl.find operators k 
+    Hashtbl.find operators k
   with Not_found ->
     let k = String.copy k in
     srepl k ':' '_';
     k
 
-let rpl {file=s} which = 
+let rpl {file=s} which =
   let stab = getstab s in
   match which with
-  | `aliases (k,v) -> 
+  | `aliases (k,v) ->
     let k = fixsym k in
     Hashtbl.replace stab.aliases k v;
     Hashtbl.replace control.all_types k s
-  
-  | `struct_aliases(k,v)  -> 
+
+  | `struct_aliases(k,v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.struct_aliases k v;
     Hashtbl.replace control.all_types k s
 
-  | `abstract_types (k,v)  -> 
+  | `abstract_types (k,v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.abstract_types k v;
     Hashtbl.replace control.all_types k s
 
-  | `incomplete_types (k,v)  -> 
+  | `incomplete_types (k,v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.incomplete_types k v
 
-  | `variables(k,v)  ->  
+  | `variables(k,v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.variables k v
 
-  | `functions((k,ts,cv),v)  -> 
+  | `functions((k,ts,cv),v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.functions (k,ts,cv) v
 
-  | `fields(k,v)  -> 
+  | `fields(k,v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.fields k v
 
-  | `cstruct (k,v)  -> 
+  | `cstruct (k,v)  ->
     let k = fixsym k in
     Hashtbl.replace control.all_types k k;
     Hashtbl.replace stab.cstructs k v
 
-  | `procedures((k,ts,cv),v)  -> 
+  | `procedures((k,ts,cv),v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.procedures (k,ts,cv) v
 
-  | `enums(k,v)  -> 
+  | `enums(k,v)  ->
     let k = fixsym k in
     Hashtbl.replace stab.enums k v
 
-  | `callback_type (s,(t,i))  -> 
+  | `callback_type (s,(t,i))  ->
     Hashtbl.replace stab.callback_types s (t,i)
 
-  | `callback_client (s,(t,cbt,i,j))  -> 
+  | `callback_client (s,(t,cbt,i,j))  ->
     Hashtbl.replace stab.callback_clients s (t,cbt,i,j)
 
 ;;
@@ -934,20 +934,20 @@ let add_file fname =
   control.files <- StringSet.add fname control.files
 ;;
 
-let add_loc {file=fname} = 
+let add_loc {file=fname} =
   add_file fname
 ;;
 
 (* find all the void* in an argument list *)
-let find_voidps ps = 
+let find_voidps ps =
   let voids = ref [] in
   let i = ref 0 in
   List.iter
   (fun (_,t,_) ->
-    (match unrollType t with 
-    | TPtr (TVoid _,[]) -> voids := !i :: !voids 
+    (match unrollType t with
+    | TPtr (TVoid _,[]) -> voids := !i :: !voids
     | _ -> ()
-    ); 
+    );
     incr i
   )
   ps
@@ -955,9 +955,9 @@ let find_voidps ps =
   !voids
 
 (* check if a function pointer is a callback, by
-seeing if it contains exactly one void * argument 
+seeing if it contains exactly one void * argument
 *)
-let is_callbackp t = 
+let is_callbackp t =
   match t with
   | TPtr (TFun (_,Some ps,false,_),_) ->
     List.length (find_voidps ps) = 1
@@ -968,8 +968,8 @@ let find_callbackps ps =
   let callbacks = ref [] in
   let i = ref 0 in
   List.iter
-  (fun (_,t,_) -> 
-    if is_callbackp t 
+  (fun (_,t,_) ->
+    if is_callbackp t
     then callbacks := !i :: !callbacks
     ;
     incr i
@@ -988,7 +988,7 @@ let get_callback_data ps =
   let callbacks = find_callbackps ps in
   let voids = find_voidps ps in
   match callbacks, voids with
-  | [cbc_i], [cbc_adri] -> 
+  | [cbc_i], [cbc_adri] ->
     begin match List.nth ps cbc_i with
     | _,TPtr (TFun (_,Some ps,false,_),_),_ ->
       begin match find_voidps ps with
@@ -1015,10 +1015,10 @@ let handle_callback_maybe ft registry key key' fname loc =
   | None -> ()
   | Some (cbc_i, cbc_adri, cbi, cbt) ->
     (*
-    print_endline 
+    print_endline
     (
       "Found callback client " ^ fname ^
-      "\n  callback index = " ^ string_of_int cbc_i ^ 
+      "\n  callback index = " ^ string_of_int cbc_i ^
       "\n  client data index = " ^ string_of_int cbc_adri ^
       "\n  callback type = " ^ sot registry cbt ^
       "\n  callback type client data index = " ^ string_of_int cbi
@@ -1033,13 +1033,13 @@ let ptr key a =
   cvqual a ^ "ptr[" ^ key ^ "]"
 
 let handle_global_fun ft registry key key' fname loc =
-  handle_callback_maybe ft registry key key' fname loc; 
+  handle_callback_maybe ft registry key key' fname loc;
   match ft with
   | TFun (TVoid _,Some ps,false,a) ->
     let tsig = map (fun (_,t,a) -> typeSig t) ps in
-    let args = 
-      if length ps = 0 then "1" 
-      else String.concat " * " (List.map (soa registry) ps) 
+    let args =
+      if length ps = 0 then "1"
+      else String.concat " * " (List.map (soa registry) ps)
     in
     let cv = cvqual a in
     let ct = if key = key' then "" else key'^"($a);" in
@@ -1060,17 +1060,17 @@ let handle_global_fun ft registry key key' fname loc =
       let ret = sot (getreg loc) ret
       and args = List.map (soa registry) ps
       and ct = if key = key' then "" else key'^"($a)"
-      in 
+      in
       (
         (
-          if length ps = 0 
-          then "1" 
+          if length ps = 0
+          then "1"
           else String.concat " * " args
-        ) 
-        ^ 
+        )
+        ^
         " -> " ^ ret,ct
       )
-    in 
+    in
       let tsig = map (fun (_,t,a) -> typeSig t) ps in
       let cv = cvqual a in
       rpl loc (`functions ((key,tsig,cv), ftb))
@@ -1083,9 +1083,9 @@ let handle_global_fun ft registry key key' fname loc =
 
   | TFun (ret,Some _,true,a) ->
     let ftb =
-      let ret = sot (getreg loc) ret in 
+      let ret = sot (getreg loc) ret in
       "t -> " ^ ret,key'^"($a)"
-    in 
+    in
       let cv = cvqual a in
       rpl loc (`functions ((key^"[t]",[],cv), ftb))
 
@@ -1096,9 +1096,9 @@ let handle_method ft registry key fname loc =
   (* procedures *)
   | (TVoid _,Some ps,false,a) ->
     let key = ptr (fixsym key) a in
-    let args = 
-      if length ps = 0 then key 
-      else String.concat " * " (key :: (List.map (soa registry) ps)) 
+    let args =
+      if length ps = 0 then key
+      else String.concat " * " (key :: (List.map (soa registry) ps))
     in
       let tsig = map (fun (_,t,a) -> typeSig t) ps in
       let cv = cvqual a in
@@ -1123,17 +1123,17 @@ let handle_method ft registry key fname loc =
     let ftb =
       let ret = sot (getreg loc) ret
       and args = List.map (soa registry) ps
-      in 
+      in
       (
         (
-          if length ps = 0 
-          then key 
+          if length ps = 0
+          then key
           else String.concat " * " (key :: args)
-        ) 
-        ^ 
+        )
+        ^
         " -> " ^ ret,"$1->"^fname^"($a)"
       )
-    in 
+    in
       let tsig = map (fun (_,t,a) -> typeSig t) ps in
       let cv = cvqual a in
       rpl loc (`functions ((fname,tsig,cv), ftb))
@@ -1150,9 +1150,9 @@ let handle_method ft registry key fname loc =
   | (ret,Some _,true,a) ->
     let key = ptr key a in
     let ftb =
-      let ret = sot (getreg loc) ret in 
+      let ret = sot (getreg loc) ret in
       "t -> " ^ ret,"$1->"^fname^"($b)"
-    in 
+    in
       let cv = cvqual a in
       rpl loc (`functions ((fname^"[t]",[],cv), ftb))
 
@@ -1166,11 +1166,11 @@ let handle_field registry key fname ftype loc =
   | _ ->
     let t = key ^ " -> " ^ sot registry ftype in
     rpl loc (`fields (("get_"^fname), (t,"$1->"^fname)))
- 
+
 let gen_cstruct registry loc key cname cfields =
   let flds = ref [] in
   iter
-  (fun {fname=fname; ftype=ftype} -> 
+  (fun {fname=fname; ftype=ftype} ->
     let t = sot registry ftype in
     flds := (rplname fname,t) :: !flds
   )
@@ -1181,19 +1181,19 @@ let gen_cstruct registry loc key cname cfields =
   if key <> cname then
     rpl loc (`aliases (key, cname))
 
-let handle_global g =  let loc = get_globalLoc g in 
+let handle_global g =  let loc = get_globalLoc g in
   add_loc loc;
   let type_name = flx_tname g in
   match isanon g,flx_name g,flx_name' g with
-  | _,None,_ 
+  | _,None,_
   | true,_,_ ->
     begin match g with
 
     (* enum { .. }; *)
-    | GEnumTag (ei,_) -> 
+    | GEnumTag (ei,_) ->
       begin match ei with { eitems=eitems } ->
         iter
-        (fun (s,_,_) -> 
+        (fun (s,_,_) ->
           if ispublic s then rpl loc (`enums (rplname s,s))
         )
         eitems
@@ -1205,17 +1205,17 @@ let handle_global g =  let loc = get_globalLoc g in
   | false,Some key,Some key' ->
   if not (Hashtbl.mem control.rejects key) then
   match g with
-  | GType (ti,loc) -> 
+  | GType (ti,loc) ->
     let registry = getreg loc in
     begin
       match ti with {ttype=ttype} ->
-      match  ttype with 
-      | TComp (ci,_) -> 
+      match  ttype with
+      | TComp (ci,_) ->
         let anon= achk (ciname ci) in
         (*
         begin match ci with { cname=cname; cfields=cfields } ->
         iter
-        (fun {fname=fname; ftype=ftype} -> 
+        (fun {fname=fname; ftype=ftype} ->
           if not (isanont ftype) && ispublic fname then
           handle_field registry key fname ftype loc
         )
@@ -1228,8 +1228,8 @@ let handle_global g =  let loc = get_globalLoc g in
         else
           let v = ptdef registry ti in
           rpl loc (`struct_aliases (type_name, v))
-   
-      | TEnum (ei,_) -> 
+
+      | TEnum (ei,_) ->
         begin match ei with { eitems=eitems } ->
         iter
         (fun (s,_,_) -> if ispublic s then rpl loc (`enums (rplname s,s)))
@@ -1241,7 +1241,7 @@ let handle_global g =  let loc = get_globalLoc g in
         else
           rpl loc (`aliases (type_name, (ptdef registry ti)))
 
-      | TFun (_,_,true,_) -> 
+      | TFun (_,_,true,_) ->
         (* HACK: varargs function typedef *)
         rpl loc (`abstract_types (type_name, key'))
 
@@ -1253,19 +1253,19 @@ let handle_global g =  let loc = get_globalLoc g in
           rpl loc (`aliases (type_name, v))
     end
 
-  | GCompTag (ci,loc) -> 
+  | GCompTag (ci,loc) ->
     let registry = getreg loc in
-    begin match ci with { 
-      cname=cname; 
-      cfields=cfields; 
-      cstruct=cstruct 
+    begin match ci with {
+      cname=cname;
+      cfields=cfields;
+      cstruct=cstruct
     } ->
-      if can_gen_ctype cstruct cfields then 
+      if can_gen_ctype cstruct cfields then
         gen_cstruct registry loc type_name cname cfields
       else begin
         rpl loc (`abstract_types (type_name, (pcci ci)));
         iter
-        (fun {fname=fname; ftype=ftype} -> 
+        (fun {fname=fname; ftype=ftype} ->
           if not (isanont ftype) && ispublic fname then
           handle_field registry type_name fname ftype loc
         )
@@ -1273,11 +1273,11 @@ let handle_global g =  let loc = get_globalLoc g in
       end
     end
 
-    
-  | GCompTagDecl (ci,loc) -> 
+
+  | GCompTagDecl (ci,loc) ->
     rpl loc (`incomplete_types (type_name, (pcci ci)))
-    
-  | GEnumTag (ei,loc) -> 
+
+  | GEnumTag (ei,loc) ->
     rpl loc (`aliases (type_name, "int"));
     begin match ei with { eitems=eitems } ->
     iter
@@ -1286,13 +1286,13 @@ let handle_global g =  let loc = get_globalLoc g in
     end
 
   | GEnumTagDecl (ci,loc) -> rpl loc (`aliases (type_name, "int"))
-  
-  | GVar (vi,_,loc) 
+
+  | GVar (vi,_,loc)
   | GFun ({svar=vi},loc)
   | GVarDecl (vi,loc) ->
     let registry = getreg loc in
     let vname, vtype=
-      match vi with {vname=vname; vtype=vtype}->vname,vtype 
+      match vi with {vname=vname; vtype=vtype}->vname,vtype
     in
     if ispublic vname then
     begin match vtype with
@@ -1309,9 +1309,9 @@ let handle_global g =  let loc = get_globalLoc g in
 List.iter handle_global gs
 ;;
 
-let is_nonempty h = 
-  try 
-    Hashtbl.iter (fun _ -> raise Not_found) h; 
+let is_nonempty h =
+  try
+    Hashtbl.iter (fun _ -> raise Not_found) h;
     false
    with Not_found -> true
 ;;
@@ -1319,10 +1319,10 @@ let is_nonempty h =
 exception Found of string
 
 let pathname_of f =
-  try 
-    iter 
-    (fun s -> 
-      let x = Filename.concat s f in 
+  try
+    iter
+    (fun s ->
+      let x = Filename.concat s f in
       if Sys.file_exists x then raise (Found x)
     )
     control.include_path;
@@ -1334,7 +1334,7 @@ let rec find_includes' includes fname =
   if not (StringSet.mem fname !includes) then
     let f = force_open_in "find_includes'" fname in
     includes := StringSet.add fname !includes;
-    begin try 
+    begin try
       let rec aux () =
         let line = input_line f in
         let n = String.length line in
@@ -1375,12 +1375,12 @@ let rec find_includes' includes fname =
 
 
           (* lookup full path name *)
-          let filename = 
+          let filename =
             if not (Filename.is_relative filename) then filename else
             try pathname_of filename
-            with Not_found -> 
+            with Not_found ->
               (*
-              print_endline 
+              print_endline
               (
                 "[include_file'] Can't resolve " ^ filename ^
                 " included from " ^ fname
@@ -1398,7 +1398,7 @@ let rec find_includes' includes fname =
           (* next line *)
           raise Next
         with Next -> aux ()
-      in 
+      in
         aux()
     with End_of_file -> close_in f
     end
@@ -1407,9 +1407,9 @@ let rec find_includes' includes fname =
 let find_includes fname =
   let includes = ref StringSet.empty in
   find_includes' includes fname;
-  let extras = 
-    try Hashtbl.find control.rev_merge_files fname 
-    with Not_found -> [] 
+  let extras =
+    try Hashtbl.find control.rev_merge_files fname
+    with Not_found -> []
   in
   iter (find_includes' includes) extras
   ;
@@ -1420,26 +1420,26 @@ let global_includes = ref StringSet.empty
 ;;
 
 Hashtbl.iter
-begin 
+begin
   fun fname stab ->
   let includes = ref (find_includes stab.stab_cfile) in
   let ict = Hashtbl.create 97 in
   let xtyps = Hashtbl.create 97 in
   Hashtbl.iter
   (fun k v ->
-    if not (Hashtbl.mem stab.abstract_types k) then 
-    try 
+    if not (Hashtbl.mem stab.abstract_types k) then
+    try
       let file = Hashtbl.find control.all_types k in
       includes := StringSet.add file !includes;
       Hashtbl.add xtyps k file;
 
     with Not_found ->
       Hashtbl.add ict k v;
-      let v',ms = 
-        try Hashtbl.find control.incomplete_types_cache k 
+      let v',ms =
+        try Hashtbl.find control.incomplete_types_cache k
         with Not_found -> v,[]
       in
-      if v'<>v then 
+      if v'<>v then
       failwith ("Inconsistent type " ^k^"->"^ v ^ " <> " ^ v')
       ;
       Hashtbl.replace control.incomplete_types_cache k (v,stab.stab_module::ms)
@@ -1454,7 +1454,7 @@ begin
   (fun k v ->
     let k = rplname k in
     if not (Hashtbl.mem control.rejects k) then
-    try 
+    try
       let file = Hashtbl.find control.all_types k in
       includes := StringSet.add file !includes;
     with Not_found ->
@@ -1479,11 +1479,11 @@ StringSet.iter
 ;;
 
 StringSet.iter
-(fun s -> 
-   let filename = 
+(fun s ->
+   let filename =
      if not (Filename.is_relative s) then s else
      try pathname_of s
-     with Not_found -> 
+     with Not_found ->
        print_endline ( "Can't resolve primary file " ^ s);
        print_endline ("in path: ");
        iter
@@ -1503,8 +1503,8 @@ let rec find_macros fname =
   begin
     try
       let f = open_in fname in
-      begin 
-        try 
+      begin
+        try
           let rec aux () =
             let line = input_line f in
             let n = String.length line in
@@ -1537,7 +1537,7 @@ let rec find_macros fname =
               (* next line *)
               raise Next
             with Next -> aux ()
-          in 
+          in
             aux()
         with End_of_file -> close_in f
       end
@@ -1556,15 +1556,15 @@ control.stabs
 ;;
 let fnames = List.sort compare !fnames
 ;;
-iter begin 
+iter begin
   fun fname ->
   let stab = Hashtbl.find control.stabs fname in
   let outname = stab.stab_flxfile in
   let mode, outf =
-    if Sys.file_exists outname then 
-      `tmp, force_open_out "generate_file" "tmp.tmp" 
+    if Sys.file_exists outname then
+      `tmp, force_open_out "generate_file" "tmp.tmp"
     else
-      `orig,autocreate outname 
+      `orig,autocreate outname
   in
   let pe s = output_string outf (s ^ "\n") in
 
@@ -1579,7 +1579,7 @@ iter begin
   pe ("include 'std';");
   pe "";
   let macros = find_macros fname in
-  iter 
+  iter
   (fun s-> pe ("//#define " ^ s))
   macros
   ;
@@ -1589,29 +1589,29 @@ iter begin
     pe ("//NOT INCLUDED: \"" ^ fname^"\"")
   ;
 
-    
-  begin 
+
+  begin
     try
       Hashtbl.iter
-      (fun k v-> 
+      (fun k v->
         match Hashtbl.find control.incomplete_types_cache k with
         | (_,[_]) -> ()
-        | _ -> 
+        | _ ->
           pe ("include \"_incomplete_types_cache\";");
           raise Not_found
       )
-      stab.ict 
+      stab.ict
     with Not_found -> ()
   end
   ;
 
 
-  let include_depends = 
+  let include_depends =
     let x = stringset_map map_filename stab.includes in
     let x = stringset_map flxinclude_of_cfile x in
     StringSet.remove stab.stab_flxinclude x
   in
-  let module_depends = 
+  let module_depends =
     let x = stringset_map map_filename stab.includes in
     let x = stringset_map (fun s -> module_of_cfilename s) x in
     StringSet.remove stab.stab_module x
@@ -1622,7 +1622,7 @@ iter begin
     pe "";
     pe "//INCLUDES";
     StringSet.iter
-    (fun incname -> 
+    (fun incname ->
       pe ("include \"" ^ incname^ "\";")
     )
     include_depends
@@ -1637,7 +1637,7 @@ iter begin
     if StringSet.cardinal module_depends > 0 then
     begin
       StringSet.iter
-      (fun modulename' -> 
+      (fun modulename' ->
         pe ("open " ^ modulename' ^";")
       )
       module_depends
@@ -1649,7 +1649,7 @@ iter begin
       pe "";
       pe "//ABSTRACT TYPES";
       Hashtbl.iter
-      (fun k v-> 
+      (fun k v->
         pe ("type " ^ k ^ " = '" ^ v ^ "';")
       )
       stab.abstract_types
@@ -1661,7 +1661,7 @@ iter begin
       pe "";
       pe "//CSTRUCTS ";
       Hashtbl.iter
-      (fun k flds -> 
+      (fun k flds ->
         pe ("cstruct " ^ k ^ " {");
         iter (fun (fld,typ) ->
           pe ("  " ^ fld ^": " ^ typ^ ";")
@@ -1679,7 +1679,7 @@ iter begin
       pe "";
       pe "//C FUNCTION POINTER TYPES";
       Hashtbl.iter
-      (fun _ (name,tdef)-> 
+      (fun _ (name,tdef)->
         pe ("header '''" ^ tdef ^ "''';");
         pe ("type " ^ name ^ " = '" ^ name ^ "';")
       )
@@ -1692,11 +1692,11 @@ iter begin
       pe "";
       pe "//EXTERNALLY COMPLETED TYPES";
       Hashtbl.iter
-      (fun k v-> 
+      (fun k v->
         let m = module_of_cfilename v in
         pe ("//type " ^ k ^ " defined in "^m^"='" ^ v ^ "';")
       )
-      stab.xtyps 
+      stab.xtyps
     end
     ;
 
@@ -1705,15 +1705,15 @@ iter begin
       pe "";
       pe "//PURE INCOMPLETE TYPES";
       Hashtbl.iter
-      (fun k v-> 
+      (fun k v->
         match Hashtbl.find control.incomplete_types_cache k with
         | (_,[_]) ->
           pe ("type " ^ k ^ " = '" ^ v ^ "'; //local")
-        | (_,ls) -> 
+        | (_,ls) ->
           pe ("typedef " ^ k ^ " = _incomplete_types::" ^ k ^ ";//shared");
           iter (fun s->pe ("//shared by: " ^ s)) ls
       )
-      stab.ict 
+      stab.ict
     end
     ;
 
@@ -1722,10 +1722,10 @@ iter begin
       pe "";
       pe "//TYPES WE CAN'T FIND";
       Hashtbl.iter
-      (fun k _ -> 
+      (fun k _ ->
         pe ("//type " ^ k ^ " ??")
       )
-      stab.udt 
+      stab.udt
     end
     ;
 
@@ -1734,7 +1734,7 @@ iter begin
       pe "";
       pe "//STRUCT or UNION TAG ALIASES";
       Hashtbl.iter
-      (fun k v-> 
+      (fun k v->
         (* va_list is already defined in the standard library *)
         if k <> "va_list" then
         (* hack to fiddle typedef X {} X *)
@@ -1750,7 +1750,7 @@ iter begin
       pe "";
       pe "//TYPE ALIASES";
       Hashtbl.iter
-      (fun k v-> 
+      (fun k v->
         (* va_list is already defined in the standard library *)
         if k <> "va_list" then
         pe ("typedef " ^ k ^ " = " ^ v ^ ";")
@@ -1764,7 +1764,7 @@ iter begin
       pe "";
       pe "//VARIABLES";
       Hashtbl.iter
-      (fun k v-> 
+      (fun k v->
         pe ("const " ^ k ^ ": " ^v^ " = '" ^ k ^ "';")
       )
       stab.variables
@@ -1776,7 +1776,7 @@ iter begin
       pe "";
       pe "//ENUMERATION CONSTANTS";
       Hashtbl.iter
-      (fun k v -> 
+      (fun k v ->
         pe ("const " ^ k ^ ": int = '" ^ v ^ "';")
       )
       stab.enums
@@ -1788,14 +1788,14 @@ iter begin
       pe "";
       pe "//PROCEDURES";
       let ps = ref [] in
-      Hashtbl.iter 
+      Hashtbl.iter
       (fun (k,_,_) v -> ps := (k,v):: !ps)
       stab.procedures
       ;
       let ps = sort compare !ps in
       iter
-      (fun (k, (v,b)) -> 
-        if b = "" then 
+      (fun (k, (v,b)) ->
+        if b = "" then
          pe ("proc " ^ k ^ ": " ^v^ ";")
         else
          pe ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
@@ -1815,7 +1815,7 @@ iter begin
       ;
       let ps = sort compare !ps in
       iter
-      (fun (k, (v,b))-> 
+      (fun (k, (v,b))->
         if b = "" then
           pe ("fun " ^ k ^ ": " ^v^ ";")
         else
@@ -1832,7 +1832,7 @@ iter begin
       pe "";
       pe "//CALLBACK TYPE WRAPPERS";
       Hashtbl.iter
-      (fun tname (t, cbi)-> 
+      (fun tname (t, cbi)->
         pe ("//callback type " ^ tname ^ ", client data at " ^ string_of_int cbi);
         let ccbt = "_ccbt_" ^ tname in
         let fcbt = "_fcbt_" ^ tname in
@@ -1842,9 +1842,9 @@ iter begin
         | TPtr (TFun (ret,Some ps, false,a),_) ->
           (* fix arg names *)
           let i = ref 0 in
-          let ps = 
+          let ps =
             map
-            (fun (_,t,a) -> 
+            (fun (_,t,a) ->
               incr i;
               let pn = "a"^ string_of_int !i in
               pn,t,a
@@ -1860,29 +1860,29 @@ iter begin
           ps
           ;
           let ps' = rev !ps' in
-          (* make a typedef for the felix callback type 
+          (* make a typedef for the felix callback type
           mainly as documentation [since the client will
           declare a function of this type, the actual
           typedef isn't that useful]
           *)
 
           begin match ret with
-          | TVoid _ -> 
-            let args = 
-             if length ps' = 0 then "1" 
-            else String.concat " * " (List.map soa ps') 
+          | TVoid _ ->
+            let args =
+             if length ps' = 0 then "1"
+            else String.concat " * " (List.map soa ps')
             in
             pe ("typedef " ^ fcbat ^ " = " ^ args ^ "; ");
             pe ("export type (" ^ fcbat ^ ") as \""^fcbat^"\";");
             pe ("typedef " ^ fcbt ^ " = " ^ args ^ " -> void; ");
             pe ("export type (" ^ fcbt ^ ") as \""^fcbt^"\";");
             let sr = {line=0;file="";byte=0} in
-            let vi = 
+            let vi =
               {
                 vname=fcbw; vtype=t'; vattr=[]; vglob=true;
                 vinline=false; vdecl=sr; vid=0; vaddrof=false;
                 vreferenced=true; vstorage=NoStorage
-              } 
+              }
             in
             let g =  GVarDecl (vi,sr) in
             let d = defaultCilPrinter#pGlobal () g in
@@ -1895,8 +1895,8 @@ iter begin
             let s = String.sub s 0 (String.length s - 1) in
             pe ("body '''\n  " ^ s ^ "{");
             let oargs = ref [] in
-            iter 
-            (fun i -> if i <> cbi then 
+            iter
+            (fun i -> if i <> cbi then
               oargs := ("a" ^ string_of_int (i+1)) :: !oargs
             )
             (nlist (length ps))
@@ -1904,7 +1904,7 @@ iter begin
             pe (
               "  con_t *p  = (("^fcbt^")a" ^ string_of_int (cbi+1) ^
               ")->call(" ^
-              if List.length !oargs > 1 then 
+              if List.length !oargs > 1 then
                 "0, " ^fcbat^"(" ^ String.concat ", " (rev !oargs)^"));"
               else
                 String.concat ", " ("0" :: rev !oargs)^");"
@@ -1912,26 +1912,26 @@ iter begin
             pe ("  while(p) p=p->resume();");
             pe ("}''';\n");
 
-          | _ -> 
-            let args = 
-             if length ps' = 0 then "1" 
-            else String.concat " * " (List.map soa ps') 
+          | _ ->
+            let args =
+             if length ps' = 0 then "1"
+            else String.concat " * " (List.map soa ps')
             in
-            let args = 
-             if length ps' = 0 then "1" 
-            else String.concat " * " (List.map soa ps') 
+            let args =
+             if length ps' = 0 then "1"
+            else String.concat " * " (List.map soa ps')
             in
             pe ("typedef " ^ fcbat ^ " = "^ args ^ ";");
             pe ("export type (" ^ fcbat ^ ") as \""^fcbat^"\";");
             pe ("typedef " ^ fcbt ^ " = "^ args ^ " -> "^sot ret^"; ");
             pe ("export type (" ^ fcbt ^ ") as \""^fcbt^"\";");
             let sr = {line=0;file="";byte=0} in
-            let vi = 
+            let vi =
               {
                 vname=fcbw; vtype=t'; vattr=[]; vglob=true;
                 vinline=false; vdecl=sr; vid=0; vaddrof=false;
                 vreferenced=true; vstorage=NoStorage
-              } 
+              }
             in
             let g =  GVarDecl (vi,sr) in
             let d = defaultCilPrinter#pGlobal () g in
@@ -1939,13 +1939,13 @@ iter begin
             let s = reformatc s in
             pe ("header '''" ^ s ^ "''';\n");
             pe ("const "^fcbw^": " ^ tname ^ " = \"" ^ fcbw ^ "\";");
-            
+
             (* hack: elide trailing semicolon *)
             let s = String.sub s 0 (String.length s - 1) in
             pe ("body '''\n  " ^ s ^ "{");
             let oargs = ref [] in
-            iter 
-            (fun i -> if i <> cbi then 
+            iter
+            (fun i -> if i <> cbi then
               oargs := ("a" ^ string_of_int (i+1)) :: !oargs
             )
             (nlist (length ps))
@@ -1953,10 +1953,10 @@ iter begin
             pe (
               "  return (("^fcbt^")a" ^ string_of_int (cbi+1) ^
               ")->apply(" ^
-              if List.length !oargs > 1 then 
+              if List.length !oargs > 1 then
                 fcbat^"(" ^
                 String.concat ", " (rev !oargs)^"));"
-              else  
+              else
                 String.concat ", " (rev !oargs)^");"
             );
             pe ("}''';\n");
@@ -1976,7 +1976,7 @@ iter begin
       pe "";
       pe "//CALLBACK CLIENT WRAPPERS";
       Hashtbl.iter
-      (fun fname (t, cbt, cbi,adri)-> 
+      (fun fname (t, cbt, cbi,adri)->
         pe ("//callback client " ^ fname ^ ", client data at " ^ string_of_int cbi ^ ", callback at " ^ string_of_int adri);
         match t with
         | TFun (ret,Some ps, false,a) ->
@@ -1984,12 +1984,12 @@ iter begin
           let i = ref 0 in
           let args = ref [] in
           iter
-          (fun (_,t,a) -> 
+          (fun (_,t,a) ->
             if !i <> adri then begin
               let pn = "a"^ string_of_int (!i+1) in
-              let t = 
-                if !i = cbi then "_fcbt_" ^ sot t 
-                else sot t 
+              let t =
+                if !i = cbi then "_fcbt_" ^ sot t
+                else sot t
               in
               args := (pn,t) :: !args
             end
@@ -1999,19 +1999,19 @@ iter begin
           ps
           ;
           let args = rev !args in
-          let params = 
-            catmap ", " 
-            (fun (n,t) -> n ^ ": " ^ t) 
-            args 
+          let params =
+            catmap ", "
+            (fun (n,t) -> n ^ ": " ^ t)
+            args
           in
           let call_args = ref [] in
           let i = ref 0 in
           for j = 0 to length ps - 1 do
-            call_args := 
-              begin 
-                if j = adri then 
+            call_args :=
+              begin
+                if j = adri then
                   ("C_hack::cast[address]a"^ string_of_int (cbi+1))
-                else if j = cbi then 
+                else if j = cbi then
                   ("_fcbw_" ^ cbt)
                 else begin
                   while !i=cbi || !i=adri do incr i done;
@@ -2019,18 +2019,18 @@ iter begin
                   incr i;
                   a
                 end
-              end 
-            :: 
+              end
+            ::
             !call_args
           done
           ;
           begin match ret with
-          | TVoid _ -> 
+          | TVoid _ ->
             pe ("proc wrapper_" ^ fname ^ "(" ^ params ^ ") {");
             pe ("  " ^fname^"(" ^ String.concat ", " (rev !call_args) ^ ");");
             pe ("}")
 
-          | ret -> 
+          | ret ->
             let ret = sot ret in
             pe ("fun wrapper_" ^ fname ^ "(" ^ params ^ "): "^ret^"= {");
             pe ("  return " ^fname^"(" ^ String.concat ", " (rev !call_args) ^ ");");
@@ -2049,7 +2049,7 @@ iter begin
       pe "";
       pe "//STRUCT and UNION FIELDS";
       Hashtbl.iter
-      (fun k (v,b)-> 
+      (fun k (v,b)->
         pe ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
       )
       stab.fields
@@ -2065,11 +2065,11 @@ iter begin
     let f1 = force_open_in "new_file" "tmp.tmp" in
     let f2 = force_open_in "changed_file" outname in
     for i = 1 to 6 do (* skip timestamps when comparing *)
-      ignore(input_line f1); 
+      ignore(input_line f1);
       ignore(input_line f2)
     done
     ;
-    try 
+    try
       while true do
         let in1 = try Some (input_line f1) with End_of_file -> None in
         let in2 = try Some (input_line f2) with End_of_file -> None in
@@ -2078,11 +2078,11 @@ iter begin
         | Some i, Some j when i = j -> ()
         | _ -> raise Not_equal
       done
-    with 
-      | Not_equal -> 
-        begin 
+    with
+      | Not_equal ->
+        begin
           print_endline ("Changed file .. " ^ outname);
-          close_in f1; close_in f2; 
+          close_in f1; close_in f2;
           let f1 = force_open_in "changed_file" "tmp.tmp" in
           let f2 = force_open_out "change_file" outname in
           try while true do output_string f2 ((input_line f1) ^ "\n")
@@ -2090,18 +2090,18 @@ iter begin
           close_in f1; close_out f2
         end
 
-      | Equal -> 
+      | Equal ->
         print_endline ("Unchanged file .. " ^ outname);
-        close_in f2; 
+        close_in f2;
         close_in f1
 end
 fnames
 ;;
 
 if is_nonempty control.incomplete_types_cache then
-  let outname = 
-    Filename.concat (control.outdir)  
-    ("_incomplete_types_cache.flx") 
+  let outname =
+    Filename.concat (control.outdir)
+    ("_incomplete_types_cache.flx")
   in
   let outf = autocreate outname in
   let print_endline s = output_string outf (s ^ "\n") in
@@ -2124,13 +2124,13 @@ if is_nonempty control.incomplete_types_cache then
   close_out outf
 ;;
 
-let flx f = 
+let flx f =
   if control.flxg_command <> "" then begin
     let cmd = control.flxg_command ^ " -I"^control.outdir^" -c " ^f in
     print_endline cmd;
     Unix.system(cmd)
   end
-  else Unix.WEXITED 0 (* cheat *) 
+  else Unix.WEXITED 0 (* cheat *)
 ;;
 
 let fnames = ref []
@@ -2139,11 +2139,11 @@ let fnames = ref []
 let rec dflx dir =
   try
     let f = Unix.opendir dir in
-    begin 
-      try 
+    begin
+      try
         while true do let m = Unix.readdir f in
           let path = Filename.concat dir m in
-          let st = 
+          let st =
             try Unix.lstat path
             with _ -> failwith ("Can't lstat " ^ path)
           in
@@ -2153,10 +2153,10 @@ let rec dflx dir =
             let fn = Filename.chop_suffix path ".flx" in
             fnames := fn :: !fnames
 
-          | Unix.S_DIR -> 
-            if not (isprefix "." m) then dflx path 
+          | Unix.S_DIR ->
+            if not (isprefix "." m) then dflx path
           | _ -> ()
-        done 
+        done
       with End_of_file -> Unix.closedir f
     end
   with Unix.Unix_error _ ->
@@ -2166,37 +2166,37 @@ let rec dflx dir =
 dflx control.outdir
 ;;
 
-let fnames = List.sort compare !fnames 
+let fnames = List.sort compare !fnames
 ;;
-let faulty = ref [];; 
+let faulty = ref [];;
 let good = ref [];;
 
-iter 
+iter
 begin fun fn ->
   let result = flx fn in
   match result with
-  | Unix.WEXITED 0 -> good := fn :: !good 
-  | Unix.WEXITED i -> 
+  | Unix.WEXITED 0 -> good := fn :: !good
+  | Unix.WEXITED i ->
     faulty := fn :: !faulty;
     print_endline ("***** Failed, error " ^ string_of_int i)
-  | Unix.WSIGNALED i 
-  | Unix.WSTOPPED i -> 
+  | Unix.WSIGNALED i
+  | Unix.WSTOPPED i ->
     failwith ("SIGNAL " ^ string_of_int i)
 end
 fnames
 ;;
 
 let f = open_out control.log_filename in
-  iter 
-  (fun fn -> 
+  iter
+  (fun fn ->
     output_string f ("FAILED   : " ^ fn ^ "\n")
-  ) 
+  )
   (rev !faulty)
   ;
-  iter 
-  (fun fn -> 
+  iter
+  (fun fn ->
     output_string f ("SUCCEEDED: " ^ fn ^ "\n")
-  ) 
+  )
   (rev !good)
   ;
   close_out f
@@ -2270,7 +2270,7 @@ rename_nontype sigstack sigstack_
 rename_nontype sigvec sigvec_
 rename_nontype mallinfo mallinfo_
 rename_nontype vtimes vtimes_
-rename_nontype statfs statfs_ 
+rename_nontype statfs statfs_
 rename_nontype timezone timezone_
 
 @if MACOSX:
@@ -2287,7 +2287,7 @@ rename_nontype timezone timezone_
 // and not intended to be used directly
 // We therefore prevent C level #includes like
 //
-// header '#include <file>'; 
+// header '#include <file>';
 //
 // from being generated
 //
@@ -2446,13 +2446,13 @@ merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
 #include config/gnu_c_search_path.flxcc
 flx_compiler bin/flxg -Ilib
 
-outdir c89 
-prefix /usr/include 
+outdir c89
+prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor gcc -E -std=c89
 language C
 
-//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1
 
 incfile assert.h
 incfile ctype.h
@@ -2483,12 +2483,12 @@ rename String String_
 #include config/gnu_c_search_path.flxcc
 flx_compiler bin/flxg -Ilib
 
-outdir gnu89 
-prefix /usr/include 
+outdir gnu89
+prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor gcc -E -std=gnu89
 language C
-//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1
 flx_compiler bin/flxg -Ilib
 
 incfile assert.h
@@ -2524,8 +2524,8 @@ rename String String_
 #include config/gnu_c_search_path.flxcc
 flx_compiler bin/flxg -Ilib
 
-outdir c99 
-prefix /usr/include 
+outdir c99
+prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor gcc -E -std=c99
 language C
@@ -2536,7 +2536,7 @@ incfile complex.h
 incfile errno.h
 incfile fenv.h
 incfile float.h
-incfile inttypes.h 
+incfile inttypes.h
 //incfile iso646.h: just macros
 incfile limits.h
 incfile locale.h
@@ -2566,11 +2566,11 @@ rename String String_
 flx_compiler bin/flxg -Ilib
 
 outdir gnu99
-prefix /usr/include 
+prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor gcc -E -std=gnu99
 language C
-//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1
 
 incfile assert.h
 incfile ctype.h
@@ -2578,7 +2578,7 @@ incfile complex.h
 incfile errno.h
 incfile fenv.h
 incfile float.h
-incfile inttypes.h 
+incfile inttypes.h
 //incfile iso646.h: just macros
 incfile limits.h
 incfile locale.h
@@ -2607,13 +2607,13 @@ rename String String_
 #include config/gnu_cxx_search_path.flxcc
 flx_compiler bin/flxg -Ilib
 
-outdir cxx 
+outdir cxx
 prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor g++ -E -I/usr/include/g++-3
 language C++
 
-//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1
 
 incfile cctype
 incfile cerrno
@@ -2649,7 +2649,7 @@ prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor g++ -E -I/usr/include/g++-3
 language C++
 
-//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1
 
 incfile cctype
 incfile cerrno
@@ -2680,13 +2680,13 @@ rename String String_
 #include config/gnu_cxx_search_path.flxcc
 flx_compiler bin/flxg -Ilib
 
-outdir gnucxx 
+outdir gnucxx
 prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor g++ -E -I/usr/include/g++-3
 language C++
 
-//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1
 
 incfile cctype
 incfile cerrno
@@ -2720,52 +2720,52 @@ prefix /usr/include
 prefix /usr/local/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prefix /usr/lib/glib/include/ glib
-preprocessor g++ -E 
+preprocessor g++ -E
 language C
 
-//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1
 
-path /usr/include/atk-1.0 
-path /usr/include/bonobo-activation-2.0 
-path /usr/include/eel-2 
-path /usr/include/gail-1.0 
-path /usr/include/gal-1.0 
-path /usr/include/gconf/2 
-path /usr/include/gtk-2.0 
-path /usr/lib/gtk-2.0/include 
+path /usr/include/atk-1.0
+path /usr/include/bonobo-activation-2.0
+path /usr/include/eel-2
+path /usr/include/gail-1.0
+path /usr/include/gal-1.0
+path /usr/include/gconf/2
+path /usr/include/gtk-2.0
+path /usr/lib/gtk-2.0/include
 path /usr/include/X11
-path /usr/include/glib-2.0 
-path /usr/lib/glib-2.0/include 
-path /usr/lib/glib/include 
-path /usr/include/gnome-vfs-2.0 
-path /usr/lib/gnome-vfs-2.0/include 
-path /usr/include/gnome-vfs-module-2.0 
-path /usr/include/gtkhtml-1.1 
-path /usr/include/gdk-pixbuf-1.0 
-path /usr/include/gnome-1.0 
-path /usr/include/freetype2 
-path /usr/lib/gnome-libs/include 
-path /usr/include/gnome-xml 
-path /usr/include/libglade-1.0 
-path /usr/include/libart-2.0 
-path /usr/include/libbonobo-2.0 
-path /usr/include/libbonoboui-2.0 
-path /usr/include/libglade-2.0 
-path /usr/include/libgnome-2.0 
-path /usr/include/libgnomecanvas-2.0 
-path /usr/include/libgnomeui-2.0 
-path /usr/include/libgsf-1 
-path /usr/include/libIDL-2.0 
-path /usr/include/metacity-1 
-path /usr/include/panel-2.0 
-path /usr/include/libpng12 
-path /usr/include/librsvg-2 
-path /usr/include/libxml2 
-path /usr/include/linc-1.0 
-path /usr/kerberos/include 
-path /usr/include/orbit-2.0 
-path /usr/include/orbit-2.0/orbit-idl 
-path /usr/include/pango-1.0 
+path /usr/include/glib-2.0
+path /usr/lib/glib-2.0/include
+path /usr/lib/glib/include
+path /usr/include/gnome-vfs-2.0
+path /usr/lib/gnome-vfs-2.0/include
+path /usr/include/gnome-vfs-module-2.0
+path /usr/include/gtkhtml-1.1
+path /usr/include/gdk-pixbuf-1.0
+path /usr/include/gnome-1.0
+path /usr/include/freetype2
+path /usr/lib/gnome-libs/include
+path /usr/include/gnome-xml
+path /usr/include/libglade-1.0
+path /usr/include/libart-2.0
+path /usr/include/libbonobo-2.0
+path /usr/include/libbonoboui-2.0
+path /usr/include/libglade-2.0
+path /usr/include/libgnome-2.0
+path /usr/include/libgnomecanvas-2.0
+path /usr/include/libgnomeui-2.0
+path /usr/include/libgsf-1
+path /usr/include/libIDL-2.0
+path /usr/include/metacity-1
+path /usr/include/panel-2.0
+path /usr/include/libpng12
+path /usr/include/librsvg-2
+path /usr/include/libxml2
+path /usr/include/linc-1.0
+path /usr/kerberos/include
+path /usr/include/orbit-2.0
+path /usr/include/orbit-2.0/orbit-idl
+path /usr/include/pango-1.0
 
 incdir /usr/include
 incdir /usr/include/sys

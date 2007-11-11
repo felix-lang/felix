@@ -8,18 +8,18 @@ open List
 let hash_table_from_list n lst =
   let tbl = Hashtbl.create n
   in let addEntry (s,kw) = Hashtbl.add tbl s kw
-  in 
+  in
   List.iter addEntry lst;
   tbl
 
 
 let flx_keyword_table =          (* 97 is a prime larger than table size *)
-  hash_table_from_list 97 [  
+  hash_table_from_list 97 [
 @for n,t in flx_keywords:
   tangle('  "'+n+'", (fun s -> '+t+' s);')
 ]
 
-let map_flx_keywords srcref lex_item = 
+let map_flx_keywords srcref lex_item =
   try (Hashtbl.find flx_keyword_table lex_item) srcref
   with Not_found -> NAME (srcref, lex_item)
 

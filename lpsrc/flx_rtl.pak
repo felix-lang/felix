@@ -137,7 +137,7 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 
 @select(tangler('config/flx_exceptions.fpc', 'data'))
 Name: flx
-Description: Felix exceptions 
+Description: Felix exceptions
 @if HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_exceptions_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_exceptions_static")
@@ -223,8 +223,8 @@ int main(int argc, char** argv)
   gc::collector::malloc_free allocator;
   gc::collector::flx_collector_t collector(&allocator, NULL);
   gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
-    false, 
-    false, 
+    false,
+    false,
     false,
     0,
     -1,

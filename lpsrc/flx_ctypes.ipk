@@ -14,20 +14,20 @@ type cexpr_t =
   | `Ce_array of cexpr_t * cexpr_t
   | `Ce_new of cexpr_t list * string * cexpr_t list
   | `Ce_cast of string * cexpr_t
-  | `Ce_cond of cexpr_t * cexpr_t * cexpr_t 
-  | `Ce_expr of string * string 
+  | `Ce_cond of cexpr_t * cexpr_t * cexpr_t
+  | `Ce_expr of string * string
 ]
 
 
 (* These are constructors for C terms representing
    actual C types. This includes incomplete types,
-   functions and arrays (which have real types, 
+   functions and arrays (which have real types,
    even though there are no corresponding first class values).
 
   Note there are no refernce types, and no const types.
 *)
 
-type ctype_t = 
+type ctype_t =
 [
   | `Ct_base of string
   | `Ct_ptr of ctype_t
@@ -41,7 +41,7 @@ type ctype_t =
   | `Ct_array of int * ctype_t
   | `Ct_varray of ctype_t
   | `Ct_fun of ctype_t * ctype_t list
-  | `Ct_vfun of ctype_t * ctype_t list 
+  | `Ct_vfun of ctype_t * ctype_t list
     (* argument list must not be empty for varags *)
 ]
 
@@ -51,7 +51,7 @@ type ctype_t =
 
   int const * const x;
 
-  declares x to be const lvalue 
+  declares x to be const lvalue
   of type pointer-const to int
 *)
 
@@ -80,7 +80,7 @@ open Flx_ctypes
 
 (* suffixes apply first, then dereferences so
   int *t[2]
-  
+
 is an array of 2 pointers, brackets are needed
 for a pointer to an array of 2 ints:
 
@@ -105,44 +105,44 @@ let prec = function
 | `Ct_cvptm _ -> 2
 
 let rec plist ps =
-  String.concat ", " 
+  String.concat ", "
   (
     List.map (fun t -> aux t "" ) ps
-  ) 
+  )
 
 
-and aux (t:ctype_t) s = 
+and aux (t:ctype_t) s =
   let br s = "(" ^ s ^ ")" in
   match t with
-  | `Ct_base x -> 
-    if String.length x = 0 
-    then s 
+  | `Ct_base x ->
+    if String.length x = 0
+    then s
     else if String.length s = 0 then x
     else x ^ " " ^ s
 
-  | `Ct_ptr t -> aux t ("*"^s) 
-  | `Ct_cptr t -> aux t (" const*"^s) 
-  | `Ct_vptr t -> aux t (" volatile*"^s) 
-  | `Ct_cvptr t -> aux t (" const volatile*"^s) 
+  | `Ct_ptr t -> aux t ("*"^s)
+  | `Ct_cptr t -> aux t (" const*"^s)
+  | `Ct_vptr t -> aux t (" volatile*"^s)
+  | `Ct_cvptr t -> aux t (" const volatile*"^s)
 
-  | `Ct_ptm (k,t) -> aux t (k ^ "::*" ^ s) 
-  | `Ct_cptm (k,t) -> aux t ("const "^ k ^ "::*" ^ s) 
-  | `Ct_vptm (k,t) -> aux t ("volatile " ^ k ^ "::*"^ s) 
-  | `Ct_cvptm (k,t) -> aux t ("const volatile " ^ k ^ "::*" ^ s) 
+  | `Ct_ptm (k,t) -> aux t (k ^ "::*" ^ s)
+  | `Ct_cptm (k,t) -> aux t ("const "^ k ^ "::*" ^ s)
+  | `Ct_vptm (k,t) -> aux t ("volatile " ^ k ^ "::*"^ s)
+  | `Ct_cvptm (k,t) -> aux t ("const volatile " ^ k ^ "::*" ^ s)
 
-  | `Ct_array (i,t) -> aux t (br s ^ "["^string_of_int i^"]" ) 
-  | `Ct_varray t -> aux t (br s ^ "[]") 
-  | `Ct_fun (t,ps) -> 
+  | `Ct_array (i,t) -> aux t (br s ^ "["^string_of_int i^"]" )
+  | `Ct_varray t -> aux t (br s ^ "[]")
+  | `Ct_fun (t,ps) ->
     let args =  plist ps in
     aux t (br s ^ "(" ^ args ^ ")" )
-    
+
   | `Ct_vfun (t,ps) ->
     let args = plist ps ^ ", ..." in
-    aux t (br s ^ "(" ^ args ^ ")") 
+    aux t (br s ^ "(" ^ args ^ ")")
 
-let string_of_ctype t = aux t "" 
+let string_of_ctype t = aux t ""
 
-let string_of_cdecl_type n t = 
+let string_of_cdecl_type n t =
   match t with
   | `Cdt_value t -> aux t n
   | `Cdt_const t -> aux t ("const " ^ n)
@@ -152,7 +152,7 @@ let string_of_cdecl_type n t =
   | `Cdt_cref t -> aux t ("const &" ^n)
   | `Cdt_vref t -> aux t ("volatile &"^n)
   | `Cdt_cvref t -> aux t ("const volatile &"^n)
- 
+
 @h = tangler("src/compiler/flxlib/flx_cexpr.mli")
 @select(h)
 open Flx_ast
@@ -177,7 +177,7 @@ val ce_dot : cexpr_t -> string -> cexpr_t
 val ce_arrow : cexpr_t -> string -> cexpr_t
 exception Unknown_prec of prec_t
 
-val genprec: string -> prec_t -> string * prec_t 
+val genprec: string -> prec_t -> string * prec_t
 
 @h = tangler("src/compiler/flxlib/flx_cexpr.ml")
 @select(h)
@@ -314,11 +314,11 @@ let postfix = Hashtbl.create 17
 let prec_remap = Hashtbl.create 31
 let seq = ref 0
 ;;
-let find_prec p = 
-  try Hashtbl.find prec p 
-  with Not_found -> 
+let find_prec p =
+  try Hashtbl.find prec p
+  with Not_found ->
     raise (Unknown_prec p)
-;; 
+;;
 
 iter (fun x -> add prec x !seq; incr seq; incr seq) precedence;
 iter (fun (n,p) -> add infix n (find_prec p)) infix_cops;
@@ -334,7 +334,7 @@ let pr cop =
   | `Ce_prefix (s,_) -> find prefix s
   | `Ce_infix (s,_,_) -> find infix s
 
-  | `Ce_call _ 
+  | `Ce_call _
   | `Ce_array _ -> find_prec "postfix"
 
   | `Ce_new _ -> find_prec "unary"
@@ -343,21 +343,21 @@ let pr cop =
   | `Ce_expr (p,_) -> find_prec p
 
 let commaprec = find_prec "comma"
-let rec comma es = "(" ^ strcat ", " (map (cep commaprec) es) ^ ")" 
+let rec comma es = "(" ^ strcat ", " (map (cep commaprec) es) ^ ")"
 and comma_opt = function | [] -> "" | ps -> comma ps
 
 (* we need brackets if the binding looseness is higher
 than or equal to the context.
 
 But due associativity, (x+y)+z = x+y+z, and we make that
-happen by making the context of the LHS subexpression 
+happen by making the context of the LHS subexpression
 slightly higher.
 *)
-and cep cp e = 
+and cep cp e =
   let ep = pr e in
   let rce e = cep ep e and lce e = cep (ep+1) e in
   let need_brackets = ep > cp in
-  (if need_brackets then "(" else "") 
+  (if need_brackets then "(" else "")
   ^
   begin match e with
     | `Ce_atom s ->  s
@@ -367,7 +367,7 @@ and cep cp e =
 
     | `Ce_call (f,es) -> rce f ^comma es
     | `Ce_array (f,e) -> rce f ^ "["^lce e^"]"
-    | `Ce_new (ps,cls,args) -> 
+    | `Ce_new (ps,cls,args) ->
       "new" ^ comma_opt ps ^ " " ^ cls ^ " " ^ comma_opt args
     | `Ce_cast (cast,e) -> "("^cast^")" ^ rce e
     | `Ce_cond (e,e1,e2) -> lce e ^ "?" ^ rce e1 ^ ":" ^ rce e2
@@ -376,7 +376,7 @@ and cep cp e =
   ^
   (if need_brackets then ")" else "")
 
-let ce_atom s = `Ce_atom s 
+let ce_atom s = `Ce_atom s
 let ce_postfix o e = `Ce_postfix (o,e)
 let ce_prefix o e = `Ce_prefix (o,e)
 let ce_infix o a b = `Ce_infix (o,a,b)
@@ -395,6 +395,6 @@ let sc p e = cep (find_prec p) e
 let ce p s = ce_expr p s
 
 let genprec ct prec =
-  try Hashtbl.find prec_remap ct 
+  try Hashtbl.find prec_remap ct
   with Not_found -> ct,prec
 

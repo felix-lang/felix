@@ -14,14 +14,14 @@ met:
     * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 
-    * Redistributions in binary form must reproduce the above 
-      copyright notice, this list of conditions and the following 
-      disclaimer in the documentation and/or other materials provided 
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
       with the distribution.
 
-    * Neither the name of the University of California, Berkeley nor 
-      the names of its contributors may be used to endorse or promote 
-      products derived from this software without specific prior 
+    * Neither the name of the University of California, Berkeley nor
+      the names of its contributors may be used to endorse or promote
+      products derived from this software without specific prior
       written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -123,7 +123,7 @@ ELKRTL_INTERFACES = [
   'src/smbase/sm_trdelete.h',
   'src/smbase/sm_voidlist.h',
   'src/smbase/sm_macros.h',
-  'src/smbase/sm_srcloc.h', 
+  'src/smbase/sm_srcloc.h',
   'src/smbase/sm_typ.h',
   'src/smbase/sm_xassert.h',
   'src/smbase/sm_objlist.h',
@@ -157,7 +157,7 @@ xfiles = [
 
 @h = tangler('config/elk.fpc')
 @select(h)
-Name: elk 
+Name: elk
 Description: Elhound
 Version: 1
 @if HAVE_MSVC:

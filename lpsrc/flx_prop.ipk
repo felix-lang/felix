@@ -10,20 +10,20 @@ open Flx_mtypes1
 open Flx_mtypes2
 
 val add_prop:
-  fully_bound_symbol_table_t  -> 
+  fully_bound_symbol_table_t  ->
   property_t ->
   int ->
   unit
 
 val rem_prop:
-  fully_bound_symbol_table_t  -> 
+  fully_bound_symbol_table_t  ->
   property_t ->
   int ->
   unit
 
 val get_vs:
-  fully_bound_symbol_table_t  -> 
-  int -> 
+  fully_bound_symbol_table_t  ->
+  int ->
   bvs_t
 
 @h = tangler("src/compiler/flxlib/flx_prop.ml")
@@ -76,7 +76,7 @@ let add_prop bbdfns p i =
     let entry = `BBDCL_reglex (p :: props, vs, ps, le, t, x) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
-  | `BBDCL_glr (props, vs, t, x) -> 
+  | `BBDCL_glr (props, vs, t, x) ->
     let entry = `BBDCL_glr (p :: props, vs, t, x) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
@@ -122,7 +122,7 @@ let rem_prop bbdfns p i =
     let entry = `BBDCL_reglex (props, vs, ps, le, t, x) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
-  | `BBDCL_glr (props, vs, t, x) -> 
+  | `BBDCL_glr (props, vs, t, x) ->
     let props = List.filter (fun k -> p <> k) props in
     let entry = `BBDCL_glr (props, vs, t, x) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)

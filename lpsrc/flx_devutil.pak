@@ -45,7 +45,7 @@ import sys
 
 crap1 = """
 @@copying
-This manual is for Felix version 1.1.0. 
+This manual is for Felix version 1.1.0.
 Copyright @copyright{} 2005 John Skaller
 @@quotation
 All rights relinquished, you can do whatever you
@@ -107,11 +107,11 @@ for line in sys.stdin:
     else:
       print "ERROR, need chapter section or subsection here"
       print "got ",line,
-      raise "error" 
+      raise "error"
     cache.append('@section\n')
     flag = 0
-  
-  
+
+
 n = len(menu)
 
 for line in cache:
@@ -221,7 +221,7 @@ print r"""
 
 for d in k:
   #print "Bench = "+d
-  print "@head(1,'["+d+"]')" 
+  print "@head(1,'["+d+"]')"
   print "@for i in machs:"
   print "  showgraph(i,'ack','"+d+" on '+i)"
   print "  showdata('speed/machine/'+i+'/rankings/"+d+".txt')"
@@ -255,7 +255,7 @@ for d in k:
 #
 # Judy .. it's a bit of a mess .. macro threaded for
 # code sharing
-# 
+#
 import string
 import os
 import sys
@@ -425,7 +425,7 @@ for fn in files:
     line = string.expandtabs(line)
     if line[:cphn]==cph:
       copy = 0
-    if copy: 
+    if copy:
       if line[:8]=="FUNCTION":
         s1 = string.split(line,"(")
         s2 = string.split(s1[0])
@@ -451,7 +451,7 @@ for fn in files:
       print line,
     if line[:cptn] == cpt:
       copy = 1
-  print 
+  print
 g.close()
 
 print "@head(1,'Judy wrappers')"
@@ -709,7 +709,7 @@ tre_files = [
   ]
 
 mods = {}
-tgts = [] 
+tgts = []
 
 for fn in tre_files:
   parts = string.split(fn,'/')
@@ -768,7 +768,7 @@ for fn,tgt in tgts:
     else:
       if line[:5] != '#line':
         print line,
- 
+
 
 @h = tangler('script/mktre.py','python')
 @select(h)
@@ -808,7 +808,7 @@ tre_files = [
   ]
 
 mods = {}
-tgts = [] 
+tgts = []
 
 for fn in tre_files:
   parts = string.split(fn,'/')
@@ -867,7 +867,7 @@ for fn,tgt in tgts:
     else:
       if line[:5] != '#line':
         print line,
- 
+
 
 @h = tangler('script/mksm.py','python')
 @select(h)
@@ -977,13 +977,13 @@ sm_files = [
 ]
 
 mods = {}
-tgts = [] 
+tgts = []
 
 for fn in sm_files:
   parts = string.split(fn,'/')
   base = parts[-1]
   target = 'elk/sm_'+base
-  if target[-2:]=='cc': 
+  if target[-2:]=='cc':
     target = target[:-2]+'cpp'
   elif target[-1:]=='c':
     target = target[:-1]+'cpp'
@@ -1026,7 +1026,7 @@ for fn,tgt in tgts:
     else:
       if line[:5] != '#line':
         print line,
- 
+
 @h = tangler('script/mkast.py','python')
 @select(h)
 
@@ -1173,7 +1173,7 @@ ast_files = [
   'towner.cc',
 ]
 mods = {}
-tgts = [] 
+tgts = []
 
 def index(line,ch):
   n = len (line)
@@ -1222,7 +1222,7 @@ for fn,tgt in tgts:
     else:
       if line[:5] != '#line':
         print line,
- 
+
 @h = tangler('script/mkelk.py','python')
 @select(h)
 
@@ -1410,7 +1410,7 @@ elk_files = [
   'gramexpl.cc'
 ]
 mods = {}
-tgts = [] 
+tgts = []
 
 
 for fn in elk_files:
@@ -1461,7 +1461,7 @@ for fn,tgt in tgts:
     else:
       if line[:5] != '#line':
         print line,
- 
+
 @h = tangler('script/mkdypgen.py','python')
 @select(h)
 
@@ -1487,9 +1487,9 @@ caml_implementations = [
 ]
 
 #caml_pack = [
-#  ("Dyp",'src/compiler/dyp/dyplib/dyp',[ 
+#  ("Dyp",'src/compiler/dyp/dyplib/dyp',[
 #    'src/compiler/dyp/dyplib/sig',
-#    'src/compiler/dyp/dyplib/gs', 
+#    'src/compiler/dyp/dyplib/gs',
 #    'src/compiler/dyp/dyplib/priority_by_relation',
 #    'src/compiler/dyp/dyplib/automaton',
 #    'src/compiler/dyp/dyplib/parser'
@@ -1524,7 +1524,7 @@ dypgen = """
 @@h = tangler('spkgs/dypgen.py')
 @@select(h)
 caml_lexes = [
-  'src/compiler/dyp/generators/dypgen/dypgen_lexer', 
+  'src/compiler/dyp/generators/dypgen/dypgen_lexer',
   'src/compiler/dyp/generators/dypgen/insert_linenum'
 ]
 
@@ -1549,7 +1549,7 @@ weaver_directory = 'doc/dypgen/'
 """
 
 files = [
-  'dyplib/dyp.mli', 
+  'dyplib/dyp.mli',
 #  'dyplib/sig.mli',
   'dyplib/automaton.ml',
 #  'dyplib/parser.ml',
@@ -1557,7 +1557,7 @@ files = [
   'dyplib/priority_by_relation.ml',
   'dyplib/gs.ml',
   'generators/pgen/pgen_lexer.mll',
-  'generators/pgen/pgen.ml',  
+  'generators/pgen/pgen.ml',
   'generators/pgen/pgen_parser_param.ml',
   'generators/dypgen/dypgen_parser.dyp',
   'generators/dypgen/parse_tree.mli',
@@ -1568,7 +1568,7 @@ files = [
 ]
 
 mods = {}
-tgts = [] 
+tgts = []
 
 print "@head(1,'Dypgen')"
 print dyplib
@@ -1585,7 +1585,7 @@ for fn in files:
     line = string.expandtabs(line)
     print line,
   print
- 
+
 @h = tangler('script/mkocs.py','python')
 @select(h)
 
@@ -1648,7 +1648,7 @@ files = [
 ]
 
 mods = {}
-tgts = [] 
+tgts = []
 
 for fn in files:
   parts = string.split(fn,'/')
@@ -1662,31 +1662,31 @@ print """
 @@h = tangler('spkgs/ocs.py')
 @@select(h)
 OCS_MODULES = [
-  'ocs/ocs_vartable', 
-  'ocs/ocs_error', 
-  'ocs/ocs_port', 
-  'ocs/ocs_types', 
-  'ocs/ocs_sym', 
+  'ocs/ocs_vartable',
+  'ocs/ocs_error',
+  'ocs/ocs_port',
+  'ocs/ocs_types',
+  'ocs/ocs_sym',
   'ocs/ocs_env',
-  'ocs/ocs_char', 
-  'ocs/ocs_numaux', 
-  'ocs/ocs_complex', 
-  'ocs/ocs_num', 
-  'ocs/ocs_numstr', 
+  'ocs/ocs_char',
+  'ocs/ocs_numaux',
+  'ocs/ocs_complex',
+  'ocs/ocs_num',
+  'ocs/ocs_numstr',
   'ocs/ocs_lex',
   'ocs/ocs_misc',
-  'ocs/ocs_read', 
-  'ocs/ocs_eval', 
-  'ocs/ocs_list', 
-  'ocs/ocs_compile', 
-  'ocs/ocs_macro', 
-  'ocs/ocs_prim', 
+  'ocs/ocs_read',
+  'ocs/ocs_eval',
+  'ocs/ocs_list',
+  'ocs/ocs_compile',
+  'ocs/ocs_macro',
+  'ocs/ocs_prim',
   'ocs/ocs_string',
-  'ocs/ocs_vector', 
-  'ocs/ocs_print', 
-  'ocs/ocs_io', 
-  'ocs/ocs_contin', 
-  'ocs/ocs_top', 
+  'ocs/ocs_vector',
+  'ocs/ocs_print',
+  'ocs/ocs_io',
+  'ocs/ocs_contin',
+  'ocs/ocs_top',
 ]
 
 caml_raw_interfaces = ['ocs/ocs_types']
@@ -1710,7 +1710,7 @@ for fn,tgt in tgts:
   for line in data:
     line = string.expandtabs(line)
     print line,
- 
+
 @h = tangler('script/mklua.py','python')
 @select(h)
 
@@ -1772,7 +1772,7 @@ files = [
 ]
 
 mods = {}
-tgts = [] 
+tgts = []
 
 for fn in files:
   parts = string.split(fn,'/')
@@ -1794,7 +1794,7 @@ for fn,tgt in tgts:
   for line in data:
     line = string.expandtabs(line)
     print line,
- 
+
 @h = tangler('script/mklua_scripts.py','python')
 @select(h)
 
@@ -1804,7 +1804,7 @@ import glob
 
 prefix = '/usr/local/src/lua-5.0.2/test/'
 files = glob.glob(prefix+'*.lua')
-tgts = [] 
+tgts = []
 
 for fn in files:
   parts = string.split(fn,'/')
@@ -1822,7 +1822,7 @@ for fn,tgt in tgts:
   for line in data:
     line = string.expandtabs(line)
     print line,
- 
+
 @h = tangler('script/mkcil.py','python')
 @select(h)
 
@@ -1879,7 +1879,7 @@ files = [
 ]
 
 mods = {}
-tgts = [] 
+tgts = []
 
 for fn in files:
   parts = string.split(fn,'/')
@@ -1907,7 +1907,7 @@ for fn,tgt in tgts:
       r = mods[s]
       line = string.replace(line,s,r)
     print line,
-      
+
 @h = tangler('script/mk_fish','python')
 @select(h)
 import glob

@@ -433,12 +433,12 @@ void flx_collector_t::scan_object(void *p)
   std::size_t *offsets = shape->offsets;
 
   if(shape->flags & gc_flags_conservative)
-  { 
+  {
     // end of object, rounded down to size of a void*
     void **end = (void**)(
-      (unsigned char*)(void*)fp + 
+      (unsigned char*)(void*)fp +
       n_used * n / sizeof(void*) * sizeof(void*)
-    ); 
+    );
     for ( void **i = (void**)p; i != end; i = i+1)
     {
       //if(debug)

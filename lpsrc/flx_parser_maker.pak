@@ -23,7 +23,7 @@ d = {}
 def isterminal(w):
   return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-def isnonterminal(w): 
+def isnonterminal(w):
   return not isterminal(w)
 
 def check_symbol(w):
@@ -51,15 +51,15 @@ def handle_line(l):
 f = open(sys.argv[1])
 state = 1
 for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/': 
+  if l[:2] == '/*' and l[-3:-1]=='*/':
     #print "skipping",l,
     pass
   else:
     if l[:2]=='/*': state = 0
-    if state: 
+    if state:
       if l <> "\n":
         handle_line(l[:-1])
-    else: 
+    else:
       #print "skippy",l,
       pass
     if l[:2]=='*/': state = 1
@@ -81,8 +81,8 @@ for k in attrtoks:
   print "  token(void*) TOK_"+k+";"
 
 print "}"
-print 
- 
+print
+
 print "context_class Flx_Elk_Parser : public UserActions {};"
 print
 print "nonterm(void*) top {"
@@ -112,7 +112,7 @@ for k in d.keys():
     print "  }"
   print "}"
   print
- 
+
 @h = tangler('script/flx_flx_grgen','python')
 @select(h)
 import string
@@ -278,7 +278,7 @@ d = {}
 def isterminal(w):
   return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-def isnonterminal(w): 
+def isnonterminal(w):
   return not isterminal(w)
 
 def check_symbol(w):
@@ -312,15 +312,15 @@ def handle_line(l):
 f = open(sys.argv[1])
 state = 1
 for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/': 
+  if l[:2] == '/*' and l[-3:-1]=='*/':
     #print "skipping",l,
     pass
   else:
     if l[:2]=='/*': state = 0
-    if state: 
+    if state:
       if l <> "\n":
         handle_line(l[:-1])
-    else: 
+    else:
       #print "skippy",l,
       pass
     if l[:2]=='*/': state = 1
@@ -343,7 +343,7 @@ ts['USTRING']=1
 ts = ts.keys()
 ts.sort()
 print 'include "std";'
-print 
+print
 print 'module flx_token'
 print '{'
 
@@ -357,8 +357,8 @@ for k in ts:
   print '  '+(s  + " " *45)[:45]+'//'+str(j)
   j = j + 1
 print '  '+";"
-print 
-print "}" 
+print
+print "}"
 
 @h = tangler('script/elk_flx_lexgen','python')
 @select(h)
@@ -395,15 +395,15 @@ def handle_line(l):
 f = open(sys.argv[1])
 state = 1
 for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/': 
+  if l[:2] == '/*' and l[-3:-1]=='*/':
     #print "skipping",l,
     pass
   else:
     if l[:2]=='/*': state = 0
-    if state: 
+    if state:
       if l <> "\n":
         handle_line(l[:-1])
-    else: 
+    else:
       #print "skippy",l,
       pass
     if l[:2]=='*/': state = 1
@@ -424,7 +424,7 @@ for k in ts:
     print ('  TOK_'+k+',                        ')[:30]+'//'+str(j)
     j = j + 1
 print "};"
-print 
+print
 
 print "char *Elk_Flx_Lexcode_Desc[] = {"
 print '  "TOK_EOF",                    //0'
@@ -433,7 +433,7 @@ for k in ts:
   print ('  "TOK_'+k+'",                        ')[:30]+'//'+str(j)
   j = j + 1
 print "};"
-print 
+print
 
 n = len(ts)+1
 print "static int const ntoks = "+str(n)+";"
@@ -443,13 +443,13 @@ print r"""
 string Elk_Flx_Lexer::tokenDesc() const
 {
   switch (type) {
-    case TOK_NAME:   
-    case TOK_INTEGER:   
-    case TOK_FLOAT:   
-    case TOK_STRING:   
-    case TOK_CSTRING:   
-    case TOK_WSTRING:   
-    case TOK_USTRING:   
+    case TOK_NAME:
+    case TOK_INTEGER:
+    case TOK_FLOAT:
+    case TOK_STRING:
+    case TOK_CSTRING:
+    case TOK_WSTRING:
+    case TOK_USTRING:
     {
       char buffer[200];
       strcpy(buffer,tokenKindDesc(type));
@@ -469,7 +469,7 @@ void Elk_Flx_Lexer::nextToken(LexerInterface *lex) {
   char buffer[100];
   if (fgets(buffer,100,stdin)) {
     int n = strlen(buffer) - 1; //skip the newline
-    memmove(buffer+4,buffer,n); 
+    memmove(buffer+4,buffer,n);
     memcpy(buffer,"TOK_",4);
     n+=4;
     buffer[n]=0;
@@ -477,19 +477,19 @@ void Elk_Flx_Lexer::nextToken(LexerInterface *lex) {
     char *extra = buffer;
     // skip non white
     while(*extra && *extra != ' ')++extra;
-    
+
     // terminate token
     *extra++ = 0;
 
     // skip white
     while(*extra && *extra == ' ')++extra;
-    
+
     int k;
     for(k=0; k<ntoks; ++k)
       if(strcmp(Elk_Flx_Lexcode_Desc[k],buffer)==0)
         break;
     if(k==ntoks) {
-      printf("Invalid token '%s'",buffer); 
+      printf("Invalid token '%s'",buffer);
       abort();
     }
     lex->type = k;
@@ -509,16 +509,16 @@ int main()
   Elk_Flx_Lexer lexer;
   for (;;) {
     lexer.getTokenFunc()(&lexer);    // first call yields a function pointer
-                                                                                
+
     // print the returned token
     string desc = lexer.tokenDesc();
     printf("%s\n", (char const*)desc);
-                                                                                
+
     if (lexer.type == TOK_ENDMARKER) {
       break;
     }
   }
-                                                                                
+
   return 0;
 }
 #endif // TEST_LEXER
@@ -538,7 +538,7 @@ public:
   static void nextToken(LexerInterface *lex);
   virtual NextTokenFunc getTokenFunc() const
     { return &Elk_Flx_Lexer::nextToken; }
- 
+
   // debugging assistance functions
   string tokenDesc() const;
   string tokenKindDesc(int kind) const;
@@ -563,16 +563,16 @@ for l in f:
         elif ch == '}': count-=1
         elif count == 0: out += ch
       out = string.strip(out)
-      if out: 
-        if out[0]=='|': 
+      if out:
+        if out[0]=='|':
           out = string.strip(out[1:])
           if out=="": print "  | /* empty */"
           else: print "  | "+out
-        elif out[-1]==':': 
-          print 
+        elif out[-1]==':':
+          print
           print out
         elif out==';': pass
-        else: 
+        else:
           print out
   elif l[:2]=='%%': start=1
 f.close()
@@ -583,7 +583,7 @@ f.close()
 # get ocamlyacc grammar and store as Python
 # the header part is between %{ and %}
 # the prelude is after that and before %%
-# then comes the grammar up to %% 
+# then comes the grammar up to %%
 # then the trailer
 
 import string
@@ -598,12 +598,12 @@ def upto(prefix=None):
   while 1:
     line = f[i]
     i = i + 1
-    if prefix == None and 
+    if prefix == None and
       i == len(lines) or
       prefix =- line[:len(prefix)]:
       return s
     s = s.append(line)
-  
+
 head = upto('%}')
 prelude = upto('%%')
 grammr = upto('%%')
@@ -631,16 +631,16 @@ for l in f:
         elif ch == '}': count-=1
         elif count == 0: out += ch
       out = string.strip(out)
-      if out: 
-        if out[0]=='|': 
+      if out:
+        if out[0]=='|':
           out = string.strip(out[1:])
           if out=="": print "  | /* empty */"
           else: print "  | "+out
-        elif out[-1]==':': 
-          print 
+        elif out[-1]==':':
+          print
           print out
         elif out==';': pass
-        else: 
+        else:
           print out
   elif l[:2]=='%%': start=1
 f.close()

@@ -47,10 +47,10 @@ let add_inst syms bbdfns ref_insts1 (i,ts) =
     catmap ", " (sbt syms.dfns) ts ^ "]");
     *)
   let x = i, map (fun t -> reduce_type (lstrip syms.dfns t)) ts in
-  let has_variables = 
+  let has_variables =
     fold_left
-    (fun truth t -> truth || 
-      try var_occurs t 
+    (fun truth t -> truth ||
+      try var_occurs t
       with _ -> failwith ("[add_inst] metatype in var_occurs for " ^ sbt syms.dfns t)
     )
     false
@@ -84,9 +84,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   ;
   (* CONSIDER DOING THIS WITH A MAP! *)
   begin match e with
-  | `BEXPR_parse (e,ii) -> 
+  | `BEXPR_parse (e,ii) ->
     ue e; iter (fun i -> ui i []) ii
-  
+
   | `BEXPR_deref e
   | `BEXPR_get_n (_,e)
   | `BEXPR_match_case (_,e)
@@ -105,15 +105,15 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     (* instantiate member with binding for class type parameters *)
     begin match ot with
     | `BTYP_inst (j,ts)
-    | `BTYP_lvalue (`BTYP_inst (j,ts)) -> 
+    | `BTYP_lvalue (`BTYP_inst (j,ts)) ->
       (*
       print_endline ("Register member " ^ si i^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
       *)
       let ts = map vs ts in
       ui i ts
-    | _ -> 
+    | _ ->
       syserr sr (
-        "[flx_inst:process_expr:BEXPR_get_named] unexpected object type " ^ 
+        "[flx_inst:process_expr:BEXPR_get_named] unexpected object type " ^
         sbt syms.dfns ot
       )
     end
@@ -126,17 +126,17 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     (*
     print_endline "apply direct";
     *)
-    let id,parent,sr2,entry = 
-      try Hashtbl.find bbdfns index 
+    let id,parent,sr2,entry =
+      try Hashtbl.find bbdfns index
       with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^ si index)
     in
     begin match entry with
     (* function type not needed for direct call *)
-    | `BBDCL_fun _ 
-    | `BBDCL_callback _ 
-    | `BBDCL_function _ 
+    | `BBDCL_fun _
+    | `BBDCL_callback _
+    | `BBDCL_function _
     | `BBDCL_nonconst_ctor _
-      -> 
+      ->
       let ts = map vs ts in
       ui index ts; ue a
     | `BBDCL_procedure _ ->
@@ -146,34 +146,34 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     which probably don't need types either .. fix me!
     *)
     (* | _ -> ue f; ue a *)
-    | _ -> 
+    | _ ->
       (*
       print_endline "struct component?";
       *)
       ui index ts; ue a
     end
 
-  | `BEXPR_apply_method_direct (obj,meth,ts,a) 
-  | `BEXPR_apply_method_stack (obj,meth,ts,a) 
+  | `BEXPR_apply_method_direct (obj,meth,ts,a)
+  | `BEXPR_apply_method_stack (obj,meth,ts,a)
   | `BEXPR_apply ((`BEXPR_method_closure (obj,meth,ts),_),a) ->
     (*
     print_endline "method apply";
     *)
-    ue obj; 
-    ui meth ts; 
+    ue obj;
+    ui meth ts;
     ue a
-    
-  | `BEXPR_apply (e1,e2) -> 
+
+  | `BEXPR_apply (e1,e2) ->
     (*
     print_endline "Simple apply";
     *)
     ue e1; ue e2
 
-  | `BEXPR_tuple es -> 
+  | `BEXPR_tuple es ->
     iter ue es;
     register_tuple syms (vs t)
 
-  | `BEXPR_record es -> 
+  | `BEXPR_record es ->
     let ss,es = split es in
     iter ue es;
     register_tuple syms (vs t)
@@ -183,10 +183,10 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
 
   | `BEXPR_case (_,t) -> ut (vs t)
 
-  | `BEXPR_ref (i,ts) 
+  | `BEXPR_ref (i,ts)
   | `BEXPR_name (i,ts)
   | `BEXPR_closure (i,ts)
-    -> 
+    ->
     (* substitute out display variables *)
     (*
     print_endline ("Raw Variable " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
@@ -195,7 +195,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     (*
     print_endline ("Variable with mapped ts " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
     *)
-    ui i ts; 
+    ui i ts;
     (*
     print_endline "Instance done";
     *)
@@ -209,7 +209,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_new e -> ue e
   | `BEXPR_likely e -> ue e
   | `BEXPR_unlikely e -> ue e
-   
+
   | `BEXPR_method_closure (e,i,ts) ->
     (*
     print_endline "method closure";
@@ -235,11 +235,11 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   (* TODO: replace with a map *)
   match exe with
   | `BEXE_axiom_check _ -> assert false
-  | `BEXE_call_prim (sr,i,ts,e2) 
-  | `BEXE_call_direct (sr,i,ts,e2) 
-  | `BEXE_jump_direct (sr,i,ts,e2) 
-  | `BEXE_call_stack (sr,i,ts,e2) 
-    -> 
+  | `BEXE_call_prim (sr,i,ts,e2)
+  | `BEXE_call_direct (sr,i,ts,e2)
+  | `BEXE_jump_direct (sr,i,ts,e2)
+  | `BEXE_call_stack (sr,i,ts,e2)
+    ->
     let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
@@ -257,9 +257,9 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     uis meth ts;
     ue sr a
 
-  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) 
-  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) 
-    -> 
+  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2)
+  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2)
+    ->
     let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
@@ -268,23 +268,23 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     uis i2 ts;
     (*
     print_endline ("INSTANTIATING CLASS " ^ si i2 ^ "<"^catmap "," (sbt syms.dfns) ts^">");
-    *) 
+    *)
     uis i3 ts;
     (*
     print_endline ("INSTANTIATING CONSTRUCTOR " ^ si i3 ^ "<"^catmap "," (sbt syms.dfns) ts^">");
     *)
     ue sr e2
 
-  | `BEXE_call (sr,e1,e2) 
-  | `BEXE_jump (sr,e1,e2) 
+  | `BEXE_call (sr,e1,e2)
+  | `BEXE_jump (sr,e1,e2)
     -> ue sr e1; ue sr e2
-    
+
   | `BEXE_assert (sr,e)
   | `BEXE_loop (sr,_,e)
   | `BEXE_ifgoto (sr,e,_)
-  | `BEXE_fun_return (sr,e) 
-  | `BEXE_yield (sr,e) 
-    -> 
+  | `BEXE_fun_return (sr,e)
+  | `BEXE_yield (sr,e)
+    ->
       ue sr e
 
   | `BEXE_assert2 (sr,_,e1,e2)
@@ -292,7 +292,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
      begin match e1 with Some e -> ue sr e | None -> () end;
      ue sr e2
 
-  | `BEXE_init (sr,i,e) -> 
+  | `BEXE_init (sr,i,e) ->
     (*
     print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe syms.dfns bbdfns e);
     *)
@@ -300,8 +300,8 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     (*
     print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs');
     print_endline ("Input ts = " ^ catmap "," (sbt syms.dfns) ts);
-    print_endline ("Varmap = " ^ Hashtbl.fold 
-      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt syms.dfns k ) 
+    print_endline ("Varmap = " ^ Hashtbl.fold
+      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt syms.dfns k )
       hvarmap ""
     );
     *)
@@ -331,7 +331,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_end
     -> ()
 
-and process_exes syms bbdfns ref_insts1 ts hvarmap exes = 
+and process_exes syms bbdfns ref_insts1 ts hvarmap exes =
   iter (process_exe syms bbdfns ref_insts1 ts hvarmap) exes
 
 and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes ts =
@@ -349,22 +349,22 @@ and process_production syms bbdfns ref_insts1 p ts =
   | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
   in
   iter uses_symbol p
-                                                                                
+
 and process_inst syms bbdfns instps ref_insts1 i ts inst =
   let uis i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
   let ui i = uis i ts in
-  let id,parent,sr,entry = 
-    try Hashtbl.find bbdfns i 
+  let id,parent,sr,entry =
+    try Hashtbl.find bbdfns i
     with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
-  in 
-  let do_reqs vs reqs = 
+  in
+  let do_reqs vs reqs =
     iter (
-      fun (i,ts)-> 
-      if i = 0 then 
+      fun (i,ts)->
+      if i = 0 then
         clierr sr ("Entity " ^ id ^ " has uninstantiable requirements");
       uis i( map vs ts)
-    ) 
-    reqs 
+    )
+    reqs
   in
   let ue hvarmap e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
   let rtr t = register_type_r uis syms bbdfns [] sr t in
@@ -378,7 +378,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns null_table ref_insts1 i sr [] ret exes ts;
     process_production syms bbdfns ref_insts1 p ts
- 
+
   | `BBDCL_regmatch (props,vs,(ps,traint),ret,(_,_,h,_))  ->
     let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
@@ -400,40 +400,40 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     iter (fun {pindex=i} -> ui i) ps;
     ui le; (* lexeme end .. *)
     ui i
-    
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
+
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     if instps || mem `Cfun props then
-      iter (fun {pindex=i; ptyp=t} -> 
-        ui i; 
+      iter (fun {pindex=i; ptyp=t} ->
+        ui i;
         rtr (varmap_subst hvarmap t)
-      ) 
+      )
       ps
     ;
     (*
     print_endline ("Instantiating function " ^ id);
     print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs);
     print_endline ("Input ts = " ^ catmap "," (sbt syms.dfns) ts);
-    print_endline ("Varmap = " ^ Hashtbl.fold 
-      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt syms.dfns k ) 
+    print_endline ("Varmap = " ^ Hashtbl.fold
+      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt syms.dfns k )
       hvarmap ""
     );
     *)
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
- 
+
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     if instps || mem `Cfun props then
-      iter (fun {pindex=i; ptyp=t} -> 
-        ui i; 
+      iter (fun {pindex=i; ptyp=t} ->
+        ui i;
         rtr (varmap_subst hvarmap t)
-      ) 
+      )
       ps
     ;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
@@ -480,11 +480,11 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
   | `BBDCL_cclass (vs,ps)
     ->
     (*
-    let argtypes = map (function 
-      | `BMemberVal (_,t) 
-      | `BMemberVar (_,t) 
-      | `BMemberFun (_,_,t) 
-      | `BMemberProc (_,_,t) 
+    let argtypes = map (function
+      | `BMemberVal (_,t)
+      | `BMemberVar (_,t)
+      | `BMemberFun (_,_,t)
+      | `BMemberProc (_,_,t)
       | `BMemberCtor (_,t)  -> t
     ) ps in
     *)
@@ -517,7 +517,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in
     rtr t
- 
+
   | `BBDCL_const (props,vs,t,_,reqs) ->
     (*
     print_endline "Register const";
@@ -540,10 +540,10 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     rtr t;
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
- 
+
   (* shortcut -- header and body can only require other header and body *)
   | `BBDCL_insert (vs,s,ikind,reqs)
-    -> 
+    ->
     (*
     print_endline ("Handling requirements of header/body " ^ s);
     *)
@@ -604,7 +604,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
 
   | `BBDCL_abs (vs,_,_,reqs)
-    -> 
+    ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
@@ -619,11 +619,11 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     (* we don't register the union .. it's a uctor anyhow *)
     let ctor_argt = varmap_subst hvarmap ctor_argt in
     rtr ctor_argt
- 
+
    | `BBDCL_typeclass _ -> ()
    | `BBDCL_instance (props,vs,con,tc,ts) -> ()
 
-(* 
+(*
   This routine creates the instance tables.
   There are 2 tables: instance types and function types (including procs)
 
@@ -665,7 +665,7 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
   (* empty instantiation registry *)
   let insts1 = ref FunInstSet.empty in
 
-  begin 
+  begin
     (* append routine to add an instance *)
     let add_cand i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
 
@@ -674,17 +674,17 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
 
     (* add exported functions, and register exported types *)
     let ui i ts = add_inst syms bbdfns insts1 (i,ts) in
-    iter 
-    (function 
-      | `BIFACE_export_fun (_,x,_) -> 
+    iter
+    (function
+      | `BIFACE_export_fun (_,x,_) ->
         let _,_,sr,entry = Hashtbl.find bbdfns x in
         begin match entry with
-        | `BBDCL_procedure (props,_,(ps,_),_) 
-        | `BBDCL_function (props,_,(ps,_),_,_) -> 
+        | `BBDCL_procedure (props,_,(ps,_),_)
+        | `BBDCL_function (props,_,(ps,_),_,_) ->
         begin match ps with
         | [] -> ()
         | [{ptyp=t}] -> register_type_r ui syms bbdfns [] sr t
-        | _ -> 
+        | _ ->
           let t =
             `BTYP_tuple
             (
@@ -703,7 +703,7 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
 
       | `BIFACE_export_type (sr,t,_) ->
         register_type_r ui syms bbdfns [] sr t
-    ) 
+    )
     bifaces
   end
   ;
@@ -713,7 +713,7 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
      have to be monomorphic anyhow
   *)
   let add_instance i ts =
-    let n = 
+    let n =
       match ts with
       | [] -> i
       | _ -> let n = !(syms.counter) in incr (syms.counter); n

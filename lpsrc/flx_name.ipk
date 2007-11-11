@@ -17,23 +17,23 @@ val cpp_instance_name :
 
 val cpp_type_classname :
   sym_state_t ->
-  btypecode_t -> 
+  btypecode_t ->
   string
 
 val cpp_typename :
   sym_state_t ->
-  btypecode_t -> 
+  btypecode_t ->
   string
 
 
 val cpp_ltypename :
   sym_state_t ->
-  btypecode_t -> 
+  btypecode_t ->
   string
 
 
 (** mangle a Felix identifier to a C one *)
-val cid_of_flxid:  
+val cid_of_flxid:
  string-> string
 
 @h = tangler('src/compiler/flxlib/flx_name.ml')
@@ -67,7 +67,7 @@ let fixups = [
 @#
 ]
 
-let cid_of_flxid s = 
+let cid_of_flxid s =
   let n = String.length s in
   let id = Buffer.create (n+10) in
   (* if the value is prefixed with a number, prepend an underscore *)
@@ -119,13 +119,13 @@ let cid_of_flxid s =
 
 (* basic name mangler *)
 let cpp_name bbdfns index =
-  let id,parent,sr,entry = 
-    try Hashtbl.find bbdfns index 
+  let id,parent,sr,entry =
+    try Hashtbl.find bbdfns index
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   (match entry with
-  | `BBDCL_function _ -> "_f"   
-  | `BBDCL_callback _ -> "_cf"   
+  | `BBDCL_function _ -> "_f"
+  | `BBDCL_callback _ -> "_cf"
   | `BBDCL_procedure _  -> "_p"
   | `BBDCL_regmatch _  -> "_rm"
   | `BBDCL_reglex _  -> "_rl"
@@ -138,60 +138,60 @@ let cpp_name bbdfns index =
   ) ^ si index ^ "_" ^ cid_of_flxid id
 
 let cpp_instance_name' syms bbdfns index ts =
-  let inst = 
-    try Hashtbl.find syms.instances (index,ts) 
-    with Not_found -> 
-    let id = 
-      try 
+  let inst =
+    try Hashtbl.find syms.instances (index,ts)
+    with Not_found ->
+    let id =
+      try
         let id,parent,sr,entry = Hashtbl.find bbdfns index in id
-      with Not_found -> 
+      with Not_found ->
       try
         match Hashtbl.find syms.dfns index with
         {id=id} -> id ^ "[unbound]"
-      with Not_found -> 
+      with Not_found ->
       "unknown"
     in
-    let has_variables = 
-      fold_left 
+    let has_variables =
+      fold_left
       (fun truth t -> truth || var_occurs t)
       false
       ts
     in
-    failwith 
+    failwith
     (
       "[cpp_instance_name] unable to find instance " ^ id ^
       "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.dfns) ts ^ "]"
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
-  "_i" ^ si inst ^ cpp_name bbdfns index 
+  "_i" ^ si inst ^ cpp_name bbdfns index
 
 let is_export syms id =
   let bifaces = syms.bifaces in
-  try 
-    iter 
+  try
+    iter
     (function
       | `BIFACE_export_fun (_,_,s)
-      | `BIFACE_export_type (_,_,s) -> 
+      | `BIFACE_export_type (_,_,s) ->
         if id = s then raise Not_found
      )
-     bifaces; 
-     false 
+     bifaces;
+     false
   with Not_found -> true
-  
+
 let cpp_instance_name syms bbdfns index ts =
   let long_name = cpp_instance_name' syms bbdfns index ts in
   if syms.compiler_options.mangle_names then long_name else
-  let id,parent,sr,entry = 
-    try Hashtbl.find bbdfns index 
+  let id,parent,sr,entry =
+    try Hashtbl.find bbdfns index
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   let id' = cid_of_flxid id in
-  if id = id' then 
+  if id = id' then
   begin
-    let inst = 
-      try Hashtbl.find syms.quick_names id 
-      with Not_found -> 
+    let inst =
+      try Hashtbl.find syms.quick_names id
+      with Not_found ->
         Hashtbl.add syms.quick_names id (index,ts);
         index,ts
     in
@@ -200,60 +200,60 @@ let cpp_instance_name syms bbdfns index ts =
   end
   else long_name
 
-let tix syms t = 
+let tix syms t =
   let t =
     match t with
     | `BTYP_function (`BTYP_void,cod) -> `BTYP_function (`BTYP_tuple [],cod)
     | x -> x
   in
   try Hashtbl.find syms.registry t
-  with Not_found -> 
+  with Not_found ->
     failwith ("Cannot find type " ^sbt syms.dfns t ^" in registry")
 
-let rec cpp_type_classname syms t = 
+let rec cpp_type_classname syms t =
   let tix t = tix syms t in
   let t = fold syms.counter syms.dfns (lstrip syms.dfns t) in
   try match unfold syms.dfns t with
-  | `BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.dfns mt) 
+  | `BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.dfns mt)
   | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
   | `BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | `BTYP_tuple [] -> "unit"
 
-  | `BTYP_pointer t' -> 
+  | `BTYP_pointer t' ->
     cpp_type_classname syms t' ^ "*"
     (*
-    "_rt" ^ cpp_type_classname syms t' 
+    "_rt" ^ cpp_type_classname syms t'
     *)
 
-  | `BTYP_function (_,`BTYP_void) -> 
-    "_pt" ^ si (tix t) 
+  | `BTYP_function (_,`BTYP_void) ->
+    "_pt" ^ si (tix t)
 
-  | `BTYP_function _ -> 
+  | `BTYP_function _ ->
     "_ft" ^ si (tix t)
 
-  | `BTYP_cfunction _ -> 
+  | `BTYP_cfunction _ ->
     "_cft" ^ si (tix t)
 
-  | `BTYP_array _ -> 
+  | `BTYP_array _ ->
     "_at" ^ si (tix t)
 
-  | `BTYP_tuple _ -> 
+  | `BTYP_tuple _ ->
     "_tt" ^ si (tix t)
 
-  | `BTYP_record _ -> 
+  | `BTYP_record _ ->
     "_art" ^ si (tix t)
 
-  | `BTYP_variant _ -> 
+  | `BTYP_variant _ ->
     "_avt" ^ si (tix t)
-  
-  | `BTYP_sum _ -> 
+
+  | `BTYP_sum _ ->
     "_st" ^ si (tix t)
 
-  | `BTYP_unitsum k -> 
+  | `BTYP_unitsum k ->
     "_us" ^ si k
 
-    
-  | `BTYP_inst (i,ts) -> 
+
+  | `BTYP_inst (i,ts) ->
     let cal_prefix = function
       | `SYMDEF_struct _  -> "_s"
       | `SYMDEF_union _   -> "_u"
@@ -265,7 +265,7 @@ let rec cpp_type_classname syms t =
     if ts = [] then
       match
         try
-          match Hashtbl.find syms.dfns i with 
+          match Hashtbl.find syms.dfns i with
           { id=id; symdef=symdef } -> Some (id,symdef )
         with Not_found -> None
       with
@@ -283,39 +283,39 @@ let rec cpp_type_classname syms t =
       | Some (_,`SYMDEF_abs (_,`StrTemplate "long",_)) -> "long" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`StrTemplate "float",_)) -> "float" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`StrTemplate "double",_)) -> "double" (* hack .. *)
-      | Some (_,data)  -> 
+      | Some (_,data)  ->
         let prefix = cal_prefix data in
-        prefix ^ si i ^ "t_" ^ si (tix t) 
-      | None -> 
-         "_unk_" ^ si i ^ "t_" ^ si (tix t) 
+        prefix ^ si i ^ "t_" ^ si (tix t)
+      | None ->
+         "_unk_" ^ si i ^ "t_" ^ si (tix t)
     else
-      "_poly_" ^ si i ^ "t_" ^ si (tix t) 
+      "_poly_" ^ si i ^ "t_" ^ si (tix t)
 
-  | _ -> 
-    failwith 
+  | _ ->
+    failwith
     (
       "[cpp_type_classname] Unexpected " ^
       string_of_btypecode syms.dfns t
     )
-  with Not_found -> 
-    failwith 
+  with Not_found ->
+    failwith
     (
-      "[cpp_type_classname] Expected type "^ 
-      string_of_btypecode syms.dfns t ^ 
+      "[cpp_type_classname] Expected type "^
+      string_of_btypecode syms.dfns t ^
       " to be in registry"
     )
 
 
-let rec cpp_typename syms t = 
+let rec cpp_typename syms t =
   match unfold syms.dfns (lstrip syms.dfns t) with
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
   | `BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
   | `BTYP_pointer t -> cpp_typename syms t ^ "*"
   (*
-  | `BTYP_inst (i,ts) -> 
+  | `BTYP_inst (i,ts) ->
     begin match
       try
-        match Hashtbl.find syms.dfns i with 
+        match Hashtbl.find syms.dfns i with
         { symdef=symdef } -> Some ( symdef )
       with Not_found -> None
     with
@@ -325,13 +325,13 @@ let rec cpp_typename syms t =
   *)
   | _ -> cpp_type_classname syms t
 
-let cpp_ltypename syms t = 
+let cpp_ltypename syms t =
  cpp_typename syms t ^
  (
-   match t with 
+   match t with
    | `BTYP_lvalue _ -> "&"
    | _ -> ""
  )
-  
+
 
 

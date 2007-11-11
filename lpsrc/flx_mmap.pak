@@ -31,7 +31,7 @@ module Mmap
     #  define MAP_ANONYMOUS MAP_ANON
     #endif
   """;
-  
+
   typedef off_t = unsigned long;
   // protection options
 @if HAVE_MMAP:
@@ -58,8 +58,8 @@ module Mmap
 
   // size of a page
   const _SC_PAGESIZE : long = "sysconf(_SC_PAGESIZE)";
-  
-  fun mmap: 
+
+  fun mmap:
     address * //< start address
     size *    //< bytes to map
     int *     //< protection
@@ -83,9 +83,9 @@ val n = cast[size](10000);
 data :=
   mmap
     (
-      NULL,n, 
-      PROT_WRITE \| PROT_READ, 
-      MAP_PRIVATE \| MAP_ANONYMOUS, 
+      NULL,n,
+      PROT_WRITE \| PROT_READ,
+      MAP_PRIVATE \| MAP_ANONYMOUS,
       -1,cast[off_t]0
     )
 ;

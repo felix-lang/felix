@@ -33,11 +33,11 @@ macro fun dbg(x) = { fprint (cerr,x); };
 
 
 // this is a hack to make close work on a listener
-// RF got this right the first time: 
+// RF got this right the first time:
 // in the abstract a listener is NOT a socket
 // In fact, it is a socket server, with accept() a way to
 // read new sockets off it ..
-open TerminalIByteStream[socket_t]; 
+open TerminalIByteStream[socket_t];
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -51,7 +51,7 @@ fun getline_to_url (get:string) =>
 ;
 
 fun split_url (inurl:string): opt[string*string] = {
-  val url = 
+  val url =
     if startswith inurl "http://" then
       inurl.[to 7]
     else
@@ -130,7 +130,7 @@ proc serve_file(infname: string, s: socket_t)
   // sent faithfully over the wire. of course doesn't work for jpegs and other
   // binary formats.
 
-  val suffix = 
+  val suffix =
     match rfind (fname, ".") with
     | None[int] => ""
     | Some ?pos => fname.[pos + 1 to]
@@ -170,11 +170,11 @@ proc serve_file(infname: string, s: socket_t)
   // O_NONBLOCK even works on actual files.
   var fd = Faio_posix::ropen(fname);
 
-  if Faio_posix::invalid fd then 
+  if Faio_posix::invalid fd then
   {
     print "BUGGER, posix open failed\n";
-    write_string(s, notfound_header); 
-    write_string(s, fname+"\r\n\n"); 
+    write_string(s, notfound_header);
+    write_string(s, fname+"\r\n\n");
   } else {
     print "got fd="; print$ str fd; endl;
 
@@ -328,11 +328,11 @@ cmp (f1,f2, &result);
 iclose(f1);
 iclose(f2);
 
-if result < 0 do 
+if result < 0 do
   print$ fn1 + " < " + fn2;
 elif result > 0 do
   print$ fn1 + " > " + fn2;
-else 
+else
   print$ fn1 + " == " + fn2;
 done;
 endl;

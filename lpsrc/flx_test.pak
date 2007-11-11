@@ -54,7 +54,7 @@ proc fire()
   {
     print i; print " ";
 
-    val result = 
+    val result =
       match get_parity() with
       |Even => "Even\n"
       |Odd => "Odd\n"
@@ -62,7 +62,7 @@ proc fire()
     ;
     print result;
 
-    ++i; 
+    ++i;
   };
 }
 
@@ -139,12 +139,12 @@ int niter = 1000;
 int xcounter = 0;
 int xcounter2 = 0;
 bool run = true;
-message_t read_message() 
+message_t read_message()
 {
   ++ xcounter;
-  if (xcounter > 1000) { 
-    xcounter = 1; 
-    xcounter2++; 
+  if (xcounter > 1000) {
+    xcounter = 1;
+    xcounter2++;
     if(xcounter2>=niter) run = false;
   }
   stringstream ss;
@@ -153,7 +153,7 @@ message_t read_message()
 }
 
 
-int id_of_message(string const &msg) 
+int id_of_message(string const &msg)
 {
 //  return msg >> 1;
 
@@ -180,7 +180,7 @@ struct library_linkage_t : flx_dynlink_t
 
   // interface
   line_handler_creator_t create_line_handler;
-  
+
   // find dlsyms from library
   void usr_link()
   {
@@ -196,8 +196,8 @@ struct library_linkage_t : flx_dynlink_t
 
 int main(int argc, char** argv)
 {
- 
-  if (argc<2) 
+
+  if (argc<2)
   {
     printf("usage flx_perf_drv ./<shared library name>\n");
     exit(1);
@@ -212,7 +212,7 @@ int main(int argc, char** argv)
       exit(1);
     }
   }
-  try 
+  try
   {
     printf("Running flx_perf_drv, %dK transactions\n", niter );
     //sleep(1);
@@ -223,8 +223,8 @@ int main(int argc, char** argv)
     malloc_free allocator;
     flx_collector_t collector(&allocator, NULL);
     gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
-      false, 
-      false, 
+      false,
+      false,
       false,
       0,
       -1,
@@ -234,18 +234,18 @@ int main(int argc, char** argv)
       &collector
     );
     instance.create(&library, gcp,library.main_sym,0,NULL,stdin,stdout,stderr);
-    
+
     typedef int session_key;
     typedef pair<const session_key, fthread_t*> session_record;
 
     std::list<session_record> active;
     std::map<session_key,fthread_t*> waiting;
 
-    fthread_t *ft// = 
-      //new(collector,flx::rtl::_fthread_ptr_map) 
+    fthread_t *ft// =
+      //new(collector,flx::rtl::_fthread_ptr_map)
       //fthread_t(instance.start_proc)
     ;
-    
+
     active.push_front(make_pair(-1,ft));
     collector.add_root(ft);
     int gc_counter = 0;
@@ -288,35 +288,35 @@ int main(int argc, char** argv)
       //printf("Message =%s\n",msg.data());
       int id = id_of_message(msg);
       //printf("New message Id=%d\n",id);
-   
+
       // find the id in the map of waiting
-      std::map<int,fthread_t*>::iterator line_handler_ptr = 
+      std::map<int,fthread_t*>::iterator line_handler_ptr =
         waiting.find(id);
-      
+
       if(line_handler_ptr  != waiting.end())
       {
         //printf("Found existing WAITING line handler for %d, making active\n", id);
         active.push_front(*line_handler_ptr);
 
-        **(message_t**)((*line_handler_ptr).second->get_svc()->data) = msg;  
+        **(message_t**)((*line_handler_ptr).second->get_svc()->data) = msg;
         waiting.erase(line_handler_ptr);
       }
-      else 
+      else
       {
         //printf("creating new instance %d\n", id);
         gc_counter++;
         if(gc_counter==100) {
           //printf("TRIGGERING GC CYCLE\n");
           //printf("Total memory allocated=%ld\n",collector.get_allocation_amt());
-          int collected FLX_UNUSED = collector.collect(); 
+          int collected FLX_UNUSED = collector.collect();
           //printf("Collected %d unreachable objects\n", collected);
           //printf("Total memory allocated=%ld\n",collector.get_allocation_amt());
           if(collector.get_allocation_count()>100)
-            printf("WARNING!: Currently allocated=%ld\n", 
+            printf("WARNING!: Currently allocated=%ld\n",
             collector.get_allocation_count());
           gc_counter = 0;
         }
-        con_t *top = 
+        con_t *top =
           library.create_line_handler(
             instance.thread_frame
           )
@@ -342,13 +342,13 @@ int main(int argc, char** argv)
           {
             **(message_t**)(request->data) = msg;
           }
-          else 
+          else
           {
             printf("SERVICE ERROR: waiting for message without setting address\n");
             exit(1);
           }
         }
-        else 
+        else
           printf("Thread died before reading INITIAL message\n") ;
       }
     }

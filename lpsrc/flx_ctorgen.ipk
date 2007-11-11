@@ -9,7 +9,7 @@ open Flx_label
 val gen_ctor:
   sym_state_t ->
   fully_bound_symbol_table_t ->
-  string ->                   (* name *) 
+  string ->                   (* name *)
   (int * int) list ->         (* display *)
   (int * btypecode_t) list -> (* funs *)
   (string * string) list ->   (* extra args *)
@@ -17,7 +17,7 @@ val gen_ctor:
   btypecode_t list ->         (* ts *)
   property_t list ->          (* properties *)
   string
- 
+
 @h = tangler("src/compiler/flxlib/flx_ctorgen.ml")
 @select(h)
 open Flx_util
@@ -51,15 +51,15 @@ let gen_ctor syms bbdfns name display funs extra_args extra_inits ts props =
   else
   "\n  (\n" ^
   (if requires_ptf then
-  "    FLX_FPAR_DECL\n" 
+  "    FLX_FPAR_DECL\n"
   else ""
   )
   ^
   cat ",\n"
   (
-    map 
+    map
     (
-      fun (i,vslen) -> 
+      fun (i,vslen) ->
         let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
       "    " ^ instname ^ " *pptr" ^ instname
     )
@@ -71,14 +71,14 @@ let gen_ctor syms bbdfns name display funs extra_args extra_inits ts props =
     )
     extra_args
   )^
-  "\n  )\n" 
+  "\n  )\n"
   )
   ^
-  (if 
-    length display + length funs + 
+  (if
+    length display + length funs +
     length extra_args + length extra_inits +
     (if requires_pc then 1 else 0)
-    = 0 
+    = 0
   then (if requires_ptf then "FLX_FMEM_INIT_ONLY" else "")
   else
   (if requires_ptf then
@@ -90,28 +90,28 @@ let gen_ctor syms bbdfns name display funs extra_args extra_inits ts props =
   (
     (if requires_pc then ["pc(0)"] else [])
     @
-    map 
+    map
     (
       fun (i,vslen) -> let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
       "  ptr" ^ instname ^ "(pptr"^instname^")"
     )
     display
     @
-    map 
-    (fun (index,t)-> 
+    map
+    (fun (index,t)->
       cpp_instance_name syms bbdfns index ts
       ^ "(0)"
     )
     funs
     @
-    map 
+    map
     (fun (t,a) -> "  " ^a ^ "(_"^a^")")
     extra_args
     @
-    map 
-    (fun x -> "  " ^x) 
+    map
+    (fun x -> "  " ^x)
     extra_inits
-  )) ^ 
+  )) ^
   " {}\n"
 
 

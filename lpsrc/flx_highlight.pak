@@ -32,7 +32,7 @@ Warning: not to be confused with misc/felix.lang, which is xml for gtksourceview
 # http:/www.andre-simon.de/
 
 @keystring = "/KEYWORDS="
-@for k,t in flx_keywords: 
+@for k,t in flx_keywords:
   keystring = keystring + k + " "
   if len (keystring) > 60:
     tangle(keystring)
@@ -46,7 +46,7 @@ float double ldouble  float32 float64 float80
 char wchar uchar string wstring ustring
 void unit bool any address byte
 
-/STRINGDELIMITERS=""" ''' " ' 
+/STRINGDELIMITERS=""" ''' " '
 
 /SINGLELINECOMMENT=//
 

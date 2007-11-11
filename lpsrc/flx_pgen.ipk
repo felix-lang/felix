@@ -21,14 +21,14 @@ val gen_prim_call :
   range_srcref ->
   string ->
   cexpr_t
-  
+
 val shape_of:
   sym_state_t ->
   fully_bound_symbol_table_t ->
   (btypecode_t -> string) ->
   btypecode_t ->
   string
-  
+
 @h = tangler('src/compiler/flxlib/flx_pgen.ml')
 @select(h)
 open Flx_util
@@ -71,14 +71,14 @@ let shape_of syms bbdfns tn t =
 
   | `BTYP_pointer _ -> "_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
- 
-let gen_prim_call 
-  syms 
-  (bbdfns:fully_bound_symbol_table_t) 
-  (tsub:btypecode_t -> btypecode_t) 
+
+let gen_prim_call
+  syms
+  (bbdfns:fully_bound_symbol_table_t)
+  (tsub:btypecode_t -> btypecode_t)
   (ge: range_srcref -> tbexpr_t -> cexpr_t)
-  (ct:string) 
-  (ts:btypecode_t list) 
+  (ct:string)
+  (ts:btypecode_t list)
   ((arg,argt as a) : tbexpr_t)
   ret sr sr2 prec
 =
@@ -97,8 +97,8 @@ let gen_prim_call
   let sh t = shape_of syms bbdfns tn t in
   let gshapes = map sh ts in
   let ts = map rtn ts in
-  let carg = 
-    match argt with 
+  let carg =
+    match argt with
     | `BTYP_tuple []  -> ce_atom "UNIT_VALUE_ERROR"
     | x -> ge sr a
   in
@@ -107,42 +107,42 @@ let gen_prim_call
 
   (* the argument is explicitly a tuple *)
   | (`BEXPR_tuple es,_) ->
-    let ess = 
-      map 
-      (fun e-> 
-        match e with 
-        (* individual arguments which are unit values are never passed: 
+    let ess =
+      map
+      (fun e->
+        match e with
+        (* individual arguments which are unit values are never passed:
           they CAN be passed as subcomponents though .. but they can't
           be generated .. we need to fix this!
         *)
-        | `BEXPR_tuple [],_ -> 
+        | `BEXPR_tuple [],_ ->
           (*
-          print_endline "Stripping unit"; 
+          print_endline "Stripping unit";
           *)
           `Ce_atom "/*()*/"
 
         | _ -> ge sr e
-      ) 
-      es 
+      )
+      es
     in
-    let ets,ashapes = 
+    let ets,ashapes =
       match argt with
       | `BTYP_tuple typs -> map rtn typs, map sh typs
       | `BTYP_array (t,`BTYP_unitsum n) ->
-        let t = tn t 
+        let t = tn t
         and s = sh t
         in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
       | _ -> assert false
     in
     csubst sr sr2 ct carg ess ets tt ret ts prec ashape ashapes ["Error"] gshapes
-  
+
   (* the argument isnt a tuple, but the type is *)
   | (_,`BTYP_tuple typs) as x ->
     let n = length typs in
     let typs = map rt typs in
-    let es = 
-      map2 
-      (fun i t -> `BEXPR_get_n (i,x),t) 
+    let es =
+      map2
+      (fun i t -> `BEXPR_get_n (i,x),t)
       (nlist n) typs
     in
     let ess = map (ge sr) es in
@@ -153,9 +153,9 @@ let gen_prim_call
   | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
     let t = rt t in
     let typs = map (fun _ -> rt t) (nlist n) in
-    let es = 
-      map 
-      (fun i -> `BEXPR_get_n (i,x),t) 
+    let es =
+      map
+      (fun i -> `BEXPR_get_n (i,x),t)
       (nlist n)
     in
     let ess = map (ge sr) es in
@@ -165,7 +165,7 @@ let gen_prim_call
   (* the argument isn't an explicit tuple, and the type
      is neither an array nor tuple
   *)
-  | (_,typ) -> 
+  | (_,typ) ->
     csubst sr sr2 ct carg [carg] [tt] tt ret ts prec ashape [ashape] ["Error"] gshapes
 
 

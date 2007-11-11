@@ -11,7 +11,7 @@
  ("long","long"),
  ("signed long","long"),
  ("unsigned long","ulong"),
- 
+
  ("long int","long"),
  ("signed long int","long"),
  ("unsigned long int","ulong"),
@@ -19,7 +19,7 @@
  ("long long","vlong"),
  ("signed long long","vlong"),
  ("unsigned long long","uvlong"),
- 
+
  ("long long int","vlong"),
  ("signed long long int","vlong"),
  ("unsigned long long int","uvlong"),
@@ -42,7 +42,7 @@ open Flx_exceptions
 open List
 open Flx_srcref
 
-(* 
+(*
 
 NOTES on token filters
 ----------------------
@@ -66,7 +66,7 @@ let dummysr = ("<eol>",0,0,0)
 *)
 let filter_comments x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | COMMENT_NEWLINE _ :: t -> filter t (NEWLINE::result)
     | COMMENT _ :: t  -> filter t result
     | h :: t -> filter t (h::result)
@@ -76,7 +76,7 @@ let filter_comments x =
 (* throw out all white space *)
 let filter_white x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | WHITE _ :: t -> filter t result
     | h :: t -> filter t (h::result)
     | [] -> rev result
@@ -85,7 +85,7 @@ let filter_white x =
 (* throw out all newlines *)
 let filter_newline x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | NEWLINE :: t -> filter t result
     | h :: t -> filter t (h::result)
     | [] -> rev result
@@ -94,7 +94,7 @@ let filter_newline x =
 (* throw out white space not immediately following a newline *)
 let filter_inner_white x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | NEWLINE :: (WHITE _ as w) :: t -> filter t (w :: NEWLINE :: result)
     | WHITE _ :: t -> filter t result
     | h :: t -> filter t (h::result)
@@ -104,7 +104,7 @@ let filter_inner_white x =
 (* throw out whitespace immediately preceding a NEWLINE *)
 let filter_trailing_white x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | WHITE _ :: NEWLINE :: t -> filter t (NEWLINE::result)
     | h :: t -> filter t (h::result)
     | [] -> rev result
@@ -115,7 +115,7 @@ let filter_trailing_white x =
 *)
 let filter_dup_newline x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | NEWLINE :: NEWLINE :: t -> filter (NEWLINE :: t) result
     | h :: t -> filter t (h::result)
     | [] -> rev result
@@ -124,28 +124,28 @@ let filter_dup_newline x =
 (* throw out duplicate SEMI *)
 let filter_dup_semi x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | SEMI _ as s :: SEMI _ :: t -> filter (s :: t) result
     | h :: t -> filter t (h::result)
     | [] -> rev result
   in filter x []
 
 let check_nowhite x =
-  let rec filter x' = match x' with 
+  let rec filter x' = match x' with
     | WHITE _ :: t -> failwith "UNEXPECTED WHITESPACE"
-    | h :: t -> filter t 
+    | h :: t -> filter t
     | [] -> x
   in filter x
 
 let check_nonewline x =
-  let rec filter x' = match x' with 
+  let rec filter x' = match x' with
     | NEWLINE :: t -> failwith "UNEXPECTED NEWLINE"
-    | h :: t -> filter t 
+    | h :: t -> filter t
     | [] -> x
   in filter x
 
 let check_dent x =
-  let rec filter x' = match x' with 
+  let rec filter x' = match x' with
     | NEWLINE :: WHITE _  :: t -> filter t
     | WHITE _ :: t -> failwith "WHITESPACE NOT AFTER NEWLINE"
     | h :: t -> filter t
@@ -156,7 +156,7 @@ let check_dent x =
    after it, even width 0 if necessary
 *)
 let check_full_dent x =
-  let rec filter x' = match x' with 
+  let rec filter x' = match x' with
     | NEWLINE :: WHITE _  :: t -> filter t
     | WHITE _ :: t -> failwith "WHITESPACE NOT AFTER NEWLINE"
     | NEWLINE :: t -> failwith "NEWLINE NOT FOLLOWED BY WHITESPACE"
@@ -165,19 +165,19 @@ let check_full_dent x =
   in filter x
 
 let check_dollardollar x =
-  let rec filter x' = match x' with 
+  let rec filter x' = match x' with
     | DOLLARDOLLAR _ :: NEWLINE :: WHITE _  :: t -> filter t
     | DOLLARDOLLAR _ :: t -> failwith "$$ not followed by INDENT"
     | h :: t -> filter t
     | [] -> x
   in filter x
 
-(* canonicalise indents, by adding whitespace width 0 if necessary 
+(* canonicalise indents, by adding whitespace width 0 if necessary
   Afterwards all newlines should be followed by white space
 *)
 let canonical_dent x =
   let rec filter x' result  =
-    match x' with 
+    match x' with
     | NEWLINE :: (WHITE _ as w) :: t -> filter t (w::NEWLINE::result)
     | NEWLINE :: t -> filter t (WHITE 0::NEWLINE::result)
     | h :: t -> filter t (h::result)
@@ -188,25 +188,25 @@ let canonical_dent x =
 let dentit x =
   let rec filter x' dent result = match x' with
     (* New block start *)
-    | DOLLARDOLLAR sr :: NEWLINE :: WHITE n :: t -> 
+    | DOLLARDOLLAR sr :: NEWLINE :: WHITE n :: t ->
       filter t (n::dent) (LBRACE sr::result)
 
     (* continuation line *)
-    | NEWLINE :: WHITE n :: t when n > hd dent -> 
+    | NEWLINE :: WHITE n :: t when n > hd dent ->
       filter t dent result
 
     (* new statement *)
-    | NEWLINE :: WHITE n :: t when n = hd dent -> 
+    | NEWLINE :: WHITE n :: t when n = hd dent ->
       filter t dent (SEMI dummysr :: result)
 
     (* dedent *)
-    | NEWLINE :: WHITE n :: t when n < hd dent -> 
+    | NEWLINE :: WHITE n :: t when n < hd dent ->
       filter x' (tl dent) (RBRACE dummysr :: SEMI dummysr :: result)
 
-    | ENDMARKER :: t when length dent > 1 -> 
+    | ENDMARKER :: t when length dent > 1 ->
       filter x' (tl dent) (RBRACE dummysr :: SEMI dummysr :: result)
 
-    | ENDMARKER :: t when length dent = 1 -> 
+    | ENDMARKER :: t when length dent = 1 ->
       rev (ENDMARKER :: SEMI dummysr :: result)
 
     | h :: t -> filter t dent (h::result)
@@ -215,23 +215,23 @@ let dentit x =
   filter x [-1] []
 
 (* remove comments, whitespace, newlines, trailing sloshes,
-  and a trailing hash on the first line 
+  and a trailing hash on the first line
 *)
 let filter_preprocessor x =
   let rec filter first_line x' result  =
-    match x' with 
+    match x' with
     | WHITE _ :: t
-    | COMMENT _ :: t 
+    | COMMENT _ :: t
       -> filter first_line t result
 
     | COMMENT_NEWLINE _ :: t
     | NEWLINE :: t
-    | SLOSH :: NEWLINE :: t 
+    | SLOSH :: NEWLINE :: t
     | SLOSH :: WHITE _ :: NEWLINE :: t
       -> filter false t result
 
     | HASH _ :: NEWLINE :: t
-    | HASH _ :: WHITE _ :: NEWLINE :: t 
+    | HASH _ :: WHITE _ :: NEWLINE :: t
       when first_line  -> filter false t result
 
     | h :: t -> filter first_line t (h::result)
@@ -240,33 +240,33 @@ let filter_preprocessor x =
 
 
 let compress_ctypes x =
-  let rec filter x' result = 
+  let rec filter x' result =
     match x' with
 @for n,c,f in mwct:
   tangle('| NAME(sr,"' + string.join (c,'") :: NAME(_,"') + '") :: t -> ')
   tangle('    filter t (NAME (sr, "'+f+'") :: result)')
-@#    
+@#
     | h :: t -> filter t (h::result)
     | [] -> rev result
-  in filter x [] 
+  in filter x []
 
 let unkeyword ts =
   let rec filter inp out = match inp with
 @for kw in flx_leadin_keywords:
   tangle("| ("+kw+" _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail ")
 @#
-  -> 
+  ->
     let sr = Flx_prelex.src_of_token  u in
     let s = Flx_prelex.string_of_token u in
     let u = NAME (sr,s) in
-    filter tail (u :: cc :: out) 
+    filter tail (u :: cc :: out)
   | h :: t -> filter t (h::out)
   | [] -> rev out
   in filter ts []
 
-let token_packer ts = 
+let token_packer ts =
   let rec aux n o i = match i with
-    | [] -> 
+    | [] ->
       if n = 0 then rev o,[]
       else failwith "At end of file, unterminated token group"
 
@@ -274,15 +274,15 @@ let token_packer ts =
       let h,t = aux (n+1) [] t in
       aux n (TOKEN_LIST h :: o) t
 
-    | NAME (sr,"_etok") :: t -> 
+    | NAME (sr,"_etok") :: t ->
       if n = 0 then failwith "Unmatched _etok"
       else rev o,t
 
     | h :: t -> aux n (h::o) t
-  in 
+  in
   fst (aux 0 [] ts)
 
-type state = { 
+type state = {
   macs: (string * (string list * token list)) list ;
   cstack : bool list;
   cond : bool;
@@ -290,7 +290,7 @@ type state = {
 
 let cond ls = fold_left (fun x y -> x && y) true ls
 
-let token_expander ts = 
+let token_expander ts =
   let rec aux s o i = match i with
   | TOKEN_LIST ts :: t -> aux s o (ts @ t)
 
@@ -335,22 +335,22 @@ let token_expander ts =
 
     | "_tokdef" ->
       let rec grabdef n o i = match i with
-        | NAME (sr,"_tokdef") as  h :: t -> 
+        | NAME (sr,"_tokdef") as  h :: t ->
           grabdef (n+1) (h::o) t
 
-        | NAME (sr,"_edef") as h :: t -> 
+        | NAME (sr,"_edef") as h :: t ->
           if n = 0 then rev o,t
           else grabdef (n-1) (h::o) t
 
-        | NAME (sr,"_quote") :: h :: t -> 
+        | NAME (sr,"_quote") :: h :: t ->
           grabdef n (h::o) t
 
         | h::t -> grabdef n (h::o) t
         | [] -> err "unterminated token macro substream"
-      in 
+      in
       begin match t with
       | NAME (sr2,name) :: t ->
-        let rec grabp n o i : string list * token list  = 
+        let rec grabp n o i : string list * token list  =
           if n = 0 then err "too many macro args, runaway?";
           match i with
           | [] -> err "unterminated macro definition"
@@ -362,7 +362,7 @@ let token_expander ts =
         let mac,t = grabdef 0 [] t in
          aux {s with macs=(name,(params,mac))::s.macs} o t
       | _ -> err "usage: _tokdef name = stream"
-      end 
+      end
 
     | "_undef" ->
        begin match t with
@@ -377,7 +377,7 @@ let token_expander ts =
          aux {s with macs=macs} o t
        | _ -> err "usage: _undef name"
        end
-    
+
     | "_popto" ->
        begin match t with
        | NAME (sr2,name) :: t ->
@@ -392,29 +392,29 @@ let token_expander ts =
        end
 
     | _ when mem_assoc name s.macs ->
-      let rec graba n o i = 
-        if n = 0 then rev o,i else 
+      let rec graba n o i =
+        if n = 0 then rev o,i else
         match i with
         | [] -> err ("Not enough args for macro " ^ name)
         | h :: t -> graba (n-1) (h::o) t
       in
       let params,body = assoc name s.macs in
       let args, t = graba (length params) [] t in
-      let pas = 
-        fold_left2 
-        (fun m p a -> (p,a) :: m) 
-        [] params args 
+      let pas =
+        fold_left2
+        (fun m p a -> (p,a) :: m)
+        [] params args
       in
-      let body = 
-        map 
-        (fun t -> match t with 
+      let body =
+        map
+        (fun t -> match t with
           | NAME(_,s) ->
             (try assoc s pas with Not_found -> t)
           | _ -> t
-        ) 
-        body 
+        )
+        body
       in
-      aux s o (body @ t) 
+      aux s o (body @ t)
     | _ -> aux s (h::o) t
     end (* name handling *)
 
@@ -422,9 +422,9 @@ let token_expander ts =
   | h :: t -> aux s (h::o) t
   | [] -> rev o
   in aux {macs=[]; cond=true; cstack=[]} [] ts
-  
-  
-let translate ts = 
+
+
+let translate ts =
   let filters = [
     filter_comments ;
     filter_inner_white;
@@ -442,18 +442,18 @@ let translate ts =
     unkeyword ;
     token_packer;
     token_expander;
-    ] 
-  and reverse_apply dat fn = fn dat 
-  in 
+    ]
+  and reverse_apply dat fn = fn dat
+  in
   let result = List.fold_left reverse_apply ts filters in
   result
 
-let translate_preprocessor ts = 
+let translate_preprocessor ts =
   let filters = [
     (* 1 *) filter_preprocessor ;
     (* 2 *) compress_ctypes ;
-    ] 
-  and reverse_apply dat fn = fn dat 
+    ]
+  and reverse_apply dat fn = fn dat
   in List.fold_left reverse_apply ts filters
 
 @h = tangler('src/compiler/flxlib/flx_lex1.mli')
@@ -470,22 +470,22 @@ open Flx_lex
 open Flx_prelex
 open Flx_preproc
 open List
-   
+
 let pre_tokens_of_lexbuf buf state =
-  let rec get lst = 
-    let t = Flx_lex.pre_flx_lex state buf in 
+  let rec get lst =
+    let t = Flx_lex.pre_flx_lex state buf in
     match t with
     | [ENDMARKER] -> lst
-    | _ -> 
+    | _ ->
     match state#get_condition with
       | `Processing -> get (List.rev_append t lst)
       | _ -> get lst
    in
    let tks = ENDMARKER :: get [] in
     (*
-    print_endline 
+    print_endline
     (
-      "#included files are " ^ 
+      "#included files are " ^
       String.concat ", " state#get_include_files
     )
     ;
@@ -506,12 +506,12 @@ let rec pre_tokens_of_filename filename dirname incdirs cache_dir expand_expr au
   *)
   let state = new Flx_lexstate.lexer_state filename dirname incdirs cache_dir expand_expr in
   let tokss =
-    (map 
-      (fun fn-> 
+    (map
+      (fun fn->
         (*
         print_endline (" .. Autoimporting " ^ fn);
         *)
-        include_directive "import" state ("auto_import",0,0,0,0) 
+        include_directive "import" state ("auto_import",0,0,0,0)
         fn pre_flx_lex
       )
       auto_imports
@@ -527,7 +527,7 @@ let rec pre_tokens_of_filename filename dirname incdirs cache_dir expand_expr au
   *)
   let infile = open_in filename in
   let src = Lexing.from_channel infile in
-  let toks = pre_tokens_of_lexbuf src state in close_in infile; 
+  let toks = pre_tokens_of_lexbuf src state in close_in infile;
   let fs,toks = split_hs toks in
   let tokss = tokss @ [toks] in
   let toks = HASH_INCLUDE_FILES fs :: concat tokss in
@@ -548,16 +548,16 @@ let pre_tokens_of_string s filename expand_expr =
 open Flx_token
 open Flx_ast
 
-val pre_tokens_of_filename : 
-  string -> string -> string list -> 
-  string option -> 
-  (string -> expr_t -> expr_t) -> 
+val pre_tokens_of_filename :
+  string -> string -> string list ->
+  string option ->
+  (string -> expr_t -> expr_t) ->
   string list -> (* auto imports *)
   token list
-  
-val pre_tokens_of_string : 
-  string -> string -> 
-  (string -> expr_t -> expr_t) -> 
+
+val pre_tokens_of_string :
+  string -> string ->
+  (string -> expr_t -> expr_t) ->
   token list
 
 @head(1, 'Tokeniser')
@@ -566,7 +566,7 @@ val pre_tokens_of_string :
 open Flx_ast
 open Flx_exceptions
 open List
-open Flx_srcref 
+open Flx_srcref
 open Flx_token
 
 let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
@@ -574,57 +574,57 @@ let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
   | [x,_] -> x
   | _ -> failwith "Dypgen parser failed"
 
-let print_pre_token t = 
+let print_pre_token t =
   let emit t = print_string (Flx_prelex.string_of_token t) in
     begin match t with
-    | COMMENT_NEWLINE s -> 
-      print_endline ("//" ^ s); 
+    | COMMENT_NEWLINE s ->
+      print_endline ("//" ^ s);
 
-    | NEWLINE -> 
+    | NEWLINE ->
       print_endline ""
 
-    | ENDMARKER -> print_endline "<<EOF>>" 
+    | ENDMARKER -> print_endline "<<EOF>>"
     | _ -> emit t
     end;
     flush stdout
 
-let print_pre_tokens ts = 
+let print_pre_tokens ts =
   if (length ts) = 0
   then print_string "<Empty pretoken list>";
   print_string "   1: ";
   iter print_pre_token ts
 
-let print_tokens ts = 
+let print_tokens ts =
   let lineno = ref 0 in
   let indent = ref 0 in
-  let emit t = 
-    print_string ((Flx_prelex.string_of_token t) ^ " ") 
-  and emit_eol t = 
+  let emit t =
+    print_string ((Flx_prelex.string_of_token t) ^ " ")
+  and emit_eol t =
     print_endline t;
     let s' = "    " ^ (string_of_int !lineno) in
     let n = String.length s' in
     print_string ((String.sub s' (n-4) 4) ^ ": ");
     for i=0 to !indent -1 do print_string "  " done
   in
-  let print_token t =  
+  let print_token t =
     begin match t with
-    | NEWLINE  -> 
+    | NEWLINE  ->
       emit_eol ("//")
-    | LBRACE _ -> 
+    | LBRACE _ ->
       incr indent;
-      emit_eol "  {" 
-    | RBRACE _ -> 
+      emit_eol "  {"
+    | RBRACE _ ->
       decr indent;
-      emit_eol "}" 
+      emit_eol "}"
     | ENDMARKER -> emit_eol "#<<EOF>>"
     | _ -> emit t
     end;
     flush stdout
-  in 
+  in
     iter print_token ts
 ;;
 
-class tokeniser t = 
+class tokeniser t =
 object(self)
   val mutable tokens = []
   val mutable tokens_copy = []
@@ -652,7 +652,7 @@ object(self)
     let token = nth tokens_copy current_token_index in
     slift (Flx_prelex.src_of_token token)
 
-  method report_syntax_error = 
+  method report_syntax_error =
     print_endline "";
     print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
     let n = length tokens_copy in
@@ -664,9 +664,9 @@ object(self)
     done;
     print_tokens !slist;
     print_endline "";
-    
+
     let j =
-      begin 
+      begin
         if length tokens_copy = current_token_index
         then begin
           print_string "Unexpected End Of File";
@@ -677,30 +677,30 @@ object(self)
           current_token_index
         end
       end
-    in 
+    in
     let token = nth tokens_copy j in
     let sr = ref (Flx_prelex.src_of_token token) in
     let file,line,scol,ecol = !sr in
     if line <> 0 or j = 0 then
-      print_endline 
+      print_endline
       (
-        " in " ^ file ^ 
-        ", line " ^ string_of_int line ^ 
+        " in " ^ file ^
+        ", line " ^ string_of_int line ^
         " col " ^ string_of_int scol
       )
     else begin
       let token = nth tokens_copy (j-1) in
       sr := Flx_prelex.src_of_token token;
       let file,line,scol,ecol = !sr in
-      print_endline 
+      print_endline
       (
-        " in " ^ file ^ 
-        ", after line " ^ string_of_int line ^ 
+        " in " ^ file ^
+        ", after line " ^ string_of_int line ^
         " col " ^ string_of_int scol
       )
     end
-    ; 
-    
+    ;
+
     slist := [];
     for i = current_token_index to last do
       slist := concat [!slist; [nth tokens_copy i]]
@@ -718,19 +718,19 @@ end
 ;;
 
 
-type 'a parser_t = 
-  (Lexing.lexbuf  -> token) -> 
-  Lexing.lexbuf -> 
+type 'a parser_t =
+  (Lexing.lexbuf  -> token) ->
+  Lexing.lexbuf ->
   'a
 
-let parse_tokens (parser:'a parser_t) (tokens: token list) = 
+let parse_tokens (parser:'a parser_t) (tokens: token list) =
   let toker = (new tokeniser tokens) in
-  try 
+  try
     parser (toker#token_src) (Lexing.from_string "dummy" )
-  with 
-  | Flx_exceptions.ClientError _ 
-  | Flx_exceptions.ClientError2 _ 
-  | Flx_exceptions.ClientErrorn _ as x -> 
+  with
+  | Flx_exceptions.ClientError _
+  | Flx_exceptions.ClientError2 _
+  | Flx_exceptions.ClientErrorn _ as x ->
     (*
     print_endline ("got client error from parse..");
     *)
@@ -778,9 +778,9 @@ class tokeniser :
     method token_peek : Lexing.lexbuf -> token
   end
 
-type 'a parser_t = 
-  (Lexing.lexbuf  -> token) -> 
-  Lexing.lexbuf -> 
+type 'a parser_t =
+  (Lexing.lexbuf  -> token) ->
+  Lexing.lexbuf ->
   'a
 
 val parse_tokens:
@@ -805,7 +805,7 @@ let print_elkhound_tokens toks =
   let nt x = name_of_token x in
   List.iter
   (
-    fun x -> 
+    fun x ->
       match x with
       | NAME (s,id) ->
         print_endline (nt x ^ " " ^ id)
@@ -813,25 +813,25 @@ let print_elkhound_tokens toks =
         print_endline (nt x ^ " " ^
           t^","^Big_int.string_of_big_int v
         )
-      | FLOAT (s,t,v) -> 
-        print_endline (nt x ^ " " ^ 
+      | FLOAT (s,t,v) ->
+        print_endline (nt x ^ " " ^
           t^","^v
         )
-      | STRING (sr,s) -> 
+      | STRING (sr,s) ->
         print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s 
+          Flx_string.c_quote_of_string s
         )
-      | CSTRING (sr,s) -> 
+      | CSTRING (sr,s) ->
         print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s 
+          Flx_string.c_quote_of_string s
         )
-      | WSTRING (sr,s) -> 
+      | WSTRING (sr,s) ->
         print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s 
+          Flx_string.c_quote_of_string s
         )
-      | USTRING (sr,s) -> 
+      | USTRING (sr,s) ->
         print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s 
+          Flx_string.c_quote_of_string s
         )
       | _ ->
         print_endline (Flx_prelex.name_of_token x)
@@ -842,14 +842,14 @@ let print_elkhound_tokens toks =
 let print_help () = print_options(); exit(0)
 ;;
 
-let run() = 
+let run() =
   let raw_options = parse_options Sys.argv in
   let compiler_options = get_felix_options raw_options in
 
   if check_keys raw_options ["h"; "help"]
   then print_help ()
   ;
-  if check_key raw_options "version" 
+  if check_key raw_options "version"
   then (print_endline ("Felix Version " ^ !version_data.version_string))
   ;
   if compiler_options.print_flag then begin
@@ -861,7 +861,7 @@ let run() =
   ;
 
   let elkhound_test = check_key raw_options "elkhound" in
-  let filename = 
+  let filename =
     match get_key_value raw_options "" with
     | Some s -> s
     | None -> exit 0
@@ -876,10 +876,10 @@ let run() =
     print_endline "Pre tokens"
   end;
 
-  let pretokens = 
-    Flx_pretok.pre_tokens_of_filename 
-    input_file_name 
-    (Filename.dirname input_file_name) 
+  let pretokens =
+    Flx_pretok.pre_tokens_of_filename
+    input_file_name
+    (Filename.dirname input_file_name)
     compiler_options.include_dirs
     compiler_options.cache_dir
     Flx_macro.expand_expression
@@ -902,7 +902,7 @@ let run() =
     print_elkhound_tokens tokens;
   end
 
-in 
+in
   run()
 ;;
 

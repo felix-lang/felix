@@ -10,8 +10,8 @@ type symbol_t = [`Atom of token | `Group of dyalt_t list]
 and dyalt_t = symbol_t list * range_srcref * action_t * anote_t
 val document_grammar: bool ref
 
-type page_entry_t = [ 
-  | `Nt of string 
+type page_entry_t = [
+  | `Nt of string
   | `Subpage of string * page_entry_t list
 ]
 
@@ -33,23 +33,23 @@ type symbol_t = [`Atom of token | `Group of dyalt_t list]
 and dyalt_t = symbol_t list * range_srcref * action_t * anote_t
 
 type gdoc_entry_t = [
-    | `Doc of string * string 
+    | `Doc of string * string
     | `Prod of string * dyalt_t list
 ]
 
 type ddoc_entry_t = [
-    | `dsslDoc of string * string 
+    | `dsslDoc of string * string
     | `dsslProd of string * dyalt_t list
 ]
 
-type page_entry_t = [ 
-  | `Nt of string 
+type page_entry_t = [
+  | `Nt of string
   | `Subpage of string * page_entry_t list
 ]
 
 
-let silly_strtoken k = 
-  match k with 
+let silly_strtoken k =
+  match k with
   | NAME (_,s) -> s
   | _ -> Flx_prelex.string_of_token k
 
@@ -60,7 +60,7 @@ let silly_strtoken k =
 let document_grammar = ref false
 let grammar_doc = Hashtbl.create 97
 let ntgroups = Hashtbl.create 97
-let dssls = Hashtbl.create 97 
+let dssls = Hashtbl.create 97
 
 let record_rule dssl nt dyalts =
   let old = try Hashtbl.find grammar_doc nt with Not_found -> [] in
@@ -109,9 +109,9 @@ let spelling = [
 @for t,s in flx_syms: tangle('"'+t+'","'+s+'";')
 ]
 
-let nt2page = Hashtbl.create 97 
+let nt2page = Hashtbl.create 97
 
-let uri s = 
+let uri s =
   try (Hashtbl.find nt2page s ^ ".html") ^ "#"^s
   with Not_found -> s ^ ".html"
 
@@ -130,12 +130,12 @@ let href_dssl s = href ("dssl_"^s^".html") s
 let span cl s =
   "<SPAN CLASS=\""^cl^"\">"^s^"</SPAN>"
 
-let begin_div cl = 
+let begin_div cl =
   "<DIV CLASS=\""^cl^"\">"
 
 let end_div = "</DIV>"
 
-let ljust n s = 
+let ljust n s =
   let s = s ^ String.make n ' ' in
   String.sub s 0 n
 
@@ -143,7 +143,7 @@ let emit_rule dssl name dyalts : string list =
   let done_space = ref false in
   let b = Buffer.create 1000 in
   let emit s = Buffer.add_string b s in
-  let spc () = 
+  let spc () =
     if !done_space then () else
     done_space :=true; emit " "
   in
@@ -152,26 +152,26 @@ let emit_rule dssl name dyalts : string list =
   let emit_ter tok = semit tok in
   let emit_nt s = semit (href_nt s) in
   let emit_enc s = emit (span "metatoken" s) in
-  let emit_user_keyword s = 
-    spc(); 
-    emit (span "userkeyword" s); 
-    done_space := false 
+  let emit_user_keyword s =
+    spc();
+    emit (span "userkeyword" s);
+    done_space := false
   in
   let rec emit_symbol sym = match sym with
-    | `Group dyalts -> 
+    | `Group dyalts ->
       spc(); emit_enc "("; done_space := false;
       let first = ref true in
-      List.iter (fun x -> 
-        if not (!first) then emit_enc "|"; 
+      List.iter (fun x ->
+        if not (!first) then emit_enc "|";
         first := false;
-        emit_dyalt x) 
-      dyalts; 
+        emit_dyalt x)
+      dyalts;
       emit_enc ")"
 
     | `Atom a -> match a with
-      | NAME (_,s) -> 
-        begin try 
-          let tok = List.assoc s nt2tok in 
+      | NAME (_,s) ->
+        begin try
+          let tok = List.assoc s nt2tok in
           emit_ter tok
         with Not_found -> emit_nt s
         end
@@ -180,12 +180,12 @@ let emit_rule dssl name dyalts : string list =
       | QUEST _ -> emit_enc "?"
       | PLUS _  -> emit_enc "+"
       | USER_KEYWORD (_,s) -> emit_user_keyword s
-      | x -> 
+      | x ->
         let s =  silly_strtoken x in
         let s = try List.assoc s spelling with Not_found -> s in
         semit s
-      
-  and emit_dyalt (rhs,sr,action,anote) = 
+
+  and emit_dyalt (rhs,sr,action,anote) =
     List.iter emit_symbol rhs;
     match action with
     | `Scheme s when String.length s > 1->
@@ -204,36 +204,36 @@ let emit_rule dssl name dyalts : string list =
       emit "  "; emit_enc "|"; done_space:=false; emit_dyalt x;
       Buffer.contents b
     )
-    dyalts 
+    dyalts
   in
   ss
 
 ;;
 
-let rec get_nts entry : string list = match entry with 
+let rec get_nts entry : string list = match entry with
   | `Nt nt -> [nt]
   | `Subpage (_,entries) -> concat (map get_nts entries)
 
 
 let make_ntdoc w page nt =
-  let dfn = 
+  let dfn =
     (*
     print_endline ("DOCUMENTING NONTERMINAL " ^ nt );
     *)
     try rev (Hashtbl.find grammar_doc nt)
-    with Not_found -> 
+    with Not_found ->
      print_endline ("ERROR, page " ^ page ^ " nonterminal " ^ nt ^ " NOT FOUND");
      []
   in
   w (begin_div "ntlist");
   w (" " ^ nt ^ anchor nt ^ span "metatoken" ":=" ^ "\n");
   List.iter (* all separate productions of nonterminal *)
-      (fun gd -> match gd with 
+      (fun gd -> match gd with
       | `Prod (dssl,dyalts) ->
         let ss = emit_rule dssl nt dyalts in
         begin match ss with
         | [] -> assert false
-        | h :: t -> 
+        | h :: t ->
         w ( begin_div "rule" ^ href_dssl dssl ^ span "production" h ^end_div);
         List.iter (* alternatives of a production *)
           (fun h ->
@@ -243,7 +243,7 @@ let make_ntdoc w page nt =
         ;
         end
       | `Doc (dssl,s) -> w s
-    ) 
+    )
   dfn
   ;
   w end_div
@@ -252,13 +252,13 @@ let make_dssldoc w dssl entries =
   w ("<H1>DSSL " ^ dssl ^ "</H1>");
   w (begin_div "ntlist");
   w ("syntax " ^ dssl ^ anchor dssl ^ span "metatoken" " {" ^ "\n");
-  List.iter 
-  (fun gd -> match gd with 
+  List.iter
+  (fun gd -> match gd with
       | `dsslProd (nt,dyalts) ->
         let ss = emit_rule dssl nt dyalts in
         begin match ss with
         | [] -> assert false
-        | h :: t -> 
+        | h :: t ->
         let ds = ljust 20 ("  " ^ dssl) in
         w ( begin_div "rule" ^ span "nt" nt ^ span "dsslproduction" h ^end_div);
         let ds = ljust 20 ""in
@@ -270,19 +270,19 @@ let make_dssldoc w dssl entries =
         ;
         end
       | `dsslDoc (nt,s) -> w s
-  ) 
-  entries 
+  )
+  entries
   ;
   w (span "metatoken" "}\n");
   w end_div
 
-let rec make_body w page level heading entries =      
+let rec make_body w page level heading entries =
       w (
-        "<h"^string_of_int level^">" ^ heading ^ 
+        "<h"^string_of_int level^">" ^ heading ^
         "</h"^string_of_int level^">\n"
       );
-      iter 
-      (fun entry -> 
+      iter
+      (fun entry ->
         match entry with
         | `Nt nt -> make_ntdoc w page nt
         | `Subpage (subhead,entries) -> make_body w page (level+1) subhead entries
@@ -296,20 +296,20 @@ let gen_doc () =
     (* calculate partial nonterminal -> page map *)
     Hashtbl.iter
     (fun page entries ->
-      iter 
-        (fun entry -> 
+      iter
+        (fun entry ->
           let nts2 = get_nts entry in
-          iter 
+          iter
           (fun nt ->
             (* Note: this is actually OK .. stuff gets documented twice! *)
-            if Hashtbl.mem nt2page nt then 
+            if Hashtbl.mem nt2page nt then
               print_endline ("Warning: nonterminal " ^ nt ^ " in two groups!")
             ;
             Hashtbl.replace nt2page nt page
            )
            nts2
-        ) 
-        entries 
+        )
+        entries
     )
     ntgroups
     ;
@@ -318,8 +318,8 @@ let gen_doc () =
       their own family
     *)
     Hashtbl.iter
-    (fun k _ -> 
-      if not (Hashtbl.mem nt2page k) 
+    (fun k _ ->
+      if not (Hashtbl.mem nt2page k)
       then Hashtbl.add ntgroups k [(`Nt k :> page_entry_t)]
     )
     grammar_doc
@@ -409,7 +409,7 @@ let gen_doc () =
 
 @h = tangler('doc/gramdoc/gramdoc.css')
 @select(h)
-BODY 
+BODY
 {
 margin-left:2em;
 margin-right:4em;
@@ -443,12 +443,12 @@ DIV.rule
 
 SPAN.dssl
 {
-  color: #330033; 
+  color: #330033;
 }
 
 SPAN.nt
 {
-  color: #330033; 
+  color: #330033;
 }
 
 
@@ -462,15 +462,15 @@ SPAN.dsslproduction
   position:absolute;left:15em;
 }
 
-P 
-{ 
+P
+{
   font-family: Arial;
   font-weight: normal;
   color: #8b6914;
   font-size: 14px;
 }
 
-CODE 
+CODE
 {
   color : black;
 }

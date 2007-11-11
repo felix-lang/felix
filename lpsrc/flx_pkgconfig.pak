@@ -13,7 +13,7 @@ so it can be built early enough.
 @h = tangler("spkgs/flx_pkgconfig.py")
 @select(h)
 
-# 
+#
 # we can't use flx_pkgconfig to supply platform
 # libraries .. because this IS flx_pkgconfig --
 # so it isn't built yet!!
@@ -28,7 +28,7 @@ FLXFLAGS = ""
 #    FLXFLAGS = "-lws2_32 -lmswsock "
 #elif SOLARIS:
 #  FLXFLAGS = "-lsocket -lnsl " # uses async hooker->faio->demux->sockets
-    
+
 # DRLIBS = ['libflx_async','libfaio','libdemux','libflx_pthread','libflx', 'libflx_exceptions']
 DRLIBS = ['libflx_pthread','libflx','libflx_gc','libflx_judy', 'libflx_exceptions']
 
@@ -108,7 +108,7 @@ enum keep_t {keepall, keepleftmost, keeprightmost};
 var keep= keepleftmost;
 
 var i = 1;
-var arg = argv i; 
+var arg = argv i;
 var args = Empty[string];
 whilst arg != "" do args = arg + args; ++i; arg=argv i; done;
 args = rev args;
@@ -122,7 +122,7 @@ fun xfind(flags: string, c: string) =>
  endmatch
 ;
 
-proc parse_args(args:list[string]) 
+proc parse_args(args:list[string])
 {
   match args with
   | Empty => {}
@@ -206,21 +206,21 @@ val dirs=split(path, char ':');
 
 var result = Empty[string];
 
-fun get_field(line:string):string * string => 
+fun get_field(line:string):string * string =>
     match find (line,char ':') with
-    | None => "","" 
-    | Some ?n => 
+    | None => "",""
+    | Some ?n =>
         strip line.[to n],
         strip line.[n+1 to]
     endmatch
   ;
 
-proc add_val(v:string){ 
+proc add_val(v:string){
  result = insert_unique streq result v;
 //  result = rev$ Cons(v, rev result);
 }
 
-proc tail_val(v:string){ 
+proc tail_val(v:string){
    result = append_unique streq result v;
 //  result = Cons(v, result);
 }
@@ -233,7 +233,7 @@ proc handle_pkg (pkg:string, trace:list[string]){
    if mem streq trace pkg return;
    var found = false;
    iter(proc (dir:string){
-     val filename = 
+     val filename =
        if dir=="" then "." else dir endif + sep + pkg + ".fpc"
      ;
      //print filename; endl;
@@ -241,16 +241,16 @@ proc handle_pkg (pkg:string, trace:list[string]){
      // examine line of one file
      file := fopen_input filename;
      if valid file do
-       if dolist call add_val pkg; 
+       if dolist call add_val pkg;
        var lines = Empty[string];
        var line = readln file;
-       whilst line != "" do 
-         lines = Cons(line,lines); 
-         line = readln file; 
+       whilst line != "" do
+         lines = Cons(line,lines);
+         line = readln file;
        done;
        if not backwards do lines = rev lines; done;
 
-       iter (proc (line:string) 
+       iter (proc (line:string)
        {
          //print line;
          def var key, var value = get_field(line);
@@ -267,8 +267,8 @@ proc handle_pkg (pkg:string, trace:list[string]){
 
          // chase dependent packages
          if mem streq recfields key do
-           iter (proc (s:string){ 
-             handle_pkg$ s,Cons(pkg,trace); 
+           iter (proc (s:string){
+             handle_pkg$ s,Cons(pkg,trace);
            })
            values;
          done;
@@ -290,10 +290,10 @@ proc handle_pkg (pkg:string, trace:list[string]){
 whilst not is_empty pkgs do
   match pkgs with
   | Empty => {}
-  | Cons (?pkg,?tail) => 
-    { 
+  | Cons (?pkg,?tail) =>
+    {
       pkgs = tail;
-      handle_pkg(pkg,Empty[string]); 
+      handle_pkg(pkg,Empty[string]);
     }
   endmatch;
 done;

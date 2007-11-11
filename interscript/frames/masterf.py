@@ -53,7 +53,7 @@ class master_frame:
       source_prefix = self.source_prefix
       if self.cache_prefix is not None:
         source_prefix = self.cache_prefix + os.sep
-        
+
       self.cache_name =self.platform.map_filename(
         source_prefix, self.filename+'.cache')
       try:

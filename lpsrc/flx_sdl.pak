@@ -105,7 +105,7 @@ if HAVE_SDL:
   cflags = SDL_CFLAGS
   dflags = SDL_LIBS
   sflags = SDL_STATIC_LIBS
-  
+
   pkg_requires = ['faio']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
   demos = glob.glob(os.path.join('demos', 'sdl', '*.flx'))
@@ -179,8 +179,8 @@ include "GL/glu_lib";
 
 module SDL_opengl_h
 {
-  inherit GL_gl_h;  
-  inherit GL_glu_h;  
+  inherit GL_gl_h;
+  inherit GL_glu_h;
 }
 @doc()
 
@@ -210,7 +210,7 @@ module SDL_h
   requires package "sdl";
   header '#include "SDL.h"';
   open C_hack;
-  
+
   const SDL_INIT_EVERYTHING: uint32;
   const SDL_INIT_EVENTTHREAD: uint32;
   const SDL_INIT_NOPARACHUTE: uint32;
@@ -223,7 +223,7 @@ module SDL_h
   //PROCEDURES
   proc SDL_Quit: 1;
   proc SDL_QuitSubSystem: uint32;
-  
+
   //FUNCTIONS
   fun SDL_Init: uint32 -> int;
   fun SDL_InitSubSystem: uint32 -> int;
@@ -252,7 +252,7 @@ module SDL_active_h
   requires package "sdl";
   header '#include "SDL_active.h"';
   open C_hack;
-  
+
   //FUNCTIONS
   fun SDL_GetAppState: 1 -> uint8;
 }
@@ -291,12 +291,12 @@ module SDL_audio_h
   const AUDIO_U16 : uint16;
   const AUDIO_S8 : uint16;
   const AUDIO_U8 : uint16;
- 
+
   //ABSTRACT TYPES
   type SDL_audiostatus = 'SDL_audiostatus';
   fun eq:SDL_audiostatus * SDL_audiostatus -> bool = "$1==$2";
 
-  //CSTRUCTS 
+  //CSTRUCTS
   cstruct SDL_AudioCVT {
     needed: int;
     src_format: uint16;
@@ -321,17 +321,17 @@ module SDL_audio_h
     callback_: SDL_audio_h_cft_1;
     userdata: address;
   }
- 
+
   fun get_callback: SDL_AudioSpec -> SDL_audio_h_cft_1 = "$1.callback";
   fun get_callback: lvalue[SDL_AudioSpec] -> lvalue[SDL_audio_h_cft_1] = "$1.callback";
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*SDL_audio_h_cft_2)(struct SDL_AudioCVT *,  Uint16);''';
   type SDL_audio_h_cft_2 = 'SDL_audio_h_cft_2';
 
   header '''typedef void (*SDL_audio_h_cft_1)(void *,  Uint8 *, int);''';
   type SDL_audio_h_cft_1 = 'SDL_audio_h_cft_1';
-  
+
   typedef flx_audio_callback_arg_t = ptr[uint8] * int;
   typedef flx_audio_callback_t = flx_audio_callback_arg_t -> void;
   export type (flx_audio_callback_t) as "flx_audio_callback_t";
@@ -356,9 +356,9 @@ module SDL_audio_h
 
 // not working yet
 //  callback proc SDL_audio_callback: SDL_audio_callback * ptr[uint8] * int;
-    
+
   //STRUCT or UNION TAG ALIASES
-  
+
   /*
   //TYPE ALIASES
   typedef _struct_SDL_AudioSpec = SDL_AudioSpec;
@@ -369,7 +369,7 @@ module SDL_audio_h
   const SDL_AUDIO_PAUSED: SDL_audiostatus = 'SDL_AUDIO_PAUSED';
   const SDL_AUDIO_STOPPED: SDL_audiostatus = 'SDL_AUDIO_STOPPED';
   const SDL_AUDIO_PLAYING: SDL_audiostatus = 'SDL_AUDIO_PLAYING';
-  
+
   //PROCEDURES
   proc SDL_AudioQuit: 1;
   proc SDL_CloseAudio: 1;
@@ -378,7 +378,7 @@ module SDL_audio_h
   proc SDL_MixAudio: ptr[uint8] * cptr[uint8] * uint32 * int;
   proc SDL_PauseAudio: int;
   proc SDL_UnlockAudio: 1;
-  
+
   //FUNCTIONS
   fun SDL_AudioDriverName: ptr[char] * int -> ptr[char];
   fun SDL_AudioInit: cptr[char] -> int;
@@ -416,11 +416,11 @@ module SDL_cdrom_h
   requires package "sdl";
   header '#include "SDL_cdrom.h"';
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type CDstatus = 'CDstatus';
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct SDL_CD {
     id: int;
     status: CDstatus;
@@ -436,25 +436,25 @@ module SDL_cdrom_h
     length: uint32;
     offset: uint32;
   }
-  
+
   //STRUCT or UNION TAG ALIASES
-  
+
   /*
   //TYPE ALIASES
   typedef _struct_SDL_CD = SDL_CD;
   typedef _struct_SDL_CDtrack = SDL_CDtrack;
   */
-  
+
   //ENUMERATION CONSTANTS
   const CD_TRAYEMPTY: int = 'CD_TRAYEMPTY';
   const CD_PLAYING: int = 'CD_PLAYING';
   const CD_ERROR: int = 'CD_ERROR';
   const CD_PAUSED: int = 'CD_PAUSED';
   const CD_STOPPED: int = 'CD_STOPPED';
-  
+
   //PROCEDURES
   proc SDL_CDClose: ptr[SDL_CD];
-  
+
   //FUNCTIONS
   fun SDL_CDEject: ptr[SDL_CD] -> int;
   fun SDL_CDName: int -> cptr[char];
@@ -488,22 +488,22 @@ module SDL_error_h
   requires package "sdl";
   header '#include "SDL_error.h"';
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type SDL_errorcode = 'SDL_errorcode';
-  
+
   //ENUMERATION CONSTANTS
   const SDL_EFSEEK: int = 'SDL_EFSEEK';
   const SDL_ENOMEM: int = 'SDL_ENOMEM';
   const SDL_LASTERROR: int = 'SDL_LASTERROR';
   const SDL_EFREAD: int = 'SDL_EFREAD';
   const SDL_EFWRITE: int = 'SDL_EFWRITE';
-  
+
   //PROCEDURES
   proc SDL_ClearError: 1;
   proc SDL_Error: SDL_errorcode;
   proc SDL_SetError[t]: t;
-  
+
   //FUNCTIONS
   fun SDL_GetError: 1 -> ptr[char];
 }
@@ -537,11 +537,11 @@ module SDL_events_h
   header '#include "SDL_events.h"';
   open C_hack;
   open SDL_keyboard_h;
-  
+
   //ABSTRACT TYPES
   type SDL_eventaction = 'SDL_eventaction';
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct SDL_SysWMEvent {
     type_: uint8;
     msg: ptr[SDL_SysWMmsg];
@@ -635,30 +635,30 @@ module SDL_events_h
     user : SDL_UserEvent;
     syswm : SDL_SysWMEvent;
   }
- 
+
   // use name type_ instead of type ..
   fun get_type_:SDL_Event -> uint8 = "$1.type";
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*SDL_events_h_cft_1)(SDL_Event const *);''';
   type SDL_events_h_cft_1 = 'SDL_events_h_cft_1';
-  
+
   //PURE INCOMPLETE TYPES
   type _struct_SDL_SysWMmsg = 'struct SDL_SysWMmsg'; //local
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef SDL_SysWMmsg = _struct_SDL_SysWMmsg;
-  
+
   typedef SDL_EventMasks = int;
   typedef SDL_EventFilter = SDL_events_h_cft_1;
   typedef SDL_Events = int;
-  
+
   // Weird
   const SDL_PEEKEVENT: uint8 = 'SDL_PEEKEVENT';
   const SDL_GETEVENT: uint8 = 'SDL_GETEVENT';
   const SDL_ADDEVENT: uint8 = 'SDL_ADDEVENT';
   const SDL_NUMEVENTS: uint8 = 'SDL_NUMEVENTS';
-  
+
   //EVENTS
   const SDL_MOUSEBUTTONUP: uint8 = 'SDL_MOUSEBUTTONUP';
   const SDL_MOUSEBUTTONDOWN: uint8 = 'SDL_MOUSEBUTTONDOWN';
@@ -713,11 +713,11 @@ module SDL_events_h
   const SDL_KEYDOWNMASK: uint8 = 'SDL_KEYDOWNMASK';
   const SDL_KEYUPMASK: uint8 = 'SDL_KEYUPMASK';
   const SDL_QUITMASK: uint8 = 'SDL_QUITMASK';
- 
+
   //PROCEDURES
   proc SDL_PumpEvents: 1;
   proc SDL_SetEventFilter: SDL_events_h_cft_1;
-  
+
   //FUNCTIONS
   fun SDL_EventState: uint8 * int -> uint8;
   fun SDL_GetEventFilter: 1 -> SDL_EventFilter;
@@ -755,17 +755,17 @@ module SDL_joystick_h
   requires package "sdl";
   header '#include "SDL_joystick.h"';
   open C_hack;
-  
+
   //PURE INCOMPLETE TYPES
   type _struct__SDL_Joystick = 'struct _SDL_Joystick'; //local
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef SDL_Joystick = _struct__SDL_Joystick;
-  
+
   //PROCEDURES
   proc SDL_JoystickClose: ptr[SDL_Joystick];
   proc SDL_JoystickUpdate: 1;
-  
+
   //FUNCTIONS
   fun SDL_JoystickEventState: int -> int;
   fun SDL_JoystickGetAxis: ptr[SDL_Joystick] * int -> int16;
@@ -809,17 +809,17 @@ module SDL_keyboard_h
   header '#include "SDL_keyboard.h"';
   open C_hack;
   open SDL_keysym_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct SDL_keysym {
     scancode: uint8;
     sym: SDLKey;
     mod: SDLMod;
     unicode: uint16;
   }
-  
+
   //STRUCT or UNION TAG ALIASES
-  
+
   /*
   //TYPE ALIASES
   typedef _struct_SDL_keysym = SDL_keysym;
@@ -827,7 +827,7 @@ module SDL_keyboard_h
 
   //PROCEDURES
   proc SDL_SetModState: SDLMod;
-  
+
   //FUNCTIONS
   fun SDL_EnableKeyRepeat: int * int -> int;
   fun SDL_EnableUNICODE: int -> int;
@@ -859,11 +859,11 @@ module SDL_keysym_h
   requires package "sdl";
   header '#include "SDL_keysym.h"';
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type SDLKey = 'SDLKey';
   type SDLMod = 'SDLMod';
-  
+
   //ENUMERATION CONSTANTS
   const SDLK_WORLD_1: SDLKey = 'SDLK_WORLD_1';
   const SDLK_POWER: SDLKey = 'SDLK_POWER';
@@ -1149,8 +1149,8 @@ module SDL_mouse_h
   header '#include "SDL_mouse.h"';
   open C_hack;
   open SDL_video_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct SDL_Cursor {
     area: SDL_Rect;
     hot_x: int16;
@@ -1160,23 +1160,23 @@ module SDL_mouse_h
     save: ptr[ptr[uint8]];
     wm_cursor: ptr[WMcursor];
   }
-  
+
   //PURE INCOMPLETE TYPES
   type _struct_WMcursor = 'struct WMcursor'; //local
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef WMcursor = _struct_WMcursor;
-  
+
   /*
   //TYPE ALIASES
   typedef _struct_SDL_Cursor = SDL_Cursor;
   */
-  
+
   //PROCEDURES
   proc SDL_FreeCursor: ptr[SDL_Cursor];
   proc SDL_SetCursor: ptr[SDL_Cursor];
   proc SDL_WarpMouse: uint16 * uint16;
-  
+
   //FUNCTIONS
   fun SDL_CreateCursor: ptr[uint8] * ptr[uint8] * int * int * int * int -> ptr[SDL_Cursor];
   fun SDL_GetCursor: 1 -> ptr[SDL_Cursor];
@@ -1209,14 +1209,14 @@ module SDL_mutex_h
   requires package "sdl";
   header '#include "SDL_mutex.h"';
   open C_hack;
-  
+
   incomplete ctypes SDL_mutex, SDL_cond, SDL_sem;
-  
+
   //PROCEDURES
   proc SDL_DestroyCond: ptr[SDL_cond];
   proc SDL_DestroyMutex: ptr[SDL_mutex];
   proc SDL_DestroySemaphore: ptr[SDL_sem];
-  
+
   //FUNCTIONS
   fun SDL_CondBroadcast: ptr[SDL_cond] -> int;
   fun SDL_CondSignal: ptr[SDL_cond] -> int;
@@ -1260,10 +1260,10 @@ module SDL_mutex_h
 module SDL_rwops_h
 {
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type _struct_SDL_RWops = 'struct SDL_RWops';
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*SDL_rwops_h_cft_1)(struct SDL_RWops *,  int, int);''';
   type SDL_rwops_h_cft_1 = 'SDL_rwops_h_cft_1';
@@ -1273,20 +1273,20 @@ module SDL_rwops_h
   type SDL_rwops_h_cft_2 = 'SDL_rwops_h_cft_2';
   header '''typedef int (*SDL_rwops_h_cft_4)(struct SDL_RWops *);''';
   type SDL_rwops_h_cft_4 = 'SDL_rwops_h_cft_4';
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef SDL_RWops = _struct_SDL_RWops;
-  
+
   //PROCEDURES
   proc SDL_FreeRW: ptr[SDL_RWops];
-  
+
   //FUNCTIONS
   fun SDL_AllocRW: 1 -> ptr[SDL_RWops];
   fun SDL_RWFromConstMem: caddress * int -> ptr[SDL_RWops];
   fun SDL_RWFromFP: ptr[FILE] * int -> ptr[SDL_RWops];
   fun SDL_RWFromFile: cptr[char] * cptr[char] -> ptr[SDL_RWops];
   fun SDL_RWFromMem: address * int -> ptr[SDL_RWops];
-  
+
   //STRUCT and UNION FIELDS
   fun get_read: _struct_SDL_RWops -> SDL_rwops_h_cft_2 = '$1->read';
   fun get_write: _struct_SDL_RWops -> SDL_rwops_h_cft_3 = '$1->write';
@@ -1320,35 +1320,35 @@ module SDL_timer_h
   header '#include "SDL_timer.h"';
   open C_hack;
   open SDL_types_h;
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef Uint32 (*SDL_timer_h_cft_2)(Uint32,  void *);''';
   type SDL_timer_h_cft_2 = 'SDL_timer_h_cft_2';
   header '''typedef Uint32 (*SDL_timer_h_cft_1)(Uint32);''';
   type SDL_timer_h_cft_1 = 'SDL_timer_h_cft_1';
-  
+
   //PURE INCOMPLETE TYPES
   type _struct__SDL_TimerID = 'struct _SDL_TimerID'; //local
-  
+
   //TYPE ALIASES
   typedef SDL_NewTimerCallback = SDL_timer_h_cft_2;
   typedef SDL_TimerID = ptr[_struct__SDL_TimerID];
   typedef SDL_TimerCallback = SDL_timer_h_cft_1;
-  
+
   //PROCEDURES
   proc SDL_Delay: uint32;
-  
+
   //FUNCTIONS
   fun SDL_AddTimer: uint32 * SDL_timer_h_cft_2 * address -> SDL_TimerID;
   fun SDL_GetTicks: 1 -> uint32;
   fun SDL_RemoveTimer: SDL_TimerID -> SDL_bool;
   fun SDL_SetTimer: uint32 * SDL_timer_h_cft_1 -> int;
-  
+
   //CALLBACK TYPE WRAPPERS
   //callback type SDL_timer_h_cft_2, client data at 1
   typedef _fcbat_SDL_timer_h_cft_2 = uint32;
   export type (_fcbat_SDL_timer_h_cft_2) as "_fcbat_SDL_timer_h_cft_2";
-  typedef _fcbt_SDL_timer_h_cft_2 = uint32 -> uint32; 
+  typedef _fcbt_SDL_timer_h_cft_2 = uint32 -> uint32;
   export type (_fcbt_SDL_timer_h_cft_2) as "_fcbt_SDL_timer_h_cft_2";
   header '''Uint32 _fcbw_SDL_timer_h_cft_2(Uint32 a1,  void *a2);''';
 
@@ -1358,7 +1358,7 @@ module SDL_timer_h
     return ((_fcbt_SDL_timer_h_cft_2)a2)->apply(a1);
   }''';
 
-  
+
   //CALLBACK CLIENT WRAPPERS
   //callback client SDL_AddTimer, client data at 1, callback at 2
   fun wrapper_SDL_AddTimer(a1: uint32, a2: _fcbt_SDL_timer_h_cft_2): SDL_TimerID= {
@@ -1390,11 +1390,11 @@ module SDL_types_h
   requires package "sdl";
   header '#include "SDL_types.h"';
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type SDL_bool = 'SDL_bool';
   type SDL_DUMMY_ENUM = 'SDL_DUMMY_ENUM';
-  
+
   //TYPE ALIASES
   typedef Sint64 = vlong;
   typedef SDL_dummy_uint32 = ptr[int];
@@ -1407,7 +1407,7 @@ module SDL_types_h
   typedef SDL_dummy_uint64 = ptr[int];
   typedef SDL_dummy_uint16 = ptr[int];
   typedef SDL_dummy_enum = ptr[int];
-  
+
   //ENUMERATION CONSTANTS
   const SDL_PRESSED: int = 'SDL_PRESSED';
   const DUMMY_ENUM_VALUE: int = 'DUMMY_ENUM_VALUE';
@@ -1442,19 +1442,19 @@ module SDL_version_h
   requires package "sdl";
   header '#include "SDL_version.h"';
   open C_hack;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct SDL_version {
     major: uint8;
     minor: uint8;
     patch: uint8;
   }
-  
+
   //STRUCT or UNION TAG ALIASES
-  
+
   //TYPE ALIASES
   typedef _struct_SDL_version = SDL_version;
-  
+
   //FUNCTIONS
   fun SDL_Linked_Version: 1 -> cptr[SDL_version];
 }
@@ -1514,7 +1514,7 @@ module SDL_video_h
   open C_hack;
   open SDL_rwops_h;
   open SDL_types_h;
-  
+
   fun SDL_MUSTLOCK: ptr[SDL_Surface] -> bool;
   const SDL_PHYSPAL : uint32;
   const SDL_LOGPAL : uint32;
@@ -1544,8 +1544,8 @@ module SDL_video_h
   //ABSTRACT TYPES
   type SDL_GrabMode = 'SDL_GrabMode';
   type SDL_GLattr = 'SDL_GLattr';
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct SDL_Color {
     r: uint8;
     g: uint8;
@@ -1625,22 +1625,22 @@ module SDL_video_h
     colorkey: uint32;
     alpha: uint8;
   }
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef int (*SDL_video_h_cft_1)(struct SDL_Surface *,  SDL_Rect *,  struct SDL_Surface *,  SDL_Rect *);''';
   type SDL_video_h_cft_1 = 'SDL_video_h_cft_1';
-  
+
   //EXTERNALLY COMPLETED TYPES
   //type _struct_SDL_Surface defined in SDL_video_h='SDL_video.h';
-  
+
   //PURE INCOMPLETE TYPES
   type _struct_SDL_BlitMap = 'struct SDL_BlitMap'; //local
   type _struct_private_yuvhwfuncs = 'struct private_yuvhwfuncs'; //local
   type _struct_private_hwdata = 'struct private_hwdata'; //local
   type _struct_private_yuvhwdata = 'struct private_yuvhwdata'; //local
-  
+
   //STRUCT or UNION TAG ALIASES
-  
+
   //TYPE ALIASES
   typedef _struct_SDL_Surface = SDL_Surface;
   typedef _struct_SDL_Overlay = SDL_Overlay;
@@ -1650,7 +1650,7 @@ module SDL_video_h
   typedef _struct_SDL_Color = SDL_Color;
   typedef _struct_SDL_VideoInfo = SDL_VideoInfo;
   typedef SDL_blit = SDL_video_h_cft_1;
-  
+
   //ENUMERATION CONSTANTS
   const SDL_GL_STENCIL_SIZE: int = 'SDL_GL_STENCIL_SIZE';
   const SDL_GL_MULTISAMPLEBUFFERS: int = 'SDL_GL_MULTISAMPLEBUFFERS';
@@ -1671,7 +1671,7 @@ module SDL_video_h
   const SDL_GL_DOUBLEBUFFER: int = 'SDL_GL_DOUBLEBUFFER';
   const SDL_GL_BUFFER_SIZE: int = 'SDL_GL_BUFFER_SIZE';
   const SDL_GRAB_ON: int = 'SDL_GRAB_ON';
-  
+
   //PROCEDURES
   proc SDL_FreeSurface: ptr[SDL_Surface];
   proc SDL_FreeYUVOverlay: ptr[SDL_Overlay];
@@ -1690,7 +1690,7 @@ module SDL_video_h
   proc SDL_WM_GetCaption: ptr[ptr[char]] * ptr[ptr[char]];
   proc SDL_WM_SetCaption: cptr[char] * cptr[char];
   proc SDL_WM_SetIcon: ptr[SDL_Surface] * ptr[uint8];
-  
+
   //FUNCTIONS
   fun SDL_BlitSurface : ptr[SDL_Surface] * ptr[SDL_Rect] * ptr[SDL_Surface] * ptr[SDL_Rect] -> int;
   fun SDL_ConvertSurface: ptr[SDL_Surface] * ptr[SDL_PixelFormat] * uint32 -> ptr[SDL_Surface];
@@ -1773,7 +1773,7 @@ module SDL_endian_h
   open C_hack;
   open SDL_rwops_h;
   open SDL_types_h;
-  
+
   //FUNCTIONS
   fun SDL_ReadBE16: ptr[SDL_RWops] -> uint16;
   fun SDL_ReadBE32: ptr[SDL_RWops] -> uint32;
@@ -1820,14 +1820,14 @@ module SDL_framerate_h
   header '#include "SDL_framerate.h"';
   open C_hack;
   open SDL_h;
-  
+
   //ABSTRACT TYPES
   type FPSmanager = 'FPSmanager';
-  
+
   //PROCEDURES
   proc SDL_framerateDelay: ptr[FPSmanager];
   proc SDL_initFramerate: ptr[FPSmanager];
-  
+
   //FUNCTIONS
   fun SDL_getFramerate: ptr[FPSmanager] -> int;
   fun SDL_setFramerate: ptr[FPSmanager] * int -> int;
@@ -1865,7 +1865,7 @@ module SDL_gfxPrimitives_h
   open SDL_h;
   open SDL_video_h;
   open math_h;
-  
+
   //FUNCTIONS
   fun aacircleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
   fun aacircleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
@@ -1934,7 +1934,7 @@ module SDL_gfxPrimitives_font_h
   requires package "sdl";
   header '#include "SDL_gfxPrimitives_font.h"';
   open C_hack;
-  
+
   //VARIABLES
   const gfxPrimitivesFontdata: ptr[utiny] = 'gfxPrimitivesFontdata';
 }
@@ -1972,7 +1972,7 @@ module SDL_image_h
   open SDL_rwops_h;
   open SDL_version_h;
   open SDL_video_h;
-  
+
   //FUNCTIONS
   fun IMG_InvertAlpha: int -> int;
   fun IMG_Linked_Version: 1 -> cptr[SDL_version];
@@ -2025,13 +2025,13 @@ module SDL_imageFilter_h
   requires package "sdl";
   header '#include "SDL_imageFilter.h"';
   open C_hack;
-  
+
   //PROCEDURES
   proc SDL_imageFilterAlignStack: 1;
   proc SDL_imageFilterMMXoff: 1;
   proc SDL_imageFilterMMXon: 1;
   proc SDL_imageFilterRestoreStack: 1;
-  
+
   //FUNCTIONS
   fun SDL_imageFilterAbsDiff: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
   fun SDL_imageFilterAdd: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
@@ -2115,12 +2115,12 @@ module SDL_mixer_h
   open C_hack;
   open SDL_rwops_h;
   open SDL_version_h;
-  
+
   //ABSTRACT TYPES
   type Mix_MusicType = 'Mix_MusicType';
   type Mix_Chunk = 'Mix_Chunk';
   type Mix_Fading = 'Mix_Fading';
-  
+
   //C FUNCTION POINTER TYPES
   header '''typedef void (*SDL_mixer_h_cft_3)(void *, Uint8 *, int);''';
   type SDL_mixer_h_cft_3 = 'SDL_mixer_h_cft_3';
@@ -2132,17 +2132,17 @@ module SDL_mixer_h
   type SDL_mixer_h_cft_5 = 'SDL_mixer_h_cft_5';
   header '''typedef void (*SDL_mixer_h_cft_4)(void);''';
   type SDL_mixer_h_cft_4 = 'SDL_mixer_h_cft_4';
-  
+
   //PURE INCOMPLETE TYPES
   type _struct__Mix_Music = 'struct _Mix_Music'; //local
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef Mix_Music = _struct__Mix_Music;
-  
+
   //TYPE ALIASES
   typedef Mix_EffectDone_t = SDL_mixer_h_cft_2;
   typedef Mix_EffectFunc_t = SDL_mixer_h_cft_1;
-  
+
   //ENUMERATION CONSTANTS
   const MUS_CMD: int = 'MUS_CMD';
   const MIX_FADING_OUT: int = 'MIX_FADING_OUT';
@@ -2154,7 +2154,7 @@ module SDL_mixer_h
   const MUS_NONE: int = 'MUS_NONE';
   const MUS_MOD: int = 'MUS_MOD';
   const MUS_MP3: int = 'MUS_MP3';
-  
+
   //PROCEDURES
   proc Mix_ChannelFinished: SDL_mixer_h_cft_5;
   proc Mix_CloseAudio: 1;
@@ -2168,7 +2168,7 @@ module SDL_mixer_h
   proc Mix_ResumeMusic: 1;
   proc Mix_RewindMusic: 1;
   proc Mix_SetPostMix: SDL_mixer_h_cft_3 * address;
-  
+
   //FUNCTIONS
   fun Mix_AllocateChannels: int -> int;
   fun Mix_ExpireChannel: int * int -> int;
@@ -2220,12 +2220,12 @@ module SDL_mixer_h
   fun Mix_Volume: int * int -> int;
   fun Mix_VolumeChunk: ptr[Mix_Chunk] * int -> int;
   fun Mix_VolumeMusic: int -> int;
-  
+
   //CALLBACK TYPE WRAPPERS
   //callback type SDL_mixer_h_cft_2, client data at 1
-  typedef _fcbat_SDL_mixer_h_cft_2 = int; 
+  typedef _fcbat_SDL_mixer_h_cft_2 = int;
   export type (_fcbat_SDL_mixer_h_cft_2) as "_fcbat_SDL_mixer_h_cft_2";
-  typedef _fcbt_SDL_mixer_h_cft_2 = int -> void; 
+  typedef _fcbt_SDL_mixer_h_cft_2 = int -> void;
   export type (_fcbt_SDL_mixer_h_cft_2) as "_fcbt_SDL_mixer_h_cft_2";
   header '''void _fcbw_SDL_mixer_h_cft_2(int a1, void *a2);''';
 
@@ -2237,9 +2237,9 @@ module SDL_mixer_h
   }''';
 
   //callback type SDL_mixer_h_cft_3, client data at 0
-  typedef _fcbat_SDL_mixer_h_cft_3 = ptr[uint8] * int; 
+  typedef _fcbat_SDL_mixer_h_cft_3 = ptr[uint8] * int;
   export type (_fcbat_SDL_mixer_h_cft_3) as "_fcbat_SDL_mixer_h_cft_3";
-  typedef _fcbt_SDL_mixer_h_cft_3 = ptr[uint8] * int -> void; 
+  typedef _fcbt_SDL_mixer_h_cft_3 = ptr[uint8] * int -> void;
   export type (_fcbt_SDL_mixer_h_cft_3) as "_fcbt_SDL_mixer_h_cft_3";
   header '''void _fcbw_SDL_mixer_h_cft_3(void *a1, Uint8 *a2, int a3);''';
 
@@ -2250,7 +2250,7 @@ module SDL_mixer_h
     while(p) p=p->resume();
   }''';
 
-  
+
   //CALLBACK CLIENT WRAPPERS
   //callback client Mix_HookMusic, client data at 0, callback at 1
   proc wrapper_Mix_HookMusic(a1: _fcbt_SDL_mixer_h_cft_3) {
@@ -2296,26 +2296,26 @@ module SDL_sound_h
   header '#include "SDL_sound.h"';
   open C_hack;
   open SDL_rwops_h;
-  
+
   //ABSTRACT TYPES
   type Sound_Sample = 'Sound_Sample';
   type Sound_Version = 'Sound_Version';
   type Sound_AudioInfo = 'Sound_AudioInfo';
   type Sound_SampleFlags = 'Sound_SampleFlags';
   type Sound_DecoderInfo = 'Sound_DecoderInfo';
-  
+
   //ENUMERATION CONSTANTS
   const SOUND_SAMPLEFLAG_ERROR: int = 'SOUND_SAMPLEFLAG_ERROR';
   const SOUND_SAMPLEFLAG_NONE: int = 'SOUND_SAMPLEFLAG_NONE';
   const SOUND_SAMPLEFLAG_EAGAIN: int = 'SOUND_SAMPLEFLAG_EAGAIN';
   const SOUND_SAMPLEFLAG_EOF: int = 'SOUND_SAMPLEFLAG_EOF';
   const SOUND_SAMPLEFLAG_CANSEEK: int = 'SOUND_SAMPLEFLAG_CANSEEK';
-  
+
   //PROCEDURES
   proc Sound_ClearError: 1;
   proc Sound_FreeSample: ptr[Sound_Sample];
   proc Sound_GetLinkedVersion: ptr[Sound_Version];
-  
+
   //FUNCTIONS
   fun Sound_AvailableDecoders: 1 -> ptr[cptr[Sound_DecoderInfo]];
   fun Sound_Decode: ptr[Sound_Sample] -> uint32;
@@ -2362,8 +2362,8 @@ module SDL_rotozoom_h
   open SDL_h;
   open SDL_video_h;
   open math_h;
-  
-  //CSTRUCTS 
+
+  //CSTRUCTS
   cstruct tColorRGBA {
     r: uint8;
     g: uint8;
@@ -2373,17 +2373,17 @@ module SDL_rotozoom_h
   cstruct tColorY {
     y: uint8;
   }
-  
+
   //STRUCT or UNION TAG ALIASES
-  
+
   //TYPE ALIASES
   typedef _struct_tColorY = tColorY;
   typedef _struct_tColorRGBA = tColorRGBA;
-  
+
   //PROCEDURES
   proc rotozoomSurfaceSize: int * int * double * double * ptr[int] * ptr[int];
   proc zoomSurfaceSize: int * int * double * double * ptr[int] * ptr[int];
-  
+
   //FUNCTIONS
   fun rotozoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
   fun zoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
@@ -2431,19 +2431,19 @@ module SDL_ttf_h
   open SDL_rwops_h;
   open SDL_version_h;
   open SDL_video_h;
-  
+
   //PURE INCOMPLETE TYPES
   type _struct__TTF_Font = 'struct _TTF_Font'; //local
-  
+
   //STRUCT or UNION TAG ALIASES
   typedef TTF_Font = _struct__TTF_Font;
-  
+
   //PROCEDURES
   proc TTF_ByteSwappedUNICODE: int;
   proc TTF_CloseFont: ptr[TTF_Font];
   proc TTF_Quit: 1;
   proc TTF_SetFontStyle: ptr[TTF_Font] * int;
-  
+
   //FUNCTIONS
   fun TTF_FontAscent: ptr[TTF_Font] -> int;
   fun TTF_FontDescent: ptr[TTF_Font] -> int;
@@ -2524,22 +2524,22 @@ module SDL_net_h
   requires package "sdl";
   header '#include "SDL_net.h"';
   open C_hack;
-  
+
   //ABSTRACT TYPES
   type SDLNet_GenericSocket = 'SDLNet_GenericSocket';
   type IPaddress = 'IPaddress';
   type UDPpacket = 'UDPpacket';
-  
+
   //PURE INCOMPLETE TYPES
   type _struct__UDPsocket = 'struct _UDPsocket'; //local
   type _struct__SDLNet_SocketSet = 'struct _SDLNet_SocketSet'; //local
   type _struct__TCPsocket = 'struct _TCPsocket'; //local
-  
+
   //TYPE ALIASES
   typedef UDPsocket = ptr[_struct__UDPsocket];
   typedef TCPsocket = ptr[_struct__TCPsocket];
   typedef SDLNet_SocketSet = ptr[_struct__SDLNet_SocketSet];
-  
+
   //PROCEDURES
   proc SDLNet_FreePacket: ptr[UDPpacket];
   proc SDLNet_FreePacketV: ptr[ptr[UDPpacket]];
@@ -2550,7 +2550,7 @@ module SDL_net_h
   proc SDLNet_UDP_Unbind: UDPsocket * int;
   proc SDLNet_Write16: uint16 * address;
   proc SDLNet_Write32: uint32 * address;
-  
+
   //FUNCTIONS
   fun SDLNet_AddSocket: SDLNet_SocketSet * SDLNet_GenericSocket -> int;
   fun SDLNet_AllocPacket: int -> ptr[UDPpacket];
@@ -2598,7 +2598,7 @@ include "SDL/SDL";
 include "SDL/SDL_events";
 include "flx_faio";
 
-module SDL_events 
+module SDL_events
 {
   requires package "sdl";
   open SDL_events_h;
@@ -2653,7 +2653,7 @@ open MixedInt;
 open Uint32;
 open Uint8;
 
-// This is the Felix asynchronous event source 
+// This is the Felix asynchronous event source
 open SDL_events;
 
 proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:uint8)
@@ -2665,19 +2665,19 @@ proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:ui
     done;
 
     match screen.format.BytesPerPixel with
-    | 1 => 
+    | 1 =>
       { /* Assuming 8-bpp */
         bufp := cast[ptr[uint8]] screen.pixels + y*screen.pitch + x;
         *bufp = color;
       }
 
-    | 2 => 
+    | 2 =>
       { /* Probably 15-bpp or 16-bpp */
         bufp := cast[ptr[uint16]] screen.pixels + y*screen.pitch/2 + x;
         *bufp = color;
       }
 
-    | 3 => 
+    | 3 =>
       { /* Slow 24-bpp mode, usually not used */
         bufp := cast[ptr[uint8]] screen.pixels + y*screen.pitch + x;
         *(bufp+screen.format.Rshift/8) = R;
@@ -2685,7 +2685,7 @@ proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:ui
         *(bufp+screen.format.Bshift/8) = B;
       }
 
-    | 4 => 
+    | 4 =>
       { /* Probably 32-bpp */
         bufp := cast[ptr[uint32]] screen.pixels + y*screen.pitch/4 + x;
         *bufp = color;
@@ -2717,7 +2717,7 @@ print " bytes per pixel\n";
 var i = 10i32; until i == 50i32 do
       DrawPixel(screen, i,i,250u8,220u8,220u8);
       ++i;
-done;      
+done;
 
 struct sample_t {
     data : ptr[uint8];
@@ -2785,13 +2785,13 @@ proc PlaySound(filename:string)
     return;
   done;
 
-  if 
+  if
     SDL_LoadWAV(
-      cstr filename, 
-      addr wave, 
-      addr data, 
+      cstr filename,
+      addr wave,
+      addr data,
       addr dlen
-    ) == null_ptr[SDL_AudioSpec] 
+    ) == null_ptr[SDL_AudioSpec]
   do
     print$ "Couldn't load Wav file " + filename; endl;
     return;
@@ -2800,11 +2800,11 @@ proc PlaySound(filename:string)
   print "Using slot "; print idx; endl;
 
   var result = SDL_BuildAudioCVT(
-    addr cvt, 
-    wave.format, 
-    wave.channels, 
+    addr cvt,
+    wave.format,
+    wave.channels,
     wave.freq,
-    AUDIO_S16,   
+    AUDIO_S16,
     2u8,
     22050
   );
@@ -2835,8 +2835,8 @@ SDL_PauseAudio 0;
 var s: ptr[SDL_Surface] ^ 16;
 {
   forall i in 1 upto 16 do
-       //filename := "media/images/fc" + str i+ ".jpg"; 
-       filename := "media/images/fc" + str i+ ".bmp"; 
+       //filename := "media/images/fc" + str i+ ".jpg";
+       filename := "media/images/fc" + str i+ ".bmp";
        print$ "Loading file " + filename; endl;
        rwop := SDL_RWFromFile (cstr filename,enconst (c"rb"));
        //s.[i-1] = IMG_LoadJPG_RW(rwop);
@@ -2890,10 +2890,10 @@ proc waitk(f:schannel[uint8]) {
   poll_event(&e);
 
   var et = event_type e;
-  whilst 
-    et != SDL_KEYDOWN and 
+  whilst
+    et != SDL_KEYDOWN and
     et != SDL_MOUSEBUTTONDOWN and
-    et != SDL_QUIT 
+    et != SDL_QUIT
   do
     //&e <- get_sdl_event event_lock;
     poll_event(&e);
@@ -2911,7 +2911,7 @@ proc waittk() {
 }
 
 
-forall i in 0 upto 15 do      
+forall i in 0 upto 15 do
   if not (isNULL s.[i]) do
     print "Show "; print i; endl;
     var r = SDL_BlitSurface ( s.[i], null_ptr[SDL_Rect], screen, addr rcDest );
@@ -2946,14 +2946,14 @@ proc Quit(x:int)
 @select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
- * This code was created by Jeff Molofee '99 
+ * This code was created by Jeff Molofee '99
  * (ported to Linux/SDL by Ti Leggett '01)
  *
  * If you've found this code useful, please let me know.
  *
  * Visit Jeff at http://nehe.gamedev.net/
- * 
- * or for port-specific comments, questions, bugreports etc. 
+ *
+ * or for port-specific comments, questions, bugreports etc.
  * email to leggett@eecs.tulane.edu
  */
 
@@ -2986,7 +2986,7 @@ open SDL_keysym_h;
 open SDL_timer_h;
 open SDL_mutex_h;
 
-// This is the Felix asynchronous event source 
+// This is the Felix asynchronous event source
 open SDL_events;
 
 open SDL_opengl_h;
@@ -3066,11 +3066,11 @@ proc drawGLScene(drawing:1->0)
     if t - T0 >= 5000 do
       val seconds = double_of (t - T0) / 1000.0;
       val fps = double_of Frames / seconds;
-      print Frames; print " frames in "; print seconds; 
+      print Frames; print " frames in "; print seconds;
       print " seconds = "; print fps; print " FPS"; endl;
       T0 = t;
       Frames = 0;
-    done; 
+    done;
   };
 }
 
@@ -3095,12 +3095,12 @@ proc Quit(n:int)
 var videoInfo = SDL_GetVideoInfo();
 
 if isNULL videoInfo do
-  print "Video query failed"; endl; 
+  print "Video query failed"; endl;
   Quit 1;
 done;
 
 /* the flags to pass to SDL_SetVideoMode */
-var 
+var
   videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
   videoFlags |= cast[uint] SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
   videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
@@ -3128,7 +3128,7 @@ var surface = SDL_SetVideoMode
 
 /* Verify there is a surface */
 if isNULL surface do
-  print "Video mode set failed"; endl; 
+  print "Video mode set failed"; endl;
   Quit 1;
 done;
 
@@ -3156,10 +3156,10 @@ proc handle_active (e:SDL_ActiveEvent)
 proc handle_resize(e:SDL_ResizeEvent)
 {
   block_sdl_events event_lock;
-  surface = SDL_SetVideoMode( 
+  surface = SDL_SetVideoMode(
     e.w,
     e.h,
-    16, videoFlags 
+    16, videoFlags
   );
   if isNULL surface do
     print "Could not get a surface after resize"; endl;
@@ -3174,9 +3174,9 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-        { 
+        {
         block_sdl_events event_lock;
-        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        ignore$ SDL_WM_ToggleFullScreen( surface );
         unblock_sdl_events event_lock;
       }
   | _ => {}
@@ -3211,7 +3211,7 @@ proc resizechan(x:schannel[SDL_ResizeEvent])
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     draw drawing;
   done;
@@ -3243,10 +3243,10 @@ proc dispatch_event(
     poll_event(&e);
 
     match e.type_ with
-    | ?et when et == SDL_ACTIVEEVENT => 
+    | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }
 
-    | ?et when et == SDL_VIDEORESIZE => 
+    | ?et when et == SDL_VIDEORESIZE =>
       { write (resize, e.resize); }
 
     | ?et when et == SDL_KEYDOWN =>
@@ -3269,15 +3269,15 @@ proc framerate (x:schannel[int], framerate:double)
   done;
 }
 
-/* LINEAR CONTROL MODEL: CANNOT DEADLOCK 
+/* LINEAR CONTROL MODEL: CANNOT DEADLOCK
   ~~> async/sync connection
   --> sync/sync connection
-  
-  SDL_event ~~> dispatcher 
+
+  SDL_event ~~> dispatcher
                 --> resize handler
                 --> active handler
                 --> key handler
-  timer ~~> framerate --> draw                
+  timer ~~> framerate --> draw
 */
 
 /* make our communication channels */
@@ -3332,14 +3332,14 @@ proc Drawing()
 @select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
- * This code was created by Jeff Molofee '99 
+ * This code was created by Jeff Molofee '99
  * (ported to Linux/SDL by Ti Leggett '01)
  *
  * If you've found this code useful, please let me know.
  *
  * Visit Jeff at http://nehe.gamedev.net/
- * 
- * or for port-specific comments, questions, bugreports etc. 
+ *
+ * or for port-specific comments, questions, bugreports etc.
  * email to leggett@eecs.tulane.edu
  */
 
@@ -3371,7 +3371,7 @@ open SDL_keysym_h;
 open SDL_timer_h;
 open SDL_mutex_h;
 
-// This is the Felix asynchronous event source 
+// This is the Felix asynchronous event source
 open SDL_events;
 
 open SDL_opengl_h;
@@ -3461,11 +3461,11 @@ proc drawGLScene(drawing:1->0)
     if t - T0 >= 5000 do
       val seconds = double_of (t - T0) / 1000.0;
       val fps = double_of Frames / seconds;
-      print Frames; print " frames in "; print seconds; 
+      print Frames; print " frames in "; print seconds;
       print " seconds = "; print fps; print " FPS"; endl;
       T0 = t;
       Frames = 0;
-    done; 
+    done;
   };
   rotate();
 }
@@ -3491,12 +3491,12 @@ proc Quit(n:int)
 var videoInfo = SDL_GetVideoInfo();
 
 if isNULL videoInfo do
-  print "Video query failed"; endl; 
+  print "Video query failed"; endl;
   Quit 1;
 done;
 
 /* the flags to pass to SDL_SetVideoMode */
-var 
+var
   videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
   videoFlags |= cast[uint] SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
   videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
@@ -3524,7 +3524,7 @@ var surface = SDL_SetVideoMode
 
 /* Verify there is a surface */
 if isNULL surface do
-  print "Video mode set failed"; endl; 
+  print "Video mode set failed"; endl;
   Quit 1;
 done;
 
@@ -3543,10 +3543,10 @@ proc handle_active (e:SDL_ActiveEvent)
 proc handle_resize(e:SDL_ResizeEvent)
 {
   block_sdl_events event_lock;
-  surface = SDL_SetVideoMode( 
+  surface = SDL_SetVideoMode(
     e.w,
     e.h,
-    16, videoFlags 
+    16, videoFlags
   );
   if isNULL surface do
     print "Could not get a surface after resize"; endl;
@@ -3561,9 +3561,9 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-      { 
+      {
         block_sdl_events event_lock;
-        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        ignore$ SDL_WM_ToggleFullScreen( surface );
         unblock_sdl_events event_lock;
       }
   | _ => {}
@@ -3598,7 +3598,7 @@ proc resizechan(x:schannel[SDL_ResizeEvent])
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     draw drawing;
   done;
@@ -3606,7 +3606,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 
 proc execute(x:schannel[int], something:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     something();
   done;
@@ -3637,10 +3637,10 @@ proc dispatch_event(
     var e : SDL_Event;
     poll_event(&e);
     match e.type_ with
-    | ?et when et == SDL_ACTIVEEVENT => 
+    | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }
 
-    | ?et when et == SDL_VIDEORESIZE => 
+    | ?et when et == SDL_VIDEORESIZE =>
       { write (resize, e.resize); }
 
     | ?et when et == SDL_KEYDOWN =>
@@ -3663,15 +3663,15 @@ proc framerate (x:schannel[int], framerate:double)
   done;
 }
 
-/* LINEAR CONTROL MODEL: CANNOT DEADLOCK 
+/* LINEAR CONTROL MODEL: CANNOT DEADLOCK
   ~~> async/sync connection
   --> sync/sync connection
-  
-  SDL_event ~~> dispatcher 
+
+  SDL_event ~~> dispatcher
                 --> resize handler
                 --> active handler
                 --> key handler
-  timer ~~> framerate --> draw                
+  timer ~~> framerate --> draw
 */
 
 /* make our communication channels */
@@ -3794,14 +3794,14 @@ proc Drawing()
 @select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
- * This code was created by Jeff Molofee '99 
+ * This code was created by Jeff Molofee '99
  * (ported to Linux/SDL by Ti Leggett '01)
  *
  * If you've found this code useful, please let me know.
  *
  * Visit Jeff at http://nehe.gamedev.net/
- * 
- * or for port-specific comments, questions, bugreports etc. 
+ *
+ * or for port-specific comments, questions, bugreports etc.
  * email to leggett@eecs.tulane.edu
  */
 
@@ -3834,7 +3834,7 @@ open SDL_keysym_h;
 open SDL_timer_h;
 open SDL_mutex_h;
 
-// This is the Felix asynchronous event source 
+// This is the Felix asynchronous event source
 open SDL_events;
 
 open SDL_opengl_h;
@@ -3892,7 +3892,7 @@ proc LoadGLTextures( )
     /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
     TextureImage.h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels 
+    GL_UNSIGNED_BYTE, TextureImage.pixels
   );
 
   /* Linear Filtering */
@@ -3961,11 +3961,11 @@ proc drawGLScene(drawing:1->0)
     if t - T0 >= 5000 do
       val seconds = double_of (t - T0) / 1000.0;
       val fps = double_of Frames / seconds;
-      print Frames; print " frames in "; print seconds; 
+      print Frames; print " frames in "; print seconds;
       print " seconds = "; print fps; print " FPS"; endl;
       T0 = t;
       Frames = 0;
-    done; 
+    done;
   };
   rotate();
 }
@@ -3991,12 +3991,12 @@ proc Quit(n:int)
 var videoInfo = SDL_GetVideoInfo();
 
 if isNULL videoInfo do
-  print "Video query failed"; endl; 
+  print "Video query failed"; endl;
   Quit 1;
 done;
 
 /* the flags to pass to SDL_SetVideoMode */
-var 
+var
   videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
   videoFlags |= cast[uint] SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
   videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
@@ -4024,7 +4024,7 @@ var surface = SDL_SetVideoMode
 
 /* Verify there is a surface */
 if isNULL surface do
-  print "Video mode set failed"; endl; 
+  print "Video mode set failed"; endl;
   Quit 1;
 done;
 
@@ -4044,10 +4044,10 @@ proc handle_active (e:SDL_ActiveEvent)
 proc handle_resize(e:SDL_ResizeEvent)
 {
   block_sdl_events event_lock;
-  surface = SDL_SetVideoMode( 
+  surface = SDL_SetVideoMode(
     e.w,
     e.h,
-    16, videoFlags 
+    16, videoFlags
   );
   if isNULL surface do
     print "Could not get a surface after resize"; endl;
@@ -4062,9 +4062,9 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-        { 
+        {
         block_sdl_events event_lock;
-        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        ignore$ SDL_WM_ToggleFullScreen( surface );
         unblock_sdl_events event_lock;
       }
   | _ => {}
@@ -4099,7 +4099,7 @@ proc resizechan(x:schannel[SDL_ResizeEvent])
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     draw drawing;
   done;
@@ -4107,7 +4107,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 
 proc execute(x:schannel[int], something:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     something();
   done;
@@ -4139,10 +4139,10 @@ proc dispatch_event(
     var e : SDL_Event;
     poll_event(&e);
     match e.type_ with
-    | ?et when et == SDL_ACTIVEEVENT => 
+    | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }
 
-    | ?et when et == SDL_VIDEORESIZE => 
+    | ?et when et == SDL_VIDEORESIZE =>
       { write (resize, e.resize); }
 
     | ?et when et == SDL_KEYDOWN =>
@@ -4165,15 +4165,15 @@ proc framerate (x:schannel[int], framerate:double)
   done;
 }
 
-/* LINEAR CONTROL MODEL: CANNOT DEADLOCK 
+/* LINEAR CONTROL MODEL: CANNOT DEADLOCK
   ~~> async/sync connection
   --> sync/sync connection
-  
-  SDL_event ~~> dispatcher 
+
+  SDL_event ~~> dispatcher
                 --> resize handler
                 --> active handler
                 --> key handler
-  timer ~~> framerate --> draw                
+  timer ~~> framerate --> draw
 */
 
 /* make our communication channels */
@@ -4291,14 +4291,14 @@ proc Drawing()
 @select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
- * This code was created by Jeff Molofee '99 
+ * This code was created by Jeff Molofee '99
  * (ported to Linux/SDL by Ti Leggett '01)
  *
  * If you've found this code useful, please let me know.
  *
  * Visit Jeff at http://nehe.gamedev.net/
- * 
- * or for port-specific comments, questions, bugreports etc. 
+ *
+ * or for port-specific comments, questions, bugreports etc.
  * email to leggett@eecs.tulane.edu
  */
 
@@ -4330,7 +4330,7 @@ open SDL_keysym_h;
 open SDL_timer_h;
 open SDL_mutex_h;
 
-// This is the Felix asynchronous event source 
+// This is the Felix asynchronous event source
 open SDL_events;
 
 open SDL_opengl_h;
@@ -4388,7 +4388,7 @@ proc LoadGLTextures( )
     /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
     TextureImage.h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels 
+    GL_UNSIGNED_BYTE, TextureImage.pixels
   );
 
   /* Linear Filtering */
@@ -4404,7 +4404,7 @@ proc LoadGLTextures( )
     /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
     TextureImage.h, 0, cast[uint] GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels 
+    GL_UNSIGNED_BYTE, TextureImage.pixels
   );
 
   glBindTexture( GL_TEXTURE_2D, texture.[2] );
@@ -4414,11 +4414,11 @@ proc LoadGLTextures( )
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST );
 
   /* Generate The MipMapped Texture ( NEW ) */
-  ignore(gluBuild2DMipmaps( 
-    GL_TEXTURE_2D, 3, 
-    TextureImage.w, TextureImage.h, 
-    GL_RGB, GL_UNSIGNED_BYTE, 
-    cast[caddress] TextureImage.pixels 
+  ignore(gluBuild2DMipmaps(
+    GL_TEXTURE_2D, 3,
+    TextureImage.w, TextureImage.h,
+    GL_RGB, GL_UNSIGNED_BYTE,
+    cast[caddress] TextureImage.pixels
   ));
 
   /* Free up any memory we may have used */
@@ -4519,11 +4519,11 @@ proc drawGLScene(drawing:1->0)
     if t - T0 >= 5000 do
       val seconds = double_of (t - T0) / 1000.0;
       val fps = double_of Frames / seconds;
-      print Frames; print " frames in "; print seconds; 
+      print Frames; print " frames in "; print seconds;
       print " seconds = "; print fps; print " FPS"; endl;
       T0 = t;
       Frames = 0;
-    done; 
+    done;
   };
   rotate();
 }
@@ -4549,12 +4549,12 @@ proc Quit(n:int)
 var videoInfo = SDL_GetVideoInfo();
 
 if isNULL videoInfo do
-  print "Video query failed"; endl; 
+  print "Video query failed"; endl;
   Quit 1;
 done;
 
 /* the flags to pass to SDL_SetVideoMode */
-var 
+var
   videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
   videoFlags |= cast[uint] SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
   videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
@@ -4582,7 +4582,7 @@ var surface = SDL_SetVideoMode
 
 /* Verify there is a surface */
 if isNULL surface do
-  print "Video mode set failed"; endl; 
+  print "Video mode set failed"; endl;
   Quit 1;
 done;
 
@@ -4602,10 +4602,10 @@ proc handle_active (e:SDL_ActiveEvent)
 proc handle_resize(e:SDL_ResizeEvent)
 {
   block_sdl_events event_lock;
-  surface = SDL_SetVideoMode( 
+  surface = SDL_SetVideoMode(
     e.w,
     e.h,
-    16, videoFlags 
+    16, videoFlags
   );
   if isNULL surface do
     print "Could not get a surface after resize"; endl;
@@ -4621,9 +4621,9 @@ proc handle_key( keysym : SDL_keysym)
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
         { ignore$ SDL_WM_ToggleFullScreen( surface ); }
-  | ?k when k == SDLK_b => 
-    { 
-      blend = not blend; 
+  | ?k when k == SDLK_b =>
+    {
+      blend = not blend;
       if blend do
             glEnable( GL_BLEND );
             glDisable( GL_DEPTH_TEST );
@@ -4632,12 +4632,12 @@ proc handle_key( keysym : SDL_keysym)
             glEnable( GL_DEPTH_TEST );
       done;
     }
-  | ?k when k == SDLK_f => 
+  | ?k when k == SDLK_f =>
     {
         filter = ( filter + 1) % 3;
       print "Filter "; print filter; endl;
     }
-  | ?k when k == SDLK_l => 
+  | ?k when k == SDLK_l =>
     {
         light = not light;
         if not light do
@@ -4646,32 +4646,32 @@ proc handle_key( keysym : SDL_keysym)
             glEnable( GL_LIGHTING );
         done;
     }
-  | ?k when k == SDLK_PAGEUP => 
+  | ?k when k == SDLK_PAGEUP =>
     {
         z = z - 0.02f;
     }
 
-  | ?k when k == SDLK_PAGEDOWN => 
+  | ?k when k == SDLK_PAGEDOWN =>
     {
         z = z + 0.02f;
     }
 
-  | ?k when k == SDLK_UP => 
+  | ?k when k == SDLK_UP =>
     {
       xspeed = xspeed - 0.01f;
     }
 
-  | ?k when k == SDLK_DOWN => 
+  | ?k when k == SDLK_DOWN =>
     {
       xspeed = xspeed + 0.01f;
     }
 
-  | ?k when k == SDLK_RIGHT => 
+  | ?k when k == SDLK_RIGHT =>
     {
       yspeed = yspeed + 0.01f;
     }
 
-  | ?k when k == SDLK_LEFT => 
+  | ?k when k == SDLK_LEFT =>
     {
       yspeed = yspeed - 0.01f;
     }
@@ -4708,7 +4708,7 @@ proc resizechan(x:schannel[SDL_ResizeEvent])
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     draw drawing;
   done;
@@ -4716,7 +4716,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 
 proc execute(x:schannel[int], something:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     something();
   done;
@@ -4747,10 +4747,10 @@ proc dispatch_event(
     var e : SDL_Event;
     poll_event(&e);
     match e.type_ with
-    | ?et when et == SDL_ACTIVEEVENT => 
+    | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }
 
-    | ?et when et == SDL_VIDEORESIZE => 
+    | ?et when et == SDL_VIDEORESIZE =>
       { write (resize, e.resize); }
 
     | ?et when et == SDL_KEYDOWN =>
@@ -4773,15 +4773,15 @@ proc framerate (x:schannel[int], framerate:double)
   done;
 }
 
-/* LINEAR CONTROL MODEL: CANNOT DEADLOCK 
+/* LINEAR CONTROL MODEL: CANNOT DEADLOCK
   ~~> async/sync connection
   --> sync/sync connection
-  
-  SDL_event ~~> dispatcher 
+
+  SDL_event ~~> dispatcher
                 --> resize handler
                 --> active handler
                 --> key handler
-  timer ~~> framerate --> draw                
+  timer ~~> framerate --> draw
 */
 
 /* make our communication channels */
@@ -4908,14 +4908,14 @@ proc Drawing()
 @select(env.test('.flx'))
 // REQUIRES OpenGL and GLU
 /*
- * This code was created by Jeff Molofee '99 
+ * This code was created by Jeff Molofee '99
  * (ported to Linux/SDL by Ti Leggett '01)
  *
  * If you've found this code useful, please let me know.
  *
  * Visit Jeff at http://nehe.gamedev.net/
- * 
- * or for port-specific comments, questions, bugreports etc. 
+ *
+ * or for port-specific comments, questions, bugreports etc.
  * email to leggett@eecs.tulane.edu
  */
 
@@ -4947,7 +4947,7 @@ open SDL_keysym_h;
 open SDL_timer_h;
 open SDL_mutex_h;
 
-// This is the Felix asynchronous event source 
+// This is the Felix asynchronous event source
 open SDL_events;
 
 open SDL_opengl_h;
@@ -5006,7 +5006,7 @@ proc LoadGLTextures( )
     /* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
     TextureImage.h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels 
+    GL_UNSIGNED_BYTE, TextureImage.pixels
   );
 
   /* Linear Filtering */
@@ -5025,7 +5025,7 @@ struct star
   /* Stars Color */
   r : int;
   g : int;
-  b : int;   
+  b : int;
   dist : float;  /* Stars Distance From Center */
   angle : float; /* Stars Current Angle */
 };
@@ -5126,11 +5126,11 @@ proc drawGLScene(drawing:1->0)
     if t - T0 >= 5000 do
       val seconds = double_of (t - T0) / 1000.0;
       val fps = double_of Frames / seconds;
-      print Frames; print " frames in "; print seconds; 
+      print Frames; print " frames in "; print seconds;
       print " seconds = "; print fps; print " FPS"; endl;
       T0 = t;
       Frames = 0;
-    done; 
+    done;
   };
   rotate();
 }
@@ -5156,12 +5156,12 @@ proc Quit(n:int)
 var videoInfo = SDL_GetVideoInfo();
 
 if isNULL videoInfo do
-  print "Video query failed"; endl; 
+  print "Video query failed"; endl;
   Quit 1;
 done;
 
 /* the flags to pass to SDL_SetVideoMode */
-var 
+var
   videoFlags  = SDL_OPENGL;          /* Enable OpenGL in SDL */
   videoFlags |= cast[uint] SDL_GL_DOUBLEBUFFER; /* Enable double buffering */
   videoFlags |= SDL_HWPALETTE;       /* Store the palette in hardware */
@@ -5189,7 +5189,7 @@ var surface = SDL_SetVideoMode
 
 /* Verify there is a surface */
 if isNULL surface do
-  print "Video mode set failed"; endl; 
+  print "Video mode set failed"; endl;
   Quit 1;
 done;
 
@@ -5209,10 +5209,10 @@ proc handle_active (e:SDL_ActiveEvent)
 proc handle_resize(e:SDL_ResizeEvent)
 {
   block_sdl_events event_lock;
-  surface = SDL_SetVideoMode( 
+  surface = SDL_SetVideoMode(
     e.w,
     e.h,
-    16, videoFlags 
+    16, videoFlags
   );
   if isNULL surface do
     print "Could not get a surface after resize"; endl;
@@ -5227,31 +5227,31 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-        { 
+        {
         block_sdl_events event_lock;
-        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        ignore$ SDL_WM_ToggleFullScreen( surface );
         unblock_sdl_events event_lock;
       }
-  | ?k when k == SDLK_t => 
-    { 
-      twinkle = not twinkle; 
+  | ?k when k == SDLK_t =>
+    {
+      twinkle = not twinkle;
     }
-  | ?k when k == SDLK_PAGEUP => 
+  | ?k when k == SDLK_PAGEUP =>
     {
         zoom = zoom - 0.2f;
     }
 
-  | ?k when k == SDLK_PAGEDOWN => 
+  | ?k when k == SDLK_PAGEDOWN =>
     {
         zoom = zoom + 0.2f;
     }
 
-  | ?k when k == SDLK_UP => 
+  | ?k when k == SDLK_UP =>
     {
       tilt = tilt - 0.5f;
     }
 
-  | ?k when k == SDLK_DOWN => 
+  | ?k when k == SDLK_DOWN =>
     {
       tilt = tilt + 0.5f;
     }
@@ -5288,7 +5288,7 @@ proc resizechan(x:schannel[SDL_ResizeEvent])
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     draw drawing;
   done;
@@ -5296,7 +5296,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 
 proc execute(x:schannel[int], something:1->0)
 {
-  whilst true do 
+  whilst true do
     var k = read x;
     something();
   done;
@@ -5327,10 +5327,10 @@ proc dispatch_event(
     var e : SDL_Event;
     poll_event(&e);
     match e.type_ with
-    | ?et when et == SDL_ACTIVEEVENT => 
+    | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }
 
-    | ?et when et == SDL_VIDEORESIZE => 
+    | ?et when et == SDL_VIDEORESIZE =>
       { write (resize, e.resize); }
 
     | ?et when et == SDL_KEYDOWN =>
@@ -5353,15 +5353,15 @@ proc framerate (x:schannel[int], framerate:double)
   done;
 }
 
-/* LINEAR CONTROL MODEL: CANNOT DEADLOCK 
+/* LINEAR CONTROL MODEL: CANNOT DEADLOCK
   ~~> async/sync connection
   --> sync/sync connection
-  
-  SDL_event ~~> dispatcher 
+
+  SDL_event ~~> dispatcher
                 --> resize handler
                 --> active handler
                 --> key handler
-  timer ~~> framerate --> draw                
+  timer ~~> framerate --> draw
 */
 
 /* make our communication channels */

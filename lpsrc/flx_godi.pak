@@ -13,7 +13,7 @@ Package: apps-felix
 @tangle('Version: '+flx_version)
 Revision: 0
 Depends:
-Build-Depends: godi-ocaml (> 3.08) 
+Build-Depends: godi-ocaml (> 3.08)
 @tangle('Sources: http://felix.sf.net/flx_'+flx_version+'_src.tgz')
 @tangle('Unpacks-To: flx_'+flx_version)
 Bytecode-Target: all
@@ -44,7 +44,7 @@ options= [`configure];
 short_desc = "Felix Compiler";
 long_desc = "Felix Compiler";
 confopts = [
-  { 
+  {
     name = "SUPPORT_DYNAMIC_LOADING";
     default = "1";
     description = "Whether to support dlopen loading";
@@ -69,7 +69,7 @@ it should be generated).
 
 @tangle('VERSION=        '+flx_version)
 PKGNAME=        apps-felix-${VERSION}
-@tangle('PKGREVISION=    '+godi_revision) 
+@tangle('PKGREVISION=    '+godi_revision)
 @tangle('DISTNAME=       flx_'+flx_version)
 @tangle('DISTFILES=      flx_'+flx_version+'_src.tgz')
 CATEGORIES=     apps
@@ -83,7 +83,7 @@ COMMENT=        Felix Compiler
 
 AUTOGENERATE_PLIST = yes
 PKG  =          apps-felix
-MAKE_FLAGS=     PREFIX=${PREFIX}  
+MAKE_FLAGS=     PREFIX=${PREFIX}
 
 
 
@@ -119,7 +119,7 @@ ALL_TARGET=     all
 
 post-install:
 	mkdir -p ${PREFIX}/doc/${PKG}
-.	for DOC in 
+.	for DOC in
 	    install -m 0644 ${WRKSRC}/${DOC} ${PREFIX}/doc/${PKG}
 .	endfor
 

@@ -22,7 +22,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, g++, ocaml-nox (>=3.08.3), ocaml-nox (<<3.08.4)
 Recommends: g++-4.0
 Description: high performance programming language translator and tools
- A new high performance language with 
+ A new high performance language with
  support for functional programming, ultra-lightweight
  user space threads, and C/C++ interoperability.
 
@@ -61,9 +61,9 @@ Copyright (c) 2001 George C. Necula <necula@cs.berkeley.edu>
 Copyright (c) 2001 Scott McPeak <smcpeak@cs.berkeley.edu>
 Copyright (c) 2001 Wes Weimer <weimer@cs.berkeley.edu>
 Copyright (c) 2002 Regents of the University of California
-Copyright (c) 2005 John Skaller <skaller@users.sourceforge.net> 
+Copyright (c) 2005 John Skaller <skaller@users.sourceforge.net>
 
-Executable License: 3 clause BSD, please see 
+Executable License: 3 clause BSD, please see
 
 /usr/share/common-licenses/BSD
 
@@ -83,7 +83,7 @@ Run time library Licence: Free for any use.
 Document: felix
 Title: Felix
 Author: John Skaller
-Abstract: Felix documents 
+Abstract: Felix documents
 Section: main
 Format: HTML
 Index: /usr/share/doc/felix/doc/en_flx_doc_top.html

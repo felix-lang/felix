@@ -72,10 +72,10 @@ let register_type_nr syms t =
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt syms.dfns t ^ " <> " ^ sbt syms.dfns t');
   *)
   match t with
-  | `BTYP_fix _ 
+  | `BTYP_fix _
   | `BTYP_tuple []
     -> ()
-  | _ 
+  | _
     ->
     let t = lstrip syms.dfns (fold syms.counter syms.dfns t) in
     if not (Hashtbl.mem syms.registry t)
@@ -102,18 +102,18 @@ let register_tuple syms t =
     let t' = reduce_type t' in
     let ts = rev_map (fun _ -> t') (nlist n) in
     register_type_nr syms (`BTYP_tuple ts)
-    
+
   | `BTYP_record ts ->
     let t = reduce_type t in
-    begin match t with 
-    | `BTYP_tuple [] -> () 
+    begin match t with
+    | `BTYP_tuple [] -> ()
     | _ -> register_type_nr syms t
     end
 
   | `BTYP_variant ts ->
     let t = reduce_type t in
-    begin match t with 
-    | `BTYP_void -> () 
+    begin match t with
+    | `BTYP_void -> ()
     | _ -> register_type_nr syms t
     end
 
@@ -136,9 +136,9 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   *)
   match t' with
   | `BTYP_void -> ()
-  | `BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered") 
+  | `BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
   | `BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
-  | `BTYP_function (ps,ret) -> 
+  | `BTYP_function (ps,ret) ->
     let ps = match ps with
     | `BTYP_void -> `BTYP_tuple []
     | x -> x
@@ -147,7 +147,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
 
   | `BTYP_cfunction (ps,ret) -> rr ps; rr ret; rnr t
 
-  | `BTYP_array (ps,ret) -> 
+  | `BTYP_array (ps,ret) ->
     begin match ret with
     | `BTYP_unitsum 0 | `BTYP_void -> syserr sr "Unexpected array length 0"
     | `BTYP_unitsum 1 | `BTYP_tuple [] -> syserr sr "Unexpected array length 1"
@@ -161,7 +161,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   | `BTYP_record ps -> iter (fun (s,t)->rr t) ps; rnr t
   | `BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t
 
-  | `BTYP_sum ps -> 
+  | `BTYP_sum ps ->
     (* iter rr ps; *) (* should be driven by constructors *)
     rnr t
 
@@ -180,14 +180,14 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   | `BTYP_inst (i,ts)->
     iter rr ts;
 
-    let id, parent, sr,entry = 
+    let id, parent, sr,entry =
       try Hashtbl.find bbdfns i
-      with Not_found -> 
+      with Not_found ->
         try match Hashtbl.find syms.dfns i with
         { id=id; sr=sr; parent=parent; symdef=entry } ->
-        clierr sr 
+        clierr sr
         (
-          "register_type_r Can't find " ^ 
+          "register_type_r Can't find " ^
           id ^ "[" ^ si i ^ "]" ^
           " in fully bound symbol table: " ^
           short_string_of_src sr
@@ -196,11 +196,11 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     in
     begin match entry with
 
-    | `BBDCL_newtype (_,r) -> 
+    | `BBDCL_newtype (_,r) ->
       rr r;
       rnr t
 
-    | `BBDCL_union (vs,cs) -> 
+    | `BBDCL_union (vs,cs) ->
       (*
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in
@@ -211,8 +211,8 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     | `BBDCL_class vs -> rnr t
 
     | `BBDCL_cclass (vs,cs) ->
-       let cts = map (function 
-         | `BMemberVal (_,t) 
+       let cts = map (function
+         | `BMemberVal (_,t)
          | `BMemberVar (_,t)
          | `BMemberCtor (_,t) -> t,[]
          | `BMemberFun (_,mvs,t)
@@ -230,8 +230,8 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       rnr t
       (* NO CONSTRUCTOR! *)
 
-    | `BBDCL_cstruct (vs,cs) 
-    | `BBDCL_struct (vs,cs) -> 
+    | `BBDCL_cstruct (vs,cs)
+    | `BBDCL_struct (vs,cs) ->
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in
       iter rr cts;
@@ -254,8 +254,8 @@ let rec register_type_r ui syms bbdfns exclude sr t =
 
     | `BBDCL_abs _ -> ui i ts; rnr t  (* instantiate the type too *)
 
-    | _ -> 
-      clierr sr 
+    | _ ->
+      clierr sr
       (
         "[register_type_r] expected type declaration, got " ^
         string_of_bbdcl syms.dfns bbdfns entry i
@@ -264,9 +264,9 @@ let rec register_type_r ui syms bbdfns exclude sr t =
 
   | _ ->  ()
     (*
-    clierr sr 
+    clierr sr
     (
-      "Unexpected kind in register type: " ^ 
+      "Unexpected kind in register type: " ^
       string_of_btypecode syms.dfns t
     )
     *)

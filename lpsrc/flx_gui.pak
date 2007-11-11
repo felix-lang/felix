@@ -51,7 +51,7 @@ def get_stdout(x,outit=None):
         if kill_flag:
           os.kill(handle.pid,9)
           kill_flag = 0
-          raise Death 
+          raise Death
         output.append(line)
         if outit: outit(line)
     except Death: pass
@@ -77,7 +77,7 @@ def dirfilt(all):
     if dir: res.append(line+"/")
   res.sort()
   return res
-  
+
 def find_next(all,x):
   n = len(all)
   if n == 0: return x
@@ -111,7 +111,7 @@ def write_val(f,v,level):
 def write_list(f,d,level):
   spaces = " " * (level * 2)
   f.write(spaces+"[\n")
-  for v in d: 
+  for v in d:
     write_val(f,v,level+1)
     f.write(",\n")
   f.write(spaces+"]")
@@ -213,37 +213,37 @@ class ConfigDialog:
     cmd = app.runcmd.get()
     cmdw = string.split(cmd)
 
-    if "--force" in cmdw: 
+    if "--force" in cmdw:
       self.force.set("--force ")
     else:
       self.force.set("")
 
-    if "--nofelix" in cmdw: 
+    if "--nofelix" in cmdw:
       self.felix.set("--nofelix ")
     else:
       self.felix.set("")
 
-    if "-c" in cmdw: 
+    if "-c" in cmdw:
       self.runit.set("-c ")
     else:
       self.runit.set("")
 
-    if "--static" in cmdw: 
+    if "--static" in cmdw:
       self.static.set("--static ")
     else:
       self.static.set("")
 
-    if "--echo" in cmdw: 
+    if "--echo" in cmdw:
       self.echo.set("--echo ")
     else:
       self.echo.set("")
 
-    if "--debug" in cmdw: 
+    if "--debug" in cmdw:
       self.debug.set("--debug ")
     else:
       self.debug.set("")
 
-    if "--nooptimise" in cmdw or "--debug" in cmdw: 
+    if "--nooptimise" in cmdw or "--debug" in cmdw:
       self.debug.set("--nooptimise ")
     else:
       self.debug.set("")
@@ -265,13 +265,13 @@ class ConfigDialog:
         "--nooptimise",
       ]:
         cmdw2.append(option)
-    opts = ( 
-      self.echo.get() + 
-      self.debug.get() + 
+    opts = (
+      self.echo.get() +
+      self.debug.get() +
       self.felix.get() +
       self.optimise.get() +
-      self.static.get() + 
-      self.runit.get() + 
+      self.static.get() +
+      self.runit.get() +
       self.force.get())
     cmd = cmdx+' '+opts+string.join(cmdw2," ")
     app.runcmd.set(cmd)
@@ -354,7 +354,7 @@ class App:
     self.runcmd.set(self.appstate.runstring)
     self.frame = Frame(master,bd=2)
     self.frame.pack(fill=BOTH,expand=1)
-    
+
     self.menu1 = Menu()
     master.config(menu=self.menu1)
     filemenu = Menu(self.menu1)
@@ -681,7 +681,7 @@ class App:
     if state in ["withdrawn","iconic"]:
       self.configdialog.top.deiconify()
     self.configdialog.top.lift()
-      
+
   def colour(self):
     font1 = ("Helvetica",10,"bold")
     font2 = ("Helvetica",10,"italic")
@@ -744,7 +744,7 @@ class App:
     print d
     while d[0] in '"\'': d = d[1:]
     x = ''
-    while d[0] not in '"\'': 
+    while d[0] not in '"\'':
       x = x + d[0:1]
       d = d[1:]
     print x

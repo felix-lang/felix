@@ -100,7 +100,7 @@ flag ["ocaml"; "parser"; "dypgen"; "no-emit-token-type"] (A"--noemit-token-type"
 flag ["ocaml"; "compile"; "warn_yzex"] (S[A"-w"; A"yzex"]);;
 
 
-let laws = 
+let laws =
   [
     { law_name = "Leftover dypgen-generated files";
     law_rules = [Implies_not(".dyp",".ml"); Implies_not(".dyp",".mli")];
@@ -115,8 +115,8 @@ dispatch begin function
         let evil = ref false in
         match !Options.entry with
         | None -> ();
-        | Some entry -> 
-            match check 
+        | Some entry ->
+            match check
               ?sanitize:
                 begin
                   if !Options.sanitize then
@@ -158,10 +158,10 @@ dispatch begin function
           (* Since pgen and dypgen programs use the same extension, we need
            * to be able to switch between the two. Do this by tagging the pgen
            * files with "use_pgen".
-           * I'm not sure how we should do byte/native, so we'll just use the 
+           * I'm not sure how we should do byte/native, so we'll just use the
            * native. *)
-          let dypgen, tags = 
-            if Tags.mem "use_pgen" tags 
+          let dypgen, tags =
+            if Tags.mem "use_pgen" tags
             then "src/compiler/dyp/generators/pgen/pgen.native", tags++"pgen"
             else "src/compiler/dyp/generators/dypgen/dypgen.native", tags++"dypgen"
           in

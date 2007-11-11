@@ -27,34 +27,34 @@ let syms = Flx_flxopt.make_syms compiler_options;;
 let input_file_name = Sys.argv.(1)
 ;;
 
-let () = 
-  let pre_tokens =  Flx_pretok.pre_tokens_of_filename 
-    input_file_name 
-    (Filename.dirname input_file_name) 
-    [] 
+let () =
+  let pre_tokens =  Flx_pretok.pre_tokens_of_filename
+    input_file_name
+    (Filename.dirname input_file_name)
+    []
     syms.compiler_options.cache_dir
     Flx_macro.expand_expression
     compiler_options.auto_imports
   in
   Flx_tok.print_pre_tokens pre_tokens;
   let tokens  = Flx_lex1.translate pre_tokens in
-  
+
   (* strip EOF *)
   let lexbuf = (Lexing.from_string "dummy" ) in
   let toker = (new Flx_tok.tokeniser tokens) in
   while toker#token_peek lexbuf != Flx_token.ENDMARKER do
-    let x = 
-        try 
+    let x =
+        try
           dyphack (
           Flx_preparse.expression
-          (toker#token_src) 
-          lexbuf 
+          (toker#token_src)
+          lexbuf
           )
         with _ -> begin
           toker#report_syntax_error;
           raise (Flx_exceptions.ParseError "Parsing Expr")
         end
-    in 
+    in
     print_endline (Flx_print.string_of_expr x)
     ;
   done;

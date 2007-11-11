@@ -110,12 +110,12 @@ proc async_rw(fd: socket_t, len: &int, buf: address, eof: &bool, read_flag: bool
 
 proc async_read(fd: socket_t, len: &int, buf: address,
     eof: &bool)
-{   
+{
     async_rw(fd, len, buf, eof, true);      // read
 }
 
 proc async_write(fd: socket_t, len: &int, buf: address, eof: &bool)
-{   
+{
     async_rw(fd, len, buf, eof, false);     // write
 }
 
@@ -130,7 +130,7 @@ fun get_err: async_connect -> int = '$1.socket_err';
 
 // could do multi connects for capable drivers
 proc connect(s: &socket_t, addr: charp, port: int)
-{   
+{
     var ac = mk_async_connect(sys_demux,addr, port);
     faio_req$ &ac;
     *s = ac.socket;
@@ -151,7 +151,7 @@ proc mk_listener(s: &socket_t, port:&int, backlog:int)
 }
 
 proc accept(s: &socket_t, listener: socket_t)
-{   
+{
     var acc = mk_accept$ sys_demux,listener;
     faio_req$ &acc;
     *s = acc.socket;
@@ -165,7 +165,7 @@ fun mk_faio: job_queue * fd_t*address*int*int*bool -> flxfileio_request
 fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
 
 proc faio_rw(q:job_queue, fd: fd_t, len: &int, buf: address, eof: &bool, read_flag: bool)
-{   
+{
     // constant offset for now, rushing to get this in flx_stream
     var faio = mk_faio(q, fd, buf, *len, 0, read_flag);
     faio_req$ &faio;
@@ -180,12 +180,12 @@ val sys_job_queue = Pthread::mk_job_queue(qbound,nthreads);
 
 proc faio_read(fd: fd_t, len: &int, buf: address,
     eof: &bool)
-{   
+{
     faio_rw(sys_job_queue, fd, len, buf, eof, true);       // read
 }
 
 proc faio_write(fd: fd_t, len: &int, buf: address, eof: &bool)
-{   
+{
     faio_rw(sys_job_queue, fd, len, buf, eof, false);      // write
 }
 

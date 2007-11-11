@@ -33,10 +33,10 @@ FLX_MODULES = [
   'src/compiler/flxlib/flx_unify',
   'src/compiler/flxlib/flx_prop',
   'src/compiler/flxlib/flx_charset',
-  'src/compiler/flxlib/flx_constfld', 
+  'src/compiler/flxlib/flx_constfld',
   'src/compiler/flxlib/flx_cexpr',
-  'src/compiler/flxlib/flx_csubst', 
-  'src/compiler/flxlib/flx_sex2flx', 
+  'src/compiler/flxlib/flx_csubst',
+  'src/compiler/flxlib/flx_sex2flx',
   'src/compiler/flxlib/flx_token',
   'src/compiler/flxlib/flx_prelex',
   'src/compiler/flxlib/flx_pdoc',
@@ -51,68 +51,68 @@ FLX_MODULES = [
   'src/compiler/flxlib/flx_parse',
   'src/compiler/flxlib/flx_parse_ctrl',
   'src/compiler/flxlib/flx_dfa',
-  'src/compiler/flxlib/flx_pat', 
-  'src/compiler/flxlib/flx_macro', 
-  'src/compiler/flxlib/flx_cformat', 
+  'src/compiler/flxlib/flx_pat',
+  'src/compiler/flxlib/flx_macro',
+  'src/compiler/flxlib/flx_cformat',
   'src/compiler/flxlib/flx_ciltoflx',
-  'src/compiler/flxlib/flx_colns', 
+  'src/compiler/flxlib/flx_colns',
   'src/compiler/flxlib/flx_tcdoc',
-  'src/compiler/flxlib/flx_desugar', 
-  'src/compiler/flxlib/flx_mbind', 
-  'src/compiler/flxlib/flx_symtab', 
-  'src/compiler/flxlib/flx_name', 
+  'src/compiler/flxlib/flx_desugar',
+  'src/compiler/flxlib/flx_mbind',
+  'src/compiler/flxlib/flx_symtab',
+  'src/compiler/flxlib/flx_name',
   'src/compiler/flxlib/flx_beta',
   'src/compiler/flxlib/flx_treg',
-  'src/compiler/flxlib/flx_tpat', 
+  'src/compiler/flxlib/flx_tpat',
   'src/compiler/flxlib/flx_tconstraint',
-  'src/compiler/flxlib/flx_generic', 
-  'src/compiler/flxlib/flx_overload', 
-  'src/compiler/flxlib/flx_lookup', 
-  'src/compiler/flxlib/flx_child', 
-  'src/compiler/flxlib/flx_bexe', 
-  'src/compiler/flxlib/flx_bbind', 
-  'src/compiler/flxlib/flx_strabs', 
-  'src/compiler/flxlib/flx_typeclass', 
-  'src/compiler/flxlib/flx_axiom', 
-  'src/compiler/flxlib/flx_label', 
-  'src/compiler/flxlib/flx_cflow', 
-  'src/compiler/flxlib/flx_call', 
-  'src/compiler/flxlib/flx_use', 
-  'src/compiler/flxlib/flx_passign', 
-  'src/compiler/flxlib/flx_tailit', 
-  'src/compiler/flxlib/flx_reparent', 
-  'src/compiler/flxlib/flx_args', 
-  'src/compiler/flxlib/flx_uncurry', 
-  'src/compiler/flxlib/flx_stack_calls', 
-  'src/compiler/flxlib/flx_mkproc', 
-  'src/compiler/flxlib/flx_spexes', 
+  'src/compiler/flxlib/flx_generic',
+  'src/compiler/flxlib/flx_overload',
+  'src/compiler/flxlib/flx_lookup',
+  'src/compiler/flxlib/flx_child',
+  'src/compiler/flxlib/flx_bexe',
+  'src/compiler/flxlib/flx_bbind',
+  'src/compiler/flxlib/flx_strabs',
+  'src/compiler/flxlib/flx_typeclass',
+  'src/compiler/flxlib/flx_axiom',
+  'src/compiler/flxlib/flx_label',
+  'src/compiler/flxlib/flx_cflow',
+  'src/compiler/flxlib/flx_call',
+  'src/compiler/flxlib/flx_use',
+  'src/compiler/flxlib/flx_passign',
+  'src/compiler/flxlib/flx_tailit',
+  'src/compiler/flxlib/flx_reparent',
+  'src/compiler/flxlib/flx_args',
+  'src/compiler/flxlib/flx_uncurry',
+  'src/compiler/flxlib/flx_stack_calls',
+  'src/compiler/flxlib/flx_mkproc',
+  'src/compiler/flxlib/flx_spexes',
   'src/compiler/flxlib/flx_reduce',
-  'src/compiler/flxlib/flx_foldvars', 
-  'src/compiler/flxlib/flx_inline', 
-  'src/compiler/flxlib/flx_mono', 
-  'src/compiler/flxlib/flx_mkcls', 
-  'src/compiler/flxlib/flx_global', 
-  'src/compiler/flxlib/flx_inst', 
-  'src/compiler/flxlib/flx_tgen', 
-  'src/compiler/flxlib/flx_display', 
-  'src/compiler/flxlib/flx_ogen', 
+  'src/compiler/flxlib/flx_foldvars',
+  'src/compiler/flxlib/flx_inline',
+  'src/compiler/flxlib/flx_mono',
+  'src/compiler/flxlib/flx_mkcls',
+  'src/compiler/flxlib/flx_global',
+  'src/compiler/flxlib/flx_inst',
+  'src/compiler/flxlib/flx_tgen',
+  'src/compiler/flxlib/flx_display',
+  'src/compiler/flxlib/flx_ogen',
   'src/compiler/flxlib/flx_regen',
-  'src/compiler/flxlib/flx_unravel', 
-  'src/compiler/flxlib/flx_pgen', 
-  'src/compiler/flxlib/flx_egen', 
-  'src/compiler/flxlib/flx_ctorgen', 
-  'src/compiler/flxlib/flx_elkgen', 
-  'src/compiler/flxlib/flx_why', 
-  'src/compiler/flxlib/flx_gen', 
-  'src/compiler/flxlib/flx_flxopt', 
-  'src/compiler/flxlib/flx_terminate', 
+  'src/compiler/flxlib/flx_unravel',
+  'src/compiler/flxlib/flx_pgen',
+  'src/compiler/flxlib/flx_egen',
+  'src/compiler/flxlib/flx_ctorgen',
+  'src/compiler/flxlib/flx_elkgen',
+  'src/compiler/flxlib/flx_why',
+  'src/compiler/flxlib/flx_gen',
+  'src/compiler/flxlib/flx_flxopt',
+  'src/compiler/flxlib/flx_terminate',
 ]
 
 FLX_RAW_INTERFACES = [
   'src/compiler/flxlib/flx_ast',
   'src/compiler/flxlib/flx_types',
   'src/compiler/flxlib/flx_token',
-] 
+]
 
 FLX_INTERFACES = FLX_MODULES
 
@@ -139,7 +139,7 @@ caml_require_libs = [
   'unix',
   'flx_version',
   'ocslib',
-  'sexlib', 
+  'sexlib',
   'dyplib',
   'misclib',
   'cillib',
@@ -148,13 +148,13 @@ caml_require_libs = [
   'flx_version_hook']
 
 caml_include_paths = [
-  'src/compiler/flxlib', 
-  'src/compiler/ocs', 
-  'src/compiler/sex', 
+  'src/compiler/flxlib',
+  'src/compiler/ocs',
+  'src/compiler/sex',
   'src/compiler/cil',
-  'src/compiler/dyp/dyplib', 
-  'src/compiler/flxcclib', 
-  'src/compiler/misclib', 
+  'src/compiler/dyp/dyplib',
+  'src/compiler/flxcclib',
+  'src/compiler/misclib',
   'src/compiler/flx_version',
   'src/compiler/flx_version_hook'
   ]
@@ -219,9 +219,9 @@ The c and c++ migration now has a separate tutorial at
 @head(1,'The Felix Compiler')
 Basic phase diagram:
 @begin_displayed_code()
-  Lexer -> 
+  Lexer ->
   Token Filter ->
-  Parser -> 
+  Parser ->
   Syntax Macro Processor ->
   Desugaring/Lambda Lifting ->
   Unbound Symbol Table Construction ->
@@ -297,7 +297,7 @@ the interface and and the signatures of the elements
 of the module.
 @p()
 The binding and lookup is driven by a flow analyser
-than is iniialised with the root procedure (the 
+than is iniialised with the root procedure (the
 init routine of the top level module) plus any
 exported procedures or functions. By chasing
 down all calls, it discovers all instances types used
@@ -313,7 +313,7 @@ which includes a list of offsets at which
 frame object pointers are located so
 the garbage collector can operate.
 @p()
-Finally, the code generator makes C wrappers for 
+Finally, the code generator makes C wrappers for
 exported functions, and provides initialisation and termination
 functions to construct and destroy the
 instance frame objects (global, process,
@@ -375,7 +375,7 @@ let version_data: version_data_t =
 @f = open ("VERSION","w")
 @f.write(flx_version+"\n")
 @f.close()
-} 
+}
 ;;
 let set_version () =
   Flx_version.version_data := version_data
@@ -464,7 +464,7 @@ let set_version () =
 @head(2,'Stub mainline')
 This is a just a file for writing
 mini tests of various ocaml functions
-of the compiler. I should probably 
+of the compiler. I should probably
 create a file here for unit tests.
 @include_file ('flx_stub.ipk')
 

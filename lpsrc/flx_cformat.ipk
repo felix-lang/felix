@@ -108,14 +108,14 @@ let is_num ch =
 
 
 
-type mode_t = [ 
-  | `Skip 
-  | `Scan 
+type mode_t = [
+  | `Skip
+  | `Scan
 ]
 
 let strchr ch = String.make 1 ch
 
-let ast i = 
+let ast i =
   let s = String.make (i+1) ' 'in
   s.[i] <- '*';
   s
@@ -125,7 +125,7 @@ let numval ch = index "0123456789" ch
 let types_of_cformat_string sr s =
   let err i msg = clierr sr ("In format, pos="^si i^"\n"^string_of_string s^"\n "^ast i^"\n"^msg) in
   let outfmt = ref "" in
-  let tent = ref "" in 
+  let tent = ref "" in
   let types = ref [] in
   let mode = ref `Skip in
   let fmt = ref "" in
@@ -145,17 +145,17 @@ let types_of_cformat_string sr s =
   let ten ch = tent := !tent ^ String.make 1 ch in
 
   for i = 0 to String.length s - 1 do
-    match !mode with 
+    match !mode with
     (* look for leading % sign *)
-    | `Skip -> 
+    | `Skip ->
       app s.[i];
       if s.[i]='%' then mode := `Scan
 
-    | `Scan -> 
+    | `Scan ->
       let ch = s.[i] in
 
       (* just emit % sign *)
-      if ch = '%' then 
+      if ch = '%' then
       begin
         mode := `Skip;
         space_used := false;
@@ -164,16 +164,16 @@ let types_of_cformat_string sr s =
       end
 
       (* last char of format spec *)
-      else if is_final ch then 
+      else if is_final ch then
       begin
         app (if ch = 'S' then 's' else ch); (* convert string to charp *)
         let xfmt = !fmt ^ strchr ch in
-        begin 
+        begin
           match !acc with | None -> () | Some j ->
           match !width with | None -> width := !acc | Some _ -> prec := !acc
         end
         ;
-        try 
+        try
           let arg = match !pos with None -> !argno | Some j -> j in
           types := (arg,assoc xfmt fmts) :: !types;
           mode := `Skip;
@@ -183,7 +183,7 @@ let types_of_cformat_string sr s =
           sign := ' ';
           dp := ' ';
           fmt := "";
-          begin match !pos with None -> incr argno | Some _ -> () end; 
+          begin match !pos with None -> incr argno | Some _ -> () end;
           pos := None;
         with Not_found ->
           err i ("Unsupported format '" ^ xfmt ^ "'")
@@ -197,16 +197,16 @@ let types_of_cformat_string sr s =
 
       (* an * spec, add a new format immediately *)
       (* hacked: you can't do *99$ at the moment! *)
-      else if ch = '*' then begin 
+      else if ch = '*' then begin
         let arg = !argno in incr argno;
         types := (arg,"int") :: !types;
         app ch;
       end
 
       (* sign *)
-      else if ch = '+' or ch = '-' then begin 
+      else if ch = '+' or ch = '-' then begin
         if !sign <> ' ' then err i "Extra sign"
-        else 
+        else
           sign := ch;
           app ch;
       end
@@ -225,7 +225,7 @@ let types_of_cformat_string sr s =
       (* digit *)
       else if is_num ch then begin
         ten ch;
-        match !acc with 
+        match !acc with
         | None -> acc := Some (numval ch)
         | Some j -> acc := Some (10 * j + numval ch)
       end

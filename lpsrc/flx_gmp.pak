@@ -66,7 +66,7 @@ body gmpxx_lcm = """
 namespace flx { namespace gmp {
 mpz_class lcm(mpz_class const &a, mpz_class const &b)
 {
-  mpz_t r; mpz_init(r); 
+  mpz_t r; mpz_init(r);
   mpz_lcm(r,a.get_mpz_t(),b.get_mpz_t());
   return mpz_class(r);
 }
@@ -77,7 +77,7 @@ body gmpxx_gcd = """
 namespace flx { namespace gmp {
 mpz_class gcd(mpz_class const &a, mpz_class const &b)
 {
-  mpz_t r; mpz_init(r); 
+  mpz_t r; mpz_init(r);
   mpz_gcd(r,a.get_mpz_t(),b.get_mpz_t());
   return mpz_class(r);
 }
