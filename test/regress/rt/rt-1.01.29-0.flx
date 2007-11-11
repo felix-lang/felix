@@ -1,6 +1,4 @@
-#line 1062 "../lpsrc/flx_regress.pak"
 //Check arrays
-#line 1062 "../lpsrc/flx_regress.pak"
 //Check array iterators
 
 open List;

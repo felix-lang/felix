@@ -1,4 +1,3 @@
-#line 249 "../lpsrc/flx_regress.pak"
 //Check strings
 var x = "Hello";
 x += "+";

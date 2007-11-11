@@ -1,4 +1,3 @@
-#line 2246 "../lpsrc/flx_regress.pak"
 //Check reglex
 
 open Lexer;

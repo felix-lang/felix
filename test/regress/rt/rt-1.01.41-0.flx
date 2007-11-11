@@ -1,4 +1,3 @@
-#line 1577 "../lpsrc/flx_regress.pak"
 //Check types:nested
 
 fun f(x:int)= {

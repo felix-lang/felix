@@ -1,4 +1,3 @@
-#line 411 "../lpsrc/flx_regress.pak"
 //Check insertions
 body "#include <iostream>";
 code 'static int x = 1;';

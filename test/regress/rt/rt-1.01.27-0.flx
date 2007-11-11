@@ -1,6 +1,4 @@
-#line 997 "../lpsrc/flx_regress.pak"
 //Check reductions
-#line 997 "../lpsrc/flx_regress.pak"
 //Check axioms
 
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }

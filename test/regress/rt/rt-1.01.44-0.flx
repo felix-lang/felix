@@ -1,4 +1,3 @@
-#line 1658 "../lpsrc/flx_regress.pak"
 //Check type constraints
 open C_hack;
 header '#include <iostream>';

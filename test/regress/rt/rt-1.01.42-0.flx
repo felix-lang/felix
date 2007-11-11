@@ -1,4 +1,3 @@
-#line 1603 "../lpsrc/flx_regress.pak"
 //Check goto:nonlocal
 
 proc f () {

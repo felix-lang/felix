@@ -1,4 +1,3 @@
-#line 2534 "../lpsrc/flx_regress.pak"
 //Check assoc_list
 open List;
 open Assoc_list;

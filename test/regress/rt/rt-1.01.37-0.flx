@@ -1,4 +1,3 @@
-#line 1350 "../lpsrc/flx_regress.pak"
 //Check generators
 
 gen f(init:int)(inc:int):int = {

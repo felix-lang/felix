@@ -1,4 +1,3 @@
-#line 2276 "../lpsrc/flx_regress.pak"
 //Check regmatch
 
 fun format (suffix:string) : string =>

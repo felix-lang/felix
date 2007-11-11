@@ -1,4 +1,3 @@
-#line 2484 "../lpsrc/flx_regress.pak"
 //Check namespace
 include 'test/regress/rt-1.01.63-0';
 

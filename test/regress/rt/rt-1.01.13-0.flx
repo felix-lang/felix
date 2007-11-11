@@ -1,4 +1,3 @@
-#line 533 "../lpsrc/flx_regress.pak"
 //Check polymorphism
 
 proc f[k] (z:k, pr:k->void) {

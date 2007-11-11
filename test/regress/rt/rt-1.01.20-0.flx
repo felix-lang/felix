@@ -1,6 +1,4 @@
-#line 764 "../lpsrc/flx_regress.pak"
 //Check recursion
-#line 764 "../lpsrc/flx_regress.pak"
 //Check tail call optimisation
 // non-self-tail rec test (inspect output)
 // (requires --inline atm)

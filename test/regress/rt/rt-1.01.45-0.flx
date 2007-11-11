@@ -1,4 +1,3 @@
-#line 1712 "../lpsrc/flx_regress.pak"
 //Check typeclasses
 proc pr[t]:t="std::cout<<$1<<std::endl;" requires iostream;
 

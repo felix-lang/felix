@@ -1,4 +1,3 @@
-#line 782 "../lpsrc/flx_regress.pak"
 //Check lvalues
 // lvalue decay if function called thru variable
 

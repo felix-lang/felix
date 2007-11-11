@@ -1,4 +1,3 @@
-#line 1843 "../lpsrc/flx_regress.pak"
 //Check typeclasses:polymorphic methods
 
 typeclass X[u] {

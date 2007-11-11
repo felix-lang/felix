@@ -1,4 +1,3 @@
-#line 214 "../lpsrc/flx_regress.pak"
 //Check laziness
 // test lazy functions and procedures
 print "lazy expr eval test\n";

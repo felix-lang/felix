@@ -1,4 +1,3 @@
-#line 1262 "../lpsrc/flx_regress.pak"
 //Check lexing:keywords
 #
 module X {

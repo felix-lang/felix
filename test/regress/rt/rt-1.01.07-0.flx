@@ -1,4 +1,3 @@
-#line 298 "../lpsrc/flx_regress.pak"
 //Check recursion:types
 proc eol: 1 = 'printf("\\n");';
 

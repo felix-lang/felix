@@ -1,6 +1,4 @@
-#line 1134 "../lpsrc/flx_regress.pak"
 //Check laziness
-#line 1134 "../lpsrc/flx_regress.pak"
 //Check lazy variables
 
 var v = 1;

@@ -1,4 +1,3 @@
-#line 2306 "../lpsrc/flx_regress.pak"
 //Check show typeclass
 
 proc p[T with Show[T]] (t:T) {

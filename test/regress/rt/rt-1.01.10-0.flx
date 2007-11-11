@@ -1,4 +1,3 @@
-#line 429 "../lpsrc/flx_regress.pak"
 //Check statements:def
 var a:int;
 var b:int;

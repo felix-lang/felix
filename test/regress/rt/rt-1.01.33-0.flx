@@ -1,4 +1,3 @@
-#line 1152 "../lpsrc/flx_regress.pak"
 //Check ref semantics
 
 noinline proc f(var x:int, val y:int)

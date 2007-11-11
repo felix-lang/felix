@@ -1,4 +1,3 @@
-#line 1863 "../lpsrc/flx_regress.pak"
 //Check typeclasses:imbue module
 //Check typeclasses:polymorphic methods
 header '#include <iostream>';

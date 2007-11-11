@@ -1,4 +1,3 @@
-#line 2029 "../lpsrc/flx_regress.pak"
 //Check purely functional
 #import <flx.flxh>;
 

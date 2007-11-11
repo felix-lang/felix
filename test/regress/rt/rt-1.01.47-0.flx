@@ -1,4 +1,3 @@
-#line 1781 "../lpsrc/flx_regress.pak"
 //Check typeclasses:inheritance
 //Check inherit:specialisation
 header '#include <iostream>';

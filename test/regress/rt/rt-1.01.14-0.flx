@@ -1,4 +1,3 @@
-#line 554 "../lpsrc/flx_regress.pak"
 //Check inlining
 proc g[t]()
 {

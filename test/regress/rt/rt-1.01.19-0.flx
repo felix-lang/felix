@@ -1,6 +1,4 @@
-#line 748 "../lpsrc/flx_regress.pak"
 //Check recursion
-#line 748 "../lpsrc/flx_regress.pak"
 //Check tail call optimisation
 fun g(x:int):int = {
   if x == 0 goto endoff;

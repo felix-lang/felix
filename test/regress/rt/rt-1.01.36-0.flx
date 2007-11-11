@@ -1,4 +1,3 @@
-#line 1304 "../lpsrc/flx_regress.pak"
 //Check generators
 
 var cheat : int = 0;

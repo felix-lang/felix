@@ -1,5 +1,3 @@
-#line 1110 "../lpsrc/flx_regress.pak"
-
 union U =
 | A of (unit -> void)
 ;

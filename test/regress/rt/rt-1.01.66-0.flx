@@ -1,4 +1,3 @@
-#line 2564 "../lpsrc/flx_regress.pak"
 // cheats, uses fun instead of gen.. may break later
 fun fold_file[a,b]
               (read_func: 1->opt[a])

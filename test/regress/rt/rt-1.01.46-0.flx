@@ -1,4 +1,3 @@
-#line 1750 "../lpsrc/flx_regress.pak"
 //Check typeclasses
 
 open List;

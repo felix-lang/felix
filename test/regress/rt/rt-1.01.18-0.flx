@@ -1,6 +1,4 @@
-#line 723 "../lpsrc/flx_regress.pak"
 //Check recursion
-#line 723 "../lpsrc/flx_regress.pak"
 //Check tail call optimisation
 var x = 4;
 proc recur2 ()

@@ -1,4 +1,3 @@
-#line 2153 "../lpsrc/flx_regress.pak"
 //Check axiom checks:integer
 axiom_check(-1);
 axiom_check(0);

@@ -1,4 +1,3 @@
-#line 1093 "../lpsrc/flx_regress.pak"
 var z = 0;
 noinline proc f
   (a:unit ->int)

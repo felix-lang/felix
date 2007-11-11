@@ -1,5 +1,3 @@
-#line 1486 "../lpsrc/flx_regress.pak"
-
 module Foo
 {
   union foo = | A | B;

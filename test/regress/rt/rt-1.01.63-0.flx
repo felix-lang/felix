@@ -1,4 +1,3 @@
-#line 2453 "../lpsrc/flx_regress.pak"
 //Check namespace
 
 namespace Foo      { val a = 1; }

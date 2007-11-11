@@ -1,4 +1,3 @@
-#line 621 "../lpsrc/flx_regress.pak"
 //Check inlining
 
 val x = 1;

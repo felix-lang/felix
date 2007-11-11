@@ -1,4 +1,3 @@
-#line 1383 "../lpsrc/flx_regress.pak"
 //Check generators
 
 union tree = TEmpty | Leaf of int | Node of tree * tree;

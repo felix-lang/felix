@@ -1,4 +1,3 @@
-#line 1279 "../lpsrc/flx_regress.pak"
 //Check applicative types
 
 open module Foo

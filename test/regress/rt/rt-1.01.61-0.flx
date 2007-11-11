@@ -1,4 +1,3 @@
-#line 2291 "../lpsrc/flx_regress.pak"
 //Check typedef
 
 module X[t] {

@@ -1,4 +1,3 @@
-#line 2232 "../lpsrc/flx_regress.pak"
 //Check export
 
 proc foo(x: int, y: int) {
