@@ -27,7 +27,7 @@ iscr_source = ["lpsrc/flx_glob.pak"]
 weaver_directory = 'doc/rtl/flx_glob/'
 xfiles = [os.path.join('src', 'unixem', '*')]
 
-rtl_interfaces = ['src/unixem/flx_glob_config.hpp', 'src/unixem/flx_glob.hpp']
+rtl_interfaces = ['config/target/flx_glob_config.hpp', 'src/unixem/flx_glob.hpp']
 felix_rtl = ['src/unixem/glob.flx']
 
 cpp_cpps = []
@@ -43,7 +43,7 @@ build_macro = "GLOB"
 
 @tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
-@h=tangler('unixem/flx_glob_config.hpp')
+@h=tangler('config/target/flx_glob_config.hpp')
 @select(h)
 #ifndef __FLX_GLOB_CONFIG_H__
 #define __FLX_GLOB_CONFIG_H__
