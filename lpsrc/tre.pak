@@ -13,6 +13,7 @@ xfiles = [os.path.join('src', 'tre', '*')]
 rtl_interfaces = [
   'config/target/flx_target_tre_config.h',
   'src/tre/tre-regex.h',
+  'src/tre/tre-config.h',
 ]
 
 felix_rtl = [
