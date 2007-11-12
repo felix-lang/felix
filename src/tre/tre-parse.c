@@ -24,16 +24,16 @@
 */
 
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
 
-#include "tre_xmalloc.hpp"
-#include "tre_mem.hpp"
-#include "tre_ast.hpp"
-#include "tre_stack.hpp"
-#include "tre_parse.hpp"
+#include "xmalloc.h"
+#include "tre-mem.h"
+#include "tre-ast.h"
+#include "tre-stack.h"
+#include "tre-parse.h"
 
 
 /* Characters with special meanings in regexp syntax. */

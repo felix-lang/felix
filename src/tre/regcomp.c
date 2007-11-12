@@ -18,15 +18,15 @@
 
 */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 
-#include "tre_regex.hpp"
-#include "tre_internal.hpp"
-#include "tre_xmalloc.hpp"
+#include "tre-regex.h"
+#include "tre-internal.h"
+#include "xmalloc.h"
 
 int
 regncomp(regex_t *preg, const char *regex, size_t n, int cflags)

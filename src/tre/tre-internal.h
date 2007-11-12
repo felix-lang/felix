@@ -30,7 +30,7 @@
 #endif /* !HAVE_WCTYPE_H */
 
 #include <ctype.h>
-#include "tre_regex.hpp"
+#include "tre-regex.h"
 
 #ifdef TRE_DEBUG
 #include <stdio.h>

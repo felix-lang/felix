@@ -18,7 +18,7 @@
 
 */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 
 #ifdef TRE_USE_ALLOCA
 /* AIX requires this to be the first thing in the file.  */
@@ -54,10 +54,10 @@ char *alloca ();
 #endif /* HAVE_MALLOC_H */
 #include <limits.h>
 
-#include "tre_regex.hpp"
-#include "tre_internal.hpp"
-#include "tre_filter.hpp"
-#include "tre_xmalloc.hpp"
+#include "tre-regex.h"
+#include "tre-internal.h"
+#include "tre-filter.h"
+#include "xmalloc.h"
 
 
 /* Fills the POSIX.2 regmatch_t array according to the TNFA tag and match

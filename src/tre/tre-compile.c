@@ -25,19 +25,19 @@
 */
 
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
-#include "tre_internal.hpp"
-#include "tre_mem.hpp"
-#include "tre_stack.hpp"
-#include "tre_ast.hpp"
-#include "tre_parse.hpp"
-#include "tre_compile.hpp"
-#include "tre_regex.hpp"
-#include "tre_xmalloc.hpp"
+#include "tre-internal.h"
+#include "tre-mem.h"
+#include "tre-stack.h"
+#include "tre-ast.h"
+#include "tre-parse.h"
+#include "tre-compile.h"
+#include "tre-regex.h"
+#include "xmalloc.h"
 
 /*
   Algorithms to setup tags so that submatch addressing can be done.

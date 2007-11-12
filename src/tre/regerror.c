@@ -18,7 +18,7 @@
 
 */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 
 #include <string.h>
 #ifdef HAVE_WCHAR_H
@@ -28,9 +28,9 @@
 #include <wctype.h>
 #endif /* HAVE_WCTYPE_H */
 
-#include "tre_internal.hpp"
-#include "tre_regex.hpp"
-#include "tre_gettext.hpp"
+#include "tre-internal.h"
+#include "tre-regex.h"
+#include "tre-gettext.h"
 #define _(String) dgettext(PACKAGE, String)
 #define gettext_noop(String) String
 

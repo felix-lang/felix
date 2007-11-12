@@ -42,7 +42,7 @@
 */
 
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 
 #ifdef TRE_USE_ALLOCA
 /* AIX requires this to be the first thing in the file.  */
@@ -77,11 +77,11 @@ char *alloca ();
 #include <malloc.h>
 #endif /* HAVE_MALLOC_H */
 
-#include "tre_internal.hpp"
-#include "tre_mem.hpp"
-#include "tre_match-utils.hpp"
-#include "tre_regex.hpp"
-#include "tre_xmalloc.hpp"
+#include "tre-internal.h"
+#include "tre-mem.h"
+#include "tre-match-utils.h"
+#include "tre-regex.h"
+#include "xmalloc.h"
 
 typedef struct {
   int pos;
@@ -139,7 +139,7 @@ typedef struct tre_backtrack_struct {
       if (!stack->next)                                                       \
         {                                                                     \
           tre_backtrack_t s;                                                  \
-          s = (tre_backtrack_struct*)tre_bt_mem_alloc(mem, sizeof(*s));                              \
+          s = tre_bt_mem_alloc(mem, sizeof(*s));                              \
           if (!s)                                                             \
             {                                                                 \
               tre_bt_mem_destroy(mem);                                        \
@@ -264,7 +264,7 @@ tre_tnfa_run_backtrack(const tre_tnfa_t *tnfa, const void *string,
 
   if (!mem)
     return REG_ESPACE;
-  stack = (tre_backtrack_struct*)tre_bt_mem_alloc(mem, sizeof(*stack));
+  stack = tre_bt_mem_alloc(mem, sizeof(*stack));
   if (!stack)
     {
       ret = REG_ESPACE;

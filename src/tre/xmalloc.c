@@ -24,7 +24,7 @@
    - group dumps by source location
 */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 
 #include <stdlib.h>
 #include <assert.h>

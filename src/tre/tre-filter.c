@@ -24,10 +24,10 @@
    numbers of different characters as the pattern, and those
    characters must occur in the same order as they occur in pattern. */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 #include <stdio.h>
-#include "tre_internal.hpp"
-#include "tre_filter.hpp"
+#include "tre-internal.h"
+#include "tre-filter.h"
 
 int
 tre_filter_find(const unsigned char *str, size_t len, tre_filter_t *filter)

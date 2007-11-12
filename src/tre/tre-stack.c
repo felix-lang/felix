@@ -17,13 +17,13 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 #include <stdlib.h>
 #include <assert.h>
 
-#include "tre_stack.hpp"
-#include "tre_internal.hpp"
-#include "tre_xmalloc.hpp"
+#include "tre-stack.h"
+#include "tre-internal.h"
+#include "xmalloc.h"
 
 struct tre_stack_rec {
   int size;

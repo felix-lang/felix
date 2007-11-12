@@ -25,13 +25,13 @@
   allocators, though.
 */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 #include <stdlib.h>
 #include <string.h>
 
-#include "tre_internal.hpp"
-#include "tre_mem.hpp"
-#include "tre_xmalloc.hpp"
+#include "tre-internal.h"
+#include "tre-mem.h"
+#include "xmalloc.h"
 
 
 /* Returns a new memory allocator or NULL if out of memory. */
@@ -41,11 +41,11 @@ tre_mem_new_impl(int provided, void *provided_block)
   tre_mem_t mem;
   if (provided)
     {
-      mem = (tre_mem_struct*)provided_block;
+      mem = provided_block;
       memset(mem, 0, sizeof(*mem));
     }
   else
-    mem = (tre_mem_struct*)xcalloc(1, sizeof(*mem));
+    mem = xcalloc(1, sizeof(*mem));
   if (mem == NULL)
     return NULL;
   return mem;

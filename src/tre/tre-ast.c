@@ -18,11 +18,11 @@
 
 */
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 #include <assert.h>
 
-#include "tre_ast.hpp"
-#include "tre_mem.hpp"
+#include "tre-ast.h"
+#include "tre-mem.h"
 
 tre_ast_node_t *
 tre_ast_new_node(tre_mem_t mem, tre_ast_type_t type, size_t size)

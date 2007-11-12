@@ -21,7 +21,7 @@
 #ifndef TRE_REGEX_H
 #define TRE_REGEX_H 1
 
-#include "tre_config.hpp"
+#include "tre-config.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

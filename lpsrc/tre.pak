@@ -12,34 +12,35 @@ xfiles = [os.path.join('src', 'tre', '*')]
 
 rtl_interfaces = [
   'config/target/flx_tre_config.hpp',
-  'src/tre/tre_gettext.hpp',
-  'src/tre/tre_regex.hpp',
-  'src/tre/tre_ast.hpp',
-  'src/tre/tre_compile.hpp',
-  'src/tre/tre_config.hpp',
-  'src/tre/tre_filter.hpp',
-  'src/tre/tre_match-utils.hpp',
-  'src/tre/tre_mem.hpp',
-  'src/tre/tre_parse.hpp',
+  'src/tre/tre-gettext.h',
+  'src/tre/tre-regex.h',
+  'src/tre/tre-ast.h',
+  'src/tre/tre-compile.h',
+  'src/tre/tre-config.h',
+  'src/tre/tre-filter.h',
+  'src/tre/tre-match-utils.h',
+  'src/tre/tre-mem.h',
+  'src/tre/tre-parse.h',
 ]
 
 felix_rtl = [
   'src/tre/tre.flx',
 ]
 
-cpp_cpps = [
-  'src/tre/tre_regcomp',
-  'src/tre/tre_regerror',
-  'src/tre/tre_regexec',
-  'src/tre/tre_ast',
-  'src/tre/tre_compile',
-  'src/tre/tre_filter',
-  'src/tre/tre_match-approx',
-  'src/tre/tre_match-backtrack',
-  'src/tre/tre_match-parallel',
-  'src/tre/tre_mem',
-  'src/tre/tre_parse',
-  'src/tre/tre_stack'
+cc_ccs = [
+  'src/tre/regcomp',
+  'src/tre/regerror',
+  'src/tre/regexec',
+  'src/tre/tre-ast',
+  'src/tre/tre-compile',
+  'src/tre/tre-filter',
+  'src/tre/tre-match-approx',
+  'src/tre/tre-match-backtrack',
+  'src/tre/tre-match-parallel',
+  'src/tre/tre-mem',
+  'src/tre/tre-parse',
+  'src/tre/tre-stack',
+  'src/tre/xmalloc',
 ]
 
 build_macro = "TRE"
@@ -56,7 +57,7 @@ build_macro = "TRE"
    tangle("provides_dlib: -ltre_dynamic")
    tangle("provides_slib: -ltre_static")
 
-@h=tangler('config/target/flx_target_tre_config.hpp')
+@h=tangler('config/target/flx_target_tre_config.h')
 @select(h)
 #ifndef __FLX_TARGET_TRE_CONFIG_H__
 #define __FLX_TARGET_TRE_CONFIG_H__

@@ -35,7 +35,7 @@
 */
 
 
-#include "flx_target_tre_config.hpp"
+#include "flx_target_tre_config.h"
 
 #ifdef TRE_USE_ALLOCA
 /* AIX requires this to be the first thing in the file.  */
@@ -70,10 +70,10 @@ char *alloca ();
 #include <malloc.h>
 #endif /* HAVE_MALLOC_H */
 
-#include "tre_internal.hpp"
-#include "tre_match-utils.hpp"
-#include "tre_regex.hpp"
-#include "tre_xmalloc.hpp"
+#include "tre-internal.h"
+#include "tre-match-utils.h"
+#include "tre-regex.h"
+#include "xmalloc.h"
 
 
 
