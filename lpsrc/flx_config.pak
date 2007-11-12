@@ -540,20 +540,20 @@ def find(path, name=None, include_dirs=True):
 @select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
 #    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
-HAVE_LIBGC = TARGET_CXX.check_header_exists(shell,"gc.h")
+HAVE_LIBGC = TARGET_CXX.check_header_exists("gc.h")
 
 @select(tangler("cpkgs/target/windowsh.py"))
 #    "Microsoft Windows core CAPI",
 #    "http://microsoft.com"
-HAVE_WINDOWS_H = TARGET_CXX.check_header_exists(shell,"windows.h")
+HAVE_WINDOWS_H = TARGET_CXX.check_header_exists("windows.h")
 
 @select(tangler("cpkgs/target/opengl.py"))
 #    'Open GL Graphics Rendering Toolkit',
 #    "http://www.opengl.org"
 if MACOSX:
-  HAVE_OPENGL = TARGET_CXX.check_header_exists(shell,"OpenGL"+os.sep+"gl.h")
+  HAVE_OPENGL = TARGET_CXX.check_header_exists("OpenGL"+os.sep+"gl.h")
 else:
-  HAVE_OPENGL = TARGET_CXX.check_header_exists(shell,"GL"+os.sep+"gl.h")
+  HAVE_OPENGL = TARGET_CXX.check_header_exists("GL"+os.sep+"gl.h")
 
 
 @select(tangler("cpkgs/target/pthread.py"))
@@ -1077,6 +1077,9 @@ if "build" in PHASES:
     BUILD_CC=flxbuild.gcc_class.gcc()
     BUILD_CXX=flxbuild.gxx_class.gxx()
 
+  BUILD_CC.shell = shell
+  BUILD_CXX.shell = shell
+
   BUILD_CC.set_options(
       COM=BUILDCC,
       include_paths=include_paths,
@@ -1085,7 +1088,7 @@ if "build" in PHASES:
       model=build_model,
       build=build_model)
 
-  BUILD_CC.check_options(shell,get_stdout)
+  BUILD_CC.check_options()
   BUILD_CC.report_config()
   BUILD_CC.save_options("config/build_cc.py")
   build_model=BUILD_CC.options.model
@@ -1098,7 +1101,7 @@ if "build" in PHASES:
       model=build_model,
       build=build_model)
 
-  BUILD_CXX.check_options(shell,get_stdout)
+  BUILD_CXX.check_options()
   BUILD_CXX.report_config()
   BUILD_CXX.save_options("config/build_cxx.py")
   build_model=BUILD_CXX.options.model
@@ -1193,6 +1196,9 @@ if "host" in PHASES:
     HOST_CC=flxbuild.gcc_class.gcc()
     HOST_CXX=flxbuild.gxx_class.gxx()
 
+  HOST_CC.shell = shell
+  HOST_CXX.shell = shell
+
   HOST_CC.set_options(
       COM=HOSTCC,
       include_paths=include_paths,
@@ -1210,7 +1216,7 @@ if "host" in PHASES:
     HOST_CC.load_options("config"+os.sep+"build_cc.py")
     HOST_CC.options.use = "host"
   else:
-    HOST_CC.check_options(shell,get_stdout)
+    HOST_CC.check_options()
     HOST_CC.report_config()
   HOST_CC.save_options("config"+os.sep+"host_cc.py")
 
@@ -1231,7 +1237,7 @@ if "host" in PHASES:
     HOST_CXX.load_options("config"+os.sep+"build_cxx.py")
     HOST_CXX.options.use = "host"
   else:
-    HOST_CXX.check_options(shell,get_stdout)
+    HOST_CXX.check_options()
     HOST_CXX.report_config()
   HOST_CXX.save_options("config"+os.sep+"host_cxx.py")
 
@@ -1239,7 +1245,9 @@ if "host" in PHASES:
   if HOST_CXX.options.CYGWIN:
     camllinkopts = '-ccopt "-Wl,--stack -Wl,10485760" '
   HOST_OCAML = flxbuild.ocaml_class.ocaml()
-  HOST_OCAML.autodetect(shell,get_stdout,camllinkopts)
+  HOST_OCAML.shell = shell
+
+  HOST_OCAML.autodetect(camllinkopts)
   HOST_OCAML.report_config()
   HOST_OCAML.save_options("config/ocaml_config.py")
 
@@ -1329,6 +1337,9 @@ if "target" in PHASES:
     TARGET_CC=flxbuild.gcc_class.gcc()
     TARGET_CXX=flxbuild.gxx_class.gxx()
 
+  TARGET_CC.shell = shell
+  TARGET_CXX.shell = shell
+
   TARGET_CC.set_options(
       COM=TARGETCC,
       include_paths=include_paths,
@@ -1352,7 +1363,7 @@ if "target" in PHASES:
     print 'using the HOST_CC options for the TARGET_CC'
     TARGET_CC.load_options("config"+os.sep+"host_cc.py")
   else:
-    TARGET_CC.check_options(shell,get_stdout)
+    TARGET_CC.check_options()
     TARGET_CC.report_config()
   TARGET_CC.save_options("config"+os.sep+"target_cc.py")
 
@@ -1381,7 +1392,7 @@ if "target" in PHASES:
     TARGET_CXX.options.use = "target"
 
   else:
-    TARGET_CXX.check_options(shell,get_stdout)
+    TARGET_CXX.check_options()
     TARGET_CXX.report_config()
   TARGET_CXX.save_options("config"+os.sep+"target_cxx.py")
 

@@ -4,7 +4,7 @@ execfile("config"+os.sep+"config.py")
 try:
   cload(globals(),"target_pari")
 except:
-  HAVE_PARI=TARGET_CXX.check_header_exists(xqt,'pari.h')
+  HAVE_PARI=TARGET_CXX.check_header_exists('pari.h')
   f=cwrite('target_pari')
   pa(f,locals(),"HAVE_PARI")
   f.close()

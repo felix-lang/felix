@@ -368,19 +368,19 @@ class PLUGIN(Plugin):
     print "CAML BUILDING GRAMMAR", pkg
 
     if LEXS:
-      HOST_OCAML.gen_lexer(vxqt, LEXS,
+      HOST_OCAML.gen_lexer(LEXS,
           outdir='build')
 
     if PARSES:
-      HOST_OCAML.gen_parser(vxqt, PARSES,
+      HOST_OCAML.gen_parser(PARSES,
           outdir='build')
 
     if PGENPARSES:
-      HOST_OCAML.gen_pgen_parser(vxqt, PGENPARSES,
+      HOST_OCAML.gen_pgen_parser(PGENPARSES,
           outdir='build')
 
     if DYPARSES:
-      HOST_OCAML.gen_dypgen_parser(vxqt, DYPARSES,
+      HOST_OCAML.gen_dypgen_parser(DYPARSES,
           FLAGS=['--prio-pt', '--pv-obj', '--noemit-token-type'],
           outdir='build')
 
@@ -409,14 +409,14 @@ class PLUGIN(Plugin):
       optimise="optimise_felix" in options,
     )
 
-    HOST_OCAML.compile_interface(vxqt, INTERFACES, **kwds)
+    HOST_OCAML.compile_interface(INTERFACES, **kwds)
 
     if 'bytecode' in options:
       compiler = HOST_OCAML.compile_bytecode
     else:
       compiler = HOST_OCAML.compile_native
 
-    return compiler(vxqt, IMPLEMENTATIONS, **kwds)
+    return compiler(IMPLEMENTATIONS, **kwds)
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_libraries.py'))
@@ -434,7 +434,7 @@ class PLUGIN(Plugin):
     else:
       linker = HOST_OCAML.link_native_lib
 
-    return linker(vxqt, IMPLEMENTATIONS, lib, outdir='build')
+    return linker(IMPLEMENTATIONS, lib, outdir='build')
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_exes.py'))
@@ -456,7 +456,7 @@ class PLUGIN(Plugin):
         linker = HOST_OCAML.link_native_exe
 
       dst = os.path.join('bin', os.path.basename(exe))
-      output_exe = linker(vxqt, [exe + '.ml'], dst + EXT_EXE,
+      output_exe = linker([exe + '.ml'], dst + EXT_EXE,
         include_paths=[os.path.join('build', os.path.dirname(exe))] + \
           [os.path.join('build', i) for i in INCLUDES],
         libs=OLIBRARIES,
@@ -564,7 +564,7 @@ class PLUGIN(Plugin):
       print "HOST C COMPILING", pkg
       pkglib = "lib"+pkg+"_host_static"
 
-      HOST_C.build_static_rtl(vxqt, CCS, 'hostlib' + os.sep + pkglib,
+      HOST_C.build_static_rtl(CCS, 'hostlib' + os.sep + pkglib,
         outdir='build',
         include_paths=INCLUDE_PATH+[FLX_RTL_DIR, FLX_HOST_CONFIG_DIR, "elk"],
         macros=MACROS+["FLX_STATIC_LINK"],
@@ -574,7 +574,7 @@ class PLUGIN(Plugin):
       print "HOST C++ COMPILING", pkg
       pkglib = "lib"+pkg+"_host_static"
 
-      HOST_CXX.build_static_rtl(vxqt, CPPS, 'hostlib' + os.sep + pkglib,
+      HOST_CXX.build_static_rtl(CPPS, 'hostlib' + os.sep + pkglib,
         outdir='build',
         include_paths=INCLUDE_PATH+[FLX_RTL_DIR, FLX_HOST_CONFIG_DIR, "elk"],
         macros=MACROS+["FLX_STATIC_LINK"],
@@ -597,7 +597,7 @@ class PLUGIN(Plugin):
       kwds['libs'] = [pkglib]
 
     for src, bin in EXES:
-      HOST_CXX.build_static_program(vxqt, src, bin, **kwds)
+      HOST_CXX.build_static_program(src, bin, **kwds)
 @doc()
 
 @select(tangler('mkplugins/build_testfile.py'))
@@ -642,9 +642,7 @@ class PLUGIN(Plugin):
           log=log)
         dlibs = dlibs[0].strip() + " "
 
-        TARGET_CXX.build_shared_dll(
-            vxqt,
-            outbase,
+        TARGET_CXX.build_shared_dll(outbase,
             #outdir='build',
             include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
             optimise=optimise_c,
@@ -677,9 +675,7 @@ class PLUGIN(Plugin):
         driver = os.path.join(FLX_RTL_DIR, driver + EXT_STATIC_OBJ)
         #log.write('static driver =%s\n' % driver)
 
-        TARGET_CXX.build_felix_static(
-          vxqt,
-          outbase,
+        TARGET_CXX.build_felix_static(outbase,
           #outdir='build',
           objects=[driver],
           include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
@@ -983,25 +979,25 @@ class PLUGIN(Plugin):
     if CCS:
       # RF: THIS SHOULD BE TARGET_CC AND THE OUTPUT DIR SHOULD BE THAT OF
       # THE TARGET.
-      objects = TARGET_CC.compile_shared_rtl(vxqt, CCS, **compile_kwds)
+      objects = TARGET_CC.compile_shared_rtl(CCS, **compile_kwds)
       library = TARGET_CC.options.SHLIB_DIR+os.sep+lib+'_dynamic'
 
-      TARGET_CC.link_shared_rtl(vxqt, objects, library, **link_kwds)
+      TARGET_CC.link_shared_rtl(objects, library, **link_kwds)
 
       if EXT_DYLIB != EXT_SHLIB:
-        TARGET_CC.link_shared_dll(vxqt, objects, library,
+        TARGET_CC.link_shared_dll(objects, library,
           **link_kwds)
 
     if CPPS:
       # RF: THIS SHOULD BE TARGET_CXX AND THE OUTPUT DIR SHOULD BE THAT OF
       # THE TARGET.
-      objects = TARGET_CXX.compile_shared_rtl(vxqt, CPPS, **compile_kwds)
+      objects = TARGET_CXX.compile_shared_rtl(CPPS, **compile_kwds)
       library = TARGET_CXX.options.SHLIB_DIR+os.sep+lib+'_dynamic'
 
-      TARGET_CXX.link_shared_rtl(vxqt, objects, library, **link_kwds)
+      TARGET_CXX.link_shared_rtl(objects, library, **link_kwds)
 
       if EXT_DYLIB != EXT_SHLIB:
-        TARGET_CXX.link_shared_dll(vxqt, objects, library, **link_kwds)
+        TARGET_CXX.link_shared_dll(objects, library, **link_kwds)
 
       for x in CCS + CPPS:
         f = x + EXT_SHARED_OBJ
@@ -1038,10 +1034,10 @@ class PLUGIN(Plugin):
         }
 
     if CCS:
-      TARGET_CC.build_static_rtl(vxqt, CCS, **kwds)
+      TARGET_CC.build_static_rtl(CCS, **kwds)
 
     if CPPS:
-      TARGET_CXX.build_static_rtl(vxqt, CPPS, **kwds)
+      TARGET_CXX.build_static_rtl(CPPS, **kwds)
 
     for x in CCS + CPPS:
       f = x + EXT_STATIC_OBJ
@@ -1063,7 +1059,7 @@ class PLUGIN(Plugin):
 
     for src, outdir in DRIVERS:
       if verbose: print 'static Compiling driver object', src
-      dst = TARGET_CXX.compile_static_main(vxqt, [src],
+      dst = TARGET_CXX.compile_static_main([src],
         include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
         macros=["FLX_STATIC_LINK"],
         optimise=optimise,
@@ -1098,7 +1094,7 @@ class PLUGIN(Plugin):
       # link of driver without async support
       if verbose: print 'dynamic Compiling driver object', src
 
-      TARGET_CXX.build_shared_program(vxqt, src, bin,
+      TARGET_CXX.build_shared_program(src, bin,
           include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
           optimise=optimise,
           debug=debug,
@@ -1123,11 +1119,7 @@ class PLUGIN(Plugin):
       for lib in LIBS: libs.append(lib+"_static")
       for src,bin in EXES:
         dir = os.path.dirname(src)
-        TARGET_CXX.build_static_main(
-          vxqt,
-          src,
-          dir,
-          bin,
+        TARGET_CXX.build_static_main(src, dir, bin,
           outdir='build',
           include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
           macros=["FLX_STATIC_LINK"],
@@ -1176,7 +1168,7 @@ class PLUGIN(Plugin):
     for src,exe in flxs:
       # added 'std' here so flx_pkgconfig builds
       flxg("-Ilib --import=flx.flxh std " + src)
-      TARGET_CXX.build_felix_static(vxqt, src, exe,
+      TARGET_CXX.build_felix_static(src, exe,
         objects=[os.path.join(FLX_RTL_DIR, 'flx_run' + EXT_STATIC_OBJ)],
         include_paths=[FLX_RTL_DIR,FLX_TARGET_CONFIG_DIR],
         macros=["FLX_STATIC_LINK"],
@@ -2106,6 +2098,13 @@ except:
   sys.exit(1)
 
 execfile(os.path.join("mkplugins", "xqt.py"))
+
+# temporary hack to set up the shell
+HOST_OCAML.shell = vxqt
+HOST_CC.shell = vxqt
+HOST_CXX.shell = vxqt
+TARGET_CC.shell = vxqt
+TARGET_CXX.shell = vxqt
 
 # add the felix directory to the search paths
 os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')

@@ -4,7 +4,7 @@ execfile("config"+os.sep+"config.py")
 try:
   cload(globals(),"target_gsl")
 except:
-  HAVE_GSL=TARGET_CXX.check_header_exists(xqt,'gsl/gsl_blas.h')
+  HAVE_GSL=TARGET_CXX.check_header_exists('gsl/gsl_blas.h')
   f=cwrite('target_gsl')
   pa(f,locals(),"HAVE_GSL")
   f.close()

@@ -17,7 +17,7 @@ execfile("config"+os.sep+"config.py")
 try:
   cload(globals(),"target_gmpxx")
 except:
-  HAVE_GMPXX=TARGET_CXX.check_header_exists(xqt,'gmpxx.h')
+  HAVE_GMPXX=TARGET_CXX.check_header_exists('gmpxx.h')
   f=cwrite('target_gmpxx')
   pa(f,locals(),"HAVE_GMPXX")
   f.close()

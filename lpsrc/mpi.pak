@@ -4,7 +4,7 @@ execfile("config"+os.sep+"config.py")
 try:
   cload(globals(),"target_mpi")
 except:
-  #HAVE_MPI=TARGET_CXX.check_header_exists(xqt,'mpi.h')
+  #HAVE_MPI=TARGET_CXX.check_header_exists('mpi.h')
   # THIS ONLY WORKS ON UNIX
   print "Search for include/mpi.h"
   dir = locate_file("/include/mpi.h")

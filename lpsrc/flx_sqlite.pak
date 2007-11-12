@@ -8,7 +8,7 @@ execfile("config"+os.sep+"config.py")
 try:
   cload(globals(),"target_sqlite3")
 except:
-  HAVE_SQLITE3=TARGET_CXX.check_header_exists(xqt,'sqlite3.h')
+  HAVE_SQLITE3=TARGET_CXX.check_header_exists('sqlite3.h')
   f=cwrite('target_sqlite3')
   pa(f,locals(),"HAVE_SQLITE3")
   f.close()
