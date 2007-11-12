@@ -619,6 +619,7 @@ class PLUGIN(Plugin):
     outbase = os.path.join("build","test",infile)
     cppfilename = outbase+ ".cpp"
     resfilename = outbase+".resh"
+    incfilename = outbase+".includes"
     try:
       flxg('-Ilib --cache_dir=build/test --output_dir=build/test --import=flx.flxh std '+ FLXFLAGS + basename, log=log)
     except MakeError, e:
@@ -630,6 +631,16 @@ class PLUGIN(Plugin):
       "flx_pkgconfig --path=config --field=cflags @"+resfilename),
       log=log)
     cflags = cflags[0].strip() + " "
+
+    includes = vxqtq(os.path.join( "bin",
+      "flx_pkgconfig --path=config --field=includes @"+resfilename),
+      log=log)
+    includes = string.split(includes[0].strip())
+    f = open(incfilename,"w")
+    for i in includes: 
+        f.write("#include " + i + "\n")
+    f.close()
+
 
     #log.write('Compiling generated code of %s\n' % testfile)
     try:
@@ -3584,6 +3595,7 @@ import os
 import os.path
 import sys
 import stat
+import string
 
 @tangle("INSTALL_ROOT='"+PREFIX+"/lib/felix/felix-"+flx_version+"'")
 FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR",INSTALL_ROOT)
@@ -3636,6 +3648,7 @@ grab=1
 cpps=""
 cppos=""
 INCLUDE_DIRS=""
+INCLUDE_FILES=""
 NOSTDLIB=0
 STDOUT=""
 STDIMPORT="--import=flx.flxh"
@@ -3800,6 +3813,9 @@ CONFIG_DIR = os.path.join(FLX_INSTALL_DIR,'config')
 # find external header files
 PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+FLX_INSTALL_DIR+"/config --field=cflags "
 
+# external header files 
+PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+FLX_INSTALL_DIR+"/config --field=includes "
+
 # find external dynload libraries
 PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+FLX_INSTALL_DIR+"/config --field=provides_dlib --field=requires_dlibs "
 
@@ -3860,11 +3876,15 @@ def xqt(cmd,dflt=None):
   else: return dflt
 
 def calpackages ():
-  global INCLUDE_DIRS, DRIVER_PKG, DRIVER, LINK_STRING
+  global INCLUDE_DIRS, DRIVER_PKG, DRIVER, LINK_STRING, INCLUDE_FILES
   # find all include directories
 
   x = xqt(PKGCONFIG_CFLAGS+ " @"+path+".resh")
   INCLUDE_DIRS=INCLUDE_DIRS +" " + x
+
+  x = xqt(PKGCONFIG_INCLUDES+ " @"+path+".resh")
+  INCLUDE_FILES=INCLUDE_FILES +" " + x
+
 
   # find the driver package
   DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+path+".resh")
@@ -3891,8 +3911,16 @@ def calpackages ():
   if ECHO == 1:
     print "#RESOURCE FILE="+path+".resh"
     print "#INCLUDE_DIRS="+INCLUDE_DIRS
+    print "#INCLUDE_FILES="+INCLUDE_FILES
     print "#DRIVER="+DRIVER
     print "#LINK_STRING="+LINK_STRING
+
+def write_include_file(path):
+  includes = string.split(string.strip(INCLUDE_FILES))
+  f = open(path+".include","w")
+  for i in includes:
+    f.write("#include " + i + "\n")
+  f.close()
 
 # grab program arguments
 grab=1
@@ -3960,6 +3988,7 @@ if STATIC == 0:
     result=system(FCMD)
     if result != 0: sys.exit(0!=result)
     calpackages()
+    write_include_file(path)
     CCMD=' '.join([
       CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
       INCLUDE_DIR, INCLUDE_DIRS, MACROS,
@@ -3995,6 +4024,7 @@ else:
     result=system(FCMD)
   if result == 0:
     calpackages()
+    write_include_file(path)
     CCMD=' '.join([
       CCOBJ_STATIC_LIB,
       CCFLAGS, "-DTARGET_BUILD",
@@ -4066,6 +4096,7 @@ NOOPTIMISE=0
 
 RUNIT=1
 CCFLAGS=""
+INCLUDE_FILES=""
 FELIX=1
 LINKER_SWITCHES=""
 MACROS=""
@@ -4277,6 +4308,9 @@ fi
 # find external header files
 PKGCONFIG_CFLAGS="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=cflags "
 
+# external header files
+PKGCONFIG_INCLUDES="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=includes "
+
 # find external dynload libraries
 PKGCONFIG_DLIBS="$PKGCONFIG -r --path+=$FLX_INSTALL_DIR/config --field=provides_dlib --field=requires_dlibs "
 
@@ -4341,6 +4375,15 @@ function calpackages () {
 
   INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS @$base.resh))"
 
+  # find all include files 
+  if [ "$ECHO" = "1" ]
+  then
+    echo "$PKGCONFIG_INCLUDES @$base.resh"
+  fi
+
+  INCLUDE_FILES="$INCLUDE_FILES $($(echo $PKGCONFIG_INCLUDES @$base.resh))"
+
+
   if [ "$ECHO" = "1" ]
   then
     echo "$PKGCONFIG_DRIVER @$base.resh"
@@ -4387,10 +4430,15 @@ function calpackages () {
   then
     echo "#RESOURCE FILE=$base.resh"
     echo "#INCLUDE_DIRS=$INCLUDE_DIRS"
+    echo "#INCLUDE_FILES=$INCLUDE_FILES"
     echo "#DRIVER=$DRIVER"
     echo "#LINK_STRING=$LINK_STRING"
   fi
 
+}
+
+function write_include_file() {
+  echo "${INCLUDE_FILES:1} "| sed -e "s/\([^ ]*\) /#include &\n/g" > $1.include
 }
 
 # grab arguments
@@ -4451,6 +4499,7 @@ then
     if [ $RUNIT = 1 ]
     then
       calpackages
+      write_include_file $base
       cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
       if [ $ECHO = 1 ]; then echo $cmd; fi
       eval $cmd
@@ -4493,6 +4542,7 @@ then
   if [ $? = 0 ]
   then
     calpackages
+    write_include_file $base
     CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING "
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
