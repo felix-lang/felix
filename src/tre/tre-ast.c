@@ -1,20 +1,21 @@
 /*
   tre-ast.c - Abstract syntax tree (AST) routines
 
-  Copyright (C) 2001-2004 Ville Laurikari <vl@iki.fi>
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
@@ -29,7 +30,7 @@ tre_ast_new_node(tre_mem_t mem, tre_ast_type_t type, size_t size)
 {
   tre_ast_node_t *node;
 
-  node = (tre_ast_node_t*)tre_mem_calloc(mem, sizeof(*node));
+  node = tre_mem_calloc(mem, sizeof(*node));
   if (!node)
     return NULL;
   node->obj = tre_mem_calloc(mem, size);
@@ -51,7 +52,7 @@ tre_ast_new_literal(tre_mem_t mem, int code_min, int code_max, int position)
   node = tre_ast_new_node(mem, LITERAL, sizeof(tre_literal_t));
   if (!node)
     return NULL;
-  lit = (tre_literal_t*)node->obj;
+  lit = node->obj;
   lit->code_min = code_min;
   lit->code_max = code_max;
   lit->position = position;
@@ -61,7 +62,7 @@ tre_ast_new_literal(tre_mem_t mem, int code_min, int code_max, int position)
 
 tre_ast_node_t *
 tre_ast_new_iter(tre_mem_t mem, tre_ast_node_t *arg, int min, int max,
-                 int minimal)
+		 int minimal)
 {
   tre_ast_node_t *node;
   tre_iteration_t *iter;
@@ -69,7 +70,7 @@ tre_ast_new_iter(tre_mem_t mem, tre_ast_node_t *arg, int min, int max,
   node = tre_ast_new_node(mem, ITERATION, sizeof(tre_iteration_t));
   if (!node)
     return NULL;
-  iter = (tre_iteration_t*)node->obj;
+  iter = node->obj;
   iter->arg = arg;
   iter->min = min;
   iter->max = max;
@@ -96,7 +97,7 @@ tre_ast_new_union(tre_mem_t mem, tre_ast_node_t *left, tre_ast_node_t *right)
 
 tre_ast_node_t *
 tre_ast_new_catenation(tre_mem_t mem, tre_ast_node_t *left,
-                       tre_ast_node_t *right)
+		       tre_ast_node_t *right)
 {
   tre_ast_node_t *node;
 
@@ -127,16 +128,16 @@ tre_print_params(int *params)
     {
       DPRINT(("params ["));
       for (i = 0; i < TRE_PARAM_LAST; i++)
-        {
-          if (params[i] == TRE_PARAM_UNSET)
-            DPRINT(("unset"));
-          else if (params[i] == TRE_PARAM_DEFAULT)
-            DPRINT(("default"));
-          else
-            DPRINT(("%d", params[i]));
-          if (i < TRE_PARAM_LAST - 1)
-            DPRINT((", "));
-        }
+	{
+	  if (params[i] == TRE_PARAM_UNSET)
+	    DPRINT(("unset"));
+	  else if (params[i] == TRE_PARAM_DEFAULT)
+	    DPRINT(("default"));
+	  else
+	    DPRINT(("%d", params[i]));
+	  if (i < TRE_PARAM_LAST - 1)
+	    DPRINT((", "));
+	}
       DPRINT(("]"));
     }
 }
@@ -158,47 +159,47 @@ tre_do_print(FILE *stream, tre_ast_node_t *ast, int indent)
       code_max = lit->code_max;
       pos = lit->position;
       if (IS_EMPTY(lit))
-        {
-          fprintf(stream, "literal empty\n");
-        }
+	{
+	  fprintf(stream, "literal empty\n");
+	}
       else if (IS_ASSERTION(lit))
-        {
-          int i;
-          char *assertions[] = { "bol", "eol", "ctype", "!ctype",
-                                 "bow", "eow", "wb", "!wb" };
-          if (code_max >= ASSERT_LAST << 1)
-            assert(0);
-          fprintf(stream, "assertions: ");
-          for (i = 0; (1 << i) <= ASSERT_LAST; i++)
-            if (code_max & (1 << i))
-              fprintf(stream, "%s ", assertions[i]);
-          fprintf(stream, "\n");
-        }
+	{
+	  int i;
+	  char *assertions[] = { "bol", "eol", "ctype", "!ctype",
+				 "bow", "eow", "wb", "!wb" };
+	  if (code_max >= ASSERT_LAST << 1)
+	    assert(0);
+	  fprintf(stream, "assertions: ");
+	  for (i = 0; (1 << i) <= ASSERT_LAST; i++)
+	    if (code_max & (1 << i))
+	      fprintf(stream, "%s ", assertions[i]);
+	  fprintf(stream, "\n");
+	}
       else if (IS_TAG(lit))
-        {
-          fprintf(stream, "tag %d\n", code_max);
-        }
+	{
+	  fprintf(stream, "tag %d\n", code_max);
+	}
       else if (IS_BACKREF(lit))
-        {
-          fprintf(stream, "backref %d, pos %d\n", code_max, pos);
-        }
+	{
+	  fprintf(stream, "backref %d, pos %d\n", code_max, pos);
+	}
       else if (IS_PARAMETER(lit))
-        {
-          tre_print_params(lit->u.params);
-          fprintf(stream, "\n");
-        }
+	{
+	  tre_print_params(lit->u.params);
+	  fprintf(stream, "\n");
+	}
       else
-        {
-          fprintf(stream, "literal (%c, %c) (%d, %d), pos %d, sub %d, "
-                  "%d tags\n", code_min, code_max, code_min, code_max, pos,
-                  ast->submatch_id, num_tags);
-        }
+	{
+	  fprintf(stream, "literal (%c, %c) (%d, %d), pos %d, sub %d, "
+		  "%d tags\n", code_min, code_max, code_min, code_max, pos,
+		  ast->submatch_id, num_tags);
+	}
       break;
     case ITERATION:
       iter = ast->obj;
       fprintf(stream, "iteration {%d, %d}, sub %d, %d tags, %s\n",
-              iter->min, iter->max, ast->submatch_id, num_tags,
-              iter->minimal ? "minimal" : "greedy");
+	      iter->min, iter->max, ast->submatch_id, num_tags,
+	      iter->minimal ? "minimal" : "greedy");
       tre_do_print(stream, iter->arg, indent + 2);
       break;
     case UNION:
@@ -208,7 +209,7 @@ tre_do_print(FILE *stream, tre_ast_node_t *ast, int indent)
       break;
     case CATENATION:
       fprintf(stream, "catenation, sub %d, %d tags\n", ast->submatch_id,
-              num_tags);
+	      num_tags);
       tre_do_print(stream, ((tre_catenation_t *)ast->obj)->left, indent + 2);
       tre_do_print(stream, ((tre_catenation_t *)ast->obj)->right, indent + 2);
       break;

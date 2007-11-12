@@ -1,4 +1,3 @@
-
 /* RF: need this for TRE_EXTERN */
 #include "flx_target_tre_config.h"
 
@@ -18,7 +17,7 @@
 #define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <wchar.h> header file. */
-//#define HAVE_WCHAR_H 0
+/* #define HAVE_WCHAR_H 0 */
 
 /* Define if you want to enable approximate matching functionality. */
 #define TRE_APPROX 1
@@ -33,10 +32,10 @@
 /* #undef TRE_USE_SYSTEM_REGEX_H */
 
 /* Define to enable wide character (wchar_t) support. */
-//#define TRE_WCHAR 0
+/* #define TRE_WCHAR 0 */
 
 /* TRE version string. */
-#define TRE_VERSION "0.7.2"
+#define TRE_VERSION "0.7.5"
 
 /* TRE version level 1. */
 #define TRE_VERSION_1 0
@@ -45,4 +44,4 @@
 #define TRE_VERSION_2 7
 
 /* TRE version level 3. */
-#define TRE_VERSION_3 2
+#define TRE_VERSION_3 5

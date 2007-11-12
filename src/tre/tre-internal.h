@@ -1,20 +1,21 @@
 /*
   tre-internal.h - TRE internal definitions
 
-  Copyright (C) 2001-2004 Ville Laurikari <vl@iki.fi>.
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>.
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
@@ -39,7 +40,7 @@
 #define DPRINT(msg) do { } while(0)
 #endif /* !TRE_DEBUG */
 
-#define elementsof(x)   ( sizeof(x) / sizeof(x[0]) )
+#define elementsof(x)	( sizeof(x) / sizeof(x[0]) )
 
 #ifdef HAVE_MBRTOWC
 #define tre_mbrtowc(pwc, s, n, ps) (mbrtowc((pwc), (s), (n), (ps)))
@@ -114,7 +115,7 @@ typedef short tre_cint_t;
 
 #define tre_tolower(c) (tre_cint_t)(tolower(c))
 #define tre_toupper(c) (tre_cint_t)(toupper(c))
-#define tre_strlen  strlen
+#define tre_strlen(s)  (strlen((const char*)s))
 
 #endif /* !TRE_WCHAR */
 
@@ -175,27 +176,27 @@ struct tnfa_transition {
   int assertions;
   /* Assertion parameters. */
   union {
-    /* Character klass assertion. */
-    tre_ctype_t klass;
+    /* Character class assertion. */
+    tre_ctype_t class;
     /* Back reference assertion. */
     int backref;
   } u;
-  /* Negative character klass assertions. */
-  tre_ctype_t *neg_klasses;
+  /* Negative character class assertions. */
+  tre_ctype_t *neg_classes;
 };
 
 
 /* Assertions. */
-#define ASSERT_AT_BOL             1   /* Beginning of line. */
-#define ASSERT_AT_EOL             2   /* End of line. */
-#define ASSERT_CHAR_CLASS         4   /* Character klass in `klass'. */
-#define ASSERT_CHAR_CLASS_NEG     8   /* Character klasses in `neg_klasses'. */
-#define ASSERT_AT_BOW            16   /* Beginning of word. */
-#define ASSERT_AT_EOW            32   /* End of word. */
-#define ASSERT_AT_WB             64   /* Word boundary. */
-#define ASSERT_AT_WB_NEG        128   /* Not a word boundary. */
-#define ASSERT_BACKREF          256   /* A back reference in `backref'. */
-#define ASSERT_LAST             256
+#define ASSERT_AT_BOL		  1   /* Beginning of line. */
+#define ASSERT_AT_EOL		  2   /* End of line. */
+#define ASSERT_CHAR_CLASS	  4   /* Character class in `class'. */
+#define ASSERT_CHAR_CLASS_NEG	  8   /* Character classes in `neg_classes'. */
+#define ASSERT_AT_BOW		 16   /* Beginning of word. */
+#define ASSERT_AT_EOW		 32   /* End of word. */
+#define ASSERT_AT_WB		 64   /* Word boundary. */
+#define ASSERT_AT_WB_NEG	128   /* Not a word boundary. */
+#define ASSERT_BACKREF		256   /* A back reference in `backref'. */
+#define ASSERT_LAST		256
 
 /* Tag directions. */
 typedef enum {
@@ -205,16 +206,16 @@ typedef enum {
 
 /* Parameters that can be changed dynamically while matching. */
 typedef enum {
-  TRE_PARAM_COST_INS        = 0,
-  TRE_PARAM_COST_DEL        = 1,
-  TRE_PARAM_COST_SUBST      = 2,
-  TRE_PARAM_COST_MAX        = 3,
-  TRE_PARAM_MAX_INS         = 4,
-  TRE_PARAM_MAX_DEL         = 5,
-  TRE_PARAM_MAX_SUBST       = 6,
-  TRE_PARAM_MAX_ERR         = 7,
-  TRE_PARAM_DEPTH           = 8,
-  TRE_PARAM_LAST            = 9
+  TRE_PARAM_COST_INS	    = 0,
+  TRE_PARAM_COST_DEL	    = 1,
+  TRE_PARAM_COST_SUBST	    = 2,
+  TRE_PARAM_COST_MAX	    = 3,
+  TRE_PARAM_MAX_INS	    = 4,
+  TRE_PARAM_MAX_DEL	    = 5,
+  TRE_PARAM_MAX_SUBST	    = 6,
+  TRE_PARAM_MAX_ERR	    = 7,
+  TRE_PARAM_DEPTH	    = 8,
+  TRE_PARAM_LAST	    = 9
 } tre_param_t;
 
 /* Unset matching parameter */
@@ -269,29 +270,29 @@ tre_free(regex_t *preg);
 
 void
 tre_fill_pmatch(size_t nmatch, regmatch_t pmatch[], int cflags,
-                const tre_tnfa_t *tnfa, int *tags, int match_eo);
+		const tre_tnfa_t *tnfa, int *tags, int match_eo);
 
 reg_errcode_t
 tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
-                      tre_str_type_t type, int *match_tags, int eflags,
-                      int *match_end_ofs);
+		      tre_str_type_t type, int *match_tags, int eflags,
+		      int *match_end_ofs);
 
 reg_errcode_t
 tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
-                      tre_str_type_t type, int *match_tags, int eflags,
-                      int *match_end_ofs);
+		      tre_str_type_t type, int *match_tags, int eflags,
+		      int *match_end_ofs);
 
 reg_errcode_t
 tre_tnfa_run_backtrack(const tre_tnfa_t *tnfa, const void *string,
-                       int len, tre_str_type_t type, int *match_tags,
-                       int eflags, int *match_end_ofs);
+		       int len, tre_str_type_t type, int *match_tags,
+		       int eflags, int *match_end_ofs);
 
 #ifdef TRE_APPROX
 reg_errcode_t
 tre_tnfa_run_approx(const tre_tnfa_t *tnfa, const void *string, int len,
-                    tre_str_type_t type, int *match_tags,
-                    regamatch_t *match, regaparams_t params,
-                    int eflags, int *match_end_ofs);
+		    tre_str_type_t type, int *match_tags,
+		    regamatch_t *match, regaparams_t params,
+		    int eflags, int *match_end_ofs);
 #endif /* TRE_APPROX */
 
 #endif /* TRE_INTERNAL_H */

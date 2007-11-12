@@ -1,20 +1,21 @@
 /*
   tre-mem.c - TRE memory allocator
 
-  Copyright (C) 2001-2004 Ville Laurikari <vl@iki.fi>
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
@@ -73,7 +74,7 @@ tre_mem_destroy(tre_mem_t mem)
    allocated block or NULL if an underlying malloc() failed. */
 void *
 tre_mem_alloc_impl(tre_mem_t mem, int provided, void *provided_block,
-                   int zero, size_t size)
+		   int zero, size_t size)
 {
   void *ptr;
 
@@ -88,11 +89,11 @@ tre_mem_alloc_impl(tre_mem_t mem, int provided, void *provided_block,
     {
       ptr = xmalloc(1);
       if (ptr == NULL)
-        {
-          DPRINT(("tre_mem_alloc: xmalloc forced failure\n"));
-          mem->failed = 1;
-          return NULL;
-        }
+	{
+	  DPRINT(("tre_mem_alloc: xmalloc forced failure\n"));
+	  mem->failed = 1;
+	  return NULL;
+	}
       xfree(ptr);
     }
 #endif /* MALLOC_DEBUGGING */
@@ -100,51 +101,51 @@ tre_mem_alloc_impl(tre_mem_t mem, int provided, void *provided_block,
   if (mem->n < size)
     {
       /* We need more memory than is available in the current block.
-         Allocate a new block. */
+	 Allocate a new block. */
       tre_list_t *l;
       if (provided)
-        {
-          DPRINT(("tre_mem_alloc: using provided block\n"));
-          if (provided_block == NULL)
-            {
-              DPRINT(("tre_mem_alloc: provided block was NULL\n"));
-              mem->failed = 1;
-              return NULL;
-            }
-          mem->ptr = (char*)provided_block;
-          mem->n = TRE_MEM_BLOCK_SIZE;
-        }
+	{
+	  DPRINT(("tre_mem_alloc: using provided block\n"));
+	  if (provided_block == NULL)
+	    {
+	      DPRINT(("tre_mem_alloc: provided block was NULL\n"));
+	      mem->failed = 1;
+	      return NULL;
+	    }
+	  mem->ptr = provided_block;
+	  mem->n = TRE_MEM_BLOCK_SIZE;
+	}
       else
-        {
-          int block_size;
-          if (size * 8 > TRE_MEM_BLOCK_SIZE)
-            block_size = size * 8;
-          else
-            block_size = TRE_MEM_BLOCK_SIZE;
-          DPRINT(("tre_mem_alloc: allocating new %d byte block\n",
-                  block_size));
-          l = (tre_list_t*)xmalloc(sizeof(*l));
-          if (l == NULL)
-            {
-              mem->failed = 1;
-              return NULL;
-            }
-          l->data = xmalloc(block_size);
-          if (l->data == NULL)
-            {
-              xfree(l);
-              mem->failed = 1;
-              return NULL;
-            }
-          l->next = NULL;
-          if (mem->current != NULL)
-            mem->current->next = l;
-          if (mem->blocks == NULL)
-            mem->blocks = l;
-          mem->current = l;
-          mem->ptr = (char*)l->data;
-          mem->n = block_size;
-        }
+	{
+	  int block_size;
+	  if (size * 8 > TRE_MEM_BLOCK_SIZE)
+	    block_size = size * 8;
+	  else
+	    block_size = TRE_MEM_BLOCK_SIZE;
+	  DPRINT(("tre_mem_alloc: allocating new %d byte block\n",
+		  block_size));
+	  l = xmalloc(sizeof(*l));
+	  if (l == NULL)
+	    {
+	      mem->failed = 1;
+	      return NULL;
+	    }
+	  l->data = xmalloc(block_size);
+	  if (l->data == NULL)
+	    {
+	      xfree(l);
+	      mem->failed = 1;
+	      return NULL;
+	    }
+	  l->next = NULL;
+	  if (mem->current != NULL)
+	    mem->current->next = l;
+	  if (mem->blocks == NULL)
+	    mem->blocks = l;
+	  mem->current = l;
+	  mem->ptr = l->data;
+	  mem->n = block_size;
+	}
     }
 
   /* Make sure the next pointer will be aligned. */

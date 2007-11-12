@@ -1,20 +1,21 @@
 /*
-  xmalloc.c - Simple malloc debugger library implementation
+  xmalloc.c - Simple malloc debugging library implementation
 
-  Copyright (C) 2001-2003 Ville Laurikari <vl@iki.fi>.
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>.
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
@@ -30,6 +31,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+
 /*
   Internal stuff.
 */
@@ -62,17 +64,17 @@ hash_table_new(void)
 {
   hashTable *tbl;
 
-  tbl = (hashTable*)malloc(sizeof(*tbl));
+  tbl = malloc(sizeof(*tbl));
 
   if (tbl != NULL)
     {
-      tbl->table = (hashTableItem**)calloc(TABLE_SIZE, sizeof(*tbl->table));
+      tbl->table = calloc(TABLE_SIZE, sizeof(*tbl->table));
 
       if (tbl->table == NULL)
-        {
-          free(tbl);
-          return NULL;
-        }
+	{
+	  free(tbl);
+	  return NULL;
+	}
     }
 
   return tbl;
@@ -89,7 +91,7 @@ hash_void_ptr(void *ptr)
   hash = 0;
   for (i = 0; i < sizeof(ptr)*8 / TABLE_BITS; i++)
     {
-      hash ^= (FLX_RAWADDRESS)ptr >> i*8;
+      hash ^= (long)ptr >> i*8;
       hash += i * 17;
       hash &= TABLE_MASK;
     }
@@ -98,10 +100,10 @@ hash_void_ptr(void *ptr)
 
 static void
 hash_table_add(hashTable *tbl, void *ptr, int bytes,
-               const char *file, int line, const char *func)
+	       const char *file, int line, const char *func)
 {
   int i;
-  hashTableItem *item, *xnew;
+  hashTableItem *item, *new;
 
   i = hash_void_ptr(ptr);
 
@@ -110,18 +112,18 @@ hash_table_add(hashTable *tbl, void *ptr, int bytes,
     while (item->next != NULL)
       item = item->next;
 
-  xnew = (hashTableItem*)malloc(sizeof(*xnew));
-  assert(xnew != NULL);
-  xnew->ptr = ptr;
-  xnew->bytes = bytes;
-  xnew->file = file;
-  xnew->line = line;
-  xnew->func = func;
-  xnew->next = NULL;
+  new = malloc(sizeof(*new));
+  assert(new != NULL);
+  new->ptr = ptr;
+  new->bytes = bytes;
+  new->file = file;
+  new->line = line;
+  new->func = func;
+  new->next = NULL;
   if (item != NULL)
-    item->next = xnew;
+    item->next = new;
   else
-    tbl->table[i] = xnew;
+    tbl->table[i] = new;
 
   xmalloc_current += bytes;
   if (xmalloc_current > xmalloc_peak)
@@ -191,6 +193,7 @@ xmalloc_init(void)
 }
 
 
+
 /*
   Public API.
 */
@@ -216,26 +219,26 @@ xmalloc_dump_leaks(void)
     {
       item = xmalloc_table->table[i];
       while (item != NULL)
-        {
-          printf("%s:%d: %s: %d bytes at %p not freed\n",
-                 item->file, item->line, item->func, item->bytes, item->ptr);
-          num_leaks++;
-          leaked_bytes += item->bytes;
-          item = item->next;
-        }
+	{
+	  printf("%s:%d: %s: %d bytes at %p not freed\n",
+		 item->file, item->line, item->func, item->bytes, item->ptr);
+	  num_leaks++;
+	  leaked_bytes += item->bytes;
+	  item = item->next;
+	}
     }
   if (num_leaks == 0)
     printf("No memory leaks.\n");
   else
     printf("%d unfreed memory chuncks, total %d unfreed bytes.\n",
-           num_leaks, leaked_bytes);
+	   num_leaks, leaked_bytes);
   printf("Peak memory consumption %d bytes (%.1f kB, %.1f MB) in %d blocks ",
-         xmalloc_peak, (double)xmalloc_peak / 1024,
-         (double)xmalloc_peak / (1024*1024), xmalloc_peak_blocks);
+	 xmalloc_peak, (double)xmalloc_peak / 1024,
+	 (double)xmalloc_peak / (1024*1024), xmalloc_peak_blocks);
   printf("(average ");
   if (xmalloc_peak_blocks)
     printf("%d", ((xmalloc_peak + xmalloc_peak_blocks / 2)
-                  / xmalloc_peak_blocks));
+		  / xmalloc_peak_blocks));
   else
     printf("N/A");
   printf(" bytes per block).\n");
@@ -262,7 +265,7 @@ xmalloc_impl(size_t size, const char *file, int line, const char *func)
   else if (xmalloc_fail_after == -2)
     {
       printf("xmalloc: called after failure from %s:%d: %s\n",
-             file, line, func);
+	     file, line, func);
       assert(0);
     }
   else if (xmalloc_fail_after > 0)
@@ -276,7 +279,7 @@ xmalloc_impl(size_t size, const char *file, int line, const char *func)
 
 void *
 xcalloc_impl(size_t nmemb, size_t size, const char *file, int line,
-             const char *func)
+	     const char *func)
 {
   void *ptr;
 
@@ -294,7 +297,7 @@ xcalloc_impl(size_t nmemb, size_t size, const char *file, int line,
   else if (xmalloc_fail_after == -2)
     {
       printf("xcalloc: called after failure from %s:%d: %s\n",
-             file, line, func);
+	     file, line, func);
       assert(0);
     }
   else if (xmalloc_fail_after > 0)
@@ -318,7 +321,7 @@ xfree_impl(void *ptr, const char *file, int line, const char *func)
 
 void *
 xrealloc_impl(void *ptr, size_t new_size, const char *file, int line,
-              const char *func)
+	      const char *func)
 {
   void *new_ptr;
 
@@ -334,7 +337,7 @@ xrealloc_impl(void *ptr, size_t new_size, const char *file, int line,
   else if (xmalloc_fail_after == -2)
     {
       printf("xrealloc: called after failure from %s:%d: %s\n",
-             file, line, func);
+	     file, line, func);
       assert(0);
     }
   else if (xmalloc_fail_after > 0)
@@ -348,3 +351,7 @@ xrealloc_impl(void *ptr, size_t new_size, const char *file, int line,
     }
   return new_ptr;
 }
+
+
+
+/* EOF */

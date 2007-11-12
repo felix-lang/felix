@@ -1,27 +1,28 @@
 /*
   tre-match-parallel.c - TRE parallel regex matching engine
 
-  Copyright (C) 2001-2004 Ville Laurikari <vl@iki.fi>.
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>.
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
 /*
   This algorithm searches for matches basically by reading characters
-  in the searched string one by one, starting at the beginning.  All
-  matching paths in the TNFA are traversed in parallel.  When two or
+  in the searched string one by one, starting at the beginning.	 All
+  matching paths in the TNFA are traversed in parallel.	 When two or
   more paths reach the same state, exactly one is chosen according to
   tag ordering rules; if returning submatches is not required it does
   not matter which path is chosen.
@@ -38,7 +39,7 @@
 #include "flx_target_tre_config.h"
 
 #ifdef TRE_USE_ALLOCA
-/* AIX requires this to be the first thing in the file.  */
+/* AIX requires this to be the first thing in the file.	 */
 #ifndef __GNUC__
 # if HAVE_ALLOCA_H
 #  include <alloca.h>
@@ -98,15 +99,15 @@ tre_print_reach(const tre_tnfa_t *tnfa, tre_tnfa_reach_t *reach, int num_tags)
     {
       DPRINT((" %p", (void *)reach->state));
       if (num_tags > 0)
-        {
-          DPRINT(("/"));
-          for (i = 0; i < num_tags; i++)
-            {
-              DPRINT(("%d:%d", i, reach->tags[i]));
-              if (i < (num_tags-1))
-                DPRINT((","));
-            }
-        }
+	{
+	  DPRINT(("/"));
+	  for (i = 0; i < num_tags; i++)
+	    {
+	      DPRINT(("%d:%d", i, reach->tags[i]));
+	      if (i < (num_tags-1))
+		DPRINT((","));
+	    }
+	}
       reach++;
     }
   DPRINT(("\n"));
@@ -116,16 +117,16 @@ tre_print_reach(const tre_tnfa_t *tnfa, tre_tnfa_reach_t *reach, int num_tags)
 
 reg_errcode_t
 tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
-                      tre_str_type_t type, int *match_tags, int eflags,
-                      int *match_end_ofs)
+		      tre_str_type_t type, int *match_tags, int eflags,
+		      int *match_end_ofs)
 {
   /* State variables required by GET_NEXT_WCHAR. */
   tre_char_t prev_c = 0, next_c = 0;
-  const char *str_byte = (const char*)string;
+  const char *str_byte = string;
   int pos = -1;
   unsigned int pos_add_next = 1;
 #ifdef TRE_WCHAR
-  const wchar_t *str_wide = (const wchar_t*)string;
+  const wchar_t *str_wide = string;
 #ifdef TRE_MBSTATE
   mbstate_t mbstate;
 #endif /* TRE_MBSTATE */
@@ -142,7 +143,7 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
   int *tag_i;
   int num_tags, i;
 
-  int match_eo = -1;       /* end offset of match (-1 if no match found yet) */
+  int match_eo = -1;	   /* end offset of match (-1 if no match found yet) */
   int new_match = 0;
   int *tmp_tags = NULL;
   int *tmp_iptr;
@@ -158,7 +159,7 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
   else
     num_tags = tnfa->num_tags;
 
-  /* Allocate memory for temporary data required for matching.  This needs to
+  /* Allocate memory for temporary data required for matching.	This needs to
      be done for every matching operation to be thread safe.  This allocates
      everything in a single large block from the stack frame using alloca()
      or with malloc() if alloca is unavailable. */
@@ -176,33 +177,33 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
 
     /* Allocate the memory. */
 #ifdef TRE_USE_ALLOCA
-    buf = (char*)alloca(total_bytes);
+    buf = alloca(total_bytes);
 #else /* !TRE_USE_ALLOCA */
-    buf = (char*)xmalloc(total_bytes);
+    buf = xmalloc(total_bytes);
 #endif /* !TRE_USE_ALLOCA */
     if (buf == NULL)
       return REG_ESPACE;
     memset(buf, 0, total_bytes);
 
     /* Get the various pointers within tmp_buf (properly aligned). */
-    tmp_tags = (int*)(void *)buf;
+    tmp_tags = (void *)buf;
     tmp_buf = buf + tbytes;
     tmp_buf += ALIGN(tmp_buf, long);
-    reach_next = (tre_tnfa_reach_t*)(void *)tmp_buf;
+    reach_next = (void *)tmp_buf;
     tmp_buf += rbytes;
     tmp_buf += ALIGN(tmp_buf, long);
-    reach = (tre_tnfa_reach_t*)(void *)tmp_buf;
+    reach = (void *)tmp_buf;
     tmp_buf += rbytes;
     tmp_buf += ALIGN(tmp_buf, long);
-    reach_pos = (tre_reach_pos_t*)(void *)tmp_buf;
+    reach_pos = (void *)tmp_buf;
     tmp_buf += pbytes;
     tmp_buf += ALIGN(tmp_buf, long);
     for (i = 0; i < tnfa->num_states; i++)
       {
-        reach[i].tags = (int*)(void *)tmp_buf;
-        tmp_buf += xbytes;
-        reach_next[i].tags = (int*)(void *)tmp_buf;
-        tmp_buf += xbytes;
+	reach[i].tags = (void *)tmp_buf;
+	tmp_buf += xbytes;
+	reach_next[i].tags = (void *)tmp_buf;
+	tmp_buf += xbytes;
       }
   }
 
@@ -216,24 +217,24 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
       int first = tnfa->first_char;
 
       if (len >= 0)
-        str_byte = (const char*)memchr(orig_str, first, len);
+	str_byte = memchr(orig_str, first, len);
       else
-        str_byte = strchr(orig_str, first);
+	str_byte = strchr(orig_str, first);
       if (str_byte == NULL)
-        {
+	{
 #ifndef TRE_USE_ALLOCA
-          if (buf)
-            xfree(buf);
+	  if (buf)
+	    xfree(buf);
 #endif /* !TRE_USE_ALLOCA */
-          return REG_NOMATCH;
-        }
-      DPRINT(("skipped %d chars\n", str_byte - orig_str));
+	  return REG_NOMATCH;
+	}
+      DPRINT(("skipped %lu chars\n", (unsigned long)(str_byte - orig_str)));
       if (str_byte >= orig_str + 1)
-        prev_c = (unsigned char)*(str_byte - 1);
+	prev_c = (unsigned char)*(str_byte - 1);
       next_c = (unsigned char)*str_byte;
       pos = str_byte - orig_str;
       if (len < 0 || pos < len)
-        str_byte++;
+	str_byte++;
     }
   else
     {
@@ -249,28 +250,28 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
       char *chars = tnfa->firstpos_chars;
 
       if (len < 0)
-        {
-          const char *orig_str = str_byte;
-          /* XXX - use strpbrk() and wcspbrk() because they might be
-             optimized for the target architecture.  Try also strcspn()
-             and wcscspn() and compare the speeds. */
-          while (next_c != L'\0' && !chars[next_c])
-            {
-              next_c = *str_byte++;
-            }
-          prev_c = *(str_byte - 2);
-          pos += str_byte - orig_str;
-          DPRINT(("skipped %d chars\n", str_byte - orig_str));
-        }
+	{
+	  const char *orig_str = str_byte;
+	  /* XXX - use strpbrk() and wcspbrk() because they might be
+	     optimized for the target architecture.  Try also strcspn()
+	     and wcscspn() and compare the speeds. */
+	  while (next_c != L'\0' && !chars[next_c])
+	    {
+	      next_c = *str_byte++;
+	    }
+	  prev_c = *(str_byte - 2);
+	  pos += str_byte - orig_str;
+	  DPRINT(("skipped %d chars\n", str_byte - orig_str));
+	}
       else
-        {
-          while (pos <= len && !chars[next_c])
-            {
-              prev_c = next_c;
-              next_c = (unsigned char)(*str_byte++);
-              pos++;
-            }
-        }
+	{
+	  while (pos <= len && !chars[next_c])
+	    {
+	      prev_c = next_c;
+	      next_c = (unsigned char)(*str_byte++);
+	      pos++;
+	    }
+	}
     }
 #endif
 
@@ -283,73 +284,73 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
     {
       /* If no match found yet, add the initial states to `reach_next'. */
       if (match_eo < 0)
-        {
-          DPRINT((" init >"));
-          trans_i = tnfa->initial;
-          while (trans_i->state != NULL)
-            {
-              if (reach_pos[trans_i->state_id].pos < pos)
-                {
-                  if (trans_i->assertions
-                      && CHECK_ASSERTIONS(trans_i->assertions))
-                    {
-                      DPRINT(("assertion failed\n"));
-                      trans_i++;
-                      continue;
-                    }
+	{
+	  DPRINT((" init >"));
+	  trans_i = tnfa->initial;
+	  while (trans_i->state != NULL)
+	    {
+	      if (reach_pos[trans_i->state_id].pos < pos)
+		{
+		  if (trans_i->assertions
+		      && CHECK_ASSERTIONS(trans_i->assertions))
+		    {
+		      DPRINT(("assertion failed\n"));
+		      trans_i++;
+		      continue;
+		    }
 
-                  DPRINT((" %p", (void *)trans_i->state));
-                  reach_next_i->state = trans_i->state;
-                  for (i = 0; i < num_tags; i++)
-                    reach_next_i->tags[i] = -1;
-                  tag_i = trans_i->tags;
-                  if (tag_i)
-                    while (*tag_i >= 0)
-                      {
-                        if (*tag_i < num_tags)
-                          reach_next_i->tags[*tag_i] = pos;
-                        tag_i++;
-                      }
-                  if (reach_next_i->state == tnfa->final)
-                    {
-                      DPRINT(("  found empty match\n"));
-                      match_eo = pos;
-                      new_match = 1;
-                      for (i = 0; i < num_tags; i++)
-                        match_tags[i] = reach_next_i->tags[i];
-                    }
-                  reach_pos[trans_i->state_id].pos = pos;
-                  reach_pos[trans_i->state_id].tags = &reach_next_i->tags;
-                  reach_next_i++;
-                }
-              trans_i++;
-            }
-          DPRINT(("\n"));
-          reach_next_i->state = NULL;
-        }
+		  DPRINT((" %p", (void *)trans_i->state));
+		  reach_next_i->state = trans_i->state;
+		  for (i = 0; i < num_tags; i++)
+		    reach_next_i->tags[i] = -1;
+		  tag_i = trans_i->tags;
+		  if (tag_i)
+		    while (*tag_i >= 0)
+		      {
+			if (*tag_i < num_tags)
+			  reach_next_i->tags[*tag_i] = pos;
+			tag_i++;
+		      }
+		  if (reach_next_i->state == tnfa->final)
+		    {
+		      DPRINT(("	 found empty match\n"));
+		      match_eo = pos;
+		      new_match = 1;
+		      for (i = 0; i < num_tags; i++)
+			match_tags[i] = reach_next_i->tags[i];
+		    }
+		  reach_pos[trans_i->state_id].pos = pos;
+		  reach_pos[trans_i->state_id].tags = &reach_next_i->tags;
+		  reach_next_i++;
+		}
+	      trans_i++;
+	    }
+	  DPRINT(("\n"));
+	  reach_next_i->state = NULL;
+	}
       else
-        {
-          if (num_tags == 0 || reach_next_i == reach_next)
-            /* We have found a match. */
-            break;
-        }
+	{
+	  if (num_tags == 0 || reach_next_i == reach_next)
+	    /* We have found a match. */
+	    break;
+	}
 
       /* Check for end of string. */
       if (len < 0)
-        {
-          if (type == STR_USER)
-            {
-              if (str_user_end)
-                break;
-            }
-          else if (next_c == L'\0')
-            break;
-        }
+	{
+	  if (type == STR_USER)
+	    {
+	      if (str_user_end)
+		break;
+	    }
+	  else if (next_c == L'\0')
+	    break;
+	}
       else
-        {
-          if (pos >= len)
-            break;
-        }
+	{
+	  if (pos >= len)
+	    break;
+	}
 
       GET_NEXT_WCHAR();
 
@@ -366,150 +367,150 @@ tre_tnfa_run_parallel(const tre_tnfa_t *tnfa, const void *string, int len,
       reach_next = reach_i;
 
       /* For each state in `reach', weed out states that don't fulfill the
-         minimal matching conditions. */
+	 minimal matching conditions. */
       if (tnfa->num_minimals && new_match)
-        {
-          new_match = 0;
-          reach_next_i = reach_next;
-          for (reach_i = reach; reach_i->state; reach_i++)
-            {
-              int i;
-              int skip = 0;
-              for (i = 0; tnfa->minimal_tags[i] >= 0; i += 2)
-                {
-                  int end = tnfa->minimal_tags[i];
-                  int start = tnfa->minimal_tags[i + 1];
-                  DPRINT(("  Minimal start %d, end %d\n", start, end));
-                  if (end >= num_tags)
-                    {
-                      DPRINT(("  Throwing %p out.\n", reach_i->state));
-                      skip = 1;
-                      break;
-                    }
-                  else if (reach_i->tags[start] == match_tags[start]
-                           && reach_i->tags[end] < match_tags[end])
-                    {
-                      DPRINT(("  Throwing %p out because t%d < %d\n",
-                              reach_i->state, end, match_tags[end]));
-                      skip = 1;
-                      break;
-                    }
-                }
-              if (!skip)
-                {
-                  int *tmp_iptr;
-                  reach_next_i->state = reach_i->state;
-                  tmp_iptr = reach_next_i->tags;
-                  reach_next_i->tags = reach_i->tags;
-                  reach_i->tags = tmp_iptr;
-                  reach_next_i++;
-                }
-            }
-          reach_next_i->state = NULL;
+	{
+	  new_match = 0;
+	  reach_next_i = reach_next;
+	  for (reach_i = reach; reach_i->state; reach_i++)
+	    {
+	      int i;
+	      int skip = 0;
+	      for (i = 0; tnfa->minimal_tags[i] >= 0; i += 2)
+		{
+		  int end = tnfa->minimal_tags[i];
+		  int start = tnfa->minimal_tags[i + 1];
+		  DPRINT(("  Minimal start %d, end %d\n", start, end));
+		  if (end >= num_tags)
+		    {
+		      DPRINT(("	 Throwing %p out.\n", reach_i->state));
+		      skip = 1;
+		      break;
+		    }
+		  else if (reach_i->tags[start] == match_tags[start]
+			   && reach_i->tags[end] < match_tags[end])
+		    {
+		      DPRINT(("	 Throwing %p out because t%d < %d\n",
+			      reach_i->state, end, match_tags[end]));
+		      skip = 1;
+		      break;
+		    }
+		}
+	      if (!skip)
+		{
+		  int *tmp_iptr;
+		  reach_next_i->state = reach_i->state;
+		  tmp_iptr = reach_next_i->tags;
+		  reach_next_i->tags = reach_i->tags;
+		  reach_i->tags = tmp_iptr;
+		  reach_next_i++;
+		}
+	    }
+	  reach_next_i->state = NULL;
 
-          /* Swap `reach' and `reach_next'. */
-          reach_i = reach;
-          reach = reach_next;
-          reach_next = reach_i;
-        }
+	  /* Swap `reach' and `reach_next'. */
+	  reach_i = reach;
+	  reach = reach_next;
+	  reach_next = reach_i;
+	}
 
       /* For each state in `reach' see if there is a transition leaving with
-         the current input symbol to a state not yet in `reach_next', and
-         add the destination states to `reach_next'. */
+	 the current input symbol to a state not yet in `reach_next', and
+	 add the destination states to `reach_next'. */
       reach_next_i = reach_next;
       for (reach_i = reach; reach_i->state; reach_i++)
-        {
-          for (trans_i = reach_i->state; trans_i->state; trans_i++)
-            {
-              /* Does this transition match the input symbol? */
-              if (trans_i->code_min <= prev_c &&
-                  trans_i->code_max >= prev_c)
-                {
-                  if (trans_i->assertions
-                      && (CHECK_ASSERTIONS(trans_i->assertions)
-                          /* Handle character klass transitions. */
-                          || ((trans_i->assertions & ASSERT_CHAR_CLASS)
-                              && !(tnfa->cflags & REG_ICASE)
-                              && !tre_isctype((tre_cint_t)prev_c,
-                                              trans_i->u.klass))
-                          || ((trans_i->assertions & ASSERT_CHAR_CLASS)
-                              && (tnfa->cflags & REG_ICASE)
-                              && (!tre_isctype(tre_tolower((tre_cint_t)prev_c),
-                                               trans_i->u.klass)
-                                  && !tre_isctype(tre_toupper((tre_cint_t)prev_c),
-                                                  trans_i->u.klass)))
-                          || ((trans_i->assertions & ASSERT_CHAR_CLASS_NEG)
-                              && tre_neg_char_klasses_match(trans_i->neg_klasses,
-                                                            (tre_cint_t)prev_c,
-                                                            tnfa->cflags & REG_ICASE))))
-                    {
-                      DPRINT(("assertion failed\n"));
-                      continue;
-                    }
+	{
+	  for (trans_i = reach_i->state; trans_i->state; trans_i++)
+	    {
+	      /* Does this transition match the input symbol? */
+	      if (trans_i->code_min <= prev_c &&
+		  trans_i->code_max >= prev_c)
+		{
+		  if (trans_i->assertions
+		      && (CHECK_ASSERTIONS(trans_i->assertions)
+			  /* Handle character class transitions. */
+			  || ((trans_i->assertions & ASSERT_CHAR_CLASS)
+			      && !(tnfa->cflags & REG_ICASE)
+			      && !tre_isctype((tre_cint_t)prev_c,
+					      trans_i->u.class))
+			  || ((trans_i->assertions & ASSERT_CHAR_CLASS)
+			      && (tnfa->cflags & REG_ICASE)
+			      && (!tre_isctype(tre_tolower((tre_cint_t)prev_c),
+					       trans_i->u.class)
+				  && !tre_isctype(tre_toupper((tre_cint_t)prev_c),
+						  trans_i->u.class)))
+			  || ((trans_i->assertions & ASSERT_CHAR_CLASS_NEG)
+			      && tre_neg_char_classes_match(trans_i->neg_classes,
+							    (tre_cint_t)prev_c,
+							    tnfa->cflags & REG_ICASE))))
+		    {
+		      DPRINT(("assertion failed\n"));
+		      continue;
+		    }
 
-                  /* Compute the tags after this transition. */
-                  for (i = 0; i < num_tags; i++)
-                    tmp_tags[i] = reach_i->tags[i];
-                  tag_i = trans_i->tags;
-                  if (tag_i != NULL)
-                    while (*tag_i >= 0)
-                      {
-                        if (*tag_i < num_tags)
-                          tmp_tags[*tag_i] = pos;
-                        tag_i++;
-                      }
+		  /* Compute the tags after this transition. */
+		  for (i = 0; i < num_tags; i++)
+		    tmp_tags[i] = reach_i->tags[i];
+		  tag_i = trans_i->tags;
+		  if (tag_i != NULL)
+		    while (*tag_i >= 0)
+		      {
+			if (*tag_i < num_tags)
+			  tmp_tags[*tag_i] = pos;
+			tag_i++;
+		      }
 
-                  if (reach_pos[trans_i->state_id].pos < pos)
-                    {
-                      /* Found an unvisited node. */
-                      reach_next_i->state = trans_i->state;
-                      tmp_iptr = reach_next_i->tags;
-                      reach_next_i->tags = tmp_tags;
-                      tmp_tags = tmp_iptr;
-                      reach_pos[trans_i->state_id].pos = pos;
-                      reach_pos[trans_i->state_id].tags = &reach_next_i->tags;
+		  if (reach_pos[trans_i->state_id].pos < pos)
+		    {
+		      /* Found an unvisited node. */
+		      reach_next_i->state = trans_i->state;
+		      tmp_iptr = reach_next_i->tags;
+		      reach_next_i->tags = tmp_tags;
+		      tmp_tags = tmp_iptr;
+		      reach_pos[trans_i->state_id].pos = pos;
+		      reach_pos[trans_i->state_id].tags = &reach_next_i->tags;
 
-                      if (reach_next_i->state == tnfa->final
-                          && (match_eo == -1
-                              || (num_tags > 0
-                                  && reach_next_i->tags[0] <= match_tags[0])))
-                        {
-                          DPRINT(("  found match %p\n", trans_i->state));
-                          match_eo = pos;
-                          new_match = 1;
-                          for (i = 0; i < num_tags; i++)
-                            match_tags[i] = reach_next_i->tags[i];
-                        }
-                      reach_next_i++;
+		      if (reach_next_i->state == tnfa->final
+			  && (match_eo == -1
+			      || (num_tags > 0
+				  && reach_next_i->tags[0] <= match_tags[0])))
+			{
+			  DPRINT(("  found match %p\n", trans_i->state));
+			  match_eo = pos;
+			  new_match = 1;
+			  for (i = 0; i < num_tags; i++)
+			    match_tags[i] = reach_next_i->tags[i];
+			}
+		      reach_next_i++;
 
-                    }
-                  else
-                    {
-                      assert(reach_pos[trans_i->state_id].pos == pos);
-                      /* Another path has also reached this state.  We choose
-                         the winner by examining the tag values for both
-                         paths. */
-                      if (tre_tag_order(num_tags, tnfa->tag_directions,
-                                        tmp_tags,
-                                        *reach_pos[trans_i->state_id].tags))
-                        {
-                          /* The new path wins. */
-                          tmp_iptr = *reach_pos[trans_i->state_id].tags;
-                          *reach_pos[trans_i->state_id].tags = tmp_tags;
-                          if (trans_i->state == tnfa->final)
-                            {
-                              DPRINT(("  found better match\n"));
-                              match_eo = pos;
-                              new_match = 1;
-                              for (i = 0; i < num_tags; i++)
-                                match_tags[i] = tmp_tags[i];
-                            }
-                          tmp_tags = tmp_iptr;
-                        }
-                    }
-                }
-            }
-        }
+		    }
+		  else
+		    {
+		      assert(reach_pos[trans_i->state_id].pos == pos);
+		      /* Another path has also reached this state.  We choose
+			 the winner by examining the tag values for both
+			 paths. */
+		      if (tre_tag_order(num_tags, tnfa->tag_directions,
+					tmp_tags,
+					*reach_pos[trans_i->state_id].tags))
+			{
+			  /* The new path wins. */
+			  tmp_iptr = *reach_pos[trans_i->state_id].tags;
+			  *reach_pos[trans_i->state_id].tags = tmp_tags;
+			  if (trans_i->state == tnfa->final)
+			    {
+			      DPRINT(("	 found better match\n"));
+			      match_eo = pos;
+			      new_match = 1;
+			      for (i = 0; i < num_tags; i++)
+				match_tags[i] = tmp_tags[i];
+			    }
+			  tmp_tags = tmp_iptr;
+			}
+		    }
+		}
+	    }
+	}
       reach_next_i->state = NULL;
     }
 

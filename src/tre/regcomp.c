@@ -1,20 +1,21 @@
 /*
   regcomp.c - TRE POSIX compatible regex compilation functions.
 
-  Copyright (C) 2001-2004 Ville Laurikari <vl@iki.fi>
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
@@ -36,7 +37,7 @@ regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
   tre_char_t *wregex;
   int wlen;
 
-  wregex = (tre_char_t*)xmalloc(sizeof(tre_char_t) * (n + 1));
+  wregex = xmalloc(sizeof(tre_char_t) * (n + 1));
   if (wregex == NULL)
     return REG_ESPACE;
 
@@ -54,7 +55,7 @@ regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
       tre_char_t *wstr = wregex;
 
       for (i = 0; i < n; i++)
-        *(wstr++) = *(str++);
+	*(wstr++) = *(str++);
       wlen = n;
     }
 #if TRE_MULTIBYTE
@@ -67,34 +68,34 @@ regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
       memset(&state, '\0', sizeof(state));
 #endif /* HAVE_MBSTATE_T */
       while (n > 0)
-        {
-          consumed = tre_mbrtowc(wcptr, regex, n, &state);
+	{
+	  consumed = tre_mbrtowc(wcptr, regex, n, &state);
 
-          switch (consumed)
-            {
-            case 0:
-              if (*regex == '\0')
-                consumed = 1;
-              else
-                {
-                  xfree(wregex);
-                  return REG_BADPAT;
-                }
-              break;
-            case -1:
-              DPRINT(("mbrtowc: error %d: %s.\n", errno, strerror(errno)));
-              xfree(wregex);
-              return REG_BADPAT;
-            case -2:
-              /* The last character wasn't complete.  Let's not call it a
-                 fatal error. */
-              consumed = n;
-              break;
-            }
-          regex += consumed;
-          n -= consumed;
-          wcptr++;
-        }
+	  switch (consumed)
+	    {
+	    case 0:
+	      if (*regex == '\0')
+		consumed = 1;
+	      else
+		{
+		  xfree(wregex);
+		  return REG_BADPAT;
+		}
+	      break;
+	    case -1:
+	      DPRINT(("mbrtowc: error %d: %s.\n", errno, strerror(errno)));
+	      xfree(wregex);
+	      return REG_BADPAT;
+	    case -2:
+	      /* The last character wasn't complete.  Let's not call it a
+		 fatal error. */
+	      consumed = n;
+	      break;
+	    }
+	  regex += consumed;
+	  n -= consumed;
+	  wcptr++;
+	}
       wlen = wcptr - wregex;
     }
 #endif /* TRE_MULTIBYTE */
@@ -103,7 +104,7 @@ regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
   ret = tre_compile(preg, wregex, wlen, cflags);
   xfree(wregex);
 #else /* !TRE_WCHAR */
-  ret = tre_compile(preg, (const tre_char_t*)regex, n, cflags);
+  ret = tre_compile(preg, (const tre_char_t *)regex, n, cflags);
 #endif /* !TRE_WCHAR */
 
   return ret;

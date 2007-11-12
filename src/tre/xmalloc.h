@@ -1,20 +1,21 @@
 /*
-  xmalloc.h - Simple malloc debugger library API
+  xmalloc.h - Simple malloc debugging library API
 
-  Copyright (C) 2001-2003 Ville Laurikari <vl@iki.fi>.
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>.
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
@@ -25,39 +26,39 @@
 
 /* Version 2.4 and later of GCC define a magical variable `__PRETTY_FUNCTION__'
    which contains the name of the function currently being defined.
-#  define __XMALLOC_FUNCTION     __PRETTY_FUNCTION__
+#  define __XMALLOC_FUNCTION	 __PRETTY_FUNCTION__
    This is broken in G++ before version 2.6.
    C9x has a similar variable called __func__, but prefer the GCC one since
    it demangles C++ function names.  */
 # ifdef __GNUC__
 #  if __GNUC__ > 2 || (__GNUC__ == 2 \
-                       && __GNUC_MINOR__ >= (defined __cplusplus ? 6 : 4))
-#   define __XMALLOC_FUNCTION    __PRETTY_FUNCTION__
+		       && __GNUC_MINOR__ >= (defined __cplusplus ? 6 : 4))
+#   define __XMALLOC_FUNCTION	 __PRETTY_FUNCTION__
 #  else
-#   define __XMALLOC_FUNCTION    ((const char *) 0)
+#   define __XMALLOC_FUNCTION	 ((const char *) 0)
 #  endif
 # else
 #  if defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
-#   define __XMALLOC_FUNCTION    __func__
+#   define __XMALLOC_FUNCTION	 __func__
 #  else
-#   define __XMALLOC_FUNCTION    ((const char *) 0)
+#   define __XMALLOC_FUNCTION	 ((const char *) 0)
 #  endif
 # endif
 
 #define xmalloc(size) xmalloc_impl(size, __FILE__, __LINE__, \
-                                   __XMALLOC_FUNCTION)
+				   __XMALLOC_FUNCTION)
 #define xcalloc(nmemb, size) xcalloc_impl(nmemb, size, __FILE__, __LINE__, \
-                                          __XMALLOC_FUNCTION)
+					  __XMALLOC_FUNCTION)
 #define xfree(ptr) xfree_impl(ptr, __FILE__, __LINE__, __XMALLOC_FUNCTION)
 #define xrealloc(ptr, new_size) xrealloc_impl(ptr, new_size, __FILE__, \
-                                              __LINE__, __XMALLOC_FUNCTION)
+					      __LINE__, __XMALLOC_FUNCTION)
 
 void *xmalloc_impl(size_t size, const char *file, int line, const char *func);
 void *xcalloc_impl(size_t nmemb, size_t size, const char *file, int line,
-                   const char *func);
+		   const char *func);
 void xfree_impl(void *ptr, const char *file, int line, const char *func);
 void *xrealloc_impl(void *ptr, size_t new_size, const char *file, int line,
-                    const char *func);
+		    const char *func);
 int xmalloc_dump_leaks(void);
 void xmalloc_configure(int fail_after);
 
@@ -66,9 +67,9 @@ void xmalloc_configure(int fail_after);
 #undef free
 #undef realloc
 
-#define malloc  USE_XMALLOC_INSTEAD_OF_MALLOC
-#define calloc  USE_XCALLOC_INSTEAD_OF_CALLOC
-#define free    USE_XFREE_INSTEAD_OF_FREE
+#define malloc	USE_XMALLOC_INSTEAD_OF_MALLOC
+#define calloc	USE_XCALLOC_INSTEAD_OF_CALLOC
+#define free	USE_XFREE_INSTEAD_OF_FREE
 #define realloc USE_XREALLOC_INSTEAD_OF_REALLOC
 
 #else /* !MALLOC_DEBUGGING */

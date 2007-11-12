@@ -1,20 +1,22 @@
 /*
   tre-ast.h - Abstract syntax tree (AST) definitions
 
-  Copyright (C) 2001-2004 Ville Laurikari <vl@iki.fi>
+  Copyright (c) 2001-2006 Ville Laurikari <vl@iki.fi>
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 2 (June
-  1991) as published by the Free Software Foundation.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
+  This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
 */
 
 
@@ -34,17 +36,17 @@ typedef enum {
 } tre_ast_type_t;
 
 /* Special subtypes of TRE_LITERAL. */
-#define EMPTY     -1   /* Empty leaf (denotes empty string). */
+#define EMPTY	  -1   /* Empty leaf (denotes empty string). */
 #define ASSERTION -2   /* Assertion leaf. */
-#define TAG       -3   /* Tag leaf. */
-#define BACKREF   -4   /* Back reference leaf. */
+#define TAG	  -3   /* Tag leaf. */
+#define BACKREF	  -4   /* Back reference leaf. */
 #define PARAMETER -5   /* Parameter. */
 
-#define IS_SPECIAL(x)   ((x)->code_min < 0)
-#define IS_EMPTY(x)     ((x)->code_min == EMPTY)
+#define IS_SPECIAL(x)	((x)->code_min < 0)
+#define IS_EMPTY(x)	((x)->code_min == EMPTY)
 #define IS_ASSERTION(x) ((x)->code_min == ASSERTION)
-#define IS_TAG(x)       ((x)->code_min == TAG)
-#define IS_BACKREF(x)   ((x)->code_min == BACKREF)
+#define IS_TAG(x)	((x)->code_min == TAG)
+#define IS_BACKREF(x)	((x)->code_min == BACKREF)
 #define IS_PARAMETER(x) ((x)->code_min == PARAMETER)
 
 
@@ -70,13 +72,13 @@ typedef struct {
   long code_max;
   int position;
   union {
-    tre_ctype_t klass;
-    unsigned int *params;
+    tre_ctype_t class;
+    int *params;
   } u;
-  tre_ctype_t *neg_klasses;
+  tre_ctype_t *neg_classes;
 } tre_literal_t;
 
-/* A "catenation" node.  These are created when two regexps are concatenated.
+/* A "catenation" node.	 These are created when two regexps are concatenated.
    If there are more than one subexpressions in sequence, the `left' part
    holds all but the last, and `right' part holds the last subexpression
    (catenation is left associative). */
@@ -85,7 +87,7 @@ typedef struct {
   tre_ast_node_t *right;
 } tre_catenation_t;
 
-/* An "iteration" node.  These are created for the "*", "+", "?", and "{m,n}"
+/* An "iteration" node.	 These are created for the "*", "+", "?", and "{m,n}"
    operators. */
 typedef struct {
   /* Subexpression to match. */
@@ -95,11 +97,11 @@ typedef struct {
   /* Maximum number of consecutive matches. */
   int max;
   /* If 0, match as many characters as possible, if 1 match as few as
-     possible.  Note that this does not always mean the same thing as
+     possible.	Note that this does not always mean the same thing as
      matching as many/few repetitions as possible. */
   unsigned int minimal:1;
   /* Approximate matching parameters (or NULL). */
-  unsigned int *params;
+  int *params;
 } tre_iteration_t;
 
 /* An "union" node.  These are created for the "|" operator. */
@@ -116,14 +118,14 @@ tre_ast_new_literal(tre_mem_t mem, int code_min, int code_max, int position);
 
 tre_ast_node_t *
 tre_ast_new_iter(tre_mem_t mem, tre_ast_node_t *arg, int min, int max,
-                 int minimal);
+		 int minimal);
 
 tre_ast_node_t *
 tre_ast_new_union(tre_mem_t mem, tre_ast_node_t *left, tre_ast_node_t *right);
 
 tre_ast_node_t *
 tre_ast_new_catenation(tre_mem_t mem, tre_ast_node_t *left,
-                       tre_ast_node_t *right);
+		       tre_ast_node_t *right);
 
 #ifdef TRE_DEBUG
 void
