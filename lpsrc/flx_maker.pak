@@ -1292,9 +1292,7 @@ class PLUGIN(Plugin):
       cppfilename = basename + ".cpp"
 
       try:
-        vxqtq(os.path.join(
-          'bin',
-          'flxg -e -Ilib ' + basename), log=log)
+        flxg('-e -Ilib --cache_dir=build/test --output_dir=build/test --import=flx.flxh std ' + FLXFLAGS + basename, log=log)
         #log.write('TESTFILE -- failed as expected %s\n' % basename)
         self.successes.append((pkg, testfile, log.getvalue()))
       except MakeError, e:
