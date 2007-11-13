@@ -635,7 +635,7 @@ class PLUGIN(Plugin):
     includes = vxqtq(os.path.join( "bin",
       "flx_pkgconfig --path=config --field=includes @"+resfilename),
       log=log)
-    includes = string.split(includes[0].strip())
+    includes = includes[0].strip().split()
     f = open(incfilename,"w")
     for i in includes: 
         f.write("#include " + i + "\n")
@@ -3916,7 +3916,7 @@ def calpackages ():
     print "#LINK_STRING="+LINK_STRING
 
 def write_include_file(path):
-  includes = string.split(string.strip(INCLUDE_FILES))
+  includes = INCLUDE_FILES.strip().split()
   f = open(path+".include","w")
   for i in includes:
     f.write("#include " + i + "\n")
