@@ -1,3 +1,6 @@
+#ifndef __FLX_STRUTIL_HPP_
+#define __FLX_STRUTIL_HPP_
+
 #include <string>
 #include <sstream>
 #include <stdarg.h>
@@ -56,3 +59,6 @@ namespace flx { namespace rtl { namespace strutil {
   RTL_EXTERN string flx_asprintf(char const *fmt,...);
 
 }}}
+
+#endif
+

@@ -3585,10 +3585,13 @@ try
   plh ("//Timestamp: " ^ compile_start_gm_string);
   plh ("//Timestamp: " ^ compile_start_local_string);
   plh "";
+  plh "#ifndef FLX_NO_INCLUDES";
+  plh ("#include \"" ^ module_name ^ ".includes\"");
+  plh "#endif";
   plh "//FELIX RUNTIME";
-  plh "#include \"flx_rtl.hpp\"";
+  (* plh "#include \"flx_rtl.hpp\""; *)
   plh "using namespace flx::rtl;";
-  plh "#include \"flx_gc.hpp\"";
+  (* plh "#include \"flx_gc.hpp\""; *)
   plh "using namespace flx::gc::generic;";
   plh "";
 
