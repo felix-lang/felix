@@ -74,6 +74,7 @@ Version: $Id$
    tangle("provides_dlib: -lflx_gc_dynamic")
    tangle("provides_slib: -lflx_gc_static")
 
+includes: "flx_gc.hpp"
 Requires: flx_judy
 
 @h=tangler('config/target/flx_gc_config.hpp')

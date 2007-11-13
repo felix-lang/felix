@@ -145,6 +145,7 @@ Description: Felix exceptions
    tangle("provides_dlib: -lflx_exceptions_dynamic")
    tangle("provides_slib: -lflx_exceptions_static")
 @doc()
+includes: "flx_exceptions.hpp"
 
 @select(tangler('config/flx.fpc', 'data'))
 Name: flx
@@ -157,6 +158,7 @@ Version: $Id$
    tangle("provides_dlib: -lflx_dynamic")
    tangle("provides_slib: -lflx_static")
 Requires: flx_gc flx_exceptions
+includes: "flx_rtl.hpp" "flx_strutil.hpp" "flx_i18n.hpp"  <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
 @doc()
 
 @select(tangler('config/flx_arun.fpc', 'data'))

@@ -24,6 +24,7 @@ Version: $Id$
    tangle("requires_dlibs: "+PTHREAD_SWITCH)
    tangle("requires_slibs: "+PTHREAD_SWITCH)
 
+includes: "pthread_thread.hpp"
 Requires: flx_gc
 
 @h = tangler('spkgs/flx_pthread.py')

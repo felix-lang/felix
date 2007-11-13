@@ -1289,7 +1289,7 @@ class PLUGIN(Plugin):
   help = 'run tests meant to fail'
 
   def runme(self,pkg, pkgdict, quiet, check_stamp):
-    bad_tests = pkgdict.get("failure_tests",[])
+    #bad_tests = pkgdict.get("failure_tests",[])
     bad_tests.sort()
 
     failed = 0
