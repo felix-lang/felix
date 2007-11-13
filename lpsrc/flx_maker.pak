@@ -472,6 +472,9 @@ class PLUGIN(Plugin):
   name = 'build_ocamls'
 
   def runme(self, pkg, pkgdict):
+    if HAVE_OCAMLBUILD:
+      return plugins['build_ocamlbuild'](pkg, pkgdict)
+
     RAW_INTERFACES = pkgdict.get('caml_raw_interfaces', [])
     plugins['copy_mli2ml'](RAW_INTERFACES)
 
@@ -731,8 +734,6 @@ class PLUGIN(Plugin):
       if "build" not in phases: phases.append("build")
 
   def runme(self):
-    global phases
-
     if "build" not in phases: phases.append("build")
     if "host" not in phases: phases.append("host")
     if "target" not in phases: phases.append("target")
@@ -950,6 +951,9 @@ class PLUGIN(Plugin):
   name='build_target_rtl_dynamic'
 
   def runme(self, pkg, pkgdict):
+    if not SUPPORT_DYNAMIC_LOADING:
+      return
+
     CCS = pkgdict.get("cc_ccs",[])
     CPPS = pkgdict.get("cpp_cpps",[])
 
@@ -1020,6 +1024,9 @@ class PLUGIN(Plugin):
   name = 'build_target_rtl_static'
 
   def runme(self, pkg, pkgdict):
+    if not SUPPORT_STATIC_LINKAGE:
+      return
+
     CCS = pkgdict.get("cc_ccs",[])
     CPPS = pkgdict.get("cpp_cpps",[])
 
@@ -1061,6 +1068,9 @@ class PLUGIN(Plugin):
   name = 'build_felix_static_drivers'
 
   def runme(self, pkg, pkgdict):
+    if not SUPPORT_STATIC_LINKAGE:
+      return
+
     DRIVERS = pkgdict.get("static_drivers",[])
     if not DRIVERS:
       return
@@ -1087,7 +1097,11 @@ class PLUGIN(Plugin):
   name = 'build_felix_dynamic_drivers'
 
   def runme(self, pkg, pkgdict):
+    if not SUPPORT_DYNAMIC_LOADING:
+      return
+
     DRIVERS = pkgdict.get("dynamic_drivers",[])
+
     if not DRIVERS:
       return
 
@@ -1288,7 +1302,7 @@ class PLUGIN(Plugin):
   name = 'run_failure_tests'
   help = 'run tests meant to fail'
 
-  def runme(self,pkg, pkgdict, quiet, check_stamp):
+  def runme(self, pkg, pkgdict):
     #bad_tests = pkgdict.get("failure_tests",[])
     bad_tests=[]
     bad_tests.sort()
@@ -1325,12 +1339,12 @@ class PLUGIN(TestPlugin):
   name = 'run_static_unit_tests'
   help = 'run static unit tests'
 
-  def runme(self, pkg, pkgdict, quiet, check_stamp):
+  def runme(self, pkg, pkgdict):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
     static_unit_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, static_unit_tests, 1, 1, 0, check_stamp,
-      "*** STATIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
+    return self.run_tests(pkg, pkgdict, static_unit_tests, 1, 1, 0,
+      "*** STATIC UNIT TESTING %s : %%s ****\n" % pkg)
 
 
 @select(tangler('mkplugins/run_dynamic_unit_tests.py'))
@@ -1338,12 +1352,12 @@ class PLUGIN(TestPlugin):
   name = 'run_dynamic_unit_tests'
   help = 'run dynamic unit tests'
 
-  def runme(self, pkg, pkgdict, quiet, check_stamp):
+  def runme(self, pkg, pkgdict):
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
     dynamic_unit_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, dynamic_unit_tests, 1, 0, 1, check_stamp,
-      "*** DYNAMIC UNIT TESTING %s : %%s ****\n" % pkg, quiet)
+    return self.run_tests(pkg, pkgdict, dynamic_unit_tests, 1, 0, 1,
+      "*** DYNAMIC UNIT TESTING %s : %%s ****\n" % pkg)
 
 
 @select(tangler('mkplugins/run_unit_tests.py'))
@@ -1351,12 +1365,12 @@ class PLUGIN(TestPlugin):
   name = 'run_unit_tests'
   help = 'run unit tests'
 
-  def runme(self,pkg, pkgdict, quiet, check_stamp):
+  def runme(self,pkg, pkgdict):
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, unit_tests, 1, 1, 1, check_stamp,
-      "*** UNIT TESTING %s : %%s ****\n" % pkg, quiet)
+    return self.run_tests(pkg, pkgdict, unit_tests, 1, 1, 1,
+      "*** UNIT TESTING %s : %%s ****\n" % pkg)
 
 
 @select(tangler('mkplugins/run_completion_tests.py'))
@@ -1365,12 +1379,12 @@ class PLUGIN(TestPlugin):
   name = 'run_completion_tests'
   help = 'run tests that just need to finish'
 
-  def runme(self,pkg, pkgdict, quiet, check_stamp):
+  def runme(self,pkg, pkgdict):
     completion_tests = pkgdict.get("completion_tests",[])
     completion_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, completion_tests, 0, 1, 1, check_stamp,
-      "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg, quiet)
+    return self.run_tests(pkg, pkgdict, completion_tests, 0, 1, 1,
+      "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg)
 
 
 @select(tangler('mkplugins/run_known_failed_tests.py'))
@@ -1382,7 +1396,7 @@ class PLUGIN(Plugin):
     Plugin.__init__(self)
     self.dummy = 1
 
-  def runme(self,pkg, pkgdict, quiet, check_stamp):
+  def runme(self,pkg, pkgdict):
     bad_tests = pkgdict.get("known_failed_tests",[])
     bad_tests.sort()
 
@@ -1400,11 +1414,11 @@ class PLUGIN(TestPlugin):
   name = 'run_demos'
   help = 'run demonstrations'
 
-  def runme(self,pkg, pkgdict, quiet=0, check_stamp=0):
+  def runme(self,pkg, pkgdict):
     demos = pkgdict.get("demos",[])
     demos.sort()
 
-    return self.run_tests(pkg, pkgdict, demos, 0, 1, 1, check_stamp,
+    return self.run_tests(pkg, pkgdict, demos, 0, 1, 1,
       "*** DEMO PACKAGE %s : %%s ****\n" % pkg, quiet)
 
 
@@ -1532,7 +1546,6 @@ class PLUGIN(Plugin):
   priority = 10
 
   def runme(self):
-    global pkgd
     global host_packages,target_packages,run_packages,doc_packages
     global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs,doc_selected_pkgs
 
@@ -1649,85 +1662,70 @@ class PLUGIN(Plugin):
       print "Target model ",target_model
       print "Run model    ",run_model
 
+@select(tangler('mkplugins/extract_iscr.py'))
+class PLUGIN(Plugin):
+  name = 'extract_iscr'
+
+  def runme(self, pkg, pkgdict):
+    srcs = pkgdict.get("iscr_source",[])
+    for src in srcs:
+      src = unix2native(src)
+      if not quiet: print "REExtracting", pkg, "from", src
+      runISCR(os.path.join(FLX_LPARCHIVE, src))
+
 @select(tangler('mkplugins/make.py'))
 class PLUGIN(Plugin):
   name = 'make'
   help = 'check if any packages need rebuilding'
   priority = 50
 
-  def runme(self):
-    global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
-    global pkgd,phases,quiet
-    mkdirs("pkg-stamps")
-    check_stamp = "force" not in options
+  def run_phase(self, phase, packages, plugin_names):
+    for pkg in packages:
+      pkgdict = pkgd[pkg]
 
-    if "host" in phases:
-      for pkg in host_selected_pkgs:
-        pkgdict = pkgd[pkg]
-        print "***** Host MAKING PACKAGE", pkg, "************"
+      print "*****", phase, "MAKING PACKAGE", pkg, "************"
 
-        stamp=os.path.join("pkg-stamps", "%s.host" % pkg)
-        erasefile(stamp)
-        srcs = pkgdict.get("iscr_source",[])
-        for src in srcs:
-          src = unix2native(src)
-          if not quiet: print "REExtracting", pkg, "from", src
-          runISCR(os.path.join(FLX_LPARCHIVE, src))
+      stamp=os.path.join("pkg-stamps", "%s.%s" % (pkg, phase))
+      erasefile(stamp)
 
-
-        if HAVE_OCAMLBUILD:
-          plugins['build_ocamlbuild'](pkg, pkgdict)
-        else:
-          plugins['build_ocamls'](pkg, pkgdict)
-
-        plugins['build_host_tools'](pkg, pkgdict)
-
+      for plugin_name in plugin_names:
+        result = plugins[plugin_name](pkg, pkgdict)
+        if not result and result is not None:
+          break
+      else:
         enstamp(stamp)
 
+
+  def runme(self):
+    mkdirs("pkg-stamps")
+
+    if "host" in phases:
+      self.run_phase('host', host_selected_pkgs, [
+        'extract_iscr',
+        'build_ocamls',
+        'build_host_tools',
+      ])
+
     if "target" in phases:
-      for pkg in target_selected_pkgs:
-        pkgdict = pkgd[pkg]
-        print "***** Target MAKING PACKAGE", pkg, "************"
-
-        stamp=os.path.join("pkg-stamps", "%s.target" % pkg)
-        erasefile(stamp)
-        if SUPPORT_DYNAMIC_LOADING:
-          plugins['build_target_rtl_dynamic'](pkg, pkgdict)
-
-        if SUPPORT_STATIC_LINKAGE:
-          plugins['build_target_rtl_static'](pkg, pkgdict)
-
-        if SUPPORT_DYNAMIC_LOADING:
-          plugins['build_felix_dynamic_drivers'](pkg, pkgdict)
-
-        if SUPPORT_STATIC_LINKAGE:
-          plugins['build_felix_static_drivers'](pkg, pkgdict)
-
-        plugins['build_target_cpp_tools'](pkg, pkgdict)
-        plugins['build_target_felix_rtl'](pkg, pkgdict)
-        plugins['build_target_felix_tools'](pkg, pkgdict)
-
-        # only stamp if we've passed the tests
-        if plugins['run_failure_tests'](pkg, pkgdict, quiet, check_stamp):
-          enstamp(stamp)
+      self.run_phase('target', target_selected_pkgs, [
+        'build_target_rtl_dynamic',
+        'build_target_rtl_static',
+        'build_felix_dynamic_drivers',
+        'build_felix_static_drivers',
+        'build_target_cpp_tools',
+        'build_target_felix_rtl',
+        'build_target_felix_tools',
+      ])
 
     if "run" in phases:
-      for pkg in run_selected_pkgs:
-        pkgdict = pkgd[pkg]
-        print "***** Run MAKING PACKAGE", pkg, "************"
-
-        stamp=os.path.join("pkg-stamps", "%s.run" % pkg)
-        erasefile(stamp)
-
-        # only stamp if we've passed the tests
-        if \
-                    plugins['run_failure_tests'](pkg, pkgdict, quiet, check_stamp) \
-                and plugins['run_unit_tests'](pkg, pkgdict, quiet, check_stamp) \
-                and plugins['run_static_unit_tests'](pkg, pkgdict, quiet, check_stamp) \
-                and plugins['run_dynamic_unit_tests'](pkg, pkgdict, quiet, check_stamp) \
-                and plugins['run_completion_tests'](pkg, pkgdict, quiet, check_stamp) \
-                and plugins['run_known_failed_tests'](pkg, pkgdict, quiet, check_stamp):
-          enstamp(stamp)
+      self.run_phase('run', run_selected_pkgs, [
+        'run_failure_tests',
+        'run_unit_tests',
+        'run_static_unit_tests',
+        'run_dynamic_unit_tests',
+        'run_completion_tests',
+        'run_known_failed_tests',
+      ])
 
 
 @select(tangler('flxbuild/pluginutil.py'))
@@ -1748,10 +1746,11 @@ class Plugin(object):
 
 
 class TestPlugin(Plugin):
-  def run_tests(self, pkg, pkgdict, testfiles, deterministic, static, dynamic, check_stamp,
-          title, quiet):
+  def run_tests(self, pkg, pkgdict, testfiles, deterministic, static, dynamic, title):
     if not testfiles:
       return 1
+
+    check_stamp = "force" not in options
 
     tests_failed = 0
 
@@ -1809,7 +1808,7 @@ class TestPlugin(Plugin):
               #log.write("Driver: %s\n" % driver)
               testscript = driver + ' ' + outbase + EXT_SHLIB
 
-              self.run_test(log, testscript, inbase, outbase, deterministic, quiet,check_stamp)
+              self.run_test(log, testscript, inbase, outbase, deterministic)
             except MakeError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -1819,7 +1818,7 @@ class TestPlugin(Plugin):
             testscript = outbase + EXT_EXE
 
             try:
-              self.run_test(log, testscript, inbase, outbase,deterministic, quiet, check_stamp)
+              self.run_test(log, testscript, inbase, outbase,deterministic)
             except MakeError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
@@ -1840,7 +1839,7 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, inbase,outbase, deterministic, quiet,check_stamp):
+  def run_test(self, log, testscript, inbase,outbase, deterministic):
     log.write('EXECUTING TEST CODE %s\n' % testscript, quiet)
     flush()
 
@@ -1915,21 +1914,19 @@ class PLUGIN(Plugin):
       if "run" not in phases: phases.append("run")
 
   def runme(self):
-    global quiet,force
-    check_stamp = "force"  not in options
-    if check_stamp:
+    if "force" not in options:
       print "##### TEST SELECTED PACKAGES ##################"
     else:
       print "##### TEST ALL PACKAGES ##################"
     for pkg in pkgs:
       pkgdict = pkgd[pkg]
       print "***** TEST PACKAGE "+pkg+" ************"
-      plugins['run_failure_tests'](pkg, pkgdict, quiet, check_stamp)
-      plugins['run_unit_tests'](pkg, pkgdict, quiet, check_stamp)
-      plugins['run_static_unit_tests'](pkg, pkgdict, quiet, check_stamp)
-      plugins['run_dynamic_unit_tests'](pkg, pkgdict, quiet, check_stamp)
-      plugins['run_completion_tests'](pkg, pkgdict, quiet, check_stamp)
-      plugins['run_known_failed_tests'](pkg, pkgdict, quiet, check_stamp)
+      plugins['run_failure_tests'](pkg, pkgdict)
+      plugins['run_unit_tests'](pkg, pkgdict)
+      plugins['run_static_unit_tests'](pkg, pkgdict)
+      plugins['run_dynamic_unit_tests'](pkg, pkgdict)
+      plugins['run_completion_tests'](pkg, pkgdict)
+      plugins['run_known_failed_tests'](pkg, pkgdict)
 
 @select(tangler('mkplugins/doc.py'))
 class PLUGIN(Plugin):
@@ -1937,9 +1934,7 @@ class PLUGIN(Plugin):
   help = 'build all user documentation'
 
   def runme(self):
-    global doc_selected_pkgs
-    global quiet,force
-    check_stamp = "force"  not in options
+    check_stamp = "force" not in options
     if check_stamp:
       plugins['cal_pkgs']()
       print "##### DOCUMENT SELECTED PACKAGES ##################"
@@ -3877,7 +3872,6 @@ def xqt(cmd,dflt=None):
   else: return dflt
 
 def calpackages ():
-  global INCLUDE_DIRS, DRIVER_PKG, DRIVER, LINK_STRING, INCLUDE_FILES
   # find all include directories
 
   x = xqt(PKGCONFIG_CFLAGS+ " @"+path+".resh")
