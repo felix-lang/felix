@@ -37,7 +37,10 @@ felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
 felix_requires_linkflags = FLXFLAGS
 exes_require_libs = DRLIBS
 iscr_source = ['lpsrc/flx_pkgconfig.pak']
-
+f = open(os.path.join("tools","flx_pkgconfig.includes"),"w")
+f.write('#include "flx_rtl.hpp"')
+f.write('#include "flx_gc.hpp"')
+f.close()
 @h = tangler("tools/flx_pkgconfig.flx","data")
 @select(h)
 #import <flx.flxh>
