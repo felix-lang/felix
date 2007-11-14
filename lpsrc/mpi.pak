@@ -1,5 +1,6 @@
 @head(1,"MPI")
 @select(tangler("cpkgs/target/mpi.py"))
+import os
 from flxbuild.config_support import cwrite, cload, pa, locate_file
 try:
   cload(globals(),"target_mpi")
