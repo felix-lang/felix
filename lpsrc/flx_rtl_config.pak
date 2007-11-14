@@ -1,5 +1,4 @@
-@import config.host_cxx
-@import config.target_cxx
+@import config
 
 @head(1,"Configuration management")
 
@@ -13,7 +12,7 @@ weaver_directory = 'doc/rtl/flx_rtl/'
 #ifndef __FLX_META_H__
 #define __FLX_META_H__
 // taken from BOOST
-@if config.target_cxx.HAVE_INCLASS_MEMBER_INITIALIZATION:
+@if config.TARGET_CXX.options.HAVE_INCLASS_MEMBER_INITIALIZATION:
   tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 1')
  else:
   tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 0')
@@ -27,7 +26,7 @@ weaver_directory = 'doc/rtl/flx_rtl/'
 #include <cstddef>
 
 template <std::size_t> struct type_with_alignment;
-@for k, t in config.target_cxx.flx_aligns.iteritems():
+@for k, t in config.TARGET_CXX.options.flx_aligns.iteritems():
   tangle('template <> struct type_with_alignment<'+str(k)+'>{ typedef '+t+' type; };')
 
 template <typename T> struct alignment_of;
@@ -94,22 +93,22 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 #ifndef __FLX_HOST_CONFIG_H__
 #define __FLX_HOST_CONFIG_H__
 
-@if config.host_cxx.WIN32:
+@if config.HOST_CXX.options.WIN32:
   tangle('#define FLX_WIN32 1')
  else:
   tangle('#define FLX_WIN32 0')
 
-@if config.host_cxx.HAVE_BOOL:
+@if config.HOST_CXX.options.HAVE_BOOL:
   tangle('#define FLX_HAVE_BOOL 1')
  else:
   tangle('#define FLX_HAVE_BOOL 0')
 
-@if config.host_cxx.HAVE_LONGLONG:
+@if config.HOST_CXX.options.HAVE_LONGLONG:
   tangle('#define FLX_HAVE_LONGLONG 1')
  else:
   tangle('#define FLX_HAVE_LONGLONG 0')
 
-@if config.host_cxx.HAVE_LONGDOUBLE:
+@if config.HOST_CXX.options.HAVE_LONGDOUBLE:
   tangle('#define FLX_HAVE_LONGDOUBLE 1')
  else:
   tangle('#define FLX_HAVE_LONGDOUBLE 0')
@@ -124,13 +123,13 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 
 
 @def cal_raw_address():
-  if config.host_cxx.SIZEOF_INT      == config.host_cxx.SIZEOF_VOIDP: return "unsigned"
-  if config.host_cxx.SIZEOF_LONG     == config.host_cxx.SIZEOF_VOIDP: return "unsigned long"
-  if config.host_cxx.SIZEOF_LONGLONG == config.host_cxx.SIZEOF_VOIDP: return "unsigned long long"
+  if config.HOST_CXX.options.SIZEOF_INT      == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned"
+  if config.HOST_CXX.options.SIZEOF_LONG     == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long"
+  if config.HOST_CXX.options.SIZEOF_LONGLONG == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
   raise "Cannot find an int the size of a void pointer"
 
 @tangle("#define FLX_RAWADDRESS " + cal_raw_address())
-@tangle('#define FLX_MAX_ALIGN ' + str(config.host_cxx.MAX_ALIGN))
+@tangle('#define FLX_MAX_ALIGN ' + str(config.HOST_CXX.options.MAX_ALIGN))
 
 #if FLX_WIN32
 #define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
@@ -143,42 +142,42 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 #ifndef __FLX_RTL_CONFIG_H__
 #define __FLX_RTL_CONFIG_H__
 
-@if config.target_cxx.HAVE_VSNPRINTF:
+@if config.TARGET_CXX.options.HAVE_VSNPRINTF:
   tangle('#define FLX_HAVE_VSNPRINTF 1')
  else:
   tangle('#define FLX_HAVE_VSNPRINTF 0')
 
-@if config.target_cxx.options.HAVE_BOOL:
+@if config.TARGET_CXX.options.HAVE_BOOL:
   tangle('#define FLX_HAVE_BOOL 1')
  else:
   tangle('#define FLX_HAVE_BOOL 0')
 
-@if config.target_cxx.HAVE_LONGLONG:
+@if config.TARGET_CXX.options.HAVE_LONGLONG:
   tangle('#define FLX_HAVE_LONGLONG 1')
  else:
   tangle('#define FLX_HAVE_LONGLONG 0')
 
-@if config.target_cxx.HAVE_LONGDOUBLE:
+@if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
   tangle('#define FLX_HAVE_LONGDOUBLE 1')
  else:
   tangle('#define FLX_HAVE_LONGDOUBLE 0')
 
-@if config.target_cxx.HAVE_GNU:
+@if config.HAVE_GNU:
   tangle('#define FLX_HAVE_GNU 1')
  else:
   tangle('#define FLX_HAVE_GNU 0')
 
-@if config.target_cxx.HAVE_GNU_X86:
+@if config.TARGET_CXX.options.HAVE_GNU_X86:
   tangle('#define FLX_HAVE_GNU_X86 1')
  else:
   tangle('#define FLX_HAVE_GNU_X86 0')
 
-@if config.target_cxx.HAVE_GNU_X86_64:
+@if config.TARGET_CXX.options.HAVE_GNU_X86_64:
   tangle('#define FLX_HAVE_GNU_X86_64 1')
  else:
   tangle('#define FLX_HAVE_GNU_X86_64 0')
 
-@if config.target_cxx.HAVE_GNU_BUILTIN_EXPECT:
+@if config.TARGET_CXX.options.HAVE_GNU_BUILTIN_EXPECT:
   # only use these with proper predicates!
   tangle('#define FLX_UNLIKELY(x) __builtin_expect(long(x),0)')
   tangle('#define FLX_LIKELY(x) __builtin_expect(long(x),1)')
@@ -186,87 +185,87 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
   tangle('#define FLX_UNLIKELY(x) x')
   tangle('#define FLX_LIKELY(x) x')
 
-@if config.target_cxx.HAVE_CGOTO:
+@if config.TARGET_CXX.options.HAVE_CGOTO:
   tangle("#define FLX_HAVE_CGOTO 1")
  else:
   tangle("#define FLX_HAVE_CGOTO 0")
 
-@if config.target_cxx.USE_REGPARM3:
+@if config.TARGET_CXX.options.USE_REGPARM3:
   tangle("#define FLX_USE_REGPARM3 1")
  else:
   tangle("#define FLX_USE_REGPARM3 0")
 
-@if config.target_cxx.HAVE_ASM_LABELS:
+@if config.TARGET_CXX.options.HAVE_ASM_LABELS:
   tangle("#define FLX_HAVE_ASM_LABELS 1")
  else:
   tangle("#define FLX_HAVE_ASM_LABELS 0")
 
-@if config.target_cxx.HAVE_DLOPEN:
+@if config.TARGET_CXX.options.HAVE_DLOPEN:
   tangle("#define FLX_HAVE_DLOPEN 1")
  else:
   tangle("#define FLX_HAVE_DLOPEN 0")
 
-@if config.target_cxx.MACOSX:
+@if config.TARGET_CXX.options.MACOSX:
   tangle("#define FLX_MACOSX 1")
  else:
   tangle("#define FLX_MACOSX 0")
 
-@if config.target_cxx.LINUX:
+@if config.TARGET_CXX.options.LINUX:
   tangle("#define FLX_LINUX 1")
  else:
   tangle("#define FLX_LINUX 0")
 
-@if config.target_cxx.WIN32:
+@if config.TARGET_CXX.options.WIN32:
   tangle("#define FLX_WIN32 1")
  else:
   tangle("#define FLX_WIN32 0")
 
-@if config.target_cxx.WIN64:
+@if config.TARGET_CXX.options.WIN64:
   tangle("#define FLX_WIN64 1")
  else:
   tangle("#define FLX_WIN64 0")
 
-@if config.target_cxx.CYGWIN:
+@if config.TARGET_CXX.options.CYGWIN:
   tangle("#define FLX_CYGWIN 1")
  else:
   tangle("#define FLX_CYGWIN 0")
 
-@if config.target_cxx.POSIX:
+@if config.TARGET_CXX.options.POSIX:
   tangle("#define FLX_POSIX 1")
  else:
   tangle("#define FLX_POSIX 0")
 
-@if config.target_cxx.SOLARIS:
+@if config.TARGET_CXX.options.SOLARIS:
   tangle("#define FLX_SOLARIS 1")
  else:
   tangle("#define FLX_SOLARIS 0")
 
-@if config.target_cxx.HAVE_MSVC:
+@if config.HAVE_MSVC:
   tangle("#define FLX_HAVE_MSVC 1")
  else:
   tangle("#define FLX_HAVE_MSVC 0")
 
-@if config.target_cxx.HAVE_KQUEUE_DEMUXER:
+@if config.TARGET_CXX.options.HAVE_KQUEUE_DEMUXER:
   tangle("#define FLX_HAVE_KQUEUE_DEMUXER 1")
  else:
   tangle("#define FLX_HAVE_KQUEUE_DEMUXER 0")
 
-@if config.target_cxx.HAVE_POLL:
+@if config.TARGET_CXX.options.HAVE_POLL:
   tangle("#define FLX_HAVE_POLL 1")
  else:
   tangle("#define FLX_HAVE_POLL 0")
 
-@if config.target_cxx.HAVE_EPOLL:
+@if config.TARGET_CXX.options.HAVE_EPOLL:
   tangle("#define FLX_HAVE_EPOLL 1")
  else:
   tangle("#define FLX_HAVE_EPOLL 0")
 
-@if config.target_cxx.HAVE_EVTPORTS:
+@if config.TARGET_CXX.options.HAVE_EVTPORTS:
   tangle("#define FLX_HAVE_EVTPORTS 1")
  else:
   tangle("#define FLX_HAVE_EVTPORTS 0")
 
-@if config.target_cxx.HAVE_OPENMP:
+@if config.TARGET_CXX.options.HAVE_OPENMP:
   tangle("#define FLX_HAVE_OPENMP 1")
  else:
   tangle("#define FLX_HAVE_OPENMP 0")
@@ -331,13 +330,13 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 #endif
 
 @def cal_raw_address():
-  if config.target_cxx.SIZEOF_INT      == config.target_cxx.SIZEOF_VOIDP: return "unsigned"
-  if config.target_cxx.SIZEOF_LONG     == config.target_cxx.SIZEOF_VOIDP: return "unsigned long"
-  if config.target_cxx.SIZEOF_LONGLONG == config.target_cxx.SIZEOF_VOIDP: return "unsigned long long"
+  if config.TARGET_CXX.options.SIZEOF_INT      == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned"
+  if config.TARGET_CXX.options.SIZEOF_LONG     == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned long"
+  if config.TARGET_CXX.options.SIZEOF_LONGLONG == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
   raise "Cannot find an int the size of a void pointer"
 
 @tangle("#define FLX_RAWADDRESS " + cal_raw_address())
-@tangle('#define FLX_MAX_ALIGN ' + str(config.target_cxx.MAX_ALIGN))
+@tangle('#define FLX_MAX_ALIGN ' + str(config.TARGET_CXX.options.MAX_ALIGN))
 #endif
 @doc()
 

@@ -1555,7 +1555,7 @@ if "target" in PHASES:
 @h = tangler('config/flx_data.py')
 @select(h)
 import os
-import config.target_cxx
+import config
 
 cprecedence = [
   "atom",
@@ -1913,7 +1913,7 @@ tmap = {
   "ldouble"  : "long double"
  }
 
-if config.target_cxx.HAVE_COMPLEX:
+if config.TARGET_CXX.options.HAVE_COMPLEX:
   tmap["imaginary"]="float _Imaginary"
   tmap["dimaginary"]="double _Imaginary"
   tmap["limaginary"]="long double _Imaginary"
@@ -1939,19 +1939,19 @@ else:
   rmap["dcomplex"]="complex_hxx"
   rmap["lcomplex"]="complex_hxx"
 
-if config.target_cxx.HAVE_LONGDOUBLE:
+if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
   tmap["ldouble"]="long double"
 else:
   tmap["ldouble"]="double"
 
-if config.target_cxx.HAVE_LONGLONG:
+if config.TARGET_CXX.options.HAVE_LONGLONG:
   tmap["vlong"]="long long"
   tmap["uvlong"]="unsigned long long"
 else:
   tmap["vlong"]="long"
   tmap["uvlong"]="unsigned long"
 
-if config.target_cxx.HAVE_STDINT:
+if config.TARGET_CXX.options.HAVE_STDINT:
   tmap["int8"]="int8_t"
   tmap["uint8"]="uint8_t"
   tmap["int16"]="int16_t"
@@ -1982,14 +1982,14 @@ else:
   tmap["int8"]="signed char"
   tmap["uint8"]="unsigned char"
   sizes = {
-    config.target_cxx.SIZEOF_SHORT*8 : "short",
-    config.target_cxx.SIZEOF_INT*8: "int",
-    config.target_cxx.SIZEOF_LONG*8 : "long",
+    config.TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
+    config.TARGET_CXX.options.SIZEOF_INT*8: "int",
+    config.TARGET_CXX.options.SIZEOF_LONG*8 : "long",
   }
   tmap["intmax"]="long"
   tmap["uintmax"]="unsigned long"
-  if config.target_cxx.HAVE_LONGLONG:
-    sizes[config.target_cxx.SIZEOF_LONGLONG*8]="long long"
+  if config.TARGET_CXX.options.HAVE_LONGLONG:
+    sizes[config.TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
     tmap["intmax"]="long long"
     tmap["uintmax"]="unsigned long long"
   for size in [16,32,64]:
@@ -2002,8 +2002,8 @@ else:
       tmap["int"+str(size)]=t
       tmap["uint"+str(size)]="unsigned " + t
   try:
-    tmap["intptr"]=sizes[config.target_cxx.SIZEOF_VOIDP*8]
-    tmap["uintptr"]="unsigned "+sizes[config.target_cxx.SIZEOF_VOIDP*8]
+    tmap["intptr"]=sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
+    tmap["uintptr"]="unsigned "+sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
   except:
     print "NO INTEGER THE SIZE OF A VOID*!"
     sys.exit(1)

@@ -6,7 +6,7 @@
 
 @head(1,'Judy source package')
 @select(tangler('spkgs/flx_judy.py'))
-import config.target_cc
+import config
 
 iscr_source = ['lpsrc/flx_judy.pak']
 weaver_directory = 'doc/judy'
@@ -77,7 +77,7 @@ cc_ccs = [
 
 include_path=['src/judy/Judy1', 'src/judy/JudyL', 'src/judy/JudyCommon', 'src/judy']
 
-if config.target_cc.SIZEOF_VOIDP == 8:
+if config.TARGET_CC.options.SIZEOF_VOIDP == 8:
   macros=['JU_64BIT']
 else:
   macros=['JU_32BIT']

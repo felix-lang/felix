@@ -1,4 +1,4 @@
-@import config.target_cxx
+@import config
 @from flxbuild.iscrutil import setup_test
 @from flxbuild.flxutil import unix2native
 

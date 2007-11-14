@@ -1,4 +1,4 @@
-@import config.target_cxx
+@import config
 @from config.flx_data import rmap, tmap
 
 @head(1,'Felix Standard Library')
@@ -321,35 +321,35 @@ typeclass Show [T] {
 @fc = {'float':'f', 'double':'','ldouble':'l'}
 
 @def gen_nan(t):
-  if config.target_cxx.HAVE_CXX_ISNAN_IN_CMATH:
+  if config.TARGET_CXX.options.HAVE_CXX_ISNAN_IN_CMATH:
     tangle('  fun isnan: '+t+' -> bool = "std::isnan($1)" is postfix requires cmath;')
-  elif config.target_cxx.HAVE_C99_ISNAN_IN_MATH:
+  elif config.TARGET_CXX.options.HAVE_C99_ISNAN_IN_MATH:
     tangle('  fun isnan: '+t+' -> bool = "isnan($1)" is postfix requires math_h;')
-  elif config.target_cxx.HAVE_BSD_ISNAN_IN_MATH:
+  elif config.TARGET_CXX.options.HAVE_BSD_ISNAN_IN_MATH:
     tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)" is postfix requires math_h;')
-  elif config.target_cxx.HAVE_BSD_ISNAN_IN_IEEEFP:
+  elif config.TARGET_CXX.options.HAVE_BSD_ISNAN_IN_IEEEFP:
     tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" is postfix requires ieeefp_h;')
   else:
     tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary;')
 
-  if config.target_cxx.HAVE_CXX_ISINF_IN_CMATH:
+  if config.TARGET_CXX.options.HAVE_CXX_ISINF_IN_CMATH:
     tangle('  fun isinf: '+t+' -> bool = "std::isinf($1)" is postfix requires cmath;')
-  elif config.target_cxx.HAVE_C99_ISINF_IN_MATH:
+  elif config.TARGET_CXX.options.HAVE_C99_ISINF_IN_MATH:
     tangle('  fun isinf: '+t+' -> bool = "isinf($1)" is postfix requires math_h;')
-  elif config.target_cxx.HAVE_BSD_ISINF_IN_MATH:
+  elif config.TARGET_CXX.options.HAVE_BSD_ISINF_IN_MATH:
     tangle('  fun isinf: '+t+' -> bool = "isinf'+fc[t]+'($1)" is postfix requires math_h;')
-  elif config.target_cxx.HAVE_BSD_ISINF_IN_IEEEFP:
+  elif config.TARGET_CXX.options.HAVE_BSD_ISINF_IN_IEEEFP:
     tangle('  fun isinf: '+t+' -> bool = "isinf'+fc[t]+'($1)" is postfix requires ieeefp_h;')
   else:
     tangle('  fun isinf: '+t+' -> bool = "($1==$1 && $1+$1+1.0==$1)" is unary;')
 
-  if config.target_cxx.HAVE_CXX_ISFINITE_IN_CMATH:
+  if config.TARGET_CXX.options.HAVE_CXX_ISFINITE_IN_CMATH:
     tangle('  fun isfinite: '+t+' -> bool = "std::isfinite($1)" is postfix requires cmath;')
-  elif config.target_cxx.HAVE_C99_ISFINITE_IN_MATH:
+  elif config.TARGET_CXX.options.HAVE_C99_ISFINITE_IN_MATH:
     tangle('  fun isfinite: '+t+' -> bool = "isfinite($1)" is postfix requires math_h;')
-  elif config.target_cxx.HAVE_BSD_FINITE_IN_MATH:
+  elif config.TARGET_CXX.options.HAVE_BSD_FINITE_IN_MATH:
     tangle('  fun isfinite: '+t+' -> bool = "finite'+fc[t]+'($1)" is postfix requires math_h;')
-  elif config.target_cxx.HAVE_BSD_FINITE_IN_IEEEFP:
+  elif config.TARGET_CXX.options.HAVE_BSD_FINITE_IN_IEEEFP:
     tangle('  fun isfinite: '+t+' -> bool = "finite'+fc[t]+'($1)" is postfix requires ieeefp_h')
   else:
     tangle('  fun isfinite: '+t+' -> bool = "($1==$1 && $1!==0.0 && $1+$1!=$1)" is unary;')
@@ -391,7 +391,7 @@ header string_hxx = '#include <string>';
 header complex_hxx = '#include <complex>';
 header c99_complex_h = '#include <complex.h>';
 
-@if config.target_cxx.HAVE_STDINT:
+@if config.TARGET_CXX.options.HAVE_STDINT:
   tangle('header c99_stdint_h = "#include <stdint.h>";')
  else:
   tangle('header c99_stdint_h = "";')
