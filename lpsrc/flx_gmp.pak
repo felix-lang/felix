@@ -1,6 +1,7 @@
-@execfile("flxbuild"+os.sep+"iscrutil.py")
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@env = setup_test('test/gmp/gmp-')
+@env = setup_test(get_input_frame(), 'test/gmp/gmp-')
 
 @head(1,'GNU Multiple Precision library')
 This module provides a wrapper for the Gnu Multiple
@@ -13,19 +14,20 @@ scripting harness to find them.
 REQUIRES: -lgmpxx -lgmp
 
 @select(tangler("cpkgs/target/gmpxx.py"))
-execfile("config"+os.sep+"config.py")
+from flxbuild.config_support import cwrite, cload, pa
 try:
   cload(globals(),"target_gmpxx")
 except:
-  HAVE_GMPXX=TARGET_CXX.check_header_exists('gmpxx.h')
-  f=cwrite('target_gmpxx')
-  pa(f,locals(),"HAVE_GMPXX")
+  import config
+  HAVE_GMPXX = config.TARGET_CXX.check_header_exists('gmpxx.h')
+  f = cwrite('target_gmpxx')
+  pa(f, locals(), "HAVE_GMPXX")
   f.close()
-  cload(globals(),"target_gmpxx")
+  cload(globals(), "target_gmpxx")
 
 @h = tangler('spkgs/gmpxx.py')
 @select(h)
-execfile('cpkgs'+os.sep+'target'+os.sep+'gmpxx.py')
+from cpkgs.target.gmpxx import HAVE_GMPXX
 if HAVE_GMPXX:
 @tangle('  unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 

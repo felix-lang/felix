@@ -1,13 +1,13 @@
+@import config
+@from flxbuild.flxutil import unix2native
+
 @set_title('Regression Tests')
 @import glob
 
-@execfile("config"+os.sep+"config.py")
-@execfile("flxbuild"+os.sep+"iscrutil.py")
-
 @def magic(n,f):
-  toglob= os.path.join(FLX_DIR,unix2native(f))
+  toglob = os.path.join(config.FLX_DIR,unix2native(f))
   tangle(n+' = glob.glob('+ repr(toglob)+')')
-  
+
 @head(1, 'Packages')
 @select(tangler('spkgs/flx_regression_tests_rt.py'))
 @magic('unit_tests',"test/regress/rt/*.flx")

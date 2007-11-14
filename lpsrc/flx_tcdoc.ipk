@@ -1,5 +1,3 @@
-@execfile('config'+os.sep+'flx_data.py')
-
 @h = tangler("src/compiler/flxlib/flx_tcdoc.mli")
 @select(h)
 open Flx_token

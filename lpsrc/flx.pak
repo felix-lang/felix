@@ -1,7 +1,7 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@execfile('config'+os.sep+'config.py')
-@set_title('Felix '+flx_version)
+@import config
+@set_title('Felix ' + config.flx_version)
 
 @head(1,'The Felix Compiler')
 SVN conversion.
@@ -324,13 +324,13 @@ There is a separate package "flx_config.pak" which should
 be used to create the configuration creator script.
 @import traceback
 @try:
-    execfile("config"+os.sep+"flx_data.py")
+    import config.flx_data
  except:
     xt,xv,tb = sys.exc_info()
     print "ERROR IN config/flx_data.py"
     traceback.print_exception(xt,xv,tb)
     print "You must either"
-    print "(a) edit config/config.py and fix the error, or,"
+    print "(a) edit config/__init__.py and fix the error, or,"
     print "(b) i) delete it, and,"
     print "    ii) run 'python script/make_config.py'"
     print "       again to reset it:"
@@ -369,19 +369,17 @@ open Flx_version
 let version_data: version_data_t =
 {
 @tangle('  buildno = '+buildno+";")
-@tangle('  version_string = "'+flx_version+'";')
-@tangle('  build_time_float = '+str(now)+";")
-@tangle('  build_time = "'+time.ctime(now)+'";')
+@tangle('  version_string = "%s";' % config.flx_version)
+@tangle('  build_time_float = %s;' % now)
+@tangle('  build_time = "%s";' % time.ctime(now))
 @f = open ("VERSION","w")
-@f.write(flx_version+"\n")
+@f.write(config.flx_version+"\n")
 @f.close()
 }
 ;;
 let set_version () =
   Flx_version.version_data := version_data
 ;;
-
-@execfile('config'+os.sep+'flx_data.py')
 
 @head(2,'The front end')
 @push_head()

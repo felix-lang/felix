@@ -1,5 +1,5 @@
 @head(1,'GODI')
-@execfile('config/flx_data.py')
+@import config
 
 This is the Godiva file originally used to
 create the GODI data. At the moment this is
@@ -10,12 +10,12 @@ is included as well.
 
 @select(tangler('meta/godiva/flx.godiva','data'))
 Package: apps-felix
-@tangle('Version: '+flx_version)
+@tangle('Version: '+config.flx_version)
 Revision: 0
 Depends:
 Build-Depends: godi-ocaml (> 3.08)
-@tangle('Sources: http://felix.sf.net/flx_'+flx_version+'_src.tgz')
-@tangle('Unpacks-To: flx_'+flx_version)
+@tangle('Sources: http://felix.sf.net/flx_'+config.flx_version+'_src.tgz')
+@tangle('Unpacks-To: flx_'+config.flx_version)
 Bytecode-Target: all
 Opt-Target: all
 Homepage: http://felix.sf.net
@@ -27,15 +27,15 @@ Felix Compiler
 
 @select(tangler('meta/godiva/flx.godiva_camlsyntax','data'))
 name = "felix";
-@tangle('version = "'+flx_version+'";')
+@tangle('version = "'+config.flx_version+'";')
 revision = 0;
 category = `apps;
 depends = [];
 build_depends = [`godi,"ocaml", Some (`gt, "3.08")];
 sources_site ="http://felix.sf.net/";
-@tangle('sources_basename= "flx_'+flx_version+'_src";')
+@tangle('sources_basename= "flx_'+config.flx_version+'_src";')
 sources_extension = ".tgz";
-@tangle('sources_unpacksto = "flx_'+flx_version+'";')
+@tangle('sources_unpacksto = "flx_'+config.flx_version+'";')
 all_target= "all";
 opt_target= "all";
 homepage= "http://felix.sf.net";
@@ -67,11 +67,11 @@ it should be generated).
 .include "../../mk/bsd.prefs.mk"
 .include "../../mk/godi.pkg.mk"
 
-@tangle('VERSION=        '+flx_version)
+@tangle('VERSION=        '+config.flx_version)
 PKGNAME=        apps-felix-${VERSION}
-@tangle('PKGREVISION=    '+godi_revision)
-@tangle('DISTNAME=       flx_'+flx_version)
-@tangle('DISTFILES=      flx_'+flx_version+'_src.tgz')
+@tangle('PKGREVISION=    '+config.godi_revision)
+@tangle('DISTNAME=       flx_'+config.flx_version)
+@tangle('DISTFILES=      flx_'+config.flx_version+'_src.tgz')
 CATEGORIES=     apps
 MASTER_SITES=   http://felix.sf.net/
 MAINTAINER=     John Skaller <skaller@users.sf.net>

@@ -1,5 +1,7 @@
+@import config
+@import config.flx_data as flx_data
+
 @head(1,'Flxcc wrapper generator')
-@execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flxcc.py')
 @select(h)
 FLXCC_EXES = [ 'src/compiler/drivers/flxcc', ]
@@ -106,7 +108,7 @@ let control = {
   preout_filename = Sys.argv.(1) ^ ".i";
   log_filename = Sys.argv.(1) ^ ".log";
   language = `C;
-@tangle('  preprocessor ="'+FLXCC_CPP+'";')
+@tangle('  preprocessor ="%s";' % config.FLXCC_CPP)
   noincludes = [];
   raw_includes = StringSet.empty;
   raw_include_dirs = StringSet.empty;
@@ -2207,7 +2209,7 @@ let f = open_out control.log_filename in
 // Felix: language and core library wrapper control
 //
 // rename Felix keywords
-@for k,j in flx_keywords:
+@for k,j in flx_data.flx_keywords:
   tangle('rename '+k+' '+k+'_')
 //
 // We need to rename any C++ keywords too
@@ -2219,14 +2221,14 @@ rename size_t size
 rename wchar_t wchar
 
 // ignore definitions of Felix standard library types
-@for k in tmap.keys():
+@for k in flx_data.tmap.keys():
   tangle('ignore '+k)
 ignore wchar
 
 @h = tangler("tmp/gnu_c_search_path.flxcc.default","data")
 @select(h)
 path /usr/local/include
-@if not MACOSX:
+@if not config.MACOSX:
   tangle('path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include')
 path /usr/include
 
@@ -2237,7 +2239,7 @@ path /usr/include/c++/4.0.0/backward
 path /usr/include/c++/3.2.2
 path /usr/include/c++/3.2.2/backward
 path /usr/local/include
-@if not MACOSX:
+@if not config.MACOSX:
   tangle('path /usr/include/c++/4.0.0/i386-redhat-linux')
   tangle('path /usr/include/c++/3.2.2/i386-redhat-linux')
   tangle('path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include')
@@ -2273,7 +2275,7 @@ rename_nontype vtimes vtimes_
 rename_nontype statfs statfs_
 rename_nontype timezone timezone_
 
-@if MACOSX:
+@if config.MACOSX:
   tangle('#include config/gnu_macosx_headers.flxcc')
  else:
   tangle('#include config/gnu_linux_macosx_headers.flxcc')
@@ -2550,7 +2552,7 @@ incfile stdint.h
 incfile stdio.h
 incfile stdlib.h
 incfile string.h
-@if not MACOSX:
+@if not config.MACOSX:
   tangle('incfile tgmath.h')
 incfile time.h
 incfile wchar.h
@@ -2592,7 +2594,7 @@ incfile stdint.h
 incfile stdio.h
 incfile stdlib.h
 incfile string.h
-@if not MACOSX:
+@if not config.MACOSX:
   tangle('incfile tgmath.h')
 incfile time.h
 incfile wchar.h

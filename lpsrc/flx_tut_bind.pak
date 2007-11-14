@@ -1,8 +1,9 @@
 @set_title('Felix Tutorial: Embedding')
 
-@execfile("flxbuild"+os.sep+"iscrutil.py")
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@env = setup_test('tut/embedding/bind-')
+@env = setup_test(get_input_frame(), 'tut/embedding/bind-')
 
 @def kat(code):
   env.kat(get_tangler(),code)

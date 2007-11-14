@@ -1,5 +1,7 @@
-@execfile(os.path.join("config","flx_data.py"))
 @import time
+@import config
+@import config.flx_data as flx_data
+
 @now = time.time()
 @gmtime = time.gmtime(now)
 @short_time = time.strftime("%a %d %b %Y",gmtime)
@@ -11,7 +13,7 @@ iscr_source = ['lpsrc/flx_man.pak']
 @python('//')
 manfoot = r"""
 .SH VERSION
-.B """+flx_version+"""
+.B """+config.flx_version+"""
 .SH SEE ALSO
 .B felix(1)
 for a language introduction and man page index
@@ -62,11 +64,11 @@ John Maxwell Skaller, mailto:skaller@users.sourceforge.net
 //
 
 @def mh(t):
-  tangle('.TH "'+t+'" 1 "'+short_time+'" ('+flx_version+')')
+  tangle('.TH "'+t+'" 1 "'+short_time+'" ('+config.flx_version+')')
 
 @head(2,'felix:language overview')
 @select(tangler('man/man1/felix.1','data'))
-@mh('FELIX LANGUAGE '+flx_version)
+@mh('FELIX LANGUAGE '+config.flx_version)
 .SH NAME
 Felix language
 .SH SYNOPSIS
@@ -951,15 +953,15 @@ Felix keywords and symbols
 
 .SH Keywords
 
-@for n,t in flx_keywords: tangle(n)
+@for n,t in flx_data.flx_keywords: tangle(n)
 .br
 
 .SH symbols
-@for k,s in flx_1_char_syms: tangle (s)
+@for k,s in flx_data.flx_1_char_syms: tangle (s)
 .br
-@for k,s in flx_2_char_syms: tangle (s)
+@for k,s in flx_data.flx_2_char_syms: tangle (s)
 .br
-@for k,s in flx_3_char_syms: tangle (s)
+@for k,s in flx_data.flx_3_char_syms: tangle (s)
 .br
 
 @tangle(manfoot)

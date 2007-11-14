@@ -1,6 +1,9 @@
-@execfile("flxbuild"+os.sep+"iscrutil.py")
+@set_title('Felix Tests')
 
-@env = setup_test('test/drivers/drvr-')
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
+
+@env = setup_test(get_input_frame(), 'test/drivers/drvr-')
 
 @select(tangler('spkgs/flx_test.py'))
 @tangle('TESTS = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')

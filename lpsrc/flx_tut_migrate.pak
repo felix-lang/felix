@@ -1,7 +1,9 @@
 @set_title('Felix For C++ Programmers')
 
-@execfile("flxbuild"+os.sep+"iscrutil.py")
-@env = setup_test('tut/migration//mig-')
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
+
+@env = setup_test(get_input_frame(), 'tut/migration//mig-')
 
 @select(tangler('spkgs/flx_tut_migrate.py'))
 @tangle('TESTS = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')

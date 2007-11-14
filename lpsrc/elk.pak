@@ -1,4 +1,4 @@
-@execfile("config"+os.sep+"config.py")
+@import config
 @head(1,'elkhound')
 
 @h=tangler('licences/elk_licence.txt','data')
@@ -160,7 +160,7 @@ xfiles = [
 Name: elk
 Description: Elhound
 Version: 1
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libelk_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libelk_static")
  else:

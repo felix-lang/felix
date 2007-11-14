@@ -1,19 +1,21 @@
 @head(1,"pari")
 @select(tangler("cpkgs/target/pari.py"))
-execfile("config"+os.sep+"config.py")
+from flxbuild.config_support import cwrite, cload, pa
 try:
   cload(globals(),"target_pari")
 except:
-  HAVE_PARI=TARGET_CXX.check_header_exists('pari.h')
-  f=cwrite('target_pari')
-  pa(f,locals(),"HAVE_PARI")
+  import config
+  HAVE_PARI = config.TARGET_CXX.check_header_exists('pari.h')
+  f = cwrite('target_pari')
+  pa(f, locals(), "HAVE_PARI")
   f.close()
-  cload(globals(),"target_pari")
+  cload(globals(), "target_pari")
 
 
 @h = tangler('spkgs/pari.py')
 @select(h)
-execfile("cpkgs"+os.sep+"target"+os.sep+"pari.py")
+from cpkgs.target.pari import HAVE_PARI
+
 if HAVE_PARI:
   iscr_source = ['lpsrc/pari.pak']
   weaver_directory = 'doc/rtl/pari/'

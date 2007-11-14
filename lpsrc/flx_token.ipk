@@ -1,4 +1,5 @@
-@execfile('config'+os.sep+'flx_data.py')
+@from config.flx_data import flx_keywords, flx_syms
+
 @h = tangler('src/compiler/flxlib/flx_token.mli')
 @select(h)
 open Flx_ast

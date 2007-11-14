@@ -1,4 +1,5 @@
-@execfile('config'+os.sep+'flx_data.py')
+@import config.flx_data as flx_data
+
 @select(tangler("lib/nugram.flxh"))
 
 SCHEME """
@@ -1341,7 +1342,7 @@ syntax cbind {
     assumed to be low, and parenthesis is always added.<p>
     <p> The precedence must be one of the following identifiers:
     <ol>
-@for i in cprecedence: tangle ('<li>'+i+'</li>')
+@for i in flx_data.cprecedence: tangle ('<li>'+i+'</li>')
     </ol></p>
   """;
 

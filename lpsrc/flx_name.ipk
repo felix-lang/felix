@@ -1,3 +1,5 @@
+@from config.flx_data import cpp_keywords
+
 @h = tangler('src/compiler/flxlib/flx_name.mli')
 @select(h)
 open Flx_types

@@ -1,6 +1,8 @@
-@execfile("flxbuild"+os.sep+"iscrutil.py")
-@execfile('config'+os.sep+'config.py')
-@env = setup_test('test/glob/glob-')
+@import config
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
+
+@env = setup_test(get_input_frame(), 'test/glob/glob-')
 
 @head(1,'Directory Services (glob)')
 @head(2,"Category Reference",nospawn=1)
@@ -12,10 +14,10 @@ Name: glob
 Description: Directory Serivces
 Version: $Id$
 
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_glob_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_glob_static")
- elif WIN32:
+ elif config.WIN32:
    tangle("provides_dlib: -lflx_glob_dynamic")
    tangle("provides_slib: -lflx_glob_static")
  else:
@@ -31,7 +33,7 @@ rtl_interfaces = ['config/target/flx_glob_config.hpp', 'src/unixem/flx_glob.hpp'
 felix_rtl = ['src/unixem/glob.flx']
 
 cpp_cpps = []
-if WIN32:
+if config.WIN32:
   cpp_cpps.extend([
     'src/unixem/flx_glob',
     'src/unixem/unixem_util',

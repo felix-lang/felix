@@ -1,5 +1,4 @@
 @head(1,"Frontc and Cil C parser")
-@execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/cil.py')
 @select(h)
 iscr_source = ['lpsrc/cil.pak']

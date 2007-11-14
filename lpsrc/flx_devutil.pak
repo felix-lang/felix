@@ -1,5 +1,4 @@
 @head(1,"Developer utility scripts")
-@execfile('config/flx_data.py')
 These script are NOT required to build Felix: they're utilies
 related to munging the original code into interscript format,
 and doing miscellaneous things during development.
@@ -393,7 +392,7 @@ cpt = '// _________________'
 cphn = len(cph)
 cptn = len(cpt)
 
-print "@execfile('config'+os.sep+'config.py')"
+print "@import config"
 print "@head(1,'Judy')"
 g = open("tmp.tmp","w")
 for fn in files:

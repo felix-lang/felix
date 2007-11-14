@@ -1,3 +1,5 @@
+@import config
+
 @head(1,'Garbage collector')
 
 @p()
@@ -38,7 +40,6 @@ around the malloc/free interface. It is provided primarily
 to allow instrumentation of allocations, although it is possible
 to supply a user written allocator.
 
-@execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flx_gc.py')
 @select(h)
 cpp_cpps = [
@@ -67,7 +68,7 @@ xfiles = [os.path.join('src', 'gc', '*')]
 Name: flx_gc
 Description: Felix default garbage collector
 Version: $Id$
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_gc_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_gc_static")
  else:

@@ -1,5 +1,4 @@
 @head(1,'Flxcc utilities')
-@execfile('config'+os.sep+'flx_data.py')
 @h = tangler('spkgs/flxcc_util.py')
 @select(h)
 FLXCC_UTIL_MODULES = [

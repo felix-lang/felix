@@ -1,4 +1,3 @@
-@execfile('config'+os.sep+'config.py')
 @select(tangler('mkplugins/extract_grammar.py'))
 import os
 class PLUGIN(Plugin):

@@ -1,12 +1,13 @@
-@execfile("config"+os.sep+"target_cxx.py")
-@execfile("flxbuild"+os.sep+"iscrutil.py")
+@import config.target_cxx
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@env = setup_test('test/mmap/mmap-')
+@env = setup_test(get_input_frame(), 'test/mmap/mmap-')
 
 @head(1,"Address space management")
 
 @select(tangler('spkgs/mmap.py'))
-if HAVE_MMAP:
+if config.HAVE_MMAP:
 @tangle('  unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 iscr_source = ['lpsrc/flx_mmap.pak']
@@ -34,24 +35,24 @@ module Mmap
 
   typedef off_t = unsigned long;
   // protection options
-@if HAVE_MMAP:
-  if HAVE_MMAP_PROT_EXEC:  tangle('  const PROT_EXEC : int;')
-  if HAVE_MMAP_PROT_READ:  tangle('  const PROT_READ : int;')
-  if HAVE_MMAP_PROT_WRITE: tangle('  const PROT_WRITE : int;')
+@if config.HAVE_MMAP:
+  if config.HAVE_MMAP_PROT_EXEC:  tangle('  const PROT_EXEC : int;')
+  if config.HAVE_MMAP_PROT_READ:  tangle('  const PROT_READ : int;')
+  if config.HAVE_MMAP_PROT_WRITE: tangle('  const PROT_WRITE : int;')
 
-  if HAVE_MMAP_DENYWRITE:    tangle('  const MAP_DENYWRITE: int;')
-  if HAVE_MMAP_ANONYMOUS:    tangle('  const MAP_ANONYMOUS: int;')
-  if HAVE_MMAP_FILE:         tangle('  const MAP_FILE: int;')
-  if HAVE_MMAP_FIXED:        tangle('  const MAP_FIXED: int;')
-  if HAVE_MMAP_HASSEMAPHORE: tangle('  const MAP_HASSEMAPHORE: int;')
-  if HAVE_MMAP_SHARED:       tangle('  const MAP_SHARED : int;')
-  if HAVE_MMAP_PRIVATE:      tangle('  const MAP_PRIVATE : int;')
-  if HAVE_MMAP_NORESERVE:    tangle('  const MAP_NORESERVE: int;')
-  if HAVE_MMAP_LOCKED:       tangle('  const MAP_LOCKED: int;')
-  if HAVE_MMAP_GROWSDOWN:    tangle('  const MAP_GROWSDOWN: int;')
-  if HAVE_MMAP_32BIT:        tangle('  const MAP_32BIT: int;')
-  if HAVE_MMAP_POPULATE:     tangle('  const MAP_POPULATE: int;')
-  if HAVE_MMAP_NONBLOCK:     tangle('  const MAP_NONBLOCK: int;')
+  if config.HAVE_MMAP_DENYWRITE:    tangle('  const MAP_DENYWRITE: int;')
+  if config.HAVE_MMAP_ANONYMOUS:    tangle('  const MAP_ANONYMOUS: int;')
+  if config.HAVE_MMAP_FILE:         tangle('  const MAP_FILE: int;')
+  if config.HAVE_MMAP_FIXED:        tangle('  const MAP_FIXED: int;')
+  if config.HAVE_MMAP_HASSEMAPHORE: tangle('  const MAP_HASSEMAPHORE: int;')
+  if config.HAVE_MMAP_SHARED:       tangle('  const MAP_SHARED : int;')
+  if config.HAVE_MMAP_PRIVATE:      tangle('  const MAP_PRIVATE : int;')
+  if config.HAVE_MMAP_NORESERVE:    tangle('  const MAP_NORESERVE: int;')
+  if config.HAVE_MMAP_LOCKED:       tangle('  const MAP_LOCKED: int;')
+  if config.HAVE_MMAP_GROWSDOWN:    tangle('  const MAP_GROWSDOWN: int;')
+  if config.HAVE_MMAP_32BIT:        tangle('  const MAP_32BIT: int;')
+  if config.HAVE_MMAP_POPULATE:     tangle('  const MAP_POPULATE: int;')
+  if config.HAVE_MMAP_NONBLOCK:     tangle('  const MAP_NONBLOCK: int;')
 @#
 
   const MAP_FAILED : address;

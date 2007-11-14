@@ -1,14 +1,13 @@
-@set_title('STL')
-
 @import glob
+@import config
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@execfile("config"+os.sep+"config.py")
-@execfile("flxbuild"+os.sep+"iscrutil.py")
-
-@env  = setup_test('test/regress//stl-')
+@env = setup_test(get_input_frame(), 'test/regress//stl-')
 
 @def kat(code): env.kat(get_tangler(),code)
 
+@set_title('STL')
 @head(1,'Stl library')
 @h=tangler('lib/stl.flx','data')
 @select(h)
@@ -22,7 +21,7 @@ header std_stl_queue = "#include <queue>";
 header std_stl_set = "#include <set>";
 header std_stl_map = "#include <map>";
 header std_stl_stack = "#include <stack>";
-@if HAVE_STL_GNU_CXX:
+@if config.HAVE_STL_GNU_CXX:
   tangle('header ext_hash_set = "#include <ext/hash_set>";')
   tangle('header ext_hash_map = "#include <ext/hash_map>";')
   tangle('header ext_slist = "#include <ext/slist>";')
@@ -349,7 +348,7 @@ module Stl
 
   }
 
-@if HAVE_STL_GNU_CXX:
+@if config.HAVE_STL_GNU_CXX:
   tangle('  module Slist[t]')
   tangle('  {')
   tangle('    requires ext_slist;')
@@ -361,7 +360,7 @@ module Stl
   tangle('    proc erase_after : stl_slist[t] * stl_slist_iterator[t] = "$1.erase_after($1);";')
   tangle('  }')
 
-@if HAVE_STL_GNU_CXX:
+@if config.HAVE_STL_GNU_CXX:
   tangle('// HASHTABLE based containers assume')
   tangle('// these classes will be added to C++ via TR1 in the future.')
   tangle('// g++ 3.2.2 at least has these classes')

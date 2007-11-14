@@ -1,4 +1,4 @@
-@execfile('config'+os.sep+'config.py')
+@import config
 @head(1,'Sourceforge web site top level')
 These HTML pages are manually prepared.
 The output lives in the subdirectory www,
@@ -24,7 +24,7 @@ modification, are permitted.
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-@tangle("<TITLE>Felix Download Felix "+flx_version+"</TITLE>")
+@tangle("<TITLE>Felix Download Felix "+config.flx_version+"</TITLE>")
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -44,7 +44,7 @@ modification, are permitted.
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-@tangle("<TITLE>Felix Download Felix "+flx_version+"</TITLE>")
+@tangle("<TITLE>Felix Download Felix "+config.flx_version+"</TITLE>")
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -84,7 +84,7 @@ native Win32 using MSVC++.
 
 <H1>Source Download</H1>
 @flx_old_version = '1.1.1'
-@tangle("<P> Download developer tarball 'Morphlix' <A HREF=../../flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A></P><P>")
+@tangle("<P> Download developer tarball 'Morphlix' <A HREF=../../flx_"+config.flx_version+"_src.tgz>flx_"+config.flx_version+"_src.tgz</A></P><P>")
 @tangle("<P> Download latest stable tarball 'Felix' <A HREF=../../flx_"+flx_old_version+"_src.tgz>flx_"+flx_old_version+"_src.tgz</A></P><P>")
 @keep=['1.1.0']
 @for k in keep:
@@ -116,7 +116,7 @@ to install the system, by default in /usr/local/lib/felix,
 the scripting driver harness in /usr/local/bin,
 and the man pages in /usr/local/man.
 If these install points are not suitable for your
-system, you'll have to <STRONG>edit</STRONG> the config/config.py file.
+system, you'll have to <STRONG>edit</STRONG> the config/__init__.py file.
 </P>
 <H1>Building your Library</H1>
 <P>Felix only comes with a core service library.

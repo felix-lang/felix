@@ -1,4 +1,5 @@
-@execfile('config'+os.sep+'flx_data.py')
+@from config.flx_data import cprecedence
+
 @head(1,"C/C++ typings")
 @h = tangler("src/compiler/flxcclib/flx_ctypes.mli")
 @select(h)

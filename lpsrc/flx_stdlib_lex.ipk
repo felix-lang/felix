@@ -1,3 +1,5 @@
+@import config.flx_data as flx_data
+
 @head(1,'Felix lexerlibrary')
 @h=tangler('lib/flx_lex.flx')
 @select(h)
@@ -248,9 +250,9 @@ module Flx_lex
     | rdQuote
     | rdddQuote
 
-@for k,s in flx_1_char_syms: tangle('    | ' +k,inhibit_sref=1)
-@for k,s in flx_2_char_syms: tangle('    | ' +k,inhibit_sref=1)
-@for k,s in flx_3_char_syms: tangle('    | ' +k,inhibit_sref=1)
+@for k,s in flx_data.flx_1_char_syms: tangle('    | ' +k,inhibit_sref=1)
+@for k,s in flx_data.flx_2_char_syms: tangle('    | ' +k,inhibit_sref=1)
+@for k,s in flx_data.flx_3_char_syms: tangle('    | ' +k,inhibit_sref=1)
 
   ;
 
@@ -287,9 +289,9 @@ module Flx_lex
     | ('r'|'R') d_quote       => rdQuote
     | ('r'|'R') ddd_quote     => rdddQuote
 
-@for k,s in flx_1_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
-@for k,s in flx_2_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
-@for k,s in flx_3_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
+@for k,s in flx_data.flx_1_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
+@for k,s in flx_data.flx_2_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
+@for k,s in flx_data.flx_3_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
 
     /* whitespace */
     | white + => White

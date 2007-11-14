@@ -1,4 +1,5 @@
-@execfile("config"+os.sep+'flx_data.py')
+@from config.flx_data import cpp_keywords
+
 @head(1,"Interscript syntax colouring for C++")
 @head(1,"Tokeniser")
 Start with the Python one.

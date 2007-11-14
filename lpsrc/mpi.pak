@@ -1,10 +1,10 @@
 @head(1,"MPI")
 @select(tangler("cpkgs/target/mpi.py"))
-execfile("config"+os.sep+"config.py")
+from flxbuild.config_support import cwrite, cload, pa, locate_file
 try:
   cload(globals(),"target_mpi")
 except:
-  #HAVE_MPI=TARGET_CXX.check_header_exists('mpi.h')
+  #HAVE_MPI= config.TARGET_CXX.check_header_exists('mpi.h')
   # THIS ONLY WORKS ON UNIX
   print "Search for include/mpi.h"
   dir = locate_file("/include/mpi.h")
@@ -20,15 +20,15 @@ except:
   else:
     HAVE_MPI=0
 
-  f=cwrite('target_mpi')
-  pa(f,locals(),"HAVE_MPI")
+  f = cwrite('target_mpi')
+  pa(f, locals(), "HAVE_MPI")
   f.close()
-  cload(globals(),"target_mpi")
+  cload(globals(), "target_mpi")
 
 
 @h = tangler('spkgs/mpi.py')
 @select(h)
-execfile("cpkgs"+os.sep+"target"+os.sep+"mpi.py")
+from cpkgs.target.mpi import HAVE_MPI
 if HAVE_MPI:
   iscr_source = ['lpsrc/mpi.pak']
   weaver_directory = 'doc/rtl/mpi/'

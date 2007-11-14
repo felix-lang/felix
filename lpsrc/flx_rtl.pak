@@ -1,6 +1,6 @@
-@head(1,"Run time driver support library")
+@import config
 
-@execfile('config'+os.sep+'flx_data.py')
+@head(1,"Run time driver support library")
 
 This package contains core types and routines
 to facilitate construction of drivers for
@@ -138,7 +138,7 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 @select(tangler('config/flx_exceptions.fpc', 'data'))
 Name: flx
 Description: Felix exceptions
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_exceptions_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_exceptions_static")
  else:
@@ -151,7 +151,7 @@ includes: "flx_exceptions.hpp"
 Name: flx
 Description: Felix core runtime support
 Version: $Id$
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_static")
  else:
@@ -179,7 +179,7 @@ Requires: flx_pthread flx flx_gc
 Name: flx_async
 Description: Async hook
 Version: $Id$
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_async_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_async_static")
  else:

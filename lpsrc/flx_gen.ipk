@@ -3029,7 +3029,7 @@ try
   (*
   and iface_file_name = filebase ^ ".fix"
   *)
-  let outbase = 
+  let outbase =
     match compiler_options.output_dir with
     | None -> filename
     | Some d -> Filename.concat d (Filename.basename filename)

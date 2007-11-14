@@ -1,4 +1,4 @@
-@execfile('config'+os.sep+'config.py')
+@import config
 @FLX_SONAME="JUNK"
 @head(1,'Debian package generator')
 Generates debian packaging meta info.
@@ -29,9 +29,9 @@ Description: high performance programming language translator and tools
 @select(tangler('olddebian/dirs','data'))
 usr/bin
 usr/lib
-@tangle('usr/lib/felix-'+flx_version)
-@tangle('usr/lib/felix-'+flx_version+'/lib')
-@tangle('usr/lib/felix-'+flx_version+'/rtl')
+@tangle('usr/lib/felix-%s' % config.flx_version)
+@tangle('usr/lib/felix-%s/lib' % config.flx_version)
+@tangle('usr/lib/felix-%s/rtl' % config.flx_version)
 @for i in [
   'elkhound',
   'mmap',
@@ -48,7 +48,7 @@ usr/lib
   'test',
   'tutorial'
   ]:
-  tangle('usr/share/doc/felix-'+flx_version+'/'+i)
+  tangle('usr/share/doc/felix-%s/%s' % (config.flx_version, i))
 usr/share/man/man1
 
 @select(tangler('olddebian/compat','data'))
@@ -73,7 +73,7 @@ Run time library Licence: Free for any use.
 
 @head(2,'Documentation')
 @select(tangler('olddebian/changelog','data'))
-@tangle('felix ('+flx_version+'-'+debian_revision+') unstable; urgency=low')
+@tangle('felix (%s-%s) unstable; urgency=low' % (config.flx_version, config.debian_revision))
 
   * Initial Release.
 
@@ -105,7 +105,7 @@ bin/flxcc usr/bin
 bin/flx_elkhound usr/bin
 bin/flx_doc usr/bin
 lib/*.flx usr/lib/felix/lib
-@tangle('rtl/libflx_dynamic.so.'+flx_version+' usr/lib')
+@tangle('rtl/libflx_dynamic.so.%s usr/lib' % config.flx_version)
 rtl/*.a usr/lib
 rtl/*.h usr/include
 rtl/*.hpp usr/include
@@ -136,8 +136,8 @@ usr/share/man/man1/flx.1.gz usr/share/man/man1/flx_elkhound.1.gz
 @# and create a link libflx_dynamic.so.major to load against (run time)
 @# the so name embedded in the library is libflx_dynamic.so.major
 @#
-@tangle('usr/lib/libflx_dynamic.so.'+flx_version+' usr/lib/libflx_dynamic.so')
-@tangle('usr/lib/libflx_dynamic.so.'+flx_version+' usr/lib/'+FLX_SONAME)
+@tangle('usr/lib/libflx_dynamic.so.%s usr/lib/libflx_dynamic.so' % config.flx_version)
+@tangle('usr/lib/libflx_dynamic.so.%s usr/lib/%s' % (config.flx_version, FLX_SONAME))
 
 @head(2,'Build rules')
 @select(tangler('olddebian/rules'))
@@ -400,46 +400,46 @@ exit 0
 @tangle("#THIS FILE MUST BE EXECUTED FROM THE PARENT DIRECTORY")
 @tangle('all: binary_package')
 @tangle('')
-@tangle('felix_'+flx_version+'.orig.tar.gz:')
+@tangle('felix_%s.orig.tar.gz:' % config.flx_version)
 @tangle('\t(cd flx && make extract src_tarball)')
-@tangle('\tln -s flx/flx_'+flx_version+'_src.tgz felix_'+flx_version+'.orig.tar.gz')
+@tangle('\tln -s flx/flx_%s_src.tgz felix_%s.orig.tar.gz' % (config.flx_version, config.flx_version))
 @tangle('')
-@tangle('felix_'+flx_version+'-'+debian_revision+'.dsc: felix_'+flx_version+'.orig.tar.gz')
-@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
-@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
-@tangle('\t(cd felix-'+flx_version+' && ./configure && iscr lpsrc/flx_debian.pak && cp -r debian ..)')
-@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
-@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
-@tangle('\tmv debian felix-'+flx_version)
-@tangle('\tchmod u+x felix-'+flx_version+'/debian/rules')
-@tangle('\tdpkg-source -b -sk felix-'+flx_version+' # build debian source package')
-@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
-@tangle('\trm -rf felix-'+flx_version+'.orig # remove .orig source directory')
+@tangle('felix_%s-%s.dsc: felix_%s.orig.tar.gz' % (config.flx_version, config.debian_revision, config.flx_version))
+@tangle('\trm -rf felix-%s # remove source directory' % config.flx_version)
+@tangle('\ttar -zxvf felix_%s.orig.tar.gz # recreate source' % config.flx_version)
+@tangle('\t(cd felix-%s && ./configure && iscr lpsrc/flx_debian.pak && cp -r debian ..)' % config.flx_version)
+@tangle('\trm -rf felix-%s # remove source directory' % config.flx_version)
+@tangle('\ttar -zxvf felix_%s.orig.tar.gz # recreate source' % config.flx_version)
+@tangle('\tmv debian felix-' + config.flx_version)
+@tangle('\tchmod u+x felix-%s/debian/rules' % config.flx_version)
+@tangle('\tdpkg-source -b -sk felix-%s # build debian source package' % config.flx_version)
+@tangle('\trm -rf felix-%s # remove source directory' % config.flx_version)
+@tangle('\trm -rf felix-%s.orig # remove .orig source directory' % config.flx_version)
 @tangle('')
 @tangle('# makes source package too')
-@tangle('felix_'+flx_version+'-'+debian_revision+'.deb: felix_'+flx_version+'.orig.tar.gz')
-@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
-@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
-@tangle('\t(cd felix-'+flx_version+' && ./configure && iscr lpsrc/flx_debian.pak && cp -r debian ..)')
-@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
-@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
-@tangle('\tmv debian felix-'+flx_version)
-@tangle('\tchmod u+x felix-'+flx_version+'/debian/rules')
-@tangle('\t(cd felix-'+flx_version+' && dpkg-buildpackage -rfakeroot -sd -us -uc)')
-@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
+@tangle('felix_%s-%s.deb: felix_%s.orig.tar.gz' % (config.flx_version, config.debian_revision, config.flx_version))
+@tangle('\trm -rf felix-%s # remove source directory' % config.flx_version)
+@tangle('\ttar -zxvf felix_%s.orig.tar.gz # recreate source' % config.flx_version)
+@tangle('\t(cd felix-%s && ./configure && iscr lpsrc/flx_debian.pak && cp -r debian ..)' % config.flx_version)
+@tangle('\trm -rf felix-%s # remove source directory' % config.flx_version)
+@tangle('\ttar -zxvf felix_%s.orig.tar.gz # recreate source' % config.flx_version)
+@tangle('\tmv debian felix-' + config.flx_version)
+@tangle('\tchmod u+x felix-%s/debian/rules' % config.flx_version)
+@tangle('\t(cd felix-%s && dpkg-buildpackage -rfakeroot -sd -us -uc)' % config.flx_version)
+@tangle('\trm -rf felix-%s # remove source directory' % config.flx_version)
 @tangle('')
-@tangle('package: felix_'+flx_version+'-'+debian_revision+'.deb')
+@tangle('package: felix_%s-%s.deb' % (config.flx_version, config.debian_revision))
 @tangle('')
 @tangle('clean:')
-@tangle('\trm -rf felix-'+flx_version+'.orig # remove source directory')
+@tangle('\trm -rf felix-%s.orig # remove source directory' % config.flx_version)
 @tangle('\trm -rf *.deb *.changes *.dsc # remove all debian stuff')
 @tangle('\trm -f *.gz # remove all tarballs')
 @tangle('')
 @tangle('# uploads debian AND felix tarball')
-@tangle('upload: felix_'+flx_version+'-'+debian_revision+'.deb')
-@tangle('\tscp flx/flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp felix_'+flx_version+'-'+debian_revision+'.dsc skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
-@tangle('\tscp felix_'+flx_version+'-'+debian_revision+'.diff.gz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
-@tangle('\tscp felix_'+flx_version+'-'+debian_revision+'_amd64.deb skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
-@tangle('\tscp felix_'+flx_version+'-1_amd64.changes skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
+@tangle('upload: felix_%s-%s.deb' % (config.flx_version, config.debian_revision))
+@tangle('\tscp flx/flx_%s_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs' % config.flx_version)
+@tangle('\tscp felix_%s-%s.dsc skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian' % (config.flx_version, config.debian_revision))
+@tangle('\tscp felix_%s-%s.diff.gz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian' % (config.flx_version, config.debian_revision))
+@tangle('\tscp felix_%s-%s_amd64.deb skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian' % (config.flx_version, config.debian_revision))
+@tangle('\tscp felix_%s-1_amd64.changes skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian' % config.flx_version)
 

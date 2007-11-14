@@ -1,7 +1,7 @@
-@execfile('config'+os.sep+'config.py')
+@import config
 
-@set_title("Felix documentation "+flx_version)
-@head(1,"FELIX DOCUMENTATION Version "+flx_version)
+@set_title("Felix documentation "+config.flx_version)
+@head(1,"FELIX DOCUMENTATION Version "+config.flx_version)
 @head(2,"TUTORIAL and REFERENCE",nospawn=1)
 
 Reference Manual (interscript):

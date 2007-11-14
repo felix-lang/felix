@@ -35,7 +35,7 @@ class compiler_base(object):
     # check first if the file exists in the felix directory
     # if it does, use it instead of the one in the local directory
     try:
-      from config.config import FLX_DIR
+      from config import FLX_DIR
     except ImportError:
       pass
     else:

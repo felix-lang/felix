@@ -1,9 +1,10 @@
 @set_title('Felix Tutorial')
 
-@execfile('config/flx_data.py')
-@execfile("flxbuild"+os.sep+"iscrutil.py")
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@env = setup_test('tut/tutorial/tut-',zfill_pattern=[2,2,2])
+@env = setup_test(get_input_frame(), 'tut/tutorial/tut-', zfill_pattern=[2,2,2])
+
 @def kat(code):
   env.kat(get_tangler(),code)
 

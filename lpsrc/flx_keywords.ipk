@@ -1,3 +1,5 @@
+@from config.flx_data import flx_keywords
+
 @head(1,'Keywords')
 @h = tangler('src/compiler/flxlib/flx_keywords.ml')
 @select(h)

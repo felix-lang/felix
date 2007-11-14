@@ -1,10 +1,13 @@
-@execfile('config'+os.sep+'config.py')
-@execfile("config"+os.sep+"target_cxx.py")
-@execfile("flxbuild"+os.sep+"iscrutil.py")
-@env = setup_test('test/judy/judy-')
+@import config
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
+
+@env = setup_test(get_input_frame(), 'test/judy/judy-')
 
 @head(1,'Judy source package')
 @select(tangler('spkgs/flx_judy.py'))
+import config.target_cc
+
 iscr_source = ['lpsrc/flx_judy.pak']
 weaver_directory = 'doc/judy'
 
@@ -74,7 +77,7 @@ cc_ccs = [
 
 include_path=['src/judy/Judy1', 'src/judy/JudyL', 'src/judy/JudyCommon', 'src/judy']
 
-if SIZEOF_VOIDP == 8:
+if config.target_cc.SIZEOF_VOIDP == 8:
   macros=['JU_64BIT']
 else:
   macros=['JU_32BIT']
@@ -87,7 +90,7 @@ provides_lib = 'libflx_judy'
 
 @head(1,'Judy run time library')
 @select(tangler('config/flx_judy.fpc'))
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_judy_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_judy_static")
  else:

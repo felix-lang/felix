@@ -1,4 +1,4 @@
-@execfile('config'+os.sep+'config.py')
+@import config
 @h = tangler('spkgs/flx_doxygen.pak')
 @select(h)
 iscr_source=['lpsrc/flx_doxygen.pak']
@@ -29,7 +29,7 @@ PROJECT_NAME           =  Felix
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-@tangle("PROJECT_NUMBER         = "+flx_version)
+@tangle("PROJECT_NUMBER         = "+config.flx_version)
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.

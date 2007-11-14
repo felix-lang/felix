@@ -1,3 +1,5 @@
+@import config
+
 @head(1,'Cil package')
 @select(tangler('licences/cil_licence.txt','data'))
 Copyright (c) 2001-2002,
@@ -123,7 +125,7 @@ let gcc:mach = {
 @tangle("  alignof_fun = 1;")
 @tangle("  sizeof_void      = 1;")
 @tangle("  sizeof_fun       = 1;")
-@tangle("  sizeof_ptr       = "+str(SIZEOF_VOIDP)+";")
+@tangle("  sizeof_ptr       = %s;" % config.SIZEOF_VOIDP)
 
 @def pr(a):
   d= globals()
@@ -134,17 +136,17 @@ let gcc:mach = {
 
 @for x in ctypes: pr(x)
 
-@if CHAR_IS_UNSIGNED:
+@if config.CHAR_IS_UNSIGNED:
    tangle("  char_is_unsigned = true;")
  else:
    tangle("  char_is_unsigned = false;")
 @tangle("  const_string_literals = true;")
-@if LITTLE_ENDIAN:
+@if config.LITTLE_ENDIAN:
    tangle("  little_endian = true;")
  else:
    tangle("  little_endian = false;")
 }
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("let hasMSVC = true")
  else:
    tangle("let hasMSVC = false")

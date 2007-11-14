@@ -1,4 +1,4 @@
-@execfile('config'+os.sep+'config.py')
+@import config
 @head(1,'demux')
 
 @h = tangler('spkgs/demux.py')
@@ -68,31 +68,31 @@ WINDOWS_DEMUX_CPPS = [
 ]
 
 EXTRA_SYS_LIBS = ''
-if WIN32:
+if config.WIN32:
   DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
-  if HAVE_MSVC:
+  if config.HAVE_MSVC:
     EXTRA_SYS_LIBS = '/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock '
   else:
     # mingw
     EXTRA_SYS_LIBS = '-lws2_32 -lmswsock '
 
 
-if POSIX:
+if config.POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
 
-if HAVE_KQUEUE_DEMUXER:
+if config.HAVE_KQUEUE_DEMUXER:
   DEMUX_CPPS = DEMUX_CPPS + [ 'src/demux/kqueue/demux_kqueue_demuxer' ]
 
-if HAVE_POLL:
+if config.HAVE_POLL:
   DEMUX_CPPS = DEMUX_CPPS + POLL_DEMUX_CPPS
 
-if HAVE_EPOLL:
+if config.HAVE_EPOLL:
   DEMUX_CPPS = DEMUX_CPPS + [ 'src/demux/epoll/demux_epoll_demuxer' ] # Linux 2.6 +
 
-if HAVE_EVTPORTS:
+if config.HAVE_EVTPORTS:
   DEMUX_CPPS = DEMUX_CPPS + [ 'src/demux/evtport/demux_evtport_demuxer'] # solaris 10
 
-if SOLARIS:
+if config.SOLARIS:
   # RF: this might not be necessary anymore.
   EXTRA_SYS_LIBS = '-lsocket -lnsl '
 
@@ -128,17 +128,17 @@ Name: demux
 Description: Event handling
 Version: $Id$
 
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libdemux_dynamic")
    tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
    tangle("provides_slib: /DEFAULTLIB:libdemux_static")
    tangle("requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
- elif WIN32:
+ elif config.WIN32:
    tangle("provides_dlib: -ldemux_dynamic")
    tangle("requires_dlibs: -lws2_32 -lmswsock")
    tangle("provides_slib: -ldemux_static")
    tangle("requires_slibs: -lws2_32 -lmswsock")
- elif SOLARIS:
+ elif config.SOLARIS:
    tangle("provides_dlib: -ldemux_dynamic")
    tangle("provides_slib: -ldemux_static -lsocket -lnsl")
  else:
@@ -164,5 +164,5 @@ flx_requires_driver: flx_arun
 #define __DEMUX_SOCKETY_CONFIG_H__
 #include <sys/socket.h>
 
-@tangle('typedef %s FLX_SOCKLEN_T;' % FLX_SOCKLEN_T)
+@tangle('typedef %s FLX_SOCKLEN_T;' % config.FLX_SOCKLEN_T)
 #endif

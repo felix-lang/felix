@@ -1,4 +1,5 @@
-@execfile('config'+os.sep+'flx_data.py')
+@import config.flx_data as flx_data
+
 @h = tangler('spkgs/flx_ref.py')
 @select(h)
 iscr_source = ['lpsrc/flx_ref.pak']
@@ -1811,10 +1812,10 @@ def add(s):
     line_break()
     l = "  "
 
-for k,s in flx_1_char_syms: add(s)
-for k,s in flx_2_char_syms: add(s)
-for k,s in flx_3_char_syms: add(s)
-for n,t in flx_keywords : add(n)
+for k,s in flx_data.flx_1_char_syms: add(s)
+for k,s in flx_data.flx_2_char_syms: add(s)
+for k,s in flx_data.flx_3_char_syms: add(s)
+for n,t in flx_data.flx_keywords : add(n)
 end_displayed_code()
 //
 

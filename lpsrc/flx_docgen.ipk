@@ -1,3 +1,5 @@
+@import config.flx_data as flx_data
+
 @head(1,"Documentation generator")
 Parse and print doco.
 @h=tangler("misc/flxdoc_style.css","data")
@@ -86,7 +88,7 @@ fun chop_extension (s:string)=
 }
 
 keywords :=
-@for k,t in flx_keywords:
+@for k,t in flx_data.flx_keywords:
   tangle('("'+k+'",TOK_'+t+'),',inhibit_sref=1)
 @#
   ("",TOK_EOF) // terminal
@@ -156,13 +158,13 @@ fun get_pretoken() =
     | rdddQuote => TOK_STRING lexeme.[3 to -3]
 
 
-@for k,s in flx_1_char_syms:
+@for k,s in flx_data.flx_1_char_syms:
   tangle('    | ' + k + ' => TOK_'+k,inhibit_sref=1)
 
-@for k,s in flx_2_char_syms:
+@for k,s in flx_data.flx_2_char_syms:
   tangle('    | ' + k + ' => TOK_'+k,inhibit_sref=1)
 
-@for k,s in flx_3_char_syms:
+@for k,s in flx_data.flx_3_char_syms:
   tangle('    | ' + k + ' => TOK_'+k,inhibit_sref=1)
 @#
     | Preprocessor =>  TOK_EOF

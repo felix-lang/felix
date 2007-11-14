@@ -1,28 +1,29 @@
-@execfile("flxbuild"+os.sep+"iscrutil.py")
+@import config
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@env = setup_test('test/pthread/pthread-')
+@env = setup_test(get_input_frame(), 'test/pthread/pthread-')
 
 @head(1,'pthread')
 
-@execfile('config'+os.sep+'config.py')
 @h = tangler('config/flx_pthread.fpc')
 @select(h)
 Name: pthread
 Description: Pre-emptive threading support
 Version: $Id$
 
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_pthread_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libflx_pthread_static")
- elif WIN32:
+ elif config.WIN32:
    tangle("provides_dlib: -lflx_pthread_dynamic")
    tangle("provides_slib: -lflx_pthread_static")
  else:
    tangle("provides_dlib: -lflx_pthread_dynamic")
    tangle("provides_slib: -lflx_pthread_static")
- if PTHREAD_SWITCH:
-   tangle("requires_dlibs: "+PTHREAD_SWITCH)
-   tangle("requires_slibs: "+PTHREAD_SWITCH)
+ if config.PTHREAD_SWITCH:
+   tangle("requires_dlibs: "+config.PTHREAD_SWITCH)
+   tangle("requires_slibs: "+config.PTHREAD_SWITCH)
 
 includes: "pthread_thread.hpp"
 Requires: flx_gc
@@ -74,19 +75,19 @@ BSD_PTHREAD_CPPS = [
 ]
 
 EXTRA_SYS_LIBS = ""
-if WIN32:
+if config.WIN32:
   PTHREAD_CPPS = PTHREAD_CPPS + WINDOWS_PTHREAD_CPPS
 
-if POSIX:
+if config.POSIX:
   PTHREAD_CPPS = PTHREAD_CPPS + POSIX_PTHREAD_CPPS
 
-if LINUX:
+if config.LINUX:
   PTHREAD_CPPS = PTHREAD_CPPS + LINUX_PTHREAD_CPPS
 
-if BSD or MACOSX:
+if config.BSD or config.MACOSX:
   PTHREAD_CPPS = PTHREAD_CPPS + BSD_PTHREAD_CPPS
 
-if SOLARIS:
+if config.SOLARIS:
   PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
   EXTRA_SYS_LIBS = "-lrt " # man sem_wait
 

@@ -1,7 +1,8 @@
-@execfile('config/config.py')
-@execfile("flxbuild"+os.sep+"iscrutil.py")
+@import config
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@env = setup_test('test/tre/tre-')
+@env = setup_test(get_input_frame(), 'test/tre/tre-')
 
 @head(1,'tre')
 @select(tangler('spkgs/tre.py'))
@@ -43,7 +44,7 @@ build_macro = "TRE"
 @h = tangler('config/tre.fpc')
 @select(h)
 
-@if HAVE_MSVC:
+@if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libtre_dynamic")
    tangle("provides_slib: /DEFAULTLIB:libtre_static")
  else:

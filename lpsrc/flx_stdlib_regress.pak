@@ -1,8 +1,8 @@
 @import glob
+@from flxbuild.iscrutil import setup_test
+@from flxbuild.flxutil import unix2native
 
-@execfile("flxbuild"+os.sep+"iscrutil.py")
-
-@env = setup_test('test/stdlib/slrt-')
+@env = setup_test(get_input_frame(), 'test/stdlib/slrt-')
 @def kat(code):
   env.kat(get_tangler(),code)
 

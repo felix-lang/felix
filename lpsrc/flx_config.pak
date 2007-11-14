@@ -41,7 +41,10 @@ import flxbuild.flxutil
 import interscript.frames.inputf
 
 class setup_test:
-  def __init__(self, root, zfill_pattern=[1], zfill_default=2):
+  def __init__(self, iframe, root,
+      zfill_pattern=[1],
+      zfill_default=2):
+    self.iframe = iframe
     self.root = root
     self.zfill_pattern = zfill_pattern
     self.zfill_default = 2
@@ -82,7 +85,7 @@ class setup_test:
     if title is None:
       title = self.root + self.level_str()
 
-    return head(level, title)
+    return self.iframe.head(level, title)
 
 
   def level_str(self):
@@ -114,7 +117,7 @@ class setup_test:
       # XXX: what's the proper way to error out an interscript file?
       sys.exit(1)
 
-    h = tangler(path, filetype)
+    h = self.iframe.tangler(path, filetype)
     self.names_written[path] = h
 
     return h
@@ -173,31 +176,35 @@ class setup_test:
     return self.tangler(name, '.argexpect', 'data')
 
 
-  def kat(self,tangler,code):
-    inp = get_input_frame()
-    tangler.writeline("//Check " + code,inp.original_filename,inp.original_count)
+  def kat(self, tangler, code):
+    tangler.writeline(
+      "//Check " + code,
+      self.iframe.original_filename,
+      self.iframe.original_count
+    )
+
     f = tangler.sink.filename
     ff = f.split('/')[-1][:-4]
     v = self.registry_out.get(code,[])
     if ff not in v:
-      set_anchor(ff)
+      self.iframe.set_anchor(ff)
       v.append(ff)
       self.registry_out[code]=v
 
 
   def emit_katlist(self):
-    begin_list("keyed")
+    self.iframe.begin_list("keyed")
     keys = self.registry_in.keys()
     keys.sort()
     for k in keys:
       v = self.registry_in[k]
-      item(k)
+      self.iframe.item(k)
       first = 1
       for i in v:
         if first: first = 0
-        else: weave(", ")
-        ref_anchor(i)
-    end_list()
+        else: self.iframe.weave(", ")
+        self.iframe.ref_anchor(i)
+    self.iframe.end_list()
 
 
   def write_katfile(self):
@@ -537,6 +544,11 @@ def find(path, name=None, include_dirs=True):
 
       yield os.path.join(root, f)
 
+@select(tangler("cpkgs/__init__.py"))
+@select(tangler("cpkgs/build/__init__.py"))
+@select(tangler("cpkgs/host/__init__.py"))
+@select(tangler("cpkgs/target/__init__.py"))
+
 @select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
 #    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
@@ -623,8 +635,9 @@ except:
   cload(globals(),"filename")
   cload(globals(),"python")
 
-@select(tangler("script/config_support.py"))
-# must be executed in global namespace
+@select(tangler("flxbuild/config_support.py"))
+import os
+from flxbuild.flxutil import get_stdout
 
 def pr(f,x):
   print x
@@ -699,7 +712,7 @@ def locate_file(fname):
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
-# config/config.py
+# config/__init__.py
 # WHICH YOU SHOULD EDIT TO SUIT YOUR REQUIREMENTS
 
 import sys
@@ -715,7 +728,7 @@ this = globals()
 if '' not in sys.path: sys.path = [''] + sys.path
 import flxbuild
 from flxbuild.flxutil import *
-execfile("script/config_support.py")
+from flxbuild.config_support import *
 
 
 @tangle("CONFIG_GENERATOR_CVS_ID='"+FLX_CONFIG_CVS_ID+"'")
@@ -740,14 +753,6 @@ mkdirs("misc")
 mkdirs("tmp")
 mkdirs("config")
 mkdirs("doc")
-
-# make sure we have a config/__init__.py so config is importable
-try:
-  f = open('config/__init__.py', 'a+')
-except OSError:
-  pass
-else:
-  f.close()
 
 verbose = 1
 quiet = 0
@@ -1128,7 +1133,7 @@ if "build" in PHASES:
     pr(f,"import flxbuild.gxx_class")
     pr(f,"import flxbuild.msvcc_class")
     pr(f,"import flxbuild.msvcxx_class")
-    pr(f,'execfile("script/config_support.py")')
+    pr(f,"from flxbuild.config_support import *")
 
     pa(f,this,"build_model")
     pa(f,this,"FLX_DIR")
@@ -1275,7 +1280,7 @@ if "host" in PHASES:
     pr(f,"import flxbuild.gxx_class")
     pr(f,"import flxbuild.msvcxx_class")
     pr(f,"import flxbuild.ocaml_class")
-    pr(f,'execfile("script/config_support.py")')
+    pr(f,"from flxbuild.config_support import *")
 
     pa(f,this,"build_model")
     pa(f,this,"host_model")
@@ -1449,7 +1454,7 @@ if "target" in PHASES:
     mkdirs("config")
 
     print "Writing main config file"
-    f = open("config"+os.sep+"config.py","w")
+    f = open("config"+os.sep+"__init__.py","w")
     pr(f,'import sys')
     pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
     pr(f,'#'+CONFIG_TIME)
@@ -1469,7 +1474,7 @@ if "target" in PHASES:
     pr(f,"import flxbuild.gxx_class")
     pr(f,"import flxbuild.msvcxx_class")
     pr(f,"import flxbuild.ocaml_class")
-    pr(f,'execfile("script/config_support.py")')
+    pr(f,"from flxbuild.config_support import *")
 
     pr(f,"")
     pr(f,"#User configurable section")
@@ -1534,10 +1539,10 @@ if "target" in PHASES:
       print "Copying bootfile :  "+ BOOTFILE
       filecopy(BOOTFILE,"config"+os.sep+"config_bootstrap.py")
   except EnvironmentError:
-    print "Unable to create config"+os.sep+"config.py"
+    print "Unable to create config"+os.sep+"__init__.py"
     sys.exit(1)
 
-  print "Created config"+os.sep+"config.py"
+  print "Created config"+os.sep+"__init__.py"
   print "Edit this file to set your preferences"
   print "This file will not be clobbered by the Felix build process"
 
@@ -1550,7 +1555,7 @@ if "target" in PHASES:
 @h = tangler('config/flx_data.py')
 @select(h)
 import os
-execfile("config"+os.sep+"config.py")
+import config.target_cxx
 
 cprecedence = [
   "atom",
@@ -1908,7 +1913,7 @@ tmap = {
   "ldouble"  : "long double"
  }
 
-if TARGET_CXX.options.HAVE_COMPLEX:
+if config.target_cxx.HAVE_COMPLEX:
   tmap["imaginary"]="float _Imaginary"
   tmap["dimaginary"]="double _Imaginary"
   tmap["limaginary"]="long double _Imaginary"
@@ -1934,19 +1939,19 @@ else:
   rmap["dcomplex"]="complex_hxx"
   rmap["lcomplex"]="complex_hxx"
 
-if TARGET_CXX.options.HAVE_LONGDOUBLE:
+if config.target_cxx.HAVE_LONGDOUBLE:
   tmap["ldouble"]="long double"
 else:
   tmap["ldouble"]="double"
 
-if TARGET_CXX.options.HAVE_LONGLONG:
+if config.target_cxx.HAVE_LONGLONG:
   tmap["vlong"]="long long"
   tmap["uvlong"]="unsigned long long"
 else:
   tmap["vlong"]="long"
   tmap["uvlong"]="unsigned long"
 
-if TARGET_CXX.options.HAVE_STDINT:
+if config.target_cxx.HAVE_STDINT:
   tmap["int8"]="int8_t"
   tmap["uint8"]="uint8_t"
   tmap["int16"]="int16_t"
@@ -1977,14 +1982,14 @@ else:
   tmap["int8"]="signed char"
   tmap["uint8"]="unsigned char"
   sizes = {
-    TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
-    TARGET_CXX.options.SIZEOF_INT*8: "int",
-    TARGET_CXX.options.SIZEOF_LONG*8 : "long",
+    config.target_cxx.SIZEOF_SHORT*8 : "short",
+    config.target_cxx.SIZEOF_INT*8: "int",
+    config.target_cxx.SIZEOF_LONG*8 : "long",
   }
   tmap["intmax"]="long"
   tmap["uintmax"]="unsigned long"
-  if TARGET_CXX.options.HAVE_LONGLONG:
-    sizes[TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
+  if config.target_cxx.HAVE_LONGLONG:
+    sizes[config.target_cxx.SIZEOF_LONGLONG*8]="long long"
     tmap["intmax"]="long long"
     tmap["uintmax"]="unsigned long long"
   for size in [16,32,64]:
@@ -1997,8 +2002,8 @@ else:
       tmap["int"+str(size)]=t
       tmap["uint"+str(size)]="unsigned " + t
   try:
-    tmap["intptr"]=sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
-    tmap["uintptr"]="unsigned "+sizes[TARGET_CXX.options.SIZEOF_VOIDP*8]
+    tmap["intptr"]=sizes[config.target_cxx.SIZEOF_VOIDP*8]
+    tmap["uintptr"]="unsigned "+sizes[config.target_cxx.SIZEOF_VOIDP*8]
   except:
     print "NO INTEGER THE SIZE OF A VOID*!"
     sys.exit(1)
