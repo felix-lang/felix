@@ -2010,7 +2010,7 @@ for o, a in opts:
   elif o in ['-v', '--verbose']:
     verbose = verbose + 1
   elif o in ['-q', '--quiet']:
-    quiet=1
+    quiet = 1
     verbose = 0
   elif o in ['-O', '--optimise', '--optimize']:
     optimise = 1
@@ -2089,17 +2089,18 @@ for model in models:
   if model == config.run_model:
     if "run" not in phases: phases.append("run")
 
-if verbose and options:
+if verbose > 1 and options:
   print "OPTIONS: ", options
 
 if not phases:
   phases = all_phases
 
-print "Using LP Archive from ",
-if config.FLX_LPARCHIVE == os.curdir:
-  print "Current Directory"
-else:
-  print config.FLX_LPARCHIVE
+if verbose > 1:
+  print "Using LP Archive from ",
+  if config.FLX_LPARCHIVE == os.curdir:
+    print "Current Directory"
+  else:
+    print config.FLX_LPARCHIVE
 
 paks = glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.pak"))
 

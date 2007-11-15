@@ -675,8 +675,6 @@ def cwrite(c):
 
 def cload(d,c):
   f = "config"+os.sep+""+c+"_config.py"
-  print "--------------------------"
-  print "Loading "+f
   execfile(f,globals(),d)
 
 # needs to be conditionalised on Unix
