@@ -2172,7 +2172,7 @@ if failed:
   print '^^^^^^^^^^ FAILURES by group ^^^^^^^^^^^^^'
 
   kats = {}
-  for plugin in scheduled_plugins + unscheduled_plugins:
+  for plugin in plugins.itervalues():
     if not plugin.failures:
       continue
 
