@@ -247,7 +247,15 @@ class PLUGIN(Plugin):
   name = 'impldoc'
   help = 'make the ocaml compiler documentation'
 
-  def runme(self, config):
+  def __init__(self, *args, **kwds):
+    super(PLUGIN, self).__init__(*args, **kwds)
+    self.ran = False
+
+  def runme(self, config, pkg, pkgdict):
+    if self.ran:
+      return
+    self.ran = True
+
     print "GENERATING OCAMLDOCS"
     erasedir('doc/impldoc')
     os.mkdir('doc/impldoc')
@@ -263,7 +271,15 @@ class PLUGIN(Plugin):
   name = 'rtldoc'
   help = 'make the runtime language documentation'
 
-  def runme(self, config):
+  def __init__(self, *args, **kwds):
+    super(PLUGIN, self).__init__(*args, **kwds)
+    self.ran = False
+
+  def runme(self, config, pkg, pkgdict):
+    if self.ran:
+      return
+    self.ran = True
+
     print "GENERATING RTLDOCS"
     try:
       vxqt("doxygen misc/doxconf.dox")
@@ -275,7 +291,15 @@ class PLUGIN(Plugin):
   name = 'gramdoc'
   help = 'make the syntax documentation'
 
-  def runme(self, config):
+  def __init__(self, *args, **kwds):
+    super(PLUGIN, self).__init__(*args, **kwds)
+    self.ran = False
+
+  def runme(self, config, pkg, pkgdict):
+    if self.ran:
+      return
+    self.ran = True
+
     print "GENERATING SYNTAX DOCUMENTATION"
     f = open ("tmp/xx.flx","w")
     f.write("#import <nugram.flxh>\n")
@@ -291,7 +315,15 @@ class PLUGIN(Plugin):
   name = 'typeclassdoc'
   help = 'make the typeclass documentation'
 
-  def runme(self, config):
+  def __init__(self, *args, **kwds):
+    super(PLUGIN, self).__init__(*args, **kwds)
+    self.ran = False
+
+  def runme(self, config, pkg, pkgdict):
+    if self.ran:
+      return
+    self.ran = True
+
     print "GENERATING TYPECLASS and MODULE DOCUMENTATION"
     filecopy2dir( os.path.join('misc', 'plus.gif'), os.path.join("doc", "moduledoc"))
     filecopy2dir( os.path.join('misc', 'minus.gif'), os.path.join("doc", "moduledoc"))
@@ -718,23 +750,6 @@ else:
   # RF - trying out args that work on solaris (-a = not cool)
   # could use that sys type stuff here?
   DIFF = "diff -b" # build system is Unix Python
-
-
-@select(tangler('mkplugins/build.py'))
-class PLUGIN(Plugin):
-  name = 'build'
-  help = 'build the sources'
-
-  def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
-
-    if "extract" in options or "force_extract" in options:
-      if "build" not in phases: phases.append("build")
-
-  def runme(self, config):
-    if "build" not in phases: phases.append("build")
-    if "host" not in phases: phases.append("host")
-    if "target" not in phases: phases.append("target")
 
 
 @select(tangler('mkplugins/virgin.py'))
@@ -1356,8 +1371,13 @@ class PLUGIN(TestPlugin):
     demos = pkgdict.get("demos",[])
     demos.sort()
 
+    if not demos:
+      return
+
+    print "***** DEMO PACKAGE", pkg, "************"
+
     return self.run_tests(pkg, pkgdict, demos, 0, 1, 1,
-      "*** DEMO PACKAGE %s : %%s ****\n" % pkg, quiet)
+      "*** DEMO PACKAGE %s : %%s ****\n" % pkg)
 
 
 @select(tangler('mkplugins/xqt.py'))
@@ -1483,128 +1503,6 @@ def get_latest_src_time(pkgdict):
 
   return newest_filetime(output_iscrs)
 
-class PLUGIN(Plugin):
-  name = 'cal_pkgs'
-  priority = 10
-
-  def runme(self, config):
-    global host_packages,target_packages,run_packages,doc_packages
-    global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs,doc_selected_pkgs
-
-    if packages:
-      build_packages = packages
-      host_packages = packages
-      target_packages = packages
-      run_packages = packages
-    else:
-      for pkg in pkgd.keys():
-        pkgdict = pkgd[pkg]
-
-        pkg_src_time = get_latest_src_time(pkgdict)
-        #print "LP Pak %-20s changed: %s" % (pkg,fmtime(pkg_src_time))
-
-        # at this stage, extra source files need to be considered
-        xfiles = []
-        for xfile in pkgdict.get('xfiles', []):
-          xfile = os.path.join(config.FLX_DIR, xfile)
-          xfiles.extend(glob.glob(xfile))
-
-        #print "XFILES="+str(xfiles)
-        xfiles_time = newest_filetime(xfiles)
-        #print "XFILES %-20s changed: %s" % (pkg,fmtime(xfiles_time))
-
-        latest_src_time = max(xfiles_time, pkg_src_time)
-
-        if latest_src_time == 0:
-          print "Pak %-20s (virtual)" % pkg
-        else:
-          print "Pak %-20s changed: %s" % (pkg,fmtime(latest_src_time))
-
-
-        host_stamp=os.path.join("pkg-stamps", "%s.host" % pkg)
-        latest_host_build_time = filetime(host_stamp)
-        if latest_host_build_time == 0:
-          print "  ** Host UNBUILT"
-          if pkg not in host_packages: host_packages.append(pkg)
-        else:
-          if latest_host_build_time < latest_src_time:
-            print "  ** Host build:",fmtime(latest_host_build_time)
-            print "  ** REQUIRES REBUILD due to changed sources"
-            if pkg not in host_packages: host_packages.append(pkg)
-
-        target_stamp=os.path.join("pkg-stamps", "%s.target" % pkg)
-        latest_target_build_time = filetime(target_stamp)
-        if latest_target_build_time == 0:
-          print "  ** Target UNBUILT"
-          if pkg not in target_packages: target_packages.append(pkg)
-        else:
-          if latest_target_build_time < latest_src_time:
-            print "  ** Target build:",fmtime(latest_target_build_time)
-            print "  ** REQUIRES REBUILD due to changed sources"
-            if pkg not in target_packages: target_packages.append(pkg)
-
-        run_stamp=os.path.join("pkg-stamps", "%s.run" % pkg)
-        latest_run_build_time = filetime(run_stamp)
-        if latest_run_build_time == 0:
-          print "  ** Run UNBUILT"
-          if pkg not in run_packages: run_packages.append(pkg)
-        else:
-          if latest_run_build_time < latest_src_time:
-            print "  ** Run build:",fmtime(latest_run_build_time)
-            print "  ** REQUIRES REBUILD due to changed sources"
-            if pkg not in run_packages: run_packages.append(pkg)
-
-        doc_stamp=os.path.join("pkg-stamps", "%s.doc" % pkg)
-        latest_doc_build_time = filetime(doc_stamp)
-        if latest_doc_build_time == 0:
-          print "  ** Doc UNBUILT"
-          if pkg not in doc_packages: doc_packages.append(pkg)
-        else:
-          if latest_doc_build_time < latest_src_time:
-            print "  ** Doc build:",fmtime(latest_doc_build_time)
-            print "  ** REQUIRES REBUILD due to changed sources"
-            if pkg not in doc_packages: doc_packages.append(pkg)
-
-      # doesn't work so well if both deps and reqs specified!
-      # would work better, if reqs was already reduced to
-      # what actually needed o be rebuilt
-
-    if "deps" in options:
-      host_packages = closure(pkgdeps,host_packages)
-      target_packages = closure(pkgdeps,target_packages)
-      run_packages = closure(pkgdeps,run_packages)
-      doc_packages = closure(pkgdeps,doc_packages)
-
-    if "reqs" in options:
-      host_packages = closure(pkgreqs,host_packages)
-      target_packages = closure(pkgreqs,target_packages)
-      run_packages = closure(pkgreqs,run_packages)
-      doc_packages = closure(pkgreqs,doc_packages)
-
-    host_selected_pkgs   = [x for x in pkgs if x in host_packages]
-    target_selected_pkgs = [x for x in pkgs if x in target_packages]
-    run_selected_pkgs    = [x for x in pkgs if x in run_packages]
-    doc_selected_pkgs    = [x for x in pkgs if x in doc_packages]
-
-    if "all" in options:
-      if not quiet: print "SELECTING ALL PACKAGES"
-      host_selected_pkgs = pkgs
-      target_selected_pkgs = pkgs
-      run_selected_pkgs = pkgs
-      doc_selected_pkgs = pkgs
-
-    if not quiet:
-      #print "AVAILABLE SOURCES",paks
-      print "Host SELECTED PACKAGES ARE ",   ','.join([str(p) for p in host_selected_pkgs])
-      print "Target SELECTED PACKAGES ARE ", ','.join([str(p) for p in target_selected_pkgs])
-      print "Run SELECTED PACKAGES ARE ",    ','.join([str(p) for p in run_selected_pkgs])
-      print "Doc SELECTED PACKAGES ARE ",    ','.join([str(p) for p in doc_selected_pkgs])
-      print "SELECTED PHASES ARE   ", phases
-      print "Build model  ", config.build_model
-      print "Host model   ", config.host_model
-      print "Target model ", config.target_model
-      print "Run model    ", config.run_model
-
 @select(tangler('mkplugins/extract_iscr.py'))
 class PLUGIN(Plugin):
   name = 'extract_iscr'
@@ -1616,66 +1514,10 @@ class PLUGIN(Plugin):
       if not quiet: print "REExtracting", pkg, "from", src
       runISCR(config, os.path.join(config.FLX_LPARCHIVE, src))
 
-@select(tangler('mkplugins/make.py'))
-class PLUGIN(Plugin):
-  name = 'make'
-  help = 'check if any packages need rebuilding'
-  priority = 50
-
-  def run_phase(self, config, phase, packages, plugin_names):
-    for pkg in packages:
-      pkgdict = pkgd[pkg]
-
-      print "*****", phase, "MAKING PACKAGE", pkg, "************"
-
-      stamp=os.path.join("pkg-stamps", "%s.%s" % (pkg, phase))
-      erasefile(stamp)
-
-      for plugin_name in plugin_names:
-        result = plugins[plugin_name](config, pkg, pkgdict)
-        if not result and result is not None:
-          break
-      else:
-        enstamp(stamp)
-
-
-  def runme(self, config):
-    mkdirs("pkg-stamps")
-
-    if "host" in phases:
-      self.run_phase(config, 'host', host_selected_pkgs, [
-        'extract_iscr',
-        'build_ocamls',
-        'build_host_tools',
-      ])
-
-    if "target" in phases:
-      self.run_phase(config, 'target', target_selected_pkgs, [
-        'build_target_rtl_dynamic',
-        'build_target_rtl_static',
-        'build_felix_dynamic_drivers',
-        'build_felix_static_drivers',
-        'build_target_cpp_tools',
-        'build_target_felix_rtl',
-        'build_target_felix_tools',
-      ])
-
-    if "run" in phases:
-      self.run_phase(config, 'run', run_selected_pkgs, [
-        'run_failure_tests',
-        'run_unit_tests',
-        'run_static_unit_tests',
-        'run_dynamic_unit_tests',
-        'run_completion_tests',
-        'run_known_failed_tests',
-      ])
-
-
 @select(tangler('flxbuild/pluginutil.py'))
 class Plugin(object):
   name = None
   help = ''
-  priority = None
 
   def __init__(self):
     self.failures = []
@@ -1689,6 +1531,11 @@ class Plugin(object):
 
 
 class TestPlugin(Plugin):
+  def find_test(self, tl, a, b):
+    for x, y, z in tl:
+      if x == a and y == b: return True
+    return False
+
   def run_tests(self, pkg, pkgdict, testfiles, deterministic, static, dynamic, title):
     if not testfiles:
       return 1
@@ -1706,8 +1553,8 @@ class TestPlugin(Plugin):
 
     for testfile in testfiles:
       failed = 0
-      if find_test(self.successes, pkg,testfile): continue
-      if find_test(self.failures, pkg,testfile): continue
+      if self.find_test(self.successes, pkg,testfile): continue
+      if self.find_test(self.failures, pkg,testfile): continue
 
       stamp = os.path.join("pkg-stamps", testfile + '.test')
 
@@ -1845,83 +1692,47 @@ class PLUGIN(Plugin):
 
     sys.exit(0)
 
-@select(tangler('mkplugins/test.py'))
-class PLUGIN(Plugin):
-  name = 'test'
-  help = 'regression and tutorial combined'
+@select(tangler('fbuildroot.py'))
+default_fbuild_processs = 'run'
 
-  def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
-
-    if "test" in options:
-      if "run" not in phases: phases.append("run")
-
-  def runme(self, config):
-    if "force" not in options:
-      print "##### TEST SELECTED PACKAGES ##################"
-    else:
-      print "##### TEST ALL PACKAGES ##################"
-    for pkg in pkgs:
-      pkgdict = pkgd[pkg]
-      print "***** TEST PACKAGE "+pkg+" ************"
-      plugins['run_failure_tests'](pkg, pkgdict)
-      plugins['run_unit_tests'](pkg, pkgdict)
-      plugins['run_static_unit_tests'](pkg, pkgdict)
-      plugins['run_dynamic_unit_tests'](pkg, pkgdict)
-      plugins['run_completion_tests'](pkg, pkgdict)
-      plugins['run_known_failed_tests'](pkg, pkgdict)
-
-@select(tangler('mkplugins/doc.py'))
-class PLUGIN(Plugin):
-  name = 'doc'
-  help = 'build all user documentation'
-
-  def runme(self, config):
-    check_stamp = "force" not in options
-    if check_stamp:
-      plugins['cal_pkgs'](config)
-      print "##### DOCUMENT SELECTED PACKAGES ##################"
-    else:
-      print "##### DOCUMENT ALL PACKAGES ##################"
-      selected_pkgs = pkgs
-
-    selected_pkgs = doc_selected_pkgs
-
-    for pkg in selected_pkgs:
-      pkgdict = pkgd[pkg]
-      print "***** DOCUMENT PACKAGE", pkg, "************"
-
-      stamp=os.path.join("pkg-stamps", "%s.doc" % pkg)
-      erasefile(stamp)
-
-      plugins['mkdoc'](config, pkg, pkgdict)
-
-      enstamp(stamp)
-
-    print "***** OCAMLDOC COMPILER [HACK!] ************"
-    plugins['impldoc'](config)
-
-    print "***** DOXGEN RTL [HACK!] ************"
-    plugins['rtldoc'](config)
-
-    print "***** GRAMMAR DOC [HACK!] ************"
-    plugins['gramdoc'](config)
-
-    print "***** TYPECLASS DOC [HACK!] ************"
-    plugins['typeclassdoc'](config)
-
-
-@select(tangler('mkplugins/demo.py'))
-class PLUGIN(Plugin):
-  name = 'demo'
-  help = 'build and run the demos'
-
-  def runme(self, config):
-    print "##### DEMONSTRATE ALL PACKAGES ##################"
-    for pkg in pkgs:
-      pkgdict = pkgd[pkg]
-      print "***** DEMO PACKAGE", pkg, "************"
-      plugins['run_demos'](pkg, pkgdict)
+fbuild_processes = {
+  'host': [
+    'extract_iscr',
+    'build_ocamls',
+    'build_host_tools',
+  ],
+  'target': [
+    'host',
+    'build_target_rtl_dynamic',
+    'build_target_rtl_static',
+    'build_felix_dynamic_drivers',
+    'build_felix_static_drivers',
+    'build_target_cpp_tools',
+    'build_target_felix_rtl',
+    'build_target_felix_tools',
+  ],
+  'run': [
+    'target',
+    'run_failure_tests',
+    'run_unit_tests',
+    'run_static_unit_tests',
+    'run_dynamic_unit_tests',
+    'run_completion_tests',
+    'run_known_failed_tests',
+  ],
+  'test': ['run'],
+  'doc': [
+    'mkdoc',
+    'impldoc',
+    'rtldoc',
+    'gramdoc',
+    'typeclassdoc',
+  ],
+  'demo': [
+    'target',
+    'run_demos',
+  ],
+}
 
 @h = tangler('script/maker','python')
 @select(h)
@@ -1937,6 +1748,13 @@ import stat
 import re
 import traceback
 import time
+import getopt
+
+# forward import of set
+try:
+  set
+except NameError:
+  from sets import Set as set
 
 if '' not in sys.path: sys.path=['']+sys.path
 import flxbuild
@@ -1965,9 +1783,9 @@ except:
 # PROCESS COMMAND LINE OPTIONS
 # ------------------------------------------------
 
-import getopt
-all_phases = ["build","host","target","run"]
-phases = []
+import fbuildroot
+
+phases = [fbuildroot.default_fbuild_processs]
 options = sys.argv[1:]
 try:
   opts, args = getopt.getopt(sys.argv[1:], 'hvqD:Og', [ \
@@ -1997,7 +1815,7 @@ flags:
   -g, --debug     generate debugging information
   --no-debug      turn off debugging information generation
   -Dmacro[=defn]  define a macro
-  --phase         run only this phase of the build %s
+  --phase         run only this phase of the build: [%s]
   --pkg           build only these packages
   --model         build only these models
   --lparchive     use an alternative lpsrc directory
@@ -2008,7 +1826,9 @@ plugins:
 
 for o, a in opts:
   if o in ['-h', '--help']:
-    print help_string % (all_phases)
+    all_phases = fbuildroot.fbuild_processes.keys()
+    all_phases.sort()
+    print help_string % (', '.join(all_phases))
     sys.exit(0)
   elif o in ['-v', '--verbose']:
     verbose = verbose + 1
@@ -2027,10 +1847,7 @@ for o, a in opts:
     macros.append(a)
   elif o in ['--phase']:
     if a == '*':
-      phases = all_phases
-    elif a not in all_phases:
-      sys.stderr.write('unknown phase: %s\n' % phase)
-      sys.exit(1)
+      phases = fbuildroot.fbuild_processes.keys()
     elif a not in phases:
       phases.append(a)
   elif o in ['--pkg']:
@@ -2095,8 +1912,6 @@ for model in models:
 if verbose > 1 and options:
   print "OPTIONS: ", options
 
-if not phases:
-  phases = all_phases
 
 if verbose > 1:
   print "Using LP Archive from ",
@@ -2122,6 +1937,7 @@ if "extract" in options or "force_extract" in options:
   print "EXTRACTION COMPLETE"
   sys.exit(0)
 
+# ----------------------------------------------------------------------------
 
 raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
 unsorted_pkgs = []
@@ -2158,12 +1974,7 @@ def addpkg_r(pkg):
 for pkg in unsorted_pkgs:
   addpkg_r(pkg)
 
-if not quiet: print "USER SELECTED PACKAGES", packages
-
-host_packages   = list(packages)
-target_packages = list(packages)
-run_packages    = list(packages)
-doc_packages    = list(packages)
+if verbose > 1: print "USER SELECTED PACKAGES", packages
 
 # make sure we delete the pkg so that we don't leak
 # references to them
@@ -2197,17 +2008,6 @@ if "help" in options:
 # LOAD PLUGINS
 
 plugins = {}
-schedule_table = []
-scheduled_plugins = []
-unscheduled_plugins = []
-
-def schedule(plugin):
-  if plugin.priority is None:
-    unscheduled_plugins.append(plugin)
-  else:
-    print "Scheduling",plugin.name," priority",plugin.priority
-    schedule_table.append((plugin.priority, plugin))
-    scheduled_plugins.append(plugin)
 
 for f in glob.glob(os.path.join("mkplugins", "*.py")):
   base = os.path.basename(os.path.splitext(f)[0])
@@ -2216,7 +2016,6 @@ for f in glob.glob(os.path.join("mkplugins", "*.py")):
     execfile(f)
     if globals().has_key("PLUGIN"):
       plugin = PLUGIN()
-      schedule(plugin)
       plugins[plugin.name] = plugin
       del PLUGIN
   except:
@@ -2237,25 +2036,94 @@ def enstamp(stamp):
   if not quiet:
     print 'Writing Stamp File:', stamp
 
-def find_test(tl,a,b):
-  for x,y,z in tl:
-    if x == a and y == b: return 1
-  return 0
+# -----------------------------------------------------------------------------
+
+def calculate_packages(config, phase):
+  if packages:
+    selected_pkgs = packages
+  else:
+    all_pkgs = pkgd.keys()
+    max_len = max([len(s) for s in all_pkgs])
+
+    selected_pkgs = []
+    for pkg in all_pkgs:
+      pkgdict = pkgd[pkg]
+      pkg_src_time = get_latest_src_time(pkgdict)
+
+      # at this stage, extra source files need to be considered
+      xfiles = []
+      for xfile in pkgdict.get('xfiles', []):
+        xfile = os.path.join(config.FLX_DIR, xfile)
+        xfiles.extend(glob.glob(xfile))
+
+      xfiles_time = newest_filetime(xfiles)
+      latest_src_time = max(xfiles_time, pkg_src_time)
+
+      stamp = os.path.join('pkg-stamps', '%s.%s' % (pkg, phase))
+      latest_build_time = filetime(stamp)
+
+      if latest_build_time == 0:
+        print "Pak %s (virtual)" % pkg.ljust(max_len), 'UNBUILT'
+        selected_pkgs.append(pkg)
+      elif latest_build_time < latest_src_time:
+        print "Pak %s changed: %s" % (pkg.ljust(max_len),fmtime(latest_src_time))
+        selected_pkgs.append(pkg)
+
+  if 'deps' in options:
+    selected_pkgs = closure(pkgdeps, selected_pkgs)
+  elif 'reqs' in options:
+    selected_pkgs = closure(pkgreqs, selected_pkgs)
+
+  return [p for p in pkgs if p in selected_pkgs]
+
+####
+
+ran_phases = set()
+
+def run_phase(config, phase):
+  if phase in ran_phases:
+    return
+  else:
+    ran_phases.add(phase)
+
+  processes = []
+  for process in fbuildroot.fbuild_processes.get(phase, []):
+    # make sure we run any dependent phase first
+    if process in fbuildroot.fbuild_processes:
+      run_phase(config, process)
+    else:
+      processes.append(process)
+
+  print '-' * 78
+  print '***** MAKING PHASE', phase
+  for pkg in calculate_packages(config, phase):
+    pkgdict = pkgd[pkg]
+
+    print "*****", phase, "MAKING PACKAGE", pkg, "************"
+
+    stamp = os.path.join("pkg-stamps", "%s.%s" % (pkg, phase))
+    erasefile(stamp)
+
+    for process in processes:
+      result = plugins[process](config, pkg, pkgdict)
+      if not result and result is not None:
+        break
+    else:
+      enstamp(stamp)
+
+####
 
 # EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
 for k in options:
-  if k in plugins:
+  if k in fbuildroot.fbuild_processes:
+    run_phase(config, k)
+  elif k in plugins:
     plugins[k](config)
-  # FIXME: commented out to allow arbitrary options
-  #else:
-  #  print "unknown option:", k
-  #  raise MakeError
 
-# execute scheduled operations in priority order
-schedule_table.sort()
-for pri,f in schedule_table:
-  f(config)
+for phase in phases:
+  run_phase(config, phase)
 
+# -----------------------------------------------------------------------------
 
 if os.name != 'nt': # requires posix
   if "test" in options or "tutorial" in options or "fcount" in options:
@@ -2283,7 +2151,7 @@ failure_log = Tee()
 failure_log.write("----- PLUGIN STATUS -----\n")
 failed = 0
 fatal = 0
-for plugin in scheduled_plugins + unscheduled_plugins:
+for plugin in plugins.itervalues():
   nfail = len(plugin.failures)
   npass = len(plugin.successes)
   failed = failed or nfail>0
