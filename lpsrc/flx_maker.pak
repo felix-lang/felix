@@ -211,6 +211,9 @@ if __name__ == '__main__':
     sys.exit(main())
 @make_executable('mk')
 
+@select(tangler('mkplugins/__init__.py'))
+@doc()
+
 @select(tangler('mkplugins/man.py'))
 class PLUGIN(Plugin):
   name = 'man'
