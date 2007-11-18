@@ -225,16 +225,15 @@ class setup_test:
 import os
 import sys
 import glob
-import stat
 import time
 import StringIO
+import shutil
 
 def filetime(f):
   try:
-    t = os.stat(f)[stat.ST_MTIME]
+    return os.path.getmtime(f)
   except EnvironmentError:
-    t = 0
-  return t
+    return 0
 
 # returns the time of the newest file of a set
 # if a file is missing, the time is in the future
@@ -321,24 +320,6 @@ def erasedir(d):
   for f in fs: erasefile(f)
   try: os.rmdir(d)
   except EnvironmentError: pass
-
-def filecopy(a,b):
-  mkdirs(os.path.dirname(b))
-  try:
-    import shutil
-  except ImportError:
-    f = open(a)
-    g = open(b,"w")
-    g.write(f.read())
-    g.close()
-    f.close()
-  else:
-    shutil.copy2(a,b)
-
-def filecopy2dir(a,d):
-  mkdirs(d)
-  base = os.path.basename(a)
-  filecopy(a,d+os.sep+base)
 
 def get_stdout(x):
   """We're screwed if popen doesn't work .."""

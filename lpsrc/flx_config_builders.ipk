@@ -2400,8 +2400,9 @@ class msvcxx(msvc_mixin, cxx_base):
 # discover which ocaml compilers are available
 import os
 import sys
+import shutil
 
-from flxbuild.flxutil import mkdirs, filecopy, MakeError
+from flxbuild.flxutil import mkdirs, MakeError
 from flxbuild.compiler_base import compiler_base
 
 class ocaml(compiler_base):
@@ -2410,7 +2411,7 @@ class ocaml(compiler_base):
     opt = self.options
 
     if os.name == 'nt' or sys.platform == 'cygwin':
-			# ocamlbuild doesn't work under windows
+      # ocamlbuild doesn't work under windows
       opt.HAVE_OCAMLBUILD = 0
     else:
       try: # check if ocamlbuild exists
@@ -2678,7 +2679,7 @@ class ocaml(compiler_base):
       src = self.find_in_flx_dir(basename + EXT_SRC)
       dst = os.path.join(outdir, basename + EXT_SRC)
 
-      filecopy(src, dst)
+      shutil.copy(src, dst)
 
       cmd = [COM]
       cmd.extend(FLAGS)

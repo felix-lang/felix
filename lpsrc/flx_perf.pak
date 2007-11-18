@@ -1,6 +1,8 @@
 @set_title('Performance Measurements')
 
 @select(tangler('mkplugins/speed.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'speed'
   help = 'Run comparative tests'
@@ -23,7 +25,8 @@ class PLUGIN(Plugin):
     self.run("gnuplot speed/mkjpgs.gpl")
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 '+
       '--weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
-    filecopy2dir(os.path.join('misc', 'interscript.css'),"speed")
+    mkdirs('speed')
+    shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')
 
 @select(tangler('spkgs/speed.py'))
 pkg_requires = ["flx"]

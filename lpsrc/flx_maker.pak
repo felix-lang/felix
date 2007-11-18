@@ -311,6 +311,8 @@ class PLUGIN(Plugin):
       pass
 
 @select(tangler('mkplugins/typeclassdoc.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'typeclassdoc'
   help = 'make the typeclass documentation'
@@ -325,9 +327,11 @@ class PLUGIN(Plugin):
     self.ran = True
 
     print "GENERATING TYPECLASS and MODULE DOCUMENTATION"
-    filecopy2dir( os.path.join('misc', 'plus.gif'), os.path.join("doc", "moduledoc"))
-    filecopy2dir( os.path.join('misc', 'minus.gif'), os.path.join("doc", "moduledoc"))
-    filecopy2dir( os.path.join('misc', 'dot.gif'), os.path.join("doc", "moduledoc"))
+    mkdirs(os.path.join('doc', 'moduledoc'))
+    shutil.copy(os.path.join('misc', 'plus.gif'),  os.path.join("doc", "moduledoc"))
+    shutil.copy(os.path.join('misc', 'minus.gif'), os.path.join("doc", "moduledoc"))
+    shutil.copy(os.path.join('misc', 'dot.gif'),   os.path.join("doc", "moduledoc"))
+
     try:
       vxqt("bin/flxd -Ilib --document-typeclass misc/ldoc")
     except:
@@ -491,6 +495,8 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_ocamls.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'build_ocamls'
 
@@ -500,8 +506,8 @@ class PLUGIN(Plugin):
       src = f+'.mli'
       dst = f+'.ml'
       if filetime(src) > filetime (dst):
-        if not quiet: print("filecopy "+src+" -> "+dst)
-        filecopy(src,dst)
+        if not quiet: print 'copying file', src, '->', dst
+        shutil.copy(src, dst)
 
 
   def runme(self, config, pkg, pkgdict):
@@ -535,6 +541,8 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_ocamlbuild.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'build_ocamlbuild'
 
@@ -550,13 +558,15 @@ class PLUGIN(Plugin):
       vxqt(OCAMLBUILD + bin)
 
       mkdirs('bin')
-      filecopy(
+      shutil.copy(
         os.path.join('_build', bin),
         os.path.join('bin', os.path.basename(exe)))
 
 @doc()
 
 @select(tangler('mkplugins/build_host_tools.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'build_host_tools'
 
@@ -571,8 +581,8 @@ class PLUGIN(Plugin):
       dst = os.path.join(config.FLX_RTL_DIR, os.path.basename(path))
 
       if filetime(src) > filetime (dst):
-        if not quiet: print("filecopy "+src+" -> "+dst)
-        filecopy(src,dst)
+        if not quiet: print 'copying file', src, '->', dst
+        shutil.copy(src,dst)
 
 
   def runme(self, config, pkg, pkgdict):
@@ -918,6 +928,8 @@ class PLUGIN(Plugin):
       erasefile(f)
 
 @select(tangler('mkplugins/mkdoc.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'mkdoc'
 
@@ -936,11 +948,12 @@ class PLUGIN(Plugin):
 
       iscr_source = filter(lambda x: x not in self.already_generated, iscr_source)
 
-      filecopy2dir(os.path.join('misc', 'plus.gif'),weaver_directory)
-      filecopy2dir(os.path.join('misc', 'minus.gif'),weaver_directory)
-      filecopy2dir(os.path.join('misc', 'dot.gif'),weaver_directory)
-      filecopy2dir(os.path.join('misc', 'interscript.css'),weaver_directory)
-      filecopy2dir(os.path.join('misc', 'user.css'),weaver_directory)
+      mkdirs(weaver_directory)
+      shutil.copy(os.path.join('misc', 'plus.gif'),        weaver_directory)
+      shutil.copy(os.path.join('misc', 'minus.gif'),       weaver_directory)
+      shutil.copy(os.path.join('misc', 'dot.gif'),         weaver_directory)
+      shutil.copy(os.path.join('misc', 'interscript.css'), weaver_directory)
+      shutil.copy(os.path.join('misc', 'user.css'),        weaver_directory)
 
       for src in iscr_source:
         srcdir = os.path.join(config.FLX_LPARCHIVE, src)
@@ -1077,6 +1090,8 @@ class PLUGIN(Plugin):
 
 
 @select(tangler('mkplugins/build_felix_static_drivers.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'build_felix_static_drivers'
 
@@ -1101,8 +1116,9 @@ class PLUGIN(Plugin):
         CFLAGS=CFLAGS+cflags)
 
       if outdir:
-        print 'copying file %s -> %s' % (dst[0], outdir)
-        filecopy2dir(dst[0], outdir)
+        print 'copying file', dst[0], '->', outdir
+        mkdirs(outdir)
+        shutil.copy(dst[0], outdir)
 
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
@@ -1169,6 +1185,8 @@ class PLUGIN(Plugin):
         deletefile(src + config.EXT_STATIC_OBJ)
 
 @select(tangler('mkplugins/build_target_felix_rtl.py'))
+import shutil
+
 class PLUGIN(Plugin):
   name = 'build_target_felix_rtl'
 
@@ -1187,8 +1205,8 @@ class PLUGIN(Plugin):
       dst = os.path.join('lib', os.path.basename(path))
 
       if filetime(src) > filetime(dst):
-        if not quiet: print('filecopy %s -> %s' % (src, dst))
-        filecopy(src, dst)
+        if not quiet: print 'copying file', src, '->', dst
+        shutil.copy(src, dst)
 
 @select(tangler('mkplugins/build_target_felix_tools.py'))
 # TARGET TOOLS : FELIX
@@ -1749,6 +1767,7 @@ import re
 import traceback
 import time
 import getopt
+import shutil
 
 # forward import of set
 try:
@@ -1930,9 +1949,8 @@ if "extract" in options or "force_extract" in options:
     else:
       runISCR(config, p)
   # this is a hack
-  filecopy(
-    os.path.join('misc', 'interscript.css'),
-    os.path.join('speed', 'interscript.css'))
+  mkdirs('speed')
+  shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')
 
   print "EXTRACTION COMPLETE"
   sys.exit(0)
