@@ -555,7 +555,7 @@ class PLUGIN(Plugin):
       else:
         bin = exe + '.native'
 
-      vxqt(OCAMLBUILD + bin)
+      self.shell(config.OCAMLBUILD, bin)
 
       mkdirs('bin')
       shutil.copy(
