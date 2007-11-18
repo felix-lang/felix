@@ -1673,7 +1673,7 @@ class TestPlugin(Plugin):
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
 
         if not failed:
-          enstamp(stamp)
+          enstamp(stamp, self.quiet)
           self.successes.append((pkg, testfile, log.getvalue()))
         else:
           erasefile(stamp)
@@ -2121,12 +2121,14 @@ for f in glob.glob(os.path.join("mkplugins", "*.py")):
 
 # ----------- Here begins the actual build procedure ---------------------
 
-def enstamp(stamp):
+def enstamp(stamp, quiet):
   mkdirs(os.path.split(stamp)[0])
   f = open(stamp,"w")
-  t = fmtime(time.time())
-  f.write(t+"\n")
-  f.close()
+  try:
+    print >> f, fmtime(time.time())
+  finally:
+    f.close()
+
   if not quiet:
     print 'Writing Stamp File:', stamp
 
@@ -2203,7 +2205,7 @@ def run_phase(config, phase):
       if not result and result is not None:
         break
     else:
-      enstamp(stamp)
+      enstamp(stamp, quiet)
 
 ####
 
