@@ -1881,8 +1881,8 @@ except getopt.error, e:
 
 quiet = 0
 verbose = 1
-optimise = 1
-debug = 1
+optimise = True
+debug = True
 packages = []
 models = []
 macros = []
@@ -1920,13 +1920,13 @@ for o, a in opts:
     quiet = 1
     verbose = 0
   elif o in ['-O', '--optimise', '--optimize']:
-    optimise = 1
+    optimise = True
   elif o in ['--no-optimise', '--no-optimize']:
-    optimise = 0
+    optimise = False
   elif o in ['-g']:
-    debug = 1
+    debug = True
   elif o in ['--no-debug']:
-    debug = 0
+    debug = False
   elif o in ['-D']:
     macros.append(a)
   elif o in ['--phase']:
@@ -1944,7 +1944,6 @@ for o, a in opts:
   else:
     sys.stderr.write('unknown option: %s %s\n' % (o, a))
     sys.exit(1)
-
 
 execfile(os.path.join("mkplugins", "xqt.py"))
 
