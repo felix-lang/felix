@@ -2480,9 +2480,9 @@ class ocaml(compiler_base):
       pass
     else:
       try:
-        output = self.shell(opt.OCAMLC, 
-          warn, 
-          os.path.join('tmp', 'camldummy.ml'), 
+        output = self.shell(opt.OCAMLC,
+          warn,
+          os.path.join('tmp', 'camldummy.ml'),
           verbose=False,
         )
       except ExecutionError:
