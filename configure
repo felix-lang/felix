@@ -49,7 +49,7 @@ def main():
         print >> sys.stderr, 'ERROR EXTRACTING CONFIGURATION PROGRAM'
         return 1
 
-    if run(os.path.join('script', 'make_config.py', *sys.argv[1:])):
+    if run(os.path.join('script', 'make_config.py'), *sys.argv[1:]):
         print >> sys.stderr, 'ERROR CONFIGURING'
         return 1
 
