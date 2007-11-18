@@ -2,15 +2,21 @@
 @select (h)
 import os
 import sys
-from flxbuild.flxutil import xqt, get_stdout
+from flxbuild.flxutil import xqt
 
 class compiler_base(object):
-  def __init__(self):
+  def __init__(self, verbose=False, quiet=False):
     class Options:
       pass
     self.options = Options()
-    self.shell = xqt
-    self.get_stdout = get_stdout
+    self.verbose = verbose
+    self.quiet = quiet
+
+  def shell(self, *args, **kwds):
+    kwds.setdefault('verbose', self.verbose)
+    kwds.setdefault('quiet', self.quiet)
+
+    return xqt(*args, **kwds)
 
   def set_options(self):
     pass
@@ -50,7 +56,7 @@ class compiler_base(object):
 import os
 import sys
 
-from flxbuild.flxutil import mkdirs, MakeError
+from flxbuild.flxutil import mkdirs, ExecutionError
 from flxbuild.compiler_base import compiler_base
 
 class c_cxx_base(compiler_base):
@@ -94,13 +100,13 @@ class c_cxx_base(compiler_base):
     opt.lib_paths = lib_paths
 
     # defaults for gcc specific stuff
-    opt.HAVE_GNU_X86 = 0
-    opt.HAVE_GNU_X86_64 = 0
-    opt.USE_REGPARM3 = 0
-    opt.HAVE_CGOTO = 0
-    opt.HAVE_ASM_LABELS = 0
-    opt.HAVE_STL_GNU_CXX = 0
-    opt.HAVE_GNU_BUILTIN_EXPECT = 0
+    opt.HAVE_GNU_X86 = False
+    opt.HAVE_GNU_X86_64 = False
+    opt.USE_REGPARM3 = False
+    opt.HAVE_CGOTO = False
+    opt.HAVE_ASM_LABELS = False
+    opt.HAVE_STL_GNU_CXX = False
+    opt.HAVE_GNU_BUILTIN_EXPECT = False
 
 
     print "COM =", opt.COM
@@ -176,7 +182,7 @@ class c_cxx_base(compiler_base):
       cmd.append(src)
 
       # compile it
-      self.shell(' '.join(cmd), log=log)
+      self.shell(*cmd, **dict(log=log))
 
       objects.append(dst)
 
@@ -270,7 +276,7 @@ class c_cxx_base(compiler_base):
 
     mkdirs(os.path.dirname(outfile))
 
-    self.shell(' '.join(cmd), log=log)
+    self.shell(*cmd, **dict(log=log))
 
     return dst
 
@@ -294,9 +300,10 @@ class c_cxx_base(compiler_base):
 
     mkdirs(os.path.dirname(outfile))
 
-    self.shell(' '.join(cmd), log=log)
+    self.shell(*cmd, **dict(log=log))
+
     if opt.RANLIB:
-      self.shell(opt.RANLIB + " " + filename, log=log)
+      self.shell(opt.RANLIB, filename, log=log)
 
     return filename
 
@@ -336,8 +343,8 @@ class c_cxx_base(compiler_base):
       objects=[],
       include_paths=[],
       macros=[],
-      optimise=0,
-      debug=0,
+      optimise=False,
+      debug=False,
       CFLAGS="",
       lib_paths=[],
       libs=[],
@@ -398,11 +405,11 @@ class c_cxx_base(compiler_base):
 
   def run_static_program(self, *args, **kwds):
     filename = self.build_static_program(*args, **kwds)
-    return self.get_stdout(filename)
+    return self.shell(filename, verbose=False)
 
   def run_shared_program(self, basename):
     filename = self.build_shared_program(*args, **kwds)
-    return self.get_stdout(filename)
+    return self.shell(filename, verbose=False)
 
   ########
 
@@ -464,18 +471,18 @@ int main(int argc, char** argv) {return 0;}
 
     try:
       self.compile_static_main([filename])
-    except EnvironmentError:
+    except ExecutionError:
       if header:
         print "NOT defined %s in %s" % (macro, header)
       else:
         print "NOT defined", macro
-      return 0
+      return False
     else:
       if header:
         print "#defined %s in %s" % (macro, header)
       else:
         print "#defined", macro
-      return 1
+      return True
 
 
   def check_header_exists(self, name):
@@ -484,10 +491,10 @@ int main(int argc, char** argv) {return 0;}
     try:
       self.compile_static_main([filename])
       print "#include <%s>" % name
-      return 1
-    except EnvironmentError:
+      return True
+    except ExecutionError:
       print "NO HEADER <%s>" % name
-      return 0
+      return False
 
   ########
 
@@ -515,15 +522,12 @@ int main(int argc, char** argv) {
 """ % (header, t), filename)
 
     try:
-      result, lines = self.run_static_program(filename)
-    except EnvironmentError:
-      pass
-    else:
-      if not result: # got a result
-        size = int(lines[0])
-        return size
+      lines = self.run_static_program(filename)
+    except ExecutionError:
+      return None
 
-    return None
+    size = int(lines[0])
+    return size
 
 
   def get_type_align(self, typedef, header=''):
@@ -556,15 +560,13 @@ int main(int argc, char** argv) {
 """ % (header, t), filename)
 
     try:
-      result, lines = self.run_static_program(filename)
-    except EnvironmentError:
-      pass
-    else:
-      if not result: # got a result
-        align = int(lines[0])
-        print '%s: align: %s' % (typedef, align)
-        return align
-    return None
+      lines = self.run_static_program(filename)
+    except ExecutionError:
+      return None
+
+    align = int(lines[0])
+    print '%s: align: %s' % (typedef, align)
+    return align
 
 
   def get_type_size_sign(self, typedef1, typedef2=None, header=''):
@@ -597,21 +599,17 @@ int main(int argc, char** argv) {
 """ % (header, typedef1, typedef2, expr1, expr2), filename)
 
     try:
-      result, lines = self.run_static_program(filename)
-    except EnvironmentError:
-      pass
+      lines = self.run_static_program(filename)
+    except ExecutionError:
+      return None, None
+    size = int(lines[0])
+    sign = int(lines[1])
+    if typedef1 == typedef2:
+      print '(%s)0: sign: %s' % (typedef1, sign)
     else:
-      if not result: # got a result
-        size = int(lines[0])
-        sign = int(lines[1])
-        if typedef1 == typedef2:
-          print '(%s)0: sign: %s' % (typedef1, sign)
-        else:
-          print '(%s)0 + (%s)0: sign: %s' % (typedef1, typedef2, sign)
+      print '(%s)0 + (%s)0: sign: %s' % (typedef1, typedef2, sign)
 
-        return size, sign
-
-    return None, None
+    return size, sign
 
   ########
 
@@ -642,13 +640,13 @@ int main(int argc, char** argv) {
       else:
         print "NO TYPE %s" % t
 
-      opt.__dict__['HAVE_' + m] = 0
+      opt.__dict__['HAVE_' + m] = False
     else:
       print '%s: size: %s' % (t, size)
 
       align = self.get_type_align(t, header)
 
-      opt.__dict__['HAVE_' + m] = 1
+      opt.__dict__['HAVE_' + m] = True
       opt.__dict__['SIZEOF_' + m] = size
       opt.__dict__['ALIGNOF_' + m] = align
 
@@ -794,9 +792,9 @@ int main(int argc, char** argv) {
 
   def detect_posix(self):
     if self.check_macro_defined("_WIN32"):
-      return 0
+      return False
     else:
-      return 1
+      return True
 
   def detect_cygwin(self):
     return self.check_macro_defined("__CYGWIN__")
@@ -839,11 +837,11 @@ int main(int argc, char** argv) {
   def detect_solaris(self):
     # can't find a symbol for solaris...
     # return self.check_macro_defined("__SOLARIS__")
-    result,output = self.get_stdout("uname")  # print SunOS on solaris
-    if not result and output[0] == "SunOS\n":
-      return 1
-    else:
-      return 0
+    try:
+      # print SunOS on solaris
+      return self.shell("uname", verbose=False) == 'SunOS\n'
+    except ExecutionError:
+      return False
 
   def detect_linux(self):
     return self.check_macro_defined("__linux__")
@@ -901,7 +899,7 @@ int main(int argc, char** argv) {
     filename = "tmp" + os.sep + "intsizes"
 
     try:
-      errno, output = self.run_static_string_program(r"""
+      output = self.run_static_string_program(r"""
 #include <stdio.h>
 #include <stddef.h>
 
@@ -922,26 +920,22 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, filename)
-    except EnvironmentError:
+    except ExecutionError:
       print "FATAL: can't determine sizes of ints"
       raise
-    else:
-      if errno:
-        raise EnvironmentError("FATAL: can't determine size of ints")
+    ## THIS CALL CANNOT USE THE SHELL BECAUSE IT REDIRECTS OUTPUT
+    os.system("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
+    f = open("tmp"+os.sep+"intsizes.py")
+    try:
+      exec f in opt.__dict__
+    finally:
+      f.close()
+    # RF (zzz): getting \r\n output from target/xcompile stage,
+    # under nocygwin which is confusing 'exec' which flags them
+    # as syntax errors. re-enabling the old code (not sure why it was
+    # changed as it sure as hell weren't broke).
 
-      ## THIS CALL CANNOT USE THE SHELL BECAUSE IT REDIRECTS OUTPUT
-      os.system("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
-      f = open("tmp"+os.sep+"intsizes.py")
-      try:
-        exec f in opt.__dict__
-      finally:
-        f.close()
-      # RF (zzz): getting \r\n output from target/xcompile stage,
-      # under nocygwin which is confusing 'exec' which flags them
-      # as syntax errors. re-enabling the old code (not sure why it was
-      # changed as it sure as hell weren't broke).
-
-      # exec string.join(output, '\n') in opt.__dict__
+    # exec string.join(output, '\n') in opt.__dict__
 
     if opt.CHAR_IS_UNSIGNED:
       print "char is unsigned"
@@ -998,10 +992,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_C99_ISNAN_IN_MATH = 1
+      self.options.HAVE_C99_ISNAN_IN_MATH = True
       print "C99 isnan found in <math.h>"
-    except EnvironmentError:
-      self.options.HAVE_C99_ISNAN_IN_MATH = 0
+    except ExecutionError:
+      self.options.HAVE_C99_ISNAN_IN_MATH = False
 
     # find if we have BSD isnanf in <math.h> (NAUGHTY!)
     try:
@@ -1014,10 +1008,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_BSD_ISNAN_IN_MATH = 1
+      self.options.HAVE_BSD_ISNAN_IN_MATH = True
       print "Isnan found in <math.h>"
-    except EnvironmentError:
-      self.options.HAVE_BSD_ISNAN_IN_MATH = 0
+    except ExecutionError:
+      self.options.HAVE_BSD_ISNAN_IN_MATH = False
 
     # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
     try:
@@ -1030,10 +1024,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_ieeefp')
-      self.options.HAVE_BSD_ISNAN_IN_IEEEFP = 1
+      self.options.HAVE_BSD_ISNAN_IN_IEEEFP = True
       print "Isnan found in <ieeefp.h>"
-    except EnvironmentError:
-      self.options.HAVE_BSD_ISNAN_IN_IEEEFP = 0
+    except ExecutionError:
+      self.options.HAVE_BSD_ISNAN_IN_IEEEFP = False
 
     # find if we have C99 isinf in <math.h>
     try:
@@ -1046,10 +1040,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_C99_ISINF_IN_MATH = 1
+      self.options.HAVE_C99_ISINF_IN_MATH = True
       print "C99 isnan found in <math.h>"
-    except EnvironmentError:
-      self.options.HAVE_C99_ISINF_IN_MATH = 0
+    except ExecutionError:
+      self.options.HAVE_C99_ISINF_IN_MATH = False
 
     # find if we have BSD isinff in <math.h> (NAUGHTY!)
     try:
@@ -1062,10 +1056,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_BSD_ISINF_IN_MATH = 1
+      self.options.HAVE_BSD_ISINF_IN_MATH = True
       print "BSD isinf found in <math.h>"
-    except EnvironmentError:
-      self.options.HAVE_BSD_ISINF_IN_MATH = 0
+    except ExecutionError:
+      self.options.HAVE_BSD_ISINF_IN_MATH = False
 
     # find if we have BSD isinff in <ieeefp.h> (NAUGHTY!)
     try:
@@ -1078,10 +1072,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_ieeefp')
-      self.options.HAVE_BSD_ISINF_IN_IEEEFP = 1
+      self.options.HAVE_BSD_ISINF_IN_IEEEFP = True
       print "BSD isinf found in <ieeefp.h>"
-    except EnvironmentError:
-      self.options.HAVE_BSD_ISINF_IN_IEEEFP = 0
+    except ExecutionError:
+      self.options.HAVE_BSD_ISINF_IN_IEEEFP = False
 
     # find if we have C99 isfinite in <math.h>
     try:
@@ -1094,10 +1088,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_C99_ISFINITE_IN_MATH = 1
+      self.options.HAVE_C99_ISFINITE_IN_MATH = True
       print "C99 isfinite found in <math.h>"
-    except EnvironmentError:
-      self.options.HAVE_C99_ISFINITE_IN_MATH = 0
+    except ExecutionError:
+      self.options.HAVE_C99_ISFINITE_IN_MATH = False
 
     # find if we have BSD finitef in <math.h> (NAUGHTY!)
     try:
@@ -1110,10 +1104,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_math')
-      self.options.HAVE_BSD_FINITE_IN_MATH = 1
+      self.options.HAVE_BSD_FINITE_IN_MATH = True
       print "BSD finitef found in <math.h>"
-    except EnvironmentError:
-      self.options.HAVE_BSD_FINITE_IN_MATH = 0
+    except ExecutionError:
+      self.options.HAVE_BSD_FINITE_IN_MATH = False
 
     # find if we have BSD isfinitef in <ieeefp.h> (NAUGHTY!)
     try:
@@ -1126,10 +1120,10 @@ int main(int argc,char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_ieeefp')
-      self.options.HAVE_BSD_FINITE_IN_IEEEFP = 1
+      self.options.HAVE_BSD_FINITE_IN_IEEEFP = True
       print "BSD finitef found in <ieeefp.h>"
-    except EnvironmentError:
-      self.options.HAVE_BSD_FINITE_IN_IEEEFP = 0
+    except ExecutionError:
+      self.options.HAVE_BSD_FINITE_IN_IEEEFP = False
 
 
   def detect_vsnprintf(self):
@@ -1154,13 +1148,11 @@ int main(int argc,char** argv) {
 """, 'tmp' + os.sep + 'vsnprintf')
 
     try:
-      res, lines = self.run_static_program(filename)
-      if res:
-        opt.HAVE_VSNPRINTF = 0
-      else:
-        opt.HAVE_VSNPRINTF = 1
-    except EnvironmentError:
-      opt.HAVE_VSNPRINTF = 0
+      lines = self.run_static_program(filename)
+    except ExecutionError:
+      opt.HAVE_VSNPRINTF = False
+    else:
+      opt.HAVE_VSNPRINTF = True
 
     if opt.HAVE_VSNPRINTF:
       print "vsnprintf() supported"
@@ -1282,10 +1274,10 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'check_inclass')
-      self.options.HAVE_INCLASS_MEMBER_INITIALIZATION = 1
+      self.options.HAVE_INCLASS_MEMBER_INITIALIZATION = True
       print "Inclass member initialisation supported"
-    except EnvironmentError:
-      self.options.HAVE_INCLASS_MEMBER_INITIALIZATION = 0
+    except ExecutionError:
+      self.options.HAVE_INCLASS_MEMBER_INITIALIZATION = False
       print "Inclass member initialisation NOT supported"
 
 
@@ -1301,10 +1293,10 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_cmath')
-      self.options.HAVE_CXX_ISNAN_IN_CMATH = 1
+      self.options.HAVE_CXX_ISNAN_IN_CMATH = True
       print "C++ isnan found in <cmath>"
-    except EnvironmentError:
-      self.options.HAVE_CXX_ISNAN_IN_CMATH = 0
+    except ExecutionError:
+      self.options.HAVE_CXX_ISNAN_IN_CMATH = False
 
     # find if we have BSD isinf in <cmath> (NAUGHTY!)
     try:
@@ -1317,10 +1309,10 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_cmath')
-      self.options.HAVE_CXX_ISINF_IN_CMATH = 1
+      self.options.HAVE_CXX_ISINF_IN_CMATH = True
       print "C++ isinf found in <cmath>"
-    except EnvironmentError:
-      self.options.HAVE_CXX_ISINF_IN_CMATH = 0
+    except ExecutionError:
+      self.options.HAVE_CXX_ISINF_IN_CMATH = False
 
     # find if we have BSD isinf in <cmath> (NAUGHTY!)
     try:
@@ -1333,10 +1325,10 @@ int main(int argc, char** argv) {
   return 0;
 }
 """, 'tmp' + os.sep + 'nan_cmath')
-      self.options.HAVE_CXX_ISFINITE_IN_CMATH = 1
+      self.options.HAVE_CXX_ISFINITE_IN_CMATH = True
       print "C++ isfinite found in <cmath>"
-    except EnvironmentError:
-      self.options.HAVE_CXX_ISFINITE_IN_CMATH = 0
+    except ExecutionError:
+      self.options.HAVE_CXX_ISFINITE_IN_CMATH = False
 
 
 
@@ -1366,6 +1358,7 @@ int main(int argc, char** argv) {
 import os
 import sys
 import flxbuild
+from flxbuild.flxutil import ExecutionError
 
 from flxbuild.c_cxx_base import c_cxx_base
 
@@ -1459,7 +1452,7 @@ class gnu_mixin(object):
         self.compile_dummy_main(CFLAGS="-Wno-invalid-offsetof")
         opt.NO_INVALID_OFFSETOF_WARNING = "-Wall -Wno-invalid-offsetof "
         print "-Wno-invalid-offsetof supported"
-      except EnvironmentError:
+      except ExecutionError:
         opt.NO_INVALID_OFFSETOF_WARNING = "-w "
     else:
       opt.NO_INVALID_OFFSETOF_WARNING = "-Wall "
@@ -1469,7 +1462,7 @@ class gnu_mixin(object):
       self.compile_dummy_main(CFLAGS="-Wfatal-errors")
       opt.NO_INVALID_OFFSETOF_WARNING = opt.NO_INVALID_OFFSETOF_WARNING + "-Wfatal-errors "
       print "-Wfatal-errors supported"
-    except EnvironmentError:
+    except ExecutionError:
       pass
 
   ########
@@ -1486,10 +1479,10 @@ int main(int argc, char** argv) {
 
     try:
       self.build_static_program(filename)
-      opt.HAVE_GNU_BUILTIN_EXPECT= 1
+      opt.HAVE_GNU_BUILTIN_EXPECT= True
       print "gcc __builtin_expect() support detected"
-    except EnvironmentError:
-      opt.HAVE_GNU_BUILTIN_EXPECT= 0
+    except ExecutionError:
+      opt.HAVE_GNU_BUILTIN_EXPECT= False
 
   def detect_named_registers(self):
     opt = self.options
@@ -1507,10 +1500,10 @@ int main(int argc, char** argv) {
     # find if we have gnu on 32 bit x86 platform with named registers
     try:
       self.build_static_program(filename)
-      opt.HAVE_GNU_X86 = 1
+      opt.HAVE_GNU_X86 = True
       print "gnu x86 32 bit support detected"
-    except EnvironmentError:
-      opt.HAVE_GNU_X86 = 0
+    except ExecutionError:
+      opt.HAVE_GNU_X86 = False
 
     filename = self.write_src(r"""
 #include <stdio.h>
@@ -1525,20 +1518,20 @@ int main(int argc, char** argv) {
     # find if we have gnu on 64 bit x86 platform with named registers
     try:
       self.build_static_program(filename)
-      opt.HAVE_GNU_X86_64 = 1
+      opt.HAVE_GNU_X86_64 = True
       print "gnu x86 64 bit support detected"
-    except EnvironmentError:
-      opt.HAVE_GNU_X86_64 = 0
+    except ExecutionError:
+      opt.HAVE_GNU_X86_64 = False
 
     # X86_64 dominates X86
     if opt.HAVE_GNU_X86 and opt.HAVE_GNU_X86_64:
-      opt.HAVE_GNU_X86 = 0
+      opt.HAVE_GNU_X86 = False
 
     if opt.HAVE_GNU_X86:
-      opt.USE_REGPARM3 = 1
+      opt.USE_REGPARM3 = True
       print "regparm3 supported"
     else:
-      opt.USE_REGPARM3 = 0
+      opt.USE_REGPARM3 = False
 
 
   def detect_computed_gotos(self):
@@ -1559,10 +1552,10 @@ int main(int argc, char** argv) {
     # find if we have g++ supporting computed jumps
     try:
       self.build_static_program(filename)
-      opt.HAVE_CGOTO = 1
+      opt.HAVE_CGOTO = True
       print "Computed goto supported"
-    except EnvironmentError:
-      opt.HAVE_CGOTO = 0
+    except ExecutionError:
+      opt.HAVE_CGOTO = False
 
     filename = self.write_src("""
 int main(int argc, char** argv) {
@@ -1581,10 +1574,10 @@ int main(int argc, char** argv) {
     # find if we have g++ supporting computed jumps and asm labels
     try:
       self.build_static_program(filename)
-      opt.HAVE_ASM_LABELS = 1
+      opt.HAVE_ASM_LABELS = True
       print "Asm labels supported"
-    except EnvironmentError:
-      opt.HAVE_ASM_LABELS = 0
+    except ExecutionError:
+      opt.HAVE_ASM_LABELS = False
 
 
   def detect_openmp(self):
@@ -1593,10 +1586,10 @@ int main(int argc, char** argv) {
       self.compile_dummy_main(CFLAGS="-Werror -fopenmp")
       self.options.openmp= "-fopenmp "
       print "OpenMP based parallel programming supported"
-      self.options.HAVE_OPENMP = 1
-    except EnvironmentError:
+      self.options.HAVE_OPENMP = True
+    except ExecutionError:
       self.options.openmp = ""
-      self.options.HAVE_OPENMP = 0
+      self.options.HAVE_OPENMP = False
       print "OpenMP based parallel programming not supported"
 
 
@@ -1610,7 +1603,7 @@ int main(int argc, char** argv) {
       self.compile_dummy_main(CFLAGS="-Werror -fPIC")
       self.options.PIC = "-fPIC "
       print "-fPIC supported"
-    except EnvironmentError:
+    except ExecutionError:
       self.options.PIC = ""
       print "All code is position independent"
 
@@ -1692,18 +1685,17 @@ int main(int argc, char** argv) {
 """, 'tmp' + os.sep + 'pthreads')
 
     # find out how to do pthreads
-    opt.HAVE_PTHREADS = 0
+    opt.HAVE_PTHREADS = False
     opt.PTHREAD_SWITCH = None
-    for i in [' ', '-lpthread ', '-pthread ', '-pthreads ']:
+    for switch in [' ', '-lpthread ', '-pthread ', '-pthreads ']:
       try:
-        result, lines = self.run_static_program(filename, LDFLAGS=i)
-
-        if not result:
-          opt.HAVE_PTHREADS = 1
-          opt.PTHREAD_SWITCH = i
-          break
-      except EnvironmentError:
+        lines = self.run_static_program(filename, LDFLAGS=switch)
+      except ExecutionError:
         pass
+      else:
+        opt.HAVE_PTHREADS = True
+        opt.PTHREAD_SWITCH = switch
+        break
 
     if opt.HAVE_PTHREADS:
       print "Posix Threads supported with", opt.PTHREAD_SWITCH
@@ -1713,65 +1705,34 @@ int main(int argc, char** argv) {
 
   def detect_mmap(self):
     opt = self.options
-    opt.HAVE_MMAP = 0
-    opt.HAVE_MMAP_PROT_EXEC = 0
-    opt.HAVE_MMAP_PROT_READ = 0
-    opt.HAVE_MMAP_PROT_WRITE = 0
-    opt.HAVE_MMAP_DENYWRITE = 0
-    opt.HAVE_MMAP_ANONYMOUS = 0
-    opt.HAVE_MMAP_FILE = 0
-    opt.HAVE_MMAP_FIXED = 0
-    opt.HAVE_MMAP_HASSEMAPHORE = 0
-    opt.HAVE_MMAP_SHARED = 0
-    opt.HAVE_MMAP_PRIVATE = 0
-    opt.HAVE_MMAP_NORESERVE = 0
-    opt.HAVE_MMAP_LOCKED = 0
-    opt.HAVE_MMAP_GROWSDOWN = 0
-    opt.HAVE_MMAP_32BIT = 0
-    opt.HAVE_MMAP_POPULATE = 0
-    opt.HAVE_MMAP_NONBLOCK = 0
 
-    opt.HAVE_MMAP_DEV_ZERO = 0
+    opt.HAVE_MMAP = self.check_macro_defined('sys/mman.h')
 
-    if not self.check_header_exists('sys/mman.h'):
+    if not opt.HAVE_MMAP:
       print "mmap not supported"
       return
 
-    opt.HAVE_MMAP = 1
     print "mmap supported"
 
-    for d in [
-        'MAP_DENYWRITE',
-        'MAP_ANONYMOUS',
-        'MAP_FILE',
-        'MAP_FIXED',
-        'MAP_HASSEMAPHORE',
-        'MAP_SHARED',
-        'MAP_PRIVATE',
-        'MAP_NORESERVE',
-        'MAP_LOCKED',
-        'MAP_GROWSDOWN',
-        'MAP_32BIT',
-        'MAP_POPULATE',
-        'MAP_NONBLOCK',
-        ]:
-      if self.check_macro_defined(d, 'sys/mman.h'):
-        opt.__dict__['HAVE_M' + d] = 1
-
-    if self.check_macro_defined('PROT_EXEC', 'sys/mman.h'):
-      opt.HAVE_MMAP_PROT_EXEC = 1
-
-    if self.check_macro_defined('PROT_READ', 'sys/mman.h'):
-      opt.HAVE_MMAP_PROT_READ = 1
-
-    if self.check_macro_defined('PROT_WRITE', 'sys/mman.h'):
-      opt.HAVE_MMAP_PROT_WRITE = 1
-
-    if self.check_macro_defined('MAP_ANON', 'sys/mman.h'):
-      opt.HAVE_MMAP_ANONYMOUS = 1
+    opt.HAVE_MMAP_PROT_EXEC    = self.check_macro_defined('PROT_EXEC',        'sys/mman.h')
+    opt.HAVE_MMAP_PROT_READ    = self.check_macro_defined('PROT_READ',        'sys/mman.h')
+    opt.HAVE_MMAP_PROT_WRITE   = self.check_macro_defined('PROT_WRITE',       'sys/mman.h')
+    opt.HAVE_MMAP_DENYWRITE    = self.check_macro_defined('MAP_DENYWRITE',    'sys/mman.h')
+    opt.HAVE_MMAP_ANONYMOUS    = self.check_macro_defined('MAP_ANON',         'sys/mman.h')
+    opt.HAVE_MMAP_FILE         = self.check_macro_defined('MAP_FILE',         'sys/mman.h')
+    opt.HAVE_MMAP_FIXED        = self.check_macro_defined('MAP_FIXED',        'sys/mman.h')
+    opt.HAVE_MMAP_HASSEMAPHORE = self.check_macro_defined('MAP_HASSEMAPHORE', 'sys/mman.h')
+    opt.HAVE_MMAP_SHARED       = self.check_macro_defined('MAP_SHARED',       'sys/mman.h')
+    opt.HAVE_MMAP_PRIVATE      = self.check_macro_defined('MAP_PRIVATE',      'sys/mman.h')
+    opt.HAVE_MMAP_NORESERVE    = self.check_macro_defined('MAP_NORESERVE',    'sys/mman.h')
+    opt.HAVE_MMAP_LOCKED       = self.check_macro_defined('MAP_LOCKED',       'sys/mman.h')
+    opt.HAVE_MMAP_GROWSDOWN    = self.check_macro_defined('MAP_GROWSDOWN',    'sys/mman.h')
+    opt.HAVE_MMAP_32BIT        = self.check_macro_defined('MAP_32BIT',        'sys/mman.h')
+    opt.HAVE_MMAP_POPULATE     = self.check_macro_defined('MAP_POPULATE',     'sys/mman.h')
+    opt.HAVE_MMAP_NONBLOCK     = self.check_macro_defined('MAP_NONBLOCK',     'sys/mman.h')
 
     try:
-      errno, output = self.run_static_string_program("""
+      output = self.run_static_string_program("""
 #include <sys/mman.h>
 #include <stdio.h>
 #include <errno.h>
@@ -1806,11 +1767,10 @@ int main(int argc, char** argv)
    return 0;
 }
 """, 'tmp'+os.sep+'mmap')
-    except EnvironmentError:
+    except ExecutionError:
       pass
     else:
-      if not errno:
-        opt.HAVE_MMAP_DEV_ZERO = 1
+      opt.HAVE_MMAP_DEV_ZERO = True
 
 
   def detect_win_dynamic_loading(self):
@@ -1846,12 +1806,12 @@ int main(int argc,char** argv) {
       dll = self.build_shared_dll(dummy_lib_filename)
       exe = self.build_shared_program(dummy_main_filename)
 
-      self.shell(exe + ' ' + dll)
-    except EnvironmentError:
+      self.shell(exe, dll)
+    except ExecutionError:
       pass
     else:
-      opt.SUPPORT_DYNAMIC_LOADING = 1
-      opt.HAVE_LOADLIBRARY = 1
+      opt.SUPPORT_DYNAMIC_LOADING = True
+      opt.HAVE_LOADLIBRARY = True
       print "Dynamic Loading Supported (with LoadLibrary)"
 
 
@@ -1889,27 +1849,27 @@ int main(int argc, char** argv) {
     try:
       dll = self.build_shared_dll(dummy_lib_filename)
       exe = self.build_shared_program(dummy_main_filename)
-      self.shell(exe + ' ' + dll)
-      opt.SUPPORT_DYNAMIC_LOADING = 1
-      opt.HAVE_DLOPEN = 1
-    except EnvironmentError:
+      self.shell(exe, dll)
+      opt.SUPPORT_DYNAMIC_LOADING = True
+      opt.HAVE_DLOPEN = True
+    except ExecutionError:
       try: # nope, try with -ldl
         exe = self.build_shared_program([dummy_main_filename], libs=['dl'])
-        opt.HAVE_DLOPEN = 1
-        opt.SUPPORT_DYNAMIC_LOADING = 1
+        opt.HAVE_DLOPEN = True
+        opt.SUPPORT_DYNAMIC_LOADING = True
         opt.DLLIB = "dl"
         print "Dynamic Loading Supported (with -ldl)"
-      except EnvironmentError:
+      except ExecutionError:
         if opt.model == "osx":
-          opt.SUPPORT_DYNAMIC_LOADING = 1  # pre 10.3, we do our own dlopen
+          opt.SUPPORT_DYNAMIC_LOADING = True  # pre 10.3, we do our own dlopen
 
   def detect_dynamic_loading(self):
     opt = self.options
 
     #check if we can get dlopen to work without -ldl (BSD, Cygwin don't need)
-    opt.SUPPORT_DYNAMIC_LOADING = 0
-    opt.HAVE_DLOPEN = 0
-    opt.HAVE_LOADLIBRARY = 0
+    opt.SUPPORT_DYNAMIC_LOADING = False
+    opt.HAVE_DLOPEN = False
+    opt.HAVE_LOADLIBRARY = False
     opt.DLLIB = ""
 
     if opt.model in ["win32", "win64"]:
@@ -1936,7 +1896,7 @@ int main(int argc, char** argv) { return 0; }
     try:
       self.compile_static_main([filename])
       opt.FLX_SOCKLEN_T = "socklen_t"
-    except EnvironmentError:
+    except ExecutionError:
       filename = self.write_src(r"""
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -1947,7 +1907,7 @@ int main(int argc, char** argv) { return 0; }
       try:
         self.compile_static_main([filename])
         opt.FLX_SOCKLEN_T = "unsigned int"
-      except EnvironmentError:
+      except ExecutionError:
         filename = self.write_src(r"""
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -1958,7 +1918,7 @@ int main(int argc, char** argv) { return 0; }
         try:
           self.compile_static_main([filename])
           opt.FLX_SOCKLEN_T = "int"
-        except EnvironmentError:
+        except ExecutionError:
           opt.FLX_SOCKLEN_T = "int"
     print "socklen_t =", opt.FLX_SOCKLEN_T
 
@@ -1993,9 +1953,9 @@ main(int argc, char** argv) {
       # basically a un*x test, note the non portable path separators and
       # gcc style switches
       self.compile_static_main([filename])
-      opt.HAVE_KQUEUE_DEMUXER = 1
-    except EnvironmentError:
-      opt.HAVE_KQUEUE_DEMUXER = 0
+      opt.HAVE_KQUEUE_DEMUXER = True
+    except ExecutionError:
+      opt.HAVE_KQUEUE_DEMUXER = False
 
     print "HAVE_KQUEUE_DEMUXER =", opt.HAVE_KQUEUE_DEMUXER
 
@@ -2012,13 +1972,12 @@ main(int argc, char** argv) {
 }
 """, 'tmp' + os.sep + 'epolltest')
 
-    opt.HAVE_EPOLL = 0
     try:
-      result,lines=self.run_static_program(filename)
-      if not result:
-        opt.HAVE_EPOLL = 1
-    except:
-      pass
+      lines = self.run_static_program(filename)
+    except ExecutionError:
+      opt.HAVE_EPOLL = False
+    else:
+      opt.HAVE_EPOLL = True
 
     print "HAVE_EPOLL=", opt.HAVE_EPOLL
 
@@ -2029,7 +1988,7 @@ main(int argc, char** argv) {
     filename = self.compile_dummy_main()
     if opt.STRIP:
       try:
-        self.shell(opt.STRIP + filename)
+        self.shell(opt.STRIP, filename)
       except:
         opt.STRIP = "true strip "
     else:
@@ -2041,13 +2000,13 @@ main(int argc, char** argv) {
 
     # see if we have ar
     filenames = self.compile_dummy_main()
-    self.shell(opt.AR + "tmp" + os.sep + "dummy.a " + ' '.join(filenames))
+    self.shell(opt.AR, os.path.join("tmp", "dummy.a"), *filenames)
 
     # see if we have ranlib, it isn't considered essential
     # (a totally brain dead Unix idea: AR should do this)
     try:
-      self.shell(opt.RANLIB + "tmp" + os.sep + "dummy.a")
-    except EnvironmentError:
+      self.shell(opt.RANLIB, os.path.join("tmp", "dummy.a"))
+    except ExecutionError:
       opt.RANLIB = "true ranlib "
 
 
@@ -2092,7 +2051,7 @@ main(int argc, char** argv) {
       libs.append(lib)
     kwds['libs'] = libs
 
-    if opt.__dict__.get('HAVE_PTHREADS', 0):
+    if opt.__dict__.get('HAVE_PTHREADS', False):
       kwds['LDFLAGS'] = kwds.get('LDFLAGS', '') + ' ' + opt.PTHREAD_SWITCH
 
     return super(gnu_mixin, self).link_thing(*args, **kwds)
@@ -2169,10 +2128,10 @@ int main(int argc,char** argv) {
    return 0;
 }
 """, 'tmp' + os.sep + 'gnu_hash')
-      self.options.HAVE_STL_GNU_CXX = 1
+      self.options.HAVE_STL_GNU_CXX = True
       print "Gnu ext/ templates supported"
-    except EnvironmentError:
-      self.options.HAVE_STL_GNU_CXX = 0
+    except ExecutionError:
+      self.options.HAVE_STL_GNU_CXX = False
 
 @h = tangler("flxbuild/msvc_mixin.py")
 @select(h)
@@ -2226,9 +2185,9 @@ class msvc_mixin(object):
     COM = opt.COM
 
     # RF: Does windows have mmap? Let's say no.
-    opt.HAVE_MMAP = 0
+    opt.HAVE_MMAP = False
     opt.RANLIB = "@rem nothing" # RF: better than none.
-    opt.SUPPORT_DYNAMIC_LOADING = 1
+    opt.SUPPORT_DYNAMIC_LOADING = True
     opt.SPEC_COMPILE_OBJ = "/c "
     opt.SPEC_OBJ_FILENAME = "/Fo"
     opt.SPEC_EXE_FILENAME = "/Fe"
@@ -2250,7 +2209,7 @@ class msvc_mixin(object):
     opt.EXT_STATIC_OBJ = "_static.obj"
     opt.EXT_SHARED_OBJ = "_dynamic.obj"
 
-    opt.HAVE_DLOPEN = 0
+    opt.HAVE_DLOPEN = False
     opt.DLLIB = ""
 
     # where to put the rtl: Cygwin requires the dll be in the PATH
@@ -2263,10 +2222,10 @@ class msvc_mixin(object):
       self.compile_dummy_main(CFLAGS="/openmp ")
       self.options.openmp= "/openmp "
       print "OpenMP based parallel programming supported"
-      self.options.HAVE_OPENMP = 1
-    except EnvironmentError:
+      self.options.HAVE_OPENMP = True
+    except ExecutionError:
       self.options.openmp = ""
-      self.options.HAVE_OPENMP = 0
+      self.options.HAVE_OPENMP = False
       print "OpenMP based parallel programming not supported"
 
 
@@ -2402,7 +2361,7 @@ import os
 import sys
 import shutil
 
-from flxbuild.flxutil import mkdirs, MakeError
+from flxbuild.flxutil import mkdirs, ExecutionError
 from flxbuild.compiler_base import compiler_base
 
 class ocaml(compiler_base):
@@ -2412,41 +2371,41 @@ class ocaml(compiler_base):
 
     if os.name == 'nt' or sys.platform == 'cygwin':
       # ocamlbuild doesn't work under windows
-      opt.HAVE_OCAMLBUILD = 0
+      opt.HAVE_OCAMLBUILD = False
     else:
       try: # check if ocamlbuild exists
-        self.shell('ocamlbuild -version', log=log)
+        self.shell('ocamlbuild', '-version', log=log)
         opt.OCAMLBUILD = 'ocamlbuild -classic-display '
-        #opt.HAVE_OCAMLBUILD = 1
+        #opt.HAVE_OCAMLBUILD = True
         # ocaml build doesn't work properly at the moment
         # due to hygiene checks or something .. so i have
         # to disable it
-        opt.HAVE_OCAMLBUILD = 0
-      except MakeError:
-        opt.HAVE_OCAMLBUILD = 0
+        opt.HAVE_OCAMLBUILD = False
+      except ExecutionError:
+        opt.HAVE_OCAMLBUILD = False
 
     try: # check if the client bootstrapped the native code compiler
       self.shell('ocamlopt.opt', log=log)
       opt.OCAMLCC = 'ocamlopt.opt ' + linkopts
       opt.OCAMLLEX = 'ocamllex.opt'
       opt.OCAMLYACC = 'ocamlyacc'
-      opt.NATIVE_CODE_COMPILER = 1
-    except MakeError:
+      opt.NATIVE_CODE_COMPILER = True
+    except ExecutionError:
       try: # check if the client has unbootstrapped native code compiler
         self.shell('ocamlopt', log=log)
         opt.OCAMLCC = 'ocamlopt ' + linkopts
         opt.OCAMLLEX = 'ocamllex'
         opt.OCAMLYACC = 'ocamlyacc'
-        opt.NATIVE_CODE_COMPILER = 1
-      except MakeError:
-        opt.NATIVE_CODE_COMPILER = 0
+        opt.NATIVE_CODE_COMPILER = True
+      except ExecutionError:
+        opt.NATIVE_CODE_COMPILER = False
         try: # check if the client has ocaml at all ..
           self.shell('ocamlc', log=log)
           opt.OCAMLCC = 'ocamlc'
           opt.OCAMLLEX = 'ocamllex'
           opt.OCAMLYACC = 'ocamlyacc'
           opt.OCAMLDOC = 'ocamldoc'
-        except MakeError:
+        except ExecutionError:
           print "WARNING: CANT FIND OCAML TOOLS (ocamlc, ocamllex, ocamlyacc)"
           opt.OCAMLCC = 'false ocamlc'
           opt.OCAMLLEX = 'false ocamllex'
@@ -2455,22 +2414,22 @@ class ocaml(compiler_base):
     try: # check if there is a native code version of the bytecode compiler
       self.shell('ocamlc.opt', log=log)
       opt.OCAMLB = 'ocamlc.opt'
-    except MakeError:
+    except ExecutionError:
       try: # check if the client has ocaml at all
         self.shell('ocamlc', log=log)
         opt.OCAMLB = 'ocamlc'
-      except MakeError:
+      except ExecutionError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamlc'"
         opt.OCAMLB = 'false ocamlc'
 
     try:
       self.shell('ocamldoc.opt', log=log)
       opt.OCAMLDOC = 'ocamldoc.opt'
-    except MakeError:
+    except ExecutionError:
       try:
         self.shell('ocamldoc', log=log)
         opt.OCAMLDOC = 'ocamldoc'
-      except MakeError:
+      except ExecutionError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamldoc'"
         opt.OCAMLDOC = 'false ocamldoc'
 
@@ -2482,33 +2441,34 @@ class ocaml(compiler_base):
 
     opt.OCAMLCP = "ocamlcp "
     # where the ocaml is installed
-    result,x = self.get_stdout(opt.OCAMLC + " -where")
-    if result:
-      print "Woops, Can't run",opt.OCAMLC
+    try:
+      output = self.shell(opt.OCAMLC, '-where', verbose=False)
+    except ExecutionError:
+      print "Woops, Can't run", opt.OCAMLC
       sys.exit(1)
-    opt.OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
+    opt.OCAML_INCLUDE_DIRECTORY= output[0].strip()
 
-    result,x = self.get_stdout(opt.OCAMLB + " -v")
-    if result:
-      print "Woops, Can't run",opt.OCAMLB
+    try:
+      output = self.shell(opt.OCAMLB, '-v', verbose=False)
+    except ExecutionError:
+      print "Woops, Can't run", opt.OCAMLB
       sys.exit(1)
-    x=x[0][0:-1]
-    opt.OCAMLB_DESCRIPTION,y = x.split(",")
-    y = y.strip()
-    opt.OCAML_VERSION=y
+    opt.OCAMLB_DESCRIPTION, ocamlb_version = output[0].strip().split(', ')
 
-    result,x = self.get_stdout(opt.OCAMLC + " -v")
-    if result:
-      print "Woops, Can't run",opt.OCAMLC
+    try:
+      output = self.shell(opt.OCAMLC, '-v', verbose=False)
+    except ExecutionError:
+      print "Woops, Can't run", opt.OCAMLC
       sys.exit(1)
-    x=x[0][0:-1]
-    opt.OCAMLC_DESCRIPTION,y = x.split(",")
-    y = y.strip()
-    if opt.OCAML_VERSION <> y:
+    opt.OCAMLC_DESCRIPTION, ocamlc_version = output[0].strip().split(', ')
+    if ocamlb_version != ocamlc_version:
       print "Inconsistent Ocaml tool versions"
-      print "Ocaml: bytecode compiler",opt.OCAML_VERSION
-      print "Ocaml: compiler         ",y
+      print "Ocaml: bytecode compiler", ocamlb_version
+      print "Ocaml: compiler         ", ocamlc_version
       sys.exit(1)
+    else:
+      opt.OCAML_VERSION = ocamlb_version
+
     warn=' -w yzex -warn-error FDPSU '
     try:
       f = open('tmp'+os.sep+'camldummy.ml','w')
@@ -2519,8 +2479,13 @@ class ocaml(compiler_base):
     except (IOError, OSError):
       pass
     else:
-      result,x = self.get_stdout(opt.OCAMLC + warn+'tmp'+os.sep+'camldummy.ml')
-      if not result:
+      try:
+        output = self.shell(opt.OCAMLC, 
+          warn, 
+          os.path.join('tmp', 'camldummy.ml'), 
+          verbose=False,
+        )
+      except ExecutionError:
         opt.OCAMLB = opt.OCAMLB + warn
         opt.OCAMLC = opt.OCAMLC + warn
 
@@ -2585,7 +2550,7 @@ class ocaml(compiler_base):
       cmd.append('-c ' + src)
 
       # compile it
-      self.shell(' '.join(cmd), log=log)
+      self.shell(*cmd, **dict(log=log))
 
       objects.append(dst)
 
@@ -2641,7 +2606,7 @@ class ocaml(compiler_base):
     cmd.extend([lib + EXT_DST for lib in libs])
     cmd.extend(objects)
 
-    self.shell(' '.join(cmd), log=log)
+    self.shell(*cmd, **dict(log=log))
 
     return dst
 
@@ -2685,7 +2650,7 @@ class ocaml(compiler_base):
       cmd.extend(FLAGS)
       cmd.append(dst)
 
-      self.shell(' '.join(cmd), log=log)
+      self.shell(*cmd, **dict(log=log))
 
 
   def gen_lexer(self, *args, **kwds):

@@ -232,7 +232,7 @@ class PLUGIN(Plugin):
     try:
       for file in MAN_PAGES:
         basename = os.path.splitext(file)[0]
-        vxqt(
+        self.shell(
           "man2html man/man1/" + file +
           '| sed -e "s%<A HREF=\\"[^<]*cgi-bin/man/man2html?1+\(.*\)\\">%<A HREF=\\"\\1_1.html\\">%"' +
           '| sed -e "7d"' +
@@ -260,9 +260,17 @@ class PLUGIN(Plugin):
     erasedir('doc/impldoc')
     os.mkdir('doc/impldoc')
     try:
-      vxqt('ocamldoc -I src -d doc/impldoc src/*.mli -html')
-      vxqt('ocamldoc -I src -o doc/impldoc/flx_impl.tex src/*.mli -latex')
-      vxqt('(cd doc/impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
+      self.shell('ocamldoc', '-html',
+        '-I', 'src',
+        '-d', os.path.join('doc', 'impldoc'),
+        os.path.join('src', '*.mli'),
+      )
+      self.shell('ocamldoc', '-latex',
+        '-I', 'src',
+        '-d', os.path.join('doc', 'impldoc', 'flx_impl.tex'),
+        os.path.join('src', '*.mli'),
+      )
+      self.shell('(cd doc/impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
     except:
      pass # well ocamldoc is full of bugs ..
 
@@ -282,7 +290,7 @@ class PLUGIN(Plugin):
 
     print "GENERATING RTLDOCS"
     try:
-      vxqt("doxygen misc/doxconf.dox")
+      self.shell('doxygen', os.path.join('misc', 'doxconf.dox'))
     except:
       pass
 
@@ -305,9 +313,14 @@ class PLUGIN(Plugin):
     f.write("#import <nugram.flxh>\n")
     f.write("open syntax felix\n")
     f.close()
+
     try:
-      vxqt("bin/flxp -Ilib --document-grammar tmp/xx")
-    except:
+      self.shell(os.path.join('bin', 'flxp'),
+        '-Ilib',
+        '--document-grammar',
+        os.path.join('tmp', 'xx'),
+      )
+    except ExecutionError:
       pass
 
 @select(tangler('mkplugins/typeclassdoc.py'))
@@ -333,8 +346,12 @@ class PLUGIN(Plugin):
     shutil.copy(os.path.join('misc', 'dot.gif'),   os.path.join("doc", "moduledoc"))
 
     try:
-      vxqt("bin/flxd -Ilib --document-typeclass misc/ldoc")
-    except:
+      self.shell(os.path.join('bin', 'flxd'),
+        '-Ilib',
+        '--document-typeclass',
+        os.path.join('misc', 'ldoc'),
+      )
+    except ExecutionError:
       pass
 
 
@@ -664,20 +681,36 @@ class PLUGIN(Plugin):
     resfilename = outbase+".resh"
     incfilename = outbase+".includes"
     try:
-      flxg('-Ilib --cache_dir=build/test --output_dir=build/test --import=flx.flxh std '+ FLXFLAGS + basename, log=log)
-    except MakeError, e:
+      self.shell(os.path.join('bin', 'flxg'),
+        '-Ilib',
+        '--cache_dir=' + os.path.join('build', 'test'),
+        '--output_dir=' + os.path.join('build', 'test'),
+        '--import=flx.flxh',
+        'std',
+        FLXFLAGS,
+        basename,
+        log=log,
+      )
+    except ExecutionError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
       erasefile(cppfilename)
       raise e
 
-    cflags = vxqtq(os.path.join( "bin",
-      "flx_pkgconfig --path=config --field=cflags @"+resfilename),
-      log=log)
+    cflags = self.shell(os.path.join('bin', 'flx_pkgconfig'),
+      '--path=config',
+      '--field=cflags',
+      '@' + resfilename,
+			verbose=False,
+      log=log,
+    )
     cflags = cflags[0].strip() + " "
 
-    includes = vxqtq(os.path.join( "bin",
-      "flx_pkgconfig --path=config --field=includes @"+resfilename),
-      log=log)
+    includes = self.shell(os.path.join('bin', 'flx_pkgconfig'),
+      '--path=config',
+      '--field=includes',
+      '@' + resfilename,
+      log=log,
+    )
     includes = includes[0].strip().split()
     f = open(incfilename,"w")
     for i in includes:
@@ -689,11 +722,16 @@ class PLUGIN(Plugin):
     try:
       if config.SUPPORT_DYNAMIC_LOADING:
         log.write("COMPILING GENERATED C++ TEST CODE: %s (dynamic)\n" % mode,quiet)
-        flush()
+        log.flush()
 
-        dlibs = vxqtq(os.path.join("bin",
-          "flx_pkgconfig -r --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename),
-          log=log)
+        dlibs = self.shell(os.path.join('bin', 'flx_pkgconfig'),
+          '-r',
+          '--path=config',
+          '--field=provides_dlib',
+          '--field=requires_dlibs',
+          '@' + resfilename,
+          log=log,
+        )
         dlibs = dlibs[0].strip() + " "
 
         config.TARGET_CXX.build_shared_dll(outbase,
@@ -708,21 +746,29 @@ class PLUGIN(Plugin):
 
       if config.SUPPORT_STATIC_LINKAGE:
         log.write("COMPILING GENERATED C++ TEST CODE: %s (static)\n" % mode,quiet)
-        flush()
+        log.flush()
 
-        driver = vxqtq(os.path.join(
-          "bin",
-          "flx_pkgconfig -r --keeprightmost --path=config "
-          "--field=flx_requires_driver @"+resfilename),
-          log=log)
+        driver = self.shell(os.path.join('bin', 'flx_pkgconfig'),
+          '-r',
+          '--keeprightmost',
+          '--path=config',
+          '--field=flx_requires_driver',
+          '@' + resfilename,
+          log=log,
+        )
         driver = driver[0].strip()
         if driver == '': driver = 'flx_run'
 
-        slibs = vxqtq(os.path.join(
-          "bin",
-          "flx_pkgconfig -r --keeprightmost --path=config "
-          "--field=provides_slib --field=requires_slibs "+driver+" @"+resfilename),
-          log=log)
+        slibs = self.shell(os.path.join('bin', 'flx_pkgconfig'),
+          '-r',
+          '--keeprightmost',
+          '--path=config',
+          '--field=provides_slib',
+          '--field=requires_slibs',
+          driver,
+          '@' + resfilename,
+          log=log,
+        )
         slibs = slibs[0].strip()
         #log.write("slibs=%s\n" % slibs)
 
@@ -743,7 +789,7 @@ class PLUGIN(Plugin):
           log=log)
 
       #log.write('TESTFILE -- OK! %s\n' % basename)
-    except MakeError, e:
+    except ExecutionError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
       erasefile(basename+config.EXT_SHLIB)
       erasefile(basename+config.EXT_EXE)
@@ -894,6 +940,7 @@ class PLUGIN(Plugin):
         print "FAILED Rmdir",d
     for f in glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.cache")):
       erasefile(f)
+
     runISCR(config, os.path.join(config.FLX_LPARCHIVE, 'lpsrc', 'flx_config.pak'),1)
     sys.exit(0)
 
@@ -1223,7 +1270,12 @@ class PLUGIN(Plugin):
     fsflags = pkgdict.get("felix_requires_linkflags","")
     for src,exe in flxs:
       # added 'std' here so flx_pkgconfig builds
-      flxg("-Ilib --import=flx.flxh std " + src)
+      self.shell(os.path.join('bin', 'flxg'),
+        '-Ilib',
+        '--import=flx.flxh',
+        'std',
+        src,
+      )
       config.TARGET_CXX.build_felix_static(src, exe,
         objects=[os.path.join(config.FLX_RTL_DIR, 'flx_run' + config.EXT_STATIC_OBJ)],
         include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
@@ -1252,9 +1304,9 @@ class PLUGIN(Plugin):
         testscript = "time "+drv_basename+ " "+test_basename+config.EXT_SHLIB+" " + moreargs
         print '(dynamic link) Executing ',testscript
         try:
-          exqt(testscript)
+          self.shell(testscript)
           #print 'TESTFILE -- OK!',testscript
-        except MakeError, e:
+        except ExecutionError, e:
           print 'TESTFILE -- ERROR!',testscript
           raise e
 
@@ -1262,9 +1314,9 @@ class PLUGIN(Plugin):
         testscript = "time "+test_basename+config.EXT_EXE+" " + moreargs
         print '(static link) Executing ',testscript
         try:
-          exqt(testscript)
+          self.shell(testscript)
           #print 'TESTFILE -- OK!',testscript
-        except MakeError, e:
+        except ExecutionError, e:
           print 'TESTFILE -- ERROR!',testscript
           raise e
 
@@ -1289,10 +1341,20 @@ class PLUGIN(Plugin):
       cppfilename = basename + ".cpp"
 
       try:
-        flxg('-e -Ilib --cache_dir=build/test --output_dir=build/test --import=flx.flxh std ' + FLXFLAGS + basename, log=log)
+        self.shell(os.path.join('bin', 'flxg'),
+          '-e',
+          '-Ilib',
+          '--cache_dir=' + os.path.join('build', 'test'),
+          '--output_dir=' + os.path.join('build', 'test'),
+          '--import=flx.flxh',
+          'std',
+          FLXFLAGS,
+          basename, log=log
+        )
+
         #log.write('TESTFILE -- failed as expected %s\n' % basename)
         self.successes.append((pkg, testfile, log.getvalue()))
-      except MakeError, e:
+      except ExecutionError, e:
         failed = 1
 
         log.write('TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED! %s\n' % basename)
@@ -1314,7 +1376,7 @@ class PLUGIN(TestPlugin):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
     static_unit_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, static_unit_tests, 1, 1, 0,
+    return self.run_tests(config, pkg, pkgdict, static_unit_tests, 1, 1, 0,
       "*** STATIC UNIT TESTING %s : %%s ****\n" % pkg)
 
 
@@ -1327,7 +1389,7 @@ class PLUGIN(TestPlugin):
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
     dynamic_unit_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, dynamic_unit_tests, 1, 0, 1,
+    return self.run_tests(config, pkg, pkgdict, dynamic_unit_tests, 1, 0, 1,
       "*** DYNAMIC UNIT TESTING %s : %%s ****\n" % pkg)
 
 
@@ -1340,7 +1402,7 @@ class PLUGIN(TestPlugin):
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, unit_tests, 1, 1, 1,
+    return self.run_tests(config, pkg, pkgdict, unit_tests, 1, 1, 1,
       "*** UNIT TESTING %s : %%s ****\n" % pkg)
 
 
@@ -1354,7 +1416,7 @@ class PLUGIN(TestPlugin):
     completion_tests = pkgdict.get("completion_tests",[])
     completion_tests.sort()
 
-    return self.run_tests(pkg, pkgdict, completion_tests, 0, 1, 1,
+    return self.run_tests(config, pkg, pkgdict, completion_tests, 0, 1, 1,
       "*** COMPLETION (nondet) TESTING %s : %%s ****\n" % pkg)
 
 
@@ -1363,8 +1425,8 @@ class PLUGIN(Plugin):
   name = 'run_known_failed_tests'
   help = 'mark tests failed that are known to fail without running'
 
-  def __init__(self):
-    Plugin.__init__(self)
+  def __init__(self, *args, **kwds):
+    super(PLUGIN, self).__init__(*args, **kwds)
     self.dummy = 1
 
   def runme(self, config, pkg, pkgdict):
@@ -1394,7 +1456,7 @@ class PLUGIN(TestPlugin):
 
     print "***** DEMO PACKAGE", pkg, "************"
 
-    return self.run_tests(pkg, pkgdict, demos, 0, 1, 1,
+    return self.run_tests(config, pkg, pkgdict, demos, 0, 1, 1,
       "*** DEMO PACKAGE %s : %%s ****\n" % pkg)
 
 
@@ -1414,25 +1476,6 @@ else:
         os.environ.get('LD_LIBRARY_PATH', '') + os.pathsep + \
         config.FLX_RTL_DIR
 
-
-def vxqt(x, **kwds):
-  kwds['verbose'] = kwds.get('verbose', verbose)
-  kwds['quiet'] = kwds.get('quiet', quiet)
-  return xqt(x, **kwds)
-
-
-def vxqtq(x, **kwds):
-  kwds['verbose'] = kwds.get('verbose', verbose)
-  return xqtq(x, **kwds)
-
-
-def exqt(x, **kwds):
-  return vxqt(ENV + x, **kwds)
-
-
-def flxg(x, **kwds):
-  x = os.path.join('bin', 'flxg ' + x)
-  return exqt(x, **kwds)
 
 
 #interscript command (now built in part of Felix package)
@@ -1459,7 +1502,7 @@ def runISCR(config, a, force=False, break_on_error=None):
     cmd.append('--break-on-error')
   cmd.append(a)
 
-  exqt(' '.join(cmd))
+  xqt(*cmd)
 
 
 @select(tangler('mkplugins/manifest.py'))
@@ -1537,15 +1580,25 @@ class Plugin(object):
   name = None
   help = ''
 
-  def __init__(self):
+  def __init__(self, verbose=False, quiet=False, optimise=False, debug=False):
     self.failures = []
     self.successes = []
     self.dummy = 0
     self.used = False
+    self.verbose = verbose
+    self.quiet = quiet
+    self.optimise = optimise
+    self.debug = debug
 
   def __call__(self, *args, **kwds):
     self.used = True
     return self.runme(*args, **kwds)
+
+  def shell(self, *args, **kwds):
+    kwds.setdefault('verbose', self.verbose)
+    kwds.setdefault('quiet', self.quiet)
+
+    return xqt(*args, **kwds)
 
 
 class TestPlugin(Plugin):
@@ -1554,7 +1607,7 @@ class TestPlugin(Plugin):
       if x == a and y == b: return True
     return False
 
-  def run_tests(self, pkg, pkgdict, testfiles, deterministic, static, dynamic, title):
+  def run_tests(self, config, pkg, pkgdict, testfiles, deterministic, static, dynamic, title):
     if not testfiles:
       return 1
 
@@ -1594,7 +1647,7 @@ class TestPlugin(Plugin):
         # build the felix code
         try:
           inbase = plugins['build_test'](config, testfile, log, quiet)
-        except MakeError, e:
+        except ExecutionError, e:
           failed = 1
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
         else:
@@ -1606,9 +1659,14 @@ class TestPlugin(Plugin):
             resfilename = outbase + ".resh"
 
             try:
-              driver = vxqtq(os.path.join("bin", "flx_pkgconfig") +
-                " --path=config --field=flx_requires_driver --rec @" + resfilename,
-                log=log)
+              driver = self.shell(
+                os.path.join('bin', 'flx_pkgconfig'),
+                '--path=config',
+                '--field=flx_requires_driver',
+                '--rec',
+                '@' + resfilename,
+                log=log,
+              )
 
               driver = driver[0].strip()
               if driver =='': driver = "flx_run"
@@ -1616,8 +1674,8 @@ class TestPlugin(Plugin):
               #log.write("Driver: %s\n" % driver)
               testscript = driver + ' ' + outbase + config.EXT_SHLIB
 
-              self.run_test(log, testscript, inbase, outbase, deterministic)
-            except MakeError, e:
+              self.run_test(config, log, testscript, inbase, outbase, deterministic)
+            except ExecutionError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
 
@@ -1626,8 +1684,8 @@ class TestPlugin(Plugin):
             testscript = outbase + config.EXT_EXE
 
             try:
-              self.run_test(log, testscript, inbase, outbase,deterministic)
-            except MakeError, e:
+              self.run_test(config, log, testscript, inbase, outbase,deterministic)
+            except ExecutionError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
 
@@ -1647,15 +1705,15 @@ class TestPlugin(Plugin):
     return tests_failed == 0
 
 
-  def run_test(self, log, testscript, inbase,outbase, deterministic):
+  def run_test(self, config, log, testscript, inbase, outbase, deterministic):
     log.write('EXECUTING TEST CODE %s\n' % testscript, quiet)
-    flush()
+    log.flush()
 
     # FIXME
     argfiles = glob.glob(inbase + '*.args')
 
     if not argfiles:
-      output = vxqt(ENV + testscript, verbose=1, log=log)
+      output = self.shell(testscript, verbose=True, log=log)
 
       f = open(outbase+ '.output', 'w')
       try:
@@ -1664,8 +1722,11 @@ class TestPlugin(Plugin):
         f.close()
 
       if deterministic:
-        output = vxqt('%s %s.expect %s.output' % (DIFF, inbase, outbase),
-            verbose=1, log=log)
+        output = self.shell(DIFF,
+          inbase + '.expect',
+          outbase + '.output',
+          verbose=True,
+          log=log)
 
     else:
       for argcount, argfile in zip(range(len(argfiles)), argfiles):
@@ -1676,7 +1737,7 @@ class TestPlugin(Plugin):
         finally:
           f.close()
 
-        output = vxqt(ENV + testscript + ' ' + args, verbose=1, log=log)
+        output = self.shell(testscript, args, verbose=True, log=log)
 
         f = open('%s-%s.argoutput' % (outbase, argcount), 'w')
         try:
@@ -1685,9 +1746,12 @@ class TestPlugin(Plugin):
           f.close()
 
         if deterministic:
-           output = vxqtq('%s %s-%s.argexpect %s-%s.argoutput' % \
-                   (DIFF, inbase, argcount, outbase, argcount),
-                   verbose=1, log=log)
+           output = self.shell(DIFF,
+            '%s-%s.argexpect' % (inbase, argcount),
+            '%s-%s.argoutput' % (outbase, argcount),
+            quiet=True,
+            log=log,
+          )
 
 
 @select(tangler('mkplugins/help.py'))
@@ -1884,11 +1948,17 @@ for o, a in opts:
 execfile(os.path.join("mkplugins", "xqt.py"))
 
 # temporary hack to set up the shell
-config.HOST_OCAML.shell = vxqt
-config.HOST_CC.shell = vxqt
-config.HOST_CXX.shell = vxqt
-config.TARGET_CC.shell = vxqt
-config.TARGET_CXX.shell = vxqt
+config.HOST_OCAML.verbose = verbose
+config.HOST_CC.verbose = verbose
+config.HOST_CXX.verbose = verbose
+config.TARGET_CC.verbose = verbose
+config.TARGET_CXX.verbose = verbose
+
+config.HOST_OCAML.quiet = quiet
+config.HOST_CC.quiet = quiet
+config.HOST_CXX.quiet = quiet
+config.TARGET_CC.quiet = quiet
+config.TARGET_CXX.quiet = quiet
 
 # add the felix directory to the search paths
 os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
@@ -2033,7 +2103,12 @@ for f in glob.glob(os.path.join("mkplugins", "*.py")):
   try:
     execfile(f)
     if globals().has_key("PLUGIN"):
-      plugin = PLUGIN()
+      plugin = PLUGIN(
+        verbose=verbose,
+        quiet=quiet,
+        optimise=optimise,
+        debug=debug,
+      )
       plugins[plugin.name] = plugin
       del PLUGIN
   except:
@@ -2148,18 +2223,31 @@ if os.name != 'nt': # requires posix
     tkind = "std"
     if "inline" in options: tkind="inline"
     elif "noinline" in options: tkind="noinline"
-    stats = sys.executable + ' script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
-    exqt(stats)
-    stats = sys.executable + ' script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
-    exqt(stats)
+    xqt(sys.executable,
+      os.path.join('script', 'fcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+      tkind,
+      '"' + os.path.join('tut', 'examples', '*.hpp') + '"',
+    )
+    xqt(sys.executable,
+      os.path.join('script', 'fcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+      tkind,
+      '"' + os.path.join('test', '*.hpp') + '"',
+    )
 
   if "pfcount" in options:
-    stats = sys.executable + ' script/pfcount.py misc/fcounts.stats'
-    exqt(stats)
+    xqt(sys.executable,
+      os.path.join('script', 'pfcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+    )
 
   if "pfcount_all" in options:
-    stats = sys.executable + ' script/pfcount.py misc/fcounts.stats all'
-    exqt(stats)
+    xqt(sys.executable,
+      os.path.join('script', 'pfcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+      'all',
+    )
 
 print
 

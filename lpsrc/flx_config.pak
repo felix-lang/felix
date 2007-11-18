@@ -338,33 +338,20 @@ def get_stdout(x):
 # hack because can't yet get stderr easily from windows yet
 get_stdouterr = get_stdout
 
-def flush():
-  try:
-    sys.stdin.flush()
-  except:
-    pass
-
-  sys.stdout.flush()
-  sys.stderr.flush()
-
-def xqt(x,
-    verbose=0,
-    quiet=0,
-    invert_result=0,
-    log=None):
+def execute(cmd, verbose=False, quiet=False, invert_result=False, log=None):
   if log is None: log = sys.stdout
 
-  if verbose and not quiet: log.write('%s\n' % x)
-  flush()
+  if verbose and not quiet: print >> log, '>', cmd
+  log.flush()
 
   try:
-    result, stdout = get_stdouterr(x)
+    result, stdout = get_stdouterr(cmd)
   except (IOError, OSError), e:
-    if not verbose: log.write('%s failed! raised exception: %s\n' % (x, e))
-    flush()
-    raise MakeError(x)
+    if not verbose: print >> log, cmd, 'failed! raised exception:', e
+    log.flush()
+    raise ExecutionError(cmd)
 
-  flush()
+  log.flush()
 
   if invert_result:
     if result:
@@ -374,39 +361,23 @@ def xqt(x,
 
   if quiet < 2:
     if result:
-      if not verbose: log.write('%s failed!\n' % x)
+      if not verbose: print >> log, cmd, 'failed!'
 
     if stdout and (result or (verbose and not quiet)):
       log.write(''.join(stdout))
 
     if result and not invert_result:
-      log.write("  .. ERROR CODE %s: %s\n" % (hex(result), x))
+      print >> log, '  .. ERROR CODE', hex(result), ':', cmd
 
-  flush()
+  log.flush()
 
   if result:
-    raise MakeError(x, stdout)
+    raise ExecutionError(cmd, result)
 
   return stdout
 
-def xqtq(x, **kwds):
-  """quiet execution"""
-  kwds['quiet'] = 1
-  return apply(xqt, (x,), kwds)
-
-def xqtqq(x, **kwds):
-  """quiet execution"""
-  kwds['verbose'] = 0
-  kwds['quiet'] = 2
-  return apply(xqt, (x,), kwds)
-
-def nxqt(x, **kwds):
-  """
-  used when a negative result is expected (return code is supposed to be nonzero)
-  used for a grep which is supposed to fail
-  """
-  kwds['invert_result'] = 1
-  return apply(xqt, (x,), kwds)
+def xqt(*commands, **kwds):
+  return execute(' '.join(commands), **kwds)
 
 def file_exists(f):
   try:
@@ -414,7 +385,7 @@ def file_exists(f):
     return 1
   except EnvironmentError: return 0
 
-class Tee:
+class Tee(object):
   def __init__(self, stdout=sys.stdout):
     self.stdout = stdout
     self.file = StringIO.StringIO()
@@ -423,6 +394,10 @@ class Tee:
     if not quiet:
       self.stdout.write(s)
     self.file.write(s)
+
+  def flush(self):
+    self.stdout.flush()
+    self.file.flush()
 
   def getvalue(self):
     return self.file.getvalue()
@@ -473,6 +448,17 @@ class MakeError(EnvironmentError):
       s.append('STDERR:\n' + self.stderr)
 
     return '\n'.join(s)
+
+class ExecutionError(Exception):
+  def __init__(self, command, returncode=None):
+    self.command = command
+    self.returncode = returncode
+
+  def __str__(self):
+    if self.returncode is None:
+      return 'Command failed: %s' % self.command
+    else:
+      return 'Command failed [%s]: %s' % (self.returncode, self.command)
 
 @select(tangler('flxbuild/path.py'))
 import os
@@ -575,7 +561,7 @@ try:
   cload(globals(),"pkgconfig")
 except:
   try:
-    shell("pkg-config --version")
+    xqt("pkg-config --version")
     HAVE_PKGCONFIG=1
   except EnvironmentError:
     HAVE_PKGCONFIG=0
@@ -734,7 +720,7 @@ mkdirs("config")
 mkdirs("doc")
 
 verbose = 1
-quiet = 0
+quiet = 1
 force = 0
 upgrade = 0
 refresh = 0
@@ -939,6 +925,7 @@ flags:
     sys.exit(0)
   elif o in ['-v', '--verbose']:
     verbose = verbose + 1
+    quiet = 0
   elif o in ['-q', '--quiet']:
     verbose = 0
   elif o in ['--force']:
@@ -1004,10 +991,8 @@ if args:
   print "UNKNOWN CONFIGURE ARGS", args
   sys.exit(1)
 
-if verbose:
-  shell = xqt
-else:
-  shell = xqtqq
+if not verbose:
+  quiet = 2
 
 if PHASES == []: PHASES = ALL_PHASES
 
@@ -1055,14 +1040,11 @@ if "build" in PHASES:
   print
 
   if build_model in ["win32","win64"]:
-    BUILD_CC=flxbuild.msvcc_class.msvcc()
-    BUILD_CXX=flxbuild.msvcxx_class.msvcxx()
+    BUILD_CC=flxbuild.msvcc_class.msvcc(verbose=verbose, quiet=quiet)
+    BUILD_CXX=flxbuild.msvcxx_class.msvcxx(verbose=verbose, quiet=quiet)
   else:
-    BUILD_CC=flxbuild.gcc_class.gcc()
-    BUILD_CXX=flxbuild.gxx_class.gxx()
-
-  BUILD_CC.shell = shell
-  BUILD_CXX.shell = shell
+    BUILD_CC=flxbuild.gcc_class.gcc(verbose=verbose, quiet=quiet)
+    BUILD_CXX=flxbuild.gxx_class.gxx(verbose=verbose, quiet=quiet)
 
   BUILD_CC.set_options(
       COM=BUILDCC,
@@ -1174,14 +1156,11 @@ if "host" in PHASES:
   print
 
   if host_model in ["win32","win64"]:
-    HOST_CC=flxbuild.msvcc_class.msvcc()
-    HOST_CXX=flxbuild.msvcxx_class.msvcxx()
+    HOST_CC=flxbuild.msvcc_class.msvcc(verbose=verbose, quiet=quiet)
+    HOST_CXX=flxbuild.msvcxx_class.msvcxx(verbose=verbose, quiet=quiet)
   else:
-    HOST_CC=flxbuild.gcc_class.gcc()
-    HOST_CXX=flxbuild.gxx_class.gxx()
-
-  HOST_CC.shell = shell
-  HOST_CXX.shell = shell
+    HOST_CC=flxbuild.gcc_class.gcc(verbose=verbose, quiet=quiet)
+    HOST_CXX=flxbuild.gxx_class.gxx(verbose=verbose, quiet=quiet)
 
   HOST_CC.set_options(
       COM=HOSTCC,
@@ -1225,16 +1204,15 @@ if "host" in PHASES:
     HOST_CXX.report_config()
   HOST_CXX.save_options("config"+os.sep+"host_cxx.py")
 
+  HOST_OCAML = flxbuild.ocaml_class.ocaml(verbose=verbose, quiet=quiet)
+
   camllinkopts = ""
   if HOST_CXX.options.CYGWIN:
     camllinkopts = '-ccopt "-Wl,--stack -Wl,10485760" '
-  HOST_OCAML = flxbuild.ocaml_class.ocaml()
-  HOST_OCAML.shell = shell
 
   HOST_OCAML.autodetect(camllinkopts)
   HOST_OCAML.report_config()
   HOST_OCAML.save_options("config/ocaml_config.py")
-
 
 
   host_model = HOST_CXX.options.model
@@ -1315,14 +1293,11 @@ if "target" in PHASES:
   print
 
   if target_model in ["win32","win64"]:
-    TARGET_CC=flxbuild.msvcc_class.msvcc()
-    TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
+    TARGET_CC=flxbuild.msvcc_class.msvcc(verbose=verbose, quiet=quiet)
+    TARGET_CXX=flxbuild.msvcxx_class.msvcxx(verbose=verbose, quiet=quiet)
   else:
-    TARGET_CC=flxbuild.gcc_class.gcc()
-    TARGET_CXX=flxbuild.gxx_class.gxx()
-
-  TARGET_CC.shell = shell
-  TARGET_CXX.shell = shell
+    TARGET_CC=flxbuild.gcc_class.gcc(verbose=verbose, quiet=quiet)
+    TARGET_CXX=flxbuild.gxx_class.gxx(verbose=verbose, quiet=quiet)
 
   TARGET_CC.set_options(
       COM=TARGETCC,
