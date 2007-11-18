@@ -1461,23 +1461,6 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/xqt.py'))
-ENV = ''
-if os.name == "nt":
-  pass
-else:
-  if config.CYGWIN or config.WIN32:
-    pass
-  elif config.MACOSX:
-    os.environ['DYLD_LIBRARY_PATH'] = \
-        os.environ.get('DYLD_LIBRARY_PATH', '') + os.pathsep + \
-        config.FLX_RTL_DIR
-  else:
-    os.environ['LD_LIBRARY_PATH'] = \
-        os.environ.get('LD_LIBRARY_PATH', '') + os.pathsep + \
-        config.FLX_RTL_DIR
-
-
-
 #interscript command (now built in part of Felix package)
 def runISCR(config, a, force=False, break_on_error=None):
   if break_on_error is None:
@@ -1775,6 +1758,24 @@ class PLUGIN(Plugin):
     sys.exit(0)
 
 @select(tangler('fbuildroot.py'))
+import os
+import config
+
+# make sure we have the runtime library in our search path
+if config.CYGWIN or config.WIN32:
+  pass
+elif config.MACOSX:
+  os.environ['DYLD_LIBRARY_PATH'] = \
+      os.environ.get('DYLD_LIBRARY_PATH', '') + os.pathsep + \
+      config.FLX_RTL_DIR
+else:
+  os.environ['LD_LIBRARY_PATH'] = \
+      os.environ.get('LD_LIBRARY_PATH', '') + os.pathsep + \
+      config.FLX_RTL_DIR
+
+# -----------------------------------------------------------------------------
+
+
 default_fbuild_processs = 'run'
 
 fbuild_processes = {
