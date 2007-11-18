@@ -688,6 +688,8 @@ import time
 import glob
 import getopt
 import signal # try to force ctrl-C to this process
+import shutil
+
 this = globals()
 
 if '' not in sys.path: sys.path = [''] + sys.path
@@ -1491,7 +1493,7 @@ if "target" in PHASES:
     f.close()
     if BOOTFILE:
       print "Copying bootfile :  "+ BOOTFILE
-      filecopy(BOOTFILE,"config"+os.sep+"config_bootstrap.py")
+      shutil.copy(BOOTFILE, os.path.join('config', 'config_bootstrap.py'))
   except EnvironmentError:
     print "Unable to create config"+os.sep+"__init__.py"
     sys.exit(1)
