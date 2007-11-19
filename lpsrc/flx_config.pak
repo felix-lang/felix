@@ -553,6 +553,7 @@ print "Pthread model according to linuxy getconf=", PTHREAD_MODEL
 
 
 @select(tangler("cpkgs/host/pkgconfig.py"))
+from flxbuild.flxutil import ExecutionError
 # see if we have pkg-config
 try:
   from config.pkgconfig_config import *
