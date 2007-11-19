@@ -641,8 +641,6 @@ class PLUGIN(Plugin):
 
     for x in CCS+CPPS:
       f = x + config.EXT_STATIC_OBJ
-      if verbose: print "Removing", f
-      deletefile(f) # delete the object files
 
     kwds = {\
       'include_paths': INCLUDE_PATH+[config.FLX_RTL_DIR, config.FLX_HOST_CONFIG_DIR, "elk"],
@@ -690,7 +688,6 @@ class PLUGIN(Plugin):
       )
     except ExecutionError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
-      erasefile(cppfilename)
       raise e
 
     cflags = self.shell(os.path.join('bin', 'flx_pkgconfig'),
@@ -788,8 +785,6 @@ class PLUGIN(Plugin):
       #log.write('TESTFILE -- OK! %s\n' % basename)
     except ExecutionError, e:
       log.write('TESTFILE -- ERROR! %s\n' % basename)
-      erasefile(basename+config.EXT_SHLIB)
-      erasefile(basename+config.EXT_EXE)
       raise e
 
     return basename
@@ -1075,8 +1070,6 @@ class PLUGIN(Plugin):
 
       for x in CCS + CPPS:
         f = x + config.EXT_SHARED_OBJ
-        if verbose: print "Removing",f
-        deletefile(f) # delete the .o files
 
 @select(tangler('mkplugins/build_target_rtl_static.py'))
 class PLUGIN(Plugin):
@@ -1118,8 +1111,6 @@ class PLUGIN(Plugin):
 
     for x in CCS + CPPS:
       f = x + config.EXT_STATIC_OBJ
-      if verbose: print "Removing", f
-      deletefile(f) # delete the object files
 
 
 @select(tangler('mkplugins/build_felix_static_drivers.py'))
@@ -1190,7 +1181,6 @@ class PLUGIN(Plugin):
           libs=libs,
           LDFLAGS=dflags)
 
-        #deletefile(src + config.EXT_SHARED_OBJ)
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 class PLUGIN(Plugin):
@@ -1213,8 +1203,6 @@ class PLUGIN(Plugin):
           lib_paths=[dir],
           libs=libs,
           LDFLAGS=esflags)
-
-        deletefile(src + config.EXT_STATIC_OBJ)
 
 @select(tangler('mkplugins/build_target_felix_rtl.py'))
 import shutil
@@ -1346,9 +1334,6 @@ class PLUGIN(Plugin):
         log.write('TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED! %s\n' % basename)
 
         self.failures.append((pkg, testfile, log.getvalue()))
-
-      erasefile(basename+'.cpp')
-      erasefile(basename+'.hpp')
 
     return not failed
 
@@ -1614,8 +1599,6 @@ class TestPlugin(Plugin):
         if not failed:
           enstamp(stamp, self.quiet)
           self.successes.append((pkg, testfile, log.getvalue()))
-        else:
-          erasefile(stamp)
 
       ####
 
