@@ -405,11 +405,11 @@ class c_cxx_base(compiler_base):
 
   def run_static_program(self, *args, **kwds):
     filename = self.build_static_program(*args, **kwds)
-    return self.shell(filename, verbose=False)
+    return self.shell(filename)
 
   def run_shared_program(self, basename):
     filename = self.build_shared_program(*args, **kwds)
-    return self.shell(filename, verbose=False)
+    return self.shell(filename)
 
   ########
 
