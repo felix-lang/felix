@@ -55,7 +55,7 @@ to get some times.
  ]
 
 @bags = sbags
-@if config.HAVE_STL_GNU_CXX:
+@if config.TARGET_CXX.options.HAVE_STL_GNU_CXX:
   bags = bags + ebags
 
 @runbags = bags

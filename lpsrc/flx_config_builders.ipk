@@ -2370,9 +2370,12 @@ class ocaml(compiler_base):
     opt = self.options
 
     if os.name == 'nt' or sys.platform == 'cygwin':
+      opt.EXT_EXE = '.exe'
       # ocamlbuild doesn't work under windows
       opt.HAVE_OCAMLBUILD = False
     else:
+      opt.EXT_EXE = ''
+
       try: # check if ocamlbuild exists
         self.shell('ocamlbuild', '-version', log=log)
         opt.OCAMLBUILD = 'ocamlbuild -classic-display '

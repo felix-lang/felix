@@ -125,7 +125,7 @@ let gcc:mach = {
 @tangle("  alignof_fun = 1;")
 @tangle("  sizeof_void      = 1;")
 @tangle("  sizeof_fun       = 1;")
-@tangle("  sizeof_ptr       = %s;" % config.SIZEOF_VOIDP)
+@tangle("  sizeof_ptr       = %s;" % config.TARGET_CXX.options.SIZEOF_VOIDP)
 
 @def pr(a):
   d= globals()
@@ -136,12 +136,12 @@ let gcc:mach = {
 
 @for x in ctypes: pr(x)
 
-@if config.CHAR_IS_UNSIGNED:
+@if config.TARGET_CXX.options.CHAR_IS_UNSIGNED:
    tangle("  char_is_unsigned = true;")
  else:
    tangle("  char_is_unsigned = false;")
 @tangle("  const_string_literals = true;")
-@if config.LITTLE_ENDIAN:
+@if config.TARGET_CXX.options.LITTLE_ENDIAN:
    tangle("  little_endian = true;")
  else:
    tangle("  little_endian = false;")

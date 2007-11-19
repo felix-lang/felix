@@ -514,22 +514,30 @@ def find(path, name=None, include_dirs=True):
 @select(tangler("cpkgs/target/__init__.py"))
 
 @select(tangler("cpkgs/target/libgc.py"))
+import config
+
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
 #    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
-HAVE_LIBGC = TARGET_CXX.check_header_exists("gc.h")
+HAVE_LIBGC = config.TARGET_CXX.check_header_exists("gc.h")
 
 @select(tangler("cpkgs/target/windowsh.py"))
+import config
+
 #    "Microsoft Windows core CAPI",
 #    "http://microsoft.com"
-HAVE_WINDOWS_H = TARGET_CXX.check_header_exists("windows.h")
+HAVE_WINDOWS_H = config.TARGET_CXX.check_header_exists("windows.h")
 
 @select(tangler("cpkgs/target/opengl.py"))
+import os
+
+import config
+
 #    'Open GL Graphics Rendering Toolkit',
 #    "http://www.opengl.org"
-if MACOSX:
-  HAVE_OPENGL = TARGET_CXX.check_header_exists("OpenGL"+os.sep+"gl.h")
+if config.MACOSX:
+  HAVE_OPENGL = config.TARGET_CXX.check_header_exists("OpenGL"+os.sep+"gl.h")
 else:
-  HAVE_OPENGL = TARGET_CXX.check_header_exists("GL"+os.sep+"gl.h")
+  HAVE_OPENGL = config.TARGET_CXX.check_header_exists("GL"+os.sep+"gl.h")
 
 
 @select(tangler("cpkgs/target/pthread.py"))
@@ -1256,7 +1264,6 @@ if "host" in PHASES:
     cxx = HOST_CXX.__class__.__name__
     pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
     pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
-    pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
     f.close()
   except EnvironmentError:
     print "Unable to create config"+os.sep+"host_config.py"
@@ -1428,9 +1435,10 @@ if "target" in PHASES:
     pa(f,this,"flx_version_major")
     pa(f,this,"godi_revision")
     pa(f,this,"debian_revision")
-    pr(f,"try:")
-    pr(f,"  execfile('config/config_bootstrap.py')")
-    pr(f,"except: pass")
+    if BOOTFILE:
+      pr(f,"try:")
+      pr(f,"  execfile('config/config_bootstrap.py')")
+      pr(f,"except: pass")
     pr(f,"import flxbuild")
     pr(f,"import flxbuild.gcc_class")
     pr(f,"import flxbuild.msvcc_class")
@@ -1497,8 +1505,6 @@ if "target" in PHASES:
     pa(f,this,"ISCR")
     pr(f,"")
     pr(f,"# HACK to get all the target variables into global namespace")
-    pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")
-    pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
     f.close()
     if BOOTFILE:
       print "Copying bootfile :  "+ BOOTFILE
