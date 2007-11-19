@@ -1676,8 +1676,8 @@ class TestPlugin(Plugin):
 
     for testfile in testfiles:
       failed = 0
-      if self.find_test(self.successes, pkg,testfile): continue
-      if self.find_test(self.failures, pkg,testfile): continue
+      if self.find_test(self.successes, pkg, testfile): continue
+      if self.find_test(self.failures, pkg, testfile): continue
 
       stamp = os.path.join("pkg-stamps", testfile + '.test')
 
@@ -2076,7 +2076,8 @@ options = sys.argv[1:]
 try:
   opts, args = getopt.getopt(sys.argv[1:], 'hvqD:Og', [ \
       'help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive=',
-      'optimise', 'optimize', 'no-optimise', 'no-optimize', 'no-debug'])
+      'optimise', 'optimize', 'no-optimise', 'no-optimize', 'no-debug',
+      '--force'])
 except getopt.error, e:
   sys.stderr.write(str(e) + '\n')
   sys.exit(1)
@@ -2309,7 +2310,7 @@ for f in glob.glob(os.path.join("mkplugins", "*.py")):
       quiet=quiet,
       optimise=optimise,
       debug=debug,
-      force=force,
+      force=force or 'force' in options,
       options=options,
     )
     plugins[plugin.name] = plugin
