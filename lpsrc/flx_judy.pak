@@ -6,6 +6,9 @@
 
 @head(1,'Judy source package')
 @select(tangler('spkgs/flx_judy.py'))
+import os
+import glob
+
 import config
 
 iscr_source = ['lpsrc/flx_judy.pak']

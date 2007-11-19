@@ -3,6 +3,9 @@
 
 @h = tangler('spkgs/demux.py')
 @select(h)
+import os
+
+import config
 
 DEMUXRTL_INTERFACES = [
   'config/target/flx_demux_config.hpp', # portable

@@ -34,6 +34,11 @@ Version: $Id$
 Requires: demux
 
 @select(tangler('spkgs/faio.py'))
+import os
+import glob
+
+import config
+
 FAIORTL_INTERFACES = [
   'config/target/flx_faio_config.hpp',
   'src/faio/faio_asyncio.hpp',

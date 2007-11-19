@@ -42,6 +42,8 @@ to supply a user written allocator.
 
 @h = tangler('spkgs/flx_gc.py')
 @select(h)
+import os
+
 cpp_cpps = [
   'src/gc/flx_gc',
   'src/gc/flx_collector',

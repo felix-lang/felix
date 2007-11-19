@@ -12,6 +12,7 @@ so it can be built early enough.
 
 @h = tangler("spkgs/flx_pkgconfig.py")
 @select(h)
+import os
 
 #
 # we can't use flx_pkgconfig to supply platform

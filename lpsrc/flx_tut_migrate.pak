@@ -6,6 +6,8 @@
 @env = setup_test(get_input_frame(), 'tut/migration//mig-')
 
 @select(tangler('spkgs/flx_tut_migrate.py'))
+import glob
+
 @tangle('TESTS = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 unit_tests = TESTS

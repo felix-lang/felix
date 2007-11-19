@@ -4827,6 +4827,8 @@ Tests by category keyword.
 This contains the Felix build system description of
 the tutorial package.
 @select(tangler('spkgs/flx_tutorial.py'))
+import glob
+
 @tangle('TESTS = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 unit_tests = TESTS

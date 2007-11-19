@@ -15,6 +15,8 @@ library support directory. The symbols are defined
 in namespace flx::rtl, except as noted.
 
 @select(tangler('spkgs/flx_exceptions.py'))
+import os
+
 cpp_cpps = [
   "src/exceptions/flx_exceptions",
 ]
@@ -33,6 +35,8 @@ xfiles = [os.path.join('src', 'exceptions', '*')]
 @doc()
 
 @select(tangler('spkgs/flx_rtl.py'))
+import os
+
 RTL_CPPS = [
   "src/rtl/flx_rtl",
   "src/rtl/flx_dynlink",

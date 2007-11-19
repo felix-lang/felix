@@ -10,6 +10,8 @@
 
 @head(1, 'Packages')
 @select(tangler('spkgs/flx_regression_tests_rt.py'))
+import glob
+
 @magic('unit_tests',"test/regress/rt/*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
@@ -20,6 +22,8 @@ weaver_directory = 'doc/test/regress'
 
 
 @select(tangler('spkgs/flx_regression_tests_srt.py'))
+import glob
+
 @magic('static_unit_tests',"test/regress/srt*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
@@ -30,6 +34,8 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_drt.py'))
+import glob
+
 @magic('dynamic_unit_tests',"test/regress/drt*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
@@ -40,6 +46,8 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_nd.py'))
+import glob
+
 @magic('completion_tests',"test/regress/nd/nd*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
@@ -50,6 +58,8 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_pt.py'))
+import glob
+
 @magic('perform_tests',"test/regress/pt*.flx")
 
 pkg_requires = ['flx_compiler','flx_drivers']
@@ -60,6 +70,8 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_bt.py'))
+import glob
+
 # these are supposed to fail!
 @magic('failure_tests',"test/regress/bt/bt*.flx")
 
@@ -70,6 +82,8 @@ weaver_directory = 'doc/test/'
 @doc()
 
 @select(tangler('spkgs/flx_regression_tests_kf.py'))
+import glob
+
 # these are supposed to fail!
 @magic('known_failed_tests',"test/regress/kf*.flx")
 

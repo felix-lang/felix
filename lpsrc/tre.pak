@@ -6,6 +6,9 @@
 
 @head(1,'tre')
 @select(tangler('spkgs/tre.py'))
+import os
+import glob
+
 iscr_source = ['lpsrc/tre.pak']
 weaver_directory = 'doc/rtl/tre/'
 

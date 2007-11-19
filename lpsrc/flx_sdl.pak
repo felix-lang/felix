@@ -11,6 +11,7 @@
 @select(tangler("cpkgs/target/sdl.py"))
 from flxbuild.config_support import cwrite, cload, pa, gs
 from flxbuild.flxutil import file_exists
+
 try:
   cload(globals(),"sdl")
 except:
@@ -100,6 +101,9 @@ except:
 
 @head(3,'Base package')
 @select(tangler('spkgs/sdl.py'))
+import os
+import glob
+
 import cpkgs.target.sdl as sdl
 
 if sdl.HAVE_SDL:

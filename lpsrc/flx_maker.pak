@@ -210,6 +210,7 @@ if __name__ == '__main__':
     sys.exit(main())
 @make_executable('mk')
 
+@select(tangler('spkgs/__init__.py'))
 @select(tangler('mkplugins/__init__.py'))
 @doc()
 
@@ -2209,14 +2210,13 @@ for i in raw_pkgs:
   pkg = os.path.basename(os.path.splitext(i)[0])
   unsorted_pkgs.append(pkg)
 
-  class X:
-    execfile(os.path.join("spkgs", pkg+".py"))
+  module = getattr(__import__('spkgs.' + pkg), pkg)
   d = {}
-  for k in X.__dict__.keys():
+  for k in module.__dict__.keys():
     if k[0] != '_':
-      v = X.__dict__[k]
-      d[k]=v
-  pkgd[pkg]=d
+      v = module.__dict__[k]
+      d[k] = v
+  pkgd[pkg] = d
 
 def addpkg_r(pkg):
   if pkg not in pkgs:

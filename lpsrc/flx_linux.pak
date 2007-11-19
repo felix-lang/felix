@@ -3,6 +3,8 @@
 @head(1,'Felix Library: Linux support')
 
 @select(tangler('spkgs/plat_linux.py'))
+import config
+
 if config.LINUX:
   pkg_provides = ['plat_linux']
   cpp_cpps = ['src/plat/linux/plat_linux']

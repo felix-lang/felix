@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @h = tangler('spkgs/elk.py')
 @select(h)
+import os
 
 # Elkhound stuffs
 

@@ -30,6 +30,11 @@ Requires: flx_gc
 
 @h = tangler('spkgs/flx_pthread.py')
 @select(h)
+import os
+import glob
+
+import config
+from flxbuild.flxutil import unix2native
 
 PTHREADRTL_INTERFACES = [
   'src/pthread/pthread_thread.hpp',               # portable

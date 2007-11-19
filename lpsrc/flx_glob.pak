@@ -25,6 +25,11 @@ Version: $Id$
 
 @h = tangler('spkgs/flx_glob.py')
 @select(h)
+import os
+import glob
+
+import config
+
 iscr_source = ["lpsrc/flx_glob.pak"]
 weaver_directory = 'doc/rtl/flx_glob/'
 xfiles = [os.path.join('src', 'unixem', '*')]
