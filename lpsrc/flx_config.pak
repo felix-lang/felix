@@ -340,12 +340,16 @@ def execute(cmd, verbose=False, quiet=False, invert_result=False, log=None):
   if verbose and not quiet: print >> log, '>', cmd
   log.flush()
 
+  fout = os.popen(cmd, 'r')
+  stdout = []
   try:
-    result, stdout = get_stdouterr(cmd)
-  except (IOError, OSError), e:
-    if not verbose: print >> log, cmd, 'failed! raised exception:', e
-    log.flush()
-    raise ExecutionError(cmd)
+    for line in fout:
+      stdout.append(line)
+
+      if verbose and not quiet:
+        log.write(line)
+  finally:
+    result = fout.close()
 
   log.flush()
 
@@ -356,11 +360,8 @@ def execute(cmd, verbose=False, quiet=False, invert_result=False, log=None):
       result = 1
 
   if quiet < 2:
-    if result:
-      if not verbose: print >> log, cmd, 'failed!'
-
-    if stdout and (result or (verbose and not quiet)):
-      log.write(''.join(stdout))
+    if result and not verbose:
+      print >> log, cmd, 'failed!'
 
     if result and not invert_result:
       print >> log, '  .. ERROR CODE', hex(result), ':', cmd
