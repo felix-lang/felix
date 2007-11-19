@@ -1,6 +1,8 @@
 @set_title('Performance Measurements')
 
 @select(tangler('mkplugins/speed.py'))
+import os
+import sys
 import shutil
 
 from flxbuild.process import Plugin
@@ -1229,10 +1231,7 @@ def mkdir(p):
   os.mkdir(p)
 
 env = {}
-try:
-  execfile('config'+os.sep+'xlators_local.py')
-except:
-  selected_xlators = []
+from config.xlators_local import selected_xlators
 
 xlators = []
 for f in glob.glob("speed"+os.sep+"xlators"+os.sep+"*.py"):
