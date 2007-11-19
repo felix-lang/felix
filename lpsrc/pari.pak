@@ -1,15 +1,14 @@
 @head(1,"pari")
 @select(tangler("cpkgs/target/pari.py"))
-from flxbuild.config_support import cwrite, cload, pa
 try:
-  cload(globals(),"target_pari")
-except:
+  from target_pari_config import *
+except ImportError:
   import config
+  from flxbuild.config_support import cwrite, pa
   HAVE_PARI = config.TARGET_CXX.check_header_exists('pari.h')
   f = cwrite('target_pari')
   pa(f, locals(), "HAVE_PARI")
   f.close()
-  cload(globals(), "target_pari")
 
 
 @h = tangler('spkgs/pari.py')

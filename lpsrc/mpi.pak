@@ -1,10 +1,11 @@
 @head(1,"MPI")
 @select(tangler("cpkgs/target/mpi.py"))
 import os
-from flxbuild.config_support import cwrite, cload, pa, locate_file
 try:
-  cload(globals(),"target_mpi")
-except:
+  from config.target_mpi_config import *
+except ImportError:
+  from flxbuild.config_support import cwrite, pa, locate_file
+
   #HAVE_MPI= config.TARGET_CXX.check_header_exists('mpi.h')
   # THIS ONLY WORKS ON UNIX
   print "Search for include/mpi.h"
@@ -24,7 +25,6 @@ except:
   f = cwrite('target_mpi')
   pa(f, locals(), "HAVE_MPI")
   f.close()
-  cload(globals(), "target_mpi")
 
 
 @h = tangler('spkgs/mpi.py')

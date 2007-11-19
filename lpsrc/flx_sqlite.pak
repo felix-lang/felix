@@ -6,16 +6,15 @@
 @head(1,'Sql lite')
 
 @select(tangler("cpkgs/target/sqlite3.py"))
-import config
-from flxbuild.config_support import cwrite, cload, pa
 try:
-  cload(globals(),"target_sqlite3")
-except:
+  from config.target_sqlite3_config import *
+except ImportError:
+  import config
+  from flxbuild.config_support import cwrite, pa
   HAVE_SQLITE3 = config.TARGET_CXX.check_header_exists('sqlite3.h')
   f=cwrite('target_sqlite3')
   pa(f,locals(),"HAVE_SQLITE3")
   f.close()
-  cload(globals(),"target_sqlite3")
 
 @h = tangler('spkgs/sqlite3.py')
 @select(h)

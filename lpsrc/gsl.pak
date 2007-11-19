@@ -1,15 +1,14 @@
 @head(1,'Gnu Scientific Library')
 @select(tangler("cpkgs/target/gsl.py"))
-from flxbuild.config_support import cwrite, cload, pa
 try:
-  cload(globals(),"target_gsl")
-except:
+  from config.target_gsl_config import *
+except ImportError:
   import config
+  from flxbuild.config_support import cwrite, pa
   HAVE_GSL = config.TARGET_CXX.check_header_exists('gsl/gsl_blas.h')
   f = cwrite('target_gsl')
   pa(f, locals(), "HAVE_GSL")
   f.close()
-  cload(globals(), "target_gsl")
 
 
 @h = tangler('spkgs/gsl.py')

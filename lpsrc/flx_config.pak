@@ -321,19 +321,6 @@ def erasedir(d):
   try: os.rmdir(d)
   except EnvironmentError: pass
 
-def get_stdout(x):
-  """We're screwed if popen doesn't work .."""
-
-  fout = os.popen(x,"r")
-  try:
-    output = fout.readlines()
-  finally:
-    result = fout.close()
-  return result, output
-
-# hack because can't yet get stderr easily from windows yet
-get_stdouterr = get_stdout
-
 def execute(cmd, verbose=False, quiet=False, invert_result=False, log=None):
   if log is None: log = sys.stdout
 
@@ -541,6 +528,8 @@ else:
 
 
 @select(tangler("cpkgs/target/pthread.py"))
+from flxbuild.flxutil import xqt, ExecutionError
+
 # try to use Linux getconf to find the pthread version
 # Ubuntu/Breezy returns "NPTL 2.3.5"
 # IEEE Std 1003.1-2001 for getconf uses the variable: _POSIX_THREADS
@@ -548,34 +537,40 @@ else:
 # if the system supports Pthreads, getconf returns nonzero
 # on RedHat Linux, "getconf _POSIX_THREADS" returns 1
 # on Darwin (Mac OS X), "getconf _POSIX_THREADS" returns 200112
-# result,output = get_stdout("getconf GNU_LIBPTHREAD_VERSION")
-result,output = get_stdout("getconf _POSIX_THREADS")
-if result:          # getconf failed
-  PTHREAD_MODEL = "Unknown"
-elif int(output[0].strip()) != 0:
-  PTHREAD_MODEL = "POSIX"
+try:
+  output = xqt('getconf', '_POSIX_THREADS')
+except ExecutionError, TypeError:
+  # getconf failed
+  PTHREAD_MODEL = 'Unknown'
 else:
-  PTHREAD_MODEL = "Unknown"
+  if int(output[0].strip()) != 0:
+    PTHREAD_MODEL = 'POSIX'
+  else:
+    PTHREAD_MODEL = 'Unknown'
 
-print "Pthread model according to linuxy getconf=",PTHREAD_MODEL
+
+print "Pthread model according to linuxy getconf=", PTHREAD_MODEL
 
 
 @select(tangler("cpkgs/host/pkgconfig.py"))
 # see if we have pkg-config
 try:
-  cload(globals(),"pkgconfig")
-except:
+  from config.pkgconfig_config import *
+except ImportError:
+  from flxbuild.flxutil import xqt
+  from flxbuild.config_support import cwrite, pr, pa
+
   try:
     xqt("pkg-config --version")
-    HAVE_PKGCONFIG=1
-  except EnvironmentError:
-    HAVE_PKGCONFIG=0
+    HAVE_PKGCONFIG = 1
+  except ExecutionError:
+    HAVE_PKGCONFIG = 0
+
   print "Storing pkgconfig configuration"
   f = cwrite("pkgconfig")
   pr(f,"#pkgconfig support")
   pa(f,locals(),"HAVE_PKGCONFIG")
   f.close()
-  cload(globals(),"pkgconfig")
 
 
 @select(tangler("cpkgs/build/python_misc.py"))
@@ -609,7 +604,7 @@ except:
 
 @select(tangler("flxbuild/config_support.py"))
 import os
-from flxbuild.flxutil import get_stdout
+from flxbuild.flxutil import xqt, ExecutionError
 
 def pr(f,x):
   print x
@@ -631,12 +626,6 @@ def pne(f,s):
     print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
     f.write(s+"= None # EDIT ME!!\n")
 
-def gs(x):
-  r,o = get_stdout(x)
-  try: o = o[0].strip()
-  except IndexError: pass
-  return r,o
-
 
 def cwrite(c):
   f = "config"+os.sep+""+c+"_config.py"
@@ -645,39 +634,39 @@ def cwrite(c):
   f= open(f,"w")
   return f
 
-def cload(d,c):
-  f = "config"+os.sep+""+c+"_config.py"
-  execfile(f,globals(),d)
-
 # needs to be conditionalised on Unix
 def locate_file(fname):
   print "Try to find",fname
   n = len(fname)
   cmd = "locate " + fname
-  result, lines = get_stdout(cmd)
-  if not result:
-    candidates = []
-    for line in lines:
-      candidate = line.strip()
-      if candidate[-n:] == fname:
-        candidates.append(candidate[0:-n])
-    if len(candidates) == 0:
-      print "Cannot find directory containing file",fname
-      return None
-    if len(candidates) == 1:
-      print "Found unique directory ",candidates[0],"containing file",fname
-      return candidates[0]
-    else:
-      print "Found multiple directories containing file",fname
-      s = candidates[0]
-      for k in candidates:
-        print "Dir: ",k
-        if len(k) < len(s): s = k
-      print "Using shortest one:",s
-      return s
-  else:
+  try:
+    lines = xqt(cmd)
+  except ExecutionError:
     print "Cannot execute Unix locate command to find file",fname
     return None
+
+  candidates = []
+  for line in lines:
+    candidate = line.strip()
+    if candidate[-n:] == fname:
+      candidates.append(candidate[0:-n])
+
+  if len(candidates) == 0:
+    print "Cannot find directory containing file",fname
+    return None
+
+  if len(candidates) == 1:
+    print "Found unique directory ",candidates[0],"containing file",fname
+    return candidates[0]
+  else:
+    print "Found multiple directories containing file",fname
+    s = candidates[0]
+    for k in candidates:
+      print "Dir: ",k
+      if len(k) < len(s): s = k
+    print "Using shortest one:",s
+    return s
+
 
 @h = tangler("script/make_config.py")
 @select(h)
@@ -792,22 +781,18 @@ archmap = {
 # indication HOW to perform these tests.
 
 try:
-  result,output = get_stdout("uname -s")  # os x uname flag (works in solaris)
-  print result,output
-  if result: # uname -s failed
-    output = [os.name] # so use Python's idea
+  output = xqt('uname', '-s')
+except ExecutionError:
+  try:
+    build_model = archmap[os.name]
+  except KeyError:
+    print "uname -s and Python returns unknown OS type, assuming 'detect'"
+    build_model = "detect"
+else:
   output = output[0].strip().lower()
   build_model = archmap[output]
-  print "Build platform: " + build_model
-# RF: EnvironmentError was not catching the the failed archmap[] lookup,
-# halting the configure. What's the EnvironmentError stuff for, Erick?
-# ET: the lookup error is for the get_stdout, which should throw something
-# derived from EnvironmentError, namely IOError, OSError, and MakeError.
-# I just missed catching LookupError (which is a superclass of IndexError and
-# KeyError)
-except (EnvironmentError, LookupError):
-  print "uname -s and Python returns unknown OS type, assuming 'detect'"
-  build_model = "detect"
+
+print "Build platform: " + build_model
 
 # RF: noone seems to be using the results of this
 # JS: Not yet: policy is to test it out anyhow, in case needed
@@ -822,21 +807,24 @@ except (EnvironmentError, LookupError):
 # not sure what it reports on intel macs.
 # machine command reports very specific cpu type, e.g. ppc7450, ppc7400
 
-result,output = get_stdout("uname -m")
-if not result:
-  ARCH = output[0].strip().lower()
-else:
+try:
+  output = xqt('uname', '-m')
+except ExecutionError:
   ARCH = "unknown"
+else:
+  ARCH = output[0].strip().lower()
+
 print "CPU=",ARCH
 
-if build_model == 'osx':
-  result,output = get_stdout("uname -p")
+try:
+  if build_model == 'osx':
+    output = xqt('uname -p')
+  else:
+    output = xqt('uname -o')
+except ExecutionError:
+  OS = 'unknown'
 else:
-  result,output = get_stdout("uname -o")
-if not result:
   OS = output[0].strip().lower()
-else:
-  OS = "unknown"
 
 print "OS=",OS
 
@@ -1131,10 +1119,9 @@ if "build" in PHASES:
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"build"+os.sep+"*.py")
   for cpkgf in cpkgs:
-    cpkg = cpkgf.split(os.sep)[2][:-3]
-    print "build CONFIGURING",cpkg
-    execfile(cpkgf)
-
+    cpkg = os.path.splitext(os.path.basename(cpkgf))[0]
+    print "build CONFIGURING", cpkg
+    __import__('cpkgs.build.' + cpkg)
 
 
 if "host" in PHASES:
@@ -1275,10 +1262,9 @@ if "host" in PHASES:
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"host"+os.sep+"*.py")
   for cpkgf in cpkgs:
-    cpkg = cpkgf.split(os.sep)[2][:-3]
-    print "host CONFIGURING",cpkg
-    execfile(cpkgf)
-
+    cpkg = os.path.splitext(os.path.basename(cpkgf))[0]
+    print "host CONFIGURING", cpkg
+    __import__('cpkgs.host.' + cpkg)
 
 
 if "target" in PHASES:
@@ -1519,9 +1505,9 @@ if "target" in PHASES:
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"target"+os.sep+"*.py")
   for cpkgf in cpkgs:
-    cpkg = cpkgf.split(os.sep)[2][:-3]
-    print "target CONFIGURING",cpkg
-    execfile(cpkgf)
+    cpkg = os.path.splitext(os.path.basename(cpkgf))[0]
+    print "target CONFIGURING", cpkg
+    __import__('cpkgs.target.' + cpkg)
 
 @h = tangler('config/flx_data.py')
 @select(h)
