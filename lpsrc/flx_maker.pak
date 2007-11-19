@@ -3912,6 +3912,7 @@ def xqt(cmd,dflt=None):
 
 def calpackages ():
   # find all include directories
+  global INCLUDE_DIRS, INCLUDE_FILES, LINK_STRING, DRIVER
 
   x = xqt(PKGCONFIG_CFLAGS+ " @"+path+".resh")
   INCLUDE_DIRS=INCLUDE_DIRS +" " + x
@@ -3951,7 +3952,7 @@ def calpackages ():
 
 def write_include_file(path):
   includes = INCLUDE_FILES.strip().split()
-  f = open(path+".include","w")
+  f = open(path+".includes","w")
   for i in includes:
     f.write("#include " + i + "\n")
   f.close()
@@ -4064,7 +4065,7 @@ else:
       CCFLAGS, "-DTARGET_BUILD",
       "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
       MACROS, cpps, path+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ])
+      SPEC_OBJ_FILENAME+path+EXT_OBJ])
     LCMD=' '.join([
       CCLINK_STATIC, SPEC_EXE_FILENAME+path+EXT_EXE,
       path+EXT_OBJ, DRIVER, cppos, LINK_STRING])
@@ -4472,7 +4473,7 @@ function calpackages () {
 }
 
 function write_include_file() {
-  echo "${INCLUDE_FILES:1} "| sed -e "s/\([^ ]*\) /#include &\n/g" > $1.include
+  echo "${INCLUDE_FILES:1} "| sed -e "s/\([^ ]*\) /#include &\n/g" > $1.includes
 }
 
 # grab arguments
@@ -4610,6 +4611,7 @@ else
   if [ $? = 0 ]
   then
     calpackages
+    write_include_file $base
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
