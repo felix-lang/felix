@@ -1476,64 +1476,46 @@ def runISCR(config, a, force=False, break_on_error=None):
   xqt(*cmd)
 
 
+
 @select(tangler('mkplugins/manifest.py'))
-manifest_src_re = re.compile(r"CREATING .* NAMED FILE SOURCE (.*) \[")
+class PLUGIN(Plugin):
+  name = 'manifest'
 
-def make_manifest(config, pkg):
-  base = os.path.basename(os.path.splitext(pkg)[0])
-  print "Make Manifest of",base
-  fname = os.path.join("manifests", base+".log")
-  runISCR(config, "--nocache --trace=sources --trace=changes --new-logfile=%s %s" % (fname, pkg))
-  deps = []
-  f = open(fname)
-  for line in f.readlines():
-    m = manifest_src_re.match(line)
-    if m:
-      g = m.group(1)
-      print "Source File: "+g
-      deps = append_unique(deps, os.path.join(config.FLX_LPARCHIVE, "lpsrc", g))
-  f.close()
-  f = open(os.path.join("manifests", base+".deps"),"w")
-  for x in deps: f.write(x+"\n")
-  f.close()
+  def make_manifest(self, config, pkg, deps_filename):
+    regex = re.compile(r"CREATING .* NAMED FILE SOURCE (.*) \[")
 
-def get_deps(base):
-  f = open(os.path.join("manifests", base+".deps"))
-  data = f.read()
-  f.close()
-  files = data.strip().split('\n')
-  return files
+    mkdirs("manifests")
+    f = open(deps_filename, "w")
+    try:
+      for line in self.shell(config.ISCR, '--trace=sources', '--trace=changes', pkg):
+        m = regex.match(line)
+        if m:
+          dep = m.group(1)
+          print "Source File:", dep
+          print >> f, os.path.join(config.FLX_LPARCHIVE, 'lpsrc', dep)
+    finally:
+      f.close()
 
-def mk_manifests(config):
-  mkdirs("manifests")
-  paks = glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.pak"))
-  for pkg in paks:
-    base = os.path.basename(os.path.splitext(pkg)[0])
-    fbase = os.path.join("manifests", base)
+  def runme(self, config):
+    paks = glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.pak"))
+    for pkg in paks:
+      base = os.path.basename(os.path.splitext(pkg)[0])
+      deps_filename = os.path.join("manifests", base + '.deps')
 
-    if not os.path.exists(fbase + '.log') or not os.path.exists(fbase + '.deps'):
-      print "New pak", pkg, "BUILDING MANIFEST"
-      make_manifest(config, pkg)
-    else:
-      manifest_time = filetime(fbase + '.log')
+      if not os.path.exists(deps_filename):
+        print "New pak", pkg, "BUILDING MANIFEST"
+        self.make_manifest(config, pkg, deps_filename)
+      else:
+        manifest_time = filetime(deps_filename)
 
-      files = get_deps(base)
-      src_time = newest_filetime(files)
-      if src_time > manifest_time:
-        print "Changed pak", pkg, "REBUILDING MANIFEST"
-        make_manifest(config, pkg)
-
-mk_manifests(config)
-
-def get_latest_src_time(pkgdict):
-  output_iscrs = []
-  for iscr in pkgdict.get("iscr_source",[]):
-    base = os.path.basename(os.path.splitext(iscr)[0])
-    iscrs = get_deps(base)
-    for i in iscrs:
-      if not i in output_iscrs: output_iscrs.append(i)
-
-  return newest_filetime(output_iscrs)
+        f = open(deps_filename)
+        try:
+          src_time = newest_filetime([line.strip() for line in f])
+          if src_time > manifest_time:
+            print "Changed pak", pkg, "REBUILDING MANIFEST"
+            self.make_manifest(config, pkg, deps_filename)
+        finally:
+          f.close()
 
 @select(tangler('mkplugins/extract_iscr.py'))
 class PLUGIN(Plugin):
@@ -1807,8 +1789,11 @@ else:
 
 # -----------------------------------------------------------------------------
 
-
 default_fbuild_processs = 'run'
+
+fbuild_preprocesses = [
+  'manifest',
+]
 
 fbuild_processes = {
   'host': [
@@ -2172,6 +2157,19 @@ def enstamp(stamp, quiet):
 
 # -----------------------------------------------------------------------------
 
+def get_latest_src_time(pkgdict):
+  iscrs = set()
+  for iscr in pkgdict.get("iscr_source",[]):
+    base = os.path.basename(os.path.splitext(iscr)[0])
+    f = open(os.path.join('manifests', base + '.deps'))
+    try:
+      iscrs.update([line.strip() for line in f])
+    finally:
+      f.close()
+
+  return newest_filetime(iscrs)
+
+
 def calculate_packages(config, phase):
   if packages:
     selected_pkgs = packages
@@ -2246,6 +2244,9 @@ def run_phase(config, phase):
       enstamp(stamp, quiet)
 
 ####
+
+for process in fbuildroot.fbuild_preprocesses:
+  plugins[process](config)
 
 # EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
 for k in options:
