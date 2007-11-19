@@ -1564,6 +1564,12 @@ pkgdeps = {}
 import os
 import time
 
+# forward import of set
+try:
+  set
+except NameError:
+  from sets import Set as set
+
 from flxbuild.flxutil import xqt, newest_filetime, filetime, fmtime, mkdirs
 
 # global process registry
