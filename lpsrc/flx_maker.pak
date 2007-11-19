@@ -1275,17 +1275,17 @@ class PLUGIN(Plugin):
       )
 
 @select(tangler('mkplugins/performance.py'))
-SPECIAL_TESTS = [
-  (os.path.join('bin', 'drivers', 'flx_run'), os.path.join('test', 'drivers', 'flx_run_lib1.flx'),''),
-  (os.path.join('test', 'drivers', 'flx_perf_drv1'), os.path.join('test', 'drivers', 'flx_perf_lib1.flx'),'1000'),
-]
-
 class PLUGIN(Plugin):
   name = 'performance'
   help = 'make performance tests'
 
+  SPECIAL_TESTS = [
+    (os.path.join('bin', 'drivers', 'flx_run'), os.path.join('test', 'drivers', 'flx_run_lib1.flx'),''),
+    (os.path.join('test', 'drivers', 'flx_perf_drv1'), os.path.join('test', 'drivers', 'flx_perf_lib1.flx'),'1000'),
+  ]
+
   def runme(self, config):
-    for driver,testfile,moreargs in SPECIAL_TESTS:
+    for driver,testfile,moreargs in self.SPECIAL_TESTS:
       test_basename = os.path.splitext(testfile)[0]
       drv_basename = os.path.splitext(driver)[0]
       if config.SUPPORT_DYNAMIC_LOADING:
