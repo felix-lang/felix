@@ -599,6 +599,7 @@ class PLUGIN(Plugin):
 
       if filetime(src) > filetime (dst):
         if not quiet: print 'copying file', src, '->', dst
+        mkdirs(os.path.dirname(dst))
         shutil.copy(src,dst)
 
 

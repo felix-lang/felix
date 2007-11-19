@@ -2644,6 +2644,7 @@ class ocaml(compiler_base):
       src = self.find_in_flx_dir(basename + EXT_SRC)
       dst = os.path.join(outdir, basename + EXT_SRC)
 
+      mkdirs(os.path.dirname(dst))
       shutil.copy(src, dst)
 
       cmd = [COM]
