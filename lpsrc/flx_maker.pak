@@ -2385,14 +2385,14 @@ for process in flxbuild.process.processes.itervalues():
   fatal = fatal or (nfail>0 and not process.dummy)
 
   if nfail:
-    failure_log.write('PROCESS **FAILED**: %s, %d/%d failures\n' % (process.name, nfail,npass+nfail))
+    failure_log.write('PROCESS **FAILED**: %s, %d/%d failures\n' % (process.__class__.__name__, nfail,npass+nfail))
     if process.dummy:
       failure_log.write("  [Expected failure, doesn't break build]\n")
   else:
     if process.used:
-      failure_log.write('PROCESS PASSED    : %s, %d pass\n' % (process.name,npass))
+      failure_log.write('PROCESS PASSED    : %s, %d pass\n' % (process.__class__.__name__,npass))
     else:
-      failure_log.write('PROCESS UNUSED    : %s\n' % process.name)
+      failure_log.write('PROCESS UNUSED    : %s\n' % process.__class__.__name__)
 
 
 if failed:
@@ -2403,7 +2403,7 @@ if failed:
     if not process.failures:
       continue
 
-    print '- %s: %s' % (len(process.failures), process.name)
+    print '- %s: %s' % (len(process.failures), process.__class__.__name__)
 
     lookup = {}
 
