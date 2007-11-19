@@ -1,5 +1,9 @@
 @select(tangler('mkplugins/extract_grammar.py'))
 import os
+import sys
+
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'extract_grammar'
   help = 'extract the grammar as a text file from ocamlyacc src'

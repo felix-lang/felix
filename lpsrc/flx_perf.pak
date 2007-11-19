@@ -3,6 +3,8 @@
 @select(tangler('mkplugins/speed.py'))
 import shutil
 
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'speed'
   help = 'Run comparative tests'

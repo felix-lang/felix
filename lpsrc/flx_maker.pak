@@ -35,8 +35,7 @@ import glob
 import os
 import sys
 if '' not in sys.path: sys.path = ['']+sys.path
-import flxbuild
-from flxbuild.flxutil import *
+from flxbuild.flxutil import xqt
 
 try:
   filename = sys.argv[1]
@@ -215,6 +214,11 @@ if __name__ == '__main__':
 @doc()
 
 @select(tangler('mkplugins/man.py'))
+import os
+import glob
+
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'man'
   help = 'make the man pages'
@@ -243,6 +247,11 @@ class PLUGIN(Plugin):
     except:pass
 
 @select(tangler('mkplugins/impldoc.py'))
+import os
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import erasedir
+
 class PLUGIN(Plugin):
   name = 'impldoc'
   help = 'make the ocaml compiler documentation'
@@ -275,6 +284,10 @@ class PLUGIN(Plugin):
      pass # well ocamldoc is full of bugs ..
 
 @select(tangler('mkplugins/rtldoc.py'))
+import os
+
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'rtldoc'
   help = 'make the runtime language documentation'
@@ -295,6 +308,11 @@ class PLUGIN(Plugin):
       pass
 
 @select(tangler('mkplugins/gramdoc.py'))
+import os
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import ExecutionError
+
 class PLUGIN(Plugin):
   name = 'gramdoc'
   help = 'make the syntax documentation'
@@ -324,7 +342,11 @@ class PLUGIN(Plugin):
       pass
 
 @select(tangler('mkplugins/typeclassdoc.py'))
+import os
 import shutil
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import mkdirs, ExecutionError
 
 class PLUGIN(Plugin):
   name = 'typeclassdoc'
@@ -402,6 +424,8 @@ include "SDL/SDL_version";
 include "SDL/SDL_video";
 
 @select(tangler('mkplugins/build_ocaml_grammar.py'))
+from flxbuild.process import Plugin, plugins
+
 class PLUGIN(Plugin):
   name = 'build_ocaml_grammar'
 
@@ -434,6 +458,10 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_modules.py'))
+import os
+
+from flxbuild.process import Plugin
+
 #ocaml compilation
 class PLUGIN(Plugin):
   name = 'build_ocaml_modules'
@@ -448,14 +476,14 @@ class PLUGIN(Plugin):
       outdir='build',
       include_paths=[os.path.join('build', i) for i in INCLUDES],
       packs=PACKS,
-      debug=debug or "debug" in options,
-      profile="profile" in options,
-      optimise="optimise_felix" in options,
+      debug=self.debug,
+      profile='profile' in self.options,
+      optimise='optimise_felix' in self.options,
     )
 
     config.HOST_OCAML.compile_interface(INTERFACES, **kwds)
 
-    if 'bytecode' in options:
+    if 'bytecode' in self.options:
       compiler = config.HOST_OCAML.compile_bytecode
     else:
       compiler = config.HOST_OCAML.compile_native
@@ -464,6 +492,8 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_libraries.py'))
+from flxbuild.process import Plugin
+
 #ocaml compilation
 class PLUGIN(Plugin):
   name = 'build_ocaml_libraries'
@@ -473,7 +503,7 @@ class PLUGIN(Plugin):
       return
 
     print "CAML CREATING LIBRARY", lib
-    if 'bytecode' in options:
+    if 'bytecode' in self.options:
       linker = config.HOST_OCAML.link_bytecode_lib
     else:
       linker = config.HOST_OCAML.link_native_lib
@@ -482,6 +512,10 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_exes.py'))
+import os
+
+from flxbuild.process import Plugin
+
 #ocaml compilation
 class PLUGIN(Plugin):
   name = 'build_ocaml_exes'
@@ -494,7 +528,7 @@ class PLUGIN(Plugin):
     print "CAML LINKING EXECUTABLES"
     output_exes = []
     for exe in EXES:
-      if 'bytecode' in options:
+      if 'bytecode' in self.options:
         linker = config.HOST_OCAML.link_bytecode_exe
       else:
         linker = config.HOST_OCAML.link_native_exe
@@ -511,11 +545,15 @@ class PLUGIN(Plugin):
     return output_exes
 @doc()
 
-@select(tangler('mkplugins/build_ocamls.py'))
+@select(tangler('mkplugins/build_host_ocaml.py'))
+import os
 import shutil
 
+from flxbuild.process import Plugin, plugins
+from flxbuild.flxutil import unix2native
+
 class PLUGIN(Plugin):
-  name = 'build_ocamls'
+  name = 'build_host_ocaml'
 
   def copy_mli2ml(self, MLIS):
     for f in MLIS:
@@ -557,7 +595,11 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_ocamlbuild.py'))
+import os
 import shutil
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import mkdirs
 
 class PLUGIN(Plugin):
   name = 'build_ocamlbuild'
@@ -581,7 +623,11 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_host_tools.py'))
+import os
 import shutil
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import unix2native, mkdirs
 
 class PLUGIN(Plugin):
   name = 'build_host_tools'
@@ -656,19 +702,24 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_testfile.py'))
+import os
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import mkdirs, Tee, ExecutionError
+
 class PLUGIN(Plugin):
   name = 'build_test'
 
-  def runme(self, config, testfile, log, quiet):
+  def runme(self, config, testfile, log):
     if log is None: log = Tee()
 
-    optimise_c = optimise or "optimise_c" in options
+    optimise_c = self.optimise or "optimise_c" in options
     mode = "std"
     if optimise_c: mode = "Optimised"
 
-    log.write('TRANSLATING %s\n' % testfile,quiet)
+    log.write('TRANSLATING %s\n' % testfile)
 
-    mkdirs("build/test")
+    mkdirs(os.path.join('build', 'test'))
     basename = os.path.splitext(testfile)[0]
     indir,infile = os.path.split(basename)
     outbase = os.path.join("build","test",infile)
@@ -714,7 +765,7 @@ class PLUGIN(Plugin):
     #log.write('Compiling generated code of %s\n' % testfile)
     try:
       if config.SUPPORT_DYNAMIC_LOADING:
-        log.write("COMPILING GENERATED C++ TEST CODE: %s (dynamic)\n" % mode,quiet)
+        log.write("COMPILING GENERATED C++ TEST CODE: %s (dynamic)\n" % mode)
         log.flush()
 
         dlibs = self.shell(os.path.join('bin', 'flx_pkgconfig'),
@@ -731,14 +782,14 @@ class PLUGIN(Plugin):
             #outdir='build',
             include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
             optimise=optimise_c,
-            debug=debug,
+            debug=self.debug,
             CFLAGS=cflags,
             lib_paths=[config.SHLIB_DIR],
             LDFLAGS=dlibs,
             log=log)
 
       if config.SUPPORT_STATIC_LINKAGE:
-        log.write("COMPILING GENERATED C++ TEST CODE: %s (static)\n" % mode,quiet)
+        log.write("COMPILING GENERATED C++ TEST CODE: %s (static)\n" % mode)
         log.flush()
 
         driver = self.shell(os.path.join('bin', 'flx_pkgconfig'),
@@ -773,7 +824,7 @@ class PLUGIN(Plugin):
           objects=[driver],
           include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
           optimise=optimise_c,
-          debug=debug,
+          debug=self.debug,
           macros=["FLX_STATIC_LINK"],
           CFLAGS=cflags,
           lib_paths=[config.FLX_RTL_DIR],
@@ -789,6 +840,13 @@ class PLUGIN(Plugin):
     return basename
 
 @select(tangler('mkplugins/virgin.py'))
+import os
+import sys
+import glob
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import erasefile
+
 #cleans everything
 class PLUGIN(Plugin):
   name = 'virgin'
@@ -930,6 +988,12 @@ class PLUGIN(Plugin):
     sys.exit(0)
 
 @select(tangler('mkplugins/clean.py'))
+import os
+import glob
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import erasefile
+
 # cleans products, but not extracted sources
 class PLUGIN(Plugin):
   name = 'clean'
@@ -960,7 +1024,11 @@ class PLUGIN(Plugin):
       erasefile(f)
 
 @select(tangler('mkplugins/mkdoc.py'))
+import os
 import shutil
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import mkdirs
 
 class PLUGIN(Plugin):
   name = 'mkdoc'
@@ -1000,6 +1068,9 @@ class PLUGIN(Plugin):
         self.already_generated[src] = 1
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
+import os
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name='build_target_rtl_dynamic'
 
@@ -1032,8 +1103,8 @@ class PLUGIN(Plugin):
     compile_kwds = {
         'outdir': 'build',
         'include_paths': INCLUDE_PATH+[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
-        'optimise': optimise,
-        'debug': debug,
+        'optimise': self.optimise,
+        'debug': self.debug,
         'macros': MACROS+["BUILD_"+BUILD_MACRO],
         'CFLAGS': EXTRA_CFLAGS,
         }
@@ -1071,6 +1142,10 @@ class PLUGIN(Plugin):
         f = x + config.EXT_SHARED_OBJ
 
 @select(tangler('mkplugins/build_target_rtl_static.py'))
+import os
+
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'build_target_rtl_static'
 
@@ -1097,8 +1172,8 @@ class PLUGIN(Plugin):
         'outdir': 'build',
         'include_paths': INCLUDE_PATH+[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
         'macros': MACROS+["FLX_STATIC_LINK"],
-        'optimise': optimise,
-        'debug': debug,
+        'optimise': self.optimise,
+        'debug': self.debug,
         'CFLAGS': EXTRA_CFLAGS,
         }
 
@@ -1115,6 +1190,9 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_felix_static_drivers.py'))
 import shutil
 
+from flxbuild.process import Plugin
+from flxbuild.flxutil import mkdirs
+
 class PLUGIN(Plugin):
   name = 'build_felix_static_drivers'
 
@@ -1130,12 +1208,12 @@ class PLUGIN(Plugin):
     cflags = pkgdict.get("cflags","")
 
     for src, outdir in DRIVERS:
-      if verbose: print 'static Compiling driver object', src
+      if self.verbose: print 'static Compiling driver object', src
       dst = config.TARGET_CXX.compile_static_main([src],
         include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
         macros=["FLX_STATIC_LINK"],
-        optimise=optimise,
-        debug=debug,
+        optimise=self.optimise,
+        debug=self.debug,
         CFLAGS=cflags)
 
       if outdir:
@@ -1145,6 +1223,8 @@ class PLUGIN(Plugin):
 
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'build_felix_dynamic_drivers'
 
@@ -1169,12 +1249,12 @@ class PLUGIN(Plugin):
       # this is a gross HACK! Don't make dynamic versions
       # of drivers with extra macros, they're for static
       # link of driver without async support
-      if verbose: print 'dynamic Compiling driver object', src
+      if self.verbose: print 'dynamic Compiling driver object', src
 
       config.TARGET_CXX.build_shared_program(src, bin,
           include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
-          optimise=optimise,
-          debug=debug,
+          optimise=self.optimise,
+          debug=self.debug,
           CFLAGS=cflags,
           lib_paths=[config.SHLIB_DIR],
           libs=libs,
@@ -1182,6 +1262,10 @@ class PLUGIN(Plugin):
 
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
+import os
+
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'build_target_cpp_tools'
 
@@ -1204,7 +1288,11 @@ class PLUGIN(Plugin):
           LDFLAGS=esflags)
 
 @select(tangler('mkplugins/build_target_felix_rtl.py'))
+import os
 import shutil
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import unix2native
 
 class PLUGIN(Plugin):
   name = 'build_target_felix_rtl'
@@ -1260,6 +1348,10 @@ class PLUGIN(Plugin):
       )
 
 @select(tangler('mkplugins/performance.py'))
+import os
+
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'performance'
   help = 'make performance tests'
@@ -1294,6 +1386,11 @@ class PLUGIN(Plugin):
           raise e
 
 @select(tangler('mkplugins/run_failure_tests.py'))
+import os
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import Tee
+
 class PLUGIN(Plugin):
   name = 'run_failure_tests'
   help = 'run tests meant to fail'
@@ -1337,6 +1434,8 @@ class PLUGIN(Plugin):
 
 
 @select(tangler('mkplugins/run_static_unit_tests.py'))
+from flxbuild.process import TestPlugin
+
 class PLUGIN(TestPlugin):
   name = 'run_static_unit_tests'
   help = 'run static unit tests'
@@ -1350,6 +1449,8 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_dynamic_unit_tests.py'))
+from flxbuild.process import TestPlugin
+
 class PLUGIN(TestPlugin):
   name = 'run_dynamic_unit_tests'
   help = 'run dynamic unit tests'
@@ -1363,6 +1464,8 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_unit_tests.py'))
+from flxbuild.process import TestPlugin
+
 class PLUGIN(TestPlugin):
   name = 'run_unit_tests'
   help = 'run unit tests'
@@ -1376,6 +1479,8 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_completion_tests.py'))
+from flxbuild.process import TestPlugin
+
 # these tests are units tests with non-deterministic results
 class PLUGIN(TestPlugin):
   name = 'run_completion_tests'
@@ -1390,6 +1495,9 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_known_failed_tests.py'))
+from flxbuild.process import Plugin
+from flxbuild.flxutil import Tee
+
 class PLUGIN(Plugin):
   name = 'run_known_failed_tests'
   help = 'mark tests failed that are known to fail without running'
@@ -1412,6 +1520,8 @@ class PLUGIN(Plugin):
     return 1 # don't report any failure!
 
 @select(tangler('mkplugins/run_demos.py'))
+from flxbuild.process import TestPlugin
+
 class PLUGIN(TestPlugin):
   name = 'run_demos'
   help = 'run demonstrations'
@@ -1430,6 +1540,13 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/manifest.py'))
+import os
+import glob
+import re
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import filetime, newest_filetime, mkdirs
+
 class PLUGIN(Plugin):
   name = 'manifest'
 
@@ -1470,6 +1587,11 @@ class PLUGIN(Plugin):
           f.close()
 
 @select(tangler('mkplugins/extract_iscr.py'))
+import os
+
+from flxbuild.process import Plugin
+from flxbuild.flxutil import unix2native
+
 class PLUGIN(Plugin):
   name = 'extract_iscr'
 
@@ -1477,15 +1599,37 @@ class PLUGIN(Plugin):
     srcs = pkgdict.get("iscr_source",[])
     for src in srcs:
       src = unix2native(src)
-      if not quiet: print "REExtracting", pkg, "from", src
+      if not self.quiet: print "REExtracting", pkg, "from", src
       self.shell(config.ISCR, os.path.join(config.FLX_LPARCHIVE, src))
 
-@select(tangler('flxbuild/pluginutil.py'))
+@select(tangler('flxbuild/package.py'))
+# global package registry
+pkgd = {}
+pkgreqs = {}
+pkgdeps = {}
+
+@select(tangler('flxbuild/process.py'))
+import os
+import glob
+import time
+
+from flxbuild.flxutil import xqt, newest_filetime, filetime, fmtime, Tee, ExecutionError, mkdirs
+from flxbuild.package import pkgd, pkgreqs
+
+# global plugin registry
+plugins = {}
+
 class Plugin(object):
   name = None
   help = ''
 
-  def __init__(self, verbose=False, quiet=False, optimise=False, debug=False):
+  def __init__(self,
+      verbose=False,
+      quiet=False,
+      optimise=False,
+      debug=False,
+      force=False,
+      options=[]):
     self.failures = []
     self.successes = []
     self.dummy = 0
@@ -1494,6 +1638,8 @@ class Plugin(object):
     self.quiet = quiet
     self.optimise = optimise
     self.debug = debug
+    self.force = force
+    self.options = options
 
   def __call__(self, *args, **kwds):
     self.used = True
@@ -1516,8 +1662,6 @@ class TestPlugin(Plugin):
     if not testfiles:
       return 1
 
-    check_stamp = "force" not in options
-
     tests_failed = 0
 
     # determine the latest time that this package, and all the recurcively dependent
@@ -1536,22 +1680,22 @@ class TestPlugin(Plugin):
 
       # run the tests
       stamptime = filetime(stamp)
-      if check_stamp and latest_src_time < stamptime:
+      if not self.force and latest_src_time < stamptime:
         self.successes.append((pkg, testfile, "Stamped ok previously on "+fmtime(stamptime)))
       else:
         log = Tee()
         log.write(title % testfile)
-        if not quiet:
+        if not self.quiet:
           if stamptime == 0:
             log.write("+++UNTRIED or FAILED\n")
-          elif not check_stamp:
+          elif self.force:
             log.write("+++FORCED\n")
           else:
             log.write("+++OUT OF DATE, source changed since "+fmtime(stamptime)+"\n")
 
         # build the felix code
         try:
-          inbase = plugins['build_test'](config, testfile, log, quiet)
+          inbase = plugins['build_test'](config, testfile, log)
         except ExecutionError, e:
           failed = 1
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
@@ -1603,13 +1747,13 @@ class TestPlugin(Plugin):
       if failed:
         tests_failed = tests_failed + 1
         self.failures.append((pkg, testfile, log.getvalue()))
-        if 'stop' in options: raise MakeError
+        if 'stop' in self.options: raise MakeError
 
     return tests_failed == 0
 
 
   def run_test(self, config, log, testscript, inbase, outbase, deterministic):
-    log.write('EXECUTING TEST CODE %s\n' % testscript, quiet)
+    log.write('EXECUTING TEST CODE %s\n' % testscript)
     log.flush()
 
     # FIXME
@@ -1657,7 +1801,34 @@ class TestPlugin(Plugin):
           )
 
 
+def get_latest_src_time(pkgdict):
+  iscrs = set()
+  for iscr in pkgdict.get("iscr_source",[]):
+    base = os.path.basename(os.path.splitext(iscr)[0])
+    f = open(os.path.join('manifests', base + '.deps'))
+    try:
+      iscrs.update([line.strip() for line in f])
+    finally:
+      f.close()
+
+  return newest_filetime(iscrs)
+
+
+def enstamp(stamp, quiet):
+  mkdirs(os.path.split(stamp)[0])
+  f = open(stamp,"w")
+  try:
+    print >> f, fmtime(time.time())
+  finally:
+    f.close()
+
+  if not quiet:
+    print 'Writing Stamp File:', stamp
+
 @select(tangler('mkplugins/help.py'))
+import sys
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'help'
   help = 'print this help message'
@@ -1678,6 +1849,10 @@ class PLUGIN(Plugin):
     sys.exit(0)
 
 @select(tangler('mkplugins/fcount.py'))
+import os
+import sys
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'fcount'
 
@@ -1686,9 +1861,9 @@ class PLUGIN(Plugin):
     if os.name == 'nt':
       return
 
-    if "inline" in options:
+    if "inline" in self.options:
       tkind = "inline"
-    elif "noinline" in options:
+    elif "noinline" in self.options:
       tkind = "noinline"
     else:
       tkind = "std"
@@ -1709,6 +1884,10 @@ class PLUGIN(Plugin):
 
 
 @select(tangler('mkplugins/pfcount.py'))
+import os
+import sys
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'pfcount'
 
@@ -1723,6 +1902,10 @@ class PLUGIN(Plugin):
     )
 
 @select(tangler('mkplugins/pfcount_all.py'))
+import os
+import sys
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'pfcount_all'
 
@@ -1762,9 +1945,12 @@ fbuild_preprocesses = [
 ]
 
 fbuild_processes = {
-  'host': [
+  'build': [
     'extract_iscr',
-    'build_ocamls',
+  ],
+  'host': [
+    'build',
+    'build_host_ocaml',
     'build_host_tools',
   ],
   'target': [
@@ -1830,11 +2016,9 @@ try:
 except NameError:
   from sets import Set as set
 
-if '' not in sys.path: sys.path=['']+sys.path
-import flxbuild
-from flxbuild.flxutil import *
+if '' not in sys.path: sys.path.insert(0, '')
 
-execfile(os.path.join("flxbuild", "pluginutil.py"))
+from flxbuild.flxutil import xqt, mkdirs
 
 # ------------------------------------------------
 # Load the initial config
@@ -1873,6 +2057,7 @@ quiet = 0
 verbose = 1
 optimise = True
 debug = True
+force = False
 packages = []
 models = []
 macros = []
@@ -1884,6 +2069,7 @@ flags:
   -h, --help      print this help message
   -v, --verbose   print out extra debugging info
   -q, --quiet     do not print out extra debugging info
+  --force         force running a process
   -O, --optimise  generate optimised code
   --no-optimise   turn off optimised code generation
   -g, --debug     generate debugging information
@@ -1909,6 +2095,8 @@ for o, a in opts:
   elif o in ['-q', '--quiet']:
     quiet = 1
     verbose = 0
+  elif o in ['--force']:
+    force = True
   elif o in ['-O', '--optimise', '--optimize']:
     optimise = True
   elif o in ['--no-optimise', '--no-optimize']:
@@ -2016,9 +2204,9 @@ if "extract" in options or "force_extract" in options:
 
 raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
 unsorted_pkgs = []
-pkgd = {}
 pkgs = []
-pkgreqs = {}
+
+from flxbuild.package import pkgdeps, pkgreqs, pkgd
 
 for i in raw_pkgs:
   pkg = os.path.basename(os.path.splitext(i)[0])
@@ -2056,7 +2244,8 @@ if verbose > 1: print "USER SELECTED PACKAGES", packages
 del pkg
 
 # invert the requirements in order to determine the dependencies
-pkgdeps = invert(pkgreqs)
+from flxbuild.flxutil import invert
+pkgdeps.update(invert(pkgreqs))
 
 # PRINT PACKAGE DEPENDENCY INFORMATION
 if "help" in options:
@@ -2082,56 +2271,26 @@ if "help" in options:
 # -------------------------------------------------
 # LOAD PLUGINS
 
-plugins = {}
+from flxbuild.process import plugins
 
 for f in glob.glob(os.path.join("mkplugins", "*.py")):
   base = os.path.basename(os.path.splitext(f)[0])
-
-  try:
-    execfile(f)
-    if globals().has_key("PLUGIN"):
-      plugin = PLUGIN(
-        verbose=verbose,
-        quiet=quiet,
-        optimise=optimise,
-        debug=debug,
-      )
-      plugins[plugin.name] = plugin
-      del PLUGIN
-  except:
-    print "Failed to install plugin",f
-    raise
-
-# END IMPLEMENTOR CONFIGURABLE SECTION
-# -------------------------------------------------
-
-# ----------- Here begins the actual build procedure ---------------------
-
-def enstamp(stamp, quiet):
-  mkdirs(os.path.split(stamp)[0])
-  f = open(stamp,"w")
-  try:
-    print >> f, fmtime(time.time())
-  finally:
-    f.close()
-
-  if not quiet:
-    print 'Writing Stamp File:', stamp
+  module = getattr(__import__('mkplugins.' + base), base)
+  if hasattr(module, 'PLUGIN'):
+    plugin = module.PLUGIN(
+      verbose=verbose,
+      quiet=quiet,
+      optimise=optimise,
+      debug=debug,
+      force=force,
+      options=options,
+    )
+    plugins[plugin.name] = plugin
 
 # -----------------------------------------------------------------------------
 
-def get_latest_src_time(pkgdict):
-  iscrs = set()
-  for iscr in pkgdict.get("iscr_source",[]):
-    base = os.path.basename(os.path.splitext(iscr)[0])
-    f = open(os.path.join('manifests', base + '.deps'))
-    try:
-      iscrs.update([line.strip() for line in f])
-    finally:
-      f.close()
-
-  return newest_filetime(iscrs)
-
+from flxbuild.process import get_latest_src_time, enstamp
+from flxbuild.flxutil import newest_filetime, filetime, fmtime
 
 def calculate_packages(config, phase):
   if packages:
@@ -2172,6 +2331,8 @@ def calculate_packages(config, phase):
   return [p for p in pkgs if p in selected_pkgs]
 
 ####
+
+from flxbuild.flxutil import erasefile
 
 ran_phases = set()
 
@@ -2222,6 +2383,8 @@ for phase in phases:
   run_phase(config, phase)
 
 # -----------------------------------------------------------------------------
+
+from flxbuild.flxutil import Tee
 
 # print out all the failed plugins
 failure_log = Tee()
