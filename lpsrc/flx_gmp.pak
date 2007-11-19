@@ -1,8 +1,6 @@
 @from flxbuild.iscrutil import setup_test
 @from flxbuild.flxutil import unix2native
 
-@env = setup_test(get_input_frame(), 'test/gmp/gmp-')
-
 @head(1,'GNU Multiple Precision library')
 This module provides a wrapper for the Gnu Multiple
 Precision Arithmetic library known as gmp.
@@ -26,9 +24,11 @@ except ImportError:
 
 @h = tangler('spkgs/gmpxx.py')
 @select(h)
+import glob
+from flxbuild.flxutil import unix2native
 from cpkgs.target.gmpxx import HAVE_GMPXX
 if HAVE_GMPXX:
-@tangle('  unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('  unit_tests = glob.glob('+repr(unix2native("test/gmp")+"*.flx")+')')
 
 iscr_source = ['lpsrc/flx_gmp.pak']
 weaver_directory = 'doc/gmp/'
@@ -156,8 +156,7 @@ instance Str[mpf] {
 @#
 @doc()
 
-@env.head(1,'gmp tests')
-@select(env.test('.flx'))
+@select('test/gmp/gmp-1.flx')
 #import <flx.flxh>
 include "flx_gmp";
 open Gmp;
@@ -219,7 +218,7 @@ open Gmp;
 };
 @doc()
 
-@select(env.expect())
+@select("test/gmp/gmp-1.expect")
 99
 7
 106
