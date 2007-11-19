@@ -20,7 +20,7 @@ cpp_cpps = [
 ]
 
 rtl_interfaces = [
-  'src/exceptions/flx_exceptions_config.hpp',
+  'config/target/flx_exceptions_config.hpp',
   'src/exceptions/flx_exceptions.hpp',
 ]
 
