@@ -10,10 +10,30 @@ class PLUGIN(Plugin):
       os.mkdir('misc')
     except:
       pass
-    os.system(sys.executable+' script'+os.sep+'get_grammar src'+os.sep+'compiler'+os.sep+'flxlib'+os.sep+'flx_parse.dyp >misc'+os.sep+'flx_parse.grammar')
-    os.system(sys.executable+' script'+os.sep+'flx_flx_grgen misc'+os.sep+'flx_parse.grammar >lib'+os.sep+'flx_grammar.flx')
-    os.system(sys.executable+' script'+os.sep+'elk_flx_lexgen misc'+os.sep+'flx_parse.grammar >misc'+os.sep+'elk_flx_lex.cc')
-    os.system(sys.executable+' script'+os.sep+'flx_tokgen misc'+os.sep+'flx_parse.grammar >lib'+os.sep+'flx_token.flx')
+    self.shell(sys.executable,
+      os.path.join('script', 'get_grammar'),
+      os.path.join('src', 'compiler', 'flxlib', 'flx_parse.dyp'),
+      '>',
+      os.path.join('misc', 'flx_parse.grammar'),
+    )
+    self.shell(sys.executable,
+      os.path.join('script', 'flx_flx_grgen'),
+      os.path.join('misc', 'flx_parse.grammar'),
+      '>',
+      os.path.join('lib', 'flx_grammar.flx'),
+    )
+    self.shell(sys.executable,
+      os.path.join('script', 'elk_flx_lexgen'),
+      os.path.join('misc', 'flx_parse.grammar'),
+      '>',
+      os.path.join('misc', 'elk_flx_lex.cc'),
+    )
+    self.shell(sys.executable,
+      os.path.join('script', 'flx_tokgen'),
+      os.path.join('misc', 'flx_parse.grammar'),
+      '>',
+      os.path.join('lib', 'flx_token.flx'),
+    )
 
 @head(1,"Felix Grammar")
 @try:
