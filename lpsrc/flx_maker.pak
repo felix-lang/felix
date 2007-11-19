@@ -796,17 +796,6 @@ class PLUGIN(Plugin):
 
     return basename
 
-
-@select(tangler('mkplugins/diff_env.py'))
-if os.name == 'nt': # build system is Windows Python
-  DIFF = "FC /L /W"
-else:
-  #DIFF = "diff -a -b " # build system is Unix Python
-  # RF - trying out args that work on solaris (-a = not cool)
-  # could use that sys type stuff here?
-  DIFF = "diff -b" # build system is Unix Python
-
-
 @select(tangler('mkplugins/virgin.py'))
 #cleans everything
 class PLUGIN(Plugin):
@@ -940,7 +929,12 @@ class PLUGIN(Plugin):
     for f in glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.cache")):
       erasefile(f)
 
-    runISCR(config, os.path.join(config.FLX_LPARCHIVE, 'lpsrc', 'flx_config.pak'),1)
+    self.shell(
+      config.ICSR,
+      '--force',
+      '--break-on-error',
+      '"%s"' % os.path.join(config.FLX_LPARCHIVE, 'lpsrc', 'flx_config.pak'),
+    )
     sys.exit(0)
 
 @select(tangler('mkplugins/clean.py'))
@@ -1002,10 +996,14 @@ class PLUGIN(Plugin):
       shutil.copy(os.path.join('misc', 'user.css'),        weaver_directory)
 
       for src in iscr_source:
-        srcdir = os.path.join(config.FLX_LPARCHIVE, src)
-        runISCR(config,
-            '--language=en --weaver=web --weaver=latex '
-            '--passes=2 --weaver-directory=%s %s' % (weaver_directory, srcdir))
+        self.shell(config.ISCR,
+          '--language=en',
+          '--weaver=web',
+          '--weaver=latex',
+          '--passes=2',
+          '--weaver-directory=%s' + weaver_directory,
+          os.path.join(config.FLX_LPARCHIVE, src),
+        )
 
         self.already_generated[src] = 1
 
@@ -1448,35 +1446,6 @@ class PLUGIN(TestPlugin):
       "*** DEMO PACKAGE %s : %%s ****\n" % pkg)
 
 
-@select(tangler('mkplugins/xqt.py'))
-#interscript command (now built in part of Felix package)
-def runISCR(config, a, force=False, break_on_error=None):
-  if break_on_error is None:
-    break_on_error = not force
-
-  x = a.split(' ')
-  z = []
-  for i in x:
-    z.append('"' + i + '"')
-  a = ' '.join(z)
-
-  cmd = [
-    sys.executable,
-    os.path.join(config.FLX_DIR, 'interscript', 'bin', 'iscr.py'),
-    '--cache-prefix=lpsrc-cache',
-  ]
-
-  if force:
-    cmd.append('--nocache')
-
-  if break_on_error:
-    cmd.append('--break-on-error')
-  cmd.append(a)
-
-  xqt(*cmd)
-
-
-
 @select(tangler('mkplugins/manifest.py'))
 class PLUGIN(Plugin):
   name = 'manifest'
@@ -1526,7 +1495,7 @@ class PLUGIN(Plugin):
     for src in srcs:
       src = unix2native(src)
       if not quiet: print "REExtracting", pkg, "from", src
-      runISCR(config, os.path.join(config.FLX_LPARCHIVE, src))
+      self.shell(config.ISCR, os.path.join(config.FLX_LPARCHIVE, src))
 
 @select(tangler('flxbuild/pluginutil.py'))
 class Plugin(object):
@@ -1675,7 +1644,7 @@ class TestPlugin(Plugin):
         f.close()
 
       if deterministic:
-        output = self.shell(DIFF,
+        output = self.shell(config.DIFF,
           inbase + '.expect',
           outbase + '.output',
           verbose=True,
@@ -1699,7 +1668,7 @@ class TestPlugin(Plugin):
           f.close()
 
         if deterministic:
-           output = self.shell(DIFF,
+           output = self.shell(config.DIFF,
             '%s-%s.argexpect' % (inbase, argcount),
             '%s-%s.argoutput' % (outbase, argcount),
             quiet=True,
@@ -1969,7 +1938,6 @@ for o, a in opts:
     sys.stderr.write('unknown option: %s %s\n' % (o, a))
     sys.exit(1)
 
-execfile(os.path.join("mkplugins", "xqt.py"))
 
 # temporary hack to set up the shell
 config.HOST_OCAML.verbose = verbose
@@ -2039,9 +2007,9 @@ if "extract" in options or "force_extract" in options:
   for p in paks:
     print "EXTRACTING", p, "from", config.FLX_LPARCHIVE
     if "force_extract" in options:
-      runISCR(config, p, force=True, break_on_error=True)
+      xqt(config.ISCR, '--force', '--break-on-error', p, verbose=verbose, quiet=quiet)
     else:
-      runISCR(config, p)
+      xqt(config.ISCR, p, verbose=verbose, quiet=quiet)
   # this is a hack
   mkdirs('speed')
   shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')

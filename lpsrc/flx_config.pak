@@ -1365,6 +1365,7 @@ if "target" in PHASES:
     HAVE_EPOLL = 0
     HAVE_EVTPORTS = 0
     HAVE_OPENMP = 0
+    DIFF = 'FC /L /W'
   else:
     FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
     HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
@@ -1378,6 +1379,15 @@ if "target" in PHASES:
 
     HAVE_MSVC = 0
     HAVE_GNU = 1
+
+    #DIFF = "diff -a -b " # build system is Unix Python
+    # RF - trying out args that work on solaris (-a = not cool)
+    # could use that sys type stuff here?
+    DIFF = 'diff -b'
+
+    ISCR = sys.executable + ' ' + \
+      os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py') + \
+      ' --cache-prefix=lpsrc-cache'
 
   # target model switches
   CYGWIN = TARGET_CXX.options.CYGWIN
@@ -1482,6 +1492,8 @@ if "target" in PHASES:
     pa(f,this,"HAVE_GNU")
     pr(f,"FLXCC_CPP='cpp '")
     pa(f,this,"HAVE_MSVC")
+    pa(f,this,"DIFF")
+    pa(f,this,"ISCR")
     pr(f,"")
     pr(f,"# HACK to get all the target variables into global namespace")
     pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")

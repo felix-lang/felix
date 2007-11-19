@@ -7,24 +7,20 @@ class PLUGIN(Plugin):
   name = 'speed'
   help = 'Run comparative tests'
 
-  def run(self,x):
-    print x
-    flush()
-    result = os.system(ENV+x)
-    if result: print "  .. ERROR CODE",hex(result)
-    flush()
-
-    if result:
-      raise MakeError
-
-
-  def runme(self):
-    runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
-    self.run("python speed/measure.py")
-    self.run("python speed/panal.py")
-    self.run("gnuplot speed/mkjpgs.gpl")
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 '+
-      '--weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
+  def runme(self, config):
+    flx_perf = os.path.join(config.FLX_LPARCHIVE, 'flx_perf.pak')
+    self.shell(config.ISCR, flx_perf)
+    self.shell(sys.executable, os.path.join('speed', 'measure.py'))
+    self.shell(sys.executable, os.path.join('speed', 'panal.py'))
+    self.shell('gnuplot', os.path.join('speed', 'mkjpgs.gpl'))
+    self.shell(config.ISCR,
+      '--inhibit-sref=1',
+      '--language=en',
+      '--weaver=web',
+      '--passes=2',
+      '--weaver-directory=speed/',
+      flx_perf,
+    )
     mkdirs('speed')
     shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')
 
