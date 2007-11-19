@@ -2,14 +2,13 @@
 import os
 import sys
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'extract_grammar'
+class extract_grammar(Process):
   help = 'extract the grammar as a text file from ocamlyacc src'
 
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(extract_grammar, self).__init__(*args, **kwds)
 
     self.ran = False
 

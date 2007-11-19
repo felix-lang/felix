@@ -5,11 +5,10 @@ import os
 import sys
 import shutil
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import mkdirs
 
-class PLUGIN(Plugin):
-  name = 'speed'
+class speed_tests(Process):
   help = 'Run comparative tests'
 
   def runme(self, config):

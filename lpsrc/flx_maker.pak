@@ -218,10 +218,9 @@ if __name__ == '__main__':
 import os
 import glob
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'man'
+class man(Process):
   help = 'make the man pages'
 
   def runme(self, config):
@@ -250,15 +249,14 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/impldoc.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import erasedir
 
-class PLUGIN(Plugin):
-  name = 'impldoc'
+class impldoc(Process):
   help = 'make the ocaml compiler documentation'
 
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(impldoc, self).__init__(*args, **kwds)
     self.ran = False
 
   def runme(self, config, pkg, pkgdict):
@@ -287,14 +285,13 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/rtldoc.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'rtldoc'
+class rtldoc(Process):
   help = 'make the runtime language documentation'
 
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(rtldoc, self).__init__(*args, **kwds)
     self.ran = False
 
   def runme(self, config, pkg, pkgdict):
@@ -311,15 +308,14 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/gramdoc.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import ExecutionError
 
-class PLUGIN(Plugin):
-  name = 'gramdoc'
+class gramdoc(Process):
   help = 'make the syntax documentation'
 
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(gramdoc, self).__init__(*args, **kwds)
     self.ran = False
 
   def runme(self, config, pkg, pkgdict):
@@ -346,15 +342,14 @@ class PLUGIN(Plugin):
 import os
 import shutil
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import mkdirs, ExecutionError
 
-class PLUGIN(Plugin):
-  name = 'typeclassdoc'
+class typeclassdoc(Process):
   help = 'make the typeclass documentation'
 
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(typeclassdoc, self).__init__(*args, **kwds)
     self.ran = False
 
   def runme(self, config, pkg, pkgdict):
@@ -425,11 +420,9 @@ include "SDL/SDL_version";
 include "SDL/SDL_video";
 
 @select(tangler('mkplugins/build_ocaml_grammar.py'))
-from flxbuild.process import Plugin, plugins
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'build_ocaml_grammar'
-
+class build_ocaml_grammar(Process):
   def runme(self, config, pkg, LEXS, PARSES, PGENPARSES,DYPARSES):
     if not (LEXS or PARSES or PGENPARSES or DYPARSES):
       return
@@ -457,12 +450,10 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_ocaml_modules.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
 #ocaml compilation
-class PLUGIN(Plugin):
-  name = 'build_ocaml_modules'
-
+class build_ocaml_modules(Process):
   def runme(self, config, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES):
     if not (INTERFACES or IMPLEMENTATIONS):
       return []
@@ -489,12 +480,10 @@ class PLUGIN(Plugin):
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_libraries.py'))
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
 #ocaml compilation
-class PLUGIN(Plugin):
-  name = 'build_ocaml_libraries'
-
+class build_ocaml_libraries(Process):
   def runme(self, config, IMPLEMENTATIONS, lib):
     if not IMPLEMENTATIONS:
       return
@@ -511,12 +500,10 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_ocaml_exes.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
 #ocaml compilation
-class PLUGIN(Plugin):
-  name = 'build_ocaml_exes'
-
+class build_ocaml_exes(Process):
   def runme(self, config, EXES, OLIBRARIES, INCLUDES):
     # finally, mainline *.cmx or cma files to link to executables
     if not EXES:
@@ -546,12 +533,10 @@ class PLUGIN(Plugin):
 import os
 import shutil
 
-from flxbuild.process import Plugin, plugins
+from flxbuild.process import Process, processes
 from flxbuild.flxutil import unix2native
 
-class PLUGIN(Plugin):
-  name = 'build_host_ocaml'
-
+class build_host_ocaml(Process):
   def copy_mli2ml(self, MLIS):
     for f in MLIS:
       f = unix2native(f)
@@ -566,14 +551,14 @@ class PLUGIN(Plugin):
     self.copy_mli2ml(RAW_INTERFACES)
 
     if config.HOST_OCAML.options.HAVE_OCAMLBUILD:
-      return plugins['build_ocamlbuild'](pkg, pkgdict)
+      return processes['build_ocamlbuild'](pkg, pkgdict)
 
     LEXS = pkgdict.get("caml_lexes", [])
     PARSES = pkgdict.get("caml_parses", [])
     PGENPARSES = pkgdict.get("caml_pgenparses", [])
     DYPARSES = pkgdict.get("caml_dyparses", [])
 
-    plugins['build_ocaml_grammar'].runme(config, pkg, LEXS, PARSES, PGENPARSES, DYPARSES)
+    processes['build_ocaml_grammar'].runme(config, pkg, LEXS, PARSES, PGENPARSES, DYPARSES)
 
     INTERFACES = pkgdict.get("caml_interfaces", [])
     IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
@@ -582,25 +567,23 @@ class PLUGIN(Plugin):
     INCLUDES = pkgdict.get("caml_include_paths", [])
 
 
-    objects = plugins['build_ocaml_modules'].runme(config, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES)
+    objects = processes['build_ocaml_modules'].runme(config, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES)
 
     lib = pkgdict.get('caml_provide_lib', os.path.join('src', pkg + 'lib'))
-    plugins['build_ocaml_libraries'].runme(config, objects, lib)
+    processes['build_ocaml_libraries'].runme(config, objects, lib)
     OLIBRARIES = pkgdict.get("caml_require_libs", [])
 
-    plugins['build_ocaml_exes'].runme(config, EXES, OLIBRARIES, INCLUDES)
+    processes['build_ocaml_exes'].runme(config, EXES, OLIBRARIES, INCLUDES)
 @doc()
 
 @select(tangler('mkplugins/build_ocamlbuild.py'))
 import os
 import shutil
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import mkdirs
 
-class PLUGIN(Plugin):
-  name = 'build_ocamlbuild'
-
+class build_ocamlbuild(Process):
   def runme(self, config, pkg, pkgdict):
     EXES = pkgdict.get('caml_exes', [])
 
@@ -623,12 +606,10 @@ class PLUGIN(Plugin):
 import os
 import shutil
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import unix2native, mkdirs
 
-class PLUGIN(Plugin):
-  name = 'build_host_tools'
-
+class build_host_tools(Process):
   def copy_hpp2rtl(self, config, HPPS):
     for path in HPPS:
       f = os.path.join(config.FLX_DIR, path)
@@ -701,12 +682,10 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_testfile.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import mkdirs, Tee, ExecutionError
 
-class PLUGIN(Plugin):
-  name = 'build_test'
-
+class build_testfile(Process):
   def runme(self, config, testfile, log):
     if log is None: log = Tee()
 
@@ -844,12 +823,11 @@ import os
 import sys
 import glob
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import erasefile
 
 #cleans everything
-class PLUGIN(Plugin):
-  name = 'virgin'
+class virgin(Process):
   help = 'clean and remove all the sources'
 
   def runme(self, config):
@@ -991,12 +969,11 @@ class PLUGIN(Plugin):
 import os
 import glob
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import erasefile
 
 # cleans products, but not extracted sources
-class PLUGIN(Plugin):
-  name = 'clean'
+class clean(Process):
   help = 'remove generated C++ and binaries from test locations'
 
   def runme(self, config):
@@ -1027,14 +1004,12 @@ class PLUGIN(Plugin):
 import os
 import shutil
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import mkdirs
 
-class PLUGIN(Plugin):
-  name = 'mkdoc'
-
+class mkdoc(Process):
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(mkdoc, self).__init__(*args, **kwds)
 
     self.already_generated = {}
 
@@ -1069,11 +1044,9 @@ class PLUGIN(Plugin):
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 import os
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name='build_target_rtl_dynamic'
-
+class build_target_rtl_dynamic(Process):
   def runme(self, config, pkg, pkgdict):
     if not config.SUPPORT_DYNAMIC_LOADING:
       return
@@ -1144,11 +1117,9 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_target_rtl_static.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'build_target_rtl_static'
-
+class build_target_rtl_static(Process):
   def runme(self, config, pkg, pkgdict):
     if not config.SUPPORT_STATIC_LINKAGE:
       return
@@ -1190,12 +1161,10 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_felix_static_drivers.py'))
 import shutil
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import mkdirs
 
-class PLUGIN(Plugin):
-  name = 'build_felix_static_drivers'
-
+class build_felix_static_drivers(Process):
   def runme(self, config, pkg, pkgdict):
     if not config.SUPPORT_STATIC_LINKAGE:
       return
@@ -1223,11 +1192,9 @@ class PLUGIN(Plugin):
 
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'build_felix_dynamic_drivers'
-
+class build_felix_dynamic_drivers(Process):
   def runme(self, config, pkg, pkgdict):
     if not config.SUPPORT_DYNAMIC_LOADING:
       return
@@ -1264,11 +1231,9 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'build_target_cpp_tools'
-
+class build_target_cpp_tools(Process):
   def runme(self, config, pkg, pkgdict):
     EXES = pkgdict.get("exes",[])
     esflags = pkgdict.get("exes_require_linkflags","")
@@ -1291,12 +1256,10 @@ class PLUGIN(Plugin):
 import os
 import shutil
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import unix2native
 
-class PLUGIN(Plugin):
-  name = 'build_target_felix_rtl'
-
+class build_target_felix_rtl(Process):
   def runme(self, config, pkg, pkgdict):
     flxs = pkgdict.get('felix_rtl', [])
     if not flxs:
@@ -1317,11 +1280,9 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/build_target_felix_tools.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'build_target_felix_tools'
-
+class build_target_felix_tools(Process):
   def runme(self, config, pkg, pkgdict):
     flxs = pkgdict.get("felix_tools",[])
     if not flxs:
@@ -1350,10 +1311,9 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/performance.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'performance'
+class performance(Process):
   help = 'make performance tests'
 
   SPECIAL_TESTS = [
@@ -1388,11 +1348,10 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/run_failure_tests.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import Tee
 
-class PLUGIN(Plugin):
-  name = 'run_failure_tests'
+class run_failure_tests(Process):
   help = 'run tests meant to fail'
 
   def runme(self, config, pkg, pkgdict):
@@ -1434,10 +1393,9 @@ class PLUGIN(Plugin):
 
 
 @select(tangler('mkplugins/run_static_unit_tests.py'))
-from flxbuild.process import TestPlugin
+from flxbuild.testprocess import TestProcess
 
-class PLUGIN(TestPlugin):
-  name = 'run_static_unit_tests'
+class run_static_unit_tests(TestProcess):
   help = 'run static unit tests'
 
   def runme(self, config, pkg, pkgdict):
@@ -1449,10 +1407,9 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_dynamic_unit_tests.py'))
-from flxbuild.process import TestPlugin
+from flxbuild.testprocess import TestProcess
 
-class PLUGIN(TestPlugin):
-  name = 'run_dynamic_unit_tests'
+class run_dynamic_unit_tests(TestProcess):
   help = 'run dynamic unit tests'
 
   def runme(self, config, pkg, pkgdict):
@@ -1464,10 +1421,9 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_unit_tests.py'))
-from flxbuild.process import TestPlugin
+from flxbuild.testprocess import TestProcess
 
-class PLUGIN(TestPlugin):
-  name = 'run_unit_tests'
+class run_unit_tests(TestProcess):
   help = 'run unit tests'
 
   def runme(self, config, pkg, pkgdict):
@@ -1479,11 +1435,10 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_completion_tests.py'))
-from flxbuild.process import TestPlugin
+from flxbuild.testprocess import TestProcess
 
 # these tests are units tests with non-deterministic results
-class PLUGIN(TestPlugin):
-  name = 'run_completion_tests'
+class run_completion_tests(TestProcess):
   help = 'run tests that just need to finish'
 
   def runme(self, config, pkg, pkgdict):
@@ -1495,15 +1450,14 @@ class PLUGIN(TestPlugin):
 
 
 @select(tangler('mkplugins/run_known_failed_tests.py'))
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import Tee
 
-class PLUGIN(Plugin):
-  name = 'run_known_failed_tests'
+class run_known_failed_tests(Process):
   help = 'mark tests failed that are known to fail without running'
 
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(run_known_failed_tests, self).__init__(*args, **kwds)
     self.dummy = 1
 
   def runme(self, config, pkg, pkgdict):
@@ -1520,10 +1474,9 @@ class PLUGIN(Plugin):
     return 1 # don't report any failure!
 
 @select(tangler('mkplugins/run_demos.py'))
-from flxbuild.process import TestPlugin
+from flxbuild.testprocess import TestProcess
 
-class PLUGIN(TestPlugin):
-  name = 'run_demos'
+class run_demos(TestProcess):
   help = 'run demonstrations'
 
   def runme(self, config, pkg, pkgdict):
@@ -1544,12 +1497,10 @@ import os
 import glob
 import re
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import filetime, newest_filetime, mkdirs
 
-class PLUGIN(Plugin):
-  name = 'manifest'
-
+class manifest(Process):
   def make_manifest(self, config, pkg, deps_filename):
     regex = re.compile(r"CREATING .* NAMED FILE SOURCE (.*) \[")
 
@@ -1589,12 +1540,10 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/extract_iscr.py'))
 import os
 
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 from flxbuild.flxutil import unix2native
 
-class PLUGIN(Plugin):
-  name = 'extract_iscr'
-
+class extract_iscr(Process):
   def runme(self, config, pkg, pkgdict):
     srcs = pkgdict.get("iscr_source",[])
     for src in srcs:
@@ -1613,17 +1562,14 @@ pkgdeps = {}
 
 @select(tangler('flxbuild/process.py'))
 import os
-import glob
 import time
 
-from flxbuild.flxutil import xqt, newest_filetime, filetime, fmtime, Tee, ExecutionError, mkdirs
-from flxbuild.package import pkgd, pkgreqs
+from flxbuild.flxutil import xqt, newest_filetime, filetime, fmtime, mkdirs
 
-# global plugin registry
-plugins = {}
+# global process registry
+processes = {}
 
-class Plugin(object):
-  name = None
+class Process(object):
   help = ''
 
   def __init__(self,
@@ -1655,7 +1601,40 @@ class Plugin(object):
     return xqt(*args, **kwds)
 
 
-class TestPlugin(Plugin):
+def get_latest_src_time(pkgdict):
+  iscrs = set()
+  for iscr in pkgdict.get("iscr_source",[]):
+    base = os.path.basename(os.path.splitext(iscr)[0])
+    f = open(os.path.join('manifests', base + '.deps'))
+    try:
+      iscrs.update([line.strip() for line in f])
+    finally:
+      f.close()
+
+  return newest_filetime(iscrs)
+
+
+def enstamp(stamp, quiet):
+  mkdirs(os.path.split(stamp)[0])
+  f = open(stamp,"w")
+  try:
+    print >> f, fmtime(time.time())
+  finally:
+    f.close()
+
+  if not quiet:
+    print 'Writing Stamp File:', stamp
+
+
+@select(tangler('flxbuild/testprocess.py'))
+import os
+import glob
+
+from flxbuild.process import Process, processes, get_latest_src_time, enstamp
+from flxbuild.package import pkgd, pkgreqs
+from flxbuild.flxutil import Tee, ExecutionError, filetime, fmtime
+
+class TestProcess(Process):
   def find_test(self, tl, a, b):
     for x, y, z in tl:
       if x == a and y == b: return True
@@ -1698,7 +1677,7 @@ class TestPlugin(Plugin):
 
         # build the felix code
         try:
-          inbase = plugins['build_test'](config, testfile, log)
+          inbase = processes['build_testfile'](config, testfile, log)
         except ExecutionError, e:
           failed = 1
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
@@ -1803,46 +1782,20 @@ class TestPlugin(Plugin):
             log=log,
           )
 
-
-def get_latest_src_time(pkgdict):
-  iscrs = set()
-  for iscr in pkgdict.get("iscr_source",[]):
-    base = os.path.basename(os.path.splitext(iscr)[0])
-    f = open(os.path.join('manifests', base + '.deps'))
-    try:
-      iscrs.update([line.strip() for line in f])
-    finally:
-      f.close()
-
-  return newest_filetime(iscrs)
-
-
-def enstamp(stamp, quiet):
-  mkdirs(os.path.split(stamp)[0])
-  f = open(stamp,"w")
-  try:
-    print >> f, fmtime(time.time())
-  finally:
-    f.close()
-
-  if not quiet:
-    print 'Writing Stamp File:', stamp
-
 @select(tangler('mkplugins/help.py'))
 import sys
-from flxbuild.process import Plugin
+from flxbuild.process import Process, processes
 
-class PLUGIN(Plugin):
-  name = 'help'
+class help(Process):
   help = 'print this help message'
 
   def runme(self, config):
     items = []
     max_len = 0
-    for name, plugin in plugins.items():
-      if plugin.help:
+    for name, process in processes.items():
+      if process.help:
         max_len = max(max_len, len(name))
-        items.append((name, plugin.help))
+        items.append((name, process.help))
 
     items.sort()
 
@@ -1854,13 +1807,11 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/fcount.py'))
 import os
 import sys
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'fcount'
-
+class fcount(Process):
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(fcount, self).__init__(*args, **kwds)
     self.ran = False
 
   def runme(self, config, pkg, pkgdict):
@@ -1897,13 +1848,11 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/pfcount.py'))
 import os
 import sys
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'pfcount'
-
+class pfcount(Process):
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(pfcount, self).__init__(*args, **kwds)
     self.ran = False
 
   def runme(self, config, pkg, pkgdict):
@@ -1923,13 +1872,11 @@ class PLUGIN(Plugin):
 @select(tangler('mkplugins/pfcount_all.py'))
 import os
 import sys
-from flxbuild.process import Plugin
+from flxbuild.process import Process
 
-class PLUGIN(Plugin):
-  name = 'pfcount_all'
-
+class pfcount_all(Process):
   def __init__(self, *args, **kwds):
-    super(PLUGIN, self).__init__(*args, **kwds)
+    super(pfcount_all, self).__init__(*args, **kwds)
     self.ran = False
 
   def runme(self, config, pkg, pkgdict):
@@ -2019,6 +1966,10 @@ fbuild_processes = {
     'target',
     'run_demos',
   ],
+  'speed': [
+    'target',
+    'speed_tests',
+  ],
 }
 
 @h = tangler('script/maker','python')
@@ -2092,7 +2043,7 @@ models = []
 macros = []
 lparchive = None
 help_string = """\
-usage: mk [options] [plugins]
+usage: mk [options] [processes]
 
 flags:
   -h, --help      print this help message
@@ -2109,8 +2060,8 @@ flags:
   --model         build only these models
   --lparchive     use an alternative lpsrc directory
 
-plugins:
-  run a custom plugin. run "mk help" to get a list of plugins to run
+processes:
+  run a custom process. run "mk help" to get a list of processes to run
   """
 
 for o, a in opts:
@@ -2297,15 +2248,22 @@ if "help" in options:
     print "  ", k.ljust(length), pkgdeps[k]
 
 # -------------------------------------------------
-# LOAD PLUGINS
+# LOAD PROCESSES
 
-from flxbuild.process import plugins
+import flxbuild.process
 
 for f in glob.glob(os.path.join("mkplugins", "*.py")):
   base = os.path.basename(os.path.splitext(f)[0])
+  if base == '__init__':
+    continue
+
   module = getattr(__import__('mkplugins.' + base), base)
-  if hasattr(module, 'PLUGIN'):
-    plugin = module.PLUGIN(
+  try:
+    process_class = getattr(module, base)
+  except AttributeError:
+    pass
+  else:
+    process = process_class(
       verbose=verbose,
       quiet=quiet,
       optimise=optimise,
@@ -2313,7 +2271,7 @@ for f in glob.glob(os.path.join("mkplugins", "*.py")):
       force=force or 'force' in options,
       options=options,
     )
-    plugins[plugin.name] = plugin
+    flxbuild.process.processes[process_class.__name__] = process
 
 # -----------------------------------------------------------------------------
 
@@ -2389,7 +2347,7 @@ def run_phase(config, phase):
     erasefile(stamp)
 
     for process in processes:
-      result = plugins[process](config, pkg, pkgdict)
+      result = flxbuild.process.processes[process](config, pkg, pkgdict)
       if not result and result is not None:
         break
     else:
@@ -2398,14 +2356,14 @@ def run_phase(config, phase):
 ####
 
 for process in fbuildroot.fbuild_preprocesses:
-  plugins[process](config)
+  flxbuild.process.processes[process](config)
 
-# EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
+# EXECUTE USER SELECTED PROCESSES IN COMMAND LINE ORDER
 for k in options:
   if k in fbuildroot.fbuild_processes:
     run_phase(config, k)
-  elif k in plugins:
-    plugins[k](config)
+  elif k in flxbuild.process.processes:
+    flxbuild.process.processes[k](config)
 
 for phase in phases:
   run_phase(config, phase)
@@ -2414,42 +2372,42 @@ for phase in phases:
 
 from flxbuild.flxutil import Tee
 
-# print out all the failed plugins
+# print out all the failed processes
 failure_log = Tee()
 
-failure_log.write("----- PLUGIN STATUS -----\n")
+failure_log.write("----- PROCESS STATUS -----\n")
 failed = 0
 fatal = 0
-for plugin in plugins.itervalues():
-  nfail = len(plugin.failures)
-  npass = len(plugin.successes)
+for process in flxbuild.process.processes.itervalues():
+  nfail = len(process.failures)
+  npass = len(process.successes)
   failed = failed or nfail>0
-  fatal = fatal or (nfail>0 and not plugin.dummy)
+  fatal = fatal or (nfail>0 and not process.dummy)
 
   if nfail:
-    failure_log.write('PLUGIN **FAILED**: %s, %d/%d failures\n' % (plugin.name, nfail,npass+nfail))
-    if plugin.dummy:
+    failure_log.write('PROCESS **FAILED**: %s, %d/%d failures\n' % (process.name, nfail,npass+nfail))
+    if process.dummy:
       failure_log.write("  [Expected failure, doesn't break build]\n")
   else:
-    if plugin.used:
-      failure_log.write('PLUGIN PASSED    : %s, %d pass\n' % (plugin.name,npass))
+    if process.used:
+      failure_log.write('PROCESS PASSED    : %s, %d pass\n' % (process.name,npass))
     else:
-      failure_log.write('PLUGIN UNUSED    : %s\n' % plugin.name)
+      failure_log.write('PROCESS UNUSED    : %s\n' % process.name)
 
 
 if failed:
   print '^^^^^^^^^^ FAILURES by group ^^^^^^^^^^^^^'
 
   kats = {}
-  for plugin in plugins.itervalues():
-    if not plugin.failures:
+  for process in flxbuild.process.processes.itervalues():
+    if not process.failures:
       continue
 
-    print '- %s: %s' % (len(plugin.failures), plugin.name)
+    print '- %s: %s' % (len(process.failures), process.name)
 
     lookup = {}
 
-    for pkg, file, failure in plugin.failures:
+    for pkg, file, failure in process.failures:
       files = lookup.get(pkg, [])
       files.append(file)
       lookup[pkg] = files
