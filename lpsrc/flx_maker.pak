@@ -649,8 +649,6 @@ class PLUGIN(Plugin):
     kwds = {\
       'include_paths': INCLUDE_PATH+[config.FLX_RTL_DIR, config.FLX_HOST_CONFIG_DIR, "elk"],
       'macros': MACROS+["FLX_STATIC_LINK"],
-      'CFLAGS': CFLAGS,
-      'LDFLAGS': SFLAGS,
     }
 
     if pkglib:
@@ -740,9 +738,9 @@ class PLUGIN(Plugin):
             include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
             optimise=optimise_c,
             debug=debug,
-            CFLAGS=CFLAGS+" "+cflags,
+            CFLAGS=cflags,
             lib_paths=[config.SHLIB_DIR],
-            LDFLAGS=DFLAGS+dlibs,
+            LDFLAGS=dlibs,
             log=log)
 
       if config.SUPPORT_STATIC_LINKAGE:
@@ -783,10 +781,10 @@ class PLUGIN(Plugin):
           optimise=optimise_c,
           debug=debug,
           macros=["FLX_STATIC_LINK"],
-          CFLAGS=CFLAGS+" "+cflags,
+          CFLAGS=cflags,
           lib_paths=[config.FLX_RTL_DIR],
           libs=[],
-          LDFLAGS=SFLAGS+slibs,
+          LDFLAGS=slibs,
           log=log)
 
       #log.write('TESTFILE -- OK! %s\n' % basename)
@@ -1011,15 +1009,6 @@ class PLUGIN(Plugin):
 
         self.already_generated[src] = 1
 
-@select(tangler('mkplugins/cflags.py'))
-# GLOBAL COMPILATION FLAGS
-
-# C++ STUFFS
-CFLAGS = ""
-SFLAGS = ""
-DFLAGS = ""
-EXTRA_LIBS = []
-
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 class PLUGIN(Plugin):
   name='build_target_rtl_dynamic'
@@ -1056,13 +1045,13 @@ class PLUGIN(Plugin):
         'optimise': optimise,
         'debug': debug,
         'macros': MACROS+["BUILD_"+BUILD_MACRO],
-        'CFLAGS': CFLAGS+EXTRA_CFLAGS,
+        'CFLAGS': EXTRA_CFLAGS,
         }
 
     link_kwds = {
         'lib_paths': [config.SHLIB_DIR],
-        'libs': EXTRA_LIBS+needs_libs,
-        'LDFLAGS': DFLAGS+EXTRA_DFLAGS,
+        'libs': needs_libs,
+        'LDFLAGS': EXTRA_DFLAGS,
         }
 
     if CCS:
@@ -1122,7 +1111,7 @@ class PLUGIN(Plugin):
         'macros': MACROS+["FLX_STATIC_LINK"],
         'optimise': optimise,
         'debug': debug,
-        'CFLAGS': CFLAGS+EXTRA_CFLAGS,
+        'CFLAGS': EXTRA_CFLAGS,
         }
 
     if CCS:
@@ -1161,7 +1150,7 @@ class PLUGIN(Plugin):
         macros=["FLX_STATIC_LINK"],
         optimise=optimise,
         debug=debug,
-        CFLAGS=CFLAGS+cflags)
+        CFLAGS=cflags)
 
       if outdir:
         print 'copying file', dst[0], '->', outdir
@@ -1200,10 +1189,10 @@ class PLUGIN(Plugin):
           include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
           optimise=optimise,
           debug=debug,
-          CFLAGS=CFLAGS+cflags,
+          CFLAGS=cflags,
           lib_paths=[config.SHLIB_DIR],
           libs=libs,
-          LDFLAGS=DFLAGS+dflags)
+          LDFLAGS=dflags)
 
         #deletefile(src + config.EXT_SHARED_OBJ)
 
@@ -1225,10 +1214,9 @@ class PLUGIN(Plugin):
           outdir='build',
           include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
           macros=["FLX_STATIC_LINK"],
-          CFLAGS=CFLAGS,
           lib_paths=[dir],
           libs=libs,
-          LDFLAGS=SFLAGS+esflags)
+          LDFLAGS=esflags)
 
         deletefile(src + config.EXT_STATIC_OBJ)
 
@@ -1281,10 +1269,9 @@ class PLUGIN(Plugin):
         objects=[os.path.join(config.FLX_RTL_DIR, 'flx_run' + config.EXT_STATIC_OBJ)],
         include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
         macros=["FLX_STATIC_LINK"],
-        CFLAGS=CFLAGS,
         lib_paths=[config.FLX_RTL_DIR],
         libs=libs,
-        LDFLAGS=SFLAGS+fsflags
+        LDFLAGS=fsflags
       )
 
 @select(tangler('mkplugins/performance.py'))
