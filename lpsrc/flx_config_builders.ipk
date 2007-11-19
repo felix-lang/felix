@@ -2486,6 +2486,8 @@ class ocaml(compiler_base):
           verbose=False,
         )
       except ExecutionError:
+        pass
+      else:
         opt.OCAMLB = opt.OCAMLB + warn
         opt.OCAMLC = opt.OCAMLC + warn
 
