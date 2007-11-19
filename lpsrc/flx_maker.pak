@@ -1745,6 +1745,50 @@ class PLUGIN(Plugin):
 
     sys.exit(0)
 
+@select(tangler('mkplugins/fcount.py'))
+class PLUGIN(Plugin):
+  name = 'fcount'
+
+  def runme(self, config):
+    # requires posix
+    if os.name == 'nt':
+      return
+
+    if "inline" in options:
+      tkind = "inline"
+    elif "noinline" in options:
+      tkind = "noinline"
+    else:
+      tkind = "std"
+
+    self.shell(sys.executable, 'script/fcount.py', 'misc/fcounts.stats',  tkind,
+      '"tut/examples/*.hpp"')
+    self.shell(sys.executable, 'script/fcount.py', 'misc/fcounts.stats ', tkind,
+      ' "test/*.hpp"')
+
+
+@select(tangler('mkplugins/pfcount.py'))
+class PLUGIN(Plugin):
+  name = 'pfcount'
+
+  def runme(self, config):
+    # requires posix
+    if os.name == 'nt':
+      return
+
+    self.shell(sys.executable, 'script/pfcount.py', 'misc/fcounts.stats')
+
+@select(tangler('mkplugins/pfcount_all.py'))
+class PLUGIN(Plugin):
+  name = 'pfcount_all'
+
+  def runme(self, config):
+    # requires posix
+    if os.name == 'nt':
+      return
+
+    self.shell(sys.executable, 'script/pfcount.py', 'misc/fcounts.stats', 'all')
+
 @select(tangler('fbuildroot.py'))
 import os
 import config
@@ -1791,7 +1835,14 @@ fbuild_processes = {
     'run_completion_tests',
     'run_known_failed_tests',
   ],
-  'test': ['run'],
+  'test': [
+    'run',
+    'fcount',
+  ],
+  'tutorial': [
+    'target',
+    'fcount',
+  ],
   'doc': [
     'mkdoc',
     'impldoc',
@@ -2207,39 +2258,6 @@ for phase in phases:
   run_phase(config, phase)
 
 # -----------------------------------------------------------------------------
-
-if os.name != 'nt': # requires posix
-  if "test" in options or "tutorial" in options or "fcount" in options:
-    tkind = "std"
-    if "inline" in options: tkind="inline"
-    elif "noinline" in options: tkind="noinline"
-    xqt(sys.executable,
-      os.path.join('script', 'fcount.py'),
-      os.path.join('misc', 'fcounts.stats'),
-      tkind,
-      '"' + os.path.join('tut', 'examples', '*.hpp') + '"',
-    )
-    xqt(sys.executable,
-      os.path.join('script', 'fcount.py'),
-      os.path.join('misc', 'fcounts.stats'),
-      tkind,
-      '"' + os.path.join('test', '*.hpp') + '"',
-    )
-
-  if "pfcount" in options:
-    xqt(sys.executable,
-      os.path.join('script', 'pfcount.py'),
-      os.path.join('misc', 'fcounts.stats'),
-    )
-
-  if "pfcount_all" in options:
-    xqt(sys.executable,
-      os.path.join('script', 'pfcount.py'),
-      os.path.join('misc', 'fcounts.stats'),
-      'all',
-    )
-
-print
 
 # print out all the failed plugins
 failure_log = Tee()
