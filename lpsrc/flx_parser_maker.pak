@@ -264,7 +264,7 @@ import string
 import sys
 import os
 
-from config.flx_data as flx_data
+import config.flx_data as flx_data
 
 ts ={}
 for k,t in flx.data.flx_keywords: ts[t]=1
