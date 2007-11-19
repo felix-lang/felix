@@ -257,8 +257,8 @@ class PLUGIN(Plugin):
     self.ran = True
 
     print "GENERATING OCAMLDOCS"
-    erasedir('doc/impldoc')
-    os.mkdir('doc/impldoc')
+    erasedir(os.path.join('doc', 'impldoc'))
+    os.mkdir(os.path.join('doc', 'impldoc'))
     try:
       self.shell('ocamldoc', '-html',
         '-I', 'src',
@@ -309,7 +309,7 @@ class PLUGIN(Plugin):
     self.ran = True
 
     print "GENERATING SYNTAX DOCUMENTATION"
-    f = open ("tmp/xx.flx","w")
+    f = open(os.path.join('tmp', 'xx.flx'), 'w')
     f.write("#import <nugram.flxh>\n")
     f.write("open syntax felix\n")
     f.close()
@@ -519,12 +519,11 @@ class PLUGIN(Plugin):
 
   def copy_mli2ml(self, MLIS):
     for f in MLIS:
-      f = f.replace("/",os.sep)
+      f = unix2native(f)
       src = f+'.mli'
       dst = f+'.ml'
-      if filetime(src) > filetime (dst):
-        if not quiet: print 'copying file', src, '->', dst
-        shutil.copy(src, dst)
+      if not self.quiet: print 'copying file', src, '->', dst
+      shutil.copy(src, dst)
 
 
   def runme(self, config, pkg, pkgdict):
@@ -550,7 +549,7 @@ class PLUGIN(Plugin):
 
     objects = plugins['build_ocaml_modules'].runme(config, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES)
 
-    lib = pkgdict.get('caml_provide_lib', 'src'+os.sep+pkg+"lib")
+    lib = pkgdict.get('caml_provide_lib', os.path.join('src', pkg + 'lib'))
     plugins['build_ocaml_libraries'].runme(config, objects, lib)
     OLIBRARIES = pkgdict.get("caml_require_libs", [])
 
@@ -594,13 +593,12 @@ class PLUGIN(Plugin):
         src = f
       else:
         src = path
-      src = src.replace('/', os.sep)
+      src = unix2native(src)
       dst = os.path.join(config.FLX_RTL_DIR, os.path.basename(path))
 
-      if filetime(src) > filetime (dst):
-        if not quiet: print 'copying file', src, '->', dst
-        mkdirs(os.path.dirname(dst))
-        shutil.copy(src,dst)
+      if not self.quiet: print 'copying file', src, '->', dst
+      mkdirs(os.path.dirname(dst))
+      shutil.copy(src,dst)
 
 
   def runme(self, config, pkg, pkgdict):
@@ -1235,15 +1233,17 @@ class PLUGIN(Plugin):
         src = f
       else:
         src = path
-      src = src.replace('/', os.sep)
+      src = unix2native(src)
       dst = os.path.join('lib', os.path.basename(path))
 
-      if filetime(src) > filetime(dst):
-        if not quiet: print 'copying file', src, '->', dst
-        shutil.copy(src, dst)
+      if not self.quiet: print 'copying file', src, '->', dst
+      shutil.copy(src, dst)
 
 @select(tangler('mkplugins/build_target_felix_tools.py'))
-# TARGET TOOLS : FELIX
+import os
+
+from flxbuild.process import Plugin
+
 class PLUGIN(Plugin):
   name = 'build_target_felix_tools'
 
@@ -1712,10 +1712,19 @@ class PLUGIN(Plugin):
     else:
       tkind = "std"
 
-    self.shell(sys.executable, 'script/fcount.py', 'misc/fcounts.stats',  tkind,
-      '"tut/examples/*.hpp"')
-    self.shell(sys.executable, 'script/fcount.py', 'misc/fcounts.stats ', tkind,
-      ' "test/*.hpp"')
+    self.shell(sys.executable,
+      os.path.join('script', 'fcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+      tkind,
+      '"' + os.path.join('tut', 'examples', '*.hpp') + '"',
+    )
+
+    self.shell(sys.executable,
+      os.path.join('script', 'fcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+      tkind,
+      '"' + os.path.join('test', '*.hpp') + '"',
+    )
 
 
 @select(tangler('mkplugins/pfcount.py'))
@@ -1727,7 +1736,10 @@ class PLUGIN(Plugin):
     if os.name == 'nt':
       return
 
-    self.shell(sys.executable, 'script/pfcount.py', 'misc/fcounts.stats')
+    self.shell(sys.executable,
+      os.path.join('script', 'pfcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+    )
 
 @select(tangler('mkplugins/pfcount_all.py'))
 class PLUGIN(Plugin):
@@ -1738,7 +1750,11 @@ class PLUGIN(Plugin):
     if os.name == 'nt':
       return
 
-    self.shell(sys.executable, 'script/pfcount.py', 'misc/fcounts.stats', 'all')
+    self.shell(sys.executable,
+      os.path.join('script', 'pfcount.py'),
+      os.path.join('misc', 'fcounts.stats'),
+      'all',
+    )
 
 @select(tangler('fbuildroot.py'))
 import os
