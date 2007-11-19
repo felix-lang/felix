@@ -39,8 +39,8 @@ felix_requires_linkflags = FLXFLAGS
 exes_require_libs = DRLIBS
 iscr_source = ['lpsrc/flx_pkgconfig.pak']
 f = open(os.path.join("tools","flx_pkgconfig.includes"),"w")
-f.write('#include "flx_rtl.hpp"')
-f.write('#include "flx_gc.hpp"')
+f.write('#include "flx_rtl.hpp"\n')
+f.write('#include "flx_gc.hpp"\n')
 f.close()
 @h = tangler("tools/flx_pkgconfig.flx","data")
 @select(h)
