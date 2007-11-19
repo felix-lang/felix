@@ -573,35 +573,6 @@ except ImportError:
   f.close()
 
 
-@select(tangler("cpkgs/build/python_misc.py"))
-try:
-  cload(globals(),"filename")
-  cload(globals(),"python")
-except:
-  PYTHON_VERSION=sys.version
-  PYTHON_OS_NAME=os.name
-  PYTHON_OS_CURDIR=os.curdir
-  PYTHON_OS_PARDIR=os.pardir
-  PYTHON_OS_SEP=os.sep
-  PYTHON_OS_PATHSEP=os.pathsep
-
-  print "Storing Python Filename separators"
-  f = cwrite("filename")
-  pa(f,locals(),"PYTHON_OS_NAME")
-  pa(f,locals(),"PYTHON_OS_CURDIR")
-  pa(f,locals(),"PYTHON_OS_PARDIR")
-  pa(f,locals(),"PYTHON_OS_SEP")
-  pa(f,locals(),"PYTHON_OS_PATHSEP")
-  f.close()
-
-  print "Storing Python configuration"
-  f = cwrite("python")
-  pr(f,"#Python config")
-  pa(f,locals(),"PYTHON_VERSION")
-  f.close()
-  cload(globals(),"filename")
-  cload(globals(),"python")
-
 @select(tangler("flxbuild/config_support.py"))
 import os
 from flxbuild.flxutil import xqt, ExecutionError
