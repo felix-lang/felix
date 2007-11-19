@@ -814,7 +814,7 @@ class PLUGIN(Plugin):
         #log.write("slibs=%s\n" % slibs)
 
         driver = os.path.join(
-          config.FLX_RTL_DIR, 
+          config.FLX_RTL_DIR,
           driver + config.TARGET_CXX.options.EXT_STATIC_OBJ,
         )
         #log.write('static driver =%s\n' % driver)
@@ -1600,7 +1600,10 @@ class PLUGIN(Plugin):
     for src in srcs:
       src = unix2native(src)
       if not self.quiet: print "REExtracting", pkg, "from", src
-      self.shell(config.ISCR, os.path.join(config.FLX_LPARCHIVE, src))
+      self.shell(config.ISCR,
+        '--break-on-error',
+        os.path.join(config.FLX_LPARCHIVE, src),
+      )
 
 @select(tangler('flxbuild/package.py'))
 # global package registry
@@ -2193,7 +2196,7 @@ if "extract" in options or "force_extract" in options:
     if "force_extract" in options:
       xqt(config.ISCR, '--force', '--break-on-error', p, verbose=verbose, quiet=quiet)
     else:
-      xqt(config.ISCR, p, verbose=verbose, quiet=quiet)
+      xqt(config.ISCR, '--break-on-error', p, verbose=verbose, quiet=quiet)
   # this is a hack
   mkdirs('speed')
   shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')
