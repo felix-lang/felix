@@ -8,7 +8,16 @@ class PLUGIN(Plugin):
   name = 'extract_grammar'
   help = 'extract the grammar as a text file from ocamlyacc src'
 
-  def runme(self):
+  def __init__(self, *args, **kwds):
+    super(PLUGIN, self).__init__(*args, **kwds)
+
+    self.ran = False
+
+  def runme(self, config, pkg, pkgdict):
+    if self.ran:
+      return
+    self.ran = True
+
     print "GENERATING GRAMMAR"
     try:
       os.mkdir('misc')

@@ -451,10 +451,6 @@ class PLUGIN(Plugin):
       config.HOST_OCAML.gen_dypgen_parser(DYPARSES,
           FLAGS=['--prio-pt', '--pv-obj', '--noemit-token-type'],
           outdir='build')
-
-
-    if PARSES: # only works on ocamlyacc grammars ..
-      plugins['extract_grammar']()
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_modules.py'))
@@ -1952,6 +1948,7 @@ fbuild_processes = {
     'build',
     'build_host_ocaml',
     'build_host_tools',
+    'extract_grammar',
   ],
   'target': [
     'host',

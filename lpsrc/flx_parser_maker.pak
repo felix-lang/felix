@@ -263,12 +263,14 @@ print "}"
 import string
 import sys
 import os
-execfile ("config"+os.sep+"flx_data.py")
+
+from config.flx_data as flx_data
+
 ts ={}
-for k,t in flx_keywords: ts[t]=1
-for t,l in flx_1_char_syms: ts[t]=1
-for t,l in flx_2_char_syms: ts[t]=1
-for t,l in flx_3_char_syms: ts[t]=1
+for k,t in flx.data.flx_keywords: ts[t]=1
+for t,l in flx.data.flx_1_char_syms: ts[t]=1
+for t,l in flx.data.flx_2_char_syms: ts[t]=1
+for t,l in flx.data.flx_3_char_syms: ts[t]=1
 ts['ERROR']=1
 
 nt = ""
