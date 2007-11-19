@@ -1,11 +1,12 @@
 @set_title('Performance Measurements')
 
-@select(tangler('mkplugins/speed.py'))
+@select(tangler('mkplugins/speed_tests.py'))
 import os
 import sys
 import shutil
 
 from flxbuild.process import Plugin
+from flxbuild.flxutil import mkdirs
 
 class PLUGIN(Plugin):
   name = 'speed'
@@ -14,8 +15,10 @@ class PLUGIN(Plugin):
   def runme(self, config):
     flx_perf = os.path.join(config.FLX_LPARCHIVE, 'flx_perf.pak')
     self.shell(config.ISCR, flx_perf)
-    self.shell(sys.executable, os.path.join('speed', 'measure.py'))
-    self.shell(sys.executable, os.path.join('speed', 'panal.py'))
+
+    import speed.measure
+    import speed.panal
+
     self.shell('gnuplot', os.path.join('speed', 'mkjpgs.gpl'))
     self.shell(config.ISCR,
       '--inhibit-sref=1',
@@ -25,7 +28,7 @@ class PLUGIN(Plugin):
       '--weaver-directory=speed/',
       flx_perf,
     )
-    mkdirs('speed')
+
     shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')
 
 @select(tangler('spkgs/speed.py'))
@@ -209,6 +212,11 @@ and is heavily dependent on the number of words stacked per function call.
 @for i in machs:
   showgraph(i,'ack',"Ackermann's function on "+i)
   showdata("speed/machine/"+i+"/rankings/ack.txt")
+
+@select(tangler('speed/__init__.py'))
+@select(tangler('speed/xlators/__init__.py'))
+@select(tangler('speed/specs/__init__.py'))
+@doc()
 
 @select(tangler('speed/specs/ack.py','data'))
 descr="Ackerman's function"
@@ -1235,10 +1243,18 @@ from config.xlators_local import selected_xlators
 
 xlators = []
 for f in glob.glob("speed"+os.sep+"xlators"+os.sep+"*.py"):
-  execfile(f)
-  name = string.split(f,os.sep)[2][0:-3]
-  if name in selected_xlators or not selected_xlators:
-    xlators.append((name,mk,lang))
+  base = os.path.splitext(os.path.basename(f))[0]
+  if base == '__init__':
+    continue
+
+  module = getattr(__import__('speed.xlators.' + base).xlators, base)
+  if base in selected_xlators or not selected_xlators:
+    try:
+      env.update(module.env)
+    except AttributeError:
+      pass
+
+    xlators.append((base, module.mk, module.lang))
 
 # set up any environment needed, this is a temporary hack
 for k in env:
@@ -1246,9 +1262,12 @@ for k in env:
 
 tests = {}
 for f in glob.glob("speed"+os.sep+"specs"+os.sep+"*.py"):
-  execfile(f)
-  base = string.split(f,os.sep)[2][:-3]
-  tests[base]=(descr,min,max)
+  base = os.path.splitext(os.path.basename(f))[0]
+  if base == '__init__':
+    continue
+
+  module = getattr(__import__('speed.specs.' + base).specs, base)
+  tests[base]=(module.descr, module.min, module.max)
 
 
 #------ command line arguments -----------------
@@ -1666,8 +1685,7 @@ def mk(k,p):
 lang="felix"
 
 @select(tangler('speed/xlators/ghc.py','python'))
-# ----------- environment hack ------------------
-env['GHCRTS']='-K8m -k1m' # set stack size for GHC
+env = {'GHCRTS': '-K8m -k1m'} # set stack size for GHC
 
 def mk(k,p):
   return "ghc -O3 -fvia-C -optc -O1 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
