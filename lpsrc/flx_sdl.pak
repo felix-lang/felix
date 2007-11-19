@@ -101,6 +101,7 @@ except:
 @head(3,'Base package')
 @select(tangler('spkgs/sdl.py'))
 import cpkgs.target.sdl as sdl
+
 if sdl.HAVE_SDL:
   # flags are compiler natives switches
   # not to be confused with platform independent lists
@@ -121,8 +122,9 @@ weaver_directory = "doc/sdl/"
 
 @head(3,'Driver package')
 @select(tangler('spkgs/sdl_drivers.py'))
-execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
-if HAVE_SDL:
+import cpkgs.target.sdl as sdl
+
+if sdl.HAVE_SDL:
   STATIC_DRIVERS = [
     ('src/rtl/flx_arun','lib/rtl'),
   ]
@@ -143,9 +145,9 @@ if HAVE_SDL:
   dynamic_drivers = DYNAMIC_DRIVERS
   drivers_require_libs = DRLIBS
   pkg_requires = ['flx_rtl','flx_async','faio','demux','flx_pthread','sdl']
-  cflags = SDL_CFLAGS
-  dflags = SDL_LIBS
-  sflags = SDL_STATIC_LIBS
+  cflags = sdl.SDL_CFLAGS
+  dflags = sdl.SDL_LIBS
+  sflags = sdl.SDL_STATIC_LIBS
 @doc()
 
 @select(tangler("tmp/sdl_opengl.cxx",'c++'))
