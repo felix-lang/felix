@@ -1057,7 +1057,7 @@ class PLUGIN(Plugin):
           '--weaver=web',
           '--weaver=latex',
           '--passes=2',
-          '--weaver-directory=%s' + weaver_directory,
+          '--weaver-directory=' + weaver_directory,
           os.path.join(config.FLX_LPARCHIVE, src),
         )
 
