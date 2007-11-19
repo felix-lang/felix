@@ -682,7 +682,6 @@ class PLUGIN(Plugin):
         '--output_dir=' + os.path.join('build', 'test'),
         '--import=flx.flxh',
         'std',
-        FLXFLAGS,
         basename,
         log=log,
       )
@@ -1322,7 +1321,6 @@ class PLUGIN(Plugin):
           '--output_dir=' + os.path.join('build', 'test'),
           '--import=flx.flxh',
           'std',
-          FLXFLAGS,
           basename, log=log
         )
 
@@ -1955,8 +1953,6 @@ config.TARGET_CXX.quiet = quiet
 os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
 sys.path.append(config.FLX_DIR)
 os.environ['PYTHONPATH'] = config.FLX_DIR + os.pathsep + os.environ.get('PYTHONPATH', '')
-
-FLXFLAGS = ""
 
 if lparchive is not None:
   config.FLX_LPARCHIVE = lparchive
