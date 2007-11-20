@@ -1653,6 +1653,9 @@ class Process(object):
 
     return xqt(*args, **kwds)
 
+  def __str__(self):
+    return self.__class__.__name
+
 
 def get_latest_src_time(pkgdict):
   filenames = set()
@@ -2400,6 +2403,7 @@ def run_phase(options, phase, packages):
     erasefile(stamp)
 
     for process in processes:
+      print "*****", phase, "RUNNING PROCESS", process, "************"
       result = flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
       if not result and result is not None:
         break
