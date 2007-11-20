@@ -1823,7 +1823,7 @@ class fcount(Process):
     super(fcount, self).__init__(*args, **kwds)
     self.ran = False
 
-  def test(self, config, pkg, pkgdict):
+  def test(self, config, pkg, pkgdict,*args):
     if self.ran:
       return
     self.ran = True
@@ -1864,7 +1864,7 @@ class pfcount(Process):
     super(pfcount, self).__init__(*args, **kwds)
     self.ran = False
 
-  def test(self, config, pkg, pkgdict):
+  def test(self, config, pkg, pkgdict,*args):
     if self.ran:
       return
     self.ran = True
@@ -1888,7 +1888,7 @@ class pfcount_all(Process):
     super(pfcount_all, self).__init__(*args, **kwds)
     self.ran = False
 
-  def test(self, config, pkg, pkgdict):
+  def test(self, config, pkg, pkgdict,*args):
     if self.ran:
       return
     self.ran = True
