@@ -1562,6 +1562,7 @@ pkgdeps = {}
 
 @select(tangler('flxbuild/process.py'))
 import os
+import glob
 import time
 
 # forward import of set
@@ -1571,6 +1572,7 @@ except NameError:
   from sets import Set as set
 
 from flxbuild.flxutil import xqt, newest_filetime, filetime, fmtime, mkdirs
+import config
 
 # global process registry
 processes = {}
@@ -1608,16 +1610,23 @@ class Process(object):
 
 
 def get_latest_src_time(pkgdict):
-  iscrs = set()
+  filenames = set()
+
+  # check out iscr files
   for iscr in pkgdict.get("iscr_source",[]):
     base = os.path.basename(os.path.splitext(iscr)[0])
     f = open(os.path.join('manifests', base + '.deps'))
     try:
-      iscrs.update([line.strip() for line in f])
+      filenames.update([line.strip() for line in f])
     finally:
       f.close()
 
-  return newest_filetime(iscrs)
+  # check out xfiles
+  for xfile in pkgdict.get('xfiles', []):
+    xfile = os.path.join(config.FLX_DIR, xfile)
+    filenames.update(glob.glob(xfile))
+  
+  return newest_filetime(filenames)
 
 
 def enstamp(stamp, quiet):
@@ -1794,11 +1803,32 @@ class TestProcess(Process):
 @select(tangler('mkplugins/help.py'))
 import sys
 from flxbuild.process import Process, processes
+from flxbuild.package import pkgreqs, pkgdeps
 
 class help(Process):
   help = 'print this help message'
 
   def preprocess(self, config):
+    # PRINT PACKAGE DEPENDENCY INFORMATION
+    print "REQS: "
+    ks=pkgreqs.keys()
+    ks.sort()
+    length = 0
+    for k in ks:
+      length = max(len(k), length)
+    for k in ks:
+      print "  ", k.ljust(length), pkgreqs[k]
+
+    print
+    print "DEPS: "
+    ks = pkgdeps.keys()
+    ks.sort()
+    length = 0
+    for k in ks:
+      length = max(len(k), length)
+    for k in ks:
+      print "  ", k.ljust(length), pkgdeps[k]
+
     items = []
     max_len = 0
     for name, process in processes.items():
@@ -1991,12 +2021,6 @@ fbuild_processes = {
 import os
 import sys
 import glob
-import stat
-import re
-import traceback
-import time
-import getopt
-import shutil
 
 # forward import of set
 try:
@@ -2006,7 +2030,6 @@ except NameError:
 
 if '' not in sys.path: sys.path.insert(0, '')
 
-from flxbuild.flxutil import xqt, mkdirs
 
 # ------------------------------------------------
 # Load the initial config
@@ -2014,7 +2037,8 @@ from flxbuild.flxutil import xqt, mkdirs
 
 try:
   import config
-except:
+except Exception:
+  import traceback
   xt,xv,tb = sys.exc_info()
   print "ERROR IN config/__init__.py"
   traceback.print_exception(xt,xv,tb)
@@ -2025,33 +2049,42 @@ except:
   print "       again to reset it:"
   print "       this is done automatically by 'make boot'"
   sys.exit(1)
+
 # ------------------------------------------------
 # PROCESS COMMAND LINE OPTIONS
 # ------------------------------------------------
 
 import fbuildroot
 
-phases = [fbuildroot.default_fbuild_processs]
-options = sys.argv[1:]
-try:
-  opts, args = getopt.getopt(sys.argv[1:], 'hvqD:Og', [ \
-      'help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive=',
-      'optimise', 'optimize', 'no-optimise', 'no-optimize', 'no-debug',
-      '--force'])
-except getopt.error, e:
-  sys.stderr.write(str(e) + '\n')
-  sys.exit(1)
 
-quiet = 0
-verbose = 1
-optimise = True
-debug = True
-force = False
-packages = []
-models = []
-macros = []
-lparchive = None
-help_string = """\
+def load_options():
+  import getopt
+
+  class Options:
+    pass
+  options = Options()
+  options.quiet = 0
+  options.verbose = 1
+  options.optimise = True
+  options.debug = True
+  options.force = False
+  options.selected_phases = []
+  options.selected_processes = []
+  options.selected_packages = []
+  options.selected_models = []
+  options.macros = []
+  options.lparchive = None
+
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], 'hvqD:Og', [ \
+        'help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive=',
+        'optimise', 'optimize', 'no-optimise', 'no-optimize', 'no-debug',
+        '--force'])
+  except getopt.error, e:
+    sys.stderr.write(str(e) + '\n')
+    sys.exit(1)
+
+  help_string = """\
 usage: mk [options] [processes]
 
 flags:
@@ -2073,240 +2106,208 @@ processes:
   run a custom process. run "mk help" to get a list of processes to run
   """
 
-for o, a in opts:
-  if o in ['-h', '--help']:
-    all_phases = fbuildroot.fbuild_processes.keys()
-    all_phases.sort()
-    print help_string % (', '.join(all_phases))
-    sys.exit(0)
-  elif o in ['-v', '--verbose']:
-    verbose = verbose + 1
-  elif o in ['-q', '--quiet']:
-    quiet = 1
-    verbose = 0
-  elif o in ['--force']:
-    force = True
-  elif o in ['-O', '--optimise', '--optimize']:
-    optimise = True
-  elif o in ['--no-optimise', '--no-optimize']:
-    optimise = False
-  elif o in ['-g']:
-    debug = True
-  elif o in ['--no-debug']:
-    debug = False
-  elif o in ['-D']:
-    macros.append(a)
-  elif o in ['--phase']:
-    if a == '*':
-      phases = fbuildroot.fbuild_processes.keys()
-    elif a not in phases:
-      phases.append(a)
-  elif o in ['--pkg']:
-    packages.append(a)
-  elif o in ['--model']:
-    if a not in models:
-      models.append(a)
-  elif o in ['--lparchive']:
-    lparchive = a
-  else:
-    sys.stderr.write('unknown option: %s %s\n' % (o, a))
-    sys.exit(1)
-
-
-# temporary hack to set up the shell
-config.HOST_OCAML.verbose = verbose
-config.HOST_CC.verbose = verbose
-config.HOST_CXX.verbose = verbose
-config.TARGET_CC.verbose = verbose
-config.TARGET_CXX.verbose = verbose
-
-config.HOST_OCAML.quiet = quiet
-config.HOST_CC.quiet = quiet
-config.HOST_CXX.quiet = quiet
-config.TARGET_CC.quiet = quiet
-config.TARGET_CXX.quiet = quiet
-
-# add the felix directory to the search paths
-os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
-sys.path.append(config.FLX_DIR)
-os.environ['PYTHONPATH'] = config.FLX_DIR + os.pathsep + os.environ.get('PYTHONPATH', '')
-
-if lparchive is not None:
-  config.FLX_LPARCHIVE = lparchive
-
-# if the user didn't say which phases to run
-# then run all the phases that use the host model
-# On building on Linux for MinGW, the build model
-# is linux, and the host model is mingw, the target
-# is win32. We'd be running all MinGW phases.
-# note a phase is named for the targetted product
-# NOT the machine that generates it. Thus host
-# phase mingw means 'compile on Linux for MingW'
-
-if not phases and not models:
-  models = [config.host_model]
-
-for model in models:
-  if model == config.build_model:
-    if "build" not in phases: phases.append("build")
-
-for model in models:
-  if model == config.host_model:
-    if "host" not in phases: phases.append("host")
-
-for model in models:
-  if model == config.target_model:
-    if "target" not in phases: phases.append("target")
-
-for model in models:
-  if model == config.run_model:
-    if "run" not in phases: phases.append("run")
-
-if verbose > 1 and options:
-  print "OPTIONS: ", options
-
-
-if verbose > 1:
-  print "Using LP Archive from ",
-  if config.FLX_LPARCHIVE == os.curdir:
-    print "Current Directory"
-  else:
-    print config.FLX_LPARCHIVE
-
-paks = glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.pak"))
-
-if "extract" in options or "force_extract" in options:
-  for p in paks:
-    print "EXTRACTING", p, "from", config.FLX_LPARCHIVE
-    if "force_extract" in options:
-      xqt(config.ISCR, '--force', '--break-on-error', p, verbose=verbose, quiet=quiet)
+  for o, a in opts:
+    if o in ['-h', '--help']:
+      all_phases = fbuildroot.fbuild_processes.keys()
+      all_phases.sort()
+      print help_string % (', '.join(all_phases))
+      sys.exit(0)
+    elif o in ['-v', '--verbose']:
+      options.verbose = options.verbose + 1
+    elif o in ['-q', '--quiet']:
+      options.quiet = 1
+      options.verbose = 0
+    elif o in ['--force']:
+      options.force = True
+    elif o in ['-O', '--optimise', '--optimize']:
+      options.optimise = True
+    elif o in ['--no-optimise', '--no-optimize']:
+      options.optimise = False
+    elif o in ['-g']:
+      options.debug = True
+    elif o in ['--no-debug']:
+      options.debug = False
+    elif o in ['-D']:
+      options.macros.append(a)
+    elif o in ['--phase']:
+      if a == '*':
+        options.selected_phases = fbuildroot.fbuild_processes.keys()
+      elif a not in phases:
+        options.selected_phases.append(a)
+    elif o in ['--pkg']:
+      options.selected_packages.append(a)
+    elif o in ['--model']:
+      if a not in models:
+        options.selected_models.append(a)
+    elif o in ['--lparchive']:
+      options.lparchive = a
     else:
-      xqt(config.ISCR, '--break-on-error', p, verbose=verbose, quiet=quiet)
-  # this is a hack
-  mkdirs('speed')
-  shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')
+      sys.stderr.write('unknown option: %s %s\n' % (o, a))
+      sys.exit(1)
 
-  print "EXTRACTION COMPLETE"
-  sys.exit(0)
+
+  # temporary hack to set up the shell
+  config.HOST_OCAML.verbose = options.verbose
+  config.HOST_CC.verbose = options.verbose
+  config.HOST_CXX.verbose = options.verbose
+  config.TARGET_CC.verbose = options.verbose
+  config.TARGET_CXX.verbose = options.verbose
+
+  config.HOST_OCAML.quiet = options.quiet
+  config.HOST_CC.quiet = options.quiet
+  config.HOST_CXX.quiet = options.quiet
+  config.TARGET_CC.quiet = options.quiet
+  config.TARGET_CXX.quiet = options.quiet
+
+  if options.lparchive is not None:
+    config.FLX_LPARCHIVE = options.lparchive
+
+  # if the user didn't say which phases to run
+  # then run all the phases that use the host model
+  # On building on Linux for MinGW, the build model
+  # is linux, and the host model is mingw, the target
+  # is win32. We'd be running all MinGW phases.
+  # note a phase is named for the targetted product
+  # NOT the machine that generates it. Thus host
+  # phase mingw means 'compile on Linux for MingW'
+
+  if not options.selected_phases and not options.selected_models:
+    options.selected_models = [config.host_model]
+
+  for model in options.selected_models:
+    if model == config.build_model:
+      if "build" not in options.selected_phases: options.selected_phases.append("build")
+
+  for model in options.selected_models:
+    if model == config.host_model:
+      if "host" not in options.selected_phases: options.selected_phases.append("host")
+
+  for model in options.selected_models:
+    if model == config.target_model:
+      if "target" not in options.selected_phases: options.selected_phases.append("target")
+
+  for model in options.selected_models:
+    if model == config.run_model:
+      if "run" not in options.selected_phases: options.selected_phases.append("run")
+
+  if options.verbose > 1 and args:
+    print "OPTIONS: ", args
+
+  if options.verbose > 1:
+    print "Using LP Archive from ",
+    if config.FLX_LPARCHIVE == os.curdir:
+      print "Current Directory"
+    else:
+      print config.FLX_LPARCHIVE
+
+  return options, args
+
+
+def initial_extraction(options, args):
+  import shutil
+  from flxbuild.flxutil import xqt, mkdirs
+
+  paks = glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.pak"))
+  if "extract" in args or "force_extract" in args:
+    for p in paks:
+      print "EXTRACTING", p, "from", config.FLX_LPARCHIVE
+      if "force_extract" in args:
+        xqt(config.ISCR, '--force', '--break-on-error', p, verbose=options.verbose, quiet=options.quiet)
+      else:
+        xqt(config.ISCR, '--break-on-error', p, verbose=options.verbose, quiet=options.quiet)
+    # this is a hack
+    mkdirs('speed')
+    shutil.copy(os.path.join('misc', 'interscript.css'), 'speed')
+
+    print "EXTRACTION COMPLETE"
+    sys.exit(0)
 
 # ----------------------------------------------------------------------------
 
-raw_pkgs = glob.glob(os.path.join("spkgs", "*.py"))
-unsorted_pkgs = []
-pkgs = []
+def load_packages():
+  from flxbuild.package import pkgdeps, pkgreqs, pkgd
 
-from flxbuild.package import pkgdeps, pkgreqs, pkgd
+  pkgs = []
+  unsorted_pkgs = []
 
-for i in raw_pkgs:
-  pkg = os.path.basename(os.path.splitext(i)[0])
-  unsorted_pkgs.append(pkg)
+  for i in glob.glob(os.path.join("spkgs", "*.py")):
+    pkg = os.path.basename(os.path.splitext(i)[0])
+    if pkg == '__init__':
+      continue
 
-  module = getattr(__import__('spkgs.' + pkg), pkg)
-  d = {}
-  for k in module.__dict__.keys():
-    if k[0] != '_':
-      v = module.__dict__[k]
-      d[k] = v
-  pkgd[pkg] = d
+    unsorted_pkgs.append(pkg)
+    module = getattr(__import__('spkgs.' + pkg), pkg)
+    d = {}
+    for k, v in module.__dict__.iteritems():
+      if k[0] != '_':
+        d[k] = v
+    pkgd[pkg] = d
 
-def addpkg_r(pkg):
-  if pkg not in pkgs:
-    if pkg not in pkgd.keys():
-      print "Unknown package", pkg
-      print "Please extract!"
-      sys.exit(1)
-    else:
-      reqs = pkgd[pkg].get('pkg_requires',[])
-      pkgreqs[pkg]=reqs
-      for i in reqs:
-        addpkg_r(i)
-      pkgs.append(pkg)
+  def addpkg_r(pkg):
+    if pkg not in pkgs:
+      if pkg not in pkgd.keys():
+        print "Unknown package", pkg
+        print "Please extract!"
+        sys.exit(1)
+      else:
+        reqs = pkgd[pkg].get('pkg_requires',[])
+        pkgreqs[pkg]=reqs
+        for i in reqs:
+          addpkg_r(i)
+        pkgs.append(pkg)
 
-for pkg in unsorted_pkgs:
-  addpkg_r(pkg)
+  for pkg in unsorted_pkgs:
+    addpkg_r(pkg)
 
-if verbose > 1: print "USER SELECTED PACKAGES", packages
+  # invert the requirements in order to determine the dependencies
+  from flxbuild.flxutil import invert
+  pkgdeps.update(invert(pkgreqs))
 
-# make sure we delete the pkg so that we don't leak
-# references to them
-del pkg
-
-# invert the requirements in order to determine the dependencies
-from flxbuild.flxutil import invert
-pkgdeps.update(invert(pkgreqs))
-
-# PRINT PACKAGE DEPENDENCY INFORMATION
-if "help" in options:
-  print "REQS: "
-  ks=pkgreqs.keys()
-  ks.sort()
-  length = 0
-  for k in ks:
-    length = max(len(k), length)
-  for k in ks:
-    print "  ", k.ljust(length), pkgreqs[k]
-
-  print
-  print "DEPS: "
-  ks = pkgdeps.keys()
-  ks.sort()
-  length = 0
-  for k in ks:
-    length = max(len(k), length)
-  for k in ks:
-    print "  ", k.ljust(length), pkgdeps[k]
+  return pkgs
 
 # -------------------------------------------------
 # LOAD PROCESSES
 
 import flxbuild.process
 
-for f in glob.glob(os.path.join("mkplugins", "*.py")):
-  base = os.path.basename(os.path.splitext(f)[0])
-  if base == '__init__':
-    continue
+def load_processes(options, args):
 
-  module = getattr(__import__('mkplugins.' + base), base)
-  try:
-    process_class = getattr(module, base)
-  except AttributeError:
-    pass
-  else:
-    process = process_class(
-      verbose=verbose,
-      quiet=quiet,
-      optimise=optimise,
-      debug=debug,
-      force=force or 'force' in options,
-      options=options,
-    )
-    flxbuild.process.processes[process_class.__name__] = process
+  for f in glob.glob(os.path.join("mkplugins", "*.py")):
+    name = os.path.basename(os.path.splitext(f)[0])
+    if name == '__init__':
+      continue
+
+    module = getattr(__import__('mkplugins.' + name), name)
+    try:
+      process_class = getattr(module, name)
+    except AttributeError:
+      pass
+    else:
+      process = process_class(
+        verbose=options.verbose,
+        quiet=options.quiet,
+        optimise=options.optimise,
+        debug=options.debug,
+        force=options.force or 'force' in args,
+        options=args,
+      )
+      flxbuild.process.processes[name] = process
 
 # -----------------------------------------------------------------------------
 
 from flxbuild.process import get_latest_src_time, enstamp
 from flxbuild.flxutil import newest_filetime, filetime, fmtime
 
-def calculate_packages(config, phase):
-  if packages:
-    selected_pkgs = packages
+
+def calculate_packages(options, phase, packages):
+  if options.selected_packages:
+    selected_pkgs = options.selected_packages
   else:
-    all_pkgs = pkgd.keys()
-    max_len = max([len(s) for s in all_pkgs])
-
     selected_pkgs = []
-    for pkg in all_pkgs:
-      pkgdict = pkgd[pkg]
-      pkg_src_time = get_latest_src_time(pkgdict)
+    max_len = max([len(s) for s in flxbuild.package.pkgd])
 
-      # at this stage, extra source files need to be considered
-      xfiles = []
-      for xfile in pkgdict.get('xfiles', []):
-        xfile = os.path.join(config.FLX_DIR, xfile)
-        xfiles.extend(glob.glob(xfile))
-
-      xfiles_time = newest_filetime(xfiles)
-      latest_src_time = max(xfiles_time, pkg_src_time)
+    for pkg, pkgdict in flxbuild.package.pkgd.iteritems():
+      latest_src_time = get_latest_src_time(pkgdict)
 
       stamp = os.path.join('pkg-stamps', '%s.%s' % (pkg, phase))
       latest_build_time = filetime(stamp)
@@ -2318,12 +2319,7 @@ def calculate_packages(config, phase):
         print "Pak %s changed: %s" % (pkg.ljust(max_len),fmtime(latest_src_time))
         selected_pkgs.append(pkg)
 
-  if 'deps' in options:
-    selected_pkgs = closure(pkgdeps, selected_pkgs)
-  elif 'reqs' in options:
-    selected_pkgs = closure(pkgreqs, selected_pkgs)
-
-  return [p for p in pkgs if p in selected_pkgs]
+  return [pkg for pkg in packages if pkg in selected_pkgs]
 
 ####
 
@@ -2331,7 +2327,7 @@ from flxbuild.flxutil import erasefile
 
 ran_phases = set()
 
-def run_phase(config, phase):
+def run_phase(options, phase, packages):
   if phase in ran_phases:
     return
   else:
@@ -2341,15 +2337,15 @@ def run_phase(config, phase):
   for process in fbuildroot.fbuild_processes.get(phase, []):
     # make sure we run any dependent phase first
     if process in fbuildroot.fbuild_processes:
-      run_phase(config, process)
+      run_phase(options, process, packages)
     else:
       processes.append(process)
 
   print '-' * 78
   print '***** MAKING PHASE', phase
   pkgsummary = {}
-  for pkg in calculate_packages(config, phase):
-    pkgdict = pkgd[pkg]
+  for pkg in calculate_packages(options, phase, packages):
+    pkgdict = flxbuild.package.pkgd[pkg]
 
     print "*****", phase, "MAKING PACKAGE", pkg, "************"
 
@@ -2365,64 +2361,49 @@ def run_phase(config, phase):
       if not result and result is not None:
         break
     else:
-      enstamp(stamp, quiet)
+      enstamp(stamp, options.quiet)
   print phase+" PHASE SUMMARY"
   for k in pkgsummary: print ("%30s %s" % (k,pkgsummary[k]))
 
-####
-
-for process in fbuildroot.fbuild_preprocesses:
-  flxbuild.process.processes[process].preprocess(config)
-
-# EXECUTE USER SELECTED PROCESSES IN COMMAND LINE ORDER
-for k in options:
-  if k in fbuildroot.fbuild_processes:
-    run_phase(config, k)
-  elif k in flxbuild.process.processes:
-    obj = flxbuild.process.processes[k]
-    subproc = getattr(obj,k,None)
-    if subproc:
-      subproc(config)
-
-for phase in phases:
-  run_phase(config, phase)
-
 # -----------------------------------------------------------------------------
 
-from flxbuild.flxutil import Tee
+def print_failures():
+  import flxbuild.process
+  from flxbuild.flxutil import Tee
 
-# print out all the failed processes
-failure_log = Tee()
+  # print out all the failed processes
+  failure_log = Tee()
 
-failure_log.write("----- PROCESS STATUS -----\n")
-failed = 0
-fatal = 0
-for process in flxbuild.process.processes.itervalues():
-  nfail = len(process.failures)
-  npass = len(process.successes)
-  failed = failed or nfail>0
-  fatal = fatal or (nfail>0 and not process.dummy)
+  failure_log.write("----- PROCESS STATUS -----\n")
+  failed = 0
+  fatal = 0
+  for name, process in flxbuild.process.processes.iteritems():
+    nfail = len(process.failures)
+    npass = len(process.successes)
+    failed = failed or nfail>0
+    fatal = fatal or (nfail>0 and not process.dummy)
 
-  if nfail:
-    failure_log.write('PROCESS **FAILED**: %s, %d/%d failures\n' % (process.__class__.__name__, nfail,npass+nfail))
-    if process.dummy:
-      failure_log.write("  [Expected failure, doesn't break build]\n")
-  else:
-    if process.used:
-      failure_log.write('PROCESS PASSED    : %s, %d pass\n' % (process.__class__.__name__,npass))
+    if nfail:
+      print >> failure_log, 'PROCESS **FAILED**:', name,  nfail, '/', npass + nfail, 'failures'
+      if process.dummy:
+        print >> failure_log, "  [Expected failure, doesn't break build]"
     else:
-      failure_log.write('PROCESS UNUSED    : %s\n' % process.__class__.__name__)
+      if process.used:
+        print >> failure_log, 'PROCESS PASSED    :', name, npass, 'passed'
+      else:
+        print >> failure_log, 'PROCESS UNUSED    :', name
 
+  if not failed:
+    return False
 
-if failed:
   print '^^^^^^^^^^ FAILURES by group ^^^^^^^^^^^^^'
 
   kats = {}
-  for process in flxbuild.process.processes.itervalues():
+  for name, process in flxbuild.process.processes.iteritems():
     if not process.failures:
       continue
 
-    print '- %s: %s' % (len(process.failures), process.__class__.__name__)
+    print '- %s: %s' % (len(process.failures), name)
 
     lookup = {}
 
@@ -2486,17 +2467,58 @@ if failed:
     for file in files:
       print "  ",file
 
-f = open('errors.log', 'w')
-try:
-  f.write(failure_log.getvalue())
-finally:
-  f.close()
+  f = open('errors.log', 'w')
+  try:
+    f.write(failure_log.getvalue())
+  finally:
+    f.close()
 
-if fatal:
-  print "********* BUILD FAILED ********************"
-  sys.exit(1)
+  return fatal
 
-print "*********** RUN COMPLETE: NO UNEXPECTED FAILURES DETECTED *******"
+# -----------------------------------------------------------------------------
+
+def main():
+  # add the felix directory to the search paths
+  sys.path.append(config.FLX_DIR)
+  os.environ['PYTHONPATH'] = \
+    config.FLX_DIR + os.pathsep + os.environ.get('PYTHONPATH', '')
+
+  options, args = load_options()
+  initial_extraction(options, args)
+  packages = load_packages()
+  load_processes(options, args)
+
+  ####
+
+  import flxbuild.process
+  for process in fbuildroot.fbuild_preprocesses:
+    flxbuild.process.processes[process].preprocess(config)
+
+  # execute user selected processes in command line order
+  for arg in args:
+    if arg in flxbuild.process.processes:
+      flxbuild.process.processes[arg](config)
+    elif arg in fbuildroot.fbuild_processes:
+      obj = flxbuild.process.processes[k]
+      subproc = getattr(obj,k,None)
+      if subproc:
+        subproc(config)
+
+  for phase in options.selected_phases:
+    run_phase(options, phase, packages)
+
+  ####
+
+  if print_failures():
+    print "********* BUILD FAILED ********************"
+    return 1
+  else:
+    print "*********** RUN COMPLETE: NO UNEXPECTED FAILURES DETECTED *******"
+
+  return 0
+
+if __name__ == '__main__':
+  sys.exit(main())
 
 @head(1,'Makefile')
 We attempt to fix the brain dead install command.
