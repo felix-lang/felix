@@ -223,7 +223,7 @@ from flxbuild.process import Process
 class man(Process):
   help = 'make the man pages'
 
-  def doc(self):
+  def runme(self):
     print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
     MAN_PAGES = []
@@ -259,7 +259,7 @@ class impldoc(Process):
     super(impldoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def doc(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict):
     if self.ran:
       return
     self.ran = True
@@ -294,7 +294,7 @@ class rtldoc(Process):
     super(rtldoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def doc(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict):
     if self.ran:
       return
     self.ran = True
@@ -318,7 +318,7 @@ class gramdoc(Process):
     super(gramdoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def doc(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict):
     if self.ran:
       return
     self.ran = True
@@ -352,7 +352,7 @@ class typeclassdoc(Process):
     super(typeclassdoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def doc(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict):
     if self.ran:
       return
     self.ran = True
@@ -425,7 +425,7 @@ from flxbuild.process import Process
 import config
 
 class build_ocaml_grammar(Process):
-  def host(self, pkg, LEXS, PARSES, PGENPARSES,DYPARSES):
+  def runme(self, pkg, LEXS, PARSES, PGENPARSES,DYPARSES):
     if not (LEXS or PARSES or PGENPARSES or DYPARSES):
       return
 
@@ -458,7 +458,7 @@ import config
 
 #ocaml compilation
 class build_ocaml_modules(Process):
-  def host(self, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES):
+  def runme(self, pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES):
     if not (INTERFACES or IMPLEMENTATIONS):
       return []
 
@@ -490,7 +490,7 @@ import config
 
 #ocaml compilation
 class build_ocaml_libraries(Process):
-  def host(self, IMPLEMENTATIONS, lib):
+  def runme(self, IMPLEMENTATIONS, lib):
     if not IMPLEMENTATIONS:
       return
 
@@ -512,7 +512,7 @@ import config
 
 #ocaml compilation
 class build_ocaml_exes(Process):
-  def host(self, EXES, OLIBRARIES, INCLUDES):
+  def runme(self, EXES, OLIBRARIES, INCLUDES):
     # finally, mainline *.cmx or cma files to link to executables
     if not EXES:
       return
@@ -556,7 +556,7 @@ class build_host_ocaml(Process):
       shutil.copy(src, dst)
 
 
-  def host(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     RAW_INTERFACES = pkgdict.get('caml_raw_interfaces', [])
     self.copy_mli2ml(RAW_INTERFACES)
 
@@ -596,7 +596,7 @@ from flxbuild.flxutil import mkdirs
 import config
 
 class build_ocamlbuild(Process):
-  def host(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict):
     EXES = pkgdict.get('caml_exes', [])
 
     for exe in EXES:
@@ -639,7 +639,7 @@ class build_host_tools(Process):
       shutil.copy(src,dst)
 
 
-  def host(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     HPPS = pkgdict.get("rtl_interfaces",[])
     self.copy_hpp2rtl(HPPS)
 
@@ -702,7 +702,7 @@ from flxbuild.flxutil import mkdirs, Tee, ExecutionError
 import config
 
 class build_testfile(Process):
-  def run(self, testfile, log):
+  def runme(self, testfile, log):
     if log is None: log = Tee()
 
     optimise_c = self.optimise or "optimise_c" in options
@@ -849,7 +849,7 @@ import config
 class virgin(Process):
   help = 'clean and remove all the sources'
 
-  def build(self, *args):
+  def runme(self, *args):
     for d in [ \
         os.path.join("judy", "JudyCommon"),
         os.path.join("judy", "Judy1"),
@@ -997,7 +997,7 @@ import config
 class clean(Process):
   help = 'remove generated C++ and binaries from test locations'
 
-  def build(self, *args):
+  def runme(self, *args):
     for d in glob.glob(os.path.join("pkg-stamps", "*")):
       erasefile(d)
 
@@ -1036,7 +1036,7 @@ class mkdoc(Process):
 
     self.already_generated = {}
 
-  def doc(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict):
     mkdirs("pkg-stamps")
 
     weaver_directory = pkgdict.get("weaver_directory","")
@@ -1072,7 +1072,7 @@ from flxbuild.process import Process
 import config
 
 class build_target_rtl_dynamic(Process):
-  def target(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     if not config.SUPPORT_DYNAMIC_LOADING:
       return
 
@@ -1147,7 +1147,7 @@ from flxbuild.process import Process
 import config
 
 class build_target_rtl_static(Process):
-  def target(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     if not config.SUPPORT_STATIC_LINKAGE:
       return
 
@@ -1194,7 +1194,7 @@ from flxbuild.flxutil import mkdirs
 import config
 
 class build_felix_static_drivers(Process):
-  def target(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     if not config.SUPPORT_STATIC_LINKAGE:
       return
 
@@ -1226,7 +1226,7 @@ from flxbuild.process import Process
 import config
 
 class build_felix_dynamic_drivers(Process):
-  def target(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     if not config.SUPPORT_DYNAMIC_LOADING:
       return
 
@@ -1267,7 +1267,7 @@ from flxbuild.process import Process
 import config
 
 class build_target_cpp_tools(Process):
-  def target(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     EXES = pkgdict.get("exes",[])
     esflags = pkgdict.get("exes_require_linkflags","")
     if len(EXES)>0:
@@ -1295,7 +1295,7 @@ from flxbuild.flxutil import unix2native
 import config
 
 class build_target_felix_rtl(Process):
-  def target(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     flxs = pkgdict.get('felix_rtl', [])
     if not flxs:
       return
@@ -1320,7 +1320,7 @@ from flxbuild.process import Process
 import config
 
 class build_target_felix_tools(Process):
-  def target(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     flxs = pkgdict.get("felix_tools",[])
     if not flxs:
       return
@@ -1394,7 +1394,7 @@ from flxbuild.flxutil import Tee
 class run_failure_tests(Process):
   help = 'run tests meant to fail'
 
-  def run(self, pkg, pkgdict,pkgsummary):
+  def runme(self, pkg, pkgdict,pkgsummary):
     #bad_tests = pkgdict.get("failure_tests",[])
     bad_tests=[]
     bad_tests.sort()
@@ -1439,7 +1439,7 @@ from flxbuild.testprocess import TestProcess
 class run_static_unit_tests(TestProcess):
   help = 'run static unit tests'
 
-  def run(self, pkg, pkgdict, pkgsummary):
+  def runme(self, pkg, pkgdict, pkgsummary):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
     static_unit_tests.sort()
 
@@ -1453,7 +1453,7 @@ from flxbuild.testprocess import TestProcess
 class run_dynamic_unit_tests(TestProcess):
   help = 'run dynamic unit tests'
 
-  def run(self, pkg, pkgdict, pkgsummary):
+  def runme(self, pkg, pkgdict, pkgsummary):
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
     dynamic_unit_tests.sort()
 
@@ -1467,7 +1467,7 @@ from flxbuild.testprocess import TestProcess
 class run_unit_tests(TestProcess):
   help = 'run unit tests'
 
-  def run(self, pkg, pkgdict, pkgsummary):
+  def runme(self, pkg, pkgdict, pkgsummary):
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
@@ -1482,7 +1482,7 @@ from flxbuild.testprocess import TestProcess
 class run_completion_tests(TestProcess):
   help = 'run tests that just need to finish'
 
-  def run(self, pkg, pkgdict, pkgsummary):
+  def runme(self, pkg, pkgdict, pkgsummary):
     completion_tests = pkgdict.get("completion_tests",[])
     completion_tests.sort()
 
@@ -1501,7 +1501,7 @@ class run_known_failed_tests(Process):
     super(run_known_failed_tests, self).__init__(*args, **kwds)
     self.dummy = 1
 
-  def run(self, pkg, pkgdict,pkgsummary):
+  def runme(self, pkg, pkgdict,pkgsummary):
     bad_tests = pkgdict.get("known_failed_tests",[])
     bad_tests.sort()
 
@@ -1520,7 +1520,7 @@ from flxbuild.testprocess import TestProcess
 class run_demos(TestProcess):
   help = 'run demonstrations'
 
-  def run(self, pkg, pkgdict, pkgsummary):
+  def runme(self, pkg, pkgdict, pkgsummary):
     demos = pkgdict.get("demos",[])
     demos.sort()
 
@@ -1589,7 +1589,7 @@ from flxbuild.flxutil import unix2native
 import config
 
 class extract_iscr(Process):
-  def build(self, pkg, pkgdict, *args):
+  def runme(self, pkg, pkgdict, *args):
     srcs = pkgdict.get("iscr_source",[])
     for src in srcs:
       src = unix2native(src)
@@ -1900,7 +1900,7 @@ class fcount(Process):
     super(fcount, self).__init__(*args, **kwds)
     self.ran = False
 
-  def test(self, pkg, pkgdict,*args):
+  def runme(self, pkg, pkgdict,*args):
     if self.ran:
       return
     self.ran = True
@@ -1941,7 +1941,7 @@ class pfcount(Process):
     super(pfcount, self).__init__(*args, **kwds)
     self.ran = False
 
-  def test(self, pkg, pkgdict,*args):
+  def runme(self, pkg, pkgdict,*args):
     if self.ran:
       return
     self.ran = True
@@ -1965,7 +1965,7 @@ class pfcount_all(Process):
     super(pfcount_all, self).__init__(*args, **kwds)
     self.ran = False
 
-  def test(self, pkg, pkgdict,*args):
+  def runme(self, pkg, pkgdict,*args):
     if self.ran:
       return
     self.ran = True
@@ -2401,7 +2401,7 @@ def run_phase(options, phase, packages):
 
     for process in processes:
       obj = flxbuild.process.processes[process]
-      subproc = getattr(obj,phase,None)
+      subproc = getattr(obj,'runme',None)
       result = None
       if subproc:
         result = subproc(pkg, pkgdict, pkgsummary)
@@ -2546,8 +2546,8 @@ def main():
     if arg in flxbuild.process.processes:
       flxbuild.process.processes[arg]()
     elif arg in fbuildroot.fbuild_processes:
-      obj = flxbuild.process.processes[k]
-      subproc = getattr(obj,k,None)
+      obj = flxbuild.process.processes[arg]
+      subproc = getattr(obj,'runme',None)
       if subproc:
         subproc()
 
