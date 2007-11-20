@@ -1252,6 +1252,7 @@ class c_base(c_cxx_base):
 import os
 
 from flxbuild.c_cxx_base import c_cxx_base
+from flxbuild.flxutil import ExecutionError
 
 class cxx_base(c_cxx_base):
   def __init__(self, *args, **kwds):
@@ -2212,6 +2213,14 @@ class msvc_mixin(object):
     opt.HAVE_DLOPEN = False
     opt.DLLIB = ""
 
+    opt.FLX_SOCKLEN_T = 'int'
+    opt.HAVE_PTHREADS = False
+    opt.HAVE_KQUEUE_DEMUXER = False
+    opt.HAVE_POLL = False
+    opt.HAVE_EPOLL = False
+    opt.HAVE_EVTPORTS = False
+    opt.HAVE_OPENMP = False
+
     # where to put the rtl: Cygwin requires the dll be in the PATH
     opt.SHLIB_DIR = "bin"
     print "rtl located in bin directory"
@@ -2329,14 +2338,15 @@ from flxbuild.c_base import c_base
 from flxbuild.msvc_mixin import msvc_mixin
 
 class msvcc(msvc_mixin, c_base):
-  # RF: /TC is screwing up the link stage, treating the object file
-  # as a .c file. Taking it away and hoping that cl can figure it out.
-  # DEFAULT_COM = 'cl /TC '
-  DEFAULT_COM = 'cl '
+  DEFAULT_COM = 'cl'
 
   def check_options(self):
     msvc_mixin.check_options(self)
     c_base.check_options(self)
+
+  def compile_thing(self, COM, *args, **kwds):
+    # make sure we tell the compiler to compile code as a c file
+    super(msvcc, self).compile_thing(COM + ' /TC', *args, **kwds)
 
 @h = tangler("flxbuild/msvcxx_class.py")
 @select(h)
@@ -2345,9 +2355,7 @@ from flxbuild.msvc_mixin import msvc_mixin
 
 class msvcxx(msvc_mixin, cxx_base):
   # RF: this might be a good place to put the RTTI switch zzz
-  # /TP was forcing the link stage to interpret the .obj files as c++.
-  # DEFAULT_COM = 'cl /TP '
-  DEFAULT_COM = 'cl '
+  DEFAULT_COM = 'cl'
 
   def check_options(self):
     msvc_mixin.check_options(self)

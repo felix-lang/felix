@@ -3738,10 +3738,6 @@ FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR", INSTALL_ROOT)
 @tangle('SPEC_EXE_FILENAME="'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
 @tangle('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+'"')
 @tangle('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+'"')
-@if config.PTHREAD_SWITCH != None:
-  tangle('PTHREAD_SWITCH="'+config.TARGET_CXX.options.PTHREAD_SWITCH+'"')
- else:
-  tangle('PTHREAD_SWITCH=""')
 
 # check for test mode: this argument must come first
 
@@ -4194,10 +4190,6 @@ sys.exit(0!=result)
 @tangle('SPEC_EXE_FILENAME="'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
 @tangle('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+'"')
 @tangle('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+'"')
-@if config.TARGET_CXX.options.PTHREAD_SWITCH != None:
-  tangle('PTHREAD_SWITCH="'+config.TARGET_CXX.options.PTHREAD_SWITCH+'"')
- else:
-  tangle('PTHREAD_SWITCH=""')
 
 # check for test mode: this argument must come first
 

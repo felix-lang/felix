@@ -21,9 +21,9 @@ Version: $Id$
  else:
    tangle("provides_dlib: -lflx_pthread_dynamic")
    tangle("provides_slib: -lflx_pthread_static")
- if config.PTHREAD_SWITCH:
-   tangle("requires_dlibs: "+config.PTHREAD_SWITCH)
-   tangle("requires_slibs: "+config.PTHREAD_SWITCH)
+ if config.TARGET_CXX.options.HAVE_PTHREADS:
+   tangle("requires_dlibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
+   tangle("requires_slibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
 
 includes: "pthread_thread.hpp"
 Requires: flx_gc

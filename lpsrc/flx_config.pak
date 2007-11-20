@@ -1320,29 +1320,10 @@ if "target" in PHASES:
   TARGET_CXX.save_options("config"+os.sep+"target_cxx.py")
 
   if target_model in ["win32","win64"]:
-    FLX_SOCKLEN_T = "int"
-    HAVE_PTHREADS = 0
-    PTHREAD_SWITCH = ""
     HAVE_MSVC = 1
     HAVE_GNU = 0
-    HAVE_KQUEUE_DEMUXER = 0 #windows doesn't have kqueues.
-    # nor these. does this really need to be said?
-    HAVE_POLL = 0
-    HAVE_EPOLL = 0
-    HAVE_EVTPORTS = 0
-    HAVE_OPENMP = 0
     DIFF = 'FC /L /W'
   else:
-    FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
-    HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
-    PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
-    HAVE_KQUEUE_DEMUXER = TARGET_CXX.options.HAVE_KQUEUE_DEMUXER
-    # EH?
-    HAVE_POLL = TARGET_CXX.options.HAVE_POLL
-    HAVE_EPOLL = TARGET_CXX.options.HAVE_EPOLL
-    HAVE_EVTPORTS = TARGET_CXX.options.HAVE_EVTPORTS
-    HAVE_OPENMP = TARGET_CXX.options.HAVE_OPENMP
-
     HAVE_MSVC = 0
     HAVE_GNU = 1
 
@@ -1351,9 +1332,9 @@ if "target" in PHASES:
     # could use that sys type stuff here?
     DIFF = 'diff -b'
 
-    ISCR = sys.executable + ' ' + \
-      os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py') + \
-      ' --cache-prefix=lpsrc-cache'
+  ISCR = sys.executable + ' ' + \
+    os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py') + \
+    ' --cache-prefix=lpsrc-cache'
 
   # target model switches
   CYGWIN = TARGET_CXX.options.CYGWIN
@@ -1416,11 +1397,6 @@ if "target" in PHASES:
     pa(f,this,"run_model")
     pa(f,this,"CYGWIN")
     pa(f,this,"MACOSX")
-    pa(f,this,"HAVE_KQUEUE_DEMUXER")
-    pa(f,this,"HAVE_POLL")
-    pa(f,this,"HAVE_EPOLL")
-    pa(f,this,"HAVE_EVTPORTS")
-    pa(f,this,"HAVE_OPENMP")
     pa(f,this,"WIN32")
     pa(f,this,"WIN64")
     pa(f,this,"POSIX")
@@ -1428,10 +1404,6 @@ if "target" in PHASES:
     pa(f,this,"BSD")
     pa(f,this,"LINUX")
     pa(f,this,"PREFIX")
-    pa(f,this,"FLX_SOCKLEN_T")
-    pa(f,this,"HAVE_PTHREADS")
-    pa(f,this,"PTHREAD_SWITCH")
-    pa(f,this,"HAVE_PKGCONFIG")
     pa(f,this,"FLX_DIR")
     pa(f,this,"FLX_LPARCHIVE")
     pa(f,this,"FLX_RTL_DIR")
