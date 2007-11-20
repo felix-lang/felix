@@ -8,6 +8,8 @@ import shutil
 from flxbuild.process import Process
 from flxbuild.flxutil import mkdirs
 
+import config
+
 class speed_tests(Process):
   help = 'Run comparative tests'
 
@@ -15,7 +17,7 @@ class speed_tests(Process):
     super(speed_tests, self).__init__(*args, **kwds)
     self.ran = False
 
-  def runme(self, config, pkg, pkgdict):
+  def runme(self, pkg, pkgdict):
     if self.ran:
       return
     self.ran = True
