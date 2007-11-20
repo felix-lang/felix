@@ -2400,11 +2400,7 @@ def run_phase(options, phase, packages):
     erasefile(stamp)
 
     for process in processes:
-      obj = flxbuild.process.processes[process]
-      subproc = getattr(obj,'runme',None)
-      result = None
-      if subproc:
-        result = subproc(pkg, pkgdict, pkgsummary)
+      result = flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
       if not result and result is not None:
         break
     else:
@@ -2544,7 +2540,7 @@ def main():
   # execute user selected processes in command line order
   for arg in args:
     if arg in flxbuild.process.processes:
-      flxbuild.process.processes[arg]()
+      flxbuild.process.processes[arg].runme()
     elif arg in fbuildroot.fbuild_processes:
       run_phase(options, arg, packages)
 
