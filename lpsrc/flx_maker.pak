@@ -223,7 +223,7 @@ from flxbuild.process import Process
 class man(Process):
   help = 'make the man pages'
 
-  def runme(self):
+  def runme(self, *args):
     print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
     MAN_PAGES = []
@@ -259,7 +259,7 @@ class impldoc(Process):
     super(impldoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     if self.ran:
       return
     self.ran = True
@@ -294,7 +294,7 @@ class rtldoc(Process):
     super(rtldoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     if self.ran:
       return
     self.ran = True
@@ -318,7 +318,7 @@ class gramdoc(Process):
     super(gramdoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     if self.ran:
       return
     self.ran = True
@@ -352,7 +352,7 @@ class typeclassdoc(Process):
     super(typeclassdoc, self).__init__(*args, **kwds)
     self.ran = False
 
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     if self.ran:
       return
     self.ran = True
@@ -596,7 +596,7 @@ from flxbuild.flxutil import mkdirs
 import config
 
 class build_ocamlbuild(Process):
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     EXES = pkgdict.get('caml_exes', [])
 
     for exe in EXES:
@@ -1036,7 +1036,7 @@ class mkdoc(Process):
 
     self.already_generated = {}
 
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     mkdirs("pkg-stamps")
 
     weaver_directory = pkgdict.get("weaver_directory","")
@@ -1741,7 +1741,7 @@ class TestProcess(Process):
 
         # build the felix code
         try:
-          inbase = processes['build_testfile'].run(testfile, log)
+          inbase = processes['build_testfile'].runme(testfile, log)
         except ExecutionError, e:
           failed = 1
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
@@ -2404,7 +2404,7 @@ def run_phase(options, phase, packages):
       subproc = getattr(obj,'runme',None)
       result = None
       if subproc:
-        result = subproc(pkg, pkgdict)
+        result = subproc(pkg, pkgdict, pkgsummary)
       if not result and result is not None:
         break
     else:

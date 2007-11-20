@@ -12,7 +12,7 @@ class extract_grammar(Process):
 
     self.ran = False
 
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     if self.ran:
       return
     self.ran = True

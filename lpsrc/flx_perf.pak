@@ -17,7 +17,7 @@ class speed_tests(Process):
     super(speed_tests, self).__init__(*args, **kwds)
     self.ran = False
 
-  def runme(self, pkg, pkgdict):
+  def runme(self, pkg, pkgdict, *args):
     if self.ran:
       return
     self.ran = True
