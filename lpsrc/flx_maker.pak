@@ -2404,7 +2404,7 @@ def run_phase(options, phase, packages):
       subproc = getattr(obj,'runme',None)
       result = None
       if subproc:
-        result = subproc(pkg, pkgdict, pkgsummary)
+        result = subproc(pkg, pkgdict)
       if not result and result is not None:
         break
     else:
