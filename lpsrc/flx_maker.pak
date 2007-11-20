@@ -723,6 +723,7 @@ class build_testfile(Process):
         '-Ilib',
         '--cache_dir=' + os.path.join('build', 'test'),
         '--output_dir=' + os.path.join('build', 'test'),
+        '--elkhound=' + os.path.join('bin', 'flx_elkhound'),
         '--import=flx.flxh',
         'std',
         basename,
@@ -1331,6 +1332,7 @@ class build_target_felix_tools(Process):
       # added 'std' here so flx_pkgconfig builds
       self.shell(os.path.join('bin', 'flxg'),
         '-Ilib',
+        '--elkhound=' + os.path.join('bin', 'flx_elkhound'),
         '--import=flx.flxh',
         'std',
         src,
@@ -1413,6 +1415,7 @@ class run_failure_tests(Process):
           '-Ilib',
           '--cache_dir=' + os.path.join('build', 'test'),
           '--output_dir=' + os.path.join('build', 'test'),
+          '--elkhound=' + os.path.join('bin', 'flx_elkhound'),
           '--import=flx.flxh',
           'std',
           basename, log=log
@@ -1980,8 +1983,6 @@ class pfcount_all(Process):
 @select(tangler('fbuildroot.py'))
 import os
 import config
-
-os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
 
 # make sure we have the runtime library in our search path
 if config.CYGWIN or config.WIN32:
