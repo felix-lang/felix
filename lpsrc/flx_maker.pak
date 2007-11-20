@@ -561,14 +561,14 @@ class build_host_ocaml(Process):
     self.copy_mli2ml(RAW_INTERFACES)
 
     if config.HOST_OCAML.options.HAVE_OCAMLBUILD:
-      return processes['build_ocamlbuild'].host(pkg, pkgdict)
+      return processes['build_ocamlbuild'].runme(pkg, pkgdict)
 
     LEXS = pkgdict.get("caml_lexes", [])
     PARSES = pkgdict.get("caml_parses", [])
     PGENPARSES = pkgdict.get("caml_pgenparses", [])
     DYPARSES = pkgdict.get("caml_dyparses", [])
 
-    processes['build_ocaml_grammar'].host(pkg, LEXS, PARSES, PGENPARSES, DYPARSES)
+    processes['build_ocaml_grammar'].runme(pkg, LEXS, PARSES, PGENPARSES, DYPARSES)
 
     INTERFACES = pkgdict.get("caml_interfaces", [])
     IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
@@ -577,13 +577,13 @@ class build_host_ocaml(Process):
     INCLUDES = pkgdict.get("caml_include_paths", [])
 
 
-    objects = processes['build_ocaml_modules'].host(pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES)
+    objects = processes['build_ocaml_modules'].runme(pkg, INTERFACES, IMPLEMENTATIONS, PACKS, INCLUDES)
 
     lib = pkgdict.get('caml_provide_lib', os.path.join('src', pkg + 'lib'))
-    processes['build_ocaml_libraries'].host(objects, lib)
+    processes['build_ocaml_libraries'].runme(objects, lib)
     OLIBRARIES = pkgdict.get("caml_require_libs", [])
 
-    processes['build_ocaml_exes'].host(EXES, OLIBRARIES, INCLUDES)
+    processes['build_ocaml_exes'].runme(EXES, OLIBRARIES, INCLUDES)
 @doc()
 
 @select(tangler('mkplugins/build_ocamlbuild.py'))
