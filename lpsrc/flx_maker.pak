@@ -1354,7 +1354,7 @@ from flxbuild.flxutil import Tee
 class run_failure_tests(Process):
   help = 'run tests meant to fail'
 
-  def test(self, config, pkg, pkgdict,pkgsummary):
+  def run(self, config, pkg, pkgdict,pkgsummary):
     #bad_tests = pkgdict.get("failure_tests",[])
     bad_tests=[]
     bad_tests.sort()
@@ -1398,7 +1398,7 @@ from flxbuild.testprocess import TestProcess
 class run_static_unit_tests(TestProcess):
   help = 'run static unit tests'
 
-  def test(self, config, pkg, pkgdict, pkgsummary):
+  def run(self, config, pkg, pkgdict, pkgsummary):
     static_unit_tests = pkgdict.get("static_unit_tests",[])
     static_unit_tests.sort()
 
@@ -1412,7 +1412,7 @@ from flxbuild.testprocess import TestProcess
 class run_dynamic_unit_tests(TestProcess):
   help = 'run dynamic unit tests'
 
-  def test(self, config, pkg, pkgdict, pkgsummary):
+  def run(self, config, pkg, pkgdict, pkgsummary):
     dynamic_unit_tests = pkgdict.get("dynamic_unit_tests",[])
     dynamic_unit_tests.sort()
 
@@ -1426,7 +1426,7 @@ from flxbuild.testprocess import TestProcess
 class run_unit_tests(TestProcess):
   help = 'run unit tests'
 
-  def test(self, config, pkg, pkgdict, pkgsummary):
+  def run(self, config, pkg, pkgdict, pkgsummary):
     unit_tests = pkgdict.get("unit_tests",[])
     unit_tests.sort()
 
@@ -1441,7 +1441,7 @@ from flxbuild.testprocess import TestProcess
 class run_completion_tests(TestProcess):
   help = 'run tests that just need to finish'
 
-  def test(self, config, pkg, pkgdict, pkgsummary):
+  def run(self, config, pkg, pkgdict, pkgsummary):
     completion_tests = pkgdict.get("completion_tests",[])
     completion_tests.sort()
 
@@ -1460,7 +1460,7 @@ class run_known_failed_tests(Process):
     super(run_known_failed_tests, self).__init__(*args, **kwds)
     self.dummy = 1
 
-  def test(self, config, pkg, pkgdict,pkgsummary):
+  def run(self, config, pkg, pkgdict,pkgsummary):
     bad_tests = pkgdict.get("known_failed_tests",[])
     bad_tests.sort()
 
@@ -1479,7 +1479,7 @@ from flxbuild.testprocess import TestProcess
 class run_demos(TestProcess):
   help = 'run demonstrations'
 
-  def test(self, config, pkg, pkgdict, pkgsummary):
+  def run(self, config, pkg, pkgdict, pkgsummary):
     demos = pkgdict.get("demos",[])
     demos.sort()
 
