@@ -2546,10 +2546,7 @@ def main():
     if arg in flxbuild.process.processes:
       flxbuild.process.processes[arg]()
     elif arg in fbuildroot.fbuild_processes:
-      obj = flxbuild.process.processes[arg]
-      subproc = getattr(obj,'runme',None)
-      if subproc:
-        subproc()
+      run_phase(options, arg, packages)
 
   for phase in options.selected_phases:
     run_phase(options, phase, packages)
