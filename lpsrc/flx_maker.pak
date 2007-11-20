@@ -1981,6 +1981,8 @@ class pfcount_all(Process):
 import os
 import config
 
+os.environ['PATH'] = 'bin' + os.pathsep + os.environ.get('PATH', '')
+
 # make sure we have the runtime library in our search path
 if config.CYGWIN or config.WIN32:
   pass
