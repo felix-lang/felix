@@ -2160,8 +2160,8 @@ class msvc_mixin(object):
     # catch(std::exception& e). we also don't want the logo
     # OF COURSE now /GR will have no sense if this happens to be a
     # c compiler. let's hope it doesn't error out.
-    opt.COM = self.DEFAULT_COM + "/nologo /GR "
-    opt.AR = self.DEFAULT_AR + "/nologo "
+    opt.COM = self.DEFAULT_COM + " /nologo /GR"
+    opt.AR = self.DEFAULT_AR + " /nologo"
 
   ########
 
