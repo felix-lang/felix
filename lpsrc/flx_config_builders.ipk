@@ -2346,7 +2346,7 @@ class msvcc(msvc_mixin, c_base):
 
   def compile_thing(self, COM, *args, **kwds):
     # make sure we tell the compiler to compile code as a c file
-    super(msvcc, self).compile_thing(COM + ' /TC', *args, **kwds)
+    return super(msvcc, self).compile_thing(COM + ' /TC', *args, **kwds)
 
 @h = tangler("flxbuild/msvcxx_class.py")
 @select(h)
