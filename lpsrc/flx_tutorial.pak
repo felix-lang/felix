@@ -47,20 +47,20 @@ directory containing the Felix demo package,
 then type:
 
 @begin_displayed_code()
-@weave('  bin/flx '+env.root+env.level_str())
+@weave('  bin/flx '+env.root+env.level_str()+'-0')
 @end_displayed_code()
 
 This produces many files, including:
 
 @fistuff = [
-  (env.root+env.level_str()+'.hpp','C++ header'),
-  (env.root+env.level_str()+'.cpp','Main implementation'),
-  (env.root+env.level_str()+'_ctors.cpp','Constructors'),
-  (env.root+env.level_str()+'.rtti','Run time type information'),
-  (env.root+env.level_str()+'.resh','Resource Requirements'),
-  (env.root+env.level_str()+'.why','Input for Theorem Prover'),
-  (env.root+env.level_str()+'_dynamic.o','Object File (unix)'),
-  (env.root+env.level_str()+'.so','Shared Library (unix)'),
+  (env.root+env.level_str()+'-0.hpp','C++ header'),
+  (env.root+env.level_str()+'-0.cpp','Main implementation'),
+  (env.root+env.level_str()+'-0_ctors.cpp','Constructors'),
+  (env.root+env.level_str()+'-0.rtti','Run time type information'),
+  (env.root+env.level_str()+'-0.resh','Resource Requirements'),
+  (env.root+env.level_str()+'-0.why','Input for Theorem Prover'),
+  (env.root+env.level_str()+'-0_dynamic.o','Object File (unix)'),
+  (env.root+env.level_str()+'-0.so','Shared Library (unix)'),
   ]
 
 @begin_table("File","Purpose")
@@ -155,42 +155,39 @@ overload matching must be exact.
 @env.head(2,'Expressions')
 Felix provides many of the operators found
 in C. Here is are some examples with equivalent
-function calls. Note: there are no shift operators,
-although there are equivalent functions.
-[The symbols are too useful to waste for an infrequently
-used facility]. There are no bitwise operators,
-because both & and | have different uses.
+function calls. The complete expression grammar is given here:
+@cite_url('../../gramdoc/dssl_expressions.html')
+Note that Felix does not have builtin expression syntax:
+the grammar, including expressions, is defined in the library. 
 
-@select(env.test('.flx'))
-// arith
-print (1 + 1); endl; print (add (1,2)); endl;
-print (1 - 1); endl; print (sub (1,2)); endl;
-print (1 * 1); endl; print (mul (1,2)); endl;
-print (1 / 1); endl; print (div (1,2)); endl;
-
-print (1.2 ** 1.2); endl;
-print (pow  (1.2,1.2)); endl;
-
+@h=env.test('.flx') 
+@e = env.expect()
+@select(h)
 // boolean
-print (not false); endl;
-print (lnot false); endl;
-
-print (true and false); endl;
-print (land (true,false)); endl;
-
-print (true or false); endl;
-print (lor  (true,false)); endl;
-
-// comparison
-print (1 == 2); endl; print (eq (1,2)); endl;
-print (1 != 2); endl; print (ne (1,2)); endl;
-print (1 < 2); endl; print (lt (1,2)); endl;
-print (1 > 2); endl; print (gt (1,2)); endl;
-print (1 <= 2); endl; print (le (1,2)); endl;
-print (1 >= 2); endl; print (ge (1,2)); endl;
-@doc()
-
-@select(env.expect())
+println (not false);      println (lnot false);        // not
+println (true and false); println (land (true,false)); // and
+println (true or false);  println (lor  (true,false)); // or
+@select(e)
+true
+true
+false
+false
+true
+true
+@select(h)
+// arith
+println (- 1);        println (neg 1);          // negation
+println (1 + 1);      println (add (1,2));      // addition
+println (1 - 1);      println (sub (1,2));      // subtraction
+println (1 * 1);      println (mul (1,2));      // multiplication
+println (1 / 1);      println (div (1,2));      // division
+println (1 % 1);      println (mod (1,2));      // modulus
+println (1.2 ** 1.2); println (pow  (1.2,1.2)); // power
+println (1u << 1u); println (shl (1u,1u));          // mul pow of 2
+println (1u >> 1u); println (shr (1u,1u));          // div pow of 2
+@select(e)
+-1
+-1
 2
 3
 0
@@ -199,14 +196,23 @@ print (1 >= 2); endl; print (ge (1,2)); endl;
 2
 1
 0
+0
+1
 1.24456
 1.24456
-true
-true
-false
-false
-true
-true
+2
+2
+0
+0
+@select(h)
+// comparison
+println (1 == 2); endl; println (eq (1,2));  // equality
+println (1 != 2); endl; println (ne (1,2));  // inequality
+println (1 < 2); endl;  println (lt (1,2));  // less
+println (1 > 2); endl;  println (gt (1,2));  // greater
+println (1 <= 2); endl; println (le (1,2));  // less or equal
+println (1 >= 2); endl; println (ge (1,2));  // greater or equal
+@select(e)
 false
 false
 true
@@ -220,7 +226,21 @@ true
 false
 false
 @doc()
-
+@select(h)
+// bitwise
+println (~0x01tu); println (compl 0x01tu);  // bitwise complement
+println (0x23u \& 0x0fu); println (band (0x23u,0x0fu)); // bitwise and
+println (0x23u \| 0x0fu); println (bor (0x23u,0x0fu));  // bitwise or
+println (0x23u \^ 0x0fu); println (bor (0x23u,0x0fu));  // bitwise xor
+@select(e)
+254
+254
+3
+3
+47
+47
+44
+44
 @env.head(2,'Statements')
 @env.head(3,'Value declaration')
 Felix allows values to be declared using the 'val'
