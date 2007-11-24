@@ -213,6 +213,8 @@ typeclass Integer[t] {
   inherit Tord[t];
   inherit Dring[t];
   inherit Bidirectional[t];
+  virtual fun shl: t * t -> t;
+  virtual fun shr: t * t -> t;
 }
 
 // Signed Integers
@@ -623,7 +625,10 @@ instance[t in ints] Bidirectional[t] {
   proc post_decr: lvalue[t] = "$1--;";
 }
 
-instance[t in ints] Integer[t] { }
+instance[t in ints] Integer[t] { 
+  fun shl: t * t -> t = "$1<<$2";
+  fun shr: t * t -> t = "$1>>$2";
+}
 
 instance[t in fast_sints] Signed_integer[t] {
   fun sgn: t -> int = "$1<0??-1:$1>0??1:0";

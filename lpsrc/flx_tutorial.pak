@@ -217,10 +217,10 @@ false
 @doc()
 @select(h)
 // bitwise
-println (~0x01tu); println (compl 0x01tu);  // bitwise complement
+println (~0x01tu); println (bnot 0x01tu);  // bitwise complement
 println (0x23u \& 0x0fu); println (band (0x23u,0x0fu)); // bitwise and
 println (0x23u \| 0x0fu); println (bor (0x23u,0x0fu));  // bitwise or
-println (0x23u \^ 0x0fu); println (bor (0x23u,0x0fu));  // bitwise xor
+println (0x23u \^ 0x0fu); println (bxor (0x23u,0x0fu));  // bitwise xor
 @select(e)
 254
 254
@@ -673,11 +673,11 @@ gen f():int = {
 
 var g = the f;
 print "F 1="; print$ g(); endl; // 1
-print "F 1="; print$ g(); endl; // 2
+print "F 2="; print$ g(); endl; // 2
 
 @select(env.expect())
-1
-2
+F 1=1
+F 2=2
 @doc()
 Note that when calling a generator which has yielded
 the parameters are re-assigned on every call, however

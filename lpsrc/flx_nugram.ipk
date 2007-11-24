@@ -305,7 +305,7 @@ syntax expressions {
   sprefixed := ! spower =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
   sprefixed := plus spower =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
   sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))" note "neg";
-  sprefixed := ~ spower =># "`(ast_apply ,_sr (compl ,_2))" note "compl";
+  sprefixed := ~ spower =># "`(ast_apply ,_sr (bnot ,_2))" note "bnot";
   sprefixed := spower =># "_1";
 
 
