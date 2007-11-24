@@ -265,10 +265,11 @@ class flx_tangler(tangler_base):
     self.writeline('# '+line,file,count)
 
   def start_section(self, file, count):
+    pass
     #data = '#line '+str(count)+' '+'"'+file+'"'
     #self._writeline(data)
-    if self.weaver:
-      self.weaver.echotangle(self.sink.lines_written,data)
+    #if self.weaver:
+    #  self.weaver.echotangle(self.sink.lines_written,data)
 
   def get_comment_tangler(self):
     return script_comment_tangler(self.sink)
