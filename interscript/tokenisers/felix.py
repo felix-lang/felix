@@ -1,4 +1,4 @@
-#line 55 "./lpsrc/flx_felix_tangler.pak"
+#line 55 "../lpsrc/flx_felix_tangler.pak"
 import string, re
 from interscript.tokenisers.felix_token import *
 
@@ -77,159 +77,155 @@ endprogs = {"'": re.compile(Single), '"': re.compile(Double),
 
 opdict = {
 
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '$':DOLLAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '?':QUEST,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '!':EXCLAMATION,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '(':LPAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 ')':RPAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '[':LSQB,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 ']':RSQB,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '{':LBRACE,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '}':RBRACE,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 ':':COLON,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 ',':COMMA,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 ';':SEMI,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '+':PLUS,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '-':MINUS,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '*':STAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '/':SLASH,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '|':VBAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&':AMPER,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '<':LESS,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '>':GREATER,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '=':EQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '.':DOT,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '%':PERCENT,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '`':BACKQUOTE,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '~':TILDE,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '^':CIRCUMFLEX,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '#':HASH,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
+'$$':DOLLARDOLLAR,
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&<':ANDLESS,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&>':ANDGREATER,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '==':EQEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '!=':NOTEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '<=':LESSEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '>=':GREATEREQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '<<':LEFTSHIFT,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '>>':RIGHTSHIFT,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '**':STARSTAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '<:':LESSCOLON,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 ':>':COLONGREATER,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '..':DOTDOT,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '::':COLONCOLON,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '++':PLUSPLUS,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '--':MINUSMINUS,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '+=':PLUSEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '-=':MINUSEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '*=':STAREQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '/=':SLASHEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '%=':PERCENTEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '^=':CARETEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '|=':VBAREQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&=':AMPEREQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '~=':TILDEEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 ':=':COLONEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '->':RIGHTARROW,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '=>':EQRIGHTARROW,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '<-':LEFTARROW,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
-'[<':LSQANGLE,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
-'>]':RSQANGLE,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '[|':LSQBAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '|]':RSQBAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&&':AMPERAMPER,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '||':VBARVBAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '\\\\&':SLOSHAMPER,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '\\\\|':SLOSHVBAR,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '\\\\^':SLOSHCIRCUMFLEX,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '#!':HASHBANG,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '<<=':LEFTSHIFTEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '>>=':RIGHTSHIFTEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '<->':LEFTRIGHTARROW,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&==':ANDEQEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&!=':ANDNOTEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&<=':ANDLESSEQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '&>=':ANDGREATEREQUAL,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '...':DOTDOTDOT,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
-'.->':DOTRIGHTARROW,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '-->':LONGRIGHTARROW,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '=>#':PARSE_ACTION,
-#line 135 "./lpsrc/flx_felix_tangler.pak"
+#line 135 "../lpsrc/flx_felix_tangler.pak"
 '#!/':HASHBANGSLASH,
   }
 
