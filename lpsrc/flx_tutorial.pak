@@ -707,6 +707,9 @@ synchronous channel.
 
 @select(env.test('.flx'))
 @kat('pthreads')
+include "pthread";
+open Pthread;
+
 var x = mk_pchannel[int]();
 
 proc reader() {

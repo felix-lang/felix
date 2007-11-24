@@ -1,4 +1,4 @@
-#line 343 "./lpsrc/flx_felix_tangler.pak"
+#line 343 "../lpsrc/flx_felix_tangler.pak"
 #---------------------------------------------------------
 # felix tangler: write to a file, insert source line numbers
 # using '#line ' comments
@@ -24,159 +24,155 @@ py_punct_tokens = [
   felix_token.COLON, felix_token.COMMA, felix_token.SEMI]
 
 py_op_tokens = [
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.DOLLAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.QUEST,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.EXCLAMATION,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LPAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.RPAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LSQB,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.RSQB,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LBRACE,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.RBRACE,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.COLON,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.COMMA,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.SEMI,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.PLUS,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.MINUS,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.STAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.SLASH,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.VBAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.AMPER,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LESS,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.GREATER,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.EQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.DOT,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.PERCENT,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.BACKQUOTE,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.TILDE,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.CIRCUMFLEX,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.HASH,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
+  felix_token.DOLLARDOLLAR,
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.ANDLESS,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.ANDGREATER,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.EQEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.NOTEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LESSEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.GREATEREQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LEFTSHIFT,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.RIGHTSHIFT,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.STARSTAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LESSCOLON,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.COLONGREATER,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.DOTDOT,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.COLONCOLON,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.PLUSPLUS,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.MINUSMINUS,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.PLUSEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.MINUSEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.STAREQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.SLASHEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.PERCENTEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.CARETEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.VBAREQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.AMPEREQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.TILDEEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.COLONEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.RIGHTARROW,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.EQRIGHTARROW,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LEFTARROW,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
-  felix_token.LSQANGLE,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
-  felix_token.RSQANGLE,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LSQBAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.RSQBAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.AMPERAMPER,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.VBARVBAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.SLOSHAMPER,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.SLOSHVBAR,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.SLOSHCIRCUMFLEX,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.HASHBANG,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LEFTSHIFTEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.RIGHTSHIFTEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LEFTRIGHTARROW,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.ANDEQEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.ANDNOTEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.ANDLESSEQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.ANDGREATEREQUAL,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.DOTDOTDOT,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
-  felix_token.DOTRIGHTARROW,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.LONGRIGHTARROW,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.PARSE_ACTION,
-#line 370 "./lpsrc/flx_felix_tangler.pak"
+#line 370 "../lpsrc/flx_felix_tangler.pak"
   felix_token.HASHBANGSLASH,
   ]
 
@@ -269,8 +265,8 @@ class flx_tangler(tangler_base):
     self.writeline('# '+line,file,count)
 
   def start_section(self, file, count):
-    data = '#line '+str(count)+' '+'"'+file+'"'
-    self._writeline(data)
+    #data = '#line '+str(count)+' '+'"'+file+'"'
+    #self._writeline(data)
     if self.weaver:
       self.weaver.echotangle(self.sink.lines_written,data)
 

@@ -366,7 +366,7 @@ class typeclassdoc(Process):
     try:
       self.shell(os.path.join('bin', 'flxd'),
         '-Ilib',
-        '-import=flx.flxh',
+        '--import=flx.flxh',
         '--document-typeclass',
         os.path.join('misc', 'ldoc'),
       )
