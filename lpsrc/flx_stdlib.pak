@@ -261,10 +261,13 @@ typeclass Real[t] {
   virtual fun trunc: t -> t;
 }
 
-typeclass Complex[t] {
+typeclass Complex[t,r] {
   inherit Eq[t];
   inherit Trig[t];
-  virtual fun arg: t -> t;
+  virtual fun real: t -> r;
+  virtual fun imag: t -> r;
+  virtual fun abs: t -> r;
+  virtual fun arg: t -> r;
 }
 
 typeclass Container [c,v]
@@ -521,9 +524,9 @@ typedef complex[t in floats] = typematch t with
   | ldouble => lcomplex
   endmatch
 ;
-typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
+// typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
 
-typedef numbers = reals || imaginaries || complexes;
+typedef numbers = reals || /* imaginaries || */ complexes;
 
 typedef basic_types = bool || numbers || chars || addressing;
 
@@ -791,7 +794,7 @@ module MixedInt
   tangle("}")
   tangle("")
 
-instance[t in floats] Trig[t] {
+instance[t in (floats || complexes)] Trig[t] {
   requires cmath;
   fun sin: t -> t = "std::sin($1)";
   fun cos: t -> t = "std::cos($1)";
@@ -825,11 +828,15 @@ open module Fcomplex
 {
   ctor fcomplex[t in reals] : t * t = "std::complex<float>($1,$2)";
   ctor fcomplex[t in reals] : t = "std::complex<float>($1,0)";
-  fun real : fcomplex -> float = "real($1)";
-  fun imag : fcomplex -> float = "imag($1)";
   proc fprint: ostream * fcomplex = "*$1<<$2;" requires iostream;
   instance Str[fcomplex] {
     fun str (z:fcomplex) => "fcomplex(" + str(real z) + "," + str(imag z)+")";
+  }
+  instance Complex[fcomplex,float] {
+    fun real : fcomplex -> float = "real($1)";
+    fun imag : fcomplex -> float = "imag($1)";
+    fun abs: fcomplex -> float = "abs($1)";
+    fun arg : fcomplex -> float = "arg($1)";
   }
 }
 
@@ -843,6 +850,12 @@ open module Dcomplex
   instance Str[dcomplex] {
     fun str (z:dcomplex) => "dcomplex(" + str(real z) + "," + str(imag z)+")";
   }
+  instance Complex[dcomplex,double] {
+    fun real : dcomplex -> double = "real($1)";
+    fun imag : dcomplex -> double = "imag($1)";
+    fun abs: dcomplex -> double = "abs($1)";
+    fun arg : dcomplex -> double = "arg($1)";
+  }
 }
 
 open module Lcomplex
@@ -854,6 +867,12 @@ open module Lcomplex
   proc fprint: ostream * lcomplex = "*$1<<$2;" requires iostream;
   instance Str[lcomplex] {
     fun str (z:lcomplex) => "lcomplex(" + str(real z) + "," + str(imag z)+")";
+  }
+  instance Complex[lcomplex,ldouble] {
+    fun real : lcomplex -> ldouble = "real($1)";
+    fun imag : lcomplex -> ldouble = "imag($1)";
+    fun abs: lcomplex -> ldouble = "abs($1)";
+    fun arg : lcomplex -> ldouble = "arg($1)";
   }
 }
 
@@ -930,12 +949,13 @@ open Unsigned_integer[uvlong];
 open Real[float];
 open Real[double];
 open Real[ldouble];
-open FloatAddgrp[fcomplex];
-open FloatAddgrp[dcomplex];
-open FloatAddgrp[lcomplex];
-open FloatAddgrp[imaginary];
-open FloatAddgrp[dimaginary];
-open FloatAddgrp[limaginary];
+open Complex[fcomplex, float];
+open Complex[dcomplex, double];
+open Complex[lcomplex, ldouble];
+
+//open FloatAddgrp[imaginary];
+//open FloatAddgrp[dimaginary];
+//open FloatAddgrp[limaginary];
 
 open[T in basic_types] Show[T];
 open Show[bool];

@@ -722,6 +722,7 @@ class build_testfile(Process):
     try:
       self.shell(os.path.join('bin', 'flxg'),
         '-Ilib',
+        '-I'+indir,
         '--cache_dir=' + os.path.join('build', 'test'),
         '--output_dir=' + os.path.join('build', 'test'),
         '--elkhound=' + os.path.join('bin', 'flx_elkhound'),

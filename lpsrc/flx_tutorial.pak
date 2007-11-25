@@ -343,7 +343,7 @@ Felix provides 3 complex types corresponding to the three floating types.
   val x2 : dcomplex = dcomplex 2.2;
   val x3 : lcomplex = lcomplex (2.2l, 21.0l);
   val z = sin (x2);
-  println (abs x1);
+  println (abs x2);
 };
 @select(env.expect())
 2.2
@@ -896,24 +896,6 @@ print (mid(2,4)); print "\n";
 which is equivalent to the one above.
 Note, however, that the types of the arguments
 must be given.
-
-@env.head(3,'Functions with C syntax')
-Functions can also be given with a C like syntax:
-
-@select(env.test('.flx'))
-int mid(int a, int b)
-{
-  int c = (a + b) / 2;
-  return c;
-};
-print (mid(2,4)); print "\n";
-@doc()
-
-@select(env.expect())
-3
-@doc()
-Note in this case the trailing semi-colon is necessary
-for syntactic disambiguation.
 
 @env.head(3,'Functions with shorthand syntax')
 Functions can also be given with a shorthand syntax

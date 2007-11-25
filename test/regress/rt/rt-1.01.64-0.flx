@@ -1,5 +1,5 @@
 //Check namespace
-include 'test/regress/rt-1.01.63-0';
+include 'rt-1.01.63-0';
 
 namespace Foo      { val d = 4; }
 module    Foo::Baz { val e = 5; }
