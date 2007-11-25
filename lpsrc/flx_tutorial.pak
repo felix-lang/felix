@@ -297,22 +297,6 @@ only for 'int'.
 @select(env.expect())
 @doc()
 
-@env.head(2,"Floats")
-@select(env.test('.flx'))
-// floats obey C99 rules, except we allow underscores
-{
-  val x1 : float = 2.2f;
-  val x2 : double = 2.2;
-  val x3 : ldouble = 2.2l;
-  val x4 : double = 22_345.78;
-  // val x5 : float = 0xFFFF.FFp4f; // doesn't work on g++ 2.95.3
-  val x6 : double = 2.2e4;
-  val x7 : float = 2.2e4f;
-};
-@select(env.expect())
-@doc()
-
-
 @env.head(2,"Mixed Mode Arithmetic")
 Felix by default only supports arithmetic on integers
 of exactly the same type. To enable mixed mode arithmetic
@@ -330,6 +314,42 @@ print$ x + y; endl;
 @select(env.expect())
 3
 @doc()
+
+
+@env.head(2,"Floats")
+Felix provides 3 floating point types.
+@select(env.test('.flx'))
+// floats obey C99 rules, except we allow underscores
+{
+  val x1 : float = 2.2f;
+  val x2 : double = -2.2;
+  val x3 : ldouble = 2.2l;
+  val x4 : double = 22_345.78;
+  // val x5 : float = 0xFFFF.FFp4f; // doesn't work on g++ 2.95.3
+  val x6 : double = 2.2e4;
+  val x7 : float = 2.2e4f;
+  println (abs x2);
+};
+@select(env.expect())
+2.2
+@doc()
+
+@env.head(2,"Complex")
+Felix provides 3 complex types corresponding to the three floating types.
+@select(env.test('.flx'))
+// floats obey C99 rules, except we allow underscores
+{
+  val x1 : fcomplex = fcomplex(2.2f, 1.0f);
+  val x2 : dcomplex = dcomplex 2.2;
+  val x3 : lcomplex = lcomplex (2.2l, 21.0l);
+  val z = sin (x2);
+  println (abs x1);
+};
+@select(env.expect())
+2.2
+@doc()
+
+
 
 @env.head(2,'Strings')
 Felix provides two kinds of strings: 8-bit and 32-bit,

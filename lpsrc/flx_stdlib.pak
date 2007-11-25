@@ -422,7 +422,7 @@ header cstring = "#include <cstring>";
 
 @floats = ["float", "double", "ldouble"]
 
-@complex = ["complex","dcomplex","lcomplex"]
+@complex = ["fcomplex","dcomplex","lcomplex"]
 @imaginary= ["imaginary", "dimaginary", "limaginary"]
 @all = [
   "byte", "address","caddress","vaddress","cvaddress",
@@ -514,7 +514,13 @@ typedef ints = sints || uints;
 typedef floats = typesetof (float, double, ldouble);
 typedef reals = ints || floats;
 
-typedef complexes = typesetof (complex,dcomplex,lcomplex);
+typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
+typedef complex[t in floats] = typematch t with
+  | float => fcomplex
+  | double => dcomplex
+  | ldouble => lcomplex
+  endmatch
+;
 typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
 
 typedef numbers = reals || imaginaries || complexes;
@@ -817,18 +823,20 @@ instance[t in floats] Real[t] {
 // note: has to be called Fcomplex to avoid clash with typeclass Complex
 open module Fcomplex
 {
-  ctor complex : float * float = "std::complex<float>($1,$2)";
-  fun real : complex -> float = "real($1)";
-  fun imag : complex -> float = "imag($1)";
-  proc fprint: ostream * complex = "*$1<<$2;" requires iostream;
-  instance Str[complex] {
-    fun str (z:complex) => "complex(" + str(real z) + "," + str(imag z)+")";
+  ctor fcomplex[t in reals] : t * t = "std::complex<float>($1,$2)";
+  ctor fcomplex[t in reals] : t = "std::complex<float>($1,0)";
+  fun real : fcomplex -> float = "real($1)";
+  fun imag : fcomplex -> float = "imag($1)";
+  proc fprint: ostream * fcomplex = "*$1<<$2;" requires iostream;
+  instance Str[fcomplex] {
+    fun str (z:fcomplex) => "fcomplex(" + str(real z) + "," + str(imag z)+")";
   }
 }
 
 open module Dcomplex
 {
-  ctor dcomplex : double * double = "std::complex<double>($1,$2)";
+  ctor dcomplex[t in reals] : t * t = "std::complex<double>($1,$2)";
+  ctor dcomplex[t in reals] : t = "std::complex<double>($1,0)";
   fun real : dcomplex -> double = "std::real($1)";
   fun imag : dcomplex -> double = "std::imag($1)";
   proc fprint: ostream * dcomplex = "*$1<<$2;" requires iostream;
@@ -839,7 +847,8 @@ open module Dcomplex
 
 open module Lcomplex
 {
-  ctor lcomplex : ldouble * ldouble = "std::complex<long double>($1,$2)";
+  ctor lcomplex[t in reals] : t * t = "std::complex<long double>($1,$2)";
+  ctor lcomplex[t in reals] : t = "std::complex<long double>($1,0)";
   fun real : lcomplex -> ldouble = "std::real($1)";
   fun imag : lcomplex -> ldouble = "std::imag($1)";
   proc fprint: ostream * lcomplex = "*$1<<$2;" requires iostream;
@@ -921,7 +930,7 @@ open Unsigned_integer[uvlong];
 open Real[float];
 open Real[double];
 open Real[ldouble];
-open FloatAddgrp[complex];
+open FloatAddgrp[fcomplex];
 open FloatAddgrp[dcomplex];
 open FloatAddgrp[lcomplex];
 open FloatAddgrp[imaginary];

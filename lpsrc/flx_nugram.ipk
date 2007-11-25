@@ -1387,18 +1387,18 @@ syntax cbind {
   """;
 
   sfunction_definition :=
-    ctor stvarlist sname : stypeexpr
+    ctor sname stvarlist : stypeexpr
     sopt_cstring sopt_prec srequires_clause ssemi =>#
   """
   (let*
     (
-      (name (string-append "_ctor_" _3))
-      (vs _2)
-      (ret `(ast_name ,_sr ,_3 ()))
+      (name (string-append "_ctor_" _2))
+      (vs _3)
+      (ret `(ast_name ,_sr ,_2 ()))
       (argt _5)
       (ct
         (if (eq? 'none _6)
-          `(StrTemplate ,(string-append _3 "($a)"))
+          `(StrTemplate ,(string-append _2 "($a)"))
           (cadr _6)
         )
       )
