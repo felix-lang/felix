@@ -1814,7 +1814,8 @@ tmap = {
   "ldouble"  : "long double"
  }
 
-if config.TARGET_CXX.options.HAVE_COMPLEX:
+#if config.TARGET_CXX.options.HAVE_COMPLEX:
+if False:
   tmap["imaginary"]="float _Imaginary"
   tmap["dimaginary"]="double _Imaginary"
   tmap["limaginary"]="long double _Imaginary"

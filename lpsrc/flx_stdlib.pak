@@ -571,6 +571,15 @@ instance [t in basic_types] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
 }
 
+instance Tord[bool] {
+  fun lt: bool * bool -> bool = "$1<$2";
+}
+
+instance Tord[address] {
+  fun lt: address * address -> bool = "std::less<?1>($1,$2)";
+}
+
+
 instance[t in reals] Tord[t] {
   fun lt: t * t -> bool = "$1<$2";
 }
@@ -604,10 +613,12 @@ instance[t in numbers] FloatDring[t] {
 instance[t in ints] Dring[t] {}
 
 instance [t in fast_uints] Bits [t] {
-  fun bxor: t * t -> t = "$1^$2";
-  fun bor: t * t -> t = "$1|$2";
-  fun band: t * t -> t = "$1&$2";
-  fun bnot: t -> t = "~$1";
+  fun bxor: t * t -> t = "(?1)($1^$2)";
+  fun bor: t * t -> t = "(?1)($1|$2)";
+  fun band: t * t -> t = "(?1)($1&$2)";
+
+  // note: the cast is essential to ensure ~1tu is 254tu 
+  fun bnot: t -> t = "(?1)~$1";
   proc bxoreq: lvalue[t] * t = "$1^=$2;";
   proc boreq: lvalue[t] * t = "$1|=$2;";
   proc bandeq: lvalue[t] * t = "$1&=$2;";
@@ -648,8 +659,8 @@ open module Bool
   fun xor: bool * bool -> bool = "$1!=$2";
   fun lnot: bool -> bool = "!$1";
   fun implies: bool * bool -> bool = "!$1||$2";
-  fun eq: bool * bool -> bool = "$1==$2";
-  fun ne: bool * bool -> bool = "$1!=$2";
+  //fun eq: bool * bool -> bool = "$1==$2";
+  //fun ne: bool * bool -> bool = "$1!=$2";
   proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires iostream;
 }
 
@@ -803,6 +814,40 @@ instance[t in floats] Real[t] {
   fun trunc: t -> t = "std::trunc($1)";
 }
 
+// note: has to be called Fcomplex to avoid clash with typeclass Complex
+open module Fcomplex
+{
+  ctor complex : float * float = "std::complex<float>($1,$2)";
+  fun real : complex -> float = "real($1)";
+  fun imag : complex -> float = "imag($1)";
+  proc fprint: ostream * complex = "*$1<<$2;" requires iostream;
+  instance Str[complex] {
+    fun str (z:complex) => "complex(" + str(real z) + "," + str(imag z)+")";
+  }
+}
+
+open module Dcomplex
+{
+  ctor dcomplex : double * double = "std::complex<double>($1,$2)";
+  fun real : dcomplex -> double = "std::real($1)";
+  fun imag : dcomplex -> double = "std::imag($1)";
+  proc fprint: ostream * dcomplex = "*$1<<$2;" requires iostream;
+  instance Str[dcomplex] {
+    fun str (z:dcomplex) => "dcomplex(" + str(real z) + "," + str(imag z)+")";
+  }
+}
+
+open module Lcomplex
+{
+  ctor lcomplex : ldouble * ldouble = "std::complex<long double>($1,$2)";
+  fun real : lcomplex -> ldouble = "std::real($1)";
+  fun imag : lcomplex -> ldouble = "std::imag($1)";
+  proc fprint: ostream * lcomplex = "*$1<<$2;" requires iostream;
+  instance Str[lcomplex] {
+    fun str (z:lcomplex) => "lcomplex(" + str(real z) + "," + str(imag z)+")";
+  }
+}
+
 @#------------- CHARACTER MODULES -------------------
 // ordinary value of chars
 
@@ -853,7 +898,8 @@ instance[T in chars] Repr[T] {
 
 open Eq[byte];
 
-open Eq[address];
+open Tord[bool];
+open Tord[address];
 open Eq[caddress];
 open Eq[vaddress];
 open Eq[cvaddress];

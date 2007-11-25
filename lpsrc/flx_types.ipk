@@ -6017,7 +6017,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
         | `TYP_type_tuple ls -> `TYP_typeset ls
         | x -> `TYP_typeset [x]
       end
-      else if name = "compl" then `TYP_dual arg
+      else if name = "bnot" then `TYP_dual arg
       else if String.sub name' 0 5 = "proj_"
       then
         begin

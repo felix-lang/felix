@@ -843,7 +843,7 @@ let oplist = [
   "^","bxor";
   "|","bor";
   "&","band";
-  "~","compl";
+  "~","bnot";
 
   "+=","pluseq";
   "-=","minuseq";

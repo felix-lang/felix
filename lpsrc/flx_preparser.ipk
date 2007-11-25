@@ -608,7 +608,7 @@ prefixed:
   | EXCLAMATION power  { apl $1 "excl" $2 }
   | PLUS power  { apl $1 "pos" $2 }
   | MINUS power { apl $1 "neg" $2 }
-  | TILDE power { apl $1 "compl" $2 }
+  | TILDE power { apl $1 "bnot" $2 }
   | power       { $1 }
 
 /* exponentiation is right associative */

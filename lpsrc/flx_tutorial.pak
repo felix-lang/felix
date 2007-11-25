@@ -113,8 +113,363 @@ println (double (x + y));
 The data type introduced here is a new primitive,
 that is, a fully abstract type, with semantics
 defined in terms of C, but typing managed by Felix.
+@p()
+Felix has many advanced features which make a tutorial
+somewhat difficult to write. For example whilst we describe
+many types such as integers and strings as part of Felix,
+in fact they're primarily defined in the library. Felix
+is fairly unique in that the compiler does not support any
+builtin types at all. It does have builtin type combinators
+though!
+@p()
+Similarly, when describing the syntax, an advanced user will
+be aware that Felix actually has no proper syntax: the syntax
+is defined in the standard library.
 
-@env.head(1,'Introduction')
+@env.head(1,'Primitive types')
+Here is a more comprehensive set of examples
+of Felix standard types and numeric lexicology.
+@p()
+The types:
+@begin_displayed_code()
+  // categorical
+  void unit
+
+  // addressing
+  byte size address offset
+
+  // logic
+  bool
+
+  // inexact integers
+  tiny  short  int  long  vlong
+  utiny ushort uint ulong uvlong
+
+  // exact integers
+  int8  int16  int32  int64
+  uint8 uint16 uint32 uint64
+
+  // floating point
+  float double ldouble
+
+  // character
+  char  uchar
+
+  // string
+  string ustring
+@end_displayed_code()
+are defined in the standard library at the top level.
+Except for the addressing types, there is a module
+containing the functions acting on the type for
+each type, with the same name except that the first
+letter is upper case: thus module Long contains all
+the operations on type long. Bool, Int, Double, Char
+and String are opened in the library so the operators
+for the corresponding types are available at the top
+level. Don't expect "1L + 1L" to work unless you
+first "open Long;" in your program!
+
+@env.head(2,'Bool')
+Felix provides the usual boolean type bool with two values
+named false and true, with false less than true. Note that
+A implies B can be written A <= B which may seem counterintuitive,
+but is quite logical.
+@p()
+The name bool is actually an alias for the canonical enumeration 2,
+meaning a type with two values, and if you look closely in
+the library you will find it is actually defined with
+a typedef.
+@p()
+As with all canonical enumerations, the notation
+@begin_displayed_code()
+  case <index> of <count>
+@end_displayed_code()
+can be used to specify the n'th value of that type,
+with the rather unfortunate 0 origin convention.
+The names 'true' and 'false' are replaced with their canonical
+values by the parser. Canonical enumerations, also called
+unit sums, are explained in more detail later, however we mention
+this now so you can understand that bool is not an abstract type,
+but a special case of a more general class of types. Since
+canonical enumerations are represented by C++ type int,
+Felix bool is a C++ int, and not a C++ bool.
+@p()
+Bools can also be used in a conditional expression,
+note that an endif keyword and both branches are always
+required.
+@select(env.test('.flx'))
+@kat('bool')
+{
+  val b1 : bool = false;
+  val b2 : bool = true;
+  val b4 : 2 = case 0 of 2; // false
+  val b3 : 2 = case 1 of 2; // true
+};
+println (not false);      println (lnot false);        // not
+println (true and false); println (land (true,false)); // and
+println (true or false);  println (lor  (true,false)); // or
+                          println (xor (true,true));
+println (true <= true);   println (implies (true,true));
+println (if true then "TRUE" else "FALSE" endif);
+@select(env.expect())
+true
+true
+false
+false
+true
+true
+false
+true
+true
+TRUE
+@doc()
+
+@env.head(2,'Integers')
+The compiler directly supports literals of all
+the numeric types, but the lexicology is a sanitised
+version of that used by C. Note in particular
+that 010 is decimal ten in Felix!
+@p()
+Integers are not builtin types, but are in fact
+defined in the standard library by binding to 
+their C equivalents.
+@p()
+In particular, the compiler can do constant folding
+only for 'int'.
+
+@select(env.test('.flx'))
+@kat('lexemes:integer')
+@kat('literals:integer')
+
+// radix
+{
+  val i1 = 999;      // decimal
+  val i2 = 0b1111;   // binary
+  val i3 = 0o7777;   // octal
+  val i4 = 0d9999;   // decimal
+  val i5 = 0xF1_F2;  // hex
+};
+
+// underscores
+{
+  val i1 = 123_456;
+  val i2 = 0x_FF_FFu;
+};
+
+// normal signed integers
+{
+  val i1 : tiny = 1t;
+  val i2 : short = 1s;
+  val i3 : int = 1; // default
+  val i4 : int = 1i;
+  val i5 : long = 1l;
+  val i6 : vlong = 1ll;
+};
+
+// normal unsigned integers
+{
+  val i1 : utiny = 1tu;
+  val i2 : utiny = 1ut; // u may be first or last
+  val i3 : ushort = 1su;
+  val i4 : uint = 1u; // default
+  val i5 : uint = 1iu;
+  val i6 : ulong = 1lu;
+  val i7 : uvlong = 1vu;
+  val i8 : uvlong = 1llu; // alternate
+};
+
+// exact signed integers
+{
+  val i1 : int8 = 1i8;
+  val i2 : int16 = 1i16;
+  val i3 : int32 = 1i32;
+  val i4 : int64 = 1i64;
+};
+
+// exact unsigned integers
+{
+  val i1 : uint8 = 1u8; // 1iu8 not allowed
+  val i2 : uint16 = 1u16;
+  val i3 : uint32 = 1u32;
+  val i4 : uint64 = 1u64;
+};
+
+@select(env.expect())
+@doc()
+
+@env.head(2,"Floats")
+@select(env.test('.flx'))
+// floats obey C99 rules, except we allow underscores
+{
+  val x1 : float = 2.2f;
+  val x2 : double = 2.2;
+  val x3 : ldouble = 2.2l;
+  val x4 : double = 22_345.78;
+  // val x5 : float = 0xFFFF.FFp4f; // doesn't work on g++ 2.95.3
+  val x6 : double = 2.2e4;
+  val x7 : float = 2.2e4f;
+};
+@select(env.expect())
+@doc()
+
+
+@env.head(2,"Mixed Mode Arithmetic")
+Felix by default only supports arithmetic on integers
+of exactly the same type. To enable mixed mode arithmetic
+you can open the MixedInt module.
+@select(env.test('.flx'))
+@kat("type constraints")
+open MixedInt;
+
+var x = 1;
+var y = 2L;
+
+print$ x + y; endl;
+@doc()
+
+@select(env.expect())
+3
+@doc()
+
+@env.head(2,'Strings')
+Felix provides two kinds of strings: 8-bit and 32-bit,
+denoted by string and ustring respectively.
+@p()
+Both kinds of string are intended to provide a universal
+representation of human readable text using the
+ISO-10646/Unicode character set.
+@p()
+Both kinds of string encode 32-bit values representing
+ISO-10646 code points. Strings use UTF-8, whilst ustrings
+use UCS-4.
+@p()
+Both kinds of string literals are replaced where they
+occur with named constants with internal linkage
+of types basic_string<char>, and
+basic_string<uint32_t>.
+@p()
+String literals are output in the C files as C string
+literals with all UTF-8 encoding expressed with hex
+escapes, surrounded by a constructor for basic_string<char>.
+@p()
+Ustrings are surrounded by a Felix function which constructs
+a basic_string<uint32_t> from an 8 bit C string literal
+by decoding UTF-8 sequences.
+@p()
+Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
+as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
+for slosh (backslash), quote, double quote, return, newline, tab,
+bell, vertical tab, and form feed, respectively.
+@p()
+Octal and hex escapes are NOT allowed: strings are
+for internationalisable human text, and do not represent
+arbitrary raw memory extents.
+@p()
+Although not part of the lexicology, note here two special
+forms for strings: a string may be applied to a string, or,
+a string may be applied to an integer. The first case is
+remodelled as a concatenation, and the second as the concatenation
+of the string and the ISO-10646 code point the integer represents.
+Note that if the string is 8 bit, UTF-8 encoding will be applied.
+
+@select(env.test('.flx'))
+var s = "Hello" 32; // add a space after "Hello"
+s = s s; // says "Hello Hello "
+print s; endl;
+@doc()
+
+@select(env.expect())
+Hello Hello
+@env.head(2,'Floating matches')
+Felix provides special matching for
+floating point. Here are some examples:
+[This will change, the need for overlapping
+ranges is too ugly ..]
+
+@select(env.test('.flx'))
+@kat('match:float')
+@kat('nan')
+
+match (1.0) with
+  | NaN => { print "Not a Number"; }
+  | -inf .. -0.999 => { print "lt -1"; }
+  | -1.001 .. 1.001 => { print "Unit circle"; }
+  | 0.999 .. inf => { print "Greater than 1"; }
+endmatch;
+endl;
+
+match (1.0) with
+  | 0.999 .. 1.001 => { print "one"; }
+endmatch;
+endl;
+
+match (1.0/3.0) with
+ | 0.3333 .. 0.3334 => { print "One third"; }
+endmatch;
+endl;
+@doc()
+
+@select(env.expect())
+Unit circle
+one
+One third
+@doc()
+
+Things to note are: if there is NaN test,
+it must be the first test. If there is
+a test -inf .. inf, it tests for a non-NaN,
+and must be the last test. A NaN will fail
+all tests other than a test for NaN.
+@p()
+A range test is neither inclusive nor exclusive!
+That's why there is no test for a particular float,
+and why the ranges above overlap.
+Welcome to constructive mathematics!
+@p()
+Note that _floating_ point provides exact
+comparisons; however, the patterns above
+apply to constructive reals. The last
+example explains this best: you can't do
+non-constructive matches. [Use IEEE type
+for exact FP?]
+
+@env.head(2,'Identifiers')
+Felix identifiers consists of a string of
+characters. The first character must be a letter
+or underscore, subsequent characters may be one of a
+letter, underscore, apostrophe or digit.
+@p()
+Certain identifiers are reserved as keywords.
+Identifiers beginning with an underscore are
+reserved to Felix. Identifiers containing
+more than one underscore in a row are
+reserved to Felix. Reserved identifiers may
+be used by programmers, but not defined.
+@p()
+The letters referred to consist of the usual
+A-Z and a-z, but also include any Unicode/ISO10646
+code point recommended as a letter for the purpose
+of use in identifiers of programming languages
+by ISO/IEC PDTR 10176, as adopted by ISO C++.
+A full table can be found in the reference manual,
+Felix Standard, and source code.
+@p()
+These code points must be represented using UTF-8,
+or by embedded Universal Character Names (ucns).
+These consist of a \uXXXX or \UXXXXXXXX where the
+X's are hex digits. Felix normalises all such
+encodings so identifiers match properly.
+
+@select(env.test('.flx'))
+val x_y_7' = 1;
+val Y_can't_U_do_this_in_C'' : double = 2.0;
+val x\u05d0= 1; // x,Hebrew  aleph
+val zz = x\U000005D0; // x,Hebrew aleph
+@doc()
+@select(env.expect())
+@doc()
+
+@env.head(1,'Functions')
 
 @env.head(2,'Overloading')
 Felix supports overloading. To demonstrate this,
@@ -152,18 +507,6 @@ the grammar, including expressions, is defined in the library.
 @h=env.test('.flx') 
 @e = env.expect()
 @select(h)
-// boolean
-println (not false);      println (lnot false);        // not
-println (true and false); println (land (true,false)); // and
-println (true or false);  println (lor  (true,false)); // or
-@select(e)
-true
-true
-false
-false
-true
-true
-@select(h)
 // arith
 println (- 1);        println (neg 1);          // negation
 println (1 + 1);      println (add (1,2));      // addition
@@ -172,8 +515,8 @@ println (1 * 1);      println (mul (1,2));      // multiplication
 println (1 / 1);      println (div (1,2));      // division
 println (1 % 1);      println (mod (1,2));      // modulus
 println (1.2 ** 1.2); println (pow  (1.2,1.2)); // power
-println (1u << 1u); println (shl (1u,1u));          // mul pow of 2
-println (1u >> 1u); println (shr (1u,1u));          // div pow of 2
+println (1u << 1u);   println (shl (1u,1u));          // mul pow of 2
+println (1u >> 1u);   println (shr (1u,1u));          // div pow of 2
 @select(e)
 -1
 -1
@@ -195,12 +538,12 @@ println (1u >> 1u); println (shr (1u,1u));          // div pow of 2
 0
 @select(h)
 // comparison
-println (1 == 2); endl; println (eq (1,2));  // equality
-println (1 != 2); endl; println (ne (1,2));  // inequality
-println (1 < 2); endl;  println (lt (1,2));  // less
-println (1 > 2); endl;  println (gt (1,2));  // greater
-println (1 <= 2); endl; println (le (1,2));  // less or equal
-println (1 >= 2); endl; println (ge (1,2));  // greater or equal
+println (1 == 2); println (eq (1,2));  // equality
+println (1 != 2); println (ne (1,2));  // inequality
+println (1 < 2); println (lt (1,2));  // less
+println (1 > 2); println (gt (1,2));  // greater
+println (1 <= 2); println (le (1,2));  // less or equal
+println (1 >= 2); println (ge (1,2));  // greater or equal
 @select(e)
 false
 false
@@ -455,12 +798,16 @@ var v: uint;
 
 // operator    procedure
 i = 1;         // assignment, intrinsic
+j = 2;         // assignment, intrinsic
+i <-> j;       // swap, intrinsic
+i,j = j,i;     // another way to swap
 
 // integral
 i +=  1;       pluseq       (i,1);
 i -=  1;       minuseq      (i,1);
 i *=  1;       muleq        (i,1);
 i /=  1;       diveq        (i,1);
+i %=  1;       modeq        (i,1);
 
 // bitwise: unsigned only
 u ^=  1u;       bxoreq      (u,1u);
@@ -529,6 +876,167 @@ print (mid(2,4)); print "\n";
 which is equivalent to the one above.
 Note, however, that the types of the arguments
 must be given.
+
+@env.head(3,'Functions with C syntax')
+Functions can also be given with a C like syntax:
+
+@select(env.test('.flx'))
+int mid(int a, int b)
+{
+  int c = (a + b) / 2;
+  return c;
+};
+print (mid(2,4)); print "\n";
+@doc()
+
+@select(env.expect())
+3
+@doc()
+Note in this case the trailing semi-colon is necessary
+for syntactic disambiguation.
+
+@env.head(3,'Functions with shorthand syntax')
+Functions can also be given with a shorthand syntax
+when the result can be written easily as a single
+expression:
+
+@select(env.test('.flx'))
+fun mid(a:int, b:int) => (a + b) / 2;
+print (mid(2,4)); print "\n";
+
+@select(env.expect())
+3
+@doc()
+Note in this case the trailing semi-colon is necessary
+for syntactic disambiguation.
+
+
+@env.head(3,'Primitive Functions')
+A function can be defined in C++ instead of Felix:
+
+@select(env.test('.flx'))
+fun mid: int * int -> int = "($1+$2)/2";
+print (mid(2,4)); print "\n";
+@doc()
+
+@select(env.expect())
+3
+@doc()
+The special notation $1 and $2 refers to the first
+and second arguments, respectively. The function type
+must be given with the arguments separated by asterisks
+and the result following an arrow. Note that this is the
+standard mathematical notation for a function whose
+argument is cartesian product.
+@p()
+The quoted code on the right is an arbitrary C++ expression
+which will be emitted by the code generator as written,
+with the $ terms replaced by the C++ encoding of the corresponding
+arguments. Felix generally takes care of precedences automatically
+but there is a full system for telling Felix precedences, so 
+the emitted code doesn't contain so many brackets as to become
+unreadable.
+@p()
+Note that Felix does not parse or type the C++ code: the programmer
+is responsible for getting it right.
+@p()
+Felix has a sophisticated system for binding to C++ code:
+this function binding technology is one small but important part 
+of it.
+
+@env.head(3,'C Functions')
+Felix normally generates C++ applicative objects for
+non-inlined Felix functions, although it often simplifies
+them to C functions, or even elides them completely if
+all calls are inlined.
+@p()
+If you need to generate a C function with a specific C type
+for use as a callback, you can use the cfun keyword in place
+of the fun keyword:
+
+@select(env.test('.flx'))
+cfun mid(a:int, b:int) =
+{
+  val c = (a + b) / 2;
+  return c;
+}
+print (mid(2,4)); print "\n";
+@doc()
+
+@select(env.expect())
+3
+@doc()
+Note that the function is still written in Felix code,
+however there are certain constraints on such functions,
+such as their inability to use the garbage collector
+or perform any service calls, including do any I/O on
+synchronous channels.
+@p()
+Thus, the code you write in a cfun must clearly reduce
+to ordinary C code. This is your responsibility as the
+programmer: the compiler does not check if the function
+is suitable for reduction to C, it just generates the
+C form of a function unconditionally. This will result
+in a C++ compile time error if you exceed the capabilities
+of C.
+@p()
+Note: a cfun has an ordinary Felix function type,
+not a C function pointer type.
+
+@select(env.test('.flx'))
+fun mid: int * int -> int = "($1+$2)/2";
+print (mid(2,4)); print "\n";
+@doc()
+
+@select(env.expect())
+3
+@doc()
+@env.head(3,'Functions with pattern syntax')
+There is yet another syntax for functions based
+on pattern matching:
+@select(env.test('.flx'))
+enum color {red, green, blue};
+
+fun cname: color -> string =
+  | red => "red"
+  | green => "green"
+  | blue => "blue"
+;
+
+println (cname red);
+@doc()
+
+@select(env.expect())
+red
+@doc()
+This will be explained in more detail when we deal with
+pattern matching and variant types later.
+
+@env.head(3,'Constructors')
+When introducing a new primitive data type via a binding to a C++
+type, it is often useful to use the type name as a function
+which constructs an instance of this type. We saw this in
+the preface already:
+@select(env.test('.flx'))
+@kat("C binding")
+type metres = "double";
+fun add: metres * metres -> metres = "$1+$2";
+ctor metres: double = "$1";
+ctor double: metres = "$1";
+
+val x = metres 1.2;
+val y = metres 1.3;
+println (double (x + y));
+
+@select(env.expect())
+2.5
+@doc()
+The keyword ctor specifies a constructor for the given
+type, which is called using that type as a function name.
+A constructor can be given for a type alias given by 
+a typedef too. Note that constructors specify only
+the function arguments, since the return type is implicit
+in the type name.
 
 @env.head(2,'Procedures')
 Felix allows you to define procedures.
@@ -645,7 +1153,7 @@ F 1=1
 Note that generators must be used even if the side-effect
 is environmental, for example reading a file may move
 the current file pointer. Generators must always be used
-when returning the address of an object.
+when returning the address of a fresh object.
 @p()
 The semantics of functions allow Felix to duplicate
 or delay calling them: a generator disables this feature
@@ -731,6 +1239,7 @@ Note that pchannels do not provide any buffering.
 The data exchange is fully hand-shaken, and neither
 thread may proceed until it is fully negotiated.
 
+@env.head(1,'Programs')
 @env.head(2,'Modules')
 Most modern languages support packaging of related
 specifications into some kind of module, and Felix
@@ -888,282 +1397,6 @@ h
 @doc()
 
 
-
-@env.head(1,'Primitive types')
-Here is a more comprehensive set of examples
-of Felix standard types and numeric lexicology.
-@p()
-The types:
-@begin_displayed_code()
-  // categorical
-  void unit
-
-  // addressing
-  byte size address offset
-
-  // logic
-  bool
-
-  // inexact integers
-  tiny  short  int  long  vlong
-  utiny ushort uint ulong uvlong
-
-  // exact integers
-  int8  int16  int32  int64
-  uint8 uint16 uint32 uint64
-
-  // floating point
-  float double ldouble
-
-  // character
-  char  uchar
-
-  // string
-  string ustring
-@end_displayed_code()
-are defined in the standard library at the top level.
-Except for the addressing types, there is a module
-containing the functions acting on the type for
-each type, with the same name except that the first
-letter is upper case: thus module Long contains all
-the operations on type long. Bool, Int, Double, Char
-and String are opened in the library so the operators
-for the corresponding types are available at the top
-level. Don't expect "1L + 1L" to work unless you
-first "open Long;" in your program!
-@p()
-
-@env.head(2,'Integer Lexemes')
-The compiler directly supports literals of all
-the numeric types, but the lexicology is a sanitised
-version of that used by C. Note in particular
-that 010 is decimal ten in Felix!
-
-@select(env.test('.flx'))
-@kat('lexemes:integer')
-@kat('literals:integer')
-
-// radix
-{
-  val i1 = 999;      // decimal
-  val i2 = 0b1111;   // binary
-  val i3 = 0o7777;   // octal
-  val i4 = 0d9999;   // decimal
-  val i5 = 0xF1_F2;  // hex
-};
-
-// underscores
-{
-  val i1 = 123_456;
-  val i2 = 0x_FF_FFu;
-};
-
-// normal signed integers
-{
-  val i1 : tiny = 1t;
-  val i2 : short = 1s;
-  val i3 : int = 1; // default
-  val i4 : int = 1i;
-  val i5 : long = 1l;
-  val i6 : vlong = 1ll;
-};
-
-// normal unsigned integers
-{
-  val i1 : utiny = 1tu;
-  val i2 : utiny = 1ut; // u may be first or last
-  val i3 : ushort = 1su;
-  val i4 : uint = 1u; // default
-  val i5 : uint = 1iu;
-  val i6 : ulong = 1lu;
-  val i7 : uvlong = 1vu;
-  val i8 : uvlong = 1llu; // alternate
-};
-
-// exact signed integers
-{
-  val i1 : int8 = 1i8;
-  val i2 : int16 = 1i16;
-  val i3 : int32 = 1i32;
-  val i4 : int64 = 1i64;
-};
-
-// exact unsigned integers
-{
-  val i1 : uint8 = 1u8; // 1iu8 not allowed
-  val i2 : uint16 = 1u16;
-  val i3 : uint32 = 1u32;
-  val i4 : uint64 = 1u64;
-};
-
-// floats obey C99 rules, except we allow underscores
-{
-  val x1 : float = 2.2f;
-  val x2 : double = 2.2;
-  val x3 : ldouble = 2.2l;
-  val x4 : double = 22_345.78;
-  // val x5 : float = 0xFFFF.FFp4f; // doesn't work on g++ 2.95.3
-  val x6 : double = 2.2e4;
-  val x7 : float = 2.2e4f;
-};
-@select(env.expect())
-@doc()
-
-@env.head(2,"Mixed Mode Arithmetic")
-Felix by default only supports arithmetic on integers
-of exactly the same type. To enable mixed mode arithmetic
-you can open the MixedInt module.
-@select(env.test('.flx'))
-@kat("type constraints")
-open MixedInt;
-
-var x = 1;
-var y = 2L;
-
-print$ x + y; endl;
-@doc()
-
-@select(env.expect())
-3
-@doc()
-
-@env.head(2,'Strings')
-Felix provides two kinds of strings: 8-bit and 32-bit,
-denoted by string and ustring respectively.
-@p()
-Both kinds of string are intended to provide a universal
-representation of human readable text using the
-ISO-10646/Unicode character set.
-@p()
-Both kinds of string encode 32-bit values representing
-ISO-10646 code points. Strings use UTF-8, whilst ustrings
-use UCS-4.
-@p()
-Both kinds of string literals are replaced where they
-occur with named constants with internal linkage
-of types basic_string<char>, and
-basic_string<uint32_t>.
-@p()
-String literals are output in the C files as C string
-literals with all UTF-8 encoding expressed with hex
-escapes, surrounded by a constructor for basic_string<char>.
-@p()
-Ustrings are surrounded by a Felix function which constructs
-a basic_string<uint32_t> from an 8 bit C string literal
-by decoding UTF-8 sequences.
-@p()
-Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
-as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
-for slosh (backslash), quote, double quote, return, newline, tab,
-bell, vertical tab, and form feed, respectively.
-@p()
-Octal and hex escapes are NOT allowed: strings are
-for internationalisable human text, and do not represent
-arbitrary raw memory extents.
-@p()
-Although not part of the lexicology, note here two special
-forms for strings: a string may be applied to a string, or,
-a string may be applied to an integer. The first case is
-remodelled as a concatenation, and the second as the concatenation
-of the string and the ISO-10646 code point the integer represents.
-Note that if the string is 8 bit, UTF-8 encoding will be applied.
-
-@select(env.test('.flx'))
-var s = "Hello" 32; // add a space after "Hello"
-s = s s; // says "Hello Hello "
-print s; endl;
-@doc()
-
-@select(env.expect())
-Hello Hello
-@env.head(2,'Floating matches')
-Felix provides special matching for
-floating point. Here are some examples:
-[This will change, the need for overlapping
-ranges is too ugly ..]
-
-@select(env.test('.flx'))
-@kat('match:float')
-@kat('nan')
-
-match (1.0) with
-  | NaN => { print "Not a Number"; }
-  | -inf .. -0.999 => { print "lt -1"; }
-  | -1.001 .. 1.001 => { print "Unit circle"; }
-  | 0.999 .. inf => { print "Greater than 1"; }
-endmatch;
-endl;
-
-match (1.0) with
-  | 0.999 .. 1.001 => { print "one"; }
-endmatch;
-endl;
-
-match (1.0/3.0) with
- | 0.3333 .. 0.3334 => { print "One third"; }
-endmatch;
-endl;
-@doc()
-
-@select(env.expect())
-Unit circle
-one
-One third
-@doc()
-
-Things to note are: if there is NaN test,
-it must be the first test. If there is
-a test -inf .. inf, it tests for a non-NaN,
-and must be the last test. A NaN will fail
-all tests other than a test for NaN.
-@p()
-A range test is neither inclusive nor exclusive!
-That's why there is no test for a particular float,
-and why the ranges above overlap.
-Welcome to constructive mathematics!
-@p()
-Note that _floating_ point provides exact
-comparisons; however, the patterns above
-apply to constructive reals. The last
-example explains this best: you can't do
-non-constructive matches. [Use IEEE type
-for exact FP?]
-
-@env.head(2,'Identifiers')
-Felix identifiers consists of a string of
-characters. The first character must be a letter
-or underscore, subsequent characters may be one of a
-letter, underscore, apostrophe or digit.
-@p()
-Certain identifiers are reserved as keywords.
-Identifiers beginning with an underscore are
-reserved to Felix. Identifiers containing
-more than one underscore in a row are
-reserved to Felix. Reserved identifiers may
-be used by programmers, but not defined.
-@p()
-The letters referred to consist of the usual
-A-Z and a-z, but also include any Unicode/ISO10646
-code point recommended as a letter for the purpose
-of use in identifiers of programming languages
-by ISO/IEC PDTR 10176, as adopted by ISO C++.
-A full table can be found in the reference manual,
-Felix Standard, and source code.
-@p()
-These code points must be represented using UTF-8,
-or by embedded Universal Character Names (ucns).
-These consist of a \uXXXX or \UXXXXXXXX where the
-X's are hex digits. Felix normalises all such
-encodings so identifiers match properly.
-
-@select(env.test('.flx'))
-val x_y_7' = 1;
-val Y_can't_U_do_this_in_C'' : double = 2.0;
-val x\u05d0= 1; // x,Hebrew  aleph
-val zz = x\U000005D0; // x,Hebrew aleph
-@doc()
-@select(env.expect())
-@doc()
 
 @env.head(2,"C formatting")
 This is how you do printf-style string formatting.
