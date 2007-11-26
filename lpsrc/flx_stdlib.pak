@@ -263,6 +263,7 @@ typeclass Real[t] {
 
 typeclass Complex[t,r] {
   inherit Eq[t];
+  inherit FloatRing[t];
   inherit Trig[t];
   virtual fun real: t -> r;
   virtual fun imag: t -> r;
@@ -837,6 +838,13 @@ open module Fcomplex
     fun imag : fcomplex -> float = "imag($1)";
     fun abs: fcomplex -> float = "abs($1)";
     fun arg : fcomplex -> float = "arg($1)";
+    fun neg: fcomplex -> fcomplex = "-$1";
+    fun add : fcomplex * fcomplex -> fcomplex = "$1+$2";
+    fun sub: fcomplex * fcomplex -> fcomplex = "$1-$2";
+    fun mul: fcomplex * fcomplex -> fcomplex = "$1*$2";
+    fun div: fcomplex * fcomplex -> fcomplex = "$1/$2";
+    fun zero(): fcomplex => fcomplex 0.0;
+    fun one(): fcomplex => fcomplex 1.0;
   }
 }
 
@@ -844,8 +852,6 @@ open module Dcomplex
 {
   ctor dcomplex[t in reals] : t * t = "std::complex<double>($1,$2)";
   ctor dcomplex[t in reals] : t = "std::complex<double>($1,0)";
-  fun real : dcomplex -> double = "std::real($1)";
-  fun imag : dcomplex -> double = "std::imag($1)";
   proc fprint: ostream * dcomplex = "*$1<<$2;" requires iostream;
   instance Str[dcomplex] {
     fun str (z:dcomplex) => "dcomplex(" + str(real z) + "," + str(imag z)+")";
@@ -855,6 +861,13 @@ open module Dcomplex
     fun imag : dcomplex -> double = "imag($1)";
     fun abs: dcomplex -> double = "abs($1)";
     fun arg : dcomplex -> double = "arg($1)";
+    fun neg: dcomplex -> dcomplex = "-$1";
+    fun add : dcomplex * dcomplex -> dcomplex = "$1+$2";
+    fun sub: dcomplex * dcomplex -> dcomplex = "$1-$2";
+    fun mul: dcomplex * dcomplex -> dcomplex = "$1*$2";
+    fun div: dcomplex * dcomplex -> dcomplex = "$1/$2";
+    fun zero(): dcomplex => dcomplex 0.0;
+    fun one(): dcomplex => dcomplex 1.0;
   }
 }
 
@@ -862,8 +875,6 @@ open module Lcomplex
 {
   ctor lcomplex[t in reals] : t * t = "std::complex<long double>($1,$2)";
   ctor lcomplex[t in reals] : t = "std::complex<long double>($1,0)";
-  fun real : lcomplex -> ldouble = "std::real($1)";
-  fun imag : lcomplex -> ldouble = "std::imag($1)";
   proc fprint: ostream * lcomplex = "*$1<<$2;" requires iostream;
   instance Str[lcomplex] {
     fun str (z:lcomplex) => "lcomplex(" + str(real z) + "," + str(imag z)+")";
@@ -873,6 +884,13 @@ open module Lcomplex
     fun imag : lcomplex -> ldouble = "imag($1)";
     fun abs: lcomplex -> ldouble = "abs($1)";
     fun arg : lcomplex -> ldouble = "arg($1)";
+    fun neg: lcomplex -> lcomplex = "-$1";
+    fun add : lcomplex * lcomplex -> lcomplex = "$1+$2";
+    fun sub: lcomplex * lcomplex -> lcomplex = "$1-$2";
+    fun mul: lcomplex * lcomplex -> lcomplex = "$1*$2";
+    fun div: lcomplex * lcomplex -> lcomplex = "$1/$2";
+    fun zero(): lcomplex => lcomplex 0.0;
+    fun one(): lcomplex => lcomplex 1.0;
   }
 }
 

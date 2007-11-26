@@ -8,7 +8,8 @@
 @def kat(code):
   env.kat(get_tangler(),code)
 
-@env.head(1,'Preface')
+@env.head(1,'Introduction')
+@env.head(2,'Hello World')
 This section deals with the basic concepts in Felix.
 There is no better introduction to a programming
 language than the infamous hello world program
@@ -30,7 +31,8 @@ if there are any significant differences.
 You'll notice that the argument to print is not
 enclosed in brackets.  We'll learn more about
 this shortly.
-@p()
+
+@env.head(2,'Running Programs')
 To run the example, make sure you are in the
 directory containing the Felix demo package,
 then type:
@@ -71,26 +73,32 @@ and linking in libraries.
 It is not only the fastest scripting language
 available, it competes very well with compiled languages,
 and is often faster than C.
-@p()
+
+@env.head(2,'Platform Independence')
 Felix provides platform independence like
 Java without using a bytecode interpreter or
 interpreted virtual machine, by mapping abstracted
 concepts onto the platform specific technologies
-at the source code level.
+at the source code level. 
 @p()
 The Felix code generator itself produces platform
 independent C++ code which should compile on any
-platform with any modern C++ compiler.
+platform with any modern C++ compiler. Thus, the primary
+vehicle for platform independence is to use the ISO Standardised
+C++ object model as an abstract target, and use the local
+conforming C++ compiler as the implementation vehicle.
 @p()
 At the same time, platform dependent features can
 easily be programmed without the need for facilities
 like the JNI (Java native code interface), using
-binding technology directly supported in the language
+binding technology directly supported in Felix
 to map C and C++ functions and data types directly
 into Felix. Felix uses the C++ object model, and so
 can bind to most C and C++ libraries without any
 needed for glue logic.
-@p()
+
+
+@env.head(2,'Binding to C++')
 Lightweight glue is required to map types and names
 across the boundary, but is simple and suitable
 for everyday use.
@@ -113,7 +121,8 @@ println (double (x + y));
 The data type introduced here is a new primitive,
 that is, a fully abstract type, with semantics
 defined in terms of C, but typing managed by Felix.
-@p()
+
+@env.head(2,'Extensibility')
 Felix has many advanced features which make a tutorial
 somewhat difficult to write. For example whilst we describe
 many types such as integers and strings as part of Felix,
@@ -128,46 +137,7 @@ is defined in the standard library.
 
 @env.head(1,'Primitive types')
 Here is a more comprehensive set of examples
-of Felix standard types and numeric lexicology.
-@p()
-The types:
-@begin_displayed_code()
-  // categorical
-  void unit
-
-  // addressing
-  byte size address offset
-
-  // logic
-  bool
-
-  // inexact integers
-  tiny  short  int  long  vlong
-  utiny ushort uint ulong uvlong
-
-  // exact integers
-  int8  int16  int32  int64
-  uint8 uint16 uint32 uint64
-
-  // floating point
-  float double ldouble
-
-  // character
-  char  uchar
-
-  // string
-  string ustring
-@end_displayed_code()
-are defined in the standard library at the top level.
-Except for the addressing types, there is a module
-containing the functions acting on the type for
-each type, with the same name except that the first
-letter is upper case: thus module Long contains all
-the operations on type long. Bool, Int, Double, Char
-and String are opened in the library so the operators
-for the corresponding types are available at the top
-level. Don't expect "1L + 1L" to work unless you
-first "open Long;" in your program!
+of Felix standard types and lexicology.
 
 @env.head(2,'Bool')
 Felix provides the usual boolean type bool with two values
@@ -224,7 +194,8 @@ true
 TRUE
 @doc()
 
-@env.head(2,'Integers')
+@env.head(2,'Arithmetic Types')
+@env.head(3,'Integers')
 The compiler directly supports literals of all
 the numeric types, but the lexicology is a sanitised
 version of that used by C. Note in particular
@@ -236,6 +207,64 @@ their C equivalents.
 @p()
 In particular, the compiler can do constant folding
 only for 'int'.
+@p()
+@begin_table("Felix name","C name","Suffix")
+@table_row("tiny","signed char","t")
+@table_row("utiny","unsigned char","ut, tu")
+@table_row("short","signed short int","s")
+@table_row("ushort","unsigned short int","us, su")
+@table_row("int","signed int","<none>")
+@table_row("uint","unsigned int","u")
+@table_row("long","signed long int","l")
+@table_row("ulong","unsigned long int","lu, ul")
+@table_row("vlong","signed long long","ll, v")
+@table_row("uvlong","unsigned long long","ull, llu, uv, vu")
+@end_table()
+@p()
+The following aliases are also provided, in this
+case the C name may not be used: 
+@p()
+@begin_table("Felix name","C name")
+@table_row("size","size_t")
+@table_row("ptrdiff","ptrdiff_t")
+@table_row("intptr","intptr_t")
+@table_row("uintptr","uintptr_t")
+@table_row("intmax","intmax_t")
+@table_row("uintmax","uintmax_t")
+@end_table()
+@p()
+
+The following aliases for exact integers are also provided, in this
+case the C name may not be used:
+@p()
+@begin_table("Felix name","C name","Suffix")
+@table_row("int8","int8_t","i8")
+@table_row("uint8","uint8_t","u8")
+@table_row("int16","int16_t","i16")
+@table_row("uint16","uint16_t","u16")
+@table_row("int32","int32_t","i32")
+@table_row("uint32","uint32_t","u32")
+@table_row("int64","int64_t","i64")
+@table_row("uint64","uint64_t","u64")
+@end_table()
+@p()
+Felix guarantees all these integer aliases exist,
+even if the C99 counterparts do not.
+@p()
+Arithmetic types support the same operations as ISO C99,
+except that Felix does not support bitwise operations on
+signed integers (shifts are supported, they're multiplications
+by powers of two).
+@p()
+Overflow of operations on signed types is undefined
+behaviour. Operations on unsigned types cannot overflow
+because it is defined as the modular residual of the
+underlying operation on integers.
+@p()
+Thus, operations on exact unsigned integral types are fully
+deterministic, and operations on signed integral types
+are also deterministic when it does not overflow.
+@p()
 
 @select(env.test('.flx'))
 @kat('lexemes:integer')
@@ -297,7 +326,7 @@ only for 'int'.
 @select(env.expect())
 @doc()
 
-@env.head(2,"Mixed Mode Arithmetic")
+@env.head(3,"Mixed Mode Integers")
 Felix by default only supports arithmetic on integers
 of exactly the same type. To enable mixed mode arithmetic
 you can open the MixedInt module.
@@ -316,8 +345,13 @@ print$ x + y; endl;
 @doc()
 
 
-@env.head(2,"Floats")
+@env.head(3,"Floats")
 Felix provides 3 floating point types.
+@begin_table("Felix name","C++ name")
+@table_row("float","float")
+@table_row("double","double")
+@table_row("ldouble","long double")
+@end_table()
 @select(env.test('.flx'))
 // floats obey C99 rules, except we allow underscores
 {
@@ -334,8 +368,13 @@ Felix provides 3 floating point types.
 2.2
 @doc()
 
-@env.head(2,"Complex")
+@env.head(3,"Complex")
 Felix provides 3 complex types corresponding to the three floating types.
+@begin_table("Felix name","C++ name")
+@table_row("fcomplex","std::complex<float>")
+@table_row("dcomplex","std::complex<double>")
+@table_row("lcomplex","std::complex<long double>")
+@end_table()
 @select(env.test('.flx'))
 // floats obey C99 rules, except we allow underscores
 {
