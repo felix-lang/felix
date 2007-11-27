@@ -261,6 +261,12 @@ typeclass Real[t] {
   virtual fun trunc: t -> t;
 }
 
+open module Imagination 
+{
+  type sqrt_minus_one = "__ERROR__";
+  const i : sqrt_minus_one = "__ERROR__";
+}
+
 typeclass Complex[t,r] {
   inherit Eq[t];
   inherit FloatRing[t];
@@ -269,6 +275,15 @@ typeclass Complex[t,r] {
   virtual fun imag: t -> r;
   virtual fun abs: t -> r;
   virtual fun arg: t -> r;
+
+  virtual fun add: r * t -> t;
+  virtual fun add: t * r -> t;
+  virtual fun sub: r * t -> t;
+  virtual fun sub: t * r -> t;
+  virtual fun mul : t * r -> t;
+  virtual fun mul : r * t -> t;
+  virtual fun div : t * r -> t;
+  virtual fun div : r * t -> t;
 }
 
 typeclass Container [c,v]
@@ -843,9 +858,18 @@ open module Fcomplex
     fun sub: fcomplex * fcomplex -> fcomplex = "$1-$2";
     fun mul: fcomplex * fcomplex -> fcomplex = "$1*$2";
     fun div: fcomplex * fcomplex -> fcomplex = "$1/$2";
+    fun add : fcomplex * float -> fcomplex = "$1+$2";
+    fun sub: fcomplex * float -> fcomplex = "$1-$2";
+    fun mul: fcomplex * float -> fcomplex = "$1*$2";
+    fun div: fcomplex * float -> fcomplex = "$1/$2";
+    fun add : float * fcomplex -> fcomplex = "$1+$2";
+    fun sub: float * fcomplex -> fcomplex = "$1-$2";
+    fun mul: float * fcomplex -> fcomplex = "$1*$2";
+    fun div: float * fcomplex -> fcomplex = "$1/$2";
     fun zero(): fcomplex => fcomplex 0.0;
     fun one(): fcomplex => fcomplex 1.0;
   }
+  fun apply(a:float, b:sqrt_minus_one)=>fcomplex(0.0f,a);
 }
 
 open module Dcomplex
@@ -866,9 +890,18 @@ open module Dcomplex
     fun sub: dcomplex * dcomplex -> dcomplex = "$1-$2";
     fun mul: dcomplex * dcomplex -> dcomplex = "$1*$2";
     fun div: dcomplex * dcomplex -> dcomplex = "$1/$2";
+    fun add : dcomplex * double -> dcomplex = "$1+$2";
+    fun sub: dcomplex * double -> dcomplex = "$1-$2";
+    fun mul: dcomplex * double -> dcomplex = "$1*$2";
+    fun div: dcomplex * double -> dcomplex = "$1/$2";
+    fun add : double * dcomplex -> dcomplex = "$1+$2";
+    fun sub: double * dcomplex -> dcomplex = "$1-$2";
+    fun mul: double * dcomplex -> dcomplex = "$1*$2";
+    fun div: double * dcomplex -> dcomplex = "$1/$2";
     fun zero(): dcomplex => dcomplex 0.0;
     fun one(): dcomplex => dcomplex 1.0;
   }
+  fun apply(a:double, b:sqrt_minus_one)=>dcomplex(0.0,a);
 }
 
 open module Lcomplex
@@ -889,9 +922,18 @@ open module Lcomplex
     fun sub: lcomplex * lcomplex -> lcomplex = "$1-$2";
     fun mul: lcomplex * lcomplex -> lcomplex = "$1*$2";
     fun div: lcomplex * lcomplex -> lcomplex = "$1/$2";
+    fun add : lcomplex * ldouble -> lcomplex = "$1+$2";
+    fun sub: lcomplex * ldouble -> lcomplex = "$1-$2";
+    fun mul: lcomplex * ldouble -> lcomplex = "$1*$2";
+    fun div: lcomplex * ldouble -> lcomplex = "$1/$2";
+    fun add : ldouble * lcomplex -> lcomplex = "$1+$2";
+    fun sub: ldouble * lcomplex -> lcomplex = "$1-$2";
+    fun mul: ldouble * lcomplex -> lcomplex = "$1*$2";
+    fun div: ldouble * lcomplex -> lcomplex = "$1/$2";
     fun zero(): lcomplex => lcomplex 0.0;
     fun one(): lcomplex => lcomplex 1.0;
   }
+  fun apply(a:ldouble, b:sqrt_minus_one)=>lcomplex(0.0l,a);
 }
 
 @#------------- CHARACTER MODULES -------------------
@@ -1882,6 +1924,7 @@ open module Ustring
   open Bool;
   open Char;
   open Int;
+  fun _ctor_uchar (x:ustring) => x.[0];
   proc pluseq: lvalue[ustring] * ustring = "$1.append($2);";
 
   fun len: ustring -> int = "$1.size()";

@@ -139,11 +139,22 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       ) [] inst_kids
     in
     let check_binding force tck sr id tck_bvs tctype =
-      let entries = filter (fun (name,x) -> name = id) inst_map in
+      let sigmatch i inst_funbvs t =
+        let t = reduce_type t in
+        let tc_ptv = length tck_bvs - length tc_bvs in
+        let inst_ptv = length inst_funbvs - length inst_vs in
+        if inst_ptv <> tc_ptv then false else
+        let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (length inst_vs)) in
+        assert (length tck_bvs = length inst_funts);
+        let tct = reduce_type (beta_reduce syms sr (tsubst tck_bvs inst_funts tctype)) in
+        let matches =  tct = t in
+        matches
+      in
+      let entries = filter (fun (name,(i,(inst_funbvs,t))) -> name = id && sigmatch i inst_funbvs t) inst_map in
       match entries with
       | [] ->
          if force then
-         clierr sr ("Cannot find typeclass virtual " ^ id ^ " in instance")
+         clierr2 sr inst_sr ("Cannot find typeclass "^inst_id^" virtual " ^ id ^ " in instance ["^catmap "," (sbt syms.dfns) inst_ts ^"]")
 
       | [_,(i,(inst_funbvs,t))] ->
         let t = reduce_type t in
@@ -232,7 +243,9 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         );
         *)
 
-      | _ -> clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
+      | _ -> 
+      
+        clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
     iter
     (fun tck ->

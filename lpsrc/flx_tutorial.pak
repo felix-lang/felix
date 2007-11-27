@@ -196,18 +196,20 @@ TRUE
 
 @env.head(2,'Arithmetic Types')
 @env.head(3,'Integers')
-The compiler directly supports literals of all
-the numeric types, but the lexicology is a sanitised
-version of that used by C. Note in particular
-that 010 is decimal ten in Felix!
-@p()
 Integers are not builtin types, but are in fact
 defined in the standard library by binding to 
 their C equivalents.
 @p()
-In particular, the compiler can do constant folding
-only for 'int'.
+In the following table, the Felix names of the basic integer
+types are given, along with the corresponding C names. Felix allows
+either the Felix name or any valid C name to be used for these types.
+For example 'unsigned' is an an acceptable type name in Felix
+because it is in C.
 @p()
+The table also lists the lower case versions of the type suffices allowed
+for literals of that type. Either or both the unsigned designator 'u'
+or the other part may be upper case instead (however lL is not permitted
+for long long, both letters must be either lower or upper case).
 @begin_table("Felix name","C name","Suffix")
 @table_row("tiny","signed char","t")
 @table_row("utiny","unsigned char","ut, tu")
@@ -248,8 +250,13 @@ case the C name may not be used:
 @table_row("uint64","uint64_t","u64")
 @end_table()
 @p()
-Felix guarantees all these integer aliases exist,
-even if the C99 counterparts do not.
+Felix guarantees all the addressing and exact integer aliases exist,
+even if the C89, C++ or C99 counterparts do not. When the C/C++ counterparts
+do exist, Felix binds to the same integer type, otherwise it binds to
+the largest appropriate integer type (for example, if both long
+and long long exist and are the same size as a pointer, and
+intptr_t is not defined by C or C++, then Felix choses long long
+as the alias).
 @p()
 Arithmetic types support the same operations as ISO C99,
 except that Felix does not support bitwise operations on
@@ -258,14 +265,30 @@ by powers of two).
 @p()
 Overflow of operations on signed types is undefined
 behaviour. Operations on unsigned types cannot overflow
-because it is defined as the modular residual of the
-underlying operation on integers.
+because they are defined as the modular residual of the
+underlying mathematical operation on integers.
 @p()
 Thus, operations on exact unsigned integral types are fully
 deterministic, and operations on signed integral types
-are also deterministic when it does not overflow.
+are also deterministic when they do not overflow.
 @p()
-
+An integer literal consists of a prefix, numeric form and suffix.
+The suffix is noted in the tables above.
+Either the size indicator or signedness indicator 'u' or 'i'
+can be wholly capitalised (but note that lL is not allowed).
+@p()
+The prefix denotes the radix as in the table below:
+@begin_table("Prefix","Radix", "name", "Allowed digits")
+@table_row("0b,0B","2", "binary","01")
+@table_row("0o,0O","8", "octal","01234567")
+@table_row("0d,0D,<none>","10", "decimal","0123456789")
+@table_row("0x,0X","16", "hexadecimal","0123456789ABCDEFabcdef")
+@end_table()
+@p()
+The numeric form consists of digits from the table above,
+with optional underscores inserted for layout purposes.
+Two underscores in a row are not permitted, one is allowed
+between digits, or a digit and the prefix or suffix.
 @select(env.test('.flx'))
 @kat('lexemes:integer')
 @kat('literals:integer')
@@ -388,7 +411,81 @@ Felix provides 3 complex types corresponding to the three floating types.
 2.2
 @doc()
 
+@env.head(3,'Floating matches')
+Felix provides special matching for
+floating point. Here are some examples:
+[This may change, the need for overlapping
+ranges is too ugly ..]
 
+@select(env.test('.flx'))
+@kat('match:float')
+@kat('nan')
+
+match (1.0) with
+  | NaN => { print "Not a Number"; }
+  | -inf .. -0.999 => { print "lt -1"; }
+  | -1.001 .. 1.001 => { print "Unit circle"; }
+  | 0.999 .. inf => { print "Greater than 1"; }
+endmatch;
+endl;
+
+match (1.0) with
+  | 0.999 .. 1.001 => { print "one"; }
+endmatch;
+endl;
+
+match (1.0/3.0) with
+ | 0.3333 .. 0.3334 => { print "One third"; }
+endmatch;
+endl;
+@doc()
+
+@select(env.expect())
+Unit circle
+one
+One third
+@doc()
+
+Things to note are: if there is NaN test,
+it must be the first test. If there is
+a test -inf .. inf, it tests for a non-NaN,
+and must be the last test. A NaN will fail
+all tests other than a test for NaN.
+@p()
+A range test is neither inclusive nor exclusive!
+That's why there is no test for a particular float,
+and why the ranges above overlap.
+Welcome to constructive mathematics!
+@p()
+Note that _floating_ point provides exact
+comparisons; however, the patterns above
+apply to constructive reals. The last
+example explains this best: you can't do
+non-constructive matches. [Use IEEE type
+for exact FP?]
+
+
+@env.head(2,'Characters')
+Felix provides two character types: char and uchar.
+Type char provides 256 code points, whereas uchar
+provides at least 2147483648 (31 bits worth).
+@p()
+There are no character literals. You can use the ord
+function to obtain the numeric value of a char or uchar
+as an int or uint32 respectively. 
+@p()
+Constructors for char and uchar convert any
+integer to the corresponding character. The result is 
+undefined for negative values of signed types.
+@p()
+The char and uchar constructors can be applied to a string
+of at least length 1 to obtain a literal, for example:
+
+@select(env.test('.flx'))
+println (char "Hello");
+@select(env.expect())
+H
+@doc()
 
 @env.head(2,'Strings')
 Felix provides two kinds of strings: 8-bit and 32-bit,
@@ -439,58 +536,7 @@ print s; endl;
 
 @select(env.expect())
 Hello Hello
-@env.head(2,'Floating matches')
-Felix provides special matching for
-floating point. Here are some examples:
-[This will change, the need for overlapping
-ranges is too ugly ..]
-
-@select(env.test('.flx'))
-@kat('match:float')
-@kat('nan')
-
-match (1.0) with
-  | NaN => { print "Not a Number"; }
-  | -inf .. -0.999 => { print "lt -1"; }
-  | -1.001 .. 1.001 => { print "Unit circle"; }
-  | 0.999 .. inf => { print "Greater than 1"; }
-endmatch;
-endl;
-
-match (1.0) with
-  | 0.999 .. 1.001 => { print "one"; }
-endmatch;
-endl;
-
-match (1.0/3.0) with
- | 0.3333 .. 0.3334 => { print "One third"; }
-endmatch;
-endl;
 @doc()
-
-@select(env.expect())
-Unit circle
-one
-One third
-@doc()
-
-Things to note are: if there is NaN test,
-it must be the first test. If there is
-a test -inf .. inf, it tests for a non-NaN,
-and must be the last test. A NaN will fail
-all tests other than a test for NaN.
-@p()
-A range test is neither inclusive nor exclusive!
-That's why there is no test for a particular float,
-and why the ranges above overlap.
-Welcome to constructive mathematics!
-@p()
-Note that _floating_ point provides exact
-comparisons; however, the patterns above
-apply to constructive reals. The last
-example explains this best: you can't do
-non-constructive matches. [Use IEEE type
-for exact FP?]
 
 @env.head(2,'Identifiers')
 Felix identifiers consists of a string of
