@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <stdarg.h>
 
 #include "flx_rtl_config.hpp"
@@ -54,6 +55,28 @@ namespace flx { namespace rtl { namespace strutil {
     x << t;
     return x.str();
   }
+
+  template<class T>
+  string fmt_default(T const &t, int w, int p) {
+    std::ostringstream x;
+    x << std::setw(w) << std::setprecision(p) << t;
+    return x.str();
+  }
+
+  template<class T>
+  string fmt_fixed(T const &t, int w, int p) {
+    std::ostringstream x;
+    x << std::fixed << std::setw(w) << std::setprecision(p) << t;
+    return x.str();
+  }
+
+  template<class T>
+  string fmt_scientific(T const &t, int w, int p) {
+    std::ostringstream x;
+    x << std::scientific << std::setw(w) << std::setprecision(p) << t;
+    return x.str();
+  }
+
 
   RTL_EXTERN string atostr(char const *a);
   RTL_EXTERN string flx_asprintf(char const *fmt,...);

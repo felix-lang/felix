@@ -800,6 +800,25 @@ module MixedInt
 }
 
 @#------------- FLOATING MODULES -------------------
+open module float_format
+{
+  union mode =
+    | default of int * int 
+    | fixed of int * int
+    | scientific of int * int
+  ;
+  fun fmt[t in reals] (v:t, m: mode) =>
+    match m with
+    | default (?w,?p) => fmt_default(v,w,p)
+    | fixed (?w,?p) => fmt_fixed(v,w,p)
+    | scientific(?w,?p) => fmt_scientific(v,w,p)
+    endmatch
+  ;
+  fun fmt_default[t] : t * int * int -> string="flx::rtl::strutil::fmt_default($a)" requires flx_strutil;
+  fun fmt_fixed[t] : t * int * int -> string="flx::rtl::strutil::fmt_fixed($a)" requires flx_strutil;
+  fun fmt_scientific[t] : t * int * int -> string="flx::rtl::strutil::fmt_scientific($a)" requires flx_strutil;
+}
+
 @for t in floats:
   tangle("open module " + string.capitalize(t))
   tangle("{")
@@ -846,7 +865,7 @@ open module Fcomplex
   ctor fcomplex[t in reals] : t = "std::complex<float>($1,0)";
   proc fprint: ostream * fcomplex = "*$1<<$2;" requires iostream;
   instance Str[fcomplex] {
-    fun str (z:fcomplex) => "fcomplex(" + str(real z) + "," + str(imag z)+")";
+    fun str (z:fcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
   instance Complex[fcomplex,float] {
     fun real : fcomplex -> float = "real($1)";
@@ -878,7 +897,7 @@ open module Dcomplex
   ctor dcomplex[t in reals] : t = "std::complex<double>($1,0)";
   proc fprint: ostream * dcomplex = "*$1<<$2;" requires iostream;
   instance Str[dcomplex] {
-    fun str (z:dcomplex) => "dcomplex(" + str(real z) + "," + str(imag z)+")";
+    fun str (z:dcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
   instance Complex[dcomplex,double] {
     fun real : dcomplex -> double = "real($1)";
@@ -910,7 +929,7 @@ open module Lcomplex
   ctor lcomplex[t in reals] : t = "std::complex<long double>($1,0)";
   proc fprint: ostream * lcomplex = "*$1<<$2;" requires iostream;
   instance Str[lcomplex] {
-    fun str (z:lcomplex) => "lcomplex(" + str(real z) + "," + str(imag z)+")";
+    fun str (z:lcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
   instance Complex[lcomplex,ldouble] {
     fun real : lcomplex -> ldouble = "real($1)";

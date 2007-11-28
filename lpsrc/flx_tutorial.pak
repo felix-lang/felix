@@ -399,6 +399,9 @@ Felix provides 3 complex types corresponding to the three floating types.
 @table_row("lcomplex","std::complex<long double>")
 @end_table()
 @select(env.test('.flx'))
+proc precision: ostream * int = "$1.precision($2);";
+precision(cout,5);
+
 // floats obey C99 rules, except we allow underscores
 {
   val x1 : fcomplex = fcomplex(2.2f, 1.0f);
@@ -406,9 +409,12 @@ Felix provides 3 complex types corresponding to the three floating types.
   val x3 : lcomplex = lcomplex (2.2l, 21.0l);
   val z = sin (x2);
   println (abs x2);
+  z = 0.5 + 0.2 i;
+  println z;
 };
 @select(env.expect())
 2.2
+0.5+0.2i
 @doc()
 
 @env.head(3,'Floating matches')
