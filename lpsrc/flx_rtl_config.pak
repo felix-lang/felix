@@ -265,7 +265,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
  else:
   tangle("#define FLX_HAVE_EVTPORTS 0")
 
-@if config.TARGET_CXX.options.HAVE_OPENMP:
+@if config.TARGET_CXX.options.HAVE_SHARED_OPENMP:
   tangle("#define FLX_HAVE_OPENMP 1")
  else:
   tangle("#define FLX_HAVE_OPENMP 0")

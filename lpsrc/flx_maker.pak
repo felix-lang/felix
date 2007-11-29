@@ -554,7 +554,7 @@ class build_host_ocaml(Process):
       src = f+'.mli'
       dst = f+'.ml'
       if not self.quiet: print 'copying file', src, '->', dst
-      shutil.copy(src, dst)
+      shutil.copyfile(src, dst)
 
 
   def runme(self, pkg, pkgdict, *args):
@@ -609,10 +609,7 @@ class build_ocamlbuild(Process):
       self.shell(config.OCAMLBUILD, bin)
 
       mkdirs('bin')
-      shutil.copy(
-        os.path.join('_build', bin),
-        os.path.join('bin', os.path.basename(exe)))
-
+      shutil.copy(os.path.join('_build', bin), 'bin')
 @doc()
 
 @select(tangler('mkplugins/build_host_tools.py'))
@@ -637,7 +634,7 @@ class build_host_tools(Process):
 
       if not self.quiet: print 'copying file', src, '->', dst
       mkdirs(os.path.dirname(dst))
-      shutil.copy(src,dst)
+      shutil.copyfile(src, dst)
 
 
   def runme(self, pkg, pkgdict, *args):
@@ -1210,6 +1207,7 @@ class build_felix_static_drivers(Process):
     for src, outdir in DRIVERS:
       if self.verbose: print 'static Compiling driver object', src
       dst = config.TARGET_CXX.compile_static_main([src],
+        outdir='build',
         include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
         macros=["FLX_STATIC_LINK"],
         optimise=self.optimise,
@@ -1312,7 +1310,7 @@ class build_target_felix_rtl(Process):
       dst = os.path.join('lib', os.path.basename(path))
 
       if not self.quiet: print 'copying file', src, '->', dst
-      shutil.copy(src, dst)
+      shutil.copyfile(src, dst)
 
 @select(tangler('mkplugins/build_target_felix_tools.py'))
 import os

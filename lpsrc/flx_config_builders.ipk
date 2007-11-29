@@ -88,10 +88,8 @@ class c_cxx_base(compiler_base):
     assert COM, 'need to specify a compiler'
     assert AR, 'need to specify a static library linker'
 
-    if RANLIB is not None: RANLIB = RANLIB + ' '
-
-    opt.COM = COM + ' '
-    opt.AR = AR + ' '
+    opt.COM = COM
+    opt.AR = AR
     opt.RANLIB = RANLIB
     opt.build = build
     opt.model = model
@@ -108,6 +106,9 @@ class c_cxx_base(compiler_base):
     opt.HAVE_STL_GNU_CXX = False
     opt.HAVE_GNU_BUILTIN_EXPECT = False
 
+    opt.HAVE_PIC = False
+    opt.HAVE_STATIC_OPENMP = False
+    opt.HAVE_SHARED_OPENMP = False
 
     print "COM =", opt.COM
 
@@ -164,8 +165,8 @@ class c_cxx_base(compiler_base):
       if optimise: cmd.append(opt.OPTIMISE)
 
       # include path
-      for i in include_paths:     cmd.append(opt.SPEC_INCLUDE + i)
-      for i in opt.include_paths: cmd.append(opt.SPEC_INCLUDE + i)
+      for i in include_paths:     cmd.extend((opt.SPEC_INCLUDE, i))
+      for i in opt.include_paths: cmd.extend((opt.SPEC_INCLUDE, i))
 
       # output file
       cmd.append(opt.SPEC_OBJ_FILENAME + dst)
@@ -191,6 +192,8 @@ class c_cxx_base(compiler_base):
   ####
 
   def compile_static_thing(self, COM, EXT_SRC, *args, **kwds):
+    if self.options.HAVE_STATIC_OPENMP: COM += ' ' + self.options.OPENMP
+
     return self.compile_thing(COM, EXT_SRC, self.options.EXT_STATIC_OBJ,
         *args, **kwds)
 
@@ -199,24 +202,40 @@ class c_cxx_base(compiler_base):
   # version of the RTL
   def compile_static_rtl(self, *args, **kwds):
     opt = self.options
-    COM = opt.__dict__.get('CCOBJ_STATIC_RTL', opt.COM + opt.SPEC_COMPILE_OBJ)
+    COM = opt.__dict__.get('CCOBJ_STATIC_RTL', opt.COM + ' ' + opt.SPEC_COMPILE_OBJ)
     return self.compile_static_thing(COM, opt.EXT_SRC_LIB, *args, **kwds)
 
 
   def compile_static_main(self, *args, **kwds):
     opt = self.options
-    COM = opt.__dict__.get('CCOBJ_STATIC_MAIN', opt.COM + opt.SPEC_COMPILE_OBJ)
+    COM = opt.__dict__.get('CCOBJ_STATIC_MAIN', opt.COM + ' ' + opt.SPEC_COMPILE_OBJ)
     return self.compile_static_thing(COM, opt.EXT_SRC_MAIN, *args, **kwds)
 
 
   def compile_felix_static(self, *args, **kwds):
     opt = self.options
-    COM = opt.__dict__.get('CCOBJ_STATIC_FLX', opt.COM + opt.SPEC_COMPILE_OBJ)
+    COM = opt.__dict__.get('CCOBJ_STATIC_FLX', opt.COM + ' ' + opt.SPEC_COMPILE_OBJ)
     return self.compile_static_thing(COM, opt.EXT_SRC_LIB, *args, **kwds)
 
   ####
 
   def compile_shared_thing(self, COM, EXT_SRC, *args, **kwds):
+    if self.options.HAVE_PIC: COM += ' ' + self.options.PIC
+
+    # JS: openmp support now detected, and the right compiler option applied
+    # Windows prof. ed. 2005 supports openMP for dynamic link only
+    # Express doesn't support openMP
+    # Xbox also supports static link, but we don't handle that here
+    #
+    # So far, we don't link the right library.. can't see at present how
+    # to get the library in, and not sure that /openmp doesn't link it
+    # automatically.
+    # It's called vcomp.lib/vcomp.dll.
+    # this has to specified with LDFLAGS to go after the 'link' directive
+    # assuming the /openmp switch doesn't force the right linkage
+
+    if self.options.HAVE_SHARED_OPENMP: COM += ' ' + self.options.OPENMP
+
     # add shared flag, then execute
     return self.compile_thing(COM, EXT_SRC, self.options.EXT_SHARED_OBJ,
         *args, **kwds)
@@ -226,19 +245,19 @@ class c_cxx_base(compiler_base):
   # which links to shared libraries
   def compile_shared_rtl(self, *args, **kwds):
     opt = self.options
-    COM = opt.__dict__.get('CCOBJ_DYNAMIC_RTL', opt.COM + opt.SPEC_COMPILE_OBJ)
+    COM = opt.__dict__.get('CCOBJ_DYNAMIC_RTL', opt.COM + ' ' + opt.SPEC_COMPILE_OBJ)
     return self.compile_shared_thing(COM, opt.EXT_SRC_LIB, *args, **kwds)
 
 
   def compile_shared_main(self, *args, **kwds):
     opt = self.options
-    COM = opt.__dict__.get('CCOBJ_DYNAMIC_MAIN', opt.COM + opt.SPEC_COMPILE_OBJ)
+    COM = opt.__dict__.get('CCOBJ_DYNAMIC_MAIN', opt.COM + ' ' + opt.SPEC_COMPILE_OBJ)
     return self.compile_shared_thing(COM, opt.EXT_SRC_MAIN, *args, **kwds)
 
 
   def compile_felix_dll(self, *args, **kwds):
     opt = self.options
-    COM = opt.__dict__.get('CCOBJ_DYNAMIC_FLX', opt.COM + opt.SPEC_COMPILE_OBJ)
+    COM = opt.__dict__.get('CCOBJ_DYNAMIC_FLX', opt.COM + ' ' + opt.SPEC_COMPILE_OBJ)
     return self.compile_shared_thing(COM, opt.EXT_SRC_LIB, *args, **kwds)
 
   ########
@@ -295,12 +314,10 @@ class c_cxx_base(compiler_base):
 
     filename = outfile + opt.EXT_LIB
 
-    cmd = [opt.AR, opt.SPEC_AR_OUT_FILENAME + filename]
-    cmd.extend(objects)
-
     mkdirs(os.path.dirname(outfile))
 
-    self.shell(*cmd, **dict(log=log))
+    self.shell(opt.AR, opt.SPEC_AR_OUT_FILENAME + filename,
+      *objects, **dict(log=log))
 
     if opt.RANLIB:
       self.shell(opt.RANLIB, filename, log=log)
@@ -407,7 +424,7 @@ class c_cxx_base(compiler_base):
     filename = self.build_static_program(*args, **kwds)
     return self.shell(filename)
 
-  def run_shared_program(self, basename):
+  def run_shared_program(self, *args, **kwds):
     filename = self.build_shared_program(*args, **kwds)
     return self.shell(filename)
 
@@ -418,7 +435,7 @@ class c_cxx_base(compiler_base):
     return self.run_static_program(basename, *args, **kwds)
 
 
-  def run_static_shared_program(self, data, basename, *args, **kwds):
+  def run_shared_string_program(self, data, basename, *args, **kwds):
     basename = self.write_src(data, basename)
     return self.run_shared_program(basename, *args, **kwds)
 
@@ -452,7 +469,7 @@ int fred(int argc, char** argv) { return 0; }
 
     filename = self.write_src(proggy, basename)
 
-    return self.compile_static_main([filename], **kwds)
+    return self.build_static_rtl([filename], **kwds)
 
   ########
 
@@ -1187,28 +1204,28 @@ int main(int argc,char** argv) {
     print opt.COM, opt.use, "configuration"
     print "**********************************************"
     print "model=", opt.model
-    print "static library tool #1                  : " + opt.AR
-    print "static library tool #2                  : " + opt.RANLIB
+    print "static library tool #1                  :",  opt.AR
+    print "static library tool #2                  :",  opt.RANLIB
     print
-    print "Command to compile static Felix rtl     : " + opt.CCOBJ_STATIC_RTL
-    print "Command to compile shared Felix rtl     : " + opt.CCOBJ_DYNAMIC_RTL
-    print "Command to link shared Felix rtl        : " + opt.CCLINK_DYNAMIC_RTL
+    print "Command to compile static Felix rtl     :",  opt.CCOBJ_STATIC_RTL
+    print "Command to compile shared Felix rtl     :",  opt.CCOBJ_DYNAMIC_RTL
+    print "Command to link shared Felix rtl        :",  opt.CCLINK_DYNAMIC_RTL
     print
-    print "Command to compile static Felix driver  : " + opt.CCOBJ_STATIC_MAIN
-    print "Command to compile dynamic Felix driver : " + opt.CCOBJ_DYNAMIC_MAIN
-    print "Command to link dynamic Felix driver    : " + opt.CCLINK_DYNAMIC_MAIN
+    print "Command to compile static Felix driver  :",  opt.CCOBJ_STATIC_MAIN
+    print "Command to compile dynamic Felix driver :",  opt.CCOBJ_DYNAMIC_MAIN
+    print "Command to link dynamic Felix driver    :",  opt.CCLINK_DYNAMIC_MAIN
     print
-    print "Command to compile static Felix object  : " + opt.CCOBJ_STATIC_FLX
-    print "Command to compile loadable Felix object: " + opt.CCOBJ_DYNAMIC_FLX
-    print "Command to link loadable Felix object   : " + opt.CCLINK_DYNAMIC_FLX
+    print "Command to compile static Felix object  :",  opt.CCOBJ_STATIC_FLX
+    print "Command to compile loadable Felix object:",  opt.CCOBJ_DYNAMIC_FLX
+    print "Command to link loadable Felix object   :",  opt.CCLINK_DYNAMIC_FLX
     print
-    print "Extension for static object file        : " + opt.EXT_STATIC_OBJ
-    print "Extension for shared object file        : " + opt.EXT_SHARED_OBJ
-    print "Extension for static archive            : " + opt.EXT_LIB
-    print "Extension for loadable RTL              : " + opt.EXT_DYLIB
-    print "Extension for flx modules               : " + opt.EXT_SHLIB
-    print "Extension for executable                : " + opt.EXT_EXE
-    print "RTL in directory                        : " + opt.SHLIB_DIR
+    print "Extension for static object file        :",  opt.EXT_STATIC_OBJ
+    print "Extension for shared object file        :",  opt.EXT_SHARED_OBJ
+    print "Extension for static archive            :",  opt.EXT_LIB
+    print "Extension for loadable RTL              :",  opt.EXT_DYLIB
+    print "Extension for flx modules               :",  opt.EXT_SHLIB
+    print "Extension for executable                :",  opt.EXT_EXE
+    print "RTL in directory                        :",  opt.SHLIB_DIR
 
     print
     self.report_isnan()
@@ -1374,12 +1391,12 @@ class gnu_mixin(object):
     super(gnu_mixin, self).set_options(**kwds)
 
     opt = self.options
-    opt.STRIP = STRIP + " "
+    opt.STRIP = STRIP
 
     self.lang = opt.COM
 
     if opt.model == "nocygwin":
-      opt.COM = opt.COM + "-mno-cygwin "
+      opt.COM = opt.COM + "-mno-cygwin"
       opt.EXT_STATIC_OBJ = "_static.obj" # temporary hack
       opt.EXT_SHARED_OBJ = "_dynamic.obj" # temporary hack
 
@@ -1397,7 +1414,7 @@ class gnu_mixin(object):
     opt.EXT_DYLIB = ".so"
     opt.SHLIB_DIR = os.path.join("lib", "rtl")
 
-    opt.SPEC_COMPILE_OBJ = "-c "
+    opt.SPEC_COMPILE_OBJ = "-c"
     opt.SPEC_OBJ_FILENAME = "-o "
     opt.SPEC_EXE_FILENAME = "-o "
     opt.SPEC_DEFINE = "-D"
@@ -1405,9 +1422,9 @@ class gnu_mixin(object):
     opt.SPEC_LIBPATH = "-L"
     opt.SPEC_LIB = "-l"
     opt.SPEC_AR_OUT_FILENAME = ""
-    opt.DEBUG_FLAGS = "-g "
-    #opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
-    opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline "
+    opt.DEBUG_FLAGS = "-g"
+    #opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG"
+    opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline"
 
     # RF: a hack to make the VS build work. sort of an "any last words"
     # argument/hook before link directives.
@@ -1432,7 +1449,6 @@ class gnu_mixin(object):
       # differentiated now because osx treats dylibs
       # and plugin-type libraries.
       opt.EXT_DYLIB = ".dylib"
-      opt.PIC = "" # darwin code is by default position independent
 
 
   def detect_warning_flags(self):
@@ -1448,20 +1464,20 @@ class gnu_mixin(object):
     # But the error can't occur in C, and specifying the option
     # causes gcc to barf with a warning
     #
-    if self.lang == "g++ ":
+    if self.lang == "g++":
       try:
         self.compile_dummy_main(CFLAGS="-Wno-invalid-offsetof")
-        opt.NO_INVALID_OFFSETOF_WARNING = "-Wall -Wno-invalid-offsetof "
+        opt.NO_INVALID_OFFSETOF_WARNING = "-Wall -Wno-invalid-offsetof"
         print "-Wno-invalid-offsetof supported"
       except ExecutionError:
-        opt.NO_INVALID_OFFSETOF_WARNING = "-w "
+        opt.NO_INVALID_OFFSETOF_WARNING = "-w"
     else:
-      opt.NO_INVALID_OFFSETOF_WARNING = "-Wall "
+      opt.NO_INVALID_OFFSETOF_WARNING = "-Wall"
 
     # find if we have g++ with -Wfatal-errors
     try:
       self.compile_dummy_main(CFLAGS="-Wfatal-errors")
-      opt.NO_INVALID_OFFSETOF_WARNING = opt.NO_INVALID_OFFSETOF_WARNING + "-Wfatal-errors "
+      opt.NO_INVALID_OFFSETOF_WARNING = opt.NO_INVALID_OFFSETOF_WARNING + " -Wfatal-errors"
       print "-Wfatal-errors supported"
     except ExecutionError:
       pass
@@ -1585,13 +1601,14 @@ int main(int argc, char** argv) {
     # find if we can use -fopenmp without a warning
     try:
       self.compile_dummy_main(CFLAGS="-Werror -fopenmp")
-      self.options.openmp= "-fopenmp "
-      print "OpenMP based parallel programming supported"
-      self.options.HAVE_OPENMP = True
     except ExecutionError:
-      self.options.openmp = ""
-      self.options.HAVE_OPENMP = False
       print "OpenMP based parallel programming not supported"
+    else:
+      print "OpenMP based parallel programming supported"
+
+      self.options.HAVE_STATIC_OPENMP = True
+      self.options.HAVE_SHARED_OPENMP = True
+      self.options.OPENMP = "-fopenmp"
 
 
   def detect_PIC(self):
@@ -1602,60 +1619,60 @@ int main(int argc, char** argv) {
     # if it would not generate this warning
     try:
       self.compile_dummy_main(CFLAGS="-Werror -fPIC")
-      self.options.PIC = "-fPIC "
-      print "-fPIC supported"
     except ExecutionError:
-      self.options.PIC = ""
       print "All code is position independent"
 
+      self.options.HAVE_PIC = False
+    else:
+      print "-fPIC supported"
+
+      self.options.HAVE_PIC = True
+      self.options.PIC = "-fPIC"
 
   def construct_compiler_commands(self):
     opt = self.options
 
     if opt.model == "osx":
-      #COMPILE_DYNAMIC_RTL = opt.PIC + "-bundle -c "
-      COMPILE_DYNAMIC_RTL = opt.PIC + opt.SPEC_COMPILE_OBJ + "-fno-common "
+      #COMPILE_DYNAMIC_RTL = "-bundle -c"
+      COMPILE_DYNAMIC_RTL = opt.SPEC_COMPILE_OBJ + " -fno-common"
       # make a dynamic library (not loadable via APIs like dlcompat)
-      LINK_DYNAMIC_RTL = "-dynamiclib "
+      LINK_DYNAMIC_RTL = "-dynamiclib"
 
       COMPILE_DYNAMIC_MAIN = opt.SPEC_COMPILE_OBJ
       LINK_DYNAMIC_MAIN = ""
 
-      COMPILE_DYNAMIC_FLX = opt.PIC + "-bundle -c " "-fno-common "
-      LINK_DYNAMIC_FLX = "-bundle "
+      COMPILE_DYNAMIC_FLX = opt.SPEC_COMPILE_OBJ + " -bundle -fno-common"
+      LINK_DYNAMIC_FLX = "-bundle"
     else:
-      COMPILE_DYNAMIC_RTL = opt.PIC + opt.SPEC_COMPILE_OBJ
-      LINK_DYNAMIC_RTL = "-shared "
+      COMPILE_DYNAMIC_RTL = opt.SPEC_COMPILE_OBJ
+      LINK_DYNAMIC_RTL = "-shared"
 
       COMPILE_DYNAMIC_MAIN = opt.SPEC_COMPILE_OBJ
-      LINK_DYNAMIC_MAIN = " "
+      LINK_DYNAMIC_MAIN = ""
 
-      COMPILE_DYNAMIC_FLX = opt.PIC + opt.SPEC_COMPILE_OBJ
-      LINK_DYNAMIC_FLX = "-shared "
+      COMPILE_DYNAMIC_FLX = opt.SPEC_COMPILE_OBJ
+      LINK_DYNAMIC_FLX = "-shared"
 
     COM = opt.COM
 
-    if opt.openmp:
-      COM = COM + opt.openmp
+    opt.CCOBJ_DYNAMIC_FLX = COM + ' ' + COMPILE_DYNAMIC_FLX
+    opt.CCLINK_DYNAMIC_FLX = COM + ' ' + LINK_DYNAMIC_FLX
 
-    opt.CCOBJ_DYNAMIC_FLX = COM + COMPILE_DYNAMIC_FLX
-    opt.CCLINK_DYNAMIC_FLX = COM + LINK_DYNAMIC_FLX
+    opt.CCOBJ_DYNAMIC_RTL = COM + ' ' + COMPILE_DYNAMIC_RTL
+    opt.CCLINK_DYNAMIC_RTL = COM + ' ' + LINK_DYNAMIC_RTL
 
-    opt.CCOBJ_DYNAMIC_RTL = COM + COMPILE_DYNAMIC_RTL
-    opt.CCLINK_DYNAMIC_RTL = COM + LINK_DYNAMIC_RTL
+    opt.CCOBJ_DYNAMIC_MAIN = COM + ' ' + COMPILE_DYNAMIC_MAIN
+    opt.CCLINK_DYNAMIC_MAIN = COM + ' ' + LINK_DYNAMIC_MAIN
 
-    opt.CCOBJ_DYNAMIC_MAIN = COM + COMPILE_DYNAMIC_MAIN
-    opt.CCLINK_DYNAMIC_MAIN = COM + LINK_DYNAMIC_MAIN
+    opt.CCOBJ_STATIC_FLX = COM + ' ' + opt.SPEC_COMPILE_OBJ
+    opt.CCOBJ_STATIC_RTL = COM + ' ' + opt.SPEC_COMPILE_OBJ
+    opt.CCOBJ_STATIC_MAIN = COM + ' ' + opt.SPEC_COMPILE_OBJ
 
-    opt.CCOBJ_STATIC_FLX = COM + opt.SPEC_COMPILE_OBJ
-    opt.CCOBJ_STATIC_RTL = COM + opt.SPEC_COMPILE_OBJ
-    opt.CCOBJ_STATIC_MAIN = COM + opt.SPEC_COMPILE_OBJ
+    opt.CCOBJ_DYNAMIC_RTL = opt.CCOBJ_DYNAMIC_RTL + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_DYNAMIC_FLX = opt.CCOBJ_DYNAMIC_FLX + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
 
-    opt.CCOBJ_DYNAMIC_RTL = opt.CCOBJ_DYNAMIC_RTL + opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCOBJ_DYNAMIC_FLX = opt.CCOBJ_DYNAMIC_FLX + opt.NO_INVALID_OFFSETOF_WARNING
-
-    opt.CCOBJ_STATIC_RTL = opt.CCOBJ_STATIC_RTL + opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCOBJ_STATIC_FLX = opt.CCOBJ_STATIC_FLX + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_RTL = opt.CCOBJ_STATIC_RTL + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_FLX = opt.CCOBJ_STATIC_FLX + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
 
     opt.CCLINK_STATIC = COM
 
@@ -1991,9 +2008,9 @@ main(int argc, char** argv) {
       try:
         self.shell(opt.STRIP, filename)
       except:
-        opt.STRIP = "true strip "
+        opt.STRIP = "true strip"
     else:
-      opt.STRIP = "true strip "
+      opt.STRIP = "true strip"
 
 
   def detect_ar(self):
@@ -2008,15 +2025,15 @@ main(int argc, char** argv) {
     try:
       self.shell(opt.RANLIB, os.path.join("tmp", "dummy.a"))
     except ExecutionError:
-      opt.RANLIB = "true ranlib "
+      opt.RANLIB = "true ranlib"
 
 
   def detect_compiler_options(self):
     self.detect_warning_flags()
     self.detect_PIC()
-    self.detect_openmp()
     self.construct_compiler_commands()
     self.detect_dynamic_loading()
+    self.detect_openmp()
 
 
   def check_options(self):
@@ -2053,7 +2070,10 @@ main(int argc, char** argv) {
     kwds['libs'] = libs
 
     if opt.__dict__.get('HAVE_PTHREADS', False):
-      kwds['LDFLAGS'] = kwds.get('LDFLAGS', '') + ' ' + opt.PTHREAD_SWITCH
+      if 'LDFLAGS' in kwds:
+        kwds['LDFLAGS'] += ' ' + opt.PTHREAD_SWITCH
+      else:
+        kwds['LDFLAGS'] = opt.PTHREAD_SWITCH
 
     return super(gnu_mixin, self).link_thing(*args, **kwds)
 
@@ -2141,10 +2161,11 @@ import sys
 
 import flxbuild
 from flxbuild.c_cxx_base import c_cxx_base
+from flxbuild.flxutil import ExecutionError
 
 class msvc_mixin(object):
-  DEFAULT_COM = 'cl '
-  DEFAULT_AR = 'lib '
+  DEFAULT_COM = 'cl'
+  DEFAULT_AR = 'lib'
 
   def set_options(self, **kwds):
     """these options are model dependent and have to
@@ -2174,8 +2195,8 @@ class msvc_mixin(object):
 
   def detect_compiler_options(self):
     self.detect_warning_flags()
-    self.detect_openmp()
     self.construct_compiler_commands()
+    self.detect_openmp()
 
 
   # CHECK_OPTIONS FOR CL.EXE IN CASE YOU WERE WONDERING
@@ -2189,7 +2210,7 @@ class msvc_mixin(object):
     opt.HAVE_MMAP = False
     opt.RANLIB = "@rem nothing" # RF: better than none.
     opt.SUPPORT_DYNAMIC_LOADING = True
-    opt.SPEC_COMPILE_OBJ = "/c "
+    opt.SPEC_COMPILE_OBJ = "/c"
     opt.SPEC_OBJ_FILENAME = "/Fo"
     opt.SPEC_EXE_FILENAME = "/Fe"
     opt.SPEC_DEFINE = "/D"
@@ -2197,11 +2218,11 @@ class msvc_mixin(object):
     opt.SPEC_LIBPATH = "/LIBPATH:"
     opt.SPEC_LIB = "/DEFAULTLIB:"
     opt.SPEC_AR_OUT_FILENAME = "/OUT:"
-    #opt.DEBUG_FLAGS = "/Yd /Zi /RTC "
+    #opt.DEBUG_FLAGS = "/Yd /Zi /RTC"
     # /Yd deprecated, /RTC not recognized with VS2005
-    opt.DEBUG_FLAGS = "/Zi "
-    #opt.OPTIMISE = "/Ox /DNDEBUG "
-    opt.OPTIMISE = "/Ox "
+    opt.DEBUG_FLAGS = "/Zi"
+    #opt.OPTIMISE = "/Ox /DNDEBUG"
+    opt.OPTIMISE = "/Ox"
 
     opt.EXT_LIB = ".lib"
     opt.EXT_EXE= ".exe"
@@ -2219,7 +2240,6 @@ class msvc_mixin(object):
     opt.HAVE_POLL = False
     opt.HAVE_EPOLL = False
     opt.HAVE_EVTPORTS = False
-    opt.HAVE_OPENMP = False
 
     # where to put the rtl: Cygwin requires the dll be in the PATH
     opt.SHLIB_DIR = "bin"
@@ -2228,14 +2248,16 @@ class msvc_mixin(object):
   def detect_openmp(self):
     # find if we can use /openmp without a warning
     try:
-      self.compile_dummy_main(CFLAGS="/openmp ")
-      self.options.openmp= "/openmp "
-      print "OpenMP based parallel programming supported"
-      self.options.HAVE_OPENMP = True
+      self.run_shared_string_program(
+        'int main(int argc, char** argv) { return 0; }',
+        os.path.join('tmp', 'openmp'), CFLAGS='/openmp')
     except ExecutionError:
-      self.options.openmp = ""
-      self.options.HAVE_OPENMP = False
       print "OpenMP based parallel programming not supported"
+    else:
+      print "OpenMP based parallel programming supported"
+
+      self.options.HAVE_SHARED_OPENMP = True
+      self.options.OPENMP = "/openmp"
 
 
   def detect_warning_flags(self):
@@ -2244,8 +2266,8 @@ class msvc_mixin(object):
     # even apply to vs toolchain? I don't think so, however, there is one
     # warning, that about missing delete for the custom operator new,
     # the follow /wd<n> should silence that warning.
-    # self.options.NO_INVALID_OFFSETOF_WARNING = "/w "
-    self.options.NO_INVALID_OFFSETOF_WARNING="/wd4291 "
+    # self.options.NO_INVALID_OFFSETOF_WARNING = "/w"
+    self.options.NO_INVALID_OFFSETOF_WARNING="/wd4291"
 
 
   def construct_compiler_commands(self):
@@ -2267,45 +2289,33 @@ class msvc_mixin(object):
     # P.S. Erick, if ever again you checkin any changes to this that you
     # haven't first tested, I'll kill you.
 
-    # JS: openmp support now detected, and the right compiler option applied
-    # Windows prof. ed. 2005 supports openMP for dynamic link only
-    # Express doesn't support openMP
-    # Xbox also supports static link, but we don't handle that here
-    #
-    # So far, we don't link the right library.. can't see at present how
-    # to get the library in, and not sure that /openmp doesn't link it
-    # automatically.
-    # It's called vcomp.lib/vcomp.dll.
-    # this has to specified with LDFLAGS to go after the 'link' directive
-    # assuming the /openmp switch doesn't force the right linkage
+    COMPILE_DYNAMIC_RTL = "/MD /c /EHs"
+    LINK_DYNAMIC_RTL = "/MD /LD"
 
-    COMPILE_DYNAMIC_RTL = "/MD /c /EHs "
-    LINK_DYNAMIC_RTL = "/MD /LD "
+    COMPILE_DYNAMIC_MAIN = "/MD /c /EHs"
+    LINK_DYNAMIC_MAIN = "/MD"
 
-    COMPILE_DYNAMIC_MAIN = "/MD /c /EHs "
-    LINK_DYNAMIC_MAIN = "/MD "
+    COMPILE_DYNAMIC_FLX = "/MD /c /EHs"
+    LINK_DYNAMIC_FLX = "/MD /LD"
 
-    COMPILE_DYNAMIC_FLX = "/MD /c /EHs "
-    LINK_DYNAMIC_FLX = "/MD /LD "
+    opt.CCOBJ_DYNAMIC_FLX = COM + ' ' + COMPILE_DYNAMIC_FLX
+    opt.CCLINK_DYNAMIC_FLX = COM + ' ' + LINK_DYNAMIC_FLX
 
-    opt.CCOBJ_DYNAMIC_FLX = COM + COMPILE_DYNAMIC_FLX
-    opt.CCLINK_DYNAMIC_FLX = COM + LINK_DYNAMIC_FLX
+    opt.CCOBJ_DYNAMIC_RTL = COM + ' ' + COMPILE_DYNAMIC_RTL
+    opt.CCLINK_DYNAMIC_RTL = COM + ' ' + LINK_DYNAMIC_RTL
 
-    opt.CCOBJ_DYNAMIC_RTL = COM + COMPILE_DYNAMIC_RTL
-    opt.CCLINK_DYNAMIC_RTL = COM + LINK_DYNAMIC_RTL
+    opt.CCOBJ_DYNAMIC_MAIN = COM + ' ' + COMPILE_DYNAMIC_MAIN
+    opt.CCLINK_DYNAMIC_MAIN = COM + ' ' + LINK_DYNAMIC_MAIN
 
-    opt.CCOBJ_DYNAMIC_MAIN = COM + COMPILE_DYNAMIC_MAIN + opt.openmp
-    opt.CCLINK_DYNAMIC_MAIN = COM + LINK_DYNAMIC_MAIN
+    opt.CCOBJ_STATIC_FLX = COM + " /MD /c /EHs"
+    opt.CCOBJ_STATIC_RTL = COM + " /MD /c /EHs"
+    opt.CCOBJ_STATIC_MAIN = COM + " /MD /c /EHs"
 
-    opt.CCOBJ_STATIC_FLX = COM + "/MD /EHs /c "
-    opt.CCOBJ_STATIC_RTL = COM + "/MD /EHs /c "
-    opt.CCOBJ_STATIC_MAIN = COM + "/MD /EHs /c "
-
-    opt.CCOBJ_DYNAMIC_RTL = opt.CCOBJ_DYNAMIC_RTL + opt.NO_INVALID_OFFSETOF_WARNING + opt.openmp
-    opt.CCOBJ_DYNAMIC_FLX = opt.CCOBJ_DYNAMIC_FLX + opt.NO_INVALID_OFFSETOF_WARNING + opt.openmp
-    opt.CCOBJ_STATIC_RTL = opt.CCOBJ_STATIC_RTL + opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCOBJ_STATIC_FLX = opt.CCOBJ_STATIC_FLX + opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCLINK_STATIC = COM + "/MD "
+    opt.CCOBJ_DYNAMIC_RTL = opt.CCOBJ_DYNAMIC_RTL + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_DYNAMIC_FLX = opt.CCOBJ_DYNAMIC_FLX + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_RTL = opt.CCOBJ_STATIC_RTL + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_FLX = opt.CCOBJ_STATIC_FLX + ' ' + opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCLINK_STATIC = COM + " /MD"
 
   ########
 
@@ -2313,7 +2323,7 @@ class msvc_mixin(object):
     kwds['LDFLAGS'] = kwds.get('LDFLAGS', '')
     # RF: hack to get /link before all other link directives,
     # including the libraries themselves and their paths.
-    self.options.PRE_LINK_FLAGS = '/link '
+    self.options.PRE_LINK_FLAGS = '/link'
 
     return super(msvc_mixin, self).link_thing(*args, **kwds)
 
@@ -2374,7 +2384,7 @@ from flxbuild.compiler_base import compiler_base
 
 class ocaml(compiler_base):
 
-  def autodetect(self, linkopts,log=None):
+  def autodetect(self, linkopts, log=None):
     opt = self.options
 
     if os.name == 'nt' or sys.platform == 'cygwin':
@@ -2386,7 +2396,7 @@ class ocaml(compiler_base):
 
       try: # check if ocamlbuild exists
         self.shell('ocamlbuild', '-version', log=log)
-        opt.OCAMLBUILD = 'ocamlbuild -classic-display '
+        opt.OCAMLBUILD = 'ocamlbuild -classic-display'
         #opt.HAVE_OCAMLBUILD = True
         # ocaml build doesn't work properly at the moment
         # due to hygiene checks or something .. so i have
@@ -2397,14 +2407,14 @@ class ocaml(compiler_base):
 
     try: # check if the client bootstrapped the native code compiler
       self.shell('ocamlopt.opt', log=log)
-      opt.OCAMLCC = 'ocamlopt.opt ' + linkopts
+      opt.OCAMLCC = 'ocamlopt.opt' + (linkopts and ' ' + linkopts or '')
       opt.OCAMLLEX = 'ocamllex.opt'
       opt.OCAMLYACC = 'ocamlyacc'
       opt.NATIVE_CODE_COMPILER = True
     except ExecutionError:
       try: # check if the client has unbootstrapped native code compiler
         self.shell('ocamlopt', log=log)
-        opt.OCAMLCC = 'ocamlopt ' + linkopts
+        opt.OCAMLCC = 'ocamlopt' + (linkopts and ' ' + linkopts or '')
         opt.OCAMLLEX = 'ocamllex'
         opt.OCAMLYACC = 'ocamlyacc'
         opt.NATIVE_CODE_COMPILER = True
@@ -2450,7 +2460,7 @@ class ocaml(compiler_base):
     else:
       opt.OCAMLC = opt.OCAMLB
 
-    opt.OCAMLCP = "ocamlcp "
+    opt.OCAMLCP = "ocamlcp"
     # where the ocaml is installed
     try:
       output = self.shell(opt.OCAMLC, '-where', verbose=False)
@@ -2480,7 +2490,7 @@ class ocaml(compiler_base):
     else:
       opt.OCAML_VERSION = ocamlb_version
 
-    warn=' -w yzex -warn-error FDPSU '
+    warn=' -w yzex -warn-error FDPSU'
     try:
       f = open('tmp'+os.sep+'camldummy.ml','w')
       try:
@@ -2549,18 +2559,18 @@ class ocaml(compiler_base):
       mkdirs(os.path.dirname(dst))
 
       cmd = [COM]
-      for i in include_paths: cmd.append('-I ' + i)
-      cmd.append('-I ' + os.path.dirname(dst))
+      for i in include_paths: cmd.extend(('-I', i))
+      cmd.extend(('-I', os.path.dirname(dst)))
 
       if debug: cmd.append('-g')
-      if optimise: cmd.extend(['-unsafe', '-noassert'])
+      if optimise: cmd.extend(('-unsafe', '-noassert'))
 
       for path, packed, parts in packs:
         if basename in parts:
-          cmd.extend(['-for-pack', pack])
+          cmd.extend(('-for-pack', pack))
 
-      cmd.append('-o ' + dst)
-      cmd.append('-c ' + src)
+      cmd.extend(('-o', dst))
+      cmd.extend(('-c', src))
 
       # compile it
       self.shell(*cmd, **dict(log=log))
@@ -2612,10 +2622,10 @@ class ocaml(compiler_base):
     dst = os.path.join(outdir, outfile)
 
     cmd = [LINK]
-    for i in include_paths: cmd.append('-I ' + i)
-    cmd.append('-I ' + os.path.dirname(dst))
+    for i in include_paths: cmd.extend(('-I', i))
+    cmd.extend(('-I', os.path.dirname(dst)))
 
-    cmd.append('-o ' + dst)
+    cmd.extend(('-o', dst))
     cmd.extend([lib + EXT_DST for lib in libs])
     cmd.extend(objects)
 

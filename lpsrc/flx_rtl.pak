@@ -114,7 +114,7 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 
 @select(tangler('spkgs/flx_async_drivers.py'))
 STATIC_DRIVERS = [
-  ('src/rtl/flx_arun',''),
+  ('src/rtl/flx_arun','lib/rtl'),
 ]
 
 DYNAMIC_DRIVERS = [
