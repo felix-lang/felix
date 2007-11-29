@@ -476,10 +476,9 @@ class build_ocaml_modules(Process):
 
     config.HOST_OCAML.compile_interface(INTERFACES, **kwds)
 
-    compiler = config.HOST_OCAML.compile_module(IMPLEMENTATIONS,
+    return config.HOST_OCAML.compile_module(IMPLEMENTATIONS,
       bytecode='bytecode' in self.options,
-      **kwds,
-    )
+      **kwds)
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_libraries.py'))
@@ -518,7 +517,9 @@ class build_ocaml_exes(Process):
     output_exes = []
     for exe in EXES:
       dst = os.path.join('bin', os.path.basename(exe))
-      output_exe = config.HOST_OCAML.link_exe([exe + '.ml'], dst + config.HOST_OCAML.options.EXT_EXE,
+      output_exe = config.HOST_OCAML.link_exe(
+        [exe + '.ml'],
+        dst + config.HOST_OCAML.options.EXT_EXE,
         bytecode='bytecode' in self.options,
         include_paths=[os.path.join('build', os.path.dirname(exe))] + \
           [os.path.join('build', i) for i in INCLUDES],
