@@ -2611,6 +2611,12 @@ class ocaml(compiler_base):
   def compile_native(self, *args, **kwds):
     return self.compile_native_thing('.ml', '.cmx', *args, **kwds)
 
+  def compile_module(self, *args, **kwds):
+    if kwds.pop('bytecode', False):
+      return self.compile_native(*args, **kwds)
+    else:
+      return self.compile_bytecode(*args, **kwds)
+
   ####
 
   def link_thing(self, LINK, EXT_DST, objects, outfile,
@@ -2646,6 +2652,12 @@ class ocaml(compiler_base):
         self.options.OCAMLC + ' -a', '.cmxa', objects, outfile + '.cmxa',
         *args, **kwds)
 
+  def link_lib(self, *args, **kwds):
+    if kwds.pop('bytecode', False):
+      return self.link_native_lib(*args, **kwds)
+    else:
+      return self.link_bytecode_lib(*args, **kwds)
+
   def link_bytecode_exe(self, *args, **kwds):
     opt = self.options
     return self.link_thing(opt.OCAMLC, '.cma', *args, **kwds)
@@ -2656,6 +2668,12 @@ class ocaml(compiler_base):
 
     opt = self.options
     return self.link_thing(opt.OCAMLC, '.cmxa', *args, **kwds)
+
+  def link_exe(self, *args, **kwds):
+    if kwds.pop('bytecode', False):
+      return self.link_native_exe(*args, **kwds)
+    else:
+      return self.link_bytecode_exe(*args, **kwds)
 
   ####
 

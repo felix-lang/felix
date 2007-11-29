@@ -476,12 +476,10 @@ class build_ocaml_modules(Process):
 
     config.HOST_OCAML.compile_interface(INTERFACES, **kwds)
 
-    if 'bytecode' in self.options:
-      compiler = config.HOST_OCAML.compile_bytecode
-    else:
-      compiler = config.HOST_OCAML.compile_native
-
-    return compiler(IMPLEMENTATIONS, **kwds)
+    compiler = config.HOST_OCAML.compile_module(IMPLEMENTATIONS,
+      bytecode='bytecode' in self.options,
+      **kwds,
+    )
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_libraries.py'))
@@ -496,12 +494,10 @@ class build_ocaml_libraries(Process):
       return
 
     print "CAML CREATING LIBRARY", lib
-    if 'bytecode' in self.options:
-      linker = config.HOST_OCAML.link_bytecode_lib
-    else:
-      linker = config.HOST_OCAML.link_native_lib
-
-    return linker(IMPLEMENTATIONS, lib, outdir='build')
+    return config.HOST_OCAML.link_lib(IMPLEMENTATIONS, lib,
+      bytecode='bytecode' in self.options,
+      outdir='build',
+    )
 @doc()
 
 @select(tangler('mkplugins/build_ocaml_exes.py'))
@@ -521,13 +517,9 @@ class build_ocaml_exes(Process):
     print "CAML LINKING EXECUTABLES"
     output_exes = []
     for exe in EXES:
-      if 'bytecode' in self.options:
-        linker = config.HOST_OCAML.link_bytecode_exe
-      else:
-        linker = config.HOST_OCAML.link_native_exe
-
       dst = os.path.join('bin', os.path.basename(exe))
-      output_exe = linker([exe + '.ml'], dst + config.HOST_OCAML.options.EXT_EXE,
+      output_exe = config.HOST_OCAML.link_exe([exe + '.ml'], dst + config.HOST_OCAML.options.EXT_EXE,
+        bytecode='bytecode' in self.options,
         include_paths=[os.path.join('build', os.path.dirname(exe))] + \
           [os.path.join('build', i) for i in INCLUDES],
         libs=OLIBRARIES,
@@ -1673,7 +1665,7 @@ def get_latest_src_time(pkgdict):
   for xfile in pkgdict.get('xfiles', []):
     xfile = os.path.join(config.FLX_DIR, xfile)
     filenames.update(glob.glob(xfile))
-  
+
   return newest_filetime(filenames)
 
 
