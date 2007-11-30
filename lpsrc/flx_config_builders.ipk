@@ -2491,26 +2491,33 @@ class ocaml(compiler_base):
       opt.OCAML_VERSION = ocamlb_version
 
     warn=' -w yzex -warn-error FDPSU'
+    f = open('tmp'+os.sep+'camldummy.ml','w')
     try:
-      f = open('tmp'+os.sep+'camldummy.ml','w')
-      try:
-        f.write('print_endline "OK";;\n')
-      finally:
-        f.close()
-    except (IOError, OSError):
+      f.write('print_endline "OK";;\n')
+    finally:
+      f.close()
+
+    try:
+      self.shell(opt.OCAMLC,
+        warn,
+        os.path.join('tmp', 'camldummy.ml'),
+        verbose=False,
+      )
+    except ExecutionError:
       pass
     else:
-      try:
-        output = self.shell(opt.OCAMLC,
-          warn,
-          os.path.join('tmp', 'camldummy.ml'),
-          verbose=False,
-        )
-      except ExecutionError:
-        pass
-      else:
-        opt.OCAMLB = opt.OCAMLB + warn
-        opt.OCAMLC = opt.OCAMLC + warn
+      opt.OCAMLB = opt.OCAMLB + warn
+      opt.OCAMLC = opt.OCAMLC + warn
+
+    try:
+      self.shell(opt.OCAMLC, '-g',
+        os.path.join('tmp', 'camldummy.ml'),
+        verbose=False,
+      )
+    except ExecutionError:
+      opt.OCAMLC_SUPPORTS_DEBUG = False
+    else:
+      opt.OCAMLC_SUPPORTS_DEBUG = True
 
   def report_config(self):
     opt = self.options
@@ -2540,7 +2547,6 @@ class ocaml(compiler_base):
       outdir='',
       include_paths=[],
       packs=[],
-      debug=False,
       profile=False,
       optimise=False,
       FLAGS=None,
@@ -2562,7 +2568,6 @@ class ocaml(compiler_base):
       for i in include_paths: cmd.extend(('-I', i))
       cmd.extend(('-I', os.path.dirname(dst)))
 
-      if debug: cmd.append('-g')
       if optimise: cmd.extend(('-unsafe', '-noassert'))
 
       for path, packed, parts in packs:
@@ -2582,9 +2587,13 @@ class ocaml(compiler_base):
 
   def compile_bytecode_thing(self, *args, **kwds):
     if kwds.pop('profile', False):
-      return self.compile_thing(self.options.OCAMLCP, *args, **kwds)
+      compiler = self.options.OCAMLCP
     else:
-      return self.compile_thing(self.options.OCAMLB, *args, **kwds)
+      compiler = self.options.OCAMLB
+
+    if kwds.pop('debug', False): compiler += ' -g'
+
+    return self.compile_thing(compiler, *args, **kwds)
 
 
   def compile_native_thing(self, *args, **kwds):
@@ -2597,6 +2606,9 @@ class ocaml(compiler_base):
 
     if kwds.get('optimise', False):
       compiler += ' -inline 5'
+
+    if kwds.pop('debug', False) and self.options.OCAMLC_SUPPORTS_DEBUG:
+      compiler += ' -g'
 
     return self.compile_thing(compiler, *args, **kwds)
 
