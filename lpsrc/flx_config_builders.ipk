@@ -2612,10 +2612,10 @@ class ocaml(compiler_base):
     return self.compile_native_thing('.ml', '.cmx', *args, **kwds)
 
   def compile_module(self, *args, **kwds):
-    if kwds.pop('bytecode', False):
-      return self.compile_native(*args, **kwds)
-    else:
+    if kwds.pop('bytecode', True):
       return self.compile_bytecode(*args, **kwds)
+    else:
+      return self.compile_native(*args, **kwds)
 
   ####
 
@@ -2653,10 +2653,10 @@ class ocaml(compiler_base):
         *args, **kwds)
 
   def link_lib(self, *args, **kwds):
-    if kwds.pop('bytecode', False):
-      return self.link_native_lib(*args, **kwds)
-    else:
+    if kwds.pop('bytecode', True):
       return self.link_bytecode_lib(*args, **kwds)
+    else:
+      return self.link_native_lib(*args, **kwds)
 
   def link_bytecode_exe(self, *args, **kwds):
     opt = self.options
@@ -2670,10 +2670,10 @@ class ocaml(compiler_base):
     return self.link_thing(opt.OCAMLC, '.cmxa', *args, **kwds)
 
   def link_exe(self, *args, **kwds):
-    if kwds.pop('bytecode', False):
-      return self.link_native_exe(*args, **kwds)
-    else:
+    if kwds.pop('bytecode', True):
       return self.link_bytecode_exe(*args, **kwds)
+    else:
+      return self.link_native_exe(*args, **kwds)
 
   ####
 
