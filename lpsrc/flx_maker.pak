@@ -2099,7 +2099,6 @@ except Exception:
 
 import fbuildroot
 
-
 def load_options():
   import getopt
 
@@ -2188,6 +2187,7 @@ processes:
       sys.stderr.write('unknown option: %s %s\n' % (o, a))
       sys.exit(1)
 
+  ####
 
   # temporary hack to set up the shell
   config.HOST_OCAML.verbose = options.verbose
@@ -2202,8 +2202,7 @@ processes:
   config.TARGET_CC.quiet = options.quiet
   config.TARGET_CXX.quiet = options.quiet
 
-  if options.lparchive is not None:
-    config.FLX_LPARCHIVE = options.lparchive
+  ####
 
   # if the user didn't say which phases to run
   # then run all the phases that use the host model
@@ -2218,30 +2217,22 @@ processes:
     options.selected_models = [config.host_model]
 
   for model in options.selected_models:
-    if model == config.build_model:
-      if "build" not in options.selected_phases: options.selected_phases.append("build")
+    if model == config.build_model and 'build' not in options.selected_phases:
+      options.selected_phases.append('build')
 
-  for model in options.selected_models:
-    if model == config.host_model:
-      if "host" not in options.selected_phases: options.selected_phases.append("host")
+    if model == config.host_model and 'host' not in options.selected_phases:
+      options.selected_phases.append('host')
 
-  for model in options.selected_models:
-    if model == config.target_model:
-      if "target" not in options.selected_phases: options.selected_phases.append("target")
+    if model == config.target_model and 'target' not in options.selected_phases:
+      options.selected_phases.append('target')
 
-  for model in options.selected_models:
-    if model == config.run_model:
-      if "run" not in options.selected_phases: options.selected_phases.append("run")
+    if model == config.run_model and 'run' not in options.selected_phases:
+      options.selected_phases.append('run')
 
-  if options.verbose > 1 and args:
-    print "OPTIONS: ", args
+  ####
 
-  if options.verbose > 1:
-    print "Using LP Archive from ",
-    if config.FLX_LPARCHIVE == os.curdir:
-      print "Current Directory"
-    else:
-      print config.FLX_LPARCHIVE
+  if options.lparchive:
+    config.FLX_LPARCHIVE = options.lparchive
 
   return options, args
 
