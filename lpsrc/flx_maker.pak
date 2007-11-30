@@ -1994,6 +1994,29 @@ else:
 
 # -----------------------------------------------------------------------------
 
+from optparse import make_option
+
+options = [
+  make_option('-O', '--optimise',
+    action='store_true',
+    default=True,
+    help='generate optimised code'),
+  make_option('--no-optimise', dest='optimise',
+    action='store_false',
+    help='turn off optimised code generation'),
+  make_option('-g', '--debug',
+    action='store_true',
+    default=True,
+    help='generate debugging information'),
+  make_option('--no-debug', dest='debug',
+    action='store_false',
+    help='turn off debugging information generation'),
+  make_option('-D', dest='macros', metavar='MACRO',
+    action='append',
+    default=[],
+    help='define a macro'),
+]
+
 default_fbuild_processs = 'run'
 
 fbuild_preprocesses = [
@@ -2116,24 +2139,6 @@ def load_options():
       action='store_true',
       default=False,
       help='force running a process'),
-    make_option('-O', '--optimise',
-      action='store_true',
-      default=True,
-      help='generate optimised code'),
-    make_option('--no-optimise', dest='optimise',
-      action='store_false',
-      help='turn off optimised code generation'),
-    make_option('-g', '--debug',
-      action='store_true',
-      default=True,
-      help='generate debugging information'),
-    make_option('--no-debug', dest='debug',
-      action='store_false',
-      help='turn off debugging information generation'),
-    make_option('-D', dest='macros', metavar='MACRO',
-      action='append',
-      default=[],
-      help='define a macro'),
     make_option('--phase', dest='selected_phases', metavar='PHASE',
       action='append',
       default=[],
@@ -2151,6 +2156,14 @@ def load_options():
       help='use an alternative lpsrc directory'),
   ])
 
+  try:
+    extra_options = fbuildroot.options
+  except AttributeError:
+    pass
+  else:
+    option_group = parser.add_option_group('project options')
+    option_group.add_options(extra_options)
+
   options, args = parser.parse_args()
 
   ####
@@ -2167,6 +2180,12 @@ def load_options():
   config.HOST_CXX.quiet = options.quiet
   config.TARGET_CC.quiet = options.quiet
   config.TARGET_CXX.quiet = options.quiet
+
+  ####
+
+  # use the default option if not specified
+  if not options.selected_phases:
+    options.selected_phases = [fbuildroot.default_fbuild_processs]
 
   ####
 
