@@ -419,8 +419,6 @@ let consider syms bt be luqn2 name
     iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
     eqns
     ;
-    *)
-    (*
     (* WRONG!! dunno why, but it is! *)
     print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
       (IntSet.fold (fun i l-> i::l) !dvars [])
@@ -428,8 +426,9 @@ let consider syms bt be luqn2 name
     print_endline "...";
     *)
 
-    let mgu = maybe_specialisation syms.counter syms.dfns eqns in
     (*
+    let mgu = maybe_specialisation syms.counter syms.dfns eqns in
+    *)
     (* doesn't work .. fails to solve for some vars
        which aren't local vs of the fun .. this case:
 
@@ -440,10 +439,9 @@ let consider syms bt be luqn2 name
        already by the instance match .. hmm ..
     *)
     let mgu =
-      try Some (unification true syms.dfns eqns !dvars)
+      try Some (unification true syms.counter syms.dfns eqns !dvars)
       with Not_found -> None
     in
-    *)
     match mgu with
     | Some mgu ->
       (*

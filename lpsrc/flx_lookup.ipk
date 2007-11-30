@@ -6255,7 +6255,7 @@ and pub_table_dir
     end
 
   | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_typeclass} ->
-    let table = make_view_table syms table [] ts in
+    let table = make_view_table syms table invs ts in
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
     *)
@@ -6316,10 +6316,15 @@ and merge_directives syms rs env dirs typeclasses =
 
   let add_qn (vs, qn) =
     if mem (vs,qn) rs.open_excludes then () else
-    let u = [bind_dir syms !env rs (vs,qn)] in
-    let u = get_includes syms u in
-    let tables = map (pub_table_dir syms !env false) u in
-    iter add tables
+    begin
+      (*
+      print_endline ("ADD vs=" ^ catmap "," (fun (s,i,_)->s^ "<"^si i^">") (fst vs) ^ " qn=" ^ string_of_qualified_name qn);
+      *)
+      let u = [bind_dir syms !env rs (vs,qn)] in
+      let u = get_includes syms u in
+      let tables = map (pub_table_dir syms !env false) u in
+      iter add tables
+    end
   in
   iter
   (fun dir -> match dir with
@@ -6429,7 +6434,12 @@ and build_env'' syms rs index : env_t =
   let env' = (index,id,table,[])::env in
 
   (* use that env to process directives and type classes *)
+  (*
+  if typeclasses <> [] then
+    print_endline ("Typeclass qns=" ^ catmap "," string_of_qualified_name typeclasses);
+  *)
   let typeclasses = map (fun qn -> dfltvs,qn) typeclasses in
+
   let env = merge_directives syms rs env' dirs typeclasses in
   env
 
