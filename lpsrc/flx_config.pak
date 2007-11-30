@@ -306,7 +306,11 @@ def erasefile(f):
   except EnvironmentError: pass
 
 def unix2native(f):
-  return os.path.join(*f.split('/'))
+  p = os.path.join(*f.split('/'))
+  if f.startswith('/'):
+    return os.sep + p
+  else:
+    return p
 
 def deletefile(f):
   erasefile(unix2native(f))
