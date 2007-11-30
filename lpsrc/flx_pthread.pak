@@ -96,6 +96,9 @@ if config.SOLARIS:
   PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
   EXTRA_SYS_LIBS = "-lrt " # man sem_wait
 
+if config.TARGET_CXX.options.HAVE_PTHREADS:
+  EXTRA_SYS_LIBS=EXTRA_SYS_LIBS+config.TARGET_CXX.options.PTHREAD_SWITCH
+
 @tangle('completion_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
 
 cpp_cpps = PTHREAD_CPPS
