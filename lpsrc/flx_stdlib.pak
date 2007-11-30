@@ -814,7 +814,6 @@ open module float_format
     | scientific(?w,?p) => fmt_scientific(v,w,p)
     endmatch
   ;
-  /*
   fun fmt[t,r with Complex[t,r]] (v:t, m: mode) =>
     match m with
     | default (?w,?p) => fmt_default(real v,w,p) +"+"+fmt_default(imag v,w,p)+"i"
@@ -822,7 +821,6 @@ open module float_format
     | scientific(?w,?p) => fmt_scientific(real v,w,p)+"+"+fmt_scientific(imag v,w,p)+"i"
     endmatch
   ;
-  */
   fun fmt_default[t] : t * int * int -> string="flx::rtl::strutil::fmt_default($a)" requires flx_strutil;
   fun fmt_fixed[t] : t * int * int -> string="flx::rtl::strutil::fmt_fixed($a)" requires flx_strutil;
   fun fmt_scientific[t] : t * int * int -> string="flx::rtl::strutil::fmt_scientific($a)" requires flx_strutil;
