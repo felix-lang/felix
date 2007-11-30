@@ -2100,92 +2100,58 @@ except Exception:
 import fbuildroot
 
 def load_options():
-  import getopt
+  from optparse import OptionParser, make_option
 
-  class Options:
-    pass
-  options = Options()
-  options.quiet = 0
-  options.verbose = 1
-  options.optimise = True
-  options.debug = True
-  options.force = False
-  options.selected_phases = []
-  options.selected_processes = []
-  options.selected_packages = []
-  options.selected_models = []
-  options.macros = []
-  options.lparchive = None
+  parser = OptionParser()
+  parser.add_options([
+    make_option('-v', '--verbose',
+      action='count',
+      default=1,
+      help='print out extra debugging info'),
+    make_option('-q', '--quiet',
+      action='count',
+      default=0,
+      help='do not print out extra debugging info'),
+    make_option('--force',
+      action='store_true',
+      default=False,
+      help='force running a process'),
+    make_option('-O', '--optimise',
+      action='store_true',
+      default=True,
+      help='generate optimised code'),
+    make_option('--no-optimise', dest='optimise',
+      action='store_false',
+      help='turn off optimised code generation'),
+    make_option('-g', '--debug',
+      action='store_true',
+      default=True,
+      help='generate debugging information'),
+    make_option('--no-debug', dest='debug',
+      action='store_false',
+      help='turn off debugging information generation'),
+    make_option('-D', dest='macros', metavar='MACRO',
+      action='append',
+      default=[],
+      help='define a macro'),
+    make_option('--phase', dest='selected_phases', metavar='PHASE',
+      action='append',
+      default=[],
+      help='run only this phase of the build'),
+    make_option('--pkg', dest='selected_packages', metavar='PKG',
+      action='append',
+      default=[],
+      help='build only these packages'),
+    make_option('--model', dest='selected_models', metavar='MODEL',
+      action='append',
+      default=[],
+      help='build only these models'),
+    make_option('--lparchive',
+      metavar='PATH',
+      help='use an alternative lpsrc directory'),
+  ])
 
-  try:
-    opts, args = getopt.getopt(sys.argv[1:], 'hvqD:Og', [ \
-        'help', 'verbose', 'quiet', 'phase=', 'pkg=', 'model=', 'lparchive=',
-        'optimise', 'optimize', 'no-optimise', 'no-optimize', 'no-debug',
-        '--force'])
-  except getopt.error, e:
-    sys.stderr.write(str(e) + '\n')
-    sys.exit(1)
-
-  help_string = """\
-usage: mk [options] [processes]
-
-flags:
-  -h, --help      print this help message
-  -v, --verbose   print out extra debugging info
-  -q, --quiet     do not print out extra debugging info
-  --force         force running a process
-  -O, --optimise  generate optimised code
-  --no-optimise   turn off optimised code generation
-  -g, --debug     generate debugging information
-  --no-debug      turn off debugging information generation
-  -Dmacro[=defn]  define a macro
-  --phase         run only this phase of the build: [%s]
-  --pkg           build only these packages
-  --model         build only these models
-  --lparchive     use an alternative lpsrc directory
-
-processes:
-  run a custom process. run "mk help" to get a list of processes to run
-  """
-
-  for o, a in opts:
-    if o in ['-h', '--help']:
-      all_phases = fbuildroot.fbuild_processes.keys()
-      all_phases.sort()
-      print help_string % (', '.join(all_phases))
-      sys.exit(0)
-    elif o in ['-v', '--verbose']:
-      options.verbose = options.verbose + 1
-    elif o in ['-q', '--quiet']:
-      options.quiet = 1
-      options.verbose = 0
-    elif o in ['--force']:
-      options.force = True
-    elif o in ['-O', '--optimise', '--optimize']:
-      options.optimise = True
-    elif o in ['--no-optimise', '--no-optimize']:
-      options.optimise = False
-    elif o in ['-g']:
-      options.debug = True
-    elif o in ['--no-debug']:
-      options.debug = False
-    elif o in ['-D']:
-      options.macros.append(a)
-    elif o in ['--phase']:
-      if a == '*':
-        options.selected_phases = fbuildroot.fbuild_processes.keys()
-      elif a not in phases:
-        options.selected_phases.append(a)
-    elif o in ['--pkg']:
-      options.selected_packages.append(a)
-    elif o in ['--model']:
-      if a not in models:
-        options.selected_models.append(a)
-    elif o in ['--lparchive']:
-      options.lparchive = a
-    else:
-      sys.stderr.write('unknown option: %s %s\n' % (o, a))
-      sys.exit(1)
+  options, args = parser.parse_args()
 
   ####
 
