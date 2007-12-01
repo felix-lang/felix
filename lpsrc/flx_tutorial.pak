@@ -222,6 +222,34 @@ for long long, both letters must be either lower or upper case).
 @table_row("vlong","signed long long","ll, v")
 @table_row("uvlong","unsigned long long","ull, llu, uv, vu")
 @end_table()
+For abstract semantics see also:
+@line_break()
+@cite_url("../../typeclassdoc/Integer.html")
+@line_break()
+@cite_url("../../typeclassdoc/Unsigned_integer.html")
+@line_break()
+For constructors and auxilliary functions see also:
+@line_break()
+@cite_url("../../moduledoc/Tiny.html")
+@line_break()
+@cite_url("../../moduledoc/Short.html")
+@line_break()
+@cite_url("../../moduledoc/Int.html")
+@line_break()
+@cite_url("../../moduledoc/Long.html")
+@line_break()
+@cite_url("../../moduledoc/Vlong.html")
+@line_break()
+@cite_url("../../moduledoc/Utiny.html")
+@line_break()
+@cite_url("../../moduledoc/Ushort.html")
+@line_break()
+@cite_url("../../moduledoc/Uint.html")
+@line_break()
+@cite_url("../../moduledoc/Ulong.html")
+@line_break()
+@cite_url("../../moduledoc/Uvlong.html")
+@line_break()
 @p()
 The following aliases are also provided, in this
 case the C name may not be used: 
@@ -352,7 +380,10 @@ between digits, or a digit and the prefix or suffix.
 @env.head(3,"Mixed Mode Integers")
 Felix by default only supports arithmetic on integers
 of exactly the same type. To enable mixed mode arithmetic
-you can open the MixedInt module.
+you can open the MixedInt module, specified here:
+@line_break()
+@cite_url("../../moduledoc/MixedInt.html")
+
 @select(env.test('.flx'))
 @kat("type constraints")
 open MixedInt;
@@ -375,6 +406,19 @@ Felix provides 3 floating point types.
 @table_row("double","double")
 @table_row("ldouble","long double")
 @end_table()
+For abstract semantics see also:
+@line_break()
+@cite_url("../../typeclassdoc/FloatDRing.html")
+@line_break()
+For constructors and auxilliary functions see also:
+@line_break()
+@cite_url("../../moduledoc/Float.html")
+@line_break()
+@cite_url("../../moduledoc/Double.html")
+@line_break()
+@cite_url("../../moduledoc/Ldouble.html")
+@line_break()
+
 @select(env.test('.flx'))
 // floats obey C99 rules, except we allow underscores
 {
@@ -398,6 +442,21 @@ Felix provides 3 complex types corresponding to the three floating types.
 @table_row("dcomplex","std::complex<double>")
 @table_row("lcomplex","std::complex<long double>")
 @end_table()
+For abstract semantics see also:
+@line_break()
+@cite_url("../../typeclassdoc/Complex.html")
+@line_break()
+For constructors and auxilliary functions see also:
+@line_break()
+@cite_url("../../moduledoc/Fcomplex.html")
+@line_break()
+@cite_url("../../moduledoc/Dcomplex.html")
+@line_break()
+@cite_url("../../moduledoc/Lcomplex.html")
+@line_break()
+@cite_url("../../moduledoc/Imagination.html")
+@line_break()
+
 @select(env.test('.flx'))
 proc pr (z:dcomplex) { println (fmt[dcomplex,double](z,fixed(0,3))); }
 
