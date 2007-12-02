@@ -693,8 +693,8 @@ from flxbuild.flxutil import mkdirs, Tee, ExecutionError
 import config
 
 class build_testfile(Process):
-  def runme(self, testfile, log):
-    if log is None: log = Tee()
+  def runme(self, root, localpath, log):
+    testfile = os.path.join(root, localpath)
 
     optimise_c = self.optimise or "optimise_c" in options
     mode = "std"
@@ -702,34 +702,34 @@ class build_testfile(Process):
 
     log.write('TRANSLATING %s\n' % testfile)
 
-    mkdirs(os.path.join('build', 'test'))
-    basename = os.path.splitext(testfile)[0]
-    indir,infile = os.path.split(basename)
-    outbase = os.path.join("build","test",infile)
-    cppfilename = outbase+ ".cpp"
-    resfilename = outbase+".resh"
-    incfilename = outbase+".includes"
+    buildpath = os.path.join('build', localpath)
+    outbase = os.path.splitext(buildpath)[0]
+    resfilename = outbase + ".resh"
+    incfilename = outbase + ".includes"
+
+    builddir = os.path.dirname(buildpath)
+    mkdirs(builddir)
+
     try:
       self.shell(os.path.join('bin', 'flxg'),
         '-Ilib',
-        '-I'+indir,
-        '--cache_dir=' + os.path.join('build', 'test'),
-        '--output_dir=' + os.path.join('build', 'test'),
+        '-I' + os.path.dirname(testfile),
+        '--cache_dir=' + builddir,
+        '--output_dir=' + builddir,
         '--elkhound=' + os.path.join('bin', 'flx_elkhound'),
         '--import=flx.flxh',
         'std',
-        basename,
+        os.path.splitext(os.path.basename(testfile))[0],
         log=log,
       )
     except ExecutionError, e:
-      log.write('TESTFILE -- ERROR! %s\n' % basename)
+      log.write('TESTFILE -- ERROR! %s\n' % testfile)
       raise e
 
     cflags = self.shell(os.path.join('bin', 'flx_pkgconfig'),
       '--path=config',
       '--field=cflags',
       '@' + resfilename,
-			verbose=False,
       log=log,
     )
     cflags = cflags[0].strip() + " "
@@ -820,12 +820,12 @@ class build_testfile(Process):
           LDFLAGS=slibs,
           log=log)
 
-      #log.write('TESTFILE -- OK! %s\n' % basename)
+      #log.write('TESTFILE -- OK! %s\n' % testfile)
     except ExecutionError, e:
-      log.write('TESTFILE -- ERROR! %s\n' % basename)
+      log.write('TESTFILE -- ERROR! %s\n' % testfile)
       raise e
 
-    return basename
+    return outbase
 
 @select(tangler('mkplugins/virgin.py'))
 import os
@@ -1383,43 +1383,47 @@ import os
 
 from flxbuild.process import Process
 from flxbuild.flxutil import Tee
+from flxbuild.path import relativepath, glob_paths
 
 class run_failure_tests(Process):
   help = 'run tests meant to fail'
 
-  def runme(self, pkg, pkgdict,pkgsummary):
+  def runme(self, pkg, pkgdict, pkgsummary):
     #bad_tests = pkgdict.get("failure_tests",[])
     bad_tests=[]
     bad_tests.sort()
 
     failed = 0
 
-    for testfile in bad_tests:
+    root = pkgdict.get('root', '.')
+    for testfile in glob_paths(bad_tests):
       log = Tee()
       log.write("**** FAILURE TESTING PACKAGE %s : %s ****\n" % (pkg, testfile))
 
       #log.write('Running Felix code generator on %s\n' % testfile)
-      basename = os.path.splitext(testfile)[0]
-      cppfilename = basename + ".cpp"
+      localpath = relativepath(root, testfile)
+      builddir = os.path.join('build', os.path.dirname(localpath))
 
       try:
         self.shell(os.path.join('bin', 'flxg'),
           '-e',
           '-Ilib',
-          '--cache_dir=' + os.path.join('build', 'test'),
-          '--output_dir=' + os.path.join('build', 'test'),
+          '-I' + os.path.dirname(testfile),
+          '--cache_dir=' + builddir,
+          '--output_dir=' + builddir,
           '--elkhound=' + os.path.join('bin', 'flx_elkhound'),
           '--import=flx.flxh',
           'std',
-          basename, log=log
+          os.path.splitext(os.path.basename(testfile))[0],
+          log=log,
         )
 
-        #log.write('TESTFILE -- failed as expected %s\n' % basename)
+        #log.write('TESTFILE -- failed as expected %s\n' % testfile)
         self.successes.append((pkg, testfile, log.getvalue()))
       except ExecutionError, e:
         failed = 1
 
-        log.write('TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED! %s\n' % basename)
+        log.write('TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED! %s\n' % testfile)
 
         self.failures.append((pkg, testfile, log.getvalue()))
 
@@ -1689,6 +1693,7 @@ import glob
 from flxbuild.process import Process, processes, get_latest_src_time, enstamp
 from flxbuild.package import pkgd, pkgreqs
 from flxbuild.flxutil import Tee, ExecutionError, filetime, fmtime
+from flxbuild.path import relativepath, glob_paths
 
 import config
 
@@ -1713,12 +1718,16 @@ class TestProcess(Process):
     for p in pkgreqs.get(pkg, []):
       latest_src_time = max(latest_src_time, get_latest_src_time(pkgd[p]))
 
-    for testfile in testfiles:
+    root = pkgdict.get('root', '.')
+    for testfile in glob_paths(testfiles, root):
+      localpath = relativepath(root, testfile)
+
       failed = 0
       if self.find_test(self.successes, pkg, testfile): continue
       if self.find_test(self.failures, pkg, testfile): continue
 
-      stamp = os.path.join("pkg-stamps", testfile + '.test')
+      stamp = os.path.join("pkg-stamps", localpath + '.test',
+      )
 
       # run the tests
       stamptime = filetime(stamp)
@@ -1737,14 +1746,11 @@ class TestProcess(Process):
 
         # build the felix code
         try:
-          inbase = processes['build_testfile'].runme(testfile, log)
+          outbase = processes['build_testfile'].runme(root, localpath, log)
         except ExecutionError, e:
           failed = 1
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
         else:
-          xdir,xbase=os.path.split(inbase)
-          outbase = os.path.join("build","test", xbase)
-
           # run the dynamic tests
           if dynamic and config.SUPPORT_DYNAMIC_LOADING:
             resfilename = outbase + ".resh"
@@ -1765,7 +1771,7 @@ class TestProcess(Process):
               #log.write("Driver: %s\n" % driver)
               testscript = driver + ' ' + outbase + config.TARGET_CXX.options.EXT_SHLIB
 
-              self.run_test(log, testscript, inbase, outbase, deterministic)
+              self.run_test(log, testscript, os.path.splitext(testfile)[0], outbase, deterministic)
             except ExecutionError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
@@ -1775,7 +1781,7 @@ class TestProcess(Process):
             testscript = outbase + config.TARGET_CXX.options.EXT_EXE
 
             try:
-              self.run_test(log, testscript, inbase, outbase,deterministic)
+              self.run_test(log, testscript, os.path.splitext(testfile)[0], outbase, deterministic)
             except ExecutionError, e:
               failed = 1
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)

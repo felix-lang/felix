@@ -1,18 +1,13 @@
 @import config
-@from flxbuild.flxutil import unix2native
 
 @set_title('Regression Tests')
-@import glob
-
-@def magic(n,f):
-  toglob = os.path.join(config.FLX_DIR,unix2native(f))
-  tangle(n+' = glob.glob('+ repr(toglob)+')')
 
 @head(1, 'Packages')
 @select(tangler('spkgs/flx_regression_tests_rt.py'))
-import glob
+import config
 
-@magic('unit_tests',"test/regress/rt/*.flx")
+root = config.FLX_DIR
+unit_tests = [('test', 'regress', 'rt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -22,9 +17,10 @@ weaver_directory = 'doc/test/regress'
 
 
 @select(tangler('spkgs/flx_regression_tests_srt.py'))
-import glob
+import config
 
-@magic('static_unit_tests',"test/regress/srt*.flx")
+root = config.FLX_DIR
+static_unit_tests = [('test', 'regress', 'srt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -34,9 +30,10 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_drt.py'))
-import glob
+import config
 
-@magic('dynamic_unit_tests',"test/regress/drt*.flx")
+root = config.FLX_DIR
+dynamic_unit_tests = [('test', 'regress', 'drt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -46,9 +43,10 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_nd.py'))
-import glob
+import config
 
-@magic('completion_tests',"test/regress/nd/nd*.flx")
+root = config.FLX_DIR
+completion_tests = [('test', 'regress', 'nd', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -58,9 +56,10 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_pt.py'))
-import glob
+import config
 
-@magic('perform_tests',"test/regress/pt*.flx")
+root = config.FLX_DIR
+perform_tests = [('test', 'regress', 'pt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -70,10 +69,12 @@ weaver_directory = 'doc/test/'
 
 
 @select(tangler('spkgs/flx_regression_tests_bt.py'))
-import glob
+import config
+
+root = config.FLX_DIR
 
 # these are supposed to fail!
-@magic('failure_tests',"test/regress/bt/bt*.flx")
+failures_tests = [('test', 'regress', 'bt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
@@ -82,10 +83,12 @@ weaver_directory = 'doc/test/'
 @doc()
 
 @select(tangler('spkgs/flx_regression_tests_kf.py'))
-import glob
+import config
+
+root = config.FLX_DIR
 
 # these are supposed to fail!
-@magic('known_failed_tests',"test/regress/kf*.flx")
+known_failures_tests = [('test', 'regress', 'kf', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']

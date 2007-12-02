@@ -2,10 +2,6 @@
 @import config
 @from flxbuild.iscrutil import setup_test
 
-@env = setup_test(get_input_frame(), 'test/regress/stl-')
-
-@def kat(code): env.kat(get_tangler(),code)
-
 @set_title('STL')
 @head(1,'Stl library')
 @h=tangler('lib/stl.flx','data')
@@ -445,172 +441,15 @@ open[k,v] Reversible_Sequence[
 open[k,v] Bidirectional_iterator[Stl::MultiMap::stl_multimap_iterator[k,v],k*v];
 open[k,v] Bidirectional_iterator[Stl::MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
 
-
-@head(1,'Regression tests')
-
-@head(2,"Category Reference",nospawn=1)
-Tests by category keyword.
-@env.emit_katlist()
-
-@env.head(2,'tests')
-
-@env.head(3)
-@t = env.test('.flx')
-@select(t)
-@kat("STL::vector")
-#import <flx.flxh>
-include "stl";
-
-var x: stl_vector[int];
-
-print$ empty x; endl;
-
-push_back  (x,4);
-push_back  (x,5);
-push_back  (x,6);
-
-insert (x,begin x,3);
-insert (x,end x,7);
-insert (x,begin x,2);
-insert (x,begin x,1);
-
-print$ empty x; endl;
-
-proc check[c,it,rit with Reversible_Sequence[c,it,rit,int]]
-{
-  // forward iterator: forwards
-  var i = begin x;
-  whilst i != end x do
-    print$ *i; endl;
-    i++;
-  done;
-
-  // forward iterator: backwards
-  i = end x;
-  whilst i != begin x do
-    i--;
-    print$ *i; endl;
-  done;
-
-  // reverse iterator: forwards
-  var j = rbegin x;
-  whilst j != rend x do
-    print$ *j; endl;
-    j++;
-  done;
-
-  // reverse iterator: backwards
-  j = rend x;
-  whilst j != rbegin x do
-    j--;
-    print$ *j; endl;
-  done;
-}
-
-check [
-  stl_vector[int],
-  stl_vector_iterator[int],
-  stl_vector_reverse_iterator[int],
-  int
-]();
-@doc()
-
-@t = env.expect()
-@select(t)
-true
-false
-1
-2
-3
-4
-5
-6
-7
-7
-6
-5
-4
-3
-2
-1
-7
-6
-5
-4
-3
-2
-1
-1
-2
-3
-4
-5
-6
-7
-@doc()
-
-@env.head(3)
-@select(env.test('.flx'))
-@kat("stl:Vector")
-@kat("stl:Map")
-#import <flx.flxh>
-include "stl";
-
-typedef ii = Vector::iterator[int];
-
-var v = Vector::create[int]();
-push_back (v,1);
-push_back (v,2);
-push_back (v,3);
-
-var j = 0; until j==3 do
-  print v.[j]; endl;
-  ++j;
-done;
-
-
-var m = Map::create[int,int]();
-
-insert(m,0,2);
-insert(m,1,23);
-insert(m,2,423);
-
-j = 0; until j==3 do
-  print m.[j]; endl;
-  ++j;
-done;
-
-
-var i = begin m; until i == end m do
-  def val k, val vl = deref i;
-  print k; print " -> "; print vl; endl; ++i;
-done;
-@doc()
-
-@select(env.expect())
-1
-2
-3
-2
-23
-423
-0 -> 2
-1 -> 23
-2 -> 423
-@doc()
-
-
 @head(1, 'Packages')
 @select(tangler('spkgs/flx_stl_tests.py'))
-import glob
+import config
 
-@tangle('unit_tests = glob.glob("%s.flx")' % env.native_root)
+root = config.FLX_DIR
+unit_tests = [('test', 'regress', 'stl', '*.flx')]
 
 pkg_requires = ['flx_stdlib','flx_compiler']
 iscr_source = ['lpsrc/flx_stl.pak']
 
 weaver_directory = 'doc/test/stl'
 @doc()
-
-@env.write_katfile()
-
