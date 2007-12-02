@@ -1,6 +1,5 @@
 @import config
 @from flxbuild.iscrutil import setup_test
-@from flxbuild.flxutil import unix2native
 
 @env = setup_test(get_input_frame(), 'test/tre/tre-')
 
@@ -42,7 +41,7 @@ cc_ccs = [
 include_path = ['src/tre']
 build_macro = "TRE"
 
-@tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('unit_tests = glob.glob("%s*.flx")' % env.native_root)
 
 @h = tangler('config/tre.fpc')
 @select(h)

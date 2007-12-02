@@ -1,6 +1,5 @@
 @import config
 @from flxbuild.iscrutil import setup_test
-@from flxbuild.flxutil import unix2native
 
 @env = setup_test(get_input_frame(), 'test/pthread/pthread-')
 
@@ -34,7 +33,6 @@ import os
 import glob
 
 import config
-from flxbuild.flxutil import unix2native
 
 PTHREADRTL_INTERFACES = [
   'src/pthread/pthread_thread.hpp',               # portable
@@ -99,7 +97,7 @@ if config.SOLARIS:
 if config.TARGET_CXX.options.HAVE_PTHREADS:
   EXTRA_SYS_LIBS=EXTRA_SYS_LIBS+config.TARGET_CXX.options.PTHREAD_SWITCH
 
-@tangle('completion_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('completion_tests = glob.glob("%s*.flx")' % env.native_root)
 
 cpp_cpps = PTHREAD_CPPS
 lib_requires = ['libflx_exceptions']

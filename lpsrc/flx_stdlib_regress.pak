@@ -1,6 +1,5 @@
 @import glob
 @from flxbuild.iscrutil import setup_test
-@from flxbuild.flxutil import unix2native
 
 @env = setup_test(get_input_frame(), 'test/stdlib/slrt-')
 @def kat(code):
@@ -9,7 +8,7 @@
 @select(tangler('spkgs/flx_stdlib_regress.py'))
 import glob
 
-@tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('unit_tests = glob.glob("%s*.flx")' % env.native_root)
 pkg_requires = ['flx_stdlib']
 iscr_source = ['lpsrc/flx_stdlib_regress.pak']
 weaver_directory = 'doc/test/stdlib'

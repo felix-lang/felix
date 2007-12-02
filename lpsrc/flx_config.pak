@@ -33,11 +33,7 @@ import sys
 import os
 import pickle
 
-if '' not in sys.path: sys.path = [''] + sys.path
-import flxbuild
-from flxbuild.flxutil import *
-
-import flxbuild.flxutil
+from flxbuild.flxutil import unix2native
 import interscript.frames.inputf
 
 class setup_test:
@@ -49,13 +45,14 @@ class setup_test:
     self.zfill_pattern = zfill_pattern
     self.zfill_default = 2
 
+    self.native_root = unix2native(self.root)
     self.levels = []
     self.testcount = 0
     self.argcount = 0
 
     self.names_written = {}
 
-    self.katfile = unix2native(self.root + 'categories')
+    self.katfile = self.root + 'categories'
 
     if os.path.exists(self.katfile):
       f = open(self.katfile)
@@ -306,11 +303,10 @@ def erasefile(f):
   except EnvironmentError: pass
 
 def unix2native(f):
-  p = os.path.join(*f.split('/'))
-  if f.startswith('/'):
-    return os.sep + p
-  else:
-    return p
+  if os.path.splitdrive(f)[0] or f.startswith(os.sep):
+    return f
+
+  return os.path.join(*f.split('/'))
 
 def deletefile(f):
   erasefile(unix2native(f))

@@ -1,6 +1,5 @@
 @import config
 @from flxbuild.iscrutil import setup_test
-@from flxbuild.flxutil import unix2native
 
 @env_faio = setup_test(get_input_frame(), 'test/faio/faio-')
 @env_win = setup_test(get_input_frame(), 'test/faio/win-')
@@ -62,15 +61,15 @@ WINDOWS_FAIO_CPPS = [
   "src/faio/faio_winio",
 ]
 
-@tangle('EXTRA_TEST_GLOBS = glob.glob('+repr(unix2native(env_faio.root)+"*.flx")+')')
+@tangle('EXTRA_TEST_GLOBS = glob.glob("%s*.flx")' % env_faio.native_root)
 
 if config.WIN32:
   FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
-@tangle('  EXTRA_TEST_GLOBS = EXTRA_TEST_GLOBS + glob.glob('+repr(unix2native(env_win.root)+"*.flx")+')')
+@tangle('  EXTRA_TEST_GLOBS.extend(glob.glob("%s*.flx"))' % env_win.native_root)
 
 if config.POSIX:
   FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
-@tangle('  EXTRA_TEST_GLOBS = EXTRA_TEST_GLOBS + glob.glob('+repr(unix2native(env_posix.root)+"*.flx")+')')
+@tangle('  EXTRA_TEST_GLOBS.extend(glob.glob("%s*.flx"))' % env_posix.native_root)
 
 cpp_cpps = FAIO_CPPS
 build_macro = "FAIO"

@@ -1,5 +1,4 @@
 @from flxbuild.iscrutil import setup_test
-@from flxbuild.flxutil import unix2native
 
 @env = setup_test(get_input_frame(), 'test/sqlite/sqlite-')
 
@@ -23,7 +22,7 @@ import glob
 from cpkgs.target.sqlite3 import HAVE_SQLITE3
 
 if HAVE_SQLITE3:
-@tangle('  unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('  unit_tests = glob.glob("%s*.flx")' % env.native_root)
 
 iscr_source = ['lpsrc/flx_sqlite.pak']
 weaver_directory = 'doc/sqlite/'

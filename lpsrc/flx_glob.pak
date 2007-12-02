@@ -1,6 +1,5 @@
 @import config
 @from flxbuild.iscrutil import setup_test
-@from flxbuild.flxutil import unix2native
 
 @env = setup_test(get_input_frame(), 'test/glob/glob-')
 
@@ -48,7 +47,7 @@ lib_requires = ['libflx_gc']
 pkg_requires = ['flx_rtl'] # flx_rtl provides flx_rtl_config.hpp
 build_macro = "GLOB"
 
-@tangle('unit_tests = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('unit_tests = glob.glob("%s*.flx")' % env.native_root)
 
 @h=tangler('config/target/flx_glob_config.hpp')
 @select(h)

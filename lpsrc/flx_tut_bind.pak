@@ -1,7 +1,6 @@
 @set_title('Felix Tutorial: Embedding')
 
 @from flxbuild.iscrutil import setup_test
-@from flxbuild.flxutil import unix2native
 
 @env = setup_test(get_input_frame(), 'tut/embedding/bind-')
 
@@ -19,7 +18,7 @@ Tests by category keyword.
 @select(tangler('spkgs/flx_tut_bind.py'))
 import glob
 
-@tangle('TESTS = glob.glob('+repr(unix2native(env.root)+"*.flx")+')')
+@tangle('TESTS = glob.glob("%s.flx")' % env.native_root)
 
 unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
