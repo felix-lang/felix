@@ -78,7 +78,7 @@ Felix provides platform independence like
 Java without using a bytecode interpreter or
 interpreted virtual machine, by mapping abstracted
 concepts onto the platform specific technologies
-at the source code level. 
+at the source code level.
 @p()
 The Felix code generator itself produces platform
 independent C++ code which should compile on any
@@ -196,7 +196,7 @@ TRUE
 @env.head(2,'Arithmetic Types')
 @env.head(3,'Integers')
 Integers are not builtin types, but are in fact
-defined in the standard library by binding to 
+defined in the standard library by binding to
 their C equivalents.
 @p()
 In the following table, the Felix names of the basic integer
@@ -251,7 +251,7 @@ For constructors and auxilliary functions see also:
 @line_break()
 @p()
 The following aliases are also provided, in this
-case the C name may not be used: 
+case the C name may not be used:
 @p()
 @begin_table("Felix name","C name")
 @table_row("size","size_t")
@@ -547,10 +547,10 @@ provides at least 2147483648 (31 bits worth).
 @p()
 There are no character literals. You can use the ord
 function to obtain the numeric value of a char or uchar
-as an int or uint32 respectively. 
+as an int or uint32 respectively.
 @p()
 Constructors for char and uchar convert any
-integer to the corresponding character. The result is 
+integer to the corresponding character. The result is
 undefined for negative values of signed types.
 @p()
 The char and uchar constructors can be applied to a string
@@ -682,9 +682,9 @@ in C. Here is are some examples with equivalent
 function calls. The complete expression grammar is given here:
 @cite_url('../../gramdoc/dssl_expressions.html')
 Note that Felix does not have builtin expression syntax:
-the grammar, including expressions, is defined in the library. 
+the grammar, including expressions, is defined in the library.
 
-@h=env.test('.flx') 
+@h=env.test('.flx')
 @e = env.expect()
 @select(h)
 // arith
@@ -1097,7 +1097,7 @@ The quoted code on the right is an arbitrary C++ expression
 which will be emitted by the code generator as written,
 with the $ terms replaced by the C++ encoding of the corresponding
 arguments. Felix generally takes care of precedences automatically
-but there is a full system for telling Felix precedences, so 
+but there is a full system for telling Felix precedences, so
 the emitted code doesn't contain so many brackets as to become
 unreadable.
 @p()
@@ -1105,7 +1105,7 @@ Note that Felix does not parse or type the C++ code: the programmer
 is responsible for getting it right.
 @p()
 Felix has a sophisticated system for binding to C++ code:
-this function binding technology is one small but important part 
+this function binding technology is one small but important part
 of it.
 
 @env.head(3,'C Functions')
@@ -1197,7 +1197,7 @@ println (double (x + y));
 @doc()
 The keyword ctor specifies a constructor for the given
 type, which is called using that type as a function name.
-A constructor can be given for a type alias given by 
+A constructor can be given for a type alias given by
 a typedef too. Note that constructors specify only
 the function arguments, since the return type is implicit
 in the type name.
@@ -1254,7 +1254,7 @@ to create a new thread of control which is scheduled
 for execution.
 @p()
 When a fibre is scheduled it runs until it terminates
-or explicitly yields control. Yielding is done by 
+or explicitly yields control. Yielding is done by
 reading or writing on a synchronous channel. Bidirectional
 are created with the mk_schannel library function.
 
@@ -1297,7 +1297,7 @@ This does not mean they are pure, because they can
 depend on variables. However they cannot modify any
 variables outside their own bodies.
 @p()
-It is still possible to write functions which have 
+It is still possible to write functions which have
 side-effects, they just have to be explicitly noted
 as generators with the gen keyword. For example:
 
@@ -1369,12 +1369,12 @@ called p-threads. In contrast to fibres or f-threads
 which effect interleaving of logical threads at explicit
 exchange points, p-threads may lose control at the whim
 of the operating system, and may be run in parallel if
-multiple processors are available. 
+multiple processors are available.
 @p()
 Felix provides Posix mutex and condition variables for
 all operating systems (including Windows). However
 the primary synchronisation vehicle is the p-channel,
-monitor, or rendevouz. This works with the same syntax as a 
+monitor, or rendevouz. This works with the same syntax as a
 synchronous channel.
 
 @select(env.test('.flx'))

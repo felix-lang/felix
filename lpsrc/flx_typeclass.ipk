@@ -243,8 +243,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         );
         *)
 
-      | _ -> 
-      
+      | _ ->
         clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
     iter

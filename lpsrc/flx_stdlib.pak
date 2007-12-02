@@ -261,7 +261,7 @@ typeclass Real[t] {
   virtual fun trunc: t -> t;
 }
 
-open module Imagination 
+open module Imagination
 {
   type sqrt_minus_one = "__ERROR__";
   const i : sqrt_minus_one = "__ERROR__";
@@ -642,7 +642,7 @@ instance [t in fast_uints] Bits [t] {
   fun bor: t * t -> t = "(?1)($1|$2)";
   fun band: t * t -> t = "(?1)($1&$2)";
 
-  // note: the cast is essential to ensure ~1tu is 254tu 
+  // note: the cast is essential to ensure ~1tu is 254tu
   fun bnot: t -> t = "(?1)~$1";
   proc bxoreq: lvalue[t] * t = "$1^=$2;";
   proc boreq: lvalue[t] * t = "$1|=$2;";
@@ -661,7 +661,7 @@ instance[t in ints] Bidirectional[t] {
   proc post_decr: lvalue[t] = "$1--;";
 }
 
-instance[t in ints] Integer[t] { 
+instance[t in ints] Integer[t] {
   fun shl: t * t -> t = "$1<<$2";
   fun shr: t * t -> t = "$1>>$2";
 }
@@ -803,7 +803,7 @@ module MixedInt
 open module float_format
 {
   union mode =
-    | default of int * int 
+    | default of int * int
     | fixed of int * int
     | scientific of int * int
   ;
