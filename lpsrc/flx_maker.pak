@@ -1704,11 +1704,12 @@ class TestProcess(Process):
     return False
 
   def run_tests(self, pkg, pkgdict, pkgsummary, testfiles, deterministic, static, dynamic, title):
-    pkgsummary[pkg]="started"
+    pkgsummary[(pkg, self.__class__.__name__)] = "started"
     if not testfiles:
-      pkgsummary[pkg]="no tests"
+      pkgsummary[(pkg, self.__class__.__name__)] = "no tests"
       return 1
 
+    tests_ran = 0
     tests_failed = 0
 
     # determine the latest time that this package, and all the recurcively dependent
@@ -1723,17 +1724,19 @@ class TestProcess(Process):
       localpath = relativepath(root, testfile)
 
       failed = 0
+
       if self.find_test(self.successes, pkg, testfile): continue
       if self.find_test(self.failures, pkg, testfile): continue
 
-      stamp = os.path.join("pkg-stamps", localpath + '.test',
-      )
+      stamp = os.path.join("pkg-stamps", localpath + '.test')
 
       # run the tests
       stamptime = filetime(stamp)
       if not self.force and latest_src_time < stamptime:
         self.successes.append((pkg, testfile, "Stamped ok previously on "+fmtime(stamptime)))
       else:
+        tests_ran += 1
+
         log = Tee()
         log.write(title % testfile)
         if not self.quiet:
@@ -1793,10 +1796,11 @@ class TestProcess(Process):
       ####
 
       if failed:
-        tests_failed = tests_failed + 1
-        pkgsummary[pkg]="Failed %d" % tests_failed
+        tests_failed += 1
         self.failures.append((pkg, testfile, log.getvalue()))
-        if 'stop' in self.options: raise MakeError
+
+      pkgsummary[(pkg, self.__class__.__name__)] = \
+        "Passed %d/%d" % (tests_ran - tests_failed, tests_ran)
 
     return tests_failed == 0
 
@@ -2384,8 +2388,13 @@ def run_phase(options, phase, packages):
         break
     else:
       enstamp(stamp, options.quiet)
-  print phase+" PHASE SUMMARY"
-  for k in pkgsummary: print ("%30s %s" % (k,pkgsummary[k]))
+
+  if pkgsummary:
+    pkgsummary = pkgsummary.items()
+    pkgsummary.sort()
+    print phase, "PHASE SUMMARY"
+    for (package, process), summary in pkgsummary:
+      print '  ', process.ljust(30), ':', package.ljust(30), ':', summary
 
 # -----------------------------------------------------------------------------
 
