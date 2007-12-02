@@ -1,7 +1,7 @@
 @head(1,"pari")
 @select(tangler("cpkgs/target/pari.py"))
 try:
-  from target_pari_config import *
+  from config.target_pari_config import *
 except ImportError:
   import config
   from flxbuild.config_support import cwrite, pa
