@@ -6533,6 +6533,8 @@ and check_module syms name sr entries ts =
       begin match get_data syms.dfns (sye index) with
       | {dirs=dirs;pubmap=table;symdef=`SYMDEF_module} ->
         Simple_module (sye index,ts,table,dirs)
+      | {dirs=dirs;pubmap=table;symdef=`SYMDEF_typeclass} ->
+        Simple_module (sye index,ts,table,dirs)
       | {id=id;sr=sr'} ->
         clierr sr
         (
