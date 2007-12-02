@@ -508,7 +508,7 @@ def glob_paths(paths, root='.'):
     new_paths.extend(glob.glob(pattern))
   return new_paths
 
-  
+
 @select(tangler("cpkgs/__init__.py"))
 @select(tangler("cpkgs/build/__init__.py"))
 @select(tangler("cpkgs/host/__init__.py"))
