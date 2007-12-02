@@ -4519,7 +4519,7 @@ function calpackages () {
 }
 
 function write_include_file() {
-  echo "${INCLUDE_FILES:1} "| sed -e "s/\([^ ]*\) /#include &\n/g" > $1.includes
+  (for filename in ${INCLUDE_FILES:1}; do echo "#include $filename"; done) > $1.includes
 }
 
 # grab arguments
