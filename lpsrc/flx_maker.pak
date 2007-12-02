@@ -652,7 +652,7 @@ class build_host_tools(Process):
       print "HOST C COMPILING", pkg
       pkglib = "lib"+pkg+"_host_static"
 
-      config.HOST_C.build_static_rtl(CCS, 'hostlib' + os.sep + pkglib,
+      config.HOST_C.build_static_rtl(CCS, os.path.join('build', 'hostlib', pkglib),
         outdir='build',
         include_paths=INCLUDE_PATH+[config.FLX_RTL_DIR, config.FLX_HOST_CONFIG_DIR, "elk"],
         macros=MACROS+["FLX_STATIC_LINK"],
@@ -662,7 +662,7 @@ class build_host_tools(Process):
       print "HOST C++ COMPILING", pkg
       pkglib = "lib"+pkg+"_host_static"
 
-      config.HOST_CXX.build_static_rtl(CPPS, 'hostlib' + os.sep + pkglib,
+      config.HOST_CXX.build_static_rtl(CPPS, os.path.join('build', 'hostlib', pkglib),
         outdir='build',
         include_paths=INCLUDE_PATH+[config.FLX_RTL_DIR, config.FLX_HOST_CONFIG_DIR, "elk"],
         macros=MACROS+["FLX_STATIC_LINK"],
@@ -677,7 +677,7 @@ class build_host_tools(Process):
     }
 
     if pkglib:
-      kwds['lib_paths'] = ['hostlib']
+      kwds['lib_paths'] = [os.path.join('build', 'hostlib')]
       kwds['libs'] = [pkglib]
 
     for src, bin in EXES:
