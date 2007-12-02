@@ -130,10 +130,10 @@ import cpkgs.target.sdl as sdl
 
 if sdl.HAVE_SDL:
   STATIC_DRIVERS = [
-    ('src/rtl/flx_arun','lib/rtl'),
+    ('src/rtl/flx_arun', 'lib/rtl'),
   ]
   DYNAMIC_DRIVERS = [
-    ('src/rtl/flx_arun','bin/flx_arun'),
+    ('src/rtl/flx_arun', 'bin'),
   ]
   DRLIBS = [
    'libflx_async',

@@ -2638,6 +2638,7 @@ class ocaml(compiler_base):
       log=None,
       ):
     dst = os.path.join(outdir, outfile)
+    mkdirs(os.path.dirname(dst))
 
     cmd = [LINK]
     for i in include_paths: cmd.extend(('-I', i))

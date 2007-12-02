@@ -501,6 +501,7 @@ class build_ocaml_libraries(Process):
 
 @select(tangler('mkplugins/build_ocaml_exes.py'))
 import os
+import shutil
 
 from flxbuild.process import Process
 
@@ -514,19 +515,28 @@ class build_ocaml_exes(Process):
       return
 
     print "CAML LINKING EXECUTABLES"
+
+    kwds = dict(
+      outdir='build',
+      bytecode='bytecode' in self.options,
+      include_paths=[os.path.join('build', i) for i in INCLUDES],
+    )
+
     output_exes = []
     for exe in EXES:
-      dst = os.path.join('bin', os.path.basename(exe))
-      output_exe = config.HOST_OCAML.link_exe(
-        [exe + '.ml'],
-        dst + config.HOST_OCAML.options.EXT_EXE,
-        bytecode='bytecode' in self.options,
-        include_paths=[os.path.join('build', os.path.dirname(exe))] + \
-          [os.path.join('build', i) for i in INCLUDES],
-        libs=OLIBRARIES,
-      )
+      modules = config.HOST_OCAML.compile_module([exe], **kwds)
 
-      output_exes.append(output_exe)
+      src = config.HOST_OCAML.link_exe(
+        modules,
+        os.path.splitext(exe)[0] + config.HOST_OCAML.options.EXT_EXE,
+        libs=OLIBRARIES, 
+        **kwds)
+
+      dst = os.path.join('bin', os.path.basename(src))
+
+      if not self.quiet: print 'copying file', src, '->', dst
+      shutil.copy(src, dst)
+      output_exes.append(dst)
 
     return output_exes
 @doc()
@@ -1214,7 +1224,11 @@ class build_felix_static_drivers(Process):
 
 
 @select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
+import os
+import shutil
+
 from flxbuild.process import Process
+from flxbuild.flxutil import mkdirs
 
 import config
 
@@ -1236,13 +1250,14 @@ class build_felix_dynamic_drivers(Process):
     for lib in LIBS:
       libs.append(lib+"_dynamic")
 
-    for src, bin in DRIVERS:
+    for src, outdir in DRIVERS:
       # this is a gross HACK! Don't make dynamic versions
       # of drivers with extra macros, they're for static
       # link of driver without async support
       if self.verbose: print 'dynamic Compiling driver object', src
 
-      config.TARGET_CXX.build_shared_program(src, bin,
+      dst = config.TARGET_CXX.build_shared_program(src, os.path.join('build', src),
+          outdir='build',
           include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
           optimise=self.optimise,
           debug=self.debug,
@@ -1250,6 +1265,11 @@ class build_felix_dynamic_drivers(Process):
           lib_paths=[config.TARGET_CXX.options.SHLIB_DIR],
           libs=libs,
           LDFLAGS=dflags)
+
+      if outdir:
+        print 'copying file', dst, '->', outdir
+        mkdirs(outdir)
+        shutil.copy(dst, outdir)
 
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))

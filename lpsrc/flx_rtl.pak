@@ -92,9 +92,9 @@ STATIC_DRIVERS = [
 ]
 
 DYNAMIC_DRIVERS = [
-  ('src/rtl/flx_run','bin/flx_run'),
-  ('test/drivers/flx_perf_drv1','test/drivers/flx_perf_drv1'),
-  ('test/drivers/mickey_mouse','bin/mickey_mouse'),
+  ('src/rtl/flx_run', 'bin'),
+  ('test/drivers/flx_perf_drv1', ''),
+  ('test/drivers/mickey_mouse', ''),
 ]
 
 DRLIBS = [
@@ -118,7 +118,7 @@ STATIC_DRIVERS = [
 ]
 
 DYNAMIC_DRIVERS = [
-  ('src/rtl/flx_arun','bin/flx_arun'),
+  ('src/rtl/flx_arun','bin'),
 ]
 
 DRLIBS = [
