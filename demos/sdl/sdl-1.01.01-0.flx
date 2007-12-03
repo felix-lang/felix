@@ -1,0 +1,316 @@
+include "SDL/SDL";
+include "SDL/SDL_video";
+include "SDL/SDL_rwops";
+//include "SDL/SDL_image";
+include "SDL/SDL_keyboard";
+include "SDL/SDL_keysym";
+include "SDL/SDL_events";
+include "SDL/SDL_mutex";
+include "SDL/SDL_audio";
+include "flx_faio";
+include "flx_faio_sdl";
+
+// Raw SDL interfaces
+open SDL_h;
+open SDL_video_h;
+open SDL_rwops_h;
+//open SDL_image_h;
+open SDL_events_h;
+open SDL_audio_h;
+open SDL_mutex_h;
+open SDL_keyboard_h;
+open SDL_keysym_h;
+
+open C_hack;
+open Carray;
+open MixedInt;
+open Uint32;
+open Uint8;
+
+// This is the Felix asynchronous event source
+open SDL_events;
+
+proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:uint8)
+{
+    color := SDL_MapRGB(screen.format, R, G, B);
+
+    if SDL_MUSTLOCK(screen) do
+        if SDL_LockSurface(screen) < 0 return;
+    done;
+
+    match screen.format.BytesPerPixel with
+    | 1 =>
+      { /* Assuming 8-bpp */
+        bufp := cast[ptr[uint8]] screen.pixels + y*screen.pitch + x;
+        *bufp = color;
+      }
+
+    | 2 =>
+      { /* Probably 15-bpp or 16-bpp */
+        bufp := cast[ptr[uint16]] screen.pixels + y*screen.pitch/2 + x;
+        *bufp = color;
+      }
+
+    | 3 =>
+      { /* Slow 24-bpp mode, usually not used */
+        bufp := cast[ptr[uint8]] screen.pixels + y*screen.pitch + x;
+        *(bufp+screen.format.Rshift/8) = R;
+        *(bufp+screen.format.Gshift/8) = G;
+        *(bufp+screen.format.Bshift/8) = B;
+      }
+
+    | 4 =>
+      { /* Probably 32-bpp */
+        bufp := cast[ptr[uint32]] screen.pixels + y*screen.pitch/4 + x;
+        *bufp = color;
+      }
+    endmatch;
+
+    if SDL_MUSTLOCK(screen) do
+        SDL_UnlockSurface(screen);
+    done;
+    SDL_UpdateRect(screen, x, y, 1u, 1u);
+}
+
+if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0 do
+  print "Unable to init SDL"; endl;
+  System::exit(1);
+done;
+
+var screen: ptr[SDL_Surface];
+screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
+if isNULL screen do
+  print "Unable to set 1024x768 video"; endl;
+  System::exit(1);
+done;
+
+print "yo, we're off: ";
+print screen.format.BytesPerPixel;
+print " bytes per pixel\n";
+
+var i = 10i32; until i == 50i32 do
+      DrawPixel(screen, i,i,250u8,220u8,220u8);
+      ++i;
+done;
+
+struct sample_t {
+    data : ptr[uint8];
+    dpos: uint32;
+    dlen: uint32;
+};
+
+macro val NUM_SOUNDS = 2;
+var sounds : sample_t ^ NUM_SOUNDS;
+
+{
+  var j:int;
+  forall j in 0 upto NUM_SOUNDS-1 do
+    sounds.[j] = sample_t(null_ptr[uint8],0u32,0u32);
+  done;
+};
+
+proc flx_mixaudio(stream : ptr[uint8], len : int)
+{
+  var i : int;
+  var amount : uint32;
+  forall i in 0 upto NUM_SOUNDS-1 do
+    amount = sounds.[i].dlen - sounds.[i].dpos;
+    if amount > len do amount = len; done;
+    var loc : ptr[uint8] = sounds.[i].data+ cast[int] sounds.[i].dpos;
+    SDL_MixAudio(stream, cast[cptr[uint8]] loc, amount, SDL_MIX_MAXVOLUME);
+    sounds.[i].dpos += amount;
+  done;
+}
+
+var fmt : SDL_AudioSpec;
+fmt.freq=22050;
+fmt.format=AUDIO_S16;
+fmt.channels=2u8;
+fmt.silence=0u8;
+fmt.samples=2048u16;
+fmt.padding=0u16;
+fmt.size=0u16;
+
+//const SDL_audio_callback : SDL_audio_h_cft_1;
+get_callback fmt = code [SDL_audio_h_cft_1] 'SDL_audio_callback';
+var mixer = the flx_mixaudio;
+fmt.userdata= cast[address] mixer;
+
+
+if SDL_OpenAudio(addr fmt, null_ptr[SDL_AudioSpec]) < 0 do
+  print "Can't open Audio"; endl;
+  System::exit 0;
+done;
+
+proc PlaySound(filename:string)
+{
+  var idx:int;
+  var wave: SDL_AudioSpec;
+  var data : ptr[uint8];
+  var dlen : uint32;
+  var cvt : SDL_AudioCVT;
+  /* Look for an empty (or finished) sound slot */
+  forall idx in 0 upto 2 do
+    if sounds.[idx].dpos == sounds.[idx].dlen goto found;
+  done;
+  found:>
+  if idx == NUM_SOUNDS do
+    print "No free slot for music"; endl;
+    return;
+  done;
+
+  if
+    SDL_LoadWAV(
+      cstr filename,
+      addr wave,
+      addr data,
+      addr dlen
+    ) == null_ptr[SDL_AudioSpec]
+  do
+    print$ "Couldn't load Wav file " + filename; endl;
+    return;
+  done;
+  print$ "Loaded Wav file " + filename; endl;
+  print "Using slot "; print idx; endl;
+
+  var result = SDL_BuildAudioCVT(
+    addr cvt,
+    wave.format,
+    wave.channels,
+    wave.freq,
+    AUDIO_S16,
+    2u8,
+    22050
+  );
+  cvt.buf = array_alloc[uint8](dlen*cvt.len_mult);
+  memcpy(as_address cvt.buf, as_address data, cast[size] dlen);
+  cvt.len = dlen;
+  result = SDL_ConvertAudio(addr cvt);
+  SDL_FreeWAV(data);
+
+  /* Put the sound data in the slot (it starts playing immediately) */
+  if not (isNULL sounds.[idx].data) call free sounds.[idx].data;
+  SDL_LockAudio();
+  sounds.[idx].data = cvt.buf;
+  sounds.[idx].dlen = cvt.len_cvt;
+  sounds.[idx].dpos = 0u32;
+  SDL_UnlockAudio();
+}
+
+SDL_PauseAudio 0;
+{
+  forall i in 1 upto 16 do
+    filename := "media/sounds/fs" + str i + ".wav";
+    print$ "Playing file " + filename; endl;
+    PlaySound(filename);
+  done;
+};
+
+var s: ptr[SDL_Surface] ^ 16;
+{
+  forall i in 1 upto 16 do
+       //filename := "media/images/fc" + str i+ ".jpg";
+       filename := "media/images/fc" + str i+ ".bmp";
+       print$ "Loading file " + filename; endl;
+       rwop := SDL_RWFromFile (cstr filename,enconst (c"rb"));
+       //s.[i-1] = IMG_LoadJPG_RW(rwop);
+       s.[i-1] = SDL_LoadBMP_RW(rwop,1);
+  done;
+};
+
+var rcDest : SDL_Rect;
+SDL_GetClipRect(screen,addr rcDest);
+
+black := SDL_MapRGB(screen.format, 0u8, 0u8, 0u8);
+
+val clock = Faio::mk_alarm_clock();
+proc waitt(t:double) (f:schannel[uint8]) {
+  Faio::sleep$ clock, t;
+  write (f,SDL_USEREVENT); // hack for timer event
+}
+
+/* function to handle key press events */
+proc handle_key( keysym : SDL_keysym)
+{
+  match keysym.sym with
+  | ?k when k == SDLK_ESCAPE => { Quit 0; }
+  | ?k when k ==  SDLK_F1 =>
+        { ignore$ SDL_WM_ToggleFullScreen(screen); }
+  | _ => {}
+  endmatch;
+}
+
+
+var event_lock = SDL_CreateMutex ();
+
+proc poll_event(e: &SDL_Event)
+{
+tryagain:>
+  //print "Polling event"; endl;
+  var result = SDL_PollEvent(e);
+  if result > 0 do
+    //print "Got event"; endl;
+    return;
+  done;
+  Faio::sleep$ clock, 0.1;
+  goto tryagain;
+}
+
+proc waitk(f:schannel[uint8]) {
+  // ASYNC event reading doesn't work with SDL on Windows
+  // So we have busy wait ;(
+  //var &e : SDL_Event <- get_sdl_event event_lock;
+  var e : SDL_Event;
+  poll_event(&e);
+
+  var et = event_type e;
+  whilst
+    et != SDL_KEYDOWN and
+    et != SDL_MOUSEBUTTONDOWN and
+    et != SDL_QUIT
+  do
+    //&e <- get_sdl_event event_lock;
+    poll_event(&e);
+    et = event_type e;
+  done;
+  if et == SDL_KEYDOWN call handle_key e.key.keysym;
+  write (f,et);
+}
+
+proc waittk() {
+  var w = mk_schannel[uint8] ();
+  spawn_fthread { waitt 15.0 w; };
+  spawn_fthread { waitk w; };
+  var i = read w;
+}
+
+
+forall i in 0 upto 15 do
+  if not (isNULL s.[i]) do
+    print "Show "; print i; endl;
+    var r = SDL_BlitSurface ( s.[i], null_ptr[SDL_Rect], screen, addr rcDest );
+    SDL_UpdateRect(screen, 0i32,0i32,0u,0u);
+    waittk;
+    r = SDL_FillRect(screen, addr rcDest, black);
+  else
+    print "Skip "; print i; endl;
+  done;
+done;
+
+print "Press any key"; endl;
+
+{
+  var x = mk_schannel[uint8] ();
+  spawn_fthread { waitk x; };
+  var i = read x;
+};
+
+Quit 0;
+
+proc Quit(x:int)
+{
+  //print "QUIT "; print x; endl;
+  SDL_CloseAudio;
+  SDL_Quit;
+  System::exit x;
+}
