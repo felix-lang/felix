@@ -1,9 +1,11 @@
 @import config
-@from flxbuild.iscrutil import setup_test
 
-@env = setup_test(get_input_frame(), 'test/pthread/pthread-')
-
-@head(1,'pthread')
+@head(1, 'Pre-emptive threads (pthread)')
+Note WE say pthread means 'pre-emptive thread' not
+merely Posix thread. Confusing on Solaris especially.
+However it fits with name fthread for felix threads
+which are actually s- (synchronous) or np- (non-preemptive)
+threads.
 
 @h = tangler('config/flx_pthread.fpc')
 @select(h)
@@ -30,7 +32,6 @@ Requires: flx_gc
 @h = tangler('spkgs/flx_pthread.py')
 @select(h)
 import os
-import glob
 
 import config
 
@@ -97,7 +98,8 @@ if config.SOLARIS:
 if config.TARGET_CXX.options.HAVE_PTHREADS:
   EXTRA_SYS_LIBS=EXTRA_SYS_LIBS+config.TARGET_CXX.options.PTHREAD_SWITCH
 
-@tangle('completion_tests = glob.glob("%s*.flx")' % env.native_root)
+root = config.FLX_DIR
+completion_tests = [('test', 'pthread', 'pthread-*.flx')]
 
 cpp_cpps = PTHREAD_CPPS
 lib_requires = ['libflx_exceptions']
@@ -125,94 +127,3 @@ xfiles= [os.path.join('src', 'pthread', '*')]
 #define PTHREAD_EXTERN FLX_IMPORT
 #endif
 #endif
-
-@head(1,"Pre-emptive threads (pthread)")
-Note WE say pthread means 'pre-emptive thread' not
-merely Posix thread. Confusing on Solaris especially.
-However it fits with name fthread for felix threads
-which are actually s- (synchronous) or np- (non-preemptive)
-threads.
-
-@env.head(1,'pthread tests')
-@env.head(2)
-@select(env.test('.flx'))
-#import <flx.flxh>
-include "flx_faio";
-include "pthread";
-open Pthread;
-
-print "Pthread spawning test"; endl;
-
-proc thr (x:int) { print "Thread "; print x; endl; }
-
-proc flx_main
-{
-  print "Running main\n";
-  var chan = mk_pchannel[int]();
-  var dummy: int;
-
-  spawn_pthread { thr 1; write (chan,1); };
-  spawn_pthread { thr 2; write (chan,2); };
-  spawn_pthread { thr 3; write (chan,3); };
-  spawn_pthread { thr 4; write (chan,4); };
-  spawn_pthread { thr 5; write (chan,5); };
-  spawn_pthread { thr 6; write (chan,6); };
-  spawn_pthread { thr 7; write (chan,7); };
-  print "Spawned\n";
-  dummy = read chan; // 1
-  print "joined "; print dummy; endl;
-  dummy = read chan; // 2
-  print "joined "; print dummy; endl;
-  dummy = read chan; // 3
-  print "joined "; print dummy; endl;
-  dummy = read chan; // 4
-  print "joined "; print dummy; endl;
-  dummy = read chan; // 5
-  print "joined "; print dummy; endl;
-  dummy = read chan; // 6
-  print "joined "; print dummy; endl;
-  dummy = read chan; // 7
-  print "joined "; print dummy; endl;
-  print "Joined all\n";
-}
-
-export proc flx_main of (1) as "flx_main";
-@doc()
-
-@env.head(2)
-@select(env.test('.flx'))
-#import <flx.flxh>
-include "pthread";
-include "flx_faio";
-open String;
-
-print "Garbage collector world stop test"; endl;
-
-var clock = Faio::mk_alarm_clock();
-
-proc randprint(n:int)
-{
-  var i = 5;
-  print$ "Start Thread number "+str(n); endl;
-  whilst i > 0 do
-    var d = double_of$ Cstdlib::rand()%10;
-    if d == 0.0 do
-      print "ZERO FOUND -- collecting!"; endl;
-      collect;
-      print "collected!"; endl;
-    done;
-    print$ "Thread "+str n +" Sleep #"+str i+" for "+str d+" sec"; endl;
-    --i;
-    Faio::sleep (clock,d);
-  done;
-  print$ "Finish Thread number "+str(n); endl;
-}
-
-Pthread::spawn_pthread { randprint(1); };
-Pthread::spawn_pthread { randprint(2); };
-Pthread::spawn_pthread { randprint(3); };
-Pthread::spawn_pthread { randprint(4); };
-Pthread::spawn_pthread { randprint(5); };
-
-print "Mainline done!"; endl;
-@doc()
