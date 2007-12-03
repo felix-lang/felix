@@ -1,0 +1,51 @@
+//Check sockets
+#import <flx.flxh>
+include "flx_stream";
+include "flx_socket";
+open Flx_stream;
+open Flx_socket;
+open Flx_stream::TerminalIOByteStream[Flx_socket::socket_t];
+
+print "flx tcp stream test\n";
+
+var listener: socket_t;
+var port = 0;  // you choose
+// var port = 1024;
+
+// check errors. how is that done?
+mk_listener(&listener, &port, 1);
+// print "Got port: "; print port; endl;
+// print "accepting\n";
+
+print "spawning connector\n";
+// not printing in thread to make output deterministic.
+// note that the connect shouldn't fail (immediately) because the
+// listener exists - it just hasn't called accept yet.
+spawn_fthread
+{
+  {
+    // print "Connector dude\n";  // get rid of, hard to test
+    var c: socket_t;
+    connect(&c, c"127.0.0.1", port); // connect to localhost
+    var st: string;
+
+    get_line(c, &st);
+    print "connector got "; print st; endl;
+    write_string(c, "thanks\n");         // newline important
+
+    ioclose(c);  // finished with this
+  };
+};
+
+var s: socket_t;
+accept(listener, &s);
+ioclose(listener);  // not needed anymore
+
+print "got connection\n";
+write_string(s, "server says hi\n");     // newline important here
+
+var st: string;
+get_line(s, &st);
+
+print "server got "; print st; endl;
+ioclose(s);
