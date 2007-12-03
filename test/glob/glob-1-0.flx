@@ -1,0 +1,17 @@
+//Check glob
+include "stl";
+include "glob";
+
+var files = glob::glob("lib/*.flx");
+open Reversible_Sequence[
+  Stl::Vector::stl_vector[string],
+  Stl::Vector::stl_vector_iterator[string],
+  Stl::Vector::stl_vector_reverse_iterator[string],
+  string
+];
+
+var p = begin files; whilst p != end files do
+  basename := (*p).[4 to];
+  if basename == "std.flx" do print "true"; endl; done;
+  ++p;
+done;

@@ -1,12 +1,7 @@
 @import config
-@from flxbuild.iscrutil import setup_test
-
-@env = setup_test(get_input_frame(), 'test/glob/glob-')
 
 @head(1,'Directory Services (glob)')
 @head(2,"Category Reference",nospawn=1)
-Tests by category keyword.
-@env.emit_katlist()
 @h = tangler('config/flx_glob.fpc')
 @select(h)
 Name: glob
@@ -47,7 +42,8 @@ lib_requires = ['libflx_gc']
 pkg_requires = ['flx_rtl'] # flx_rtl provides flx_rtl_config.hpp
 build_macro = "GLOB"
 
-@tangle('unit_tests = glob.glob("%s*.flx")' % env.native_root)
+root = config.FLX_DIR
+unit_tests = [('test', 'glob', 'glob-*.flx')]
 
 @h=tangler('config/target/flx_glob_config.hpp')
 @select(h)
@@ -100,28 +96,3 @@ build_macro = "GLOB"
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * ////////////////////////////////////////////////////////////////////////// */
-
-@env.head(1,'glob tests')
-@select(env.test('.flx'))
-include "stl";
-include "glob";
-
-var files = glob::glob("lib/*.flx");
-open Reversible_Sequence[
-  Stl::Vector::stl_vector[string],
-  Stl::Vector::stl_vector_iterator[string],
-  Stl::Vector::stl_vector_reverse_iterator[string],
-  string
-];
-
-var p = begin files; whilst p != end files do
-  basename := (*p).[4 to];
-  if basename == "std.flx" do print "true"; endl; done;
-  ++p;
-done;
-@doc()
-@select(env.expect())
-true
-@doc()
-@env.write_katfile()
-
