@@ -1,0 +1,5 @@
+//Check Array::iter
+val f = proc (i:int) { print i; };
+iter f$ array(4, 5); endl;
+iter f$ array(4, 5, 6); endl;
+iter f$ array(4, 5, 6, 7); endl;

@@ -7,6 +7,10 @@
 @include_file ('flx_nugram.ipk')
 
 @select(tangler('spkgs/flx_stdlib.py'))
+import config
+
+root = config.FLX_DIR
+unit_tests = [('test', 'stdlib', 'slrt-*.flx')]
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio']
 pkg_provides = ['flx_stdlib']
 

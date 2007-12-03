@@ -1,0 +1,18 @@
+//Check Array::subscript
+val x2 = array(5, 6);
+print$ x2.[0];
+print$ x2.[1];
+endl;
+
+val x3 = array(7, 8, 9);
+print$ x3.[0];
+print$ x3.[1];
+print$ x3.[2];
+endl;
+
+val x4 = array(10, 11, 12, 13);
+print$ x4.[0];
+print$ x4.[1];
+print$ x4.[2];
+print$ x4.[3];
+endl;

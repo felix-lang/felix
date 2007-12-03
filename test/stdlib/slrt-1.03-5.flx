@@ -1,0 +1,3 @@
+//Check String::rstrip
+print$ rstrip "  a b c  "; endl;
+print$ rstrip "  a b c"; endl;
