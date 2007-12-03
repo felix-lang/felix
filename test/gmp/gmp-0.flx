@@ -1,0 +1,60 @@
+//Check gmp
+
+include "flx_gmp";
+open Gmp;
+
+{
+  val x:mpz = mpz_of_int 99;
+  val y:mpz = mpz_of_int 7;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x % y; endl;
+
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+
+  print$ lcm (x,y); endl;
+  print$ gcd (x,y); endl;
+  print$ x /\ y; endl;
+  print$ x \/ y; endl;
+};
+{
+  val x:mpq = mpq_of_int 99;
+  val y:mpq = mpq_of_int 7;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+};
+{
+  val x:mpf = mpf_of_double 99.0;
+  val y:mpf = mpf_of_double 7.0;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+};
