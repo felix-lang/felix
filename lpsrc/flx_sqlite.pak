@@ -1,7 +1,3 @@
-@from flxbuild.iscrutil import setup_test
-
-@env = setup_test(get_input_frame(), 'test/sqlite/sqlite-')
-
 @head(1,'Sql lite')
 
 @select(tangler("cpkgs/target/sqlite3.py"))
@@ -17,12 +13,12 @@ except ImportError:
 
 @h = tangler('spkgs/sqlite3.py')
 @select(h)
-import glob
-
+import config
 from cpkgs.target.sqlite3 import HAVE_SQLITE3
 
 if HAVE_SQLITE3:
-@tangle('  unit_tests = glob.glob("%s*.flx")' % env.native_root)
+  root = config.FLX_DIR
+  unit_tests = [('test', 'sqlite', 'sqlite-*.flx')]
 
 iscr_source = ['lpsrc/flx_sqlite.pak']
 weaver_directory = 'doc/sqlite/'
@@ -112,85 +108,4 @@ syntax sql { // see: http://www.sqlite.org/lang.html
   ;
   conflict_clause : string = "on" "conflict" conflict_algorithm;
 }
-
-@doc()
-
-@env.head(1,'sqlite tests')
-@select(env.test('.flx'))
-#import <flx.flxh>
-include "flx_sqlite3";
-open Sqlite3;
-
-fun subscript: & &char * int -> &char = "$1[$2]";
-
-cfun eh(void *data, int ncols, char * *values, char* *names):int =
-{
-  int ii = 0;
-  whilst ii<ncols do
-    print$ str names.[ii] + "=" + str values.[ii];
-    if ii<ncols-1 do print ", ";  done;
-    ++ii;
-  done;
-  println "";
-  return 0;
-}
-
-void run(struct sqlite3_db_t db) {
-  sql :=
-    "drop table if exists fred;",
-    "create table fred (name, address);",
-    "insert into fred values('joe','wigram');",
-    "insert into fred values('max','gpr');",
-    "insert into fred values('lee','wax');",
-    "insert into fred values('henry','pollen');",
-    "select all name,address from fred;",
-    ""
-  ;
-  char *usr = c"user pointer";
-  char *errm = c"";
-
-  var i = 0;
-  var p = sql.[i];
-  whilst p != "" do
-    println p;
-    val cb : sqlite3_exec_callback_t = the eh;
-    res := sqlite3_exec(db,p,cb,cast[address] usr,&errm);
-    if res !=0 do
-      println$ "exec DB error[abort]: " + errm;
-      return;
-    done;
-    ++i;
-    p = sql.[i];
-  done;
-}
-
-println "Hello";
-var db : sqlite3_db_t;
-err := sqlite3_open("mydb.db", &db);
-if err != 0 do
-  print "open DB error[abort] ";
-  println $ sqlite3_errmsg db;
-  goto finish;
-done;
-
-run(db);
-
-finish:>
-  sqlite3_close(db);
-
-@doc()
-
-@select(env.expect())
-Hello
-drop table if exists fred;
-create table fred (name, address);
-insert into fred values('joe','wigram');
-insert into fred values('max','gpr');
-insert into fred values('lee','wax');
-insert into fred values('henry','pollen');
-select all name,address from fred;
-name=joe, address=wigram
-name=max, address=gpr
-name=lee, address=wax
-name=henry, address=pollen
 @doc()
