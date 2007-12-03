@@ -1,29 +1,21 @@
 @import config
-@from flxbuild.iscrutil import setup_test
-
-@env = setup_test(get_input_frame(), 'test/mmap/mmap-')
 
 @head(1,"Address space management")
 
 @select(tangler('spkgs/mmap.py'))
-import glob
-
 import config
 
 if config.TARGET_CXX.options.HAVE_MMAP:
-@tangle('  unit_tests = glob.glob("%s*.flx")' % env.native_root)
+  root = config.FLX_DIR
+  unit_tests = [('test', 'mmap', 'mmap-*.flx')]
 
 iscr_source = ['lpsrc/flx_mmap.pak']
 weaver_directory = 'doc/mmap/'
 
-@h = tangler('config/mmap.fpc', 'data')
-@select(h)
+@select(tangler('config/mmap.fpc', 'data'))
 Name: mmap
 
-@h = tangler('lib/mmap.flx')
-@select(h)
-#import <flx.flxh>
-
+@select(tangler('lib/mmap.flx'))
 module Mmap
 {
   header """
@@ -74,39 +66,3 @@ module Mmap
 
   fun munmap: address * size -> int;
 }
-
-@env.head(1, 'mmap tests')
-@select(env.test('.flx'))
-#import <flx.flxh>
-include "mmap";
-open Mmap;
-open MixedInt;
-open C_hack;
-
-val n = cast[size](10000);
-data :=
-  mmap
-    (
-      NULL,n,
-      PROT_WRITE \| PROT_READ,
-      MAP_PRIVATE \| MAP_ANONYMOUS,
-      -1,cast[off_t]0
-    )
-;
-
-if data == MAP_FAILED do
-  print$ "mmap failed!\n";
-else
-  res := munmap(data,n);
-  if res != 0 do
-    print$ "munmap failed!\n";
-  else
-    print$ "mmap worked!\n";
-  done;
-done;
-@doc()
-
-@select(env.expect())
-mmap worked!
-@doc()
-

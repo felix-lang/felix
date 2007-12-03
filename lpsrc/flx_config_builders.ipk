@@ -1724,7 +1724,7 @@ int main(int argc, char** argv) {
   def detect_mmap(self):
     opt = self.options
 
-    opt.HAVE_MMAP = self.check_macro_defined('sys/mman.h')
+    opt.HAVE_MMAP = self.check_header_exists('sys/mman.h')
 
     if not opt.HAVE_MMAP:
       print "mmap not supported"
