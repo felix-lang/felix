@@ -1,0 +1,37 @@
+// test Judy1
+include "judy";
+open Judy;
+open C_hack;            // ptr...
+
+print "judyable\n";
+
+var j1 = J1Array();  // new bit array, all zero
+var je = JError_t(); // for error info
+
+var res: int;
+var pres = ptr res;
+Judy1Set(j1, word(1977), je, pres);
+
+Judy1Test(j1, word(1977), je, pres);
+print res; endl;
+
+Judy1Test(j1, word(1978), je, pres);
+print res; endl;
+
+Judy1Set(j1, word(1000000009), je, pres);
+
+var first: word = word 0;
+var last: word = word (-1);
+var n: word;
+
+Judy1First(j1, ptr(first), je, pres);
+Judy1Last(j1, ptr(last), je, pres);             // seems to give max uint
+//print "first="; print(int first); endl;
+//print "last="; print(ulong last); endl;
+
+// count 1 bits between range, returning in w.
+Judy1Count(j1, first, last, je, ptr(n));
+print (int n); endl;
+
+free je;
+free j1;
