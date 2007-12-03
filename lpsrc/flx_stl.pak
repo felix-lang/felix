@@ -1,6 +1,4 @@
-@import glob
 @import config
-@from flxbuild.iscrutil import setup_test
 
 @set_title('STL')
 @head(1,'Stl library')
