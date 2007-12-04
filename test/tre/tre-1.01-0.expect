@@ -1,0 +1,8 @@
+Using tre TRE 0.7.5 (LGPL)
+Done tre compile
+Compiled
+Result = 0
+nmatches = 2
+0-> match 'aabbabababb'
+1-> match 'b'
+Finished

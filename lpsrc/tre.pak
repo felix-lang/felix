@@ -1,12 +1,10 @@
 @import config
-@from flxbuild.iscrutil import setup_test
-
-@env = setup_test(get_input_frame(), 'test/tre/tre-')
 
 @head(1,'tre')
 @select(tangler('spkgs/tre.py'))
 import os
-import glob
+
+import config
 
 iscr_source = ['lpsrc/tre.pak']
 weaver_directory = 'doc/rtl/tre/'
@@ -41,7 +39,8 @@ cc_ccs = [
 include_path = ['src/tre']
 build_macro = "TRE"
 
-@tangle('unit_tests = glob.glob("%s*.flx")' % env.native_root)
+root = config.FLX_DIR
+unit_tests = [('test', 'tre', 'tre-*.flx')]
 
 @h = tangler('config/tre.fpc')
 @select(h)
@@ -332,67 +331,3 @@ build_macro = "TRE"
   tangle('#ifndef __cplusplus')
   tangle('/* #undef inline */')
   tangle('#endif')
-
-@head(1, 'Tre tests')
-@env.head(2)
-@select(env.test('.flx'))
-#import <flx.flxh>
-include "tre.flx";
-open Tre;
-open C_hack;
-open Carray;
-
-print$ "Using tre " tre_version; endl;
-
-var r = tre_regcomp("(a|b)*abb");
-print "Done tre compile"; endl;
-
-print
-  match r with
-  | Some _ => "Compiled"
-  | None => "failed"
-  endmatch
-;
-endl;
-
-
-var re : tre_regex_t =
-  match r with
-  | Some ?re => re
-  | None => re // HACK!
-  endmatch
-;
-
-var s = "aabbabababb";
-res,n,a := tre_regexec re s;
-print "Result = "; print res; endl;
-print "nmatches = "; print n; endl;
-
-var i : int;
-for_each { i=0; } { i<n } { ++i; }
-  {
-    if int(a.[i].rm_so) == -1 do
-      print i; print " -> nomatch\n";
-    else
-      print i; print "-> match '";
-      start := int(a.[i].rm_so);
-      finish := int(a.[i].rm_eo);
-      print s.[start to finish];
-      print "'"; endl;
-    done;
-  }
-;
-
-print "Finished"; endl;
-@doc()
-
-@select(env.expect())
-Using tre TRE 0.7.5 (LGPL)
-Done tre compile
-Compiled
-Result = 0
-nmatches = 2
-0-> match 'aabbabababb'
-1-> match 'b'
-Finished
-@doc()
