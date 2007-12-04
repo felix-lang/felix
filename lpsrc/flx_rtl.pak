@@ -37,7 +37,7 @@ xfiles = [os.path.join('src', 'exceptions', '*')]
 @select(tangler('spkgs/flx_rtl.py'))
 import os
 
-RTL_CPPS = [
+cpp_cpps = [
   "src/rtl/flx_rtl",
   "src/rtl/flx_dynlink",
   "src/rtl/flx_sync",
@@ -49,7 +49,7 @@ RTL_CPPS = [
   "src/rtl/flx_main",
 ]
 
-RTL_INTERFACES = [
+rtl_interfaces = [
   "src/rtl/flx_rtl.hpp",
   'src/rtl/flx_compiler_support_headers.hpp',
   'src/rtl/flx_compiler_support_bodies.hpp',
@@ -60,8 +60,6 @@ RTL_INTERFACES = [
   'src/rtl/flx_executil.hpp',
 ]
 
-cpp_cpps = RTL_CPPS
-rtl_interfaces = RTL_INTERFACES
 provides_lib = "libflx"
 lib_requires = ['libflx_exceptions','libflx_gc','libflx_judy','libflx_pthread']
 pkg_requires = ['flx_exceptions','flx_gc','flx_pthread']
@@ -85,43 +83,26 @@ build_macro = "ASYNC"
 @doc()
 
 @select(tangler('spkgs/flx_drivers.py'))
-STATIC_DRIVERS = [
-  ('src/rtl/flx_run', 'lib/rtl'),
-  ('test/drivers/flx_perf_drv1', ''),
-  ('test/drivers/mickey_mouse', ''),
-]
+static_drivers = [('src/rtl/flx_run', 'lib/rtl')] 
+dynamic_drivers = [('src/rtl/flx_run', 'bin')]
 
-DYNAMIC_DRIVERS = [
-  ('src/rtl/flx_run', 'bin'),
-  ('test/drivers/flx_perf_drv1', ''),
-  ('test/drivers/mickey_mouse', ''),
-]
-
-DRLIBS = [
+drivers_require_libs = [
   'libflx_pthread',
   'libflx',
   'libflx_gc',
   'libflx_judy',
-  ]
+]
 
-static_drivers = STATIC_DRIVERS
-dynamic_drivers = DYNAMIC_DRIVERS
-drivers_require_libs = DRLIBS
 pkg_requires = ['flx_rtl','flx_pthread','flx_gc', 'flx_exceptions']
 lib_requires = ['libdemux','libflx_pthread','libflx','libflx_judy', 'libflx_exceptions']
 iscr_source = ['lpsrc/flx_rtl.pak']
 @doc()
 
 @select(tangler('spkgs/flx_async_drivers.py'))
-STATIC_DRIVERS = [
-  ('src/rtl/flx_arun','lib/rtl'),
-]
+static_drivers = [('src/rtl/flx_arun','lib/rtl')]
+dynamic_drivers = [('src/rtl/flx_arun','bin')]
 
-DYNAMIC_DRIVERS = [
-  ('src/rtl/flx_arun','bin'),
-]
-
-DRLIBS = [
+drivers_require_libs = [
   'libflx_async',
   'libfaio',
   'libdemux',
@@ -130,11 +111,8 @@ DRLIBS = [
   'libflx_gc',
   'libflx_judy',
   'libflx_exceptions',
-  ]
+]
 
-static_drivers = STATIC_DRIVERS
-dynamic_drivers = DYNAMIC_DRIVERS
-drivers_require_libs = DRLIBS
 pkg_requires = ['flx_gc','flx_rtl','flx_pthread','flx_async','demux','faio']
 iscr_source = ['lpsrc/flx_rtl.pak']
 @doc()
@@ -210,40 +188,3 @@ right type by client drivers.
 #define FLX_EXCEPTIONS_EXTERN FLX_IMPORT
 #endif
 #endif
-
-
-@select(tangler('test/drivers/mickey_mouse.cxx','cpp'))
-#include <stdio.h>
-#include "flx_rtl.hpp"
-#include "flx_collector.hpp"
-#include "flx_dynlink.hpp"
-
-using namespace std;
-using namespace flx;
-
-int main(int argc, char** argv)
-{
-  rtl::flx_dynlink_t library;
-  rtl::flx_libinit_t instance;
-  library.link(argc>1?argv[1]:"<static>");
-  gc::collector::malloc_free allocator;
-  gc::collector::flx_collector_t collector(&allocator, NULL);
-  gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
-    false,
-    false,
-    false,
-    0,
-    -1,
-    -1,
-    0.2,
-    true,
-    &collector
-  );
-  instance.create(&library, gcp,library.main_sym,argc,argv,stdin,stdout,stderr);
-  rtl::con_t *top = instance.start_proc;
-  while( top ) top = top->resume();
-  return 0;
-}
-@doc()
-
-
