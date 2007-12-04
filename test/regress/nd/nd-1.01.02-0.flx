@@ -1,4 +1,3 @@
-#line 2642 "../lpsrc/flx_regress.pak"
 //Check pthreads
 //Check pchannels
 open System;
@@ -48,4 +47,3 @@ whilst nthreads > 0 do
   write$ chan, 0;
   --nthreads;
 done;
-

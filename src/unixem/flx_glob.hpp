@@ -1,4 +1,3 @@
-#line 635 "../lpsrc/flx_glob.pak"
 #ifndef __FLX_GLOB_H__
 #define __FLX_GLOB_H__
 #include <flx_glob_config.hpp>
@@ -53,4 +52,3 @@ void GLOB_EXTERN globfree(glob_t *pglob);
 
 #endif
 #endif
-

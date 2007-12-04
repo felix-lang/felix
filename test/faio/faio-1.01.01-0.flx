@@ -1,5 +1,4 @@
 //Check sockets
-#import <flx.flxh>
 include "flx_stream";
 include "flx_socket";
 open Flx_stream;

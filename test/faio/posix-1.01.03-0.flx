@@ -1,4 +1,3 @@
-#import <flx.flxh>
 // actually portable, but I don't know the scheme for
 // adding those tests.
 include "flx_stream";

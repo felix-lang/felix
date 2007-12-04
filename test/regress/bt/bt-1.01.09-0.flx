@@ -1,5 +1,3 @@
-#line 2800 "../lpsrc/flx_regress.pak"
-#import <flx.flxh>
 // this should give an error at felix time
 // but we only get one at C++ compile time
 

@@ -1,5 +1,3 @@
-#line 2740 "../lpsrc/flx_regress.pak"
-#import <flx.flxh>
 // open depends on self
 interface I { proc print_endl:int; }
 module X {

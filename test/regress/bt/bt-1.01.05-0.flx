@@ -1,5 +1,3 @@
-#line 2762 "../lpsrc/flx_regress.pak"
-#import <flx.flxh>
 // impossible recursion
 type int = "int";
 fun neg(a:int) = { return -a; }

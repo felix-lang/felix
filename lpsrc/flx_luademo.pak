@@ -2,7 +2,6 @@
 
 @h=tangler('lib/lua.flx')
 @select(h)
-#import <flx.flxh>
 header lua_h = '#include "flx_lua.h"';
 header lua_h = '#include "flx_lauxlib.h"';
 header lua_h = '#include "flx_lualib.h"';
@@ -516,8 +515,6 @@ Even so, it's not that much code.
 
 @h=tangler('lib/lua_parse.flx')
 @select(h)
-#import <flx.flxh>
-
 module Lua_parse
 {
   requires package "elk";
@@ -926,8 +923,6 @@ module Lua_parse
 
 @h=tangler('tools/lua_parser.flx')
 @select(h)
-#import <flx.flxh>
-
 include "lua_parse";
 open Lua_parse;
 

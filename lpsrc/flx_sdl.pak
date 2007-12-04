@@ -175,8 +175,6 @@ main(int argc, char** argv)
 @head(2,'SDL wrapper')
 @head(3,'SDL felix wrapper')
 @select(tangler('lib/SDL/SDL_opengl.flx'))
-#import <flx.flxh>
-
 header '#include "SDL_opengl.h"';
 
 include "GL/gl_lib";
@@ -190,7 +188,6 @@ module SDL_opengl_h
 @doc()
 
 @select(tangler('lib/SDL/SDL.flx'))
-#import <flx.flxh>
 //Module        : SDL_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -237,7 +234,6 @@ module SDL_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_active.flx'))
-#import <flx.flxh>
 //Module        : SDL_active_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -264,7 +260,6 @@ module SDL_active_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_audio.flx'))
-#import <flx.flxh>
 //Module        : SDL_audio_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -397,7 +392,6 @@ module SDL_audio_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_cdrom.flx'))
-#import <flx.flxh>
 //Module        : SDL_cdrom_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -475,7 +469,6 @@ module SDL_cdrom_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_error.flx'))
-#import <flx.flxh>
 //Module        : SDL_error_h
 //Timestamp     : 2006/1/6 2:1:27 UTC
 //Timestamp     : 2006/1/6 13:1:27 (local)
@@ -515,7 +508,6 @@ module SDL_error_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_events.flx'))
-#import <flx.flxh>
 //Module        : SDL_events_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -734,7 +726,6 @@ module SDL_events_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_joystick.flx'))
-#import <flx.flxh>
 //Module        : SDL_joystick_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -790,7 +781,6 @@ module SDL_joystick_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_keyboard.flx'))
-#import <flx.flxh>
 //Module        : SDL_keyboard_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -843,7 +833,6 @@ module SDL_keyboard_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_keysym.flx'))
-#import <flx.flxh>
 //Module        : SDL_keysym_h
 //Timestamp     : 2006/1/6 2:1:27 UTC
 //Timestamp     : 2006/1/6 13:1:27 (local)
@@ -1124,7 +1113,6 @@ module SDL_keysym_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_mouse.flx'))
-#import <flx.flxh>
 //Module        : SDL_mouse_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1192,7 +1180,6 @@ module SDL_mouse_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_mutex.flx'))
-#import <flx.flxh>
 //Module        : SDL_mutex_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -1243,7 +1230,6 @@ module SDL_mutex_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_rwops.flx'))
-#import <flx.flxh>
 //Module        : SDL_rwops_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -1302,7 +1288,6 @@ module SDL_rwops_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_timer.flx'))
-#import <flx.flxh>
 //Module        : SDL_timer_h
 //Timestamp     : 2006/1/6 2:5:23 UTC
 //Timestamp     : 2006/1/6 13:5:23 (local)
@@ -1373,7 +1358,6 @@ module SDL_timer_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_types.flx'))
-#import <flx.flxh>
 //Module        : SDL_types_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1423,7 +1407,6 @@ module SDL_types_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_version.flx'))
-#import <flx.flxh>
 //Module        : SDL_version_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1466,7 +1449,6 @@ module SDL_version_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_video.flx'))
-#import <flx.flxh>
 //Module        : SDL_video_h
 //Timestamp     : 2006/1/6 2:18:42 UTC
 //Timestamp     : 2006/1/6 13:18:42 (local)
@@ -1742,7 +1724,6 @@ module SDL_video_h
 }
 
 @select(tangler('lib/SDL/SDL_endian.flx'))
-#import <flx.flxh>
 //Module        : SDL_endian_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1798,7 +1779,6 @@ module SDL_endian_h
 }
 
 @select(tangler('lib/SDL/SDL_framerate.flx'))
-#import <flx.flxh>
 //Module        : SDL_framerate_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1840,7 +1820,6 @@ module SDL_framerate_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_gfxPrimitives.flx'))
-#import <flx.flxh>
 //Module        : SDL_gfxPrimitives_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1922,7 +1901,6 @@ module SDL_gfxPrimitives_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_gfxPrimitives_font.flx'))
-#import <flx.flxh>
 //Module        : SDL_gfxPrimitives_font_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -1946,7 +1924,6 @@ module SDL_gfxPrimitives_font_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_image.flx'))
-#import <flx.flxh>
 //Module        : SDL_image_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2010,7 +1987,6 @@ module SDL_image_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_imageFilter.flx'))
-#import <flx.flxh>
 //Module        : SDL_imageFilter_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2076,7 +2052,6 @@ module SDL_imageFilter_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_mixer.flx'))
-#import <flx.flxh>
 //Module        : SDL_mixer_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2273,7 +2248,6 @@ module SDL_mixer_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_sound.flx'))
-#import <flx.flxh>
 //Module        : SDL_sound_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2337,7 +2311,6 @@ module SDL_sound_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_rotozoom.flx'))
-#import <flx.flxh>
 //Module        : SDL_rotozoom_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2396,7 +2369,6 @@ module SDL_rotozoom_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_ttf.flx'))
-#import <flx.flxh>
 //Module        : SDL_ttf_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2486,7 +2458,6 @@ module SDL_ttf_h
 @doc()
 
 @select(tangler('lib/SDL/SDL_net.flx'))
-#import <flx.flxh>
 //Module        : SDL_net_h
 //Timestamp     : 2006/1/8 3:36:0 UTC
 //Timestamp     : 2006/1/8 14:36:0 (local)
@@ -2597,8 +2568,6 @@ module SDL_net_h
 @doc()
 
 @select(tangler('lib/flx_faio_sdl.flx'))
-#import <flx.flxh>
-
 include "SDL/SDL";
 include "SDL/SDL_events";
 include "flx_faio";

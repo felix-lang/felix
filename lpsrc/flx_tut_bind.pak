@@ -39,7 +39,6 @@ concrete C++ data type.
 Here is an example of a binding.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 header """
 // This is C++ code!
 class gauss;
@@ -181,7 +180,6 @@ code is fluid. To illustrate this, lets consider
 a version of the above code written entirely in Felix.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 struct gauss = {
   x : int;
   y : int;
@@ -267,7 +265,6 @@ at once. Each Felix name must also be a c identifier
 representing a type in C.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 header "#include <cstdio>";
 {
   ctypes int, long;
@@ -316,7 +313,6 @@ in the place it is written.
 For example:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 header "#include<stdio.h>";
 print 1; endl;
 code 'printf("%d\\n",2);';
@@ -339,8 +335,6 @@ using the dot notation provided you supply
 appropriate projection functions.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 // part 1
 header """
 struct gauss
@@ -421,7 +415,6 @@ Here is a simple example illustrating
 generic primitive bindings.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 // include STL vector template
 header """
 #include <vector>
@@ -514,7 +507,6 @@ The same tag can be used on more than one code insertion
 statements: this is typically useful on a header-body pair.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char const *fmt, char const *s) { printf(fmt,s);}";
 body printu = 'void print(char const *s) { printx("%s\\n",s); }';
@@ -531,7 +523,6 @@ Header and body statements can also have requirements.
 We can reorganise the previous example using this fact.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char const*fmt, char const*s) { printf(fmt,s);}";
 body printu = 'void print(char const*s) { printx("%s\\n",s); }'
@@ -550,7 +541,6 @@ They can define dependencies, or simply specify
 existing tagged requirements are roots.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char const*fmt, char const*s) { printf(fmt,s);}";
 body printu = 'void print(char const*s) { printx("%s\\n",s); }';
@@ -569,7 +559,6 @@ You can also use qualified names to refer to tags defined
 inside modules, unless they're marked private of course.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 body "#include <stdio.h>";
 body xprint = "void printx(char const*fmt, char const*s) { printf(fmt,s);}";
 module fred {
@@ -588,7 +577,6 @@ Hello
 The next example demonstrates untagged bodies at work.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 
 body top = 'int ptop() { printf("TOP\\n"); return 1; }';
 body 'int top = ptop();' requires top;
@@ -627,7 +615,6 @@ Here you can see that insertions can be given
 literally too:
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 proc f: 1 = 'printf("A is used\\n");'
   requires header '#include <stdio.h>';
 
@@ -641,8 +628,6 @@ A is used
 Here's an example demonstrating polymorphic insertions.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 body prb[t] = "void pr(?1 x) { std::cout << x << std::endl; }"
   requires header "#include <iostream>";
 
@@ -663,8 +648,6 @@ is assumed to be defined in embedded C/C++ header
 code somewhere.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 header """
 struct X { int a; int b; };
 """;
@@ -695,8 +678,6 @@ and a const will refer to a C entity of the
 same name.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 body """
 int n = 3;
 void ff() { n++; }
@@ -727,7 +708,6 @@ print (g N); endl;
 C++ classes are bound using the cclass construction.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 open Long;
 
 header """#include <stdio.h>""";
@@ -859,8 +839,6 @@ Y=2,3
 @env.head(2,'Callbacks')
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 callback fun f: int * f -> int;
 
 fun g(x:int)=> x + x + 1;
@@ -911,8 +889,6 @@ the system standard calling conventions for a
 C++ function.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 cfun fff(x:int)=>x + 1;
 
 print$ fff 22; endl;

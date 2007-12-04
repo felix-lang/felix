@@ -1,6 +1,4 @@
-#import <flx.flxh>;
 open List;
-
 
 fun eq[T]: T * T -> bool = "$1==$2";
 

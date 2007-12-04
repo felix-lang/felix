@@ -1,7 +1,6 @@
 // run with
 // flx `pkg-config --cflags --libs gtk+-2.0 gthread-2.0` gpak
 
-#import <flx.flxh>
 include "pthread";
 include "stl";
 include "glob";

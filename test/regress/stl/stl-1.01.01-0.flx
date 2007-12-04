@@ -1,5 +1,4 @@
 //Check STL::vector
-#import <flx.flxh>
 include "stl";
 
 var x: stl_vector[int];

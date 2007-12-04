@@ -1,5 +1,3 @@
-#line 112 "../lpsrc/flx_glob.pak"
-
 #include "unixem_util.hpp"
 
 #include <assert.h>
@@ -276,5 +274,3 @@ char get_current_drive(void)
         return '\0';
     }
 }
-
-

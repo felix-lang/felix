@@ -1,6 +1,4 @@
-#line 2604 "../lpsrc/flx_regress.pak"
 //Check garbage collector
-#import <flx.flxh>;
 open List;
 Control::collect();
 var a = list(1,2,3,4);

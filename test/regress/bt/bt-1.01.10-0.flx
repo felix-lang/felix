@@ -1,5 +1,3 @@
-#line 2823 "../lpsrc/flx_regress.pak"
-#import <flx.flxh>
 // function drops off end
 fun f(x:int):int =
 {

@@ -1,4 +1,3 @@
-#line 393 "../lpsrc/flx_glob.pak"
 #ifndef SYNSOFT_UNIXEM_INCL_H_UNISTD
 #define SYNSOFT_UNIXEM_INCL_H_UNISTD
 
@@ -236,5 +235,3 @@ int usleep(unsigned long microSeconds);
 #endif /* __cplusplus */
 
 #endif /* SYNSOFT_UNIXEM_INCL_H_UNISTD */
-
-

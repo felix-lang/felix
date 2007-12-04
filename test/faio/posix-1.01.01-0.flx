@@ -1,4 +1,3 @@
-#import <flx.flxh>
 include "flx_faio_posix";
 open Faio_posix;
 

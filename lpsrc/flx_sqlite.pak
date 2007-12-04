@@ -30,7 +30,6 @@ provides_slib: -lsqlite3
 
 @h = tangler('lib/flx_sqlite3.flx','data')
 @select(h)
-#import <flx.flxh>
 open C_hack;
 
 module Sqlite3 {

@@ -23,10 +23,8 @@ Description: Linux specific
 
 @h = tangler("lib/plat_linux.flx")
 @select(h)
-#import <flx.flxh>
 module Linux {
   header '#include "plat_linux.hpp"';
   requires package "plat_linux";
   fun get_cpu_nr: 1 -> int;
 }
-

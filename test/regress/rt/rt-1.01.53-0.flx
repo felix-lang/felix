@@ -1,8 +1,5 @@
 //Check purely functional
-#import <flx.flxh>;
-
 open List;
-
 open Avl;
 
 proc pr_node (x:int) {

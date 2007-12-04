@@ -1,4 +1,3 @@
-#line 692 "../lpsrc/flx_glob.pak"
 #include "flx_glob.hpp"
 #include "unixem_util.hpp"
 
@@ -372,4 +371,3 @@ void globfree(glob_t *pglob)
         pglob->gl_pathv = NULL;
     }
 }
-

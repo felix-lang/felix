@@ -35,8 +35,6 @@ if HAVE_MPI:
   weaver_directory = 'doc/rtl/mpi/'
 
 @select(tangler("lib/mpi/mpi.flx"))
-#import <flx.flxh>
-
 //Module        : usr_lib_mpich_include_mpi_h
 //Timestamp     : 2006/8/29 15:42:8 UTC
 //Timestamp     : 2006/8/30 1:42:8 (local)

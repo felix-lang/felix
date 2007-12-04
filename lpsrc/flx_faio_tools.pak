@@ -11,8 +11,6 @@ weaver_directory = 'doc/tools/'
 @head(2, 'A Simple Webserver')
 @h = tangler("tools/webserver.flx")
 @select(h)
-#import <flx.flxh>
-
 #if POSIX
 include "flx_faio_posix";  // aio_ropen
 //open Faio_posix;
@@ -256,8 +254,6 @@ iclose(listener);
 @head(2, 'fcp: A file copy program')
 @h = tangler("tools/fcp.flx")
 @select(h)
-#import <flx.flxh>
-
 include "flx_faio";
 include "flx_stream";
 
@@ -299,8 +295,6 @@ oclose(fout);
 @head(2, 'fcmp: A file compare program')
 @h = tangler("tools/fcmp.flx")
 @select(h)
-#import <flx.flxh>
-
 include "flx_faio";
 include "flx_stream";
 

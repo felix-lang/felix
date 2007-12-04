@@ -4,8 +4,6 @@
 @head(1,'Stl library')
 @h=tangler('lib/stl.flx','data')
 @select(h)
-#import <flx.flxh>
-
 include "std";
 header std_stl_vector = "#include <vector>";
 header std_stl_list = "#include <list>";

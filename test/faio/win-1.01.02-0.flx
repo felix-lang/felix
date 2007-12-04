@@ -1,4 +1,3 @@
-#import <flx.flxh>
 include "Flx_faio_win32";
 open Faio_win32;
 

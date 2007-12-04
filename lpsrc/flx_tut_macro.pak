@@ -61,7 +61,6 @@ will defeat the check for a duplication.
 
 @h1 = env.test('.flx')
 @select(h1)
-#import <flx.flxh>
 @tangle('print "This is '+h1.sink.name+'"; endl;')
 @doc()
 
@@ -71,7 +70,6 @@ will defeat the check for a duplication.
 
 @h2 = env.test('.flx')
 @select(h2)
-#import <flx.flxh>
 @tangle('#include "'+os.path.basename(h1.sink.name)+'"')
 @tangle('print "This is '+h2.sink.name+'"; endl;')
 @tangle('print "it should have printed the '+h1.sink.name+' message too"; endl;')
@@ -123,7 +121,6 @@ Note that every name encountered must name a
 preprocessor macro.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 print "Defining FIRST"; endl;
 #define FIRST
 #ifdef FIRST
@@ -139,7 +136,6 @@ detected FIRST
 @doc()
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 #define FIRST 1
 #define SECOND 2
 #if FIRST == 1 and SECOND == 2
@@ -154,7 +150,6 @@ OK
 @doc()
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 #define FIRST 1
 #define SECOND 2
 #if if FIRST == 1 then SECOND == 2 else 1 == 0 endif
@@ -174,7 +169,6 @@ OK
 @doc()
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 @tangle('#import "'+os.path.basename(h.sink.name)+'"')
 #ifdef FIRST
 print "OK";
@@ -194,7 +188,6 @@ will be taken as the argument string.
 @doc()
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 #define ONE 1
 #define TWO 1
 #define THREE 1
@@ -229,7 +222,6 @@ a redefinition hides the preceding defintion
 until the end of the scope.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 macro val mx1 = 1+y;
 macro val mx2 = 2+y;
 val y = 100;
@@ -272,7 +264,6 @@ until the end of the scope.
 Macro variables can be assigned a new value.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 macro var mx1 = 1+y;
 val y = 100;
 print mx1; endl; // 101
@@ -295,7 +286,6 @@ macro expanded as expressions: they must be qualified
 names though.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 header fred = "inline int f(int x){return x;}";
 macro val joe = fred;
 fun f: int -> int = "f($1)" requires joe;
@@ -320,8 +310,6 @@ at the end. This is because the RHS is universally
 treated as an expression.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 // a basic expression macro without parameters
 macro fun x() =  {print 1; endl;};
 x;
@@ -430,7 +418,6 @@ The first operation is the UTF-8 representation
 of 999, whilst the second is the UCS-32 value 999.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 header '''
 #define flx_unix 0
 #define flx_windows 0
@@ -478,7 +465,6 @@ This represents a special exception to the rule
 that macros respect scope.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 // procedure macro
 macro proc k ()
 {
@@ -585,7 +571,6 @@ a macro expansion has as its argument another expansion
 of itself.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 macro proc print_alot ()
 {
   macro var count = 10;
@@ -630,7 +615,6 @@ macro {
 The symbol 'noexpand' can be used to block expansion.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 // expansion barrier
 macro val x = 1;
 macro proc k ()
@@ -667,8 +651,6 @@ name in the chain which is not an ident macro,
 or which recurs.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
-
 macro oldname is newname;
 fun oldname(x:int):int = { return x; }
 print (newname 1); endl;
@@ -700,7 +682,6 @@ the forget statement. If no arguments are given,
 all macros defined in the current scope are forgotten.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 macro val hello = "Hello";
 macro val place = "world";
 macro fun greet() = hello " " place "!\n";
@@ -728,7 +709,6 @@ Hello world!
 Felix provides two for loops which iterate over tuples.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 macro for val i in ("Hello","World",42) do
   print i; print " ";
 done;
@@ -752,7 +732,6 @@ Tuples can be unpacked by macro assignment,
 macro val, macro var, and macro for val statements.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 macro val x,y = 1,2;
 macro var a,b = 1,2;
 macro a,b = a+1,b+1;
@@ -776,7 +755,6 @@ printing a variable name (but it works for any expression).
 Note the expanded value is stringized.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 var x = 1;
 var y = 42;
 print (_str x); print " = "; print x; endl;
@@ -812,7 +790,6 @@ expansions, particularly when driven by user defined
 nontermial parses (see the next section).
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 macro var x = _tuple 1;
 macro x = _tuple_cons (2,x);
 macro x = _tuple_cons (3,x);
@@ -847,7 +824,6 @@ be sure to #import the file in every file that it is
 needed.
 
 @select(env.test('.flx'))
-#import <flx.flxh>
 #infix 10 "^%" myfun
 print "OK"; endl;
 fun myfun: int * int -> int = "$1 + $2 * 2";

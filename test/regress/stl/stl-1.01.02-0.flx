@@ -1,6 +1,5 @@
 //Check stl:Vector
 //Check stl:Map
-#import <flx.flxh>
 include "stl";
 
 typedef ii = Vector::iterator[int];

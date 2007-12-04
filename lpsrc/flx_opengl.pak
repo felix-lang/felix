@@ -18,8 +18,6 @@ pkg_requires = ['glu']
 
 @h = tangler("lib/GL/gl_lib.flx")
 @select(h)
-#import <flx.flxh>
-
 //Module        : GL_gl_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)
@@ -1593,8 +1591,6 @@ module GL_gl_h
 
 @h = tangler("lib/GL/glu_lib.flx")
 @select(h)
-#import <flx.flxh>
-
 //Module        : GL_glu_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)
@@ -1859,8 +1855,6 @@ module GL_glu_h
 }
 @h = tangler("lib/GL/glut_lib.flx")
 @select(h)
-#import <flx.flxh>
-
 //Module        : GL_freeglut_std_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)
@@ -2224,8 +2218,6 @@ module GL_glut_h
 }
 @h = tangler("lib/GL/glext_lib.flx")
 @select(h)
-#import <flx.flxh>
-
 //Module        : GL_glext_h
 //Timestamp     : 2006/1/23 15:46:10 UTC
 //Timestamp     : 2006/1/24 2:46:10 (local)

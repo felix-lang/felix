@@ -1066,8 +1066,6 @@ open Show[bool];
 @std=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(std)
-#import <flx.flxh>
-
 header '#include "flx_rtl_config.hpp"';
 
 header iostream = "#include <iostream>";
@@ -1351,8 +1349,6 @@ module C_hack
 include "debug";
 @h = tangler("lib/debug.flx")
 @select(h)
-#import <flx.flxh>
-
 // the internal representation of a Felix source location
 // has to be global to simplify compiler hack
 type flx_location_t = "flx::rtl::flx_range_srcref_t";
@@ -1382,7 +1378,6 @@ module Debug
 include "std/carray";
 @h = tangler("lib/std/carray.flx")
 @select(h)
-#import <flx.flxh>
 module Carray
 {
   requires cstdlib;
@@ -1436,7 +1431,6 @@ module Carray
 include "std/system";
 @h = tangler("lib/std/system.flx")
 @select(h)
-#import <flx.flxh>
 publish "System Interface"
 module System
 {
@@ -1459,7 +1453,6 @@ module System
 include "std/env";
 @h = tangler("lib/std/env.flx")
 @select(h)
-#import <flx.flxh>
 module Env
 {
   fun getenv:string -> string =
@@ -1471,7 +1464,6 @@ module Env
 include "std/dynlink";
 @h = tangler("lib/std/dynlink.flx")
 @select(h)
-#import <flx.flxh>
 module Dynlink
 {
   requires flx_dynlink;
@@ -1585,7 +1577,6 @@ module Dynlink
 include "std/filename";
 @h = tangler("lib/std/filename.flx")
 @select(h)
-#import <flx.flxh>
 module Filename
 {
 @if os.sep == '\\':
@@ -1604,7 +1595,6 @@ module Filename
 include "std/cstdio";
 @h = tangler("lib/std/cstdio.flx")
 @select(h)
-#import <flx.flxh>
 open module Cstdio
 {
   header "#include <cstdio>";
@@ -1616,7 +1606,6 @@ open module Cstdio
 include "std/textio";
 @h = tangler("lib/std/textio.flx")
 @select(h)
-#import <flx.flxh>
 module Text_file
 {
   requires flx_ioutil;
@@ -1643,7 +1632,6 @@ module Text_file
 include "std/stdout";
 @h = tangler("lib/std/stdout.flx")
 @select(h)
-#import <flx.flxh>
 open module Stdout
 {
   // NOTE: this module works on C++ standard streams
@@ -1668,7 +1656,6 @@ open module Stdout
 include "std/string";
 @h = tangler("lib/std/string.flx")
 @select(h)
-#import <flx.flxh>
 typedef strings = typesetof (string,ustring);
 
 instance[t in strings] Eq[t] {
@@ -2017,7 +2004,6 @@ open module Cstdlib
 include "control";
 @h = tangler("lib/control.flx")
 @select(h)
-#import <flx.flxh>
 module Control
 {
   open C_hack;
@@ -2280,7 +2266,6 @@ module Control
 include "std/list";
 @h = tangler("lib/std/list.flx")
 @select(h)
-#import <flx.flxh>
 publish "List manipulation"
 module List
 {
@@ -2637,7 +2622,6 @@ module Assoc_list
 include "std/array";
 @h = tangler("lib/std/array.flx")
 @select(h)
-#import <flx.flxh>
 publish "Array manipulation"
 
 open module Array
@@ -2813,7 +2797,6 @@ open module Array
 include "std/varray";
 @h = tangler("lib/std/varray.flx")
 @select(h)
-#import <flx.flxh>
 publish "Bounded Variable length arrays"
 
 open module Varray
@@ -2887,7 +2870,6 @@ open[T] Show[Varray::varray[T]];
 include "std/avl";
 @h = tangler("lib/std/avl.flx")
 @select(h)
-#import <flx.flxh>
 module Avl
 {
   union avl[T] =
@@ -3100,7 +3082,6 @@ module Avl
 include "lexer";
 @h = tangler("lib/lexer.flx")
 @select(h)
-#import <flx.flxh>
 // This module provides functions to
 // use in conjunction with the reglex construction
 module Lexer

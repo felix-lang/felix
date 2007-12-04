@@ -173,7 +173,6 @@ where 'ack' is replaced by the name of the test.
 
 @def flx_setup():
   tangle("// Felix Performance Test Program")
-  tangle('#import <flx.flxh>";')
   tangle("n := atoi(System::argv 1);")
 @def showgraph(machine,test,title):
   get_weaver()._write(
