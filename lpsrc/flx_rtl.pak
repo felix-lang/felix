@@ -83,7 +83,7 @@ build_macro = "ASYNC"
 @doc()
 
 @select(tangler('spkgs/flx_drivers.py'))
-static_drivers = [('src/rtl/flx_run', 'lib/rtl')] 
+static_drivers = [('src/rtl/flx_run', 'lib/rtl')]
 dynamic_drivers = [('src/rtl/flx_run', 'bin')]
 
 drivers_require_libs = [

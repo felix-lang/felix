@@ -1,6 +1,6 @@
 @set_title('Felix Tutorial: Embedding')
 
-@from flxbuild.iscrutil import setup_test
+@from fbuild.flxbuild.iscrutil import setup_test
 
 @env = setup_test(get_input_frame(), 'tut/embedding/bind-')
 

@@ -4,7 +4,7 @@ import os
 try:
   from config.target_mpi_config import *
 except ImportError:
-  from flxbuild.config_support import cwrite, pa, locate_file
+  from fbuild.flxbuild.config_support import cwrite, pa, locate_file
 
   #HAVE_MPI= config.TARGET_CXX.check_header_exists('mpi.h')
   # THIS ONLY WORKS ON UNIX

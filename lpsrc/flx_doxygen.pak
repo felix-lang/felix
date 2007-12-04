@@ -1,7 +1,7 @@
 @import config
 @h = tangler('spkgs/flx_doxygen.pak')
 @select(h)
-from flxbuild.flxutil import mkdirs
+from fbuild.flxbuild.flxutil import mkdirs
 iscr_source=['lpsrc/flx_doxygen.pak']
 
 # dir must exist for doxygen to work

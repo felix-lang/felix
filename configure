@@ -36,7 +36,11 @@ def main():
         i += 1
 
     os.environ['FLX_DIR'] = flx_dir
-    os.environ['PYTHONPATH'] = flx_dir + os.pathsep + os.environ.get('PYTHONPATH', '')
+    os.environ['PYTHONPATH'] = os.pathsep.join([
+      flx_dir,
+      os.path.join(flx_dir, 'fbuild', 'lib'),
+      os.environ.get('PYTHONPATH', ''),
+    ])
     os.environ['FLX_LPARCHIVE'] = lparchive
 
     print 'Configuring Felix'
@@ -49,7 +53,7 @@ def main():
         print >> sys.stderr, 'ERROR EXTRACTING CONFIGURATION PROGRAM'
         return 1
 
-    if run(os.path.join('script', 'make_config.py'), *sys.argv[1:]):
+    if run(os.path.join(flx_dir, 'fbuild', 'bin', 'make_config.py'), *sys.argv[1:]):
         print >> sys.stderr, 'ERROR CONFIGURING'
         return 1
 

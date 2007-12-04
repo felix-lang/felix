@@ -10,8 +10,8 @@ try:
 except ImportError:
   import os
   import config
-  from flxbuild.config_support import cwrite, pa
-  from flxbuild.flxutil import xqt, ExecutionError, file_exists
+  from fbuild.flxbuild.config_support import cwrite, pa
+  from fbuild.flxbuild.flxutil import xqt, ExecutionError, file_exists
 
   try:
     SDL_VERSION = xqt("sdl-config --version")[0].strip()
