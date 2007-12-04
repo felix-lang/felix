@@ -121,13 +121,52 @@ The data type introduced here is a new primitive,
 that is, a fully abstract type, with semantics
 defined in terms of C, but typing managed by Felix.
 
+@env.head(2,'Modules and Namespaces')
+Felix provides both modules and C++ like namespaces.
+Modules are a closed construction, and can't be extended.
+Namespaces are extensible modules.
+@p()
+Both modules and namespaces can have type paramaters, however
+neither are polymorphic: rather this is syntactic sugar which
+prefixes the type parameters to those specified for individual
+members, thus providing a shorthand for a collection of
+polymorphic functions.
+@p()
+The Felix compiler has special switches which generates HTML documentation
+for all parsed modules. This documentation is more accurate than
+hand written reference material because it is generated from the actual
+library code. 
+@p()
+Where appropriate semantic descriptions in this tutorial are augmented
+by links to such generated documentation.
+
+@env.head(2,'Typeclasses')
+Felix also supports ad-hoc polymorphism by specification of a set
+of function signatures parameterised by type variables,
+and with specified semantics, together with a set of concrete 
+specialisations. This is similar to a C++ template with specialisations,
+or a Haskell type class. The salient point is that binding is parametric,
+whilst specialisations depend on a discrete set of type families
+which can be augmented by the user.
+@p()
+Typeclasses are used extensively in the standard library to 
+give the language a 'scripting' and 'dynamic' feel.
+@p()
+The Felix compiler has special switches which generates HTML documentation
+for all parsed typeclasses. This documentation is more accurate than
+hand written reference material because it is generated from the actual
+library code. 
+@p()
+Where appropriate semantic descriptions in this tutorial are augmented
+by links to such generated documentation.
+
 @env.head(2,'Extensibility')
 Felix has many advanced features which make a tutorial
 somewhat difficult to write. For example whilst we describe
 many types such as integers and strings as part of Felix,
 in fact they're primarily defined in the library. Felix
-is fairly unique in that the compiler does not support any
-builtin types at all. It does have builtin type combinators
+is fairly unique in that the compiler does not support
+builtin types. It does have builtin type combinators
 though!
 @p()
 Similarly, when describing the syntax, an advanced user will
@@ -166,6 +205,12 @@ Felix bool is a C++ int, and not a C++ bool.
 Bools can also be used in a conditional expression,
 note that an endif keyword and both branches are always
 required.
+@p()
+See also 
+@cite_url("../../moduledoc/Bool.html")
+@cite_url("../../gramdoc/logic.html")
+@cite_url("../../gramdoc/conditional.html")
+
 @select(env.test('.flx'))
 @kat('bool')
 {
@@ -250,6 +295,13 @@ For constructors and auxilliary functions see also:
 @cite_url("../../moduledoc/Uvlong.html")
 @line_break()
 @p()
+Some of the grammar is specified here:
+@line_break()
+@cite_url("../../gramdoc/arithmetic.html")
+@line_break()
+@cite_url("../../gramdoc/exponentials.html")
+@line_break()
+
 The following aliases are also provided, in this
 case the C name may not be used:
 @p()
