@@ -304,7 +304,7 @@ options = [
     help='define a macro'),
 ]
 
-default_fbuild_processs = 'run'
+default_fbuild_phases = ['build','host','target','run']
 
 fbuild_preprocesses = [
   'manifest',
@@ -315,13 +315,11 @@ fbuild_processes = {
     'extract_iscr',
   ],
   'host': [
-    'build',
     'build_host_ocaml',
     'build_host_tools',
     'extract_grammar',
   ],
   'target': [
-    'host',
     'build_target_rtl_dynamic',
     'build_target_rtl_static',
     'build_felix_dynamic_drivers',
@@ -331,7 +329,6 @@ fbuild_processes = {
     'build_target_felix_tools',
   ],
   'run': [
-    'target',
     'run_failure_tests',
     'run_unit_tests',
     'run_static_unit_tests',
@@ -340,11 +337,9 @@ fbuild_processes = {
     'run_known_failed_tests',
   ],
   'test': [
-    'run',
     'fcount',
   ],
   'tutorial': [
-    'target',
     'fcount',
   ],
   'doc': [
@@ -355,11 +350,9 @@ fbuild_processes = {
     'typeclassdoc',
   ],
   'demo': [
-    'target',
     'run_demos',
   ],
   'speed': [
-    'target',
     'speed_tests',
   ],
 }
