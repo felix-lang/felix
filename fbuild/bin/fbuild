@@ -141,10 +141,6 @@ def load_options():
     if model == config.run_model and 'run' not in options.selected_phases:
       options.selected_phases.append('run')
 
-  # use the default option if not specified
-  if not options.selected_phases:
-    options.selected_phases = [fbuildroot.default_fbuild_phases]
-
   ####
 
   if options.lparchive:
