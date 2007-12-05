@@ -34,7 +34,7 @@ class TestProcess(Process):
     for testfile in glob_paths(testfiles, root):
       localpath = relativepath(root, testfile)
 
-      failed = 0
+      failed = False
 
       if self.find_test(self.successes, pkg, testfile): continue
       if self.find_test(self.failures, pkg, testfile): continue
@@ -62,7 +62,7 @@ class TestProcess(Process):
         try:
           outbase = processes['build_testfile'].runme(root, localpath, log)
         except ExecutionError, e:
-          failed = 1
+          failed = True
           log.write('TESTFILE -- ERROR! %s (compiler)\n' % testfile)
         else:
           # run the dynamic tests
@@ -87,7 +87,7 @@ class TestProcess(Process):
 
               self.run_test(log, testscript, os.path.splitext(testfile)[0], outbase, deterministic)
             except ExecutionError, e:
-              failed = 1
+              failed = True
               log.write('TESTFILE -- ERROR! %s (dynamic)\n' % testscript)
 
           # run the static tests
@@ -97,7 +97,7 @@ class TestProcess(Process):
             try:
               self.run_test(log, testscript, os.path.splitext(testfile)[0], outbase, deterministic)
             except ExecutionError, e:
-              failed = 1
+              failed = True
               log.write('TESTFILE -- ERROR! %s (static)\n' % testscript)
 
         if not failed:

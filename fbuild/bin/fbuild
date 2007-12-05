@@ -285,8 +285,8 @@ def run_phase(options, phase, packages):
       result = fbuild.flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
       if not result and result is not None:
         break
-      else:
-        fbuild.flxbuild.process.enstamp(stamp, options.quiet)
+    else:
+      fbuild.flxbuild.process.enstamp(stamp, options.quiet)
 
   if pkgsummary:
     pkgsummary = pkgsummary.items()
