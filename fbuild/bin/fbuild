@@ -81,7 +81,7 @@ def load_options():
     make_option('--model', dest='selected_models', metavar='MODEL',
       action='append',
       default=[],
-      help='build only these models'),
+      help='build only the phases which can run on this platform'),
     make_option('--lparchive',
       metavar='PATH',
       help='use an alternative lpsrc directory'),
@@ -273,48 +273,34 @@ def calculate_packages(options, phase, packages):
 
 ####
 
-ran_phases = set()
-
 def run_phase(options, phase, packages):
-  if phase in ran_phases:
-    return
-  else:
-    ran_phases.add(phase)
-
-  processes = []
   for process in fbuildroot.fbuild_processes.get(phase, []):
-    # make sure we run any dependent phase first
-    if process in fbuildroot.fbuild_processes:
-      run_phase(options, process, packages)
-    else:
-      processes.append(process)
+    print '-' * 78
+    print '***** MAKING PHASE', phase
+    pkgsummary = {}
+    for pkg in calculate_packages(options, phase, packages):
+      pkgdict = fbuild.flxbuild.package.pkgd[pkg]
 
-  print '-' * 78
-  print '***** MAKING PHASE', phase
-  pkgsummary = {}
-  for pkg in calculate_packages(options, phase, packages):
-    pkgdict = fbuild.flxbuild.package.pkgd[pkg]
+      print "*****", phase, "MAKING PACKAGE", pkg, "************"
 
-    print "*****", phase, "MAKING PACKAGE", pkg, "************"
+      stamp = os.path.join("pkg-stamps", "%s.%s" % (pkg, phase))
+      if os.path.exists(stamp):
+        os.remove(stamp)
 
-    stamp = os.path.join("pkg-stamps", "%s.%s" % (pkg, phase))
-    if os.path.exists(stamp):
-      os.remove(stamp)
+      for process in processes:
+        print "*****", phase, "RUNNING PROCESS", process, "************"
+        result = fbuild.flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
+        if not result and result is not None:
+          break
+      else:
+        fbuild.flxbuild.process.enstamp(stamp, options.quiet)
 
-    for process in processes:
-      print "*****", phase, "RUNNING PROCESS", process, "************"
-      result = fbuild.flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
-      if not result and result is not None:
-        break
-    else:
-      fbuild.flxbuild.process.enstamp(stamp, options.quiet)
-
-  if pkgsummary:
-    pkgsummary = pkgsummary.items()
-    pkgsummary.sort()
-    print phase, "PHASE SUMMARY"
-    for (package, process), summary in pkgsummary:
-      print '  ', process.ljust(30), ':', package.ljust(30), ':', summary
+    if pkgsummary:
+      pkgsummary = pkgsummary.items()
+      pkgsummary.sort()
+      print phase, "PHASE SUMMARY"
+      for (package, process), summary in pkgsummary:
+        print '  ', process.ljust(30), ':', package.ljust(30), ':', summary
 
 # -----------------------------------------------------------------------------
 
@@ -438,16 +424,19 @@ def main():
 
   ####
 
+  # run all the pre-processes
   for process in fbuildroot.fbuild_preprocesses:
     fbuild.flxbuild.process.processes[process].preprocess()
 
   # execute user selected processes in command line order
   for arg in args:
+    # check in the build system stock process set
+    # these are run independently of the selected phase
     if arg in fbuild.flxbuild.process.processes:
       fbuild.flxbuild.process.processes[arg].runme()
-    elif arg in fbuildroot.fbuild_processes:
-      run_phase(options, arg, packages)
 
+  # now run all the processes specified by the application
+  # for the selected phases, in the application specified phase order
   for phase in options.selected_phases:
     run_phase(options, phase, packages)
 
