@@ -367,10 +367,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
             with Not_found ->
               syserr sr ("[bexe][EXE_apply_ctor] Weird, can't find class index " ^ si class_idx)
           with
-          | {id=name;pubmap=pubmap;symdef=`SYMDEF_class} ->
-            (*
-            print_endline ("Found a class "^name^", look for constructor with hacked name _ctor_"^name);
-            *)
+          | {id=name;pubmap=pubmap;vs=class_vs; symdef=`SYMDEF_class} ->
+            print_endline ("Found a class "^name^
+              ", vs="^catmap "," (fun (s,i,_)->s) (fst class_vs)
+              ^" look for constructor with hacked name _ctor_"^name);
             let entries = lookup_name_in_htab pubmap ("_ctor_" ^ name) in
             begin match entries with
             | None -> clierr sr "Unable to find any constructors for this class"
@@ -381,9 +381,25 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
               (*
               print_endline ("Ok, found "^si (length fs) ^"constructors for " ^ name);
               *)
+              (*
+              The constructors are specified as non-polymorphic, but we need the overload
+              to include the class type variables, so we hack it up by pre-pending the
+              class type variables to the constructor views
+              *)
+              let fs = map (fun ({base_sym=i; spec_vs=vs; sub_ts=ts} as view) -> 
+                (* these failure shouldn't happen by construction .. *)
+                if length vs <> 0 then 
+                  failwith "Unexpected polymorphic view of class constructor!"
+                ;
+                if length ts <> 0 then 
+                  failwith "Unexpected polymorphic class constructor!"
+                ;
+                {view with spec_vs=map (fun (s,i,_)->s,i) (fst class_vs) }
+                ) fs
+              in
               let ro =
                 resolve_overload
-                syms env sr fs ("_ctor_" ^ name) [t2] [] (* constructors can't be polymorphic *)
+                syms env sr fs ("_ctor_" ^ name) [t2] ts
               in
               match ro with
                 | Some (ctor_idx,t,ret,mgu,ts') ->
@@ -396,6 +412,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
                     clierr sr ("[EXE_apply_ctor] Type subscript mismatch:\n" ^
                     "got type subscripts " ^ catmap "," (sbt syms.dfns) ts')
                   ;
+                  assert (length (fst class_vs) = length ts');
+                  (* NOTE: we should check the type constraint here! i.e. the aux_vs thing *)
                   tack (`BEXE_apply_ctor (sr,var_idx,class_idx,ts,ctor_idx, barg))
                 | None ->
                   clierr sr
@@ -403,7 +421,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
                     "Unable to find matching constructor for class " ^ name ^
                     "<" ^ si class_idx ^ ">[" ^
                     catmap "," (sbt syms.dfns) ts ^ "](" ^
-                    sbt syms.dfns t2 ^ ")"
+                    sbt syms.dfns t2 ^ "),\n" ^
+                    "Candidates were:\n" ^ catmap "\n" (full_string_of_entry_kind syms.dfns) fs
                   )
             end
           | _ -> clierr sr "Argument of new must be a class"

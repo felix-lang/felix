@@ -3562,7 +3562,7 @@ and string_of_property = function
 and string_of_properties ps =
   match ps with
   | [] -> ""
-  | ps -> catmap " " string_of_property ps
+  | ps -> catmap " " string_of_property ps ^ " "
 
 and string_of_code_spec = function
   | `StrTemplate s -> "\"" ^ s ^  "\""
@@ -5140,10 +5140,14 @@ let string_of_dfn dfns i =
   match Hashtbl.find dfns i with
   | { id=id; sr=sr; vs=vs; symdef=entry } ->
   string_of_symdef entry id vs
-  ^ " defined at " ^ short_string_of_src sr
+  ^ "\n  defined at " ^ short_string_of_src sr
 
-let full_string_of_entry_kind dfns {base_sym=i} =
-  string_of_dfn dfns i
+let full_string_of_entry_kind dfns {base_sym=i; spec_vs=vs; sub_ts=ts} =
+  string_of_dfn dfns i ^ 
+  "\n  with view" ^
+  " vs=" ^ catmap "," (fun (s,_)->s) vs ^
+  " ts=" ^ catmap "," (sbt dfns) ts
+
 
 let string_of_entry_kind {base_sym=i} = si i
 
