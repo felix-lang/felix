@@ -304,8 +304,6 @@ options = [
     help='define a macro'),
 ]
 
-default_fbuild_phases = ['build','host','target','run']
-
 fbuild_preprocesses = [
   'manifest',
 ]
