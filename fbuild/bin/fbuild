@@ -270,33 +270,30 @@ def calculate_packages(options, phase, packages):
 ####
 
 def run_phase(options, phase, packages):
-  for process in fbuildroot.fbuild_processes.get(phase, []):
-    print '-' * 78
-    print '***** MAKING PHASE', phase
-    pkgsummary = {}
-    for pkg in calculate_packages(options, phase, packages):
-      pkgdict = fbuild.flxbuild.package.pkgd[pkg]
-
-      print "*****", phase, "MAKING PACKAGE", pkg, "************"
-
-      stamp = os.path.join("pkg-stamps", "%s.%s" % (pkg, phase))
-      if os.path.exists(stamp):
+  print '-' * 78
+  print '***** MAKING PHASE', phase
+  pkgsummary = {}
+  for pkg in calculate_packages(options, phase, packages):
+    pkgdict = fbuild.flxbuild.package.pkgd[pkg]
+    print "*****", phase, "MAKING PACKAGE", pkg, "************"
+    stamp = os.path.join("pkg-stamps", "%s.%s" % (pkg, phase))
+    if os.path.exists(stamp):
         os.remove(stamp)
 
-      for process in processes:
-        print "*****", phase, "RUNNING PROCESS", process, "************"
-        result = fbuild.flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
-        if not result and result is not None:
-          break
+    for process in fbuildroot.fbuild_processes.get(phase, []):
+      print "*****", phase, "RUNNING PROCESS", process, "************"
+      result = fbuild.flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
+      if not result and result is not None:
+        break
       else:
         fbuild.flxbuild.process.enstamp(stamp, options.quiet)
 
-    if pkgsummary:
-      pkgsummary = pkgsummary.items()
-      pkgsummary.sort()
-      print phase, "PHASE SUMMARY"
-      for (package, process), summary in pkgsummary:
-        print '  ', process.ljust(30), ':', package.ljust(30), ':', summary
+  if pkgsummary:
+    pkgsummary = pkgsummary.items()
+    pkgsummary.sort()
+    print phase, "PHASE SUMMARY"
+    for (package, process), summary in pkgsummary:
+      print '  ', process.ljust(30), ':', package.ljust(30), ':', summary
 
 # -----------------------------------------------------------------------------
 
