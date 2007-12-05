@@ -1,4 +1,4 @@
 print "Starting .. "; endl;
-Dynlink::run_lib("build/test/rt-1.01.02-0.so");
-Dynlink::run_lib("build/test/rt-1.01.03-0.so");
+Dynlink::run_lib("build/test/regress/rt/rt-1.01.02-0.so");
+Dynlink::run_lib("build/test/regress/rt/rt-1.01.03-0.so");
 print "Its run"; endl;
