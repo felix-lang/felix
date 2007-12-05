@@ -108,11 +108,11 @@ class html_weaver(weaver_base):
   def end_displayed_text(self):
     self._write('</BLOCKQUOTE>')
 
-  def begin_displayed_code(self):
-    self._write('<PRE>\n')
+  def begin_displayed_code(self,DIV="CODE"):
+    self._write('<DIV CLASS="'+DIV+'"><PRE>\n')
 
   def end_displayed_code(self):
-    self._write('</PRE>')
+    self._write('</PRE></DIV>')
 
   def line_break(self):
     self._writeline('<BR>')
