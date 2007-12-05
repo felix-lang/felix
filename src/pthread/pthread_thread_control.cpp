@@ -9,7 +9,7 @@ namespace flx { namespace pthread {
 static void *get_stack_pointer() { unsigned long x; return &x; }
 
 thread_control_t::thread_control_t (bool d) :
-  do_world_stop(false), thread_counter(0), debug(d)
+  do_world_stop(false), thread_counter(0), active_counter(0), debug(d)
   {
     if(debug)
       fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
@@ -21,12 +21,19 @@ int thread_control_t::thread_count()
     return thread_counter;
   }
 
+int thread_control_t::active_count()
+  {
+    flx_mutex_locker_t m(stop_mutex);
+    return active_counter;
+  }
+
 void thread_control_t::add_thread(void *stack_base)
   {
     flx_mutex_locker_t m(stop_mutex);
     flx_native_thread_t id = get_current_native_thread();
     threads.insert (std::make_pair(id, thread_data_t (stack_base)));
     ++thread_counter;
+    ++active_counter;
     if(debug)
       fprintf(stderr, "Adding thread %lx base %p, count=%d\n", id, stack_base, thread_counter);
     stop_guard.broadcast();
@@ -42,6 +49,7 @@ void thread_control_t::remove_thread()
       std::abort();
     }
     --thread_counter;
+    --active_counter;
     if(debug)
       fprintf(stderr, "Removed thread %lx, count=%d\n", id, thread_counter);
     stop_guard.broadcast();
@@ -55,14 +63,14 @@ bool thread_control_t::world_stop()
   {
     stop_mutex.lock();
     if(debug)
-      fprintf(stderr,"Thread %lx Stopping world, threads=%d\n", get_current_native_thread(), thread_counter);
+      fprintf(stderr,"Thread %lx Stopping world, active threads=%d\n", get_current_native_thread(), active_counter);
     if (do_world_stop) {
       stop_mutex.unlock();
       return false; // race! Someone else beat us
     }
     do_world_stop = true;
     stop_guard.broadcast();
-    while(thread_counter>1) {
+    while(active_counter>1) {
       if(debug)
         for(
           thread_registry_t::iterator it = threads.begin();
@@ -175,9 +183,9 @@ void thread_control_t::unsafe_suspend()
   (*it).second.active = false;
   if(debug)
     fprintf(stderr,"Stack size = %ld\n",(char*)(*it).second.stack_base -(char*)(*it).second.stack_top);
-  --thread_counter;
+  --active_counter;
   if(debug)
-    fprintf(stderr,"Suspend: thread count now %d\n",thread_counter);
+    fprintf(stderr,"Suspend: active thread count now %d\n",active_counter);
   stop_guard.broadcast();
 }
 
@@ -187,7 +195,7 @@ void thread_control_t::unsafe_resume()
     fprintf(stderr,"Unsafe resume %lx\n", get_current_native_thread());
   stop_guard.broadcast();
   while(do_world_stop) stop_guard.wait(&stop_mutex);
-  ++thread_counter;
+  ++active_counter;
   flx_native_thread_t id = get_current_native_thread();
   thread_registry_t::iterator it = threads.find(id);
   if(it == threads.end()) {
@@ -198,7 +206,7 @@ void thread_control_t::unsafe_resume()
   (*it).second.active = true;
   if(debug) {
     flx_native_thread_t id = get_current_native_thread();
-    fprintf(stderr,"Thread %lx resumed, count= %d\n",get_current_native_thread(),thread_counter);
+    fprintf(stderr,"Thread %lx resumed, active count= %d\n",get_current_native_thread(),active_counter);
   }
   stop_guard.broadcast();
 }

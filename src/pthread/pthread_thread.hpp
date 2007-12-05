@@ -60,6 +60,7 @@ class PTHREAD_EXTERN thread_control_t
 {
     bool do_world_stop;
     unsigned int thread_counter;
+    unsigned int active_counter;
     flx_condv_t stop_guard;
     flx_mutex_t stop_mutex;
     thread_registry_t threads;
@@ -70,6 +71,7 @@ public:
     bool debug;
     thread_control_t (bool);
     int thread_count();
+    int active_count();
     void add_thread(void*);
     void remove_thread();
     bool world_stop();
