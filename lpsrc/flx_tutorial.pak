@@ -509,7 +509,7 @@ For constructors and auxilliary functions see also:
 @line_break()
 
 @select(env.test('.flx'))
-proc pr (z:dcomplex) { println (fmt[fcomplex,double](z,fixed(0,3))); }
+proc pr (z:dcomplex) { println (fmt[dcomplex,double](z,fixed(0,3))); }
 
 {
   val x1 : fcomplex = fcomplex(2.2f, 1.0f);

@@ -6054,7 +6054,7 @@ and split_dirs open_excludes dirs :
   (c) the routine is only called for modules and typeclasses?
 *)
 
-and get_includes syms xs =
+and get_includes syms rs xs =
   let rec get_includes' syms includes ((invs,i, ts) as index) =
     if not (mem index !includes) then
     begin
@@ -6080,7 +6080,15 @@ and get_includes syms xs =
             try lookup_qn_in_env syms env qn
             with Not_found -> failwith "QN NOT FOUND"
           in
-            let ts'' = map (bind_type syms env sr) ts'' in
+            (*
+            print_endline ("BIND types " ^ catmap "," string_of_typecode ts'');
+            *)
+            let mkenv i = mk_bare_env syms i in
+            let bt t = bind_type' syms env rs sr t [] mkenv in
+            let ts'' = map bt ts'' in
+            (*
+            print_endline ("BOUND types " ^ catmap "," (sbt syms.dfns) ts'');
+            *)
             (*
             print_endline ("inherit " ^ string_of_qualified_name qn ^
             ", bound ts="^catmap "," (sbt syms.dfns) ts'');
@@ -6154,7 +6162,13 @@ and bind_dir
    assert (length ts = 0);
    *)
    let mkenv i = mk_bare_env syms i in
+   (*
+   print_endline ("Binding ts=" ^ catmap "," string_of_typecode ts');
+   *)
    let ts' = map (fun t -> beta_reduce syms sr (bind_type' syms (cheat_env::env) rsground sr t [] mkenv)) ts' in
+   (*
+   print_endline ("Ts bound = " ^ catmap "," (sbt syms.dfns) ts');
+   *)
    (*
    let ts' = map (fun t-> bind_type syms env sr t) ts' in
    *)
@@ -6291,7 +6305,7 @@ and pub_table_dir
 and get_pub_tables syms env rs dirs =
   let _,includes,_ = split_dirs rs.open_excludes dirs in
   let xs = uniq_list (map (bind_dir syms env rs) includes) in
-  let includes = get_includes syms xs in
+  let includes = get_includes syms rs xs in
   let tables = map (pub_table_dir syms env false) includes in
   tables
 
@@ -6321,8 +6335,17 @@ and merge_directives syms rs env dirs typeclasses =
       print_endline ("ADD vs=" ^ catmap "," (fun (s,i,_)->s^ "<"^si i^">") (fst vs) ^ " qn=" ^ string_of_qualified_name qn);
       *)
       let u = [bind_dir syms !env rs (vs,qn)] in
-      let u = get_includes syms u in
+      (*
+      print_endline "dir bound!";
+      *)
+      let u = get_includes syms rs u in
+      (*
+      print_endline "includes got, doing pub_table_dir";
+      *)
       let tables = map (pub_table_dir syms !env false) u in
+      (*
+      print_endline "pub table dir done!";
+      *)
       iter add tables
     end
   in
@@ -6403,7 +6426,7 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   (*
   (* HACK to check open typeclass *)
   let _ =
-    let xs = get_includes syms bopens in
+    let xs = get_includes syms rs bopens in
     let tables = map (pub_table_dir syms env true) xs in
     ()
   in
@@ -6414,7 +6437,7 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   let u = uniq_cat u bincludes in
 
   (* add on any inherited modules *)
-  let u = get_includes syms u in
+  let u = get_includes syms rs u in
 
   (* convert the i,ts list to a list of lookup tables *)
   let tables = map (pub_table_dir syms env false) u in
@@ -6427,6 +6450,15 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
 and build_env'' syms rs index : env_t =
   match hfind "lookup" syms.dfns index with
   {id=id; parent=parent; vs=vs; privmap=table;dirs=dirs} ->
+  if mem index rs.idx_fixlist then
+    failwith ("RECURSION: Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i))
+  else 
+  let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
+  (*
+  print_endline ("Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i));
+  print_endline ("Privmap=");
+  Hashtbl.iter (fun s _ ->  print_endline s) table ;
+  *)
   let typeclasses = match vs with (_,{raw_typeclass_reqs=rtcr})-> rtcr in
   let env = inner_build_env syms rs parent in
 
@@ -6440,7 +6472,13 @@ and build_env'' syms rs index : env_t =
   *)
   let typeclasses = map (fun qn -> dfltvs,qn) typeclasses in
 
+  (*
+  print_endline ("MERGE DIRECTIVES for " ^ id);
+  *)
   let env = merge_directives syms rs env' dirs typeclasses in
+  (*
+  print_endline "Build_env'' complete";
+  *)
   env
 
 and inner_build_env syms rs parent : env_t =

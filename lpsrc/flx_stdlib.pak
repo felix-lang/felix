@@ -1049,11 +1049,9 @@ open Real[ldouble];
 open Complex[fcomplex, float];
 open Complex[dcomplex, double];
 open Complex[lcomplex, ldouble];
-/*
 open CartComplex[float];
 open CartComplex[double];
 open CartComplex[ldouble];
-*/
 
 //open FloatAddgrp[imaginary];
 //open FloatAddgrp[dimaginary];
