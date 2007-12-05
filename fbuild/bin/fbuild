@@ -428,10 +428,11 @@ def main():
     if arg in fbuild.flxbuild.process.processes:
       fbuild.flxbuild.process.processes[arg].runme()
 
-  # now run all the processes specified by the application
-  # for the selected phases, in the application specified phase order
-  for phase in options.selected_phases:
-    run_phase(options, phase, packages)
+  else:
+    # otherwise run all the processes specified by the application
+    # for the selected phases, in the application specified phase order
+    for phase in options.selected_phases:
+      run_phase(options, phase, packages)
 
   ####
 
