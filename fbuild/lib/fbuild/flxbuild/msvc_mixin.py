@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 
 import fbuild.flxbuild
 from fbuild.flxbuild.c_cxx_base import c_cxx_base
@@ -36,9 +37,24 @@ class msvc_mixin(object):
 
 
   def detect_compiler_options(self):
+    self.detect_compiler_version()
     self.detect_warning_flags()
     self.construct_compiler_commands()
     self.detect_openmp()
+
+
+  def detect_compiler_version(self):
+    w, r, e = os.popen3('cl')
+    output = e.read()
+
+    match = re.search(r'Optimizing Compiler Version ([\d.]+) for', output)
+
+    if match:
+      self.options.VERSION = [int(i) for i in match.group(1).split('.')]
+    else:
+      self.options.VERSION = [0]
+
+    print 'COMPILER VERSION:', self.options.VERSION
 
 
   # CHECK_OPTIONS FOR CL.EXE IN CASE YOU WERE WONDERING
@@ -168,6 +184,20 @@ class msvc_mixin(object):
     self.options.PRE_LINK_FLAGS = '/link'
 
     return super(msvc_mixin, self).link_thing(*args, **kwds)
+
+
+  def link_shared_thing(self, *args, **kwds):
+    lib = super(msvc_mixin, self).link_shared_thing(*args, **kwds)
+
+    # msvc 8 and above need the manifest baked into the dll
+    if self.options.VERSION > [14, 0, 0, 0]:
+      self.shell('mt', 
+        '/nologo', 
+        '/manifest', lib + '.manifest', 
+        '/outputresource:' + lib + ';#2',
+      )
+
+    return lib
 
   ########
 
