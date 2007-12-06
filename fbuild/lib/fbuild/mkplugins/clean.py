@@ -13,23 +13,5 @@ class clean(Process):
   def runme(self, *args):
     for d in glob.glob(os.path.join("pkg-stamps", "*")):
       erasefile(d)
-
-    for d in [
-      os.path.join("tut", "examples"),
-      os.path.join("bagley", "felix"),
-      "src","elk","demux","faio","lib","lpsrc","rtl","bin","test",
-      ]:
-      for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
-        "*.par","*.output","*.o","*.obj",
-        "*.exp","*.lib",'*.resh','*.par',
-        "*.cache","*.a","*.exp","*.exe",
-        "*.cmo","*.cma","*.cmi","*.cmx","*.cmxa",
-        ]:
-        for f in glob.glob(os.path.join(d, e)):
-          erasefile(f)
-
-    for f in glob.glob(os.path.join("lib", "*.par")):
-      erasefile(f)
-
     for f in glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc", "*.cache")):
       erasefile(f)
