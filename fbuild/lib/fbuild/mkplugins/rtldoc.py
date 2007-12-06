@@ -1,5 +1,5 @@
 import os
-
+from fbuild.flxbuild.flxutil import mkdirs
 from fbuild.flxbuild.process import Process
 
 class rtldoc(Process):
@@ -14,6 +14,7 @@ class rtldoc(Process):
       return
     self.ran = True
 
+    mkdirs(os.path.join("doc","rtl"))
     print "GENERATING RTLDOCS"
     try:
       self.shell('doxygen', os.path.join('misc', 'doxconf.dox'))
