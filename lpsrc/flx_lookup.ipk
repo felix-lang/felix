@@ -6450,20 +6450,23 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
 and build_env'' syms rs index : env_t =
   match hfind "lookup" syms.dfns index with
   {id=id; parent=parent; vs=vs; privmap=table;dirs=dirs} ->
-  if mem index rs.idx_fixlist then
-    failwith ("RECURSION: Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i))
-  else 
+  let skip_merges = mem index rs.idx_fixlist in
+  (*
+  if skip_merges then
+    print_endline ("WARNING: RECURSION: Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i)) 
+  ;
+  *)
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
+  let env = inner_build_env syms rs parent in
+  (* build temporary bare innermost environment with a full parent env *)
+  let env' = (index,id,table,[])::env in
+  if skip_merges then env' else
   (*
   print_endline ("Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i));
   print_endline ("Privmap=");
   Hashtbl.iter (fun s _ ->  print_endline s) table ;
   *)
   let typeclasses = match vs with (_,{raw_typeclass_reqs=rtcr})-> rtcr in
-  let env = inner_build_env syms rs parent in
-
-  (* build temporary bare innermost environment with a full parent env *)
-  let env' = (index,id,table,[])::env in
 
   (* use that env to process directives and type classes *)
   (*

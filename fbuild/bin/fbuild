@@ -293,7 +293,8 @@ def run_phase(options, phase, packages):
     pkgsummary.sort()
     print phase, "PHASE SUMMARY"
     for (package, process), summary in pkgsummary:
-      print '  ', process.ljust(30), ':', package.ljust(30), ':', summary
+      if summary != "no tests":
+        print '  ', process.ljust(25), ':', package.ljust(20), ':', summary
 
 # -----------------------------------------------------------------------------
 

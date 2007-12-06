@@ -1,21 +1,3 @@
-//Check integer math
-open Tiny;
-open Short;
-open Long;
-open Vlong;
-open Utiny;
-open Ushort;
-open Uint;
-open Ulong;
-open Uvlong;
-open Int8;
-open Int16;
-open Int32;
-open Int64;
-open Uint8;
-open Uint16;
-open Uint32;
-open Uint64;
 //noinline is needed to stop gcc dropping dead
 noinline proc tst_240 () {
   assert(int_of(2 + 40)==42);
