@@ -334,12 +334,6 @@ fbuild_processes = {
     'run_completion_tests',
     'run_known_failed_tests',
   ],
-  'test': [
-    'fcount',
-  ],
-  'tutorial': [
-    'fcount',
-  ],
   'doc': [
     'mkdoc',
     'impldoc',
