@@ -289,6 +289,9 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 // vs windows.h just LOVES to include winsock version 1 headers by default.
 // that's bad for everyone, so quit it.
 #define _WINSOCKAPI_
+
+// windows.h defines min/max macros, which can cause all sorts of confusion.
+#define NOMINMAX
 #endif
 
 
