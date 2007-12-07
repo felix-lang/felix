@@ -946,6 +946,7 @@ to the unit argument.</p>
 //------------------------------------------
 syntax statements {
   requires expressions;
+  statement:= sexecutable=># "_1";
   statement:= sdeclarative =># "_1";
   statement:= sinclusion =># "_1";
   statement:= sdirective =># "_1";
@@ -1545,7 +1546,6 @@ a Felix name onto the same C name.<p>""";
 //------------------------------------------
 syntax executable {
   requires statements;
-  statement:= sexecutable =># "_1";
   sexecutable := scall =># "_1";
   sexecutable := ssvc =># "_1";
   sexecutable := sreturn =># "_1";
@@ -2275,12 +2275,12 @@ the same as <code>x:int</code></p>
   """;
 
   // function
-  sfunction_definition := sadjectives pointer_type sdeclname
+  sfunction_definition := (extern|static) sadjectives pointer_type sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
     (mkns
-    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (,_2 ,_5) Function ,_6)
-    (cdr _3))
+    `(ast_curry ,_sr ,(caar _4) ,(cadar _4) ,_5 (,_3 ,_6) Function ,_7)
+    (cdr _4))
   """;
 
   // union
