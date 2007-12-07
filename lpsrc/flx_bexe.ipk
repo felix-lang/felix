@@ -386,12 +386,12 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
               to include the class type variables, so we hack it up by pre-pending the
               class type variables to the constructor views
               *)
-              let fs = map (fun ({base_sym=i; spec_vs=vs; sub_ts=ts} as view) -> 
+              let fs = map (fun ({base_sym=i; spec_vs=vs; sub_ts=ts} as view) ->
                 (* these failure shouldn't happen by construction .. *)
-                if length vs <> 0 then 
+                if length vs <> 0 then
                   failwith "Unexpected polymorphic view of class constructor!"
                 ;
-                if length ts <> 0 then 
+                if length ts <> 0 then
                   failwith "Unexpected polymorphic class constructor!"
                 ;
                 {view with spec_vs=map (fun (s,i,_)->s,i) (fst class_vs) }

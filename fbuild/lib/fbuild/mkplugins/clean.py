@@ -17,4 +17,3 @@ class clean(Process):
       erasefile(f)
     for f in glob.glob(os.path.join(config.FLX_LPARCHIVE, "lpsrc-cache", "*.cache")):
       erasefile(f)
-      

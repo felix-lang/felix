@@ -27,4 +27,3 @@ class clean_run(Process):
       print "Removing " + d
       erasefile(d)
     exit(0)
-      

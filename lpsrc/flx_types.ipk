@@ -5143,7 +5143,7 @@ let string_of_dfn dfns i =
   ^ "\n  defined at " ^ short_string_of_src sr
 
 let full_string_of_entry_kind dfns {base_sym=i; spec_vs=vs; sub_ts=ts} =
-  string_of_dfn dfns i ^ 
+  string_of_dfn dfns i ^
   "\n  with view" ^
   " vs=" ^ catmap "," (fun (s,_)->s) vs ^
   " ts=" ^ catmap "," (sbt dfns) ts

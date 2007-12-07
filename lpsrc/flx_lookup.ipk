@@ -6453,7 +6453,7 @@ and build_env'' syms rs index : env_t =
   let skip_merges = mem index rs.idx_fixlist in
   (*
   if skip_merges then
-    print_endline ("WARNING: RECURSION: Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i)) 
+    print_endline ("WARNING: RECURSION: Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i))
   ;
   *)
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in

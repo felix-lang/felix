@@ -191,9 +191,9 @@ class msvc_mixin(object):
 
     # msvc 8 and above need the manifest baked into the dll
     if self.options.VERSION > [14, 0, 0, 0]:
-      self.shell('mt', 
-        '/nologo', 
-        '/manifest', lib + '.manifest', 
+      self.shell('mt',
+        '/nologo',
+        '/manifest', lib + '.manifest',
         '/outputresource:' + lib + ';#2',
       )
 
