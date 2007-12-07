@@ -359,6 +359,12 @@ fbuild_processes = {
   'speed': [
     'fbuild.mkplugins.speed_tests.speed_tests',
   ],
+  'clean': [
+    'fbuild.mkplugins.clean.clean',
+  ],
+  'clean_run': [
+    'fbuild.mkplugins.clean_run.clean_run',
+  ],
 }
 
 @head(1,'Makefile')

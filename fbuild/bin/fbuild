@@ -223,6 +223,9 @@ def load_process(process_path, options, args):
   module, name = process_path.rsplit('.', 1)
   process_class = getattr(__import__(module, {}, {}, ['']), name)
 
+  if not callable(process_class):
+    raise ImportError
+
   return process_class(
     verbose=options.verbose,
     quiet=options.quiet,
@@ -427,6 +430,14 @@ def main():
     # these are run independently of the selected phase
     if arg in fbuild.flxbuild.process.processes:
       fbuild.flxbuild.process.processes[arg].runme()
+    else:
+      # try seeing if it's a process
+      try:
+        process = load_process(arg, options, args)
+      except ImportError:
+        pass
+      else:
+        process.runme()
 
   else:
     # otherwise run all the processes specified by the application
