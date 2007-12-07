@@ -6,7 +6,11 @@ from fbuild.flxbuild.process import Process
 import config
 
 class build_ocaml_exes(Process):
-  def runme(self, EXES, OLIBRARIES, INCLUDES):
+  def runme(self, pkg, pkgdict, *args):
+    EXES = pkgdict.get("caml_exes", [])
+    OLIBRARIES = pkgdict.get("caml_require_libs", [])
+    INCLUDES = pkgdict.get("caml_include_paths", [])
+
     if not EXES:
       return
 
@@ -20,10 +24,10 @@ class build_ocaml_exes(Process):
 
     output_exes = []
     for exe in EXES:
-      modules = config.HOST_OCAML.compile_module([exe], **kwds)
+      config.HOST_OCAML.compile_module([exe], **kwds)
 
       src = config.HOST_OCAML.link_exe(
-        modules,
+        [os.path.join('build', exe)],
         os.path.splitext(exe)[0] + config.HOST_OCAML.options.EXT_EXE,
         libs=OLIBRARIES,
         **kwds)
@@ -33,5 +37,3 @@ class build_ocaml_exes(Process):
       if not self.quiet: print 'copying file', src, '->', dst
       shutil.copy(src, dst)
       output_exes.append(dst)
-
-    return output_exes

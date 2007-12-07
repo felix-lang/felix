@@ -305,47 +305,58 @@ options = [
 ]
 
 fbuild_preprocesses = [
-  'manifest',
+  'fbuild.mkplugins.manifest.manifest',
 ]
+
+ocaml_processes = ['fbuild.mkplugins.build_host_ocaml.copy_mli2ml']
+
+if config.HOST_OCAML.options.HAVE_OCAMLBUILD:
+  ocaml_processes += ['fbuild.mkpluings.build_ocamlbuild.build_ocamlbuild']
+else:
+  ocaml_processes += [
+    'fbuild.mkplugins.build_ocaml_grammar.build_ocaml_grammar',
+    'fbuild.mkplugins.build_ocaml_modules.build_ocaml_modules',
+    'fbuild.mkplugins.build_ocaml_libraries.build_ocaml_libraries',
+    'fbuild.mkplugins.build_ocaml_exes.build_ocaml_exes',
+  ]
 
 fbuild_processes = {
   'build': [
-    'extract_iscr',
+    'fbuild.mkplugins.extract_iscr.extract_iscr',
   ],
-  'host': [
-    'build_host_ocaml',
-    'build_host_tools',
-    'extract_grammar',
+  'host': ocaml_processes + [
+    'fbuild.mkplugins.build_host_tools.build_host_tools',
+    'fbuild.mkplugins.extract_grammar.extract_grammar',
   ],
   'target': [
-    'build_target_rtl_dynamic',
-    'build_target_rtl_static',
-    'build_felix_dynamic_drivers',
-    'build_felix_static_drivers',
-    'build_target_cpp_tools',
-    'build_target_felix_rtl',
-    'build_target_felix_tools',
+    'fbuild.mkplugins.build_target_rtl_dynamic.build_target_rtl_dynamic',
+    'fbuild.mkplugins.build_target_rtl_static.build_target_rtl_static',
+    'fbuild.mkplugins.build_felix_dynamic_drivers.build_felix_dynamic_drivers',
+    'fbuild.mkplugins.build_felix_static_drivers.build_felix_static_drivers',
+    'fbuild.mkplugins.build_target_cpp_tools.build_target_cpp_tools',
+    'fbuild.mkplugins.build_target_felix_rtl.build_target_felix_rtl',
+    'fbuild.mkplugins.build_target_felix_tools.build_target_felix_tools',
   ],
   'run': [
-    'run_failure_tests',
-    'run_unit_tests',
-    'run_static_unit_tests',
-    'run_dynamic_unit_tests',
-    'run_completion_tests',
-    'run_known_failed_tests',
+    'fbuild.mkplugins.run_failure_tests.run_failure_tests',
+    'fbuild.mkplugins.run_unit_tests.run_unit_tests',
+    'fbuild.mkplugins.run_static_unit_tests.run_static_unit_tests',
+    'fbuild.mkplugins.run_dynamic_unit_tests.run_dynamic_unit_tests',
+    'fbuild.mkplugins.run_completion_tests.run_completion_tests',
+    'fbuild.mkplugins.run_known_failed_tests.run_known_failed_tests',
   ],
   'doc': [
-    'mkdoc',
-    'impldoc',
-    'rtldoc',
-    'gramdoc',
-    'typeclassdoc',
+    'fbuild.mkplugins.mkdoc.mkdoc',
+    'fbuild.mkplugins.impldoc.impldoc',
+    'fbuild.mkplugins.rtldoc.rtldoc',
+    'fbuild.mkplugins.gramdoc.gramdoc',
+    'fbuild.mkplugins.typeclassdoc.typeclassdoc',
   ],
   'demo': [
-    'run_demos',
+    'fbuild.mkplugins.run_demos.run_demos',
   ],
   'speed': [
-    'speed_tests',
+    'fbuild.mkplugins.speed_tests.speed_tests',
   ],
 }
 

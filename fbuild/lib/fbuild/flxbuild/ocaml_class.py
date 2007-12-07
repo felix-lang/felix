@@ -255,7 +255,7 @@ class ocaml(compiler_base):
 
   ####
 
-  def link_thing(self, LINK, EXT_DST, objects, outfile,
+  def link_thing(self, LINK, EXT_SRC, EXT_DST, objects, outfile,
       outdir='',
       include_paths=[],
       libs=[],
@@ -270,7 +270,7 @@ class ocaml(compiler_base):
 
     cmd.extend(('-o', dst))
     cmd.extend([lib + EXT_DST for lib in libs])
-    cmd.extend(objects)
+    cmd.extend([obj + EXT_SRC for obj in objects])
 
     self.shell(*cmd, **dict(log=log))
 
@@ -278,7 +278,7 @@ class ocaml(compiler_base):
 
   def link_bytecode_lib(self, objects, outfile, *args, **kwds):
     return self.link_thing(
-        self.options.OCAMLB + ' -a', '.cma', objects, outfile + '.cma',
+        self.options.OCAMLB + ' -a', '.cmo', '.cma', objects, outfile + '.cma',
         *args, **kwds)
 
   def link_native_lib(self, objects, outfile, *args, **kwds):
@@ -286,7 +286,7 @@ class ocaml(compiler_base):
       return self.link_bytecode(*args, **kwds)
 
     return self.link_thing(
-        self.options.OCAMLC + ' -a', '.cmxa', objects, outfile + '.cmxa',
+        self.options.OCAMLC + ' -a', '.cmx', '.cmxa', objects, outfile + '.cmxa',
         *args, **kwds)
 
   def link_lib(self, *args, **kwds):
@@ -297,14 +297,14 @@ class ocaml(compiler_base):
 
   def link_bytecode_exe(self, *args, **kwds):
     opt = self.options
-    return self.link_thing(opt.OCAMLC, '.cma', *args, **kwds)
+    return self.link_thing(opt.OCAMLC, '.cmo', '.cma', *args, **kwds)
 
   def link_native_exe(self, *args, **kwds):
     if not self.options.NATIVE_CODE_COMPILER:
       return self.link_bytecode_exe(*args, **kwds)
 
     opt = self.options
-    return self.link_thing(opt.OCAMLC, '.cmxa', *args, **kwds)
+    return self.link_thing(opt.OCAMLC, '.cmx', '.cmxa', *args, **kwds)
 
   def link_exe(self, *args, **kwds):
     if kwds.pop('bytecode', True):

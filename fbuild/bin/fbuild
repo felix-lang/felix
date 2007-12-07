@@ -218,27 +218,26 @@ def load_packages():
 # -------------------------------------------------
 # LOAD PROCESSES
 
-def load_processes(options, args):
-  for f in glob.glob(os.path.join(config.FLX_DIR, "fbuild", "lib", "fbuild", "mkplugins", "*.py")):
-    name = os.path.basename(os.path.splitext(f)[0])
-    if name == '__init__':
-      continue
 
-    module = getattr(__import__('fbuild.mkplugins.' + name).mkplugins, name)
-    try:
-      process_class = getattr(module, name)
-    except AttributeError:
-      pass
-    else:
-      process = process_class(
-        verbose=options.verbose,
-        quiet=options.quiet,
-        optimise=options.optimise,
-        debug=options.debug,
-        force=options.force or 'force' in args,
-        options=args,
-      )
-      fbuild.flxbuild.process.processes[name] = process
+def load_process(process_path, options, args):
+  module, name = process_path.rsplit('.', 1)
+  process_class = getattr(__import__(module, {}, {}, ['']), name)
+
+  return process_class(
+    verbose=options.verbose,
+    quiet=options.quiet,
+    optimise=options.optimise,
+    debug=options.debug,
+    force=options.force or 'force' in args,
+    options=args,
+  )
+
+
+def load_processes(options, args):
+  for phase, processes in fbuildroot.fbuild_processes.iteritems():
+    for process_path in processes:
+      process = load_process(process_path, options, args)
+      fbuild.flxbuild.process.processes[process_path] = process
 
 # -----------------------------------------------------------------------------
 
@@ -420,7 +419,7 @@ def main():
 
   # run all the pre-processes
   for process in fbuildroot.fbuild_preprocesses:
-    fbuild.flxbuild.process.processes[process].preprocess()
+    load_process(process, options, args).preprocess()
 
   # execute user selected processes in command line order
   for arg in args:

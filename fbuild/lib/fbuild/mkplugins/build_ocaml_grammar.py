@@ -3,7 +3,12 @@ from fbuild.flxbuild.process import Process
 import config
 
 class build_ocaml_grammar(Process):
-  def runme(self, pkg, LEXS, PARSES, PGENPARSES,DYPARSES):
+  def runme(self, pkg, pkgdict, *args):
+    LEXS = pkgdict.get("caml_lexes", [])
+    PARSES = pkgdict.get("caml_parses", [])
+    PGENPARSES = pkgdict.get("caml_pgenparses", [])
+    DYPARSES = pkgdict.get("caml_dyparses", [])
+
     if not (LEXS or PARSES or PGENPARSES or DYPARSES):
       return
 
