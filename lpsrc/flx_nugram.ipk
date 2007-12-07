@@ -599,6 +599,8 @@ syntax functions {
 
     sadjective := inline =># "'InlineFunction";
     sadjective := noinline =># "'NoInlineFunction";
+    sadjective := static =># "'InlineFunction";
+    sadjective := extern =># "'NoInlineFunction";
     sadjective := virtual =># "'Virtual";
     sadjectives := sadjective* =># "_1";
 
@@ -2275,11 +2277,16 @@ the same as <code>x:int</code></p>
   """;
 
   // function
-  sfunction_definition := (extern|static) sadjectives pointer_type sdeclname
+  cfun_kind := extern =># "'CFunction";
+  cfun_kind := static =># "'Function";
+  cfun_kind := inline =># "'Function";
+  cfun_kind := noinline =># "'Function";
+
+  sfunction_definition := cfun_kind sadjectives pointer_type sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
     (mkns
-    `(ast_curry ,_sr ,(caar _4) ,(cadar _4) ,_5 (,_3 ,_6) Function ,_7)
+    `(ast_curry ,_sr ,(caar _4) ,(cadar _4) ,_5 (,_3 ,_6) ,_1 ,_7)
     (cdr _4))
   """;
 
