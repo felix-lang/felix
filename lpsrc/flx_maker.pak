@@ -308,16 +308,17 @@ fbuild_preprocesses = [
   'fbuild.mkplugins.manifest.manifest',
 ]
 
-ocaml_processes = ['fbuild.mkplugins.build_host_ocaml.copy_mli2ml']
+ocaml_processes = ['fbuild.processes.ocaml.copy_mli2ml']
 
 if config.HOST_OCAML.options.HAVE_OCAMLBUILD:
-  ocaml_processes += ['fbuild.mkpluings.build_ocamlbuild.build_ocamlbuild']
+  ocaml_processes += ['fbuild.processes.ocamlbuild.build']
 else:
   ocaml_processes += [
-    'fbuild.mkplugins.build_ocaml_grammar.build_ocaml_grammar',
-    'fbuild.mkplugins.build_ocaml_modules.build_ocaml_modules',
-    'fbuild.mkplugins.build_ocaml_libraries.build_ocaml_libraries',
-    'fbuild.mkplugins.build_ocaml_exes.build_ocaml_exes',
+    'fbuild.processes.ocaml.build_grammar',
+    'fbuild.processes.dypgen.build_grammar',
+    'fbuild.processes.ocaml.build_modules',
+    'fbuild.processes.ocaml.build_libs',
+    'fbuild.processes.ocaml.build_exes',
   ]
 
 fbuild_processes = {
