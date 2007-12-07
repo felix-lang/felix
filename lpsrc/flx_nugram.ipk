@@ -2135,6 +2135,8 @@ syntax csyntax {
 
   base_type :=
     | "char" =># '`(ast_name ,_sr "char" ())' note "C character"
+    | "uchar" =># '`(ast_name ,_sr "uchar" ())'
+
     | "tiny" =># '`(ast_name ,_sr "tiny" ())'
     | "short" =># '`(ast_name ,_sr "short" ())'
     | "int" =># '`(ast_name ,_sr "int" ())'
@@ -2146,9 +2148,36 @@ syntax csyntax {
     | "uint" =># '`(ast_name ,_sr "uint" ())'
     | "ulong" =># '`(ast_name ,_sr "ulong" ())'
     | "uvlong" =># '`(ast_name ,_sr "uvlong" ())'
+
+    | "int8" =># '`(ast_name ,_sr "int8" ())'
+    | "int16" =># '`(ast_name ,_sr "int16" ())'
+    | "int32" =># '`(ast_name ,_sr "int32" ())'
+    | "int64" =># '`(ast_name ,_sr "int64" ())'
+    | "uint8" =># '`(ast_name ,_sr "uint8" ())'
+    | "uint16" =># '`(ast_name ,_sr "uint16" ())'
+    | "uint32" =># '`(ast_name ,_sr "uint32" ())'
+    | "uint64" =># '`(ast_name ,_sr "uint64" ())'
+
     | "float" =># '`(ast_name ,_sr "float" ())'
     | "double" =># '`(ast_name ,_sr "double" ())'
     | "ldouble" =># '`(ast_name ,_sr "ldouble" ())'
+
+    | "fcomplex" =># '`(ast_name ,_sr "fcomplex" ())'
+    | "dcomplex" =># '`(ast_name ,_sr "dcomlex" ())'
+    | "lcomplex" =># '`(ast_name ,_sr "lcomplex" ())'
+
+    | "string" =># '`(ast_name ,_sr "string" ())'
+    | "ustring" =># '`(ast_name ,_sr "ustring" ())'
+
+    | "intmax" =># '`(ast_name ,_sr "intmax" ())'
+    | "uintmax" =># '`(ast_name ,_sr "uintmax" ())'
+
+    | "size" =># '`(ast_name ,_sr "size" ())'
+    | "address" =># '`(ast_name ,_sr "address" ())'
+    | "offset" =># '`(ast_name ,_sr "offset" ())'
+    | "ptrdiff" =># '`(ast_name ,_sr "ptrdiff" ())'
+    | "byte" =># '`(ast_name ,_sr "byte" ())'
+
 
     | struct sname =># "`(ast_name ,_sr ,_2 ())"
     | union sname =># "`(ast_name ,_sr ,_2 ())"
