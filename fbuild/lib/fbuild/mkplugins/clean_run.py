@@ -1,8 +1,10 @@
 import os
+import sys
 import glob
 
 from fbuild.flxbuild.process import Process
 from fbuild.flxbuild.flxutil import erasefile
+from fbuild.flxbuild.path import find
 
 import config
 
@@ -12,18 +14,10 @@ class clean_run(Process):
 
   def runme(self, *args):
     for d in glob.glob(os.path.join("pkg-stamps", "*.run")):
-      print "Removing " + d
+      print "Removing", d
       erasefile(d)
-    for d in glob.glob(os.path.join("pkg-stamps", "*.test")):
-      print "Removing " + d
+    for d in find('pkg-stamps', '*.test'):
+      print "Removing", d
       erasefile(d)
-    for d in glob.glob(os.path.join("pkg-stamps", "*","*.test")):
-      print "Removing " + d
-      erasefile(d)
-    for d in glob.glob(os.path.join("pkg-stamps", "*","*","*.test")):
-      print "Removing " + d
-      erasefile(d)
-    for d in glob.glob(os.path.join("pkg-stamps", "*","*","*","*.test")):
-      print "Removing " + d
-      erasefile(d)
-    exit(0)
+
+    sys.exit(0)
