@@ -221,19 +221,22 @@ def load_packages():
 
 def load_process(process_path, options, args):
   module, name = process_path.rsplit('.', 1)
-  process_class = getattr(__import__(module, {}, {}, ['']), name)
+  process = getattr(__import__(module, {}, {}, ['']), name)
 
-  if not callable(process_class):
+  if not callable(process):
     raise ImportError
 
-  return process_class(
-    verbose=options.verbose,
-    quiet=options.quiet,
-    optimise=options.optimise,
-    debug=options.debug,
-    force=options.force or 'force' in args,
-    options=args,
-  )
+  if type(process) is type:
+    process = process(
+      verbose=options.verbose,
+      quiet=options.quiet,
+      optimise=options.optimise,
+      debug=options.debug,
+      force=options.force or 'force' in args,
+      options=args,
+    )
+
+  return process
 
 
 def load_processes(options, args):
@@ -284,7 +287,7 @@ def run_phase(options, phase, packages):
 
     for process in fbuildroot.fbuild_processes.get(phase, []):
       print "*****", phase, "RUNNING PROCESS", process, "************"
-      result = fbuild.flxbuild.process.processes[process].runme(pkg, pkgdict, pkgsummary)
+      result = fbuild.flxbuild.process.processes[process](pkg, pkgdict, pkgsummary)
       if not result and result is not None:
         break
     else:
@@ -308,17 +311,25 @@ def print_failures():
   failed = 0
   fatal = 0
   for name, process in fbuild.flxbuild.process.processes.iteritems():
-    nfail = len(process.failures)
-    npass = len(process.successes)
-    failed = failed or nfail>0
-    fatal = fatal or (nfail>0 and not process.dummy)
+    try:
+      failures = process.failures
+      successes = process.successes
+      dummy = process.dummy
+      used = process.used
+    except AttributeError:
+      continue
+
+    nfail = len(failures)
+    npass = len(successes)
+    failed = failed or nfail > 0
+    fatal = fatal or (nfail > 0 and not dummy)
 
     if nfail:
       print >> failure_log, 'PROCESS **FAILED**:', name,  nfail, '/', npass + nfail, 'failures'
-      if process.dummy:
+      if dummy:
         print >> failure_log, "  [Expected failure, doesn't break build]"
     else:
-      if process.used:
+      if used:
         print >> failure_log, 'PROCESS PASSED    :', name, npass, 'passed'
       else:
         print >> failure_log, 'PROCESS UNUSED    :', name
@@ -330,14 +341,19 @@ def print_failures():
 
   kats = {}
   for name, process in fbuild.flxbuild.process.processes.iteritems():
-    if not process.failures:
+    try:
+      failures = process.failures
+    except AttributeError:
       continue
 
-    print '- %s: %s' % (len(process.failures), name)
+    if not failures:
+      continue
+
+    print '- %s: %s' % (len(failures), name)
 
     lookup = {}
 
-    for pkg, file, failure in process.failures:
+    for pkg, file, failure in failures:
       files = lookup.get(pkg, [])
       files.append(file)
       lookup[pkg] = files

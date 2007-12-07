@@ -28,7 +28,7 @@ class build_felix_dynamic_drivers(Process):
       # this is a gross HACK! Don't make dynamic versions
       # of drivers with extra macros, they're for static
       # link of driver without async support
-      if self.verbose: print 'dynamic Compiling driver object', src
+      print 'dynamic Compiling driver object', src
 
       dst = config.TARGET_CXX.build_shared_program(src, os.path.join('build', src),
           outdir='build',

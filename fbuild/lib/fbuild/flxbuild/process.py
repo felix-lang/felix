@@ -36,9 +36,8 @@ class Process(object):
     self.force = force
     self.options = options
 
-  #def __call__(self, *args, **kwds):
-  #  self.used = True
-  #  return self.runme(*args, **kwds)
+  def __call__(self, *args, **kwds):
+    return self.runme(*args, **kwds)
 
   def shell(self, *args, **kwds):
     kwds.setdefault('verbose', self.verbose)

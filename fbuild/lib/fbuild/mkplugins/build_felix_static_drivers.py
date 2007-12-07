@@ -18,7 +18,8 @@ class build_felix_static_drivers(Process):
     cflags = pkgdict.get("cflags","")
 
     for src, outdir in DRIVERS:
-      if self.verbose: print 'static Compiling driver object', src
+      print 'static Compiling driver object', src
+
       dst = config.TARGET_CXX.compile_static_main([src],
         outdir='build',
         include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],

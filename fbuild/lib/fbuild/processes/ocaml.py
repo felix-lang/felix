@@ -5,33 +5,34 @@ import config
 from fbuild.flxbuild.process import Process
 from fbuild.flxbuild.flxutil import unix2native
 
-class copy_mli2ml(Process):
-    def runme(self, pkg, pkgdict, *args):
-        for f in pkgdict.get('caml_raw_interfaces', []):
-            f = unix2native(f)
-            src = f+'.mli'
-            dst = f+'.ml'
-            if not self.quiet: print 'copying file', src, '->', dst
-            shutil.copyfile(src, dst)
+def copy_mli2ml(pkg, pkgdict, *args):
+    for f in pkgdict.get('caml_raw_interfaces', []):
+        f = unix2native(f)
+        src = f+'.mli'
+        dst = f+'.ml'
+
+        print 'copying file', src, '->', dst
+        shutil.copyfile(src, dst)
 
 
-class build_grammar(Process):
-    def runme(self, pkg, pkgdict, *args):
-        LEXS = pkgdict.get("caml_lexes", [])
-        PARSES = pkgdict.get("caml_parses", [])
+def build_grammar(pkg, pkgdict, *args):
+    LEXS = pkgdict.get("caml_lexes", [])
+    PARSES = pkgdict.get("caml_parses", [])
 
-        if not (LEXS or PARSES):
-            return
+    if not (LEXS or PARSES):
+        return
 
-        print "CAML BUILDING GRAMMAR", pkg
+    print "CAML BUILDING GRAMMAR", pkg
 
-        if LEXS:
-            config.HOST_OCAML.gen_lexer(LEXS,
-                    outdir='build')
+    if LEXS:
+        config.HOST_OCAML.gen_lexer(LEXS,
+            outdir='build',
+        )
 
-        if PARSES:
-            config.HOST_OCAML.gen_parser(PARSES,
-                    outdir='build')
+    if PARSES:
+        config.HOST_OCAML.gen_parser(PARSES,
+            outdir='build',
+        )
 
 
 class build_modules(Process):
