@@ -201,6 +201,14 @@ SCHEME """
   )
 """;
 
+SCHEME """
+(begin 
+  (define typenames ())
+  (define (addtype t) (set! typenames (cons t typenames)))
+  (define (istype) (if (member _arg typenames)_arg ()))
+)
+""";
+
 //------------------------------------------
 syntax expressions {
   sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))";
@@ -2129,11 +2137,32 @@ syntax namespaces {
 }
 
 //------------------------------------------
+SCHEME """
+(for-each addtype '(
+  "tiny" "short" "int" "long" "vlong" 
+  "utiny" "uchar" "ushort" "uint" "ulong" "uvlong"
+
+  "int8" "int16" "int32" "int64"
+  "uint8" "uint16" "uint32" "uint64" 
+
+  "float" "double" "ldouble" 
+  "fcomplex" "dcomplex" "lcomplex" 
+
+  "char" "uchar"
+  "string" "ustring"
+
+  "intmax" "uintmax"
+  "size" "address" "offset" "ptrdiff" "byte"
+))
+""";
+
 
 syntax csyntax {
   requires statements;
 
   base_type :=
+    | SCHEME "(istype)" =># '`(ast_name ,_sr ,_1 ())'
+/*
     | "char" =># '`(ast_name ,_sr "char" ())' note "C character"
     | "uchar" =># '`(ast_name ,_sr "uchar" ())'
 
@@ -2177,7 +2206,7 @@ syntax csyntax {
     | "offset" =># '`(ast_name ,_sr "offset" ())'
     | "ptrdiff" =># '`(ast_name ,_sr "ptrdiff" ())'
     | "byte" =># '`(ast_name ,_sr "byte" ())'
-
+*/
 
     | struct sname =># "`(ast_name ,_sr ,_2 ())"
     | union sname =># "`(ast_name ,_sr ,_2 ())"
