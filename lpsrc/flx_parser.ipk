@@ -115,6 +115,11 @@ let init_env () =
   let v1:Ocs_types.sval = Ocs_sym.get_symbol "_sr" in
   let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
   Ocs_env.bind_name env v1 g1;
+
+  let v1:Ocs_types.sval = Ocs_sym.get_symbol "_arg" in
+  let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
+  Ocs_env.bind_name env v1 g1;
+
   for n = 1 to 20 do
     let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
     let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
@@ -194,9 +199,32 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
     try dyp.add_nt name "Obj_sexpr"
     with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ name)
   in
-  let f o =
+  (* this routine converts SCHEME "(scm prog)" into a single compiled token *)
+  let rec fudge_rhs inls outls = match inls with
+  | [] -> rev outls
+  | SCHEME _ :: STRING (sr,scm) :: t ->
+    (*
+    print_endline ("Compiling Scheme checker " ^ scm);
+    *)
+    let cde =
+      try
+        let l = scheme_lex (slift sr) scm in
+        let c = scheme_compile dyp.global_data.env l in
+        c
+      with
+      | Ocs_error.Error err | Ocs_error.ErrorL (_,err) -> failwith ("Error " ^ err ^ " compiling " ^ scm)
+    in
+    fudge_rhs t (SCHEME_CODE (sr,scm,cde) :: outls)
+
+  | h :: t -> fudge_rhs t (h::outls)
+  in
+  let rhs = fudge_rhs rhs [] in
+  let rec f o =
     match o with
       | STRING _ ->
+        Dyp.Ter Dyp_symbols.t_NAME
+
+      | SCHEME_CODE _ ->
         Dyp.Ter Dyp_symbols.t_NAME
 
       | NONTERMINAL (sr,s,p) ->
@@ -266,6 +294,18 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
             ->
             if s1 <> s2 then raise Giveup;
             slift sr,Sstring s1
+
+          | SCHEME_CODE (_,scm,f),
+            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2) | `Obj_USER10 (sr,s2,_))
+            ->
+            (* set _arg to the symbol *)
+            let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_arg") in
+            Ocs_env.set_glob env v1 (Sstring s2);
+            let result = scheme_eval f in
+            begin match result with
+            | Snull -> raise Giveup
+            | v -> slift sr,v
+            end
 
           | k , _ ->
           print_endline ("Woops, unhandled token=" ^ Flx_prelex.string_of_token k);
@@ -686,6 +726,8 @@ let dyp_merge_Obj_statement_star ol =
 %token <(Flx_ast.srcref * string * string)> USER10
 %token <(Flx_ast.srcref * (string * string) list * string)> USERLB
 %token <(Flx_ast.srcref * string )> USERRB
+
+%token <(Flx_ast.srcref * string * Ocs_types.code)> SCHEME_CODE
 
 @for k,v in flx_syms:
   tangle("%token <(Flx_ast.srcref)> " + k,inhibit_sref=1)

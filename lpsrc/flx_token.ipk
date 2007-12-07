@@ -43,6 +43,7 @@ type token =
   | USERRB of (srcref * string)
   | LOAD_SYNTAX of (local_data_t)
   | SAVE_SYNTAX of (string)
+  | SCHEME_CODE of (srcref * string * Ocs_types.code)
 
 @for k,v in flx_syms:
   tangle("  | "+k+" of srcref",inhibit_sref=1)
@@ -115,6 +116,7 @@ let string_of_token (tok :Flx_token.token): string =
   | TOKEN_LIST ts -> "<<token list>>"
   | LOAD_SYNTAX _ -> "<<load syntax>>"
   | SAVE_SYNTAX f -> "<<save syntax "^f^">>"
+  | SCHEME_CODE (sr,scm,_) -> "@("^scm^")"
   (*
   | PARSE_ACTION sr -> "=>#"
   *)
@@ -154,6 +156,7 @@ let name_of_token (tok :Flx_token.token): string =
   | TOKEN_LIST _ -> "TOKEN_LIST"
   | LOAD_SYNTAX _ -> "LOAD_SYNTAX"
   | SAVE_SYNTAX _ -> "SAVE_SYNTAX"
+  | SCHEME_CODE _ -> "SCHEME_CODE"
   (*
   | PARSE_ACTION sr -> "PARSE_ACTION"
   *)
@@ -185,6 +188,7 @@ let src_of_token t = match t with
   | SAVE_SYNTAX _
     -> ("",0,0,0)
 
+  | SCHEME_CODE (s,_,_)
   | NAME    (s,_)
   | NONTERMINAL (s,_,_)
   | INTEGER (s,_,_)
