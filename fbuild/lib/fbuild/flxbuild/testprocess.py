@@ -4,7 +4,7 @@ import glob
 from fbuild.flxbuild.process import Process, get_latest_src_time, enstamp
 from fbuild.flxbuild.package import pkgd, pkgreqs
 from fbuild.flxbuild.flxutil import Tee, ExecutionError, filetime, fmtime, mkdirs
-from fbuild.flxbuild.path import relativepath, glob_paths
+from fbuild.path import relativepath, glob_paths
 
 import config
 

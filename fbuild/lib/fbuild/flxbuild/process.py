@@ -9,7 +9,7 @@ except NameError:
   from sets import Set as set
 
 from fbuild.flxbuild.flxutil import xqt, newest_filetime, filetime, fmtime, mkdirs
-from fbuild.flxbuild.path import glob_paths
+from fbuild.path import glob_paths
 import config
 
 # global process registry

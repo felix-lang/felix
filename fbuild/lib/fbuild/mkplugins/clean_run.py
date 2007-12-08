@@ -4,7 +4,7 @@ import glob
 
 from fbuild.flxbuild.process import Process
 from fbuild.flxbuild.flxutil import erasefile
-from fbuild.flxbuild.path import find
+from fbuild.path import find
 
 import config
 

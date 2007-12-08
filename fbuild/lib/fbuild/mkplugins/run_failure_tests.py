@@ -2,7 +2,7 @@ import os
 
 from fbuild.flxbuild.process import Process
 from fbuild.flxbuild.flxutil import Tee
-from fbuild.flxbuild.path import relativepath, glob_paths
+from fbuild.path import relativepath, glob_paths
 
 class run_failure_tests(Process):
   help = 'run tests meant to fail'
