@@ -1524,7 +1524,10 @@ FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR", INSTALL_ROOT)
 @tangle("MACOSX="+str(config.MACOSX))
 @tangle("HAVE_GNU="+str(config.HAVE_GNU))
 @tangle("HAVE_MSVC="+str(config.HAVE_MSVC))
-@tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"')
+@if config.TARGET_CXX.options.HAVE_PIC:
+  tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
+ else:
+  tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"')
 @tangle('CCLINK_DLLIB="'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"')
 @tangle('CCOBJ_STATIC_LIB="'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"')
 @tangle('CCLINK_STATIC="'+config.TARGET_CXX.options.CCLINK_STATIC+'"')

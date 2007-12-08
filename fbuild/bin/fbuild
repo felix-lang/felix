@@ -286,7 +286,7 @@ def run_phase(options, phase, packages):
         os.remove(stamp)
 
     for process in fbuildroot.fbuild_processes.get(phase, []):
-      print "*****", phase, "RUNNING PROCESS", process, "************"
+      #print "*****", phase, "RUNNING PROCESS", process, "************"
       result = fbuild.flxbuild.process.processes[process](pkg, pkgdict, pkgsummary)
       if not result and result is not None:
         break
@@ -332,7 +332,8 @@ def print_failures():
       if used:
         print >> failure_log, 'PROCESS PASSED    :', name, npass, 'passed'
       else:
-        print >> failure_log, 'PROCESS UNUSED    :', name
+        pass
+        #print >> failure_log, 'PROCESS UNUSED    :', name
 
   if not failed:
     return False
