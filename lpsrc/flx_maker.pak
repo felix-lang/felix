@@ -390,11 +390,6 @@ We have no idea if it continues copying.
 @tangle('\t./mk test ')
 @tangle('')
 
-@tangle('# ============== SYSTEM BOOTSTRAP ==============')
-@tangle('.svn:')
-@tangle('\tsvn co https://felix.svn.sourceforge.net:/svnroot/felix/felix/trunk . ')
-@tangle('')
-
 @tangle('config: config/init__.py')
 @tangle('')
 @tangle('config/__init__.py: lpsrc/flx_config.pak')
@@ -407,29 +402,6 @@ We have no idea if it continues copying.
 @tangle('make: script/maker')
 @tangle('')
 @tangle('boot: script/maker')
-@tangle('')
-
-@tangle('undead:')
-@tangle('\tcp Makefile .Makefile')
-@tangle('\trm -rf *')
-@tangle('\trm -rf .svn')
-@tangle('\tcp .Makefile Makefile')
-@tangle('')
-@tangle('checkout:')
-@tangle('\tcp Makefile .Makefile')
-@tangle('\trm -rf *')
-@tangle('\trm -rf .svn')
-@tangle('\tcp .Makefile Makefile')
-@tangle('\tsvn co https://felix.svn.sourceforge.net:/svnroot/felix/felix/trunk . ')
-
-@tangle('update: .svn')
-@tangle('\tsvn update')
-@tangle('')
-@tangle('lpsrc/flx_config.pak: .svn')
-@tangle('\tsvn update')
-@tangle('')
-@tangle('lpsrc/flx_maker.pak: .svn')
-@tangle('\tsvn update')
 @tangle('')
 
 @tangle('virgin: distclean')
@@ -1692,7 +1664,6 @@ while grab == 1 and argno<len(sys.argv):
 
 # the main filename -- subsequent args are args to flx_run
   else:
-    print "FILENAME="+ arg
     grab=0
   argno = argno + 1
 
