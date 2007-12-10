@@ -207,8 +207,11 @@ note that an endif keyword and both branches are always
 required.
 @p()
 See also
+@line_break()
 @cite_url("../../moduledoc/Bool.html")
+@line_break()
 @cite_url("../../gramdoc/logic.html")
+@line_break()
 @cite_url("../../gramdoc/conditional.html")
 
 @select(env.test('.flx'))
@@ -459,7 +462,7 @@ Felix provides 3 floating point types.
 @end_table()
 For abstract semantics see also:
 @line_break()
-@cite_url("../../typeclassdoc/FloatDRing.html")
+@cite_url("../../typeclassdoc/FloatDring.html")
 @line_break()
 For constructors and auxilliary functions see also:
 @line_break()

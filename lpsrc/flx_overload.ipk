@@ -131,10 +131,20 @@ let sig_of_symdef symdef sr name i = match symdef with
   | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
   | `SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
   | `SYMDEF_type_alias t ->
+    (*
+    print_endline ("[sig_of_symdef] Found a typedef " ^ name);
+    *)
     begin match t with
-    | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r,None
+    | `TYP_typefun (ps,r,b) -> 
+      (*
+      print_endline "TYP_typefun";
+      *)
+      typeof_list (map snd ps),r,None
     | `TYP_case _ -> `TYP_type,`TYP_type,None
     | symdef ->
+      (*
+      print_endline "OverloadKindError";
+      *)
       raise (OverloadKindError (sr,
         "[sig_of_symdef] Expected "^
         name

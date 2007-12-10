@@ -3,9 +3,26 @@
 @select(tangler("lib/nugram.flxh"))
 
 SCHEME """
+(begin 
+  (define (first x)(car x))
+  (define (second x)(cadr x))
+  (define (third x)(caddr x))
+  (define (tail x)(cdr x))
+)
+""";
+
+SCHEME """
 (define fold_left
   (lambda (f acc lst)
     (if (null? lst) acc (fold_left f (f acc (car lst)) (cdr lst)))))
+""";
+
+SCHEME """
+(define (mkname x)`(ast_name ,_sr ,x ()))
+""";
+
+SCHEME """
+(define (typesoftvarlist x) (map mkname (map first (first x))))
 """;
 
 SCHEME """
@@ -813,7 +830,7 @@ syntax functions {
     (
       (name (string-append "_ctor_" _3))
       (vs _2)
-      (ret `(ast_name ,_sr ,_3 ()))
+      (ret `(ast_name ,_sr ,_3 ,(typesoftvarlist _2)))
       (traint _5)
       (body `((ast_fun_return ,_sr ,_7)))
       (args _4)

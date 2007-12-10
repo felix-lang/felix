@@ -2870,23 +2870,36 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
        a typename..
     *)
     let ts = map (bt sr) ts in
-    begin try
-      lookup_name_with_sig
-        syms
-        sra srn
-        env env rs name ts signs
-    with OverloadKindError (sr,s) ->
-    try
-      lookup_name_with_sig
-        syms
-        sra srn
-        env env rs ("_ctor_" ^ name) ts signs
-     with ClientError (_,s2) ->
-       clierr sr
-       (
-       "ERROR: " ^ s ^
-       "\nERROR2: " ^ s2
-       )
+    (*
+    print_endline ("Lookup simple name " ^ name);
+    *)
+    begin 
+      try
+        lookup_name_with_sig
+          syms
+          sra srn
+          env env rs name ts signs
+      with 
+      | OverloadKindError (sr,s) ->
+        begin 
+          try
+            (*
+            print_endline "Trying _ctor_ hack";
+            *)
+            lookup_name_with_sig
+              syms
+              sra srn
+              env env rs ("_ctor_" ^ name) ts signs
+           with ClientError (_,s2) ->
+             clierr sr
+             (
+             "ERROR: " ^ s ^
+             "\nERROR2: " ^ s2
+             )
+        end
+      | x -> print_endline (
+        "Other exn = " ^ Printexc.to_string x);
+        raise x;
     end
 
   | `AST_index (sr,name,index) as x ->
