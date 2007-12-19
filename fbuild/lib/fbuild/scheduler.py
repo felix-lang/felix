@@ -1,10 +1,10 @@
 import sys
 import threading
 
-try:
+# we need the Queue from python 2.5 or greater
+if sys.version_info >= (2, 5):
     import Queue
-    Queue.Queue.task_done
-except (ImportError, AttributeError):
+else:
     import fbuild.compat.Queue as Queue
 
 __all__ = ['Scheduler', 'Future', 'Full', 'Empty']
