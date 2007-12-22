@@ -337,7 +337,7 @@ if "build" in options.phases:
   BUILD_CC.check_options()
   BUILD_CC.report_config()
   BUILD_CC.save_options("config/build_cc.py")
-  options.build_model=BUILD_CC.options.model
+  options.build_model = BUILD_CC.options.model
 
   BUILD_CXX.set_options(
       COM=options.buildcxx,
@@ -350,52 +350,7 @@ if "build" in options.phases:
   BUILD_CXX.check_options()
   BUILD_CXX.report_config()
   BUILD_CXX.save_options("config/build_cxx.py")
-  options.build_model=BUILD_CXX.options.model
-
-  try:
-    print "Writing build config file"
-    f = open("config"+os.sep+"build_config.py","w")
-    pr(f,'import sys')
-    pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
-    print "WRITE STEP 0"
-    pr(f,'#'+CONFIG_TIME)
-    print "WRITE STEP 1"
-    pa(f,this,"CONFIG_TIME")
-    pa(f,this,"flx_version")
-    pa(f,this,"flx_version_major")
-    pa(f,this,"godi_revision")
-    pa(f,this,"debian_revision")
-    pr(f,"import fbuild.flxbuild.gcc_class")
-    pr(f,"import fbuild.flxbuild.gxx_class")
-    pr(f,"import fbuild.flxbuild.msvcc_class")
-    pr(f,"import fbuild.flxbuild.msvcxx_class")
-    pr(f,"from fbuild.flxbuild.config_support import *")
-
-    pr(f,"build_model = " + repr(options.build_model))
-    pr(f,"src_dir = " + repr(options.src_dir))
-    pr(f,"FLX_LPARCHIVE = " + repr(options.lparchive))
-    pa(f,this,"FLX_RTL_DIR")
-    pa(f,this,"FLX_TARGET_CONFIG_DIR")
-    pa(f,this,"FLX_HOST_CONFIG_DIR")
-    pr(f,"")
-
-    print "WRITE STEP 2"
-
-    cc = BUILD_CC.__class__.__name__
-    pr(f,"BUILD_CC = fbuild.flxbuild."+cc+"_class."+cc+"()")
-    pr(f,"BUILD_CC.load_options("+repr('config'+os.sep+'build_cc.py')+")")
-
-    cxx = BUILD_CXX.__class__.__name__
-    pr(f,"BUILD_CXX = fbuild.flxbuild."+cxx+"_class."+cxx+"()")
-    pr(f,"BUILD_CXX.load_options("+repr('config'+os.sep+'build_cxx.py')+")")
-    f.close()
-  except EnvironmentError:
-    print "Unable to create config"+os.sep+"build_config.py"
-    sys.exit(1)
-
-  print "Created config"+os.sep+"build_config.py"
-  print "Edit this file to set your preferences"
-  print "This file will not be clobbered by the Felix build process"
+  options.build_model = BUILD_CXX.options.model
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"build"+os.sep+"*.py")
   for cpkgf in cpkgs:
@@ -488,52 +443,7 @@ if "host" in options.phases:
   HOST_OCAML.report_config()
   HOST_OCAML.save_options("config/ocaml_config.py")
 
-
   options.host_model = HOST_CXX.options.model
-  try:
-    print "Writing host config file"
-    f = open("config"+os.sep+"host_config.py","w")
-    pr(f,'import sys')
-    pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
-    pr(f,'#'+CONFIG_TIME)
-    pa(f,this,"CONFIG_TIME")
-    pa(f,this,"flx_version")
-    pa(f,this,"flx_version_major")
-    pa(f,this,"godi_revision")
-    pa(f,this,"debian_revision")
-    pr(f,"import fbuild.flxbuild.gcc_class")
-    pr(f,"import fbuild.flxbuild.msvcc_class")
-    pr(f,"import fbuild.flxbuild.gxx_class")
-    pr(f,"import fbuild.flxbuild.msvcxx_class")
-    pr(f,"import fbuild.flxbuild.ocaml_class")
-    pr(f,"from fbuild.flxbuild.config_support import *")
-
-    pr(f,"build_model = " + repr(options.build_model))
-    pr(f,"host_model = " + repr(options.host_model))
-    pr(f,"src_dir = " + repr(options.src_dir))
-    pr(f,"FLX_LPARCHIVE = " + repr(options.lparchive))
-    pa(f,this,"FLX_RTL_DIR")
-    pa(f,this,"FLX_HOST_CONFIG_DIR")
-    pr(f,"")
-
-    pr(f,"HOST_OCAML = fbuild.flxbuild.ocaml_class.ocaml()")
-    pr(f,"HOST_OCAML.load_options("+repr('config'+os.sep+'ocaml_config.py')+")")
-
-    cc = HOST_CC.__class__.__name__
-    pr(f,"HOST_CC = fbuild.flxbuild."+cc+"_class."+cc+"()")
-    pr(f,"HOST_CC.load_options("+repr('config'+os.sep+'host_cc.py')+")")
-
-    cxx = HOST_CXX.__class__.__name__
-    pr(f,"HOST_CXX = fbuild.flxbuild."+cxx+"_class."+cxx+"()")
-    pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
-    f.close()
-  except EnvironmentError:
-    print "Unable to create config"+os.sep+"host_config.py"
-    sys.exit(1)
-
-  print "Created config"+os.sep+"host_config.py"
-  print "Edit this file to set your preferences"
-  print "This file will not be clobbered by the Felix build process"
 
   cpkgs =  glob.glob("cpkgs"+os.sep+"host"+os.sep+"*.py")
   for cpkgf in cpkgs:
