@@ -5,7 +5,7 @@ import threading
 if sys.version_info >= (2, 5):
     import Queue
 else:
-    import fbuild.compat.Queue as Queue
+    import fbuild.compat._Queue as Queue
 
 __all__ = ['Scheduler', 'Future', 'Full', 'Empty']
 
