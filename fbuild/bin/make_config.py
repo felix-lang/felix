@@ -4,7 +4,7 @@ import os
 import sys
 import time
 import glob
-import getopt
+from optparse import OptionParser, make_option
 import shutil
 
 sys.path.append(
@@ -23,29 +23,11 @@ from version import *
 
 #----------------------------------------
 
-print 'flx_version', flx_version
-print 'flx_version_major', flx_version_major
-print 'godi_revision', godi_revision
-print 'debian_revision', debian_revision
-
 time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
 config_time = time.gmtime(time.time())
 CONFIG_TIME = time.strftime(time_stamp_format, config_time)
 
 #----------------------------------------
-
-verbose = 1
-quiet = 1
-force = 0
-upgrade = 0
-refresh = 0
-default_prefix='/usr/local'
-
-PREFIX=os.environ.get("PREFIX",default_prefix)
-if PREFIX:
-  print "Default Installation Root from environment: ",PREFIX
-
-overrides = {}
 
 # supported platforms
 
@@ -90,28 +72,188 @@ archmap = {
   "detect":"detect"
   }
 
-# attempt to find the Felix name for the build OS
-# using uname -s, or, if that fails, Python os.name
-# if the final result isn't a name we recognize
-# set the build_model to 'detect' to indicate C level
-# testing is to be used. Note that these C tests are
-# done anyhow, and may verify, refine, or otherwise
-# munge this result .. however we need some initial
-# indication HOW to perform these tests.
-
-try:
-  output = xqt('uname', '-s')
-except ExecutionError:
+def check_model(m):
   try:
-    build_model = archmap[os.name]
+    m = archmap[m]
   except KeyError:
-    print "uname -s and Python returns unknown OS type, assuming 'detect'"
-    build_model = "detect"
-else:
-  output = output[0].strip().lower()
-  build_model = archmap[output]
+    print "Unknown model '"+m+"' please choose one of:"
+    for m in platforms: print " * " + m
+    sys.exit(1)
+  return m
 
-print "Build platform: " + build_model
+ALL_PHASES = ["build", "host", "target", "run"]
+
+parser = OptionParser()
+parser.add_options([
+    make_option('-v', '--verbose',
+        action='count',
+        default=0,
+        help='print out extra debugging info'),
+    make_option('-q', '--quiet',
+        dest='verbose',
+        action='store_const',
+        const=0,
+        help='do not print out extra debugging info'),
+    make_option('--prefix',
+        help='install into this prefixed directory',
+        default=os.environ.get('PREFIX', '/usr/local')),
+    make_option('-I', '--include-path',
+        metavar='INCLUDE_PATH',
+        dest='include_paths',
+        action='append',
+        help='additionally search these paths for headers'),
+    make_option('-L', '--lib-path',
+        metavar='LIB_PATH',
+        dest='lib_paths',
+        action='append',
+        help='additionally search these paths for libraries'),
+    make_option('--build',
+        dest='build_model',
+        help='specify the build model'),
+    make_option('--host',
+        dest='host_model',
+        help='specify the host model'),
+    make_option('--target',
+        dest='target_model',
+        help='specify the target model'),
+    make_option('--run',
+        dest='run_model',
+        help='specify the run model'),
+    make_option('--buildcc',
+        metavar='CC',
+        help='specify the build c compiler'),
+    make_option('--hostcc',
+        metavar='CC',
+        help='specify the host c compiler'),
+    make_option('--targetcc',
+        metavar='CC',
+        help='specify the target c compiler'),
+    make_option('--buildcxx',
+        metavar='CXX',
+        help='specify the build c++ compiler'),
+    make_option('--hostcxx',
+        metavar='CXX',
+        help='specify the host c++ compiler'),
+    make_option('--targetcxx',
+        metavar='CXX',
+        help='specify the target c++ compiler'),
+    make_option('--boot',
+        dest='bootfile',
+        help='add a config bootfile for additional config modification'),
+    make_option('--src-dir',
+        metavar='PATH',
+        default=os.environ.get("SRC_DIR", os.curdir),
+        help='specify the source directory'),
+    make_option('--lparchive',
+        metavar='PATH',
+        default=os.environ.get("FLX_LPARCHIVE", os.curdir),
+        help='specify the location of the interscript files'),
+    make_option('--phase',
+        dest='phases',
+        action='append',
+        default=[],
+        help='specify which phases to configure'),
+])
+
+options, args = parser.parse_args()
+
+if args:
+  print "UNKNOWN CONFIGURE ARGS", args
+  sys.exit(1)
+
+if not options.verbose:
+  options.quiet = 2
+else:
+  options.quiet = 0
+
+if options.build_model:
+  print "Specified build model", options.build_model
+  options.build_model = check_model(options.build_model)
+else:
+  # attempt to find the Felix name for the build OS
+  # using uname -s, or, if that fails, Python os.name
+  # if the final result isn't a name we recognize
+  # set the build_model to 'detect' to indicate C level
+  # testing is to be used. Note that these C tests are
+  # done anyhow, and may verify, refine, or otherwise
+  # munge this result .. however we need some initial
+  # indication HOW to perform these tests.
+
+  try:
+    output = xqt('uname', '-s')
+  except ExecutionError:
+    try:
+      options.build_model = archmap[os.name]
+    except KeyError:
+      print "uname -s and Python returns unknown OS type, assuming 'detect'"
+      options.build_model = "detect"
+  else:
+    output = output[0].strip().lower()
+    options.build_model = archmap[output]
+
+  # attempt to find the Felix name for the build OS
+  # using uname -s, or, if that fails, Python os.name
+  # if the final result isn't a name we recognize
+  # set the build_model to 'detect' to indicate C level
+  # testing is to be used. Note that these C tests are
+  # done anyhow, and may verify, refine, or otherwise
+  # munge this result .. however we need some initial
+  # indication HOW to perform these tests.
+
+  try:
+    output = xqt('uname', '-s')
+  except ExecutionError:
+    try:
+      options.build_model = archmap[os.name]
+    except KeyError:
+      print "uname -s and Python returns unknown OS type, assuming 'detect'"
+      options.build_model = "detect"
+  else:
+    output = output[0].strip().lower()
+    options.build_model = archmap[output]
+
+print "Build platform: " + options.build_model
+
+if options.host_model:
+  print "Specified host model", options.host_model
+  options.host_model = check_model(options.host_model)
+
+if options.target_model:
+  print "Specified target model", options.target_model
+  options.target_model = check_model(options.target_model)
+
+if options.run_model:
+  print "Specified run model", options.run_model
+  options.run_model = check_model(options.run_model)
+
+for phase in options.phases:
+  if phase not in ALL_PHASES:
+    print "UNKNOWN PHASE", phase,"not in", ALL_PHASES
+    sys.exit(1)
+
+if not options.phases:
+  options.phases = ALL_PHASES
+
+if options.bootfile:
+  try:
+    execfile(options.bootfile)
+    print "Loaded", options.bootfile
+  except:
+    print "Cannot execute specified bootstrap file: ", options.bootfile
+    sys.exit(1)
+
+print 'flx_version', flx_version
+print 'flx_version_major', flx_version_major
+print 'godi_revision', godi_revision
+print 'debian_revision', debian_revision
+
+#---------------------------------------------------
+
+FLX_RTL_DIR=os.path.join('lib', 'rtl')
+FLX_HOST_CONFIG_DIR=os.path.join('config', 'host')
+FLX_TARGET_CONFIG_DIR=os.path.join('config', 'target')
+
+#---------------------------------------------------
 
 # RF: noone seems to be using the results of this
 # JS: Not yet: policy is to test it out anyhow, in case needed
@@ -136,7 +278,7 @@ else:
 print "CPU=",ARCH
 
 try:
-  if build_model == 'osx':
+  if options.build_model == 'osx':
     output = xqt('uname -p')
   else:
     output = xqt('uname -o')
@@ -146,187 +288,6 @@ else:
   OS = output[0].strip().lower()
 
 print "OS=",OS
-
-
-print "Detected Build model:",build_model
-
-host_model = None
-target_model = None
-run_model = None
-
-def check_model(m):
-  try:
-    m = archmap[m]
-  except KeyError:
-    print "Unknown model '"+m+"' please choose one of:"
-    for m in platforms: print " * " + m
-    sys.exit(1)
-  return m
-
-SAVE_CONFIG=""
-LOAD_CONFIG=""
-BOOTFILE=""
-
-include_paths=[]
-lib_paths=[]
-
-BUILDCC=None
-HOSTCC=None
-TARGETCC=None
-
-BUILDCXX=None
-HOSTCXX=None
-TARGETCXX=None
-
-src_dir=os.environ.get("SRC_DIR",os.curdir)
-FLX_LPARCHIVE=os.environ.get("FLX_LPARCHIVE",os.curdir)
-FLX_RTL_DIR=os.path.join('lib', 'rtl')
-FLX_TARGET_CONFIG_DIR=os.path.join('config', 'target')
-FLX_HOST_CONFIG_DIR=os.path.join('config', 'host')
-
-ALL_PHASES=["build","host","target","run"]
-
-PHASES = []
-
-try:
-  opts, args = getopt.getopt(sys.argv[1:], 'hvq',
-      ['help', 'verbose', 'quiet', 'force', 'refresh', 'upgrade',
-      'prefix=', 'set-int=', 'set-string=',
-      'include_paths=', 'lib_paths=',
-      'build=', 'host=', 'target=', 'run=',
-      'buildcc=', 'hostcc=', 'targetcc=', 'targetcxx=',
-      'boot=', 'save-config=',
-      'load-config=', 'lparchive=', 'phase='])
-      #'set-int',
-except getopt.error, e:
-  sys.stderr.write(str(e) + '\n')
-  sys.exit(1)
-
-for o, a in opts:
-  if o in ['-h', '--help']:
-    print """\
-usage: configure [options]
-
-flags:
-  -h, --help      print this help message
-  -v, --verbose   print out extra debugging info
-  -q, --quiet     do not print out extra debugging info
-
-  --force
-  --refresh
-  --upgrade
-  --prefix        install in this prefixed directory
-  --set-int
-  --set-string
-  --include_paths additionally search these paths for headers
-  --lib_paths     additionally search these paths for libraries
-  --build
-  --host
-  --target
-  --run
-  --buildcc
-  --hostcc
-  --targetcc
-  --buildcxx
-  --hostcxx
-  --targetcxx
-  --boot
-  --save-config
-  --load-config
-  --lparchive
-  --phase
-"""
-    sys.exit(0)
-  elif o in ['-v', '--verbose']:
-    verbose = verbose + 1
-    quiet = 0
-  elif o in ['-q', '--quiet']:
-    verbose = 0
-  elif o in ['--force']:
-    force = 1
-  elif o in ['--refresh']:
-    refresh = 1
-  elif o in ['--upgrade']:
-    upgrade = 1
-  elif o in ['--prefix']:
-    PREFIX = a
-  elif o in ['--set-int']:
-    v, a = a.split('=', 1)
-    overrides[v] = int(a)
-  elif o in ['--set-string']:
-    v, a = a.split('=', 1)
-    overrides[v] = a
-  elif o in ['--include_paths']:
-    include_paths.append(a)
-  elif o in ['--lib_paths']:
-    lib_paths.append(a)
-  elif o in ['--build']:
-    print "Specified build model", a
-    build_model = check_model(a)
-  elif o in ['--host']:
-    print "Specified host model:", a
-    host_model = check_model(a)
-  elif o in ['--target']:
-    print "Specified target model:", a
-    target_model = check_model(a)
-  elif o in ['--run']:
-    print "Specified run model", a
-    run_model = check_model(a)
-  elif o in ['--buildcc']:
-    BUILDCC = a
-  elif o in ['--hostcc']:
-    HOSTCC = a
-  elif o in ['--targetcc']:
-    TARGETCC = a
-  elif o in ['--buildcxx']:
-    BUILDCXX = a
-  elif o in ['--hostcxx']:
-    HOSTCXX = a
-  elif o in ['--targetcxx']:
-    TARGETCXX = a
-  elif o in ['--boot']:
-    BOOTFILE = a
-  elif o in ['--save-config']:
-    SAVE_CONFIG = a
-  elif o in ['--load-config']:
-    LOAD_CONFIG = a
-  elif o in ['--lparchive']:
-    FLX_LPARCHIVE = a
-  elif o in ['--phase']:
-    if a not in ALL_PHASES:
-      print "UNKNOWN PHASE",a,"not in",ALL_PHASES
-      sys.exit(1)
-    if a not in PHASES: PHASES.append(a)
-  else:
-    print "UNKNOWN CONFIGURE OPTION", o, a
-    sys.exit(1)
-
-if args:
-  print "UNKNOWN CONFIGURE ARGS", args
-  sys.exit(1)
-
-if not verbose:
-  quiet = 2
-
-if PHASES == []: PHASES = ALL_PHASES
-
-if BOOTFILE:
-  try:
-    execfile(BOOTFILE)
-    print "Loaded",BOOTFILE
-  except:
-    print "Cannot execute specified bootstrap file: ", BOOTFILE
-    sys.exit(1)
-
-if PREFIX=='': PREFIX=default_prefix
-print "INSTALL PREFIX="+PREFIX
-if src_dir=='': src_dir = os.curdir
-if FLX_LPARCHIVE=='': FLX_LPARCHIVE = os.curdir
-print "src_dir="+src_dir
-print "FLX_LPARCHIVE="+FLX_LPARCHIVE
-print "FLX_RTL_DIR="+FLX_RTL_DIR
-print "FLX_TARGET_CONFIG_DIR="+FLX_TARGET_CONFIG_DIR
-print "FLX_HOST_CONFIG_DIR="+FLX_HOST_CONFIG_DIR
 
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
@@ -351,45 +312,45 @@ if not os.path.exists('config'):
 
 this = globals()
 
-if "build" in PHASES:
+if "build" in options.phases:
   print
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  print "Checking BUILD MODEL",build_model
+  print "Checking BUILD MODEL", options.build_model
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print
 
-  if build_model in ["win32","win64"]:
-    BUILD_CC = fbuild.flxbuild.msvcc_class.msvcc(verbose=verbose, quiet=quiet)
-    BUILD_CXX = fbuild.flxbuild.msvcxx_class.msvcxx(verbose=verbose, quiet=quiet)
+  if options.build_model in ["win32","win64"]:
+    BUILD_CC = fbuild.flxbuild.msvcc_class.msvcc(verbose=options.verbose, quiet=options.quiet)
+    BUILD_CXX = fbuild.flxbuild.msvcxx_class.msvcxx(verbose=options.verbose, quiet=options.quiet)
   else:
-    BUILD_CC = fbuild.flxbuild.gcc_class.gcc(verbose=verbose, quiet=quiet)
-    BUILD_CXX = fbuild.flxbuild.gxx_class.gxx(verbose=verbose, quiet=quiet)
+    BUILD_CC = fbuild.flxbuild.gcc_class.gcc(verbose=options.verbose, quiet=options.quiet)
+    BUILD_CXX = fbuild.flxbuild.gxx_class.gxx(verbose=options.verbose, quiet=options.quiet)
 
   BUILD_CC.set_options(
-      COM=BUILDCC,
-      include_paths=include_paths,
-      lib_paths=lib_paths,
+      COM=options.buildcc,
+      include_paths=options.include_paths,
+      lib_paths=options.lib_paths,
       use="build",
-      model=build_model,
-      build=build_model)
+      model=options.build_model,
+      build=options.build_model)
 
   BUILD_CC.check_options()
   BUILD_CC.report_config()
   BUILD_CC.save_options("config/build_cc.py")
-  build_model=BUILD_CC.options.model
+  options.build_model=BUILD_CC.options.model
 
   BUILD_CXX.set_options(
-      COM=BUILDCXX,
-      include_paths=include_paths,
-      lib_paths=lib_paths,
+      COM=options.buildcxx,
+      include_paths=options.include_paths,
+      lib_paths=options.lib_paths,
       use="build",
-      model=build_model,
-      build=build_model)
+      model=options.build_model,
+      build=options.build_model)
 
   BUILD_CXX.check_options()
   BUILD_CXX.report_config()
   BUILD_CXX.save_options("config/build_cxx.py")
-  build_model=BUILD_CXX.options.model
+  options.build_model=BUILD_CXX.options.model
 
   try:
     print "Writing build config file"
@@ -410,9 +371,9 @@ if "build" in PHASES:
     pr(f,"import fbuild.flxbuild.msvcxx_class")
     pr(f,"from fbuild.flxbuild.config_support import *")
 
-    pa(f,this,"build_model")
-    pa(f,this,"src_dir")
-    pa(f,this,"FLX_LPARCHIVE")
+    pr(f,"build_model = " + repr(options.build_model))
+    pr(f,"src_dir = " + repr(options.src_dir))
+    pr(f,"FLX_LPARCHIVE = " + repr(options.lparchive))
     pa(f,this,"FLX_RTL_DIR")
     pa(f,this,"FLX_TARGET_CONFIG_DIR")
     pa(f,this,"FLX_HOST_CONFIG_DIR")
@@ -443,7 +404,7 @@ if "build" in PHASES:
     __import__('cpkgs.build.' + cpkg)
 
 
-if "host" in PHASES:
+if "host" in options.phases:
   #
   # Now create the host model: the compiler has to run
   # on the build machine, but can cross compile for
@@ -454,34 +415,34 @@ if "host" in PHASES:
   #
 
 
-  if not host_model:
-    host_model=build_model
-    print "Defaulting host model to build model",host_model
-  if not target_model:
-    target_model = host_model
-    print "Defaulting target model to host model:",target_model
+  if not options.host_model:
+    options.host_model = options.build_model
+    print "Defaulting host model to build model:", options.host_model
+  if not options.target_model:
+    options.target_model = options.host_model
+    print "Defaulting target model to host model:", options.target_model
 
 
   print
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  print "Checking HOST MODEL",host_model
+  print "Checking HOST MODEL", options.host_model
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print
 
-  if host_model in ["win32","win64"]:
-    HOST_CC = fbuild.flxbuild.msvcc_class.msvcc(verbose=verbose, quiet=quiet)
-    HOST_CXX = fbuild.flxbuild.msvcxx_class.msvcxx(verbose=verbose, quiet=quiet)
+  if options.host_model in ["win32","win64"]:
+    HOST_CC = fbuild.flxbuild.msvcc_class.msvcc(verbose=options.verbose, quiet=options.quiet)
+    HOST_CXX = fbuild.flxbuild.msvcxx_class.msvcxx(verbose=options.verbose, quiet=options.quiet)
   else:
-    HOST_CC = fbuild.flxbuild.gcc_class.gcc(verbose=verbose, quiet=quiet)
-    HOST_CXX = fbuild.flxbuild.gxx_class.gxx(verbose=verbose, quiet=quiet)
+    HOST_CC = fbuild.flxbuild.gcc_class.gcc(verbose=options.verbose, quiet=options.quiet)
+    HOST_CXX = fbuild.flxbuild.gxx_class.gxx(verbose=options.verbose, quiet=options.quiet)
 
   HOST_CC.set_options(
-      COM=HOSTCC,
-      include_paths=include_paths,
-      lib_paths=lib_paths,
+      COM=options.hostcc,
+      include_paths=options.include_paths,
+      lib_paths=options.lib_paths,
       use="host",
-      model=host_model,
-      build=build_model)
+      model=options.host_model,
+      build=options.build_model)
 
   # check if we can just copy the build compiler
   if \
@@ -497,12 +458,12 @@ if "host" in PHASES:
   HOST_CC.save_options("config"+os.sep+"host_cc.py")
 
   HOST_CXX.set_options(
-      COM=HOSTCXX,
-      include_paths=include_paths,
-      lib_paths=lib_paths,
+      COM=options.hostcxx,
+      include_paths=options.include_paths,
+      lib_paths=options.lib_paths,
       use="host",
-      model=host_model,
-      build=build_model)
+      model=options.host_model,
+      build=options.build_model)
 
   # check if we can just copy the build compiler
   if \
@@ -517,7 +478,7 @@ if "host" in PHASES:
     HOST_CXX.report_config()
   HOST_CXX.save_options("config"+os.sep+"host_cxx.py")
 
-  HOST_OCAML = fbuild.flxbuild.ocaml_class.ocaml(verbose=verbose, quiet=quiet)
+  HOST_OCAML = fbuild.flxbuild.ocaml_class.ocaml(verbose=options.verbose, quiet=options.quiet)
 
   camllinkopts = ""
   if HOST_CXX.options.CYGWIN:
@@ -528,7 +489,7 @@ if "host" in PHASES:
   HOST_OCAML.save_options("config/ocaml_config.py")
 
 
-  host_model = HOST_CXX.options.model
+  options.host_model = HOST_CXX.options.model
   try:
     print "Writing host config file"
     f = open("config"+os.sep+"host_config.py","w")
@@ -547,10 +508,10 @@ if "host" in PHASES:
     pr(f,"import fbuild.flxbuild.ocaml_class")
     pr(f,"from fbuild.flxbuild.config_support import *")
 
-    pa(f,this,"build_model")
-    pa(f,this,"host_model")
-    pa(f,this,"src_dir")
-    pa(f,this,"FLX_LPARCHIVE")
+    pr(f,"build_model = " + repr(options.build_model))
+    pr(f,"host_model = " + repr(options.host_model))
+    pr(f,"src_dir = " + repr(options.src_dir))
+    pr(f,"FLX_LPARCHIVE = " + repr(options.lparchive))
     pa(f,this,"FLX_RTL_DIR")
     pa(f,this,"FLX_HOST_CONFIG_DIR")
     pr(f,"")
@@ -581,7 +542,7 @@ if "host" in PHASES:
     __import__('cpkgs.host.' + cpkg)
 
 
-if "target" in PHASES:
+if "target" in options.phases:
   #
   # Now create the target model: the compiler has to run
   # on the build machine, but can cross compile for
@@ -594,24 +555,24 @@ if "target" in PHASES:
 
   print
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  print "Checking TARGET MODEL",target_model
+  print "Checking TARGET MODEL", options.target_model
   print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   print
 
-  if target_model in ["win32","win64"]:
-    TARGET_CC = fbuild.flxbuild.msvcc_class.msvcc(verbose=verbose, quiet=quiet)
-    TARGET_CXX = fbuild.flxbuild.msvcxx_class.msvcxx(verbose=verbose, quiet=quiet)
+  if options.target_model in ["win32","win64"]:
+    TARGET_CC = fbuild.flxbuild.msvcc_class.msvcc(verbose=options.verbose, quiet=options.quiet)
+    TARGET_CXX = fbuild.flxbuild.msvcxx_class.msvcxx(verbose=options.verbose, quiet=options.quiet)
   else:
-    TARGET_CC = fbuild.flxbuild.gcc_class.gcc(verbose=verbose, quiet=quiet)
-    TARGET_CXX = fbuild.flxbuild.gxx_class.gxx(verbose=verbose, quiet=quiet)
+    TARGET_CC = fbuild.flxbuild.gcc_class.gcc(verbose=options.verbose, quiet=options.quiet)
+    TARGET_CXX = fbuild.flxbuild.gxx_class.gxx(verbose=options.verbose, quiet=options.quiet)
 
   TARGET_CC.set_options(
-      COM=TARGETCC,
-      include_paths=include_paths,
-      lib_paths=lib_paths,
+      COM=options.targetcc,
+      include_paths=options.include_paths,
+      lib_paths=options.lib_paths,
       use="target",
-      model=target_model,
-      build=build_model)
+      model=options.target_model,
+      build=options.build_model)
 
   # check if we can just copy the build compiler
   if \
@@ -633,12 +594,12 @@ if "target" in PHASES:
   TARGET_CC.save_options("config"+os.sep+"target_cc.py")
 
   TARGET_CXX.set_options(
-      COM=TARGETCXX,
-      include_paths=include_paths,
-      lib_paths=lib_paths,
+      COM=options.targetcxx,
+      include_paths=options.include_paths,
+      lib_paths=options.lib_paths,
       use="target",
-      model=target_model,
-      build=build_model)
+      model=options.target_model,
+      build=options.build_model)
 
   # check if we can just copy the build compiler
   if \
@@ -661,7 +622,7 @@ if "target" in PHASES:
     TARGET_CXX.report_config()
   TARGET_CXX.save_options("config"+os.sep+"target_cxx.py")
 
-  if target_model in ["win32","win64"]:
+  if options.target_model in ["win32","win64"]:
     HAVE_MSVC = 1
     HAVE_GNU = 0
     DIFF = 'FC /L /W'
@@ -675,7 +636,7 @@ if "target" in PHASES:
     DIFF = 'diff -b'
 
   ISCR = sys.executable + ' ' + \
-    os.path.join(src_dir, 'interscript', 'bin', 'iscr.py') + \
+    os.path.join(options.src_dir, 'interscript', 'bin', 'iscr.py') + \
     ' --cache-prefix=lpsrc-cache'
 
   # target model switches
@@ -688,10 +649,10 @@ if "target" in PHASES:
   POSIX =  TARGET_CXX.options.POSIX
   BSD =  TARGET_CXX.options.BSD
 
-  target_model = TARGET_CXX.options.model
-  if not run_model:
-    run_model = target_model
-    print "Defaulting run model to target model:",run_model
+  options.target_model = TARGET_CXX.options.model
+  if not options.run_model:
+    options.run_model = options.target_model
+    print "Defaulting run model to target model:", options.run_model
 
   SUPPORT_DYNAMIC_LOADING = TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING
 
@@ -711,7 +672,7 @@ if "target" in PHASES:
     pa(f,this,"flx_version_major")
     pa(f,this,"godi_revision")
     pa(f,this,"debian_revision")
-    if BOOTFILE:
+    if options.bootfile:
       pr(f,"try:")
       pr(f,"  execfile('config/config_bootstrap.py')")
       pr(f,"except: pass")
@@ -727,10 +688,10 @@ if "target" in PHASES:
     pa(f,this,"SUPPORT_DYNAMIC_LOADING")
     pr(f,"SUPPORT_STATIC_LINKAGE = 1")
     pa(f,this,"DEFAULT_LINK_MODEL")
-    pa(f,this,"build_model")
-    pa(f,this,"host_model")
-    pa(f,this,"target_model")
-    pa(f,this,"run_model")
+    pr(f,"build_model = " + repr(options.build_model))
+    pr(f,"host_model = " + repr(options.host_model))
+    pr(f,"target_model = " + repr(options.target_model))
+    pr(f,"run_model = " + repr(options.run_model))
     pa(f,this,"CYGWIN")
     pa(f,this,"MACOSX")
     pa(f,this,"WIN32")
@@ -739,9 +700,9 @@ if "target" in PHASES:
     pa(f,this,"SOLARIS")
     pa(f,this,"BSD")
     pa(f,this,"LINUX")
-    pa(f,this,"PREFIX")
-    pa(f,this,"src_dir")
-    pa(f,this,"FLX_LPARCHIVE")
+    pr(f,"PREFIX = " + repr(options.prefix))
+    pr(f,"src_dir = " + repr(options.src_dir))
+    pr(f,"FLX_LPARCHIVE = " + repr(options.lparchive))
     pa(f,this,"FLX_RTL_DIR")
     pa(f,this,"FLX_HOST_CONFIG_DIR")
     pa(f,this,"FLX_TARGET_CONFIG_DIR")
@@ -772,9 +733,9 @@ if "target" in PHASES:
     pr(f,"")
     pr(f,"# HACK to get all the target variables into global namespace")
     f.close()
-    if BOOTFILE:
-      print "Copying bootfile :  "+ BOOTFILE
-      shutil.copy(BOOTFILE, os.path.join('config', 'config_bootstrap.py'))
+    if options.bootfile:
+      print "Copying bootfile :", options.bootfile
+      shutil.copy(options.bootfile, os.path.join('config', 'config_bootstrap.py'))
   except EnvironmentError:
     print "Unable to create config"+os.sep+"__init__.py"
     sys.exit(1)
