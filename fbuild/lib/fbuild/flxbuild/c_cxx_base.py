@@ -100,7 +100,7 @@ class c_cxx_base(compiler_base):
 
     objects = []
     for basename in basenames:
-      src = self.find_in_flx_dir(basename + EXT_SRC)
+      src = self.find_in_src_dir(basename + EXT_SRC)
       dst = os.path.join(outdir, basename + EXT_DST)
       mkdirs(os.path.dirname(dst))
 

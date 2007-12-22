@@ -426,9 +426,9 @@ def print_failures():
 
 def main():
   # add the felix directory to the search paths
-  sys.path.append(config.FLX_DIR)
+  sys.path.append(config.src_dir)
   os.environ['PYTHONPATH'] = \
-    config.FLX_DIR + os.pathsep + os.environ.get('PYTHONPATH', '')
+    config.src_dir + os.pathsep + os.environ.get('PYTHONPATH', '')
 
   options, args = load_options()
   initial_extraction(options, args)

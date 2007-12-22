@@ -36,15 +36,15 @@ class compiler_base(object):
     exec f in self.options.__dict__
     f.close()
 
-  def find_in_flx_dir(self, filename):
+  def find_in_src_dir(self, filename):
     # check first if the file exists in the felix directory
     # if it does, use it instead of the one in the local directory
     try:
-      from config import FLX_DIR
+      from config import src_dir
     except ImportError:
       pass
     else:
-      f = os.path.join(FLX_DIR, filename)
+      f = os.path.join(src_dir, filename)
       if os.path.exists(f):
         return f
 

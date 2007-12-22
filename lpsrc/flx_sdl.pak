@@ -112,7 +112,7 @@ if sdl.HAVE_SDL:
 
   pkg_requires = ['faio']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
-  root = config.FLX_DIR
+  root = config.src_dir
   demos = [('demos', 'sdl', '*.flx')]
 
 iscr_source = ['lpsrc/flx_sdl.pak']

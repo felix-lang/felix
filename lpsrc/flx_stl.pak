@@ -441,7 +441,7 @@ open[k,v] Bidirectional_iterator[Stl::MultiMap::stl_multimap_reverse_iterator[k,
 @select(tangler('spkgs/flx_stl_tests.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 unit_tests = [('test', 'regress', 'stl', '*.flx')]
 
 pkg_requires = ['flx_stdlib','flx_compiler']

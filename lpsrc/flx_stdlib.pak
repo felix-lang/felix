@@ -9,7 +9,7 @@
 @select(tangler('spkgs/flx_stdlib.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 unit_tests = [('test', 'stdlib', 'slrt-*.flx')]
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio']
 pkg_provides = ['flx_stdlib']

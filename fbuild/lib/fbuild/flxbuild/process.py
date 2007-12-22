@@ -62,7 +62,7 @@ def get_latest_src_time(pkgdict):
       f.close()
 
   # check out xfiles
-  root = pkgdict.get('root', config.FLX_DIR)
+  root = pkgdict.get('root', config.src_dir)
   xfiles = pkgdict.get('xfiles', [])
 
   filenames.update(glob_paths(xfiles, root))

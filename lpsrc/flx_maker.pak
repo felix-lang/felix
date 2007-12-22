@@ -179,13 +179,13 @@ weaver_directory = 'doc/flx/flx_maker/'
 import os
 import sys
 
-@tangle('flx_dir = %r' % config.FLX_DIR)
-os.environ['PYTHONPATH'] = flx_dir + os.pathsep + os.environ.get('PYTHONPATH', '')
+@tangle('src_dir = %r' % config.src_dir)
+os.environ['PYTHONPATH'] = src_dir + os.pathsep + os.environ.get('PYTHONPATH', '')
 
 os.execl(
     sys.executable,
     sys.executable,
-    os.path.join(flx_dir, 'fbuild', 'bin', 'fbuild'),
+    os.path.join(src_dir, 'fbuild', 'bin', 'fbuild'),
     *sys.argv[1:])
 @make_executable('umk')
 
@@ -195,9 +195,9 @@ import os
 import sys
 import time
 
-@tangle('flx_dir = %r' % config.FLX_DIR)
+@tangle('src_dir = %r' % config.src_dir)
 
-sys.path.append(os.path.join(flx_dir, 'fbuild', 'lib'))
+sys.path.append(os.path.join(src_dir, 'fbuild', 'lib'))
 
 from fbuild.flxbuild.flxutil import Tee, tee_cmd
 

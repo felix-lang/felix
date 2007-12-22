@@ -42,7 +42,7 @@ lib_requires = ['libflx_gc']
 pkg_requires = ['flx_rtl'] # flx_rtl provides flx_rtl_config.hpp
 build_macro = "GLOB"
 
-root = config.FLX_DIR
+root = config.src_dir
 unit_tests = [('test', 'glob', 'glob-*.flx')]
 
 @h=tangler('config/target/flx_glob_config.hpp')

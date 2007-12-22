@@ -6,7 +6,7 @@
 @select(tangler('spkgs/flx_regression_tests_rt.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 unit_tests = [('test', 'regress', 'rt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
@@ -19,7 +19,7 @@ weaver_directory = 'doc/test/regress'
 @select(tangler('spkgs/flx_regression_tests_srt.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 static_unit_tests = [('test', 'regress', 'srt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
@@ -32,7 +32,7 @@ weaver_directory = 'doc/test/'
 @select(tangler('spkgs/flx_regression_tests_drt.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 dynamic_unit_tests = [('test', 'regress', 'drt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_regression_tests_rt']
@@ -45,7 +45,7 @@ weaver_directory = 'doc/test/'
 @select(tangler('spkgs/flx_regression_tests_nd.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 completion_tests = [('test', 'regress', 'nd', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
@@ -58,7 +58,7 @@ weaver_directory = 'doc/test/'
 @select(tangler('spkgs/flx_regression_tests_pt.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 perform_tests = [('test', 'regress', 'pt', '*.flx')]
 
 pkg_requires = ['flx_compiler','flx_drivers']
@@ -71,7 +71,7 @@ weaver_directory = 'doc/test/'
 @select(tangler('spkgs/flx_regression_tests_bt.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 
 # these are supposed to fail!
 failures_tests = [('test', 'regress', 'bt', '*.flx')]
@@ -85,7 +85,7 @@ weaver_directory = 'doc/test/'
 @select(tangler('spkgs/flx_regression_tests_kf.py'))
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 
 # these are supposed to fail!
 known_failures_tests = [('test', 'regress', 'kf', '*.flx')]

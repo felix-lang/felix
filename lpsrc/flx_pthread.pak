@@ -98,7 +98,7 @@ if config.SOLARIS:
 if config.TARGET_CXX.options.HAVE_PTHREADS:
   EXTRA_SYS_LIBS=EXTRA_SYS_LIBS+config.TARGET_CXX.options.PTHREAD_SWITCH
 
-root = config.FLX_DIR
+root = config.src_dir
 completion_tests = [('test', 'pthread', 'pthread-*.flx')]
 
 cpp_cpps = PTHREAD_CPPS

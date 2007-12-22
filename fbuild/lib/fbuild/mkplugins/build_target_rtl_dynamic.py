@@ -19,7 +19,7 @@ class build_target_rtl_dynamic(Process):
     EXTRA_CFLAGS = pkgdict.get("cflags","")
     EXTRA_DFLAGS = pkgdict.get("dflags","")
     INCLUDES=pkgdict.get("include_path",[])
-    INCLUDE_PATH=[os.path.join(config.FLX_DIR, i) for i in INCLUDES]
+    INCLUDE_PATH=[os.path.join(config.src_dir, i) for i in INCLUDES]
     MACROS =pkgdict.get("macros",[])
 
     flibs = pkgdict.get("lib_requires",[])

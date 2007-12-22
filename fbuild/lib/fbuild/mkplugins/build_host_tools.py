@@ -9,7 +9,7 @@ import config
 class build_host_tools(Process):
   def copy_hpp2rtl(self, HPPS):
     for path in HPPS:
-      f = os.path.join(config.FLX_DIR, path)
+      f = os.path.join(config.src_dir, path)
       if os.path.exists(f):
         src = f
       else:
@@ -32,7 +32,7 @@ class build_host_tools(Process):
     LIBS = pkgdict.get("host_exes_require_libs",[])
     MACROS =pkgdict.get("host_macros",[])
     INCLUDES=pkgdict.get("host_include_path",[])
-    INCLUDE_PATH=[os.path.join(config.FLX_DIR, i) for i in INCLUDES]
+    INCLUDE_PATH=[os.path.join(config.src_dir, i) for i in INCLUDES]
 
     if len(CCS)+len(CPPS)+len(EXES)+len(LIBS) == 0:
       return

@@ -9,8 +9,8 @@ def run(*args):
     return os.system('%s %s' % (sys.executable, cmd))
 
 def main():
-    flx_dir = os.path.dirname(sys.argv[0])
-    lparchive = os.environ.get('FLX_LPARCHIVE', flx_dir)
+    src_dir = os.path.dirname(sys.argv[0])
+    lparchive = os.environ.get('FLX_LPARCHIVE', src_dir)
 
     i = 0
     while i < len(sys.argv):
@@ -35,10 +35,10 @@ def main():
             break
         i += 1
 
-    os.environ['FLX_DIR'] = flx_dir
+    os.environ['SRC_DIR'] = src_dir
     os.environ['PYTHONPATH'] = os.pathsep.join([
-      flx_dir,
-      os.path.join(flx_dir, 'fbuild', 'lib'),
+      src_dir,
+      os.path.join(src_dir, 'fbuild', 'lib'),
       os.environ.get('PYTHONPATH', ''),
     ])
     os.environ['FLX_LPARCHIVE'] = lparchive
@@ -47,13 +47,13 @@ def main():
     print 'FLX_LPARCHIVE at', lparchive
 
     lpsrc = os.path.join(lparchive, 'lpsrc')
-    iscr = os.path.join(flx_dir, 'interscript', 'bin', 'iscr.py')
+    iscr = os.path.join(src_dir, 'interscript', 'bin', 'iscr.py')
 
     if run(iscr, '--cache-prefix=lpsrc-cache', '--break-on-error', os.path.join(lpsrc, 'flx_config.pak')):
         print >> sys.stderr, 'ERROR EXTRACTING CONFIGURATION PROGRAM'
         return 1
 
-    if run(os.path.join(flx_dir, 'fbuild', 'bin', 'make_config.py'), *sys.argv[1:]):
+    if run(os.path.join(src_dir, 'fbuild', 'bin', 'make_config.py'), *sys.argv[1:]):
         print >> sys.stderr, 'ERROR CONFIGURING'
         return 1
 

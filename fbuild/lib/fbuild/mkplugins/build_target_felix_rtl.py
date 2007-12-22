@@ -13,7 +13,7 @@ class build_target_felix_rtl(Process):
       return
 
     for path in flxs:
-      f = os.path.join(config.FLX_DIR, path)
+      f = os.path.join(config.src_dir, path)
       if os.path.exists(f):
         src = f
       else:

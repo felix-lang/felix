@@ -5,7 +5,7 @@ import os
 
 import config
 
-root = config.FLX_DIR
+root = config.src_dir
 
 static_drivers = [
   ('test/drivers/flx_perf_drv1', ''),

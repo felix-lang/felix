@@ -6,7 +6,7 @@
 import config
 
 if config.TARGET_CXX.options.HAVE_MMAP:
-  root = config.FLX_DIR
+  root = config.src_dir
   unit_tests = [('test', 'mmap', 'mmap-*.flx')]
 
 iscr_source = ['lpsrc/flx_mmap.pak']

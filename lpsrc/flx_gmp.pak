@@ -25,7 +25,7 @@ import config
 from cpkgs.target.gmpxx import HAVE_GMPXX
 
 if HAVE_GMPXX:
-  root = config.FLX_DIR
+  root = config.src_dir
   unit_tests = [('test', 'gmp', 'gmp-*.flx')]
 
 iscr_source = ['lpsrc/flx_gmp.pak']

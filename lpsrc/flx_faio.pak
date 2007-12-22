@@ -46,7 +46,7 @@ WINDOWS_FAIO_CPPS = [
   "src/faio/faio_winio",
 ]
 
-root = config.FLX_DIR
+root = config.src_dir
 EXTRA_TEST_GLOBS = [('test', 'faio', 'faio-*.flx')]
 
 if config.WIN32:

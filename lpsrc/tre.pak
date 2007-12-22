@@ -39,7 +39,7 @@ cc_ccs = [
 include_path = ['src/tre']
 build_macro = "TRE"
 
-root = config.FLX_DIR
+root = config.src_dir
 unit_tests = [('test', 'tre', 'tre-*.flx')]
 
 @h = tangler('config/tre.fpc')

@@ -178,7 +178,7 @@ BUILDCXX=None
 HOSTCXX=None
 TARGETCXX=None
 
-FLX_DIR=os.environ.get("FLX_DIR",os.curdir)
+src_dir=os.environ.get("SRC_DIR",os.curdir)
 FLX_LPARCHIVE=os.environ.get("FLX_LPARCHIVE",os.curdir)
 FLX_RTL_DIR=os.path.join('lib', 'rtl')
 FLX_TARGET_CONFIG_DIR=os.path.join('config', 'target')
@@ -320,9 +320,9 @@ if BOOTFILE:
 
 if PREFIX=='': PREFIX=default_prefix
 print "INSTALL PREFIX="+PREFIX
-if FLX_DIR=='': FLX_DIR = os.curdir
+if src_dir=='': src_dir = os.curdir
 if FLX_LPARCHIVE=='': FLX_LPARCHIVE = os.curdir
-print "FLX_DIR="+FLX_DIR
+print "src_dir="+src_dir
 print "FLX_LPARCHIVE="+FLX_LPARCHIVE
 print "FLX_RTL_DIR="+FLX_RTL_DIR
 print "FLX_TARGET_CONFIG_DIR="+FLX_TARGET_CONFIG_DIR
@@ -411,7 +411,7 @@ if "build" in PHASES:
     pr(f,"from fbuild.flxbuild.config_support import *")
 
     pa(f,this,"build_model")
-    pa(f,this,"FLX_DIR")
+    pa(f,this,"src_dir")
     pa(f,this,"FLX_LPARCHIVE")
     pa(f,this,"FLX_RTL_DIR")
     pa(f,this,"FLX_TARGET_CONFIG_DIR")
@@ -549,7 +549,7 @@ if "host" in PHASES:
 
     pa(f,this,"build_model")
     pa(f,this,"host_model")
-    pa(f,this,"FLX_DIR")
+    pa(f,this,"src_dir")
     pa(f,this,"FLX_LPARCHIVE")
     pa(f,this,"FLX_RTL_DIR")
     pa(f,this,"FLX_HOST_CONFIG_DIR")
@@ -675,7 +675,7 @@ if "target" in PHASES:
     DIFF = 'diff -b'
 
   ISCR = sys.executable + ' ' + \
-    os.path.join(FLX_DIR, 'interscript', 'bin', 'iscr.py') + \
+    os.path.join(src_dir, 'interscript', 'bin', 'iscr.py') + \
     ' --cache-prefix=lpsrc-cache'
 
   # target model switches
@@ -740,7 +740,7 @@ if "target" in PHASES:
     pa(f,this,"BSD")
     pa(f,this,"LINUX")
     pa(f,this,"PREFIX")
-    pa(f,this,"FLX_DIR")
+    pa(f,this,"src_dir")
     pa(f,this,"FLX_LPARCHIVE")
     pa(f,this,"FLX_RTL_DIR")
     pa(f,this,"FLX_HOST_CONFIG_DIR")

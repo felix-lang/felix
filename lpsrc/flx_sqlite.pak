@@ -17,7 +17,7 @@ import config
 from cpkgs.target.sqlite3 import HAVE_SQLITE3
 
 if HAVE_SQLITE3:
-  root = config.FLX_DIR
+  root = config.src_dir
   unit_tests = [('test', 'sqlite', 'sqlite-*.flx')]
 
 iscr_source = ['lpsrc/flx_sqlite.pak']

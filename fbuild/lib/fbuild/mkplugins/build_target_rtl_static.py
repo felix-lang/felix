@@ -18,7 +18,7 @@ class build_target_rtl_static(Process):
     EXTRA_CFLAGS = pkgdict.get("cflags","")
     lib = pkgdict.get("provides_lib","lib"+pkg)
     INCLUDES=pkgdict.get("include_path",[])
-    INCLUDE_PATH=[os.path.join(config.FLX_DIR, i) for i in INCLUDES]
+    INCLUDE_PATH=[os.path.join(config.src_dir, i) for i in INCLUDES]
     MACROS =pkgdict.get("macros",[])
 
     print " ++ "+pkg+" RTL (static)"
