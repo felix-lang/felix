@@ -221,7 +221,7 @@ def load_packages():
 
 def load_process(process_path, options, args):
   p = process_path.split('.')
-  module, name = '.'.join(p[:-1]), name[-1]
+  module, name = '.'.join(p[:-1]), p[-1]
   process = getattr(__import__(module, {}, {}, ['']), name)
 
   if not callable(process):
