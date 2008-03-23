@@ -1841,11 +1841,11 @@ sys.exit(0!=result)
 # flx - felix script harness
 @tangle("INSTALL_ROOT="+config.PREFIX+"/lib/felix/felix-"+config.flx_version)
 @tangle("FLX_INSTALL_DIR=${FLX_INSTALL_DIR:-$INSTALL_ROOT}")
-@tangle("CYGWIN="+str(config.CYGWIN))
-@tangle("WIN32="+str(config.WIN32))
-@tangle("MACOSX="+str(config.MACOSX))
-@tangle("HAVE_GNU="+str(config.HAVE_GNU))
-@tangle("HAVE_MSVC="+str(config.HAVE_MSVC))
+@tangle("CYGWIN="+str(config.CYGWIN and 1 or 0))
+@tangle("WIN32="+str(config.WIN32 and 1 or 0))
+@tangle("MACOSX="+str(config.MACOSX and 1 or 0))
+@tangle("HAVE_GNU="+str(config.HAVE_GNU and 1 or 0))
+@tangle("HAVE_MSVC="+str(config.HAVE_MSVC and 1 or 0))
 @if config.TARGET_CXX.options.HAVE_PIC:
   tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
  else:
