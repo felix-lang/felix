@@ -456,9 +456,6 @@ and resolve_inherits syms rs sr x =
     end
   | `FunctionEntry fs -> `FunctionEntry (trclose syms rs sr fs)
 
-and lookup_name_in_env syms (env:env_t) sr name : entry_set_t =
- inner_lookup_name_in_env syms (env:env_t) rsground sr name
-
 and inner_lookup_name_in_env syms (env:env_t) rs sr name : entry_set_t =
   (*
   print_endline ("[lookup_name_in_env] " ^ name);
@@ -557,57 +554,6 @@ and lookup_qn_in_env2'
         )
       end
       *)
-
-and lookup_qn_in_env2
-  syms
-  (env:env_t)
-  (qn: qualified_name_t)
-  : entry_set_t * typecode_t list
-=
-  lookup_qn_in_env2' syms env rsground qn
-
-
-(* this one isn't recursive i hope .. *)
-and lookup_code_in_env syms env sr qn =
-  let result =
-    try Some (lookup_qn_in_env2' syms env rsground qn)
-    with _ -> None
-  in match result with
-  | Some (`NonFunctionEntry x,ts) ->
-    clierr sr
-    (
-      "[lookup_qn_in_env] Not expecting " ^
-      string_of_qualified_name qn ^
-      " to be non-function (code insertions use function entries) "
-    )
-
-  | Some (`FunctionEntry x,ts) ->
-    iter
-    (fun i ->
-      match hfind "lookup" syms.dfns (sye i) with
-      | {symdef=`SYMDEF_insert _} -> ()
-      | {id=id; vs=vs; symdef=y} -> clierr sr
-        (
-          "Expected requirement '"^
-          string_of_qualified_name qn ^
-          "' to bind to a header or body insertion, instead got:\n" ^
-          string_of_symdef y id vs
-        )
-    )
-    x
-    ;
-    x,ts
-
-  | None -> [mkentry syms dfltvs 0],[]
-
-and lookup_qn_in_env
-  syms
-  (env:env_t)
-  (qn: qualified_name_t)
-  : entry_kind_t  * typecode_t list
-=
-  lookup_qn_in_env' syms env rsground qn
-
 and lookup_qn_in_env'
   syms
   (env:env_t) rs
@@ -627,73 +573,6 @@ and lookup_qn_in_env'
         string_of_qualified_name qn ^
         " to be function set"
       )
-
-and lookup_uniq_in_env
-  syms
-  (env:env_t)
-  (qn: qualified_name_t)
-  : entry_kind_t  * typecode_t list
-=
-  match lookup_qn_in_env2' syms env rsground qn with
-    | `NonFunctionEntry x,ts -> x,ts
-    | `FunctionEntry [x],ts -> x,ts
-    | _ ->
-      let sr = src_of_expr (qn:>expr_t) in
-      clierr sr
-      (
-        "[lookup_uniq_in_env] Not expecting " ^
-        string_of_qualified_name qn ^
-        " to be non-singleton function set"
-      )
-
-and lookup_function_in_env
-  syms
-  (env:env_t)
-  (qn: qualified_name_t)
-  : entry_kind_t  * typecode_t list
-=
-  match lookup_qn_in_env2' syms env rsground qn with
-    | `FunctionEntry [x],ts -> x,ts
-    | _ ->
-      let sr = src_of_expr (qn:>expr_t) in
-      clierr sr
-      (
-        "[lookup_qn_in_env] Not expecting " ^
-        string_of_qualified_name qn ^
-        " to be non-function or non-singleton function set"
-      )
-
-and lookup_sn_in_env
-  syms
-  (env:env_t)
-  (sn: suffixed_name_t)
-  : int * btypecode_t list
-=
-  let sr = src_of_expr (sn:>expr_t) in
-  let bt t = bind_type syms env sr t in
-  match sn with
-  | #qualified_name_t as x ->
-    begin match
-      lookup_qn_in_env syms env x
-    with
-    | index,ts -> (sye index),map bt ts
-    end
-
-  | `AST_suffix (sr,(qn,suf)) ->
-    let bsuf = bind_type syms env sr suf in
-    (* OUCH HACKERY *)
-    let ((be,t) : tbexpr_t) =
-      lookup_qn_with_sig'
-      syms
-      sr sr
-      env rsground
-      qn [bsuf]
-    in match be with
-    | `BEXPR_name (index,ts) ->
-      index,ts
-    | `BEXPR_closure (index,ts) -> index,ts
-
-    | _ -> failwith "Expected expression to be index"
 
 (* This routine binds a type expression to a bound type expression.
    Note in particular that a type alias is replaced by what
@@ -721,14 +600,14 @@ and lookup_sn_in_env
    I should test that ..
 
 *)
-and bind_type syms env sr t : btypecode_t =
+and inner_bind_type syms env sr rs t : btypecode_t =
   (*
   print_endline ("[bind_type] " ^ string_of_typecode t);
   *)
   let mkenv i = build_env syms (Some i) in
   let bt:btypecode_t =
     try
-      bind_type' syms env rsground sr t [] mkenv
+      bind_type' syms env rs sr t [] mkenv
 
     with
       | Free_fixpoint b ->
@@ -749,11 +628,11 @@ and bind_type syms env sr t : btypecode_t =
     *)
     bt
 
-and bind_expression syms env e  =
+and inner_bind_expression syms env rs e  =
   let sr = src_of_expr e in
   let e',t' =
     try
-     let x = bind_expression' syms env rsground e [] in
+     let x = bind_expression' syms env rs e [] in
      (*
      print_endline ("Bound expression " ^
        string_of_bound_expression_with_type syms.dfns x
@@ -1701,7 +1580,7 @@ and bind_type'
     *)
     if env = [] then print_endline "WOOPS EMPTY ENVIRONMENT!";
     let sr = src_of_qualified_name x in
-    begin match lookup_qn_in_env syms env x with
+    begin match lookup_qn_in_env' syms env rs x with
     | {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts},ts ->
       let ts = map bt ts in
       (*
@@ -1771,7 +1650,7 @@ and cal_glr_attr_type'' syms sr (i:int) t =
   | `TYP_none -> `BTYP_var (i,`BTYP_type 0)
   | _ ->
     let env = build_env syms (Some i) in
-    let t = bind_type syms env sr t in
+    let t = inner_bind_type syms env sr rsground t in
     Hashtbl.add syms.glr_cache i t;
     Hashtbl.add syms.varmap i t;
     t
@@ -1996,7 +1875,7 @@ and bind_type_index syms (rs:recstop)
           *)
         | None -> []
       in
-      let mt = bind_type syms env sr mt in
+      let mt = inner_bind_type syms env sr rs mt in
       (*
       print_endline ("Bound metatype is " ^ sbt syms.dfns mt);
       let mt = cal_assoc_type syms sr mt in
@@ -2054,7 +1933,7 @@ and  typeof_literal syms env sr v : btypecode_t =
   let _,_,root,_ = hd (rev env) in
   let name = base_typename_of_literal v in
   let t = `AST_name (sr,name,[]) in
-  let bt = bind_type syms env sr t in
+  let bt = inner_bind_type syms env sr rsground t in
   bt
 
 and typeofindex_with_ts
@@ -2389,7 +2268,14 @@ and inner_typeofindex
       { rs with idx_fixlist = index::rs.idx_fixlist }
       e []
     in
-    let t = snd (be (snd (hd cls))) in
+    let t = 
+      let rec aux cls = match cls with
+      | [] -> raise (Unresolved_return (sr,"reglex branches all indeterminate"))
+      | h :: t -> 
+         try snd (be (snd h)) 
+         with Expr_recursion _ -> aux t
+      in aux cls
+    in
     let lexit_t = bt (`AST_lookup (sr,(`AST_name (sr,"Lexer",[]),"iterator",[]))) in
     `BTYP_function (`BTYP_array (lexit_t,`BTYP_unitsum 2),t)
 
@@ -2446,9 +2332,9 @@ and inner_typeofindex
     )
   end
 
-and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
+and cal_apply syms sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let mkenv i = build_env syms (Some i) in
-  let be i e = bind_expression syms (mkenv i) e in
+  let be i e = bind_expression' syms (mkenv i) rs e [] in
   (*
   print_endline ("Cal apply of " ^ sbe syms.dfns bbdfns tbe1 ^ " to " ^ sbe syms.dfns bbdfns tbe2);
   *)
@@ -2670,26 +2556,6 @@ and koenig_lookup syms env rs sra id' name_map fn t2 ts =
     end
   | `NonFunctionEntry _ -> clierr sra "Koenig lookup expected function"
 
-(* this routine has to return a function or procedure .. *)
-and lookup_qn_with_sig
-  syms
-  sra srn
-  env
-  (qn:qualified_name_t)
-  (signs:btypecode_t list)
-=
-try
-  lookup_qn_with_sig'
-    syms
-    sra srn
-    env rsground
-    qn
-    signs
-with
-  | Free_fixpoint b ->
-    clierr sra
-    ("Recursive dependency resolving name " ^ string_of_qualified_name qn)
-
 and lookup_qn_with_sig'
   syms
   sra srn
@@ -2710,7 +2576,7 @@ and lookup_qn_with_sig'
     (*
     print_endline "NON PROPAGATING BIND TYPE";
     *)
-    bind_type syms env sr t
+    inner_bind_type syms env sr rs t
   in
   let handle_nonfunction_index index ts =
     begin match get_data syms.dfns index with
@@ -2822,9 +2688,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     (*
     print_endline ("AST_the " ^ string_of_qualified_name qn);
     *)
-    lookup_qn_with_sig' syms sra srn
-    env rs
-    qn signs
+    lookup_qn_with_sig' syms sra srn env rs qn signs
 
   | `AST_void _ -> clierr sra "qualified-name is void"
 
@@ -2993,7 +2857,7 @@ and lookup_type_qn_with_sig'
     (*
     print_endline "NON PROPAGATING BIND TYPE";
     *)
-    bind_type syms env sr t
+    inner_bind_type syms env sr rs t
   in
   let handle_nonfunction_index index ts =
     print_endline ("Found non function? index " ^ si index);
@@ -3983,7 +3847,7 @@ and bind_regdef syms env regexp_exclude e =
   | `REGEXP_alt (e1,e2) -> `REGEXP_alt (bd e1, bd e2)
   | `REGEXP_aster e -> `REGEXP_aster (bd e)
   | `REGEXP_name qn ->
-    begin match lookup_qn_in_env syms env qn with
+    begin match lookup_qn_in_env' syms env rsground qn with
     | i,_ ->
       if mem (sye i) regexp_exclude
       then
@@ -4052,21 +3916,18 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   if mem_assq e rs.expr_fixlist
   then raise (Expr_recursion e)
   ;
-  let be e' = bind_expression' syms env
-    { rs with expr_fixlist=(e,rs.depth)::rs.expr_fixlist; depth=rs.depth+1} e' [] in
+  let rs = { rs with expr_fixlist=(e,rs.depth)::rs.expr_fixlist } in
+  let be e' = bind_expression' syms env { rs with depth=rs.depth+1} e' [] in
   let mkenv i = build_env syms (Some i) in
   let bt sr t =
     (* we're really wanting to call bind type and propagate depth ? *)
-    let t = bind_type' syms env
-      { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth=rs.depth +1 }
-      sr t [] mkenv
-    in
+    let t = bind_type' syms env { rs with depth=rs.depth +1 } sr t [] mkenv in
     let t = beta_reduce syms sr t in
     t
   in
   let ti sr i ts =
     inner_typeofindex_with_ts syms sr
-    { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth + 1}
+    { rs with depth = rs.depth + 1}
                                (* CHANGED THIS ------------------*******)
     i ts
   in
@@ -4503,7 +4364,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let idx = sye idx in
           let vtype =
             inner_typeofindex_with_ts syms sr
-            { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
+            { rs with depth = rs.depth+1 }
             idx ts
            in
            (*
@@ -4755,7 +4616,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
       | args ->
         let sufs = map snd args in
-        let rs = { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist } in
         let ro = resolve_overload' syms env rs sr fs name sufs ts in
         begin match ro with
          | Some (index, dom,ret,mgu,ts) ->
@@ -4874,7 +4734,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
           | args ->
             let sufs = map snd args in
-            let rs  = { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist } in
             let ro = resolve_overload' syms env rs sr fs name sufs ts in
             begin match ro with
              | Some (index, dom,ret,mgu,ts) ->
@@ -4902,12 +4761,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     begin match (f:>expr_t) with
     | #qualified_name_t as name ->
       let srn = src_of_expr name in
-      lookup_qn_with_sig'
-        syms
-        sr srn env
-        { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist }
-        name [sign]
-
+      lookup_qn_with_sig' syms sr srn env rs name [sign] 
     | e -> be e
     end
 
@@ -4959,7 +4813,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         ->
         let vtype =
           inner_typeofindex_with_ts syms sr
-          { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
+          { rs with depth = rs.depth+1 }
          index ts
         in
           `BEXPR_ref (index,ts), `BTYP_pointer vtype
@@ -5061,7 +4915,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
       | _ -> clierr sra ("apply method "^fn^" to nongenerative type")
     in
-      cal_apply syms sra tbe1 (be2, t2)
+      cal_apply syms sra rs tbe1 (be2, t2)
     end
 
   | `AST_map (sr,f,a) ->
@@ -5084,9 +4938,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         (*
         print_endline "Lookup qn with sig .. ";
         *)
-        lookup_qn_with_sig' syms sr srn env
-          { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist }
-          name (ta::sigs)
+        lookup_qn_with_sig' syms sr srn env rs name (ta::sigs)
       | _ -> bind_expression' syms env rs f' (a :: args)
     in
     (*
@@ -5095,10 +4947,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     *)
     let tf = lstrip syms.dfns tf in
     begin match tf with
-    | `BTYP_cfunction _ -> cal_apply syms sr f a
+    | `BTYP_cfunction _ -> cal_apply syms sr rs f a
     | `BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
-      cal_apply syms sr f a
+      cal_apply syms sr rs f a
 
     (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
     | `BTYP_inst (i,ts') when
@@ -5155,7 +5007,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         let t:btypecode_t = match cts with [t]->t | _ -> `BTYP_tuple cts in
         let a: bexpr_t = match a with [x,_]->x | _ -> `BEXPR_tuple a in
         let a:tbexpr_t = a,t in
-        cal_apply syms sr f a
+        cal_apply syms sr rs f a
       end
 
     | t ->
@@ -5372,7 +5224,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             let idx = sye idx in
             let vtype =
               inner_typeofindex_with_ts syms sr
-              { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
+              { rs with depth = rs.depth+1 }
               idx ts'
              in
              (*
@@ -5951,7 +5803,7 @@ and instance_check syms caller_env called_env mgu sr calledname rtcr tsub =
   print_endline "SEARCH FOR INSTANCE!";
   print_env caller_env;
   *)
-  let luqn2 qn = lookup_qn_in_env2 syms caller_env qn in
+  let luqn2 qn = lookup_qn_in_env2' syms caller_env rsground qn in
   if length rtcr > 0 then begin
     (*
     print_endline (calledname ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^
@@ -5973,7 +5825,7 @@ and instance_check syms caller_env called_env mgu sr calledname rtcr tsub =
       (*
       print_endline ("With unbound ts = " ^ catmap "," string_of_typecode ts');
       *)
-      let ts' = map (fun t -> try bind_type syms called_env sr t with _ -> print_endline "Bind type failed .."; assert false) ts' in
+      let ts' = map (fun t -> try inner_bind_type syms called_env sr rsground t with _ -> print_endline "Bind type failed .."; assert false) ts' in
       (*
       print_endline ("With bound ts = " ^ catmap "," (sbt syms.dfns) ts');
       *)
@@ -6004,12 +5856,12 @@ and resolve_overload'
     inner_build_env syms rs (Some i)
   in
   let bt sr i t =
-    bind_type syms (env i) sr t
+    inner_bind_type syms (env i) sr rs t
   in
   let be i e =
-    bind_expression syms (env i) e
+    inner_bind_expression syms (env i) rs e
   in
-  let luqn2 i qn = lookup_qn_in_env2 syms (env i) qn in
+  let luqn2 i qn = lookup_qn_in_env2' syms (env i) rs qn in
   let fs = trclose syms rs sr fs in
   let result : overload_result option = overload syms bt be luqn2 sr fs name sufs ts in
   begin match result with
@@ -6119,7 +5971,7 @@ and get_includes syms rs xs =
       in
       iter (fun (_,qn) ->
           let {base_sym=j; spec_vs=vs'; sub_ts=ts'},ts'' =
-            try lookup_qn_in_env syms env qn
+            try lookup_qn_in_env' syms env rsground qn
             with Not_found -> failwith "QN NOT FOUND"
           in
             (*
@@ -6327,7 +6179,7 @@ and pub_table_dir
       );
       let luqn2 qn =
         try
-          Some (lookup_qn_in_env2 syms env qn)
+          Some (lookup_qn_in_env2' syms env rsground qn)
         with _ -> None
       in
       let res = luqn2 (`AST_name (sr,inst_name,[])) in
@@ -6563,7 +6415,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_inst (i,_) ->
     begin match get_data syms.dfns i with
     | {symdef=`SYMDEF_type_alias t'} ->
-      bind_type syms env sr t'
+      inner_bind_type syms env sr rsground t'
     | _ -> t
     end
 
@@ -6675,4 +6527,151 @@ and eval_module_expr syms env e : module_rep_t =
       string_of_expr e
     )
 
+(* ********* THUNKS ************* *)
+(* this routine has to return a function or procedure .. *)
+let lookup_qn_with_sig
+  syms
+  sra srn
+  env
+  (qn:qualified_name_t)
+  (signs:btypecode_t list)
+=
+try
+  lookup_qn_with_sig'
+    syms
+    sra srn
+    env rsground
+    qn
+    signs
+with
+  | Free_fixpoint b ->
+    clierr sra
+    ("Recursive dependency resolving name " ^ string_of_qualified_name qn)
+
+let lookup_name_in_env syms (env:env_t) sr name : entry_set_t =
+ inner_lookup_name_in_env syms (env:env_t) rsground sr name
+
+
+let lookup_qn_in_env2
+  syms
+  (env:env_t)
+  (qn: qualified_name_t)
+  : entry_set_t * typecode_t list
+=
+  lookup_qn_in_env2' syms env rsground qn
+
+
+(* this one isn't recursive i hope .. *)
+let lookup_code_in_env syms env sr qn =
+  let result =
+    try Some (lookup_qn_in_env2' syms env rsground qn)
+    with _ -> None
+  in match result with
+  | Some (`NonFunctionEntry x,ts) ->
+    clierr sr
+    (
+      "[lookup_qn_in_env] Not expecting " ^
+      string_of_qualified_name qn ^
+      " to be non-function (code insertions use function entries) "
+    )
+
+  | Some (`FunctionEntry x,ts) ->
+    iter
+    (fun i ->
+      match hfind "lookup" syms.dfns (sye i) with
+      | {symdef=`SYMDEF_insert _} -> ()
+      | {id=id; vs=vs; symdef=y} -> clierr sr
+        (
+          "Expected requirement '"^
+          string_of_qualified_name qn ^
+          "' to bind to a header or body insertion, instead got:\n" ^
+          string_of_symdef y id vs
+        )
+    )
+    x
+    ;
+    x,ts
+
+  | None -> [mkentry syms dfltvs 0],[]
+
+let lookup_qn_in_env
+  syms
+  (env:env_t)
+  (qn: qualified_name_t)
+  : entry_kind_t  * typecode_t list
+=
+  lookup_qn_in_env' syms env rsground qn
+
+
+let lookup_uniq_in_env
+  syms
+  (env:env_t)
+  (qn: qualified_name_t)
+  : entry_kind_t  * typecode_t list
+=
+  match lookup_qn_in_env2' syms env rsground qn with
+    | `NonFunctionEntry x,ts -> x,ts
+    | `FunctionEntry [x],ts -> x,ts
+    | _ ->
+      let sr = src_of_expr (qn:>expr_t) in
+      clierr sr
+      (
+        "[lookup_uniq_in_env] Not expecting " ^
+        string_of_qualified_name qn ^
+        " to be non-singleton function set"
+      )
+
+(*
+let lookup_function_in_env
+  syms
+  (env:env_t)
+  (qn: qualified_name_t)
+  : entry_kind_t  * typecode_t list
+=
+  match lookup_qn_in_env2' syms env rsground qn with
+    | `FunctionEntry [x],ts -> x,ts
+    | _ ->
+      let sr = src_of_expr (qn:>expr_t) in
+      clierr sr
+      (
+        "[lookup_qn_in_env] Not expecting " ^
+        string_of_qualified_name qn ^
+        " to be non-function or non-singleton function set"
+      )
+
+*)
+
+let lookup_sn_in_env
+  syms
+  (env:env_t)
+  (sn: suffixed_name_t)
+  : int * btypecode_t list
+=
+  let sr = src_of_expr (sn:>expr_t) in
+  let bt t = inner_bind_type syms env sr rsground t in
+  match sn with
+  | #qualified_name_t as x ->
+    begin match
+      lookup_qn_in_env' syms env rsground x
+    with
+    | index,ts -> (sye index),map bt ts
+    end
+
+  | `AST_suffix (sr,(qn,suf)) ->
+    let bsuf = inner_bind_type syms env sr rsground suf in
+    (* OUCH HACKERY *)
+    let ((be,t) : tbexpr_t) =
+      lookup_qn_with_sig' syms sr sr env rsground qn [bsuf]
+    in match be with
+    | `BEXPR_name (index,ts) ->
+      index,ts
+    | `BEXPR_closure (index,ts) -> index,ts
+
+    | _ -> failwith "Expected expression to be index"
+
+let bind_type syms env sr t : btypecode_t =
+  inner_bind_type syms env sr rsground t 
+
+let bind_expression syms env e  =
+  inner_bind_expression syms env rsground e 
 
