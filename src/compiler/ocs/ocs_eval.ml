@@ -51,7 +51,7 @@ let chkargs p n =
 	()
       else
 	raise (Error (p.prim_name ^ ": wrong number of arguments"))
-  | _ -> raise (Error "apply: not a procedure or primitive")
+  | _ -> raise (Error ("apply: '" ^ Ocs_print.string_of_ocs p ^ "' not a procedure or primitive"))
 ;;
 
 let rec doapply th cc p disp av =

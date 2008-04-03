@@ -22,13 +22,13 @@ let cons h t =
 let gcar =
   function
     Spair { car = r; cdr = _ } -> r
-  | _ -> raise (Error "car: bad args")
+  | e -> raise (Error ("car: '" ^ Ocs_print.string_of_ocs e ^ "' bad args"))
 ;;
 
 let gcdr =
   function
     Spair { car = _; cdr = r } -> r
-  | _ -> raise (Error "cdr: bad args")
+  | e -> raise (Error ("cdr: '" ^ Ocs_print.string_of_ocs e ^ "'  bad args"))
 ;;
 
 let caar x = gcar (gcar x);;
