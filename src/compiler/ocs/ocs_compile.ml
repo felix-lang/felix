@@ -228,7 +228,7 @@ and mklambda e args body =
 	  let _ = bind_var ne s in
 	    incr nargs;
 	    scanargs tl
-      | Ssymbol _ as s ->
+      | (Ssymbol _ | Sesym (_, _)) as s ->
 	  let _ = bind_var ne s in
 	    incr nargs;
 	    has_rest := true;
@@ -259,52 +259,66 @@ and mknamedlet e s args =
     let av =
       Array.map (fun (s, v) -> let _ = bind_var ne s in v) argv in
     let body = mkseq (mkbody ne (Array.sub args 2 (Array.length args - 2))) in
-      let proc =
-	Clambda (make_proc body (Array.length av) false !(ne.env_frame_size))
-      in
-	Cseq2 (gendef ar proc, mkapply (genref ar) av)
+    let proc =
+      Clambda (make_proc body (Array.length av) false !(ne.env_frame_size))
+    in
+      Cseq2 (gendef ar proc, mkapply (genref ar) av)
 
 and mklet e args =
   if Array.length args < 2 then
     raise (Error "let: too few args");
   match args.(0) with
     (Ssymbol _ | Sesym (_, _)) as s -> mknamedlet e s args
-  | (Spair _ | Snull) as al ->
-      let av =
+  | Snull -> mkseq (mkbody e (Array.sub args 1 (Array.length args - 1)))
+  | Spair _ as al ->
+      let argv =
 	Array.map
-	  (letsplit (fun s v -> s, new_var e, compile e v))
-	  (Array.of_list (list_to_caml al))
+	  (letsplit (fun s v -> s, compile e v))
+	  (Array.of_list (list_to_caml al)) in
+      let ne = new_frame e in
+      let av = Array.map (fun (s, v) -> let _ = bind_var ne s in v) argv in
+      let body = mkseq (mkbody ne (Array.sub args 1 (Array.length args - 1))) in
+      let proc =
+	Clambda (make_proc body (Array.length av) false !(ne.env_frame_size))
       in
-	let ne = new_scope e in
-	let sets =
-	  Array.map
-	    (fun (s, r, v) -> bind_name ne s r; gendef r v) av in
-	let rest = mkbody ne (Array.sub args 1 (Array.length args - 1)) in
-	  mkseq (Array.append sets rest)
+	mkapply proc av
   | _ -> raise (Error "let: missing argument list")
 
 and mkletstar e args =
   if Array.length args < 2 then
     raise (Error "let*: too few args");
-  let ne = new_scope e in
-  let sets = Array.map
-    (letsplit
-      (fun s v -> let ce = compile ne v in gendef (bind_var ne s) ce))
-    (Array.of_list (list_to_caml args.(0))) in
-  let rest = mkbody ne (Array.sub args 1 (Array.length args - 1)) in
-    mkseq (Array.append sets rest)
+  let rec build e =
+    function
+      x::t ->
+	let (s, v) = letsplit (fun s v -> s, compile e v) x in
+	let ne = new_frame e in
+	let _ = bind_var ne s in
+	let body = build ne t in
+	let proc = Clambda (make_proc body 1 false !(ne.env_frame_size)) in
+	  mkapply proc [| v |]
+    | [] -> mkseq (mkbody e (Array.sub args 1 (Array.length args - 1)))
+  in
+    build e (list_to_caml args.(0))
 
 and mkletrec e args =
   if Array.length args < 2 then
     raise (Error "letrec: too few args");
-  let ne = new_scope e in
-  let t =
+  let ne = new_frame e in
+  let av =
     Array.map (letsplit (fun s v -> let r = bind_var ne s in (r, v)))
 	      (Array.of_list (list_to_caml args.(0))) in
-  let sets =
-    Array.map (fun (r, v) -> gendef r (compile ne v)) t in
-  let rest = mkbody ne (Array.sub args 1 (Array.length args - 1)) in
-    mkseq (Array.append sets rest)
+  let avi = Array.map (fun (r, v) -> compile ne v) av in
+  let ne' = new_frame ne in
+  let sets = Array.map (fun (r, v) -> gendef r (genref (new_var ne'))) av in
+  let body = mkseq (Array.append sets
+    (mkbody ne' (Array.sub args 1 (Array.length args - 1)))) in
+  let proc =
+    Clambda (make_proc body (Array.length av) false !(ne'.env_frame_size)) in
+  let proc =
+    Clambda (make_proc (mkapply proc avi)
+		       (Array.length av) false !(ne.env_frame_size))
+  in
+    mkapply proc (Array.map (fun _ -> Cval Sunspec) av)
 
 and compileseq e s =
   mkseq (Array.map (fun x -> compile e x)

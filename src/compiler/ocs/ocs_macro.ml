@@ -397,7 +397,7 @@ let mkdefine_syntax e =
       let rules = parsetspec (new_scope e) sym tspec in
 	bind_name e sym (Vmacro (expand (normalize_name sym) e
 				        { r_rules = rules }));
-	Cval Snull
+	Cval Sunspec
   | _ -> raise (Error "define-syntax: bad args")
 ;;
 
