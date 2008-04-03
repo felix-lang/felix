@@ -37,12 +37,13 @@ def build_grammar(pkg, pkgdict, *args):
 
 class build_modules(Process):
     def runme(self, pkg, pkgdict, *args):
+        MODULES = pkgdict.get("caml_modules", [])
         INTERFACES = pkgdict.get("caml_interfaces", [])
         IMPLEMENTATIONS = pkgdict.get("caml_implementations", [])
         PACKS = pkgdict.get("caml_pack", [])
         INCLUDES = pkgdict.get("caml_include_paths", [])
 
-        if not (INTERFACES or IMPLEMENTATIONS):
+        if not (MODULES or INTERFACES or IMPLEMENTATIONS):
             return
 
         print "CAML COMPILING", pkg
@@ -55,6 +56,17 @@ class build_modules(Process):
             profile='profile' in self.options,
             optimise='optimise_felix' in self.options,
         )
+
+        for module in MODULES:
+            mli = config.HOST_OCAML.find_in_src_dir(module + '.mli')
+            if os.path.exists(mli):
+                config.HOST_OCAML.compile_interface([module], **kwds)
+
+            ml  = config.HOST_OCAML.find_in_src_dir(module + '.ml')
+            if os.path.exists(ml):
+                config.HOST_OCAML.compile_module([module],
+                    bytecode='bytecode' in self.options,
+                    **kwds)
 
         config.HOST_OCAML.compile_interface(INTERFACES, **kwds)
 
@@ -69,11 +81,19 @@ class build_libs(Process):
             for f in pkgdict.get("caml_implementations", [])]
         lib = pkgdict.get('caml_provide_lib', os.path.join('src', pkg + 'lib'))
 
-        if not IMPLEMENTATIONS:
+        MODULES = [os.path.join('build', f)
+            for f in pkgdict.get("caml_modules", [])]
+
+        if 'bytecode' in self.options or not config.HOST_OCAML.options.NATIVE_CODE_COMPILER:
+            MODULES = [f for f in MODULES if os.path.exists(f + '.cmo')]
+        else:
+            MODULES = [f for f in MODULES if os.path.exists(f + '.cmx')]
+
+        if not MODULES + IMPLEMENTATIONS:
             return
 
         print "CAML CREATING LIBRARY", lib
-        config.HOST_OCAML.link_lib(IMPLEMENTATIONS, lib,
+        config.HOST_OCAML.link_lib(MODULES + IMPLEMENTATIONS, lib,
             bytecode='bytecode' in self.options,
             outdir='build',
         )
