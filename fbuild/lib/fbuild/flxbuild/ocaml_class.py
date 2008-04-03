@@ -178,8 +178,6 @@ class ocaml(compiler_base):
       ):
     objects = []
     for basename in basenames:
-      if EXT_DST == '.cmx':
-         asdas
       src = self.find_in_src_dir(basename + EXT_SRC)
       dst = os.path.join(outdir, basename + EXT_DST)
 
