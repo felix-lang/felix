@@ -1,0 +1,31 @@
+%mltop { open Sex_token }
+{
+open Sex_types
+}
+
+%token LB
+%token RB
+%token EOF
+%token <string> STR
+%token <string> SYM
+%token <string> ID
+%token <string> INT
+
+%start <Sex_types.sexp_t> sex_parse
+
+%%
+
+sex_parse: sexp EOF { $1 }
+
+sexp:
+  | INT { Int $1 }
+  | STR { Str $1 }
+  | SYM { Sym $1 }
+  | ID  { Id $1 }
+  | LB sexps RB { Lst $2 }
+
+sexps:
+  | sexp sexps { $1 :: $2 }
+  | { [] }
+
+%mlitop { open Sex_token }

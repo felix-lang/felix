@@ -1,0 +1,3 @@
+(
+  AST_apply (add (AST_tuple (1 2)))
+)
