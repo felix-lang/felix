@@ -18,6 +18,16 @@ def copy_mli2ml(pkg, pkgdict, *args):
 def build_grammar(pkg, pkgdict, *args):
     LEXS = pkgdict.get("caml_lexes", [])
     PARSES = pkgdict.get("caml_parses", [])
+    MODULES = pkgdict.get("caml_modules", [])
+
+    for module in MODULES:
+        mll = config.HOST_OCAML.find_in_src_dir(module + '.mll')
+        if os.path.exists(mll) or os.path.exists(os.path.join('build', mll)):
+            LEXS.append(module)
+
+        mly = config.HOST_OCAML.find_in_src_dir(module + '.mly')
+        if os.path.exists(mly) or os.path.exists(os.path.join('build', mly)):
+            PARSES.append(module)
 
     if not (LEXS or PARSES):
         return
@@ -59,11 +69,11 @@ class build_modules(Process):
 
         for module in MODULES:
             mli = config.HOST_OCAML.find_in_src_dir(module + '.mli')
-            if os.path.exists(mli):
+            if os.path.exists(mli) or os.path.exists(os.path.join('build', mli)):
                 config.HOST_OCAML.compile_interface([module], **kwds)
 
             ml  = config.HOST_OCAML.find_in_src_dir(module + '.ml')
-            if os.path.exists(ml):
+            if os.path.exists(ml) or os.path.exists(os.path.join('build', ml)):
                 config.HOST_OCAML.compile_module([module],
                     bytecode='bytecode' in self.options,
                     **kwds)
