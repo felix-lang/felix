@@ -649,7 +649,7 @@ int main(int argc, char** argv) {
         if alias is not None:
           opt.arith_conv[(t1, t2)] = alias
 
-    for t in ['ptrdiff_t', 'size_t']:
+    for t in ['ptrdiff_t', 'size_t', 'wchar_t']:
       alias = self.find_alias(t)
       if alias:
         opt.__dict__['ALIAS_' + t] = alias
