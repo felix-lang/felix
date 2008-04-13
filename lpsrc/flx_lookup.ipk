@@ -2754,6 +2754,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
              "\nERROR2: " ^ s2
              )
         end
+      | Free_fixpoint _ as x -> raise x
       | x -> print_endline (
         "Other exn = " ^ Printexc.to_string x);
         raise x;
