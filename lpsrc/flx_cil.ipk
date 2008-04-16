@@ -127,11 +127,18 @@ let gcc:mach = {
 @tangle("  sizeof_fun       = 1;")
 @tangle("  sizeof_ptr       = %s;" % config.TARGET_CXX.options.SIZEOF_VOIDP)
 
+
 @def pr(a):
-  d= globals()
-  v = d.get("SIZEOF_"+a.upper(),0)
+  try:
+    v = getattr(config.TARGET_CC.options, "SIZEOF_"+a.upper())
+  except AttributeError:
+    v = getattr(config.TARGET_CXX.options, "SIZEOF_"+a.upper(), 0)
   tangle("  sizeof_" + a.lower() + " = " + str(v) + ";")
-  v = d.get("ALIGNOF_"+a.upper(),0)
+
+  try:
+    v = getattr(config.TARGET_CC.options, "ALIGNOF_"+a.upper())
+  except AttributeError:
+    v = getattr(config.TARGET_CXX.options, "ALIGNOF_"+a.upper(), 0)
   tangle("  alignof_" + a.lower() + " = " + str(v) + ";")
 
 @for x in ctypes: pr(x)
