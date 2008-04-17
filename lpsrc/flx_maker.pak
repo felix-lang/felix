@@ -814,8 +814,7 @@ are not misrepresented in any way.
 Parts of this code, included in the file
 
 
-lpsrc/flx_frontc.ipk
-lpsrc/flx_cil.ipk
+lpsrc/cil.pak
 
 are covered by a BSD Licence, here is the copyright notice:
 (*
