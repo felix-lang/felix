@@ -2,15 +2,14 @@
 @h = tangler("src/compiler/flxlib/flx_ciltoflx.mli")
 @select(h)
 open Flx_ast
-open Flx_cil_cil
+open Cil
 val handle_global: global -> statement_t list
 
 @h = tangler("src/compiler/flxlib/flx_ciltoflx.ml")
 @select(h)
 
 (* CIL HANDLING .. MOVE ELSEWHERE *)
-open Flx_cil_cabs
-open Flx_cil_cil
+open Cil
 open Flx_ctypes
 open Flxcc_util
 open Flx_ast
@@ -49,7 +48,7 @@ let rec ctyp_of_ciltyp t : ctype_t =
       let si = {tname=name;ttype=t;treferenced=true } in
       let gt =  GType (si,sr) in
       let d = defaultCilPrinter#pGlobal () gt in
-      let s = Flx_cil_pretty.sprint 65 d in
+      let s = Pretty.sprint 65 d in
       let s = reformatc s in
       Hashtbl.add stab.registry t' (name,s);
       name

@@ -259,8 +259,6 @@ let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
 
-open Flx_cil_cabs
-open Flx_cil_cil
 open Flx_ctypes
 open Flxcc_util
 open Flx_ciltoflx
@@ -1152,20 +1150,20 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_cparse (sr,s) ->
     (* WARNING: unfortunately Frontc/Cil isn't re-entrant *)
     let filename,lineno,_,_,_ = sr in
-    Flx_cil_cil.initCIL();
-    let lexbuf = Flx_cil_clexer.init_from_string filename lineno `C s in
+    Cil.initCIL();
+    let lexbuf = Clexer.init_from_string filename lineno `C s in
     let cabs =
-      try Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
+      try Cparser.file Clexer.initial lexbuf
       with
-      | Flx_cil_errormsg.Flx_cil_parse_error (filename, line, c1, c2) ->
+      | Errormsg.Parse_error (filename, line, c1, c2) ->
         let sr = filename, line, c1, line, c2 in
         clierr sr "Frontc Parsing error"
     in
-    Flx_cil_clexer.finish();
+    Clexer.finish();
     print_endline "Frontc Parse done .. converting cabs to cil";
-    let cil = Flx_cil_cabs2cil.convFile (filename, cabs) in
+    let cil = Cabs2cil.convFile (filename, cabs) in
     print_endline "Conversion to Cil done";
-    let {globals=gs} = cil in
+    let {Cil.globals=gs} = cil in
     let sts = concat (map handle_global gs) in
     rsts name parent_vs  access sts
 
