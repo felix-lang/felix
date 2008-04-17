@@ -44,7 +44,7 @@ let verboseFlag = ref false
 
 (**** Error reporting ****)  
 exception Error
-let s (d : doc) = raise Error
+let s (d : 'a) = raise Error
 
 let hadErrors = ref false
 
@@ -87,7 +87,7 @@ let showContext () =
     raise e
   end
 
-let contextMessage name d = 
+let contextMessage (name: string) (d: doc) = 
   ignore (eprintf "@!%s: %a@!" name insert d);
   showContext ()
 
@@ -96,58 +96,48 @@ let warnFlag = ref false
 let logChannel : out_channel ref = ref stderr
 
 
-let bug (fmt : ('a,unit,doc) format) : 'a = 
+let bug (fmt : ('a,unit,doc,unit) format4) : 'a = 
   let f d =  
     hadErrors := true; contextMessage "Bug" d; 
-    flush !logChannel; 
-    nil 
+    flush !logChannel
   in
   Pretty.gprintf f fmt
 
-let error (fmt : ('a,unit,doc) format) : 'a = 
+let error (fmt : ('a,unit,doc,unit) format4) : 'a = 
   let f d = hadErrors := true; contextMessage "Error" d; 
-    flush !logChannel; 
-    nil 
+    flush !logChannel
   in
   Pretty.gprintf f fmt
 
-let unimp (fmt : ('a,unit,doc) format) : 'a = 
+let unimp (fmt : ('a,unit,doc,unit) format4) : 'a = 
   let f d = hadErrors := true; contextMessage "Unimplemented" d; 
-    flush !logChannel; 
-    nil 
+    flush !logChannel
   in
   Pretty.gprintf f fmt
 
-let warn (fmt : ('a,unit,doc) format) : 'a = 
-  let f d = contextMessage "Warning" d; flush !logChannel; nil in
+let warn (fmt : ('a,unit,doc,unit) format4) : 'a = 
+  let f d = contextMessage "Warning" d; flush !logChannel in
   Pretty.gprintf f fmt
 
-let warnOpt (fmt : ('a,unit,doc) format) : 'a = 
+let warnOpt (fmt : ('a,unit,doc,unit) format4) : 'a = 
     let f d = 
-      if !warnFlag then contextMessage "Warning" d; flush !logChannel;
-      nil in
+      if !warnFlag then contextMessage "Warning" d; 
+      flush !logChannel in
     Pretty.gprintf f fmt
 
 
-let log (fmt : ('a,unit,doc) format) : 'a = 
-  let f d = fprint !logChannel 80 d; flush !logChannel; d in
+let log (fmt : ('a,unit,doc,unit) format4) : 'a = 
+  let f d = fprint !logChannel 80 d; flush !logChannel in
   Pretty.gprintf f fmt
 
-let null (fmt : ('a,unit,doc) format) : 'a =
-  let f d = Pretty.nil in
+let logg (fmt : ('a,unit,doc,unit) format4) : 'a =
+  let f d = fprint !logChannel 10000000 d; flush !logChannel in
   Pretty.gprintf f fmt
 
-let check (what: bool) (fmt : ('a,unit,doc) format) : 'a = 
-  if what then 
-     what
-  else begin
-    let f d = 
-      if not what then begin
-         hadErrors := true; contextMessage "Assert" d; 
-         flush !logChannel; raise Error 
-    end else nil in
-    Pretty.gprintf f fmt
-  end
+let null (fmt : ('a,unit,doc,unit) format4) : 'a =
+  let f d = () in
+  Pretty.gprintf f fmt
+
 
 let theLexbuf = ref (Lexing.from_string "")
 
@@ -212,17 +202,32 @@ let cleanFileName str =
   in
   loop 0 0
 
-let startParsing (fname: string) = 
+let readingFromStdin = ref false
+
+let startParsing ?(useBasename=true) (fname: string) = 
+  (* We only support one open file at a time *)
+  if !current != dummyinfo then begin
+     s (error "Errormsg.startParsing supports only one open file: You want to open %s and %s is still open\n" fname !current.fileName); 
+  end; 
   let inchan = 
-    try open_in fname with 
-      _ -> s (error "Cannot find input file %s" fname) in
+    try if fname = "-" then begin 
+           readingFromStdin := true;
+           stdin 
+        end else begin
+           readingFromStdin := false;
+           open_in fname 
+        end
+    with e -> s (error "Cannot find input file %s (exception %s" 
+                    fname (Printexc.to_string e)) in
   let lexbuf = Lexing.from_channel inchan in
   let i = 
     { linenum = 1; linestart = 0; 
-      fileName = cleanFileName (Filename.basename fname);
+      fileName = 
+        cleanFileName (if useBasename then Filename.basename fname else fname);
       lexbuf = lexbuf; inchan = Some inchan;
       hfile = ""; hline = 0;
       num_errors = 0 } in
+
   current := i;
   lexbuf
 
@@ -292,6 +297,7 @@ let parse_error (msg: string) : 'a =
     output_string stderr "Too many errors. Aborting.\n" ;
     exit 1 
   end;
+  hadErrors := true;
   raise Parsing.Parse_error
 
 

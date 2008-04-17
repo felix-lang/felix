@@ -35,11 +35,11 @@
  *
  *)
 
+
 (* maincil *)
 (* this module is the program entry point for the 'cilly' program, *)
 (* which reads a C program file, parses it, translates it to the CIL *)
 (* intermediate language, and then renders that back into C *)
-
 
 module F = Frontc
 module C = Cil
@@ -48,13 +48,11 @@ module E = Errormsg
 open Pretty
 open Trace
 
-
-let outChannel : out_channel option ref = ref None
-let mergedChannel : out_channel option ref = ref None
-let dumpFCG = ref false
-let testcil = ref ""
-
-exception Done_Processing
+type outfile = 
+    { fname: string;
+      fchan: out_channel } 
+let outChannel : outfile option ref = ref None
+let mergedChannel : outfile option ref = ref None
 
 
 let parseOneFile (fname: string) : C.file =
@@ -92,10 +90,9 @@ let makeCFGFeature : C.featureDescr =
 
 let features : C.featureDescr list = 
   [ Epicenter.feature;
-    Ptranal.feature;
+    Simplify.feature;
     Canonicalize.feature;
     Callgraph.feature;
-    Logcalls.feature;
     Logwrites.feature;
     Heapify.feature1;
     Heapify.feature2;
@@ -103,16 +100,24 @@ let features : C.featureDescr list =
     makeCFGFeature; (* ww: make CFG *must* come before Partial *) 
     Partial.feature;
     Simplemem.feature;
-    Simplify.feature;
+    Sfi.feature;
+    Dataslicing.feature;
+    Logcalls.feature;
+    Ptranal.feature;
+    Liveness.feature;
   ] 
   @ Feature_config.features 
 
 let rec processOneFile (cil: C.file) =
-  try begin
+  begin
 
     if !Cilutil.doCheck then begin
       ignore (E.log "First CIL check\n");
-      ignore (CK.checkFile [] cil);
+      if not (CK.checkFile [] cil) && !Cilutil.strictChecking then begin
+        E.bug ("CIL's internal data structures are inconsistent "
+               ^^"(see the warnings above).  This may be a bug "
+               ^^"in CIL.\n")
+      end
     end;
 
     (* Scan all the features configured from the Makefile and, if they are 
@@ -123,93 +128,51 @@ let rec processOneFile (cil: C.file) =
           if !E.verboseFlag then 
             ignore (E.log "Running CIL feature %s (%s)\n" 
                       fdesc.C.fd_name fdesc.C.fd_description);
-          fdesc.C.fd_doit cil;
+          (* Run the feature, and see how long it takes. *)
+          Stats.time fdesc.C.fd_name
+            fdesc.C.fd_doit cil;
           (* See if we need to do some checking *)
           if !Cilutil.doCheck && fdesc.C.fd_post_check then begin
             ignore (E.log "CIL check after %s\n" fdesc.C.fd_name);
-            ignore (CK.checkFile [] cil);
+            if not (CK.checkFile [] cil) && !Cilutil.strictChecking then begin
+              E.error ("Feature \"%s\" left CIL's internal data "
+                       ^^"structures in an inconsistent state. "
+                       ^^"(See the warnings above)\n") fdesc.C.fd_name
+            end
           end
         end)
       features;
 
 
-    (* sm: enabling this by default, since I think usually we
-     * want 'cilly' transformations to preserve annotations; I
-     * can easily add a command-line flag if someone sometimes
-     * wants these suppressed *)
-    C.print_CIL_Input := true;
-
     (match !outChannel with
       None -> ()
     | Some c -> Stats.time "printCIL" 
-	(C.dumpFile (C.defaultCilPrinter) c) cil);
+	(C.dumpFile (!C.printerForMaincil) c.fchan c.fname) cil);
 
     if !E.hadErrors then
-      E.s (E.error "Cabs2cil has some errors");
+      E.s (E.error "Error while processing file; see above for details.");
 
-  end with Done_Processing -> ()
+  end
         
 (***** MAIN *****)  
-let rec theMain () =
-  let doCombine = ref "" in 
+let theMain () =
   let usageMsg = "Usage: cilly [options] source-files" in
-  let fileNames : string list ref = ref [] in
-  let recordFile fname = 
-    fileNames := fname :: (!fileNames) 
-  in
-  (* Parsing of files with additional names *)
-  let parseExtraFile (s: string) = 
-    try
-      let sfile = open_in s in
-      while true do
-        let line = try input_line sfile with e -> (close_in sfile; raise e) in
-        let linelen = String.length line in
-        let rec scan (pos: int) (* next char to look at *)
-                     (start: int) : unit (* start of the word, 
-                                            or -1 if none *) =
-          if pos >= linelen then 
-            if start >= 0 then 
-              recordFile (String.sub line start (pos - start))
-            else 
-              () (* Just move on to the next line *)
-          else
-            let c = String.get line pos in
-            match c with 
-              ' ' | '\n' | '\r' | '\t' -> 
-                (* whitespace *)
-                if start >= 0 then begin
-                  recordFile (String.sub line start (pos - start));
-                end;
-                scan (pos + 1) (-1)
-
-            | _ -> (* non-whitespace *)
-                if start >= 0 then 
-                  scan (pos + 1) start 
-                else
-                  scan (pos + 1) pos
-        in
-        scan 0 (-1)
-      done
-    with Sys_error _ -> E.s (E.error "Cannot find extra file: %s\n" s)
-   |  End_of_file -> () 
-  in
   (* Processign of output file arguments *)
-  let openFile (what: string) (takeit: out_channel -> unit) (fl: string) = 
+  let openFile (what: string) (takeit: outfile -> unit) (fl: string) = 
     if !E.verboseFlag then
       ignore (Printf.printf "Setting %s to %s\n" what fl);
-    (try takeit (open_out fl)
+    (try takeit { fname = fl;
+                  fchan = open_out fl }
     with _ ->
-      raise (Arg.Bad ("Cannot open " ^ what ^ " file")))
+      raise (Arg.Bad ("Cannot open " ^ what ^ " file " ^ fl)))
   in
   let outName = ref "" in
-  let setDebugFlag v name =
-    E.debugFlag := v;
-    if v then Pretty.flushOften := true
-  in
-  (* sm: for print depth *)
-  let setTraceDepth n =
-    Pretty.printDepth := n
-  in
+  (* sm: enabling this by default, since I think usually we
+   * want 'cilly' transformations to preserve annotations; I
+   * can easily add a command-line flag if someone sometimes
+   * wants these suppressed *)
+  C.print_CIL_Input := true;
+
   (*********** COMMAND LINE ARGUMENTS *****************)
   (* Construct the arguments for the features configured from the Makefile *)
   let blankLine = ("", Arg.Unit (fun _ -> ()), "") in
@@ -233,94 +196,42 @@ let rec theMain () =
       [blankLine]
   in
   let featureArgs = 
-    ("", Arg.Unit (fun () -> ()), "\n\t\tCIL Features") :: featureArgs 
+    ("", Arg.Unit (fun () -> ()), " \n\t\tCIL Features") :: featureArgs 
   in
     
-  let argDescr = [
-    "--verbose", Arg.Unit (fun _ -> E.verboseFlag := true),
-                "turn on verbose mode";
-    "--debug", Arg.String (setDebugFlag true),
-                     "<xxx> turns on debugging flag xxx";
-    "--flush", Arg.Unit (fun _ -> Pretty.flushOften := true),
-                     "Flush the output streams often (aids debugging)" ;
-    "--check", Arg.Unit (fun _ -> Cilutil.doCheck := true),
-                     "turns on consistency checking of CIL";
-    "--nocheck", Arg.Unit (fun _ -> Cilutil.doCheck := false),
-                     "turns off consistency checking of CIL";
-    "--nodebug", Arg.String (setDebugFlag false),
-                      "<xxx> turns off debugging flag xxx";
-    "--stats", Arg.Unit (fun _ -> Cilutil.printStats := true),
-               "print some statistics";
-    "--testcil", Arg.String (fun s -> testcil := s),
-          "test CIL using the give compiler";
-    "--nocil", Arg.Int (fun n -> Cabs2cil.nocil := n),
-                      "Do not compile to CIL the global with the given index";
-    "--disallowDuplication", Arg.Unit (fun n -> Cabs2cil.allowDuplication := false),
-                      "Prevent small chunks of code from being duplicated";
-    "--log", Arg.String (openFile "log" (fun oc -> E.logChannel := oc)),
-             "the name of the log file";
-    "--out", Arg.String (openFile "output" (fun oc -> outChannel := Some oc)),
-             "the name of the output CIL file";
-    "--warnall", Arg.Unit (fun _ -> E.warnFlag := true),
-                 "Show all warnings";
-    "--MSVC", Arg.Unit (fun _ ->   C.msvcMode := true;
-                                   F.setMSVCMode ();
-                                   if not Machdep.hasMSVC then
-                                     ignore (E.warn "Will work in MSVC mode but will be using machine-dependent parameters for GCC since you do not have the MSVC compiler installed\n")
-                       ), "Produce MSVC output. Default is GNU";
-    "--stages", Arg.Unit (fun _ -> Cilutil.printStages := true),
-               "print the stages of the algorithm as they happen";
-    "--keepunused", Arg.Unit (fun _ -> Rmtmps.keepUnused := true),
-                "do not remove the unused variables and types";
-
-    "--mergedout", Arg.String (openFile "merged output"
-                                   (fun oc -> mergedChannel := Some oc)),
-                "specify the name of the merged file";
-    "--ignore-merge-conflicts", 
-                 Arg.Unit (fun _ -> Mergecil.ignore_merge_conflicts := true),
-                  "ignore merging conflicts";
-    "--noPrintLn", Arg.Unit (fun _ -> Cil.lineDirectiveStyle := None;
-                                     Cprint.printLn := false),
-               "don't output #line directives";
-    "--commPrintLn", Arg.Unit (fun _ -> Cil.lineDirectiveStyle := Some Cil.LineComment;
-                                       Cprint.printLnComment := true),
-               "output #line directives as comments";
-    "--printCilAsIs", Arg.Unit (fun _ -> Cil.printCilAsIs := true),
-               "do not try to simplify the CIL when printing";
-    "--sliceGlobal", Arg.Unit (fun _ -> Cilutil.sliceGlobal := true),
-               "output is the slice of #pragma cilnoremove(sym) symbols";
-    (* sm: some more debugging options *)
-    "--tr",         Arg.String Trace.traceAddMulti,
-                     "<sys>: subsystem to show debug printfs for";
-    "--pdepth",     Arg.Int setTraceDepth,
-                      "<n>: set max print depth (default: 5)";
-
-    "--extrafiles", Arg.String parseExtraFile,
-    "<filename>: the name of a file that contains a list of additional files to process, separated by whitespace of newlines";
-  ] @ F.args @ featureArgs in
+  let argDescr = Ciloptions.options @ 
+        [ 
+          "--out", Arg.String (openFile "output" 
+                                 (fun oc -> outChannel := Some oc)),
+              " the name of the output CIL file.  The cilly script sets this for you.";
+          "--mergedout", Arg.String (openFile "merged output"
+                                       (fun oc -> mergedChannel := Some oc)),
+              " specify the name of the merged file";
+        ]
+        @ F.args @ featureArgs in
   begin
     (* this point in the code is the program entry point *)
 
-    Stats.reset false; (* no performance counters *)
+    Stats.reset Stats.HardwareIfAvail;
 
     (* parse the command-line arguments *)
-    Arg.parse argDescr recordFile usageMsg;
+    Arg.parse (Arg.align argDescr) Ciloptions.recordFile usageMsg;
     Cil.initCIL ();
 
-    fileNames := List.rev !fileNames;
+    Ciloptions.fileNames := List.rev !Ciloptions.fileNames;
 
-    if !testcil <> "" then begin
-      Testcil.doit !testcil
+    if !Cilutil.testcil <> "" then begin
+      Testcil.doit !Cilutil.testcil
     end else
       (* parse each of the files named on the command line, to CIL *)
-      let files = List.map parseOneFile !fileNames in
+      let files = List.map parseOneFile !Ciloptions.fileNames in
 
       (* if there's more than one source file, merge them together; *)
       (* now we have just one CIL "file" to deal with *)
       let one =
         match files with
           [one] -> one
-        | [] -> E.s (E.error "No arguments\n")
+        | [] -> E.s (E.error "No arguments for CIL\n")
         | _ ->
             let merged =
               Stats.time "merge" (Mergecil.merge files)
@@ -334,11 +245,14 @@ let rec theMain () =
                 let oldpci = !C.print_CIL_Input in
                 C.print_CIL_Input := true;
                 Stats.time "printMerged"
-                  (C.dumpFile C.defaultCilPrinter mc) merged;
+                  (C.dumpFile !C.printerForMaincil mc.fchan mc.fname) merged;
                 C.print_CIL_Input := oldpci
             end);
             merged
       in
+
+      if !E.hadErrors then
+        E.s (E.error "Cabs2cil had some errors");
 
       (* process the CIL file (merged if necessary) *)
       processOneFile one
@@ -353,17 +267,30 @@ let cleanup () =
     Stats.print stderr "Timings:\n";
   if !E.logChannel != stderr then 
     close_out (! E.logChannel);  
-  (match ! outChannel with Some c -> close_out c | _ -> ())
+  (match ! outChannel with Some c -> close_out c.fchan | _ -> ())
+
+
+(* Without this handler, cilly.asm.exe will quit silently with return code 0
+   when a segfault happens. *)
+let handleSEGV code =
+  if !Cil.currentLoc == Cil.locUnknown then
+    E.log  "**** Segmentation fault (possibly a stack overflow)\n"
+  else begin
+    E.log ("**** Segmentation fault (possibly a stack overflow) "^^
+           "while processing %a\n")
+      Cil.d_loc !Cil.currentLoc
+  end;
+  exit code
+
+let _ = Sys.set_signal Sys.sigsegv (Sys.Signal_handle handleSEGV);
 
 ;;
 
-try 
-  theMain (); 
-  cleanup ();
-  exit (if !failed then 1 else 0)
-with F.CabsOnly -> (* This is Ok *) fun () -> exit 0
-
+begin 
+  try 
+    theMain (); 
+  with F.CabsOnly -> (* this is OK *) ()
+end;
 cleanup ();
-
-;;
+exit (if !failed then 1 else 0)
 

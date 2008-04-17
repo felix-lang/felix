@@ -68,7 +68,7 @@ let warnContext fmt =
 let checkAttributes (attrs: attribute list) : unit = 
   let rec loop lastname = function
       [] -> ()
-    | (Attr(an, _) as a) :: resta -> 
+    | Attr(an, _) :: resta -> 
         if an < lastname then
           ignore (warn "Attributes not sorted");
         loop an resta
@@ -102,6 +102,7 @@ let defineName s =
   H.add varNamesEnv s ()
 
 let defineVariable vi = 
+  (* E.log "saw %s: %d\n" vi.vname vi.vid; *)
   defineName vi.vname;
   varNamesList := (vi.vname, vi.vid) :: !varNamesList;
   (* Check the id *)
@@ -115,8 +116,14 @@ let defineVariable vi =
 let checkVariable vi = 
   try
     (* Check in the current scope only *)
-    if vi != H.find varIdsEnv vi.vid then
-      ignore (warnContext "varinfos for %s not shared\n" vi.vname);
+    let old = H.find varIdsEnv vi.vid in
+    if vi != old then begin
+      if vi.vname = old.vname then
+        ignore (warnContext "varinfos for %s not shared\n" vi.vname)
+      else
+        ignore (warnContext "variables %s and %s share id %d\n"
+                  vi.vname old.vname vi.vid )
+    end
   with Not_found -> 
     ignore (warn "Unknown id (%d) for %s\n" vi.vid vi.vname)
 
@@ -193,16 +200,29 @@ let typUsed  : (string, typeinfo * defuse ref) H.t = H.create 117
 let compNames : (string, unit) H.t = H.create 17
     
 
+let typeSigIgnoreConst (t : typ) : typsig =
+  let attrFilter (attr : attribute) : bool =
+    match attr with
+      | Attr ("const", []) -> false
+      | _ -> true
+  in
+  typeSigWithAttrs (List.filter attrFilter) t
+
+
   (* Check a type *)
 let rec checkType (t: typ) (ctx: ctxType) = 
   (* Check that it appears in the right context *)
   let rec checkContext = function
-      TVoid _ -> ctx = CTPtr || ctx = CTFRes || ctx = CTDecl
+      TVoid _ -> ctx = CTPtr || ctx = CTFRes || ctx = CTDecl || ctx = CTSizeof
     | TNamed (ti, a) -> checkContext ti.ttype
     | TArray _ -> 
         (ctx = CTStruct || ctx = CTUnion 
          || ctx = CTSizeof || ctx = CTDecl || ctx = CTArray || ctx = CTPtr)
-    | TComp _ -> ctx <> CTExp 
+    | TFun _ -> 
+        if ctx = CTSizeof && !msvcMode then
+          (ignore(warn "sizeof(function) is not defined in MSVC."); false)
+        else
+          ctx = CTPtr || ctx = CTDecl || ctx = CTSizeof
     | _ -> true
   in
   if not (checkContext t) then 
@@ -239,9 +259,8 @@ let rec checkType (t: typ) (ctx: ctxType) =
         None -> ()
       | Some l -> begin
           let t = checkExp true l in
-          match t with 
-            TInt((IInt|IUInt), _) -> ()
-          | _ -> E.s (bug "Type of array length is not integer")
+          if not (isIntegralType t) then
+            E.s (bug "Type of array length is not integer")
       end)
 
   | TFun (rt, targs, isva, a) -> 
@@ -283,7 +302,9 @@ and checkPointerType (t: typ) =
 
 
 and typeMatch (t1: typ) (t2: typ) = 
-  if typeSig t1 <> typeSig t2 then
+  (* Allow mismatches in const-ness, so that string literals can be used
+     as char*s *)
+  if typeSigIgnoreConst t1 <> typeSigIgnoreConst t2 then
     match unrollType t1, unrollType t2 with
     (* Allow free interchange of TInt and TEnum *)
       TInt (IInt, _), TEnum _ -> ()
@@ -333,7 +354,7 @@ and checkCompInfo (isadef: defuse) comp =
         (match unrollType f.ftype, f.fbitfield with
         | TInt (ik, a), Some w -> 
             checkAttributes a;
-            if w < 0 || w >= bitsSizeOf (TInt(ik, a)) then
+            if w < 0 || w > bitsSizeOf (TInt(ik, a)) then
               ignore (warn "Wrong width (%d) in bitfield" w)
         | _, Some w -> 
             ignore (E.error "Bitfield on a non integer type\n")
@@ -392,14 +413,14 @@ and checkTypeInfo (isadef: defuse) ti =
 (* Check an lvalue. If isconst then the lvalue appears in a context where 
  * only a compile-time constant can appear. Return the type of the lvalue. 
  * See the typing rule from cil.mli *)
-and checkLval (isconst: bool) (lv: lval) : typ = 
+and checkLval (isconst: bool) (forAddrof: bool) (lv: lval) : typ = 
   match lv with
     Var vi, off -> 
       checkVariable vi; 
       checkOffset vi.vtype off
 
   | Mem addr, off -> begin
-      if isconst then
+      if isconst && not forAddrof then
         ignore (warn "Memory operation in constant");
       let ta = checkExp false addr in
       match unrollType ta with
@@ -413,7 +434,7 @@ and checkLval (isconst: bool) (lv: lval) : typ =
 and checkOffset basetyp : offset -> typ = function
     NoOffset -> basetyp
   | Index (ei, o) -> 
-      checkExpType false ei intType; 
+      checkIntegralType (checkExp false ei);
       begin
         match unrollType basetyp with
           TArray (t, _, _) -> checkOffset t o
@@ -431,13 +452,8 @@ and checkOffset basetyp : offset -> typ = function
         
 and checkExpType (isconst: bool) (e: exp) (t: typ) =
   let t' = checkExp isconst e in (* compute the type *)
-  if isconst then begin (* For initializers allow a string to initialize an 
-                         * array of characters  *)
-    if typeSig t' <> typeSig t then 
-      match e, t with
-      | _ -> typeMatch t' t
-  end else
-    typeMatch t' t
+  (* ignore(E.log "checkType %a %a\n" d_plainexp e d_plaintype t); *)
+  typeMatch t' t
 
 (* Check an expression. isconst specifies if the expression occurs in a 
  * context where only a compile-time constant can occur. Return the computed 
@@ -448,45 +464,39 @@ and checkExp (isconst: bool) (e: exp) : typ =
         (if isconst then "Const" else "Exp") d_exp e)
     (fun _ ->
       match e with
-      | Const(CInt64 (_, ik, _)) -> TInt(ik, [])
-      | Const(CChr _) -> charType
-      | Const(CStr s) -> charPtrType
-      | Const(CWStr s) -> TPtr(!wcharType,[])
-      | Const(CReal (_, fk, _)) -> TFloat(fk, [])
+      | Const(_) -> typeOf e
       | Lval(lv) -> 
           if isconst then
             ignore (warn "Lval in constant");
-          checkLval isconst lv
+          checkLval isconst false lv
 
       | SizeOf(t) -> begin
           (* Sizeof cannot be applied to certain types *)
           checkType t CTSizeof;
           (match unrollType t with
-            (TFun _ | TVoid _) -> 
+            (TFun _ ) -> 
               ignore (warn "Invalid operand for sizeof")
           | _ ->());
-          uintType
+          typeOf e
       end
-      | SizeOfE(e) ->
+      | SizeOfE(e') ->
           (* The expression in a sizeof can be anything *)
-          let te = checkExp false e in
-          checkExp isconst (SizeOf(te))
+          let te = checkExp false e' in
+          checkType te CTSizeof;
+          typeOf e
 
-      | SizeOfStr s -> uintType
+      | SizeOfStr s ->  typeOf e
 
       | AlignOf(t) -> begin
           (* Sizeof cannot be applied to certain types *)
           checkType t CTSizeof;
-          (match unrollType t with
-            (TFun _ | TVoid _) -> 
-              ignore (warn "Invalid operand for sizeof")
-          | _ ->());
-          uintType
+          typeOf e
       end
-      | AlignOfE(e) ->
+      | AlignOfE(e') ->
           (* The expression in an AlignOfE can be anything *)
-          let te = checkExp false e in
-          checkExp isconst (AlignOf(te))
+          let te = checkExp false e' in
+          checkType te CTSizeof;
+          typeOf e
 
       | UnOp (Neg, e, tres) -> 
           checkArithmeticType tres; checkExpType isconst e tres; tres
@@ -535,7 +545,7 @@ and checkExp (isconst: bool) (e: exp) : typ =
               tres
       end
       | AddrOf (lv) -> begin
-          let tlv = checkLval isconst lv in
+          let tlv = checkLval isconst true lv in
           (* Only certain types can be in AddrOf *)
           match unrollType tlv with
           | TVoid _ -> 
@@ -549,7 +559,7 @@ and checkExp (isconst: bool) (e: exp) : typ =
       end
 
       | StartOf lv -> begin
-          let tlv = checkLval isconst lv in
+          let tlv = checkLval isconst true lv in
           match unrollType tlv with
             TArray (t,_, _) -> TPtr(t, [])
           | _ -> E.s (bug "StartOf on a non-array")
@@ -562,7 +572,8 @@ and checkExp (isconst: bool) (e: exp) : typ =
           match unrollType et with
             TArray _ -> E.s (bug "Cast of an array type")
           | TFun _ -> E.s (bug "Cast of a function type")
-          | TComp _ -> E.s (bug "Cast of a composite type")
+          (* A TComp cast that changes the attributes is okay. *)
+          (* | TComp _ -> E.s (bug "Cast of a composite type") *)
           | TVoid _ -> E.s (bug "Cast of a void type")
           | _ -> tres
       end)
@@ -586,10 +597,18 @@ and checkInit  (i: init) : typ =
       | CompoundInit (ct, initl) -> begin
           checkType ct CTSizeof;
           (match unrollType ct with
-            TArray(bt, Some (Const(CInt64(len, _, _))), _) -> 
+            TArray(bt, Some elen, _) -> 
+              ignore (checkExp true elen);
+              let len =
+                match isInteger (constFold true elen) with
+                  Some len -> len
+                | None -> 
+                    ignore (warn "Array length is not a constant");
+                    0L
+              in
               let rec loopIndex i = function
                   [] -> 
-                    if i <> len then 
+                    if i > len then 
                       ignore (warn "Wrong number of initializers in array")
 
                 | (Index(Const(CInt64(i', _, _)), NoOffset), ei) :: rest -> 
@@ -602,7 +621,7 @@ and checkInit  (i: init) : typ =
                     ignore (warn "Malformed initializer for array element")
               in
               loopIndex Int64.zero initl
-          | TArray(_, _, _) -> 
+          | TArray(_, None, _) -> 
               ignore (warn "Malformed initializer for array")
           | TComp (comp, _) -> 
               if comp.cstruct then
@@ -669,7 +688,8 @@ and checkStmt (s: stmt) =
             if H.mem labels ln then
               ignore (warn "Multiply defined label %s" ln);
             H.add labels ln ()
-        | Case (e, _) -> checkExpType true e intType
+        | Case (e, _) -> 
+            checkExpType true e intType
         | _ -> () (* Not yet implemented *)
       in
       List.iter checkLabel s.labels;
@@ -717,12 +737,16 @@ and checkStmt (s: stmt) =
           (* Remember the statements so far *)
           let prevStatements = !statements in
           checkBlock b;
-          (* Now make sure that all the cases do occur in that block *)
+          (* Now make sure that all the cases do occur in that block,
+             and that no case is listed twice. *)
+          let casesVisited : stmt list ref = ref [] in
           List.iter
             (fun c -> 
-              if not (List.exists (function Case _ -> true | _ -> false) 
-                        c.labels) then
-                ignore (warn "Case in switch statment without a \"case\"\n");
+               (if List.memq c !casesVisited then
+                  ignore (warnContext 
+                            "Duplicate stmt in \"cases\" list of Switch.")
+                else
+                  casesVisited := c::!casesVisited);
               (* Make sure it is in there *)
               let rec findCase = function
                 | l when l == prevStatements -> (* Not found *)
@@ -757,7 +781,7 @@ and checkInstr (i: instr) =
   match i with 
   | Set (dest, e, l) -> 
       currentLoc := l;
-      let t = checkLval false dest in
+      let t = checkLval false false dest in
       (* Not all types can be assigned to *)
       (match unrollType t with
         TFun _ -> ignore (warn "Assignment to a function type")
@@ -768,9 +792,9 @@ and checkInstr (i: instr) =
             
   | Call(dest, what, args, l) -> 
       currentLoc := l;
-      let (rt, formals, isva) = 
-        match checkExp false what with
-          TFun(rt, formals, isva, _) -> rt, formals, isva
+      let (rt, formals, isva, fnAttrs) = 
+        match unrollType (checkExp false what) with
+          TFun(rt, formals, isva, fnAttrs) -> rt, formals, isva, fnAttrs
         | _ -> E.s (bug "Call to a non-function")
       in
           (* Now check the return value*)
@@ -779,8 +803,11 @@ and checkInstr (i: instr) =
       | Some _, TVoid _ -> ignore (warn "void value is assigned")
       | None, _ -> () (* "Call of function is not assigned" *)
       | Some destlv, rt' -> 
-          let desttyp = checkLval false destlv in
+          let desttyp = checkLval false false destlv in
           if typeSig desttyp <> typeSig rt then begin
+            if not !Cabs2cil.doCollapseCallCast then
+              ignore (warn
+                        "Destination of Call does not match the return type.");
             (* Not all types can be assigned to *)
             (match unrollType desttyp with
               TFun _ -> ignore (warn "Assignment to a function type")
@@ -788,7 +815,7 @@ and checkInstr (i: instr) =
             | TVoid _ -> ignore (warn "Assignment to a void type")
             | _ -> ());
             (* Not all types can be cast *)
-            (match rt' with
+            (match unrollType rt' with
               TArray _ -> ignore (warn "Cast of an array type")
             | TFun _ -> ignore (warn "Cast of a function type")
             | TComp _ -> ignore (warn "Cast of a composite type")
@@ -805,9 +832,7 @@ and checkInstr (i: instr) =
             loopArgs formals args
         | _, _ -> ignore (warn "Not enough arguments")
       in
-      if formals = None then 
-        ignore (warn "Call to function without prototype\n")
-      else
+      if formals <> None then
         loopArgs (argsToList formals) args
         
   | Asm _ -> ()  (* Not yet implemented *)
@@ -891,9 +916,16 @@ let rec checkGlobal = function
             match targs, formals with
               [], [] -> ()
             | (fn, ft, fa) :: targs, fo :: formals -> 
-                if fn <> fo.vname || ft != fo.vtype || fa != fo.vattr then 
+                if fn <> fo.vname then 
                   ignore (warnContext 
-                            "Formal %s not shared (type + locals) in %s" 
+                            "Formal %s not shared (expecting name %s) in %s" 
+                            fo.vname fn fname);
+                E.withContext (fun () -> text "formal "++ text fo.vname)
+                  (fun () -> typeMatch ft fo.vtype)
+                  ();
+                if fa != fo.vattr then 
+                  ignore (warnContext 
+                            "Formal %s not shared (different attrs) in %s" 
                             fo.vname fname);
                 loopArgs targs formals
 
@@ -901,7 +933,7 @@ let rec checkGlobal = function
                 E.s (bug "Type has different number of formals for %s" 
                        fname)
           in
-          begin match vi.vtype with
+          begin match unrollType vi.vtype with
             TFun (rt, args, isva, a) -> begin
               currentReturnType := rt;
               loopArgs (argsToList args) fd.sformals

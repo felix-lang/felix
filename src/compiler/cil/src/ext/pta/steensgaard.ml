@@ -32,6 +32,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *)
+
+(***********************************************************************)
+(*                                                                     *)
+(*                                                                     *)
+(* This file is currently unused by CIL.  It is included in the        *)
+(*   distribution for reference only.                                  *)
+(*                                                                     *)
+(*                                                                     *)
+(***********************************************************************)
+
+
 (***********************************************************************)
 (*                                                                     *)
 (* Type Declarations                                                   *)
@@ -1256,8 +1267,6 @@ let debug_cycle (is_pos,c,l,p) =
   ever unify the labels themselves. The return is the new bounds of the 
   argument label *)
 let rec flow (is_pos : bool) (path : label list) (l : label) : label boundset =
-  let name = string_of_label l in
-  let name_bounds = string_of_bounds is_pos l in
   let collapse_cycle () = 
     let cycle = truncate path l in
       debug_cycle (is_pos,cycle,l,path);
@@ -1301,7 +1310,6 @@ let rec flow (is_pos : bool) (path : label list) (l : label) : label boundset =
 	
 (** Compute and cache any positive flow. *)
 let pos_flow l : constantset  = 
-  let name = string_of_label l in 
   let result = ref C.empty in 
     begin
       ignore (flow true [] l);
@@ -1312,7 +1320,6 @@ let pos_flow l : constantset  =
     
 (** Compute and cache any negative flow. *)
 let neg_flow l : constantset =
-  let name = string_of_label l in 
   let result = ref C.empty in
     begin
       ignore (flow false [] l); 
@@ -1324,7 +1331,6 @@ let neg_flow l : constantset =
 (** Compute and cache any pos-neg flow. Assumes that both pos_flow and
   neg_flow have been computed for the label [l]. *)
 let pos_neg_flow(l : label) : constantset  =
-  let name = string_of_label l in 
   let result = ref C.empty in
     begin
       B.iter (fun x -> result := C.union (!result) (pos_flow x.info))

@@ -1,7 +1,10 @@
 (*
  *
- * Copyright (c) 2001-2002, 
- *  John Kodumal        <jkodumal@eecs.berkeley.edu>
+ * Copyright (c) 2001-2003,
+ *  George C. Necula    <necula@cs.berkeley.edu>
+ *  Scott McPeak        <smcpeak@cs.berkeley.edu>
+ *  Wes Weimer          <weimer@cs.berkeley.edu>
+ *  Ben Liblit          <liblit@cs.berkeley.edu>
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +35,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *)
-type 'a term_hash
-val create : unit -> 'a term_hash
-val find : 'a term_hash -> int list -> 'a
-val insert : 'a term_hash -> int list -> 'a -> bool
+
+(** A number of lowering passes over CIL *)
+open Cil
+open Pretty
+module E = Errormsg
+
+(** Lower CEnum constants *)
+class lowerEnumVisitorClass : cilVisitor = object (self)
+  inherit nopCilVisitor 
+
+  method vexpr (e: exp) =
+    match e with
+      Const (CEnum(v, s, ei)) -> 
+        ChangeTo (visitCilExpr (self :>cilVisitor) v)
+
+    | _ -> DoChildren
+
+end
+
+let lowerEnumVisitor = new lowerEnumVisitorClass

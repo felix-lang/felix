@@ -45,7 +45,6 @@ let parse_error msg : 'a =           (* sm: c++-mode highlight hack: -> ' <- *)
   E.hadErrors := true;
   E.parse_error
     msg
-    (Parsing.symbol_start ()) (Parsing.symbol_end ())
 
 
 let getArg (argname: string) (args: (string * formatArg) list) = 
@@ -267,6 +266,9 @@ type maybeInit =
 %token SWITCH CASE DEFAULT
 %token WHILE DO FOR
 %token IF THEN ELSE
+
+%token  PLUS_EQ MINUS_EQ STAR_EQ SLASH_EQ PERCENT_EQ
+%token  AND_EQ PIPE_EQ CIRC_EQ INF_INF_EQ SUP_SUP_EQ
 
 %token ATTRIBUTE INLINE ASM TYPEOF FUNCTION__ PRETTY_FUNCTION__ LABEL__
 %token BUILTIN_VA_ARG BUILTIN_VA_LIST

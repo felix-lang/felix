@@ -71,6 +71,10 @@ val show_progress : bool ref
 (** Treat undefined functions conservatively *)
 val conservative_undefineds : bool ref
 
+(** client can specify particular external functions that
+ *  have no side effects *)
+val callHasNoSideEffects : (Cil.exp -> bool) ref
+
 (***********************************************************************)
 (*                                                                     *)
 (* Building the Points-to Graph                                        *)
@@ -123,6 +127,9 @@ val absloc_e_points_to  : Cil.exp -> absloc list
 val absloc_e_transitive_points_to : Cil.exp -> absloc list 
 
 val absloc_lval_aliases : Cil.lval -> absloc list
+
+(** Print a string representing an absloc, for debugging. *)
+val d_absloc : unit -> absloc -> Pretty.doc
 
 
 (***********************************************************************)

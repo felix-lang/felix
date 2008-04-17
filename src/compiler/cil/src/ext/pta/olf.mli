@@ -50,6 +50,7 @@ val print_constraints : bool ref
 val no_flow : bool ref
 val no_sub : bool ref
 val analyze_mono : bool ref
+val solve_constraints : unit -> unit (* only for compatability with Golf *)
 val rvalue : lvalue -> tau
 val deref : tau -> lvalue
 val join : tau -> tau -> tau
@@ -76,16 +77,4 @@ val absloc_points_to : lvalue -> absloc list
 val absloc_epoints_to : tau -> absloc list
 val absloc_of_lvalue : lvalue -> absloc 
 val absloc_eq : (absloc * absloc) -> bool
-
-
-
-(*
-
-Low level interface should be subsumed by the above queries
-
-val abslocLvalue : lvalue -> absloc
-val abslocEq : absloc -> absloc -> bool
 val d_absloc : unit -> absloc -> Pretty.doc
-val phonyAddrOf : lvalue -> lvalue
-*)
-

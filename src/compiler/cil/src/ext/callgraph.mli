@@ -35,7 +35,7 @@
  *
  *)
 (* callgraph.mli *)
-(* compute a static call graph; ignores function pointers *)
+(* compute a static call graph *)
 
 (* module maintainer: scott *)
 (* see copyright notice at end of this file *)
@@ -46,15 +46,33 @@
  * single function: which functions it calls, and which
  * functions call it *)
 type callnode = {
+  (* An id *)
+  cnid: int;
+  
   (* the function this node describes *)
-  cnInfo: Cil.varinfo;
+  cnInfo: nodeinfo;
 
-  (* set of functions this one calls *)
-  cnCallees: (string, callnode) Hashtbl.t;
+  (* set of functions this one calls, indexed by the node id *)
+  cnCallees: callnode Inthash.t;
 
-  (* set of functions that call this one *)
-  cnCallers: (string, callnode) Hashtbl.t;
+  (* set of functions that call this one , indexed by the node id *)
+  cnCallers: callnode Inthash.t;
 }
+
+and nodeinfo = 
+    NIVar of Cil.varinfo * bool ref 
+                         (* Node corresponding to a function. If the boolean 
+                          * is true, then the function is defined, otherwise 
+                          * it is external *)
+
+  | NIIndirect of string (* Indirect nodes have a string associated to them. 
+                          * These strings must be invalid function names *)
+               * Cil.varinfo list ref 
+                         (* A list of functions that this indirect node might 
+                          * denote *)
+
+
+val nodeName: nodeinfo -> string
 
 (* a call graph is a hashtable, mapping a function name to
  * the node which describes that function's call structure *)
@@ -82,7 +100,7 @@ val feature: Cil.featureDescr
  * All rights reserved.  Permission to use, copy, modify and distribute
  * this software for research purposes only is hereby granted, 
  * provided that the following conditions are met: 
- * 1. XSRedistributions of source code must retain the above copyright notice, 
+ * 1. Redistributions of source code must retain the above copyright notice, 
  * this list of conditions and the following disclaimer. 
  * 2. Redistributions in binary form must reproduce the above copyright notice, 
  * this list of conditions and the following disclaimer in the documentation 

@@ -48,11 +48,47 @@ exception InternalError of string
 module E = Errormsg
 module H = Hashtbl
 
-let currentLoc () = 
-  let l, f, c = E.getPosition () in
-  { Cabs.lineno   = l;
-    Cabs.filename = f;
-    Cabs.byteno   = c; }
+let matchingParsOpen = ref 0
+
+let currentLoc () = Cabshelper.currentLoc ()
+
+(* string -> unit *)
+let addComment c =
+  let l = currentLoc() in
+  let i = GrowArray.max_init_index Cabshelper.commentsGA in
+  GrowArray.setg Cabshelper.commentsGA (i+1) (l,c,false)
+
+(* track whitespace for the current token *)
+let white = ref ""  
+let addWhite lexbuf =
+    let w = Lexing.lexeme lexbuf in 
+    white := !white ^ w
+let clear_white () = white := ""
+let get_white () = !white
+
+let lexeme = ref ""
+let addLexeme lexbuf =
+    let l = Lexing.lexeme lexbuf in
+    lexeme := !lexeme ^ l
+let clear_lexeme () = lexeme := ""
+let get_extra_lexeme () = !lexeme 
+
+let int64_to_char value =
+  if (compare value (Int64.of_int 255) > 0) || (compare value Int64.zero < 0) then
+    begin
+      let msg = Printf.sprintf "clexer:intlist_to_string: character 0x%Lx too big" value in
+      E.parse_error msg;
+    end
+  else
+    Char.chr (Int64.to_int value)
+
+(* takes a not-nul-terminated list, and converts it to a string. *)
+let rec intlist_to_string (str: int64 list):string =
+  match str with
+    [] -> ""  (* add nul-termination *)
+  | value::rest ->
+      let this_char = int64_to_char value in
+      (String.make 1 this_char) ^ (intlist_to_string rest)
 
 (* Some debugging support for line numbers *)
 let dbgToken (t: token) = 
@@ -69,6 +105,7 @@ let dbgToken (t: token) =
     t
   end else
     t
+
 
 (*
 ** Keyword hashtable
@@ -120,9 +157,16 @@ let init_lexicon _ =
       ("__inline__", fun loc -> INLINE loc);
       ("inline", fun loc -> INLINE loc); 
       ("__inline", fun loc -> INLINE loc);
-      ("_inline", fun loc -> INLINE loc);
+      ("_inline", fun loc ->
+                      if !Cprint.msvcMode then 
+                        INLINE loc
+                      else 
+                        IDENT ("_inline", loc));
       ("__attribute__", fun loc -> ATTRIBUTE loc);
       ("__attribute", fun loc -> ATTRIBUTE loc);
+(*
+      ("__attribute_used__", fun loc -> ATTRIBUTE_USED loc);
+*)
       ("__blockattribute__", fun _ -> BLOCKATTRIBUTE);
       ("__blockattribute", fun _ -> BLOCKATTRIBUTE);
       ("__asm__", fun loc -> ASM loc);
@@ -164,6 +208,8 @@ let init_lexicon _ =
       ("__builtin_va_list", 
        fun _ -> NAMED_TYPE ("__builtin_va_list", currentLoc ()));
       ("__builtin_va_arg", fun loc -> BUILTIN_VA_ARG loc);
+      ("__builtin_types_compatible_p", fun loc -> BUILTIN_TYPES_COMPAT loc);
+      ("__builtin_offsetof", fun loc -> BUILTIN_OFFSETOF loc);
       (* On some versions of GCC __thread is a regular identifier *)
       ("__thread", fun loc -> 
                       if Machdep.__thread_is_keyword then 
@@ -217,12 +263,8 @@ let scan_ident id =
 ** Buffer processor
 *)
  
-let attribDepth = ref 0 (* Remembers the nesting level when parsing 
-                         * attributes *)
-
 
 let init ~(filename: string) : Lexing.lexbuf =
-  attribDepth := 0;
   init_lexicon ();
   (* Inititialize the pointer in Errormsg *)
   Lexerhack.add_type := add_type;
@@ -250,10 +292,14 @@ let scan_escape (char: char) : int64 =
   | 'f' -> '\012'  (* ASCII code 12 *)
   | 'v' -> '\011'  (* ASCII code 11 *)
   | 'a' -> '\007'  (* ASCII code 7 *)
-  | 'e' -> '\027'  (* ASCII code 27. This is a GCC extension *)
+  | 'e' | 'E' -> '\027'  (* ASCII code 27. This is a GCC extension *)
   | '\'' -> '\''    
   | '"'-> '"'     (* '"' *)
   | '?' -> '?'
+  | '(' when not !Cprint.msvcMode -> '('
+  | '{' when not !Cprint.msvcMode -> '{'
+  | '[' when not !Cprint.msvcMode -> '['
+  | '%' when not !Cprint.msvcMode -> '%'
   | '\\' -> '\\' 
   | other -> error ("Unrecognized escape sequence: \\" ^ (String.make 1 other))
   in
@@ -264,7 +310,7 @@ let scan_hex_escape str =
   let the_value = ref Int64.zero in
   (* start at character 2 to skip the \x *)
   for i = 2 to (String.length str) - 1 do
-    let thisDigit = Cabs.valueOfDigit (String.get str i) in
+    let thisDigit = Cabshelper.valueOfDigit (String.get str i) in
     (* the_value := !the_value * 16 + thisDigit *)
     the_value := Int64.add (Int64.mul !the_value radix) thisDigit
   done;
@@ -275,7 +321,7 @@ let scan_oct_escape str =
   let the_value = ref Int64.zero in
   (* start at character 1 to skip the \x *)
   for i = 1 to (String.length str) - 1 do
-    let thisDigit = Cabs.valueOfDigit (String.get str i) in
+    let thisDigit = Cabshelper.valueOfDigit (String.get str i) in
     (* the_value := !the_value * 8 + thisDigit *)
     the_value := Int64.add (Int64.mul !the_value radix) thisDigit
   done;
@@ -296,6 +342,12 @@ let lex_simple_escape remainder lexbuf =
 
 let lex_unescaped remainder lexbuf =
   let prefix = Int64.of_int (Char.code (Lexing.lexeme_char lexbuf 0)) in
+  prefix :: remainder lexbuf
+
+let lex_comment remainder lexbuf =
+  let ch = Lexing.lexeme_char lexbuf 0 in
+  let prefix = Int64.of_int (Char.code ch) in
+  if ch = '\n' then E.newline();
   prefix :: remainder lexbuf
 
 let make_char (i:int64):char =
@@ -348,7 +400,9 @@ let letter = ['a'- 'z' 'A'-'Z']
 
 let usuffix = ['u' 'U']
 let lsuffix = "l"|"L"|"ll"|"LL"
-let intsuffix = lsuffix | usuffix | usuffix lsuffix | lsuffix usuffix
+let intsuffix = lsuffix | usuffix | usuffix lsuffix | lsuffix usuffix 
+              | usuffix ? "i64"
+                
 
 let hexprefix = '0' ['x' 'X']
 
@@ -372,31 +426,54 @@ let hexfloat = hexprefix hexfraction binexponent
 let floatsuffix = ['f' 'F' 'l' 'L']
 let floatnum = (decfloat | hexfloat) floatsuffix?
 
-let ident = (letter|'_')(letter|decdigit|'_')* 
-let attribident = (letter|'_')(letter|decdigit|'_'|':')
+let ident = (letter|'_'|'$')(letter|decdigit|'_'|'$')* 
 let blank = [' ' '\t' '\012' '\r']+
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
 let oct_escape = '\\' octdigit octdigit? octdigit? 
 
+(* Pragmas that are not parsed by CIL.  We lex them as PRAGMA_LINE tokens *)
+let no_parse_pragma =
+               "warning" | "GCC"
+             (* Solaris-style pragmas:  *)
+             | "ident" | "section" | "option" | "asm" | "use_section" | "weak"
+             | "redefine_extname"
+             | "TCS_align"
+
+
 rule initial =
-	parse 	"/*"			{ let _ = comment lexbuf in 
+	parse 	"/*"			{ let il = comment lexbuf in
+	                                  let sl = intlist_to_string il in
+					  addComment sl;
+                                          addWhite lexbuf;
                                           initial lexbuf}
-|               "//"                    { endline lexbuf }
-|		blank			{initial lexbuf}
+|               "//"                    { let il = onelinecomment lexbuf in
+                                          let sl = intlist_to_string il in
+                                          addComment sl;
+                                          E.newline();
+                                          addWhite lexbuf;
+                                          initial lexbuf
+                                           }
+|		blank			{ addWhite lexbuf; initial lexbuf}
 |               '\n'                    { E.newline ();
                                           if !pragmaLine then
                                             begin
                                               pragmaLine := false;
                                               PRAGMA_EOL
                                             end
-                                          else
-                                            initial lexbuf }
-|		'#'			{ hash lexbuf}
+                                          else begin
+                                            addWhite lexbuf;
+                                            initial lexbuf
+                                          end}
+|               '\\' '\r' * '\n'        { addWhite lexbuf;
+                                          E.newline ();
+                                          initial lexbuf
+                                        }
+|		'#'			{ addWhite lexbuf; hash lexbuf}
 |               "_Pragma" 	        { PRAGMA (currentLoc ()) }
 |		'\''			{ CST_CHAR (chr lexbuf, currentLoc ())}
 |		"L'"			{ CST_WCHAR (chr lexbuf, currentLoc ()) }
-|		'"'			{ (* '"' *)
+|		'"'			{ addLexeme lexbuf; (* '"' *)
 (* matth: BUG:  this could be either a regular string or a wide string.
  *  e.g. if it's the "world" in 
  *     L"Hello, " "world"
@@ -469,7 +546,14 @@ rule initial =
 |               "__asm"                 { if !Cprint.msvcMode then 
                                              MSASM (msasm lexbuf, currentLoc ()) 
                                           else (ASM (currentLoc ())) }
-      
+
+(* If we see __pragma we eat it and the matching parentheses as well *)
+|               "__pragma"              { matchingParsOpen := 0;
+                                          let _ = matchingpars lexbuf in 
+                                          addWhite lexbuf;
+                                          initial lexbuf 
+                                        }
+
 (* sm: tree transformation keywords *)
 |               "@transform"            {AT_TRANSFORM (currentLoc ())}
 |               "@transformExpr"        {AT_TRANSFORMEXPR (currentLoc ())}
@@ -479,57 +563,84 @@ rule initial =
 
 (* __extension__ is a black. The parser runs into some conflicts if we let it
  * pass *)
-|               "__extension__"         {initial lexbuf }
+|               "__extension__"         {addWhite lexbuf; initial lexbuf }
 |		ident			{scan_ident (Lexing.lexeme lexbuf)}
 |		eof			{EOF}
-|		_			{E.parse_error
-						"Invalid symbol"
-						(Lexing.lexeme_start lexbuf)
-						(Lexing.lexeme_end lexbuf);
-						initial lexbuf}
+|		_			{E.parse_error "Invalid symbol"}
 and comment =
     parse 	
-      "*/"			        { () }
-|     '\n'                              { E.newline (); comment lexbuf }
-| 		_ 			{ comment lexbuf }
+      "*/"			        { addWhite lexbuf; [] }
+(*|     '\n'                              { E.newline (); lex_unescaped comment lexbuf }*)
+| 		_ 			{ addWhite lexbuf; lex_comment comment lexbuf }
+
+
+and onelinecomment = parse
+    '\n'|eof    {addWhite lexbuf; []}
+|   _           {addWhite lexbuf; lex_comment onelinecomment lexbuf }
+
+and matchingpars = parse
+  '\n'          { addWhite lexbuf; E.newline (); matchingpars lexbuf }
+| blank         { addWhite lexbuf; matchingpars lexbuf }
+| '('           { addWhite lexbuf; incr matchingParsOpen; matchingpars lexbuf }
+| ')'           { addWhite lexbuf; decr matchingParsOpen;
+                  if !matchingParsOpen = 0 then 
+                     ()
+                  else 
+                     matchingpars lexbuf
+                }
+|  "/*"		{ addWhite lexbuf; let il = comment lexbuf in
+                  let sl = intlist_to_string il in
+		  addComment sl;
+                  matchingpars lexbuf}
+|  '"'		{ addWhite lexbuf; (* '"' *)
+                  let _ = str lexbuf in 
+                  matchingpars lexbuf
+                 }
+| _              { addWhite lexbuf; matchingpars lexbuf }
 
 (* # <line number> <file name> ... *)
 and hash = parse
-  '\n'		{ E.newline (); initial lexbuf}
-| blank		{ hash lexbuf}
-| intnum	{ (* We are seeing a line number. This is the number for the 
+  '\n'		{ addWhite lexbuf; E.newline (); initial lexbuf}
+| blank		{ addWhite lexbuf; hash lexbuf}
+| intnum	{ addWhite lexbuf; (* We are seeing a line number. This is the number for the 
                    * next line *)
-                  E.setCurrentLine (int_of_string (Lexing.lexeme lexbuf) - 1);
-                  (* A file name must follow *)
+                 let s = Lexing.lexeme lexbuf in
+                 let lineno = try
+                   int_of_string s
+                 with Failure ("int_of_string") ->
+                   (* the int is too big. *)
+                   E.warn "Bad line number in preprocessed file: %s" s;
+                   (-1)
+                 in
+                  E.setCurrentLine (lineno - 1);
+                  (* A file name may follow *)
 		  file lexbuf }
-| "line"        { hash lexbuf } (* MSVC line number info *)
-                (* MSVC warning pragmas have very irregular syntax. We parse 
-                 * them as a whole line. *)
-| "pragma" blank "warning" { let here = currentLoc () in
-                             PRAGMA_LINE ("warning" ^ pragma lexbuf, here)
-                           }
-| "pragma" blank "GCC"     { let here = currentLoc () in
-                             PRAGMA_LINE ("GCC" ^ pragma lexbuf, here)
-                           }
+| "line"        { addWhite lexbuf; hash lexbuf } (* MSVC line number info *)
+                (* For pragmas with irregular syntax, like #pragma warning, 
+                 * we parse them as a whole line. *)
+| "pragma" blank (no_parse_pragma as pragmaName)
+                { let here = currentLoc () in
+                  PRAGMA_LINE (pragmaName ^ pragma lexbuf, here)
+                }
 | "pragma"      { pragmaLine := true; PRAGMA (currentLoc ()) }
-| _	        { endline lexbuf}
+| _	        { addWhite lexbuf; endline lexbuf}
 
 and file =  parse 
-        '\n'		        {E.newline (); initial lexbuf}
-|	blank			{file lexbuf}
-|	'"' [^ '\012' '\t' '"']* '"' 	{ (* '"' *)
+        '\n'		        {addWhite lexbuf; E.newline (); initial lexbuf}
+|	blank			{addWhite lexbuf; file lexbuf}
+|	'"' [^ '\012' '\t' '"']* '"' 	{ addWhite lexbuf;  (* '"' *)
                                    let n = Lexing.lexeme lexbuf in
                                    let n1 = String.sub n 1 
                                        ((String.length n) - 2) in
                                    E.setCurrentFile n1;
 				 endline lexbuf}
 
-|	_			{endline lexbuf}
+|	_			{addWhite lexbuf; endline lexbuf}
 
 and endline = parse 
-        '\n' 			{ E.newline (); initial lexbuf}
+        '\n' 			{ addWhite lexbuf; E.newline (); initial lexbuf}
 |   eof                         { EOF }
-|	_			{ endline lexbuf}
+|	_			{ addWhite lexbuf; endline lexbuf}
 
 and pragma = parse
    '\n'                 { E.newline (); "" }
@@ -537,11 +648,11 @@ and pragma = parse
                           cur ^ (pragma lexbuf) }  
 
 and str = parse
-        '"'             {[]} (* no nul terminiation in CST_STRING *)
-|	hex_escape	{lex_hex_escape str lexbuf}
-|	oct_escape	{lex_oct_escape str lexbuf}
-|	escape		{lex_simple_escape str lexbuf}
-|	_		{lex_unescaped str lexbuf}
+        '"'             {[]} (* no nul terminiation in CST_STRING '"' *)
+|	hex_escape	{addLexeme lexbuf; lex_hex_escape str lexbuf}
+|	oct_escape	{addLexeme lexbuf; lex_oct_escape str lexbuf}
+|	escape		{addLexeme lexbuf; lex_simple_escape str lexbuf}
+|	_		{addLexeme lexbuf; lex_unescaped str lexbuf}
 
 and chr =  parse
 	'\''	        {[]}
@@ -570,28 +681,6 @@ and msasmnobrace = parse
 |  _                    { let cur = Lexing.lexeme lexbuf in 
 
                           cur ^ (msasmnobrace lexbuf) }
-
-and attribute = parse
-   '\n'                 { E.newline (); attribute lexbuf }
-|  blank                { attribute lexbuf }
-|  '('                  { incr attribDepth; LPAREN (currentLoc ()) }
-|  ')'                  { decr attribDepth;
-                          if !attribDepth = 0 then
-                            initial lexbuf (* Skip the last closed paren *)
-                          else
-                            RPAREN }
-|  attribident          { IDENT (Lexing.lexeme lexbuf, currentLoc ()) }
-
-|  '\''			{ CST_CHAR (chr lexbuf, currentLoc ())}
-|  '"'			{ (* '"' *)
-                                          try CST_STRING (str lexbuf, currentLoc ())
-                                          with e -> 
-                                             raise (InternalError "str")}
-|  floatnum		{CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
-|  hexnum		{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
-|  octnum		{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
-|  intnum		{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
-
 
 {
 

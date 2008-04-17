@@ -154,8 +154,6 @@ let test () =
   let func = emptyFunction "test_formatcil" in
   (* Construct a few varinfo *)
   let res = makeLocalVar func "res" (TPtr(intType, [])) in
-  let arr = makeLocalVar func "arr" (TArray(TPtr(intType, []),
-                                            Some (integer 8), [])) in
   let fptr = makeLocalVar func "fptr" 
       (TPtr(TFun(intType, None, false, []), [])) in
   (* Construct an instruction *)
@@ -180,7 +178,7 @@ let test () =
   noMemoize := true;
   Stats.time "make instruction interpreted"
     (fun _ -> for i = 0 to times do 
-      let ins = 
+      let _ = 
         cInstr "%v:res = (* ((int * (*)(int, int * a2, int * * a3))%v:fptr))();"
           locUnknown [ ("res", Fv res); 
                        ("fptr", Fv fptr) ] 
@@ -192,7 +190,7 @@ let test () =
   noMemoize := false;
   Stats.time "make instruction interpreted memoized"
     (fun _ -> for i = 0 to times do 
-      let ins = 
+      let _ = 
         cInstr "%v:res = (* ((int * (*)(int, int * a2, int * * a3))%v:fptr))();"
           locUnknown [ ("res", Fv res); ("fptr", Fv fptr) ] 
       in
@@ -204,7 +202,7 @@ let test () =
     cInstr "%v:res = (* ((int * (*)(int, int * a2, int * * a3))%v:fptr))();" in
   Stats.time "make instruction interpreted partial"
     (fun _ -> for i = 0 to times do 
-      let ins = 
+      let _ = 
         partInstr
           locUnknown [ ("res", Fv res); ("fptr", Fv fptr) ] 
       in

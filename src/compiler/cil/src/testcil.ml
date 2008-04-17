@@ -389,12 +389,12 @@ let createFile () =
     { fileName = "testingcil.c";
       globals  = getGlobals ();
       globinit = None;
-      globinitcalled = false
+      globinitcalled = false;
     } 
   in
   (* Print the file *)
   let oc = open_out "testingcil.c" in
-  dumpFile defaultCilPrinter oc file;
+  dumpFile defaultCilPrinter oc "testingcil.c" file;
   close_out oc
 
   

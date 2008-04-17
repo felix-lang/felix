@@ -36,7 +36,7 @@
  *)
 
 
-(** {b An Interpreter for constructing CIL constructs} *)
+(** An Interpreter for constructing CIL constructs *)
 
 
 (** Constructs an expression based on the program and the list of arguments. 

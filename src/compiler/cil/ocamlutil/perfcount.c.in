@@ -10,28 +10,46 @@
  * Author: George Necula (necula@cs.berkeley.edu)
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-/* Store here the first value read from the performance counter */
-unsigned static long long first_value;
-
-/* This is the function that actually reads the performance counter. */
-inline static unsigned long long read_ppc() {
-  unsigned long low, high;
-  unsigned long long lowhigh;
-
-#if !defined(__i386__)
-  printf ("Reading of performance counters is supported only on Intel x86\n");
-  exit(1);
-#endif
-
+#if defined(__GNUC__)
+  #define longlong long long
   // RDTSC puts the result in EAX and EDX. We tell gcc to use those registers
   // for "low" and "high"
-  __asm__ volatile ("rdtsc" : "=a" (low), "=d" (high));
+  #if defined(__i386__) || defined(__x86_64__)
+    #define GETCOUNTER(low,high) \
+            __asm__ volatile ("rdtsc" : "=a" (low), "=d" (high));
+  #else
+    #define GETCOUNTER(low,high) \
+            printf ("Reading of performance counters is supported only on Intel x86\n"); \
+            exit(1);
+  #endif
+#else
+  // Microsoft Visual Studio
+  #define longlong __int64
+  #define inline   __inline
+  #define GETCOUNTER(low,high) __asm { \
+    __asm rdtsc \
+    __asm mov low, eax \
+    __asm mov high, edx };
+#endif
 
+/* Store here the first value read from the performance counter */
+unsigned static longlong first_value;
+
+
+/* This is the function that actually reads the performance counter. */
+inline unsigned longlong read_ppc(void) {
+  unsigned long pclow, pchigh;
+  unsigned longlong lowhigh;
+
+  GETCOUNTER(pclow, pchigh);
+  
   // printf ("Read low=0x%08lx high=0x%08lx\n", low, high);
 
   // Put the 64-bit value together
-  lowhigh = ((unsigned long long)low) | ((unsigned long long)high << 32);
+  lowhigh = ((unsigned longlong)pclow) | ((unsigned longlong)pchigh << 32);
 
   if(first_value == 0) {
     first_value = lowhigh;
@@ -40,29 +58,140 @@ inline static unsigned long long read_ppc() {
 }
 
 
+/* sm: I want a version that is as fast as possible, dropping
+ * bits that aren't very important to achieve it. *
+ *
+ * This version drops the low 20 bits and the high 14 bits so the
+ * result is 30 bits (always a positive Ocaml int); this yields
+ * megacycles, which for GHz machines will be something like
+ * milliseconds. */
+static unsigned long sample_ppc_20(void)
+{
+  unsigned long pclow, pchigh;
+
+  GETCOUNTER(pclow, pchigh);
+
+  return ((pclow >> 20) | (pchigh << 12)) & 0x3FFFFFFF;
+}
+
+/* This version drops the low 10 bits, yielding something like
+ * microseconds. */
+inline static unsigned long sample_ppc_10()
+{
+  unsigned long pclow, pchigh;
+
+  GETCOUNTER(pclow,pchigh);
+    
+  return ((pclow >> 10) | (pchigh << 22)) & 0x3FFFFFFF;
+}
+
+
+
 #ifndef CONFIGURATION_ONLY
 /*** This is the OCAML stub for the read_ppc ***/
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 
-#define CYCLES_PER_USEC @CYCLES_PER_USEC@
+// At configuration time, we estimated the cycles per microsecond as
+// @CYCLES_PER_USEC@.  But if we can get the cycle counts directly from the OS,
+// do that instead, since it's more reliable and it lets us move programs
+// to different machines without recompiling.
+double cycles_per_usec = @CYCLES_PER_USEC@;
+
+#if defined(__FreeBSD__) 
+#define CAN_GET_SPEED_FROM_OS
+
+  // Get the CPU speed from the sysctl machdep.tsc_freq
+  // This only works on FreeBSD
+
+  #include <sys/types.h>
+  #include <sys/param.h>
+  #include <sys/sysctl.h>
+
+  double getSpeedFromOS() {
+    unsigned long tscfreq;
+    size_t tflen = sizeof(tscfreq);
+    
+    if (sysctlbyname("machdep.tsc_freq", (void *) &tscfreq,
+                     &tflen, NULL, 0) < 0) {
+      perror("sysctl failed");
+      return @CYCLES_PER_USEC@;
+    }
+    return (double)tscfreq / 1000000; // We care about cycles per microsecond
+  }
+#elif defined(__CYGWIN__) || defined(__linux__)
+#define CAN_GET_SPEED_FROM_OS
+
+  // Get the CPU speed from /proc/cpuinfo
+
+  #define CPUINFO_KEY "cpu MHz"
+  #include <errno.h>
+
+  double getSpeedFromOS(){ 
+    char buffer[100];
+    FILE* cpuinfo = fopen("/proc/cpuinfo", "r");
+    if (!cpuinfo) {
+      printf("Error: could not open /proc/cpuinfo: %s",  strerror(errno));
+      exit(1);
+    }
+    while(fgets(buffer, 100, cpuinfo)) {
+      if (0 == strncasecmp(buffer, CPUINFO_KEY, sizeof(CPUINFO_KEY)-1)) {
+        char* speed = buffer + sizeof(CPUINFO_KEY)-1;
+        double result;
+        while (*speed == ' ' || *speed == '\t' || *speed == ':') { 
+          speed++; 
+        }
+        result = atof(speed);
+        if (result != 0.0) {
+          return result;
+        }
+      }
+    }
+    // Reading /proc/cpuinfo failed to find "cpu MHz"
+    return @CYCLES_PER_USEC@;
+  }
+#endif
+
+
+/* Returns false if hardware counters are not availible.  */
+value has_performance_counters() {
+
+  // HAS_PERFCOUNT is set by the configuration code at the end of
+  // this file, during ./configure
+  if ((@HAS_PERFCOUNT@) && (cycles_per_usec > 0.0)) {
+    return Val_true;
+  } else {
+    return Val_false;
+  }
+}
+
+/* The Ocaml system can use this function to set cycles_per_usec.  
+   Returns false if hardware counters are not availible.  */
+value reset_performance_counters() {
+
+#ifdef CAN_GET_SPEED_FROM_OS
+  cycles_per_usec = getSpeedFromOS();
+#endif
+
+  return has_performance_counters();
+}
+
 value read_pentium_perfcount()
 {
-  double counter = (double)read_ppc() / (1000000.0 * CYCLES_PER_USEC);
+  double counter = (double)read_ppc() / (1000000.0 * cycles_per_usec);
   return copy_double(counter);
 }
 
-/* The Ocaml system can use this function to figure out if there are 
- * performance counters available */
-value has_performance_counters() {
-  // HAS_PERFCOUNT is set by the configuration code at the end of
-  // this file, during ./configure
-#if @HAS_PERFCOUNT@ != 0
-  return Val_true;
-#else
-  return Val_false;
-#endif  
+/* sm: interface to above from Ocaml */
+value sample_pentium_perfcount_20()
+{
+  return Val_long(sample_ppc_20());
+}
+
+value sample_pentium_perfcount_10()
+{
+  return Val_long(sample_ppc_10());
 }
 
 #endif
@@ -78,7 +207,7 @@ value has_performance_counters() {
 int main() {
   struct tms t;
   clock_t start, finish, diff;
-  unsigned long long start_pc, finish_pc, diff_pc;
+  unsigned longlong start_pc, finish_pc, diff_pc;
   long clk_per_sec = sysconf(_SC_CLK_TCK);
   double cycles_per_usec;
   
@@ -122,5 +251,5 @@ int main() {
   printf("%.3lf\n", cycles_per_usec);
   exit(0);
 }
-#endif
+#endif //defined CONFIGURATION_ONLY
 

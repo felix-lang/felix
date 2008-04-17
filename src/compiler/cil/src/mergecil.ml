@@ -46,6 +46,7 @@ module P = Pretty
 open Cil
 module E = Errormsg
 module H = Hashtbl
+module A = Alpha
 open Trace
 
 let debugMerge = false
@@ -315,13 +316,16 @@ let inlineBodies : (P.doc, varinfo node) H.t = H.create 111
  * name space. Unfortunately, because of the way the C lexer works, type 
  * names must be different from variable names!! We one alpha table both for 
  * variables and types. *)
-let vtAlpha : (string, alphaTableData ref) H.t = H.create 57 (* Variables and 
+let vtAlpha : (string, location A.alphaTableData ref) H.t 
+    = H.create 57 (* Variables and 
                                                              * types *)
-let sAlpha : (string, alphaTableData ref) H.t = H.create 57 (* Structures and 
+let sAlpha : (string, location A.alphaTableData ref) H.t 
+    = H.create 57 (* Structures and 
                                                              * unions have 
                                                              * the same name 
                                                              * space *)
-let eAlpha : (string, alphaTableData ref) H.t = H.create 57 (* Enumerations *)
+let eAlpha : (string, location A.alphaTableData ref) H.t 
+    = H.create 57 (* Enumerations *)
 
 
 (** Keep track, for all global function definitions, of the names of the formal 
@@ -608,7 +612,8 @@ and matchCompInfo (oldfidx: int) (oldci: compinfo)
      * and the old one was defined. We just reuse the old *)
     (* More complicated is the case when the old one is not defined but the 
      * new one is. We still reuse the old one and we'll take care of defining 
-     * it later with the new fields. *)
+     * it later with the new fields. 
+     * GN: 7/10/04, I could not find when is "later", so I added it below *)
     if len <> 0 && old_len <> 0 && old_len <> len then (
       let curLoc = !currentLoc in     (* d_global blows this away.. *)
       (trace "merge" (P.dprintf "different # of fields\n%d: %a\n%d: %a\n"
@@ -629,7 +634,8 @@ and matchCompInfo (oldfidx: int) (oldci: compinfo)
      * the lengths are the same. Due to the code above this the other 
      * possibility is that one of the length is 0, in which case we reuse the 
      * old compinfo. *)
-    if old_len = len then
+    (* But what if the old one is the empty one ? *)
+    if old_len = len then begin
       (try
         List.iter2 
           (fun oldf f ->
@@ -657,8 +663,16 @@ and matchCompInfo (oldfidx: int) (oldci: compinfo)
                dn_global (GCompTag(ci,locUnknown)))
                in
         raise (Failure msg)
-      end);
-    (* We get here when we succeeded checking that they are equal *)
+      end)
+    end else begin
+      (* We will reuse the old one. One of them is empty. If the old one is 
+       * empty, copy over the fields from the new one. Won't this result in 
+       * all sorts of undefined types??? *)
+      if old_len = 0 then 
+        oldci.cfields <- ci.cfields;
+    end;
+    (* We get here when we succeeded checking that they are equal, or one of 
+     * them was empty *)
     newrep.ndata.cattr <- addAttributes oldci.cattr ci.cattr;
     ()
   end
@@ -674,9 +688,7 @@ and matchEnumInfo (oldfidx: int) (oldei: enuminfo)
   else begin
     (* Replace with the representative data *)
     let oldei = oldeinode.ndata in
-    let oldfidx = oldeinode.nfidx in
     let ei = einode.ndata in
-    let fidx = einode.nfidx in
     (* Try to match them. But if you cannot just make them both integers *)
     try
       (* We do not have a mapping. They better be defined in the same way *)
@@ -765,7 +777,7 @@ let rec oneFilePass1 (f:file) : unit =
    * with the same name have been encountered before and we merge those types 
    * *)
   let matchVarinfo (vi: varinfo) (l: location * int) = 
-    ignore (registerAlphaName vtAlpha None vi.vname);
+    ignore (Alpha.registerAlphaName vtAlpha None vi.vname !currentLoc);
     (* Make a node for it and put it in vEq *)
     let vinode = mkSelfNode vEq vSyn !currentFidx vi.vname vi (Some l) in
     try
@@ -1296,13 +1308,13 @@ let oneFilePass2 (f: file) =
       else begin
         (* Maybe it is static. Rename it then *)
         if vi.vstorage = Static then begin
-          let newName, _ = newAlphaName vtAlpha None vi.vname in
+          let newName, _ = A.newAlphaName vtAlpha None vi.vname !currentLoc in
           (* Remember the original name *)
           H.add originalVarNames newName vi.vname;
           if debugMerge then ignore (E.log "renaming %s at %a to %s\n"
                                            vi.vname d_loc vloc newName);
           vi.vname <- newName;
-          vi.vid <- H.hash vi.vname;
+          vi.vid <- newVID ();
           vi.vreferenced <- true;
           vi
         end else begin
@@ -1331,7 +1343,7 @@ let oneFilePass2 (f: file) =
             mergePushGlobals (visitCilGlobal renameVisitor g)
           end
 
-      | GVar (vi, init, l) as g ->
+      | GVar (vi, init, l) ->
           currentLoc := l;
           incr currentDeclIdx;
           let vi' = processVarinfo vi l in
@@ -1344,21 +1356,23 @@ let oneFilePass2 (f: file) =
               let prevVar, prevInitOpt, prevLoc =
                 (H.find emittedVarDefn vi'.vname) in
               (* previously defined; same initializer? *)
-              if (equalInitOpts prevInitOpt init.init) then (
+              if (equalInitOpts prevInitOpt init.init)
+                || (init.init = None) then (
                 (trace "mergeGlob"
                   (P.dprintf "dropping global var %s at %a in favor of the one at %a\n"
                              vi'.vname  d_loc l  d_loc prevLoc));
                 false  (* do not emit *)
               )
-              else (
-                (ignore (warn "global var %s at %a has different initializer than %a\n"
-                              vi'.vname  d_loc l  d_loc prevLoc));
-                (* emit it so we get a compiler error.. I think it would be
-                 * better to give an error message and *not* emit, since doing
-                 * this explicitly violates the CIL invariant of only one GVar
-                 * per name, but the rest of this file is very permissive so
-                 * I'll be similarly permissive.. *)
+              else if prevInitOpt = None then (
+                (* We have an initializer, but the previous one didn't.
+                   We should really convert the previous global from GVar
+                   to GVarDecl, but that's not convenient to do here. *)
                 true
+              )
+              else ( 
+                (* Both GVars have initializers. *)
+                (E.s (error "global var %s at %a has different initializer than %a\n"
+                              vi'.vname  d_loc l  d_loc prevLoc));
               )
             with Not_found -> (
               (* no previous definition *)
@@ -1418,7 +1432,6 @@ let oneFilePass2 (f: file) =
               (* If we must do alpha conversion then temporarily set the 
                * names of the local variables and formals in a standard way *)
               let nameId = ref 0 in 
-              let newName () = incr nameId;  in
               let oldNames : string list ref = ref [] in
               let renameOne (v: varinfo) = 
                 oldNames := v.vname :: !oldNames; 
@@ -1558,7 +1571,8 @@ let oneFilePass2 (f: file) =
                   E.s (bug "Setting creferenced for struct %s(%d) which is not in the sEq!\n"
                          ci.cname !currentFidx);
                 end);
-                let newname, _ = newAlphaName sAlpha None ci.cname in
+                let newname, _ = 
+                  A.newAlphaName sAlpha None ci.cname !currentLoc in
                 ci.cname <- newname;
                 ci.creferenced <- true; 
                 ci.ckey <- H.hash (compFullName ci);
@@ -1581,7 +1595,8 @@ let oneFilePass2 (f: file) =
           else begin
             match findReplacement true eEq !currentFidx ei.ename with 
               None -> (* We must rename it *)
-                let newname, _ = newAlphaName eAlpha None ei.ename in
+                let newname, _ = 
+                  A.newAlphaName eAlpha None ei.ename !currentLoc in
                 ei.ename <- newname;
                 ei.ereferenced <- true;
                 (* And we must rename the items to using the same name space 
@@ -1589,7 +1604,8 @@ let oneFilePass2 (f: file) =
                 ei.eitems <- 
                    List.map
                      (fun (n, i, loc) -> 
-                       let newname, _ = newAlphaName vtAlpha None n in
+                       let newname, _ = 
+                         A.newAlphaName vtAlpha None n !currentLoc in
                        newname, i, loc)
                      ei.eitems;
                 mergePushGlobals (visitCilGlobal renameVisitor g);
@@ -1629,7 +1645,8 @@ let oneFilePass2 (f: file) =
           else begin
             match findReplacement true tEq !currentFidx ti.tname with 
               None -> (* We must rename it and keep it *)
-                let newname, _ = newAlphaName vtAlpha None ti.tname in
+                let newname, _ = 
+                  A.newAlphaName vtAlpha None ti.tname !currentLoc in
                 ti.tname <- newname;
                 ti.treferenced <- true;
                 mergePushGlobals (visitCilGlobal renameVisitor g);
@@ -1733,7 +1750,7 @@ let merge (files: file list) (newname: string) : file =
     { fileName = newname;
       globals  = revonto (revonto [] !theFile) !theFileTypes;
       globinit = None;
-      globinitcalled = false } in
+      globinitcalled = false;} in
   init (); (* Make the GC happy *)
   (* We have made many renaming changes and sometimes we have just guessed a 
    * name wrong. Make sure now that the local names are unique. *)

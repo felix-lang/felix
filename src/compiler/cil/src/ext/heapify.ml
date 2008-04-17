@@ -53,6 +53,8 @@ let mkSimpleField ci fn ft fl =
 
 (* actual Heapify begins *)
 
+let heapifyNonArrays = ref false
+
 (* Does this local var contain an array? *)
 let rec containsArray (t:typ) : bool =  (* does this type contain an array? *)
   match unrollType t with
@@ -75,7 +77,7 @@ class heapifyModifyVisitor big_struct big_struct_fields varlist free
       let big_struct_field = List.nth big_struct_fields i in
       let new_lval = Mem(Lval(big_struct, NoOffset)),
 	Field(big_struct_field,vi_offset) in (* rewrite the lvalue *)
-      ChangeTo(new_lval)
+      ChangeDoChildrenPost(new_lval, (fun l -> l))
   | _ -> DoChildren (* ignore other lvalues *)
   method vstmt s = match s.skind with (* also rewrite the return *)
     Return(None,loc) -> 
@@ -91,7 +93,8 @@ class heapifyModifyVisitor big_struct big_struct_fields varlist free
       let free_instr = Call(None,free,[Lval(big_struct,NoOffset)],loc) in
       (* insert the instructions before the return *)
       self#queueInstr [eval_ret_instr; free_instr];
-      ChangeTo (mkStmt (Return(Some(Lval(var ret_tmp)), loc)))
+      s.skind <- (Return(Some(Lval(var ret_tmp)), loc));
+      DoChildren
   | _ -> DoChildren (* ignore other statements *)
 end
     
@@ -101,8 +104,11 @@ class heapifyAnalyzeVisitor f alloc free = object
     GFun(fundec,funloc) -> 
       let counter = ref 0 in (* the number of local vars containing arrays *)
       let varlist = ref [] in  (* a list of (var,id) pairs, in reverse order *)
-      List.iter (fun vi ->  (* find all local vars with arrays *)
-        if containsArray vi.vtype then begin (* this var contains an array *)
+      List.iter (fun vi ->  
+         (* find all local vars with arrays.  If the user requests it,
+            we also look for non-array vars whose address is taken. *)
+        if (containsArray vi.vtype) || (vi.vaddrof && !heapifyNonArrays)
+        then begin
           varlist := (vi,!counter) :: !varlist ; (* add it to the list *)
           incr counter (* put the next such var in the next slot *)
         end
@@ -112,18 +118,18 @@ class heapifyAnalyzeVisitor f alloc free = object
         let ci = mkCompInfo true name (* make a big structure *)
 	    (fun _ -> List.rev_map (* reverse the list to fix the order *)
                 (* each local var becomes a field *)
-		(fun (vi,i) -> vi.vname,vi.vtype,None,[],locUnknown) !varlist) [] in
+		(fun (vi,i) -> vi.vname,vi.vtype,None,[],vi.vdecl) !varlist) [] in
         let vi = makeLocalVar fundec name (TPtr(TComp(ci,[]),[])) in
         let modify = new heapifyModifyVisitor (Var(vi)) ci.cfields
 	    !varlist free fundec in (* rewrite accesses to local vars *)
         fundec.sbody <- visitCilBlock modify fundec.sbody ;
         let alloc_stmt = mkStmt (* allocate the big struct on the heap *)
             (Instr [Call(Some(Var(vi),NoOffset), alloc, 
-			 [SizeOf(TComp(ci,[]))],locUnknown)]) in
+			 [SizeOf(TComp(ci,[]))],funloc)]) in
         fundec.sbody.bstmts <- alloc_stmt :: fundec.sbody.bstmts ; 
 	fundec.slocals <- List.filter (fun vi -> (* remove local vars *)
 	  not (List.mem_assoc vi !varlist)) fundec.slocals ; 
-	let typedec = (GCompTag(ci,locUnknown)) in (* declare the big struct *)
+	let typedec = (GCompTag(ci,funloc)) in (* declare the big struct *)
         ChangeTo([typedec ; GFun(fundec,funloc)])  (* done! *)
       end else
 	DoChildren	(* ignore everything else *)
@@ -220,7 +226,7 @@ void * stackguard_pop() {
 let feature1 : featureDescr = 
   { fd_name = "stackGuard";
     fd_enabled = Cilutil.doStackGuard;
-    fd_description = "instrument function calls and returns to maintain a separate stack for return addresses" ;
+    fd_description = "instrument function calls and returns to maintain a\n\t\t\t\tseparate stack for return addresses" ;
     fd_extraopt = [];
     fd_doit = (function (f: file) -> default_stackguard f);
     fd_post_check = true;
@@ -229,7 +235,10 @@ let feature2 : featureDescr =
   { fd_name = "heapify";
     fd_enabled = Cilutil.doHeapify;
     fd_description = "move stack-allocated arrays to the heap" ;
-    fd_extraopt = [];
+    fd_extraopt = [
+      "--heapifyAll", Arg.Set heapifyNonArrays,
+      " When using heapify, move all local vars whose address is taken,\n\t\t\t\tnot just arrays.";
+    ];
     fd_doit = (function (f: file) -> default_heapify f);
     fd_post_check = true;
   } 

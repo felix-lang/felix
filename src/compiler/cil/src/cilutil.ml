@@ -37,6 +37,8 @@
 
 (* Keep here the globally-visible flags *)
 let doCheck= ref false   (* Whether to check CIL *)
+let strictChecking= ref false   (* If doCheck is true and warnings are found,
+                                * treat them as errors. *)
 
 let logCalls = ref false (* Whether to produce a log with all the function 
                           * calls made *)
@@ -66,3 +68,7 @@ let printStages = ref false
 let doCxxPP = ref false
 
 let libDir = ref ""
+
+let dumpFCG = ref false
+let testcil = ref ""
+

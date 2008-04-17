@@ -105,12 +105,20 @@ let break         = Break
 let mark          = Mark
 let unmark        = Unmark
 
+let d_int32 (i: int32) = text (Int32.to_string i)
+let f_int32 () i = d_int32 i
+
+let d_int64 (i: int64) = text (Int64.to_string i)
+let f_int64 () i = d_int64 i
+
+
 (* Note that the ++ operator in Ocaml are left-associative. This means 
  * that if you have a long list of ++ then the whole thing is very unbalanced 
  * towards the left side. This is the worst possible case since scanning the 
  * left side of a Concat is the non-tail recursive case. *)
 
 let (++) d1 d2 = Concat (d1, d2)
+let concat d1 d2 = Concat (d1, d2)
 
 (* Ben Liblit fix *)
 let indent n d = text (String.make n ' ') ++ (align ++ (d ++ unalign))
@@ -131,7 +139,7 @@ let seq ~(sep:doc)  ~(doit:'a -> doc) ~(elements: 'a list) =
       let fh = doit h in loop fh t)
 
 
-let docArray (sep:doc) (doit:int -> 'a -> doc) () (elements:'a array) = 
+let docArray ?(sep=chr ',') (doit:int -> 'a -> doc) () (elements:'a array) = 
   let len = Array.length elements in
   if len = 0 then 
     nil
@@ -146,11 +154,11 @@ let docArray (sep:doc) (doit:int -> 'a -> doc) () (elements:'a array) =
 
 let docOpt delem () = function
     None -> text "None"
-  | Some e -> text "Some(" ++ (delem () e) ++ chr ')'
+  | Some e -> text "Some(" ++ (delem e) ++ chr ')'
 
 
 
-let docList (sep:doc) (doit:'a -> doc) () (elements:'a list) = 
+let docList ?(sep=chr ',') (doit:'a -> doc) () (elements:'a list) = 
   seq sep doit elements
 
 let insert () d = d
@@ -160,7 +168,51 @@ let d_list (sep:string) (doit:unit -> 'a -> doc) () (elts:'a list) : doc =
   (* thunk 'doit' to match docList's interface *)
   let internalDoit (elt:'a) =
     (doit () elt) in
-  (docList (text sep) internalDoit () elts)
+  (docList ~sep:(text sep) internalDoit () elts)
+
+(** Format maps *)
+module MakeMapPrinter =
+  functor (Map: sig 
+                  type key
+                  type 'a t
+                  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+                end) ->
+struct
+  let docMap ?(sep=chr ',')
+              (doit: Map.key -> 'a -> doc) () (maplets: 'a Map.t) : doc =
+    Map.fold
+      (fun k d acc ->
+	(if acc==nil then acc else acc ++ sep)
+	  ++ (doit k d))
+      maplets
+      nil
+
+  let dmaplet d0 d1 = d0 ++ (text " |-> ") ++ d1
+
+  let d_map ?(dmaplet=dmaplet) (sep:string) dkey dval =
+    let doit = fun k d -> dmaplet (dkey () k) (dval () d) in
+    docMap ~sep:(text sep) doit
+end
+
+(** Format sets *)
+module MakeSetPrinter =
+  functor (Set: sig 
+                  type elt
+                  type t
+                  val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+                end) ->
+struct
+  let docSet ?(sep=chr ',') (doit: Set.elt -> doc) () (set: Set.t) : doc =
+    Set.fold
+      (fun elt acc ->
+	(if acc==nil then acc else acc ++ sep)
+	  ++ (doit elt))
+      set
+      nil
+
+  let d_set (sep:string) delt =
+    docSet ~sep:(text sep) (delt ())
+end
 
 
 (******************************************************************************)	
@@ -530,27 +582,35 @@ let emitDoc
 
 (* Print a document on a channel *)
 let fprint (chn: out_channel) ~(width: int) doc =
+  (* Save some parameters, to allow for nested calls of these routines. *)
   maxCol := width;
+  let old_breaks = !breaks in 
   breaks := [];
+  let old_alignDepth = !alignDepth in 
   alignDepth := 0;
+  let old_activeMarkups = !activeMarkups in 
   activeMarkups := [];
   ignore (scan 0 doc);
   breaks := List.rev !breaks;
-  alignDepth := 0;
   ignore (emitDoc 
             (fun s nrcopies -> 
               for i = 1 to nrcopies do
                 output_string chn s
               done) doc);
-  activeMarkups := [];
-  breaks := [] (* We must do this especially if we don't do emit (which 
-                * consumes breaks) because otherwise we waste memory *)
+  activeMarkups := old_activeMarkups;
+  alignDepth := old_alignDepth;
+  breaks := old_breaks (* We must do this especially if we don't do emit 
+                        * (which consumes breaks) because otherwise we waste 
+                        * memory *)
 
 (* Print the document to a string *)
 let sprint ~(width : int)  doc : string = 
   maxCol := width;
+  let old_breaks = !breaks in 
   breaks := [];
+  let old_activeMarkups = !activeMarkups in 
   activeMarkups := [];
+  let old_alignDepth = !alignDepth in 
   alignDepth := 0;
   ignore (scan 0 doc);
   breaks := List.rev !breaks;
@@ -559,21 +619,21 @@ let sprint ~(width : int)  doc : string =
     if num <= 0 then ()
     else begin Buffer.add_string buf str; add_n_strings str (num - 1) end
   in
-  alignDepth := 0;
   emitDoc add_n_strings doc;
-  breaks  := [];
-  activeMarkups := [];
+  breaks  := old_breaks;
+  activeMarkups := old_activeMarkups;
+  alignDepth := old_alignDepth;
   Buffer.contents buf
 
 
                                         (* The rest is based on printf.ml *)
-external format_int: string -> int -> string = "format_int"
-external format_float: string -> float -> string = "format_float"
+external format_int: string -> int -> string = "caml_format_int"
+external format_float: string -> float -> string = "caml_format_float"
 
 
     
-let gprintf (finish : doc -> doc)  
-    (format : ('a, unit, doc) format) : 'a =
+let gprintf (finish : doc -> 'b)  
+            (format : ('a, unit, doc, 'b) format4) : 'a =
   let format = (Obj.magic format : string) in
 
   (* Record the starting align depth *)
@@ -586,7 +646,7 @@ let gprintf (finish : doc -> doc)
     CText(acc, str)
   in
   (* Special finish function *)
-  let dfinish dc = 
+  let dfinish (dc: doc) : 'b = 
     if !alignDepth <> startAlignDepth then
       prerr_string ("Unmatched align/unalign in " ^ format ^ "\n");
     finish dc
@@ -689,7 +749,7 @@ let gprintf (finish : doc -> doc)
               collect (dctext1 acc
                          (format_float (String.sub format i (j-i+1)) f))
                 (succ j))
-        | 'b' ->
+        | 'b' | 'B' ->
             Obj.magic(fun b ->
               collect (dctext1 acc (string_of_bool b)) (succ j))
         | 'a' ->
@@ -794,3 +854,6 @@ let getAboutString () : string =
   "(Pretty: ALGO=" ^ (getAlgoName algo) ^ ")"
 
 
+(************************************************)
+let auto_printer (typ: string) = 
+  failwith ("Pretty.auto_printer \"" ^ typ ^ "\" only works with you use -pp \"camlp4o pa_prtype.cmo\" when you compile")

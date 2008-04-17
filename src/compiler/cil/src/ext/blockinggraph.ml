@@ -504,13 +504,17 @@ let markBlockingFunctions () : unit =
   in
   List.iter (fun n -> List.iter markFunction n.preds) !blockingNodes
 
+let hasFunctionTypeAttribute (n: string) (t: typ) : bool = 
+  let _, _, _, a = splitFunctionType t in 
+  hasAttribute n a
+
 let markVar (vi: varinfo) : unit =
   let node = getFunctionNode vi.vname in
   if node.origkind = NoBlock then begin
     if hasAttribute "yield" vi.vattr then begin
       node.origkind <- BlockPoint;
       blockingNodes := node :: !blockingNodes;
-    end else if hasAttribute "noreturn" vi.vattr then begin
+    end else if hasFunctionTypeAttribute "noreturn" vi.vtype then begin
       node.origkind <- EndPoint;
     end else if hasAttribute "expand" vi.vattr then begin
       node.expand <- true;

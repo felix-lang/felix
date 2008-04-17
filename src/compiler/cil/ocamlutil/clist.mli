@@ -88,8 +88,8 @@ val fold_left: ('acc -> 'a -> 'acc) -> 'acc -> 'a clist -> 'acc
 (** A version of iter that works on clists *)
 val iter: ('a -> unit) -> 'a clist -> unit
 
-(** Reverse a clist *)
-val rev: 'a clist -> 'a clist
+(** Reverse a clist. The first function reverses an element.  *)
+val rev: ('a -> 'a) -> 'a clist -> 'a clist
 
 (** A document for printing a clist (similar to [docList]) *)
 val docCList: 

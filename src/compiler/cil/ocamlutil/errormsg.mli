@@ -53,39 +53,40 @@ exception Error
 
 
    (* Error reporting. All of these functions take same arguments as a 
-    * Pretty.eprintf. They raise the exception Error after they print their 
-    * stuff. However, their type indicates that they return a "Pretty.doc" 
-    * (due to the need to use the built-in type "format") return a doc. Thus 
-    * use as follows:  E.s (E.bug "different lengths (%d != %d)" l1 l2)
-     *)
+    * Pretty.eprintf. They set the hadErrors flag, but do not raise an 
+    * exception. Their return type is unit.
+    *)
 
 (** Prints an error message of the form [Error: ...]. 
     Use in conjunction with s, for example: [E.s (E.error ... )]. *)
-val error:         ('a,unit,Pretty.doc) format -> 'a
+val error:         ('a,unit,Pretty.doc,unit) format4 -> 'a
 
 (** Similar to [error] except that its output has the form [Bug: ...] *)
-val bug:           ('a,unit,Pretty.doc) format -> 'a
+val bug:           ('a,unit,Pretty.doc,unit) format4 -> 'a
 
 (** Similar to [error] except that its output has the form [Unimplemented: ...] *)
-val unimp:         ('a,unit,Pretty.doc) format -> 'a
+val unimp:         ('a,unit,Pretty.doc,unit) format4 -> 'a
 
-(** Stop the execution by raising an Error. Use "s (error "Foo")"  *)
-val s:             Pretty.doc -> 'a
+(** Stop the execution by raising an Error. *)
+val s:             'a -> 'b
 
 (** This is set whenever one of the above error functions are called. It must
     be cleared manually *)
 val hadErrors: bool ref  
 
 (** Like {!Errormsg.error} but does not raise the {!Errormsg.Error} 
- * exception. Use: [ignore (E.warn ...)] *)
-val warn:    ('a,unit,Pretty.doc) format -> 'a
+ * exception. Return type is unit. *)
+val warn:    ('a,unit,Pretty.doc,unit) format4 -> 'a
 
 (** Like {!Errormsg.warn} but optional. Printed only if the 
  * {!Errormsg.warnFlag} is set *)
-val warnOpt: ('a,unit,Pretty.doc) format -> 'a
+val warnOpt: ('a,unit,Pretty.doc,unit) format4 -> 'a
 
 (** Print something to [logChannel] *)
-val log:           ('a,unit,Pretty.doc) format -> 'a
+val log:           ('a,unit,Pretty.doc,unit) format4 -> 'a
+
+(** same as {!Errormsg.log} but do not wrap lines *)
+val logg:          ('a,unit,Pretty.doc,unit) format4 -> 'a
 
    (* All of the error and warning reporting functions can also print a 
     * context. To register a context printing function use "pushContext". To 
@@ -94,7 +95,7 @@ val log:           ('a,unit,Pretty.doc) format -> 'a
     * context reporting functions in the reverse order they were registered. *)
 
 (** Do not actually print (i.e. print to /dev/null) *)
-val null : ('a,unit,Pretty.doc) format -> 'a
+val null : ('a,unit,Pretty.doc,unit) format4 -> 'a
 
 (** Registers a context printing function *)
 val pushContext  : (unit -> Pretty.doc) -> unit
@@ -144,8 +145,16 @@ val parse_error: string -> (* A message *)
 val locUnknown: location
 
 
-val startParsing: string -> Lexing.lexbuf (* Call this function to start 
-                                           * parsing *)
+(** Records whether the stdin is open for reading the goal **)
+val readingFromStdin: bool ref
+
+
+(* Call this function to start parsing. useBasename is by default "true", 
+ * meaning that the error information maintains only the basename. If the 
+ * file name is - then it reads from stdin. *)
+val startParsing:  ?useBasename:bool -> string -> 
+  Lexing.lexbuf 
+
 val startParsingFromString: ?file:string -> ?line:int -> string
                             -> Lexing.lexbuf
 

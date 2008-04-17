@@ -35,11 +35,45 @@
  *
  *)
 
+(** The main entry point *)
 val convFile: Cabs.file -> Cil.file
 
-(* Set this integer to the index of the global to be left in CABS form. Use 
+(** Turn on tranformation that forces correct parameter evaluation order *)
+val forceRLArgEval: bool ref
+
+(** Set this integer to the index of the global to be left in CABS form. Use 
  * -1 to disable *)
 val nocil: int ref
 
-(* Indicates whether we're allowed to duplicate small chunks of code. *)
+(** Indicates whether we're allowed to duplicate small chunks of code. *)
 val allowDuplication: bool ref
+
+(** If false, the destination of a Call instruction should always have the
+    same type as the function's return type.  Where needed, CIL will insert
+    a temporary to make this happen.
+
+    If true, the destination type may differ from the return type, so there
+    is an implicit cast.  This is useful for analyses involving [malloc],
+    because the instruction "T* x = malloc(...);" won't be broken into
+    two instructions, so it's easy to find the allocation type.
+
+    This is false by default.  Set to true to replicate the behavior
+    of CIL 1.3.5 and earlier.
+*)
+val doCollapseCallCast: bool ref
+
+(** A hook into the code that creates temporary local vars.  By default this
+  is the identity function, but you can overwrite it if you need to change the
+  types of cabs2cil-introduced temp variables. *)
+val typeForInsertedVar: (Cil.typ -> Cil.typ) ref
+
+(** Like [typeForInsertedVar], but for casts.  
+  * Casts in the source code are exempt from this hook. *)
+val typeForInsertedCast: (Cil.typ -> Cil.typ) ref
+
+(** A hook into the code that merges arguments in function types. *)
+val typeForCombinedArg: ((string, string) Hashtbl.t -> Cil.typ -> Cil.typ) ref
+
+(** A hook into the code that merges arguments in function attributes. *)
+val attrsForCombinedArg: ((string, string) Hashtbl.t ->
+                          Cil.attributes -> Cil.attributes) ref

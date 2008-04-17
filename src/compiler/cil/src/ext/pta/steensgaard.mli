@@ -32,6 +32,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *)
+
+(***********************************************************************)
+(*                                                                     *)
+(*                                                                     *)
+(* This file is currently unused by CIL.  It is included in the        *)
+(*   distribution for reference only.                                  *)
+(*                                                                     *)
+(*                                                                     *)
+(***********************************************************************)
+
 type lvalue
 type tau
 val debug : bool ref

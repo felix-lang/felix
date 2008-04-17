@@ -1,7 +1,8 @@
 (*
  *
  * Copyright (c) 2001-2002, 
- *  John Kodumal        <jkodumal@eecs.berkeley.edu>
+ *  Jeremy Condit       <jcondit@cs.berkeley.edu>
+ *  George C. Necula    <necula@cs.berkeley.edu>
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -33,18 +34,8 @@
  *
  *)
 
-type 'a entry = 'a * int list 
+(* This feature implements data slicing.  The user annotates base types
+ * and function types with region(i) annotations, and this transformation
+ * will separate the fields into parallel data structures accordingly. *)
 
-type term_hash = {
-  buckets : mutable 'a entry list;
-  ub : int;
-  size : int;
-  capacity : int;
-  inserts : int;
-}
-
-let create () : term_hash = ()
- 
-let find (th : term_hash) (stamps : int list) (elt : 'a) : bool = false
-
-val insert (th : term_hash) (stamps : int list) (elt : 'a) : bool = false
+val feature: Cil.featureDescr

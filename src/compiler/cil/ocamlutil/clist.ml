@@ -36,7 +36,7 @@
  *)
 
 open Pretty
-open Trace
+
 
 (* We often need to concatenate sequences and using lists for this purpose is 
  * expensive. So we define a kind of "concatenable lists" that are easier to 
@@ -113,11 +113,17 @@ let iter (f: 'a -> unit) (l: 'a clist) : unit =
   loop l
     
         
-let rec rev = function
-    CList l -> CList (List.rev l)
-  | CConsL (x, l) -> CConsR (rev l, x)
-  | CConsR (l, x) -> CConsL (x, rev l)
-  | CSeq (l1, l2) -> CSeq (rev l2, rev l1)
+let rec rev (revelem: 'a -> 'a) = function
+    CList l -> 
+      let rec revonto (tail: 'a list) = function
+          [] -> tail
+        | x :: rest -> revonto (revelem x :: tail) rest
+      in
+      CList (revonto [] l)
+
+  | CConsL (x, l) -> CConsR (rev revelem l, x)
+  | CConsR (l, x) -> CConsL (x, rev revelem l)
+  | CSeq (l1, l2) -> CSeq (rev revelem l2, rev revelem l1)
 
 
 let docCList (sep: doc) (doone: 'a -> doc) () (dl: 'a clist) = 
@@ -151,7 +157,7 @@ let d_boxedInt () b =
   | SomethingElse -> (text "somethingElse")
 
 
-(* sm: some simple tests of CLists *)
+(* sm: some simple tests of CLists 
 let testCList () : unit =
 begin
   (trace "sm" (dprintf "in testCList\n"));
@@ -162,8 +168,16 @@ begin
 
   let flattened = (toList clist1) in
   (trace "sm" (dprintf "flattened: %a\n"
-                       (docList (chr ',' ++ break) (d_boxedInt ()))
+                       (docList ~sep:(chr ',' ++ break) (d_boxedInt ()))
                        flattened));
 
 
 end
+1) in
+  (trace "sm" (dprintf "flattened: %a\n"
+                       (docList ~sep:(chr ',' ++ break) (d_boxedInt ()))
+                       flattened));
+
+
+end
+*)

@@ -37,11 +37,12 @@
  **)
 (**
 ** 1.0	3.22.99	Hugues Cassé	First version.
-** 2.0  George Necula 12/12/00: Many extensions
+** 2.0  George Necula 12/12/00: Practically complete rewrite.
 *)
 */
 %{
 open Cabs
+open Cabshelper
 module E = Errormsg
 
 let parse_error msg : unit =       (* sm: c++-mode highlight hack: -> ' <- *)
@@ -49,12 +50,28 @@ let parse_error msg : unit =       (* sm: c++-mode highlight hack: -> ' <- *)
 
 let print = print_string
 
+(* unit -> string option *)
+(*
+let getComments () =
+  match !comments with
+    [] -> None
+  | _ -> 
+      let r = Some(String.concat "\n" (List.rev !comments)) in
+      comments := [];
+      r
+*)
 
-let currentLoc () = 
-  let l, f, c = E.getPosition () in
-  { lineno   = l; filename = f; byteno   = c; }
+let cabslu = {lineno = -10; 
+	      filename = "cabs loc unknown"; 
+	      byteno = -10;
+              ident = 0;}
 
-let cabslu = {lineno = -10; filename = "cabs loc unknown"; byteno = -10;}
+(* cabsloc -> cabsloc *)
+(*
+let handleLoc l =
+  l.clcomment <- getComments();
+  l
+*)
 
 (*
 ** Expression building
@@ -159,27 +176,68 @@ begin
   else ()
 end
 
+let int64_to_char value =
+  if (compare value (Int64.of_int 255) > 0) || (compare value Int64.zero < 0) then
+    begin
+      let msg = Printf.sprintf "cparser:intlist_to_string: character 0x%Lx too big" value in
+      parse_error msg;
+      raise Parsing.Parse_error
+    end
+  else
+    Char.chr (Int64.to_int value)
+
 (* takes a not-nul-terminated list, and converts it to a string. *)
 let rec intlist_to_string (str: int64 list):string =
   match str with
     [] -> ""  (* add nul-termination *)
   | value::rest ->
-      let this_char = 
-	if (compare value (Int64.of_int 255) > 0) 
-           || (compare value Int64.zero < 0)
-	then begin
-	  let msg = Printf.sprintf "cparser:intlist_to_string: character 0x%Lx too big" value in
-	  parse_error msg;
-	  raise Parsing.Parse_error
-	end 
-	else 
-	  String.make 1 (Char.chr (Int64.to_int value))
-      in
-      this_char ^ (intlist_to_string rest)
+      let this_char = int64_to_char value in
+      (String.make 1 this_char) ^ (intlist_to_string rest)
 
 let fst3 (result, _, _) = result
 let snd3 (_, result, _) = result
 let trd3 (_, _, result) = result
+
+
+(*
+   transform:  __builtin_offsetof(type, member)
+   into     :  (size_t) (&(type * ) 0)->member
+ *)
+
+let transformOffsetOf (speclist, dtype) member =
+  let rec addPointer = function
+    | JUSTBASE ->
+	PTR([], JUSTBASE)
+    | PARENTYPE (attrs1, dtype, attrs2) ->
+	PARENTYPE (attrs1, addPointer dtype, attrs2)
+    | ARRAY (dtype, attrs, expr) ->
+	ARRAY (addPointer dtype, attrs, expr)
+    | PTR (attrs, dtype) ->
+	PTR (attrs, addPointer dtype)
+    | PROTO (dtype, names, variadic) ->
+	PROTO (addPointer dtype, names, variadic)
+  in
+  let nullType = (speclist, addPointer dtype) in
+  let nullExpr = CONSTANT (CONST_INT "0") in
+  let castExpr = CAST (nullType, SINGLE_INIT nullExpr) in
+
+  let rec replaceBase = function
+    | VARIABLE field ->
+	MEMBEROFPTR (castExpr, field)
+    | MEMBEROF (base, field) ->
+	MEMBEROF (replaceBase base, field)
+    | INDEX (base, index) ->
+	INDEX (replaceBase base, index)
+    | _ ->
+	parse_error "malformed offset expression in __builtin_offsetof";
+        raise Parsing.Parse_error 
+  in
+  let memberExpr = replaceBase member in
+  let addrExpr = UNARY (ADDROF, memberExpr) in
+  (* slight cheat: hard-coded assumption that size_t == unsigned int *)
+  let sizeofType = [SpecType Tunsigned], JUSTBASE in
+  let resultExpr = CAST (sizeofType, SINGLE_INIT addrExpr) in
+  resultExpr
 
 %}
 
@@ -234,13 +292,14 @@ let trd3 (_, _, result) = result
 
 %token<Cabs.cabsloc> ATTRIBUTE INLINE ASM TYPEOF FUNCTION__ PRETTY_FUNCTION__
 %token LABEL__
-%token<Cabs.cabsloc> BUILTIN_VA_ARG
+%token<Cabs.cabsloc> BUILTIN_VA_ARG ATTRIBUTE_USED
 %token BUILTIN_VA_LIST
-%token BLOCKATTRIBUTE
+%token BLOCKATTRIBUTE 
+%token<Cabs.cabsloc> BUILTIN_TYPES_COMPAT BUILTIN_OFFSETOF
 %token<Cabs.cabsloc> DECLSPEC
 %token<string * Cabs.cabsloc> MSASM MSATTR
-%token<Cabs.cabsloc> PRAGMA
 %token<string * Cabs.cabsloc> PRAGMA_LINE
+%token<Cabs.cabsloc> PRAGMA
 %token PRAGMA_EOL
 
 /* sm: cabs tree transformation specification keywords */
@@ -291,7 +350,7 @@ let trd3 (_, _, result) = result
 %type <Cabs.expression list * cabsloc> paren_comma_expression
 %type <Cabs.expression list> arguments
 %type <Cabs.expression list> bracket_comma_expression
-%type <int64 list * cabsloc> string_list 
+%type <int64 list Queue.t * cabsloc> string_list 
 %type <int64 list * cabsloc> wstring_list
 
 %type <Cabs.initwhat * Cabs.init_expression> initializer
@@ -351,15 +410,12 @@ global:
 | function_def                          { $1 } 
 /*(* Some C header files ar shared with the C++ compiler and have linkage 
    * specification *)*/
-| EXTERN string_constant declaration    { LINKAGE (fst $2, snd $2, [ $3 ]) }
+| EXTERN string_constant declaration    { LINKAGE (fst $2, (*handleLoc*) (snd $2), [ $3 ]) }
 | EXTERN string_constant LBRACE globals RBRACE 
-                                        { LINKAGE (fst $2, snd $2, $4)  }
+                                        { LINKAGE (fst $2, (*handleLoc*) (snd $2), $4)  }
 | ASM LPAREN string_constant RPAREN SEMICOLON
-                                        { GLOBASM (fst $3, $1) }
-| PRAGMA attr PRAGMA_EOL		{ PRAGMA ($2, $1) }
-| PRAGMA attr SEMICOLON PRAGMA_EOL	{ PRAGMA ($2, $1) }
-| PRAGMA_LINE                           { PRAGMA (VARIABLE (fst $1), 
-                                                  snd $1) }
+                                        { GLOBASM (fst $3, (*handleLoc*) $1) }
+| pragma                                { $1 }
 /* (* Old-style function prototype. This should be somewhere else, like in
     * "declaration". For now we keep it at global scope only because in local
     * scope it looks too much like a function call  *) */
@@ -367,14 +423,14 @@ global:
                            { (* Convert pardecl to new style *)
                              let pardecl, isva = doOldParDecl $3 $5 in 
                              (* Make the function declarator *)
-                             doDeclaration (snd $1) []
+                             doDeclaration ((*handleLoc*) (snd $1)) []
                                [((fst $1, PROTO(JUSTBASE, pardecl,isva), [], cabslu),
                                  NO_INIT)]
                             }
 /* (* Old style function prototype, but without any arguments *) */
 | IDENT LPAREN RPAREN  SEMICOLON
                            { (* Make the function declarator *)
-                             doDeclaration (snd $1) []
+                             doDeclaration ((*handleLoc*)(snd $1)) []
                                [((fst $1, PROTO(JUSTBASE,[],false), [], cabslu),
                                  NO_INIT)]
                             }
@@ -404,126 +460,228 @@ maybecomma:
 
 /* *** Expressions *** */
 
-
-expression:
-        	constant
-		        {CONSTANT (fst $1), snd $1}
+primary_expression:                     /*(* 6.5.1. *)*/
 |		IDENT
 		        {VARIABLE (fst $1), snd $1}
-|		SIZEOF expression
-		        {EXPR_SIZEOF (fst $2), $1}
-|	 	SIZEOF LPAREN type_name RPAREN
-		        {let b, d = $3 in TYPE_SIZEOF (b, d), $1}
-|		ALIGNOF expression
-		        {EXPR_ALIGNOF (fst $2), $1}
-|	 	ALIGNOF LPAREN type_name RPAREN
-		        {let b, d = $3 in TYPE_ALIGNOF (b, d), $1}
-|		PLUS expression
-		        {UNARY (PLUS, fst $2), $1}
-|		MINUS expression
-		        {UNARY (MINUS, fst $2), $1}
-|		STAR expression
-		        {UNARY (MEMOF, fst $2), $1}
-|		AND expression				%prec ADDROF
-		        {UNARY (ADDROF, fst $2), $1}
-|		EXCLAM expression
-		        {UNARY (NOT, fst $2), $1}
-|		TILDE expression
-		        {UNARY (BNOT, fst $2), $1}
-|		PLUS_PLUS expression                    %prec CAST
-		        {UNARY (PREINCR, fst $2), $1}
-|		expression PLUS_PLUS
-		        {UNARY (POSINCR, fst $1), snd $1}
-|		MINUS_MINUS expression                  %prec CAST
-		        {UNARY (PREDECR, fst $2), $1}
-|		expression MINUS_MINUS
-		        {UNARY (POSDECR, fst $1), snd $1}
-|		expression ARROW id_or_typename
-		        {MEMBEROFPTR (fst $1, $3), snd $1}
-|		expression DOT id_or_typename
-		        {MEMBEROF (fst $1, $3), snd $1}
+|        	constant
+		        {CONSTANT (fst $1), snd $1}
+|		paren_comma_expression  
+		        {PAREN (smooth_expression (fst $1)), snd $1}
 |		LPAREN block RPAREN
 		        { GNU_BODY (fst3 $2), $1 }
-|		paren_comma_expression
-		        {smooth_expression (fst $1), snd $1}
-|		expression LPAREN arguments RPAREN
+
+     /*(* Next is Scott's transformer *)*/
+|               AT_EXPR LPAREN IDENT RPAREN         /* expression pattern variable */
+                         { EXPR_PATTERN(fst $3), $1 }
+;
+
+postfix_expression:                     /*(* 6.5.2 *)*/
+|               primary_expression     
+                        { $1 }
+|		postfix_expression bracket_comma_expression
+			{INDEX (fst $1, smooth_expression $2), snd $1}
+|		postfix_expression LPAREN arguments RPAREN
 			{CALL (fst $1, $3), snd $1}
 |               BUILTIN_VA_ARG LPAREN expression COMMA type_name RPAREN
                         { let b, d = $5 in
                           CALL (VARIABLE "__builtin_va_arg", 
                                 [fst $3; TYPE_SIZEOF (b, d)]), $1 }
-|		expression bracket_comma_expression
-			{INDEX (fst $1, smooth_expression $2), snd $1}
-|		expression QUEST opt_expression COLON expression
-			{QUESTION (fst $1, $3, fst $5), snd $1}
-|		expression PLUS expression
-			{BINARY(ADD, fst $1, fst $3), snd $1}
-|		expression MINUS expression
-			{BINARY(SUB, fst $1, fst $3), snd $1}
-|		expression STAR expression
-			{BINARY(MUL, fst $1, fst $3), snd $1}
-|		expression SLASH expression
-			{BINARY(DIV, fst $1, fst $3), snd $1}
-|		expression PERCENT expression
-			{BINARY(MOD, fst $1, fst $3), snd $1}
-|		expression AND_AND expression
-			{BINARY(AND, fst $1, fst $3), snd $1}
-|		expression PIPE_PIPE expression
-			{BINARY(OR, fst $1, fst $3), snd $1}
-|		expression AND expression
-			{BINARY(BAND, fst $1, fst $3), snd $1}
-|		expression PIPE expression
-			{BINARY(BOR, fst $1, fst $3), snd $1}
-|		expression CIRC expression
-			{BINARY(XOR, fst $1, fst $3), snd $1}
-|		expression EQ_EQ expression
-			{BINARY(EQ, fst $1, fst $3), snd $1}
-|		expression EXCLAM_EQ expression
-			{BINARY(NE, fst $1, fst $3), snd $1}
-|		expression INF expression
-			{BINARY(LT, fst $1, fst $3), snd $1}
-|		expression SUP expression
-			{BINARY(GT, fst $1, fst $3), snd $1}
-|		expression INF_EQ expression
-			{BINARY(LE, fst $1, fst $3), snd $1}
-|		expression SUP_EQ expression
-			{BINARY(GE, fst $1, fst $3), snd $1}
-|		expression  INF_INF expression
-			{BINARY(SHL, fst $1, fst $3), snd $1}
-|		expression  SUP_SUP expression
-			{BINARY(SHR, fst $1, fst $3), snd $1}
-|		expression EQ expression
-			{BINARY(ASSIGN, fst $1, fst $3), snd $1}
-|		expression PLUS_EQ expression
-			{BINARY(ADD_ASSIGN, fst $1, fst $3), snd $1}
-|		expression MINUS_EQ expression
-			{BINARY(SUB_ASSIGN, fst $1, fst $3), snd $1}
-|		expression STAR_EQ expression
-			{BINARY(MUL_ASSIGN, fst $1, fst $3), snd $1}
-|		expression SLASH_EQ expression
-			{BINARY(DIV_ASSIGN, fst $1, fst $3), snd $1}
-|		expression PERCENT_EQ expression
-			{BINARY(MOD_ASSIGN, fst $1, fst $3), snd $1}
-|		expression AND_EQ expression
-			{BINARY(BAND_ASSIGN, fst $1, fst $3), snd $1}
-|		expression PIPE_EQ expression
-			{BINARY(BOR_ASSIGN, fst $1, fst $3), snd $1}
-|		expression CIRC_EQ expression
-			{BINARY(XOR_ASSIGN, fst $1, fst $3), snd $1}
-|		expression INF_INF_EQ expression	
-			{BINARY(SHL_ASSIGN, fst $1, fst $3), snd $1}
-|		expression SUP_SUP_EQ expression
-			{BINARY(SHR_ASSIGN, fst $1, fst $3), snd $1}
-|		LPAREN type_name RPAREN expression
-		         { CAST($2, SINGLE_INIT (fst $4)), $1 }
+|               BUILTIN_TYPES_COMPAT LPAREN type_name COMMA type_name RPAREN
+                        { let b1,d1 = $3 in
+                          let b2,d2 = $5 in
+                          CALL (VARIABLE "__builtin_types_compatible_p", 
+                                [TYPE_SIZEOF(b1,d1); TYPE_SIZEOF(b2,d2)]), $1 }
+|               BUILTIN_OFFSETOF LPAREN type_name COMMA offsetof_member_designator RPAREN
+                        { transformOffsetOf $3 $5, $1 }
+|		postfix_expression DOT id_or_typename
+		        {MEMBEROF (fst $1, $3), snd $1}
+|		postfix_expression ARROW id_or_typename   
+		        {MEMBEROFPTR (fst $1, $3), snd $1}
+|		postfix_expression PLUS_PLUS
+		        {UNARY (POSINCR, fst $1), snd $1}
+|		postfix_expression MINUS_MINUS
+		        {UNARY (POSDECR, fst $1), snd $1}
 /* (* We handle GCC constructor expressions *) */
 |		LPAREN type_name RPAREN LBRACE initializer_list_opt RBRACE
-		         { CAST($2, COMPOUND_INIT $5), $1 }
-/* (* GCC's address of labels *)  */
-|               AND_AND IDENT  { LABELADDR (fst $2), $1 }
-|               AT_EXPR LPAREN IDENT RPAREN         /* expression pattern variable */
-                         { EXPR_PATTERN(fst $3), $1 }
+		        { CAST($2, COMPOUND_INIT $5), $1 }
 ;
+
+offsetof_member_designator:	/* GCC extension for __builtin_offsetof */
+|		id_or_typename
+		        { VARIABLE ($1) }
+|		offsetof_member_designator DOT IDENT
+			{ MEMBEROF ($1, fst $3) }
+|		offsetof_member_designator bracket_comma_expression
+			{ INDEX ($1, smooth_expression $2) }
+;
+
+unary_expression:   /*(* 6.5.3 *)*/
+|               postfix_expression
+                        { $1 }
+|		PLUS_PLUS unary_expression
+		        {UNARY (PREINCR, fst $2), $1}
+|		MINUS_MINUS unary_expression
+		        {UNARY (PREDECR, fst $2), $1}
+|		SIZEOF unary_expression
+		        {EXPR_SIZEOF (fst $2), $1}
+|	 	SIZEOF LPAREN type_name RPAREN
+		        {let b, d = $3 in TYPE_SIZEOF (b, d), $1}
+|		ALIGNOF unary_expression
+		        {EXPR_ALIGNOF (fst $2), $1}
+|	 	ALIGNOF LPAREN type_name RPAREN
+		        {let b, d = $3 in TYPE_ALIGNOF (b, d), $1}
+|		PLUS cast_expression
+		        {UNARY (PLUS, fst $2), $1}
+|		MINUS cast_expression
+		        {UNARY (MINUS, fst $2), $1}
+|		STAR cast_expression
+		        {UNARY (MEMOF, fst $2), $1}
+|		AND cast_expression				
+		        {UNARY (ADDROF, fst $2), $1}
+|		EXCLAM cast_expression
+		        {UNARY (NOT, fst $2), $1}
+|		TILDE cast_expression
+		        {UNARY (BNOT, fst $2), $1}
+|               AND_AND IDENT  { LABELADDR (fst $2), $1 }
+;
+
+cast_expression:   /*(* 6.5.4 *)*/
+|              unary_expression 
+                         { $1 }
+|		LPAREN type_name RPAREN cast_expression
+		         { CAST($2, SINGLE_INIT (fst $4)), $1 }
+;
+
+multiplicative_expression:  /*(* 6.5.5 *)*/
+|               cast_expression
+                         { $1 }
+|		multiplicative_expression STAR cast_expression
+			{BINARY(MUL, fst $1, fst $3), snd $1}
+|		multiplicative_expression SLASH cast_expression
+			{BINARY(DIV, fst $1, fst $3), snd $1}
+|		multiplicative_expression PERCENT cast_expression
+			{BINARY(MOD, fst $1, fst $3), snd $1}
+;
+
+additive_expression:  /*(* 6.5.6 *)*/
+|               multiplicative_expression
+                        { $1 }
+|		additive_expression PLUS multiplicative_expression
+			{BINARY(ADD, fst $1, fst $3), snd $1}
+|		additive_expression MINUS multiplicative_expression
+			{BINARY(SUB, fst $1, fst $3), snd $1}
+;
+
+shift_expression:      /*(* 6.5.7 *)*/
+|               additive_expression
+                         { $1 }
+|		shift_expression  INF_INF additive_expression
+			{BINARY(SHL, fst $1, fst $3), snd $1}
+|		shift_expression  SUP_SUP additive_expression
+			{BINARY(SHR, fst $1, fst $3), snd $1}
+;
+
+
+relational_expression:   /*(* 6.5.8 *)*/
+|               shift_expression
+                        { $1 }
+|		relational_expression INF shift_expression
+			{BINARY(LT, fst $1, fst $3), snd $1}
+|		relational_expression SUP shift_expression
+			{BINARY(GT, fst $1, fst $3), snd $1}
+|		relational_expression INF_EQ shift_expression
+			{BINARY(LE, fst $1, fst $3), snd $1}
+|		relational_expression SUP_EQ shift_expression
+			{BINARY(GE, fst $1, fst $3), snd $1}
+;
+
+equality_expression:   /*(* 6.5.9 *)*/
+|              relational_expression
+                        { $1 }
+|		equality_expression EQ_EQ relational_expression
+			{BINARY(EQ, fst $1, fst $3), snd $1}
+|		equality_expression EXCLAM_EQ relational_expression
+			{BINARY(NE, fst $1, fst $3), snd $1}
+;
+
+
+bitwise_and_expression:   /*(* 6.5.10 *)*/
+|               equality_expression
+                       { $1 }
+|		bitwise_and_expression AND equality_expression
+			{BINARY(BAND, fst $1, fst $3), snd $1}
+;
+
+bitwise_xor_expression:   /*(* 6.5.11 *)*/
+|               bitwise_and_expression
+                       { $1 }
+|		bitwise_xor_expression CIRC bitwise_and_expression
+			{BINARY(XOR, fst $1, fst $3), snd $1}
+;
+
+bitwise_or_expression:   /*(* 6.5.12 *)*/
+|               bitwise_xor_expression
+                        { $1 } 
+|		bitwise_or_expression PIPE bitwise_xor_expression
+			{BINARY(BOR, fst $1, fst $3), snd $1}
+;
+
+logical_and_expression:   /*(* 6.5.13 *)*/
+|               bitwise_or_expression
+                        { $1 }
+|		logical_and_expression AND_AND bitwise_or_expression
+			{BINARY(AND, fst $1, fst $3), snd $1}
+;
+
+logical_or_expression:   /*(* 6.5.14 *)*/
+|               logical_and_expression
+                        { $1 }
+|		logical_or_expression PIPE_PIPE logical_and_expression
+			{BINARY(OR, fst $1, fst $3), snd $1}
+;
+
+conditional_expression:    /*(* 6.5.15 *)*/
+|               logical_or_expression
+                         { $1 }
+|		logical_or_expression QUEST opt_expression COLON conditional_expression
+			{QUESTION (fst $1, $3, fst $5), snd $1}
+;
+
+/*(* The C spec says that left-hand sides of assignment expressions are unary 
+ * expressions. GCC allows cast expressions in there ! *)*/
+
+assignment_expression:     /*(* 6.5.16 *)*/
+|               conditional_expression
+                         { $1 }
+|		cast_expression EQ assignment_expression
+			{BINARY(ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression PLUS_EQ assignment_expression
+			{BINARY(ADD_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression MINUS_EQ assignment_expression
+			{BINARY(SUB_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression STAR_EQ assignment_expression
+			{BINARY(MUL_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression SLASH_EQ assignment_expression
+			{BINARY(DIV_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression PERCENT_EQ assignment_expression
+			{BINARY(MOD_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression AND_EQ assignment_expression
+			{BINARY(BAND_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression PIPE_EQ assignment_expression
+			{BINARY(BOR_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression CIRC_EQ assignment_expression
+			{BINARY(XOR_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression INF_INF_EQ assignment_expression	
+			{BINARY(SHL_ASSIGN, fst $1, fst $3), snd $1}
+|		cast_expression SUP_SUP_EQ assignment_expression
+			{BINARY(SHR_ASSIGN, fst $1, fst $3), snd $1}
+;
+
+expression:           /*(* 6.5.17 *)*/
+                assignment_expression
+                        { $1 }
+;
+                            
 
 constant:
     CST_INT				{CONST_INT (fst $1), snd $1}
@@ -537,15 +695,32 @@ constant:
 string_constant:
 /* Now that we know this constant isn't part of a wstring, convert it
    back to a string for easy viewing. */
-    string_list                         {intlist_to_string (fst $1), snd $1 }
+    string_list                         {
+     let queue, location = $1 in
+     let buffer = Buffer.create (Queue.length queue) in
+     Queue.iter
+       (List.iter
+	  (fun value ->
+	    let char = int64_to_char value in
+	    Buffer.add_char buffer char))
+       queue;
+     Buffer.contents buffer, location
+   }
 ;
 one_string_constant:
 /* Don't concat multiple strings.  For asm templates. */
     CST_STRING                          {intlist_to_string (fst $1) }
 ;
 string_list:
-    one_string                          { $1 }
-|   string_list one_string              { (fst $1) @ (fst $2), snd $1 }
+    one_string                          {
+      let queue = Queue.create () in
+      Queue.add (fst $1) queue;
+      queue, snd $1
+    }
+|   string_list one_string              {
+      Queue.add (fst $2) (fst $1);
+      $1
+    }
 ;
 
 wstring_list:
@@ -557,9 +732,9 @@ wstring_list:
 
 one_string: 
     CST_STRING				{$1}
-|   FUNCTION__                          {(Cabs.explodeStringToInts 
+|   FUNCTION__                          {(Cabshelper.explodeStringToInts 
 					    !currentFunctionName), $1}
-|   PRETTY_FUNCTION__                   {(Cabs.explodeStringToInts 
+|   PRETTY_FUNCTION__                   {(Cabshelper.explodeStringToInts 
 					    !currentFunctionName), $1}
 ;    
 
@@ -669,6 +844,7 @@ block_element_list:
 /*(* GCC accepts a label at the end of a block *)*/
 |   IDENT COLON	                         { [ LABEL (fst $1, NOP (snd $1), 
                                                     snd $1)] }
+|   pragma block_element_list            { $2 }
 ;
 
 local_labels:
@@ -683,56 +859,59 @@ local_label_names:
 
 
 statement:
-    SEMICOLON		{NOP $1 }
+    SEMICOLON		{NOP ((*handleLoc*) $1) }
 |   comma_expression SEMICOLON
-	        	{COMPUTATION (smooth_expression (fst $1), snd $1)}
-|   block               {BLOCK (fst3 $1, snd3 $1)}
+	        	{COMPUTATION (smooth_expression (fst $1), (*handleLoc*)(snd $1))}
+|   block               {BLOCK (fst3 $1, (*handleLoc*)(snd3 $1))}
 |   IF paren_comma_expression statement                    %prec IF
                 	{IF (smooth_expression (fst $2), $3, NOP $1, $1)}
 |   IF paren_comma_expression statement ELSE statement
-	                {IF (smooth_expression (fst $2), $3, $5, $1)}
+	                {IF (smooth_expression (fst $2), $3, $5, (*handleLoc*) $1)}
 |   SWITCH paren_comma_expression statement
-                        {SWITCH (smooth_expression (fst $2), $3, $1)}
+                        {SWITCH (smooth_expression (fst $2), $3, (*handleLoc*) $1)}
 |   WHILE paren_comma_expression statement
-	        	{WHILE (smooth_expression (fst $2), $3, $1)}
+	        	{WHILE (smooth_expression (fst $2), $3, (*handleLoc*) $1)}
 |   DO statement WHILE paren_comma_expression SEMICOLON
-	        	         {DOWHILE (smooth_expression (fst $4), $2, $1)}
+	        	         {DOWHILE (smooth_expression (fst $4), $2, (*handleLoc*) $1)}
 |   FOR LPAREN for_clause opt_expression
 	        SEMICOLON opt_expression RPAREN statement
-	                         {FOR ($3, $4, $6, $8, $1)}
-|   IDENT COLON statement
-		                 {LABEL (fst $1, $3, snd $1)}
-|   CASE expression COLON
-	                         {CASE (fst $2, NOP $1, $1)}
-|   CASE expression ELLIPSIS expression COLON
-	                         {CASERANGE (fst $2, fst $4, NOP $1, $1)}
+	                         {FOR ($3, $4, $6, $8, (*handleLoc*) $1)}
+|   IDENT COLON attribute_nocv_list statement
+		                 {(* The only attribute that should appear here
+                                     is "unused". For now, we drop this on the
+                                     floor, since unused labels are usually
+                                     removed anyways by Rmtmps. *)
+                                  LABEL (fst $1, $4, (snd $1))}
+|   CASE expression COLON statement
+	                         {CASE (fst $2, $4, (*handleLoc*) $1)}
+|   CASE expression ELLIPSIS expression COLON statement
+	                         {CASERANGE (fst $2, fst $4, $6, (*handleLoc*) $1)}
 |   DEFAULT COLON
-	                         {DEFAULT (NOP $1, $1)}
-|   RETURN SEMICOLON		 {RETURN (NOTHING, $1)}
+	                         {DEFAULT (NOP $1, (*handleLoc*) $1)}
+|   RETURN SEMICOLON		 {RETURN (NOTHING, (*handleLoc*) $1)}
 |   RETURN comma_expression SEMICOLON
-	                         {RETURN (smooth_expression (fst $2), $1)}
-|   BREAK SEMICOLON     {BREAK $1}
-|   CONTINUE SEMICOLON	 {CONTINUE $1}
+	                         {RETURN (smooth_expression (fst $2), (*handleLoc*) $1)}
+|   BREAK SEMICOLON     {BREAK ((*handleLoc*) $1)}
+|   CONTINUE SEMICOLON	 {CONTINUE ((*handleLoc*) $1)}
 |   GOTO IDENT SEMICOLON
-		                 {GOTO (fst $2, $1)}
+		                 {GOTO (fst $2, (*handleLoc*) $1)}
 |   GOTO STAR comma_expression SEMICOLON 
-                                 { COMPGOTO (smooth_expression (fst $3), $1) }
+                                 { COMPGOTO (smooth_expression (fst $3), (*handleLoc*) $1) }
 |   ASM asmattr LPAREN asmtemplate asmoutputs RPAREN SEMICOLON
-                        { let (outs,ins,clobs) = $5 in
-                          ASM ($2, $4, outs, ins, clobs, $1) }
-|   MSASM               { ASM ([], [fst $1], [], [], [], snd $1)}
+                        { ASM ($2, $4, $5, (*handleLoc*) $1) }
+|   MSASM               { ASM ([], [fst $1], None, (*handleLoc*)(snd $1))}
 |   TRY block EXCEPT paren_comma_expression block
                         { let b, _, _ = $2 in
                           let h, _, _ = $5 in
                           if not !Cprint.msvcMode then 
                             parse_error "try/except in GCC code";
-                          TRY_EXCEPT (b, COMMA (fst $4), h, $1) }
+                          TRY_EXCEPT (b, COMMA (fst $4), h, (*handleLoc*) $1) }
 |   TRY block FINALLY block 
                         { let b, _, _ = $2 in
                           let h, _, _ = $4 in
                           if not !Cprint.msvcMode then 
                             parse_error "try/finally in GCC code";
-                          TRY_FINALLY (b, h, $1) }
+                          TRY_FINALLY (b, h, (*handleLoc*) $1) }
 
 |   error location   SEMICOLON   { (NOP $2)}
 ;
@@ -745,8 +924,9 @@ for_clause:
 
 declaration:                                /* ISO 6.7.*/
     decl_spec_list init_declarator_list SEMICOLON
-                                       { doDeclaration (snd $1) (fst $1) $2 }
-|   decl_spec_list SEMICOLON	       { doDeclaration (snd $1) (fst $1) [] }
+                                       { doDeclaration ((*handleLoc*)(snd $1)) (fst $1) $2 }
+|   decl_spec_list SEMICOLON	       
+                                       { doDeclaration ((*handleLoc*)(snd $1)) (fst $1) [] }
 ;
 init_declarator_list:                       /* ISO 6.7 */
     init_declarator                              { [$1] }
@@ -755,7 +935,7 @@ init_declarator_list:                       /* ISO 6.7 */
 ;
 init_declarator:                             /* ISO 6.7 */
     declarator                          { ($1, NO_INIT) }
-|   declarator EQ init_expression
+|   declarator EQ init_expression 
                                         { ($1, $3) }
 ;
 
@@ -802,6 +982,8 @@ type_spec:   /* ISO 6.7.2 */
 |   UNSIGNED        { Tunsigned, $1 }
 |   STRUCT                 id_or_typename
                                                    { Tstruct ($2, None,    []), $1 }
+|   STRUCT just_attributes id_or_typename
+                                                   { Tstruct ($3, None,    $2), $1 }
 |   STRUCT                 id_or_typename LBRACE struct_decl_list RBRACE
                                                    { Tstruct ($2, Some $4, []), $1 }
 |   STRUCT                                LBRACE struct_decl_list RBRACE
@@ -848,6 +1030,9 @@ struct_decl_list: /* (* ISO 6.7.2. Except that we allow empty structs. We
 |  decl_spec_list field_decl_list SEMICOLON struct_decl_list
                                           { (fst $1, $2) 
                                             :: $4 }
+/*(* MSVC allows pragmas in strange places *)*/
+|  pragma struct_decl_list                { $2 }
+
 |  error                          SEMICOLON struct_decl_list
                                           { $3 } 
 ;
@@ -857,7 +1042,10 @@ field_decl_list: /* (* ISO 6.7.2 *) */
 ;
 field_decl: /* (* ISO 6.7.2. Except that we allow unnamed fields. *) */
 |   declarator                      { ($1, None) }
-|   declarator COLON expression     { ($1, Some (fst $3)) }    
+|   declarator COLON expression attributes
+                                    { let (n,decl,al,loc) = $1 in
+                                      let al' = al @ $4 in
+                                     ((n,decl,al',loc), Some (fst $3)) }    
 |              COLON expression     { (missingFieldDecl, Some (fst $2)) }
 ;
 
@@ -874,8 +1062,8 @@ enumerator:
 
 declarator:  /* (* ISO 6.7.5. Plus Microsoft declarators.*) */
    pointer_opt direct_decl attributes_with_asm
-                                         { let (n, decl) = $2 in
-                                           (n, applyPointer (fst $1) decl, $3, snd $1) }
+                               { let (n, decl) = $2 in
+                                (n, applyPointer (fst $1) decl, $3, (snd $1)) }
 ;
 
 
@@ -930,8 +1118,12 @@ parameter_decl: /* (* ISO 6.7.5 *) */
 /* (* Old style prototypes. Like a declarator *) */
 old_proto_decl:
   pointer_opt direct_old_proto_decl   { let (n, decl, a) = $2 in
-					  (n, applyPointer (fst $1) decl, a, snd $1) }
+					  (n, applyPointer (fst $1) decl, 
+                                           a, snd $1) 
+                                      }
+
 ;
+
 direct_old_proto_decl:
   direct_decl LPAREN old_parameter_list_ne RPAREN old_pardef_list
                                    { let par_decl, isva = doOldParDecl $3 $5 in
@@ -942,6 +1134,15 @@ direct_old_proto_decl:
                                    { let n, decl = $1 in
                                      (n, PROTO(decl, [], false), [])
                                    }
+
+/* (* appears sometimesm but generates a shift-reduce conflict. *)
+| LPAREN STAR direct_decl LPAREN old_parameter_list_ne RPAREN RPAREN LPAREN RPAREN old_pardef_list
+                                   { let par_decl, isva 
+                                             = doOldParDecl $5 $10 in
+                                     let n, decl = $3 in
+                                     (n, PROTO(decl, par_decl, isva), [])
+                                   }
+*/
 ;
 
 old_parameter_list_ne:
@@ -971,7 +1172,8 @@ pointer: /* (* ISO 6.7.5 *) */
    STAR attributes pointer_opt  { $2 :: fst $3, $1 }
 ;
 pointer_opt:
-   /**/                          { [], currentLoc () }
+   /**/                          { let l = currentLoc () in
+                                   ([], l) }
 |  pointer                       { $1 }
 ;
 
@@ -1003,7 +1205,7 @@ abs_direct_decl: /* (* ISO 6.7.6. We do not support optional declarator for
             
 |   abs_direct_decl_opt LBRACKET comma_expression_opt RBRACKET
                                    { ARRAY($1, [], $3) }
-/*(* The next shoudl be abs_direct_decl_opt but we get conflicts *)*/
+/*(* The next should be abs_direct_decl_opt but we get conflicts *)*/
 |   abs_direct_decl  parameter_list_startscope rest_par_list RPAREN
                                    { let (params, isva) = $3 in
                                      !Lexerhack.pop_context ();
@@ -1020,7 +1222,7 @@ function_def:  /* (* ISO 6.9.1 *) */
             currentFunctionName := "<__FUNCTION__ used outside any functions>";
             !Lexerhack.pop_context (); (* The context pushed by 
                                     * announceFunctionName *)
-            doFunctionDef loc (trd3 $2) specs decl (fst3 $2)
+            doFunctionDef ((*handleLoc*) loc) (trd3 $2) specs decl (fst3 $2)
           } 
 
 
@@ -1097,12 +1299,21 @@ attributes_with_asm:
 
 /* things like __attribute__, but no const/volatile */
 attribute_nocv:
-    ATTRIBUTE LPAREN paren_attr_list_ne RPAREN	
+    ATTRIBUTE LPAREN paren_attr_list RPAREN	
                                         { ("__attribute__", $3), $1 }
+/*(*
+|   ATTRIBUTE_USED                      { ("__attribute__", 
+                                             [ VARIABLE "used" ]), $1 }
+*)*/
 |   DECLSPEC paren_attr_list_ne         { ("__declspec", $2), $1 }
 |   MSATTR                              { (fst $1, []), snd $1 }
                                         /* ISO 6.7.3 */
 |   THREAD                              { ("__thread",[]), $1 }
+;
+
+attribute_nocv_list:
+    /* empty */				{ []}
+|   attribute_nocv attribute_nocv_list  { fst $1 :: $2 }
 ;
 
 /* __attribute__ plus const/volatile */
@@ -1117,7 +1328,7 @@ attribute:
  *  to support them appearing between the 'struct' keyword and the type name. 
  * Actually, a declspec can appear there as well (on MSVC) *)  */
 just_attribute:
-    ATTRIBUTE LPAREN paren_attr_list_ne RPAREN
+    ATTRIBUTE LPAREN paren_attr_list RPAREN
                                         { ("__attribute__", $3) }
 |   DECLSPEC paren_attr_list_ne         { ("__declspec", $2) }
 ;
@@ -1130,60 +1341,146 @@ just_attributes:
 ;
 
 /** (* PRAGMAS and ATTRIBUTES *) ***/
+pragma: 
+| PRAGMA attr PRAGMA_EOL		{ PRAGMA ($2, $1) }
+| PRAGMA attr SEMICOLON PRAGMA_EOL	{ PRAGMA ($2, $1) }
+| PRAGMA_LINE                           { PRAGMA (VARIABLE (fst $1), 
+                                                  snd $1) }
+;
+
 /* (* We want to allow certain strange things that occur in pragmas, so we 
     * cannot use directly the language of expressions *) */ 
-attr: 
-|   id_or_typename                       { VARIABLE $1 }
+primary_attr: 
+    IDENT				{ VARIABLE (fst $1) }
+    /*(* The NAMED_TYPE here creates conflicts with IDENT *)*/
+|   NAMED_TYPE				{ VARIABLE (fst $1) } 
+|   LPAREN attr RPAREN                  { $2 } 
 |   IDENT IDENT                          { CALL(VARIABLE (fst $1), [VARIABLE (fst $2)]) }
-|   IDENT COLON CST_INT                  { VARIABLE (fst $1 ^ ":" ^ fst $3) }
-
-|   CST_INT COLON CST_INT                { VARIABLE (fst $1 ^ ":" ^ fst $3) } 
-|   DEFAULT COLON CST_INT                { VARIABLE ("default:" ^ fst $3) }
-                                         /* (* use a VARIABLE "" so that the 
-                                             * parentheses are printed *) */
-|   IDENT LPAREN  RPAREN                 { CALL(VARIABLE (fst $1), [VARIABLE ""]) }
-|   IDENT paren_attr_list_ne             { CALL(VARIABLE (fst $1), $2) }
-
 |   CST_INT                              { CONSTANT(CONST_INT (fst $1)) }
 |   string_constant                      { CONSTANT(CONST_STRING (fst $1)) }
                                            /*(* Const when it appears in 
                                             * attribute lists, is translated 
                                             * to aconst *)*/
 |   CONST                                { VARIABLE "aconst" }
-|   SIZEOF expression                     {EXPR_SIZEOF (fst $2)}
+
+|   IDENT COLON CST_INT                  { VARIABLE (fst $1 ^ ":" ^ fst $3) }
+
+/*(* The following rule conflicts with the ? : attributes. We give it a very 
+   * low priority *)*/
+|   CST_INT COLON CST_INT                { VARIABLE (fst $1 ^ ":" ^ fst $3) } 
+
+|   DEFAULT COLON CST_INT                { VARIABLE ("default:" ^ fst $3) }
+                          
+                                            /*(** GCC allows this as an 
+                                             * attribute for functions, 
+                                             * synonim for noreturn **)*/
+|   VOLATILE                             { VARIABLE ("__noreturn__") }
+;
+
+postfix_attr:
+    primary_attr                         { $1 }
+                                         /* (* use a VARIABLE "" so that the 
+                                             * parentheses are printed *) */
+|   IDENT LPAREN  RPAREN             { CALL(VARIABLE (fst $1), [VARIABLE ""]) }
+|   IDENT paren_attr_list_ne         { CALL(VARIABLE (fst $1), $2) }
+
+|   postfix_attr ARROW id_or_typename    {MEMBEROFPTR ($1, $3)} 
+|   postfix_attr DOT id_or_typename      {MEMBEROF ($1, $3)}  
+|   postfix_attr LBRACKET attr RBRACKET  {INDEX ($1, $3) }
+;
+
+/*(* Since in attributes we use both IDENT and NAMED_TYPE as indentifiers, 
+ * that leads to conflicts for SIZEOF and ALIGNOF. In those cases we require 
+ * that their arguments be expressions, not attributes *)*/
+unary_attr:
+    postfix_attr                         { $1 }
+|   SIZEOF unary_expression              {EXPR_SIZEOF (fst $2) }
 |   SIZEOF LPAREN type_name RPAREN
 		                         {let b, d = $3 in TYPE_SIZEOF (b, d)}
 
-|   ALIGNOF expression                   {EXPR_ALIGNOF (fst $2)}
+|   ALIGNOF unary_expression             {EXPR_ALIGNOF (fst $2) }
 |   ALIGNOF LPAREN type_name RPAREN      {let b, d = $3 in TYPE_ALIGNOF (b, d)}
-|   PLUS expression    	                 {UNARY (PLUS, fst $2)}
-|   MINUS expression 		        {UNARY (MINUS, fst $2)}
-|   STAR expression		        {UNARY (MEMOF, fst $2)}
-|   AND expression				                 %prec ADDROF
-	                                {UNARY (ADDROF, fst $2)}
-|   EXCLAM expression		        {UNARY (NOT, fst $2)}
-|   TILDE expression		        {UNARY (BNOT, fst $2)}
-|   attr PLUS attr                      {BINARY(ADD ,$1 , $3)} 
-|   attr MINUS attr                     {BINARY(SUB ,$1 , $3)}
-|   attr STAR expression                {BINARY(MUL ,$1 , fst $3)}
-|   attr SLASH attr			{BINARY(DIV ,$1 , $3)}
-|   attr PERCENT attr			{BINARY(MOD ,$1 , $3)}
-|   attr AND_AND attr			{BINARY(AND ,$1 , $3)}
-|   attr PIPE_PIPE attr			{BINARY(OR ,$1 , $3)}
-|   attr AND attr			{BINARY(BAND ,$1 , $3)}
-|   attr PIPE attr			{BINARY(BOR ,$1 , $3)}
-|   attr CIRC attr			{BINARY(XOR ,$1 , $3)}
-|   attr EQ_EQ attr			{BINARY(EQ ,$1 , $3)}
-|   attr EXCLAM_EQ attr			{BINARY(NE ,$1 , $3)}
-|   attr INF attr			{BINARY(LT ,$1 , $3)}
-|   attr SUP attr			{BINARY(GT ,$1 , $3)}
-|   attr INF_EQ attr			{BINARY(LE ,$1 , $3)}
-|   attr SUP_EQ attr			{BINARY(GE ,$1 , $3)}
-|   attr INF_INF attr			{BINARY(SHL ,$1 , $3)}
-|   attr SUP_SUP attr			{BINARY(SHR ,$1 , $3)}
-|   attr ARROW id_or_typename           {MEMBEROFPTR ($1, $3)} 
-|   attr DOT id_or_typename             {MEMBEROF ($1, $3)}  
-|   LPAREN attr RPAREN                  { $2 } 
+|   PLUS cast_attr                      {UNARY (PLUS, $2)}
+|   MINUS cast_attr                     {UNARY (MINUS, $2)}
+|   STAR cast_attr		        {UNARY (MEMOF, $2)}
+|   AND cast_attr
+	                                {UNARY (ADDROF, $2)}
+|   EXCLAM cast_attr    	        {UNARY (NOT, $2)}
+|   TILDE cast_attr                     {UNARY (BNOT, $2)}
+;
+
+cast_attr:
+    unary_attr                           { $1 }
+;   
+
+multiplicative_attr:
+    cast_attr                           { $1 }
+|   multiplicative_attr STAR cast_attr  {BINARY(MUL ,$1 , $3)}
+|   multiplicative_attr SLASH cast_attr	  {BINARY(DIV ,$1 , $3)}
+|   multiplicative_attr PERCENT cast_attr {BINARY(MOD ,$1 , $3)}
+;
+
+
+additive_attr:
+    multiplicative_attr                 { $1 }
+|   additive_attr PLUS multiplicative_attr  {BINARY(ADD ,$1 , $3)} 
+|   additive_attr MINUS multiplicative_attr {BINARY(SUB ,$1 , $3)}
+;
+
+shift_attr:
+    additive_attr                       { $1 }
+|   shift_attr INF_INF additive_attr	{BINARY(SHL ,$1 , $3)}
+|   shift_attr SUP_SUP additive_attr	{BINARY(SHR ,$1 , $3)}
+;
+
+relational_attr:
+    shift_attr                          { $1 }
+|   relational_attr INF shift_attr	{BINARY(LT ,$1 , $3)}
+|   relational_attr SUP shift_attr	{BINARY(GT ,$1 , $3)}
+|   relational_attr INF_EQ shift_attr	{BINARY(LE ,$1 , $3)}
+|   relational_attr SUP_EQ shift_attr	{BINARY(GE ,$1 , $3)}
+;
+
+equality_attr:
+    relational_attr                     { $1 }
+|   equality_attr EQ_EQ relational_attr	    {BINARY(EQ ,$1 , $3)}
+|   equality_attr EXCLAM_EQ relational_attr {BINARY(NE ,$1 , $3)}
+;
+
+
+bitwise_and_attr:
+    equality_attr                       { $1 }
+|   bitwise_and_attr AND equality_attr	{BINARY(BAND ,$1 , $3)}
+;
+
+bitwise_xor_attr:
+    bitwise_and_attr                       { $1 }
+|   bitwise_xor_attr CIRC bitwise_and_attr {BINARY(XOR ,$1 , $3)}
+;
+
+bitwise_or_attr: 
+    bitwise_xor_attr                      { $1 }
+|   bitwise_or_attr PIPE bitwise_xor_attr {BINARY(BOR ,$1 , $3)}
+;
+
+logical_and_attr:
+    bitwise_or_attr                             { $1 }
+|   logical_and_attr AND_AND bitwise_or_attr	{BINARY(AND ,$1 , $3)}
+;
+
+logical_or_attr:
+    logical_and_attr                           { $1 }
+|   logical_or_attr PIPE_PIPE logical_and_attr {BINARY(OR ,$1 , $3)}
+;
+
+conditional_attr: 
+    logical_or_attr                        { $1 }
+/* This is in conflict for now */
+|   logical_or_attr QUEST conditional_attr COLON conditional_attr 
+                                          { QUESTION($1, $3, $5) }
+
+
+attr: conditional_attr                    { $1 }
 ;
 
 attr_list_ne:
@@ -1191,8 +1488,16 @@ attr_list_ne:
 |  attr COMMA attr_list_ne               { $1 :: $3 }
 |  error COMMA attr_list_ne              { $3 }
 ;
+attr_list:
+  /* empty */                            { [] }
+| attr_list_ne                           { $1 }
+;
 paren_attr_list_ne: 
    LPAREN attr_list_ne RPAREN            { $2 }
+|  LPAREN error RPAREN                   { [] }
+;
+paren_attr_list: 
+   LPAREN attr_list RPAREN               { $2 }
 |  LPAREN error RPAREN                   { [] }
 ;
 /*** GCC ASM instructions ***/
@@ -1206,10 +1511,10 @@ asmtemplate:
 |   one_string_constant asmtemplate              { $1 :: $2 }
 ;
 asmoutputs: 
-  /* empty */           { ([], [], []) }
+  /* empty */           { None }
 | COLON asmoperands asminputs
                         { let (ins, clobs) = $3 in
-                          ($2, ins, clobs) }
+                          Some {aoutputs = $2; ainputs = ins; aclobbers = clobs} }
 ;
 asmoperands:
      /* empty */                        { [] }
@@ -1220,14 +1525,19 @@ asmoperandsne:
 |    asmoperandsne COMMA asmoperand     { $3 :: $1 }
 ;
 asmoperand:
-     string_constant LPAREN expression RPAREN    { (fst $1, fst $3) }
-|    string_constant LPAREN error RPAREN         { (fst $1, NOTHING ) } 
+     asmopname string_constant LPAREN expression RPAREN    { ($1, fst $2, fst $4) }
+|    asmopname string_constant LPAREN error RPAREN         { ($1, fst $2, NOTHING ) } 
 ; 
 asminputs: 
   /* empty */                { ([], []) }
 | COLON asmoperands asmclobber
                         { ($2, $3) }
 ;
+asmopname:
+    /* empty */                         { None }
+|   LBRACKET IDENT RBRACKET             { Some (fst $2) }
+;
+
 asmclobber:
     /* empty */                         { [] }
 | COLON asmcloberlst_ne                 { $2 }

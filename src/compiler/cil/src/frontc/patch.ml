@@ -40,6 +40,7 @@
 (* CABS file patching *)
 
 open Cabs
+open Cabshelper
 open Trace
 open Pretty
 open Cabsvisit

@@ -44,10 +44,11 @@ let withTimeout (secs: float) (* Seconds for timeout *)
   end
 
 (** Print a hash table *)
-let docHash (one: 'a -> 'b -> doc) () (h: ('a, 'b) H.t) = 
-  let theDoc = ref nil in
+let docHash ?(sep=chr ',') (one: 'a -> 'b -> doc) () (h: ('a, 'b) H.t) = 
   (H.fold 
-     (fun key data acc -> acc ++ one key data)
+     (fun key data acc -> 
+       if acc == align then acc ++ one key data
+       else acc ++ sep ++ one key data)
      h
      align) ++ unalign
     
@@ -83,6 +84,18 @@ let rec list_drop (n : int) (xs : 'a list) : 'a list =
     | y::ys -> list_drop (n-1) ys
   end
 
+let list_droptail (n : int) (xs : 'a list) : 'a list =
+  if n < 0 then invalid_arg "Util.list_droptail";
+  let (ndrop,r) =
+    List.fold_right
+      (fun x (ndrop,acc) ->
+	if ndrop = 0 then (ndrop, x :: acc)
+	else (ndrop-1, acc))
+      xs
+      (n,[])
+  in
+  if ndrop > 0 then invalid_arg "Util.listdroptail"
+  else r
 
 let rec list_span (p : 'a -> bool) (xs : 'a list) : 'a list * 'a list = 
   begin match xs with
@@ -136,6 +149,13 @@ let rec get_some_option_list (xs : 'a option list) : 'a list =
   end
 ;;
 
+(* tail-recursive append: reverses xs twice *)
+let list_append (xs: 'a list) (ys: 'a list): 'a list =
+  match xs with (* optimize some common cases *)
+      [] -> ys
+    | [x] -> x::ys
+    | _ -> list_rev_append (List.rev xs) ys
+
 let list_iteri (f: int -> 'a -> unit) (l: 'a list) : unit = 
   let rec loop (i: int) (l: 'a list) : unit = 
     match l with 
@@ -173,6 +193,15 @@ let list_init (len : int) (init_fun : int -> 'a) : 'a list =
 ;;
 
 
+let rec list_find_first (l: 'a list) (f: 'a -> 'b option) : 'b option = 
+  match l with 
+    [] -> None
+  | h :: t -> begin
+      match f h with 
+        None -> list_find_first t f
+      | r -> r
+  end
+  
 (** Generates the range of integers starting with a and ending with b *)
 let int_range_list (a: int) (b: int) = 
   list_init (b - a + 1) (fun i -> a + i)
@@ -282,11 +311,24 @@ let restoreHash ?deepCopy (h: ('a, 'b) H.t) : (unit -> unit) =
     match deepCopy with 
       None -> H.copy h 
     | Some f -> 
-        let old = H.create 13 in 
+        let old = H.create (H.length h) in 
         H.iter (fun k d -> H.add old k (f d)) h;
         old
   in
   (fun () -> hash_copy_into old h)
+
+let restoreIntHash ?deepCopy (h: 'a IH.t) : (unit -> unit) = 
+  let old = 
+    match deepCopy with 
+      None -> IH.copy h 
+    | Some f -> 
+        let old = IH.create (IH.length h) in 
+        IH.iter (fun k d -> IH.add old k (f d)) h;
+        old
+  in
+  (fun () -> 
+    IH.clear h;
+    IH.iter (fun i k -> IH.add h i k) old)
 
 let restoreArray ?deepCopy (a: 'a array) : (unit -> unit) = 
   let old = Array.copy a in
@@ -329,19 +371,6 @@ let tryFinally
     raise e
   end
 
-
-
-
-(** The state information that the GUI must display is viewed abstractly as a 
- * set of registers. *)
-type registerInfo = {
-    rName: string; (** The name of the register *)
-    rGroup: string; (** The name of the group to which this register belongs. 
-                     * The special group {!Engine.machineRegisterGroup} 
-                     * contains the machine registers. *)
-    rVal: Pretty.doc; (** The value to be displayed about a register *)
-    rOneLineVal: Pretty.doc option (** The value to be displayed on one line *)
-} 
 
 
 
@@ -477,6 +506,13 @@ let rec filterNoCopy (f: 'a -> bool) (l: 'a list) : 'a list =
   | h :: rest -> 
       let rest' = filterNoCopy f rest in
       if rest == rest' then l else h :: rest'
+
+(** Join a list of strings *)
+let rec joinStrings (sep: string) (sl: string list) = 
+  match sl with 
+    [] -> ""
+  | [s1] -> s1
+  | s1 :: ((_ :: _) as rest) -> s1 ^ sep ^ joinStrings sep rest
 
 
 (************************************************************************
@@ -669,8 +705,6 @@ let loadConfiguration (fname: string) : unit =
 
    
  
-(************************************************************************)
-
 (*********************************************************************)
 type symbol = int
 
@@ -679,14 +713,44 @@ let registeredSymbolNames: (string, symbol) H.t = H.create 113
 let symbolNames: string IH.t = IH.create 113 
 let nextSymbolId = ref 0 
 
+(* When we register symbol ranges, we store a naming function for use later 
+ * when we print the symbol *)
+let symbolRangeNaming: (int * int * (int -> string)) list ref = ref []
+
+(* Reset the symbols. We want to allow the registration of symbols at the 
+ * top-level. This means that we cannot simply clear the hash tables. The 
+ * first time we call "reset" we actually remember the state. *)
+let resetThunk: (unit -> unit) option ref = ref None
+
+let snapshotSymbols () : unit -> unit = 
+  runThunks [ restoreIntHash symbolNames;
+              restoreRef nextSymbolId;
+              restoreHash registeredSymbolNames;
+              restoreRef symbolRangeNaming ]
+
+let resetSymbols () = 
+  match !resetThunk with 
+    None -> resetThunk := Some (snapshotSymbols ())
+  | Some t -> t ()
+  
+
+let dumpSymbols () = 
+  ignore (E.log "Current symbols\n");
+  IH.iter (fun i k -> ignore (E.log " %s -> %d\n" k i)) symbolNames;
+  ()
+
+let newSymbol (n: string) : symbol = 
+  assert(not (H.mem registeredSymbolNames n));
+  let id = !nextSymbolId in
+  incr nextSymbolId;
+  H.add registeredSymbolNames n id;
+  IH.add symbolNames id n;
+  id
+
 let registerSymbolName (n: string) : symbol = 
   try H.find registeredSymbolNames n
   with Not_found -> begin
-    let id = !nextSymbolId in
-    incr nextSymbolId;
-    H.add registeredSymbolNames n id;
-    IH.add symbolNames id n;
-    id
+    newSymbol n
   end
 
 (** Register a range of symbols. The mkname function will be invoked for 
@@ -694,14 +758,58 @@ let registerSymbolName (n: string) : symbol =
 let registerSymbolRange (count: int) (mkname: int -> string) : symbol = 
   if count < 0 then E.s (E.bug "registerSymbolRange: invalid counter");
   let first = !nextSymbolId in
-  for i = 0 to count - 1 do 
-    ignore (registerSymbolName (mkname i))
-  done;
+  nextSymbolId := !nextSymbolId + count;
+  symbolRangeNaming := 
+    (first, !nextSymbolId - 1, mkname) :: !symbolRangeNaming;
   first
     
 let symbolName (id: symbol) : string = 
   try IH.find symbolNames id
   with Not_found -> 
-    ignore (E.warn "Cannot find the name of symbol %d" id);
-    "pseudo" ^ string_of_int id
+    (* Perhaps it is one of the lazily named symbols *)
+    try 
+      let (fst, _, mkname) = 
+        List.find 
+          (fun (fst,lst,_) -> fst <= id && id <= lst) 
+          !symbolRangeNaming in
+      let n = mkname (id - fst) in
+      IH.add symbolNames id n;
+      n
+    with Not_found ->
+      ignore (E.warn "Cannot find the name of symbol %d" id);
+      "symbol" ^ string_of_int id
 
+(************************************************************************)
+
+(** {1 Int32 Operators} *)
+
+module Int32Op = struct
+   exception IntegerTooLarge
+   let to_int (i: int32) = 
+     let i' = Int32.to_int i in (* Silently drop the 32nd bit *)
+     if i = Int32.of_int i' then i'
+     else raise IntegerTooLarge
+
+   let (<%) = (fun x y -> (Int32.compare x y) < 0)
+   let (<=%) = (fun x y -> (Int32.compare x y) <= 0)
+   let (>%) = (fun x y -> (Int32.compare x y) > 0)
+   let (>=%) = (fun x y -> (Int32.compare x y) >= 0)
+   let (<>%) = (fun x y -> (Int32.compare x y) <> 0)
+   
+   let (+%) = Int32.add
+   let (-%) = Int32.sub
+   let ( *% ) = Int32.mul
+   let (/%) = Int32.div
+   let (~-%) = Int32.neg
+
+   (* We cannot use the <<% because it trips camlp4 *)
+   let sll = fun i j -> Int32.shift_left i (to_int j)
+   let (>>%) = fun i j -> Int32.shift_right i (to_int j)
+   let (>>>%) = fun i j -> Int32.shift_right_logical i (to_int j)
+end
+
+
+(*********************************************************************)
+
+let equals x1 x2 : bool =
+  (compare x1 x2) = 0

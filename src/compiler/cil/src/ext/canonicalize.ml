@@ -43,8 +43,8 @@
  * This is incomplete -- certain fixes which are necessary 
  * for some programs are not yet implemented.
  * 
- * #1) C allows global variables to have multiple declarations and (I think)
- *     equivalent definitions. This transformation removes all but one
+ * #1) C allows global variables to have multiple declarations and multiple
+ *     (equivalent) definitions. This transformation removes all but one
  *     declaration and all but one definition.
  *
  * #2) Any variables that use C++ keywords as identifiers are renamed.
@@ -214,7 +214,7 @@ class canonicalizeVisitor = object(self)
     end
     | _ -> SkipChildren
 
-  method vinit i = 
+  method vinit (forg: varinfo) (off: offset) i = 
 (* #5. If an initializer uses expressions as enum values,
    add an explicit cast. *)
     match i with 

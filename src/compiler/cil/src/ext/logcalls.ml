@@ -11,40 +11,52 @@ module H = Hashtbl
 let i = ref 0
 let name = ref ""
 
-(* sm: switches! *)
-let linux = ref false          (* when true, use printk *)
-let allInsts = ref false       (* when true, instrument every instruction *)
-let printPtrs = ref false      (* when true, print pointer values *)
-let printStrings = ref false   (* when true, print char* as strings *)
-let noCFuncs = ref false       (* when true, don't print calls to *)
-                               (* functions whose name begins with "C" *)
-                               (* (only relevant when allInsts = true) *)
+(* Switches *)
+let printFunctionName = ref "printf"
 
-let styleHelp:string = "<n>: sets logcalls style, as sum of:\n" ^
-  "      1=linux, 2=allInsts, 4=printPtrs, 8=printStrings, 16=noCFuncs"
+let addProto = ref false
 
-(* sm: decided to pass cryptic integer instead of making lots of separate *)
-(* command-line arguments *)
-let setStyle (i:int) =
-  linux        := (i land 1) != 0;
-  allInsts     := (i land 2) != 0;
-  printPtrs    := (i land 4) != 0;
-  printStrings := (i land 8) != 0;
-  noCFuncs     := (i land 16) != 0;
+let printf: varinfo option ref = ref None
+let makePrintfFunction () : varinfo = 
+    match !printf with 
+      Some v -> v
+    | None -> begin 
+        let v = makeGlobalVar !printFunctionName 
+                     (TFun(voidType, Some [("format", charPtrType, [])],
+                             true, [])) in
+        printf := Some v;
+        addProto := true;
+        v
+    end
 
-(* instrument every instruction! aie! *)
-class verboseLogVisitor printfFun funstr prefix = object
+let mkPrint (format: string) (args: exp list) : instr = 
+  let p: varinfo = makePrintfFunction () in 
+  Call(None, Lval(var p), (mkString format) :: args, !currentLoc)
+  
+
+let d_string (fmt : ('a,unit,doc,string) format4) : 'a = 
+  let f (d: doc) : string = 
+    Pretty.sprint 200 d
+  in
+  Pretty.gprintf f fmt 
+
+let currentFunc: string ref = ref ""
+
+class logCallsVisitorClass = object
   inherit nopCilVisitor
 
+  (* Watch for a declaration for our printer *)
+  
   method vinst i = begin
     match i with
-    | Call(lo,Lval(Var(vi),NoOffset),al,l)
-        when (!noCFuncs && vi.vname.[0] = 'C') -> SkipChildren
     | Call(lo,e,al,l) ->
+        let pre = mkPrint (d_string "call %a\n" d_exp e) [] in
+        let post = mkPrint (d_string "return from %a\n" d_exp e) [] in
+(*
       let str1 = prefix ^
         (Pretty.sprint 800 ( Pretty.dprintf "Calling %a(%a)\n"
           d_exp e
-          (docList (chr ',' ++ break ) (fun arg ->
+          (docList ~sep:(chr ',' ++ break ) (fun arg ->
             try
               match unrollType (typeOf arg) with
                   TInt _ | TEnum _ -> dprintf "%a = %%d" d_exp arg
@@ -63,12 +75,20 @@ class verboseLogVisitor printfFun funstr prefix = object
                                 ( [ (* one ; *) mkString str ] @ args),
                                 locUnknown)) : instr )in
       let ilist = ([ (newinst str1 log_args) ; i ; (newinst str2 []) ] : instr list) in
-    (ChangeTo(ilist))
+ *)
+    ChangeTo [ pre; i; post ] 
+
     | _ -> DoChildren
   end
   method vstmt (s : stmt) = begin
     match s.skind with
-      Return(Some(e),l) ->
+      Return _ -> 
+        let pre = mkPrint (d_string "exit %s\n" !currentFunc) [] in 
+        ChangeTo (mkStmt (Block (mkBlock [ mkStmtOneInstr pre; s ])))
+    | _ -> DoChildren
+
+(*
+(Some(e),l) ->
       let str = prefix ^ Pretty.sprint 800 ( Pretty.dprintf
         "Return(%%p) from %s\n" funstr ) in
       let newinst = ((Call (None, Lval(var printfFun.svar),
@@ -87,35 +107,36 @@ class verboseLogVisitor printfFun funstr prefix = object
       let slist = [ new_stmt ; s ] in
       (ChangeTo(mkStmt(Block(mkBlock slist))))
     | _ -> DoChildren
+*)
   end
 end
 
+let logCallsVisitor = new logCallsVisitorClass
+
 
 let logCalls (f: file) : unit =
-  let prefix = if !linux then "<5>" else "" in
-
-  (* Create a prototype for the logging function *)
-  let printfFun =
-    let fdec = emptyFunction (if !linux then "printk" else "printf") in
-    (* let argi  = makeLocalVar fdec "prio" intType in *)
-    fdec.svar.vtype <- 
-       TFun(intType, Some [ ("format", charConstPtrType, []) ], true, []);
-    fdec
-  in
-
-  let isCharType (k:ikind) =
-    k=IChar || k=ISChar || k=IUChar in
-
-  (* debugging 'anagram', it's really nice to be able to see the strings *)
-  (* inside fat pointers, even if it's a bit of a hassle and a hack here *)
-  let isFatCharPtr (cinfo:compinfo) =
-    cinfo.cname="wildp_char" ||
-    cinfo.cname="fseqp_char" ||
-    cinfo.cname="seqp_char" in
 
   let doGlobal = function
-      GFun (fdec, loc) ->
-        (trace "logcalls" (dprintf "looking at %s\n" fdec.svar.vname));
+    | GVarDecl (v, _) when v.vname = !printFunctionName -> 
+          if !printf = None then
+             printf := Some v
+
+    | GFun (fdec, loc) ->
+        currentFunc := fdec.svar.vname;
+        (* do the body *)
+        ignore (visitCilFunction logCallsVisitor fdec);
+        (* Now add the entry instruction *)
+        let pre = mkPrint (d_string "enter %s\n" !currentFunc) [] in 
+        fdec.sbody <- 
+          mkBlock [ mkStmtOneInstr pre;
+                    mkStmt (Block fdec.sbody) ]
+(*
+	(* debugging 'anagram', it's really nice to be able to see the strings *)
+	(* inside fat pointers, even if it's a bit of a hassle and a hack here *)
+	let isFatCharPtr (cinfo:compinfo) =
+	  cinfo.cname="wildp_char" ||
+	  cinfo.cname="fseqp_char" ||
+	  cinfo.cname="seqp_char" in
 
         (* Collect expressions that denote the actual arguments *)
         let actargs =
@@ -146,7 +167,7 @@ let logCalls (f: file) : unit =
         (* sm: expanded width to 200 because I want one per line *)
         let formatstr = prefix ^ (Pretty.sprint 200
           (dprintf "entering %s(%a)\n" fdec.svar.vname
-            (docList (chr ',' ++ break)
+            (docList ~sep:(chr ',' ++ break)
               (fun vi -> match unrollType vi.vtype with
               | TInt _ | TEnum _ -> dprintf "%s = %%d" vi.vname
               | TFloat _ -> dprintf "%s = %%g" vi.vname
@@ -185,17 +206,26 @@ let logCalls (f: file) : unit =
                                 ( (* one :: *) mkString formatstr 
                                    :: actargs),
                                 loc)]) :: fdec.sbody.bstmts
-
+ *)
     | _ -> ()
   in
-  Stats.time "logCalls" (iterGlobals f) doGlobal
+  Stats.time "logCalls" (iterGlobals f) doGlobal;
+  if !addProto then begin
+     let p = makePrintfFunction () in 
+     E.log "Adding prototype for call logging function %s\n" p.vname;
+     f.globals <- GVarDecl (p, locUnknown) :: f.globals
+  end  
 
 let feature : featureDescr = 
   { fd_name = "logcalls";
     fd_enabled = Cilutil.logCalls;
     fd_description = "generation of code to log function calls";
-    fd_extraopt = 
-    [("--logstyle", Arg.Int (fun i -> setStyle i), styleHelp);];
+    fd_extraopt = [
+      ("--logcallprintf", Arg.String (fun s -> printFunctionName := s), 
+       " the name of the printf function to use");
+      ("--logcalladdproto", Arg.Unit (fun s -> addProto := true), 
+       " whether to add the prototype for the printf function")
+    ];
     fd_doit = logCalls;
     fd_post_check = true
   } 
