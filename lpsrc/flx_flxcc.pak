@@ -6,9 +6,18 @@
 @select(h)
 FLXCC_EXES = [ 'src/compiler/drivers/flxcc', ]
 caml_exes = FLXCC_EXES
-caml_require_libs = ['nums','unix','flx_version','misclib','cillib','flxcclib','flxlib']
+caml_require_libs = ['str','nums','unix','flx_version','misclib','cillib','flxcclib','flxlib']
 pkg_requires = ['cil']
-caml_include_paths = ['src/compiler/cil', 'src/compiler/flxlib', 'src/compiler/flx_version', 'src/compiler/flxcclib', 'src/compiler/misclib']
+caml_include_paths = [
+    'src/compiler/cil',
+    'src/compiler/cil/ocamlutil',
+    'src/compiler/cil/src',
+    'src/compiler/cil/src/frontc',
+    'src/compiler/flxlib',
+    'src/compiler/flx_version',
+    'src/compiler/flxcclib',
+    'src/compiler/misclib',
+]
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 weaver_directory = 'doc/flxcc/'
 
@@ -19,8 +28,7 @@ open Flx_util
 open Flx_types
 open Flx_version
 open Flx_mtypes1
-open Flx_cil_cabs
-open Flx_cil_cil
+open Cil
 open Flxcc_util
 ;;
 
@@ -78,7 +86,7 @@ type control_t = {
   mutable prein_filename: string;
   mutable preout_filename: string;
   mutable log_filename: string;
-  mutable language: Flx_cil_cabs.lang_t;
+  mutable language: Cabs.lang_t;
   mutable preprocessor: string;
   mutable raw_includes: StringSet.t;
   mutable raw_include_dirs : StringSet.t;
@@ -503,17 +511,17 @@ let compile_start_gm_string = format_time compile_start_gm ^ " UTC"
 let compile_start_local_string = format_time compile_start_local ^ " (local)"
 ;;
 
-Flx_cil_cil.initCIL()
+Cil.initCIL()
 ;;
 
-let lexbuf = Flx_cil_clexer.init control.preout_filename control.language;;
-let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
+let lexbuf = Clexer.init control.preout_filename control.language;;
+let cabs = Cparser.file Clexer.initial lexbuf
 ;;
-Flx_cil_clexer.finish()
+Clexer.finish()
 ;;
 
 (*
-Flx_cil_cprint.print_defs cabs;;
+Cprint.print_defs cabs;;
 *)
 
 let ns (s,_,_,_) = s
@@ -521,14 +529,14 @@ let ns (s,_,_,_) = s
 let is_def = function | Some _ -> "complete" | None -> "incomplete"
 ;;
 let type_of_se = function
-| SpecType ts ->
+| Cabs.SpecType ts ->
   begin match ts with
-  | Tnamed s -> print_endline ("type " ^ s)
-  | Tstruct (s,fglo,_) ->
+  | Cabs.Tnamed s -> print_endline ("type " ^ s)
+  | Cabs.Tstruct (s,fglo,_) ->
     print_endline ("struct " ^ s ^ " " ^ is_def fglo)
-  | Tunion (s,fglo,_) ->
+  | Cabs.Tunion (s,fglo,_) ->
     print_endline ("union " ^ s ^ " " ^ is_def fglo)
-  | Tenum (s,fglo,_) ->
+  | Cabs.Tenum (s,fglo,_) ->
     print_endline ("enum " ^ s ^ " " ^ is_def fglo)
   | _ -> ()
   end
@@ -537,7 +545,7 @@ let type_of_se = function
 let types_in sp = List.iter type_of_se sp
 ;;
 
-let cil = Flx_cil_cabs2cil.convFile (control.preout_filename, cabs)
+let cil = Cabs2cil.convFile (control.preout_filename, cabs)
 ;;
 
 
@@ -637,7 +645,7 @@ let rec sot stab t = match t with
     let si = {tname=name;ttype=t;treferenced=true } in
     let gt =  GType (si,sr) in
     let d = defaultCilPrinter#pGlobal () gt in
-    let s = Flx_cil_pretty.sprint 65 d in
+    let s = Pretty.sprint 65 d in
     let s = reformatc s in
     Hashtbl.add stab.registry t' (name,s);
     name
@@ -1292,6 +1300,8 @@ let handle_global g =  let loc = get_globalLoc g in
   | GVar (vi,_,loc)
   | GFun ({svar=vi},loc)
   | GVarDecl (vi,loc) ->
+    (* Ignore this token if it's builtin. *)
+    if loc = Cil.builtinLoc then () else
     let registry = getreg loc in
     let vname, vtype=
       match vi with {vname=vname; vtype=vtype}->vname,vtype
@@ -1883,12 +1893,13 @@ iter begin
               {
                 vname=fcbw; vtype=t'; vattr=[]; vglob=true;
                 vinline=false; vdecl=sr; vid=0; vaddrof=false;
-                vreferenced=true; vstorage=NoStorage
+                vreferenced=true; vdescr=Pretty.nil; vdescrpure=false;
+                vstorage=NoStorage
               }
             in
             let g =  GVarDecl (vi,sr) in
             let d = defaultCilPrinter#pGlobal () g in
-            let s = Flx_cil_pretty.sprint 65 d in
+            let s = Pretty.sprint 65 d in
             let s = reformatc s in
             pe ("header '''" ^ s ^ "''';\n");
             pe ("const "^fcbw^": " ^ tname ^ " = \"" ^ fcbw ^ "\";");
@@ -1932,12 +1943,13 @@ iter begin
               {
                 vname=fcbw; vtype=t'; vattr=[]; vglob=true;
                 vinline=false; vdecl=sr; vid=0; vaddrof=false;
-                vreferenced=true; vstorage=NoStorage
+                vreferenced=true; vdescr=Pretty.nil; vdescrpure=false;
+                vstorage=NoStorage
               }
             in
             let g =  GVarDecl (vi,sr) in
             let d = defaultCilPrinter#pGlobal () g in
-            let s = Flx_cil_pretty.sprint 65 d in
+            let s = Pretty.sprint 65 d in
             let s = reformatc s in
             pe ("header '''" ^ s ^ "''';\n");
             pe ("const "^fcbw^": " ^ tname ^ " = \"" ^ fcbw ^ "\";");
