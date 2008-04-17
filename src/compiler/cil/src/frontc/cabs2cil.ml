@@ -1658,52 +1658,57 @@ let makeGlobalVarinfo (isadef: bool) (vi: varinfo) : varinfo * bool =
     if debug then
       ignore (E.log "  %s already in the env at loc %a\n" 
                 vi.vname d_loc oldloc);
-    (* It was already defined. We must reuse the varinfo. But clean up the 
-     * storage.  *)
-    let newstorage = (** See 6.2.2 *)
-      match oldvi.vstorage, vi.vstorage with
-        (* Extern and something else is that thing *)
-      | Extern, other
-      | other, Extern -> other
-
-      | NoStorage, other
-      | other, NoStorage ->  other
-
-
-      | _ ->
-	  if vi.vstorage != oldvi.vstorage then
-            ignore (warn
-		      "Inconsistent storage specification for %s. Previous declaration: %a" 
-		      vi.vname d_loc oldloc);
-          vi.vstorage
-    in
-    oldvi.vinline <- oldvi.vinline || vi.vinline;
-    oldvi.vstorage <- newstorage;
-    (* If the new declaration has a section attribute, remove any
-     * preexisting section attribute. This mimics behavior of gcc that is
-     * required to compile the Linux kernel properly. *)
-    if hasAttribute "section" vi.vattr then
-      oldvi.vattr <- dropAttribute "section" oldvi.vattr;
-    (* Union the attributes *)
-    oldvi.vattr <- cabsAddAttributes oldvi.vattr vi.vattr;
     begin 
       try
         oldvi.vtype <- 
            combineTypes 
              (if isadef then CombineFundef else CombineOther) 
              oldvi.vtype vi.vtype;
+        (* It was already defined. We must reuse the varinfo. But clean up the 
+         * storage.  *)
+        let newstorage = (** See 6.2.2 *)
+          match oldvi.vstorage, vi.vstorage with
+            (* Extern and something else is that thing *)
+            | Extern, other
+            | other, Extern -> other
+
+            | NoStorage, other
+            | other, NoStorage ->  other
+
+
+            | _ ->
+	      if vi.vstorage != oldvi.vstorage then
+                  ignore (warn
+		            "Inconsistent storage specification for %s. Previous declaration: %a" 
+		            vi.vname d_loc oldloc);
+		            vi.vstorage
+        in
+        oldvi.vinline <- oldvi.vinline || vi.vinline;
+        oldvi.vstorage <- newstorage;
+        (* If the new declaration has a section attribute, remove any
+         * preexisting section attribute. This mimics behavior of gcc that is
+         * required to compile the Linux kernel properly. *)
+        if hasAttribute "section" vi.vattr then
+          oldvi.vattr <- dropAttribute "section" oldvi.vattr;
+        (* Union the attributes *)
+        oldvi.vattr <- cabsAddAttributes oldvi.vattr vi.vattr;
+
+        (* Found an old one. Keep the location always from the definition *)
+        if isadef then begin 
+          oldvi.vdecl <- vi.vdecl;
+        end;
+        oldvi, true
       with Failure reason -> 
         ignore (E.log "old type = %a\n" d_plaintype oldvi.vtype);
         ignore (E.log "new type = %a\n" d_plaintype vi.vtype);
-        E.s (error "Declaration of %s does not match previous declaration from %a (%s)." 
+        if !Lexerhack.get_lang () =`C then
+          E.s (error "Declaration of %s does not match previous declaration from %a (%s)."
                vi.vname d_loc oldloc reason)
+        else begin
+          ignore (E.log "[Overload] %s." vi.vname);
+          vi, false
+        end
     end;
-      
-    (* Found an old one. Keep the location always from the definition *)
-    if isadef then begin 
-      oldvi.vdecl <- vi.vdecl;
-    end;
-    oldvi, true
       
   with Not_found -> begin (* A new one.  *)
     if debug then
@@ -2195,6 +2200,7 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
   let sortedspecs = 
     let order = function (* Don't change this *)
       | A.Tvoid -> 0
+      | A.Tbool -> 0
       | A.Tsigned -> 1
       | A.Tunsigned -> 2
       | A.Tchar -> 3
@@ -2204,7 +2210,9 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
       | A.Tint64 -> 7
       | A.Tfloat -> 8
       | A.Tdouble -> 9
-      | _ -> 10 (* There should be at most one of the others *)
+      | A.Tcomplex -> 10
+      | A.Timaginary -> 10
+      | _ -> 11 (* There should be at most one of the others *)
     in
     List.stable_sort (fun ts1 ts2 -> compare (order ts1) (order ts2)) tspecs' 
   in
@@ -2272,6 +2280,15 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
     | [A.Tdouble] -> TFloat(FDouble, [])
 
     | [A.Tlong; A.Tdouble] -> TFloat(FLongDouble, [])
+
+    | [A.Tcomplex] -> TFloat(CFloat, [])
+    | [A.Tfloat; A.Tcomplex] -> TFloat(CFloat, [])
+    | [A.Tdouble; A.Tcomplex] -> TFloat(CDouble, [])
+    | [A.Tlong; A.Tdouble; A.Tcomplex] -> TFloat(CLongDouble, [])
+
+    | [A.Timaginary] -> TFloat(IFloat, [])
+    | [A.Tdouble; A.Timaginary] -> TFloat(IDouble, [])
+    | [A.Tlong; A.Tdouble; A.Timaginary] -> TFloat(ILongDouble, [])
 
      (* Now the other type specifiers *)
     | [A.Tnamed n] -> begin
@@ -2681,6 +2698,11 @@ and doType (nameortype: attributeClass) (* This is AttrName if we are doing
 
     | A.ARRAY (d, al, len) -> 
         let lo = 
+          (* JMS:
+          Cil fails on sizeof() in constants .. we don't
+          actually care so just make all arrays unknown length
+          None
+          *)
           match len with 
             A.NOTHING -> None 
           | _ -> 
@@ -2885,8 +2907,8 @@ and makeCompType (isstruct: bool)
     let makeFieldInfo
         (((n,ndt,a,cloc) : A.name), (widtho : A.expression option))
       : fieldinfo = 
-      if sto <> NoStorage || inl then 
-        E.s (error "Storage or inline not allowed for fields");
+      if sto <> NoStorage && sto <> Static || inl then 
+        E.s (error "Non-static Storage or inline not allowed for fields");
       let ftype, nattr = 
         doType (AttrName false) bt (A.PARENTYPE(attrs, ndt, a)) in 
       (* check for fields whose type is an undefined struct.  This rules
@@ -2929,7 +2951,8 @@ and makeCompType (isstruct: bool)
         ftype     =  ftype;
         fbitfield =  width;
         fattr     =  nattr;
-        floc      =  convLoc cloc
+        floc      =  convLoc cloc;
+        fstorage  = sto
       } 
     in
     List.map makeFieldInfo nl
@@ -5776,6 +5799,16 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
         (fun d -> 
           let s = doDecl isglobal d in
           if isNotEmpty s then 
+            E.s (bug "doDecl returns non-empty statement for global"))
+        dl;
+      empty
+
+  | NAMESPACE (n, loc, dl) ->
+      currentLoc := convLoc loc;
+      List.iter
+        (fun d ->
+          let s = doDecl isglobal d in
+          if isNotEmpty s then
             E.s (bug "doDecl returns non-empty statement for global"))
         dl;
       empty

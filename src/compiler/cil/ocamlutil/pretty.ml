@@ -627,8 +627,12 @@ let sprint ~(width : int)  doc : string =
 
 
                                         (* The rest is based on printf.ml *)
+(*
 external format_int: string -> int -> string = "caml_format_int"
 external format_float: string -> float -> string = "caml_format_float"
+*)
+let format_int fmt x = string_of_int x
+let format_float fmt x = string_of_float x
 
 
     

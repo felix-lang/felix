@@ -43,6 +43,9 @@ let debugFlag  = ref false              (* If set then print debugging info *)
 let verboseFlag = ref false
 
 (**** Error reporting ****)  
+(* JS: added this *)
+exception Parse_error of string * int * int * int
+
 exception Error
 let s (d : 'a) = raise Error
 
@@ -298,7 +301,7 @@ let parse_error (msg: string) : 'a =
     exit 1 
   end;
   hadErrors := true;
-  raise Parsing.Parse_error
+  raise (Parse_error (i.fileName, i.linenum, adjStart, adjEnd))
 
 
 

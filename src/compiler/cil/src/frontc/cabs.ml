@@ -53,8 +53,11 @@ type cabsloc = {
  ident : int;
 }
 
+type lang_t = [`C | `Cxx]
+
 type typeSpecifier = (* Merge all specifiers into one type *)
     Tvoid                             (* Type specifier ISO 6.7.2 *)
+  | Tbool
   | Tchar
   | Tshort
   | Tint
@@ -64,6 +67,8 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | Tdouble
   | Tsigned
   | Tunsigned
+  | Tcomplex
+  | Timaginary
   | Tnamed of string
   (* each of the following three kinds of specifiers contains a field 
    * or item list iff it corresponds to a definition (as opposed to
@@ -158,6 +163,15 @@ and enum_item = string * expression * cabsloc
 (*
 ** Declaration definition (at toplevel)
 *)
+and base_spec = [
+  | `Public of string
+  | `Protected of string
+  | `Private of string
+  | `Public_virtual of string
+  | `Protected_virtual of string
+  | `Private_virtual of string
+]
+
 and definition =
    FUNDEF of single_name * block * cabsloc * cabsloc
  | DECDEF of init_name_group * cabsloc        (* global variable(s), or function prototype *)
@@ -166,6 +180,7 @@ and definition =
  | GLOBASM of string * cabsloc
  | PRAGMA of expression * cabsloc
  | LINKAGE of string * cabsloc * definition list (* extern "C" { ... } *)
+ | NAMESPACE of string * cabsloc * definition list
  (* toplevel form transformer, from the first definition to the *)
  (* second group of definitions *)
  | TRANSFORMER of definition * definition list * cabsloc

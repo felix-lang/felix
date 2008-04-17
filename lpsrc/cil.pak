@@ -1,61 +1,177 @@
+@import config
+
 @head(1,"Frontc and Cil C parser")
 @h = tangler('spkgs/cil.py')
 @select(h)
 iscr_source = ['lpsrc/cil.pak']
 
-CIL_LEXS = [ 'src/compiler/cil/flx_cil_clexer', 'src/compiler/cil/flx_cil_formatlex', ]
-CIL_PARSES = [ 'src/compiler/cil/flx_cil_cparser', 'src/compiler/cil/flx_cil_formatparse', ]
+caml_modules = [
+    'src/compiler/cil/cilversion',
+    'src/compiler/cil/machdep',
 
-CIL_MODULES = [
-  'src/compiler/cil/flx_cil_machdep_type',
-  'src/compiler/cil/flx_cil_cabs',
-  'src/compiler/cil/flx_cil_cilversion',
-  'src/compiler/cil/flx_cil_machdep',
-  'src/compiler/cil/flx_cil_pretty',
-  'src/compiler/cil/flx_cil_errormsg',
-  'src/compiler/cil/flx_cil_cabs_helper',
-  'src/compiler/cil/flx_cil_lexerhack',
-  'src/compiler/cil/flx_cil_escape',
-  'src/compiler/cil/flx_cil_cprint',
-  'src/compiler/cil/flx_cil_cparser',
-  'src/compiler/cil/flx_cil_clexer',
-  'src/compiler/cil/flx_cil_stats',
-  'src/compiler/cil/flx_cil_trace',
-  'src/compiler/cil/flx_cil_clist',
-  'src/compiler/cil/flx_cil_cil',
-  'src/compiler/cil/flx_cil_frontc',
-  'src/compiler/cil/flx_cil_rmtmps',
-  'src/compiler/cil/flx_cil_cabsvisit',
-  'src/compiler/cil/flx_cil_inthash',
-  'src/compiler/cil/flx_cil_formatparse',
-  'src/compiler/cil/flx_cil_formatlex',
-  'src/compiler/cil/flx_cil_util',
-  'src/compiler/cil/flx_cil_mergecil',
-  'src/compiler/cil/flx_cil_patch',
-  'src/compiler/cil/flx_cil_formatcil',
-  'src/compiler/cil/flx_cil_cilutil',
-  'src/compiler/cil/flx_cil_cabs2cil',
-  'src/compiler/cil/flx_cil_check',
+    'src/compiler/cil/ocamlutil/pretty',
+    'src/compiler/cil/ocamlutil/errormsg',
+    'src/compiler/cil/ocamlutil/alpha',
+    'src/compiler/cil/ocamlutil/clist',
+    'src/compiler/cil/ocamlutil/inthash',
+    'src/compiler/cil/ocamlutil/stats',
+    'src/compiler/cil/ocamlutil/trace',
+    'src/compiler/cil/ocamlutil/util',
+    'src/compiler/cil/ocamlutil/longarray',
+    'src/compiler/cil/ocamlutil/growArray',
+
+    'src/compiler/cil/src/frontc/cabs',
+
+    'src/compiler/cil/src/escape',
+    'src/compiler/cil/src/cil',
+    'src/compiler/cil/src/cilutil',
+
+    'src/compiler/cil/src/frontc/cabshelper',
+    'src/compiler/cil/src/frontc/cabsvisit',
+    'src/compiler/cil/src/frontc/whitetrack',
+    'src/compiler/cil/src/frontc/cprint',
+    'src/compiler/cil/src/frontc/lexerhack',
+    'src/compiler/cil/src/frontc/cabs2cil',
+
+    'src/compiler/cil/src/check',
+    'src/compiler/cil/src/formatparse',
+    'src/compiler/cil/src/formatlex',
+    'src/compiler/cil/src/formatcil',
+    'src/compiler/cil/src/mergecil',
+    'src/compiler/cil/src/rmtmps',
+
+    'src/compiler/cil/src/frontc/cparser',
+    'src/compiler/cil/src/frontc/clexer',
+    'src/compiler/cil/src/frontc/patch',
+    'src/compiler/cil/src/frontc/frontc',
 ]
 
-CIL_RAW_INTERFACES = [
-  'src/compiler/cil/flx_cil_machdep_type',
-  'src/compiler/cil/flx_cil_cabs',
+caml_include_paths = [
+    'src/compiler/cil',
+    'src/compiler/cil/ocamlutil',
+    'src/compiler/cil/src',
+    'src/compiler/cil/src/frontc',
 ]
 
-CIL_INTERFACES = CIL_MODULES
-CIL_IMPLEMENTATIONS = CIL_INTERFACES
-
-caml_lexes = CIL_LEXS
-caml_parses = CIL_PARSES
-caml_raw_interfaces = CIL_RAW_INTERFACES
-caml_interfaces = CIL_INTERFACES
-caml_implementations = CIL_IMPLEMENTATIONS
 caml_provide_lib = 'src/compiler/cil/cillib'
 caml_require_libs = ['nums','unix','misclib','cillib']
 pkg_requires = ['misc']
 
-@include_file("flx_frontc.ipk")
-@include_file("flx_cil.ipk")
+@h = tangler('src/compiler/cil/cilversion.mli')
+@select(h)
+val cilVersionMajor:int
+val cilVersionMinor:int
+val cilVersionRev:int
+val cilVersion:string
 
 
+@h = tangler('src/compiler/cil/cilversion.ml')
+@select(h)
+let cilVersionMajor = 1
+let cilVersionMinor = 2
+let cilVersionRev   = 5
+let cilVersion      = "1.2.5"
+
+@h = tangler('src/compiler/cil/machdep.ml')
+@select(h)
+@ctypes = [
+  'bool',
+  'cbool',
+  'int',
+  'short',
+  'long',
+  'longlong',
+  'enum',
+  'wchar_t',
+  'size_t',
+
+  'float',
+  'double',
+  'longdouble',
+
+  'complex',
+  'doublecomplex',
+  'longdoublecomplex',
+
+  'imaginary',
+  'doubleimaginary',
+  'longdoubleimaginary',
+  ]
+
+@def dcl(a):
+  tangle("  sizeof_" + a.lower() + " : int;")
+  tangle("  alignof_" + a.lower() + " : int;")
+
+
+type mach = {
+  version_major: int;     (* Major version number *)
+  version_minor: int;     (* Minor version number *)
+  version: string;        (* version number *)
+  underscore_name: bool;  (* If assembly names have leading underscore *)
+
+@for x in ctypes: dcl(x)
+
+  sizeof_ptr: int;        (* Size of pointers *)
+  sizeof_void: int;       (* Size of "void" *)
+  sizeof_fun: int;        (* Size of function *)
+  size_t: string;         (* Alias of size_t *)
+  wchar_t: string;        (* Alias of wchar_t *)
+
+  alignof_str: int;       (* Alignment of strings *)
+  alignof_fun: int;       (* Alignment of function *)
+  alignof_ptr: int;       (* Alignment of pointers *)
+  char_is_unsigned: bool; (* Whether "char" is unsigned *)
+  const_string_literals: bool; (* Whether string literals have const chars *)
+  little_endian: bool; (* whether the machine is little endian *)
+}
+
+
+
+let gcc:mach = {
+  version_major    = 3;
+  version_minor    = 2;
+  version          = "3.2.2 20030222 (Red Hat Linux 3.2.2-5)";
+  underscore_name  = true;
+
+@tangle("  alignof_str = 1;")
+@tangle("  alignof_fun = 1;")
+@tangle("  alignof_ptr       = %s;" % config.TARGET_CXX.options.ALIGNOF_VOIDP)
+@tangle("  sizeof_void      = 1;")
+@tangle("  sizeof_fun       = 1;")
+@tangle("  sizeof_ptr       = %s;" % config.TARGET_CXX.options.SIZEOF_VOIDP)
+@tangle('  size_t           = "%s";' % config.TARGET_CXX.options.ALIAS_size_t)
+@tangle('  wchar_t          = "%s";' % config.TARGET_CXX.options.ALIAS_wchar_t)
+
+@def pr(a):
+  try:
+    v = getattr(config.TARGET_CC.options, "SIZEOF_"+a.upper())
+  except AttributeError:
+    v = getattr(config.TARGET_CXX.options, "SIZEOF_"+a.upper(), 0)
+  tangle("  sizeof_" + a.lower() + " = " + str(v) + ";")
+
+  try:
+    v = getattr(config.TARGET_CC.options, "ALIGNOF_"+a.upper())
+  except AttributeError:
+    v = getattr(config.TARGET_CXX.options, "ALIGNOF_"+a.upper(), 0)
+  tangle("  alignof_" + a.lower() + " = " + str(v) + ";")
+
+@for x in ctypes: pr(x)
+
+@if config.TARGET_CXX.options.CHAR_IS_UNSIGNED:
+   tangle("  char_is_unsigned = true;")
+ else:
+   tangle("  char_is_unsigned = false;")
+@tangle("  const_string_literals = true;")
+@if config.TARGET_CXX.options.LITTLE_ENDIAN:
+   tangle("  little_endian = true;")
+ else:
+   tangle("  little_endian = false;")
+}
+@if config.HAVE_MSVC:
+   tangle("let hasMSVC = true")
+ else:
+   tangle("let hasMSVC = false")
+
+let msvc = gcc (* hackery .. *)
+let gccHas__builtin_va_list = true
+let __thread_is_keyword = true

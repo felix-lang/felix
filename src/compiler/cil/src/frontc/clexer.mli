@@ -42,7 +42,15 @@
  * interface files *)
 
 
-val init: filename:string -> Lexing.lexbuf
+val init: filename:string -> lang:Cabs.lang_t -> Lexing.lexbuf
+
+val init_from_string:
+  filename:string ->
+  line:int->
+  lang:Cabs.lang_t ->
+  ins:string ->
+  Lexing.lexbuf
+
 val finish: unit -> unit
 
 (* This is the main parser function *)

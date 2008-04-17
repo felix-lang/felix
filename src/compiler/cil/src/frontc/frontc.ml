@@ -110,18 +110,18 @@ exception ParseError of string
 exception CabsOnly
 
 (* parse, and apply patching *)
-let rec parse_to_cabs fname =
+let rec parse_to_cabs fname lang =
 begin
   (* parse the patch file if it isn't parsed already *)
   if ((!patchFileName <> "") && (isNone !patchFile)) then (
     (* parse the patch file *)
-    patchFile := Some(parse_to_cabs_inner !patchFileName);
+    patchFile := Some(parse_to_cabs_inner !patchFileName lang);
     if !E.hadErrors then
       (failwith "There were parsing errors in the patch file")
   );
 
   (* now parse the file we came here to parse *)
-  let cabs = parse_to_cabs_inner fname in
+  let cabs = parse_to_cabs_inner fname lang in
   if !E.hadErrors then 
     E.s (E.error "There were parsing errors in %s\n" fname);
 
@@ -183,12 +183,12 @@ and clexer lexbuf =
     white,lexeme,token,cabsloc
 
 (* just parse *)
-and parse_to_cabs_inner (fname : string) =
+and parse_to_cabs_inner (fname : string) (lang : Cabs.lang_t) =
   try
     if !E.verboseFlag then ignore (E.log "Frontc is parsing %s\n" fname);
     flush !E.logChannel;
     E.hadErrors := false;
-    let lexbuf = Clexer.init fname in
+    let lexbuf = Clexer.init fname lang in
     let cabs = Stats.time "parse" (Cparser.interpret (Whitetrack.wraplexer clexer)) lexbuf in
     Whitetrack.setFinalWhite (Clexer.get_white ());
     Clexer.finish ();
@@ -252,9 +252,9 @@ end
 
 
 
-let parse_helper fname =
+let parse_helper fname lang =
   (trace "sm" (dprintf "parsing %s to Cabs\n" fname));
-  let cabs = parse_to_cabs fname in
+  let cabs = parse_to_cabs fname lang in
   (* Now (return a function that will) convert to CIL *)
   fun _ ->
     (trace "sm" (dprintf "converting %s from Cabs to CIL\n" fname));
@@ -262,6 +262,6 @@ let parse_helper fname =
     if !doPrintProtos then (printPrototypes cabs);
     cabs, cil
 
-let parse fname = (fun () -> snd(parse_helper fname ()))
+let parse fname lang = (fun () -> snd(parse_helper fname lang ()))
 
-let parse_with_cabs fname = (fun () -> parse_helper fname ())
+let parse_with_cabs fname lang = (fun () -> parse_helper fname lang ())

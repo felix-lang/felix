@@ -73,6 +73,9 @@ let init ~(prog: string) : Lexing.lexbuf =
       ("volatile", VOLATILE);
       ("char", CHAR);
       ("int", INT);
+      ("_Imaginary", IMAGINARY);
+      ("_Complex", COMPLEX);
+      ("_Bool", BOOL);
       ("float", FLOAT);
       ("double", DOUBLE);
       ("void", VOID);

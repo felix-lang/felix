@@ -59,6 +59,7 @@
 
 (* George Necula: I changed this pretty dramatically since CABS changed *)
 open Cabs
+open Cabshelper
 open Escape
 open Whitetrack
 
@@ -168,6 +169,7 @@ let rec print_specifiers (specs: spec_elem list) =
 
 and print_type_spec = function
     Tvoid -> print "void "
+  | Tbool -> print "_Bool "
   | Tchar -> print "char "
   | Tshort -> print "short "
   | Tint -> print "int "
@@ -175,6 +177,8 @@ and print_type_spec = function
   | Tint64 -> print "__int64 "
   | Tfloat -> print "float "
   | Tdouble -> print "double "
+  | Tcomplex -> print "_Complex "
+  | Timaginary -> print "_Imaginary "
   | Tsigned -> print "signed "
   | Tunsigned -> print "unsigned "
   | Tnamed s -> comprint "tnamed"; print s; space ();
@@ -770,6 +774,15 @@ and print_attribute (name,args) =
 and print_attributes attrs =
   List.iter (fun a -> print_attribute a; space ()) attrs
 
+and print_base b = match b with
+  | `Public_virtual n -> print "public "; print "virtual "; print n
+  | `Protected_virtual n -> print "protected "; print "virtual "; print n
+  | `Private_virtual n -> print "private "; print "virtual "; print n
+  | `Public n -> print n
+  | `Protected n -> print "protected "; print n
+  | `Private n -> print "private "; print n
+
+
 (*
 ** Declaration printing
 *)
@@ -849,6 +862,16 @@ and print_def def =
       force_new_line ();
       print "extern "; print_string n; print_string "  {";
       List.iter print_def dl;
+      print_string "}";
+      force_new_line ()
+
+  | NAMESPACE (n, loc, dl) ->
+      setLoc (loc);
+      force_new_line ();
+      print "namespace "; print n; print_string "  {";
+      indent();
+      List.iter print_def dl;
+      unindent();
       print_string "}";
       force_new_line ()
 

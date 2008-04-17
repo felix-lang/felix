@@ -51,6 +51,9 @@ val warnFlag: bool ref
 (** Error reporting functions raise this exception *)
 exception Error
 
+(* JS: added this *)
+exception Parse_error of string * int * int * int
+
 
    (* Error reporting. All of these functions take same arguments as a 
     * Pretty.eprintf. They set the hadErrors flag, but do not raise an 

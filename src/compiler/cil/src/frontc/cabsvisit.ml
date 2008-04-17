@@ -331,6 +331,10 @@ and childrenDefinition vis d =
       let dl' = mapNoCopyList (visitCabsDefinition vis) dl in
       if dl' != dl then LINKAGE (n, l, dl') else d
       
+  | NAMESPACE (n, l, dl) ->
+      let dl' = mapNoCopyList (visitCabsDefinition vis) dl in
+      if dl' != dl then NAMESPACE (n, l, dl') else d
+
   | TRANSFORMER _ -> d
   | EXPRTRANSFORMER _ -> d
         

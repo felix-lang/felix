@@ -239,6 +239,19 @@ let transformOffsetOf (speclist, dtype) member =
   let resultExpr = CAST (sizeofType, SINGLE_INIT addrExpr) in
   resultExpr
 
+let mkflds accessible ls =
+  let accessible = ref accessible in
+  let nls = ref [] in
+  List.iter
+  (fun x -> match x with
+  | `Fields x -> if !accessible then nls := x :: !nls
+  | `Access_public -> accessible := true
+  | `Access_private | `Access_protected -> accessible := false
+  )
+  ls
+  ;
+  Some (List.rev !nls)
+
 %}
 
 %token <string * Cabs.cabsloc> IDENT
@@ -254,11 +267,14 @@ let transformOffsetOf (speclist, dtype) member =
 %token <int64 list * Cabs.cabsloc> CST_WSTRING
 
 %token EOF
-%token<Cabs.cabsloc> CHAR INT DOUBLE FLOAT VOID INT64 INT32
+%token<Cabs.cabsloc> BOOL CHAR INT DOUBLE FLOAT COMPLEX IMAGINARY VOID INT64 INT32
 %token<Cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
 %token<Cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
 %token<Cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
 %token<Cabs.cabsloc> THREAD
+%token<Cabs.cabsloc> CLASS NAMESPACE USING
+%token<Cabs.cabsloc> TYPENAME TEMPLATENAME
+%token<Cabs.cabsloc> PUBLIC PRIVATE PROTECTED VIRTUAL
 
 %token<Cabs.cabsloc> SIZEOF ALIGNOF
 
@@ -280,7 +296,7 @@ let transformOffsetOf (speclist, dtype) member =
 %token<Cabs.cabsloc> LPAREN RBRACE
 %token<Cabs.cabsloc> LBRACE
 %token LBRACKET RBRACKET
-%token COLON
+%token COLON XCOLON
 %token<Cabs.cabsloc> SEMICOLON
 %token COMMA ELLIPSIS QUEST
 
@@ -359,7 +375,7 @@ let transformOffsetOf (speclist, dtype) member =
 
 %type <spec_elem list * cabsloc> decl_spec_list
 %type <typeSpecifier * cabsloc> type_spec
-%type <Cabs.field_group list> struct_decl_list
+/* %type <Cabs.field_group list> struct_decl_list */
 
 
 %type <Cabs.name> old_proto_decl
@@ -413,6 +429,7 @@ global:
 | EXTERN string_constant declaration    { LINKAGE (fst $2, (*handleLoc*) (snd $2), [ $3 ]) }
 | EXTERN string_constant LBRACE globals RBRACE 
                                         { LINKAGE (fst $2, (*handleLoc*) (snd $2), $4)  }
+| NAMESPACE IDENT LBRACE globals RBRACE { NAMESPACE (fst $2, snd $2, $4)  }
 | ASM LPAREN string_constant RPAREN SEMICOLON
                                         { GLOBASM (fst $3, (*handleLoc*) $1) }
 | pragma                                { $1 }
@@ -969,39 +986,87 @@ decl_spec_list_opt_no_named:
     /* empty */                         { [] } %prec IDENT
 |   decl_spec_list                      { fst $1 }
 ;
-type_spec:   /* ISO 6.7.2 */
-    VOID            { Tvoid, $1}
+
+
+base:
+| id_or_typename { `Public $1 }
+| PUBLIC id_or_typename { `Public $2 }
+| PROTECTED id_or_typename { `Protected $2 }
+| PRIVATE id_or_typename { `Private $2 }
+| VIRTUAL id_or_typename { `Public $2 }
+| VIRTUAL PUBLIC id_or_typename { `Public $3 }
+| VIRTUAL PROTECTED id_or_typename { `Protected $3 }
+| VIRTUAL PRIVATE id_or_typename { `Private $3 }
+| PUBLIC VIRTUAL id_or_typename { `Public $3 }
+| PROTECTED VIRTUAL id_or_typename { `Protected $3 }
+| PRIVATE VIRTUAL id_or_typename { `Private $3 }
+
+bases:
+| base COMMA bases {$1 :: $3 }
+| base { [$1] }
+
+int_spec:
 |   CHAR            { Tchar, $1 }
 |   SHORT           { Tshort, $1 }
 |   INT             { Tint, $1 }
 |   LONG            { Tlong, $1 }
 |   INT64           { Tint64, $1 }
-|   FLOAT           { Tfloat, $1 }
-|   DOUBLE          { Tdouble, $1 }
 |   SIGNED          { Tsigned, $1 }
 |   UNSIGNED        { Tunsigned, $1 }
+
+
+type_spec:   /* ISO 6.7.2 */
+|   int_spec        { $1 }
+|   VOID            { Tvoid, $1}
+|   BOOL            { Tbool, $1 }
+|   FLOAT           { Tfloat, $1 }
+|   COMPLEX         { Tcomplex, $1 }
+|   IMAGINARY       { Timaginary, $1 }
+|   DOUBLE          { Tdouble, $1 }
 |   STRUCT                 id_or_typename
                                                    { Tstruct ($2, None,    []), $1 }
 |   STRUCT just_attributes id_or_typename
                                                    { Tstruct ($3, None,    $2), $1 }
 |   STRUCT                 id_or_typename LBRACE struct_decl_list RBRACE
-                                                   { Tstruct ($2, Some $4, []), $1 }
+                                                   { Tstruct ($2, mkflds true $4, []), $1 }
+|   STRUCT                 id_or_typename COLON bases LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($2, mkflds true $6, []), $1 }
 |   STRUCT                                LBRACE struct_decl_list RBRACE
-                                                   { Tstruct ("", Some $3, []), $1 }
+                                                   { Tstruct ("", mkflds true $3, []), $1 }
 |   STRUCT just_attributes id_or_typename LBRACE struct_decl_list RBRACE
-                                                   { Tstruct ($3, Some $5, $2), $1 }
+                                                   { Tstruct ($3, mkflds true $5, $2), $1 }
+|   STRUCT just_attributes id_or_typename COLON bases LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($3, mkflds true $7, $2), $1 }
 |   STRUCT just_attributes                LBRACE struct_decl_list RBRACE
-                                                   { Tstruct ("", Some $4, $2), $1 }
+                                                   { Tstruct ("", mkflds true $4, $2), $1 }
+|   CLASS                  id_or_typename
+                                                   { Tstruct ($2, None,    []), $1 }
+|   CLASS                  id_or_typename LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($2, mkflds false $4, []), $1 }
+|   CLASS                  id_or_typename COLON bases LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($2, mkflds false $6, []), $1 }
+|   CLASS                                 LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ("", mkflds false $3, []), $1 }
+|   CLASS just_attributes  id_or_typename LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($3, mkflds false $5, $2), $1 }
+|   CLASS just_attributes  id_or_typename COLON bases LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($3, mkflds false $7, $2), $1 }
+|   CLASS just_attributes                 LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ("", mkflds false $4, $2), $1 }
 |   UNION                  id_or_typename
                                                    { Tunion  ($2, None,    []), $1 }
 |   UNION                  id_or_typename LBRACE struct_decl_list RBRACE
-                                                   { Tunion  ($2, Some $4, []), $1 }
+                                                   { Tunion  ($2, mkflds true $4, []), $1 }
+|   UNION                  id_or_typename COLON bases LBRACE struct_decl_list RBRACE
+                                                   { Tunion  ($2, mkflds true  $6, []), $1 }
 |   UNION                                 LBRACE struct_decl_list RBRACE
-                                                   { Tunion  ("", Some $3, []), $1 }
+                                                   { Tunion  ("", mkflds true $3, []), $1 }
 |   UNION  just_attributes id_or_typename LBRACE struct_decl_list RBRACE
-                                                   { Tunion  ($3, Some $5, $2), $1 }
+                                                   { Tunion  ($3, mkflds true $5, $2), $1 }
+|   UNION  just_attributes id_or_typename COLON bases LBRACE struct_decl_list RBRACE
+                                                   { Tunion  ($3, mkflds true $7, $2), $1 }
 |   UNION  just_attributes                LBRACE struct_decl_list RBRACE
-                                                   { Tunion  ("", Some $4, $2), $1 }
+                                                   { Tunion  ("", mkflds true $4, $2), $1 }
 |   ENUM                   id_or_typename
                                                    { Tenum   ($2, None,    []), $1 }
 |   ENUM                   id_or_typename LBRACE enum_list maybecomma RBRACE
@@ -1022,17 +1087,34 @@ struct_decl_list: /* (* ISO 6.7.2. Except that we allow empty structs. We
                    */
    /* empty */                           { [] }
 |  decl_spec_list                 SEMICOLON struct_decl_list
-                                         { (fst $1, 
+                                         { `Fields (fst $1,
                                             [(missingFieldDecl, None)]) :: $3 }
 /*(* GCC allows extra semicolons *)*/
 |                                 SEMICOLON struct_decl_list
                                          { $2 }
 |  decl_spec_list field_decl_list SEMICOLON struct_decl_list
-                                          { (fst $1, $2) 
+                                          { `Fields (fst $1, $2)
                                             :: $4 }
 /*(* MSVC allows pragmas in strange places *)*/
 |  pragma struct_decl_list                { $2 }
 
+/* this is a hack allowing 'int : 2' */
+
+|  int_spec COLON expression SEMICOLON struct_decl_list
+   {
+     let ts: Cabs.spec_elem = SpecType (fst $1) in
+     let fld
+       : Cabs.name * Cabs.expression option
+       = missingFieldDecl,Some (fst $3)
+     in
+     let x = `Fields ([ts],[fld]) in
+     x :: $5
+   }
+
+
+| PUBLIC COLON struct_decl_list { `Access_public :: $3 }
+| PROTECTED COLON struct_decl_list { `Access_protected :: $3 }
+| PRIVATE COLON struct_decl_list {`Access_private :: $3 }
 |  error                          SEMICOLON struct_decl_list
                                           { $3 } 
 ;
@@ -1046,7 +1128,19 @@ field_decl: /* (* ISO 6.7.2. Except that we allow unnamed fields. *) */
                                     { let (n,decl,al,loc) = $1 in
                                       let al' = al @ $4 in
                                      ((n,decl,al',loc), Some (fst $3)) }    
+
+/* This construction can't be allowed in C++ because
+there is a conflict here
+
+  struct X : Y
+
+between declaring a nested class with a base, and an unnamed bitfield
+of type struct X, length Y
+*/
+
+/*
 |              COLON expression     { (missingFieldDecl, Some (fst $2)) }
+*/
 ;
 
 enum_list: /* (* ISO 6.7.2.2 *) */

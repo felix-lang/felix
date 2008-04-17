@@ -16,6 +16,14 @@ let push_context: (unit -> unit) ref =
 let pop_context: (unit -> unit) ref = 
   ref (fun _ -> E.s (E.bug "You called an uninitialized pop_context")) 
 
+let push_class: (string -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized push_class"))
+
+let pop_class : (unit -> unit) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized pop_class"))
+
+let get_lang: (unit -> Cabs.lang_t) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized get_lang"))
 
 (* Keep here the current pattern for formatparse *)
 let currentPattern = ref ""

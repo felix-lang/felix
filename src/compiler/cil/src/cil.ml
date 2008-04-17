@@ -258,7 +258,8 @@ and typ =
 
 (** Various kinds of integers *)
 and ikind = 
-    IChar       (** [char] *)
+  | IBool       (** [_Bool] *)
+  | IChar       (** [char] *)
   | ISChar      (** [signed char] *)
   | IUChar      (** [unsigned char] *)
   | IInt        (** [int] *)
@@ -276,6 +277,14 @@ and fkind =
     FFloat      (** [float] *)
   | FDouble     (** [double] *)
   | FLongDouble (** [long double] *)
+
+  | CFloat      (** [_Complex] *)
+  | CDouble     (** [double _Complex] *)
+  | CLongDouble (** [long double _Complex] *)
+
+  | IFloat      (** [_Imaginary] *)
+  | IDouble     (** [double _Imaginary] *)
+  | ILongDouble (** [long double _Imaginary] *)
 
 (** An attribute has a name and some optional parameters *)
 and attribute = Attr of string * attrparam list
@@ -353,6 +362,8 @@ and fieldinfo = {
                                           * (not for its type) *)
     mutable floc: location;             (** The location where this field
                                           * is defined *)
+    mutable fstorage: storage;          (** Must be NoStorage or Static,
+                                          * indicates nonstatic or static member *)
 }
 
 
@@ -1223,6 +1234,7 @@ let uintType = TInt(IUInt,[])
 let longType = TInt(ILong,[])
 let ulongType = TInt(IULong,[])
 let charType = TInt(IChar, [])
+let boolType = TInt(IBool, [])
 
 let charPtrType = TPtr(charType,[])
 let charConstPtrType = TPtr(TInt(IChar, [Attr("const", [])]),[])
@@ -1251,6 +1263,7 @@ let initCIL_called = ref false
 
 (** Returns true if and only if the given integer type is signed. *)
 let isSigned = function
+  | IBool
   | IUChar
   | IUShort
   | IUInt
@@ -1417,7 +1430,7 @@ let mkCompInfo
        * the fields. The function can ignore this argument if not 
        * constructing a recursive type.  *)
        (mkfspec: compinfo -> (string * typ * int option * attribute list *
-                             location) list)   
+                             location * storage) list)   
        (a: attribute list) : compinfo =
 
   (* make a new name for anonymous structs *)
@@ -1434,13 +1447,14 @@ let mkCompInfo
    comp.ckey <- !nextCompinfoKey;
    incr nextCompinfoKey;
    let flds = 
-       List.map (fun (fn, ft, fb, fa, fl) -> 
+       List.map (fun (fn, ft, fb, fa, fl, fs) -> 
           { fcomp = comp;
             ftype = ft;
             fname = fn;
             fbitfield = fb;
             fattr = fa;
-            floc = fl}) (mkfspec comp) in
+            floc = fl;
+            fstorage = fs}) (mkfspec comp) in
    comp.cfields <- flds;
    if flds <> [] then comp.cdefined <- true;
    comp
@@ -1606,7 +1620,8 @@ external parse : string -> file = "cil_main"
  *)
 
 let d_ikind () = function
-    IChar -> text "char"
+  | IBool -> text "_Bool"
+  | IChar -> text "char"
   | ISChar -> text "signed char"
   | IUChar -> text "unsigned char"
   | IInt -> text "int"
@@ -1625,6 +1640,14 @@ let d_fkind () = function
     FFloat -> text "float"
   | FDouble -> text "double"
   | FLongDouble -> text "long double"
+
+  | CFloat -> text "_Complex"
+  | CDouble -> text "double _Complex"
+  | CLongDouble -> text "long double _Complex"
+
+  | IFloat -> text "_Imaginary"
+  | IDouble -> text "double _Imaginary"
+  | ILongDouble -> text "long double _Imaginary"
 
 let d_storage () = function
     NoStorage -> nil
@@ -1708,7 +1731,13 @@ let d_const () c =
       (match fsize with
          FFloat -> chr 'f'
        | FDouble -> nil
-       | FLongDouble -> chr 'L')
+       | FLongDouble -> chr 'L'
+       | CFloat -> nil
+       | CDouble -> nil
+       | CLongDouble -> nil
+       | IFloat -> nil
+       | IDouble -> nil
+       | ILongDouble -> nil)
   | CEnum(_, s, ei) -> text s
 
 
@@ -1896,14 +1925,21 @@ exception SizeOfError of string * typ
 (* Get the minimum aligment in bytes for a given type *)
 let rec alignOf_int = function
   | TInt((IChar|ISChar|IUChar), _) -> 1
+  | TInt((IBool), _) -> !theMachine.M.alignof_cbool
   | TInt((IShort|IUShort), _) -> !theMachine.M.alignof_short
   | TInt((IInt|IUInt), _) -> !theMachine.M.alignof_int
   | TInt((ILong|IULong), _) -> !theMachine.M.alignof_long
   | TInt((ILongLong|IULongLong), _) -> !theMachine.M.alignof_longlong
   | TEnum _ -> !theMachine.M.alignof_enum
-  | TFloat(FFloat, _) -> !theMachine.M.alignof_float 
+  | TFloat(FFloat, _) -> !theMachine.M.alignof_float
   | TFloat(FDouble, _) -> !theMachine.M.alignof_double
   | TFloat(FLongDouble, _) -> !theMachine.M.alignof_longdouble
+  | TFloat(IFloat, _) -> !theMachine.M.alignof_imaginary
+  | TFloat(IDouble, _) -> !theMachine.M.alignof_doubleimaginary
+  | TFloat(ILongDouble, _) -> !theMachine.M.alignof_longdoubleimaginary
+  | TFloat(CFloat, _) -> !theMachine.M.alignof_complex
+  | TFloat(CDouble, _) -> !theMachine.M.alignof_doublecomplex
+  | TFloat(CLongDouble, _) -> !theMachine.M.alignof_longdoublecomplex
   | TNamed (t, _) -> alignOf_int t.ttype
   | TArray (t, _, _) -> alignOf_int t
   | TPtr _ | TBuiltin_va_list _ -> !theMachine.M.alignof_ptr
@@ -1936,7 +1972,7 @@ let rec alignOf_int = function
 
 let bytesSizeOfInt (ik: ikind): int = 
   match ik with 
-  | IChar | ISChar | IUChar -> 1
+  | IBool | IChar | ISChar | IUChar -> 1
   | IInt | IUInt -> !theMachine.M.sizeof_int
   | IShort | IUShort -> !theMachine.M.sizeof_short
   | ILong | IULong -> !theMachine.M.sizeof_long
@@ -2000,7 +2036,7 @@ let convertInts (i1:int64) (ik1:ikind) (i2:int64) (ik2:ikind)
     let rank : ikind -> int = function
         (* these are just unique numbers representing the integer 
            conversion rank. *)
-      | IChar | ISChar | IUChar -> 1
+      | IBool | IChar | ISChar | IUChar -> 1
       | IShort | IUShort -> 2
       | IInt | IUInt -> 3
       | ILong | IULong -> 4
@@ -2238,7 +2274,7 @@ and bitsSizeOf t =
   | TInt (ik,_) -> 8 * (bytesSizeOfInt ik)
   | TFloat(FDouble, _) -> 8 * !theMachine.M.sizeof_double
   | TFloat(FLongDouble, _) -> 8 * !theMachine.M.sizeof_longdouble
-  | TFloat _ -> 8 * !theMachine.M.sizeof_float
+    | TFloat _ -> 8 * !theMachine.M.sizeof_float
   | TEnum _ -> 8 * !theMachine.M.sizeof_enum
   | TPtr _ -> 8 * !theMachine.M.sizeof_ptr
   | TBuiltin_va_list _ -> 8 * !theMachine.M.sizeof_ptr

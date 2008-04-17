@@ -237,7 +237,7 @@ type maybeInit =
 %token <string> NAMED_TYPE
 
 %token EOF
-%token CHAR INT DOUBLE FLOAT VOID INT64 INT32
+%token BOOL CHAR INT DOUBLE FLOAT COMPLEX IMAGINARY VOID INT64 INT32
 %token ENUM STRUCT TYPEDEF UNION
 %token SIGNED UNSIGNED LONG SHORT
 %token VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
@@ -823,6 +823,12 @@ type_spec:
                     }
 |   DOUBLE          { ((fun al args -> TFloat(FDouble, al)),
                        matchFloatType FDouble) }
+
+|   COMPLEX         { ((fun al args -> TFloat(CFloat, al)),
+                       matchFloatType CFloat ) }
+
+|   IMAGINARY       { ((fun al args -> TFloat(IFloat, al)),
+                       matchFloatType IFloat) }
 
 |   STRUCT ARG_c { let currentArg = $2 in
                       ((fun al args -> 

@@ -51,6 +51,6 @@ val args: (string * Arg.spec * string) list
 
     (* the main command to parse a file. Return a thunk that can be used to 
      * convert the AST to CIL. *)
-val parse: string -> (unit -> Cil.file)
+val parse: string -> Cabs.lang_t -> (unit -> Cil.file)
 
-val parse_with_cabs: string -> (unit -> Cabs.file * Cil.file)
+val parse_with_cabs: string -> Cabs.lang_t -> (unit -> Cabs.file * Cil.file)

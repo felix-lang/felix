@@ -272,7 +272,8 @@ certain type attributes then use {!Cil.typeSigWithAttrs}.
 
 (** Various kinds of integers *)
 and ikind = 
-    IChar       (** [char] *)
+    IBool       (** [_Bool] *)
+  | IChar       (** [char] *)
   | ISChar      (** [signed char] *)
   | IUChar      (** [unsigned char] *)
   | IInt        (** [int] *)
@@ -290,6 +291,14 @@ and fkind =
     FFloat      (** [float] *)
   | FDouble     (** [double] *)
   | FLongDouble (** [long double] *)
+
+  | CFloat      (** [float _Complex] *)
+  | CDouble     (** [double _Complex] *)
+  | CLongDouble (** [long double _Complex] *)
+
+  | IFloat      (** [float _Imaginary] *)
+  | IDouble     (** [double _Imaginary] *)
+  | ILongDouble (** [long double _Imaginary] *)
 
 
 (** {b Attributes.} *)
@@ -401,6 +410,9 @@ and fieldinfo = {
     (** The attributes for this field (not for its type) *)
     mutable floc: location;
     (** The location where this field is defined *)
+    mutable fstorage: storage;
+    (** Must be NoStorage or Static,
+      * indicates nonstatic or static member *)
 }
 
 
@@ -1378,7 +1390,7 @@ val isSigned: ikind -> bool
 val mkCompInfo: bool ->      (* whether it is a struct or a union *)
                string ->     (* name of the composite type; cannot be empty *)
                (compinfo -> 
-                  (string * typ * int option * attributes * location) list) ->
+                  (string * typ * int option * attributes * location * storage) list) ->
                (* a function that when given a forward 
                   representation of the structure type constructs the type of 
                   the fields. The function can ignore this argument if not 

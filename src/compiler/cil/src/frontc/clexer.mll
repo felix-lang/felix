@@ -110,12 +110,12 @@ let dbgToken (t: token) =
 (*
 ** Keyword hashtable
 *)
-let lexicon = H.create 211
-let init_lexicon _ =
-  H.clear lexicon;
-  List.iter 
-    (fun (key, builder) -> H.add lexicon key builder)
-    [ ("auto", fun loc -> AUTO loc);
+let c_keywords =
+    [
+      ("_Bool", fun loc -> BOOL loc);
+      ("_Imaginary", fun loc -> IMAGINARY loc);
+      ("_Complex", fun loc -> COMPLEX loc);
+      ("auto", fun loc -> AUTO loc);
       ("const", fun loc -> CONST loc);
       ("__const", fun loc -> CONST loc);
       ("__const__", fun loc -> CONST loc);
@@ -218,6 +218,37 @@ let init_lexicon _ =
                          IDENT ("__thread", loc));
     ]
 
+let cxx_extra_keywords = [
+      ("class", fun loc -> CLASS loc);
+      ("namespace", fun loc -> NAMESPACE loc);
+      ("using", fun loc -> USING loc);
+      ("typename", fun loc -> TYPENAME loc);
+      ("templatename", fun loc -> TEMPLATENAME loc);
+      ("public", fun loc -> PUBLIC loc);
+      ("private", fun loc -> PRIVATE loc);
+      ("protected", fun loc -> PROTECTED loc);
+      ("virtual", fun loc -> VIRTUAL loc);
+]
+
+let lexicon = H.create 211
+let class_list = ref [""]
+
+let init_lexicon (langind : Cabs.lang_t) =
+  H.clear lexicon;
+  List.iter
+    (fun (key, builder) -> H.add lexicon key builder)
+    c_keywords
+  ;
+  if langind = `Cxx then
+   List.iter
+    (fun (key, builder) -> H.add lexicon key builder)
+    cxx_extra_keywords
+  ;
+  class_list := [""]
+
+let push_class s = class_list := s :: !class_list
+let pop_class () = class_list := List.tl !class_list
+
 (* Mark an identifier as a type name. The old mapping is preserved and will 
  * be reinstated when we exit this context *)
 let add_type name =
@@ -254,9 +285,14 @@ let add_identifier name =
 *)
 let scan_ident id =
   let here = currentLoc () in
-  try (H.find lexicon id) here
+  let s = ref "" in
+  for i = 0 to String.length id - 1 do
+    let ch = id.[i] in
+    if ch > ' ' then s := !s ^ String.make 1 ch
+  done;
+  try (H.find lexicon !s) here
   (* default to variable name, as opposed to type *)
-  with Not_found -> dbgToken (IDENT (id, here))
+  with Not_found -> dbgToken (IDENT (!s, here))
 
 
 (*
@@ -264,14 +300,30 @@ let scan_ident id =
 *)
  
 
-let init ~(filename: string) : Lexing.lexbuf =
-  init_lexicon ();
+let init_lexer lang =
+  init_lexicon lang;
   (* Inititialize the pointer in Errormsg *)
   Lexerhack.add_type := add_type;
   Lexerhack.push_context := push_context;
   Lexerhack.pop_context := pop_context;
+  Lexerhack.push_class:= push_class;
+  Lexerhack.pop_class := pop_class;
   Lexerhack.add_identifier := add_identifier;
+  let get_lang () = lang in
+  Lexerhack.get_lang := get_lang
+
+let init ~(filename: string) ~(lang: Cabs.lang_t) : Lexing.lexbuf =
+  init_lexer lang;
   E.startParsing filename
+
+let init_from_string
+  ~(filename: string)
+  ~(line: int)
+  ~(lang: Cabs.lang_t)
+  ~(ins: string) : Lexing.lexbuf
+=
+  init_lexer lang;
+  E.startParsingFromString ~file:filename ~line:line ins
 
 
 let finish () = 
@@ -428,9 +480,20 @@ let floatnum = (decfloat | hexfloat) floatsuffix?
 
 let ident = (letter|'_'|'$')(letter|decdigit|'_'|'$')* 
 let blank = [' ' '\t' '\012' '\r']+
+let spaces = [' ' '\t' '\012' '\r']*
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
 let oct_escape = '\\' octdigit octdigit? octdigit? 
+let sym =
+  "<<=" | ">>=" |
+  "<<" | ">>" | "==" | "!=" | "<=" | ">=" |
+  "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "->" |
+  "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "!" | "~" | "="
+
+
+let operator = "operator" spaces sym
+let oident = operator | ident
+let qualified_name = ("::" spaces)?oident (spaces "::" spaces oident)*
 
 (* Pragmas that are not parsed by CIL.  We lex them as PRAGMA_LINE tokens *)
 let no_parse_pragma =
@@ -554,6 +617,12 @@ rule initial =
                                           initial lexbuf 
                                         }
 
+(* jms: a hack to change unsigned int to plain unsigned to fix
+an shift/reduce parsing problem
+with C++ class base list/unnamed bitfield *)
+
+|              "unsigned" (' '|'\t')+ "int" {UNSIGNED (currentLoc())}
+
 (* sm: tree transformation keywords *)
 |               "@transform"            {AT_TRANSFORM (currentLoc ())}
 |               "@transformExpr"        {AT_TRANSFORMEXPR (currentLoc ())}
@@ -564,7 +633,7 @@ rule initial =
 (* __extension__ is a black. The parser runs into some conflicts if we let it
  * pass *)
 |               "__extension__"         {addWhite lexbuf; initial lexbuf }
-|		ident			{scan_ident (Lexing.lexeme lexbuf)}
+|		qualified_name		{ scan_ident (Lexing.lexeme lexbuf) }
 |		eof			{EOF}
 |		_			{E.parse_error "Invalid symbol"}
 and comment =
