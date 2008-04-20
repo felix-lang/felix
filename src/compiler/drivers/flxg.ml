@@ -147,7 +147,7 @@ try
     | None -> filename
     | Some d -> Filename.concat d (Filename.basename filename)
   in
-  let why_file_name = outbase ^ ".why"
+  let why_file_name = mkf (outbase ^ ".why")
 
   and header_file = mkf (outbase ^ ".hpp")
   and body_file = mkf (outbase ^ ".cpp")
@@ -1123,21 +1123,23 @@ try
     in close_in f; x
   end
   in
-    let f = open_out fname in
-    Printf.fprintf
-      f
-      "parse=%f\ndesugar=%f\nbuild=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
-      (old_parse_time +. parse_time)
-      (old_desugar_time +. desugar_time)
-      (old_build_table_time +. build_table_time)
-      (old_binding_time +. binding_time)
-      (old_opt_time +. opt_time)
-      (old_instantiation_time +. instantiation_time)
-      (old_code_generation_time +. code_generation_time)
-      (old_total_time +. total_time)
+    try (* failure to save stats isn't fatal *)
+      let f = open_out fname in
+      Printf.fprintf
+        f
+        "parse=%f\ndesugar=%f\nbuild=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
+        (old_parse_time +. parse_time)
+        (old_desugar_time +. desugar_time)
+        (old_build_table_time +. build_table_time)
+        (old_binding_time +. binding_time)
+        (old_opt_time +. opt_time)
+        (old_instantiation_time +. instantiation_time)
+        (old_code_generation_time +. code_generation_time)
+        (old_total_time +. total_time)
+      ;
+      close_out f
+    with _ -> ()
     ;
-    close_out f
-  ;
   exit (if compiler_options.reverse_return_parity then 1 else 0)
 
 with x ->
