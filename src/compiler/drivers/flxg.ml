@@ -234,7 +234,7 @@ try
   Flx_axiom.axiom_check syms bbdfns;
 
   (* generate why file *)
-  Flx_why.emit_whycode why_file_name syms bbdfns root
+  Flx_why.emit_whycode why_file_name.out_filename syms bbdfns root
   ;
 
 
