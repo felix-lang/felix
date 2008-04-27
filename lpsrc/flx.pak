@@ -386,7 +386,6 @@ let set_version () =
 
 @head(2,'The front end')
 @push_head()
-@include_file ('flx_filesys.ipk')
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
 @include_file ('flx_prop.ipk')

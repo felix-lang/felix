@@ -1,12 +1,3 @@
-@head(1,"System dependent path handling")
-@select(tangler('src/compiler/misclib/flx_filesys.mli'))
-val filetime : string -> float
-val find_file_in_path:
-  string list -> string -> string
-val find_file:
-  bool -> string list -> string -> string
-
-@select(tangler('src/compiler/misclib/flx_filesys.ml'))
 exception Found_file of string
 
 (* Note: empty list of components is not allowed *)
@@ -58,27 +49,3 @@ let filetime f =
   else
     try (Unix.stat f).Unix.st_mtime
     with | _ -> 0.0
-@doc()
-
-@h = tangler('spkgs/misc.py')
-@select(h)
-# files containing ocamllex sources
-MISC_LEXS = []
-
-# files containing ocamlyacc sources
-MISC_PARSES = [ ]
-
-# ocaml modules = interfaces + implementation files
-MISC_MODULES = [
-  'src/compiler/misclib/flx_filesys',
-]
-
-MISC_INTERFACES = MISC_MODULES
-
-MISC_IMPLEMENTATIONS = MISC_INTERFACES
-
-caml_require_libs = ["str"]
-caml_provide_lib = 'src/compiler/misclib/misclib'
-caml_interfaces = MISC_INTERFACES
-caml_implementations = MISC_IMPLEMENTATIONS
-
