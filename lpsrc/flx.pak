@@ -5,176 +5,160 @@
 
 @head(1,'The Felix Compiler')
 SVN conversion.
-@h = tangler('spkgs/flx_compiler.py')
-@select(h)
-FLX_LEXS = [ 'src/compiler/flxlib/flx_lex' ]
-FLX_PARSES = [ 'src/compiler/flxlib/flx_preparse', 'src/compiler/flxlib/flx_parse' ]
+@select(tangler('spkgs/flx_compiler.py'))
+iscr_source = ["lpsrc/flx.pak"]
 
-FLX_MODULES = [
-  'src/compiler/flxlib/inria_table',
-  'src/compiler/flxlib/inria_cset',
-  'src/compiler/flxlib/inria_syntax',
-  'src/compiler/flxlib/inria_lexgen',
-  'src/compiler/flxlib/flx_mtypes1',
-  'src/compiler/flxlib/flx_ast',
-  'src/compiler/flxlib/flx_types',
-  'src/compiler/flxlib/flx_util',
-  'src/compiler/flxlib/flx_dlst',
-  'src/compiler/flxlib/flx_getopt',
-  'src/compiler/flxlib/flx_mtypes2',
-  'src/compiler/flxlib/flx_srcref',
-  'src/compiler/flxlib/flx_typing',
-  'src/compiler/flxlib/flx_exceptions',
-  'src/compiler/flxlib/flx_string',
-  'src/compiler/flxlib/flx_id',
-  'src/compiler/flxlib/flx_print',
-  'src/compiler/flxlib/flx_maps',
-  'src/compiler/flxlib/flx_typing2',
-  'src/compiler/flxlib/flx_unify',
-  'src/compiler/flxlib/flx_prop',
-  'src/compiler/flxlib/flx_charset',
-  'src/compiler/flxlib/flx_constfld',
-  'src/compiler/flxlib/flx_cexpr',
-  'src/compiler/flxlib/flx_csubst',
-  'src/compiler/flxlib/flx_sex2flx',
-  'src/compiler/flxlib/flx_token',
-  'src/compiler/flxlib/flx_prelex',
-  'src/compiler/flxlib/flx_pdoc',
-  'src/compiler/flxlib/flx_preparse',
-  'src/compiler/flxlib/flx_keywords',
-  'src/compiler/flxlib/flx_lex1',
-  'src/compiler/flxlib/flx_tok',
-  'src/compiler/flxlib/flx_lexstate',
-  'src/compiler/flxlib/flx_preproc',
-  'src/compiler/flxlib/flx_lex',
-  'src/compiler/flxlib/flx_pretok',
-  'src/compiler/flxlib/flx_parse',
-  'src/compiler/flxlib/flx_parse_ctrl',
-  'src/compiler/flxlib/flx_dfa',
-  'src/compiler/flxlib/flx_pat',
-  'src/compiler/flxlib/flx_macro',
-  'src/compiler/flxlib/flx_cformat',
-  'src/compiler/flxlib/flx_ciltoflx',
-  'src/compiler/flxlib/flx_colns',
-  'src/compiler/flxlib/flx_tcdoc',
-  'src/compiler/flxlib/flx_desugar',
-  'src/compiler/flxlib/flx_mbind',
-  'src/compiler/flxlib/flx_symtab',
-  'src/compiler/flxlib/flx_name',
-  'src/compiler/flxlib/flx_beta',
-  'src/compiler/flxlib/flx_treg',
-  'src/compiler/flxlib/flx_tpat',
-  'src/compiler/flxlib/flx_tconstraint',
-  'src/compiler/flxlib/flx_generic',
-  'src/compiler/flxlib/flx_overload',
-  'src/compiler/flxlib/flx_lookup',
-  'src/compiler/flxlib/flx_child',
-  'src/compiler/flxlib/flx_bexe',
-  'src/compiler/flxlib/flx_bbind',
-  'src/compiler/flxlib/flx_strabs',
-  'src/compiler/flxlib/flx_typeclass',
-  'src/compiler/flxlib/flx_axiom',
-  'src/compiler/flxlib/flx_label',
-  'src/compiler/flxlib/flx_cflow',
-  'src/compiler/flxlib/flx_call',
-  'src/compiler/flxlib/flx_use',
-  'src/compiler/flxlib/flx_passign',
-  'src/compiler/flxlib/flx_tailit',
-  'src/compiler/flxlib/flx_reparent',
-  'src/compiler/flxlib/flx_args',
-  'src/compiler/flxlib/flx_uncurry',
-  'src/compiler/flxlib/flx_stack_calls',
-  'src/compiler/flxlib/flx_mkproc',
-  'src/compiler/flxlib/flx_spexes',
-  'src/compiler/flxlib/flx_reduce',
-  'src/compiler/flxlib/flx_foldvars',
-  'src/compiler/flxlib/flx_inline',
-  'src/compiler/flxlib/flx_mono',
-  'src/compiler/flxlib/flx_mkcls',
-  'src/compiler/flxlib/flx_global',
-  'src/compiler/flxlib/flx_inst',
-  'src/compiler/flxlib/flx_tgen',
-  'src/compiler/flxlib/flx_display',
-  'src/compiler/flxlib/flx_ogen',
-  'src/compiler/flxlib/flx_regen',
-  'src/compiler/flxlib/flx_unravel',
-  'src/compiler/flxlib/flx_pgen',
-  'src/compiler/flxlib/flx_egen',
-  'src/compiler/flxlib/flx_ctorgen',
-  'src/compiler/flxlib/flx_elkgen',
-  'src/compiler/flxlib/flx_why',
-  'src/compiler/flxlib/flx_gen',
-  'src/compiler/flxlib/flx_flxopt',
-  'src/compiler/flxlib/flx_terminate',
+caml_modules = [
+    'src/compiler/frontend/flx_ast',
+    'src/compiler/frontend/flx_mtypes1',
+    'src/compiler/frontend/flx_types',
+    'src/compiler/frontend/flx_exceptions',
+    'src/compiler/frontend/flx_string',
+    'src/compiler/frontend/flx_mtypes2',
+    'src/compiler/flxlib/flx_token',
+    'src/compiler/frontend/flx_util',
+    'src/compiler/flxlib/flx_lexstate',
+    'src/compiler/frontend/flx_srcref',
+    'src/compiler/flxlib/flx_prelex',
+    'src/compiler/flxlib/flx_tok',
+    'src/compiler/frontend/flx_typing',
+    'src/compiler/frontend/flx_print',
+    'src/compiler/frontend/flx_typing2',
+    'src/compiler/frontend/flx_charset',
+    'src/compiler/flxlib/flx_pdoc',
+    'src/compiler/flxlib/flx_preparse',
+    'src/compiler/flxlib/flx_lex1',
+    'src/compiler/flxlib/flx_preproc',
+    'src/compiler/frontend/flx_id',
+    'src/compiler/flxlib/flx_keywords',
+    'src/compiler/flxlib/flx_lex',
+    'src/compiler/frontend/flx_sex2flx',
+    'src/compiler/flxlib/flx_parse',
+    'src/compiler/flxlib/inria_table',
+    'src/compiler/flxlib/inria_cset',
+    'src/compiler/flxlib/inria_syntax',
+    'src/compiler/flxlib/inria_lexgen',
+    'src/compiler/frontend/flx_dlst',
+    'src/compiler/flxlib/flx_getopt',
+    'src/compiler/frontend/flx_maps',
+    'src/compiler/frontend/flx_unify',
+    'src/compiler/frontend/flx_beta',
+    'src/compiler/frontend/flx_generic',
+    'src/compiler/flxlib/flx_name',
+    'src/compiler/frontend/flx_tpat',
+    'src/compiler/frontend/flx_tconstraint',
+    'src/compiler/frontend/flx_overload',
+    'src/compiler/flxlib/flx_lookup',
+    'src/compiler/frontend/flx_mbind',
+    'src/compiler/frontend/flx_treg',
+    'src/compiler/frontend/flx_use',
+    'src/compiler/frontend/flx_prop',
+    'src/compiler/flxlib/flx_constfld',
+    'src/compiler/flxlib/flx_cexpr',
+    'src/compiler/flxlib/flx_csubst',
+    'src/compiler/flxlib/flx_pretok',
+    'src/compiler/flxlib/flx_parse_ctrl',
+    'src/compiler/flxlib/flx_dfa',
+    'src/compiler/frontend/flx_pat',
+    'src/compiler/flxlib/flx_macro',
+    'src/compiler/flxlib/flx_cformat',
+    'src/compiler/flxlib/flx_ciltoflx',
+    'src/compiler/frontend/flx_colns',
+    'src/compiler/flxlib/flx_tcdoc',
+    'src/compiler/frontend/flx_desugar',
+    'src/compiler/frontend/flx_symtab',
+    'src/compiler/frontend/flx_child',
+    'src/compiler/flxlib/flx_bexe',
+    'src/compiler/frontend/flx_bbind',
+    'src/compiler/flxlib/flx_strabs',
+    'src/compiler/frontend/flx_typeclass',
+    'src/compiler/frontend/flx_axiom',
+    'src/compiler/frontend/flx_label',
+    'src/compiler/flxlib/flx_cflow',
+    'src/compiler/frontend/flx_call',
+    'src/compiler/flxlib/flx_passign',
+    'src/compiler/flxlib/flx_tailit',
+    'src/compiler/frontend/flx_reparent',
+    'src/compiler/flxlib/flx_spexes',
+    'src/compiler/flxlib/flx_foldvars',
+    'src/compiler/flxlib/flx_args',
+    'src/compiler/frontend/flx_uncurry',
+    'src/compiler/flxlib/flx_stack_calls',
+    'src/compiler/flxlib/flx_mkproc',
+    'src/compiler/flxlib/flx_reduce',
+    'src/compiler/flxlib/flx_inline',
+    'src/compiler/flxlib/flx_mono',
+    'src/compiler/flxlib/flx_mkcls',
+    'src/compiler/flxlib/flx_global',
+    'src/compiler/flxlib/flx_inst',
+    'src/compiler/flxlib/flx_tgen',
+    'src/compiler/flxlib/flx_display',
+    'src/compiler/flxlib/flx_ogen',
+    'src/compiler/flxlib/flx_regen',
+    'src/compiler/flxlib/flx_unravel',
+    'src/compiler/flxlib/flx_pgen',
+    'src/compiler/flxlib/flx_egen',
+    'src/compiler/flxlib/flx_ctorgen',
+    'src/compiler/flxlib/flx_elkgen',
+    'src/compiler/flxlib/flx_why',
+    'src/compiler/flxlib/flx_gen',
+    'src/compiler/flxlib/flx_flxopt',
+    'src/compiler/frontend/flx_terminate',
 ]
 
-FLX_RAW_INTERFACES = [
-  'src/compiler/flxlib/flx_ast',
-  'src/compiler/flxlib/flx_types',
-  'src/compiler/flxlib/flx_token',
+caml_exes = [
+    'src/compiler/drivers/flxl',
+    'src/compiler/drivers/flxp',
+    'src/compiler/drivers/flxm',
+    'src/compiler/drivers/flxd',
+    'src/compiler/drivers/flxb',
+    'src/compiler/drivers/flxg',
+    'src/compiler/drivers/stub',
 ]
 
-FLX_INTERFACES = FLX_MODULES
-
-FLX_IMPLEMENTATIONS = FLX_INTERFACES
-
-FLX_EXES = [
-  'src/compiler/drivers/flxl',
-  'src/compiler/drivers/flxp',
-  'src/compiler/drivers/flxm',
-  'src/compiler/drivers/flxd',
-  'src/compiler/drivers/flxb',
-  'src/compiler/drivers/flxg',
-  'src/compiler/drivers/stub',
-]
-
-caml_lexes = FLX_LEXS
-caml_interfaces = FLX_INTERFACES
-caml_raw_interfaces = FLX_RAW_INTERFACES
-caml_exes = FLX_EXES
-caml_implementations = FLX_IMPLEMENTATIONS
 caml_require_libs = [
-  'str',
-  'nums',
-  'unix',
-  'flx_version',
-  'ocslib',
-  'sexlib',
-  'dyplib',
-  'misclib',
-  'cillib',
-  'flxcclib',
-  'flxlib',
-  'flx_version_hook']
+    'str',
+    'nums',
+    'unix',
+    'flx_version',
+    'ocslib',
+    'sexlib',
+    'dyplib',
+    'misclib',
+    'cillib',
+    'flxcclib',
+    'flxlib',
+    'flx_version_hook',
+]
 
 caml_include_paths = [
-  'src/compiler/flxlib',
-  'src/compiler/ocs',
-  'src/compiler/sex',
-  'src/compiler/cil',
-  'src/compiler/cil/ocamlutil',
-  'src/compiler/cil/src',
-  'src/compiler/cil/src/frontc',
-  'src/compiler/dyp/dyplib',
-  'src/compiler/flxcclib',
-  'src/compiler/misclib',
-  'src/compiler/flx_version',
-  'src/compiler/flx_version_hook'
-  ]
+    'src/compiler/frontend',
+    'src/compiler/flxlib',
+    'src/compiler/ocs',
+    'src/compiler/sex',
+    'src/compiler/cil',
+    'src/compiler/cil/ocamlutil',
+    'src/compiler/cil/src',
+    'src/compiler/cil/src/frontc',
+    'src/compiler/dyp/dyplib',
+    'src/compiler/flxcclib',
+    'src/compiler/misclib',
+    'src/compiler/flx_version',
+    'src/compiler/flx_version_hook'
+]
 
-caml_dyparses = FLX_PARSES
 pkg_requires = [
-  'flx_version',
-  'ocs',
-  'dypgen',
-  'sex',
-  'misc',
-  'cil',
-  'flxcc_util',
-  'flx_version_hook'
-  ]
+    'flx_version',
+    'ocs',
+    'dypgen',
+    'sex',
+    'misc',
+    'cil',
+    'flxcc_util',
+    'flx_version_hook',
+]
+
 caml_provide_lib = 'src/compiler/flxlib/flxlib'
-iscr_source = ["lpsrc/flx.pak"]
 weaver_directory = 'doc/flx/flx_compiler/'
 tmpdir = ['src']
 
@@ -386,52 +370,27 @@ let set_version () =
 
 @head(2,'The front end')
 @push_head()
-@include_file ('flx_util.ipk')
-@include_file ('flx_types.ipk')
-@include_file ('flx_prop.ipk')
-@include_file ('flx_unify.ipk')
 @include_file ('flx_pdoc.ipk')
 @include_file ('flx_preparser.ipk')
 @include_file ('flx_parser.ipk')
-@include_file ('flx_string.ipk')
 @include_file ('flx_keywords.ipk')
 @include_file ('flx_lexer.ipk')
 @include_file ('flx_token.ipk')
 @include_file ('flx_tokeniser.ipk')
-@include_file ('flx_pat.ipk')
 @include_file ('flx_constfld.ipk')
-@include_file ('flx_sex2flx.ipk')
 @include_file ('flx_macro.ipk')
 @include_file ('flx_cformat.ipk')
 @include_file ('flx_ciltoflx.ipk')
 @include_file ('flx_tcdoc.ipk')
-@include_file ('flx_desugar.ipk')
-@include_file ('flx_symtab.ipk')
-@include_file ('flx_beta.ipk')
-@include_file ('flx_tpat.ipk')
-@include_file ('flx_treg.ipk')
-@include_file ('flx_tconstraint.ipk')
-@include_file ('flx_generic.ipk')
-@include_file ('flx_overload.ipk')
 @include_file ('flx_lookup.ipk')
-@include_file ('flx_mbind.ipk')
 @include_file ('flx_bexe.ipk')
-@include_file ('flx_bbind.ipk')
 @include_file ('flx_strabs.ipk')
-@include_file ('flx_typeclass.ipk')
-@include_file ('flx_axiom.ipk')
 @include_file ('flx_args.ipk')
-@include_file ('flx_uncurry.ipk')
 @include_file ('flx_mkproc.ipk')
-@include_file ('flx_label.ipk')
 @include_file ('flx_cflow.ipk')
-@include_file ('flx_call.ipk')
-@include_file ('flx_use.ipk')
-@include_file ('flx_child.ipk')
 @include_file ('flx_passign.ipk')
 @include_file ('flx_tailit.ipk')
 @include_file ('flx_spexes.ipk')
-@include_file ('flx_reparent.ipk')
 @include_file ('flx_reduce.ipk')
 @include_file ('flx_foldvars.ipk')
 @include_file ('flx_inline.ipk')

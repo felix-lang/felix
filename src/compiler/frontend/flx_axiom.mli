@@ -1,0 +1,14 @@
+(** Axiom check
+ *
+ * Scan all exes, replace BEXE_axiom_check e with BEXE_assert (axiom e) for
+ * each axiom that matches the argument e. *)
+
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+
+val axiom_check:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  unit
