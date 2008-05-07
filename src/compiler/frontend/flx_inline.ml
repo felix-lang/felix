@@ -1,43 +1,3 @@
-@head(1,"Inlining")
-To make this work, we need a theorem.
-First,  the call rule is:
-
-@begin_displayed_code()
-A procedure may only call a child of an ancestor.
-@end_displayed_code()
-Note an ancestor is itself or a parent
-of any ancestor: that is, a procedure
-is an ancestor of itself. A parentless toplevel
-procedure is considered a child of a dummy root
-to make this simple formulation work.
-@p()
-It is clear we can inline any sibling
-by copying its body, and duplicating
-any children -- variables and nested
-procedures included. This is because
-any references to its parent will
-go through from the caller, since
-they have the same parent.
-@p()
-Clearly this result extends to any
-child of any parent.
-
-@h = tangler("src/compiler/flxlib/flx_inline.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-open Flx_call
-
-val heavy_inlining:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
-  unit
-
-@h = tangler("src/compiler/flxlib/flx_inline.ml")
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -1518,5 +1478,4 @@ inline B' into it, and C' into that .. but C' is a cloned sibling
 of C, and not the same function. So we try to inline into C',
 and inlining A is allowed there .. which causes an infinite
 recursion.
-
 *)

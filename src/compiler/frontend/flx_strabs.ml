@@ -1,20 +1,3 @@
-@head(1,"Downgrade Abstract types")
-Convert newtype abstractions to their representations.
-
-@h = tangler("src/compiler/flxlib/flx_strabs.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-
-val strabs:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  fully_bound_symbol_table_t
-
-@h = tangler("src/compiler/flxlib/flx_strabs.ml")
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types

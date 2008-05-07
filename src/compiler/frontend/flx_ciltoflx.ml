@@ -1,13 +1,3 @@
-@head(1,"Cil to Felix")
-@h = tangler("src/compiler/flxlib/flx_ciltoflx.mli")
-@select(h)
-open Flx_ast
-open Cil
-val handle_global: global -> statement_t list
-
-@h = tangler("src/compiler/flxlib/flx_ciltoflx.ml")
-@select(h)
-
 (* CIL HANDLING .. MOVE ELSEWHERE *)
 open Cil
 open Flx_ctypes
@@ -218,5 +208,3 @@ let handle_global g =
   | GAsm _ -> print_endline "GASM"; []
   | GPragma _ -> print_endline "PRAGMA"; []
   | GText _ -> print_endline "TEXT"; []
-
-

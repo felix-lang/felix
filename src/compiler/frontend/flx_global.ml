@@ -1,40 +1,3 @@
-@head(1,"Thread frame pointer required detector")
-Run after inlining is done. Uses two properies:
-@begin_displayed_code()
-  `Uses_global_var
-  `Requires_ptf
-  `Not_requires_ptf
-@end_displayed_code()
-The first is a local property, whilst the second is its
-closure over abstract closure formation -- both explicit
-closure building and direct calls. The ptf is only required
-to reference global variables, to pass to constructors
-of function objects that do so, or to access the garbage collector.
-@p()
-Eliding it when not needed
-is a useful optimisation. The third property is the negation
-of the second.
-
-@h = tangler("src/compiler/flxlib/flx_global.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-open Flx_call
-
-val set_globals:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  unit
-
-val check_global_vars_all_used:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  (bid_t, 'a) Hashtbl.t -> unit
-
-@h = tangler("src/compiler/flxlib/flx_global.ml")
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -468,4 +431,3 @@ let check_all_used syms bbdfns used ii =
 let check_global_vars_all_used syms bbdfns used =
   let ii = find_global_vars syms bbdfns in
   check_all_used syms bbdfns used ii
-

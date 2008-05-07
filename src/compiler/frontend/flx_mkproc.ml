@@ -1,19 +1,3 @@
-@head(1,"mkproc")
-@h = tangler("src/compiler/flxlib/flx_mkproc.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-
-val mkproc_gen:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
-  int
-
-@h = tangler("src/compiler/flxlib/flx_mkproc.ml")
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -379,4 +363,3 @@ let mkproc_gen syms (child_map,bbdfns) =
   (*
   0 (* TEMPORARY HACK, to prevent infinite recursion *)
   *)
-

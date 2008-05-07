@@ -1,23 +1,3 @@
-@head(1,'Bind executable statements')
-@h = tangler("src/compiler/flxlib/flx_bexe.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes2
-
-val bind_exes:
-  sym_state_t ->
-  env_t ->
-  range_srcref ->
-  (range_srcref * exe_t) list ->
-  btypecode_t ->
-  string ->
-  bid_t ->
-  bvs_t ->
-  btypecode_t * bexe_t list
-
-@h = tangler("src/compiler/flxlib/flx_bexe.ml")
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -675,5 +655,3 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   end
   ;
   !ret_type,bound_exes
-
-

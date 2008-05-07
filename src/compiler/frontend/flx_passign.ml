@@ -1,30 +1,3 @@
-@h = tangler("src/compiler/flxlib/flx_passign.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-open Flx_call
-open Flx_srcref
-open Flx_child
-
-type aentry_t =
-  int *
-  (string * btypecode_t * tbexpr_t * IntSet.t)
-
-val passign:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  aentry_t list ->                (* list of assignments to fix *)
-  btypecode_t list ->             (* ts to use when creating temporaries *)
-  range_srcref ->                 (* source ref *)
-  (btypecode_t * int) list *
-  bexe_t list
-
-
-
-@h = tangler("src/compiler/flxlib/flx_passign.ml")
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -263,4 +236,3 @@ let passign syms bbdfns (pinits:aentry_t list) ts' sr =
     tmplist := tl !tmplist
   done;
   !parameters, !result
-

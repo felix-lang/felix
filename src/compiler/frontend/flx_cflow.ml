@@ -1,22 +1,3 @@
-@head(1,'Control Flow')
-@select(tangler('src/compiler/flxlib/flx_cflow.mli'))
-open Flx_types
-open Flx_mtypes2
-
-val tailable:
-  bexe_t list ->
-  string list ->
-  bexe_t list ->
-  bool
-
-val chain_gotos:
-  sym_state_t ->
-  bexe_t list -> bexe_t list
-
-val final_tailcall_opt:
-  bexe_t list -> bexe_t list
-
-@select(tangler('src/compiler/flxlib/flx_cflow.ml'))
 open Flx_types
 open List
 open Flx_util
@@ -190,4 +171,3 @@ let final_tailcall_opt exes =
       -> aux tail (`BEXE_jump (sr,a,b) :: out)
     | head :: tail -> aux tail (head :: out)
   in aux exes []
-

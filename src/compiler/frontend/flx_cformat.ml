@@ -1,16 +1,3 @@
-@head(1,"C format string")
-@h = tangler("src/compiler/flxlib/flx_cformat.mli")
-@select(h)
-open Flx_srcref
-open Flx_ast
-
-val types_of_cformat_string:
-  range_srcref ->
-  string ->
-  string * (int * typecode_t) list
-
-@h = tangler("src/compiler/flxlib/flx_cformat.ml")
-@select(h)
 open String
 open List
 open Flx_ast
@@ -249,4 +236,3 @@ let types_of_cformat_string sr s =
   commit();
   !outfmt,
   rev_map (fun (i,s) -> i,`AST_name (sr,s,[])) !types
-

@@ -1,27 +1,3 @@
-@head(1,"Reductions")
-
-@h = tangler("src/compiler/flxlib/flx_reduce.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-
-val remove_useless_reductions:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  reduction_t list ->
-  reduction_t list
-
-val reduce_exes:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  reduction_t list ->
-  bexe_t list ->
-  bexe_t list
-
-@h = tangler("src/compiler/flxlib/flx_reduce.ml")
-@select(h)
 open Flx_ast
 open Flx_types
 open Flx_mtypes1
@@ -116,5 +92,3 @@ let reduce_exes syms bbdfns reductions exes =
   in
 
   map (reduce_exe syms bbdfns xreds 10) exes
-
-
