@@ -133,6 +133,7 @@ caml_require_libs = [
 
 caml_include_paths = [
     'src/compiler/frontend',
+    'src/compiler/backend',
     'src/compiler/flxlib',
     'src/compiler/ocs',
     'src/compiler/sex',
