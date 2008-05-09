@@ -4,7 +4,7 @@ open Flx_unify
 open Flx_print
 open Flx_util
 open Flx_exceptions
-open Flx_cpp_keywords
+open Flx_backend_config
 open List
 
 (* these words are either keywords or peculiar to the

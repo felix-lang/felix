@@ -1,6 +1,7 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
 @import config
+@from config.flx_data import flx_keywords, flx_syms, cpp_keywords
 @set_title('Felix ' + config.flx_version)
 
 @head(1,'The Felix Compiler')
@@ -9,6 +10,7 @@ SVN conversion.
 iscr_source = ["lpsrc/flx.pak"]
 
 caml_modules = [
+    'src/compiler/frontend/flx_frontend_config',
     'src/compiler/frontend/flx_ast',
     'src/compiler/frontend/flx_mtypes1',
     'src/compiler/frontend/flx_types',
@@ -25,12 +27,12 @@ caml_modules = [
     'src/compiler/frontend/flx_print',
     'src/compiler/frontend/flx_typing2',
     'src/compiler/frontend/flx_charset',
-    'src/compiler/flxlib/flx_pdoc',
+    'src/compiler/flxlib/flx_keywords',
+    'src/compiler/frontend/flx_pdoc',
     'src/compiler/flxlib/flx_preparse',
     'src/compiler/flxlib/flx_lex1',
     'src/compiler/flxlib/flx_preproc',
     'src/compiler/frontend/flx_id',
-    'src/compiler/flxlib/flx_keywords',
     'src/compiler/flxlib/flx_lex',
     'src/compiler/frontend/flx_sex2flx',
     'src/compiler/flxlib/flx_parse',
@@ -44,7 +46,7 @@ caml_modules = [
     'src/compiler/frontend/flx_unify',
     'src/compiler/frontend/flx_beta',
     'src/compiler/frontend/flx_generic',
-    'src/compiler/backend/flx_cpp_keywords',
+    'src/compiler/backend/flx_backend_config',
     'src/compiler/backend/flx_name',
     'src/compiler/frontend/flx_tpat',
     'src/compiler/frontend/flx_tconstraint',
@@ -172,6 +174,26 @@ caml_provide_lib = 'src/compiler/flx_version_hook/flx_version_hook'
 tmpdir = ['src']
 caml_implementations = ['src/compiler/flx_version_hook/flx_version_hook']
 caml_include_paths = ['src/compiler/flx_version','src/compiler/flx_version_hook']
+
+@select(tangler('src/compiler/frontend/flx_frontend_config.ml'))
+let flx_keywords = [
+@for n, t in flx_keywords:
+  tangle('  "%s", "%s";' % (n, t))
+@#
+]
+
+let flx_syms = [
+@for n, t in flx_syms:
+  tangle('  "%s", "%s";' % (n, t))
+@#
+]
+
+@select(tangler('src/compiler/backend/flx_backend_config.ml'))
+let cpp_keywords = [
+@for k in cpp_keywords:
+  tangle('  "%s";' % k)
+@#
+]
 
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
@@ -381,11 +403,6 @@ let set_version () =
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_macro.ipk')
 @include_file ('flx_tcdoc.ipk')
-@pop_head()
-
-@head(2,'The back end')
-@push_head()
-@include_file ('flx_cpp_keywords.ipk')
 @pop_head()
 
 @head(2,'Stub mainline')
