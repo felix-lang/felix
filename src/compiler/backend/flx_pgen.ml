@@ -1,36 +1,3 @@
-@head(1,'C++ Code generator')
-@h = tangler('src/compiler/flxlib/flx_pgen.mli')
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-open Flx_label
-open Flx_ctypes
-
-val gen_prim_call :
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  (btypecode_t -> btypecode_t) ->
-  (range_srcref -> tbexpr_t -> cexpr_t) ->
-  string ->
-  btypecode_t list ->
-  tbexpr_t ->
-  string ->
-  range_srcref ->
-  range_srcref ->
-  string ->
-  cexpr_t
-
-val shape_of:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  (btypecode_t -> string) ->
-  btypecode_t ->
-  string
-
-@h = tangler('src/compiler/flxlib/flx_pgen.ml')
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -167,6 +134,3 @@ let gen_prim_call
   *)
   | (_,typ) ->
     csubst sr sr2 ct carg [carg] [tt] tt ret ts prec ashape [ashape] ["Error"] gshapes
-
-
-

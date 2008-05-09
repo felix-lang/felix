@@ -1,21 +1,3 @@
-@head(1,'Type generator')
-@h = tangler('src/compiler/flxlib/flx_tgen.mli')
-@select(h)
-open Flx_types
-open Flx_mtypes2
-
-val gen_types :
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  (int * btypecode_t) list -> string
-
-val gen_type_names :
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  (int * btypecode_t) list -> string
-
-@h = tangler('src/compiler/flxlib/flx_tgen.ml')
-@select(h)
 open Flx_util
 open Flx_types
 open Flx_mtypes1
@@ -34,10 +16,11 @@ open Flx_ctypes
 open Flx_ctype
 open Flx_maps
 
-@doc()
-Now some code to generate the bases, given the
-hashtable. We also mangle c++ abstract type names.
-@select(h)
+(*
+ * Now some code to generate the bases, given the hashtable. We also mangle
+ * c++ abstract type names.
+ *)
+
 let gen_tuple name tn typs =
   let n = length typs in
   "struct " ^ name ^ " {\n" ^
@@ -572,4 +555,3 @@ let gen_types syms bbdfns ts =
   )
   ts;
   Buffer.contents s
-

@@ -1,18 +1,3 @@
-@head(1,"Expression unraveller")
-@h = tangler("src/compiler/flxlib/flx_unravel.mli")
-@select(h)
-open Flx_types
-open Flx_mtypes2
-
-val unravel:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  tbexpr_t ->
-  (tbexpr_t * string) list *
-  tbexpr_t
-
-@h = tangler("src/compiler/flxlib/flx_unravel.ml")
-@select(h)
 open Flx_types
 open Flx_mtypes1
 open Flx_mtypes2

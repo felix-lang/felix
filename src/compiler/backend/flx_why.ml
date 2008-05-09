@@ -1,22 +1,3 @@
-@head(1,"Why interface")
-Interface to Why program.
-
-@h = tangler("src/compiler/flxlib/flx_why.mli")
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_typing
-open Flx_mtypes2
-
-val emit_whycode:
-  string ->
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  int -> (* root for lookup of and/or/not etc *)
-  unit
-
-@h = tangler("src/compiler/flxlib/flx_why.ml")
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -376,5 +357,3 @@ let emit_whycode filename syms bbdfns root =
   ;
   close_out f
   ;
-
-

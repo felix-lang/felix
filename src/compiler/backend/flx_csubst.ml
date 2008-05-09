@@ -1,29 +1,3 @@
-@head(1,"Code fragment inliner")
-@h = tangler('src/compiler/flxlib/flx_csubst.mli')
-@select(h)
-open Flx_types
-open Flx_ast
-open Flx_ctypes
-
-val csubst:
-  range_srcref ->
-  range_srcref ->
-  string ->
-  cexpr_t ->      (* value argument 'as is' use $t *)
-  cexpr_t list -> (* value arguments as strings *)
-  string list -> (* types of value arguments as strings *)
-  string ->      (* argument type as string *)
-  string ->      (* return type as string *)
-  string list -> (* generic arguments as strings *)
-  string ->      (* precedence *)
-  string ->      (* shape of argument *)
-  string list -> (* shape of arguments *)
-  string list -> (* display EXCLUDING thread frame *)
-  string list -> (* shape of generic type arguments as strings *)
-  cexpr_t
-
-@h = tangler('src/compiler/flxlib/flx_csubst.ml')
-@select(h)
 open Flx_types
 open Flx_typing
 open List
@@ -58,35 +32,51 @@ open Flx_cexpr
 *)
 
 (* finite state machine states *)
-@modes = [
-  'Normal',
-  'CString',
-  'CChar',
-  'CStringBackslash',
-  'CCharBackslash',
-  'Dollar',
-  'Backquote',
-  'Hash',
-  'Earhole',
-  'Quest',
-  'DollarDigits',
-  'BackquoteDigits',
-  'HashDigits',
-  'EarholeDigits',
-  'EarholeDisplayDigits',
-  'EarholeQuestDigits',
-  'QuestDigits',
-  'Varargs',
-  'VarargsDigits',
-  'DollarDigitsPrec',
-  'Escape'
- ]
-
 type mode_t =
-@for m in modes: tangle(' | ' + m)
+  | Normal
+  | CString
+  | CChar
+  | CStringBackslash
+  | CCharBackslash
+  | Dollar
+  | Backquote
+  | Hash
+  | Earhole
+  | Quest
+  | DollarDigits
+  | BackquoteDigits
+  | HashDigits
+  | EarholeDigits
+  | EarholeDisplayDigits
+  | EarholeQuestDigits
+  | QuestDigits
+  | Varargs
+  | VarargsDigits
+  | DollarDigitsPrec
+  | Escape
 
 let pr = function
-@for m in modes: tangle(' | ' + m + ' -> "'+m+'"')
+  | Normal -> "Normal"
+  | CString -> "CString"
+  | CChar -> "CChar"
+  | CStringBackslash -> "CStringBackslash"
+  | CCharBackslash -> "CCharBackslash"
+  | Dollar -> "Dollar"
+  | Backquote -> "Backquote"
+  | Hash -> "Hash"
+  | Earhole -> "Earhole"
+  | Quest -> "Quest"
+  | DollarDigits -> "DollarDigits"
+  | BackquoteDigits -> "BackquoteDigits"
+  | HashDigits -> "HashDigits"
+  | EarholeDigits -> "EarholeDigits"
+  | EarholeDisplayDigits -> "EarholeDisplayDigits"
+  | EarholeQuestDigits -> "EarholeQuestDigits"
+  | QuestDigits -> "QuestDigits"
+  | Varargs -> "Varargs"
+  | VarargsDigits -> "VarargsDigits"
+  | DollarDigitsPrec -> "DollarDigitsPrec"
+  | Escape -> "Escape"
 
 let is_idletter ch =
   ch >= '0' && ch <='9' ||
@@ -445,5 +435,3 @@ in
   end;
   let prec = if prec = "" then "expr" else prec in
   ce prec (Buffer.contents buf)
-
-

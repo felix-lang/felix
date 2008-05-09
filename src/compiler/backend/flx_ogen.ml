@@ -1,33 +1,3 @@
-@head(1,'GC shape object generator')
-
-@h = tangler('src/compiler/flxlib/flx_ogen.mli')
-@select(h)
-open Flx_ast
-open Flx_types
-open Flx_mtypes1
-open Flx_mtypes2
-
-val gen_offset_tables:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
-  string ->
-  string
-
-val find_thread_vars_with_type:
-  fully_bound_symbol_table_t ->
-  (bid_t * btypecode_t) list
-
-val find_references:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
-  bid_t ->
-  btypecode_t list ->
-  (bid_t * btypecode_t) list
-
-@h = tangler('src/compiler/flxlib/flx_ogen.ml')
-@select(h)
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -843,5 +813,3 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   bcat s ("extern \"C\" FLX_EXPORT gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
   bcat s ("gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
   Buffer.contents s
-
-

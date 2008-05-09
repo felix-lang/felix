@@ -55,10 +55,10 @@ caml_modules = [
     'src/compiler/frontend/flx_prop',
     'src/compiler/frontend/flx_constfld',
     'src/compiler/flxlib/flx_cexpr',
-    'src/compiler/flxlib/flx_csubst',
+    'src/compiler/backend/flx_csubst',
     'src/compiler/flxlib/flx_pretok',
     'src/compiler/flxlib/flx_parse_ctrl',
-    'src/compiler/flxlib/flx_dfa',
+    'src/compiler/backend/flx_dfa',
     'src/compiler/frontend/flx_pat',
     'src/compiler/flxlib/flx_macro',
     'src/compiler/frontend/flx_cformat',
@@ -91,17 +91,17 @@ caml_modules = [
     'src/compiler/frontend/flx_mkcls',
     'src/compiler/frontend/flx_global',
     'src/compiler/frontend/flx_inst',
-    'src/compiler/flxlib/flx_tgen',
-    'src/compiler/flxlib/flx_display',
-    'src/compiler/flxlib/flx_ogen',
-    'src/compiler/flxlib/flx_regen',
-    'src/compiler/flxlib/flx_unravel',
-    'src/compiler/flxlib/flx_pgen',
-    'src/compiler/flxlib/flx_egen',
-    'src/compiler/flxlib/flx_ctorgen',
-    'src/compiler/flxlib/flx_elkgen',
-    'src/compiler/flxlib/flx_why',
-    'src/compiler/flxlib/flx_gen',
+    'src/compiler/backend/flx_tgen',
+    'src/compiler/backend/flx_display',
+    'src/compiler/backend/flx_ogen',
+    'src/compiler/backend/flx_regen',
+    'src/compiler/backend/flx_unravel',
+    'src/compiler/backend/flx_pgen',
+    'src/compiler/backend/flx_egen',
+    'src/compiler/backend/flx_ctorgen',
+    'src/compiler/backend/flx_elkgen',
+    'src/compiler/backend/flx_why',
+    'src/compiler/backend/flx_gen',
     'src/compiler/backend/flx_flxopt',
     'src/compiler/frontend/flx_terminate',
 ]
@@ -385,19 +385,6 @@ let set_version () =
 @head(2,'The back end')
 @push_head()
 @include_file ('flx_name.ipk')
-@include_file ('flx_tgen.ipk')
-@include_file ('flx_csubst.ipk')
-@include_file ('flx_regexp.ipk')
-@include_file ('flx_regen.ipk')
-@include_file ('flx_unravel.ipk')
-@include_file ('flx_display.ipk')
-@include_file ('flx_ogen.ipk')
-@include_file ('flx_pgen.ipk')
-@include_file ('flx_egen.ipk')
-@include_file ('flx_ctorgen.ipk')
-@include_file ('flx_elkgen.ipk')
-@include_file ('flx_why.ipk')
-@include_file ('flx_gen.ipk')
 @pop_head()
 
 @head(2,'Stub mainline')

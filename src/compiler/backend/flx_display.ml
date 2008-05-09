@@ -1,27 +1,3 @@
-@head(1,'Display calcs')
-@h = tangler('src/compiler/flxlib/flx_display.mli')
-@select(h)
-open Flx_types
-open Flx_ast
-open Flx_mtypes2
-
-val get_display_list:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  bid_t ->
-  (bid_t * int) list
-
-val cal_display:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  bid_t option ->
-  (bid_t * int) list
-
-val strd:
-  string list -> property_t list -> string
-
-@h = tangler('src/compiler/flxlib/flx_display.ml')
-@select(h)
 open Flx_ast
 open Flx_types
 open Flx_util
@@ -92,4 +68,3 @@ let strd the_display props =
   (if mem `Requires_ptf props then "(FLX_FPAR_PASS_ONLY)" else "()")
   else
   (if mem `Requires_ptf props then "(FLX_FPAR_PASS " else "(") ^ cat ", " the_display ^ ")"
-

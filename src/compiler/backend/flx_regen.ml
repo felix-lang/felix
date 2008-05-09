@@ -1,25 +1,3 @@
-@head(1,'Lexer generator')
-@h = tangler('src/compiler/flxlib/flx_regen.mli')
-@select(h)
-open Flx_ast
-open Flx_types
-
-type reg_kind_t =
-[
-  | `regmatch of string * string
-  | `reglex of string * string * string
-]
-
-val regen:
-  Buffer.t ->
-  range_srcref ->
-  regular_args_t ->
-  reg_kind_t ->
-  (tbexpr_t -> string) ->
-  unit
-
-@h = tangler('src/compiler/flxlib/flx_regen.ml')
-@select(h)
 open Flx_ast
 open Flx_types
 open Flx_util
@@ -161,5 +139,3 @@ let regen b sr (alpha, nstates, cases, matrix) kind ge =
   tack ("    case 0: FLX_MATCH_FAILURE("^s^");\n");
   tack ("    default: FLX_MATCH_FAILURE("^s^");\n");
   tack "  }\n";
-
-
