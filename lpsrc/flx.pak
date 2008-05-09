@@ -44,7 +44,8 @@ caml_modules = [
     'src/compiler/frontend/flx_unify',
     'src/compiler/frontend/flx_beta',
     'src/compiler/frontend/flx_generic',
-    'src/compiler/flxlib/flx_name',
+    'src/compiler/backend/flx_cpp_keywords',
+    'src/compiler/backend/flx_name',
     'src/compiler/frontend/flx_tpat',
     'src/compiler/frontend/flx_tconstraint',
     'src/compiler/frontend/flx_overload',
@@ -384,7 +385,7 @@ let set_version () =
 
 @head(2,'The back end')
 @push_head()
-@include_file ('flx_name.ipk')
+@include_file ('flx_cpp_keywords.ipk')
 @pop_head()
 
 @head(2,'Stub mainline')

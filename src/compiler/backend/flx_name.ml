@@ -1,51 +1,10 @@
-@from config.flx_data import cpp_keywords
-
-@h = tangler('src/compiler/flxlib/flx_name.mli')
-@select(h)
-open Flx_types
-open Flx_mtypes2
-
-val cpp_name :
-  fully_bound_symbol_table_t ->
-  int ->
-  string
-
-val cpp_instance_name :
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  int ->
-  btypecode_t list ->
-  string
-
-val cpp_type_classname :
-  sym_state_t ->
-  btypecode_t ->
-  string
-
-val cpp_typename :
-  sym_state_t ->
-  btypecode_t ->
-  string
-
-
-val cpp_ltypename :
-  sym_state_t ->
-  btypecode_t ->
-  string
-
-
-(** mangle a Felix identifier to a C one *)
-val cid_of_flxid:
- string-> string
-
-@h = tangler('src/compiler/flxlib/flx_name.ml')
-@select(h)
 open Flx_types
 open Flx_mtypes2
 open Flx_unify
 open Flx_print
 open Flx_util
 open Flx_exceptions
+open Flx_cpp_keywords
 open List
 
 (* these words are either keywords or peculiar to the
@@ -64,10 +23,7 @@ let fixups = [
   "flx_stdout","_flx_stdout";
   "flx_stderr","_flx_stderr";
   "gc","_gc";
-@for ck in cpp_keywords:
-  tangle('  "' + ck + '","_' + ck+'";')
-@#
-]
+] @ List.map (fun k -> k, "_" ^ k) cpp_keywords
 
 let cid_of_flxid s =
   let n = String.length s in
@@ -307,7 +263,6 @@ let rec cpp_type_classname syms t =
       " to be in registry"
     )
 
-
 let rec cpp_typename syms t =
   match unfold syms.dfns (lstrip syms.dfns t) with
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
@@ -334,6 +289,3 @@ let cpp_ltypename syms t =
    | `BTYP_lvalue _ -> "&"
    | _ -> ""
  )
-
-
-

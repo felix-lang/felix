@@ -1,0 +1,8 @@
+@from config.flx_data import cpp_keywords
+
+@select(tangler('src/compiler/backend/flx_cpp_keywords.ml'))
+let cpp_keywords = [
+@for k in cpp_keywords:
+  tangle('  "%s";' % k)
+@#
+]
