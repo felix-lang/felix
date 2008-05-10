@@ -36,7 +36,7 @@
 @mwct.sort()
 @mwct.reverse()
 
-@h = tangler('src/compiler/flxlib/flx_lex1.ml')
+@h = tangler('src/compiler/frontend/flx_lex1.ml')
 @select(h)
 
 open Flx_token
@@ -458,14 +458,14 @@ let translate_preprocessor ts =
   and reverse_apply dat fn = fn dat
   in List.fold_left reverse_apply ts filters
 
-@h = tangler('src/compiler/flxlib/flx_lex1.mli')
+@h = tangler('src/compiler/frontend/flx_lex1.mli')
 @select(h)
 open Flx_token
 val translate : token list -> token list
 val translate_preprocessor : token list -> token list
 
 @head(1,'Pre token printer')
-@h = tangler('src/compiler/flxlib/flx_pretok.ml')
+@h = tangler('src/compiler/frontend/flx_pretok.ml')
 @select(h)
 open Flx_token
 open Flx_lex
@@ -545,7 +545,7 @@ let pre_tokens_of_string s filename expand_expr =
   pre_tokens_of_lexbuf (Lexing.from_string s) state
 
 
-@h = tangler('src/compiler/flxlib/flx_pretok.mli')
+@h = tangler('src/compiler/frontend/flx_pretok.mli')
 @select(h)
 open Flx_token
 open Flx_ast
@@ -563,7 +563,7 @@ val pre_tokens_of_string :
   token list
 
 @head(1, 'Tokeniser')
-@h = tangler('src/compiler/flxlib/flx_tok.ml')
+@h = tangler('src/compiler/frontend/flx_tok.ml')
 @select(h)
 open Flx_ast
 open Flx_exceptions
@@ -760,7 +760,7 @@ let parse_tokens (parser:'a parser_t) (tokens: token list) =
     raise (Flx_exceptions.ParseError "Parsing Tokens")
 
 
-@h = tangler('src/compiler/flxlib/flx_tok.mli')
+@h = tangler('src/compiler/frontend/flx_tok.mli')
 @select(h)
 open Flx_token
 open Flx_ast

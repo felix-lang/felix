@@ -1,6 +1,6 @@
 @from config.flx_data import flx_keywords, flx_syms
 
-@h = tangler('src/compiler/flxlib/flx_token.mli')
+@h = tangler('src/compiler/frontend/flx_token.mli')
 @select(h)
 open Flx_ast
 open Flx_mtypes2
@@ -75,13 +75,13 @@ and global_data_t = {
 }
 
 
-@h = tangler('src/compiler/flxlib/flx_prelex.mli')
+@h = tangler('src/compiler/frontend/flx_prelex.mli')
 @select(h)
 val src_of_token : Flx_token.token -> Flx_ast.srcref
 val string_of_token : Flx_token.token -> string
 val name_of_token : Flx_token.token -> string
 
-@h = tangler('src/compiler/flxlib/flx_prelex.ml')
+@h = tangler('src/compiler/frontend/flx_prelex.ml')
 @select(h)
 open Flx_token
 

@@ -23,7 +23,7 @@ class extract_grammar(Process):
       pass
     self.shell(sys.executable,
       os.path.join('script', 'get_grammar'),
-      os.path.join('src', 'compiler', 'flxlib', 'flx_parse.dyp'),
+      os.path.join('src', 'compiler', 'frontend', 'flx_parse.dyp'),
       '>',
       os.path.join('misc', 'flx_parse.grammar'),
     )

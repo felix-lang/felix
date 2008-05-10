@@ -1,7 +1,7 @@
 @from config.flx_data import flx_keywords, flx_syms
 
 @head(1,'Parser')
-@h = tangler('src/compiler/flxlib/flx_parse.dyp','data')
+@h = tangler('src/compiler/frontend/flx_parse.dyp','data')
 
 @# define meta operators:
 @#  aster: t*
@@ -1323,7 +1323,7 @@ open Flx_mtypes2
 }
 
 @head(1,'Parser object')
-@h = tangler('src/compiler/flxlib/flx_parse_ctrl.ml')
+@h = tangler('src/compiler/frontend/flx_parse_ctrl.ml')
 @select(h)
 
 open Flx_ast
@@ -1422,7 +1422,7 @@ let parse_string (data : string) (filename : string) expand_expr =
     end
 
 
-@h = tangler('src/compiler/flxlib/flx_parse_ctrl.mli')
+@h = tangler('src/compiler/frontend/flx_parse_ctrl.mli')
 @select(h)
 open Flx_ast
 
