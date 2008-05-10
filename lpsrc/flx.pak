@@ -63,7 +63,7 @@ caml_modules = [
     'src/compiler/flxlib/flx_parse_ctrl',
     'src/compiler/backend/flx_dfa',
     'src/compiler/frontend/flx_pat',
-    'src/compiler/flxlib/flx_macro',
+    'src/compiler/frontend/flx_macro',
     'src/compiler/frontend/flx_cformat',
     'src/compiler/frontend/flx_ciltoflx',
     'src/compiler/frontend/flx_colns',
