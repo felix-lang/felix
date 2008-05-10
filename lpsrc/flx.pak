@@ -5,7 +5,16 @@
 @set_title('Felix ' + config.flx_version)
 
 @head(1,'The Felix Compiler')
-SVN conversion.
+@select(tangler('spkgs/inria_re.py'))
+caml_modules = [
+    'src/compiler/inria_re/inria_table',
+    'src/compiler/inria_re/inria_cset',
+    'src/compiler/inria_re/inria_syntax',
+    'src/compiler/inria_re/inria_lexgen',
+]
+
+caml_provide_lib = 'src/compiler/inria_re/inria_re'
+
 @select(tangler('spkgs/flx_compiler.py'))
 iscr_source = ["lpsrc/flx.pak"]
 
@@ -36,10 +45,6 @@ caml_modules = [
     'src/compiler/flxlib/flx_lex',
     'src/compiler/frontend/flx_sex2flx',
     'src/compiler/flxlib/flx_parse',
-    'src/compiler/flxlib/inria_table',
-    'src/compiler/flxlib/inria_cset',
-    'src/compiler/flxlib/inria_syntax',
-    'src/compiler/flxlib/inria_lexgen',
     'src/compiler/frontend/flx_dlst',
     'src/compiler/frontend/flx_getopt',
     'src/compiler/frontend/flx_maps',
@@ -132,6 +137,7 @@ caml_require_libs = [
     'cillib',
     'flxcclib',
     'flxlib',
+    'inria_re',
     'flx_version_hook',
 ]
 
@@ -139,6 +145,7 @@ caml_include_paths = [
     'src/compiler/frontend',
     'src/compiler/backend',
     'src/compiler/flxlib',
+    'src/compiler/inria_re',
     'src/compiler/ocs',
     'src/compiler/sex',
     'src/compiler/cil',
@@ -160,6 +167,7 @@ pkg_requires = [
     'misc',
     'cil',
     'flxcc_util',
+    'inria_re',
     'flx_version_hook',
 ]
 
@@ -414,10 +422,3 @@ create a file here for unit tests.
 
 @head(2,'Tools')
 @include_file ('flx_docgen.ipk')
-
-
-@head(2,'Misc')
-@include_file ('inria_re.ipk')
-
-
-
