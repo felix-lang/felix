@@ -15,7 +15,7 @@ caml_modules = [
 
 caml_provide_lib = 'src/compiler/inria_re/inria_re'
 
-@select(tangler('spkgs/flx_compiler.py'))
+@select(tangler('spkgs/flx_frontend.py'))
 iscr_source = ["lpsrc/flx.pak"]
 
 caml_modules = [
@@ -97,7 +97,43 @@ caml_modules = [
     'src/compiler/frontend/flx_inst',
     'src/compiler/frontend/flx_terminate',
     'src/compiler/frontend/flx_inline',
+]
 
+caml_include_paths = [
+    'src/compiler/ocs',
+    'src/compiler/sex',
+    'src/compiler/cil',
+    'src/compiler/cil/ocamlutil',
+    'src/compiler/cil/src',
+    'src/compiler/cil/src/frontc',
+    'src/compiler/dyp/dyplib',
+    'src/compiler/flxcclib',
+    'src/compiler/misclib',
+    'src/compiler/flx_version',
+    'src/compiler/flx_version_hook',
+    'src/compiler/inria_re',
+]
+
+caml_provide_lib = 'src/compiler/frontend/flx_frontend'
+
+pkg_requires = [
+    'flx_version',
+    'flx_version_hook',
+    'ocs',
+    'sex',
+    'dypgen',
+    'misc',
+    'cil',
+    'flxcc_util',
+    'inria_re',
+]
+
+weaver_directory = 'doc/flx/flx_compiler/'
+
+@select(tangler('spkgs/flx_backend.py'))
+iscr_source = ["lpsrc/flx.pak"]
+
+caml_modules = [
     'src/compiler/backend/flx_backend_config',
     'src/compiler/backend/flx_name',
     'src/compiler/backend/flx_csubst',
@@ -114,6 +150,23 @@ caml_modules = [
     'src/compiler/backend/flx_gen',
     'src/compiler/backend/flx_flxopt',
 ]
+
+caml_include_paths = [
+    'src/compiler/frontend',
+    'src/compiler/flxcclib',
+]
+
+caml_provide_lib = 'src/compiler/backend/flx_backend'
+
+pkg_requires = [
+    'flx_frontend',
+    'flxcc_util',
+]
+
+weaver_directory = 'doc/flx/flx_compiler/'
+
+@select(tangler('spkgs/flx_compiler.py'))
+iscr_source = ["lpsrc/flx.pak"]
 
 caml_exes = [
     'src/compiler/drivers/flxl',
@@ -136,15 +189,15 @@ caml_require_libs = [
     'misclib',
     'cillib',
     'flxcclib',
-    'flxlib',
     'inria_re',
+    'flx_frontend',
+    'flx_backend',
     'flx_version_hook',
 ]
 
 caml_include_paths = [
     'src/compiler/frontend',
     'src/compiler/backend',
-    'src/compiler/flxlib',
     'src/compiler/inria_re',
     'src/compiler/ocs',
     'src/compiler/sex',
@@ -160,20 +213,11 @@ caml_include_paths = [
 ]
 
 pkg_requires = [
-    'flx_version',
-    'ocs',
-    'dypgen',
-    'sex',
-    'misc',
-    'cil',
-    'flxcc_util',
-    'inria_re',
-    'flx_version_hook',
+    'flx_frontend',
+    'flx_backend',
 ]
 
-caml_provide_lib = 'src/compiler/flxlib/flxlib'
 weaver_directory = 'doc/flx/flx_compiler/'
-tmpdir = ['src']
 
 @h = tangler('spkgs/flx_version_hook.py')
 @select(h)

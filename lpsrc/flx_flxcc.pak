@@ -6,15 +6,25 @@
 @select(h)
 FLXCC_EXES = [ 'src/compiler/drivers/flxcc', ]
 caml_exes = FLXCC_EXES
-caml_require_libs = ['str','nums','unix','flx_version','misclib','cillib','flxcclib','flxlib']
-pkg_requires = ['cil']
+caml_require_libs = [
+    'str',
+    'nums',
+    'unix',
+    'flx_version',
+    'misclib',
+    'cillib',
+    'flxcclib',
+    'flx_frontend',
+    'flx_backend',
+]
+pkg_requires = ['cil', 'flx_frontend', 'flx_backend']
 caml_include_paths = [
     'src/compiler/cil',
     'src/compiler/cil/ocamlutil',
     'src/compiler/cil/src',
     'src/compiler/cil/src/frontc',
-    'src/compiler/flxlib',
     'src/compiler/frontend',
+    'src/compiler/backend',
     'src/compiler/flx_version',
     'src/compiler/flxcclib',
     'src/compiler/misclib',
