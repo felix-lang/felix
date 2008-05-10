@@ -6,7 +6,6 @@ open Flx_print
 open Flx_exceptions
 open Flx_util
 open Flx_srcref
-open Flx_name
 open List
 open Flx_maps
 open Flx_beta

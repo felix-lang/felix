@@ -277,7 +277,7 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
     (* replace all function returns with variable initialisations *)
     let body2 = ref [] in
     let n = !(syms.counter) in incr (syms.counter);
-    let end_label = "_end_inline_" ^ Flx_name.cid_of_flxid id ^ "_"^ si n in
+    let end_label = "_end_inline_" ^ id ^ "_" ^ si n in
     let t = ref None in
     let end_label_used = ref false in
     iter

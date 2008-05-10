@@ -12,7 +12,6 @@ open Flx_srcref
 open Flx_unify
 open Flx_beta
 open Flx_generic
-open Flx_name
 open Flx_overload
 open Flx_tpat
 

@@ -46,8 +46,6 @@ caml_modules = [
     'src/compiler/frontend/flx_unify',
     'src/compiler/frontend/flx_beta',
     'src/compiler/frontend/flx_generic',
-    'src/compiler/backend/flx_backend_config',
-    'src/compiler/backend/flx_name',
     'src/compiler/frontend/flx_tpat',
     'src/compiler/frontend/flx_tconstraint',
     'src/compiler/frontend/flx_overload',
@@ -58,10 +56,8 @@ caml_modules = [
     'src/compiler/frontend/flx_prop',
     'src/compiler/frontend/flx_constfld',
     'src/compiler/flxlib/flx_cexpr',
-    'src/compiler/backend/flx_csubst',
     'src/compiler/flxlib/flx_pretok',
     'src/compiler/flxlib/flx_parse_ctrl',
-    'src/compiler/backend/flx_dfa',
     'src/compiler/frontend/flx_pat',
     'src/compiler/frontend/flx_macro',
     'src/compiler/frontend/flx_cformat',
@@ -72,6 +68,7 @@ caml_modules = [
     'src/compiler/frontend/flx_symtab',
     'src/compiler/frontend/flx_child',
     'src/compiler/frontend/flx_bexe',
+    'src/compiler/frontend/flx_dfa',
     'src/compiler/frontend/flx_bbind',
     'src/compiler/frontend/flx_strabs',
     'src/compiler/frontend/flx_typeclass',
@@ -89,11 +86,16 @@ caml_modules = [
     'src/compiler/frontend/flx_stack_calls',
     'src/compiler/frontend/flx_mkproc',
     'src/compiler/frontend/flx_reduce',
-    'src/compiler/frontend/flx_inline',
     'src/compiler/frontend/flx_mono',
     'src/compiler/frontend/flx_mkcls',
     'src/compiler/frontend/flx_global',
     'src/compiler/frontend/flx_inst',
+    'src/compiler/frontend/flx_terminate',
+    'src/compiler/frontend/flx_inline',
+
+    'src/compiler/backend/flx_backend_config',
+    'src/compiler/backend/flx_name',
+    'src/compiler/backend/flx_csubst',
     'src/compiler/backend/flx_tgen',
     'src/compiler/backend/flx_display',
     'src/compiler/backend/flx_ogen',
@@ -106,7 +108,6 @@ caml_modules = [
     'src/compiler/backend/flx_why',
     'src/compiler/backend/flx_gen',
     'src/compiler/backend/flx_flxopt',
-    'src/compiler/frontend/flx_terminate',
 ]
 
 caml_exes = [
@@ -401,7 +402,6 @@ let set_version () =
 @include_file ('flx_lexer.ipk')
 @include_file ('flx_token.ipk')
 @include_file ('flx_tokeniser.ipk')
-@include_file ('flx_macro.ipk')
 @include_file ('flx_tcdoc.ipk')
 @pop_head()
 
