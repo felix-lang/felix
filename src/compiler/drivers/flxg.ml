@@ -117,6 +117,11 @@ try
   if check_key raw_options "version"
   then (print_endline ("Felix Version " ^ !version_data.version_string))
   ;
+  let print_debug msg =
+    if compiler_options.print_flag
+    then print_endline msg
+  in
+
   if compiler_options.print_flag then begin
     print_string "//Include directories = ";
     List.iter (fun d -> print_string (d ^ " "))
@@ -174,56 +179,44 @@ try
       let file_name =
         if Filename.check_suffix file ".flx" then file else file ^ ".flx"
       in
-      if compiler_options.print_flag
-      then print_endline ("//Parsing Implementation " ^ file_name);
+      print_debug ("//Parsing Implementation " ^ file_name);
       let sts = Flx_colns.include_file syms file_name true in
       concat [tree; sts]
     )
     []
     files
   in
-  if compiler_options.print_flag
-  then print_endline (Flx_print.string_of_compilation_unit parse_tree);
+  print_debug (Flx_print.string_of_compilation_unit parse_tree);
 
   let parse_time = tim() in
-  if compiler_options.print_flag
-  then print_endline ("//PARSE OK time " ^ string_of_float parse_time);
+  print_debug ("//PARSE OK time " ^ string_of_float parse_time);
 
-  if compiler_options.print_flag
-  then print_endline "//DESUGARING";
+  print_debug "//DESUGARING";
 
   let deblocked =
     desugar_program syms module_name parse_tree
   in
   let desugar_time = tim() in
-  if compiler_options.print_flag
-  then print_endline ("//DESUGAR time " ^ string_of_float desugar_time);
+  print_debug ("//DESUGAR time " ^ string_of_float desugar_time);
 
   (* THIS IS A HACK! *)
   let root = !(syms.counter) in
-  if compiler_options.print_flag
-  then print_endline ("//Top level module '" ^ module_name ^ "' has index " ^ si root);
+  print_debug ("//Top level module '" ^ module_name ^ "' has index " ^ si root);
 
 
-  if compiler_options.print_flag
-  then print_endline "//BUILDING TABLES";
+  print_debug "//BUILDING TABLES";
 
   let pubtab, _, exes, ifaces,dirs =
     build_tables syms "root" dfltvs 0 None None root false deblocked
   in
   let build_table_time = tim() in
-  if compiler_options.print_flag
-  then print_endline ("//BUILDING TABLES time " ^ string_of_float build_table_time);
+  print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);
 
 
-  if compiler_options.print_flag
-  then print_endline "//BINDING EXECUTABLE CODE"
-  ;
+  print_debug "//BINDING EXECUTABLE CODE";
   let bbdfns = bbind syms in
 
-  if compiler_options.print_flag
-  then print_endline "//DOWNGRADING ABSTRACT TYPES"
-  ;
+  print_debug "//DOWNGRADING ABSTRACT TYPES";
   let bbdfns = Flx_strabs.strabs syms bbdfns in
 
   let child_map = Flx_child.cal_children syms bbdfns in
@@ -243,11 +236,9 @@ try
 
   let binding_time = tim() in
 
-  if compiler_options.print_flag
-  then print_endline ("//Binding complete time " ^ string_of_float binding_time);
+  print_debug ("//Binding complete time " ^ string_of_float binding_time);
 
-  if compiler_options.print_flag
-  then print_endline "//CHECKING ROOT";
+  print_debug "//CHECKING ROOT";
 
   let root_proc =
     match
@@ -275,13 +266,11 @@ try
       | `FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
       | `NonFunctionEntry _ -> failwith "_init_ found but not procedure"
     in
-    if compiler_options.print_flag
-    then print_endline ("//root module's init procedure has index " ^ si index);
+    print_debug ("//root module's init procedure has index " ^ si index);
     index
   in
 
-  if compiler_options.print_flag
-  then print_endline "//OPTIMISING";
+  print_debug "//OPTIMISING";
   let () = Flx_use.find_roots syms bbdfns root_proc syms.bifaces in
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = Flx_child.cal_children syms bbdfns in
@@ -319,9 +308,7 @@ try
     let bbdfns = Flx_use.copy_used syms bbdfns in
     let child_map = Flx_child.cal_children syms bbdfns in
 
-    if compiler_options.print_flag then
-      print_endline "PHASE 1 INLINING COMPLETE"
-    ;
+    print_debug "PHASE 1 INLINING COMPLETE";
     if compiler_options.print_flag then begin
       print_endline "";
       print_endline "---------------------------";
@@ -345,11 +332,9 @@ try
       This will do nothing, because they're not
       actually instantiated!
     *)
-    if compiler_options.print_flag
-    then print_endline "//MONOMORPHISING";
+    print_debug "//MONOMORPHISING";
     Flx_mono.monomorphise syms bbdfns;
-    if compiler_options.print_flag
-    then print_endline "//MONOMORPHISING DONE";
+    print_debug "//MONOMORPHISING DONE";
 
     let bbdfns = Flx_use.copy_used syms bbdfns in
     let child_map = Flx_child.cal_children syms bbdfns in
@@ -363,13 +348,11 @@ try
       print_symbols syms.dfns bbdfns
     end;
 
-    if compiler_options.print_flag then
-    print_endline "//Removing useless reductions";
+    print_debug "//Removing useless reductions";
 
     syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
 
-    if compiler_options.print_flag then
-    print_endline "//INLINING";
+    print_debug "//INLINING";
 
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
     let bbdfns = Flx_use.copy_used syms bbdfns in
@@ -418,8 +401,7 @@ try
     exes
   in
   let elim_pass () =
-    if syms.compiler_options.print_flag then
-      print_endline "Elim pass";
+    print_debug "Elim pass";
     (* check for unused things .. possible, just a diagnostic for now *)
     let full_use = Flx_use.full_use_closure syms bbdfns in
     let partial_use = Flx_use.cal_use_closure syms bbdfns false in
@@ -449,8 +431,7 @@ try
     IntSet.iter
     (fun i->
       let id,_,_,_ = Hashtbl.find bbdfns i in
-      if compiler_options.print_flag then
-      print_endline ("Removing unused " ^ id ^ "<" ^ si i ^ ">");
+      print_debug ("Removing unused " ^ id ^ "<" ^ si i ^ ">");
       Hashtbl.remove bbdfns i
     )
     maybe_unused
@@ -466,8 +447,7 @@ try
   *)
 
   Flx_typeclass.fixup_typeclass_instances syms bbdfns;
-  if compiler_options.print_flag
-  then print_endline "//Calculating stackable calls";
+  print_debug "//Calculating stackable calls";
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
   let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
   let label_info = label_map, label_usage in
@@ -476,12 +456,10 @@ try
 
   let opt_time = tim() in
 
-  if compiler_options.print_flag
-  then print_endline ("//Optimisation complete time " ^ string_of_float opt_time);
+  print_debug ("//Optimisation complete time " ^ string_of_float opt_time);
 
 
-  if compiler_options.print_flag
-  then print_endline "//Generating primitive wrapper closures";
+  print_debug "//Generating primitive wrapper closures";
   Flx_mkcls.make_closures syms bbdfns;
   let child_map = Flx_child.cal_children syms bbdfns in
 
@@ -493,8 +471,7 @@ try
   end
   ;
 
-  if compiler_options.print_flag
-  then print_endline "//Finding which functions use globals";
+  print_debug "//Finding which functions use globals";
   let bbdfns = Flx_use.copy_used syms bbdfns in
   Flx_global.set_globals syms bbdfns;
   let child_map = Flx_child.cal_children syms bbdfns in
@@ -503,8 +480,7 @@ try
   print_symbols syms.dfns bbdfns;
   *)
 
-  if compiler_options.print_flag
-  then print_endline "//instantiating";
+  print_debug "//instantiating";
 
   Flx_inst.instantiate syms bbdfns false root_proc syms.bifaces;
 
@@ -553,15 +529,11 @@ try
     | `BBDCL_procedure (props,vs,p,exes) -> props
     | _ -> syserr sr "Expected root to be procedure"
   in
-  if compiler_options.print_flag
-  then print_endline ("//root module's init procedure has name " ^
-    top_class
-  );
+  print_debug ("//root module's init procedure has name " ^ top_class);
 
   let instantiation_time = tim() in
 
-  if compiler_options.print_flag
-  then print_endline ("//instantiation time " ^ string_of_float instantiation_time);
+  print_debug ("//instantiation time " ^ string_of_float instantiation_time);
 
   if compiler_options.compile_only
   then exit (if compiler_options.reverse_return_parity then 1 else 0)
@@ -636,13 +608,12 @@ try
   let psp s = ws package_file s in
   let psr s = ws rtti_file s in
 
-  let plh s = psh s; psh  "\n" in
+  let plh s = psh s; psh "\n" in
   let plb s = psb s; psb "\n" in
   let plr s = psr s; psr "\n" in
   let plp s = psp s; psp "\n" in
 
-  if compiler_options.print_flag
-  then print_endline "//GENERATING Package Requirements";
+  print_debug "//GENERATING Package Requirements";
 
   (* These must be in order: build a list and sort it *)
   begin
@@ -688,8 +659,7 @@ try
   ;
 
 
-  if compiler_options.print_flag
-  then print_endline "//GENERATING C++: user headers";
+  print_debug "//GENERATING C++: user headers";
 
   plh ("#ifndef _FLX_GUARD_" ^ cid_of_flxid module_name);
   plh ("#define _FLX_GUARD_" ^ cid_of_flxid module_name);
@@ -774,8 +744,7 @@ try
   "struct thread_frame_t;"
   ]
   ;
-  if compiler_options.print_flag then
-  print_endline "//GENERATING C++: collect types";
+  print_debug "//GENERATING C++: collect types";
   let types = ref [] in
     Hashtbl.iter
     (fun t index-> types := (index, t) :: !types)
@@ -795,14 +764,12 @@ try
   ;
   *)
 
-  if compiler_options.print_flag then
-  print_endline "//GENERATING C++: type class names";
+  print_debug "//GENERATING C++: type class names";
   plh "\n//-----------------------------------------";
   plh "//NAME THE TYPES";
   plh  (gen_type_names syms bbdfns types);
 
-  if compiler_options.print_flag then
-  print_endline "//GENERATING C++: type class definitions";
+  print_debug "//GENERATING C++: type class definitions";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE THE TYPES";
   plh  (gen_types syms bbdfns types);
@@ -820,8 +787,7 @@ try
   syms.parsers
   end
   ;
-  if compiler_options.print_flag then
-  print_endline "//GENERATING C++: function and procedure classes";
+  print_debug "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
   plh  (gen_function_names syms (child_map,bbdfns));
@@ -866,8 +832,7 @@ try
   plh ("}} // namespace flxusr::" ^ cid_of_flxid module_name);
 
   (* BODY *)
-  if compiler_options.print_flag then
-  print_endline "//GENERATING C++: GC ptr maps & offsets";
+  print_debug "//GENERATING C++: GC ptr maps & offsets";
 
   plb ("//Input file: " ^ input_file_name);
   plb ("//Generated by Felix Version " ^ !version_data.version_string);
@@ -1011,15 +976,14 @@ try
   end
   ;
 
-  if compiler_options.print_flag then
-  print_endline "//GENERATING C++: method bodies";
+  print_debug "//GENERATING C++: method bodies";
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";
   plb ("#include \"" ^module_name ^ "_ctors.cpp\"");
   gen_execute_methods body_file.out_filename syms (child_map,bbdfns) label_info syms.counter (force_open body_file) (force_open ctors_file);
 
-  if compiler_options.print_flag then print_endline "//GENERATING C++: interface";
+  print_debug "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
   plb ("}} // namespace flxusr::" ^ cid_of_flxid module_name);
 
@@ -1083,8 +1047,7 @@ try
   plp "flx_gc";  (* RF: flx apps now need flx_gc. is this the way to do it? *)
   ensure_closed package_file;
   let code_generation_time = tim() in
-  if compiler_options.print_flag then
-  print_endline ("//code generation time " ^ string_of_float code_generation_time);
+  print_debug ("//code generation time " ^ string_of_float code_generation_time);
 
   let total_time =
     parse_time +.
@@ -1095,8 +1058,7 @@ try
     instantiation_time +.
     code_generation_time
   in
-  if compiler_options.print_flag then
-  print_endline ("//Felix compiler time " ^ string_of_float total_time);
+  print_debug ("//Felix compiler time " ^ string_of_float total_time);
   let fname = "flxg_stats.txt" in
   let
     old_parse_time,
