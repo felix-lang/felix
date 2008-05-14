@@ -1,34 +1,43 @@
 import os
 
 from fbuild.flxbuild.process import Process
-from fbuild.flxbuild.flxutil import erasedir, ExecutionError
+from fbuild.flxbuild.flxutil import mkdirs, ExecutionError
+
+import config
 
 class impldoc(Process):
-  help = 'make the ocaml compiler documentation'
+    help = 'make the ocaml compiler documentation'
 
-  def __init__(self, *args, **kwds):
-    super(impldoc, self).__init__(*args, **kwds)
-    self.ran = False
+    def runme(self, pkg, pkgdict, *args):
+        modules = pkgdict.get('caml_modules', [])
+        interfaces = pkgdict.get('caml_interfaces', [])
+        includes = pkgdict.get('caml_include_paths', [])
 
-  def runme(self, pkg, pkgdict, *args):
-    if self.ran:
-      return
-    self.ran = True
+        if not (modules or interfaces):
+            return
 
-    print "GENERATING OCAMLDOCS"
-    erasedir(os.path.join('doc', 'impldoc'))
-    os.mkdir(os.path.join('doc', 'impldoc'))
-    try:
-      self.shell('ocamldoc', '-html',
-        '-I', 'src',
-        '-d', os.path.join('doc', 'impldoc'),
-        os.path.join('src', '*.mli'),
-      )
-      self.shell('ocamldoc', '-latex',
-        '-I', 'src',
-        '-d', os.path.join('doc', 'impldoc', 'flx_impl.tex'),
-        os.path.join('src', '*.mli'),
-      )
-      self.shell('(cd doc/impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
-    except ExecutionError:
-     pass # well ocamldoc is full of bugs ..
+        print "GENERATING OCAMLDOC", pkg
+
+        mlis = []
+
+        for module in interfaces + modules:
+            for extension in '.mli', '.ml':
+                f = config.HOST_OCAML.find_in_src_dir(module + extension)
+                if os.path.exists(f):
+                    mlis.append(f)
+                    break
+                elif os.path.exists(os.path.join('build', f)):
+                    mlis.append(os.path.join('build', f))
+                    break
+                else:
+                    print 'ignoring:', module
+
+        if not mlis:
+            return
+
+        try:
+            config.HOST_OCAML.ocamldoc(mlis,
+                outdir=os.path.join('doc', 'impldoc', pkg),
+                include_paths=[os.path.join('build', i) for i in includes])
+        except ExecutionError:
+            pass # well ocamldoc is full of bugs ..

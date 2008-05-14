@@ -3,7 +3,7 @@ import os
 import sys
 import shutil
 
-from fbuild.flxbuild.flxutil import mkdirs, ExecutionError
+from fbuild.flxbuild.flxutil import mkdirs, erasedir, ExecutionError
 from fbuild.flxbuild.compiler_base import compiler_base
 
 class ocaml(compiler_base):
@@ -348,3 +348,19 @@ class ocaml(compiler_base):
   def gen_dypgen_parser(self, *args, **kwds):
     return self.gen_thing(os.path.join('bin', 'dypgen'), '.dyp',
         *args, **kwds)
+
+  ####
+
+  def ocamldoc(self, filenames, outdir,
+    include_paths=[],
+    log=None,
+    ):
+    erasedir(outdir)
+    mkdirs(outdir)
+
+    cmd = [self.options.OCAMLDOC, '-html']
+    cmd.extend(('-d', outdir))
+    for i in include_paths: cmd.extend(('-I', i))
+    cmd.extend(filenames)
+
+    self.shell(*cmd, **dict(log=log))
