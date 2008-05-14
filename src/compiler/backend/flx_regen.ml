@@ -1,5 +1,3 @@
-open Flx_ast
-open Flx_types
 open Flx_util
 
 type reg_kind_t =

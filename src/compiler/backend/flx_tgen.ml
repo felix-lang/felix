@@ -1,18 +1,13 @@
 open Flx_util
-open Flx_types
-open Flx_mtypes1
 open Flx_mtypes2
 open Flx_print
 open Flx_typing
-open Flx_srcref
 open Flx_unify
 open Flx_name
 open Flx_cexpr
 open Flx_csubst
 open Flx_exceptions
-open Flx_treg
 open List
-open Flx_ctypes
 open Flx_ctype
 open Flx_maps
 

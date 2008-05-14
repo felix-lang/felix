@@ -1,6 +1,5 @@
 (** Code fragment inliner *)
 
-open Flx_types
 open Flx_ast
 open Flx_ctypes
 

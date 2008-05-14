@@ -1,27 +1,19 @@
 open Flx_util
-open Flx_ast
 open Flx_types
-open Flx_mtypes1
 open Flx_mtypes2
 open Flx_print
 open Flx_typing
 open Flx_name
-open Flx_tgen
 open Flx_unify
 open Flx_csubst
 open Flx_exceptions
 open Flx_display
 open List
-open Flx_generic
-open Flx_label
-open Flx_unravel
-open Flx_ogen
 open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
 open Flx_pgen
 open Flx_beta
-open Flx_srcref
 
 let string_of_string = Flx_string.c_quote_of_string
 

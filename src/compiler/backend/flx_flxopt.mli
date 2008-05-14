@@ -1,4 +1,3 @@
-open Flx_types
 open Flx_mtypes2
 
 val get_felix_options:

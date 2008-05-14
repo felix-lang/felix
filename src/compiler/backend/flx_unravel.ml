@@ -1,10 +1,6 @@
-open Flx_types
-open Flx_mtypes1
 open Flx_mtypes2
 open List
-open Flx_maps
 open Flx_util
-open Flx_print
 
 let rec eassoc x l = match l with
   | [] -> raise Not_found

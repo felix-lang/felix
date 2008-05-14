@@ -1,5 +1,3 @@
-open Flx_types
-open Flx_typing
 open List
 open Flx_util
 open Flx_exceptions
