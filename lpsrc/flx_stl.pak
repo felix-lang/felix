@@ -87,7 +87,7 @@ size_t __gnu_cxx::hash<std::string>::
 
 @def mksub(n):
   c = 'stl_'+n+'[t]'
-  tangle('    fun subscript : lvalue['+c+'] * int -> lvalue[t] = "$1.at($2)";')
+  #  tangle('    fun subscript : lvalue['+c+'] * int -> lvalue[t] = "$1.at($2)";')
   tangle('    fun subscript : '+c+' * int -> t = "$1.at($2)";')
 
 @def mkset(n,ns='std'):
