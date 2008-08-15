@@ -286,6 +286,6 @@ let cpp_ltypename syms t =
  cpp_typename syms t ^
  (
    match t with
-   | `BTYP_lvalue _ -> "&"
+ (*  | `BTYP_lvalue _ -> "&" *)
    | _ -> ""
  )

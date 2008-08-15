@@ -430,7 +430,7 @@ and beta_reduce' syms sr termlist t =
   | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (br a, br b)
   | `BTYP_pointer a -> `BTYP_pointer (br a)
-  | `BTYP_lvalue a -> `BTYP_lvalue (br a)
+(*  | `BTYP_lvalue a -> `BTYP_lvalue (br a) *)
 
   | `BTYP_void -> t
   | `BTYP_type _ -> t

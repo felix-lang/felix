@@ -35,9 +35,9 @@ let rec check_if_parent syms child parent =
 let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   let be i e = bind_expression syms (build_env syms (Some i)) e in
   match unfold syms.dfns t1 with
-  | `BTYP_lvalue (`BTYP_cfunction (t, `BTYP_void))
+(*  | `BTYP_lvalue (`BTYP_cfunction (t, `BTYP_void)) *)
   | `BTYP_cfunction (t, `BTYP_void)
-  | `BTYP_lvalue (`BTYP_function (t, `BTYP_void))
+(*  | `BTYP_lvalue (`BTYP_function (t, `BTYP_void)) *)
   | `BTYP_function (t, `BTYP_void) ->
     if type_match syms.counter syms.dfns t t2
     then
@@ -511,7 +511,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.counter syms.dfns rhst in
-        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
+(*        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in *)
         let lhst = reduce_type lhst in
         if type_match syms.counter syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
@@ -535,7 +535,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.counter syms.dfns rhst in
-        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
+(*        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in *)
         let lhst = reduce_type lhst in
         (*
         print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
@@ -566,6 +566,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let _,rhst as rx = be r in
       let lhst = reduce_type lhst in
       let rhst = reduce_type rhst in
+      (* NOTE LVALUE TEST REMOVED!
       begin
         match lhst with
         | `BTYP_lvalue t -> ()
@@ -574,6 +575,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           print_endline (sbe syms.dfns bbdfns lx ^ " = " ^ sbe syms.dfns bbdfns rx);
       end
       ;
+      *)
       let lhst = lstrip syms.dfns lhst in
       let rhst = lstrip syms.dfns rhst in
       let lhst = minimise syms.counter syms.dfns lhst in

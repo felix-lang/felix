@@ -70,7 +70,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
   | `AST_longarrow (_,(a,b)) -> `TYP_cfunction (te a, te b)
   | `AST_superscript (_,(a,b)) -> `TYP_array (te a, te b)
-  | `AST_lvalue (sr,e) -> `TYP_lvalue (te e)
+(*  | `AST_lvalue (sr,e) -> `TYP_lvalue (te e) *)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
   | `AST_sum (_,ts) ->
     let ts = map te ts in

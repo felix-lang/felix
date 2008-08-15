@@ -170,7 +170,7 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
   let argtype = rt vs argtype in
   let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let ret = rt' vs ret' in
-  let is_ref = match ret with `BTYP_lvalue _ -> true | _ -> false in
+  let is_ref = (* match ret with `BTYP_lvalue _ -> true | _ -> *) false in
   let ret = lstrip syms.dfns ret in
   if ret = `BTYP_tuple [] then "// elided (returns unit)\n" else
 
@@ -368,7 +368,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
   let argtype = rt vs argtype in
   let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let ret = rt' vs ret' in
-  let is_ref = match ret with | `BTYP_lvalue _ -> true | _ -> false in
+  let is_ref = (* match ret with | `BTYP_lvalue _ -> true | _ -> *) false in
   let ret = lstrip syms.dfns ret in
   if ret = `BTYP_tuple [] then "// elided (returns unit)\n" else
 
@@ -1700,7 +1700,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     let argtype = rt vs argtype in
     let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
     let ret = rt' vs ret' in
-    let is_ref = match ret with | `BTYP_lvalue _ -> true | _ -> false in
+    let is_ref = (* match ret with | `BTYP_lvalue _ -> true | _ -> *) false in
     let ret = lstrip syms.dfns ret in
     if ret = `BTYP_tuple [] then "// elided (returns unit)\n\n" else
 
@@ -1980,7 +1980,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     let argtype = rt vs argtype in
     let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
     let ret = rt' vs ret' in
-    let is_ref = match ret with | `BTYP_lvalue _ -> true | _ -> false in
+    let is_ref = (* match ret with | `BTYP_lvalue _ -> true | _ -> *) false in
     let ret = lstrip syms.dfns ret in
     if ret = `BTYP_tuple [] then "// elided (returns unit)\n","" else
 

@@ -165,7 +165,7 @@ let emit_type syms bbdfns f index name sr bvs =
 let rec cal_type syms bbdfns t =
   let ct t = cal_type syms bbdfns t in
   match t with
-  | `BTYP_lvalue t -> ct t ^ " lvalue "
+(*  | `BTYP_lvalue t -> ct t ^ " lvalue " *)
   | `BTYP_tuple [] -> "unit"
   | `BTYP_void -> "unit" (* cheat *)
   | `BTYP_unitsum 2 -> "bool"
@@ -259,7 +259,7 @@ let emit_whycode filename syms bbdfns root =
   let logics = find_logics syms root in
   let f = open_out filename in
   output_string f "(****** HACKS *******)\n";
-  output_string f "type 'a lvalue  (* Felix lvalues *) \n";
+(*  output_string f "type 'a lvalue  (* Felix lvalues *) \n"; *)
   output_string f "type dunno      (* translation error *)\n";
   output_string f "type ('a,'b) fn (* functions *)\n";
   output_string f "logic apply: ('a,'b) fn, 'a -> 'b (* application *)\n";

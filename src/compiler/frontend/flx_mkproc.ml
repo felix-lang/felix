@@ -317,7 +317,8 @@ let mkproc_gen syms (child_map,bbdfns) =
 
       (* and actually convert it *)
       let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
-      let dv = `BEXPR_deref (`BEXPR_name (vix,ts),`BTYP_pointer ret),`BTYP_lvalue ret in
+      (* let dv = `BEXPR_deref (`BEXPR_name (vix,ts),`BTYP_pointer * ret),`BTYP_lvalue ret in *)
+      let dv = `BEXPR_deref (`BEXPR_name (vix,ts),`BTYP_pointer ret),ret in
       let exes = proc_exes syms bbdfns dv exes in
 
       (* save the new procedure *)

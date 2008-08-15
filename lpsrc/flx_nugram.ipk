@@ -326,7 +326,7 @@ syntax expressions {
   s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
   s_term := sprefixed =># "_1";
 
-  sprefixed := lval spower =># "`(ast_lvalue ,_2)";
+/*  sprefixed := lval spower =># "`(ast_lvalue ,_2)"; */
   sprefixed := ! spower =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
   sprefixed := plus spower =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
   sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))" note "neg";

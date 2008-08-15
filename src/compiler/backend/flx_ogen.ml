@@ -199,7 +199,7 @@ let rec get_offsets' syms bbdfns typ : string list =
 
   | `BTYP_sum _
   | `BTYP_array _
-  | `BTYP_lvalue _
+(*  | `BTYP_lvalue _ *)
   | `BTYP_fix _
   | `BTYP_void
   | `BTYP_var _

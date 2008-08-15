@@ -1152,10 +1152,12 @@ publish "Universal type 'x as x'"
   typedef any = any;
 
 publish "Lvalue hack"
-  typedef lvalue[t] = lval t;
+  //typedef lvalue[t] = lval t;
+  typedef lvalue[t] = t;
 
 publish "Deref hack"
-  inline fun deref[t](p:&t):lval t => _deref p;
+  //inline fun deref[t](p:&t):lval t => _deref p;
+  inline fun deref[t](p:&t):t => _deref p;
 
 
 @#------------- Pointers ---------------------------
@@ -2632,7 +2634,7 @@ open module Array
 
   publish "Array access: works on LHS of assignment too"
   fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
-  fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
+  //fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
 
   /*
   THIS HACK IS NASTY because we get the error:

@@ -1271,7 +1271,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (* application of C function pointer, type
      f: a --> b
   *)
-  | `BEXPR_apply ( (_,`BTYP_lvalue(`BTYP_cfunction _)) as f,a)
+(*  | `BEXPR_apply ( (_,`BTYP_lvalue(`BTYP_cfunction _)) as f,a) *)
   | `BEXPR_apply ( (_,`BTYP_cfunction _) as f,a) ->
     ce_atom (
     (ge f) ^"(" ^ ge_arg a ^ ")"

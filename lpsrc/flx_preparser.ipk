@@ -595,6 +595,7 @@ term:
   -x ** -x = -(x**(-x))
 */
 prefixed:
+/*
   | LVAL power
     {
       `AST_lvalue
@@ -603,6 +604,7 @@ prefixed:
         $2
       )
     }
+*/
   /*
   | HASH power  { apl $1 "len" $2 }
   */

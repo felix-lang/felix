@@ -97,7 +97,7 @@ type 't b0typecode_t' =
   | `BTYP_function of 't * 't
   | `BTYP_cfunction of 't * 't
   | `BTYP_pointer  of 't
-  | `BTYP_lvalue  of 't
+(*  | `BTYP_lvalue  of 't *)
   | `BTYP_array of 't * 't
   | `BTYP_void
   | `BTYP_fix of int

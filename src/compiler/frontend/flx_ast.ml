@@ -123,7 +123,7 @@ and typecode_t =
   | `TYP_var of int                             (** unknown type *)
   | `TYP_none                                   (** unspecified *)
   | `TYP_ellipsis                               (** ... for varargs *)
-  | `TYP_lvalue of typecode_t                   (** ... lvalue annotation *)
+(*  | `TYP_lvalue of typecode_t *)                  (** ... lvalue annotation *)
   | `TYP_isin of typecode_t * typecode_t        (** typeset membership *)
 
   (* sets of types *)
@@ -243,7 +243,7 @@ and expr_t =
   | `AST_likely of range_srcref * expr_t
   | `AST_unlikely of range_srcref * expr_t
   | `AST_new of range_srcref * expr_t
-  | `AST_lvalue of range_srcref * expr_t
+(*  | `AST_lvalue of range_srcref * expr_t *)
   | `AST_callback of range_srcref * qualified_name_t
   | `AST_method_apply of range_srcref * (id_t * expr_t * typecode_t list)
   (*

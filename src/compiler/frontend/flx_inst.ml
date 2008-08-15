@@ -89,7 +89,8 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     (* instantiate member with binding for class type parameters *)
     begin match ot with
     | `BTYP_inst (j,ts)
-    | `BTYP_lvalue (`BTYP_inst (j,ts)) ->
+(*    | `BTYP_lvalue (`BTYP_inst (j,ts)) *)
+      ->
       (*
       print_endline ("Register member " ^ si i^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
       *)

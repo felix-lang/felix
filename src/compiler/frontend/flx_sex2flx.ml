@@ -188,7 +188,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_new"; e] -> `AST_new (sr,ex e)
  | Lst [Id "ast_likely"; e] -> `AST_likely (sr,ex e)
  | Lst [Id "ast_unlikely"; e] -> `AST_unlikely (sr,ex e)
- | Lst [Id "ast_lvalue"; e] -> `AST_lvalue (sr,ex e)
+(* | Lst [Id "ast_lvalue"; e] -> `AST_lvalue (sr,ex e) *)
  | Lst [Id "ast_callback";  qn] -> `AST_callback (sr,xq "ast_callback" qn)
  | Lst [Id "ast_method_apply";  Lst [Str n; e; Lst ts]] -> `AST_method_apply(sr,(n, ex e, map ti ts))
 

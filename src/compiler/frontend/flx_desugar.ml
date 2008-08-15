@@ -238,7 +238,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_andlist _
   | `AST_orlist _
   | `AST_ellipsis _
-  | `AST_lvalue _
+(*  | `AST_lvalue _ *)
   | `AST_lift _
   | `AST_setunion  _
   | `AST_intersect _

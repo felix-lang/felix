@@ -29,7 +29,7 @@ let rec dual t =
   | `BTYP_array (a,b) -> `BTYP_array (b,a)
 
   | `BTYP_pointer t -> `BTYP_pointer (dual t)
-  | `BTYP_lvalue t -> `BTYP_lvalue (dual t)
+(*  | `BTYP_lvalue t -> `BTYP_lvalue (dual t) *)
   | `BTYP_lift t -> `BTYP_lift (dual t)
   | `BTYP_void -> unit_t
   | `BTYP_unitsum k ->
@@ -254,7 +254,7 @@ let fix i t =
     | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
     | `BTYP_cfunction (a,b) -> `BTYP_cfunction (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
-    | `BTYP_lvalue a -> `BTYP_lvalue (aux a)
+(*    | `BTYP_lvalue a -> `BTYP_lvalue (aux a) *)
     | `BTYP_lift a -> `BTYP_lift (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
 
@@ -300,7 +300,7 @@ let lstrip dfns t =
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
 
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
-  | `BTYP_lvalue a -> aux (1::trail) a
+(*  | `BTYP_lvalue a -> aux (1::trail) a *)
   | `BTYP_lift a -> aux (1::trail) a
   | `BTYP_fix i ->
      let k = ref i in
@@ -364,9 +364,9 @@ let rec unification allow_lval counter dfns
             s := Some (j,ti)
           else raise Not_found
 
-      | `BTYP_lvalue t1, `BTYP_lvalue t2 ->
+(*      | `BTYP_lvalue t1, `BTYP_lvalue t2 ->
         eqns := (t1,t2) :: !eqns
-
+*)
       (* This says an argument of type lvalue t can match
         a parameter of type t -- not the other way around tho
 
@@ -374,9 +374,9 @@ let rec unification allow_lval counter dfns
          `BTYP_var i, t
        to ensure t can't be an lvalue
       *)
-      | t1, `BTYP_lvalue t2 when allow_lval ->
+(*      | t1, `BTYP_lvalue t2 when allow_lval ->
         eqns := (t1,t2) :: !eqns
-
+*)
       (*
       | `BTYP_lvalue t1, t2 when allow_lval ->
         print_endline "WARNING LVALUE ON LEFT UNEXPECTED ..";
@@ -844,9 +844,11 @@ let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2
     -> te p1 p2
 
   | `BTYP_lift p1,`BTYP_lift p2
-  | `BTYP_lvalue p1,`BTYP_lvalue p2
+(*  | `BTYP_lvalue p1,`BTYP_lvalue p2
+*)
     -> te p1 p2
 
+(*
   | p1,(`BTYP_lvalue p2 as lt) when allow_lval
     ->
     type_eq' counter dfns allow_lval
@@ -854,6 +856,7 @@ let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2
     ((rdepth,lt)::rtrail) (rdepth+1)
     ((p1,lt)::trail)
     p1 p2
+*)
 
   | `BTYP_void,`BTYP_void
     -> true
@@ -950,7 +953,7 @@ let unfold dfns t =
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
-  | `BTYP_lvalue a -> `BTYP_lvalue (uf a)
+(*  | `BTYP_lvalue a -> `BTYP_lvalue (uf a) *)
   | `BTYP_lift a -> `BTYP_lift (uf a)
   | `BTYP_fix i when (-i) = depth -> t
   | `BTYP_fix i when (-i) > depth ->
@@ -991,7 +994,7 @@ let fold counter dfns t =
     | `BTYP_cfunction (a,b) -> ax a; ax b
 
     | `BTYP_pointer a  -> ax a
-    | `BTYP_lvalue a  -> ax a
+(*    | `BTYP_lvalue a  -> ax a *)
     | `BTYP_lift a  -> ax a
 
     | `BTYP_void
@@ -1046,7 +1049,7 @@ let var_occurs t =
     | `BTYP_cfunction (a,b) -> aux a; aux b
 
     | `BTYP_pointer a  -> aux a
-    | `BTYP_lvalue a  -> aux a
+(*    | `BTYP_lvalue a  -> aux a *)
     | `BTYP_lift a  -> aux a
 
     | `BTYP_unitsum _

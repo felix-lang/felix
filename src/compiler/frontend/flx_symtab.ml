@@ -594,7 +594,8 @@ let rec build_tables syms name inherit_vs
               add_tvars' (Some getn) funtab vs;
               let get_dcl =
                 if class_kind = `CClass then
-                 `SYMDEF_fun ([],[`TYP_lvalue stype],`TYP_lvalue t,
+                 (* `SYMDEF_fun ([],[`TYP_lvalue stype],`TYP_lvalue t, *)
+                 `SYMDEF_fun ([],[stype],t,
                    `StrTemplate ("$1->" ^ component_name),
                    `NREQ_true,"primary"
                  )
@@ -604,20 +605,23 @@ let rec build_tables syms name inherit_vs
                   Hashtbl.add dfns objix {
                     id=objname;sr=sr;parent=Some getn;
                     vs=dfltvs;pubmap=null_tab;privmap=null_tab;
-                    dirs=[];symdef=`SYMDEF_parameter (`PVal,`TYP_lvalue stype)
+                    (* dirs=[];symdef=`SYMDEF_parameter (`PVal,`TYP_lvalue stype) *)
+                    dirs=[];symdef=`SYMDEF_parameter (`PVal,stype)
                   };
                   (*
                   add_unique funtab objname objix;
                   *)
                   full_add_unique syms sr dfltvs funtab objname objix;
-                  let ps = [`PVal,"obj",`TYP_lvalue stype,None],None in
+                  (* let ps = [`PVal,"obj",`TYP_lvalue stype,None],None in *)
+                  let ps = [`PVal,"obj",stype,None],None in
                   let exes = [sr,
                     `EXE_fun_return (`AST_get_named_variable (sr,
                       (component_name,`AST_index (sr,"obj",objix))
                     ))
                   ]
                   in
-                  `SYMDEF_function (ps,`TYP_lvalue t,[`Inline],exes)
+                  (* `SYMDEF_function (ps,`TYP_lvalue t,[`Inline],exes) *)
+                  `SYMDEF_function (ps,t,[`Inline],exes)
               in
               Hashtbl.add dfns getn {
                 id=get_name;sr=sr;parent=parent;vs=vs;
@@ -1149,7 +1153,10 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_var t ->
           let t = if t = `TYP_none then `TYP_var n else t in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_var (`TYP_lvalue t)}
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=
+            (* `SYMDEF_var (`TYP_lvalue t) *)
+            `SYMDEF_var t
+          }
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n

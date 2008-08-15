@@ -152,7 +152,8 @@ let rec fixup_expr syms bbdfns fi mt e =
     *)
     begin match t with
     | `BTYP_inst (j,ts)
-    | `BTYP_lvalue (`BTYP_inst (j,ts)) ->
+(*    | `BTYP_lvalue (`BTYP_inst (j,ts))  *)
+    ->
       (*
       print_endline ("type=" ^ si j ^ ", ts = " ^ catmap "," (sbt syms.dfns) ts);
       *)
