@@ -1667,8 +1667,8 @@ syntax executable {
   sassignexpr := sexpr srmwop sexpr =>#
     "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
-  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 ,_1)";
-  sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 ,_2)";
+  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 (ast_ref ,_1))";
+  sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 (ast_ref ,_2))";
 
   page subroutines =
     sreturn, scall
@@ -1774,7 +1774,7 @@ syntax executable {
         "lab2"
       ))
       _8
-      `((ast_call ,_sr pre_incr (ast_name ,_sr ,_2()))
+      `((ast_call ,_sr pre_incr (ast_ref (ast_name ,_sr ,_2())))
       ( ast_goto ,_sr "lab1" )
       ( ast_label ,_sr "lab2" ))
      ))
@@ -1792,7 +1792,7 @@ syntax executable {
         "lab2"
       ))
       _8
-      `((ast_call ,_sr pre_decr (ast_name ,_sr ,_2 ()))
+      `((ast_call ,_sr pre_decr (ast_ref (ast_name ,_sr ,_2 ())))
       ( ast_goto ,_sr "lab1" )
       ( ast_label ,_sr "lab2" ))
      ))

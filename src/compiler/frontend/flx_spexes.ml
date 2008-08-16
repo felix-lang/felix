@@ -343,6 +343,37 @@ let gen_body syms (uses,child_map,bbdfns) id
         else []
       )
     in
+    let handle_arg prolog argmap index argument kind =      
+      let eagerly () =
+         let x = `BEXE_init (sr,index,argument) in
+         prolog := x :: !prolog
+      in
+      match kind with
+      | `PFun ->
+        let argt = match argument with
+        | _,`BTYP_function (`BTYP_void,t)
+        | _,`BTYP_function (`BTYP_tuple [],t) -> t
+        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt syms.dfns t)
+        in
+        let un = `BEXPR_tuple [], `BTYP_tuple [] in
+        let apl = `BEXPR_apply (argument, un), argt in
+        Hashtbl.add argmap index apl
+
+      | `PVal when inline_method = `Lazy ->
+        Hashtbl.add argmap index argument
+
+      | `PRef ->
+        begin match argument with
+        | `BEXPR_ref (i,ts),`BTYP_pointer t ->
+          Hashtbl.add argmap index (`BEXPR_name (i,ts),t)
+        | _ -> eagerly ()
+        end
+
+      | `PVal when inline_method = `Eager -> eagerly ()
+
+      | `PVar -> eagerly ()
+
+    in
     (*
     if inline_method = `Eager then begin
       (* create a variable for the parameter *)
@@ -429,40 +460,7 @@ let gen_body syms (uses,child_map,bbdfns) id
     | 1 ->
       let {pkind=kind; pid=vid; pindex=k; ptyp=ptyp} = hd ps in
       let index = revar k in
-      begin match kind with
-      | `PFun ->
-        let argt = match argument with
-        | _,`BTYP_function (`BTYP_void,t)
-        | _,`BTYP_function (`BTYP_tuple [],t) -> t
-        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt syms.dfns t)
-        in
-        let un = `BEXPR_tuple [], `BTYP_tuple [] in
-        let apl = `BEXPR_apply (argument, un), argt in
-        Hashtbl.add argmap index apl
-
-      | `PVal when inline_method = `Lazy ->
-        Hashtbl.add argmap index argument
-
-      | `PRef ->
-        begin match argument with
-        | `BEXPR_ref (i,ts),`BTYP_pointer t ->
-          Hashtbl.add argmap index (`BEXPR_name (i,ts),t)
-        | _ ->
-          let x = `BEXE_init (sr,index,argument) in
-          b := x :: !b
-        end
-
-      | `PVal when inline_method = `Eager ->
-         let x = `BEXE_init (sr,index,argument) in
-         b := x :: !b
-
-      | `PVar ->
-         let x = `BEXE_init (sr,index,argument) in
-         b := x :: !b
-
-      | _ -> failwith "Can't handle ref/fun params yet"
-      end
-
+      handle_arg b argmap index argument kind
     | _ ->
       (* create a variable for the parameter *)
       let parameter = !(syms.counter) in
@@ -494,40 +492,7 @@ let gen_body syms (uses,child_map,bbdfns) id
         *)
         let prj = pj in
         let index = revar ix in
-        begin match kind with
-        | `PFun ->
-          let t = match prj with
-          | _,`BTYP_function (`BTYP_void,t)
-          | _,`BTYP_function (`BTYP_tuple [],t) -> t
-          | _ -> failwith "Expected argument to be function void->t!"
-          in
-          let un = `BEXPR_tuple [], `BTYP_tuple [] in
-          let apl = `BEXPR_apply (prj,un),t in
-          Hashtbl.add argmap index apl
-
-        | `PVal when inline_method = `Lazy ->
-          Hashtbl.add argmap index prj
-
-        | `PRef ->
-          begin match prj with
-          | `BEXPR_ref (i,ts),`BTYP_pointer t ->
-            Hashtbl.add argmap index (`BEXPR_name (i,ts),t)
-          | _ ->
-            let x = `BEXE_init (sr,index,prj) in
-            b := x :: !b
-          end
-
-        | `PVal when inline_method = `Eager ->
-          let x = `BEXE_init (sr,index,prj) in
-          b := x :: !b
-
-        | `PVar ->
-          let x = `BEXE_init (sr,index,prj) in
-          b := x :: !b
-
-        | _ -> failwith "Can't handle ref/fun params yet"
-        end
-        ;
+        handle_arg b argmap index prj kind;
         incr n
       )
       ps

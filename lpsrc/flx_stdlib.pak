@@ -157,15 +157,15 @@ typeclass Dring[t] {
 
 typeclass Forward[t] {
   virtual fun succ: t -> t;
-  virtual proc pre_incr: lvalue[t];
-  virtual proc post_incr: lvalue[t];
+  virtual proc pre_incr: &t;
+  virtual proc post_incr: &t;
 }
 
 typeclass Bidirectional[t] {
   inherit Forward[t];
   virtual fun pred: t -> t;
-  virtual proc pre_decr: lvalue[t];
-  virtual proc post_decr: lvalue[t];
+  virtual proc pre_decr: &t;
+  virtual proc post_decr: &t;
 }
 
 typeclass IStream[f,t] {
@@ -655,14 +655,14 @@ instance [t in fast_uints] Bits [t] {
 
 instance[t in ints] Forward[t] {
   fun succ: t -> t = "$1+1";
-  proc pre_incr: lvalue[t] = "++$1;";
-  proc post_incr: lvalue[t] = "$1++;";
+  proc pre_incr: &t = "++*$1;";
+  proc post_incr: &t = "(*$1)++;";
 }
 
 instance[t in ints] Bidirectional[t] {
   fun pred: t -> t = "$1-1";
-  proc pre_decr: lvalue[t] = "--$1;";
-  proc post_decr: lvalue[t] = "$1--;";
+  proc pre_decr: &t = "--*$1;";
+  proc post_decr: &t = "(*$1)--;";
 }
 
 instance[t in ints] Integer[t] {
@@ -1398,12 +1398,12 @@ module Carray
   fun sub[T]: carray[T] * int -> carray[T] = '$1-$2';
   fun sub[T]: carray[T] * carray[T]-> int = '$1-$2';
 
-  proc pre_incr[T]: lvalue[carray[T]] = '++$1;';
-  proc post_incr[T]: lvalue[carray[T]] = '$1++;';
-  proc pre_decr[T]: lvalue[carray[T]] = '--$1;';
-  proc post_decr[T]: lvalue[carray[T]] = '$1--;';
-  proc pluseq[T]: lvalue[carray[T]] * int = '$1+=$2;';
-  proc minuseq[T]: lvalue[carray[T]] * int = '$1-=$2;';
+  proc pre_incr[T]: &carray[T] = '++*$1;';
+  proc post_incr[T]: &carray[T] = '(*$1)++;';
+  proc pre_decr[T]: &carray[T] = '--*$1;';
+  proc post_decr[T]: &carray[T] = '(*$1)--;';
+  proc pluseq[T]: carray[T] * int = '$1+=$2;';
+  proc minuseq[T]: carray[T] * int = '$1-=$2;';
 
   /* carray is alias for a pointer .. */
   /*

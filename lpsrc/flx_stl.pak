@@ -133,8 +133,8 @@ size_t __gnu_cxx::hash<std::string>::
 
   tangle('  instance Forward['+it+'] {')
   tangle('    fun succ: '+it+' -> '+it+' = "$1+1";')
-  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
-  tangle('    proc post_incr : lvalue['+it+'] = "++$1;";')
+  tangle('    proc pre_incr : &'+it+' = "++*$1;";')
+  tangle('    proc post_incr : &'+it+' = "++*$1;";')
   tangle('  }')
 
   tangle('  instance Forward_iterator['+it+','+kv+'] {}')
@@ -144,8 +144,8 @@ size_t __gnu_cxx::hash<std::string>::
   mkfor(it,ts,kv)
   tangle('  instance Bidirectional['+it+'] {')
   tangle('    fun pred: '+it+' -> '+it+' = "$1-11;";')
-  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
-  tangle('    proc post_decr : lvalue['+it+'] = "--$1;";')
+  tangle('    proc pre_decr : &'+it+' = "--*$1;";')
+  tangle('    proc post_decr : &'+it+' = "--*$1;";')
   tangle('  }')
 
   tangle('  instance Bidirectional_iterator['+it+','+kv+'] {}')
