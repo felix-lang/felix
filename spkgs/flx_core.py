@@ -9,11 +9,15 @@ caml_modules = [
     'src/compiler/flx_core/flx_exceptions',
     'src/compiler/flx_core/flx_typing2',
     'src/compiler/flx_core/flx_mtypes2',
+    'src/compiler/flx_core/flx_maps',
 ]
 
 caml_include_paths = [
-    'src/compiler/ocs',
     'src/compiler/flx_misc',
 ]
 
 caml_provide_lib = 'src/compiler/flx_core/flx_core'
+
+pkg_requires = [
+    'flx_misc',
+]
