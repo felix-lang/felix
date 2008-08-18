@@ -1,5 +1,3 @@
-@bc = begin_displayed_code
-@ec = end_displayed_code
 @import config
 @from config.flx_data import flx_keywords, flx_syms, cpp_keywords
 @set_title('Felix ' + config.flx_version)
