@@ -6,6 +6,7 @@ import os
 import sys
 import glob
 import shutil
+import imp
 
 # forward import of set
 try:
@@ -180,13 +181,21 @@ def load_packages():
   pkgs = []
   unsorted_pkgs = []
 
-  for i in glob.glob(os.path.join("spkgs", "*.py")):
+  for i in \
+      glob.glob(os.path.join("spkgs", "*.py")) + \
+      glob.glob(os.path.join(config.src_dir, "spkgs", "*.py")):
     pkg = os.path.basename(os.path.splitext(i)[0])
     if pkg == '__init__':
       continue
 
+    f, filename, description = imp.find_module(pkg, [os.path.dirname(i)])
+    try:
+        module = imp.load_module(pkg, f, filename, description)
+    finally:
+        if f:
+            f.close()
+
     unsorted_pkgs.append(pkg)
-    module = getattr(__import__('spkgs.' + pkg), pkg)
     d = {}
     for k, v in module.__dict__.iteritems():
       if k[0] != '_':
