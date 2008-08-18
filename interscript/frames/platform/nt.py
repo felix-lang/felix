@@ -19,16 +19,21 @@ class platform_frame:
       f = self.os.popen('uname -s 2>tmp.tmp','r')
       self.uname[0] = f.read()
       f.close()
+      os.remove('tmp.tmp')
       del f
+
       # operating system version
       f = self.os.popen('uname -v 2>tmp.tmp','r')
       self.uname[1] = f.read()
       f.close()
+      os.remove('tmp.tmp')
       del f
+
       # operating system release
       f = self.os.popen('uname -r 2>tmp.tmp','r')
       self.uname[2] = f.read()
       f.close()
+      os.remove('tmp.tmp')
       del f
     except:
       pass# OS dependent routines.
