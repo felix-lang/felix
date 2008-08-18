@@ -1,6 +1,4 @@
 caml_modules = [
-    'src/compiler/frontend/flx_sex2flx',
-    'src/compiler/frontend/flx_parse',
     'src/compiler/frontend/flx_dlst',
     'src/compiler/frontend/flx_getopt',
     'src/compiler/frontend/flx_maps',
@@ -17,7 +15,6 @@ caml_modules = [
     'src/compiler/frontend/flx_prop',
     'src/compiler/frontend/flx_constfld',
     'src/compiler/frontend/flx_cexpr',
-    'src/compiler/frontend/flx_parse_ctrl',
     'src/compiler/frontend/flx_pat',
     'src/compiler/frontend/flx_macro',
     'src/compiler/frontend/flx_cformat',
@@ -55,26 +52,28 @@ caml_modules = [
 ]
 
 caml_include_paths = [
-    'src/compiler/ocs',
-    'src/compiler/sex',
     'src/compiler/cil',
     'src/compiler/cil/ocamlutil',
     'src/compiler/cil/src',
     'src/compiler/cil/src/frontc',
     'src/compiler/dyp/dyplib',
-    'src/compiler/flxcclib',
     'src/compiler/flx_core',
     'src/compiler/flx_lex',
     'src/compiler/flx_misc',
+    'src/compiler/flx_parse',
     'src/compiler/flx_version',
     'src/compiler/flx_version_hook',
+    'src/compiler/flxcclib',
     'src/compiler/inria_re',
+    'src/compiler/ocs',
+    'src/compiler/sex',
 ]
 
 caml_provide_lib = 'src/compiler/frontend/flx_frontend'
 
 pkg_requires = [
     'flx_lex',
+    'flx_parse',
     'flx_core',
     'flx_version',
     'flx_version_hook',

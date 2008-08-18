@@ -1,7 +1,7 @@
 @from config.flx_data import flx_keywords, flx_syms
 
 @head(1,'Parser')
-@h = tangler('src/compiler/frontend/flx_parse.dyp','data')
+@h = tangler('src/compiler/flx_parse/flx_parse.dyp','data')
 
 @head(2,'Header')
 @select(h)

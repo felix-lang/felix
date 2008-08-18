@@ -24,6 +24,7 @@ caml_require_libs = [
     'inria_re',
     'flx_core',
     'flx_lex',
+    'flx_parse',
     'flx_frontend',
     'flx_backend',
     'flx_version_hook',
@@ -43,6 +44,7 @@ caml_include_paths = [
     'src/compiler/flxcclib',
     'src/compiler/flx_core',
     'src/compiler/flx_lex',
+    'src/compiler/flx_parse',
     'src/compiler/flx_misc',
     'src/compiler/flx_version',
     'src/compiler/flx_version_hook'

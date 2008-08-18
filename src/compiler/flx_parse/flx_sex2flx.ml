@@ -1,8 +1,11 @@
-open Sex_types
 open Flx_ast
+open Sex_types
+open Flx_typing2
+
+(*
 open Flx_types
 open Flx_typing
-open Flx_typing2
+*)
 open List
 
 exception Sex2FlxTypeError of string * sexp_t
