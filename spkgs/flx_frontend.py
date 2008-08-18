@@ -10,7 +10,6 @@ caml_modules = [
     'src/compiler/frontend/flx_treg',
     'src/compiler/frontend/flx_use',
     'src/compiler/frontend/flx_prop',
-    'src/compiler/frontend/flx_cexpr',
     'src/compiler/frontend/flx_symtab',
     'src/compiler/frontend/flx_child',
     'src/compiler/frontend/flx_bexe',

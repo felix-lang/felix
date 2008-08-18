@@ -1,22 +1,30 @@
 @head(1,'Flxcc utilities')
 @h = tangler('spkgs/flxcc_util.py')
 @select(h)
-FLXCC_UTIL_MODULES = [
+iscr_source = ["lpsrc/flxcc_util.pak"]
+
+caml_modules = [
   'src/compiler/flxcclib/flx_ctypes',
   'src/compiler/flxcclib/flx_ctype',
-  'src/compiler/flxcclib/flxcc_util'
+  'src/compiler/flxcclib/flx_cexpr',
+  'src/compiler/flxcclib/flxcc_util',
 ]
 
-FLXCC_UTIL_RAW_INTERFACES = ['src/compiler/flxcclib/flx_ctypes']
+caml_include_paths = [
+    'src/compiler/cil/src',
+    'src/compiler/cil/src/frontc',
+    'src/compiler/flx_core',
+]
 
-pkg_requires = ['flx_misc','cil']
-iscr_source = ["lpsrc/flxcc_util.pak"]
-weaver_directory = 'doc/flxcc_util/'
 caml_provide_lib = 'src/compiler/flxcclib/flxcclib'
-caml_include_paths = ['src/compiler/cil/src', 'src/compiler/cil/src/frontc']
-caml_interfaces = FLXCC_UTIL_MODULES
-caml_implementations = FLXCC_UTIL_MODULES
-caml_raw_interfaces = FLXCC_UTIL_RAW_INTERFACES
+
+pkg_requires = [
+    'cil',
+    'flx_core',
+    'flx_misc',
+]
+
+weaver_directory = 'doc/flxcc_util/'
 
 @include_file("flx_ctypes.ipk")
 

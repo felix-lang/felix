@@ -154,7 +154,7 @@ let string_of_cdecl_type n t =
   | `Cdt_vref t -> aux t ("volatile &"^n)
   | `Cdt_cvref t -> aux t ("const volatile &"^n)
 
-@h = tangler("src/compiler/frontend/flx_cexpr.mli")
+@h = tangler("src/compiler/flxcclib/flx_cexpr.mli")
 @select(h)
 open Flx_ast
 open Flx_ctypes
@@ -180,7 +180,7 @@ exception Unknown_prec of prec_t
 
 val genprec: string -> prec_t -> string * prec_t
 
-@h = tangler("src/compiler/frontend/flx_cexpr.ml")
+@h = tangler("src/compiler/flxcclib/flx_cexpr.ml")
 @select(h)
 open Flx_ctypes
 exception Unknown_prec of string
