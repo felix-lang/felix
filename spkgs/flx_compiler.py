@@ -56,6 +56,8 @@ pkg_requires = [
     'flx_desugar',
     'flx_frontend',
     'flx_backend',
+    'flx_version',
+    'flx_version_hook',
 ]
 
 weaver_directory = 'doc/flx/flx_compiler/'
