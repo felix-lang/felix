@@ -1,7 +1,7 @@
 @from config.flx_data import flx_keywords
 
 @head(1,'Keywords')
-@h = tangler('src/compiler/frontend/flx_keywords.ml')
+@h = tangler('src/compiler/flx_lex/flx_keywords.ml')
 @select(h)
 
 open Flx_token
@@ -14,11 +14,22 @@ let hash_table_from_list n lst =
   List.iter addEntry lst;
   tbl
 
+let flx_keywords = [
+@for n, t in flx_keywords:
+  tangle('  "%s", "%s";' % (n, t), inhibit_sref=1)
+@#
+]
+
+let flx_syms = [
+@for n, t in flx_syms:
+  tangle('  "%s", "%s";' % (n, t), inhibit_sref=1)
+@#
+]
 
 let flx_keyword_table =          (* 97 is a prime larger than table size *)
   hash_table_from_list 97 [
 @for n,t in flx_keywords:
-  tangle('  "'+n+'", (fun s -> '+t+' s);')
+  tangle('  "'+n+'", (fun s -> '+t+' s);', inhibit_sref=1)
 ]
 
 let map_flx_keywords srcref lex_item =
@@ -26,7 +37,9 @@ let map_flx_keywords srcref lex_item =
   with Not_found -> NAME (srcref, lex_item)
 
 
-@h = tangler('src/compiler/frontend/flx_keywords.mli')
+@h = tangler('src/compiler/flx_lex/flx_keywords.mli')
 @select(h)
 open Flx_token
+val flx_keywords : (string * string) list
+val flx_syms : (string * string) list
 val map_flx_keywords : Flx_ast.srcref -> string -> token

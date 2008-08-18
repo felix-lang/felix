@@ -1,7 +1,7 @@
 open Flx_token
 open Flx_ast
 open Flx_util
-open Flx_frontend_config
+open Flx_keywords
 open List
 
 type action_t = [`Scheme of string | `None]

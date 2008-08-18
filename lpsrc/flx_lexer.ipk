@@ -1,7 +1,7 @@
 @from config.flx_data import flx_syms
 
 @head(1,'Lexer')
-@h = tangler('src/compiler/frontend/flx_lexstate.ml')
+@h = tangler('src/compiler/flx_lex/flx_lexstate.ml')
 @select(h)
 open Flx_util
 open Flx_token
@@ -379,7 +379,7 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
         tk [] s
 end
 
-@h = tangler('src/compiler/frontend/flx_lexstate.mli')
+@h = tangler('src/compiler/flx_lex/flx_lexstate.mli')
 @select(h)
 open Flx_ast
 open Flx_string
@@ -539,7 +539,7 @@ class lexer_state :
     method tokenise_symbols : Lexing.lexbuf -> string -> token list
 end
 
-@h = tangler('src/compiler/frontend/flx_preproc.mli')
+@h = tangler('src/compiler/flx_lex/flx_preproc.mli')
 @select(h)
 open Flx_ast
 open Flx_token
@@ -579,7 +579,7 @@ val handle_preprocessor :
   Lexing.position ->
   token list
 
-@h = tangler('src/compiler/frontend/flx_preproc.ml')
+@h = tangler('src/compiler/flx_lex/flx_preproc.ml')
 @select(h)
 open Flx_util
 open Flx_token
@@ -1267,7 +1267,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
   result
 
 
-@h = tangler('src/compiler/frontend/flx_lex.mll','data')
+@h = tangler('src/compiler/flx_lex/flx_lex.mll','data')
 @select(h)
 {
 open Flx_util
@@ -1918,7 +1918,7 @@ and pre_flx_lex state = parse
 {
 }
 
-@h = tangler('src/compiler/frontend/flx_lex.mli')
+@h = tangler('src/compiler/flx_lex/flx_lex.mli')
 @select(h)
 val pre_flx_lex :
   Flx_lexstate.lexer_state ->

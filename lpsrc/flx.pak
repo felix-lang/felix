@@ -4,19 +4,6 @@
 
 @head(1,'The Felix Compiler')
 
-@select(tangler('src/compiler/frontend/flx_frontend_config.ml'))
-let flx_keywords = [
-@for n, t in flx_keywords:
-  tangle('  "%s", "%s";' % (n, t))
-@#
-]
-
-let flx_syms = [
-@for n, t in flx_syms:
-  tangle('  "%s", "%s";' % (n, t))
-@#
-]
-
 @select(tangler('src/compiler/backend/flx_backend_config.ml'))
 let cpp_keywords = [
 @for k in cpp_keywords:
