@@ -541,12 +541,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         (*
         print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
         *)
+        (*
         let lhst =
           let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
           match entry with
           | `SYMDEF_ref _ -> `BTYP_pointer lhst
           | _ -> lhst
         in
+        *)
         if type_match syms.counter syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
@@ -556,9 +558,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           "\n of initialisation must have same type as RHS:\n"^
           string_of_btypecode syms.dfns rhst^
           "\nunfolded LHS = " ^ sbt syms.dfns (unfold syms.dfns lhst) ^
+          (if length parent_vs > 0 then
           "\nenvironment type variables are " ^
           print_vs parent_vs
-
+          else "")
         )
       end
 

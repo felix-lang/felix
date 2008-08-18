@@ -47,6 +47,7 @@ let get_variable_typename syms bbdfns i ts =
   | `BBDCL_var (vs,t)
   | `BBDCL_val (vs,t)
   | `BBDCL_tmp (vs,t)
+  | `BBDCL_ref (vs,t)
   ->
     let t = lower t in
     if length ts <> length vs then
@@ -59,21 +60,6 @@ let get_variable_typename syms bbdfns i ts =
     );
     let t = rt vs t in
     let n = cpp_typename syms t in
-    n
-
-  | `BBDCL_ref (vs,t)
-    ->
-    let t = lower t in
-    if length ts <> length vs then
-    failwith
-    (
-      "[get_variable_typename} wrong number of args, expected vs = " ^
-      si (length vs) ^
-      ", got ts=" ^
-      si (length ts)
-    );
-    let t = rt vs t in
-    let n = cpp_typename syms (`BTYP_pointer t) in
     n
 
   | _ ->

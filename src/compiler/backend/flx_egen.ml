@@ -95,24 +95,8 @@ let get_var_ref syms bbdfns this index ts : string =
   *)
   match entry with
   | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t) ->
-    begin match parent with
-    | None -> (* print_endline "No parent ...?"; *)
-      "PTF " ^ cpp_instance_name syms bbdfns index ts
-    | Some i ->
-      (*
-      print_endline ("Parent " ^ si i);
-      *)
-      (
-        if i <> this
-        then "ptr" ^ cpp_instance_name syms bbdfns i ts ^ "->"
-        else ""
-      ) ^
-      cpp_instance_name syms bbdfns index ts
-    end
-
+  | `BBDCL_var (vs,t)
   | `BBDCL_ref (vs,t) ->
-    "(*(" ^
     begin match parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bbdfns index ts
@@ -127,8 +111,6 @@ let get_var_ref syms bbdfns this index ts : string =
       ) ^
       cpp_instance_name syms bbdfns index ts
     end
-    ^"))"
-
 
   | `BBDCL_tmp (vs,t) ->
       cpp_instance_name syms bbdfns index ts

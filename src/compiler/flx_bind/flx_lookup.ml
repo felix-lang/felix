@@ -4354,9 +4354,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let ts = adjust_ts syms sr index ts in
       let t = ti sr index ts in
       begin match hfind "lookup:ref-check" syms.dfns index with
-      |  {symdef=`SYMDEF_parameter (`PRef,_)} -> 
+      |  {symdef=`SYMDEF_parameter (`PRef,_)} 
+      |  {symdef=`SYMDEF_ref _ } -> 
           let t' = match t with `BTYP_pointer t' -> t' | _ -> 
-            failwith ("[lookup, AST_name] expected ref parameter "^name^" to have pointer type")
+            failwith ("[lookup, AST_name] expected ref "^name^" to have pointer type")
           in
           `BEXPR_deref (`BEXPR_name (index,ts),t),t'
       | _ -> `BEXPR_name (index,ts), t
