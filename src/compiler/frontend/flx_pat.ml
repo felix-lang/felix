@@ -1,4 +1,3 @@
-open Flx_util
 open Flx_ast
 open Flx_print
 open Flx_typing
@@ -121,7 +120,7 @@ and check_match_tuple n pats =
     )
   in let tpats =
     try
-      Flx_util.transpose
+      Flx_list.transpose
       (
         List.filter
         (function | [] -> false | _ -> true)

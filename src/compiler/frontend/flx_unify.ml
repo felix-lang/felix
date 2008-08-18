@@ -4,6 +4,7 @@ open Flx_mtypes2
 open Flx_print
 open Flx_maps
 open Flx_util
+open Flx_list
 open List
 open Flx_exceptions
 

@@ -5,6 +5,7 @@ open Flx_unify
 open Flx_print
 open Flx_exceptions
 open Flx_util
+open Flx_list
 open Flx_srcref
 open List
 open Flx_maps

@@ -6,7 +6,7 @@ open Flx_tpat
 open Flx_exceptions
 open List
 open Flx_print
-open Flx_util
+open Flx_list
 
 (* A type constraint written in a vs list is a simplification.
    The form

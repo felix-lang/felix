@@ -36,6 +36,7 @@ weaver_directory = 'doc/flxcc/'
 @select(h)
 open List
 open Flx_util
+open Flx_list
 open Flx_types
 open Flx_version
 open Flx_mtypes1

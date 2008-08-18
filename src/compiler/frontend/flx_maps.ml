@@ -277,7 +277,7 @@ let scan_expr e =
   let ls = ref [] in
   let add x = ls := Flx_srcref.src_of_expr x :: !ls in
   iter_expr add e;
-  Flx_util.uniq_list !ls
+  Flx_list.uniq_list !ls
 
 let all_units' ts =
   try

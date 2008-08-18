@@ -25,8 +25,10 @@ let sliftfst x = slift (fst x)
 (** {6 Type specific operations} *)
 
 open Flx_util
+open Flx_list
 open Flx_ast
 open Flx_types
+
 let src_of_bexe = function
   | `BEXE_goto (sr,_)
   | `BEXE_assert (sr,_)

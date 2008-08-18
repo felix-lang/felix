@@ -1022,7 +1022,7 @@ try
           let remap =
             List.map
             (fun (s,_) ->
-              match Flx_util.list_assoc_index dstls s with
+              match Flx_list.list_assoc_index dstls s with
               | Some i -> i
               | None -> assert false
             )

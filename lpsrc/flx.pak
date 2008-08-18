@@ -149,6 +149,7 @@ caml_modules = [
 ]
 
 caml_include_paths = [
+    'src/compiler/flx_misc',
     'src/compiler/frontend',
     'src/compiler/flxcclib',
 ]
@@ -156,6 +157,7 @@ caml_include_paths = [
 caml_provide_lib = 'src/compiler/backend/flx_backend'
 
 pkg_requires = [
+    'flx_misc',
     'flx_frontend',
     'flxcc_util',
 ]

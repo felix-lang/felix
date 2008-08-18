@@ -7,7 +7,6 @@ open Flx_constfld
 open Flx_srcref
 open Flx_typing2
 open Flx_util
-open Flx_typing2
 
 let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
   match ls with
@@ -2001,7 +2000,7 @@ and special_expand_statements recursion_limit local_prefix seq
   let sr =
     rsrange
     (src_of_stmt (List.hd ss))
-    (src_of_stmt (Flx_util.list_last ss))
+    (src_of_stmt (Flx_list.list_last ss))
   in
 
   let cf e = const_fold e in

@@ -1,5 +1,6 @@
 open List
 open Flx_util
+open Flx_list
 open Flx_exceptions
 open Flx_ctypes
 open Flx_cexpr
