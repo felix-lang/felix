@@ -359,17 +359,18 @@ let gen_body syms (uses,child_map,bbdfns) id
         let apl = `BEXPR_apply (argument, un), argt in
         Hashtbl.add argmap index apl
 
-      | `PVal when inline_method = `Lazy ->
-        Hashtbl.add argmap index argument
+      | `PVal ->
+          if inline_method = `Lazy 
+          then Hashtbl.add argmap index argument
+          else eagerly ()
 
       | `PRef ->
         begin match argument with
         | `BEXPR_ref (i,ts),`BTYP_pointer t ->
-          Hashtbl.add argmap index (`BEXPR_name (i,ts),t)
+          Hashtbl.add argmap index argument
         | _ -> eagerly ()
         end
 
-      | `PVal when inline_method = `Eager -> eagerly ()
 
       | `PVar -> eagerly ()
 

@@ -1763,7 +1763,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
             then
               let t = rt vs t in
               let t = match k with
-                | `PRef -> `BTYP_pointer t
+(*                | `PRef -> `BTYP_pointer t *)
                 | `PFun -> `BTYP_function (`BTYP_void,t)
                 | _ -> t
               in
@@ -1777,7 +1777,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs (lower t) in
                 let t = match k with
-                  | `PRef -> `BTYP_pointer t
+(*                  | `PRef -> `BTYP_pointer t *)
                   | `PFun -> `BTYP_function (`BTYP_void,t)
                   | _ -> t
                 in
@@ -1903,7 +1903,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
             then
               let t = rt vs t in
               let t = match k with
-                | `PRef -> `BTYP_pointer t
+(*                | `PRef -> `BTYP_pointer t *)
                 | `PFun -> `BTYP_function (`BTYP_void,t)
                 | _ -> t
               in
@@ -1917,7 +1917,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs (lower t) in
                 let t = match k with
-                  | `PRef -> `BTYP_pointer t
+(*                  | `PRef -> `BTYP_pointer t *)
                   | `PFun -> `BTYP_function (`BTYP_void,t)
                   | _ -> t
                 in

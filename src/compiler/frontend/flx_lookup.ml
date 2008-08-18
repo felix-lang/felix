@@ -2015,27 +2015,22 @@ and inner_typeofindex
         t
 
   | `SYMDEF_const (_,t,_,_)
+  
   | `SYMDEF_val (t)
-  | `SYMDEF_var (t)
-  | `SYMDEF_ref (t)
+  | `SYMDEF_var (t) -> bt t
+  | `SYMDEF_ref (t) -> `BTYP_pointer (bt t)
+
   | `SYMDEF_parameter (`PVal,t)
   | `SYMDEF_parameter (`PFun,t)
+  | `SYMDEF_parameter (`PVar,t) -> bt t
+  | `SYMDEF_parameter (`PRef,t) -> `BTYP_pointer (bt t)
+
   | `SYMDEF_const_ctor (_,t,_,_)
     ->
     (*
     print_endline ("Calculating type of variable " ^ id);
     *)
     bt t
-
-(* WARNING -- NO LONGER SUPPORTED???? *)
-  | `SYMDEF_parameter (`PVar,t)
-  | `SYMDEF_parameter (`PRef,t) ->
-(*    `BTYP_lvalue (bt t)
-*)
-(*
-print_endline ("Munging Var paramater " ^ si index);
-*)
-  (bt t)
 
   | `SYMDEF_regmatch (ps,cls)
   | `SYMDEF_reglex (ps,_,cls) ->
@@ -4357,7 +4352,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let ts = map (tsubst spec_vs ts) sub_ts in
       let ts = adjust_ts syms sr index ts in
       let t = ti sr index ts in
-      `BEXPR_name (index,ts), t
+      begin match hfind "lookup:ref-check" syms.dfns index with
+      |  {symdef=`SYMDEF_parameter (`PRef,_)} -> 
+          let t' = match t with `BTYP_pointer t' -> t' | _ -> 
+            failwith ("[lookup, AST_name] expected ref parameter "^name^" to have pointer type")
+          in
+          `BEXPR_deref (`BEXPR_name (index,ts),t),t'
+      | _ -> `BEXPR_name (index,ts), t
+      end
 
     | `FunctionEntry [{base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}] 
     ->
@@ -4549,7 +4551,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     lookup sr (f:>expr_t) [sign]
     *)
 
-  | `AST_ref (_,(`AST_deref (sr,e))) -> be e
 
 (*  | `AST_lvalue (srr,e) ->
     failwith "WOOPS, lvalue in expression??";
@@ -4577,9 +4578,11 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_likely (srr,e) ->  let (_,t) as x = be e in `BEXPR_likely x,t
   | `AST_unlikely (srr,e) ->  let (_,t) as x = be e in `BEXPR_unlikely x,t
 
+  | `AST_ref (_,(`AST_deref (_,e))) -> be e
   | `AST_ref (srr,e) ->
     let e',t' = be e in
     begin match e' with
+    | `BEXPR_deref e -> e
     | `BEXPR_name (index,ts) ->
       begin match get_data syms.dfns index with
       {id=id; sr=sr; symdef=entry} ->
@@ -4589,7 +4592,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       | `SYMDEF_ref _
       | `SYMDEF_var _
       | `SYMDEF_parameter (`PVar,_)
-      | `SYMDEF_parameter (`PRef,_) (* not sure if this works .. *)
         ->
         let vtype =
           inner_typeofindex_with_ts syms sr
@@ -4624,7 +4626,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
        clierr srr
         (
           "[bind_expression] " ^
-          "Address non variable"
+          "Address non variable " ^ sbe syms.dfns bbdfns (e',t')
         )
     end
 

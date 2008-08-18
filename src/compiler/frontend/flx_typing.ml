@@ -91,7 +91,7 @@ let typeofbps bps =
   map
   (fun {ptyp=t; pkind=k} ->
     match k with
-    | `PRef -> `BTYP_pointer t
+(*    | `PRef -> `BTYP_pointer t *)
     | `PFun -> `BTYP_function (`BTYP_tuple [],t)
     | _ ->t
   )

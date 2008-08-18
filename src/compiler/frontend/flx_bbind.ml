@@ -225,7 +225,9 @@ let bbind_sym syms bbdfns i {
     let bind_basic_ps ps =
       List.map (fun (k,s,t,_) ->
         let i = find_param name_map s in
-        {pid=s; pindex=i;pkind=k; ptyp=bt t}
+        let t = let t = bt t in match k with `PRef -> `BTYP_pointer t | _ -> t in 
+(*        print_endline ("Param " ^ s ^ " type=" ^ sbt syms.dfns t); *)
+        {pid=s; pindex=i;pkind=k; ptyp=t}
       )
       ps
     in
@@ -330,7 +332,7 @@ let bbind_sym syms bbdfns i {
           let dcl = match k with
           | `PVar -> `BBDCL_var (bvs,t)
           | `PVal -> `BBDCL_val (bvs,t)
-          | `PRef -> `BBDCL_ref (bvs,t)
+          | `PRef -> `BBDCL_val (bvs,t)
           | `PFun -> `BBDCL_val (bvs,`BTYP_function (`BTYP_void,t))
           in
           Hashtbl.add bbdfns i (name,true_parent,sr,dcl);

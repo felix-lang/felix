@@ -1053,10 +1053,10 @@ u &=  1u;       bandeq      (u,1u);
 
 
 // counting
-++i;           pre_incr (i);
-i++;           post_incr (i);
---i;           pre_decr (i);
-i--;           post_decr (i);
+++i;           pre_incr (&i);
+i++;           post_incr (&i);
+--i;           pre_decr (&i);
+i--;           post_decr (&i);
 @doc()
 
 @select(env.expect())
