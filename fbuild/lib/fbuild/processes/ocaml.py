@@ -3,7 +3,7 @@ import shutil
 
 import config
 from fbuild.flxbuild.process import Process
-from fbuild.flxbuild.flxutil import unix2native
+from fbuild.flxbuild.flxutil import unix2native, MissingFile
 
 def copy_mli2ml(pkg, pkgdict, *args):
     for f in pkgdict.get('caml_raw_interfaces', []):
@@ -69,14 +69,22 @@ class build_modules(Process):
 
         for module in MODULES:
             mli = config.HOST_OCAML.find_in_src_dir(module + '.mli')
-            if os.path.exists(mli) or os.path.exists(os.path.join('build', mli)):
+            mli_exists = os.path.exists(mli) or os.path.exists(os.path.join('build', mli))
+
+            ml = config.HOST_OCAML.find_in_src_dir(module + '.ml')
+            ml_exists = os.path.exists(ml) or os.path.exists(os.path.join('build', ml))
+
+            if not mli_exists and not ml_exists:
+                raise MissingFile(module)
+
+            if mli_exists:
                 config.HOST_OCAML.compile_interface([module], **kwds)
 
-            ml  = config.HOST_OCAML.find_in_src_dir(module + '.ml')
-            if os.path.exists(ml) or os.path.exists(os.path.join('build', ml)):
+            if ml_exists:
                 config.HOST_OCAML.compile_module([module],
                     bytecode='bytecode' in self.options,
                     **kwds)
+
 
         config.HOST_OCAML.compile_interface(INTERFACES, **kwds)
 

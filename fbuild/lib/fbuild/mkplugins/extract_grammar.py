@@ -12,7 +12,7 @@ class extract_grammar(Process):
     self.ran = False
 
   def runme(self, pkg, pkgdict, *args):
-    if pkg != 'frontend':
+    if pkg != 'flx_parser':
       return
     if self.ran:
       return
@@ -25,7 +25,7 @@ class extract_grammar(Process):
       pass
     self.shell(sys.executable,
       os.path.join('script', 'get_grammar'),
-      os.path.join('src', 'compiler', 'frontend', 'flx_parse.dyp'),
+      os.path.join('src', 'compiler', 'flx_parser', 'flx_parse.dyp'),
       '>',
       os.path.join('misc', 'flx_parse.grammar'),
     )

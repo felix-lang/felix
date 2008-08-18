@@ -1,7 +1,7 @@
 import os
 
 from fbuild.flxbuild.process import Process
-from fbuild.flxbuild.flxutil import mkdirs, ExecutionError
+from fbuild.flxbuild.flxutil import mkdirs, ExecutionError, MissingFile
 
 import config
 
@@ -31,6 +31,8 @@ class impldoc(Process):
                     break
                 else:
                     print 'ignoring:', module
+            else:
+                raise MissingFile(module)
 
         if not mlis:
             return

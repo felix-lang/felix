@@ -225,3 +225,10 @@ class ExecutionError(Exception):
       return 'Command failed: %s' % self.command
     else:
       return 'Command failed [%s]: %s' % (self.returncode, self.command)
+
+class MissingFile(Exception):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __str__(self):
+        return 'File not found: ' + self.filename
