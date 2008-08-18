@@ -10,6 +10,8 @@ caml_modules = [
     'src/compiler/flx_core/flx_typing2',
     'src/compiler/flx_core/flx_mtypes2',
     'src/compiler/flx_core/flx_maps',
+    'src/compiler/flx_core/flx_unify',
+    'src/compiler/flx_core/flx_beta',
 ]
 
 caml_include_paths = [

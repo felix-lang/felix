@@ -1,6 +1,4 @@
 caml_modules = [
-    'src/compiler/frontend/flx_unify',
-    'src/compiler/frontend/flx_beta',
     'src/compiler/frontend/flx_treg',
     'src/compiler/frontend/flx_use',
     'src/compiler/frontend/flx_prop',
