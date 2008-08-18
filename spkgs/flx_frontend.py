@@ -5,7 +5,6 @@ caml_modules = [
     'src/compiler/frontend/flx_exceptions',
     'src/compiler/frontend/flx_mtypes2',
     'src/compiler/frontend/flx_token',
-    'src/compiler/frontend/flx_util',
     'src/compiler/frontend/flx_lexstate',
     'src/compiler/frontend/flx_srcref',
     'src/compiler/frontend/flx_prelex',
