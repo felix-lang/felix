@@ -317,7 +317,7 @@ and bbdcl_t =
 
   | `BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
   | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
-  | `BBDCL_cstruct of     bvs_t * (id_t * btypecode_t) list
+  | `BBDCL_cstruct of    bvs_t * (id_t * btypecode_t) list
   | `BBDCL_cclass of     bvs_t * bclass_member_t list
   | `BBDCL_class of      property_t list * bvs_t
   | `BBDCL_typeclass of  property_t list * bvs_t
