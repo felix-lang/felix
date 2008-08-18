@@ -1,6 +1,5 @@
 open List
 open Flx_util
-open Flx_types
 
 let parse_option s =
   let n = String.length s in

@@ -1,7 +1,5 @@
 (** Get options *)
 
-open Flx_types
-
 val parse_option: string -> (string * string) list
 val parse_options: string array -> (string * string) list
 
