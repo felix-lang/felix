@@ -35,7 +35,6 @@ caml_modules = [
     'src/compiler/frontend/flx_mkcls',
     'src/compiler/frontend/flx_global',
     'src/compiler/frontend/flx_inst',
-    'src/compiler/frontend/flx_terminate',
     'src/compiler/frontend/flx_inline',
 ]
 

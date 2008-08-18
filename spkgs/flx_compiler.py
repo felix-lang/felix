@@ -1,5 +1,9 @@
 iscr_source = ['flx.pak']
 
+caml_modules = [
+    'src/compiler/drivers/flx_terminate',
+]
+
 caml_exes = [
     'src/compiler/drivers/flxl',
     'src/compiler/drivers/flxp',
@@ -29,6 +33,7 @@ caml_require_libs = [
     'flx_frontend',
     'flx_backend',
     'flx_version_hook',
+    'flx_driver',
 ]
 
 caml_include_paths = [
@@ -51,6 +56,8 @@ caml_include_paths = [
     'src/compiler/flx_version',
     'src/compiler/flx_version_hook'
 ]
+
+caml_provide_lib = 'src/compiler/drivers/flx_driver'
 
 pkg_requires = [
     'flx_desugar',
