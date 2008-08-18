@@ -1,3 +1,5 @@
+iscr_source = ['flx.pak']
+
 caml_modules = [
     'src/compiler/backend/flx_backend_config',
     'src/compiler/backend/flx_name',
@@ -17,16 +19,18 @@ caml_modules = [
 ]
 
 caml_include_paths = [
+    'src/compiler/flx_core',
     'src/compiler/flx_misc',
-    'src/compiler/frontend',
     'src/compiler/flxcclib',
+    'src/compiler/frontend',
 ]
 
 caml_provide_lib = 'src/compiler/backend/flx_backend'
 
 pkg_requires = [
-    'flx_misc',
+    'flx_core',
     'flx_frontend',
+    'flx_misc',
     'flxcc_util',
 ]
 

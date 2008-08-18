@@ -25,6 +25,7 @@ caml_include_paths = [
     'src/compiler/cil/src/frontc',
     'src/compiler/frontend',
     'src/compiler/backend',
+    'src/compiler/flx_core',
     'src/compiler/flx_version',
     'src/compiler/flxcclib',
     'src/compiler/flx_misc',

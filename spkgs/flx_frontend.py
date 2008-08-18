@@ -1,17 +1,9 @@
 caml_modules = [
     'src/compiler/frontend/flx_frontend_config',
-    'src/compiler/frontend/flx_ast',
-    'src/compiler/frontend/flx_types',
-    'src/compiler/frontend/flx_exceptions',
-    'src/compiler/frontend/flx_mtypes2',
     'src/compiler/frontend/flx_token',
     'src/compiler/frontend/flx_lexstate',
-    'src/compiler/frontend/flx_srcref',
     'src/compiler/frontend/flx_prelex',
     'src/compiler/frontend/flx_tok',
-    'src/compiler/frontend/flx_typing',
-    'src/compiler/frontend/flx_print',
-    'src/compiler/frontend/flx_typing2',
     'src/compiler/frontend/flx_charset',
     'src/compiler/frontend/flx_keywords',
     'src/compiler/frontend/flx_pdoc',
@@ -85,6 +77,7 @@ caml_include_paths = [
     'src/compiler/cil/src/frontc',
     'src/compiler/dyp/dyplib',
     'src/compiler/flxcclib',
+    'src/compiler/flx_core',
     'src/compiler/flx_misc',
     'src/compiler/flx_version',
     'src/compiler/flx_version_hook',
@@ -94,6 +87,7 @@ caml_include_paths = [
 caml_provide_lib = 'src/compiler/frontend/flx_frontend'
 
 pkg_requires = [
+    'flx_core',
     'flx_version',
     'flx_version_hook',
     'ocs',
