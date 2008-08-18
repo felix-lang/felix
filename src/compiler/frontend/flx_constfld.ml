@@ -4,7 +4,7 @@ open Flx_exceptions
 open List
 open Flx_typing
 open Big_int
-open Flx_mtypes1
+open Flx_set
 open Flx_maps
 
 let truth sr r =

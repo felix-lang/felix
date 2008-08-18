@@ -725,7 +725,7 @@ and sb dfns depth fixlist counter prec tc =
        8,
        sbt 8 pat ^
        "-->" ^
-       Flx_mtypes1.string_of_intset vars ^
+       Flx_set.string_of_intset vars ^
        " " ^
        sbt 8 res
   in

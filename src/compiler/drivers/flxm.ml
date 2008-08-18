@@ -8,7 +8,7 @@ open Flx_getopt
 open Flx_version
 open Flx_flxopt
 open Flx_types
-open Flx_mtypes1
+open Flx_set
 open Flx_mtypes2
 ;;
 Flx_version_hook.set_version ();;

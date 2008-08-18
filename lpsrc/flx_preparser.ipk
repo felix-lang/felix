@@ -13,7 +13,7 @@ open Flx_token
 (* parser header *)
 exception EndOfInput
 open Flx_ast
-open Flx_mtypes1
+open Flx_set
 open Flx_typing
 open Flx_typing2
 open Flx_srcref

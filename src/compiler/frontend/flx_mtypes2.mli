@@ -1,5 +1,5 @@
 open Flx_types
-open Flx_mtypes1
+open Flx_set
 
 module VarMap : Map.S with type key = string
 

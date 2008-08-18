@@ -7,7 +7,7 @@ open Flx_types
 open Flx_getopt
 open Flx_flxopt
 open Flx_version
-open Flx_mtypes1
+open Flx_set
 open Flx_mtypes2
 ;;
 

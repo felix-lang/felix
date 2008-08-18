@@ -2,7 +2,7 @@
 
 open Flx_ast
 open Flx_types
-open Flx_mtypes1
+open Flx_set
 open Flx_mtypes2
 open Flx_call
 open Flx_child

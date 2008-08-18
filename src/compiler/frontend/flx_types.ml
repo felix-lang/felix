@@ -5,7 +5,7 @@
 
 (** {6 Generic partial ordering comparison result} *)
 
-open Flx_mtypes1
+open Flx_set
 
 type partial_order_result_t =
 [

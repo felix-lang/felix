@@ -11,7 +11,7 @@ open Flx_getopt
 open Flx_version
 open Flx_flxopt
 open Flx_exceptions
-open Flx_mtypes1
+open Flx_set
 open Flx_mtypes2
 open Flx_use
 open Flx_typing
