@@ -65,7 +65,7 @@ Pathname.define_context "src/compiler/flxlib" [
   "src/compiler/dyp/dyplib";
   "src/compiler/flxcclib";
   "src/compiler/flx_version";
-  "src/compiler/misclib";
+  "src/compiler/flx_misc";
   "src/compiler/ocs";
   "src/compiler/sex";
 ];;
@@ -87,7 +87,7 @@ ocaml_lib ~dir:"src/compiler/dyp/dyplib"       "src/compiler/dyp/dyplib/dyplib";
 ocaml_lib ~dir:"src/compiler/ocs"              "src/compiler/ocs/ocslib";;
 ocaml_lib ~dir:"src/compiler/sex"              "src/compiler/sex/sexlib";;
 ocaml_lib ~dir:"src/compiler/cil"              "src/compiler/cil/cillib";;
-ocaml_lib ~dir:"src/compiler/misclib"          "src/compiler/misclib/misclib";;
+ocaml_lib ~dir:"src/compiler/flx_misc"         "src/compiler/misc/flx_misc";;
 ocaml_lib ~dir:"src/compiler/flx_version"      "src/compiler/flx_version/flx_version";;
 ocaml_lib ~dir:"src/compiler/flx_version_hook" "src/compiler/flx_version_hook/flx_version_hook";;
 ocaml_lib ~dir:"src/compiler/flxcclib"         "src/compiler/flxcclib/flxcclib";;

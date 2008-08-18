@@ -11,7 +11,7 @@ caml_require_libs = [
     'nums',
     'unix',
     'flx_version',
-    'misclib',
+    'flx_misc',
     'cillib',
     'flxcclib',
     'flx_frontend',
@@ -27,7 +27,7 @@ caml_include_paths = [
     'src/compiler/backend',
     'src/compiler/flx_version',
     'src/compiler/flxcclib',
-    'src/compiler/misclib',
+    'src/compiler/flx_misc',
 ]
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 weaver_directory = 'doc/flxcc/'

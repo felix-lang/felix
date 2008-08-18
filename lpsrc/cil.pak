@@ -54,8 +54,8 @@ caml_include_paths = [
 ]
 
 caml_provide_lib = 'src/compiler/cil/cillib'
-caml_require_libs = ['nums','unix','misclib','cillib']
-pkg_requires = ['misc']
+caml_require_libs = ['nums','unix','flx_misc','cillib']
+pkg_requires = ['flx_misc']
 
 @h = tangler('src/compiler/cil/cilversion.mli')
 @select(h)
