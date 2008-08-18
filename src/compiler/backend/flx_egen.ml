@@ -186,8 +186,8 @@ let isclass bbdfns t : bool =
 
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
-  print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
-  print_endline ("Location " ^ short_string_of_src sr);
+  print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns bbdfns (e,t));
+  print_endline ("Location " ^ Flx_srcref.short_string_of_src sr);
   *)
   let ge' e = gen_expr' syms bbdfns this e vs ts sr in
   let ge e = gen_expr syms bbdfns this e vs ts sr in
