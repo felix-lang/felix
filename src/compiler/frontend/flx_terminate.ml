@@ -9,7 +9,7 @@ let terminate rrp = let return_parity = not rrp in function
     flush stdout; print_endline ("Unknown Precedence name '"^s^"'");
     exit (if return_parity then 1 else 0)
 
-  | LexError s ->
+  | Flx_string.Error s | LexError s ->
     flush stdout; print_endline "LEX ERROR";
     print_endline s;
     exit (if return_parity then 1 else 0)

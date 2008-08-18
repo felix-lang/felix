@@ -22,7 +22,6 @@ caml_modules = [
     'src/compiler/frontend/flx_mtypes1',
     'src/compiler/frontend/flx_types',
     'src/compiler/frontend/flx_exceptions',
-    'src/compiler/frontend/flx_string',
     'src/compiler/frontend/flx_mtypes2',
     'src/compiler/frontend/flx_token',
     'src/compiler/frontend/flx_util',

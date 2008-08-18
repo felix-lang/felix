@@ -1,5 +1,7 @@
 (** String handling *)
 
+exception Error of string
+
 val bin_char2int : char -> int
 val oct_char2int : char -> int
 val dec_char2int : char -> int

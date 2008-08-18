@@ -1,5 +1,6 @@
 caml_modules = [
     'src/compiler/flx_misc/flx_filesys',
+    'src/compiler/flx_misc/flx_string',
 ]
 
 caml_require_libs = ["str"]
