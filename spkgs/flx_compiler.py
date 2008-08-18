@@ -25,6 +25,7 @@ caml_require_libs = [
     'flx_core',
     'flx_lex',
     'flx_parse',
+    'flx_desugar',
     'flx_frontend',
     'flx_backend',
     'flx_version_hook',
@@ -43,6 +44,7 @@ caml_include_paths = [
     'src/compiler/dyp/dyplib',
     'src/compiler/flxcclib',
     'src/compiler/flx_core',
+    'src/compiler/flx_desugar',
     'src/compiler/flx_lex',
     'src/compiler/flx_parse',
     'src/compiler/flx_misc',
@@ -51,6 +53,7 @@ caml_include_paths = [
 ]
 
 pkg_requires = [
+    'flx_desugar',
     'flx_frontend',
     'flx_backend',
 ]
