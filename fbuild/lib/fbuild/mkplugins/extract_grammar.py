@@ -12,6 +12,8 @@ class extract_grammar(Process):
     self.ran = False
 
   def runme(self, pkg, pkgdict, *args):
+    if pkg != 'frontend':
+      return
     if self.ran:
       return
     self.ran = True
