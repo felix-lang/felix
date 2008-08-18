@@ -3,50 +3,6 @@
 @head(1,'Preprocessor Parser')
 @h = tangler('src/compiler/frontend/flx_preparse.dyp','data')
 
-@# define meta operators:
-@#  aster: t*
-@#  plus:  t+
-@#  quest: t?
-@# commalistof:  (t (,t)*)?
-@def plus(s):
-  for line in [
-    s + "_plus:",
-    "  | " + s + " " + s+ "_plus { $1 :: $2 }",
-    "  | " + s + " {[$1]}",
-  ]: tangle (line)
-  # begin_bold()
-  # weave("    " + s + "_plus: " + s + "+\n")
-  # end_bold()
-@def aster(s):
-  for line in [
-    s + "_aster:",
-    "  | " + s + " " + s+ "_aster { $1 :: $2 }",
-    "  | { [] }"
-  ]: tangle (line)
-  # begin_bold()
-  # weave("    " + s + "_aster: " + s + "*\n")
-  # end_bold()
-@def opt(s):
-  for line in [
-    s+"_opt:",
-    "  | " + s + " { Some $1 }",
-    "  | { None }"
-  ]: tangle (line)
-  # begin_bold()
-  # weave("    " + s + "_opt: " + s + "?\n")
-  # end_bold()
-
-@def commalistof(s): # possibly empty comma separated list
-  for line in [
-    s+"_comma_list:",
-    "  | " + s + " COMMA " + s+"_comma_list { $1 :: $3 }",
-    "  | " + s + " { [$1] }",
-    "  | { [] }",
-  ]: tangle (line)
-  # begin_bold()
-  # weave("    " + s + "_comma_list: " + s + " (COMMA " + s+")*\n")
-  # end_bold()
-
 @head(2,'Header')
 @select(h)
 %mltop {
@@ -398,7 +354,11 @@ floating:
 
 basic_name:
   | NAME { $1 }
-@commalistof("basic_name")
+
+basic_name_comma_list:
+  | basic_name COMMA basic_name_comma_list { $1 :: $3 }
+  | basic_name { [$1] }
+  | { [] }
 
 old_expr:
   | LET pattern EQUAL old_expr IN old_expr
