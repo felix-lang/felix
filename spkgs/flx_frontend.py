@@ -1,20 +1,10 @@
 caml_modules = [
     'src/compiler/frontend/flx_unify',
     'src/compiler/frontend/flx_beta',
-    'src/compiler/frontend/flx_generic',
-    'src/compiler/frontend/flx_tpat',
-    'src/compiler/frontend/flx_tconstraint',
-    'src/compiler/frontend/flx_overload',
-    'src/compiler/frontend/flx_lookup',
-    'src/compiler/frontend/flx_mbind',
     'src/compiler/frontend/flx_treg',
     'src/compiler/frontend/flx_use',
     'src/compiler/frontend/flx_prop',
-    'src/compiler/frontend/flx_symtab',
     'src/compiler/frontend/flx_child',
-    'src/compiler/frontend/flx_bexe',
-    'src/compiler/frontend/flx_dfa',
-    'src/compiler/frontend/flx_bbind',
     'src/compiler/frontend/flx_strabs',
     'src/compiler/frontend/flx_typeclass',
     'src/compiler/frontend/flx_axiom',
@@ -41,6 +31,7 @@ caml_modules = [
 caml_include_paths = [
     'src/compiler/flx_core',
     'src/compiler/flx_misc',
+    'src/compiler/flx_bind',
     'src/compiler/flxcclib',
     'src/compiler/inria_re',
 ]
@@ -50,6 +41,7 @@ caml_provide_lib = 'src/compiler/frontend/flx_frontend'
 pkg_requires = [
     'flx_core',
     'flx_misc',
+    'flx_bind',
     'flxcc_util',
     'inria_re',
 ]

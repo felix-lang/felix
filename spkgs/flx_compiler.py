@@ -27,6 +27,7 @@ caml_require_libs = [
     'flxcclib',
     'inria_re',
     'flx_core',
+    'flx_bind',
     'flx_lex',
     'flx_parse',
     'flx_desugar',
@@ -48,6 +49,7 @@ caml_include_paths = [
     'src/compiler/cil/src/frontc',
     'src/compiler/dyp/dyplib',
     'src/compiler/flxcclib',
+    'src/compiler/flx_bind',
     'src/compiler/flx_core',
     'src/compiler/flx_desugar',
     'src/compiler/flx_lex',
@@ -60,9 +62,10 @@ caml_include_paths = [
 caml_provide_lib = 'src/compiler/drivers/flx_driver'
 
 pkg_requires = [
+    'flx_backend',
+    'flx_bind',
     'flx_desugar',
     'flx_frontend',
-    'flx_backend',
     'flx_version',
     'flx_version_hook',
 ]

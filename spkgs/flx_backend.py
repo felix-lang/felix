@@ -21,6 +21,7 @@ caml_modules = [
 caml_include_paths = [
     'src/compiler/flx_core',
     'src/compiler/flx_misc',
+    'src/compiler/flx_bind',
     'src/compiler/flxcclib',
     'src/compiler/frontend',
 ]
@@ -31,6 +32,7 @@ pkg_requires = [
     'flx_core',
     'flx_frontend',
     'flx_misc',
+    'flx_bind',
     'flxcc_util',
 ]
 
