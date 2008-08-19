@@ -15,7 +15,6 @@ caml_modules = [
     'src/compiler/backend/flx_elkgen',
     'src/compiler/backend/flx_why',
     'src/compiler/backend/flx_gen',
-    'src/compiler/backend/flx_flxopt',
 ]
 
 caml_include_paths = [

@@ -2,6 +2,7 @@ iscr_source = ['flx.pak']
 
 caml_modules = [
     'src/compiler/drivers/flx_terminate',
+    'src/compiler/drivers/flx_flxopt',
 ]
 
 caml_exes = [
