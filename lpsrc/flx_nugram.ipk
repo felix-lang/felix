@@ -1171,6 +1171,20 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
     (cdr _2))
      """;
 
+  sval_def := fun sdeclname <- sexpr ssemi =>#
+    """
+    (mkns
+    `(ast_lazy_decl ,(caar _2) ,(cadar _2) none (some ,_4))
+    (cdr _2))
+     """;
+
+  sval_def := fun sdeclname : stypeexpr <- sexpr ssemi =>#
+    """
+    (mkns
+    `(ast_lazy_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
+    (cdr _2))
+     """;
+
   svar_def := var sname sname_suffix = sexpr ssemi =>#
   """
   (let
