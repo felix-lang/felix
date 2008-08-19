@@ -1,0 +1,182 @@
+\documentclass{report}
+\title{Felix Compilation Model}
+\author{John Skaller}
+\begin{document}
+\maketitle
+%\tableofcontents
+\chapter{Command Line Interface}
+The Felix compiler is designed to be used in conjunction with a host management
+program, various Felix system libraries, and user supplied application support
+libraries. The system is fully integrated by the command line processor 
+\verb%flx% which organises the compilation, linking, and execution of a 
+Felix script file. The system is designed to have the look and feel of a
+conventional scripting language such as Perl or Python, driving the Felix compiler,
+C++ compiler and linker without need for complex options or specification of
+resource locations.
+
+\section{Basic operation}
+Most programs can be run simply by:
+%
+\begin{verbatim}
+flx filename
+\end{verbatim}
+%
+or equivalently
+%
+\begin{verbatim}
+flx filename.flx
+\end{verbatim}
+
+On Unix, if the first line of the file is
+%
+\begin{verbatim}
+#!/usr/bin/env flx
+\end{verbatim}
+%
+and the file is marked as executable, then the script can be run just by
+invoking the filename:
+%
+\begin{verbatim}
+filename.flx
+\end{verbatim}
+
+A similar facility is available for Microsoft Windows.
+
+\section{Selecting Felix Version}
+Felix support an arbitrary number of independent Felix installations.
+All of the program files, apart from the command line processor \verb%flx%, 
+can be installed in a single directory. This directory will typically
+be named for the Felix version, for example:
+%
+\begin{verbatim}
+felix-1.1.4_rc4
+\end{verbatim}
+%
+describes Felix version 1.1.4, release candidate 4. On Unix these are
+typically installed in one of
+%
+\begin{verbatim}
+/usr/lib
+/usr/local/lib
+/opt/felix
+${HOME}/lib
+\end{verbatim}
+%
+or some such place where packages are installed. The \verb%flx% script
+will usually have a hard coded constant refering to the installation location.
+
+\subsection{Overriding the version on the command line}
+This can be overridden by specifying the installation directory using the
+\verb%--test% option:
+%
+\begin{verbatim}
+flx --test filename
+flx --test=/opt/felix-1.1.4_rc4 filename
+\end{verbatim}
+%
+The first variant specifies the current directory, and is primarily used by
+developers testing the system. The second variant can be used to specify a 
+particular installation, allowing an upgraded system to be installed without
+compromising existing working programs.
+
+\subsection{Overriding the version with environment variables}
+Felix also provides an environment variable \verb%FLX_INSTALL_DIR% 
+which can be used to override the installation directory:
+%
+\begin{verbatim}
+FLX_INSTALL_DIR=/opt/felix-1.1.4_rc4 flx filename
+\end{verbatim}
+
+On Unix, this can also be set in a program file like:
+%
+\begin{verbatim}
+#!/usr/bin/env FLX_INSTALL_DIR=/opt/felix-1.1.4_rc4 flx
+\end{verbatim}
+%
+to ensure a program is run with a particular version.
+
+\subsection{Querying the Version}
+The version of the \verb%flx% script can be found by:
+%
+\begin{verbatim}
+flx --version
+\end{verbatim}
+Note that this is the version of the \em{flx script} and not
+the version of the installation!
+
+\subsubsection{Alternate driver scripts}
+Felix provides three implementations of the driver script:
+\verb%flx% is written for Unix \verb%bash%, \verb%flx.bat% is written for Windows
+\verb%CMD.EXE% shell, and \verb%flx.py% is written for Python and should operate
+on all platforms where Python is installed.
+
+\subsubsection{Getting Help}
+In GNU tradition, some help on the command line can be obtained by
+simply typing
+%
+\begin{verbatim}
+flx
+\end{verbatim}
+%
+which will reply
+\begin{verbatim}
+usage: flx [options] filename
+\end{verbatim}
+%
+More extensive help can be obtained on Unix by 
+\begin{verbatim}
+flx --help
+\end{verbatim}
+%
+which invokes the \verb%man% processor for the main
+Felix man page. 
+
+\subsection{Linkage model}
+Felix supports two linkage models: dynamic and static.
+Dynamic linkage is the default if the target platform supports it.
+Some platforms, such as embedded systems, do not support dynamic
+linkage. Other platforms, notable Microsoft Windows, and increasingly
+Linux systems, do not provide static link versions of important libraries,
+and so dymamic linkage is mandatory.
+
+\subsubsection{Static Linkage}
+In the static linkage model, Felix generates C++ code which is compiled
+to an object file, extension \verb%.o% on Unix or \verb%.obj% on Windows.
+This file is then linked against various libraries, typically \verb%.a%
+files on Unix, or \verb%.lib% files on Windows. All Felix built static
+linkage files have the suffix \verb%_static% added to the library name,
+for example:
+%
+\begin{verbatim}
+lib/rtl/libflx_gc_static.a
+\end{verbatim}
+provides the garbage collector library in static link form on Unix.
+Note the prefix \verb%lib% which Unix favours. On Cygwin the prefix
+is \ver%cyg%, whereas Windows does not use a prefix.
+%
+The \verb%_static% suffix is essential to prevent \em{smart} linkers
+such as Unix \verb%ld% from linking with either static or dynamic linkage
+depending on availability, and thereby producing unexpected program form,
+corrupted programs, or subsequently failing for hard to understand reasons
+when other libraries are not available in static link format.
+
+Static linkage is invoked by
+\begin{verbatim}
+flx --static filename
+\end{verbatim}
+%
+and creates a statically linked executable program.
+Static link programs are sometimes faster than dynamic linked
+programs, and are easier to ship. However they're harder to upgrade
+to work with new system libraries. Note some platforms (such as Linux)
+do not statically link the C library even in the static link model.
+Other platforms always statically link thunks, even when linking
+dynamically, notably Windows.
+
+Finally note some Felix features such as dynamic loading of
+plugins do not work with the static link model.
+
+\subsubsection{Dynamic link model}
+
+
+\end{document}

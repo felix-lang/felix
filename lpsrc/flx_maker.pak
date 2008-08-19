@@ -1527,7 +1527,7 @@ while grab == 1 and argno<len(sys.argv):
     TIME=1
 
   elif arg == "--help":
-    os.system("man flx")
+    os.system("man -M "+FLX_INSTALL_DIR+os.sep+man"+" flx")
     sys.exit(0)
 
   elif arg == "-c":
@@ -1972,7 +1972,7 @@ do
   ;;
 
   x--help)
-    man flx
+    man -M $FLX_INSTALL_DIR/man flx
     exit 0
   ;;
 
