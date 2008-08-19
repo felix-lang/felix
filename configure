@@ -38,7 +38,7 @@ def main():
     os.environ['SRC_DIR'] = src_dir
     os.environ['PYTHONPATH'] = os.pathsep.join([
       src_dir,
-      os.path.join(src_dir, 'fbuild', 'lib'),
+      os.path.join(src_dir, 'fbuild_old', 'lib'),
       os.environ.get('PYTHONPATH', ''),
     ])
     os.environ['FLX_LPARCHIVE'] = lparchive
@@ -53,7 +53,7 @@ def main():
         print >> sys.stderr, 'ERROR EXTRACTING CONFIGURATION PROGRAM'
         return 1
 
-    if run(os.path.join(src_dir, 'fbuild', 'bin', 'make_config.py'), *sys.argv[1:]):
+    if run(os.path.join(src_dir, 'fbuild_old', 'bin', 'make_config.py'), *sys.argv[1:]):
         print >> sys.stderr, 'ERROR CONFIGURING'
         return 1
 

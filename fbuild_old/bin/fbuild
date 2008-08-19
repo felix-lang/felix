@@ -52,7 +52,7 @@ except Exception:
 # PROCESS COMMAND LINE OPTIONS
 # ------------------------------------------------
 
-import fbuildroot
+import fbuildroot_old as fbuildroot
 
 def load_options():
   from optparse import OptionParser, make_option

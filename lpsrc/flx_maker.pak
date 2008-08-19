@@ -185,7 +185,7 @@ os.environ['PYTHONPATH'] = src_dir + os.pathsep + os.environ.get('PYTHONPATH', '
 os.execl(
     sys.executable,
     sys.executable,
-    os.path.join(src_dir, 'fbuild', 'bin', 'fbuild'),
+    os.path.join(src_dir, 'fbuild_old', 'bin', 'fbuild'),
     *sys.argv[1:])
 @make_executable('umk')
 
@@ -197,7 +197,7 @@ import time
 
 @tangle('src_dir = %r' % config.src_dir)
 
-sys.path.append(os.path.join(src_dir, 'fbuild', 'lib'))
+sys.path.append(os.path.join(src_dir, 'fbuild_old', 'lib'))
 
 from fbuild.flxbuild.flxutil import Tee, tee_cmd
 
