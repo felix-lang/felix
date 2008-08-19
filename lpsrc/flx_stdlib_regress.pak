@@ -1,5 +1,5 @@
 @import glob
-@from fbuild.flxbuild.iscrutil import setup_test
+@from iscrutil import setup_test
 
 @env = setup_test(get_input_frame(), 'test/stdlib/slrt-')
 @def kat(code):
