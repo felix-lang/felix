@@ -3,7 +3,117 @@
 \author{John Skaller}
 \begin{document}
 \maketitle
-%\tableofcontents
+\tableofcontents
+
+\chapter{Overview}
+Felix is a cross-cross compiler toolkit comprising a number of tools.
+The supplied base tools are compiled programs and scripts:
+\begin{verbatim}
+flx_pkgconfig     # package manager
+flxg              # Felix compiler
+flxp              # parser debug
+flxm              # syntax macro debug
+flxd              # desugaring debug
+flxb              # binding debug
+flx               # bash command line harness (Unix) 
+flx.bat           # CMD.EXE command line harness (Windows)
+flx.py            # Python 2.4 command line harness (Platform independent)
+flx_elkhound      # GLR parser generator
+flxcc             # C header wrapper generator
+flx_run           # basic dynamic program driver
+flx_arun          # driver with asynchronous I/O support
+tools/webserver   # a demo webserver
+\end{verbatim}
+%
+The client must supply a C++ compiler. GNU \verb%g++% and Microsoft
+\verb%MSVC++% are both supported. The compilers are required to implement
+a reasonable subset of ISO C 89 and ISO C++, ISO C99 support is highly
+desirable.
+
+Python is not required, but can be used to run platform independent
+command line and GUI interface scripts and is therefore considered
+desirable. Version 2.4 or above is recommended. The scripts will
+not run with Python 3 due to unfortunate incompatibilities with
+the print statement.
+
+\section{Platform model}
+Compilation terminology specifies
+four potentially distinct platforms. 
+
+\begin{verbatim}
+felix(build) --[flxg]--> C++(host) --[g++]--> binary(target) --[ship]--> flx_run(run)
+\end{verbatim}
+
+The {\em build} platform is the one
+on which the Felix code is developed, and the Felix \verb%flxg% translator is usually run.
+It generates platform independent ISO C++ code from the input Felix code.
+
+This code can then be shipped to a second machine on which the C++ code
+is compiled, this is called the {\em host} machine. The Felix translator
+could also be run on this platform. Generally the build and host platforms
+are identified and referred to as the host platform.
+
+The C++ compiler targets a third machine call the {\em target}
+platform. Many C++ compilers provide the ability to target other platforms.
+For example it is possible on Linux to use a version of \verb%gcc% which will
+generate binaries for Microsoft Windows. On Windows itself, there are two
+common platforms: a 32 bit and a 64 bit environment, and \verb%MSVC++% 
+cross compilers exist which run in one of these environments targetting
+the other. Cygwin is another cross compilation environment.
+
+After the required binaries are created, they can be shipped to a fourth
+machine called the {\em run} platform which provides the actual execution environment. 
+Although this machine must be compatible with the target model, it is often a significantly
+distinct machine. For example the Debian autobuilder provides a very specific environment
+for generating binary packages, quite distinct from the client Linux on which the
+binaries will actually be run. The target and run machines are usually identified.
+
+Felix provides some convenient tools for integrating the development and
+execution of programs where all the platforms are identified. In other
+cases the developers and their clients must organise the scheduling of
+the software process using the component tools directly.
+
+\subsection{File name conventions}
+\begin{verbatim}
+*.flx                      # general felix code
+*.expect                   # expected stdout of program (for regression testing)
+*.output                   # actual output of program (for regression testing)
+
+*.flxh                     # felix macro package headers
+*.flxh.syncache            # cached grammar
+*.par                      # cached parse tree
+*.hpp                      # generated and library C++ headers
+*.cpp                      # generated C++ implementation
+*_parser99.cpp             # generated Elkhound parser implementation (C++)
+*_lexer99.cpp              # generated Elkhound lexer implementation (C++)
+*.rtti                     # generated run time type information (C++)
+*.includes                 # generated collated C++ header includes
+*_ctors.cpp                # generated C++ constructors
+*.why                      # generated Ergo format theorem proving code
+*.resh                     # generated list of abstract resource requirements
+*.fpc                      # resource database row mapping abstract to concrete resources
+
+*_static.o                 # generated static link object files (Unix)
+*_static.obj               # generated static link object files (Windows)
+*_dynamic.o                # generated dymamic link object files (Unix)
+*_dynamic.obj              # generated dynamic link object files (Windows)
+
+lib*_static.a              # supplied static link libraries (Unix)
+*_static.lib               # supplied static link libraries (Windows)
+
+lib*_dynamic.so            # supplied dynamic link libraries (Unix)
+lib*_dynamic.dylib         # supplied dynamic link libraries (OSX)
+_dynamic.dll               # supplied dynamic link libraries (Windows)
+_dynamic.exp               # supplied dynamic link export thunks (Windows)
+
+<none>                     # generated statically link program (Unix)
+*.exe                      # generated statically linked programs (Windows)
+
+*.so                       # generated dymamic link program (Unix)
+*.dylib                    # generated dynamic link program (OSX)
+*.dll                      # generated dynamic link program (Windows)
+\end{verbatim}
+
 \chapter{Command Line Interface}
 The Felix compiler is designed to be used in conjunction with a host management
 program, various Felix system libraries, and user supplied application support
@@ -101,7 +211,7 @@ The version of the \verb%flx% script can be found by:
 \begin{verbatim}
 flx --version
 \end{verbatim}
-Note that this is the version of the \em{flx script} and not
+Note that this is the version of the {\em flx script} and not
 the version of the installation!
 
 \subsubsection{Alternate driver scripts}
@@ -129,7 +239,8 @@ flx --help
 \end{verbatim}
 %
 which invokes the \verb%man% processor for the main
-Felix man page. 
+Felix man page. Other documentation is to be found in the \verb%doc%
+directory of the installation.
 
 \subsection{Linkage model}
 Felix supports two linkage models: dynamic and static.
@@ -152,9 +263,9 @@ lib/rtl/libflx_gc_static.a
 \end{verbatim}
 provides the garbage collector library in static link form on Unix.
 Note the prefix \verb%lib% which Unix favours. On Cygwin the prefix
-is \ver%cyg%, whereas Windows does not use a prefix.
+is \verb%cyg%, whereas Windows does not use a prefix.
 %
-The \verb%_static% suffix is essential to prevent \em{smart} linkers
+The \verb%_static% suffix is essential to prevent {\em smart} linkers
 such as Unix \verb%ld% from linking with either static or dynamic linkage
 depending on availability, and thereby producing unexpected program form,
 corrupted programs, or subsequently failing for hard to understand reasons
@@ -168,7 +279,9 @@ flx --static filename
 however it will be chosen by default if the build is configured so as not
 to support dynamic linkage.
 
-Static linkage creates a standalone statically linked executable program.
+Static linkage creates a standalone statically linked executable program
+with the basename of the file on Unix, and with extension \verb%.EXE%
+on Windows.
 
 Static link programs are sometimes faster than dynamic linked
 programs, and are easier to ship. However they're harder to upgrade
@@ -261,7 +374,7 @@ locate a bug.
 It is sometimes useful to compile and link with additional resources
 such as extra Felix files, extra C++ header files, extra libraries,
 or extra object files. In addition, some extra controls over compilation
-and linkage may be required. Please note this feature is \em{not desirable}
+and linkage may be required. Please note this feature is {\em not desirable}
 and there is generally a much better way to support automatic resource
 location using a resource database, which is described subsequently.
 
@@ -301,7 +414,7 @@ omits the standard Felix libraries from the link step.
 \end{verbatim}
 omits the standard Felix library from the Felix compilation step.
 This option is used to compile a Felix program in fully raw mode,
-with no standard definitions. On tghe other hand
+with no standard definitions. On the other hand
 \begin{verbatim}
 --import=filename
 \end{verbatim}
@@ -332,7 +445,7 @@ please use
 to specify the maximum number of lines a function can have
 and still be inlined. Specifying a small number such as 2 will
 effective ensure significant functions are not inlined.
-The default is 100. The exact meaning of \em{line} is not specified.
+The default is 100. The exact meaning of {\em line} is not specified.
 
 \subsection{debugging}
 The switch
@@ -354,7 +467,7 @@ trace the build process and flags being used.
 \chapter{Resource Management Model}
 Felix has an advanced resource management model which is designed
 to allow programs to build automatically without need to specify
-any additional libraries on the command linem whilst at the same
+any additional libraries on the command line whilst at the same
 time leaving these programs entirely portable.
 
 This is achieved by requiring programs to specify the abstract
@@ -426,7 +539,7 @@ specified resources, allowing the user to override those provided
 by default.
 
 \chapter{Felix resources}
-This chapter describes \em{in-program} resource management.
+This chapter describes {\em in-program} resource management.
 Felix programs generally consist of a main file, together
 with various library files, both Felix and C++.
 
@@ -466,7 +579,7 @@ The Felix pre-processor is a C style line oriented conditional
 compilation facility with some constraints and additions.
 It is provided rather begrudingly to ensure most of the tricks
 that can be done in C with pre-processing conditionals are
-available in Felix. However Felix does \em{not} support
+available in Felix. However Felix does {\em not} support
 macro expansion in Felix code with this processor.  
 Pre-processor macros are supported, but they only expand
 in pre-processor statements.
@@ -593,4 +706,126 @@ directive introduces new keywords without mapping them to anything.
 These are encoded in the \verb%USER_KEYWORD% token, with the keyword
 as the attribute.
 
+\chapter{Code insertions}
+Felix provides a sophsiticated system of code insertion.
+\subsection{floating insertions}
+Two directives specify floating insertions. These are
+\begin{verbatim}
+header tag="#include <complex>";
+body tag='#include "mycode.cpp"';
+\end{verbatim}
+%
+These directives specify literal text to emit near the top
+of the generated C++ header and body files, respectively.
+The insertions preceed any Felix generated code, but follow
+fixed system headers. These directives are usually used to 
+specify required C++ header files as shown, but any valid
+C++ text can be emitted. The optional tag followed by equal sign
+can be given to name the insertion. 
+%
+Floating insertions are emitted in order of writing. The same tag
+can be given for multiple insertions.
+%
+Floating insertions also support a requires clause as described below.
+They can also be polymorphic!
+
+\subsection{requires clause}
+A requires clause can be added to any floating insertion or
+definition of a primitive type, to specify inclusion of any
+resources required to support the definition. A requires clause
+can also be given as a directive, in which case it is unconditional
+if at global scope, or applies to the containing module or typeclass
+instance if contained in a module or typeclass instance.
+\begin{verbatim}
+requires tag;
+requires header "#include <sys.h>";
+requires body "#define PI 3.141";
+requires package "faio";
+\end{verbatim}
+The four forms of clause generate a dependence on another
+insertion, generate a floating header or body, or specify
+a package is needed, respectively.
+
+When a package is specified, the compiler uses the \verb%flx_pkgconfig%
+program to search for *.fpc resource files, and then determines if
+any C++ headers need to be included. It also addes the abstract name
+of the resource specified to the program resource file *.resh, to
+allow the CLI or other code to locate any binary libraries which
+must be linked in. Using package requirements isolates client file
+system layout and C++ compiler and linker variations from the
+Felix program, allowing it to remain essential platform independent.
+
+The requires clause can be used as a whole statement as shown, however
+it can also be used like this:
+\begin{verbatim}
+header cmpx_h="#include <complex>";
+type dcomplex = "std::complex<double>" requies cmpx_h;
+\end{verbatim}
+The effect of this is that, if and only if the dcomplex type
+is actually used in a program, then the C++ complex header
+file is included. Note that you can also write stuff like:
+\begin{verbatim}
+header A requires B,C,D;
+\end{verbatim}
+to create a dependency graph. Cycles in dependency graphs are
+alllowed. Once a set of depenencies are determine they're
+emitted in order of writing. Generally, any physical dependency
+between insertions must be handled by writing in the proper order.
+
+The rooting of resource requirements in the actual usage of
+client programs minimises the amount of C++ header that need to
+be compiled and the number of libraries that need to be linked.
+It also allows libraries to provide alternate facilities such
+as Unix and Windows functions simultaneously and without error,
+provided the client uses the one appropriate for their platform.
+In particular the interfaces for libraries which are missing from
+the system can still be provided: if they're not used, they
+won't be C++ compiled or linked.
+
+A complete description of the insertion, requirements, and
+primitive code generation technology is beyond the scope of
+this document and can be found in the language specification.
+
+\chapter{The Felix compiler}
+The Felix compiler is provided by the executable \verb%flxg%
+together with debugging versions \verb%flxp% (parser only),
+\verb%flxm% (parse and macro process), \verb%flxd% (parse,
+macro process and desugar), and \verb%flxb% (parse, macros, desugaring
+and binding).
+
+In addition, if the client must launch the package manager \verb%flx_pkgconfig%
+to generate the include file resource file for the program.
+
+If the program uses the GLR parsing feature, then the compiler launches
+the specified Elkhound executable, usually \verb%flx_elkhound% to generate
+the C++ code for the lexer and parser. This program and the associated
+run time libraries are derived from Scott McPeak's Elkhound system.
+
+The Felix compiler must occasionally search for include files and
+other resources, and generates a set of files as output. Generally
+all resource files in Felix code must be Unix format relative filenames,
+even on Windows. That is, they use \verb%/% as a directory name separator,
+and may not start with any \verb%/% or \verb%.%. However filenames given
+on the command line are given in native OS format.
+
+Apart from such filename munging, the Felix compiler is entirely
+platform independent, and, both the input Felix and output
+C++ is also platform independent. Platform dependencies are handled
+by the package manager, for example the selection of an asynchronous
+socket driver. Felix provides drivers using epoll (Linux), poll (Unix),
+kqueue (BSD, OSX), select (general Unix), IO completion ports (Sun style
+for SunOS) and IO completion ports (Windows style for Windows). The configuration
+phase of the build process determines the best package to use and configures
+the package management database so asynchronous I/O requests made by the
+\verb%faio% (Felix Asycn IO) system are delegated to chosen platform
+specific library from the \verb%demux% system.
+
+[Specify compiler operation and options here!]
+
+\chapter{The package manager}
+
+[Specify \verb%flx_pkgconfig% operation, options, and database
+layout here]
+
 \end{document}
+
