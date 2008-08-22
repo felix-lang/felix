@@ -1,0 +1,141 @@
+\documentclass{report}
+\title{Felix Assertions}
+\author{John Skaller}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\chapter{Overview}
+Felix language provides syntax to specify axioms, lemmas, and theorems
+and other semantic properties of functions, types and program state. This semantic
+information can be checked in two ways: by invoking offline theorem
+provers on generated files containing axioms and proof obligations,
+and by run time testing. The compiler can also use special logic
+constructs called reductions to optimise evaluation.
+
+It should be emphasised, however, that the primary intent of logic
+elements in Felix is not for proving or checking correctness
+mechanically, but simply to provide a syntax for {\em stating}
+semantics so as to enable programmers to better understand
+the intent, operation, and constraints on use of programs
+and libraries.
+
+The facilities provided are rudimentary, that is, they're
+quite weak, compared to those available in proof assistants,
+however the mere existence of these facilities is a major
+advance over most other programming languages, including
+advanced functional languages such as Ocaml and Haskell.
+
+\section{Axioms, Lemmas and Theorems}
+Felix provides constructions to state axioms, lemmas,
+and theorems with equational first order predicates and universal
+head quantification. Existential quantifiers are not
+supported, and universal quantification is represented
+by variables which scope over whole expressions.
+Polymorphic logic elements are allowed, and have two meanings.
+outside of typeclasses, they're universal. Such axioms can
+only be used to prove properties of polymorphic functions
+or categorical constructions such as tuple formation.
+
+Inside typeclasses, axioms also act as constraints on 
+type class instance implementations. For example if
+a type-class function is associative, all instances
+of it must be associative. Thus, such axioms generate
+obligations on the instantiator, and in effect become
+theorems of the instance which require proof.
+
+Theorems inside typeclasses should be provable from
+the axioms for all instances, and if obligations
+are generated if the theorem is specified as a lemma.
+
+An axiom is a basic assertion. A lemma is an assertion
+which is considered simple enough to be proved automatically
+from axioms by a reasonably competent automatic theorem prover.
+A theorem is an assertion which is expected to be hard enough to
+prove that it requires a proof outline and/or hints to a
+proof assistant as to what strategy to use to find a proof.
+There is currently no support for providing such assistance.
+
+Felix emits data relating to types and functions, together
+with axioms and lemmas in the \verb%why% format,
+which allows either the \verb%ergo% theorem prover to attempt
+a proof directly, or the \verb%why% program to translate
+the specifications to a format supported by one of several
+supported theorem provers, such as \verb%simplify%.
+
+Because theorem proving is slow, and proof assistants require
+considerable expertise to use, Felix does not invoke any provers
+or assistants automatically, however specifications are generated
+in \verb%*.why% files automatically.
+
+Axioms, lemmas and theorems are stated like polymorphic functions:
+\begin{verbatim}
+axiom symmetry[v] (a:v, b:v) f(a,b) == f(b,a);
+lemma add0 (a:int) a + 0 == a;
+\end{verbatim}
+
+\section{Reductions}
+Another form of logic is the reduction:
+\begin{verbatim}
+reduce add0 (a:int) a + 0 => a;
+\end{verbatim}
+In this form, a logic element actually effects the replacement
+of expressions of form $a + 0$ where a is any \verb%int% expression
+with just $a$. A real example is that revering a list twice leaves
+the original list: although programmers rarely reverse lists twice,
+this can easily happen if when functions are inlined, and so the
+optimisation provided can be quite useful.
+
+Search for patterns matching the head of a reduction is computationally
+expensive: at least quadratic since every reduction is matched against
+every subexpression in the program.
+
+Therefore Felix does these searches in a limited number
+of places, so there is no assurance a reduction which could be applied
+at some stage actually will be. The system uses a garbage collection
+concept to discard axioms applying to types which are never used, to
+avoid fruitless match attempts.
+
+Note: there is currently no way to make assertions about procedures, the system
+only works for expressions.
+
+\section{ad hoc assertion}
+Felix provides the usual run time checking with 
+\begin{verbatim}
+assert condition;
+\end{verbatim}
+which generates a run time check which aborts the program
+if the condition evaluates false. Assertions cannot be disabled,
+they're always checked.
+
+\section{Pre and post conditions}
+For functions pre and
+post conditions can also be given:
+\begin{verbatim}
+fun f(a:int where a>0):int expect result >0 => a;
+\end{verbatim}
+A precondition is specified by a \verb%where% clause
+after all the function arguments, a postcondition is
+specified by an \verb%expect% clause, after the return type
+is specified, but before the body is given. The special identifier
+\verb%result% can be used to indicate the function return value.
+
+Pre- and post- conditions usually generate run time checks.
+However the compiler is free to attempt to prove the post-
+condition from the pre-condition or the actual program code
+and elide it.
+
+\section{Axiom Checks}
+In addition, axioms can be checked with a \verb%check_axiom%
+directive. This looks like:
+\begin{verbatim}
+check_axiom(2,3);
+\end{verbatim}
+This example checks the expression of all axioms which can take
+two integer arguments, and aborts with a diagnostic if any
+axiom fails. However, if an axiom has a pre-condition, then
+the check is not attempted if the pre-condition fails: in this
+case the axiom doesn't apply to the data.
+
+\end{document}
+

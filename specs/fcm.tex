@@ -992,6 +992,9 @@ In absense of other options, \verb%flx_pkgconfig% scans the given list
 of package names and returns 0 if they are all found, or 1 if one
 of them is missing.
 
+If \verb%--list% is specified, the names of packages actually found
+are printed.
+
 If the \verb%--field=value% option is given, it prints the values
 of the specified field in each package out. If a field is missing
 the program still completes, but returns 1. 
@@ -1008,6 +1011,10 @@ before continuing with the current package, provided that the program is
 not already processing that package. Thus, circular linkages are automatically
 and silently broken.
 
+The best way to understand \verb%flx_pkgconfig% is that it performs
+a recursive descent of a dependency tree, printing the values of
+a specified attribute as it encounters them, thus forming a transitive
+closure of the dependencies.
 
 \end{document}
 
