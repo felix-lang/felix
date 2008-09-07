@@ -76,7 +76,6 @@ let print_options () =
   print_endline "  -h, --help : print this help";
   print_endline "  --version: print version info";
   print_endline "  -v, --verbose: print symbol table";
-  print_endline "  -q, --quiet: no stdout";
   print_endline "  -c, --compile-only: no code generation";
   print_endline "  -Idir, --include=dir : append dir to include path";
   print_endline "  --import=file.flxh : automatically #import <file.flxh>";

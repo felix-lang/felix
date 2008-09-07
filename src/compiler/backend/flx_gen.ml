@@ -2798,3 +2798,32 @@ let gen_biface_headers syms bbdfns bifaces =
 
 let gen_biface_bodies syms bbdfns bifaces =
   cat "" (map (gen_biface_body syms bbdfns) bifaces)
+
+(*  Generate Python module initialisation entry point
+if a Python module function is detected as an export
+*)
+
+let gen_python_module modname syms bbdfns bifaces =
+  let pychk acc elt = match elt with
+  | `BIFACE_export_pyfun (sr,index,name) ->
+    let class_name = cpp_instance_name syms bbdfns index [] in
+    let loc = short_string_of_src sr in
+    let entry = name, class_name, loc in
+    entry :: acc
+  | _ -> acc
+  in
+  let funs = fold_left pychk [] bifaces in
+  match funs with
+  | [] -> ""
+  | funs -> 
+      "  static PyMethodDef " ^ modname ^ "_methods [] = {\n" ^
+      cat "" (rev_map (fun (export_name, symbol_name, loc) ->
+      "    {" ^ "\"" ^ export_name ^ "\", " ^ symbol_name ^ 
+      ", METH_VARARGS, \""^loc^"\"},\n"
+      ) funs) ^ 
+      "    {NULL, NULL, 0, NULL}\n" ^
+      "  }\n" ^
+      "PyMODINIT_FUNC init" ^ modname ^ 
+      " { Py_InitModule(\"" ^ modname ^ "\", " ^ 
+      modname ^ "_methods);}\n"
+

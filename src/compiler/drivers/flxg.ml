@@ -1004,6 +1004,7 @@ try
     plh (gen_biface_headers syms bbdfns syms.bifaces);
     plb "//DEFINE EXPORTS";
     plb (gen_biface_bodies syms bbdfns syms.bifaces);
+    plb (gen_python_module module_name syms bbdfns syms.bifaces);
   end
   ;
 

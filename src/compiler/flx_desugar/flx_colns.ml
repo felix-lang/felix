@@ -207,3 +207,20 @@ let rec collate_namespaces syms sts =
    cn tail (head::stsout) nslist
 
  in cn sts [] []
+
+(* The namespace munging replaces this:
+
+    namespace A { .. }
+    namespace A { .. }
+
+ with this:
+
+   module A1 { inherit A; ... }
+   module A2 { inherit A; .. }
+   module A { inherit A1; inherit A2; }
+
+The effect is to make all the definitions visible in each namespace
+section, and be able to grab the lot, collated, by the original 
+name, whilst preserving order of writing within each namespace
+*)
+
