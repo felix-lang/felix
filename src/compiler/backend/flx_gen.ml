@@ -2822,14 +2822,14 @@ let gen_python_module modname syms bbdfns bifaces =
   match funs with
   | [] -> ""
   | funs -> 
-      "  static PyMethodDef " ^ modname ^ "_methods [] = {\n" ^
+      "static PyMethodDef " ^ modname ^ "_methods [] = {\n" ^
       cat "" (rev_map (fun (export_name, symbol_name, loc) ->
-      "    {" ^ "\"" ^ export_name ^ "\", " ^ symbol_name ^ 
+      "  {" ^ "\"" ^ export_name ^ "\", " ^ symbol_name ^ 
       ", METH_VARARGS, \""^loc^"\"},\n"
       ) funs) ^ 
-      "    {NULL, NULL, 0, NULL}\n" ^
-      "  }\n" ^
-      "PyMODINIT_FUNC init" ^ modname ^ 
+      "  {NULL, NULL, 0, NULL}\n" ^
+      "};\n" ^
+      "PyMODINIT_FUNC init" ^ modname ^ "()" ^ 
       " { Py_InitModule(\"" ^ modname ^ "\", " ^ 
       modname ^ "_methods);}\n"
 
