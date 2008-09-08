@@ -1099,6 +1099,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     reachable := false
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN EXPORT *)
+  | `AST_export_python_fun (sr, sn, s) ->  tack st
   | `AST_export_fun (sr, sn, s) ->  tack st
   | `AST_export_type (sr, sn, s) ->  tack st
 

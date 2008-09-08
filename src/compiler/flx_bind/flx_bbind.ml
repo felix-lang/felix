@@ -850,6 +850,17 @@ let bind_ifaces syms
           string_of_suffixed_name sn
         )
 
+      | sr,`IFACE_export_python_fun (sn, cpp_name), parent ->
+        let env = build_env syms parent in
+        let index,ts = lookup_sn_in_env syms env sn in
+        if length ts = 0 then
+          `BIFACE_export_python_fun (sr,index, cpp_name)
+        else clierr sr
+        (
+          "Can't export generic entity " ^
+          string_of_suffixed_name sn
+        )
+
       | sr,`IFACE_export_type (typ, cpp_name), parent ->
         let env = build_env syms parent in
         let t = bind_type syms env dummy_sr typ in

@@ -1357,6 +1357,8 @@ syntax cbind {
   sbinding_definition :=  sexport_statement =># "_1";
    sexport_statement := export fun ssuffixed_name as sstring ssemi =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
+   sexport_statement := export "python" fun ssuffixed_name as sstring ssemi =>#
+    "`(ast_export_python_fun ,_sr ,_4 ,_6)";
   sexport_statement := export proc ssuffixed_name as sstring ssemi =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
   sexport_statement := export type lpar sexpr rpar as sstring ssemi =>#

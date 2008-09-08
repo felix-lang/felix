@@ -227,6 +227,7 @@ let src_of_stmt e = match e with
   | `AST_untyped_module (s,_,_,_)
   | `AST_namespace (s,_,_,_)
   | `AST_export_fun (s, _,_)
+  | `AST_export_python_fun (s, _,_)
   | `AST_export_type (s, _,_)
   | `AST_type (s,_,_)
   | `AST_open (s,_,_)

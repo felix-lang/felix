@@ -661,6 +661,7 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
     let ui i ts = add_inst syms bbdfns insts1 (i,ts) in
     iter
     (function
+      | `BIFACE_export_python_fun (_,x,_)
       | `BIFACE_export_fun (_,x,_) ->
         let _,_,sr,entry = Hashtbl.find bbdfns x in
         begin match entry with

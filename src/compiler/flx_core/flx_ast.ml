@@ -578,6 +578,7 @@ and statement_t =
   | `AST_noreturn_code of range_srcref * c_t
 
   | `AST_export_fun of range_srcref * suffixed_name_t * string
+  | `AST_export_python_fun of range_srcref * suffixed_name_t * string
   | `AST_export_type of range_srcref * typecode_t * string
 
   | `AST_user_statement of range_srcref * string * ast_term_t

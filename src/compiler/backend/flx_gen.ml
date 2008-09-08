@@ -2585,6 +2585,9 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
   syms.instances
 
 let gen_biface_header syms bbdfns biface = match biface with
+  | `BIFACE_export_python_fun (sr,index, export_name) -> 
+     "// PYTHON FUNCTION " ^ export_name ^ " header to go here??\n"
+
   | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
       try Hashtbl.find bbdfns index
@@ -2643,6 +2646,9 @@ let gen_biface_header syms bbdfns biface = match biface with
     "typedef " ^ cpp_typename syms typ ^ " " ^ export_name ^ ";\n"
 
 let gen_biface_body syms bbdfns biface = match biface with
+  | `BIFACE_export_python_fun (sr,index, export_name) -> 
+     "// PYTHON FUNCTION " ^ export_name ^ " body to go here??\n"
+
   | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
       try Hashtbl.find bbdfns index

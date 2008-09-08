@@ -82,6 +82,7 @@ and asm_t =
 and iface_t =
   [
   | `IFACE_export_fun of suffixed_name_t * string
+  | `IFACE_export_python_fun of suffixed_name_t * string
   | `IFACE_export_type of typecode_t * string
   ]
 
@@ -166,6 +167,7 @@ and name_map_t = (string, entry_set_t) Hashtbl.t
 type biface_t =
   [
   | `BIFACE_export_fun of range_srcref * bid_t * string
+  | `BIFACE_export_python_fun of range_srcref * bid_t * string
   | `BIFACE_export_type of range_srcref * btypecode_t * string
   ]
 

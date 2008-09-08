@@ -1177,6 +1177,12 @@ and string_of_statement level s =
     string_of_suffixed_name flx_name ^
     " as \"" ^ cpp_name ^ "\";"
 
+  | `AST_export_python_fun (_,flx_name,cpp_name) ->
+    spaces level ^
+    "export python fun " ^
+    string_of_suffixed_name flx_name ^
+    " as \"" ^ cpp_name ^ "\";"
+
   | `AST_export_type (_,flx_type,cpp_name) ->
     spaces level ^
     "export type (" ^
@@ -1693,6 +1699,10 @@ and string_of_iface level s =
     spc ^ "export fun " ^ string_of_suffixed_name flx_name ^
     " as \"" ^ cpp_name ^ "\";"
 
+  | `IFACE_export_python_fun (flx_name,cpp_name) ->
+    spc ^ "export python fun " ^ string_of_suffixed_name flx_name ^
+    " as \"" ^ cpp_name ^ "\";"
+
   | `IFACE_export_type (flx_type,cpp_name) ->
     spc ^ "export type (" ^ string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
@@ -2065,6 +2075,10 @@ and string_of_biface dfns bbdfns level s =
   match s with
   | `BIFACE_export_fun (_,index,cpp_name) ->
     spc ^ "export fun " ^ qualified_name_of_index dfns index ^
+    " as \"" ^ cpp_name ^ "\";"
+
+  | `BIFACE_export_python_fun (_,index,cpp_name) ->
+    spc ^ "export python fun " ^ qualified_name_of_index dfns index ^
     " as \"" ^ cpp_name ^ "\";"
 
   | `BIFACE_export_type (_,btyp,cpp_name) ->

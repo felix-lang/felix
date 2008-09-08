@@ -924,6 +924,14 @@ and xstatement_t sr x : statement_t =
     in
     `AST_export_fun  (xsr sr, xsn sn, ss s)
 
+  | Lst [Id "ast_export_python_fun"; sr; sn; Str s] ->
+    print_endline "got ast_export_python_fun in sex2flx";
+    let xsn x = match ex x with
+    | #suffixed_name_t as x -> x
+    | _ -> err  x "suffixed_name_t"
+    in
+    `AST_export_python_fun  (xsr sr, xsn sn, ss s)
+
   | Lst [Id "ast_export_type"; sr; t; Str s] ->
     `AST_export_type (xsr sr, ti t, ss s)
 
