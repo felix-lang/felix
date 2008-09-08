@@ -61,3 +61,12 @@ val is_gc_pointer:
   range_srcref ->
   btypecode_t ->
   bool
+
+val gen_python_module: 
+  string -> 
+  sym_state_t -> 
+  fully_bound_symbol_table_t ->
+  biface_t list -> 
+  string
+
+ 

@@ -2811,7 +2811,7 @@ if a Python module function is detected as an export
 
 let gen_python_module modname syms bbdfns bifaces =
   let pychk acc elt = match elt with
-  | `BIFACE_export_pyfun (sr,index,name) ->
+  | `BIFACE_export_python_fun (sr,index,name) ->
     let class_name = cpp_instance_name syms bbdfns index [] in
     let loc = short_string_of_src sr in
     let entry = name, class_name, loc in
