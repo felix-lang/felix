@@ -121,7 +121,7 @@ def build_flx_bind(env, builder):
         builder=builder)
 
 def build_flx_frontend(env, builder):
-    path = fbuild.Path('src/compiler/frontend')
+    path = fbuild.Path('src/compiler/flx_frontend')
     return ocaml.Library(path / 'flx_frontend', [path / '*.ml{,i}'],
         libs=[
             env.config(build_flx_misc, builder),
@@ -131,7 +131,7 @@ def build_flx_frontend(env, builder):
         builder=builder)
 
 def build_flx_backend(env, builder):
-    path = fbuild.Path('src/compiler/backend')
+    path = fbuild.Path('src/compiler/flx_backend')
     return ocaml.Library(path / 'flx_backend', [
             path / '*.ml{,i}',
             fbuild.buildroot / path / '*.ml{,i}',

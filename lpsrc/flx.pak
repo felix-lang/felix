@@ -4,7 +4,7 @@
 
 @head(1,'The Felix Compiler')
 
-@select(tangler('src/compiler/backend/flx_backend_config.ml'))
+@select(tangler('src/compiler/flx_backend/flx_backend_config.ml'))
 let cpp_keywords = [
 @for k in cpp_keywords:
   tangle('  "%s";' % k)

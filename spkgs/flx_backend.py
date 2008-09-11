@@ -1,20 +1,20 @@
 iscr_source = ['flx.pak']
 
 caml_modules = [
-    'src/compiler/backend/flx_backend_config',
-    'src/compiler/backend/flx_name',
-    'src/compiler/backend/flx_csubst',
-    'src/compiler/backend/flx_tgen',
-    'src/compiler/backend/flx_display',
-    'src/compiler/backend/flx_ogen',
-    'src/compiler/backend/flx_regen',
-    'src/compiler/backend/flx_unravel',
-    'src/compiler/backend/flx_pgen',
-    'src/compiler/backend/flx_egen',
-    'src/compiler/backend/flx_ctorgen',
-    'src/compiler/backend/flx_elkgen',
-    'src/compiler/backend/flx_why',
-    'src/compiler/backend/flx_gen',
+    'src/compiler/flx_backend/flx_backend_config',
+    'src/compiler/flx_backend/flx_name',
+    'src/compiler/flx_backend/flx_csubst',
+    'src/compiler/flx_backend/flx_tgen',
+    'src/compiler/flx_backend/flx_display',
+    'src/compiler/flx_backend/flx_ogen',
+    'src/compiler/flx_backend/flx_regen',
+    'src/compiler/flx_backend/flx_unravel',
+    'src/compiler/flx_backend/flx_pgen',
+    'src/compiler/flx_backend/flx_egen',
+    'src/compiler/flx_backend/flx_ctorgen',
+    'src/compiler/flx_backend/flx_elkgen',
+    'src/compiler/flx_backend/flx_why',
+    'src/compiler/flx_backend/flx_gen',
 ]
 
 caml_include_paths = [
@@ -22,10 +22,10 @@ caml_include_paths = [
     'src/compiler/flx_misc',
     'src/compiler/flx_bind',
     'src/compiler/flxcclib',
-    'src/compiler/frontend',
+    'src/compiler/flx_frontend',
 ]
 
-caml_provide_lib = 'src/compiler/backend/flx_backend'
+caml_provide_lib = 'src/compiler/flx_backend/flx_backend'
 
 pkg_requires = [
     'flx_core',
