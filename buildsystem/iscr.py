@@ -191,7 +191,7 @@ def _print_types(env, lang, p):
         p('ALIGNOF_' + name, data['alignment'])
 
     # standard language type info
-    std = env.config('fbuild.builders.c.std.config', lang.static)
+    std = env.config('fbuild.builders.cxx.std.config', lang.static)
     p('CHAR_IS_UNSIGNED', not std.types['char']['signed'])
     p('HAVE_BOOL',        'bool' in std.types)
     p('HAVE_LONGLONG',    'long long' in std.types)
