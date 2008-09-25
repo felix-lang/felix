@@ -33,7 +33,7 @@ def build(env, phase):
     flx_run_lib = cxx.StaticLibrary(path / 'flx_run',
         srcs=[path / 'flx_run.cxx'],
         includes=run_includes,
-        cflags={'macros': ['FLX_STATIC_LINK']},
+        macros=['FLX_STATIC_LINK'],
         libs=run_libs,
         builder=phase.cxx)
 
@@ -46,7 +46,7 @@ def build(env, phase):
     flx_arun_lib = cxx.StaticLibrary(path / 'flx_arun',
         srcs=[path / 'flx_arun.cxx'],
         includes=arun_includes,
-        cflags={'macros': ['FLX_STATIC_LINK']},
+        macros=['FLX_STATIC_LINK'],
         libs=run_libs,
         builder=phase.cxx)
 

@@ -272,10 +272,28 @@ def _print_posix_support(env, lang, platform, p):
         p('HAVE_PTHREADS',  True)
         p('PTHREAD_SWITCH', ' '.join(pthread_h.flags))
 
-    p('HAVE_KQUEUE_DEMUXER', 'event_h' in posix.headers.sys)
-    p('HAVE_EPOLL',          'epoll_h' in posix.headers.sys)
-    p('HAVE_POLL',           'poll_h'  in posix.headers)
-    p('HAVE_EVTPORTS',       'port_h'  in posix.headers)
+    try:
+        env.config('fbuild.builders.c.bsd.config_sys_event_h', lang.static)
+    except fbuild.builders.ConfigFailed:
+        p('HAVE_KQUEUE_DEMUXER', False)
+    else:
+        p('HAVE_KQUEUE_DEMUXER', True)
+
+    try:
+        env.config('fbuild.builders.c.linux.config_sys_epoll_h', lang.static)
+    except fbuild.builders.ConfigFailed:
+        p('HAVE_EPOLL', False)
+    else:
+        p('HAVE_EPOLL', True)
+
+    try:
+        env.config('fbuild.builders.c.solaris.config_port_h', lang.static)
+    except fbuild.builders.ConfigFailed:
+        p('HAVE_EVTPORTS', False)
+    else:
+        p('HAVE_EVTPORTS', True)
+
+    p('HAVE_POLL', 'poll_h' in posix.headers)
 
     try:
         mman_h = posix.headers.sys.mman_h

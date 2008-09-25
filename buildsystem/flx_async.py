@@ -18,5 +18,5 @@ def build(env, phase):
             env.config('buildsystem.flx_pthread.build', phase),
             env.config('buildsystem.faio.build', phase),
         ],
-        cflags={'macros': ['BUILD_ASYNC']},
+        macros=['BUILD_ASYNC'],
         builder=phase.cxx)

@@ -47,6 +47,6 @@ def build(env, phase):
             fbuild.buildroot / 'config/target',
         ],
         libs=libs,
-        cflags={'macros': ['BUILD_PTHREAD']},
+        macros=['BUILD_PTHREAD'],
         lflags={'flags': flags},
         builder=phase.cxx)

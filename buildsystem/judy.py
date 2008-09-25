@@ -66,6 +66,6 @@ def build(env, phase):
             path / 'JudyL',
             path / 'JudyHS',
         ],
-        cflags={'macros': macros},
+        macros=macros,
         builder=phase.c,
     )

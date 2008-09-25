@@ -32,5 +32,5 @@ def build(env, phase):
             env.config('buildsystem.flx_pthread.build', phase),
             env.config('buildsystem.demux.build', phase),
         ],
-        cflags={'macros': ['BUILD_FAIO']},
+        macros=['BUILD_FAIO'],
         builder=phase.cxx)

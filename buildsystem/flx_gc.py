@@ -16,5 +16,5 @@ def build(env, phase):
             env.config('buildsystem.flx_exceptions.build', phase),
             env.config('buildsystem.flx_pthread.build', phase),
         ],
-        cflags={'macros': ['BUILD_EXCEPTIONS']},
+        macros=['BUILD_EXCEPTIONS'],
         builder=phase.cxx)

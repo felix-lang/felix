@@ -79,6 +79,6 @@ def build(env, phase):
     return cxx.SharedLibrary(path / 'demux', srcs,
         includes=includes,
         libs=libs,
-        cflags={'macros': ['BUILD_DEMUX']},
+        macros=['BUILD_DEMUX'],
         builder=phase.cxx,
     )
