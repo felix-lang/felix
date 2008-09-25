@@ -124,7 +124,7 @@ def build(env):
         partial(Iscr.build, env=env),
         [Iscr(p) for p in (env.config(src_dir)/'lpsrc/*.pak').glob()])
 
-    drivers = env.config('buildsystem.flx.build_flx_drivers', host.ocaml)
+    drivers = env.config('buildsystem.flx_compiler.build_flx_drivers', host.ocaml)
     for driver in drivers.values():
         driver.build(env)
 
