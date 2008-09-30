@@ -20,6 +20,9 @@ class build_felix_dynamic_drivers(Process):
     cflags = pkgdict.get("cflags","")
     dflags = pkgdict.get("dflags","")
     LIBS = pkgdict.get("drivers_require_libs",[])
+    includes = pkgdict.get('include_path',[])
+    includes = [os.path.join(config.src_dir, i) for i in includes]
+
     libs = []
     for lib in LIBS:
       libs.append(lib+"_dynamic")
@@ -32,7 +35,7 @@ class build_felix_dynamic_drivers(Process):
 
       dst = config.TARGET_CXX.build_shared_program(src, os.path.join('build', src),
           outdir='build',
-          include_paths=[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
+          include_paths=includes+[config.FLX_RTL_DIR, config.FLX_TARGET_CONFIG_DIR],
           optimise=self.optimise,
           debug=self.debug,
           CFLAGS=cflags,

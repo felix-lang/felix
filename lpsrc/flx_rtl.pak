@@ -83,8 +83,10 @@ build_macro = "ASYNC"
 @doc()
 
 @select(tangler('spkgs/flx_drivers.py'))
-static_drivers = [('src/rtl/flx_run', 'lib/rtl')]
-dynamic_drivers = [('src/rtl/flx_run', 'bin')]
+static_drivers = [('src/flx_drivers/flx_run', 'lib/rtl')]
+dynamic_drivers = [('src/flx_drivers/flx_run', 'bin')]
+
+include_path = ['src/rtl']
 
 drivers_require_libs = [
   'libflx_pthread',
@@ -99,8 +101,10 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 @doc()
 
 @select(tangler('spkgs/flx_async_drivers.py'))
-static_drivers = [('src/rtl/flx_arun','lib/rtl')]
-dynamic_drivers = [('src/rtl/flx_arun','bin')]
+static_drivers = [('src/flx_drivers/flx_arun','lib/rtl')]
+dynamic_drivers = [('src/flx_drivers/flx_arun','bin')]
+
+include_path = ['src/rtl']
 
 drivers_require_libs = [
   'libflx_async',
