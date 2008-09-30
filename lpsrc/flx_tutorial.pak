@@ -665,7 +665,7 @@ print s; endl;
 @doc()
 
 @select(env.expect())
-Hello Hello
+@tangle('Hello Hello ')
 @doc()
 
 @env.head(1,'Expressions')
@@ -879,7 +879,7 @@ endl;
 @doc()
 
 @select(env.expect())
-1 2 3 4 5
+@tangle('1 2 3 4 5 ')
 @doc()
 
 @env.head(2,'Variable declaration')
@@ -1014,9 +1014,9 @@ endl;
 @doc()
 
 @select(env.expect())
-1 2 3
-1 2 3
-9 8 7
+@tangle('1 2 3 ')
+@tangle('1 2 3 ')
+@tangle('9 8 7 ')
 @doc()
 
 @env.head(3,'Other Mutators')
@@ -2688,11 +2688,11 @@ print "Done.\n";
 
 @select(env.expect())
 Identifier: A
-White:
+@tangle('White:  ')
 Identifier: string
-White:
+@tangle('White:  ')
 Number: 2
-White:
+@tangle('White:  ')
 Identifier: lex
 Done.
 @doc()
@@ -3660,8 +3660,8 @@ print y_r_total; endl;
 @doc()
 
 @select(env.expect())
-1, 2, 3,
-3, 2, 1,
+@tangle('1, 2, 3, ')
+@tangle('3, 2, 1, ')
 6
 6
 6
@@ -4059,7 +4059,7 @@ endl;
 @doc()
 
 @select(env.expect())
-ONE
+@tangle('ONE ')
 FoundWeird Found
 @doc()
 
@@ -4105,11 +4105,11 @@ NOT ONE
 NOT ONE
 1 TWENTY
 NOT ONE
-1
+@tangle('1 ')
 NOT ONE
 2 TWENTY
 NOT ONE
-Dunno ..
+@tangle('Dunno .. ')
 @doc()
 
 Conditionals are primarily a convenient shorthand for
