@@ -260,7 +260,7 @@ module Lua
     a4: string
   ): int=
   {
-    return lua_load(a1, _fcbw_chrd, C_hack::cast[address]a2, C_hack::enconst (cstr a4));
+    return lua_load(a1, _fcbw_chrd, C_hack::cast[address]a2, cstr a4);
   }
 
   comment "3.11- Manipulating Tables";
