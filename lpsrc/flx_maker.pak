@@ -1887,6 +1887,7 @@ NOSTDLIB=0
 STDOUT=""
 STDIMPORT="--import=flx.flxh"
 IMPORTS=""
+OUTPUT_DIR=""
 
 while (( "$grab" == "1" ));
 do
@@ -1969,6 +1970,11 @@ do
   x--version)
     echo $VERSION
     exit 0
+  ;;
+
+  x--output_dir=*)
+		OUTPUT_DIR=$1
+    shift
   ;;
 
   x--help)
@@ -2308,7 +2314,7 @@ else
   VERBOSE="-q"
 fi
 
-FLXFLAGS="--inline=$INLINE"
+FLXFLAGS="--inline=$INLIN $OUTPUT_DIR"
 
 if [ $STATIC = 0 ]
 then
