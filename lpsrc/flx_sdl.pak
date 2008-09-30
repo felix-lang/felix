@@ -1850,7 +1850,6 @@ module SDL_gfxPrimitives_h
   open C_hack;
   open SDL_h;
   open SDL_video_h;
-  open math_h;
 
   //FUNCTIONS
   fun aacircleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
@@ -2341,7 +2340,6 @@ module SDL_rotozoom_h
   open C_hack;
   open SDL_h;
   open SDL_video_h;
-  open math_h;
 
   //CSTRUCTS
   cstruct tColorRGBA {
