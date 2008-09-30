@@ -1,15 +1,21 @@
 import fbuild
 import fbuild.packages.cxx as cxx
+from fbuild.path import Path
 
-def build(env, phase):
-    path = fbuild.Path('src', 'demux')
+import buildsystem.flx as flx
+
+# ------------------------------------------------------------------------------
+
+def build_runtime(phase):
+    path = Path('src', 'demux')
+
     srcs = [path / '*.cpp']
     includes = [
         fbuild.buildroot / 'config/target',
-        fbuild.Path('src', 'pthread'),
+        Path('src', 'pthread'),
         path,
     ]
-    libs = [env.config('buildsystem.flx_pthread.build', phase)]
+    libs = [fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase)]
 
     if 'win32' in phase.platform:
         srcs.extend((
@@ -34,7 +40,7 @@ def build(env, phase):
         includes.append(path / 'posix')
 
     try:
-        env.config('fbuild.builders.c.posix.config_poll_h', phase.cxx.shared)
+        fbuild.env.cache('fbuild.builders.c.posix.config_poll_h', phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
     else:
@@ -47,7 +53,7 @@ def build(env, phase):
         includes.append(path / 'poll')
 
     try:
-        epoll = env.config('fbuild.builders.c.linux.config_sys_epoll_h',
+        epoll = fbuild.env.cache('fbuild.builders.c.linux.config_sys_epoll_h',
             phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
@@ -57,7 +63,7 @@ def build(env, phase):
             includes.append(path / 'epoll')
 
     try:
-        kqueue = env.config('fbuild.builders.c.bsd.config_sys_event_h',
+        kqueue = fbuild.env.cache('fbuild.builders.c.bsd.config_sys_event_h',
             phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
@@ -67,7 +73,7 @@ def build(env, phase):
             includes.append(path / 'kqueue')
 
     try:
-        evtports = env.config('fbuild.builders.c.solaris.config_port_h',
+        evtports = fbuild.env.cache('fbuild.builders.c.solaris.config_port_h',
             phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
@@ -76,7 +82,7 @@ def build(env, phase):
             srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
             includes.append(path / 'evtport')
 
-    return cxx.SharedLibrary(path / 'demux', srcs,
+    return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/demux', srcs,
         includes=includes,
         libs=libs,
         macros=['BUILD_DEMUX'],

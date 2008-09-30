@@ -1,10 +1,14 @@
 import fbuild
 import fbuild.packages.ocaml as ocaml
+from fbuild.path import Path
+from fbuild.record import Record
 
-def build(env, builder=None):
-    ocs = fbuild.Record()
+# -----------------------------------------------------------------------------
 
-    path = fbuild.Path('src/compiler/ocs')
+def build(builder=None):
+    ocs = Record()
+
+    path = Path('src/compiler/ocs')
 
     ocs.lib = ocaml.Library(path/'ocs',
         list((path/'*.ml{,i}').glob(exclude='ocs_main.ml')),

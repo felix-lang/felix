@@ -1,20 +1,25 @@
 import fbuild
 import fbuild.packages.cxx as cxx
+from fbuild.path import Path
 
-def build(env, phase):
-    path = fbuild.Path('src', 'gc')
-    return cxx.SharedLibrary(path / 'flx_gc', [path / '*.cpp'],
+# -----------------------------------------------------------------------------
+
+def build_runtime(phase):
+    path = Path('src', 'gc')
+
+    return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_gc_dynamic',
+        [path / '*.cpp'],
         includes=[
-            fbuild.Path('src', 'rtl'),
-            fbuild.Path('src', 'pthread'),
-            fbuild.Path('src', 'exceptions'),
-            fbuild.Path('src', 'judy'),
             fbuild.buildroot / 'config/target',
+            'src/rtl',
+            'src/pthread',
+            'src/exceptions',
+            'src/judy',
         ],
         libs=[
-            env.config('buildsystem.judy.build', phase),
-            env.config('buildsystem.flx_exceptions.build', phase),
-            env.config('buildsystem.flx_pthread.build', phase),
+            fbuild.env.run('buildsystem.judy.build_runtime', phase),
+            fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
+            fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
         ],
         macros=['BUILD_EXCEPTIONS'],
         builder=phase.cxx)

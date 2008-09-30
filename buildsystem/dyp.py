@@ -29,46 +29,55 @@ class Builder:
 
 # -----------------------------------------------------------------------------
 
-def build_dyplib(env, builder=None):
+def build_dyplib(builder=None):
     path = fbuild.buildroot/'src/compiler/dyp/dyplib'
     return ocaml.Library(path/'dyp', [path/'*.ml{,i}'], builder=builder)
 
-def build_pgen(env, builder=None):
+def build_pgen(builder=None):
     path = fbuild.buildroot/'src/compiler/dyp/generators/pgen'
-    return ocaml.Executable(path/'pgen', [
-            path/'*.ml{,i}',
-            ocaml.Ocamllex(path/'pgen_lexer.mll'),
-        ],
-        libs=[env.config(build_dyplib, builder)],
-        builder=builder)
+    return fbuild.packages.BuilderWrapper(Builder,
+        ocaml.Executable(path/'pgen',
+            srcs=[
+                path/'*.ml{,i}',
+                ocaml.Ocamllex(path/'pgen_lexer.mll'),
+            ],
+            libs=[fbuild.env.run(build_dyplib, builder)],
+            builder=builder,
+        )
+    )
 
-def build_dypgen(env, builder=None):
+def build_dypgen(builder=None):
     path = fbuild.buildroot/'src/compiler/dyp/generators/dypgen'
-    return ocaml.Executable(path/'dypgen', [
-            path/'*.ml{,i}',
-            ocaml.Ocamllex(path/'dypgen_lexer.mll'),
-            ocaml.Ocamllex(path/'insert_linenum.mll'),
-            Pgen(path/'dypgen_parser.dyp'),
-        ],
-        libs=[env.config(build_dyplib, builder)],
-        builder=builder)
+    return fbuild.packages.BuilderWrapper(Builder,
+        ocaml.Executable(
+            dst=path/'dypgen',
+            srcs=[
+                path/'*.ml{,i}',
+                ocaml.Ocamllex(path/'dypgen_lexer.mll'),
+                ocaml.Ocamllex(path/'insert_linenum.mll'),
+                Pgen(path/'dypgen_parser.dyp'),
+            ],
+            libs=[fbuild.env.run(build_dyplib, builder)],
+            builder=builder,
+        )
+    )
 
 # -----------------------------------------------------------------------------
 
 class Pgen(fbuild.packages.SimplePackage):
     default_config = 'buildsystem.dyp.build_pgen'
 
-    def dependencies(self, env):
-        return (self.target, self.config(env))
+    def dependencies(self):
+        return (self.target, self.config)
 
-    def command(self, env, *args, **kwargs):
-        return Builder(self.config(env).build(env))(*args, **kwargs)
+    def command(self, *args, **kwargs):
+        return self.config.build()(*args, **kwargs)
 
 class Dypgen(fbuild.packages.SimplePackage):
     default_config = 'buildsystem.dyp.build_dypgen'
 
-    def dependencies(self, env):
-        return (self.target, self.config(env))
+    def dependencies(self):
+        return (self.target, self.config)
 
-    def command(self, env, *args, **kwargs):
-        return Builder(self.config(env).build(env))(*args, **kwargs)
+    def command(self, *args, **kwargs):
+        return self.config.build()(*args, **kwargs)

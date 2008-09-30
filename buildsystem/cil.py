@@ -1,8 +1,11 @@
 import fbuild
+from fbuild.path import Path
 import fbuild.packages.ocaml as ocaml
 
-def build(env, builder=None):
-    path = fbuild.Path('src', 'compiler', 'cil')
+# -----------------------------------------------------------------------------
+
+def build(builder=None):
+    path = Path('src', 'compiler', 'cil')
 
     return ocaml.Library(path / 'cil', [
             list((path / 'src/*.ml{,i}').glob(

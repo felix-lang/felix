@@ -1,8 +1,12 @@
 import fbuild
 import fbuild.packages.cxx as cxx
+from fbuild.path import Path
 
-def build(env, phase):
-    path = fbuild.Path('src/pthread')
+# -----------------------------------------------------------------------------
+
+def build_runtime(phase):
+    path = Path('src/pthread')
+
     srcs = [
         path / 'pthread_win_posix_condv_emul.cpp', # portability hackery
         path / 'pthread_mutex.cpp',
@@ -34,18 +38,15 @@ def build(env, phase):
         libs.append('rt')
 
     try:
-        pthread_h = env.config('fbuild.builders.c.posix.config_pthread_h',
+        pthread_h = fbuild.env.cache('fbuild.builders.c.posix.config_pthread_h',
             phase.cxx.shared)
     except fbuild.builders.ConfigFailed:
         pass
     else:
         flags.extend(pthread_h.flags)
 
-    return cxx.SharedLibrary(path / 'flx_pthread', srcs,
-        includes=[
-            fbuild.Path('src', 'rtl'),
-            fbuild.buildroot / 'config/target',
-        ],
+    return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_pthread_dynamic', srcs,
+        includes=[fbuild.buildroot / 'config/target', 'src/rtl'],
         libs=libs,
         macros=['BUILD_PTHREAD'],
         lflags={'flags': flags},

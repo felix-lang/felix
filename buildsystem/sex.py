@@ -1,17 +1,20 @@
 import fbuild
 import fbuild.packages.ocaml as ocaml
+from fbuild.path import Path
 
-def build(env, builder=None):
+# -----------------------------------------------------------------------------
+
+def build(builder=None):
     from buildsystem.dyp import Dypgen
 
-    path = fbuild.Path('src', 'compiler', 'sex')
+    path = Path('src', 'compiler', 'sex')
     return ocaml.Library(path/'sex', [
             path/'*.ml{,i}',
             Dypgen(path/'sex_parse.dyp'),
             ocaml.Ocamllex(path/'sex_lex.mll'),
         ],
         libs=[
-            env.config('buildsystem.ocs.build', builder).lib,
-            env.config('buildsystem.dyp.build_dyplib', builder),
+            fbuild.env.run('buildsystem.ocs.build', builder).lib,
+            fbuild.env.run('buildsystem.dyp.build_dyplib', builder),
         ],
         builder=builder)

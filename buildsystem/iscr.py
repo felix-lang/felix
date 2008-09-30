@@ -1,19 +1,20 @@
 import fbuild
-import fbuild.builders
-import fbuild.packages
+from fbuild import ConfigFailed
+from fbuild.packages import SimplePackage
+from fbuild.path import Path
 
 # -----------------------------------------------------------------------------
 
 class IscrBuilder:
     def __init__(self, exe):
-        self.exe = fbuild.Path(exe)
+        self.exe = Path(exe)
 
     def __call__(self, src, *,
             break_on_error=True,
             flags=[],
             buildroot=fbuild.buildroot,
             **kwargs):
-        src = fbuild.Path(src)
+        src = Path(src)
 
         cmd = [
             self.exe.relative_path_to(buildroot),
@@ -28,24 +29,24 @@ class IscrBuilder:
         return fbuild.execute(cmd, 'iscr extracting', src,
             color='green',
             cwd=buildroot,
-            env={'PYTHONPATH': fbuild.Path.relative_path_to('.', buildroot)},
+            env={'PYTHONPATH': Path.relative_path_to('.', buildroot)},
             **kwargs)
 
-def config_iscr(env, exe=None):
+def config_iscr(exe=None):
     if exe is None:
-        exe = env.config('fbuildroot.src_dir') / 'interscript/bin/iscr.py'
+        exe = fbuild.env.cache('fbuildroot.src_dir') / 'interscript/bin/iscr.py'
 
     return IscrBuilder(exe)
 
-def config_iscr_config(env, build, host, target):
+def config_iscr_config(build, host, target):
     # allow us to import the buildroot
     with open(fbuild.buildroot/'__init__.py', 'w'):
         pass
 
     with open(fbuild.buildroot/'config/__init__.py', 'w') as f:
-        _print_config(env, f, build, host, target)
+        _print_config(f, build, host, target)
 
-def _print_config(env, f, build, host, target):
+def _print_config(f, build, host, target):
     def p(msg, *args):
         if not args:
             print(msg, file=f)
@@ -67,8 +68,8 @@ def _print_config(env, f, build, host, target):
     # -------------------------------------------------------------------------
     # setup paths
 
-    p('src_dir',   str(env.config('fbuildroot.src_dir')))
-    p('PREFIX',    str(env.config('fbuildroot.prefix')))
+    p('src_dir',   str(fbuild.env.cache('fbuildroot.src_dir')))
+    p('PREFIX',    str(fbuild.env.cache('fbuildroot.prefix')))
     p('FLXCC_CPP', 'cpp ')
 
     # -------------------------------------------------------------------------
@@ -82,8 +83,8 @@ def _print_config(env, f, build, host, target):
     supported_platforms = sorted(supported_platforms)
 
     try:
-        env.config('fbuild.builders.c.win32.config', target.c.static)
-    except fbuild.builders.ConfigFailed:
+        fbuild.env.cache('fbuild.builders.c.win32.config', target.c.static)
+    except ConfigFailed:
         p('HAVE_MSVC', False)
     else:
         p('HAVE_MSVC', True)
@@ -105,14 +106,14 @@ def _print_config(env, f, build, host, target):
 
             lang = phase[lang]
 
-            _print_compiler(env, lang, platform, pp)
-            _print_types(env, lang, pp)
-            _print_c99_support(env, lang, pp)
-            _print_posix_support(env, lang, platform, pp)
-            _print_math_support(env, lang, pp)
-            _print_openmp_support(env, lang, pp)
-            _print_cxx_bugs(env, lang, pp)
-            _print_gcc_extensions(env, lang, pp)
+            _print_compiler(lang, platform, pp)
+            _print_types(lang, pp)
+            _print_c99_support(lang, pp)
+            _print_posix_support(lang, platform, pp)
+            _print_math_support(lang, pp)
+            _print_openmp_support(lang, pp)
+            _print_cxx_bugs(lang, pp)
+            _print_gcc_extensions(lang, pp)
 
     # -------------------------------------------------------------------------
     # expose target_cxx to the top level config
@@ -132,7 +133,7 @@ def _print_config(env, f, build, host, target):
     p('  DEFAULT_LINK_MODEL', 'static')
 
 
-def _print_compiler(env, lang, platform, p):
+def _print_compiler(lang, platform, p):
     # determine information about the compiler
 
     p('HAVE_PIC', '-fPIC' in lang.shared.compiler.flags)
@@ -172,11 +173,11 @@ def _print_compiler(env, lang, platform, p):
     p('DEBUG_FLAGS',    ' '.join(static.compiler.debug_flags))
 
     p('LITTLE_ENDIAN',
-        env.config('fbuild.builders.c.config_little_endian', static))
+        fbuild.env.cache('fbuild.builders.c.config_little_endian', static))
 
-def _print_types(env, lang, p):
+def _print_types(lang, p):
     import fbuild.builders.c.std as c_std
-    int_aliases = c_std.type_aliases_int(env, lang.static)
+    int_aliases = c_std.type_aliases_int(lang.static)
 
     def write(name, data):
         try:
@@ -191,7 +192,7 @@ def _print_types(env, lang, p):
         p('ALIGNOF_' + name, data['alignment'])
 
     # standard language type info
-    std = env.config('fbuild.builders.cxx.std.config', lang.static)
+    std = fbuild.env.cache('fbuild.builders.cxx.std.config', lang.static)
     p('CHAR_IS_UNSIGNED', not std.types['char']['signed'])
     p('HAVE_BOOL',        'bool' in std.types)
     p('HAVE_LONGLONG',    'long long' in std.types)
@@ -207,14 +208,14 @@ def _print_types(env, lang, p):
         write(name, data)
     p('MAX_ALIGN', max_align)
     p('flx_aligns', aligns)
-    p('arith_conv', c_std.type_conversions_int(env, lang.static))
+    p('arith_conv', c_std.type_conversions_int(lang.static))
 
     # stddef.h types
     for name, data in std.headers.stddef_h.types.items():
         write(name, data)
 
     # c99 types
-    c99 = env.config('fbuild.builders.c.c99.config', lang.static)
+    c99 = fbuild.env.cache('fbuild.builders.c.c99.config', lang.static)
     for name, data in c99.types.items():
         if name == '_Bool': name = 'cbool'
         write(name, data)
@@ -233,8 +234,8 @@ def _print_types(env, lang, p):
         for name, data in types.items():
             write(name, data)
 
-def _print_c99_support(env, lang, p):
-    c99 = env.config('fbuild.builders.c.c99.config', lang.static)
+def _print_c99_support(lang, p):
+    c99 = fbuild.env.cache('fbuild.builders.c.c99.config', lang.static)
     try:
         vsnprintf = c99.headers.stdio_h.vsnprintf
     except KeyError:
@@ -242,10 +243,10 @@ def _print_c99_support(env, lang, p):
     else:
         p('HAVE_VSNPRINTF', vsnprintf)
 
-def _print_posix_support(env, lang, platform, p):
+def _print_posix_support(lang, platform, p):
     # print out information about the posix libraries
 
-    posix = env.config('fbuild.builders.c.posix.config', lang.static)
+    posix = fbuild.env.cache('fbuild.builders.c.posix.config', lang.static)
     try:
         dlopen = posix.headers.dlfcn_h.dlopen
     except KeyError:
@@ -273,22 +274,22 @@ def _print_posix_support(env, lang, platform, p):
         p('PTHREAD_SWITCH', ' '.join(pthread_h.flags))
 
     try:
-        env.config('fbuild.builders.c.bsd.config_sys_event_h', lang.static)
-    except fbuild.builders.ConfigFailed:
+        fbuild.env.cache('fbuild.builders.c.bsd.config_sys_event_h', lang.static)
+    except ConfigFailed:
         p('HAVE_KQUEUE_DEMUXER', False)
     else:
         p('HAVE_KQUEUE_DEMUXER', True)
 
     try:
-        env.config('fbuild.builders.c.linux.config_sys_epoll_h', lang.static)
-    except fbuild.builders.ConfigFailed:
+        fbuild.env.cache('fbuild.builders.c.linux.config_sys_epoll_h', lang.static)
+    except ConfigFailed:
         p('HAVE_EPOLL', False)
     else:
         p('HAVE_EPOLL', True)
 
     try:
-        env.config('fbuild.builders.c.solaris.config_port_h', lang.static)
-    except fbuild.builders.ConfigFailed:
+        fbuild.env.cache('fbuild.builders.c.solaris.config_port_h', lang.static)
+    except ConfigFailed:
         p('HAVE_EVTPORTS', False)
     else:
         p('HAVE_EVTPORTS', True)
@@ -310,17 +311,17 @@ def _print_posix_support(env, lang, platform, p):
             else:
                 p('HAVE_MMAP_' + macro, exists)
 
-def _print_math_support(env, lang, p):
+def _print_math_support(lang, p):
     try:
-        cmath = env.config('fbuild.builders.cxx.cmath.config', lang.static)
-    except fbuild.builders.ConfigFailed:
+        cmath = fbuild.env.cache('fbuild.builders.cxx.cmath.config', lang.static)
+    except ConfigFailed:
         cmath = {}
 
     for function in ('isnan', 'isinf', 'isfinite'):
         p('HAVE_CXX_' + function.upper() + '_IN_CMATH',
             cmath.get(function, False))
 
-    math = env.config('fbuild.builders.c.math.config', lang.static)
+    math = fbuild.env.cache('fbuild.builders.c.math.config', lang.static)
     for mode, function in \
             ('C99', 'isnan'), ('C99', 'isinf'), ('C99', 'isfinite'), \
             ('BSD', 'isnanf'), ('BSD', 'isinff'), ('BSD', 'finitef'):
@@ -329,24 +330,24 @@ def _print_math_support(env, lang, p):
             p('HAVE_%s_%s_IN_%s' % (mode, function.upper(), header.upper()),
                 h.get(function, False))
 
-def _print_openmp_support(env, lang, p):
+def _print_openmp_support(lang, p):
     try:
-        static = env.config('fbuild.builders.c.openmp.config', lang.static)
-    except fbuild.builders.ConfigFailed:
+        static = fbuild.env.cache('fbuild.builders.c.openmp.config', lang.static)
+    except ConfigFailed:
         static = {}
 
     try:
-        shared = env.config('fbuild.builders.c.openmp.config', lang.shared)
-    except fbuild.builders.ConfigFailed:
+        shared = fbuild.env.cache('fbuild.builders.c.openmp.config', lang.shared)
+    except ConfigFailed:
         shared = {}
 
     p('HAVE_OPENMP',        bool(static) or bool(shared))
     p('HAVE_STATIC_OPENMP', bool(static))
     p('HAVE_SHARED_OPENMP', bool(shared))
 
-def _print_cxx_bugs(env, lang, p):
+def _print_cxx_bugs(lang, p):
     try:
-        bugs = env.config('fbuild.builders.cxx.std.config_compiler_bugs',
+        bugs = fbuild.env.cache('fbuild.builders.cxx.std.config_compiler_bugs',
             lang.static)
     except fbuild.ConfigFailed:
         bugs = {}
@@ -357,17 +358,17 @@ def _print_cxx_bugs(env, lang, p):
     else:
         p('HAVE_INCLASS_MEMBER_INITIALIZATION', test)
 
-def _print_gcc_extensions(env, lang, p):
+def _print_gcc_extensions(lang, p):
     try:
-        gcc = env.config('fbuild.builders.c.gcc.config_extensions',
+        gcc = fbuild.env.cache('fbuild.builders.c.gcc.config_extensions',
             lang.static)
-    except fbuild.builders.ConfigFailed:
+    except ConfigFailed:
         gcc = {}
 
     try:
-        gxx = env.config('fbuild.builders.cxx.gxx.config_extensions',
+        gxx = fbuild.env.cache('fbuild.builders.cxx.gxx.config_extensions',
             lang.static)
-    except fbuild.builders.ConfigFailed:
+    except ConfigFailed:
         gxx = {}
 
     have_gnu_x86 = not gcc.get('named_registers_x86_64') and \
@@ -383,8 +384,8 @@ def _print_gcc_extensions(env, lang, p):
 
 # -----------------------------------------------------------------------------
 
-class Iscr(fbuild.packages.SimplePackage):
+class Iscr(SimplePackage):
     default_config = 'buildsystem.iscr.config_iscr'
 
-    def command(self, env, *args, **kwargs):
-        return self.config(env)(*args, **kwargs)
+    def command(self, *args, **kwargs):
+        return self.config(*args, **kwargs)

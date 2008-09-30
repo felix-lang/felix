@@ -1,18 +1,25 @@
 import fbuild
+import fbuild.packages.c as c
+from fbuild.path import Path
 
-def build(env, phase):
-    import fbuild.packages.c as c
+import buildsystem.flx as flx
+
+# -----------------------------------------------------------------------------
+
+def build_runtime(phase):
+    path = Path('src', 'judy')
 
     macros = ['BUILD_JUDY']
 
-    types = env.config('fbuild.builders.c.std.config_types', phase.c.static)
+    types = fbuild.env.cache('fbuild.builders.c.std.config_types',
+        phase.c.static)
+
     if types['void*']['size'] == 8:
         macros.append('JU_64BIT')
     else:
         macros.append('JU_32BIT')
 
-    path = fbuild.Path('src', 'judy')
-    return c.SharedLibrary(path / 'judy',
+    return c.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_judy_dynamic',
         srcs=[
             path / 'JudyCommon/JudyMalloc.c',
             path / 'Judy1/JUDY1_Judy1ByCount.c',
