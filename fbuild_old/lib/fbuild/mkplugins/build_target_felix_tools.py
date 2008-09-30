@@ -14,6 +14,8 @@ class build_target_felix_tools(Process):
     libs = [l+'_static' for l in pkgdict.get("exes_require_libs",[])]
     fsflags = pkgdict.get("felix_requires_linkflags","")
     for src,exe in flxs:
+      src = os.path.join(config.src_dir, src)
+
       # added 'std' here so flx_pkgconfig builds
       self.shell(os.path.join('bin', 'flxg'),
         '-Ilib',

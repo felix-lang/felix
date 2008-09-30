@@ -1,49 +1,16 @@
-@head(1,'pkg-config replacement')
+/*
 This program provides roughly the same functionality as
 the pkg-config program. It isn't the same, however,
 and it uses its own files. As usual other people's software
 is harder to modify so it work right than to do it oneself;(
-@p()
+
 This program should be compiled static with Felix, as early
 as possible, since it is needed to compile Felix code
 which uses extensions, plugins, or whatever.
 Maybe the tarball should even include the C++ sources,
 so it can be built early enough.
+*/
 
-@h = tangler("spkgs/flx_pkgconfig.py")
-@select(h)
-import os
-
-#
-# we can't use flx_pkgconfig to supply platform
-# libraries .. because this IS flx_pkgconfig --
-# so it isn't built yet!!
-#
-# driver apps (like pkg_config) only use async if they have to, so I think
-# all this socket bootstrapping stuff is now unnecessary. Let's see!
-FLXFLAGS = ""
-#if WIN32:
-#  if HAVE_MSVC:
-#    FLXFLAGS = "/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock "
-#  else:
-#    FLXFLAGS = "-lws2_32 -lmswsock "
-#elif SOLARIS:
-#  FLXFLAGS = "-lsocket -lnsl " # uses async hooker->faio->demux->sockets
-
-# DRLIBS = ['libflx_async','libfaio','libdemux','libflx_pthread','libflx', 'libflx_exceptions']
-DRLIBS = ['libflx_pthread','libflx','libflx_gc','libflx_judy', 'libflx_exceptions']
-
-pkg_requires = ['flx_compiler','flx_drivers','flx_stdlib']
-felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
-felix_requires_linkflags = FLXFLAGS
-exes_require_libs = DRLIBS
-iscr_source = ['lpsrc/flx_pkgconfig.pak']
-f = open(os.path.join("tools","flx_pkgconfig.includes"),"w")
-f.write('#include "flx_rtl.hpp"\n')
-f.write('#include "flx_gc.hpp"\n')
-f.close()
-@h = tangler("tools/flx_pkgconfig.flx","data")
-@select(h)
 proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;";
 kludge();
 
@@ -304,4 +271,3 @@ done;
 // strip any trailing space off to ease bash scripting
 print$ strip$ str result; endl;
 System::exit return_code;
-
