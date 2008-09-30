@@ -2570,6 +2570,7 @@ module SDL_net_h
 @select(tangler('lib/flx_faio_sdl.flx'))
 include "SDL/SDL";
 include "SDL/SDL_events";
+include "SDL/SDL_mutex";
 include "flx_faio";
 
 module SDL_events
@@ -2577,6 +2578,7 @@ module SDL_events
   requires package "sdl";
   open SDL_events_h;
   open SDL_mutex_h;
+  open C_hack;
 
   fun event_type: SDL_Event -> uint8 = "$1.type";
 
