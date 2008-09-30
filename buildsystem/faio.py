@@ -1,4 +1,5 @@
 import fbuild
+import fbuild.packages
 import fbuild.packages.cxx as cxx
 from fbuild.path import Path
 
@@ -8,6 +9,15 @@ import buildsystem.flx as flx
 
 def build_runtime(phase):
     path = Path('src', 'faio')
+
+    for hpp in (
+            fbuild.buildroot / 'config/target/flx_faio_config.hpp',
+            path / 'faio_asyncio.hpp',
+            path / 'faio_job.hpp',
+            path / 'faio_timer.hpp',
+            path / 'faio_posixio.hpp',
+            path / 'faio_winio.hpp'):
+        fbuild.packages.Copy(fbuild.buildroot / 'lib/rtl', hpp).build()
 
     srcs = [
         path / 'faio_asyncio.cpp',

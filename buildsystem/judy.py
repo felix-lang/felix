@@ -1,4 +1,5 @@
 import fbuild
+import fbuild.packages
 import fbuild.packages.c as c
 from fbuild.path import Path
 
@@ -8,6 +9,8 @@ import buildsystem.flx as flx
 
 def build_runtime(phase):
     path = Path('src', 'judy')
+
+    fbuild.packages.Copy(fbuild.buildroot / 'lib/rtl', path / 'Judy.h').build()
 
     macros = ['BUILD_JUDY']
 

@@ -7,6 +7,14 @@ from fbuild.path import Path
 def build_runtime(phase):
     path = Path('src', 'gc')
 
+    for hpp in (
+            fbuild.buildroot / 'config/target/flx_gc_config.hpp',
+            path / 'flx_gc.hpp',
+            path / 'flx_collector.hpp',
+            path / 'flx_gc_private.hpp',
+            path / 'flx_ts_collector.hpp'):
+        fbuild.packages.Copy(fbuild.buildroot / 'lib/rtl', hpp).build()
+
     return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_gc_dynamic',
         [path / '*.cpp'],
         includes=[
