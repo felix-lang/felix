@@ -51,3 +51,7 @@ def build_runtime(phase):
         ],
         macros=['BUILD_FAIO'],
         builder=phase.cxx)
+
+def build_flx(builder):
+    return flx.copy_flxs_to_lib(builder,
+        Path('src/faio/*.flx').glob())

@@ -79,3 +79,6 @@ def build_runtime(phase):
         macros=macros,
         builder=phase.c,
     )
+
+def build_flx(builder):
+    return flx.copy_flxs_to_lib(builder, Path('src/faio/*.flx').glob())

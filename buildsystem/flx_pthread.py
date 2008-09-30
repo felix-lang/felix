@@ -3,6 +3,8 @@ import fbuild.packages
 import fbuild.packages.cxx as cxx
 from fbuild.path import Path
 
+import buildsystem.flx as flx
+
 # -----------------------------------------------------------------------------
 
 def build_runtime(phase):
@@ -70,3 +72,7 @@ def build_runtime(phase):
         macros=['BUILD_PTHREAD'],
         lflags={'flags': flags},
         builder=phase.cxx)
+
+def build_flx(builder):
+    return flx.copy_flxs_to_lib(builder,
+        Path('src/pthread/*.flx').glob())

@@ -127,3 +127,7 @@ def build_runtime(phase):
         macros=['BUILD_DEMUX'],
         builder=phase.cxx,
     )
+
+def build_flx(builder):
+    return flx.copy_flxs_to_lib(builder,
+        Path('src/demux/*.flx').glob())
