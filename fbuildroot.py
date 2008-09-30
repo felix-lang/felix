@@ -124,14 +124,51 @@ def build():
     fbuild.scheduler.map(fbuild.packages.build,
         [Iscr(p) for p in (fbuild.env.cache(src_dir)/'lpsrc/*.pak').glob()])
 
-    drivers = env.config('buildsystem.flx_compiler.build_flx_drivers', host.ocaml)
-    for driver in drivers.values():
-        driver.build(env)
+    ####
 
-    import buildsystem.flx_drivers
+    # make the rtl header directory
+    (fbuild.buildroot / 'lib/rtl').make_dirs()
 
-    flx_drivers = buildsystem.flx_drivers.build(env, target)
-    flx_drivers.flx_run.lib.build(env)
-    flx_drivers.flx_run.exe.build(env)
-    flx_drivers.flx_arun.lib.build(env)
-    flx_drivers.flx_arun.exe.build(env)
+    import buildsystem.flx as flx
+
+    compilers = fbuild.env.run('buildsystem.flx_compiler.build_flx_drivers',
+        host.ocaml)
+
+    drivers = fbuild.env.run('buildsystem.flx_drivers.build',
+        target)
+
+    elk = fbuild.env.run('buildsystem.elk.build', host, target)
+    elk.exe.build()
+    elk.lib.build()
+
+    flx_config = fbuild.env.run('buildsystem.flx.build',
+        compilers.flxg, target.cxx.shared, drivers)
+
+    # copy files into the library
+    for module in 'flx_pthread', 'demux', 'faio', 'judy':
+        for f in fbuild.env.run('buildsystem.' + module + '.build_flx', flx):
+            f.build()
+
+    flx_pkgconfig = fbuild.env.run('buildsystem.flx.build_flx_pkgconfig',
+        flx_config, target).build()
+
+    # now, try building a file
+
+    felix = fbuild.env.cache('fbuild.builders.felix.config',
+        exe=fbuild.buildroot / 'bin/flx',
+        flags=['--test=' + fbuild.buildroot])
+
+    run_tests(felix, Path.glob(fbuild.buildroot / 'tut/tutorial/*.flx'))
+
+def run_tests(felix, srcs):
+    from fbuild.packages.felix import Felix
+    from buildsystem.flx import Test
+
+    tests = [Test(src, config=felix) for src in sorted(srcs)]
+    def f(test):
+        try:
+            test.build()
+        except fbuild.ConfigFailed as e:
+            fbuild.logger.log(e)
+
+    fbuild.scheduler.map(f, tests)
