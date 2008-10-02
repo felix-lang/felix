@@ -1,11 +1,12 @@
+import time
+
 import fbuild
 from fbuild import ConfigFailed
-from fbuild.packages import SimplePackage
 from fbuild.path import Path
 
 # -----------------------------------------------------------------------------
 
-class IscrBuilder:
+class Iscr:
     def __init__(self, exe):
         self.exe = Path(exe)
 
@@ -15,6 +16,12 @@ class IscrBuilder:
             buildroot=fbuild.buildroot,
             **kwargs):
         src = Path(src)
+        dst = src.replace_root(buildroot) + '.stdout'
+
+        # if the iscr file hasn't changed, read the .stdout file and return it.
+        if not dst.is_dirty(src):
+            with open(dst, 'rb') as f:
+                return f.read()
 
         cmd = [
             self.exe.relative_path_to(buildroot),
@@ -26,17 +33,26 @@ class IscrBuilder:
         cmd.extend(flags)
         cmd.append(src.relative_path_to(buildroot))
 
-        return fbuild.execute(cmd, 'iscr extracting', src,
+        stdout, stderr = fbuild.execute(cmd, 'iscr extracting', src,
             color='green',
             cwd=buildroot,
             env={'PYTHONPATH': Path.relative_path_to('.', buildroot)},
             **kwargs)
 
+        # make sure the dst parent exists, or we'll get an error
+        dst.parent.make_dirs()
+
+        # cache the output
+        with open(dst, 'wb') as f:
+            f.write(stdout)
+
+        return stdout
+
 def config_iscr(exe=None):
     if exe is None:
         exe = fbuild.env.cache('fbuildroot.src_dir') / 'interscript/bin/iscr.py'
 
-    return IscrBuilder(exe)
+    return Iscr(exe)
 
 def config_iscr_config(build, host, target):
     # allow us to import the buildroot
@@ -381,11 +397,3 @@ def _print_gcc_extensions(lang, p):
     p('HAVE_GNU_BUILTIN_EXPECT', gcc.get('builtin_expect'))
     p('USE_REGPARM3',            have_gnu_x86)
     p('HAVE_STL_GNU_CXX',        gxx.get('headers', {}).get('hash_map'))
-
-# -----------------------------------------------------------------------------
-
-class Iscr(SimplePackage):
-    default_config = 'buildsystem.iscr.config_iscr'
-
-    def command(self, *args, **kwargs):
-        return self.config(*args, **kwargs)
