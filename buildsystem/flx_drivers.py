@@ -1,5 +1,4 @@
 import fbuild
-import fbuild.packages.cxx as cxx
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -35,31 +34,33 @@ def build(phase):
         fbuild.env.run('buildsystem.faio.build_runtime', phase),
     ]
 
-    flx_run_lib = cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_run',
-        srcs=[path / 'flx_run.cxx'],
+    flx_run_lib = phase.cxx.static.compile(
+        dst=fbuild.buildroot / 'lib/rtl/flx_run',
+        src=path / 'flx_run.cxx',
         includes=run_includes,
         macros=['FLX_STATIC_LINK'],
-        libs=run_libs,
-        builder=phase.cxx)
+    )
 
-    flx_run_exe = cxx.Executable(fbuild.buildroot / 'bin/flx_run',
+    flx_run_exe = phase.cxx.shared.build_exe(
+        dst=fbuild.buildroot / 'bin/flx_run',
         srcs=[path / 'flx_run.cxx'],
         includes=run_includes,
         libs=run_libs,
-        builder=phase.cxx)
+    )
 
-    flx_arun_lib = cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_arun',
-        srcs=[path / 'flx_arun.cxx'],
+    flx_arun_lib = phase.cxx.static.compile(
+        dst=fbuild.buildroot / 'lib/rtl/flx_arun',
+        src=path / 'flx_arun.cxx',
         includes=arun_includes,
         macros=['FLX_STATIC_LINK'],
-        libs=run_libs,
-        builder=phase.cxx)
+    )
 
-    flx_arun_exe = cxx.Executable(fbuild.buildroot / 'bin/flx_arun',
+    flx_arun_exe = phase.cxx.shared.build_exe(
+        dst=fbuild.buildroot / 'bin/flx_arun',
         srcs=[path / 'flx_arun.cxx'],
         includes=arun_includes,
         libs=arun_libs,
-        builder=phase.cxx)
+    )
 
     return Record(
         flx_run_lib=flx_run_lib,
