@@ -1,6 +1,4 @@
 import fbuild
-import fbuild.packages
-import fbuild.packages.ocaml as ocaml
 
 # -----------------------------------------------------------------------------
 
@@ -38,55 +36,30 @@ class Builder:
 
 # -----------------------------------------------------------------------------
 
-def build_dyplib(builder=None):
+def build_lib(ocaml):
     path = fbuild.buildroot/'src/compiler/dyp/dyplib'
-    return ocaml.Library(path/'dyp', [path/'*.ml{,i}'], builder=builder)
+    return ocaml.builder.build_lib(path/'dyp', [path/'*.ml{,i}'])
 
-def build_pgen(builder=None):
+def build_pgen(ocaml):
     path = fbuild.buildroot/'src/compiler/dyp/generators/pgen'
-    return fbuild.packages.BuilderWrapper(Builder,
-        ocaml.Executable(path/'pgen',
-            srcs=[
-                path/'*.ml{,i}',
-                ocaml.Ocamllex(path/'pgen_lexer.mll'),
-            ],
-            libs=[fbuild.env.run(build_dyplib, builder)],
-            builder=builder,
-        )
-    )
+    exe = ocaml.builder.build_exe(path/'pgen', [
+            path/'*.ml{,i}',
+            ocaml.ocamllex(path/'pgen_lexer.mll'),
+        ],
+        libs=[fbuild.env.run(build_lib, ocaml)])
 
-def build_dypgen(builder=None):
+    return Builder(exe)
+
+def build_dypgen(ocaml):
     path = fbuild.buildroot/'src/compiler/dyp/generators/dypgen'
-    return fbuild.packages.BuilderWrapper(Builder,
-        ocaml.Executable(
-            dst=path/'dypgen',
-            srcs=[
-                path/'*.ml{,i}',
-                ocaml.Ocamllex(path/'dypgen_lexer.mll'),
-                ocaml.Ocamllex(path/'insert_linenum.mll'),
-                Pgen(path/'dypgen_parser.dyp'),
-            ],
-            libs=[fbuild.env.run(build_dyplib, builder)],
-            builder=builder,
-        )
-    )
 
-# -----------------------------------------------------------------------------
+    pgen = fbuild.env.run(build_pgen, ocaml)
+    exe = ocaml.builder.build_exe(path/'dypgen', [
+            path/'*.ml{,i}',
+            ocaml.ocamllex(path/'dypgen_lexer.mll'),
+            ocaml.ocamllex(path/'insert_linenum.mll'),
+            pgen(path/'dypgen_parser.dyp'),
+        ],
+        libs=[fbuild.env.run(build_lib, ocaml)])
 
-class Pgen(fbuild.packages.SimplePackage):
-    default_config = 'buildsystem.dyp.build_pgen'
-
-    def dependencies(self):
-        return (self.target, self.config)
-
-    def command(self, *args, **kwargs):
-        return self.config.build()(*args, **kwargs)
-
-class Dypgen(fbuild.packages.SimplePackage):
-    default_config = 'buildsystem.dyp.build_dypgen'
-
-    def dependencies(self):
-        return (self.target, self.config)
-
-    def command(self, *args, **kwargs):
-        return self.config.build()(*args, **kwargs)
+    return Builder(exe)
