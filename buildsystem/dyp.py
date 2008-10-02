@@ -11,21 +11,30 @@ class Builder:
     def __call__(self, src, *, buildroot=fbuild.buildroot, flags=[]):
         # first, copy the src file into the buildroot
         src_buildroot = src.replace_root(buildroot)
+        dsts = (
+            src_buildroot.replace_ext('.ml'),
+            src_buildroot.replace_ext('.mli'),
+        )
+
+        for dst in dsts:
+            if dst.is_dirty((src,)):
+                break
+        else:
+            return dsts
 
         if src != src_buildroot:
             src_buildroot.parent.make_dirs()
             src.copy(src_buildroot)
             src = src_buildroot
 
-        dst = src.replace_ext('.ml')
         cmd = [self.exe]
         cmd.extend(flags)
         cmd.append(src)
 
-        fbuild.execute(cmd, self.exe.name, '%s -> %s' % (src, dst),
+        fbuild.execute(cmd, self.exe.name, '%s -> %s' % (src, ' '.join(dsts)),
             color='yellow')
 
-        return (dst, dst + 'i')
+        return dsts
 
 # -----------------------------------------------------------------------------
 
