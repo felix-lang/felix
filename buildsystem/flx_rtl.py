@@ -1,28 +1,29 @@
 import fbuild
-import fbuild.packages
-import fbuild.packages.cxx as cxx
 from fbuild.path import Path
+
+import buildsystem
 
 # -----------------------------------------------------------------------------
 
 def build_runtime(phase):
     path = Path('src', 'rtl')
 
-    for hpp in (
-            fbuild.buildroot / 'config/target/flx_rtl_config.hpp',
-            fbuild.buildroot / 'config/target/flx_meta.hpp',
-            path / 'flx_rtl.hpp',
-            path / 'flx_compiler_support_headers.hpp',
-            path / 'flx_compiler_support_bodies.hpp',
-            path / 'flx_dynlink.hpp',
-            path / 'flx_i18n.hpp',
-            path / 'flx_ioutil.hpp',
-            path / 'flx_strutil.hpp',
-            path / 'flx_executil.hpp'):
-        fbuild.packages.Copy(fbuild.buildroot / 'lib/rtl', hpp).build()
+    buildsystem.copy_hpps_to_rtl(
+        fbuild.buildroot / 'config/target/flx_rtl_config.hpp',
+        fbuild.buildroot / 'config/target/flx_meta.hpp',
+        path / 'flx_rtl.hpp',
+        path / 'flx_compiler_support_headers.hpp',
+        path / 'flx_compiler_support_bodies.hpp',
+        path / 'flx_dynlink.hpp',
+        path / 'flx_i18n.hpp',
+        path / 'flx_ioutil.hpp',
+        path / 'flx_strutil.hpp',
+        path / 'flx_executil.hpp',
+    )
 
-    return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_dynamic',
-        [path / '*.cpp'],
+    return phase.cxx.shared.build_lib(
+        dst=fbuild.buildroot / 'lib/rtl/flx_dynamic',
+        srcs=[path / '*.cpp'],
         includes=[
             fbuild.buildroot / 'config/target',
             'src/exceptions',
@@ -39,4 +40,4 @@ def build_runtime(phase):
             fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
         ],
         macros=['BUILD_EXCEPTIONS'],
-        builder=phase.cxx)
+    )
