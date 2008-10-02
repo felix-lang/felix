@@ -1,32 +1,30 @@
 import fbuild
-import fbuild.packages
-import fbuild.packages.cxx as cxx
 from fbuild.path import Path
 
-import buildsystem.flx as flx
+import buildsystem
 
 # -----------------------------------------------------------------------------
 
 def build_runtime(phase):
     path = Path('src/pthread')
 
-    for hpp in (
-            fbuild.buildroot / 'config/target/flx_pthread_config.hpp',
+    buildsystem.copy_hpps_to_rtl(
+        fbuild.buildroot / 'config/target/flx_pthread_config.hpp',
 
-            # portable
-            path / 'pthread_thread.hpp',
-            path / 'pthread_mutex.hpp',
-            path / 'pthread_counter.hpp',
-            path / 'pthread_waitable_bool.hpp',
-            path / 'pthread_condv.hpp',
-            path / 'pthread_semaphore.hpp',
-            path / 'pthread_monitor.hpp',
-            path / 'pthread_sleep_queue.hpp',
-            path / 'pthread_work_fifo.hpp',
+        # portable
+        path / 'pthread_thread.hpp',
+        path / 'pthread_mutex.hpp',
+        path / 'pthread_counter.hpp',
+        path / 'pthread_waitable_bool.hpp',
+        path / 'pthread_condv.hpp',
+        path / 'pthread_semaphore.hpp',
+        path / 'pthread_monitor.hpp',
+        path / 'pthread_sleep_queue.hpp',
+        path / 'pthread_work_fifo.hpp',
 
-            # win32 and posix
-            path / 'pthread_win_posix_condv_emul.hpp'):
-        fbuild.packages.Copy(fbuild.buildroot / 'lib/rtl', hpp).build()
+        # win32 and posix
+        path / 'pthread_win_posix_condv_emul.hpp',
+    )
 
     srcs = [
         path / 'pthread_win_posix_condv_emul.cpp', # portability hackery
@@ -66,13 +64,14 @@ def build_runtime(phase):
     else:
         flags.extend(pthread_h.flags)
 
-    return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_pthread_dynamic', srcs,
+    return phase.cxx.shared.build_lib(
+        dst=fbuild.buildroot / 'lib/rtl/flx_pthread_dynamic',
+        srcs=srcs,
         includes=[fbuild.buildroot / 'config/target', 'src/rtl'],
         libs=libs,
         macros=['BUILD_PTHREAD'],
         lflags={'flags': flags},
-        builder=phase.cxx)
+    )
 
 def build_flx(builder):
-    return flx.copy_flxs_to_lib(builder,
-        Path('src/pthread/*.flx').glob())
+    buildsystem.copy_flxs_to_lib(Path('src/pthread/*.flx').glob())
