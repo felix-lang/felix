@@ -1,11 +1,12 @@
 import fbuild
-import fbuild.packages.cxx as cxx
 from fbuild.record import Record
+
+import buildsystem
 
 # -----------------------------------------------------------------------------
 
-def build(host, target):
-    smbase_srcs = [
+def build_lib(phase):
+    srcs = [
         'src/smbase/sm_malloc_stub.cpp',
         'src/smbase/sm_nonport.cpp',
         'src/smbase/sm_autofile.cpp',
@@ -40,9 +41,51 @@ def build(host, target):
         'src/smbase/sm_trdelete.cpp',
         'src/smbase/sm_voidlist.cpp',
         'src/smbase/sm_exc.cpp',
+
+        'src/elkhound/elk_glr.cpp',
+        'src/elkhound/elk_parsetables.cpp',
+        'src/elkhound/elk_useract.cpp',
+        'src/elkhound/elk_ptreenode.cpp',
+        'src/elkhound/elk_ptreeact.cpp',
     ]
 
-    ast_srcs = [
+    buildsystem.copy_hpps_to_rtl(
+        fbuild.buildroot / 'config/target/flx_faio_config.hpp',
+        fbuild.buildroot / 'config/target/flx_elk_config.hpp',
+        fbuild.buildroot / 'config/host/flx_host_elk_config.hpp',
+        fbuild.buildroot / 'config/target/flx_target_elk_config.hpp',
+        'src/smbase/sm_array.h',
+        'src/smbase/sm_objpool.h',
+        'src/smbase/sm_sobjlist.h',
+        'src/smbase/sm_trdelete.h',
+        'src/smbase/sm_voidlist.h',
+        'src/smbase/sm_macros.h',
+        'src/smbase/sm_srcloc.h',
+        'src/smbase/sm_typ.h',
+        'src/smbase/sm_xassert.h',
+        'src/smbase/sm_objlist.h',
+        'src/smbase/sm_str.h',
+        'src/elkhound/elk_lexerint.h',
+        'src/elkhound/elk_glrconfig.h',
+        'src/elkhound/elk_parsetables.h',
+        'src/elkhound/elk_glr.h',
+        'src/elkhound/elk_rcptr.h',
+        'src/elkhound/elk_useract.h',
+    )
+
+    return phase.cxx.shared.build_lib(
+        dst=fbuild.buildroot / 'lib/rtl/elk_dynamic',
+        srcs=srcs,
+        includes=[
+            fbuild.buildroot / 'config/host',
+            fbuild.buildroot / 'config/target',
+            'src/smbase',
+        ],
+        macros=['TARGET_BUILD'],
+    )
+
+def build_exe(phase):
+    srcs = [
         'src/ast/ast_gramlex.cpp',
         'src/ast/ast_ccsstr.cpp',
         'src/ast/ast_reporterr.cpp',
@@ -50,9 +93,7 @@ def build(host, target):
         'src/ast/ast_asthelp.cpp',
         'src/ast/ast_strtable.cpp',
         'src/ast/ast_locstr.cpp',
-    ]
 
-    elkhound_srcs = [
         'src/elkhound/elk_asockind.cpp',
         'src/elkhound/elk_grammar.cpp',
         'src/elkhound/elk_emitcode.cpp',
@@ -63,68 +104,19 @@ def build(host, target):
         'src/elkhound/elk_grampar.cpp',
         'src/elkhound/elk_grampar.tab.cpp',
         'src/elkhound/elk_gramexpl.cpp',
+        'src/elkhound/elk_gramanl.cpp',
+        'src/elkhound/elk_gramanl.cxx',
     ]
 
-    elkrtl_srcs = [
-        'src/elkhound/elk_glr.cpp',
-        'src/elkhound/elk_parsetables.cpp',
-        'src/elkhound/elk_useract.cpp',
-        'src/elkhound/elk_ptreenode.cpp',
-        'src/elkhound/elk_ptreeact.cpp',
-    ]
-
-    srcs = []
-    srcs.extend(smbase_srcs)
-    srcs.extend(ast_srcs)
-    srcs.extend(elkhound_srcs)
-    srcs.extend(elkrtl_srcs)
-    srcs.append('src/elkhound/elk_gramanl.cpp')
-
-    exe = cxx.Executable(fbuild.buildroot / 'bin/flx_elkhound',
-        srcs + ['src/elkhound/elk_gramanl.cxx'],
+    return phase.cxx.shared.build_exe(
+        dst=fbuild.buildroot / 'bin/flx_elkhound',
+        srcs=srcs,
         includes=[
             fbuild.buildroot / 'config/host',
             fbuild.buildroot / 'config/target',
             'src/smbase',
             'src/ast',
         ],
+        libs=[fbuild.env.run(build_lib, phase)],
         macros=['HOST_BUILD'],
-        builder=target.cxx,
     )
-
-    for hpp in (
-            fbuild.buildroot / 'config/target/flx_faio_config.hpp',
-            fbuild.buildroot / 'config/target/flx_elk_config.hpp',
-            fbuild.buildroot / 'config/host/flx_host_elk_config.hpp',
-            fbuild.buildroot / 'config/target/flx_target_elk_config.hpp',
-            'src/smbase/sm_array.h',
-            'src/smbase/sm_objpool.h',
-            'src/smbase/sm_sobjlist.h',
-            'src/smbase/sm_trdelete.h',
-            'src/smbase/sm_voidlist.h',
-            'src/smbase/sm_macros.h',
-            'src/smbase/sm_srcloc.h',
-            'src/smbase/sm_typ.h',
-            'src/smbase/sm_xassert.h',
-            'src/smbase/sm_objlist.h',
-            'src/smbase/sm_str.h',
-            'src/elkhound/elk_lexerint.h',
-            'src/elkhound/elk_glrconfig.h',
-            'src/elkhound/elk_parsetables.h',
-            'src/elkhound/elk_glr.h',
-            'src/elkhound/elk_rcptr.h',
-            'src/elkhound/elk_useract.h'):
-        fbuild.packages.Copy(fbuild.buildroot / 'lib/rtl', hpp).build()
-
-    lib = cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/elk_dynamic',
-        elkrtl_srcs + smbase_srcs,
-        includes=[
-            fbuild.buildroot / 'config/host',
-            fbuild.buildroot / 'config/target',
-            'src/smbase',
-        ],
-        macros=['TARGET_BUILD'],
-        builder=target.cxx,
-    )
-
-    return Record(exe=exe, lib=lib)
