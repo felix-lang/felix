@@ -1,10 +1,10 @@
 import fbuild
-import fbuild.packages.cxx as cxx
 
 # -----------------------------------------------------------------------------
 
 def build(phase):
-    return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_async_dynamic',
+    return phase.cxx.shared.build_lib(
+        dst=fbuild.buildroot / 'lib/rtl/flx_async_dynamic',
         srcs=['src/rtl/flx_async.cpp'],
         includes=[
             fbuild.buildroot / 'config/target',
@@ -19,4 +19,4 @@ def build(phase):
             fbuild.env.run('buildsystem.faio.build_runtime', phase),
         ],
         macros=['BUILD_ASYNC'],
-        builder=phase.cxx)
+    )
