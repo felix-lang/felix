@@ -63,6 +63,12 @@ def config_host(build, *,
         ocamllex=ocamllex,
         ocamlyacc=ocamlyacc)
 
+    # we prefer the native ocaml as it's much faster
+    if 'native' in phase.ocaml:
+        phase.ocaml.builder = phase.ocaml.native
+    else:
+        phase.ocaml.builder = phase.ocaml.bytecode
+
     return phase
 
 def config_target(host, *, platform, cc, cxx):
