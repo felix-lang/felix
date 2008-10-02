@@ -1,22 +1,18 @@
 import fbuild
-import fbuild.packages.ocaml as ocaml
 from fbuild.path import Path
 from fbuild.record import Record
 
 # -----------------------------------------------------------------------------
 
-def build(builder=None):
-    ocs = Record()
-
+def build_lib(ocaml):
     path = Path('src/compiler/ocs')
 
-    ocs.lib = ocaml.Library(path/'ocs',
+    return ocaml.builder.build_lib(path/'ocs',
         list((path/'*.ml{,i}').glob(exclude='ocs_main.ml')),
-        libs=['nums', 'unix'],
-        builder=builder)
+        libs=['nums', 'unix'])
 
-    ocs.exe = ocaml.Executable(path/'ocs', [path/'ocs_main.ml'],
-        libs=['unix', 'nums', ocs.lib],
-        builder=builder)
+def build_exe(ocaml):
+    path = Path('src/compiler/ocs')
 
-    return ocs
+    return ocaml.builder.build_exe(path/'ocs', [path/'ocs_main.ml'],
+        libs=['nums', 'unix', fbuild.env.run(build_lib, ocaml)])
