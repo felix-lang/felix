@@ -1,22 +1,24 @@
 import fbuild
-import fbuild.packages.cxx as cxx
 from fbuild.path import Path
+
+import buildsystem
 
 # -----------------------------------------------------------------------------
 
 def build_runtime(phase):
-    path = Path('src', 'gc')
+    path = Path('src/gc')
 
-    for hpp in (
-            fbuild.buildroot / 'config/target/flx_gc_config.hpp',
-            path / 'flx_gc.hpp',
-            path / 'flx_collector.hpp',
-            path / 'flx_gc_private.hpp',
-            path / 'flx_ts_collector.hpp'):
-        fbuild.packages.Copy(fbuild.buildroot / 'lib/rtl', hpp).build()
+    buildsystem.copy_hpps_to_rtl(
+        fbuild.buildroot / 'config/target/flx_gc_config.hpp',
+        path / 'flx_gc.hpp',
+        path / 'flx_collector.hpp',
+        path / 'flx_gc_private.hpp',
+        path / 'flx_ts_collector.hpp',
+    )
 
-    return cxx.SharedLibrary(fbuild.buildroot / 'lib/rtl/flx_gc_dynamic',
-        [path / '*.cpp'],
+    return phase.cxx.shared.build_lib(
+        dst=fbuild.buildroot / 'lib/rtl/flx_gc_dynamic',
+        srcs=[path / '*.cpp'],
         includes=[
             fbuild.buildroot / 'config/target',
             'src/rtl',
@@ -29,5 +31,5 @@ def build_runtime(phase):
             fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
             fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
         ],
-        macros=['BUILD_EXCEPTIONS'],
-        builder=phase.cxx)
+        macros=['BUILD_GC'],
+    )
