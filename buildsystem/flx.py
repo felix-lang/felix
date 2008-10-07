@@ -202,25 +202,49 @@ def build_flx_pkgconfig(flx, phase):
 # -----------------------------------------------------------------------------
 
 def test_flx(felix, src):
-    exe = felix.compile(src)
-    dst = exe + '.stdout'
+    for static in False, True:
+        try:
+            exe = felix.compile(src, static=static)
+        except fbuild.ExecutionError as e:
+            fbuild.logger.log(e, verbose=1)
+            if e.stdout:
+                fbuild.logger.log(e.stdout.decode().strip(), verbose=1)
+            if e.stderr:
+                fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
+            continue
 
-    if dst.is_dirty(src):
-        fbuild.logger.check('checking ' + src)
-        stdout, stderr = felix.run(exe, quieter=1)
+        dst = exe + '.stdout'
+        if dst.is_dirty(src):
+            fbuild.logger.check('checking ' + exe)
 
-        with open(dst, 'wb') as f:
-            f.write(stdout)
-
-        expect = src.replace_ext('.expect')
-        if not expect.exists():
-            fbuild.logger.log('no .expect', color='cyan')
-        else:
-            with open(expect, 'rb') as f:
-                s = f.read()
-
-            if stdout == s and stderr == b'':
-                fbuild.logger.passed()
-            else:
+            try:
+                stdout, stderr = felix.run(exe, static=static, quieter=1)
+            except fbuild.ExecutionError as e:
                 fbuild.logger.failed()
-                raise fbuild.ConfigFailed('%s does not equal %s' % (stdout, s))
+
+                fbuild.logger.log(e, verbose=1)
+                if e.stdout:
+                    fbuild.logger.log(e.stdout.decode().strip(), verbose=1)
+                if e.stderr:
+                    fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
+                continue
+
+            with open(dst, 'wb') as f:
+                f.write(stdout)
+
+            expect = src.replace_ext('.expect')
+            if not expect.exists():
+                fbuild.logger.log('no .expect', color='cyan')
+            else:
+                with open(expect, 'rb') as f:
+                    s = f.read()
+
+                if stdout == s:
+                    fbuild.logger.passed()
+                else:
+                    fbuild.logger.failed('failed: output does not match')
+                    fbuild.logger.log('output:', verbose=1)
+                    fbuild.logger.log(stdout.decode(), verbose=1)
+                    fbuild.logger.log('expected:', verbose=1)
+                    fbuild.logger.log(s.decode(), verbose=1)
+                    Path.remove(dst)
