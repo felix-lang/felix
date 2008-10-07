@@ -171,18 +171,21 @@ def build():
     def test(src):
         try:
             test_flx(felix, src)
-        except fbuild.ConfigFailed:
-            pass
+        except fbuild.ConfigFailed as e:
+            fbuild.logger.log(str(e))
 
     fbuild.scheduler.map(test, chain(
         Path.glob('test/*/*.flx', exclude=[
+            'test/drivers/*.flx',
             'test/faio/win-*.flx',
         ]),
         Path.glob('test/*/*/*.flx', exclude=[
+            'test/regress/bt/*.flx',
             'test/regress/kf/*.flx',
             'test/regress/nd/*.flx',
         ]),
         Path.glob(fbuild.buildroot / 'test/*/*.flx', exclude=[
+            fbuild.buildroot / 'test/drivers/*.flx',
             fbuild.buildroot / 'test/faio/win-*.flx',
         ]),
         Path.glob(fbuild.buildroot / 'tut/*/*.flx'),
