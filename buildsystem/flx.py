@@ -202,7 +202,7 @@ def test_flx(felix, src):
 
         expect = src.replace_ext('.expect')
         if not expect.exists():
-            fbuild.logger.passed()
+            fbuild.logger.log('no .expect', color='cyan')
         else:
             with open(expect, 'rb') as f:
                 s = f.read()
