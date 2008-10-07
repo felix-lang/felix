@@ -79,4 +79,4 @@ def build_runtime(phase):
     )
 
 def build_flx(builder):
-    return buildsystem.copy_flxs_to_lib(Path('src/faio/*.flx').glob())
+    return buildsystem.copy_flxs_to_lib(Path('src/judy/*.flx').glob())
