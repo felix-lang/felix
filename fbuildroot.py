@@ -1,3 +1,4 @@
+from itertools import chain
 from optparse import make_option
 
 import fbuild
@@ -167,5 +168,13 @@ def build():
             test_flx(felix, src)
         except fbuild.ConfigFailed:
             pass
-    fbuild.scheduler.map(test,
-        Path.glob(fbuild.buildroot / 'tut/tutorial/*.flx'))
+
+    fbuild.scheduler.map(test, chain(
+        Path.glob('test/*/*.flx', exclude=[
+            'test/faio/win-*.flx',
+        ]),
+        Path.glob(fbuild.buildroot / 'test/*/*.flx', exclude=[
+            fbuild.buildroot / 'test/faio/win-*.flx',
+        ]),
+        Path.glob(fbuild.buildroot / 'tut/*/*.flx'),
+    ))
