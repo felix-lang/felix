@@ -120,7 +120,7 @@ def build_runtime(phase):
             includes.append(path / 'evtport')
 
     return phase.cxx.shared.build_lib(
-        dst=fbuild.buildroot / 'lib/rtl/demux',
+        dst=fbuild.buildroot / 'lib/rtl/demux_dynamic',
         srcs=srcs,
         includes=includes,
         libs=libs,
