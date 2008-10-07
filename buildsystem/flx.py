@@ -172,7 +172,7 @@ def build(flxg, cxx, drivers):
     )
 
 def build_flx_pkgconfig(flx, phase):
-    return flx.build_exe(
+    exe = flx.build_exe(
         dst=fbuild.buildroot / 'bin/flx_pkgconfig',
         src='src/flx_pkgconfig/flx_pkgconfig.flx',
         includes=[fbuild.buildroot / 'lib'],
@@ -186,6 +186,18 @@ def build_flx_pkgconfig(flx, phase):
         ],
         cxx_cflags=['-Wno-invalid-offsetof'],
     )
+
+    # make sure flx_pkgconfig runs
+    fbuild.logger.check('checking ' + exe)
+    try:
+        fbuild.execute([exe], quieter=1)
+    except fbuild.ExecutionError:
+        fbuild.logger.failed()
+        raise
+    else:
+        fbuild.logger.passed()
+
+    return exe
 
 # -----------------------------------------------------------------------------
 
