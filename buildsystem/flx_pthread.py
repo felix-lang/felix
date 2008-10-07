@@ -70,7 +70,7 @@ def build_runtime(phase):
         includes=[fbuild.buildroot / 'config/target', 'src/rtl'],
         libs=libs,
         macros=['BUILD_PTHREAD'],
-        lflags={'flags': flags},
+        lflags=flags,
     )
 
 def build_flx(builder):
