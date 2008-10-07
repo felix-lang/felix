@@ -1,5 +1,6 @@
 import fbuild
 from fbuild.path import Path
+from fbuild.record import Record
 
 import buildsystem
 
@@ -46,15 +47,16 @@ def build_runtime(phase):
         path / 'evtport/demux_evtport_demuxer.hpp',
     )
 
+    dst = fbuild.buildroot / 'lib/rtl/demux'
     srcs = [path / '*.cpp']
     includes = [
         fbuild.buildroot / 'config/target',
         Path('src', 'pthread'),
         path,
     ]
-    libs = [
-        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase).shared,
-    ]
+    macros = ['BUILD_DEMUX']
+    libs = [fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase)]
+    extra_libs = []
 
     if 'win32' in phase.platform:
         srcs.extend((
@@ -64,7 +66,7 @@ def build_runtime(phase):
             path / 'win/demux_win_timer_queue.cpp',    # windows
         ))
         includes.append(path / 'win')
-        libs.extend(('ws2_32', 'mswsock'))
+        extra_libs.extend(('ws2_32', 'mswsock'))
 
     if 'posix' in phase.platform:
         srcs.extend((
@@ -121,13 +123,15 @@ def build_runtime(phase):
             srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
             includes.append(path / 'evtport')
 
-    return phase.cxx.shared.build_lib(
-        dst=fbuild.buildroot / 'lib/rtl/demux_dynamic',
-        srcs=srcs,
-        includes=includes,
-        libs=libs,
-        macros=['BUILD_DEMUX'],
-    )
+    return Record(
+        static=phase.cxx.static.build_lib(dst + '_static', srcs,
+            includes=includes,
+            macros=macros + ['FLX_STATIC_LINK'],
+            libs=[lib.static for lib in libs] + extra_libs),
+        shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
+            includes=includes,
+            macros=macros,
+            libs=[lib.shared for lib in libs] + extra_libs))
 
 def build_flx(builder):
     return buildsystem.copy_flxs_to_lib(Path('src/demux/*.flx').glob())
