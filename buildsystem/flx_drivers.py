@@ -22,16 +22,16 @@ def build(phase):
     ]
 
     run_libs = [
-        fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase).shared,
-        fbuild.env.run('buildsystem.flx_gc.build_runtime', phase).shared,
+        fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
+        fbuild.env.run('buildsystem.flx_gc.build_runtime', phase),
         fbuild.env.run('buildsystem.flx_rtl.build_runtime', phase),
-        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase).shared,
-        fbuild.env.run('buildsystem.judy.build_runtime', phase).shared,
+        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
+        fbuild.env.run('buildsystem.judy.build_runtime', phase),
     ]
 
     arun_libs = run_libs + [
-        fbuild.env.run('buildsystem.demux.build_runtime', phase).shared,
-        fbuild.env.run('buildsystem.faio.build_runtime', phase).shared,
+        fbuild.env.run('buildsystem.demux.build_runtime', phase),
+        fbuild.env.run('buildsystem.faio.build_runtime', phase),
     ]
 
     flx_run_lib = phase.cxx.static.compile(
@@ -45,7 +45,7 @@ def build(phase):
         dst=fbuild.buildroot / 'bin/flx_run',
         srcs=[path / 'flx_run.cxx'],
         includes=run_includes,
-        libs=run_libs,
+        libs=[lib.shared for lib in run_libs],
     )
 
     flx_arun_lib = phase.cxx.static.compile(
@@ -59,7 +59,7 @@ def build(phase):
         dst=fbuild.buildroot / 'bin/flx_arun',
         srcs=[path / 'flx_arun.cxx'],
         includes=arun_includes,
-        libs=arun_libs,
+        libs=[lib.shared for lib in arun_libs],
     )
 
     return Record(
