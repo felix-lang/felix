@@ -42,7 +42,6 @@ DEMUXRTL_INTERFACES = [
 
 DEMUX_CPPS = [
   'src/demux/flx_demux',
-  'src/demux/demux_demuxer',
   'src/demux/demux_quitter',
 ]
 
