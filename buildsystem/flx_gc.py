@@ -1,5 +1,6 @@
 import fbuild
 from fbuild.path import Path
+from fbuild.record import Record
 
 import buildsystem
 
@@ -16,22 +17,28 @@ def build_runtime(phase):
         path / 'flx_ts_collector.hpp',
     )
 
-    return phase.cxx.shared.build_lib(
-        dst=fbuild.buildroot / 'lib/rtl/flx_gc_dynamic',
-        srcs=[path / '*.cpp'],
-        includes=[
-            fbuild.buildroot / 'config/target',
-            'src/rtl',
-            'src/pthread',
-            'src/exceptions',
-            'src/judy',
-        ],
-        libs=[
-            fbuild.env.run('buildsystem.judy.build_runtime', phase).shared,
-            fbuild.env.run('buildsystem.flx_exceptions.build_runtime',
-                phase).shared,
-            fbuild.env.run('buildsystem.flx_pthread.build_runtime',
-                phase).shared,
-        ],
-        macros=['BUILD_GC'],
-    )
+    dst = fbuild.buildroot / 'lib/rtl/flx_gc'
+    srcs = [path / '*.cpp']
+    includes = [
+        fbuild.buildroot / 'config/target',
+        'src/rtl',
+        'src/pthread',
+        'src/exceptions',
+        'src/judy',
+    ]
+    macros = ['BUILD_GC']
+    libs = [
+        fbuild.env.run('buildsystem.judy.build_runtime', phase),
+        fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
+        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
+    ]
+
+    return Record(
+        static=phase.cxx.static.build_lib(dst + '_static', srcs,
+            includes=includes,
+            macros=macros + ['FLX_STATIC_LINK'],
+            libs=[lib.static for lib in libs]),
+        shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
+            includes=includes,
+            macros=macros,
+            libs=[lib.shared for lib in libs]))
