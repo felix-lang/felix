@@ -31,7 +31,7 @@ def build(phase):
 
     arun_libs = run_libs + [
         fbuild.env.run('buildsystem.demux.build_runtime', phase).shared,
-        fbuild.env.run('buildsystem.faio.build_runtime', phase),
+        fbuild.env.run('buildsystem.faio.build_runtime', phase).shared,
     ]
 
     flx_run_lib = phase.cxx.static.compile(

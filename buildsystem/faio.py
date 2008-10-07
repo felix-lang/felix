@@ -1,5 +1,6 @@
 import fbuild
 from fbuild.path import Path
+from fbuild.record import Record
 
 import buildsystem
 
@@ -17,6 +18,7 @@ def build_runtime(phase):
         path / 'faio_winio.hpp',
     )
 
+    dst = fbuild.buildroot / 'lib/rtl/faio'
     srcs = [
         path / 'faio_asyncio.cpp',
         path / 'faio_job.cpp',
@@ -31,6 +33,11 @@ def build_runtime(phase):
         Path('src', 'gc'),
         path,
     ]
+    macros = ['BUILD_FAIO']
+    libs=[
+        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
+        fbuild.env.run('buildsystem.demux.build_runtime', phase),
+    ]
 
     if 'win32' in phase.platform:
         srcs.append(path / 'faio_winio.cpp')
@@ -40,16 +47,15 @@ def build_runtime(phase):
         srcs.append(path / 'faio_posixio.cpp')
         includes.append(Path('src', 'demux', 'posix'))
 
-    return phase.cxx.shared.build_lib(
-        dst=fbuild.buildroot / 'lib/rtl/faio_dynamic',
-        srcs=srcs,
-        includes=includes,
-        libs=[
-            fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase).shared,
-            fbuild.env.run('buildsystem.demux.build_runtime', phase).shared,
-        ],
-        macros=['BUILD_FAIO'],
-    )
+    return Record(
+        static=phase.cxx.static.build_lib(dst + '_static', srcs,
+            includes=includes,
+            macros=macros + ['FLX_STATIC_LINK'],
+            libs=[lib.static for lib in libs]),
+        shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
+            includes=includes,
+            macros=macros,
+            libs=[lib.shared for lib in libs]))
 
 def build_flx(builder):
     return buildsystem.copy_flxs_to_lib(Path('src/faio/*.flx').glob())
