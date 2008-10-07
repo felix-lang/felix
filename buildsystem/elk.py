@@ -5,7 +5,7 @@ import buildsystem
 
 # -----------------------------------------------------------------------------
 
-def build_lib(phase):
+def build_runtime(phase):
     srcs = [
         'src/smbase/sm_malloc_stub.cpp',
         'src/smbase/sm_nonport.cpp',
@@ -117,6 +117,6 @@ def build_exe(phase):
             'src/smbase',
             'src/ast',
         ],
-        libs=[fbuild.env.run(build_lib, phase)],
+        libs=[fbuild.env.run(build_runtime, phase)],
         macros=['HOST_BUILD'],
     )

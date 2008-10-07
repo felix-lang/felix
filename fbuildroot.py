@@ -138,7 +138,10 @@ def build():
     drivers = fbuild.env.run('buildsystem.flx_drivers.build', target)
 
     fbuild.env.run('buildsystem.elk.build_exe', host)
-    fbuild.env.run('buildsystem.elk.build_lib', target)
+    fbuild.env.run('buildsystem.elk.build_runtime', target)
+    fbuild.env.run('buildsystem.flx_async.build_runtime', target)
+    fbuild.env.run('buildsystem.flx_glob.build_runtime', target)
+    fbuild.env.run('buildsystem.tre.build_runtime', target)
 
     # -------------------------------------------------------------------------
 
@@ -146,7 +149,7 @@ def build():
         compilers.flxg, target.cxx.shared, drivers)
 
     # copy files into the library
-    for module in 'flx_pthread', 'demux', 'faio', 'judy':
+    for module in 'flx_pthread', 'demux', 'faio', 'judy', 'flx_glob', 'tre':
         fbuild.env.run('buildsystem.' + module + '.build_flx', flx)
 
     flx_pkgconfig = fbuild.env.run('buildsystem.flx.build_flx_pkgconfig',
