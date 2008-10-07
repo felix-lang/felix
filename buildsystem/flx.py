@@ -182,7 +182,7 @@ def build_flx_pkgconfig(flx, phase):
             fbuild.env.run('buildsystem.flx_rtl.build_runtime', phase),
             fbuild.env.run('buildsystem.flx_gc.build_runtime', phase),
             fbuild.env.run('buildsystem.judy.build_runtime', phase),
-            fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
+            fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase).shared,
         ],
         cxx_cflags=['-Wno-invalid-offsetof'],
     )

@@ -28,7 +28,8 @@ def build_runtime(phase):
         ],
         libs=[
             fbuild.env.run('buildsystem.judy.build_runtime', phase),
-            fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
+            fbuild.env.run('buildsystem.flx_exceptions.build_runtime',
+                phase).shared,
             fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
         ],
         macros=['BUILD_GC'],
