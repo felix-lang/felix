@@ -173,6 +173,10 @@ def build():
         Path.glob('test/*/*.flx', exclude=[
             'test/faio/win-*.flx',
         ]),
+        Path.glob('test/*/*/*.flx', exclude=[
+            'test/regress/kf/*.flx',
+            'test/regress/nd/*.flx',
+        ]),
         Path.glob(fbuild.buildroot / 'test/*/*.flx', exclude=[
             fbuild.buildroot / 'test/faio/win-*.flx',
         ]),
