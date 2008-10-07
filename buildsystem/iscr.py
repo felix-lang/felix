@@ -170,12 +170,14 @@ def _print_compiler(lang, platform, p):
         p('SPEC_EXE_FILENAME', '-o ')
 
         p('CCOBJ_STATIC_FLX',
-            ' '.join([static.compiler.gcc.exe] + static.compiler.flags))
+            ' '.join([static.compiler.gcc.exe] + static.compiler.flags) +
+            ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
 
         p('CCLINK_STATIC', static.exe_linker.gcc.exe)
 
         p('CCOBJ_DYNAMIC_FLX',
-            ' '.join([shared.compiler.gcc.exe] + shared.compiler.flags))
+            ' '.join([shared.compiler.gcc.exe] + shared.compiler.flags) +
+            ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
 
         p('CCLINK_DYNAMIC_FLX',
             ' '.join([shared.lib_linker.gcc.exe] + shared.lib_linker.flags))
