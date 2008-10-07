@@ -178,7 +178,7 @@ def build_flx_pkgconfig(flx, phase):
         includes=[fbuild.buildroot / 'lib'],
         cxx_includes=['src/flx_pkgconfig', fbuild.buildroot / 'lib/rtl'],
         cxx_libs=[
-            fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
+            fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase).shared,
             fbuild.env.run('buildsystem.flx_rtl.build_runtime', phase),
             fbuild.env.run('buildsystem.flx_gc.build_runtime', phase),
             fbuild.env.run('buildsystem.judy.build_runtime', phase).shared,

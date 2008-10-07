@@ -52,7 +52,9 @@ def build_runtime(phase):
         Path('src', 'pthread'),
         path,
     ]
-    libs = [fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase)]
+    libs = [
+        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase).shared,
+    ]
 
     if 'win32' in phase.platform:
         srcs.extend((

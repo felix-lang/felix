@@ -1,5 +1,6 @@
 import fbuild
 from fbuild.path import Path
+from fbuild.record import Record
 
 import buildsystem
 
@@ -26,6 +27,7 @@ def build_runtime(phase):
         path / 'pthread_win_posix_condv_emul.hpp',
     )
 
+    dst = fbuild.buildroot / 'lib/rtl/flx_pthread'
     srcs = [
         path / 'pthread_win_posix_condv_emul.cpp', # portability hackery
         path / 'pthread_mutex.cpp',
@@ -38,8 +40,10 @@ def build_runtime(phase):
         path / 'pthread_work_fifo.cpp',
         path / 'pthread_thread_control.cpp',
     ]
-    libs = []
+    includes = [fbuild.buildroot / 'config/target', 'src/rtl']
+    macros = ['BUILD_PTHREAD']
     flags = []
+    libs = []
 
     if 'win32' in phase.platform:
         srcs.append(path / 'pthread_win_thread.cpp')
@@ -64,14 +68,19 @@ def build_runtime(phase):
     else:
         flags.extend(pthread_h.flags)
 
-    return phase.cxx.shared.build_lib(
-        dst=fbuild.buildroot / 'lib/rtl/flx_pthread_dynamic',
-        srcs=srcs,
-        includes=[fbuild.buildroot / 'config/target', 'src/rtl'],
-        libs=libs,
-        macros=['BUILD_PTHREAD'],
-        lflags=flags,
-    )
+    return Record(
+        static=phase.cxx.static.build_lib(dst + '_static', srcs,
+            includes=includes,
+            macros=macros + ['FLX_STATIC_LINK'],
+            cflags=flags,
+            libs=libs,
+            lflags=flags),
+        shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
+            includes=includes,
+            macros=macros,
+            cflags=flags,
+            libs=libs,
+            lflags=flags))
 
 def build_flx(builder):
     buildsystem.copy_flxs_to_lib(Path('src/pthread/*.flx').glob())

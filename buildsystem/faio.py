@@ -45,7 +45,7 @@ def build_runtime(phase):
         srcs=srcs,
         includes=includes,
         libs=[
-            fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
+            fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase).shared,
             fbuild.env.run('buildsystem.demux.build_runtime', phase),
         ],
         macros=['BUILD_FAIO'],
