@@ -1,6 +1,5 @@
 #include "pthread_sleep_queue.hpp"
 #include <queue>        // stl to the bloated rescue
-#include <string.h>       // strerror
 
 using namespace std;
 

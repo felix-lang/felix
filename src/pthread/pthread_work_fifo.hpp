@@ -22,6 +22,7 @@ public:
 };
 
 /// Job scheduler, executes jobs in turn from queue
+/// Does not delete dequeued jobs
 class PTHREAD_EXTERN worker_fifo
 {
   flx_mutex_t nlock;

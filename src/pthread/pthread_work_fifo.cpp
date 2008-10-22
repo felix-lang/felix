@@ -60,6 +60,7 @@ worker_fifo::thread_loop_body()
 
   req->doit();
   req->finished();          // finish hook. I find this handy
+  // Note: task not deleted. use finish hook if you want that
 
   return true;            // keep going
 }
