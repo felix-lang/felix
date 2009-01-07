@@ -3,7 +3,7 @@ from fbuild.record import Record
 
 import buildsystem
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def build_runtime(phase):
     buildsystem.copy_hpps_to_rtl(

@@ -2,7 +2,7 @@ import fbuild
 from fbuild.path import Path
 from fbuild.record import Record
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def build_flx_misc(ocaml):
     path = Path('src/compiler/flx_misc')

@@ -2,7 +2,7 @@ import fbuild
 from fbuild.path import Path
 from fbuild.record import Record
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def build_lib(ocaml):
     path = Path('src/compiler/ocs')

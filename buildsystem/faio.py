@@ -4,7 +4,7 @@ from fbuild.record import Record
 
 import buildsystem
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def build_runtime(phase):
     path = Path('src/faio')

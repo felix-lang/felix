@@ -4,7 +4,7 @@ import fbuild
 from fbuild import ConfigFailed
 from fbuild.path import Path
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 class Iscr:
     def __init__(self, exe):
@@ -72,7 +72,7 @@ def _print_config(f, build, host, target):
     def pp(msg, *args):
         p('    ' + msg, *args)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # version information
 
     p('import version')
@@ -81,14 +81,14 @@ def _print_config(f, build, host, target):
     p('godi_revision = version.godi_revision')
     p('debian_revision = version.debian_revision')
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # setup paths
 
     p('src_dir',   str(fbuild.env.cache('fbuildroot.src_dir')))
     p('PREFIX',    str(fbuild.env.cache('fbuildroot.prefix')))
     p('FLXCC_CPP', 'cpp ')
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # get all the platform information
 
     from fbuild.builders.platform import archmap
@@ -106,7 +106,7 @@ def _print_config(f, build, host, target):
         p('HAVE_MSVC', True)
     p('HAVE_GNU', 'windows' not in target.platform)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # phases
 
     for phase_name, phase in (
@@ -131,13 +131,13 @@ def _print_config(f, build, host, target):
             _print_cxx_bugs(lang, pp)
             _print_gcc_extensions(lang, pp)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # expose target_cxx to the top level config
 
     for platform in supported_platforms:
         p(platform.upper() + '=TARGET_CXX.options.' + platform.upper())
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # figure out the global library loading scheme
 
     p('SUPPORT_STATIC_LINKAGE', True)

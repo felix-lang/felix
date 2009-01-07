@@ -1,7 +1,7 @@
 import fbuild
 from fbuild.record import Record
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def build_runtime(phase):
     dst = fbuild.buildroot / 'lib/rtl/flx_async'

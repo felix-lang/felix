@@ -2,7 +2,7 @@ import fbuild
 from fbuild.path import Path
 from fbuild.record import Record
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 class Builder:
     def __init__(self, flxg, cxx,
@@ -121,7 +121,7 @@ class Builder:
     def link_lib(self, *args, **kwargs):
         return self._link(self.cxx.link_lib, *args, **kwargs)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def run_lib(self, src, *args, async=True, **kwargs):
         if async:
@@ -133,7 +133,7 @@ class Builder:
 
         return fbuild.execute(cmd, *args, **kwargs)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _build_link(self, function, src, dst=None, *,
             async=True,
@@ -159,7 +159,7 @@ class Builder:
     def build_exe(self, *args, **kwargs):
         return self._build_link(self.link_exe, *args, **kwargs)
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def build(flxg, cxx, drivers):
     return Builder(
@@ -199,7 +199,7 @@ def build_flx_pkgconfig(flx, phase):
 
     return exe
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def test_flx(felix, src):
     for static in False, True:

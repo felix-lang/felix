@@ -5,7 +5,7 @@ import fbuild
 from fbuild.path import Path
 from fbuild.record import Record
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def pre_options(parser):
     group = parser.add_option_group('config options')
@@ -26,7 +26,7 @@ def pre_options(parser):
         make_option('--ocamlyacc'),
     ))
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def make_c_builder(**kwargs):
     return fbuild.env.cache('fbuild.builders.c.guess.config', **kwargs)
@@ -88,7 +88,7 @@ def config_target(host, *, platform, cc, cxx):
 
     return phase
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 def prefix():
     prefix = Path(fbuild.options.prefix)
@@ -131,7 +131,7 @@ def build():
     fbuild.scheduler.map(iscr,
         (fbuild.env.cache(src_dir)/'lpsrc/*.pak').glob())
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     compilers = fbuild.env.run('buildsystem.flx_compiler.build_flx_drivers',
         host.ocaml)
@@ -148,7 +148,7 @@ def build():
     flx_pkgconfig = fbuild.env.run('buildsystem.flx.build_flx_pkgconfig',
         flx, target)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # build the secondary libraries
 
     fbuild.env.run('buildsystem.elk.build_exe', host)
@@ -160,7 +160,7 @@ def build():
     for module in 'flx_glob', 'tre':
         fbuild.env.run('buildsystem.' + module + '.build_flx', flx)
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # now, try building a file
 
     felix = fbuild.env.cache('fbuild.builders.felix.config',
