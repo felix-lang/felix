@@ -19,8 +19,22 @@ let fcat fs =
    concatenation.
 *)
 
+let dir_sep, is_dir_sep =
+  let unix_is_dir_sep s i = s.[i] = '/' in
+  let win32_is_dir_sep s i = begin
+    let c = s.[i] in
+    c = '/' || c = '\\'
+  end in
+  match Sys.os_type with
+    "Unix" -> "/", unix_is_dir_sep
+  | "Win32" -> "\\", win32_is_dir_sep
+  | "Cygwin" -> "/", win32_is_dir_sep
+  | _ -> assert false
+
 let slosh = Str.regexp "/"
-let split_unix f =  Str.split slosh f
+let split_unix f =
+  let fs = Str.split slosh f in
+  if is_dir_sep f 0 then dir_sep :: fs else fs
 let unix2native f = fcat (split_unix f)
 
 let find_file_in_path incdirs f =
