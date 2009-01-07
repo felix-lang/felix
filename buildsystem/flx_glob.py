@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -17,7 +18,7 @@ def build_runtime(phase):
     dst = fbuild.buildroot / 'lib/rtl/flx_glob'
     srcs = []
     macros = ['BUILD_GLOB']
-    libs = [fbuild.env.run('buildsystem.flx_gc.build_runtime', phase)]
+    libs = [call('buildsystem.flx_gc.build_runtime', phase)]
 
     if 'win32' in phase.platform:
         srcs.extend((path / 'flx_glob.cpp', path / 'unixem_util.cpp'))

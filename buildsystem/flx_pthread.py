@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -61,7 +62,7 @@ def build_runtime(phase):
         libs.append('rt')
 
     try:
-        pthread_h = fbuild.env.cache('fbuild.builders.c.posix.config_pthread_h',
+        pthread_h = call('fbuild.builders.c.posix.config_pthread_h',
             phase.cxx.shared)
     except fbuild.builders.ConfigFailed:
         pass

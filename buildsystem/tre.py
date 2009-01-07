@@ -15,7 +15,7 @@ def build_runtime(phase):
     )
 
     dst = fbuild.buildroot / 'lib/rtl/tre'
-    srcs = ['src/tre/*.c']
+    srcs = Path.glob('src/tre/*.c')
     includes = [fbuild.buildroot / 'config/target']
 
     return Record(

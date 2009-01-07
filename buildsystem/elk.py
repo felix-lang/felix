@@ -1,4 +1,6 @@
 import fbuild
+from fbuild.functools import call
+from fbuild.path import Path
 from fbuild.record import Record
 
 import buildsystem
@@ -31,7 +33,7 @@ def build_runtime(phase):
     )
 
     dst = fbuild.buildroot / 'lib/rtl/elk'
-    srcs = [
+    srcs = Path.globall(
         'src/smbase/sm_malloc_stub.cpp',
         'src/smbase/sm_nonport.cpp',
         'src/smbase/sm_autofile.cpp',
@@ -72,7 +74,7 @@ def build_runtime(phase):
         'src/elkhound/elk_useract.cpp',
         'src/elkhound/elk_ptreenode.cpp',
         'src/elkhound/elk_ptreeact.cpp',
-    ]
+    )
     includes = [
         fbuild.buildroot / 'config/host',
         fbuild.buildroot / 'config/target',
@@ -89,7 +91,7 @@ def build_runtime(phase):
             macros=macros))
 
 def build_exe(phase):
-    srcs = [
+    srcs = Path.globall(
         'src/ast/ast_gramlex.cpp',
         'src/ast/ast_ccsstr.cpp',
         'src/ast/ast_reporterr.cpp',
@@ -110,7 +112,7 @@ def build_exe(phase):
         'src/elkhound/elk_gramexpl.cpp',
         'src/elkhound/elk_gramanl.cpp',
         'src/elkhound/elk_gramanl.cxx',
-    ]
+    )
 
     return phase.cxx.shared.build_exe(
         dst=fbuild.buildroot / 'bin/flx_elkhound',
@@ -121,6 +123,6 @@ def build_exe(phase):
             'src/smbase',
             'src/ast',
         ],
-        libs=[fbuild.env.run(build_runtime, phase).shared],
+        libs=[call(build_runtime, phase).shared],
         macros=['HOST_BUILD'],
     )

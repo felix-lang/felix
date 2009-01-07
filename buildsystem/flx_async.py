@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.record import Record
 
 # ------------------------------------------------------------------------------
@@ -17,8 +18,8 @@ def build_runtime(phase):
     ]
     macros = ['BUILD_ASYNC']
     libs = [
-        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
-        fbuild.env.run('buildsystem.faio.build_runtime', phase),
+        call('buildsystem.flx_pthread.build_runtime', phase),
+        call('buildsystem.faio.build_runtime', phase),
     ]
 
     return Record(

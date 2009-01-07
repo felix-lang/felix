@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -67,7 +68,7 @@ def build_runtime(phase):
         path / 'JudyHS',
     ]
 
-    types = fbuild.env.cache('fbuild.builders.c.std.config_types',
+    types = call('fbuild.builders.c.std.config_types',
         phase.c.shared)
 
     macros = ['BUILD_JUDY']

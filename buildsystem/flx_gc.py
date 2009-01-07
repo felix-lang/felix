@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -18,7 +19,7 @@ def build_runtime(phase):
     )
 
     dst = fbuild.buildroot / 'lib/rtl/flx_gc'
-    srcs = [path / '*.cpp']
+    srcs = Path.glob(path / '*.cpp')
     includes = [
         fbuild.buildroot / 'config/target',
         'src/rtl',
@@ -28,9 +29,9 @@ def build_runtime(phase):
     ]
     macros = ['BUILD_GC']
     libs = [
-        fbuild.env.run('buildsystem.judy.build_runtime', phase),
-        fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
-        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
+        call('buildsystem.judy.build_runtime', phase),
+        call('buildsystem.flx_exceptions.build_runtime', phase),
+        call('buildsystem.flx_pthread.build_runtime', phase),
     ]
 
     return Record(

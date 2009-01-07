@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -55,7 +56,7 @@ def build_runtime(phase):
         path,
     ]
     macros = ['BUILD_DEMUX']
-    libs = [fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase)]
+    libs = [call('buildsystem.flx_pthread.build_runtime', phase)]
     extra_libs = []
 
     if 'win32' in phase.platform:
@@ -81,7 +82,7 @@ def build_runtime(phase):
         includes.append(path / 'posix')
 
     try:
-        fbuild.env.cache('fbuild.builders.c.posix.config_poll_h', phase.cxx.shared)
+        call('fbuild.builders.c.posix.config_poll_h', phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
     else:
@@ -94,7 +95,7 @@ def build_runtime(phase):
         includes.append(path / 'poll')
 
     try:
-        epoll = fbuild.env.cache('fbuild.builders.c.linux.config_sys_epoll_h',
+        epoll = call('fbuild.builders.c.linux.config_sys_epoll_h',
             phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
@@ -104,7 +105,7 @@ def build_runtime(phase):
             includes.append(path / 'epoll')
 
     try:
-        kqueue = fbuild.env.cache('fbuild.builders.c.bsd.config_sys_event_h',
+        kqueue = call('fbuild.builders.c.bsd.config_sys_event_h',
             phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
@@ -114,7 +115,7 @@ def build_runtime(phase):
             includes.append(path / 'kqueue')
 
     try:
-        evtports = fbuild.env.cache('fbuild.builders.c.solaris.config_port_h',
+        evtports = call('fbuild.builders.c.solaris.config_port_h',
             phase.cxx.shared)
     except fbuild.ConfigFailed:
         pass
@@ -122,6 +123,8 @@ def build_runtime(phase):
         if evtports:
             srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
             includes.append(path / 'evtport')
+
+    srcs = Path.globall(srcs)
 
     return Record(
         static=phase.cxx.static.build_lib(dst + '_static', srcs,

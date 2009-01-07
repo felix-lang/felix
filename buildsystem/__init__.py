@@ -1,21 +1,27 @@
 import fbuild
+import fbuild.db
 from fbuild.path import Path
 
 # ------------------------------------------------------------------------------
 
-def copy_to(dstdir, srcs):
-    dstdir.make_dirs()
+@fbuild.db.caches
+def copy_to(dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
+    dstdir.makedirs()
+
+    dsts = []
 
     for src in srcs:
         src = Path(src)
         dst = dstdir / src.name
-        if dst.is_dirty(src):
-            fbuild.logger.check(' * copy', '%s -> %s' % (src, dst),
-                color='yellow')
-            src.copy(dst)
+        fbuild.logger.check(' * copy', '%s -> %s' % (src, dst),
+            color='yellow')
+        src.copy(dst)
+        dsts.append(dst)
+
+    return dsts
 
 def copy_hpps_to_rtl(*hpps):
-    return copy_to(fbuild.buildroot / 'lib/rtl', hpps)
+    return copy_to(fbuild.buildroot / 'lib/rtl', tuple(hpps))
 
 def copy_flxs_to_lib(flxs):
-    return copy_to(fbuild.buildroot / 'lib', flxs)
+    return copy_to(fbuild.buildroot / 'lib', tuple(flxs))

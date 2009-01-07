@@ -1,10 +1,12 @@
 import fbuild
+import fbuild.db
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
 # ------------------------------------------------------------------------------
 
-class Builder:
+class Builder(fbuild.db.PersistentObject):
     def __init__(self, flxg, cxx,
             flx_run_exe,
             flx_arun_exe,
@@ -17,33 +19,31 @@ class Builder:
         self.flx_run_lib  = flx_run_lib
         self.flx_arun_lib = flx_arun_lib
 
-    def _run_flxg(self, src, *,
+    @fbuild.db.cachemethod
+    def _run_flxg(self, src:fbuild.db.SRC, *,
             includes=[],
             imports=[],
             flags=[],
             include_std=True,
             preparse=False,
             buildroot=fbuild.buildroot,
-            **kwargs):
+            **kwargs) -> fbuild.db.DST:
         src = Path(src)
         # first, copy the src file into the buildroot
-        src_buildroot = src.replace_root(buildroot)
-        dst = src.replace_root(buildroot)
+        src_buildroot = src.addroot(buildroot)
+        dst = src.addroot(buildroot)
 
         if preparse:
-            dst = dst.replace_ext('.par')
+            dst = dst.replaceext('.par')
         else:
-            dst = dst.replace_ext('.cpp')
-
-        if not dst.is_dirty(src):
-            return dst
+            dst = dst.replaceext('.cpp')
 
         if src != src_buildroot:
-            src_buildroot.parent.make_dirs()
+            src_buildroot.parent.makedirs()
             src.copy(src_buildroot)
             src = src_buildroot
 
-        dst.parent.make_dirs()
+        dst.parent.makedirs()
 
         cmd = [self.flxg]
 
@@ -67,7 +67,7 @@ class Builder:
             cmd.append('std')
 
         if src.ext == '.flx':
-            cmd.append(src.replace_ext(''))
+            cmd.append(src.replaceext(''))
         else:
             cmd.append(src)
 
@@ -92,11 +92,8 @@ class Builder:
         src = Path(src)
 
         if dst is None:
-            dst = src.replace_ext('')
-        dst.replace_root(src)
-
-        if not dst.is_dirty(src):
-            return dst
+            dst = src.replaceext('')
+        dst.addroot(src)
 
         obj = self.cxx.compile(src,
             includes=includes,
@@ -178,11 +175,11 @@ def build_flx_pkgconfig(flx, phase):
         includes=[fbuild.buildroot / 'lib'],
         cxx_includes=['src/flx_pkgconfig', fbuild.buildroot / 'lib/rtl'],
         cxx_libs=[
-            fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase).shared,
-            fbuild.env.run('buildsystem.flx_rtl.build_runtime', phase).shared,
-            fbuild.env.run('buildsystem.flx_gc.build_runtime', phase).shared,
-            fbuild.env.run('buildsystem.judy.build_runtime', phase).shared,
-            fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase).shared,
+            call('buildsystem.flx_pthread.build_runtime', phase).shared,
+            call('buildsystem.flx_rtl.build_runtime', phase).shared,
+            call('buildsystem.flx_gc.build_runtime', phase).shared,
+            call('buildsystem.judy.build_runtime', phase).shared,
+            call('buildsystem.flx_exceptions.build_runtime', phase).shared,
         ],
         cxx_cflags=['-Wno-invalid-offsetof'],
     )
@@ -213,38 +210,51 @@ def test_flx(felix, src):
                 fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
             continue
 
-        dst = exe + '.stdout'
-        if dst.is_dirty(src):
-            fbuild.logger.check('checking ' + exe)
+        expect = src.replaceext('.expect')
 
-            try:
-                stdout, stderr = felix.run(exe, static=static, quieter=1)
-            except fbuild.ExecutionError as e:
-                fbuild.logger.failed()
+        check_flx(felix,
+            exe=exe,
+            dst=exe + '.stdout',
+            expect=expect if expect.exists() else None,
+            static=static)
 
-                fbuild.logger.log(e, verbose=1)
-                if e.stdout:
-                    fbuild.logger.log(e.stdout.decode().strip(), verbose=1)
-                if e.stderr:
-                    fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
-                continue
+@fbuild.db.caches
+def check_flx(felix,
+        exe:fbuild.db.SRC,
+        dst:fbuild.db.DST,
+        expect:fbuild.db.OPTIONAL_SRC,
+        static):
+    fbuild.logger.check('checking ' + exe)
+    try:
+        stdout, stderr = felix.run(exe, static=static, quieter=1)
+    except fbuild.ExecutionError as e:
+        fbuild.logger.failed()
 
-            with open(dst, 'wb') as f:
-                f.write(stdout)
+        fbuild.logger.log(e, verbose=1)
+        if e.stdout:
+            fbuild.logger.log(e.stdout.decode().strip(), verbose=1)
+        if e.stderr:
+            fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
+        return False
 
-            expect = src.replace_ext('.expect')
-            if not expect.exists():
-                fbuild.logger.log('no .expect', color='cyan')
-            else:
-                with open(expect, 'rb') as f:
-                    s = f.read()
+    with open(dst, 'wb') as f:
+        f.write(stdout)
 
-                if stdout == s:
-                    fbuild.logger.passed()
-                else:
-                    fbuild.logger.failed('failed: output does not match')
-                    fbuild.logger.log('output:', verbose=1)
-                    fbuild.logger.log(stdout.decode(), verbose=1)
-                    fbuild.logger.log('expected:', verbose=1)
-                    fbuild.logger.log(s.decode(), verbose=1)
-                    Path.remove(dst)
+    if expect is None:
+        fbuild.logger.log('no .expect', color='cyan')
+        return True
+    else:
+        with open(expect, 'rb') as f:
+            s = f.read()
+
+        if stdout == s:
+            fbuild.logger.passed()
+            return True
+        else:
+            fbuild.logger.failed('failed: output does not match')
+            fbuild.logger.log('output:', verbose=1)
+            fbuild.logger.log(stdout.decode(), verbose=1)
+            fbuild.logger.log('expected:', verbose=1)
+            fbuild.logger.log(s.decode(), verbose=1)
+            Path.remove(dst)
+            return False

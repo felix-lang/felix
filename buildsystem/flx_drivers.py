@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -22,16 +23,16 @@ def build(phase):
     ]
 
     run_libs = [
-        fbuild.env.run('buildsystem.flx_exceptions.build_runtime', phase),
-        fbuild.env.run('buildsystem.flx_gc.build_runtime', phase),
-        fbuild.env.run('buildsystem.flx_rtl.build_runtime', phase),
-        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
-        fbuild.env.run('buildsystem.judy.build_runtime', phase),
+        call('buildsystem.flx_exceptions.build_runtime', phase),
+        call('buildsystem.flx_gc.build_runtime', phase),
+        call('buildsystem.flx_rtl.build_runtime', phase),
+        call('buildsystem.flx_pthread.build_runtime', phase),
+        call('buildsystem.judy.build_runtime', phase),
     ]
 
     arun_libs = run_libs + [
-        fbuild.env.run('buildsystem.demux.build_runtime', phase),
-        fbuild.env.run('buildsystem.faio.build_runtime', phase),
+        call('buildsystem.demux.build_runtime', phase),
+        call('buildsystem.faio.build_runtime', phase),
     ]
 
     flx_run_lib = phase.cxx.static.compile(

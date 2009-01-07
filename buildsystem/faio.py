@@ -1,4 +1,5 @@
 import fbuild
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -35,8 +36,8 @@ def build_runtime(phase):
     ]
     macros = ['BUILD_FAIO']
     libs=[
-        fbuild.env.run('buildsystem.flx_pthread.build_runtime', phase),
-        fbuild.env.run('buildsystem.demux.build_runtime', phase),
+        call('buildsystem.flx_pthread.build_runtime', phase),
+        call('buildsystem.demux.build_runtime', phase),
     ]
 
     if 'win32' in phase.platform:

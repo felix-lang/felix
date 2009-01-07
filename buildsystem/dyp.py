@@ -1,27 +1,27 @@
 import fbuild
+import fbuild.db
+from fbuild.functools import call
+from fbuild.path import Path
 
 # ------------------------------------------------------------------------------
 
-class Builder:
+class Builder(fbuild.db.PersistentObject):
     def __init__(self, exe):
         self.exe = exe
 
-    def __call__(self, src, *, buildroot=fbuild.buildroot, flags=[]):
+    @fbuild.db.cachemethod
+    def __call__(self, src:fbuild.db.SRC, *,
+            buildroot=fbuild.buildroot,
+            flags=[]) -> fbuild.db.DSTS:
         # first, copy the src file into the buildroot
-        src_buildroot = src.replace_root(buildroot)
+        src_buildroot = src.addroot(buildroot)
         dsts = (
-            src_buildroot.replace_ext('.ml'),
-            src_buildroot.replace_ext('.mli'),
+            src_buildroot.replaceext('.ml'),
+            src_buildroot.replaceext('.mli'),
         )
 
-        for dst in dsts:
-            if dst.is_dirty((src,)):
-                break
-        else:
-            return dsts
-
         if src != src_buildroot:
-            src_buildroot.parent.make_dirs()
+            src_buildroot.parent.makedirs()
             src.copy(src_buildroot)
             src = src_buildroot
 
@@ -38,28 +38,26 @@ class Builder:
 
 def build_lib(ocaml):
     path = fbuild.buildroot/'src/compiler/dyp/dyplib'
-    return ocaml.builder.build_lib(path/'dyp', [path/'*.ml{,i}'])
+    return ocaml.ocaml.build_lib(path/'dyp', Path.glob(path/'*.ml{,i}'))
 
 def build_pgen(ocaml):
     path = fbuild.buildroot/'src/compiler/dyp/generators/pgen'
-    exe = ocaml.builder.build_exe(path/'pgen', [
+    exe = ocaml.ocaml.build_exe(path/'pgen', Path.globall(
             path/'*.ml{,i}',
-            ocaml.ocamllex(path/'pgen_lexer.mll'),
-        ],
-        libs=[fbuild.env.run(build_lib, ocaml)])
+            ocaml.ocamllex(path/'pgen_lexer.mll')),
+        libs=[call(build_lib, ocaml)])
 
     return Builder(exe)
 
 def build_dypgen(ocaml):
     path = fbuild.buildroot/'src/compiler/dyp/generators/dypgen'
 
-    pgen = fbuild.env.run(build_pgen, ocaml)
-    exe = ocaml.builder.build_exe(path/'dypgen', [
+    pgen = call(build_pgen, ocaml)
+    exe = ocaml.ocaml.build_exe(path/'dypgen', Path.globall(
             path/'*.ml{,i}',
             ocaml.ocamllex(path/'dypgen_lexer.mll'),
             ocaml.ocamllex(path/'insert_linenum.mll'),
-            pgen(path/'dypgen_parser.dyp'),
-        ],
-        libs=[fbuild.env.run(build_lib, ocaml)])
+            pgen(path/'dypgen_parser.dyp')),
+        libs=[call(build_lib, ocaml)])
 
     return Builder(exe)

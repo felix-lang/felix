@@ -2,6 +2,8 @@ from itertools import chain
 from optparse import make_option
 
 import fbuild
+import fbuild.db
+from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
@@ -28,26 +30,28 @@ def pre_options(parser):
 
 # ------------------------------------------------------------------------------
 
-def make_c_builder(**kwargs):
-    return fbuild.env.cache('fbuild.builders.c.guess.config', **kwargs)
+def make_c_builder(*args, **kwargs):
+    return call('fbuild.builders.c.guess.config', *args, **kwargs)
 
-def make_cxx_builder(**kwargs):
-    return fbuild.env.cache('fbuild.builders.cxx.guess.config', **kwargs)
+def make_cxx_builder(*args, **kwargs):
+    return call('fbuild.builders.cxx.guess.config', *args, **kwargs)
 
+@fbuild.db.caches
 def config_build(*, platform, cc, cxx):
     fbuild.logger.log('configuring build phase', color='cyan')
 
     return Record(
-        platform=fbuild.env.cache('fbuild.builders.platform.config', platform),
+        platform=call('fbuild.builders.platform.config', platform),
         c=make_c_builder(exe=cc),
         cxx=make_cxx_builder(exe=cxx),
     )
 
+@fbuild.db.caches
 def config_host(build, *,
         platform, cc, cxx, ocamlc, ocamlopt, ocamllex, ocamlyacc):
     fbuild.logger.log('configuring host phase', color='cyan')
 
-    platform = fbuild.env.cache('fbuild.builders.platform.config', platform)
+    platform = call('fbuild.builders.platform.config', platform)
 
     if platform == build.platform:
         fbuild.logger.log("using build's c and cxx compiler", color='cyan')
@@ -58,24 +62,25 @@ def config_host(build, *,
             c=make_c_builder(exe=cc),
             cxx=make_cxx_builder(exe=cxx))
 
-    phase.ocaml = fbuild.env.cache('fbuild.builders.ocaml.config',
+    phase.ocaml = call('fbuild.builders.ocaml.config',
         ocamlc=ocamlc,
         ocamlopt=ocamlopt,
         ocamllex=ocamllex,
         ocamlyacc=ocamlyacc)
 
     # we prefer the native ocaml as it's much faster
-    if 'native' in phase.ocaml:
-        phase.ocaml.builder = phase.ocaml.native
+    if hasattr(phase.ocaml.ocaml, 'native'):
+        phase.ocaml.ocaml = phase.ocaml.ocaml.native
     else:
-        phase.ocaml.builder = phase.ocaml.bytecode
+        phase.ocaml.ocaml = phase.ocaml.ocaml.bytecode
 
     return phase
 
+@fbuild.db.caches
 def config_target(host, *, platform, cc, cxx):
     fbuild.logger.log('configuring target phase', color='cyan')
 
-    platform = fbuild.env.cache('fbuild.builders.platform.config', platform)
+    platform = call('fbuild.builders.platform.config', platform)
 
     if platform == host.platform:
         fbuild.logger.log("using host's c and cxx compiler", color='cyan')
@@ -90,23 +95,25 @@ def config_target(host, *, platform, cc, cxx):
 
 # ------------------------------------------------------------------------------
 
+@fbuild.db.caches
 def prefix():
     prefix = Path(fbuild.options.prefix)
     fbuild.logger.check('install prefix', prefix, color='cyan')
 
     return prefix
 
+@fbuild.db.caches
 def src_dir():
     return Path(__file__).parent
 
 def build():
     # configure the phases
-    build = fbuild.env.cache(config_build,
+    build = config_build(
         platform=fbuild.options.build_platform,
         cc=fbuild.options.build_cc,
         cxx=fbuild.options.build_cxx)
 
-    host = fbuild.env.cache(config_host, build,
+    host = config_host(build,
         platform=fbuild.options.host_platform,
         cc=fbuild.options.host_cc,
         cxx=fbuild.options.host_cxx,
@@ -115,55 +122,54 @@ def build():
         ocamllex=fbuild.options.ocamllex,
         ocamlyacc=fbuild.options.ocamlyacc)
 
-    target = fbuild.env.cache(config_target, host,
+    target = config_target(host,
         platform=fbuild.options.target_platform,
         cc=fbuild.options.target_cc,
         cxx=fbuild.options.target_cxx)
 
     # extract the configuration
-    iscr = fbuild.env.cache('buildsystem.iscr.config_iscr')
+    iscr = call('buildsystem.iscr.config_iscr')
     iscr('lpsrc/flx_config.pak')
 
     # convert the config into something iscr can use
-    fbuild.env.cache('buildsystem.iscr.config_iscr_config', build, host, target)
+    call('buildsystem.iscr.config_iscr_config', build, host, target)
 
     # re-extract packages if any of them changed
-    fbuild.scheduler.map(iscr,
-        (fbuild.env.cache(src_dir)/'lpsrc/*.pak').glob())
+    fbuild.scheduler.map(iscr, (src_dir()/'lpsrc/*.pak').glob())
 
     # --------------------------------------------------------------------------
 
-    compilers = fbuild.env.run('buildsystem.flx_compiler.build_flx_drivers',
+    compilers = call('buildsystem.flx_compiler.build_flx_drivers',
         host.ocaml)
 
-    drivers = fbuild.env.run('buildsystem.flx_drivers.build', target)
+    drivers = call('buildsystem.flx_drivers.build', target)
 
-    flx = fbuild.env.run('buildsystem.flx.build',
+    flx = call('buildsystem.flx.build',
         compilers.flxg, target.cxx.shared, drivers)
 
     # copy files into the library
     for module in 'flx_pthread', 'demux', 'faio', 'judy':
-        fbuild.env.run('buildsystem.' + module + '.build_flx', flx)
+        call('buildsystem.' + module + '.build_flx', flx)
 
-    flx_pkgconfig = fbuild.env.run('buildsystem.flx.build_flx_pkgconfig',
+    flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig',
         flx, target)
 
     # --------------------------------------------------------------------------
     # build the secondary libraries
 
-    fbuild.env.run('buildsystem.elk.build_exe', host)
-    fbuild.env.run('buildsystem.elk.build_runtime', target)
-    fbuild.env.run('buildsystem.flx_async.build_runtime', target)
-    fbuild.env.run('buildsystem.flx_glob.build_runtime', target)
-    fbuild.env.run('buildsystem.tre.build_runtime', target)
+    call('buildsystem.elk.build_exe', host)
+    call('buildsystem.elk.build_runtime', target)
+    call('buildsystem.flx_async.build_runtime', target)
+    call('buildsystem.flx_glob.build_runtime', target)
+    call('buildsystem.tre.build_runtime', target)
 
     for module in 'flx_glob', 'tre':
-        fbuild.env.run('buildsystem.' + module + '.build_flx', flx)
+        call('buildsystem.' + module + '.build_flx', flx)
 
     # --------------------------------------------------------------------------
     # now, try building a file
 
-    felix = fbuild.env.cache('fbuild.builders.felix.config',
+    felix = call('fbuild.builders.felix.config',
         exe=fbuild.buildroot / 'bin/flx',
         flags=['--test=' + fbuild.buildroot])
 
