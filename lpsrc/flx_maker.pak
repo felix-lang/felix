@@ -1973,7 +1973,7 @@ do
   ;;
 
   x--output_dir=*)
-		OUTPUT_DIR=$1
+    OUTPUT_DIR=$1
     shift
   ;;
 
@@ -2322,72 +2322,58 @@ then
   then
     FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-    eval $FCMD
+    eval $FCMD || exit $?
   fi
-  if [ $? = 0 ]
-  then
-    calpackages
-    write_include_file $base
-    CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING "
-    if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-    if `echo $CCMD`
-    then
-      if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-      if `echo $LCMD`
-      then
-        if [ $RUNIT = 1 ]
-        then
-          if [ $TIME = 1 ]
-          then
-            cmd="time $FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-          else
-            cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-          fi
-          if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
-          if [ $ECHO = 1 ]; then echo $cmd; fi
-          eval $cmd
-        fi
-      fi
-    fi
-  fi
+  calpackages
+  write_include_file $base
+  CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+  LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING "
+  if [ $ECHO = 1 ]; then echo "$CCMD"; fi
+  eval $CCMD || exit $?
+	if [ $ECHO = 1 ]; then echo "$LCMD"; fi
+	eval $LCMD || exit $?
+	if [ $RUNIT = 1 ]
+	then
+		if [ $TIME = 1 ]
+		then
+			cmd="time $FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
+		else
+			cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
+		fi
+		if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
+		if [ $ECHO = 1 ]; then echo $cmd; fi
+		eval $cmd || exit $?
+	fi
 else
   if [ $FELIX = 1 ]
   then
     FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-    eval $FCMD
+    eval $FCMD || exit $?
+    if [ $? != 0 ]; then exit $?; fi
   fi
-  if [ $? = 0 ]
+  calpackages
+  write_include_file $base
+  CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+  LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
+  if [ $ECHO = 1 ]; then echo "$CCMD"; fi
+  eval $CCMD || exit $?
+  if [ $ECHO = 1 ]; then echo "$LCMD"; fi
+  eval $LCMD || exit $?
+  # rm -f "$base.cpp"
+  if [ $RUNIT = 1 ]
   then
-    calpackages
-    write_include_file $base
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
-    if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-    if `echo $CCMD`
+    if [ $TIME = 1 ]
     then
-      if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-      if `echo $LCMD`
-      then
-        # rm -f "$base.cpp"
-        if [ $RUNIT = 1 ]
-        then
-          if [ $TIME = 1 ]
-          then
-            cmd="time $STATIC_ENV $base $args"
-          else
-            cmd="$STATIC_ENV $base $args"
-          fi
-          if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
-          if [ $ECHO = 1 ]; then echo $cmd; fi
-          eval $cmd
-        fi
-      fi
+      cmd="time $STATIC_ENV $base $args"
+    else
+      cmd="$STATIC_ENV $base $args"
     fi
+    if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
+    if [ $ECHO = 1 ]; then echo $cmd; fi
+    eval $cmd || exit $?
   fi
 fi
-exit $?
 
 @select(tangler('bin/flx-postinstall-check','data'))
 #!/usr/bin/env bash
