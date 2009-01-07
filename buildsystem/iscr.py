@@ -1,3 +1,5 @@
+import io
+import re
 import time
 from itertools import chain
 
@@ -18,13 +20,14 @@ class Iscr(fbuild.db.PersistentObject):
             break_on_error=True,
             flags=[],
             buildroot=fbuild.buildroot,
-            **kwargs):
+            **kwargs) -> fbuild.db.DSTS:
         src = Path(src)
-        dst = src.addroot(buildroot) + '.stdout'
 
         cmd = [
             self.exe.relpath(buildroot),
             '--cache-prefix=lpsrc-cache',
+            '--trace=sources',
+            '--trace=changes',
         ]
 
         if break_on_error:
@@ -38,14 +41,14 @@ class Iscr(fbuild.db.PersistentObject):
             env={'PYTHONPATH': Path.relpath('.', buildroot)},
             **kwargs)
 
-        # make sure the dst parent exists, or we'll get an error
-        dst.parent.makedirs()
+        dsts = []
+        regex = re.compile('^File (.*) is (NEW|CHANGED|unchanged)$')
+        for line in io.StringIO(stdout.decode()):
+            m = regex.match(line)
+            if m:
+                dsts.append(Path(m.group(1)))
 
-        # cache the output
-        with open(dst, 'wb') as f:
-            f.write(stdout)
-
-        return stdout
+        return dsts
 
 def config_iscr(exe=None):
     if exe is None:
