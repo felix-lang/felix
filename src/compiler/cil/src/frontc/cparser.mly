@@ -1138,9 +1138,7 @@ between declaring a nested class with a base, and an unnamed bitfield
 of type struct X, length Y
 */
 
-/*
 |              COLON expression     { (missingFieldDecl, Some (fst $2)) }
-*/
 ;
 
 enum_list: /* (* ISO 6.7.2.2 *) */
