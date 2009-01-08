@@ -171,7 +171,7 @@ def build(flxg, cxx, drivers):
     )
 
 def build_flx_pkgconfig(flx, phase):
-    exe = flx.build_exe(
+    return flx.build_exe(
         dst=fbuild.buildroot / 'bin/flx_pkgconfig',
         src='src/flx_pkgconfig/flx_pkgconfig.flx',
         includes=[fbuild.buildroot / 'lib'],
@@ -186,21 +186,29 @@ def build_flx_pkgconfig(flx, phase):
         cxx_cflags=['-Wno-invalid-offsetof'],
     )
 
-    # make sure flx_pkgconfig runs
-    fbuild.logger.check('checking ' + exe)
-    try:
-        fbuild.execute([exe], quieter=1)
-    except fbuild.ExecutionError:
-        fbuild.logger.failed()
-        raise
-    else:
-        fbuild.logger.passed()
-
-    return exe
-
 # ------------------------------------------------------------------------------
 
+def test_flxs(felix, srcs):
+    def test(src):
+        try:
+            passed = test_flx(felix, src)
+        except fbuild.ConfigFailed as e:
+            fbuild.logger.log(str(e))
+            passed = False
+        return src, passed
+
+    failed_srcs = []
+    for src, passed in fbuild.scheduler.map(test, sorted(srcs)):
+        if not passed:
+            failed_srcs.append(src)
+
+    if failed_srcs:
+        fbuild.logger.log('\nThe following tests failed:')
+        for src in failed_srcs:
+            fbuild.logger.log('  %s' % src, color='yellow')
+
 def test_flx(felix, src):
+    passed = True
     for static in False, True:
         try:
             exe = felix.compile(src, static=static)
@@ -210,15 +218,23 @@ def test_flx(felix, src):
                 fbuild.logger.log(e.stdout.decode().strip(), verbose=1)
             if e.stderr:
                 fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
+            passed = False
             continue
+
+        if static:
+            dst = exe + '.static.stdout'
+        else:
+            dst = exe + '.shared.stdout'
 
         expect = src.replaceext('.expect')
 
-        check_flx(felix,
+        passed &= check_flx(felix,
             exe=exe,
-            dst=exe + '.stdout',
+            dst=dst,
             expect=expect if expect.exists() else None,
             static=static)
+
+    return passed
 
 @fbuild.db.caches
 def check_flx(felix,
@@ -228,9 +244,12 @@ def check_flx(felix,
         static):
     fbuild.logger.check('checking ' + exe)
     try:
-        stdout, stderr = felix.run(exe, static=static, quieter=1)
+        stdout, stderr = felix.run(exe, static=static, timeout=5, quieter=1)
     except fbuild.ExecutionError as e:
-        fbuild.logger.failed()
+        if isinstance(e, fbuild.ExecutionTimedOut):
+            fbuild.logger.failed('failed: timed out')
+        else:
+            fbuild.logger.failed()
 
         fbuild.logger.log(e, verbose=1)
         if e.stdout:
@@ -257,6 +276,6 @@ def check_flx(felix,
             for line in difflib.ndiff(
                     stdout.decode().split('\n'),
                     s.decode().split('\n')):
-                print(line)
-            Path.remove(dst)
+                fbuild.logger.log(line)
+            dst.remove()
             return False

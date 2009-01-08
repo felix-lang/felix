@@ -173,14 +173,9 @@ def build():
         exe=fbuild.buildroot / 'bin/flx',
         flags=['--test=' + fbuild.buildroot])
 
-    from buildsystem.flx import test_flx
-    def test(src):
-        try:
-            test_flx(felix, src)
-        except fbuild.ConfigFailed as e:
-            fbuild.logger.log(str(e))
+    from buildsystem.flx import test_flxs
 
-    fbuild.scheduler.map(test, chain(
+    test_flxs(felix, chain(
         Path.glob('test/*/*.flx', exclude=[
             'test/drivers/*.flx',
             'test/faio/win-*.flx',
