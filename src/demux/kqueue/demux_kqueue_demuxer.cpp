@@ -7,6 +7,7 @@
 #include "demux_kqueue_demuxer.hpp"
 
 #include <stdio.h>      // perror
+#include <errno.h>      // errno, for debugging
 #include <unistd.h>     // close
 
 #include <sys/types.h>    // from the kqueue manpage
@@ -100,8 +101,10 @@ kqueue_demuxer::add_kqueue_filter(socket_wakeup* sv, short filter)
   //EV_SET(&evt, s, EVFILT_READ, EV_ADD, | EV_ONESHOT NOTE_LOWAT, 16*1024, sv);
 
   // add event
-  if(kevent(kq, &evt, 1, NULL, 0, NULL) < 0)
+  int err;
+  if((err=kevent(kq, &evt, 1, NULL, 0, NULL)) < 0)
   {
+    fprintf(stderr, "kevent returned code %d, errno=%d\n",err,errno);
     perror("kevent add_kqueue_filter");
     return -1;
   }

@@ -66,7 +66,11 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
   | x -> x
   in
   let auxt t =
-    map_btype tmap (varmap_subst varmap t)
+    let t' = varmap_subst varmap t in
+    let rec s t = tmap (map_btype s t) in
+    let t' = s t' in
+    (* print_endline ("Remap type " ^ sbt syms.dfns t ^ " to " ^ sbt syms.dfns * t'); *)
+    t'
   in
   let fixup i ts =
     let ts = map auxt ts in
@@ -120,7 +124,7 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
     let gs = map revar gs in
     `BEXPR_parse (e,gs), auxt t
 
-  | x -> x
+  | x,t -> x, auxt t
   in
     let a = aux e in
     (*
@@ -129,9 +133,7 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
     a
 
 let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len exe =
-  (*
   print_endline ("remap_exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
-  *)
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
@@ -142,7 +144,11 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
   | x -> x
   in
   let auxt t =
-    map_btype tmap (varmap_subst varmap t)
+    let t' = varmap_subst varmap t in
+    let rec s t = tmap (map_btype s t) in
+    let t' = s t' in
+    (* print_endline ("Remap type " ^ sbt syms.dfns t ^ " to " ^ sbt syms.dfns * t'); *)
+    t'
   in
   let exe =
   match exe with
@@ -257,7 +263,11 @@ let remap_reqs syms bbdfns varmap revariable caller_vars callee_vs_len reqs : br
   | x -> x
   in
   let auxt t =
-    map_btype tmap (varmap_subst varmap t)
+    let t' = varmap_subst varmap t in
+    let rec s t = tmap (map_btype s t) in
+    let t' = s t' in
+    (* print_endline ("Remap type " ^ sbt syms.dfns t ^ " to " ^ sbt syms.dfns * t'); *)
+    t'
   in
   let fixup (i, ts) =
     let ts = map auxt ts in
@@ -307,7 +317,11 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | x -> x
   in
   let auxt t =
-    map_btype tmap (varmap_subst varmap t)
+    let t' = varmap_subst varmap t in
+    let rec s t = tmap (map_btype s t) in
+    let t' = s t' in
+    (* print_endline ("Remap type " ^ sbt syms.dfns t ^ " to " ^ sbt syms.dfns * t'); *)
+    t'
   in
   let remap_ps ps = map (fun {pid=id; pindex=i; ptyp=t; pkind=k} ->
     {pid=id; pindex=revar i; ptyp=auxt t; pkind=k})
@@ -375,12 +389,12 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add uses k calls
 
   | `BBDCL_var (vs,t) ->
-    (*
     print_endline ("Reparent variable old: id<"^si index^"> vs=" ^
       catmap "," (fun (s,i) -> s^"<"^si i^">") vs);
     print_endline ("         variable new: id<"^si k^"> vs=" ^
       catmap "," (fun (s,i) -> s^"<"^si i^">") (splice vs));
-    *)
+     print_endline ("Type old " ^ sbt syms.dfns t ^ " -> type new " ^ sbt
+     syms.dfns (auxt t));
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_var (splice vs,auxt t))
 
   | `BBDCL_val (vs,t) ->

@@ -487,8 +487,11 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
   | `BBDCL_ref (vs,t)
   | `BBDCL_tmp (vs,t)
     ->
+
     (*
-    print_endline "Registering variable";
+    (print_endline ("Registering variable " ^ 
+    (try match Hashtbl.find syms.dfns i with {id=id} ->  id
+    with Not_found -> si i) ^ " type " ^ sbt syms.dfns t));
     *)
     if length vs <> length ts
     then syserr sr
