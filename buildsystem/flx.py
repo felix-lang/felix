@@ -1,3 +1,5 @@
+import difflib
+
 import fbuild
 import fbuild.db
 from fbuild.functools import call
@@ -252,9 +254,9 @@ def check_flx(felix,
             return True
         else:
             fbuild.logger.failed('failed: output does not match')
-            fbuild.logger.log('output:', verbose=1)
-            fbuild.logger.log(stdout.decode(), verbose=1)
-            fbuild.logger.log('expected:', verbose=1)
-            fbuild.logger.log(s.decode(), verbose=1)
+            for line in difflib.ndiff(
+                    stdout.decode().split('\n'),
+                    s.decode().split('\n')):
+                print(line)
             Path.remove(dst)
             return False
