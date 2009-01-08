@@ -142,13 +142,8 @@ fun mk_accept: demuxer * socket_t -> accept_request = 'flx::faio::accept_request
 fun get_socket: accept_request -> socket_t = '$1.accepted';
 
 // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
-proc cmk_listener: lvalue[socket_t]*lvalue[int]*int
-    = '$1 = flx::demux::create_async_listener(&$2, $3);' requires sockety_h;
-
-proc mk_listener(s: &socket_t, port:&int, backlog:int)
-{
-    cmk_listener(*s,*port, backlog);
-}
+proc mk_listener: ptr[socket_t]*ptr[int]*int
+    = '*$1 = flx::demux::create_async_listener($2, $3);' requires sockety_h;
 
 proc accept(s: &socket_t, listener: socket_t)
 {
