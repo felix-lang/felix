@@ -7,7 +7,7 @@
 @select(tangler('spkgs/flx_tut_macro.py'))
 import glob
 
-@tangle('TESTS = glob.glob("%s.flx")' % env.native_root)
+@tangle('TESTS = glob.glob("%s*.flx")' % env.native_root)
 
 unit_tests = TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
