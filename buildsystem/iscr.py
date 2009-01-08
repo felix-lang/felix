@@ -28,6 +28,7 @@ class Iscr(fbuild.db.PersistentObject):
             '--cache-prefix=lpsrc-cache',
             '--trace=sources',
             '--trace=changes',
+            '--nocache',
         ]
 
         if break_on_error:
