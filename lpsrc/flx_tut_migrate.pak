@@ -238,7 +238,7 @@ xprint x; endl;
 @doc()
 
 @select(env.expect())
-2 1
+@tangle('2 1 ')
 @doc()
 
 @env.head(1,'Type system')

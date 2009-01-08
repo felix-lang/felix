@@ -606,9 +606,9 @@ macro {
 @doc()
 
 @select(env.expect())
-10 9 8 7 6 5 4 3 2 1
-10 9 8 7 6 5 4 3 2 1
-10 9 8 7 6 5 4 3 2 1
+@tangle('10 9 8 7 6 5 4 3 2 1 ')
+@tangle('10 9 8 7 6 5 4 3 2 1 ')
+@tangle('10 9 8 7 6 5 4 3 2 1 ')
 @doc()
 
 @env.head(2,'Expansion Barrier')
@@ -721,7 +721,7 @@ done;
 @doc()
 
 @select(env.expect())
-Hello World 42
+@tangle('Hello World 42 ')
 PTF a:int=1
 PTF b:int=1
 PTF c:int=1
@@ -744,8 +744,8 @@ endl;
 @doc()
 
 @select(env.expect())
-1 2 2 3
-(1,2) (3,4)
+@tangle('1 2 2 3 ')
+@tangle('(1,2) (3,4) ')
 @doc()
 
 @env.head(3,"String representation")
@@ -797,7 +797,7 @@ macro for val i in x do print i; print " "; done; endl;
 @doc()
 
 @select(env.expect())
-3 2 1
+@tangle('3 2 1 ')
 @doc()
 
 @env.head(1,"User defined syntax")

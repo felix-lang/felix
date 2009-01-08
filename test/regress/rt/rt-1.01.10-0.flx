@@ -7,8 +7,7 @@ a,(b,c) = 1,(2,3);
 
 print a; print " ";
 print b; print " ";
-print c; print " ";
-endl;
+print c; endl;
 
 def a = 1;
 def val x = 2;
@@ -18,5 +17,4 @@ def a, val d, var e = 9,8,7;
 
 print a; print " ";
 print d; print " ";
-print e; print " ";
-endl;
+print e; endl;

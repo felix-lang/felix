@@ -475,7 +475,7 @@ vprint[int] v; endl();
 
 @select(env.expect())
 1
-1 2 3
+@tangle('1 2 3 ')
 @doc()
 
 @env.head(2,'Header and body tags')
