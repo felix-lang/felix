@@ -391,12 +391,14 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add uses k calls
 
   | `BBDCL_var (vs,t) ->
+    (*
     print_endline ("Reparent variable old: id<"^si index^"> vs=" ^
       catmap "," (fun (s,i) -> s^"<"^si i^">") vs);
     print_endline ("         variable new: id<"^si k^"> vs=" ^
       catmap "," (fun (s,i) -> s^"<"^si i^">") (splice vs));
      print_endline ("Type old " ^ sbt syms.dfns t ^ " -> type new " ^ sbt
      syms.dfns (auxt t));
+    *)
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_var (splice vs,auxt t))
 
   | `BBDCL_val (vs,t) ->
