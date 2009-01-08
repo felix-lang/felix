@@ -185,9 +185,5 @@ def build():
             'test/regress/kf/*.flx',
             'test/regress/nd/*.flx',
         ]),
-        Path.glob(fbuild.buildroot / 'test/*/*.flx', exclude=[
-            fbuild.buildroot / 'test/drivers/*.flx',
-            fbuild.buildroot / 'test/faio/win-*.flx',
-        ]),
         Path.glob(fbuild.buildroot / 'tut/*/*.flx'),
     ))
