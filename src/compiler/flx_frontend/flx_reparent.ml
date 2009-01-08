@@ -133,7 +133,9 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
     a
 
 let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len exe =
+  (*
   print_endline ("remap_exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
+  *)
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
