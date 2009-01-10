@@ -36,7 +36,6 @@ def make_c_builder(*args, **kwargs):
 def make_cxx_builder(*args, **kwargs):
     return call('fbuild.builders.cxx.guess.config', *args, **kwargs)
 
-@fbuild.db.caches
 def config_build(*, platform, cc, cxx):
     fbuild.logger.log('configuring build phase', color='cyan')
 
@@ -46,7 +45,6 @@ def config_build(*, platform, cc, cxx):
         cxx=make_cxx_builder(exe=cxx),
     )
 
-@fbuild.db.caches
 def config_host(build, *,
         platform, cc, cxx, ocamlc, ocamlopt, ocamllex, ocamlyacc):
     fbuild.logger.log('configuring host phase', color='cyan')
@@ -76,7 +74,6 @@ def config_host(build, *,
 
     return phase
 
-@fbuild.db.caches
 def config_target(host, *, platform, cc, cxx):
     fbuild.logger.log('configuring target phase', color='cyan')
 
