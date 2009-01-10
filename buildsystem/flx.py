@@ -244,7 +244,7 @@ def check_flx(felix,
         static):
     fbuild.logger.check('checking ' + exe)
     try:
-        stdout, stderr = felix.run(exe, static=static, timeout=5, quieter=1)
+        stdout, stderr = felix.run(exe, static=static, timeout=60, quieter=1)
     except fbuild.ExecutionError as e:
         if isinstance(e, fbuild.ExecutionTimedOut):
             fbuild.logger.failed('failed: timed out')
