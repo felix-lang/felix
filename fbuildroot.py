@@ -31,16 +31,20 @@ def pre_options(parser):
 # ------------------------------------------------------------------------------
 
 def make_c_builder(*args, **kwargs):
-    return call('fbuild.builders.c.guess.config', *args, **kwargs)
+    return Record(
+        static=call('fbuild.builders.c.guess_static', *args, **kwargs),
+        shared=call('fbuild.builders.c.guess_shared', *args, **kwargs))
 
 def make_cxx_builder(*args, **kwargs):
-    return call('fbuild.builders.cxx.guess.config', *args, **kwargs)
+    return Record(
+        static=call('fbuild.builders.cxx.guess_static', *args, **kwargs),
+        shared=call('fbuild.builders.cxx.guess_shared', *args, **kwargs))
 
 def config_build(*, platform, cc, cxx):
     fbuild.logger.log('configuring build phase', color='cyan')
 
     return Record(
-        platform=call('fbuild.builders.platform.config', platform),
+        platform=call('fbuild.builders.platform.platform', platform),
         c=make_c_builder(exe=cc),
         cxx=make_cxx_builder(exe=cxx),
     )
@@ -49,7 +53,7 @@ def config_host(build, *,
         platform, cc, cxx, ocamlc, ocamlopt, ocamllex, ocamlyacc):
     fbuild.logger.log('configuring host phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.config', platform)
+    platform = call('fbuild.builders.platform.platform', platform)
 
     if platform == build.platform:
         fbuild.logger.log("using build's c and cxx compiler", color='cyan')
@@ -60,24 +64,24 @@ def config_host(build, *,
             c=make_c_builder(exe=cc),
             cxx=make_cxx_builder(exe=cxx))
 
-    phase.ocaml = call('fbuild.builders.ocaml.config',
+    phase.ocaml = call('fbuild.builders.ocaml.Ocaml',
         ocamlc=ocamlc,
-        ocamlopt=ocamlopt,
-        ocamllex=ocamllex,
-        ocamlyacc=ocamlyacc)
+        ocamlopt=ocamlopt)
+    phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex', ocamllex)
+    phase.ocamlyacc = call('fbuild.builders.ocaml.Ocamlyacc', ocamlyacc)
 
     # we prefer the native ocaml as it's much faster
-    if hasattr(phase.ocaml.ocaml, 'native'):
-        phase.ocaml.ocaml = phase.ocaml.ocaml.native
+    if hasattr(phase.ocaml, 'ocamlopt'):
+        phase.ocaml = phase.ocaml.ocamlopt
     else:
-        phase.ocaml.ocaml = phase.ocaml.ocaml.bytecode
+        phase.ocaml = phase.ocaml.ocamlc
 
     return phase
 
 def config_target(host, *, platform, cc, cxx):
     fbuild.logger.log('configuring target phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.config', platform)
+    platform = call('fbuild.builders.platform.platform', platform)
 
     if platform == host.platform:
         fbuild.logger.log("using host's c and cxx compiler", color='cyan')
@@ -137,7 +141,7 @@ def build():
     # --------------------------------------------------------------------------
 
     compilers = call('buildsystem.flx_compiler.build_flx_drivers',
-        host.ocaml)
+        host.ocaml, host.ocamllex, host.ocamlyacc)
 
     drivers = call('buildsystem.flx_drivers.build', target)
 
@@ -166,7 +170,7 @@ def build():
     # --------------------------------------------------------------------------
     # now, try building a file
 
-    felix = call('fbuild.builders.felix.config',
+    felix = call('fbuild.builders.felix.Felix',
         exe=fbuild.buildroot / 'bin/flx',
         flags=['--test=' + fbuild.buildroot])
 
