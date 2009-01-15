@@ -1,4 +1,8 @@
 import fbuild
+import fbuild.config.c.bsd
+import fbuild.config.c.linux
+import fbuild.config.c.posix04
+import fbuild.config.c.solaris
 from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
@@ -81,11 +85,7 @@ def build_runtime(phase):
         ))
         includes.append(path / 'posix')
 
-    try:
-        call('fbuild.builders.c.posix.config_poll_h', phase.cxx.shared)
-    except fbuild.ConfigFailed:
-        pass
-    else:
+    if fbuild.config.c.posix04.poll_h(phase.cxx.shared).header:
         srcs.extend((
             # I've seen poll on linux and osx10.4 systems.
             # conditionally compiled and used.
@@ -94,35 +94,17 @@ def build_runtime(phase):
         ))
         includes.append(path / 'poll')
 
-    try:
-        epoll = call('fbuild.builders.c.linux.config_sys_epoll_h',
-            phase.cxx.shared)
-    except fbuild.ConfigFailed:
-        pass
-    else:
-        if epoll:
-            srcs.append(path / 'epoll/demux_epoll_demuxer.cpp')
-            includes.append(path / 'epoll')
+    if fbuild.config.c.linux.sys_epoll_h(phase.cxx.shared).header:
+        srcs.append(path / 'epoll/demux_epoll_demuxer.cpp')
+        includes.append(path / 'epoll')
 
-    try:
-        kqueue = call('fbuild.builders.c.bsd.config_sys_event_h',
-            phase.cxx.shared)
-    except fbuild.ConfigFailed:
-        pass
-    else:
-        if kqueue:
-            srcs.append(path / 'kqueue/demux_kqueue_demuxer.cpp')
-            includes.append(path / 'kqueue')
+    if fbuild.config.c.bsd.sys_event_h(phase.cxx.shared).header:
+        srcs.append(path / 'kqueue/demux_kqueue_demuxer.cpp')
+        includes.append(path / 'kqueue')
 
-    try:
-        evtports = call('fbuild.builders.c.solaris.config_port_h',
-            phase.cxx.shared)
-    except fbuild.ConfigFailed:
-        pass
-    else:
-        if evtports:
-            srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
-            includes.append(path / 'evtport')
+    if fbuild.config.c.solaris.port_h(phase.cxx.shared).header:
+        srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
+        includes.append(path / 'evtport')
 
     srcs = Path.globall(srcs)
 
