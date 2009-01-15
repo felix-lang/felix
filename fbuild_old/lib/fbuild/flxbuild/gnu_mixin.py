@@ -357,11 +357,12 @@ int main(int argc, char** argv) {
 
     print "mmap supported"
 
-    opt.HAVE_MMAP_PROT_EXEC    = self.check_macro_defined('PROT_EXEC',        'sys/mman.h')
-    opt.HAVE_MMAP_PROT_READ    = self.check_macro_defined('PROT_READ',        'sys/mman.h')
-    opt.HAVE_MMAP_PROT_WRITE   = self.check_macro_defined('PROT_WRITE',       'sys/mman.h')
+    opt.HAVE_PROT_EXEC         = self.check_macro_defined('PROT_EXEC',        'sys/mman.h')
+    opt.HAVE_PROT_READ         = self.check_macro_defined('PROT_READ',        'sys/mman.h')
+    opt.HAVE_PROT_WRITE        = self.check_macro_defined('PROT_WRITE',       'sys/mman.h')
     opt.HAVE_MMAP_DENYWRITE    = self.check_macro_defined('MAP_DENYWRITE',    'sys/mman.h')
-    opt.HAVE_MMAP_ANONYMOUS    = self.check_macro_defined('MAP_ANON',         'sys/mman.h')
+    opt.HAVE_MMAP_ANON         = self.check_macro_defined('MAP_ANON',         'sys/mman.h')
+    opt.HAVE_MMAP_ANONYMOUS    = self.check_macro_defined('MAP_ANONYMOUS',    'sys/mman.h')
     opt.HAVE_MMAP_FILE         = self.check_macro_defined('MAP_FILE',         'sys/mman.h')
     opt.HAVE_MMAP_FIXED        = self.check_macro_defined('MAP_FIXED',        'sys/mman.h')
     opt.HAVE_MMAP_HASSEMAPHORE = self.check_macro_defined('MAP_HASSEMAPHORE', 'sys/mman.h')
