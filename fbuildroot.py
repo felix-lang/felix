@@ -146,7 +146,7 @@ def build():
     drivers = call('buildsystem.flx_drivers.build', target)
 
     flx = call('buildsystem.flx.build',
-        compilers.flxg, target.cxx.shared, drivers)
+        compilers.flxg, target.cxx.static, drivers)
 
     # copy files into the library
     for module in 'flx_pthread', 'demux', 'faio', 'judy':
