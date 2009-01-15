@@ -4,6 +4,8 @@ import time
 from itertools import chain
 
 import fbuild
+import fbuild.builders.platform
+import fbuild.config.c
 import fbuild.db
 from fbuild import ConfigFailed
 from fbuild.functools import call
@@ -56,7 +58,6 @@ class Iscr(fbuild.db.PersistentObject):
 
 # ------------------------------------------------------------------------------
 
-@fbuild.db.caches
 def config_iscr_config(build, host, target) -> fbuild.db.DST:
     # allow us to import the buildroot
     with open(fbuild.buildroot/'__init__.py', 'w'):
@@ -98,19 +99,14 @@ def _print_config(f, build, host, target):
     # --------------------------------------------------------------------------
     # get all the platform information
 
-    from fbuild.builders.platform import archmap
-
     supported_platforms = set()
-    for platforms in archmap.values():
+    for platforms in fbuild.builders.platform.archmap.values():
         supported_platforms |= platforms
     supported_platforms = sorted(supported_platforms)
 
-    try:
-        call('fbuild.builders.c.win32.config', target.c.static)
-    except ConfigFailed:
-        p('HAVE_MSVC', False)
-    else:
-        p('HAVE_MSVC', True)
+    windows_h = call('fbuild.config.c.win32.windows_h', target.c.static)
+
+    p('HAVE_MSVC', bool(windows_h.header))
     p('HAVE_GNU', 'windows' not in target.platform)
 
     # --------------------------------------------------------------------------
@@ -133,6 +129,7 @@ def _print_config(f, build, host, target):
             _print_types(lang, pp)
             _print_c99_support(lang, pp)
             _print_posix_support(lang, platform, pp)
+            _print_windows_support(lang, platform, pp)
             _print_math_support(lang, pp)
             _print_openmp_support(lang, pp)
             _print_cxx_bugs(lang, pp)
@@ -201,159 +198,131 @@ def _print_compiler(lang, platform, p):
         call('fbuild.builders.c.config_little_endian', static))
 
 def _print_types(lang, p):
-    import fbuild.builders.c.std as c_std
-    int_aliases = c_std.type_aliases_int(lang.static)
+    cxx_types = call('fbuild.config.cxx.cxx03.types', lang.static)
 
-    def write(name, data):
-        try:
-            alias = int_aliases[data['size'], data['signed']]
-        except KeyError:
-            pass
-        else:
-            p('ALIAS_' + name.replace(' ', ''), alias)
+    def write(name, type_):
+        if name == '_Bool':
+            name = 'cbool'
+        elif name == 'void*':
+            name = 'VOIDP'
 
-        name = name.upper().replace(' ', '')
-        p('SIZEOF_' + name,  data['size'])
-        p('ALIGNOF_' + name, data['alignment'])
+        name = name.replace(' ', '')
+        alias = cxx_types.structural_alias(type_)
+        if isinstance(type_, fbuild.config.c.IntType):
+            p('ALIAS_' + name, alias)
+
+        name = name.upper()
+        p('SIZEOF_' + name,  type_.size)
+        p('ALIGNOF_' + name, type_.alignment)
 
     # standard language type info
-    std = call('fbuild.builders.cxx.std.config', lang.static)
-    p('CHAR_IS_UNSIGNED', not std.types['char']['signed'])
-    p('HAVE_BOOL',        'bool' in std.types)
-    p('HAVE_LONGLONG',    'long long' in std.types)
-    p('HAVE_LONGDOUBLE',  'long double' in std.types)
+    p('CHAR_IS_UNSIGNED', not cxx_types.char.signed)
+    p('HAVE_BOOL',        bool(cxx_types.bool))
+    p('HAVE_LONGLONG',    bool(cxx_types.long_long))
+    p('HAVE_LONGDOUBLE',  bool(cxx_types.long_double))
 
     max_align = 1
     aligns = {1: 'char'}
-    for name, data in std.types.items():
-        aligns.setdefault(data['alignment'], name)
-        max_align = max(max_align, data['alignment'])
+    for name, type_ in cxx_types.types():
+        if type_ is not None:
+            aligns.setdefault(type_.alignment, name)
+            max_align = max(max_align, type_.alignment)
 
         if name == 'void*': name = 'VOIDP'
-        write(name, data)
+        write(name, type_)
     p('MAX_ALIGN', max_align)
     p('flx_aligns', aligns)
-    p('arith_conv', c_std.type_conversions_int(lang.static))
+    p('arith_conv', cxx_types.conversion_map())
 
-    # stddef.h types
-    for name, data in std.headers.stddef_h.types.items():
-        write(name, data)
+    c99_types = call('fbuild.config.c.c99.types', lang.static)
+    stddef_h = call('fbuild.config.c.c99.stddef_h', lang.static)
+    complex_h = call('fbuild.config.c.c99.complex_h', lang.static)
+    stdint_h = call('fbuild.config.c.c99.stdint_h', lang.static)
 
-    # c99 types
-    c99 = call('fbuild.builders.c.c99.config', lang.static)
-    for name, data in c99.types.items():
-        if name == '_Bool': name = 'cbool'
-        write(name, data)
+    p('HAVE_STDINT', bool(stdint_h.header))
 
-    # complex.h types
-    for name, data in c99.headers.complex_h.types.items():
-        write(name, data)
-
-    # stdint.h types
-    try:
-        types = c99.headers.stdint_h.types
-    except AttributeError:
-        p('HAVE_STDINT', False)
-    else:
-        p('HAVE_STDINT', True)
-        for name, data in types.items():
-            write(name, data)
+    # write out data for the types.
+    for name, type_ in set(chain(
+            cxx_types.types(),
+            c99_types.types(),
+            stddef_h.types(),
+            complex_h.types(),
+            stdint_h.types())):
+        if type_ is None:
+            continue
+        write(name, type_)
 
 def _print_c99_support(lang, p):
-    c99 = call('fbuild.builders.c.c99.config', lang.static)
-    try:
-        vsnprintf = c99.headers.stdio_h.vsnprintf
-    except KeyError:
-        p('HAVE_VSNPRINTF', False)
-    else:
-        p('HAVE_VSNPRINTF', vsnprintf)
+    stdio_h = call('fbuild.config.c.c99.stdio_h', lang.static)
+    p('HAVE_VSNPRINTF', bool(stdio_h.vsnprintf))
 
 def _print_posix_support(lang, platform, p):
     # print out information about the posix libraries
-
-    posix = call('fbuild.builders.c.posix.config', lang.static)
-    try:
-        dlopen = posix.headers.dlfcn_h.dlopen
-    except KeyError:
+    dlfcn_h = call('fbuild.config.c.posix04.dlfcn_h', lang.static)
+    if dlfcn_h.dlopen:
+        p('HAVE_DLOPEN', True)
+        p('SUPPORT_DYNAMIC_LOADING', True)
+    else:
         p('HAVE_DLOPEN', False)
-        p('SUPPORT_DYNAMIC_LOADING',
-            'windows' in platform or 'osx' in platform)
-    else:
-        p('HAVE_DLOPEN', dlopen)
-        p('SUPPORT_DYNAMIC_LOADING',
-            dlopen or 'windows' in platform or 'osx' in platform)
 
-    try:
-        socklen_t = posix.headers.sys.socket_h.socklen_t
-    except KeyError:
-        pass
-    else:
-        p('FLX_SOCKLEN_T', socklen_t)
+    socket_h = call('fbuild.config.c.posix04.sys_socket_h', lang.static)
+    if socket_h.socklen_t:
+        # FIXME: Need to figure out how to do this in the new buildsystem.
+        p('FLX_SOCKLEN_T', 'socklen_t')
 
-    try:
-        pthread_h = posix.headers.pthread_h
-    except KeyError:
+    pthread_h = call('fbuild.config.c.posix04.pthread_h', lang.static)
+    if pthread_h.header:
+        p('HAVE_PTHREADS', True)
+        # FIXME: Need to figure out how to do this in the new buildsystem.
+        p('PTHREAD_SWITCH', '')
+    else:
         p('HAVE_PTHREADS', False)
-    else:
-        p('HAVE_PTHREADS',  True)
-        p('PTHREAD_SWITCH', ' '.join(pthread_h.flags))
 
-    try:
-        call('fbuild.builders.c.bsd.config_sys_event_h', lang.static)
-    except ConfigFailed:
-        p('HAVE_KQUEUE_DEMUXER', False)
-    else:
-        p('HAVE_KQUEUE_DEMUXER', True)
+    poll_h = call('fbuild.config.c.posix04.poll_h', lang.static)
+    p('HAVE_POLL', bool(poll_h.header))
 
-    try:
-        call('fbuild.builders.c.linux.config_sys_epoll_h', lang.static)
-    except ConfigFailed:
-        p('HAVE_EPOLL', False)
-    else:
-        p('HAVE_EPOLL', True)
+    mman_h = call('fbuild.config.c.sys_mman_h.sys_mman_h', lang.static)
 
-    try:
-        call('fbuild.builders.c.solaris.config_port_h', lang.static)
-    except ConfigFailed:
-        p('HAVE_EVTPORTS', False)
-    else:
-        p('HAVE_EVTPORTS', True)
+    p('HAVE_MMAP', bool(mman_h.header))
+    for name, macro in mman_h.macros():
+        p('HAVE_' + name, bool(macro))
 
-    p('HAVE_POLL', 'poll_h' in posix.headers)
+    event_h = call('fbuild.config.c.bsd.sys_event_h', lang.static)
+    p('HAVE_KQUEUE_DEMUXER', bool(event_h.kqueue))
 
-    try:
-        mman_h = posix.headers.sys.mman_h
-    except KeyError:
-        p('HAVE_MMAP', False)
-    else:
-        p('HAVE_MMAP', True)
+    epoll_h = call('fbuild.config.c.linux.sys_epoll_h', lang.static)
+    p('HAVE_EPOLL', bool(epoll_h.epoll_create))
 
-        for macro, exists in mman_h['macros'].items():
-            if macro == 'MAP_ANON': macro = 'MAP_ANONYMOUS'
+    port_h = call('fbuild.config.c.solaris.port_h', lang.static)
+    p('HAVE_EVTPORTS', bool(port_h.port_create))
 
-            if macro.startswith('MAP'):
-                p('HAVE_M' + macro, bool(exists))
-            else:
-                p('HAVE_MMAP_' + macro, bool(exists))
+def _print_windows_support(lang, platform, p):
+    if 'windows' not in platform:
+        return
+
+    p('SUPPORT_DYNAMIC_LOADING', True)
+    p('FLX_SOCKLEN_T', 'int')
 
 def _print_math_support(lang, p):
-    try:
-        cmath = call('fbuild.builders.cxx.cmath.config', lang.static)
-    except ConfigFailed:
-        cmath = {}
+    cmath = call('fbuild.config.cxx.cmath.cmath', lang.static)
+    math_h = call('fbuild.config.c.math_h.math_h', lang.static)
+    ieeefp_h = call('fbuild.config.c.ieeefp_h.ieeefp_h', lang.static)
 
-    for function in ('isnan', 'isinf', 'isfinite'):
-        p('HAVE_CXX_' + function.upper() + '_IN_CMATH',
-            cmath.get(function, False))
-
-    math = call('fbuild.builders.c.math.config', lang.static)
-    for mode, function in \
-            ('C99', 'isnan'), ('C99', 'isinf'), ('C99', 'isfinite'), \
-            ('BSD', 'isnanf'), ('BSD', 'isinff'), ('BSD', 'finitef'):
-        for header in ('math', 'ieeefp'):
-            h = math
-            p('HAVE_%s_%s_IN_%s' % (mode, function.upper(), header.upper()),
-                h.get(function, False))
+    p('HAVE_CXX_ISNAN_IN_CMATH', bool(cmath.isnan))
+    p('HAVE_CXX_ISINF_IN_CMATH', bool(cmath.isinf))
+    p('HAVE_CXX_ISFINITE_IN_CMATH', bool(cmath.isfinite))
+    p('HAVE_C99_ISFINITE_IN_MATH', bool(math_h.isfinite))
+    p('HAVE_C99_ISINF_IN_MATH', bool(math_h.isinf))
+    p('HAVE_C99_ISNAN_IN_MATH', bool(math_h.isnan))
+    p('HAVE_BSD_FINITEF_IN_MATH', bool(math_h.finitef))
+    p('HAVE_BSD_ISINFF_IN_MATH', bool(math_h.isinff))
+    p('HAVE_BSD_ISNANF_IN_MATH', bool(math_h.isnanf))
+    p('HAVE_BSD_FINITEF_IN_IEEEFP', bool(ieeefp_h.finitef))
+    p('HAVE_BSD_ISINFF_IN_IEEEFP', bool(ieeefp_h.isinff))
+    p('HAVE_BSD_ISNANF_IN_IEEEFP', bool(ieeefp_h.isnanf))
+    p('HAVE_FINITE_IN_IEEEFP', bool(ieeefp_h.finite))
+    p('HAVE_ISINF_IN_IEEEFP', bool(ieeefp_h.isinf))
+    p('HAVE_ISNANF_IN_IEEEFP', bool(ieeefp_h.isnanf))
 
 def _print_openmp_support(lang, p):
     try:
