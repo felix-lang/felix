@@ -12,7 +12,10 @@ from fbuild.path import Path
 # ------------------------------------------------------------------------------
 
 class Iscr(fbuild.db.PersistentObject):
-    def __init__(self, exe):
+    def __init__(self, exe=None):
+        if exe is None:
+            exe = call('fbuildroot.src_dir') / 'interscript/bin/iscr.py'
+
         self.exe = Path(exe)
 
     @fbuild.db.cachemethod
@@ -51,11 +54,7 @@ class Iscr(fbuild.db.PersistentObject):
 
         return dsts
 
-def config_iscr(exe=None):
-    if exe is None:
-        exe = call('fbuildroot.src_dir') / 'interscript/bin/iscr.py'
-
-    return Iscr(exe)
+# ------------------------------------------------------------------------------
 
 @fbuild.db.caches
 def config_iscr_config(build, host, target) -> fbuild.db.DST:

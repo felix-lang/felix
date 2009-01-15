@@ -129,7 +129,7 @@ def build():
         cxx=fbuild.options.target_cxx)
 
     # extract the configuration
-    iscr = call('buildsystem.iscr.config_iscr')
+    iscr = call('buildsystem.iscr.Iscr')
     iscr('lpsrc/flx_config.pak')
 
     # convert the config into something iscr can use
