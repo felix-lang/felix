@@ -58,6 +58,7 @@ class Iscr(fbuild.db.PersistentObject):
 
 # ------------------------------------------------------------------------------
 
+@fbuild.db.caches
 def config_iscr_config(build, host, target) -> fbuild.db.DST:
     # allow us to import the buildroot
     with open(fbuild.buildroot/'__init__.py', 'w'):
