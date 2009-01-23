@@ -779,6 +779,7 @@ syntax functions {
   sproc_kind := cproc =># "'CFunction";
 
   sopt_traint_eq:= expect sexpr = =># "`(some ,_2)";
+  sopt_traint_eq:= = =># "'none";
   sopt_traint_eq:= sepsilon =># "'none";
 
   sopt_traint:= expect sexpr =># "`(some ,_2)";
@@ -845,6 +846,15 @@ syntax functions {
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
     (cdr _3))
   """;
+
+  sprocedure_definition := sadjectives sproc_kind sdeclname
+    sfun_arg* => statement =>#
+  """
+    (mkns
+    `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void none) ,(cal_funkind _1 _2) (,_6))
+    (cdr _3))
+  """;
+
 
   sobject_definition := obj sdeclname sfun_arg+ scompound =>#
   """
