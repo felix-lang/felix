@@ -192,8 +192,8 @@ def _print_compiler(lang, platform, p):
     p('EXT_LIB',        static.lib_linker.suffix)
     p('EXT_SHLIB',      shared.lib_linker.suffix)
     p('EXT_EXE',        static.exe_linker.suffix)
-    p('OPTIMISE',       ' '.join(static.compiler.optimize_flags))
-    p('DEBUG_FLAGS',    ' '.join(static.compiler.debug_flags))
+    p('OPTIMISE',       ' '.join(static.compiler.gcc.optimize_flags))
+    p('DEBUG_FLAGS',    ' '.join(static.compiler.gcc.debug_flags))
 
     p('LITTLE_ENDIAN',
         call('fbuild.builders.c.config_little_endian', static))
