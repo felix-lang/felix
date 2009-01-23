@@ -47,12 +47,24 @@ class Iscr(fbuild.db.PersistentObject):
             env={'PYTHONPATH': Path.relpath('.', buildroot)},
             **kwargs)
 
+        srcs = []
         dsts = []
-        regex = re.compile('^File (.*) is (NEW|CHANGED|unchanged)$')
+        ipk_regex = re.compile('^CREATING .* NAMED FILE SOURCE (.*) \[.*\]')
+        file_regex = re.compile('^File (.*) is (NEW|CHANGED|unchanged)$')
         for line in io.StringIO(stdout.decode()):
-            m = regex.match(line)
+            m = ipk_regex.match(line)
             if m:
-                dsts.append(Path(m.group(1)))
+                path = Path(m.group(1))
+                if not path.exists():
+                    # The path may be relative to the .pak file.
+                    path = src.parent / path
+                srcs.append(path)
+            else:
+                m = file_regex.match(line)
+                if m:
+                    dsts.append(Path(m.group(1)))
+
+        fbuild.db.add_external_dependencies_to_call(srcs=srcs)
 
         return dsts
 
