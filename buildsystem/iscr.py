@@ -225,11 +225,11 @@ def _print_types(lang, p):
     max_align = 1
     aligns = {1: 'char'}
     for name, type_ in cxx_types.types():
-        if type_ is not None:
-            aligns.setdefault(type_.alignment, name)
-            max_align = max(max_align, type_.alignment)
+        if type_ is None:
+            continue
 
-        if name == 'void*': name = 'VOIDP'
+        aligns.setdefault(type_.alignment, name)
+        max_align = max(max_align, type_.alignment)
         write(name, type_)
     p('MAX_ALIGN', max_align)
     p('flx_aligns', aligns)
