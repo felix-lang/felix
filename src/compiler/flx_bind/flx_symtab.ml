@@ -585,6 +585,7 @@ let rec build_tables syms name inherit_vs
               print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
             end
             ;
+            (*
             (* LVALUE VARIATION *)
             if kind = `Var then
             begin
@@ -635,7 +636,7 @@ let rec build_tables syms name inherit_vs
               if print_flag then
               print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name ^ " [lvalue]")
             end
-
+            *)
           )
           sts
           ;
@@ -1505,53 +1506,6 @@ let rec build_tables syms name inherit_vs
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
-          (*
-          (* projections *)
-          iter
-          (fun (component_name,t) ->
-            begin
-              let getn = !counter in incr counter;
-              let get_name = "get_" ^ component_name in
-              let get_dcl = `SYMDEF_fun ([],[stype],t,
-                `StrTemplate("$1." ^ component_name),
-                `NREQ_true,"primary")
-              in
-              Hashtbl.add dfns getn {
-                id=get_name;sr=sr;parent=parent;vs=vs;
-                pubmap=pubtab;privmap=privtab;dirs=[];
-                symdef=get_dcl
-              };
-              if access = `Public then add_function pub_name_map get_name getn;
-              add_function priv_name_map get_name getn
-              ;
-              if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
-            end
-            ;
-            (* LVALUE VARIATION *)
-            begin
-              let getn = !counter in incr counter;
-              let get_name = "get_" ^ component_name in
-              let get_dcl = `SYMDEF_fun ([],[`TYP_lvalue stype],
-                `TYP_lvalue t,
-                `StrTemplate ("$1." ^ component_name),
-                `NREQ_true,"primary")
-              in
-              Hashtbl.add dfns getn {
-                id=get_name;sr=sr;parent=parent;vs=vs;
-                pubmap=pubtab;privmap=privtab;dirs=[];
-                symdef=get_dcl
-              };
-              if access = `Public then add_function pub_name_map get_name getn;
-              add_function priv_name_map get_name getn
-              ;
-              if print_flag then print_endline ("//[lvalue]  " ^ spc ^ si getn ^ " -> " ^ get_name)
-            end
-            ;
-
-          )
-          sts
-          ;
-          *)
           add_tvars privtab
 
           (* NOTE: we don't add a type constructor for struct, because

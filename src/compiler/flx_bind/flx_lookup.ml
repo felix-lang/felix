@@ -5038,12 +5038,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             *)
           let get_name = "get_" ^ name in
           begin try be (`AST_method_apply (sr,(get_name,e,ts)))
-          with _ -> try be (`AST_apply (sr,(e2,e)))
-          with exn ->
+          with exn1 -> try be (`AST_apply (sr,(e2,e)))
+          with exn2 ->
           clierr sr (
-            "AST_dot: cclass type: koenig apply "^get_name ^
-            ", AND apply " ^ name ^
-            " failed with " ^ Printexc.to_string exn
+            "AST_dot: cclass type:" ^
+            "\nKoenig apply "^get_name ^
+            " failed with " ^ Printexc.to_string exn1 ^
+            "\nAND apply " ^ name ^
+            " failed with " ^ Printexc.to_string exn2
             )
           end
 
