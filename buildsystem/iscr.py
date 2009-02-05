@@ -279,9 +279,9 @@ def _print_posix_support(lang, platform, p):
         p('HAVE_DLOPEN', False)
 
     socket_h = call('fbuild.config.c.posix.sys_socket_h', lang.static)
-    if socket_h.socklen_t:
-        # FIXME: Need to figure out how to do this in the new buildsystem.
-        p('FLX_SOCKLEN_T', 'socklen_t')
+    if socket_h.accept:
+        # We strip off the trailing '*' from the socklen_t type.
+        p('FLX_SOCKLEN_T', socket_h.accept.args[-1][:-1])
 
     pthread_h = call('fbuild.config.c.posix.pthread_h', lang.static)
     if pthread_h.pthread_create:
