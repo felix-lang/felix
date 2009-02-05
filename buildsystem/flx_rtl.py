@@ -42,12 +42,20 @@ def build_runtime(phase):
         call('buildsystem.flx_pthread.build_runtime', phase),
     ]
 
+    dlfcn_h = call('fbuild.config.c.posix.dlfcn_h', phase.cxx.static)
+    if dlfcn_h.dlopen:
+        external_libs = dlfcn_h.external_libs
+    else:
+        external_libs = []
+
     return Record(
         static=phase.cxx.static.build_lib(dst + '_static', srcs,
             includes=includes,
             macros=macros + ['FLX_STATIC_LINK'],
-            libs=[lib.static for lib in libs]),
+            libs=[lib.static for lib in libs],
+            external_libs=external_libs),
         shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
             includes=includes,
             macros=macros,
-            libs=[lib.shared for lib in libs]))
+            libs=[lib.shared for lib in libs],
+            external_libs=external_libs))
