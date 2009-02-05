@@ -289,7 +289,8 @@ def _print_posix_support(lang, platform, p):
         switch = list(pthread_h.flags)
         switch.extend('-L' + p for p in pthread_h.libpaths)
         switch.extend('-l' + l for l in pthread_h.libs)
-        p('PTHREAD_SWITCH', repr(' '.join(switch)))
+        switch.extend('-l' + l for l in pthread_h.external_libs)
+        p('PTHREAD_SWITCH', ' '.join(switch))
     else:
         p('HAVE_PTHREADS', False)
 
