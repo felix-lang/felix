@@ -247,10 +247,10 @@ def _print_types(lang, p):
     p('flx_aligns', aligns)
     p('arith_conv', cxx_types.conversion_map())
 
-    c99_types = call('fbuild.config.c.c99.types', lang.static)
-    stddef_h = call('fbuild.config.c.c99.stddef_h', lang.static)
-    complex_h = call('fbuild.config.c.c99.complex_h', lang.static)
-    stdint_h = call('fbuild.config.c.c99.stdint_h', lang.static)
+    c99_types = call('fbuild.config.c.stdlib.types', lang.static)
+    stddef_h = call('fbuild.config.c.stdlib.stddef_h', lang.static)
+    complex_h = call('fbuild.config.c.stdlib.complex_h', lang.static)
+    stdint_h = call('fbuild.config.c.stdlib.stdint_h', lang.static)
 
     p('HAVE_STDINT', bool(stdint_h.header))
 
@@ -266,35 +266,37 @@ def _print_types(lang, p):
         write(name, type_)
 
 def _print_c99_support(lang, p):
-    stdio_h = call('fbuild.config.c.c99.stdio_h', lang.static)
+    stdio_h = call('fbuild.config.c.stdlib.stdio_h', lang.static)
     p('HAVE_VSNPRINTF', bool(stdio_h.vsnprintf))
 
 def _print_posix_support(lang, platform, p):
     # print out information about the posix libraries
-    dlfcn_h = call('fbuild.config.c.posix04.dlfcn_h', lang.static)
+    dlfcn_h = call('fbuild.config.c.posix.dlfcn_h', lang.static)
     if dlfcn_h.dlopen:
         p('HAVE_DLOPEN', True)
         p('SUPPORT_DYNAMIC_LOADING', True)
     else:
         p('HAVE_DLOPEN', False)
 
-    socket_h = call('fbuild.config.c.posix04.sys_socket_h', lang.static)
+    socket_h = call('fbuild.config.c.posix.sys_socket_h', lang.static)
     if socket_h.socklen_t:
         # FIXME: Need to figure out how to do this in the new buildsystem.
         p('FLX_SOCKLEN_T', 'socklen_t')
 
-    pthread_h = call('fbuild.config.c.posix04.pthread_h', lang.static)
-    if pthread_h.header:
+    pthread_h = call('fbuild.config.c.posix.pthread_h', lang.static)
+    if pthread_h.pthread_create:
         p('HAVE_PTHREADS', True)
-        # FIXME: Need to figure out how to do this in the new buildsystem.
-        p('PTHREAD_SWITCH', '')
+        switch = list(pthread_h.flags)
+        switch.extend('-L' + p for p in pthread_h.libpaths)
+        switch.extend('-l' + l for l in pthread_h.libs)
+        p('PTHREAD_SWITCH', repr(' '.join(switch)))
     else:
         p('HAVE_PTHREADS', False)
 
-    poll_h = call('fbuild.config.c.posix04.poll_h', lang.static)
+    poll_h = call('fbuild.config.c.posix.poll_h', lang.static)
     p('HAVE_POLL', bool(poll_h.header))
 
-    mman_h = call('fbuild.config.c.sys_mman_h.sys_mman_h', lang.static)
+    mman_h = call('fbuild.config.c.posix.sys_mman_h', lang.static)
 
     p('HAVE_MMAP', bool(mman_h.header))
     for name, macro in mman_h.macros():
@@ -318,7 +320,7 @@ def _print_windows_support(lang, platform, p):
 
 def _print_math_support(lang, p):
     cmath = call('fbuild.config.cxx.cmath.cmath', lang.static)
-    math_h = call('fbuild.config.c.math_h.math_h', lang.static)
+    math_h = call('fbuild.config.c.stdlib.math_h', lang.static)
     ieeefp_h = call('fbuild.config.c.ieeefp_h.ieeefp_h', lang.static)
 
     p('HAVE_CXX_ISNAN_IN_CMATH', bool(cmath.isnan))

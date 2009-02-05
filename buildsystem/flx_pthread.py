@@ -45,6 +45,7 @@ def build_runtime(phase):
     macros = ['BUILD_PTHREAD']
     flags = []
     libs = []
+    external_libs = []
 
     if 'win32' in phase.platform:
         srcs.append(path / 'pthread_win_thread.cpp')
@@ -52,22 +53,11 @@ def build_runtime(phase):
     if 'posix' in phase.platform:
         srcs.append(path / 'pthread_posix_thread.cpp')
 
-    if 'linux' in phase.platform:
-        pass
-
-    if 'bsd' in phase.platform:
-        pass
-
-    if 'solaris' in phase.platform:
-        libs.append('rt')
-
-    try:
-        pthread_h = call('fbuild.builders.c.posix.config_pthread_h',
-            phase.cxx.shared)
-    except fbuild.builders.ConfigFailed:
-        pass
-    else:
+    pthread_h = call('fbuild.config.c.posix.pthread_h', phase.cxx.shared)
+    if pthread_h.pthread_create:
         flags.extend(pthread_h.flags)
+        libs.extend(pthread_h.libs)
+        external_libs.extend(pthread_h.external_libs)
 
     return Record(
         static=phase.cxx.static.build_lib(dst + '_static', srcs,
@@ -75,12 +65,14 @@ def build_runtime(phase):
             macros=macros + ['FLX_STATIC_LINK'],
             cflags=flags,
             libs=libs,
+            external_libs=external_libs,
             lflags=flags),
         shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
             includes=includes,
             macros=macros,
             cflags=flags,
             libs=libs,
+            external_libs=external_libs,
             lflags=flags))
 
 def build_flx(builder):

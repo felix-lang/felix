@@ -22,16 +22,6 @@ def build(phase):
         'src/faio',
     ]
 
-    libs = [
-        call('buildsystem.demux.build_runtime', phase),
-        call('buildsystem.faio.build_runtime', phase),
-        call('buildsystem.flx_exceptions.build_runtime', phase),
-        call('buildsystem.flx_gc.build_runtime', phase),
-        call('buildsystem.flx_rtl.build_runtime', phase),
-        call('buildsystem.flx_pthread.build_runtime', phase),
-        call('buildsystem.judy.build_runtime', phase),
-    ]
-
     flx_run_lib = phase.cxx.static.compile(
         dst=fbuild.buildroot / 'lib/rtl/flx_run',
         src=path / 'flx_run.cxx',
@@ -43,7 +33,7 @@ def build(phase):
         dst=fbuild.buildroot / 'bin/flx_run',
         srcs=[path / 'flx_run.cxx'],
         includes=run_includes,
-        libs=[lib.shared for lib in libs],
+        libs=[call('buildsystem.flx_rtl.build_runtime', phase).shared],
     )
 
     flx_arun_lib = phase.cxx.static.compile(
@@ -57,7 +47,7 @@ def build(phase):
         dst=fbuild.buildroot / 'bin/flx_arun',
         srcs=[path / 'flx_arun.cxx'],
         includes=arun_includes,
-        libs=[lib.shared for lib in libs],
+        libs=[call('buildsystem.flx_rtl.build_runtime', phase).shared],
     )
 
     return Record(
