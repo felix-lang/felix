@@ -112,11 +112,13 @@ def build_runtime(phase):
         static=phase.cxx.static.build_lib(dst + '_static', srcs,
             includes=includes,
             macros=macros + ['FLX_STATIC_LINK'],
-            libs=[lib.static for lib in libs] + extra_libs),
+            libs=[lib.static for lib in libs],
+            external_libs=extra_libs),
         shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
             includes=includes,
             macros=macros,
-            libs=[lib.shared for lib in libs] + extra_libs))
+            libs=[lib.shared for lib in libs],
+            external_libs=extra_libs))
 
 def build_flx(builder):
     return buildsystem.copy_flxs_to_lib(Path('src/demux/*.flx').glob())
