@@ -17,7 +17,7 @@ def build_runtime(phase):
     dst = fbuild.buildroot / 'lib/rtl/flx_exceptions'
     srcs = [path / 'flx_exceptions.cpp']
     includes = [fbuild.buildroot / 'config/target']
-    macros = ['BUILD_EXCEPTIONS']
+    macros = ['BUILD_FLX_EXCEPTIONS']
 
     return Record(
         static=phase.cxx.static.build_lib(dst + '_static', srcs,
