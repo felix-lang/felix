@@ -15,6 +15,7 @@ def build_runtime(phase):
         'src/faio',
         'src/gc',
         'src/pthread',
+        'src/rtl',
     ]
     macros = ['BUILD_ASYNC']
     libs = [
