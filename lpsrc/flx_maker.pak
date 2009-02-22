@@ -2314,7 +2314,7 @@ else
   VERBOSE="-q"
 fi
 
-FLXFLAGS="--inline=$INLIN $OUTPUT_DIR"
+FLXFLAGS="--inline=$INLINE $OUTPUT_DIR"
 
 if [ $STATIC = 0 ]
 then
