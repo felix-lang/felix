@@ -27,7 +27,7 @@ def build_runtime(phase):
         'src/exceptions',
         'src/judy',
     ]
-    macros = ['BUILD_GC']
+    macros = ['BUILD_FLX_GC']
     libs = [
         call('buildsystem.judy.build_runtime', phase),
         call('buildsystem.flx_exceptions.build_runtime', phase),
