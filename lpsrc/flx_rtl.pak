@@ -74,7 +74,7 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','d
 @doc()
 
 @select(tangler('spkgs/flx_async.py'))
-cpp_cpps = ['src/rtl/flx_async']
+cpp_cpps = ['src/flx_async/flx_async']
 provides_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl','flx_gc']
 lib_requires = ['libfaio','libdemux','libflx_pthread','libflx','libflx_gc','libflx_judy', 'libflx_exceptions']

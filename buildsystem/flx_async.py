@@ -7,7 +7,7 @@ from fbuild.record import Record
 def build_runtime(phase):
     dst = fbuild.buildroot / 'lib/rtl/flx_async'
     suffix = '.so'
-    srcs = ['src/rtl/flx_async.cpp']
+    srcs = ['src/flx_async/flx_async.cpp']
     includes = [
         fbuild.buildroot / 'config/target',
         'src/exceptions',
@@ -20,6 +20,7 @@ def build_runtime(phase):
     libs = [
         call('buildsystem.flx_pthread.build_runtime', phase),
         call('buildsystem.faio.build_runtime', phase),
+        call('buildsystem.demux.build_runtime', phase),
     ]
 
     return Record(
