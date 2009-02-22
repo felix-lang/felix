@@ -14,10 +14,12 @@ def build(phase):
         'src/gc',
         'src/judy',
         'src/pthread',
+        'src/flx_async',
         'src/rtl',
     ]
 
     arun_includes = run_includes + [
+        fbuild.buildroot / 'lib/rtl',
         'src/demux',
         'src/faio',
     ]
