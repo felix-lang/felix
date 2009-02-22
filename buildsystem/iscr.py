@@ -179,9 +179,12 @@ def _print_compiler(lang, platform, p):
         p('SPEC_OBJ_FILENAME', '/Fo')
         p('SPEC_EXE_FILENAME', '/Fe')
 
-        p('CCOBJ_STATIC_FLX',  static.compiler.exe + ' /MD /c /EHs')
-        p('CCOBJ_DYNAMIC_FLX', shared.compiler.exe + ' /MD /LD')
-        p('CCLINK_STATIC',     static.compiler.exe + ' /MD')
+        p('CCOBJ_STATIC_FLX',  str(static.compiler.cl.exe) + ' /MD /c /EHs')
+        p('CCOBJ_DYNAMIC_FLX', str(shared.compiler.cl.exe) + ' /MD /LD')
+        p('CCLINK_STATIC',     str(static.compiler.cl.exe) + ' /MD')
+
+        p('CCLINK_DYNAMIC_FLX', ' '.join(
+            chain([shared.lib_linker.exe], shared.lib_linker.flags)))
     else:
         p('SPEC_OBJ_FILENAME', '-o ')
         p('SPEC_EXE_FILENAME', '-o ')
@@ -199,13 +202,18 @@ def _print_compiler(lang, platform, p):
         p('CCLINK_DYNAMIC_FLX', ' '.join(
             chain([shared.lib_linker.gcc.exe], shared.lib_linker.flags)))
 
-    p('EXT_STATIC_OBJ', static.compiler.suffix)
-    p('EXT_SHARED_OBJ', shared.compiler.suffix)
-    p('EXT_LIB',        static.lib_linker.suffix)
-    p('EXT_SHLIB',      shared.lib_linker.suffix)
-    p('EXT_EXE',        static.exe_linker.suffix)
-    p('OPTIMISE',       ' '.join(static.compiler.gcc.optimize_flags))
-    p('DEBUG_FLAGS',    ' '.join(static.compiler.gcc.debug_flags))
+    p('EXT_STATIC_OBJ', fbuild.builders.platform.static_obj_suffix())
+    p('EXT_SHARED_OBJ', fbuild.builders.platform.shared_obj_suffix())
+    p('EXT_LIB',        fbuild.builders.platform.static_lib_suffix())
+    p('EXT_SHLIB',      fbuild.builders.platform.shared_lib_suffix())
+    p('EXT_EXE',        fbuild.builders.platform.exe_suffix())
+
+    if 'windows' in platform:
+        p('OPTIMISE',       ' '.join(static.compiler.cl.optimize_flags))
+        p('DEBUG_FLAGS',    ' '.join(static.compiler.cl.debug_flags))
+    else:
+        p('OPTIMISE',       ' '.join(static.compiler.gcc.optimize_flags))
+        p('DEBUG_FLAGS',    ' '.join(static.compiler.gcc.debug_flags))
 
     p('LITTLE_ENDIAN',
         call('fbuild.builders.c.config_little_endian', static))
@@ -264,6 +272,27 @@ def _print_types(lang, p):
         if type_ is None:
             continue
         write(name, type_)
+
+    if not stdint_h.header:
+        if c99_types.long_long:
+            p('ALIAS_intmax_t', 'long long')
+            p('ALIAS_uintmax_t', 'unsigned long long')
+        else:
+            p('ALIAS_intmax_t', 'long')
+            p('ALIAS_uintmax_t', 'unsigned long')
+
+        visited = set()
+        for name, type_ in cxx_types.int_types():
+            if type_ is not None and type_ not in visited:
+                visited.add(type_)
+                if type_.signed:
+                    p('ALIAS_int%s_t' % (type_.size * 8), name)
+                else:
+                    p('ALIAS_uint%s_t' % (type_.size * 8), name)
+
+        p('ALIAS_intptr_t', cxx_types.structural_alias(cxx_types.voidp))
+        p('ALIAS_uintptr_t',
+            'unsigned ' + cxx_types.structural_alias(cxx_types.voidp))
 
 def _print_c99_support(lang, p):
     stdio_h = call('fbuild.config.c.stdlib.stdio_h', lang.static)
@@ -330,12 +359,12 @@ def _print_math_support(lang, p):
     p('HAVE_C99_ISFINITE_IN_MATH', bool(math_h.isfinite))
     p('HAVE_C99_ISINF_IN_MATH', bool(math_h.isinf))
     p('HAVE_C99_ISNAN_IN_MATH', bool(math_h.isnan))
-    p('HAVE_BSD_FINITEF_IN_MATH', bool(math_h.finitef))
-    p('HAVE_BSD_ISINFF_IN_MATH', bool(math_h.isinff))
-    p('HAVE_BSD_ISNANF_IN_MATH', bool(math_h.isnanf))
-    p('HAVE_BSD_FINITEF_IN_IEEEFP', bool(ieeefp_h.finitef))
-    p('HAVE_BSD_ISINFF_IN_IEEEFP', bool(ieeefp_h.isinff))
-    p('HAVE_BSD_ISNANF_IN_IEEEFP', bool(ieeefp_h.isnanf))
+    p('HAVE_BSD_FINITE_IN_MATH', bool(math_h.finite))
+    p('HAVE_BSD_ISINF_IN_MATH', bool(math_h.isinf))
+    p('HAVE_BSD_ISNAN_IN_MATH', bool(math_h.isnan))
+    p('HAVE_BSD_FINITE_IN_IEEEFP', bool(ieeefp_h.finite))
+    p('HAVE_BSD_ISINF_IN_IEEEFP', bool(ieeefp_h.isinf))
+    p('HAVE_BSD_ISNAN_IN_IEEEFP', bool(ieeefp_h.isnan))
     p('HAVE_FINITE_IN_IEEEFP', bool(ieeefp_h.finite))
     p('HAVE_ISINF_IN_IEEEFP', bool(ieeefp_h.isinf))
     p('HAVE_ISNANF_IN_IEEEFP', bool(ieeefp_h.isnanf))
