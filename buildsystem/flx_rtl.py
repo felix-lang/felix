@@ -33,13 +33,11 @@ def build_runtime(phase):
         'src/gc',
         'src/pthread',
     ]
-    macros = ['BUILD_EXCEPTIONS']
+    macros = ['BUILD_RTL']
     libs = [
-        call('buildsystem.demux.build_runtime', phase),
-        call('buildsystem.faio.build_runtime', phase),
+        call('buildsystem.flx_async.build_runtime', phase),
         call('buildsystem.flx_exceptions.build_runtime', phase),
         call('buildsystem.flx_gc.build_runtime', phase),
-        call('buildsystem.flx_pthread.build_runtime', phase),
     ]
 
     dlfcn_h = call('fbuild.config.c.posix.dlfcn_h', phase.cxx.static)
