@@ -25,3 +25,6 @@ def copy_hpps_to_rtl(*hpps):
 
 def copy_flxs_to_lib(flxs):
     return copy_to(fbuild.buildroot / 'lib', tuple(flxs))
+
+def copy_fpc_to_config(fpcs):
+    return copy_to(fbuild.buildroot / 'config', tuple(fpcs))
