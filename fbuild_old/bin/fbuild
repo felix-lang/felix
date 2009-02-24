@@ -181,6 +181,9 @@ def load_packages():
   pkgs = []
   unsorted_pkgs = []
 
+  for i in glob.glob(os.path.join(config.src_dir, "cpkgs", "target", "*.py")):
+    shutil.copy(i, os.path.join('cpkgs', 'target'))
+
   for i in \
       glob.glob(os.path.join("spkgs", "*.py")) + \
       glob.glob(os.path.join(config.src_dir, "spkgs", "*.py")):
