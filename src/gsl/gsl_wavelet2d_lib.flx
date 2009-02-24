@@ -1,0 +1,37 @@
+//Module        : gsl_wavelet2d_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_wavelet2d.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_WAVELET2D_H__
+header '#include "gsl/gsl_wavelet2d.h"';
+
+//INCLUDES
+include "gsl_matrix_double_lib";
+include "gsl_wavelet_lib";
+
+module gsl_wavelet2d_h
+{
+  open C_hack;
+  open gsl_matrix_double_h;
+  open gsl_wavelet_h;
+
+  //FUNCTIONS
+  fun gsl_wavelet2d_nstransform: cptr[gsl_wavelet] * ptr[double] * size * size * size * gsl_wavelet_direction * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_nstransform_forward: cptr[gsl_wavelet] * ptr[double] * size * size * size * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_nstransform_inverse: cptr[gsl_wavelet] * ptr[double] * size * size * size * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_nstransform_matrix: cptr[gsl_wavelet] * ptr[gsl_matrix] * gsl_wavelet_direction * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_nstransform_matrix_forward: cptr[gsl_wavelet] * ptr[gsl_matrix] * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_nstransform_matrix_inverse: cptr[gsl_wavelet] * ptr[gsl_matrix] * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_transform: cptr[gsl_wavelet] * ptr[double] * size * size * size * gsl_wavelet_direction * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_transform_forward: cptr[gsl_wavelet] * ptr[double] * size * size * size * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_transform_inverse: cptr[gsl_wavelet] * ptr[double] * size * size * size * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_transform_matrix: cptr[gsl_wavelet] * ptr[gsl_matrix] * gsl_wavelet_direction * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_transform_matrix_forward: cptr[gsl_wavelet] * ptr[gsl_matrix] * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet2d_transform_matrix_inverse: cptr[gsl_wavelet] * ptr[gsl_matrix] * ptr[gsl_wavelet_workspace] -> int;
+}

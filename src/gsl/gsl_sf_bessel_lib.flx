@@ -1,0 +1,125 @@
+//Module        : gsl_sf_bessel_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sf_bessel.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SF_BESSEL_H__
+header '#include "gsl/gsl_sf_bessel.h"';
+
+//INCLUDES
+include "gsl_mode_lib";
+include "gsl_sf_result_lib";
+
+module gsl_sf_bessel_h
+{
+  open C_hack;
+  open gsl_mode_h;
+  open gsl_sf_result_h;
+
+  //FUNCTIONS
+  fun gsl_sf_bessel_I0: double -> double;
+  fun gsl_sf_bessel_I0_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_I0_scaled: double -> double;
+  fun gsl_sf_bessel_I0_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_I1: double -> double;
+  fun gsl_sf_bessel_I1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_I1_scaled: double -> double;
+  fun gsl_sf_bessel_I1_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_In: int * double -> double;
+  fun gsl_sf_bessel_In_array: int * int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_In_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_In_scaled: int * double -> double;
+  fun gsl_sf_bessel_In_scaled_array: int * int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_In_scaled_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Inu: double * double -> double;
+  fun gsl_sf_bessel_Inu_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Inu_scaled: double * double -> double;
+  fun gsl_sf_bessel_Inu_scaled_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_J0: double -> double;
+  fun gsl_sf_bessel_J0_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_J1: double -> double;
+  fun gsl_sf_bessel_J1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Jn: int * double -> double;
+  fun gsl_sf_bessel_Jn_array: int * int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_Jn_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Jnu: double * double -> double;
+  fun gsl_sf_bessel_Jnu_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_K0: double -> double;
+  fun gsl_sf_bessel_K0_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_K0_scaled: double -> double;
+  fun gsl_sf_bessel_K0_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_K1: double -> double;
+  fun gsl_sf_bessel_K1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_K1_scaled: double -> double;
+  fun gsl_sf_bessel_K1_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Kn: int * double -> double;
+  fun gsl_sf_bessel_Kn_array: int * int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_Kn_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Kn_scaled: int * double -> double;
+  fun gsl_sf_bessel_Kn_scaled_array: int * int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_Kn_scaled_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Knu: double * double -> double;
+  fun gsl_sf_bessel_Knu_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Knu_scaled: double * double -> double;
+  fun gsl_sf_bessel_Knu_scaled_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Y0: double -> double;
+  fun gsl_sf_bessel_Y0_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Y1: double -> double;
+  fun gsl_sf_bessel_Y1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Yn: int * double -> double;
+  fun gsl_sf_bessel_Yn_array: int * int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_Yn_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_Ynu: double * double -> double;
+  fun gsl_sf_bessel_Ynu_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_i0_scaled: double -> double;
+  fun gsl_sf_bessel_i0_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_i1_scaled: double -> double;
+  fun gsl_sf_bessel_i1_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_i2_scaled: double -> double;
+  fun gsl_sf_bessel_i2_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_il_scaled: int * double -> double;
+  fun gsl_sf_bessel_il_scaled_array: int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_il_scaled_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_j0: double -> double;
+  fun gsl_sf_bessel_j0_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_j1: double -> double;
+  fun gsl_sf_bessel_j1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_j2: double -> double;
+  fun gsl_sf_bessel_j2_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_jl: int * double -> double;
+  fun gsl_sf_bessel_jl_array: int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_jl_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_jl_steed_array: int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_k0_scaled: double -> double;
+  fun gsl_sf_bessel_k0_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_k1_scaled: double -> double;
+  fun gsl_sf_bessel_k1_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_k2_scaled: double -> double;
+  fun gsl_sf_bessel_k2_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_kl_scaled: int * double -> double;
+  fun gsl_sf_bessel_kl_scaled_array: int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_kl_scaled_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_lnKnu: double * double -> double;
+  fun gsl_sf_bessel_lnKnu_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_sequence_Jnu_e: double * gsl_mode_t * size * ptr[double] -> int;
+  fun gsl_sf_bessel_y0: double -> double;
+  fun gsl_sf_bessel_y0_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_y1: double -> double;
+  fun gsl_sf_bessel_y1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_y2: double -> double;
+  fun gsl_sf_bessel_y2_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_yl: int * double -> double;
+  fun gsl_sf_bessel_yl_array: int * double * ptr[double] -> int;
+  fun gsl_sf_bessel_yl_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_zero_J0: uint -> double;
+  fun gsl_sf_bessel_zero_J0_e: uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_zero_J1: uint -> double;
+  fun gsl_sf_bessel_zero_J1_e: uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_bessel_zero_Jnu: double * uint -> double;
+  fun gsl_sf_bessel_zero_Jnu_e: double * uint * ptr[gsl_sf_result] -> int;
+}

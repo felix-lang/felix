@@ -1,0 +1,48 @@
+//Module        : gsl_statistics_long_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_statistics_long.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_STATISTICS_LONG_H__
+header '#include "gsl/gsl_statistics_long.h"';
+
+module gsl_statistics_long_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_stats_long_minmax: ptr[long] * ptr[long] * cptr[long] * size * size;
+  proc gsl_stats_long_minmax_index: ptr[size] * ptr[size] * cptr[long] * size * size;
+
+  //FUNCTIONS
+  fun gsl_stats_long_absdev: cptr[long] * size * size -> double;
+  fun gsl_stats_long_absdev_m: cptr[long] * size * size * double -> double;
+  fun gsl_stats_long_covariance: cptr[long] * size * cptr[long] * size * size -> double;
+  fun gsl_stats_long_covariance_m: cptr[long] * size * cptr[long] * size * size * double * double -> double;
+  fun gsl_stats_long_kurtosis: cptr[long] * size * size -> double;
+  fun gsl_stats_long_kurtosis_m_sd: cptr[long] * size * size * double * double -> double;
+  fun gsl_stats_long_lag1_autocorrelation: cptr[long] * size * size -> double;
+  fun gsl_stats_long_lag1_autocorrelation_m: cptr[long] * size * size * double -> double;
+  fun gsl_stats_long_max: cptr[long] * size * size -> long;
+  fun gsl_stats_long_max_index: cptr[long] * size * size -> size;
+  fun gsl_stats_long_mean: cptr[long] * size * size -> double;
+  fun gsl_stats_long_median_from_sorted_data: cptr[long] * size * size -> double;
+  fun gsl_stats_long_min: cptr[long] * size * size -> long;
+  fun gsl_stats_long_min_index: cptr[long] * size * size -> size;
+  fun gsl_stats_long_pvariance: cptr[long] * size * size * cptr[long] * size * size -> double;
+  fun gsl_stats_long_quantile_from_sorted_data: cptr[long] * size * size * double -> double;
+  fun gsl_stats_long_sd: cptr[long] * size * size -> double;
+  fun gsl_stats_long_sd_m: cptr[long] * size * size * double -> double;
+  fun gsl_stats_long_sd_with_fixed_mean: cptr[long] * size * size * double -> double;
+  fun gsl_stats_long_skew: cptr[long] * size * size -> double;
+  fun gsl_stats_long_skew_m_sd: cptr[long] * size * size * double * double -> double;
+  fun gsl_stats_long_ttest: cptr[long] * size * size * cptr[long] * size * size -> double;
+  fun gsl_stats_long_variance: cptr[long] * size * size -> double;
+  fun gsl_stats_long_variance_m: cptr[long] * size * size * double -> double;
+  fun gsl_stats_long_variance_with_fixed_mean: cptr[long] * size * size * double -> double;
+}

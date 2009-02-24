@@ -1,0 +1,49 @@
+//Module        : gsl_dht_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_dht.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_DHT_H__
+header '#include "gsl/gsl_dht.h"';
+
+//INCLUDES
+include "gsl_dht_struct_lib";
+
+module gsl_dht_h
+{
+  open C_hack;
+  open gsl_dht_struct_h;
+
+  //CSTRUCTS
+  cstruct gsl_dht_struct {
+    size: size;
+    nu: double;
+    xmax: double;
+    kmax: double;
+    j: ptr[double];
+    Jjj: ptr[double];
+    J2: ptr[double];
+  }
+
+  //STRUCT or UNION TAG ALIASES
+  typedef gsl_dht = gsl_dht_struct;
+
+  //TYPE ALIASES
+  typedef _struct_gsl_dht_struct = gsl_dht_struct;
+
+  //PROCEDURES
+  proc gsl_dht_free: ptr[gsl_dht];
+
+  //FUNCTIONS
+  fun gsl_dht_alloc: size -> ptr[gsl_dht];
+  fun gsl_dht_apply: cptr[gsl_dht] * ptr[double] * ptr[double] -> int;
+  fun gsl_dht_init: ptr[gsl_dht] * double * double -> int;
+  fun gsl_dht_k_sample: cptr[gsl_dht] * int -> double;
+  fun gsl_dht_new: size * double * double -> ptr[gsl_dht];
+  fun gsl_dht_x_sample: cptr[gsl_dht] * int -> double;
+}

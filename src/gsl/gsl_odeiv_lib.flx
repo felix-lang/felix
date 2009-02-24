@@ -1,0 +1,66 @@
+//Module        : gsl_odeiv_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_odeiv.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_ODEIV_HADJ_DEC (-1) /* step decreased     */
+//#define GSL_ODEIV_HADJ_NIL   0  /* step unchanged     */
+//#define GSL_ODEIV_HADJ_INC   1  /* step was increased */
+//#define GSL_ODEIV_JA_EVAL(S,t,y,dfdy,dfdt)  (*((S)->jacobian))(t,y,dfdy,dfdt,(S)->params)
+//#define GSL_ODEIV_FN_EVAL(S,t,y,f)  (*((S)->function))(t,y,f,(S)->params)
+//#define __GSL_ODEIV_H__
+header '#include "gsl/gsl_odeiv.h"';
+
+module gsl_odeiv_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_odeiv_control = 'gsl_odeiv_control';
+  type gsl_odeiv_step = 'gsl_odeiv_step';
+  type gsl_odeiv_evolve = 'gsl_odeiv_evolve';
+  type gsl_odeiv_system = 'gsl_odeiv_system';
+  type gsl_odeiv_control_type = 'gsl_odeiv_control_type';
+  type gsl_odeiv_step_type = 'gsl_odeiv_step_type';
+
+  //VARIABLES
+  const gsl_odeiv_step_gear1: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_gear1';
+  const gsl_odeiv_step_gear2: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_gear2';
+  const gsl_odeiv_step_rk4imp: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rk4imp';
+  const gsl_odeiv_step_rk2simp: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rk2simp';
+  const gsl_odeiv_step_rkf45: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rkf45';
+  const gsl_odeiv_step_rk8pd: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rk8pd';
+  const gsl_odeiv_step_rk2: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rk2';
+  const gsl_odeiv_step_rk4: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rk4';
+  const gsl_odeiv_step_rk2imp: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rk2imp';
+  const gsl_odeiv_step_bsimp: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_bsimp';
+  const gsl_odeiv_step_rkck: cptr[gsl_odeiv_step_type] = 'gsl_odeiv_step_rkck';
+
+  //PROCEDURES
+  proc gsl_odeiv_control_free: ptr[gsl_odeiv_control];
+  proc gsl_odeiv_evolve_free: ptr[gsl_odeiv_evolve];
+  proc gsl_odeiv_step_free: ptr[gsl_odeiv_step];
+
+  //FUNCTIONS
+  fun gsl_odeiv_control_alloc: cptr[gsl_odeiv_control_type] -> ptr[gsl_odeiv_control];
+  fun gsl_odeiv_control_hadjust: ptr[gsl_odeiv_control] * ptr[gsl_odeiv_step] * cptr[double] * cptr[double] * cptr[double] * ptr[double] -> int;
+  fun gsl_odeiv_control_init: ptr[gsl_odeiv_control] * double * double * double * double -> int;
+  fun gsl_odeiv_control_name: cptr[gsl_odeiv_control] -> cptr[char];
+  fun gsl_odeiv_control_scaled_new: double * double * double * double * cptr[double] * size -> ptr[gsl_odeiv_control];
+  fun gsl_odeiv_control_standard_new: double * double * double * double -> ptr[gsl_odeiv_control];
+  fun gsl_odeiv_control_y_new: double * double -> ptr[gsl_odeiv_control];
+  fun gsl_odeiv_control_yp_new: double * double -> ptr[gsl_odeiv_control];
+  fun gsl_odeiv_evolve_alloc: size -> ptr[gsl_odeiv_evolve];
+  fun gsl_odeiv_evolve_apply: ptr[gsl_odeiv_evolve] * ptr[gsl_odeiv_control] * ptr[gsl_odeiv_step] * cptr[gsl_odeiv_system] * ptr[double] * double * ptr[double] * ptr[double] -> int;
+  fun gsl_odeiv_evolve_reset: ptr[gsl_odeiv_evolve] -> int;
+  fun gsl_odeiv_step_alloc: cptr[gsl_odeiv_step_type] * size -> ptr[gsl_odeiv_step];
+  fun gsl_odeiv_step_apply: ptr[gsl_odeiv_step] * double * double * ptr[double] * ptr[double] * cptr[double] * ptr[double] * cptr[gsl_odeiv_system] -> int;
+  fun gsl_odeiv_step_name: cptr[gsl_odeiv_step] -> cptr[char];
+  fun gsl_odeiv_step_order: cptr[gsl_odeiv_step] -> uint;
+  fun gsl_odeiv_step_reset: ptr[gsl_odeiv_step] -> int;
+}

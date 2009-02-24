@@ -1,0 +1,93 @@
+//Module        : gsl_multifit_nlin_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_multifit_nlin.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_MULTIFIT_FN_EVAL_F_DF(F,x,y,dy) ((*((F)->fdf))(x,(F)->params,(y),(dy)))
+//#define GSL_MULTIFIT_FN_EVAL_DF(F,x,dy) ((*((F)->df))(x,(F)->params,(dy)))
+//#define GSL_MULTIFIT_FN_EVAL_F(F,x,y) ((*((F)->f))(x,(F)->params,(y)))
+//#define GSL_MULTIFIT_FN_EVAL(F,x,y) (*((F)->f))(x,(F)->params,(y))
+//#define __GSL_MULTIFIT_NLIN_H__
+header '#include "gsl/gsl_multifit_nlin.h"';
+
+//INCLUDES
+include "gsl_matrix_double_lib";
+include "gsl_multifit_function_fdf_struct_lib";
+include "gsl_multifit_function_struct_lib";
+include "gsl_vector_double_lib";
+
+module gsl_multifit_nlin_h
+{
+  open C_hack;
+  open gsl_matrix_double_h;
+  open gsl_multifit_function_fdf_struct_h;
+  open gsl_multifit_function_struct_h;
+  open gsl_vector_double_h;
+
+  //ABSTRACT TYPES
+  type gsl_multifit_fdfsolver = 'gsl_multifit_fdfsolver';
+  type gsl_multifit_fdfsolver_type = 'gsl_multifit_fdfsolver_type';
+  type gsl_multifit_fsolver = 'gsl_multifit_fsolver';
+  type gsl_multifit_fsolver_type = 'gsl_multifit_fsolver_type';
+
+  //CSTRUCTS
+  cstruct gsl_multifit_function_struct {
+    f: gsl_multifit_nlin_h_cft_1;
+    n: size;
+    p: size;
+    params: address;
+  }
+  cstruct gsl_multifit_function_fdf_struct {
+    f: gsl_multifit_nlin_h_cft_1;
+    df: gsl_multifit_nlin_h_cft_2;
+    fdf: gsl_multifit_nlin_h_cft_3;
+    n: size;
+    p: size;
+    params: address;
+  }
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef int (*gsl_multifit_nlin_h_cft_3)(gsl_vector const *,  void *, gsl_vector *,  gsl_matrix *);''';
+  type gsl_multifit_nlin_h_cft_3 = 'gsl_multifit_nlin_h_cft_3';
+  header '''typedef int (*gsl_multifit_nlin_h_cft_2)(gsl_vector const *,  void *, gsl_matrix *);''';
+  type gsl_multifit_nlin_h_cft_2 = 'gsl_multifit_nlin_h_cft_2';
+  header '''typedef int (*gsl_multifit_nlin_h_cft_1)(gsl_vector const *,  void *, gsl_vector *);''';
+  type gsl_multifit_nlin_h_cft_1 = 'gsl_multifit_nlin_h_cft_1';
+
+  //STRUCT or UNION TAG ALIASES
+  typedef gsl_multifit_function = gsl_multifit_function_struct;
+  typedef gsl_multifit_function_fdf = gsl_multifit_function_fdf_struct;
+
+  //TYPE ALIASES
+  typedef _struct_gsl_multifit_function_fdf_struct = gsl_multifit_function_fdf_struct;
+  typedef _struct_gsl_multifit_function_struct = gsl_multifit_function_struct;
+
+  //VARIABLES
+  const gsl_multifit_fdfsolver_lmsder: cptr[gsl_multifit_fdfsolver_type] = 'gsl_multifit_fdfsolver_lmsder';
+  const gsl_multifit_fdfsolver_lmder: cptr[gsl_multifit_fdfsolver_type] = 'gsl_multifit_fdfsolver_lmder';
+
+  //PROCEDURES
+  proc gsl_multifit_fdfsolver_free: ptr[gsl_multifit_fdfsolver];
+  proc gsl_multifit_fsolver_free: ptr[gsl_multifit_fsolver];
+
+  //FUNCTIONS
+  fun gsl_multifit_covar: cptr[gsl_matrix] * double * ptr[gsl_matrix] -> int;
+  fun gsl_multifit_fdfsolver_alloc: cptr[gsl_multifit_fdfsolver_type] * size * size -> ptr[gsl_multifit_fdfsolver];
+  fun gsl_multifit_fdfsolver_iterate: ptr[gsl_multifit_fdfsolver] -> int;
+  fun gsl_multifit_fdfsolver_name: cptr[gsl_multifit_fdfsolver] -> cptr[char];
+  fun gsl_multifit_fdfsolver_position: cptr[gsl_multifit_fdfsolver] -> ptr[gsl_vector];
+  fun gsl_multifit_fdfsolver_set: ptr[gsl_multifit_fdfsolver] * ptr[gsl_multifit_function_fdf] * ptr[gsl_vector] -> int;
+  fun gsl_multifit_fsolver_alloc: cptr[gsl_multifit_fsolver_type] * size * size -> ptr[gsl_multifit_fsolver];
+  fun gsl_multifit_fsolver_iterate: ptr[gsl_multifit_fsolver] -> int;
+  fun gsl_multifit_fsolver_name: cptr[gsl_multifit_fsolver] -> cptr[char];
+  fun gsl_multifit_fsolver_position: cptr[gsl_multifit_fsolver] -> ptr[gsl_vector];
+  fun gsl_multifit_fsolver_set: ptr[gsl_multifit_fsolver] * ptr[gsl_multifit_function] * ptr[gsl_vector] -> int;
+  fun gsl_multifit_gradient: cptr[gsl_matrix] * cptr[gsl_vector] * ptr[gsl_vector] -> int;
+  fun gsl_multifit_test_delta: cptr[gsl_vector] * cptr[gsl_vector] * double * double -> int;
+  fun gsl_multifit_test_gradient: cptr[gsl_vector] * double -> int;
+}

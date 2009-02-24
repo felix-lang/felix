@@ -1,0 +1,52 @@
+//Module        : gsl_complex_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_complex.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_SET_COMPLEX_PACKED(zp,n,x,y) do {*((zp)+2*(n))=(x); *((zp)+(2*(n)+1))=(y);} while(0)
+//#define GSL_SET_IMAG(zp,y) do {(zp)->dat[1]=(y);} while(0)
+//#define GSL_SET_REAL(zp,x) do {(zp)->dat[0]=(x);} while(0)
+//#define GSL_SET_COMPLEX(zp,x,y) do {(zp)->dat[0]=(x); (zp)->dat[1]=(y);} while(0)
+//#define GSL_COMPLEX_EQ(z1,z2) (((z1).dat[0] == (z2).dat[0]) && ((z1).dat[1] == (z2).dat[1]))
+//#define GSL_COMPLEX_P_IMAG(zp)  ((zp)->dat[1])
+//#define GSL_COMPLEX_P_REAL(zp)  ((zp)->dat[0])
+//#define GSL_COMPLEX_P(zp) ((zp)->dat)
+//#define GSL_IMAG(z)     ((z).dat[1])
+//#define GSL_REAL(z)     ((z).dat[0])
+//#define __GSL_COMPLEX_H__
+header '#include "gsl/gsl_complex.h"';
+
+module gsl_complex_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_complex = 'gsl_complex';
+  type gsl_complex_float = 'gsl_complex_float';
+  type gsl_complex_long_double = 'gsl_complex_long_double';
+
+  //TYPE ALIASES
+  typedef gsl_complex_packed = ptr[double];
+  typedef gsl_const_complex_packed_long_double = cptr[ldouble];
+  typedef gsl_const_complex_packed_float = cptr[float];
+  typedef gsl_const_complex_packed = cptr[double];
+  typedef gsl_const_complex_packed_float_ptr = cptr[float];
+  typedef gsl_complex_packed_array = ptr[double];
+  typedef gsl_complex_packed_long_double = ptr[ldouble];
+  typedef gsl_const_complex_packed_ptr = cptr[double];
+  typedef gsl_complex_packed_long_double_ptr = ptr[ldouble];
+  typedef gsl_const_complex_packed_long_double_ptr = cptr[ldouble];
+  typedef gsl_complex_packed_float = ptr[float];
+  typedef gsl_complex_packed_array_long_double = ptr[ldouble];
+  typedef gsl_const_complex_packed_array_float = cptr[float];
+  typedef gsl_const_complex_packed_array_long_double = cptr[ldouble];
+  typedef gsl_complex_packed_array_float = ptr[float];
+  typedef gsl_complex_packed_float_ptr = ptr[float];
+  typedef gsl_complex_packed_ptr = ptr[double];
+  typedef gsl_const_complex_packed_array = cptr[double];
+}

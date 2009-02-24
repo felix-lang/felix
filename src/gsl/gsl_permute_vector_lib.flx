@@ -1,0 +1,17 @@
+//Module        : gsl_permute_vector_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_permute_vector.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_PERMUTE_VECTOR_H__
+header '#include "gsl/gsl_permute_vector.h"';
+
+module gsl_permute_vector_h
+{
+  open C_hack;
+}

@@ -1,0 +1,39 @@
+//Module        : gsl_spline_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_spline.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SPLINE_H__
+header '#include "gsl/gsl_spline.h"';
+
+//INCLUDES
+include "gsl_interp_lib";
+
+module gsl_spline_h
+{
+  open C_hack;
+  open gsl_interp_h;
+
+  //ABSTRACT TYPES
+  type gsl_spline = 'gsl_spline';
+
+  //PROCEDURES
+  proc gsl_spline_free: ptr[gsl_spline];
+
+  //FUNCTIONS
+  fun gsl_spline_alloc: cptr[gsl_interp_type] * size -> ptr[gsl_spline];
+  fun gsl_spline_eval: cptr[gsl_spline] * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_spline_eval_deriv: cptr[gsl_spline] * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_spline_eval_deriv2: cptr[gsl_spline] * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_spline_eval_deriv2_e: cptr[gsl_spline] * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_spline_eval_deriv_e: cptr[gsl_spline] * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_spline_eval_e: cptr[gsl_spline] * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_spline_eval_integ: cptr[gsl_spline] * double * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_spline_eval_integ_e: cptr[gsl_spline] * double * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_spline_init: ptr[gsl_spline] * cptr[double] * cptr[double] * size -> int;
+}

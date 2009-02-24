@@ -1,0 +1,26 @@
+//Module        : gsl_deriv_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_deriv.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_DERIV_H__
+header '#include "gsl/gsl_deriv.h"';
+
+//INCLUDES
+include "gsl_math_lib";
+
+module gsl_deriv_h
+{
+  open C_hack;
+  open gsl_math_h;
+
+  //FUNCTIONS
+  fun gsl_deriv_backward: cptr[gsl_function] * double * double * ptr[double] * ptr[double] -> int;
+  fun gsl_deriv_central: cptr[gsl_function] * double * double * ptr[double] * ptr[double] -> int;
+  fun gsl_deriv_forward: cptr[gsl_function] * double * double * ptr[double] * ptr[double] -> int;
+}

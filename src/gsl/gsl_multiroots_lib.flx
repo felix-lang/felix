@@ -1,0 +1,100 @@
+//Module        : gsl_multiroots_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_multiroots.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_MULTIROOT_FN_EVAL_F_DF(F,x,y,dy) ((*((F)->fdf))(x,(F)->params,(y),(dy)))
+//#define GSL_MULTIROOT_FN_EVAL_DF(F,x,dy) ((*((F)->df))(x,(F)->params,(dy)))
+//#define GSL_MULTIROOT_FN_EVAL_F(F,x,y) ((*((F)->f))(x,(F)->params,(y)))
+//#define GSL_MULTIROOT_FN_EVAL(F,x,y) (*((F)->f))(x,(F)->params,(y))
+//#define __GSL_MULTIROOTS_H__
+header '#include "gsl/gsl_multiroots.h"';
+
+//INCLUDES
+include "gsl_matrix_double_lib";
+include "gsl_multiroot_function_fdf_struct_lib";
+include "gsl_multiroot_function_struct_lib";
+include "gsl_vector_double_lib";
+
+module gsl_multiroots_h
+{
+  open C_hack;
+  open gsl_matrix_double_h;
+  open gsl_multiroot_function_fdf_struct_h;
+  open gsl_multiroot_function_struct_h;
+  open gsl_vector_double_h;
+
+  //ABSTRACT TYPES
+  type gsl_multiroot_fsolver = 'gsl_multiroot_fsolver';
+  type gsl_multiroot_fdfsolver_type = 'gsl_multiroot_fdfsolver_type';
+  type gsl_multiroot_fsolver_type = 'gsl_multiroot_fsolver_type';
+  type gsl_multiroot_fdfsolver = 'gsl_multiroot_fdfsolver';
+
+  //CSTRUCTS
+  cstruct gsl_multiroot_function_struct {
+    f: gsl_multiroots_h_cft_1;
+    n: size;
+    params: address;
+  }
+  cstruct gsl_multiroot_function_fdf_struct {
+    f: gsl_multiroots_h_cft_1;
+    df: gsl_multiroots_h_cft_2;
+    fdf: gsl_multiroots_h_cft_3;
+    n: size;
+    params: address;
+  }
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef int (*gsl_multiroots_h_cft_3)(gsl_vector const *,  void *, gsl_vector *,  gsl_matrix *);''';
+  type gsl_multiroots_h_cft_3 = 'gsl_multiroots_h_cft_3';
+  header '''typedef int (*gsl_multiroots_h_cft_2)(gsl_vector const *,  void *, gsl_matrix *);''';
+  type gsl_multiroots_h_cft_2 = 'gsl_multiroots_h_cft_2';
+  header '''typedef int (*gsl_multiroots_h_cft_1)(gsl_vector const *,  void *, gsl_vector *);''';
+  type gsl_multiroots_h_cft_1 = 'gsl_multiroots_h_cft_1';
+
+  //STRUCT or UNION TAG ALIASES
+  typedef gsl_multiroot_function = gsl_multiroot_function_struct;
+  typedef gsl_multiroot_function_fdf = gsl_multiroot_function_fdf_struct;
+
+  //TYPE ALIASES
+  typedef _struct_gsl_multiroot_function_struct = gsl_multiroot_function_struct;
+  typedef _struct_gsl_multiroot_function_fdf_struct = gsl_multiroot_function_fdf_struct;
+
+  //VARIABLES
+  const gsl_multiroot_fsolver_hybrids: cptr[gsl_multiroot_fsolver_type] = 'gsl_multiroot_fsolver_hybrids';
+  const gsl_multiroot_fdfsolver_newton: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_newton';
+  const gsl_multiroot_fsolver_dnewton: cptr[gsl_multiroot_fsolver_type] = 'gsl_multiroot_fsolver_dnewton';
+  const gsl_multiroot_fsolver_broyden: cptr[gsl_multiroot_fsolver_type] = 'gsl_multiroot_fsolver_broyden';
+  const gsl_multiroot_fsolver_hybrid: cptr[gsl_multiroot_fsolver_type] = 'gsl_multiroot_fsolver_hybrid';
+  const gsl_multiroot_fdfsolver_hybridj: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_hybridj';
+  const gsl_multiroot_fdfsolver_hybridsj: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_hybridsj';
+  const gsl_multiroot_fdfsolver_gnewton: cptr[gsl_multiroot_fdfsolver_type] = 'gsl_multiroot_fdfsolver_gnewton';
+
+  //PROCEDURES
+  proc gsl_multiroot_fdfsolver_free: ptr[gsl_multiroot_fdfsolver];
+  proc gsl_multiroot_fsolver_free: ptr[gsl_multiroot_fsolver];
+
+  //FUNCTIONS
+  fun gsl_multiroot_fdfsolver_alloc: cptr[gsl_multiroot_fdfsolver_type] * size -> ptr[gsl_multiroot_fdfsolver];
+  fun gsl_multiroot_fdfsolver_dx: cptr[gsl_multiroot_fdfsolver] -> ptr[gsl_vector];
+  fun gsl_multiroot_fdfsolver_f: cptr[gsl_multiroot_fdfsolver] -> ptr[gsl_vector];
+  fun gsl_multiroot_fdfsolver_iterate: ptr[gsl_multiroot_fdfsolver] -> int;
+  fun gsl_multiroot_fdfsolver_name: cptr[gsl_multiroot_fdfsolver] -> cptr[char];
+  fun gsl_multiroot_fdfsolver_root: cptr[gsl_multiroot_fdfsolver] -> ptr[gsl_vector];
+  fun gsl_multiroot_fdfsolver_set: ptr[gsl_multiroot_fdfsolver] * ptr[gsl_multiroot_function_fdf] * ptr[gsl_vector] -> int;
+  fun gsl_multiroot_fdjacobian: ptr[gsl_multiroot_function] * cptr[gsl_vector] * cptr[gsl_vector] * double * ptr[gsl_matrix] -> int;
+  fun gsl_multiroot_fsolver_alloc: cptr[gsl_multiroot_fsolver_type] * size -> ptr[gsl_multiroot_fsolver];
+  fun gsl_multiroot_fsolver_dx: cptr[gsl_multiroot_fsolver] -> ptr[gsl_vector];
+  fun gsl_multiroot_fsolver_f: cptr[gsl_multiroot_fsolver] -> ptr[gsl_vector];
+  fun gsl_multiroot_fsolver_iterate: ptr[gsl_multiroot_fsolver] -> int;
+  fun gsl_multiroot_fsolver_name: cptr[gsl_multiroot_fsolver] -> cptr[char];
+  fun gsl_multiroot_fsolver_root: cptr[gsl_multiroot_fsolver] -> ptr[gsl_vector];
+  fun gsl_multiroot_fsolver_set: ptr[gsl_multiroot_fsolver] * ptr[gsl_multiroot_function] * ptr[gsl_vector] -> int;
+  fun gsl_multiroot_test_delta: cptr[gsl_vector] * cptr[gsl_vector] * double * double -> int;
+  fun gsl_multiroot_test_residual: cptr[gsl_vector] * double -> int;
+}

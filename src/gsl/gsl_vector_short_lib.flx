@@ -1,0 +1,75 @@
+//Module        : gsl_vector_short_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_vector_short.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_VECTOR_SHORT_H__
+header '#include "gsl/gsl_vector_short.h"';
+
+//INCLUDES
+include "gsl_block_short_lib";
+
+module gsl_vector_short_h
+{
+  open C_hack;
+  open gsl_block_short_h;
+
+  //ABSTRACT TYPES
+  type _gsl_vector_short_view = '_gsl_vector_short_view';
+  type _gsl_vector_short_const_view = '_gsl_vector_short_const_view';
+  type gsl_vector_short = 'gsl_vector_short';
+
+  //TYPE ALIASES
+  typedef gsl_vector_short_view = _gsl_vector_short_view;
+  typedef gsl_vector_short_const_view = _gsl_vector_short_const_view;
+
+  //PROCEDURES
+  proc gsl_vector_short_free: ptr[gsl_vector_short];
+  proc gsl_vector_short_minmax: cptr[gsl_vector_short] * ptr[short] * ptr[short];
+  proc gsl_vector_short_minmax_index: cptr[gsl_vector_short] * ptr[size] * ptr[size];
+  proc gsl_vector_short_set: ptr[gsl_vector_short] * size * short;
+  proc gsl_vector_short_set_all: ptr[gsl_vector_short] * short;
+  proc gsl_vector_short_set_zero: ptr[gsl_vector_short];
+
+  //FUNCTIONS
+  fun gsl_vector_short_add: ptr[gsl_vector_short] * cptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_add_constant: ptr[gsl_vector_short] * double -> int;
+  fun gsl_vector_short_alloc: size -> ptr[gsl_vector_short];
+  fun gsl_vector_short_alloc_from_block: ptr[gsl_block_short] * size * size * size -> ptr[gsl_vector_short];
+  fun gsl_vector_short_alloc_from_vector: ptr[gsl_vector_short] * size * size * size -> ptr[gsl_vector_short];
+  fun gsl_vector_short_calloc: size -> ptr[gsl_vector_short];
+  fun gsl_vector_short_const_ptr: cptr[gsl_vector_short] * size -> cptr[short];
+  fun gsl_vector_short_const_subvector: cptr[gsl_vector_short] * size * size -> _gsl_vector_short_const_view;
+  fun gsl_vector_short_const_subvector_with_stride: cptr[gsl_vector_short] * size * size * size -> _gsl_vector_short_const_view;
+  fun gsl_vector_short_const_view_array: cptr[short] * size -> _gsl_vector_short_const_view;
+  fun gsl_vector_short_const_view_array_with_stride: cptr[short] * size * size -> _gsl_vector_short_const_view;
+  fun gsl_vector_short_div: ptr[gsl_vector_short] * cptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_fprintf: ptr[FILE] * cptr[gsl_vector_short] * cptr[char] -> int;
+  fun gsl_vector_short_fread: ptr[FILE] * ptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_fscanf: ptr[FILE] * ptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_fwrite: ptr[FILE] * cptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_get: cptr[gsl_vector_short] * size -> short;
+  fun gsl_vector_short_isnull: cptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_max: cptr[gsl_vector_short] -> short;
+  fun gsl_vector_short_max_index: cptr[gsl_vector_short] -> size;
+  fun gsl_vector_short_memcpy: ptr[gsl_vector_short] * cptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_min: cptr[gsl_vector_short] -> short;
+  fun gsl_vector_short_min_index: cptr[gsl_vector_short] -> size;
+  fun gsl_vector_short_mul: ptr[gsl_vector_short] * cptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_ptr: ptr[gsl_vector_short] * size -> ptr[short];
+  fun gsl_vector_short_reverse: ptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_scale: ptr[gsl_vector_short] * double -> int;
+  fun gsl_vector_short_set_basis: ptr[gsl_vector_short] * size -> int;
+  fun gsl_vector_short_sub: ptr[gsl_vector_short] * cptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_subvector: ptr[gsl_vector_short] * size * size -> _gsl_vector_short_view;
+  fun gsl_vector_short_subvector_with_stride: ptr[gsl_vector_short] * size * size * size -> _gsl_vector_short_view;
+  fun gsl_vector_short_swap: ptr[gsl_vector_short] * ptr[gsl_vector_short] -> int;
+  fun gsl_vector_short_swap_elements: ptr[gsl_vector_short] * size * size -> int;
+  fun gsl_vector_short_view_array: ptr[short] * size -> _gsl_vector_short_view;
+  fun gsl_vector_short_view_array_with_stride: ptr[short] * size * size -> _gsl_vector_short_view;
+}

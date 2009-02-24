@@ -1,0 +1,99 @@
+//Module        : gsl_matrix_short_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_matrix_short.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_MATRIX_SHORT_H__
+header '#include "gsl/gsl_matrix_short.h"';
+
+//INCLUDES
+include "gsl_block_short_lib";
+include "gsl_vector_short_lib";
+
+module gsl_matrix_short_h
+{
+  open C_hack;
+  open gsl_block_short_h;
+  open gsl_vector_short_h;
+
+  //ABSTRACT TYPES
+  type gsl_matrix_short = 'gsl_matrix_short';
+  type _gsl_matrix_short_const_view = '_gsl_matrix_short_const_view';
+  type _gsl_matrix_short_view = '_gsl_matrix_short_view';
+
+  //TYPE ALIASES
+  typedef gsl_matrix_short_const_view = _gsl_matrix_short_const_view;
+  typedef gsl_matrix_short_view = _gsl_matrix_short_view;
+
+  //PROCEDURES
+  proc gsl_matrix_short_free: ptr[gsl_matrix_short];
+  proc gsl_matrix_short_max_index: cptr[gsl_matrix_short] * ptr[size] * ptr[size];
+  proc gsl_matrix_short_min_index: cptr[gsl_matrix_short] * ptr[size] * ptr[size];
+  proc gsl_matrix_short_minmax: cptr[gsl_matrix_short] * ptr[short] * ptr[short];
+  proc gsl_matrix_short_minmax_index: cptr[gsl_matrix_short] * ptr[size] * ptr[size] * ptr[size] * ptr[size];
+  proc gsl_matrix_short_set: ptr[gsl_matrix_short] * size * size * short;
+  proc gsl_matrix_short_set_all: ptr[gsl_matrix_short] * short;
+  proc gsl_matrix_short_set_identity: ptr[gsl_matrix_short];
+  proc gsl_matrix_short_set_zero: ptr[gsl_matrix_short];
+
+  //FUNCTIONS
+  fun gsl_matrix_short_add: ptr[gsl_matrix_short] * cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_add_constant: ptr[gsl_matrix_short] * double -> int;
+  fun gsl_matrix_short_add_diagonal: ptr[gsl_matrix_short] * double -> int;
+  fun gsl_matrix_short_alloc: size * size -> ptr[gsl_matrix_short];
+  fun gsl_matrix_short_alloc_from_block: ptr[gsl_block_short] * size * size * size * size -> ptr[gsl_matrix_short];
+  fun gsl_matrix_short_alloc_from_matrix: ptr[gsl_matrix_short] * size * size * size * size -> ptr[gsl_matrix_short];
+  fun gsl_matrix_short_calloc: size * size -> ptr[gsl_matrix_short];
+  fun gsl_matrix_short_column: ptr[gsl_matrix_short] * size -> _gsl_vector_short_view;
+  fun gsl_matrix_short_const_column: cptr[gsl_matrix_short] * size -> _gsl_vector_short_const_view;
+  fun gsl_matrix_short_const_diagonal: cptr[gsl_matrix_short] -> _gsl_vector_short_const_view;
+  fun gsl_matrix_short_const_ptr: cptr[gsl_matrix_short] * size * size -> cptr[short];
+  fun gsl_matrix_short_const_row: cptr[gsl_matrix_short] * size -> _gsl_vector_short_const_view;
+  fun gsl_matrix_short_const_subdiagonal: cptr[gsl_matrix_short] * size -> _gsl_vector_short_const_view;
+  fun gsl_matrix_short_const_submatrix: cptr[gsl_matrix_short] * size * size * size * size -> _gsl_matrix_short_const_view;
+  fun gsl_matrix_short_const_superdiagonal: cptr[gsl_matrix_short] * size -> _gsl_vector_short_const_view;
+  fun gsl_matrix_short_const_view_array: cptr[short] * size * size -> _gsl_matrix_short_const_view;
+  fun gsl_matrix_short_const_view_array_with_tda: cptr[short] * size * size * size -> _gsl_matrix_short_const_view;
+  fun gsl_matrix_short_const_view_vector: cptr[gsl_vector_short] * size * size -> _gsl_matrix_short_const_view;
+  fun gsl_matrix_short_const_view_vector_with_tda: cptr[gsl_vector_short] * size * size * size -> _gsl_matrix_short_const_view;
+  fun gsl_matrix_short_diagonal: ptr[gsl_matrix_short] -> _gsl_vector_short_view;
+  fun gsl_matrix_short_div_elements: ptr[gsl_matrix_short] * cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_fprintf: ptr[FILE] * cptr[gsl_matrix_short] * cptr[char] -> int;
+  fun gsl_matrix_short_fread: ptr[FILE] * ptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_fscanf: ptr[FILE] * ptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_fwrite: ptr[FILE] * cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_get: cptr[gsl_matrix_short] * size * size -> short;
+  fun gsl_matrix_short_get_col: ptr[gsl_vector_short] * cptr[gsl_matrix_short] * size -> int;
+  fun gsl_matrix_short_get_row: ptr[gsl_vector_short] * cptr[gsl_matrix_short] * size -> int;
+  fun gsl_matrix_short_isnull: cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_max: cptr[gsl_matrix_short] -> short;
+  fun gsl_matrix_short_memcpy: ptr[gsl_matrix_short] * cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_min: cptr[gsl_matrix_short] -> short;
+  fun gsl_matrix_short_mul_elements: ptr[gsl_matrix_short] * cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_ptr: ptr[gsl_matrix_short] * size * size -> ptr[short];
+  fun gsl_matrix_short_row: ptr[gsl_matrix_short] * size -> _gsl_vector_short_view;
+  fun gsl_matrix_short_scale: ptr[gsl_matrix_short] * double -> int;
+  fun gsl_matrix_short_set_col: ptr[gsl_matrix_short] * size * cptr[gsl_vector_short] -> int;
+  fun gsl_matrix_short_set_row: ptr[gsl_matrix_short] * size * cptr[gsl_vector_short] -> int;
+  fun gsl_matrix_short_sub: ptr[gsl_matrix_short] * cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_subdiagonal: ptr[gsl_matrix_short] * size -> _gsl_vector_short_view;
+  fun gsl_matrix_short_submatrix: ptr[gsl_matrix_short] * size * size * size * size -> _gsl_matrix_short_view;
+  fun gsl_matrix_short_superdiagonal: ptr[gsl_matrix_short] * size -> _gsl_vector_short_view;
+  fun gsl_matrix_short_swap: ptr[gsl_matrix_short] * ptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_swap_columns: ptr[gsl_matrix_short] * size * size -> int;
+  fun gsl_matrix_short_swap_rowcol: ptr[gsl_matrix_short] * size * size -> int;
+  fun gsl_matrix_short_swap_rows: ptr[gsl_matrix_short] * size * size -> int;
+  fun gsl_matrix_short_transpose: ptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_transpose_memcpy: ptr[gsl_matrix_short] * cptr[gsl_matrix_short] -> int;
+  fun gsl_matrix_short_view_array: ptr[short] * size * size -> _gsl_matrix_short_view;
+  fun gsl_matrix_short_view_array_with_tda: ptr[short] * size * size * size -> _gsl_matrix_short_view;
+  fun gsl_matrix_short_view_vector: ptr[gsl_vector_short] * size * size -> _gsl_matrix_short_view;
+  fun gsl_matrix_short_view_vector_with_tda: ptr[gsl_vector_short] * size * size * size -> _gsl_matrix_short_view;
+  fun gsl_vector_short_alloc_col_from_matrix: ptr[gsl_matrix_short] * size -> ptr[gsl_vector_short];
+  fun gsl_vector_short_alloc_row_from_matrix: ptr[gsl_matrix_short] * size -> ptr[gsl_vector_short];
+}

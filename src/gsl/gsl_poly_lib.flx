@@ -1,0 +1,39 @@
+//Module        : gsl_poly_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_poly.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_POLY_H__
+header '#include "gsl/gsl_poly.h"';
+
+//INCLUDES
+include "gsl_complex_lib";
+
+module gsl_poly_h
+{
+  open C_hack;
+  open gsl_complex_h;
+
+  //ABSTRACT TYPES
+  type gsl_poly_complex_workspace = 'gsl_poly_complex_workspace';
+
+  //PROCEDURES
+  proc gsl_poly_complex_workspace_free: ptr[gsl_poly_complex_workspace];
+
+  //FUNCTIONS
+  fun gsl_poly_complex_solve: cptr[double] * size * ptr[gsl_poly_complex_workspace] * gsl_complex_packed_ptr -> int;
+  fun gsl_poly_complex_solve_cubic: double * double * double * ptr[gsl_complex] * ptr[gsl_complex] * ptr[gsl_complex] -> int;
+  fun gsl_poly_complex_solve_quadratic: double * double * double * ptr[gsl_complex] * ptr[gsl_complex] -> int;
+  fun gsl_poly_complex_workspace_alloc: size -> ptr[gsl_poly_complex_workspace];
+  fun gsl_poly_dd_eval: cptr[double] * cptr[double] * size * double -> double;
+  fun gsl_poly_dd_init: ptr[double] * cptr[double] * cptr[double] * size -> int;
+  fun gsl_poly_dd_taylor: ptr[double] * double * cptr[double] * cptr[double] * size * ptr[double] -> int;
+  fun gsl_poly_eval: cptr[double] * int * double -> double;
+  fun gsl_poly_solve_cubic: double * double * double * ptr[double] * ptr[double] * ptr[double] -> int;
+  fun gsl_poly_solve_quadratic: double * double * double * ptr[double] * ptr[double] -> int;
+}

@@ -1,0 +1,25 @@
+//Module        : gsl_fit_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_fit.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_FIT_H__
+header '#include "gsl/gsl_fit.h"';
+
+module gsl_fit_h
+{
+  open C_hack;
+
+  //FUNCTIONS
+  fun gsl_fit_linear: cptr[double] * size * cptr[double] * size * size * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] -> int;
+  fun gsl_fit_linear_est: double * double * double * double * double * double * ptr[double] * ptr[double] -> int;
+  fun gsl_fit_mul: cptr[double] * size * cptr[double] * size * size * ptr[double] * ptr[double] * ptr[double] -> int;
+  fun gsl_fit_mul_est: double * double * double * ptr[double] * ptr[double] -> int;
+  fun gsl_fit_wlinear: cptr[double] * size * cptr[double] * size * cptr[double] * size * size * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] * ptr[double] -> int;
+  fun gsl_fit_wmul: cptr[double] * size * cptr[double] * size * cptr[double] * size * size * ptr[double] * ptr[double] * ptr[double] -> int;
+}

@@ -186,6 +186,8 @@ def build():
     for module in 'flx_glob', 'tre':
         call('buildsystem.' + module + '.build_flx', flx)
 
+    call('buildsystem.bindings.build_flx', target)
+
     # --------------------------------------------------------------------------
     # now, try building a file
 

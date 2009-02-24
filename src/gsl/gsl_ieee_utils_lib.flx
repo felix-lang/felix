@@ -1,0 +1,57 @@
+//Module        : gsl_ieee_utils_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_ieee_utils.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_IEEE_UTILS_H__
+header '#include "gsl/gsl_ieee_utils.h"';
+
+//INCLUDES
+
+module gsl_ieee_utils_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_ieee_float_rep = 'gsl_ieee_float_rep';
+  type gsl_ieee_double_rep = 'gsl_ieee_double_rep';
+
+  //ENUMERATION CONSTANTS
+  const GSL_IEEE_ROUND_TO_NEAREST: int = 'GSL_IEEE_ROUND_TO_NEAREST';
+  const GSL_IEEE_MASK_UNDERFLOW: int = 'GSL_IEEE_MASK_UNDERFLOW';
+  const GSL_IEEE_MASK_DENORMALIZED: int = 'GSL_IEEE_MASK_DENORMALIZED';
+  const GSL_IEEE_ROUND_TO_ZERO: int = 'GSL_IEEE_ROUND_TO_ZERO';
+  const GSL_IEEE_SINGLE_PRECISION: int = 'GSL_IEEE_SINGLE_PRECISION';
+  const GSL_IEEE_TYPE_DENORMAL: int = 'GSL_IEEE_TYPE_DENORMAL';
+  const GSL_IEEE_ROUND_UP: int = 'GSL_IEEE_ROUND_UP';
+  const GSL_IEEE_MASK_OVERFLOW: int = 'GSL_IEEE_MASK_OVERFLOW';
+  const GSL_IEEE_MASK_DIVISION_BY_ZERO: int = 'GSL_IEEE_MASK_DIVISION_BY_ZERO';
+  const GSL_IEEE_DOUBLE_PRECISION: int = 'GSL_IEEE_DOUBLE_PRECISION';
+  const GSL_IEEE_MASK_ALL: int = 'GSL_IEEE_MASK_ALL';
+  const GSL_IEEE_TRAP_INEXACT: int = 'GSL_IEEE_TRAP_INEXACT';
+  const GSL_IEEE_EXTENDED_PRECISION: int = 'GSL_IEEE_EXTENDED_PRECISION';
+  const GSL_IEEE_TYPE_INF: int = 'GSL_IEEE_TYPE_INF';
+  const GSL_IEEE_TYPE_ZERO: int = 'GSL_IEEE_TYPE_ZERO';
+  const GSL_IEEE_TYPE_NORMAL: int = 'GSL_IEEE_TYPE_NORMAL';
+  const GSL_IEEE_TYPE_NAN: int = 'GSL_IEEE_TYPE_NAN';
+  const GSL_IEEE_MASK_INVALID: int = 'GSL_IEEE_MASK_INVALID';
+  const GSL_IEEE_ROUND_DOWN: int = 'GSL_IEEE_ROUND_DOWN';
+
+  //PROCEDURES
+  proc gsl_ieee_double_to_rep: cptr[double] * ptr[gsl_ieee_double_rep];
+  proc gsl_ieee_env_setup: 1;
+  proc gsl_ieee_float_to_rep: cptr[float] * ptr[gsl_ieee_float_rep];
+  proc gsl_ieee_fprintf_double: ptr[FILE] * cptr[double];
+  proc gsl_ieee_fprintf_float: ptr[FILE] * cptr[float];
+  proc gsl_ieee_printf_double: cptr[double];
+  proc gsl_ieee_printf_float: cptr[float];
+
+  //FUNCTIONS
+  fun gsl_ieee_read_mode_string: cptr[char] * ptr[int] * ptr[int] * ptr[int] -> int;
+  fun gsl_ieee_set_mode: int * int * int -> int;
+}

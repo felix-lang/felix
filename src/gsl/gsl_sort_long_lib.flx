@@ -1,0 +1,27 @@
+//Module        : gsl_sort_long_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sort_long.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SORT_LONG_H__
+header '#include "gsl/gsl_sort_long.h"';
+
+module gsl_sort_long_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_sort_long: ptr[long] * size * size;
+  proc gsl_sort_long_index: ptr[size] * cptr[long] * size * size;
+
+  //FUNCTIONS
+  fun gsl_sort_long_largest: ptr[long] * size * cptr[long] * size * size -> int;
+  fun gsl_sort_long_largest_index: ptr[size] * size * cptr[long] * size * size -> int;
+  fun gsl_sort_long_smallest: ptr[long] * size * cptr[long] * size * size -> int;
+  fun gsl_sort_long_smallest_index: ptr[size] * size * cptr[long] * size * size -> int;
+}

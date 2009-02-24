@@ -1,0 +1,61 @@
+//Module        : gsl_statistics_long_double_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_statistics_long_double.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_STATISTICS_LONG_DOUBLE_H__
+header '#include "gsl/gsl_statistics_long_double.h"';
+
+module gsl_statistics_long_double_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_stats_long_double_minmax: ptr[ldouble] * ptr[ldouble] * cptr[ldouble] * size * size;
+  proc gsl_stats_long_double_minmax_index: ptr[size] * ptr[size] * cptr[ldouble] * size * size;
+
+  //FUNCTIONS
+  fun gsl_stats_long_double_absdev: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_absdev_m: cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_covariance: cptr[ldouble] * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_covariance_m: cptr[ldouble] * size * cptr[ldouble] * size * size * double * double -> double;
+  fun gsl_stats_long_double_kurtosis: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_kurtosis_m_sd: cptr[ldouble] * size * size * double * double -> double;
+  fun gsl_stats_long_double_lag1_autocorrelation: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_lag1_autocorrelation_m: cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_max: cptr[ldouble] * size * size -> ldouble;
+  fun gsl_stats_long_double_max_index: cptr[ldouble] * size * size -> size;
+  fun gsl_stats_long_double_mean: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_median_from_sorted_data: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_min: cptr[ldouble] * size * size -> ldouble;
+  fun gsl_stats_long_double_min_index: cptr[ldouble] * size * size -> size;
+  fun gsl_stats_long_double_pvariance: cptr[ldouble] * size * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_quantile_from_sorted_data: cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_sd: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_sd_m: cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_sd_with_fixed_mean: cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_skew: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_skew_m_sd: cptr[ldouble] * size * size * double * double -> double;
+  fun gsl_stats_long_double_ttest: cptr[ldouble] * size * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_variance: cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_variance_m: cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_variance_with_fixed_mean: cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_wabsdev: cptr[ldouble] * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_wabsdev_m: cptr[ldouble] * size * cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_wkurtosis: cptr[ldouble] * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_wkurtosis_m_sd: cptr[ldouble] * size * cptr[ldouble] * size * size * double * double -> double;
+  fun gsl_stats_long_double_wmean: cptr[ldouble] * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_wsd: cptr[ldouble] * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_wsd_m: cptr[ldouble] * size * cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_wsd_with_fixed_mean: cptr[ldouble] * size * cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_wskew: cptr[ldouble] * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_wskew_m_sd: cptr[ldouble] * size * cptr[ldouble] * size * size * double * double -> double;
+  fun gsl_stats_long_double_wvariance: cptr[ldouble] * size * cptr[ldouble] * size * size -> double;
+  fun gsl_stats_long_double_wvariance_m: cptr[ldouble] * size * cptr[ldouble] * size * size * double -> double;
+  fun gsl_stats_long_double_wvariance_with_fixed_mean: cptr[ldouble] * size * cptr[ldouble] * size * size * double -> double;
+}

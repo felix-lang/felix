@@ -1,0 +1,35 @@
+//Module        : gsl_sum_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sum.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SUM_H__
+header '#include "gsl/gsl_sum.h"';
+
+module gsl_sum_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_sum_levin_utrunc_workspace = 'gsl_sum_levin_utrunc_workspace';
+  type gsl_sum_levin_u_workspace = 'gsl_sum_levin_u_workspace';
+
+  //PROCEDURES
+  proc gsl_sum_levin_u_free: ptr[gsl_sum_levin_u_workspace];
+  proc gsl_sum_levin_utrunc_free: ptr[gsl_sum_levin_utrunc_workspace];
+
+  //FUNCTIONS
+  fun gsl_sum_levin_u_accel: cptr[double] * size * ptr[gsl_sum_levin_u_workspace] * ptr[double] * ptr[double] -> int;
+  fun gsl_sum_levin_u_alloc: size -> ptr[gsl_sum_levin_u_workspace];
+  fun gsl_sum_levin_u_minmax: cptr[double] * size * size * size * ptr[gsl_sum_levin_u_workspace] * ptr[double] * ptr[double] -> int;
+  fun gsl_sum_levin_u_step: double * size * size * ptr[gsl_sum_levin_u_workspace] * ptr[double] -> int;
+  fun gsl_sum_levin_utrunc_accel: cptr[double] * size * ptr[gsl_sum_levin_utrunc_workspace] * ptr[double] * ptr[double] -> int;
+  fun gsl_sum_levin_utrunc_alloc: size -> ptr[gsl_sum_levin_utrunc_workspace];
+  fun gsl_sum_levin_utrunc_minmax: cptr[double] * size * size * size * ptr[gsl_sum_levin_utrunc_workspace] * ptr[double] * ptr[double] -> int;
+  fun gsl_sum_levin_utrunc_step: double * size * ptr[gsl_sum_levin_utrunc_workspace] * ptr[double] -> int;
+}

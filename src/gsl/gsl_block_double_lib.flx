@@ -1,0 +1,50 @@
+//Module        : gsl_block_double_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_block_double.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_BLOCK_DOUBLE_H__
+header '#include "gsl/gsl_block_double.h"';
+
+//INCLUDES
+include "gsl_block_struct_lib";
+
+module gsl_block_double_h
+{
+  open C_hack;
+  open gsl_block_struct_h;
+
+  //CSTRUCTS
+  cstruct gsl_block_struct {
+    size: size;
+    data: ptr[double];
+  }
+
+  //STRUCT or UNION TAG ALIASES
+  typedef gsl_block = gsl_block_struct;
+
+  //TYPE ALIASES
+  typedef _struct_gsl_block_struct = gsl_block_struct;
+
+  //PROCEDURES
+  proc gsl_block_free: ptr[gsl_block];
+
+  //FUNCTIONS
+  fun gsl_block_alloc: size -> ptr[gsl_block];
+  fun gsl_block_calloc: size -> ptr[gsl_block];
+  fun gsl_block_data: cptr[gsl_block] -> ptr[double];
+  fun gsl_block_fprintf: ptr[FILE] * cptr[gsl_block] * cptr[char] -> int;
+  fun gsl_block_fread: ptr[FILE] * ptr[gsl_block] -> int;
+  fun gsl_block_fscanf: ptr[FILE] * ptr[gsl_block] -> int;
+  fun gsl_block_fwrite: ptr[FILE] * cptr[gsl_block] -> int;
+  fun gsl_block_raw_fprintf: ptr[FILE] * cptr[double] * size * size * cptr[char] -> int;
+  fun gsl_block_raw_fread: ptr[FILE] * ptr[double] * size * size -> int;
+  fun gsl_block_raw_fscanf: ptr[FILE] * ptr[double] * size * size -> int;
+  fun gsl_block_raw_fwrite: ptr[FILE] * cptr[double] * size * size -> int;
+  fun gsl_block_size: cptr[gsl_block] -> size;
+}

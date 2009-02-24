@@ -1,0 +1,48 @@
+//Module        : gsl_statistics_short_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_statistics_short.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_STATISTICS_SHORT_H__
+header '#include "gsl/gsl_statistics_short.h"';
+
+module gsl_statistics_short_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_stats_short_minmax: ptr[short] * ptr[short] * cptr[short] * size * size;
+  proc gsl_stats_short_minmax_index: ptr[size] * ptr[size] * cptr[short] * size * size;
+
+  //FUNCTIONS
+  fun gsl_stats_short_absdev: cptr[short] * size * size -> double;
+  fun gsl_stats_short_absdev_m: cptr[short] * size * size * double -> double;
+  fun gsl_stats_short_covariance: cptr[short] * size * cptr[short] * size * size -> double;
+  fun gsl_stats_short_covariance_m: cptr[short] * size * cptr[short] * size * size * double * double -> double;
+  fun gsl_stats_short_kurtosis: cptr[short] * size * size -> double;
+  fun gsl_stats_short_kurtosis_m_sd: cptr[short] * size * size * double * double -> double;
+  fun gsl_stats_short_lag1_autocorrelation: cptr[short] * size * size -> double;
+  fun gsl_stats_short_lag1_autocorrelation_m: cptr[short] * size * size * double -> double;
+  fun gsl_stats_short_max: cptr[short] * size * size -> short;
+  fun gsl_stats_short_max_index: cptr[short] * size * size -> size;
+  fun gsl_stats_short_mean: cptr[short] * size * size -> double;
+  fun gsl_stats_short_median_from_sorted_data: cptr[short] * size * size -> double;
+  fun gsl_stats_short_min: cptr[short] * size * size -> short;
+  fun gsl_stats_short_min_index: cptr[short] * size * size -> size;
+  fun gsl_stats_short_pvariance: cptr[short] * size * size * cptr[short] * size * size -> double;
+  fun gsl_stats_short_quantile_from_sorted_data: cptr[short] * size * size * double -> double;
+  fun gsl_stats_short_sd: cptr[short] * size * size -> double;
+  fun gsl_stats_short_sd_m: cptr[short] * size * size * double -> double;
+  fun gsl_stats_short_sd_with_fixed_mean: cptr[short] * size * size * double -> double;
+  fun gsl_stats_short_skew: cptr[short] * size * size -> double;
+  fun gsl_stats_short_skew_m_sd: cptr[short] * size * size * double * double -> double;
+  fun gsl_stats_short_ttest: cptr[short] * size * size * cptr[short] * size * size -> double;
+  fun gsl_stats_short_variance: cptr[short] * size * size -> double;
+  fun gsl_stats_short_variance_m: cptr[short] * size * size * double -> double;
+  fun gsl_stats_short_variance_with_fixed_mean: cptr[short] * size * size * double -> double;
+}

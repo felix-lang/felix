@@ -1,0 +1,67 @@
+//Module        : gsl_histogram_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_histogram.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_HISTOGRAM_H__
+header '#include "gsl/gsl_histogram.h"';
+
+//INCLUDES
+
+module gsl_histogram_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_histogram = 'gsl_histogram';
+  type gsl_histogram_pdf = 'gsl_histogram_pdf';
+
+  //PROCEDURES
+  proc gsl_histogram_free: ptr[gsl_histogram];
+  proc gsl_histogram_pdf_free: ptr[gsl_histogram_pdf];
+  proc gsl_histogram_reset: ptr[gsl_histogram];
+
+  //FUNCTIONS
+  fun gsl_histogram_accumulate: ptr[gsl_histogram] * double * double -> int;
+  fun gsl_histogram_add: ptr[gsl_histogram] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_alloc: size -> ptr[gsl_histogram];
+  fun gsl_histogram_bins: cptr[gsl_histogram] -> size;
+  fun gsl_histogram_calloc: size -> ptr[gsl_histogram];
+  fun gsl_histogram_calloc_range: size * ptr[double] -> ptr[gsl_histogram];
+  fun gsl_histogram_calloc_uniform: size * double * double -> ptr[gsl_histogram];
+  fun gsl_histogram_clone: cptr[gsl_histogram] -> ptr[gsl_histogram];
+  fun gsl_histogram_div: ptr[gsl_histogram] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_equal_bins_p: cptr[gsl_histogram] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_find: cptr[gsl_histogram] * double * ptr[size] -> int;
+  fun gsl_histogram_fprintf: ptr[FILE] * cptr[gsl_histogram] * cptr[char] * cptr[char] -> int;
+  fun gsl_histogram_fread: ptr[FILE] * ptr[gsl_histogram] -> int;
+  fun gsl_histogram_fscanf: ptr[FILE] * ptr[gsl_histogram] -> int;
+  fun gsl_histogram_fwrite: ptr[FILE] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_get: cptr[gsl_histogram] * size -> double;
+  fun gsl_histogram_get_range: cptr[gsl_histogram] * size * ptr[double] * ptr[double] -> int;
+  fun gsl_histogram_increment: ptr[gsl_histogram] * double -> int;
+  fun gsl_histogram_max: cptr[gsl_histogram] -> double;
+  fun gsl_histogram_max_bin: cptr[gsl_histogram] -> size;
+  fun gsl_histogram_max_val: cptr[gsl_histogram] -> double;
+  fun gsl_histogram_mean: cptr[gsl_histogram] -> double;
+  fun gsl_histogram_memcpy: ptr[gsl_histogram] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_min: cptr[gsl_histogram] -> double;
+  fun gsl_histogram_min_bin: cptr[gsl_histogram] -> size;
+  fun gsl_histogram_min_val: cptr[gsl_histogram] -> double;
+  fun gsl_histogram_mul: ptr[gsl_histogram] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_pdf_alloc: size -> ptr[gsl_histogram_pdf];
+  fun gsl_histogram_pdf_init: ptr[gsl_histogram_pdf] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_pdf_sample: cptr[gsl_histogram_pdf] * double -> double;
+  fun gsl_histogram_scale: ptr[gsl_histogram] * double -> int;
+  fun gsl_histogram_set_ranges: ptr[gsl_histogram] * cptr[double] * size -> int;
+  fun gsl_histogram_set_ranges_uniform: ptr[gsl_histogram] * double * double -> int;
+  fun gsl_histogram_shift: ptr[gsl_histogram] * double -> int;
+  fun gsl_histogram_sigma: cptr[gsl_histogram] -> double;
+  fun gsl_histogram_sub: ptr[gsl_histogram] * cptr[gsl_histogram] -> int;
+  fun gsl_histogram_sum: cptr[gsl_histogram] -> double;
+}

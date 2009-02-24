@@ -1,0 +1,185 @@
+//Module        : gsl_cblas_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_cblas.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define CBLAS_INDEX size_t  /* this may vary between platforms */
+//#define __GSL_CBLAS_H__
+header '#include "gsl/gsl_cblas.h"';
+
+module gsl_cblas_h
+{
+  open C_hack;
+
+  //TYPE ALIASES
+  typedef CBLAS_ORDER = int;
+  typedef CBLAS_TRANSPOSE = int;
+  typedef CBLAS_DIAG = int;
+  typedef CBLAS_SIDE = int;
+  typedef CBLAS_UPLO = int;
+
+  //ENUMERATION CONSTANTS
+  const CblasConjTrans: int = 'CblasConjTrans';
+  const CblasRight: int = 'CblasRight';
+  const CblasLower: int = 'CblasLower';
+  const CblasUnit: int = 'CblasUnit';
+  const CblasRowMajor: int = 'CblasRowMajor';
+  const CblasTrans: int = 'CblasTrans';
+  const CblasUpper: int = 'CblasUpper';
+  const CblasColMajor: int = 'CblasColMajor';
+  const CblasNoTrans: int = 'CblasNoTrans';
+  const CblasNonUnit: int = 'CblasNonUnit';
+  const CblasLeft: int = 'CblasLeft';
+
+  //PROCEDURES
+  proc cblas_caxpy: int * caddress * caddress * int * address * int;
+  proc cblas_ccopy: int * caddress * int * address * int;
+  proc cblas_cdotc_sub: int * caddress * int * caddress * int * address;
+  proc cblas_cdotu_sub: int * caddress * int * caddress * int * address;
+  proc cblas_cgbmv: int * int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_cgemm: int * int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_cgemv: int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_cgerc: int * int * int * caddress * caddress * int * caddress * int * address * int;
+  proc cblas_cgeru: int * int * int * caddress * caddress * int * caddress * int * address * int;
+  proc cblas_chbmv: int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_chemm: int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_chemv: int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_cher: int * int * int * float * caddress * int * address * int;
+  proc cblas_cher2: int * int * int * caddress * caddress * int * caddress * int * address * int;
+  proc cblas_cher2k: int * int * int * int * int * caddress * caddress * int * caddress * int * float * address * int;
+  proc cblas_cherk: int * int * int * int * int * float * caddress * int * float * address * int;
+  proc cblas_chpmv: int * int * int * caddress * caddress * caddress * int * caddress * address * int;
+  proc cblas_chpr: int * int * int * float * caddress * int * address;
+  proc cblas_chpr2: int * int * int * caddress * caddress * int * caddress * int * address;
+  proc cblas_cscal: int * caddress * address * int;
+  proc cblas_csscal: int * float * address * int;
+  proc cblas_cswap: int * address * int * address * int;
+  proc cblas_csymm: int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_csyr2k: int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_csyrk: int * int * int * int * int * caddress * caddress * int * caddress * address * int;
+  proc cblas_ctbmv: int * int * int * int * int * int * caddress * int * address * int;
+  proc cblas_ctbsv: int * int * int * int * int * int * caddress * int * address * int;
+  proc cblas_ctpmv: int * int * int * int * int * caddress * address * int;
+  proc cblas_ctpsv: int * int * int * int * int * caddress * address * int;
+  proc cblas_ctrmm: int * int * int * int * int * int * int * caddress * caddress * int * address * int;
+  proc cblas_ctrmv: int * int * int * int * int * caddress * int * address * int;
+  proc cblas_ctrsm: int * int * int * int * int * int * int * caddress * caddress * int * address * int;
+  proc cblas_ctrsv: int * int * int * int * int * caddress * int * address * int;
+  proc cblas_daxpy: int * double * cptr[double] * int * ptr[double] * int;
+  proc cblas_dcopy: int * cptr[double] * int * ptr[double] * int;
+  proc cblas_dgbmv: int * int * int * int * int * int * double * cptr[double] * int * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dgemm: int * int * int * int * int * int * double * cptr[double] * int * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dgemv: int * int * int * int * double * cptr[double] * int * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dger: int * int * int * double * cptr[double] * int * cptr[double] * int * ptr[double] * int;
+  proc cblas_drot: int * ptr[double] * int * ptr[double] * int * double * double;
+  proc cblas_drotg: ptr[double] * ptr[double] * ptr[double] * ptr[double];
+  proc cblas_drotm: int * ptr[double] * int * ptr[double] * int * cptr[double];
+  proc cblas_drotmg: ptr[double] * ptr[double] * ptr[double] * double * ptr[double];
+  proc cblas_dsbmv: int * int * int * int * double * cptr[double] * int * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dscal: int * double * ptr[double] * int;
+  proc cblas_dspmv: int * int * int * double * cptr[double] * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dspr: int * int * int * double * cptr[double] * int * ptr[double];
+  proc cblas_dspr2: int * int * int * double * cptr[double] * int * cptr[double] * int * ptr[double];
+  proc cblas_dswap: int * ptr[double] * int * ptr[double] * int;
+  proc cblas_dsymm: int * int * int * int * int * double * cptr[double] * int * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dsymv: int * int * int * double * cptr[double] * int * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dsyr: int * int * int * double * cptr[double] * int * ptr[double] * int;
+  proc cblas_dsyr2: int * int * int * double * cptr[double] * int * cptr[double] * int * ptr[double] * int;
+  proc cblas_dsyr2k: int * int * int * int * int * double * cptr[double] * int * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dsyrk: int * int * int * int * int * double * cptr[double] * int * double * ptr[double] * int;
+  proc cblas_dtbmv: int * int * int * int * int * int * cptr[double] * int * ptr[double] * int;
+  proc cblas_dtbsv: int * int * int * int * int * int * cptr[double] * int * ptr[double] * int;
+  proc cblas_dtpmv: int * int * int * int * int * cptr[double] * ptr[double] * int;
+  proc cblas_dtpsv: int * int * int * int * int * cptr[double] * ptr[double] * int;
+  proc cblas_dtrmm: int * int * int * int * int * int * int * double * cptr[double] * int * ptr[double] * int;
+  proc cblas_dtrmv: int * int * int * int * int * cptr[double] * int * ptr[double] * int;
+  proc cblas_dtrsm: int * int * int * int * int * int * int * double * cptr[double] * int * ptr[double] * int;
+  proc cblas_dtrsv: int * int * int * int * int * cptr[double] * int * ptr[double] * int;
+  proc cblas_saxpy: int * float * cptr[float] * int * ptr[float] * int;
+  proc cblas_scopy: int * cptr[float] * int * ptr[float] * int;
+  proc cblas_sgbmv: int * int * int * int * int * int * float * cptr[float] * int * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_sgemm: int * int * int * int * int * int * float * cptr[float] * int * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_sgemv: int * int * int * int * float * cptr[float] * int * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_sger: int * int * int * float * cptr[float] * int * cptr[float] * int * ptr[float] * int;
+  proc cblas_srot: int * ptr[float] * int * ptr[float] * int * float * float;
+  proc cblas_srotg: ptr[float] * ptr[float] * ptr[float] * ptr[float];
+  proc cblas_srotm: int * ptr[float] * int * ptr[float] * int * cptr[float];
+  proc cblas_srotmg: ptr[float] * ptr[float] * ptr[float] * float * ptr[float];
+  proc cblas_ssbmv: int * int * int * int * float * cptr[float] * int * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_sscal: int * float * ptr[float] * int;
+  proc cblas_sspmv: int * int * int * float * cptr[float] * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_sspr: int * int * int * float * cptr[float] * int * ptr[float];
+  proc cblas_sspr2: int * int * int * float * cptr[float] * int * cptr[float] * int * ptr[float];
+  proc cblas_sswap: int * ptr[float] * int * ptr[float] * int;
+  proc cblas_ssymm: int * int * int * int * int * float * cptr[float] * int * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_ssymv: int * int * int * float * cptr[float] * int * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_ssyr: int * int * int * float * cptr[float] * int * ptr[float] * int;
+  proc cblas_ssyr2: int * int * int * float * cptr[float] * int * cptr[float] * int * ptr[float] * int;
+  proc cblas_ssyr2k: int * int * int * int * int * float * cptr[float] * int * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_ssyrk: int * int * int * int * int * float * cptr[float] * int * float * ptr[float] * int;
+  proc cblas_stbmv: int * int * int * int * int * int * cptr[float] * int * ptr[float] * int;
+  proc cblas_stbsv: int * int * int * int * int * int * cptr[float] * int * ptr[float] * int;
+  proc cblas_stpmv: int * int * int * int * int * cptr[float] * ptr[float] * int;
+  proc cblas_stpsv: int * int * int * int * int * cptr[float] * ptr[float] * int;
+  proc cblas_strmm: int * int * int * int * int * int * int * float * cptr[float] * int * ptr[float] * int;
+  proc cblas_strmv: int * int * int * int * int * cptr[float] * int * ptr[float] * int;
+  proc cblas_strsm: int * int * int * int * int * int * int * float * cptr[float] * int * ptr[float] * int;
+  proc cblas_strsv: int * int * int * int * int * cptr[float] * int * ptr[float] * int;
+  proc cblas_xerbla[t]: t;
+  proc cblas_zaxpy: int * caddress * caddress * int * address * int;
+  proc cblas_zcopy: int * caddress * int * address * int;
+  proc cblas_zdotc_sub: int * caddress * int * caddress * int * address;
+  proc cblas_zdotu_sub: int * caddress * int * caddress * int * address;
+  proc cblas_zdscal: int * double * address * int;
+  proc cblas_zgbmv: int * int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zgemm: int * int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zgemv: int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zgerc: int * int * int * caddress * caddress * int * caddress * int * address * int;
+  proc cblas_zgeru: int * int * int * caddress * caddress * int * caddress * int * address * int;
+  proc cblas_zhbmv: int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zhemm: int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zhemv: int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zher: int * int * int * double * caddress * int * address * int;
+  proc cblas_zher2: int * int * int * caddress * caddress * int * caddress * int * address * int;
+  proc cblas_zher2k: int * int * int * int * int * caddress * caddress * int * caddress * int * double * address * int;
+  proc cblas_zherk: int * int * int * int * int * double * caddress * int * double * address * int;
+  proc cblas_zhpmv: int * int * int * caddress * caddress * caddress * int * caddress * address * int;
+  proc cblas_zhpr: int * int * int * double * caddress * int * address;
+  proc cblas_zhpr2: int * int * int * caddress * caddress * int * caddress * int * address;
+  proc cblas_zscal: int * caddress * address * int;
+  proc cblas_zswap: int * address * int * address * int;
+  proc cblas_zsymm: int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zsyr2k: int * int * int * int * int * caddress * caddress * int * caddress * int * caddress * address * int;
+  proc cblas_zsyrk: int * int * int * int * int * caddress * caddress * int * caddress * address * int;
+  proc cblas_ztbmv: int * int * int * int * int * int * caddress * int * address * int;
+  proc cblas_ztbsv: int * int * int * int * int * int * caddress * int * address * int;
+  proc cblas_ztpmv: int * int * int * int * int * caddress * address * int;
+  proc cblas_ztpsv: int * int * int * int * int * caddress * address * int;
+  proc cblas_ztrmm: int * int * int * int * int * int * int * caddress * caddress * int * address * int;
+  proc cblas_ztrmv: int * int * int * int * int * caddress * int * address * int;
+  proc cblas_ztrsm: int * int * int * int * int * int * int * caddress * caddress * int * address * int;
+  proc cblas_ztrsv: int * int * int * int * int * caddress * int * address * int;
+
+  //FUNCTIONS
+  fun cblas_dasum: int * cptr[double] * int -> double;
+  fun cblas_ddot: int * cptr[double] * int * cptr[double] * int -> double;
+  fun cblas_dnrm2: int * cptr[double] * int -> double;
+  fun cblas_dsdot: int * cptr[float] * int * cptr[float] * int -> double;
+  fun cblas_dzasum: int * caddress * int -> double;
+  fun cblas_dznrm2: int * caddress * int -> double;
+  fun cblas_icamax: int * caddress * int -> size;
+  fun cblas_idamax: int * cptr[double] * int -> size;
+  fun cblas_isamax: int * cptr[float] * int -> size;
+  fun cblas_izamax: int * caddress * int -> size;
+  fun cblas_sasum: int * cptr[float] * int -> float;
+  fun cblas_scasum: int * caddress * int -> float;
+  fun cblas_scnrm2: int * caddress * int -> float;
+  fun cblas_sdot: int * cptr[float] * int * cptr[float] * int -> float;
+  fun cblas_sdsdot: int * float * cptr[float] * int * cptr[float] * int -> float;
+  fun cblas_snrm2: int * cptr[float] * int -> float;
+}

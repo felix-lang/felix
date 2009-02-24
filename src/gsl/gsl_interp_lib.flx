@@ -1,0 +1,52 @@
+//Module        : gsl_interp_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_interp.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_INTERP_H__
+header '#include "gsl/gsl_interp.h"';
+
+module gsl_interp_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_interp_accel = 'gsl_interp_accel';
+  type gsl_interp_type = 'gsl_interp_type';
+  type gsl_interp = 'gsl_interp';
+
+  //VARIABLES
+  const gsl_interp_linear: cptr[gsl_interp_type] = 'gsl_interp_linear';
+  const gsl_interp_akima_periodic: cptr[gsl_interp_type] = 'gsl_interp_akima_periodic';
+  const gsl_interp_polynomial: cptr[gsl_interp_type] = 'gsl_interp_polynomial';
+  const gsl_interp_akima: cptr[gsl_interp_type] = 'gsl_interp_akima';
+  const gsl_interp_cspline_periodic: cptr[gsl_interp_type] = 'gsl_interp_cspline_periodic';
+  const gsl_interp_cspline: cptr[gsl_interp_type] = 'gsl_interp_cspline';
+
+  //PROCEDURES
+  proc gsl_interp_accel_free: ptr[gsl_interp_accel];
+  proc gsl_interp_free: ptr[gsl_interp];
+
+  //FUNCTIONS
+  fun gsl_interp_accel_alloc: 1 -> ptr[gsl_interp_accel];
+  fun gsl_interp_accel_find: ptr[gsl_interp_accel] * cptr[double] * size * double -> size;
+  fun gsl_interp_accel_reset: ptr[gsl_interp_accel] -> int;
+  fun gsl_interp_alloc: cptr[gsl_interp_type] * size -> ptr[gsl_interp];
+  fun gsl_interp_bsearch: cptr[double] * double * size * size -> size;
+  fun gsl_interp_eval: cptr[gsl_interp] * cptr[double] * cptr[double] * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_interp_eval_deriv: cptr[gsl_interp] * cptr[double] * cptr[double] * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_interp_eval_deriv2: cptr[gsl_interp] * cptr[double] * cptr[double] * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_interp_eval_deriv2_e: cptr[gsl_interp] * cptr[double] * cptr[double] * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_interp_eval_deriv_e: cptr[gsl_interp] * cptr[double] * cptr[double] * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_interp_eval_e: cptr[gsl_interp] * cptr[double] * cptr[double] * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_interp_eval_integ: cptr[gsl_interp] * cptr[double] * cptr[double] * double * double * ptr[gsl_interp_accel] -> double;
+  fun gsl_interp_eval_integ_e: cptr[gsl_interp] * cptr[double] * cptr[double] * double * double * ptr[gsl_interp_accel] * ptr[double] -> int;
+  fun gsl_interp_init: ptr[gsl_interp] * cptr[double] * cptr[double] * size -> int;
+  fun gsl_interp_min_size: cptr[gsl_interp] -> uint;
+  fun gsl_interp_name: cptr[gsl_interp] -> cptr[char];
+}

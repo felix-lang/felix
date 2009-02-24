@@ -1,0 +1,35 @@
+//Module        : gsl_ntuple_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_ntuple.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_NTUPLE_H__
+header '#include "gsl/gsl_ntuple.h"';
+
+//INCLUDES
+include "gsl_histogram_lib";
+
+module gsl_ntuple_h
+{
+  open C_hack;
+  open gsl_histogram_h;
+
+  //ABSTRACT TYPES
+  type gsl_ntuple_select_fn = 'gsl_ntuple_select_fn';
+  type gsl_ntuple_value_fn = 'gsl_ntuple_value_fn';
+  type gsl_ntuple = 'gsl_ntuple';
+
+  //FUNCTIONS
+  fun gsl_ntuple_bookdata: ptr[gsl_ntuple] -> int;
+  fun gsl_ntuple_close: ptr[gsl_ntuple] -> int;
+  fun gsl_ntuple_create: ptr[char] * address * size -> ptr[gsl_ntuple];
+  fun gsl_ntuple_open: ptr[char] * address * size -> ptr[gsl_ntuple];
+  fun gsl_ntuple_project: ptr[gsl_histogram] * ptr[gsl_ntuple] * ptr[gsl_ntuple_value_fn] * ptr[gsl_ntuple_select_fn] -> int;
+  fun gsl_ntuple_read: ptr[gsl_ntuple] -> int;
+  fun gsl_ntuple_write: ptr[gsl_ntuple] -> int;
+}

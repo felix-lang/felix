@@ -1,0 +1,21 @@
+//Module        : gsl_version_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_version.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_VERSION "1.6"
+//#define __GSL_VERSION_H__
+header '#include "gsl/gsl_version.h"';
+
+module gsl_version_h
+{
+  open C_hack;
+
+  //VARIABLES
+  const gsl_version: cptr[char] = 'gsl_version';
+}

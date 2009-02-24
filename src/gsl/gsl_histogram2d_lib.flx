@@ -1,0 +1,74 @@
+//Module        : gsl_histogram2d_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_histogram2d.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_HISTOGRAM2D_H__
+header '#include "gsl/gsl_histogram2d.h"';
+
+//INCLUDES
+
+module gsl_histogram2d_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_histogram2d_pdf = 'gsl_histogram2d_pdf';
+  type gsl_histogram2d = 'gsl_histogram2d';
+
+  //PROCEDURES
+  proc gsl_histogram2d_free: ptr[gsl_histogram2d];
+  proc gsl_histogram2d_max_bin: cptr[gsl_histogram2d] * ptr[size] * ptr[size];
+  proc gsl_histogram2d_min_bin: cptr[gsl_histogram2d] * ptr[size] * ptr[size];
+  proc gsl_histogram2d_pdf_free: ptr[gsl_histogram2d_pdf];
+  proc gsl_histogram2d_reset: ptr[gsl_histogram2d];
+
+  //FUNCTIONS
+  fun gsl_histogram2d_accumulate: ptr[gsl_histogram2d] * double * double * double -> int;
+  fun gsl_histogram2d_add: ptr[gsl_histogram2d] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_alloc: size * size -> ptr[gsl_histogram2d];
+  fun gsl_histogram2d_calloc: size * size -> ptr[gsl_histogram2d];
+  fun gsl_histogram2d_calloc_range: size * size * ptr[double] * ptr[double] -> ptr[gsl_histogram2d];
+  fun gsl_histogram2d_calloc_uniform: size * size * double * double * double * double -> ptr[gsl_histogram2d];
+  fun gsl_histogram2d_clone: cptr[gsl_histogram2d] -> ptr[gsl_histogram2d];
+  fun gsl_histogram2d_cov: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_div: ptr[gsl_histogram2d] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_equal_bins_p: cptr[gsl_histogram2d] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_find: cptr[gsl_histogram2d] * double * double * ptr[size] * ptr[size] -> int;
+  fun gsl_histogram2d_fprintf: ptr[FILE] * cptr[gsl_histogram2d] * cptr[char] * cptr[char] -> int;
+  fun gsl_histogram2d_fread: ptr[FILE] * ptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_fscanf: ptr[FILE] * ptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_fwrite: ptr[FILE] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_get: cptr[gsl_histogram2d] * size * size -> double;
+  fun gsl_histogram2d_get_xrange: cptr[gsl_histogram2d] * size * ptr[double] * ptr[double] -> int;
+  fun gsl_histogram2d_get_yrange: cptr[gsl_histogram2d] * size * ptr[double] * ptr[double] -> int;
+  fun gsl_histogram2d_increment: ptr[gsl_histogram2d] * double * double -> int;
+  fun gsl_histogram2d_max_val: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_memcpy: ptr[gsl_histogram2d] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_min_val: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_mul: ptr[gsl_histogram2d] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_nx: cptr[gsl_histogram2d] -> size;
+  fun gsl_histogram2d_ny: cptr[gsl_histogram2d] -> size;
+  fun gsl_histogram2d_pdf_alloc: size * size -> ptr[gsl_histogram2d_pdf];
+  fun gsl_histogram2d_pdf_init: ptr[gsl_histogram2d_pdf] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_pdf_sample: cptr[gsl_histogram2d_pdf] * double * double * ptr[double] * ptr[double] -> int;
+  fun gsl_histogram2d_scale: ptr[gsl_histogram2d] * double -> int;
+  fun gsl_histogram2d_set_ranges: ptr[gsl_histogram2d] * cptr[double] * size * cptr[double] * size -> int;
+  fun gsl_histogram2d_set_ranges_uniform: ptr[gsl_histogram2d] * double * double * double * double -> int;
+  fun gsl_histogram2d_shift: ptr[gsl_histogram2d] * double -> int;
+  fun gsl_histogram2d_sub: ptr[gsl_histogram2d] * cptr[gsl_histogram2d] -> int;
+  fun gsl_histogram2d_sum: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_xmax: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_xmean: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_xmin: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_xsigma: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_ymax: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_ymean: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_ymin: cptr[gsl_histogram2d] -> double;
+  fun gsl_histogram2d_ysigma: cptr[gsl_histogram2d] -> double;
+}

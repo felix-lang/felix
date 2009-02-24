@@ -1,0 +1,38 @@
+//Module        : gsl_qrng_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_qrng.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_QRNG_H__
+header '#include "gsl/gsl_qrng.h"';
+
+module gsl_qrng_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_qrng_type = 'gsl_qrng_type';
+  type gsl_qrng = 'gsl_qrng';
+
+  //VARIABLES
+  const gsl_qrng_niederreiter_2: cptr[gsl_qrng_type] = 'gsl_qrng_niederreiter_2';
+  const gsl_qrng_sobol: cptr[gsl_qrng_type] = 'gsl_qrng_sobol';
+
+  //PROCEDURES
+  proc gsl_qrng_free: ptr[gsl_qrng];
+  proc gsl_qrng_init: ptr[gsl_qrng];
+
+  //FUNCTIONS
+  fun gsl_qrng_alloc: cptr[gsl_qrng_type] * uint -> ptr[gsl_qrng];
+  fun gsl_qrng_clone: cptr[gsl_qrng] -> ptr[gsl_qrng];
+  fun gsl_qrng_get: cptr[gsl_qrng] * ptr[double] -> int;
+  fun gsl_qrng_memcpy: ptr[gsl_qrng] * cptr[gsl_qrng] -> int;
+  fun gsl_qrng_name: cptr[gsl_qrng] -> cptr[char];
+  fun gsl_qrng_size: cptr[gsl_qrng] -> size;
+  fun gsl_qrng_state: cptr[gsl_qrng] -> address;
+}

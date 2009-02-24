@@ -1,0 +1,29 @@
+//Module        : gsl_precision_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_precision.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define _GSL_PREC_T_NUM 3
+//#define __GSL_PRECISION_H__
+header '#include "gsl/gsl_precision.h"';
+
+module gsl_precision_h
+{
+  open C_hack;
+
+  //TYPE ALIASES
+  typedef gsl_prec_t = uint;
+
+  //VARIABLES
+  const gsl_prec_eps: cptr[double] = 'gsl_prec_eps';
+  const gsl_prec_root3_eps: cptr[double] = 'gsl_prec_root3_eps';
+  const gsl_prec_root5_eps: cptr[double] = 'gsl_prec_root5_eps';
+  const gsl_prec_sqrt_eps: cptr[double] = 'gsl_prec_sqrt_eps';
+  const gsl_prec_root4_eps: cptr[double] = 'gsl_prec_root4_eps';
+  const gsl_prec_root6_eps: cptr[double] = 'gsl_prec_root6_eps';
+}

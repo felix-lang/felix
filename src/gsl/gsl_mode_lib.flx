@@ -1,0 +1,25 @@
+//Module        : gsl_mode_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_mode.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_MODE_DEFAULT  0
+//#define GSL_MODE_PREC(mt) ((mt) & (unsigned int)7)
+//#define GSL_PREC_APPROX  2
+//#define GSL_PREC_SINGLE  1
+//#define GSL_PREC_DOUBLE  0
+//#define __GSL_MODE_H__
+header '#include "gsl/gsl_mode.h"';
+
+module gsl_mode_h
+{
+  open C_hack;
+
+  //TYPE ALIASES
+  typedef gsl_mode_t = uint;
+}

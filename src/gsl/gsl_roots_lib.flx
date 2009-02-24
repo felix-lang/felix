@@ -1,0 +1,56 @@
+//Module        : gsl_roots_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_roots.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_ROOTS_H__
+header '#include "gsl/gsl_roots.h"';
+
+//INCLUDES
+include "gsl_math_lib";
+
+module gsl_roots_h
+{
+  open C_hack;
+  open gsl_math_h;
+
+  //ABSTRACT TYPES
+  type gsl_root_fdfsolver = 'gsl_root_fdfsolver';
+  type gsl_root_fsolver_type = 'gsl_root_fsolver_type';
+  type gsl_root_fdfsolver_type = 'gsl_root_fdfsolver_type';
+  type gsl_root_fsolver = 'gsl_root_fsolver';
+
+  //VARIABLES
+  const gsl_root_fdfsolver_steffenson: cptr[gsl_root_fdfsolver_type] = 'gsl_root_fdfsolver_steffenson';
+  const gsl_root_fdfsolver_secant: cptr[gsl_root_fdfsolver_type] = 'gsl_root_fdfsolver_secant';
+  const gsl_root_fdfsolver_newton: cptr[gsl_root_fdfsolver_type] = 'gsl_root_fdfsolver_newton';
+  const gsl_root_fsolver_falsepos: cptr[gsl_root_fsolver_type] = 'gsl_root_fsolver_falsepos';
+  const gsl_root_fsolver_bisection: cptr[gsl_root_fsolver_type] = 'gsl_root_fsolver_bisection';
+  const gsl_root_fsolver_brent: cptr[gsl_root_fsolver_type] = 'gsl_root_fsolver_brent';
+
+  //PROCEDURES
+  proc gsl_root_fdfsolver_free: ptr[gsl_root_fdfsolver];
+  proc gsl_root_fsolver_free: ptr[gsl_root_fsolver];
+
+  //FUNCTIONS
+  fun gsl_root_fdfsolver_alloc: cptr[gsl_root_fdfsolver_type] -> ptr[gsl_root_fdfsolver];
+  fun gsl_root_fdfsolver_iterate: ptr[gsl_root_fdfsolver] -> int;
+  fun gsl_root_fdfsolver_name: cptr[gsl_root_fdfsolver] -> cptr[char];
+  fun gsl_root_fdfsolver_root: cptr[gsl_root_fdfsolver] -> double;
+  fun gsl_root_fdfsolver_set: ptr[gsl_root_fdfsolver] * ptr[gsl_function_fdf] * double -> int;
+  fun gsl_root_fsolver_alloc: cptr[gsl_root_fsolver_type] -> ptr[gsl_root_fsolver];
+  fun gsl_root_fsolver_iterate: ptr[gsl_root_fsolver] -> int;
+  fun gsl_root_fsolver_name: cptr[gsl_root_fsolver] -> cptr[char];
+  fun gsl_root_fsolver_root: cptr[gsl_root_fsolver] -> double;
+  fun gsl_root_fsolver_set: ptr[gsl_root_fsolver] * ptr[gsl_function] * double * double -> int;
+  fun gsl_root_fsolver_x_lower: cptr[gsl_root_fsolver] -> double;
+  fun gsl_root_fsolver_x_upper: cptr[gsl_root_fsolver] -> double;
+  fun gsl_root_test_delta: double * double * double * double -> int;
+  fun gsl_root_test_interval: double * double * double * double -> int;
+  fun gsl_root_test_residual: double * double -> int;
+}

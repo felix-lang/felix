@@ -1,0 +1,118 @@
+//Module        : gsl_randist_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_randist.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_RANDIST_H__
+header '#include "gsl/gsl_randist.h"';
+
+//INCLUDES
+include "gsl_rng_lib";
+
+module gsl_randist_h
+{
+  open C_hack;
+  open gsl_rng_h;
+
+  //ABSTRACT TYPES
+  type gsl_ran_discrete_t = 'gsl_ran_discrete_t';
+
+  //PROCEDURES
+  proc gsl_ran_bivariate_gaussian: cptr[gsl_rng] * double * double * double * ptr[double] * ptr[double];
+  proc gsl_ran_dir_2d: cptr[gsl_rng] * ptr[double] * ptr[double];
+  proc gsl_ran_dir_2d_trig_method: cptr[gsl_rng] * ptr[double] * ptr[double];
+  proc gsl_ran_dir_3d: cptr[gsl_rng] * ptr[double] * ptr[double] * ptr[double];
+  proc gsl_ran_dir_nd: cptr[gsl_rng] * size * ptr[double];
+  proc gsl_ran_dirichlet: cptr[gsl_rng] * size * cptr[double] * ptr[double];
+  proc gsl_ran_discrete_free: ptr[gsl_ran_discrete_t];
+  proc gsl_ran_multinomial: cptr[gsl_rng] * size * uint * cptr[double] * ptr[uint];
+  proc gsl_ran_poisson_array: cptr[gsl_rng] * size * ptr[uint] * double;
+  proc gsl_ran_sample: cptr[gsl_rng] * address * size * address * size * size;
+  proc gsl_ran_shuffle: cptr[gsl_rng] * address * size * size;
+
+  //FUNCTIONS
+  fun gsl_ran_bernoulli: cptr[gsl_rng] * double -> uint;
+  fun gsl_ran_bernoulli_pdf: uint * double -> double;
+  fun gsl_ran_beta: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_beta_pdf: double * double * double -> double;
+  fun gsl_ran_binomial: cptr[gsl_rng] * double * uint -> uint;
+  fun gsl_ran_binomial_pdf: uint * double * uint -> double;
+  fun gsl_ran_binomial_tpe: cptr[gsl_rng] * double * uint -> uint;
+  fun gsl_ran_bivariate_gaussian_pdf: double * double * double * double * double -> double;
+  fun gsl_ran_cauchy: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_cauchy_pdf: double * double -> double;
+  fun gsl_ran_chisq: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_chisq_pdf: double * double -> double;
+  fun gsl_ran_choose: cptr[gsl_rng] * address * size * address * size * size -> int;
+  fun gsl_ran_dirichlet_lnpdf: size * cptr[double] * cptr[double] -> double;
+  fun gsl_ran_dirichlet_pdf: size * cptr[double] * cptr[double] -> double;
+  fun gsl_ran_discrete: cptr[gsl_rng] * cptr[gsl_ran_discrete_t] -> size;
+  fun gsl_ran_discrete_pdf: size * cptr[gsl_ran_discrete_t] -> double;
+  fun gsl_ran_discrete_preproc: size * cptr[double] -> ptr[gsl_ran_discrete_t];
+  fun gsl_ran_erlang: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_erlang_pdf: double * double * double -> double;
+  fun gsl_ran_exponential: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_exponential_pdf: double * double -> double;
+  fun gsl_ran_exppow: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_exppow_pdf: double * double * double -> double;
+  fun gsl_ran_fdist: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_fdist_pdf: double * double * double -> double;
+  fun gsl_ran_flat: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_flat_pdf: double * double * double -> double;
+  fun gsl_ran_gamma: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_gamma_int: cptr[gsl_rng] * uint -> double;
+  fun gsl_ran_gamma_pdf: double * double * double -> double;
+  fun gsl_ran_gaussian: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_gaussian_pdf: double * double -> double;
+  fun gsl_ran_gaussian_ratio_method: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_gaussian_tail: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_gaussian_tail_pdf: double * double * double -> double;
+  fun gsl_ran_geometric: cptr[gsl_rng] * double -> uint;
+  fun gsl_ran_geometric_pdf: uint * double -> double;
+  fun gsl_ran_gumbel1: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_gumbel1_pdf: double * double * double -> double;
+  fun gsl_ran_gumbel2: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_gumbel2_pdf: double * double * double -> double;
+  fun gsl_ran_hypergeometric: cptr[gsl_rng] * uint * uint * uint -> uint;
+  fun gsl_ran_hypergeometric_pdf: uint * uint * uint * uint -> double;
+  fun gsl_ran_landau: cptr[gsl_rng] -> double;
+  fun gsl_ran_landau_pdf: double -> double;
+  fun gsl_ran_laplace: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_laplace_pdf: double * double -> double;
+  fun gsl_ran_levy: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_levy_skew: cptr[gsl_rng] * double * double * double -> double;
+  fun gsl_ran_logarithmic: cptr[gsl_rng] * double -> uint;
+  fun gsl_ran_logarithmic_pdf: uint * double -> double;
+  fun gsl_ran_logistic: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_logistic_pdf: double * double -> double;
+  fun gsl_ran_lognormal: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_lognormal_pdf: double * double * double -> double;
+  fun gsl_ran_multinomial_lnpdf: size * cptr[double] * cptr[uint] -> double;
+  fun gsl_ran_multinomial_pdf: size * cptr[double] * cptr[uint] -> double;
+  fun gsl_ran_negative_binomial: cptr[gsl_rng] * double * double -> uint;
+  fun gsl_ran_negative_binomial_pdf: uint * double * double -> double;
+  fun gsl_ran_pareto: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_pareto_pdf: double * double * double -> double;
+  fun gsl_ran_pascal: cptr[gsl_rng] * double * uint -> uint;
+  fun gsl_ran_pascal_pdf: uint * double * uint -> double;
+  fun gsl_ran_poisson: cptr[gsl_rng] * double -> uint;
+  fun gsl_ran_poisson_pdf: uint * double -> double;
+  fun gsl_ran_rayleigh: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_rayleigh_pdf: double * double -> double;
+  fun gsl_ran_rayleigh_tail: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_rayleigh_tail_pdf: double * double * double -> double;
+  fun gsl_ran_tdist: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_tdist_pdf: double * double -> double;
+  fun gsl_ran_ugaussian: cptr[gsl_rng] -> double;
+  fun gsl_ran_ugaussian_pdf: double -> double;
+  fun gsl_ran_ugaussian_ratio_method: cptr[gsl_rng] -> double;
+  fun gsl_ran_ugaussian_tail: cptr[gsl_rng] * double -> double;
+  fun gsl_ran_ugaussian_tail_pdf: double * double -> double;
+  fun gsl_ran_weibull: cptr[gsl_rng] * double * double -> double;
+  fun gsl_ran_weibull_pdf: double * double * double -> double;
+}

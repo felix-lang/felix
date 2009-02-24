@@ -1,0 +1,41 @@
+//Module        : gsl_sf_fermi_dirac_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sf_fermi_dirac.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SF_FERMI_DIRAC_H__
+header '#include "gsl/gsl_sf_fermi_dirac.h"';
+
+//INCLUDES
+include "gsl_sf_result_lib";
+
+module gsl_sf_fermi_dirac_h
+{
+  open C_hack;
+  open gsl_sf_result_h;
+
+  //FUNCTIONS
+  fun gsl_sf_fermi_dirac_0: double -> double;
+  fun gsl_sf_fermi_dirac_0_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_1: double -> double;
+  fun gsl_sf_fermi_dirac_1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_2: double -> double;
+  fun gsl_sf_fermi_dirac_2_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_3half: double -> double;
+  fun gsl_sf_fermi_dirac_3half_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_half: double -> double;
+  fun gsl_sf_fermi_dirac_half_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_inc_0: double * double -> double;
+  fun gsl_sf_fermi_dirac_inc_0_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_int: int * double -> double;
+  fun gsl_sf_fermi_dirac_int_e: int * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_m1: double -> double;
+  fun gsl_sf_fermi_dirac_m1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fermi_dirac_mhalf: double -> double;
+  fun gsl_sf_fermi_dirac_mhalf_e: double * ptr[gsl_sf_result] -> int;
+}

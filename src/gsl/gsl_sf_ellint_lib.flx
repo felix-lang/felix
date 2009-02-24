@@ -1,0 +1,45 @@
+//Module        : gsl_sf_ellint_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sf_ellint.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SF_ELLINT_H__
+header '#include "gsl/gsl_sf_ellint.h"';
+
+//INCLUDES
+include "gsl_mode_lib";
+include "gsl_sf_result_lib";
+
+module gsl_sf_ellint_h
+{
+  open C_hack;
+  open gsl_mode_h;
+  open gsl_sf_result_h;
+
+  //FUNCTIONS
+  fun gsl_sf_ellint_D: double * double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_D_e: double * double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_E: double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_E_e: double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_Ecomp: double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_Ecomp_e: double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_F: double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_F_e: double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_Kcomp: double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_Kcomp_e: double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_P: double * double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_P_e: double * double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_RC: double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_RC_e: double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_RD: double * double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_RD_e: double * double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_RF: double * double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_RF_e: double * double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_ellint_RJ: double * double * double * double * gsl_mode_t -> double;
+  fun gsl_sf_ellint_RJ_e: double * double * double * double * gsl_mode_t * ptr[gsl_sf_result] -> int;
+}

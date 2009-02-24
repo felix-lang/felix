@@ -1,0 +1,48 @@
+//Module        : gsl_statistics_int_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_statistics_int.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_STATISTICS_INT_H__
+header '#include "gsl/gsl_statistics_int.h"';
+
+module gsl_statistics_int_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_stats_int_minmax: ptr[int] * ptr[int] * cptr[int] * size * size;
+  proc gsl_stats_int_minmax_index: ptr[size] * ptr[size] * cptr[int] * size * size;
+
+  //FUNCTIONS
+  fun gsl_stats_int_absdev: cptr[int] * size * size -> double;
+  fun gsl_stats_int_absdev_m: cptr[int] * size * size * double -> double;
+  fun gsl_stats_int_covariance: cptr[int] * size * cptr[int] * size * size -> double;
+  fun gsl_stats_int_covariance_m: cptr[int] * size * cptr[int] * size * size * double * double -> double;
+  fun gsl_stats_int_kurtosis: cptr[int] * size * size -> double;
+  fun gsl_stats_int_kurtosis_m_sd: cptr[int] * size * size * double * double -> double;
+  fun gsl_stats_int_lag1_autocorrelation: cptr[int] * size * size -> double;
+  fun gsl_stats_int_lag1_autocorrelation_m: cptr[int] * size * size * double -> double;
+  fun gsl_stats_int_max: cptr[int] * size * size -> int;
+  fun gsl_stats_int_max_index: cptr[int] * size * size -> size;
+  fun gsl_stats_int_mean: cptr[int] * size * size -> double;
+  fun gsl_stats_int_median_from_sorted_data: cptr[int] * size * size -> double;
+  fun gsl_stats_int_min: cptr[int] * size * size -> int;
+  fun gsl_stats_int_min_index: cptr[int] * size * size -> size;
+  fun gsl_stats_int_pvariance: cptr[int] * size * size * cptr[int] * size * size -> double;
+  fun gsl_stats_int_quantile_from_sorted_data: cptr[int] * size * size * double -> double;
+  fun gsl_stats_int_sd: cptr[int] * size * size -> double;
+  fun gsl_stats_int_sd_m: cptr[int] * size * size * double -> double;
+  fun gsl_stats_int_sd_with_fixed_mean: cptr[int] * size * size * double -> double;
+  fun gsl_stats_int_skew: cptr[int] * size * size -> double;
+  fun gsl_stats_int_skew_m_sd: cptr[int] * size * size * double * double -> double;
+  fun gsl_stats_int_ttest: cptr[int] * size * size * cptr[int] * size * size -> double;
+  fun gsl_stats_int_variance: cptr[int] * size * size -> double;
+  fun gsl_stats_int_variance_m: cptr[int] * size * size * double -> double;
+  fun gsl_stats_int_variance_with_fixed_mean: cptr[int] * size * size * double -> double;
+}

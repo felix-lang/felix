@@ -1,0 +1,99 @@
+//Module        : gsl_matrix_ushort_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_matrix_ushort.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_MATRIX_USHORT_H__
+header '#include "gsl/gsl_matrix_ushort.h"';
+
+//INCLUDES
+include "gsl_block_ushort_lib";
+include "gsl_vector_ushort_lib";
+
+module gsl_matrix_ushort_h
+{
+  open C_hack;
+  open gsl_block_ushort_h;
+  open gsl_vector_ushort_h;
+
+  //ABSTRACT TYPES
+  type _gsl_matrix_ushort_const_view = '_gsl_matrix_ushort_const_view';
+  type gsl_matrix_ushort = 'gsl_matrix_ushort';
+  type _gsl_matrix_ushort_view = '_gsl_matrix_ushort_view';
+
+  //TYPE ALIASES
+  typedef gsl_matrix_ushort_const_view = _gsl_matrix_ushort_const_view;
+  typedef gsl_matrix_ushort_view = _gsl_matrix_ushort_view;
+
+  //PROCEDURES
+  proc gsl_matrix_ushort_free: ptr[gsl_matrix_ushort];
+  proc gsl_matrix_ushort_max_index: cptr[gsl_matrix_ushort] * ptr[size] * ptr[size];
+  proc gsl_matrix_ushort_min_index: cptr[gsl_matrix_ushort] * ptr[size] * ptr[size];
+  proc gsl_matrix_ushort_minmax: cptr[gsl_matrix_ushort] * ptr[ushort] * ptr[ushort];
+  proc gsl_matrix_ushort_minmax_index: cptr[gsl_matrix_ushort] * ptr[size] * ptr[size] * ptr[size] * ptr[size];
+  proc gsl_matrix_ushort_set: ptr[gsl_matrix_ushort] * size * size * ushort;
+  proc gsl_matrix_ushort_set_all: ptr[gsl_matrix_ushort] * ushort;
+  proc gsl_matrix_ushort_set_identity: ptr[gsl_matrix_ushort];
+  proc gsl_matrix_ushort_set_zero: ptr[gsl_matrix_ushort];
+
+  //FUNCTIONS
+  fun gsl_matrix_ushort_add: ptr[gsl_matrix_ushort] * cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_add_constant: ptr[gsl_matrix_ushort] * double -> int;
+  fun gsl_matrix_ushort_add_diagonal: ptr[gsl_matrix_ushort] * double -> int;
+  fun gsl_matrix_ushort_alloc: size * size -> ptr[gsl_matrix_ushort];
+  fun gsl_matrix_ushort_alloc_from_block: ptr[gsl_block_ushort] * size * size * size * size -> ptr[gsl_matrix_ushort];
+  fun gsl_matrix_ushort_alloc_from_matrix: ptr[gsl_matrix_ushort] * size * size * size * size -> ptr[gsl_matrix_ushort];
+  fun gsl_matrix_ushort_calloc: size * size -> ptr[gsl_matrix_ushort];
+  fun gsl_matrix_ushort_column: ptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_view;
+  fun gsl_matrix_ushort_const_column: cptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_const_view;
+  fun gsl_matrix_ushort_const_diagonal: cptr[gsl_matrix_ushort] -> _gsl_vector_ushort_const_view;
+  fun gsl_matrix_ushort_const_ptr: cptr[gsl_matrix_ushort] * size * size -> cptr[ushort];
+  fun gsl_matrix_ushort_const_row: cptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_const_view;
+  fun gsl_matrix_ushort_const_subdiagonal: cptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_const_view;
+  fun gsl_matrix_ushort_const_submatrix: cptr[gsl_matrix_ushort] * size * size * size * size -> _gsl_matrix_ushort_const_view;
+  fun gsl_matrix_ushort_const_superdiagonal: cptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_const_view;
+  fun gsl_matrix_ushort_const_view_array: cptr[ushort] * size * size -> _gsl_matrix_ushort_const_view;
+  fun gsl_matrix_ushort_const_view_array_with_tda: cptr[ushort] * size * size * size -> _gsl_matrix_ushort_const_view;
+  fun gsl_matrix_ushort_const_view_vector: cptr[gsl_vector_ushort] * size * size -> _gsl_matrix_ushort_const_view;
+  fun gsl_matrix_ushort_const_view_vector_with_tda: cptr[gsl_vector_ushort] * size * size * size -> _gsl_matrix_ushort_const_view;
+  fun gsl_matrix_ushort_diagonal: ptr[gsl_matrix_ushort] -> _gsl_vector_ushort_view;
+  fun gsl_matrix_ushort_div_elements: ptr[gsl_matrix_ushort] * cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_fprintf: ptr[FILE] * cptr[gsl_matrix_ushort] * cptr[char] -> int;
+  fun gsl_matrix_ushort_fread: ptr[FILE] * ptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_fscanf: ptr[FILE] * ptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_fwrite: ptr[FILE] * cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_get: cptr[gsl_matrix_ushort] * size * size -> ushort;
+  fun gsl_matrix_ushort_get_col: ptr[gsl_vector_ushort] * cptr[gsl_matrix_ushort] * size -> int;
+  fun gsl_matrix_ushort_get_row: ptr[gsl_vector_ushort] * cptr[gsl_matrix_ushort] * size -> int;
+  fun gsl_matrix_ushort_isnull: cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_max: cptr[gsl_matrix_ushort] -> ushort;
+  fun gsl_matrix_ushort_memcpy: ptr[gsl_matrix_ushort] * cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_min: cptr[gsl_matrix_ushort] -> ushort;
+  fun gsl_matrix_ushort_mul_elements: ptr[gsl_matrix_ushort] * cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_ptr: ptr[gsl_matrix_ushort] * size * size -> ptr[ushort];
+  fun gsl_matrix_ushort_row: ptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_view;
+  fun gsl_matrix_ushort_scale: ptr[gsl_matrix_ushort] * double -> int;
+  fun gsl_matrix_ushort_set_col: ptr[gsl_matrix_ushort] * size * cptr[gsl_vector_ushort] -> int;
+  fun gsl_matrix_ushort_set_row: ptr[gsl_matrix_ushort] * size * cptr[gsl_vector_ushort] -> int;
+  fun gsl_matrix_ushort_sub: ptr[gsl_matrix_ushort] * cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_subdiagonal: ptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_view;
+  fun gsl_matrix_ushort_submatrix: ptr[gsl_matrix_ushort] * size * size * size * size -> _gsl_matrix_ushort_view;
+  fun gsl_matrix_ushort_superdiagonal: ptr[gsl_matrix_ushort] * size -> _gsl_vector_ushort_view;
+  fun gsl_matrix_ushort_swap: ptr[gsl_matrix_ushort] * ptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_swap_columns: ptr[gsl_matrix_ushort] * size * size -> int;
+  fun gsl_matrix_ushort_swap_rowcol: ptr[gsl_matrix_ushort] * size * size -> int;
+  fun gsl_matrix_ushort_swap_rows: ptr[gsl_matrix_ushort] * size * size -> int;
+  fun gsl_matrix_ushort_transpose: ptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_transpose_memcpy: ptr[gsl_matrix_ushort] * cptr[gsl_matrix_ushort] -> int;
+  fun gsl_matrix_ushort_view_array: ptr[ushort] * size * size -> _gsl_matrix_ushort_view;
+  fun gsl_matrix_ushort_view_array_with_tda: ptr[ushort] * size * size * size -> _gsl_matrix_ushort_view;
+  fun gsl_matrix_ushort_view_vector: ptr[gsl_vector_ushort] * size * size -> _gsl_matrix_ushort_view;
+  fun gsl_matrix_ushort_view_vector_with_tda: ptr[gsl_vector_ushort] * size * size * size -> _gsl_matrix_ushort_view;
+  fun gsl_vector_ushort_alloc_col_from_matrix: ptr[gsl_matrix_ushort] * size -> ptr[gsl_vector_ushort];
+  fun gsl_vector_ushort_alloc_row_from_matrix: ptr[gsl_matrix_ushort] * size -> ptr[gsl_vector_ushort];
+}

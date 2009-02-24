@@ -1,0 +1,27 @@
+//Module        : gsl_sort_ulong_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sort_ulong.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SORT_ULONG_H__
+header '#include "gsl/gsl_sort_ulong.h"';
+
+module gsl_sort_ulong_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_sort_ulong: ptr[ulong] * size * size;
+  proc gsl_sort_ulong_index: ptr[size] * cptr[ulong] * size * size;
+
+  //FUNCTIONS
+  fun gsl_sort_ulong_largest: ptr[ulong] * size * cptr[ulong] * size * size -> int;
+  fun gsl_sort_ulong_largest_index: ptr[size] * size * cptr[ulong] * size * size -> int;
+  fun gsl_sort_ulong_smallest: ptr[ulong] * size * cptr[ulong] * size * size -> int;
+  fun gsl_sort_ulong_smallest_index: ptr[size] * size * cptr[ulong] * size * size -> int;
+}

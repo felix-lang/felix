@@ -1,0 +1,48 @@
+//Module        : gsl_fft_complex_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_fft_complex.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_FFT_COMPLEX_H__
+header '#include "gsl/gsl_fft_complex.h"';
+
+//INCLUDES
+include "gsl_complex_lib";
+include "gsl_fft_lib";
+
+module gsl_fft_complex_h
+{
+  open C_hack;
+  open gsl_complex_h;
+  open gsl_fft_h;
+
+  //ABSTRACT TYPES
+  type gsl_fft_complex_wavetable = 'gsl_fft_complex_wavetable';
+  type gsl_fft_complex_workspace = 'gsl_fft_complex_workspace';
+
+  //PROCEDURES
+  proc gsl_fft_complex_wavetable_free: ptr[gsl_fft_complex_wavetable];
+  proc gsl_fft_complex_workspace_free: ptr[gsl_fft_complex_workspace];
+
+  //FUNCTIONS
+  fun gsl_fft_complex_backward: gsl_complex_packed_array * size * size * cptr[gsl_fft_complex_wavetable] * ptr[gsl_fft_complex_workspace] -> int;
+  fun gsl_fft_complex_forward: gsl_complex_packed_array * size * size * cptr[gsl_fft_complex_wavetable] * ptr[gsl_fft_complex_workspace] -> int;
+  fun gsl_fft_complex_inverse: gsl_complex_packed_array * size * size * cptr[gsl_fft_complex_wavetable] * ptr[gsl_fft_complex_workspace] -> int;
+  fun gsl_fft_complex_memcpy: ptr[gsl_fft_complex_wavetable] * ptr[gsl_fft_complex_wavetable] -> int;
+  fun gsl_fft_complex_radix2_backward: gsl_complex_packed_array * size * size -> int;
+  fun gsl_fft_complex_radix2_dif_backward: gsl_complex_packed_array * size * size -> int;
+  fun gsl_fft_complex_radix2_dif_forward: gsl_complex_packed_array * size * size -> int;
+  fun gsl_fft_complex_radix2_dif_inverse: gsl_complex_packed_array * size * size -> int;
+  fun gsl_fft_complex_radix2_dif_transform: gsl_complex_packed_array * size * size * gsl_fft_direction -> int;
+  fun gsl_fft_complex_radix2_forward: gsl_complex_packed_array * size * size -> int;
+  fun gsl_fft_complex_radix2_inverse: gsl_complex_packed_array * size * size -> int;
+  fun gsl_fft_complex_radix2_transform: gsl_complex_packed_array * size * size * gsl_fft_direction -> int;
+  fun gsl_fft_complex_transform: gsl_complex_packed_array * size * size * cptr[gsl_fft_complex_wavetable] * ptr[gsl_fft_complex_workspace] * gsl_fft_direction -> int;
+  fun gsl_fft_complex_wavetable_alloc: size -> ptr[gsl_fft_complex_wavetable];
+  fun gsl_fft_complex_workspace_alloc: size -> ptr[gsl_fft_complex_workspace];
+}

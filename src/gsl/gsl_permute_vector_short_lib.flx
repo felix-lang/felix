@@ -1,0 +1,27 @@
+//Module        : gsl_permute_vector_short_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_permute_vector_short.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_PERMUTE_VECTOR_SHORT_H__
+header '#include "gsl/gsl_permute_vector_short.h"';
+
+//INCLUDES
+include "gsl_permutation_lib";
+include "gsl_vector_short_lib";
+
+module gsl_permute_vector_short_h
+{
+  open C_hack;
+  open gsl_permutation_h;
+  open gsl_vector_short_h;
+
+  //FUNCTIONS
+  fun gsl_permute_vector_short: cptr[gsl_permutation] * ptr[gsl_vector_short] -> int;
+  fun gsl_permute_vector_short_inverse: cptr[gsl_permutation] * ptr[gsl_vector_short] -> int;
+}

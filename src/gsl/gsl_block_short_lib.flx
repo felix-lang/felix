@@ -1,0 +1,50 @@
+//Module        : gsl_block_short_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_block_short.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_BLOCK_SHORT_H__
+header '#include "gsl/gsl_block_short.h"';
+
+//INCLUDES
+include "gsl_block_short_struct_lib";
+
+module gsl_block_short_h
+{
+  open C_hack;
+  open gsl_block_short_struct_h;
+
+  //CSTRUCTS
+  cstruct gsl_block_short_struct {
+    size: size;
+    data: ptr[short];
+  }
+
+  //STRUCT or UNION TAG ALIASES
+  typedef gsl_block_short = gsl_block_short_struct;
+
+  //TYPE ALIASES
+  typedef _struct_gsl_block_short_struct = gsl_block_short_struct;
+
+  //PROCEDURES
+  proc gsl_block_short_free: ptr[gsl_block_short];
+
+  //FUNCTIONS
+  fun gsl_block_short_alloc: size -> ptr[gsl_block_short];
+  fun gsl_block_short_calloc: size -> ptr[gsl_block_short];
+  fun gsl_block_short_data: cptr[gsl_block_short] -> ptr[short];
+  fun gsl_block_short_fprintf: ptr[FILE] * cptr[gsl_block_short] * cptr[char] -> int;
+  fun gsl_block_short_fread: ptr[FILE] * ptr[gsl_block_short] -> int;
+  fun gsl_block_short_fscanf: ptr[FILE] * ptr[gsl_block_short] -> int;
+  fun gsl_block_short_fwrite: ptr[FILE] * cptr[gsl_block_short] -> int;
+  fun gsl_block_short_raw_fprintf: ptr[FILE] * cptr[short] * size * size * cptr[char] -> int;
+  fun gsl_block_short_raw_fread: ptr[FILE] * ptr[short] * size * size -> int;
+  fun gsl_block_short_raw_fscanf: ptr[FILE] * ptr[short] * size * size -> int;
+  fun gsl_block_short_raw_fwrite: ptr[FILE] * cptr[short] * size * size -> int;
+  fun gsl_block_short_size: cptr[gsl_block_short] -> size;
+}

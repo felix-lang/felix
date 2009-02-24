@@ -1,0 +1,27 @@
+//Module        : gsl_sort_double_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sort_double.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SORT_DOUBLE_H__
+header '#include "gsl/gsl_sort_double.h"';
+
+module gsl_sort_double_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_sort: ptr[double] * size * size;
+  proc gsl_sort_index: ptr[size] * cptr[double] * size * size;
+
+  //FUNCTIONS
+  fun gsl_sort_largest: ptr[double] * size * cptr[double] * size * size -> int;
+  fun gsl_sort_largest_index: ptr[size] * size * cptr[double] * size * size -> int;
+  fun gsl_sort_smallest: ptr[double] * size * cptr[double] * size * size -> int;
+  fun gsl_sort_smallest_index: ptr[size] * size * cptr[double] * size * size -> int;
+}

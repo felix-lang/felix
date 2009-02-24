@@ -1,0 +1,80 @@
+//Module        : gsl_errno_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_errno.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_STATUS_UPDATE(sp, s) do { if ((s) != GSL_SUCCESS) *(sp) = (s);} while(0)
+//#define GSL_ERROR_SELECT_5(a,b,c,d,e) ((a) != GSL_SUCCESS ? (a) : GSL_ERROR_SELECT_4(b,c,d,e))
+//#define GSL_ERROR_SELECT_4(a,b,c,d)   ((a) != GSL_SUCCESS ? (a) : GSL_ERROR_SELECT_3(b,c,d))
+//#define GSL_ERROR_SELECT_3(a,b,c)     ((a) != GSL_SUCCESS ? (a) : GSL_ERROR_SELECT_2(b,c))
+//#define GSL_ERROR_SELECT_2(a,b)       ((a) != GSL_SUCCESS ? (a) : ((b) != GSL_SUCCESS ? (b) : GSL_SUCCESS))
+//#define GSL_ERROR_NULL(reason, gsl_errno) GSL_ERROR_VAL(reason, gsl_errno, 0)
+//#define GSL_ERROR_VOID(reason, gsl_errno) \
+//#define GSL_ERROR_VAL(reason, gsl_errno, value) \
+//#define GSL_ERROR(reason, gsl_errno) \
+//#define __GSL_ERRNO_H__
+header '#include "gsl/gsl_errno.h"';
+
+//INCLUDES
+
+module gsl_errno_h
+{
+  open C_hack;
+
+  //TYPE ALIASES
+  typedef gsl_error_handler_t = cptr[char] * cptr[char] * int * int -> void_t;
+  typedef gsl_stream_handler_t = cptr[char] * cptr[char] * int * cptr[char] -> void_t;
+
+  //ENUMERATION CONSTANTS
+  const GSL_FAILURE: int = 'GSL_FAILURE';
+  const GSL_ETOLF: int = 'GSL_ETOLF';
+  const GSL_EZERODIV: int = 'GSL_EZERODIV';
+  const GSL_ETOLG: int = 'GSL_ETOLG';
+  const GSL_EUNSUP: int = 'GSL_EUNSUP';
+  const GSL_EUNIMPL: int = 'GSL_EUNIMPL';
+  const GSL_EINVAL: int = 'GSL_EINVAL';
+  const GSL_EOVRFLW: int = 'GSL_EOVRFLW';
+  const GSL_EFACTOR: int = 'GSL_EFACTOR';
+  const GSL_ETOLX: int = 'GSL_ETOLX';
+  const GSL_ETABLE: int = 'GSL_ETABLE';
+  const GSL_EDIVERGE: int = 'GSL_EDIVERGE';
+  const GSL_ERUNAWAY: int = 'GSL_ERUNAWAY';
+  const GSL_EROUND: int = 'GSL_EROUND';
+  const GSL_SUCCESS: int = 'GSL_SUCCESS';
+  const GSL_ETOL: int = 'GSL_ETOL';
+  const GSL_EMAXITER: int = 'GSL_EMAXITER';
+  const GSL_ECACHE: int = 'GSL_ECACHE';
+  const GSL_ESING: int = 'GSL_ESING';
+  const GSL_ENOPROG: int = 'GSL_ENOPROG';
+  const GSL_ESANITY: int = 'GSL_ESANITY';
+  const GSL_EOF: int = 'GSL_EOF';
+  const GSL_ENOPROGJ: int = 'GSL_ENOPROGJ';
+  const GSL_ENOTSQR: int = 'GSL_ENOTSQR';
+  const GSL_EFAILED: int = 'GSL_EFAILED';
+  const GSL_EBADFUNC: int = 'GSL_EBADFUNC';
+  const GSL_EBADTOL: int = 'GSL_EBADTOL';
+  const GSL_EUNDRFLW: int = 'GSL_EUNDRFLW';
+  const GSL_ENOMEM: int = 'GSL_ENOMEM';
+  const GSL_EDOM: int = 'GSL_EDOM';
+  const GSL_ELOSS: int = 'GSL_ELOSS';
+  const GSL_EFAULT: int = 'GSL_EFAULT';
+  const GSL_ERANGE: int = 'GSL_ERANGE';
+  const GSL_EBADLEN: int = 'GSL_EBADLEN';
+  const GSL_CONTINUE: int = 'GSL_CONTINUE';
+
+  //PROCEDURES
+  proc gsl_error: cptr[char] * cptr[char] * int * int;
+  proc gsl_stream_printf: cptr[char] * cptr[char] * int * cptr[char];
+
+  //FUNCTIONS
+  fun gsl_set_error_handler: ptr[gsl_error_handler_t] -> ptr[gsl_error_handler_t];
+  fun gsl_set_error_handler_off: 1 -> ptr[gsl_error_handler_t];
+  fun gsl_set_stream: ptr[FILE] -> ptr[FILE];
+  fun gsl_set_stream_handler: ptr[gsl_stream_handler_t] -> ptr[gsl_stream_handler_t];
+  fun gsl_strerror: int -> cptr[char];
+}

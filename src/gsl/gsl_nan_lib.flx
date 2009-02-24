@@ -1,0 +1,28 @@
+//Module        : gsl_nan_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_nan.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_NEGZERO (-0)
+//#define GSL_POSZERO (+0)
+//#define GSL_NAN (gsl_nan())
+//#define GSL_NAN (INFINITY/INFINITY)
+//#define GSL_NAN NAN
+//#define GSL_NEGINF (gsl_neginf())
+//#define GSL_POSINF (gsl_posinf())
+//#define GSL_NEGINF (-HUGE_VAL)
+//#define GSL_POSINF HUGE_VAL
+//#define GSL_NEGINF (-INFINITY)
+//#define GSL_POSINF INFINITY
+//#define __GSL_NAN_H__
+header '#include "gsl/gsl_nan.h"';
+
+module gsl_nan_h
+{
+  open C_hack;
+}

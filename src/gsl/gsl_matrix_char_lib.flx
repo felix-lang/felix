@@ -1,0 +1,99 @@
+//Module        : gsl_matrix_char_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_matrix_char.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_MATRIX_CHAR_H__
+header '#include "gsl/gsl_matrix_char.h"';
+
+//INCLUDES
+include "gsl_block_char_lib";
+include "gsl_vector_char_lib";
+
+module gsl_matrix_char_h
+{
+  open C_hack;
+  open gsl_block_char_h;
+  open gsl_vector_char_h;
+
+  //ABSTRACT TYPES
+  type gsl_matrix_char = 'gsl_matrix_char';
+  type _gsl_matrix_char_const_view = '_gsl_matrix_char_const_view';
+  type _gsl_matrix_char_view = '_gsl_matrix_char_view';
+
+  //TYPE ALIASES
+  typedef gsl_matrix_char_view = _gsl_matrix_char_view;
+  typedef gsl_matrix_char_const_view = _gsl_matrix_char_const_view;
+
+  //PROCEDURES
+  proc gsl_matrix_char_free: ptr[gsl_matrix_char];
+  proc gsl_matrix_char_max_index: cptr[gsl_matrix_char] * ptr[size] * ptr[size];
+  proc gsl_matrix_char_min_index: cptr[gsl_matrix_char] * ptr[size] * ptr[size];
+  proc gsl_matrix_char_minmax: cptr[gsl_matrix_char] * ptr[char] * ptr[char];
+  proc gsl_matrix_char_minmax_index: cptr[gsl_matrix_char] * ptr[size] * ptr[size] * ptr[size] * ptr[size];
+  proc gsl_matrix_char_set: ptr[gsl_matrix_char] * size * size * char;
+  proc gsl_matrix_char_set_all: ptr[gsl_matrix_char] * char;
+  proc gsl_matrix_char_set_identity: ptr[gsl_matrix_char];
+  proc gsl_matrix_char_set_zero: ptr[gsl_matrix_char];
+
+  //FUNCTIONS
+  fun gsl_matrix_char_add: ptr[gsl_matrix_char] * cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_add_constant: ptr[gsl_matrix_char] * double -> int;
+  fun gsl_matrix_char_add_diagonal: ptr[gsl_matrix_char] * double -> int;
+  fun gsl_matrix_char_alloc: size * size -> ptr[gsl_matrix_char];
+  fun gsl_matrix_char_alloc_from_block: ptr[gsl_block_char] * size * size * size * size -> ptr[gsl_matrix_char];
+  fun gsl_matrix_char_alloc_from_matrix: ptr[gsl_matrix_char] * size * size * size * size -> ptr[gsl_matrix_char];
+  fun gsl_matrix_char_calloc: size * size -> ptr[gsl_matrix_char];
+  fun gsl_matrix_char_column: ptr[gsl_matrix_char] * size -> _gsl_vector_char_view;
+  fun gsl_matrix_char_const_column: cptr[gsl_matrix_char] * size -> _gsl_vector_char_const_view;
+  fun gsl_matrix_char_const_diagonal: cptr[gsl_matrix_char] -> _gsl_vector_char_const_view;
+  fun gsl_matrix_char_const_ptr: cptr[gsl_matrix_char] * size * size -> cptr[char];
+  fun gsl_matrix_char_const_row: cptr[gsl_matrix_char] * size -> _gsl_vector_char_const_view;
+  fun gsl_matrix_char_const_subdiagonal: cptr[gsl_matrix_char] * size -> _gsl_vector_char_const_view;
+  fun gsl_matrix_char_const_submatrix: cptr[gsl_matrix_char] * size * size * size * size -> _gsl_matrix_char_const_view;
+  fun gsl_matrix_char_const_superdiagonal: cptr[gsl_matrix_char] * size -> _gsl_vector_char_const_view;
+  fun gsl_matrix_char_const_view_array: cptr[char] * size * size -> _gsl_matrix_char_const_view;
+  fun gsl_matrix_char_const_view_array_with_tda: cptr[char] * size * size * size -> _gsl_matrix_char_const_view;
+  fun gsl_matrix_char_const_view_vector: cptr[gsl_vector_char] * size * size -> _gsl_matrix_char_const_view;
+  fun gsl_matrix_char_const_view_vector_with_tda: cptr[gsl_vector_char] * size * size * size -> _gsl_matrix_char_const_view;
+  fun gsl_matrix_char_diagonal: ptr[gsl_matrix_char] -> _gsl_vector_char_view;
+  fun gsl_matrix_char_div_elements: ptr[gsl_matrix_char] * cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_fprintf: ptr[FILE] * cptr[gsl_matrix_char] * cptr[char] -> int;
+  fun gsl_matrix_char_fread: ptr[FILE] * ptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_fscanf: ptr[FILE] * ptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_fwrite: ptr[FILE] * cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_get: cptr[gsl_matrix_char] * size * size -> char;
+  fun gsl_matrix_char_get_col: ptr[gsl_vector_char] * cptr[gsl_matrix_char] * size -> int;
+  fun gsl_matrix_char_get_row: ptr[gsl_vector_char] * cptr[gsl_matrix_char] * size -> int;
+  fun gsl_matrix_char_isnull: cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_max: cptr[gsl_matrix_char] -> char;
+  fun gsl_matrix_char_memcpy: ptr[gsl_matrix_char] * cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_min: cptr[gsl_matrix_char] -> char;
+  fun gsl_matrix_char_mul_elements: ptr[gsl_matrix_char] * cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_ptr: ptr[gsl_matrix_char] * size * size -> ptr[char];
+  fun gsl_matrix_char_row: ptr[gsl_matrix_char] * size -> _gsl_vector_char_view;
+  fun gsl_matrix_char_scale: ptr[gsl_matrix_char] * double -> int;
+  fun gsl_matrix_char_set_col: ptr[gsl_matrix_char] * size * cptr[gsl_vector_char] -> int;
+  fun gsl_matrix_char_set_row: ptr[gsl_matrix_char] * size * cptr[gsl_vector_char] -> int;
+  fun gsl_matrix_char_sub: ptr[gsl_matrix_char] * cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_subdiagonal: ptr[gsl_matrix_char] * size -> _gsl_vector_char_view;
+  fun gsl_matrix_char_submatrix: ptr[gsl_matrix_char] * size * size * size * size -> _gsl_matrix_char_view;
+  fun gsl_matrix_char_superdiagonal: ptr[gsl_matrix_char] * size -> _gsl_vector_char_view;
+  fun gsl_matrix_char_swap: ptr[gsl_matrix_char] * ptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_swap_columns: ptr[gsl_matrix_char] * size * size -> int;
+  fun gsl_matrix_char_swap_rowcol: ptr[gsl_matrix_char] * size * size -> int;
+  fun gsl_matrix_char_swap_rows: ptr[gsl_matrix_char] * size * size -> int;
+  fun gsl_matrix_char_transpose: ptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_transpose_memcpy: ptr[gsl_matrix_char] * cptr[gsl_matrix_char] -> int;
+  fun gsl_matrix_char_view_array: ptr[char] * size * size -> _gsl_matrix_char_view;
+  fun gsl_matrix_char_view_array_with_tda: ptr[char] * size * size * size -> _gsl_matrix_char_view;
+  fun gsl_matrix_char_view_vector: ptr[gsl_vector_char] * size * size -> _gsl_matrix_char_view;
+  fun gsl_matrix_char_view_vector_with_tda: ptr[gsl_vector_char] * size * size * size -> _gsl_matrix_char_view;
+  fun gsl_vector_char_alloc_col_from_matrix: ptr[gsl_matrix_char] * size -> ptr[gsl_vector_char];
+  fun gsl_vector_char_alloc_row_from_matrix: ptr[gsl_matrix_char] * size -> ptr[gsl_vector_char];
+}

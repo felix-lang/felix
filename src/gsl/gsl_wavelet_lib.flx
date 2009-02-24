@@ -1,0 +1,47 @@
+//Module        : gsl_wavelet_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_wavelet.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_WAVELET_H__
+header '#include "gsl/gsl_wavelet.h"';
+
+module gsl_wavelet_h
+{
+  open C_hack;
+
+  //ABSTRACT TYPES
+  type gsl_wavelet_workspace = 'gsl_wavelet_workspace';
+  type gsl_wavelet_type = 'gsl_wavelet_type';
+  type gsl_wavelet_direction = 'gsl_wavelet_direction';
+  type gsl_wavelet = 'gsl_wavelet';
+
+  //VARIABLES
+  const gsl_wavelet_haar_centered: cptr[gsl_wavelet_type] = 'gsl_wavelet_haar_centered';
+  const gsl_wavelet_daubechies_centered: cptr[gsl_wavelet_type] = 'gsl_wavelet_daubechies_centered';
+  const gsl_wavelet_daubechies: cptr[gsl_wavelet_type] = 'gsl_wavelet_daubechies';
+  const gsl_wavelet_bspline_centered: cptr[gsl_wavelet_type] = 'gsl_wavelet_bspline_centered';
+  const gsl_wavelet_bspline: cptr[gsl_wavelet_type] = 'gsl_wavelet_bspline';
+  const gsl_wavelet_haar: cptr[gsl_wavelet_type] = 'gsl_wavelet_haar';
+
+  //ENUMERATION CONSTANTS
+  const backward___0: int = 'backward___0';
+  const forward___0: int = 'forward___0';
+
+  //PROCEDURES
+  proc gsl_wavelet_free: ptr[gsl_wavelet];
+  proc gsl_wavelet_workspace_free: ptr[gsl_wavelet_workspace];
+
+  //FUNCTIONS
+  fun gsl_wavelet_alloc: cptr[gsl_wavelet_type] * size -> ptr[gsl_wavelet];
+  fun gsl_wavelet_name: cptr[gsl_wavelet] -> cptr[char];
+  fun gsl_wavelet_transform: cptr[gsl_wavelet] * ptr[double] * size * size * gsl_wavelet_direction * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet_transform_forward: cptr[gsl_wavelet] * ptr[double] * size * size * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet_transform_inverse: cptr[gsl_wavelet] * ptr[double] * size * size * ptr[gsl_wavelet_workspace] -> int;
+  fun gsl_wavelet_workspace_alloc: size -> ptr[gsl_wavelet_workspace];
+}

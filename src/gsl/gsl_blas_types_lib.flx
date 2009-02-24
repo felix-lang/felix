@@ -1,0 +1,38 @@
+//Module        : gsl_blas_types_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_blas_types.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_BLAS_TYPES_H__
+header '#include "gsl/gsl_blas_types.h"';
+
+module gsl_blas_types_h
+{
+  open C_hack;
+
+  //TYPE ALIASES
+  typedef CBLAS_ORDER_t = int;
+  typedef CBLAS_SIDE_t = int;
+  typedef CBLAS_UPLO_t = int;
+  typedef CBLAS_INDEX_t = size;
+  typedef CBLAS_TRANSPOSE_t = int;
+  typedef CBLAS_DIAG_t = int;
+
+  //ENUMERATION CONSTANTS
+  const CblasConjTrans: int = 'CblasConjTrans';
+  const CblasRight: int = 'CblasRight';
+  const CblasLower: int = 'CblasLower';
+  const CblasUnit: int = 'CblasUnit';
+  const CblasRowMajor: int = 'CblasRowMajor';
+  const CblasTrans: int = 'CblasTrans';
+  const CblasUpper: int = 'CblasUpper';
+  const CblasColMajor: int = 'CblasColMajor';
+  const CblasNoTrans: int = 'CblasNoTrans';
+  const CblasNonUnit: int = 'CblasNonUnit';
+  const CblasLeft: int = 'CblasLeft';
+}

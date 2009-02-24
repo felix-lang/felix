@@ -1,0 +1,67 @@
+//Module        : gsl_sf_gamma_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sf_gamma.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define GSL_SF_GAMMA_XMAX  171.0
+//#define __GSL_SF_GAMMA_H__
+header '#include "gsl/gsl_sf_gamma.h"';
+
+//INCLUDES
+include "gsl_sf_result_lib";
+
+module gsl_sf_gamma_h
+{
+  open C_hack;
+  open gsl_sf_result_h;
+
+  //FUNCTIONS
+  fun gsl_sf_beta: double * double -> double;
+  fun gsl_sf_beta_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_beta_inc: double * double * double -> double;
+  fun gsl_sf_beta_inc_e: double * double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_choose: uint * uint -> double;
+  fun gsl_sf_choose_e: uint * uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_doublefact: uint -> double;
+  fun gsl_sf_doublefact_e: uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_fact: uint -> double;
+  fun gsl_sf_fact_e: uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_gamma: double -> double;
+  fun gsl_sf_gamma_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_gamma_inc: double * double -> double;
+  fun gsl_sf_gamma_inc_P: double * double -> double;
+  fun gsl_sf_gamma_inc_P_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_gamma_inc_Q: double * double -> double;
+  fun gsl_sf_gamma_inc_Q_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_gamma_inc_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_gammainv: double -> double;
+  fun gsl_sf_gammainv_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_gammastar: double -> double;
+  fun gsl_sf_gammastar_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lnbeta: double * double -> double;
+  fun gsl_sf_lnbeta_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lnchoose: uint * uint -> double;
+  fun gsl_sf_lnchoose_e: uint * uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lndoublefact: uint -> double;
+  fun gsl_sf_lndoublefact_e: uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lnfact: uint -> double;
+  fun gsl_sf_lnfact_e: uint * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lngamma: double -> double;
+  fun gsl_sf_lngamma_complex_e: double * double * ptr[gsl_sf_result] * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lngamma_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lngamma_sgn_e: double * ptr[gsl_sf_result] * ptr[double] -> int;
+  fun gsl_sf_lnpoch: double * double -> double;
+  fun gsl_sf_lnpoch_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_lnpoch_sgn_e: double * double * ptr[gsl_sf_result] * ptr[double] -> int;
+  fun gsl_sf_poch: double * double -> double;
+  fun gsl_sf_poch_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_pochrel: double * double -> double;
+  fun gsl_sf_pochrel_e: double * double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_taylorcoeff: int * double -> double;
+  fun gsl_sf_taylorcoeff_e: int * double * ptr[gsl_sf_result] -> int;
+}

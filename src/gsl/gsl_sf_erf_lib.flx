@@ -1,0 +1,35 @@
+//Module        : gsl_sf_erf_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sf_erf.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SF_ERF_H__
+header '#include "gsl/gsl_sf_erf.h"';
+
+//INCLUDES
+include "gsl_sf_result_lib";
+
+module gsl_sf_erf_h
+{
+  open C_hack;
+  open gsl_sf_result_h;
+
+  //FUNCTIONS
+  fun gsl_sf_erf: double -> double;
+  fun gsl_sf_erf_Q: double -> double;
+  fun gsl_sf_erf_Q_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_erf_Z: double -> double;
+  fun gsl_sf_erf_Z_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_erf_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_erfc: double -> double;
+  fun gsl_sf_erfc_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_hazard: double -> double;
+  fun gsl_sf_hazard_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_log_erfc: double -> double;
+  fun gsl_sf_log_erfc_e: double * ptr[gsl_sf_result] -> int;
+}

@@ -1,0 +1,50 @@
+//Module        : gsl_block_uchar_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_block_uchar.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_BLOCK_UCHAR_H__
+header '#include "gsl/gsl_block_uchar.h"';
+
+//INCLUDES
+include "gsl_block_uchar_struct_lib";
+
+module gsl_block_uchar_h
+{
+  open C_hack;
+  open gsl_block_uchar_struct_h;
+
+  //CSTRUCTS
+  cstruct gsl_block_uchar_struct {
+    size: size;
+    data: ptr[utiny];
+  }
+
+  //STRUCT or UNION TAG ALIASES
+  typedef gsl_block_uchar = gsl_block_uchar_struct;
+
+  //TYPE ALIASES
+  typedef _struct_gsl_block_uchar_struct = gsl_block_uchar_struct;
+
+  //PROCEDURES
+  proc gsl_block_uchar_free: ptr[gsl_block_uchar];
+
+  //FUNCTIONS
+  fun gsl_block_uchar_alloc: size -> ptr[gsl_block_uchar];
+  fun gsl_block_uchar_calloc: size -> ptr[gsl_block_uchar];
+  fun gsl_block_uchar_data: cptr[gsl_block_uchar] -> ptr[utiny];
+  fun gsl_block_uchar_fprintf: ptr[FILE] * cptr[gsl_block_uchar] * cptr[char] -> int;
+  fun gsl_block_uchar_fread: ptr[FILE] * ptr[gsl_block_uchar] -> int;
+  fun gsl_block_uchar_fscanf: ptr[FILE] * ptr[gsl_block_uchar] -> int;
+  fun gsl_block_uchar_fwrite: ptr[FILE] * cptr[gsl_block_uchar] -> int;
+  fun gsl_block_uchar_raw_fprintf: ptr[FILE] * cptr[utiny] * size * size * cptr[char] -> int;
+  fun gsl_block_uchar_raw_fread: ptr[FILE] * ptr[utiny] * size * size -> int;
+  fun gsl_block_uchar_raw_fscanf: ptr[FILE] * ptr[utiny] * size * size -> int;
+  fun gsl_block_uchar_raw_fwrite: ptr[FILE] * cptr[utiny] * size * size -> int;
+  fun gsl_block_uchar_size: cptr[gsl_block_uchar] -> size;
+}

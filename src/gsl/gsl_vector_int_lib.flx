@@ -1,0 +1,75 @@
+//Module        : gsl_vector_int_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_vector_int.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_VECTOR_INT_H__
+header '#include "gsl/gsl_vector_int.h"';
+
+//INCLUDES
+include "gsl_block_int_lib";
+
+module gsl_vector_int_h
+{
+  open C_hack;
+  open gsl_block_int_h;
+
+  //ABSTRACT TYPES
+  type _gsl_vector_int_view = '_gsl_vector_int_view';
+  type gsl_vector_int = 'gsl_vector_int';
+  type _gsl_vector_int_const_view = '_gsl_vector_int_const_view';
+
+  //TYPE ALIASES
+  typedef gsl_vector_int_view = _gsl_vector_int_view;
+  typedef gsl_vector_int_const_view = _gsl_vector_int_const_view;
+
+  //PROCEDURES
+  proc gsl_vector_int_free: ptr[gsl_vector_int];
+  proc gsl_vector_int_minmax: cptr[gsl_vector_int] * ptr[int] * ptr[int];
+  proc gsl_vector_int_minmax_index: cptr[gsl_vector_int] * ptr[size] * ptr[size];
+  proc gsl_vector_int_set: ptr[gsl_vector_int] * size * int;
+  proc gsl_vector_int_set_all: ptr[gsl_vector_int] * int;
+  proc gsl_vector_int_set_zero: ptr[gsl_vector_int];
+
+  //FUNCTIONS
+  fun gsl_vector_int_add: ptr[gsl_vector_int] * cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_add_constant: ptr[gsl_vector_int] * double -> int;
+  fun gsl_vector_int_alloc: size -> ptr[gsl_vector_int];
+  fun gsl_vector_int_alloc_from_block: ptr[gsl_block_int] * size * size * size -> ptr[gsl_vector_int];
+  fun gsl_vector_int_alloc_from_vector: ptr[gsl_vector_int] * size * size * size -> ptr[gsl_vector_int];
+  fun gsl_vector_int_calloc: size -> ptr[gsl_vector_int];
+  fun gsl_vector_int_const_ptr: cptr[gsl_vector_int] * size -> cptr[int];
+  fun gsl_vector_int_const_subvector: cptr[gsl_vector_int] * size * size -> _gsl_vector_int_const_view;
+  fun gsl_vector_int_const_subvector_with_stride: cptr[gsl_vector_int] * size * size * size -> _gsl_vector_int_const_view;
+  fun gsl_vector_int_const_view_array: cptr[int] * size -> _gsl_vector_int_const_view;
+  fun gsl_vector_int_const_view_array_with_stride: cptr[int] * size * size -> _gsl_vector_int_const_view;
+  fun gsl_vector_int_div: ptr[gsl_vector_int] * cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_fprintf: ptr[FILE] * cptr[gsl_vector_int] * cptr[char] -> int;
+  fun gsl_vector_int_fread: ptr[FILE] * ptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_fscanf: ptr[FILE] * ptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_fwrite: ptr[FILE] * cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_get: cptr[gsl_vector_int] * size -> int;
+  fun gsl_vector_int_isnull: cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_max: cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_max_index: cptr[gsl_vector_int] -> size;
+  fun gsl_vector_int_memcpy: ptr[gsl_vector_int] * cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_min: cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_min_index: cptr[gsl_vector_int] -> size;
+  fun gsl_vector_int_mul: ptr[gsl_vector_int] * cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_ptr: ptr[gsl_vector_int] * size -> ptr[int];
+  fun gsl_vector_int_reverse: ptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_scale: ptr[gsl_vector_int] * double -> int;
+  fun gsl_vector_int_set_basis: ptr[gsl_vector_int] * size -> int;
+  fun gsl_vector_int_sub: ptr[gsl_vector_int] * cptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_subvector: ptr[gsl_vector_int] * size * size -> _gsl_vector_int_view;
+  fun gsl_vector_int_subvector_with_stride: ptr[gsl_vector_int] * size * size * size -> _gsl_vector_int_view;
+  fun gsl_vector_int_swap: ptr[gsl_vector_int] * ptr[gsl_vector_int] -> int;
+  fun gsl_vector_int_swap_elements: ptr[gsl_vector_int] * size * size -> int;
+  fun gsl_vector_int_view_array: ptr[int] * size -> _gsl_vector_int_view;
+  fun gsl_vector_int_view_array_with_stride: ptr[int] * size * size -> _gsl_vector_int_view;
+}

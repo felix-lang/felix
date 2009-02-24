@@ -1,0 +1,33 @@
+//Module        : gsl_sort_vector_double_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sort_vector_double.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SORT_VECTOR_DOUBLE_H__
+header '#include "gsl/gsl_sort_vector_double.h"';
+
+//INCLUDES
+include "gsl_permutation_lib";
+include "gsl_vector_double_lib";
+
+module gsl_sort_vector_double_h
+{
+  open C_hack;
+  open gsl_permutation_h;
+  open gsl_vector_double_h;
+
+  //PROCEDURES
+  proc gsl_sort_vector: ptr[gsl_vector];
+
+  //FUNCTIONS
+  fun gsl_sort_vector_index: ptr[gsl_permutation] * cptr[gsl_vector] -> int;
+  fun gsl_sort_vector_largest: ptr[double] * size * cptr[gsl_vector] -> int;
+  fun gsl_sort_vector_largest_index: ptr[size] * size * cptr[gsl_vector] -> int;
+  fun gsl_sort_vector_smallest: ptr[double] * size * cptr[gsl_vector] -> int;
+  fun gsl_sort_vector_smallest_index: ptr[size] * size * cptr[gsl_vector] -> int;
+}

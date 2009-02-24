@@ -1,0 +1,50 @@
+//Module        : gsl_block_ulong_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_block_ulong.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_BLOCK_ULONG_H__
+header '#include "gsl/gsl_block_ulong.h"';
+
+//INCLUDES
+include "gsl_block_ulong_struct_lib";
+
+module gsl_block_ulong_h
+{
+  open C_hack;
+  open gsl_block_ulong_struct_h;
+
+  //CSTRUCTS
+  cstruct gsl_block_ulong_struct {
+    size: size;
+    data: ptr[ulong];
+  }
+
+  //STRUCT or UNION TAG ALIASES
+  typedef gsl_block_ulong = gsl_block_ulong_struct;
+
+  //TYPE ALIASES
+  typedef _struct_gsl_block_ulong_struct = gsl_block_ulong_struct;
+
+  //PROCEDURES
+  proc gsl_block_ulong_free: ptr[gsl_block_ulong];
+
+  //FUNCTIONS
+  fun gsl_block_ulong_alloc: size -> ptr[gsl_block_ulong];
+  fun gsl_block_ulong_calloc: size -> ptr[gsl_block_ulong];
+  fun gsl_block_ulong_data: cptr[gsl_block_ulong] -> ptr[ulong];
+  fun gsl_block_ulong_fprintf: ptr[FILE] * cptr[gsl_block_ulong] * cptr[char] -> int;
+  fun gsl_block_ulong_fread: ptr[FILE] * ptr[gsl_block_ulong] -> int;
+  fun gsl_block_ulong_fscanf: ptr[FILE] * ptr[gsl_block_ulong] -> int;
+  fun gsl_block_ulong_fwrite: ptr[FILE] * cptr[gsl_block_ulong] -> int;
+  fun gsl_block_ulong_raw_fprintf: ptr[FILE] * cptr[ulong] * size * size * cptr[char] -> int;
+  fun gsl_block_ulong_raw_fread: ptr[FILE] * ptr[ulong] * size * size -> int;
+  fun gsl_block_ulong_raw_fscanf: ptr[FILE] * ptr[ulong] * size * size -> int;
+  fun gsl_block_ulong_raw_fwrite: ptr[FILE] * cptr[ulong] * size * size -> int;
+  fun gsl_block_ulong_size: cptr[gsl_block_ulong] -> size;
+}

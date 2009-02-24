@@ -1,0 +1,48 @@
+//Module        : gsl_statistics_uchar_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_statistics_uchar.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_STATISTICS_UCHAR_H__
+header '#include "gsl/gsl_statistics_uchar.h"';
+
+module gsl_statistics_uchar_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_stats_uchar_minmax: ptr[utiny] * ptr[utiny] * cptr[utiny] * size * size;
+  proc gsl_stats_uchar_minmax_index: ptr[size] * ptr[size] * cptr[utiny] * size * size;
+
+  //FUNCTIONS
+  fun gsl_stats_uchar_absdev: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_absdev_m: cptr[utiny] * size * size * double -> double;
+  fun gsl_stats_uchar_covariance: cptr[utiny] * size * cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_covariance_m: cptr[utiny] * size * cptr[utiny] * size * size * double * double -> double;
+  fun gsl_stats_uchar_kurtosis: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_kurtosis_m_sd: cptr[utiny] * size * size * double * double -> double;
+  fun gsl_stats_uchar_lag1_autocorrelation: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_lag1_autocorrelation_m: cptr[utiny] * size * size * double -> double;
+  fun gsl_stats_uchar_max: cptr[utiny] * size * size -> utiny;
+  fun gsl_stats_uchar_max_index: cptr[utiny] * size * size -> size;
+  fun gsl_stats_uchar_mean: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_median_from_sorted_data: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_min: cptr[utiny] * size * size -> utiny;
+  fun gsl_stats_uchar_min_index: cptr[utiny] * size * size -> size;
+  fun gsl_stats_uchar_pvariance: cptr[utiny] * size * size * cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_quantile_from_sorted_data: cptr[utiny] * size * size * double -> double;
+  fun gsl_stats_uchar_sd: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_sd_m: cptr[utiny] * size * size * double -> double;
+  fun gsl_stats_uchar_sd_with_fixed_mean: cptr[utiny] * size * size * double -> double;
+  fun gsl_stats_uchar_skew: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_skew_m_sd: cptr[utiny] * size * size * double * double -> double;
+  fun gsl_stats_uchar_ttest: cptr[utiny] * size * size * cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_variance: cptr[utiny] * size * size -> double;
+  fun gsl_stats_uchar_variance_m: cptr[utiny] * size * size * double -> double;
+  fun gsl_stats_uchar_variance_with_fixed_mean: cptr[utiny] * size * size * double -> double;
+}

@@ -1,0 +1,48 @@
+//Module        : gsl_statistics_char_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_statistics_char.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_STATISTICS_CHAR_H__
+header '#include "gsl/gsl_statistics_char.h"';
+
+module gsl_statistics_char_h
+{
+  open C_hack;
+
+  //PROCEDURES
+  proc gsl_stats_char_minmax: ptr[char] * ptr[char] * cptr[char] * size * size;
+  proc gsl_stats_char_minmax_index: ptr[size] * ptr[size] * cptr[char] * size * size;
+
+  //FUNCTIONS
+  fun gsl_stats_char_absdev: cptr[char] * size * size -> double;
+  fun gsl_stats_char_absdev_m: cptr[char] * size * size * double -> double;
+  fun gsl_stats_char_covariance: cptr[char] * size * cptr[char] * size * size -> double;
+  fun gsl_stats_char_covariance_m: cptr[char] * size * cptr[char] * size * size * double * double -> double;
+  fun gsl_stats_char_kurtosis: cptr[char] * size * size -> double;
+  fun gsl_stats_char_kurtosis_m_sd: cptr[char] * size * size * double * double -> double;
+  fun gsl_stats_char_lag1_autocorrelation: cptr[char] * size * size -> double;
+  fun gsl_stats_char_lag1_autocorrelation_m: cptr[char] * size * size * double -> double;
+  fun gsl_stats_char_max: cptr[char] * size * size -> char;
+  fun gsl_stats_char_max_index: cptr[char] * size * size -> size;
+  fun gsl_stats_char_mean: cptr[char] * size * size -> double;
+  fun gsl_stats_char_median_from_sorted_data: cptr[char] * size * size -> double;
+  fun gsl_stats_char_min: cptr[char] * size * size -> char;
+  fun gsl_stats_char_min_index: cptr[char] * size * size -> size;
+  fun gsl_stats_char_pvariance: cptr[char] * size * size * cptr[char] * size * size -> double;
+  fun gsl_stats_char_quantile_from_sorted_data: cptr[char] * size * size * double -> double;
+  fun gsl_stats_char_sd: cptr[char] * size * size -> double;
+  fun gsl_stats_char_sd_m: cptr[char] * size * size * double -> double;
+  fun gsl_stats_char_sd_with_fixed_mean: cptr[char] * size * size * double -> double;
+  fun gsl_stats_char_skew: cptr[char] * size * size -> double;
+  fun gsl_stats_char_skew_m_sd: cptr[char] * size * size * double * double -> double;
+  fun gsl_stats_char_ttest: cptr[char] * size * size * cptr[char] * size * size -> double;
+  fun gsl_stats_char_variance: cptr[char] * size * size -> double;
+  fun gsl_stats_char_variance_m: cptr[char] * size * size * double -> double;
+  fun gsl_stats_char_variance_with_fixed_mean: cptr[char] * size * size * double -> double;
+}

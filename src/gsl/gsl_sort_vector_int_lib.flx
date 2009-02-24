@@ -1,0 +1,33 @@
+//Module        : gsl_sort_vector_int_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sort_vector_int.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SORT_VECTOR_INT_H__
+header '#include "gsl/gsl_sort_vector_int.h"';
+
+//INCLUDES
+include "gsl_permutation_lib";
+include "gsl_vector_int_lib";
+
+module gsl_sort_vector_int_h
+{
+  open C_hack;
+  open gsl_permutation_h;
+  open gsl_vector_int_h;
+
+  //PROCEDURES
+  proc gsl_sort_vector_int: ptr[gsl_vector_int];
+
+  //FUNCTIONS
+  fun gsl_sort_vector_int_index: ptr[gsl_permutation] * cptr[gsl_vector_int] -> int;
+  fun gsl_sort_vector_int_largest: ptr[int] * size * cptr[gsl_vector_int] -> int;
+  fun gsl_sort_vector_int_largest_index: ptr[size] * size * cptr[gsl_vector_int] -> int;
+  fun gsl_sort_vector_int_smallest: ptr[int] * size * cptr[gsl_vector_int] -> int;
+  fun gsl_sort_vector_int_smallest_index: ptr[size] * size * cptr[gsl_vector_int] -> int;
+}

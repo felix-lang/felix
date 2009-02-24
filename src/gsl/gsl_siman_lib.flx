@@ -1,0 +1,51 @@
+//Module        : gsl_siman_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_siman.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SIMAN_H__
+header '#include "gsl/gsl_siman.h"';
+
+//INCLUDES
+include "gsl_rng_lib";
+
+module gsl_siman_h
+{
+  open C_hack;
+  open gsl_rng_h;
+
+  //ABSTRACT TYPES
+  type gsl_siman_params_t = 'gsl_siman_params_t';
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef void (*gsl_siman_h_cft_2)(gsl_rng const *, void *,  double);''';
+  type gsl_siman_h_cft_2 = 'gsl_siman_h_cft_2';
+  header '''typedef void (*gsl_siman_h_cft_5)(void *, void *);''';
+  type gsl_siman_h_cft_5 = 'gsl_siman_h_cft_5';
+  header '''typedef double (*gsl_siman_h_cft_3)(void *, void *);''';
+  type gsl_siman_h_cft_3 = 'gsl_siman_h_cft_3';
+  header '''typedef void *(*gsl_siman_h_cft_6)(void *);''';
+  type gsl_siman_h_cft_6 = 'gsl_siman_h_cft_6';
+  header '''typedef void (*gsl_siman_h_cft_4)(void *);''';
+  type gsl_siman_h_cft_4 = 'gsl_siman_h_cft_4';
+  header '''typedef double (*gsl_siman_h_cft_1)(void *);''';
+  type gsl_siman_h_cft_1 = 'gsl_siman_h_cft_1';
+
+  //TYPE ALIASES
+  typedef gsl_siman_Efunc_t = gsl_siman_h_cft_1;
+  typedef gsl_siman_step_t = gsl_siman_h_cft_2;
+  typedef gsl_siman_copy_t = gsl_siman_h_cft_5;
+  typedef gsl_siman_metric_t = gsl_siman_h_cft_3;
+  typedef gsl_siman_destroy_t = gsl_siman_h_cft_4;
+  typedef gsl_siman_print_t = gsl_siman_h_cft_4;
+  typedef gsl_siman_copy_construct_t = gsl_siman_h_cft_6;
+
+  //PROCEDURES
+  proc gsl_siman_solve: cptr[gsl_rng] * address * gsl_siman_h_cft_1 * gsl_siman_h_cft_2 * gsl_siman_h_cft_3 * gsl_siman_h_cft_4 * gsl_siman_h_cft_5 * gsl_siman_h_cft_6 * gsl_siman_h_cft_4 * size * gsl_siman_params_t;
+  proc gsl_siman_solve_many: cptr[gsl_rng] * address * gsl_siman_h_cft_1 * gsl_siman_h_cft_2 * gsl_siman_h_cft_3 * gsl_siman_h_cft_4 * size * gsl_siman_params_t;
+}

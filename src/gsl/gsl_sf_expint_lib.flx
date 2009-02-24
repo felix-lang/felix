@@ -1,0 +1,47 @@
+//Module        : gsl_sf_expint_h
+//Timestamp     : 2006/3/29 3:52:26 UTC
+//Timestamp     : 2006/3/29 14:52:26 (local)
+//Raw Header    : gsl_sf_expint.h
+//Preprocessor  : gcc -E
+//Input file: gsl.flxcc.i
+//Flxcc Control : gsl.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define __GSL_SF_EXPINT_H__
+header '#include "gsl/gsl_sf_expint.h"';
+
+//INCLUDES
+include "gsl_sf_result_lib";
+
+module gsl_sf_expint_h
+{
+  open C_hack;
+  open gsl_sf_result_h;
+
+  //FUNCTIONS
+  fun gsl_sf_Chi: double -> double;
+  fun gsl_sf_Chi_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_Ci: double -> double;
+  fun gsl_sf_Ci_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_Shi: double -> double;
+  fun gsl_sf_Shi_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_Si: double -> double;
+  fun gsl_sf_Si_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_atanint: double -> double;
+  fun gsl_sf_atanint_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_expint_3: double -> double;
+  fun gsl_sf_expint_3_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_expint_E1: double -> double;
+  fun gsl_sf_expint_E1_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_expint_E1_scaled: double -> double;
+  fun gsl_sf_expint_E1_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_expint_E2: double -> double;
+  fun gsl_sf_expint_E2_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_expint_E2_scaled: double -> double;
+  fun gsl_sf_expint_E2_scaled_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_expint_Ei: double -> double;
+  fun gsl_sf_expint_Ei_e: double * ptr[gsl_sf_result] -> int;
+  fun gsl_sf_expint_Ei_scaled: double -> double;
+  fun gsl_sf_expint_Ei_scaled_e: double * ptr[gsl_sf_result] -> int;
+}
