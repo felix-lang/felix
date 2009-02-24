@@ -1,0 +1,130 @@
+//Module        : parigen_h
+//Timestamp     : 2006/4/5 6:8:55 UTC
+//Timestamp     : 2006/4/5 16:8:55 (local)
+//Raw Header    : parigen.h
+//Preprocessor  : gcc -E
+//Input file: pari.flxcc.i
+//Flxcc Control : pari.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define setvarn(x,s)  (((GEN)(x))[1]=\
+//#define varn(x)       ((long) ((((GEN) (x))[1]&VARNBITS) >> VARNSHIFT))
+//#define setprecp(x,s) (((GEN)(x))[1]=\
+//#define precp(x)      ((long) (((ulong) ((GEN) (x))[1]) >> PRECPSHIFT))
+//#define setvalp(x,s)  (((GEN)(x))[1]=\
+//#define valp(x)       ((long) ((((GEN)(x))[1] & VALPBITS) - HIGHVALPBIT))
+//#define setexpo(x,s)  (((GEN)(x))[1]=\
+//#define expo(x)       ((long) ((((GEN) (x))[1] & EXPOBITS) - HIGHEXPOBIT))
+//#define setlgefint(x,s) (((GEN)(x))[1]=\
+//#define lgefint(x)      ((long) (((GEN) (x))[1] & LGEFINTBITS))
+//#define setlgef(x,s)  (((GEN)(x))[1]=\
+//#define lgef(x)       ((long) (((GEN) (x))[1] & LGEFBITS))
+//#define setsigne(x,s) (((GEN)(x))[1]=\
+//#define signe(x)      (((long) ((GEN) (x))[1]) >> SIGNSHIFT)
+//#define setlg(x,s)    (((GEN)(x))[0]=\
+//#define lg(x)         ((((long)(x))&1)?1: ((long) (((GEN) (x))[0] & LGBITS)))
+//#define unsetisclone(x) (((GEN) (x))[0] &= (~CLONEBIT))
+//#define setisclone(x) (((GEN) (x))[0] |= CLONEBIT)
+//#define isclone(x)    (((GEN) (x))[0] & CLONEBIT)
+//#define smalltos(x)   (((long)(x))>>1)
+//#define settyp(x,s)   (((GEN)(x))[0]=\
+//#define typ(x)        ((((long)(x))&1)? t_SMALL: (((ulong) ((GEN) (x))[0]) >> TYPSHIFT))
+//#define m_evallgef(x)  (x)
+//#define m_evallg(x)    (x)
+//#define evallgefint(x) (x)
+//#define m_evalvalp(x)  (HIGHVALPBIT + (x))
+//#define m_evalexpo(x)  (HIGHEXPOBIT + (x))
+//#define evalprecp(x)   (((long)(x)) << PRECPSHIFT)
+//#define evalsigne(x)   (((long)(x)) << SIGNSHIFT)
+//#define evalvarn(x)    (((ulong)(x)) << VARNSHIFT)
+//#define evaltyp(x)     (((ulong)(x)) << TYPSHIFT)
+//#define VARNSHIFT    32
+//#define PRECPSHIFT   32
+//#define PRECPBITS    (0xffffffff00000000UL)
+//#define HIGHVALPBIT  (0x0000000080000000L)
+//#define VALPBITS     (0x00000000ffffffffUL)
+//#define LGEFINTBITS  (0x00000000ffffffffUL)
+//#define HIGHEXPOBIT  (0x0000800000000000L)
+//#define EXPOBITS     (0x0000ffffffffffffUL)
+//#define MAXVARN      65535
+//#define SIGNSHIFT    48
+//#define LGEFBITS     (0x00000000ffffffffUL)
+//#define VARNBITS     (0x0000ffff00000000UL)
+//#define SIGNBITS     (0xffff000000000000UL)
+//#define TYPSHIFT     48
+//#define LGBITS       (0x00000000ffffffffUL)
+//#define CLONEBIT     (0x0000000100000000UL)
+//#define TYPBITS      (0xffff000000000000UL)
+//#define TYPSHIFT     24
+//#define LGBITS       (0x0000ffffUL)
+//#define CLONEBIT     (0x00010000UL)
+//#define TYPBITS      (0xff000000UL)
+//#define TYPSHIFT     25
+//#define LGBITS       (0x00ffffffUL)
+//#define CLONEBIT     (0x01000000UL)
+//#define TYPBITS      (0xfe000000UL)
+//#define MAXVARN     255
+//#define SIGNSHIFT   24
+//#define LGEFINTBITS (0x0000ffffUL)
+//#define VARNBITS    (0x00ff0000UL)
+//#define SIGNBITS    (0xff000000UL)
+//#define MAXVARN     16383
+//#define SIGNSHIFT   30
+//#define LGEFINTBITS (0x00ffffffUL)
+//#define VARNBITS    (0x3fff0000UL)
+//#define SIGNBITS    (0xc0000000UL)
+//#define VARNSHIFT   16
+//#define PRECPSHIFT  16
+//#define PRECPBITS   (0xffff0000UL) /* used only for type PADIC */
+//#define HIGHVALPBIT (0x00008000L)  /* used only for type PADIC, SER */
+//#define VALPBITS    (0x0000ffffUL) /* used only for type PADIC */
+//#define LGEFBITS    (0x0000ffffUL)
+//#define HIGHEXPOBIT (0x00800000L)
+//#define EXPOBITS    (0x00ffffffUL)
+//#define BITS_IN_RANDOM      32
+//#define BITS_IN_HALFULONG   16
+//#define BITS_IN_LONG        32
+//#define BYTES_IN_LONG        4
+//#define TWOPOTBITS_IN_LONG   5
+//#define TWOPOTBYTES_IN_LONG  2
+//#define BIGDEFAULTPREC  8
+//#define MEDDEFAULTPREC  6
+//#define DEFAULTPREC     4
+//#define SMALL_MASK   (0x40000000UL)
+//#define LOWMASK      (0x0000ffffUL)
+//#define HIGHMASK     (0xffff0000UL)
+//#define HIGHBIT      (0x80000000UL)
+//#define MAXHALFULONG (0x0000ffffUL)
+//#define MAXULONG     (0xffffffffUL)
+//#define BITS_IN_RANDOM      32
+//#define BITS_IN_HALFULONG   32
+//#define BITS_IN_LONG        64
+//#define BYTES_IN_LONG        8
+//#define TWOPOTBITS_IN_LONG   6
+//#define TWOPOTBYTES_IN_LONG  3
+//#define BIGDEFAULTPREC  5
+//#define MEDDEFAULTPREC  4
+//#define DEFAULTPREC     3
+//#define SMALL_MASK   (0x4000000000000000UL)
+//#define LOWMASK      (0x00000000ffffffffUL)
+//#define HIGHMASK     (0xffffffff00000000UL)
+//#define HIGHBIT      (0x8000000000000000UL)
+//#define MAXHALFULONG (0x00000000ffffffffUL)
+//#define MAXULONG     (0xffffffffffffffffUL)
+//#define OLD_CODES
+
+module parigen_h
+{
+  requires package "pari";
+  header '#include "parigen.h"';
+  open C_hack;
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef int (*parigen_h_cft_1)(void const *,  void const *);''';
+  type parigen_h_cft_1 = 'parigen_h_cft_1';
+
+  //TYPE ALIASES
+  typedef GEN = ptr[long];
+  typedef QSCOMP = parigen_h_cft_1;
+}

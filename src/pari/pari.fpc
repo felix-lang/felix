@@ -1,0 +1,2 @@
+provides_dlib: -lpari
+provides_slib: -lpari
