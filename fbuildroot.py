@@ -66,7 +66,8 @@ def config_host(build, *,
 
     phase.ocaml = call('fbuild.builders.ocaml.Ocaml',
         ocamlc=ocamlc,
-        ocamlopt=ocamlopt)
+        ocamlopt=ocamlopt,
+        flags=['-w', 'yzex', '-warn-error', 'FDPSU'])
     phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex', ocamllex)
     phase.ocamlyacc = call('fbuild.builders.ocaml.Ocamlyacc', ocamlyacc)
 
