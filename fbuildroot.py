@@ -31,11 +31,29 @@ def pre_options(parser):
 # ------------------------------------------------------------------------------
 
 def make_c_builder(*args, **kwargs):
+    kwargs['platform_options'] = [
+        ({'posix'},
+            {'warnings': ['all', 'fatal-errors'],
+            'flags': ['-fno-common']}),
+        ({'windows'}, {
+            'warnings': ['/wd4291'],
+            'flags': ['/GR', '/MD', '/EHs']}),
+    ]
+
     return Record(
         static=call('fbuild.builders.c.guess_static', *args, **kwargs),
         shared=call('fbuild.builders.c.guess_shared', *args, **kwargs))
 
 def make_cxx_builder(*args, **kwargs):
+    kwargs['platform_options'] = [
+        ({'posix'}, {
+            'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
+            'flags': ['-fno-common']}),
+        ({'windows'}, {
+            'warnings': ['/wd4291'],
+            'flags': ['/GR', '/MD', '/EHs']}),
+    ]
+
     return Record(
         static=call('fbuild.builders.cxx.guess_static', *args, **kwargs),
         shared=call('fbuild.builders.cxx.guess_shared', *args, **kwargs))
