@@ -1,6 +1,3 @@
-@set_title("Extension Experiment")
-@h = tangler('spkgs/sex.py')
-@select(h)
 caml_modules = [
   'src/compiler/sex/sex_types',
   'src/compiler/sex/sex_token',
@@ -16,6 +13,5 @@ caml_provide_lib = 'src/compiler/sex/sexlib'
 caml_require_libs = ['dyplib','ocslib','sexlib']
 pkg_requires = ['ocs','dypgen']
 caml_exes = ['src/compiler/sex/sex']
-iscr_src = ['lpsrc/sex.pak']
 weaver_directory='doc/sex'
 tmpdir = ['sex']
