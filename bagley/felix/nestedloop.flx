@@ -1,0 +1,29 @@
+var x = 0;
+
+var a=0;
+whilst a<n do
+  var b=0;
+  whilst b<n do
+    var c=0;
+    whilst c<n do
+      var d=0;
+      whilst d<n do
+        var e=0;
+        whilst e<n do
+          var f=0;
+          whilst f<n do
+            x++;
+            ++f;
+          done;
+          ++e;
+        done;
+        ++d;
+      done;
+      ++c;
+    done;
+    ++b;
+  done;
+  ++a;
+done;
+
+print x; endl;

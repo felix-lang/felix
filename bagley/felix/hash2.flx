@@ -1,0 +1,28 @@
+include "stl";
+open Stl;
+open Stl::HashMap;
+
+requires ext_string_hash;
+
+var h1 = HashMap::create[string,int]();
+
+var i = 1; until i == 10000 do
+  s := "foo_" + str i;
+  insert (h1, s, i);
+  ++i;
+done;
+
+var h2 = HashMap::create[string,int]();
+
+i=n; until i == 0 do
+  var j = begin h1; until j == end h1 do
+    k, v := deref j;
+    //h2.[k] = h2.[k] + v;
+    h2.[k] += v;
+    ++j;
+  done;
+  --i;
+done;
+
+print h1.["foo_1"]; print " "; print h1.["foo_9999"]; print " " ;
+print h2.["foo_1"]; print " "; print h2.["foo_9999"]; endl;

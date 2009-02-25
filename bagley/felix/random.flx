@@ -1,0 +1,15 @@
+//adapted from Ocaml solution
+im := 139968;
+ia := 3877;
+ic := 29573;
+first_last := 42;
+
+
+fun gen_random (max:double, last:int, i:int):double =>
+  let ?new_last = (last * ia + ic) % im in
+  if i > 1 then gen_random (max, new_last, (i - 1))
+  else max * double_of new_last / double_of im
+  endif
+;
+
+print (gen_random (100.0, first_last, n)); endl;

@@ -1,0 +1,23 @@
+//adapted from C solution
+open Carray;
+
+x := array_calloc[int] n;
+y := array_calloc[int] n;
+
+var i = 0;
+whilst i < n do x.[i] = i + 1; ++i; done;
+
+var k = 0;
+whilst k<1000 do
+  i = n - 1;
+  whilst i >= 0 do
+    y.[i] = y.[i] + x.[i];
+    --i;
+  done;
+  ++k;
+done;
+
+print y.[0]; print " "; print y.[n-1]; endl;
+free x;
+free y;
+

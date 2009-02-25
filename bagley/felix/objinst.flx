@@ -1,0 +1,75 @@
+// Adapted from C++ solution
+
+body """
+class Toggle {
+public:
+    Toggle(bool start_state) : state(start_state) { }
+    virtual ~Toggle() {  }
+    bool value() { return(state); }
+    virtual Toggle* activate() {
+        state = !state;
+        return this;
+    }
+protected:
+    bool state;
+};
+
+class NthToggle : public Toggle {
+public:
+    NthToggle(bool start_state, int max_counter) :
+        Toggle(start_state), count_max(max_counter), counter(0) {
+    }
+    Toggle *activate() {
+        if (++this->counter >= this->count_max) {
+            state = !state;
+            counter = 0;
+        }
+        return this;
+    }
+private:
+    int count_max;
+    int counter;
+};
+""";
+
+header "class Toggle;";
+pod type toggle =  "class Toggle*";
+
+fun new_toggle: bool -> toggle = "new Toggle($1)";
+fun new_ntoggle: bool * int -> toggle = "new NthToggle($1,$2)";
+proc del: toggle = "delete $1;";
+fun value: toggle -> bool = "$1->value()";
+proc activate: toggle = "$1->activate();";
+proc tprint (t: toggle) { print (value t); }
+
+proc check(t: toggle, k:int) {
+  var tt = t;
+  var i=k;
+  until i == 0 do
+    activate tt;
+    tprint tt; endl;
+    --i;
+  done;
+  del t;
+}
+
+check(new_toggle true,5);
+
+{
+  var i = n;
+  until i == 0 do
+    del (new_toggle true);
+    --i;
+  done;
+  endl;
+};
+
+check (new_ntoggle(true, 3), 8);
+
+{
+  var i = n;
+  until i == 0 do
+    del (new_ntoggle (true, 3));
+    --i;
+  done;
+};

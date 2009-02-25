@@ -1,0 +1,213 @@
+// Adapted from C solution
+
+header """
+// a simple Double Linked List
+// the head node is special, it's val is length of list
+struct DLL {
+    int val;
+    struct DLL *next;        /* points to next or head (if at tail) */
+    struct DLL *prev;        /* points to prev or tail (if at head) */
+};
+""";
+
+body """
+inline int len(DLL *head) { return(head->val); }
+inline int empty(DLL *head) { return(len(head) == 0); }
+inline DLL *first(DLL *head) { return(head->next); }
+inline DLL *last(DLL *head) { return(head->prev); }
+
+void push_tail(DLL *head, DLL *item) {
+    DLL *tail = head->prev;
+    tail->next = item;
+    item->next = head;
+    head->prev = item;
+    item->prev = tail;
+    head->val++;
+}
+
+DLL *pop_tail(DLL *head) {
+    DLL *prev, *tail;
+    if (empty(head)) return(NULL);
+    tail = head->prev;
+    prev = tail->prev;
+    prev->next = head;
+    head->prev = prev;
+    head->val--;
+    return(tail);
+}
+
+void push_head(DLL *head, DLL *item) {
+    DLL *next = head->next;
+    head->next = item;
+    next->prev = item;
+    item->next = next;
+    item->prev = head;
+    head->val++;
+}
+
+DLL *pop_head(DLL *head) {
+    DLL *next;
+    if (empty(head)) return(NULL);
+    next = head->next;
+    head->next = next->next;
+    next->next->prev = head;
+    head->val--;
+    return(next);
+}
+
+int list_equal(DLL *x, DLL *y) {
+    DLL *xp, *yp;
+    // first val's checked will be list lengths
+    for (xp=x, yp=y; xp->next != x; xp=xp->next, yp=yp->next) {
+        if (xp->val != yp->val) return(0);
+    }
+    if (xp->val != yp->val) return(0);
+    return(yp->next == y);
+}
+
+DLL *list_new() {
+    DLL *l = (DLL *)malloc(sizeof(DLL));
+    l->next = l;
+    l->prev = l;
+    l->val = 0;
+    return(l);
+}
+
+/* inclusive sequence 'from' <-> 'to' */
+DLL *list_sequence(int from, int to) {
+    int size, tmp, i, j;
+    DLL *l;
+    if (from > to) {
+        tmp = from; from = to; to = tmp;
+    }
+    size = to - from + 1;
+    l = (DLL *)malloc((size+1) * sizeof(DLL));
+    from--;
+    for (i=0, j=1; i<size; ++i, ++j) {
+        l[i].next = &l[i+1];
+        l[j].prev = &l[j-1];
+        l[i].val = from++;
+    }
+    l[0].prev = &l[size];
+    l[size].next = &l[0];
+    l[size].prev = &l[size-1];
+    l[size].val = from;
+    l[0].val = size;
+    return(l);
+}
+
+DLL *copy(DLL *x) {
+    int i, j, size = len(x);
+    DLL *xp, *l = (DLL *)malloc((size+1) * sizeof(DLL));
+    for (i=0, j=1, xp=x; i<size; i++, j++, xp=xp->next) {
+        l[i].next = &l[j];
+        l[j].prev = &l[i];
+        l[i].val = xp->val;
+    }
+    l[0].prev = &l[size];
+    l[size].next = &l[0];
+    l[size].val = last(x)->val;
+    return(l);
+}
+
+void rev (DLL *head) {
+    DLL *tmp, *p = head;
+    do {
+        tmp = p->next;
+        p->next = p->prev;
+        p->prev = tmp;
+        p = tmp;
+    } while (p != head);
+}
+""";
+
+type DLL_head = "DLL*";
+type DLL_item = "DLL*";
+
+fun get: DLL_item -> int = "$1->val";
+
+fun len: DLL_head -> int;
+fun empty: DLL_head -> bool;
+
+fun non_empty(x:DLL_head)=> not (empty x);
+
+fun first: DLL_head -> DLL_item;
+fun last: DLL_head -> DLL_item;
+
+proc push_tail: DLL_head * DLL_item;
+fun pop_tail: DLL_head -> DLL_item;
+proc push_head: DLL_head * DLL_item;
+
+fun pop_head: DLL_head -> DLL_item;
+fun eq: DLL_head * DLL_head -> bool = "list_equal($1,$2)";
+fun ne (x:DLL_head,y:DLL_head) => not (x == y);
+
+fun list_new: unit -> DLL_head;
+
+/* inclusive sequence 'from' <-> 'to' */
+fun list_sequence: int * int -> DLL_head;
+fun copy: DLL_head -> DLL_head;
+
+proc rev: DLL_head;
+proc free: DLL_head = "std::free($1);";
+
+proc check(cond:bool) (msg:string) {
+  open System;
+  open Text_file;
+  if cond goto endoff;
+  writeln (stderr,msg);
+  exit 1;
+endoff:>
+}
+
+SIZE:=10000;
+
+
+var result: int;
+proc test_lists() {
+    var li1 = list_sequence(1, SIZE);
+    var li2 = copy(li1);
+    var x : DLL_item;
+    check (li2 == li1) "li2 and li1 are not equal";
+
+    // remove each individual item from left side of li2 and
+    // append to right side of li3 (preserving order)
+    var li3 = list_new();
+    whilst non_empty li2 do
+        x = pop_head li2;
+        push_tail(li3, x);
+    done;
+
+    check (empty li2) "li2 should be empty now";
+
+    // remove each individual item from right side of li3 and
+    // append to right side of li2 (reversing list)
+    whilst non_empty li3 do
+        x = pop_tail li3;
+        push_tail(li2, x);
+    done;
+
+    check (empty li3) "li3 should be empty now";
+
+    // reverse li1 in place
+    rev li1;
+
+    check (get (first li1) == SIZE) "li1 first value wrong";
+    check (get (last li1) == 1) "last value wrong";
+
+    check (get (first li2) == SIZE) "li2 first value wrong";
+    check (get (last li2) == 1) "li2 last value wrong";
+    check (len li1 == SIZE) "li1 size wrong";
+
+    // compare li1 and li2 for equality
+    check (li1 == li2) "li1 and li2 are not equal";
+
+    result = len li1;
+    free li1;
+    free li2;
+    free li3;
+}
+
+var i = n;
+until i == 0 do test_lists; --i; done;
+print result; endl;

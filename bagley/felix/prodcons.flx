@@ -1,0 +1,24 @@
+var produced = 0;
+var consumed = 0;
+
+proc consumer() {
+  until consumed == n do
+    var x:int; &x <- read;
+    ++consumed;
+  done;
+}
+
+proc producer() {
+  var i = 1;
+  until produced == n do
+    ++produced;
+    send[int] (&con) i;
+    ++i;
+  done;
+}
+
+var con = start the consumer;
+var prod= start the producer;
+run prod;
+
+print produced; print " "; print consumed; endl;

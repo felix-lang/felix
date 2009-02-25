@@ -1,0 +1,18 @@
+// Adapted from C++ solution
+
+var str = "";
+var capacity = 31;
+reserve(str,capacity); // as per C-string
+var newLength = 6;
+var i = n;
+until i == 0 do
+  if newLength > capacity do
+    capacity *= 2;
+    reserve(str,capacity);
+  done;
+  str += c"hello\n";
+  newLength += 6;
+  --i;
+done;
+
+print (len str); endl;

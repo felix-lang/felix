@@ -1,0 +1,18 @@
+open List;
+open Text_file;
+
+var x = Empty[string];
+var s = readln stdin;
+until s == "" do
+  x = Cons (s,x);
+  s = readln stdin;
+done;
+
+proc plist(x:list[string]){
+  match x with
+  | Cons (?s,?t) => { print s; plist t; }
+  |  _ => {}
+  endmatch;
+};
+
+plist x;

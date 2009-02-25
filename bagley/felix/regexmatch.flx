@@ -1,0 +1,97 @@
+/*
+This GREATLY decreases the performance for this test -- which would otherwise
+blow PCRE out of the water
+
+Note: the actual result data given on the Alioth site is WRONG and so are the
+regexp encodings given by every language that passes this test.  The following
+entry:
+
+foo (213 222-2222 bar
+
+actually meets the specified conditions but is listed as a mismatch. You can
+see how the other languages cheated -- for example the gcc encoding goes ..
+
+"(?:^|[^\\d\\(])"  	/* must be preceeded by non-digit */
+             ^ since when is ( a digit?
+*/
+
+
+open Lexer;
+
+regexp digit = ["0123456789"];
+regexp digits3 = digit digit digit;
+regexp digits4 =  digits3 digit;
+
+regexp area_code = digits3 | "(" digits3 ")";
+regexp exchange = digits3;
+
+regexp phone = area_code " " exchange (" " | "-") digits4;
+
+// Felix, like Python, provides no literals of char type
+zero := ord("0".[0]);
+nine := ord("9".[0]);
+
+// Felix regular matching currently only supports
+// actual regular sets of strings -- it does not support
+// lookback or lookahead because they're not regular
+//
+// So we have to hand code the context check.
+//
+fun check_context(start: iterator, finish: iterator): string =
+{
+  prior :=  ord(deref(start-1));
+  next := ord(deref(finish));
+  return
+    if zero <= prior &<= nine
+    or zero <= next &<= nine
+    then ""
+    else string_between(start, finish)
+    endif
+  ;
+}
+
+// this is the actual lexer function
+fun lexit (start:iterator, finish:iterator): iterator * string =>
+  reglex start to finish with
+  | phone => check_context (lexeme_start, lexeme_end)
+  | _ => ""
+  endmatch
+;
+
+// hack so context_check won't crash (pre- and append space)
+var data = " " + Text_file::load(Text_file::stdin)+" ";
+first := Lexer::start_iterator data;
+finish := Lexer::end_iterator data;
+
+
+var i=n;
+var current: iterator;
+var s: string;
+whilst i>1 do
+  current = first;
+  until current == finish do
+    current, s = lexit(current, finish);
+  done;
+  --i;
+done;
+
+proc print_phone(x:string, j:int) {
+  n := len x;
+  var s = "";
+  var i = 0;
+  whilst i<n do
+    if zero <= ord(x.[i]) &<= nine do
+      s = s + ord(x.[i]);
+    done;
+    ++i;
+  done;
+  print j; print ": ";
+  print ("("+s.[0 to 3]+") "+s.[3 to 6]+"-"+s.[6 to 10]); endl;
+}
+
+current = first;
+var j = 0;
+until current == finish do
+ current, s = lexit(current, finish);
+ if s != "" do  ++j; print_phone (s,j); done;
+done;

@@ -1,0 +1,42 @@
+// data structure for communication with plugin
+struct plugin_com_t
+{
+  input_line: string;
+  string_pos:int;
+  decoded_num:int;
+  success:bool;
+};
+
+
+val zero = '0'.[0];
+val nine = '9'.[0];
+val space = ' '.[0];
+val leadin = 'i'.[0];
+
+proc plugin (p:address) {
+  var q = C_hack::cast[C_hack::ptr[plugin_com_t]] p;
+  val r = C_hack::deref q;
+  var k = r.string_pos;
+  var acc = 0;
+  whilst r.input_line.[k] == space do ++k; done;
+  if r.input_line.[k] == leadin do
+    ++k;
+    whilst r.input_line.[k] == space do ++k; done;
+    if ord zero <= ord r.input_line.[k] &<= ord nine do
+      whilst ord zero <= ord r.input_line.[k] &<= ord nine do
+        acc += acc * 10 + (ord r.input_line.[k] - ord zero);
+        ++k;
+      done;
+      r.success = true;
+      r.decoded_num = acc;
+      r.string_pos = k;
+    else
+      r.success = false;
+    done;
+  else
+    r.success = false;
+  done;
+  C_hack::deref q = r;
+}
+
+export fun plugin of (address) as "plugin";

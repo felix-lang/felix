@@ -1,0 +1,28 @@
+include "stl";
+open Stl;
+open Stl::HashSet;
+open Text_file;
+
+requires ext_string_hash;
+
+var prefix = Env::getenv "DICT_DIR";
+if prefix == "" do prefix = "./"; done;
+
+
+var dict = HashSet::create[string]();
+val dfile = prefix + "Usr.Dict.Words";
+var f = fopen_input dfile;
+if not (valid f) do
+  print ("Cannot Open Dictionary file '" + dfile +"'"); endl;
+  System::exit 1;
+done;
+
+var word = readln f;
+until word == "" do insert (dict,word); word = readln f; done;
+fclose f;
+
+word = readln stdin;
+until word == "" do
+  if not (mem (dict,word)) do print word; done;
+  word = readln stdin;
+done;
