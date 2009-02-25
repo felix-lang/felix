@@ -1,7 +1,3 @@
-@head(1,'OCS')
-
-@h = tangler('spkgs/ocs.py')
-@select(h)
 caml_modules = [
   'src/compiler/ocs/ocs_vartable',
   'src/compiler/ocs/ocs_error',
@@ -33,7 +29,6 @@ caml_modules = [
 caml_provide_lib = 'src/compiler/ocs/ocslib'
 caml_require_libs = ['nums','unix','ocslib']
 caml_exes = ['src/compiler/ocs/ocs_main']
-iscr_src= ['lpsrc/ocs.pak']
 weaver_directory='doc/ocs'
 pkg_requires = []
 tmpdir = ['ocs']
