@@ -39,8 +39,8 @@ using namespace std;
   #elif FLX_MACOSX
     // this should never have worked. dylibs can't be programmatically
     // loaded. perhaps 10.3 and above removed the bundle/dylib distinction.
-    // #define FLX_LIB_EXTENSION ".dylib"
-    #define FLX_LIB_EXTENSION ".so"
+     #define FLX_LIB_EXTENSION ".dylib"
+    //#define FLX_LIB_EXTENSION ".so"
   #else
     #define FLX_LIB_EXTENSION ".so"
   #endif
