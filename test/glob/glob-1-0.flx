@@ -12,7 +12,7 @@ open Reversible_Sequence[
 ];
 
 var p = begin files; whilst p != end files do
-  basename := (*p).[4 to];
+  basename := (*p).[10 to];
   if basename == "std.flx" do print "true"; endl; done;
   ++p;
 done;
