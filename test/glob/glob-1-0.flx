@@ -2,7 +2,8 @@
 include "stl";
 include "glob";
 
-var files = glob::glob("lib/*.flx");
+// THIS IS A HACK!
+var files = glob::glob("build/lib/*.flx");
 open Reversible_Sequence[
   Stl::Vector::stl_vector[string],
   Stl::Vector::stl_vector_iterator[string],
