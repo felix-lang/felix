@@ -1,4 +1,5 @@
 import difflib
+from itertools import chain
 
 import fbuild
 import fbuild.db
@@ -90,6 +91,7 @@ class Builder(fbuild.db.PersistentObject):
             cflags=[],
             libs=[],
             lflags=[],
+            objects=[],
             buildroot=fbuild.buildroot):
         src = Path(src)
 
@@ -103,18 +105,18 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=buildroot,
             flags=cflags)
 
-        return linker(dst, [obj],
+        return linker(dst, list(chain(objects, [obj])),
             libs=libs,
             flags=lflags,
             buildroot=buildroot)
 
-    def link_exe(self, *args, async=True, macros=[], libs=[], **kwargs):
+    def link_exe(self, *args, async=True, macros=[], objects=[], **kwargs):
         macros = macros + ['FLX_STATIC_LINK']
-        libs = libs + [self.flx_arun_lib if async else self.flx_run_lib]
+        objs = objects + [self.flx_arun_lib if async else self.flx_run_lib]
 
         return self._link(self.cxx.link_exe, *args,
             macros=macros,
-            libs=libs,
+            objects=objs,
             **kwargs)
 
     def link_lib(self, *args, **kwargs):
