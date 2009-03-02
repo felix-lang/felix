@@ -401,25 +401,16 @@ def _print_cxx_bugs(lang, p):
         p('HAVE_INCLASS_MEMBER_INITIALIZATION', test)
 
 def _print_gcc_extensions(lang, p):
-    try:
-        gcc = call('fbuild.builders.c.gcc.config_extensions',
-            lang.static)
-    except ConfigFailed:
-        gcc = {}
+    gcc = call('fbuild.config.c.gnu.extensions',         lang.static)
 
-    try:
-        gxx = call('fbuild.builders.cxx.gxx.config_extensions',
-            lang.static)
-    except ConfigFailed:
-        gxx = {}
-
-    have_gnu_x86 = not gcc.get('named_registers_x86_64') and \
-            gcc.get('named_registers_x86')
+    have_gnu_x86 = gcc.named_registers_x86 and not gcc.named_registers_x86_64
 
     p('HAVE_GNU_X86',            have_gnu_x86)
-    p('HAVE_GNU_X86_64',         gcc.get('named_registers_x86_64'))
-    p('HAVE_CGOTO',              gcc.get('computed_gotos'))
-    p('HAVE_ASM_LABELS',         gcc.get('asm_labels'))
-    p('HAVE_GNU_BUILTIN_EXPECT', gcc.get('builtin_expect'))
+    p('HAVE_GNU_X86_64',         gcc.named_registers_x86_64)
+    p('HAVE_CGOTO',              gcc.computed_gotos)
+    p('HAVE_ASM_LABELS',         gcc.asm_labels)
+    p('HAVE_GNU_BUILTIN_EXPECT', bool(gcc.builtin_expect))
     p('USE_REGPARM3',            have_gnu_x86)
-    p('HAVE_STL_GNU_CXX',        gxx.get('headers', {}).get('hash_map'))
+
+    hash_map = call('fbuild.config.cxx.gnu.gcc_cxx_hash_map', lang.static)
+    p('HAVE_STL_GNU_CXX', hash_map.header)
