@@ -36,6 +36,9 @@ class Iscr(fbuild.db.PersistentObject):
             '--nocache',
         ]
 
+        if 'windows' in fbuild.builders.platform.platform():
+            cmd.insert(0, 'c:\python26\python.exe')
+
         if break_on_error:
             cmd.append('--break-on-error')
         cmd.extend(flags)
