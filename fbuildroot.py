@@ -36,8 +36,7 @@ def make_c_builder(*args, **kwargs):
             {'warnings': ['all', 'fatal-errors'],
             'flags': ['-fno-common']}),
         ({'windows'}, {
-            'warnings': ['/wd4291'],
-            'flags': ['/GR', '/MD', '/EHs']}),
+            'flags': ['/GR', '/MD', '/EHs', '/wd4291']}),
     ]
 
     return Record(
@@ -50,8 +49,7 @@ def make_cxx_builder(*args, **kwargs):
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
             'flags': ['-fno-common']}),
         ({'windows'}, {
-            'warnings': ['/wd4291'],
-            'flags': ['/GR', '/MD', '/EHs']}),
+            'flags': ['/GR', '/MD', '/EHs', '/wd4291']}),
     ]
 
     return Record(

@@ -177,7 +177,6 @@ def build_flx_pkgconfig(flx, phase):
         includes=[fbuild.buildroot / 'lib'],
         cxx_includes=['src/flx_pkgconfig', fbuild.buildroot / 'lib/rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', phase).static],
-        cxx_cflags=['-Wno-invalid-offsetof'],
     )
 
 # ------------------------------------------------------------------------------
