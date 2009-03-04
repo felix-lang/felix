@@ -119,7 +119,7 @@ def build_exe(phase):
         'src/elkhound/elk_gramanl.cxx',
     )
 
-    return phase.cxx.shared.build_exe(
+    return phase.cxx.static.build_exe(
         dst=fbuild.buildroot / 'bin/flx_elkhound',
         srcs=srcs,
         includes=[
@@ -129,5 +129,5 @@ def build_exe(phase):
             'src/ast',
         ],
         libs=[call(build_runtime, phase, host=True).static],
-        macros=['HOST_BUILD'],
+        macros=['HOST_BUILD', 'FLX_STATIC_LINK'],
     )
