@@ -17,13 +17,15 @@ def build_runtime(phase):
     dst = fbuild.buildroot / 'lib/rtl/tre'
     srcs = Path.glob('src/tre/*.c')
     includes = [fbuild.buildroot / 'config/target']
+    macros = ['BUILD_TRE']
 
     return Record(
         static=phase.c.static.build_lib(dst + '_static', srcs,
             includes=includes,
-            macros=['FLX_STATIC_LINK']),
+            macros=macros + ['FLX_STATIC_LINK']),
         shared=phase.c.shared.build_lib(dst + '_dynamic', srcs,
-            includes=includes))
+            includes=includes,
+            macros=macros))
 
 def build_flx(builder):
     return buildsystem.copy_flxs_to_lib(Path('src/tre/*.flx').glob())
