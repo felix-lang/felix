@@ -37,6 +37,22 @@ let split_unix f =
   if is_dir_sep f 0 then dir_sep :: fs else fs
 let unix2native f = fcat (split_unix f)
 
+let is_abs : string -> bool = match Sys.os_type with
+  | "Win32" -> 
+    (fun s ->
+      let n = String.length s in
+      if n = 0 then false else
+      if s.[0] = '\\' then true else
+      if n > 2 then (s.[1]=':') && (s.[2]='\\') else
+      false
+    )
+  | _ ->
+    (fun s ->
+      let n = String.length s in
+      if n = 0 then false else
+      s.[0] = '/' 
+    )
+
 let find_file_in_path incdirs f =
   let f = unix2native f in
   try
@@ -55,7 +71,7 @@ let find_file lookup incdirs f =
   if String.length f = 0
   then failwith "Empty include file name"
   ;
-  if f.[0] = '/' || not lookup then unix2native f
+  if is_abs f || not lookup then unix2native f
   else find_file_in_path incdirs f
 
 let filetime f =
