@@ -177,7 +177,6 @@ def build():
 
     call('buildsystem.elk.build_exe', host)
     call('buildsystem.elk.build_runtime', target)
-    call('buildsystem.flx_async.build_runtime', target)
     call('buildsystem.flx_glob.build_runtime', target)
     call('buildsystem.tre.build_runtime', target)
 
