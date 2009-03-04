@@ -189,7 +189,7 @@ def build():
     # now, try building a file
 
     felix = call('fbuild.builders.felix.Felix',
-        exe=fbuild.buildroot / 'bin/flx',
+        exe=fbuild.buildroot / 'bin/flx.py',
         flags=['--test=' + fbuild.buildroot])
 
     from buildsystem.flx import test_flxs
