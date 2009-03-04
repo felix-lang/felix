@@ -131,9 +131,9 @@ Description: Event handling
 Version: $Id$
 
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libdemux_dynamic")
+   tangle("provides_dlib: /DEFAULTLIB:demux_dynamic")
    tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
-   tangle("provides_slib: /DEFAULTLIB:libdemux_static")
+   tangle("provides_slib: /DEFAULTLIB:demux_static")
    tangle("requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
  elif config.WIN32:
    tangle("provides_dlib: -ldemux_dynamic")

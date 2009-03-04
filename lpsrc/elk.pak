@@ -162,8 +162,8 @@ Name: elk
 Description: Elhound
 Version: 1
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libelk_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libelk_static")
+   tangle("provides_dlib: /DEFAULTLIB:elk_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:elk_static")
  else:
    tangle("provides_dlib: -lelk_dynamic")
    tangle("provides_slib: -lelk_static")

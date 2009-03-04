@@ -46,8 +46,8 @@ unit_tests = [('test', 'tre', 'tre-*.flx')]
 @select(h)
 
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libtre_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libtre_static")
+   tangle("provides_dlib: /DEFAULTLIB:tre_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:tre_static")
  else:
    tangle("provides_dlib: -ltre_dynamic")
    tangle("provides_slib: -ltre_static")

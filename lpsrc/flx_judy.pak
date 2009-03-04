@@ -91,8 +91,8 @@ unit_tests = [('test', 'judy', 'judy-*.flx')]
 @head(1,'Judy run time library')
 @select(tangler('config/flx_judy.fpc'))
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libflx_judy_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libflx_judy_static")
+   tangle("provides_dlib: /DEFAULTLIB:flx_judy_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_judy_static")
  else:
    tangle("provides_dlib: -lflx_judy_dynamic")
    tangle("provides_slib: -lflx_judy_static")

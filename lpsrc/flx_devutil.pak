@@ -660,8 +660,8 @@ print
 print "@head(1,'Judy run time library')"
 print "@select(tangler('config/flx_judy.fpc'))"
 print '@if HAVE_MSVC:'
-print '   tangle("provides_dlib: /DEFAULTLIB:libflx_judy_dynamic")'
-print '   tangle("provides_slib: /DEFAULTLIB:libflx_judy_static")'
+print '   tangle("provides_dlib: /DEFAULTLIB:flx_judy_dynamic")'
+print '   tangle("provides_slib: /DEFAULTLIB:flx_judy_static")'
 print ' else:'
 print '   tangle("provides_dlib: -lflx_judy_dynamic")'
 print '   tangle("provides_slib: -lflx_judy_static")'

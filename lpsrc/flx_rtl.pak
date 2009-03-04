@@ -125,8 +125,8 @@ iscr_source = ['lpsrc/flx_rtl.pak']
 Name: flx
 Description: Felix exceptions
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libflx_exceptions_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libflx_exceptions_static")
+   tangle("provides_dlib: /DEFAULTLIB:flx_exceptions_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_exceptions_static")
  else:
    tangle("provides_dlib: -lflx_exceptions_dynamic")
    tangle("provides_slib: -lflx_exceptions_static")
@@ -138,8 +138,8 @@ Name: flx
 Description: Felix core runtime support
 Version: $Id$
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libflx_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libflx_static")
+   tangle("provides_dlib: /DEFAULTLIB:flx_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_static")
  else:
    tangle("provides_dlib: -lflx_dynamic")
    tangle("provides_slib: -lflx_static")
@@ -166,8 +166,8 @@ Name: flx_async
 Description: Async hook
 Version: $Id$
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libflx_async_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libflx_async_static")
+   tangle("provides_dlib: /DEFAULTLIB:flx_async_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_async_static")
  else:
    tangle("provides_dlib: -lflx_async_dynamic")
    tangle("provides_slib: -lflx_async_static")

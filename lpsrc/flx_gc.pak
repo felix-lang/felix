@@ -71,8 +71,8 @@ Name: flx_gc
 Description: Felix default garbage collector
 Version: $Id$
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libflx_gc_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libflx_gc_static")
+   tangle("provides_dlib: /DEFAULTLIB:flx_gc_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_gc_static")
  else:
    tangle("provides_dlib: -lflx_gc_dynamic")
    tangle("provides_slib: -lflx_gc_static")

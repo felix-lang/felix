@@ -9,8 +9,8 @@ Name: faio
 Description: Asynchronous I/O support
 Version: $Id$
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libfaio_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libfaio_static")
+   tangle("provides_dlib: /DEFAULTLIB:faio_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:faio_static")
    tangle('includes: "faio_winio.hpp"')
  else:
    tangle("provides_dlib: -lfaio_dynamic")

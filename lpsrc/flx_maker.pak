@@ -1341,7 +1341,7 @@ cl /nologo /MD /c /EHs /w  /I"%FID%\LIB\RTL" /I"%FID%\config\target" @%1_cflags.
 if ERRORLEVEL 1 GOTO ERROR
 %FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:provides_dlib --field:requires_dlibs @%1.resh >%1_linkflags.txt
 if ERRORLEVEL 1 GOTO ERROR
-link /dll %1.obj /OUT:%1.dll @%1_linkflags.txt /LIBPATH:"%FID%\BIN" /DEFAULTLIB:libflx_dynamic >"%1.LOG"
+link /dll %1.obj /OUT:%1.dll @%1_linkflags.txt /LIBPATH:"%FID%\BIN" /DEFAULTLIB:flx_dynamic >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 del %1.exp
 del %1.lib
@@ -1356,7 +1356,7 @@ if ERRORLEVEL 1 GOTO ERROR
 cl /nologo /MT /c /EHs /w  /I"%FID%\LIB\RTL" /I"%FID%\config\target" /DFLX_STATIC_LINK @%1_cflags.txt %1.cpp /Fo%1.obj >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 %FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:provides_slib --field:requires_slibs @%1.resh >%1_linkflags.txt
-link "%FID%\rtl\flx_arun_static.obj" %1.obj /OUT:%1.exe @%1_linkflags.txt /LIBPATH:"%FID%\RTL" /DEFAULTLIB:libflx_async_static /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_pthread_static /DEFAULTLIB:libflx_static >"%1.LOG"
+link "%FID%\rtl\flx_arun_static.obj" %1.obj /OUT:%1.exe @%1_linkflags.txt /LIBPATH:"%FID%\RTL" /DEFAULTLIB:flx_async_static /DEFAULTLIB:faio_static /DEFAULTLIB:demux_static /DEFAULTLIB:flx_pthread_static /DEFAULTLIB:flx_static >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 del %1_cflags.txt
 del %1_linkflags.txt

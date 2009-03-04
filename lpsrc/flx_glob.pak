@@ -9,8 +9,8 @@ Description: Directory Serivces
 Version: $Id$
 
 @if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:libflx_glob_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:libflx_glob_static")
+   tangle("provides_dlib: /DEFAULTLIB:flx_glob_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_glob_static")
  elif config.WIN32:
    tangle("provides_dlib: -lflx_glob_dynamic")
    tangle("provides_slib: -lflx_glob_static")
