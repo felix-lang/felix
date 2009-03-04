@@ -182,12 +182,10 @@ def _print_compiler(lang, platform, p):
         p('SPEC_OBJ_FILENAME', '/Fo')
         p('SPEC_EXE_FILENAME', '/Fe')
 
-        p('CCOBJ_STATIC_FLX',  str(static.compiler.cl.exe) + ' /MD /c /EHs')
-        p('CCOBJ_DYNAMIC_FLX', str(shared.compiler.cl.exe) + ' /MD /LD')
-        p('CCLINK_STATIC',     str(static.compiler.cl.exe) + ' /MD')
-
-        p('CCLINK_DYNAMIC_FLX', ' '.join(
-            chain([shared.lib_linker.exe], shared.lib_linker.flags)))
+        p('CCOBJ_STATIC_FLX',   str(static.compiler.cl.exe) + ' /MD /c /EHs')
+        p('CCOBJ_DYNAMIC_FLX',  str(shared.compiler.cl.exe) + ' /MD /c /EHs')
+        p('CCLINK_STATIC',      str(static.compiler.cl.exe) + ' /MD')
+        p('CCLINK_DYNAMIC_FLX', str(shared.compiler.cl.exe) + ' /MD /LD')
     else:
         p('SPEC_OBJ_FILENAME', '-o ')
         p('SPEC_EXE_FILENAME', '-o ')
