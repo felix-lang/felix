@@ -1434,6 +1434,7 @@ NOSTDLIB=0
 STDOUT=""
 STDIMPORT="--import=flx.flxh"
 IMPORTS=""
+OUTPUT_DIR=""
 
 def splitext(p):
   if p[-5:-1] == ".flx":
@@ -1526,6 +1527,9 @@ while grab == 1 and argno<len(sys.argv):
   elif arg == "--time":
     TIME=1
 
+  elif prefix(arg,"--output_dir="):
+    OUTPUT_DIR=arg
+
   elif arg == "--help":
     os.system("man -M "+FLX_INSTALL_DIR+os.sep+"man"+" flx")
     sys.exit(0)
@@ -1572,8 +1576,8 @@ if NOOPTIMISE == 0:
   CCFLAGS=CCFLAGS+" " + OPTIMISE
 
 @if config.HAVE_MSVC:
-  tangle('DLINK_STRING="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\bin "')
-  tangle('SLINK_STRING="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\bin "')
+  tangle('DLINK_STRING="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
+  tangle('SLINK_STRING="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
  elif config.CYGWIN or config.WIN32:
   tangle('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin "')
   tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
@@ -1591,19 +1595,19 @@ if ECHO == 1:
 CONFIG_DIR = os.path.join(FLX_INSTALL_DIR,'config')
 
 # find external header files
-PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+FLX_INSTALL_DIR+"/config --field=cflags "
+PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=cflags "
 
 # external header files
-PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+FLX_INSTALL_DIR+"/config --field=includes "
+PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=includes "
 
 # find external dynload libraries
-PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+FLX_INSTALL_DIR+"/config --field=provides_dlib --field=requires_dlibs "
+PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs "
 
 # find external static libraries
-PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+FLX_INSTALL_DIR+"/config --field=provides_slib --field=requires_slibs "
+PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs "
 
 #find driver package required
-PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+FLX_INSTALL_DIR+"/config --field=flx_requires_driver "
+PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver "
 
 # make a list of any *.cpp files (or other g++ options ..)
 
@@ -1615,6 +1619,13 @@ else:
 # Strip trailing .flx or .so
 # users should type 'flx file' without extension,
 # but #! interpreter always passes extension ..
+
+if path.endswith('.flx'):
+  base = path[:-4]
+elif path.endswith('.so'):
+  base = path[:-3]
+else:
+  base = path
 
 # Find absolute pathname
 
@@ -1646,7 +1657,7 @@ def get_stdout(x,outit=None):
 def xqt(cmd,dflt=None):
   if ECHO == 1: print cmd
   result,output = get_stdout(cmd)
-  if result == None:
+  if not result:
      output=output[0][:-1] # first line excluding newline
      if ECHO==1:print "output="+output
      return output
@@ -1659,37 +1670,38 @@ def calpackages ():
   # find all include directories
   global INCLUDE_DIRS, INCLUDE_FILES, LINK_STRING, DRIVER
 
-  x = xqt(PKGCONFIG_CFLAGS+ " @"+path+".resh")
+  # find all include directories
+  x = xqt(PKGCONFIG_CFLAGS+ " @"+base+".resh")
   INCLUDE_DIRS=INCLUDE_DIRS +" " + x
 
-  x = xqt(PKGCONFIG_INCLUDES+ " @"+path+".resh")
+  # find all include files
+  x = xqt(PKGCONFIG_INCLUDES+ " @"+base+".resh")
   INCLUDE_FILES=INCLUDE_FILES +" " + x
 
-
   # find the driver package
-  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+path+".resh")
+  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+base+".resh")
   if DRIVER_PKG == "":
     DRIVER_PKG="flx_run"
 
   # find the driver entity
   if STATIC == 0:
     # dynamic linkage: the driver executable
-    DRIVER=FLX_INSTALL_DIR+"/bin/"+DRIVER_PKG+EXT_EXE
+    DRIVER=os.path.join(FLX_INSTALL_DIR,"bin",DRIVER_PKG+EXT_EXE)
   else:
     # static linkage: the driver object file
-    DRIVER=FLX_INSTALL_DIR+"/lib/rtl/"+DRIVER_PKG+EXT_STATIC_OBJ
+    DRIVER=os.path.join(FLX_INSTALL_DIR,"lib","rtl",DRIVER_PKG+EXT_STATIC_OBJ)
 
   if STATIC == 0:
     # dynamic linkage: all the libraries required by the application
     LINK_STRING=DLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_DLIBS+" @"+path+".resh")
+      PKGCONFIG_DLIBS+" @"+base+".resh")
   else:
     # static linkage: all the libraries required by the application and driver
     LINK_STRING=SLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+path+".resh")
+      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+base+".resh")
 
   if ECHO == 1:
-    print "#RESOURCE FILE="+path+".resh"
+    print "#RESOURCE FILE="+base+".resh"
     print "#INCLUDE_DIRS="+INCLUDE_DIRS
     print "#INCLUDE_FILES="+INCLUDE_FILES
     print "#DRIVER="+DRIVER
@@ -1706,20 +1718,24 @@ def write_include_file(path):
 grab=1
 args=' '.join(sys.argv[argno:])
 
-INCLUDE_DIR="-I"+FLX_INSTALL_DIR+"/lib/rtl" + " -I"+FLX_INSTALL_DIR+"/config/target"
-FLXLIB="-I"+FLX_INSTALL_DIR+"/lib"
+INCLUDE_DIR="-I"+os.path.join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+os.path.join(FLX_INSTALL_DIR,"config","target")
+FLXLIB="-I"+os.path.join(FLX_INSTALL_DIR,"lib")
 STDLIB="std"
 if NOSTDLIB == 1:
   FLXLIB=""
   STDLIB=""
 
-FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg"
-# the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-if MACOSX == 1:
-  FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH "
+if WIN32:
+  FLXG=os.path.join(FLX_INSTALL_DIR, 'bin', 'flxg')
+  FLXRUN=''
 else:
-  FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH "
-ELKHOUND="--elkhound="+FLX_INSTALL_DIR+"/bin/flx_elkhound"
+  FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg"
+  # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+  if MACOSX == 1:
+    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH "
+  else:
+    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH "
+ELKHOUND="--elkhound="+os.path.join(FLX_INSTALL_DIR,"bin","flx_elkhound")
 
 DEBUGSWITCH=""
 if DEBUG == 1: DEBUGSWITCH=" --debug"
@@ -1737,13 +1753,13 @@ def filetime(f):
 if RECOMPILE == 0 and RUNIT == 1:
   # not (--force or -c)
   if STATIC == 0:
-    if (filetime(path+EXT_SHLIB) > filetime (path+".flx")):
+    if (filetime(base+EXT_SHLIB) > filetime (base+".flx")):
       calpackages()
-      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ path+EXT_SHLIB+" "+args
+      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ base+EXT_SHLIB+" "+args
       sys.exit(system(cmd))
   else:
-    if (filetime(path+EXT_EXE) > filetime(path+".flx")):
-      cmd=STATIC_ENV+" "+path+" "+args
+    if (filetime(base+EXT_EXE) > filetime(base+".flx")):
+      cmd=STATIC_ENV+" "+base+" "+args
       sys.exit(system(cmd))
 
 # Need Felix and c++ compile, then run it
@@ -1754,7 +1770,7 @@ if DEBUG == 1:
 else:
   VERBOSE="-q"
 
-FLXFLAGS="--inline="+str(INLINE)
+FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR)
 
 result = 0
 
@@ -1764,20 +1780,20 @@ if STATIC == 0:
       FLXG,
       VERBOSE, FLXFLAGS, ELKHOUND, FLXLIB,
       INCLUDE_DIRS, STDIMPORT, IMPORTS,
-      STDLIB, path])
+      STDLIB, base])
     result=system(FCMD)
     if result != 0: sys.exit(0!=result)
     calpackages()
-    write_include_file(path)
+    write_include_file(base)
     CCMD=' '.join([
       CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
       INCLUDE_DIR, INCLUDE_DIRS, MACROS,
-      cpps, path+".cpp",
-      SPEC_OBJ_FILENAME+path+EXT_OBJ])
+      cpps, base+".cpp",
+      SPEC_OBJ_FILENAME+base+EXT_OBJ])
     LCMD=' '.join([
       CCLINK_DLLIB, CCFLAGS,
-      cppos, path+EXT_OBJ,
-      SPEC_EXE_FILENAME+path+EXT_SHLIB,
+      cppos, base+EXT_OBJ,
+      SPEC_EXE_FILENAME+base+EXT_SHLIB,
       LINK_STRING])
     result = system(CCMD)
     if result == 0:
@@ -1788,11 +1804,11 @@ if STATIC == 0:
             cmd=' '.join([
               TIMECMD,
               FLXRUN+DRIVER+DEBUGSWITCH,
-              path+EXT_SHLIB, args])
+              base+EXT_SHLIB, args])
           else:
             cmd=' '.join([
               FLXRUN+DRIVER+DEBUGSWITCH,
-              path+EXT_SHLIB, args])
+              base+EXT_SHLIB, args])
           if STDOUT != "": cmd=cmd+" > " +STDOUT
           sys.exit(0!=system(cmd))
 else:
@@ -1800,20 +1816,20 @@ else:
     FCMD=' '.join([
       FLXG, VERBOSE, FLXFLAGS, ELKHOUND,
       FLXLIB, INCLUDE_DIRS, STDIMPORT,
-      IMPORTS, STDLIB, path])
+      IMPORTS, STDLIB, base])
     result=system(FCMD)
   if result == 0:
     calpackages()
-    write_include_file(path)
+    write_include_file(base)
     CCMD=' '.join([
       CCOBJ_STATIC_LIB,
       CCFLAGS, "-DTARGET_BUILD",
       "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
-      MACROS, cpps, path+".cpp",
-      SPEC_OBJ_FILENAME+path+EXT_OBJ])
+      MACROS, cpps, base+".cpp",
+      SPEC_OBJ_FILENAME+base+EXT_OBJ])
     LCMD=' '.join([
-      CCLINK_STATIC, SPEC_EXE_FILENAME+path+EXT_EXE,
-      path+EXT_OBJ, DRIVER, cppos, LINK_STRING])
+      CCLINK_STATIC, SPEC_EXE_FILENAME+base+EXT_EXE,
+      base+EXT_OBJ, DRIVER, cppos, LINK_STRING])
     result=system(CCMD)
     if result == 0:
       result=system(LCMD)
@@ -1822,10 +1838,10 @@ else:
         if RUNIT == 1:
           if TIME == 1:
             cmd=' '.join([
-              TIMECMD, STATIC_ENV, path, args])
+              TIMECMD, STATIC_ENV, base, args])
           else:
             cmd=' '.join([
-              STATIC_ENV, path,args])
+              STATIC_ENV, base,args])
           if STDOUT != "": cmd=cmd + " > "+STDOUT
           sys.exit(0!=system(cmd))
 sys.exit(0!=result)
@@ -2157,7 +2173,6 @@ function calpackages () {
   then
     echo "$PKGCONFIG_CFLAGS @$base.resh"
   fi
-
   INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS @$base.resh))"
 
   # find all include files
@@ -2165,9 +2180,7 @@ function calpackages () {
   then
     echo "$PKGCONFIG_INCLUDES @$base.resh"
   fi
-
   INCLUDE_FILES="$INCLUDE_FILES $($(echo $PKGCONFIG_INCLUDES @$base.resh))"
-
 
   if [ "$ECHO" = "1" ]
   then
