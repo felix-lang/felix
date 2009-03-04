@@ -7,7 +7,7 @@ import buildsystem
 
 # ------------------------------------------------------------------------------
 
-def build_runtime(phase):
+def build_runtime(phase, host=True):
     buildsystem.copy_hpps_to_rtl(
         fbuild.buildroot / 'config/target/flx_faio_config.hpp',
         fbuild.buildroot / 'config/target/flx_elk_config.hpp',
@@ -80,7 +80,12 @@ def build_runtime(phase):
         fbuild.buildroot / 'config/target',
         'src/smbase',
     ]
-    macros = ['TARGET_BUILD']
+
+    if host:
+        dst += '_host'
+        macros = ['BUILD_ELK', 'HOST_BUILD']
+    else:
+        macros = ['BUILD_ELK', 'TARGET_BUILD']
 
     return Record(
         static=phase.cxx.static.build_lib(dst + '_static', srcs,
@@ -123,6 +128,6 @@ def build_exe(phase):
             'src/smbase',
             'src/ast',
         ],
-        libs=[call(build_runtime, phase).shared],
+        libs=[call(build_runtime, phase, host=True).static],
         macros=['HOST_BUILD'],
     )
