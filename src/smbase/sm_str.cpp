@@ -298,7 +298,7 @@ MAKE_LSHIFT(long, "%ld")
 MAKE_LSHIFT(unsigned long, "%lu")
 MAKE_LSHIFT(float, "%g")
 MAKE_LSHIFT(double, "%g")
-MAKE_LSHIFT(void*, "%p")
+MAKE_LSHIFT(const void*, "%p")
 #if FLX_HAVE_LONGLONG
 MAKE_LSHIFT(unsigned long long, "%llu")
 MAKE_LSHIFT(long long, "%lld")

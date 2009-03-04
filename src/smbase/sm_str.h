@@ -196,7 +196,7 @@ public:
   sm_stringBuilder& operator << (unsigned short i) { return operator<<((long)i); }
   sm_stringBuilder& operator << (float d);
   sm_stringBuilder& operator << (double d);
-  sm_stringBuilder& operator << (void *ptr);     // inserts address in hex
+  sm_stringBuilder& operator << (const void *ptr);     // inserts address in hex
 #if FLX_HAVE_LONGLONG
   sm_stringBuilder& operator << (long long i);
   sm_stringBuilder& operator << (unsigned long long i);
