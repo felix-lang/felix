@@ -17,6 +17,7 @@ def build_runtime(phase):
 
     dst = fbuild.buildroot / 'lib/rtl/flx_glob'
     srcs = []
+    includes = [fbuild.buildroot / 'config/target']
     macros = ['BUILD_GLOB']
     libs = [call('buildsystem.flx_gc.build_runtime', phase)]
 
@@ -28,6 +29,7 @@ def build_runtime(phase):
         #    macros=macros + ['FLX_STATIC_LINK'],
         #    libs=[lib.static for lib in libs]),
         shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
+            includes=includes,
             macros=macros,
             libs=[lib.shared for lib in libs]))
 
