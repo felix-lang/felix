@@ -60,14 +60,14 @@ def build_runtime(phase):
         external_libs.extend(pthread_h.external_libs)
 
     return Record(
-        static=phase.cxx.static.build_lib(dst + '_static', srcs,
+        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
             includes=includes,
-            macros=macros + ['FLX_STATIC_LINK'],
+            macros=macros,
             cflags=flags,
             libs=libs,
             external_libs=external_libs,
             lflags=flags),
-        shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
+        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
             includes=includes,
             macros=macros,
             cflags=flags,

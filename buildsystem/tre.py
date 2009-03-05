@@ -20,10 +20,10 @@ def build_runtime(phase):
     macros = ['BUILD_TRE']
 
     return Record(
-        static=phase.c.static.build_lib(dst + '_static', srcs,
+        static=buildsystem.build_c_static_lib(phase, dst, srcs,
             includes=includes,
-            macros=macros + ['FLX_STATIC_LINK']),
-        shared=phase.c.shared.build_lib(dst + '_dynamic', srcs,
+            macros=macros),
+        shared=buildsystem.build_c_shared_lib(phase, dst, srcs,
             includes=includes,
             macros=macros))
 

@@ -25,10 +25,10 @@ def build_runtime(phase):
         srcs.extend((path / 'flx_glob.cpp', path / 'unixem_util.cpp'))
 
     return Record(
-        #static=phase.cxx.static.build_lib(dst + '_static', srcs,
-        #    macros=macros + ['FLX_STATIC_LINK'],
+        #static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+        #    macros=macros,
         #    libs=[lib.static for lib in libs]),
-        shared=phase.cxx.shared.build_lib(dst + '_dynamic', srcs,
+        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
             includes=includes,
             macros=macros,
             libs=[lib.shared for lib in libs]))
