@@ -260,8 +260,10 @@ def check_flx(felix,
         fbuild.logger.log('no .expect', color='cyan')
         return True
     else:
+        stdout = stdout.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+
         with open(expect, 'rb') as f:
-            s = f.read()
+            s = f.read().replace(b'\r\n', b'\n').replace(b'\r', b'\n')
 
         if stdout == s:
             fbuild.logger.passed()
