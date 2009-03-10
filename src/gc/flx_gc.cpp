@@ -108,3 +108,12 @@ void *operator new(
   void *p = gcp.allocate(&shape,1,allow_gc);
   return p;
 }
+
+void operator delete(
+  void*,
+  flx::gc::generic::gc_profile_t &,
+  flx::gc::generic::gc_shape_t &,
+  bool
+)
+{
+}

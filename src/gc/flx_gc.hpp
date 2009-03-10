@@ -212,4 +212,15 @@ GC_EXTERN void *operator new
   flx::gc::generic::gc_shape_t &,
   bool
 );
+
+/*
+ * Define an empty delete to make msvc happy.
+ */
+GC_EXTERN void operator delete(
+  void*,
+  flx::gc::generic::gc_profile_t &,
+  flx::gc::generic::gc_shape_t &,
+  bool
+);
+
 #endif
