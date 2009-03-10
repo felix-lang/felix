@@ -193,7 +193,7 @@ def test_flxs(felix, srcs):
         return src, passed
 
     failed_srcs = []
-    for src, passed in fbuild.scheduler.map(test, sorted(srcs)):
+    for src, passed in fbuild.scheduler.map(test, sorted(srcs, reverse=True)):
         if not passed:
             failed_srcs.append(src)
 
