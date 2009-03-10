@@ -54,7 +54,7 @@ unsigned long gc_profile_t::maybe_collect() {
 unsigned long gc_profile_t::actually_collect() {
   if(debug_collections) fprintf(stderr,"Actually collect\n");
   gc_counter = 0;
-  unsigned long collected = collector-> collect();
+  unsigned long collected = collector->collect();
   unsigned long allocated = collector->get_allocation_amt();
   if (allocated > max_mem) throw flx::rtl::flx_out_of_memory_t();
   threshhold = std::max ( min_mem,
