@@ -12,25 +12,99 @@ from fbuild.record import Record
 def pre_options(parser):
     group = parser.add_option_group('config options')
     group.add_options((
-        make_option('--prefix', default='/usr/local'),
-        make_option('--build-platform'),
-        make_option('--build-cc'),
-        make_option('--build-cxx'),
-        make_option('--host-platform'),
-        make_option('--host-cc'),
-        make_option('--host-cxx'),
-        make_option('--target-platform'),
-        make_option('--target-cc'),
-        make_option('--target-cxx'),
-        make_option('--ocamlc'),
-        make_option('--ocamlopt'),
-        make_option('--ocamllex'),
-        make_option('--ocamlyacc'),
+        make_option('--prefix',
+            default='/usr/local',
+            help='specify the install location'),
+        make_option('-I', '--include',
+            dest='includes',
+            default=[],
+            action='append',
+            help='Add this path to the c header search path for all phases'),
+        make_option('-L', '--library-path',
+            dest='libpaths',
+            default=[],
+            action='append',
+            help='Add this path to the c library search path for all phases'),
+    ))
+
+    group = parser.add_option_group('build phase options')
+    group.add_options((
+        make_option('--build-platform',
+            help='specify the build phase platform'),
+        make_option('--build-cc',
+            help='specify the build phase c compiler'),
+        make_option('--build-cxx',
+            help='specify the build phase c++ compiler'),
+        make_option('--build-include',
+            dest='build_includes',
+            default=[],
+            action='append',
+            help='Add this path to the c header search path for the build ' \
+                    'phase'),
+        make_option('--build-library-path',
+            dest='build_libpaths',
+            default=[],
+            action='append',
+            help='Add this path to the c library search path for the build ' \
+                    'phase'),
+    ))
+
+    group = parser.add_option_group('host phase options')
+    group.add_options((
+        make_option('--host-platform',
+            help='specify the host phase platform'),
+        make_option('--host-cc',
+            help='specify the host phase c compiler'),
+        make_option('--host-cxx',
+            help='specify the host phase c++ compiler'),
+        make_option('--host-include',
+            dest='host_includes',
+            default=[],
+            action='append',
+            help='Add this path to the c header search path for the host ' \
+                    'phase'),
+        make_option('--host-library-path',
+            dest='host_libpaths',
+            default=[],
+            action='append',
+            help='Add this path to the c library search path for the host ' \
+                    'phase'),
+        make_option('--host-ocamlc',
+            help='specify the ocaml bytecode compiler'),
+        make_option('--host-ocamlopt',
+            help='specify the ocaml native compiler'),
+        make_option('--host-ocamllex',
+            help='specify the ocaml lexer'),
+        make_option('--host-ocamlyacc',
+            help='specify the ocaml lexer'),
+    ))
+
+    group = parser.add_option_group('target phase options')
+    group.add_options((
+        make_option('--target-platform',
+            help='specify the target phase platform'),
+        make_option('--target-cc',
+            help='specify the target phase c compiler'),
+        make_option('--target-cxx',
+            help='specify the target phase c++ compiler'),
+        make_option('--target-include',
+            dest='target_includes',
+            default=[],
+            action='append',
+            help='Add this path to the c header search path for the target ' \
+                    'phase'),
+        make_option('--target-library-path',
+            dest='target_libpaths',
+            default=[],
+            action='append',
+            help='Add this path to the c library search path for the build ' \
+                    'phase'),
+
     ))
 
 # ------------------------------------------------------------------------------
 
-def make_c_builder(*args, **kwargs):
+def make_c_builder(*args, includes=[], libpaths=[], **kwargs):
     kwargs['platform_options'] = [
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
@@ -38,12 +112,14 @@ def make_c_builder(*args, **kwargs):
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291']}),
     ]
+    kwargs['includes'] = list(chain(fbuild.options.includes, includes))
+    kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
 
     return Record(
         static=call('fbuild.builders.c.guess_static', *args, **kwargs),
         shared=call('fbuild.builders.c.guess_shared', *args, **kwargs))
 
-def make_cxx_builder(*args, **kwargs):
+def make_cxx_builder(*args, includes=[], libpaths=[], **kwargs):
     kwargs['platform_options'] = [
         ({'posix'}, {
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
@@ -51,6 +127,8 @@ def make_cxx_builder(*args, **kwargs):
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291']}),
     ]
+    kwargs['includes'] = list(chain(fbuild.options.includes, includes))
+    kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
 
     return Record(
         static=call('fbuild.builders.cxx.guess_static', *args, **kwargs),
@@ -61,9 +139,12 @@ def config_build(*, platform, cc, cxx):
 
     return Record(
         platform=call('fbuild.builders.platform.platform', platform),
-        c=make_c_builder(exe=cc),
-        cxx=make_cxx_builder(exe=cxx),
-    )
+        c=make_c_builder(cc,
+            includes=fbuild.options.build_includes,
+            libpaths=fbuild.options.build_libpaths),
+        cxx=make_cxx_builder(cxx,
+            includes=fbuild.options.build_includes,
+            libpaths=fbuild.options.build_libpaths))
 
 def config_host(build, *,
         platform, cc, cxx, ocamlc, ocamlopt, ocamllex, ocamlyacc):
@@ -77,8 +158,12 @@ def config_host(build, *,
     else:
         phase = Record(
             platform=platform,
-            c=make_c_builder(exe=cc),
-            cxx=make_cxx_builder(exe=cxx))
+            c=make_c_builder(cc,
+                includes=fbuild.options.host_includes,
+                libpaths=fbuild.options.host_libpaths),
+            cxx=make_cxx_builder(cxx,
+                includes=fbuild.options.host_includes,
+                libpaths=fbuild.options.host_libpaths))
 
     phase.ocaml = call('fbuild.builders.ocaml.Ocaml',
         ocamlc=ocamlc,
@@ -106,8 +191,12 @@ def config_target(host, *, platform, cc, cxx):
     else:
         phase = Record(
             platform=platform,
-            c=make_c_builder(exe=cc),
-            cxx=make_cxx_builder(exe=cxx))
+            c=make_c_builder(cc,
+                includes=fbuild.options.target_includes,
+                libpaths=fbuild.options.target_libpaths),
+            cxx=make_cxx_builder(cxx,
+                includes=fbuild.options.target_includes,
+                libpaths=fbuild.options.target_libpaths))
 
     return phase
 
@@ -135,10 +224,10 @@ def build():
         platform=fbuild.options.host_platform,
         cc=fbuild.options.host_cc,
         cxx=fbuild.options.host_cxx,
-        ocamlc=fbuild.options.ocamlc,
-        ocamlopt=fbuild.options.ocamlopt,
-        ocamllex=fbuild.options.ocamllex,
-        ocamlyacc=fbuild.options.ocamlyacc)
+        ocamlc=fbuild.options.host_ocamlc,
+        ocamlopt=fbuild.options.host_ocamlopt,
+        ocamllex=fbuild.options.host_ocamllex,
+        ocamlyacc=fbuild.options.host_ocamlyacc)
 
     target = config_target(host,
         platform=fbuild.options.target_platform,
