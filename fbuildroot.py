@@ -194,15 +194,23 @@ def build():
 
     from buildsystem.flx import test_flxs
 
-    test_flxs(felix, chain(
-        Path.glob('test/*/*.flx', exclude=[
+    tests = Path.globall(
+        'test/*/*.flx',
+        'test/*/*/*.flx',
+        fbuild.buildroot / 'tut/*/*.flx',
+        exclude=[
             'test/drivers/*.flx',
+            'test/faio/posix-*.flx',
             'test/faio/win-*.flx',
-        ]),
-        Path.glob('test/*/*/*.flx', exclude=[
             'test/regress/bt/*.flx',
             'test/regress/kf/*.flx',
             'test/regress/nd/*.flx',
-        ]),
-        Path.glob(fbuild.buildroot / 'tut/*/*.flx'),
-    ))
+        ])
+
+    if 'posix' in target.platform:
+        tests.extend(Path.glob('test/faio/posix-*.flx'))
+
+    if 'windows' in target.platform:
+        tests.extend(Path.glob('test/faio/win-*.flx'))
+
+    test_flxs(felix, tests)
