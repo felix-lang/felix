@@ -137,12 +137,16 @@ def make_cxx_builder(*args, includes=[], libpaths=[], **kwargs):
 def config_build(*, platform, cc, cxx):
     fbuild.logger.log('configuring build phase', color='cyan')
 
+    platform = call('fbuild.builders.platform.platform', platform)
+
     return Record(
-        platform=call('fbuild.builders.platform.platform', platform),
+        platform=platform,
         c=make_c_builder(cc,
+            platform=platform,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths),
         cxx=make_cxx_builder(cxx,
+            platform=platform,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths))
 
@@ -159,9 +163,11 @@ def config_host(build, *,
         phase = Record(
             platform=platform,
             c=make_c_builder(cc,
+                platform=platform,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths),
             cxx=make_cxx_builder(cxx,
+                platform=platform,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths))
 
@@ -192,9 +198,11 @@ def config_target(host, *, platform, cc, cxx):
         phase = Record(
             platform=platform,
             c=make_c_builder(cc,
+                platform=platform,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths),
             cxx=make_cxx_builder(cxx,
+                platform=platform,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths))
 
