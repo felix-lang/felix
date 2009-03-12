@@ -53,7 +53,7 @@ class Iscr(fbuild.db.PersistentObject):
         srcs = []
         dsts = []
         ipk_regex = re.compile('^CREATING .* NAMED FILE SOURCE (.*) \[.*\]')
-        file_regex = re.compile('^File (.*) is (NEW|CHANGED|unchanged)$')
+        file_regex = re.compile('^File (.*) is (NEW|CHANGED|unchanged)')
         for line in io.StringIO(stdout.decode()):
             m = ipk_regex.match(line)
             if m:
