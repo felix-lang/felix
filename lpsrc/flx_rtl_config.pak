@@ -131,7 +131,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 @tangle("#define FLX_RAWADDRESS " + cal_raw_address())
 @tangle('#define FLX_MAX_ALIGN ' + str(config.HOST_CXX.options.MAX_ALIGN))
 
-#if FLX_WIN32
+#if FLX_WIN32 && !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
 #endif
 
@@ -283,9 +283,15 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 #define FLX_CGOTO 0
 #endif
 
-#if FLX_WIN32
+#if FLX_WIN32 && !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+#if FLX_WIN32 && !defined(WINVER)
 #define WINVER 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+#if FLX_WIN32
 // vs windows.h just LOVES to include winsock version 1 headers by default.
 // that's bad for everyone, so quit it.
 #define _WINSOCKAPI_
