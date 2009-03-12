@@ -42,6 +42,7 @@ def build_runtime(phase):
         'src/smbase/*.cpp',
         exclude=[
             'src/smbase/sm_mysig.cpp',
+            'src/smbase/sm_regexp.cpp',
             'src/smbase/sm_tsobjlist.cpp',
         ])
     includes = [
@@ -70,6 +71,7 @@ def build_exe(phase):
             'src/ast/ast_ast.ast.cpp',
             'src/ast/ast_towner.cpp',
             'src/smbase/sm_mysig.cpp',
+            'src/smbase/sm_regexp.cpp',
             'src/smbase/sm_tsobjlist.cpp',
         ])
 
