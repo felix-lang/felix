@@ -1614,13 +1614,14 @@ module Text_file
 
   pod type text_file = "FILE*"; // its a macro?
 
-  fun fopen_input: string -> text_file = 'std::fopen($1.data(),"rt")';
-  fun fopen_output: string -> text_file = 'std::fopen($1.data(),"wt")';
+  gen fopen_input: string -> text_file = 'std::fopen($1.data(),"rt")';
+  gen fopen_output: string -> text_file = 'std::fopen($1.data(),"wt")';
   proc fclose: text_file = '(void)std::fclose($1);';
-  fun readln: text_file -> string ="flx::rtl::ioutil::readln($1)";
+  gen readln: text_file -> string ="flx::rtl::ioutil::readln($1)";
   proc writeln : text_file * string ="flx::rtl::ioutil::writeln($1,$2);";
   proc write : text_file * string ="flx::rtl::ioutil::write($1,$2);";
-  fun valid : text_file -> bool = "$1!=(FILE*)0";
+  gen valid : text_file -> bool = "$1!=(FILE*)0";
+  gen feof : text_file -> bool = "std::feof($1)";
   const stdin: text_file = "PTF flx_stdin";
   const stdout: text_file = "PTF flx_stdout";
   const stderr: text_file = "PTF flx_stderr";
