@@ -1,0 +1,6 @@
+var i:int; forall i in 0 upto 10 do
+  if i == 5 do
+    continue;
+  done;
+  println i;
+done;
