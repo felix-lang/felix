@@ -379,88 +379,6 @@ let bbind_sym syms bbdfns i {
         sbt syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool))
       )
 
-    (*
-    | `SYMDEF_regexp _ -> ()
-    *)
-
-    | `SYMDEF_regmatch (ps,cls) ->
-      let bps = bindps ps in
-      let ts = typeofbps_traint bps in
-      let ret_type =  ref (snd (be (snd (hd cls)))) in
-      let bregex = bind_regex syms env sr be ret_type cls in
-      let bbdcl = `BBDCL_regmatch ([],bvs,bps,!ret_type,bregex) in
-      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl)
-      ;
-      begin
-        if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.counter syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
-        Hashtbl.add syms.ticache i t
-      end
-      ;
-      if syms.compiler_options.print_flag then
-      print_endline ("//bound regmatch " ^ name ^ "<"^si i^">" )
-
-
-    | `SYMDEF_reglex (ps,le,cls) ->
-      let bps = bindps ps in
-      let ts = typeofbps_traint bps in
-      let ret_type = ref (snd (be (snd (hd cls)))) in
-      let bregex = bind_regex syms env sr be ret_type cls in
-      let bbdcl = `BBDCL_reglex ([],bvs,bps,le,!ret_type,bregex) in
-      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl)
-      ;
-      begin
-        if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.counter syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
-        Hashtbl.add syms.ticache i t
-      end
-      ;
-      if syms.compiler_options.print_flag then
-      print_endline ("//bound reglex " ^ name ^ "<"^si i^">" )
-
-    | `SYMDEF_glr (t,(p,exes)) ->
-      (*
-      print_endline ("Binding nonterm " ^ name ^"<"^ si i ^">");
-      *)
-      let brt = if t = `TYP_none then `BTYP_var (i,`BTYP_type 0) else bt t in
-      (*
-      print_endline ("Specified type " ^ sbt syms.dfns brt);
-      *)
-      (*
-      let brt = `BTYP_var i in (* hack .. *)
-      *)
-
-      let bn q =
-        (* we have to check this .. *)
-        match luqn2 q with
-        | `FunctionEntry [i],[] ->
-          let i = sye i in
-          begin match hfind "bbind" syms.dfns i with
-          | {symdef=`SYMDEF_glr _ } -> `Nonterm [i]
-          | {symdef=`SYMDEF_nonconst_ctor _} -> `Term i
-          | _ -> clierr sr "Expected nonterminal or union constructor"
-          end
-        | `FunctionEntry ii,[] ->
-          let ii = map sye ii in
-          let i = hd ii in
-          begin match hfind "bbind" syms.dfns i with
-          | {symdef=`SYMDEF_glr _ } -> `Nonterm ii
-          | {symdef=`SYMDEF_nonconst_ctor _} ->
-            clierr sr "Expected unique union constructor (it's overloaded)"
-          | _ -> clierr sr "Expected nonterminal or union constructor"
-          end
-        | `NonFunctionEntry i,[] -> `Term (sye i)
-        | _,ts -> clierr sr "Unexpected type variables"
-      in
-      let bp p = map (fun (n,q) -> n,bn q) p in
-      let p = bp p in
-      let brt',bbexes = bexes env exes brt i bvs in
-      let bbdcl = `BBDCL_glr ([],bvs,brt',(p, bbexes)) in
-      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
-
-      if syms.compiler_options.print_flag then
-      print_endline ("//bound glr " ^ name ^ "<"^si i^">" )
-
     | `SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
       (*
       print_endline ("Binding const ctor " ^ name);
@@ -704,36 +622,6 @@ let bbind_sym syms bbdfns i {
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_cstruct (bvs,cs'))
-
-    | `SYMDEF_cclass (cs) ->
-      (* NOTE: At present the code spec is already handled by symtab,
-      so there is point propagating it .. the bound members are kept
-      to ensure we generate all required types, they don't generate
-      any actual code
-      *)
-
-      (*
-      (* DUMMY type variable index here!! FIX ME !!!! *)
-      let vs2bvs (s,_) = let i = 0 in s,i in
-      let cs' =
-        List.map (function
-        |  `MemberVal (n,t,_) -> `BMemberVal (n, bt t)
-        |  `MemberVar (n,t,_) -> `BMemberVar (n, bt t)
-        |  `MemberFun (n,vs,t,_) -> `BMemberFun (n, map vs2bvs vs, bt t)
-        |  `MemberProc (n,vs,t,_) -> `BMemberProc (n, map vs2bvs vs, bt t)
-        |  `MemberCtor (n,t,_) -> `BMemberCtor (n, bt t)
-        )
-        cs
-      in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cclass (bvs,cs'))
-      *)
-
-      (* temporary hack, elide interface .. *)
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cclass (bvs,[]))
-
-    | `SYMDEF_class ->
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_class ([],bvs))
-
     | `SYMDEF_typeclass ->
       let sym : bbdcl_t = `BBDCL_typeclass ([],bvs) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
@@ -754,7 +642,6 @@ let bbind_sym syms bbdfns i {
       let sym : bbdcl_t = `BBDCL_instance ([],bvs,bcons, k,ts) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
-    | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
     | `SYMDEF_inherit _ -> ()
     | `SYMDEF_inherit_fun _ -> ()

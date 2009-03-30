@@ -95,15 +95,6 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
     iter (cal_param_usage syms uses sr k) ps;
     iter (cal_exe_usage syms uses k) exes
 
-  | `BBDCL_glr (_,_,_,(p,exes)) ->
-    iter (cal_exe_usage syms uses k) exes;
-    uses_production uses k sr p
-
-  | `BBDCL_regmatch (_,_,(ps,_),_,(_,_,h,_))
-  | `BBDCL_reglex (_,_,(ps,_),_,_,(_,_,h,_)) ->
-    iter (cal_param_usage syms uses sr k) ps;
-    Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
-
   | `BBDCL_newtype (_,t) -> ut t
   | `BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
   | `BBDCL_const (_,_,t,_,reqs) -> cal_req_usage sr k reqs
@@ -125,8 +116,6 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   | `BBDCL_cstruct (_,ps)  ->
     iter ut (map snd ps)
 
-  | `BBDCL_class _ -> ()
-  | `BBDCL_cclass _ -> ()
   | `BBDCL_val (_,t)
   | `BBDCL_var (_,t)
   | `BBDCL_tmp (_,t) -> ut t

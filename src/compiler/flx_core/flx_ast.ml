@@ -74,20 +74,6 @@ and suffixed_name_t =
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)
   ]
 
-(** type of a regular expression *)
-and regexp_t =
-  [
-  | `REGEXP_seq of regexp_t * regexp_t (** concatenation *)
-  | `REGEXP_alt of regexp_t * regexp_t (** alternation *)
-  | `REGEXP_aster of regexp_t (** Kleene closure *)
-  | `REGEXP_name of qualified_name_t (** lookup regular definition *)
-  | `REGEXP_string of string  (** concatenation of chars of string *)
-  | `REGEXP_epsilon (** epsilon: null string *)
-  | `REGEXP_sentinel (** end marker *)
-  | `REGEXP_code of expr_t (** associated code *)
-  | `REGEXP_group of string * regexp_t (** named group *)
-  ]
-
 (** {7 Type sublanguage}
  *
  * The encoding '`TYP_void' is the categorical initial: the type of an empty
@@ -147,8 +133,6 @@ and typecode_t =
   | `TYP_type_tuple of typecode_t list          (** meta type product *)
 
   | `TYP_type_match of typecode_t * (typecode_t * typecode_t) list
-
-  | `TYP_glr_attr_type of qualified_name_t
 
   (* Barry Jay pattern calculus case *)
   | `TYP_case of typecode_t * string list * typecode_t
@@ -281,9 +265,6 @@ and expr_t =
   | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
   | `AST_sparse of range_srcref * expr_t * string * int list
 
-  | `AST_regmatch of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
-  | `AST_string_regmatch of range_srcref * (expr_t * (regexp_t * expr_t) list)
-  | `AST_reglex of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
   | `AST_lift of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
@@ -328,7 +309,6 @@ and pattern_t =
   | `PAT_name of range_srcref * id_t
   | `PAT_tuple of range_srcref * pattern_t list
   | `PAT_any of range_srcref
-  | `PAT_regexp of range_srcref * string * id_t list
     (* second list is group bindings 1 .. n-1: EXCLUDES 0 cause we can use 'as' for that ?? *)
   | `PAT_const_ctor of range_srcref * qualified_name_t
   | `PAT_nonconst_ctor of range_srcref * qualified_name_t * pattern_t
@@ -434,29 +414,7 @@ and named_req_expr_t =
 ]
 
 and prec_t = string
-and glr_term_t =
-[
-  | `GLR_name of qualified_name_t
-  | `GLR_opt of glr_term_t
-  | `GLR_ast of glr_term_t
-  | `GLR_plus of glr_term_t
-  | `GLR_alt of glr_term_t list
-  | `GLR_seq of glr_term_t list
-]
-
-and glr_entry_t = string option * glr_term_t
-and production_t = glr_entry_t list
-
-and reduced_glr_entry_t = string option * qualified_name_t
-and reduced_production_t = reduced_glr_entry_t list
 and params_t = parameter_t list * expr_t option (* second arg is a constraint *)
-and class_member_t = [
-  | `MemberVal of id_t * typecode_t * c_t option
-  | `MemberVar of id_t * typecode_t * c_t option
-  | `MemberFun of id_t * int option * vs_list_t * typecode_t * c_t option
-  | `MemberProc of id_t * int option * vs_list_t * typecode_t * c_t option
-  | `MemberCtor of id_t * int option * typecode_t * c_t option
-]
 
 and ast_term_t =
   [
@@ -490,8 +448,6 @@ and statement_t =
   | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
-  | `AST_regdef of range_srcref * string * regexp_t
-  | `AST_glr of range_srcref * string * typecode_t * (range_srcref * production_t * expr_t) list
 
   (* macros *)
   | `AST_macro_name of range_srcref * id_t * id_t
@@ -520,8 +476,6 @@ and statement_t =
   | `AST_union of range_srcref * id_t * vs_list_t * (id_t * int option * vs_list_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_cstruct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
-  | `AST_cclass of range_srcref * id_t * vs_list_t * class_member_t list
-  | `AST_class of range_srcref * id_t * vs_list_t * statement_t list
   | `AST_type_alias of range_srcref * id_t * vs_list_t * typecode_t
   | `AST_inherit of range_srcref * id_t * vs_list_t * qualified_name_t
   | `AST_inherit_fun of range_srcref * id_t * vs_list_t * qualified_name_t

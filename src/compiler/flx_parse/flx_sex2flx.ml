@@ -95,7 +95,6 @@ and type_of_sex sr w =
   y
 
 and xexpr_t sr x =
-  let re x = xregexp_t sr x in
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
   let ii i = int_of_string i in
@@ -226,15 +225,6 @@ and xexpr_t sr x =
    in
    `AST_match (sr, (ex e,pes))
 
- | Lst [Id "ast_parse";  sr; e; Lst pes] ->
-   let pes = map (function
-     | Lst [pr; e] -> (xsr sr), xpr pr, ex e
-     | x -> err x "ast_parse syntax error"
-     )
-     pes
-   in
-   `AST_parse (xsr sr,ex e, pes)
-
  | Lst [Id "ast_sparse";  e; Str s; Lst ints] ->
    let ints = map (function
      | Int i -> ii i
@@ -242,34 +232,6 @@ and xexpr_t sr x =
    ) ints
    in
    `AST_sparse (sr,ex e, ss s, ints)
-
- | Lst [Id "ast_regmatch";  Lst [e1; e2; Lst res]] ->
-   let res = map (function
-     | Lst [r; e] -> re r,ex e
-     | x -> err x "ast_regmatch"
-     )
-     res
-   in
-   `AST_regmatch (sr,(ex e1, ex e2, res))
-
- | Lst [Id "ast_string_regmatch";  Lst [e; Lst res]] ->
-   let res = map (function
-     | Lst [r; e] -> re r,ex e
-     | x -> err x "ast_string_regmatch"
-     )
-     res
-   in
-   `AST_string_regmatch (sr,(ex e, res))
-
- | Lst [Id "ast_reglex";  Lst [e1; e2; Lst res]] ->
-   let res = map (function
-     | Lst [r; e] -> re r,ex e
-     | x -> err x "ast_reglex"
-     )
-     res
-   in
-   `AST_reglex (sr,(ex e1, ex e2, res))
-
 
  | Lst [Id "ast_typeof";  e] -> `AST_typeof (sr, ex e)
  | Lst [Id "ast_lift";  e] -> `AST_lift (sr,ex e)
@@ -356,9 +318,6 @@ and xpattern_t sr x =
   | Lst [Id "pat_tuple"; sr; Lst ps] -> `PAT_tuple (xsr sr, map xp ps)
 
   | Id "pat_any" -> `PAT_any sr
-(*
-  | `PAT_regexp of range_srcref * string * id_t list
-*)
   | Lst [Id "pat_const_ctor"; qn] -> `PAT_const_ctor (sr, xq "pat_const_ctor" qn)
   | Lst [Id "pat_nonconst_ctor"; qn; p] -> `PAT_nonconst_ctor (sr, xq "pat_nonconst_ctor" qn, xp p)
 
@@ -396,58 +355,6 @@ and xcharset_t sr x =
 
   | x ->
     err x "charset"
-
-and xregexp_t sr x =
-  let ex x = xexpr_t sr x in
-  let xq m qn = qne ex m qn in
-  let re x = xregexp_t sr x in
-  let ss s = s in
-  let cs x = xcharset_t sr x in
-  match x with
-  | Lst [Id "regexp_seq"; r1; r2] -> `REGEXP_seq (re r1, re r2)
-  | Lst [Id "regexp_alt"; r1; r2] -> `REGEXP_alt (re r1, re r2)
-  | Lst [Id "regexp_aster"; r] -> `REGEXP_aster (re r)
-  | Lst [Id "regexp_name"; qn] -> `REGEXP_name (xq "regexp_name" qn)
-  | Lst [Id "regexp_string"; Str s] -> `REGEXP_string (ss s)
-  | Id "regexp_epsilon" -> `REGEXP_epsilon
-  | Id "regexp_sentinel" -> `REGEXP_sentinel
-  | Lst [Id "regexp_code"; e] -> `REGEXP_code (ex e)
-  | Lst [Id "regexp_group"; Str s; r] -> `REGEXP_group (ss s, re r)
-
-  | Id "regexp_underscore" -> Flx_charset.regexp_underscore
-  | Id "regexp_dot" -> Flx_charset.regexp_dot
-
-  | Lst [Id "regexp_of_charset"; x] ->
-    Flx_charset.regexp_of_charset  (cs x)
-
-  | x -> err x "regexp_t syntax error"
-
-and xglr_term_t sr x =
-  let ex x = xexpr_t sr x in
-  let xq m qn = qne ex m qn in
-  let xg x = xglr_term_t sr x in
-  match x with
-  | Lst [Id "GLR_name"; qn] -> `GLR_name (xq "GLR_name" qn)
-  | Lst [Id "GLR_seq"; Lst rs] -> `GLR_seq (map xg rs)
-  | Lst [Id "GLR_alt"; Lst rs] -> `GLR_alt (map xg rs)
-  | Lst [Id "GLR_ast"; r] -> `GLR_ast (xg r)
-  | Lst [Id "GLR_plus"; r] -> `GLR_plus (xg r)
-  | Lst [Id "GLR_opt"; r] -> `GLR_opt (xg r)
-  | x -> err x "glr_term_t syntax error"
-
-and xglr_entry_t sr x =
-  let xg x = xglr_term_t sr x in
-  let ss s = s in
-  match x with
-  | Lst [Id "none"; g] -> None,xg g
-  | Lst [Lst [Id "some"; Str s]; g] -> Some (ss s),xg g
-  | x -> err x "glr_entry_t syntax error"
-
-and xproduction_t sr p =
-  let xge x = xglr_entry_t sr x in
-  match p with
-  | Lst xs -> map xge xs
-  | x -> err x "production_t syntax error"
 
 and xraw_typeclass_insts_t sr x =
   let ex x = xexpr_t sr x in
@@ -682,8 +589,6 @@ and xstatement_t sr x : statement_t =
   let xsts x =  lst "statement" xs x in
   let xprops x =  lst "property" (xproperty_t sr) x in
   let xfk x = xfunkind_t sr x in
-  let re x = xregexp_t sr x in
-  let xp x = xproduction_t sr x in
   let ti x = type_of_sex sr x in
   let xmps x = lst "macro_parameter_t" (xmacro_parameter_t sr) x in
   let xid = function | Str n -> n | x -> err x "id" in
@@ -698,7 +603,6 @@ and xstatement_t sr x : statement_t =
   let lnot sr x = `AST_apply (sr,(`AST_name (sr,"lnot",[]),x)) in
   match x with
   | Lst [] -> `AST_nop(sr,"null")
-  | Lst [Id "ast_cparse"; sr; Str s] -> `AST_cparse (xsr sr, ss s)
   | Lst [Id "ast_include"; sr; Str s] -> `AST_include (xsr sr, ss s)
   | Lst [Id "ast_open"; sr; vs; qn] -> `AST_open (xsr sr, xvs vs, xq "ast_open" qn)
   | Lst [Id "ast_inject_module"; sr; qn] -> `AST_inject_module (xsr sr, xq "ast_inject_module" qn)
@@ -715,16 +619,6 @@ and xstatement_t sr x : statement_t =
     `AST_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
   | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] ->
     `AST_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
-  | Lst [Id "ast_object"; Str s; vs; ps; sts] ->
-    `AST_object(sr,ss s,xvs vs, xps ps, xsts sts)
-  | Lst [Id "ast_regdef"; sr; Str s; r] -> `AST_regdef (xsr sr,s,re r)
-  | Lst [Id "ast_glr"; sr; Str s; t; Lst pl] ->
-    let pl = map (function
-      | Lst [p;e] -> (xsr sr),xp p, ex e
-      | x -> err x "glr phrase"
-      ) pl
-    in
-    `AST_glr (xsr sr,s,ti t, pl)
 
   | Lst [Id "ast_macro_name"; Str n; Str m] -> `AST_macro_name (sr,n,m)
   | Lst [Id "ast_macro_names"; Str n; ms] ->
@@ -781,13 +675,6 @@ and xstatement_t sr x : statement_t =
     in
     let ucmp = lst "cstruct component" xscmp ucmp in
     `AST_cstruct (xsr sr,n, xvs vs, ucmp)
-
-  | Lst [Id "ast_cclass"; sr; Str n; vs; ucmp] ->
-    let ucmp = lst "cclass component" (xclass_member_t (xsr sr))ucmp in
-    `AST_cclass (xsr sr,n, xvs vs, ucmp)
-
-  | Lst [Id "ast_class"; sr; Str n; vs; sts] ->
-    `AST_class (xsr sr,n, xvs vs, xsts sts)
 
   | Lst [Id "ast_type_alias"; sr; Str n; vs; t] ->
     `AST_type_alias (xsr sr,n, xvs vs, ti t)

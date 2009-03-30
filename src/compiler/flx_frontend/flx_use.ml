@@ -138,19 +138,6 @@ and uses syms used bbdfns count_inits i =
         iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ux exes
 
-      | `BBDCL_glr (_,_,t,(p,e)) ->
-        ut t; ux e;
-        uses_production syms used bbdfns count_inits p
-
-      | `BBDCL_regmatch (_,_,(ps,traint),t,(_,_,h,_)) ->
-        ut t; Hashtbl.iter (fun _ e -> ue e) h;
-        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
-
-      | `BBDCL_reglex (_,_,(ps,traint),i,t,(_,_,h,_)) ->
-        ut t; Hashtbl.iter (fun _ e -> ue e) h;
-        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
-        ui i
-
       | `BBDCL_union (_,ps)
         -> ()
 
@@ -162,10 +149,6 @@ and uses syms used bbdfns count_inits i =
       | `BBDCL_cstruct (_,ps)
         ->
         iter ut (map snd ps)
-
-      | `BBDCL_class _ -> ()
-
-      | `BBDCL_cclass (_,mems) -> ()
 
       | `BBDCL_val (_,t)
       | `BBDCL_var (_,t)

@@ -461,79 +461,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     in
     l,`AST_sparse (sr,e,nt,glr_ixs)
 
-  | `AST_regmatch (sr,(p1,p2,cls')) ->
-    let dcls = ref [] in
-    let cls = ref [] in
-    iter
-    (fun (re,e) ->
-      let l,x = rex e in
-      dcls := l @ !dcls;
-      cls := (re,x) :: !cls
-    )
-    cls'
-    ;
-
-    let n = seq() in
-    let fname = "regmatch" ^ si n in
-    let l1,p1 = rex p1 in
-    let l2,p2 = rex p2 in
-    let rfun = `Dcl(sr,fname,Some n,`Private,dfltvs, `DCL_regmatch !cls) in
-    let pp = `AST_tuple (sr,[p1;p2]) in
-    rfun :: l1 @ l2 @ !dcls,
-    `AST_apply(sr,(`AST_index(sr,fname,n),pp))
-
-  | `AST_string_regmatch (sr,(s,cls)) ->
-    let l1,s = rex s in
-    let ssr = src_of_expr s in
-    let vix = seq() in
-    let vid = "_me_" ^ si vix in
-    let v = `AST_index(sr,vid,vix) in
-    let pa = `PAT_as (sr,`PAT_any sr,"_a") in
-    let pb = `PAT_as (sr,`PAT_any sr,"_b") in
-    let p = `PAT_tuple (sr,[pa;pb]) in
-    let a = `AST_name (sr,"_a",[]) in
-    let b = `AST_name (sr,"_b",[]) in
-    let lexmod = `AST_name(sr,"Lexer",[]) in
-    let sb = `AST_lookup(sr,(lexmod,"bounds",[])) in
-    let se = `AST_apply(sr,(sb,v)) in
-    let r =
-      `AST_letin (sr,(p,se,
-        `AST_regmatch (sr,(a,b,cls)))
-      )
-    in
-      let l2,x = rex r in
-      let d1 =
-        `Dcl (ssr,vid,Some vix,`Private,dfltvs, `DCL_var (`TYP_typeof(s)))
-      in
-      let d2 =
-        `Exe (ssr,`EXE_iinit ((vid, vix),s))
-      in
-      d1 :: d2 :: l1 @ l2, x
-
-
-  | `AST_reglex (sr,(p1,p2,cls')) ->
-    let dcls = ref [] in
-    let cls = ref [] in
-    let le = `AST_name (sr,"lexeme_end",[]) in
-    iter
-    (fun (re,e) ->
-      let l,x = rex e in
-      let x = `AST_tuple (sr,[le;x]) in
-      dcls := l @ !dcls;
-      cls := (re,x) :: !cls
-    )
-    cls'
-    ;
-
-    let n = seq() in
-    let fname = "reglex" ^ si n in
-    let l1,p1 = rex p1 in
-    let l2,p2 = rex p2 in
-    let rfun = `Dcl(sr,fname,Some n,`Private,dfltvs, `DCL_reglex !cls) in
-    let pp = `AST_tuple (sr,[p1;p2]) in
-    rfun :: l1 @ l2 @ !dcls,
-    `AST_apply(sr,(`AST_index(sr,fname,n),pp))
-
   | `AST_letin (sr,(pat,e1,e2)) ->
     rex (`AST_match (sr,(e1,[pat,e2])))
 
@@ -929,8 +856,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let sts = concat (map handle_global gs) in
     rsts name parent_vs  access sts
 
-  | `AST_regdef (sr,name,regexp) ->
-    [`Dcl (sr,name,None,access,dfltvs,`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [`Exe (sr,`EXE_label s)]
   | `AST_proc_return sr -> [`Exe (sr,`EXE_proc_return)]
   | `AST_halt (sr,s) -> [`Exe (sr,`EXE_halt s)]
@@ -1357,14 +1282,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_noreturn_code (sr,s) -> [`Exe (sr,`EXE_noreturn_code s)]
 
   (* split into multiple declarations *)
-  | `AST_glr (sr, id, t, ms )  ->
-    let rec aux dcls ms = match ms with
-    | [] ->dcls
-    | (sr',p,e)::ta ->
-       let glr_idx = seq() in
-       let dcls' = handle_glr seq rex sr' p e glr_idx t id in
-       aux (dcls' @ dcls) ta
-    in aux [] ms
 
   | `AST_user_statement _
   | `AST_ctypes _

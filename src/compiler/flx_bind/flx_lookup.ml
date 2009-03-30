@@ -1214,31 +1214,6 @@ and bind_type'
     *)
     assoc s params
 
-  | `TYP_glr_attr_type qn ->
-    (*
-    print_string ("[bind_type] Calculating type of glr symbol " ^ string_of_qualified_name qn);
-    *)
-    (* WARNING: we're skipping the recursion stoppers here !! *)
-    let t =
-      match lookup_qn_in_env2' syms env rs qn with
-      | `FunctionEntry ii,[] ->
-        cal_glr_attr_type syms sr (map sye ii)
-
-      | `NonFunctionEntry i,[] ->
-        begin match hfind "lookup" syms.dfns (sye i) with
-        | {sr=sr; symdef=`SYMDEF_const_ctor (_,ut,_,_)} -> `BTYP_void (* hack *)
-        | {sr=sr; symdef=`SYMDEF_nonconst_ctor (_,_,_,_,argt)} ->
-          cal_glr_attr_type'' syms sr (sye i) argt
-        | _ -> clierr sr "Token must be union constructor"
-        end
-      | _,ts -> clierr sr "GLR symbol can't have type subscripts"
-    in
-      (*
-      print_endline (" .. Calculated: " ^sbt syms.dfns t);
-      *)
-      t
-
-
   | `AST_index (sr,name,index) as x ->
     (*
     print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
@@ -1252,8 +1227,6 @@ and bind_type'
     | `SYMDEF_struct _
     | `SYMDEF_cstruct _
     | `SYMDEF_union _
-    | `SYMDEF_class
-    | `SYMDEF_cclass _
     | `SYMDEF_abs _
       ->
       (*
@@ -1417,65 +1390,6 @@ and bind_type'
     (*
     print_endline ("Bound type is " ^ sbt syms.dfns t);
     *)
-    t
-
-and cal_glr_attr_type'' syms sr (i:int) t =
-  try Hashtbl.find syms.glr_cache i
-  with Not_found ->
-  try Hashtbl.find syms.varmap i
-  with Not_found ->
-  match t with
-  | `TYP_none -> `BTYP_var (i,`BTYP_type 0)
-  | _ ->
-    let env = build_env syms (Some i) in
-    let t = inner_bind_type syms env sr rsground t in
-    Hashtbl.add syms.glr_cache i t;
-    Hashtbl.add syms.varmap i t;
-    t
-
-and cal_glr_attr_type' syms sr i =
-  match hfind "lookup" syms.dfns i with
-  | {symdef=`SYMDEF_glr (t,_)} ->
-    `Nonterm,cal_glr_attr_type'' syms sr i t
-
-  | {symdef=`SYMDEF_nonconst_ctor (_,_,_,_,t)} ->
-    `Term, cal_glr_attr_type'' syms sr i t
-
-  (* shouldn't happen .. *)
-  | {symdef=`SYMDEF_const_ctor (_,_,_,_)} ->
-    `Term, `BTYP_void
-
-  | {id=id;symdef=symdef} ->
-    clierr sr (
-      "[cal_glr_attr_type'] Expected glr nonterminal or token "^
-      "(union constructor with argument), got\n" ^
-      string_of_symdef symdef id dfltvs
-    )
-
-and cal_glr_attr_type syms sr ii =
-  let idof i = match hfind "lookup" syms.dfns i with {id=id} -> id in
-  match ii with
-  | [] -> syserr sr "Unexpected empty FunctonEntry"
-  | h :: tts ->
-    let kind,t = cal_glr_attr_type' syms sr h in
-    iter
-    (fun i ->
-      let kind',t' = cal_glr_attr_type' syms sr i in
-      match kind,kind' with
-      | `Nonterm,`Nonterm
-      | `Term,`Term  ->
-        if not (type_eq syms.counter syms.dfns t t') then
-        clierr sr
-        ("Expected same type for glr symbols,\n" ^
-          idof h ^ " has type " ^ sbt syms.dfns t ^ "\n" ^
-          idof i ^ " has type " ^ sbt syms.dfns t'
-        )
-
-      | `Nonterm,`Term -> clierr sr "Expected glr nonterminal argument"
-      | `Term,`Nonterm -> clierr sr "Token: Expected union constructor with argument"
-    )
-    tts
-    ;
     t
 
 and cal_assoc_type syms sr t =
@@ -1675,8 +1589,6 @@ and bind_type_index syms (rs:recstop)
     | `SYMDEF_union _
     | `SYMDEF_struct _
     | `SYMDEF_cstruct _
-    | `SYMDEF_class
-    | `SYMDEF_cclass _
     | `SYMDEF_typeclass
       ->
       `BTYP_inst (index,ts)
@@ -2033,24 +1945,6 @@ and inner_typeofindex
     *)
     bt t
 
-  | `SYMDEF_regmatch (ps,cls)
-  | `SYMDEF_reglex (ps,_,cls) ->
-    let be e =
-      bind_expression' syms env
-      { rs with idx_fixlist = index::rs.idx_fixlist }
-      e []
-    in
-    let t = 
-      let rec aux cls = match cls with
-      | [] -> raise (Unresolved_return (sr,"reglex branches all indeterminate"))
-      | h :: t -> 
-         try snd (be (snd h)) 
-         with Expr_recursion _ -> aux t
-      in aux cls
-    in
-    let lexit_t = bt (`AST_lookup (sr,(`AST_name (sr,"Lexer",[]),"iterator",[]))) in
-    `BTYP_function (`BTYP_array (lexit_t,`BTYP_unitsum 2),t)
-
   | `SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
     bt (`TYP_function (argt,ut))
 
@@ -2080,12 +1974,6 @@ and inner_typeofindex
     print_endline ("Struct as function type is " ^ sbt syms.dfns t);
     *)
     t
-
-  | `SYMDEF_class ->
-    let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
-    let ts = map bt ts in
-    let ts = adjust_ts syms sr index ts in
-    `BTYP_inst (index,ts)
 
   | `SYMDEF_abs _ ->
     clierr sr
@@ -2361,8 +2249,6 @@ and lookup_qn_with_sig'
       | `SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_regmatch _
-      | `SYMDEF_reglex _
       | `SYMDEF_cstruct _
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
@@ -2371,7 +2257,7 @@ and lookup_qn_with_sig'
         print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
         *)
 (*
-print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
+print_endline (id ^ ": lookup_qn_with_sig: struct");
 *)
         (*
         let ts = adjust_ts syms sr index ts in
@@ -2644,12 +2530,6 @@ and lookup_type_qn_with_sig'
       | `SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_regmatch _ ->
-          clierr sr "[lookup_type_qn_with_sig] Found regmatch"
-
-      | `SYMDEF_reglex _ ->
-          clierr sr "[lookup_type_qn_with_sig] Found reglex"
-
       | `SYMDEF_cstruct _
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
@@ -2920,8 +2800,6 @@ and handle_type
   | `SYMDEF_struct _
   | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
-  | `SYMDEF_regmatch _
-  | `SYMDEF_reglex _
   | `SYMDEF_callback _
     ->
     print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
@@ -2987,8 +2865,6 @@ and handle_function
   | `SYMDEF_struct _
   | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
-  | `SYMDEF_regmatch _
-  | `SYMDEF_reglex _
   | `SYMDEF_callback _
     ->
     (*
@@ -3142,8 +3018,6 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         failwith "NOT IMPLEMENTED YET"
         *)
 
-    | `SYMDEF_regmatch _
-    | `SYMDEF_reglex _
     | `SYMDEF_cstruct _
     | `SYMDEF_struct _
     | `SYMDEF_nonconst_ctor _
@@ -3170,51 +3044,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
               Some tb
           | None -> None
           end
-
-    | `SYMDEF_class ->
-      (*
-      print_endline ("Found a class "^name^", look for constructor with hacked name _ctor_"^name);
-      *)
-      let entries = lookup_name_in_htab pubmap ("_ctor_" ^ name) in
-      begin match entries with
-      | None -> clierr sr "Unable to find any constructors for this class"
-      | Some (`NonFunctionEntry _) -> syserr sr
-        "[lookup_name_in_table_dirs_with_sig] Expected constructor to be a procedure"
-
-      | Some (`FunctionEntry fs) ->
-        (*
-        print_endline ("Ok, found "^si (length fs) ^"constructors for " ^ name);
-        *)
-        let ro =
-          resolve_overload'
-          syms caller_env rs sra fs ("_ctor_" ^ name) t2 ts
-        in
-        match ro with
-          | Some (index,t,ret,mgu,ts) ->
-            print_endline "handle_function (2)";
-            let ((_,tt) as tb) =
-              handle_function
-              syms
-              rs
-              sra srn name ts index
-            in
-              (*
-              print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
-              print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
-              print_endline ("Instantiated closure value is " ^ sbe syms.dfns bbdfns tb);
-              print_endline ("type is " ^ sbt syms.dfns tt);
-              *)
-              Some tb
-          | None ->
-            clierr sr "Unable to find matching constructor"
-      end
-      (*
-      lookup_name_in_table_dirs_with_sig (table, dirs)
-      syms env rs sra srn ("_ctor_" ^ name) ts t2
-      *)
-
     | `SYMDEF_abs _
-    | `SYMDEF_cclass _
     | `SYMDEF_union _
     | `SYMDEF_type_alias _ ->
 
@@ -3310,7 +3140,6 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
               *)
               match entry with
               | `SYMDEF_abs _
-              | `SYMDEF_cclass _
               | `SYMDEF_union _ -> true
               | _ -> false
            ) ->
@@ -3415,44 +3244,6 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
           | None -> None
           end
 
-    | `SYMDEF_class ->
-      (*
-      print_endline ("Found a class "^name^", look for constructor with hacked name _ctor_"^name);
-      *)
-      let entries = lookup_name_in_htab pubmap ("_ctor_" ^ name) in
-      begin match entries with
-      | None -> clierr sr "Unable to find any constructors for this class"
-      | Some (`NonFunctionEntry _) -> syserr sr
-        "[lookup_type_name_in_table_dirs_with_sig] Expected constructor to be a procedure"
-
-      | Some (`FunctionEntry fs) ->
-        (*
-        print_endline ("Ok, found "^si (length fs) ^"constructors for " ^ name);
-        *)
-        let ro =
-          resolve_overload'
-          syms caller_env rs sra fs ("_ctor_" ^ name) t2 ts
-        in
-        match ro with
-          | Some (index,t,ret,mgu,ts) ->
-            print_endline "handle_function (2)";
-            let tb =
-              handle_type
-              syms
-              rs
-              sra srn name ts index
-            in
-              (*
-              print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
-              print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
-              print_endline ("Instantiated closure value is " ^ sbe syms.dfns bbdfns tb);
-              print_endline ("type is " ^ sbt syms.dfns tt);
-              *)
-              Some tb
-          | None ->
-            clierr sr "Unable to find matching constructor"
-      end
-
     | `SYMDEF_typevar mt ->
       let mt = bt sra mt in
       (* match function a -> b -> c -> d with sigs a b c *)
@@ -3473,10 +3264,9 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
       ); None)
 
     | `SYMDEF_abs _
-    | `SYMDEF_cclass _
     | `SYMDEF_union _
     | `SYMDEF_type_alias _ ->
-      print_endline "Found abs,cclass, union or alias";
+      print_endline "Found abs,union or alias";
       Some (`BTYP_inst (sye index, ts))
 
 
@@ -3491,7 +3281,6 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_callback _
     | `SYMDEF_fun _
     | `SYMDEF_function _
-    | `SYMDEF_glr _
     | `SYMDEF_insert _
     | `SYMDEF_instance _
     | `SYMDEF_lazy _
@@ -3499,9 +3288,6 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_module
     | `SYMDEF_newtype _
     | `SYMDEF_reduce _
-    | `SYMDEF_regdef _
-    | `SYMDEF_regmatch _
-    | `SYMDEF_reglex _
     | `SYMDEF_typeclass
       ->
         clierr sra
@@ -3573,7 +3359,6 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
               *)
               match entry with
               | `SYMDEF_abs _
-              | `SYMDEF_cclass _
               | `SYMDEF_union _ -> true
               | _ -> false
            ) ->
@@ -3611,45 +3396,6 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
             print_endline "FAILURE"; flush stdout;
             *)
             None
-
-and bind_regdef syms env regexp_exclude e =
-  let bd e = bind_regdef syms env regexp_exclude e in
-  match e with
-  | `REGEXP_group (n,e) -> `REGEXP_group (n, bd e)
-  | `REGEXP_seq (e1,e2) -> `REGEXP_seq (bd e1, bd e2)
-  | `REGEXP_alt (e1,e2) -> `REGEXP_alt (bd e1, bd e2)
-  | `REGEXP_aster e -> `REGEXP_aster (bd e)
-  | `REGEXP_name qn ->
-    begin match lookup_qn_in_env' syms env rsground qn with
-    | i,_ ->
-      if mem (sye i) regexp_exclude
-      then
-        let sr = src_of_expr (qn:>expr_t) in
-        clierr sr
-        (
-          "[bind_regdef] Regdef " ^ string_of_qualified_name qn ^
-          " depends on itself"
-        )
-      else
-        begin
-          match get_data syms.dfns (sye i) with
-          {symdef=entry} ->
-          match entry with
-          | `SYMDEF_regdef e ->
-            let mkenv i = build_env syms (Some i) in
-            let env = mkenv (sye i) in
-            bind_regdef syms env ((sye i)::regexp_exclude) e
-          | _ ->
-            let sr = src_of_expr (qn:>expr_t) in
-            clierr sr
-            (
-              "[bind_regdef] Expected " ^ string_of_qualified_name qn ^
-              " to be regdef"
-            )
-        end
-    end
-
-  | x -> x
 
 and handle_map sr (f,ft) (a,at) =
     let t =
@@ -3897,17 +3643,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       "'callback' expression denotes non-singleton function set"
     end
 
-  | `AST_sparse (sr,e,nt,nts) ->
-    let e = be e in
-    (*
-    print_endline ("Calculating AST_parse, symbol " ^ nt);
-    *)
-    let t = cal_glr_attr_type syms sr nts in
-    (*
-    print_endline (".. DONE: Calculating AST_parse, type=" ^ sbt syms.dfns t);
-    *)
-    `BEXPR_parse (e,nts),`BTYP_sum [unit_t;t]
-
   | `AST_expr (sr,s,t) ->
     let t = bt sr t in
     `BEXPR_expr (s,t),t
@@ -4103,7 +3838,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let e'',t'' as x2 = be e' in
     begin match t'' with
     | `BTYP_record es
-(*    | `BTYP_lvalue (`BTYP_record es) *)
       ->
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = sort rcmp es in
@@ -4118,133 +3852,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           )
       end
 
-    | `BTYP_inst (i,ts)
-(*    | `BTYP_lvalue (`BTYP_inst (i,ts)) *)
-     ->
-      begin match hfind "lookup" syms.dfns i with
-      | { privmap=privtab; symdef = `SYMDEF_class } ->
-        (*
-        print_endline "AST_get_named finds a class .. ";
-        print_endline ("Looking for component named " ^ name);
-        *)
-        let entryset =
-          try Hashtbl.find privtab name
-          with Not_found -> clierr sr
-            ("[lookup:get_named_variable] Cannot find variable " ^
-              name ^ " in class"
-            )
-        in
-        begin match entryset with
-        | `NonFunctionEntry idx ->
-          let idx = sye idx in
-          let vtype =
-            inner_typeofindex_with_ts syms sr
-            { rs with depth = rs.depth+1 }
-            idx ts
-           in
-           (*
-           print_endline ("Class member variable has type " ^ sbt syms.dfns vtype);
-           *)
-           `BEXPR_get_named (idx,(e'',t'')),vtype
-        | _ -> clierr sr ("Expected component "^name^" to be a variable")
-        end
-      | _ -> clierr sr ("[bind_expression] Projection requires class")
-      end
-    | _ -> clierr sr ("[bind_expression] Projection requires class instance")
+    | _ -> clierr sr ("[bind_expression] Projection requires record instance")
     end
-
-  | `AST_get_named_method (sr,(meth_name,meth_idx,meth_ts,obj)) ->
-    (*
-    print_endline ("Get named method " ^ meth_name);
-    *)
-    let meth_ts = map (bt sr) meth_ts in
-    let oe,ot = be obj in
-    begin match ot with
-    | `BTYP_inst (oi,ots)
-(*    | `BTYP_lvalue (`BTYP_inst (oi,ots)) *) 
-    ->
-
-      (*
-      (* bind the method signature in the context of the object *)
-      let sign =
-        let entry = hfind "lookup" syms.dfns oi in
-        match entry with | {vs = vs } ->
-        let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
-        print_endline ("Binding sign = " ^ string_of_typecode sign);
-        let env' = build_env syms (Some oi) in
-        bind_type' syms env' rsground sr sign bvs mkenv
-      in
-      print_endline ("Got sign bound = " ^ sbt syms.dfns sign);
-      *)
-      begin match hfind "lookup" syms.dfns oi with
-      | {id=classname; privmap=privtab;
-         vs=obj_vs; symdef = `SYMDEF_class } ->
-        (*
-        print_endline ("AST_get_named finds a class .. " ^ classname);
-        print_endline ("Looking for component named " ^ name);
-        *)
-        let entryset =
-          try Hashtbl.find privtab meth_name
-          (* try Hashtbl.find pubtab meth_name  *)
-          with Not_found -> clierr sr
-            ("[lookup: get_named_method] Cannot find method " ^
-            meth_name ^ " in class " ^ classname
-            )
-        in
-        begin match entryset with
-        | `FunctionEntry fs ->
-          if not (mem meth_idx (map sye fs)) then syserr sr "Woops, method index isn't a member function!";
-          begin match hfind "lookup" syms.dfns meth_idx with
-          | {id=method_name; vs=meth_vs; symdef = `SYMDEF_function _} ->
-            assert (meth_name = method_name);
-            (*
-            print_endline ("Found " ^ si (length fs) ^ " candidates");
-            print_endline ("Object ts=" ^ catmap "," (sbt syms.dfns) ots);
-            print_endline ("Object vs = " ^ print_ivs_with_index obj_vs);
-            print_endline ("Method ts=" ^ catmap "," (sbt syms.dfns) meth_ts);
-            print_endline ("Method vs = " ^ print_ivs_with_index meth_vs);
-            *)
-            (*
-            begin match resolve_overload' syms env rs sr fs meth_name [sign] meth_ts with
-            | Some (meth_idx,meth_dom,meth_ret,mgu,meth_ts) ->
-              (*
-              print_endline "Overload resolution OK";
-              *)
-              (* Now we need to fixate the class type variables in the method *)
-              *)
-              (*
-              print_endline ("ots = " ^ catmap "," (sbt syms.dfns) ots);
-              *)
-              let omap =
-                let vars = map2 (fun (_,i,_) t -> i,t) (fst obj_vs) ots in
-                hashtable_of_list vars
-              in
-              let meth_ts = map (varmap_subst omap) meth_ts in
-              (*
-              print_endline ("meth_ts = " ^ catmap "," (sbt syms.dfns) meth_ts);
-              *)
-              let ts = ots @ meth_ts in
-              let typ = typeofindex_with_ts' rs syms sr meth_idx ts in
-              `BEXPR_method_closure ((oe,ot),meth_idx,ts),typ
-
-
-            (*
-            | _ -> clierr sr
-              ("[lookup: get_named_method] Cannot find method " ^ meth_name ^
-                " with signature "^sbt syms.dfns sign^" in class, candidates are:\n" ^
-                catmap "," (fun i -> meth_name ^ "<" ^si i^ ">") fs
-              )
-          end
-          *)
-          | _ -> clierr sr ("[get_named_method] Can't find method "^meth_name)
-          end
-        | _ -> clierr sr ("Expected component "^meth_name^" to be a function")
-        end
-      | _ -> clierr sr ("[bind_expression] Projection requires class")
-      end
-    | _ -> clierr sr ("[bind_expression] Projection requires class instance")
-    end
-
   | `AST_case_index (sr,e) ->
     let (e',t) as e  = be e in
     begin match lstrip syms.dfns t with
@@ -4999,57 +4608,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
            end
 
-        (* LHS CLASS *)
-        | {id=id; pubmap=pubtab; symdef = `SYMDEF_class } ->
-          (*
-          print_endline "AST_get_named finds a class .. ";
-          print_endline ("Looking for component named " ^ name);
-          *)
-          let entryset =
-            try Hashtbl.find pubtab name
-            with Not_found -> clierr sr ("[lookup: dot] Cannot find component " ^ name ^ " in class")
-          in
-          begin match entryset with
-          | `NonFunctionEntry idx ->
-            let idx = sye idx in
-            let vtype =
-              inner_typeofindex_with_ts syms sr
-              { rs with depth = rs.depth+1 }
-              idx ts'
-             in
-             (*
-             print_endline ("Class member variable has type " ^ sbt syms.dfns vtype);
-             *)
-             `BEXPR_get_named (idx,te),vtype
-          | `FunctionEntry _ ->
-            (* WEAK! *)
-            (*
-            print_endline ("Synth get method .. (2) " ^ name);
-            *)
-            let get_name = "get_" ^ name in
-            be (`AST_method_apply (sr,(get_name,e,ts)))
-
-          end
-
-        (* LHS CCLASS *)
-        | {id=id; symdef=`SYMDEF_cclass _} ->
-            (*
-            print_endline ("Synth get method .. (3) " ^ name);
-            *)
-          let get_name = "get_" ^ name in
-          begin try be (`AST_method_apply (sr,(get_name,e,ts)))
-          with exn1 -> try be (`AST_apply (sr,(e2,e)))
-          with exn2 ->
-          clierr sr (
-            "AST_dot: cclass type:" ^
-            "\nKoenig apply "^get_name ^
-            " failed with " ^ Printexc.to_string exn1 ^
-            "\nAND apply " ^ name ^
-            " failed with " ^ Printexc.to_string exn2
-            )
-          end
-
-
         (* LHS PRIMITIVE TYPE *)
         | {id=id; symdef=`SYMDEF_abs _ } ->
             (*
@@ -5070,7 +4628,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
         | _ ->
           failwith ("[lookup] operator . Expected LHS nominal type to be"^
-          " (c)struct, (c)class, or abstract primitive, got " ^
+          " (c)struct or abstract primitive, got " ^
           sbt syms.dfns ttt)
 
         end
@@ -5389,23 +4947,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
     | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
-
-  | `AST_string_regmatch (sr,_)
-  | `AST_regmatch (sr,_) ->
-    syserr sr
-    (
-      "[bind_expression] "  ^
-      "Unexpected regmatch when binding expression (should have been lifted out)" ^
-      string_of_expr e
-    )
-
-  | `AST_reglex (sr,(p1,p2,cls)) ->
-    syserr sr
-    (
-      "[bind_expression] " ^
-      "Unexpected reglex when binding expression (should have been lifted out)" ^
-      string_of_expr e
-    )
 
   | `AST_lambda (sr,_) ->
     syserr sr

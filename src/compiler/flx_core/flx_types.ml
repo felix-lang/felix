@@ -37,11 +37,9 @@ type dcl_t =
   | `DCL_union of        (id_t * int option * vs_list_t * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
   | `DCL_cstruct of      (id_t * typecode_t) list
-  | `DCL_cclass of       class_member_t list
   | `DCL_typeclass of    asm_t list
   | `DCL_match_check of pattern_t * (string * int)
   | `DCL_match_handler of pattern_t * (string * int) * asm_t list
-  | `DCL_glr of          typecode_t * (reduced_production_t * expr_t)
 
   (* variables *)
   | `DCL_val of          typecode_t
@@ -54,7 +52,6 @@ type dcl_t =
 
   (* module system *)
   | `DCL_module of       asm_t list
-  | `DCL_class of        asm_t list
   | `DCL_instance of     qualified_name_t * asm_t list
 
   (* binding structures [prolog] *)
@@ -64,9 +61,6 @@ type dcl_t =
   | `DCL_fun of         property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
   | `DCL_callback of    property_t list * typecode_t list * typecode_t * named_req_expr_t
   | `DCL_insert of      c_t * ikind_t * named_req_expr_t
-  | `DCL_regdef of      regexp_t
-  | `DCL_regmatch of    (regexp_t * expr_t) list
-  | `DCL_reglex of      (regexp_t * expr_t) list
   ]
 
 and access_t = [`Private | `Public ]
@@ -240,7 +234,6 @@ and bexe_t =
 
 and bexpr_t =
   [
-  | `BEXPR_parse of tbexpr_t * int list
   | `BEXPR_deref of tbexpr_t
   | `BEXPR_name of bid_t * btypecode_t list
   | `BEXPR_ref of bid_t * btypecode_t list
@@ -275,10 +268,6 @@ and bexpr_t =
 
 and tbexpr_t = bexpr_t * btypecode_t
 
-and glr_symbol_t = [`Term of int | `Nonterm of int list]
-and bglr_entry_t = string option * glr_symbol_t
-and bproduction_t = bglr_entry_t list
-
 and bparameter_t = {pkind:param_kind_t; pid:string; pindex:int; ptyp:btypecode_t}
 and breqs_t = (bid_t * btypecode_t list) list
 and bvs_t = (string * int) list
@@ -304,9 +293,6 @@ and bbdcl_t =
   | `BBDCL_var of        bvs_t * btypecode_t
   | `BBDCL_ref of        bvs_t * btypecode_t
   | `BBDCL_tmp of        bvs_t * btypecode_t
-  | `BBDCL_glr of        property_t list * bvs_t * btypecode_t * (bproduction_t * bexe_t list)
-  | `BBDCL_regmatch of   property_t list * bvs_t * bparams_t * btypecode_t * regular_args_t
-  | `BBDCL_reglex of     property_t list * bvs_t * bparams_t * int * btypecode_t * regular_args_t
 
   (* binding structures [prolog] *)
   | `BBDCL_newtype of    bvs_t * btypecode_t
@@ -320,8 +306,6 @@ and bbdcl_t =
   | `BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
   | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
   | `BBDCL_cstruct of    bvs_t * (id_t * btypecode_t) list
-  | `BBDCL_cclass of     bvs_t * bclass_member_t list
-  | `BBDCL_class of      property_t list * bvs_t
   | `BBDCL_typeclass of  property_t list * bvs_t
   | `BBDCL_instance of   property_t list *
                          bvs_t *
@@ -344,10 +328,6 @@ type symbol_definition_t =
   [
   | `SYMDEF_newtype of typecode_t
   | `SYMDEF_abs of type_qual_t list * c_t * named_req_expr_t
-  | `SYMDEF_regdef of regexp_t
-  | `SYMDEF_regmatch of params_t * (regexp_t * expr_t) list
-  | `SYMDEF_reglex of params_t * int * (regexp_t * expr_t) list
-  | `SYMDEF_glr of typecode_t * (reduced_production_t * sexe_t list)
 
   | `SYMDEF_parameter of  param_kind_t * typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
@@ -375,7 +355,6 @@ type symbol_definition_t =
   | `SYMDEF_union of  (id_t * int *  vs_list_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
-  | `SYMDEF_cclass of  class_member_t list
   | `SYMDEF_typeclass
   | `SYMDEF_type_alias of   typecode_t
   | `SYMDEF_inherit of   qualified_name_t
