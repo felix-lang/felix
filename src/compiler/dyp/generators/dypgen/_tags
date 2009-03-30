@@ -1,0 +1,4 @@
+<dypgen_parser.dyp>: use_pgen
+#<dypgen.{ml,byte,native}>: use_dyplib
+#<dypgen_parser.{ml}>: use_dyplib
+
