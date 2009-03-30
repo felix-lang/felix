@@ -227,33 +227,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
-  | `BEXPR_parse ((_,t')as e,ii) ->
-    let pn =
-      try Hashtbl.find syms.parsers (this,t',ii)
-      with Not_found -> failwith ("[gen_expr] parse can't find parser")
-    in
-    let ln =
-      try Hashtbl.find syms.lexers (this,e)
-      with Not_found -> failwith ("[gen_expr] parse can't find lexer")
-    in
-    let the_display =
-      "this"::
-      map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-      our_display
-    in
-
-    (* HACK PROPERTIES *)
-    let pdisplay = strd the_display [`Requires_ptf] in
-    let ldisplay = strd (the_display @[ge e]) [`Requires_ptf] in
-    let callstr =
-    "(Elk_" ^ si pn ^ pdisplay ^
-    ".apply((FLX_NEWP( ElkLex_" ^ si ln^")"^ldisplay^")->init()))"
-    in
-      (*
-      print_endline ("Parse call : " ^ callstr);
-      *)
-      ce_atom callstr
-
   | `BEXPR_expr (s,_) -> ce_top s
 
   | `BEXPR_case_index e -> gen_case_index e
@@ -291,8 +264,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
     | `BTYP_inst (i,_) ->
       begin match Hashtbl.find bbdfns i with
-      | _,_,_,`BBDCL_struct (_,ls)
-      | _,_,_,`BBDCL_cstruct (_,ls) ->
+      | _,_,_,`BBDCL_struct (_,ls) ->
         let name,_ =
           try nth ls n
           with _ ->
@@ -339,10 +311,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | `BTYP_function _ ->
       let cast = tn t in
       ce_cast cast (ce_dot (ge' e) "data")
-    | _ when isclass bbdfns t ->
-      let cast = tn t in
-      ce_cast cast (ce_dot (ge' e) "data")
-
     | _ ->
       let cast = tn t ^ "*" in
       ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
@@ -522,7 +490,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
             let _,_,_,entry = Hashtbl.find bbdfns i in
             begin match entry with
               | `BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
-              | `BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
               | `BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
               | _ ->
                 clierr sr (
@@ -546,7 +513,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       | `BBDCL_function (_,_,([],_),_,[`BEXE_fun_return (_,e)]) ->
         ge' e
 
-      | `BBDCL_cstruct _
       | `BBDCL_struct _
       | `BBDCL_function _
       | `BBDCL_procedure _
@@ -602,7 +568,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       print_endline "Mapping closure of callback to C function pointer";
       ce_atom id
 
-    | `BBDCL_cstruct _
     | `BBDCL_struct _
     | `BBDCL_fun _
     | `BBDCL_proc _ ->
@@ -662,7 +627,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       union_typename = tn t
     in
     let aval =
-       if isclass bbdfns t' then ge_arg e else
       "new (*PTF gcp, "^arg_typename^"_ptr_map,true) " ^
       arg_typename ^ "(" ^ ge_arg e ^ ")"
     in
@@ -717,7 +681,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
          union_typename = tn (lower t)
        in
        let aval =
-         if isclass bbdfns t'' then ge_arg (a,t'') else
          "new (*PTF gcp, "^arg_typename^"_ptr_map,true) " ^
          arg_typename ^ "(" ^ ge_arg (a,t'') ^ ")"
        in
@@ -836,10 +799,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     let ts = map tsub ts in
     begin match entry with
-    | `BBDCL_cstruct (vs,_) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
-
     | `BBDCL_struct (vs,cts) ->
       let name = tn (`BTYP_inst (index,ts)) in
       if length cts > 1 then
@@ -868,11 +827,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
          should do a clone .. class types are also pointers ..
       *)
       | `BTYP_function _ ->
-        ce_atom (
-          "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
-        )
-
-      | _ when isclass bbdfns ct ->
         ce_atom (
           "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
         )

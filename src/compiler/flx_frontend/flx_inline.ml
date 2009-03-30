@@ -172,8 +172,6 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
           match e with
           | `BEXPR_closure (i,ts),_ ->
             `BEXE_call_direct (sr,i,ts,argument)
-          | `BEXPR_method_closure (obj,i,ts),_ ->
-            `BEXE_call_method_direct (sr,obj,i,ts,argument)
           | _ ->
           *)
             `BEXE_call (sr,e,argument)
@@ -365,14 +363,6 @@ let expand_exe syms bbdfns u exe =
       let e,xs = u sr e2 in
       `BEXE_jump_direct (sr,i,ts,e) :: xs
       *)
-
-    | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
-      let e,xs = u sr e2 in
-      `BEXE_apply_ctor (sr,i1,i2,ts,i3,e) :: xs
-
-    | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
-      let e,xs = u sr e2 in
-      `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e) :: xs
 
     | `BEXE_assign (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in

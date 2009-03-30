@@ -304,8 +304,6 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
              -> elimi exe
 
           (* terminate substitution, return modified instr *)
-          | `BEXE_apply_ctor _
-          | `BEXE_apply_ctor_stack _
           | `BEXE_assign _
           | `BEXE_fun_return _
           | `BEXE_yield _

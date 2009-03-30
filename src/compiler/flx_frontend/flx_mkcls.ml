@@ -100,24 +100,6 @@ let rec adj_cls syms bbdfns all_closures e =
     all_closures := IntSet.add i !all_closures;
     x
 
-  (* Class method -- ASSUMED NOT A PRIMITIVE -- seem to require
-     heap closures: not sure why this should be. They cannot
-     be inlined into their parent at the moment, since it is a class,
-     and any 'inlined' version would be an actual C++ class method.
-     Which would also be a kind of stack call. In any case
-     we cannot optimise this yet.
-  *)
-  | `BEXPR_method_closure (_,i,_),_ as x ->
-    all_closures := IntSet.add i !all_closures;
-    x
-
-  (* HUM .. *)
-  (*
-  | `BEXPR_parse (_,prds),_ as x ->
-    iter (fun i -> all_closures := IntSet.add i !all_closures) prds;
-    x
-  *)
-
   | x -> x
 
 
@@ -147,15 +129,6 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
   | `BEXE_call_stack (sr,i,ts,e2)  ->
     (* stack calls do use closures -- but not heap allocated ones *)
     `BEXE_call_stack (sr,i,ts, ue e2)
-
-  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
-    all_closures := IntSet.add i2 !all_closures;
-    all_closures := IntSet.add i3 !all_closures;
-    `BEXE_apply_ctor(sr,i1,i2,ts,i3,ue e2)
-
-  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
-    all_closures := IntSet.add i2 !all_closures;
-    `BEXE_apply_ctor_stack(sr,i1,i2,ts,i3,ue e2)
 
   | `BEXE_call (sr,e1,e2)  -> `BEXE_call (sr,ue e1, ue e2)
   | `BEXE_jump (sr,e1,e2)  -> `BEXE_jump (sr,ue e1, ue e2)
@@ -203,17 +176,6 @@ let process_entry syms bbdfns all_closures i =
     let exes = process_exes syms bbdfns all_closures exes in
     let entry = `BBDCL_procedure (props,vs,ps,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_glr (props,vs,t,(p,exes)) ->
-    let exes = process_exes syms bbdfns all_closures exes in
-    let entry = `BBDCL_glr (props,vs,t,(p,exes)) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_regmatch (props,vs,ps,t,(a,j,h,m)) ->
-    Hashtbl.iter (fun i e -> Hashtbl.replace h i (ue e)) h
-
-  | `BBDCL_reglex (props,vs,ps,i,t,(a,j,h,m)) ->
-    Hashtbl.iter (fun i e -> Hashtbl.replace h i (ue e)) h
 
   | _ -> ()
 

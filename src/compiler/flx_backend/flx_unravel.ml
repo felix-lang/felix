@@ -45,8 +45,6 @@ let unravel syms bbdfns e =
 
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with
-        | `BBDCL_regmatch _
-        | `BBDCL_reglex _
         | `BBDCL_struct _
         | `BBDCL_fun _ -> `BEXPR_apply_direct (i, ts, aux n b),t
         | `BBDCL_function _ -> refer (`BEXPR_apply_direct (i,ts, aux urn b),t)

@@ -288,25 +288,12 @@ let emit_whycode filename syms bbdfns root =
   output_string f "(****** STRUCTS *******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
-  | `BBDCL_cstruct (bvs,variants)
   | `BBDCL_struct (bvs,variants) ->
     emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
   bbdfns
   ;
-
-  output_string f "(****** CLASSES *******)\n";
-  Hashtbl.iter
-  (fun index (id,parent,sr,entry) -> match entry with
-  | `BBDCL_class (_,bvs)
-  | `BBDCL_cclass (bvs,_) ->
-    emit_type syms bbdfns f index id sr bvs
-  | _ -> ()
-  )
-  bbdfns
-  ;
-
 
   output_string f "(******* FUNCTIONS ******)\n";
   Hashtbl.iter

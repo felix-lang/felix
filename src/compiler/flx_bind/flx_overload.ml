@@ -93,7 +93,6 @@ let sig_of_symdef symdef sr name i = match symdef with
       paramtype p,r,Some (map (fun (_,name,_,d)->name,d) p)
     end
 
-  | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
     typeof_list (map snd ls),`AST_index (sr,name,i),
      Some (map (fun (p,_) -> p,None) ls)

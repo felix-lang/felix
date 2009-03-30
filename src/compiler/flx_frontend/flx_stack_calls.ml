@@ -27,18 +27,6 @@ let hfind msg h k =
   the code generator works
 *)
 
-(* return true if exes contain BEXPR_parse expression *)
-let check_parser_calls exes : bool =
-  let cp = function
-    | `BEXPR_parse _,_ -> raise Not_found
-    | _ -> ()
-  in
-  let cpe e = iter_tbexpr ignore cp ignore e in
-  try
-    iter (iter_bexe ignore cpe ignore ignore ignore) exes;
-    false
-  with Not_found -> true
-
 (* The Pure property is a bit weird. We consider a function pure
   if it doesn't need a stack frame, and can make do with
   individual variables. This allows the function to be modelled
@@ -81,7 +69,6 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_callback _
   | `BBDCL_insert _
   | `BBDCL_struct _
-  | `BBDCL_cstruct _
   | `BBDCL_union _
   | `BBDCL_abs _
   | `BBDCL_newtype _
@@ -98,17 +85,6 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_fun (_,_,_,_,ct,_,_)
   | `BBDCL_proc (_,_,_,ct,_) ->
     ct <> `Virtual
-
-  | `BBDCL_cclass _  (* not sure FIXME .. *)
-  | `BBDCL_class _  (* not sure FIXME .. *)
-  | `BBDCL_glr _
-  | `BBDCL_reglex _
-  | `BBDCL_regmatch _
-    ->
-    (*
-    print_endline (id ^ " is intrinsically Not pure");
-    *)
-    false
 
   | `BBDCL_procedure (_,_,_,exes)   (* ALLOWED NOW *)
   | `BBDCL_function (_,_,_,_,exes) ->
@@ -138,17 +114,9 @@ let rec is_pure syms (child_map, bbdfns) i =
       children
       ;
       (*
-      print_endline (id ^ " is checked pure, checking for parser calls ..");
+      print_endline (id ^ " is Pure");
       *)
-      let pure = not (check_parser_calls exes) in
-      (*
-      if pure then
-        print_endline (id ^ " is Pure")
-      else
-        print_endline (id ^ " calls a parser, NOT Pure")
-      ;
-      *)
-      pure
+      true
 
     with
     | Not_found ->
@@ -274,28 +242,8 @@ let has_ptr_fn cache syms bbdfns children e =
         | `BBDCL_union (vs,cs)->
           check_components vs ts (map (fun (_,_,t)->t) cs)
 
-        | `BBDCL_struct (vs,cs)
-        | `BBDCL_cstruct (vs,cs) ->
+        | `BBDCL_struct (vs,cs) ->
           check_components vs ts (map snd cs)
-
-        | `BBDCL_class _ ->
-          Hashtbl.replace cache e `Unsafe;
-          raise Unsafe
-
-        | `BBDCL_cclass (vs,cs) ->
-          ()
-          (* nope, it isn't a use *)
-          (*
-          let tlist = map (function
-            | `BMemberVal (_,t)
-            | `BMemberVar (_,t)
-            | `BMemberFun (_,_,t)
-            | `BMemberProc (_,_,t)
-            | `BMemberCtor (_,t) -> t
-            ) cs
-          in
-          check_components vs ts tlist
-          *)
 
         | _ -> assert false
         end
@@ -320,9 +268,6 @@ let can_stack_func cache syms (child_map,bbdfns) i =
   | `BBDCL_fun _
   | `BBDCL_callback _
   | `BBDCL_struct _
-  | `BBDCL_cstruct _
-  | `BBDCL_regmatch _
-  | `BBDCL_reglex _
     -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
@@ -354,7 +299,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     | `BEXE_call (_,(`BEXPR_closure (j,_),_),_)
     | `BEXE_call_direct (_,j,_,_)
     | `BEXE_call_method_direct (_,_,j,_,_)
-    | `BEXE_apply_ctor (_,_,_,_,j,_)
 
     (* this case needed for virtuals/typeclasses .. *)
     | `BEXE_call_prim (_,j,_,_)
@@ -434,7 +378,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     | `BEXE_code _
     | `BEXE_nonreturn_code _
 
-    | `BEXE_apply_ctor_stack _
     | `BEXE_call_stack _ (* cool *)
     | `BEXE_call_method_stack _
     | `BEXE_halt _
@@ -526,22 +469,8 @@ let rec enstack_applies cache syms (child_map, bbdfns) x =
           `BEXPR_apply_prim(i,ts,b),t
 
         | `BBDCL_struct _
-        | `BBDCL_cstruct _
         | `BBDCL_nonconst_ctor  _ ->
           `BEXPR_apply_struct(i,ts,b),t
-        | _ -> x
-      end
-  | (
-      `BEXPR_apply ((`BEXPR_method_closure (obj,meth,ts),_),b),t
-      | `BEXPR_apply_method_direct (obj,meth,ts,b),t
-    ) as x ->
-      begin
-        let _,_,_,entry = Hashtbl.find bbdfns meth in
-        match entry with
-        | `BBDCL_function (props,_,_,_,_) ->
-          if mem `Stackable props
-          then `BEXPR_apply_method_stack (obj,meth,ts,b),t
-          else `BEXPR_apply_method_direct (obj,meth,ts,b),t
         | _ -> x
       end
   | x -> x
@@ -631,26 +560,6 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
         | _ -> assert false
         end
 
-      | `BEXE_apply_ctor (sr,v,obj,ts,meth,a) ->
-        let id,parent,sr,entry = Hashtbl.find bbdfns meth in
-        begin match entry with
-        | `BBDCL_procedure (props,vs,p,exes) ->
-          if mem `Stackable props then
-          begin
-            if not (mem `Stack_closure props) then
-              Hashtbl.replace bbdfns meth (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
-            ;
-            (*
-            print_endline "APPLY_CTOR_STACK";
-            *)
-            `BEXE_apply_ctor_stack (sr,v,obj,ts,meth,a)
-          end
-          else
-          `BEXE_apply_ctor (sr,v,obj,ts,meth,a)
-
-        | _ -> assert false
-        end
-
       | x -> x
       in
         map_bexe id ea id id id exe
@@ -683,25 +592,6 @@ let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) labe
         Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_function (props,vs,p,ret,exes))
       | _ -> assert false
       end
-
-    | `BBDCL_glr (props,vs,t,(p,exes)) ->
-      let exes = enstack_calls cache syms (child_map,bbdfns) i exes in
-      let id,parent,sr,entry = Hashtbl.find bbdfns i in
-      begin match entry with
-      | `BBDCL_glr (props,vs,t,(p,_)) ->
-        Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes)))
-      | _ -> assert false
-      end
-
-    | `BBDCL_regmatch (_,vs,p,t,(a,i,h,m)) ->
-      Hashtbl.iter
-      (fun k e -> Hashtbl.replace h k (ea e))
-      h
-
-    | `BBDCL_reglex (_,vs,p,j,t,(a,i,h,m)) ->
-      Hashtbl.iter
-      (fun k e -> Hashtbl.replace h k (ea e))
-      h
 
     | _ -> ()
   )

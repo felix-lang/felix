@@ -198,10 +198,3 @@ val lookup_qn_with_sig:
   qualified_name_t ->
   btypecode_t list ->
   tbexpr_t
-
-val bind_regdef:
-  sym_state_t ->
-  env_t ->
-  int list -> (* regexp exclusion list *)
-  regexp_t ->
-  regexp_t

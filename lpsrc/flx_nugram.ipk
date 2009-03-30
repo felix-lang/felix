@@ -865,121 +865,6 @@ syntax functions {
 
 }
 
-
-//------------------------------------------
-syntax regexps {
-  requires expressions;
-  satom := sregmatch_expr =># "_1";
-  sdirective := sregdef =># "_1";
-
-  page regular_expressions =
-    sregmatch_expr,
-    sregmatch_alternatives,
-    sregmatch_alternative,
-    sregdef,
-    sre0, sre1, sre2, sre3, sre4, sre_name,
-    scharset, scharset0
-  ;
-
-  sregmatch_expr := reglex sexpr to sexpr with sregmatch_alternatives endmatch =>#
-    "`(ast_reglex (,_2 ,_4 ,_6))";
-  sregmatch_expr := regmatch sexpr with sregmatch_alternatives endmatch =>#
-    "`(ast_string_regmatch (,_2 ,_4))";
-
-  sregmatch_alternatives := sregmatch_alternative + =># "(reverse _1)";
-  sregmatch_alternative := vbar sre1 => sexpr =># "`(,_2 ,_4)";
-
-  sregdef := regexp sname = sre1 ssemi =># "`(ast_regdef ,_sr ,_2 ,_4)";
-
-  sre0 := sre1 as sname =># "`(regexp_group ,_3 ,_1)";
-  sre0 := sre1 =># "_1";
-
-  sre1 := sre1 vbar sre2 =># "`(regexp_alt ,_1 ,_3)";
-  sre1 := sre2 =># "_1";
-
-  sre2 := sre2 sre3 =># "`(regexp_seq ,_1 ,_2)";
-  sre2 := sre3 =># "_1";
-
-  sre3 := sre4 star =># "`(regexp_aster ,_1)";
-  sre3 := sre4 plus =># "`(regexp_seq ,_1 (regexp_aster ,_1))";
-  sre3 := sre4 quest =># "`(regexp_alt regexp_epsilon ,_1)";
-  sre3 := sre4 =># "_1";
-
-  sre4 := sstring =># "`(regexp_string ,_1)";
-  sre4 := _ =># "'regexp_underscore";
-  sre4 := . =># "'regexp_dot";
-  sre4 := lpar sre0 rpar =># "_2";
-  sre4 := lsqb scharset rsqb =># "`(regexp_of_charset ,_2)";
-  sre4 := lsqb ^ scharset rsqb =># "`(regexp_of_charset (charset_inv ,_3))";
-  sre4 := sre_name =># "`(regexp_name ,_1)";
-
-  sre_name := sre_name :: sname =># "`(ast_lookup (,_1 ,_3 ()))";
-  sre_name := sname =># "`(ast_name ,_sr ,_1 ())";
-
-  scharset0:= sinteger - sinteger =># "`(charset_of_int_range ,_1 ,_3)";
-  scharset0:= sstring - sstring =># "`(charset_of_range ,_1 ,_3)";
-  scharset0:= sstring =># "`(charset_of_string ,_1)";
-  scharset0:= sinteger =># "`(charset_of_int_range ,_1 ,_1)";
-
-  scharset:= scharset scharset0 =># "`(charset_union ,_1 ,_2)";
-  scharset:= scharset0 =># "_1";
-
-}
-
-//------------------------------------------
-syntax parsing {
-  requires expressions, statements;
-  satom := sglr_parse =># "_1";
-  sdirective := sglr_production =># "_1";
-
-  page glr_parsing =
-    sglr_parse,
-    sglr_production,
-    sglr_matching,
-    sglr_entry,
-    sglr_seq,
-    sglr_alts,
-    sglr_term
-  ;
-
-  sglr_term := squalified_name =># "`(GLR_name ,_1)";
-  sglr_term := sglr_term quest =># "`(GLR_opt ,_1)";
-  sglr_term := sglr_term star =># "`(GLR_ast ,_1)";
-  sglr_term := sglr_term plus =># "`(GLR_plus ,_1)";
-
-  sglr_term := lbrace sglr_alts rbrace =># "`(GLR_ast ,_2)";
-  sglr_term := lpar sglr_alts rpar =># "_2";
-
-  sglr_seq:= sglr_term sglr_term+ =># "`(GLR_seq ,(cons _1 _2))";
-  sglr_seq:= sglr_term =># "_1";
-
-  sglr_alts := sglr_seq (vbar sglr_seq)+ =># "`(GLR_alt ,(cons _1 (map cadr _2)))";
-  sglr_alts := sglr_seq =># "_1";
-
-  sglr_entry:= sname colon sglr_term =># "`((some ,_1) ,_3)";
-  sglr_entry:= sglr_term =># "`(none ,_1)";
-
-  sglr_matching:= vbar sglr_entry* => sexpr =># "`(,_2 ,_4)";
-
-  sglr_production:= nonterm sname colon sexpr = sglr_matching+ ssemi =>#
-  "`(ast_glr ,_sr ,_2 ,_4 ,_6)";
-
-explain sglr_production """<p>A nonterm directive defines
-nonterminal as a sequence of symbols and a user
-action.<p>""";
-
-  sglr_parse:= parse sexpr with sglr_matching+ endmatch =>#
-  "`(ast_parse ,_sr ,_2 ,_4)";
-
-explain sglr_parse """<p>A GLR parsing expression accepts
-a token source generator as its first argument. This must
-be a generator returning a value of union type when applied
-to the unit argument.</p>
-""";
-
-}
-
-
 //------------------------------------------
 syntax statements {
   requires expressions;
@@ -1374,14 +1259,6 @@ syntax cbind {
   sexport_statement := export type lpar sexpr rpar as sstring ssemi =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
-
-  sstruct_decl := cstruct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
-    """
-    (mkns
-    `(ast_cstruct ,_sr ,(caar _2) ,(cadar _2) ,_5)
-    (cdr _2))
-     """;
-
   sopt_prec := is sname =># "_2";
   sopt_prec := sepsilon =># '(quote "")';
 
@@ -1515,13 +1392,6 @@ syntax cbind {
     "`(MemberFun ,_2 none ,_3 ,_5 ,_6)";
   sclass_component:= proc sname stvarlist  : stypeexpr sopt_cstring ssemi =>#
     "`(MemberProc ,_2 none ,_3 ,_5 ,_6)";
-
-  sstruct_decl := cclass sdeclname = ? lbrace sclass_component * rbrace =>#
-    """
-    (mkns
-    `(ast_cclass ,_sr ,(caar _2) ,(cadar _2) ,_5)
-    (cdr _2))
-     """;
 
   sexpr_code_prefix := code lsqb stypeexpr rsqb =># "_3";
   satom := sexpr_code_prefix sstring =># "`(ast_expr ,_2 ,_1)";
@@ -2396,7 +2266,7 @@ the same as <code>x:int</code></p>
     `(,(car _1) none ,dfltvs ,(cadr _1))
   """;
 
-  // struct, cstruct
+  // struct
   sstruct_mem_decl := declarator ssemi =># """
     ;;(begin (display "\\ndeclarator=")(display _1)
     ;;(display "\\nvariable=")(display (cadr _1))
@@ -2502,8 +2372,6 @@ syntax felix {
     functions,
     patterns,
     cbind,
-    regexps,
-    parsing,
     macros,
     csyntax
   ;

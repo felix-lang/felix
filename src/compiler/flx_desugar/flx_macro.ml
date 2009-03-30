@@ -823,15 +823,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `AST_get_n (sr, (i, e1)) ->  `AST_get_n (sr,(i,me e1))
   | `AST_get_named_variable (sr, (i, e1)) ->  `AST_get_named_variable (sr,(i,me e1))
-  | `AST_get_named_method (sr, (i,j,ts, e1)) ->
-     `AST_get_named_method (sr,(i,j,map (mt sr) ts,me e1))
   | `AST_as (sr, (e1, id)) ->  `AST_as (sr,(me e1, mi sr id))
-
-  | `AST_parse (sr, e1, ms) ->
-    let ms = map (fun (sr,p,e) -> sr,p,me e) ms in
-    `AST_parse (sr, me e1, ms)
-
-  | `AST_sparse _ -> assert false
 
   | `AST_match (sr, (e1, pes)) ->
     let pes =
@@ -845,18 +837,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       pes
     in
     `AST_match (sr,(me e1, pes))
-
-  | `AST_regmatch (sr, (p1, p2, res)) ->
-    let res = map (fun (rexp,e) -> rexp, me e) res in
-    `AST_regmatch (sr,(me p1, me p2, res))
-
-  | `AST_string_regmatch (sr, (s, res)) ->
-    let res = map (fun (rexp,e) -> rexp, me e) res in
-    `AST_string_regmatch (sr,(me s, res))
-
-  | `AST_reglex (sr, (e1, e2, res)) ->
-    let res = map (fun (rexp,e) -> rexp, me e) res in
-    `AST_reglex (sr,(me e1, me e2, res))
 
   | `AST_type_match (sr, (e,ps)) ->
     let ps = map (fun (pat,e) -> pat, mt sr e) ps in
@@ -995,7 +975,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     iter tack (ms sts)
 
   | `AST_include (sr, s) -> tack st
-  | `AST_cparse (sr, s) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | `AST_open (sr, vs, qn) ->
@@ -1017,14 +996,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | `AST_comment _  ->  tack st
 
-  (* IDENTIFIER RENAMING NOT SUPPORTED IN REGDEF *)
-  | `AST_regdef (sr, id, re)  ->  tack st
-
-  | `AST_glr (sr, id, t, ms )  ->
-    (* add protection code later .. see AST_match *)
-    let ms = map (fun (sr',p,e) -> sr',p,me e) ms in
-    tack (`AST_glr (sr, mi sr id, mt sr t, ms ))
-
   | `AST_union (sr, id, vs, idts ) ->
     let idts = map (fun (id,v,vs,t) -> id,v,vs,mt sr t) idts in
     tack (`AST_union (sr, mi sr id, vs, idts))
@@ -1032,21 +1003,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_struct (sr, id, vs, idts) ->
     let idts = map (fun (id,t) -> id,mt sr t) idts in
     tack (`AST_struct (sr, mi sr id, vs, idts))
-
-  | `AST_cstruct (sr, id, vs, idts) ->
-    let idts = map (fun (id,t) -> id,mt sr t) idts in
-    tack (`AST_cstruct (sr, mi sr id, vs, idts))
-
-  | `AST_cclass (sr, id, vs, idts) ->
-    let idts = map (function
-      | `MemberVar (id,t,cc) -> `MemberVar (id,mt sr t,cc)
-      | `MemberVal (id,t,cc) -> `MemberVal (id,mt sr t,cc)
-      | `MemberFun (id,mix,vs,t,cc) -> `MemberFun (id,mix,vs,mt sr t,cc)
-      | `MemberProc (id,mix,vs,t,cc) -> `MemberProc (id,mix,vs,mt sr t,cc)
-      | `MemberCtor (id,mix,t,cc) -> `MemberCtor (id,mix,mt sr t,cc)
-      ) idts
-    in
-    tack (`AST_cclass (sr, mi sr id, vs, idts))
 
   | `AST_typeclass (sr, id, vs, sts) ->
     tack (`AST_typeclass (sr, mi sr id, vs, ms sts))
@@ -1146,10 +1102,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let pss = map (fun psp -> mpsp sr psp) pss in
     tack(`AST_curry(sr, mi sr id, vs, pss, (ret,post),kind, msp sr pr sts ))
 
-  | `AST_object (sr, id, vs, psp, sts ) ->
-    let pr = map (fun(x,y,z,d)->y) (fst psp) in
-    tack(`AST_object (sr, mi sr id, vs, mpsp sr psp, msp sr pr sts ))
-
   | `AST_val_decl (sr, id, vs, optt, opte) ->
     let opte = match opte with
     | Some x -> Some (me x)
@@ -1228,10 +1180,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_namespace (sr, id, vs, sts) ->
     tack (`AST_namespace (sr, mi sr id, vs, ms sts))
 
-
-  | `AST_class (sr, id, vs, sts) ->
-    tack (`AST_class (sr, mi sr id, vs, ms sts))
-
   | `AST_instance (sr, vs, qn, sts) ->
     tack (`AST_instance (sr, vs, mq qn, ms sts))
 
@@ -1248,12 +1196,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | _ ->
       ctack (`AST_ifgoto (sr, e, mi sr id))
     end
-
-  | `AST_apply_ctor (sr,i,f,a) ->
-    let i = mi sr i in
-    let f = me f in
-    let a = me a in
-    ctack (`AST_apply_ctor (sr, i, f, a))
 
   | `AST_init (sr,v,e) ->
     ctack (`AST_init (sr, mi sr v, me e))

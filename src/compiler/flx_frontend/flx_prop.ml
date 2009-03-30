@@ -38,18 +38,6 @@ let add_prop bbdfns p i =
     let entry = `BBDCL_proc (p :: props,vs,ps,ct,reqs) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry);
 
-  | `BBDCL_regmatch (props,vs,ps,t,x) ->
-    let entry = `BBDCL_regmatch (p :: props, vs, ps, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_reglex (props,vs,ps,le,t,x) ->
-    let entry = `BBDCL_reglex (p :: props, vs, ps, le, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_glr (props, vs, t, x) ->
-    let entry = `BBDCL_glr (p :: props, vs, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
   | _ -> ()
 
 let rem_prop bbdfns p i =
@@ -82,21 +70,6 @@ let rem_prop bbdfns p i =
     let entry = `BBDCL_proc (props,vs,ps,ct,reqs) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry);
 
-  | `BBDCL_regmatch (props,vs,ps,t,x) ->
-    let props = List.filter (fun k -> p <> k) props in
-    let entry = `BBDCL_regmatch (props, vs, ps, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_reglex (props,vs,ps,le,t,x) ->
-    let props = List.filter (fun k -> p <> k) props in
-    let entry = `BBDCL_reglex (props, vs, ps, le, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-  | `BBDCL_glr (props, vs, t, x) ->
-    let props = List.filter (fun k -> p <> k) props in
-    let entry = `BBDCL_glr (props, vs, t, x) in
-    Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
   | _ -> ()
 
 let get_vs bbdfns i =
@@ -108,15 +81,9 @@ let get_vs bbdfns i =
   | `BBDCL_var (vs,t) -> vs
   | `BBDCL_ref (vs,t) -> vs
   | `BBDCL_tmp (vs,t) -> vs
-  | `BBDCL_glr (props,vs,ret, (p,exes)) -> vs
-  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  -> vs
-  | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) -> vs
-  | `BBDCL_class (props,vs) -> vs
   | `BBDCL_union (vs,ps) -> vs
   | `BBDCL_struct (vs,ps) -> vs
-  | `BBDCL_cstruct (vs,ps) -> vs
   | `BBDCL_newtype (vs,t) -> vs
-  | `BBDCL_cclass (vs,ps) -> vs
   | `BBDCL_const (_,vs,t,ct,reqs) -> vs
   | `BBDCL_insert (vs,s,ikind,reqs) -> vs
   | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> vs

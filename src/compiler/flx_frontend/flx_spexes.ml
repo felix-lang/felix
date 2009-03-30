@@ -258,38 +258,9 @@ let gen_body syms (uses,child_map,bbdfns) id
     [`BEXE_jump_direct (sr,i,ts, ge e2)]
 
   | `BEXE_call_stack (sr,i,ts,e2)  -> assert false
-
-  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
-    let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
-      try
-        let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
-      with Not_found -> i,ts
-    in
-    let i2,ts = fixup i2 ts in
-    let rv i = try Hashtbl.find revariable i with Not_found -> i in
-    [`BEXE_apply_ctor (sr,rv i1, i2,ts,rv i3,ge e2)]
-
-  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
-    let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
-      try
-        let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
-      with Not_found -> i,ts
-    in
-    let i2,ts = fixup i2 ts in
-    let rv i = try Hashtbl.find revariable i with Not_found -> i in
-    [`BEXE_apply_ctor_stack (sr,rv i1, i2,ts,rv i3,ge e2)]
-
   | `BEXE_call (sr,e1,e2)  -> [`BEXE_call (sr,ge e1, ge e2)]
   | `BEXE_jump (sr,e1,e2)  -> assert false
-
   | `BEXE_loop (sr,i,e) -> assert false
-
   | `BEXE_assert (sr,e) -> [`BEXE_assert (sr, ge e)]
   | `BEXE_assert2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e1 -> Some (ge e1) | None -> None in
@@ -555,34 +526,6 @@ let gen_body syms (uses,child_map,bbdfns) id
           recal_exes_usage syms uses sr i ps exes;
           Hashtbl.replace bbdfns i
           (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
-
-        | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx)) ->
-          (try Hashtbl.remove uses i with Not_found -> ());
-          iter (cal_param_usage syms uses sr i) ps;
-          let h2 = Hashtbl.create 97 in
-          Hashtbl.iter (fun k x ->
-            let x = rpl syms argmap x in
-            Hashtbl.add h2 k x;
-            cal_expr_usage syms uses i sr x
-          )
-          h
-          ;
-          Hashtbl.replace bbdfns i
-          (id,parent,sr,`BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h2,mx)))
-
-        | `BBDCL_reglex (props,vs,(ps,traint),j,ret,(alpha,states,h,mx)) ->
-          (try Hashtbl.remove uses i with Not_found -> ());
-          iter (cal_param_usage syms uses sr i) ps;
-          let h2 = Hashtbl.create 97 in
-          Hashtbl.iter (fun k x ->
-            let x = rpl syms argmap x in
-            Hashtbl.add h2 k x;
-            cal_expr_usage syms uses i sr x
-          )
-          h
-          ;
-          Hashtbl.replace bbdfns i
-          (id,parent,sr,`BBDCL_reglex (props,vs,(ps,traint),j,ret,(alpha,states,h2,mx)))
 
         | _ -> ()
       )

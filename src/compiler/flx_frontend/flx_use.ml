@@ -145,9 +145,7 @@ and uses syms used bbdfns count_inits i =
           .. OR ..  matched against ??
         *)
 
-      | `BBDCL_struct (_,ps)
-      | `BBDCL_cstruct (_,ps)
-        ->
+      | `BBDCL_struct (_,ps) ->
         iter ut (map snd ps)
 
       | `BBDCL_val (_,t)

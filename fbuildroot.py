@@ -272,8 +272,6 @@ def build():
     # --------------------------------------------------------------------------
     # build the secondary libraries
 
-    call('buildsystem.elk.build_exe', host)
-    call('buildsystem.elk.build_runtime', target)
     call('buildsystem.flx_glob.build_runtime', target)
     call('buildsystem.tre.build_runtime', target)
 

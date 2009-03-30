@@ -30,12 +30,8 @@ let cal_display syms bbdfns parent : (bid_t *int) list =
       try Some (Hashtbl.find bbdfns parent)
       with Not_found ->  None
     with
-    | Some (_,parent',sr,`BBDCL_class (_,vs))
     | Some (_,parent',sr,`BBDCL_procedure (_,vs,_,_))
     | Some (_,parent',sr,`BBDCL_function (_,vs,_,_,_))
-    | Some (_,parent',sr,`BBDCL_regmatch (_,vs,_,_,_))
-    | Some (_,parent',sr,`BBDCL_reglex (_,vs,_,_,_,_))
-    | Some (_,parent',sr,`BBDCL_glr (_,vs,_,_))
       -> aux parent' ((parent,length vs)::display)
 
     (* typeclasses have to be treated 'as if' top level *)

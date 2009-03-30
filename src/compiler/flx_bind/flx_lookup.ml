@@ -1225,7 +1225,6 @@ and bind_type'
     in
     begin match entry with
     | `SYMDEF_struct _
-    | `SYMDEF_cstruct _
     | `SYMDEF_union _
     | `SYMDEF_abs _
       ->
@@ -1588,7 +1587,6 @@ and bind_type_index syms (rs:recstop)
     | `SYMDEF_newtype _
     | `SYMDEF_union _
     | `SYMDEF_struct _
-    | `SYMDEF_cstruct _
     | `SYMDEF_typeclass
       ->
       `BTYP_inst (index,ts)
@@ -1959,7 +1957,6 @@ and inner_typeofindex
     clierr sr ("Union "^id^" doesn't have a type")
 
   (* struct as function *)
-  | `SYMDEF_cstruct (ls)
   | `SYMDEF_struct (ls) ->
     (* ARGGG WHAT A MESS *)
     let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
@@ -2077,7 +2074,6 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       begin match get_data syms.dfns index with
       { id=id;vs=vs;symdef=entry} ->
         begin match entry with
-        | `SYMDEF_cstruct (cs)
         | `SYMDEF_struct (cs) -> t1, None
         | _ ->
           clierr sr
@@ -2249,7 +2245,6 @@ and lookup_qn_with_sig'
       | `SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_cstruct _
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
         let t = typeofindex_with_ts' rs syms sr index ts in
@@ -2530,7 +2525,6 @@ and lookup_type_qn_with_sig'
       | `SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_cstruct _
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
         let t = typeofindex_with_ts' rs syms sr index ts in
@@ -2798,7 +2792,6 @@ and handle_type
   | `SYMDEF_function _
   | `SYMDEF_fun _
   | `SYMDEF_struct _
-  | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
   | `SYMDEF_callback _
     ->
@@ -2863,7 +2856,6 @@ and handle_function
   | `SYMDEF_function _
   | `SYMDEF_fun _
   | `SYMDEF_struct _
-  | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
   | `SYMDEF_callback _
     ->
@@ -3001,7 +2993,6 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_inherit_fun _ ->
       clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
-    | `SYMDEF_cstruct _
     | `SYMDEF_struct _
       when
         (match t2 with
@@ -3018,7 +3009,6 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         failwith "NOT IMPLEMENTED YET"
         *)
 
-    | `SYMDEF_cstruct _
     | `SYMDEF_struct _
     | `SYMDEF_nonconst_ctor _
       ->
@@ -3218,7 +3208,6 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_inherit_fun _ ->
       clierr sra "Woops found inherit function in lookup_type_name_in_table_dirs_with_sig"
 
-    | `SYMDEF_cstruct _
     | `SYMDEF_struct _
     | `SYMDEF_nonconst_ctor _
       ->
@@ -3488,7 +3477,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_longarrow _
   | `AST_superscript _
   | `AST_ellipsis _
-  | `AST_parse _
   | `AST_setunion _
   | `AST_setintersection _
   | `AST_intersect _
@@ -4352,8 +4340,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | `BTYP_inst (i,ts') when
       (
         match hfind "lookup" syms.dfns i with
-        | {symdef=`SYMDEF_struct _}
-        | {symdef=`SYMDEF_cstruct _} ->
+        | {symdef=`SYMDEF_struct _} ->
           (match ta with | `BTYP_record _ -> true | _ -> false)
         | _ -> false
       )
@@ -4362,8 +4349,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline "struct applied to record .. ";
       *)
       let id,vs,fls = match hfind "lookup" syms.dfns i with
-        | {id=id; vs=vs; symdef=`SYMDEF_struct ls }
-        | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } -> id,vs,ls
+        | {id=id; vs=vs; symdef=`SYMDEF_struct ls } -> id,vs,ls
         | _ -> assert false
       in
       let alst = match ta with
@@ -4564,49 +4550,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
               )
             end
           end
-
-        (* LHS CSTRUCT *)
-        | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } ->
-          (* NOTE: we try $1.name binding using get_n first,
-          but if we can't find a component we treat the
-          entity as abstract.
-
-          Hmm not sure that cstructs can be polymorphic.
-          *)
-          begin try
-            let cidx,ct =
-              let rec scan i = function
-              | [] -> raise Not_found
-              | (vn,vat)::_ when vn = name -> i,vat
-              | _:: t -> scan (i+1) t
-              in scan 0 ls
-            in
-            let ct =
-              let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
-              let env' = build_env syms (Some i) in
-              bind_type' syms env' rsground sr ct bvs mkenv
-            in
-            let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
-            let ct = tsubst vs' ts' ct in
-            (* propagate lvalueness to struct component *)
-            `BEXPR_get_n (cidx,te),lmap ct
-          with
-          | Not_found ->
-            (*
-            print_endline ("Synth get method .. (1) " ^ name);
-            *)
-            let get_name = "get_" ^ name in
-            begin try be (`AST_method_apply (sr,(get_name,e,ts)))
-            with _ -> try be (`AST_apply (sr,(e2,e)))
-            with exn ->
-            clierr sr (
-              "AST_dot: cstruct type: koenig apply "^get_name ^
-              ", AND apply " ^ name ^
-              " failed with " ^ Printexc.to_string exn
-              )
-            end
-
-           end
 
         (* LHS PRIMITIVE TYPE *)
         | {id=id; symdef=`SYMDEF_abs _ } ->

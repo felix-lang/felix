@@ -28,15 +28,7 @@ let throw_on_gc syms bbdfns e : unit = match e with
     *)
     raise Not_found
 
-  | `BEXPR_method_closure (_,i,_),_ ->
-    (*
-    print_endline ("Found method closure of " ^ si i);
-    *)
-    raise Not_found
-
-
   | `BEXPR_apply_direct _,_ -> raise Not_found
-  | `BEXPR_apply_method_direct _,_ -> raise Not_found
   | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> raise Not_found
   | `BEXPR_apply_struct (i,_,_),_ ->
     let id,sr,parent,entry=Hashtbl.find bbdfns i in
@@ -71,12 +63,6 @@ let exe_uses_gc syms bbdfns exe =
   match exe with
   | `BEXE_jump_direct _
   | `BEXE_call_direct _
-  | `BEXE_apply_ctor _
-
-  (* Even if the constructor is applied as a stack call, the class object
-     is ALSO built by this statement, and always on the heap ..
-  *)
-  | `BEXE_apply_ctor_stack _
     -> raise Not_found
 
   (* this test is used to trap use of gc by primitives *)
@@ -146,29 +132,6 @@ let set_gc_use syms bbdfns =
     Hashtbl.replace bbdfns i (id,parent,sr,
       `BBDCL_procedure (`Uses_gc :: props,vs,ps,exes))
 
-  | `BBDCL_glr (props,vs,t, (pr,exes)) ->
-    if exes_use_gc syms bbdfns exes then
-    Hashtbl.replace bbdfns i (id,parent,sr,
-      `BBDCL_glr (`Uses_gc :: props,vs,t,(pr,exes)))
-
-  | `BBDCL_regmatch (props,vs,ps,rt, (a,s,se,tr)) ->
-    begin
-      try
-        Hashtbl.iter (fun _ e -> expr_uses_gc syms bbdfns e) se
-      with Not_found ->
-        Hashtbl.replace bbdfns i (id,parent,sr,
-          `BBDCL_regmatch (`Uses_gc :: props,vs,ps,rt,(a,s,se,tr)))
-    end
-
-  | `BBDCL_reglex (props,vs, ps, j,rt, (a,s,se,tr)) ->
-    begin
-      try
-        Hashtbl.iter (fun _ e -> expr_uses_gc syms bbdfns e) se
-      with Not_found ->
-        Hashtbl.replace bbdfns i (id,parent,sr,
-          `BBDCL_reglex (`Uses_gc :: props,vs,ps,j,rt,(a,s,se,tr)))
-    end
-
   | _ -> ()
   )
   bbdfns
@@ -209,30 +172,7 @@ let set_local_globals bbdfns =
     Hashtbl.replace bbdfns i (id,parent,sr,
       `BBDCL_procedure (`Uses_global_var :: props,vs,ps,exes))
 
-  | `BBDCL_glr (props,vs,t, (pr,exes)) ->
-    if exes_use_global bbdfns exes then
-    Hashtbl.replace bbdfns i (id,parent,sr,
-      `BBDCL_glr (`Uses_global_var :: props,vs,t,(pr,exes)))
-
-  | `BBDCL_regmatch (props,vs,ps,rt, (a,s,se,tr)) ->
-    begin
-      try
-        Hashtbl.iter (fun _ e -> expr_uses_global bbdfns e) se
-      with Not_found ->
-        Hashtbl.replace bbdfns i (id,parent,sr,
-          `BBDCL_regmatch (`Uses_global_var :: props,vs,ps,rt,(a,s,se,tr)))
-    end
-
-  | `BBDCL_reglex (props,vs, ps, j,rt, (a,s,se,tr)) ->
-    begin
-      try
-        Hashtbl.iter (fun _ e -> expr_uses_global bbdfns e) se
-      with Not_found ->
-        Hashtbl.replace bbdfns i (id,parent,sr,
-          `BBDCL_reglex (`Uses_global_var :: props,vs,ps,j,rt,(a,s,se,tr)))
-    end
-
-   | _ -> ()
+  | _ -> ()
   )
   bbdfns
 
@@ -334,62 +274,6 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
         `BBDCL_fun (`Requires_ptf :: props,vs,ps,ret,ct,reqs,prec));
         Required
     end else Not_required
-
-  | `BBDCL_glr (props,vs,t, (pr,exes)) ->
-    if mem `Requires_ptf props then Required
-    else if mem `Not_requires_ptf props then Not_required
-    else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_glr (`Requires_ptf :: props,vs,t,(pr,exes)));
-        Required
-    end else begin
-      let result1, result2 = cal_reqs calls i in
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_glr (result2 :: props,vs,t,(pr,exes)));
-      result1
-   end
-
-  | `BBDCL_regmatch (props,vs,ps,rt,ra) ->
-    if mem `Requires_ptf props then Required
-    else if mem `Not_requires_ptf props then Not_required
-    else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_regmatch(`Requires_ptf :: props,vs,ps,rt,ra));
-        Required
-    end else begin
-      let result1, result2 = cal_reqs calls i in
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_regmatch (result2 :: props,vs,ps,rt,ra));
-      result1
-   end
-
-  | `BBDCL_reglex (props,vs, ps,j,rt,ra) ->
-    if mem `Requires_ptf props then Required
-    else if mem `Not_requires_ptf props then Not_required
-    else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_reglex (`Requires_ptf :: props,vs,ps,j,rt,ra));
-        Required
-    end else begin
-      let result1, result2 = cal_reqs calls i in
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_reglex (result2 :: props,vs,ps,j,rt,ra));
-      result1
-   end
-
-  | `BBDCL_class (props,vs) ->
-    if mem `Requires_ptf props then Required
-    else if mem `Not_requires_ptf props then Not_required
-    else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_class (`Requires_ptf :: props,vs));
-        Required
-    end else begin
-      let result1, result2 = cal_reqs calls i in
-      Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_class (result2 :: props,vs));
-      result1
-   end
 
   | _ -> Not_required
 

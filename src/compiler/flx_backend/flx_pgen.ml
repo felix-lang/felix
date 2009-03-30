@@ -21,8 +21,6 @@ let shape_of syms bbdfns tn t =
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
       if all_voids cpts then "_int_ptr_map"
       else "_uctor_ptr_map"
-    | `BBDCL_class _ ->
-      cpp_instance_name syms bbdfns i ts ^ "_ptr_map"
     | _ -> tn t ^ "_ptr_map"
     end
   | `BTYP_sum cpts ->

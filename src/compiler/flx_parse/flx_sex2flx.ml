@@ -101,7 +101,6 @@ and xexpr_t sr x =
   let ss s = s in
   let xq m qn = qne ex m qn in
   let xp x = xpattern_t sr x in
-  let xpr x = xproduction_t sr x in
   let xps x =  xparams_t sr x in
   let xvs x = xvs_list_t sr x in
   let xs x = xstatement_t sr x in
@@ -212,9 +211,6 @@ and xexpr_t sr x =
  | Lst [Id "ast_get_n";  Lst [Int i; e]] -> `AST_get_n(sr,(ii i, ex e))
  | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> `AST_get_named_variable (sr, (ss s, ex e))
 
- | Lst [Id "ast_get_named_method";  Lst [Str s; Int i; Lst ts; e]] ->
-   `AST_get_named_method (sr,(ss s, ii i, map ti ts, ex e))
-
  | Lst [Id "ast_as";  Lst [e; Str s]] -> `AST_as (sr,(ex e, ss s))
  | Lst [Id "ast_match";  Lst [e; Lst pes]]->
    let pes = map (function
@@ -224,14 +220,6 @@ and xexpr_t sr x =
      pes
    in
    `AST_match (sr, (ex e,pes))
-
- | Lst [Id "ast_sparse";  e; Str s; Lst ints] ->
-   let ints = map (function
-     | Int i -> ii i
-     | x -> err x "ast_sparse requires ints here"
-   ) ints
-   in
-   `AST_sparse (sr,ex e, ss s, ints)
 
  | Lst [Id "ast_typeof";  e] -> `AST_typeof (sr, ex e)
  | Lst [Id "ast_lift";  e] -> `AST_lift (sr,ex e)
@@ -484,22 +472,6 @@ and xmacro_parameter_t sr x : macro_parameter_t =
   | Lst [Str s; m] -> s,xmacro_parameter_type_t sr m
   | x -> err x "macro_parameter_t"
 
-and xclass_member_t sr x : class_member_t =
-  let ex x = xexpr_t sr x in
-  let ti x = type_of_sex sr x in
-  let ii i = int_of_string i in
-  let xi = function | Int i -> ii i | x -> err x "int" in
-  let xio x = opt "int" xi x in
-  let ct x = opt "c_t" (xc_t sr) x in
-  let xvs x = xvs_list_t sr x in
-  match x with
-  | Lst [Id "MemberVal"; Str n; t; cto] -> `MemberVal (n, ti t, ct cto)
-  | Lst [Id "MemberVar"; Str n;  t; cto] -> `MemberVar (n, ti t, ct cto)
-  | Lst [Id "MemberFun"; Str n; io; vs; t; cto] -> `MemberFun (n, xio io, xvs vs, ti t, ct cto)
-  | Lst [Id "MemberProc"; Str n; io; vs; t; cto] -> `MemberProc (n, xio io, xvs vs, ti t, ct cto)
-  | Lst [Id "MemberCtor"; Str n; io; t; cto] -> `MemberCtor (n,xio io, ti t, ct cto)
-  | x -> err x "class_member_t"
-
 and xc_t sr x : c_t =
   let ss s = s in
   match x with
@@ -667,15 +639,6 @@ and xstatement_t sr x : statement_t =
     let ucmp = lst "struct component" xscmp ucmp in
     `AST_struct (xsr sr,n, xvs vs, ucmp)
 
-  | Lst [Id "ast_cstruct"; sr; Str n; vs; ucmp] ->
-    let xscmp = function
-      | Lst [Id c; t] -> c, ti t
-      | Lst [Str c; t] -> c, ti t
-      | x -> err x "cstruct component"
-    in
-    let ucmp = lst "cstruct component" xscmp ucmp in
-    `AST_cstruct (xsr sr,n, xvs vs, ucmp)
-
   | Lst [Id "ast_type_alias"; sr; Str n; vs; t] ->
     `AST_type_alias (xsr sr,n, xvs vs, ti t)
 
@@ -770,7 +733,6 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_trace"; sr; Str n; Str s] -> `AST_trace(xsr sr, ss n, ss s)
   | Lst [Id "ast_nop"; sr; Str s] -> `AST_nop(xsr sr,ss s)
   | Lst [Id "ast_assert"; sr; e] -> `AST_assert(xsr sr,ex e)
-  | Lst [Id "ast_apply_ctor"; sr; Str n; e1; e2] -> `AST_apply_ctor(xsr sr,n,ex e1,ex e2)
   | Lst [Id "ast_init"; sr; Str n; e] -> `AST_init(xsr sr,n,ex e)
   | Lst [Id "ast_newtype"; sr; Str n; vs; t] -> `AST_newtype(xsr sr,n,xvs vs, ti t)
   | Lst [Id "ast_abs_decl"; sr; Str n; vs; tqs; ct; req] ->

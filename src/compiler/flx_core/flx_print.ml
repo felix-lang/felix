@@ -136,9 +136,6 @@ and string_of_expr (e:expr_t) =
   | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name
   | `AST_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
   | `AST_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
-  | `AST_get_named_method (_,(n,mix,ts,e)) ->
-    "get (" ^ n ^ "<" ^ si mix ^">"^"["^catmap "," string_of_typecode ts^"], " ^
-    se e ^")"
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
 (*  | `AST_lvalue (_,e) -> "lvalue" ^ "(" ^ se e ^ ")" *)
@@ -252,22 +249,6 @@ and string_of_expr (e:expr_t) =
     "match_case " ^ si v ^ "(" ^
     se e ^ ")"
 
-  | `AST_sparse (_,e, nt,iis) ->
-    "parse " ^ se e ^ " with " ^ nt ^ " endmatch"
-
-  | `AST_parse (_,e, ms) ->
-    "parse " ^ se e ^ " with\n" ^
-    catmap ""
-    (fun (_,p,e')->
-      " | " ^
-      string_of_production p ^
-      " => " ^
-      string_of_expr e' ^
-      "\n"
-    )
-    ms
-    ^ "endmatch"
-
   | `AST_match (_,(e, ps)) ->
     "match " ^ se e ^ " with\n" ^
     catmap "\n"
@@ -315,45 +296,6 @@ and string_of_expr (e:expr_t) =
   | `AST_macro_statements (_,ss) ->
     "macro statements begin\n" ^
     catmap "\n" (string_of_statement 1) ss ^ "\nend"
-
-  | `AST_regmatch (_,(p1,p2, ps)) ->
-    "regmatch " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
-    catmap "\n"
-    (fun (p,e')->
-      " | " ^
-      string_of_re p ^
-      " => " ^
-      string_of_expr e'
-    )
-    ps
-    ^
-    " endmatch"
-
-  | `AST_string_regmatch (_,(s, ps)) ->
-    "regmatch " ^ se s ^ " with " ^
-    catmap "\n"
-    (fun (p,e')->
-      " | " ^
-      string_of_re p ^
-      " => " ^
-      string_of_expr e'
-    )
-    ps
-    ^
-    " endmatch"
-
-  | `AST_reglex (_,(p1, p2, ps)) ->
-    "reglex " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
-    catmap "\n"
-    (fun (p,e')->
-      " | " ^
-      string_of_re p ^
-      " => " ^
-      string_of_expr e'
-    )
-    ps
-    ^
-    " endmatch"
 
   | `AST_case (_,e1,ls,e2) ->
     "typecase [" ^
@@ -492,9 +434,6 @@ and st prec tc : string =
     | `TYP_type -> 0,"TYPE"
     | `TYP_type_tuple ls ->
       4, cat ", " (map (st 4) ls)
-
-    | `TYP_glr_attr_type qn ->
-       0,"glr_attr_type(" ^string_of_qualified_name qn^ ")"
 
     | `TYP_typefun (args,ret,body) ->
        10,
@@ -865,9 +804,6 @@ and string_of_pattern p =
   | `PAT_name (_,s) -> s
   | `PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
   | `PAT_any _ -> "any"
-  | `PAT_regexp (_,r,b) ->
-    "regexp " ^ string_of_string r ^
-    "(" ^ cat ", " b ^ ")"
   | `PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
   | `PAT_as (_,p,n) ->
@@ -1194,9 +1130,6 @@ and string_of_statement level s =
 
   | `AST_assert (_,e) -> spaces level ^ "assert " ^ se e ^ ";"
 
-  | `AST_apply_ctor (_,i1,f,a) ->
-    spaces level ^ i1 ^ " <- new " ^ se f ^ "(" ^ se a ^ ");"
-
   | `AST_init (_,v,e) ->
     spaces level ^ v ^ " := " ^ se e ^ ";"
 
@@ -1211,30 +1144,8 @@ and string_of_statement level s =
   | `AST_include (_,s) ->
     spaces level ^ "include " ^ s ^ ";"
 
-  | `AST_cparse (_,s) ->
-    spaces level ^ "cparse \"\"\"\n" ^ s ^ "\n\"\"\";"
-
-
   | `AST_use (_,n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
-
-  | `AST_regdef (_,n,r) ->
-    spaces level ^ "regdef " ^ n ^ " = " ^string_of_re r^";"
-
-  | `AST_glr (_,n,t,ps) ->
-    spaces level ^ "nonterm " ^ n ^ " : " ^string_of_typecode t ^
-    catmap ""
-    (fun (_,p,e')->
-      spaces (level + 1) ^ " | " ^
-      string_of_production p ^
-      " => " ^
-      string_of_expr e' ^
-      "\n"
-    )
-    ps
-    ^
-    spaces level ^ ";"
-
 
   | `AST_type_alias (_,t1,vs,t2) ->
     spaces level ^ "typedef " ^ t1 ^ print_vs vs ^
@@ -1263,7 +1174,6 @@ and string_of_statement level s =
     "\n" ^
     string_of_compound level sts
 
-
   | `AST_struct (_,name, vs, cs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
@@ -1273,21 +1183,6 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_cstruct (_,name, vs, cs) ->
-    let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
-    in
-    spaces level ^ "cstruct " ^ name ^ print_vs vs ^ " = " ^
-    spaces level ^ "{\n" ^
-    catmap "\n" string_of_struct_component cs ^ "\n" ^
-    spaces level ^ "}"
-
-  | `AST_cclass (_,name, vs, cs) ->
-    spaces level ^ "cclass " ^ name ^ print_vs vs ^ " = " ^
-    spaces level ^ "{\n" ^
-    catmap "\n" (string_of_class_component level) cs ^ "\n" ^
-    spaces level ^ "}"
-
   | `AST_typeclass (_,name, vs, sts) ->
     spaces level ^ "typeclass " ^ name ^ print_vs vs ^ " = " ^
     string_of_compound level sts
@@ -1295,11 +1190,6 @@ and string_of_statement level s =
   | `AST_instance (_,vs,name, sts) ->
     spaces level ^ "instance " ^ print_vs vs ^ " " ^
     string_of_qualified_name name ^ " = " ^
-    string_of_compound level sts
-
-
-  | `AST_class (_,name, vs, sts) ->
-    spaces level ^ "class " ^ name ^ print_vs vs ^ " = " ^
     string_of_compound level sts
 
   | `AST_union (_,name, vs,cs) ->
@@ -1434,13 +1324,6 @@ and string_of_statement level s =
     | [`AST_fun_return (_,e)] -> " => " ^ se e ^ ";\n"
     | _ -> "\n" ^ string_of_compound level ss
     end
-
-
-  | `AST_object (_,name, vs, ps, ss) ->
-    spaces level ^
-    "object " ^ name ^ print_vs vs ^
-    "("^string_of_parameters ps^")\n" ^
-    string_of_compound level ss
 
   | `AST_macro_val (_,names, e) ->
     spaces level ^
@@ -1715,26 +1598,6 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     "instance " ^ print_ivs vs ^ " " ^
     string_of_qualified_name qn ^ ";\n"
 
-  | `SYMDEF_regdef re ->
-    "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
-
-  | `SYMDEF_regmatch (ps,cls) ->
-    "regmatch " ^ name ^ " with " ^
-    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^se e) cls ^
-    "endmatch;\n"
-
-  | `SYMDEF_reglex (ps,i,cls) ->
-    "regmatch " ^ name ^ " with " ^
-    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^se e) cls ^
-    "endmatch;\n"
-
-
-  | `SYMDEF_glr(t,(p,sexes)) ->
-    "nonterm " ^ name ^ " : " ^st t ^ " = | " ^
-    string_of_reduced_production p ^
-    " => " ^ " <exes> " ^
-    ";"
-
   | `SYMDEF_const_ctor (uidx,ut,idx,vs') ->
      st ut ^ "  const_ctor: " ^
      name ^ print_ivs vs ^
@@ -1801,12 +1664,6 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
 
   | `SYMDEF_struct (cts) ->
     "struct " ^ name ^ print_ivs vs ^ ";"
-
-  | `SYMDEF_cstruct (cts) ->
-    "cstruct " ^ name ^ print_ivs vs ^ ";"
-
-  | `SYMDEF_cclass (cts) ->
-    "cclass " ^ name ^ print_ivs vs ^ ";"
 
   | `SYMDEF_typeclass ->
     "typeclass " ^ name ^ print_ivs vs ^ ";"
@@ -1895,9 +1752,6 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   | `SYMDEF_module ->
     "module " ^ name ^ ";"
 
-  | `SYMDEF_class ->
-    "class " ^ name ^ ";"
-
 and string_of_exe level s =
   let spc = spaces level
   and se e = string_of_expr e
@@ -1906,10 +1760,6 @@ and string_of_exe level s =
 
   | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
   | `EXE_assert e -> spc ^ "assert " ^ se e ^ ";"
-  | `EXE_apply_ctor (i1,f,e) ->
-    spc ^ i1 ^ " <- new " ^ se f ^
-    "(" ^ se e ^ ");"
-
 
   | `EXE_ifgoto (e,s) -> spc ^
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
@@ -1989,15 +1839,12 @@ and string_of_bound_expression' dfns bbdfns se e =
   let sid n = bound_name_of_bindex dfns bbdfns n in
   match fst e with
 
-  | `BEXPR_parse (e,ii) -> "parse " ^ se e ^ " with <nt> endmatch"
-
   | `BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
   | `BEXPR_get_named (i,e') -> "(" ^ se e' ^ ")." ^ sid i
 
   | `BEXPR_deref e -> "*("^ se e ^ ")"
   | `BEXPR_name (i,ts) -> sid i ^ print_inst dfns ts
   | `BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
-  | `BEXPR_method_closure (e,i,ts) -> se e ^ "." ^ sid i ^ print_inst dfns ts
   | `BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
   | `BEXPR_new e -> "new " ^ se e
   | `BEXPR_not e -> "not " ^ se e
@@ -2020,12 +1867,6 @@ and string_of_bound_expression' dfns bbdfns se e =
     se arg ^
     ")"
 
-  | `BEXPR_apply_method_direct (obj,i,ts, arg) -> "(" ^
-    se obj ^ " -> " ^ sid i ^ print_inst dfns ts ^ " " ^
-    se arg ^
-    ")"
-
-
   | `BEXPR_apply_struct (i,ts, arg) -> "(" ^
     sid i ^ print_inst dfns ts ^ " " ^
     se arg ^
@@ -2033,11 +1874,6 @@ and string_of_bound_expression' dfns bbdfns se e =
 
   | `BEXPR_apply_stack (i,ts, arg) -> "(" ^
     sid i ^ print_inst dfns ts ^ " " ^
-    se arg ^
-    ")"
-
-  | `BEXPR_apply_method_stack (obj,i,ts, arg) -> "(" ^
-    se obj ^ " -> " ^ sid i ^ print_inst dfns ts ^ " " ^
     se arg ^
     ")"
 
@@ -2188,14 +2024,6 @@ and string_of_bexe dfns bbdfns level s =
 
   | `BEXE_end -> "}//end"
 
-  | `BEXE_apply_ctor (sr,i0,i1,ts, i2, arg) -> spc ^
-    sid i0 ^ " = new " ^ sid i1 ^ print_inst dfns ts ^ " " ^
-    sid i2 ^ " (" ^ se arg ^ ");"
-
-  | `BEXE_apply_ctor_stack (sr,i0,i1,ts, i2, arg) -> spc ^
-    sid i0 ^ " = new " ^ sid i1 ^ print_inst dfns ts ^ " " ^
-    sid i2 ^ " (" ^ se arg ^ ");/*stacked*/"
-
 
 and string_of_dcl level name seq vs (s:dcl_t) =
   let se e = string_of_expr e in
@@ -2203,20 +2031,6 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   let sl = spaces level in
   let seq = match seq with Some i -> "<" ^ si i ^ ">" | None -> "" in
   match s with
-  | `DCL_regdef re ->
-    sl ^ "regexp " ^ name^seq ^ " = " ^ string_of_re re ^ ";\n"
-
-  | `DCL_regmatch cls ->
-    sl ^ "regmatch " ^ name^seq ^ " with " ^
-    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
-    "endmatch;\n"
-
-  | `DCL_reglex cls ->
-    sl ^ "reglex " ^ name^seq ^ " with " ^
-    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
-    "endmatch;\n"
-
-
   | `DCL_type_alias (t2) ->
     sl ^ "typedef " ^ name^seq ^ print_vs vs ^
     " = " ^ st t2 ^ ";"
@@ -2234,11 +2048,6 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "\n" ^
     string_of_asm_compound level asms
 
-  | `DCL_class (asms) ->
-    sl ^ "class " ^ name^seq ^ print_vs vs ^ " = " ^
-    "\n" ^
-    string_of_asm_compound level asms
-
   | `DCL_instance (name,asms) ->
     sl ^ "instance " ^ print_vs vs ^ " " ^
     string_of_qualified_name name ^seq ^ " = " ^
@@ -2252,21 +2061,6 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     sl ^ "struct " ^ name^seq ^ print_vs vs ^ " = " ^
     sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
-    sl ^ "}"
-
-  | `DCL_cstruct (cs) ->
-    let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
-    in
-    sl ^ "cstruct " ^ name^seq ^ print_vs vs ^ " = " ^
-    sl ^ "{\n" ^
-    catmap "\n" string_of_struct_component cs ^ "\n" ^
-    sl ^ "}"
-
-  | `DCL_cclass (cs) ->
-    sl ^ "cclass " ^ name^seq ^ print_vs vs ^ " = " ^
-    sl ^ "{\n" ^
-    catmap "\n" (string_of_class_component level) cs ^ "\n" ^
     sl ^ "}"
 
   | `DCL_typeclass (asms) ->
@@ -2376,14 +2170,6 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "match_handler " ^ name^seq ^
     "(" ^ string_of_pattern pat ^ ")" ^
     string_of_asm_compound level sts
-
-  | `DCL_glr (t,(p,e')) ->
-    sl ^ "nonterm " ^ name^seq ^ " : " ^st t ^
-    spaces (level + 1) ^ " | " ^
-    string_of_reduced_production p ^
-    " => " ^
-    string_of_expr e' ^
-    ";"
 
   | `DCL_val (ty) ->
     sl ^
@@ -2585,36 +2371,6 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
-  | `BBDCL_cstruct (vs,cs) ->
-    let string_of_struct_component (name,ty) =
-      "  " ^ name ^ ": " ^ sobt ty ^ ";"
-    in
-    "cstruct " ^ name ^ print_bvs vs ^ " = " ^
-    "{\n" ^
-    catmap "\n" string_of_struct_component cs ^ "\n" ^
-    "}"
-
-  | `BBDCL_cclass (vs,cs) ->
-    let string_of_class_component mem  =
-      let kind, name,bvs,ty =
-        match mem with
-        | `BMemberVal (name,ty) -> "val",name,[],ty
-        | `BMemberVar (name,ty) -> "var",name,[],ty
-        | `BMemberFun (name,bvs,ty) -> "fun",name,bvs,ty
-        | `BMemberProc (name,bvs,ty) -> "proc",name,bvs,ty
-        | `BMemberCtor (name,ty) -> "ctor",name,[],ty
-      in
-      kind ^ "  " ^ name ^ print_bvs bvs ^ ": " ^ sobt ty ^ ";"
-    in
-    "cclass " ^ name ^ print_bvs vs ^ " = " ^
-    "{\n" ^
-    catmap "\n" string_of_class_component cs ^ "\n" ^
-    "}"
-
-  | `BBDCL_class (props,vs) ->
-    string_of_properties props ^
-    "class " ^ name ^ print_bvs vs ^ ";"
-
   | `BBDCL_typeclass (props,vs) ->
     string_of_properties props ^
     "typeclass " ^ name ^ print_bvs vs ^ ";"
@@ -2623,17 +2379,6 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     string_of_properties props ^
     "instance "^print_bvs_cons dfns vs cons^
     " of <" ^ si bid ^">["^ catmap "," (sbt dfns) ts ^ "];"
-
-  | `BBDCL_glr (props,vs,t,(p,bexes)) ->
-    "  " ^ "nonterm " ^ name ^ print_bvs vs ^ " : " ^sobt t ^
-    "   | " ^
-    string_of_bproduction dfns p ^
-    " => " ^
-    cat "\n" (map (string_of_bexe dfns bbdfns 1) bexes) ^
-    ";"
-
-  | `BBDCL_regmatch (props,vs,ps,t,regargs) -> "regmatch.."
-  | `BBDCL_reglex (props,vs,ps,i,t,regargs) -> "reglex.."
 
   | `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
     "  uctor<" ^ name ^ ">"^ print_bvs vs ^

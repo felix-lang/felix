@@ -235,54 +235,6 @@ let gen_type_name syms bbdfns (index,typ) =
 
     | `BBDCL_newtype (_,t') -> ""
 
-    | `BBDCL_cstruct _ -> if ts = [] then "" else
-      let descr =
-        "\n//CSTRUCT "^si i ^" INSTANCE " ^
-        si index^": " ^
-        sbt syms.dfns typ ^
-        "\n"
-      in
-      let instance_name = cn typ in
-      let instance = id ^ "<" ^ catmap "," cn ts ^"> " in
-      descr ^
-      "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
-
-
-    | `BBDCL_class _ ->
-      begin
-        (*
-        print_endline "[gen_type_name] CLASS TYPE INSTANCE";
-        *)
-        let type_instance_name = cn typ in
-        let class_name = cpp_instance_name syms bbdfns i ts in
-        let class_instance =
-          try Hashtbl.find syms.instances (i,ts)
-          with Not_found -> assert false
-        in
-        let descr =
-          "\n//CLASS "^si i ^" TYPE INSTANCE " ^
-          si index^": " ^
-          sbt syms.dfns typ ^
-          ", CLASS INSTANCE " ^ si class_instance ^
-          "\n"
-        in
-        descr ^
-        "struct " ^ class_name ^"; // class instance \n"  ^
-        "typedef " ^ class_name ^" *"^type_instance_name^"; // type instance\n"
-      end
-
-    | `BBDCL_cclass _ ->  if ts = [] then "" else
-      let descr =
-        "\n//CCLASS "^si i ^" INSTANCE " ^
-        si index^": " ^
-        sbt syms.dfns typ ^
-        "\n"
-      in
-      let instance_name = cn typ in
-      let instance = id ^ "<" ^ catmap "," cn ts ^"> " in
-      descr ^
-      "typedef " ^ instance ^ " *" ^ instance_name ^ ";\n"
-
     | `BBDCL_struct _ ->
       let descr =
         "\n//STRUCT "^si i ^" INSTANCE " ^
@@ -450,24 +402,6 @@ let gen_type syms bbdfns (index,typ) =
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
     | `BBDCL_abs (vs,quals,ct,_) -> ""
-    | `BBDCL_cstruct (vs,cts) -> ""
-    | `BBDCL_cclass (vs,cts) -> ""
-    | `BBDCL_class vs ->
-      (*
-      print_endline "[gen_type] FOUND CLASS TYPE INSTANCE (doing nothing)";
-      *)
-      ""
-
-      (*
-      let name = cn typ in
-      let descr =
-        "\n//GENERIC CLASS "^si i ^" INSTANCE TYPE " ^
-        si index^": " ^
-        sbt syms.dfns typ ^
-        "\n"
-      in
-      descr ^ "//see " ^ name ^ ";\n"
-      *)
 
     | `BBDCL_struct (vs,cts) ->
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in

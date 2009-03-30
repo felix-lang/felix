@@ -153,29 +153,6 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       *)
       rnr t
 
-    | `BBDCL_class vs -> rnr t
-
-    | `BBDCL_cclass (vs,cs) ->
-       let cts = map (function
-         | `BMemberVal (_,t)
-         | `BMemberVar (_,t)
-         | `BMemberCtor (_,t) -> t,[]
-         | `BMemberFun (_,mvs,t)
-         | `BMemberProc (_,mvs,t) -> t,mvs
-         ) cs
-       in
-      (* I THINK THIS IS WRONG NOW .. only register
-         the interface if it is used .. we need
-         the method instance type variables too!
-      *)
-      (*
-      let cts = map (fun (t,ts') -> tsubst vs ts t) cts in
-      iter rr cts;
-      *)
-      rnr t
-      (* NO CONSTRUCTOR! *)
-
-    | `BBDCL_cstruct (vs,cs)
     | `BBDCL_struct (vs,cs) ->
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in

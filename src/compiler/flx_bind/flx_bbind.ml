@@ -31,80 +31,6 @@ let print_bvs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 
-
-let bind_regex' syms env sr be ret_type cls : regular_args_t =
-  let irc c = Characters (Inria_cset.singleton (Char.code c)) in
-  let rec inr re = match re with
-    | `REGEXP_code _ -> assert false
-    | `REGEXP_name _ -> assert false
-    | `REGEXP_sentinel -> assert false
-
-    | `REGEXP_alt (a,b) -> Alternative (inr a, inr b)
-    | `REGEXP_seq (a,b) -> Sequence (inr a, inr b)
-    | `REGEXP_epsilon -> Epsilon
-    | `REGEXP_aster a -> Repetition (inr a)
-    | `REGEXP_group (name,a) -> Bind (inr a,name)
-    | `REGEXP_string s ->
-      if String.length s = 0 then Epsilon
-      else let r = ref (irc s.[0]) in
-      for i = 1 to String.length s -1 do
-        r := Sequence (!r, irc s.[i])
-      done;
-      !r
-  in
-  let cls = map (fun (e,c) -> bind_regdef syms env [] e, c) cls in
-  let lex : (unit, expr_t) Inria_syntax.entry =
-  {
-      name = "dummy"; shortest = false; args=();
-      clauses = map (fun (e,c) -> inr e, c) cls
-  }
-  in
-    let aes, aut = Inria_lexgen.make_dfa [lex] in
-    failwith "Inria dfa built"
-
-let bind_regex syms env sr be ret_type cls : regular_args_t =
-  (*
-  print_endline "Binding regmatch";
-  *)
-  let bd e = bind_regdef syms env [] e in
-
-  (* create a unified regexp using `REGEXP_code for expressions *)
-  let f (e,c) = `REGEXP_seq (e, `REGEXP_code c) in
-  let re = List.map f cls in
-  let alt r1 r2 = `REGEXP_alt (r1,r2) in
-  let re = List.fold_right alt re `REGEXP_sentinel in
-
-  (* do lookups *)
-  let re = bd re in
-
-  (* generate transition matrix *)
-  let alphabet, nstates, code_table, matrix = Flx_dfa.process_regexp re in
-  let alphabet = CharSet.elements alphabet in
-
-  (* bind RHS expressions *)
-  let bcode = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun i c ->
-    let sr = src_of_expr c in
-    let e,t as bt = be c in
-    let t = minimise syms.counter syms.dfns t in
-    Hashtbl.add bcode i (e,t);
-    if do_unify syms !ret_type t then
-      ret_type := varmap_subst syms.varmap !ret_type
-    else
-      clierr sr
-      (
-        "[bind_regex] Wrong return type,\nexpected : " ^
-        string_of_btypecode syms.dfns !ret_type ^
-        "\nbut we got " ^
-        string_of_btypecode syms.dfns t ^ " in\n" ^
-        short_string_of_src sr
-      )
-  )
-  code_table
-  ;
-  alphabet,nstates, bcode,matrix
-
 let rec find_true_parent dfns child parent =
   match parent with
   | None -> None
@@ -325,8 +251,6 @@ let bbind_sym syms bbdfns i {
         | {symdef=`SYMDEF_axiom _}
         | {symdef=`SYMDEF_lemma _}
         | {symdef=`SYMDEF_function _}
-        | {symdef=`SYMDEF_regmatch _}
-        | {symdef=`SYMDEF_reglex _}
           ->
           let t = typeofindex syms i in
           let dcl = match k with
@@ -617,11 +541,6 @@ let bbind_sym syms bbdfns i {
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_struct (bvs,cs'))
 
-    | `SYMDEF_cstruct (cs) ->
-      (* print_endline ("//Binding cstruct " ^ si i ^ " --> " ^ name);
-      *)
-      let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_cstruct (bvs,cs'))
     | `SYMDEF_typeclass ->
       let sym : bbdcl_t = `BBDCL_typeclass ([],bvs) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)

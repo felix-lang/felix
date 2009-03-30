@@ -78,7 +78,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `AST_case_tag _
   | `AST_index _
   | `AST_the _
-  | `TYP_glr_attr_type _
   | `TYP_var _
   | `AST_patvar _
   | `AST_patany _
@@ -159,23 +158,9 @@ let map_expr f (e:expr_t):expr_t = match e with
 
   | `AST_get_n (sr,(j,x)) -> `AST_get_n (sr,(j,f x))
   | `AST_get_named_variable (sr,(j,x)) -> `AST_get_named_variable (sr,(j,f x))
-  | `AST_get_named_method (sr,(j,k,ts,x)) -> `AST_get_named_method (sr,(j,k,ts,f x))
   | `AST_as (sr,(x,s)) -> `AST_as (sr,(f x, s))
   | `AST_match (sr,(a,pes)) ->
     `AST_match (sr, (f a, map (fun (pat,x) -> pat, f x) pes))
-
-  (* GIVE UP ON NASTY STUFF FOR THE MOMENT *)
-  (*
-  | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
-  | `AST_sparse of range_srcref * expr_t * string * int list
-  | `AST_regmatch of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
-  | `AST_reglex of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
-  *)
-  | `AST_parse _
-  | `AST_sparse _
-  | `AST_regmatch _
-  | `AST_string_regmatch _
-  | `AST_reglex _ -> e
 
   | `AST_typeof (sr,x) -> `AST_typeof (sr,f x)
   | `AST_cond (sr,(a,b,c)) -> `AST_cond (sr, (f a, f b, f c))
@@ -209,11 +194,6 @@ let iter_expr f (e:expr_t) =
   | `AST_suffix _
   | `AST_literal _
   | `AST_lambda _
-  | `AST_parse _
-  | `AST_sparse _
-  | `AST_regmatch _
-  | `AST_string_regmatch _
-  | `AST_reglex _
   | `AST_expr _
   | `AST_type_match _
   | `AST_macro_ctor _
@@ -223,7 +203,6 @@ let iter_expr f (e:expr_t) =
   | `AST_variant (_,(_,x))
   | `AST_typeof (_,x)
   | `AST_as (_,(x,_))
-  | `AST_get_named_method (_,(_,_,_,x))
   | `AST_get_n (_,(_,x))
   | `AST_get_named_variable (_,(_,x))
   | `AST_ctor_arg (_,(_,x))
@@ -387,7 +366,6 @@ let iter_btype f = function
 *)
 let flat_iter_tbexpr fi fe ft ((x,t) as e) =
   match x with
-  | `BEXPR_parse (e,iis) -> fe e; iter fi iis
   | `BEXPR_deref e -> fe e
   | `BEXPR_ref (i,ts) -> fi i; iter ft ts
   | `BEXPR_likely e -> fe e
@@ -399,10 +377,8 @@ let flat_iter_tbexpr fi fe ft ((x,t) as e) =
 
   | `BEXPR_apply_prim (i,ts,e2) -> fi i; iter ft ts; fe e2
   | `BEXPR_apply_direct (i,ts,e2) -> fi i; iter ft ts; fe e2
-  | `BEXPR_apply_method_direct (e1,i,ts,e2) -> fe e1; fi i; iter ft ts; fe e2
   | `BEXPR_apply_struct (i,ts,e2) -> fi i; iter ft ts; fe e2
   | `BEXPR_apply_stack (i,ts,e2) -> fi i; iter ft ts; fe e2
-  | `BEXPR_apply_method_stack (e1,i,ts,e2) -> fe e1; fi i; iter ft ts; fe e2
   | `BEXPR_tuple  es -> iter fe es
   | `BEXPR_record es -> iter (fun (s,e) -> fe e) es
   | `BEXPR_variant (s,e) -> fe e
@@ -411,7 +387,6 @@ let flat_iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_get_named (i,e) -> fi i; fe e
 
   | `BEXPR_closure (i,ts) -> fi i; iter ft ts
-  | `BEXPR_method_closure (e,i,ts) -> fe e; fi i; iter ft ts
   | `BEXPR_name (i,ts) -> fi i; iter ft ts
   | `BEXPR_case (i,t') -> ft t'
   | `BEXPR_match_case (i,e) -> fe e
@@ -433,7 +408,6 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
 
 
 let map_tbexpr fi fe ft e = match e with
-  | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t
   | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
   | `BEXPR_ref (i,ts),t -> `BEXPR_ref (fi i, map ft ts), ft t
   | `BEXPR_new e,t -> `BEXPR_new (fe e), ft t
@@ -445,10 +419,8 @@ let map_tbexpr fi fe ft e = match e with
 
   | `BEXPR_apply_prim (i,ts,e2),t -> `BEXPR_apply_prim (fi i, map ft ts, fe e2),ft t
   | `BEXPR_apply_direct (i,ts,e2),t -> `BEXPR_apply_direct (fi i, map ft ts, fe e2),ft t
-  | `BEXPR_apply_method_direct (e1,i,ts,e2),t -> `BEXPR_apply_method_direct (fe e1,fi i, map ft ts, fe e2),ft t
   | `BEXPR_apply_struct (i,ts,e2),t -> `BEXPR_apply_struct (fi i, map ft ts, fe e2),ft t
   | `BEXPR_apply_stack (i,ts,e2),t -> `BEXPR_apply_stack (fi i, map ft ts, fe e2),ft t
-  | `BEXPR_apply_method_stack (e1,i,ts,e2),t -> `BEXPR_apply_method_stack (fe e1,fi i, map ft ts, fe e2),ft t
 
   | `BEXPR_tuple  es,t -> `BEXPR_tuple (map fe es),ft t
   | `BEXPR_record es,t -> `BEXPR_record (map (fun (s,e) -> s, fe e) es),ft t
@@ -458,7 +430,6 @@ let map_tbexpr fi fe ft e = match e with
   | `BEXPR_get_named (i,e),t -> `BEXPR_get_named (fi i, fe e),ft t
 
   | `BEXPR_closure (i,ts),t -> `BEXPR_closure (fi i, map ft ts),ft t
-  | `BEXPR_method_closure (e,i,ts),t -> `BEXPR_method_closure (fe e, fi i, map ft ts),ft t
   | `BEXPR_name (i,ts),t -> `BEXPR_name (fi i, map ft ts), ft t
   | `BEXPR_case (i,t'),t -> `BEXPR_case (i, ft t'),ft t
   | `BEXPR_match_case (i,e),t -> `BEXPR_match_case (i, fe e),ft t
@@ -488,12 +459,6 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_call (sr,e1,e2)
   | `BEXE_jump (sr,e1,e2)
     -> fe e1; fe e2
-
-  | `BEXE_apply_ctor (sr,i0, i1,ts,i2,e2)
-    -> fi i0; fi i1; iter ft ts; fi i2; fe e2
-
-  | `BEXE_apply_ctor_stack (sr,i0, i1,ts,i2,e2)
-    -> fi i0; fi i1; iter ft ts; fi i2; fe e2
 
   | `BEXE_loop (sr,i,e)
     -> fi i; fe e
@@ -566,12 +531,6 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   | `BEXE_call (sr,e1,e2) ->
     `BEXE_call (sr,fe e1, fe e2)
 
-  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
-    `BEXE_apply_ctor (sr,fi i1,fi i2, map ft ts, fi i3,fe e2)
-
-  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
-    `BEXE_apply_ctor_stack (sr,fi i1,fi i2, map ft ts, fi i3,fe e2)
-
   | `BEXE_jump (sr,e1,e2) ->
     `BEXE_jump (sr,fe e1, fe e2)
 
@@ -627,9 +586,6 @@ let reduce_tbexpr bbdfns e =
     | `BEXPR_apply((`BEXPR_closure (i,ts),_),a),t ->
       `BEXPR_apply_direct (i,ts,a),t
 
-    | `BEXPR_apply((`BEXPR_method_closure (obj,i,ts),_),a),t ->
-      `BEXPR_apply_method_direct (obj,i,ts,a),t
-
     | `BEXPR_get_n (n,((`BEXPR_tuple ls),_)),_ ->
       List.nth ls n
 
@@ -643,10 +599,6 @@ let reduce_bexe bbdfns exe =
   match map_bexe ident (reduce_tbexpr bbdfns) ident ident ident exe with
   | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),a) ->
     `BEXE_call_direct (sr,i,ts,a)
-
-  | `BEXE_call (sr,(`BEXPR_method_closure (obj,meth,ts),_),a) ->
-    `BEXE_call_method_direct (sr,obj,meth,ts,a)
-
   | x -> x
 
 let rec reduce_type t =

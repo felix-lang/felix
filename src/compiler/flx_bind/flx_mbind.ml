@@ -77,12 +77,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_longarrow _
   | `AST_superscript _
   | `AST_match _
-  | `AST_regmatch _
-  | `AST_string_regmatch _
-  | `AST_reglex _
   | `AST_ellipsis _
-  | `AST_parse _
-  | `AST_sparse _
   | `AST_setunion _
   | `AST_setintersection _
   | `AST_intersect _
@@ -152,7 +147,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_ctor_arg _
   | `AST_get_n _
   | `AST_get_named_variable _
-  | `AST_get_named_method _
   | `AST_match_ctor _
     ->
     let sr = src_of_expr e in
@@ -197,9 +191,6 @@ let rec get_pattern_vars
       get_pattern_vars vars pat extractor'
     )
     pats
-
-  | `PAT_regexp _ ->
-    failwith "[get_pattern_vars] Can't handle regexp yet"
 
   | `PAT_nonconst_ctor (sr,name,pat) ->
     let extractor' = (Udtor (sr, name)) :: extractor in
@@ -358,8 +349,6 @@ let rec gen_match_check pat (arg:expr_t) =
     (List.tl rpats)
 
   | `PAT_any sr -> truth sr
-  | `PAT_regexp _ ->
-    failwith "[gen_match_check] Can't handle regexp yet"
   | `PAT_const_ctor (sr,name) ->
     `AST_match_ctor (sr,(name,arg))
 

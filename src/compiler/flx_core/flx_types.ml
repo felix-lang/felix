@@ -36,7 +36,6 @@ type dcl_t =
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * int option * vs_list_t * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
-  | `DCL_cstruct of      (id_t * typecode_t) list
   | `DCL_typeclass of    asm_t list
   | `DCL_match_check of pattern_t * (string * int)
   | `DCL_match_handler of pattern_t * (string * int) * asm_t list
@@ -202,35 +201,7 @@ and bexe_t =
   | `BEXE_assert of range_srcref * tbexpr_t
   | `BEXE_assert2 of range_srcref * range_srcref * tbexpr_t option * tbexpr_t
   | `BEXE_axiom_check of range_srcref * tbexpr_t
-
-  | `BEXE_apply_ctor of range_srcref * bid_t * bid_t * btypecode_t list * bid_t * tbexpr_t
-  | `BEXE_apply_ctor_stack of range_srcref * bid_t * bid_t * btypecode_t list * bid_t * tbexpr_t
-    (* For classes! Note this case works as so:
-     * arg0 denotes a variable to store the closure pointer in
-     * arg1 and 2 denote the closure to be created,
-     * arg3 and 4 s a procedure call executed in the
-       context of the closure to initialise the frame.
-     * The expression just returns the initialised closure.
-     * This is rougly equivalent to (in Ocaml notation):
-
-      let frame = closure (arg1,arg2) in
-      closure(arg3,arg2).call(arg4).run();
-      closure
-
-      except that the second closure create takes
-      the first as its parent. This combinator is
-      needed to intervene in the construction of
-      the display (list of environment pointers)
-      to ensure that the first closure is passed
-      as a display variable to the second, so that
-      the class constructor can refer to the class object
-      as its parent, that is, so references to member variables
-      resolve correctly to the instance object.
-
-      NOTE: the stack version applies to the constructor procedure
-      NOT the class, which is always heaped
-    *)
-   ]
+  ]
 
 and bexpr_t =
   [
@@ -246,8 +217,6 @@ and bexpr_t =
   | `BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t
   | `BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t
   | `BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t
-  | `BEXPR_apply_method_direct of tbexpr_t * bid_t * btypecode_t list * tbexpr_t
-  | `BEXPR_apply_method_stack of tbexpr_t * bid_t * btypecode_t list * tbexpr_t
   | `BEXPR_apply_struct of bid_t * btypecode_t list * tbexpr_t
 
   | `BEXPR_tuple of tbexpr_t list
@@ -256,7 +225,6 @@ and bexpr_t =
   | `BEXPR_get_n of int * tbexpr_t (* tuple projection *)
   | `BEXPR_get_named of int * tbexpr_t (* struct/class projection *)
   | `BEXPR_closure of bid_t * btypecode_t list
-  | `BEXPR_method_closure of tbexpr_t * bid_t * btypecode_t list
   | `BEXPR_case of int * btypecode_t
   | `BEXPR_match_case of int * tbexpr_t
   | `BEXPR_case_arg of int * tbexpr_t
@@ -272,13 +240,6 @@ and bparameter_t = {pkind:param_kind_t; pid:string; pindex:int; ptyp:btypecode_t
 and breqs_t = (bid_t * btypecode_t list) list
 and bvs_t = (string * int) list
 and bparams_t = bparameter_t list * tbexpr_t option
-and bclass_member_t = [
-  | `BMemberVal of id_t * btypecode_t
-  | `BMemberVar of id_t * btypecode_t
-  | `BMemberFun of id_t * bvs_t * btypecode_t
-  | `BMemberProc of id_t * bvs_t * btypecode_t
-  | `BMemberCtor of id_t * btypecode_t
-]
 
 and btype_qual_t = [
   | base_type_qual_t
@@ -305,7 +266,6 @@ and bbdcl_t =
 
   | `BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
   | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
-  | `BBDCL_cstruct of    bvs_t * (id_t * btypecode_t) list
   | `BBDCL_typeclass of  property_t list * bvs_t
   | `BBDCL_instance of   property_t list *
                          bvs_t *
@@ -339,7 +299,6 @@ type symbol_definition_t =
 
   | `SYMDEF_match_check of  pattern_t * (string *int)
   | `SYMDEF_module
-  | `SYMDEF_class
 
   | `SYMDEF_const_ctor of int * typecode_t * int * ivs_list_t
   | `SYMDEF_nonconst_ctor of int * typecode_t * int * ivs_list_t * typecode_t
@@ -354,7 +313,6 @@ type symbol_definition_t =
   | `SYMDEF_insert of c_t  * ikind_t * named_req_expr_t
   | `SYMDEF_union of  (id_t * int *  vs_list_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
-  | `SYMDEF_cstruct of  (id_t * typecode_t) list
   | `SYMDEF_typeclass
   | `SYMDEF_type_alias of   typecode_t
   | `SYMDEF_inherit of   qualified_name_t

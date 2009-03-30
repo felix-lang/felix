@@ -259,11 +259,8 @@ and expr_t =
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
   | `AST_get_named_variable of range_srcref * (string * expr_t) (* get named component of a class or record *)
-  | `AST_get_named_method of range_srcref * (string * int * typecode_t list * expr_t ) (* get named component of a class *)
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
-  | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
-  | `AST_sparse of range_srcref * expr_t * string * int list
 
   | `AST_typeof of range_srcref * expr_t
   | `AST_lift of range_srcref * expr_t
@@ -428,7 +425,6 @@ and ast_term_t =
 
 and statement_t =
   [
-  | `AST_cparse of range_srcref * string
   | `AST_include of range_srcref * string
   | `AST_open of range_srcref * vs_list_t * qualified_name_t
 
@@ -447,7 +443,6 @@ and statement_t =
   | `AST_lemma of range_srcref * id_t * vs_list_t * params_t * axiom_method_t
   | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
-  | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
 
   (* macros *)
   | `AST_macro_name of range_srcref * id_t * id_t
@@ -475,7 +470,6 @@ and statement_t =
   (* types *)
   | `AST_union of range_srcref * id_t * vs_list_t * (id_t * int option * vs_list_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
-  | `AST_cstruct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_type_alias of range_srcref * id_t * vs_list_t * typecode_t
   | `AST_inherit of range_srcref * id_t * vs_list_t * qualified_name_t
   | `AST_inherit_fun of range_srcref * id_t * vs_list_t * qualified_name_t
@@ -515,7 +509,6 @@ and statement_t =
   | `AST_trace of range_srcref  * id_t * string
   | `AST_nop of range_srcref * string
   | `AST_assert of range_srcref * expr_t
-  | `AST_apply_ctor of range_srcref * id_t * expr_t * expr_t
   | `AST_init of range_srcref * id_t * expr_t
 
   | `AST_newtype of range_srcref * id_t * vs_list_t * typecode_t
@@ -562,7 +555,6 @@ and exe_t =
   | `EXE_iinit of (id_t * int) * expr_t
   | `EXE_assign of expr_t * expr_t
   | `EXE_assert of expr_t
-  | `EXE_apply_ctor of id_t * expr_t * expr_t
   ]
 
 type sexe_t = range_srcref * exe_t

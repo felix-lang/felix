@@ -280,11 +280,6 @@ atomic_pattern:
   | QUEST { `PAT_any (slift $1) }
   | UNDERSCORE { `PAT_any (slift $1) }
   | LPAR pattern RPAR { $2 }
-  | REGEXP STRING LPAR basic_name_comma_list RPAR
-    {
-      let names = List.map snd $4 in
-      `PAT_regexp (rstoken $1 $5, snd $2, names)
-    }
   | STRUCT LBRACE pat_assigns RBRACE
     {
       `PAT_record (rstoken $1 $4, $3)

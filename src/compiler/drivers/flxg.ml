@@ -18,7 +18,6 @@ open Flx_version
 open Flx_exceptions
 open Flx_flxopt
 open Flx_ogen
-open Flx_elkgen
 open Flx_typing
 open List
 ;;
@@ -419,10 +418,6 @@ try
       let entry = `BBDCL_function (props,bvs,(ps,rt),ret,exes) in
       Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
-    | `BBDCL_glr (props,bvs,ret,(p,exes)) ->
-      let exes = elim_init maybe_unused exes in
-      let entry =  `BBDCL_glr (props,bvs,ret,(p,exes)) in
-      Hashtbl.replace bbdfns i (id,parent,sr,entry)
     | _ -> ()
     )
     bbdfns
@@ -539,39 +534,8 @@ try
   then exit (if compiler_options.reverse_return_parity then 1 else 0)
   ;
 
-  begin let cnt = ref 1 in
+  begin
   let find_parsers this sr e = match e with
-    | `BEXPR_parse ((_,t') as e,ii),_ ->
-      if not (Hashtbl.mem syms.parsers (this,t',ii)) then begin
-        begin match t' with
-        | `BTYP_function (`BTYP_tuple [],`BTYP_inst(i,[])) ->
-          let token_id,parent,sr',entry = Hashtbl.find bbdfns i in
-          begin match entry with
-          | `BBDCL_union ([],cts) -> ()
-          | _ -> clierr sr
-            ("Parser function must have unit domain and return a non-polymorphic union\n" ^
-            "Got: " ^ sbt syms.dfns t')
-          end
-        | _ -> clierr sr
-            ("Parser function must have unit domain and return a non-polymorphic union\n" ^
-            "Got: " ^ sbt syms.dfns t')
-        end
-        ;
-
-        let n = !cnt in incr cnt;
-        Hashtbl.add syms.parsers (this,t',ii) n;
-        (*
-        print_endline ("PARSER " ^ si n)
-        *)
-      end
-      ;
-      if not (Hashtbl.mem syms.lexers (this,e)) then begin
-        let n = !cnt in incr cnt;
-        Hashtbl.add syms.lexers (this,e) n;
-        (*
-        print_endline ("LEXER " ^ si n ^ " = " ^ sbe syms.dfns e);
-        *)
-      end
     | _ -> ()
   in
 
@@ -593,15 +557,6 @@ try
   ;
 
   let sr = ("unknown",0,0,0,0) in
-  Hashtbl.iter
-  (fun (this,t',ii) n ->  gen_elk_parser outbase module_name syms bbdfns this sr t' n ii)
-  syms.parsers
-  ;
-
-  Hashtbl.iter
-  (fun (this,e) n ->  gen_elk_lexer outbase module_name syms bbdfns this sr e n)
-  syms.lexers
-  ;
 
   let psh s = ws header_file s in
   let psb s = ws body_file s in

@@ -36,7 +36,6 @@ and check_match_string pats =
   | `PAT_any _
   | `PAT_string _
   | `PAT_string_range _
-  | `PAT_regexp _
   | `PAT_name _ -> ()
 
   | `PAT_coercion (_,pat,_)
@@ -180,7 +179,6 @@ and find_match_type pat = match pat with
   | `PAT_name _ -> renaming
   | `PAT_tuple (_,pats) -> check_match_tuple (List.length pats)
   | `PAT_any _ -> renaming
-  | `PAT_regexp _ -> check_match_string
   | `PAT_const_ctor _ -> check_match_union
   | `PAT_nonconst_ctor _ -> check_match_union
   | `PAT_record (_,_) -> check_match_record

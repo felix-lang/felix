@@ -141,9 +141,6 @@ let cmp_literal (l:literal_t) (l':literal_t) = match l, l' with
 
 let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
   let ecmp = cmp_tbexpr in match a,b with
-  | `BEXPR_parse (e,ii), `BEXPR_parse (e',ii') ->
-    ecmp e e' && ii = ii'
-
   | `BEXPR_coerce (e,t),`BEXPR_coerce (e',t') ->
     (* not really right .. *)
     ecmp e e'
@@ -179,11 +176,6 @@ let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
   | `BEXPR_likely e1,_
   | `BEXPR_unlikely e1,_ -> ecmp e1 xb
 
-  | `BEXPR_method_closure (e,i,ts),`BEXPR_method_closure (e',i',ts') ->
-     ecmp e e' &&
-     i = i' &&
-     fold_left2 (fun r a b -> r && a = b) true ts ts'
-
   | `BEXPR_literal a,`BEXPR_literal a' -> cmp_literal a a'
 
   | `BEXPR_apply (a,b),`BEXPR_apply (a',b') ->  ecmp a a' && ecmp b b'
@@ -192,18 +184,6 @@ let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
   | `BEXPR_apply_direct (i,ts,b),`BEXPR_apply_direct (i',ts',b')
   | `BEXPR_apply_struct (i,ts,b),`BEXPR_apply_struct (i',ts',b')
   | `BEXPR_apply_stack (i,ts,b),`BEXPR_apply_stack (i',ts',b') ->
-     i = i' &&
-     fold_left2 (fun r a b -> r && a = b) true ts ts' &&
-     ecmp b b'
-
-  | `BEXPR_apply_method_direct (e,i,ts,b),`BEXPR_apply_method_direct (e',i',ts',b') ->
-     ecmp e e' &&
-     i = i' &&
-     fold_left2 (fun r a b -> r && a = b) true ts ts' &&
-     ecmp b b'
-
-  | `BEXPR_apply_method_stack (e,i,ts,b),`BEXPR_apply_method_stack (e',i',ts',b') ->
-     ecmp e e' &&
      i = i' &&
      fold_left2 (fun r a b -> r && a = b) true ts ts' &&
      ecmp b b'

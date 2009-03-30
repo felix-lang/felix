@@ -95,14 +95,6 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
     let i,ts = fi i ts in
     `BEXPR_apply_stack (i,ts,a)
 
-  | `BEXPR_apply_method_direct (obj,i,ts,a) ->
-    let i,ts = fi i ts in
-    `BEXPR_apply_method_direct (obj,i,ts,a)
-
-  | `BEXPR_apply_method_stack (obj,i,ts,a) ->
-    let i,ts = fi i ts in
-    `BEXPR_apply_method_stack (obj,i,ts,a)
-
   | `BEXPR_ref (i,ts)  ->
     let i,ts = fi i ts in
     `BEXPR_ref (i,ts)
@@ -121,9 +113,6 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
     let i,ts = fi i ts in
     `BEXPR_closure (i,ts)
 
-  | `BEXPR_method_closure (e,i,ts) ->
-    let i,ts = fi i ts in
-    `BEXPR_method_closure (e,i,ts)
   | x -> x
   in
   (*
@@ -237,34 +226,6 @@ let fixup_exe syms bbdfns fi mt exe =
     *)
     `BEXE_svc (sr,i)
 
-
-  | `BEXE_apply_ctor (sr,dst,cls,clsts,ctor,ctorarg) ->
-    (*
-    print_endline ("ORIGINAL: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
-    *)
-    let cls,clsts = fi cls clsts and ctor,_ = fi ctor clsts in
-    (*
-    print_endline ("REMAPPED: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
-    *)
-    let dstvs = get_vs bbdfns dst in
-    let dstts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) dstvs in
-    let dst,dstts = fi dst dstts in
-    `BEXE_apply_ctor (sr,dst,cls,clsts,ctor,ctorarg)
-
-  | `BEXE_apply_ctor_stack (sr,dst,cls,clsts,ctor,ctorarg) ->
-    (*
-    print_endline ("ORIGINAL: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
-    *)
-    let cls,clsts = fi cls clsts and ctor,_ = fi ctor clsts in
-    (*
-    print_endline ("REMAPPED: apply ctor " ^ si ctor ^ " class " ^ si cls ^ " ts = " ^ catmap "," (sbt syms.dfns) clsts);
-    *)
-    let dstvs = get_vs bbdfns dst in
-    let dstts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) dstvs in
-    let dst,dstts = fi dst dstts in
-    `BEXE_apply_ctor_stack (sr,dst,cls,clsts,ctor,ctorarg)
-
-
   | x -> x
   in
   (*
@@ -352,12 +313,6 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  | `BBDCL_class (props,vs) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let entry = `BBDCL_class (props,[]) in
-    let parent = cal_parent syms bbdfns i ts in
-    Hashtbl.replace bbdfns n (id,parent,sr,entry)
-
   (* we have tp replace types in interfaces like Vector[int]
     with monomorphic versions if any .. even if we don't
     monomorphise the entry itself.
@@ -389,41 +344,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst syms.counter vars t in
-    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
-    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
-      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps
-    in
-    let ret = mt ret in
-    let h2 = Hashtbl.create 97 in
-    Hashtbl.iter (fun j e ->
-      let e = fixup_expr syms bbdfns fi mt e in
-      Hashtbl.add h2 j e
-    )
-    h
-    ;
-    let entry = `BBDCL_regmatch (props,[],(ps,traint),ret,(alpha,states,h2,mx)) in
-    let parent = cal_parent syms bbdfns i ts in
-    Hashtbl.replace bbdfns n (id,parent,sr,entry)
-
-
   (*
-  | `BBDCL_glr (props,vs,ret, (p,exes)) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst syms.counter vars t in
-    let ret = mt ret in
-    let exes = fixup_exes syms bbdfns mt exes in
-    `BBDCL_glr (props,[],ret,(p,exes))
-
-  | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst syms.counter vars t in
-    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns mt x) in
-    let ret = mt ret in
-    `BBDCL_reglex (props,[],(ps,traint),le,ret,(alpha,states,h,mx))
-
   | `BBDCL_union (vs,ps) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = list_subst syms.counter vars t in
@@ -436,21 +357,11 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let ps = map (fun (i,t) -> i,mt t) ps in
     `BBDCL_struct ([],ps)
 
-  | `BBDCL_cstruct (vs,ps) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst syms.counter vars t in
-    let ps = map (fun (i,t) -> i,mt t) ps in
-    `BBDCL_cstruct ([],ps)
-
   | `BBDCL_newtype (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = list_subst syms.counter vars t in
     let t = mt t in
     `BBDCL_newtype ([],t)
-
-  | `BBDCL_cclass (vs,ps) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_cclass ([],ps)
 
   | `BBDCL_const (props,vs,t,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -459,7 +370,6 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   | `BBDCL_insert (vs,s,ikind,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     `BBDCL_insert ([],s,ikind,reqs)
-
 
   | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -497,18 +407,10 @@ let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
   | `BBDCL_var (vs,t) -> true
   | `BBDCL_ref (vs,t) -> true
   | `BBDCL_tmp (vs,t) -> true
-  | `BBDCL_class (props,vs) -> true
   | `BBDCL_const (_,_,_,`Str "#this",_) -> true
-  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(alpha,states,h,mx))  -> true
-
-
-  | `BBDCL_glr (props,vs,ret, (p,exes)) -> false
-  | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(alpha,states,h,mx)) -> false
   | `BBDCL_union (vs,ps) -> false
   | `BBDCL_struct (vs,ps) -> false
-  | `BBDCL_cstruct (vs,ps) -> false
   | `BBDCL_newtype (vs,t) -> false
-  | `BBDCL_cclass (vs,ps) -> false
   | `BBDCL_const (props,vs,t,ct,reqs) -> false
   | `BBDCL_insert (vs,s,ikind,reqs) ->  false
   | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> false

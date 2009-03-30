@@ -85,13 +85,10 @@ let cpp_name bbdfns index =
   | `BBDCL_function _ -> "_f"
   | `BBDCL_callback _ -> "_cf"
   | `BBDCL_procedure _  -> "_p"
-  | `BBDCL_regmatch _  -> "_rm"
-  | `BBDCL_reglex _  -> "_rl"
   | `BBDCL_var _ -> "_v"
   | `BBDCL_val _ -> "_v"
   | `BBDCL_ref _ -> "_v"
   | `BBDCL_tmp _ -> "_tmp"
-  | `BBDCL_class _ -> "_cl"
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
   ) ^ si index ^ "_" ^ cid_of_flxid id
 
@@ -217,7 +214,6 @@ let rec cpp_type_classname syms t =
       | `SYMDEF_struct _  -> "_s"
       | `SYMDEF_union _   -> "_u"
       | `SYMDEF_abs _  -> "_a"
-      | `SYMDEF_class -> "_cl"
       | `SYMDEF_newtype _ -> "_abstr_"
       | _ -> "_unk_"
     in
@@ -228,8 +224,6 @@ let rec cpp_type_classname syms t =
           { id=id; symdef=symdef } -> Some (id,symdef )
         with Not_found -> None
       with
-      | Some (id,`SYMDEF_cstruct _) -> id
-      | Some (id,`SYMDEF_cclass _) -> id^"*"
       | Some (_,`SYMDEF_abs (_,`Str "char",_)) -> "char" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "int",_)) -> "int" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "short",_)) -> "short" (* hack .. *)
@@ -277,7 +271,6 @@ let rec cpp_typename syms t =
         { symdef=symdef } -> Some ( symdef )
       with Not_found -> None
     with
-    | Some (`SYMDEF_class ) -> cpp_type_classname syms t ^ "*"
     | _ -> cpp_type_classname syms t
     end
   *)

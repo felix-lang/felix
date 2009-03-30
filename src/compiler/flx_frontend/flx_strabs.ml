@@ -103,30 +103,6 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
   | `BBDCL_tmp (  bvs, t) ->
     h (`BBDCL_tmp (  bvs, ft t) )
 
-  | `BBDCL_glr (  props, bvs, t, (bprod, bexes)) ->
-    let bexes = fxs bexes in
-    h (`BBDCL_glr (  props, bvs, ft t, (bprod, bexes)) )
-
-  | `BBDCL_regmatch ( props, bvs, bps , t, regular_args) ->
-    let alpha,cnt, sem, tr = regular_args in
-    let nusem = Hashtbl.create 97 in
-    Hashtbl.iter
-    (fun k e -> Hashtbl.add nusem k (fe e))
-    sem
-    ;
-    let regular_args = alpha,cnt,nusem,tr in
-    h (`BBDCL_regmatch ( props, bvs, fp bps, ft t, regular_args) )
-
-  | `BBDCL_reglex ( props, bvs, bps, j, t, regular_args) ->
-    let alpha,cnt, sem, tr = regular_args in
-    let nusem = Hashtbl.create 97 in
-    Hashtbl.iter
-    (fun k e -> Hashtbl.add nusem k (fe e))
-    sem
-    ;
-    let regular_args = alpha,cnt,nusem,tr in
-    h (`BBDCL_reglex ( props, bvs, fp bps, j, ft t, regular_args) )
-
   | `BBDCL_newtype (  bvs, t) -> ()
 
   | `BBDCL_abs (  bvs, btqs, c, breqs) ->
@@ -155,16 +131,6 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
   | `BBDCL_struct ( bvs, cts) ->
     let cts = map (fun (s,t) -> s,ft t) cts in
     h (`BBDCL_struct ( bvs, cts) )
-
-  | `BBDCL_cstruct (  bvs, cts) ->
-    let cts = map (fun (s,t) -> s,ft t) cts in
-    h (`BBDCL_cstruct (  bvs, cts) )
-
-  | `BBDCL_cclass ( bvs, bclass_members) ->
-    h (`BBDCL_cclass ( bvs, fkms bclass_members) )
-
-  | `BBDCL_class (  props, bvs) ->
-    h (`BBDCL_class (  props, bvs) )
 
   | `BBDCL_typeclass (  props, bvs) ->
     h (`BBDCL_typeclass (  props, bvs) )

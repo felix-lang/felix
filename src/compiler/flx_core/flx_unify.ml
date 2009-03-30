@@ -716,7 +716,6 @@ let do_unify syms a b =
               with Not_found -> failwith ("BUG, flx_unify can't find symbol " ^ si i)
             end
           with
-          | { symdef=`SYMDEF_glr _ }
           | { symdef=`SYMDEF_function _ } ->
             (*
             print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);

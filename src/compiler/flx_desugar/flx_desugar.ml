@@ -88,35 +88,25 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
     in
     match args with
     | [] ->
-      (match kind with
-        | `Object ->
-          `AST_object (sr, name n, vs, ([],None), body)
+        begin match return_type with
+        | `AST_void _ ->
+          `AST_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
         | _ ->
-          begin match return_type with
-          | `AST_void _ ->
-            `AST_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
+          (* allow functions with no arguments now .. *)
+          begin match body with
+          | [`AST_fun_return (_,e)] ->
+            let rt = match return_type with
+            | `TYP_none -> None
+            | x -> Some x
+            in
+            `AST_lazy_decl (sr, name n, vs, rt, Some e)
           | _ ->
-            (* allow functions with no arguments now .. *)
-            begin match body with
-            | [`AST_fun_return (_,e)] ->
-              let rt = match return_type with
-              | `TYP_none -> None
-              | x -> Some x
-              in
-              `AST_lazy_decl (sr, name n, vs, rt, Some e)
-            | _ ->
-            clierr sr "Function with no arguments"
-            end
+          clierr sr "Function with no arguments"
           end
-
-        )
+        end
 
     | h :: [] -> (* bottom level *)
-        (match kind with
-        | `Object -> `AST_object (sr, name n, vs, h, body)
-        | _  ->
-          `AST_function (sr, name n, vs, h, (return_type,postcondition), props, body)
-        )
+        `AST_function (sr, name n, vs, h, (return_type,postcondition), props, body)
     | h :: t ->
       let argt =
         let hdt = hd t in
@@ -161,11 +151,6 @@ let find_methods seq sr sts =
   let rec check = function
     | `AST_curry (sr,mname,vs,pss,ret,kind,sts) ->
       check (mkcurry seq sr mname vs pss ret kind sts [])
-
-    (*
-    | `AST_object (sr,mname, vs, ps, sts) ->
-       check (`AST_function (sr,mname,vs,ps,(`TYP_none,None),props,sts))
-    *)
 
     | `AST_function (sr,mname, vs, ps, (ret,postcondition),props,sts) ->
       if vs <> dfltvs then
@@ -224,7 +209,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_patvar _
   | `AST_patany _
   | `AST_case _
-  | `AST_sparse _
   | `AST_match_ctor _
   | `AST_match_case _
   | `AST_ctor_arg _
@@ -365,10 +349,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e' in
     l1, `AST_get_named_variable (sr,(n,x1))
 
-  | `AST_get_named_method (sr,(n,mix,ts,e')) ->
-    let l1,x1 = rex e' in
-    l1, `AST_get_named_method (sr,(n,mix,ts,x1))
-
   | `AST_case_index (sr,e) ->
     let l,x = rex e in
     l,`AST_case_index (sr,x)
@@ -437,29 +417,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in
     l1, `AST_coercion (sr,(x1,t))
-
-  | `AST_parse (sr,e,ms) ->
-    (* SIMPLIFY TO ONE SYMBOL PLUS DUMMY NONTERMS *)
-    let l,e = rex e in
-    let n = seq() in
-    let nt = "_nt_"^si n in
-    let nt_name = `AST_index (sr,nt,n) in
-    let l,glr_ixs =
-      fold_left
-      (fun (ll,glr_ixs) (sr,p,e) ->
-        let t = `TYP_none in
-        let glr_idx = seq() in
-        let dcls = handle_glr seq rex sr p e glr_idx t nt in
-        dcls @ l @ ll,
-        (*
-        `Dcl(sr,nt,Some n',`Private,[],`DCL_glr(t,(p,x))) :: l @ ll,
-        *)
-        glr_idx::glr_ixs
-      )
-      (l,[])
-      ms
-    in
-    l,`AST_sparse (sr,e,nt,glr_ixs)
 
   | `AST_letin (sr,(pat,e1,e2)) ->
     rex (`AST_match (sr,(e1,[pat,e2])))
@@ -836,26 +793,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     rsts name parent_vs  access sts
     *)
 
-  | `AST_cparse (sr,s) ->
-    (* WARNING: unfortunately Frontc/Cil isn't re-entrant *)
-    let filename,lineno,_,_,_ = sr in
-    Cil.initCIL();
-    let lexbuf = Clexer.init_from_string filename lineno `C s in
-    let cabs =
-      try Cparser.file Clexer.initial lexbuf
-      with
-      | Errormsg.Parse_error (filename, line, c1, c2) ->
-        let sr = filename, line, c1, line, c2 in
-        clierr sr "Frontc Parsing error"
-    in
-    Clexer.finish();
-    print_endline "Frontc Parse done .. converting cabs to cil";
-    let cil = Cabs2cil.convFile (filename, cabs) in
-    print_endline "Conversion to Cil done";
-    let {Cil.globals=gs} = cil in
-    let sts = concat (map handle_global gs) in
-    rsts name parent_vs  access sts
-
   | `AST_label (sr,s) -> [`Exe (sr,`EXE_label s)]
   | `AST_proc_return sr -> [`Exe (sr,`EXE_proc_return)]
   | `AST_halt (sr,s) -> [`Exe (sr,`EXE_halt s)]
@@ -941,16 +878,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_union (sr,name, vs, components) -> [`Dcl (sr,name,None,access,vs,`DCL_union (components))]
   | `AST_struct (sr,name, vs, components) ->  [`Dcl (sr,name,None,access,vs,`DCL_struct (components))]
-  | `AST_cstruct (sr,name, vs, components) ->  [`Dcl (sr,name,None,access,vs,`DCL_cstruct (components))]
-  | `AST_cclass (sr,name, vs, components) ->  [`Dcl (sr,name,None,access,vs,`DCL_cclass (components))]
-
-  | `AST_class (sr,name', vs', sts) ->
-    (* let asms = rsts name' (merge_vs parent_vs vs') sts in *)
-    let asms = rsts name' dfltvs `Public sts in
-    let asms = bridge name' sr :: asms in
-    let mdcl =
-      [ `Dcl (sr,name',None,access,vs', `DCL_class asms) ]
-    in mdcl
 
   | `AST_typeclass (sr,name, vs, sts) ->
     if syms.compiler_options.document_typeclass then
@@ -982,45 +909,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
     rst syms name access parent_vs (mkcurry seq sr name' vs pps ret kind sts [])
-
-  (* The object *)
-  (* THIS IS HACKY AND DOESN'T WORK PROPERLY --
-    need a real object construction --
-    the constructor name and object type should
-    be the same .. at present the exported type
-    may refer to typedefs in the constructor function,
-    and these cant be found by lookup .. really
-    we need to use a proper construction that will
-    be bound correctly without lookup
-  *)
-  | `AST_object (sr,name,vs,params,sts) ->
-    let vs',params = fix_params sr seq params in
-    let vs = merge_vs vs (vs',dfltvs_aux) in
-    let methods = find_methods seq sr sts in
-    let mtuple =
-      `AST_tuple
-      (
-        sr,
-        map
-          (fun (n,t) ->
-            match t with
-            | `TYP_function (d,_) ->
-              `AST_suffix ( sr, ( `AST_name (sr,n,[]), d))
-            | _ -> assert false
-          )
-          methods
-      )
-    in
-    let otname = "_ot_" ^ name in
-    let rtyp = `AST_name (sr,otname,[]) in
-    let retval:expr_t = `AST_apply (sr,(rtyp, mtuple)) in
-    let sts = sts @ [`AST_fun_return (sr,retval)] in
-    let asms = rsts name dfltvs `Public sts in
-    let asms = bridge name sr :: asms in
-    [
-      `Dcl (sr,otname,None,access,vs,`DCL_struct methods);
-      `Dcl (sr,name,None,access,vs,`DCL_function (params,rtyp,[],asms))
-    ]
 
   (* functions *)
   | `AST_reduce (sr,name,vs,params, rsrc,rdst) ->
@@ -1249,16 +1137,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let d2,x2 = rex arg in
     d1 @ d2 @ [`Exe (sr,`EXE_call (x1,x2))]
 
-  | `AST_apply_ctor (sr,name,f,a) ->
-    let d1,f1 = rex f in
-    let d2,a1 = rex a in
-    let t = `TYP_typeof(f1) in
-    let vs = dfltvs in
-    d1 @ d2 @ [
-      `Dcl (sr,name,None,access,vs,`DCL_var t);
-      `Exe (sr,`EXE_apply_ctor (name,f1,a1))
-    ]
-
   | `AST_init (sr,v,e) ->
     let d,x = rex e in
     d @ [`Exe (sr,`EXE_init (v,e))]
@@ -1312,221 +1190,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_macro_vfor _
   | `AST_scheme_string _
     -> assert false
-
-and handle_glr seq rex sr' p e glr_idx t nt_id =
-  (* p can contain expressions now, we have to
-    create dummy glr's for them
-  *)
-  let new_glrs = ref [] in
-  let new_ast (qn:qualified_name_t) : qualified_name_t =
-    (* qs = qn qs | epsilon -- right recursive *)
-    let qt = `TYP_glr_attr_type qn in
-    let typ =
-      `TYP_as
-      (
-        `TYP_sum
-        [
-          `TYP_tuple [];
-          `TYP_tuple [qt; `AST_name (sr',"__fix__",[])]
-        ],
-        "__fix__"
-      )
-    in
-    let glr_idx = seq() in
-    let nt_id = "_ast_" ^ si glr_idx in
-    let nt_name = `AST_name (sr',nt_id,[]) in
-    let p = [(Some "_1",qn); (Some "_2",nt_name)] in
-    let e =
-      `AST_apply
-      (sr',
-        (
-         `AST_typed_case (sr',1,typ),
-         `AST_tuple
-           (
-             sr',
-             [
-               `AST_name (sr',"_1",[]);
-               `AST_name (sr',"_2",[])
-             ]
-          )
-        )
-      )
-    in
-    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
-
-    let e = `AST_typed_case (sr',0,typ) in
-    let p = [] in
-    let glr_idx = seq() in
-    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
-    `AST_name (sr',nt_id,[])
-  in
-  let new_plus (qn:qualified_name_t) : qualified_name_t =
-    (* qs = qn qs | qn -- right recursive *)
-    let qt = `TYP_glr_attr_type qn in
-    let typ =
-      `TYP_as
-      (
-        `TYP_sum
-        [
-          `TYP_tuple [];
-          `TYP_tuple [qt; `AST_name (sr',"__fix__",[])]
-        ],
-        "__fix__"
-      )
-    in
-    let glr_idx = seq() in
-    let nt_id = "_plus_" ^ si glr_idx in
-    let nt_name = `AST_name (sr',nt_id,[]) in
-    let p = [(Some "_1",qn); (Some "_2",nt_name)] in
-    let e =
-      `AST_apply
-      (sr',
-        (
-         `AST_typed_case (sr',1,typ),
-         `AST_tuple
-           (
-             sr',
-             [
-               `AST_name (sr',"_1",[]);
-               `AST_name (sr',"_2",[])
-             ]
-          )
-        )
-      )
-    in
-    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
-
-    let e =
-      `AST_apply
-      (sr',
-        (
-         `AST_typed_case (sr',1,typ),
-         `AST_tuple
-           (
-             sr',
-             [
-               `AST_name (sr',"_1",[]);
-               `AST_typed_case (sr',0,typ)
-             ]
-          )
-        )
-      )
-    in
-
-    let p = [(Some "_1",qn)] in
-    let glr_idx = seq() in
-    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
-    `AST_name (sr',nt_id,[])
-  in
-  let new_opt (qn:qualified_name_t) : qualified_name_t =
-    (* qs = qn | epsilon *)
-    let qt = `TYP_glr_attr_type qn in
-    let typ = `TYP_sum [ `TYP_tuple []; qt] in
-    let glr_idx = seq() in
-    let nt_id = "_opt_" ^ si glr_idx in
-    let nt_name = `AST_name (sr',nt_id,[]) in
-    let p = [(Some "_1",qn)] in
-    let e =
-      `AST_apply
-      (sr',
-        (
-         `AST_typed_case (sr',1,typ),
-         `AST_name (sr',"_1",[])
-        )
-      )
-    in
-    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
-
-    let e = `AST_typed_case (sr',0,typ) in
-    let p = [] in
-    let glr_idx = seq() in
-    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
-    `AST_name (sr',nt_id,[])
-  in
-
-  let new_seq (qs:qualified_name_t list) : qualified_name_t =
-    let n = length qs in
-    let typ = `TYP_tuple (map (fun qn -> `TYP_glr_attr_type qn) qs) in
-    let glr_idx = seq() in
-    let nt_id = "_seq_" ^ si glr_idx in
-    let nt_name = `AST_name (sr',nt_id,[]) in
-    let p = combine (map (fun n -> Some ("_"^ si n)) (nlist n)) qs in
-    let e =
-      `AST_tuple
-      (
-        sr',
-        map
-        (fun n -> `AST_name (sr',"_"^si n,[]))
-        (nlist n)
-      )
-    in
-    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
-    `AST_name (sr',nt_id,[])
-  in
-
-  let new_alt t = failwith "can't handle glr alt yet" in
-  let rec unravel t: qualified_name_t = match t with
-  | `GLR_name qn -> qn
-  | `GLR_ast t -> new_ast (unravel t)
-  | `GLR_plus t -> new_plus (unravel t)
-  | `GLR_opt t -> new_opt (unravel t)
-  | `GLR_seq ts -> new_seq (map unravel ts)
-  | `GLR_alt ts -> new_alt (map unravel ts)
-  in
-  let p = map (fun (name,t) -> name,unravel t) p in
-  let dcls = inner_handle_glr seq rex sr' p e glr_idx t nt_id in
-  dcls @
-  concat
-  (
-    map
-    (fun (p,e,glr_idx,t,nt_id) ->
-      inner_handle_glr seq rex sr' p e glr_idx t nt_id
-    )
-    !new_glrs
-  )
-
-
-and inner_handle_glr seq rex sr' p e glr_idx t nt_id =
-   (* we turn the expression into a call to a function
-    so any lambdas lifted out are nested in the
-    function, and rely on the call to bind to the
-    arguments, and we mark the function noinline,
-    to stop it being inlined into the C wrapper code
-  *)
-
-  let fun_idx = seq() in
-  let fun_id = nt_id ^ "_" ^ si fun_idx in
-  let fun_ref = `AST_index (sr',fun_id,fun_idx) in
-  let params : (param_kind_t * string * typecode_t * expr_t option) list =
-    let rec aux params prod = match prod with
-    | [] -> rev params
-    | (None,_):: tail -> aux params tail
-    | (Some n,qn) :: tail ->
-      let typ = `TYP_glr_attr_type qn in
-      aux ((`PVal,n,typ,None)::params) tail
-    in aux [] p
-  in
-  let lams,x = rex e in
-  let d: asm_t = `Dcl
-    (
-      sr',
-      fun_id, Some fun_idx,
-      `Private,
-      dfltvs,
-      `DCL_function
-      (
-        (params,None),
-        `TYP_none,
-        [`NoInline],
-        (`Exe (sr',`EXE_fun_return x) :: lams)
-       )
-    )
-  in
-  let args = map (fun (_,n,_,_) -> `AST_name (sr',n,[])) params in
-  let invoke = `AST_apply(sr',(fun_ref,`AST_tuple (sr',args))) in
-  let dcl =   `DCL_glr (t,(p,invoke)) in
-  let dcl =   `Dcl (sr',nt_id,Some glr_idx,`Public,dfltvs,dcl) in
-  [d; dcl]
 
 let typeofargs a =
       match map snd a with
