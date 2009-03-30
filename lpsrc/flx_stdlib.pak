@@ -2809,6 +2809,31 @@ open module Varray
     "(?1*)(PTF gcp->gc->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
   ;
+
+  publish "Construct a varray with a default value"
+  gen _ctor_varray[t] (size:ulong, default:t) = {
+    var o = varray[t] size;
+    var i : ulong;
+
+    forall i in 0ul upto size - 1ul do
+      o.[i] = default;
+    done;
+
+    return o;
+  }
+
+  publish "Construct a varray with a default value computed by a function"
+  gen _ctor_varray[t] (size:ulong, f:ulong->t) = {
+    var o = varray[t] size;
+    var i : ulong;
+
+    forall i in 0ul upto size - 1ul do
+      o.[i] = f i;
+    done;
+
+    return o;
+  }
+
   private proc set_used[t]: varray[t] * ulong =
     "PTF gcp->gc->set_used($1,$2);"
     requires property "needs_gc"
@@ -2847,6 +2872,47 @@ open module Varray
   """
     requires property "needs_gc"
   ;
+
+  proc iter[T] (_f:T->void) (x:varray[T]) {
+    var i : ulong;
+
+    forall i in 0ul upto len(x) - 1ul do
+      _f x.[i];
+    done;
+  }
+
+  fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
+    var o = varray[U]$ len(x);
+    var i : ulong;
+
+    forall i in 0ul upto len(x) - 1ul do
+      o.[i] = _f x.[i];
+    done;
+
+    return o;
+  }
+
+  fun fold_left[T, U] (_f:U->T->U) (init:U) (x:varray[T]): U = {
+    var o = init;
+    var i : ulong;
+
+    forall i in 0ul upto len(x) - 1ul do
+      o = _f o x.[i];
+    done;
+
+    return o;
+  }
+
+  fun fold_right[T, U] (_f:T->U->U) (x:varray[T]) (init:U): U = {
+    var o = init;
+    var i : ulong;
+
+    forall i in len(x) - 1ul downto 0ul do
+      o = _f x.[i] o;
+    done;
+
+    return o;
+  }
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {
