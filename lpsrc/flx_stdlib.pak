@@ -83,8 +83,8 @@ typeclass FloatAddgrp[t] {
   virtual fun add: t * t -> t;
   virtual fun neg: t -> t;
   virtual fun sub(x:t,y:t):t => add (x,neg y);
-  virtual proc pluseq (x:lvalue[t],y:t){ x = x + y; }
-  virtual proc minuseq (x:lvalue[t],y:t){ x = x - y; }
+  virtual proc pluseq (x:lvalue[t],y:t) { x = x + y; }
+  virtual proc minuseq (x:lvalue[t],y:t) { x = x - y; }
 
   reduce id (x:t): x+zero() => x;
   reduce id (x:t): zero()+x => x;
