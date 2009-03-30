@@ -6,7 +6,6 @@ caml_modules = [
     'src/compiler/flx_bind/flx_lookup',
     'src/compiler/flx_bind/flx_mbind',
     'src/compiler/flx_bind/flx_bexe',
-    'src/compiler/flx_bind/flx_dfa',
     'src/compiler/flx_bind/flx_bbind',
     'src/compiler/flx_bind/flx_symtab',
 ]
