@@ -125,8 +125,6 @@ let rec get_offsets' syms bbdfns typ : string list =
       ;
       !lst
 
-    | `BBDCL_class _ -> ["0"]
-
     | `BBDCL_abs (vs,type_quals,_,_)
        when mem `GC_pointer type_quals -> ["0"]
 
@@ -290,45 +288,6 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props 
     name ^ "\n"
   );
   gen_offset_data s n name offsets true props None last_ptr_map
-
-let gen_class_offsets s syms (child_map,bbdfns) index vs ts instance last_ptr_map : unit =
-  let vars =  (find_references syms (child_map,bbdfns) index ts) in
-  let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
-  let varmap = mk_varmap vs ts in
-  let name = cpp_instance_name syms bbdfns index ts in
-  let display = Flx_display.get_display_list syms bbdfns index in
-  let offsets =
-    map
-    (fun (didx, vslen) ->
-    let dptr = "ptr" ^ cpp_instance_name syms bbdfns didx (list_prefix ts vslen) in
-    "offsetof("^name^","^dptr^"),"
-    )
-    display
-    @
-    concat
-    (
-      map
-      (fun (idx,typ)->
-        let mem = cpp_instance_name syms bbdfns idx ts in
-        let offsets = get_offsets syms bbdfns typ in
-        map
-        (fun offset ->
-          "offsetof("^name^","^mem^")+" ^ offset
-        )
-        offsets
-      )
-      vars
-    )
-  in
-  bcat s
-  (
-    "\n//OFFSETS for class "^ name ^
-     "<"^si index^">["^catmap "," (sbt syms.dfns) ts^"] = instance "^si instance^"\n" ^
-     "// WARNING, incomplete, not handling ptf yet .. \n"
-  );
-  let n = length offsets in
-  gen_offset_data s n name offsets true [] None last_ptr_map
-
 let gen_thread_frame_offsets s syms bbdfns last_ptr_map =
   let vars = find_thread_vars_with_type bbdfns in
   let ts = [] in
@@ -403,18 +362,6 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     | `BBDCL_function (props,vs,ps, ret,exes) ->
       scan exes;
       if mem `Cfun props then () else
-      if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props last_ptr_map
-      (*
-      else
-        print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
-      *)
-
-    | `BBDCL_class (props,vs) ->
-      gen_class_offsets s syms (child_map,bbdfns) index vs ts instance last_ptr_map
-
-    | `BBDCL_regmatch (props,vs,ps,ret,_)
-    | `BBDCL_reglex (props,vs,ps,_,ret,_)  ->
       if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props last_ptr_map
       (*
@@ -512,25 +459,6 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         | h :: t -> handle_qual h; aux t
         in aux bquals
 
-      | `BBDCL_class (props,vs) ->
-        (*
-        print_endline "Detected class instance type";
-        *)
-        begin try
-        let index =
-          try Hashtbl.find syms.registry btyp
-          with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:class] can't find type in registry " ^ sbt syms.dfns btyp)
-        in
-        (*
-        print_endline ("Class " ^id ^"<"^ si i ^ ">, ts=["^
-          catmap "," (fun t -> sbt syms.dfns t) ts
-        ^"] type registry instance " ^ si index);
-        *)
-        Hashtbl.replace allocable_types btyp index
-        with Not_found ->
-          print_endline ("Can't find the type " ^ sbt syms.dfns btyp ^ " in registry");
-          failwith ("Can't find the type " ^ sbt syms.dfns btyp ^ " in registry")
-        end
 
       (* this routine assumes any use of a union component is
          allocable .. this is quite wrong but safe. This SHOULD
@@ -648,22 +576,6 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^ si i)
       in
       begin match entry with
-      | `BBDCL_class (props,vs) ->
-        let instance = index in
-        (*
-        print_endline ("[gen_offset_tables] CLASS TYPE INSTANCE(skipping). Class " ^ si i ^ " instance " ^ si instance);
-        *)
-        let class_instance =
-          try Hashtbl.find syms.instances (i,ts)
-          with Not_found -> failwith ("WOOPS CAN'T FIND CLASS INSTANCE CORRESONDING TO CLASS TYPE INSTANCE")
-        in
-        bcat s ("\n/* CLASS TYPE "^id^"<"^si i^">["^catmap "," (sbt syms.dfns) ts^"] INSTANCE "^si instance^" OFFSETS WILL GO HERE */\n");
-        bcat s ("/* CLASS TYPE INSTANCE IS CURRENTLY CLASS INSTANCE */\n");
-        bcat s ("/* SEE CLASS "^id^"<"^si i^">["^catmap "," (sbt syms.dfns) ts^"] INSTANCE "^si class_instance^"*/\n")
-        (*
-        gen_class_offsets s syms (child_map,bbdfns) index vs ts instance
-        *)
-
       | `BBDCL_abs (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let pod = mem `Pod quals in
@@ -756,56 +668,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   allocable_types
   ;
   bcat s ("\n");
-  bcat  s "//ELKHOUND LEXERS\n";
-  Hashtbl.iter
-  (fun (parent,e) n ->
-    let display = Flx_display.cal_display syms bbdfns (Some parent) in
-    let display_names =
-      map
-      (fun (i, vslen) ->
-       try
-       let instname = cpp_instance_name syms bbdfns i [] in
-       "ptr" ^ instname
-       with _ -> failwith "Can't cal display name"
-       )
-      display
-    in
-    let name = "ElkLex_" ^ si n in
-    let this_ptr_map = name ^ "_ptr_map" in
-    let old_ptr_map = !last_ptr_map in
-    last_ptr_map := "&"^this_ptr_map;
-    let offsets = "sval"::"get_token"::display_names in
-    let offsets = map (fun n-> "offsetof("^name^","^n^")") offsets in
-    bcat s ("static std::size_t " ^ name ^ "_offsets[FLX_PASS_PTF+"^si (length offsets)^"]={\n");
-    bcat s ("  " ^("FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)\n  ")  ^ cat ",\n  " offsets);
-    bcat s "\n};\n";
-    bcat s ("static gc_shape_t "^name^"_ptr_map ={\n");
-    bcat s ("  " ^ old_ptr_map ^ ",\n");
-    bcat s ("  \"" ^ name ^ "\",\n");
-    bcat s ("  1,sizeof("^name^"),0,\n");
-    bcat s ("  FLX_PASS_PTF+"^si (length offsets-1)^","^name^"_offsets,gc_flags_default\n");
-    bcat s "};\n"
-  )
-  syms.lexers
-  ;
-  (*
-  bcat  s "//ELKHOUND PARSERS\n";
-  Hashtbl.iter
-  (fun _ n ->
-    let name = "Elk_" ^ si n in
-    let this_ptr_map = name ^ "_ptr_map" in
-    let old_ptr_map = !last_ptr_map in
-    last_ptr_map := "&"^this_ptr_map;
-    bcat s ("// DO OFFSETS PROPERLY! FOR THIS STUFF!\n");
-    bcat s ("static gc_shape_t "^name^"_ptr_map ={\n");
-    bcat s ("  " ^ old_ptr_map ^ ",\n");
-    bcat s ("  \"" ^ name ^ "\",\n");
-    bcat s ("  1,sizeof("^name^"),0,0,0,gc_flags_default\n");
-    bcat s "};\n"
-  )
-  syms.parsers
-  ;
-  *)
+
   bcat s ("// Head of shape list\n");
   bcat s ("extern \"C\" FLX_EXPORT gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
   bcat s ("gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");

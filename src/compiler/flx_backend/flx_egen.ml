@@ -157,16 +157,6 @@ let nth_type ts i =
   with Not_found ->
     failwith ("Can't find component " ^ si i ^ " of type!")
 
-let isclass bbdfns t : bool =
-  match t with
-  | `BTYP_inst (i,_) ->
-  begin let _,_,_,entry = Hashtbl.find bbdfns i in
-  match entry with
-  | `BBDCL_class _ -> true
-  | _ -> false
-  end
-  | _ -> false
-
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns bbdfns (e,t));
@@ -324,23 +314,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | `BTYP_inst (i,ts) ->
       let cname = cpp_instance_name syms bbdfns n ts in
       ce_arrow (ge' e) cname
-      (*
-      begin match
-        try Hashtbl.find syms.dfns i
-        with Not_found -> assert false
-      with { id=class_name; symdef=symdef } ->
-      match symdef with
-      | `SYMDEF_class ->
-        begin match
-          try Hashtbl.find syms.dfns n
-          with Not_found -> failwith ("Can't find class "^class_name^"member " ^ si n);
-        with { id = name } ->
-          let cname = cpp_instance_name syms bbdfns n ts in
-          ce_arrow (ge' e) cname
-        end
-      | _ -> clierr sr ("[gen_expr'] Expecting "^si i^" to be class, got " ^ string_of_bbdcl syms.dfns bbdfns entry i)
-      end
-      *)
     | _ -> assert false
     end
 
@@ -551,7 +524,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
               | `BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
               | `BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
               | `BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
-              | `BBDCL_class (_,ls) -> let n = length ls in ce_atom (si n)
               | _ ->
                 clierr sr (
                   "#memcount function requires type with members to count, got: " ^
@@ -576,8 +548,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
       | `BBDCL_cstruct _
       | `BBDCL_struct _
-      | `BBDCL_reglex _
-      | `BBDCL_regmatch _
       | `BBDCL_function _
       | `BBDCL_procedure _
       | `BBDCL_fun _
@@ -631,151 +601,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | `BBDCL_callback _ ->
       print_endline "Mapping closure of callback to C function pointer";
       ce_atom id
-
-    | `BBDCL_cstruct _
-    | `BBDCL_struct _
-    | `BBDCL_fun _
-    | `BBDCL_proc _ ->
-      failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or struct '"^id^"' yet")
-    | _ -> failwith ("[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression")
-    end
-
-  | `BEXPR_apply_method_stack (obj,meth,ts',a) ->
-    let id,parent,sr2,entry =
-      try Hashtbl.find bbdfns meth
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si meth)
-    in
-    begin
-    (*
-    print_endline ("apply method closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
-    *)
-    match entry with
-    | `BBDCL_function (props,_,_,_,_) ->
-      (*
-      print_endline ("Generating closure[apply method stack] of " ^ si meth);
-      *)
-      let ts = map tsub ts' in
-      let the_display =
-        let d' =
-          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list  syms bbdfns meth)
-        in
-          let d' = tl d' in (* throw out class pointer *)
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      let class_frame = ge obj in
-      let the_display = class_frame :: the_display in
-      let name = cpp_instance_name syms bbdfns meth ts in
-      ce_atom (
-      name ^ strd the_display props ^
-      "\n      .apply(" ^ ge_arg a ^ ")"
-      )
-    | _ ->
-      failwith
-      (
-        "[gen_expr: apply_method_stack] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns bbdfns entry meth
-      )
-   end
-
-  | `BEXPR_apply_method_direct (obj,meth,ts',a) ->
-    let id,parent,sr2,entry =
-      try Hashtbl.find bbdfns meth
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si meth)
-    in
-    begin
-    (*
-    print_endline ("apply method closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
-    *)
-    match entry with
-    | `BBDCL_function (props,_,_,_,_) ->
-      (*
-      print_endline ("Generating closure[apply method direct] of " ^ si meth);
-      *)
-      let ts = map tsub ts' in
-      let the_display =
-        let d' =
-          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list syms bbdfns meth)
-        in
-          let d' = tl d' in (* throw out class pointer *)
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      let class_frame = ge obj in
-      let the_display = class_frame :: the_display in
-      let name = cpp_instance_name syms bbdfns meth ts in
-      if mem `Cfun props then failwith "Not expecting `Cfun for apply_method_direct" else
-      ce_atom (
-      "(FLX_NEWP("^name^")"^ strd the_display props ^")"^
-      "\n      ->apply(" ^ ge_arg a ^ ")"
-      )
-
-    | _ ->
-      failwith
-      (
-        "[gen_expr: apply_method_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns bbdfns entry meth
-      )
-    end
-
-  | `BEXPR_method_closure (e,index,ts') ->
-    (*
-    print_endline ("Generating method closure of " ^ si index);
-    *)
-    let id,parent,sr,entry =
-      try Hashtbl.find bbdfns index
-      with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
-    in
-    (*
-    Should not be needed now ..
-    let ts = adjust_ts syms index ts' in
-    *)
-    let ts = map tsub ts' in
-    begin match entry with
-    | `BBDCL_function (props,_,_,_,_)
-    | `BBDCL_procedure (props,_,_,_) ->
-      (*
-      print_endline ("Method " ^ id ^ (
-        if mem `Requires_ptf props then
-          " REQUIRES PTF" else " DOES NOT REQUIRE PTF"
-        )
-      );
-      *)
-      let the_display =
-        let d' =
-          map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list syms bbdfns index)
-        in
-        let d' = tl d' in (* throw out class pointer *)
-
-          (*
-          print_endline ("Generated display is " ^ cat ", " d');
-          print_endline ("Display length = " ^ si (length d') ^ " .. our level = " ^ si our_level);
-          *)
-
-          assert (length d' >= our_level);
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      (* A method closure requires the last entry in the display
-         to be the class. If we're cross calling from one
-         method to another, we should automatically get the
-         parent class environment, but I'm not sure ..
-      *)
-      let class_frame = ge e in
-      let the_display = class_frame :: the_display in
-      let name = cpp_instance_name syms bbdfns index ts in
-      if mem `Cfun props then failwith "Not expecting `Cfun for apply_method_direct" else
-      ce_atom (
-      "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
-      )
 
     | `BBDCL_cstruct _
     | `BBDCL_struct _
@@ -1093,8 +918,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
     *)
     match entry with
-    | `BBDCL_regmatch (props,_,_,_,_)
-    | `BBDCL_reglex (props,_,_,_,_,_)
     | `BBDCL_function (props,_,_,_,_) ->
       (*
       print_endline ("Generating closure[apply direct] of " ^ si index);
