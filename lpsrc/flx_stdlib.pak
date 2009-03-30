@@ -79,7 +79,7 @@ typeclass Tord[t]{
 // additive symmetric group
 typeclass FloatAddgrp[t] {
   inherit Eq[t];
-  virtual fun zero: 1 -> t;
+  virtual fun zero: unit -> t;
   virtual fun add: t * t -> t;
   virtual fun neg: t -> t;
   virtual fun sub(x:t,y:t):t => add (x,neg y);
@@ -614,7 +614,7 @@ instance[t in reals] Tord[t] {
 }
 
 instance[t in numbers] FloatAddgrp[t] {
-  fun zero: 1 -> t = "(?1)0" ;
+  fun zero: unit -> t = "(?1)0" ;
   fun add: t * t -> t = "$1+$2" ;
   fun neg: t -> t = "-$1" ;
   fun sub: t * t -> t = "$1-$2" ;
@@ -1996,7 +1996,7 @@ open module Cstdlib
   const RAND_MAX:long;
 
   proc srand: uint = 'std::srand($1);';
-  fun rand: 1 -> int = 'std::rand()';
+  fun rand: unit -> int = 'std::rand()';
 }
 
 
@@ -2074,7 +2074,7 @@ module Control
   _gc_pointer type cont = "flx::rtl::con_t*";
 
   publish "Current continuation"
-  fun current_continuation: 1 -> cont = "this";
+  fun current_continuation: unit -> cont = "this";
 
   publish "Felix fthread"
   _gc_pointer type fthread = "flx::rtl::fthread_t*";
@@ -2254,11 +2254,11 @@ module Control
   """
   proc collect() { svc svc_collect; }
 
-  fun gc_get_allocation_amt : 1 -> ulong = "PTF gcp->collector->get_allocation_amt()"
+  fun gc_get_allocation_amt : unit -> ulong = "PTF gcp->collector->get_allocation_amt()"
     requires property "needs_gc";
-  fun gc_get_allocation_count : 1 -> ulong = "PTF gcp->collector->get_allocation_count()"
+  fun gc_get_allocation_count : unit -> ulong = "PTF gcp->collector->get_allocation_count()"
     requires property "needs_gc";
-  fun gc_get_root_count : 1 -> ulong = "PTF gcp->collector->get_root_count()"
+  fun gc_get_root_count : unit -> ulong = "PTF gcp->collector->get_root_count()"
     requires property "needs_gc";
 }
 
