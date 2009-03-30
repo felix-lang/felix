@@ -1620,6 +1620,7 @@ module Text_file
   gen readln: text_file -> string ="flx::rtl::ioutil::readln($1)";
   proc writeln : text_file * string ="flx::rtl::ioutil::writeln($1,$2);";
   proc write : text_file * string ="flx::rtl::ioutil::write($1,$2);";
+  proc write : text_file * utiny ="std::fwrite($2,sizeof(unsigned char),1,$1)";
   gen valid : text_file -> bool = "$1!=(FILE*)0";
   gen feof : text_file -> bool = "std::feof($1)";
   const stdin: text_file = "PTF flx_stdin";
