@@ -115,7 +115,7 @@ typeclass FloatMultSemi1[t] {
   inherit Eq[t];
   virtual fun one: unit -> t;
   virtual fun mul: t * t -> t;
-  virtual proc muleq: lvalue[t] * t;
+  virtual proc muleq (x:lvalue[t], y:t) { x = x * y; }
   reduce id (x:t): x*one() => x;
   reduce id (x:t): one()*x => x;
 }
