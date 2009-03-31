@@ -11,11 +11,11 @@ Version: $Id$
 @if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:faio_dynamic")
    tangle("provides_slib: /DEFAULTLIB:faio_static")
-   tangle('includes: "faio_winio.hpp"')
+   tangle('includes: \'"faio_winio.hpp"\'')
  else:
    tangle("provides_dlib: -lfaio_dynamic")
    tangle("provides_slib: -lfaio_static")
-   tangle('includes: "faio_posixio.hpp"')
+   tangle('includes: \'"faio_posixio.hpp"\'')
 Requires: demux
 
 @select(tangler('spkgs/faio.py'))

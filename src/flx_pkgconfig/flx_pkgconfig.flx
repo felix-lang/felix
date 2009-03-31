@@ -33,6 +33,8 @@ proc pre_incr:&iterator = "++*$1;";
 
 fun lexit(ini:iterator, finish:iterator): iterator * string =
 {
+  //println$ "lexit input='" + string_between(ini,finish)+"'";
+
   var start = ini;
 
   // already at end
@@ -53,8 +55,7 @@ fun lexit(ini:iterator, finish:iterator): iterator * string =
     if start == finish do
       return start,string_between(p1,start);
     else
-      ++start;
-      return start+1,string_between(p1, start-2);
+      return start+1,string_between(p1, start);
     done;
 
   // single quoted string
@@ -65,8 +66,7 @@ fun lexit(ini:iterator, finish:iterator): iterator * string =
     if start == finish do 
       return start,string_between(p2,start);
     else
-      ++start;
-      return start+1,string_between(p2, start-2);
+      return start+1,string_between(p2, start);
     done;
 
   done;
@@ -93,6 +93,7 @@ fun lexstr(s':string): list[string] =
       }
     endmatch;
   };
+  //println$ "Words='" + str(rev words)+"'";
   return rev words;
 }
 
