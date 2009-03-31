@@ -191,7 +191,6 @@ and xexpr_t sr x =
  | Lst [Id "ast_unlikely"; e] -> `AST_unlikely (sr,ex e)
 (* | Lst [Id "ast_lvalue"; e] -> `AST_lvalue (sr,ex e) *)
  | Lst [Id "ast_callback";  qn] -> `AST_callback (sr,xq "ast_callback" qn)
- | Lst [Id "ast_method_apply";  Lst [Str n; e; Lst ts]] -> `AST_method_apply(sr,(n, ex e, map ti ts))
 
  | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> `AST_dot (xsr sr,(ex e1, ex e2))
 
@@ -449,7 +448,6 @@ and xproperty_t sr x : property_t =
 
 and xfunkind_t sr x : funkind_t =
   match x with
-  | Id "Object" -> `Object
   | Id "Function" -> `Function
   | Id "CFunction" -> `CFunction
   | Id "InlineFunction" -> `InlineFunction
@@ -638,6 +636,16 @@ and xstatement_t sr x : statement_t =
     in
     let ucmp = lst "struct component" xscmp ucmp in
     `AST_struct (xsr sr,n, xvs vs, ucmp)
+
+
+  | Lst [Id "ast_cstruct"; sr; Str n; vs; ucmp] ->
+    let xscmp = function
+      | Lst [Id c; t] -> c, ti t
+      | Lst [Str c; t] -> c, ti t
+      | x -> err x "cstruct component"
+    in
+    let ucmp = lst "cstruct component" xscmp ucmp in
+    `AST_cstruct (xsr sr,n, xvs vs, ucmp)
 
   | Lst [Id "ast_type_alias"; sr; Str n; vs; t] ->
     `AST_type_alias (xsr sr,n, xvs vs, ti t)

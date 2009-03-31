@@ -145,30 +145,6 @@ let assign sr op l r =
     `AST_tuple ( sr, [ l; r ])
   )
 
-
-let find_methods seq sr sts =
-  let methods = ref [] in
-  let rec check = function
-    | `AST_curry (sr,mname,vs,pss,ret,kind,sts) ->
-      check (mkcurry seq sr mname vs pss ret kind sts [])
-
-    | `AST_function (sr,mname, vs, ps, (ret,postcondition),props,sts) ->
-      if vs <> dfltvs then
-      clierr sr "[process_object] Object methods may not be generic"
-      ;
-      let argtyp = match map (fun(x,y,z,d)->z) (fst ps) with
-        | [] -> `TYP_tuple []
-        | [a] -> a
-        | x -> `TYP_tuple x
-      in
-      let typ = `TYP_function (argtyp, ret) in
-      methods := (mname, typ) :: !methods
-    | _ -> ()
-  in
-  iter check sts
-  ;
-  rev !methods
-
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original
    statement, which is prefixed by the definition.
@@ -362,10 +338,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex fn in
     let l2,x2 = rex arg in
     l1 @ l2, `AST_map (sr,x1,x2)
-
-  | `AST_method_apply (sr,(fn,arg,ts)) ->
-    let l2,x2 = rex arg in
-    l2, `AST_method_apply (sr,(fn,x2,ts))
 
   | `AST_tuple (sr,t) ->
     let lss,xs = split (map rex t) in

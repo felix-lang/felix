@@ -113,15 +113,6 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
     all_closures := IntSet.add i !all_closures;
     `BEXE_call_direct (sr,i,ts, ue e2)
 
-  | `BEXE_call_method_direct (sr,e1,i,ts,e2)  ->
-    all_closures := IntSet.add i !all_closures;
-    `BEXE_call_method_direct (sr,ue e1,i,ts, ue e2)
-
-  | `BEXE_call_method_stack (sr,e1,i,ts,e2)  ->
-    (* stack calls do use closures -- but not heap allocated ones *)
-    `BEXE_call_method_stack (sr,ue e1,i,ts, ue e2)
-
-
   | `BEXE_jump_direct (sr,i,ts,e2)  ->
     all_closures := IntSet.add i !all_closures;
     `BEXE_jump_direct (sr,i,ts, ue e2)

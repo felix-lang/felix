@@ -221,30 +221,6 @@ let gen_body syms (uses,child_map,bbdfns) id
     [`BEXE_call_direct (sr,i,ts, ge e2)]
     *)
 
-  | `BEXE_call_method_direct (sr,e1,i,ts,e2)  ->
-    let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
-      try
-        let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
-      with Not_found -> i,ts
-    in
-    let i,ts = fixup i ts in
-    [`BEXE_call_method_direct (sr,ge e1,i,ts, ge e2)]
-
-  | `BEXE_call_method_stack (sr,e1,i,ts,e2)  ->
-    let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
-      try
-        let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
-      with Not_found -> i,ts
-    in
-    let i,ts = fixup i ts in
-    [`BEXE_call_method_stack (sr,ge e1,i,ts, ge e2)]
-
   | `BEXE_jump_direct (sr,i,ts,e2)  ->
     let fixup i ts =
       let auxt t = varmap_subst varmap t in

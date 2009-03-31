@@ -1300,7 +1300,6 @@ and string_of_statement level s =
     (match kind with
     | `Function -> "fun "
     | `CFunction -> "cfun "
-    | `Object -> "obj "
     | `InlineFunction -> "inline fun "
     | `NoInlineFunction -> "noinline fun "
     | `Virtual -> "virtual fun "
@@ -1956,16 +1955,6 @@ and string_of_bexe dfns bbdfns level s =
   | `BEXE_call_direct (_,i,ts,a) -> spc ^
     "directcall " ^
     sid i ^ print_inst dfns ts ^ " " ^
-    se a ^ ";"
-
-  | `BEXE_call_method_direct (_,obj,i,ts,a) -> spc ^
-    "direct_method_call " ^
-    se obj ^ "->" ^ sid i ^ print_inst dfns ts ^ " " ^
-    se a ^ ";"
-
-  | `BEXE_call_method_stack (_,obj,i,ts,a) -> spc ^
-    "stack_method_call " ^
-    se obj ^ "->" ^ sid i ^ print_inst dfns ts ^ " " ^
     se a ^ ";"
 
   | `BEXE_jump_direct (_,i,ts,a) -> spc ^

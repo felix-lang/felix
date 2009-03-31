@@ -167,28 +167,6 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
     `BEXE_call_direct (sr,i,ts, ge e2)
     *)
 
-  | `BEXE_call_method_direct (sr,e1,i,ts,e2)  ->
-    let fixup i ts =
-      let ts = map auxt ts in
-      try
-        let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
-      with Not_found -> i,ts
-    in
-    let i,ts = fixup i ts in
-    `BEXE_call_method_direct (sr,ge e1,i,ts, ge e2)
-
-  | `BEXE_call_method_stack (sr,e1,i,ts,e2)  ->
-    let fixup i ts =
-      let ts = map auxt ts in
-      try
-        let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
-      with Not_found -> i,ts
-    in
-    let i,ts = fixup i ts in
-    `BEXE_call_method_stack (sr,ge e1,i,ts, ge e2)
-
   | `BEXE_call_stack (sr,i,ts,e2)  ->  assert false
     (*
     let fixup i ts =

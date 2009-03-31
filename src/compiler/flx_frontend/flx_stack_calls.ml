@@ -298,7 +298,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
       end
     | `BEXE_call (_,(`BEXPR_closure (j,_),_),_)
     | `BEXE_call_direct (_,j,_,_)
-    | `BEXE_call_method_direct (_,_,j,_,_)
 
     (* this case needed for virtuals/typeclasses .. *)
     | `BEXE_call_prim (_,j,_,_)
@@ -379,7 +378,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) label_map label_usage i rec
     | `BEXE_nonreturn_code _
 
     | `BEXE_call_stack _ (* cool *)
-    | `BEXE_call_method_stack _
     | `BEXE_halt _
     | `BEXE_trace _
     | `BEXE_comment _
@@ -538,26 +536,6 @@ let enstack_calls cache syms (child_map,bbdfns) self exes =
         | `BBDCL_callback _ -> `BEXE_call_direct (sr,i,ts,a)
 
         | _ -> syserr sr ("Call to non-procedure " ^ id ^ "<" ^ si i ^ ">")
-        end
-
-      | `BEXE_call_method_direct (sr,obj,i,ts,a) ->
-        let id,parent,sr,entry = Hashtbl.find bbdfns i in
-        begin match entry with
-        | `BBDCL_procedure (props,vs,p,exes) ->
-          if mem `Stackable props then
-          begin
-            if not (mem `Stack_closure props) then
-              Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
-            ;
-            (*
-            print_endline "CALL_METHOD_STACK";
-            *)
-            `BEXE_call_method_stack (sr,obj,i,ts,a)
-          end
-          else
-          `BEXE_call_method_direct (sr,obj,i,ts,a)
-
-        | _ -> assert false
         end
 
       | x -> x

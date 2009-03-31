@@ -193,14 +193,6 @@ let fixup_exe syms bbdfns fi mt exe =
     `BEXE_call_stack (sr,i,ts,a)
     *)
 
-  | `BEXE_call_method_direct (sr,o,i,ts,a) ->
-    let i,ts = fi i ts in
-    `BEXE_call_method_direct (sr,o, i,ts,a)
-
-  | `BEXE_call_method_stack (sr, o, i,ts,a) ->
-    let i,ts = fi i ts in
-    `BEXE_call_method_stack (sr,o, i,ts,a)
-
   (* this is deviant case: implied ts is vs of parent! *)
   | `BEXE_init (sr,i,e) ->
     (*

@@ -180,8 +180,6 @@ and bexe_t =
   | `BEXE_ifgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
   | `BEXE_call of range_srcref * tbexpr_t * tbexpr_t
   | `BEXE_call_direct of range_srcref * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_call_method_direct of range_srcref * tbexpr_t * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_call_method_stack of range_srcref * tbexpr_t * bid_t * btypecode_t list * tbexpr_t
   | `BEXE_call_stack of range_srcref * bid_t * btypecode_t list * tbexpr_t
   | `BEXE_call_prim of range_srcref * bid_t * btypecode_t list * tbexpr_t
   | `BEXE_jump of range_srcref * tbexpr_t * tbexpr_t

@@ -313,8 +313,6 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | `BEXE_call_prim _
           | `BEXE_call _
           | `BEXE_call_direct _
-          | `BEXE_call_method_direct _
-          | `BEXE_call_method_stack _
           | `BEXE_call_stack _
              -> subs := false; elimi exe
           else exe

@@ -348,16 +348,6 @@ let expand_exe syms bbdfns u exe =
       `BEXE_call_direct (sr,i,ts,e) :: xs
       *)
 
-    | `BEXE_call_method_direct (sr,e1,i,ts,e2) ->
-      let e1,xs1 = u sr e1 in
-      let e2,xs2 = u sr e2 in
-      `BEXE_call_method_direct (sr,e1,i,ts,e2) :: xs2 @ xs1
-
-    | `BEXE_call_method_stack (sr,e1,i,ts,e2) ->
-      let e1,xs1 = u sr e1 in
-      let e2,xs2 = u sr e2 in
-      `BEXE_call_method_stack (sr,e1,i,ts,e2) :: xs2 @ xs1
-
     | `BEXE_jump_direct (sr,i,ts,e2) -> assert false
       (*
       let e,xs = u sr e2 in

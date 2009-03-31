@@ -336,7 +336,6 @@ and lvalue_t = [
 and tlvalue_t = lvalue_t * typecode_t option
 
 and funkind_t = [
-  | `Object
   | `Function
   | `CFunction
   | `InlineFunction

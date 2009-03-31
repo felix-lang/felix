@@ -2294,50 +2294,6 @@ The conditional expression is merely
 a shortcut for a match, as shown in the
 third sign function.
 
-@env.head(2,'Objects')
-Felix provides a way of making objects from functions.
-An object is just a struct whose members are functions
-nested in the scope of the object constructor function.
-Variables in the constructor are hidden.
-@p()
-Note: the type of a member function must not depend
-on a name or type defined in the object (this constraint is
-because the desugaring precedes name binding).
-@p()
-Note: object constructors are not members, because their
-types would be local to the constructor (see above).
-@p()
-Note: The name of the type of an object with constructor 'x' is
-'_ot_x': the constructor name prefixed by '_ot_' (Ugly).
-@p()
-Note: you can change the methods of an object by assigning
-a new functional value to the structure component.
-@p()
-Note: the type of the object is not part of a method
-signature: their type is as written.
-@p()
-Note: only explicitly declared non-private functions (and procedures)
-are taken as methods. Implicit functions such as blocks
-are not taken.
-
-@select(env.test('.flx'))
-obj a(x:int) {
-  var v = x;
-  fun fetch ():int = { return v; }
-  proc store (y:int) { v = y; }
-}
-
-val z = a(1);
-print (z.fetch()); endl;
-z.store(2);
-print (z.fetch()); endl;
-@doc()
-
-@select(env.expect())
-1
-2
-@doc()
-
 @env.head(2,'Pointers')
 Felix supports pointers. The type of a pointer to T is
 denoted:
