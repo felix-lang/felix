@@ -21,20 +21,59 @@ open Env;
 open Filename;
 open Text_file;
 open Lexer;
-
+/*
 regexp white = " " +;
 regexp black = [^" "]+;
 regexp dquoted = '"' [^'"']* '"';
 regexp squoted = "'" [^"'"]* "'";
 regexp quoted = dquoted | squoted;
+*/
 
-fun lexit(start:iterator, finish:iterator): iterator * string =
+proc pre_incr:&iterator = "++*$1;";
+
+fun lexit(ini:iterator, finish:iterator): iterator * string =
 {
-  return reglex start to finish with
-  | black => string_between(lexeme_start, lexeme_end)
-  | quoted => string_between(lexeme_start+1, lexeme_end-1)
-  | white => ""
-  endmatch;
+  var start = ini;
+
+  // already at end
+  if start == finish do 
+    return start, "";
+
+  // eat white space 
+  elif *start == char(' ') do 
+    ++start;
+    whilst start != finish and *start == char(' ') do ++start; done;
+    return start,"";
+
+  // double quoted string
+  elif *start == char('"') do
+    ++start;
+    p1 := start;
+    whilst start != finish and *start != char('"') do ++start; done;
+    if start == finish do
+      return start,string_between(p1,start);
+    else
+      ++start;
+      return start+1,string_between(p1, start-2);
+    done;
+
+  // single quoted string
+  elif *start == char("'") do
+    ++start;
+    p2 := start;
+    whilst start != finish and *start != char("'") do ++start; done;
+    if start == finish do 
+      return start,string_between(p2,start);
+    else
+      ++start;
+      return start+1,string_between(p2, start-2);
+    done;
+
+  done;
+  // identifier
+  p3 := start;
+  whilst start != finish and *start != char(" ")  do ++start; done;
+  return start,string_between(p3,start);
 }
 
 fun lexstr(s':string): list[string] =
