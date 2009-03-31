@@ -83,6 +83,7 @@ let get_vs bbdfns i =
   | `BBDCL_tmp (vs,t) -> vs
   | `BBDCL_union (vs,ps) -> vs
   | `BBDCL_struct (vs,ps) -> vs
+  | `BBDCL_cstruct (vs,ps) -> vs
   | `BBDCL_newtype (vs,t) -> vs
   | `BBDCL_const (_,vs,t,ct,reqs) -> vs
   | `BBDCL_insert (vs,s,ikind,reqs) -> vs

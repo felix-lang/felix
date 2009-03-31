@@ -62,23 +62,12 @@ let fixps bbdfns (ps,traint) =
   | Some t -> Some (fixexpr bbdfns t)
   )
 
-let fixupmember bbdfns mem =
-  let ft t = fixtype bbdfns t in
-  match mem with
-  | `BMemberVal (id,t) -> `BMemberVal (id, ft t)
-  | `BMemberVar (id,t) -> `BMemberVar (id, ft t)
-  | `BMemberFun (id,vs,t) -> `BMemberFun (id, vs, ft t)
-  | `BMemberProc (id,vs,t) -> `BMemberProc (id, vs, ft t)
-  | `BMemberCtor (id,t) -> `BMemberCtor (id, ft t)
-
 let strabs syms (bbdfns: fully_bound_symbol_table_t) =
   let ft t = fixtype bbdfns t in
   let fts ts = map (fixtype bbdfns) ts in
   let fe e = fixexpr bbdfns e in
   let fxs xs = fixbexes bbdfns xs in
   let fp bps = fixps bbdfns bps in
-  let fkm m = fixupmember bbdfns m in
-  let fkms ms = map (fixupmember bbdfns) ms in
 
   let nutab = Hashtbl.create 97 in
   Hashtbl.iter
@@ -131,6 +120,10 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
   | `BBDCL_struct ( bvs, cts) ->
     let cts = map (fun (s,t) -> s,ft t) cts in
     h (`BBDCL_struct ( bvs, cts) )
+
+  | `BBDCL_cstruct ( bvs, cts) ->
+    let cts = map (fun (s,t) -> s,ft t) cts in
+    h (`BBDCL_cstruct ( bvs, cts) )
 
   | `BBDCL_typeclass (  props, bvs) ->
     h (`BBDCL_typeclass (  props, bvs) )

@@ -541,6 +541,12 @@ let bbind_sym syms bbdfns i {
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_struct (bvs,cs'))
 
+    | `SYMDEF_cstruct (cs) ->
+      (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
+      *)
+      let cs' = List.map (fun (n,t) -> n, bt t) cs in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_cstruct (bvs,cs'))
+
     | `SYMDEF_typeclass ->
       let sym : bbdcl_t = `BBDCL_typeclass ([],bvs) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)

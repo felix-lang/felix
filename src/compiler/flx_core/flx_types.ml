@@ -36,6 +36,7 @@ type dcl_t =
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * int option * vs_list_t * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
+  | `DCL_cstruct of       (id_t * typecode_t) list
   | `DCL_typeclass of    asm_t list
   | `DCL_match_check of pattern_t * (string * int)
   | `DCL_match_handler of pattern_t * (string * int) * asm_t list
@@ -264,6 +265,7 @@ and bbdcl_t =
 
   | `BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
   | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
+  | `BBDCL_cstruct of     bvs_t * (id_t * btypecode_t) list
   | `BBDCL_typeclass of  property_t list * bvs_t
   | `BBDCL_instance of   property_t list *
                          bvs_t *
@@ -311,6 +313,7 @@ type symbol_definition_t =
   | `SYMDEF_insert of c_t  * ikind_t * named_req_expr_t
   | `SYMDEF_union of  (id_t * int *  vs_list_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
+  | `SYMDEF_cstruct of  (id_t * typecode_t) list
   | `SYMDEF_typeclass
   | `SYMDEF_type_alias of   typecode_t
   | `SYMDEF_inherit of   qualified_name_t

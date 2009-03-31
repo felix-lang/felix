@@ -224,6 +224,7 @@ let rec cpp_type_classname syms t =
           { id=id; symdef=symdef } -> Some (id,symdef )
         with Not_found -> None
       with
+      | Some (id,`SYMDEF_cstruct _) -> id
       | Some (_,`SYMDEF_abs (_,`Str "char",_)) -> "char" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "int",_)) -> "int" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "short",_)) -> "short" (* hack .. *)

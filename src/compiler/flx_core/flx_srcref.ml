@@ -205,6 +205,7 @@ let src_of_stmt e = match e with
   | `AST_noreturn_code (s, _)
   | `AST_union (s, _,_, _ )
   | `AST_struct (s,_, _, _)
+  | `AST_cstruct (s,_, _, _)
   | `AST_typeclass (s,_, _, _)
   | `AST_instance (s,_, _,_)
   | `AST_untyped_module (s,_,_,_)

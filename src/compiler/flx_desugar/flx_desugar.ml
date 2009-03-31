@@ -850,6 +850,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_union (sr,name, vs, components) -> [`Dcl (sr,name,None,access,vs,`DCL_union (components))]
   | `AST_struct (sr,name, vs, components) ->  [`Dcl (sr,name,None,access,vs,`DCL_struct (components))]
+  | `AST_cstruct (sr,name, vs, components) ->  [`Dcl (sr,name,None,access,vs,`DCL_cstruct (components))]
 
   | `AST_typeclass (sr,name, vs, sts) ->
     if syms.compiler_options.document_typeclass then

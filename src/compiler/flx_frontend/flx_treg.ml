@@ -153,6 +153,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       *)
       rnr t
 
+    | `BBDCL_cstruct (vs,cs)
     | `BBDCL_struct (vs,cs) ->
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in

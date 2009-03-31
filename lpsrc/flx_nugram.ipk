@@ -582,7 +582,6 @@ syntax patterns {
 syntax functions {
   requires expressions;
   sdeclarative := sfunction_definition =># "_1";
-  sdeclarative := sobject_definition =># "_1";
   sdeclarative := sprocedure_definition =># "_1";
   sdeclarative := sctor_definition =># "_1";
 
@@ -854,15 +853,6 @@ syntax functions {
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void none) ,(cal_funkind _1 _2) (,_6))
     (cdr _3))
   """;
-
-
-  sobject_definition := obj sdeclname sfun_arg+ scompound =>#
-  """
-    (mkns
-    `(ast_curry ,_sr ,(caar _2) ,(cadar _2) ,_3 (typ_none none) Object ,_4)
-    (cdr _2))
-  """;
-
 }
 
 //------------------------------------------
@@ -875,7 +865,6 @@ syntax statements {
   statement:= spublish =># "_1";
   statement:= scomment =># "_1";
   statement:= snull_statement =># "_1";
-  statement:= scparse =># "_1";
 
   scomment := comment sstring ssemi =># "`(ast_comment ,_sr ,_2)";
 
@@ -897,7 +886,6 @@ syntax statements {
   snull_statement := ssemi =># """`(ast_nop ,_sr "")""";
 
   sinclusion := include sstring ssemi =># "`(ast_include ,_sr ,_2)";
-  scparse := cparse sstring ssemi =># "`(ast_cparse ,_sr ,_2)";
 
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sdeclname :: sname stvarlist =># "(cons `(,_3 ,_4) _1)";
@@ -1855,6 +1843,13 @@ syntax type_decls {
     """
     (mkns
     `(ast_struct ,_sr ,(caar _2) ,(cadar _2) ,_5)
+    (cdr _2))
+     """;
+
+  sstruct_decl := cstruct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
+    """
+    (mkns
+    `(ast_cstruct ,_sr ,(caar _2) ,(cadar _2) ,_5)
     (cdr _2))
      """;
 

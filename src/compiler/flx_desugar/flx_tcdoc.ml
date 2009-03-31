@@ -227,7 +227,6 @@ let gen_mdoc () =
           (match kind with
           | `Function -> (match res with `AST_void _ -> "proc " | _ -> "fun ")
           | `CFunction -> (match res with `AST_void _ -> "cproc " | _ -> "cfun ")
-          | `Object -> "obj "
           | `InlineFunction -> (match res with `AST_void _ -> "inline proc " | _ -> "inline fun ")
           | `NoInlineFunction -> (match res with `AST_void _ -> "noinline proc " | _ -> "noinline fun ")
           | `Virtual -> (match res with `AST_void _ -> "virtual proc " | _ -> "virtual fun ")

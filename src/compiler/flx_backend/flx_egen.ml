@@ -258,12 +258,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let field_name,_ =
         try nth es n
         with Not_found ->
-          failwith "Woops, index of non-existent struct field"
+          failwith "[flx_egen] Woops, index of non-existent struct field"
       in
       ce_dot (ge' e) field_name
 
     | `BTYP_inst (i,_) ->
       begin match Hashtbl.find bbdfns i with
+      | _,_,_,`BBDCL_cstruct (_,ls)
       | _,_,_,`BBDCL_struct (_,ls) ->
         let name,_ =
           try nth ls n
@@ -272,7 +273,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         in
         ce_dot (ge' e) name
 
-      | _ -> failwith "Instance expected to be (c)struct"
+      | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
       end
 
     | _ -> ce_dot (ge' e) ("mem_" ^ si n)
@@ -799,6 +800,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     let ts = map tsub ts in
     begin match entry with
+    | `BBDCL_cstruct (vs,_) ->
+      let name = tn (`BTYP_inst (index,ts)) in
+      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
+
     | `BBDCL_struct (vs,cts) ->
       let name = tn (`BTYP_inst (index,ts)) in
       if length cts > 1 then

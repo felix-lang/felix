@@ -135,12 +135,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_likely (sr,x) -> `AST_likely (sr, f x)
   | `AST_unlikely (sr,x) -> `AST_unlikely (sr, f x)
   | `AST_new (sr,x) -> `AST_new (sr, f x)
-(*  | `AST_lvalue (sr,x) -> `AST_lvalue (sr, f x) *)
   | `AST_lift (sr,x) -> `AST_lift (sr, f x)
-  | `AST_method_apply (sr,(id,x,ts)) -> `AST_method_apply (sr,(id,f x,ts))
-  (*
-  | `AST_dot (sr,(x,id,ts)) -> `AST_dot (sr,(f x,id,ts))
-  *)
   | `AST_dot (sr,(x,x2)) -> `AST_dot (sr,(f x,f x2))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
@@ -210,7 +205,6 @@ let iter_expr f (e:expr_t) =
   | `AST_case_index (_,x)
   | `AST_match_ctor (_,(_,x))
   | `AST_match_case (_,(_,x))
-  | `AST_method_apply (_,(_,x,_))
   | `AST_deref (_,x)
   | `AST_ref (_,x)
   | `AST_likely (_,x)
@@ -449,12 +443,6 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_jump_direct (sr,i,ts,e2)
     -> fi i; iter ft ts; fe e2
 
-  | `BEXE_call_method_direct (sr,e1,i,ts,e2)
-    -> fe e1; fi i; iter ft ts; fe e2
-
-  | `BEXE_call_method_stack (sr,e1,i,ts,e2)
-    -> fe e1; fi i; iter ft ts; fe e2
-
   | `BEXE_assign (sr,e1,e2)
   | `BEXE_call (sr,e1,e2)
   | `BEXE_jump (sr,e1,e2)
@@ -515,12 +503,6 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
 
   | `BEXE_call_direct (sr,i,ts,e2) ->
     `BEXE_call_direct (sr,fi i,map ft ts,fe e2)
-
-  | `BEXE_call_method_direct (sr,e1,i,ts,e2) ->
-    `BEXE_call_method_direct (sr,fe e1,fi i,map ft ts,fe e2)
-
-  | `BEXE_call_method_stack (sr,e1,i,ts,e2) ->
-    `BEXE_call_method_stack (sr,fe e1,fi i,map ft ts,fe e2)
 
   | `BEXE_jump_direct (sr,i,ts,e2) ->
     `BEXE_jump_direct (sr,fi i,map ft ts,fe e2)

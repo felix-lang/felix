@@ -112,6 +112,7 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
 
   | `BBDCL_union _  -> ()
 
+  | `BBDCL_cstruct (_,ps)
   | `BBDCL_struct (_,ps) ->
     iter ut (map snd ps)
 

@@ -183,15 +183,6 @@ and string_of_expr (e:expr_t) =
   | `AST_superscript (_,(a,b)) ->
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
 
-  | `AST_method_apply  (_,(fn, arg,ts)) -> "(" ^ fn ^
-    (match ts with
-    | [] -> ""
-    | _ -> "[" ^catmap "," string_of_typecode ts^ "]"
-    ) ^
-    " " ^
-    se arg ^
-    ")"
-
   | `AST_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
 
   | `AST_record (_,ts) -> "struct {" ^
@@ -1183,6 +1174,15 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
+  | `AST_cstruct (_,name, vs, cs) ->
+    let string_of_struct_component (name,ty) =
+      (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
+    in
+    spaces level ^ "cstruct " ^ name ^ print_vs vs ^ " = " ^
+    spaces level ^ "{\n" ^
+    catmap "\n" string_of_struct_component cs ^ "\n" ^
+    spaces level ^ "}"
+
   | `AST_typeclass (_,name, vs, sts) ->
     spaces level ^ "typeclass " ^ name ^ print_vs vs ^ " = " ^
     string_of_compound level sts
@@ -1664,6 +1664,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   | `SYMDEF_struct (cts) ->
     "struct " ^ name ^ print_ivs vs ^ ";"
 
+  | `SYMDEF_cstruct (cts) ->
+    "cstruct " ^ name ^ print_ivs vs ^ ";"
+
   | `SYMDEF_typeclass ->
     "typeclass " ^ name ^ print_ivs vs ^ ";"
 
@@ -2052,6 +2055,15 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
 
+  | `DCL_cstruct (cs) ->
+    let string_of_struct_component (name,ty) =
+      (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
+    in
+    sl ^ "cstruct " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "{\n" ^
+    catmap "\n" string_of_struct_component cs ^ "\n" ^
+    sl ^ "}"
+
   | `DCL_typeclass (asms) ->
     sl ^ "type class " ^ name^seq ^ print_vs vs ^ " =\n" ^
     string_of_asm_compound level asms
@@ -2356,6 +2368,15 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
     "struct " ^ name ^ print_bvs vs ^ " = " ^
+    "{\n" ^
+    catmap "\n" string_of_struct_component cs ^ "\n" ^
+    "}"
+
+  | `BBDCL_cstruct (vs,cs) ->
+    let string_of_struct_component (name,ty) =
+      "  " ^ name ^ ": " ^ sobt ty ^ ";"
+    in
+    "cstruct " ^ name ^ print_bvs vs ^ " = " ^
     "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"

@@ -336,58 +336,6 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  (*
-  | `BBDCL_union (vs,ps) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst syms.counter vars t in
-    let ps = map (fun (i,j,t) -> i,j,mt t) ps in
-    `BBDCL_union ([],ps)
-
-  | `BBDCL_struct (vs,ps) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst syms.counter vars t in
-    let ps = map (fun (i,t) -> i,mt t) ps in
-    `BBDCL_struct ([],ps)
-
-  | `BBDCL_newtype (vs,t) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = list_subst syms.counter vars t in
-    let t = mt t in
-    `BBDCL_newtype ([],t)
-
-  | `BBDCL_const (props,vs,t,ct,reqs) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_const (props,[],t,ct,reqs)
-
-  | `BBDCL_insert (vs,s,ikind,reqs) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_insert ([],s,ikind,reqs)
-
-  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_callback (props,[],argtypes_cf,argtypes_c,k,ret,reqs,prec)
-
-  | `BBDCL_abs (vs,tqual,ct,reqs) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_abs ([],tqual,ct,reqs)
-
-  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_nonconst_ctor ([],uidx,udt, ctor_idx, ctor_argt, evs, etraint)
-
-  | `BBDCL_typeclass (props,vs) ->  entry
-    (*
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_typeclass (props,[])
-    *)
-
-  | `BBDCL_instance (props,vs,con,tc,ts) ->  entry
-    (*
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    `BBDCL_instance (props,[],con,tc,ts) ->
-    *)
-  *)
-
   | _ -> ()
 
 let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
@@ -401,6 +349,7 @@ let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
   | `BBDCL_tmp (vs,t) -> true
   | `BBDCL_const (_,_,_,`Str "#this",_) -> true
   | `BBDCL_union (vs,ps) -> false
+  | `BBDCL_cstruct (vs,ps) -> false
   | `BBDCL_struct (vs,ps) -> false
   | `BBDCL_newtype (vs,t) -> false
   | `BBDCL_const (props,vs,t,ct,reqs) -> false

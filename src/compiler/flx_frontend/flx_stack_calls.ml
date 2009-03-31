@@ -68,6 +68,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_nonconst_ctor _
   | `BBDCL_callback _
   | `BBDCL_insert _
+  | `BBDCL_cstruct _
   | `BBDCL_struct _
   | `BBDCL_union _
   | `BBDCL_abs _
@@ -242,6 +243,7 @@ let has_ptr_fn cache syms bbdfns children e =
         | `BBDCL_union (vs,cs)->
           check_components vs ts (map (fun (_,_,t)->t) cs)
 
+        | `BBDCL_cstruct (vs,cs)
         | `BBDCL_struct (vs,cs) ->
           check_components vs ts (map snd cs)
 
@@ -267,6 +269,7 @@ let can_stack_func cache syms (child_map,bbdfns) i =
   | `BBDCL_nonconst_ctor _
   | `BBDCL_fun _
   | `BBDCL_callback _
+  | `BBDCL_cstruct _
   | `BBDCL_struct _
     -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
@@ -466,6 +469,7 @@ let rec enstack_applies cache syms (child_map, bbdfns) x =
         | `BBDCL_callback _ ->
           `BEXPR_apply_prim(i,ts,b),t
 
+        | `BBDCL_cstruct _
         | `BBDCL_struct _
         | `BBDCL_nonconst_ctor  _ ->
           `BEXPR_apply_struct(i,ts,b),t

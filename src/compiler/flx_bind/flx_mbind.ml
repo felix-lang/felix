@@ -126,18 +126,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_variant (sr,(s,e)) -> `AST_variant (sr,(s,subst e))
   | `AST_arrayof (sr,es) -> `AST_arrayof (sr,map subst es)
 
-
-  (* Only one of these should occur, but I can't
-     figure out which one at the moment
-  *)
-  | `AST_method_apply (sr,(id,e,ts)) ->
-    `AST_method_apply (sr,(id, subst e,ts))
-
-  (*
-  | `AST_dot (sr,(e,id,ts)) ->
-    `AST_dot (sr,(subst e, id,ts))
-  *)
-
   | `AST_dot (sr,(e,e2)) ->
     `AST_dot (sr,(subst e, subst e2))
 

@@ -227,12 +227,7 @@ and expr_t =
   | `AST_likely of range_srcref * expr_t
   | `AST_unlikely of range_srcref * expr_t
   | `AST_new of range_srcref * expr_t
-(*  | `AST_lvalue of range_srcref * expr_t *)
   | `AST_callback of range_srcref * qualified_name_t
-  | `AST_method_apply of range_srcref * (id_t * expr_t * typecode_t list)
-  (*
-  | `AST_dot of range_srcref * (expr_t * id_t * typecode_t list)
-  *)
   | `AST_dot of range_srcref * (expr_t * expr_t)
   | `AST_lambda of range_srcref * (vs_list_t * params_t list * typecode_t * statement_t list)
 
@@ -469,6 +464,7 @@ and statement_t =
   (* types *)
   | `AST_union of range_srcref * id_t * vs_list_t * (id_t * int option * vs_list_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
+  | `AST_cstruct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_type_alias of range_srcref * id_t * vs_list_t * typecode_t
   | `AST_inherit of range_srcref * id_t * vs_list_t * qualified_name_t
   | `AST_inherit_fun of range_srcref * id_t * vs_list_t * qualified_name_t

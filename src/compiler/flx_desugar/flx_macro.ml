@@ -810,10 +810,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_likely (sr, e1) ->  `AST_likely (sr, me e1)
   | `AST_unlikely (sr, e1) ->  `AST_unlikely (sr, me e1)
   | `AST_new (sr, e1) ->  `AST_new (sr, me e1)
-  | `AST_method_apply (sr, (id, e1,ts)) -> `AST_method_apply (sr,(mi sr id, me e1,map (mt sr) ts))
-  (*
-  | `AST_dot (sr, (e1, id, ts)) ->  `AST_dot (sr,(me e1,mi sr id, ts))
-  *)
   | `AST_dot (sr, (e1, e2)) ->  `AST_dot (sr,(me e1, me e2))
   | `AST_match_ctor (sr, (qn, e1)) -> `AST_match_ctor (sr,(qn,me e1))
   | `AST_match_case (sr, (i, e1)) ->  `AST_match_case (sr,(i, me e1))
@@ -1003,6 +999,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_struct (sr, id, vs, idts) ->
     let idts = map (fun (id,t) -> id,mt sr t) idts in
     tack (`AST_struct (sr, mi sr id, vs, idts))
+
+  | `AST_cstruct (sr, id, vs, idts) ->
+    let idts = map (fun (id,t) -> id,mt sr t) idts in
+    tack (`AST_cstruct (sr, mi sr id, vs, idts))
 
   | `AST_typeclass (sr, id, vs, sts) ->
     tack (`AST_typeclass (sr, mi sr id, vs, ms sts))

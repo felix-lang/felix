@@ -908,6 +908,7 @@ let rec build_tables syms name inherit_vs
           ;
           add_tvars privtab
 
+        | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
           (*
           print_endline ("Got a struct " ^ id);
@@ -922,6 +923,7 @@ let rec build_tables syms name inherit_vs
             symdef=(
               match dcl with
               | `DCL_struct _ -> `SYMDEF_struct (sts)
+              | `DCL_cstruct _ -> `SYMDEF_cstruct (sts)
               | _ -> assert false
             )
           }

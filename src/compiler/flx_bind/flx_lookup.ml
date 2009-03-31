@@ -1225,6 +1225,7 @@ and bind_type'
     in
     begin match entry with
     | `SYMDEF_struct _
+    | `SYMDEF_cstruct _
     | `SYMDEF_union _
     | `SYMDEF_abs _
       ->
@@ -1587,6 +1588,7 @@ and bind_type_index syms (rs:recstop)
     | `SYMDEF_newtype _
     | `SYMDEF_union _
     | `SYMDEF_struct _
+    | `SYMDEF_cstruct _
     | `SYMDEF_typeclass
       ->
       `BTYP_inst (index,ts)
@@ -1957,6 +1959,7 @@ and inner_typeofindex
     clierr sr ("Union "^id^" doesn't have a type")
 
   (* struct as function *)
+  | `SYMDEF_cstruct (ls)
   | `SYMDEF_struct (ls) ->
     (* ARGGG WHAT A MESS *)
     let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
@@ -2074,6 +2077,7 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       begin match get_data syms.dfns index with
       { id=id;vs=vs;symdef=entry} ->
         begin match entry with
+        | `SYMDEF_cstruct (cs) -> t1, None
         | `SYMDEF_struct (cs) -> t1, None
         | _ ->
           clierr sr
@@ -2245,6 +2249,7 @@ and lookup_qn_with_sig'
       | `SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
+      | `SYMDEF_cstruct _ 
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
         let t = typeofindex_with_ts' rs syms sr index ts in
@@ -2525,6 +2530,7 @@ and lookup_type_qn_with_sig'
       | `SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
+      | `SYMDEF_cstruct _
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
         let t = typeofindex_with_ts' rs syms sr index ts in
@@ -2792,6 +2798,7 @@ and handle_type
   | `SYMDEF_function _
   | `SYMDEF_fun _
   | `SYMDEF_struct _
+  | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
   | `SYMDEF_callback _
     ->
@@ -2856,6 +2863,7 @@ and handle_function
   | `SYMDEF_function _
   | `SYMDEF_fun _
   | `SYMDEF_struct _
+  | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
   | `SYMDEF_callback _
     ->
@@ -2993,7 +3001,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_inherit_fun _ ->
       clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
-    | `SYMDEF_struct _
+    | (`SYMDEF_cstruct _ | `SYMDEF_struct _ )
       when
         (match t2 with
         | [`BTYP_record _] -> true
@@ -3010,6 +3018,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         *)
 
     | `SYMDEF_struct _
+    | `SYMDEF_cstruct _
     | `SYMDEF_nonconst_ctor _
       ->
         (*
@@ -3209,6 +3218,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
       clierr sra "Woops found inherit function in lookup_type_name_in_table_dirs_with_sig"
 
     | `SYMDEF_struct _
+    | `SYMDEF_cstruct _
     | `SYMDEF_nonconst_ctor _
       ->
         (*
@@ -3460,6 +3470,53 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   *)
   let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms sr t)) in
   let sr = src_of_expr e in
+  let cal_method_apply sra fn e2 meth_ts =
+    (*
+    print_endline ("METHOD APPLY: " ^ string_of_expr e);
+    *)
+    (* .. PRAPS .. *)
+    let meth_ts = map (bt sra) meth_ts in
+    let (be2,t2) as x2 = be e2 in
+    begin match t2 with
+    | `BTYP_record es ->
+      let rcmp (s1,_) (s2,_) = compare s1 s2 in
+      let es = sort rcmp es in
+      let field_name = String.sub fn 4 (String.length fn -4) in
+      begin match list_index (map fst es) field_name with
+      | Some n -> `BEXPR_get_n (n,x2),assoc field_name es
+      | None -> clierr sr
+         (
+           "Field " ^ field_name ^
+           " is not a member of anonymous structure " ^
+           sbt syms.dfns t2
+          )
+      end
+    | _ ->
+    let tbe1 =
+      match t2 with
+      | `BTYP_inst (index,ts) ->
+        begin match get_data syms.dfns index with
+        {id=id; parent=parent;sr=sr;symdef=entry} ->
+        match parent with
+        | None -> clierr sra "Koenig lookup: No parent for method apply (can't handle global yet)"
+        | Some index' ->
+          match get_data syms.dfns index' with
+          {id=id';sr=sr';parent=parent';vs=vs';pubmap=name_map;dirs=dirs;symdef=entry'}
+          ->
+          match entry' with
+          | `SYMDEF_module
+          | `SYMDEF_function _
+            ->
+            koenig_lookup syms env rs sra id' name_map fn t2 (ts @ meth_ts)
+
+          | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
+        end
+
+      | _ -> clierr sra ("apply method "^fn^" to nongenerative type")
+    in
+      cal_apply syms sra rs tbe1 (be2, t2)
+    end
+  in  
   match e with
   | `AST_patvar _
   | `AST_patany _
@@ -4146,34 +4203,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | e -> be e
     end
 
-    (*
-    lookup sr (f:>expr_t) [sign]
-    *)
-
-
-(*  | `AST_lvalue (srr,e) ->
-    failwith "WOOPS, lvalue in expression??";
-*)
-  (* DEPRECATED
-  | `AST_ref (sr,(`AST_dot (_,(e,id,[])))) ->
-  *)
-
-  (*
-  | `AST_ref (sr,(`AST_dot (_,(e,`AST_name (_,id,[]))))) ->
-    let ref_name = "ref_" ^ id in
-    be
-    (
-      `AST_apply
-      (
-        sr,
-        (
-          `AST_name (sr, ref_name,[]),
-          `AST_ref (sr,e)
-        )
-      )
-    )
-  *)
-
   | `AST_likely (srr,e) ->  let (_,t) as x = be e in `BEXPR_likely x,t
   | `AST_unlikely (srr,e) ->  let (_,t) as x = be e in `BEXPR_unlikely x,t
 
@@ -4252,55 +4281,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_literal (sr,v) ->
     let t = typeof_literal syms env sr v in
     `BEXPR_literal v, t
-
-  | `AST_method_apply (sra,(fn,e2,meth_ts)) ->
-    (*
-    print_endline ("METHOD APPLY: " ^ string_of_expr e);
-    *)
-    (* .. PRAPS .. *)
-    let meth_ts = map (bt sra) meth_ts in
-    let (be2,t2) as x2 = be e2 in
-    begin match t2 with
-(*    | `BTYP_lvalue(`BTYP_record es) *)
-    | `BTYP_record es ->
-      let rcmp (s1,_) (s2,_) = compare s1 s2 in
-      let es = sort rcmp es in
-      let field_name = String.sub fn 4 (String.length fn -4) in
-      begin match list_index (map fst es) field_name with
-      | Some n -> `BEXPR_get_n (n,x2),assoc field_name es
-      | None -> clierr sr
-         (
-           "Field " ^ field_name ^
-           " is not a member of anonymous structure " ^
-           sbt syms.dfns t2
-          )
-      end
-    | _ ->
-    let tbe1 =
-      match t2 with
-(*      | `BTYP_lvalue(`BTYP_inst (index,ts)) *)
-      | `BTYP_inst (index,ts) ->
-        begin match get_data syms.dfns index with
-        {id=id; parent=parent;sr=sr;symdef=entry} ->
-        match parent with
-        | None -> clierr sra "Koenig lookup: No parent for method apply (can't handle global yet)"
-        | Some index' ->
-          match get_data syms.dfns index' with
-          {id=id';sr=sr';parent=parent';vs=vs';pubmap=name_map;dirs=dirs;symdef=entry'}
-          ->
-          match entry' with
-          | `SYMDEF_module
-          | `SYMDEF_function _
-            ->
-            koenig_lookup syms env rs sra id' name_map fn t2 (ts @ meth_ts)
-
-          | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
-        end
-
-      | _ -> clierr sra ("apply method "^fn^" to nongenerative type")
-    in
-      cal_apply syms sra rs tbe1 (be2, t2)
-    end
 
   | `AST_map (sr,f,a) ->
     handle_map sr (be f) (be a)
@@ -4469,9 +4449,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     `BEXPR_tuple [],`BTYP_tuple []
 
 
-  (*
-  | `AST_dot (sr,(e,name,ts)) ->
-  *)
   | `AST_dot (sr,(e,e2)) ->
 
     (* Analyse LHS.
@@ -4484,16 +4461,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let ttt,e,te,lmap =
       let (_,tt') as te = be e in (* polymorphic! *)
       let lmap t = t in
-(*
-      let lmap t =
-        let is_lvalue = match tt' with
-          | `BTYP_lvalue _
-          | `BTYP_pointer _ -> true
-          | _ -> false
-        in
-        if is_lvalue then lvalify t else t
-      in
-*)
       let rec aux n t = match t with
         | `BTYP_pointer t -> aux (n+1) t
         | _ -> n,t
@@ -4536,11 +4503,51 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           in
           let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
           let ct = tsubst vs' ts' ct in
-          (* propagate lvalueness to struct component *)
           `BEXPR_get_n (cidx,te),lmap ct
           with Not_found ->
             let get_name = "get_" ^ name in
-            begin try be (`AST_method_apply (sr,(get_name,e,ts)))
+            begin try cal_method_apply sr get_name e ts 
+            with exn1 -> try be (`AST_apply (sr,(e2,e)))
+            with exn2 ->
+            clierr sr (
+              "AST_dot: cstruct type: koenig apply "^get_name ^
+              ", AND apply " ^ name ^
+              " failed with " ^ Printexc.to_string exn2
+              )
+            end
+          end
+        (* LHS CSTRUCT *)
+        | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } ->
+          (* NOTE: we try $1.name binding using get_n first,
+          but if we can't find a component we treat the
+          entity as abstract.
+
+          Hmm not sure that cstructs can be polymorphic.
+          *)
+          begin try
+            let cidx,ct =
+              let rec scan i = function
+              | [] -> raise Not_found
+              | (vn,vat)::_ when vn = name -> i,vat
+              | _:: t -> scan (i+1) t
+              in scan 0 ls
+            in
+            let ct =
+              let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
+              let env' = build_env syms (Some i) in
+              bind_type' syms env' rsground sr ct bvs mkenv
+            in
+            let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
+            let ct = tsubst vs' ts' ct in
+            (* propagate lvalueness to struct component *)
+            `BEXPR_get_n (cidx,te),lmap ct
+          with
+          | Not_found ->
+            (*
+            print_endline ("Synth get method .. (1) " ^ name);
+            *)
+            let get_name = "get_" ^ name in
+            begin try cal_method_apply sr get_name e ts 
             with _ -> try be (`AST_apply (sr,(e2,e)))
             with exn ->
             clierr sr (
@@ -4549,7 +4556,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
               " failed with " ^ Printexc.to_string exn
               )
             end
-          end
+
+           end
 
         (* LHS PRIMITIVE TYPE *)
         | {id=id; symdef=`SYMDEF_abs _ } ->
@@ -4557,14 +4565,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             print_endline ("Synth get method .. (4) " ^ name);
             *)
           let get_name = "get_" ^ name in
-          begin try be (`AST_method_apply (sr,(get_name,e,ts)))
+          begin try cal_method_apply sr get_name e ts
           with exn1 -> try be (`AST_apply (sr,(e2,e)))
           with exn2 ->
           clierr sr (
             "AST_dot: Abstract type "^id^"="^sbt syms.dfns ttt ^
-            ":\nKoenig apply "^get_name ^
-            " failed with " ^ Printexc.to_string exn1 ^
-            "\nAND apply " ^ name ^
+            "\napply " ^ name ^
             " failed with " ^ Printexc.to_string exn2
             )
           end
