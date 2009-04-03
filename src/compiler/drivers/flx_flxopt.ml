@@ -15,12 +15,6 @@ let print_chosen options =
 
 let get_felix_options options =
   {
-    elkhound    =
-      begin match get_key_value options "elkhound" with
-      | Some s -> s
-      | None -> "flx_elkhound"
-      end
-    ;
     optimise    = check_keys options ["opt"; "optimise"];
     debug       = check_key options "debug";
     document_grammar = check_key options "document-grammar";
@@ -84,8 +78,7 @@ let print_options () =
   print_endline "  --output_dir=<none>: .cpp, .hpp, .why etc directory";
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
-  print_endline "  --mangle-names : generate code with fully mangled names";
-  print_endline "  --elkhound=flx_elkhound : set pathname of elkhound executable"
+  print_endline "  --mangle-names : generate code with fully mangled names"
 
 let make_syms options =
   {

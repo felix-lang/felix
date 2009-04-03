@@ -10,44 +10,6 @@ open Flx_token
 ;;
 Flx_version_hook.set_version ();;
 
-let print_elkhound_tokens toks =
-  let nt x = name_of_token x in
-  List.iter
-  (
-    fun x ->
-      match x with
-      | NAME (s,id) ->
-        print_endline (nt x ^ " " ^ id)
-      | INTEGER (s,t,v) ->
-        print_endline (nt x ^ " " ^
-          t^","^Big_int.string_of_big_int v
-        )
-      | FLOAT (s,t,v) ->
-        print_endline (nt x ^ " " ^
-          t^","^v
-        )
-      | STRING (sr,s) ->
-        print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s
-        )
-      | CSTRING (sr,s) ->
-        print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s
-        )
-      | WSTRING (sr,s) ->
-        print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s
-        )
-      | USTRING (sr,s) ->
-        print_endline (nt x ^ " " ^
-          Flx_string.c_quote_of_string s
-        )
-      | _ ->
-        print_endline (Flx_prelex.name_of_token x)
-  )
-  toks
-;;
-
 let print_help () = print_options(); exit(0)
 ;;
 
@@ -69,7 +31,6 @@ let run() =
   end
   ;
 
-  let elkhound_test = check_key raw_options "elkhound" in
   let filename =
     match get_key_value raw_options "" with
     | Some s -> s
@@ -101,16 +62,12 @@ let run() =
   end
   ;
   let tokens = Flx_lex1.translate pretokens in
-  if not elkhound_test || compiler_options.print_flag then
+  if compiler_options.print_flag then
     Flx_tok.print_tokens tokens;
   if compiler_options.print_flag then begin
     print_endline "---------------------------------------"
   end
   ;
-  if elkhound_test then begin
-    print_elkhound_tokens tokens;
-  end
-
 in
   run()
 ;;

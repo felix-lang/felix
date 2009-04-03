@@ -36,7 +36,6 @@ type felix_compiler_options_t =
   document_grammar: bool;
   document_typeclass: bool;
   mangle_names : bool;
-  elkhound : string;
   generate_axiom_checks : bool;
   auto_imports : string list;
   cache_dir : string option;
