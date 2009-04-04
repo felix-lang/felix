@@ -11,7 +11,7 @@ class Builder(fbuild.db.PersistentObject):
     @fbuild.db.cachemethod
     def __call__(self, src:fbuild.db.SRC, *,
             buildroot=fbuild.buildroot,
-            flags=[]) -> fbuild.db.DSTS:
+            flags=[]) -> fbuild.db.DST:
         # first, copy the src file into the buildroot
         src_buildroot = src.addroot(buildroot)
         dst = src_buildroot.replaceext('.ml')
