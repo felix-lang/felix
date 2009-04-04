@@ -181,7 +181,8 @@ def config_host(build):
                 libpaths=fbuild.options.host_libpaths))
 
     phase.ocaml = call('fbuild.builders.ocaml.Ocaml',
-        debug=fbuild.options.debug or fbuild.options.host_ocaml_debug,
+        # debug=fbuild.options.debug or fbuild.options.host_ocaml_debug,
+        debug_flags = [],
         ocamlc=fbuild.options.host_ocamlc,
         ocamlopt=fbuild.options.host_ocamlopt,
         flags=['-w', 'yzex', '-warn-error', 'FDPSU'])
