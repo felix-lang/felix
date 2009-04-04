@@ -1575,12 +1575,11 @@ str_non_ter prio_names str_ter (regexp_array:regexp array) =
 
 
 
-let make_grammar ral (relations:string list list) ppar ter_table str_ter regexp_fun (*token_nb*) regexp_table =
+let make_grammar ral (relations:string list list) ppar ter_table str_ter regexp_fun regexp_table =
   
   let token_nb = Hashtbl.length ter_table in
-  let rec f2 rhs nts ps = match rhs with
-    | [] -> nts, ps
-    | (Non_ter (nt,p))::t ->
+  let fold_rhs (nts, ps) = function
+    | (Non_ter (nt, p)) | (Non_ter_NL (nt, p)) ->
         let nts = String_set.add nt nts in
         (match p with
           | No_priority -> nts, ps
@@ -1588,18 +1587,16 @@ let make_grammar ral (relations:string list list) ppar ter_table str_ter regexp_
           | Less_priority p
           | Lesseq_priority p
           | Greater_priority p
-          | Greatereq_priority p ->
-              let ps = String_set.add p ps in
-              f2 t nts ps)
-    | _::t -> f2 t nts ps
-  in
-  let f1 (nts,ps) ((lhs,rhs,p,_),_,_) =
-    let nts = String_set.add lhs nts in
-    let ps = String_set.add p ps in
-    f2 rhs nts ps
+          | Greatereq_priority p -> nts, String_set.add p ps)
+    | Ter _ | Ter_NL _ | Regexp _ | Regexp_NL _ -> nts, ps
   in
   let nt_set, prio_set =
-    List.fold_left f1 (String_set.empty,String_set.empty) ral
+    List.fold_left
+      (fun (nts, ps) ((lhs, rhs, p, _), _, _) ->
+        let nts = String_set.add lhs nts in
+        let ps = String_set.add p ps in
+        List.fold_left fold_rhs (nts, ps) rhs)
+      (String_set.empty, String_set.empty) ral
   in
   let prio_set = List.fold_left
     (fun prio_set l -> List.fold_left
@@ -1609,9 +1606,9 @@ let make_grammar ral (relations:string list list) ppar ter_table str_ter regexp_
   let nt_table = Hashtbl.create (String_set.cardinal nt_set) in
   let pr_nb = String_set.cardinal prio_set (*+ 1*) in
   let prio_table = Hashtbl.create pr_nb in
-  let f6 ht str n = Hashtbl.add ht str n; (n+1) in
-  let _ = String_set.fold (f6 nt_table) nt_set 0 in
-  let _ = String_set.fold (f6 prio_table) prio_set 0 in
+  let fold_ht ht str n = Hashtbl.add ht str n; (n+1) in
+  let _ = String_set.fold (fold_ht nt_table) nt_set 0 in
+  let _ = String_set.fold (fold_ht prio_table) prio_set 0 in
   (*let regexp_table = Hashtbl.create 10 in*)
   let re_id = ref (token_nb + (Hashtbl.length regexp_table)) in
   let regexp_list = (ref []),(ref []) in
@@ -1644,7 +1641,9 @@ let make_grammar ral (relations:string list list) ppar ter_table str_ter regexp_
       | Greatereq_priority p -> Greatereq_priority
           (Hashtbl.find prio_table p)
     in
-    (Hashtbl.find nt_table nt, p)
+    try (Hashtbl.find nt_table nt, p)
+    with Not_found ->
+      failwith ("make_non_ter did not find non terminal \""^nt^"\"")
   in
   let f4 l = match l with
     | Ter t -> Ps_Ter (try Hashtbl.find ter_table t
@@ -2815,7 +2814,7 @@ let new_start_state is lit_trans subst_rn_red subst_rn nt_nb is_trace state_list
 
 
 
-(* On utilise update_parsing_device à la place maintenant *)
+(* On utilise update_parsing_device ï¿½ la place maintenant *)
 (*let merge_parsing_device pdev_list newdata
     newlocal_data lit_trans g_nb is nt_cons_map relations ppar =
   
