@@ -141,9 +141,6 @@ let dummysr = "Dummy",0,0,0,0
 %token <string> SAVE_SYNTAX
 
 /* user defined symbols */
-%token <(Flx_ast.srcref * string * string)> USER10
-%token <(Flx_ast.srcref * (string * string) list * string)> USERLB
-%token <(Flx_ast.srcref * string )> USERRB
 %token <(Flx_ast.srcref * string * Ocs_types.code)> SCHEME_CODE
 
 @for k,v in flx_syms:

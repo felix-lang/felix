@@ -231,14 +231,14 @@ let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
 
           | k,`Obj_keyword sr -> slift sr, Sstring (Flx_prelex.string_of_token k)
 
-          | (STRING (_,s1) | USER_KEYWORD (_,s1) | USER10 (_,s1,_)),
-            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2) | `Obj_USER10 (sr,s2,_))
+          | (STRING (_,s1) | USER_KEYWORD (_,s1)),
+            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2))
             ->
             if s1 <> s2 then raise Giveup;
             slift sr,Sstring s1
 
           | SCHEME_CODE (_,scm,f),
-            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2) | `Obj_USER10 (sr,s2,_))
+            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2))
             ->
             (* set _arg to the symbol *)
             let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_arg") in
@@ -660,11 +660,6 @@ let dyp_merge_Obj_statement_star ol =
 %token <local_data_t> LOAD_SYNTAX
 %token <string> SAVE_SYNTAX
 
-/* user defined symbols */
-%token <(Flx_ast.srcref * string * string)> USER10
-%token <(Flx_ast.srcref * (string * string) list * string)> USERLB
-%token <(Flx_ast.srcref * string )> USERRB
-
 %token <(Flx_ast.srcref * string * Ocs_types.code)> SCHEME_CODE
 
 @for k,v in flx_syms:
@@ -693,7 +688,6 @@ let dyp_merge_Obj_statement_star ol =
 
 /* tokens replacements for special symbols used in productions */
 %constructor Obj_sexpr %for star plus quest suser10token sident
-%constructor Obj_sexpr %for suserlbtoken suserrbtoken
 %constructor Obj_sexpr %for lbrace rbrace lpar rpar lsqb rsqb
 %constructor Obj_sexpr %for ssemi comma colon vbar
 
@@ -853,7 +847,6 @@ rhs_atom:
   | STRING { let sr,s = $1 in STRING (sr,s) } /* the string as an identifier */
   | IDENT { NAME ($1,"identifier") }
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
-  | USER10 { USER10 $1 } /* user terminal */
 @for s,t in flx_keywords:
   if t != "IDENT":
     tangle("  | " +t+ " { " + t + " $1 }")
@@ -1204,36 +1197,6 @@ sliteral:
       let x = Ocs_misc.make_slist Snull (rev x) in
       0,slift sr,x
     }
-
-suser10token:
-  | USER10
-    {
-      let sr,op,fn = $1 in
-      0,slift sr,Sstring fn
-    }
-
-suserlbtoken:
-  | USERLB
-  {
-    let sr, ass, sym = $1 in
-    let ass = List.rev_map (fun (k,f) ->
-      let x = Sstring k :: Sstring f :: [] in
-      let x = Ocs_misc.make_slist Snull (rev x) in
-      x
-      )
-      ass
-    in
-    let ass = Ocs_misc.make_slist Snull ass in
-    let x = ass :: Sstring sym :: [] in
-    let x = Ocs_misc.make_slist Snull (rev x) in
-    0,slift sr,x
-  }
-
-suserrbtoken:
-  | USERRB
-  {
-    0,slift (fst $1),Sstring (snd $1)
-  }
 
 basic_name:
   | NAME { $1 }

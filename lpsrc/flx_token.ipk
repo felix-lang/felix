@@ -38,9 +38,6 @@ type token =
   | HASH_INCLUDE_FILES of string list
   | TOKEN_LIST of token list
   | DUMMY
-  | USER10 of (srcref * string * string)
-  | USERLB of (srcref * (string * string) list * string)
-  | USERRB of (srcref * string)
   | LOAD_SYNTAX of (local_data_t)
   | SAVE_SYNTAX of (string)
   | SCHEME_CODE of (srcref * string * Ocs_types.code)
@@ -108,9 +105,6 @@ let string_of_token (tok :Flx_token.token): string =
   | QSTRING (sr,s) -> Flx_string.c_quote_of_string s
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s
-  | USER10 (sr,op,fn) -> "op10 " ^ op
-  | USERLB (sr,_,lb) -> lb
-  | USERRB (sr,rb) -> rb
   | USER_KEYWORD (sr,s) -> s
   | HASH_INCLUDE_FILES fs -> "include_files(" ^ String.concat "," fs ^ ")"
   | TOKEN_LIST ts -> "<<token list>>"
@@ -148,9 +142,6 @@ let name_of_token (tok :Flx_token.token): string =
   | QSTRING (sr,s) -> "QSTRING"
   | WSTRING (sr,s) -> "WSTRING"
   | USTRING (sr,s) -> "USTRING"
-  | USER10 (sr,op,f) -> "USER10"
-  | USERLB _ -> "USERLB"
-  | USERRB _ -> "USERRB"
   | USER_KEYWORD (sr,s) -> s
   | HASH_INCLUDE_FILES _ -> "HASH_INCLUDE_FILES"
   | TOKEN_LIST _ -> "TOKEN_LIST"
@@ -199,9 +190,6 @@ let src_of_token t = match t with
   | QSTRING  (s,_)
   | WSTRING  (s,_)
   | USTRING  (s,_)
-  | USER10 (s,_,_)
-  | USERLB (s,_,_)
-  | USERRB (s,_)
   | USER_KEYWORD (s,_)
   (*
   | PARSE_ACTION s

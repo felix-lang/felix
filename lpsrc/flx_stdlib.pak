@@ -386,10 +386,6 @@ typeclass Show [T] {
 #syntax <nugram.flxh>
 open syntax felix;
 
-#infix 10 "/\\" wedge
-#infix 10 "\\/" vee
-#infix 10 ">>=" bind
-
 #import <flx_platform.flxh>
 
 @h=tangler('lib/flx_platform.flxh','data')

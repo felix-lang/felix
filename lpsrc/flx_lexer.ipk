@@ -174,15 +174,12 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
       (string, (token list * ast_term_t) list) Hashtbl.t
       = Hashtbl.create 97
 
-    val mutable brackets: ((string * string) * string) list = []
-
     method get_expand_expr = expand_expr
     method get_include_files = include_files
     method add_include_file f = include_files <- f :: include_files
 
     method get_symbols = symbols
     method get_nonterminals = nonterminals
-    method get_brackets = brackets
 
     method is_at_line_start = at_line_start
 
@@ -283,9 +280,6 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
      done
      ;
 
-     brackets <- s#get_brackets @ brackets
-
-     ;
      Hashtbl.iter
      (fun k ls ->
        let old = try Hashtbl.find nonterminals k with Not_found -> [] in
@@ -311,18 +305,6 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
         symbols <- a
       end
 
-    method add_infix_symbol (prec:int) s f =
-      let n = String.length s in
-      self#adjust_symbol_array n;
-      let elt = s,(fun (sr,_) -> USER10 (sr,s,f)) in
-      symbols.(n) <- elt :: symbols.(n)
-
-    method add_infix_keyword (prec:int) s f =
-      let n = String.length s in
-      self#adjust_keyword_array n;
-      let elt = s,(fun (sr,_) -> USER10 (sr,s,f)) in
-      keywords.(n) <- elt :: keywords.(n)
-
     method add_keyword (s:string) =
       let n = String.length s in
       self#adjust_keyword_array n;
@@ -332,26 +314,6 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
     method add_nonterminal (s:string) (sr:range_srcref) (toks: Flx_token.token list) (term:ast_term_t) =
       let productions = try Hashtbl.find nonterminals s with Not_found -> [] in
       Hashtbl.replace nonterminals s ((toks,term)::productions)
-
-    method add_brackets tok1 tok2 f =
-      let n1 = String.length tok1 in
-      let n2 = String.length tok2 in
-      let n = max n1 n2 in
-      self#adjust_symbol_array n;
-      brackets <- ((tok1,tok2),f) :: brackets;
-      let rbs =
-        let rec aux fnmap brs = match brs with
-          | [] -> rev fnmap
-          | ((l,r),f) :: t ->
-            if l = tok1 then aux ((r,f)::fnmap) t
-            else aux fnmap t
-        in aux [] brackets
-      in
-      let elt = tok1,(fun (sr,_) -> USERLB (sr,rbs,tok1)) in
-      symbols.(n1) <- elt :: symbols.(n1)
-      ;
-      let elt = tok2,(fun (sr,_) -> USERRB (sr,tok2)) in
-      symbols.(n1) <- elt :: symbols.(n2)
 
     method tokenise_symbols lexbuf (s:string) : token list =
       (* temporary hack *)
@@ -467,7 +429,6 @@ class lexer_state :
       (string * (srcref * string -> token)) list array
     val mutable keywords:
       (string * (srcref * string -> token)) list array
-    val mutable brackets: ((string * string) * string) list
     val nonterminals: (string, (token list *ast_term_t) list) Hashtbl.t
     val mutable include_files : string list
 
@@ -509,21 +470,14 @@ class lexer_state :
     method get_macros : (string,string list * token list) Hashtbl.t
     method add_macros : lexer_state -> unit
     method adjust_symbol_array : int -> unit
-    method add_infix_symbol:
-      int -> string -> string -> unit
 
     method get_keywords:
       (string * (srcref * string -> token)) list array
 
     method adjust_keyword_array : int -> unit
 
-    method add_infix_keyword:
-      int -> string -> string -> unit
     method add_keyword:
       string -> unit
-
-    method get_brackets:
-      ((string * string) * string) list
 
     method get_nonterminals:
       (string, (token list *ast_term_t) list) Hashtbl.t
@@ -533,8 +487,6 @@ class lexer_state :
 
     method add_nonterminal:
       string -> range_srcref -> token list -> ast_term_t -> unit
-
-    method add_brackets: string -> string -> string -> unit
 
     method tokenise_symbols : Lexing.lexbuf -> string -> token list
 end
@@ -799,53 +751,6 @@ let define_directive state sr toks =
   | [] ->
     clierr sr "#define requires identifier"
 
-let infix_directive state sr toks =
-  match toks with
-  | [INTEGER (sr1,kind,v); STRING (sr2,tok); NAME (sr3,fn)] ->
-    if kind <> "int" then
-      clierr sr "#infix directive requires plain integer precedence"
-    ;
-    let j = Big_int.int_of_big_int v in
-    state#add_infix_symbol j tok fn;
-    []
-
-  | [INTEGER (sr1,kind,v); NAME (sr2,tok); NAME (sr3,fn)] ->
-    if kind <> "int" then
-      clierr sr "#infix directive requires plain integer precedence"
-    ;
-    let j = Big_int.int_of_big_int v in
-    state#add_infix_keyword j tok fn;
-    []
-
-  (* as above, without the precedence integer -- we set it to 10.
-     in the dypgen system it isn't relevant anyhow
-  *)
-  | [STRING (sr2,tok); NAME (sr3,fn)] ->
-    state#add_infix_symbol 10 tok fn;
-    []
-
-  | [ NAME (sr2,tok); NAME (sr3,fn)] ->
-    state#add_infix_keyword 10 tok fn;
-    []
-
-
-  (* as above, without the precedence integer or mapping function
-     in the dypgen system it isn't relevant if the symbol is
-     used as a keyword other than an operator.
-
-     NOTE: such symbols are USER10 encoded not USER_KEYWORD encoded
-  *)
-  | [STRING (sr2,tok)] ->
-    state#add_infix_symbol 10 tok tok;
-    []
-
-  | [NAME (sr2,tok)] ->
-    state#add_infix_keyword 10 tok tok;
-    []
-
-  | _ ->
-    clierr sr "#infix directive has syntax #infix 99 \"..\" fname"
-
 let keyword_directive state sr toks =
   let rec aux toks = match toks with
   | NAME (sr,tok) :: t ->
@@ -863,15 +768,6 @@ let action_split t =
   | PARSE_ACTION _ :: tail -> rev out, tail
   | h :: t -> aux t (h::out)
   in aux t []
-
-let bracket_directive state sr toks =
-  match toks with
-  | [STRING (sr1,tok1); STRING (sr2,tok2); NAME (sr3,fn)] ->
-    state#add_brackets tok1 tok2 fn;
-    []
-
-  | _ ->
-    clierr sr "#bracket directive has syntax #bracket \"lb\" \"rb\" fname"
 
 let if_directive state sr toks =
   state#push_condition
@@ -1237,15 +1133,8 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
         undef_directive state sr toks
 
 
-    | "symbol"
-    | "infix" ->
-        infix_directive state sr toks
-
     | "keyword" ->
         keyword_directive state sr toks
-
-    | "bracket" ->
-        bracket_directive state sr toks
 
     | _ ->
       print_endline (state#string_of_srcref lexbuf);
