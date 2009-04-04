@@ -1,0 +1,27 @@
+{
+open Parse_tree
+
+let rec dyp_merge_Obj_expr l = match l with
+  | (o1,gd,ld)::(o2,_,_)::t ->
+  begin match o1 with
+    | Times ((Plus _),_)
+    | Times (_,(Plus _)) -> dyp_merge_Obj_expr ((o2,gd,ld)::t)
+    | _ -> dyp_merge_Obj_expr ((o1,gd,ld)::t)
+  end
+  | [o,gd,ld] -> [o],gd,ld
+  | _ -> assert false
+}
+
+%token <int> INT PLUS TIMES EOL
+
+%start main
+%layout [' ' '\t']
+
+%parser
+
+main : expr "\n"  { $1 }
+
+expr :
+  | ['0'-'9']+    { Int (int_of_string $1) }
+  | expr "+" expr { Plus ($1,$3) }
+  | expr "*" expr { Times ($1,$3) }

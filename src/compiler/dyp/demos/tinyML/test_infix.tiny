@@ -1,0 +1,8 @@
+infixl 4 ++ , -- ;;
+infixr 5 *+ ;;
+
+let x ++ y = match (x,y) with ((x1,x2),(y1,y2)) -> (x1+y1,x2+y2);;
+let x -- y = match (x,y) with ((x1,x2),(y1,y2)) -> (x1-y1,x2-y2);;
+let x *+ y = match (x,y) with ((x1,x2),(y1,y2)) -> (x1*y1,x2*y2);;
+
+(4,5)++(3,8)*+(10,10)--(4,5);;

@@ -1,0 +1,16 @@
+Emmanuel Onzon, main author.
+Christophe Raffalli: ideas for self-extensibility and disambiguation with the system of priorities and the relation between priorities. Dypgen began as a school work supervised by Christophe Raffalli in 2005. Pierre Hyvernat made the documentation generation script.
+
+The primary goal of dypgen is to be a convenient and useful tool for OCaml developers. To achieve this, dypgen introduces new ideas as well as gathers and implements other ideas found in other projects.
+
+Dypgen uses Martin Bravenboer and Eelco Visser algorithm of parse table composition, adapted to handle dypgen's system of priorities and local extensibility.
+
+[1] Martin Bravenboer and Eelco Visser, Parse Table Composition: Separate Compilation and Binary Extensibility of Grammars, 2007.
+
+http://www.stratego-language.org/Stratego/ParseTableComposition
+
+Some details of the implementation of the GLR algorithm as well as the idea of merge functions are borrowed from the following technical report about the parser generator Elkhound from Scott McPeak:
+
+[2] Scott McPeak. Elkhound: A fast, efficient GLR parser generator. Technical Report CSD-02-1214, University of California, Berkeley, December 2002.
+
+http://www.cs.berkeley.edu/~smcpeak/elkhound

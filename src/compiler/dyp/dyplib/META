@@ -1,0 +1,6 @@
+name = "dyp"
+version = "1.0.0"
+description = "Parser generator"
+requires = "unix"
+archive(byte) = "dyp.cma"
+archive(native) = "dyp.cmxa"

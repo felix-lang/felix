@@ -1,0 +1,41 @@
+REQUIREMENTS
+
+You no longer need the library ocamlgraph in this version of dypgen
+If you want to compile the example tinyML-ulex then you need ulex
+and findlib.
+
+
+HOW TO INSTALL
+
+Change what you want (destination directories) in Makefile.config.
+
+If you want to use the script which generates a documentation of the
+grammar from .dyp file then change the first line of the script dyp2gram.pl
+to the path to perl if it is not /usr/bin/perl.
+
+To compile dypgen, its library and the examples, from the top directory do :
+make all
+
+If you don't want to compile the examples, then just do :
+make
+
+If you already compiled dypgen and want now to compile the examples do :
+make examples
+
+To install dypgen and the dypgen library with support for findlib, do :
+make install
+
+To install dypgen and the dypgen library without support for findlib, do :
+make install2
+
+To uninstall dypgen and the library with support for findlib, do :
+make uninstall
+
+To uninstall dypgen and the library without support for findlib, do :
+make uninstall2
+
+To clean everything do :
+make clean
+
+To just clean the examples do :
+make clean_examples

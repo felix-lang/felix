@@ -1,0 +1,10 @@
+#define INFIX(op,p) expr(<=p) #op expr(<p) { $1 op $3 } p
+
+expr:
+  | ['0'-'9']+     { int_of_string $1 }  pi
+  | "-" expr(=pi)            { -$2 }     pi
+  | "(" expr ")"             { $2 }      pi
+  | INFIX(+,pp)
+  | INFIX(-,pp)
+  | INFIX(*,pt)
+  | INFIX(/,pt)
