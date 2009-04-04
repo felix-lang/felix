@@ -6,7 +6,7 @@ from fbuild.path import Path
 
 def build(ocaml, ocamllex):
     path = Path('src', 'compiler', 'sex')
-    dypgen = call('buildsystem.dyp.build_dypgen', ocaml, ocamllex)
+    dypgen = call('buildsystem.dyp.build_exe', ocaml, ocamllex)
     return ocaml.build_lib(path/'sex', Path.globall(
             path/'*.ml{,i}',
             dypgen(path/'sex_parse.dyp'),

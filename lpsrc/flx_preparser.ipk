@@ -110,9 +110,6 @@ let dummysr = "Dummy",0,0,0,0
 @head(2,'Tokens')
 @select(h)
 
-%global_data_type <unit>
-%local_data_type <unit>
-
 /* special */
 %token <(Flx_ast.srcref * string)> ERRORTOKEN
 %token ENDMARKER

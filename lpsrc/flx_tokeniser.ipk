@@ -571,7 +571,7 @@ open List
 open Flx_srcref
 open Flx_token
 
-let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
+let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
   | [x,_] -> x
   | _ -> failwith "Dypgen parser failed"

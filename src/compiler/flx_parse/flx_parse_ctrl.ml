@@ -3,7 +3,7 @@ open Flx_token
 open Flx_exceptions
 open Flx_parse
 
-let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
+let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
   | [x,_] -> x
   | _ -> failwith "Dypgen parser failed"

@@ -8,7 +8,7 @@ open Flx_srcref
 open Flx_typing2
 open Flx_util
 
-let dyphack (ls : ( 'a * Dyp.priority) list) : 'a =
+let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
   | [x,_] -> x
   | _ -> failwith "Dypgen parser failed"

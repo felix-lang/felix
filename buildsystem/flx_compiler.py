@@ -33,14 +33,14 @@ def build_flx_version_hook(ocaml):
 
 def build_flx_lex(ocaml, ocamllex):
     path = Path('src/compiler/flx_lex')
-    dypgen = call('buildsystem.dyp.build_dypgen', ocaml, ocamllex)
+    dypgen = call('buildsystem.dyp.build_exe', ocaml, ocamllex)
     return ocaml.build_lib(path/'flx_lex',
         srcs=Path.globall(
             path / '*.ml{,i}',
             fbuild.buildroot / path / '*.ml{,i}',
             ocamllex(fbuild.buildroot / path / 'flx_lex.mll'),
             dypgen(fbuild.buildroot / path / 'flx_preparse.dyp',
-                flags=['--prio-pt', '--pv-obj', '--noemit-token-type'])),
+                flags=['--pv-obj', '--noemit-token-type'])),
         libs=[
             call('buildsystem.dyp.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),
@@ -51,12 +51,12 @@ def build_flx_lex(ocaml, ocamllex):
 
 def build_flx_parse(ocaml, ocamllex):
     path = Path('src/compiler/flx_parse')
-    dypgen = call('buildsystem.dyp.build_dypgen', ocaml, ocamllex)
+    dypgen = call('buildsystem.dyp.build_exe', ocaml, ocamllex)
     return ocaml.build_lib(path/'flx_parse',
         srcs=Path.globall(
             path / '*.ml{,i}',
             dypgen(fbuild.buildroot / path / 'flx_parse.dyp',
-                flags=['--prio-pt', '--pv-obj', '--noemit-token-type'])),
+                flags=['--pv-obj', '--noemit-token-type'])),
         libs=[
             call('buildsystem.dyp.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),

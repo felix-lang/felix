@@ -134,28 +134,20 @@ let scheme_run sr env (s:string):sval =
   let r :sval = scheme_eval c in
   r
 
-let cal_priority priority_data p =
-  let cp p =
-    try find_priority priority_data p
-    with Not_found -> failwith ("Priority " ^ p ^ " not defined!")
-  in
+let cal_priority p =
   match p with
   | `No_prio -> No_priority
-  | `Eq_prio p -> Eq_priority (cp p)
-  | `Less_prio p -> Less_priority (cp p)
-  | `Lesseq_prio p -> Lesseq_priority (cp p)
-  | `Greater_prio p -> Greater_priority (cp p)
-  | `Greatereq_prio p -> Greatereq_priority (cp p)
+  | `Eq_prio p -> Eq_priority p
+  | `Less_prio p -> Less_priority p
+  | `Lesseq_prio p -> Lesseq_priority p
+  | `Greater_prio p -> Greater_priority p
+  | `Greatereq_prio p -> Greatereq_priority p
 
-let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:string) =
+let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
   let mapnt name = try Drules.find name dssl_record.privacy with Not_found -> name in
   let pr_age = !(dyp.global_data.pcounter) in
   incr (dyp.global_data.pcounter);
   let name = mapnt name in
-  let lhs =
-    try dyp.add_nt name "Obj_sexpr"
-    with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ name)
-  in
   (* this routine converts SCHEME "(scm prog)" into a single compiled token *)
   let rec fudge_rhs inls outls = match inls with
   | [] -> rev outls
@@ -179,26 +171,21 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
   let rec f o =
     match o with
       | STRING _ ->
-        Dyp.Ter Dyp_symbols.t_NAME
+          Dyp.Ter "NAME"
 
       | SCHEME_CODE _ ->
-        Dyp.Ter Dyp_symbols.t_NAME
+          Dyp.Ter "NAME"
 
       | NONTERMINAL (sr,s,p) ->
           let nt = mapnt s in
-          let nt =
-            try dyp.add_nt nt "Obj_sexpr"
-            with Dyp.Constructor_mismatch _ -> failwith ("CONSTRUCTOR MISMATCH " ^ s)
-            | Dyp.Bad_constructor _ -> failwith ("BAD CONSTRUCTOR FOR " ^ s)
-          in
-          let ntpri = cal_priority priority_data p in
+          let ntpri = cal_priority p in
           Dyp.Non_ter (nt,ntpri)
 
       | NAME (sr,s) -> assert false
 
       | s ->
         let name = Dyp_symbols.str_token s in
-        Dyp.Ter (Dyp_symbols.get_token_name s)
+        Dyp.Ter name
   in
   let cde =
     try
@@ -210,12 +197,10 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
   in
 
   let priority = match prio with
-  | `Default -> Dyp_priority_data.default_priority
-  | `Priority p ->
-    try find_priority priority_data p
-    with Not_found -> clierr sr ("Priority " ^ p ^ " not found")
+  | `Default -> "default_priority"
+  | `Priority p -> p
   in
-  let rule  = lhs,(List.map f rhs),priority in
+  let rule = name,(List.map f rhs),priority,[] in
   if !(dyp.global_data.pdebug) then
   print_endline ("Rule "^string_of_int pr_age ^" " ^ name ^ " := " ^
   catmap " " silly_strtoken rhs ^
@@ -301,13 +286,12 @@ let define_scheme sr dyp priority_data dssl_record dssl name prio rhs (scm:strin
     in
     `Obj_sexpr (!age,sr,r),[]
   in
-  rule,action
+  rule,action,Bind_to_cons [(name, "Obj_sexpr")]
 
-let extend_grammar dyp priority_data (dssl,(name,prio,prod,action,anote,sr)) =
+let extend_grammar dyp (dssl,(name,prio,prod,action,anote,sr)) =
   let m = dyp.local_data in
   let dssl_record = Drules.find dssl m.dssls in
-  let rule = define_scheme sr dyp priority_data dssl_record dssl name prio prod action in
-  rule
+  define_scheme sr dyp dssl_record dssl name prio prod action
 
 (* ------------------------------------------------------ *)
 
@@ -646,9 +630,6 @@ let dyp_merge_Obj_statement_star ol =
 @head(2,'Tokens')
 @select(h)
 
-%global_data_type <global_data_t>
-%local_data_type <local_data_t>
-
 /* special */
 %token <(Flx_ast.srcref * string)> ERRORTOKEN
 %token ENDMARKER
@@ -745,7 +726,7 @@ statement_star:
      let sseq,stmts = $1 in
      let s' = ocs2flx sr s in
      (max seq sseq, (s' :: stmts))),
-     [Keep_grammar true; Local_data (dyp.last_local_data)]
+     [Keep_grammar; Local_data (dyp.last_local_data)]
    }
 
  | { 0,[] }
@@ -950,23 +931,14 @@ statement:
         to_install
       in
 
-      let priority_data =
-        fold_left (fun pd prios ->
-          let pd,plist = fold_left (fun (pd,plist) pri ->
-            let pd,pr = insert_priority pd pri in
-            pd,(pr::plist)
-          ) (pd,[]) prios
-          in
-          match plist with
-          | []
-          | [_] -> pd
-          | _ ->  add_list_relations pd (rev plist)
-        ) dyp.priority_data prios
-      in
-
-      let add_rules = List.map (extend_grammar dyp priority_data) rules in
+      let bindings = ref [] in
+      let add_rules = List.map begin fun rule ->
+        let rule, action, binding = extend_grammar dyp rule in
+        bindings := binding :: !bindings;
+        rule, action
+      end rules in
       let local_data = { m with loaded_dssls = to_install @ m.loaded_dssls } in
-      (0,sr,Snull),[Add_rules add_rules; Local_data local_data; Priority_data priority_data]
+      (0,sr,Snull),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
 
   | SYNTAX NAME LBRACE dyprods RBRACE
