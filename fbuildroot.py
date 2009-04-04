@@ -25,6 +25,10 @@ def pre_options(parser):
             default=[],
             action='append',
             help='Add this path to the c library search path for all phases'),
+        make_option('-g', '--debug',
+            default=False,
+            action='store_true',
+            help='enable debugging for all phases'),
     ))
 
     group = parser.add_option_group('build phase options')
@@ -69,6 +73,10 @@ def pre_options(parser):
             action='append',
             help='Add this path to the c library search path for the host ' \
                     'phase'),
+        make_option('--host-ocaml-debug',
+            default=False,
+            action='store_true',
+            help='turn on ocaml debugging'),
         make_option('--host-ocamlc',
             help='specify the ocaml bytecode compiler'),
         make_option('--host-ocamlopt',
@@ -134,27 +142,28 @@ def make_cxx_builder(*args, includes=[], libpaths=[], **kwargs):
         static=call('fbuild.builders.cxx.guess_static', *args, **kwargs),
         shared=call('fbuild.builders.cxx.guess_shared', *args, **kwargs))
 
-def config_build(*, platform, cc, cxx):
+def config_build():
     fbuild.logger.log('configuring build phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', platform)
+    platform = call('fbuild.builders.platform.platform',
+        fbuild.options.build_platform)
 
     return Record(
         platform=platform,
-        c=make_c_builder(cc,
+        c=make_c_builder(fbuild.options.build_cc,
             platform=platform,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths),
-        cxx=make_cxx_builder(cxx,
+        cxx=make_cxx_builder(fbuild.options.build_cxx,
             platform=platform,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths))
 
-def config_host(build, *,
-        platform, cc, cxx, ocamlc, ocamlopt, ocamllex, ocamlyacc):
+def config_host(build):
     fbuild.logger.log('configuring host phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', platform)
+    platform = call('fbuild.builders.platform.platform',
+        fbuild.options.build_platform)
 
     if platform == build.platform:
         fbuild.logger.log("using build's c and cxx compiler", color='cyan')
@@ -162,21 +171,24 @@ def config_host(build, *,
     else:
         phase = Record(
             platform=platform,
-            c=make_c_builder(cc,
+            c=make_c_builder(fbuild.builders.host_cc,
                 platform=platform,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths),
-            cxx=make_cxx_builder(cxx,
+            cxx=make_cxx_builder(fbuild.buildesr.host_cxx,
                 platform=platform,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths))
 
     phase.ocaml = call('fbuild.builders.ocaml.Ocaml',
-        ocamlc=ocamlc,
-        ocamlopt=ocamlopt,
+        debug=fbuild.options.debug or fbuild.options.host_ocaml_debug,
+        ocamlc=fbuild.options.host_ocamlc,
+        ocamlopt=fbuild.options.host_ocamlopt,
         flags=['-w', 'yzex', '-warn-error', 'FDPSU'])
-    phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex', ocamllex)
-    phase.ocamlyacc = call('fbuild.builders.ocaml.Ocamlyacc', ocamlyacc)
+    phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex',
+        fbuild.options.host_ocamllex)
+    phase.ocamlyacc = call('fbuild.builders.ocaml.Ocamlyacc',
+        fbuild.options.host_ocamlyacc)
 
     # we prefer the native ocaml as it's much faster
     if hasattr(phase.ocaml, 'ocamlopt'):
@@ -186,10 +198,11 @@ def config_host(build, *,
 
     return phase
 
-def config_target(host, *, platform, cc, cxx):
+def config_target(host):
     fbuild.logger.log('configuring target phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', platform)
+    platform = call('fbuild.builders.platform.platform',
+        fbuild.options.target_platform)
 
     if platform == host.platform:
         fbuild.logger.log("using host's c and cxx compiler", color='cyan')
@@ -197,11 +210,11 @@ def config_target(host, *, platform, cc, cxx):
     else:
         phase = Record(
             platform=platform,
-            c=make_c_builder(cc,
+            c=make_c_builder(fbuild.options.target_cc,
                 platform=platform,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths),
-            cxx=make_cxx_builder(cxx,
+            cxx=make_cxx_builder(fbuild.options.target_cxx,
                 platform=platform,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths))
@@ -223,24 +236,9 @@ def src_dir():
 
 def build():
     # configure the phases
-    build = config_build(
-        platform=fbuild.options.build_platform,
-        cc=fbuild.options.build_cc,
-        cxx=fbuild.options.build_cxx)
-
-    host = config_host(build,
-        platform=fbuild.options.host_platform,
-        cc=fbuild.options.host_cc,
-        cxx=fbuild.options.host_cxx,
-        ocamlc=fbuild.options.host_ocamlc,
-        ocamlopt=fbuild.options.host_ocamlopt,
-        ocamllex=fbuild.options.host_ocamllex,
-        ocamlyacc=fbuild.options.host_ocamlyacc)
-
-    target = config_target(host,
-        platform=fbuild.options.target_platform,
-        cc=fbuild.options.target_cc,
-        cxx=fbuild.options.target_cxx)
+    build = config_build()
+    host = config_host(build)
+    target = config_target(host)
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr')
