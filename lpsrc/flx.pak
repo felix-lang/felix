@@ -214,7 +214,6 @@ let set_version () =
 @include_file ('flx_preparser.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_keywords.ipk')
-@include_file ('flx_lexer.ipk')
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_tcdoc.ipk')
 @pop_head()
