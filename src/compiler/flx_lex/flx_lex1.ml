@@ -1,44 +1,3 @@
-@from config.flx_data import flx_leadin_keywords
-
-@head(1,'Pre token filters')
-
-@mwct = [
- ("signed char","tiny"),
- ("unsigned char","utiny"),
-
- ("signed int","int"),
- ("unsigned int","uint"),
- ("unsigned","uint"),
-
- ("long","long"),
- ("signed long","long"),
- ("unsigned long","ulong"),
-
- ("long int","long"),
- ("signed long int","long"),
- ("unsigned long int","ulong"),
-
- ("long long","vlong"),
- ("signed long long","vlong"),
- ("unsigned long long","uvlong"),
-
- ("long long int","vlong"),
- ("signed long long int","vlong"),
- ("unsigned long long int","uvlong"),
-
- ("float double","double"),
- ("double float","double"),
- ("long double float","ldouble"),
- ]
-
-@mwct = [ (string.split(s,' '),t) for s,t in mwct ]
-@mwct = [ (len (s), s, t) for s,t in mwct ]
-@mwct.sort()
-@mwct.reverse()
-
-@h = tangler('src/compiler/flx_lex/flx_lex1.ml')
-@select(h)
-
 open Flx_token
 open Flx_exceptions
 open List
@@ -244,19 +203,61 @@ let filter_preprocessor x =
 let compress_ctypes x =
   let rec filter x' result =
     match x' with
-@for n,c,f in mwct:
-  tangle('| NAME(sr,"' + string.join (c,'") :: NAME(_,"') + '") :: t -> ')
-  tangle('    filter t (NAME (sr, "'+f+'") :: result)')
-@#
+| NAME(sr,"unsigned") :: NAME(_,"long") :: NAME(_,"long") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "uvlong") :: result)
+| NAME(sr,"signed") :: NAME(_,"long") :: NAME(_,"long") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "vlong") :: result)
+| NAME(sr,"unsigned") :: NAME(_,"long") :: NAME(_,"long") :: t -> 
+    filter t (NAME (sr, "uvlong") :: result)
+| NAME(sr,"unsigned") :: NAME(_,"long") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "ulong") :: result)
+| NAME(sr,"signed") :: NAME(_,"long") :: NAME(_,"long") :: t -> 
+    filter t (NAME (sr, "vlong") :: result)
+| NAME(sr,"signed") :: NAME(_,"long") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "long") :: result)
+| NAME(sr,"long") :: NAME(_,"long") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "vlong") :: result)
+| NAME(sr,"long") :: NAME(_,"double") :: NAME(_,"float") :: t -> 
+    filter t (NAME (sr, "ldouble") :: result)
+| NAME(sr,"unsigned") :: NAME(_,"long") :: t -> 
+    filter t (NAME (sr, "ulong") :: result)
+| NAME(sr,"unsigned") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "uint") :: result)
+| NAME(sr,"unsigned") :: NAME(_,"char") :: t -> 
+    filter t (NAME (sr, "utiny") :: result)
+| NAME(sr,"signed") :: NAME(_,"long") :: t -> 
+    filter t (NAME (sr, "long") :: result)
+| NAME(sr,"signed") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "int") :: result)
+| NAME(sr,"signed") :: NAME(_,"char") :: t -> 
+    filter t (NAME (sr, "tiny") :: result)
+| NAME(sr,"long") :: NAME(_,"long") :: t -> 
+    filter t (NAME (sr, "vlong") :: result)
+| NAME(sr,"long") :: NAME(_,"int") :: t -> 
+    filter t (NAME (sr, "long") :: result)
+| NAME(sr,"float") :: NAME(_,"double") :: t -> 
+    filter t (NAME (sr, "double") :: result)
+| NAME(sr,"double") :: NAME(_,"float") :: t -> 
+    filter t (NAME (sr, "double") :: result)
+| NAME(sr,"unsigned") :: t -> 
+    filter t (NAME (sr, "uint") :: result)
+| NAME(sr,"long") :: t -> 
+    filter t (NAME (sr, "long") :: result)
     | h :: t -> filter t (h::result)
     | [] -> rev result
   in filter x []
 
 let unkeyword ts =
   let rec filter inp out = match inp with
-@for kw in flx_leadin_keywords:
-  tangle("| ("+kw+" _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail ")
-@#
+| (COLONCOLON _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (DOT _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (RIGHTARROW _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (STRUCT _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (UNION _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (CLASS _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (FUNCTION _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (PROCEDURE _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
+| (GENERATOR _ as cc) :: (USER_KEYWORD (sr,s) as u) :: tail 
   ->
     let sr = Flx_prelex.src_of_token  u in
     let s = Flx_prelex.string_of_token u in
@@ -457,335 +458,3 @@ let translate_preprocessor ts =
     ]
   and reverse_apply dat fn = fn dat
   in List.fold_left reverse_apply ts filters
-
-@h = tangler('src/compiler/flx_lex/flx_lex1.mli')
-@select(h)
-open Flx_token
-val translate : token list -> token list
-val translate_preprocessor : token list -> token list
-
-@head(1,'Pre token printer')
-@h = tangler('src/compiler/flx_lex/flx_pretok.ml')
-@select(h)
-open Flx_token
-open Flx_lex
-open Flx_prelex
-open Flx_preproc
-open List
-
-let pre_tokens_of_lexbuf buf state =
-  let rec get lst =
-    let t = Flx_lex.pre_flx_lex state buf in
-    match t with
-    | [ENDMARKER] -> lst
-    | _ ->
-    match state#get_condition with
-      | `Processing -> get (List.rev_append t lst)
-      | _ -> get lst
-   in
-   let tks = ENDMARKER :: get [] in
-    (*
-    print_endline
-    (
-      "#included files are " ^
-      String.concat ", " state#get_include_files
-    )
-    ;
-    *)
-  let toks = List.rev tks in
-  let includes = state#get_include_files in
-  HASH_INCLUDE_FILES includes :: toks
-
-(* This routine appears to be called ONLY by the parser. It is never
-   called for any #includes. So it is triggered only for each
-   whole file name given to flxg, or, by a syntactic include directive
-   which recursively parses.
-*)
-
-let rec pre_tokens_of_filename filename dirname incdirs cache_dir expand_expr auto_imports =
-  (*
-  print_endline ("tokenising " ^ filename);
-  *)
-  let state = new Flx_lexstate.lexer_state filename dirname incdirs cache_dir expand_expr in
-  let tokss =
-    (map
-      (fun fn->
-        (*
-        print_endline (" .. Autoimporting " ^ fn);
-        *)
-        include_directive "import" state ("auto_import",0,0,0,0)
-        fn pre_flx_lex
-      )
-      auto_imports
-    )
-  in
-  let split_hs toks = match toks with
-  | HASH_INCLUDE_FILES fs :: toks -> fs, toks
-  | _ -> assert false
-  in
-
-  (*
-  print_endline ("Actually tokenising " ^ filename);
-  *)
-  let infile = open_in filename in
-  let src = Lexing.from_channel infile in
-  let toks = pre_tokens_of_lexbuf src state in close_in infile;
-  let fs,toks = split_hs toks in
-  let tokss = tokss @ [toks] in
-  let toks = HASH_INCLUDE_FILES fs :: concat tokss in
-  (*
-  print_endline ("DONE tokenising " ^ filename);
-  print_endline ("Token stream is: ");
-  Flx_tok.print_tokens toks;
-  *)
-  toks
-
-let pre_tokens_of_string s filename expand_expr =
-  let state = new Flx_lexstate.lexer_state filename "" [] None expand_expr in
-  pre_tokens_of_lexbuf (Lexing.from_string s) state
-
-
-@h = tangler('src/compiler/flx_lex/flx_pretok.mli')
-@select(h)
-open Flx_token
-open Flx_ast
-
-val pre_tokens_of_filename :
-  string -> string -> string list ->
-  string option ->
-  (string -> expr_t -> expr_t) ->
-  string list -> (* auto imports *)
-  token list
-
-val pre_tokens_of_string :
-  string -> string ->
-  (string -> expr_t -> expr_t) ->
-  token list
-
-@head(1, 'Tokeniser')
-@h = tangler('src/compiler/flx_lex/flx_tok.ml')
-@select(h)
-open Flx_ast
-open Flx_exceptions
-open List
-open Flx_srcref
-open Flx_token
-
-let dyphack (ls : ( 'a * string) list) : 'a =
-  match ls with
-  | [x,_] -> x
-  | _ -> failwith "Dypgen parser failed"
-
-let print_pre_token t =
-  let emit t = print_string (Flx_prelex.string_of_token t) in
-    begin match t with
-    | COMMENT_NEWLINE s ->
-      print_endline ("//" ^ s);
-
-    | NEWLINE ->
-      print_endline ""
-
-    | ENDMARKER -> print_endline "<<EOF>>"
-    | _ -> emit t
-    end;
-    flush stdout
-
-let print_pre_tokens ts =
-  if (length ts) = 0
-  then print_string "<Empty pretoken list>";
-  print_string "   1: ";
-  iter print_pre_token ts
-
-let print_tokens ts =
-  let lineno = ref 0 in
-  let indent = ref 0 in
-  let emit t =
-    print_string ((Flx_prelex.string_of_token t) ^ " ")
-  and emit_eol t =
-    print_endline t;
-    let s' = "    " ^ (string_of_int !lineno) in
-    let n = String.length s' in
-    print_string ((String.sub s' (n-4) 4) ^ ": ");
-    for i=0 to !indent -1 do print_string "  " done
-  in
-  let print_token t =
-    begin match t with
-    | NEWLINE  ->
-      emit_eol ("//")
-    | LBRACE _ ->
-      incr indent;
-      emit_eol "  {"
-    | RBRACE _ ->
-      decr indent;
-      emit_eol "}"
-    | ENDMARKER -> emit_eol "#<<EOF>>"
-    | _ -> emit t
-    end;
-    flush stdout
-  in
-    iter print_token ts
-;;
-
-class tokeniser t =
-object(self)
-  val mutable tokens = []
-  val mutable tokens_copy = []
-  val mutable current_token_index = 0
-  initializer tokens  <- t; tokens_copy <- t
-
-  method token_peek (dummy :Lexing.lexbuf) =
-    hd tokens
-
-  method token_src (dummy :Lexing.lexbuf) =
-    if List.length tokens = 0 then begin
-      print_endline "Tokeniser: Run out of tokens!";
-      ENDMARKER
-    end else
-    let tmp = hd tokens in
-    tokens <- tl tokens;
-    current_token_index <- current_token_index + 1;
-    tmp
-
-  method put_back (x:token) =
-    tokens <- x :: tokens;
-    current_token_index <- current_token_index - 1
-
-  method get_loc =
-    let token = nth tokens_copy current_token_index in
-    slift (Flx_prelex.src_of_token token)
-
-  method report_syntax_error =
-    print_endline "";
-    print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-    let n = length tokens_copy in
-    let first = max 0 (current_token_index - 20)
-    and last = min (n-1) (current_token_index + 20)
-    and slist = ref [] in
-    for i = first to current_token_index-1 do
-      slist := concat [!slist; [nth tokens_copy i]]
-    done;
-    print_tokens !slist;
-    print_endline "";
-
-    let j =
-      begin
-        if length tokens_copy = current_token_index
-        then begin
-          print_string "Unexpected End Of File";
-          current_token_index - 1
-        end else begin
-          print_string "Syntax Error before token ";
-          print_string (string_of_int current_token_index);
-          current_token_index
-        end
-      end
-    in
-    let token = nth tokens_copy j in
-    let sr = ref (Flx_prelex.src_of_token token) in
-    let file,line,scol,ecol = !sr in
-    if line <> 0 or j = 0 then
-      print_endline
-      (
-        " in " ^ file ^
-        ", line " ^ string_of_int line ^
-        " col " ^ string_of_int scol
-      )
-    else begin
-      let token = nth tokens_copy (j-1) in
-      sr := Flx_prelex.src_of_token token;
-      let file,line,scol,ecol = !sr in
-      print_endline
-      (
-        " in " ^ file ^
-        ", after line " ^ string_of_int line ^
-        " col " ^ string_of_int scol
-      )
-    end
-    ;
-
-    slist := [];
-    for i = current_token_index to last do
-      slist := concat [!slist; [nth tokens_copy i]]
-    done;
-    print_tokens !slist;
-    print_endline "";
-    print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-    flush stdout;
-    (*
-    clierr (slift (!sr)) "Syntax Error";
-    ()
-    *)
-
-end
-;;
-
-
-type 'a parser_t =
-  (Lexing.lexbuf  -> token) ->
-  Lexing.lexbuf ->
-  'a
-
-let parse_tokens (parser:'a parser_t) (tokens: token list) =
-  let toker = (new tokeniser tokens) in
-  try
-    parser (toker#token_src) (Lexing.from_string "dummy" )
-  with
-  | Flx_exceptions.ClientError _
-  | Flx_exceptions.ClientError2 _
-  | Flx_exceptions.ClientErrorn _ as x ->
-    (*
-    print_endline ("got client error from parse..");
-    *)
-    toker#report_syntax_error;
-    raise x
-
-  | Flx_exceptions.ParseError _ as x ->
-    (*
-    print_endline ("got ParseError from parse..");
-    *)
-    toker#report_syntax_error;
-    raise x
-
-  | Flx_exceptions.RDP_match_fail _ as x ->
-    (*
-    print_endline ("got RDP_match_fail from parse..");
-    *)
-    toker#report_syntax_error;
-    raise x
-
-  | exn ->
-    print_endline "Got unknown error from parse..";
-    print_endline (Printexc.to_string exn);
-    toker#report_syntax_error;
-    raise (Flx_exceptions.ParseError "Parsing Tokens")
-
-
-@h = tangler('src/compiler/flx_lex/flx_tok.mli')
-@select(h)
-open Flx_token
-open Flx_ast
-
-val print_pre_tokens : token list -> unit
-val print_tokens : token list -> unit
-class tokeniser :
-  token list ->
-  object
-    val mutable current_token_index : int
-    val mutable tokens : token list
-    val mutable tokens_copy : token list
-    method report_syntax_error : unit
-    method put_back : token -> unit
-    method get_loc: range_srcref
-    method token_src : Lexing.lexbuf -> token
-    method token_peek : Lexing.lexbuf -> token
-  end
-
-type 'a parser_t =
-  (Lexing.lexbuf  -> token) ->
-  Lexing.lexbuf ->
-  'a
-
-val parse_tokens:
-  'a parser_t ->
-  token list ->
-  'a
