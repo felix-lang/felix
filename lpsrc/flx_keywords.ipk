@@ -1,7 +1,7 @@
 @from config.flx_data import flx_keywords
 
 @head(1,'Keywords')
-@h = tangler('src/compiler/flx_lex/flx_keywords.ml')
+@h = tangler('src/compiler/flx_lex/flx_keywords.ml', 'data')
 @select(h)
 
 open Flx_token
@@ -37,7 +37,7 @@ let map_flx_keywords srcref lex_item =
   with Not_found -> NAME (srcref, lex_item)
 
 
-@h = tangler('src/compiler/flx_lex/flx_keywords.mli')
+@h = tangler('src/compiler/flx_lex/flx_keywords.mli', 'data')
 @select(h)
 open Flx_token
 val flx_keywords : (string * string) list

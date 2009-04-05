@@ -37,7 +37,6 @@ def build_flx_lex(ocaml, ocamllex):
     return ocaml.build_lib(path/'flx_lex',
         srcs=Path.globall(
             path / '*.ml{,i}',
-            fbuild.buildroot / path / '*.ml{,i}',
             ocamllex(path / 'flx_lex.mll'),
             dypgen(fbuild.buildroot / path / 'flx_preparse.dyp',
                 flags=['--no-undef-nt', '--pv-obj', '--noemit-token-type'])),
