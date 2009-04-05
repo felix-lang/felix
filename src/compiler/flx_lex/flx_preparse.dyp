@@ -1,10 +1,3 @@
-@from config.flx_data import flx_keywords, flx_syms
-
-@head(1,'Preprocessor Parser')
-@h = tangler('src/compiler/flx_lex/flx_preparse.dyp','data')
-
-@head(2,'Header')
-@select(h)
 %mltop {
 open Flx_token
 }
@@ -107,8 +100,6 @@ let dfltvs =
 let dummysr = "Dummy",0,0,0,0
 }
 
-@head(2,'Tokens')
-@select(h)
 
 /* special */
 %token <(Flx_ast.srcref * string)> ERRORTOKEN
@@ -143,24 +134,201 @@ let dummysr = "Dummy",0,0,0,0
 /* user defined symbols */
 %token <(Flx_ast.srcref * string * Ocs_types.code)> SCHEME_CODE
 
-@for k,v in flx_syms:
-  tangle("%token <(Flx_ast.srcref)> " + k,inhibit_sref=1)
-
-@for n,t in flx_keywords:
-  tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
-
+%token <(Flx_ast.srcref)> DOLLAR
+%token <(Flx_ast.srcref)> QUEST
+%token <(Flx_ast.srcref)> EXCLAMATION
+%token <(Flx_ast.srcref)> LPAR
+%token <(Flx_ast.srcref)> RPAR
+%token <(Flx_ast.srcref)> LSQB
+%token <(Flx_ast.srcref)> RSQB
+%token <(Flx_ast.srcref)> LBRACE
+%token <(Flx_ast.srcref)> RBRACE
+%token <(Flx_ast.srcref)> COLON
+%token <(Flx_ast.srcref)> COMMA
+%token <(Flx_ast.srcref)> SEMI
+%token <(Flx_ast.srcref)> PLUS
+%token <(Flx_ast.srcref)> MINUS
+%token <(Flx_ast.srcref)> STAR
+%token <(Flx_ast.srcref)> SLASH
+%token <(Flx_ast.srcref)> VBAR
+%token <(Flx_ast.srcref)> AMPER
+%token <(Flx_ast.srcref)> LESS
+%token <(Flx_ast.srcref)> GREATER
+%token <(Flx_ast.srcref)> EQUAL
+%token <(Flx_ast.srcref)> DOT
+%token <(Flx_ast.srcref)> PERCENT
+%token <(Flx_ast.srcref)> BACKQUOTE
+%token <(Flx_ast.srcref)> TILDE
+%token <(Flx_ast.srcref)> CIRCUMFLEX
+%token <(Flx_ast.srcref)> HASH
+%token <(Flx_ast.srcref)> DOLLARDOLLAR
+%token <(Flx_ast.srcref)> ANDLESS
+%token <(Flx_ast.srcref)> ANDGREATER
+%token <(Flx_ast.srcref)> EQEQUAL
+%token <(Flx_ast.srcref)> NOTEQUAL
+%token <(Flx_ast.srcref)> LESSEQUAL
+%token <(Flx_ast.srcref)> GREATEREQUAL
+%token <(Flx_ast.srcref)> LEFTSHIFT
+%token <(Flx_ast.srcref)> RIGHTSHIFT
+%token <(Flx_ast.srcref)> STARSTAR
+%token <(Flx_ast.srcref)> LESSCOLON
+%token <(Flx_ast.srcref)> COLONGREATER
+%token <(Flx_ast.srcref)> DOTDOT
+%token <(Flx_ast.srcref)> COLONCOLON
+%token <(Flx_ast.srcref)> PLUSPLUS
+%token <(Flx_ast.srcref)> MINUSMINUS
+%token <(Flx_ast.srcref)> PLUSEQUAL
+%token <(Flx_ast.srcref)> MINUSEQUAL
+%token <(Flx_ast.srcref)> STAREQUAL
+%token <(Flx_ast.srcref)> SLASHEQUAL
+%token <(Flx_ast.srcref)> PERCENTEQUAL
+%token <(Flx_ast.srcref)> CARETEQUAL
+%token <(Flx_ast.srcref)> VBAREQUAL
+%token <(Flx_ast.srcref)> AMPEREQUAL
+%token <(Flx_ast.srcref)> TILDEEQUAL
+%token <(Flx_ast.srcref)> COLONEQUAL
+%token <(Flx_ast.srcref)> RIGHTARROW
+%token <(Flx_ast.srcref)> EQRIGHTARROW
+%token <(Flx_ast.srcref)> LEFTARROW
+%token <(Flx_ast.srcref)> LSQBAR
+%token <(Flx_ast.srcref)> RSQBAR
+%token <(Flx_ast.srcref)> AMPERAMPER
+%token <(Flx_ast.srcref)> VBARVBAR
+%token <(Flx_ast.srcref)> SLOSHAMPER
+%token <(Flx_ast.srcref)> SLOSHVBAR
+%token <(Flx_ast.srcref)> SLOSHCIRCUMFLEX
+%token <(Flx_ast.srcref)> HASHBANG
+%token <(Flx_ast.srcref)> LEFTSHIFTEQUAL
+%token <(Flx_ast.srcref)> RIGHTSHIFTEQUAL
+%token <(Flx_ast.srcref)> LEFTRIGHTARROW
+%token <(Flx_ast.srcref)> ANDEQEQUAL
+%token <(Flx_ast.srcref)> ANDNOTEQUAL
+%token <(Flx_ast.srcref)> ANDLESSEQUAL
+%token <(Flx_ast.srcref)> ANDGREATEREQUAL
+%token <(Flx_ast.srcref)> DOTDOTDOT
+%token <(Flx_ast.srcref)> LONGRIGHTARROW
+%token <(Flx_ast.srcref)> PARSE_ACTION
+%token <(Flx_ast.srcref)> HASHBANGSLASH
+%token <(Flx_ast.srcref)> ALL
+%token <(Flx_ast.srcref)> ASSERT
+%token <(Flx_ast.srcref)> AXIOM
+%token <(Flx_ast.srcref)> BODY
+%token <(Flx_ast.srcref)> CALL
+%token <(Flx_ast.srcref)> CASE
+%token <(Flx_ast.srcref)> CASENO
+%token <(Flx_ast.srcref)> CFUNCTION
+%token <(Flx_ast.srcref)> CLASS
+%token <(Flx_ast.srcref)> COMMENT_KEYWORD
+%token <(Flx_ast.srcref)> COMPOUND
+%token <(Flx_ast.srcref)> CONST
+%token <(Flx_ast.srcref)> CPROCEDURE
+%token <(Flx_ast.srcref)> CSTRUCT
+%token <(Flx_ast.srcref)> CTOR
+%token <(Flx_ast.srcref)> CTYPES
+%token <(Flx_ast.srcref)> DEF
+%token <(Flx_ast.srcref)> DO
+%token <(Flx_ast.srcref)> DONE
+%token <(Flx_ast.srcref)> ELIF
+%token <(Flx_ast.srcref)> ELSE
+%token <(Flx_ast.srcref)> ENDCASE
+%token <(Flx_ast.srcref)> ENDIF
+%token <(Flx_ast.srcref)> ENDMATCH
+%token <(Flx_ast.srcref)> ENUM
+%token <(Flx_ast.srcref)> EXPECT
+%token <(Flx_ast.srcref)> EXPORT
+%token <(Flx_ast.srcref)> EXTERN
+%token <(Flx_ast.srcref)> FOR
+%token <(Flx_ast.srcref)> FORGET
+%token <(Flx_ast.srcref)> FORK
+%token <(Flx_ast.srcref)> FUNCTOR
+%token <(Flx_ast.srcref)> FUNCTION
+%token <(Flx_ast.srcref)> GENERATOR
+%token <(Flx_ast.srcref)> GOTO
+%token <(Flx_ast.srcref)> HALT
+%token <(Flx_ast.srcref)> HEADER
+%token <(Flx_ast.srcref)> IDENT
+%token <(Flx_ast.srcref)> INCLUDE
+%token <(Flx_ast.srcref)> INCOMPLETE
+%token <(Flx_ast.srcref)> INF
+%token <(Flx_ast.srcref)> IN
+%token <(Flx_ast.srcref)> INSTANCE
+%token <(Flx_ast.srcref)> IS
+%token <(Flx_ast.srcref)> INHERIT
+%token <(Flx_ast.srcref)> INLINE
+%token <(Flx_ast.srcref)> JUMP
+%token <(Flx_ast.srcref)> LEMMA
+%token <(Flx_ast.srcref)> LET
+%token <(Flx_ast.srcref)> LOOP
+%token <(Flx_ast.srcref)> LVAL
+%token <(Flx_ast.srcref)> MACRO
+%token <(Flx_ast.srcref)> MODULE
+%token <(Flx_ast.srcref)> NAMESPACE
+%token <(Flx_ast.srcref)> NAN
+%token <(Flx_ast.srcref)> NEW
+%token <(Flx_ast.srcref)> NOINLINE
+%token <(Flx_ast.srcref)> NONTERM
+%token <(Flx_ast.srcref)> NORETURN
+%token <(Flx_ast.srcref)> NOT
+%token <(Flx_ast.srcref)> OPEN
+%token <(Flx_ast.srcref)> PACKAGE
+%token <(Flx_ast.srcref)> POD
+%token <(Flx_ast.srcref)> PRIVATE
+%token <(Flx_ast.srcref)> PROCEDURE
+%token <(Flx_ast.srcref)> PROPERTY
+%token <(Flx_ast.srcref)> REDUCE
+%token <(Flx_ast.srcref)> REF
+%token <(Flx_ast.srcref)> RENAME
+%token <(Flx_ast.srcref)> REQUIRES
+%token <(Flx_ast.srcref)> RETURN
+%token <(Flx_ast.srcref)> SCHEME
+%token <(Flx_ast.srcref)> SYNTAX
+%token <(Flx_ast.srcref)> STATIC
+%token <(Flx_ast.srcref)> STRUCT
+%token <(Flx_ast.srcref)> THEN
+%token <(Flx_ast.srcref)> TODO
+%token <(Flx_ast.srcref)> TO
+%token <(Flx_ast.srcref)> TYPEDEF
+%token <(Flx_ast.srcref)> TYPE
+%token <(Flx_ast.srcref)> TYPECLASS
+%token <(Flx_ast.srcref)> UNION
+%token <(Flx_ast.srcref)> USE
+%token <(Flx_ast.srcref)> VAL
+%token <(Flx_ast.srcref)> VAR
+%token <(Flx_ast.srcref)> VIRTUAL
+%token <(Flx_ast.srcref)> WHERE
+%token <(Flx_ast.srcref)> WHEN
+%token <(Flx_ast.srcref)> WITH
+%token <(Flx_ast.srcref)> YIELD
+%token <(Flx_ast.srcref)> GC_POINTER
+%token <(Flx_ast.srcref)> GC_TYPE
+%token <(Flx_ast.srcref)> SVC
+%token <(Flx_ast.srcref)> DEREF
+%token <(Flx_ast.srcref)> AND
+%token <(Flx_ast.srcref)> AS
+%token <(Flx_ast.srcref)> CALLBACK
+%token <(Flx_ast.srcref)> CODE
+%token <(Flx_ast.srcref)> FALSE
+%token <(Flx_ast.srcref)> IF
+%token <(Flx_ast.srcref)> ISIN
+%token <(Flx_ast.srcref)> MATCH
+%token <(Flx_ast.srcref)> NOEXPAND
+%token <(Flx_ast.srcref)> OF
+%token <(Flx_ast.srcref)> OR
+%token <(Flx_ast.srcref)> THE
+%token <(Flx_ast.srcref)> TRUE
+%token <(Flx_ast.srcref)> TYPEMATCH
+%token <(Flx_ast.srcref)> TYPECASE
+%token <(Flx_ast.srcref)> WHENCE
+%token <(Flx_ast.srcref)> UNLESS
+%token <(Flx_ast.srcref)> UNDERSCORE
 %start <(Flx_ast.expr_t)> expression
 %%
 
-@head(2,'Compilation Unit')
-@select(h)
 expression:
   | old_expr ENDMARKER { $1 }
 
 /* ******************* OLD STUFF *************************** */
 
-@head(3,'Pattern Matching')
-@select(h)
 match_expr:
   | MATCH old_expr WITH matchings ENDMATCH
   {
@@ -173,12 +341,6 @@ matching:
   | VBAR pattern EQRIGHTARROW old_expr { $2, $4 }
   | VBAR EQRIGHTARROW old_expr { let sr = rstoken $1 $2 in `PAT_none sr, $3 }
 
-@doc()
-The pattern matching statment analyses the shape and contents of
-a value and selects the first matching case from the matching body.
-
-@head(4,'Patterns')
-@select(h)
 pattern:
   | as_pattern WHEN old_expr
     {
@@ -883,5 +1045,3 @@ epsilon: | {()}
 %mlitop {
 open Flx_token
 }
-
-
