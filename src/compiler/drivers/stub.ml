@@ -1,7 +1,3 @@
-@head(1,'Stub mainline')
-Used for misc testing of Ocaml things.
-@h=tangler('src/compiler/drivers/stub.ml')
-@select(h)
 open Flx_types
 ;;
 let pe x = print_endline x
@@ -158,4 +154,3 @@ print_endline ("u4="^Flx_print.string_of_btypecode syms.Flx_mtypes2.dfns u4);;
 
 
 *)
-

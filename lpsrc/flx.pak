@@ -214,12 +214,5 @@ let set_version () =
 @include_file ('flx_tcdoc.ipk')
 @pop_head()
 
-@head(2,'Stub mainline')
-This is a just a file for writing
-mini tests of various ocaml functions
-of the compiler. I should probably
-create a file here for unit tests.
-@include_file ('flx_stub.ipk')
-
 @head(2,'Tools')
 @include_file ('flx_docgen.ipk')
