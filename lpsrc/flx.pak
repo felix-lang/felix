@@ -211,7 +211,6 @@ let set_version () =
 @head(2,'The front end')
 @push_head()
 @include_file ('flx_pdoc.ipk')
-@include_file ('flx_parser.ipk')
 @include_file ('flx_tcdoc.ipk')
 @pop_head()
 

@@ -1,10 +1,3 @@
-@from config.flx_data import flx_keywords, flx_syms
-
-@head(1,'Parser')
-@h = tangler('src/compiler/flx_parse/flx_parse.dyp','data')
-
-@head(2,'Header')
-@select(h)
 %mltop {
 open Flx_token
 open Flx_mtypes2
@@ -627,8 +620,6 @@ let dyp_merge_Obj_statement_star ol =
 
 }
 
-@head(2,'Tokens')
-@select(h)
 
 /* special */
 %token <(Flx_ast.srcref * string)> ERRORTOKEN
@@ -662,14 +653,380 @@ let dyp_merge_Obj_statement_star ol =
 
 %token <(Flx_ast.srcref * string * Ocs_types.code)> SCHEME_CODE
 
-@for k,v in flx_syms:
-  tangle("%token <(Flx_ast.srcref)> " + k,inhibit_sref=1)
-  tangle("%constructor Obj_keyword %for " + k,inhibit_sref=1)
-
-@for n,t in flx_keywords:
-  tangle("%token <(Flx_ast.srcref)> " + t,inhibit_sref=1)
-  tangle("%constructor Obj_keyword %for " + t,inhibit_sref=1)
-
+%token <(Flx_ast.srcref)> DOLLAR
+%constructor Obj_keyword %for DOLLAR
+%token <(Flx_ast.srcref)> QUEST
+%constructor Obj_keyword %for QUEST
+%token <(Flx_ast.srcref)> EXCLAMATION
+%constructor Obj_keyword %for EXCLAMATION
+%token <(Flx_ast.srcref)> LPAR
+%constructor Obj_keyword %for LPAR
+%token <(Flx_ast.srcref)> RPAR
+%constructor Obj_keyword %for RPAR
+%token <(Flx_ast.srcref)> LSQB
+%constructor Obj_keyword %for LSQB
+%token <(Flx_ast.srcref)> RSQB
+%constructor Obj_keyword %for RSQB
+%token <(Flx_ast.srcref)> LBRACE
+%constructor Obj_keyword %for LBRACE
+%token <(Flx_ast.srcref)> RBRACE
+%constructor Obj_keyword %for RBRACE
+%token <(Flx_ast.srcref)> COLON
+%constructor Obj_keyword %for COLON
+%token <(Flx_ast.srcref)> COMMA
+%constructor Obj_keyword %for COMMA
+%token <(Flx_ast.srcref)> SEMI
+%constructor Obj_keyword %for SEMI
+%token <(Flx_ast.srcref)> PLUS
+%constructor Obj_keyword %for PLUS
+%token <(Flx_ast.srcref)> MINUS
+%constructor Obj_keyword %for MINUS
+%token <(Flx_ast.srcref)> STAR
+%constructor Obj_keyword %for STAR
+%token <(Flx_ast.srcref)> SLASH
+%constructor Obj_keyword %for SLASH
+%token <(Flx_ast.srcref)> VBAR
+%constructor Obj_keyword %for VBAR
+%token <(Flx_ast.srcref)> AMPER
+%constructor Obj_keyword %for AMPER
+%token <(Flx_ast.srcref)> LESS
+%constructor Obj_keyword %for LESS
+%token <(Flx_ast.srcref)> GREATER
+%constructor Obj_keyword %for GREATER
+%token <(Flx_ast.srcref)> EQUAL
+%constructor Obj_keyword %for EQUAL
+%token <(Flx_ast.srcref)> DOT
+%constructor Obj_keyword %for DOT
+%token <(Flx_ast.srcref)> PERCENT
+%constructor Obj_keyword %for PERCENT
+%token <(Flx_ast.srcref)> BACKQUOTE
+%constructor Obj_keyword %for BACKQUOTE
+%token <(Flx_ast.srcref)> TILDE
+%constructor Obj_keyword %for TILDE
+%token <(Flx_ast.srcref)> CIRCUMFLEX
+%constructor Obj_keyword %for CIRCUMFLEX
+%token <(Flx_ast.srcref)> HASH
+%constructor Obj_keyword %for HASH
+%token <(Flx_ast.srcref)> DOLLARDOLLAR
+%constructor Obj_keyword %for DOLLARDOLLAR
+%token <(Flx_ast.srcref)> ANDLESS
+%constructor Obj_keyword %for ANDLESS
+%token <(Flx_ast.srcref)> ANDGREATER
+%constructor Obj_keyword %for ANDGREATER
+%token <(Flx_ast.srcref)> EQEQUAL
+%constructor Obj_keyword %for EQEQUAL
+%token <(Flx_ast.srcref)> NOTEQUAL
+%constructor Obj_keyword %for NOTEQUAL
+%token <(Flx_ast.srcref)> LESSEQUAL
+%constructor Obj_keyword %for LESSEQUAL
+%token <(Flx_ast.srcref)> GREATEREQUAL
+%constructor Obj_keyword %for GREATEREQUAL
+%token <(Flx_ast.srcref)> LEFTSHIFT
+%constructor Obj_keyword %for LEFTSHIFT
+%token <(Flx_ast.srcref)> RIGHTSHIFT
+%constructor Obj_keyword %for RIGHTSHIFT
+%token <(Flx_ast.srcref)> STARSTAR
+%constructor Obj_keyword %for STARSTAR
+%token <(Flx_ast.srcref)> LESSCOLON
+%constructor Obj_keyword %for LESSCOLON
+%token <(Flx_ast.srcref)> COLONGREATER
+%constructor Obj_keyword %for COLONGREATER
+%token <(Flx_ast.srcref)> DOTDOT
+%constructor Obj_keyword %for DOTDOT
+%token <(Flx_ast.srcref)> COLONCOLON
+%constructor Obj_keyword %for COLONCOLON
+%token <(Flx_ast.srcref)> PLUSPLUS
+%constructor Obj_keyword %for PLUSPLUS
+%token <(Flx_ast.srcref)> MINUSMINUS
+%constructor Obj_keyword %for MINUSMINUS
+%token <(Flx_ast.srcref)> PLUSEQUAL
+%constructor Obj_keyword %for PLUSEQUAL
+%token <(Flx_ast.srcref)> MINUSEQUAL
+%constructor Obj_keyword %for MINUSEQUAL
+%token <(Flx_ast.srcref)> STAREQUAL
+%constructor Obj_keyword %for STAREQUAL
+%token <(Flx_ast.srcref)> SLASHEQUAL
+%constructor Obj_keyword %for SLASHEQUAL
+%token <(Flx_ast.srcref)> PERCENTEQUAL
+%constructor Obj_keyword %for PERCENTEQUAL
+%token <(Flx_ast.srcref)> CARETEQUAL
+%constructor Obj_keyword %for CARETEQUAL
+%token <(Flx_ast.srcref)> VBAREQUAL
+%constructor Obj_keyword %for VBAREQUAL
+%token <(Flx_ast.srcref)> AMPEREQUAL
+%constructor Obj_keyword %for AMPEREQUAL
+%token <(Flx_ast.srcref)> TILDEEQUAL
+%constructor Obj_keyword %for TILDEEQUAL
+%token <(Flx_ast.srcref)> COLONEQUAL
+%constructor Obj_keyword %for COLONEQUAL
+%token <(Flx_ast.srcref)> RIGHTARROW
+%constructor Obj_keyword %for RIGHTARROW
+%token <(Flx_ast.srcref)> EQRIGHTARROW
+%constructor Obj_keyword %for EQRIGHTARROW
+%token <(Flx_ast.srcref)> LEFTARROW
+%constructor Obj_keyword %for LEFTARROW
+%token <(Flx_ast.srcref)> LSQBAR
+%constructor Obj_keyword %for LSQBAR
+%token <(Flx_ast.srcref)> RSQBAR
+%constructor Obj_keyword %for RSQBAR
+%token <(Flx_ast.srcref)> AMPERAMPER
+%constructor Obj_keyword %for AMPERAMPER
+%token <(Flx_ast.srcref)> VBARVBAR
+%constructor Obj_keyword %for VBARVBAR
+%token <(Flx_ast.srcref)> SLOSHAMPER
+%constructor Obj_keyword %for SLOSHAMPER
+%token <(Flx_ast.srcref)> SLOSHVBAR
+%constructor Obj_keyword %for SLOSHVBAR
+%token <(Flx_ast.srcref)> SLOSHCIRCUMFLEX
+%constructor Obj_keyword %for SLOSHCIRCUMFLEX
+%token <(Flx_ast.srcref)> HASHBANG
+%constructor Obj_keyword %for HASHBANG
+%token <(Flx_ast.srcref)> LEFTSHIFTEQUAL
+%constructor Obj_keyword %for LEFTSHIFTEQUAL
+%token <(Flx_ast.srcref)> RIGHTSHIFTEQUAL
+%constructor Obj_keyword %for RIGHTSHIFTEQUAL
+%token <(Flx_ast.srcref)> LEFTRIGHTARROW
+%constructor Obj_keyword %for LEFTRIGHTARROW
+%token <(Flx_ast.srcref)> ANDEQEQUAL
+%constructor Obj_keyword %for ANDEQEQUAL
+%token <(Flx_ast.srcref)> ANDNOTEQUAL
+%constructor Obj_keyword %for ANDNOTEQUAL
+%token <(Flx_ast.srcref)> ANDLESSEQUAL
+%constructor Obj_keyword %for ANDLESSEQUAL
+%token <(Flx_ast.srcref)> ANDGREATEREQUAL
+%constructor Obj_keyword %for ANDGREATEREQUAL
+%token <(Flx_ast.srcref)> DOTDOTDOT
+%constructor Obj_keyword %for DOTDOTDOT
+%token <(Flx_ast.srcref)> LONGRIGHTARROW
+%constructor Obj_keyword %for LONGRIGHTARROW
+%token <(Flx_ast.srcref)> PARSE_ACTION
+%constructor Obj_keyword %for PARSE_ACTION
+%token <(Flx_ast.srcref)> HASHBANGSLASH
+%constructor Obj_keyword %for HASHBANGSLASH
+%token <(Flx_ast.srcref)> ALL
+%constructor Obj_keyword %for ALL
+%token <(Flx_ast.srcref)> ASSERT
+%constructor Obj_keyword %for ASSERT
+%token <(Flx_ast.srcref)> AXIOM
+%constructor Obj_keyword %for AXIOM
+%token <(Flx_ast.srcref)> BODY
+%constructor Obj_keyword %for BODY
+%token <(Flx_ast.srcref)> CALL
+%constructor Obj_keyword %for CALL
+%token <(Flx_ast.srcref)> CASE
+%constructor Obj_keyword %for CASE
+%token <(Flx_ast.srcref)> CASENO
+%constructor Obj_keyword %for CASENO
+%token <(Flx_ast.srcref)> CFUNCTION
+%constructor Obj_keyword %for CFUNCTION
+%token <(Flx_ast.srcref)> CLASS
+%constructor Obj_keyword %for CLASS
+%token <(Flx_ast.srcref)> COMMENT_KEYWORD
+%constructor Obj_keyword %for COMMENT_KEYWORD
+%token <(Flx_ast.srcref)> COMPOUND
+%constructor Obj_keyword %for COMPOUND
+%token <(Flx_ast.srcref)> CONST
+%constructor Obj_keyword %for CONST
+%token <(Flx_ast.srcref)> CPROCEDURE
+%constructor Obj_keyword %for CPROCEDURE
+%token <(Flx_ast.srcref)> CSTRUCT
+%constructor Obj_keyword %for CSTRUCT
+%token <(Flx_ast.srcref)> CTOR
+%constructor Obj_keyword %for CTOR
+%token <(Flx_ast.srcref)> CTYPES
+%constructor Obj_keyword %for CTYPES
+%token <(Flx_ast.srcref)> DEF
+%constructor Obj_keyword %for DEF
+%token <(Flx_ast.srcref)> DO
+%constructor Obj_keyword %for DO
+%token <(Flx_ast.srcref)> DONE
+%constructor Obj_keyword %for DONE
+%token <(Flx_ast.srcref)> ELIF
+%constructor Obj_keyword %for ELIF
+%token <(Flx_ast.srcref)> ELSE
+%constructor Obj_keyword %for ELSE
+%token <(Flx_ast.srcref)> ENDCASE
+%constructor Obj_keyword %for ENDCASE
+%token <(Flx_ast.srcref)> ENDIF
+%constructor Obj_keyword %for ENDIF
+%token <(Flx_ast.srcref)> ENDMATCH
+%constructor Obj_keyword %for ENDMATCH
+%token <(Flx_ast.srcref)> ENUM
+%constructor Obj_keyword %for ENUM
+%token <(Flx_ast.srcref)> EXPECT
+%constructor Obj_keyword %for EXPECT
+%token <(Flx_ast.srcref)> EXPORT
+%constructor Obj_keyword %for EXPORT
+%token <(Flx_ast.srcref)> EXTERN
+%constructor Obj_keyword %for EXTERN
+%token <(Flx_ast.srcref)> FOR
+%constructor Obj_keyword %for FOR
+%token <(Flx_ast.srcref)> FORGET
+%constructor Obj_keyword %for FORGET
+%token <(Flx_ast.srcref)> FORK
+%constructor Obj_keyword %for FORK
+%token <(Flx_ast.srcref)> FUNCTOR
+%constructor Obj_keyword %for FUNCTOR
+%token <(Flx_ast.srcref)> FUNCTION
+%constructor Obj_keyword %for FUNCTION
+%token <(Flx_ast.srcref)> GENERATOR
+%constructor Obj_keyword %for GENERATOR
+%token <(Flx_ast.srcref)> GOTO
+%constructor Obj_keyword %for GOTO
+%token <(Flx_ast.srcref)> HALT
+%constructor Obj_keyword %for HALT
+%token <(Flx_ast.srcref)> HEADER
+%constructor Obj_keyword %for HEADER
+%token <(Flx_ast.srcref)> IDENT
+%constructor Obj_keyword %for IDENT
+%token <(Flx_ast.srcref)> INCLUDE
+%constructor Obj_keyword %for INCLUDE
+%token <(Flx_ast.srcref)> INCOMPLETE
+%constructor Obj_keyword %for INCOMPLETE
+%token <(Flx_ast.srcref)> INF
+%constructor Obj_keyword %for INF
+%token <(Flx_ast.srcref)> IN
+%constructor Obj_keyword %for IN
+%token <(Flx_ast.srcref)> INSTANCE
+%constructor Obj_keyword %for INSTANCE
+%token <(Flx_ast.srcref)> IS
+%constructor Obj_keyword %for IS
+%token <(Flx_ast.srcref)> INHERIT
+%constructor Obj_keyword %for INHERIT
+%token <(Flx_ast.srcref)> INLINE
+%constructor Obj_keyword %for INLINE
+%token <(Flx_ast.srcref)> JUMP
+%constructor Obj_keyword %for JUMP
+%token <(Flx_ast.srcref)> LEMMA
+%constructor Obj_keyword %for LEMMA
+%token <(Flx_ast.srcref)> LET
+%constructor Obj_keyword %for LET
+%token <(Flx_ast.srcref)> LOOP
+%constructor Obj_keyword %for LOOP
+%token <(Flx_ast.srcref)> LVAL
+%constructor Obj_keyword %for LVAL
+%token <(Flx_ast.srcref)> MACRO
+%constructor Obj_keyword %for MACRO
+%token <(Flx_ast.srcref)> MODULE
+%constructor Obj_keyword %for MODULE
+%token <(Flx_ast.srcref)> NAMESPACE
+%constructor Obj_keyword %for NAMESPACE
+%token <(Flx_ast.srcref)> NAN
+%constructor Obj_keyword %for NAN
+%token <(Flx_ast.srcref)> NEW
+%constructor Obj_keyword %for NEW
+%token <(Flx_ast.srcref)> NOINLINE
+%constructor Obj_keyword %for NOINLINE
+%token <(Flx_ast.srcref)> NONTERM
+%constructor Obj_keyword %for NONTERM
+%token <(Flx_ast.srcref)> NORETURN
+%constructor Obj_keyword %for NORETURN
+%token <(Flx_ast.srcref)> NOT
+%constructor Obj_keyword %for NOT
+%token <(Flx_ast.srcref)> OPEN
+%constructor Obj_keyword %for OPEN
+%token <(Flx_ast.srcref)> PACKAGE
+%constructor Obj_keyword %for PACKAGE
+%token <(Flx_ast.srcref)> POD
+%constructor Obj_keyword %for POD
+%token <(Flx_ast.srcref)> PRIVATE
+%constructor Obj_keyword %for PRIVATE
+%token <(Flx_ast.srcref)> PROCEDURE
+%constructor Obj_keyword %for PROCEDURE
+%token <(Flx_ast.srcref)> PROPERTY
+%constructor Obj_keyword %for PROPERTY
+%token <(Flx_ast.srcref)> REDUCE
+%constructor Obj_keyword %for REDUCE
+%token <(Flx_ast.srcref)> REF
+%constructor Obj_keyword %for REF
+%token <(Flx_ast.srcref)> RENAME
+%constructor Obj_keyword %for RENAME
+%token <(Flx_ast.srcref)> REQUIRES
+%constructor Obj_keyword %for REQUIRES
+%token <(Flx_ast.srcref)> RETURN
+%constructor Obj_keyword %for RETURN
+%token <(Flx_ast.srcref)> SCHEME
+%constructor Obj_keyword %for SCHEME
+%token <(Flx_ast.srcref)> SYNTAX
+%constructor Obj_keyword %for SYNTAX
+%token <(Flx_ast.srcref)> STATIC
+%constructor Obj_keyword %for STATIC
+%token <(Flx_ast.srcref)> STRUCT
+%constructor Obj_keyword %for STRUCT
+%token <(Flx_ast.srcref)> THEN
+%constructor Obj_keyword %for THEN
+%token <(Flx_ast.srcref)> TODO
+%constructor Obj_keyword %for TODO
+%token <(Flx_ast.srcref)> TO
+%constructor Obj_keyword %for TO
+%token <(Flx_ast.srcref)> TYPEDEF
+%constructor Obj_keyword %for TYPEDEF
+%token <(Flx_ast.srcref)> TYPE
+%constructor Obj_keyword %for TYPE
+%token <(Flx_ast.srcref)> TYPECLASS
+%constructor Obj_keyword %for TYPECLASS
+%token <(Flx_ast.srcref)> UNION
+%constructor Obj_keyword %for UNION
+%token <(Flx_ast.srcref)> USE
+%constructor Obj_keyword %for USE
+%token <(Flx_ast.srcref)> VAL
+%constructor Obj_keyword %for VAL
+%token <(Flx_ast.srcref)> VAR
+%constructor Obj_keyword %for VAR
+%token <(Flx_ast.srcref)> VIRTUAL
+%constructor Obj_keyword %for VIRTUAL
+%token <(Flx_ast.srcref)> WHERE
+%constructor Obj_keyword %for WHERE
+%token <(Flx_ast.srcref)> WHEN
+%constructor Obj_keyword %for WHEN
+%token <(Flx_ast.srcref)> WITH
+%constructor Obj_keyword %for WITH
+%token <(Flx_ast.srcref)> YIELD
+%constructor Obj_keyword %for YIELD
+%token <(Flx_ast.srcref)> GC_POINTER
+%constructor Obj_keyword %for GC_POINTER
+%token <(Flx_ast.srcref)> GC_TYPE
+%constructor Obj_keyword %for GC_TYPE
+%token <(Flx_ast.srcref)> SVC
+%constructor Obj_keyword %for SVC
+%token <(Flx_ast.srcref)> DEREF
+%constructor Obj_keyword %for DEREF
+%token <(Flx_ast.srcref)> AND
+%constructor Obj_keyword %for AND
+%token <(Flx_ast.srcref)> AS
+%constructor Obj_keyword %for AS
+%token <(Flx_ast.srcref)> CALLBACK
+%constructor Obj_keyword %for CALLBACK
+%token <(Flx_ast.srcref)> CODE
+%constructor Obj_keyword %for CODE
+%token <(Flx_ast.srcref)> FALSE
+%constructor Obj_keyword %for FALSE
+%token <(Flx_ast.srcref)> IF
+%constructor Obj_keyword %for IF
+%token <(Flx_ast.srcref)> ISIN
+%constructor Obj_keyword %for ISIN
+%token <(Flx_ast.srcref)> MATCH
+%constructor Obj_keyword %for MATCH
+%token <(Flx_ast.srcref)> NOEXPAND
+%constructor Obj_keyword %for NOEXPAND
+%token <(Flx_ast.srcref)> OF
+%constructor Obj_keyword %for OF
+%token <(Flx_ast.srcref)> OR
+%constructor Obj_keyword %for OR
+%token <(Flx_ast.srcref)> THE
+%constructor Obj_keyword %for THE
+%token <(Flx_ast.srcref)> TRUE
+%constructor Obj_keyword %for TRUE
+%token <(Flx_ast.srcref)> TYPEMATCH
+%constructor Obj_keyword %for TYPEMATCH
+%token <(Flx_ast.srcref)> TYPECASE
+%constructor Obj_keyword %for TYPECASE
+%token <(Flx_ast.srcref)> WHENCE
+%constructor Obj_keyword %for WHENCE
+%token <(Flx_ast.srcref)> UNLESS
+%constructor Obj_keyword %for UNLESS
+%token <(Flx_ast.srcref)> UNDERSCORE
+%constructor Obj_keyword %for UNDERSCORE
 /* top level entry */
 %constructor Obj_sexpr %for sterm
 
@@ -700,8 +1057,6 @@ let dyp_merge_Obj_statement_star ol =
 %start <(Flx_ast.compilation_unit_t)> compilation_unit
 %%
 
-@head(2,'Compilation Unit')
-@select(h)
 
 compilation_unit:
   | statements ENDMARKER { $1 }
@@ -725,13 +1080,6 @@ statement_star:
 
  | { 0,[] }
 
-@doc()
-A compilation unit is just a sequence of statements.
-Executable statements (or parts thereof) form the initialisation
-code of the compilation unit.
-
-@head(2,'Statement')
-@select(h)
 dyprods:
    | dyprods dyprod { $2 :: $1 }
    | { [] }
@@ -847,13 +1195,187 @@ rhs_atom:
   | STRING { let sr,s = $1 in STRING (sr,s) } /* the string as an identifier */
   | IDENT { NAME ($1,"identifier") }
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
-@for s,t in flx_keywords:
-  if t != "IDENT":
-    tangle("  | " +t+ " { " + t + " $1 }")
-@for t,s in flx_syms:
-  if t not in ["PARSE_ACTION","VBAR","LPAR","RPAR","SEMI"]:
-    tangle("  | " +t+ " { " + t + " $1 }")
-
+  | ALL { ALL $1 }
+  | ASSERT { ASSERT $1 }
+  | AXIOM { AXIOM $1 }
+  | BODY { BODY $1 }
+  | CALL { CALL $1 }
+  | CASE { CASE $1 }
+  | CASENO { CASENO $1 }
+  | CFUNCTION { CFUNCTION $1 }
+  | CLASS { CLASS $1 }
+  | COMMENT_KEYWORD { COMMENT_KEYWORD $1 }
+  | COMPOUND { COMPOUND $1 }
+  | CONST { CONST $1 }
+  | CPROCEDURE { CPROCEDURE $1 }
+  | CSTRUCT { CSTRUCT $1 }
+  | CTOR { CTOR $1 }
+  | CTYPES { CTYPES $1 }
+  | DEF { DEF $1 }
+  | DO { DO $1 }
+  | DONE { DONE $1 }
+  | ELIF { ELIF $1 }
+  | ELSE { ELSE $1 }
+  | ENDCASE { ENDCASE $1 }
+  | ENDIF { ENDIF $1 }
+  | ENDMATCH { ENDMATCH $1 }
+  | ENUM { ENUM $1 }
+  | EXPECT { EXPECT $1 }
+  | EXPORT { EXPORT $1 }
+  | EXTERN { EXTERN $1 }
+  | FOR { FOR $1 }
+  | FORGET { FORGET $1 }
+  | FORK { FORK $1 }
+  | FUNCTOR { FUNCTOR $1 }
+  | FUNCTION { FUNCTION $1 }
+  | GENERATOR { GENERATOR $1 }
+  | GOTO { GOTO $1 }
+  | HALT { HALT $1 }
+  | HEADER { HEADER $1 }
+  | INCLUDE { INCLUDE $1 }
+  | INCOMPLETE { INCOMPLETE $1 }
+  | INF { INF $1 }
+  | IN { IN $1 }
+  | INSTANCE { INSTANCE $1 }
+  | IS { IS $1 }
+  | INHERIT { INHERIT $1 }
+  | INLINE { INLINE $1 }
+  | JUMP { JUMP $1 }
+  | LEMMA { LEMMA $1 }
+  | LET { LET $1 }
+  | LOOP { LOOP $1 }
+  | LVAL { LVAL $1 }
+  | MACRO { MACRO $1 }
+  | MODULE { MODULE $1 }
+  | NAMESPACE { NAMESPACE $1 }
+  | NAN { NAN $1 }
+  | NEW { NEW $1 }
+  | NOINLINE { NOINLINE $1 }
+  | NONTERM { NONTERM $1 }
+  | NORETURN { NORETURN $1 }
+  | NOT { NOT $1 }
+  | OPEN { OPEN $1 }
+  | PACKAGE { PACKAGE $1 }
+  | POD { POD $1 }
+  | PRIVATE { PRIVATE $1 }
+  | PROCEDURE { PROCEDURE $1 }
+  | PROPERTY { PROPERTY $1 }
+  | REDUCE { REDUCE $1 }
+  | REF { REF $1 }
+  | RENAME { RENAME $1 }
+  | REQUIRES { REQUIRES $1 }
+  | RETURN { RETURN $1 }
+  | SCHEME { SCHEME $1 }
+  | SYNTAX { SYNTAX $1 }
+  | STATIC { STATIC $1 }
+  | STRUCT { STRUCT $1 }
+  | THEN { THEN $1 }
+  | TODO { TODO $1 }
+  | TO { TO $1 }
+  | TYPEDEF { TYPEDEF $1 }
+  | TYPE { TYPE $1 }
+  | TYPECLASS { TYPECLASS $1 }
+  | UNION { UNION $1 }
+  | USE { USE $1 }
+  | VAL { VAL $1 }
+  | VAR { VAR $1 }
+  | VIRTUAL { VIRTUAL $1 }
+  | WHERE { WHERE $1 }
+  | WHEN { WHEN $1 }
+  | WITH { WITH $1 }
+  | YIELD { YIELD $1 }
+  | GC_POINTER { GC_POINTER $1 }
+  | GC_TYPE { GC_TYPE $1 }
+  | SVC { SVC $1 }
+  | DEREF { DEREF $1 }
+  | AND { AND $1 }
+  | AS { AS $1 }
+  | CALLBACK { CALLBACK $1 }
+  | CODE { CODE $1 }
+  | FALSE { FALSE $1 }
+  | IF { IF $1 }
+  | ISIN { ISIN $1 }
+  | MATCH { MATCH $1 }
+  | NOEXPAND { NOEXPAND $1 }
+  | OF { OF $1 }
+  | OR { OR $1 }
+  | THE { THE $1 }
+  | TRUE { TRUE $1 }
+  | TYPEMATCH { TYPEMATCH $1 }
+  | TYPECASE { TYPECASE $1 }
+  | WHENCE { WHENCE $1 }
+  | UNLESS { UNLESS $1 }
+  | UNDERSCORE { UNDERSCORE $1 }
+  | DOLLAR { DOLLAR $1 }
+  | QUEST { QUEST $1 }
+  | EXCLAMATION { EXCLAMATION $1 }
+  | LSQB { LSQB $1 }
+  | RSQB { RSQB $1 }
+  | LBRACE { LBRACE $1 }
+  | RBRACE { RBRACE $1 }
+  | COLON { COLON $1 }
+  | COMMA { COMMA $1 }
+  | PLUS { PLUS $1 }
+  | MINUS { MINUS $1 }
+  | STAR { STAR $1 }
+  | SLASH { SLASH $1 }
+  | AMPER { AMPER $1 }
+  | LESS { LESS $1 }
+  | GREATER { GREATER $1 }
+  | EQUAL { EQUAL $1 }
+  | DOT { DOT $1 }
+  | PERCENT { PERCENT $1 }
+  | BACKQUOTE { BACKQUOTE $1 }
+  | TILDE { TILDE $1 }
+  | CIRCUMFLEX { CIRCUMFLEX $1 }
+  | HASH { HASH $1 }
+  | DOLLARDOLLAR { DOLLARDOLLAR $1 }
+  | ANDLESS { ANDLESS $1 }
+  | ANDGREATER { ANDGREATER $1 }
+  | EQEQUAL { EQEQUAL $1 }
+  | NOTEQUAL { NOTEQUAL $1 }
+  | LESSEQUAL { LESSEQUAL $1 }
+  | GREATEREQUAL { GREATEREQUAL $1 }
+  | LEFTSHIFT { LEFTSHIFT $1 }
+  | RIGHTSHIFT { RIGHTSHIFT $1 }
+  | STARSTAR { STARSTAR $1 }
+  | LESSCOLON { LESSCOLON $1 }
+  | COLONGREATER { COLONGREATER $1 }
+  | DOTDOT { DOTDOT $1 }
+  | COLONCOLON { COLONCOLON $1 }
+  | PLUSPLUS { PLUSPLUS $1 }
+  | MINUSMINUS { MINUSMINUS $1 }
+  | PLUSEQUAL { PLUSEQUAL $1 }
+  | MINUSEQUAL { MINUSEQUAL $1 }
+  | STAREQUAL { STAREQUAL $1 }
+  | SLASHEQUAL { SLASHEQUAL $1 }
+  | PERCENTEQUAL { PERCENTEQUAL $1 }
+  | CARETEQUAL { CARETEQUAL $1 }
+  | VBAREQUAL { VBAREQUAL $1 }
+  | AMPEREQUAL { AMPEREQUAL $1 }
+  | TILDEEQUAL { TILDEEQUAL $1 }
+  | COLONEQUAL { COLONEQUAL $1 }
+  | RIGHTARROW { RIGHTARROW $1 }
+  | EQRIGHTARROW { EQRIGHTARROW $1 }
+  | LEFTARROW { LEFTARROW $1 }
+  | LSQBAR { LSQBAR $1 }
+  | RSQBAR { RSQBAR $1 }
+  | AMPERAMPER { AMPERAMPER $1 }
+  | VBARVBAR { VBARVBAR $1 }
+  | SLOSHAMPER { SLOSHAMPER $1 }
+  | SLOSHVBAR { SLOSHVBAR $1 }
+  | SLOSHCIRCUMFLEX { SLOSHCIRCUMFLEX $1 }
+  | HASHBANG { HASHBANG $1 }
+  | LEFTSHIFTEQUAL { LEFTSHIFTEQUAL $1 }
+  | RIGHTSHIFTEQUAL { RIGHTSHIFTEQUAL $1 }
+  | LEFTRIGHTARROW { LEFTRIGHTARROW $1 }
+  | ANDEQEQUAL { ANDEQEQUAL $1 }
+  | ANDNOTEQUAL { ANDNOTEQUAL $1 }
+  | ANDLESSEQUAL { ANDLESSEQUAL $1 }
+  | ANDGREATEREQUAL { ANDGREATEREQUAL $1 }
+  | DOTDOTDOT { DOTDOTDOT $1 }
+  | LONGRIGHTARROW { LONGRIGHTARROW $1 }
+  | HASHBANGSLASH { HASHBANGSLASH $1 }
 statement:
   | SCHEME STRING SEMI
     @{

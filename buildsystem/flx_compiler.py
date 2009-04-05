@@ -54,7 +54,7 @@ def build_flx_parse(ocaml, ocamllex):
     return ocaml.build_lib(path/'flx_parse',
         srcs=Path.globall(
             path / '*.ml{,i}',
-            dypgen(fbuild.buildroot / path / 'flx_parse.dyp',
+            dypgen(path / 'flx_parse.dyp',
                 flags=['--no-undef-nt', '--pv-obj', '--noemit-token-type'])),
         libs=[
             call('buildsystem.dyp.build_lib', ocaml),
