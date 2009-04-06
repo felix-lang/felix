@@ -1,0 +1,3 @@
+[submodule "fbuild"]
+	path = fbuild
+	url = http://git.felix-lang.org/r/fbuild.git
