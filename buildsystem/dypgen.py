@@ -33,11 +33,11 @@ class Builder(fbuild.db.PersistentObject):
 # ------------------------------------------------------------------------------
 
 def build_lib(ocaml):
-    path = Path('src/compiler/dyp/dyplib')
+    path = Path('src/compiler/dypgen/dyplib')
     return ocaml.build_lib(path/'dyp', Path.glob(path/'*.ml{,i}'))
 
 def build_exe(ocaml, ocamllex):
-    path = Path('src/compiler/dyp/dypgen')
+    path = Path('src/compiler/dypgen/dypgen')
     exe = ocaml.build_exe(path/'dypgen', Path.globall(
         path/'*.ml{,i}',
         ocamllex(path/'dypgen_lexer.mll'),

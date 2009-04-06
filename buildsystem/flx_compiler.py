@@ -33,7 +33,7 @@ def build_flx_version_hook(ocaml):
 
 def build_flx_lex(ocaml, ocamllex):
     path = Path('src/compiler/flx_lex')
-    dypgen = call('buildsystem.dyp.build_exe', ocaml, ocamllex)
+    dypgen = call('buildsystem.dypgen.build_exe', ocaml, ocamllex)
     return ocaml.build_lib(path/'flx_lex',
         srcs=Path.globall(
             path / '*.ml{,i}',
@@ -41,7 +41,7 @@ def build_flx_lex(ocaml, ocamllex):
             dypgen(path / 'flx_preparse.dyp',
                 flags=['--no-undef-nt', '--pv-obj', '--noemit-token-type'])),
         libs=[
-            call('buildsystem.dyp.build_lib', ocaml),
+            call('buildsystem.dypgen.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),
             call('buildsystem.sex.build', ocaml, ocamllex),
             build_flx_misc(ocaml),
@@ -50,14 +50,14 @@ def build_flx_lex(ocaml, ocamllex):
 
 def build_flx_parse(ocaml, ocamllex):
     path = Path('src/compiler/flx_parse')
-    dypgen = call('buildsystem.dyp.build_exe', ocaml, ocamllex)
+    dypgen = call('buildsystem.dypgen.build_exe', ocaml, ocamllex)
     return ocaml.build_lib(path/'flx_parse',
         srcs=Path.globall(
             path / '*.ml{,i}',
             dypgen(path / 'flx_parse.dyp',
                 flags=['--no-undef-nt', '--pv-obj', '--noemit-token-type'])),
         libs=[
-            call('buildsystem.dyp.build_lib', ocaml),
+            call('buildsystem.dypgen.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),
             call('buildsystem.sex.build', ocaml, ocamllex),
             build_flx_misc(ocaml),
@@ -84,7 +84,7 @@ def build_flx_desugar(ocaml, ocamllex, ocamlyacc):
             fbuild.buildroot / 'src/compiler/cil/src',
             fbuild.buildroot / 'src/compiler/cil/src/frontc'],
         libs=[
-            call('buildsystem.dyp.build_lib', ocaml),
+            call('buildsystem.dypgen.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),
             call('buildsystem.sex.build', ocaml, ocamllex),
             call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
@@ -149,7 +149,7 @@ def build_flx_drivers(ocaml, ocamllex, ocamlyacc):
     libs = [
         call('buildsystem.ocs.build_lib', ocaml),
         call('buildsystem.sex.build', ocaml, ocamllex),
-        call('buildsystem.dyp.build_lib', ocaml),
+        call('buildsystem.dypgen.build_lib', ocaml),
         call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
         build_flx_misc(ocaml),
         build_flx_core(ocaml),
