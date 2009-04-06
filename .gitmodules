@@ -4,3 +4,6 @@
 [submodule "src/compiler/dypgen"]
 	path = src/compiler/dypgen
 	url = http://git.felix-lang.org/r/dypgen.git
+[submodule "src/compiler/ocs"]
+	path = src/compiler/ocs
+	url = felixgit@felix-lang.org:ocs
