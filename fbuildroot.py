@@ -261,7 +261,7 @@ def build():
         compilers.flxg, target.cxx.static, drivers)
 
     # copy files into the library
-    for module in 'flx_pthread', 'demux', 'faio', 'judy':
+    for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':
         call('buildsystem.' + module + '.build_flx', flx)
 
     flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig',
