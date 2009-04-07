@@ -1,0 +1,37 @@
+include "flx_faio";
+include "flx_stream";
+
+open Faio;
+open Flx_stream;
+open TerminalIByteStream[fd_t];
+open TerminalOByteStream[fd_t];
+
+val fnin,fnout = System::argv 1, System::argv 2;
+
+gen openi(s:string):fd_t = {
+  var f: fd_t;
+  f = Faio_posix::ropen(s);
+  if Faio_posix::invalid f do
+    print$ "Can't open input file " + s + "\n";
+    System::exit 1;
+  done;
+  return f;
+}
+
+typedef posix_permissions = Faio_posix::posix_permissions;
+
+gen openo(s:string, perm:posix_permissions):fd_t = {
+  var f: fd_t;
+  f = Faio_posix::aio_creat(s,perm);
+  if Faio_posix::invalid f do
+    print$ "Can't open output file " + s + "\n";
+    System::exit 1;
+  done;
+  return f;
+}
+
+var fin = openi(fnin);
+var fout = openo(fnout,Faio_posix::access fin);
+cat (fin,fout);
+iclose(fin);
+oclose(fout);
