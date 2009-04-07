@@ -83,8 +83,6 @@ def pre_options(parser):
             help='specify the ocaml native compiler'),
         make_option('--host-ocamllex',
             help='specify the ocaml lexer'),
-        make_option('--host-ocamlyacc',
-            help='specify the ocaml lexer'),
     ))
 
     group = parser.add_option_group('target phase options')
@@ -187,8 +185,6 @@ def config_host(build):
         flags=['-w', 'yzex', '-warn-error', 'FDPSU'])
     phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex',
         fbuild.options.host_ocamllex)
-    phase.ocamlyacc = call('fbuild.builders.ocaml.Ocamlyacc',
-        fbuild.options.host_ocamlyacc)
 
     # we prefer the native ocaml as it's much faster
     if hasattr(phase.ocaml, 'ocamlopt'):
@@ -253,7 +249,7 @@ def build():
     # --------------------------------------------------------------------------
 
     compilers = call('buildsystem.flx_compiler.build_flx_drivers',
-        host.ocaml, host.ocamllex, host.ocamlyacc)
+        host.ocaml, host.ocamllex)
 
     drivers = call('buildsystem.flx_drivers.build', target)
 
