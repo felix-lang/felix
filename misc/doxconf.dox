@@ -1,13 +1,3 @@
-@import config
-@h = tangler('spkgs/flx_doxygen.pak')
-@select(h)
-from fbuild.flxbuild.flxutil import mkdirs
-iscr_source=['lpsrc/flx_doxygen.pak']
-
-# dir must exist for doxygen to work
-mkdirs(os.path.join('doc','rtl','doxygen'))
-
-@select(tangler("misc/doxconf.dox","data"))
 # Doxyfile 1.4.4
 
 # This file describes the settings to be used by the documentation system
@@ -33,7 +23,7 @@ PROJECT_NAME           =  Felix
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-@tangle("PROJECT_NUMBER         = "+config.flx_version)
+PROJECT_NUMBER         = dev
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
