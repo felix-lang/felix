@@ -65,35 +65,20 @@ def build_flx_parse(ocaml, ocamllex):
             build_flx_version(ocaml),
             build_flx_lex(ocaml, ocamllex)])
 
-def build_flxcclib(ocaml, ocamllex, ocamlyacc):
-    path = fbuild.buildroot / 'src/compiler/flxcclib'
-    return ocaml.build_lib(path / 'flxcclib',
-        srcs=Path.glob(path / '*.ml{,i}'),
-        includes=[fbuild.buildroot / 'src/compiler/cil/src'],
-        libs=[
-            call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
-            build_flx_core(ocaml)])
-
-def build_flx_desugar(ocaml, ocamllex, ocamlyacc):
+def build_flx_desugar(ocaml, ocamllex):
     path = Path('src/compiler/flx_desugar')
 
     return ocaml.build_lib(path / 'flx_desugar',
         srcs=Path.glob(path / '*.ml{,i}'),
-        includes=[
-            fbuild.buildroot / 'src/compiler/cil/ocamlutil',
-            fbuild.buildroot / 'src/compiler/cil/src',
-            fbuild.buildroot / 'src/compiler/cil/src/frontc'],
         libs=[
             call('buildsystem.dypgen.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),
             call('buildsystem.sex.build', ocaml, ocamllex),
-            call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
             build_flx_misc(ocaml),
             build_flx_core(ocaml),
             build_flx_version(ocaml),
             build_flx_lex(ocaml, ocamllex),
-            build_flx_parse(ocaml, ocamllex),
-            build_flxcclib(ocaml, ocamllex, ocamlyacc)],
+            build_flx_parse(ocaml, ocamllex)],
         external_libs=['nums', 'unix'])
 
 def build_inria_re(ocaml):
@@ -120,7 +105,7 @@ def build_flx_frontend(ocaml):
             build_flx_core(ocaml),
             build_flx_bind(ocaml)])
 
-def build_flx_backend(ocaml, ocamllex, ocamlyacc):
+def build_flx_backend(ocaml, ocamllex):
     path = Path('src/compiler/flx_backend')
     return ocaml.build_lib(path / 'flx_backend',
         srcs=Path.globall(
@@ -130,11 +115,10 @@ def build_flx_backend(ocaml, ocamllex, ocamlyacc):
             build_flx_misc(ocaml),
             build_flx_core(ocaml),
             build_flx_bind(ocaml),
-            build_flxcclib(ocaml, ocamllex, ocamlyacc),
             build_flx_frontend(ocaml)],
         external_libs=['nums'])
 
-def build_flx_drivers(ocaml, ocamllex, ocamlyacc):
+def build_flx_drivers(ocaml, ocamllex):
     path = Path('src', 'compiler', 'drivers')
 
     lib = ocaml.build_lib(path / 'flx_driver',
@@ -144,25 +128,23 @@ def build_flx_drivers(ocaml, ocamllex, ocamlyacc):
         libs=[
             build_flx_misc(ocaml),
             build_flx_core(ocaml),
-            build_flxcclib(ocaml, ocamllex, ocamlyacc)])
+            build_flx_backend(ocaml, ocamllex)])
 
     libs = [
         call('buildsystem.ocs.build_lib', ocaml),
         call('buildsystem.sex.build', ocaml, ocamllex),
         call('buildsystem.dypgen.build_lib', ocaml),
-        call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
         build_flx_misc(ocaml),
         build_flx_core(ocaml),
         build_flx_version(ocaml),
         build_flx_version_hook(ocaml),
         build_flx_lex(ocaml, ocamllex),
         build_flx_parse(ocaml, ocamllex),
-        build_flxcclib(ocaml, ocamllex, ocamlyacc),
-        build_flx_desugar(ocaml, ocamllex, ocamlyacc),
+        build_flx_desugar(ocaml, ocamllex),
         build_inria_re(ocaml),
         build_flx_bind(ocaml),
         build_flx_frontend(ocaml),
-        build_flx_backend(ocaml, ocamllex, ocamlyacc),
+        build_flx_backend(ocaml, ocamllex),
         lib]
 
     external_libs = ['nums', 'unix', 'str']
