@@ -3,9 +3,6 @@
 
 @head(1,'Felix Standard Library')
 
-@include_file ('flx_stdlib_lex.ipk')
-@include_file ('flx_nugram.ipk')
-
 @select(tangler('spkgs/flx_stdlib.py'))
 import config
 
