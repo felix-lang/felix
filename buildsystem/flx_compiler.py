@@ -69,9 +69,7 @@ def build_flxcclib(ocaml, ocamllex, ocamlyacc):
     path = Path('src/compiler/flxcclib')
     return ocaml.build_lib(path / 'flxcclib',
         srcs=Path.glob(path / '*.ml{,i}'),
-        includes=[fbuild.buildroot / 'src/compiler/cil/src'],
         libs=[
-            call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
             build_flx_core(ocaml)])
 
 def build_flx_desugar(ocaml, ocamllex, ocamlyacc):
@@ -79,15 +77,10 @@ def build_flx_desugar(ocaml, ocamllex, ocamlyacc):
 
     return ocaml.build_lib(path / 'flx_desugar',
         srcs=Path.glob(path / '*.ml{,i}'),
-        includes=[
-            fbuild.buildroot / 'src/compiler/cil/ocamlutil',
-            fbuild.buildroot / 'src/compiler/cil/src',
-            fbuild.buildroot / 'src/compiler/cil/src/frontc'],
         libs=[
             call('buildsystem.dypgen.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),
             call('buildsystem.sex.build', ocaml, ocamllex),
-            call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
             build_flx_misc(ocaml),
             build_flx_core(ocaml),
             build_flx_version(ocaml),
@@ -150,7 +143,6 @@ def build_flx_drivers(ocaml, ocamllex, ocamlyacc):
         call('buildsystem.ocs.build_lib', ocaml),
         call('buildsystem.sex.build', ocaml, ocamllex),
         call('buildsystem.dypgen.build_lib', ocaml),
-        call('buildsystem.cil.build', ocaml, ocamllex, ocamlyacc),
         build_flx_misc(ocaml),
         build_flx_core(ocaml),
         build_flx_version(ocaml),

@@ -22,8 +22,6 @@ let dfltvs = [],dfltvs_aux
 
 
 open Flx_ctypes
-open Flxcc_util
-open Flx_ciltoflx
 
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =
