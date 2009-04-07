@@ -1,9 +1,6 @@
-@import config.flx_data as flx_data
-
-@select(tangler("lib/nugram.flxh"))
 
 SCHEME """
-(begin 
+(begin
   (define (first x)(car x))
   (define (second x)(cadr x))
   (define (third x)(caddr x))
@@ -219,7 +216,7 @@ SCHEME """
 """;
 
 SCHEME """
-(begin 
+(begin
   (define typenames ())
   (define (addtype t) (set! typenames (cons t typenames)))
   (define (istype) (if (member _arg typenames)_arg ()))
@@ -1261,7 +1258,27 @@ syntax cbind {
     assumed to be low, and parenthesis is always added.<p>
     <p> The precedence must be one of the following identifiers:
     <ol>
-@for i in flx_data.cprecedence: tangle ('<li>'+i+'</li>')
+<li>atom</li>
+<li>primary</li>
+<li>postfix</li>
+<li>unary</li>
+<li>cast</li>
+<li>pm</li>
+<li>mult</li>
+<li>add</li>
+<li>shift</li>
+<li>rel</li>
+<li>eq</li>
+<li>band</li>
+<li>bxor</li>
+<li>bor</li>
+<li>and</li>
+<li>xor</li>
+<li>or</li>
+<li>cond</li>
+<li>assign</li>
+<li>comma</li>
+<li>expr</li>
     </ol></p>
   """;
 
@@ -2047,14 +2064,14 @@ syntax namespaces {
 //------------------------------------------
 SCHEME """
 (for-each addtype '(
-  "tiny" "short" "int" "long" "vlong" 
+  "tiny" "short" "int" "long" "vlong"
   "utiny" "uchar" "ushort" "uint" "ulong" "uvlong"
 
   "int8" "int16" "int32" "int64"
-  "uint8" "uint16" "uint32" "uint64" 
+  "uint8" "uint16" "uint32" "uint64"
 
-  "float" "double" "ldouble" 
-  "fcomplex" "dcomplex" "lcomplex" 
+  "float" "double" "ldouble"
+  "fcomplex" "dcomplex" "lcomplex"
 
   "char" "uchar"
   "string" "ustring"
