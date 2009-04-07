@@ -1,187 +1,3 @@
-@from config.flx_data import cprecedence
-
-@head(1,"C/C++ typings")
-@h = tangler("src/compiler/flxcclib/flx_ctypes.mli")
-@select(h)
-
-type cexpr_t =
-[
-  | `Ce_atom of string
-  | `Ce_postfix of string * cexpr_t
-  | `Ce_prefix of string  * cexpr_t
-  | `Ce_infix of string * cexpr_t * cexpr_t
-
-  | `Ce_call of cexpr_t * cexpr_t list
-  | `Ce_array of cexpr_t * cexpr_t
-  | `Ce_new of cexpr_t list * string * cexpr_t list
-  | `Ce_cast of string * cexpr_t
-  | `Ce_cond of cexpr_t * cexpr_t * cexpr_t
-  | `Ce_expr of string * string
-]
-
-
-(* These are constructors for C terms representing
-   actual C types. This includes incomplete types,
-   functions and arrays (which have real types,
-   even though there are no corresponding first class values).
-
-  Note there are no refernce types, and no const types.
-*)
-
-type ctype_t =
-[
-  | `Ct_base of string
-  | `Ct_ptr of ctype_t
-  | `Ct_cptr of ctype_t
-  | `Ct_vptr of ctype_t
-  | `Ct_cvptr of ctype_t
-  | `Ct_ptm of string * ctype_t
-  | `Ct_cptm of string * ctype_t
-  | `Ct_vptm of string * ctype_t
-  | `Ct_cvptm of string * ctype_t
-  | `Ct_array of int * ctype_t
-  | `Ct_varray of ctype_t
-  | `Ct_fun of ctype_t * ctype_t list
-  | `Ct_vfun of ctype_t * ctype_t list
-    (* argument list must not be empty for varags *)
-]
-
-(* The decl type is the type term used in a declaration,
-  it is not a type, but the combination of a type
-  and an access modifier. For example:
-
-  int const * const x;
-
-  declares x to be const lvalue
-  of type pointer-const to int
-*)
-
-type cdecl_type_t =
-[
-  | `Cdt_value of ctype_t
-  | `Cdt_const of ctype_t
-  | `Cdt_volatile of ctype_t
-  | `Cdt_const_volatile of ctype_t
-  | `Cdt_ref of ctype_t
-  | `Cdt_cref of ctype_t
-  | `Cdt_vref of ctype_t
-  | `Cdt_cvref of ctype_t
-]
-
-@h = tangler("src/compiler/flxcclib/flx_ctype.mli")
-@select(h)
-open Flx_ctypes
-
-val string_of_ctype: ctype_t -> string
-val string_of_cdecl_type: string -> cdecl_type_t -> string
-
-@h = tangler("src/compiler/flxcclib/flx_ctype.ml")
-@select(h)
-open Flx_ctypes
-
-(* suffixes apply first, then dereferences so
-  int *t[2]
-
-is an array of 2 pointers, brackets are needed
-for a pointer to an array of 2 ints:
-
-  int ( *t )[2]
-
-Lower value in table indicates higher precedence.
-*)
-
-let prec = function
-| `Ct_base _ -> 0
-| `Ct_array _
-| `Ct_varray _
-| `Ct_fun _
-| `Ct_vfun _ -> 1
-| `Ct_ptr _
-| `Ct_cptr _
-| `Ct_vptr _
-| `Ct_cvptr _
-| `Ct_ptm _
-| `Ct_cptm _
-| `Ct_vptm _
-| `Ct_cvptm _ -> 2
-
-let rec plist ps =
-  String.concat ", "
-  (
-    List.map (fun t -> aux t "" ) ps
-  )
-
-
-and aux (t:ctype_t) s =
-  let br s = "(" ^ s ^ ")" in
-  match t with
-  | `Ct_base x ->
-    if String.length x = 0
-    then s
-    else if String.length s = 0 then x
-    else x ^ " " ^ s
-
-  | `Ct_ptr t -> aux t ("*"^s)
-  | `Ct_cptr t -> aux t (" const*"^s)
-  | `Ct_vptr t -> aux t (" volatile*"^s)
-  | `Ct_cvptr t -> aux t (" const volatile*"^s)
-
-  | `Ct_ptm (k,t) -> aux t (k ^ "::*" ^ s)
-  | `Ct_cptm (k,t) -> aux t ("const "^ k ^ "::*" ^ s)
-  | `Ct_vptm (k,t) -> aux t ("volatile " ^ k ^ "::*"^ s)
-  | `Ct_cvptm (k,t) -> aux t ("const volatile " ^ k ^ "::*" ^ s)
-
-  | `Ct_array (i,t) -> aux t (br s ^ "["^string_of_int i^"]" )
-  | `Ct_varray t -> aux t (br s ^ "[]")
-  | `Ct_fun (t,ps) ->
-    let args =  plist ps in
-    aux t (br s ^ "(" ^ args ^ ")" )
-
-  | `Ct_vfun (t,ps) ->
-    let args = plist ps ^ ", ..." in
-    aux t (br s ^ "(" ^ args ^ ")")
-
-let string_of_ctype t = aux t ""
-
-let string_of_cdecl_type n t =
-  match t with
-  | `Cdt_value t -> aux t n
-  | `Cdt_const t -> aux t ("const " ^ n)
-  | `Cdt_volatile t -> aux t ("volatile " ^n)
-  | `Cdt_const_volatile t -> aux t ("const volatile " ^n)
-  | `Cdt_ref t -> aux t ("& " ^ n)
-  | `Cdt_cref t -> aux t ("const &" ^n)
-  | `Cdt_vref t -> aux t ("volatile &"^n)
-  | `Cdt_cvref t -> aux t ("const volatile &"^n)
-
-@h = tangler("src/compiler/flxcclib/flx_cexpr.mli")
-@select(h)
-open Flx_ast
-open Flx_ctypes
-
-val string_of_cexpr : cexpr_t -> string
-val sc : prec_t -> cexpr_t -> string
-val ce : prec_t -> string -> cexpr_t
-
-val ce_atom : string -> cexpr_t
-val ce_postfix : string -> cexpr_t -> cexpr_t
-val ce_prefix : string -> cexpr_t -> cexpr_t
-val ce_infix : string -> cexpr_t -> cexpr_t -> cexpr_t
-val ce_call : cexpr_t -> cexpr_t list -> cexpr_t
-val ce_array : cexpr_t -> cexpr_t -> cexpr_t
-val ce_new : cexpr_t list -> string -> cexpr_t list -> cexpr_t
-val ce_cast : string -> cexpr_t -> cexpr_t
-val ce_cond : cexpr_t -> cexpr_t -> cexpr_t -> cexpr_t
-val ce_expr : prec_t -> string -> cexpr_t
-val ce_top : string -> cexpr_t
-val ce_dot : cexpr_t -> string -> cexpr_t
-val ce_arrow : cexpr_t -> string -> cexpr_t
-exception Unknown_prec of prec_t
-
-val genprec: string -> prec_t -> string * prec_t
-
-@h = tangler("src/compiler/flxcclib/flx_cexpr.ml")
-@select(h)
 open Flx_ctypes
 exception Unknown_prec of string
 
@@ -192,8 +8,27 @@ let strcat = String.concat
 let add = Hashtbl.add
 
 let precedence = [
-@for i in cprecedence: tangle ('"'+i+'";',inhibit_sref=1)
-@#
+  "atom";
+  "primary";
+  "postfix";
+  "unary";
+  "cast";
+  "pm";
+  "mult";
+  "add";
+  "shift";
+  "rel";
+  "eq";
+  "band";
+  "bxor";
+  "bor";
+  "and";
+  "xor";
+  "or";
+  "cond";
+  "assign";
+  "comma";
+  "expr";
 ]
 
 let postfix_cops = [
@@ -398,4 +233,3 @@ let ce p s = ce_expr p s
 let genprec ct prec =
   try Hashtbl.find prec_remap ct
   with Not_found -> ct,prec
-

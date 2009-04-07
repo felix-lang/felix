@@ -66,7 +66,7 @@ def build_flx_parse(ocaml, ocamllex):
             build_flx_lex(ocaml, ocamllex)])
 
 def build_flxcclib(ocaml, ocamllex, ocamlyacc):
-    path = fbuild.buildroot / 'src/compiler/flxcclib'
+    path = Path('src/compiler/flxcclib')
     return ocaml.build_lib(path / 'flxcclib',
         srcs=Path.glob(path / '*.ml{,i}'),
         includes=[fbuild.buildroot / 'src/compiler/cil/src'],

@@ -1,71 +1,3 @@
-@head(1,'Flxcc utilities')
-@h = tangler('spkgs/flxcc_util.py')
-@select(h)
-iscr_source = ["lpsrc/flxcc_util.pak"]
-
-caml_modules = [
-  'src/compiler/flxcclib/flx_ctypes',
-  'src/compiler/flxcclib/flx_ctype',
-  'src/compiler/flxcclib/flx_cexpr',
-  'src/compiler/flxcclib/flxcc_util',
-]
-
-caml_include_paths = [
-    'src/compiler/cil/src',
-    'src/compiler/cil/src/frontc',
-    'src/compiler/flx_core',
-]
-
-caml_provide_lib = 'src/compiler/flxcclib/flxcclib'
-
-pkg_requires = [
-    'cil',
-    'flx_core',
-    'flx_misc',
-]
-
-weaver_directory = 'doc/flxcc_util/'
-
-@include_file("flx_ctypes.ipk")
-
-@h = tangler("src/compiler/flxcclib/flxcc_util.mli")
-@select(h)
-open Cil
-val ptname: typeinfo -> string
-val ciname: compinfo -> string
-val einame: enuminfo -> string
-val viname: varinfo -> string
-
-val pci: compinfo -> string
-val pcci: compinfo -> string
-
-val pei: enuminfo -> string
-val pcei: enuminfo -> string
-
-val pcomp: compinfo -> string
-
-
-val soi: ikind -> string
-val sof: fkind -> string
-
-val cvqual: attributes -> string
-
-val attrof: typ -> attributes
-
-val c_name: global -> string option
-
-val achk: string -> bool
-
-val isanont: typ -> bool
-val isanon: global -> bool
-
-val is_cstruct_field: typ -> bool
-val ispublic: string -> bool
-
-val flx_name': global -> string option
-
-@h = tangler("src/compiler/flxcclib/flxcc_util.ml")
-@select(h)
 open Cil
 open Flx_ctypes
 open List
@@ -231,5 +163,3 @@ let flx_name' = function
   | GAsm _ -> None
   | GPragma _ -> None
   | GText _ -> None
-
-
