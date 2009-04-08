@@ -127,7 +127,7 @@ let scheme_run sr env (s:string):sval =
   let r :sval = scheme_eval c in
   r
 
-let cal_priority p =
+let cal_priority_relation p =
   match p with
   | `No_prio -> No_priority
   | `Eq_prio p -> Eq_priority p
@@ -171,7 +171,7 @@ let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
 
       | NONTERMINAL (sr,s,p) ->
           let nt = mapnt s in
-          let ntpri = cal_priority p in
+          let ntpri = cal_priority_relation p in
           Dyp.Non_ter (nt,ntpri)
 
       | NAME (sr,s) -> assert false
@@ -384,6 +384,11 @@ let fixup_suffix sr pcounter kind rhs =
 let fixup_prio rhs =
   let rec aux inp out = match inp with
   | [] -> rev out
+
+  (* Default relation is less equal *)
+  | NAME (sr,s) :: LSQB _ :: NAME (_,p) :: RSQB _ :: t ->
+    aux t (NONTERMINAL (sr,s,`Lesseq_prio p)::out)
+
   | NAME (sr,s) :: LSQB _ :: LESS _ :: NAME (_,p) :: RSQB _ :: t ->
     aux t (NONTERMINAL (sr,s,`Less_prio p)::out)
   | NAME (sr,s) :: LSQB _ :: LESSEQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
@@ -1247,7 +1252,6 @@ rhs_atom:
   | LEMMA { LEMMA $1 }
   | LET { LET $1 }
   | LOOP { LOOP $1 }
-  | LVAL { LVAL $1 }
   | MACRO { MACRO $1 }
   | MODULE { MODULE $1 }
   | NAMESPACE { NAMESPACE $1 }
