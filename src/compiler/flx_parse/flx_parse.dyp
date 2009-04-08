@@ -80,7 +80,7 @@ let init_env () =
 let global_data = {
   pcounter = ref 1;
   env=init_env();
-  pdebug=ref false;
+  pdebug=ref true;
 }
 let local_data = {
   dssls=Drules.empty;
@@ -207,6 +207,9 @@ let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
     let b = Buffer.create 200 in
     if !(dyp.global_data.pdebug) then
     Buffer.add_string b ("Reducing Rule for " ^ name ^ ", scm="^scm^"\n");
+
+    if !(dyp.global_data.pdebug) then
+    print_endline ("Reducing Rule for " ^ name ^ ", scm="^scm^"\n");
 
     (* let env = Ocs_env.env_copy dyp.local_data.env in *)
     (* let env = dyp.local_data.env in *)

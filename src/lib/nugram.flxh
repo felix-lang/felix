@@ -225,6 +225,40 @@ SCHEME """
 
 //------------------------------------------
 syntax expressions {
+  /* Experimentally, start coding up for priority management */
+  priority 
+/*
+    let_pri < 
+    dollar_pri < 
+    tuple_pri <
+    sor_condition_pri <
+    sand_condition_pri <
+    snot_condition_pri <
+    scomparison_pri <
+    sas_expr_pri <
+    ssetunion_pri <
+    ssetintersection_pri <
+    sarrow_pri <
+    scase_literal_pri <
+    sbor_pri <
+    sbxor_pri <
+    sband_pri <
+    sshift_pri <
+    ssum_pri <
+    ssubtraction_pri <
+    sproduct_pri <
+    s_term_pri <
+    sprefixed_pri <
+    spower_pri <
+    ssuperscript_pri <
+    srefr_pri <
+*/
+    sapplication_pri <
+    scoercion_pri <
+    sfactor_pri <
+    satom_pri
+  ;
+
   sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))";
   sexpr := slambda =># "_1";
 
@@ -247,7 +281,6 @@ syntax expressions {
     scomparison,
     sas_expr,
     ssetunion,
-    suser10,
     ssetintersection,
     sarrow,
     scase_literal
@@ -270,11 +303,7 @@ syntax expressions {
   sas_expr := sas_expr as sname =># "`(ast_as (,_1 ,_3))";
   sas_expr := ssetunion =># "_1";
 
-  ssetunion := suser10 ( || suser10)* =># "(chain 'ast_setunion _1 _2)" note "setunion";
-
-  suser10 := suser10 suser10token ssetintersection =>#
-    "`(ast_apply ,_sr ( (ast_name ,_sr ,_2 ()) (,_1 ,_3)))";
-  suser10 := ssetintersection =># "_1";
+  ssetunion := ssetintersection ( || ssetintersection)* =># "(chain 'ast_setunion _1 _2)" note "setunion";
 
   ssetintersection := sarrow (&& sarrow)* =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
 
@@ -323,7 +352,6 @@ syntax expressions {
   s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
   s_term := sprefixed =># "_1";
 
-/*  sprefixed := lval spower =># "`(ast_lvalue ,_2)"; */
   sprefixed := ! spower =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
   sprefixed := plus spower =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
   sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))" note "neg";
@@ -346,7 +374,7 @@ syntax expressions {
   srefr := _deref srefr =># "`(ast_deref ,_2)";
   srefr := new srefr =># "`(ast_new ,_2)";
   srefr := anon_value =># "_1";
-  srefr := sapplication =># "_1";
+  srefr := x[sapplication_pri] =># "_1";
 
   explain srefr """<p>Next: applications</p>""";
 
@@ -366,11 +394,6 @@ syntax expressions {
   anon_value := struct lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
     sstruct_assign := sname = sexpr ssemi =># "`(,_1 ,_3)";
 
-  satom := lpar rassign (, rassign )* rpar =>#
-    "`(ast_record ,(cons _2 (map cadr _3)))"
-  ;
-    rassign := sname = sor_condition =># "`(,_1 ,_3)";
-
   anon_value := union lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
     stype_sum_item := sname sopt_value stvarlist of sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
     stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
@@ -385,7 +408,7 @@ syntax expressions {
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
   page basic_expr = sapplication, scoercion, sfactor;
-
+/*
   sapplication := scoercion =># "_1";
   sapplication := sapplication scoercion =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
   sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
@@ -419,12 +442,28 @@ syntax expressions {
   sfactor := sfactor . shash_name =>#
     "`(ast_dot ,_sr (,_1 ,_3))))";
 
-  /*
-  sfactor := sfactor .-> ssimple_name_parts =>#
-    "`(ast_dot ,_sr ((ast_apply ,_sr (deref ,_1)) (ast_name ,_sr ,(car _3) ,(cadr _3))))";
-  */
-
   sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
+*/
+
+  x[sapplication_pri] := x[scoercion_pri] =># "_1";
+  x[sapplication_pri] := x[sapplication_pri] x[scoercion =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
+  x[sapplication_pri] := caseno x[scoercion_pri] =># "`(ast_case_index ,_2)";
+  x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_2)";
+  x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_2)";
+
+  x[scoercion_pri] := x[sfactor_pri] =># "_1";
+  x[scoercion_pri] := x[scoercion_pri] : x[sfactor_pri] =># "`(ast_coercion (,_1 ,_3))";
+  x[scoercion_pri] := ssuffixed_name =># "_1";
+
+  x[sfactor_pri] := shash_name =># "_1";
+  x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr rsqb =># "`(ast_apply ,_sr (subscript (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
+  x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
+  x[sfactor_pri] := x[sfactor_pri] . shash_name =>#
+    "`(ast_dot ,_sr (,_1 ,_3))))";
+
+  x[sfactor_pri] := x[sfactor_pri] . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
   page names =
     shash_name,
@@ -458,12 +497,20 @@ syntax expressions {
     "`(ast_lookup (,_1 ,(car _3) ,(cadr _3)))";
   squalified_name := ssimple_name_parts =>#
     "`(ast_name ,_sr ,(car _1) ,(cadr _1))";
-
+/*
   ssuffixed_name := squalified_name of sfactor =>#
+    "`(ast_suffix (,_1 ,_3))";
+*/
+  ssuffixed_name := squalified_name of x[sfactor_pri] =>#
     "`(ast_suffix (,_1 ,_3))";
 
   ssimple_name_parts := sname           =># "`(,_1 ())";
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
+
+  satom := lpar rassign (, rassign )* rpar =>#
+    "`(ast_record ,(cons _2 (map cadr _3)))"
+  ;
+    rassign := sname = sor_condition =># "`(,_1 ,_3)";
 
   satom := sliteral =># "_1";
   satom := _ =># "'ast_patany";
@@ -501,9 +548,6 @@ syntax expressions {
             `(ast_cond (,cond ,thn ,result))))))
         (fold_left f _3 _1))
       """;
-
-  satom := suserlbtoken sexpr suserrbtoken =>#
-    "`(ast_apply ,_sr ((ast_name ,_sr ,(myassoc _3 (car _1)) ()) ,_2))";
 
   page atomic = satom, sexpr_code_prefix;
 
@@ -1223,7 +1267,7 @@ syntax macros {
     smac_arg_list := lpar smac_args rpar =># "_2";
     smac_arg_list := lpar rpar =># "()";
 
-  sapplication := macro ctor sname scoercion =># "`ast_macro_ctor (,_3 ,_4))";
+  x[sapplication_pri] := macro ctor sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
 }
 
 //------------------------------------------
@@ -1546,7 +1590,7 @@ syntax executable {
   slelement := _ =># "`(Skip ,_sr)";
   slelement := lpar slexprs rpar =># "`(List ,_2)";
 
-  stlelement := slelement : sfactor =># "`(,_1 (some ,_3))";
+  stlelement := slelement : x[sfactor_pri] =># "`(,_1 (some ,_3))";
   stlelement := slelement =># "`(,_1 none)";
 
   slexprs := stlelement , slexprs =># "(cons _1 _3)";
