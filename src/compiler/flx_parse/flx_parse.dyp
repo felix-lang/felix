@@ -80,7 +80,7 @@ let init_env () =
 let global_data = {
   pcounter = ref 1;
   env=init_env();
-  pdebug=ref true;
+  pdebug=ref false;
 }
 let local_data = {
   dssls=Drules.empty;
@@ -195,7 +195,7 @@ let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
   in
   let rule = name,(List.map f rhs),priority,[] in
   if !(dyp.global_data.pdebug) then
-  print_endline ("Rule "^string_of_int pr_age ^" " ^ name ^ " := " ^
+  print_endline ("Rule "^string_of_int pr_age ^" " ^ name ^ "["^priority^"] := " ^
   catmap " " silly_strtoken rhs ^
   " =># "^scm);
   let action = fun _ avl ->
@@ -206,10 +206,10 @@ let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
     let age = ref pr_age in
     let b = Buffer.create 200 in
     if !(dyp.global_data.pdebug) then
-    Buffer.add_string b ("Reducing Rule for " ^ name ^ ", scm="^scm^"\n");
+    Buffer.add_string b ("Reducing Rule for " ^ name ^ "["^priority^"], scm="^scm^"\n");
 
     if !(dyp.global_data.pdebug) then
-    print_endline ("Reducing Rule for " ^ name ^ ", scm="^scm^"\n");
+    print_endline ("Reducing Rule for " ^ name ^ "["^priority^"] := "^ catmap " " silly_strtoken rhs^ " #scm="^scm^"\n");
 
     (* let env = Ocs_env.env_copy dyp.local_data.env in *)
     (* let env = dyp.local_data.env in *)
@@ -385,9 +385,9 @@ let fixup_prio rhs =
   let rec aux inp out = match inp with
   | [] -> rev out
 
-  (* Default relation is less equal *)
+  (* Default relation is greater equal *)
   | NAME (sr,s) :: LSQB _ :: NAME (_,p) :: RSQB _ :: t ->
-    aux t (NONTERMINAL (sr,s,`Lesseq_prio p)::out)
+    aux t (NONTERMINAL (sr,s,`Greatereq_prio p)::out)
 
   | NAME (sr,s) :: LSQB _ :: LESS _ :: NAME (_,p) :: RSQB _ :: t ->
     aux t (NONTERMINAL (sr,s,`Less_prio p)::out)
@@ -590,8 +590,10 @@ let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
 
 let dyp_merge_Obj_sexpr ol =
  match ol with
- | []
- | [_] -> assert false
+ | [] -> assert false
+(* | [_] -> assert false *)
+ | [ntt,gd,ld] -> [ntt],gd,ld
+
  | h :: t ->
    match fold_left smerge h t with
    ntt,gd,ld -> [ntt],gd,ld
