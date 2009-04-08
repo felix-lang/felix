@@ -460,10 +460,10 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
   x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
   x[sfactor_pri] := x[sfactor_pri] . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
+  x[sfactor_pri] := x[sfactor_pri] . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
   x[sfactor_pri] := x[sfactor_pri] . shash_name =>#
     "`(ast_dot ,_sr (,_1 ,_3))))";
 
-  x[sfactor_pri] := x[sfactor_pri] . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
   page names =
     shash_name,
