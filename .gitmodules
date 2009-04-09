@@ -6,4 +6,4 @@
 	url = http://git.felix-lang.org/r/dypgen.git
 [submodule "src/compiler/ocs"]
 	path = src/compiler/ocs
-	url = felixgit@felix-lang.org:ocs
+	url = http://git.felix-lang.org/r/ocs.git
