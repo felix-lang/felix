@@ -228,6 +228,7 @@ syntax expressions {
   /* Experimentally, start coding up for priority management */
   priority 
 /*
+*/
     let_pri < 
     dollar_pri < 
     tuple_pri <
@@ -252,13 +253,11 @@ syntax expressions {
     spower_pri <
     ssuperscript_pri <
     srefr_pri <
-*/
     sapplication_pri <
     scoercion_pri <
-    sfactor_pri
-/* <
+    sfactor_pri <
     satom_pri
-*/
+
   ;
 
   sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))";
@@ -462,9 +461,11 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
   x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
   x[sfactor_pri] := x[sfactor_pri] . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
-  x[sfactor_pri] := x[sfactor_pri] . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
   x[sfactor_pri] := x[sfactor_pri] . shash_name =>#
     "`(ast_dot ,_sr (,_1 ,_3))))";
+  // note the next production MUST be after the previous one so it overrides the
+  // interpretation of a.(0) as an AST_dot
+  x[sfactor_pri] := x[sfactor_pri] . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
 
   page names =
