@@ -60,96 +60,94 @@ let print_tokens ts =
 ;;
 
 class tokeniser t =
-object(self)
-val mutable tokens = []
-val mutable tokens_copy = []
-val mutable current_token_index = 0
-initializer tokens  <- t; tokens_copy <- t
+  object(self)
+    val mutable tokens = []
+    val mutable tokens_copy = []
+    val mutable current_token_index = 0
+    initializer tokens  <- t; tokens_copy <- t
 
-method token_peek (dummy :Lexing.lexbuf) =
-  hd tokens
+    method token_peek (dummy :Lexing.lexbuf) =
+      hd tokens
 
-method token_src (dummy :Lexing.lexbuf) =
-  if List.length tokens = 0 then begin
-    print_endline "Tokeniser: Run out of tokens!";
-    ENDMARKER
-  end else
-  let tmp = hd tokens in
-  tokens <- tl tokens;
-  current_token_index <- current_token_index + 1;
-  tmp
+    method token_src (dummy :Lexing.lexbuf) =
+      if List.length tokens = 0 then begin
+        print_endline "Tokeniser: Run out of tokens!";
+        ENDMARKER
+      end else
+      let tmp = hd tokens in
+      tokens <- tl tokens;
+      current_token_index <- current_token_index + 1;
+      tmp
 
-method put_back (x:token) =
-  tokens <- x :: tokens;
-  current_token_index <- current_token_index - 1
+    method put_back (x:token) =
+      tokens <- x :: tokens;
+      current_token_index <- current_token_index - 1
 
-method get_loc =
-  let token = nth tokens_copy current_token_index in
-  slift (Flx_prelex.src_of_token token)
+    method get_loc =
+      let token = nth tokens_copy current_token_index in
+      slift (Flx_prelex.src_of_token token)
 
-method report_syntax_error =
-  print_endline "";
-  print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-  let n = length tokens_copy in
-  let first = max 0 (current_token_index - 20)
-  and last = min (n-1) (current_token_index + 20)
-  and slist = ref [] in
-  for i = first to current_token_index-1 do
-    slist := concat [!slist; [nth tokens_copy i]]
-  done;
-  print_tokens !slist;
-  print_endline "";
+    method report_syntax_error =
+      print_endline "";
+      print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+      let n = length tokens_copy in
+      let first = max 0 (current_token_index - 20)
+      and last = min (n-1) (current_token_index + 20)
+      and slist = ref [] in
+      for i = first to current_token_index-1 do
+        slist := concat [!slist; [nth tokens_copy i]]
+      done;
+      print_tokens !slist;
+      print_endline "";
 
-  let j =
-    begin
-      if length tokens_copy = current_token_index
-      then begin
-        print_string "Unexpected End Of File";
-        current_token_index - 1
-      end else begin
-        print_string "Syntax Error before token ";
-        print_string (string_of_int current_token_index);
-        current_token_index
-      end
-    end
-  in
-  let token = nth tokens_copy j in
-  let sr = ref (Flx_prelex.src_of_token token) in
-  let file,line,scol,ecol = !sr in
-  if line <> 0 or j = 0 then
-    print_endline
-    (
-      " in " ^ file ^
-      ", line " ^ string_of_int line ^
-      " col " ^ string_of_int scol
-    )
-  else begin
-    let token = nth tokens_copy (j-1) in
-    sr := Flx_prelex.src_of_token token;
-    let file,line,scol,ecol = !sr in
-    print_endline
-    (
-      " in " ^ file ^
-      ", after line " ^ string_of_int line ^
-      " col " ^ string_of_int scol
-    )
-  end
-  ;
+      let j =
+        begin
+          if length tokens_copy = current_token_index
+          then begin
+            print_string "Unexpected End Of File";
+            current_token_index - 1
+          end else begin
+            print_string "Syntax Error before token ";
+            print_string (string_of_int current_token_index);
+            current_token_index
+          end
+        end
+      in
+      let token = nth tokens_copy j in
+      let sr = ref (Flx_prelex.src_of_token token) in
+      let file,line,scol,ecol = !sr in
+      if line <> 0 or j = 0 then
+        print_endline
+        (
+          " in " ^ file ^
+          ", line " ^ string_of_int line ^
+          " col " ^ string_of_int scol
+        )
+      else begin
+        let token = nth tokens_copy (j-1) in
+        sr := Flx_prelex.src_of_token token;
+        let file,line,scol,ecol = !sr in
+        print_endline
+        (
+          " in " ^ file ^
+          ", after line " ^ string_of_int line ^
+          " col " ^ string_of_int scol
+        )
+      end;
 
-  slist := [];
-  for i = current_token_index to last do
-    slist := concat [!slist; [nth tokens_copy i]]
-  done;
-  print_tokens !slist;
-  print_endline "";
-  print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-  flush stdout;
-  (*
-  clierr (slift (!sr)) "Syntax Error";
-  ()
-  *)
-end
-;;
+      slist := [];
+      for i = current_token_index to last do
+        slist := concat [!slist; [nth tokens_copy i]]
+      done;
+      print_tokens !slist;
+      print_endline "";
+      print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+      flush stdout;
+      (*
+      clierr (slift (!sr)) "Syntax Error";
+      ()
+      *)
+  end;;
 
 type 'a parser_t =
   (Lexing.lexbuf  -> token) ->
