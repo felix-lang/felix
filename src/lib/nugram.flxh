@@ -228,8 +228,9 @@ syntax expressions {
   /* Experimentally, start coding up for priority management */
   priority 
     let_pri < 
-    dollar_pri < 
-    tuple_pri <
+    slambda_pri <
+    sdollar_apply_pri < 
+    stuple_pri <
     sor_condition_pri <
     sand_condition_pri <
     snot_condition_pri <
@@ -262,28 +263,14 @@ syntax expressions {
   x[let_pri] := let spattern = x[let_pri] in x[let_pri] =># "`(ast_letin (,_2 ,_4 ,_6))";
 
 
-  page tuples = sdollar_apply, stuple;
-
   x[sdollar_apply_pri] := x[stuple_pri] unless x[let_pri] then x[sdollar_apply_pri] =>#
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   x[sdollar_apply_pri] := x[stuple_pri] $ x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
   x[stuple_pri] := x[sor_condition_pri] ( , x[sor_condition_pri])* =># "(chain 'ast_tuple _1 _2)";
 
-  page logic =
-    sor_condition,
-    sand_condition,
-    snot_condition,
-    scomparison,
-    sas_expr,
-    ssetunion,
-    ssetintersection,
-    sarrow,
-    scase_literal
-  ;
-
-  x[sor_condition_pri] := x[sand_condition_pri] ( or x[sand_condition_pri])* =># "(chain 'ast_orlist _1 _2)" note "lor";
-  x[sand_condition_pri] := x[snot_condition_pri] ( and x[snot_condition_pri])* =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[sor_condition_pri] := x[sand_condition_pri] ( or x[sand_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
+  x[sand_condition_pri] := x[snot_condition_pri] ( and x[snot_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
   x[snot_condition_pri] := not x[snot_condition_pri]  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
 
   // NOTE: this version doesn't support chains like a < b < c.. too bad
@@ -295,32 +282,20 @@ syntax expressions {
   x[scomparison_pri]:= x[sas_expr_pri] > x[sas_expr_pri] =># "`(ast_apply ,_sr (gt (,_1 ,_3)))" note "gt";
 
   x[sas_expr_pri] := x[sas_expr_pri] as sname =># "`(ast_as (,_1 ,_3))";
+
   x[ssetunion_pri] := x[ssetintersection_pri] ( || x[ssetintersection_pri])* =># "(chain 'ast_setunion _1 _2)" note "setunion";
   x[ssetintersection_pri] := x[sarrow_pri] (&& x[sarrow_pri])* =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
-  x[sarrow_pri] := x[scase_literal_pri] -> x[sarrow] =># "`(ast_arrow (,_1 ,_3))";
-  x[sarrow_pri] := x[scase_literal_pri] --> x[sarrow] =># "`(ast_longarrow (,_1 ,_3))";
+  x[sarrow_pri] := x[scase_literal_pri] -> x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
+  x[sarrow_pri] := x[scase_literal_pri] --> x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
   x[scase_literal_pri] := case sinteger =># "`(ast_case_tag ,_2))";
   x[scase_literal_pri] := case sinteger of x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
   x[scase_literal_pri] := case sname of x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
-  explain scase_literal """<p>Next: bitwise</p>""";
-
-  page bitwise = sbor, sbxor, sband, sshift;
   x[sbor_pri] := x[sbor_pri] \| x[sbxor_pri] =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
   x[sbxor_pri] := x[sbxor_pri] \^ x[sband_pri] =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
   x[sband_pri] := x[sband_pri] \& x[sshift_pri] =># "`(ast_apply ,_sr (band (,_1 ,_3)))" note "band";
   x[sshift_pri] := x[sshift_pri] << x[ssum_pri] =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
   x[sshift_pri] := x[sshift_pri] >> x[ssum_pri] =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
-
-  explain sshift """<p>Next: arithmetic</p>""";
-
-  page arithmetic =
-    ssum,
-    ssubtraction,
-    sproduct,
-    s_term,
-    sprefixed
-  ;
 
   x[ssum_pri] := x[ssubtraction_pri] (plus x[ssubtraction_pri])* =># "(chain 'ast_sum _1 _2)" note "add";
   x[ssubtraction_pri] := x[ssubtraction_pri] - x[sproduct_pri] =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
@@ -335,11 +310,6 @@ syntax expressions {
   x[sprefixed_pri] := - x[spower_pri] =># "`(ast_apply ,_sr (neg ,_2))" note "neg";
   x[sprefixed_pri] := ~ x[spower_pri] =># "`(ast_apply ,_sr (bnot ,_2))" note "bnot";
 
-
-  explain sprefixed """<p>Next: exponentials</p>""";
-
-  page exponentials = spower, ssuperscript, srefr;
-
   x[spower_pri] := x[ssuperscript_pri] ** x[sprefixed_pri] =># "`(ast_apply ,_sr (pow (,_1 ,_3)))" note "pow";
   x[ssuperscript_pri] := x[ssuperscript_pri] ^ x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
@@ -348,19 +318,6 @@ syntax expressions {
   x[srefr_pri] := _deref x[srefr_pri] =># "`(ast_deref ,_2)";
   x[srefr_pri] := new x[srefr_pri] =># "`(ast_new ,_2)";
   x[srefr_pri] := anon_value =># "_1";
-
-  explain srefr """<p>Next: applications</p>""";
-
-  page structured_values =
-    anon_value,
-    sstruct_mem_decl,
-    sstruct_assign,
-    stype_sum_item,
-    stype_sum_item0,
-    stype_sum_item1,
-    stype_sum_item2,
-    stype_sum_items2
-  ;
 
   anon_value := struct lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
     sstruct_mem_decl := sname : stypeexpr ssemi =># "`(,_1 ,_3)";
@@ -380,7 +337,6 @@ syntax expressions {
     stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
-  page basic_expr = sapplication, scoercion, sfactor;
   x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
   x[sapplication_pri] := caseno x[scoercion_pri] =># "`(ast_case_index ,_2)";
   x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_2)";
@@ -521,7 +477,7 @@ syntax patterns {
 
     stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
 
-    scoercive_pattern := satomic_pattern : sarrow =># "`(pat_coercion ,_1 ,_3)";
+    scoercive_pattern := satomic_pattern : x[sarrow_pri] =># "`(pat_coercion ,_1 ,_3)";
     scoercive_pattern := satomic_pattern =># "_1";
 
     satomic_pattern := strue =># "'(pat_const_ctor (ast_case_tag 1))";
@@ -933,7 +889,7 @@ syntax statements {
   stvarlist:= lsqb stvar_comma_list stype_constraint rsqb =>#
     "(tvfixup _2 _3)";
 
-  stypeparameter:= sname : sarrow =># "`(,_1 ,_3)";
+  stypeparameter:= sname : x[sarrow_pri] =># "`(,_1 ,_3)";
   stypeparameter:= sname =># "`(,_1 typ_none)";
   stypeparameter_comma_list := sepsilon =># "()";
   stypeparameter_comma_list := stypeparameter , stypeparameter_comma_list =># "(cons _1 _3)";

@@ -206,10 +206,10 @@ let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
     let age = ref pr_age in
     let b = Buffer.create 200 in
     if !(dyp.global_data.pdebug) then
-    Buffer.add_string b ("Reducing Rule for " ^ name ^ "["^priority^"], scm="^scm^"\n");
+    Buffer.add_string b ("Reducing Rule "^string_of_int pr_age ^" for " ^ name ^ "["^priority^"], scm="^scm^"\n");
 
     if !(dyp.global_data.pdebug) then
-    print_endline ("Reducing Rule for " ^ name ^ "["^priority^"] := "^ catmap " " silly_strtoken rhs^ " #scm="^scm^"\n");
+    print_endline ("Reducing Rule "^string_of_int pr_age ^" for " ^ name ^ "["^priority^"] := "^ catmap " " silly_strtoken rhs^ " #scm="^scm^"\n");
 
     (* let env = Ocs_env.env_copy dyp.local_data.env in *)
     (* let env = dyp.local_data.env in *)
@@ -578,12 +578,13 @@ let ocs2flx sr r =
   flx
 
 let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
+(*
    if !(global_data.pdebug) then
    begin
      print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
      print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ "\nnxt=" ^ Ocs_print.string_of_ocs nsex);
    end;
-
+*)
    if oseq > nseq then oit
    else if nseq > oseq then nit
    else if osex = nsex then oit
