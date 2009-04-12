@@ -227,8 +227,6 @@ SCHEME """
 syntax expressions {
   /* Experimentally, start coding up for priority management */
   priority 
-/*
-*/
     let_pri < 
     dollar_pri < 
     tuple_pri <
@@ -255,25 +253,22 @@ syntax expressions {
     srefr_pri <
     sapplication_pri <
     scoercion_pri <
-    sfactor_pri <
-    satom_pri
-
+    sfactor_pri 
   ;
 
-  sexpr := let spattern = sexpr in sexpr =># "`(ast_letin (,_2 ,_4 ,_6))";
-  sexpr := slambda =># "_1";
+  sexpr := x[let_pri] =># "_1";
+  stypeexpr:= x[sor_condition_pri] =># "_1";
 
-  stypeexpr:= sor_condition =># "_1";
-  slambda := sdollar_apply =># "_1";
+  x[let_pri] := let spattern = x[let_pri] in x[let_pri] =># "`(ast_letin (,_2 ,_4 ,_6))";
+
 
   page tuples = sdollar_apply, stuple;
 
-  sdollar_apply := stuple unless sexpr then sdollar_apply =>#
+  x[sdollar_apply_pri] := x[stuple_pri] unless x[let_pri] then x[sdollar_apply_pri] =>#
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
-  sdollar_apply := stuple $ sdollar_apply =># "`(ast_apply ,_sr (,_1 ,_3))";
-  sdollar_apply := stuple =># "_1";
+  x[sdollar_apply_pri] := x[stuple_pri] $ x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
-  stuple := sor_condition ( , sor_condition)* =># "(chain 'ast_tuple _1 _2)";
+  x[stuple_pri] := x[sor_condition_pri] ( , x[sor_condition_pri])* =># "(chain 'ast_tuple _1 _2)";
 
   page logic =
     sor_condition,
@@ -287,51 +282,35 @@ syntax expressions {
     scase_literal
   ;
 
-  sor_condition := sand_condition ( or sand_condition)* =># "(chain 'ast_orlist _1 _2)" note "lor";
-  sand_condition := snot_condition ( and snot_condition)* =># "(chain 'ast_andlist _1 _2)" note "land";
-  snot_condition := not snot_condition  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
-  snot_condition := scomparison  =># "_1";
+  x[sor_condition_pri] := x[sand_condition_pri] ( or x[sand_condition_pri])* =># "(chain 'ast_orlist _1 _2)" note "lor";
+  x[sand_condition_pri] := x[snot_condition_pri] ( and x[snot_condition_pri])* =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[snot_condition_pri] := not x[snot_condition_pri]  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
 
   // NOTE: this version doesn't support chains like a < b < c.. too bad
-  scomparison:= sas_expr < sas_expr =># "`(ast_apply ,_sr (lt (,_1 ,_3)))" note "lt";
-  scomparison:= sas_expr <= sas_expr =># "`(ast_apply ,_sr (le (,_1 ,_3)))" note "le";
-  scomparison:= sas_expr == sas_expr =># "`(ast_apply ,_sr (eq (,_1 ,_3)))" note "eq";
-  scomparison:= sas_expr != sas_expr =># "`(ast_apply ,_sr (ne (,_1 ,_3)))" note "ne";
-  scomparison:= sas_expr >= sas_expr =># "`(ast_apply ,_sr (ge (,_1 ,_3)))" note "ge";
-  scomparison:= sas_expr > sas_expr =># "`(ast_apply ,_sr (gt (,_1 ,_3)))" note "gt";
-  scomparison:= sas_expr =># "_1";
+  x[scomparison_pri]:= x[sas_expr_pri] < x[sas_expr_pri] =># "`(ast_apply ,_sr (lt (,_1 ,_3)))" note "lt";
+  x[scomparison_pri]:= x[sas_expr_pri] <= x[sas_expr_pri] =># "`(ast_apply ,_sr (le (,_1 ,_3)))" note "le";
+  x[scomparison_pri]:= x[sas_expr_pri] == x[sas_expr_pri] =># "`(ast_apply ,_sr (eq (,_1 ,_3)))" note "eq";
+  x[scomparison_pri]:= x[sas_expr_pri] != x[sas_expr_pri] =># "`(ast_apply ,_sr (ne (,_1 ,_3)))" note "ne";
+  x[scomparison_pri]:= x[sas_expr_pri] >= x[sas_expr_pri] =># "`(ast_apply ,_sr (ge (,_1 ,_3)))" note "ge";
+  x[scomparison_pri]:= x[sas_expr_pri] > x[sas_expr_pri] =># "`(ast_apply ,_sr (gt (,_1 ,_3)))" note "gt";
 
-  sas_expr := sas_expr as sname =># "`(ast_as (,_1 ,_3))";
-  sas_expr := ssetunion =># "_1";
-
-  ssetunion := ssetintersection ( || ssetintersection)* =># "(chain 'ast_setunion _1 _2)" note "setunion";
-
-  ssetintersection := sarrow (&& sarrow)* =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
-
-  sarrow := scase_literal -> sarrow =># "`(ast_arrow (,_1 ,_3))";
-  sarrow := scase_literal --> sarrow =># "`(ast_longarrow (,_1 ,_3))";
-  sarrow := scase_literal =># "_1";
-
-  scase_literal := case sinteger =># "`(ast_case_tag ,_2))";
-  scase_literal := case sinteger of ssum =># "`(ast_typed_case ,_2 ,_4)";
-  scase_literal := case sname of ssum =># "`(ast_variant (,_2 ,_4))";
-  scase_literal := sbor =># "_1";
+  x[sas_expr_pri] := x[sas_expr_pri] as sname =># "`(ast_as (,_1 ,_3))";
+  x[ssetunion_pri] := x[ssetintersection_pri] ( || x[ssetintersection_pri])* =># "(chain 'ast_setunion _1 _2)" note "setunion";
+  x[ssetintersection_pri] := x[sarrow_pri] (&& x[sarrow_pri])* =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
+  x[sarrow_pri] := x[scase_literal_pri] -> x[sarrow] =># "`(ast_arrow (,_1 ,_3))";
+  x[sarrow_pri] := x[scase_literal_pri] --> x[sarrow] =># "`(ast_longarrow (,_1 ,_3))";
+  x[scase_literal_pri] := case sinteger =># "`(ast_case_tag ,_2))";
+  x[scase_literal_pri] := case sinteger of x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+  x[scase_literal_pri] := case sname of x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
   explain scase_literal """<p>Next: bitwise</p>""";
 
   page bitwise = sbor, sbxor, sband, sshift;
-  sbor := sbor \| sbxor =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
-  sbor := sbxor =># "_1";
-
-  sbxor := sbxor \^ sband =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
-  sbxor := sband =># "_1";
-
-  sband := sband \& sshift =># "`(ast_apply ,_sr (band (,_1 ,_3)))" note "band";
-  sband :=  sshift =># "_1";
-
-  sshift := sshift << ssum =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
-  sshift := sshift >> ssum =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
-  sshift := ssum =># "_1";
+  x[sbor_pri] := x[sbor_pri] \| x[sbxor_pri] =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
+  x[sbxor_pri] := x[sbxor_pri] \^ x[sband_pri] =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
+  x[sband_pri] := x[sband_pri] \& x[sshift_pri] =># "`(ast_apply ,_sr (band (,_1 ,_3)))" note "band";
+  x[sshift_pri] := x[sshift_pri] << x[ssum_pri] =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
+  x[sshift_pri] := x[sshift_pri] >> x[ssum_pri] =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
 
   explain sshift """<p>Next: arithmetic</p>""";
 
@@ -343,39 +322,32 @@ syntax expressions {
     sprefixed
   ;
 
-  ssum := ssubtraction (plus ssubtraction)* =># "(chain 'ast_sum _1 _2)" note "add";
-  ssubtraction := ssubtraction - sproduct =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
-  ssubtraction := sproduct =># "_1";
+  x[ssum_pri] := x[ssubtraction_pri] (plus x[ssubtraction_pri])* =># "(chain 'ast_sum _1 _2)" note "add";
+  x[ssubtraction_pri] := x[ssubtraction_pri] - x[sproduct_pri] =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
 
-  sproduct := s_term (star s_term)* =># "(chain 'ast_product _1 _2)" note "mul";
+  x[sproduct_pri] := x[s_term_pri] (star x[s_term_pri])* =># "(chain 'ast_product _1 _2)" note "mul";
 
-  s_term := s_term / spower =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
-  s_term := s_term % spower =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
-  s_term := sprefixed =># "_1";
+  x[s_term_pri] := x[s_term_pri] / x[spower_pri] =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
+  x[s_term_pri] := x[s_term_pri] % x[spower_pri] =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
 
-  sprefixed := ! spower =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
-  sprefixed := plus spower =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
-  sprefixed := - spower =># "`(ast_apply ,_sr (neg ,_2))" note "neg";
-  sprefixed := ~ spower =># "`(ast_apply ,_sr (bnot ,_2))" note "bnot";
-  sprefixed := spower =># "_1";
+  x[sprefixed_pri] := ! x[spower_pri] =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
+  x[sprefixed_pri] := plus x[spower_pri] =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
+  x[sprefixed_pri] := - x[spower_pri] =># "`(ast_apply ,_sr (neg ,_2))" note "neg";
+  x[sprefixed_pri] := ~ x[spower_pri] =># "`(ast_apply ,_sr (bnot ,_2))" note "bnot";
 
 
   explain sprefixed """<p>Next: exponentials</p>""";
 
   page exponentials = spower, ssuperscript, srefr;
 
-  spower := ssuperscript ** sprefixed =># "`(ast_apply ,_sr (pow (,_1 ,_3)))" note "pow";
-  spower := ssuperscript  =># "_1";
+  x[spower_pri] := x[ssuperscript_pri] ** x[sprefixed_pri] =># "`(ast_apply ,_sr (pow (,_1 ,_3)))" note "pow";
+  x[ssuperscript_pri] := x[ssuperscript_pri] ^ x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
-  ssuperscript := ssuperscript ^ srefr =># "`(ast_superscript (,_1 ,_3))";
-  ssuperscript := srefr =># "_1";
-
-  srefr := & srefr =># "`(ast_ref ,_2)";
-  srefr := star srefr =># "`(ast_apply ,_sr (deref ,_2))" note "deref";
-  srefr := _deref srefr =># "`(ast_deref ,_2)";
-  srefr := new srefr =># "`(ast_new ,_2)";
-  srefr := anon_value =># "_1";
-  srefr := x[sapplication_pri] =># "_1";
+  x[srefr_pri] := & x[srefr_pri] =># "`(ast_ref ,_2)";
+  x[srefr_pri] := star x[srefr_pri] =># "`(ast_apply ,_sr (deref ,_2))" note "deref";
+  x[srefr_pri] := _deref x[srefr_pri] =># "`(ast_deref ,_2)";
+  x[srefr_pri] := new x[srefr_pri] =># "`(ast_new ,_2)";
+  x[srefr_pri] := anon_value =># "_1";
 
   explain srefr """<p>Next: applications</p>""";
 
@@ -409,50 +381,11 @@ syntax expressions {
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
   page basic_expr = sapplication, scoercion, sfactor;
-/*
-  sapplication := scoercion =># "_1";
-  sapplication := sapplication scoercion =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
-  sapplication := caseno scoercion =># "`(ast_case_index ,_2)";
-  sapplication := "likely" scoercion =># "`(ast_likely ,_2)";
-  sapplication := "unlikely" scoercion =># "`(ast_unlikely ,_2)";
-
-  explain sapplication """
-  <p>The system automatically handles application of values of function type.
-  However the user can provide overloaded applicators for a value of
-  type <code>d</code> to a value of type <code>c</code> by defining
-  a function named <code>apply</code> of type <code>d -> c</code>.</p>
-  <p>In addition, a constructor for a named type <code>t</code> can be
-  defined by a function with the name <code>_ctor_t</code>.
-  This function will be invisible if the type already has a constructor
-  defined by the system, for example a <code>struct</code>. In fact there
-  is no requirement that the function return the specified type: this
-  feature is purely syntactic sugar which is used when a function is
-  expected and a named type is found. Algebraic types can be used
-  via a typedef name.</p>
-  """;
-
-  scoercion := sfactor =># "_1";
-  scoercion := scoercion : sfactor =># "`(ast_coercion (,_1 ,_3))";
-  scoercion := ssuffixed_name =># "_1";
-
-  sfactor := shash_name =># "_1";
-  sfactor := sfactor . lsqb sexpr rsqb =># "`(ast_apply ,_sr (subscript (,_1 ,_4)))";
-  sfactor := sfactor . lsqb sexpr to sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
-  sfactor := sfactor . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
-  sfactor := sfactor . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
-  sfactor := sfactor . shash_name =>#
-    "`(ast_dot ,_sr (,_1 ,_3))))";
-
-  sfactor := sfactor . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
-*/
-
-//  x[sapplication_pri] := x[scoercion_pri] =># "_1";
   x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
   x[sapplication_pri] := caseno x[scoercion_pri] =># "`(ast_case_index ,_2)";
   x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_2)";
   x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_2)";
 
-//  x[scoercion_pri] := x[sfactor_pri] =># "_1";
   x[scoercion_pri] := x[scoercion_pri] : x[sfactor_pri] =># "`(ast_coercion (,_1 ,_3))";
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
@@ -645,22 +578,22 @@ syntax functions {
   page parameters = sparameter, sparameter_comma_list, sparam_qual;
   page lambda = slambda, slambda_fun_arg, slambda_fun_args;
 
-  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type = scompound =>#
+  x[slambda_pri] := sadjectives fun stvarlist slambda_fun_args fun_return_type = scompound =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ,_7))
     """;
 
-  slambda := sadjectives fun stvarlist slambda_fun_args fun_return_type => sexpr =>#
+  x[slambda_pri] := sadjectives fun stvarlist slambda_fun_args fun_return_type => sexpr =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ((ast_fun_return ,_sr ,_7))))
     """;
 
-  slambda := sadjectives proc stvarlist slambda_fun_args scompound =>#
+  x[slambda_pri] := sadjectives proc stvarlist slambda_fun_args scompound =>#
     """
     `(ast_lambda (,_3 ,_4 ast_void ,_5))
     """;
 
-  slambda := sadjectives proc stvarlist scompound =>#
+  x[slambda_pri] := sadjectives proc stvarlist scompound =>#
     """
     `(ast_lambda (,_3 ((() none)) ast_void ,_4))
     """;
@@ -695,8 +628,8 @@ syntax functions {
   should always provide an explicit return type annotation.</p>
   """;
 
-    sparameter := sparam_qual sname : sarrow = sor_condition =># "`(,_1 ,_2 ,_4 (some ,_6))";
-    sparameter := sparam_qual sname : sarrow =># "`(,_1 ,_2 ,_4 none)";
+    sparameter := sparam_qual sname : x[sarrow_pri] = x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
+    sparameter := sparam_qual sname : x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
     sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none none)";
 
     explain sparameter """

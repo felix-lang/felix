@@ -80,7 +80,7 @@ let init_env () =
 let global_data = {
   pcounter = ref 1;
   env=init_env();
-  pdebug=ref false;
+  pdebug=ref true;
 }
 let local_data = {
   dssls=Drules.empty;
@@ -399,6 +399,10 @@ let fixup_prio rhs =
     aux t (NONTERMINAL (sr,s,`Greatereq_prio p)::out)
   | NAME (sr,s) :: LSQB _ :: EQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
     aux t (NONTERMINAL (sr,s,`Eq_prio p)::out)
+   
+  | NAME (_,s) :: LSQB sr :: _ -> 
+    clierr (slift sr) "Dangling [ in grammar"
+ 
   | NAME (sr,s) ::t ->
     aux t (NONTERMINAL (sr,s,`No_prio)::out)
   | h :: t -> aux t (h::out)
@@ -582,6 +586,7 @@ let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
 
    if oseq > nseq then oit
    else if nseq > oseq then nit
+   else if osex = nsex then oit
    else begin
      print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
      print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ "\nnxt=" ^ Ocs_print.string_of_ocs nsex);
