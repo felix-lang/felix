@@ -267,42 +267,42 @@ syntax expressions {
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   x[sdollar_apply_pri] := x[stuple_pri] $ x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
-  x[stuple_pri] := x[sor_condition_pri] ( , x[sor_condition_pri])+ =># "(chain 'ast_tuple _1 _2)";
-  x[sor_condition_pri] := x[sand_condition_pri] ( or x[sand_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
-  x[sand_condition_pri] := x[snot_condition_pri] ( and x[snot_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[stuple_pri] := x[>stuple_pri] ( , x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
+  x[sor_condition_pri] := x[>sor_condition_pri] ( or x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
+  x[sand_condition_pri] := x[>sand_condition_pri] ( and x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
   x[snot_condition_pri] := not x[snot_condition_pri]  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
 
   // NOTE: this version doesn't support chains like a < b < c.. too bad
-  x[scomparison_pri]:= x[sas_expr_pri] < x[sas_expr_pri] =># "`(ast_apply ,_sr (lt (,_1 ,_3)))" note "lt";
-  x[scomparison_pri]:= x[sas_expr_pri] <= x[sas_expr_pri] =># "`(ast_apply ,_sr (le (,_1 ,_3)))" note "le";
-  x[scomparison_pri]:= x[sas_expr_pri] == x[sas_expr_pri] =># "`(ast_apply ,_sr (eq (,_1 ,_3)))" note "eq";
-  x[scomparison_pri]:= x[sas_expr_pri] != x[sas_expr_pri] =># "`(ast_apply ,_sr (ne (,_1 ,_3)))" note "ne";
-  x[scomparison_pri]:= x[sas_expr_pri] >= x[sas_expr_pri] =># "`(ast_apply ,_sr (ge (,_1 ,_3)))" note "ge";
-  x[scomparison_pri]:= x[sas_expr_pri] > x[sas_expr_pri] =># "`(ast_apply ,_sr (gt (,_1 ,_3)))" note "gt";
+  x[scomparison_pri]:= x[>scomparison_pri] < x[>scomparison_pri] =># "`(ast_apply ,_sr (lt (,_1 ,_3)))" note "lt";
+  x[scomparison_pri]:= x[>scomparison_pri] <= x[>scomparison_pri] =># "`(ast_apply ,_sr (le (,_1 ,_3)))" note "le";
+  x[scomparison_pri]:= x[>scomparison_pri] == x[>scomparison_pri] =># "`(ast_apply ,_sr (eq (,_1 ,_3)))" note "eq";
+  x[scomparison_pri]:= x[>scomparison_pri] != x[>scomparison_pri] =># "`(ast_apply ,_sr (ne (,_1 ,_3)))" note "ne";
+  x[scomparison_pri]:= x[>scomparison_pri] >= x[>scomparison_pri] =># "`(ast_apply ,_sr (ge (,_1 ,_3)))" note "ge";
+  x[scomparison_pri]:= x[>scomparison_pri] > x[>scomparison_pri] =># "`(ast_apply ,_sr (gt (,_1 ,_3)))" note "gt";
 
   x[sas_expr_pri] := x[sas_expr_pri] as sname =># "`(ast_as (,_1 ,_3))";
 
-  x[ssetunion_pri] := x[ssetintersection_pri] ( || x[ssetintersection_pri])+ =># "(chain 'ast_setunion _1 _2)" note "setunion";
-  x[ssetintersection_pri] := x[sarrow_pri] (&& x[sarrow_pri])+ =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
+  x[ssetunion_pri] := x[>ssetunion_pri] ( || x[>ssetunion_pri])+ =># "(chain 'ast_setunion _1 _2)" note "setunion";
+  x[ssetintersection_pri] := x[>ssetintersection_pri] (&& x[>ssetintersection_pri])+ =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
   x[sarrow_pri] := x[scase_literal_pri] -> x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
   x[sarrow_pri] := x[scase_literal_pri] --> x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
   x[scase_literal_pri] := case sinteger =># "`(ast_case_tag ,_2))";
   x[scase_literal_pri] := case sinteger of x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
   x[scase_literal_pri] := case sname of x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
-  x[sbor_pri] := x[sbor_pri] \| x[sbxor_pri] =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
-  x[sbxor_pri] := x[sbxor_pri] \^ x[sband_pri] =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
-  x[sband_pri] := x[sband_pri] \& x[sshift_pri] =># "`(ast_apply ,_sr (band (,_1 ,_3)))" note "band";
-  x[sshift_pri] := x[sshift_pri] << x[ssum_pri] =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
-  x[sshift_pri] := x[sshift_pri] >> x[ssum_pri] =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
+  x[sbor_pri] := x[sbor_pri] \| x[>sbor_pri] =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
+  x[sbxor_pri] := x[sbxor_pri] \^ x[>sbxor_pri] =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
+  x[sband_pri] := x[sband_pri] \& x[>sband_pri] =># "`(ast_apply ,_sr (band (,_1 ,_3)))" note "band";
+  x[sshift_pri] := x[sshift_pri] << x[>sshift_pri] =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
+  x[sshift_pri] := x[sshift_pri] >> x[>sshift_pri] =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
 
-  x[ssum_pri] := x[ssubtraction_pri] (plus x[ssubtraction_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
+  x[ssum_pri] := x[>ssum_pri] (plus x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
   x[ssubtraction_pri] := x[ssubtraction_pri] - x[sproduct_pri] =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
 
-  x[sproduct_pri] := x[s_term_pri] (star x[s_term_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
+  x[sproduct_pri] := x[>sproduct_pri] (star x[>sproduct_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
 
-  x[s_term_pri] := x[s_term_pri] / x[spower_pri] =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
-  x[s_term_pri] := x[s_term_pri] % x[spower_pri] =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
+  x[s_term_pri] := x[s_term_pri] / x[>s_term_pri] =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
+  x[s_term_pri] := x[s_term_pri] % x[>s_term_pri] =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
 
   x[sprefixed_pri] := ! x[spower_pri] =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
   x[sprefixed_pri] := plus x[spower_pri] =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
@@ -401,7 +401,7 @@ syntax expressions {
   satom := lpar rassign (, rassign )* rpar =>#
     "`(ast_record ,(cons _2 (map cadr _3)))"
   ;
-    rassign := sname = sor_condition =># "`(,_1 ,_3)";
+    rassign := sname = x[sor_condition] =># "`(,_1 ,_3)";
 
   satom := sliteral =># "_1";
   satom := _ =># "'ast_patany";

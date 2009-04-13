@@ -1064,7 +1064,7 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_sexpr %for sintegral
 
 /* tokens replacements for special symbols used in productions */
-%constructor Obj_sexpr %for star plus quest suser10token sident
+%constructor Obj_sexpr %for star plus quest sident
 %constructor Obj_sexpr %for lbrace rbrace lpar rpar lsqb rsqb
 %constructor Obj_sexpr %for ssemi comma colon vbar
 
