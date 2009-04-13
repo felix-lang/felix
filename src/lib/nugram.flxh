@@ -267,8 +267,7 @@ syntax expressions {
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   x[sdollar_apply_pri] := x[stuple_pri] $ x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
-  x[stuple_pri] := x[sor_condition_pri] ( , x[sor_condition_pri])* =># "(chain 'ast_tuple _1 _2)";
-
+  x[stuple_pri] := x[sor_condition_pri] ( , x[sor_condition_pri])+ =># "(chain 'ast_tuple _1 _2)";
   x[sor_condition_pri] := x[sand_condition_pri] ( or x[sand_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
   x[sand_condition_pri] := x[snot_condition_pri] ( and x[snot_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
   x[snot_condition_pri] := not x[snot_condition_pri]  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
@@ -283,8 +282,8 @@ syntax expressions {
 
   x[sas_expr_pri] := x[sas_expr_pri] as sname =># "`(ast_as (,_1 ,_3))";
 
-  x[ssetunion_pri] := x[ssetintersection_pri] ( || x[ssetintersection_pri])* =># "(chain 'ast_setunion _1 _2)" note "setunion";
-  x[ssetintersection_pri] := x[sarrow_pri] (&& x[sarrow_pri])* =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
+  x[ssetunion_pri] := x[ssetintersection_pri] ( || x[ssetintersection_pri])+ =># "(chain 'ast_setunion _1 _2)" note "setunion";
+  x[ssetintersection_pri] := x[sarrow_pri] (&& x[sarrow_pri])+ =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
   x[sarrow_pri] := x[scase_literal_pri] -> x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
   x[sarrow_pri] := x[scase_literal_pri] --> x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
   x[scase_literal_pri] := case sinteger =># "`(ast_case_tag ,_2))";
@@ -297,10 +296,10 @@ syntax expressions {
   x[sshift_pri] := x[sshift_pri] << x[ssum_pri] =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
   x[sshift_pri] := x[sshift_pri] >> x[ssum_pri] =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
 
-  x[ssum_pri] := x[ssubtraction_pri] (plus x[ssubtraction_pri])* =># "(chain 'ast_sum _1 _2)" note "add";
+  x[ssum_pri] := x[ssubtraction_pri] (plus x[ssubtraction_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
   x[ssubtraction_pri] := x[ssubtraction_pri] - x[sproduct_pri] =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
 
-  x[sproduct_pri] := x[s_term_pri] (star x[s_term_pri])* =># "(chain 'ast_product _1 _2)" note "mul";
+  x[sproduct_pri] := x[s_term_pri] (star x[s_term_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
 
   x[s_term_pri] := x[s_term_pri] / x[spower_pri] =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
   x[s_term_pri] := x[s_term_pri] % x[spower_pri] =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
