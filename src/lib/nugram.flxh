@@ -1433,10 +1433,6 @@ syntax executable {
 
   sassignment := sassignexpr ssemi =># "_1";
 
-  // deprecate: class object construction, use a generator
-  sassignexpr := var sname <- new sexpr =>#
-    "(append `(ast_apply_ctor ,_sr ,_2) (splitapply _5))";
-
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
   sassignexpr := sexpr <- sexpr =>#
    """
@@ -1604,14 +1600,16 @@ syntax executable {
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
       ( ast_macro_name "break_label" "" )
       ( ast_macro_name "continue_label" "" )
-      ( ast_label ,_sr "continue_label" )
+      ( ast_macro_name "redo_label" "" )
+      ( ast_label ,_sr "redo_label" )
       ( ast_unlikely_ifnotgoto ,_sr
         (ast_apply ,_sr (le ((ast_name ,_sr ,_2 ()),_6)))
         "break_label"
       ))
       _8
-      `((ast_call ,_sr pre_incr (ast_ref (ast_name ,_sr ,_2())))
-      ( ast_goto ,_sr "continue_label" )
+      `(( ast_label ,_sr "continue_label" )
+      (ast_call ,_sr pre_incr (ast_ref (ast_name ,_sr ,_2())))
+      ( ast_goto ,_sr "redo_label" )
       ( ast_label ,_sr "break_label" ))
      ))
   """;
@@ -1622,14 +1620,16 @@ syntax executable {
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
       ( ast_macro_name "break_label" "" )
       ( ast_macro_name "continue_label" "" )
-      ( ast_label ,_sr "continue_label" )
+      ( ast_macro_name "redo_label" "" )
+      ( ast_label ,_sr "redo_label" )
       ( ast_unlikely_ifnotgoto ,_sr
         (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6)))
         "break_label"
       ))
       _8
-      `((ast_call ,_sr pre_decr (ast_ref (ast_name ,_sr ,_2 ())))
-      ( ast_goto ,_sr "continue_label" )
+      `(( ast_label ,_sr "continue_label" )
+      ( ast_call ,_sr pre_decr (ast_ref (ast_name ,_sr ,_2 ())))
+      ( ast_goto ,_sr "redo_label" )
       ( ast_label ,_sr "break_label" ))
      ))
   """;
