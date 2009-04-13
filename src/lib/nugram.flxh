@@ -1568,13 +1568,13 @@ syntax executable {
   sifgoto := "whilst" sexpr do statement* done ssemi =>#
   """
     `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" )
-      ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" )
-      ( ast_unlikely_ifnotgoto ,_sr ,_2 "lab2" ))
+      ( ast_macro_name "break_label" "" )
+      ( ast_macro_name "continue_label" "" )
+      ( ast_label ,_sr "continue_label" )
+      ( ast_unlikely_ifnotgoto ,_sr ,_2 "break_label" ))
       _4
-      `(( ast_goto ,_sr "lab1" )
-      ( ast_label ,_sr "lab2" ))
+      `(( ast_goto ,_sr "continue_label" )
+      ( ast_label ,_sr "break_label" ))
       )
     )
   """;
@@ -1582,13 +1582,13 @@ syntax executable {
   sifgoto := "until" sexpr do statement* done ssemi =>#
   """
     `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" )
-      ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" )
-      ( ast_unlikely_ifgoto ,_sr ,_2 "lab2" ))
+      ( ast_macro_name "break_label" "" )
+      ( ast_macro_name "continue_label" "" )
+      ( ast_label ,_sr "continue_label" )
+      ( ast_unlikely_ifgoto ,_sr ,_2 "break_label" ))
       _4
-      `(( ast_goto ,_sr "lab1" )
-      ( ast_label ,_sr "lab2" ))
+      `(( ast_goto ,_sr "continue_label" )
+      ( ast_label ,_sr "break_label" ))
       )
     )
   """;
@@ -1602,17 +1602,17 @@ syntax executable {
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-      ( ast_macro_name "lab1" "" )
-      ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" )
+      ( ast_macro_name "break_label" "" )
+      ( ast_macro_name "continue_label" "" )
+      ( ast_label ,_sr "continue_label" )
       ( ast_unlikely_ifnotgoto ,_sr
         (ast_apply ,_sr (le ((ast_name ,_sr ,_2 ()),_6)))
-        "lab2"
+        "break_label"
       ))
       _8
       `((ast_call ,_sr pre_incr (ast_ref (ast_name ,_sr ,_2())))
-      ( ast_goto ,_sr "lab1" )
-      ( ast_label ,_sr "lab2" ))
+      ( ast_goto ,_sr "continue_label" )
+      ( ast_label ,_sr "break_label" ))
      ))
   """;
 
@@ -1620,17 +1620,17 @@ syntax executable {
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-      ( ast_macro_name "lab1" "" )
-      ( ast_macro_name "lab2" "" )
-      ( ast_label ,_sr "lab1" )
+      ( ast_macro_name "break_label" "" )
+      ( ast_macro_name "continue_label" "" )
+      ( ast_label ,_sr "continue_label" )
       ( ast_unlikely_ifnotgoto ,_sr
         (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6)))
-        "lab2"
+        "break_label"
       ))
       _8
       `((ast_call ,_sr pre_decr (ast_ref (ast_name ,_sr ,_2 ())))
-      ( ast_goto ,_sr "lab1" )
-      ( ast_label ,_sr "lab2" ))
+      ( ast_goto ,_sr "continue_label" )
+      ( ast_label ,_sr "break_label" ))
      ))
   """;
 }
@@ -2257,7 +2257,7 @@ the same as <code>x:int</code></p>
   // otherwise while (fun ()=>x) { } is interpreted
   // as a C while loop, instead of the while HOF in the library
 
-  sifgoto := "while" lpar sdollar_apply rpar statement =>#
+  sifgoto := "while" lpar x[sdollar_apply_pri] rpar statement =>#
   """
     ( block ( append `(
       ( ast_label ,_sr "continue_label" )
@@ -2268,7 +2268,7 @@ the same as <code>x:int</code></p>
     )))
   """;
 
-  sifgoto := do scompound "until" sdollar_apply ssemi =>#
+  sifgoto := do scompound "until" x[sdollar_apply_pri] ssemi =>#
   """
     ( block ( append `(
       ( ast_label ,_sr "continue_label" )
@@ -2278,7 +2278,7 @@ the same as <code>x:int</code></p>
     )))
   """;
 
-  sifgoto := if lpar sdollar_apply rpar statement else statement =>#
+  sifgoto := if lpar x[sdollar_apply_pri] rpar statement else statement =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" )
@@ -2293,7 +2293,7 @@ the same as <code>x:int</code></p>
   """;
 
   // this must be given first ..
-  sifgoto := if lpar sdollar_apply rpar statement =>#
+  sifgoto := if lpar x[sdollar_apply_pri] rpar statement =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" )
