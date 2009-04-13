@@ -398,10 +398,12 @@ syntax expressions {
   ssimple_name_parts := sname           =># "`(,_1 ())";
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
 
+
   satom := lpar rassign (, rassign )* rpar =>#
     "`(ast_record ,(cons _2 (map cadr _3)))"
   ;
-    rassign := sname = x[sor_condition] =># "`(,_1 ,_3)";
+    rassign := sname = x[sor_condition_pri] =># "`(,_1 ,_3)";
+
 
   satom := sliteral =># "_1";
   satom := _ =># "'ast_patany";
