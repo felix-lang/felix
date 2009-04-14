@@ -1052,6 +1052,7 @@ let dyp_merge_Obj_statement_star ol =
 
 /* predefined major non-terminals */
 %constructor Obj_sexpr %for statement sexpr
+%constructor Obj_sexpr %for sstatements
 
 /* low level non terminals */
 %constructor Obj_sexpr %for sname sliteral
@@ -1081,6 +1082,7 @@ let dyp_merge_Obj_statement_star ol =
 compilation_unit:
   | statements ENDMARKER { $1 }
 
+/* top level statements only */
 statements:
  | statement_star
    {
@@ -1099,6 +1101,29 @@ statement_star:
    }
 
  | { 0,[] }
+
+/* inner statements only */
+sstatements: 
+  | sstatement_star
+    {
+      let ss = (snd $1) in
+      let ss = Ocs_misc.make_slist Snull ss in
+      (*
+      print_endline "Returning inner statement list";
+      *)
+      0, dummysr, ss
+    }
+
+sstatement_star:
+ | sstatement_star statement
+   @{
+     let seq,sr,s = $2 in
+     (match s with Snull -> $1 | _ ->
+     let sseq,stmts = $1 in
+     (max seq sseq, (s :: stmts))),
+     [Keep_grammar; Local_data (dyp.last_local_data)]
+    }
+  | { 0,[] }
 
 dyprods:
    | dyprods dyprod { $2 :: $1 }

@@ -563,6 +563,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          however, is required to supply a dead code assertion
          to prevent the error.
       *)
+      print_endline "[DEBUG] Instruction sequence is:";
+      iter (fun exe -> print_endline (string_of_bexe syms.dfns bbdfns 0 exe)) bound_exes;
       clierr sr
       (
         "[bind_exes]: function "^id^" drops off end, missing return statement"

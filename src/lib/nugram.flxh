@@ -903,7 +903,8 @@ syntax statements {
   stodo := todo sstring ssemi =># "`(ast_nop ,_sr ,_2)";
   stodo := todo ssemi =># """`(ast_nop ,_sr "todo")""";
 
-  scompound := lbrace statement* rbrace =># "_2";
+  //scompound := lbrace statement* rbrace =># "_2";
+  scompound := lbrace sstatements rbrace =># "_2";
 
   sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= comma sname =># "`(,_2)";

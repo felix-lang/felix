@@ -61,20 +61,6 @@ let filter_dup_semi x =
     | [] -> rev result
   in filter x []
 
-let check_nowhite x =
-  let rec filter x' = match x' with
-    | WHITE _ :: t -> failwith "UNEXPECTED WHITESPACE"
-    | h :: t -> filter t
-    | [] -> x
-  in filter x
-
-let check_nonewline x =
-  let rec filter x' = match x' with
-    | NEWLINE :: t -> failwith "UNEXPECTED NEWLINE"
-    | h :: t -> filter t
-    | [] -> x
-  in filter x
-
 (* remove comments, whitespace, newlines, trailing sloshes,
   and a trailing hash on the first line
 *)
