@@ -105,8 +105,17 @@ def pre_options(parser):
             action='append',
             help='Add this path to the c library search path for the build ' \
                     'phase'),
-
     ))
+
+def post_options(options, args):
+    options.prefix = Path(options.prefix)
+
+    if options.debug:
+        options.buildroot = Path(options.buildroot, 'debug')
+    else:
+        options.buildroot = Path(options.buildroot, 'release')
+
+    return options, args
 
 # ------------------------------------------------------------------------------
 
