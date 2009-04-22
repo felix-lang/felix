@@ -53,12 +53,6 @@ let parse_file
           raise x
         end
 
-      | Flx_exceptions.RDP_match_fail (sr1,sr2,s) as x  ->
-        begin
-          toker#report_syntax_error;
-          clierr2 sr1 sr2 ("User Syntax Parse Error " ^ s)
-        end
-
       | Dyp.Bad_constructor (nt,ctor1, ctor2) ->
           toker#report_syntax_error;
           let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^"'" in

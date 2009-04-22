@@ -175,13 +175,6 @@ let parse_tokens (parser:'a parser_t) (tokens: token list) =
     toker#report_syntax_error;
     raise x
 
-  | Flx_exceptions.RDP_match_fail _ as x ->
-    (*
-    print_endline ("got RDP_match_fail from parse..");
-    *)
-    toker#report_syntax_error;
-    raise x
-
   | exn ->
     print_endline "Got unknown error from parse..";
     print_endline (Printexc.to_string exn);

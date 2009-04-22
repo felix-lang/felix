@@ -3,6 +3,7 @@ open Flx_ast
 
 val print_pre_tokens : token list -> unit
 val print_tokens : token list -> unit
+
 class tokeniser :
   token list ->
   object
@@ -17,11 +18,11 @@ class tokeniser :
   end
 
 type 'a parser_t =
-  (Lexing.lexbuf  -> token) ->
+  (Lexing.lexbuf -> token) ->
   Lexing.lexbuf ->
   'a
 
-val parse_tokens:
+val parse_tokens :
   'a parser_t ->
   token list ->
   'a
