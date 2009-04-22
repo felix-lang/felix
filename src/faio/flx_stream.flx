@@ -4,7 +4,7 @@ if POSIX do
 elif WIN32 do
   include "flx_faio_win32";
 else
-  include "ERROR: stream requires POSIX or WIN32";
+  include "ERROR: flx_stream requires POSIX or WIN32";
 done;
 
 module Flx_stream {
@@ -83,7 +83,7 @@ module Flx_stream {
     else 
       proc read(s: fd_t, len: &int, buf: address, eof: &bool)
         { ReadFile(s, len, buf, eof); }
-    done 
+    done; 
   }
 
   instance OByteStream[fd_t]

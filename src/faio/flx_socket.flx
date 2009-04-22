@@ -1,59 +1,61 @@
 include "flx_faio";
 include "flx_stream";
 
-#if POSIX
-include "flx_faio_posix";
-#elif WIN32
-include "flx_faio_win32";
-#endif
+if POSIX do
+  include "flx_faio_posix";
+elif WIN32 do
+  include "flx_faio_win32";
+else
+  include "ERROR: flx_socket requires POSIX or WIN32";
+done;
 
 module Flx_socket {
-  #if POSIX
+  if POSIX do
     typedef socket_t = Faio_posix::socket_t;
-  #elif WIN32
+  else
     typedef socket_t = Faio_win32::socket_t;
-  #endif
+  done;
 
 
   proc mk_listener(l: &socket_t, port: &int, qlen: int)
   {
-  #if POSIX
+  if POSIX do
     Faio_posix::mk_listener(l,port, qlen);
-  #elif WIN32
+  else
     Faio_win32::mk_listener(l, port, qlen);
-  #endif
+  done;
   }
 
   proc accept(l: socket_t, s: &socket_t)
   {
-  #if POSIX
+  if POSIX do
     Faio_posix::accept(s, l);  // success or not? error checking
-  #elif WIN32
+  else
     var success: bool;
     Faio_win32::mk_socket(s);  // error check?
     Faio_win32::Accept(&success, l, *s);
     if not success do
       fprint (cout, "Accept failed! num?\n");
     done;
-  #endif
+  done;
   }
 
   proc shutdown(s: socket_t, how: int)
   {
-  #if POSIX
+  if POSIX do
     Faio_posix::shutdown(s, how);
-  #elif WIN32
+  else
     Faio_win32::shutdown(s, how);
-  #endif
+  done;
   }
 
   proc connect(s: &socket_t, addr: charp, port: int)
   {
-  #if POSIX
+  if POSIX do
       Faio_posix::connect(s, addr, port );
-  #elif WIN32
+  else
       Faio_win32::Connect( s, addr, port );
-  #endif
+  done;
   }
 
 
@@ -62,50 +64,54 @@ module Flx_socket {
   //
   instance Flx_stream::IByteStream[socket_t]
   {
+    if POSIX do
     proc read(s: socket_t, len: &int, buf: address, eof: &bool)
-    #if POSIX
       { Faio_posix::async_read(s, len, buf, eof); }
-    #elif WIN32
+    else
+    proc read(s: socket_t, len: &int, buf: address, eof: &bool)
       { Faio_win32::WSARecv(s, len, buf, eof); }
-    #endif
+    done;
   }
 
   instance Flx_stream::OByteStream[socket_t]
   {
+    if POSIX do
     proc write(s: socket_t, len: &int, buf: address, eof: &bool)
-    #if POSIX
       { Faio_posix::async_write(s, len, buf, eof); }
-    #elif WIN32
+    else
+    proc write(s: socket_t, len: &int, buf: address, eof: &bool)
       { Faio_win32::WSASend(s, len, buf, eof); }
-    #endif
+    done;
   }
 
   instance Flx_stream::IOByteStream[socket_t] {}
 
   instance Flx_stream::TerminalIByteStream[socket_t]
   {
+    if POSIX do
     proc iclose (s:socket_t)
-    #if POSIX
       { Faio_posix::shutdown (s,0); Faio_posix::close s; }
-    #else
+    else
+    proc iclose (s:socket_t)
       { Faio_win32::closesocket s; }
-    #endif
+    done;
   }
 
   instance Flx_stream::TerminalOByteStream[socket_t]
   {
+    if POSIX do
     proc oclose (s:socket_t)
-    #if POSIX
       { Faio_posix::shutdown (s,1); Faio_posix::close s; }
-    #elif WIN32
+    else
+    proc oclose (s:socket_t)
       { Faio_win32::closesocket s; }
-    #endif
+    done;
   }
 
   instance Flx_stream::TerminalIOByteStream[socket_t]
   {
+    if POSIX do
     proc ioclose (s:socket_t)
-    #if POSIX
       {
         // RF: just close, I don't think any of this stuff is necessary.
         // I think this is an application level problem.
@@ -120,8 +126,9 @@ module Flx_socket {
         */
         Faio_posix::close s;
       }
-    #elif WIN32
+    else
+    proc ioclose (s:socket_t)
       { Faio_win32::closesocket s; }
-    #endif
+    done;
   }
 }
