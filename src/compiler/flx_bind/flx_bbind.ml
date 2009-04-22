@@ -14,7 +14,6 @@ open Flx_bexe
 open List
 open Flx_generic
 open Flx_tpat
-open Inria_syntax
 
 let hfind msg h k =
   try Hashtbl.find h k

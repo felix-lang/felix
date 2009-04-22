@@ -1,9 +1,11 @@
 include "flx_faio";
-#if POSIX
-include "flx_faio_posix";
-#elif WIN32
-include "flx_faio_win32";
-#endif
+if POSIX do
+  include "flx_faio_posix";
+elif WIN32 do
+  include "flx_faio_win32";
+else
+  include "ERROR: stream requires POSIX or WIN32";
+done;
 
 module Flx_stream {
   requires package "demux";
@@ -11,12 +13,12 @@ module Flx_stream {
 
   open Faio;
 
-  #if POSIX
-  open Faio_posix;
-  typedef fd_t = Faio_posix::fd_t;
-  #elif WIN32
-  open Faio_win32;
-  #endif
+  if POSIX do
+    open Faio_posix;
+    typedef fd_t = Faio_posix::fd_t;
+  else 
+    open Faio_win32;
+  done;
 
   union devnull_t = DEVNULL;
 
@@ -75,54 +77,53 @@ module Flx_stream {
   //
   instance IByteStream[fd_t]
   {
-    proc read(s: fd_t, len: &int, buf: address, eof: &bool)
-    #if POSIX
-      { faio_read(s, len, buf, eof); }
-    #elif WIN32
-      { ReadFile(s, len, buf, eof); }
-    #endif
+    if POSIX do
+      proc read(s: fd_t, len: &int, buf: address, eof: &bool)
+        { faio_read(s, len, buf, eof); }
+    else 
+      proc read(s: fd_t, len: &int, buf: address, eof: &bool)
+        { ReadFile(s, len, buf, eof); }
+    done 
   }
 
   instance OByteStream[fd_t]
   {
-    proc write(s: fd_t, len: &int, buf: address, eof: &bool)
-    #if POSIX
-      { faio_write(s, len, buf, eof); }
-    #elif WIN32
-      { WriteFile(s, len, buf, eof); }
-    #endif
+    if POSIX do
+      proc write(s: fd_t, len: &int, buf: address, eof: &bool)
+        { faio_write(s, len, buf, eof); }
+    else 
+      proc write(s: fd_t, len: &int, buf: address, eof: &bool)
+        { WriteFile(s, len, buf, eof); }
+    done;
   }
 
   instance IOByteStream[fd_t] {}
 
   instance TerminalIByteStream[fd_t]
   {
-    proc iclose (f:fd_t)
-    #if POSIX
-      { close f; }
-    #elif WIN32
-      { CloseFile f; }
-    #endif
+    if POSIX do
+      proc iclose (f:fd_t) { close f; }
+    else
+      proc iclose (f:fd_t) { CloseFile f; }
+    done; 
   }
 
   instance TerminalOByteStream[fd_t]
   {
-    proc oclose (f:fd_t)
-    #if POSIX
-      { close f; }
-    #elif WIN32
-      { CloseFile f; }
-    #endif
+    if POSIX do
+    proc oclose (f:fd_t) { close f; }
+    else
+      proc oclose (f:fd_t) { CloseFile f; }
+    done; 
   }
 
   instance TerminalIOByteStream[fd_t]
   {
-    proc ioclose (f:fd_t)
-    #if POSIX
-      { close f; }
-    #elif WIN32
-      { CloseFile f; }
-    #endif
+    if POSIX do
+      proc ioclose (f:fd_t) { close f; }
+    else
+      proc ioclose (f:fd_t) { CloseFile f; }
+    done; 
   }
 
   proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
