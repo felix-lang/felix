@@ -81,19 +81,13 @@ def build_flx_desugar(ocaml, ocamllex):
             build_flx_parse(ocaml, ocamllex)],
         external_libs=['nums', 'unix'])
 
-def build_inria_re(ocaml):
-    path = Path('src/compiler/inria_re')
-    return ocaml.build_lib(path / 'inria_re',
-        srcs=Path.glob(path / '*.ml{,i}'))
-
 def build_flx_bind(ocaml):
     path = Path('src/compiler/flx_bind')
     return ocaml.build_lib(path / 'flx_bind',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_inria_re(ocaml)],
+            build_flx_core(ocaml)],
         external_libs=['nums'])
 
 def build_flx_frontend(ocaml):
@@ -141,7 +135,6 @@ def build_flx_drivers(ocaml, ocamllex):
         build_flx_lex(ocaml, ocamllex),
         build_flx_parse(ocaml, ocamllex),
         build_flx_desugar(ocaml, ocamllex),
-        build_inria_re(ocaml),
         build_flx_bind(ocaml),
         build_flx_frontend(ocaml),
         build_flx_backend(ocaml, ocamllex),
