@@ -8,7 +8,11 @@ let transpose x =
     | _ -> cons (h :: ls) (dtor t)
   in tl (rev (cons [] ([],x)))
 
-let list_last l = hd (rev l)
+let rec list_last ls =
+  match ls with
+  | head :: [] -> head
+  | head :: tail -> list_last tail
+  | [] -> failwith "list_last"
 
 let rec list_index l x =
  let rec aux l i =
