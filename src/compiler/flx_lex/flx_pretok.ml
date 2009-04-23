@@ -9,10 +9,7 @@ let pre_tokens_of_lexbuf buf state =
     let t = Flx_lex.pre_flx_lex state buf in
     match t with
     | [ENDMARKER] -> lst
-    | _ ->
-    match state#get_condition with
-      | `Processing -> get (List.rev_append t lst)
-      | _ -> get lst
+    | _ -> get (List.rev_append t lst)
    in
    let tks = ENDMARKER :: get [] in
     (*

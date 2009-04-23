@@ -26,7 +26,7 @@ Support table.
 @end_table()
 
 
-@select(tangler('lib/flx_tclass.flxh', 'data'))
+@select(tangler('lib/flx_tclass.flx', 'data'))
 // Core types and type classes
 
 typedef void = 0;
@@ -383,18 +383,7 @@ typeclass Show [T] {
 #syntax <nugram.flxh>
 open syntax felix;
 
-#import <flx_platform.flxh>
-
-@h=tangler('lib/flx_platform.flxh','data')
-@select(h)
-
 @plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
-@for i in plats:
-  if getattr(config, i):
-    tangle("#define " + i + " true")
-  else:
-    tangle("#define " + i + " false")
-@#
 
 @for i in plats:
   if getattr(config, i):
@@ -402,7 +391,7 @@ open syntax felix;
   else:
     tangle("macro val " + i + " = false;")
 
-@h=tangler('lib/flx_ctypes.flxh','data')
+@h=tangler('lib/flx_ctypes.flx','data')
 @select(h)
 header cctype_hxx = '#include <cctype>';
 header string_hxx = '#include <string>';
@@ -1090,8 +1079,8 @@ header stdexcept = '#include <stdexcept>';
 
 header flx_strutil = '#include "flx_strutil.hpp"';
 
-#import <flx_tclass.flxh>
-#import <flx_ctypes.flxh>
+include "flx_tclass";
+include "flx_ctypes";
 
 @absmap = {
   "tiny":"abs",

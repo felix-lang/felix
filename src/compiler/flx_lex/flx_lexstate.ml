@@ -96,7 +96,6 @@ let mk_std_tokens () =
   ;
   tk
 
-exception Duplicate_macro of string
 
 class comment_control =
   object (self)
@@ -113,13 +112,6 @@ class comment_control =
   end
 
 exception Found_file of string
-
-type condition_t = [
- | `Processing
- | `Skip_to_endif
- | `Skip_to_else
- | `Subscan
-]
 
 type location = {
     mutable buf_pos : int;
@@ -145,8 +137,6 @@ class file_control
 
     (* this is the generator file name, can be set with #line directive *)
     val mutable filename = filename'
-    val mutable condition:condition_t list = [`Processing]
-    val macros : (string,string list * Flx_token.token list) Hashtbl.t = Hashtbl.create 97
 
     method incr_lex_counters lexbuf =
       loc.line_no <- loc.line_no + 1;
@@ -199,23 +189,7 @@ class file_control
         failwith ("Library File <" ^ f ^ "> not found in path")
       with Found_file s -> s
 
-    method store_macro name params body =
-      Hashtbl.add macros name (params,body)
-
-    method undef_macro name = Hashtbl.remove macros name
-
-    method get_macro name =
-      try Some (Hashtbl.find macros name)
-      with Not_found -> None
-
-    method get_macros = macros
-
     method get_incdirs = incdirs
-    method get_condition = List.hd condition
-    method push_condition c =  condition <- (c :: condition)
-    method pop_condition = condition <- List.tl condition
-    method set_condition c = condition <- (c :: List.tl condition)
-    method condition_stack_length = List.length condition
   end
 
 class lexer_state filename basedir incdirs cache_dir expand_expr' =
@@ -299,28 +273,7 @@ class lexer_state filename basedir incdirs cache_dir expand_expr' =
     method get_relative f = file_ctrl#get_relative f
     method get_absolute f = file_ctrl#get_absolute f
 
-    method get_condition = file_ctrl#get_condition
-    method push_condition c = file_ctrl#push_condition c
-    method pop_condition = file_ctrl#pop_condition
-    method set_condition c = file_ctrl#set_condition c
-    method condition_stack_length = file_ctrl#condition_stack_length
-
-    method store_macro name parms body = file_ctrl#store_macro name parms body
-    method undef_macro name = file_ctrl#undef_macro name
-    method get_macro name = file_ctrl#get_macro name
-    method get_macros = file_ctrl#get_macros
-
     method add_macros (s:lexer_state) =
-      let h = self#get_macros in
-      Hashtbl.iter
-      (fun k v ->
-        if Hashtbl.mem h k
-        then raise (Duplicate_macro k)
-        else Hashtbl.add h k v
-      )
-      s#get_macros
-      ;
-
      (* append new keywords *)
      let new_keywords = s#get_keywords in
      let n = Array.length new_keywords in

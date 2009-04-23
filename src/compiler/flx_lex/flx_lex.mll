@@ -622,16 +622,7 @@ and pre_flx_lex state = parse
   }
 
 (* end of file *)
-| eof {
-  if state#get_condition = `Subscan then [ENDMARKER] else
-  if state#condition_stack_length <> 1
-  then
-    let sr = state#get_srcref lexbuf in
-    let sr = Flx_srcref.slift sr in
-    Flx_exceptions.clierr sr "Unmatched #if at end of file"
-  else
-    [ENDMARKER]
-  }
+| eof { [ENDMARKER] }
 
 (* Anything else is an error *)
 | _ {

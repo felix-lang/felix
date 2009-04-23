@@ -2,8 +2,6 @@ open Flx_ast
 open Flx_string
 open Flx_token
 
-exception Duplicate_macro of string
-
 class comment_control :
   object
     val mutable nesting_level : int
@@ -15,13 +13,6 @@ class comment_control :
     method incr : unit
     method set_text : string -> unit
   end
-
-type condition_t = [
- | `Processing
- | `Skip_to_endif
- | `Skip_to_else
- | `Subscan
-]
 
 type location = {
     mutable buf_pos : int;
@@ -38,8 +29,6 @@ class file_control :
   object
     val mutable loc: location
     val filename : string
-    val mutable condition : condition_t list
-    val macros : (string,string list * token list) Hashtbl.t
 
     method get_loc : location
     method set_loc : location -> unit
@@ -56,16 +45,6 @@ class file_control :
     method get_incdirs : string list
     method get_absolute : string -> string
 
-    method get_condition : condition_t
-    method push_condition : condition_t -> unit
-    method pop_condition : unit
-    method set_condition : condition_t -> unit
-    method condition_stack_length : int
-
-    method store_macro : string -> string list -> token list -> unit
-    method undef_macro : string -> unit
-    method get_macro : string -> (string list * token list) option
-    method get_macros : (string,string list * token list) Hashtbl.t
   end
 
 class lexer_state :
@@ -111,18 +90,9 @@ class lexer_state :
     method get_relative : string -> string
     method get_absolute : string -> string
 
-    method get_condition : condition_t
-    method push_condition : condition_t -> unit
-    method pop_condition : unit
-    method set_condition : condition_t -> unit
-    method condition_stack_length : int
     method get_loc : location
     method set_loc : location -> unit
 
-    method store_macro : string -> string list -> token list -> unit
-    method undef_macro : string -> unit
-    method get_macro : string -> (string list * token list) option
-    method get_macros : (string,string list * token list) Hashtbl.t
     method add_macros : lexer_state -> unit
     method adjust_symbol_array : int -> unit
 

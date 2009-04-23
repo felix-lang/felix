@@ -42,12 +42,7 @@ let pre_tokens_of_lexbuf lexer buf state =
     let ts = lexer state buf in
     match ts with
     | [ENDMARKER] -> lst
-    | _ ->
-      match state#get_condition with
-      | `Processing | `Subscan ->
-        get (rev_append ts lst)
-      | _ ->
-        get lst
+    | _ -> get (rev_append ts lst)
   in
     rev (get [])
 
@@ -234,81 +229,6 @@ let action_split t =
   | h :: t -> aux t (h::out)
   in aux t []
 
-let if_directive state sr toks =
-  state#push_condition
-  (
-    let string_of_bool b = if b then "true" else "false" in
-    let string_of_tokens tks = catmap " " Flx_prelex.string_of_token tks in
-    let result = eval_bool state sr toks in
-    (*
-    print_endline ("#if " ^ string_of_tokens toks ^ "evaluates to " ^ string_of_bool result);
-    *)
-    match result with
-    | true -> `Processing
-    | false -> `Skip_to_else
-  )
-  ;
-  []
-
-let ifdef_directive state sr toks =
-  begin match toks with
-  | NAME (sr,s) :: _ ->
-    begin match state#get_macro s with
-    | None -> state#push_condition `Skip_to_else
-    | Some _ -> state#push_condition `Processing
-    end
-  | _ -> clierr sr "#ifdef requires identifier"
-  end
-  ;
-  []
-
-let ifndef_directive state sr toks =
-  begin match toks with
-  | NAME (sr,s) :: _ ->
-    begin match state#get_macro s with
-    | None -> state#push_condition `Processing
-    | Some _ -> state#push_condition `Skip_to_else
-    end
-  | _ -> clierr sr "#ifndef requires identifier"
-  end
-  ;
-  []
-
-let else_directive state sr =
-  begin match state#get_condition with
-  | `Processing -> state#set_condition `Skip_to_endif
-  | `Skip_to_endif -> ()
-  | `Skip_to_else -> state#set_condition `Processing
-  | `Subscan -> syserr sr "unexpected else while subscanning"
-  end
-  ;
-  []
-
-let elif_directive state sr toks =
-  begin match state#get_condition with
-  | `Processing -> state#set_condition `Skip_to_endif
-  | `Skip_to_endif -> ()
-  | `Skip_to_else ->
-    state#set_condition
-    (
-      match eval_bool state sr toks with
-      | true -> `Processing
-      | false -> `Skip_to_else
-    )
-  | `Subscan -> syserr sr "unexpected elif while subscanning"
-  end
-  ;
-  []
-
-
-let endif_directive state sr =
-  if state#condition_stack_length < 2
-  then
-    clierr sr "Unmatched endif"
-  else
-    state#pop_condition;
-    []
-
 let find_include_file state s sr =
   if s.[0]<>'"' && s.[0]<>'<'
   then clierr sr "'\"' or '<' required after #include"
@@ -390,9 +310,7 @@ let include_directive kind state sr s pre_flx_lex =
     let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
       close_in infile;
       if kind = "import" then begin
-        try state#add_macros state'
-        with Duplicate_macro k -> clierr sr
-        ("Duplicate Macro " ^ k ^ " imported")
+        state#add_macros state'
       end;
       iter state#add_include_file state'#get_include_files;
       toks
@@ -482,17 +400,11 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
   *)
   (* print a warning *)
   | "error" ->
-    begin match state#get_condition with
-    | `Processing ->
       print_endline ("#error " ^ s');
       clierr2 sr sr' ("#error " ^ s')
-    | _ -> []
-    end
 
   | "warn" ->
     let result =
-      match state#get_condition with
-      | `Processing ->
         let desc = Flx_srcref.short_string_of_src sr in
           print_endline desc
         ;
@@ -504,7 +416,6 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
         print_endline ("#warn " ^ s');
         print_endline "";
         [NEWLINE]
-      | _ -> []
     in
       for i = 1 to linecount do state#newline lexbuf done;
       result
@@ -512,14 +423,9 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
   | "line" ->
     line_directive state sr s' lexbuf
 
-  | "include"
-  | "import"
   | "syntax" ->
     let result =
-      match state#get_condition with
-      | `Processing ->
         include_directive ident state sr s' pre_flx_lex
-      | _ -> []
     in
      for i = 1 to linecount do state#newline lexbuf done;
      result
@@ -532,7 +438,6 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     print_endline ("Start buf pos = " ^ si (start_position.Lexing.pos_cnum));
     print_endline ("Start loc = " ^ si (start_location.buf_pos));
     *)
-    state#push_condition `Subscan;
 
     (* hack the location to the start of the line *)
     let b = start_location.buf_pos - start_position.Lexing.pos_cnum in
@@ -547,8 +452,6 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
     };
 
     let toks = pre_tokens_of_lexbuf pre_flx_lex src state in
-
-    state#pop_condition;
 
     (* use the special preprocessor token filter *)
     let toks = Flx_lex1.translate_preprocessor toks in
@@ -572,36 +475,7 @@ let handle_preprocessor state lexbuf s pre_flx_lex start_location start_position
         h
       )
     ;
-    match h with
 
-    (* conditional compilation *)
-    | "if" -> if_directive state sr toks
-    | "ifdef" -> ifdef_directive state sr toks
-    | "ifndef" -> ifndef_directive state sr toks
-    | "else" -> else_directive state sr
-    | "elif" -> elif_directive state sr toks
-    | "endif" -> endif_directive state sr
-
-    | _ -> match state#get_condition with
-    | `Skip_to_else
-    | `Skip_to_endif -> []
-    | `Subscan -> syserr sr "Unexpected preprocessor directive in subscan"
-
-    (* these ones are only done if in processing mode *)
-    | `Processing ->
-    match h with
-
-    | "define" ->
-        define_directive state sr toks
-
-    | "undef" ->
-        undef_directive state sr toks
-
-
-    | "keyword" ->
-        keyword_directive state sr toks
-
-    | _ ->
       print_endline (state#string_of_srcref lexbuf);
       print_endline
       (
