@@ -191,7 +191,9 @@ def config_host(build):
         debug=fbuild.options.debug or fbuild.options.host_ocaml_debug,
         ocamlc=fbuild.options.host_ocamlc,
         ocamlopt=fbuild.options.host_ocamlopt,
-        flags=['-w', 'yzex', '-warn-error', 'FDPSU'])
+        flags=['-w', 'yzex', '-warn-error', 'FDPSU'],
+        requires_at_least_version=(3, 11))
+
     phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex',
         fbuild.options.host_ocamllex)
 

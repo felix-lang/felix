@@ -64,13 +64,14 @@ let terminate rrp = let return_parity = not rrp in function
     print_endline s;
     exit (if return_parity then 1 else 0)
 
-
   | Failure s ->
     flush stdout; print_endline "SYSTEM FAILURE";
     print_endline s;
     exit (if return_parity then 1 else 0)
 
   | x ->
-    flush stdout; print_endline "EXCEPTION";
-    print_endline (Printexc.to_string x);
+    print_endline ("Fatal error: exception " ^ (Printexc.to_string x));
+    if Printexc.backtrace_status () then begin
+      print_endline (Printexc.get_backtrace ());
+    end;
     exit (if return_parity then 1 else 0)

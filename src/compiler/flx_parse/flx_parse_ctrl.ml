@@ -62,7 +62,11 @@ let parse_file
       | x ->
         begin
           toker#report_syntax_error;
+          print_string "Fatal error: exception ";
           print_endline (Printexc.to_string x);
+          if Printexc.backtrace_status () then begin
+            print_endline (Printexc.get_backtrace ());
+          end;
           raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
         end
       in hash_include_files, parse_tree
