@@ -1,5 +1,4 @@
 //Check arrays
-#import <flx.flxh>
 val f = proc (i:int) { print i; };
 val g = fun (i:int) => i - 1;
 iter f$ map g$ array(4, 5); endl;
