@@ -56,6 +56,18 @@ let lfcount s =
   done;
   !n
 
+(* string parsers *)
+let decode_qstring s = let n = String.length s in unescape (String.sub s 0 (n-1))
+let decode_dstring s = let n = String.length s in unescape (String.sub s 0 (n-1))
+let decode_qqqstring s = let n = String.length s in unescape (String.sub s 0 (n-3))
+let decode_dddstring s = let n = String.length s in unescape (String.sub s 0 (n-3))
+
+let decode_raw_qstring s = let n = String.length s in String.sub s 0 (n-1)
+let decode_raw_dstring s = let n = String.length s in String.sub s 0 (n-1)
+let decode_raw_qqqstring s = let n = String.length s in String.sub s 0 (n-3)
+let decode_raw_dddstring s = let n = String.length s in String.sub s 0 (n-3)
+
+
 let silly_strtoken k = Flx_prelex.string_of_token k
   (*
   match k with
@@ -1353,215 +1365,203 @@ and parse_C_comment = parse
 and parse_line = parse
 | not_newline * (newline | eof)
   {
-    incr_lineno lexbuf;
+    incr_lineno lexbuf 1;
     lexeme lexbuf
   }
 
-and parse_preprocessor state start_location start_position = parse
-| ( not_newline* slosh space* newline)* not_newline* newline
-| ( not_newline* hash space* newline) (not_hash_or_newline not_newline* newline)+
-  {
-    let toks = handle_preprocessor lexbuf
-      (lexeme lexbuf) pre_flx_lex start_location start_position
-    in
-    toks
-  }
-
-
-
 main lexer =
-  "all" -> ALL { dummysr }
-  "assert" -> ASSERT { dummysr }
-  "axiom" -> AXIOM { dummysr }
-  "body" -> BODY { dummysr }
-  "call" -> CALL { dummysr }
-  "case" -> CASE { dummysr }
-  "caseno" -> CASENO { dummysr }
-  "cfun" -> CFUNCTION { dummysr }
-  "class" -> CLASS { dummysr }
-  "comment" -> COMMENT_KEYWORD { dummysr }
-  "compound" -> COMPOUND { dummysr }
-  "const" -> CONST { dummysr }
-  "cproc" -> CPROCEDURE { dummysr }
-  "cstruct" -> CSTRUCT { dummysr }
-  "ctor" -> CTOR { dummysr }
-  "ctypes" -> CTYPES { dummysr }
-  "def" -> DEF { dummysr }
-  "do" -> DO { dummysr }
-  "done" -> DONE { dummysr }
-  "elif" -> ELIF { dummysr }
-  "else" -> ELSE { dummysr }
-  "endcase" -> ENDCASE { dummysr }
-  "endif" -> ENDIF { dummysr }
-  "endmatch" -> ENDMATCH { dummysr }
-  "enum" -> ENUM { dummysr }
-  "expect" -> EXPECT { dummysr }
-  "export" -> EXPORT { dummysr }
-  "extern" -> EXTERN { dummysr }
-  "for" -> FOR { dummysr }
-  "forget" -> FORGET { dummysr }
-  "fork" -> FORK { dummysr }
-  "functor" -> FUNCTOR { dummysr }
-  "fun" -> FUNCTION { dummysr }
-  "gen" -> GENERATOR { dummysr }
-  "goto" -> GOTO { dummysr }
-  "halt" -> HALT { dummysr }
-  "header" -> HEADER { dummysr }
-  "ident" -> IDENT { dummysr }
-  "include" -> INCLUDE { dummysr }
-  "incomplete" -> INCOMPLETE { dummysr }
-  "inf" -> INF { dummysr }
-  "in" -> IN { dummysr }
-  "instance" -> INSTANCE { dummysr }
-  "is" -> IS { dummysr }
-  "inherit" -> INHERIT { dummysr }
-  "inline" -> INLINE { dummysr }
-  "jump" -> JUMP { dummysr }
-  "lemma" -> LEMMA { dummysr }
-  "let" -> LET { dummysr }
-  "loop" -> LOOP { dummysr }
-  "lval" -> LVAL { dummysr }
-  "macro" -> MACRO { dummysr }
-  "module" -> MODULE { dummysr }
-  "namespace" -> NAMESPACE { dummysr }
-  "NaN" -> NAN { dummysr }
-  "new" -> NEW { dummysr }
-  "noinline" -> NOINLINE { dummysr }
-  "nonterm" -> NONTERM { dummysr }
-  "noreturn" -> NORETURN { dummysr }
-  "not" -> NOT { dummysr }
-  "open" -> OPEN { dummysr }
-  "package" -> PACKAGE { dummysr }
-  "pod" -> POD { dummysr }
-  "private" -> PRIVATE { dummysr }
-  "proc" -> PROCEDURE { dummysr }
-  "property" -> PROPERTY { dummysr }
-  "reduce" -> REDUCE { dummysr }
-  "ref" -> REF { dummysr }
-  "rename" -> RENAME { dummysr }
-  "requires" -> REQUIRES { dummysr }
-  "return" -> RETURN { dummysr }
-  "SCHEME" -> SCHEME { dummysr }
-  "syntax" -> SYNTAX { dummysr }
-  "static" -> STATIC { dummysr }
-  "struct" -> STRUCT { dummysr }
-  "then" -> THEN { dummysr }
-  "todo" -> TODO { dummysr }
-  "to" -> TO { dummysr }
-  "typedef" -> TYPEDEF { dummysr }
-  "type" -> TYPE { dummysr }
-  "typeclass" -> TYPECLASS { dummysr }
-  "union" -> UNION { dummysr }
-  "use" -> USE { dummysr }
-  "val" -> VAL { dummysr }
-  "var" -> VAR { dummysr }
-  "virtual" -> VIRTUAL { dummysr }
-  "where" -> WHERE { dummysr }
-  "when" -> WHEN { dummysr }
-  "with" -> WITH { dummysr }
-  "yield" -> YIELD { dummysr }
-  "_gc_pointer" -> GC_POINTER { dummysr }
-  "_gc_type" -> GC_TYPE { dummysr }
-  "_svc" -> SVC { dummysr }
-  "_deref" -> DEREF { dummysr }
-  "and" -> AND { dummysr }
-  "as" -> AS { dummysr }
-  "callback" -> CALLBACK { dummysr }
-  "code" -> CODE { dummysr }
-  "false" -> FALSE { dummysr }
-  "if" -> IF { dummysr }
-  "isin" -> ISIN { dummysr }
-  "match" -> MATCH { dummysr }
-  "noexpand" -> NOEXPAND { dummysr }
-  "of" -> OF { dummysr }
-  "or" -> OR { dummysr }
-  "the" -> THE { dummysr }
-  "true" -> TRUE { dummysr }
-  "typematch" -> TYPEMATCH { dummysr }
-  "typecase" -> TYPECASE { dummysr }
-  "whence" -> WHENCE { dummysr }
-  "unless" -> UNLESS { dummysr }
-  "_" -> UNDERSCORE { dummysr }
+  "all" -> ALL { getsr lexbuf }
+  "assert" -> ASSERT { getsr lexbuf }
+  "axiom" -> AXIOM { getsr lexbuf }
+  "body" -> BODY { getsr lexbuf }
+  "call" -> CALL { getsr lexbuf }
+  "case" -> CASE { getsr lexbuf }
+  "caseno" -> CASENO { getsr lexbuf }
+  "cfun" -> CFUNCTION { getsr lexbuf }
+  "class" -> CLASS { getsr lexbuf }
+  "comment" -> COMMENT_KEYWORD { getsr lexbuf }
+  "compound" -> COMPOUND { getsr lexbuf }
+  "const" -> CONST { getsr lexbuf }
+  "cproc" -> CPROCEDURE { getsr lexbuf }
+  "cstruct" -> CSTRUCT { getsr lexbuf }
+  "ctor" -> CTOR { getsr lexbuf }
+  "ctypes" -> CTYPES { getsr lexbuf }
+  "def" -> DEF { getsr lexbuf }
+  "do" -> DO { getsr lexbuf }
+  "done" -> DONE { getsr lexbuf }
+  "elif" -> ELIF { getsr lexbuf }
+  "else" -> ELSE { getsr lexbuf }
+  "endcase" -> ENDCASE { getsr lexbuf }
+  "endif" -> ENDIF { getsr lexbuf }
+  "endmatch" -> ENDMATCH { getsr lexbuf }
+  "enum" -> ENUM { getsr lexbuf }
+  "expect" -> EXPECT { getsr lexbuf }
+  "export" -> EXPORT { getsr lexbuf }
+  "extern" -> EXTERN { getsr lexbuf }
+  "for" -> FOR { getsr lexbuf }
+  "forget" -> FORGET { getsr lexbuf }
+  "fork" -> FORK { getsr lexbuf }
+  "functor" -> FUNCTOR { getsr lexbuf }
+  "fun" -> FUNCTION { getsr lexbuf }
+  "gen" -> GENERATOR { getsr lexbuf }
+  "goto" -> GOTO { getsr lexbuf }
+  "halt" -> HALT { getsr lexbuf }
+  "header" -> HEADER { getsr lexbuf }
+  "ident" -> IDENT { getsr lexbuf }
+  "include" -> INCLUDE { getsr lexbuf }
+  "incomplete" -> INCOMPLETE { getsr lexbuf }
+  "inf" -> INF { getsr lexbuf }
+  "in" -> IN { getsr lexbuf }
+  "instance" -> INSTANCE { getsr lexbuf }
+  "is" -> IS { getsr lexbuf }
+  "inherit" -> INHERIT { getsr lexbuf }
+  "inline" -> INLINE { getsr lexbuf }
+  "jump" -> JUMP { getsr lexbuf }
+  "lemma" -> LEMMA { getsr lexbuf }
+  "let" -> LET { getsr lexbuf }
+  "loop" -> LOOP { getsr lexbuf }
+  "lval" -> LVAL { getsr lexbuf }
+  "macro" -> MACRO { getsr lexbuf }
+  "module" -> MODULE { getsr lexbuf }
+  "namespace" -> NAMESPACE { getsr lexbuf }
+  "NaN" -> NAN { getsr lexbuf }
+  "new" -> NEW { getsr lexbuf }
+  "noinline" -> NOINLINE { getsr lexbuf }
+  "nonterm" -> NONTERM { getsr lexbuf }
+  "noreturn" -> NORETURN { getsr lexbuf }
+  "not" -> NOT { getsr lexbuf }
+  "open" -> OPEN { getsr lexbuf }
+  "package" -> PACKAGE { getsr lexbuf }
+  "pod" -> POD { getsr lexbuf }
+  "private" -> PRIVATE { getsr lexbuf }
+  "proc" -> PROCEDURE { getsr lexbuf }
+  "property" -> PROPERTY { getsr lexbuf }
+  "reduce" -> REDUCE { getsr lexbuf }
+  "ref" -> REF { getsr lexbuf }
+  "rename" -> RENAME { getsr lexbuf }
+  "requires" -> REQUIRES { getsr lexbuf }
+  "return" -> RETURN { getsr lexbuf }
+  "SCHEME" -> SCHEME { getsr lexbuf }
+  "syntax" -> SYNTAX { getsr lexbuf }
+  "static" -> STATIC { getsr lexbuf }
+  "struct" -> STRUCT { getsr lexbuf }
+  "then" -> THEN { getsr lexbuf }
+  "todo" -> TODO { getsr lexbuf }
+  "to" -> TO { getsr lexbuf }
+  "typedef" -> TYPEDEF { getsr lexbuf }
+  "type" -> TYPE { getsr lexbuf }
+  "typeclass" -> TYPECLASS { getsr lexbuf }
+  "union" -> UNION { getsr lexbuf }
+  "use" -> USE { getsr lexbuf }
+  "val" -> VAL { getsr lexbuf }
+  "var" -> VAR { getsr lexbuf }
+  "virtual" -> VIRTUAL { getsr lexbuf }
+  "where" -> WHERE { getsr lexbuf }
+  "when" -> WHEN { getsr lexbuf }
+  "with" -> WITH { getsr lexbuf }
+  "yield" -> YIELD { getsr lexbuf }
+  "_gc_pointer" -> GC_POINTER { getsr lexbuf }
+  "_gc_type" -> GC_TYPE { getsr lexbuf }
+  "_svc" -> SVC { getsr lexbuf }
+  "_deref" -> DEREF { getsr lexbuf }
+  "and" -> AND { getsr lexbuf }
+  "as" -> AS { getsr lexbuf }
+  "callback" -> CALLBACK { getsr lexbuf }
+  "code" -> CODE { getsr lexbuf }
+  "false" -> FALSE { getsr lexbuf }
+  "if" -> IF { getsr lexbuf }
+  "isin" -> ISIN { getsr lexbuf }
+  "match" -> MATCH { getsr lexbuf }
+  "noexpand" -> NOEXPAND { getsr lexbuf }
+  "of" -> OF { getsr lexbuf }
+  "or" -> OR { getsr lexbuf }
+  "the" -> THE { getsr lexbuf }
+  "true" -> TRUE { getsr lexbuf }
+  "typematch" -> TYPEMATCH { getsr lexbuf }
+  "typecase" -> TYPECASE { getsr lexbuf }
+  "whence" -> WHENCE { getsr lexbuf }
+  "unless" -> UNLESS { getsr lexbuf }
+  "_" -> UNDERSCORE { getsr lexbuf }
 
-  "$" -> DOLLAR { dummysr }
-  "?" -> QUEST { dummysr }
-  "!" -> EXCLAMATION { dummysr }
-  "(" -> LPAR { dummysr }
-  ")" -> RPAR { dummysr }
-  "[" -> LSQB { dummysr }
-  "]" -> RSQB { dummysr }
-  "{" -> LBRACE { dummysr }
-  "}" -> RBRACE { dummysr }
-  ":" -> COLON { dummysr }
-  "," -> COMMA { dummysr }
-  ";" -> SEMI { dummysr }
-  "+" -> PLUS { dummysr }
-  "-" -> MINUS { dummysr }
-  "*" -> STAR { dummysr }
-  "/" -> SLASH { dummysr }
-  "|" -> VBAR { dummysr }
-  "&" -> AMPER { dummysr }
-  "<" -> LESS { dummysr }
-  ">" -> GREATER { dummysr }
-  "=" -> EQUAL { dummysr }
-  "." -> DOT { dummysr }
-  "%" -> PERCENT { dummysr }
-  "`" -> BACKQUOTE { dummysr }
-  "~" -> TILDE { dummysr }
-  "^" -> CIRCUMFLEX { dummysr }
-  "#" -> HASH { dummysr }
-  "$$" -> DOLLARDOLLAR { dummysr }
-  "&<" -> ANDLESS { dummysr }
-  "&>" -> ANDGREATER { dummysr }
-  "==" -> EQEQUAL { dummysr }
-  "!=" -> NOTEQUAL { dummysr }
-  "<=" -> LESSEQUAL { dummysr }
-  ">=" -> GREATEREQUAL { dummysr }
-  "<<" -> LEFTSHIFT { dummysr }
-  ">>" -> RIGHTSHIFT { dummysr }
-  "**" -> STARSTAR { dummysr }
-  "<:" -> LESSCOLON { dummysr }
-  ":>" -> COLONGREATER { dummysr }
-  ".." -> DOTDOT { dummysr }
-  "::" -> COLONCOLON { dummysr }
-  "++" -> PLUSPLUS { dummysr }
-  "--" -> MINUSMINUS { dummysr }
-  "+=" -> PLUSEQUAL { dummysr }
-  "-=" -> MINUSEQUAL { dummysr }
-  "*=" -> STAREQUAL { dummysr }
-  "/=" -> SLASHEQUAL { dummysr }
-  "%=" -> PERCENTEQUAL { dummysr }
-  "^=" -> CARETEQUAL { dummysr }
-  "|=" -> VBAREQUAL { dummysr }
-  "&=" -> AMPEREQUAL { dummysr }
-  "~=" -> TILDEEQUAL { dummysr }
-  ":=" -> COLONEQUAL { dummysr }
-  "->" -> RIGHTARROW { dummysr }
-  "=>" -> EQRIGHTARROW { dummysr }
-  "<-" -> LEFTARROW { dummysr }
-  "[|" -> LSQBAR { dummysr }
-  "|]" -> RSQBAR { dummysr }
-  "&&" -> AMPERAMPER { dummysr }
-  "||" -> VBARVBAR { dummysr }
-  "\\&" -> SLOSHAMPER { dummysr }
-  "\\|" -> SLOSHVBAR { dummysr }
-  "\\^" -> SLOSHCIRCUMFLEX { dummysr }
-  "#!" -> HASHBANG { dummysr }
-  "<<=" -> LEFTSHIFTEQUAL { dummysr }
-  ">>=" -> RIGHTSHIFTEQUAL { dummysr }
-  "<->" -> LEFTRIGHTARROW { dummysr }
-  "&==" -> ANDEQEQUAL { dummysr }
-  "&!=" -> ANDNOTEQUAL { dummysr }
-  "&<=" -> ANDLESSEQUAL { dummysr }
-  "&>=" -> ANDGREATEREQUAL { dummysr }
-  "..." -> DOTDOTDOT { dummysr }
-  "-->" -> LONGRIGHTARROW { dummysr }
-  "=>#" -> PARSE_ACTION { dummysr }
-  "#!/" -> HASHBANGSLASH { dummysr }
+  "$" -> DOLLAR { getsr lexbuf }
+  "?" -> QUEST { getsr lexbuf }
+  "!" -> EXCLAMATION { getsr lexbuf }
+  "(" -> LPAR { getsr lexbuf }
+  ")" -> RPAR { getsr lexbuf }
+  "[" -> LSQB { getsr lexbuf }
+  "]" -> RSQB { getsr lexbuf }
+  "{" -> LBRACE { getsr lexbuf }
+  "}" -> RBRACE { getsr lexbuf }
+  ":" -> COLON { getsr lexbuf }
+  "," -> COMMA { getsr lexbuf }
+  ";" -> SEMI { getsr lexbuf }
+  "+" -> PLUS { getsr lexbuf }
+  "-" -> MINUS { getsr lexbuf }
+  "*" -> STAR { getsr lexbuf }
+  "/" -> SLASH { getsr lexbuf }
+  "|" -> VBAR { getsr lexbuf }
+  "&" -> AMPER { getsr lexbuf }
+  "<" -> LESS { getsr lexbuf }
+  ">" -> GREATER { getsr lexbuf }
+  "=" -> EQUAL { getsr lexbuf }
+  "." -> DOT { getsr lexbuf }
+  "%" -> PERCENT { getsr lexbuf }
+  "`" -> BACKQUOTE { getsr lexbuf }
+  "~" -> TILDE { getsr lexbuf }
+  "^" -> CIRCUMFLEX { getsr lexbuf }
+  "#" -> HASH { getsr lexbuf }
+  "$$" -> DOLLARDOLLAR { getsr lexbuf }
+  "&<" -> ANDLESS { getsr lexbuf }
+  "&>" -> ANDGREATER { getsr lexbuf }
+  "==" -> EQEQUAL { getsr lexbuf }
+  "!=" -> NOTEQUAL { getsr lexbuf }
+  "<=" -> LESSEQUAL { getsr lexbuf }
+  ">=" -> GREATEREQUAL { getsr lexbuf }
+  "<<" -> LEFTSHIFT { getsr lexbuf }
+  ">>" -> RIGHTSHIFT { getsr lexbuf }
+  "**" -> STARSTAR { getsr lexbuf }
+  "<:" -> LESSCOLON { getsr lexbuf }
+  ":>" -> COLONGREATER { getsr lexbuf }
+  ".." -> DOTDOT { getsr lexbuf }
+  "::" -> COLONCOLON { getsr lexbuf }
+  "++" -> PLUSPLUS { getsr lexbuf }
+  "--" -> MINUSMINUS { getsr lexbuf }
+  "+=" -> PLUSEQUAL { getsr lexbuf }
+  "-=" -> MINUSEQUAL { getsr lexbuf }
+  "*=" -> STAREQUAL { getsr lexbuf }
+  "/=" -> SLASHEQUAL { getsr lexbuf }
+  "%=" -> PERCENTEQUAL { getsr lexbuf }
+  "^=" -> CARETEQUAL { getsr lexbuf }
+  "|=" -> VBAREQUAL { getsr lexbuf }
+  "&=" -> AMPEREQUAL { getsr lexbuf }
+  "~=" -> TILDEEQUAL { getsr lexbuf }
+  ":=" -> COLONEQUAL { getsr lexbuf }
+  "->" -> RIGHTARROW { getsr lexbuf }
+  "=>" -> EQRIGHTARROW { getsr lexbuf }
+  "<-" -> LEFTARROW { getsr lexbuf }
+  "[|" -> LSQBAR { getsr lexbuf }
+  "|]" -> RSQBAR { getsr lexbuf }
+  "&&" -> AMPERAMPER { getsr lexbuf }
+  "||" -> VBARVBAR { getsr lexbuf }
+  "\\&" -> SLOSHAMPER { getsr lexbuf }
+  "\\|" -> SLOSHVBAR { getsr lexbuf }
+  "\\^" -> SLOSHCIRCUMFLEX { getsr lexbuf }
+  "#!" -> HASHBANG { getsr lexbuf }
+  "<<=" -> LEFTSHIFTEQUAL { getsr lexbuf }
+  ">>=" -> RIGHTSHIFTEQUAL { getsr lexbuf }
+  "<->" -> LEFTRIGHTARROW { getsr lexbuf }
+  "&==" -> ANDEQEQUAL { getsr lexbuf }
+  "&!=" -> ANDNOTEQUAL { getsr lexbuf }
+  "&<=" -> ANDLESSEQUAL { getsr lexbuf }
+  "&>=" -> ANDGREATEREQUAL { getsr lexbuf }
+  "..." -> DOTDOTDOT { getsr lexbuf }
+  "-->" -> LONGRIGHTARROW { getsr lexbuf }
+  "=>#" -> PARSE_ACTION { getsr lexbuf }
+  "#!/" -> HASHBANGSLASH { getsr lexbuf }
 
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
  "//" not_newline * (newline | eof) -> {
-      incr_lineno lexbuf
+      incr_lineno lexbuf 1
   }
 
  "/*" -> {
@@ -1725,7 +1725,7 @@ main lexer =
 
 /* end of line */
  newline -> {
-      incr_lineno lexbuf
+      incr_lineno lexbuf 1
   }
 
 /* end of file */
