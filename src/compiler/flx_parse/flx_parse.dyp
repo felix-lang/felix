@@ -114,7 +114,7 @@ let init_env () =
 let global_data = {
   pcounter = ref 1;
   env=init_env();
-  pdebug=ref false;
+  pdebug=ref true;
 }
 
 type local_data_t = {
@@ -1814,13 +1814,14 @@ prilist:
 dyprod:
    | opt_private NAME opt_prio COLONEQUAL dyalts SEMI
      {
+       print_endline ("RULE " ^ snd $2);
        `Scheme_rule ($1, snd $2, $3,`Sval,$5)
      }
 
    | opt_private NAME opt_prio COLON NAME EQUAL dyalts SEMI
      {
        if snd $5 <> "string" then raise Giveup;
-       print_endline "STRING RULE";
+       print_endline ("STRING RULE " ^ snd $2);
        `Scheme_rule ($1, snd $2,$3,`String,$7)
      }
 
@@ -2487,6 +2488,25 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
           raise x
         end
 
+      | Dyp.Syntax_error ->
+          print_endline ("Syntax error at unknown location in file " ^ filename);
+          let lexbuf = Dyp.std_lexbuf lexbuf in
+          let line = lexbuf.lex_curr_p.pos_lnum  in
+          let column = lexbuf.lex_curr_p.pos_bol in
+          let file = lexbuf.lex_curr_p.pos_fname in
+          let charno = lexbuf.lex_curr_p.pos_cnum in
+          print_endline ("Line=" ^ string_of_int line);
+          print_endline ("Column=" ^ string_of_int column);
+          print_endline ("File=" ^ file);
+          print_endline ("Absolute char pos=" ^ string_of_int charno);
+          let curr_pos =lexbuf.lex_curr_pos in
+          print_endline ("Lex curpos: " ^ string_of_int curr_pos);
+          print_endline ("Lex startpo: " ^ string_of_int lexbuf.lex_start_pos);
+          print_endline ("Lex buffer contains:\n" ^ String.sub lexbuf.lex_buffer 0 curr_pos);
+          print_endline ("\nSYNTAX ERROR HERE\n");
+          print_endline (String.sub lexbuf.lex_buffer curr_pos (lexbuf.lex_buffer_len - curr_pos));
+
+          failwith ("Syntax error at unknown location in file " ^ filename);
 
       | Dyp.Bad_constructor (nt,ctor1, ctor2) ->
           let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^"'" in
@@ -2502,7 +2522,9 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
           end;
           raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
         end
-   in parse_tree
+   in 
+   close_in ic;
+   parse_tree
 
 let parse_file filename dirname incdirs cache_dir auto_imports =
    let tree, local_data = 
