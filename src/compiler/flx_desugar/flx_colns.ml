@@ -50,7 +50,7 @@ let include_file syms inspec lookup =
   let tf_mt = filetime tf in
   let pf_mt = filetime pf in
   let cbt = this_version.build_time_float in
-  let saveit hash_include_files sts =
+  let saveit sts =
       let pf =
         match syms.compiler_options.cache_dir with
         | None ->
@@ -67,12 +67,12 @@ let include_file syms inspec lookup =
           if syms.compiler_options.print_flag then
           print_endline ("Written " ^ pf);
           Marshal.to_channel x this_version [];
-          Marshal.to_channel x (hash_include_files,sts) [];
+          Marshal.to_channel x sts [];
           close_out x
         | None -> () (* can't write, don't worry *)
   in
   let parseit() =
-    let hash_include_files, sts =
+    let sts =
       if syms.compiler_options.print_flag then
       print_endline ("Parsing " ^ tf);
       Flx_parse_ctrl.parse_file
@@ -85,7 +85,7 @@ let include_file syms inspec lookup =
     in
       let local_prefix = Filename.basename basename in
       let tree = expand_macros local_prefix 5000 sts in
-      hash_include_files, tree
+      tree
   in
   let sts =
       (* -- no file ----------------------------------------- *)
@@ -113,39 +113,24 @@ let include_file syms inspec lookup =
           let x = open_in_bin pf in
           let that_version = Marshal.from_channel x in
           if this_version = that_version then begin
-            let (hash_include_files,tree) = Marshal.from_channel x in
+            let tree = Marshal.from_channel x in
             close_in x;
-
-            let hash_includes_agree = fold_left
-              (fun acc f ->
-                let ft = filetime f in
-                acc && ft <> 0.0 && ft < pf_mt
-              )
-              true
-              hash_include_files
-            in
-            if hash_includes_agree then begin (* all time stamps OK *)
-              if syms.compiler_options.print_flag then
-              print_endline ("Loaded " ^ pf);
-              tree
-            end else begin (* include file timestamps wrong *)
-              let hash_include_files, sts = parseit() in
-              saveit hash_include_files sts;
-              sts
-            end
+            if syms.compiler_options.print_flag then
+            print_endline ("Loaded " ^ pf);
+            tree
           end (* right version of compiler *)
           else
           begin (* wrong version of compiler *)
             close_in x;
-            let hash_include_files, sts = parseit() in
-            saveit hash_include_files sts;
+            let sts = parseit() in
+            saveit sts;
             sts
           end
         end
         else
         begin (* time stamps wrong *)
-          let hash_include_files,sts = parseit() in
-          saveit hash_include_files sts;
+          let sts = parseit() in
+          saveit sts;
           sts
         end
       end (* process inclusion first time *)

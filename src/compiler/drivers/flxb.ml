@@ -71,7 +71,7 @@ try
 
   (* PARSE THE IMPLEMENTATION FILE *)
   print_endline ("//Parsing Implementation " ^ input_file_name);
-  let hash_include_files,parse_tree =
+  let parse_tree =
     Flx_parse_ctrl.parse_file
       input_file_name
       (Filename.dirname input_file_name)

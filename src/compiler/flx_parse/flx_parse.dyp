@@ -117,7 +117,13 @@ let global_data = {
   pdebug=ref false;
 }
 
-let local_data = {
+type local_data_t = {
+  dssls:dssl_t Drules.t;
+  loaded_dssls: string list;
+  scm: (Flx_ast.range_srcref * string) list;
+}
+
+let local_data: local_data_t = {
   dssls=Drules.empty;
   loaded_dssls = [];
   scm = [];
@@ -1098,7 +1104,7 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_sexpr %for sepsilon
 %constructor Obj_sexpr %for strepsilon
 
-%start <(Flx_ast.compilation_unit_t)> compilation_unit
+%start <(Flx_ast.compilation_unit_t * local_data_t)> compilation_unit
 
 %lexer
 
@@ -1741,7 +1747,7 @@ main lexer =
 %parser
 
 compilation_unit:
-  | statements ENDMARKER { $1 }
+  | statements ENDMARKER { $1, dyp.local_data }
 
 /* top level statements only */
 statements:
@@ -2434,6 +2440,85 @@ basic_name_comma_list:
   | { [] }
 
 epsilon: | {()}
+%%
+{
+exception Found_file of string
+let lookup_file incdirs f =
+  try
+    List.iter
+    (fun d ->
+      let f = Filename.concat d f in
+      if Sys.file_exists f
+      then raise (Found_file f)
+    )
+    incdirs
+    ;
+    failwith ("Library File <" ^ f ^ "> not found in path")
+  with Found_file s -> s
+
+let dyphack (ls : ( 'a * string) list) : 'a =
+  match ls with
+  | [x,_] -> x
+  | _ -> failwith "Dypgen parser failed"
+
+let parse1 local_data filename : compilation_unit_t * local_data_t = 
+  let ic = open_in filename in 
+  let pilot = pp () in 
+  let lexbuf = Dyp.from_channel pilot ic in
+  let parse_tree = 
+    try dyphack (
+      compilation_unit 
+        ~local_data:local_data 
+        ~global_data:global_data 
+        lexbuf
+      ) 
+    with
+      | Failure s ->
+        begin
+          print_endline ("Parse fail " ^ s);
+          raise (Flx_exceptions.ParseError ("Failure \""^s^"\" Parsing File"))
+        end
+      | Flx_exceptions.ClientError (sr,s)
+      | Flx_exceptions.ClientError2 (sr,_,s)
+      | Flx_exceptions.ClientErrorn (sr::_, s) as x  ->
+        begin
+          print_endline "Parse fail";
+          print_endline (Flx_srcref.long_string_of_src sr);
+          raise x
+        end
+
+
+      | Dyp.Bad_constructor (nt,ctor1, ctor2) ->
+          let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^"'" in
+          print_endline s;
+          failwith s
+
+      | x ->
+        begin
+          print_string "Fatal error: exception ";
+          print_endline (Printexc.to_string x);
+          if Printexc.backtrace_status () then begin
+            print_endline (Printexc.get_backtrace ());
+          end;
+          raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
+        end
+   in parse_tree
+
+let parse_file filename dirname incdirs cache_dir auto_imports =
+   let tree, local_data = 
+      List.fold_left (fun (old_tree, old_local_data) filename ->
+         let filename = lookup_file incdirs filename in
+         let tree, local_data = parse1 old_local_data filename in
+         old_tree @ tree, local_data 
+      )
+      ([],local_data)
+       auto_imports
+   in
+   let filename = lookup_file (dirname :: incdirs) filename in
+   let tree,_ = parse1 local_data filename in
+   tree
+}
+
 
 %mlitop {
 open Flx_token
@@ -2442,5 +2527,6 @@ open Flx_mtypes2
 
 %mli {
   exception Scheme_error of Ocs_types.sval
-  val global_data : global_data_t
 }
+
+

@@ -49,7 +49,7 @@ let run() =
   end
   ;
 
-  let _,parse_tree =
+  let parse_tree =
     Flx_parse_ctrl.parse_file
     input_file_name
     (Filename.dirname input_file_name)
