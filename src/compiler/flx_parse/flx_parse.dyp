@@ -2508,7 +2508,9 @@ let parse_file filename dirname incdirs cache_dir auto_imports =
    let tree, local_data = 
       List.fold_left (fun (old_tree, old_local_data) filename ->
          let filename = lookup_file incdirs filename in
+print_endline ("PARSING IMPORT=" ^ filename);
          let tree, local_data = parse1 old_local_data filename in
+print_endline ("PARSING IMPORT=" ^ filename ^ " DONE");
          old_tree @ tree, local_data 
       )
       ([],local_data)

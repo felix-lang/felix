@@ -58,8 +58,7 @@ let get_felix_options options =
           if inline < 1 then 1 else inline
       end
     ;
-    auto_imports =
-      List.map (fun s -> "<" ^ s ^ ">" ) (get_key_values options "import")
+    auto_imports = get_key_values options "import"
     ;
 
     compile_only = check_keys options ["c";"compile-only"]
