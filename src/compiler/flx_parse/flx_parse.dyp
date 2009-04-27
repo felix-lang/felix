@@ -114,7 +114,7 @@ let init_env () =
 let global_data = {
   pcounter = ref 1;
   env=init_env();
-  pdebug=ref true;
+  pdebug=ref false;
 }
 
 type local_data_t = {
@@ -170,6 +170,9 @@ let cal_priority_relation p =
   | `Greatereq_prio p -> Greatereq_priority p
 
 let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
+(*
+print_endline ("define_scheme " ^ name);
+*)
   let mapnt name = try Drules.find name dssl_record.privacy with Not_found -> name in
   let pr_age = !(dyp.global_data.pcounter) in
   incr (dyp.global_data.pcounter);
@@ -210,7 +213,15 @@ let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
       | NAME (sr,s) -> assert false
 
       | s ->
+(*
+print_endline ("Token=" ^ Flx_prelex.string_of_token s);
+print_endline ("Name =" ^ Flx_prelex.name_of_token s);
+*)
         let name = Dyp_symbols.str_token s in
+        let name = Flx_prelex.name_of_token s in
+(*
+print_endline ("Running f, arg=\"" ^ name ^ "\"");
+*)
         Dyp.Ter name
   in
   let cde =
@@ -1748,29 +1759,35 @@ main lexer =
 
 compilation_unit:
   | graminit statements ENDMARKER { 
-    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.local_data.loaded_dssls);
-    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.local_data.scm)); 
-    print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.local_data.dssls ""));
-
-    $2, dyp.local_data }
+    (*
+    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
+    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm)); 
+    print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
+    *)
+    $2, dyp.last_local_data }
 
 graminit: @{
+    (*
     print_endline "Parsing about to start";
+    *)
     let m = dyp.local_data in
     let loaded_dssls = m.loaded_dssls in
     let scm = List.rev m.scm in
     let env = dyp.global_data.env in
-print_endline "Doing scheme .. ";
+(*
+print_endline ("Doing scheme .. " ^ string_of_int (List.length scm) ^ " fragments");
+*)
     List.iter (fun (sr,s) -> ignore (
-       print_endline ("Scheme: " ^ s);
+       (* print_endline ("Scheme: " ^ s); *)
        try scheme_run sr env s
        with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
          print_endline ("Error "^err^" executing " ^s);
          failwith "Error executing SCHEME"
       ))
     scm;
+(*
 print_endline "Scheme Done .. ";
-
+*)
     (* calculate the transitive closure of DSSL's required *)
     let visited = ref [] in
     let to_install = ref [] in
@@ -1788,8 +1805,9 @@ print_endline "Scheme Done .. ";
     in
     List.iter cal_install loaded_dssls;
     let to_install = List.rev (!to_install) in
+(*
     print_endline ("Installing " ^ cat "," to_install);
-
+*)
     let rules,prios =
       List.fold_left (fun (acc_rules, acc_prios) dssl ->
       let rules,prios =
@@ -1813,6 +1831,10 @@ print_endline "Scheme Done .. ";
       ) 
       rules 
     in
+    let local_data = { m with loaded_dssls = to_install } in
+(*
+    print_endline ("Mounting Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) m.dssls ""));
+*)
     (),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
   }
 
@@ -1822,7 +1844,7 @@ statements:
  | statement_star
    @{
      List.rev (snd $1),
-     [Local_data dyp.local_data]
+     [Local_data dyp.last_local_data]
    }
 
 statement_star:
@@ -1883,7 +1905,9 @@ prilist:
 dyprod:
    | opt_private NAME opt_prio COLONEQUAL dyalts SEMI
      {
+       (*
        print_endline ("RULE " ^ snd $2);
+       *)
        `Scheme_rule ($1, snd $2, $3,`Sval,$5)
      }
 
@@ -2180,11 +2204,13 @@ statement:
   | OPEN SYNTAX basic_name_comma_list SEMI
     @{
       (*
-      print_endline "Parsed open of syntax extensions";
       print_endline "Opening syntax extensions";
       *)
       let sr = rstoken $1 $4 in
       let dssls = List.map snd $3 in
+(*
+      print_endline ("Parsed open of syntax extensions " ^ String.concat "," dssls);
+*)
       let m = dyp.local_data in
 
       (* calculate the transitive closure of DSSL's required
@@ -2208,10 +2234,9 @@ statement:
       List.iter cal_install dssls
       ;
       let to_install = List.rev (!to_install) in
-      (*
+(*
       print_endline ("Installing " ^ cat "," to_install);
-      *)
-
+*)
       let rules,prios =
         List.fold_left (fun (acc_rules, acc_prios) dssl ->
         let rules,prios =
@@ -2233,6 +2258,9 @@ statement:
         bindings := binding :: !bindings;
         rule, action
       end rules in
+(*
+      print_endline "Prepared nu grammar rules to yield to Dypgen";
+*)
       let local_data = { m with loaded_dssls = to_install @ m.loaded_dssls } in
       (0,sr,Snull),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
@@ -2532,6 +2560,7 @@ let dyphack (ls : ( 'a * string) list) : 'a =
   | _ -> failwith "Dypgen parser failed"
 
 let parse1 local_data filename : compilation_unit_t * local_data_t = 
+  print_endline ("PARSING " ^ filename);
   let ic = open_in filename in 
   let pilot = pp () in 
   let lexbuf = Dyp.from_channel pilot ic in
@@ -2596,12 +2625,13 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
    parse_tree
 
 let parse_file filename dirname incdirs cache_dir auto_imports =
+(* TEMPORARY HACK *)
+let auto_imports = "nugram.flxh" :: auto_imports in
+
    let tree, local_data = 
       List.fold_left (fun (old_tree, old_local_data) filename ->
          let filename = lookup_file incdirs filename in
-print_endline ("PARSING IMPORT=" ^ filename);
          let tree, local_data = parse1 old_local_data filename in
-print_endline ("PARSING IMPORT=" ^ filename ^ " DONE");
          old_tree @ tree, local_data 
       )
       ([],local_data)
