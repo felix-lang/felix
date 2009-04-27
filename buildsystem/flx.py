@@ -25,6 +25,7 @@ class Builder(fbuild.db.PersistentObject):
     @fbuild.db.cachemethod
     def _run_flxg(self, src:fbuild.db.SRC, *,
             includes=[],
+            syntaxes=[],
             imports=[],
             flags=[],
             include_std=True,
@@ -57,11 +58,14 @@ class Builder(fbuild.db.PersistentObject):
         includes.add(src.parent)
         includes.add(dst.parent)
 
+        syntaxes = set(syntaxes)
         imports = set(imports)
         if include_std:
+            syntaxes.add('nugram.flxh')
             imports.add('flx.flxh')
 
         cmd.extend('-I' + i for i in sorted(includes) if Path.exists(i))
+        cmd.extend('--syntax=' + i for i in sorted(syntaxes))
         cmd.extend('--import=' + i for i in sorted(imports))
         cmd.append('--output_dir=' + dst.parent)
         cmd.extend(flags)
