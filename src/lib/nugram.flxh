@@ -1594,7 +1594,7 @@ syntax executable {
 
 
   sifgoto := "forall" sname in sexpr do statement* done ssemi =>#
-    "`(ast_macro_vfor (,_2) ,_4 ,_6)";
+    "`(ast_macro_vfor (,_2) ,_4 ,_6)"
   ;
 
   sifgoto := "forall" sname in sexpr "upto" sexpr do statement* done ssemi =>#
