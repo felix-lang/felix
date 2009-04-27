@@ -72,12 +72,11 @@ try
   (* PARSE THE IMPLEMENTATION FILE *)
   print_endline ("//Parsing Implementation " ^ input_file_name);
   let parse_tree =
-    Flx_parse_ctrl.parse_file
+    Flx_parse.parse_file
       input_file_name
       (Filename.dirname input_file_name)
       compiler_options.include_dirs
       compiler_options.cache_dir
-      Flx_macro.expand_expression
       compiler_options.auto_imports
   in
   let have_interface = Sys.file_exists iface_file_name in

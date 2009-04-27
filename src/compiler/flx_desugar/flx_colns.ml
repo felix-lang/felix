@@ -75,12 +75,11 @@ let include_file syms inspec lookup =
     let sts =
       if syms.compiler_options.print_flag then
       print_endline ("Parsing " ^ tf);
-      Flx_parse_ctrl.parse_file
+      Flx_parse.parse_file
         tf
         (Filename.dirname tf)
         include_dirs
         syms.compiler_options.cache_dir
-        Flx_macro.expand_expression
         syms.compiler_options.auto_imports
     in
       let local_prefix = Filename.basename basename in

@@ -50,12 +50,11 @@ let run() =
   ;
 
   let parse_tree =
-    Flx_parse_ctrl.parse_file
+    Flx_parse.parse_file
     input_file_name
     (Filename.dirname input_file_name)
     compiler_options.include_dirs
     compiler_options.cache_dir
-    Flx_macro.expand_expression
     compiler_options.auto_imports
   in
     print_endline (Flx_print.string_of_compilation_unit parse_tree);

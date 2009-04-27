@@ -3,7 +3,6 @@ iscr_source = ['flx.pak']
 caml_modules = [
     'src/compiler/flx_parse/flx_sex2flx',
     'src/compiler/flx_parse/flx_parse',
-    'src/compiler/flx_parse/flx_parse_ctrl',
 ]
 
 caml_include_paths = [

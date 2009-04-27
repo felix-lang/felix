@@ -63,12 +63,11 @@ try
   (* PARSE THE IMPLEMENTATION FILE *)
   print_endline ("//Parsing Implementation " ^ input_file_name);
   let parse_tree =
-    Flx_parse_ctrl.parse_file
+    Flx_parse.parse_file
       input_file_name
       (Filename.dirname input_file_name)
       compiler_options.include_dirs
       compiler_options.cache_dir
-      expand_expression
       compiler_options.auto_imports
   in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
