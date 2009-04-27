@@ -380,7 +380,6 @@ typeclass Show [T] {
 
 @h=tangler('lib/flx.flxh','data')
 @select(h)
-#syntax <nugram.flxh>
 open syntax felix;
 
 @plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]

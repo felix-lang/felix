@@ -1747,13 +1747,82 @@ main lexer =
 %parser
 
 compilation_unit:
-  | statements ENDMARKER { $1, dyp.local_data }
+  | graminit statements ENDMARKER { 
+    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.local_data.loaded_dssls);
+    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.local_data.scm)); 
+    print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.local_data.dssls ""));
+
+    $2, dyp.local_data }
+
+graminit: @{
+    print_endline "Parsing about to start";
+    let m = dyp.local_data in
+    let loaded_dssls = m.loaded_dssls in
+    let scm = List.rev m.scm in
+    let env = dyp.global_data.env in
+print_endline "Doing scheme .. ";
+    List.iter (fun (sr,s) -> ignore (
+       print_endline ("Scheme: " ^ s);
+       try scheme_run sr env s
+       with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
+         print_endline ("Error "^err^" executing " ^s);
+         failwith "Error executing SCHEME"
+      ))
+    scm;
+print_endline "Scheme Done .. ";
+
+    (* calculate the transitive closure of DSSL's required *)
+    let visited = ref [] in
+    let to_install = ref [] in
+    let rec cal_install s =
+      if List.mem s !visited then ()
+      else begin
+        visited := s :: !visited;
+        let d =
+          try Drules.find s m.dssls
+          with Not_found -> failwith ("Can't open syntax " ^ s)
+        in
+        List.iter cal_install d.deps;
+        to_install := s :: !to_install
+      end
+    in
+    List.iter cal_install loaded_dssls;
+    let to_install = List.rev (!to_install) in
+    print_endline ("Installing " ^ cat "," to_install);
+
+    let rules,prios =
+      List.fold_left (fun (acc_rules, acc_prios) dssl ->
+      let rules,prios =
+        let d =
+          try Drules.find dssl m.dssls
+          with Not_found -> failwith ("Can't open syntax " ^ dssl)
+        in d.rules,d.prios
+      in
+      let rules = List.map (fun x -> dssl,x) rules in
+      acc_rules @ rules, acc_prios @ prios
+      )
+      ([],[])
+      to_install
+    in
+
+    let bindings = ref [] in
+    let add_rules = List.map (fun rule ->
+      let rule, action, binding = extend_grammar dyp rule in
+      bindings := binding :: !bindings;
+      rule, action
+      ) 
+      rules 
+    in
+    (),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+  }
+
 
 /* top level statements only */
 statements:
  | statement_star
-   {
-     List.rev (snd $1)
+   @{
+     List.rev (snd $1),
+     [Local_data dyp.local_data]
    }
 
 statement_star:
