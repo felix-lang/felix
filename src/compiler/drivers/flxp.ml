@@ -16,7 +16,6 @@ let print_help () = print_options(); exit(0)
 let run() =
   let raw_options = parse_options Sys.argv in
   let compiler_options = get_felix_options raw_options in
-  Flx_pdoc.document_grammar := compiler_options.document_grammar;
   Flx_parse.global_data.pdebug := compiler_options.print_flag;
 
   if check_keys raw_options ["h"; "help"]
@@ -67,9 +66,6 @@ let run() =
   ;
 
   flush stdout;
-
-  if compiler_options.document_grammar then
-    Flx_pdoc.gen_doc();
 
 in
   run()

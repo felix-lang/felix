@@ -145,103 +145,8 @@ let build_args sr ps args =
   )
   ps args
 
-let rec parse_expr sr s =
-  let filename = match sr with filename,_,_,_,_ -> "_string_in_"^filename in
-  let pre_tokens  = Flx_pretok.pre_tokens_of_string s filename expand_expression in
-  let pre_tokens =
-    match pre_tokens with
-    | Flx_token.HASH_INCLUDE_FILES _ :: tail -> tail
-    | _ -> assert false
-  in
-  let tokens  = Flx_lex1.translate_preprocessor pre_tokens @ [Flx_token.ENDMARKER] in
-  let toker = (new Flx_tok.tokeniser tokens) in
-  begin try
-    dyphack (
-    Flx_preparse.expression
-    (toker#token_src)
-    (Lexing.from_string "dummy" )
-    )
-  with _ ->
-    toker#report_syntax_error;
-    raise (Flx_exceptions.ParseError ("Parsing String '"^s^"'as Expression"))
-  end
-
-and interpolate sr s : expr_t =
-  let out = ref "" in
-  let b = ref 0 in
-  let args = ref [] in
-  let arg = ref "" in
-  let apa ch = arg := !arg ^ String.make 1 ch in
-  let aps ch = out := !out ^ String.make 1 ch in
-  let mode = ref `Text in
-  let end_expr () =
-    args := !arg :: !args;
-    arg := "";
-    out := !out ^ "%S";
-    mode := `Text
-  in
-  for i = 0 to String.length s - 1 do
-    let ch = s.[i] in
-    match !mode with
-    | `Text ->
-      begin match ch with
-      | '$' -> mode := `Dollar
-      | _ -> aps ch
-      end
-
-    | `Dollar ->
-      begin match ch with
-      | '(' ->
-         incr b; apa ch; mode := `Expr
-
-      | _ when is_quote ch ->
-         mode := `Quote ch
-
-      | _ when starts_id ch ->
-        apa ch;
-        mode := `Ident
-
-      | _ -> aps '$'; aps ch; mode := `Text
-      end
-
-    | `Quote q ->
-      begin match ch with
-      | _ when ch = q -> end_expr()
-      | _ -> apa ch
-      end
-
-    | `Ident ->
-      begin match ch with
-      | _ when continues_id ch -> apa ch
-      | _ -> end_expr (); aps ch
-      end
-
-    | `Expr ->
-      begin match ch with
-      | '(' -> incr b; apa ch
-      | ')' ->
-        decr b;
-        apa ch;
-        if !b = 0 then end_expr ()
-      | _ -> apa ch
-      end
-  done
-  ;
-  if !mode = `Expr then end_expr ();
-  let args = rev !args in
-  let args = map (parse_expr sr) args in
-  let str = `AST_name (sr,"str",[]) in
-  let args = map (fun e -> `AST_apply (sr,(str,e))) args in
-  match args with
-  | [] -> `AST_literal (sr,`AST_string !out)
-  | [x] ->
-    `AST_apply (sr,(`AST_vsprintf (sr,!out),x))
-  | _ ->
-    let x = `AST_tuple (sr,args) in
-   `AST_apply (sr,(`AST_vsprintf (sr,!out),x))
-
 (* alpha convert parameter names *)
-and alpha_expr sr local_prefix seq ps e =
+  let rec alpha_expr sr local_prefix seq ps e =
   let psn, pst = split ps in
   let psn' =  (* new parameter names *)
     map
@@ -435,9 +340,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e
   | `AST_vsprintf _ -> e
-  | `AST_interpolate (sr,s) ->
-    let e = interpolate sr s in
-    me e
+  | `AST_interpolate (sr,s) -> failwith "Interpolation not supported now!"
 
   (* and desugaring: x and y and z and ... *)
   | `AST_andlist (sr, es) ->
@@ -620,17 +523,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
      let x = me x in
      let x = string_of_expr x in
      `AST_literal (sr,`AST_string x)
-
-  | `AST_apply (sr,(`AST_name(_,"_parse_expr",[]),x)) ->
-    let x = me x in
-    let x = cf x in
-    begin match x with
-    | `AST_literal (_,`AST_string s) ->
-      parse_expr sr s
-
-    | _ -> clierr sr "_parse_expr requires string argument"
-    end
-
 
    (* _tuple_cons (a,t) ->
      a,t if t is not a tuple

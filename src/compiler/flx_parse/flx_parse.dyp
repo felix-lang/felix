@@ -19,11 +19,29 @@ open Flx_list
 open Ocs_types
 open Sex_types
 open Dyp
-open Flx_pdoc
 open Lexing
 open Big_int
 open Flx_string
-open Flx_preproc (* for strip_us *)
+
+type action_t = [`Scheme of string | `None]
+type symbol_t = [`Atom of token | `Group of dyalt_t list]
+and dyalt_t = symbol_t list * range_srcref * action_t * anote_t
+
+type page_entry_t = [
+  | `Nt of string
+  | `Subpage of string * page_entry_t list
+]
+
+let strip_us s =
+  let n = String.length s in
+  let x = Buffer.create n in
+  for i=0 to n - 1 do
+    match s.[i] with
+    | '_' -> ()
+    | c -> Buffer.add_char x c
+  done;
+  Buffer.contents x
+
 
 let lexeme x = Lexing.lexeme (Dyp.std_lexbuf x)
 
@@ -578,7 +596,6 @@ let add_rule global_data local_data dssl rule =
   let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
   match rule with
   | `Scheme_rule (privacy,name,prio,kind,dyalts) ->
-     if !Flx_pdoc.document_grammar then record_rule dssl name dyalts;
      let rules = fixup_alternatives global_data.pcounter kind name prio dyalts in
      let rules = List.fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
      let privacy =
@@ -598,8 +615,8 @@ let add_rule global_data local_data dssl rule =
      let m = {m with dssls=Drules.add dssl d m.dssls } in
      global_data,m
 
-  | `Document (name,s) -> record_doc dssl name s; global_data,local_data
-  | `Page (name,entries) -> record_group name entries; global_data, local_data
+  | `Document (name,s) -> global_data,local_data
+  | `Page (name,entries) -> global_data, local_data
   | `Priorities p ->
     let d = { d with prios = p::d.prios } in
     let m = {m with dssls=Drules.add dssl d m.dssls } in
@@ -2542,16 +2559,21 @@ epsilon: | {()}
 {
 exception Found_file of string
 let lookup_file incdirs f =
-  try
-    List.iter
-    (fun d ->
-      let f = Filename.concat d f in
-      if Sys.file_exists f
-      then raise (Found_file f)
-    )
-    incdirs
-    ;
-    failwith ("Library File <" ^ f ^ "> not found in path")
+  try 
+    begin
+      if Filename.is_relative f then
+        List.iter
+        (fun d ->
+          let f = Filename.concat d f in
+          if Sys.file_exists f
+          then raise (Found_file f)
+        )
+        incdirs
+      else
+        if Sys.file_exists f
+        then raise (Found_file f)
+    end; 
+    failwith ("File " ^ f ^ " not found in path")
   with Found_file s -> s
 
 let dyphack (ls : ( 'a * string) list) : 'a =

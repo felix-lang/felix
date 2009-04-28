@@ -36,10 +36,8 @@ def build_flx_lex(ocaml, ocamllex):
     dypgen = call('buildsystem.dypgen.build_exe', ocaml, ocamllex)
     return ocaml.build_lib(path/'flx_lex',
         srcs=Path.globall(
-            path / '*.ml{,i}',
-            ocamllex(path / 'flx_lex.mll'),
-            dypgen(path / 'flx_preparse.dyp',
-                flags=['--no-undef-nt', '--pv-obj', '--noemit-token-type'])),
+            path / '*.ml{,i}'
+            ),
         libs=[
             call('buildsystem.dypgen.build_lib', ocaml),
             call('buildsystem.ocs.build_lib', ocaml),
@@ -142,9 +140,6 @@ def build_flx_drivers(ocaml, ocamllex):
 
     external_libs = ['nums', 'unix', 'str']
 
-    flxl = ocaml.build_exe(fbuild.buildroot / 'bin/flxl',
-        [path / 'flxl.ml'], libs=libs, external_libs=external_libs)
-
     flxp = ocaml.build_exe(fbuild.buildroot / 'bin/flxp',
         [path / 'flxp.ml'], libs=libs, external_libs=external_libs)
 
@@ -161,7 +156,6 @@ def build_flx_drivers(ocaml, ocamllex):
         [path / 'flxg.ml'], libs=libs, external_libs=external_libs)
 
     return Record(
-        flxl=flxl,
         flxp=flxp,
         flxm=flxm,
         flxd=flxd,

@@ -6,7 +6,6 @@ caml_modules = [
 ]
 
 caml_exes = [
-    'src/compiler/drivers/flxl',
     'src/compiler/drivers/flxp',
     'src/compiler/drivers/flxm',
     'src/compiler/drivers/flxd',
