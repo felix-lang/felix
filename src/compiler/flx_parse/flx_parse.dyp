@@ -2586,6 +2586,26 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
   let ic = open_in filename in 
   let pilot = pp () in 
   let lexbuf = Dyp.from_channel pilot ic in
+  let b = (Dyp.std_lexbuf lexbuf) in
+  b.lex_curr_p <- { b.lex_curr_p with pos_fname = filename };
+  let show_error() =
+      print_endline ("Syntax error at unknown location in file " ^ filename);
+      let lexbuf = Dyp.std_lexbuf lexbuf in
+      let line = lexbuf.lex_curr_p.pos_lnum  in
+      let column = lexbuf.lex_curr_p.pos_bol in
+      let file = lexbuf.lex_curr_p.pos_fname in
+      let charno = lexbuf.lex_curr_p.pos_cnum in
+      print_endline ("Line=" ^ string_of_int line);
+      print_endline ("Column=" ^ string_of_int column);
+      print_endline ("File=" ^ file);
+      print_endline ("Absolute char pos=" ^ string_of_int charno);
+      let curr_pos =lexbuf.lex_curr_pos in
+      print_endline ("Lex curpos: " ^ string_of_int curr_pos);
+      print_endline ("Lex startpo: " ^ string_of_int lexbuf.lex_start_pos);
+      print_endline ("Lex buffer contains:\n" ^ String.sub lexbuf.lex_buffer 0 curr_pos);
+      print_endline ("\nSYNTAX ERROR HERE\n");
+      print_endline (String.sub lexbuf.lex_buffer curr_pos (lexbuf.lex_buffer_len - curr_pos));
+  in
   let parse_tree = 
     try dyphack (
       compilation_unit 
@@ -2597,6 +2617,7 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
       | Failure s ->
         begin
           print_endline ("Parse fail " ^ s);
+          show_error();
           raise (Flx_exceptions.ParseError ("Failure \""^s^"\" Parsing File"))
         end
       | Flx_exceptions.ClientError (sr,s)
@@ -2609,23 +2630,7 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
         end
 
       | Dyp.Syntax_error ->
-          print_endline ("Syntax error at unknown location in file " ^ filename);
-          let lexbuf = Dyp.std_lexbuf lexbuf in
-          let line = lexbuf.lex_curr_p.pos_lnum  in
-          let column = lexbuf.lex_curr_p.pos_bol in
-          let file = lexbuf.lex_curr_p.pos_fname in
-          let charno = lexbuf.lex_curr_p.pos_cnum in
-          print_endline ("Line=" ^ string_of_int line);
-          print_endline ("Column=" ^ string_of_int column);
-          print_endline ("File=" ^ file);
-          print_endline ("Absolute char pos=" ^ string_of_int charno);
-          let curr_pos =lexbuf.lex_curr_pos in
-          print_endline ("Lex curpos: " ^ string_of_int curr_pos);
-          print_endline ("Lex startpo: " ^ string_of_int lexbuf.lex_start_pos);
-          print_endline ("Lex buffer contains:\n" ^ String.sub lexbuf.lex_buffer 0 curr_pos);
-          print_endline ("\nSYNTAX ERROR HERE\n");
-          print_endline (String.sub lexbuf.lex_buffer curr_pos (lexbuf.lex_buffer_len - curr_pos));
-
+          show_error();
           failwith ("Syntax error at unknown location in file " ^ filename);
 
       | Dyp.Bad_constructor (nt,ctor1, ctor2) ->
