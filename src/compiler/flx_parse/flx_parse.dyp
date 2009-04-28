@@ -1382,19 +1382,11 @@ and parse_hashbang = parse
       incr_lineno lexbuf 1
   }
 
-and parse_C_comment = parse
-| "/*" {
-      parse_C_comment lexbuf
-  }
-| newline {
-      incr_lineno lexbuf 1;
-      parse_C_comment lexbuf
-  }
-| "*/" {
-  }
-| _ {
-      parse_C_comment lexbuf
-  }
+and parse_C_comment count = parse
+| "/*"    { parse_C_comment (count+1) lexbuf }
+| newline { incr_lineno lexbuf 1; parse_C_comment count lexbuf }
+| "*/"    { if count = 1 then () else parse_C_comment (count - 1) lexbuf }
+| _       { parse_C_comment count lexbuf }
 
 and parse_line = parse
 | not_newline * (newline | eof)
@@ -1598,9 +1590,7 @@ main lexer =
       incr_lineno lexbuf 1
   }
 
- "/*" -> {
-      parse_C_comment lexbuf
-  }
+ "/*" -> { parse_C_comment 1 lexbuf }
 
  int_lit -> INTEGER {
       let sr = getsr lexbuf in
@@ -1684,57 +1674,43 @@ main lexer =
  ddd    -> STRING {   parse_dddstring lexbuf }
 
 /* Python raw strings */
- ('r'|'R') quote  -> STRING {   parse_raw_qstring lexbuf }
  ('r'|'R') qqq    -> STRING {   parse_raw_qqqstring lexbuf }
  ('r'|'R') dquote -> STRING {   parse_raw_dstring lexbuf }
  ('r'|'R') ddd    -> STRING {   parse_raw_dddstring lexbuf }
 
 
 /* C strings: type char*  */
- ('c'|'C') quote  -> CSTRING {   parse_qstring lexbuf }
  ('c'|'C') qqq    -> CSTRING {   parse_qqqstring lexbuf }
  ('c'|'C') dquote -> CSTRING {   parse_dstring lexbuf }
  ('c'|'C') ddd    -> CSTRING {   parse_dddstring lexbuf }
 
 /* raw C strings: type char*  */
- rqc quote  -> CSTRING {   parse_raw_qstring lexbuf }
  rqc qqq    -> CSTRING {   parse_raw_qqqstring lexbuf }
  rqc dquote -> CSTRING {   parse_raw_dstring lexbuf }
  rqc ddd    -> CSTRING {   parse_raw_dddstring lexbuf }
 
 
 /* Format strings */
- ('f'|'F') quote  -> FSTRING {   parse_qstring lexbuf }
  ('f'|'F') qqq    -> FSTRING {   parse_qqqstring lexbuf }
  ('f'|'F') dquote -> FSTRING {   parse_dstring lexbuf }
  ('f'|'F') ddd    -> FSTRING {   parse_dddstring lexbuf }
 
-/* interpolated strings */
- ('q'|'Q') quote  -> QSTRING {   parse_qstring lexbuf }
- ('q'|'Q') qqq    -> QSTRING {   parse_qqqstring lexbuf }
- ('q'|'Q') dquote -> QSTRING {   parse_dstring lexbuf }
- ('q'|'Q') ddd    -> QSTRING {   parse_dddstring lexbuf }
-
 /* wide strings */
- ('w' | 'W') quote  -> WSTRING {   parse_qstring lexbuf }
  ('w' | 'W') qqq    -> WSTRING {   parse_qqqstring lexbuf }
  ('w' | 'W') dquote -> WSTRING {   parse_dstring lexbuf }
  ('w' | 'W') ddd    -> WSTRING {   parse_dddstring lexbuf }
 
 /* UTF32 strings */
- ('u' | 'U') quote  -> USTRING {   parse_qstring lexbuf }
  ('u' | 'U') qqq    -> USTRING {   parse_qqqstring lexbuf }
  ('u' | 'U') dquote -> USTRING {   parse_dstring lexbuf }
  ('u' | 'U') ddd    -> USTRING {   parse_dddstring lexbuf }
 
 /* keyword strings */
- ('k' | 'K') quote  -> USER_KEYWORD {   parse_qstring lexbuf }
  ('k' | 'K') qqq    -> USER_KEYWORD {   parse_qqqstring lexbuf }
  ('k' | 'K') dquote -> USER_KEYWORD {   parse_dstring lexbuf }
  ('k' | 'K') ddd    -> USER_KEYWORD {   parse_dddstring lexbuf }
 
 /* name strings */
- ('n' | 'N') quote  -> NAME {   parse_qstring lexbuf }
  ('n' | 'N') qqq    -> NAME {   parse_qqqstring lexbuf }
  ('n' | 'N') dquote -> NAME {   parse_dstring lexbuf }
  ('n' | 'N') ddd    -> NAME {   parse_dddstring lexbuf }

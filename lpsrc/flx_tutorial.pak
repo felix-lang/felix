@@ -1947,7 +1947,7 @@ var d = f(b=1,a=2); // 4
 println$ "d=" + str (d);
 
 d = f(x=1,y=2); // 12
-println "d=" + str (d);
+println$ "d=" + str (d);
 
 
 fun g(xx:X)=> xx.aa+xx.bb;
