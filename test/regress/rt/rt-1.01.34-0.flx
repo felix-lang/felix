@@ -1,9 +1,0 @@
-//Check lexing:keywords
-#
-module X {
-  fun f(x:int)=> x + x;
-}
-
-#keyword f
-
-print$ X::f 22; endl;
