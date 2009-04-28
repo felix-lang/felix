@@ -2650,7 +2650,7 @@ let parse_file filename dirname incdirs cache_dir auto_imports =
 (* TEMPORARY HACK *)
 let auto_imports = "nugram.flxh" :: auto_imports in
 
-   let tree, local_data = 
+   let prefix_tree, local_data = 
       List.fold_left (fun (old_tree, old_local_data) filename ->
          let filename = lookup_file incdirs filename in
          let tree, local_data = parse1 old_local_data filename in
@@ -2661,7 +2661,7 @@ let auto_imports = "nugram.flxh" :: auto_imports in
    in
    let filename = lookup_file (dirname :: incdirs) filename in
    let tree,_ = parse1 local_data filename in
-   tree
+   prefix_tree @ tree
 }
 
 

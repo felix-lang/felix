@@ -1640,65 +1640,6 @@ see
 
 @doc()
 
-@env.head(2,"Perl Formatting")
-Felix provides Perl/Tcl style string interpolation,
-where you can write an expression inside a string
-enclosed in $() or $'' or $"". The expression is
-converted to a string an replaces the $ expression.
-@p()
-Interpolation is statically type checked and cannot
-fail at run time. Interpolation literals are actually
-first class functions applied to unit and returning
-a string.
-@p()
-
-@select(env.test('.flx'))
-@kat("formatting:interpolation")
-
-var x = "Hello";
-var y = "World";
-var u = 41;
-
-var z = q"$x $(y) $(1+u) $'2+u'\n";
-
-print z;
-@doc()
-
-@select(env.expect())
-Hello World 42 43
-@doc()
-The 'q' character introduces an interpolated string;
-any of the usual quoting styles is allowed.
-@p()
-Inside the string, the '$' character introduces
-an expression which is evaluated, converted to a string
-using the 'str' function, and replaced by that string.
-@p()
-The expression may begin with a '(', in which case
-it proceeds up to the balancing ')'. You should note
-the scan for brackets ignores other characters,
-in particular quote marks, so this form does not
-allow you to embed another string containing an
-unbalanced bracket.
-@p()
-The expression may begin with a double quote,
-single quote, or backtick, in which case it
-consists of the text up to the next occurence
-of the same kind of quote mark.
-@p()
-Finally, you can just write a Felix identifier,
-starting with a letter or underscore, and
-continuing with any letter, underscore, digit,
-or single quote mark.
-
-@head(3,"How it works")
-The conversion uses a visible str function to do the conversions,
-usually the str method of the Str typeclass, so if you have
-a data type which you wish to format this way, you need to
-provide an instance of Str with method str to convert it
-to a string.
-
-
 @env.head(1,'Structured types')
 @env.head(2,'Tuples')
 As you might guess from the title, Felix has
@@ -1983,30 +1924,30 @@ Also parameters can have default values.
 @kat('Struct:initialised by record')
 
 var x = struct {a=1; b=2; };
-println q"a=$(x.a), b=$(x.b)";
+println$ "a=" + str (x.a) + ", b=" + str (x.b);
 var y = (a=3, b=4);
-println q"a=$(y.a), b=$(y.b)";
+println$ "a="+ str (y.a) + ", b=" + str (y.b);
 
 struct X { aa:int; bb:int; };
 
 val k = X (1,2);
-println q"aa=$(k.aa), bb=$(k.bb)";
+println$ "aa=" + str (k.aa)+ ", bb=" + str (k.bb)";
 
 val j = X (bb=11,aa=22);
-println q"aa=$(j.aa), bb=$(j.bb)";
+println$ "aa="+str(j.aa)+", bb=" + str (j.bb)";
 
 val r = (bb=88,aa=99);
 val q = X r;
-println q"aa=$(q.aa), bb=$(q.bb)";
+println$ "aa="+str(q.aa)+", bb=" + str(q.bb)";
 
 fun f(a:int, b:int)=> a + 2* b;
 fun f(x:int, y:int)=> 2 * x + 5* y;
 
 var d = f(b=1,a=2); // 4
-println q"d=$(d)";
+println$ "d=" + str (d);
 
 d = f(x=1,y=2); // 12
-println q"d=$(d)";
+println "d=" + str (d);
 
 
 fun g(xx:X)=> xx.aa+xx.bb;
