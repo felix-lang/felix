@@ -1566,9 +1566,9 @@ module Filename
    # Felix then reduces it to \\           !!!
    # and finally C reduces it to plain \   !!!
    # don't remove the !!! because \ at eol is continuation .. argg
-   tangle("  const sep : charp = c'\"\\\\\\\\\"';")
+   tangle('  const sep : charp = c"\"\\\\\\\\\"";')
  else:
-   tangle("  const sep : charp = c'\""+os.sep+"\"';")
+   tangle('  const sep : charp = c"\\"'+os.sep+'\\"";')
 }
 
 @#------------- C I/O -------------------
