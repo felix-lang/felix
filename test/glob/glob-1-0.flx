@@ -3,7 +3,7 @@ include "stl";
 include "glob";
 
 // THIS IS A HACK!
-var files = glob::glob("build/lib/*.flx");
+var files = glob::glob((Env::getenv "TEST_DATA_DIR") + "/*.flx");
 open Reversible_Sequence[
   Stl::Vector::stl_vector[string],
   Stl::Vector::stl_vector_iterator[string],
@@ -12,7 +12,6 @@ open Reversible_Sequence[
 ];
 
 var p = begin files; whilst p != end files do
-  basename := (*p).[10 to];
-  if basename == "std.flx" do print "true"; endl; done;
+  println$ *p;
   ++p;
 done;

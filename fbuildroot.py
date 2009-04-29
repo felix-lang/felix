@@ -292,9 +292,33 @@ def build():
         exe=fbuild.buildroot / 'bin/flx.py',
         flags=['--test=' + fbuild.buildroot])
 
-    from buildsystem.flx import test_flxs
+    # --------------------------------------------------------------------------
+    # run the felix tests
 
-    tests = Path.globall(
+    from buildsystem.flx import test_flx
+
+    failed_srcs = []
+
+    def test(src):
+        try:
+            passed = test_flx(felix, src)
+        except fbuild.ConfigFailed as e:
+            fbuild.logger.log(str(e))
+            passed = False
+        return src, passed
+
+    # Run the dynamic loading tests first
+    try:
+        lib1 = felix.compile('test/regress/rt/rt-1.01.02-0.flx', static=False)
+        lib2 = felix.compile('test/regress/rt/rt-1.01.03-0.flx', static=False)
+    except fbuild.ExecutionError as e:
+        fbuild.logger.log(e, verbose=1)
+    else:
+        if not test_flx(felix, 'test/regress/drt/drt-1.01.01-0.flx',
+                env={'lib1': lib1, 'lib2': lib2}):
+            failed_srcs.append('test/regress/drt/drt-1.01.01-0.flx')
+
+    srcs = Path.globall(
         'test/*/*.flx',
         'test/*/*/*.flx',
         fbuild.buildroot / 'tut/*/*.flx',
@@ -302,15 +326,24 @@ def build():
             'test/drivers/*.flx',
             'test/faio/posix-*.flx',
             'test/faio/win-*.flx',
+            'test/regress/drt/*.flx',
             'test/regress/bt/*.flx',
             'test/regress/kf/*.flx',
             'test/regress/nd/*.flx',
+            'test/test-data/*.flx',
         ])
 
     if 'posix' in target.platform:
-        tests.extend(Path.glob('test/faio/posix-*.flx'))
+        srcs.extend(Path.glob('test/faio/posix-*.flx'))
 
     if 'windows' in target.platform:
-        tests.extend(Path.glob('test/faio/win-*.flx'))
+        srcs.extend(Path.glob('test/faio/win-*.flx'))
 
-    test_flxs(felix, tests)
+    for src, passed in fbuild.scheduler.map(test, sorted(srcs, reverse=True)):
+        if not passed:
+            failed_srcs.append(src)
+
+    if failed_srcs:
+        fbuild.logger.log('\nThe following tests failed:')
+        for src in failed_srcs:
+            fbuild.logger.log('  %s' % src, color='yellow')

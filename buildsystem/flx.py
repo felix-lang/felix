@@ -187,26 +187,9 @@ def build_flx_pkgconfig(flx, phase):
 
 # ------------------------------------------------------------------------------
 
-def test_flxs(felix, srcs):
-    def test(src):
-        try:
-            passed = test_flx(felix, src)
-        except fbuild.ConfigFailed as e:
-            fbuild.logger.log(str(e))
-            passed = False
-        return src, passed
+def test_flx(felix, src, *args, **kwargs):
+    src = Path(src)
 
-    failed_srcs = []
-    for src, passed in fbuild.scheduler.map(test, sorted(srcs, reverse=True)):
-        if not passed:
-            failed_srcs.append(src)
-
-    if failed_srcs:
-        fbuild.logger.log('\nThe following tests failed:')
-        for src in failed_srcs:
-            fbuild.logger.log('  %s' % src, color='yellow')
-
-def test_flx(felix, src):
     passed = True
     for static in False, True:
         try:
@@ -227,11 +210,12 @@ def test_flx(felix, src):
 
         expect = src.replaceext('.expect')
 
-        passed &= check_flx(felix,
+        passed &= check_flx(felix, *args,
             exe=exe,
             dst=dst,
             expect=expect if expect.exists() else None,
-            static=static)
+            static=static,
+            **kwargs)
 
     return passed
 
@@ -240,10 +224,15 @@ def check_flx(felix,
         exe:fbuild.db.SRC,
         dst:fbuild.db.DST,
         expect:fbuild.db.OPTIONAL_SRC,
-        static):
+        static,
+        env={}):
     fbuild.logger.check('checking ' + exe)
     try:
-        stdout, stderr = felix.run(exe, static=static, timeout=60, quieter=1)
+        stdout, stderr = felix.run(exe,
+            env=dict(env, TEST_DATA_DIR=Path('test/test-data')),
+            static=static,
+            timeout=60,
+            quieter=1)
     except fbuild.ExecutionError as e:
         if isinstance(e, fbuild.ExecutionTimedOut):
             fbuild.logger.failed('failed: timed out')
