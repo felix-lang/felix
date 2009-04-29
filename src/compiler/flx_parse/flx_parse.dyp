@@ -51,9 +51,9 @@ let getsr lexbuf =
   let lexbuf = Dyp.std_lexbuf lexbuf in
   let file = lexbuf.lex_start_p.pos_fname in
   let start_line = lexbuf.lex_start_p.pos_lnum in
-  let start_col = lexbuf.lex_start_p.pos_bol in
-  let end_col = lexbuf.lex_start_p.pos_bol + (lexbuf.lex_curr_p.pos_cnum - lexbuf.lex_start_p.pos_cnum)
-  in file, start_line, start_col, end_col
+  let start_col = lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol + 1 in
+  let end_col =   lexbuf.lex_curr_p.pos_cnum  - lexbuf.lex_start_p.pos_bol in
+  file, start_line, start_col, end_col
 
 let set_filename lexbuf fname = 
   let lexbuf = Dyp.std_lexbuf lexbuf in
@@ -61,11 +61,12 @@ let set_filename lexbuf fname =
 
 let set_lineno lexbuf n =
   let lexbuf = Dyp.std_lexbuf lexbuf in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_lnum = n; pos_bol = 1 }
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_lnum = n }
 
 let incr_lineno lexbuf n = 
   let lexbuf = Dyp.std_lexbuf lexbuf in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_lnum = lexbuf.lex_curr_p.pos_lnum + n; pos_bol = 1 }
+  let n = ref n in
+  while !n <> 0 do Lexing.new_line lexbuf; decr n done
 
 let lfcount s =
   let n = ref 0 in
@@ -2565,22 +2566,8 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
   let b = (Dyp.std_lexbuf lexbuf) in
   b.lex_curr_p <- { b.lex_curr_p with pos_fname = filename };
   let show_error() =
-      print_endline ("Syntax error at unknown location in file " ^ filename);
-      let lexbuf = Dyp.std_lexbuf lexbuf in
-      let line = lexbuf.lex_curr_p.pos_lnum  in
-      let column = lexbuf.lex_curr_p.pos_bol in
-      let file = lexbuf.lex_curr_p.pos_fname in
-      let charno = lexbuf.lex_curr_p.pos_cnum in
-      print_endline ("Line=" ^ string_of_int line);
-      print_endline ("Column=" ^ string_of_int column);
-      print_endline ("File=" ^ file);
-      print_endline ("Absolute char pos=" ^ string_of_int charno);
-      let curr_pos =lexbuf.lex_curr_pos in
-      print_endline ("Lex curpos: " ^ string_of_int curr_pos);
-      print_endline ("Lex startpo: " ^ string_of_int lexbuf.lex_start_pos);
-      print_endline ("Lex buffer contains:\n" ^ String.sub lexbuf.lex_buffer 0 curr_pos);
-      print_endline ("\nSYNTAX ERROR HERE\n");
-      print_endline (String.sub lexbuf.lex_buffer curr_pos (lexbuf.lex_buffer_len - curr_pos));
+      let sr = slift (getsr lexbuf) in
+      print_endline (long_string_of_src sr);
   in
   let parse_tree = 
     try dyphack (
