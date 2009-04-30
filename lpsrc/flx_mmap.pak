@@ -28,7 +28,7 @@ module Mmap
     #endif
   """;
 
-  typedef off_t = unsigned long;
+  typedef off_t = ulong;
   // protection options
 @if config.TARGET_CXX.options.HAVE_MMAP:
   if config.TARGET_CXX.options.HAVE_PROT_EXEC:  tangle('  const PROT_EXEC : int;')
