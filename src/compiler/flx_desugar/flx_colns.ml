@@ -136,22 +136,6 @@ let include_file syms inspec lookup =
   in
     sts
 
-
-let appns sr name vs fudge_name nslist =
-  try
-    match assoc name nslist with
-    { sr=sr'; vs=vs'; fudges=fudges' } ->
-    if vs <> vs' then
-      clierr2 sr' sr "namespace type variables/constraints don't agree"
-    ;
-    fudges' := fudge_name :: !fudges'
-    ;
-    nslist
-
-
-  with Not_found ->
-   ( name,{name=name; sr=sr; vs=vs; fudges=ref [fudge_name] }) :: nslist
-
 (* very inefficient .. fixme! *)
 let rev_concat lss = rev (concat lss)
 
@@ -174,15 +158,6 @@ let rec collate_namespaces syms sts =
    @
    rev stsout
 
- | `AST_namespace (sr,name,vs,sts) :: tail ->
-   let n = !counter in incr counter;
-   let fudge_name = "_" ^ name ^ "_" ^ si n in
-   let inh = `AST_inject_module (sr, `AST_name (sr,name, map_vs sr vs)) in
-   let sts = inh :: sts in
-   let fudge_module = `AST_untyped_module (sr,fudge_name,vs,sts) in
-   let nslist = appns sr name vs fudge_name nslist in
-   cn tail (fudge_module::stsout) nslist
-
  | `AST_include (sr,inspec) :: tail ->
     let sts = include_file syms inspec true in
     cn (sts @ tail) stsout nslist
@@ -191,20 +166,4 @@ let rec collate_namespaces syms sts =
    cn tail (head::stsout) nslist
 
  in cn sts [] []
-
-(* The namespace munging replaces this:
-
-    namespace A { .. }
-    namespace A { .. }
-
- with this:
-
-   module A1 { inherit A; ... }
-   module A2 { inherit A; .. }
-   module A { inherit A1; inherit A2; }
-
-The effect is to make all the definitions visible in each namespace
-section, and be able to grab the lot, collated, by the original 
-name, whilst preserving order of writing within each namespace
-*)
 

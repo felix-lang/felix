@@ -161,7 +161,6 @@ let string_of_token (tok :Flx_token.token): string =
   | LVAL _ -> "lval"
   | MACRO _ -> "macro"
   | MODULE _ -> "module"
-  | NAMESPACE _ -> "namespace"
   | NAN _ -> "NaN"
   | NEW _ -> "new"
   | NOINLINE _ -> "noinline"

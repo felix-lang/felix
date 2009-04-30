@@ -1421,7 +1421,6 @@ main lexer =
   "lval" -> LVAL { getsr lexbuf }
   "macro" -> MACRO { getsr lexbuf }
   "module" -> MODULE { getsr lexbuf }
-  "namespace" -> NAMESPACE { getsr lexbuf }
   "NaN" -> NAN { getsr lexbuf }
   "new" -> NEW { getsr lexbuf }
   "noinline" -> NOINLINE { getsr lexbuf }

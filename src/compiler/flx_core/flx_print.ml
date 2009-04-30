@@ -1159,12 +1159,6 @@ and string_of_statement level s =
     "\n" ^
     string_of_compound level sts
 
-  | `AST_namespace (_,name, vs,sts)  ->
-    spaces level ^ "namespace " ^ name ^ print_vs vs ^
-    " = " ^
-    "\n" ^
-    string_of_compound level sts
-
   | `AST_struct (_,name, vs, cs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"

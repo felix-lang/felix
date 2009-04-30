@@ -1069,9 +1069,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_untyped_module (sr, id, vs, sts) ->
     tack (`AST_untyped_module (sr, mi sr id, vs, ms sts))
 
-  | `AST_namespace (sr, id, vs, sts) ->
-    tack (`AST_namespace (sr, mi sr id, vs, ms sts))
-
   | `AST_instance (sr, vs, qn, sts) ->
     tack (`AST_instance (sr, vs, mq qn, ms sts))
 

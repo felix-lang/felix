@@ -687,9 +687,6 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_untyped_module"; sr; Str n; vs; sts] ->
     `AST_untyped_module (xsr sr, ss n, xvs vs, xsts sts)
 
-  | Lst [Id "ast_namespace"; Str n; vs; sts] ->
-    `AST_namespace (sr, ss n, xvs vs, xsts sts)
-
   | Lst [Id "ast_typeclass"; sr; Str n; vs; sts] ->
     `AST_typeclass(xsr sr, n, xvs vs, xsts sts)
 

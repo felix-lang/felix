@@ -477,7 +477,6 @@ and statement_t =
 
   (* module system *)
   | `AST_untyped_module of range_srcref * id_t * vs_list_t * statement_t list
-  | `AST_namespace of range_srcref * id_t * vs_list_t * statement_t list
   | `AST_typeclass of range_srcref * id_t * vs_list_t * statement_t list
   | `AST_instance of range_srcref * vs_list_t * qualified_name_t * statement_t list
 
