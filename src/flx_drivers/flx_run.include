@@ -48,6 +48,11 @@ static void *sp = 0;
   flx::demux::winsock_initer wsinit;
 #endif
 
+#ifdef FLX_STATIC_LINK
+extern "C" void *create_thread_frame;
+extern "C" void *flx_start;
+extern "C" void *flx_main;
+#endif
 
 int do_final_cleanup(
   bool debug_driver,
@@ -383,9 +388,17 @@ int run_felix(
   {
     if(debug_driver)
       fprintf(stderr,"flx_run driver begins %s\n",flx_argv[0]);
-    flx_dynlink_t library;
     flx_libinit_t instance;
+
+#ifdef FLX_STATIC_LINK
+    flx_dynlink_t library(
+        (thread_frame_creator_t)&create_thread_frame,
+        (start_t)&flx_start,
+        (main_t)&flx_main);
+#else
+    flx_dynlink_t library;
     library.link(filename);
+#endif
 
     flx::gc::generic::collector_t *collector = gcp->collector;
 

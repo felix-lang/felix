@@ -49,11 +49,11 @@ using namespace std;
   #define FLX_SDLSYM(x,y) dlsym(x,y)
 #endif
 
+#define DLSYM(x,y) FLX_DLSYM(x,y)
+
 #ifndef FLX_STATIC_LINK
-  #define DLSYM(x,y) FLX_DLSYM(x,y)
   #define SDLSYM(x,y) FLX_SDLSYM(x,y)
 #else
-  #define DLSYM(x,y) (void*)&y
   #define SDLSYM(x,y) (throw flx::rtl::link_failure_t("<static link>",y,"dlsym with static link requires name not string")
 #endif
 
@@ -133,17 +133,21 @@ struct RTL_EXTERN flx_dynlink_t
 {
   // data
   LIBHANDLE library;
-  string filename;
   thread_frame_creator_t thread_frame_creator;
   start_t start_sym;
   main_t main_sym;
   long refcnt;
 
+  flx_dynlink_t();
+  flx_dynlink_t(
+    thread_frame_creator_t thread_frame_creator,
+    start_t start_sym,
+    main_t main_sym) throw(flx_link_failure_t);
+
   // routines
   void link(const std::string& filename) throw(flx_link_failure_t);
   void unlink();
   virtual ~flx_dynlink_t();
-  flx_dynlink_t();
 
 private:
   // the user should override this procedure to

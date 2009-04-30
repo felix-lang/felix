@@ -2,12 +2,6 @@
 #include <cstring>
 #include <cstdlib>
 
-#ifdef FLX_STATIC_LINK
-extern "C" void *create_thread_frame;
-extern "C" void *flx_start;
-extern "C" void *flx_main;
-#endif
-
 namespace flx { namespace rtl {
 
 #if FLX_MACOSX_NODLCOMPAT
@@ -30,26 +24,12 @@ flx_link_failure_t::flx_link_failure_t(string f, string o, string w) :
 
 flx_link_failure_t::~flx_link_failure_t(){}
 
-flx_dynlink_t::~flx_dynlink_t() {}
-flx_dynlink_t::flx_dynlink_t(flx_dynlink_t const&) {} // no copy hack
-void flx_dynlink_t::operator=(flx_dynlink_t const&) {} // no copy hack
-
-flx_dynlink_t::flx_dynlink_t() :
-  library(0),
-  filename(""),
-  thread_frame_creator(NULL),
-  start_sym(NULL),
-  main_sym(NULL),
-  refcnt(0)
-{}
-
 LIBHANDLE
 flx_load_library(const std::string& filename)
 {
   LIBHANDLE library;
   FLX_SET_NOLIBRARY(library);
 
-#ifndef FLX_STATIC_LINK
 //#if FLX_WIN32 || FLX_CYGWIN
 #if FLX_WIN32
   // stop windows showing err dialogues, ignoring error code.
@@ -115,7 +95,6 @@ flx_load_library(const std::string& filename)
       throw flx_link_failure_t(filename,"dlopen",dlerror());
   #endif
 #endif
-#endif
   return library;
 }
 
@@ -125,10 +104,38 @@ flx_load_module(const std::string& filename)
   return flx_load_library(filename + FLX_LIB_EXTENSION);
 }
 
-void flx_dynlink_t::link(const std::string& fname) throw(flx_link_failure_t)
+flx_dynlink_t::~flx_dynlink_t() {}
+flx_dynlink_t::flx_dynlink_t(flx_dynlink_t const&) {} // no copy hack
+void flx_dynlink_t::operator=(flx_dynlink_t const&) {} // no copy hack
+
+flx_dynlink_t::flx_dynlink_t():
+  library(0),
+  thread_frame_creator(NULL),
+  start_sym(NULL),
+  main_sym(NULL),
+  refcnt(0)
+{}
+
+flx_dynlink_t::flx_dynlink_t(
+        thread_frame_creator_t thread_frame_creator,
+        start_t start_sym,
+        main_t main_sym) throw(flx_link_failure_t):
+  library(0),
+  thread_frame_creator(thread_frame_creator),
+  start_sym(start_sym),
+  main_sym(main_sym),
+  refcnt(0)
 {
-  filename=fname;
-  library = flx_load_library(fname);
+  if(!thread_frame_creator)
+    throw flx_link_failure_t("<static link>","dlsym","create_thread_frame");
+
+  if(!start_sym)
+    throw flx_link_failure_t("<static link>","dlsym","flx_start");
+}
+
+void flx_dynlink_t::link(const std::string& filename) throw(flx_link_failure_t)
+{
+  library = flx_load_library(filename);
   //fprintf(stderr,"File %s dlopened at %p ok\n",fname.c_str(),library);
 
   thread_frame_creator = (thread_frame_creator_t)
@@ -167,7 +174,6 @@ void flx_dynlink_t::unlink()
   --refcnt;
   if(refcnt == 0) {
     //fprintf(stderr,"closing library\n");
-#ifndef FLX_STATIC_LINK
 //#if FLX_WIN32 || FLX_CYGWIN
 #if FLX_WIN32
     //FreeLibrary(library);
@@ -177,7 +183,6 @@ void flx_dynlink_t::unlink()
   #else
     //dlclose(library);
   #endif
-#endif
 #endif
   }
 }
