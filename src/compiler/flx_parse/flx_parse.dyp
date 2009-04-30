@@ -553,16 +553,12 @@ let cal_action kind prod action =
   | `None -> dflt_action kind prod
   | `Scheme scm -> scm
 
-let unlift (f,l1,c1,l2,c2) =
-  if l1 = l2 then f,l1,c1,c2
-  else f,l1,c1,c1
-
 let rec flatten sr pcounter kind (rhs: symbol_t list) : token list * rule_t list =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
 
   | `Group dyalts :: t ->
-    let sr = unlift sr in
+    let sr = Flx_srcref.slower sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_"^x in
     let rules : rule_t list = fixup_alternatives pcounter kind sl `Default dyalts in

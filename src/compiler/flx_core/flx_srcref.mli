@@ -8,6 +8,7 @@ open Flx_types
 val rstoken: srcref -> srcref -> range_srcref
 val rsrange: range_srcref -> range_srcref -> range_srcref
 val slift: srcref -> range_srcref
+val slower: range_srcref -> srcref
 
 val rsexpr: expr_t -> expr_t -> range_srcref
 val rslist: expr_t list -> range_srcref

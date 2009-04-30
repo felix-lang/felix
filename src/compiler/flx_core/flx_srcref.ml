@@ -22,6 +22,11 @@ let slift (f,l,s,e) = (f,l,s,l,e)
 (** lift token source to range for tokens with attribute*)
 let sliftfst x = slift (fst x)
 
+(** lower token source range to source *)
+let slower (f,l1,c1,l2,c2) =
+  if l1 = l2 then f,l1,c1,c2
+  else f,l1,c1,c1
+
 (** {6 Type specific operations} *)
 
 open Flx_util
