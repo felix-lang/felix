@@ -316,4 +316,5 @@ let get_lines f context l1' l2' c1 c2 = (* first line is line 1 *)
 let long_string_of_src (f,l1,c1,l2,c2) =
   short_string_of_src (f,l1,c1,l2,c2) ^
   "\n" ^
+  let c2 = if l1 = l2 && c2 < c1 then c1 else c2 in
   get_lines f 1 l1 l2 c1 c2

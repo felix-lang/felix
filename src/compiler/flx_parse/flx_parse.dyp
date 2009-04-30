@@ -2555,9 +2555,10 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
           raise x
         end
 
-      | Dyp.Syntax_error ->
+      | Dyp.Syntax_error as x ->
           show_error();
-          failwith ("Syntax error at unknown location in file " ^ filename);
+          raise x
+          
 
       | Dyp.Bad_constructor (nt, ctor1, ctor2) ->
           let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^ "'" in
