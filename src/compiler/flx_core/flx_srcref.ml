@@ -83,7 +83,6 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
 
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
-  | `AST_interpolate (s,_)
   | `AST_vsprintf (s,_)
   | `AST_ellipsis (s)
   | `AST_noexpand (s,_)
@@ -135,7 +134,6 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_typeof (s,_)
   | `AST_macro_ctor (s,_)
   | `AST_macro_statements (s,_)
-  | `AST_case (s,_,_,_)
   | `AST_user_expr (s,_,_)
     -> s
 

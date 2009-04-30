@@ -57,9 +57,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   match e with
   | `AST_patvar _
   | `AST_patany _
-  | `AST_case _
   | `AST_vsprintf _
-  | `AST_interpolate _
   | `AST_type_match _
   | `AST_noexpand _
   | `AST_letin _

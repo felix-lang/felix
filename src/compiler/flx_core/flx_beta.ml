@@ -32,7 +32,6 @@ and metatype' syms sr term =
   let mt t = metatype' syms sr t in
   match term with
   | `BTYP_lift t -> t
-  | `BTYP_case _ -> `BTYP_function (`BTYP_type 0, `BTYP_type 0)
 
   | `BTYP_typefun (a,b,c) ->
     let ps = List.map snd a in
@@ -339,7 +338,6 @@ and beta_reduce' syms sr termlist t =
     with Not_found -> `BTYP_inst (i,ts) (* could be reparented class *)
     end
 
-  | `BTYP_case (a,b,c) -> `BTYP_case (br a, b, br c)
   | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
   | `BTYP_array (i,t) -> `BTYP_array (i, br t)
   | `BTYP_sum ls -> `BTYP_sum (map br ls)

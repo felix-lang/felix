@@ -1047,63 +1047,6 @@ and bind_type'
       *)
       `BTYP_typefun (bparams, bt r, bbody)
 
-  (* this is much the same as our type function *)
-  | `TYP_case (t1, ls, t2) ->
-    (*
-    print_endline ("BINDING TYPECDE " ^ string_of_typecode t);
-    *)
-
-    (* the variables *)
-    let typevars =
-      rev_map
-      (fun (name) ->
-        name,
-        `BTYP_type 0,
-        let n = !(syms.counter) in
-        incr (syms.counter);
-        n
-      )
-      ls
-    in
-    let pnames =  (* reverse order .. *)
-      map (fun (n, t, i) ->
-        (*
-        print_endline ("Binding param " ^ n ^ "<" ^ si i ^ "> metatype " ^ sbt syms.dfns t);
-        *)
-        (n,`BTYP_var (i,t))) typevars
-    in
-    let bt1 =
-      (*
-      print_endline (" ... binding body .. " ^ string_of_typecode t1);
-      print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.dfns t) (pnames @ params));
-      *)
-      bind_type' syms env { rs with depth=rs.depth+1 }
-      sr
-      t1 (pnames@params) mkenv
-    in
-    let bt2 =
-      (*
-      print_endline (" ... binding body .. " ^ string_of_typecode t2);
-      print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.dfns t) (pnames @ params));
-      *)
-      bind_type' syms env { rs with depth=rs.depth+1 }
-      sr
-      t2 (pnames@params) mkenv
-    in
-      let bparams = (* order as written *)
-        rev_map (fun (n,t,i) -> (i,t)) typevars
-      in
-      (*
-      print_endline "BINDING DONE\n";
-      *)
-
-      (* For the moment .. the argument and return types are
-         all of kind TYPE
-      *)
-      let varset = intset_of_list (map fst bparams) in
-      `BTYP_case (bt1, varset, bt2)
-
-
   | `TYP_apply (`AST_name (_,"_flatten",[]),t2) ->
     let t2 = bt t2 in
     begin match t2 with
@@ -2891,7 +2834,6 @@ and handle_function
           sbt syms.dfns t ^ "'"
         )
     )
-  | `SYMDEF_type_alias (`TYP_case _)  (* -> failwith "Finally found case??" *)
   | `SYMDEF_type_alias (`TYP_typefun _) ->
     (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
     (* let t = inner_typeofindex_with_ts syms sr rs index ts in *)
@@ -3520,8 +3462,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   match e with
   | `AST_patvar _
   | `AST_patany _
-  | `AST_case _
-  | `AST_interpolate _
   | `AST_vsprintf _
   | `AST_type_match _
   | `AST_noexpand _
@@ -5735,7 +5675,6 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_fix _ -> t
 
   | `BTYP_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
-  | `BTYP_case _
   | `BTYP_apply _
   | `BTYP_typefun _
   | `BTYP_type _

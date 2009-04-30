@@ -710,8 +710,7 @@ let rec build_tables syms name inherit_vs
              both function set results and non-function results.
           *)
           begin match t with
-          | `TYP_typefun _
-          | `TYP_case _ ->
+          | `TYP_typefun _ ->
             if access = `Public then add_function pub_name_map id n;
             add_function priv_name_map id n
           | _ ->

@@ -134,9 +134,6 @@ and typecode_t =
 
   | `TYP_type_match of typecode_t * (typecode_t * typecode_t) list
 
-  (* Barry Jay pattern calculus case *)
-  | `TYP_case of typecode_t * string list * typecode_t
-
   | `TYP_lift of typecode_t                      (** lift type to metatype *)
   ]
 
@@ -184,7 +181,6 @@ and axiom_kind_t = [`Axiom | `Lemma ]
 and axiom_method_t = [`Predicate of expr_t | `Equation of expr_t * expr_t]
 and expr_t =
   [
-  | `AST_interpolate of range_srcref * string
   | `AST_vsprintf of range_srcref * string
   | `AST_map of range_srcref * expr_t * expr_t
   | `AST_noexpand of range_srcref * expr_t
@@ -268,7 +264,6 @@ and expr_t =
   | `AST_macro_ctor of range_srcref * (string * expr_t)
   | `AST_macro_statements of range_srcref * statement_t list
 
-  | `AST_case of range_srcref * expr_t * string list * expr_t
   | `AST_user_expr of range_srcref * string * ast_term_t
   ]
 

@@ -54,7 +54,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_cod t -> `TYP_cod (f t)
   | `TYP_proj (i,t) -> `TYP_proj (i, f t)
   | `TYP_case_arg (i,t) -> `TYP_case_arg (i, f t)
-  | `TYP_case (t1,ls,t2) -> `TYP_case (f t1, ls, f t2)
 
   (*
   | `TYP_type_match (t,ps) ->
@@ -95,7 +94,6 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_patvar _
   | `AST_patany _
   | `AST_vsprintf _ -> e
-  | `AST_interpolate _ -> e
   | `AST_map (sr,a,b) -> `AST_map (sr,f a, f b)
   | `AST_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
   | `AST_name _ -> e
@@ -164,7 +162,6 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_type_match _ -> e
   | `AST_macro_ctor _ -> e
   | `AST_macro_statements _ -> e
-  | `AST_case (sr,e1,ls,e2) -> `AST_case (sr,f e1, ls, f e2)
   | `AST_user_expr (sr,term,ts) -> e (* ouch! *)
 
 
@@ -174,7 +171,6 @@ let iter_expr f (e:expr_t) =
   | `AST_patvar _
   | `AST_patany _
   | `AST_vsprintf _
-  | `AST_interpolate _
   | `AST_name _
   | `AST_callback _
   | `AST_the _
@@ -216,7 +212,6 @@ let iter_expr f (e:expr_t) =
   | `AST_lift (_,x)
     -> f x
 
-  | `AST_case (_,a,_,b)
   | `AST_letin (_,(_,a,b))
   | `AST_dot (_,(a,b))
   | `AST_longarrow (_,(a,b))

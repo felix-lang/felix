@@ -48,7 +48,6 @@ let all_tunits ts =
 let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with
-  | `AST_case (sr,e1,ls,e2) -> `TYP_case (te e1, ls, te e2)
   | `AST_name (_,"TYPE",[]) -> `TYP_type
   | `AST_name (sr,"_",[]) -> `AST_patany sr
   | `AST_ellipsis _ -> `TYP_ellipsis

@@ -110,7 +110,6 @@ and xexpr_t sr x =
  | Str s -> `AST_literal (sr, (`AST_string s))
  | Lst [] -> `AST_tuple (sr,[])
  | Lst [x] -> ex x
- | Lst [Id "ast_interpolate";  Str s] -> `AST_interpolate (sr,ss s)
  | Lst [Id "ast_vsprintf";  Str s] -> `AST_vsprintf (sr,ss s)
  | Lst [Id "ast_noexpand";  e] -> `AST_noexpand (sr,ex e)
  | Lst [Id "ast_name"; sr; Id s ; Lst ts] ->
@@ -240,15 +239,6 @@ and xexpr_t sr x =
 
  | Lst [Id "ast_macro_statements"; sts] ->
   `AST_macro_statements (sr, xsts sts)
-
- | Lst [Id "ast_case";  Lst [e1; Lst ses; e2]] ->
-   let ses =
-     map (function
-       | Str s -> ss s
-       | x -> err x "ast_case type error")
-     ses
-   in
-   `AST_case (sr, ex e1,ses,ex e2)
 
  | Lst [Id "ast_user_expr"; sr; Str s; term] ->
    `AST_user_expr (xsr sr, s, xterm term)

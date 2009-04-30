@@ -179,7 +179,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
   | `AST_patvar _
   | `AST_patany _
-  | `AST_case _
   | `AST_match_ctor _
   | `AST_match_case _
   | `AST_ctor_arg _
@@ -246,8 +245,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_literal _ -> [],e
 
   | `AST_expr _ -> [],e
-
-  | `AST_interpolate (sr,s) -> failwith "UNEXPECTED interpolate!"
 
   | `AST_vsprintf (sr,s) ->
     let ix = seq () in

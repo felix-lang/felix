@@ -333,14 +333,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     with no meaning except as a proxy for a type, however
     at a macro level, it is an ordinary expression .. hmm
   *)
-  | `AST_case (sr,pat,ls,res) -> `AST_case (sr, me pat, ls, me res)
   | `AST_patvar _
   | `AST_patany _ -> print_endline "HACK.. AST_pat thing in expr"; e
 
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e
   | `AST_vsprintf _ -> e
-  | `AST_interpolate (sr,s) -> failwith "Interpolation not supported now!"
 
   (* and desugaring: x and y and z and ... *)
   | `AST_andlist (sr, es) ->

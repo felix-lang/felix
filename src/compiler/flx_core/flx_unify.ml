@@ -275,9 +275,6 @@ let fix i t =
     | `BTYP_type_match _
     | `BTYP_typesetunion _ -> t
     | `BTYP_typesetintersection _ -> t
-
-    (* Jay case: not sure *)
-    | `BTYP_case (a,b,c) -> `BTYP_case (aux a, b, aux c)
   in
     aux 0 t
 
@@ -1011,8 +1008,6 @@ let fold counter dfns t =
       end
 
     | `BTYP_apply (a,b) -> ax a; ax b
-
-    | `BTYP_case (a,b,c) -> ax a; ax c
 
     | `BTYP_typesetintersection _
     | `BTYP_typesetunion _

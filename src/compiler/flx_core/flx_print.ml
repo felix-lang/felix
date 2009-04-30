@@ -108,7 +108,6 @@ and string_of_expr (e:expr_t) =
   | `AST_patvar (sr,s) -> "?"^s
   | `AST_patany sr -> "ANY"
   | `AST_vsprintf (sr,s) -> "f"^string_of_string s
-  | `AST_interpolate (sr,s) -> "q"^string_of_string s
   | `AST_ellipsis _ -> "..."
   (*
   | `AST_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
@@ -288,12 +287,6 @@ and string_of_expr (e:expr_t) =
     "macro statements begin\n" ^
     catmap "\n" (string_of_statement 1) ss ^ "\nend"
 
-  | `AST_case (_,e1,ls,e2) ->
-    "typecase [" ^
-    String.concat "," ls ^
-    "] " ^ se e1 ^ " => " ^ se e2 ^
-    "endcase"
-
   | `AST_user_expr (_,name,term) ->
     let body = string_of_ast_term 0 term in
     "User expr " ^ name ^ "(" ^ body ^ ")"
@@ -414,10 +407,6 @@ and st prec tc : string =
     | `TYP_dom t -> 2,"dom "^ st 2 t
     | `TYP_cod t -> 2,"cod "^st 2 t
     | `TYP_case_arg (i,t) -> 2,"case_arg_"^si i^" "^st 2 t
-    | `TYP_case (t1,ls,t2) -> 0,
-      "typecase [" ^
-      String.concat "," ls ^
-      "] " ^ st 0 t1 ^ " => " ^ st 0 t2 ^ " endcase"
 
     | `TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
 
@@ -651,13 +640,6 @@ and sb dfns depth fixlist counter prec tc =
          ) ^
          "): " ^ sbt 0 ret ^ "=" ^ sbt 8 body
        )
-     | `BTYP_case (pat,vars,res) ->
-       8,
-       sbt 8 pat ^
-       "-->" ^
-       Flx_set.string_of_intset vars ^
-       " " ^
-       sbt 8 res
   in
     let txt,lst = print_fixpoints depth !fixlist in
     fixlist := lst;

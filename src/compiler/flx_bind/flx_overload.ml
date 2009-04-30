@@ -110,7 +110,6 @@ let sig_of_symdef symdef sr name i = match symdef with
       print_endline "TYP_typefun";
       *)
       typeof_list (map snd ps),r,None
-    | `TYP_case _ -> `TYP_type,`TYP_type,None
     | symdef ->
       (*
       print_endline "OverloadKindError";
