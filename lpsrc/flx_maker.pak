@@ -1401,14 +1401,15 @@ FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR", INSTALL_ROOT)
 @tangle('EXT_SHLIB="'+config.TARGET_CXX.options.EXT_SHLIB+'"')
 @tangle('SPEC_OBJ_FILENAME="'+config.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"')
 @tangle('SPEC_EXE_FILENAME="'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
-@tangle('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+'"')
-@tangle('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+'"')
+@tangle('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+' "')
+@tangle('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+' "')
 
 # check for test mode: this argument must come first
 
 TESTMODE=0
 RECOMPILE=0
 DEBUG=0
+DEBUG_COMPILER=0
 INLINE=100
 ECHO=0
 TIME=0
@@ -1494,7 +1495,11 @@ while grab == 1 and argno<len(sys.argv):
 
   elif arg=="--debug":
     DEBUG=1
-    ECHO=1
+
+  elif arg=="--debug-compiler":
+    DEBUG_COMPILER=1
+
+  elif arg=="--nooptimise":
     NOOPTIMISE=1
 
   elif arg=="--nostdlib":
@@ -1738,10 +1743,10 @@ else:
 ELKHOUND="--elkhound="+os.path.join(FLX_INSTALL_DIR,"bin","flx_elkhound")
 
 DEBUGSWITCH=""
-if DEBUG == 1: DEBUGSWITCH=" --debug"
+if DEBUG_COMPILER == 1: DEBUGSWITCH=" --debug"
 
 STATIC_ENV=""
-if DEBUG == 1: STATIC_ENV="env FLX_DEBUG=1 "
+if DEBUG_COMPILER == 1: STATIC_ENV="env FLX_DEBUG=1 "
 
 def filetime(f):
   try:
@@ -1764,11 +1769,13 @@ if RECOMPILE == 0 and RUNIT == 1:
 
 # Need Felix and c++ compile, then run it
 
-if DEBUG == 1:
+if DEBUG_COMPILER == 1:
   VERBOSE="-v"
-  CCFLAGS=CCFLAGS+DEBUG_FLAGS
 else:
   VERBOSE="-q"
+
+if DEBUG:
+  CCFLAGS=CCFLAGS+DEBUG_FLAGS
 
 FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR)
 
