@@ -51,6 +51,10 @@ def pre_options(parser):
             action='append',
             help='Add this path to the c library search path for the build ' \
                     'phase'),
+        make_option('--build-c-debug',
+            default=False,
+            action='store_true',
+            help='turn on c/c++ build phase debugging'),
     ))
 
     group = parser.add_option_group('host phase options')
@@ -73,6 +77,10 @@ def pre_options(parser):
             action='append',
             help='Add this path to the c library search path for the host ' \
                     'phase'),
+        make_option('--host-c-debug',
+            default=False,
+            action='store_true',
+            help='turn on c/c++ host phase debugging'),
         make_option('--host-ocaml-debug',
             default=False,
             action='store_true',
@@ -105,6 +113,10 @@ def pre_options(parser):
             action='append',
             help='Add this path to the c library search path for the build ' \
                     'phase'),
+        make_option('--target-c-debug',
+            default=False,
+            action='store_true',
+            help='turn on c/c++ target phase debugging'),
     ))
 
 def post_options(options, args):
@@ -159,10 +171,12 @@ def config_build():
         platform=platform,
         c=make_c_builder(fbuild.options.build_cc,
             platform=platform,
+            debug=fbuild.options.debug or fbuild.options.build_c_debug,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths),
         cxx=make_cxx_builder(fbuild.options.build_cxx,
             platform=platform,
+            debug=fbuild.options.debug or fbuild.options.build_c_debug,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths))
 
@@ -180,10 +194,12 @@ def config_host(build):
             platform=platform,
             c=make_c_builder(fbuild.builders.host_cc,
                 platform=platform,
+                debug=fbuild.options.debug or fbuild.options.host_c_debug,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths),
             cxx=make_cxx_builder(fbuild.buildesr.host_cxx,
                 platform=platform,
+                debug=fbuild.options.debug or fbuild.options.host_c_debug,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths))
 
@@ -219,10 +235,12 @@ def config_target(host):
             platform=platform,
             c=make_c_builder(fbuild.options.target_cc,
                 platform=platform,
+                debug=fbuild.options.debug or fbuild.options.target_c_debug,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths),
             cxx=make_cxx_builder(fbuild.options.target_cxx,
                 platform=platform,
+                debug=fbuild.options.debug or fbuild.options.target_c_debug,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths))
 
