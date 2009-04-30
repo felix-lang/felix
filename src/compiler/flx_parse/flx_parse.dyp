@@ -132,8 +132,8 @@ let init_env () =
 
 let global_data = {
   pcounter = ref 1;
-  env=init_env();
-  pdebug=ref false;
+  env = init_env ();
+  pdebug = ref false;
 }
 
 type local_data_t = {
@@ -143,7 +143,7 @@ type local_data_t = {
 }
 
 let local_data: local_data_t = {
-  dssls=Drules.empty;
+  dssls = Drules.empty;
   loaded_dssls = [];
   scm = [];
 }
@@ -258,9 +258,11 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
   in
   let rule = name,(List.map f rhs),priority,[] in
   if !(dyp.global_data.pdebug) then
-  print_endline ("Rule "^string_of_int pr_age ^" " ^ name ^ "["^priority^"] := " ^
-  catmap " " silly_strtoken rhs ^
-  " =># "^scm);
+  print_endline (
+    "Rule " ^ string_of_int pr_age ^ " " ^ name ^ "["^priority^"] := " ^
+    catmap " " silly_strtoken rhs ^
+    " =># " ^ scm
+  );
   let action = fun _ avl ->
     match avl,scm with
     (* optimise special case *)
@@ -268,11 +270,19 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
     | _ ->
     let age = ref pr_age in
     let b = Buffer.create 200 in
-    if !(dyp.global_data.pdebug) then
-    Buffer.add_string b ("Reducing Rule "^string_of_int pr_age ^" for " ^ name ^ "["^priority^"], scm="^scm^"\n");
 
-    if !(dyp.global_data.pdebug) then
-    print_endline ("Reducing Rule "^string_of_int pr_age ^" for " ^ name ^ "["^priority^"] := "^ catmap " " silly_strtoken rhs^ " #scm="^scm^"\n");
+    if !(dyp.global_data.pdebug) then begin
+      Buffer.add_string b (
+        "Reducing Rule " ^ string_of_int pr_age ^ " for " ^ name ^ "[" ^
+        priority ^ "], scm=" ^ scm ^ "\n"
+      );
+
+      print_endline (
+        "Reducing Rule " ^ string_of_int pr_age ^ " for " ^ name ^ "[" ^
+        priority ^ "] := " ^ catmap " " silly_strtoken rhs ^ " #scm=" ^ scm ^
+        "\n"
+      );
+    end;
 
     (* let env = Ocs_env.env_copy dyp.local_data.env in *)
     (* let env = dyp.local_data.env in *)
@@ -560,9 +570,9 @@ let rec flatten sr pcounter kind (rhs: symbol_t list) : token list * rule_t list
   | `Group dyalts :: t ->
     let sr = Flx_srcref.slower sr in
     let x = string_of_int (!pcounter) in incr pcounter;
-    let sl = "__grp_"^x in
+    let sl = "__grp_" ^ x in
     let rules : rule_t list = fixup_alternatives pcounter kind sl `Default dyalts in
-    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rules@extras)
+    aux t (NONTERMINAL (sr, sl, `No_prio)::out) (rules@extras)
 
   | `Atom h :: t -> aux t (h::out) extras
   in aux rhs [] []
@@ -1279,105 +1289,71 @@ let quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote
 
 rule parse_qstring = parse
 | qstring {
-       
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-      (
-        getsr lexbuf,
-        decode_qstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_qstring s)
   }
 
 and parse_dstring = parse
 | dstring {
-       
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-      (
-        getsr lexbuf,
-        decode_dstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_dstring s)
   }
 
 and parse_qqqstring = parse
 | qqqstring {
-       
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-      (
-        getsr lexbuf,
-        decode_qqqstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_qqqstring s)
   }
 
 and parse_dddstring = parse
 | dddstring {
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-       
-       (
-        getsr lexbuf,
-        decode_dddstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_dddstring s)
   }
 
 /* ----------- RAW STRING -----------------------------------*/
 and parse_raw_qstring = parse
 | raw_qstring {
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-       
-      (
-        getsr lexbuf,
-        decode_raw_qstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_raw_qstring s)
   }
 
 and parse_raw_dstring = parse
 | raw_dstring {
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-       
-      (
-        getsr lexbuf,
-        decode_raw_dstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_raw_dstring s)
   }
 
 and parse_raw_qqqstring = parse
 | raw_qqqstring {
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-       
-      (
-        getsr lexbuf,
-        decode_raw_qqqstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_raw_qqqstring s)
   }
 
 and parse_raw_dddstring = parse
 | raw_dddstring {
-      let s = lexeme lexbuf in
-      let n = lfcount s in
-      incr_lineno lexbuf n; 
-       
-      (
-        getsr lexbuf,
-        decode_raw_dddstring s
-      )
+    let s = lexeme lexbuf in
+    let n = lfcount s in
+    incr_lineno lexbuf n;
+    (getsr lexbuf, decode_raw_dddstring s)
   }
 
 and parse_hashbang = parse
-| not_newline * newline {
-      incr_lineno lexbuf 1
-  }
+| not_newline * newline { incr_lineno lexbuf 1 }
 
 and parse_C_comment count = parse
 | "/*"    { parse_C_comment (count+1) lexbuf }
@@ -1386,8 +1362,7 @@ and parse_C_comment count = parse
 | _       { parse_C_comment count lexbuf }
 
 and parse_line = parse
-| not_newline * (newline | eof)
-  {
+| not_newline * (newline | eof) {
     incr_lineno lexbuf 1;
     lexeme lexbuf
   }
@@ -1505,7 +1480,6 @@ main lexer =
   "whence" -> WHENCE { getsr lexbuf }
   "unless" -> UNLESS { getsr lexbuf }
   "_" -> UNDERSCORE { getsr lexbuf }
-
   "$" -> DOLLAR { getsr lexbuf }
   "?" -> QUEST { getsr lexbuf }
   "!" -> EXCLAMATION { getsr lexbuf }
@@ -1718,32 +1692,25 @@ main lexer =
   but x'x' is an identifier .. yucky ..
 */
  identifier -> NAME {
-       
-      let s = lexeme lexbuf in
-      let s' = Flx_id.utf8_to_ucn s in
-      let src = getsr lexbuf in
-      (src,s')
+    let s = lexeme lexbuf in
+    let s' = Flx_id.utf8_to_ucn s in
+    let src = getsr lexbuf in
+    (src, s')
   }
 
 /* whitespace */
  white+ -> { () }
 
- slosh -> SLOSH 
+ slosh -> SLOSH
 
 /* end of line */
- newline -> {
-      incr_lineno lexbuf 1
-  }
+ newline -> { incr_lineno lexbuf 1 }
 
 /* end of file */
  eof -> ENDMARKER { }
 
 /* Anything else is an error */
- _ -> ERRORTOKEN {
-      (
-        getsr lexbuf, lexeme lexbuf
-      )
-  }
+ _ -> ERRORTOKEN { (getsr lexbuf, lexeme lexbuf) }
 
 %parser
 
@@ -2577,10 +2544,10 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
         begin
           print_endline ("Parse fail " ^ s);
           show_error();
-          raise (Flx_exceptions.ParseError ("Failure \""^s^"\" Parsing File"))
+          raise (Flx_exceptions.ParseError ("Failure \"" ^ s ^ "\" Parsing File"))
         end
-      | Flx_exceptions.ClientError (sr,s)
-      | Flx_exceptions.ClientError2 (sr,_,s)
+      | Flx_exceptions.ClientError (sr, s)
+      | Flx_exceptions.ClientError2 (sr, _, s)
       | Flx_exceptions.ClientErrorn (sr::_, s) as x  ->
         begin
           print_endline "Parse fail";
@@ -2592,8 +2559,8 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
           show_error();
           failwith ("Syntax error at unknown location in file " ^ filename);
 
-      | Dyp.Bad_constructor (nt,ctor1, ctor2) ->
-          let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^"'" in
+      | Dyp.Bad_constructor (nt, ctor1, ctor2) ->
+          let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^ "'" in
           print_endline s;
           failwith s
 
@@ -2617,7 +2584,7 @@ let parse_file filename dirname incdirs cache_dir auto_imports =
       let tree, local_data = parse1 old_local_data filename in
       old_tree @ tree, local_data
     end
-    ([],local_data) auto_imports
+    ([], local_data) auto_imports
   in
   let filename = lookup_file (dirname :: incdirs) filename in
   let tree,_ = parse1 local_data filename in
@@ -2633,5 +2600,3 @@ open Flx_mtypes2
 %mli {
   exception Scheme_error of Ocs_types.sval
 }
-
-
