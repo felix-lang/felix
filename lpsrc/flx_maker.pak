@@ -1659,17 +1659,21 @@ def get_stdout(x,outit=None):
       result = fout.close()
   return result,output
 
-def xqt(cmd,dflt=None):
+def xqt(cmd, default=None):
   if ECHO == 1: print cmd
   result,output = get_stdout(cmd)
   if not result:
      output=output[0][:-1] # first line excluding newline
      if ECHO==1:print "output="+output
      return output
-  if dflt==None:
+  if default is None:
     sys.stderr.write("Error "+repr(result)+" executing command " + cmd+"\n")
-    sys.exit(result)
-  else: return dflt
+    if not hasattr(os, 'WEXITSTATUS'):
+      sys.exit(1)
+    else:
+      sys.exit(os.WEXITSTATUS(result))
+  else:
+    return default
 
 def calpackages ():
   # find all include directories
