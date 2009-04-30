@@ -56,17 +56,6 @@ SCHEME """
 """;
 
 SCHEME """
-(define (mkn1 stmt nvs)
-  `(ast_namespace ,(car nvs) ,(cadr nvs) (,stmt)))
-""";
-
-SCHEME """
-(define (mkns stmt nvsl) (
-  fold_left mkn1 stmt nvsl
-  ))
-""";
-
-SCHEME """
 (define (splitapply x)
   (if (pair? x)
     (if (eq? (car x) 'ast_apply)
@@ -356,16 +345,6 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] . lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
 
-  page names =
-    shash_name,
-    sthe_name,
-    ssuffixed_name,
-    squalified_name,
-    ssimple_name_parts,
-    squalified_name_comma_list,
-    sbasic_name_comma_list
-  ;
-
   // these are weirdos
   sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map cadr _2))";
 
@@ -423,8 +402,6 @@ syntax expressions {
   satom := lpar rpar =># "'()";
   satom := sconditional =># "_1";
 
-  page conditional = sconditional, selif, selifs, selse_part;
-
   sconditional := if sexpr then sexpr selse_part endif =>#
     "`(ast_cond (,_2 ,_4 ,_5))";
 
@@ -442,27 +419,11 @@ syntax expressions {
         (fold_left f _3 _1))
       """;
 
-  page atomic = satom, sexpr_code_prefix;
-
 }
 
 //------------------------------------------
 syntax patterns {
   satom := pattern_match =># "_1";
-
-
-  page pattern_matching =
-    pattern_match,
-    smatching,
-    spattern,
-    spat_assign,
-    sctor_name,
-    stuple_pattern,
-    scoercive_pattern,
-    sas_pattern,
-    satomic_pattern,
-    sfloating
-  ;
 
   pattern_match := match sexpr with smatching+ endmatch =>#
     "`(ast_match (,_2 ,_4))";
@@ -519,22 +480,6 @@ syntax functions {
   sdeclarative := sprocedure_definition =># "_1";
   sdeclarative := sctor_definition =># "_1";
 
-  page functions = sfunction_definition, sfun_kind, sfun_arg, fun_return_type;
-  page procedures =
-    sprocedure_definition,
-    sproc_kind,
-    sopt_traint,
-    sopt_traint_eq,
-    class_constructor=
-     (
-       sctor_definition, sctor_init, sctor_inits
-     )
-  ;
-
-  page adjectives = sadjective, sadjectives;
-  page parameters = sparameter, sparameter_comma_list, sparam_qual;
-  page lambda = slambda, slambda_fun_arg, slambda_fun_args;
-
   x[slambda_pri] := sadjectives fun stvarlist slambda_fun_args fun_return_type = scompound =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ,_7))
@@ -571,27 +516,9 @@ syntax functions {
     fun_return_type := expect sexpr =># "`(typ_none (some ,_2))";
     fun_return_type := sepsilon =># "'(typ_none none)";
 
-  explain fun_return_type """
-  <p>A function return specification consists of an optional type
-  and an optional expected postcondition. The special identifier
-  <code>result</code> can be used in the postcondition to denote
-  the returned value. If the postcondition is omitted it is
-  quivalent to <code>true</code>, otherwise the postcondition
-  is check after every application.</p>
-  <p>If the return type is not specified, the compiler will
-  try to calculate it from the function definition. Occasionally
-  this will fail for recursive functions due to the interaction
-  with overloading and recursive types. Reusable library functions
-  should always provide an explicit return type annotation.</p>
-  """;
-
     sparameter := sparam_qual sname : x[sarrow_pri] = x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
     sparameter := sparam_qual sname : x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
     sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none none)";
-
-    explain sparameter """
-    <p>If the type is elided, a fresh type variable is used.</p>
-    """;
 
     sparameter_comma_list := sepsilon =># "()";
     sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map cadr _2))";
@@ -603,25 +530,6 @@ syntax functions {
     sparam_qual := fun =># "'PFun";
     sparam_qual := sepsilon =># "'PVal";
 
-    explain sparam_qual """
-    <p>Parameter qualifiers have the following meaning:
-    <dl>
-    <dt>val</dt><dd>The default: Pass by name or value, may be inlined (lazy evaluation), and maybe not.</dd>
-    <dt>var</dt><dd>Pass by value, assign to local variable (eager evaluation, copying).</dd>
-    <dt>ref</dt><dd>Enforced Lazy evaluation.
-      Pass a pointer to the specified type by value.
-      Automatically dereferenced in function body.
-      Caller will usually explicitly take address, eg <code>&amp;x</code>.
-      </dd>
-    <dt>fun</dt><dd>Enforced Lazy evaluation.
-      Pass a closure of a function of unit argument returning the specified value.
-      Automatically called in function body.
-      Caller will usually explicitly wrap, eg <code>{ 42 }</code>.
-      </dd>
-    </dl>
-    </P>
-    """;
-
   sfun_arg :=  lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
   sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
   sfun_arg :=  sname =># "`(((PVal ,_1 typ_none none)) none)";
@@ -630,48 +538,19 @@ syntax functions {
   sfun_kind := gen =># "'Generator";
   sfun_kind := fun =># "'Function";
 
-  explain sfun_kind """
-  <p>The function kinds have the following semantics:
-  <dl>
-  <dt>fun</dt><dd>An ordinary Felix function. Must not have side-effects.
-    The representation is indeterminate, and may be a C++ class with an
-    <code>apply()</code> method, an ordinary C function, or nothing if all applications
-    are inlined away.
-  </dd>
-  <dt>cfun</dt><dd>Enforces creation of a C style function.</dd>
-  <dt>gen</dt><dd>Create a generator. A generator is a
-    function with side-effects, which includes any kind of
-    object creation (such as a C++ string), or function which
-    impacts external state such as <code>malloc()</code>
-    or <code>random()</code>.
-    <p>Generator applications are
-    always lifted out of expressions and the result of the
-    application assigned to a temporary variable, which
-    replaces the application in the original expression.
-    This ensures a generator application is evaluated exactly
-    one if the enclosing expression is evaluated. This feature
-    is similar to C sequence points.
-  </dd>
-  </dl>
-  </p>
-  """;
-
   sfunction_definition := sadjectives sfun_kind sdeclname
     sfun_arg* fun_return_type => sexpr ssemi =>#
   """
     (let ((body `((ast_fun_return ,_sr ,_7))))
-    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
-    (cdr _3)))
+    )
   """;
 
 
   sfunction_definition := sadjectives sfun_kind sdeclname
     sfun_arg* fun_return_type = scompound =>#
   """
-    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
-    (cdr _3))
   """;
 
   sopt_cstring := = scode_spec =># "`(some ,_2)";
@@ -693,14 +572,12 @@ syntax functions {
           (ret (cadadr t))
           (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
         )
-        (mkns
         `(ast_curry ,_sr ,(caar _3) ,(cadar _3)
           (
             (((PVal _a ,argt none)) none)
           )
           (,ret ,traint)
           ,(cal_funkind _1 _2) ,body)
-        (cdr _3))
       )
       'ERROR
      )
@@ -775,17 +652,13 @@ syntax functions {
   sprocedure_definition := sadjectives sproc_kind sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
-    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
-    (cdr _3))
   """;
 
   sprocedure_definition := sadjectives sproc_kind sdeclname
     sfun_arg* => statement =>#
   """
-    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void none) ,(cal_funkind _1 _2) (,_6))
-    (cdr _3))
   """;
 }
 
@@ -827,20 +700,8 @@ syntax statements {
 
   sabstract_type := stype_qual* type sdeclname = new sexpr ssemi =>#
     """
-    (mkns
     `(ast_newtype ,_sr ,(caar _3) ,(cadar _3) ,_6)
-    (cdr _3))
     """;
-
-  page type_variables =
-    stvarlist,
-    stvar_comma_list,
-    stvar,
-    scomma_tvar,
-    seqorin,
-    stype_constraint
-  ;
-
 
   stype_constraint := with squalified_name_comma_list where sexpr =>#
     "`(,_4 ,_2)";
@@ -850,34 +711,9 @@ syntax statements {
   stype_constraint := with squalified_name_comma_list =># "`((ast_tuple,_sr()) ,_2)";
   stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
 
-  explain stype_constraint
-  """<p>A <code>with</code> clause is a side constraint
-  on the set of type variables, it specifies a list
-  of typeclass specialisations, requiring suitable instances
-  exist, but also allowing functions of the typeclass to
-  be applied to the specified types in the body of the
-  definition.</p>
-  <p>A <code>where</code> constraint is an arbitrary
-  predicate on type variables, which must resolve to true for
-  any use of the symbol being defined. It is typically an
-  equation, but may also be a type match. In the case of
-  a function or procedure, failed predicative constraints
-  exclude the function from any overload set.</p>
-  """;
-
   seqorin:= = stypeexpr =># "`(Eq ,_2)";
   seqorin:= in stypeexpr =># "`(In ,_2)";
   seqorin:= sepsilon =># "'NoConstraint";
-
-  explain seqorin
-  """<p>An <code>=</code> assignment suffix on a type variable is used
-  to add a dependent type variable to the list of type variables.
-  </p>
-  <p>An <code>in</code> suffix specifies that a type variable
-  is a member of a typeset. in the case of a function
-  or procedure, failure of this constraint excludes the function
-  from any overload set.</p>
-  """;
 
   stvar := sname seqorin =># """`(,_1 (ast_name ,_sr "TYPE" ()) ,_2)""";
   stvar := sname : stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
@@ -952,55 +788,37 @@ syntax variables {
 
   sval_def := val sdeclname = sexpr ssemi =>#
     """
-    (mkns
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
-    (cdr _2))
      """;
 
   sval_def := val sdeclname : stypeexpr = sexpr ssemi =>#
     """
-    (mkns
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
-    (cdr _2))
      """;
-
-explain sval_def """<p>Value definition requires an initialiser.</p>""";
 
   sval_def := val sdeclname : stypeexpr ssemi =>#
     """
-    (mkns
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
-    (cdr _2))
      """;
-
-explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
 
   sval_def := ref sdeclname <- sexpr ssemi =>#
     """
-    (mkns
     `(ast_ref_decl ,(caar _2) ,(cadar _2) none (some ,_4))
-    (cdr _2))
      """;
 
   sval_def := ref sdeclname : stypeexpr <- sexpr ssemi =>#
     """
-    (mkns
     `(ast_ref_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
-    (cdr _2))
      """;
 
   sval_def := fun sdeclname <- sexpr ssemi =>#
     """
-    (mkns
     `(ast_lazy_decl ,(caar _2) ,(cadar _2) none (some ,_4))
-    (cdr _2))
      """;
 
   sval_def := fun sdeclname : stypeexpr <- sexpr ssemi =>#
     """
-    (mkns
     `(ast_lazy_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
-    (cdr _2))
      """;
 
   svar_def := var sname sname_suffix = sexpr ssemi =>#
@@ -1033,79 +851,19 @@ explain sval_def """<p>Value declaration, only allowed in classes.</p>""";
 
   svar_def := var sdeclname = sexpr ssemi =>#
     """
-    (mkns
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
-    (cdr _2))
      """;
 
   svar_def := var sdeclname : stypeexpr = sexpr ssemi =>#
     """
-    (mkns
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
-    (cdr _2))
      """;
 
   svar_def := var sdeclname : stypeexpr ssemi =>#
     """
-    (mkns
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
-    (cdr _2))
      """;
 
-  svar_def := var & sname stvarlist : stypeexpr <- sexpr ssemi =>#
-     """
-   (let* (
-     (fl (splitapply _8))
-     (f (car fl))
-     (a (cadr fl))
-     (nua (cons `(ast_ref (ast_name ,_sr ,_3 ())) (mkl a)))
-     (call `(ast_call ,_sr ,f ,nua))
-     (vardef `(ast_var_decl ,_sr ,_3 ,_4 (some ,_6) none))
-     (seq `(ast_seq ,_sr (,vardef ,call))))
-     (begin
-     ;;(display "f=")(display f)
-     ;;(display "\\n_3=")(display _3)
-     ;;(display "\\na=")(display a)
-     ;;(display "\\nnua=")(display nua)
-     ;;(display "\\ncall=")(display call)
-     ;;(display "\\nvardef=")(display vardef)
-     ;;(display "\\nseq=")(display seq)
-     ;;(display "\\n")
-     seq))
-     """;
-
-
-  svar_def := var sdeclname : stypeexpr <- sexpr ssemi =>#
-   """
-   (let*
-     (
-       (fl (splitapply _6))
-       (f (car fl))
-       (a (cadr fl))
-       (name (caar _2))
-       (vs (cadar _2))
-       (namespace (cdr _2))
-       (typ _4)
-       (nua (cons `(ast_name ,_sr ,name ()) (mkl a)))
-       (call `(ast_call ,_sr ,f ,nua))
-       (vardef `(ast_var_decl ,_sr ,name ,vs (some ,typ) none))
-       (seq `(ast_seq ,_sr (,vardef ,call)))
-     )
-     (begin
-     ;;(display "f=")(display f)
-     ;;(display "\\na=")(display a)
-     ;;(display "\\nname=")(display name)
-     ;;(display "\\nvs=")(display vs)
-     ;;(display "\\ntyp=")(display typ)
-     ;;(display "\\nnua=")(display nua)
-     ;;(display "\\ncall=")(display call)
-     ;;(display "\\nvardef=")(display vardef)
-     ;;(display "\\nseq=")(display seq)
-     ;;(display "\\nnamespace=")(display namespace)
-     ;;(display "\\n")
-     (mkns seq namespace)
-     ))
-     """;
 }
 
 //------------------------------------------
@@ -1150,8 +908,6 @@ syntax macros {
   smacro_definition := macro for val sbasic_name_comma_list in sexpr do statement* done ssemi =>#
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
-  page macro_terms = smac_arg, smac_args, smac_arg_list;
-
     smac_arg:= sname : fun =># "`(,_1 Expr)";
     smac_arg:= sname : proc =># "`(,_1 Stmt)";
     smac_arg:= sname : sident =># "`(,_1 Stmt)";
@@ -1184,41 +940,6 @@ syntax cbind {
 
   sopt_prec := is sname =># "_2";
   sopt_prec := sepsilon =># '(quote "")';
-
-  explain sopt_prec """
-    <p>This attribute is used to specify the precedence of a C expression
-    so that the code generator can place parenthesis around it if it
-    is embedded in a context with higher precedence.</p>
-    <p>Felix automatically calculates the predence for tightly
-    packed encodings of all C operators; for example there is no
-    need to specify the precedence of <code>"$1+$2"</code>.</p>
-    <p>Otherwise, if the precedence is omitted, the expression is
-    assumed to be low, and parenthesis is always added.<p>
-    <p> The precedence must be one of the following identifiers:
-    <ol>
-<li>atom</li>
-<li>primary</li>
-<li>postfix</li>
-<li>unary</li>
-<li>cast</li>
-<li>pm</li>
-<li>mult</li>
-<li>add</li>
-<li>shift</li>
-<li>rel</li>
-<li>eq</li>
-<li>band</li>
-<li>bxor</li>
-<li>bor</li>
-<li>and</li>
-<li>xor</li>
-<li>or</li>
-<li>cond</li>
-<li>assign</li>
-<li>comma</li>
-<li>expr</li>
-    </ol></p>
-  """;
 
   // note: also needed by typeclasses atm for virtual funs
   sfunction_definition := sadjectives sfun_kind sdeclname
@@ -1254,9 +975,8 @@ syntax cbind {
       (let (
         (argt (caadr t))
         (ret (cadadr t)))
-      (mkns
       `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
-      (cdr _3)))
+      )
       ('ERROR))))
   """;
 
@@ -1283,13 +1003,9 @@ syntax cbind {
   )
   """;
 
-  page abstract_types = sabstract_type, stype_qual;
-
   sabstract_type:= stype_qual* type sdeclname = scode_spec srequires_clause ssemi =>#
     """
-    (mkns
     `(ast_abs_decl ,_sr ,(caar _3) ,(cadar _3) ,_1 ,_5 ,_6)
-    (cdr _3))
     """;
 
   sabstract_type := callback proc sname : stypeexpr srequires_clause ssemi =>#
@@ -1346,15 +1062,9 @@ syntax cbind {
     (let ((reqs (if (memv 'Virtual _1)
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
       _8)))
-    (mkns
     `(ast_const_decl ,_sr ,(caar _3) ,(cadar _3) ,_5 ,_7 ,reqs)
-    (cdr _3)))
+    )
   """;
-
-explain sconst_def """<p>A const definition defines a typed
-expression in terms of C code. Note that whilst the C code
-is usually a constant value, any expression can be used.<p>""";
-
 
   // note: also needed by typeclasses atm for virtual consts
   sconst_def := sadjectives const sdeclname : stypeexpr srequires_clause ssemi =>#
@@ -1362,13 +1072,9 @@ is usually a constant value, any expression can be used.<p>""";
     (let ((reqs (if (memv 'Virtual _1)
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
       _6)))
-    (mkns
     `(ast_const_decl ,_sr ,(caar _3) ,(cadar _3) ,_5 (Str ,(caar _3)) ,reqs)
-    (cdr _3)))
+    )
   """;
-
-explain sconst_def """<p>A short form const definition maps
-a Felix name onto the same C name.<p>""";
 
   // note: also needed by typeclasses atm for virtual procs
   sprocedure_definition := sadjectives sproc_kind sdeclname : stypeexpr
@@ -1401,9 +1107,8 @@ a Felix name onto the same C name.<p>""";
     (let (
       (argt t)
       (ret 'ast_void))
-      (mkns
       `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
-      (cdr _3)))))
+      )))
   """;
 
 
@@ -1421,18 +1126,7 @@ syntax executable {
   sexecutable := sgoto_statement=># "_1";
   sexecutable := slabel_statement =># "_1";
 
-  page system_call = ssvc;
   ssvc := _svc sname ssemi =># "`(ast_svc ,_sr ,_2)";
-
-  page assignments =
-    sassignment, sassignexpr, sassignop,
-    srmwop, sswapop,
-    spreincrop, spostincrop,
-    slelement,
-    stlelement,
-    slexprs, slexpr
-  ;
-
 
   sassignment := sassignexpr ssemi =># "_1";
 
@@ -1505,10 +1199,6 @@ syntax executable {
   sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 (ast_ref ,_1))";
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 (ast_ref ,_2))";
 
-  page subroutines =
-    sreturn, scall
-  ;
-
   sreturn := yield sexpr ssemi =># "`(ast_yield ,_sr ,_2)";
   sreturn := return sexpr ssemi =># "`(ast_fun_return ,_sr ,_2)";
   sreturn := return ssemi =># "`(ast_proc_return ,_sr)";
@@ -1523,11 +1213,6 @@ syntax executable {
   scall := loop sname ssemi =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
 
   scall := sexpr ssemi =># "(cons 'ast_call (cons _sr (splitapply _1)))";
-
-  page gotos =
-    slabel_statement, sgoto_statement,
-    sifgoto, selif_clause, selif_clauses, selse_clause
-  ;
 
   slabel_statement := sname :> =># "`(ast_label ,_sr ,_1)";
   sgoto_statement := goto sname ssemi =># "`(ast_goto ,_sr ,_2)";
@@ -1642,51 +1327,7 @@ syntax executable {
 syntax requirements {
   srequires_clause := requires srequirements =># "_2";
 
-  page requirement_terms =
-    sbinding_header,
-    srequires_clause,
-    srequirement,
-    srequirement_atom,
-    srequirement_and,
-    srequirement_or,
-    srequirements
-  ;
-
   srequires_clause := sepsilon =># "'rreq_true";
-
-  explain srequires_clause """
-  <p>A requires clause is used to establish a dependency between
-  a named C binding, particularly abstract types, and resources
-  such as C code needed to define the subject of the binding, particularly
-  C header files, so that the specified resource is loaded
-  if, and only if, one of the dependent C bindings is used.</p>
-
-  <p>This not only makes it possible to minimise the header files
-  read by the C++ compiler processing the output of Felix, but also
-  to provide Felix libraries binding to C libraries which are not
-  installed without breaking the compilation process, provided
-  the library is not actually used.</p>
-
-  <p>The requirement mechanism is also responsible for triggering
-  the emission of a run or link time resource requirements list which in
-  turn is used to search for and link external C libraries, without
-  user command line intervention.</p>
-
-  <p>Requirements may be polymorphic, in which case an instance for
-  each combination of type variable instances is emitted.</p>
-
-  <p>Requirements can be named, and may depend on other requirements.
-  Those dependencies may be recursive. Felix emits C code resources
-  in order of writing, independently of the dependencies.</p>
-
-  <p>A resource which is C text to be emitted in the header or body
-  file generated by Felix is known as a <em>floating insertion</em>.
-  </p>
-
-  <p>The name of a requirement is sometimes called a <em>tag name</em>,
-  however unlike C struct tags, tag names live in the same unified
-  namespace as other declarations.</p>
-  """;
 
   srequirement:= squalified_name =># "`(Named_req ,_1)";
   srequirement :=  property sstring =># "`(Property_req ,_2)";
@@ -1731,16 +1372,12 @@ syntax requirements {
     """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))""";
   sbinding_header:= header sdeclname = scode_spec srequires_clause ssemi =>#
     """
-    (mkns
     `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 header ,_5)
-    (cdr _2))
      """;
 
   sbinding_header:= body sdeclname = scode_spec srequires_clause ssemi =>#
     """
-    (mkns
     `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 body ,_5)
-    (cdr _2))
      """;
 
 }
@@ -1750,28 +1387,14 @@ syntax type_decls {
 
   satom := stypematch =># "_1";
 
-  page type_decls =
-    stype_alias,
-    stypematch,
-    stype_matching,
-    stypefun_arg,
-    stypefun_args,
-    stypeparameter,
-    stypeparameter_comma_list
-  ;
-
   stype_alias := typedef sdeclname = sexpr ssemi =>#
     """
-    (mkns
     `(ast_type_alias ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
     """;
 
   stype_alias := typedef fun sdeclname stypefun_args : stypeexpr => sexpr ssemi =>#
     """
-    (mkns
     `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8)
-    (cdr _3))
     """;
 
   stype_alias := typedef fun sdeclname : stypeexpr = stype_matching+ ssemi =>#
@@ -1782,9 +1405,8 @@ syntax type_decls {
         (ret (cadadr _5))
         (body `(ast_type_match (_a ,_7))))
         (let ((args `(((_a ,argt)))))
-      (mkns
       `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,args ,ret ,body)
-      (cdr _3))))
+      ))
       ('ERROR)
     )
     """;
@@ -1796,16 +1418,12 @@ syntax type_decls {
 
   sstruct_decl := struct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
-    (mkns
     `(ast_struct ,_sr ,(caar _2) ,(cadar _2) ,_5)
-    (cdr _2))
      """;
 
   sstruct_decl := cstruct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
-    (mkns
     `(ast_cstruct ,_sr ,(caar _2) ,(cadar _2) ,_5)
-    (cdr _2))
      """;
 
   sopt_name := sname =># "_1";
@@ -1813,16 +1431,12 @@ syntax type_decls {
 
   sstruct_decl := class sdeclname = ? scompound =>#
     """
-    (mkns
     `(ast_class ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
      """;
 
   sstruct_decl := typeclass sdeclname = ? scompound =>#
     """
-    (mkns
     `(ast_typeclass ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
      """;
 
   sstruct_decl := instance stvarlist squalified_name = ? scompound =>#
@@ -1832,28 +1446,20 @@ syntax type_decls {
 
   sunion_decl := union sdeclname = stype_sum_items2 ssemi =>#
     """
-    (mkns
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
      """;
 
   sunion_decl := union sdeclname lbrace stype_sum_item1* rbrace =>#
     """
-    (mkns
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
      """;
 
   sunion_decl := senum_decl =># "_1";
 
   senum_decl := enum sdeclname lbrace senum_items rbrace =>#
     """
-    (mkns
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
      """;
-
-  page enumeration = senum_decl, sopt_value, senum_item, senum_items;
 
   sopt_value := = sinteger =># "`(some ,_2)";
   sopt_value := sepsilon =># "'none";
@@ -1869,85 +1475,49 @@ syntax assertions {
   requires statements;
   sexecutable := sassert_statement =># "_1";
 
-  page assertions =
-    sassert_statement,
-    sassertion,
-    sreduce_args
-  ;
-
   sassert_statement:= assert sexpr ssemi =># "`(ast_assert ,_sr ,_2)";
 
   sdeclarative := sassertion =># "_1";
 
   sassertion := axiom sdeclname sfun_arg : sexpr ssemi =>#
   """
-    (mkns
     `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
-    (cdr _2))
-  """;
-
-  explain sassertion """<p>An axiom using a general predicate
-  to specify semantics.</p>
   """;
 
   sassertion := axiom sdeclname sfun_arg : sexpr = sexpr ssemi =>#
   """
-    (mkns
     `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
-    (cdr _2))
   """;
-
-  explain sassertion """<p>An axiom using equality to specify semantics.</p>""";
-
 
   sassertion := lemma sdeclname sfun_arg : sexpr ssemi =>#
   """
-    (mkns
     `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
-    (cdr _2))
   """;
 
   sassertion := lemma sdeclname sfun_arg : sexpr = sexpr ssemi =>#
   """
-    (mkns
     `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
-    (cdr _2))
   """;
-
-  explain sassertion """<p>A lemma is a proposition which can be
-  derived from axioms by an automatic theorem prover.</p>
-  """;
-
 
   sreduce_args := lpar stypeparameter_comma_list rpar =># "_2";
 
   sassertion := reduce sdeclname sreduce_args : sexpr => sexpr ssemi =>#
   """
-    (mkns
     `(ast_reduce ,_sr ,(caar _2) ,(cadar _2) ,_3 ,_5 ,_7)
-    (cdr _2))
   """;
 
-  explain sassertion """<p>A reduction is an axiom or lemma
-  specified as a rewriting rule. Rewriting rules are applied
-  exhaustively to eliminate left hand side terms globally.</p>
-  """;
 }
 
 syntax namespaces {
   requires statements;
   sopen_decl := rename sdeclname = squalified_name ssemi =>#
     """
-    (mkns
     `(ast_inherit ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
     """;
 
   sopen_decl := rename fun sdeclname = squalified_name ssemi =>#
     """
-    (mkns
     `(ast_inherit_fun ,_sr ,(caar _3) ,(cadar _3) ,_5)
-    (cdr _3))
     """;
 
   sopen_decl := inherit squalified_name ssemi =># "`(ast_inject_module ,_sr ,_2)";
@@ -1967,34 +1537,26 @@ syntax namespaces {
 
   smodule_definition := module sdeclname = ? scompound =>#
     """
-    (mkns
     `(ast_untyped_module ,_sr ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
      """;
 
   smodule_definition := open module sdeclname = ? scompound =>#
     """
-    (mkns
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(caar _3) ,(cadar _3) ,_5)
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
-    (cdr _3))
      """;
 
   smodule_definition := namespace sdeclname = ? scompound =>#
     """
-    (mkns
     `(ast_namespace ,(caar _2) ,(cadar _2) ,_4)
-    (cdr _2))
      """;
 
   smodule_definition := open namespace sdeclname = ? scompound =>#
     """
-    (mkns
     `(ast_seq ,_sr (
       (ast_namespace ,(caar _3) ,(cadar _3) ,_5)
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
-    (cdr _3))
      """;
 
 }
@@ -2077,29 +1639,11 @@ syntax csyntax {
     | enum sname =># "`(ast_name ,_sr ,_2 ())"
   ;
 
-explain base_type """
-<p>Support for basic C types.</p>
-""";
-
-
-explain base_type """
-<p>Although matching only
-Felix names for these types, you can actually use
-the C type name, for example <code>long long</code>
-with be translated by the lexer to <code>ulong</code>.</p>
-""";
-
-
   pointer_type:=
     | base_type =># "_1"
     | "void" star =># '`(ast_name ,_sr "address" ())'
     | pointer_type star =># "`(ast_ref ,_1)"
   ;
-
-explain pointer_type """
-<p>Note that pointers to const are not supported.</p>
-""";
-
 
   c_type :=
     | pointer_type =># "_1"
@@ -2107,25 +1651,11 @@ explain pointer_type """
       "`(ast_longarrow (,_6 ,_1))"           // cfunction
   ;
 
-explain c_type """
-<p>Note that function pointer types are C function
-pointers <code>A--&gt;B</code>.</p>
-""";
-
-
   c_type_suffix := comma c_type =># "_2";
   c_type_list :=
     | c_type c_type_suffix+ =># "`(ast_tuple,_sr ,(cons _1 _2))"
     | c_type =># "_1"
     | sepsilon =># "`(ast_tuple,_sr ())"
-  ;
-
-  page c_types =
-    base_type,
-    pointer_type,
-    c_type,
-    c_type_suffix,
-    c_type_list
   ;
 
   declarator :=
@@ -2141,25 +1671,9 @@ pointers <code>A--&gt;B</code>.</p>
       "`(PVar ,_2 (ast_longarrow (,_4 ,_1)))"
   ;
 
-explain declarator """
-<p>Top level const is supported by passing by <code>val</code>,
-otherwise we pass by <code>var</code></p>
-""";
-
-explain declarator """
-<p>Note that function pointer types are C function
-pointers <code>A--&gt;B</code>.</p>
-""";
-
-
   // function parameter
   sparameter := declarator =># "(append _1 `(none))";
   sparameter := declarator = sor_condition =># "(append _1 `((some ,_3)))";
-
-explain sparameter """
-<p> C style function paramaters like <code>int x</code> mean
-the same as <code>x:int</code></p>
-""";
 
   // initialised variable
   svar_def := declarator = sexpr ssemi =>#
@@ -2192,9 +1706,7 @@ the same as <code>x:int</code></p>
   sprocedure_definition := sadjectives "void" sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
-    (mkns
     `(ast_curry ,_sr ,(caar _3) ,(cadar _3) ,_4 (ast_void ,_5) Function ,_6)
-    (cdr _3))
   """;
 
   // function
@@ -2206,9 +1718,7 @@ the same as <code>x:int</code></p>
   sfunction_definition := cfun_kind sadjectives pointer_type sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
   """
-    (mkns
     `(ast_curry ,_sr ,(caar _4) ,(cadar _4) ,_5 (,_3 ,_6) ,_1 ,_7)
-    (cdr _4))
   """;
 
   // union
