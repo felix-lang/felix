@@ -166,7 +166,6 @@ type token =
   | LVAL of srcref
   | MACRO of srcref
   | MODULE of srcref
-  | NAMESPACE of srcref
   | NAN of srcref
   | NEW of srcref
   | NOINLINE of srcref

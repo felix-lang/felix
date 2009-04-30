@@ -129,7 +129,7 @@ void doflx (void *data) {
         void *data = new doflx_data(debug_driver, gcp, pactive, thread_control);
         flx_detached_thread_t dummy;
         if(debug_driver)
-          fprintf(stderr,"Starting new pthread, thread counter= %ld\n",thread_control->thread_count());
+          fprintf(stderr,"Starting new pthread, thread counter= %d\n",thread_control->thread_count());
         {
           flx_mutex_t spawner_lock;
           flx_condv_t spawner_cond;

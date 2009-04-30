@@ -377,7 +377,6 @@ let name_of_token (tok :Flx_token.token): string =
   | LVAL _ -> "LVAL"
   | MACRO _ -> "MACRO"
   | MODULE _ -> "MODULE"
-  | NAMESPACE _ -> "NAMESPACE"
   | NAN _ -> "NAN"
   | NEW _ -> "NEW"
   | NOINLINE _ -> "NOINLINE"
@@ -603,7 +602,6 @@ let src_of_token t = match t with
   | LVAL s
   | MACRO s
   | MODULE s
-  | NAMESPACE s
   | NAN s
   | NEW s
   | NOINLINE s

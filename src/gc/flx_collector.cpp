@@ -466,18 +466,18 @@ void flx_collector_t::scan_object(void *p)
 unsigned long flx_collector_t::impl_collect()
 {
   if(debug)
-    fprintf(stderr,"Request to collect, thread %lx\n", flx::pthread::get_current_native_thread());
+    fprintf(stderr,"Request to collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
   if (thread_control == NULL || thread_control->world_stop())
   {
     if(debug)
-      fprintf(stderr,"Collecting, thread %lx\n", flx::pthread::get_current_native_thread());
+      fprintf(stderr,"Collecting, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
     pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
     mark(mr);
     delete mr;
     unsigned long collected = sweep();
     if(thread_control) thread_control->world_start();
     if(debug)
-      fprintf(stderr,"FINISHED collect, thread %lx\n", flx::pthread::get_current_native_thread());
+      fprintf(stderr,"FINISHED collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
     return collected;
   }
   else {

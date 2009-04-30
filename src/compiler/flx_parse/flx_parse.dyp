@@ -993,8 +993,6 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_keyword %for MACRO
 %token <(Flx_ast.srcref)> MODULE
 %constructor Obj_keyword %for MODULE
-%token <(Flx_ast.srcref)> NAMESPACE
-%constructor Obj_keyword %for NAMESPACE
 %token <(Flx_ast.srcref)> NAN
 %constructor Obj_keyword %for NAN
 %token <(Flx_ast.srcref)> NEW
@@ -2008,7 +2006,6 @@ rhs_atom:
   | LOOP { LOOP $1 }
   | MACRO { MACRO $1 }
   | MODULE { MODULE $1 }
-  | NAMESPACE { NAMESPACE $1 }
   | NAN { NAN $1 }
   | NEW { NEW $1 }
   | NOINLINE { NOINLINE $1 }

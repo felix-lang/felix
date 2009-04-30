@@ -994,8 +994,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     :: dcls
 
   (* misc *)
-  | `AST_namespace _ -> assert false
-
   | `AST_untyped_module (sr,name', vs', sts) ->
     if syms.compiler_options.document_typeclass then
     begin
