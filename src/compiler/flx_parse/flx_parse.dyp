@@ -2566,8 +2566,8 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
   let b = (Dyp.std_lexbuf lexbuf) in
   b.lex_curr_p <- { b.lex_curr_p with pos_fname = filename };
   let show_error() =
-      let sr = slift (getsr lexbuf) in
-      print_endline (long_string_of_src sr);
+    let sr = slift (getsr lexbuf) in
+    print_endline (long_string_of_src sr);
   in
   let parse_tree = 
     try dyphack (
@@ -2610,26 +2610,22 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
           end;
           raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
         end
-   in 
-   close_in ic;
-   parse_tree
+  in
+  close_in ic;
+  parse_tree
 
 let parse_file filename dirname incdirs cache_dir auto_imports =
-(* TEMPORARY HACK *)
-let auto_imports = "nugram.flxh" :: auto_imports in
-
-   let prefix_tree, local_data = 
-      List.fold_left (fun (old_tree, old_local_data) filename ->
-         let filename = lookup_file incdirs filename in
-         let tree, local_data = parse1 old_local_data filename in
-         old_tree @ tree, local_data 
-      )
-      ([],local_data)
-       auto_imports
-   in
-   let filename = lookup_file (dirname :: incdirs) filename in
-   let tree,_ = parse1 local_data filename in
-   prefix_tree @ tree
+  let prefix_tree, local_data =
+    List.fold_left begin fun (old_tree, old_local_data) filename ->
+      let filename = lookup_file incdirs filename in
+      let tree, local_data = parse1 old_local_data filename in
+      old_tree @ tree, local_data
+    end
+    ([],local_data) auto_imports
+  in
+  let filename = lookup_file (dirname :: incdirs) filename in
+  let tree,_ = parse1 local_data filename in
+  prefix_tree @ tree
 }
 
 
