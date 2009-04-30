@@ -58,15 +58,16 @@ class Builder(fbuild.db.PersistentObject):
         includes.add(src.parent)
         includes.add(dst.parent)
 
-        syntaxes = set(syntaxes)
-        imports = set(imports)
+        imports = list(imports)
+        syntaxes = list(syntaxes)
         if include_std:
-            syntaxes.add('nugram.flxh')
-            imports.add('flx.flxh')
+            imports.insert(0, 'flx.flxh')
+            imports.insert(0, 'nugram.flxh')
+            syntaxes.insert(0, 'nugram.flxh')
 
         cmd.extend('-I' + i for i in sorted(includes) if Path.exists(i))
-        cmd.extend('--syntax=' + i for i in sorted(syntaxes))
-        cmd.extend('--import=' + i for i in sorted(imports))
+        cmd.extend('--import=' + i for i in imports)
+        cmd.extend('--syntax=' + i for i in syntaxes)
         cmd.append('--output_dir=' + dst.parent)
         cmd.extend(flags)
 
