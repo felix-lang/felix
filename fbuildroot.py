@@ -308,6 +308,7 @@ def build():
 
     felix = call('fbuild.builders.felix.Felix',
         exe=fbuild.buildroot / 'bin/flx.py',
+        debug=fbuild.options.debug,
         flags=['--test=' + fbuild.buildroot])
 
     # --------------------------------------------------------------------------
