@@ -1641,7 +1641,7 @@ syntax csyntax {
 
   pointer_type:=
     | base_type =># "_1"
-    | "void" star =># '`(ast_name ,_sr "address" ())'
+    | k"void" star =># '`(ast_name ,_sr "address" ())'
     | pointer_type star =># "`(ast_ref ,_1)"
   ;
 
@@ -1770,7 +1770,7 @@ syntax csyntax {
   // otherwise while (fun ()=>x) { } is interpreted
   // as a C while loop, instead of the while HOF in the library
 
-  sifgoto := "while" lpar x[sdollar_apply_pri] rpar statement =>#
+  sifgoto := k"while" lpar x[sdollar_apply_pri] rpar statement =>#
   """
     ( block ( append `(
       ( ast_label ,_sr "continue_label" )

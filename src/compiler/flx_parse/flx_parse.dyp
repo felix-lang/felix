@@ -23,6 +23,10 @@ open Lexing
 open Big_int
 open Flx_string
 
+(*
+let dypgen_choose_token = `all
+*)
+
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
 and dyalt_t = symbol_t list * range_srcref * action_t * anote_t
@@ -212,8 +216,12 @@ print_endline ("define_scheme " ^ name);
   let rhs = fudge_rhs rhs [] in
   let rec f o =
     match o with
-      | STRING _ ->
-          Dyp.Ter "NAME"
+      | STRING (sr,s) ->
+          (* Dyp.Ter "NAME" *)
+          Dyp.Regexp (Dyp.RE_String s)
+
+      | USER_KEYWORD (sr,s) ->
+         Dyp.Ter "NAME"
 
       | SCHEME_CODE _ ->
           Dyp.Ter "NAME"
@@ -310,6 +318,8 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
             | Snull -> raise Giveup
             | v -> slift sr,v
             end
+
+          | STRING _, `Lexeme_matched s -> print_endline ("Matched regexp to " ^ s); dummysr, Sstring s
 
           | k , _ ->
           print_endline ("Woops, unhandled token=" ^ Flx_prelex.string_of_token k);

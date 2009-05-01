@@ -8,7 +8,7 @@ print "felix posix accept/connect test\n";
 
 var port = 0;   // let mk_listener choose the port
 print "creating listener\n";
-var &listener: socket_t <- mk_listener(&port, 1);
+var listener: socket_t; mk_listener(&listener,&port, 1);
 
 print "spawning connector\n";
 // not printing in thread to make output repeatable in
