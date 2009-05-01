@@ -74,12 +74,12 @@ proc Connect(s: &SOCKET, addr: charp, port: int)
 }
 
 // listens on all interfaces, I guess
-proc cmk_listener: lvalue[SOCKET]*lvalue[int]*int
-    = '$1 = flx::demux::create_listener_socket(&$2, $3);';
+proc cmk_listener: &SOCKET*lvalue[int]*int
+    = '*$1 = flx::demux::create_listener_socket(&$2, $3);';
 
 proc mk_listener(listener: &SOCKET, port: &int, backlog: int)
 {
-    *listener <- cmk_listener(*port, backlog);
+    cmk_listener(listener,*port, backlog);
     associate_with_iocp(*listener);
 }
 
