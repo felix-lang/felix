@@ -88,12 +88,6 @@ let decode_raw_dddstring s = let n = String.length s in String.sub s 0 (n-3)
 
 
 let silly_strtoken k = Flx_prelex.string_of_token k
-  (*
-  match k with
-  | NAME (_,s) -> s
-  | NONTERMINAL (_,s,p) -> s
-  | _ -> Dyp_symbols.str_token k
-  *)
 
 let fresh_dssl = {
   prios = [];
@@ -236,7 +230,6 @@ print_endline ("define_scheme " ^ name);
 print_endline ("Token=" ^ Flx_prelex.string_of_token s);
 print_endline ("Name =" ^ Flx_prelex.name_of_token s);
 *)
-        let name = Dyp_symbols.str_token s in
         let name = Flx_prelex.name_of_token s in
 (*
 print_endline ("Running f, arg=\"" ^ name ^ "\"");
