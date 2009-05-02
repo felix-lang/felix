@@ -257,9 +257,9 @@ syntax expressions {
   x[sdollar_apply_pri] := x[stuple_pri] $ x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
   x[stuple_pri] := x[>stuple_pri] ( , x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
-  x[sor_condition_pri] := x[>sor_condition_pri] ( or x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
-  x[sand_condition_pri] := x[>sand_condition_pri] ( and x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
-  x[snot_condition_pri] := not x[snot_condition_pri]  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
+  x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
+  x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
 
   // NOTE: this version doesn't support chains like a < b < c.. too bad
   x[scomparison_pri]:= x[>scomparison_pri] < x[>scomparison_pri] =># "`(ast_apply ,_sr (lt (,_1 ,_3)))" note "lt";
@@ -383,8 +383,8 @@ syntax expressions {
   satom := sliteral =># "_1";
   satom := _ =># "'ast_patany";
   satom := ... =># "'ast_ellipsis";
-  satom := sfalse =># "'(ast_typed_case  0 2)";
-  satom := strue =># "'(ast_typed_case  1 2)";
+  satom := "false" =># "'(ast_typed_case  0 2)";
+  satom := "true" =># "'(ast_typed_case  1 2)";
 
   satom := "callback" lsqb sexpr rsqb =># "`(ast_callback ,_3)";
   satom := [| sexpr |] =># "`(ast_arrayof ,(mkl _2))";
@@ -398,7 +398,7 @@ syntax expressions {
   satom := lpar rpar =># "'()";
   satom := sconditional =># "_1";
 
-  sconditional := if sexpr "then" sexpr selse_part "endif" =>#
+  sconditional := "if" sexpr "then" sexpr selse_part "endif" =>#
     "`(ast_cond (,_2 ,_4 ,_5))";
 
   selif := "elif" sexpr "then" sexpr =># "`(,_2 ,_4)";
@@ -438,8 +438,8 @@ syntax patterns {
     scoercive_pattern := satomic_pattern : x[sarrow_pri] =># "`(pat_coercion ,_1 ,_3)";
     scoercive_pattern := satomic_pattern =># "_1";
 
-    satomic_pattern := strue =># "'(pat_const_ctor (ast_case_tag 1))";
-    satomic_pattern := sfalse =># "'(pat_const_ctor (ast_case_tag 0))";
+    satomic_pattern := "true" =># "'(pat_const_ctor (ast_case_tag 1))";
+    satomic_pattern := "false" =># "'(pat_const_ctor (ast_case_tag 0))";
     satomic_pattern := sstring =># "`(pat_string ,_1)";
     satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
     satomic_pattern := _ =># "'pat_any";
@@ -457,14 +457,14 @@ syntax patterns {
     satomic_pattern := sintegral .. sintegral=>#
       "`(pat_int_range ,(car _1) ,(cadr _1) ,(car _3) ,(cadr _3))";
 
-    satomic_pattern := k"NaN" =># "'pat_nan";
+    satomic_pattern := "NaN" =># "'pat_nan";
     satomic_pattern := sfloating .. sfloating =>#
       "`(pat_float_range ,_1 ,_3)";
 
       sfloating:= sfloat =># "`(Float_plus ,(car _1) ,(cadr _1))";
       sfloating:= - sfloat =># "`(Float_minus ,(car _2) ,(cadr _2))";
-      sfloating:= k"inf" =># "'Float_inf";
-      sfloating:= - k"inf" =># "'Float_minus_inf";
+      sfloating:= "inf" =># "'Float_inf";
+      sfloating:= - "inf" =># "'Float_minus_inf";
 
 
 }
@@ -669,7 +669,7 @@ syntax statements {
   statement:= scomment =># "_1";
   statement:= snull_statement =># "_1";
 
-  scomment := comment sstring ssemi =># "`(ast_comment ,_sr ,_2)";
+  scomment := "comment" sstring ssemi =># "`(ast_comment ,_sr ,_2)";
 
 
   spublish := "private" sdeclarative =># "`(ast_private ,_2)";
@@ -747,7 +747,7 @@ syntax statements {
 syntax variables {
   // assignments have lower priority than variable
   // definitions to support 'int x = 1;' being
-  // a variable definition not an assignment,
+  // a variable definition "not" an assignment,
   // so we have to requires them first: they're
   // currently defined in executable.. this is fragile ..
   requires statements, executable;
@@ -867,41 +867,41 @@ syntax macros {
   requires expressions, statements;
 
   sdirective := smacro_definition =># "_1";
-  smacro_definition := macro sname "is" sbasic_name_comma_list ssemi =>#
+  smacro_definition := "macro" sname "is" sbasic_name_comma_list ssemi =>#
     "`(ast_macro_names ,_2 ,_4)";
 
   // this MUST be next, overrides case with only one name
-  smacro_definition := macro sname "is" sname ssemi =># "`(ast_macro_name ,_2 ,_4)";
-  smacro_definition := macro for sname "in" sbasic_name_comma_list do statement* done ssemi =>#
+  smacro_definition := "macro" sname "is" sname ssemi =># "`(ast_macro_name ,_2 ,_4)";
+  smacro_definition := "macro" "for" sname "in" sbasic_name_comma_list "do" statement* "done" ssemi =>#
     "`(ast_macro_ifor ,_3 ,_5 ,_7)";
-  smacro_definition := macro for sname "in" lpar sbasic_name_comma_list rpar do statement* done ssemi =>#
+  smacro_definition := "macro" "for" sname "in" lpar sbasic_name_comma_list rpar "do" statement* "done" ssemi =>#
     "`(ast_macro_ifor ,_3 ,_6 ,_9)";
 
-  smacro_definition := macro sname "is" "new" ssemi =># """`(ast_macro_name ,_2 "")""";
-  smacro_definition := macro "var" sbasic_name_comma_list = sexpr ssemi =>#
+  smacro_definition := "macro" sname "is" "new" ssemi =># """`(ast_macro_name ,_2 "")""";
+  smacro_definition := "macro" "var" sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_var ,_3 ,_5)";
-  smacro_definition := macro "val" sbasic_name_comma_list = sexpr ssemi =>#
+  smacro_definition := "macro" "val" sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_val ,_3 ,_5)";
-  smacro_definition := macro sbasic_name_comma_list = sexpr ssemi =>#
+  smacro_definition := "macro" sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_assign ,_2 ,_4)";
-  smacro_definition := macro "val" sname "is" sexpr ssemi =>#
+  smacro_definition := "macro" "val" sname "is" sexpr ssemi =>#
     "`(ast_macro_vals ,_3 ,(mkl _5))";
-  smacro_definition := macro "fun" sname smac_arg_list = sexpr ssemi =>#
+  smacro_definition := "macro" "fun" sname smac_arg_list = sexpr ssemi =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := macro "fun" sname smac_arg_list => sexpr ssemi =>#
+  smacro_definition := "macro" "fun" sname smac_arg_list => sexpr ssemi =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := macro "proc" sname smac_arg_list scompound =>#
+  smacro_definition := "macro" "proc" sname smac_arg_list scompound =>#
     "`(ast_stmt_macro ,_3 ,_4 ,_5)";
-  smacro_definition := macro scompound ssemi =># "`(ast_macro_block ,_2)";
-  smacro_definition := macro "forget" sbasic_name_comma_list ssemi =>#
+  smacro_definition := "macro" scompound ssemi =># "`(ast_macro_block ,_2)";
+  smacro_definition := "macro" "forget" sbasic_name_comma_list ssemi =>#
     "`(ast_macro_forget ,_3)";
-  smacro_definition := macro "forget" ssemi =>#
+  smacro_definition := "macro" "forget" ssemi =>#
     "`(ast_macro_forget ())";
-  smacro_definition := macro "goto" sname ssemi =># "`(ast_macro_goto ,_3)";
-  smacro_definition := macro sname :> =># "`(ast_macro_label ,_2)";
-  smacro_definition := macro if sexpr "goto" sname ssemi =>#
+  smacro_definition := "macro" "goto" sname ssemi =># "`(ast_macro_goto ,_3)";
+  smacro_definition := "macro" sname :> =># "`(ast_macro_label ,_2)";
+  smacro_definition := "macro" "if" sexpr "goto" sname ssemi =>#
     "`(ast_macro_ifgoto ,_3 ,_5)";
-  smacro_definition := macro for "val" sbasic_name_comma_list "in" sexpr do statement* done ssemi =>#
+  smacro_definition := "macro" "for" "val" sbasic_name_comma_list "in" sexpr "do" statement* "done" ssemi =>#
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
     smac_arg:= sname : "fun" =># "`(,_1 Expr)";
@@ -913,7 +913,7 @@ syntax macros {
     smac_arg_list := lpar smac_args rpar =># "_2";
     smac_arg_list := lpar rpar =># "()";
 
-  x[sapplication_pri] := macro "ctor" sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
+  x[sapplication_pri] := "macro" "ctor" sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
 }
 
 //------------------------------------------
@@ -1214,16 +1214,16 @@ syntax executable {
   sgoto_statement := "goto" sname ssemi =># "`(ast_goto ,_sr ,_2)";
 
 
-  sifgoto := if sexpr "goto" sname ssemi =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
-  sifgoto := if sexpr "return" ssemi =># "`(ast_ifreturn ,_sr ,_2)";
-  sifgoto := if sexpr "call" sexpr ssemi =>#
+  sifgoto := "if" sexpr "goto" sname ssemi =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  sifgoto := "if" sexpr "return" ssemi =># "`(ast_ifreturn ,_sr ,_2)";
+  sifgoto := "if" sexpr "call" sexpr ssemi =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
-  sifgoto := if sexpr do statement* selse_clause done ssemi =>#
+  sifgoto := "if" sexpr "do" statement* selse_clause "done" ssemi =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
-  sifgoto := if sexpr do statement* done ssemi =>#
+  sifgoto := "if" sexpr "do" statement* "done" ssemi =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
-  selif_clause := "elif" sexpr do statement* =># "`(,_2 ,_4)";
+  selif_clause := "elif" sexpr "do" statement* =># "`(,_2 ,_4)";
   selif_clause := "elif" sexpr "return" ssemi =># "`(,_2 ((ast_proc_return ,_sr)))";
   selif_clause := "elif" sexpr "goto" sname ssemi =># "`(,_2 (ast_goto ,_sr ,_4))";
   selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
@@ -1245,7 +1245,7 @@ syntax executable {
         (fold_left f () _1))
     """;
 
-  sifgoto := "whilst" sexpr do statement* done ssemi =>#
+  sifgoto := "whilst" sexpr "do" statement* "done" ssemi =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "break_label" "" )
@@ -1259,7 +1259,7 @@ syntax executable {
     )
   """;
 
-  sifgoto := "until" sexpr do statement* done ssemi =>#
+  sifgoto := "until" sexpr "do" statement* "done" ssemi =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "break_label" "" )
@@ -1274,11 +1274,11 @@ syntax executable {
   """;
 
 
-  sifgoto := "forall" sname "in" sexpr do statement* done ssemi =>#
+  sifgoto := "forall" sname "in" sexpr "do" statement* "done" ssemi =>#
     "`(ast_macro_vfor (,_2) ,_4 ,_6)"
   ;
 
-  sifgoto := "forall" sname "in" sexpr "upto" sexpr do statement* done ssemi =>#
+  sifgoto := "forall" sname "in" sexpr "upto" sexpr "do" statement* "done" ssemi =>#
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
@@ -1298,7 +1298,7 @@ syntax executable {
      ))
   """;
 
-  sifgoto := "forall" sname "in" sexpr "downto" sexpr do statement* done ssemi =>#
+  sifgoto := "forall" sname "in" sexpr "downto" sexpr "do" statement* "done" ssemi =>#
   """
     `(ast_macro_block ,( append `(
       (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
@@ -1332,11 +1332,11 @@ syntax requirements {
   srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
   srequirement_atom:= lpar srequirements rpar =># "_2";
 
-  srequirement_and:= srequirement_and and srequirement_atom =>#
+  srequirement_and:= srequirement_and "and" srequirement_atom =>#
     "`(rreq_and ,_1 ,_3)";
   srequirement_and:= srequirement_atom =># "_1";
 
-  srequirement_or:= srequirement_or or srequirement_and =>#
+  srequirement_or:= srequirement_or "or" srequirement_and =>#
     "`(rreq_or ,_1 ,_3)";
   srequirement_or:= srequirement_and =># "_1";
 
@@ -1543,11 +1543,6 @@ syntax namespaces {
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(caar _3)()))))
      """;
 
-  smodule_definition := namespace sdeclname = ? scompound =>#
-    """
-    `(ast_namespace ,(caar _2) ,(cadar _2) ,_4)
-     """;
-
   smodule_definition := "open" namespace sdeclname = ? scompound =>#
     """
     `(ast_seq ,_sr (
@@ -1741,7 +1736,7 @@ syntax csyntax {
   sifgoto := "continue" ssemi =># '`(ast_goto ,_sr "continue_label")';
   sifgoto := "redo" ssemi =># '`(ast_goto ,_sr "redo_label")';
 
-  sifgoto := for lpar statement sexpr ssemi sassignexpr rpar statement =>#
+  sifgoto := "for" lpar statement sexpr ssemi sassignexpr rpar statement =>#
   """
     (let*
       (
@@ -1762,7 +1757,7 @@ syntax csyntax {
     )))
   """;
 
-  // note: we use sdollar_apply not sexpr here,
+  // note: we use sdollar_apply "not" sexpr here,
   // otherwise while (fun ()=>x) { } is interpreted
   // as a C while loop, instead of the while HOF in the library
 
@@ -1777,7 +1772,7 @@ syntax csyntax {
     )))
   """;
 
-  sifgoto := do scompound "until" x[sdollar_apply_pri] ssemi =>#
+  sifgoto := "do" scompound "until" x[sdollar_apply_pri] ssemi =>#
   """
     ( block ( append `(
       ( ast_label ,_sr "continue_label" )
@@ -1787,7 +1782,7 @@ syntax csyntax {
     )))
   """;
 
-  sifgoto := if lpar x[sdollar_apply_pri] rpar statement "else" statement =>#
+  sifgoto := "if" lpar x[sdollar_apply_pri] rpar statement "else" statement =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" )
@@ -1802,7 +1797,7 @@ syntax csyntax {
   """;
 
   // this must be given first ..
-  sifgoto := if lpar x[sdollar_apply_pri] rpar statement =>#
+  sifgoto := "if" lpar x[sdollar_apply_pri] rpar statement =>#
   """
     `( ast_macro_block ,( append `(
       ( ast_macro_name "lab1" "" )
