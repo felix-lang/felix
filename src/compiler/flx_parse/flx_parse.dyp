@@ -1376,31 +1376,22 @@ main lexer =
   "call" -> CALL { getsr lexbuf }
   "case" -> CASE { getsr lexbuf }
   "caseno" -> CASENO { getsr lexbuf }
-/*  "cfun" -> CFUNCTION { getsr lexbuf } */
-/*  "class" -> CLASS { getsr lexbuf } */
   "comment" -> COMMENT_KEYWORD { getsr lexbuf }
   "compound" -> COMPOUND { getsr lexbuf }
   "const" -> CONST { getsr lexbuf }
-/*  "cproc" -> CPROCEDURE { getsr lexbuf } */
   "cstruct" -> CSTRUCT { getsr lexbuf }
   "ctor" -> CTOR { getsr lexbuf }
-  "ctypes" -> CTYPES { getsr lexbuf }
+/*  "ctypes" -> CTYPES { getsr lexbuf } */
   "def" -> DEF { getsr lexbuf }
   "do" -> DO { getsr lexbuf }
   "done" -> DONE { getsr lexbuf }
-  "elif" -> ELIF { getsr lexbuf }
-  "else" -> ELSE { getsr lexbuf }
-  "endcase" -> ENDCASE { getsr lexbuf }
-  "endif" -> ENDIF { getsr lexbuf }
+/*  "elif" -> ELIF { getsr lexbuf } */
+/*  "else" -> ELSE { getsr lexbuf } */
+/*  "endif" -> ENDIF { getsr lexbuf } */
   "endmatch" -> ENDMATCH { getsr lexbuf }
   "enum" -> ENUM { getsr lexbuf }
-  "expect" -> EXPECT { getsr lexbuf }
-/*  "export" -> EXPORT { getsr lexbuf } */
-/*  "extern" -> EXTERN { getsr lexbuf } */
   "for" -> FOR { getsr lexbuf }
   "forget" -> FORGET { getsr lexbuf }
-  "fork" -> FORK { getsr lexbuf }
-  "functor" -> FUNCTOR { getsr lexbuf }
   "fun" -> FUNCTION { getsr lexbuf }
   "gen" -> GENERATOR { getsr lexbuf }
   "goto" -> GOTO { getsr lexbuf }
@@ -1408,29 +1399,25 @@ main lexer =
   "header" -> HEADER { getsr lexbuf }
   "ident" -> IDENT { getsr lexbuf }
   "include" -> INCLUDE { getsr lexbuf }
-  "incomplete" -> INCOMPLETE { getsr lexbuf }
   "inf" -> INF { getsr lexbuf }
-  "in" -> IN { getsr lexbuf }
+/*  "in" -> IN { getsr lexbuf } */
   "instance" -> INSTANCE { getsr lexbuf }
-  "is" -> IS { getsr lexbuf }
+/*  "is" -> IS { getsr lexbuf } */
   "inherit" -> INHERIT { getsr lexbuf }
-/*  "inline" -> INLINE { getsr lexbuf }  */
   "jump" -> JUMP { getsr lexbuf }
   "lemma" -> LEMMA { getsr lexbuf }
-  "let" -> LET { getsr lexbuf }
+/*  "let" -> LET { getsr lexbuf } */
   "loop" -> LOOP { getsr lexbuf }
   "lval" -> LVAL { getsr lexbuf }
   "macro" -> MACRO { getsr lexbuf }
   "module" -> MODULE { getsr lexbuf }
   "NaN" -> NAN { getsr lexbuf }
   "new" -> NEW { getsr lexbuf }
-/*  "noinline" -> NOINLINE { getsr lexbuf }  */
   "nonterm" -> NONTERM { getsr lexbuf }
-  "noreturn" -> NORETURN { getsr lexbuf }
+/*  "noreturn" -> NORETURN { getsr lexbuf } */
   "not" -> NOT { getsr lexbuf }
   "open" -> OPEN { getsr lexbuf }
   "package" -> PACKAGE { getsr lexbuf }
-  "pod" -> POD { getsr lexbuf }
   "private" -> PRIVATE { getsr lexbuf }
   "proc" -> PROCEDURE { getsr lexbuf }
   "property" -> PROPERTY { getsr lexbuf }
@@ -1438,12 +1425,10 @@ main lexer =
   "ref" -> REF { getsr lexbuf }
   "rename" -> RENAME { getsr lexbuf }
   "requires" -> REQUIRES { getsr lexbuf }
-  "return" -> RETURN { getsr lexbuf }
   "SCHEME" -> SCHEME { getsr lexbuf }
   "syntax" -> SYNTAX { getsr lexbuf }
-/*  "static" -> STATIC { getsr lexbuf } */
   "struct" -> STRUCT { getsr lexbuf }
-  "then" -> THEN { getsr lexbuf }
+/*  "then" -> THEN { getsr lexbuf } */
   "todo" -> TODO { getsr lexbuf }
   "to" -> TO { getsr lexbuf }
   "typedef" -> TYPEDEF { getsr lexbuf }
@@ -1453,32 +1438,19 @@ main lexer =
   "use" -> USE { getsr lexbuf }
   "val" -> VAL { getsr lexbuf }
   "var" -> VAR { getsr lexbuf }
-/*  "virtual" -> VIRTUAL { getsr lexbuf } */
-  "where" -> WHERE { getsr lexbuf }
-  "when" -> WHEN { getsr lexbuf }
-  "with" -> WITH { getsr lexbuf }
-  "yield" -> YIELD { getsr lexbuf }
-  "_gc_pointer" -> GC_POINTER { getsr lexbuf }
-  "_gc_type" -> GC_TYPE { getsr lexbuf }
-  "_svc" -> SVC { getsr lexbuf }
-  "_deref" -> DEREF { getsr lexbuf }
   "and" -> AND { getsr lexbuf }
-  "as" -> AS { getsr lexbuf }
-  "callback" -> CALLBACK { getsr lexbuf }
-  "code" -> CODE { getsr lexbuf }
+/*  "as" -> AS { getsr lexbuf } */
+/*  "callback" -> CALLBACK { getsr lexbuf } */
+/*  "code" -> CODE { getsr lexbuf } */
   "false" -> FALSE { getsr lexbuf }
   "if" -> IF { getsr lexbuf }
   "isin" -> ISIN { getsr lexbuf }
   "match" -> MATCH { getsr lexbuf }
   "noexpand" -> NOEXPAND { getsr lexbuf }
-  "of" -> OF { getsr lexbuf }
+/*  "of" -> OF { getsr lexbuf } */
   "or" -> OR { getsr lexbuf }
   "the" -> THE { getsr lexbuf }
   "true" -> TRUE { getsr lexbuf }
-  "typematch" -> TYPEMATCH { getsr lexbuf }
-  "typecase" -> TYPECASE { getsr lexbuf }
-  "whence" -> WHENCE { getsr lexbuf }
-  "unless" -> UNLESS { getsr lexbuf }
   "_" -> UNDERSCORE { getsr lexbuf }
   "$" -> DOLLAR { getsr lexbuf }
   "?" -> QUEST { getsr lexbuf }
