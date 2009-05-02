@@ -275,9 +275,9 @@ syntax expressions {
   x[ssetintersection_pri] := x[>ssetintersection_pri] (&& x[>ssetintersection_pri])+ =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
   x[sarrow_pri] := x[scase_literal_pri] -> x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
   x[sarrow_pri] := x[scase_literal_pri] --> x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
-  x[scase_literal_pri] := case sinteger =># "`(ast_case_tag ,_2))";
-  x[scase_literal_pri] := case sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
-  x[scase_literal_pri] := case sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
+  x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_2))";
+  x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
+  x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
   x[sbor_pri] := x[sbor_pri] \| x[>sbor_pri] =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
   x[sbxor_pri] := x[sbxor_pri] \^ x[>sbxor_pri] =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
@@ -304,7 +304,7 @@ syntax expressions {
   x[srefr_pri] := & x[srefr_pri] =># "`(ast_ref ,_2)";
   x[srefr_pri] := star x[srefr_pri] =># "`(ast_apply ,_sr (deref ,_2))" note "deref";
   x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_2)";
-  x[srefr_pri] := new x[srefr_pri] =># "`(ast_new ,_2)";
+  x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_2)";
   x[srefr_pri] := anon_value =># "_1";
 
   anon_value := "struct" lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
@@ -335,9 +335,9 @@ syntax expressions {
 
   x[sfactor_pri] := shash_name =># "_1";
   x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr rsqb =># "`(ast_apply ,_sr (subscript (,_1 ,_4)))";
-  x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
-  x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr to rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
-  x[sfactor_pri] := x[sfactor_pri] . lsqb to sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
+  x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr k"to" sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
+  x[sfactor_pri] := x[sfactor_pri] . lsqb sexpr k"to" rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] . lsqb k"to" sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
   x[sfactor_pri] := x[sfactor_pri] . shash_name =>#
     "`(ast_dot ,_sr (,_1 ,_3))))";
   // note the next production MUST be after the previous one so it overrides the
@@ -356,8 +356,8 @@ syntax expressions {
   shash_name := sthe_name =># "_1";
 
   sthe_name :=
-    | the squalified_name =># "`(ast_the ,_2)"
-    | noexpand squalified_name =># "`(ast_noexpand ,_2)"
+    | "the" squalified_name =># "`(ast_the ,_2)"
+    | "noexpand" squalified_name =># "`(ast_noexpand ,_2)"
     | quest sname =># "`(ast_patvar ,_2)"
     | squalified_name =># "_1"
   ;
@@ -421,7 +421,7 @@ syntax expressions {
 syntax patterns {
   satom := pattern_match =># "_1";
 
-  pattern_match := match sexpr "with" smatching+ endmatch =>#
+  pattern_match := "match" sexpr "with" smatching+ "endmatch" =>#
     "`(ast_match (,_2 ,_4))";
 
     smatching  := vbar spattern => sexpr =># "`(,_2 ,_4)";
@@ -450,21 +450,21 @@ syntax patterns {
     satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_1 ,_2)";
     satomic_pattern := sctor_name =># "`(pat_const_ctor ,_1)";
       sctor_name := squalified_name =># "_1";
-      sctor_name := case sinteger =># "`(ast_case_tag ,_2)";
+      sctor_name := "case" sinteger =># "`(ast_case_tag ,_2)";
 
     satomic_pattern := sstring .. sstring =># "`(pat_string_range ,_1 ,_3)";
     satomic_pattern := sintegral =># "`(pat_int ,(car _1) ,(cadr _1))";
     satomic_pattern := sintegral .. sintegral=>#
       "`(pat_int_range ,(car _1) ,(cadr _1) ,(car _3) ,(cadr _3))";
 
-    satomic_pattern := NaN =># "'pat_nan";
+    satomic_pattern := k"NaN" =># "'pat_nan";
     satomic_pattern := sfloating .. sfloating =>#
       "`(pat_float_range ,_1 ,_3)";
 
       sfloating:= sfloat =># "`(Float_plus ,(car _1) ,(cadr _1))";
       sfloating:= - sfloat =># "`(Float_minus ,(car _2) ,(cadr _2))";
-      sfloating:= inf =># "'Float_inf";
-      sfloating:= - inf =># "'Float_minus_inf";
+      sfloating:= k"inf" =># "'Float_inf";
+      sfloating:= - k"inf" =># "'Float_minus_inf";
 
 
 }
@@ -476,22 +476,22 @@ syntax functions {
   sdeclarative := sprocedure_definition =># "_1";
   sdeclarative := sctor_definition =># "_1";
 
-  x[slambda_pri] := sadjectives fun stvarlist slambda_fun_args fun_return_type = scompound =>#
+  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type = scompound =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ,_7))
     """;
 
-  x[slambda_pri] := sadjectives fun stvarlist slambda_fun_args fun_return_type => sexpr =>#
+  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type => sexpr =>#
     """
     `(ast_lambda (,_3 ,_4 ,(car _5) ((ast_fun_return ,_sr ,_7))))
     """;
 
-  x[slambda_pri] := sadjectives proc stvarlist slambda_fun_args scompound =>#
+  x[slambda_pri] := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
     """
     `(ast_lambda (,_3 ,_4 ast_void ,_5))
     """;
 
-  x[slambda_pri] := sadjectives proc stvarlist scompound =>#
+  x[slambda_pri] := sadjectives "proc" stvarlist scompound =>#
     """
     `(ast_lambda (,_3 ((() none)) ast_void ,_4))
     """;
@@ -520,10 +520,10 @@ syntax functions {
     sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map cadr _2))";
 
 
-    sparam_qual := val =># "'PVal";
-    sparam_qual := var =># "'PVar";
-    sparam_qual := ref =># "'PRef";
-    sparam_qual := fun =># "'PFun";
+    sparam_qual := "val" =># "'PVal";
+    sparam_qual := "var" =># "'PVar";
+    sparam_qual := "ref" =># "'PRef";
+    sparam_qual := "fun" =># "'PFun";
     sparam_qual := sepsilon =># "'PVal";
 
   sfun_arg :=  lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
@@ -531,8 +531,8 @@ syntax functions {
   sfun_arg :=  sname =># "`(((PVal ,_1 typ_none none)) none)";
 
   sfun_kind := "cfun" =># "'CFunction";
-  sfun_kind := gen =># "'Generator";
-  sfun_kind := fun =># "'Function";
+  sfun_kind := "gen" =># "'Generator";
+  sfun_kind := "fun" =># "'Function";
 
   sfunction_definition := sadjectives sfun_kind sdeclname
     sfun_arg* fun_return_type => sexpr ssemi =>#
@@ -581,7 +581,7 @@ syntax functions {
    )
   """;
 
-  sproc_kind := proc =># "'Function";
+  sproc_kind := "proc" =># "'Function";
   sproc_kind := "cproc" =># "'CFunction";
 
   sopt_traint_eq:= "expect" sexpr = =># "`(some ,_2)";
@@ -597,7 +597,7 @@ syntax functions {
   sctor_inits := sepsilon =># "()";
 
   // only used by classes
-  sctor_definition := ctor stvarlist sfun_arg* sopt_traint_eq
+  sctor_definition := "ctor" stvarlist sfun_arg* sopt_traint_eq
     sctor_inits scompound =>#
   """
   (let*
@@ -615,7 +615,7 @@ syntax functions {
     `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
   """;
 
-  sctor_definition := ctor stvarlist sname sfun_arg+ sopt_traint_eq
+  sctor_definition := "ctor" stvarlist sname sfun_arg+ sopt_traint_eq
     scompound =>#
   """
   (let*
@@ -630,7 +630,7 @@ syntax functions {
     `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
   """;
 
-  sctor_definition := ctor stvarlist sname sfun_arg+
+  sctor_definition := "ctor" stvarlist sname sfun_arg+
     sopt_traint => sexpr ssemi =>#
   """
   (let*
@@ -688,13 +688,13 @@ syntax statements {
 
   snull_statement := ssemi =># """`(ast_nop ,_sr "")""";
 
-  sinclusion := include sstring ssemi =># "`(ast_include ,_sr ,_2)";
+  sinclusion := "include" sstring ssemi =># "`(ast_include ,_sr ,_2)";
 
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sdeclname :: sname stvarlist =># "(cons `(,_3 ,_4) _1)";
   sdeclname := sname stvarlist =># "`((,_1 ,_2))";
 
-  sabstract_type := stype_qual* type sdeclname = new sexpr ssemi =>#
+  sabstract_type := stype_qual* "type" sdeclname = "new" sexpr ssemi =>#
     """
     `(ast_newtype ,_sr ,(caar _3) ,(cadar _3) ,_6)
     """;
@@ -732,8 +732,8 @@ syntax statements {
   stypefun_arg := lpar stypeparameter_comma_list rpar =># "_2";
   stypefun_args := stypefun_arg+  =># "_1";
 
-  stodo := todo sstring ssemi =># "`(ast_nop ,_sr ,_2)";
-  stodo := todo ssemi =># """`(ast_nop ,_sr "todo")""";
+  stodo := "todo" sstring ssemi =># "`(ast_nop ,_sr ,_2)";
+  stodo := "todo" ssemi =># """`(ast_nop ,_sr "todo")""";
 
   //scompound := lbrace statement* rbrace =># "_2";
   scompound := lbrace sstatements rbrace =># "_2";
@@ -754,7 +754,7 @@ syntax variables {
 
   sexecutable := svar_def =># "_1";
   sexecutable := sval_def =># "_1";
-  sval_def := val sname sname_suffix = sexpr ssemi =>#
+  sval_def := "val" sname sname_suffix = sexpr ssemi =>#
   """
   (let
     (
@@ -782,42 +782,42 @@ syntax variables {
   )))
   """;
 
-  sval_def := val sdeclname = sexpr ssemi =>#
+  sval_def := "val" sdeclname = sexpr ssemi =>#
     """
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
      """;
 
-  sval_def := val sdeclname : stypeexpr = sexpr ssemi =>#
+  sval_def := "val" sdeclname : stypeexpr = sexpr ssemi =>#
     """
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
      """;
 
-  sval_def := val sdeclname : stypeexpr ssemi =>#
+  sval_def := "val" sdeclname : stypeexpr ssemi =>#
     """
     `(ast_val_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
      """;
 
-  sval_def := ref sdeclname <- sexpr ssemi =>#
+  sval_def := "ref" sdeclname <- sexpr ssemi =>#
     """
     `(ast_ref_decl ,(caar _2) ,(cadar _2) none (some ,_4))
      """;
 
-  sval_def := ref sdeclname : stypeexpr <- sexpr ssemi =>#
+  sval_def := "ref" sdeclname : stypeexpr <- sexpr ssemi =>#
     """
     `(ast_ref_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
      """;
 
-  sval_def := fun sdeclname <- sexpr ssemi =>#
+  sval_def := "fun" sdeclname <- sexpr ssemi =>#
     """
     `(ast_lazy_decl ,(caar _2) ,(cadar _2) none (some ,_4))
      """;
 
-  sval_def := fun sdeclname : stypeexpr <- sexpr ssemi =>#
+  sval_def := "fun" sdeclname : stypeexpr <- sexpr ssemi =>#
     """
     `(ast_lazy_decl ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
      """;
 
-  svar_def := var sname sname_suffix = sexpr ssemi =>#
+  svar_def := "var" sname sname_suffix = sexpr ssemi =>#
   """
   (let
     (
@@ -845,17 +845,17 @@ syntax variables {
   )))
   """;
 
-  svar_def := var sdeclname = sexpr ssemi =>#
+  svar_def := "var" sdeclname = sexpr ssemi =>#
     """
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) none (some ,_4))
      """;
 
-  svar_def := var sdeclname : stypeexpr = sexpr ssemi =>#
+  svar_def := "var" sdeclname : stypeexpr = sexpr ssemi =>#
     """
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) (some ,_6))
      """;
 
-  svar_def := var sdeclname : stypeexpr ssemi =>#
+  svar_def := "var" sdeclname : stypeexpr ssemi =>#
     """
     `(ast_var_decl ,_sr ,(caar _2) ,(cadar _2) (some ,_4) none)
      """;
@@ -877,20 +877,20 @@ syntax macros {
   smacro_definition := macro for sname "in" lpar sbasic_name_comma_list rpar do statement* done ssemi =>#
     "`(ast_macro_ifor ,_3 ,_6 ,_9)";
 
-  smacro_definition := macro sname "is" new ssemi =># """`(ast_macro_name ,_2 "")""";
-  smacro_definition := macro var sbasic_name_comma_list = sexpr ssemi =>#
+  smacro_definition := macro sname "is" "new" ssemi =># """`(ast_macro_name ,_2 "")""";
+  smacro_definition := macro "var" sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_var ,_3 ,_5)";
-  smacro_definition := macro val sbasic_name_comma_list = sexpr ssemi =>#
+  smacro_definition := macro "val" sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_val ,_3 ,_5)";
   smacro_definition := macro sbasic_name_comma_list = sexpr ssemi =>#
     "`(ast_macro_assign ,_2 ,_4)";
-  smacro_definition := macro val sname "is" sexpr ssemi =>#
+  smacro_definition := macro "val" sname "is" sexpr ssemi =>#
     "`(ast_macro_vals ,_3 ,(mkl _5))";
-  smacro_definition := macro fun sname smac_arg_list = sexpr ssemi =>#
+  smacro_definition := macro "fun" sname smac_arg_list = sexpr ssemi =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := macro fun sname smac_arg_list => sexpr ssemi =>#
+  smacro_definition := macro "fun" sname smac_arg_list => sexpr ssemi =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := macro proc sname smac_arg_list scompound =>#
+  smacro_definition := macro "proc" sname smac_arg_list scompound =>#
     "`(ast_stmt_macro ,_3 ,_4 ,_5)";
   smacro_definition := macro scompound ssemi =># "`(ast_macro_block ,_2)";
   smacro_definition := macro "forget" sbasic_name_comma_list ssemi =>#
@@ -901,11 +901,11 @@ syntax macros {
   smacro_definition := macro sname :> =># "`(ast_macro_label ,_2)";
   smacro_definition := macro if sexpr "goto" sname ssemi =>#
     "`(ast_macro_ifgoto ,_3 ,_5)";
-  smacro_definition := macro for val sbasic_name_comma_list "in" sexpr do statement* done ssemi =>#
+  smacro_definition := macro for "val" sbasic_name_comma_list "in" sexpr do statement* done ssemi =>#
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
-    smac_arg:= sname : fun =># "`(,_1 Expr)";
-    smac_arg:= sname : proc =># "`(,_1 Stmt)";
+    smac_arg:= sname : "fun" =># "`(,_1 Expr)";
+    smac_arg:= sname : "proc" =># "`(,_1 Stmt)";
     smac_arg:= sname : sident =># "`(,_1 Stmt)";
     smac_arg:= sname =># "`(,_1 Expr)";
     smac_args := smac_arg , smac_args =># "(cons _1 _3)";
@@ -913,7 +913,7 @@ syntax macros {
     smac_arg_list := lpar smac_args rpar =># "_2";
     smac_arg_list := lpar rpar =># "()";
 
-  x[sapplication_pri] := macro ctor sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
+  x[sapplication_pri] := macro "ctor" sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
 }
 
 //------------------------------------------
@@ -925,13 +925,13 @@ syntax cbind {
   sbinding_definition :=  sconst_def =># "_1";
   sbinding_definition :=  sbinding_header =># "_1";
   sbinding_definition :=  sexport_statement =># "_1";
-   sexport_statement := "export" fun ssuffixed_name "as" sstring ssemi =>#
+   sexport_statement := "export" "fun" ssuffixed_name "as" sstring ssemi =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-   sexport_statement := "export" "python" fun ssuffixed_name "as" sstring ssemi =>#
+   sexport_statement := "export" "python" "fun" ssuffixed_name "as" sstring ssemi =>#
     "`(ast_export_python_fun ,_sr ,_4 ,_6)";
-  sexport_statement := "export" proc ssuffixed_name "as" sstring ssemi =>#
+  sexport_statement := "export" "proc" ssuffixed_name "as" sstring ssemi =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-  sexport_statement := "export" type lpar sexpr rpar "as" sstring ssemi =>#
+  sexport_statement := "export" "type" lpar sexpr rpar "as" sstring ssemi =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
   sopt_prec := "is" sname =># "_2";
@@ -977,7 +977,7 @@ syntax cbind {
   """;
 
   sfunction_definition :=
-    ctor sname stvarlist : stypeexpr
+    "ctor" sname stvarlist : stypeexpr
     sopt_cstring sopt_prec srequires_clause ssemi =>#
   """
   (let*
@@ -999,18 +999,18 @@ syntax cbind {
   )
   """;
 
-  sabstract_type:= stype_qual* type sdeclname = scode_spec srequires_clause ssemi =>#
+  sabstract_type:= stype_qual* "type" sdeclname = scode_spec srequires_clause ssemi =>#
     """
     `(ast_abs_decl ,_sr ,(caar _3) ,(cadar _3) ,_1 ,_5 ,_6)
     """;
 
-  sabstract_type := "callback" proc sname : stypeexpr srequires_clause ssemi =>#
+  sabstract_type := "callback" "proc" sname : stypeexpr srequires_clause ssemi =>#
     """
     `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) ast_void ,_6)
     """;
 
 
-  sabstract_type := "callback" fun sname : stypeexpr srequires_clause ssemi =>#
+  sabstract_type := "callback" "fun" sname : stypeexpr srequires_clause ssemi =>#
     """
     (if (eq? 'ast_arrow (car _5))
       (let*
@@ -1039,13 +1039,13 @@ syntax cbind {
   sinline_cpp:= "code" scode_spec ssemi =># "`(ast_code ,_sr ,_2)";
   sinline_cpp:= "noreturn" "code" scode_spec ssemi =># "`(ast_noreturn_code ,_sr ,_3)";
 
-  sclass_component:= var sname : stypeexpr ssemi =># "`(MemberVar ,_2 ,_4 none)";
-  sclass_component:= val sname : stypeexpr ssemi =># "`(MemberVal ,_2 ,_4 none)";
-  sclass_component:= ctor sopt_name : stypeexpr sopt_cstring ssemi =>#
+  sclass_component:= "var" sname : stypeexpr ssemi =># "`(MemberVar ,_2 ,_4 none)";
+  sclass_component:= "val" sname : stypeexpr ssemi =># "`(MemberVal ,_2 ,_4 none)";
+  sclass_component:= "ctor" sopt_name : stypeexpr sopt_cstring ssemi =>#
     "`(MemberCtor ,_2 none ,_4 ,_5)";
-  sclass_component:= fun sname stvarlist  : stypeexpr sopt_cstring ssemi =>#
+  sclass_component:= "fun" sname stvarlist  : stypeexpr sopt_cstring ssemi =>#
     "`(MemberFun ,_2 none ,_3 ,_5 ,_6)";
-  sclass_component:= proc sname stvarlist  : stypeexpr sopt_cstring ssemi =>#
+  sclass_component:= "proc" sname stvarlist  : stypeexpr sopt_cstring ssemi =>#
     "`(MemberProc ,_2 none ,_3 ,_5 ,_6)";
 
   sexpr_code_prefix := "code" lsqb stypeexpr rsqb =># "_3";
@@ -1164,8 +1164,8 @@ syntax executable {
   spostincrop:= ++ =># "'post_incr";
   spostincrop:= -- =># "'post_decr";
 
-  slelement := val sname =># "`(Val ,_sr ,_2)";
-  slelement := var sname =># "`(Var ,_sr ,_2)";
+  slelement := "val" sname =># "`(Val ,_sr ,_2)";
+  slelement := "var" sname =># "`(Var ,_sr ,_2)";
   slelement := sname =># "`(Name ,_sr ,_1)";
   slelement := _ =># "`(Skip ,_sr)";
   slelement := lpar slexprs rpar =># "`(List ,_2)";
@@ -1321,7 +1321,7 @@ syntax executable {
 
 //------------------------------------------
 syntax requirements {
-  srequires_clause := requires srequirements =># "_2";
+  srequires_clause := "requires" srequirements =># "_2";
 
   srequires_clause := sepsilon =># "'rreq_true";
 
@@ -1345,33 +1345,33 @@ syntax requirements {
   srequirements:= srequirement_or =># "_1";
 
 
-  srequirement := body scode_spec =># "`(Body_req ,_2)";
-  srequirement := header scode_spec =># "`(Header_req ,_2)";
+  srequirement := "body" scode_spec =># "`(Body_req ,_2)";
+  srequirement := "header" scode_spec =># "`(Header_req ,_2)";
 
   scode_spec := sstring =># "`(StrTemplate ,_1)";
   scode_spec := scstring =># "`(Str ,_1)";
   scode_spec := sident =># "'Identity";
 
-  sbinding_header := requires srequirements ssemi =>#
+  sbinding_header := "requires" srequirements ssemi =>#
     """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
 
-  sbinding_header := sname requires srequirements ssemi =>#
+  sbinding_header := sname "requires" srequirements ssemi =>#
     """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
 
-  sbinding_header:= header scode_spec srequires_clause ssemi =>#
+  sbinding_header:= "header" scode_spec srequires_clause ssemi =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
-  sbinding_header:= body scode_spec srequires_clause ssemi =>#
+  sbinding_header:= "body" scode_spec srequires_clause ssemi =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
-  sbinding_header:= header = scode_spec srequires_clause ssemi =>#
+  sbinding_header:= "header" = scode_spec srequires_clause ssemi =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_3 header ,_4))""";
-  sbinding_header:= body = scode_spec srequires_clause ssemi =>#
+  sbinding_header:= "body" = scode_spec srequires_clause ssemi =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))""";
-  sbinding_header:= header sdeclname = scode_spec srequires_clause ssemi =>#
+  sbinding_header:= "header" sdeclname = scode_spec srequires_clause ssemi =>#
     """
     `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 header ,_5)
      """;
 
-  sbinding_header:= body sdeclname = scode_spec srequires_clause ssemi =>#
+  sbinding_header:= "body" sdeclname = scode_spec srequires_clause ssemi =>#
     """
     `(ast_insert ,_sr ,(caar _2) ,(cadar _2) ,_4 body ,_5)
      """;
@@ -1388,12 +1388,12 @@ syntax type_decls {
     `(ast_type_alias ,_sr ,(caar _2) ,(cadar _2) ,_4)
     """;
 
-  stype_alias := "typedef" fun sdeclname stypefun_args : stypeexpr => sexpr ssemi =>#
+  stype_alias := "typedef" "fun" sdeclname stypefun_args : stypeexpr => sexpr ssemi =>#
     """
     `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8)
     """;
 
-  stype_alias := "typedef" fun sdeclname : stypeexpr = stype_matching+ ssemi =>#
+  stype_alias := "typedef" "fun" sdeclname : stypeexpr = stype_matching+ ssemi =>#
     """
     (if (eq? 'ast_arrow (car _5))
       (let (
@@ -1409,7 +1409,7 @@ syntax type_decls {
 
   stype_matching  := vbar sexpr => sexpr =># "`(,_2 ,_4)";
 
-  stypematch := "typematch" sexpr "with" stype_matching+ endmatch =>#
+  stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
     "`(ast_type_match (,_2 ,_4))";
 
   sstruct_decl := "struct" sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
@@ -1425,17 +1425,17 @@ syntax type_decls {
   sopt_name := sname =># "_1";
   sopt_name := sepsilon =># '""';
 
-  sstruct_decl := class sdeclname = ? scompound =>#
+  sstruct_decl := "class" sdeclname = ? scompound =>#
     """
     `(ast_class ,_sr ,(caar _2) ,(cadar _2) ,_4)
      """;
 
-  sstruct_decl := typeclass sdeclname = ? scompound =>#
+  sstruct_decl := "typeclass" sdeclname = ? scompound =>#
     """
     `(ast_typeclass ,_sr ,(caar _2) ,(cadar _2) ,_4)
      """;
 
-  sstruct_decl := instance stvarlist squalified_name = ? scompound =>#
+  sstruct_decl := "instance" stvarlist squalified_name = ? scompound =>#
     """
     `(ast_instance ,_sr ,_2 ,_3 ,_5)
      """;
@@ -1471,33 +1471,33 @@ syntax assertions {
   requires statements;
   sexecutable := sassert_statement =># "_1";
 
-  sassert_statement:= assert sexpr ssemi =># "`(ast_assert ,_sr ,_2)";
+  sassert_statement:= "assert" sexpr ssemi =># "`(ast_assert ,_sr ,_2)";
 
   sdeclarative := sassertion =># "_1";
 
-  sassertion := axiom sdeclname sfun_arg : sexpr ssemi =>#
+  sassertion := "axiom" sdeclname sfun_arg : sexpr ssemi =>#
   """
     `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
   """;
 
-  sassertion := axiom sdeclname sfun_arg : sexpr = sexpr ssemi =>#
+  sassertion := "axiom" sdeclname sfun_arg : sexpr = sexpr ssemi =>#
   """
     `(ast_axiom ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
   """;
 
-  sassertion := lemma sdeclname sfun_arg : sexpr ssemi =>#
+  sassertion := "lemma" sdeclname sfun_arg : sexpr ssemi =>#
   """
     `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Predicate ,_5))
   """;
 
-  sassertion := lemma sdeclname sfun_arg : sexpr = sexpr ssemi =>#
+  sassertion := "lemma" sdeclname sfun_arg : sexpr = sexpr ssemi =>#
   """
     `(ast_lemma ,_sr ,(caar _2) ,(cadar _2) ,_3 (Equation (,_5 ,_7)))
   """;
 
   sreduce_args := lpar stypeparameter_comma_list rpar =># "_2";
 
-  sassertion := reduce sdeclname sreduce_args : sexpr => sexpr ssemi =>#
+  sassertion := "reduce" sdeclname sreduce_args : sexpr => sexpr ssemi =>#
   """
     `(ast_reduce ,_sr ,(caar _2) ,(cadar _2) ,_3 ,_5 ,_7)
   """;
@@ -1506,22 +1506,22 @@ syntax assertions {
 
 syntax namespaces {
   requires statements;
-  sopen_decl := rename sdeclname = squalified_name ssemi =>#
+  sopen_decl := "rename" sdeclname = squalified_name ssemi =>#
     """
     `(ast_inherit ,_sr ,(caar _2) ,(cadar _2) ,_4)
     """;
 
-  sopen_decl := rename fun sdeclname = squalified_name ssemi =>#
+  sopen_decl := "rename" "fun" sdeclname = squalified_name ssemi =>#
     """
     `(ast_inherit_fun ,_sr ,(caar _3) ,(cadar _3) ,_5)
     """;
 
-  sopen_decl := inherit squalified_name ssemi =># "`(ast_inject_module ,_sr ,_2)";
+  sopen_decl := "inherit" squalified_name ssemi =># "`(ast_inject_module ,_sr ,_2)";
 
-  sopen_decl := open stvarlist squalified_name ssemi =>#
+  sopen_decl := "open" stvarlist squalified_name ssemi =>#
     "`(ast_open ,_sr ,_2 ,_3)";
 
-  sopen_decl := use squalified_name ssemi =>#
+  sopen_decl := "use" squalified_name ssemi =>#
     """
     (let ((name
       (if (eq? (car _2) 'ast_lookup) (cadadr _2)
@@ -1529,14 +1529,14 @@ syntax namespaces {
         ("ERROR")))))
     `(ast_use ,_sr ,name ,_2))
     """;
-  sopen_decl := use sname = squalified_name ssemi =># "`(ast_use ,_sr ,_2 ,_4)";
+  sopen_decl := "use" sname = squalified_name ssemi =># "`(ast_use ,_sr ,_2 ,_4)";
 
-  smodule_definition := module sdeclname = ? scompound =>#
+  smodule_definition := "module" sdeclname = ? scompound =>#
     """
     `(ast_untyped_module ,_sr ,(caar _2) ,(cadar _2) ,_4)
      """;
 
-  smodule_definition := open module sdeclname = ? scompound =>#
+  smodule_definition := "open" "module" sdeclname = ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(caar _3) ,(cadar _3) ,_5)
@@ -1548,7 +1548,7 @@ syntax namespaces {
     `(ast_namespace ,(caar _2) ,(cadar _2) ,_4)
      """;
 
-  smodule_definition := open namespace sdeclname = ? scompound =>#
+  smodule_definition := "open" namespace sdeclname = ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_namespace ,(caar _3) ,(cadar _3) ,_5)
