@@ -307,12 +307,12 @@ syntax expressions {
   x[srefr_pri] := new x[srefr_pri] =># "`(ast_new ,_2)";
   x[srefr_pri] := anon_value =># "_1";
 
-  anon_value := struct lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
+  anon_value := "struct" lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
     sstruct_mem_decl := sname : stypeexpr ssemi =># "`(,_1 ,_3)";
-  anon_value := struct lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
+  anon_value := "struct" lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
     sstruct_assign := sname = sexpr ssemi =># "`(,_1 ,_3)";
 
-  anon_value := union lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
+  anon_value := "union" lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
     stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
     stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
 
@@ -326,7 +326,7 @@ syntax expressions {
     stype_sum_items2 := stype_sum_item2* =># "_1";
 
   x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
-  x[sapplication_pri] := caseno x[scoercion_pri] =># "`(ast_case_index ,_2)";
+  x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_2)";
   x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_2)";
   x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_2)";
 
@@ -444,7 +444,7 @@ syntax patterns {
     satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
     satomic_pattern := _ =># "'pat_any";
     satomic_pattern := lpar spattern rpar =># "_2";
-    satomic_pattern := struct lbrace spat_assign+ rbrace =># "`(pat_record ,_3)";
+    satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_3)";
       spat_assign := sname = spattern ssemi =># "`(,_1 ,_3)";
 
     satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_1 ,_2)";
@@ -672,10 +672,10 @@ syntax statements {
   scomment := comment sstring ssemi =># "`(ast_comment ,_sr ,_2)";
 
 
-  spublish := private sdeclarative =># "`(ast_private ,_2)";
-  spublish := private sbinding_definition =># "`(ast_private ,_2)";
-  spublish := private svar_def =># "`(ast_private ,_2)";
-  spublish := private sval_def =># "`(ast_private ,_2)";
+  spublish := "private" sdeclarative =># "`(ast_private ,_2)";
+  spublish := "private" sbinding_definition =># "`(ast_private ,_2)";
+  spublish := "private" svar_def =># "`(ast_private ,_2)";
+  spublish := "private" sval_def =># "`(ast_private ,_2)";
 
   spublish := "publish" sstring statement =># "_3";
 
@@ -893,13 +893,13 @@ syntax macros {
   smacro_definition := macro proc sname smac_arg_list scompound =>#
     "`(ast_stmt_macro ,_3 ,_4 ,_5)";
   smacro_definition := macro scompound ssemi =># "`(ast_macro_block ,_2)";
-  smacro_definition := macro forget sbasic_name_comma_list ssemi =>#
+  smacro_definition := macro "forget" sbasic_name_comma_list ssemi =>#
     "`(ast_macro_forget ,_3)";
-  smacro_definition := macro forget ssemi =>#
+  smacro_definition := macro "forget" ssemi =>#
     "`(ast_macro_forget ())";
-  smacro_definition := macro goto sname ssemi =># "`(ast_macro_goto ,_3)";
+  smacro_definition := macro "goto" sname ssemi =># "`(ast_macro_goto ,_3)";
   smacro_definition := macro sname :> =># "`(ast_macro_label ,_2)";
-  smacro_definition := macro if sexpr goto sname ssemi =>#
+  smacro_definition := macro if sexpr "goto" sname ssemi =>#
     "`(ast_macro_ifgoto ,_3 ,_5)";
   smacro_definition := macro for val sbasic_name_comma_list "in" sexpr do statement* done ssemi =>#
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
@@ -1053,7 +1053,7 @@ syntax cbind {
   satom := sexpr_code_prefix sname =># "`(ast_expr ,_2 ,_1)";
 
   // note: also needed by typeclasses atm for virtual consts
-  sconst_def := sadjectives const sdeclname : stypeexpr = scode_spec srequires_clause ssemi =>#
+  sconst_def := sadjectives "const" sdeclname : stypeexpr = scode_spec srequires_clause ssemi =>#
   """
     (let ((reqs (if (memv 'Virtual _1)
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
@@ -1063,7 +1063,7 @@ syntax cbind {
   """;
 
   // note: also needed by typeclasses atm for virtual consts
-  sconst_def := sadjectives const sdeclname : stypeexpr srequires_clause ssemi =>#
+  sconst_def := sadjectives "const" sdeclname : stypeexpr srequires_clause ssemi =>#
   """
     (let ((reqs (if (memv 'Virtual _1)
       `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
@@ -1181,7 +1181,7 @@ syntax executable {
     (if (null? (cdr _1)) (car _1) `((List ,_1) none))
     """;
 
-  sassignexpr := def slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
+  sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
 
   sassignexpr := sexpr sswapop sexpr =>#
     "`(ast_call ,_sr ,_2 (,_1 ,_3))";
@@ -1201,22 +1201,22 @@ syntax executable {
   sreturn := "halt" sstring ssemi =># "`(ast_halt ,_sr ,_2)";
   sreturn := "trace" sname sstring ssemi =># "`(ast_trace ,_sr ,_2 ,_3)";
 
-  scall := call sexpr ssemi =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
-  scall := jump sexpr ssemi =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
+  scall := "call" sexpr ssemi =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
+  scall := "jump" sexpr ssemi =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
   //scall := loop sname sexpr ssemi =># "`(ast_loop ,_sr ,_2 ,_3)";
   //scall := loop sname ssemi =># "`(ast_loop ,_sr ,_2 (ast_tuple,_sr ()))";
-  scall := loop sname sexpr ssemi =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
-  scall := loop sname ssemi =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+  scall := "loop" sname sexpr ssemi =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+  scall := "loop" sname ssemi =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
 
   scall := sexpr ssemi =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
   slabel_statement := sname :> =># "`(ast_label ,_sr ,_1)";
-  sgoto_statement := goto sname ssemi =># "`(ast_goto ,_sr ,_2)";
+  sgoto_statement := "goto" sname ssemi =># "`(ast_goto ,_sr ,_2)";
 
 
-  sifgoto := if sexpr goto sname ssemi =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  sifgoto := if sexpr "goto" sname ssemi =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
   sifgoto := if sexpr "return" ssemi =># "`(ast_ifreturn ,_sr ,_2)";
-  sifgoto := if sexpr call sexpr ssemi =>#
+  sifgoto := if sexpr "call" sexpr ssemi =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
   sifgoto := if sexpr do statement* selse_clause done ssemi =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
@@ -1225,7 +1225,7 @@ syntax executable {
 
   selif_clause := "elif" sexpr do statement* =># "`(,_2 ,_4)";
   selif_clause := "elif" sexpr "return" ssemi =># "`(,_2 ((ast_proc_return ,_sr)))";
-  selif_clause := "elif" sexpr goto sname ssemi =># "`(,_2 (ast_goto ,_sr ,_4))";
+  selif_clause := "elif" sexpr "goto" sname ssemi =># "`(,_2 (ast_goto ,_sr ,_4))";
   selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
   selif_clauses := selif_clause =># "`(,_1)";
   selse_clause := selif_clauses "else" statement* =>#
@@ -1326,8 +1326,8 @@ syntax requirements {
   srequires_clause := sepsilon =># "'rreq_true";
 
   srequirement:= squalified_name =># "`(Named_req ,_1)";
-  srequirement :=  property sstring =># "`(Property_req ,_2)";
-  srequirement :=  package scode_spec =># "`(Package_req ,_2)";
+  srequirement :=  "property" sstring =># "`(Property_req ,_2)";
+  srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
 
   srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
   srequirement_atom:= lpar srequirements rpar =># "_2";
@@ -1383,17 +1383,17 @@ syntax type_decls {
 
   satom := stypematch =># "_1";
 
-  stype_alias := typedef sdeclname = sexpr ssemi =>#
+  stype_alias := "typedef" sdeclname = sexpr ssemi =>#
     """
     `(ast_type_alias ,_sr ,(caar _2) ,(cadar _2) ,_4)
     """;
 
-  stype_alias := typedef fun sdeclname stypefun_args : stypeexpr => sexpr ssemi =>#
+  stype_alias := "typedef" fun sdeclname stypefun_args : stypeexpr => sexpr ssemi =>#
     """
     `(mktypefun ,_sr ,(caar _3) ,(cadar _3) ,_4 ,_6 ,_8)
     """;
 
-  stype_alias := typedef fun sdeclname : stypeexpr = stype_matching+ ssemi =>#
+  stype_alias := "typedef" fun sdeclname : stypeexpr = stype_matching+ ssemi =>#
     """
     (if (eq? 'ast_arrow (car _5))
       (let (
@@ -1412,12 +1412,12 @@ syntax type_decls {
   stypematch := "typematch" sexpr "with" stype_matching+ endmatch =>#
     "`(ast_type_match (,_2 ,_4))";
 
-  sstruct_decl := struct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
+  sstruct_decl := "struct" sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
     `(ast_struct ,_sr ,(caar _2) ,(cadar _2) ,_5)
      """;
 
-  sstruct_decl := cstruct sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
+  sstruct_decl := "cstruct" sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
     `(ast_cstruct ,_sr ,(caar _2) ,(cadar _2) ,_5)
      """;
@@ -1440,19 +1440,19 @@ syntax type_decls {
     `(ast_instance ,_sr ,_2 ,_3 ,_5)
      """;
 
-  sunion_decl := union sdeclname = stype_sum_items2 ssemi =>#
+  sunion_decl := "union" sdeclname = stype_sum_items2 ssemi =>#
     """
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
      """;
 
-  sunion_decl := union sdeclname lbrace stype_sum_item1* rbrace =>#
+  sunion_decl := "union" sdeclname lbrace stype_sum_item1* rbrace =>#
     """
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
      """;
 
   sunion_decl := senum_decl =># "_1";
 
-  senum_decl := enum sdeclname lbrace senum_items rbrace =>#
+  senum_decl := "enum" sdeclname lbrace senum_items rbrace =>#
     """
     `(ast_union ,_sr ,(caar _2) ,(cadar _2) ,_4)
      """;
@@ -1629,10 +1629,10 @@ syntax csyntax {
     | "byte" =># '`(ast_name ,_sr "byte" ())'
 */
 
-    | struct sname =># "`(ast_name ,_sr ,_2 ())"
-    | union sname =># "`(ast_name ,_sr ,_2 ())"
-    | class sname =># "`(ast_name ,_sr ,_2 ())"
-    | enum sname =># "`(ast_name ,_sr ,_2 ())"
+    | "struct" sname =># "`(ast_name ,_sr ,_2 ())"
+    | "union" sname =># "`(ast_name ,_sr ,_2 ())"
+    | "class" sname =># "`(ast_name ,_sr ,_2 ())"
+    | "enum" sname =># "`(ast_name ,_sr ,_2 ())"
   ;
 
   pointer_type:=
@@ -1656,7 +1656,7 @@ syntax csyntax {
 
   declarator :=
     | pointer_type sname =># "`(PVar ,_2 ,_1)"
-    | pointer_type const sname =># "`(PVal ,_3 ,_1)"
+    | pointer_type "const" sname =># "`(PVal ,_3 ,_1)"
     | c_type lpar sname rpar lpar c_type_list rpar =>#
       "`(PVar ,_3 (ast_longarrow (,_6 ,_1)))"
 
@@ -1732,7 +1732,7 @@ syntax csyntax {
   """;
 
   // typedef
-  stype_alias := typedef declarator ssemi =>#
+  stype_alias := "typedef" declarator ssemi =>#
     """
     `(ast_type_alias ,_sr ,(car _2) ,dfltvs ,(cadr _2))
     """;

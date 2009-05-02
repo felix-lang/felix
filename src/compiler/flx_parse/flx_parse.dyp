@@ -1369,85 +1369,53 @@ and parse_line = parse
   }
 
 main lexer =
-  "all" -> ALL { getsr lexbuf }
   "assert" -> ASSERT { getsr lexbuf }
   "axiom" -> AXIOM { getsr lexbuf }
   "body" -> BODY { getsr lexbuf }
-  "call" -> CALL { getsr lexbuf }
   "case" -> CASE { getsr lexbuf }
-  "caseno" -> CASENO { getsr lexbuf }
   "comment" -> COMMENT_KEYWORD { getsr lexbuf }
   "compound" -> COMPOUND { getsr lexbuf }
-  "const" -> CONST { getsr lexbuf }
-  "cstruct" -> CSTRUCT { getsr lexbuf }
   "ctor" -> CTOR { getsr lexbuf }
-/*  "ctypes" -> CTYPES { getsr lexbuf } */
-  "def" -> DEF { getsr lexbuf }
   "do" -> DO { getsr lexbuf }
   "done" -> DONE { getsr lexbuf }
-/*  "elif" -> ELIF { getsr lexbuf } */
-/*  "else" -> ELSE { getsr lexbuf } */
-/*  "endif" -> ENDIF { getsr lexbuf } */
   "endmatch" -> ENDMATCH { getsr lexbuf }
-  "enum" -> ENUM { getsr lexbuf }
   "for" -> FOR { getsr lexbuf }
-  "forget" -> FORGET { getsr lexbuf }
   "fun" -> FUNCTION { getsr lexbuf }
   "gen" -> GENERATOR { getsr lexbuf }
-  "goto" -> GOTO { getsr lexbuf }
-  "halt" -> HALT { getsr lexbuf }
   "header" -> HEADER { getsr lexbuf }
   "ident" -> IDENT { getsr lexbuf }
   "include" -> INCLUDE { getsr lexbuf }
   "inf" -> INF { getsr lexbuf }
-/*  "in" -> IN { getsr lexbuf } */
   "instance" -> INSTANCE { getsr lexbuf }
-/*  "is" -> IS { getsr lexbuf } */
   "inherit" -> INHERIT { getsr lexbuf }
-  "jump" -> JUMP { getsr lexbuf }
   "lemma" -> LEMMA { getsr lexbuf }
-/*  "let" -> LET { getsr lexbuf } */
-  "loop" -> LOOP { getsr lexbuf }
-  "lval" -> LVAL { getsr lexbuf }
   "macro" -> MACRO { getsr lexbuf }
   "module" -> MODULE { getsr lexbuf }
   "NaN" -> NAN { getsr lexbuf }
   "new" -> NEW { getsr lexbuf }
   "nonterm" -> NONTERM { getsr lexbuf }
-/*  "noreturn" -> NORETURN { getsr lexbuf } */
   "not" -> NOT { getsr lexbuf }
   "open" -> OPEN { getsr lexbuf }
-  "package" -> PACKAGE { getsr lexbuf }
-  "private" -> PRIVATE { getsr lexbuf }
   "proc" -> PROCEDURE { getsr lexbuf }
-  "property" -> PROPERTY { getsr lexbuf }
   "reduce" -> REDUCE { getsr lexbuf }
   "ref" -> REF { getsr lexbuf }
   "rename" -> RENAME { getsr lexbuf }
   "requires" -> REQUIRES { getsr lexbuf }
   "SCHEME" -> SCHEME { getsr lexbuf }
   "syntax" -> SYNTAX { getsr lexbuf }
-  "struct" -> STRUCT { getsr lexbuf }
-/*  "then" -> THEN { getsr lexbuf } */
   "todo" -> TODO { getsr lexbuf }
   "to" -> TO { getsr lexbuf }
-  "typedef" -> TYPEDEF { getsr lexbuf }
   "type" -> TYPE { getsr lexbuf }
   "typeclass" -> TYPECLASS { getsr lexbuf }
-  "union" -> UNION { getsr lexbuf }
   "use" -> USE { getsr lexbuf }
   "val" -> VAL { getsr lexbuf }
   "var" -> VAR { getsr lexbuf }
   "and" -> AND { getsr lexbuf }
-/*  "as" -> AS { getsr lexbuf } */
-/*  "callback" -> CALLBACK { getsr lexbuf } */
-/*  "code" -> CODE { getsr lexbuf } */
   "false" -> FALSE { getsr lexbuf }
   "if" -> IF { getsr lexbuf }
   "isin" -> ISIN { getsr lexbuf }
   "match" -> MATCH { getsr lexbuf }
   "noexpand" -> NOEXPAND { getsr lexbuf }
-/*  "of" -> OF { getsr lexbuf } */
   "or" -> OR { getsr lexbuf }
   "the" -> THE { getsr lexbuf }
   "true" -> TRUE { getsr lexbuf }
