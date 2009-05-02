@@ -500,11 +500,11 @@ syntax functions {
     `(ast_lambda (,_3 ((() none)) ast_void ,_4))
     """;
 
-    sadjective := inline =># "'InlineFunction";
-    sadjective := noinline =># "'NoInlineFunction";
-    sadjective := static =># "'InlineFunction";
-    sadjective := extern =># "'NoInlineFunction";
-    sadjective := virtual =># "'Virtual";
+    sadjective := "inline" =># "'InlineFunction";
+    sadjective := "noinline" =># "'NoInlineFunction";
+    sadjective := "static" =># "'InlineFunction";
+    sadjective := "extern" =># "'NoInlineFunction";
+    sadjective := "virtual" =># "'Virtual";
     sadjectives := sadjective* =># "_1";
 
     slambda_fun_arg := lpar sparameter_comma_list when sexpr rpar =># "`(,_2 (some ,_4))";
@@ -534,7 +534,7 @@ syntax functions {
   sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
   sfun_arg :=  sname =># "`(((PVal ,_1 typ_none none)) none)";
 
-  sfun_kind := cfun =># "'CFunction";
+  sfun_kind := "cfun" =># "'CFunction";
   sfun_kind := gen =># "'Generator";
   sfun_kind := fun =># "'Function";
 
@@ -586,7 +586,7 @@ syntax functions {
   """;
 
   sproc_kind := proc =># "'Function";
-  sproc_kind := cproc =># "'CFunction";
+  sproc_kind := "cproc" =># "'CFunction";
 
   sopt_traint_eq:= expect sexpr = =># "`(some ,_2)";
   sopt_traint_eq:= = =># "'none";
@@ -929,13 +929,13 @@ syntax cbind {
   sbinding_definition :=  sconst_def =># "_1";
   sbinding_definition :=  sbinding_header =># "_1";
   sbinding_definition :=  sexport_statement =># "_1";
-   sexport_statement := export fun ssuffixed_name as sstring ssemi =>#
+   sexport_statement := "export" fun ssuffixed_name as sstring ssemi =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-   sexport_statement := export "python" fun ssuffixed_name as sstring ssemi =>#
+   sexport_statement := "export" "python" fun ssuffixed_name as sstring ssemi =>#
     "`(ast_export_python_fun ,_sr ,_4 ,_6)";
-  sexport_statement := export proc ssuffixed_name as sstring ssemi =>#
+  sexport_statement := "export" proc ssuffixed_name as sstring ssemi =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-  sexport_statement := export type lpar sexpr rpar as sstring ssemi =>#
+  sexport_statement := "export" type lpar sexpr rpar as sstring ssemi =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
   sopt_prec := is sname =># "_2";
@@ -1710,10 +1710,10 @@ syntax csyntax {
   """;
 
   // function
-  cfun_kind := extern =># "'CFunction";
-  cfun_kind := static =># "'Function";
-  cfun_kind := inline =># "'Function";
-  cfun_kind := noinline =># "'Function";
+  cfun_kind := "extern" =># "'CFunction";
+  cfun_kind := "static" =># "'Function";
+  cfun_kind := "inline" =># "'Function";
+  cfun_kind := "noinline" =># "'Function";
 
   sfunction_definition := cfun_kind sadjectives pointer_type sdeclname
     sfun_arg* sopt_traint_eq scompound =>#
