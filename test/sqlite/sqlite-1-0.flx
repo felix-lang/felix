@@ -3,9 +3,9 @@ open Sqlite3;
 
 fun subscript: & &char * int -> &char = "$1[$2]";
 
-cfun eh(void *data, int ncols, char * *values, char* *names):int =
+cfun eh(void *data, ncols:int, values: & &char, names: & &char):int =
 {
-  int ii = 0;
+  var ii:int = 0;
   whilst ii<ncols do
     print$ str names.[ii] + "=" + str values.[ii];
     if ii<ncols-1 do print ", ";  done;
