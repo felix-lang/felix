@@ -1,0 +1,171 @@
+publish "Array manipulation"
+
+open module Array
+{
+  publish "Array type"
+  typedef array[t,n] = t ^ n;
+
+  publish "Array constructors"
+  fun _ctor_array[T,N] (x:array[T,N]) => x;
+
+  publish "Array access: works on LHS of assignment too"
+  fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
+  //fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
+
+  /*
+  THIS HACK IS NASTY because we get the error:
+
+    Too many candidates match in overloading subscript with argument types lvalue[(string<1498>)] * lvalue[(int<709>)]
+    Of the matching candidates, the following are most specialised ones are incomparable
+    String::subscript<2115><2115> sig string<1498> * int<709>
+    Array::subscript<3461><3461> sig lvalue[(<T3462>)] * int<709>
+    Perhaps you need to define a function more specialised than all these?
+
+  and it is RIGHT. There's no lvalue form of String::subscript.
+  We would HAVE to define one to resolve the conflict.
+
+  I have no idea what I changed .. this used to work .. hmm ..
+  I fiddled with overloading ..
+
+  // hack to make subscript of non-array work: ignores index
+  fun subscript[t]: lvalue[t] * int -> lvalue[t] = "$1";
+  fun subscript[t]: t * int -> t = "$1";
+  */
+
+
+  publish "Explicit array store function"
+  proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.get_data()))[$2]=$3;";
+
+  fun len[T, N] (x:array[T, N]): int => Typing::memcount[N];
+
+  proc iter[T, N] (_f:T->void) (x:array[T, N]) {
+    var i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      _f x.[i];
+    done;
+  }
+
+  fun map[T, N, U] (_f:T->U) (x:array[T, N]): array[U, N] = {
+    var o : array[U, N];
+    var i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      o.[i] = _f x.[i];
+    done;
+
+    return o;
+  }
+
+  fun fold_left[T, N, U] (_f:U->T->U) (init:U) (x:array[T, N]): U = {
+    var o = init;
+    var i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      o = _f o x.[i];
+    done;
+
+    return o;
+  }
+
+  fun fold_right[T, N, U] (_f:T->U->U) (x:array[T, N]) (init:U): U = {
+    var o = init;
+    var i : int;
+
+    forall i in len(x) - 1 downto 0 do
+      o = _f x.[i] o;
+    done;
+
+    return o;
+  }
+
+/*
+  fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, _flatten(N + M)] = {
+    var o = array[T, _flatten(N + M)];
+    val i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      o.[i] = x.[i];
+    done;
+
+    val j : int;
+
+    forall k in 0 upto len(y) - 1 do
+      o.[i + j] = y.[i];
+    done;
+
+    return o;
+  }
+*/
+
+  fun mem[T, N] (eq:T->bool) (x:array[T, N]): bool = {
+    var i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      if eq(x.[i]) do
+        return true;
+      done;
+    done;
+
+    return false;
+  }
+
+  fun mem[T, N, U] (eq:T*U->bool) (x:array[T, N]) (e:U): bool =>
+    mem (fun (i:T) => eq(i, e)) x
+  ;
+
+  fun find[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
+    var i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      if eq(x.[i], e) do
+        return Some x.[i];
+      done;
+    done;
+
+    return None[T];
+  }
+
+  fun find[T, N] (eq:T->bool) (x:array[T, N]): opt[T] = {
+    var i : int;
+
+    forall i in 0 upto len(x) - 1 do
+      if eq(x.[i]) do
+        return Some x.[i];
+      done;
+    done;
+
+    return None[T];
+  }
+
+  fun rev[T, N] (x:array[T, N]): array[T, N] = {
+    var o : array[T, N];
+    var i : int;
+    var length = len x;
+
+    forall i in 0 upto length - 1 do
+      o.[length - 1 - i] = x.[i];
+    done;
+
+    return o;
+  }
+
+  instance[T,N with Show[T]] Str[array[T, N]] {
+    fun str (xs:array[T,N]) = {
+      var o = '(';
+      var i : int;
+
+      if len(xs) > 0 do
+        o += repr xs.[0];
+
+        forall i in 1 upto len(xs) - 1 do
+          o += ', ' + repr xs.[i];
+        done;
+      done;
+
+      return o + ')';
+    }
+  }
+}
+
+

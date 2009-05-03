@@ -704,36 +704,37 @@ let dyp_merge_Obj_statement_star ol =
 
 %token <(Flx_ast.srcref)> QUEST
 %constructor Obj_keyword %for QUEST
+%token <(Flx_ast.srcref)> PLUS
+%constructor Obj_keyword %for PLUS
+%token <(Flx_ast.srcref)> STAR
+%constructor Obj_keyword %for STAR
+
 %token <(Flx_ast.srcref)> LPAR
 %constructor Obj_keyword %for LPAR
 %token <(Flx_ast.srcref)> RPAR
 %constructor Obj_keyword %for RPAR
+
 %token <(Flx_ast.srcref)> LSQB
 %constructor Obj_keyword %for LSQB
 %token <(Flx_ast.srcref)> RSQB
 %constructor Obj_keyword %for RSQB
+
 %token <(Flx_ast.srcref)> LBRACE
 %constructor Obj_keyword %for LBRACE
 %token <(Flx_ast.srcref)> RBRACE
 %constructor Obj_keyword %for RBRACE
+
 %token <(Flx_ast.srcref)> COMMA
 %constructor Obj_keyword %for COMMA
-%token <(Flx_ast.srcref)> PLUS
-%constructor Obj_keyword %for PLUS
-%token <(Flx_ast.srcref)> MINUS
-%constructor Obj_keyword %for MINUS
-%token <(Flx_ast.srcref)> STAR
-%constructor Obj_keyword %for STAR
 %token <(Flx_ast.srcref)> VBAR
 %constructor Obj_keyword %for VBAR
+
 %token <(Flx_ast.srcref)> LESS
 %constructor Obj_keyword %for LESS
 %token <(Flx_ast.srcref)> GREATER
 %constructor Obj_keyword %for GREATER
 %token <(Flx_ast.srcref)> EQUAL
 %constructor Obj_keyword %for EQUAL
-%token <(Flx_ast.srcref)> HASH
-%constructor Obj_keyword %for HASH
 %token <(Flx_ast.srcref)> EQEQUAL
 %constructor Obj_keyword %for EQEQUAL
 %token <(Flx_ast.srcref)> NOTEQUAL
@@ -742,14 +743,6 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_keyword %for LESSEQUAL
 %token <(Flx_ast.srcref)> GREATEREQUAL
 %constructor Obj_keyword %for GREATEREQUAL
-%token <(Flx_ast.srcref)> LSQBAR
-%constructor Obj_keyword %for LSQBAR
-%token <(Flx_ast.srcref)> RSQBAR
-%constructor Obj_keyword %for RSQBAR
-%token <(Flx_ast.srcref)> HASHBANG
-%constructor Obj_keyword %for HASHBANG
-%token <(Flx_ast.srcref)> HASHBANGSLASH
-%constructor Obj_keyword %for HASHBANGSLASH
 
 %token <(Flx_ast.srcref)> UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE

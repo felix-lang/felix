@@ -1,0 +1,428 @@
+typedef strings = typesetof (string,ustring);
+
+instance[t in strings] Eq[t] {
+  fun eq: t * t -> bool = "$1==$2";
+}
+
+open Eq[string];
+open Eq[ustring];
+
+open module String
+{
+  requires string_hxx;
+  open Bool;
+  open Char;
+  open Int;
+
+  proc pluseq: lvalue[string] * string = "$1.append($2);";
+  proc pluseq: lvalue[string] * charcp = "$1.append($2);";
+  proc pluseq: lvalue[string] * charp = "$1.append($2);";
+  proc pluseq: lvalue[string] * char = "$1 += $2;";
+
+  // we need to cast to an int so that c++ won't complain
+  fun len: string -> int = "static_cast<int>($1.size())";
+
+  fun add: string * string -> string = "$1+$2";
+  fun add: string * charp -> string = "$1+$2";
+  fun add: charp * string -> string = "$1+$2";
+  fun add: string * char -> string = "$1+$2";
+  fun add: char * string -> string = "$1+$2";
+  fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)" requires flx_i18n;
+  fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)" requires flx_strutil;
+  fun mul: char * int -> string = "std::string($2,$1)";
+
+  fun apply (x:string, y:string):string => x + y;
+  fun apply (x:string, y:int):string => x + y;
+
+  fun _ctor_char (x:string) => x.[0];
+  fun _ctor_string (c:char) => ""+c;
+  gen _ctor_string: charp -> string = "std::string($1)";
+  gen _ctor_string: charp * int -> string = "std::string($1,$2)";
+  gen _ctor_string: charcp -> string = "std::string($1)";
+  gen _ctor_string: charcp * int -> string = "std::string($1,$2)";
+
+  fun subscript: string * int -> char =
+    "flx::rtl::strutil::subscript($1,$2)" requires flx_strutil;
+  fun copyfrom: string * int -> string =
+    "flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
+  fun copyto: string * int -> string =
+    "flx::rtl::strutil::substr($1,0,$2)" requires flx_strutil;
+  fun substring: string * int * int -> string =
+    "flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
+
+  fun subscript (x:string, s:slice[int]):string =>
+    match s with
+    | Slice_all[int] => substring (x, 0, len x)
+    | Slice_from (?start) => copyfrom (x, start)
+    | Slice_to (?end) => copyto (x, end)
+    | Slice_range (?start, ?end) => substring (x, start, end)
+    | Slice_one (?index) => string x.[index]
+    endmatch
+  ;
+
+  proc store: lvalue[string] * int * char = "$1[$2] = $3;";
+
+  fun map (f:char->char) (var x:string): string = {
+    var i:int; forall i in 0 upto (len x) - 1 do
+      // FIXME: The statement below currently doesn't compile correctly.
+      //x.[i] = _f x.[i];
+
+      store(x, i, f x.[i]);
+    done;
+
+    return x;
+  }
+
+  // comparisons
+  //gen_cmp string;
+
+  // Note we use int instead of size here: size is correct,
+  // but that would requires heaps of casts in Felix
+
+  const stl_npos: int = "static_cast<int>(std::string::npos)";
+
+  fun stl_find: string * string -> int = "$1.find($2)";
+  fun stl_find: string * string * int -> int = "$1.find($2,$3)";
+  fun stl_find: string * charp -> int = "$1.find($2)";
+  fun stl_find: string * charp * int -> int = "$1.find($2,$3)";
+  fun stl_find: string * char -> int = "$1.find($2)";
+  fun stl_find: string * char * int -> int = "$1.find($2,$3)";
+
+  fun find (s:string, e:string) : opt[int] => match stl_find (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:string, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:charp) : opt[int] => match stl_find (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:charp, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:char) : opt[int] => match stl_find (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:char, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_rfind: string * string -> int = "$1.rfind($2)";
+  fun stl_rfind: string * string * int -> int = "$1.rfind($2,$3)";
+  fun stl_rfind: string * charp -> int = "$1.rfind($2)";
+  fun stl_rfind: string * charp * int -> int = "$1.rfind($2,$3)";
+  fun stl_rfind: string * char -> int = "$1.rfind($2)";
+  fun stl_rfind: string * char * int -> int = "$1.rfind($2,$3)";
+
+  fun rfind (s:string, e:string) : opt[int] => match stl_rfind (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:string, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:charp) : opt[int] => match stl_rfind (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:charp, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:char) : opt[int] => match stl_rfind (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:char, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_first_of: string * string -> int = "$1.find_first_of($2)";
+  fun stl_find_first_of: string * string * int -> int = "$1.find_first_of($2,$3)";
+  fun stl_find_first_of: string * charp -> int = "$1.find_first_of($2)";
+  fun stl_find_first_of: string * charp * int -> int = "$1.find_first_of($2,$3)";
+  fun stl_find_first_of: string * char -> int = "$1.find_first_of($2)";
+  fun stl_find_first_of: string * char * int -> int = "$1.find_first_of($2,$3)";
+
+  fun find_first_of (s:string, e:string) : opt[int] => match stl_find_first_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:charp) : opt[int] => match stl_find_first_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:charp, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:char) : opt[int] => match stl_find_first_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_first_not_of: string * string -> int = "$1.find_first_not_of($2)";
+  fun stl_find_first_not_of: string * string * int -> int = "$1.find_first_not_of($2,$3)";
+  fun stl_find_first_not_of: string * charp -> int = "$1.find_first_not_of($2)";
+  fun stl_find_first_not_of: string * charp * int -> int = "$1.find_first_not_of($2,$3)";
+  fun stl_find_first_not_of: string * char -> int = "$1.find_first_not_of($2)";
+  fun stl_find_first_not_of: string * char * int -> int = "$1.find_first_not_of($2,$3)";
+
+  fun find_first_not_of (s:string, e:string) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:charp) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:charp, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:char) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_last_of: string * string -> int = "$1.find_last_of($2)";
+  fun stl_find_last_of: string * string * int -> int = "$1.find_last_of($2,$3)";
+  fun stl_find_last_of: string * charp -> int = "$1.find_last_of($2)";
+  fun stl_find_last_of: string * charp * int -> int = "$1.find_last_of($2,$3)";
+  fun stl_find_last_of: string * char -> int = "$1.find_last_of($2)";
+  fun stl_find_last_of: string * char * int -> int = "$1.find_last_of($2,$3)";
+
+  fun find_last_of (s:string, e:string) : opt[int] => match stl_find_last_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:charp) : opt[int] => match stl_find_last_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:charp, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:char) : opt[int] => match stl_find_last_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_last_not_of: string * string -> int = "$1.find_last_not_of($2)";
+  fun stl_find_last_not_of: string * string * int -> int = "$1.find_last_not_of($2,$3)";
+  fun stl_find_last_not_of: string * charp -> int = "$1.find_last_not_of($2)";
+  fun stl_find_last_not_of: string * charp * int -> int = "$1.find_last_not_of($2,$3)";
+  fun stl_find_last_not_of: string * char -> int = "$1.find_last_not_of($2)";
+  fun stl_find_last_not_of: string * char * int -> int = "$1.find_last_not_of($2,$3)";
+
+  fun find_last_not_of (s:string, e:string) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:charp) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:charp, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun startswith (x:string) (e:string) : bool =
+  {
+    if len x < len e do
+      return false;
+    done;
+
+    var i: int; forall i in 0 upto (len e) - 1 do
+      if e.[i] != x.[i] do
+        return false;
+      done;
+    done;
+
+    return true;
+  }
+
+  fun endswith (x:string) (e:string) : bool =
+  {
+    val len_x = len x;
+    val len_e = len e;
+
+    if len_x < len_e do
+      return false;
+    done;
+
+    var i: int; forall i in 0 upto (len_e) - 1 do
+      if e.[len_e - i - 1] != x.[len_x - i - 1] do
+        return false;
+      done;
+    done;
+
+    return true;
+  }
+
+  fun startswith (x:string) (e:char) : bool => x.[0] == e;
+  fun endswith (x:string) (e:char) : bool => x.[len x - 1] == e;
+
+  fun ltrim (x:string) (e:string) : string =>
+    if startswith x e then
+      x.[len e to]
+    else
+      x
+    endif
+  ;
+
+  fun rtrim (x:string) (e:string) : string =>
+    if endswith x e then
+      x.[to (len x) - (len e)]
+    else
+      x
+    endif
+  ;
+
+  fun trim (x:string) (e:string) : string => ltrim (rtrim x e) e;
+
+
+  // strip whitespace
+  fun lstrip (x:string, e:string) : string =
+  {
+    var i: int; forall i in 0 upto (len x) - 1 do
+      var found = false;
+      var j: int; forall j in 0 upto (len e) - 1 do
+        if x.[i] == e.[j] do
+          found = true;
+        done;
+      done;
+
+      if not found do
+        return x.[i to];
+      done;
+    done;
+
+    return '';
+  }
+
+  fun rstrip (x:string, e:string) : string =
+  {
+    var i: int; forall i in (len x) - 1 downto 0 do
+      var found = false;
+      var j: int; forall j in 0 upto (len e) - 1 do
+        if x.[i] == e.[j] do
+          found = true;
+        done;
+      done;
+
+      if not found do
+        return x.[to i + 1];
+      done;
+    done;
+
+    return '';
+  }
+
+  fun strip (x:string, e:string) : string => lstrip(rstrip(x, e), e);
+
+  fun lstrip (x:string) : string => lstrip(x, " \t\n\r\f\v");
+  fun rstrip (x:string) : string => rstrip(x, " \t\n\r\f\v");
+  fun strip (x:string) : string => lstrip$ rstrip x;
+
+  fun ljust(x:string, width:int) : string =>
+    if len x >= width
+      then x
+      else x + (' ' * (width - len x))
+    endif;
+  ;
+
+  fun rjust(x:string, width:int) : string =>
+    if len x >= width
+      then x
+      else (' ' * (width - len x)) + x
+    endif;
+  ;
+
+  fun split (x:string, d:char): List::list[string] = {
+    fun aux (x:string,y:List::list[string]) =>
+      match find (x, d) with
+      | None => List::rev$ List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      endmatch
+    ;
+    return aux$ x, List::Empty[string];
+  }
+
+  fun split (x:string, d:string): List::list[string] = {
+    fun aux (x:string,y:List::list[string]) =>
+      match find_first_of (x, d) with
+      | None => List::rev$ List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      endmatch
+    ;
+    return aux$ x, List::Empty[string];
+  }
+
+  fun split (x:string, d:charp): List::list[string] = {
+    fun aux (x:string,y:List::list[string]) =>
+      match find_first_of (x, d) with
+      | None => List::rev$ List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      endmatch
+    ;
+    return aux$ x, List::Empty[string];
+  }
+
+  // Note: pos, length!
+  proc erase: string * int * int = "$1.erase($2,$3);";
+  proc insert: string * int * string = "$1.insert($2,$3);";
+  proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
+
+  proc fprint: ostream * C_hack::ptr[char] = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * C_hack::cptr[char] = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * string = "*$1<<$2;" requires iostream;
+  fun atoi: string -> int = "std::atoi($1.data())" requires cstdlib;
+  fun atol: string -> long = "std::atol($1.data())" requires cstdlib;
+  fun atof: string -> double = "std::atof($1.data())" requires cstdlib;
+
+  proc reserve: lvalue[string] * int = "$1.reserve($2);";
+
+  publish "Unsafe extract buffer pointer"
+  fun cstr: string -> C_hack::cptr[char] = "$1.data()";
+
+  fun vsprintf[t]: C_hack::ptr[char] * t -> string =
+    "flx::rtl::strutil::flx_asprintf($1,$2)" requires flx_strutil
+  ;
+
+  fun vsprintf[t]: string * t -> string =
+    "flx::rtl::strutil::flx_asprintf(const_cast<char*>($1.c_str()),$2)" requires flx_strutil
+  ;
+}
+
+instance Str[string] {
+  fun str (s:string) : string => s;
+}
+
+instance[T in charp||charcp] Str[T] {
+  fun str: T -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+}
+
+instance[T in ucharp||ucharcp] Str[T] {
+  fun str: T -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
+}
+
+instance Repr[string] {
+  fun repr (x:string) : string = {
+    var o = "'";
+    var i: int; forall i in 0 upto (String::len x) - 1 do
+      o += repr x.[i];
+    done;
+    return o + "'";
+  }
+}
+
+type ustring = "basic_string<uint32_t>" requires string_hxx;
+open module Ustring
+{
+  open Bool;
+  open Char;
+  open Int;
+  fun _ctor_uchar (x:ustring) => x.[0];
+  proc pluseq: lvalue[ustring] * ustring = "$1.append($2);";
+
+  fun len: ustring -> int = "$1.size()";
+  fun add: ustring * ustring -> ustring = "$1+$2";
+  fun mul: ustring * int -> ustring = "flx::lib::mul($1,$2)";
+  fun mul: char * int -> ustring = "ustring($2,$1)";
+
+  fun apply (x:ustring, y:ustring):ustring => x + y;
+
+  fun subscript: ustring * int -> char =
+    "$1[$2<0??$1.size()+$2 : $2]";
+  fun copyfrom: ustring * int -> ustring =
+    "flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
+  fun copyto: ustring * int -> ustring =
+    "flx::rtl::strutil::substr($1,0,$2)" requires flx_strutil;
+  fun substring: ustring * int * int -> ustring =
+    "flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
+
+  // comparisons
+  //gen_cmp ustring;
+
+  proc fprint: ostream * ustring = "*$1<<$2;" requires iostream;
+}
+
+open[T in strings] Show[T];
+
+publish """
+All the arithmetic casts between standard C arithmetic types.
+"""
+module Arith_casts
+{
+  fun utiny_of[t2 in reals]: t2 -> utiny = "(unsigned char)$1:cast" is cast;
+  fun ushort_of[t2 in reals]: t2 -> ushort = "(unsigned short)$1:cast" is cast;
+  fun uint_of[t2 in reals]: t2 -> uint = "(unsigned int)$1:cast" is cast;
+  fun ulong_of[t2 in reals]: t2 -> ulong = "(unsigned long)$1:cast" is cast;
+  fun uvlong_of[t2 in reals]: t2 -> uvlong = "(unsigned long long)$1:cast" is cast;
+  fun uint8_of[t2 in reals]: t2 -> uint8 = "(uint8_t)$1:cast" is cast;
+  fun uint16_of[t2 in reals]: t2 -> uint16 = "(uint16_t)$1:cast" is cast;
+  fun uint32_of[t2 in reals]: t2 -> uint32 = "(uint32_t)$1:cast" is cast;
+  fun uint64_of[t2 in reals]: t2 -> uint64 = "(uint64_t)$1:cast" is cast;
+  fun tiny_of[t2 in reals]: t2 -> tiny = "(signed char)$1:cast" is cast;
+  fun short_of[t2 in reals]: t2 -> short = "(short)$1:cast" is cast;
+  fun int_of[t2 in reals]: t2 -> int = "(int)$1:cast" is cast;
+  fun long_of[t2 in reals]: t2 -> long = "(long)$1:cast" is cast;
+  fun vlong_of[t2 in reals]: t2 -> vlong = "(long long)$1:cast" is cast;
+  fun int8_of[t2 in reals]: t2 -> int8 = "(int8_t)$1:cast" is cast;
+  fun int16_of[t2 in reals]: t2 -> int16 = "(int16_t)$1:cast" is cast;
+  fun int32_of[t2 in reals]: t2 -> int32 = "(int32_t)$1:cast" is cast;
+  fun int64_of[t2 in reals]: t2 -> int64 = "(int64_t)$1:cast" is cast;
+  fun float_of[t2 in reals]: t2 -> float = "(float)$1:cast" is cast;
+  fun double_of[t2 in reals]: t2 -> double = "(double)$1:cast" is cast;
+  fun ldouble_of[t2 in reals]: t2 -> ldouble = "(long double)$1:cast" is cast;
+}
+
+open module Cstdlib
+{
+  requires cstdlib;
+  const RAND_MAX:long;
+
+  proc srand: uint = 'std::srand($1);';
+  fun rand: unit -> int = 'std::rand()';
+}
+
+

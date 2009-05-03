@@ -1,0 +1,49 @@
+module Carray
+{
+  requires cstdlib;
+  open C_hack;
+
+  publish "Carray type"
+  typedef carray[T] = ptr[T];
+
+  publish "Convert Felix array to C array"
+  fun _ctor_carray[T,N]: array[T,N] -> carray[T] = "$t.data";
+
+  fun array_alloc[T]: int -> carray[T] = '(?1*)std::malloc(sizeof(?1)*$1)';
+  fun array_calloc[T]: int -> carray[T] = '(?1*)std::calloc(sizeof(?1),$1)';
+  proc free[T]: carray[T] = "std::free($1);";
+  fun subscript[T]: carray[T] * int -> lvalue[T] = '$1[$2]';
+
+  fun add[T]: carray[T] * int -> carray[T]= '$1+$2';
+  fun sub[T]: carray[T] * int -> carray[T] = '$1-$2';
+  fun sub[T]: carray[T] * carray[T]-> int = '$1-$2';
+
+  proc pre_incr[T]: &carray[T] = '++*$1;';
+  proc post_incr[T]: &carray[T] = '(*$1)++;';
+  proc pre_decr[T]: &carray[T] = '--*$1;';
+  proc post_decr[T]: &carray[T] = '(*$1)--;';
+  proc pluseq[T]: carray[T] * int = '$1+=$2;';
+  proc minuseq[T]: carray[T] * int = '$1-=$2;';
+
+  /* carray is alias for a pointer .. */
+  /*
+  fun eq[T]: carray[T] * carray[T] -> bool = '$1==$2';
+  fun ne[T]: carray[T] * carray[T] -> bool = '$1!=$2';
+  fun lt[T]: carray[T] * carray[T] -> bool = '$1<$2';
+  fun le[T]: carray[T] * carray[T] -> bool = '$1<=$2';
+  fun gt[T]: carray[T] * carray[T] -> bool = '$1>$2';
+  fun ge[T]: carray[T] * carray[T] -> bool = '$1>=$2';
+  */
+
+  publish "Convert C array to Felix array"
+  fun array_of[T,N]: carray[T] -> ptr[array[T,N]] = "*(#0*)(void*)$1";
+
+  proc memcpy: address * address * size =
+    "{if($1 && $2 && $3)std::memcpy($1,$2,$3);}"
+    requires cstring
+  ;
+  fun memcmp: address * address * size -> int = "std::memcmp($1,$2,$3)"
+    requires cstring
+  ;
+}
+

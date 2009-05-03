@@ -1,0 +1,257 @@
+module Control
+{
+  open C_hack;
+  publish 'infinite loop'
+  proc forever (bdy:unit->void)
+  {
+    rpeat:>
+      bdy();
+      goto rpeat;
+    dummy:> // fool reachability checker
+  }
+
+  publish 'C style while loop'
+  proc while (cond:unit->bool) (bdy:unit->void)
+  {
+    rpeat:>
+      if not (cond()) goto finish;
+      bdy();
+      goto rpeat;
+    finish:>
+  }
+
+  /* DISABLED: replaced by UNTIL statement until the optimiser is working
+  publish """
+  C style while loop with reversed condition
+  note the until is tested first -- zero iterations are possible
+  """
+  proc until(cond:unit->bool) (bdy:unit->void)
+  {
+    repeatx:>
+      if cond() goto finish;
+      bdy();
+      goto repeatx;
+    finish:>
+  }
+  */
+
+  publish "do nothing [the name pass comes from Python]"
+  proc pass(){}
+
+  publish 'C style for loop'
+  proc for_each
+    (init:unit->void)
+    (cond:unit->bool)
+    (incr:unit->void)
+    (bdy:unit->void)
+  {
+    init();
+    rpeat:>
+      if not (cond()) goto finish;
+      bdy();
+      incr();
+      goto rpeat;
+    finish:>
+  }
+
+  publish 'abnormal termination with message'
+  proc fail:string = 'throw std::runtime_error($1);' requires stdexcept;
+
+  publish "WILL BE DEPRECATED, these don't work right"
+  fun fail_fun[t]:1->t = 'throw std::runtime_error(""),*(?1*)0' requires stdexcept;
+
+  publish "WILL BE DEPRECATED, these don't work right"
+  fun fail_fun[t]:string->t = 'throw std::runtime_error($1),*(?1*)0' requires stdexcept;
+
+  publish "Felix procedural continuation type"
+  _gc_pointer type cont = "flx::rtl::con_t*";
+
+  publish "Current continuation"
+  fun current_continuation: unit -> cont = "this";
+
+  publish "Felix fthread"
+  _gc_pointer type fthread = "flx::rtl::fthread_t*";
+
+
+  publish """
+    Throw a continuation. This is unsafe. It should
+    work from a top level procedure, or any function
+    called by such a procedure, but may fail
+    if thrown from a procedure called by a function.
+    The library run and driver will catch the
+    continuation and execute it instead of the
+    current continuation. If the library run is used
+    and the continuation being executed is down the
+    C stack, the C stack will not have been correctly
+    popped. Crudely, nested drivers should rethrow
+    the exception until the C stack is in the correct
+    state to execute the continuation, but there is no
+    way to determine that at the moment.
+
+    Compiler generated runs ignore the exception,
+    the library run catches it. Exceptions typically
+    use a non-local goto, and they cannot pass across
+    a function boundary.
+  """
+  proc throw(x: unit->void) { _throw (C_hack::cast[cont] x); }
+  private proc _throw: cont = "throw $1;";
+
+  // THESE VALUES MUST SYNC WITH THE RTL
+  union svc_req_t =
+  /*0*/ | svc_yield
+  /*1*/ | svc_get_fthread         of ptr[fthread]
+  /*2*/ | svc_read                of address
+  /*3*/ | svc_general             of &address
+  /*4*/ | svc_reserved1
+  /*5*/ | svc_spawn_pthread       of fthread
+  /*6*/ | svc_spawn_detached      of fthread
+  /*7*/ | svc_sread               of _schannel * &gcaddress
+  /*8*/ | svc_swrite              of _schannel * &gcaddress
+  /*9*/ | svc_kill                of fthread
+  /*10*/ | svc_collect
+  ;
+
+  publish "Call Supervisor"
+  // this interface just gets rid of the horrible requirement
+  // the request be in a variable so it is addressable
+  proc svc(x:svc_req_t) {
+    var y=x;
+    _svc y;
+  }
+
+  _gc_pointer type schannel[t] = "flx::rtl::schannel_t*";
+  _gc_pointer type ischannel[t] = "flx::rtl::schannel_t*";
+  _gc_pointer type oschannel[t] = "flx::rtl::schannel_t*";
+
+  private _gc_pointer type _schannel = "flx::rtl::schannel_t*";
+  gen mk_schannel[t]: 1->schannel[t] =
+    "new(*PTF gcp,flx::rtl::schannel_ptr_map,false) flx::rtl::schannel_t(PTF gcp)"
+    requires property "needs_gc"
+  ;
+
+  // safe casts from bidirectional to unidirectional channels
+  fun _ctor_oschannel[t](x:schannel[t]):oschannel[t]=> C_hack::cast[oschannel[t]] x;
+  fun _ctor_ischannel[t](x:schannel[t]):ischannel[t]=> C_hack::cast[ischannel[t]] x;
+
+  fun mk_ioschannel_pair[t](var ch:schannel[t]) =>
+    ischannel[t] ch, oschannel[t] ch
+  ;
+
+  fun mk_ioschannel_pair[t]() =>
+    mk_ioschannel_pair[t]$ mk_schannel[t] ()
+  ;
+
+  // THIS IS THE DESIRED FORMULATION .. but it doesn't currently work.
+  // The typematch implied by the typeset is failing during
+  // overload resolution .. probably because unification indicates
+  // it is OK to proceed BEFORE t is substituted out.
+
+  typedef i_schannel[t] = typesetof(ischannel[t], schannel[t]);
+  typedef o_schannel[t] = typesetof(oschannel[t], schannel[t]);
+
+  inline gen read[T] (chan:schannel[T]) = {
+    var loc: gcptr[T];
+    svc$ svc_sread$ cast[_schannel] chan, reinterpret[&gcaddress] (&loc);
+    return *loc;
+  }
+  inline gen read[T] (chan:ischannel[T]) => read$ cast[schannel[T]] chan;
+
+  proc write[T] (chan:schannel[T], v:T) {
+    var ps = cast[gcaddress]$ xnew v;
+    svc$ svc_swrite$ cast[_schannel] chan, &ps;
+  }
+  proc write[T] (chan:oschannel[T], v:T) { write (cast[schannel[T]] chan, v); }
+
+  private gen _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
+  gen start[t] (p:t->0) (x:t) = { return _start (p,x); }
+  private fun _start0: (1->0)->cont = "$1->clone()->call(0)";
+  gen start (p:1->0) = { return _start0 (p); }
+
+  gen mk_thread: cont->fthread = "new(*PTF gcp,_fthread_ptr_map,false) flx::rtl::fthread_t($1)";
+
+  proc spawn_fthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_detached fthr;
+  }
+
+  publish "Resume a continuation until it yields"
+  gen step: cont -> cont = "$1->resume()";
+  proc kill: fthread = "$1->cc = 0;";
+
+  publish """
+  Run a continuation until it terminates.
+  Do not use this proc if the underlying
+  procedure attempts to read messages.
+
+  This is a low level primitive, bypassing fthreads.
+  """
+  proc run: cont = "flx::rtl::executil::run($1);" requires flx_executil;
+
+  private proc _send[t]: &cont * t =
+  """
+  {
+    using namespace flx::rtl;
+    con_t *tmp = *(con_t**)$1.get_data();
+    // run target until it reaches a service request (or death)
+    while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {
+      try { tmp=tmp->resume(); }
+      catch (con_t *x) { tmp = x; }
+    }
+    // check it is alive and making the expected service request
+    if (!tmp)
+      throw flx_exec_failure_t (__FILE__,"send","Send to terminated procedure");
+    if (!tmp->p_svc)
+      throw flx_exec_failure_t (__FILE__,"send","Send to unready Procedure");
+    if (tmp->p_svc->variant != svc_read)
+      throw flx_exec_failure_t (__FILE__,"send","Send to Procedure which is not trying to read");
+    // store the message
+    **(?1**)tmp->p_svc->data= $2;
+    // clear the service request
+    tmp->p_svc = 0;
+    // run the target until the next service request (or death)
+    while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {
+      try { tmp=tmp->resume(); }
+      catch (con_t *x) { tmp = x; }
+    }
+    // save the new continuation
+    *(con_t**)$1.get_data() = tmp;
+
+  }
+  """;
+
+  publish """Send a message to a continuation.
+  There is no type checking on the message type.
+  The procedure is executed until
+  the next wait_state, then the message is stored.
+
+  Low level primitive, bypassing fthreads.
+  """
+  proc send[t] (p:&cont) (x:t)
+  {
+    _send (p,x);
+  }
+
+  publish """
+  Invoke the garbage collector inside a procedure run
+  by the top level (external) driver.
+
+  Don't call this procedure in a procedure which is run
+  with 'run', because such procedures do not link to their
+  caller with frame pointers -- unless of course a such a
+  procedure has a private collector.
+
+  Note procedure called by functions are run with
+  code equivalent to 'run'.
+  """
+  proc collect() { svc svc_collect; }
+
+  fun gc_get_allocation_amt : unit -> ulong = "PTF gcp->collector->get_allocation_amt()"
+    requires property "needs_gc";
+  fun gc_get_allocation_count : unit -> ulong = "PTF gcp->collector->get_allocation_count()"
+    requires property "needs_gc";
+  fun gc_get_root_count : unit -> ulong = "PTF gcp->collector->get_root_count()"
+    requires property "needs_gc";
+}
+

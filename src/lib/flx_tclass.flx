@@ -1,0 +1,314 @@
+// Core types and type classes
+
+typedef void = 0;
+typedef unit = 1;
+typedef bool = 2;
+
+
+// equality
+typeclass Eq[t] {
+  virtual fun eq: t * t -> bool;
+  virtual fun ne (x:t,y:t):bool => not (eq (x,y));
+  axiom reflex(x:t): eq(x,x);
+  axiom sym(x:t, y:t): eq(x,y) == eq(y,x);
+  axiom trans(x:t, y:t, z:t): implies(eq(x,y) and eq(y,z), eq(x,z));
+}
+
+// this is a pain .. equality for pairs
+instance[t,u with Eq[t], Eq[u]] Eq[t*u] {
+  fun eq: (t * u) * (t * u) -> bool =
+  | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
+  ;
+}
+
+open[t,u] Eq[t*u];
+
+// equality for triples
+instance[t,u,v with Eq[t], Eq[u], Eq[v]] Eq[t*u*v] {
+  fun eq: (t * u * v) * (t * u * v) -> bool =
+  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
+  ;
+}
+
+open[t,u,v] Eq[t*u*v];
+
+
+// total order
+typeclass Tord[t]{
+  inherit Eq[t];
+  virtual fun lt: t * t -> bool;
+  virtual fun gt(x:t,y:t):bool =>lt(y,x);
+  virtual fun le(x:t,y:t):bool => not (gt(x,y));
+  virtual fun ge(x:t,y:t):bool => not (lt(x,y));
+  virtual fun max(x:t,y:t):t=> if lt(x,y) then y else x endif;
+  virtual fun min(x:t,y:t):t => if lt(x,y) then x else y endif;
+}
+
+// additive symmetric group
+typeclass FloatAddgrp[t] {
+  inherit Eq[t];
+  virtual fun zero: unit -> t;
+  virtual fun add: t * t -> t;
+  virtual fun neg: t -> t;
+  virtual fun sub(x:t,y:t):t => add (x,neg y);
+  virtual proc pluseq (x:lvalue[t],y:t) { x = x + y; }
+  virtual proc minuseq (x:lvalue[t],y:t) { x = x - y; }
+
+  reduce id (x:t): x+zero() => x;
+  reduce id (x:t): zero()+x => x;
+  reduce inv(x:t): x-x => zero();
+  reduce inv(x:t): - (-x) => x;
+  axiom sym (x:t,y:t): x+y == y+x;
+}
+
+typeclass Addgrp[t] {
+  inherit FloatAddgrp[t];
+  axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
+  reduce inv(x:t,y:t): x+y-y => x;
+}
+
+
+typeclass Bits[t] {
+  virtual fun bxor: t * t -> t;
+  virtual fun bor: t * t -> t;
+  virtual fun band: t * t -> t;
+  virtual fun bnot: t -> t;
+  virtual proc bxoreq: lvalue[t] * t;
+  virtual proc boreq: lvalue[t] * t;
+  virtual proc bandeq: lvalue[t] * t;
+}
+
+// mult semi group with unit
+typeclass FloatMultSemi1[t] {
+  inherit Eq[t];
+  virtual fun one: unit -> t;
+  virtual fun mul: t * t -> t;
+  virtual proc muleq (x:lvalue[t], y:t) { x = x * y; }
+  reduce id (x:t): x*one() => x;
+  reduce id (x:t): one()*x => x;
+}
+
+// mult semi group with unit
+typeclass MultSemi1[t] {
+  inherit FloatMultSemi1[t];
+  axiom assoc (x:t,y:t,z:t): (x*y)*z == x*(y*z);
+  reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+}
+
+// ring
+typeclass FloatRing[t] {
+  inherit FloatAddgrp[t];
+  inherit FloatMultSemi1[t];
+}
+
+// ring
+typeclass Ring[t] {
+  inherit Addgrp[t];
+  inherit MultSemi1[t];
+  axiom distrib (x:t,y:t,z:t): x * ( y + z) == x * y + x * z;
+}
+
+// division ring
+typeclass FloatDring[t] {
+  inherit FloatRing[t];
+  virtual fun div: t * t -> t; // pre t != 0
+  virtual proc diveq: lvalue[t] * t;
+  virtual fun mod : t * t -> t;
+  virtual proc modeq: lvalue[t] * t;
+}
+
+// division ring
+typeclass Dring[t] {
+  inherit Ring[t];
+  inherit FloatDring[t];
+}
+
+typeclass Forward[t] {
+  virtual fun succ: t -> t;
+  virtual proc pre_incr: &t;
+  virtual proc post_incr: &t;
+}
+
+typeclass Bidirectional[t] {
+  inherit Forward[t];
+  virtual fun pred: t -> t;
+  virtual proc pre_decr: &t;
+  virtual proc post_decr: &t;
+}
+
+typeclass IStream[f,t] {
+  virtual gen read: f -> t;
+}
+
+typeclass OStream[f,t] {
+  virtual proc write: f * t;
+}
+
+typeclass IOStream[f,t] {
+  inherit IStream[f,t];
+  inherit OStream[f,t];
+}
+
+typeclass IFile[f,t] {
+  inherit IStream [f,opt[t]];
+}
+
+typeclass OFile[f,t] {
+  inherit OStream;
+  virtual proc close: f; // invalidates write operation
+}
+
+typeclass IBuffer [f] {
+  virtual gen read: f -> address * int -> int * bool;
+}
+
+typeclass OBuffer [f] {
+  virtual gen write : f -> address * int -> int * bool;
+}
+
+typeclass Iterator[it,t] {
+  virtual fun deref: it -> lvalue[t];
+}
+
+typeclass Forward_iterator[it,t] {
+  inherit Tord[it];
+  inherit Forward[it];
+  inherit Iterator[it,t];
+}
+
+typeclass Bidirectional_iterator[it,t] {
+  inherit Forward_iterator[it,t];
+  inherit Bidirectional[it];
+}
+
+typeclass Integer[t] {
+  inherit Tord[t];
+  inherit Dring[t];
+  inherit Bidirectional[t];
+  virtual fun shl: t * t -> t;
+  virtual fun shr: t * t -> t;
+}
+
+// Signed Integers
+typeclass Signed_integer[t] {
+  inherit Integer[t];
+  virtual fun sgn: t -> int;
+  virtual fun abs: t -> t;
+}
+
+// Unsigned Integers
+typeclass Unsigned_integer[t] {
+  inherit Integer[t];
+  inherit Bits[t];
+}
+
+
+typeclass Trig[t] {
+  virtual fun sin: t -> t;
+  virtual fun cos: t -> t;
+  virtual fun tan: t -> t;
+  virtual fun asin: t -> t;
+  virtual fun acos: t -> t;
+  virtual fun atan: t -> t;
+  virtual fun sinh: t -> t;
+  virtual fun cosh: t -> t;
+  virtual fun tanh: t -> t;
+  virtual fun asinh: t -> t;
+  virtual fun acosh: t -> t;
+  virtual fun atanh: t -> t;
+  virtual fun exp: t -> t;
+  virtual fun log: t -> t;
+  virtual fun pow: t * t -> t;
+}
+
+typeclass Real[t] {
+  inherit Tord[t];
+  inherit Trig[t];
+  inherit FloatDring[t];
+  virtual fun log10: t -> t;
+  virtual fun abs: t -> t;
+  virtual fun sqrt: t -> t;
+  virtual fun ceil: t -> t;
+  virtual fun floor: t -> t;
+  virtual fun trunc: t -> t;
+}
+
+open module Imagination
+{
+  type sqrt_minus_one = "__ERROR__";
+  const i : sqrt_minus_one = "__ERROR__";
+}
+
+typeclass Complex[t,r] {
+  inherit Eq[t];
+  inherit FloatRing[t];
+  inherit Trig[t];
+  virtual fun real: t -> r;
+  virtual fun imag: t -> r;
+  virtual fun abs: t -> r;
+  virtual fun arg: t -> r;
+
+  virtual fun add: r * t -> t;
+  virtual fun add: t * r -> t;
+  virtual fun sub: r * t -> t;
+  virtual fun sub: t * r -> t;
+  virtual fun mul : t * r -> t;
+  virtual fun mul : r * t -> t;
+  virtual fun div : t * r -> t;
+  virtual fun div : r * t -> t;
+}
+
+typeclass Container [c,v]
+{
+  virtual fun len: c -> size;
+  virtual fun empty(x: c): bool => len x == size(0);
+}
+
+typeclass Sequence[c,it,v] {
+  inherit Eq[c];
+  inherit Forward_iterator[it,v];
+  inherit Container[c,v];
+  virtual gen begin: c -> it;
+  virtual gen end: c -> it;
+  virtual proc erase: lvalue[c] * it;
+  virtual proc erase_between: lvalue[c] * it * it;
+  virtual proc clear: lvalue[c];
+  virtual fun fold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = begin x; var e = end x;
+    whilst s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
+}
+
+typeclass Reversible_Sequence[c,it,rit,v] {
+  inherit Sequence[c,it,v];
+  inherit Bidirectional_iterator[it,v];
+  inherit Bidirectional_iterator[rit,v];
+  virtual gen rbegin: c -> rit;
+  virtual gen rend: c -> rit;
+  virtual fun rfold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = rbegin x; var e = rend x;
+    whilst s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
+}
+
+typeclass Monad [M: TYPE->TYPE] {
+  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+  virtual fun ret[a]: a -> M a;
+}
+
+typeclass Str [T] {
+  virtual fun str: T -> string;
+}
+
+typeclass Repr [T with Str[T]] {
+  virtual fun repr (t:T) : string => str t;
+}
+
+typeclass Show [T] {
+  inherit Str[T];
+  inherit Repr[T];
+}
+
+

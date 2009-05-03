@@ -1,0 +1,351 @@
+publish "List manipulation"
+module List
+{
+  union list[T] = | Empty | Cons of T * list[T];
+
+  // the second list is made the tail of the
+  // list stored at the location pointed at by the first argument
+  // if the first list is empty, the variable will point
+  // at the second list. This operation is DANGEROUS because
+  // it is a mutator: lists are traditionally purely functional
+
+  // this function is required for efficient joining of lists.
+  // we copy the first list, then splice the second one onto its last element
+
+  // representation dependent: may break!
+  // A Felix list is a _uctor_ which has a variant code and pointer
+  // If the variant is 1, the pointer points at the tuple of type
+  // T * list[T]. There is no way to name this type from C,
+  // so we just create an compatible type and use a cast.
+
+  proc splice[T] : &list[T] * list[T] =
+    """
+    {
+      struct node_t { ?1 elt; _uctor_ tail; };
+      _uctor_ *p = $1;
+      while(p->variant) p = &((node_t*)p->data)->tail;
+      *p = $2;
+    }
+    """
+  ;
+
+  // in place list reversal
+  proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1);" requires _iprev_[T,PLT];
+
+  body _iprev_[T,PLT]=
+    """
+    void _rev(?2 plt)
+    {
+      struct node_t { ?1 elt; _uctor_ tail; };
+      _uctor_ nutail = _uctor_(0,0);
+      _uctor_ cur = *plt;
+      while(cur.variant)
+      {
+        _uctor_ oldtail = ((node_t*)cur.data)->tail;
+        ((node_t*)cur.data)->tail = nutail;
+        nutail = cur;
+        cur = oldtail;
+      }
+      *plt = nutail;
+    }
+    """
+  ;
+
+  // in place list reversal, also returns the last element
+  // as a list, empty iff the original list is
+  proc rev_last[T] : &list[T] * &list[T] =
+    """
+    {
+      struct node_t { ?1 elt; _uctor_ tail; };
+      _uctor_ nutail = _uctor_(0,0);
+      _uctor_ cur = *$1;
+      _uctor_ last = cur;
+      while(cur.variant)
+      {
+        _uctor_ oldtail = ((node_t*)cur.data)->tail;
+        ((node_t*)cur.data)->tail = nutail;
+        nutail = cur;
+        cur = oldtail;
+      }
+      *$1 = nutail;
+      *$2 = last;
+    }
+    """
+  ;
+
+  fun copy[T] (x:list[T]):list[T]= {
+    var y = rev x;
+    rev (&y);
+    return y;
+  }
+
+  proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
+    *out = rev inp;
+    rev_last (out, last);
+  }
+
+
+  fun _ctor_list[T] () => Empty[T];
+
+  fun _ctor_list[T] (x:T) => Cons(x, Empty[T]);
+
+  fun _ctor_list[T, N] (x:Array::array[T, N]) = {
+    var o = Empty[T];
+    var i:int; forall i in Array::len(x) - 1 downto 0 do
+      o = Cons (x.[i],o);
+    done;
+    return o;
+  }
+
+  fun len[T] (x:list[T]) = {
+    fun aux (acc:int) (x:list[T]) =>
+      match x with
+      | Empty => acc
+      | Cons (_,?t) => aux (acc + 1) t
+      endmatch
+    ;
+    return aux 0 x;
+  }
+
+  fun is_empty[T] : list[T] -> 2 =
+    | Empty => true
+    | _ => false
+  ;
+
+  fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
+    fun aux (inp:list[T]) (out:list[U]) : list[U] =>
+      match inp with
+      | Empty[T] => out
+      | Cons[T] (?h, ?t) => aux t (Cons (_f(h), out))
+      endmatch
+    ;
+    return aux x Empty[U];
+  }
+
+  fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
+  {
+    var r = rev_map _f x;
+    rev$ &r;
+    return r;
+  }
+
+  noinline fun rev[T] (x:list[T]):list[T]= {
+    fun aux (x:list[T]) (y:list[T]) : list[T] =
+    {
+      return
+        match x with
+        | Empty[T] => y
+        | Cons[T] (?h, ?t) => aux t (Cons (h, y))
+        endmatch
+      ;
+    }
+    return aux x Empty[T];
+  }
+
+  proc iter[T] (_f:T->void) (x:list[T]) {
+    match x with
+    | Empty[T] => {}
+    | Cons[T] (?h,?t) => { _f h; iter _f t; }
+    endmatch
+    ;
+  }
+
+  fun fold_left[T,U] (_f:U->T->U) (init:U) (x:list[T]):U =
+  {
+    fun aux (init:U) (x:list[T]):U =>
+      match x with
+      | Empty[T] => init
+      | Cons[T] (?h,?t) => aux (_f init h) t
+      endmatch
+    ;
+    return aux init x;
+  }
+
+  fun fold_right[T,U] (_f:T->U->U) (x:list[T]) (init:U):U =
+  {
+    fun aux (x:list[T]) (init:U):U =>
+      match x with
+      | Empty[T] => init
+      | Cons[T] (?h,?t) => _f h (aux t init)
+      endmatch
+    ;
+    return aux x init;
+  }
+
+  fun range (low:int, high:int, step:int) =
+  {
+    fun inner(low:int, high:int, step:int, values:list[int]) =
+    {
+      return
+        if high < low
+          then values
+          else inner(low, high - step, step, Cons(high, values))
+          endif
+      ;
+    }
+
+    // reverse low and high so we can do negative steps
+    lo, hi, s := if low < high
+      then low, high, step
+      else high, low, -step
+      endif;
+
+    // adjust the high to be the actual last value so we don't
+    // have to reverse the list
+    n := hi - lo - 1;
+
+    return if s <= 0
+      then Empty[int]
+      else inner(lo, lo + n - (n % s), s, Empty[int])
+      endif
+    ;
+  }
+
+  fun range (low:int, high:int) => range(low, high, 1);
+
+  fun range (num:int) => range(0, num, 1);
+
+  fun join[T] (x:list[T]) (y:list[T]):list[T] =
+  {
+    if is_empty x do
+      return y;
+    else
+      var z: list[T];
+      var last: list[T];
+      copy_last (x,&z,&last);
+      splice (&last, y);
+      return z;
+    done;
+  }
+
+  fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
+
+  fun add[T] (x:T, y:list[T]):list[T] => Cons (x, y);
+
+  // very slow, adding to end ..
+  noinline fun add[T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
+
+  proc pluseq[T] (x:lvalue[list[T]], y:T) { x = x + y; }
+
+  noinline fun cat[T] (x:list[list[T]]):list[T] =
+  {
+     return
+       match x with
+       | Empty[list[T]] => Empty[T]
+       | Cons[list[T]] (?h,?t) => fold_left join of (list[T]) h t
+       endmatch
+     ;
+   }
+
+  fun cat (sep:string) (x:list[string]):string =
+  {
+    return
+      match x with
+      | Empty[string] => ''
+      | Cons[string] (?h, ?t) =>
+          fold_left (fun (a:string) (b:string) => a + sep + b) h t
+      endmatch
+    ;
+  }
+
+  fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
+    match xs with
+    | Empty => false
+    | Cons (?h,?t) => if eq(h) then true else mem eq t endif
+    endmatch
+  ;
+
+  fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool =>
+    mem (fun (x:T) => eq(x, e)) xs
+  ;
+
+  fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
+    match xs with
+    | Empty => None[T]
+    | Cons (?h,?t) => if eq(h) then Some h else find eq t endif
+    endmatch
+  ;
+
+  fun find[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : opt[T] =>
+    find (fun (x:T) => eq(x, e)) xs;
+  ;
+
+  noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =
+  {
+    fun aux (inp:list[T], out: list[T]) =>
+      match inp with
+      | Empty => rev out
+      | Cons(?h,?t) =>
+        if P(h) then aux(t,Cons(h,out))
+        else aux (t,out)
+        endif
+      endmatch
+    ;
+    return aux (x,Empty[T]);
+  }
+
+  fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+    if mem eq x e then x else Cons (e,x) endif
+  ;
+
+  fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+    if mem eq x e then x else rev$ Cons (e,rev x) endif
+  ;
+
+  fun remove[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+    filter (fun (y:T) => not eq (e,y)) x
+  ;
+
+  noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = {
+    fun aux (inp:list[T], out: list[T]) =>
+      match inp with
+      | Empty => rev$ Cons(e,out)
+      | Cons(?h,?t) =>
+        if not eq (h, e) then aux(t,Cons(h,out))
+        else aux (t,out)
+        endif
+      endmatch
+    ;
+    return aux (x,Empty[T]);
+  }
+}
+
+instance[T with Show[T]] Str[List::list[T]] {
+  fun str (xs:List::list[T]) =>
+    '[' +
+      match xs with
+      | Empty[T] => ''
+      | Cons(?o, ?os) =>
+          List::fold_left (
+            fun (a:string) (b:T):string => a + ', ' + (repr b)
+          ) (repr o) os
+      endmatch
+    + ']'
+  ;
+}
+
+publish "Association Lists (lists of pairs)"
+module Assoc_list
+{
+  typedef assoc_list[A,B] = List::list[A*B];
+
+  fun mem[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : bool =>
+    List::mem (fun (a:A, b:B) => eq a) xs;
+  ;
+
+  fun mem[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : bool =>
+    mem (fun (a:A) => eq(a, e)) xs;
+  ;
+
+  fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : opt[B] =>
+    match xs with
+    | Empty => None[B]
+    | Cons ((?a, ?b), ?t) => if eq(a) then Some b else find eq t endif
+    endmatch
+  ;
+
+  fun find[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : opt[B] =>
+    find (fun (a:A) => eq (a, e)) xs;
+  ;
+}
+

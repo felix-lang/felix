@@ -1,0 +1,6 @@
+open module Cstdio
+{
+  header "#include <cstdio>";
+  incomplete type FILE = "std::FILE";
+}
+

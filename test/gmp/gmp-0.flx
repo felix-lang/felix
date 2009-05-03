@@ -3,6 +3,12 @@
 include "flx_gmp";
 open Gmp;
 
+syntax gmp_syntax {
+  x[ssetunion_pri] := x[ssetunion_pri] "/\\" x[>ssetunion_pri] =># "`(ast_apply ,_sr (lcm (,_1 ,_3)))" note "lcm";
+  x[ssetintersection_pri] := x[ssetintersection_pri] "\\/" x[>ssetintersection_pri] =># "`(ast_apply ,_sr (gcd (,_1 ,_3)))" note "gcd";
+}
+open syntax gmp_syntax;
+
 {
   val x:mpz = mpz_of_int 99;
   val y:mpz = mpz_of_int 7;
