@@ -33,81 +33,24 @@ type token =
   | LOAD_SYNTAX of (local_data_t)
   | SAVE_SYNTAX of (string)
 
-  | DOLLAR of srcref
   | QUEST of srcref
-  | EXCLAMATION of srcref
   | LPAR of srcref
   | RPAR of srcref
   | LSQB of srcref
   | RSQB of srcref
   | LBRACE of srcref
   | RBRACE of srcref
-  | COLON of srcref
   | COMMA of srcref
-  | SEMI of srcref
   | PLUS of srcref
-  | MINUS of srcref
   | STAR of srcref
-  | SLASH of srcref
   | VBAR of srcref
-  | AMPER of srcref
   | LESS of srcref
   | GREATER of srcref
   | EQUAL of srcref
-  | DOT of srcref
-  | PERCENT of srcref
-  | BACKQUOTE of srcref
-  | TILDE of srcref
-  | CIRCUMFLEX of srcref
-  | HASH of srcref
-  | DOLLARDOLLAR of srcref
-  | ANDLESS of srcref
-  | ANDGREATER of srcref
   | EQEQUAL of srcref
   | NOTEQUAL of srcref
   | LESSEQUAL of srcref
   | GREATEREQUAL of srcref
-  | LEFTSHIFT of srcref
-  | RIGHTSHIFT of srcref
-  | STARSTAR of srcref
-  | LESSCOLON of srcref
-  | COLONGREATER of srcref
-  | DOTDOT of srcref
-  | COLONCOLON of srcref
-  | PLUSPLUS of srcref
-  | MINUSMINUS of srcref
-  | PLUSEQUAL of srcref
-  | MINUSEQUAL of srcref
-  | STAREQUAL of srcref
-  | SLASHEQUAL of srcref
-  | PERCENTEQUAL of srcref
-  | CARETEQUAL of srcref
-  | VBAREQUAL of srcref
-  | AMPEREQUAL of srcref
-  | TILDEEQUAL of srcref
-  | COLONEQUAL of srcref
-  | RIGHTARROW of srcref
-  | EQRIGHTARROW of srcref
-  | LEFTARROW of srcref
-  | LSQBAR of srcref
-  | RSQBAR of srcref
-  | AMPERAMPER of srcref
-  | VBARVBAR of srcref
-  | SLOSHAMPER of srcref
-  | SLOSHVBAR of srcref
-  | SLOSHCIRCUMFLEX of srcref
-  | HASHBANG of srcref
-  | LEFTSHIFTEQUAL of srcref
-  | RIGHTSHIFTEQUAL of srcref
-  | LEFTRIGHTARROW of srcref
-  | ANDEQEQUAL of srcref
-  | ANDNOTEQUAL of srcref
-  | ANDLESSEQUAL of srcref
-  | ANDGREATEREQUAL of srcref
-  | DOTDOTDOT of srcref
-  | LONGRIGHTARROW of srcref
-  | PARSE_ACTION of srcref
-  | HASHBANGSLASH of srcref
   | UNDERSCORE of srcref
 
 and prio_t = [`Default | `Priority of string]
