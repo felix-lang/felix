@@ -17,9 +17,6 @@ type token =
   | ENDMARKER
   | NEWLINE
   | SLOSH
-  | COMMENT of string
-  | COMMENT_NEWLINE of string
-  | WHITE of int
   | NAME of (srcref * string)
   | NONTERMINAL of (srcref * string * ntprio_t)
   | INTEGER of (srcref * string * Flx_ast.bigint)
@@ -32,11 +29,9 @@ type token =
   | USTRING of (srcref * string)
   | USER_KEYWORD of (srcref * string)
   | HASH_INCLUDE_FILES of string list
-  | TOKEN_LIST of token list
   | DUMMY
   | LOAD_SYNTAX of (local_data_t)
   | SAVE_SYNTAX of (string)
-  | SCHEME_CODE of (srcref * string * Ocs_types.code)
 
   | DOLLAR of srcref
   | QUEST of srcref
@@ -113,117 +108,8 @@ type token =
   | LONGRIGHTARROW of srcref
   | PARSE_ACTION of srcref
   | HASHBANGSLASH of srcref
-  | ALL of srcref
-  | ASSERT of srcref
-  | AXIOM of srcref
-  | BODY of srcref
-  | CALL of srcref
-  | CASE of srcref
-  | CASENO of srcref
-  | CFUNCTION of srcref
-  | CLASS of srcref
-  | COMMENT_KEYWORD of srcref
-  | COMPOUND of srcref
-  | CONST of srcref
-  | CPROCEDURE of srcref
-  | CSTRUCT of srcref
-  | CTOR of srcref
-  | CTYPES of srcref
-  | DEF of srcref
-  | DO of srcref
-  | DONE of srcref
-  | ELIF of srcref
-  | ELSE of srcref
-  | ENDCASE of srcref
-  | ENDIF of srcref
-  | ENDMATCH of srcref
-  | ENUM of srcref
-  | EXPECT of srcref
-  | EXPORT of srcref
-  | EXTERN of srcref
-  | FOR of srcref
-  | FORGET of srcref
-  | FORK of srcref
-  | FUNCTOR of srcref
-  | FUNCTION of srcref
-  | GENERATOR of srcref
-  | GOTO of srcref
-  | HALT of srcref
-  | HEADER of srcref
-  | IDENT of srcref
-  | INCLUDE of srcref
-  | INCOMPLETE of srcref
-  | INF of srcref
-  | IN of srcref
-  | INSTANCE of srcref
-  | IS of srcref
-  | INHERIT of srcref
-  | INLINE of srcref
-  | JUMP of srcref
-  | LEMMA of srcref
-  | LET of srcref
-  | LOOP of srcref
-  | LVAL of srcref
-  | MACRO of srcref
-  | MODULE of srcref
-  | NAN of srcref
-  | NEW of srcref
-  | NOINLINE of srcref
-  | NONTERM of srcref
-  | NORETURN of srcref
-  | NOT of srcref
-  | OPEN of srcref
-  | PACKAGE of srcref
-  | POD of srcref
-  | PRIVATE of srcref
-  | PROCEDURE of srcref
-  | PROPERTY of srcref
-  | REDUCE of srcref
-  | REF of srcref
-  | RENAME of srcref
-  | REQUIRES of srcref
-  | RETURN of srcref
-  | SCHEME of srcref
-  | SYNTAX of srcref
-  | STATIC of srcref
-  | STRUCT of srcref
-  | THEN of srcref
-  | TODO of srcref
-  | TO of srcref
-  | TYPEDEF of srcref
-  | TYPE of srcref
-  | TYPECLASS of srcref
-  | UNION of srcref
-  | USE of srcref
-  | VAL of srcref
-  | VAR of srcref
-  | VIRTUAL of srcref
-  | WHERE of srcref
-  | WHEN of srcref
-  | WITH of srcref
-  | YIELD of srcref
-  | GC_POINTER of srcref
-  | GC_TYPE of srcref
-  | SVC of srcref
-  | DEREF of srcref
-  | AND of srcref
-  | AS of srcref
-  | CALLBACK of srcref
-  | CODE of srcref
-  | FALSE of srcref
-  | IF of srcref
-  | ISIN of srcref
-  | MATCH of srcref
-  | NOEXPAND of srcref
-  | OF of srcref
-  | OR of srcref
-  | THE of srcref
-  | TRUE of srcref
-  | TYPEMATCH of srcref
-  | TYPECASE of srcref
-  | WHENCE of srcref
-  | UNLESS of srcref
   | UNDERSCORE of srcref
+
 and prio_t = [`Default | `Priority of string]
 
 and rule_t = string * prio_t * token list * string * anote_t * Flx_ast.range_srcref

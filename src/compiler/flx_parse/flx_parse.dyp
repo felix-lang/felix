@@ -51,6 +51,10 @@ let lexeme x = Lexing.lexeme (Dyp.std_lexbuf x)
 
 let dummysr = "Dummy",0,0,0,0
 
+let getsrr dyp =
+  let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
+  s.pos_fname, s.pos_lnum, s.pos_cnum - s.pos_bol + 1, e.pos_lnum, e.pos_cnum - e.pos_bol
+
 let getsr lexbuf = 
   let lexbuf = Dyp.std_lexbuf lexbuf in
   let file = lexbuf.lex_start_p.pos_fname in
@@ -194,26 +198,7 @@ print_endline ("define_scheme " ^ name);
   let pr_age = !(dyp.global_data.pcounter) in
   incr (dyp.global_data.pcounter);
   let name = mapnt name in
-  (* this routine converts SCHEME "(scm prog)" into a single compiled token *)
-  let rec fudge_rhs inls outls = match inls with
-  | [] -> List.rev outls
-  | SCHEME _ :: STRING (sr,scm) :: t ->
-    (*
-    print_endline ("Compiling Scheme checker " ^ scm);
-    *)
-    let cde =
-      try
-        let l = scheme_lex (slift sr) scm in
-        let c = scheme_compile dyp.global_data.env l in
-        c
-      with
-      | Ocs_error.Error err | Ocs_error.ErrorL (_,err) -> failwith ("Error " ^ err ^ " compiling " ^ scm)
-    in
-    fudge_rhs t (SCHEME_CODE (sr,scm,cde) :: outls)
 
-  | h :: t -> fudge_rhs t (h::outls)
-  in
-  let rhs = fudge_rhs rhs [] in
   let rec f o =
     match o with
       | STRING (sr,s) ->
@@ -222,9 +207,6 @@ print_endline ("define_scheme " ^ name);
 
       | USER_KEYWORD (sr,s) ->
          Dyp.Ter "NAME"
-
-      | SCHEME_CODE _ ->
-          Dyp.Ter "NAME"
 
       | NONTERMINAL (sr,s,p) ->
           let nt = mapnt s in
@@ -288,42 +270,29 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
     (* let env = Ocs_env.env_copy dyp.local_data.env in *)
     (* let env = dyp.local_data.env in *)
     let env = dyp.global_data.env in
-    let srs = ref [] in
     let rec aux objs syms n = match objs, syms with
       | [],[] -> ()
       | [],_ | _,[] -> assert false
       | h1::t1,h2::t2 ->
-        let sr,s =
+        let s =
           match h1,h2 with
           | _,`Obj_sexpr (seq,sr,s) ->
             (* age := max !age seq; *)
-            sr,s
+            s
 
-          | k,`Obj_keyword sr -> slift sr, Sstring (Flx_prelex.string_of_token k)
+          | k,`Obj_keyword sr -> Sstring (Flx_prelex.string_of_token k)
 
           | (STRING (_,s1) | USER_KEYWORD (_,s1)),
             (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2))
             ->
             if s1 <> s2 then raise Giveup;
-            slift sr,Sstring s1
+            Sstring s1
 
-          | SCHEME_CODE (_,scm,f),
-            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2))
-            ->
-            (* set _arg to the symbol *)
-            let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_arg") in
-            Ocs_env.set_glob env v1 (Sstring s2);
-            let result = scheme_eval f in
-            begin match result with
-            | Snull -> raise Giveup
-            | v -> slift sr,v
-            end
-
-          | STRING _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) dummysr, Sstring s
+          | STRING _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring s
 
           | k , _ ->
           print_endline ("Woops, unhandled token=" ^ Flx_prelex.string_of_token k);
-          dummysr, Sstring (Flx_prelex.string_of_token k)
+          Sstring (Flx_prelex.string_of_token k)
         in
         if !(dyp.global_data.pdebug) then begin
           Buffer.add_string b ("Arg " ^ string_of_int n ^ " = ");
@@ -331,20 +300,12 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
         end;
         let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
         Ocs_env.set_glob env v1 s;
-        if (match sr with _,l,_,_,_ -> l) <> 0 then srs := sr :: !srs;
         aux t1 t2 (n+1)
     in
     aux rhs avl 1;
     if !(dyp.global_data.pdebug) then
     Buffer.add_string b "End of arguments\n";
-    let sr = match !srs with
-      | [] -> "dummy:"^name,0,0,0,0
-      | sr::_ -> rsrange (List.hd (List.rev !srs)) sr
-    in
-    let sr =  
-       let s = dyp2.symbol_start_pos() and e = dyp2.symbol_end_pos() in
-       s.pos_fname, s.pos_lnum, s.pos_cnum - s.pos_bol + 1, e.pos_lnum, e.pos_cnum - e.pos_bol
-    in
+    let sr = getsrr dyp2 in 
 (*
 print_endline ("sr of reduction is " ^ short_string_of_src sr);
 *)
@@ -722,9 +683,6 @@ let dyp_merge_Obj_statement_star ol =
 /* whitespace and comments */
 %token NEWLINE
 %token SLOSH
-%token <(string)> COMMENT
-%token <(string)> COMMENT_NEWLINE
-%token <(int)> WHITE
 
 /* literals */
 %token <(Flx_ast.srcref * string)> NAME
@@ -739,20 +697,13 @@ let dyp_merge_Obj_statement_star ol =
 %token <(Flx_ast.srcref * string)> USTRING
 %token <(Flx_ast.srcref * string)> USER_KEYWORD
 %token <(string list)> HASH_INCLUDE_FILES
-%token <(token list)> TOKEN_LIST
 %token DUMMY
 
 %token <local_data_t> LOAD_SYNTAX
 %token <string> SAVE_SYNTAX
 
-%token <(Flx_ast.srcref * string * Ocs_types.code)> SCHEME_CODE
-
-%token <(Flx_ast.srcref)> DOLLAR
-%constructor Obj_keyword %for DOLLAR
 %token <(Flx_ast.srcref)> QUEST
 %constructor Obj_keyword %for QUEST
-%token <(Flx_ast.srcref)> EXCLAMATION
-%constructor Obj_keyword %for EXCLAMATION
 %token <(Flx_ast.srcref)> LPAR
 %constructor Obj_keyword %for LPAR
 %token <(Flx_ast.srcref)> RPAR
@@ -765,48 +716,24 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_keyword %for LBRACE
 %token <(Flx_ast.srcref)> RBRACE
 %constructor Obj_keyword %for RBRACE
-%token <(Flx_ast.srcref)> COLON
-%constructor Obj_keyword %for COLON
 %token <(Flx_ast.srcref)> COMMA
 %constructor Obj_keyword %for COMMA
-%token <(Flx_ast.srcref)> SEMI
-%constructor Obj_keyword %for SEMI
 %token <(Flx_ast.srcref)> PLUS
 %constructor Obj_keyword %for PLUS
 %token <(Flx_ast.srcref)> MINUS
 %constructor Obj_keyword %for MINUS
 %token <(Flx_ast.srcref)> STAR
 %constructor Obj_keyword %for STAR
-%token <(Flx_ast.srcref)> SLASH
-%constructor Obj_keyword %for SLASH
 %token <(Flx_ast.srcref)> VBAR
 %constructor Obj_keyword %for VBAR
-%token <(Flx_ast.srcref)> AMPER
-%constructor Obj_keyword %for AMPER
 %token <(Flx_ast.srcref)> LESS
 %constructor Obj_keyword %for LESS
 %token <(Flx_ast.srcref)> GREATER
 %constructor Obj_keyword %for GREATER
 %token <(Flx_ast.srcref)> EQUAL
 %constructor Obj_keyword %for EQUAL
-%token <(Flx_ast.srcref)> DOT
-%constructor Obj_keyword %for DOT
-%token <(Flx_ast.srcref)> PERCENT
-%constructor Obj_keyword %for PERCENT
-%token <(Flx_ast.srcref)> BACKQUOTE
-%constructor Obj_keyword %for BACKQUOTE
-%token <(Flx_ast.srcref)> TILDE
-%constructor Obj_keyword %for TILDE
-%token <(Flx_ast.srcref)> CIRCUMFLEX
-%constructor Obj_keyword %for CIRCUMFLEX
 %token <(Flx_ast.srcref)> HASH
 %constructor Obj_keyword %for HASH
-%token <(Flx_ast.srcref)> DOLLARDOLLAR
-%constructor Obj_keyword %for DOLLARDOLLAR
-%token <(Flx_ast.srcref)> ANDLESS
-%constructor Obj_keyword %for ANDLESS
-%token <(Flx_ast.srcref)> ANDGREATER
-%constructor Obj_keyword %for ANDGREATER
 %token <(Flx_ast.srcref)> EQEQUAL
 %constructor Obj_keyword %for EQEQUAL
 %token <(Flx_ast.srcref)> NOTEQUAL
@@ -815,97 +742,15 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_keyword %for LESSEQUAL
 %token <(Flx_ast.srcref)> GREATEREQUAL
 %constructor Obj_keyword %for GREATEREQUAL
-%token <(Flx_ast.srcref)> LEFTSHIFT
-%constructor Obj_keyword %for LEFTSHIFT
-%token <(Flx_ast.srcref)> RIGHTSHIFT
-%constructor Obj_keyword %for RIGHTSHIFT
-%token <(Flx_ast.srcref)> STARSTAR
-%constructor Obj_keyword %for STARSTAR
-%token <(Flx_ast.srcref)> LESSCOLON
-%constructor Obj_keyword %for LESSCOLON
-%token <(Flx_ast.srcref)> COLONGREATER
-%constructor Obj_keyword %for COLONGREATER
-%token <(Flx_ast.srcref)> DOTDOT
-%constructor Obj_keyword %for DOTDOT
-%token <(Flx_ast.srcref)> COLONCOLON
-%constructor Obj_keyword %for COLONCOLON
-%token <(Flx_ast.srcref)> PLUSPLUS
-%constructor Obj_keyword %for PLUSPLUS
-%token <(Flx_ast.srcref)> MINUSMINUS
-%constructor Obj_keyword %for MINUSMINUS
-%token <(Flx_ast.srcref)> PLUSEQUAL
-%constructor Obj_keyword %for PLUSEQUAL
-%token <(Flx_ast.srcref)> MINUSEQUAL
-%constructor Obj_keyword %for MINUSEQUAL
-%token <(Flx_ast.srcref)> STAREQUAL
-%constructor Obj_keyword %for STAREQUAL
-%token <(Flx_ast.srcref)> SLASHEQUAL
-%constructor Obj_keyword %for SLASHEQUAL
-%token <(Flx_ast.srcref)> PERCENTEQUAL
-%constructor Obj_keyword %for PERCENTEQUAL
-%token <(Flx_ast.srcref)> CARETEQUAL
-%constructor Obj_keyword %for CARETEQUAL
-%token <(Flx_ast.srcref)> VBAREQUAL
-%constructor Obj_keyword %for VBAREQUAL
-%token <(Flx_ast.srcref)> AMPEREQUAL
-%constructor Obj_keyword %for AMPEREQUAL
-%token <(Flx_ast.srcref)> TILDEEQUAL
-%constructor Obj_keyword %for TILDEEQUAL
-%token <(Flx_ast.srcref)> COLONEQUAL
-%constructor Obj_keyword %for COLONEQUAL
-%token <(Flx_ast.srcref)> RIGHTARROW
-%constructor Obj_keyword %for RIGHTARROW
-%token <(Flx_ast.srcref)> EQRIGHTARROW
-%constructor Obj_keyword %for EQRIGHTARROW
-%token <(Flx_ast.srcref)> LEFTARROW
-%constructor Obj_keyword %for LEFTARROW
 %token <(Flx_ast.srcref)> LSQBAR
 %constructor Obj_keyword %for LSQBAR
 %token <(Flx_ast.srcref)> RSQBAR
 %constructor Obj_keyword %for RSQBAR
-%token <(Flx_ast.srcref)> AMPERAMPER
-%constructor Obj_keyword %for AMPERAMPER
-%token <(Flx_ast.srcref)> VBARVBAR
-%constructor Obj_keyword %for VBARVBAR
-%token <(Flx_ast.srcref)> SLOSHAMPER
-%constructor Obj_keyword %for SLOSHAMPER
-%token <(Flx_ast.srcref)> SLOSHVBAR
-%constructor Obj_keyword %for SLOSHVBAR
-%token <(Flx_ast.srcref)> SLOSHCIRCUMFLEX
-%constructor Obj_keyword %for SLOSHCIRCUMFLEX
 %token <(Flx_ast.srcref)> HASHBANG
 %constructor Obj_keyword %for HASHBANG
-%token <(Flx_ast.srcref)> LEFTSHIFTEQUAL
-%constructor Obj_keyword %for LEFTSHIFTEQUAL
-%token <(Flx_ast.srcref)> RIGHTSHIFTEQUAL
-%constructor Obj_keyword %for RIGHTSHIFTEQUAL
-%token <(Flx_ast.srcref)> LEFTRIGHTARROW
-%constructor Obj_keyword %for LEFTRIGHTARROW
-%token <(Flx_ast.srcref)> ANDEQEQUAL
-%constructor Obj_keyword %for ANDEQEQUAL
-%token <(Flx_ast.srcref)> ANDNOTEQUAL
-%constructor Obj_keyword %for ANDNOTEQUAL
-%token <(Flx_ast.srcref)> ANDLESSEQUAL
-%constructor Obj_keyword %for ANDLESSEQUAL
-%token <(Flx_ast.srcref)> ANDGREATEREQUAL
-%constructor Obj_keyword %for ANDGREATEREQUAL
-%token <(Flx_ast.srcref)> DOTDOTDOT
-%constructor Obj_keyword %for DOTDOTDOT
-%token <(Flx_ast.srcref)> LONGRIGHTARROW
-%constructor Obj_keyword %for LONGRIGHTARROW
-%token <(Flx_ast.srcref)> PARSE_ACTION
-%constructor Obj_keyword %for PARSE_ACTION
 %token <(Flx_ast.srcref)> HASHBANGSLASH
 %constructor Obj_keyword %for HASHBANGSLASH
 
-%token <(Flx_ast.srcref)> IDENT
-%constructor Obj_keyword %for IDENT
-%token <(Flx_ast.srcref)> NONTERM
-%constructor Obj_keyword %for NONTERM
-%token <(Flx_ast.srcref)> SCHEME
-%constructor Obj_keyword %for SCHEME
-%token <(Flx_ast.srcref)> SYNTAX
-%constructor Obj_keyword %for SYNTAX
 %token <(Flx_ast.srcref)> UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE
 /* top level entry */
@@ -1165,85 +1010,25 @@ and parse_line = parse
   }
 
 main lexer =
-  "ident" -> IDENT { getsr lexbuf }
-  "nonterm" -> NONTERM { getsr lexbuf }
-  "SCHEME" -> SCHEME { getsr lexbuf }
-  "syntax" -> SYNTAX { getsr lexbuf }
   "_" -> UNDERSCORE { getsr lexbuf }
-  "$" -> DOLLAR { getsr lexbuf }
   "?" -> QUEST { getsr lexbuf }
-  "!" -> EXCLAMATION { getsr lexbuf }
   "(" -> LPAR { getsr lexbuf }
   ")" -> RPAR { getsr lexbuf }
   "[" -> LSQB { getsr lexbuf }
   "]" -> RSQB { getsr lexbuf }
   "{" -> LBRACE { getsr lexbuf }
   "}" -> RBRACE { getsr lexbuf }
-  ":" -> COLON { getsr lexbuf }
   "," -> COMMA { getsr lexbuf }
-  ";" -> SEMI { getsr lexbuf }
   "+" -> PLUS { getsr lexbuf }
-  "-" -> MINUS { getsr lexbuf }
   "*" -> STAR { getsr lexbuf }
-  "/" -> SLASH { getsr lexbuf }
-  "|" -> VBAR { getsr lexbuf }
-  "&" -> AMPER { getsr lexbuf }
-  "<" -> LESS { getsr lexbuf }
-  ">" -> GREATER { getsr lexbuf }
   "=" -> EQUAL { getsr lexbuf }
-  "." -> DOT { getsr lexbuf }
-  "%" -> PERCENT { getsr lexbuf }
-  "`" -> BACKQUOTE { getsr lexbuf }
-  "~" -> TILDE { getsr lexbuf }
-  "^" -> CIRCUMFLEX { getsr lexbuf }
-  "#" -> HASH { getsr lexbuf }
-  "$$" -> DOLLARDOLLAR { getsr lexbuf }
-  "&<" -> ANDLESS { getsr lexbuf }
-  "&>" -> ANDGREATER { getsr lexbuf }
   "==" -> EQEQUAL { getsr lexbuf }
   "!=" -> NOTEQUAL { getsr lexbuf }
+  "|" -> VBAR { getsr lexbuf }
+  "<" -> LESS { getsr lexbuf }
+  ">" -> GREATER { getsr lexbuf }
   "<=" -> LESSEQUAL { getsr lexbuf }
   ">=" -> GREATEREQUAL { getsr lexbuf }
-  "<<" -> LEFTSHIFT { getsr lexbuf }
-  ">>" -> RIGHTSHIFT { getsr lexbuf }
-  "**" -> STARSTAR { getsr lexbuf }
-  "<:" -> LESSCOLON { getsr lexbuf }
-  ":>" -> COLONGREATER { getsr lexbuf }
-  ".." -> DOTDOT { getsr lexbuf }
-  "::" -> COLONCOLON { getsr lexbuf }
-  "++" -> PLUSPLUS { getsr lexbuf }
-  "--" -> MINUSMINUS { getsr lexbuf }
-  "+=" -> PLUSEQUAL { getsr lexbuf }
-  "-=" -> MINUSEQUAL { getsr lexbuf }
-  "*=" -> STAREQUAL { getsr lexbuf }
-  "/=" -> SLASHEQUAL { getsr lexbuf }
-  "%=" -> PERCENTEQUAL { getsr lexbuf }
-  "^=" -> CARETEQUAL { getsr lexbuf }
-  "|=" -> VBAREQUAL { getsr lexbuf }
-  "&=" -> AMPEREQUAL { getsr lexbuf }
-  "~=" -> TILDEEQUAL { getsr lexbuf }
-  ":=" -> COLONEQUAL { getsr lexbuf }
-  "->" -> RIGHTARROW { getsr lexbuf }
-  "=>" -> EQRIGHTARROW { getsr lexbuf }
-  "<-" -> LEFTARROW { getsr lexbuf }
-  "[|" -> LSQBAR { getsr lexbuf }
-  "|]" -> RSQBAR { getsr lexbuf }
-  "&&" -> AMPERAMPER { getsr lexbuf }
-  "||" -> VBARVBAR { getsr lexbuf }
-  "\\&" -> SLOSHAMPER { getsr lexbuf }
-  "\\|" -> SLOSHVBAR { getsr lexbuf }
-  "\\^" -> SLOSHCIRCUMFLEX { getsr lexbuf }
-  "#!" -> HASHBANG { getsr lexbuf }
-  "<<=" -> LEFTSHIFTEQUAL { getsr lexbuf }
-  ">>=" -> RIGHTSHIFTEQUAL { getsr lexbuf }
-  "<->" -> LEFTRIGHTARROW { getsr lexbuf }
-  "&==" -> ANDEQEQUAL { getsr lexbuf }
-  "&!=" -> ANDNOTEQUAL { getsr lexbuf }
-  "&<=" -> ANDLESSEQUAL { getsr lexbuf }
-  "&>=" -> ANDGREATEREQUAL { getsr lexbuf }
-  "..." -> DOTDOTDOT { getsr lexbuf }
-  "-->" -> LONGRIGHTARROW { getsr lexbuf }
-  "=>#" -> PARSE_ACTION { getsr lexbuf }
   "#!/" -> HASHBANGSLASH { getsr lexbuf }
 
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
@@ -1550,7 +1335,7 @@ prilist:
   | pri { [$1] }
 
 dyprod:
-   | opt_private NAME opt_prio COLONEQUAL dyalts SEMI
+   | opt_private NAME opt_prio ":=" dyalts ";" 
      {
        (*
        print_endline ("RULE " ^ snd $2);
@@ -1558,7 +1343,7 @@ dyprod:
        `Scheme_rule ($1, snd $2, $3,`Sval,$5)
      }
 
-   | opt_private NAME opt_prio COLON NAME EQUAL dyalts SEMI
+   | opt_private NAME opt_prio ":" NAME EQUAL dyalts ";" 
      {
        if snd $5 <> "string" then raise Giveup;
        print_endline ("STRING RULE " ^ snd $2);
@@ -1566,25 +1351,25 @@ dyprod:
      }
 
 
-   | "requires" basic_name_comma_list SEMI
+   | "requires" basic_name_comma_list ";" 
      {
         let dssls = List.map snd $2 in
        `Requires dssls
      }
 
-   | NAME NAME STRING SEMI
+   | NAME NAME STRING ";" 
      {
        if snd $1 <> "explain" then raise Giveup;
        `Document ((snd $2),(snd $3))
      }
 
-   | NAME NAME EQUAL subpage_entries SEMI
+   | NAME NAME EQUAL subpage_entries ";" 
      {
        if snd $1 <> "page" then raise Giveup;
        `Page ((snd $2),$4)
      }
 
-   | NAME prilist SEMI
+   | NAME prilist ";" 
      {
        if snd $1 <> "priority" then raise Giveup;
        `Priorities $2
@@ -1611,7 +1396,7 @@ note:
    | { "" }
 
 dyalt:
-   | rhs PARSE_ACTION action note
+   | rhs "=>#" action note
      {
        let anote = $4 in
        let prod = $1 in
@@ -1623,9 +1408,9 @@ dyalt:
          | `Expr (_,_,e) ->
            `Scheme (user_expr prod e)
        in
-       prod,slift $2,action,anote
+       prod,getsrr dyp,action,anote
      }
-   | rhs { $1,dummysr,`None,"" }
+   | rhs { $1,getsrr dyp,`None,"" }
 
 dyaltlist:
    | { [] }
@@ -1646,86 +1431,34 @@ rhs_term :
 rhs_atom:
   | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
   | STRING { let sr,s = $1 in STRING (sr,s) } /* the string as an identifier */
-  | IDENT { NAME ($1,"identifier") }
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
-  | NONTERM { NONTERM $1 }
-  | SCHEME { SCHEME $1 }
-  | SYNTAX { SYNTAX $1 }
   | UNDERSCORE { UNDERSCORE $1 }
-  | DOLLAR { DOLLAR $1 }
+
   | QUEST { QUEST $1 }
-  | EXCLAMATION { EXCLAMATION $1 }
+  | PLUS { PLUS $1 }
+  | STAR { STAR $1 }
+
+  | LPAR { LPAR $1 }
+  | RPAR { RPAR $1 }
   | LSQB { LSQB $1 }
   | RSQB { RSQB $1 }
   | LBRACE { LBRACE $1 }
   | RBRACE { RBRACE $1 }
-  | COLON { COLON $1 }
+
   | COMMA { COMMA $1 }
-  | PLUS { PLUS $1 }
-  | MINUS { MINUS $1 }
-  | STAR { STAR $1 }
-  | SLASH { SLASH $1 }
-  | AMPER { AMPER $1 }
+
   | LESS { LESS $1 }
   | GREATER { GREATER $1 }
   | EQUAL { EQUAL $1 }
-  | DOT { DOT $1 }
-  | PERCENT { PERCENT $1 }
-  | BACKQUOTE { BACKQUOTE $1 }
-  | TILDE { TILDE $1 }
-  | CIRCUMFLEX { CIRCUMFLEX $1 }
-  | HASH { HASH $1 }
-  | DOLLARDOLLAR { DOLLARDOLLAR $1 }
-  | ANDLESS { ANDLESS $1 }
-  | ANDGREATER { ANDGREATER $1 }
   | EQEQUAL { EQEQUAL $1 }
   | NOTEQUAL { NOTEQUAL $1 }
   | LESSEQUAL { LESSEQUAL $1 }
   | GREATEREQUAL { GREATEREQUAL $1 }
-  | LEFTSHIFT { LEFTSHIFT $1 }
-  | RIGHTSHIFT { RIGHTSHIFT $1 }
-  | STARSTAR { STARSTAR $1 }
-  | LESSCOLON { LESSCOLON $1 }
-  | COLONGREATER { COLONGREATER $1 }
-  | DOTDOT { DOTDOT $1 }
-  | COLONCOLON { COLONCOLON $1 }
-  | PLUSPLUS { PLUSPLUS $1 }
-  | MINUSMINUS { MINUSMINUS $1 }
-  | PLUSEQUAL { PLUSEQUAL $1 }
-  | MINUSEQUAL { MINUSEQUAL $1 }
-  | STAREQUAL { STAREQUAL $1 }
-  | SLASHEQUAL { SLASHEQUAL $1 }
-  | PERCENTEQUAL { PERCENTEQUAL $1 }
-  | CARETEQUAL { CARETEQUAL $1 }
-  | VBAREQUAL { VBAREQUAL $1 }
-  | AMPEREQUAL { AMPEREQUAL $1 }
-  | TILDEEQUAL { TILDEEQUAL $1 }
-  | COLONEQUAL { COLONEQUAL $1 }
-  | RIGHTARROW { RIGHTARROW $1 }
-  | EQRIGHTARROW { EQRIGHTARROW $1 }
-  | LEFTARROW { LEFTARROW $1 }
-  | LSQBAR { LSQBAR $1 }
-  | RSQBAR { RSQBAR $1 }
-  | AMPERAMPER { AMPERAMPER $1 }
-  | VBARVBAR { VBARVBAR $1 }
-  | SLOSHAMPER { SLOSHAMPER $1 }
-  | SLOSHVBAR { SLOSHVBAR $1 }
-  | SLOSHCIRCUMFLEX { SLOSHCIRCUMFLEX $1 }
-  | HASHBANG { HASHBANG $1 }
-  | LEFTSHIFTEQUAL { LEFTSHIFTEQUAL $1 }
-  | RIGHTSHIFTEQUAL { RIGHTSHIFTEQUAL $1 }
-  | LEFTRIGHTARROW { LEFTRIGHTARROW $1 }
-  | ANDEQEQUAL { ANDEQEQUAL $1 }
-  | ANDNOTEQUAL { ANDNOTEQUAL $1 }
-  | ANDLESSEQUAL { ANDLESSEQUAL $1 }
-  | ANDGREATEREQUAL { ANDGREATEREQUAL $1 }
-  | DOTDOTDOT { DOTDOTDOT $1 }
-  | LONGRIGHTARROW { LONGRIGHTARROW $1 }
-  | HASHBANGSLASH { HASHBANGSLASH $1 }
+
 statement:
-  | SCHEME STRING SEMI
+  | "SCHEME" STRING ";" 
     @{
-      let sr = rstoken $1 $3 in
+      let sr = getsrr dyp in
       let s = snd $2 in
       let failwith x = print_endline ("Evaluating " ^ s); failwith x in
       (*
@@ -1742,18 +1475,12 @@ statement:
       (0,sr,Snull),[Local_data local_data]
     }
 
-  | "open" SYNTAX basic_name_comma_list SEMI
+  | "open" "syntax" basic_name_comma_list ";" 
     @{
       (*
       print_endline "Opening syntax extensions";
       *)
-      let sr =  
-         let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
-         s.pos_fname, s.pos_lnum, s.pos_cnum - s.pos_bol + 1, e.pos_lnum, e.pos_cnum - e.pos_bol
-      in
-(*
-      let sr = rstoken $2 $4 in
-*)
+      let sr = getsrr dyp in
       let dssls = List.map snd $3 in
 (*
       print_endline ("Parsed open of syntax extensions " ^ String.concat "," dssls);
@@ -1812,20 +1539,14 @@ statement:
       (0,sr,Snull),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
 
-  | SYNTAX NAME LBRACE dyprods RBRACE
+  | "syntax" NAME LBRACE dyprods RBRACE
     @{
       (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
       (*
       print_endline ("Parsed syntax extensions " ^ (snd $2));
       print_endline ("Defining syntax extensions " ^ (snd $2));
       *)
-(*
-      let sr = rstoken $1 $5 in
-*)
-      let sr =  
-         let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
-         s.pos_fname, s.pos_lnum, s.pos_cnum - s.pos_bol + 1, e.pos_lnum, e.pos_cnum - e.pos_bol
-      in
+      let sr =   getsrr dyp in
       let dssl = snd $2 in
       let m = dyp.local_data in
       let m =
@@ -1891,7 +1612,6 @@ list, non-empty list, and optional respectively
 star: STAR { 0,slift $1,Snull }
 plus: PLUS { 0,slift $1,Snull }
 quest: QUEST { 0,slift $1,Snull }
-sident: IDENT { 0,slift $1,Snull }
 
 lbrace: LBRACE { 0,slift $1,Snull }
 rbrace: RBRACE { 0,slift $1,Snull }
@@ -1900,9 +1620,7 @@ rpar: RPAR { 0,slift $1,Snull }
 lsqb: LSQB { 0,slift $1,Snull }
 rsqb: RSQB { 0,slift $1,Snull }
 
-ssemi: SEMI { 0,slift $1,Snull }
 comma: COMMA { 0,slift $1,Snull }
-colon: COLON { 0,slift $1,Snull }
 vbar: VBAR { 0,slift $1,Snull }
 
 /*
@@ -1953,7 +1671,7 @@ sintegral:
       let x = Ocs_misc.make_slist Snull (List.rev i) in
       0,slift sr,x
     }
-  | MINUS INTEGER
+  | "-" INTEGER
     {
       let sr,t,v = $2 in
       let v = Big_int.minus_big_int v in
