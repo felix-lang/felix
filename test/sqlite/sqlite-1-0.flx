@@ -26,8 +26,8 @@ void run(struct sqlite3_db_t db) {
     "select all name,address from fred;",
     ""
   ;
-  char *usr = c"user pointer";
-  char *errm = c"";
+  var usr: &char = c"user pointer";
+  var errm: &char = c"";
 
   var i = 0;
   var p = sql.[i];

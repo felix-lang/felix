@@ -519,7 +519,7 @@ proc pr (z:dcomplex) { println (fmt[dcomplex,double](z,fixed(0,3))); }
   val x2 : dcomplex = dcomplex 2.2;
   val x3 : lcomplex = lcomplex (2.2l, 21.0l);
   println (abs x2);
-  var z = 0.5 + 0.2 i;
+  var z = dcomplex(0.5,0.2);
   println z;
   pr$ sin z;
   pr$ cos z;
@@ -930,14 +930,10 @@ except that a trailing ; is strangely required,
 and the condition is given in curly brackets.
 We'll find out exactly why later, but here is a hint:
 there is no while statement in Felix!
-@p()
-Finally, because C and C++ programmers (including
-the author) often revert to their familiar syntax,
-Felix allows C style variable declarations too:
 
 @select(env.test('.flx'))
-int i = 1;
-int j = 0;
+var i:int = 1;
+var j:int = 0;
 
 while (i < 10)
 {

@@ -572,7 +572,6 @@ open module Fcomplex
     fun zero(): fcomplex => fcomplex 0.0;
     fun one(): fcomplex => fcomplex 1.0;
   }
-  fun apply(a:float, b:sqrt_minus_one)=>fcomplex(0.0f,a);
 }
 
 open module Dcomplex
@@ -604,7 +603,6 @@ open module Dcomplex
     fun zero(): dcomplex => dcomplex 0.0;
     fun one(): dcomplex => dcomplex 1.0;
   }
-  fun apply(a:double, b:sqrt_minus_one)=>dcomplex(0.0,a);
 }
 
 open module Lcomplex
@@ -636,7 +634,6 @@ open module Lcomplex
     fun zero(): lcomplex => lcomplex 0.0;
     fun one(): lcomplex => lcomplex 1.0;
   }
-  fun apply(a:ldouble, b:sqrt_minus_one)=>lcomplex(0.0l,a);
 }
 
 @#------------- CHARACTER MODULES -------------------

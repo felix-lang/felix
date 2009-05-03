@@ -1824,7 +1824,9 @@ let dyphack (ls : ( 'a * string) list) : 'a =
   | _ -> failwith "Dypgen parser failed"
 
 let parse1 local_data filename : compilation_unit_t * local_data_t = 
+(*
   print_endline ("PARSING " ^ filename);
+*)
   let ic = open_in filename in 
   let pilot = pp () in 
   let lexbuf = Dyp.from_channel pilot ic in

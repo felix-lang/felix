@@ -233,12 +233,6 @@ typeclass Real[t] {
   virtual fun trunc: t -> t;
 }
 
-open module Imagination
-{
-  type sqrt_minus_one = "__ERROR__";
-  const i : sqrt_minus_one = "__ERROR__";
-}
-
 typeclass Complex[t,r] {
   inherit Eq[t];
   inherit FloatRing[t];
