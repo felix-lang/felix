@@ -4461,7 +4461,11 @@ proc show(r:Maybe double) {
 }
 
 // we have to put this here so it overrides left shift assignment operator
-#infix 10 ">>=" bind
+
+syntax monad {
+  x[ssetunion_pri] := x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># "`(ast_apply ,_sr (bind (,_1 ,_3)))";
+}
+open syntax monad;
 
 var x1 = 2.7; var y1 = 1.2; var z = 0.0;
 {
