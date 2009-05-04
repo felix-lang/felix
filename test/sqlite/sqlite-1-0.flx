@@ -3,7 +3,7 @@ open Sqlite3;
 
 fun subscript: & &char * int -> &char = "$1[$2]";
 
-cfun eh(void *data, ncols:int, values: & &char, names: & &char):int =
+cfun eh(data:address, ncols:int, values: & &char, names: & &char):int =
 {
   var ii:int = 0;
   whilst ii<ncols do
@@ -15,7 +15,7 @@ cfun eh(void *data, ncols:int, values: & &char, names: & &char):int =
   return 0;
 }
 
-void run(struct sqlite3_db_t db) {
+proc run(db:sqlite3_db_t) {
   sql :=
     "drop table if exists fred;",
     "create table fred (name, address);",
