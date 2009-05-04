@@ -204,6 +204,14 @@ SCHEME """
   )
 """;
 
+SCHEME """
+  (define (infix op) `(ast_apply ,_sr (,op (,_1 ,_3))))
+""";
+SCHEME """
+  (define (prefix op) `(ast_apply ,_sr (,op ,_2)))
+""";
+
+
 //------------------------------------------
 syntax expressions {
   /* Experimentally, start coding up for priority management */
@@ -251,15 +259,14 @@ syntax expressions {
   x[stuple_pri] := x[>stuple_pri] ( , x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
   x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
   x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
-  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_apply ,_sr (lnot ,_2))" note "lnot";
+  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "(prefix 'lnot)";
 
-  // NOTE: this version doesn't support chains like a < b < c.. too bad
-  x[scomparison_pri]:= x[>scomparison_pri] < x[>scomparison_pri] =># "`(ast_apply ,_sr (lt (,_1 ,_3)))" note "lt";
-  x[scomparison_pri]:= x[>scomparison_pri] <= x[>scomparison_pri] =># "`(ast_apply ,_sr (le (,_1 ,_3)))" note "le";
-  x[scomparison_pri]:= x[>scomparison_pri] == x[>scomparison_pri] =># "`(ast_apply ,_sr (eq (,_1 ,_3)))" note "eq";
-  x[scomparison_pri]:= x[>scomparison_pri] != x[>scomparison_pri] =># "`(ast_apply ,_sr (ne (,_1 ,_3)))" note "ne";
-  x[scomparison_pri]:= x[>scomparison_pri] >= x[>scomparison_pri] =># "`(ast_apply ,_sr (ge (,_1 ,_3)))" note "ge";
-  x[scomparison_pri]:= x[>scomparison_pri] > x[>scomparison_pri] =># "`(ast_apply ,_sr (gt (,_1 ,_3)))" note "gt";
+  x[scomparison_pri]:= x[>scomparison_pri] < x[>scomparison_pri] =># "(infix 'lt)";
+  x[scomparison_pri]:= x[>scomparison_pri] <= x[>scomparison_pri] =># "(infix 'le)";
+  x[scomparison_pri]:= x[>scomparison_pri] == x[>scomparison_pri] =># "(infix 'eq)";
+  x[scomparison_pri]:= x[>scomparison_pri] != x[>scomparison_pri] =># "(infix 'ne)";
+  x[scomparison_pri]:= x[>scomparison_pri] >= x[>scomparison_pri] =># "(infix 'ge)";
+  x[scomparison_pri]:= x[>scomparison_pri] > x[>scomparison_pri] =># "(infix 'gt)";
 
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as (,_1 ,_3))";
 
@@ -271,30 +278,30 @@ syntax expressions {
   x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
   x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
-  x[sbor_pri] := x[sbor_pri] "\\|" x[>sbor_pri] =># "`(ast_apply ,_sr (bor (,_1 ,_3)))" note "bxor";
-  x[sbxor_pri] := x[sbxor_pri] "\\^" x[>sbxor_pri] =># "`(ast_apply ,_sr (bxor (,_1 ,_3)))" note "bor";
-  x[sband_pri] := x[sband_pri] "\\&" x[>sband_pri] =># "`(ast_apply ,_sr (band (,_1 ,_3)))" note "band";
-  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "`(ast_apply ,_sr (shl (,_1 ,_3)))" note "shl";
-  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "`(ast_apply ,_sr (shr (,_1 ,_3)))" note "shr";
+  x[sbor_pri] := x[sbor_pri] "\\|" x[>sbor_pri] =># "(infix 'bor)";
+  x[sbxor_pri] := x[sbxor_pri] "\\^" x[>sbxor_pri] =># "(infix 'bxor)";
+  x[sband_pri] := x[sband_pri] "\\&" x[>sband_pri] =># "(infix 'band)";
+  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(infix 'shl)";
+  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(infix 'shr)";
 
   x[ssum_pri] := x[>ssum_pri] (plus x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
-  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "`(ast_apply ,_sr (sub (,_1 ,_3)))" note "sub";
+  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(infix 'sub)";
 
   x[sproduct_pri] := x[>sproduct_pri] (star x[>sproduct_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
 
-  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "`(ast_apply ,_sr (div (,_1 ,_3)))" note "div";
-  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "`(ast_apply ,_sr (mod (,_1 ,_3)))" note "mod";
+  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(infix 'div)";
+  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(infix 'mod)";
 
-  x[sprefixed_pri] := "!" x[spower_pri] =># "`(ast_apply ,_sr (excl ,_2))" note "excl";
-  x[sprefixed_pri] := plus x[spower_pri] =># "`(ast_apply ,_sr (pos ,_2))" note "pos";
-  x[sprefixed_pri] := "-" x[spower_pri] =># "`(ast_apply ,_sr (neg ,_2))" note "neg";
-  x[sprefixed_pri] := "~" x[spower_pri] =># "`(ast_apply ,_sr (bnot ,_2))" note "bnot";
+  x[sprefixed_pri] := "!" x[spower_pri] =># "(prefix 'excl)";
+  x[sprefixed_pri] := plus x[spower_pri] =># "(prefix 'pos)";
+  x[sprefixed_pri] := "-" x[spower_pri] =># "(prefix 'neg)";
+  x[sprefixed_pri] := "~" x[spower_pri] =># "(prefix 'bnot)";
 
-  x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "`(ast_apply ,_sr (pow (,_1 ,_3)))" note "pow";
+  x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
   x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
   x[srefr_pri] := "&" x[srefr_pri] =># "`(ast_ref ,_2)";
-  x[srefr_pri] := star x[srefr_pri] =># "`(ast_apply ,_sr (deref ,_2))" note "deref";
+  x[srefr_pri] := star x[srefr_pri] =># "(prefix 'deref)";
   x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_2)";
   x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_2)";
   x[srefr_pri] := anon_value =># "_1";
