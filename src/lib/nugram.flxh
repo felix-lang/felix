@@ -11,7 +11,7 @@ SCHEME """
 SCHEME """
 (define fold_left
   (lambda (f acc lst)
-    (if (null? lst) acc (fold_left f (f acc (first lst)) (cdr lst)))))
+    (if (null? lst) acc (fold_left f (f acc (first lst)) (tail lst)))))
 """;
 
 SCHEME """
@@ -486,11 +486,11 @@ syntax functions {
     `(ast_lambda (,_3 ((() none)) ast_void ,_4))
     """;
 
-    sadjective := "inline" =># "'InlineFunction";
-    sadjective := "noinline" =># "'NoInlineFunction";
-    sadjective := "static" =># "'InlineFunction";
-    sadjective := "extern" =># "'NoInlineFunction";
-    sadjective := "virtual" =># "'Virtual";
+    sadjective := k"inline" =># "'InlineFunction";
+    sadjective := k"noinline" =># "'NoInlineFunction";
+    sadjective := k"static" =># "'InlineFunction";
+    sadjective := k"extern" =># "'NoInlineFunction";
+    sadjective := k"virtual" =># "'Virtual";
     sadjectives := sadjective* =># "_1";
 
     slambda_fun_arg := lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
@@ -914,13 +914,13 @@ syntax cbind {
   sbinding_definition :=  sconst_def =># "_1";
   sbinding_definition :=  sbinding_header =># "_1";
   sbinding_definition :=  sexport_statement =># "_1";
-   sexport_statement := "export" "fun" ssuffixed_name "as" sstring ";" =>#
+   sexport_statement := k"export" "fun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-   sexport_statement := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
+   sexport_statement := k"export" k"python" "fun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_python_fun ,_sr ,_4 ,_6)";
-  sexport_statement := "export" "proc" ssuffixed_name "as" sstring ";" =>#
+  sexport_statement := k"export" "proc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-  sexport_statement := "export" "type" lpar sexpr rpar "as" sstring ";" =>#
+  sexport_statement := k"export" "type" lpar sexpr rpar "as" sstring ";" =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
   sopt_prec := "is" sname =># "_2";
@@ -1156,21 +1156,15 @@ syntax executable {
   slexprs := stlelement , slexprs =># "(cons _1 _3)";
   slexprs := stlelement =># "`(,_1)";
 
-  slexpr := slexprs =>#
-    """
-    (if (null? (cdr _1)) (first _1) `((List ,_1) none))
-    """;
+  slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
 
   sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
 
-  sassignexpr := sexpr sswapop sexpr =>#
-    "`(ast_call ,_sr ,_2 (,_1 ,_3))";
+  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,_2 (,_1 ,_3))";
 
-  sassignexpr := sexpr sassignop sexpr =>#
-    "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+  sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
-  sassignexpr := sexpr srmwop sexpr =>#
-    "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+  sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
   sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 (ast_ref ,_1))";
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 (ast_ref ,_2))";
