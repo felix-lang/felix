@@ -125,12 +125,6 @@ header cstring = "#include <cstring>";
   else:
     tangle('pod type '+t+' = "'+tmap[t]+'";')
 
-@for t in all:
-  gen_type(t)
-
-_gc_pointer type gcaddress = "void*";
-_gc_pointer type gcptr[t]= "?1*";
-
 @fint2cint={
   'tiny':'signed char',
   'short':'short',
@@ -169,6 +163,13 @@ _gc_pointer type gcptr[t]= "?1*";
   if SIZEOF_LONG == size: return 'ulong'
   if SIZEOF_LONGLONG == size: return 'uvlong'
 
+@select(tangler("lib/plat/ctypedefs.flx",'data'))
+@for t in all:
+  gen_type(t)
+
+_gc_pointer type gcaddress = "void*";
+_gc_pointer type gcptr[t]= "?1*";
+
 @# mandatory in C
 @for t in ['ptrdiff','size','intmax','uintmax','intptr','uintptr']:
   equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
@@ -179,43 +180,6 @@ _gc_pointer type gcptr[t]= "?1*";
   equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
   tangle('typedef ' + t + ' = ' + equiv + ';')
   tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
-
-typedef addressing = typesetof (
-  byte,offset,
-  address,caddress,vaddress,cvaddress
-);
-
-typedef chars = typesetof (char, wchar, uchar);
-
-typedef fast_sints = typesetof (tiny, short, int, long, vlong);
-typedef exact_sints = typesetof(int8,int16,int32,int64);
-typedef fast_uints = typesetof (utiny, ushort, uint, ulong,uvlong);
-typedef exact_uints = typesetof (uint8,uint16,uint32,uint64);
-
-typedef sints = fast_sints || exact_sints;
-typedef uints = fast_uints || exact_uints;
-
-typedef fast_ints = fast_sints || fast_uints;
-typedef exact_ints = exact_sints || exact_uints;
-
-typedef ints = sints || uints;
-
-typedef floats = typesetof (float, double, ldouble);
-typedef reals = ints || floats;
-
-typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
-typedef complex[t in floats] = typematch t with
-  | float => fcomplex
-  | double => dcomplex
-  | ldouble => lcomplex
-  endmatch
-;
-// typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
-
-typedef numbers = reals || /* imaginaries || */ complexes;
-
-typedef basic_types = bool || numbers || chars || addressing;
-include "plat/arithmax";
 
 @select(tangler('lib/plat/arithmax.flx','data'))
 // arithmetic conversion rule
@@ -246,7 +210,6 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   endmatch
 ;
 
-include "plat/float";
 
 @select(tangler('lib/plat/float.flx','data'))
 @for t in floats:
@@ -261,6 +224,11 @@ include "plat/float";
 
 
 @select(ctypes)
+include "plat/ctypedefs";
+include "std/ctypesets";
+include "plat/arithmax";
+include "plat/float";
+
 
 fun _ctor_int: size -> int = "$1";
 fun _ctor_size: int -> size = "$1";
@@ -269,90 +237,16 @@ fun _ctor_size: int -> size = "$1";
 instance [t in basic_types] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
 }
-
-instance Tord[address] {
-  fun lt: address * address -> bool = "std::less<?1>($1,$2)";
-}
-
-
-instance[t in reals] Tord[t] {
-  fun lt: t * t -> bool = "$1<$2";
-}
-
-instance[t in numbers] FloatAddgrp[t] {
-  fun zero: unit -> t = "(?1)0" ;
-  fun add: t * t -> t = "$1+$2" ;
-  fun neg: t -> t = "-$1" ;
-  fun sub: t * t -> t = "$1-$2" ;
-  proc pluseq: lvalue[t] * t = "$1+=$2;";
-  proc minuseq: lvalue[t] * t = "$1-=$2;";
-}
-
-instance[t in numbers] FloatMultSemi1[t] {
-  fun one: unit -> t = "(?1)1";
-  fun mul: t * t -> t = "$1*$2";
-  proc muleq: lvalue[t] * t = "$1*=$2;";
-}
-
-instance[t in numbers] FloatRing[t] {}
-instance[t in numbers] FloatDring[t] {
-  fun div: t * t -> t = "$1/$2";
-  fun mod: t * t -> t = "$1%$2";
-  proc diveq: lvalue[t] * t = "$1/=$2;";
-  proc modeq: lvalue[t] * t = "$1%=$2;";
-}
+include "std/address";
 include "std/bool";
 include "std/int";
-
-instance[T in addressing] Str[T] {
-  fun str (t:T) : string => vsprintf (c"%i", t);
-}
-
-// Do we want this to be hex?
-//instance[T in addressing] Repr[T] {
-//  fun repr (t:T) : string => vsprintf (c"0x%x", t);
-//}
+include "std/real";
+include "std/number";
 
 include "std/mixedint";
 include "std/float_format";
 include "std/float_math";
 include "std/char";
-
-open Eq[byte];
-
-open Tord[bool];
-open Tord[address];
-open Eq[caddress];
-open Eq[vaddress];
-open Eq[cvaddress];
-
-open Eq[char];
-open Eq[wchar];
-open Eq[uchar];
-
-open Signed_integer[tiny];
-open Signed_integer[short];
-open Signed_integer[int];
-open Signed_integer[long];
-open Signed_integer[vlong];
-open Unsigned_integer[utiny];
-open Unsigned_integer[ushort];
-open Unsigned_integer[uint];
-open Unsigned_integer[ulong];
-open Unsigned_integer[uvlong];
-open Real[float];
-open Real[double];
-open Real[ldouble];
-open Complex[fcomplex, float];
-open Complex[dcomplex, double];
-open Complex[lcomplex, ldouble];
-open CartComplex[float];
-open CartComplex[double];
-open CartComplex[ldouble];
-
-//open FloatAddgrp[imaginary];
-//open FloatAddgrp[dimaginary];
-//open FloatAddgrp[limaginary];
 
 open[T in basic_types] Show[T];
 open Show[bool];
@@ -396,14 +290,6 @@ header flx_strutil = '#include "flx_strutil.hpp"';
 include "flx_tclass";
 include "flx_ctypes";
 
-@absmap = {
-  "tiny":"abs",
-  "short":"abs",
-  "int":"abs",
-  "long":"labs",
-  "vlong":"llabs"
-  }
-
 body swapper[t] = """
   void swapper(?1 &a, ?1 &b){
     ?1 tmp = a; a = b; b = tmp;
@@ -419,31 +305,6 @@ typedef charcp = C_hack::cptr[char];
 
 typedef ucharp = C_hack::ptr[utiny];
 typedef ucharcp = C_hack::cptr[utiny];
-
-publish "option type"
-  union opt[T] =
-    | None
-    | Some of T
-  ;
-
-instance[T with Show[T]] Str[opt[T]] {
-  fun str (x:opt[T]) =>
-    match x with
-    | Some ?x => "Some " + (str x)
-    | None[T] => "None"
-    endmatch
-  ;
-}
-
-publish "slice type"
-  union slice[T] =
-    | Slice_all
-    | Slice_from of T
-    | Slice_to of T
-    | Slice_range of T * T
-    | Slice_one of T
-  ;
-
 publish "Universal type 'x as x'"
   typedef any = any;
 
@@ -451,76 +312,6 @@ publish "Lvalue hack"
   //typedef lvalue[t] = lval t;
   typedef lvalue[t] = t;
 
-publish "Deref hack"
-  //inline fun deref[t](p:&t):lval t => _deref p;
-  inline fun deref[t](p:&t):t => _deref p;
-
-
-@#------------- Pointers ---------------------------
-open module Pointer
-{
-  fun eq[t]: &t * &t -> 2 = "$1==$2";
-  fun ne[t]: &t * &t -> 2 = "$1!=$2";
-}
-
-@#------------- TYPING ---------------------------
-open module Typing
-{
-  typedef fun dom(t:TYPE):TYPE =>
-    typematch t with
-    | ?a -> _ => a
-    endmatch
-  ;
-
-  typedef fun cod(t:TYPE):TYPE =>
-    typematch t with
-    | _ -> ?b => b
-    endmatch
-  ;
-
-  typedef fun prj1(t:TYPE):TYPE =>
-    typematch t with
-    | ?a * _ => a
-    endmatch
-  ;
-
-  typedef fun prj2(t:TYPE):TYPE =>
-    typematch t with
-    | _ * ?b => b
-    endmatch
-  ;
-
-  typedef fun type_land(x:TYPE, y:TYPE):TYPE =>
-    typematch (x,  y) with
-    | 0, _ => 0
-    | _,0 => 0
-    | _,_ => 1
-    endmatch
-  ;
-
-  typedef fun type_lor(x:TYPE, y:TYPE):TYPE=>
-    typematch (x,  y) with
-    | 0, 0 => 0
-    | _,_ => 1
-    endmatch
-  ;
-
-  typedef fun eq(x:TYPE, y:TYPE):TYPE=>
-    typematch x with
-    | y => typematch y with | x => 1 | _ => 0 endmatch
-    | _ => 0
-    endmatch
-  ;
-
-
-  const memcount[t] : int = "#memcount";
-}
-
-@select(std)
-include "c_hack";
-include "debug";
-include "std/carray";
-include "std/system";
 @h = tangler("lib/std/system.flx")
 @select(h)
 publish "System Interface"
@@ -540,14 +331,7 @@ module System
   const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME";
 }
 
-@select(std)
-include "std/env";
-include "std/dynlink";
-
-@#------------- Filename -------------------
-@select(std)
-include "std/filename";
-@h = tangler("lib/std/filename.flx")
+@h = tangler("lib/plat/filename.flx")
 @select(h)
 module Filename
 {
@@ -563,22 +347,32 @@ module Filename
 }
 
 @select(std)
+include "std/debug";
+include "std/c_hack";
+include "std/typing";
+include "std/system";
+include "std/dynlink";
+include "std/env";
+include "plat/filename";
+include "std/arith_casts";
+include "std/cstdlib";
+include "std/control";
+
+// I/O
 include "std/cstdio";
 include "std/textio";
 include "std/stdout";
+
+// base data types
+include "std/pointer";
+include "std/option";
+include "std/slice";
+include "std/carray";
 include "std/string";
-include "control";
 include "std/list";
 include "std/array";
 include "std/varray";
 include "std/avl";
 include "std/lexer";
-include "std/arith_casts";
-include "std/cstdlib";
-
-@select(std)
-// ------ Open common modules -------------
-open Arith_casts;
-open Control;
 
 

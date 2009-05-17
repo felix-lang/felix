@@ -1,4 +1,4 @@
-module Control
+open module Control
 {
   open C_hack;
   publish 'infinite loop'

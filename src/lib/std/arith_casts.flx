@@ -1,8 +1,7 @@
 
-publish """
-All the arithmetic casts between standard C arithmetic types.
-"""
-module Arith_casts
+// All the arithmetic casts between standard C arithmetic types.
+
+open module Arith_casts
 {
   fun utiny_of[t2 in reals]: t2 -> utiny = "(unsigned char)$1:cast" is cast;
   fun ushort_of[t2 in reals]: t2 -> ushort = "(unsigned short)$1:cast" is cast;

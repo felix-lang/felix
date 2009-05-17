@@ -2,8 +2,8 @@ module Lexer
 {
   pod type iterator = "char const*";
   fun start_iterator : lvalue[string] -> iterator = "$1.data()";
-  fun end_iterator: lvalue[string] -> iterator = "$1.data()+$1.size()";
-  fun bounds (x:lvalue[string]): iterator * iterator = {
+  fun end_iterator: string -> lvalue[iterator] = "$1.data()+$1.size()";
+  fun bounds (x:string): iterator * iterator = {
     return
       start_iterator x,
       end_iterator x
@@ -26,7 +26,7 @@ instance Tord[Lexer::iterator] {
 }
 
 instance Iterator[Lexer::iterator, char] {
-  fun deref: Lexer::iterator -> lvalue[char] = "*$1";
+  fun deref: Lexer::iterator -> char = "*$1";
 }
 
 open Eq[Lexer::iterator];

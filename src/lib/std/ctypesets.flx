@@ -1,0 +1,37 @@
+
+typedef addressing = typesetof (
+  byte,offset,
+  address,caddress,vaddress,cvaddress
+);
+
+typedef chars = typesetof (char, wchar, uchar);
+
+typedef fast_sints = typesetof (tiny, short, int, long, vlong);
+typedef exact_sints = typesetof(int8,int16,int32,int64);
+typedef fast_uints = typesetof (utiny, ushort, uint, ulong,uvlong);
+typedef exact_uints = typesetof (uint8,uint16,uint32,uint64);
+
+typedef sints = fast_sints || exact_sints;
+typedef uints = fast_uints || exact_uints;
+
+typedef fast_ints = fast_sints || fast_uints;
+typedef exact_ints = exact_sints || exact_uints;
+
+typedef ints = sints || uints;
+
+typedef floats = typesetof (float, double, ldouble);
+typedef reals = ints || floats;
+
+typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
+typedef complex[t in floats] = typematch t with
+  | float => fcomplex
+  | double => dcomplex
+  | ldouble => lcomplex
+  endmatch
+;
+// typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
+
+typedef numbers = reals || /* imaginaries || */ complexes;
+
+typedef basic_types = bool || numbers || chars || addressing;
+

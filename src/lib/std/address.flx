@@ -1,0 +1,22 @@
+
+instance Tord[address] {
+  fun lt: address * address -> bool = "std::less<?1>($1,$2)";
+}
+instance[T in addressing] Str[T] {
+  fun str (t:T) : string => vsprintf (c"%i", t);
+}
+
+// Do we want this to be hex?
+//instance[T in addressing] Repr[T] {
+//  fun repr (t:T) : string => vsprintf (c"0x%x", t);
+//}
+
+open Eq[byte];
+
+open Tord[address];
+open Eq[caddress];
+open Eq[vaddress];
+open Eq[cvaddress];
+
+
+

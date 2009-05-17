@@ -43,3 +43,7 @@ instance[T in chars] Repr[T] {
   }
 }
 
+open Eq[char];
+open Eq[wchar];
+open Eq[uchar];
+

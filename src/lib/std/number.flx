@@ -1,0 +1,25 @@
+
+instance[t in numbers] FloatAddgrp[t] {
+  fun zero: unit -> t = "(?1)0" ;
+  fun add: t * t -> t = "$1+$2" ;
+  fun neg: t -> t = "-$1" ;
+  fun sub: t * t -> t = "$1-$2" ;
+  proc pluseq: lvalue[t] * t = "$1+=$2;";
+  proc minuseq: lvalue[t] * t = "$1-=$2;";
+}
+
+instance[t in numbers] FloatMultSemi1[t] {
+  fun one: unit -> t = "(?1)1";
+  fun mul: t * t -> t = "$1*$2";
+  proc muleq: lvalue[t] * t = "$1*=$2;";
+}
+
+instance[t in numbers] FloatRing[t] {}
+instance[t in numbers] FloatDring[t] {
+  fun div: t * t -> t = "$1/$2";
+  fun mod: t * t -> t = "$1%$2";
+  proc diveq: lvalue[t] * t = "$1/=$2;";
+  proc modeq: lvalue[t] * t = "$1%=$2;";
+}
+
+

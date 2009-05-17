@@ -1,0 +1,10 @@
+publish "slice type"
+  union slice[T] =
+    | Slice_all
+    | Slice_from of T
+    | Slice_to of T
+    | Slice_range of T * T
+    | Slice_one of T
+  ;
+
+

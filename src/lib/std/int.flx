@@ -145,3 +145,14 @@ instance[t in fast_sints] Signed_integer[t] {
 
 instance[t in fast_uints] Unsigned_integer[t] {}
 
+open Signed_integer[tiny];
+open Signed_integer[short];
+open Signed_integer[int];
+open Signed_integer[long];
+open Signed_integer[vlong];
+open Unsigned_integer[utiny];
+open Unsigned_integer[ushort];
+open Unsigned_integer[uint];
+open Unsigned_integer[ulong];
+open Unsigned_integer[uvlong];
+

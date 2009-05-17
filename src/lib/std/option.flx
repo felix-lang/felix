@@ -1,0 +1,16 @@
+publish "option type"
+  union opt[T] =
+    | None
+    | Some of T
+  ;
+
+instance[T with Show[T]] Str[opt[T]] {
+  fun str (x:opt[T]) =>
+    match x with
+    | Some ?x => "Some " + (str x)
+    | None[T] => "None"
+    endmatch
+  ;
+}
+
+
