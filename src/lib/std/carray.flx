@@ -1,4 +1,4 @@
-module Carray
+open module Carray
 {
   requires cstdlib;
   open C_hack;
@@ -37,6 +37,9 @@ module Carray
 
   publish "Convert C array to Felix array"
   fun array_of[T,N]: carray[T] -> ptr[array[T,N]] = "*(#0*)(void*)$1";
+
+  publish "Convert C array to Felix pointer"
+  fun ptr_of[t]: ptr[t] -> &t = "$1";
 
   proc memcpy: address * address * size =
     "{if($1 && $2 && $3)std::memcpy($1,$2,$3);}"
