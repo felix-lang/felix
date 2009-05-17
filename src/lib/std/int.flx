@@ -1,0 +1,147 @@
+typedef fun integral_promotion: TYPE -> TYPE =
+  | tiny => int
+  | utiny => int
+  | short => int
+  | ushort => int
+  | int => int
+  | uint => uint
+  | long => long
+  | ulong => ulong
+  | vlong => vlong
+  | uvlong => uvlong
+;
+
+open module Tiny
+{
+  fun _ctor_tiny: string -> tiny = "static_cast<signed char>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_tiny[T in reals]: T -> tiny = "static_cast<signed char>($1)";
+  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires iostream;
+}
+
+open module Short
+{
+  fun _ctor_short: string -> short = "static_cast<short>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_short[T in reals]: T -> short = "static_cast<short>($1)";
+  proc fprint: ostream * short = "*$1<<$2;" requires iostream;
+}
+
+open module Int
+{
+  fun _ctor_int: string -> int = "static_cast<int>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int[T in reals]: T -> int = "static_cast<int>($1)";
+  proc fprint: ostream * int = "*$1<<$2;" requires iostream;
+}
+
+open module Long
+{
+  fun _ctor_long: string -> long = "static_cast<long>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_long[T in reals]: T -> long = "static_cast<long>($1)";
+  proc fprint: ostream * long = "*$1<<$2;" requires iostream;
+}
+
+open module Vlong
+{
+  fun _ctor_vlong: string -> vlong = "static_cast<long long>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_vlong[T in reals]: T -> vlong = "static_cast<long long>($1)";
+  proc fprint: ostream * vlong = "*$1<<$2;" requires iostream;
+}
+
+open module Utiny
+{
+  fun _ctor_utiny: string -> utiny = "static_cast<unsigned char>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_utiny[T in reals]: T -> utiny = "static_cast<unsigned char>($1)";
+  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires iostream;
+}
+
+open module Ushort
+{
+  fun _ctor_ushort: string -> ushort = "static_cast<unsigned short>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_ushort[T in reals]: T -> ushort = "static_cast<unsigned short>($1)";
+  proc fprint: ostream * ushort = "*$1<<$2;" requires iostream;
+}
+
+open module Uint
+{
+  fun _ctor_uint: string -> uint = "static_cast<unsigned int>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint[T in reals]: T -> uint = "static_cast<unsigned int>($1)";
+  proc fprint: ostream * uint = "*$1<<$2;" requires iostream;
+}
+
+open module Ulong
+{
+  fun _ctor_ulong: string -> ulong = "static_cast<unsigned long>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_ulong[T in reals]: T -> ulong = "static_cast<unsigned long>($1)";
+  proc fprint: ostream * ulong = "*$1<<$2;" requires iostream;
+}
+
+open module Uvlong
+{
+  fun _ctor_uvlong: string -> uvlong = "static_cast<unsigned long long>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uvlong[T in reals]: T -> uvlong = "static_cast<unsigned long long>($1)";
+  proc fprint: ostream * uvlong = "*$1<<$2;" requires iostream;
+}
+
+instance Str[tiny] {
+  fun str: tiny -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;
+}
+
+instance Str[utiny] {
+  fun str: utiny -> string = "flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;
+}
+
+instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong] Str[T] {
+  fun str: T -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+}
+
+instance Repr[tiny]   { fun repr[with Str[tiny]]   (t:tiny)   : string => (str t) + "t";  }
+instance Repr[utiny]  { fun repr[with Str[utiny]]  (t:utiny)  : string => (str t) + "ut"; }
+instance Repr[short]  { fun repr[with Str[short]]  (t:short)  : string => (str t) + "s";  }
+instance Repr[ushort] { fun repr[with Str[ushort]] (t:ushort) : string => (str t) + "us"; }
+instance Repr[uint]   { fun repr[with Str[uint]]   (t:uint)   : string => (str t) + "u";  }
+instance Repr[long]   { fun repr[with Str[long]]   (t:long)   : string => (str t) + "l";  }
+instance Repr[ulong]  { fun repr[with Str[ulong]]  (t:ulong)  : string => (str t) + "ul"; }
+instance Repr[vlong]  { fun repr[with Str[vlong]]  (t:vlong)  : string => (str t) + "v";  }
+instance Repr[uvlong] { fun repr[with Str[uvlong]] (t:uvlong) : string => (str t) + "uv"; }
+
+
+instance[t in ints] Addgrp[t] {}
+instance[t in ints] Ring[t] {}
+instance[t in ints] MultSemi1[t] {}
+instance[t in ints] Dring[t] {}
+
+instance [t in fast_uints] Bits [t] {
+  fun bxor: t * t -> t = "(?1)($1^$2)";
+  fun bor: t * t -> t = "(?1)($1|$2)";
+  fun band: t * t -> t = "(?1)($1&$2)";
+
+  // note: the cast is essential to ensure ~1tu is 254tu
+  fun bnot: t -> t = "(?1)~$1";
+  proc bxoreq: lvalue[t] * t = "$1^=$2;";
+  proc boreq: lvalue[t] * t = "$1|=$2;";
+  proc bandeq: lvalue[t] * t = "$1&=$2;";
+}
+
+instance[t in ints] Forward[t] {
+  fun succ: t -> t = "$1+1";
+  proc pre_incr: &t = "++*$1;";
+  proc post_incr: &t = "(*$1)++;";
+}
+
+instance[t in ints] Bidirectional[t] {
+  fun pred: t -> t = "$1-1";
+  proc pre_decr: &t = "--*$1;";
+  proc post_decr: &t = "(*$1)--;";
+}
+
+instance[t in ints] Integer[t] {
+  fun shl: t * t -> t = "$1<<$2";
+  fun shr: t * t -> t = "$1>>$2";
+}
+
+instance[t in fast_sints] Signed_integer[t] {
+  fun sgn: t -> int = "$1<0??-1:$1>0??1:0";
+  fun abs: t -> t = "$1<0??-$1:$1";
+}
+
+instance[t in fast_uints] Unsigned_integer[t] {}
+

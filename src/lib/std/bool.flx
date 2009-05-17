@@ -1,0 +1,24 @@
+open module Bool
+{
+
+  fun land: bool * bool -> bool = "$1&&$2";
+  fun nand: bool * bool -> bool = "!($1&&$2)";
+  fun lor: bool * bool -> bool = "$1||$2";
+  fun nor: bool * bool -> bool = "!($1||$2)";
+  fun xor: bool * bool -> bool = "$1!=$2";
+  fun lnot: bool -> bool = "!$1";
+  fun implies: bool * bool -> bool = "!$1||$2";
+  //fun eq: bool * bool -> bool = "$1==$2";
+  //fun ne: bool * bool -> bool = "$1!=$2";
+  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires iostream;
+}
+
+instance Str[bool] {
+  fun str (b:bool) : string => if b then "true" else "false" endif;
+}
+
+instance Tord[bool] {
+  fun lt: bool * bool -> bool = "$1<$2";
+}
+
+

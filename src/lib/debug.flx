@@ -1,0 +1,26 @@
+// the internal representation of a Felix source location
+// has to be global to simplify compiler hack
+type flx_location_t = "flx::rtl::flx_range_srcref_t";
+
+module Debug
+{
+  const FLX_SRCLOC : flx_location_t = "#srcloc";
+  fun filename: flx_location_t -> charp = "$1.filename";
+  fun startline: flx_location_t -> int = "$1.startline";
+  fun startcol: flx_location_t -> int = "$1.startcol";
+  fun endline: flx_location_t -> int = "$1.endline";
+  fun endcol: flx_location_t -> int = "$1.endcol";
+
+  // hack to emit C++ source file locations
+  const CPP_FUNCTION : charp = "__FUNCTION__";
+  const CPP_FILE: charp = "__FILE__";
+  const CPP_LINE: int = "__LINE__";
+
+  // hack to emit C code an expression would generate
+  fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
+
+  // hack to emit C typename of a Felix type
+  const repr_type[t]:string = '\\"?1\\"';
+}
+
+

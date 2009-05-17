@@ -1,0 +1,109 @@
+module Dynlink
+{
+  requires flx_dynlink;
+  type flx_library = "flx::rtl::flx_dynlink_t*";
+  type flx_instance = "flx::rtl::flx_libinit_t*";
+  proc dlopen:flx_library * string = "$1->link($2.data());";
+  proc dlclose:flx_library = "$1->unlink();";
+
+  // this is a procedure, so maybe the caller is too
+  // which means the thread frame must be available
+  proc create: flx_library * flx_instance =
+    "_create($1,$2,PTF gcp,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
+    requires property "needs_gc",
+    body """
+    void _create
+    (
+      flx::rtl::flx_dynlink_t *library,
+      flx::rtl::flx_libinit_t *instance,
+      flx::gc::generic::gc_profile_t *gcp,
+      flx::rtl::main_t main_sym,
+      int argc, char **argv,
+      FILE *stdin_, FILE *stdout_, FILE *stderr_
+    )
+    {
+      instance->create(library,gcp,main_sym,argc,argv,stdin_,stdout_,stderr_);
+    }
+    """;
+
+  private fun get_init: flx_instance -> cont = "$1->start_proc";
+  private fun get_library: flx_instance -> flx_library = "$1->lib";
+  proc destroy: flx_instance = "$1->destroy();";
+
+  fun create_library_handle: unit->flx_library=
+    "new flx::rtl::flx_dynlink_t()";
+
+  fun create_instance_handle: unit->flx_instance=
+    "new flx::rtl::flx_libinit_t()";
+
+  proc delete_library_handle: flx_library =
+    "delete $1;";
+
+  proc delete_instance_handle: flx_instance =
+    "delete $1;";
+
+  noinline fun init_lib(filename:string):flx_instance = {
+    var library = create_library_handle();
+    var linstance =  create_instance_handle();
+    dlopen(library,filename);
+    create (library,linstance);
+    var init = get_init linstance;
+    Control::run init;
+    return linstance;
+  }
+
+  publish """ Run a Felix program.
+    WARNING!! All data created by the target
+    program must be destroyed
+    before the library code is unlinked.
+  """
+  proc run_lib(filename:string)
+  {
+    var linstance = init_lib(filename);
+    destroy_lib linstance;
+  }
+
+  noinline proc destroy_lib(linstance:flx_instance)
+  {
+    destroy linstance;
+    Control::collect();
+    dl := get_library linstance;
+    delete_instance_handle linstance;
+    dlclose dl;
+    delete_library_handle dl;
+  }
+
+  publish "dlsym wrapper, returns any symbol"
+  fun dlsym:flx_library * string->address =
+      "SDLSYM($1->library,$2.data())";
+
+  publish """
+    execute an address representing a top
+    level exported felix procedure's C wrapper,
+    this creates a 'read to run' continuation object
+    by both constructing the object using the thread
+    frame of the instance as an argument, and calling
+    it to fix a null return address and an arbitrary
+    client data pointer as arguments to the call method.
+  """
+  fun bind_proc: flx_instance * address * address -> cont =
+    "$1->bind_proc($2,$3)";
+
+  fun dlib_of : flx_library -> address = "(void*)$1->library";
+
+  proc dlsym_err:flx_library*string="""
+    throw flx::rtl::flx_link_failure_t($1->filename,$2,"symbol not found");
+  """;
+
+  noinline proc run_proc (linstance:flx_instance, p: string, data: address)
+  {
+    var lib = get_library linstance;
+    var sym = dlsym(lib, p);
+    if C_hack::isNULL(sym) do dlsym_err(lib,p); done;
+    var f = bind_proc(linstance, sym, data);
+    run f;
+  }
+
+}
+
+

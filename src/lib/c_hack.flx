@@ -1,0 +1,124 @@
+publish """
+This module provides access to raw C/C++ encodings.
+Incorrect typing is likely to pass by Felix and
+be trapped by the C/C++ compiler. Incorrect management
+of storage can lead to corruption. The use of the
+C_hack module is necessary for interfacing.
+"""
+module C_hack
+{
+  publish "C void"
+  incomplete type void_t = "void";
+
+  publish "standard variable argument list pointer type"
+  type va_list = "va_list";
+
+  publish """
+  GCC specific valist thingo: it will
+  be optimised away if not used (eg on MSVC)
+  """
+  type __builtin_va_list = '__builtin_va_list';
+
+  publish """
+  Throw away result of a function call:
+  only useful for C functions that are mainly
+  called for side effects.
+  """
+  proc ignore[t]:t = "(void)$t;";
+
+  fun cast[dst,src]: src->dst = '(?1)($1)';
+  fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
+  fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
+  fun const_cast[dst,src]: src->dst = 'const_cast<?1>($1)';
+  fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
+  fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($1)';
+
+  const sizeof[t]:size = 'sizeof(?1)';
+
+  // deprecated
+  fun int_of:size->int='$1';
+  fun size_of:int->size='$1';
+
+  fun eq: address * address -> bool = "$1==$2";
+  fun ne: address * address -> bool = "$1!=$2";
+
+  publish "Abstract type for C pointer"
+  typedef ptr[t]= &t;
+
+  publish "Abstract type for C pointer to const"
+  pod type cptr[t]="?1 const *";
+
+  publish "Convert pointer to pointer to const"
+  fun enconst[t]: ptr[t]->cptr[t] = "(?1 const*)$1";
+
+  publish """
+  Dereference a C pointer. If the expression is an
+  an lvalue, the result is an lvalue. Assignments
+  to const lvalues are trapped by the C/C++ compiler.
+  """
+  fun deref[t]: ptr[t] -> lvalue[t] = "*$1";
+  fun deref[t]: cptr[t] -> lvalue[t] = "*$1";
+  fun deref[t]: gcptr[t] -> lvalue[t] = "*$1";
+
+  publish """
+  Function to take the address of a C lvalue,
+  fails in C/C++ compiler if the argument isn't an lvalue.
+  Addresses of Felix variables are safe to use provided the
+  containing frame won't be collected.
+  Addresses of temporaries must not be taken.
+  """
+  fun _ctor_ptr[t]: lvalue[t] -> ptr[t] = "&$1";
+  fun _ctor_cptr[t]: lvalue[t] -> cptr[t] = "(void*)&$1";
+  fun _ctor_address[t]: ptr[t] -> address = "(void*)$1";
+  fun _ctor_address[t]: lvalue[t] -> address = "(void*)&$1";
+
+  // deprecated
+  fun addr[t]: lvalue[t] -> ptr[t] = "&$1";
+  fun caddr[t]: lvalue[t] -> cptr[t] ="(?1 const*)&$1";
+
+  fun as_address[t]: ptr[t]->address = "(void*)$1";
+  fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
+
+
+  fun isNULL: address -> bool = "(NULL==$1)";
+  fun isNULL[t]: ptr[t] -> bool = "(NULL==$1)";
+  fun isNULL[t]: cptr[t] -> bool = "(NULL==$1)";
+  fun isNULL[t]: gcptr[t] -> bool = "(NULL==$1)";
+
+  publish """
+  Polymorphic null pointer constant
+  """
+  const null_ptr[t]:ptr[t] = "(?1*)NULL";
+  const null_gcptr[t]:gcptr[t] = "(?1*)NULL";
+  const null_cptr[t]:ptr[t] = "(?1 const*)NULL";
+  const NULL : address = "NULL";
+
+  publish """
+  Unsafe output of hopefully null terminated C strings
+  """
+  proc fprint: ostream * charp = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * charcp = "*$1<<$2;" requires iostream;
+
+  publish """ print an address in hex """
+  proc fprint: ostream * address = "*$1<<$2;" requires iostream;
+
+  header dflt_h = "template<class T> T dflt() { return T(); }";
+  publish """
+  Workaround for g++ 3.2.2 parsing bug,
+  it can parse T() as a default ctor call,
+  but screws up on (T())
+  """
+  fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
+
+  // this hackery is here to force Felix to make
+  // a suitable shape object
+  private union _dummy[t] = | _new of t;
+  private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
+  fun xnew[t](x:t) => _udata$ _new x;
+
+  // raw allocation and deallocation
+  fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
+  proc free: address = 'free($1);' requires stdlib_h;
+}
+
+

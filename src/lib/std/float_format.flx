@@ -1,0 +1,60 @@
+open module float_format
+{
+  union mode =
+    | default of int * int
+    | fixed of int * int
+    | scientific of int * int
+  ;
+  fun fmt[t in reals] (v:t, m: mode) =>
+    match m with
+    | default (?w,?p) => fmt_default(v,w,p)
+    | fixed (?w,?p) => fmt_fixed(v,w,p)
+    | scientific(?w,?p) => fmt_scientific(v,w,p)
+    endmatch
+  ;
+  fun fmt[t,r with Complex[t,r]] (v:t, m: mode) =>
+    match m with
+    | default (?w,?p) => fmt_default(real v,w,p) +"+"+fmt_default(imag v,w,p)+"i"
+    | fixed (?w,?p) => fmt_fixed(real v,w,p)+"+"+fmt_fixed(imag v,w,p)+"i"
+    | scientific(?w,?p) => fmt_scientific(real v,w,p)+"+"+fmt_scientific(imag v,w,p)+"i"
+    endmatch
+  ;
+  fun fmt_default[t] : t * int * int -> string="flx::rtl::strutil::fmt_default($a)" requires flx_strutil;
+  fun fmt_fixed[t] : t * int * int -> string="flx::rtl::strutil::fmt_fixed($a)" requires flx_strutil;
+  fun fmt_scientific[t] : t * int * int -> string="flx::rtl::strutil::fmt_scientific($a)" requires flx_strutil;
+}
+
+instance Str[float] {
+  fun xstr: float -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str(x:float):string =>
+    if Float::isnan x then "nan"
+    elif Float::isinf x then
+      if x > 0.0f then "+inf" else "-inf" endif
+    else xstr x
+    endif
+  ;
+}
+
+instance Str[double] {
+  fun xstr: double -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str(x:double):string =>
+    if Double::isnan x then "nan"
+    elif Double::isinf x then
+      if x > 0.0 then "+inf" else "-inf" endif
+    else xstr x
+    endif
+  ;
+}
+
+instance Str[ldouble] {
+  fun xstr: ldouble -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str(x:ldouble):string =>
+    if Ldouble::isnan x then "nan"
+    elif Ldouble::isinf x then
+      if x > 0.0l then "+inf" else "-inf" endif
+    else xstr x
+    endif
+  ;
+}
+
+

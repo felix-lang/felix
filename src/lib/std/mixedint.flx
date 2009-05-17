@@ -1,0 +1,23 @@
+publish "Mixed Mode arithmentic"
+module MixedInt
+{
+  fun add[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1+$2";
+  fun sub[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1-$2";
+  fun mul[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1*$2";
+  fun div[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1/$2";
+  fun mod[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1%$2";
+
+  fun band[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1&$2";
+  fun bor [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1|$2";
+  fun bxor[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1^$2";
+  fun shl [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1<<$2";
+  fun shr [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1>>$2";
+
+  fun lt[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1<$2";
+  fun le[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1<=$2";
+  fun eq[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1==$2";
+  fun ne[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1!=$2";
+  fun gt[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1>$2";
+  fun ge[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1>=$2";
+}
+

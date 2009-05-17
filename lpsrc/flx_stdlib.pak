@@ -75,8 +75,8 @@ open syntax felix;
   else:
     tangle("macro val " + i + " = false;")
 
-@h=tangler('lib/flx_ctypes.flx','data')
-@select(h)
+@ctypes=tangler('lib/flx_ctypes.flx','data')
+@select(ctypes)
 header cctype_hxx = '#include <cctype>';
 header string_hxx = '#include <string>';
 header complex_hxx = '#include <complex>';
@@ -215,21 +215,9 @@ typedef complex[t in floats] = typematch t with
 typedef numbers = reals || /* imaginaries || */ complexes;
 
 typedef basic_types = bool || numbers || chars || addressing;
+include "plat/arithmax";
 
-// C integer promotion rule
-typedef fun integral_promotion: TYPE -> TYPE =
-  | tiny => int
-  | utiny => int
-  | short => int
-  | ushort => int
-  | int => int
-  | uint => uint
-  | long => long
-  | ulong => ulong
-  | vlong => vlong
-  | uvlong => uvlong
-;
-
+@select(tangler('lib/plat/arithmax.flx','data'))
 // arithmetic conversion rule
 typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   typematch integral_promotion l, integral_promotion r with
@@ -258,16 +246,28 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   endmatch
 ;
 
+include "plat/float";
+
+@select(tangler('lib/plat/float.flx','data'))
+@for t in floats:
+  tangle("open module " + string.capitalize(t))
+  tangle("{")
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
+  gen_nan(t)
+  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
+  tangle("}")
+  tangle("")
+
+
+@select(ctypes)
+
 fun _ctor_int: size -> int = "$1";
 fun _ctor_size: int -> size = "$1";
 
 
 instance [t in basic_types] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
-}
-
-instance Tord[bool] {
-  fun lt: bool * bool -> bool = "$1<$2";
 }
 
 instance Tord[address] {
@@ -287,153 +287,22 @@ instance[t in numbers] FloatAddgrp[t] {
   proc pluseq: lvalue[t] * t = "$1+=$2;";
   proc minuseq: lvalue[t] * t = "$1-=$2;";
 }
-instance[t in ints] Addgrp[t] {}
 
 instance[t in numbers] FloatMultSemi1[t] {
   fun one: unit -> t = "(?1)1";
   fun mul: t * t -> t = "$1*$2";
   proc muleq: lvalue[t] * t = "$1*=$2;";
 }
-instance[t in ints] MultSemi1[t] {}
 
 instance[t in numbers] FloatRing[t] {}
-instance[t in ints] Ring[t] {}
-
 instance[t in numbers] FloatDring[t] {
   fun div: t * t -> t = "$1/$2";
   fun mod: t * t -> t = "$1%$2";
   proc diveq: lvalue[t] * t = "$1/=$2;";
   proc modeq: lvalue[t] * t = "$1%=$2;";
 }
-instance[t in ints] Dring[t] {}
-
-instance [t in fast_uints] Bits [t] {
-  fun bxor: t * t -> t = "(?1)($1^$2)";
-  fun bor: t * t -> t = "(?1)($1|$2)";
-  fun band: t * t -> t = "(?1)($1&$2)";
-
-  // note: the cast is essential to ensure ~1tu is 254tu
-  fun bnot: t -> t = "(?1)~$1";
-  proc bxoreq: lvalue[t] * t = "$1^=$2;";
-  proc boreq: lvalue[t] * t = "$1|=$2;";
-  proc bandeq: lvalue[t] * t = "$1&=$2;";
-}
-
-instance[t in ints] Forward[t] {
-  fun succ: t -> t = "$1+1";
-  proc pre_incr: &t = "++*$1;";
-  proc post_incr: &t = "(*$1)++;";
-}
-
-instance[t in ints] Bidirectional[t] {
-  fun pred: t -> t = "$1-1";
-  proc pre_decr: &t = "--*$1;";
-  proc post_decr: &t = "(*$1)--;";
-}
-
-instance[t in ints] Integer[t] {
-  fun shl: t * t -> t = "$1<<$2";
-  fun shr: t * t -> t = "$1>>$2";
-}
-
-instance[t in fast_sints] Signed_integer[t] {
-  fun sgn: t -> int = "$1<0??-1:$1>0??1:0";
-  fun abs: t -> t = "$1<0??-$1:$1";
-}
-
-instance[t in fast_uints] Unsigned_integer[t] {}
-
-@#------------- BOOL -------------------
-open module Bool
-{
-
-  fun land: bool * bool -> bool = "$1&&$2";
-  fun nand: bool * bool -> bool = "!($1&&$2)";
-  fun lor: bool * bool -> bool = "$1||$2";
-  fun nor: bool * bool -> bool = "!($1||$2)";
-  fun xor: bool * bool -> bool = "$1!=$2";
-  fun lnot: bool -> bool = "!$1";
-  fun implies: bool * bool -> bool = "!$1||$2";
-  //fun eq: bool * bool -> bool = "$1==$2";
-  //fun ne: bool * bool -> bool = "$1!=$2";
-  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires iostream;
-}
-
-instance Str[bool] {
-  fun str (b:bool) : string => if b then "true" else "false" endif;
-}
-
-type string = "std::string";
-@for t in fast_ints:
-  tangle("open module " + string.capitalize(t))
-  tangle("{")
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atoi($1.data()))" requires cstdlib;')
-  tangle('  fun _ctor_'+t+'[T in reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
-  #if t in fast_sints:
-  #  tangle('  fun abs: '+t+' -> '+t+' = "'+absmap[t]+'($1)";')
-  if t == "tiny":
-    tangle('  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires iostream;')
-  elif t == "utiny":
-    tangle('  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires iostream;')
-  else:
-    tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
-  tangle("}")
-  tangle("")
-
-instance Str[tiny] {
-  fun str: tiny -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;
-}
-
-instance Str[utiny] {
-  fun str: utiny -> string = "flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;
-}
-
-instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong] Str[T] {
-  fun str: T -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-}
-
-instance Str[float] {
-  fun xstr: float -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-  fun str(x:float):string =>
-    if Float::isnan x then "nan"
-    elif Float::isinf x then
-      if x > 0.0f then "+inf" else "-inf" endif
-    else xstr x
-    endif
-  ;
-}
-
-instance Str[double] {
-  fun xstr: double -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-  fun str(x:double):string =>
-    if Double::isnan x then "nan"
-    elif Double::isinf x then
-      if x > 0.0 then "+inf" else "-inf" endif
-    else xstr x
-    endif
-  ;
-}
-
-instance Str[ldouble] {
-  fun xstr: ldouble -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-  fun str(x:ldouble):string =>
-    if Ldouble::isnan x then "nan"
-    elif Ldouble::isinf x then
-      if x > 0.0l then "+inf" else "-inf" endif
-    else xstr x
-    endif
-  ;
-}
-
-instance Repr[tiny]   { fun repr[with Str[tiny]]   (t:tiny)   : string => (str t) + "t";  }
-instance Repr[utiny]  { fun repr[with Str[utiny]]  (t:utiny)  : string => (str t) + "ut"; }
-instance Repr[short]  { fun repr[with Str[short]]  (t:short)  : string => (str t) + "s";  }
-instance Repr[ushort] { fun repr[with Str[ushort]] (t:ushort) : string => (str t) + "us"; }
-instance Repr[uint]   { fun repr[with Str[uint]]   (t:uint)   : string => (str t) + "u";  }
-instance Repr[long]   { fun repr[with Str[long]]   (t:long)   : string => (str t) + "l";  }
-instance Repr[ulong]  { fun repr[with Str[ulong]]  (t:ulong)  : string => (str t) + "ul"; }
-instance Repr[vlong]  { fun repr[with Str[vlong]]  (t:vlong)  : string => (str t) + "v";  }
-instance Repr[uvlong] { fun repr[with Str[uvlong]] (t:uvlong) : string => (str t) + "uv"; }
+include "std/bool";
+include "std/int";
 
 instance[T in addressing] Str[T] {
   fun str (t:T) : string => vsprintf (c"%i", t);
@@ -444,245 +313,10 @@ instance[T in addressing] Str[T] {
 //  fun repr (t:T) : string => vsprintf (c"0x%x", t);
 //}
 
-@#------------- INTEGER MODULES -------------------
-
-publish "Mixed Mode arithmentic"
-module MixedInt
-{
-  fun add[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1+$2";
-  fun sub[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1-$2";
-  fun mul[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1*$2";
-  fun div[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1/$2";
-  fun mod[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1%$2";
-
-  fun band[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1&$2";
-  fun bor [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1|$2";
-  fun bxor[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1^$2";
-  fun shl [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1<<$2";
-  fun shr [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1>>$2";
-
-  fun lt[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1<$2";
-  fun le[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1<=$2";
-  fun eq[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1==$2";
-  fun ne[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1!=$2";
-  fun gt[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1>$2";
-  fun ge[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> bool = "$1>=$2";
-}
-
-@#------------- FLOATING MODULES -------------------
-open module float_format
-{
-  union mode =
-    | default of int * int
-    | fixed of int * int
-    | scientific of int * int
-  ;
-  fun fmt[t in reals] (v:t, m: mode) =>
-    match m with
-    | default (?w,?p) => fmt_default(v,w,p)
-    | fixed (?w,?p) => fmt_fixed(v,w,p)
-    | scientific(?w,?p) => fmt_scientific(v,w,p)
-    endmatch
-  ;
-  fun fmt[t,r with Complex[t,r]] (v:t, m: mode) =>
-    match m with
-    | default (?w,?p) => fmt_default(real v,w,p) +"+"+fmt_default(imag v,w,p)+"i"
-    | fixed (?w,?p) => fmt_fixed(real v,w,p)+"+"+fmt_fixed(imag v,w,p)+"i"
-    | scientific(?w,?p) => fmt_scientific(real v,w,p)+"+"+fmt_scientific(imag v,w,p)+"i"
-    endmatch
-  ;
-  fun fmt_default[t] : t * int * int -> string="flx::rtl::strutil::fmt_default($a)" requires flx_strutil;
-  fun fmt_fixed[t] : t * int * int -> string="flx::rtl::strutil::fmt_fixed($a)" requires flx_strutil;
-  fun fmt_scientific[t] : t * int * int -> string="flx::rtl::strutil::fmt_scientific($a)" requires flx_strutil;
-}
-
-@for t in floats:
-  tangle("open module " + string.capitalize(t))
-  tangle("{")
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
-  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
-  gen_nan(t)
-  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
-  tangle("}")
-  tangle("")
-
-instance[t in (floats || complexes)] Trig[t] {
-  requires cmath;
-  fun sin: t -> t = "std::sin($1)";
-  fun cos: t -> t = "std::cos($1)";
-  fun tan: t -> t = "std::tan($1)";
-  fun asin: t -> t = "std::asin($1)";
-  fun acos: t -> t = "std::acos($1)";
-  fun atan: t -> t = "std::atan($1)";
-  fun sinh: t -> t = "std::sinh($1)";
-  fun cosh: t -> t = "std::cosh($1)";
-  fun tanh: t -> t = "std::tanh($1)";
-  fun asinh: t -> t = "std::asinh($1)";
-  fun acosh: t -> t = "std::acosh($1)";
-  fun atanh: t -> t = "std::atanh($1)";
-  fun exp: t -> t = "std::exp($1)";
-  fun log: t -> t = "std::log($1)";
-  fun pow: t * t -> t = "std::pow($1,$2)";
-}
-
-instance[t in floats] Real[t] {
-  requires cmath;
-  fun abs: t -> t = "std::abs($1)";
-  fun log10: t -> t = "std::log10($1)";
-  fun sqrt: t -> t = "std::sqrt($1)";
-  fun ceil: t -> t = "std::ceil($1)";
-  fun floor: t -> t = "std::floor($1)";
-  fun trunc: t -> t = "std::trunc($1)";
-}
-
-typeclass CartComplex[r] {
-  typedef t = complex[r];
-  inherit Complex[t,r];
-}
-
-instance[r in floats] CartComplex[r] {}
-
-// note: has to be called Fcomplex to avoid clash with typeclass Complex
-open module Fcomplex
-{
-  ctor fcomplex[t in reals] : t * t = "std::complex<float>($1,$2)";
-  ctor fcomplex[t in reals] : t = "std::complex<float>($1,0)";
-  proc fprint: ostream * fcomplex = "*$1<<$2;" requires iostream;
-  instance Str[fcomplex] {
-    fun str (z:fcomplex) => str(real z) + "+" + str(imag z)+"i";
-  }
-  instance Complex[fcomplex,float] {
-    fun real : fcomplex -> float = "real($1)";
-    fun imag : fcomplex -> float = "imag($1)";
-    fun abs: fcomplex -> float = "abs($1)";
-    fun arg : fcomplex -> float = "arg($1)";
-    fun neg: fcomplex -> fcomplex = "-$1";
-    fun add : fcomplex * fcomplex -> fcomplex = "$1+$2";
-    fun sub: fcomplex * fcomplex -> fcomplex = "$1-$2";
-    fun mul: fcomplex * fcomplex -> fcomplex = "$1*$2";
-    fun div: fcomplex * fcomplex -> fcomplex = "$1/$2";
-    fun add : fcomplex * float -> fcomplex = "$1+$2";
-    fun sub: fcomplex * float -> fcomplex = "$1-$2";
-    fun mul: fcomplex * float -> fcomplex = "$1*$2";
-    fun div: fcomplex * float -> fcomplex = "$1/$2";
-    fun add : float * fcomplex -> fcomplex = "$1+$2";
-    fun sub: float * fcomplex -> fcomplex = "$1-$2";
-    fun mul: float * fcomplex -> fcomplex = "$1*$2";
-    fun div: float * fcomplex -> fcomplex = "$1/$2";
-    fun zero(): fcomplex => fcomplex 0.0;
-    fun one(): fcomplex => fcomplex 1.0;
-  }
-}
-
-open module Dcomplex
-{
-  ctor dcomplex[t in reals] : t * t = "std::complex<double>($1,$2)";
-  ctor dcomplex[t in reals] : t = "std::complex<double>($1,0)";
-  proc fprint: ostream * dcomplex = "*$1<<$2;" requires iostream;
-  instance Str[dcomplex] {
-    fun str (z:dcomplex) => str(real z) + "+" + str(imag z)+"i";
-  }
-  instance Complex[dcomplex,double] {
-    fun real : dcomplex -> double = "real($1)";
-    fun imag : dcomplex -> double = "imag($1)";
-    fun abs: dcomplex -> double = "abs($1)";
-    fun arg : dcomplex -> double = "arg($1)";
-    fun neg: dcomplex -> dcomplex = "-$1";
-    fun add : dcomplex * dcomplex -> dcomplex = "$1+$2";
-    fun sub: dcomplex * dcomplex -> dcomplex = "$1-$2";
-    fun mul: dcomplex * dcomplex -> dcomplex = "$1*$2";
-    fun div: dcomplex * dcomplex -> dcomplex = "$1/$2";
-    fun add : dcomplex * double -> dcomplex = "$1+$2";
-    fun sub: dcomplex * double -> dcomplex = "$1-$2";
-    fun mul: dcomplex * double -> dcomplex = "$1*$2";
-    fun div: dcomplex * double -> dcomplex = "$1/$2";
-    fun add : double * dcomplex -> dcomplex = "$1+$2";
-    fun sub: double * dcomplex -> dcomplex = "$1-$2";
-    fun mul: double * dcomplex -> dcomplex = "$1*$2";
-    fun div: double * dcomplex -> dcomplex = "$1/$2";
-    fun zero(): dcomplex => dcomplex 0.0;
-    fun one(): dcomplex => dcomplex 1.0;
-  }
-}
-
-open module Lcomplex
-{
-  ctor lcomplex[t in reals] : t * t = "std::complex<long double>($1,$2)";
-  ctor lcomplex[t in reals] : t = "std::complex<long double>($1,0)";
-  proc fprint: ostream * lcomplex = "*$1<<$2;" requires iostream;
-  instance Str[lcomplex] {
-    fun str (z:lcomplex) => str(real z) + "+" + str(imag z)+"i";
-  }
-  instance Complex[lcomplex,ldouble] {
-    fun real : lcomplex -> ldouble = "real($1)";
-    fun imag : lcomplex -> ldouble = "imag($1)";
-    fun abs: lcomplex -> ldouble = "abs($1)";
-    fun arg : lcomplex -> ldouble = "arg($1)";
-    fun neg: lcomplex -> lcomplex = "-$1";
-    fun add : lcomplex * lcomplex -> lcomplex = "$1+$2";
-    fun sub: lcomplex * lcomplex -> lcomplex = "$1-$2";
-    fun mul: lcomplex * lcomplex -> lcomplex = "$1*$2";
-    fun div: lcomplex * lcomplex -> lcomplex = "$1/$2";
-    fun add : lcomplex * ldouble -> lcomplex = "$1+$2";
-    fun sub: lcomplex * ldouble -> lcomplex = "$1-$2";
-    fun mul: lcomplex * ldouble -> lcomplex = "$1*$2";
-    fun div: lcomplex * ldouble -> lcomplex = "$1/$2";
-    fun add : ldouble * lcomplex -> lcomplex = "$1+$2";
-    fun sub: ldouble * lcomplex -> lcomplex = "$1-$2";
-    fun mul: ldouble * lcomplex -> lcomplex = "$1*$2";
-    fun div: ldouble * lcomplex -> lcomplex = "$1/$2";
-    fun zero(): lcomplex => lcomplex 0.0;
-    fun one(): lcomplex => lcomplex 1.0;
-  }
-}
-
-@#------------- CHARACTER MODULES -------------------
-// ordinary value of chars
-
-open module Char
-{
-  open Int;
-  fun ord: char -> int = "(int)$1";
-  fun _ctor_char[t in ints]: t -> char = "(char)$1";
-  proc fprint: ostream * char = "*$1<<$2;" requires iostream;
-}
-
-open module Wchar
-{
-  open Long;
-  fun ord: wchar -> long ="(long)$1";
-  fun _ctor_wchar[t in ints]: t -> wchar = "(wchar_t)$1";
-  proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
-}
-
-open module Unicode
-{
-  fun ord: uchar -> uint32 ="$1";
-  fun _ctor_uchar[t in ints]: t-> uchar = "$1";
-  //this needs to be fixed!
-  //proc print: uchar = "std::cout<<$1;" requires iostream;
-}
-
-instance[T in chars] Str[T] {
-  fun str: T -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
-}
-
-instance[T in chars] Repr[T] {
-  fun repr[with Str[T]] (c:T) : string = {
-    val s = str c;
-    return
-      match s with
-      | "'" =>  "\\'"
-      | '\t' => '\\t'
-      | '\n' => '\\n'
-      | '\r' => '\\r'
-      | '\f' => '\\f'
-      | '\v' => '\\v'
-      | _    => s
-      endmatch
-    ;
-  }
-}
+include "std/mixedint";
+include "std/float_format";
+include "std/float_math";
+include "std/char";
 
 open Eq[byte];
 
@@ -725,7 +359,6 @@ open Show[bool];
 @doc()
 
 @std=tangler('lib/std.flx','data')
-@# use data tangler to prevent line number generation
 @select(std)
 header '#include "flx_rtl_config.hpp"';
 
@@ -883,163 +516,10 @@ open module Typing
   const memcount[t] : int = "#memcount";
 }
 
-@#------------- CASTS and C HACKERY ---------------
-publish """
-This module provides access to raw C/C++ encodings.
-Incorrect typing is likely to pass by Felix and
-be trapped by the C/C++ compiler. Incorrect management
-of storage can lead to corruption. The use of the
-C_hack module is necessary for interfacing.
-"""
-module C_hack
-{
-  publish "C void"
-  incomplete type void_t = "void";
-
-  publish "standard variable argument list pointer type"
-  type va_list = "va_list";
-
-  publish """
-  GCC specific valist thingo: it will
-  be optimised away if not used (eg on MSVC)
-  """
-  type __builtin_va_list = '__builtin_va_list';
-
-  publish """
-  Throw away result of a function call:
-  only useful for C functions that are mainly
-  called for side effects.
-  """
-  proc ignore[t]:t = "(void)$t;";
-
-  fun cast[dst,src]: src->dst = '(?1)($1)';
-  fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
-  fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
-  fun const_cast[dst,src]: src->dst = 'const_cast<?1>($1)';
-  fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
-  fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($1)';
-
-  const sizeof[t]:size = 'sizeof(?1)';
-
-  // deprecated
-  fun int_of:size->int='$1';
-  fun size_of:int->size='$1';
-
-  fun eq: address * address -> bool = "$1==$2";
-  fun ne: address * address -> bool = "$1!=$2";
-
-  publish "Abstract type for C pointer"
-  typedef ptr[t]= &t;
-
-  publish "Abstract type for C pointer to const"
-  pod type cptr[t]="?1 const *";
-
-  publish "Convert pointer to pointer to const"
-  fun enconst[t]: ptr[t]->cptr[t] = "(?1 const*)$1";
-
-  publish """
-  Dereference a C pointer. If the expression is an
-  an lvalue, the result is an lvalue. Assignments
-  to const lvalues are trapped by the C/C++ compiler.
-  """
-  fun deref[t]: ptr[t] -> lvalue[t] = "*$1";
-  fun deref[t]: cptr[t] -> lvalue[t] = "*$1";
-  fun deref[t]: gcptr[t] -> lvalue[t] = "*$1";
-
-  publish """
-  Function to take the address of a C lvalue,
-  fails in C/C++ compiler if the argument isn't an lvalue.
-  Addresses of Felix variables are safe to use provided the
-  containing frame won't be collected.
-  Addresses of temporaries must not be taken.
-  """
-  fun _ctor_ptr[t]: lvalue[t] -> ptr[t] = "&$1";
-  fun _ctor_cptr[t]: lvalue[t] -> cptr[t] = "(void*)&$1";
-  fun _ctor_address[t]: ptr[t] -> address = "(void*)$1";
-  fun _ctor_address[t]: lvalue[t] -> address = "(void*)&$1";
-
-  // deprecated
-  fun addr[t]: lvalue[t] -> ptr[t] = "&$1";
-  fun caddr[t]: lvalue[t] -> cptr[t] ="(?1 const*)&$1";
-
-  fun as_address[t]: ptr[t]->address = "(void*)$1";
-  fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
-
-
-  fun isNULL: address -> bool = "(NULL==$1)";
-  fun isNULL[t]: ptr[t] -> bool = "(NULL==$1)";
-  fun isNULL[t]: cptr[t] -> bool = "(NULL==$1)";
-  fun isNULL[t]: gcptr[t] -> bool = "(NULL==$1)";
-
-  publish """
-  Polymorphic null pointer constant
-  """
-  const null_ptr[t]:ptr[t] = "(?1*)NULL";
-  const null_gcptr[t]:gcptr[t] = "(?1*)NULL";
-  const null_cptr[t]:ptr[t] = "(?1 const*)NULL";
-  const NULL : address = "NULL";
-
-  publish """
-  Unsafe output of hopefully null terminated C strings
-  """
-  proc fprint: ostream * charp = "*$1<<$2;" requires iostream;
-  proc fprint: ostream * charcp = "*$1<<$2;" requires iostream;
-
-  publish """ print an address in hex """
-  proc fprint: ostream * address = "*$1<<$2;" requires iostream;
-
-  header dflt_h = "template<class T> T dflt() { return T(); }";
-  publish """
-  Workaround for g++ 3.2.2 parsing bug,
-  it can parse T() as a default ctor call,
-  but screws up on (T())
-  """
-  fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
-
-  // this hackery is here to force Felix to make
-  // a suitable shape object
-  private union _dummy[t] = | _new of t;
-  private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
-  fun xnew[t](x:t) => _udata$ _new x;
-
-  // raw allocation and deallocation
-  fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
-  proc free: address = 'free($1);' requires stdlib_h;
-}
-
-
 @select(std)
+include "c_hack";
 include "debug";
-@h = tangler("lib/debug.flx")
-@select(h)
-// the internal representation of a Felix source location
-// has to be global to simplify compiler hack
-type flx_location_t = "flx::rtl::flx_range_srcref_t";
-
-module Debug
-{
-  const FLX_SRCLOC : flx_location_t = "#srcloc";
-  fun filename: flx_location_t -> charp = "$1.filename";
-  fun startline: flx_location_t -> int = "$1.startline";
-  fun startcol: flx_location_t -> int = "$1.startcol";
-  fun endline: flx_location_t -> int = "$1.endline";
-  fun endcol: flx_location_t -> int = "$1.endcol";
-
-  // hack to emit C++ source file locations
-  const CPP_FUNCTION : charp = "__FUNCTION__";
-  const CPP_FILE: charp = "__FILE__";
-  const CPP_LINE: int = "__LINE__";
-
-  // hack to emit C code an expression would generate
-  fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
-
-  // hack to emit C typename of a Felix type
-  const repr_type[t]:string = '\\"?1\\"';
-}
-
-@select(std)
 include "std/carray";
-@select(std)
 include "std/system";
 @h = tangler("lib/std/system.flx")
 @select(h)
@@ -1060,129 +540,9 @@ module System
   const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME";
 }
 
-@#------------- Environment -------------------
 @select(std)
 include "std/env";
-@h = tangler("lib/std/env.flx")
-@select(h)
-module Env
-{
-  fun getenv:string -> string =
-    "flx::rtl::strutil::atostr(getenv($1.data()))"
-    requires flx_strutil, cstdlib;
-}
-
-@select(std)
 include "std/dynlink";
-@h = tangler("lib/std/dynlink.flx")
-@select(h)
-module Dynlink
-{
-  requires flx_dynlink;
-  type flx_library = "flx::rtl::flx_dynlink_t*";
-  type flx_instance = "flx::rtl::flx_libinit_t*";
-  proc dlopen:flx_library * string = "$1->link($2.data());";
-  proc dlclose:flx_library = "$1->unlink();";
-
-  // this is a procedure, so maybe the caller is too
-  // which means the thread frame must be available
-  proc create: flx_library * flx_instance =
-    "_create($1,$2,PTF gcp,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
-    requires property "needs_gc",
-    body """
-    void _create
-    (
-      flx::rtl::flx_dynlink_t *library,
-      flx::rtl::flx_libinit_t *instance,
-      flx::gc::generic::gc_profile_t *gcp,
-      flx::rtl::main_t main_sym,
-      int argc, char **argv,
-      FILE *stdin_, FILE *stdout_, FILE *stderr_
-    )
-    {
-      instance->create(library,gcp,main_sym,argc,argv,stdin_,stdout_,stderr_);
-    }
-    """;
-
-  private fun get_init: flx_instance -> cont = "$1->start_proc";
-  private fun get_library: flx_instance -> flx_library = "$1->lib";
-  proc destroy: flx_instance = "$1->destroy();";
-
-  fun create_library_handle: unit->flx_library=
-    "new flx::rtl::flx_dynlink_t()";
-
-  fun create_instance_handle: unit->flx_instance=
-    "new flx::rtl::flx_libinit_t()";
-
-  proc delete_library_handle: flx_library =
-    "delete $1;";
-
-  proc delete_instance_handle: flx_instance =
-    "delete $1;";
-
-  noinline fun init_lib(filename:string):flx_instance = {
-    var library = create_library_handle();
-    var linstance =  create_instance_handle();
-    dlopen(library,filename);
-    create (library,linstance);
-    var init = get_init linstance;
-    Control::run init;
-    return linstance;
-  }
-
-  publish """ Run a Felix program.
-    WARNING!! All data created by the target
-    program must be destroyed
-    before the library code is unlinked.
-  """
-  proc run_lib(filename:string)
-  {
-    var linstance = init_lib(filename);
-    destroy_lib linstance;
-  }
-
-  noinline proc destroy_lib(linstance:flx_instance)
-  {
-    destroy linstance;
-    Control::collect();
-    dl := get_library linstance;
-    delete_instance_handle linstance;
-    dlclose dl;
-    delete_library_handle dl;
-  }
-
-  publish "dlsym wrapper, returns any symbol"
-  fun dlsym:flx_library * string->address =
-      "SDLSYM($1->library,$2.data())";
-
-  publish """
-    execute an address representing a top
-    level exported felix procedure's C wrapper,
-    this creates a 'read to run' continuation object
-    by both constructing the object using the thread
-    frame of the instance as an argument, and calling
-    it to fix a null return address and an arbitrary
-    client data pointer as arguments to the call method.
-  """
-  fun bind_proc: flx_instance * address * address -> cont =
-    "$1->bind_proc($2,$3)";
-
-  fun dlib_of : flx_library -> address = "(void*)$1->library";
-
-  proc dlsym_err:flx_library*string="""
-    throw flx::rtl::flx_link_failure_t($1->filename,$2,"symbol not found");
-  """;
-
-  noinline proc run_proc (linstance:flx_instance, p: string, data: address)
-  {
-    var lib = get_library linstance;
-    var sym = dlsym(lib, p);
-    if C_hack::isNULL(sym) do dlsym_err(lib,p); done;
-    var f = bind_proc(linstance, sym, data);
-    run f;
-  }
-
-}
 
 @#------------- Filename -------------------
 @select(std)
@@ -1202,83 +562,23 @@ module Filename
    tangle('  const sep : charp = c"\\"'+os.sep+'\\"";')
 }
 
-@#------------- C I/O -------------------
 @select(std)
 include "std/cstdio";
-@#------------- Text I/O ------------------
-@select(std)
 include "std/textio";
-@#------------- STDOUT UTILITY -------------------
-@select(std)
 include "std/stdout";
-@#------------- STRING MODULES -------------------
-@select(std)
 include "std/string";
-@#------------- CONTROL STRUCTURES -------------------
-@select(std)
 include "control";
-@#------------- List -------------------
-@select(std)
 include "std/list";
-@#------------- Array -------------------
-@select(std)
 include "std/array";
-@select(std)
 include "std/varray";
-@select(std)
 include "std/avl";
-@#------------- Lexer -------------------
-@select(std)
-include "lexer";
-@h = tangler("lib/lexer.flx")
-@select(h)
-// This module provides functions to
-// use in conjunction with the reglex construction
-module Lexer
-{
-  pod type iterator = "char const*";
-  fun start_iterator : lvalue[string] -> iterator = "$1.data()";
-  fun end_iterator: lvalue[string] -> iterator = "$1.data()+$1.size()";
-  fun bounds (x:lvalue[string]): iterator * iterator = {
-    return
-      start_iterator x,
-      end_iterator x
-    ;
-  }
-  fun string_between: iterator * iterator -> string =
-   "std::string($1,$2)";
-
-  fun add: iterator * int -> iterator = "$1 + $2";
-  fun sub: iterator * int -> iterator = "$1 - $2";
-  fun sub: iterator * iterator -> int = "$1 - $2";
-}
-
-instance Eq[Lexer::iterator] {
-  fun eq:Lexer::iterator * Lexer::iterator -> bool = "$1==$2";
-}
-
-instance Tord[Lexer::iterator] {
-  fun lt:Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
-}
-
-instance Iterator[Lexer::iterator, char] {
-  fun deref: Lexer::iterator -> lvalue[char] = "*$1";
-}
-
-open Eq[Lexer::iterator];
-open Iterator[Lexer::iterator, char];
+include "std/lexer";
+include "std/arith_casts";
+include "std/cstdlib";
 
 @select(std)
 // ------ Open common modules -------------
-//open Bool;
-//open Int;
-//open Double;
-//open Char;
-//open String;
-open Array;
-//open Stdout;
 open Arith_casts;
 open Control;
-open Cstdio;
 
 

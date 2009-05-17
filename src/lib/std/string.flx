@@ -1,3 +1,6 @@
+type string = "std::string";
+type ustring = "basic_string<uint32_t>" requires string_hxx;
+
 typedef strings = typesetof (string,ustring);
 
 instance[t in strings] Eq[t] {
@@ -355,7 +358,6 @@ instance Repr[string] {
   }
 }
 
-type ustring = "basic_string<uint32_t>" requires string_hxx;
 open module Ustring
 {
   open Bool;
@@ -387,42 +389,4 @@ open module Ustring
 }
 
 open[T in strings] Show[T];
-
-publish """
-All the arithmetic casts between standard C arithmetic types.
-"""
-module Arith_casts
-{
-  fun utiny_of[t2 in reals]: t2 -> utiny = "(unsigned char)$1:cast" is cast;
-  fun ushort_of[t2 in reals]: t2 -> ushort = "(unsigned short)$1:cast" is cast;
-  fun uint_of[t2 in reals]: t2 -> uint = "(unsigned int)$1:cast" is cast;
-  fun ulong_of[t2 in reals]: t2 -> ulong = "(unsigned long)$1:cast" is cast;
-  fun uvlong_of[t2 in reals]: t2 -> uvlong = "(unsigned long long)$1:cast" is cast;
-  fun uint8_of[t2 in reals]: t2 -> uint8 = "(uint8_t)$1:cast" is cast;
-  fun uint16_of[t2 in reals]: t2 -> uint16 = "(uint16_t)$1:cast" is cast;
-  fun uint32_of[t2 in reals]: t2 -> uint32 = "(uint32_t)$1:cast" is cast;
-  fun uint64_of[t2 in reals]: t2 -> uint64 = "(uint64_t)$1:cast" is cast;
-  fun tiny_of[t2 in reals]: t2 -> tiny = "(signed char)$1:cast" is cast;
-  fun short_of[t2 in reals]: t2 -> short = "(short)$1:cast" is cast;
-  fun int_of[t2 in reals]: t2 -> int = "(int)$1:cast" is cast;
-  fun long_of[t2 in reals]: t2 -> long = "(long)$1:cast" is cast;
-  fun vlong_of[t2 in reals]: t2 -> vlong = "(long long)$1:cast" is cast;
-  fun int8_of[t2 in reals]: t2 -> int8 = "(int8_t)$1:cast" is cast;
-  fun int16_of[t2 in reals]: t2 -> int16 = "(int16_t)$1:cast" is cast;
-  fun int32_of[t2 in reals]: t2 -> int32 = "(int32_t)$1:cast" is cast;
-  fun int64_of[t2 in reals]: t2 -> int64 = "(int64_t)$1:cast" is cast;
-  fun float_of[t2 in reals]: t2 -> float = "(float)$1:cast" is cast;
-  fun double_of[t2 in reals]: t2 -> double = "(double)$1:cast" is cast;
-  fun ldouble_of[t2 in reals]: t2 -> ldouble = "(long double)$1:cast" is cast;
-}
-
-open module Cstdlib
-{
-  requires cstdlib;
-  const RAND_MAX:long;
-
-  proc srand: uint = 'std::srand($1);';
-  fun rand: unit -> int = 'std::rand()';
-}
-
 

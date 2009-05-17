@@ -1,0 +1,34 @@
+module Lexer
+{
+  pod type iterator = "char const*";
+  fun start_iterator : lvalue[string] -> iterator = "$1.data()";
+  fun end_iterator: lvalue[string] -> iterator = "$1.data()+$1.size()";
+  fun bounds (x:lvalue[string]): iterator * iterator = {
+    return
+      start_iterator x,
+      end_iterator x
+    ;
+  }
+  fun string_between: iterator * iterator -> string =
+   "std::string($1,$2)";
+
+  fun add: iterator * int -> iterator = "$1 + $2";
+  fun sub: iterator * int -> iterator = "$1 - $2";
+  fun sub: iterator * iterator -> int = "$1 - $2";
+}
+
+instance Eq[Lexer::iterator] {
+  fun eq:Lexer::iterator * Lexer::iterator -> bool = "$1==$2";
+}
+
+instance Tord[Lexer::iterator] {
+  fun lt:Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
+}
+
+instance Iterator[Lexer::iterator, char] {
+  fun deref: Lexer::iterator -> lvalue[char] = "*$1";
+}
+
+open Eq[Lexer::iterator];
+open Iterator[Lexer::iterator, char];
+
