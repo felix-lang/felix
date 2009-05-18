@@ -1,6 +1,5 @@
 import buildsystem
 import os
-import glob
 from fbuild.path import Path
 
 def copy_user_fpcs():
