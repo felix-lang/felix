@@ -275,6 +275,9 @@ def build():
     # re-extract packages if any of them changed
     fbuild.scheduler.map(iscr, (src_dir()/'lpsrc/*.pak').glob())
 
+    # overwrite or add *.fpc files to the config directory
+    call('buildsystem.post_config.copy_user_fpcs')
+
     # --------------------------------------------------------------------------
 
     compilers = call('buildsystem.flx_compiler.build_flx_drivers',
