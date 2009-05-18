@@ -107,7 +107,6 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_ref  (s,_)
   | `AST_likely (s,_)
   | `AST_unlikely (s,_)
-  | `AST_lift (s,_)
   | `AST_literal  (s,_)
   | `AST_tuple  (s,_)
   | `AST_record (s,_)

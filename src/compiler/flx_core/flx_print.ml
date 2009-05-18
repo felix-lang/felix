@@ -137,8 +137,6 @@ and string_of_expr (e:expr_t) =
   | `AST_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
-(*  | `AST_lvalue (_,e) -> "lvalue" ^ "(" ^ se e ^ ")" *)
-  | `AST_lift (_,t) -> "lift " ^ "(" ^ se t ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `AST_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
   | `AST_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
@@ -399,7 +397,6 @@ and st prec tc : string =
 (*    | `TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
 
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | `TYP_lift t -> 0,"lift(" ^ st 0 t ^ ")"
     | `TYP_as (t,s) -> 11,st 11 t ^ " as " ^ s
 
     | `TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
@@ -615,8 +612,6 @@ and sb dfns depth fixlist counter prec tc =
       | _ -> 3, sbt 3 t1 ^"^"^sbt 3 t2
       end
 
-(*    | `BTYP_lvalue t -> 0,"lvalue[" ^ sbt 0 t ^"]" *)
-    | `BTYP_lift t -> 0,"lift[" ^ sbt 0 t ^"]"
     | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
     | `BTYP_void -> 0,"void"
 

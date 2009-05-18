@@ -134,7 +134,6 @@ and typecode_t =
 
   | `TYP_type_match of typecode_t * (typecode_t * typecode_t) list
 
-  | `TYP_lift of typecode_t                      (** lift type to metatype *)
   ]
 
 and tpattern_t =
@@ -254,7 +253,6 @@ and expr_t =
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
 
   | `AST_typeof of range_srcref * expr_t
-  | `AST_lift of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
 
   | `AST_expr of range_srcref * string * typecode_t

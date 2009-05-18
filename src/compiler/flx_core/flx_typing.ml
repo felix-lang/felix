@@ -112,9 +112,6 @@ let typeoflist typlist = match typlist with
     with Not_found ->
       `BTYP_tuple typlist
 
-let lift t = t
-let lower t = t (* CHANGE THIS WHEN ABSTRACT TYPES IMPLEMENTED *)
-
 let flx_bool = `TYP_unitsum 2
 let flx_bbool = `BTYP_unitsum 2
 

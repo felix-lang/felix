@@ -596,7 +596,7 @@ try
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms (Flx_typing.lower t) in
+              let tn t = cpp_typename syms t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -661,7 +661,7 @@ try
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms (Flx_typing.lower t) in
+              let tn t = cpp_typename syms t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -831,7 +831,7 @@ try
             | `Str s -> Flx_cexpr.ce_expr "atom" s
             | `StrTemplate s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms (Flx_typing.lower t) in
+              let tn t = cpp_typename syms t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in

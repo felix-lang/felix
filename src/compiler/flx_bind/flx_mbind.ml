@@ -85,7 +85,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_callback _
   | `AST_record_type _
   | `AST_variant_type _
-  | `AST_lift  _
   | `AST_user_expr _
     ->
       let sr = src_of_expr e in
@@ -116,7 +115,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_likely (sr,e') -> `AST_likely (sr,subst e')
   | `AST_unlikely (sr,e') -> `AST_unlikely (sr,subst e')
   | `AST_new (sr,e') -> `AST_new (sr,subst e')
-(*  | `AST_lvalue (sr,e') -> `AST_lvalue (sr,subst e') *)
   | `AST_apply (sr,(f,e)) -> `AST_apply (sr,(subst f,subst e))
   | `AST_map (sr,f,e) -> `AST_map (sr,subst f,subst e)
   | `AST_tuple (sr,es) -> `AST_tuple (sr,map subst es)

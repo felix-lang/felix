@@ -731,9 +731,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_ellipsis _
   | `AST_void _ -> e
 
-(*  | `AST_lvalue (sr,e) -> `AST_lvalue (sr, me e) *)
-  | `AST_lift (sr,e) -> `AST_lift (sr, me e)
-
   | `AST_typeof (sr,e) -> `AST_typeof (sr, me e)
 
   | `AST_user_expr (sr,name,term) ->

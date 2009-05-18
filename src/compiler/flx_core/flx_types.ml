@@ -121,7 +121,6 @@ type 't b1typecode_t' =
   | `BTYP_typesetunion of 't list (** open union *)
   | `BTYP_typesetintersection of 't list (** open union *)
 
-  | `BTYP_lift of 't (* lift type to metatype *)
   ]
 
 (** general typing *)

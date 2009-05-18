@@ -31,7 +31,6 @@ and metatype' syms sr term =
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype' syms sr t in
   match term with
-  | `BTYP_lift t -> t
 
   | `BTYP_typefun (a,b,c) ->
     let ps = List.map snd a in
@@ -317,7 +316,6 @@ and beta_reduce' syms sr termlist t =
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype syms sr t in
   match t with
-  | `BTYP_lift t -> `BTYP_lift (br t)
   | `BTYP_fix _ -> t
   | `BTYP_var (i,_) -> t
 
@@ -540,7 +538,7 @@ and beta_reduce' syms sr termlist t =
       failwith "[beta-reduce] typematch failure"
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try
-        let mgu = unification false syms.counter syms.dfns [p', tt] dvars in
+        let mgu = unification syms.counter syms.dfns [p', tt] dvars in
         (*
         print_endline "Typematch success";
         *)

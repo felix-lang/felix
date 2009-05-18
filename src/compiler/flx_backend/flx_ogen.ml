@@ -55,7 +55,7 @@ let find_references syms (child_map,bbdfns) index ts =
           ", got ts=" ^
           si (length ts)
         );
-        let t = reduce_type (tsubst vs ts (lower t)) in
+        let t = reduce_type (tsubst vs ts t) in
         references := (idx,t) :: !references
       | _ -> ()
     with Not_found -> ()
@@ -76,12 +76,10 @@ let comma_sub s =
 
 (* this code handles pointers in types *)
 let rec get_offsets' syms bbdfns typ : string list =
-  let typ = reduce_type (lstrip syms.dfns typ) in
+  let typ = reduce_type typ in
   let tname = cpp_typename syms typ in
   let t' = unfold syms.dfns typ in
   match t' with
-
-  | `BTYP_lift _ -> assert false
 
   | `BTYP_pointer t -> ["0"]
     (*
@@ -319,7 +317,6 @@ let id x = ()
 let scan_bexpr syms allocable_types e : unit =
   let rec aux e = match e with
   | `BEXPR_new ((_,t) as x),_ ->
-    let t = lstrip syms.dfns t in
     let t = reduce_type t in
     (*
     print_endline ("FOUND A NEW " ^ sbt syms.dfns t);

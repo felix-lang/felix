@@ -220,7 +220,6 @@ and xexpr_t sr x =
    `AST_match (sr, (ex e,pes))
 
  | Lst [Id "ast_typeof";  e] -> `AST_typeof (sr, ex e)
- | Lst [Id "ast_lift";  e] -> `AST_lift (sr,ex e)
 
  | Lst [Id "ast_cond";  Lst [e1;e2;e3]] -> `AST_cond (sr,(ex e1, ex e2, ex e3))
 

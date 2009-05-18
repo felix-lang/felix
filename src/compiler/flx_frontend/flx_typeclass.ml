@@ -338,7 +338,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      );
      *)
      let mgu =
-       try Some (unification false syms.counter syms.dfns eqns vset)
+       try Some (unification syms.counter syms.dfns eqns vset)
        with Not_found -> None
      in
      begin match mgu with

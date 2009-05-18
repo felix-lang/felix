@@ -49,13 +49,6 @@ let mkentry syms (vs:ivs_list_t) i =
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
 
-let lvalify t = t
-(*
-let lvalify t = match t with
-  | `BTYP_lvalue _ -> t
-  | t -> `BTYP_lvalue t
-*)
-
 exception Found of int
 exception Tfound of btypecode_t
 
@@ -719,7 +712,6 @@ and bind_type'
   | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
   | `TYP_record ts -> `BTYP_record (map (fun (s,t) -> s,bt t) ts)
   | `TYP_variant ts -> `BTYP_variant (map (fun (s,t) -> s,bt t) ts)
-  | `TYP_lift t -> `BTYP_lift (bt t)
 
   (* We first attempt to perform the match
     at binding time as an optimisation, if that
@@ -1002,8 +994,6 @@ and bind_type'
   | `TYP_pointer t ->
      let t' = bt t in
      `BTYP_pointer t'
-
-(*  | `TYP_lvalue t -> lvalify (bt t) *)
 
   | `AST_void _ ->
     `BTYP_void
@@ -1365,7 +1355,6 @@ and cal_assoc_type syms sr t =
   | `BTYP_sum _
   | `BTYP_cfunction _
   | `BTYP_pointer _
-(*  | `BTYP_lvalue _ *)
   | `BTYP_array _
   | `BTYP_void
     -> `BTYP_type 0
@@ -1950,9 +1939,7 @@ and cal_apply syms sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
 and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest,reorder =
     match unfold syms.dfns t1 with
-(*    | `BTYP_lvalue (`BTYP_function (argt,rest)) *)
     | `BTYP_function (argt,rest)
-(*    | `BTYP_lvalue (`BTYP_cfunction (argt,rest)) *)
     | `BTYP_cfunction (argt,rest) ->
       if type_match syms.counter syms.dfns argt t2
       then rest, None
@@ -2089,21 +2076,6 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
         sbe syms.dfns bbdfns tbe2
     )
   ;
-  *)
-  (*
-  match be1 with
-  | `BEXPR_closure (i,ts) ->
-    begin match hfind "lookup" syms.dfns i with
-    | {symdef=`SYMDEF_fun _}
-    | {symdef=`SYMDEF_callback _} ->
-      `BEXPR_apply_prim (i,ts, (be2,lower t2)),rest
-    | {symdef=`SYMDEF_function _} ->
-      `BEXPR_apply_direct (i,ts, (be2,lower t2)),rest
-    | _ -> (* needed temporarily for constructors .. *)
-      `BEXPR_apply_direct (i,ts, (be2,lower t2)),rest
-
-    end
-  | _ ->
   *)
   let x2 = match reorder with
   | None -> be2,t2
@@ -2880,7 +2852,6 @@ and handle_variable syms
     let vs = find_vs syms index in
     let bvs = map (fun (s,i,tp) -> s,i) (fst vs) in
     let t = beta_reduce syms sr (tsubst bvs ts t) in
-(*    let t = match t with | `BTYP_lvalue t -> t | t -> t in *)
     begin match t with
     | `BTYP_cfunction (d,c)
     | `BTYP_function (d,c) ->
@@ -3410,7 +3381,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   print_env env;
   print_endline "==";
   *)
-  let rt t = Flx_maps.reduce_type (lstrip syms.dfns (beta_reduce syms sr t)) in
+  let rt t = Flx_maps.reduce_type (beta_reduce syms sr t) in
   let sr = src_of_expr e in
   let cal_method_apply sra fn e2 meth_ts =
     (*
@@ -3480,7 +3451,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_isin _
   | `AST_macro_ctor _
   | `AST_macro_statements  _
-  | `AST_lift _
   | `AST_user_expr _
     ->
       clierr sr
@@ -3668,7 +3638,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let t' = Flx_maps.reduce_type t' in (* src *)
     let t'' = Flx_maps.reduce_type t'' in (* dst *)
     begin match t',t'' with
-(*    | `BTYP_lvalue(`BTYP_inst (i,[])),`BTYP_unitsum n *)
     | `BTYP_inst (i,[]),`BTYP_unitsum n ->
       begin match hfind "lookup" syms.dfns i with
       | { id="int"; symdef=`SYMDEF_abs (_,`StrTemplate "int",_) }  ->
@@ -3695,7 +3664,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         ^"to unitsum " ^ si n)
       end
 
-(*    | `BTYP_lvalue(`BTYP_record ls'),`BTYP_record ls'' *)
     | `BTYP_record ls',`BTYP_record ls'' ->
       begin
       try
@@ -3729,7 +3697,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
       end
 
-(*    | `BTYP_lvalue(`BTYP_variant lhs),`BTYP_variant rhs *)
     | `BTYP_variant lhs,`BTYP_variant rhs ->
       begin
       try
@@ -3782,21 +3749,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           string_of_int (len-1)
         )
       else t
-(*
-    | `BTYP_lvalue (`BTYP_array (t,`BTYP_unitsum len)) ->
-      if n<0 or n>len-1
-      then clierr sr
-        (
-          "[bind_expression] Tuple index " ^
-          string_of_int n ^
-          " out of range 0.." ^
-          string_of_int (len-1)
-        )
-      else lvalify t
-*)
 
     | `BTYP_tuple ts
-(*    | `BTYP_lvalue (`BTYP_tuple ts) *)
       ->
       let len = length ts in
       if n<0 or n>len-1
@@ -3841,7 +3795,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     end
   | `AST_case_index (sr,e) ->
     let (e',t) as e  = be e in
-    begin match lstrip syms.dfns t with
+    begin match t with
     | `BTYP_unitsum _ -> ()
     | `BTYP_sum _ -> ()
     | `BTYP_variant _ -> ()
@@ -4206,10 +4160,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_deref (sr,e) ->
     let e,t = be e in
     begin match unfold syms.dfns t with
-(*    | `BTYP_lvalue (`BTYP_pointer t') *)
     | `BTYP_pointer t'
-(*      -> `BEXPR_deref (e,t),`BTYP_lvalue t' *)
-(* NOTE REMOVAL OF LVALUE TYPING *)
       -> `BEXPR_deref (e,t),t'
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
@@ -4249,7 +4200,6 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     print_endline ("tf=" ^ sbt syms.dfns tf);
     print_endline ("ta=" ^ sbt syms.dfns ta);
     *)
-    let tf = lstrip syms.dfns tf in
     begin match tf with
     | `BTYP_cfunction _ -> cal_apply syms sr rs f a
     | `BTYP_function _ ->
@@ -4398,9 +4348,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       is used, in which case the user function result
       determines the lvalueness.
     *)
-    let ttt,e,te,lmap =
+    let ttt,e,te =
       let (_,tt') as te = be e in (* polymorphic! *)
-      let lmap t = t in
       let rec aux n t = match t with
         | `BTYP_pointer t -> aux (n+1) t
         | _ -> n,t
@@ -4412,8 +4361,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       in
       let e = dref np e in
       let e',t' = be e in
-      let te = e',lmap t' in
-      ttt,e,te,lmap
+      let te = e',t' in
+      ttt,e,te
     in
 
     begin match e2 with
@@ -4443,7 +4392,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           in
           let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
           let ct = tsubst vs' ts' ct in
-          `BEXPR_get_n (cidx,te),lmap ct
+          `BEXPR_get_n (cidx,te),ct
           with Not_found ->
             let get_name = "get_" ^ name in
             begin try cal_method_apply sr get_name e ts 
@@ -4480,7 +4429,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             let vs' = map (fun (s,i,tp) -> s,i) (fst vs) in
             let ct = tsubst vs' ts' ct in
             (* propagate lvalueness to struct component *)
-            `BEXPR_get_n (cidx,te),lmap ct
+            `BEXPR_get_n (cidx,te),ct
           with
           | Not_found ->
             (*
@@ -4528,7 +4477,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         let es = sort rcmp es in
         let field_name = name in
         begin match list_index (map fst es) field_name with
-        | Some n -> `BEXPR_get_n (n,te),lmap (assoc field_name es)
+        | Some n -> `BEXPR_get_n (n,te),(assoc field_name es)
         | None ->
           try be (`AST_apply (sr,(e2,e)))
           with exn ->
@@ -4689,7 +4638,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
-     begin match lstrip syms.dfns (unfold syms.dfns t) with
+     begin match unfold syms.dfns t with
      | `BTYP_unitsum n ->
        if v < 0 or v >= n
        then clierr sr "Invalid sum index"
@@ -5666,8 +5615,6 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r)
   | `BTYP_cfunction (a,r) -> `BTYP_cfunction (rbt a, rbt r)
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
-  | `BTYP_lift t -> `BTYP_lift (rbt t)
-(*  | `BTYP_lvalue t -> lvalify (rbt t) *)
   | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
 
   | `BTYP_unitsum _

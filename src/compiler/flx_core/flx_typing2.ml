@@ -78,8 +78,6 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     else
       `TYP_sum ts
 
-  | `AST_lift (sr,e) -> `TYP_lift (te e)
-
   | `AST_orlist (sr,ts) ->
     begin match ts with
     | [] -> assert false

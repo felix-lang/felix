@@ -10,7 +10,6 @@ open Flx_mtypes2
   dependent variable set, throws Not_found if cannot unify
 *)
 val unification:
-  bool -> (* true if lvalue degrade is allowed *)
   int ref -> (* alpha conversion counter *)
   symbol_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
@@ -85,13 +84,6 @@ val type_match:
   btypecode_t ->
   btypecode_t ->
   bool
-
-(** [lstrip t] returns t all lvalue combinators elided
-*)
-val lstrip:
-  symbol_table_t ->
-  btypecode_t ->
-  btypecode_t
 
 (** [unfold t] returns t with each fix variable
   denoting t replaced with t

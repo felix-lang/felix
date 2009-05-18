@@ -26,12 +26,6 @@ val typeoflist:
 val typeofbps_traint: bparams_t -> btypecode_t list
 val typeofbps: bparameter_t list-> btypecode_t list
 
-val lift:
-  btypecode_t -> btypecode_t
-
-val lower:
-  btypecode_t -> btypecode_t
-
 module FuntypeSet : Set.S with type elt = typecode_t
 
 module FunInstSet : Set.S with type elt = bid_t * btypecode_t list

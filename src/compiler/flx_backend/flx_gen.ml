@@ -42,14 +42,13 @@ let get_variable_typename syms bbdfns i ts =
     try Hashtbl.find bbdfns i
     with Not_found -> failwith ("[get_variable_typename] can't find index " ^ si i)
   in
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   match entry with
   | `BBDCL_var (vs,t)
   | `BBDCL_val (vs,t)
   | `BBDCL_tmp (vs,t)
   | `BBDCL_ref (vs,t)
   ->
-    let t = lower t in
     if length ts <> length vs then
     failwith
     (
@@ -107,7 +106,6 @@ let get_type bbdfns index =
 
 
 let is_gc_pointer syms bbdfns sr t =
-  let t = lstrip syms.dfns t in
   (*
   print_endline ("[is_gc_ptr] Checking type " ^ sbt syms.dfns t);
   *)
@@ -127,7 +125,7 @@ let is_gc_pointer syms bbdfns sr t =
   | _ -> false
 
 let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instance_no =
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let requires_ptf = mem `Requires_ptf props in
   (*
   print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
@@ -145,7 +143,7 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
       else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
     )
   );
-  let argtype = lower(typeof_bparams bps) in
+  let argtype = typeof_bparams bps in
   if length ts <> length vs then
   failwith
   (
@@ -157,8 +155,6 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
   let argtype = rt vs argtype in
   let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let ret = rt' vs ret' in
-  let is_ref = (* match ret with `BTYP_lvalue _ -> true | _ -> *) false in
-  let ret = lstrip syms.dfns ret in
   if ret = `BTYP_tuple [] then "// elided (returns unit)\n" else
 
   let funtype = fold syms.counter syms.dfns (`BTYP_function (argtype, ret)) in
@@ -169,7 +165,6 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
   let name = cpp_instance_name syms bbdfns index ts in
   let rettypename = cpp_typename syms ret in
   rettypename ^ " " ^
-  (if is_ref then "& " else "") ^
   (if mem `Cfun props then "" else "FLX_REGPARM ")^
   name ^ "(" ^
   (
@@ -185,7 +180,7 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
         let counter = ref 0 in
         fold_left
         (fun s {pindex=i; ptyp=t} ->
-          let t = rt vs (lower t) in
+          let t = rt vs t in
           if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
           then s ^
             (if String.length s > 0 then ", " else " ") ^
@@ -207,7 +202,7 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
   ");\n"
 
 let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let requires_ptf = mem `Requires_ptf props in
   if syms.compiler_options.print_flag then
   print_endline
@@ -325,7 +320,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
   (*
   let heapable = not stackable or heapable in
   *)
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let requires_ptf = mem `Requires_ptf props in
   let yields = mem `Yields props in
   (*
@@ -343,7 +338,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
       else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
     )
   );
-  let argtype = lower(typeof_bparams bps) in
+  let argtype = typeof_bparams bps in
   if length ts <> length vs then
   failwith
   (
@@ -355,8 +350,6 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
   let argtype = rt vs argtype in
   let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let ret = rt' vs ret' in
-  let is_ref = (* match ret with | `BTYP_lvalue _ -> true | _ -> *) false in
-  let ret = lstrip syms.dfns ret in
   if ret = `BTYP_tuple [] then "// elided (returns unit)\n" else
 
   let funtype = fold syms.counter syms.dfns (`BTYP_function (argtype, ret)) in
@@ -511,7 +504,6 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
     "  //apply\n" ^
     *)
     "  "^rettypename^
-    (if is_ref then "& " else "") ^
     " apply(" ^
     (if argtype = `BTYP_tuple[] or argtype = `BTYP_void then ""
     else argtypename^" const &")^
@@ -607,7 +599,7 @@ let gen_functions syms (child_map,bbdfns) =
         bcat s ("//CALLBACK C FUNCTION <"^si index^">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       end
       ;
-      let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+      let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
       if syms.compiler_options.print_flag then
       print_endline
       (
@@ -644,7 +636,7 @@ let gen_functions syms (child_map,bbdfns) =
           | _ ->
             fold_left
             (fun s t ->
-              let t = rt vs (lower t) in
+              let t = rt vs t in
               s ^
               (if String.length s > 0 then ", " else "") ^
               cpp_typename syms t
@@ -689,7 +681,7 @@ let is_closure_var bbdfns index =
     in match entry with
     | `BBDCL_var (_,t)
     | `BBDCL_ref (_,t)  (* ?? *)
-    | `BBDCL_val (_,t) -> lower t
+    | `BBDCL_val (_,t) -> t
     | _ -> failwith ("[var_type] expected "^id^" to be variable")
   in
   match var_type bbdfns index with
@@ -1113,7 +1105,7 @@ let gen_exe filename syms
                 (combine xs ps)
 
               | _,tt ->
-                let tt = reduce_type (beta_reduce syms sr  (lstrip syms.dfns (tsubst vs ts tt))) in
+                let tt = reduce_type (beta_reduce syms sr  (tsubst vs ts tt)) in
                 (* NASTY, EVALUATES EXPR MANY TIMES .. *)
                 let n = ref 0 in
                 fold_left
@@ -1325,7 +1317,7 @@ let gen_exe filename syms
     | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
     | `BEXE_assign (sr,e1,(( _,t) as e2)) ->
-      let t = lstrip syms.dfns (tsub t) in
+      let t = tsub t in
       begin match t with
       | `BTYP_tuple [] -> ""
       | _ ->
@@ -1335,7 +1327,7 @@ let gen_exe filename syms
       end
 
     | `BEXE_init (sr,v,((_,t) as e)) ->
-      let t = lstrip syms.dfns (tsub t) in
+      let t = tsub t in
       begin match t with
       | `BTYP_tuple [] -> ""
       | _ ->
@@ -1431,7 +1423,7 @@ let gen_exes filename syms bbdfns display label_info counter index exes vs ts in
 let gen_C_function_body filename syms (child_map,bbdfns)
   label_info counter index ts sr instance_no
 =
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
     try Hashtbl.find bbdfns index
     with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
@@ -1465,12 +1457,10 @@ let gen_C_function_body filename syms (child_map,bbdfns)
 
     "//C FUNC <" ^si index^ ">: " ^ name ^ "\n" ^
 
-    let argtype = lower (typeof_bparams bps) in
+    let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
     let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
     let ret = rt' vs ret' in
-    let is_ref = (* match ret with | `BTYP_lvalue _ -> true | _ -> *) false in
-    let ret = lstrip syms.dfns ret in
     if ret = `BTYP_tuple [] then "// elided (returns unit)\n\n" else
 
 
@@ -1517,7 +1507,6 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       "" kids
     in
       rettypename ^ " " ^
-      (if is_ref then "& " else "") ^
       (if mem `Cfun props then "" else "FLX_REGPARM ")^
       name ^ "(" ^
       (
@@ -1544,7 +1533,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
               let counter = ref 0 in
               fold_left
               (fun s {pkind=k; pindex=i; ptyp=t} ->
-                let t = rt vs (lower t) in
+                let t = rt vs t in
                 let t = match k with
 (*                  | `PRef -> `BTYP_pointer t *)
                   | `PFun -> `BTYP_function (`BTYP_void,t)
@@ -1580,7 +1569,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
 let gen_C_procedure_body filename syms (child_map,bbdfns)
   label_info counter index ts sr instance_no
 =
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
     try Hashtbl.find bbdfns index
     with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
@@ -1611,7 +1600,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
 
     "//C PROC <"^si index^ ">: " ^ name ^ "\n" ^
 
-    let argtype = lower (typeof_bparams bps) in
+    let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
 
     let funtype = fold syms.counter syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
@@ -1684,9 +1673,8 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
               let counter = ref 0 in
               fold_left
               (fun s {pkind=k; pindex=i; ptyp=t} ->
-                let t = rt vs (lower t) in
+                let t = rt vs t in
                 let t = match k with
-(*                  | `PRef -> `BTYP_pointer t *)
                   | `PFun -> `BTYP_function (`BTYP_void,t)
                   | _ -> t
                 in
@@ -1723,7 +1711,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     try Hashtbl.find bbdfns index
     with Not_found -> failwith ("[gen_function_methods] can't find " ^ si index)
   in
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -1745,12 +1733,10 @@ let gen_function_methods filename syms (child_map,bbdfns)
       ", got ts=" ^
       si (length ts)
     );
-    let argtype = lower (typeof_bparams bps) in
+    let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
     let rt' vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
     let ret = rt' vs ret' in
-    let is_ref = (* match ret with | `BTYP_lvalue _ -> true | _ -> *) false in
-    let ret = lstrip syms.dfns ret in
     if ret = `BTYP_tuple [] then "// elided (returns unit)\n","" else
 
     let funtype = fold syms.counter syms.dfns (`BTYP_function (argtype, ret)) in
@@ -1865,7 +1851,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     try Hashtbl.find bbdfns index
     with Not_found -> failwith ("[gen_procedure_methods] Can't find index " ^ si index)
   in (* can't fail *)
-  let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+  let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -1892,7 +1878,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     (*
     let heapable = not stackable or heapable in
     *)
-    let argtype = lower (typeof_bparams bps) in
+    let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
     let funtype = fold syms.counter syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
 
@@ -2064,7 +2050,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
         bcat s ("//CALLBACK C FUNCTION <" ^ si index ^ ">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
       end
       ;
-      let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms sr  (tsubst vs ts t))) in
+      let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
       let ps_c = map (rt vs) ps_c in
       let ps_cf = map (rt vs) ps_cf in
       let ret = rt vs ret' in

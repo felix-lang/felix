@@ -30,8 +30,6 @@ let rec dual t =
   | `BTYP_array (a,b) -> `BTYP_array (b,a)
 
   | `BTYP_pointer t -> `BTYP_pointer (dual t)
-(*  | `BTYP_lvalue t -> `BTYP_lvalue (dual t) *)
-  | `BTYP_lift t -> `BTYP_lift (dual t)
   | `BTYP_void -> unit_t
   | `BTYP_unitsum k ->
     let rec aux ds k = if k = 0 then ds else aux (unit_t::ds) (k-1) in
@@ -255,8 +253,6 @@ let fix i t =
     | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
     | `BTYP_cfunction (a,b) -> `BTYP_cfunction (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
-(*    | `BTYP_lvalue a -> `BTYP_lvalue (aux a) *)
-    | `BTYP_lift a -> `BTYP_lift (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
 
     | `BTYP_record ts ->
@@ -283,40 +279,6 @@ let var_list_occurs ls t =
   iter (fun i -> yes := !yes || var_i_occurs i t) ls;
   !yes
 
-let lstrip dfns t =
-  let rec aux trail t' =
-  let uf t = aux (0::trail) t in
-  match t' with
-  | `BTYP_sum ls -> `BTYP_sum (map uf ls)
-  | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
-  | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
-  | `BTYP_record ts -> `BTYP_record (map (fun (s,t) -> s,uf t) ts)
-  | `BTYP_variant ts -> `BTYP_variant (map (fun (s,t) -> s,uf t) ts)
-
-  (* I think this is WRONG .. *)
-  | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
-  | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
-
-  | `BTYP_pointer a -> `BTYP_pointer (uf a)
-(*  | `BTYP_lvalue a -> aux (1::trail) a *)
-  | `BTYP_lift a -> aux (1::trail) a
-  | `BTYP_fix i ->
-     let k = ref i in
-     let j = ref 0 in
-     let trail = ref trail in
-     while !k < 0 do
-       j := !j + hd !trail;
-       trail := tl !trail;
-       incr k
-     done;
-     `BTYP_fix (i + !j)
-
-  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
-  | _ -> t'
-  in aux [] t
-
-
-
 (* NOTE: this algorithm unifies EQUATIONS
   not inequations, therefore it doesn't
   handle any subtyping
@@ -331,7 +293,7 @@ let lstrip dfns t =
   that right requires unification .. :)
 *)
 
-let rec unification allow_lval counter dfns
+let rec unification counter dfns
   (eqns: (btypecode_t * btypecode_t) list)
   (dvars: IntSet.t)
 : (int * btypecode_t) list =
@@ -361,26 +323,6 @@ let rec unification allow_lval counter dfns
           else if IntSet.mem j dvars then
             s := Some (j,ti)
           else raise Not_found
-
-(*      | `BTYP_lvalue t1, `BTYP_lvalue t2 ->
-        eqns := (t1,t2) :: !eqns
-*)
-      (* This says an argument of type lvalue t can match
-        a parameter of type t -- not the other way around tho
-
-        This must be done FIRST, before matching against
-         `BTYP_var i, t
-       to ensure t can't be an lvalue
-      *)
-(*      | t1, `BTYP_lvalue t2 when allow_lval ->
-        eqns := (t1,t2) :: !eqns
-*)
-      (*
-      | `BTYP_lvalue t1, t2 when allow_lval ->
-        print_endline "WARNING LVALUE ON LEFT UNEXPECTED ..";
-        eqns := (t1,t2) :: !eqns
-      *)
-
       | `BTYP_var (i,_), t
       | t,`BTYP_var (i,_) ->
         (*
@@ -403,15 +345,11 @@ let rec unification allow_lval counter dfns
           *)
           s := Some (i, fix i t)
         end else begin
-          let t = lstrip dfns t in
           (*
           print_endline "Adding substitution";
           *)
           s := Some (i,t)
         end
-
-      | `BTYP_lift t1, `BTYP_lift t2 ->
-        eqns := (t1,t2) :: !eqns
 
       | `BTYP_intersect ts,t
       | t,`BTYP_intersect ts ->
@@ -588,18 +526,18 @@ let find_vars_eqns eqns =
 let maybe_unification counter dfns eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = IntSet.union l r in
-  try Some (unification false counter dfns eqns dvars)
+  try Some (unification counter dfns eqns dvars)
   with Not_found -> None
 
 let maybe_matches counter dfns eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = IntSet.union l r in
-  try Some (unification true counter dfns eqns dvars)
+  try Some (unification counter dfns eqns dvars)
   with Not_found -> None
 
 let maybe_specialisation counter dfns eqns =
   let l,_ = find_vars_eqns eqns in
-  try Some (unification true counter dfns eqns l)
+  try Some (unification counter dfns eqns l)
   with Not_found -> None
 
 let unifies counter dfns t1 t2 =
@@ -668,7 +606,7 @@ let do_unify syms a b =
     (*
     print_endline "Calling unification";
     *)
-    let mgu = unification true syms.counter syms.dfns eqns dvars in
+    let mgu = unification syms.counter syms.dfns eqns dvars in
     (*
     print_endline "mgu=";
     iter
@@ -739,10 +677,10 @@ let rec memq trail (a,b) = match trail with
   | [] -> false
   | (i,j)::t -> i == a && j == b || memq t (a,b)
 
-let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
+let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
   (* print_endline (sbt dfns t1 ^ " =? " ^ sbt dfns t2); *)
   if memq trail (t1,t2) then true
-  else let te a b = type_eq' counter dfns allow_lval
+  else let te a b = type_eq' counter dfns 
     ((ldepth,t1)::ltrail) (ldepth+1)
     ((rdepth,t2)::rtrail) (rdepth+1)
     ((t1,t2)::trail)
@@ -840,21 +778,6 @@ let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2
   | `BTYP_pointer p1,`BTYP_pointer p2
     -> te p1 p2
 
-  | `BTYP_lift p1,`BTYP_lift p2
-(*  | `BTYP_lvalue p1,`BTYP_lvalue p2
-*)
-    -> te p1 p2
-
-(*
-  | p1,(`BTYP_lvalue p2 as lt) when allow_lval
-    ->
-    type_eq' counter dfns allow_lval
-    ltrail ldepth
-    ((rdepth,lt)::rtrail) (rdepth+1)
-    ((p1,lt)::trail)
-    p1 p2
-*)
-
   | `BTYP_void,`BTYP_void
     -> true
 
@@ -878,7 +801,7 @@ let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2
       try
       let a = assoc (ldepth+i) ltrail in
       let b = assoc (rdepth+j) rtrail in
-      type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail a b
+      type_eq' counter dfns ltrail ldepth rtrail rdepth trail a b
       with Not_found -> false
     end
 
@@ -888,7 +811,7 @@ let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2
     *)
     begin try
     let a = assoc (ldepth+i) ltrail in
-    type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail a t
+    type_eq' counter dfns ltrail ldepth rtrail rdepth trail a t
     with Not_found -> false
     end
 
@@ -898,7 +821,7 @@ let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2
     *)
     begin try
     let b = assoc (rdepth+j) rtrail in
-    type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t b
+    type_eq' counter dfns ltrail ldepth rtrail rdepth trail t b
     with Not_found -> false
     end
 
@@ -927,10 +850,10 @@ let rec type_eq' counter dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2
     false
 
 let type_eq counter dfns t1 t2 = (* print_endline "TYPE EQ";  *)
-  type_eq' counter dfns false [] 0 [] 0 [] t1 t2
+  type_eq' counter dfns [] 0 [] 0 [] t1 t2
 
 let type_match counter dfns t1 t2 = (* print_endline "TYPE MATCH"; *)
-  type_eq' counter dfns true [] 0 [] 0 [] t1 t2
+  type_eq' counter dfns [] 0 [] 0 [] t1 t2
 
 (* NOTE: only works on explicit fixpoint operators,
   i.e. it won't work on typedefs: no name lookup,
@@ -950,8 +873,6 @@ let unfold dfns t =
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
-(*  | `BTYP_lvalue a -> `BTYP_lvalue (uf a) *)
-  | `BTYP_lift a -> `BTYP_lift (uf a)
   | `BTYP_fix i when (-i) = depth -> t
   | `BTYP_fix i when (-i) > depth ->
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
@@ -991,8 +912,6 @@ let fold counter dfns t =
     | `BTYP_cfunction (a,b) -> ax a; ax b
 
     | `BTYP_pointer a  -> ax a
-(*    | `BTYP_lvalue a  -> ax a *)
-    | `BTYP_lift a  -> ax a
 
     | `BTYP_void
     | `BTYP_unitsum _
@@ -1044,8 +963,6 @@ let var_occurs t =
     | `BTYP_cfunction (a,b) -> aux a; aux b
 
     | `BTYP_pointer a  -> aux a
-(*    | `BTYP_lvalue a  -> aux a *)
-    | `BTYP_lift a  -> aux a
 
     | `BTYP_unitsum _
     | `BTYP_void
@@ -1243,7 +1160,7 @@ let rec expr_unification counter dfns
       loop ()
     in
       loop ();
-      let tmgu = unification true counter dfns !teqns tdvars in
+      let tmgu = unification counter dfns !teqns tdvars in
       tmgu,
       !mgu
 

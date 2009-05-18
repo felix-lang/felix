@@ -418,7 +418,7 @@ let consider syms bt be luqn2 name
        already by the instance match .. hmm ..
     *)
     let mgu =
-      try Some (unification true syms.counter syms.dfns eqns !dvars)
+      try Some (unification syms.counter syms.dfns eqns !dvars)
       with Not_found -> None
     in
     match mgu with
@@ -655,7 +655,7 @@ let consider syms bt be luqn2 name
         );
         *)
         let maybe_extra_mgu =
-          try Some (unification false syms.counter syms.dfns !extra_eqns !dvars)
+          try Some (unification syms.counter syms.dfns !extra_eqns !dvars)
           with Not_found -> None
         in
         match maybe_extra_mgu with

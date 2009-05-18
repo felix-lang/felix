@@ -22,7 +22,7 @@ let register_type_nr syms t =
     -> ()
   | _
     ->
-    let t = lstrip syms.dfns (fold syms.counter syms.dfns t) in
+    let t = fold syms.counter syms.dfns t in
     if not (Hashtbl.mem syms.registry t)
     then begin
       let () = check_recursion t in
@@ -34,7 +34,7 @@ let register_type_nr syms t =
     end
 
 let register_tuple syms t =
-  let t = lstrip syms.dfns (fold syms.counter syms.dfns t) in
+  let t = fold syms.counter syms.dfns t in
   match t with
   | `BTYP_tuple [] -> ()
   | `BTYP_tuple [_] -> assert false
@@ -65,7 +65,7 @@ let register_tuple syms t =
   | _ -> assert false
 
 let rec register_type_r ui syms bbdfns exclude sr t =
-  let t = reduce_type (beta_reduce syms sr (lower (lstrip syms.dfns t))) in
+  let t = reduce_type (beta_reduce syms sr t) in
   (*
   let sp = String.make (length exclude * 2) ' ' in
   print_endline (sp ^ "Register type " ^ string_of_btypecode syms.dfns t);

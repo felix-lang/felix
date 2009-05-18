@@ -174,13 +174,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     si (length ts)
   );
   let tsub t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
-  let tn t = cpp_typename syms (tsub (lower t)) in
+  let tn t = cpp_typename syms (tsub t) in
 
   (* NOTE this function does not do a reduce_type *)
   let raw_typename t = cpp_typename syms (beta_reduce syms sr  (tsubst vs ts t)) in
   let gen_case_index e =
     let _,t = e in
-    let t = lstrip syms.dfns t in
     begin match t with
     | `BTYP_sum _
     | `BTYP_unitsum _
@@ -217,7 +216,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   in
   let our_display = get_display_list syms bbdfns this in
   let our_level = length our_display in
-  let rt t = reduce_type (beta_reduce syms sr  (lstrip syms.dfns (tsubst vs ts t))) in
+  let rt t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let t = rt t in
   match t with
   | `BTYP_tuple [] ->
@@ -291,7 +290,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     end
 
   | `BEXPR_match_case (n,((e',t') as e)) ->
-    let t' = reduce_type (beta_reduce syms sr  (lstrip syms.dfns t')) in
+    let t' = reduce_type (beta_reduce syms sr  t') in
     let x = gen_case_index e in
     ce_infix "==" x (ce_atom (si n))
 
@@ -480,7 +479,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
         | `Str c
         | `StrTemplate c when c = "#memcount" ->
-          let ts = map (lstrip syms.dfns) ts in
           begin match ts with
           | [`BTYP_void] -> ce_atom "0"
           | [`BTYP_unitsum n]
@@ -578,8 +576,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_ref (index,ts') ->
     let ts = map tsub ts' in
-    let t = lower t in
-    let ref_type = tn (lower t) in
+    let ref_type = tn t in
     (*
     let frame_ptr, var_ptr =
       match t with
@@ -644,7 +641,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     ce_atom uval
 
   | `BEXPR_coerce ((srcx,srct) as srce,dstt) ->
-    let srct = lstrip syms.dfns srct in
     let vts =
       match dstt with
       | `BTYP_variant ls -> ls
@@ -677,9 +673,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           t'' is the type of the argument
        *)
        let
-         arg_typename = tn (lower t'')
+         arg_typename = tn t''
        and
-         union_typename = tn (lower t)
+         union_typename = tn t
        in
        let aval =
          "new (*PTF gcp, "^arg_typename^"_ptr_map,true) " ^
@@ -768,7 +764,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       | `Str s -> ce_expr prec s
       | `StrTemplate s ->
         let ts = map tsub ts in
-        let retyp = reduce_type (beta_reduce syms sr  (lstrip syms.dfns (tsubst vs ts retyp))) in
+        let retyp = reduce_type (beta_reduce syms sr  (tsubst vs ts retyp)) in
         let retyp = tn retyp in
         gen_prim_call syms bbdfns tsub ge'' s ts (arg,argt) retyp sr sr2 prec
       end
@@ -780,7 +776,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       ;
       let ts = map tsub ts in
       let s = id ^ "($a)" in
-      let retyp = reduce_type (beta_reduce syms sr  (lstrip syms.dfns (tsubst vs ts retyp))) in
+      let retyp = reduce_type (beta_reduce syms sr  (tsubst vs ts retyp)) in
       let retyp = tn retyp in
       gen_prim_call syms bbdfns tsub ge'' s ts (arg,argt) retyp sr sr2 "atom"
 
@@ -979,7 +975,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
               xs ps
 
             | _,tt ->
-              let tt = reduce_type (beta_reduce syms sr  (lstrip syms.dfns (tsubst vs ts tt))) in
+              let tt = reduce_type (beta_reduce syms sr  (tsubst vs ts tt)) in
               (* NASTY, EVALUATES EXPR MANY TIMES .. *)
               let n = ref 0 in
               fold_left
@@ -1052,7 +1048,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let rcmp (s1,_) (s2,_) = compare s1 s2 in
     let es = sort rcmp es in
     let es = map snd es in
-    let ctyp = tn (lower t) in
+    let ctyp = tn t in
     ce_atom (
     ctyp ^ "(" ^
       fold_left
@@ -1096,13 +1092,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         )
       in
         (* cast a tuple which is an array type to an array *)
-        let atyp = tn (lower t) in
+        let atyp = tn t in
         ce_call
           (ce_atom ("reinterpret<" ^ atyp ^">"))
           [tuple]
 
     | `BTYP_tuple _ ->
-      let ctyp = tn (lower t) in
+      let ctyp = tn t in
       ce_atom (
       ctyp ^ "(" ^
         fold_left

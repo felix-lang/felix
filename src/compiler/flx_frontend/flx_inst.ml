@@ -30,7 +30,7 @@ let add_inst syms bbdfns ref_insts1 (i,ts) =
     print_endline ("remapped to instance " ^ si i ^ "[" ^
     catmap ", " (sbt syms.dfns) ts ^ "]");
     *)
-  let x = i, map (fun t -> reduce_type (lstrip syms.dfns t)) ts in
+  let x = i, map (fun t -> reduce_type t) ts in
   let has_variables =
     fold_left
     (fun truth t -> truth ||
@@ -303,7 +303,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
   in
   let ue hvarmap e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
   let rtr t = register_type_r uis syms bbdfns [] sr t in
-  let rtnr t = register_type_nr syms (reduce_type (lstrip syms.dfns t)) in
+  let rtnr t = register_type_nr syms (reduce_type t) in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with

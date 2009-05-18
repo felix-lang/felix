@@ -39,7 +39,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_cfunction (a,b) -> `TYP_cfunction (f a, f b)
   | `TYP_pointer t -> `TYP_pointer (f t)
-(*  | `TYP_lvalue t -> `TYP_lvalue (f t) *)
   | `TYP_array (t1, t2) -> `TYP_array (f t1, f t2)
   | `TYP_as (t,s) -> `TYP_as (f t,s)
 
@@ -68,7 +67,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_apply (a,b) -> `TYP_apply (f a, f b)
   | `TYP_typefun (ps, a, b) -> `TYP_typefun (ps, f a, f b)
   | `TYP_type_tuple ts -> `TYP_type_tuple (map f ts)
-  | `TYP_lift t -> `TYP_lift (f t)
 
 
   (* invariant ..?? *)
@@ -133,7 +131,6 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_likely (sr,x) -> `AST_likely (sr, f x)
   | `AST_unlikely (sr,x) -> `AST_unlikely (sr, f x)
   | `AST_new (sr,x) -> `AST_new (sr, f x)
-  | `AST_lift (sr,x) -> `AST_lift (sr, f x)
   | `AST_dot (sr,(x,x2)) -> `AST_dot (sr,(f x,f x2))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
@@ -206,10 +203,8 @@ let iter_expr f (e:expr_t) =
   | `AST_likely (_,x)
   | `AST_unlikely (_,x)
   | `AST_new (_,x)
-(*  | `AST_lvalue (_,x) *)
   | `AST_lookup (_,(x,_,_))
   | `AST_coercion (_, (x,_))
-  | `AST_lift (_,x)
     -> f x
 
   | `AST_letin (_,(_,a,b))
@@ -284,7 +279,6 @@ let map_b0type f = function
   | `BTYP_function (a,b) -> `BTYP_function (f a, f b)
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (f a, f b)
   | `BTYP_pointer t->  `BTYP_pointer (f t)
-(*  | `BTYP_lvalue t->  `BTYP_lvalue (f t) *)
   | `BTYP_array (t1,t2)->  `BTYP_array (f t1, f t2)
   | x -> x
 
@@ -327,7 +321,6 @@ let iter_b0type f = function
   | `BTYP_function (a,b) -> f a; f b
   | `BTYP_cfunction (a,b) -> f a; f b
   | `BTYP_pointer t->  f t
-(*  | `BTYP_lvalue t->  f t *)
   | `BTYP_array (t1,t2)->  f t1; f t2
   | x -> ()
 

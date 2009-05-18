@@ -47,7 +47,7 @@ let gen_prim_call
   print_endline ("arg = " ^ sbe syms.dfns a);
   *)
   let tn t = cpp_typename syms t in
-  let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
+  let rt t = reduce_type (tsub t) in
   let rtn t = tn (rt t) in
 
   let argt = rt argt in

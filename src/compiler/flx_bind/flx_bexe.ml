@@ -36,9 +36,7 @@ let rec check_if_parent syms child parent =
 let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   let be i e = bind_expression syms (build_env syms (Some i)) e in
   match unfold syms.dfns t1 with
-(*  | `BTYP_lvalue (`BTYP_cfunction (t, `BTYP_void)) *)
   | `BTYP_cfunction (t, `BTYP_void)
-(*  | `BTYP_lvalue (`BTYP_function (t, `BTYP_void)) *)
   | `BTYP_function (t, `BTYP_void) ->
     if type_match syms.counter syms.dfns t t2
     then
@@ -140,7 +138,7 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
       | `BEXPR_closure (i,ts) ->
         if check_if_parent syms i this
         then
-          `BEXE_call (sr,(p,lower pt), tbe2)
+          `BEXE_call (sr,(p,pt), tbe2)
           (*
           `BEXE_call_direct (sr,i, ts, tbe2)
           *)
@@ -233,7 +231,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_ifgoto (e,s) ->
       let e',t = be e in
-      if lstrip syms.dfns t = flx_bbool
+      if t = flx_bbool
       then tack (`BEXE_ifgoto (sr,(e',t), s))
       else
         clierr (src_of_expr e)
@@ -380,7 +378,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       ignore(do_unify syms !ret_type t');
       ret_type := varmap_subst syms.varmap !ret_type;
       if type_match syms.counter syms.dfns !ret_type t' then
-        tack (`BEXE_fun_return (sr,(e',lower t')))
+        tack (`BEXE_fun_return (sr,(e',t')))
       else clierr sr
         (
           "[bind_exe: fun_return ] return of  "^sbe syms.dfns bbdfns e ^":\n"^
@@ -396,7 +394,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       ignore(do_unify syms !ret_type t');
       ret_type := varmap_subst syms.varmap !ret_type;
       if type_match syms.counter syms.dfns !ret_type t' then
-        tack (`BEXE_yield (sr,(e',lower t')))
+        tack (`BEXE_yield (sr,(e',t')))
       else
         clierr sr
         (
@@ -415,7 +413,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_assert e ->
       let (x,t) as e' = be e in
-      if lstrip syms.dfns t = flx_bbool
+      if t = flx_bbool
       then tack (`BEXE_assert (sr,e'))
       else clierr sr
       (
@@ -427,7 +425,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.counter syms.dfns rhst in
-(*        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in *)
         let lhst = reduce_type lhst in
         if type_match syms.counter syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
@@ -451,7 +448,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.counter syms.dfns rhst in
-(*        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in *)
         let lhst = reduce_type lhst in
         (*
         print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
@@ -485,18 +481,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let _,rhst as rx = be r in
       let lhst = reduce_type lhst in
       let rhst = reduce_type rhst in
-      (* NOTE LVALUE TEST REMOVED!
-      begin
-        match lhst with
-        | `BTYP_lvalue t -> ()
-        | t ->
-          print_endline "WARNING: LHS of assignment is not an lvalue";
-          print_endline (sbe syms.dfns bbdfns lx ^ " = " ^ sbe syms.dfns bbdfns rx);
-      end
-      ;
-      *)
-      let lhst = lstrip syms.dfns lhst in
-      let rhst = lstrip syms.dfns rhst in
       let lhst = minimise syms.counter syms.dfns lhst in
       let rhst = minimise syms.counter syms.dfns rhst in
       if type_match syms.counter syms.dfns lhst rhst
