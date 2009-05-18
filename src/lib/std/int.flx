@@ -116,9 +116,9 @@ instance [t in fast_uints] Bits [t] {
 
   // note: the cast is essential to ensure ~1tu is 254tu
   fun bnot: t -> t = "(?1)~$1";
-  proc bxoreq: lvalue[t] * t = "$1^=$2;";
-  proc boreq: lvalue[t] * t = "$1|=$2;";
-  proc bandeq: lvalue[t] * t = "$1&=$2;";
+  proc bxoreq: &t * t = "*$1^=$2;";
+  proc boreq: &t * t = "*$1|=$2;";
+  proc bandeq: &t * t = "*$1&=$2;";
 }
 
 instance[t in ints] Forward[t] {

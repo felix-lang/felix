@@ -17,10 +17,10 @@ open module String
   open Char;
   open Int;
 
-  proc pluseq: lvalue[string] * string = "$1.append($2);";
-  proc pluseq: lvalue[string] * charcp = "$1.append($2);";
-  proc pluseq: lvalue[string] * charp = "$1.append($2);";
-  proc pluseq: lvalue[string] * char = "$1 += $2;";
+  proc pluseq: &string * string = "$1->append($2);";
+  proc pluseq: &string * charcp = "$1->append($2);";
+  proc pluseq: &string * charp = "$1->append($2);";
+  proc pluseq: &string * char = "*$1 += $2;";
 
   // we need to cast to an int so that c++ won't complain
   fun len: string -> int = "static_cast<int>($1.size())";

@@ -51,8 +51,8 @@ typeclass FloatAddgrp[t] {
   virtual fun add: t * t -> t;
   virtual fun neg: t -> t;
   virtual fun sub(x:t,y:t):t => add (x,neg y);
-  virtual proc pluseq (x:lvalue[t],y:t) { x = x + y; }
-  virtual proc minuseq (x:lvalue[t],y:t) { x = x - y; }
+  virtual proc pluseq (px:&t,y:t) { px <- *px + y; }
+  virtual proc minuseq (px:&t,y:t) { px <- *px - y; }
 
   reduce id (x:t): x+zero() => x;
   reduce id (x:t): zero()+x => x;
@@ -73,9 +73,9 @@ typeclass Bits[t] {
   virtual fun bor: t * t -> t;
   virtual fun band: t * t -> t;
   virtual fun bnot: t -> t;
-  virtual proc bxoreq: lvalue[t] * t;
-  virtual proc boreq: lvalue[t] * t;
-  virtual proc bandeq: lvalue[t] * t;
+  virtual proc bxoreq: &t * t;
+  virtual proc boreq: &t * t;
+  virtual proc bandeq: &t * t;
 }
 
 // mult semi group with unit
@@ -83,7 +83,7 @@ typeclass FloatMultSemi1[t] {
   inherit Eq[t];
   virtual fun one: unit -> t;
   virtual fun mul: t * t -> t;
-  virtual proc muleq (x:lvalue[t], y:t) { x = x * y; }
+  virtual proc muleq (px:&t, y:t) { px <- *px * y; }
   reduce id (x:t): x*one() => x;
   reduce id (x:t): one()*x => x;
 }
@@ -112,9 +112,9 @@ typeclass Ring[t] {
 typeclass FloatDring[t] {
   inherit FloatRing[t];
   virtual fun div: t * t -> t; // pre t != 0
-  virtual proc diveq: lvalue[t] * t;
+  virtual proc diveq: &t * t;
   virtual fun mod : t * t -> t;
-  virtual proc modeq: lvalue[t] * t;
+  virtual proc modeq: &t * t;
 }
 
 // division ring

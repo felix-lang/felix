@@ -1130,6 +1130,7 @@ syntax executable {
    """;
 
   sassignop:= = =># "'_set";
+  sassignop:= "<-" =># "'_pset";
   sassignop:= ":=" =># "'_init";
 
   srmwop:= "+=" =># "'pluseq";
@@ -1167,10 +1168,9 @@ syntax executable {
 
   sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
 
-  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,_2 (,_1 ,_3))";
+  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,_2 ((ast_ref ,_1) (ast_ref ,_3)))";
 
   sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-
   sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
   sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 (ast_ref ,_1))";

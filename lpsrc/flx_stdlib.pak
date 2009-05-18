@@ -291,12 +291,12 @@ include "flx_tclass";
 include "flx_ctypes";
 
 body swapper[t] = """
-  void swapper(?1 &a, ?1 &b){
-    ?1 tmp = a; a = b; b = tmp;
+  void swapper(?1 *a, ?1 *b){
+    ?1 tmp = *a; *a = *b; *b = tmp;
   }
 """;
 
-proc _swap[t]: lvalue[t] * lvalue[t] =
+proc _swap[t]: &t * &t =
   "swapper($1,$2);"
   requires swapper[t];
 

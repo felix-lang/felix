@@ -22,8 +22,8 @@ open module Carray
   proc post_incr[T]: &carray[T] = '(*$1)++;';
   proc pre_decr[T]: &carray[T] = '--*$1;';
   proc post_decr[T]: &carray[T] = '(*$1)--;';
-  proc pluseq[T]: carray[T] * int = '$1+=$2;';
-  proc minuseq[T]: carray[T] * int = '$1-=$2;';
+  proc pluseq[T]: &carray[T] * int = '*$1+=$2;';
+  proc minuseq[T]: &carray[T] * int = '*$1-=$2;';
 
   /* carray is alias for a pointer .. */
   /*

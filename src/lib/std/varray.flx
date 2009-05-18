@@ -50,9 +50,9 @@ open module Varray
     requires property "needs_gc"
   ;
 
-  proc pluseq[t] : varray[t] * t = """
+  proc pluseq[t] : &varray[t] * t = """
     {
-      ?1 * _p = $1;
+      ?1 * _p = *$1;
       unsigned long n = PTF gcp->gc->get_used(_p);
       PTF gcp->gc->incr_used(_p,1L);
       new(_p+n) ?1($2);

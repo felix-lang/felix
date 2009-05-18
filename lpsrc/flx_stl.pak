@@ -223,8 +223,8 @@ module Stl
 @mksub('vector')
     fun add: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1+$2";
     fun sub: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1-$2";
-    proc pluseq: lvalue[stl_vector_iterator[t]] * int = "$1+=$2;";
-    proc minuseq: lvalue[stl_vector_iterator[t]] * int -> stl_vector_iterator[t] = "$1-=$2;";
+    proc pluseq: &stl_vector_iterator[t] * int = "*$1+=$2;";
+    proc minuseq: &stl_vector_iterator[t] * int = "*$1-=$2;";
     fun subscript: stl_vector_iterator[t] * int -> lvalue[t] = "$1[$2]";
 // Vector
 @tcmkseq('stl_vector')

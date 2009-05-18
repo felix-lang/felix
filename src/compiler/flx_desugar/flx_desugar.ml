@@ -132,12 +132,13 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
 let assign sr op l r =
   match op with
   | "_set" -> `AST_cassign (sr,l,r)
+  | "_pset" -> `AST_cassign (sr,`AST_deref (sr,l),r)
   | _ ->
   `AST_call
   (
     sr,
     `AST_name (sr, op,[]),
-    `AST_tuple ( sr, [ l; r ])
+    `AST_tuple ( sr, [ `AST_ref (sr,l); r ])
   )
 
 (* split lambdas out. Each lambda is replaced by a
