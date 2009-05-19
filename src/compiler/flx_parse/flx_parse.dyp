@@ -49,18 +49,9 @@ let strip_us s =
 
 let lexeme x = Lexing.lexeme (Dyp.std_lexbuf x)
 
-let getsrr dyp =
+let getsr dyp =
   let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
   s.pos_fname, s.pos_lnum, s.pos_cnum - s.pos_bol + 1, e.pos_lnum, e.pos_cnum - e.pos_bol
-
-let getsr lexbuf = 
-  let lexbuf = Dyp.std_lexbuf lexbuf in
-  let file = lexbuf.lex_start_p.pos_fname in
-  let start_line = lexbuf.lex_start_p.pos_lnum in
-  let start_col  = lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol + 1 in
-  let end_line   = lexbuf.lex_curr_p.pos_lnum in
-  let end_col    = lexbuf.lex_curr_p.pos_cnum  - lexbuf.lex_start_p.pos_bol in
-  file, start_line, start_col, end_line, end_col
 
 let set_filename lexbuf fname = 
   let lexbuf = Dyp.std_lexbuf lexbuf in
@@ -200,19 +191,19 @@ print_endline ("define_scheme " ^ name);
 
   let rec f o =
     match o with
-      | STRING (sr,s) ->
+      | STRING s ->
           (* Dyp.Ter "NAME" *)
           Dyp.Regexp (Dyp.RE_String s)
 
-      | USER_KEYWORD (sr,s) ->
+      | USER_KEYWORD s ->
          Dyp.Ter "NAME"
 
-      | NONTERMINAL (sr,s,p) ->
+      | NONTERMINAL (s,p) ->
           let nt = mapnt s in
           let ntpri = cal_priority_relation p in
           Dyp.Non_ter (nt,ntpri)
 
-      | NAME (sr,s) -> assert false
+      | NAME s -> assert false
 
       | s ->
 (*
@@ -279,10 +270,10 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
             (* age := max !age seq; *)
             s
 
-          | k,`Obj_keyword sr -> Sstring (Flx_prelex.string_of_token k)
+          | k,`Obj_keyword -> Sstring (Flx_prelex.string_of_token k)
 
-          | (STRING (_,s1) | USER_KEYWORD (_,s1)),
-            (`Obj_NAME (sr,s2) | `Obj_USER_KEYWORD (sr,s2))
+          | (STRING s1 | USER_KEYWORD s1),
+            (`Obj_NAME s2 | `Obj_USER_KEYWORD s2)
             ->
             if s1 <> s2 then raise Giveup;
             Sstring s1
@@ -304,7 +295,7 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
     aux rhs avl 1;
     if !(dyp.global_data.pdebug) then
     Buffer.add_string b "End of arguments\n";
-    let sr = getsrr dyp2 in 
+    let sr = getsr dyp2 in
 (*
 print_endline ("sr of reduction is " ^ short_string_of_src sr);
 *)
@@ -338,37 +329,37 @@ let extend_grammar dyp (dssl,(name,prio,prod,action,anote,sr)) =
 let fixup_suffix_scheme sr pcounter rhs =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
-  | NONTERMINAL (sr,s,p) :: STAR _ :: t ->
+  | NONTERMINAL (s,p) :: STAR :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",sr in
+    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"(reverse _1)","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(cons _2 _1)","",sr in
     let rule2 = sl,`Default,[],"'()","",sr in
-    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
+    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
-  | NONTERMINAL (sr,s,p) :: PLUS _ :: t ->
+  | NONTERMINAL (s,p) :: PLUS :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",sr in
-    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"`(,_1)","",sr in
-    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
+    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"(reverse _1)","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(cons _2 _1)","",sr in
+    let rule2 = sl,`Default,[NONTERMINAL(s,`No_prio)],"`(,_1)","",sr in
+    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
-  | NONTERMINAL (sr,s,p) :: QUEST _ :: t ->
+  | NONTERMINAL (s,p) :: QUEST :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"`(,_1)","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(s,p)],"`(,_1)","",sr in
     let rule2 = sl,`Default,[],"()","",sr in
-    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
+    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
 
-  | other :: QUEST sr :: t ->
+  | other :: QUEST :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__opt_"^x in
     let rule1 = sl,`Default,[other],"()","",sr in
     let rule2 = sl,`Default,[],"()","",sr in
-    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
+    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
 
   | h :: t -> aux t (h::out) extras
   in aux rhs [] []
@@ -376,37 +367,37 @@ let fixup_suffix_scheme sr pcounter rhs =
 let fixup_suffix_string sr pcounter rhs =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
-  | NONTERMINAL (sr,s,p) :: STAR _ :: t ->
+  | NONTERMINAL (s,p) :: STAR :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",sr in
+    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"_1","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(strcat `(,_1 ,_2))","",sr in
     let rule2 = sl,`Default,[],"\"\"","",sr in
-    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
+    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
-  | NONTERMINAL (sr,s,p) :: PLUS _ :: t ->
+  | NONTERMINAL (s,p) :: PLUS :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",sr in
-    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"_1","",sr in
-    aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
+    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"_1","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(strcat `(,_1 ,_2))","",sr in
+    let rule2 = sl,`Default,[NONTERMINAL(s,`No_prio)],"_1","",sr in
+    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
-  | NONTERMINAL (sr,s,p) :: QUEST _ :: t ->
+  | NONTERMINAL (s,p) :: QUEST :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"_1","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(s,p)],"_1","",sr in
     let rule2 = sl,`Default,[],"\"\"","",sr in
-    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
+    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
 
-  | other :: QUEST sr :: t ->
+  | other :: QUEST :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__opt_"^x in
     let rule1 = sl,`Default,[other],"_1","",sr in
     let rule2 = sl,`Default,[],"\"\"","",sr in
-    aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
+    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
 
   | h :: t -> aux t (h::out) extras
   in aux rhs [] []
@@ -416,30 +407,30 @@ let fixup_suffix sr pcounter kind rhs =
   | `Sval -> fixup_suffix_scheme sr pcounter rhs
   | `String -> fixup_suffix_string sr pcounter rhs
 
-let fixup_prio rhs =
+let fixup_prio sr rhs =
   let rec aux inp out = match inp with
   | [] -> List.rev out
 
   (* Default relation is greater equal *)
-  | NAME (sr,s) :: LSQB _ :: NAME (_,p) :: RSQB _ :: t ->
-    aux t (NONTERMINAL (sr,s,`Greatereq_prio p)::out)
+  | NAME s :: LSQB _ :: NAME p :: RSQB _ :: t ->
+    aux t (NONTERMINAL (s,`Greatereq_prio p)::out)
 
-  | NAME (sr,s) :: LSQB _ :: LESS _ :: NAME (_,p) :: RSQB _ :: t ->
-    aux t (NONTERMINAL (sr,s,`Less_prio p)::out)
-  | NAME (sr,s) :: LSQB _ :: LESSEQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
-    aux t (NONTERMINAL (sr,s,`Lesseq_prio p)::out)
-  | NAME (sr,s) :: LSQB _ :: GREATER _ :: NAME (_,p) :: RSQB _ :: t ->
-    aux t (NONTERMINAL (sr,s,`Greater_prio p)::out)
-  | NAME (sr,s) :: LSQB _ :: GREATEREQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
-    aux t (NONTERMINAL (sr,s,`Greatereq_prio p)::out)
-  | NAME (sr,s) :: LSQB _ :: EQUAL _ :: NAME (_,p) :: RSQB _ :: t ->
-    aux t (NONTERMINAL (sr,s,`Eq_prio p)::out)
+  | NAME s :: LSQB _ :: LESS _ :: NAME p :: RSQB _ :: t ->
+    aux t (NONTERMINAL (s,`Less_prio p)::out)
+  | NAME s :: LSQB _ :: LESSEQUAL _ :: NAME p :: RSQB _ :: t ->
+    aux t (NONTERMINAL (s,`Lesseq_prio p)::out)
+  | NAME s :: LSQB _ :: GREATER _ :: NAME p :: RSQB _ :: t ->
+    aux t (NONTERMINAL (s,`Greater_prio p)::out)
+  | NAME s :: LSQB _ :: GREATEREQUAL _ :: NAME p :: RSQB _ :: t ->
+    aux t (NONTERMINAL (s,`Greatereq_prio p)::out)
+  | NAME s :: LSQB _ :: EQUAL _ :: NAME p :: RSQB _ :: t ->
+    aux t (NONTERMINAL (s,`Eq_prio p)::out)
    
-  | NAME (_,s) :: LSQB sr :: _ -> 
+  | NAME s :: LSQB :: _ ->
     clierr sr "Dangling [ in grammar"
  
-  | NAME (sr,s) ::t ->
-    aux t (NONTERMINAL (sr,s,`No_prio)::out)
+  | NAME s ::t ->
+    aux t (NONTERMINAL (s,`No_prio)::out)
   | h :: t -> aux t (h::out)
   in aux rhs []
 
@@ -482,13 +473,13 @@ let user_expr prod fn : string =
   let arg =
     let rec aux acc inp = match inp with
     | [] -> acc
-    | `Atom (NAME _) :: `Atom (LSQB _) ::
+    | `Atom (NAME _) :: `Atom LSQB ::
       `Atom
       (
-        EQUAL _ | LESS _ |
-        GREATER _ | LESSEQUAL _ |
-        GREATEREQUAL _
-      ) :: `Atom (NAME _) :: `Atom (RSQB _) :: t
+        EQUAL | LESS |
+        GREATER | LESSEQUAL |
+        GREATEREQUAL
+      ) :: `Atom (NAME _) :: `Atom RSQB :: t
 
     | `Atom (NAME _) :: t ->
       let n = !rn in incr rn;
@@ -498,7 +489,7 @@ let user_expr prod fn : string =
         ^ "(Expression_term ,_" ^ string_of_int n ^ ")"
       ) t
 
-    | `Atom (QUEST _ | PLUS _ | STAR _) :: _
+    | `Atom (QUEST | PLUS | STAR) :: _
     | `Group _ :: _ ->
       failwith "Production of user expression can't have meta symbols"
 
@@ -533,7 +524,7 @@ let rec flatten sr pcounter kind (rhs: symbol_t list) : token list * rule_t list
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_" ^ x in
     let rules : rule_t list = fixup_alternatives pcounter kind sl `Default dyalts in
-    aux t (NONTERMINAL (sr, sl, `No_prio)::out) (rules@extras)
+    aux t (NONTERMINAL (sl, `No_prio)::out) (rules@extras)
 
   | `Atom h :: t -> aux t (h::out) extras
   in aux rhs [] []
@@ -541,8 +532,8 @@ let rec flatten sr pcounter kind (rhs: symbol_t list) : token list * rule_t list
 and fixup_rule sr pcounter kind (rhs:symbol_t list) : token list * rule_t list =
   let rhs,extras = flatten sr pcounter kind rhs in
   let rhs, extras =
-    fixup_prio rhs,
-    List.map (fun (name,prio,prod,action,anote,sr) -> name,prio,fixup_prio prod, action,anote,sr) extras
+    fixup_prio sr rhs,
+    List.map (fun (name,prio,prod,action,anote,sr) -> name,prio,fixup_prio sr prod, action,anote,sr) extras
   in
   let rhs,extras' = fixup_suffix sr pcounter kind rhs in
   rhs,extras@extras'
@@ -675,66 +666,66 @@ let dyp_merge_Obj_statement_star ol =
 %token SLOSH
 
 /* literals */
-%token <(Flx_srcref.t * string)> NAME
-%token <(Flx_srcref.t * string * prio_t)> NONTERMINAL
-%token <(Flx_srcref.t * string * Flx_ast.bigint)> INTEGER
-%token <(Flx_srcref.t * string * string )> FLOAT
-%token <(Flx_srcref.t * string)> STRING
-%token <(Flx_srcref.t * string)> CSTRING
-%token <(Flx_srcref.t * string)> FSTRING
-%token <(Flx_srcref.t * string)> QSTRING
-%token <(Flx_srcref.t * string)> WSTRING
-%token <(Flx_srcref.t * string)> USTRING
-%token <(Flx_srcref.t * string)> USER_KEYWORD
-%token <(string list)> HASH_INCLUDE_FILES
+%token <string> NAME
+%token <(string * prio_t)> NONTERMINAL
+%token <(string * Flx_ast.bigint)> INTEGER
+%token <(string * string )> FLOAT
+%token <string> STRING
+%token <string> CSTRING
+%token <string> FSTRING
+%token <string> QSTRING
+%token <string> WSTRING
+%token <string> USTRING
+%token <string> USER_KEYWORD
+%token <string list> HASH_INCLUDE_FILES
 %token DUMMY
 
 %token <local_data_t> LOAD_SYNTAX
 %token <string> SAVE_SYNTAX
 
-%token <(Flx_srcref.t)> QUEST
+%token QUEST
 %constructor Obj_keyword %for QUEST
-%token <(Flx_srcref.t)> PLUS
+%token PLUS
 %constructor Obj_keyword %for PLUS
-%token <(Flx_srcref.t)> STAR
+%token STAR
 %constructor Obj_keyword %for STAR
 
-%token <(Flx_srcref.t)> LPAR
+%token LPAR
 %constructor Obj_keyword %for LPAR
-%token <(Flx_srcref.t)> RPAR
+%token RPAR
 %constructor Obj_keyword %for RPAR
 
-%token <(Flx_srcref.t)> LSQB
+%token LSQB
 %constructor Obj_keyword %for LSQB
-%token <(Flx_srcref.t)> RSQB
+%token RSQB
 %constructor Obj_keyword %for RSQB
 
-%token <(Flx_srcref.t)> LBRACE
+%token LBRACE
 %constructor Obj_keyword %for LBRACE
-%token <(Flx_srcref.t)> RBRACE
+%token RBRACE
 %constructor Obj_keyword %for RBRACE
 
-%token <(Flx_srcref.t)> COMMA
+%token COMMA
 %constructor Obj_keyword %for COMMA
-%token <(Flx_srcref.t)> VBAR
+%token VBAR
 %constructor Obj_keyword %for VBAR
 
-%token <(Flx_srcref.t)> LESS
+%token LESS
 %constructor Obj_keyword %for LESS
-%token <(Flx_srcref.t)> GREATER
+%token GREATER
 %constructor Obj_keyword %for GREATER
-%token <(Flx_srcref.t)> EQUAL
+%token EQUAL
 %constructor Obj_keyword %for EQUAL
-%token <(Flx_srcref.t)> EQEQUAL
+%token EQEQUAL
 %constructor Obj_keyword %for EQEQUAL
-%token <(Flx_srcref.t)> NOTEQUAL
+%token NOTEQUAL
 %constructor Obj_keyword %for NOTEQUAL
-%token <(Flx_srcref.t)> LESSEQUAL
+%token LESSEQUAL
 %constructor Obj_keyword %for LESSEQUAL
-%token <(Flx_srcref.t)> GREATEREQUAL
+%token GREATEREQUAL
 %constructor Obj_keyword %for GREATEREQUAL
 
-%token <(Flx_srcref.t)> UNDERSCORE
+%token UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE
 /* top level entry */
 %constructor Obj_sexpr %for sterm
@@ -917,7 +908,7 @@ rule parse_qstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_qstring s)
+    decode_qstring s
   }
 
 and parse_dstring = parse
@@ -925,7 +916,7 @@ and parse_dstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_dstring s)
+    decode_dstring s
   }
 
 and parse_qqqstring = parse
@@ -933,7 +924,7 @@ and parse_qqqstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_qqqstring s)
+    decode_qqqstring s
   }
 
 and parse_dddstring = parse
@@ -941,7 +932,7 @@ and parse_dddstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_dddstring s)
+    decode_dddstring s
   }
 
 /* ----------- RAW STRING -----------------------------------*/
@@ -950,7 +941,7 @@ and parse_raw_qstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_raw_qstring s)
+    decode_raw_qstring s
   }
 
 and parse_raw_dstring = parse
@@ -958,7 +949,7 @@ and parse_raw_dstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_raw_dstring s)
+    decode_raw_dstring s
   }
 
 and parse_raw_qqqstring = parse
@@ -966,7 +957,7 @@ and parse_raw_qqqstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_raw_qqqstring s)
+    decode_raw_qqqstring s
   }
 
 and parse_raw_dddstring = parse
@@ -974,11 +965,8 @@ and parse_raw_dddstring = parse
     let s = lexeme lexbuf in
     let n = lfcount s in
     incr_lineno lexbuf n;
-    (getsr lexbuf, decode_raw_dddstring s)
+    decode_raw_dddstring s
   }
-
-and parse_hashbang = parse
-| not_newline * newline { incr_lineno lexbuf 1 }
 
 and parse_C_comment count = parse
 | "/*"    { parse_C_comment (count+1) lexbuf }
@@ -986,33 +974,28 @@ and parse_C_comment count = parse
 | "*/"    { if count = 1 then () else parse_C_comment (count - 1) lexbuf }
 | _       { parse_C_comment count lexbuf }
 
-and parse_line = parse
-| not_newline * (newline | eof) {
-    incr_lineno lexbuf 1;
-    lexeme lexbuf
-  }
 
 main lexer =
-  "_" -> UNDERSCORE { getsr lexbuf }
-  "?" -> QUEST { getsr lexbuf }
-  "(" -> LPAR { getsr lexbuf }
-  ")" -> RPAR { getsr lexbuf }
-  "[" -> LSQB { getsr lexbuf }
-  "]" -> RSQB { getsr lexbuf }
-  "{" -> LBRACE { getsr lexbuf }
-  "}" -> RBRACE { getsr lexbuf }
-  "," -> COMMA { getsr lexbuf }
-  "+" -> PLUS { getsr lexbuf }
-  "*" -> STAR { getsr lexbuf }
-  "=" -> EQUAL { getsr lexbuf }
-  "==" -> EQEQUAL { getsr lexbuf }
-  "!=" -> NOTEQUAL { getsr lexbuf }
-  "|" -> VBAR { getsr lexbuf }
-  "<" -> LESS { getsr lexbuf }
-  ">" -> GREATER { getsr lexbuf }
-  "<=" -> LESSEQUAL { getsr lexbuf }
-  ">=" -> GREATEREQUAL { getsr lexbuf }
-  "#!/" -> HASHBANGSLASH { getsr lexbuf }
+  "_" -> UNDERSCORE
+  "?" -> QUEST
+  "(" -> LPAR
+  ")" -> RPAR
+  "[" -> LSQB
+  "]" -> RSQB
+  "{" -> LBRACE
+  "}" -> RBRACE
+  "," -> COMMA
+  "+" -> PLUS
+  "*" -> STAR
+  "=" -> EQUAL
+  "==" -> EQEQUAL
+  "!=" -> NOTEQUAL
+  "|" -> VBAR
+  "<" -> LESS
+  ">" -> GREATER
+  "<=" -> LESSEQUAL
+  ">=" -> GREATEREQUAL
+  "#!/" -> HASHBANGSLASH
 
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
  "//" not_newline * (newline | eof) -> {
@@ -1022,7 +1005,6 @@ main lexer =
  "/*" -> { parse_C_comment 1 lexbuf }
 
  int_lit -> INTEGER {
-      let sr = getsr lexbuf in
       let s = lexeme lexbuf in
       let n = String.length s in
       let converter, first =
@@ -1080,7 +1062,7 @@ main lexer =
       in
       let d = String.sub s first (!k-first) in
       let v = (converter d) in
-        (sr, t, v)
+      (t, v)
   }
 
  floating_literal -> FLOAT {
@@ -1088,73 +1070,63 @@ main lexer =
     let n = String.length str in
     let last_char = str.[n-1] in
     match last_char with
-    | 'l'|'L' ->
-      (getsr lexbuf,"ldouble", strip_us (String.sub str 0 (n-1)))
-    | 'f'|'F' ->
-      (getsr lexbuf,"float",strip_us (String.sub str 0 (n-1)))
-    | _ ->
-      (getsr lexbuf,"double",strip_us str)
+    | 'l'|'L' -> "ldouble", strip_us (String.sub str 0 (n-1))
+    | 'f'|'F' -> "float", strip_us (String.sub str 0 (n-1))
+    | _       -> "double", strip_us str
   }
 
 /* Python strings */
- quote  -> STRING {   parse_qstring lexbuf }
- qqq    -> STRING {   parse_qqqstring lexbuf }
- dquote -> STRING {   parse_dstring lexbuf }
- ddd    -> STRING {   parse_dddstring lexbuf }
+ quote  -> STRING { parse_qstring lexbuf }
+ qqq    -> STRING { parse_qqqstring lexbuf }
+ dquote -> STRING { parse_dstring lexbuf }
+ ddd    -> STRING { parse_dddstring lexbuf }
 
 /* Python raw strings */
- ('r'|'R') qqq    -> STRING {   parse_raw_qqqstring lexbuf }
- ('r'|'R') dquote -> STRING {   parse_raw_dstring lexbuf }
- ('r'|'R') ddd    -> STRING {   parse_raw_dddstring lexbuf }
-
+ ('r'|'R') qqq    -> STRING { parse_raw_qqqstring lexbuf }
+ ('r'|'R') dquote -> STRING { parse_raw_dstring lexbuf }
+ ('r'|'R') ddd    -> STRING { parse_raw_dddstring lexbuf }
 
 /* C strings: type char*  */
- ('c'|'C') qqq    -> CSTRING {   parse_qqqstring lexbuf }
- ('c'|'C') dquote -> CSTRING {   parse_dstring lexbuf }
- ('c'|'C') ddd    -> CSTRING {   parse_dddstring lexbuf }
+ ('c'|'C') qqq    -> CSTRING { parse_qqqstring lexbuf }
+ ('c'|'C') dquote -> CSTRING { parse_dstring lexbuf }
+ ('c'|'C') ddd    -> CSTRING { parse_dddstring lexbuf }
 
 /* raw C strings: type char*  */
- rqc qqq    -> CSTRING {   parse_raw_qqqstring lexbuf }
- rqc dquote -> CSTRING {   parse_raw_dstring lexbuf }
- rqc ddd    -> CSTRING {   parse_raw_dddstring lexbuf }
-
+ rqc qqq    -> CSTRING { parse_raw_qqqstring lexbuf }
+ rqc dquote -> CSTRING { parse_raw_dstring lexbuf }
+ rqc ddd    -> CSTRING { parse_raw_dddstring lexbuf }
 
 /* Format strings */
- ('f'|'F') qqq    -> FSTRING {   parse_qqqstring lexbuf }
- ('f'|'F') dquote -> FSTRING {   parse_dstring lexbuf }
- ('f'|'F') ddd    -> FSTRING {   parse_dddstring lexbuf }
+ ('f'|'F') qqq    -> FSTRING { parse_qqqstring lexbuf }
+ ('f'|'F') dquote -> FSTRING { parse_dstring lexbuf }
+ ('f'|'F') ddd    -> FSTRING { parse_dddstring lexbuf }
 
 /* wide strings */
- ('w' | 'W') qqq    -> WSTRING {   parse_qqqstring lexbuf }
- ('w' | 'W') dquote -> WSTRING {   parse_dstring lexbuf }
- ('w' | 'W') ddd    -> WSTRING {   parse_dddstring lexbuf }
+ ('w' | 'W') qqq    -> WSTRING { parse_qqqstring lexbuf }
+ ('w' | 'W') dquote -> WSTRING { parse_dstring lexbuf }
+ ('w' | 'W') ddd    -> WSTRING { parse_dddstring lexbuf }
 
 /* UTF32 strings */
- ('u' | 'U') qqq    -> USTRING {   parse_qqqstring lexbuf }
- ('u' | 'U') dquote -> USTRING {   parse_dstring lexbuf }
- ('u' | 'U') ddd    -> USTRING {   parse_dddstring lexbuf }
+ ('u' | 'U') qqq    -> USTRING { parse_qqqstring lexbuf }
+ ('u' | 'U') dquote -> USTRING { parse_dstring lexbuf }
+ ('u' | 'U') ddd    -> USTRING { parse_dddstring lexbuf }
 
 /* keyword strings */
- ('k' | 'K') qqq    -> USER_KEYWORD {   parse_qqqstring lexbuf }
- ('k' | 'K') dquote -> USER_KEYWORD {   parse_dstring lexbuf }
- ('k' | 'K') ddd    -> USER_KEYWORD {   parse_dddstring lexbuf }
+ ('k' | 'K') qqq    -> USER_KEYWORD { parse_qqqstring lexbuf }
+ ('k' | 'K') dquote -> USER_KEYWORD { parse_dstring lexbuf }
+ ('k' | 'K') ddd    -> USER_KEYWORD { parse_dddstring lexbuf }
 
 /* name strings */
- ('n' | 'N') qqq    -> NAME {   parse_qqqstring lexbuf }
- ('n' | 'N') dquote -> NAME {   parse_dstring lexbuf }
- ('n' | 'N') ddd    -> NAME {   parse_dddstring lexbuf }
+ ('n' | 'N') qqq    -> NAME { parse_qqqstring lexbuf }
+ ('n' | 'N') dquote -> NAME { parse_dstring lexbuf }
+ ('n' | 'N') ddd    -> NAME { parse_dddstring lexbuf }
 
 
 /* this MUST be after strings, so raw strings take precedence
   over identifiers, eg r'x' is a string, not an identifier,
   but x'x' is an identifier .. yucky ..
 */
- identifier -> NAME {
-    let s = lexeme lexbuf in
-    let s' = Flx_id.utf8_to_ucn s in
-    let src = getsr lexbuf in
-    (src, s')
-  }
+ identifier -> NAME { Flx_id.utf8_to_ucn (lexeme lexbuf) }
 
 /* whitespace */
  white+ -> { () }
@@ -1168,7 +1140,7 @@ main lexer =
  eof -> ENDMARKER { }
 
 /* Anything else is an error */
- _ -> ERRORTOKEN { (getsr lexbuf, lexeme lexbuf) }
+ _ -> ERRORTOKEN { lexeme lexbuf }
 
 %parser
 
@@ -1307,11 +1279,11 @@ opt_private:
   | { `Public }
 
 opt_prio:
-  | LSQB NAME RSQB { `Priority (snd $2) }
+  | LSQB NAME RSQB { `Priority $2 }
   | { `Default }
 
 pri:
-  | NAME { snd $1 }
+  | NAME { $1 }
 
 prilist:
   | pri LESS prilist { $1 :: $3 }
@@ -1323,14 +1295,14 @@ dyprod:
        (*
        print_endline ("RULE " ^ snd $2);
        *)
-       `Scheme_rule ($1, snd $2, $3,`Sval,$5)
+       `Scheme_rule ($1, $2, $3, `Sval, $5)
      }
 
    | opt_private NAME opt_prio ":" NAME EQUAL dyalts ";" 
      {
-       if snd $5 <> "string" then raise Giveup;
-       print_endline ("STRING RULE " ^ snd $2);
-       `Scheme_rule ($1, snd $2,$3,`String,$7)
+       if $5 <> "string" then raise Giveup;
+       print_endline ("STRING RULE " ^ $2);
+       `Scheme_rule ($1, $2, $3, `String, $7)
      }
 
 
@@ -1342,39 +1314,39 @@ dyprod:
 
    | NAME NAME STRING ";" 
      {
-       if snd $1 <> "explain" then raise Giveup;
-       `Document ((snd $2),(snd $3))
+       if $1 <> "explain" then raise Giveup;
+       `Document ($2, $3)
      }
 
    | NAME NAME EQUAL subpage_entries ";" 
      {
-       if snd $1 <> "page" then raise Giveup;
-       `Page ((snd $2),$4)
+       if $1 <> "page" then raise Giveup;
+       `Page ($2, $4)
      }
 
    | NAME prilist ";" 
      {
-       if snd $1 <> "priority" then raise Giveup;
+       if $1 <> "priority" then raise Giveup;
        `Priorities $2
      }
 
 subpage_entry:
-  | NAME EQUAL LPAR subpage_entries RPAR { `Subpage ((snd $1),$4) }
-  | NAME { `Nt (snd $1) }
+  | NAME EQUAL LPAR subpage_entries RPAR { `Subpage ($1, $4) }
+  | NAME { `Nt $1 }
 
 subpage_entries:
   | subpage_entry COMMA subpage_entries { $1 :: $3 }
   | subpage_entry { [$1] }
 
 action:
-   | STRING { `Scheme (snd $1) }
+   | STRING { `Scheme $1 }
    | LPAR sexpr RPAR { `Expr $2 }
 
 note:
    | NAME STRING
      {
-       if snd $1 <> "note" then raise Giveup;
-       snd $2
+       if $1 <> "note" then raise Giveup;
+       $2
      }
    | { "" }
 
@@ -1391,9 +1363,9 @@ dyalt:
          | `Expr (_,_,e) ->
            `Scheme (user_expr prod e)
        in
-       prod,getsrr dyp,action,anote
+       prod,getsr dyp,action,anote
      }
-   | rhs { $1,getsrr dyp,`None,"" }
+   | rhs { $1,getsr dyp,`None,"" }
 
 dyaltlist:
    | { [] }
@@ -1415,34 +1387,30 @@ rhs_atom:
   | NAME { NAME $1 } /* arbitrary nonterminal */
   | STRING { STRING $1 } /* the string as an identifier */
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
-  | UNDERSCORE { UNDERSCORE $1 }
-
-  | QUEST { QUEST $1 }
-  | PLUS { PLUS $1 }
-  | STAR { STAR $1 }
-
-  | LPAR { LPAR $1 }
-  | RPAR { RPAR $1 }
-  | LSQB { LSQB $1 }
-  | RSQB { RSQB $1 }
-  | LBRACE { LBRACE $1 }
-  | RBRACE { RBRACE $1 }
-
-  | COMMA { COMMA $1 }
-
-  | LESS { LESS $1 }
-  | GREATER { GREATER $1 }
-  | EQUAL { EQUAL $1 }
-  | EQEQUAL { EQEQUAL $1 }
-  | NOTEQUAL { NOTEQUAL $1 }
-  | LESSEQUAL { LESSEQUAL $1 }
-  | GREATEREQUAL { GREATEREQUAL $1 }
+  | QUEST { QUEST }
+  | PLUS { PLUS }
+  | STAR { STAR }
+  | LPAR { LPAR }
+  | RPAR { RPAR }
+  | LSQB { LSQB }
+  | RSQB { RSQB }
+  | LBRACE { LBRACE }
+  | RBRACE { RBRACE }
+  | COMMA { COMMA }
+  | LESS { LESS }
+  | GREATER { GREATER }
+  | EQUAL { EQUAL }
+  | EQEQUAL { EQEQUAL }
+  | NOTEQUAL { NOTEQUAL }
+  | LESSEQUAL { LESSEQUAL }
+  | GREATEREQUAL { GREATEREQUAL }
+  | UNDERSCORE { UNDERSCORE }
 
 statement:
   | "SCHEME" STRING ";" 
     @{
-      let sr = getsrr dyp in
-      let s = snd $2 in
+      let sr = getsr dyp in
+      let s = $2 in
       let failwith x = print_endline ("Evaluating " ^ s); failwith x in
       (*
       let env = Ocs_env.env_copy dyp.local_data.env in
@@ -1463,7 +1431,7 @@ statement:
       (*
       print_endline "Opening syntax extensions";
       *)
-      let sr = getsrr dyp in
+      let sr = getsr dyp in
       let dssls = List.map snd $3 in
 (*
       print_endline ("Parsed open of syntax extensions " ^ String.concat "," dssls);
@@ -1529,8 +1497,8 @@ statement:
       print_endline ("Parsed syntax extensions " ^ (snd $2));
       print_endline ("Defining syntax extensions " ^ (snd $2));
       *)
-      let sr =   getsrr dyp in
-      let dssl = snd $2 in
+      let sr =   getsr dyp in
+      let dssl = $2 in
       let m = dyp.local_data in
       let m =
         if Drules.mem dssl m.dssls then m
@@ -1564,7 +1532,7 @@ statement:
             failwith "Error executing SCHEME"
       ))
       scm;
-      (0,Flx_srcref.dummy_sr,Snull),[Local_data local_data]
+      (0, Flx_srcref.dummy_sr, Snull), [Local_data local_data]
     }
 
   | SAVE_SYNTAX
@@ -1580,116 +1548,104 @@ statement:
         Marshal.to_channel x dyp.local_data [];
         close_out x
       end;
-      (0,Flx_srcref.dummy_sr,Snull)
+      (0, Flx_srcref.dummy_sr, Snull)
     }
-sexpr: | DUMMY { 0,Flx_srcref.dummy_sr,Snull }
+sexpr: | DUMMY { 0, Flx_srcref.dummy_sr, Snull }
 
 /* identifiers which aren't keywords */
-sname: NAME { 0,fst $1,Sstring (snd $1) }
+sname: NAME { 0, getsr dyp, Sstring $1 }
 
 /*
 replacements for * + and ? to be used in productions,
 since these symbols have special meansings as
 list, non-empty list, and optional respectively
 */
-star: STAR { 0,$1,Snull }
-plus: PLUS { 0,$1,Snull }
-quest: QUEST { 0,$1,Snull }
+star: STAR { 0, getsr dyp, Snull }
+plus: PLUS { 0, getsr dyp, Snull }
+quest: QUEST { 0, getsr dyp, Snull }
 
-lbrace: LBRACE { 0,$1,Snull }
-rbrace: RBRACE { 0,$1,Snull }
-lpar: LPAR { 0,$1,Snull }
-rpar: RPAR { 0,$1,Snull }
-lsqb: LSQB { 0,$1,Snull }
-rsqb: RSQB { 0,$1,Snull }
+lbrace: LBRACE { 0, getsr dyp, Snull }
+rbrace: RBRACE { 0, getsr dyp, Snull }
+lpar: LPAR { 0, getsr dyp, Snull }
+rpar: RPAR { 0, getsr dyp, Snull }
+lsqb: LSQB { 0, getsr dyp, Snull }
+rsqb: RSQB { 0, getsr dyp, Snull }
 
-comma: COMMA { 0,$1,Snull }
-vbar: VBAR { 0,$1,Snull }
+comma: COMMA { 0, getsr dyp, Snull }
+vbar: VBAR { 0, getsr dyp, Snull }
 
 /*
 a definite non-terminal for a sequence of no tokens,
 since the production syntax cannot parse an empty
 production at the moment
 */
-sepsilon: | {0,Flx_srcref.dummy_sr,Snull }
-strepsilon: | {0,Flx_srcref.dummy_sr,Sstring "" }
+sepsilon: | { 0, Flx_srcref.dummy_sr, Snull }
+strepsilon: | { 0, Flx_srcref.dummy_sr, Sstring "" }
 
 sinteger:
   | INTEGER
     {
-      let sr,t,v = $1 in
-      0,sr,Sbigint v
+      let t, v = $1 in
+      0, getsr dyp, Sbigint v
     }
 
 strint:
   | INTEGER
     {
-      let sr,t,v = $1 in
+      let t, v = $1 in
       let s = Big_int.string_of_big_int v in
-      0,sr,Sstring s
+      0, getsr dyp, Sstring s
     }
 
 sfloat:
   | FLOAT
     {
-      let sr,t,v = $1 in
+      let t, v = $1 in
       let x = Sstring t::Sstring v::[] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, getsr dyp, x
     }
 
 strfloat:
   | FLOAT
     {
-      let sr,t,v = $1 in
-      0,sr,Sstring v
+      let t, v = $1 in
+      0, getsr dyp, Sstring v
     }
 
 
 sintegral:
   | INTEGER
     {
-      let sr,t,v = $1 in
+      let t, v = $1 in
       let i = Sstring t :: Sbigint v :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev i) in
-      0,sr,x
+      0, getsr dyp, x
     }
   | "-" INTEGER
     {
-      let sr,t,v = $2 in
+      let t, v = $2 in
       let v = Big_int.minus_big_int v in
       let i = Sstring t :: Sbigint v :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev i) in
-      0,sr,x
+      0, getsr dyp, x
     }
 
 sstring:
-  | STRING
-    {
-      let sr,s = $1 in
-      0,sr,Sstring s
-    }
+  | STRING { 0, getsr dyp, Sstring $1 }
 
 strstring:
-  | STRING
-    {
-      let sr,s = $1 in
-      let s = Flx_string.c_quote_of_string s in
-      0,sr,Sstring s
-    }
+  | STRING { 0, getsr dyp, Sstring (Flx_string.c_quote_of_string $1) }
 
 scstring:
-  | CSTRING
-    {
-      let sr,s = $1 in
-      0,sr,Sstring s
-    }
+  | CSTRING { 0, getsr dyp, Sstring $1 }
 
 
 sliteral:
   | INTEGER
     {
-      let sr,t,v = $1 in
+      let t, v = $1 in
+      let sr = getsr dyp in
       let v = Big_int.string_of_big_int v in
       let alit = Ocs_sym.get_symbol "ast_literal" in
       let aint = Ocs_sym.get_symbol "ast_int" in
@@ -1697,97 +1653,104 @@ sliteral:
       let i = Ocs_misc.make_slist Snull (List.rev i) in
       let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, sr, x
     }
 
   | FLOAT
     {
-      let sr,t,v = $1 in
+      let t, v = $1 in
+      let sr = getsr dyp in
       let alit = Ocs_sym.get_symbol "ast_literal" in
       let afloat = Ocs_sym.get_symbol "ast_float" in
       let i = afloat :: Sstring t :: Sstring v :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
       let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, sr, x
     }
 
   | STRING
     {
-      let sr,s = $1 in
+      let s = $1 in
+      let sr = getsr dyp in
       let alit = Ocs_sym.get_symbol "ast_literal" in
       let astring = Ocs_sym.get_symbol "ast_string" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
       let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, sr, x
    }
 
   | WSTRING
     {
-      let sr,s = $1 in
+      let s = $1 in
+      let sr = getsr dyp in
       let alit = Ocs_sym.get_symbol "ast_literal" in
       let astring = Ocs_sym.get_symbol "ast_wstring" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
       let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, sr, x
     }
 
   | USTRING
     {
-      let sr,s = $1 in
+      let s = $1 in
+      let sr = getsr dyp in
       let alit = Ocs_sym.get_symbol "ast_literal" in
       let astring = Ocs_sym.get_symbol "ast_ustring" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
       let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, sr, x
     }
 
   | CSTRING
     {
-      let sr,s = $1 in
+      let s = $1 in
+      let sr = getsr dyp in
       let alit = Ocs_sym.get_symbol "ast_literal" in
       let astring = Ocs_sym.get_symbol "ast_cstring" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
       let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, sr, x
     }
 
   | QSTRING
     {
-      let sr,s = $1 in
+      let s = $1 in
       let qstring = Ocs_sym.get_symbol "ast_interpolate" in
       let x = qstring :: Sstring s :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, getsr dyp, x
     }
 
   | FSTRING
     {
-      let sr,s = $1 in
+      let s = $1 in
       let fstring = Ocs_sym.get_symbol "ast_vsprintf" in
       let x = fstring :: Sstring s :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,sr,x
+      0, getsr dyp, x
     }
 
 basic_name:
-  | NAME { $1 }
+  | NAME { getsr dyp, $1 }
 
 basic_name_comma_list:
   | basic_name COMMA basic_name_comma_list { $1 :: $3 }
   | basic_name { [$1] }
   | { [] }
 
-epsilon: | {()}
+epsilon: | { () }
+
 %%
+
 {
 exception Found_file of string
 let lookup_file incdirs f =
@@ -1823,7 +1786,12 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
   let b = (Dyp.std_lexbuf lexbuf) in
   b.lex_curr_p <- { b.lex_curr_p with pos_fname = filename };
   let show_error() =
-    let sr = getsr lexbuf in
+    let file = b.lex_start_p.pos_fname in
+    let start_line = b.lex_start_p.pos_lnum in
+    let start_col = b.lex_start_p.pos_cnum - b.lex_start_p.pos_bol + 1 in
+    let end_line = b.lex_curr_p.pos_lnum in
+    let end_col = b.lex_curr_p.pos_cnum - b.lex_start_p.pos_bol in
+    let sr = file, start_line, start_col, end_line, end_col in
     print_endline (long_string_of_src sr);
   in
   let parse_tree = 
