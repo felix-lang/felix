@@ -1,38 +1,34 @@
 (** Generic support *)
 
-open Flx_types
-open Flx_mtypes2
-open Flx_ast
-
 val find_split_vs:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   int ->
-  plain_ivs_list_t *
-  plain_ivs_list_t *
-  vs_aux_t
+  Flx_ast.plain_ivs_list_t *
+  Flx_ast.plain_ivs_list_t *
+  Flx_ast.vs_aux_t
 
 val find_vs:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   int ->
-  ivs_list_t
+  Flx_ast.ivs_list_t
 
 val adjust_ts:
-  sym_state_t ->
-  range_srcref ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_srcref.t ->
   int ->
-  btypecode_t list ->
-  btypecode_t list
+  Flx_types.btypecode_t list ->
+  Flx_types.btypecode_t list
 
 val make_params:
-  sym_state_t ->
-  range_srcref ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_srcref.t ->
   int ->
-  btypecode_t list ->
-  (string * btypecode_t) list
+  Flx_types.btypecode_t list ->
+  (string * Flx_types.btypecode_t) list
 
 val make_varmap:
-  sym_state_t ->
-  range_srcref ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_srcref.t ->
   int ->
-  btypecode_t list ->
-  (int, btypecode_t) Hashtbl.t
+  Flx_types.btypecode_t list ->
+  (int, Flx_types.btypecode_t) Hashtbl.t

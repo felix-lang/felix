@@ -643,7 +643,7 @@ let bbind syms =
 
 let bind_ifaces syms
   (ifaces:
-    (range_srcref * iface_t * int option) list
+    (Flx_srcref.t * iface_t * int option) list
   )
 =
   let luqn env n = lookup_qn_in_env syms env n in

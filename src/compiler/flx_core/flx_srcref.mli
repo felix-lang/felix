@@ -2,25 +2,27 @@
  *
  * Source reference manipulators. *)
 
-open Flx_ast
-open Flx_types
+(** type of a position in the {e original} sources *)
+type srcref =
+  string (* filename *) *
+  int (* line number, 1 origin *) *
+  int (* starting column, 1 origin *) *
+  int (* ending column, 1 origin *)
 
-val rstoken: srcref -> srcref -> range_srcref
-val rsrange: range_srcref -> range_srcref -> range_srcref
-val slift: srcref -> range_srcref
-val slower: range_srcref -> srcref
+(** type of a span between two positions in one file*)
+type t =
+  string * (* filename *)
+  int * (* starting line number, 1 origin *)
+  int * (* starting column, 1 origin *)
+  int * (* ending line number, 1 origin *)
+  int   (* ending column, 1 origin *)
 
-val rsexpr: expr_t -> expr_t -> range_srcref
-val rslist: expr_t list -> range_srcref
+val rstoken: srcref -> srcref -> t
+val rsrange: t -> t -> t
+val slift: srcref -> t
+val slower: t -> srcref
 
-val src_of_bexe: bexe_t -> range_srcref
-val src_of_expr: expr_t -> range_srcref
-val src_of_stmt : statement_t -> range_srcref
-val src_of_pat : pattern_t -> range_srcref
-val src_of_qualified_name : qualified_name_t -> range_srcref
-val src_of_suffixed_name: suffixed_name_t -> range_srcref
+val short_string_of_src: t -> string
+val long_string_of_src: t -> string
 
-val short_string_of_src: range_srcref -> string
-val long_string_of_src: range_srcref -> string
-
-val dummy_sr: range_srcref
+val dummy_sr: t

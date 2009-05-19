@@ -134,7 +134,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_dot (sr,(x,x2)) -> `AST_dot (sr,(f x,f x2))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
-  (* | `AST_lambda of range_srcref * (vs_list_t * params_t list * typecode_t * statement_t list) *)
+  (* | `AST_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list) *)
   | `AST_lambda _ -> e
 
   | `AST_match_ctor (sr,(qn,x)) -> `AST_match_ctor (sr,(qn,f x))
@@ -238,7 +238,7 @@ let iter_expr f (e:expr_t) =
 
 let scan_expr e =
   let ls = ref [] in
-  let add x = ls := Flx_srcref.src_of_expr x :: !ls in
+  let add x = ls := Flx_ast.src_of_expr x :: !ls in
   iter_expr add e;
   Flx_list.uniq_list !ls
 

@@ -36,6 +36,6 @@ val tcinst_chk:
   bool ->
   int ->
   btypecode_t list ->
-  range_srcref ->
+  Flx_srcref.t ->
   bvs_t * btypecode_t * btypecode_t list * int ->
   (int * btypecode_t list) option

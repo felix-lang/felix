@@ -2,15 +2,11 @@
  *
  * Name binding pass 2 *)
 
-open Flx_types
-open Flx_ast
-open Flx_mtypes2
-
 val bbind:
-  sym_state_t ->
-  fully_bound_symbol_table_t
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t
 
 val bind_ifaces:
-  sym_state_t ->
-  (range_srcref * iface_t * int option) list ->
-  biface_t list
+  Flx_mtypes2.sym_state_t ->
+  (Flx_srcref.t * Flx_types.iface_t * int option) list ->
+  Flx_types.biface_t list

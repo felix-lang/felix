@@ -15,6 +15,6 @@ val passign:
   fully_bound_symbol_table_t ->
   aentry_t list ->                (* list of assignments to fix *)
   btypecode_t list ->             (* ts to use when creating temporaries *)
-  range_srcref ->                 (* source ref *)
+  Flx_srcref.t ->                 (* source ref *)
   (btypecode_t * int) list *
   bexe_t list

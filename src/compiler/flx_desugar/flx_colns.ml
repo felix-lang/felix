@@ -17,7 +17,7 @@ open Flx_macro
 
 type nsrec = {
   name:string;
-  sr:range_srcref;
+  sr:Flx_srcref.t;
   vs:vs_list_t;
   fudges:string list ref
 }

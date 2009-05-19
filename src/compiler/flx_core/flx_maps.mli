@@ -69,4 +69,4 @@ val reduce_type:
   btypecode_t ->
   btypecode_t
 
-val scan_expr: expr_t -> range_srcref list
+val scan_expr: expr_t -> Flx_srcref.t list

@@ -34,7 +34,7 @@ let gen_prim_call
   syms
   (bbdfns:fully_bound_symbol_table_t)
   (tsub:btypecode_t -> btypecode_t)
-  (ge: range_srcref -> tbexpr_t -> cexpr_t)
+  (ge: Flx_srcref.t -> tbexpr_t -> cexpr_t)
   (ct:string)
   (ts:btypecode_t list)
   ((arg,argt as a) : tbexpr_t)

@@ -1,72 +1,65 @@
 (** C++ code generator *)
 
-open Flx_ast
-open Flx_types
-open Flx_mtypes2
-open Flx_label
-
 val gen_function_names:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  Flx_types.fully_bound_symbol_table_t ->
   string
 
 val gen_functions:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  Flx_types.fully_bound_symbol_table_t ->
   string
 
 val gen_execute_methods:
   string ->
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
-  label_map_t * label_usage_t ->
+  Flx_mtypes2.sym_state_t ->
+  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  Flx_types.fully_bound_symbol_table_t ->
+  Flx_label.label_map_t * Flx_label.label_usage_t ->
   int ref ->
   out_channel ->
   out_channel ->
   unit
 
 val find_members:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  Flx_types.fully_bound_symbol_table_t ->
   int ->
-  btypecode_t list ->
+  Flx_types.btypecode_t list ->
   string
 
 val gen_biface_headers:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  biface_t list ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
+  Flx_types.biface_t list ->
   string
 
 val gen_biface_bodies:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  biface_t list ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
+  Flx_types.biface_t list ->
   string
 
 val format_vars:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  bid_t list ->
-  btypecode_t list ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
+  Flx_ast.bid_t list ->
+  Flx_types.btypecode_t list ->
   string
 
 val is_gc_pointer:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  range_srcref ->
-  btypecode_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
+  Flx_srcref.t ->
+  Flx_types.btypecode_t ->
   bool
 
-val gen_python_module: 
-  string -> 
-  sym_state_t -> 
-  fully_bound_symbol_table_t ->
-  biface_t list -> 
+val gen_python_module:
+  string ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
+  Flx_types.biface_t list ->
   string
-
- 

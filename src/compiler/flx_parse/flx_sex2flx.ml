@@ -29,7 +29,7 @@ let lst s (f:sexp_t->'a) x : 'a list = match x with
   | Lst ls -> map f ls
   | x -> err x (s^ " list")
 
-let xsr x : range_srcref =
+let xsr x : Flx_srcref.t =
   let ii i = int_of_string i in
   match x with
   | Lst [Str fn; Int fl; Int fc; Int ll; Int lc] -> fn,ii fl,ii fc,ii ll,ii lc

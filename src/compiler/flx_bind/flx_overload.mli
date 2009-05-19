@@ -13,14 +13,14 @@ type overload_result =
 
 val overload:
   sym_state_t ->
-  (range_srcref  -> int -> typecode_t -> btypecode_t) -> (* bind type *)
+  (Flx_srcref.t  -> int -> typecode_t -> btypecode_t) -> (* bind type *)
   (int -> expr_t -> tbexpr_t) -> (* bind expression in context of i *)
   (int -> qualified_name_t -> entry_set_t * typecode_t list) ->
-  range_srcref ->
+  Flx_srcref.t ->
   entry_kind_t list ->
   string ->
   btypecode_t list ->
   btypecode_t list ->
   overload_result option
 
-exception OverloadKindError of range_srcref * string
+exception OverloadKindError of Flx_srcref.t * string

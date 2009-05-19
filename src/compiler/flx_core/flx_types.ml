@@ -67,9 +67,9 @@ and access_t = [`Private | `Public ]
 
 and asm_t =
   [
-  | `Exe of range_srcref * exe_t
-  | `Dcl of range_srcref * id_t * int option * access_t * vs_list_t * dcl_t
-  | `Iface of range_srcref * iface_t
+  | `Exe of Flx_srcref.t * exe_t
+  | `Dcl of Flx_srcref.t * id_t * int option * access_t * vs_list_t * dcl_t
+  | `Iface of Flx_srcref.t * iface_t
   | `Dir of dir_t
   ]
 
@@ -156,9 +156,9 @@ and name_map_t = (string, entry_set_t) Hashtbl.t
 
 type biface_t =
   [
-  | `BIFACE_export_fun of range_srcref * bid_t * string
-  | `BIFACE_export_python_fun of range_srcref * bid_t * string
-  | `BIFACE_export_type of range_srcref * btypecode_t * string
+  | `BIFACE_export_fun of Flx_srcref.t * bid_t * string
+  | `BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
+  | `BIFACE_export_type of Flx_srcref.t * btypecode_t * string
   ]
 
 type regular_args_t =
@@ -169,33 +169,33 @@ type regular_args_t =
 
 and bexe_t =
   [
-  | `BEXE_label of range_srcref * string
-  | `BEXE_comment of range_srcref * string (* for documenting generated code *)
-  | `BEXE_halt of range_srcref * string  (* for internal use only *)
-  | `BEXE_trace of range_srcref * string * string  (* for internal use only *)
-  | `BEXE_goto of range_srcref * string  (* for internal use only *)
-  | `BEXE_ifgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
-  | `BEXE_call of range_srcref * tbexpr_t * tbexpr_t
-  | `BEXE_call_direct of range_srcref * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_call_stack of range_srcref * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_call_prim of range_srcref * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_jump of range_srcref * tbexpr_t * tbexpr_t
-  | `BEXE_jump_direct of range_srcref * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_loop of range_srcref * int * tbexpr_t
-  | `BEXE_svc of range_srcref * bid_t
-  | `BEXE_fun_return of range_srcref * tbexpr_t
-  | `BEXE_yield of range_srcref * tbexpr_t
-  | `BEXE_proc_return of range_srcref
-  | `BEXE_nop of range_srcref * string
-  | `BEXE_code of range_srcref * c_t
-  | `BEXE_nonreturn_code of range_srcref * c_t
-  | `BEXE_assign of range_srcref * tbexpr_t * tbexpr_t
-  | `BEXE_init of range_srcref * bid_t * tbexpr_t
+  | `BEXE_label of Flx_srcref.t * string
+  | `BEXE_comment of Flx_srcref.t * string (* for documenting generated code *)
+  | `BEXE_halt of Flx_srcref.t * string  (* for internal use only *)
+  | `BEXE_trace of Flx_srcref.t * string * string  (* for internal use only *)
+  | `BEXE_goto of Flx_srcref.t * string  (* for internal use only *)
+  | `BEXE_ifgoto of Flx_srcref.t * tbexpr_t * string  (* for internal use only *)
+  | `BEXE_call of Flx_srcref.t * tbexpr_t * tbexpr_t
+  | `BEXE_call_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | `BEXE_call_stack of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | `BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | `BEXE_jump of Flx_srcref.t * tbexpr_t * tbexpr_t
+  | `BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | `BEXE_loop of Flx_srcref.t * int * tbexpr_t
+  | `BEXE_svc of Flx_srcref.t * bid_t
+  | `BEXE_fun_return of Flx_srcref.t * tbexpr_t
+  | `BEXE_yield of Flx_srcref.t * tbexpr_t
+  | `BEXE_proc_return of Flx_srcref.t
+  | `BEXE_nop of Flx_srcref.t * string
+  | `BEXE_code of Flx_srcref.t * c_t
+  | `BEXE_nonreturn_code of Flx_srcref.t * c_t
+  | `BEXE_assign of Flx_srcref.t * tbexpr_t * tbexpr_t
+  | `BEXE_init of Flx_srcref.t * bid_t * tbexpr_t
   | `BEXE_begin
   | `BEXE_end
-  | `BEXE_assert of range_srcref * tbexpr_t
-  | `BEXE_assert2 of range_srcref * range_srcref * tbexpr_t option * tbexpr_t
-  | `BEXE_axiom_check of range_srcref * tbexpr_t
+  | `BEXE_assert of Flx_srcref.t * tbexpr_t
+  | `BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * tbexpr_t option * tbexpr_t
+  | `BEXE_axiom_check of Flx_srcref.t * tbexpr_t
   ]
 
 and bexpr_t =
@@ -274,7 +274,7 @@ and bbdcl_t =
 
 and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-and axiom_t = id_t * range_srcref * int option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
+and axiom_t = id_t * Flx_srcref.t * int option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
 
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
 
@@ -319,7 +319,7 @@ type symbol_definition_t =
 
 type symbol_data_t = {
   id:string;
-  sr:range_srcref;
+  sr:Flx_srcref.t;
   parent:int option;
   vs:ivs_list_t;
   pubmap:name_map_t;
@@ -330,7 +330,7 @@ type symbol_data_t = {
 
 type symbol_table_t = (int, symbol_data_t) Hashtbl.t
 
-type symbol_data3_t = string * int option * range_srcref * bbdcl_t
+type symbol_data3_t = string * int option * Flx_srcref.t * bbdcl_t
 type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
 type type_registry_t = (btypecode_t,int) Hashtbl.t

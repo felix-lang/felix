@@ -6,9 +6,9 @@ open Flx_ast
 open Flx_types
 
 type extract_t =
-  | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
-  | Udtor of range_srcref * qualified_name_t (* argument of union component s *)
-  | Proj_s of range_srcref * string          (* record projection name *)
+  | Proj_n of Flx_srcref.t * int             (* tuple projections 1 .. n *)
+  | Udtor of Flx_srcref.t * qualified_name_t (* argument of union component s *)
+  | Proj_s of Flx_srcref.t * string          (* record projection name *)
 
 val gen_match_check:
   pattern_t ->
@@ -16,7 +16,7 @@ val gen_match_check:
   expr_t
 
 val get_pattern_vars:
-  (string, range_srcref * extract_t list) Hashtbl.t ->
+  (string, Flx_srcref.t * extract_t list) Hashtbl.t ->
                               (* Hashtable of variable -> extractor *)
   pattern_t ->      (* pattern *)
   extract_t list -> (* extractor for this pattern *)

@@ -10,9 +10,9 @@ open Flx_exceptions
 open List
 
 type extract_t =
-  | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
-  | Udtor of range_srcref * qualified_name_t (* argument of union component s *)
-  | Proj_s of range_srcref * string          (* record projection name *)
+  | Proj_n of Flx_srcref.t * int             (* tuple projections 1 .. n *)
+  | Udtor of Flx_srcref.t * qualified_name_t (* argument of union component s *)
+  | Proj_s of Flx_srcref.t * string          (* record projection name *)
 
 (* the extractor is a function to be applied to
    the argument to extract the value of the identifier;
@@ -158,7 +158,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
 *)
 
 let rec get_pattern_vars
-  vars      (* Hashtable of variable -> range_srcref * extractor *)
+  vars      (* Hashtable of variable -> Flx_srcref.t * extractor *)
   pat       (* pattern *)
   extractor (* extractor for this pattern *)
 =
