@@ -487,7 +487,7 @@ and statement_t =
 
   (* binding structures [prolog] *)
   | `AST_abs_decl of Flx_srcref.t * id_t * vs_list_t * type_qual_t list * c_t * raw_req_expr_t
-  | `AST_ctypes of Flx_srcref.t * (Flx_srcref.srcref * id_t) list * type_qual_t list  * raw_req_expr_t
+  | `AST_ctypes of Flx_srcref.t * (Flx_srcref.t * id_t) list * type_qual_t list  * raw_req_expr_t
   | `AST_const_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t * c_t * raw_req_expr_t
   | `AST_fun_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t list * typecode_t * c_t * raw_req_expr_t * prec_t
   | `AST_callback_decl of Flx_srcref.t * id_t * typecode_t list * typecode_t * raw_req_expr_t

@@ -1,10 +1,3 @@
-(** type of a position in the {e original} sources *)
-type srcref =
-  string (* filename *) *
-  int (* line number, 1 origin *) *
-  int (* starting column, 1 origin *) *
-  int (* ending column, 1 origin *)
-
 (** type of a span between two positions in one file*)
 type t =
   string * (* filename *)
@@ -22,25 +15,9 @@ let dummy_sr = ("generated",0,0,0,0)
 
 (** axiom: rstoken a b = rsrange (lift a) (lift b) *)
 
-(** get source range from source references of first
-   and last tokens
-*)
-let rstoken (f1,l1,s1,e1) (f2,l2,s2,e2) = (f1,l1,s1,l2,e2)
-
 (** get range from first and last ranges *)
 let rsrange (f1,sl1,sc1,el1,ec1) (f2,sl2,sc2,el2,ec2) =
   (f1,sl1,sc1,el2,ec2)
-
-(** lift token source to range for token without attribute*)
-let slift (f,l,s,e) = (f,l,s,l,e)
-
-(** lift token source to range for tokens with attribute*)
-let sliftfst x = slift (fst x)
-
-(** lower token source range to source *)
-let slower (f,l1,c1,l2,c2) =
-  if l1 = l2 then f,l1,c1,c2
-  else f,l1,c1,c1
 
 (** {6 Type specific operations} *)
 

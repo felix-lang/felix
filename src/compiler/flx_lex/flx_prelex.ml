@@ -101,7 +101,7 @@ let src_of_token t = match t with
   | HASH_INCLUDE_FILES _
   | LOAD_SYNTAX _
   | SAVE_SYNTAX _
-    -> ("",0,0,0)
+    -> Flx_srcref.dummy_sr
 
   | NAME    (s,_)
   | NONTERMINAL (s,_,_)

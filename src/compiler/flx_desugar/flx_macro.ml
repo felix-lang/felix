@@ -904,7 +904,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     iter
     (fun (sr,id) ->
       let id = mi sr id in
-      let sr = slift sr in
       let st = `AST_abs_decl (sr,id, dfltvs, qs, `Str id, rqmap reqs) in
       tack st
     )

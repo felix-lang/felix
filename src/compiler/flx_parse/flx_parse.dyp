@@ -49,8 +49,6 @@ let strip_us s =
 
 let lexeme x = Lexing.lexeme (Dyp.std_lexbuf x)
 
-let dummysr = "Dummy",0,0,0,0
-
 let getsrr dyp =
   let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
   s.pos_fname, s.pos_lnum, s.pos_cnum - s.pos_bol + 1, e.pos_lnum, e.pos_cnum - e.pos_bol
@@ -59,9 +57,10 @@ let getsr lexbuf =
   let lexbuf = Dyp.std_lexbuf lexbuf in
   let file = lexbuf.lex_start_p.pos_fname in
   let start_line = lexbuf.lex_start_p.pos_lnum in
-  let start_col = lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol + 1 in
-  let end_col =   lexbuf.lex_curr_p.pos_cnum  - lexbuf.lex_start_p.pos_bol in
-  file, start_line, start_col, end_col
+  let start_col  = lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol + 1 in
+  let end_line   = lexbuf.lex_curr_p.pos_lnum in
+  let end_col    = lexbuf.lex_curr_p.pos_cnum  - lexbuf.lex_start_p.pos_bol in
+  file, start_line, start_col, end_line, end_col
 
 let set_filename lexbuf fname = 
   let lexbuf = Dyp.std_lexbuf lexbuf in
@@ -340,39 +339,35 @@ let fixup_suffix_scheme sr pcounter rhs =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
   | NONTERMINAL (sr,s,p) :: STAR _ :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",rsr in
-    let rule2 = sl,`Default,[],"'()","",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",sr in
+    let rule2 = sl,`Default,[],"'()","",sr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: PLUS _ :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",rsr in
-    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"`(,_1)","",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"(reverse _1)","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(cons _2 _1)","",sr in
+    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"`(,_1)","",sr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: QUEST _ :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"`(,_1)","",rsr in
-    let rule2 = sl,`Default,[],"()","",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"`(,_1)","",sr in
+    let rule2 = sl,`Default,[],"()","",sr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | other :: QUEST sr :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__opt_"^x in
-    let rule1 = sl,`Default,[other],"()","",rsr in
-    let rule2 = sl,`Default,[],"()","",rsr in
+    let rule1 = sl,`Default,[other],"()","",sr in
+    let rule2 = sl,`Default,[],"()","",sr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | h :: t -> aux t (h::out) extras
@@ -382,39 +377,35 @@ let fixup_suffix_string sr pcounter rhs =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
   | NONTERMINAL (sr,s,p) :: STAR _ :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__rlist_"^x in
     let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",rsr in
-    let rule2 = sl,`Default,[],"\"\"","",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",sr in
+    let rule2 = sl,`Default,[],"\"\"","",sr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: PLUS _ :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let slr = s ^ "__nerlist_"^x in
     let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",rsr in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",rsr in
-    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"_1","",rsr in
+    let rule0 = slr,`Default,[NONTERMINAL(sr,sl,`No_prio)],"_1","",sr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,sl,`No_prio);NONTERMINAL(sr,s,p)],"(strcat `(,_1 ,_2))","",sr in
+    let rule2 = sl,`Default,[NONTERMINAL(sr,s,`No_prio)],"_1","",sr in
     aux t (NONTERMINAL (sr,slr,`No_prio)::out) (rule0::rule1::rule2::extras)
 
   | NONTERMINAL (sr,s,p) :: QUEST _ :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"_1","",rsr in
-    let rule2 = sl,`Default,[],"\"\"","",rsr in
+    let rule1 = sl,`Default,[NONTERMINAL(sr,s,p)],"_1","",sr in
+    let rule2 = sl,`Default,[],"\"\"","",sr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | other :: QUEST sr :: t ->
-    let rsr = slift sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__opt_"^x in
-    let rule1 = sl,`Default,[other],"_1","",rsr in
-    let rule2 = sl,`Default,[],"\"\"","",rsr in
+    let rule1 = sl,`Default,[other],"_1","",sr in
+    let rule2 = sl,`Default,[],"\"\"","",sr in
     aux t (NONTERMINAL (sr,sl,`No_prio)::out) (rule1::rule2::extras)
 
   | h :: t -> aux t (h::out) extras
@@ -445,7 +436,7 @@ let fixup_prio rhs =
     aux t (NONTERMINAL (sr,s,`Eq_prio p)::out)
    
   | NAME (_,s) :: LSQB sr :: _ -> 
-    clierr (slift sr) "Dangling [ in grammar"
+    clierr sr "Dangling [ in grammar"
  
   | NAME (sr,s) ::t ->
     aux t (NONTERMINAL (sr,s,`No_prio)::out)
@@ -539,7 +530,6 @@ let rec flatten sr pcounter kind (rhs: symbol_t list) : token list * rule_t list
   | [] -> List.rev out,extras
 
   | `Group dyalts :: t ->
-    let sr = Flx_srcref.slower sr in
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_" ^ x in
     let rules : rule_t list = fixup_alternatives pcounter kind sl `Default dyalts in
@@ -677,7 +667,7 @@ let dyp_merge_Obj_statement_star ol =
 
 
 /* special */
-%token <(Flx_srcref.srcref * string)> ERRORTOKEN
+%token <(Flx_srcref.t * string)> ERRORTOKEN
 %token ENDMARKER
 
 /* whitespace and comments */
@@ -685,66 +675,66 @@ let dyp_merge_Obj_statement_star ol =
 %token SLOSH
 
 /* literals */
-%token <(Flx_srcref.srcref * string)> NAME
-%token <(Flx_srcref.srcref * string * prio_t)> NONTERMINAL
-%token <(Flx_srcref.srcref * string * Flx_ast.bigint)> INTEGER
-%token <(Flx_srcref.srcref * string * string )> FLOAT
-%token <(Flx_srcref.srcref * string)> STRING
-%token <(Flx_srcref.srcref * string)> CSTRING
-%token <(Flx_srcref.srcref * string)> FSTRING
-%token <(Flx_srcref.srcref * string)> QSTRING
-%token <(Flx_srcref.srcref * string)> WSTRING
-%token <(Flx_srcref.srcref * string)> USTRING
-%token <(Flx_srcref.srcref * string)> USER_KEYWORD
+%token <(Flx_srcref.t * string)> NAME
+%token <(Flx_srcref.t * string * prio_t)> NONTERMINAL
+%token <(Flx_srcref.t * string * Flx_ast.bigint)> INTEGER
+%token <(Flx_srcref.t * string * string )> FLOAT
+%token <(Flx_srcref.t * string)> STRING
+%token <(Flx_srcref.t * string)> CSTRING
+%token <(Flx_srcref.t * string)> FSTRING
+%token <(Flx_srcref.t * string)> QSTRING
+%token <(Flx_srcref.t * string)> WSTRING
+%token <(Flx_srcref.t * string)> USTRING
+%token <(Flx_srcref.t * string)> USER_KEYWORD
 %token <(string list)> HASH_INCLUDE_FILES
 %token DUMMY
 
 %token <local_data_t> LOAD_SYNTAX
 %token <string> SAVE_SYNTAX
 
-%token <(Flx_srcref.srcref)> QUEST
+%token <(Flx_srcref.t)> QUEST
 %constructor Obj_keyword %for QUEST
-%token <(Flx_srcref.srcref)> PLUS
+%token <(Flx_srcref.t)> PLUS
 %constructor Obj_keyword %for PLUS
-%token <(Flx_srcref.srcref)> STAR
+%token <(Flx_srcref.t)> STAR
 %constructor Obj_keyword %for STAR
 
-%token <(Flx_srcref.srcref)> LPAR
+%token <(Flx_srcref.t)> LPAR
 %constructor Obj_keyword %for LPAR
-%token <(Flx_srcref.srcref)> RPAR
+%token <(Flx_srcref.t)> RPAR
 %constructor Obj_keyword %for RPAR
 
-%token <(Flx_srcref.srcref)> LSQB
+%token <(Flx_srcref.t)> LSQB
 %constructor Obj_keyword %for LSQB
-%token <(Flx_srcref.srcref)> RSQB
+%token <(Flx_srcref.t)> RSQB
 %constructor Obj_keyword %for RSQB
 
-%token <(Flx_srcref.srcref)> LBRACE
+%token <(Flx_srcref.t)> LBRACE
 %constructor Obj_keyword %for LBRACE
-%token <(Flx_srcref.srcref)> RBRACE
+%token <(Flx_srcref.t)> RBRACE
 %constructor Obj_keyword %for RBRACE
 
-%token <(Flx_srcref.srcref)> COMMA
+%token <(Flx_srcref.t)> COMMA
 %constructor Obj_keyword %for COMMA
-%token <(Flx_srcref.srcref)> VBAR
+%token <(Flx_srcref.t)> VBAR
 %constructor Obj_keyword %for VBAR
 
-%token <(Flx_srcref.srcref)> LESS
+%token <(Flx_srcref.t)> LESS
 %constructor Obj_keyword %for LESS
-%token <(Flx_srcref.srcref)> GREATER
+%token <(Flx_srcref.t)> GREATER
 %constructor Obj_keyword %for GREATER
-%token <(Flx_srcref.srcref)> EQUAL
+%token <(Flx_srcref.t)> EQUAL
 %constructor Obj_keyword %for EQUAL
-%token <(Flx_srcref.srcref)> EQEQUAL
+%token <(Flx_srcref.t)> EQEQUAL
 %constructor Obj_keyword %for EQEQUAL
-%token <(Flx_srcref.srcref)> NOTEQUAL
+%token <(Flx_srcref.t)> NOTEQUAL
 %constructor Obj_keyword %for NOTEQUAL
-%token <(Flx_srcref.srcref)> LESSEQUAL
+%token <(Flx_srcref.t)> LESSEQUAL
 %constructor Obj_keyword %for LESSEQUAL
-%token <(Flx_srcref.srcref)> GREATEREQUAL
+%token <(Flx_srcref.t)> GREATEREQUAL
 %constructor Obj_keyword %for GREATEREQUAL
 
-%token <(Flx_srcref.srcref)> UNDERSCORE
+%token <(Flx_srcref.t)> UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE
 /* top level entry */
 %constructor Obj_sexpr %for sterm
@@ -1294,7 +1284,7 @@ sstatements:
       (*
       print_endline "Returning inner statement list";
       *)
-      0, dummysr, ss
+      0, Flx_srcref.dummy_sr, ss
     }
 
 sstatement_star:
@@ -1422,8 +1412,8 @@ rhs_term :
   | LPAR dyalts RPAR { `Group $2 }
 
 rhs_atom:
-  | NAME { let sr,s = $1 in NAME (sr,s) } /* arbitrary nonterminal */
-  | STRING { let sr,s = $1 in STRING (sr,s) } /* the string as an identifier */
+  | NAME { NAME $1 } /* arbitrary nonterminal */
+  | STRING { STRING $1 } /* the string as an identifier */
   | USER_KEYWORD { USER_KEYWORD $1 } /* user terminal */
   | UNDERSCORE { UNDERSCORE $1 }
 
@@ -1574,7 +1564,7 @@ statement:
             failwith "Error executing SCHEME"
       ))
       scm;
-      (0,dummysr,Snull),[Local_data local_data]
+      (0,Flx_srcref.dummy_sr,Snull),[Local_data local_data]
     }
 
   | SAVE_SYNTAX
@@ -1590,45 +1580,45 @@ statement:
         Marshal.to_channel x dyp.local_data [];
         close_out x
       end;
-      (0,dummysr,Snull)
+      (0,Flx_srcref.dummy_sr,Snull)
     }
-sexpr: | DUMMY { 0,dummysr,Snull }
+sexpr: | DUMMY { 0,Flx_srcref.dummy_sr,Snull }
 
 /* identifiers which aren't keywords */
-sname: NAME { 0,slift (fst $1),Sstring (snd $1) }
+sname: NAME { 0,fst $1,Sstring (snd $1) }
 
 /*
 replacements for * + and ? to be used in productions,
 since these symbols have special meansings as
 list, non-empty list, and optional respectively
 */
-star: STAR { 0,slift $1,Snull }
-plus: PLUS { 0,slift $1,Snull }
-quest: QUEST { 0,slift $1,Snull }
+star: STAR { 0,$1,Snull }
+plus: PLUS { 0,$1,Snull }
+quest: QUEST { 0,$1,Snull }
 
-lbrace: LBRACE { 0,slift $1,Snull }
-rbrace: RBRACE { 0,slift $1,Snull }
-lpar: LPAR { 0,slift $1,Snull }
-rpar: RPAR { 0,slift $1,Snull }
-lsqb: LSQB { 0,slift $1,Snull }
-rsqb: RSQB { 0,slift $1,Snull }
+lbrace: LBRACE { 0,$1,Snull }
+rbrace: RBRACE { 0,$1,Snull }
+lpar: LPAR { 0,$1,Snull }
+rpar: RPAR { 0,$1,Snull }
+lsqb: LSQB { 0,$1,Snull }
+rsqb: RSQB { 0,$1,Snull }
 
-comma: COMMA { 0,slift $1,Snull }
-vbar: VBAR { 0,slift $1,Snull }
+comma: COMMA { 0,$1,Snull }
+vbar: VBAR { 0,$1,Snull }
 
 /*
 a definite non-terminal for a sequence of no tokens,
 since the production syntax cannot parse an empty
 production at the moment
 */
-sepsilon: | {0,dummysr,Snull }
-strepsilon: | {0,dummysr,Sstring "" }
+sepsilon: | {0,Flx_srcref.dummy_sr,Snull }
+strepsilon: | {0,Flx_srcref.dummy_sr,Sstring "" }
 
 sinteger:
   | INTEGER
     {
       let sr,t,v = $1 in
-      0,slift sr,Sbigint v
+      0,sr,Sbigint v
     }
 
 strint:
@@ -1636,7 +1626,7 @@ strint:
     {
       let sr,t,v = $1 in
       let s = Big_int.string_of_big_int v in
-      0,slift sr,Sstring s
+      0,sr,Sstring s
     }
 
 sfloat:
@@ -1645,14 +1635,14 @@ sfloat:
       let sr,t,v = $1 in
       let x = Sstring t::Sstring v::[] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
 strfloat:
   | FLOAT
     {
       let sr,t,v = $1 in
-      0,slift sr,Sstring v
+      0,sr,Sstring v
     }
 
 
@@ -1662,7 +1652,7 @@ sintegral:
       let sr,t,v = $1 in
       let i = Sstring t :: Sbigint v :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev i) in
-      0,slift sr,x
+      0,sr,x
     }
   | "-" INTEGER
     {
@@ -1670,14 +1660,14 @@ sintegral:
       let v = Big_int.minus_big_int v in
       let i = Sstring t :: Sbigint v :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev i) in
-      0,slift sr,x
+      0,sr,x
     }
 
 sstring:
   | STRING
     {
       let sr,s = $1 in
-      0,slift sr,Sstring s
+      0,sr,Sstring s
     }
 
 strstring:
@@ -1685,14 +1675,14 @@ strstring:
     {
       let sr,s = $1 in
       let s = Flx_string.c_quote_of_string s in
-      0,slift sr,Sstring s
+      0,sr,Sstring s
     }
 
 scstring:
   | CSTRING
     {
       let sr,s = $1 in
-      0,slift sr,Sstring s
+      0,sr,Sstring s
     }
 
 
@@ -1705,9 +1695,9 @@ sliteral:
       let aint = Ocs_sym.get_symbol "ast_int" in
       let i = aint :: Sstring t :: Sstring v :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr (slift sr) :: i :: [] in
+      let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
   | FLOAT
@@ -1717,9 +1707,9 @@ sliteral:
       let afloat = Ocs_sym.get_symbol "ast_float" in
       let i = afloat :: Sstring t :: Sstring v :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr (slift sr) :: i :: [] in
+      let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
   | STRING
@@ -1729,9 +1719,9 @@ sliteral:
       let astring = Ocs_sym.get_symbol "ast_string" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr (slift sr) :: i :: [] in
+      let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
    }
 
   | WSTRING
@@ -1741,9 +1731,9 @@ sliteral:
       let astring = Ocs_sym.get_symbol "ast_wstring" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr (slift sr) :: i :: [] in
+      let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
   | USTRING
@@ -1753,9 +1743,9 @@ sliteral:
       let astring = Ocs_sym.get_symbol "ast_ustring" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr (slift sr) :: i :: [] in
+      let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
   | CSTRING
@@ -1765,9 +1755,9 @@ sliteral:
       let astring = Ocs_sym.get_symbol "ast_cstring" in
       let i = astring :: Sstring s :: [] in
       let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr (slift sr) :: i :: [] in
+      let x = alit :: xsr sr :: i :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
   | QSTRING
@@ -1776,7 +1766,7 @@ sliteral:
       let qstring = Ocs_sym.get_symbol "ast_interpolate" in
       let x = qstring :: Sstring s :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
   | FSTRING
@@ -1785,7 +1775,7 @@ sliteral:
       let fstring = Ocs_sym.get_symbol "ast_vsprintf" in
       let x = fstring :: Sstring s :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0,slift sr,x
+      0,sr,x
     }
 
 basic_name:
@@ -1833,7 +1823,7 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
   let b = (Dyp.std_lexbuf lexbuf) in
   b.lex_curr_p <- { b.lex_curr_p with pos_fname = filename };
   let show_error() =
-    let sr = slift (getsr lexbuf) in
+    let sr = getsr lexbuf in
     print_endline (long_string_of_src sr);
   in
   let parse_tree = 

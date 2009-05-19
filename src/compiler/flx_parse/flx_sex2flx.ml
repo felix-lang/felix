@@ -734,7 +734,7 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] ->
     let ids = map (function
-      | Str n -> ("dummy",0,0,0),n
+      | Str n -> Flx_srcref.dummy_sr,n
       | x -> err x "ast_ctypes"
     ) ids
     in
