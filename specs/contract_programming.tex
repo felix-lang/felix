@@ -32,8 +32,9 @@ and theorems with equational first order predicates and universal
 head quantification. Existential quantifiers are not
 supported, and universal quantification is represented
 by variables which scope over whole expressions.
+
 Polymorphic logic elements are allowed, and have two meanings.
-outside of typeclasses, they're universal. Such axioms can
+Outside of typeclasses, they're universal. Such axioms can
 only be used to prove properties of polymorphic functions
 or categorical constructions such as tuple formation.
 
@@ -73,6 +74,44 @@ Axioms, lemmas and theorems are stated like polymorphic functions:
 axiom symmetry[v] (a:v, b:v) f(a,b) == f(b,a);
 lemma add0 (a:int) a + 0 == a;
 \end{verbatim}
+
+\subsection{Default Virtuals}
+In addition to explicit constraints, a typeclass may
+provide a default implementation for a virtual function.
+\begin{verbatim}
+virtual fun plus: v * v -> v;
+virtual fun neg: v -> v;
+virtual fun sub (a:v, b:v) => plus (a, neg b);
+\end{verbatim}
+
+Such implementations generate an implementation in an
+instance if one is not provided. If an implementation is
+provided in an instance, it must be a more efficient implementation
+of the function; that is, it must conform to the semantics
+implied by the default. The compiler is free to reject a program
+if it is able to prove this is not the case.
+
+Default virtuals can also provide another more subtle 
+completeness obligation on a typeclass instance breach of which 
+which may not be detected by the compiler: the breaking of
+circular definitions. In this example:
+\begin{verbatim}
+virtual fun neg (a:v) => sub (zero(), a);
+virtual fun sub (a:v, b:v) => plus (a, neg b);
+\end{verbatim}
+
+instances much provide at least one of the functions
+to break the circular definition, otherwise an infinite
+recursion will occur at run time. Although circularity can
+be detected by the compiler, it cannot easily distinguish
+unconditional circularity as above, and conditional
+circularity in which a branch might terminate a recursion.
+
+In summary we may say that an instance is obliged to 
+be complete; that is, to implement a basis, and, it is
+obliged to be conforming, that is, to behave according
+to the explicitly specified axioms and those implied by
+default implementations.
 
 \section{Reductions}
 Another form of logic is the reduction:
@@ -123,7 +162,7 @@ is specified, but before the body is given. The special identifier
 Pre- and post- conditions usually generate run time checks.
 However the compiler is free to attempt to prove the post-
 condition from the pre-condition or the actual program code
-and elide it.
+and reduce or elide it.
 
 \section{Axiom Checks}
 In addition, axioms can be checked with a \verb%check_axiom%

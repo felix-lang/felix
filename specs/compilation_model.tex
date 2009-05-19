@@ -18,7 +18,6 @@ flxb              # binding debug
 flx               # bash command line harness (Unix) 
 flx.bat           # CMD.EXE command line harness (Windows)
 flx.py            # Python 2.4 command line harness (Platform independent)
-flx_elkhound      # GLR parser generator
 flxcc             # C header wrapper generator
 flx_run           # basic dynamic program driver
 flx_arun          # driver with asynchronous I/O support
@@ -84,8 +83,6 @@ the software process using the component tools directly.
 *.par                      # cached parse tree
 *.hpp                      # generated and library C++ headers
 *.cpp                      # generated C++ implementation
-*_parser99.cpp             # generated Elkhound parser implementation (C++)
-*_lexer99.cpp              # generated Elkhound lexer implementation (C++)
 *.rtti                     # generated run time type information (C++)
 *.includes                 # generated collated C++ header includes
 *_ctors.cpp                # generated C++ constructors
@@ -573,138 +570,6 @@ is a bleeding edge extensible GLR parser, it is considerably slower
 the less capable automata, so reducing the amoung of code that
 need to be compiled by partitioning is important for production
 programming.
-
-\section{The pre-processor}
-The Felix pre-processor is a C style line oriented conditional
-compilation facility with some constraints and additions.
-It is provided rather begrudingly to ensure most of the tricks
-that can be done in C with pre-processing conditionals are
-available in Felix. However Felix does {\em not} support
-macro expansion in Felix code with this processor.  
-Pre-processor macros are supported, but they only expand
-in pre-processor statements.
-
-\subsection{File inclusion}
-When the 
-\begin{verbatim}
-#include "filename.flxi"
-\end{verbatim}
-directives are invoked, the incuded file is first recursively pre-processed,
-then the resulting token stream is emitted. In a similar way to
-the syntactic include, no macros can be either imported or exported
-using this directive, so the tokenisation of the included and including
-files are independent. This directive is hardly ever used and may be phased
-out in the future.
-
-Because it is sometimes desirable to bundly commonly used macros into
-a package for reuse, Felix also provides the
-\begin{verbatim}
-#import "filename.flxh"
-\end{verbatim}
-directive. This directive imports pre-processor macros from the specified filename
-and exports the current macros into that file. This allows configuration 
-macros to be stored in a reusable file, and thence control conditional
-compilation in several client files.
-
-\subsection{Conditional Compilation}
-Macros are set the same way as in C:
-\begin{verbatim}
-#define UNIX 1
-\end{verbatim}
-and of course they can be unset:
-\begin{verbatim}
-#undef UNIX
-\end{verbatim}
-Then the usual conditional compilation directives are available:
-\begin{verbatim}
-#ifdef MSCRO
-#ifndef MACRO
-#if EXPR
-#elif EXPR
-#else
-#endif
-\end{verbatim}
-Conditional compilation directives must nest properly inside files.
-
-\subsection{Debugging}
-The usual directive
-\begin{verbatim}
-#line 999 "filename"
-\end{verbatim}
-is provided to remap error messages to a generating file. This source
-tracking pervades the compiler.
-
-Felix provides 
-\begin{verbatim}
-#error "Some bug"
-#warn "Maybe nasty"
-\end{verbatim}
-to facilitate debugging and error management in conjunction with
-conditional compilation.
-
-\subsection{Tokenisation}
-The Felix tokeniser tokenises a whole file before parsing. Whilst the parser
-can play some tricks distinguising identifiers and keywords, it cannot recognize
-other kinds of new symbols. Therefore, rudimentary facilities are provided in the
-preprocessor to generate a restricted class of user defined tokens.
-The
-\begin{verbatim}
-#infix 99 "$*" funds
-#infix "$*" funds
-#infix 99 fred funds
-#infix fred funds
-\end{verbatim}
-introduce either a symbol name, consisting of a sequence of special
-characters, or a keyword name, and make them infix operator mapping to
-a function taking a pair of arguments. Thus the syntax
-\begin{verbatim}
-1 $* 2
-\end{verbatim}
-is mapped to
-\begin{verbatim}
-funds (1,2)
-\end{verbatim}
-The precedence is currently ignored: all symbols have a fixed low precedence.
-The syntax
-\begin{verbatim}
-#symbol "$*"
-#symbol fred
-\end{verbatim}
-also introduces a new token.
-All these symbols are encoded as a \verb%USER10% token with attributes
-precedence 10, symbol as specified, and function as specified, or, the token
-spelling if elided. Currently \verb%infix% and \verb%symbol% are synonyms
-and can be used interchangeably.
-
-Although these symbols are encoded in a fixed token, the parser is able to test
-attributes and abort parses when token attributes fail some condition. Therefore,
-the parser is capable of distinguishing tokens based on their attributes
-provided the grammar is programmed to do so.
-
-Felix also provides
-\begin{verbatim}
-#bracket "left" "right" funbr
-\end{verbatim}
-which defines two new tokens which act as balanced pairs or brackets
-and apply the specified function to their contents, so that
-\begin{verbatim}
-left x right
-\end{verbatim}
-maps to
-\begin{verbatim}
-funbr x
-\end{verbatim}
-These are encoded in the \verb%USERLB% and \verb%USERRB% tokens respectively
-with the bracket spelling as an attribute, and the function encoded in the
-left bracket token.
-
-Finally, the 
-\begin{verbatim}
-#keyword id1 id2 id3
-\end{verbatim}
-directive introduces new keywords without mapping them to anything.
-These are encoded in the \verb%USER_KEYWORD% token, with the keyword
-as the attribute.
 
 \chapter{Code insertions}
 Felix provides a sophsiticated system of code insertion.
