@@ -1,8 +1,5 @@
 (** Lexer generator *)
 
-open Flx_ast
-open Flx_types
-
 type reg_kind_t =
 [
   | `regmatch of string * string
@@ -12,7 +9,7 @@ type reg_kind_t =
 val regen:
   Buffer.t ->
   Flx_srcref.t ->
-  regular_args_t ->
+  Flx_types.regular_args_t ->
   reg_kind_t ->
-  (tbexpr_t -> string) ->
+  (Flx_types.tbexpr_t -> string) ->
   unit
