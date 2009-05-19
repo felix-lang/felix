@@ -689,34 +689,25 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let ix = None in
     let props = ref [] in
     let decls = ref [] in
+    let mkreq s kind =
+      let n = !(syms.counter) in incr syms.counter;
+      let n = "_req_" ^ si n in
+      let dcl = `Dcl (sr,n,ix,access,dfltvs,`DCL_insert (s,kind,`NREQ_true)) in
+      decls := dcl :: !decls;
+      `NREQ_atom (`AST_name (sr,n,parent_ts sr))
+    in
     let rec aux rqs = match rqs with
     | `RREQ_or (a,b) -> `NREQ_or (aux a, aux b)
     | `RREQ_and (a,b) -> `NREQ_and (aux a, aux b)
     | `RREQ_true -> `NREQ_true
     | `RREQ_false -> `NREQ_false
     | `RREQ_atom x -> match x with
-      | `Body_req s ->
-        let n = !(syms.counter) in incr syms.counter;
-        let n = "_req_" ^ si n in
-        let dcl = `Dcl (sr,n,ix,access,dfltvs,`DCL_insert (s,`Body,`NREQ_true)) in
-        decls := dcl :: !decls;
-        `NREQ_atom (`AST_name (sr,n,parent_ts sr))
-
-      | `Header_req s ->
-        let n = !(syms.counter) in incr syms.counter;
-        let n = "_req_" ^ si n in
-        let dcl = `Dcl (sr,n,ix,access,dfltvs,`DCL_insert (s,`Header,`NREQ_true)) in
-        decls := dcl :: !decls;
-        `NREQ_atom (`AST_name (sr,n,parent_ts sr))
-
-      | `Package_req s ->
-        let n = !(syms.counter) in incr syms.counter;
-        let n = "_req_" ^ si n in
-        let dcl = `Dcl (sr,n,ix,access,dfltvs,`DCL_insert (s,`Package,`NREQ_true)) in
-        decls := dcl :: !decls;
-        `NREQ_atom (`AST_name (sr,n,parent_ts sr))
+      | `Body_req s -> mkreq s `Body
+      | `Header_req s -> mkreq s `Header
+      | `Package_req s -> mkreq s `Package
 
       | `Named_req n -> `NREQ_atom n
+
       | `Property_req "generator" ->
         props := `Generator :: !props;
         `NREQ_true
@@ -970,15 +961,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       (rev vs,[])
       args
     in
-    (*
-    if mem `Generator props then
-      print_endline (name' ^ " is a GENERATOR");
-    if mem `Virtual props then
-      print_endline (name' ^ " is property Virtual");
-    if code = `Virtual then
-      print_endline (name' ^ " is pure Virtual");
-    *)
-
     `Dcl (sr,name',None,access,(rev vs,con),
       `DCL_fun (props,rev args,result,code,map_reqs sr reqs,prec))
     :: dcls
@@ -1139,15 +1121,8 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_macro_var _
   | `AST_macro_name _
   | `AST_macro_names _
-  (*
-  | `AST_public _
-  *)
   | `AST_stmt_macro _
   | `AST_macro_block _
-  (*
-  | `AST_until _
-  | `AST_whilst _
-  *)
   | `AST_macro_ifor _
   | `AST_macro_vfor _
   | `AST_scheme_string _

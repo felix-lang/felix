@@ -1,0 +1,64 @@
+
+\documentclass{report}
+\title{Felix Assertions}
+\author{John Skaller}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\chapter{Overview}
+Felix provides both polymorphism with two kinds of constraints: typeclass constraints
+and finite set membership constraint.
+
+Typeclass constraints specify that a type variables be constrained to be a member
+of a typeclass, and given that condition permits values of the types 
+to be acted on by methods of the typeclass. A typeclass constraint is
+introduced by a {\tt with} clause. 
+
+Finite set membership constraints specify that the type variable is 
+one of a discrete, concrete set of types. It is primarily useful
+for elaborating C function definitions over subsets of basic C types.
+A typeset membership constraint is introduced by an {\tt in} predicate.
+Typesets can be constructed using the typesetof constructor and
+set union and intersection operators, and they can be defined 
+using a typedef.
+
+Here is an example from the standard library used to
+classify integers:
+
+\begin{verbatim}
+typedef fast_sints = typesetof (tiny, short, int, long, vlong);
+typedef exact_sints = typesetof(int8,int16,int32,int64);
+typedef fast_uints = typesetof (utiny, ushort, uint, ulong,uvlong);
+typedef exact_uints = typesetof (uint8,uint16,uint32,uint64);
+
+typedef sints = fast_sints || exact_sints;
+typedef uints = fast_uints || exact_uints;
+
+typedef fast_ints = fast_sints || fast_uints;
+typedef exact_ints = exact_sints || exact_uints;
+
+typedef ints = sints || uints;
+\end{verbatim}
+
+Here is a use:
+\begin{verbatim}
+instance[t in ints] Integer[t] {
+  fun shl: t * t -> t = "$1<<$2";
+  fun shr: t * t -> t = "$1>>$2";
+}
+\end{verbatim}
+which provides that all integers admit left
+and right shift operations. This kind of constraint
+is primarily used to lift C level operator overloading
+into Felix.
+
+Note that as a hack, type sets and types can be jumbled
+together. Thus you could write:
+\begin{verbatim}
+typedef fast_ints = typesetof(fast_sints,fast_uints);
+\end{verbatim}
+
+
+\end{document}
+
