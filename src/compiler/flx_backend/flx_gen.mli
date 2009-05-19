@@ -58,7 +58,7 @@ val format_vars:
 val is_gc_pointer:
   sym_state_t ->
   fully_bound_symbol_table_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   btypecode_t ->
   bool
 

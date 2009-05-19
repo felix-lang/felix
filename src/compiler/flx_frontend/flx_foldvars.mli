@@ -16,4 +16,4 @@ val fold_vars:
   bexe_t list
 
 val add_use:
-  usage_table_t -> int -> int -> range_srcref -> unit
+  usage_table_t -> int -> int -> Flx_srcref.t -> unit

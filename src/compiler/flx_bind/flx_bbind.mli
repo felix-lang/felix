@@ -12,5 +12,5 @@ val bbind:
 
 val bind_ifaces:
   sym_state_t ->
-  (range_srcref * iface_t * int option) list ->
+  (Flx_srcref.t * iface_t * int option) list ->
   biface_t list

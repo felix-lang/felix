@@ -41,6 +41,6 @@ val register_type_r:
   sym_state_t ->
   fully_bound_symbol_table_t ->
   btypecode_t list ->
-  range_srcref ->
+  Flx_srcref.t ->
   btypecode_t ->
   unit

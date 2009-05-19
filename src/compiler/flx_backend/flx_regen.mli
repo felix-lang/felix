@@ -11,7 +11,7 @@ type reg_kind_t =
 
 val regen:
   Buffer.t ->
-  range_srcref ->
+  Flx_srcref.t ->
   regular_args_t ->
   reg_kind_t ->
   (tbexpr_t -> string) ->

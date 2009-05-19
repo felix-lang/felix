@@ -6,15 +6,15 @@ exception SyntaxError of string
 exception ParseError of string
 exception LexError of string
 exception TokenError of string
-exception ClientErrorn of range_srcref list * string
-exception ClientError of range_srcref * string
-exception ClientError2 of range_srcref * range_srcref * string
-exception SystemError of range_srcref * string
+exception ClientErrorn of Flx_srcref.t list * string
+exception ClientError of Flx_srcref.t * string
+exception ClientError2 of Flx_srcref.t * Flx_srcref.t * string
+exception SystemError of Flx_srcref.t * string
 exception Exit of int
 exception Bad_recursion
 exception Expr_recursion of expr_t
 exception Free_fixpoint of btypecode_t
-exception Unresolved_return of range_srcref * string
+exception Unresolved_return of Flx_srcref.t * string
 
 let clierrn srs s = raise (ClientErrorn (srs,s))
 let clierr2 sr sr2 s = raise (ClientError2 (sr,sr2,s))

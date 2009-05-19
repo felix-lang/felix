@@ -11,7 +11,7 @@ val tailit:
   usage_table_t * child_map_t * fully_bound_symbol_table_t ->
   string ->
   bid_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   bparameter_t list ->
   bvs_t ->
   bexe_t list ->

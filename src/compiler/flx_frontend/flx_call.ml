@@ -11,7 +11,7 @@ open Flx_mtypes2
 
 (* NOTE: THIS CODE LARGELY DUPLICATES CODE IN flx_use.ml *)
 
-type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
+type usage_table_t =  (bid_t, (bid_t * Flx_srcref.t) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
 let add (h:usage_table_t) k j sr =

@@ -19,7 +19,7 @@ val gen_body :
   (bid_t, bid_t) Hashtbl.t ->      (* revariable *)
   bexe_t list ->                   (* the exes *)
   tbexpr_t ->                      (* argument *)
-  range_srcref ->                  (* srcref *)
+  Flx_srcref.t ->                  (* srcref *)
   int ->                           (* caller *)
   bid_t ->                         (* callee *)
   bvs_t ->                         (* caller vs *)
@@ -31,7 +31,7 @@ val gen_body :
 val recal_exes_usage:
   sym_state_t ->
   usage_table_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   int ->
   bparameter_t list ->
   bexe_t list ->

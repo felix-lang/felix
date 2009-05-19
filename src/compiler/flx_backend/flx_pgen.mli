@@ -9,13 +9,13 @@ val gen_prim_call :
   sym_state_t ->
   fully_bound_symbol_table_t ->
   (btypecode_t -> btypecode_t) ->
-  (range_srcref -> tbexpr_t -> cexpr_t) ->
+  (Flx_srcref.t -> tbexpr_t -> cexpr_t) ->
   string ->
   btypecode_t list ->
   tbexpr_t ->
   string ->
-  range_srcref ->
-  range_srcref ->
+  Flx_srcref.t ->
+  Flx_srcref.t ->
   string ->
   cexpr_t
 

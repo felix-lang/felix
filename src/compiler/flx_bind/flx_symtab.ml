@@ -51,9 +51,9 @@ let merge_ivs
 
 
 let split_asms asms :
-  (range_srcref * id_t * int option * access_t * vs_list_t * dcl_t) list *
+  (Flx_srcref.t * id_t * int option * access_t * vs_list_t * dcl_t) list *
   sexe_t list *
-  (range_srcref * iface_t) list *
+  (Flx_srcref.t * iface_t) list *
   dir_t list
 =
   let rec aux asms dcls exes ifaces dirs =

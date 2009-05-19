@@ -1,40 +1,35 @@
-open Flx_ast
-open Flx_types
-open Flx_mtypes2
-open Flx_ctypes
-
 val gen_expr:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
   int ->
-  tbexpr_t ->
-  bvs_t ->
-  btypecode_t list ->
-  range_srcref -> string
+  Flx_types.tbexpr_t ->
+  Flx_types.bvs_t ->
+  Flx_types.btypecode_t list ->
+  Flx_srcref.t -> string
 
 val gen_expr':
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
   int ->
-  tbexpr_t ->
-  bvs_t ->
-  btypecode_t list ->
-  range_srcref -> cexpr_t
+  Flx_types.tbexpr_t ->
+  Flx_types.bvs_t ->
+  Flx_types.btypecode_t list ->
+  Flx_srcref.t -> Flx_ctypes.cexpr_t
 
 (* for use in an expression *)
 val get_var_ref:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
   int ->
   int ->
-  btypecode_t list ->
+  Flx_types.btypecode_t list ->
   string
 
 (* for definition/initialisation *)
 val get_ref_ref:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
   int ->
   int ->
-  btypecode_t list ->
+  Flx_types.btypecode_t list ->
   string

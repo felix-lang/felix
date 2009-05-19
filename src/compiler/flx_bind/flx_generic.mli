@@ -18,21 +18,21 @@ val find_vs:
 
 val adjust_ts:
   sym_state_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   int ->
   btypecode_t list ->
   btypecode_t list
 
 val make_params:
   sym_state_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   int ->
   btypecode_t list ->
   (string * btypecode_t) list
 
 val make_varmap:
   sym_state_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   int ->
   btypecode_t list ->
   (int, btypecode_t) Hashtbl.t

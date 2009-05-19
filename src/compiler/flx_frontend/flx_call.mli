@@ -7,7 +7,7 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 
-type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
+type usage_table_t =  (bid_t, (bid_t * Flx_srcref.t) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
 val call_data:
@@ -23,12 +23,12 @@ val cal_exe_usage:
   sym_state_t -> usage_table_t -> int -> bexe_t -> unit
 
 val cal_expr_usage:
-  sym_state_t -> usage_table_t -> int -> range_srcref -> tbexpr_t -> unit
+  sym_state_t -> usage_table_t -> int -> Flx_srcref.t -> tbexpr_t -> unit
 
 val cal_param_usage:
   sym_state_t ->
   usage_table_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   int ->
   bparameter_t ->
   unit

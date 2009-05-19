@@ -17,7 +17,7 @@ open Flx_tconstraint
 open Flx_tpat
 open Flx_maps
 
-exception OverloadKindError of range_srcref * string
+exception OverloadKindError of Flx_srcref.t * string
 
 type overload_result =
  int *  (* index of function *)

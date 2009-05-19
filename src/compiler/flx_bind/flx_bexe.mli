@@ -7,8 +7,8 @@ open Flx_mtypes2
 val bind_exes:
   sym_state_t ->
   env_t ->
-  range_srcref ->
-  (range_srcref * exe_t) list ->
+  Flx_srcref.t ->
+  (Flx_srcref.t * exe_t) list ->
   btypecode_t ->
   string ->
   bid_t ->

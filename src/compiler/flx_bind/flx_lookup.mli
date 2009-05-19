@@ -96,7 +96,7 @@ val build_env:
 val lookup_name_in_env :
   sym_state_t ->
   env_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   id_t ->
   entry_set_t
 
@@ -121,7 +121,7 @@ val lookup_sn_in_env :
 val lookup_code_in_env:
   sym_state_t ->
   env_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   qualified_name_t ->
   entry_kind_t list * typecode_t list
 
@@ -138,7 +138,7 @@ variables is not a type function.
 val bind_type:
   sym_state_t ->
   env_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   typecode_t ->
   btypecode_t
 
@@ -151,7 +151,7 @@ val eval_module_expr:
 val resolve_overload:
   sym_state_t ->
   env_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   entry_kind_t list ->
   id_t ->
   btypecode_t list ->
@@ -178,7 +178,7 @@ val typeofindex :
 
 val typeofindex_with_ts:
   sym_state_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   int ->
   btypecode_t list ->
   btypecode_t
@@ -186,14 +186,14 @@ val typeofindex_with_ts:
 val typeof_literal:
   sym_state_t ->
   env_t ->
-  range_srcref ->
+  Flx_srcref.t ->
   literal_t ->
   btypecode_t
 
 val lookup_qn_with_sig:
   sym_state_t ->
-  range_srcref ->
-  range_srcref ->
+  Flx_srcref.t ->
+  Flx_srcref.t ->
   env_t ->
   qualified_name_t ->
   btypecode_t list ->

@@ -29,7 +29,7 @@ let dypgen_choose_token = `all
 
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
-and dyalt_t = symbol_t list * range_srcref * action_t * anote_t
+and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
 
 type page_entry_t = [
   | `Nt of string
@@ -141,7 +141,7 @@ let global_data = {
 type local_data_t = {
   dssls:dssl_t Drules.t;
   loaded_dssls: string list;
-  scm: (Flx_ast.range_srcref * string) list;
+  scm: (Flx_srcref.t * string) list;
 }
 
 let local_data: local_data_t = {
@@ -677,7 +677,7 @@ let dyp_merge_Obj_statement_star ol =
 
 
 /* special */
-%token <(Flx_ast.srcref * string)> ERRORTOKEN
+%token <(Flx_srcref.srcref * string)> ERRORTOKEN
 %token ENDMARKER
 
 /* whitespace and comments */
@@ -685,66 +685,66 @@ let dyp_merge_Obj_statement_star ol =
 %token SLOSH
 
 /* literals */
-%token <(Flx_ast.srcref * string)> NAME
-%token <(Flx_ast.srcref * string * prio_t)> NONTERMINAL
-%token <(Flx_ast.srcref * string * Flx_ast.bigint)> INTEGER
-%token <(Flx_ast.srcref * string * string )> FLOAT
-%token <(Flx_ast.srcref * string)> STRING
-%token <(Flx_ast.srcref * string)> CSTRING
-%token <(Flx_ast.srcref * string)> FSTRING
-%token <(Flx_ast.srcref * string)> QSTRING
-%token <(Flx_ast.srcref * string)> WSTRING
-%token <(Flx_ast.srcref * string)> USTRING
-%token <(Flx_ast.srcref * string)> USER_KEYWORD
+%token <(Flx_srcref.srcref * string)> NAME
+%token <(Flx_srcref.srcref * string * prio_t)> NONTERMINAL
+%token <(Flx_srcref.srcref * string * Flx_ast.bigint)> INTEGER
+%token <(Flx_srcref.srcref * string * string )> FLOAT
+%token <(Flx_srcref.srcref * string)> STRING
+%token <(Flx_srcref.srcref * string)> CSTRING
+%token <(Flx_srcref.srcref * string)> FSTRING
+%token <(Flx_srcref.srcref * string)> QSTRING
+%token <(Flx_srcref.srcref * string)> WSTRING
+%token <(Flx_srcref.srcref * string)> USTRING
+%token <(Flx_srcref.srcref * string)> USER_KEYWORD
 %token <(string list)> HASH_INCLUDE_FILES
 %token DUMMY
 
 %token <local_data_t> LOAD_SYNTAX
 %token <string> SAVE_SYNTAX
 
-%token <(Flx_ast.srcref)> QUEST
+%token <(Flx_srcref.srcref)> QUEST
 %constructor Obj_keyword %for QUEST
-%token <(Flx_ast.srcref)> PLUS
+%token <(Flx_srcref.srcref)> PLUS
 %constructor Obj_keyword %for PLUS
-%token <(Flx_ast.srcref)> STAR
+%token <(Flx_srcref.srcref)> STAR
 %constructor Obj_keyword %for STAR
 
-%token <(Flx_ast.srcref)> LPAR
+%token <(Flx_srcref.srcref)> LPAR
 %constructor Obj_keyword %for LPAR
-%token <(Flx_ast.srcref)> RPAR
+%token <(Flx_srcref.srcref)> RPAR
 %constructor Obj_keyword %for RPAR
 
-%token <(Flx_ast.srcref)> LSQB
+%token <(Flx_srcref.srcref)> LSQB
 %constructor Obj_keyword %for LSQB
-%token <(Flx_ast.srcref)> RSQB
+%token <(Flx_srcref.srcref)> RSQB
 %constructor Obj_keyword %for RSQB
 
-%token <(Flx_ast.srcref)> LBRACE
+%token <(Flx_srcref.srcref)> LBRACE
 %constructor Obj_keyword %for LBRACE
-%token <(Flx_ast.srcref)> RBRACE
+%token <(Flx_srcref.srcref)> RBRACE
 %constructor Obj_keyword %for RBRACE
 
-%token <(Flx_ast.srcref)> COMMA
+%token <(Flx_srcref.srcref)> COMMA
 %constructor Obj_keyword %for COMMA
-%token <(Flx_ast.srcref)> VBAR
+%token <(Flx_srcref.srcref)> VBAR
 %constructor Obj_keyword %for VBAR
 
-%token <(Flx_ast.srcref)> LESS
+%token <(Flx_srcref.srcref)> LESS
 %constructor Obj_keyword %for LESS
-%token <(Flx_ast.srcref)> GREATER
+%token <(Flx_srcref.srcref)> GREATER
 %constructor Obj_keyword %for GREATER
-%token <(Flx_ast.srcref)> EQUAL
+%token <(Flx_srcref.srcref)> EQUAL
 %constructor Obj_keyword %for EQUAL
-%token <(Flx_ast.srcref)> EQEQUAL
+%token <(Flx_srcref.srcref)> EQEQUAL
 %constructor Obj_keyword %for EQEQUAL
-%token <(Flx_ast.srcref)> NOTEQUAL
+%token <(Flx_srcref.srcref)> NOTEQUAL
 %constructor Obj_keyword %for NOTEQUAL
-%token <(Flx_ast.srcref)> LESSEQUAL
+%token <(Flx_srcref.srcref)> LESSEQUAL
 %constructor Obj_keyword %for LESSEQUAL
-%token <(Flx_ast.srcref)> GREATEREQUAL
+%token <(Flx_srcref.srcref)> GREATEREQUAL
 %constructor Obj_keyword %for GREATEREQUAL
 
-%token <(Flx_ast.srcref)> UNDERSCORE
+%token <(Flx_srcref.srcref)> UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE
 /* top level entry */
 %constructor Obj_sexpr %for sterm

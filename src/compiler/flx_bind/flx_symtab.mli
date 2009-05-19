@@ -26,6 +26,6 @@ val build_tables:
     name_map_t *
     name_map_t *
     sexe_t list *
-    (range_srcref * iface_t * int option) list *
+    (Flx_srcref.t * iface_t * int option) list *
     dir_t list
   )

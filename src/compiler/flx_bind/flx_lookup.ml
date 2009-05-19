@@ -3364,7 +3364,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   in
 
   (* model infix operator as function call *)
-  let apl2 (sri:range_srcref) (fn : string) (tup:expr_t list) =
+  let apl2 (sri:Flx_srcref.t) (fn : string) (tup:expr_t list) =
     let sr = rslist tup in
     `AST_apply
     (
