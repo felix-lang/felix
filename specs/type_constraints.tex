@@ -13,7 +13,10 @@ and finite set membership constraint.
 Typeclass constraints specify that a type variables be constrained to be a member
 of a typeclass, and given that condition permits values of the types 
 to be acted on by methods of the typeclass. A typeclass constraint is
-introduced by a {\tt with} clause. 
+introduced by a {\tt with} clause. For example:
+\begin{verbatim}
+fun f[u with Ord[u]] (x:u,y:u) => x < y;
+\end{verbatim}
 
 Finite set membership constraints specify that the type variable is 
 one of a discrete, concrete set of types. It is primarily useful
@@ -57,6 +60,18 @@ Note that as a hack, type sets and types can be jumbled
 together. Thus you could write:
 \begin{verbatim}
 typedef fast_ints = typesetof(fast_sints,fast_uints);
+\end{verbatim}
+
+Discrete set constraints affect overloading. First, candidates
+are selected according to the unconstrained type. Then, any
+constraints are applied to further refine the set of candidates.
+For example:
+
+\begin{verbatim}
+fun f[u in int || long] (x:u)=> "int";
+fun f[v in float || double] (x:v)=> "float";
+println$ f 1;
+println$ f 1.0;
 \end{verbatim}
 
 

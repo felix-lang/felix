@@ -20,7 +20,6 @@ val build_tables:
   int option -> (* parent index *)
   int option -> (* grandparent index *)
   int -> (* root index *)
-  bool -> (* true if parent is a class, false otherwise *)
   asm_t list ->
   (
     name_map_t *

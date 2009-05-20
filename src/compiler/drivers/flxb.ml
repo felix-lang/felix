@@ -92,7 +92,7 @@ try
   print_endline ("//Top level module '"^module_name^"' has index " ^ si root);
 
   let table, _, exes, ifaces,dirs =
-    build_tables syms "root" dfltvs 0 None None root false deblocked
+    build_tables syms "root" dfltvs 0 None None root deblocked
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";

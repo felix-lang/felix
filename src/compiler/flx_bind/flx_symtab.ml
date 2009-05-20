@@ -154,7 +154,7 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
 
 
 let rec build_tables syms name inherit_vs
-  level parent grandparent root is_class asms
+  level parent grandparent root asms
 =
   (*
   print_endline ("//Building tables for " ^ name);
@@ -377,11 +377,6 @@ let rec build_tables syms name inherit_vs
             "Function with constructor property not named __constructor__"
           ;
 
-          if is_ctor && not is_class
-          then clierr sr
-            "Constructors must be defined directly inside a class"
-          ;
-
           if is_ctor then
             begin match t with
             | `AST_void _ -> ()
@@ -402,7 +397,7 @@ let rec build_tables syms name inherit_vs
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let pubtab,privtab, exes, ifaces,dirs =
             build_tables syms id dfltvs (level+1)
-            (Some fun_index) parent root false asms
+            (Some fun_index) parent root asms
           in
           let ips = ref [] in
           iter (fun (k,name,typ,dflt) ->
@@ -432,7 +427,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_match_check (pat,(mvname,match_var_index)) ->
-          if is_class then clierr sr "Match check not allowed in class";
           assert (length (fst vs) = 0);
           let fun_index = n in
           Hashtbl.add dfns fun_index {
@@ -447,7 +441,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_match_handler (pat,(mvname,match_var_index),asms) ->
-          if is_class then clierr sr "Match handler not allowed in class";
           (*
           print_endline ("Parent is " ^ match parent with Some i -> si i);
           print_endline ("Match handler, "^si n^", mvname = " ^ mvname);
@@ -488,7 +481,7 @@ let rec build_tables syms name inherit_vs
           let fun_index = n in
           let pubtab,privtab, exes,ifaces,dirs =
             build_tables syms id dfltvs (level+1)
-            (Some fun_index) parent root false !new_asms
+            (Some fun_index) parent root !new_asms
           in
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
@@ -512,10 +505,9 @@ let rec build_tables syms name inherit_vs
           add_function priv_name_map id n
 
         | `DCL_module asms ->
-          if is_class then clierr sr "Module not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs =
             build_tables syms id (merge_ivs inherit_vs vs)
-            (level+1) (Some n) parent root false
+            (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns n {
@@ -546,11 +538,10 @@ let rec build_tables syms name inherit_vs
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
           *)
-          if is_class then clierr sr "typeclass not allowed in class";
 
           let pubtab,privtab, exes,ifaces,dirs =
             build_tables syms id (merge_ivs inherit_vs vs)
-            (level+1) (Some n) parent root false
+            (level+1) (Some n) parent root
             asms
           in
           let fudged_privtab = Hashtbl.create 97 in
@@ -613,10 +604,9 @@ let rec build_tables syms name inherit_vs
 
 
         | `DCL_instance (qn,asms) ->
-          if is_class then clierr sr "instance not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs =
             build_tables syms id dfltvs
-            (level+1) (Some n) parent root false
+            (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns n {
@@ -673,7 +663,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_type_alias (t) ->
-          if is_class then clierr sr "Type alias not allowed in class";
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_type_alias t}
           ;
           (* this is a hack, checking for a type function this way,
@@ -730,7 +719,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
          | `DCL_inherit_fun qn ->
-          if is_class then clierr sr "inherit clause not allowed in class";
           Hashtbl.add dfns n
           {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
           privmap=privtab;dirs=[];symdef=`SYMDEF_inherit_fun qn}
@@ -741,7 +729,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_newtype t ->
-          if is_class then clierr sr "Type abstraction not allowed in class";
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
@@ -773,7 +760,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_abs (quals,c, reqs) ->
-          if is_class then clierr sr "Type binding not allowed in class";
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
@@ -786,7 +772,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_const (props,t,c, reqs) ->
-          if is_class then clierr sr "Const binding not allowed in class";
           let t = if t = `TYP_none then `TYP_var n else t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
@@ -826,7 +811,6 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_union (its) ->
-          if is_class then clierr sr "Union not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let utype = `AST_name(sr,id, tvars) in
           let its =
@@ -913,7 +897,6 @@ let rec build_tables syms name inherit_vs
           print_endline ("Got a struct " ^ id);
           print_endline ("Members=" ^ catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
           *)
-          if is_class then clierr sr "(c)struct not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {

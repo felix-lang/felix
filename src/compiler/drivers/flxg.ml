@@ -206,7 +206,7 @@ try
   print_debug "//BUILDING TABLES";
 
   let pubtab, _, exes, ifaces,dirs =
-    build_tables syms "root" dfltvs 0 None None root false deblocked
+    build_tables syms "root" dfltvs 0 None None root deblocked
   in
   let build_table_time = tim() in
   print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);
