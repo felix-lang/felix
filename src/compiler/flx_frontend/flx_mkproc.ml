@@ -6,7 +6,6 @@ open Flx_set
 open Flx_mtypes2
 open Flx_typing
 open Flx_mbind
-open Flx_srcref
 open List
 open Flx_maps
 open Flx_exceptions

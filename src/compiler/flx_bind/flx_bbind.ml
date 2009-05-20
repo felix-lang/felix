@@ -7,7 +7,6 @@ open Flx_print
 open Flx_typing
 open Flx_lookup
 open Flx_mbind
-open Flx_srcref
 open Flx_unify
 open Flx_exceptions
 open Flx_bexe
@@ -283,7 +282,7 @@ let bbind_sym syms bbdfns i {
         failwith
         (
           "expected boolean return from match checker " ^ name ^ " in\n" ^
-          short_string_of_src sr
+          Flx_srcref.short_string_of_src sr
         )
       ;
       Hashtbl.add bbdfns i (name,true_parent,sr,
@@ -674,7 +673,7 @@ let bind_ifaces syms
 
       | sr,`IFACE_export_type (typ, cpp_name), parent ->
         let env = build_env syms parent in
-        let t = bind_type syms env dummy_sr typ in
+        let t = bind_type syms env Flx_srcref.dummy_sr typ in
         if try var_occurs t with _ -> true then
         clierr sr
         (

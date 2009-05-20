@@ -20,7 +20,6 @@ open Flx_pgen
 open Flx_ctorgen
 open Flx_child
 open Flx_beta
-open Flx_srcref
 
 let find_variable_indices syms (child_map,bbdfns) index =
   let children = find_children child_map index in
@@ -2407,7 +2406,7 @@ let gen_python_module modname syms bbdfns bifaces =
   let pychk acc elt = match elt with
   | `BIFACE_export_python_fun (sr,index,name) ->
     let class_name = cpp_instance_name syms bbdfns index [] in
-    let loc = short_string_of_src sr in
+    let loc = Flx_srcref.short_string_of_src sr in
     let entry = name, class_name, loc in
     entry :: acc
   | _ -> acc

@@ -1,6 +1,5 @@
 open Flx_ast
 open Flx_types
-open Flx_srcref
 open List
 
 (* MOVED FROM PARSER so flx_sex2flx can do the nasty work

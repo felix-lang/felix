@@ -6,7 +6,6 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_print
-open Flx_srcref
 open Flx_desugar
 open Flx_bbind
 open Flx_name

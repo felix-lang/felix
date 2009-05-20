@@ -9,7 +9,6 @@ open Flx_exceptions
 open Flx_typing
 open Flx_typing2
 open List
-open Flx_srcref
 open Flx_unify
 open Flx_beta
 open Flx_generic
@@ -703,7 +702,7 @@ let consider syms bt be luqn2 name
           begin
             ok := false;
             (*
-            print_endline ("At " ^ short_string_of_src call_sr);
+            print_endline ("At " ^ Flx_srcref.short_string_of_src call_sr);
             (*
             clierr call_sr
             *)

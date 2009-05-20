@@ -10,7 +10,6 @@ open Flx_typing
 open Flx_typing2
 open List
 open Flx_pat
-open Flx_srcref
 open Flx_exceptions
 open Flx_macro
 open Flx_filesys
@@ -1140,7 +1139,7 @@ let desugar_program syms name sts =
     | _ -> sts
   in
   let sr =
-    rsrange
+    Flx_srcref.rsrange
       (src_of_stmt (hd sts))
       (src_of_stmt (list_last sts))
   in

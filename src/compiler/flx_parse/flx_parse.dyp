@@ -10,7 +10,6 @@ open Flx_ast
 open Flx_set
 open Flx_typing
 open Flx_typing2
-open Flx_srcref
 open Flx_print
 open Flx_charset
 open Flx_exceptions
@@ -147,7 +146,7 @@ let xsr sr =
 let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
 
 let scheme_lex sr (s:string):sval =
-  let sr = short_string_of_src sr in
+  let sr = Flx_srcref.short_string_of_src sr in
   let inp = Ocs_port.string_input_port s in
   let lex = Ocs_lex.make_lexer inp sr in
   match Ocs_read.read_expr lex with
@@ -297,7 +296,7 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
     Buffer.add_string b "End of arguments\n";
     let sr = getsr dyp2 in
 (*
-print_endline ("sr of reduction is " ^ short_string_of_src sr);
+print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
 *)
     begin
       let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_sr") in
@@ -1792,7 +1791,7 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
     let end_line = b.lex_curr_p.pos_lnum in
     let end_col = b.lex_curr_p.pos_cnum - b.lex_start_p.pos_bol in
     let sr = file, start_line, start_col, end_line, end_col in
-    print_endline (long_string_of_src sr);
+    print_endline (Flx_srcref.long_string_of_src sr);
   in
   let parse_tree = 
     try dyphack (

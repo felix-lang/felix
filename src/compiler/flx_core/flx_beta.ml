@@ -10,7 +10,6 @@ open Flx_print
 open Flx_exceptions
 open Flx_typing
 open List
-open Flx_srcref
 open Flx_unify
 open Flx_maps
 

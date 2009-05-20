@@ -9,7 +9,6 @@ open Flx_types
 open Flx_mtypes2
 open List
 open Flx_exceptions
-open Flx_srcref
 open Flx_util
 open Flx_filesys
 open Flx_version

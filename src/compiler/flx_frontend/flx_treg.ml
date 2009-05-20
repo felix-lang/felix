@@ -6,7 +6,6 @@ open Flx_print
 open Flx_exceptions
 open Flx_util
 open Flx_list
-open Flx_srcref
 open List
 open Flx_maps
 open Flx_beta
@@ -135,7 +134,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
           "register_type_r Can't find " ^
           id ^ "[" ^ si i ^ "]" ^
           " in fully bound symbol table: " ^
-          short_string_of_src sr
+          Flx_srcref.short_string_of_src sr
         )
         with Not_found -> failwith ("[register_type_r] Can't find index " ^ si i)
     in

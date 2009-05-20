@@ -1,7 +1,6 @@
 open Flx_ast
 open Flx_types
 open Flx_print
-open Flx_srcref
 open Flx_exceptions
 open List
 
@@ -12,7 +11,7 @@ let qualified_name_of_expr e =
     failwith
     (
       "Qualified name expected in\n" ^
-      short_string_of_src (src_of_expr e) ^
+      Flx_srcref.short_string_of_src (src_of_expr e) ^
       "\nGot " ^ Flx_print.string_of_expr e
     )
 
@@ -154,7 +153,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
             clierr sr
             (
               "Digits expected in name '" ^ name ^ "' in\n" ^
-              short_string_of_src sr
+              Flx_srcref.short_string_of_src sr
             )
           done;
           `TYP_proj (!acc, arg)
@@ -171,7 +170,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
             clierr sr
             (
               "Digits expected in name '" ^ name ^ "' in\n" ^
-              short_string_of_src sr
+              Flx_srcref.short_string_of_src sr
             )
           done;
           `TYP_case_arg (!acc, arg)
