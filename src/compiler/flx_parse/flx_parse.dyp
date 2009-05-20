@@ -1779,9 +1779,9 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
   let ic = open_in filename in 
   let pilot = pp () in 
   let lexbuf = Dyp.from_channel pilot ic in
-  let b = (Dyp.std_lexbuf lexbuf) in
-  b.lex_curr_p <- { b.lex_curr_p with pos_fname = filename };
+  Dyp.set_fname lexbuf filename;
   let show_error() =
+    let b = (Dyp.std_lexbuf lexbuf) in
     let file = b.lex_start_p.pos_fname in
     let start_line = b.lex_start_p.pos_lnum in
     let start_col = b.lex_start_p.pos_cnum - b.lex_start_p.pos_bol + 1 in
@@ -1816,7 +1816,6 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
       | Dyp.Syntax_error as x ->
           show_error();
           raise x
-          
 
       | Dyp.Bad_constructor (nt, ctor1, ctor2) ->
           let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^ "'" in
