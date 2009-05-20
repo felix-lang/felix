@@ -1,6 +1,11 @@
 open Flx_exceptions
 
-let terminate rrp = let return_parity = not rrp in function
+let terminate rrp exc =
+  let return_parity = not rrp in
+  if Printexc.backtrace_status () then begin
+    print_endline (Printexc.get_backtrace ());
+  end;
+  match exc with
   | Exit n ->
     exit (if return_parity then n else (if n=0 then 1 else 0))
 
@@ -70,7 +75,4 @@ let terminate rrp = let return_parity = not rrp in function
 
   | x ->
     print_endline ("Fatal error: exception " ^ (Printexc.to_string x));
-    if Printexc.backtrace_status () then begin
-      print_endline (Printexc.get_backtrace ());
-    end;
     exit (if return_parity then 1 else 0)
