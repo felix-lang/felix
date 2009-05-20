@@ -78,8 +78,7 @@ let get_lines f context l1' l2' c1 c2 = (* first line is line 1 *)
     close_in f;
     Buffer.contents buf
   with _ ->
-    "*** Can't read file " ^ f ^
-    " lines " ^ fmt l1 ^ " thru " ^ fmt l2 ^ "\n"
+    "*** Can't read file " ^ f ^ " lines " ^ fmt l1 ^ " thru " ^ fmt l2 ^ "\n"
 
 let long_string_of_src (f,l1,c1,l2,c2) =
   short_string_of_src (f,l1,c1,l2,c2) ^
