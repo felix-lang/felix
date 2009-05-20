@@ -28,7 +28,7 @@ let hfind msg h k =
 *)
 let bbdfns = Hashtbl.create 97
 
-let dummy_sr = "[flx_lookup] generated", 0,0,0,0
+let dummy_sr = Flx_srcref.make_dummy "[flx_lookup] generated"
 
 let unit_t = `BTYP_tuple []
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}

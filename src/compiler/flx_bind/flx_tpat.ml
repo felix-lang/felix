@@ -3,6 +3,8 @@ open List
 open Flx_mtypes2
 open Flx_maps
 
+let dummy_sr = Flx_srcref.make_dummy "[flx_tpat] generated"
+
 (*
 let type_of_tpattern syms p :
   typecode_t *
@@ -11,7 +13,6 @@ let type_of_tpattern syms p :
   (int * string) list *     (* variables for 'as' terms *)
   (int * typecode_t) list   (* assignments for as terms *)
 =
-  let sr = "unk",0,0,0,0 in
   let explicit_vars = ref [] in
   let any_vars = ref [] in
   let as_vars = ref [] in
@@ -22,8 +23,8 @@ let type_of_tpattern syms p :
     | `TPAT_tuple ps -> `TYP_tuple (map tp ps)
     | `TPAT_sum ps -> `TYP_sum (map tp ps)
     | `TPAT_pointer p -> `TYP_pointer (tp p)
-    | `TPAT_name (n,ps) -> `AST_name (sr,n,map tp ps)
-    | `TPAT_void -> `AST_void sr
+    | `TPAT_name (n,ps) -> `AST_name (dummy_sr,n,map tp ps)
+    | `TPAT_void -> `AST_void dummy_sr
 
     | `TPAT_var n ->
       let j = !(syms.counter) in
@@ -59,14 +60,13 @@ let type_of_tpattern syms p :
   (int * string) list *     (* variables for 'as' terms *)
   (int * typecode_t) list   (* assignments for as terms *)
 =
-  let sr = "unk",0,0,0,0 in
   let explicit_vars = ref [] in
   let any_vars = ref [] in
   let as_vars = ref [] in
   let eqns = ref [] in
 
   let rec tp p = match map_type tp p with
-    | `AST_patvar (sr,n) ->
+    | `AST_patvar (dummy_sr, n) ->
       let j = !(syms.counter) in
       incr (syms.counter);
       explicit_vars := (j,n) :: !explicit_vars;

@@ -50,7 +50,12 @@ let lexeme x = Lexing.lexeme (Dyp.std_lexbuf x)
 
 let getsr dyp =
   let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
-  s.pos_fname, s.pos_lnum, s.pos_cnum - s.pos_bol + 1, e.pos_lnum, e.pos_cnum - e.pos_bol
+  Flx_srcref.make (
+    s.pos_fname,
+    s.pos_lnum,
+    s.pos_cnum - s.pos_bol + 1,
+    e.pos_lnum,
+    e.pos_cnum - e.pos_bol)
 
 let set_filename lexbuf fname = 
   let lexbuf = Dyp.std_lexbuf lexbuf in
@@ -140,7 +145,7 @@ let local_data: local_data_t = {
 }
 
 let xsr sr =
-  match sr with f,fl,fc,ll,lc ->
+  match Flx_srcref.to_tuple sr with f,fl,fc,ll,lc ->
   Ocs_misc.make_slist Snull ((Sint lc) :: (Sint ll) :: (Sint fc) :: (Sint ll) :: (Sstring f) :: [])
 
 let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
@@ -1790,7 +1795,7 @@ let parse1 local_data filename : compilation_unit_t * local_data_t =
     let start_col = b.lex_start_p.pos_cnum - b.lex_start_p.pos_bol + 1 in
     let end_line = b.lex_curr_p.pos_lnum in
     let end_col = b.lex_curr_p.pos_cnum - b.lex_start_p.pos_bol in
-    let sr = file, start_line, start_col, end_line, end_col in
+    let sr = Flx_srcref.make (file, start_line, start_col, end_line, end_col) in
     print_endline (Flx_srcref.long_string_of_src sr);
   in
   let parse_tree = 

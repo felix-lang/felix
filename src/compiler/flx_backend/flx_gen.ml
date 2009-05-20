@@ -995,7 +995,7 @@ let gen_exe filename syms
     (* FIX THIS TO PUT SOURCE REFERENCE IN *)
     | `BEXE_halt (sr,msg) ->
       let msg = Flx_print.string_of_string ("HALT: " ^ msg) in
-      let f,sl,sc,el,ec = sr in
+      let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
       let s = Flx_print.string_of_string f ^"," ^
         si sl ^ "," ^ si sc ^ "," ^
         si el ^ "," ^ si ec
@@ -1004,7 +1004,7 @@ let gen_exe filename syms
 
     | `BEXE_trace (sr,v,msg) ->
       let msg = Flx_print.string_of_string ("TRACE: " ^ msg) in
-      let f,sl,sc,el,ec = sr in
+      let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
       let s = Flx_print.string_of_string f ^"," ^
         si sl ^ "," ^ si sc ^ "," ^
         si el ^ "," ^ si ec
@@ -1364,8 +1364,8 @@ let gen_exe filename syms
     | `BEXE_end -> "      }\n"
 
     | `BEXE_assert (sr,e) ->
-       let f,sl,sc,el,ec = sr in
-       let s = string_of_string f ^"," ^
+       let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
+       let s = string_of_string f ^ "," ^
          si sl ^ "," ^ si sc ^ "," ^
          si el ^ "," ^ si ec
        in
@@ -1373,13 +1373,13 @@ let gen_exe filename syms
        "        FLX_ASSERT_FAILURE("^s^");}\n"
 
     | `BEXE_assert2 (sr,sr2,e1,e2) ->
-       let f,sl,sc,el,ec = sr in
-       let s = string_of_string f ^"," ^
+       let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
+       let s = string_of_string f ^ "," ^
          si sl ^ "," ^ si sc ^ "," ^
          si el ^ "," ^ si ec
        in
-       let f2,sl2,sc2,el2,ec2 = sr2 in
-       let s2 = string_of_string f2 ^"," ^
+       let f2, sl2, sc2, el2, ec2 = Flx_srcref.to_tuple sr2 in
+       let s2 = string_of_string f2 ^ "," ^
          si sl2 ^ "," ^ si sc2 ^ "," ^
          si el2 ^ "," ^ si ec2
        in

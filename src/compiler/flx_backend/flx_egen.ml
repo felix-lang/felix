@@ -231,7 +231,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | `BEXPR_case_index e -> gen_case_index e
 
   | `BEXPR_range_check (e1,e2,e3) ->
-     let f,sl,sc,el,ec = sr in
+     let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
      let f = ce_atom ("\""^ f ^"\"") in
      let sl = ce_atom (si sl) in
      let sc = ce_atom (si sc) in
@@ -457,13 +457,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         | `Virtual -> clierr2 sr sr2 ("Instantiate virtual const " ^ id)
         | `Str c
         | `StrTemplate c when c = "#srcloc" ->
-           let filename, startline, startcol, endline, endcol = sr in
+           let f, l1, c1, l2, c2 = Flx_srcref.to_tuple sr in
            ce_atom ("flx::rtl::flx_range_srcref_t(" ^
-             string_of_string filename ^ "," ^
-             si startline ^ "," ^
-             si startcol ^ "," ^
-             si endline ^ "," ^
-             si endcol ^ ")"
+             string_of_string f ^ "," ^
+             si l1 ^ "," ^
+             si c1 ^ "," ^
+             si l2 ^ "," ^
+             si c2 ^ ")"
            )
 
         | `Str c when c = "#this" ->

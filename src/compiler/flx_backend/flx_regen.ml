@@ -130,7 +130,7 @@ let regen b sr (alpha, nstates, cases, matrix) kind ge =
   )
   cases
   ;
-  let f,sl,sc,el,ec = sr in
+  let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
   let s = Flx_print.string_of_string f ^ "," ^
     si sl ^ "," ^ si sc ^ "," ^
     si el ^ "," ^ si ec

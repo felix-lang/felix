@@ -6,14 +6,18 @@ type t =
   int * (* ending line number, 1 origin *)
   int   (* ending column, 1 origin *)
 
+let make srcref = srcref
+
+let make_dummy name = make (name, 0, 0, 0, 0)
+
+let to_tuple srcref = srcref
+
 (** Generic source reference manipulation.
  *
  * Note the special hack of forgetting the second filename when creating a
  * range: the alternative would be to record a complete list of lines. *)
 
-let dummy_sr = ("generated",0,0,0,0)
-
-(** axiom: rstoken a b = rsrange (lift a) (lift b) *)
+let dummy_sr = make_dummy "[flx_srcref] generated"
 
 (** get range from first and last ranges *)
 let rsrange (f1,sl1,sc1,el1,ec1) (f2,sl2,sc2,el2,ec2) =

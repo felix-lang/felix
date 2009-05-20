@@ -14,6 +14,8 @@ open Flx_maps
 open Flx_prop
 open Flx_beta
 
+let dummy_sr = Flx_srcref.make_dummy "[flx_inst] generated"
+
 let null_table = Hashtbl.create 3
 
 let add_inst syms bbdfns ref_insts1 (i,ts) =
@@ -21,8 +23,7 @@ let add_inst syms bbdfns ref_insts1 (i,ts) =
     print_endline ("Attempt to register instance " ^ si i ^ "[" ^
     catmap ", " (sbt syms.dfns) ts ^ "]");
     *)
-  let sr = "_dummy_[add_inst]",0,0,0,0 in
-  let ts = map (fun t -> beta_reduce syms sr t) ts in
+  let ts = map (fun t -> beta_reduce syms dummy_sr t) ts in
 
   let i,ts = Flx_typeclass.fixup_typeclass_instance syms bbdfns i ts in
     (*
