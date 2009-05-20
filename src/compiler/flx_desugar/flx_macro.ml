@@ -4,7 +4,6 @@ open Flx_print
 open Flx_exceptions
 open List
 open Flx_constfld
-open Flx_srcref
 open Flx_typing2
 open Flx_util
 
@@ -904,7 +903,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     iter
     (fun (sr,id) ->
       let id = mi sr id in
-      let sr = slift sr in
       let st = `AST_abs_decl (sr,id, dfltvs, qs, `Str id, rqmap reqs) in
       tack st
     )
@@ -1825,7 +1823,7 @@ and special_expand_statements recursion_limit local_prefix seq
   if ss = [] then []
   else
   let sr =
-    rsrange
+    Flx_srcref.rsrange
     (src_of_stmt (List.hd ss))
     (src_of_stmt (Flx_list.list_last ss))
   in

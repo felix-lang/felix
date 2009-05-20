@@ -2,25 +2,22 @@
  *
  * Source reference manipulators. *)
 
-(** type of a position in the {e original} sources *)
-type srcref =
-  string (* filename *) *
-  int (* line number, 1 origin *) *
-  int (* starting column, 1 origin *) *
-  int (* ending column, 1 origin *)
+(** type of a span between two positions in one file *)
+type t
 
-(** type of a span between two positions in one file*)
-type t =
+val make:
   string * (* filename *)
   int * (* starting line number, 1 origin *)
   int * (* starting column, 1 origin *)
   int * (* ending line number, 1 origin *)
   int   (* ending column, 1 origin *)
+  -> t
 
-val rstoken: srcref -> srcref -> t
+val to_tuple: t -> string * int * int * int * int
+
+val make_dummy: string -> t
+
 val rsrange: t -> t -> t
-val slift: srcref -> t
-val slower: t -> srcref
 
 val short_string_of_src: t -> string
 val long_string_of_src: t -> string

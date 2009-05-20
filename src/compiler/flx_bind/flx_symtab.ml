@@ -5,7 +5,6 @@ open Flx_types
 open Flx_mtypes2
 open Flx_print
 open Flx_typing
-open Flx_srcref
 open List
 open Flx_lookup
 open Flx_exceptions
@@ -221,7 +220,7 @@ let rec build_tables syms name inherit_vs
           print_endline
           (
             "//" ^ spc ^ si n ^ " -> " ^ id ^ vss ^
-            " " ^ kind ^ short_string_of_src sr
+            " " ^ kind ^ Flx_srcref.short_string_of_src sr
           )
         end;
         let make_vs (vs',con) : ivs_list_t =

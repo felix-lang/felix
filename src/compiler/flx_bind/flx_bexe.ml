@@ -8,7 +8,6 @@ open Flx_mtypes2
 open Flx_typing
 open Flx_lookup
 open Flx_mbind
-open Flx_srcref
 open Flx_unify
 open Flx_exceptions
 open List
@@ -220,7 +219,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         (
           "WARNING: Unreachable code in "^id^": " ^
           string_of_exe 1 x ^ " in\n" ^
-          short_string_of_src sr
+          Flx_srcref.short_string_of_src sr
         );
     end
     ;

@@ -6,7 +6,6 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_print
-open Flx_srcref
 open Flx_desugar
 open Flx_bbind
 open Flx_name
@@ -854,7 +853,7 @@ try
   plb "FLX_DEF_THREAD_FRAME";
   plb "//Thread Frame Constructor";
 
-  let sr = "Thread Frame",0,0,0,0 in
+  let sr = Flx_srcref.make_dummy "Thread Frame" in
   let topfuns = List.filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) topvars_with_type in
   let topfuns = List.map fst topfuns in
   let topinits =

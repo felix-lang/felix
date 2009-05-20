@@ -6,7 +6,7 @@ open List
 open Flx_maps
 open Flx_lookup
 
-let sr  = "[flx_why]dummy",0,0,0,0
+let sr  = Flx_srcref.make_dummy "[flx_why] generated"
 
 (* Hackery to find logic functions in the library *)
 let find_function syms env name =

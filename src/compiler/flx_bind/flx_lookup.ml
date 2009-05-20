@@ -9,7 +9,6 @@ open Flx_mtypes2
 open Flx_typing
 open Flx_typing2
 open List
-open Flx_srcref
 open Flx_unify
 open Flx_beta
 open Flx_generic
@@ -29,7 +28,7 @@ let hfind msg h k =
 *)
 let bbdfns = Hashtbl.create 97
 
-let dummy_sr = "[flx_lookup] generated", 0,0,0,0
+let dummy_sr = Flx_srcref.make_dummy "[flx_lookup] generated"
 
 let unit_t = `BTYP_tuple []
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
@@ -843,7 +842,7 @@ and bind_type'
     | _ ->
       clierr sr
       (
-        short_string_of_src sr ^
+        Flx_srcref.short_string_of_src sr ^
         "\ntype domain requires function"
       )
     end
@@ -855,7 +854,7 @@ and bind_type'
     | _ ->
       clierr sr
       (
-        short_string_of_src sr ^
+        Flx_srcref.short_string_of_src sr ^
         "\ntype codomain requires function"
       )
     end
@@ -1393,7 +1392,7 @@ and bind_type_index syms (rs:recstop)
       (
         match get_data syms.dfns index with {id=id;sr=sr}->
           id ^ " defined at " ^
-          short_string_of_src sr
+          Flx_srcref.short_string_of_src sr
       )
     );
     *)
@@ -3944,7 +3943,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         (
           "[bind_expression] Simple name " ^ name ^
           " binds to function set in\n" ^
-          short_string_of_src sr
+          Flx_srcref.short_string_of_src sr
         )
       | args ->
         let sufs = map snd args in
@@ -4951,7 +4950,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
         classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^
         " found"
       );
-      print_endline ("Call of " ^ calledname ^ " at " ^ short_string_of_src call_sr);
+      print_endline ("Call of " ^ calledname ^ " at " ^ Flx_srcref.short_string_of_src call_sr);
       iter (fun i ->
         match i with
         | `Inst i -> print_endline ("Instance " ^ si i)
@@ -5184,7 +5183,6 @@ and bind_dir
   (env:env_t) rs
   (vs,qn)
 : ivs_list_t * int * btypecode_t list =
-  let sr = ("dummy",0,0,0,0) in
   (*
   print_endline ("Try to bind dir " ^ string_of_qualified_name qn);
   *)
@@ -5196,7 +5194,7 @@ and bind_dir
    let entry = `NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
     Hashtbl.add cheat_table n entry;
     if not (Hashtbl.mem syms.dfns i) then
-      Hashtbl.add syms.dfns i {id=n;sr=sr;parent=None;vs=dfltvs;
+      Hashtbl.add syms.dfns i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
       pubmap=nullmap; privmap=nullmap;dirs=[];
       symdef=`SYMDEF_typevar `TYP_type
       }
@@ -5230,12 +5228,17 @@ and bind_dir
    (*
    print_endline ("Binding ts=" ^ catmap "," string_of_typecode ts');
    *)
-   let ts' = map (fun t -> beta_reduce syms sr (bind_type' syms (cheat_env::env) rsground sr t [] mkenv)) ts' in
+   let ts' = map (fun t ->
+     beta_reduce
+       syms
+       dummy_sr
+       (bind_type' syms (cheat_env::env) rsground dummy_sr t [] mkenv)
+     ) ts' in
    (*
    print_endline ("Ts bound = " ^ catmap "," (sbt syms.dfns) ts');
    *)
    (*
-   let ts' = map (fun t-> bind_type syms env sr t) ts' in
+   let ts' = map (fun t-> bind_type syms env dummy_sr t) ts' in
    *)
    vs,i,ts'
 
@@ -5642,8 +5645,8 @@ and check_module syms name sr entries ts =
         clierr sr
         (
           "Expected '" ^ id ^ "' to be module in: " ^
-          short_string_of_src sr ^ ", found: " ^
-          short_string_of_src sr'
+          Flx_srcref.short_string_of_src sr ^ ", found: " ^
+          Flx_srcref.short_string_of_src sr'
         )
       end
     | _ ->

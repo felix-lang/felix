@@ -1,7 +1,6 @@
 open Flx_util
 open Flx_ast
 open Flx_types
-open Flx_srcref
 open Big_int
 open Flx_typing
 open List
@@ -2372,7 +2371,7 @@ let string_of_dfn dfns i =
   match Hashtbl.find dfns i with
   | { id=id; sr=sr; vs=vs; symdef=entry } ->
   string_of_symdef entry id vs
-  ^ "\n  defined at " ^ short_string_of_src sr
+  ^ "\n  defined at " ^ Flx_srcref.short_string_of_src sr
 
 let full_string_of_entry_kind dfns {base_sym=i; spec_vs=vs; sub_ts=ts} =
   string_of_dfn dfns i ^

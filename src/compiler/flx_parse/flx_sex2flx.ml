@@ -32,7 +32,8 @@ let lst s (f:sexp_t->'a) x : 'a list = match x with
 let xsr x : Flx_srcref.t =
   let ii i = int_of_string i in
   match x with
-  | Lst [Str fn; Int fl; Int fc; Int ll; Int lc] -> fn,ii fl,ii fc,ii ll,ii lc
+  | Lst [Str fn; Int fl; Int fc; Int ll; Int lc] ->
+      Flx_srcref.make (fn,ii fl,ii fc,ii ll,ii lc)
   | x -> err x "Invalid source reference"
 
 let rec xliteral_t sr x =
@@ -734,7 +735,7 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] ->
     let ids = map (function
-      | Str n -> ("dummy",0,0,0),n
+      | Str n -> Flx_srcref.dummy_sr,n
       | x -> err x "ast_ctypes"
     ) ids
     in

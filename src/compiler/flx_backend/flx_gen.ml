@@ -20,7 +20,6 @@ open Flx_pgen
 open Flx_ctorgen
 open Flx_child
 open Flx_beta
-open Flx_srcref
 
 let find_variable_indices syms (child_map,bbdfns) index =
   let children = find_children child_map index in
@@ -996,7 +995,7 @@ let gen_exe filename syms
     (* FIX THIS TO PUT SOURCE REFERENCE IN *)
     | `BEXE_halt (sr,msg) ->
       let msg = Flx_print.string_of_string ("HALT: " ^ msg) in
-      let f,sl,sc,el,ec = sr in
+      let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
       let s = Flx_print.string_of_string f ^"," ^
         si sl ^ "," ^ si sc ^ "," ^
         si el ^ "," ^ si ec
@@ -1005,7 +1004,7 @@ let gen_exe filename syms
 
     | `BEXE_trace (sr,v,msg) ->
       let msg = Flx_print.string_of_string ("TRACE: " ^ msg) in
-      let f,sl,sc,el,ec = sr in
+      let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
       let s = Flx_print.string_of_string f ^"," ^
         si sl ^ "," ^ si sc ^ "," ^
         si el ^ "," ^ si ec
@@ -1365,8 +1364,8 @@ let gen_exe filename syms
     | `BEXE_end -> "      }\n"
 
     | `BEXE_assert (sr,e) ->
-       let f,sl,sc,el,ec = sr in
-       let s = string_of_string f ^"," ^
+       let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
+       let s = string_of_string f ^ "," ^
          si sl ^ "," ^ si sc ^ "," ^
          si el ^ "," ^ si ec
        in
@@ -1374,13 +1373,13 @@ let gen_exe filename syms
        "        FLX_ASSERT_FAILURE("^s^");}\n"
 
     | `BEXE_assert2 (sr,sr2,e1,e2) ->
-       let f,sl,sc,el,ec = sr in
-       let s = string_of_string f ^"," ^
+       let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
+       let s = string_of_string f ^ "," ^
          si sl ^ "," ^ si sc ^ "," ^
          si el ^ "," ^ si ec
        in
-       let f2,sl2,sc2,el2,ec2 = sr2 in
-       let s2 = string_of_string f2 ^"," ^
+       let f2, sl2, sc2, el2, ec2 = Flx_srcref.to_tuple sr2 in
+       let s2 = string_of_string f2 ^ "," ^
          si sl2 ^ "," ^ si sc2 ^ "," ^
          si el2 ^ "," ^ si ec2
        in
@@ -2407,7 +2406,7 @@ let gen_python_module modname syms bbdfns bifaces =
   let pychk acc elt = match elt with
   | `BIFACE_export_python_fun (sr,index,name) ->
     let class_name = cpp_instance_name syms bbdfns index [] in
-    let loc = short_string_of_src sr in
+    let loc = Flx_srcref.short_string_of_src sr in
     let entry = name, class_name, loc in
     entry :: acc
   | _ -> acc

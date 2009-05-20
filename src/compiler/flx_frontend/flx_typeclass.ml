@@ -7,7 +7,6 @@ open Flx_set
 open Flx_mtypes2
 open Flx_typing
 open Flx_mbind
-open Flx_srcref
 open List
 open Flx_unify
 open Flx_treg
@@ -18,7 +17,7 @@ open Flx_use
 open Flx_child
 open Flx_beta
 
-let dummy_sr = "[typeclass] generated",0,0,0,0
+let dummy_sr = Flx_srcref.make_dummy "[flx_typeclass] generated"
 
 let vs2ts vs = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs
 

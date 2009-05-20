@@ -2,7 +2,6 @@ open Flx_ast
 open Flx_print
 open Flx_typing
 open List
-open Flx_srcref
 open Flx_exceptions
 
 (* These routine just check that the shape of a list
@@ -148,7 +147,7 @@ and check_match_union pats =
   | _ ->
     let sr = src_of_pat pat in clierr sr
     (
-      short_string_of_src (src_of_pat pat) ^
+      Flx_srcref.short_string_of_src (src_of_pat pat) ^
       ": union pattern expected"
     )
   in
@@ -208,19 +207,19 @@ let rec check_terminal pat = match pat with
     failwith
     (
       "'Any' pattern '_' must be last in match in " ^
-      short_string_of_src sr
+      Flx_srcref.short_string_of_src sr
     )
   | `PAT_name (sr,x) ->
     failwith
     (
       "'Name' pattern '"^x^"' must be last in match in " ^
-      short_string_of_src sr
+      Flx_srcref.short_string_of_src sr
     )
   | `PAT_float_range (sr, Float_minus_inf, Float_inf) ->
     failwith
     (
       "Whole floating range must be last in match in " ^
-      short_string_of_src sr
+      Flx_srcref.short_string_of_src sr
     )
 
   | `PAT_as (_,pat,_) -> check_terminal pat
@@ -241,7 +240,7 @@ let validate_patterns pats =
       failwith
       (
         "NaN test must be first in match in " ^
-        short_string_of_src sr
+        Flx_srcref.short_string_of_src sr
       )
     | _ -> ()
   )

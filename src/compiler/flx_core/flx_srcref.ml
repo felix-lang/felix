@@ -1,10 +1,3 @@
-(** type of a position in the {e original} sources *)
-type srcref =
-  string (* filename *) *
-  int (* line number, 1 origin *) *
-  int (* starting column, 1 origin *) *
-  int (* ending column, 1 origin *)
-
 (** type of a span between two positions in one file*)
 type t =
   string * (* filename *)
@@ -13,34 +6,22 @@ type t =
   int * (* ending line number, 1 origin *)
   int   (* ending column, 1 origin *)
 
+let make srcref = srcref
+
+let make_dummy name = make (name, 0, 0, 0, 0)
+
+let to_tuple srcref = srcref
+
 (** Generic source reference manipulation.
  *
  * Note the special hack of forgetting the second filename when creating a
  * range: the alternative would be to record a complete list of lines. *)
 
-let dummy_sr = ("generated",0,0,0,0)
-
-(** axiom: rstoken a b = rsrange (lift a) (lift b) *)
-
-(** get source range from source references of first
-   and last tokens
-*)
-let rstoken (f1,l1,s1,e1) (f2,l2,s2,e2) = (f1,l1,s1,l2,e2)
+let dummy_sr = make_dummy "[flx_srcref] generated"
 
 (** get range from first and last ranges *)
 let rsrange (f1,sl1,sc1,el1,ec1) (f2,sl2,sc2,el2,ec2) =
   (f1,sl1,sc1,el2,ec2)
-
-(** lift token source to range for token without attribute*)
-let slift (f,l,s,e) = (f,l,s,l,e)
-
-(** lift token source to range for tokens with attribute*)
-let sliftfst x = slift (fst x)
-
-(** lower token source range to source *)
-let slower (f,l1,c1,l2,c2) =
-  if l1 = l2 then f,l1,c1,c2
-  else f,l1,c1,c1
 
 (** {6 Type specific operations} *)
 
@@ -97,8 +78,7 @@ let get_lines f context l1' l2' c1 c2 = (* first line is line 1 *)
     close_in f;
     Buffer.contents buf
   with _ ->
-    "*** Can't read file " ^ f ^
-    " lines " ^ fmt l1 ^ " thru " ^ fmt l2 ^ "\n"
+    "*** Can't read file " ^ f ^ " lines " ^ fmt l1 ^ " thru " ^ fmt l2 ^ "\n"
 
 let long_string_of_src (f,l1,c1,l2,c2) =
   short_string_of_src (f,l1,c1,l2,c2) ^

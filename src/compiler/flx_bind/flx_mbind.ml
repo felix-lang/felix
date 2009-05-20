@@ -4,7 +4,6 @@ open Flx_types
 open Flx_print
 open Flx_typing
 open Flx_lookup
-open Flx_srcref
 open Flx_typing
 open Flx_exceptions
 open List
@@ -226,7 +225,7 @@ let rec gen_match_check pat (arg:expr_t) =
       )
     )
   and truth sr = `AST_typed_case (sr,1,flx_bool)
-  and ssrc x = short_string_of_src x
+  and ssrc x = Flx_srcref.short_string_of_src x
   in
   match pat with
   | `PAT_int (sr,t,i) -> apl2 sr "eq" (lint sr t i) arg

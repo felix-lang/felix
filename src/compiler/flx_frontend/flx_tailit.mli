@@ -3,7 +3,6 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_call
-open Flx_srcref
 open Flx_child
 
 val tailit:
