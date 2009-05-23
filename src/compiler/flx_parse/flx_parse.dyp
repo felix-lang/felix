@@ -1809,7 +1809,7 @@ let parse_lexbuf local_data lexbuf : compilation_unit_t * local_data_t =
         raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
       end
 
-let parse_file filename dirname include_dirs cache_dir auto_imports =
+let parse_file filename include_dirs cache_dir auto_imports =
   let parse' (old_tree, old_local_data) filename =
     let filename = Flx_filesys.find_file ~include_dirs filename in
     let ic = open_in filename in

@@ -51,7 +51,6 @@ let run() =
   let parse_tree =
     Flx_parse.parse_file
     input_file_name
-    (Filename.dirname input_file_name)
     compiler_options.include_dirs
     compiler_options.cache_dir
     compiler_options.auto_imports
