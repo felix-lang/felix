@@ -48,14 +48,14 @@ let run() =
   end
   ;
 
-  let parse_tree =
-    Flx_parse.parse_file
-    input_file_name
-    compiler_options.include_dirs
-    compiler_options.cache_dir
-    compiler_options.auto_imports
+  (* Parse the files *)
+  let parser_state = List.fold_left
+    (Flx_parse.parse_file ~include_dirs:compiler_options.include_dirs)
+    (Flx_parse.make_parser_state ())
+    (compiler_options.auto_imports @ [input_file_name])
   in
-    print_endline (Flx_print.string_of_compilation_unit parse_tree);
+  let parse_tree = Flx_parse.compilation_unit parser_state in
+  print_endline (Flx_print.string_of_compilation_unit parse_tree);
 
   if compiler_options.print_flag then begin
     print_endline "---------------------------------------";

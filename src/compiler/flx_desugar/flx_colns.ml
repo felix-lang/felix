@@ -74,19 +74,17 @@ let include_file syms inspec =
           close_out x
         | None -> () (* can't write, don't worry *)
   in
-  let parseit() =
-    let sts =
-      if syms.compiler_options.print_flag then
-      print_endline ("Parsing " ^ tf);
-      Flx_parse.parse_file
-        tf
-        include_dirs
-        syms.compiler_options.cache_dir
-        syms.compiler_options.auto_imports
+  let parseit () =
+    if syms.compiler_options.print_flag then print_endline ("Parsing " ^ tf);
+    let parser_state = List.fold_left
+      (Flx_parse.parse_file ~include_dirs)
+      (Flx_parse.make_parser_state ())
+      (syms.compiler_options.auto_imports @ [tf])
     in
-      let local_prefix = Filename.basename basename in
-      let tree = expand_macros local_prefix 5000 sts in
-      tree
+    let tree = Flx_parse.compilation_unit parser_state in
+    let local_prefix = Filename.basename basename in
+    let tree = expand_macros local_prefix 5000 tree in
+    tree
   in
   let sts =
       (* -- no file ----------------------------------------- *)

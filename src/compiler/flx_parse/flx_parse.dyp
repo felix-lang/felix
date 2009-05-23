@@ -1748,16 +1748,15 @@ epsilon: | { () }
 %%
 
 {
+let make_parser_state () = [], local_data
+
 let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
   | [x,_] -> x
   | _ -> failwith "Dypgen parser failed"
 
-let parse_lexbuf local_data lexbuf : compilation_unit_t * local_data_t =
-(*
-  print_endline ("PARSING " ^ filename);
-*)
-  let show_error() =
+let parse_lexbuf (old_tree, old_local_data) lexbuf =
+  let show_error () =
     let b = (Dyp.std_lexbuf lexbuf) in
     let file = b.lex_start_p.pos_fname in
     let start_line = b.lex_start_p.pos_lnum in
@@ -1767,71 +1766,70 @@ let parse_lexbuf local_data lexbuf : compilation_unit_t * local_data_t =
     let sr = Flx_srcref.make (file, start_line, start_col, end_line, end_col) in
     print_endline (Flx_srcref.long_string_of_src sr);
   in
-  try
-    dyphack (
-      compilation_unit
-        ~local_data:local_data
-        ~global_data:global_data
-        lexbuf
-      )
-  with
-    | Failure s ->
-      begin
-        print_endline ("Parse fail " ^ s);
-        show_error();
-        raise (Flx_exceptions.ParseError ("Failure \"" ^ s ^ "\" Parsing File"))
-      end
-    | Flx_exceptions.ClientError (sr, s)
-    | Flx_exceptions.ClientError2 (sr, _, s)
-    | Flx_exceptions.ClientErrorn (sr::_, s) as x  ->
-      begin
-        print_endline "Parse fail";
-        print_endline (Flx_srcref.long_string_of_src sr);
-        raise x
-      end
+  let tree, local_data =
+    try
+      dyphack (
+        compilation_unit
+          ~local_data:old_local_data
+          ~global_data:global_data
+          lexbuf
+        )
+    with
+      | Failure s ->
+        begin
+          print_endline ("Parse fail " ^ s);
+          show_error();
+          raise (Flx_exceptions.ParseError ("Failure \"" ^ s ^ "\" Parsing File"))
+        end
+      | Flx_exceptions.ClientError (sr, s)
+      | Flx_exceptions.ClientError2 (sr, _, s)
+      | Flx_exceptions.ClientErrorn (sr::_, s) as x  ->
+        begin
+          print_endline "Parse fail";
+          print_endline (Flx_srcref.long_string_of_src sr);
+          raise x
+        end
 
-    | Dyp.Syntax_error as x ->
-        show_error();
-        raise x
+      | Dyp.Syntax_error as x ->
+          show_error();
+          raise x
 
-    | Dyp.Bad_constructor (nt, ctor1, ctor2) ->
-        let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^ "'" in
-        print_endline s;
-        failwith s
+      | Dyp.Bad_constructor (nt, ctor1, ctor2) ->
+          let s = "Bad constructor '" ^ ctor1 ^ "' and '" ^ ctor2 ^ "' for nonterminal '" ^ nt ^ "'" in
+          print_endline s;
+          failwith s
 
-    | x ->
-      begin
-        print_string "Fatal error: exception ";
-        print_endline (Printexc.to_string x);
-        if Printexc.backtrace_status () then begin
-          print_endline (Printexc.get_backtrace ());
-        end;
-        raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
-      end
-
-let parse_file filename include_dirs cache_dir auto_imports =
-  let parse' (old_tree, old_local_data) filename =
-    let filename = Flx_filesys.find_file ~include_dirs filename in
-    let ic = open_in filename in
-    let pilot = pp () in
-    let lexbuf = Dyp.from_channel pilot ic in
-    Dyp.set_fname lexbuf filename;
-    let tree, local_data =
-      try
-        parse_lexbuf old_local_data lexbuf
-      with e ->
-        close_in ic;
-        raise e
-    in
-    close_in ic;
-    old_tree @ tree, local_data
+      | x ->
+        begin
+          print_string "Fatal error: exception ";
+          print_endline (Printexc.to_string x);
+          if Printexc.backtrace_status () then begin
+            print_endline (Printexc.get_backtrace ());
+          end;
+          raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
+        end
   in
-  let prefix_tree, local_data =
-    List.fold_left parse' ([], local_data) auto_imports
-  in
-  let filename = Flx_filesys.find_file ~include_dirs filename in
-  let tree,_ = parse' (prefix_tree, local_data) filename in
-  tree
+  old_tree @ tree, local_data
+
+let compilation_unit (tree, parser_data) = tree
+
+let parse_channel ?(name="<channel>") parser_state channel =
+  let lexbuf = Dyp.from_channel (pp ()) channel in
+  Dyp.set_fname lexbuf name;
+  parse_lexbuf parser_state lexbuf
+
+let parse_file ?(include_dirs=[]) parser_state name =
+  let name = Flx_filesys.find_file ~include_dirs name in
+  Flx_filesys.with_file_in name (parse_channel ~name parser_state)
+
+let parse_string ?(name="<string>") parser_state str =
+  let lexbuf = Dyp.from_string (pp ()) str in
+  Dyp.set_fname lexbuf name;
+  parse_lexbuf parser_state lexbuf
+
+let parse_function ?(name="<function>") parser_state f =
+  let lexbuf = Dyp.from_function (pp ()) f in
+  parse_lexbuf parser_state lexbuf
 }
 
 
