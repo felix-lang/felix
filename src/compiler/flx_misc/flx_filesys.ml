@@ -97,3 +97,15 @@ let find_dir ?(include_dirs=[]) path =
   let dir = find_path ~include_dirs path in
   if not (Sys.is_directory dir) then raise (Missing_path dir) else
   dir
+
+(** Open the file for reading and pass the channel to the subfunction. The file
+ * is then closed when the subfunction exits. *)
+let with_file_in path f =
+  let file = open_in path in
+  Flx_util.finally (fun () -> close_in file) f file
+
+(** Open the file for writing and pass the channel to the subfunction. The file
+ * is then closed when the subfunction exits. *)
+let with_file_out path f =
+  let file = open_out path in
+  Flx_util.finally (fun () -> close_out file) f file

@@ -35,3 +35,7 @@ val hashtable_of_list:
 (** fixpoint combinator *)
 val fix:
  (('a -> 'b) -> 'a -> 'b) -> 'a -> 'b
+
+(** `finally fend f x` calls `f x` then fend, even if `f x` raises an
+  * exception. *)
+val finally: (unit -> unit) -> ('a -> 'b) -> 'a -> 'b

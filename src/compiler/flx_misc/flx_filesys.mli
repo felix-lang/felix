@@ -24,3 +24,17 @@ val find_dir:
   ?include_dirs:string list ->  (** Optional directories to search. *)
   string ->                     (** The directory name. *)
   string
+
+(** Open the file for reading and pass the channel to the subfunction. The file
+ * is then closed when the subfunction exits. *)
+val with_file_in:
+  string ->             (** The file name. *)
+  (in_channel -> 'a) -> (** The subfunction. *)
+  'a
+
+(** Open the file for writing and pass the channel to the subfunction. The file
+ * is then closed when the subfunction exits. *)
+val with_file_out:
+  string ->               (** The file name. *)
+  (out_channel -> 'a) ->  (** The subfunction. *)
+  'a

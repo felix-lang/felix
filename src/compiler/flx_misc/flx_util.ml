@@ -22,3 +22,14 @@ let hashtable_of_list lst =
   t
 
 let rec fix f x = f (fix f) x
+
+let finally fend f x =
+  let r =
+    try
+      f x
+    with e ->
+      fend ();
+      raise e
+  in
+  fend ();
+  r
