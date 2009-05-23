@@ -10,7 +10,6 @@ open Flx_mtypes2
 open List
 open Flx_exceptions
 open Flx_util
-open Flx_filesys
 open Flx_version
 open Flx_macro
 
@@ -24,7 +23,7 @@ type nsrec = {
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 let dfltvs = [],dfltvs_aux
 
-let include_file syms inspec lookup =
+let include_file syms inspec =
   let force = syms.compiler_options.force_recompile in
   let this_version = !Flx_version.version_data in
   let basename =
@@ -38,16 +37,21 @@ let include_file syms inspec lookup =
 
   in
   let include_dirs = syms.compiler_options.include_dirs in
-  let tf = find_file lookup include_dirs (basename ^ ".flx") in
-  let pf = find_file lookup
-    (match syms.compiler_options.cache_dir with
-    | None -> include_dirs
-    | Some d -> d::include_dirs
-    )
-    (basename ^ ".par")
+  let tf = Flx_filesys.find_file ~include_dirs (basename ^ ".flx") in
+  let pf =
+    try
+      Flx_filesys.find_file
+        ~include_dirs:(match syms.compiler_options.cache_dir with
+        | None -> include_dirs
+        | Some d -> d::include_dirs
+        )
+        (basename ^ ".par")
+    with Flx_filesys.Missing_path _ ->
+      (* It's okay if the .par file doesn't exist. *)
+      ""
   in
-  let tf_mt = filetime tf in
-  let pf_mt = filetime pf in
+  let tf_mt = Flx_filesys.filetime tf in
+  let pf_mt = Flx_filesys.filetime pf in
   let cbt = this_version.build_time_float in
   let saveit sts =
       let pf =
@@ -76,7 +80,6 @@ let include_file syms inspec lookup =
       print_endline ("Parsing " ^ tf);
       Flx_parse.parse_file
         tf
-        (Filename.dirname tf)
         include_dirs
         syms.compiler_options.cache_dir
         syms.compiler_options.auto_imports
@@ -158,7 +161,7 @@ let rec collate_namespaces syms sts =
    rev stsout
 
  | `AST_include (sr,inspec) :: tail ->
-    let sts = include_file syms inspec true in
+    let sts = include_file syms inspec in
     cn (sts @ tail) stsout nslist
 
  | head:: tail ->

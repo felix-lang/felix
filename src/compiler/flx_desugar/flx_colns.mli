@@ -14,5 +14,4 @@ val collate_namespaces:
 val include_file:
   sym_state_t ->
   string ->
-  bool ->
   statement_t list

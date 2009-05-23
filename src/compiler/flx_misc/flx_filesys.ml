@@ -1,4 +1,12 @@
-exception Found_file of string
+exception Found_path of string
+exception Missing_path of string
+
+(** Look up the file's modification time. *)
+let filetime f =
+  if f = "" then 0.0
+  else
+    try (Unix.stat f).Unix.st_mtime
+    with | _ -> 0.0
 
 (* Note: empty list of components is not allowed *)
 let fcat fs =
@@ -35,10 +43,15 @@ let slosh = Str.regexp "/"
 let split_unix f =
   let fs = Str.split slosh f in
   if is_dir_sep f 0 then dir_sep :: fs else fs
+
+(** Convert a unix path into a native path. *)
 let unix2native f = fcat (split_unix f)
 
-let is_abs : string -> bool = match Sys.os_type with
-  | "Win32" -> 
+(** Check if the native path is an absolute path. *)
+let is_abs =
+  match Sys.os_type with
+  | "Win32" ->
+    (* A path is native on windows if it starts with '\' or '[A-Z]:\'. *)
     (fun s ->
       let n = String.length s in
       if n = 0 then false else
@@ -47,35 +60,40 @@ let is_abs : string -> bool = match Sys.os_type with
       false
     )
   | _ ->
+    (* A path is native on unix if it starts with '/'. *)
     (fun s ->
       let n = String.length s in
       if n = 0 then false else
-      s.[0] = '/' 
+      s.[0] = '/'
     )
 
-let find_file_in_path incdirs f =
-  let f = unix2native f in
+(** Look in the filesystem for the path. Raises Missing_path if not found. *)
+let find_path ?(include_dirs=[]) path =
+  let path = unix2native path in
   try
-    List.iter
-    (fun d ->
-      let f =  Filename.concat d f in
-      if Sys.file_exists f
-      then raise (Found_file f)
-    )
-    incdirs
-    ;
-    ""
-  with Found_file s -> s
+    (* Check first if the path can be found directly. *)
+    if Sys.file_exists path then raise (Found_path path);
 
-let find_file lookup incdirs f =
-  if String.length f = 0
-  then failwith "Empty include file name"
-  ;
-  if is_abs f || not lookup then unix2native f
-  else find_file_in_path incdirs f
+    (* Nope, so search through the include dirs for the path. *)
+    List.iter begin fun d ->
+      let path = Filename.concat d path in
+      if Sys.file_exists path then raise (Found_path path)
+    end include_dirs;
 
-let filetime f =
-  if f = "" then 0.0
-  else
-    try (Unix.stat f).Unix.st_mtime
-    with | _ -> 0.0
+    (* We still didn't find it? Then error out. *)
+    raise (Missing_path path)
+  with Found_path path -> path
+
+(** Look in the filesystem for the path. Raises Missing_path if not found or is
+ * not a file. *)
+let find_file ?(include_dirs=[]) path =
+  let file = find_path ~include_dirs path in
+  if Sys.is_directory file then raise (Missing_path file) else
+  file
+
+(** Look in the filesystem for the path. Raises Missing_path if not found or is
+ * not a directory. *)
+let find_dir ?(include_dirs=[]) path =
+  let dir = find_path ~include_dirs path in
+  if not (Sys.is_directory dir) then raise (Missing_path dir) else
+  dir

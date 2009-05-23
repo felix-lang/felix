@@ -1748,25 +1748,6 @@ epsilon: | { () }
 %%
 
 {
-exception Found_file of string
-let lookup_file incdirs f =
-  try 
-    begin
-      if Filename.is_relative f then
-        List.iter
-        (fun d ->
-          let f = Filename.concat d f in
-          if Sys.file_exists f
-          then raise (Found_file f)
-        )
-        incdirs
-      else
-        if Sys.file_exists f
-        then raise (Found_file f)
-    end; 
-    failwith ("File " ^ f ^ " not found in path")
-  with Found_file s -> s
-
 let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
   | [x,_] -> x
@@ -1828,9 +1809,9 @@ let parse_lexbuf local_data lexbuf : compilation_unit_t * local_data_t =
         raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
       end
 
-let parse_file filename dirname incdirs cache_dir auto_imports =
+let parse_file filename dirname include_dirs cache_dir auto_imports =
   let parse' (old_tree, old_local_data) filename =
-    let filename = lookup_file incdirs filename in
+    let filename = Flx_filesys.find_file ~include_dirs filename in
     let ic = open_in filename in
     let pilot = pp () in
     let lexbuf = Dyp.from_channel pilot ic in
@@ -1848,7 +1829,7 @@ let parse_file filename dirname incdirs cache_dir auto_imports =
   let prefix_tree, local_data =
     List.fold_left parse' ([], local_data) auto_imports
   in
-  let filename = lookup_file (dirname :: incdirs) filename in
+  let filename = Flx_filesys.find_file ~include_dirs filename in
   let tree,_ = parse' (prefix_tree, local_data) filename in
   tree
 }

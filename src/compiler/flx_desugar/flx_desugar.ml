@@ -12,7 +12,6 @@ open List
 open Flx_pat
 open Flx_exceptions
 open Flx_macro
-open Flx_filesys
 open Flx_colns
 
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"

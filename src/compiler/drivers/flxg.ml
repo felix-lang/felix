@@ -178,7 +178,7 @@ try
         if Filename.check_suffix file ".flx" then file else file ^ ".flx"
       in
       print_debug ("//Parsing Implementation " ^ file_name);
-      let sts = Flx_colns.include_file syms file_name true in
+      let sts = Flx_colns.include_file syms file_name in
       concat [tree; sts]
     )
     []

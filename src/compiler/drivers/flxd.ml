@@ -64,7 +64,7 @@ try
   (* PARSE THE IMPLEMENTATION FILE *)
   print_endline ("//Parsing Implementation " ^ input_file_name);
   let parse_tree =
-    Flx_colns.include_file syms input_file_name false
+    Flx_colns.include_file syms input_file_name
   in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
