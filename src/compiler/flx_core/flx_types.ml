@@ -278,8 +278,10 @@ and axiom_t = id_t * Flx_srcref.t * int option * axiom_kind_t * bvs_t * bparams_
 
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
 
-type env_t = (bid_t * id_t * name_map_t * name_map_t list) list
-
+type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
+    (* env: container index, name, primary symbol map, directives, type
+     * constraint
+     *)
 type symbol_definition_t =
   [
   | `SYMDEF_newtype of typecode_t

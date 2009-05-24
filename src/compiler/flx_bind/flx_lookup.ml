@@ -233,7 +233,7 @@ and inner_lookup_name_in_env syms (env:env_t) rs sr name : entry_set_t =
   let rec aux env =
     match env with
     | [] -> None
-    | (_,_,table,dirs) :: tail ->
+    | (_,_,table,dirs,_) :: tail ->
       match lookup_name_in_table_dirs table dirs sr name with
       | Some x as y -> y
       | None -> aux tail
@@ -1551,7 +1551,7 @@ and base_typename_of_literal v = match v with
   | `AST_ustring _ -> "string"
 
 and  typeof_literal syms env sr v : btypecode_t =
-  let _,_,root,_ = hd (rev env) in
+  let _,_,root,_,_ = hd (rev env) in
   let name = base_typename_of_literal v in
   let t = `AST_name (sr,name,[]) in
   let bt = inner_bind_type syms env sr rsground t in
@@ -2632,7 +2632,7 @@ and lookup_name_with_sig
       "[lookup_name_with_sig] Can't find " ^ name ^
       " of " ^ catmap "," (sbt syms.dfns) t2
     )
-  | (_,_,table,dirs)::tail ->
+  | (_,_,table,dirs,_)::tail ->
     match
       lookup_name_in_table_dirs_with_sig
       (table, dirs)
@@ -2669,7 +2669,7 @@ and lookup_type_name_with_sig
       "[lookup_name_with_sig] Can't find " ^ name ^
       " of " ^ catmap "," (sbt syms.dfns) t2
     )
-  | (_,_,table,dirs)::tail ->
+  | (_,_,table,dirs,_)::tail ->
     match
       lookup_type_name_in_table_dirs_with_sig
       (table, dirs)
@@ -5202,7 +5202,7 @@ and bind_dir
   )
   (fst vs)
   ;
-  let cheat_env = (0,"cheat",cheat_table,[]) in
+  let cheat_env = (0,"cheat",cheat_table,[],`TYP_tuple []) in
   let result =
     try
       lookup_qn_in_env' syms env
@@ -5379,7 +5379,7 @@ and get_pub_tables syms env rs dirs =
 
 and mk_bare_env syms index =
   match hfind "lookup" syms.dfns index with
-  {id=id;parent=parent;privmap=table} -> (index,id,table,[]) ::
+  {id=id;parent=parent;privmap=table} -> (index,id,table,[],`TYP_tuple []) ::
   match parent with
   | None -> []
   | Some index -> mk_bare_env syms index
@@ -5389,8 +5389,8 @@ and merge_directives syms rs env dirs typeclasses =
   let add table =
    env :=
      match !env with
-     | (idx, id, nm, nms) :: tail ->
-     (idx, id, nm,  table :: nms) :: tail
+     | (idx, id, nm, nms,con) :: tail ->
+     (idx, id, nm,  table :: nms,con) :: tail
      | [] -> assert false
   in
   let use_map = Hashtbl.create 97 in
@@ -5527,14 +5527,17 @@ and build_env'' syms rs index : env_t =
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
   let env = inner_build_env syms rs parent in
   (* build temporary bare innermost environment with a full parent env *)
-  let env' = (index,id,table,[])::env in
+  let typeclasses, constraints = 
+     match vs with 
+     (_,{raw_type_constraint=con; raw_typeclass_reqs=rtcr})-> rtcr,con 
+  in
+  let env' = (index,id,table,[],constraints)::env in
   if skip_merges then env' else
   (*
   print_endline ("Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i));
   print_endline ("Privmap=");
   Hashtbl.iter (fun s _ ->  print_endline s) table ;
   *)
-  let typeclasses = match vs with (_,{raw_typeclass_reqs=rtcr})-> rtcr in
 
   (* use that env to process directives and type classes *)
   (*

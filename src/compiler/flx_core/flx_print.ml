@@ -2432,18 +2432,19 @@ let print_env e =
     print_endline "--"; Hashtbl.iter print_entry htab
 
   in
-  let print_level (index,id,htab,htabs) =
+  let print_level (index,id,htab,htabs,con) =
     print_string (id^"<"^si index^">");
     print_table htab;
     print_endline "OPENS:";
     List.iter print_table htabs;
-    print_endline "ENDOFOPENS"
+    print_endline "ENDOFOPENS";
+    print_endline ("CONSTRAINT: " ^ string_of_typecode con)
   in
 
   List.iter print_level e
 
 let print_env_short e =
-  let print_level (index,id,htab,htabs) =
+  let print_level (index,id,htab,htabs,con) =
     print_endline (id^"<"^si index^">")
   in
   List.iter print_level e
