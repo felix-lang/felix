@@ -92,7 +92,18 @@ let rec find_func_vs syms vs j =
 
   | _ ->
     let (vs',con) = find_vs syms j in
-    vs',fst vs,merge_con con (snd vs)
+    (* NOTE: the constraints of the parent are dropped
+     * because they're automatically satisfied:
+     * No merge is done on the constraints.
+     * Hope this doesn't screw something up.
+     * It will for sure if this routine is ALSO used
+     * to get the calling context constraints.
+     *
+     * This line originally read:
+     * vs',fst vs,merge_con con (snd vs)
+     *
+     *)
+    vs',fst vs,snd vs
 
 (* finds the triple pvs,vs,con where vs is the entity
    vs INCLUDING module vs. pvs is the vs of
