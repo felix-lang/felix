@@ -1262,8 +1262,8 @@ sstatement_star:
   | { 0,[] }
 
 dyprods:
-   | dyprods dyprod { $2 :: $1 }
-   | { [] }
+  | dyprods dyprod { $2 :: $1 }
+  | { [] }
 
 opt_private:
   | "private" { `Private }
