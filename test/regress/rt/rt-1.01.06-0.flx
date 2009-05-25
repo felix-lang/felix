@@ -1,3 +1,0 @@
-//Check assert
-// chained comparison not implemented in nu grammar
-assert(1<2 and 2<3 and 3<4);
