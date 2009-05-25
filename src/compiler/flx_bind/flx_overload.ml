@@ -49,7 +49,7 @@ let rec scancases syms tss1 tss2 = match (tss1, tss2) with
 
 let typematch_implies syms a b = match a, b with
   | `BTYP_type_match (v1,tss1), `BTYP_type_match (v2,tss2) ->
-    v1 = v2 && scancases syms tss1 tss2
+     type_eq syms.counter syms.dfns v1 v2 && scancases syms tss1 tss2
   | _ -> false
 
 let factor_implies syms ls b =
@@ -83,7 +83,10 @@ let filter_out_units ls =
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
 let constraint_implies syms a b =
-  terms_imply syms (split_conjuncts a) (split_conjuncts b)
+  print_endline "checking constraint implication"; 
+  let r = terms_imply syms (split_conjuncts a) (split_conjuncts b) in
+  print_endline ("Result = " ^ (if r then "IMPLIES" else "NOT IMPLIES"));
+  r
 
 type overload_result =
  int *  (* index of function *)
@@ -218,7 +221,7 @@ let hack_name qn = match qn with
 (* Note this bt must bind types in the base context *)
 let consider syms env bt be luqn2 name
   ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
-  input_ts arg_types call_sr env_traint
+  input_ts arg_types call_sr env_traint 
 : overload_result option =
     let bt sr t = bt sr i t in
     let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames =
@@ -844,6 +847,7 @@ let consider syms env bt be luqn2 name
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
         | x ->
+          print_endline "About to check constraint implication";
           let implied = constraint_implies syms env_traint reduced_constraint in
           if implied then 
             let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
@@ -870,6 +874,7 @@ let consider syms env bt be luqn2 name
 
 let overload
   syms env
+  rs
   bt be
   luqn2
   call_sr
@@ -889,14 +894,19 @@ let overload
   let env_traint = `BTYP_intersect (
     filter_out_units  
     (map 
-      (fun (ix,id,_,_,con) -> bt call_sr ix con) 
+      (fun (ix,id,_,_,con) -> 
+        if mem ix rs.constraint_overload_trail then `BTYP_tuple [] else
+        let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
+        let r = bt rs call_sr ix con in
+        r
+      ) 
       env
     ))
   in
 
   (* HACK for the moment *)
   let aux i =
-    match consider syms env bt be luqn2 name i ts sufs call_sr env_traint with
+    match consider syms env (bt rs) be luqn2 name i ts sufs call_sr env_traint with
     | Some x -> Unique x
     | None -> Fail
   in

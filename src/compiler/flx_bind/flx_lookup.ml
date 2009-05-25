@@ -140,16 +140,8 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   | [] -> None
 
 
-type recstop = {
-  idx_fixlist: int list;
-  type_alias_fixlist: (int * int) list;
-  as_fixlist: (string * int) list;
-  expr_fixlist: (expr_t * int) list;
-  depth:int;
-  open_excludes : (ivs_list_t * qualified_name_t) list
-}
-
 let rsground= {
+  constraint_overload_trail = [];
   idx_fixlist = [];
   type_alias_fixlist = [];
   as_fixlist = [];
@@ -5025,7 +5017,7 @@ and resolve_overload'
     *)
     inner_build_env syms rs (Some i)
   in
-  let bt sr i t =
+  let bt rs sr i t =
     inner_bind_type syms (env i) sr rs t
   in
   let be i e =
@@ -5033,7 +5025,7 @@ and resolve_overload'
   in
   let luqn2 i qn = lookup_qn_in_env2' syms (env i) rs qn in
   let fs = trclose syms rs sr fs in
-  let result : overload_result option = overload syms caller_env bt be luqn2 sr fs name sufs ts in
+  let result : overload_result option = overload syms caller_env rs bt be luqn2 sr fs name sufs ts in
   begin match result with
   | None -> ()
   | Some (index,sign,ret,mgu,ts) ->

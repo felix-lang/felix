@@ -13,7 +13,8 @@ type overload_result =
 
 val overload:
   sym_state_t -> env_t ->
-  (Flx_srcref.t  -> int -> typecode_t -> btypecode_t) -> (* bind type *)
+  recstop ->
+  (recstop -> Flx_srcref.t  -> int -> typecode_t -> btypecode_t) -> (* bind type *)
   (int -> expr_t -> tbexpr_t) -> (* bind expression in context of i *)
   (int -> qualified_name_t -> entry_set_t * typecode_t list) ->
   Flx_srcref.t ->

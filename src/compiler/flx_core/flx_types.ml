@@ -17,6 +17,17 @@ type partial_order_result_t =
 
 open Flx_ast
 
+type recstop = {
+  constraint_overload_trail: int list;
+  idx_fixlist: int list;
+  type_alias_fixlist: (int * int) list;
+  as_fixlist: (string * int) list;
+  expr_fixlist: (expr_t * int) list;
+  depth:int;
+  open_excludes : (ivs_list_t * qualified_name_t) list
+}
+
+
 (** {6 Pattern extractor}
  *
  * This type is used to extract components of a value, corresponding to a
