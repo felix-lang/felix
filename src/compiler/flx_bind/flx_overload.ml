@@ -18,6 +18,73 @@ open Flx_maps
 
 exception OverloadKindError of Flx_srcref.t * string
 
+(* this routine checks that the second list of cases includes the first,
+ * which means the first implies the second. This means, every case
+ * in the first list must be in the second list. The order must agree
+ * as well, since typematches are ordered.
+ *)
+let rec scancases syms tss1 tss2 = match (tss1, tss2) with
+  | [],_ -> true
+  | _,[] -> false
+  | (p1,v1)::t1 as c1, (p2,v2)::t2  ->
+    if p1.assignments = [] 
+    && p2.assignments = []
+    then
+      if IntSet.is_empty (p1.pattern_vars) 
+      && IntSet.is_empty (p2.pattern_vars)
+      then
+        if type_eq syms.counter syms.dfns p1.pattern p2.pattern 
+        && type_eq syms.counter syms.dfns v1 v2
+        then scancases syms t1 t2 (* advance both *)
+        else scancases syms c1 t2 (* skip rhs case *)
+      (* special case of wildcard, somewhat hacked *)
+      else match p1.pattern,p2.pattern with
+      | `BTYP_var _, `BTYP_var _ -> 
+         if type_eq syms.counter syms.dfns v1 v2 
+         then scancases syms t1 t2 (* advance both *)
+         else scancases syms c1 t2 (* skip rhs case *)
+      | `BTYP_var _,_ -> scancases syms c1 t2 (* skip rhs case *)
+      | _ -> false
+   else false
+
+let typematch_implies syms a b = match a, b with
+  | `BTYP_type_match (v1,tss1), `BTYP_type_match (v2,tss2) ->
+    v1 = v2 && scancases syms tss1 tss2
+  | _ -> false
+
+let factor_implies syms ls b =
+  try 
+    iter (fun a ->
+      if type_eq syms.counter syms.dfns a b then raise Not_found
+      else if typematch_implies syms a b then raise Not_found
+    ) 
+    ls;
+    false
+  with Not_found -> true
+
+let terms_imply syms ls1 ls2 =
+  try
+    iter (fun b -> 
+      if not (factor_implies syms ls1 b) then raise Not_found
+    )  
+    ls2;
+    true
+   with Not_found -> false
+
+let rec split_conjuncts' t : btypecode_t list =
+  match t with
+  | `BTYP_intersect ls -> 
+    concat (map split_conjuncts' ls)
+  | _ -> [t]
+
+let filter_out_units ls = 
+   filter (fun x -> x <> `BTYP_tuple []) ls
+
+let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
+
+let constraint_implies syms a b =
+  terms_imply syms (split_conjuncts a) (split_conjuncts b)
+
 type overload_result =
  int *  (* index of function *)
  btypecode_t * (* type of function signature *)
@@ -149,9 +216,9 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 (* Note this bt must bind types in the base context *)
-let consider syms bt be luqn2 name
+let consider syms env bt be luqn2 name
   ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
-  input_ts arg_types call_sr
+  input_ts arg_types call_sr env_traint
 : overload_result option =
     let bt sr t = bt sr i t in
     let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames =
@@ -777,11 +844,21 @@ let consider syms bt be luqn2 name
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
         | x ->
-          clierr sr
-          ("[overload] Cannot resolve type constraint! " ^
-            sbt syms.dfns type_constraint ^
-            "\nReduced to " ^ sbt syms.dfns x
-          )
+          let implied = constraint_implies syms env_traint reduced_constraint in
+          if implied then 
+            let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
+            Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
+          else begin
+            print_endline "Can't resolve type constraint!";
+            print_endline ("Env traint = " ^ sbt syms.dfns env_traint);
+            print_endline ("Fun traint = " ^ sbt syms.dfns reduced_constraint);
+            print_endline ("Implication result = " ^ if implied then "true" else "false");
+            clierr sr
+            ("[overload] Cannot resolve type constraint! " ^
+              sbt syms.dfns type_constraint ^
+              "\nReduced to " ^ sbt syms.dfns x
+            )
+          end
         end
       end
 
@@ -792,7 +869,7 @@ let consider syms bt be luqn2 name
       None
 
 let overload
-  syms
+  syms env
   bt be
   luqn2
   call_sr
@@ -809,9 +886,17 @@ let overload
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
   *)
+  let env_traint = `BTYP_intersect (
+    filter_out_units  
+    (map 
+      (fun (ix,id,_,_,con) -> bt call_sr ix con) 
+      env
+    ))
+  in
+
   (* HACK for the moment *)
   let aux i =
-    match consider syms bt be luqn2 name i ts sufs call_sr with
+    match consider syms env bt be luqn2 name i ts sufs call_sr env_traint with
     | Some x -> Unique x
     | None -> Fail
   in

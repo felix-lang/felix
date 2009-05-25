@@ -5033,7 +5033,7 @@ and resolve_overload'
   in
   let luqn2 i qn = lookup_qn_in_env2' syms (env i) rs qn in
   let fs = trclose syms rs sr fs in
-  let result : overload_result option = overload syms bt be luqn2 sr fs name sufs ts in
+  let result : overload_result option = overload syms caller_env bt be luqn2 sr fs name sufs ts in
   begin match result with
   | None -> ()
   | Some (index,sign,ret,mgu,ts) ->
