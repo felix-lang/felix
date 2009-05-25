@@ -18,6 +18,45 @@ open Flx_maps
 
 exception OverloadKindError of Flx_srcref.t * string
 
+let is_typeset tss1 =
+  match rev tss1 with
+  | [] -> false
+  | (p1,v1) ::t ->
+    p1.assignments = [] &&
+    IntSet.cardinal p1.pattern_vars = 1 &&
+    match p1.pattern,v1 with 
+    | `BTYP_var (i,`BTYP_type 0), `BTYP_void 
+      when i = IntSet.choose p1.pattern_vars -> 
+      begin try 
+        iter (fun (p,v) -> match p,v with
+        | { assignments=[]; 
+            pattern_vars=pvs; 
+            pattern=`BTYP_inst (_,[])
+          },
+          `BTYP_tuple [] when IntSet.is_empty pvs -> ()
+        | _ -> raise Not_found
+        )
+        t;
+        true
+      with Not_found -> false
+      end
+    | _ -> false
+
+let make_typeset tss : int list =
+  match rev tss with
+  | h::t -> map (fun x -> 
+    match x with 
+    | {pattern=`BTYP_inst (i,[])},_ -> i 
+    | _ -> assert false
+    ) 
+    t
+  | _ -> assert false
+
+let is_subset tss1 tss2 : bool =
+  let tss1: int list = make_typeset tss1 and tss2 : int list = make_typeset tss2 in
+  try iter (fun x -> if not (mem x tss2) then raise Not_found) tss1; true
+  with Not_found -> false
+
 (* this routine checks that the second list of cases includes the first,
  * which means the first implies the second. This means, every case
  * in the first list must be in the second list. The order must agree
@@ -49,7 +88,10 @@ let rec scancases syms tss1 tss2 = match (tss1, tss2) with
 
 let typematch_implies syms a b = match a, b with
   | `BTYP_type_match (v1,tss1), `BTYP_type_match (v2,tss2) ->
-     type_eq syms.counter syms.dfns v1 v2 && scancases syms tss1 tss2
+     type_eq syms.counter syms.dfns v1 v2 && 
+     if is_typeset tss1 && is_typeset tss2 
+     then is_subset tss1 tss2
+     else scancases syms tss1 tss2
   | _ -> false
 
 let factor_implies syms ls b =
@@ -83,9 +125,7 @@ let filter_out_units ls =
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
 let constraint_implies syms a b =
-  print_endline "checking constraint implication"; 
   let r = terms_imply syms (split_conjuncts a) (split_conjuncts b) in
-  print_endline ("Result = " ^ (if r then "IMPLIES" else "NOT IMPLIES"));
   r
 
 type overload_result =
@@ -847,7 +887,9 @@ let consider syms env bt be luqn2 name
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
         | x ->
+          (*
           print_endline "About to check constraint implication";
+          *)
           let implied = constraint_implies syms env_traint reduced_constraint in
           if implied then 
             let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
