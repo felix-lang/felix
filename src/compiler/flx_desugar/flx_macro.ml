@@ -1259,7 +1259,9 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     begin try
       match assoc name macros with
       | MStmt ([],b) ->
+(*
         print_endline ("EXPANDING call to macro " ^ name);
+*)
         iter tack (mss b)
       | _ ->
         tack (`AST_call (sr, me e1, me e2))
