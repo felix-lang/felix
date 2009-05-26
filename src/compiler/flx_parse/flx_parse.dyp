@@ -1515,9 +1515,8 @@ statement:
           with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
             print_endline ("Error "^err^" executing " ^s);
             failwith "Error executing SCHEME"
-      ))
-      scm;
-      (0, Flx_srcref.dummy_sr, Snull), [Local_data local_data]
+      )) scm;
+      (0, getsr dyp, Snull), [Local_data local_data]
     }
 
   | SAVE_SYNTAX
@@ -1533,7 +1532,7 @@ statement:
         Marshal.to_channel x dyp.local_data [];
         close_out x
       end;
-      (0, Flx_srcref.dummy_sr, Snull)
+      (0, getsr dyp, Snull)
     }
 sexpr: | DUMMY { 0, Flx_srcref.dummy_sr, Snull }
 
