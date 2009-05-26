@@ -18,6 +18,7 @@ val parse_channel:
 
 (** Parse a file and return the new parser state. *)
 val parse_file:
+  ?include_dirs: string list ->
   'a parser_state_t ->  (** The state for the felix parser. *)
   string ->             (** The filename to parse. *)
   'a parser_state_t
