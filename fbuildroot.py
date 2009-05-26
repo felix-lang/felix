@@ -331,14 +331,14 @@ def build():
 
     # Run the dynamic loading tests first
     try:
-        lib1 = felix.compile('test/regress/rt/rt-1.01.02-0.flx', static=False)
-        lib2 = felix.compile('test/regress/rt/rt-1.01.03-0.flx', static=False)
+        lib1 = felix.compile('test/regress/drt/lib1.flx', static=False)
+        lib2 = felix.compile('test/regress/drt/lib2.flx', static=False)
     except fbuild.ExecutionError as e:
         fbuild.logger.log(e, verbose=1)
     else:
-        if not test_flx(felix, 'test/regress/drt/drt-1.01.01-0.flx',
+        if not test_flx(felix, 'test/regress/drt/main1.flx',
                 env={'lib1': lib1, 'lib2': lib2}):
-            failed_srcs.append('test/regress/drt/drt-1.01.01-0.flx')
+            failed_srcs.append('test/regress/drt/main1.flx')
 
     srcs = Path.globall(
         'test/*/*.flx',
