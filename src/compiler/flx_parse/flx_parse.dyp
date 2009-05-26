@@ -119,6 +119,7 @@ let init_env () =
   env
 
 let global_data = {
+  handle_stmt = (fun stmt -> ());
   pcounter = ref 1;
   env = init_env ();
   pdebug = ref false;
@@ -751,7 +752,7 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_sexpr %for sepsilon
 %constructor Obj_sexpr %for strepsilon
 
-%start <(Flx_ast.compilation_unit_t * local_data_t)> compilation_unit
+%start <local_data_t> compilation_unit
 
 %lexer
 
@@ -1147,7 +1148,7 @@ compilation_unit:
     print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm)); 
     print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
     *)
-    $2, dyp.last_local_data }
+    dyp.last_local_data }
 
 graminit: @{
     (*
@@ -1224,24 +1225,18 @@ print_endline "Scheme Done .. ";
 
 /* top level statements only */
 statements:
- | statement_star
+ | statements statement
    @{
-     List.rev (snd $1),
-     [Local_data dyp.last_local_data]
+      let seq,sr,s = $2 in
+      let () =
+        match s with
+        | Snull -> ()
+        | _ -> dyp.global_data.handle_stmt (ocs2flx sr s)
+      in
+      (), [Keep_grammar; Local_data (dyp.last_local_data)]
    }
 
-statement_star:
- | statement_star statement
-   @{
-     let seq,sr,s = $2 in
-     (match s with Snull -> $1 | _ ->
-     let sseq,stmts = $1 in
-     let s' = ocs2flx sr s in
-     (max seq sseq, (s' :: stmts))),
-     [Keep_grammar; Local_data (dyp.last_local_data)]
-   }
-
- | { 0,[] }
+ | { () }
 
 /* inner statements only */
 sstatements: 
@@ -1748,14 +1743,12 @@ epsilon: | { () }
 %%
 
 {
-let make_parser_state () = [], local_data
-
 let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
   | [x,_] -> x
   | _ -> failwith "Dypgen parser failed"
 
-let parse_lexbuf (old_tree, old_local_data) lexbuf =
+let parse_lexbuf (handle_stmt, init, old_local_data) lexbuf =
   let show_error () =
     let b = (Dyp.std_lexbuf lexbuf) in
     let file = b.lex_start_p.pos_fname in
@@ -1766,14 +1759,16 @@ let parse_lexbuf (old_tree, old_local_data) lexbuf =
     let sr = Flx_srcref.make (file, start_line, start_col, end_line, end_col) in
     print_endline (Flx_srcref.long_string_of_src sr);
   in
-  let tree, local_data =
+  (* Make the init a reference so that our handle_stmt function can update
+   * it. *)
+  let init = ref init in
+  let local_data =
     try
-      dyphack (
-        compilation_unit
-          ~local_data:old_local_data
-          ~global_data:global_data
-          lexbuf
-        )
+      dyphack (compilation_unit
+        ~local_data:old_local_data
+        ~global_data: { global_data with
+          handle_stmt = fun stmt -> init := handle_stmt stmt !init; }
+        lexbuf)
     with
       | Failure s ->
         begin
@@ -1809,9 +1804,11 @@ let parse_lexbuf (old_tree, old_local_data) lexbuf =
           raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
         end
   in
-  old_tree @ tree, local_data
+  handle_stmt, !init, local_data
 
-let compilation_unit (tree, parser_data) = tree
+let make_parser_state handle_stmt init = handle_stmt, init, local_data
+
+let parser_data (handle_stmt, init, local_data) = init
 
 let parse_channel ?(name="<channel>") parser_state channel =
   let lexbuf = Dyp.from_channel (pp ()) channel in

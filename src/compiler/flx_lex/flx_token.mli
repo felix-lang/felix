@@ -70,6 +70,7 @@ and local_data_t = {
 }
 
 and global_data_t = {
+  handle_stmt : Flx_ast.statement_t -> unit;
   pcounter : int ref;
   env : Ocs_types.env;
   pdebug : bool ref;

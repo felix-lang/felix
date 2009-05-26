@@ -64,10 +64,10 @@ try
   print_endline ("//Parsing Implementation " ^ input_file_name);
   let parser_state = List.fold_left
     (Flx_parse.parse_file ~include_dirs:compiler_options.include_dirs)
-    (Flx_parse.make_parser_state ())
+    (Flx_parse.make_parser_state (fun stmt stmts -> stmt :: stmts) [])
     (compiler_options.auto_imports @ [input_file_name])
   in
-  let parse_tree = Flx_parse.compilation_unit parser_state in
+  let parse_tree = List.rev (Flx_parse.parser_data parser_state) in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
 
