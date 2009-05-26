@@ -23,15 +23,15 @@
  * Note: name macros replace names in executable code, including macro bodies,
  * but they cannot be used to rename macros. *)
 
-open Flx_ast
+(** Expand all the macros in the statements. *)
 val expand_macros:
   string ->
   int ->
-  statement_t list ->
-  statement_t list
+  Flx_ast.statement_t list ->
+  Flx_ast.statement_t list
 
 (** [expand_expr] is a special hook used to perform
   constant folding and desugaring in the preprocessor
 *)
 val expand_expression:
-  string -> expr_t -> expr_t
+  string -> Flx_ast.expr_t -> Flx_ast.expr_t
