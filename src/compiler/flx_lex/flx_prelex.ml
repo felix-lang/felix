@@ -24,9 +24,6 @@ let string_of_token = function
   | USTRING s -> Flx_string.c_quote_of_string s
   | USER_KEYWORD s -> s
   | HASH_INCLUDE_FILES fs -> "include_files(" ^ String.concat "," fs ^ ")"
-  | LOAD_SYNTAX _ -> "<<load syntax>>"
-  | SAVE_SYNTAX f -> "<<save syntax "^f^">>"
-
   | QUEST _ -> "?"
   | LPAR _ -> "("
   | RPAR _ -> ")"
@@ -65,8 +62,6 @@ let name_of_token = function
   | USTRING _ -> "USTRING"
   | USER_KEYWORD s -> s
   | HASH_INCLUDE_FILES _ -> "HASH_INCLUDE_FILES"
-  | LOAD_SYNTAX _ -> "LOAD_SYNTAX"
-  | SAVE_SYNTAX _ -> "SAVE_SYNTAX"
   | QUEST _ -> "QUEST"
   | LPAR -> "LPAR"
   | RPAR -> "RPAR"

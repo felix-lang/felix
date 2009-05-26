@@ -27,8 +27,6 @@ type token =
   | USER_KEYWORD of string
   | HASH_INCLUDE_FILES of string list
   | DUMMY
-  | LOAD_SYNTAX of local_data_t
-  | SAVE_SYNTAX of string
   | QUEST
   | LPAR
   | RPAR

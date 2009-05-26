@@ -671,9 +671,6 @@ let dyp_merge_Obj_statement_star ol =
 %token <string list> HASH_INCLUDE_FILES
 %token DUMMY
 
-%token <local_data_t> LOAD_SYNTAX
-%token <string> SAVE_SYNTAX
-
 %token QUEST
 %constructor Obj_keyword %for QUEST
 %token PLUS
@@ -1505,35 +1502,6 @@ statement:
       (0, sr, Snull), mods
     }
 
-  | LOAD_SYNTAX
-    @{
-      let local_data = $1 in
-      let scm = List.rev local_data.scm in
-      let env = dyp.global_data.env in
-      List.iter (fun (sr,s) -> ignore (
-          try scheme_run sr env s
-          with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
-            print_endline ("Error "^err^" executing " ^s);
-            failwith "Error executing SCHEME"
-      )) scm;
-      (0, getsr dyp, Snull), [Local_data local_data]
-    }
-
-  | SAVE_SYNTAX
-    {
-      let this_version = !Flx_version.version_data in
-      let filename = $1 in
-      let x = try Some  (open_out_bin filename) with _ -> None in
-      begin match x with
-      | None -> ()
-      | Some x ->
-        print_endline ("// Save Syntax file " ^ filename);
-        Marshal.to_channel x this_version [];
-        Marshal.to_channel x dyp.local_data [];
-        close_out x
-      end;
-      (0, getsr dyp, Snull)
-    }
 sexpr: | DUMMY { 0, Flx_srcref.dummy_sr, Snull }
 
 /* identifiers which aren't keywords */
