@@ -6,7 +6,6 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_print
-open Flx_desugar
 open Flx_bbind
 open Flx_name
 open Flx_tgen
@@ -191,9 +190,8 @@ try
 
   print_debug "//DESUGARING";
 
-  let deblocked =
-    desugar_program syms module_name parse_tree
-  in
+  let desugar_state = Flx_desugar.make_desugar_state module_name syms in
+  let deblocked = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
   let desugar_time = tim() in
   print_debug ("//DESUGAR time " ^ string_of_float desugar_time);
 

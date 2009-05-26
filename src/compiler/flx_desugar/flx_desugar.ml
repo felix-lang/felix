@@ -13,6 +13,12 @@ open Flx_pat
 open Flx_exceptions
 open Flx_colns
 
+type desugar_state_t = {
+  name: string;
+  macro_state: Flx_macro.macro_state_t;
+  syms: Flx_mtypes2.sym_state_t;
+}
+
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[] }
 let dfltvs = [], dfltvs_aux
@@ -1125,7 +1131,15 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_scheme_string _
     -> assert false
 
-let desugar_program syms name sts =
+(** Construct a desugar state value needed for desugaring. *)
+let make_desugar_state name syms = {
+  name = name;
+  syms = syms;
+  macro_state = Flx_macro.make_macro_state name;
+}
+
+(** Desugar all the statements in a compilation unit. *)
+let desugar_compilation_unit desugar_state sts =
   let sts = match sts with
     | [] -> [`AST_nop (generated, "empty module")]
     | _ -> sts
@@ -1135,9 +1149,23 @@ let desugar_program syms name sts =
       (src_of_stmt (hd sts))
       (src_of_stmt (list_last sts))
   in
-  let macro_state = Flx_macro.make_macro_state name in
-  let sts = Flx_macro.expand_macros macro_state sts in
+  let sts = Flx_macro.expand_macros desugar_state.macro_state sts in
   (*
   let sts = `AST_body(sr,"_rqs__top",[],"",[]) :: sts in
   *)
-  rst syms name `Public dfltvs (`AST_untyped_module (sr,name,dfltvs,sts))
+  rst
+    desugar_state.syms
+    desugar_state.name
+    `Public
+    dfltvs
+    (`AST_untyped_module (sr, desugar_state.name, dfltvs, sts))
+
+(** Desguar a statement. *)
+let desugar_statement desugar_state stmt =
+  let stmts = Flx_macro.expand_macros_in_statement
+    desugar_state.macro_state
+    stmt
+  in
+  List.fold_left begin fun asms stmt ->
+    asms @ (rst desugar_state.syms desugar_state.name `Public dfltvs stmt)
+  end [] stmts

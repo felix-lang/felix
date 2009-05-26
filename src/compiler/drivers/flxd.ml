@@ -1,7 +1,6 @@
 (* desugar test harness *)
 
 open Flx_util
-open Flx_desugar
 open Flx_print
 open Flx_types
 open Flx_getopt
@@ -75,7 +74,8 @@ try
   let include_dirs =  (* (Filename.dirname input_file_name) :: *) compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
-  let deblocked = desugar_program syms module_name parse_tree in
+  let desugar_state = Flx_desugar.make_desugar_state module_name syms in
+  let deblocked = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
   if syms.compiler_options.document_typeclass then
     Flx_tcdoc.gen_doc()
   else begin
