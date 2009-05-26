@@ -11,7 +11,6 @@ open List
 open Flx_exceptions
 open Flx_util
 open Flx_version
-open Flx_macro
 
 type nsrec = {
   name:string;
@@ -83,7 +82,8 @@ let include_file syms inspec =
     in
     let tree = List.rev (Flx_parse.parser_data parser_state) in
     let local_prefix = Filename.basename basename in
-    let tree = expand_macros local_prefix 5000 tree in
+    let macro_state = Flx_macro.make_macro_state local_prefix in
+    let tree = Flx_macro.expand_macros macro_state tree in
     tree
   in
   let sts =

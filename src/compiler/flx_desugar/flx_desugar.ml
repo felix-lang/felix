@@ -11,7 +11,6 @@ open Flx_typing2
 open List
 open Flx_pat
 open Flx_exceptions
-open Flx_macro
 open Flx_colns
 
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
@@ -1142,7 +1141,8 @@ let desugar_program syms name sts =
       (src_of_stmt (hd sts))
       (src_of_stmt (list_last sts))
   in
-  let sts = expand_macros name 5000 sts in
+  let macro_state = Flx_macro.make_macro_state name in
+  let sts = Flx_macro.expand_macros macro_state sts in
   (*
   let sts = `AST_body(sr,"_rqs__top",[],"",[]) :: sts in
   *)

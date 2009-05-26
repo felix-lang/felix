@@ -23,15 +23,21 @@
  * Note: name macros replace names in executable code, including macro bodies,
  * but they cannot be used to rename macros. *)
 
+type macro_state_t
+
+val make_macro_state:
+  ?recursion_limit:int -> (** How deep to recurse. *)
+  string ->               (** Local prefix used for creating unique names. *)
+  macro_state_t
+
 (** Expand all the macros in the statements. *)
 val expand_macros:
-  string ->
-  int ->
-  Flx_ast.statement_t list ->
+  macro_state_t ->            (** Macro state. *)
+  Flx_ast.statement_t list -> (** Statements to expand. *)
   Flx_ast.statement_t list
 
-(** [expand_expr] is a special hook used to perform
-  constant folding and desugaring in the preprocessor
-*)
-val expand_expression:
-  string -> Flx_ast.expr_t -> Flx_ast.expr_t
+(** Expand all the macros in the statement. *)
+val expand_macros_in_statement:
+  macro_state_t ->        (** Macro state. *)
+  Flx_ast.statement_t ->  (** Statement to expand. *)
+  Flx_ast.statement_t list

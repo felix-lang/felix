@@ -1,7 +1,6 @@
 (* macro test harness *)
 
 open Flx_util
-open Flx_macro
 open Flx_print
 open Flx_ast
 open Flx_getopt
@@ -74,8 +73,8 @@ try
   print_endline "//----------------------------";
   print_endline "//IMPLEMENTATION EXPANDED:";
 
-  let local_prefix = module_name in
-  let expanded = expand_macros local_prefix 5000 parse_tree in
+  let macro_state = Flx_macro.make_macro_state module_name in
+  let expanded = Flx_macro.expand_macros macro_state parse_tree in
   print_endline (Flx_print.string_of_compilation_unit expanded);
   print_endline "//----------------------------";
 

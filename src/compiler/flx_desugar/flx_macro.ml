@@ -36,6 +36,15 @@ type macro_t =
 
 type macro_dfn_t = id_t * macro_t
 
+type macro_state_t = {
+  recursion_limit: int;
+  local_prefix: string;
+  seq: int ref;
+  reachable: bool ref;
+  ref_macros: macro_dfn_t list ref;
+  macros: macro_dfn_t list;
+}
+
 let print_mpar (id,t) =
   id ^ ":" ^
   (
@@ -1808,13 +1817,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
   ;
   rev !result
 
-
-
-
 and expand_statements recursion_limit local_prefix seq reachable macros (ss:statement_t list) =
   let ref_macros = ref [] in
-  let r = special_expand_statements recursion_limit local_prefix seq reachable ref_macros macros ss in
-  r
+  special_expand_statements recursion_limit local_prefix seq reachable ref_macros macros ss
 
 and special_expand_statements recursion_limit local_prefix seq
   reachable ref_macros macros ss
@@ -1930,10 +1935,31 @@ and special_expand_statements recursion_limit local_prefix seq
   with
     Macro_return -> rev !expansion
 
-and expand_macros local_prefix recursion_limit ss =
-  expand_statements recursion_limit local_prefix (ref 1) (ref true) [] ss
+let expand_macros macro_state stmts =
+  expand_statements
+    macro_state.recursion_limit
+    macro_state.local_prefix
+    macro_state.seq
+    macro_state.reachable
+    macro_state.macros
+    stmts
 
+let expand_macros_in_statement macro_state stmt =
+  expand_statement
+    macro_state.recursion_limit
+    macro_state.local_prefix
+    macro_state.seq
+    macro_state.reachable
+    macro_state.ref_macros
+    macro_state.macros
+    stmt
 
-and expand_expression local_prefix e =
-  let seq = ref 1 in
-  expand_expr 20 local_prefix seq [] e
+let make_macro_state ?(recursion_limit=5000) local_prefix =
+  {
+    recursion_limit = recursion_limit;
+    local_prefix = local_prefix;
+    seq = ref 1;
+    reachable = ref true;
+    ref_macros = ref [];
+    macros = [];
+  }
