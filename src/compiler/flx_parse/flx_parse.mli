@@ -1,4 +1,7 @@
-type 'a parser_state_t
+type 'a parser_state_t =
+  (Flx_ast.statement_t -> 'a -> 'a) *
+  'a *
+  Flx_token.local_data_t
 
 (** Create a new parser state. *)
 val make_parser_state:
