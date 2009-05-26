@@ -68,4 +68,6 @@ type sym_state_t =
   transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
 }
 
+val make_syms: felix_compiler_options_t -> sym_state_t
+
 module Drules : Map.S with type key = string

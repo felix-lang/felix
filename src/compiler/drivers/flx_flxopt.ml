@@ -78,29 +78,3 @@ let print_options () =
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
   print_endline "  --mangle-names : generate code with fully mangled names"
-
-let make_syms options =
-  {
-    registry = Hashtbl.create 97;
-    counter = ref 1;
-    dfns = Hashtbl.create 97;
-    varmap = Hashtbl.create 97;
-    ticache = Hashtbl.create 97;
-    glr_cache = Hashtbl.create 97;
-    env_cache = Hashtbl.create 97;
-    compiler_options = options;
-    instances = Hashtbl.create 97;
-    include_files = ref [];
-    roots = ref IntSet.empty;
-    wrappers = Hashtbl.create 97;
-    lexers = Hashtbl.create 7;
-    parsers = Hashtbl.create 7;
-    quick_names = Hashtbl.create 97;
-    bifaces = [];
-    reductions = [];
-    axioms = [];
-    variant_map = Hashtbl.create 97;
-    typeclass_to_instance = Hashtbl.create 97;
-    instances_of_typeclass = Hashtbl.create 97;
-    transient_specialisation_cache = Hashtbl.create 97;
-  }
