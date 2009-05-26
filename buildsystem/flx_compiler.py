@@ -135,25 +135,29 @@ def build_flx_drivers(ocaml, ocamllex):
         build_flx_desugar(ocaml, ocamllex),
         build_flx_bind(ocaml),
         build_flx_frontend(ocaml),
-        build_flx_backend(ocaml, ocamllex),
-        lib]
+        build_flx_backend(ocaml, ocamllex)]
 
     external_libs = ['nums', 'unix', 'str']
 
     flxp = ocaml.build_exe(fbuild.buildroot / 'bin/flxp',
-        [path / 'flxp.ml'], libs=libs, external_libs=external_libs)
+        [path / 'flxp.ml'], libs=libs + [lib], external_libs=external_libs)
 
     flxm = ocaml.build_exe(fbuild.buildroot / 'bin/flxm',
-        [path / 'flxm.ml'], libs=libs, external_libs=external_libs)
+        [path / 'flxm.ml'], libs=libs + [lib], external_libs=external_libs)
 
     flxd = ocaml.build_exe(fbuild.buildroot / 'bin/flxd',
-        [path / 'flxd.ml'], libs=libs, external_libs=external_libs)
+        [path / 'flxd.ml'], libs=libs + [lib], external_libs=external_libs)
 
     flxb = ocaml.build_exe(fbuild.buildroot / 'bin/flxb',
-        [path / 'flxb.ml'], libs=libs, external_libs=external_libs)
+        [path / 'flxb.ml'], libs=libs + [lib], external_libs=external_libs)
 
     flxg = ocaml.build_exe(fbuild.buildroot / 'bin/flxg',
-        [path / 'flxg.ml'], libs=libs, external_libs=external_libs)
+        [path / 'flxg.ml'], libs=libs + [lib], external_libs=external_libs)
+
+    flxc = ocaml.build_exe(fbuild.buildroot / 'bin/flxc',
+        Path('src/compiler/flxc/*.ml{,i}').glob(),
+        libs=libs,
+        external_libs=external_libs)
 
     return Record(
         flxp=flxp,
@@ -161,4 +165,5 @@ def build_flx_drivers(ocaml, ocamllex):
         flxd=flxd,
         flxb=flxb,
         flxg=flxg,
+        flxc=flxc,
     )
