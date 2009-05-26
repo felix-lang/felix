@@ -1789,13 +1789,3 @@ let parse_function ?(name="<function>") parser_state f =
   let lexbuf = Dyp.from_function (pp ()) f in
   parse_lexbuf parser_state lexbuf
 }
-
-
-%mlitop {
-open Flx_token
-open Flx_mtypes2
-}
-
-%mli {
-  exception Scheme_error of Ocs_types.sval
-}
