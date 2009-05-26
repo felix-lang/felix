@@ -125,16 +125,10 @@ let global_data = {
   pdebug = ref false;
 }
 
-type local_data_t = {
-  dssls:dssl_t Drules.t;
-  loaded_dssls: string list;
-  scm: (Flx_srcref.t * string) list;
-}
-
-let local_data: local_data_t = {
-  dssls = Drules.empty;
-  loaded_dssls = [];
-  scm = [];
+let local_data = {
+  Flx_token.dssls = Drules.empty;
+  Flx_token.loaded_dssls = [];
+  Flx_token.scm = [];
 }
 
 let xsr sr =
@@ -513,20 +507,20 @@ let cal_action kind prod action =
   | `None -> dflt_action kind prod
   | `Scheme scm -> scm
 
-let rec flatten sr pcounter kind (rhs: symbol_t list) : token list * rule_t list =
+let rec flatten sr pcounter kind rhs =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
 
   | `Group dyalts :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_" ^ x in
-    let rules : rule_t list = fixup_alternatives pcounter kind sl `Default dyalts in
+    let rules = fixup_alternatives pcounter kind sl `Default dyalts in
     aux t (NONTERMINAL (sl, `No_prio)::out) (rules@extras)
 
   | `Atom h :: t -> aux t (h::out) extras
   in aux rhs [] []
 
-and fixup_rule sr pcounter kind (rhs:symbol_t list) : token list * rule_t list =
+and fixup_rule sr pcounter kind rhs =
   let rhs,extras = flatten sr pcounter kind rhs in
   let rhs, extras =
     fixup_prio sr rhs,
@@ -535,7 +529,7 @@ and fixup_rule sr pcounter kind (rhs:symbol_t list) : token list * rule_t list =
   let rhs,extras' = fixup_suffix sr pcounter kind rhs in
   rhs,extras@extras'
 
-and fixup_alternatives pcounter kind name prio (dyalts:dyalt_t list) : rule_t list =
+and fixup_alternatives pcounter kind name prio dyalts =
   let rules =
     List.fold_left
       (fun rules (rhs,sr,action,anote) ->
@@ -549,7 +543,7 @@ and fixup_alternatives pcounter kind name prio (dyalts:dyalt_t list) : rule_t li
 
 let add_rule global_data local_data dssl rule =
   let m = local_data in
-  let d: dssl_t = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
+  let d = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
   match rule with
   | `Scheme_rule (privacy,name,prio,kind,dyalts) ->
      let rules = fixup_alternatives global_data.pcounter kind name prio dyalts in
@@ -562,20 +556,20 @@ let add_rule global_data local_data dssl rule =
           Drules.add name secret d.privacy
        | `Public -> d.privacy
      in
-     let d: dssl_t = {d with rules = rules;  privacy = privacy} in
-     let m = {m with dssls=Drules.add dssl d m.dssls } in
+     let d = { d with rules = rules; privacy = privacy } in
+     let m = { m with dssls = Drules.add dssl d m.dssls } in
      global_data,m
 
   | `Requires ls ->
-     let d: dssl_t = {d with deps = ls @ d.deps } in
-     let m = {m with dssls=Drules.add dssl d m.dssls } in
+     let d = { d with deps = ls @ d.deps } in
+     let m = { m with dssls = Drules.add dssl d m.dssls } in
      global_data,m
 
-  | `Document (name,s) -> global_data,local_data
+  | `Document (name,s) -> global_data, local_data
   | `Page (name,entries) -> global_data, local_data
   | `Priorities p ->
     let d = { d with prios = p::d.prios } in
-    let m = {m with dssls=Drules.add dssl d m.dssls } in
+    let m = { m with dssls = Drules.add dssl d m.dssls } in
     global_data, m
 
 let ocs2flx sr r =
@@ -1414,7 +1408,7 @@ statement:
           failwith "Error executing SCHEME"
       in
       let local_data = { dyp.local_data with scm = (sr,s) :: dyp.local_data.scm } in
-      (0,sr,Snull),[Local_data local_data]
+      (0, sr, Snull), [Local_data local_data]
     }
 
   | "open" "syntax" basic_name_comma_list ";" 
@@ -1478,7 +1472,8 @@ statement:
       print_endline "Prepared nu grammar rules to yield to Dypgen";
 *)
       let local_data = { m with loaded_dssls = to_install @ m.loaded_dssls } in
-      (0,sr,Snull),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+      (0, sr, Snull),
+      !bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
 
   | "syntax" NAME LBRACE dyprods RBRACE
@@ -1507,7 +1502,7 @@ statement:
         @
         (if dyp.local_data != local_data then [Local_data local_data] else [])
       in
-      (0,sr,Snull),mods
+      (0, sr, Snull), mods
     }
 
   | LOAD_SYNTAX
@@ -1516,7 +1511,6 @@ statement:
       let scm = List.rev local_data.scm in
       let env = dyp.global_data.env in
       List.iter (fun (sr,s) -> ignore (
-
           try scheme_run sr env s
           with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
             print_endline ("Error "^err^" executing " ^s);

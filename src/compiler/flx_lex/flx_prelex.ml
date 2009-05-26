@@ -10,8 +10,7 @@ let sp p = match p with
   | `Greater_prio p -> "[>"^p^"]"
   | `Greatereq_prio p -> "[>="^p^"]"
 
-let string_of_token (tok :Flx_token.token): string =
-  match tok with
+let string_of_token = function
   | DUMMY -> "DUMMY"
   | NAME s -> s
   | NONTERMINAL (s,p) -> s ^ sp p
@@ -52,8 +51,7 @@ let string_of_token (tok :Flx_token.token): string =
   | ERRORTOKEN s -> "<<ERROR '"^ s ^"'>>"
   | SLOSH -> "\\"
 
-let name_of_token (tok :Flx_token.token): string =
-  match tok with
+let name_of_token = function
   | DUMMY -> "DUMMY"
   | NAME _ -> "NAME"
   | NONTERMINAL _ -> "NONTERMINAL"

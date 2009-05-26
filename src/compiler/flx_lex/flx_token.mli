@@ -1,6 +1,3 @@
-open Flx_ast
-open Flx_mtypes2
-
 type anote_t = string
 
 type ntprio_t = [
@@ -60,11 +57,11 @@ and dssl_t = {
   prios : string list list;
   rules : rule_t list;
   deps : string list;
-  privacy : string Drules.t; (* string -> string *)
+  privacy : string Flx_mtypes2.Drules.t; (* string -> string *)
 }
 
 and local_data_t = {
-  dssls : dssl_t Drules.t;
+  dssls : dssl_t Flx_mtypes2.Drules.t;
   loaded_dssls : string list;
   scm : (Flx_srcref.t * string) list;
 }
