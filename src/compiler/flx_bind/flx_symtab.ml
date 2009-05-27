@@ -1,5 +1,4 @@
 open Flx_ast
-open Flx_types
 open Flx_mtypes2
 
 let null_tab = Hashtbl.create 3
@@ -19,7 +18,7 @@ let mkentry syms (vs:ivs_list_t) i =
     ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.dfns) ts
   );
   *)
-  {base_sym=i; spec_vs=vs; sub_ts=ts}
+  {Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts}
 
 let merge_ivs
   (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1})
@@ -43,10 +42,10 @@ let merge_ivs
 
 
 let split_asms asms :
-  (Flx_srcref.t * id_t * int option * access_t * vs_list_t * dcl_t) list *
+  (Flx_srcref.t * id_t * int option * Flx_types.access_t * vs_list_t * Flx_types.dcl_t) list *
   sexe_t list *
-  (Flx_srcref.t * iface_t) list *
-  dir_t list
+  (Flx_srcref.t * Flx_types.iface_t) list *
+  Flx_types.dir_t list
 =
   let rec aux asms dcls exes ifaces dirs =
     match asms with
@@ -82,7 +81,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.dfns (Flx_typing.sye idx)  with
-       | { sr=sr2 } ->
+       | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          string_of_int (Flx_typing.sye idx) ^ ">")
@@ -98,7 +97,7 @@ let full_add_typevar syms sr table key value =
     | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.dfns (Flx_typing.sye idx)  with
-       | { sr=sr2 } ->
+       | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          string_of_int (Flx_typing.sye idx) ^ ">")
@@ -114,7 +113,7 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
     | `NonFunctionEntry entry ->
       begin
         match Hashtbl.find syms.dfns (Flx_typing.sye entry) with
-        { id=id; sr=sr2 } ->
+        { Flx_types.id=id; sr=sr2 } ->
         Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
@@ -271,14 +270,14 @@ let rec build_tables syms name inherit_vs
             in
             Hashtbl.add dfns i
             {
-              id=tvid;
+              Flx_types.id=tvid;
               sr=sr;
               parent=parent;
               vs=dfltvs;
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
-              symdef=`SYMDEF_typevar mt
+              symdef=`SYMDEF_typevar mt;
             };
             full_add_typevar syms sr table tvid i
           )
@@ -286,7 +285,7 @@ let rec build_tables syms name inherit_vs
         in
         let add_tvars table = add_tvars' (Some n) table vs in
 
-        begin match (dcl:dcl_t) with
+        begin match (dcl:Flx_types.dcl_t) with
         | `DCL_reduce (ps,e1,e2) ->
           let fun_index = n in
           let ips = ref [] in
@@ -295,9 +294,14 @@ let rec build_tables syms name inherit_vs
             if print_flag then
             print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
             Hashtbl.add dfns n {
-              id=name;sr=sr;parent=Some fun_index;
-              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
-              dirs=[];symdef=`SYMDEF_parameter (`PVal,typ)
+              Flx_types.id=name;
+              sr=sr;
+              parent=Some fun_index;
+              vs=dfltvs;
+              pubmap=null_tab;
+              privmap=null_tab;
+              dirs=[];
+              symdef=`SYMDEF_parameter (`PVal,typ);
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
@@ -305,9 +309,14 @@ let rec build_tables syms name inherit_vs
           ) ps
           ;
           Hashtbl.add dfns fun_index {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_reduce (List.rev !ips, e1, e2)
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_reduce (List.rev !ips, e1, e2);
           };
           ;
           add_tvars privtab
@@ -320,9 +329,14 @@ let rec build_tables syms name inherit_vs
             if print_flag then
             print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
             Hashtbl.add dfns n {
-              id=name;sr=sr;parent=Some fun_index;
-              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
-              dirs=[];symdef=`SYMDEF_parameter (k,typ)
+              Flx_types.id=name;
+              sr=sr;
+              parent=Some fun_index;
+              vs=dfltvs;
+              pubmap=null_tab;
+              privmap=null_tab;
+              dirs=[];
+              symdef=`SYMDEF_parameter (k,typ);
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
@@ -330,9 +344,14 @@ let rec build_tables syms name inherit_vs
           ) ps
           ;
           Hashtbl.add dfns fun_index {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_axiom ((List.rev !ips, pre),e1)
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_axiom ((List.rev !ips, pre),e1);
           };
           ;
           add_tvars privtab
@@ -345,9 +364,14 @@ let rec build_tables syms name inherit_vs
             if print_flag then
             print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
             Hashtbl.add dfns n {
-              id=name;sr=sr;parent=Some fun_index;
-              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
-              dirs=[];symdef=`SYMDEF_parameter (k,typ)
+              Flx_types.id=name;
+              sr=sr;
+              parent=Some fun_index;
+              vs=dfltvs;
+              pubmap=null_tab;
+              privmap=null_tab;
+              dirs=[];
+              symdef=`SYMDEF_parameter (k,typ);
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
@@ -355,9 +379,14 @@ let rec build_tables syms name inherit_vs
           ) ps
           ;
           Hashtbl.add dfns fun_index {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_lemma ((List.rev !ips, pre),e1)
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_lemma ((List.rev !ips, pre),e1);
           };
           ;
           add_tvars privtab
@@ -399,9 +428,14 @@ let rec build_tables syms name inherit_vs
             if print_flag then
             print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name^ " (parameter)");
             Hashtbl.add dfns n {
-              id=name;sr=sr;parent=Some fun_index;
-              vs=dfltvs;pubmap=null_tab;privmap=null_tab;
-              dirs=[];symdef=`SYMDEF_parameter (k,typ)
+              Flx_types.id=name;
+              sr=sr;
+              parent=Some fun_index;
+              vs=dfltvs;
+              pubmap=null_tab;
+              privmap=null_tab;
+              dirs=[];
+              symdef=`SYMDEF_parameter (k,typ);
             };
             if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
             full_add_unique syms sr dfltvs privtab name n;
@@ -409,10 +443,14 @@ let rec build_tables syms name inherit_vs
           ) ps
           ;
           Hashtbl.add dfns fun_index {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
             dirs=dirs;
-            symdef=`SYMDEF_function ((List.rev !ips,pre), t, props, exes)
+            symdef=`SYMDEF_function ((List.rev !ips,pre), t, props, exes);
           };
           if access = `Public then add_function pub_name_map id fun_index;
           add_function priv_name_map id fun_index;
@@ -424,10 +462,15 @@ let rec build_tables syms name inherit_vs
           assert (List.length (fst vs) = 0);
           let fun_index = n in
           Hashtbl.add dfns fun_index {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_match_check (pat, (mvname,match_var_index))}
-          ;
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_match_check (pat, (mvname,match_var_index));
+          };
           if access = `Public then add_function pub_name_map id fun_index ;
           add_function priv_name_map id fun_index ;
           interfaces := !interfaces @ ifaces
@@ -478,8 +521,12 @@ let rec build_tables syms name inherit_vs
             (Some fun_index) parent root !new_asms
           in
           Hashtbl.add dfns fun_index {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
             dirs=dirs;
             symdef=`SYMDEF_function (([],None),`TYP_var fun_index, [`Generated "symtab:match handler" ; `Inline],exes)
           };
@@ -492,8 +539,15 @@ let rec build_tables syms name inherit_vs
 
 
         | `DCL_insert (s,ikind,reqs) ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_insert (s,ikind,reqs)
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_insert (s,ikind,reqs);
           };
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
@@ -505,19 +559,30 @@ let rec build_tables syms name inherit_vs
             asms
           in
           Hashtbl.add dfns n {
-            id=id;sr=sr;
-            parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
             dirs=dirs;
-            symdef=`SYMDEF_module
+            symdef=`SYMDEF_module;
           };
           let n' = !counter in
           incr counter;
           let init_def = `SYMDEF_function ( ([],None),`AST_void sr, [],exes) in
           if print_flag then
           print_endline ("//  " ^ spc ^ string_of_int n' ^ " -> _init_  (module " ^ id ^ ")");
-          Hashtbl.add dfns n' {id="_init_";sr=sr;parent=Some n;vs=vs;pubmap=null_tab;privmap=null_tab;dirs=[];symdef=init_def};
-
+          Hashtbl.add dfns n' {
+            Flx_types.id="_init_";
+            sr=sr;
+            parent=Some n;
+            vs=vs;
+            pubmap=null_tab;
+            privmap=null_tab;
+            dirs=[];
+            symdef=init_def
+          };
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n;
           if access = `Public then add_function pubtab ("_init_") n';
@@ -550,14 +615,14 @@ let rec build_tables syms name inherit_vs
           in
           let nts = List.map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
           (* fudge the private view to remove the vs *)
-          let show { base_sym=i; spec_vs=vs; sub_ts=ts } =
+          let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
           string_of_int i ^ " |-> " ^
             "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
             "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt syms.dfns) ts
           in
-          let fixup ({ base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
+          let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
             let e' = {
-              base_sym=i;
+              Flx_types.base_sym=i;
               spec_vs=drop vs;
               sub_ts=nts @ drop ts
               }
@@ -585,17 +650,19 @@ let rec build_tables syms name inherit_vs
           privtab
           ;
           Hashtbl.add dfns n {
-            id=id;sr=sr;parent=parent;
-            vs=vs;pubmap=pubtab;privmap=fudged_privtab;dirs=dirs;
-            symdef=`SYMDEF_typeclass
-          }
-          ;
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=fudged_privtab;
+            dirs=dirs;
+            symdef=`SYMDEF_typeclass;
+          };
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n;
-          interfaces := !interfaces @ ifaces
-          ;
+          interfaces := !interfaces @ ifaces;
           add_tvars fudged_privtab
-
 
         | `DCL_instance (qn,asms) ->
           let pubtab,privtab, exes,ifaces,dirs =
@@ -604,11 +671,14 @@ let rec build_tables syms name inherit_vs
             asms
           in
           Hashtbl.add dfns n {
-            id=id;sr=sr;
-            parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
             dirs=dirs;
-            symdef=`SYMDEF_instance qn
+            symdef=`SYMDEF_instance qn;
           };
           let inst_name = "_inst_" ^ id in
           if access = `Public then add_function pub_name_map inst_name n;
@@ -619,8 +689,16 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_val t ->
           let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_val (t)}
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_val (t);
+          };
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
@@ -628,37 +706,66 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_var t ->
           let t = if t = `TYP_none then `TYP_var n else t in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=
-            (* `SYMDEF_var (`TYP_lvalue t) *)
-            `SYMDEF_var t
-          }
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=
+              (* `SYMDEF_var (`TYP_lvalue t) *)
+              `SYMDEF_var t;
+          };
           if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n
-          ;
+          add_unique priv_name_map id n;
           add_tvars privtab
 
         | `DCL_lazy (t,e) ->
           let t = if t = `TYP_none then `TYP_var n else t in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_lazy (t,e)}
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_lazy (t,e)
+          };
           if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n
-          ;
+          add_unique priv_name_map id n;
           add_tvars privtab
 
         | `DCL_ref t ->
           let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_ref (t)}
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_ref (t)
+          };
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
           add_tvars privtab
 
         | `DCL_type_alias (t) ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];symdef=`SYMDEF_type_alias t}
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_type_alias t
+          };
           (* this is a hack, checking for a type function this way,
              since it will also incorrectly recognize a type lambda like:
 
@@ -703,20 +810,32 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_inherit qn ->
-          Hashtbl.add dfns n
-          {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
-          privmap=privtab;dirs=[];symdef=`SYMDEF_inherit qn}
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_inherit qn
+          };
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
           add_tvars privtab
 
          | `DCL_inherit_fun qn ->
-          Hashtbl.add dfns n
-          {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
-          privmap=privtab;dirs=[];symdef=`SYMDEF_inherit_fun qn}
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_inherit_fun qn
+          };
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
           ;
@@ -724,25 +843,38 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_newtype t ->
           Hashtbl.add dfns n {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_newtype t
-          }
-          ;
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_newtype t;
+          };
           let n_repr = !(syms.counter) in incr (syms.counter);
           let piname = `AST_name (sr,id,[]) in
           Hashtbl.add dfns n_repr {
-            id="_repr_";sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
+            Flx_types.id="_repr_";
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
             symdef=`SYMDEF_fun ([],[piname],t,`Identity,`NREQ_true,"expr")
-          }
-          ;
+          };
           add_function priv_name_map "_repr_" n_repr
           ;
           let n_make = !(syms.counter) in incr (syms.counter);
           Hashtbl.add dfns n_make {
-            id="_make_"^id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
+            Flx_types.id="_make_" ^ id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
             symdef=`SYMDEF_fun ([],[t],piname,`Identity,`NREQ_true,"expr")
           }
           ;
@@ -755,11 +887,15 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_abs (quals,c, reqs) ->
           Hashtbl.add dfns n {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
             symdef=`SYMDEF_abs (quals,c,reqs)
-          }
-          ;
+          };
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
@@ -767,8 +903,14 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_const (props,t,c, reqs) ->
           let t = if t = `TYP_none then `TYP_var n else t in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
             symdef=`SYMDEF_const (props,t,c,reqs)
           }
           ;
@@ -779,8 +921,13 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_fun (props, ts,t,c,reqs,prec) ->
           Hashtbl.add dfns n {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
             symdef=`SYMDEF_fun (props, ts,t,c,reqs,prec)
           }
           ;
@@ -796,12 +943,18 @@ let rec build_tables syms name inherit_vs
           as the C function, with this void* dropped.
         *)
         | `DCL_callback (props, ts,t,reqs) ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_callback (props, ts,t,reqs)}
-          ;
+          Hashtbl.add dfns n {
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
+            symdef=`SYMDEF_callback (props, ts,t,reqs)
+          };
           if access = `Public then add_function pub_name_map id n;
-          add_function priv_name_map id n
-          ;
+          add_function priv_name_map id n;
           add_tvars privtab
 
         | `DCL_union (its) ->
@@ -823,14 +976,17 @@ let rec build_tables syms name inherit_vs
           in
 
           Hashtbl.add dfns n {
-            id=id;sr=sr;parent=parent;vs=vs;
-            pubmap=pubtab;privmap=privtab;dirs=[];
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
             symdef=`SYMDEF_union (its)
-          }
-          ;
+          };
           if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n
-          ;
+          add_unique priv_name_map id n;
 
           let unit_sum =
             List.fold_left
@@ -874,7 +1030,9 @@ let rec build_tables syms name inherit_vs
             if print_flag then print_endline ("//  " ^ spc ^
               string_of_int dfn_idx ^ " -> " ^ component_name);
             Hashtbl.add dfns dfn_idx {
-              id=component_name;sr=sr;parent=parent;
+              Flx_types.id=component_name;
+              sr=sr;
+              parent=parent;
               vs=vs;
               pubmap=pubtab;
               privmap=privtab;
@@ -895,16 +1053,20 @@ let rec build_tables syms name inherit_vs
           let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {
-            id=id;sr=sr;parent=parent;
-            vs=vs;pubmap=pubtab;privmap=privtab;dirs=[];
+            Flx_types.id=id;
+            sr=sr;
+            parent=parent;
+            vs=vs;
+            pubmap=pubtab;
+            privmap=privtab;
+            dirs=[];
             symdef=(
               match dcl with
               | `DCL_struct _ -> `SYMDEF_struct (sts)
               | `DCL_cstruct _ -> `SYMDEF_cstruct (sts)
               | _ -> assert false
             )
-          }
-          ;
+          };
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
