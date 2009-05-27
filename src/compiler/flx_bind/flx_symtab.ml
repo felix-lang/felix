@@ -1,7 +1,6 @@
 open Flx_ast
 open Flx_types
 open Flx_mtypes2
-open Flx_print
 open Flx_typing
 open Flx_lookup
 
@@ -19,7 +18,7 @@ let mkentry syms (vs:ivs_list_t) i =
   (*
   print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
     Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
-    ", ts=" ^ Flx_util.catmap "," (sbt syms.dfns) ts
+    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.dfns) ts
   );
   *)
   {base_sym=i; spec_vs=vs; sub_ts=ts}
@@ -556,7 +555,7 @@ let rec build_tables syms name inherit_vs
           let show { base_sym=i; spec_vs=vs; sub_ts=ts } =
           string_of_int i ^ " |-> " ^
             "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
-            "ts =" ^ Flx_util.catmap  "," (sbt syms.dfns) ts
+            "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt syms.dfns) ts
           in
           let fixup ({ base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
             let e' = {
