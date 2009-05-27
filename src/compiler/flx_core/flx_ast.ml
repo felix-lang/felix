@@ -747,3 +747,10 @@ let rsexpr a b = Flx_srcref.rsrange (src_of_expr a) (src_of_expr b)
 (** get source range of non-empty list of expressions *)
 let rslist lst =
   rsexpr (List.hd lst) (Flx_list.list_last lst)
+
+(** Define a default vs_aux_t. *)
+let dfltvs_aux =
+  { raw_type_constraint = `TYP_tuple []; raw_typeclass_reqs = []; }
+
+(** Define a default vs_list_t. *)
+let dfltvs = [], dfltvs_aux

@@ -13,7 +13,6 @@ let dyphack (ls : ( 'a * string) list) : 'a =
   | _ -> failwith "Dypgen parser failed"
 
 exception Macro_return
-let dfltvs = [],{ raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 
 let truthof x = match x with
   | `AST_typed_case (_,0,`TYP_unitsum 2) -> Some false

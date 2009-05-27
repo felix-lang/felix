@@ -1030,8 +1030,6 @@ and string_of_ast_term level (term:ast_term_t) =
   | `Keyword_term s -> s
   | `Apply_term (t,ts) -> "apply("^ sast 0 t ^ ",(" ^ catmap ", " (sast 0) ts ^ "))"
 
-and dfltvs = [], {raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
-and dfltivs = [], {raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
 and string_of_class_component level mem =
   let kind, name, mix,vs,ty,cc = match mem with
   | `MemberVar (name,typ,cc) -> "var",name,None,dfltvs,typ,cc

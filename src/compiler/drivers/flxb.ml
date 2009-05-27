@@ -2,14 +2,6 @@
 
 Flx_version_hook.set_version ()
 
-let dfltvs_aux =
-  {
-    Flx_ast.raw_type_constraint = `TYP_tuple [];
-    Flx_ast.raw_typeclass_reqs = [];
-  }
-
-let dfltvs = [], dfltvs_aux
-
 let print_help () =
   Flx_flxopt.print_options ();
   exit 0
@@ -78,14 +70,14 @@ try
   let syms = { syms with
     Flx_mtypes2.compiler_options = compiler_options } in
   let desugar_state = Flx_desugar.make_desugar_state module_name syms in
-  let deblocked = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
+  let asms = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
 
   let root = !(syms.Flx_mtypes2.counter) in
   print_endline
     ("//Top level module '" ^ module_name ^ "' has index " ^ string_of_int root);
 
   let _, _, _, ifaces, _ =
-    Flx_symtab.build_tables syms "root" dfltvs 0 None None root deblocked
+    Flx_symtab.build_tables syms "root" Flx_ast.dfltvs 0 None None root asms
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";

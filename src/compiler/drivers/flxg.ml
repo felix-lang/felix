@@ -21,10 +21,6 @@ open List
 ;;
 Flx_version_hook.set_version ();;
 
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
-let dfltvs = [],dfltvs_aux
-
-
 let print_help () = print_options(); exit(0)
 ;;
 
@@ -191,7 +187,7 @@ try
   print_debug "//DESUGARING";
 
   let desugar_state = Flx_desugar.make_desugar_state module_name syms in
-  let deblocked = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
+  let asms = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
   let desugar_time = tim() in
   print_debug ("//DESUGAR time " ^ string_of_float desugar_time);
 
@@ -203,7 +199,7 @@ try
   print_debug "//BUILDING TABLES";
 
   let _, _, exes, ifaces, _ =
-    build_tables syms "root" dfltvs 0 None None root deblocked
+    build_tables syms "root" Flx_ast.dfltvs 0 None None root asms
   in
   let build_table_time = tim() in
   print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);

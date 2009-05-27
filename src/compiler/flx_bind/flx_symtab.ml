@@ -1,11 +1,4 @@
 let null_tab = Hashtbl.create 3
-let dfltvs_aux =
-  {
-    Flx_ast.raw_type_constraint=`TYP_tuple [];
-    raw_typeclass_reqs=[];
-  }
-let dfltvs = [],dfltvs_aux
-
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:Flx_ast.ivs_list_t) i =
@@ -107,7 +100,8 @@ let full_add_typevar syms sr table key value =
        )
      | `FunctionEntry [] -> assert false
   with Not_found ->
-    Hashtbl.add table key (`NonFunctionEntry (mkentry syms dfltvs value))
+    Hashtbl.add table key
+      (`NonFunctionEntry (mkentry syms Flx_ast.dfltvs value))
 
 
 let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
@@ -184,7 +178,8 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
     if name = "root"
     then failwith ("Can't name non-toplevel module 'root'")
     else
-      Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry syms dfltvs root))
+      Hashtbl.add priv_name_map "root"
+        (`NonFunctionEntry (mkentry syms Flx_ast.dfltvs root))
   ;
   begin
     List.iter
@@ -272,7 +267,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
               Flx_types.id=tvid;
               sr=sr;
               parent=parent;
-              vs=dfltvs;
+              vs=Flx_ast.dfltvs;
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
@@ -296,14 +291,15 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
               Flx_types.id=name;
               sr=sr;
               parent=Some fun_index;
-              vs=dfltvs;
+              vs=Flx_ast.dfltvs;
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
               symdef=`SYMDEF_parameter (`PVal,typ);
             };
-            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
-            full_add_unique syms sr dfltvs privtab name n;
+            if access = `Public then
+              full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
+            full_add_unique syms sr Flx_ast.dfltvs privtab name n;
             ips := (`PVal,name,typ,None) :: !ips
           ) ps
           ;
@@ -331,14 +327,15 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
               Flx_types.id=name;
               sr=sr;
               parent=Some fun_index;
-              vs=dfltvs;
+              vs=Flx_ast.dfltvs;
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
               symdef=`SYMDEF_parameter (k,typ);
             };
-            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
-            full_add_unique syms sr dfltvs privtab name n;
+            if access = `Public then
+              full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
+            full_add_unique syms sr Flx_ast.dfltvs privtab name n;
             ips := (k,name,typ,dflt) :: !ips
           ) ps
           ;
@@ -366,14 +363,14 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
               Flx_types.id=name;
               sr=sr;
               parent=Some fun_index;
-              vs=dfltvs;
+              vs=Flx_ast.dfltvs;
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
               symdef=`SYMDEF_parameter (k,typ);
             };
-            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
-            full_add_unique syms sr dfltvs privtab name n;
+            if access = `Public then full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
+            full_add_unique syms sr Flx_ast.dfltvs privtab name n;
             ips := (k,name,typ,dflt) :: !ips
           ) ps
           ;
@@ -418,7 +415,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
           let fun_index = n in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let pubtab,privtab, exes, ifaces,dirs =
-            build_tables syms id dfltvs (level+1)
+            build_tables syms id Flx_ast.dfltvs (level+1)
             (Some fun_index) parent root asms
           in
           let ips = ref [] in
@@ -430,14 +427,14 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
               Flx_types.id=name;
               sr=sr;
               parent=Some fun_index;
-              vs=dfltvs;
+              vs=Flx_ast.dfltvs;
               pubmap=null_tab;
               privmap=null_tab;
               dirs=[];
               symdef=`SYMDEF_parameter (k,typ);
             };
-            if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
-            full_add_unique syms sr dfltvs privtab name n;
+            if access = `Public then full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
+            full_add_unique syms sr Flx_ast.dfltvs privtab name n;
             ips := (k,name,typ,dflt) :: !ips
           ) ps
           ;
@@ -503,7 +500,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
               (`AST_index (sr,mvname,match_var_index))
             in
             let dcl =
-              `Dcl (sr, vname, None,`Private, dfltvs,
+              `Dcl (sr, vname, None,`Private, Flx_ast.dfltvs,
                 `DCL_val (`TYP_typeof (component))
               )
             and instr = `Exe (sr, `EXE_init (vname, component))
@@ -516,7 +513,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
           *)
           let fun_index = n in
           let pubtab,privtab, exes,ifaces,dirs =
-            build_tables syms id dfltvs (level+1)
+            build_tables syms id Flx_ast.dfltvs (level+1)
             (Some fun_index) parent root !new_asms
           in
           Hashtbl.add dfns fun_index {
@@ -665,7 +662,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
 
         | `DCL_instance (qn,asms) ->
           let pubtab,privtab, exes,ifaces,dirs =
-            build_tables syms id dfltvs
+            build_tables syms id Flx_ast.dfltvs
             (level+1) (Some n) parent root
             asms
           in

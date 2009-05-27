@@ -46,9 +46,6 @@ subscript list -- this can happen when an instantiated
 call calls upscope using an unindexed name.
 *)
 
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
-let dfltvs = [],dfltvs_aux
-
 let merge_con
   {raw_type_constraint=con1; raw_typeclass_reqs=rtcr1}
   {raw_type_constraint=con2; raw_typeclass_reqs=rtcr2}
@@ -109,12 +106,11 @@ let rec find_func_vs syms vs j =
    vs INCLUDING module vs. pvs is the vs of
    the ultimately containing function and its ancestors.
 *)
-
 let find_split_vs syms i =
   match hfind "find_split_vs" syms.dfns i with
-  {symdef=`SYMDEF_typevar _} -> [],[],dfltvs_aux
+  { symdef=`SYMDEF_typevar _ } -> [], [], Flx_ast.dfltvs_aux
 
-  | {parent=parent; vs=vs} ->
+  | { parent=parent; vs=vs } ->
   match parent with
   | None -> [],fst vs, snd vs
   | Some j -> find_func_vs syms vs j

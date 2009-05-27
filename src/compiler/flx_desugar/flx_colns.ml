@@ -19,9 +19,6 @@ type nsrec = {
   fudges:string list ref
 }
 
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
-let dfltvs = [],dfltvs_aux
-
 let include_file syms inspec =
   let force = syms.compiler_options.force_recompile in
   let this_version = !Flx_version.version_data in

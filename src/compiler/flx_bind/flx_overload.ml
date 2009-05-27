@@ -139,10 +139,6 @@ type result =
   | Unique of overload_result
   | Fail
 
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
-let dfltvs = [],dfltvs_aux
-
-
 let get_data table index : symbol_data_t =
   try Hashtbl.find table index
   with Not_found ->

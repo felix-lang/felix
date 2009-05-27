@@ -20,8 +20,6 @@ type desugar_state_t = {
 }
 
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[] }
-let dfltvs = [], dfltvs_aux
 
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =

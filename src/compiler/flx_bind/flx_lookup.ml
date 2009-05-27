@@ -31,8 +31,6 @@ let bbdfns = Hashtbl.create 97
 let dummy_sr = Flx_srcref.make_dummy "[flx_lookup] generated"
 
 let unit_t = `BTYP_tuple []
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
-let dfltvs = [],dfltvs_aux
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i =
