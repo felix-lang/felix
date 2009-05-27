@@ -8,23 +8,19 @@
  *
  * Types, expressions, and bodies of functions remain unbound. *)
 
-open Flx_ast
-open Flx_types
-open Flx_mtypes2
-
 val build_tables:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   string ->
-  ivs_list_t ->
+  Flx_ast.ivs_list_t ->
   int ->
   int option -> (* parent index *)
   int option -> (* grandparent index *)
   int -> (* root index *)
-  asm_t list ->
+  Flx_types.asm_t list ->
   (
-    name_map_t *
-    name_map_t *
-    sexe_t list *
-    (Flx_srcref.t * iface_t * int option) list *
-    dir_t list
+    Flx_types.name_map_t *
+    Flx_types.name_map_t *
+    Flx_ast.sexe_t list *
+    (Flx_srcref.t * Flx_types.iface_t * int option) list *
+    Flx_types.dir_t list
   )

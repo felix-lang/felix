@@ -5,9 +5,7 @@ open Flx_types
 open Flx_mtypes2
 open Flx_print
 open Flx_typing
-open List
 open Flx_lookup
-open Flx_exceptions
 
 let null_tab = Hashtbl.create 3
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
@@ -16,10 +14,10 @@ let dfltvs = [],dfltvs_aux
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i =
-  let n = length (fst vs) in
+  let n = List.length (fst vs) in
   let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
-  let ts = map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
-  let vs = map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
+  let ts = List.map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
+  let vs = List.map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
   (*
   print_endline ("Make entry " ^ si i ^ ", " ^ "vs =" ^
     catmap "," (fun (s,i) -> s^ "<" ^ si i ^">") vs ^
@@ -57,7 +55,7 @@ let split_asms asms :
 =
   let rec aux asms dcls exes ifaces dirs =
     match asms with
-    | [] -> (dcls,exes,ifaces, dirs)
+    | [] -> (dcls, exes, ifaces, dirs)
     | h :: t ->
       match h with
       | `Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
@@ -90,7 +88,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     | `FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.dfns (sye idx)  with
        | { sr=sr2 } ->
-         clierr2 sr sr2
+         Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
        )
      | `FunctionEntry [] -> assert false
@@ -105,7 +103,7 @@ let full_add_typevar syms sr table key value =
     | `FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.dfns (sye idx)  with
        | { sr=sr2 } ->
-         clierr2 sr sr2
+         Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
        )
      | `FunctionEntry [] -> assert false
@@ -120,7 +118,7 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
       begin
         match Hashtbl.find syms.dfns ( sye entry ) with
         { id=id; sr=sr2 } ->
-        clierr2 sr sr2
+        Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
           key ^ "<" ^ si value ^ ">" ^
@@ -165,9 +163,9 @@ let rec build_tables syms name inherit_vs
   in
   let dcls,exes,ifaces,export_dirs = split_asms asms in
   let dcls,exes,ifaces,export_dirs =
-    rev dcls,rev exes,rev ifaces, rev export_dirs
+    List.rev dcls, List.rev exes, List.rev ifaces, List.rev export_dirs
   in
-  let ifaces = map (fun (i,j)-> i,j,parent) ifaces in
+  let ifaces = List.map (fun (i,j)-> i,j,parent) ifaces in
   let interfaces = ref ifaces in
   let spc = spaces level in
   let pub_name_map = Hashtbl.create 97 in
@@ -194,7 +192,7 @@ let rec build_tables syms name inherit_vs
       Hashtbl.add priv_name_map "root" (`NonFunctionEntry (mkentry syms dfltvs root))
   ;
   begin
-    iter
+    List.iter
     (
       fun (sr,id,seq,access,vs',dcl) ->
         let pubtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
@@ -224,7 +222,7 @@ let rec build_tables syms name inherit_vs
           )
         end;
         let make_vs (vs',con) : ivs_list_t =
-          map
+          List.map
           (
             fun (tid,tpat)-> let n = !counter in incr counter;
             if print_flag then
@@ -247,7 +245,7 @@ let rec build_tables syms name inherit_vs
           | [] -> ();
         end;
         let rec addtc tcin dirsout = match tcin with
-          | [] -> rev dirsout
+          | [] -> List.rev dirsout
           | h::t ->
             addtc t (DIR_typeclass_req h :: dirsout);
         in
@@ -259,7 +257,7 @@ let rec build_tables syms name inherit_vs
         let add_unique table id idx = full_add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_function table id idx = full_add_function syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_tvars' parent table vs =
-          iter
+          List.iter
           (fun (tvid,i,tpat) ->
             let mt = match tpat with
               | `AST_patany _ -> `TYP_type (* default/unspecified *)
@@ -271,7 +269,7 @@ let rec build_tables syms name inherit_vs
               *)
 
               | `TYP_none -> `TYP_type
-              | `TYP_ellipsis -> clierr sr "Ellipsis ... as metatype"
+              | `TYP_ellipsis -> Flx_exceptions.clierr sr "Ellipsis ... as metatype"
               | _ -> tpat
             in
             Hashtbl.add dfns i
@@ -295,7 +293,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_reduce (ps,e1,e2) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (name,typ) ->
+          List.iter (fun (name,typ) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -312,7 +310,7 @@ let rec build_tables syms name inherit_vs
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_reduce (rev !ips, e1, e2)
+            symdef=`SYMDEF_reduce (List.rev !ips, e1, e2)
           };
           ;
           add_tvars privtab
@@ -320,7 +318,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_axiom ((ps,pre),e1) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (k,name,typ,dflt) ->
+          List.iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -337,7 +335,7 @@ let rec build_tables syms name inherit_vs
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_axiom ((rev !ips, pre),e1)
+            symdef=`SYMDEF_axiom ((List.rev !ips, pre),e1)
           };
           ;
           add_tvars privtab
@@ -345,7 +343,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_lemma ((ps,pre),e1) ->
           let fun_index = n in
           let ips = ref [] in
-          iter (fun (k,name,typ,dflt) ->
+          List.iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -362,24 +360,24 @@ let rec build_tables syms name inherit_vs
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=[];
-            symdef=`SYMDEF_lemma ((rev !ips, pre),e1)
+            symdef=`SYMDEF_lemma ((List.rev !ips, pre),e1)
           };
           ;
           add_tvars privtab
 
 
         | `DCL_function ((ps,pre),t,props,asms) ->
-          let is_ctor =  mem `Ctor props in
+          let is_ctor = List.mem `Ctor props in
 
           if is_ctor && id <> "__constructor__"
-          then syserr sr
+          then Flx_exceptions.syserr sr
             "Function with constructor property not named __constructor__"
           ;
 
           if is_ctor then
             begin match t with
             | `AST_void _ -> ()
-            | _ -> syserr sr
+            | _ -> Flx_exceptions.syserr sr
               "Constructor should return type void"
             end
           ;
@@ -399,7 +397,7 @@ let rec build_tables syms name inherit_vs
             (Some fun_index) parent root asms
           in
           let ips = ref [] in
-          iter (fun (k,name,typ,dflt) ->
+          List.iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
@@ -417,7 +415,7 @@ let rec build_tables syms name inherit_vs
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;
             dirs=dirs;
-            symdef=`SYMDEF_function ((rev !ips,pre), t, props, exes)
+            symdef=`SYMDEF_function ((List.rev !ips,pre), t, props, exes)
           };
           if access = `Public then add_function pub_name_map id fun_index;
           add_function priv_name_map id fun_index;
@@ -426,7 +424,7 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_match_check (pat,(mvname,match_var_index)) ->
-          assert (length (fst vs) = 0);
+          assert (List.length (fst vs) = 0);
           let fun_index = n in
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
@@ -444,7 +442,7 @@ let rec build_tables syms name inherit_vs
           print_endline ("Parent is " ^ match parent with Some i -> si i);
           print_endline ("Match handler, "^si n^", mvname = " ^ mvname);
           *)
-          assert (length (fst vs) = 0);
+          assert (List.length (fst vs) = 0);
           let vars = Hashtbl.create 97 in
           Flx_mbind.get_pattern_vars vars pat [];
           (*
@@ -544,16 +542,16 @@ let rec build_tables syms name inherit_vs
             asms
           in
           let fudged_privtab = Hashtbl.create 97 in
-          let vsl = length (fst inherit_vs) + length (fst vs) in
+          let vsl = List.length (fst inherit_vs) + List.length (fst vs) in
           (*
           print_endline ("Strip " ^ si vsl ^ " vs");
           *)
           let drop vs =
-            let keep = length vs - vsl in
-            if keep >= 0 then rev (list_prefix (rev vs) keep)
+            let keep = List.length vs - vsl in
+            if keep >= 0 then List.rev (list_prefix (List.rev vs) keep)
             else failwith "WEIRD CASE"
           in
-          let nts = map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
+          let nts = List.map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
           (* fudge the private view to remove the vs *)
           let show { base_sym=i; spec_vs=vs; sub_ts=ts } =
           si i ^ " |-> " ^
@@ -583,7 +581,7 @@ let rec build_tables syms name inherit_vs
               | `NonFunctionEntry e ->
                  `NonFunctionEntry (fixup e)
               | `FunctionEntry es ->
-                `FunctionEntry (map fixup es)
+                `FunctionEntry (List.map fixup es)
              in
              Hashtbl.add fudged_privtab s nues
           )
@@ -810,11 +808,11 @@ let rec build_tables syms name inherit_vs
           add_tvars privtab
 
         | `DCL_union (its) ->
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
+          let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let utype = `AST_name(sr,id, tvars) in
           let its =
             let ccount = ref 0 in (* count component constructors *)
-            map (fun (component_name,v,vs,t) ->
+            List.map (fun (component_name,v,vs,t) ->
               (* ctor sequence in union *)
               let ctor_idx = match v with
                 | None ->  !ccount
@@ -838,12 +836,12 @@ let rec build_tables syms name inherit_vs
           ;
 
           let unit_sum =
-            fold_left
+            List.fold_left
             (fun v (_,_,_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
             true
             its
           in
-          iter
+          List.iter
           (fun (component_name,ctor_idx,vs',t) ->
             let dfn_idx = !counter in incr counter; (* constructor *)
             let match_idx = !counter in incr counter; (* matcher *)
@@ -896,7 +894,7 @@ let rec build_tables syms name inherit_vs
           print_endline ("Got a struct " ^ id);
           print_endline ("Members=" ^ catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
           *)
-          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
+          let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;
