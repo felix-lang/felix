@@ -149,17 +149,13 @@ let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
 *)
 
 
-let rec build_tables syms name inherit_vs
-  level parent grandparent root asms
-=
+let rec build_tables syms name inherit_vs level parent grandparent root asms =
   (*
   print_endline ("//Building tables for " ^ name);
   *)
-  let
-    print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag and
-    dfns = syms.Flx_mtypes2.dfns and
-    counter = syms.Flx_mtypes2.counter
-  in
+  let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
+  let dfns = syms.Flx_mtypes2.dfns in
+  let counter = syms.Flx_mtypes2.counter in
   let dcls,exes,ifaces,export_dirs = split_asms asms in
   let dcls,exes,ifaces,export_dirs =
     List.rev dcls, List.rev exes, List.rev ifaces, List.rev export_dirs
@@ -621,7 +617,7 @@ let rec build_tables syms name inherit_vs
           let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
           string_of_int i ^ " |-> " ^
             "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
-            "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt syms.Flx_mtypes2.dfns) ts
+            "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt dfns) ts
           in
           let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
             let e' = {

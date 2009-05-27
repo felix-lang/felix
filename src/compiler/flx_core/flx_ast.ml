@@ -144,7 +144,7 @@ and vs_aux_t = {
 
 and plain_vs_list_t = (id_t * typecode_t) list
 and plain_ivs_list_t = (id_t * int * typecode_t) list
-and vs_list_t = plain_vs_list_t *  vs_aux_t
+and vs_list_t = plain_vs_list_t * vs_aux_t
 and ivs_list_t = plain_ivs_list_t * vs_aux_t
 
 (** Literals recognized by the lexer. *)
@@ -561,7 +561,7 @@ let src_of_bexe = function
   | `BEXE_nonreturn_code (sr,_)
   | `BEXE_assign (sr,_,_)
   | `BEXE_init (sr,_,_)
-    -> sr
+  -> sr
 
   | `BEXE_begin
   | `BEXE_end -> Flx_srcref.dummy_sr
@@ -575,17 +575,17 @@ let src_of_qualified_name (e : qualified_name_t) = match e with
   | `AST_the (s,_)
   | `AST_index (s,_,_)
   | `AST_callback (s,_)
-    -> s
+  -> s
 
 let src_of_suffixed_name (e : suffixed_name_t) = match e with
   | #qualified_name_t as x -> src_of_qualified_name x
   | `AST_suffix (s,_)
-    -> s
+  -> s
 
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
   | `AST_vsprintf (s,_)
-  | `AST_ellipsis (s)
+  | `AST_ellipsis s
   | `AST_noexpand (s,_)
   | `AST_product (s,_)
   | `AST_sum (s,_)
@@ -600,30 +600,29 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_superscript (s,_)
   | `AST_patvar (s,_)
   | `AST_patany s
-
   | `AST_map (s,_,_)
-  | `AST_apply  (s,_)
+  | `AST_apply (s,_)
   | `AST_deref (s,_)
   | `AST_new (s,_)
   | `AST_ref  (s,_)
   | `AST_likely (s,_)
   | `AST_unlikely (s,_)
-  | `AST_literal  (s,_)
+  | `AST_literal (s,_)
   | `AST_tuple  (s,_)
   | `AST_record (s,_)
   | `AST_variant (s,_)
   | `AST_record_type (s,_)
   | `AST_variant_type (s,_)
   | `AST_arrayof (s,_)
-  | `AST_dot  (s,_)
-  | `AST_lambda  (s,_)
-  | `AST_match_ctor  (s,_)
+  | `AST_dot (s,_)
+  | `AST_lambda (s,_)
+  | `AST_match_ctor (s,_)
   | `AST_match_case (s,_)
-  | `AST_ctor_arg  (s,_)
-  | `AST_case_arg  (s,_)
+  | `AST_ctor_arg (s,_)
+  | `AST_case_arg (s,_)
   | `AST_case_index (s,_)
-  | `AST_get_n  (s,_)
-  | `AST_get_named_variable  (s,_)
+  | `AST_get_n (s,_)
+  | `AST_get_named_variable (s,_)
   | `AST_coercion (s,_)
   | `AST_as (s,_)
   | `AST_match (s, _)
@@ -635,7 +634,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_macro_ctor (s,_)
   | `AST_macro_statements (s,_)
   | `AST_user_expr (s,_,_)
-    -> s
+  -> s
 
 let src_of_stmt e = match e with
   (*
@@ -646,15 +645,15 @@ let src_of_stmt e = match e with
   | `AST_goto (s,_)
   | `AST_assert (s,_)
   | `AST_init (s,_,_)
-  | `AST_function (s,_, _, _ , _, _, _)
-  | `AST_reduce (s,_, _, _ , _, _)
-  | `AST_axiom (s,_, _, _ , _)
-  | `AST_lemma (s,_, _, _ , _)
-  | `AST_curry (s,_, _, _ , _, _,_)
-  | `AST_macro_name (s, _,_)
-  | `AST_macro_names (s, _,_)
-  | `AST_expr_macro (s,_, _,_)
-  | `AST_stmt_macro (s,_, _,_)
+  | `AST_function (s,_,_,_,_,_,_)
+  | `AST_reduce (s,_,_,_,_,_)
+  | `AST_axiom (s,_,_,_,_)
+  | `AST_lemma (s,_,_,_,_)
+  | `AST_curry (s,_,_,_,_,_,_)
+  | `AST_macro_name (s,_,_)
+  | `AST_macro_names (s,_,_)
+  | `AST_expr_macro (s,_,_,_)
+  | `AST_stmt_macro (s,_,_,_)
   | `AST_macro_block (s,_)
   | `AST_macro_val (s,_,_)
   | `AST_macro_vals (s,_,_)
@@ -667,26 +666,22 @@ let src_of_stmt e = match e with
   | `AST_macro_proc_return s
   | `AST_macro_ifor (s,_,_,_)
   | `AST_macro_vfor (s,_,_,_)
-
   | `AST_val_decl (s,_,_,_,_)
   | `AST_lazy_decl (s,_,_,_,_)
   | `AST_var_decl (s,_,_,_,_)
   | `AST_ref_decl (s,_,_,_,_)
-
-
   | `AST_type_alias (s,_,_,_)
   | `AST_inherit (s,_,_,_)
   | `AST_inherit_fun (s,_,_,_)
   | `AST_nop (s, _)
-
-  | `AST_assign (s, _, _,_ )
-  | `AST_cassign (s, _,_ )
-  | `AST_call (s, _, _ )
-  | `AST_jump (s, _, _ )
-  | `AST_loop (s, _, _ )
-  | `AST_svc (s, _)
-  | `AST_fun_return (s, _)
-  | `AST_yield (s, _)
+  | `AST_assign (s,_,_,_)
+  | `AST_cassign (s, _,_)
+  | `AST_call (s,_,_)
+  | `AST_jump (s,_,_)
+  | `AST_loop (s,_,_)
+  | `AST_svc (s,_)
+  | `AST_fun_return (s,_)
+  | `AST_yield (s,_)
   | `AST_proc_return s
   | `AST_halt (s,_)
   | `AST_trace (s,_,_)
@@ -697,25 +692,25 @@ let src_of_stmt e = match e with
   | `AST_whilst (s,_,_)
   | `AST_until (s,_,_)
   *)
-  | `AST_abs_decl (s,_,_, _,_,_)
+  | `AST_abs_decl (s,_,_,_,_,_)
   | `AST_newtype (s,_,_,_)
   | `AST_ctypes (s,_,_,_)
   | `AST_const_decl (s,_,_,_,_,_)
-  | `AST_fun_decl (s,_,_,_,_,_,_,_ )
+  | `AST_fun_decl (s,_,_,_,_,_,_,_)
   | `AST_callback_decl (s,_,_,_,_)
   | `AST_insert (s,_,_,_,_,_)
   | `AST_code (s, _)
-  | `AST_noreturn_code (s, _)
-  | `AST_union (s, _,_, _ )
-  | `AST_struct (s,_, _, _)
-  | `AST_cstruct (s,_, _, _)
-  | `AST_typeclass (s,_, _, _)
-  | `AST_instance (s,_, _,_)
+  | `AST_noreturn_code (s,_)
+  | `AST_union (s, _,_,_)
+  | `AST_struct (s,_,_,_)
+  | `AST_cstruct (s,_,_,_)
+  | `AST_typeclass (s,_,_,_)
+  | `AST_instance (s,_,_,_)
   | `AST_untyped_module (s,_,_,_)
   | `AST_namespace (s,_,_,_)
-  | `AST_export_fun (s, _,_)
-  | `AST_export_python_fun (s, _,_)
-  | `AST_export_type (s, _,_)
+  | `AST_export_fun (s,_,_)
+  | `AST_export_python_fun (s,_,_)
+  | `AST_export_type (s,_,_)
   | `AST_type (s,_,_)
   | `AST_open (s,_,_)
   | `AST_inject_module (s,_)
@@ -724,32 +719,31 @@ let src_of_stmt e = match e with
   | `AST_seq (s,_)
   | `AST_user_statement (s,_,_)
   | `AST_scheme_string (s,_)
-    -> s
-  | `AST_comment (s,_) -> s
-
+  | `AST_comment (s,_)
+  -> s
 
 let src_of_pat e = match e with
   | `PAT_coercion (s,_,_)
   | `PAT_nan s
   | `PAT_none s
   | `PAT_int (s,_,_)
-  | `PAT_string (s, _)
+  | `PAT_string (s,_)
   | `PAT_int_range (s,_,_,_,_)
-  | `PAT_string_range (s, _, _)
-  | `PAT_float_range (s, _,_)
-  | `PAT_name (s, _)
-  | `PAT_tuple (s, _)
+  | `PAT_string_range (s,_,_)
+  | `PAT_float_range (s,_,_)
+  | `PAT_name (s,_)
+  | `PAT_tuple (s,_)
   | `PAT_any s
-  | `PAT_const_ctor (s, _)
-  | `PAT_nonconst_ctor (s, _, _)
-  | `PAT_as (s, _, _)
-  | `PAT_when (s, _, _)
-  | `PAT_record (s, _)
-    -> s
+  | `PAT_const_ctor (s,_)
+  | `PAT_nonconst_ctor (s,_,_)
+  | `PAT_as (s,_,_)
+  | `PAT_when (s,_,_)
+  | `PAT_record (s,_)
+  -> s
 
-(* get range from first and last expressions *)
+(** get range from first and last expressions *)
 let rsexpr a b = Flx_srcref.rsrange (src_of_expr a) (src_of_expr b)
 
-(* get source range of non-empty list of expressions *)
+(** get source range of non-empty list of expressions *)
 let rslist lst =
   rsexpr (List.hd lst) (Flx_list.list_last lst)

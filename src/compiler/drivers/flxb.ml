@@ -84,7 +84,7 @@ try
   print_endline
     ("//Top level module '" ^ module_name ^ "' has index " ^ string_of_int root);
 
-  let table, _, exes, ifaces,dirs =
+  let _, _, _, ifaces, _ =
     Flx_symtab.build_tables syms "root" dfltvs 0 None None root deblocked
   in
     print_endline "//BINDING EXECUTABLE CODE";
