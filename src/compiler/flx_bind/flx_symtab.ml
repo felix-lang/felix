@@ -1,4 +1,3 @@
-open Flx_util
 open Flx_list
 open Flx_ast
 open Flx_types
@@ -19,9 +18,9 @@ let mkentry syms (vs:ivs_list_t) i =
   let ts = List.map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
   let vs = List.map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
   (*
-  print_endline ("Make entry " ^ si i ^ ", " ^ "vs =" ^
-    catmap "," (fun (s,i) -> s^ "<" ^ si i ^">") vs ^
-    ", ts=" ^ catmap "," (sbt syms.dfns) ts
+  print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
+    Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
+    ", ts=" ^ Flx_util.catmap "," (sbt syms.dfns) ts
   );
   *)
   {base_sym=i; spec_vs=vs; sub_ts=ts}
@@ -66,19 +65,19 @@ let split_asms asms :
     aux asms [] [] [] []
 
 let dump_name_to_int_map level name name_map =
-  let spc = spaces level in
+  let spc = Flx_util.spaces level in
   print_endline (spc ^ "//Name to int map for " ^ name);
   print_endline (spc ^ "//---------------");
   Hashtbl.iter
   (
     fun id n ->
-      print_endline ( "//" ^ spc ^ id ^ ": " ^ si n)
+      print_endline ( "//" ^ spc ^ id ^ ": " ^ string_of_int n)
   )
   name_map
   ;
   print_endline ""
 
-let strp = function | Some x -> si x | None -> "none"
+let strp = function | Some x -> string_of_int x | None -> "none"
 
 let full_add_unique syms sr (vs:ivs_list_t) table key value =
   try
@@ -89,7 +88,8 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
        (match Hashtbl.find syms.dfns (sye idx)  with
        | { sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
-         ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
+         ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
+         string_of_int (sye idx) ^ ">")
        )
      | `FunctionEntry [] -> assert false
   with Not_found ->
@@ -104,7 +104,8 @@ let full_add_typevar syms sr table key value =
        (match Hashtbl.find syms.dfns (sye idx)  with
        | { sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
-         ("[build_tables] Duplicate non-function " ^ key ^ "<"^si (sye idx)^">")
+         ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
+         string_of_int (sye idx) ^ ">")
        )
      | `FunctionEntry [] -> assert false
   with Not_found ->
@@ -121,9 +122,9 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
         Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
-          key ^ "<" ^ si value ^ ">" ^
+          key ^ "<" ^ string_of_int value ^ ">" ^
           " with non-function " ^
-          id ^ "<" ^ si (sye entry) ^ ">"
+          id ^ "<" ^ string_of_int (sye entry) ^ ">"
         )
       end
 
@@ -167,7 +168,7 @@ let rec build_tables syms name inherit_vs
   in
   let ifaces = List.map (fun (i,j)-> i,j,parent) ifaces in
   let interfaces = ref ifaces in
-  let spc = spaces level in
+  let spc = Flx_util.spaces level in
   let pub_name_map = Hashtbl.create 97 in
   let priv_name_map = Hashtbl.create 97 in
 
@@ -198,7 +199,7 @@ let rec build_tables syms name inherit_vs
         let pubtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
         let privtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
         let n = match seq with
-          | Some n -> (* print_endline ("SPECIAL " ^ id ^ si n); *) n
+          | Some n -> (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *) n
           | None -> let n = !counter in incr counter; n
         in
         if print_flag then begin
@@ -213,11 +214,11 @@ let rec build_tables syms name inherit_vs
           | `DCL_val _ -> "(val) "
           | _ -> ""
           in
-          let vss = catmap "," fst (fst vs') in
+          let vss = Flx_util.catmap "," fst (fst vs') in
           let vss = if vss <> "" then "["^vss^"]" else "" in
           print_endline
           (
-            "//" ^ spc ^ si n ^ " -> " ^ id ^ vss ^
+            "//" ^ spc ^ string_of_int n ^ " -> " ^ id ^ vss ^
             " " ^ kind ^ Flx_srcref.short_string_of_src sr
           )
         end;
@@ -226,7 +227,7 @@ let rec build_tables syms name inherit_vs
           (
             fun (tid,tpat)-> let n = !counter in incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ si n ^ " -> " ^ tid^ " (type variable)");
+            print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ tid^ " (type variable)");
             tid,n,tpat
           )
           vs'
@@ -241,7 +242,7 @@ let rec build_tables syms name inherit_vs
           match rtcr  with
           | _::_ ->
             print_endline (id^": TYPECLASS REQUIREMENTS " ^
-            catmap "," string_of_qualified_name rtcr);
+            Flx_util.catmap "," string_of_qualified_name rtcr);
           | [] -> ();
         end;
         let rec addtc tcin dirsout = match tcin with
@@ -263,7 +264,7 @@ let rec build_tables syms name inherit_vs
               | `AST_patany _ -> `TYP_type (* default/unspecified *)
               (*
               | #suffixed_name_t as name ->
-                print_endline ("Decoding type variable " ^ si i ^ " kind");
+                print_endline ("Decoding type variable " ^ string_of_int i ^ " kind");
                 print_endline ("Hacking suffixed kind name " ^ string_of_suffixed_name name ^ " to TYPE");
                 `TYP_type (* HACK *)
               *)
@@ -296,7 +297,7 @@ let rec build_tables syms name inherit_vs
           List.iter (fun (name,typ) ->
             let n = !counter in incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
@@ -321,7 +322,7 @@ let rec build_tables syms name inherit_vs
           List.iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
@@ -346,7 +347,7 @@ let rec build_tables syms name inherit_vs
           List.iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
@@ -400,7 +401,7 @@ let rec build_tables syms name inherit_vs
           List.iter (fun (k,name,typ,dflt) ->
             let n = !counter in incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name^ " (parameter)");
             Hashtbl.add dfns n {
               id=name;sr=sr;parent=Some fun_index;
               vs=dfltvs;pubmap=null_tab;privmap=null_tab;
@@ -439,8 +440,8 @@ let rec build_tables syms name inherit_vs
 
         | `DCL_match_handler (pat,(mvname,match_var_index),asms) ->
           (*
-          print_endline ("Parent is " ^ match parent with Some i -> si i);
-          print_endline ("Match handler, "^si n^", mvname = " ^ mvname);
+          print_endline ("Parent is " ^ match parent with Some i -> string_of_int i);
+          print_endline ("Match handler, " ^ string_of_int n ^ ", mvname = " ^ mvname);
           *)
           assert (List.length (fst vs) = 0);
           let vars = Hashtbl.create 97 in
@@ -518,7 +519,7 @@ let rec build_tables syms name inherit_vs
           incr counter;
           let init_def = `SYMDEF_function ( ([],None),`AST_void sr, [],exes) in
           if print_flag then
-          print_endline ("//  "^spc ^ si n' ^ " -> _init_  (module "^id^")");
+          print_endline ("//  " ^ spc ^ string_of_int n' ^ " -> _init_  (module " ^ id ^ ")");
           Hashtbl.add dfns n' {id="_init_";sr=sr;parent=Some n;vs=vs;pubmap=null_tab;privmap=null_tab;dirs=[];symdef=init_def};
 
           if access = `Public then add_unique pub_name_map id n;
@@ -544,7 +545,7 @@ let rec build_tables syms name inherit_vs
           let fudged_privtab = Hashtbl.create 97 in
           let vsl = List.length (fst inherit_vs) + List.length (fst vs) in
           (*
-          print_endline ("Strip " ^ si vsl ^ " vs");
+          print_endline ("Strip " ^ string_of_int vsl ^ " vs");
           *)
           let drop vs =
             let keep = List.length vs - vsl in
@@ -554,9 +555,9 @@ let rec build_tables syms name inherit_vs
           let nts = List.map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
           (* fudge the private view to remove the vs *)
           let show { base_sym=i; spec_vs=vs; sub_ts=ts } =
-          si i ^ " |-> " ^
-            "vs= " ^catmap "," (fun (s,i) -> s^"<" ^si i^">") vs^
-            "ts =" ^catmap  "," (sbt syms.dfns) ts
+          string_of_int i ^ " |-> " ^
+            "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
+            "ts =" ^ Flx_util.catmap  "," (sbt syms.dfns) ts
           in
           let fixup ({ base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
             let e' = {
@@ -874,7 +875,8 @@ let rec build_tables syms name inherit_vs
                   `SYMDEF_nonconst_ctor (n,utype,ctor_idx,evs,t)
             in
 
-            if print_flag then print_endline ("//  " ^ spc ^ si dfn_idx ^ " -> " ^ component_name);
+            if print_flag then print_endline ("//  " ^ spc ^
+              string_of_int dfn_idx ^ " -> " ^ component_name);
             Hashtbl.add dfns dfn_idx {
               id=component_name;sr=sr;parent=parent;
               vs=vs;
@@ -892,7 +894,7 @@ let rec build_tables syms name inherit_vs
         | `DCL_struct (sts) ->
           (*
           print_endline ("Got a struct " ^ id);
-          print_endline ("Members=" ^ catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
+          print_endline ("Members=" ^ Flx_util.catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
           *)
           let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
           let stype = `AST_name(sr,id,tvars) in
