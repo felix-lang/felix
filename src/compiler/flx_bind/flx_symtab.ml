@@ -1,5 +1,3 @@
-open Flx_mtypes2
-
 let null_tab = Hashtbl.create 3
 let dfltvs_aux =
   {
@@ -12,13 +10,14 @@ let dfltvs = [],dfltvs_aux
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:Flx_ast.ivs_list_t) i =
   let n = List.length (fst vs) in
-  let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
+  let base = !(syms.Flx_mtypes2.counter) in
+  syms.Flx_mtypes2.counter := !(syms.Flx_mtypes2.counter) + n;
   let ts = List.map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (Flx_list.nlist n) in
   let vs = List.map2 (fun i (n,_,_) -> n,i+base) (Flx_list.nlist n) (fst vs) in
   (*
   print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
     Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
-    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.dfns) ts
+    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.Flx_mtypes2.dfns) ts
   );
   *)
   {Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts}
@@ -84,7 +83,7 @@ let full_add_unique syms sr (vs:Flx_ast.ivs_list_t) table key value =
     match entry with
     | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.dfns (Flx_typing.sye idx)  with
+       (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx)  with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
@@ -100,7 +99,7 @@ let full_add_typevar syms sr table key value =
     match entry with
     | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.dfns (Flx_typing.sye idx)  with
+       (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx)  with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
@@ -116,7 +115,7 @@ let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
     match Hashtbl.find table key with
     | `NonFunctionEntry entry ->
       begin
-        match Hashtbl.find syms.dfns (Flx_typing.sye entry) with
+        match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye entry) with
         { Flx_types.id=id; sr=sr2 } ->
         Flx_exceptions.clierr2 sr sr2
         (
@@ -157,9 +156,9 @@ let rec build_tables syms name inherit_vs
   print_endline ("//Building tables for " ^ name);
   *)
   let
-    print_flag = syms.compiler_options.print_flag and
-    dfns = syms.dfns and
-    counter = syms.counter
+    print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag and
+    dfns = syms.Flx_mtypes2.dfns and
+    counter = syms.Flx_mtypes2.counter
   in
   let dcls,exes,ifaces,export_dirs = split_asms asms in
   let dcls,exes,ifaces,export_dirs =
@@ -622,7 +621,7 @@ let rec build_tables syms name inherit_vs
           let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
           string_of_int i ^ " |-> " ^
             "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
-            "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt syms.dfns) ts
+            "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt syms.Flx_mtypes2.dfns) ts
           in
           let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
             let e' = {
@@ -856,7 +855,7 @@ let rec build_tables syms name inherit_vs
             dirs=[];
             symdef=`SYMDEF_newtype t;
           };
-          let n_repr = !(syms.counter) in incr (syms.counter);
+          let n_repr = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
           let piname = `AST_name (sr,id,[]) in
           Hashtbl.add dfns n_repr {
             Flx_types.id="_repr_";
@@ -870,7 +869,7 @@ let rec build_tables syms name inherit_vs
           };
           add_function priv_name_map "_repr_" n_repr
           ;
-          let n_make = !(syms.counter) in incr (syms.counter);
+          let n_make = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
           Hashtbl.add dfns n_make {
             Flx_types.id="_make_" ^ id;
             sr=sr;
