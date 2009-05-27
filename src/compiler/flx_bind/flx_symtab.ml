@@ -1,4 +1,3 @@
-open Flx_list
 open Flx_ast
 open Flx_types
 open Flx_mtypes2
@@ -15,8 +14,8 @@ let dfltvs = [],dfltvs_aux
 let mkentry syms (vs:ivs_list_t) i =
   let n = List.length (fst vs) in
   let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
-  let ts = List.map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (nlist n) in
-  let vs = List.map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
+  let ts = List.map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (Flx_list.nlist n) in
+  let vs = List.map2 (fun i (n,_,_) -> n,i+base) (Flx_list.nlist n) (fst vs) in
   (*
   print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
     Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
@@ -39,7 +38,7 @@ let merge_ivs
     | a,`TYP_intersect b -> `TYP_intersect (a::b)
     | a,b -> `TYP_intersect [a;b]
   and
-    rtcr = uniq_list (rtcr1 @ rtcr2)
+    rtcr = Flx_list.uniq_list (rtcr1 @ rtcr2)
   in
   vs1 @ vs2,
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
@@ -549,7 +548,7 @@ let rec build_tables syms name inherit_vs
           *)
           let drop vs =
             let keep = List.length vs - vsl in
-            if keep >= 0 then List.rev (list_prefix (List.rev vs) keep)
+            if keep >= 0 then List.rev (Flx_list.list_prefix (List.rev vs) keep)
             else failwith "WEIRD CASE"
           in
           let nts = List.map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
