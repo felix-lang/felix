@@ -1,8 +1,6 @@
 open Flx_ast
 open Flx_types
 open Flx_mtypes2
-open Flx_typing
-open Flx_lookup
 
 let null_tab = Hashtbl.create 3
 let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
@@ -83,11 +81,11 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     match entry with
     | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.dfns (sye idx)  with
+       (match Hashtbl.find syms.dfns (Flx_typing.sye idx)  with
        | { sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
-         string_of_int (sye idx) ^ ">")
+         string_of_int (Flx_typing.sye idx) ^ ">")
        )
      | `FunctionEntry [] -> assert false
   with Not_found ->
@@ -99,11 +97,11 @@ let full_add_typevar syms sr table key value =
     match entry with
     | `NonFunctionEntry (idx)
     | `FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.dfns (sye idx)  with
+       (match Hashtbl.find syms.dfns (Flx_typing.sye idx)  with
        | { sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
-         string_of_int (sye idx) ^ ">")
+         string_of_int (Flx_typing.sye idx) ^ ">")
        )
      | `FunctionEntry [] -> assert false
   with Not_found ->
@@ -115,14 +113,14 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
     match Hashtbl.find table key with
     | `NonFunctionEntry entry ->
       begin
-        match Hashtbl.find syms.dfns ( sye entry ) with
+        match Hashtbl.find syms.dfns (Flx_typing.sye entry) with
         { id=id; sr=sr2 } ->
         Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
           key ^ "<" ^ string_of_int value ^ ">" ^
           " with non-function " ^
-          id ^ "<" ^ string_of_int (sye entry) ^ ">"
+          id ^ "<" ^ string_of_int (Flx_typing.sye entry) ^ ">"
         )
       end
 
