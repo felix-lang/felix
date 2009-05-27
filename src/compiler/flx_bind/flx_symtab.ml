@@ -1,13 +1,16 @@
-open Flx_ast
 open Flx_mtypes2
 
 let null_tab = Hashtbl.create 3
-let dfltvs_aux = { raw_type_constraint=`TYP_tuple []; raw_typeclass_reqs=[]}
+let dfltvs_aux =
+  {
+    Flx_ast.raw_type_constraint=`TYP_tuple [];
+    raw_typeclass_reqs=[];
+  }
 let dfltvs = [],dfltvs_aux
 
 
 (* use fresh variables, but preserve names *)
-let mkentry syms (vs:ivs_list_t) i =
+let mkentry syms (vs:Flx_ast.ivs_list_t) i =
   let n = List.length (fst vs) in
   let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
   let ts = List.map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (Flx_list.nlist n) in
@@ -21,9 +24,10 @@ let mkentry syms (vs:ivs_list_t) i =
   {Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts}
 
 let merge_ivs
-  (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1})
-  (vs2,{raw_type_constraint=con2; raw_typeclass_reqs=rtcr2})
-:ivs_list_t =
+  (vs1,{ Flx_ast.raw_type_constraint=con1; raw_typeclass_reqs=rtcr1 })
+  (vs2,{ Flx_ast.raw_type_constraint=con2; raw_typeclass_reqs=rtcr2 }) :
+  Flx_ast.ivs_list_t
+  =
   let t =
     match con1,con2 with
     | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
@@ -37,13 +41,13 @@ let merge_ivs
     rtcr = Flx_list.uniq_list (rtcr1 @ rtcr2)
   in
   vs1 @ vs2,
-  { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
+  { Flx_ast.raw_type_constraint=t; raw_typeclass_reqs=rtcr }
 
 
 
 let split_asms asms :
-  (Flx_srcref.t * id_t * int option * Flx_types.access_t * vs_list_t * Flx_types.dcl_t) list *
-  sexe_t list *
+  (Flx_srcref.t * Flx_ast.id_t * int option * Flx_types.access_t * Flx_ast.vs_list_t * Flx_types.dcl_t) list *
+  Flx_ast.sexe_t list *
   (Flx_srcref.t * Flx_types.iface_t) list *
   Flx_types.dir_t list
 =
@@ -74,7 +78,7 @@ let dump_name_to_int_map level name name_map =
 
 let strp = function | Some x -> string_of_int x | None -> "none"
 
-let full_add_unique syms sr (vs:ivs_list_t) table key value =
+let full_add_unique syms sr (vs:Flx_ast.ivs_list_t) table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
@@ -107,7 +111,7 @@ let full_add_typevar syms sr table key value =
     Hashtbl.add table key (`NonFunctionEntry (mkentry syms dfltvs value))
 
 
-let full_add_function syms sr (vs:ivs_list_t) table key value =
+let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
   try
     match Hashtbl.find table key with
     | `NonFunctionEntry entry ->
@@ -217,7 +221,7 @@ let rec build_tables syms name inherit_vs
             " " ^ kind ^ Flx_srcref.short_string_of_src sr
           )
         end;
-        let make_vs (vs',con) : ivs_list_t =
+        let make_vs (vs',con) : Flx_ast.ivs_list_t =
           List.map
           (
             fun (tid,tpat)-> let n = !counter in incr counter;
@@ -233,7 +237,7 @@ let rec build_tables syms name inherit_vs
 
         (*
         begin
-          match vs with (_,{raw_typeclass_reqs=rtcr})->
+          match vs with (_,{Flx_ast.raw_typeclass_reqs=rtcr})->
           match rtcr  with
           | _::_ ->
             print_endline (id^": TYPECLASS REQUIREMENTS " ^
@@ -246,7 +250,7 @@ let rec build_tables syms name inherit_vs
             addtc t (DIR_typeclass_req h :: dirsout);
         in
         let typeclass_dirs =
-          match vs with (_,{raw_typeclass_reqs=rtcr})-> addtc rtcr []
+          match vs with (_,{Flx_ast.raw_typeclass_reqs=rtcr})-> addtc rtcr []
         in
         *)
 
