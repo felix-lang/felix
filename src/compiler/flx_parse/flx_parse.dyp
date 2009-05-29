@@ -1733,6 +1733,9 @@ let parse_lexbuf (handle_stmt, init, old_local_data) lexbuf =
     with
       | Failure s ->
         begin
+          if Printexc.backtrace_status () then begin
+            print_endline (Printexc.get_backtrace ());
+          end;
           print_endline ("Parse fail " ^ s);
           show_error();
           raise (Flx_exceptions.ParseError ("Failure \"" ^ s ^ "\" Parsing File"))
@@ -1741,6 +1744,9 @@ let parse_lexbuf (handle_stmt, init, old_local_data) lexbuf =
       | Flx_exceptions.ClientError2 (sr, _, s)
       | Flx_exceptions.ClientErrorn (sr::_, s) as x  ->
         begin
+          if Printexc.backtrace_status () then begin
+            print_endline (Printexc.get_backtrace ());
+          end;
           print_endline "Parse fail";
           print_endline (Flx_srcref.long_string_of_src sr);
           raise x
