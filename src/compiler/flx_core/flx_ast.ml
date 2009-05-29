@@ -605,7 +605,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_user_expr (s,_,_)
   -> s
 
-let src_of_stmt e = match e with
+let src_of_stmt (e : statement_t) = match e with
   (*
   | `AST_public (s,_,_)
   *)
@@ -642,7 +642,7 @@ let src_of_stmt e = match e with
   | `AST_type_alias (s,_,_,_)
   | `AST_inherit (s,_,_,_)
   | `AST_inherit_fun (s,_,_,_)
-  | `AST_nop (s, _)
+  | `AST_nop (s,_)
   | `AST_assign (s,_,_,_)
   | `AST_cassign (s, _,_)
   | `AST_call (s,_,_)
@@ -668,7 +668,7 @@ let src_of_stmt e = match e with
   | `AST_fun_decl (s,_,_,_,_,_,_,_)
   | `AST_callback_decl (s,_,_,_,_)
   | `AST_insert (s,_,_,_,_,_)
-  | `AST_code (s, _)
+  | `AST_code (s,_)
   | `AST_noreturn_code (s,_)
   | `AST_union (s, _,_,_)
   | `AST_struct (s,_,_,_)
@@ -676,11 +676,9 @@ let src_of_stmt e = match e with
   | `AST_typeclass (s,_,_,_)
   | `AST_instance (s,_,_,_)
   | `AST_untyped_module (s,_,_,_)
-  | `AST_namespace (s,_,_,_)
   | `AST_export_fun (s,_,_)
   | `AST_export_python_fun (s,_,_)
   | `AST_export_type (s,_,_)
-  | `AST_type (s,_,_)
   | `AST_open (s,_,_)
   | `AST_inject_module (s,_)
   | `AST_include (s,_)
@@ -691,7 +689,7 @@ let src_of_stmt e = match e with
   | `AST_comment (s,_)
   -> s
 
-let src_of_pat e = match e with
+let src_of_pat (e : pattern_t) = match e with
   | `PAT_coercion (s,_,_)
   | `PAT_nan s
   | `PAT_none s
