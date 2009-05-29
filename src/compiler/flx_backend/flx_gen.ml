@@ -700,7 +700,7 @@ type kind_t = Function | Procedure
 let gen_exe filename syms
   (child_map,bbdfns) (label_map,label_usage_map)
   counter this vs ts instance_no needs_switch stackable (exe:bexe_t) : string =
-  let sr = Flx_ast.src_of_bexe exe in
+  let sr = Flx_types.src_of_bexe exe in
   if length ts <> length vs then
   failwith
   (

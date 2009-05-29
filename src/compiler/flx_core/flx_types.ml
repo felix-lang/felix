@@ -347,3 +347,34 @@ type symbol_data3_t = string * int option * Flx_srcref.t * bbdcl_t
 type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
 type type_registry_t = (btypecode_t,int) Hashtbl.t
+
+let src_of_bexe (e : bexe_t) = match e with
+  | `BEXE_goto (sr,_)
+  | `BEXE_assert (sr,_)
+  | `BEXE_assert2 (sr,_,_,_)
+  | `BEXE_axiom_check (sr,_)
+  | `BEXE_halt (sr,_)
+  | `BEXE_trace (sr,_,_)
+  | `BEXE_ifgoto (sr,_,_)
+  | `BEXE_label (sr,_)
+  | `BEXE_comment (sr,_)
+  | `BEXE_call (sr,_,_)
+  | `BEXE_call_direct (sr,_,_,_)
+  | `BEXE_jump_direct (sr,_,_,_)
+  | `BEXE_call_stack (sr,_,_,_)
+  | `BEXE_call_prim (sr,_,_,_)
+  | `BEXE_jump (sr,_,_)
+  | `BEXE_loop (sr,_,_)
+  | `BEXE_svc (sr,_)
+  | `BEXE_fun_return (sr,_)
+  | `BEXE_yield (sr,_)
+  | `BEXE_proc_return sr
+  | `BEXE_nop (sr,_)
+  | `BEXE_code (sr,_)
+  | `BEXE_nonreturn_code (sr,_)
+  | `BEXE_assign (sr,_,_)
+  | `BEXE_init (sr,_,_)
+  -> sr
+
+  | `BEXE_begin
+  | `BEXE_end -> Flx_srcref.dummy_sr
