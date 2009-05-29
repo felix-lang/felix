@@ -29,6 +29,10 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='enable debugging for all phases'),
+        make_option('--skip-tests',
+            default=False,
+            action='store_true',
+            help='skip running tests'),
     ))
 
     group = parser.add_option_group('build phase options')
@@ -317,6 +321,10 @@ def build():
     # --------------------------------------------------------------------------
     # run the felix tests
 
+    if not fbuild.options.skip_tests:
+        run_tests(target, felix)
+
+def run_tests(target, felix):
     from buildsystem.flx import test_flx
 
     failed_srcs = []
