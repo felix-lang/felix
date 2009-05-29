@@ -81,9 +81,10 @@ try
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
-    let bbdfns = Flx_bbind.bbind syms in
+    let bbind_state = Flx_bbind.make_bbind_state syms in
+    let bbdfns = Flx_bbind.bbind bbind_state in
     let child_map = Flx_child.cal_children syms bbdfns in
-    let bifaces = Flx_bbind.bind_ifaces syms ifaces in
+    let bifaces = Flx_bbind.bind_ifaces bbind_state ifaces in
     print_endline "//Binding complete";
 
     let root_proc =

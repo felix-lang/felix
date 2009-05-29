@@ -206,7 +206,8 @@ try
 
 
   print_debug "//BINDING EXECUTABLE CODE";
-  let bbdfns = bbind syms in
+  let bbind_state = Flx_bbind.make_bbind_state syms in
+  let bbdfns = bbind bbind_state in
 
   print_debug "//DOWNGRADING ABSTRACT TYPES";
   let bbdfns = Flx_strabs.strabs syms bbdfns in
@@ -223,7 +224,7 @@ try
   ;
 
 
-  syms.bifaces <- bind_ifaces syms ifaces;
+  syms.bifaces <- bind_ifaces bbind_state ifaces;
   Hashtbl.clear syms.ticache;
 
   let binding_time = tim() in

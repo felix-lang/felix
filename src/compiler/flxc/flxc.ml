@@ -6,35 +6,78 @@ type state_t = {
   syms: Flx_mtypes2.sym_state_t;
   macro_state: Flx_macro.macro_state_t;
   desugar_state: Flx_desugar.desugar_state_t;
+  bbind_state: Flx_bbind.bbind_state_t;
 }
 
-let print_stmt state stmt () =
+
+let print_stmt state stmt old_asms =
   print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt));
 
   let expanded = Flx_macro.expand_macros_in_statement state.macro_state stmt in
   print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_compilation_unit expanded));
 
-  let desugared = Flx_desugar.desugar_statement state.desugar_state stmt in
-  print_endline ("... DESUGARED: " ^ (Flx_print.string_of_desugared desugared));
+  let asms = Flx_desugar.desugar_statement state.desugar_state stmt in
+  print_endline ("... DESUGARED: " ^ (Flx_print.string_of_desugared asms));
 
-  print_string ">>> "; flush stdout;
-  ()
-
-let evaluate_stmts state name tree =
-  Flx_desugar.desugar_compilation_unit state.desugar_state tree
-
-let parse_file state parser_state name =
-  let parser_state = Flx_parse.parse_file
-    ~include_dirs:!Options.include_dirs
-    parser_state
-    name
+  (* Bind the variables *)
+  let _ = Flx_symtab.build_tables state.syms
+    "root"
+    Flx_ast.dfltvs
+    0
+    None
+    None
+    !(state.syms.Flx_mtypes2.counter)
+    asms
   in
-  let tree = evaluate_stmts state name (Flx_parse.parser_data parser_state) in
-  parser_state
 
+  (* Now, bind all the symbols *)
+  let bbdfns = Flx_bbind.bbind state.bbind_state in
+
+  print_string " >>> "; flush stdout;
+  old_asms @ asms
+
+
+(* Parse all the imports *)
+let parse_imports state =
+  let _, stmts, local_data =
+    List.fold_left begin fun parser_state name ->
+      Flx_parse.parse_file
+        ~include_dirs:!Options.include_dirs
+        parser_state
+        name
+    end
+    (Flx_parse.make_parser_state (fun stmt stmts -> stmt :: stmts) [])
+    (List.rev !Options.imports)
+  in
+
+  (* The statements are constructed in reverse *)
+  let stmts = List.rev stmts in
+
+  (* Desugar all the statements *)
+  let asms = Flx_desugar.desugar_compilation_unit state.desugar_state stmts in
+
+  (* Create a symbol table from those desugared statements *)
+  let _ = Flx_symtab.build_tables
+    state.syms
+    "root"
+    Flx_ast.dfltvs
+    0
+    None
+    None
+    !(state.syms.Flx_mtypes2.counter)
+    asms
+  in
+
+  (* Now, bind all the symbols *)
+  let bbdfns = Flx_bbind.bbind state.bbind_state in
+
+  asms, local_data
+
+
+(* Parse stdin *)
 let rec parse_stdin parser_state =
   print_string ">>> "; flush stdout;
-  let _ =
+  let parser_state =
     try
       Flx_parse.parse_channel
         ~name:"<input>"
@@ -47,28 +90,44 @@ let rec parse_stdin parser_state =
   in
   parser_state
 
-let main () =
-  Options.parse_args ();
-  let options = Options.make_felix_compiler_options () in
-  let syms = Flx_mtypes2.make_syms options in
-  let state = {
-    syms = syms;
-    macro_state = Flx_macro.make_macro_state "<input>";
-    desugar_state = Flx_desugar.make_desugar_state "<input>" syms; }
-  in
-  (* Parse all the imports *)
-  let parser_state = List.fold_left
-    (parse_file state)
-    (Flx_parse.make_parser_state (fun stmt stmts -> stmt :: stmts) [])
-    (List.rev !Options.imports)
-  in
-  let parser_state =
-    let f, init, local_data = parser_state in
-    (* Evaluate all the imported statements *)
 
-    (print_stmt state), (), local_data
+let main () =
+  let options = Options.make_felix_compiler_options () in
+
+  (* Construct the state needed for compilation *)
+  let state =
+    let syms = Flx_mtypes2.make_syms options in
+    {
+      syms = syms;
+      macro_state = Flx_macro.make_macro_state "<input>";
+      desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
+      bbind_state = Flx_bbind.make_bbind_state syms;
+    }
   in
-  let parser_state = parse_stdin parser_state in
+
+  (* Parse all the imported files and get the desugared statements *)
+  let import_asms, local_data = parse_imports state in
+
+  (* Parse stdin and get the desugared statements *)
+  let _, stdin_asms, _ = parse_stdin ((print_stmt state), [], local_data) in
+
+  (* Now, bind all the symbols *)
+  let bbdfns = Flx_bbind.bbind state.bbind_state in
+
+  print_newline ();
+  print_newline ();
+  print_endline "before!";
+
+  (* And print out the bound values *)
+  Hashtbl.iter begin fun index (name,parent,sr,entry) ->
+    print_endline (
+      string_of_int index ^ " --> " ^
+      Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.dfns bbdfns entry index
+    )
+  end bbdfns;
+
+  print_endline "after!";
+
   0
 ;;
 

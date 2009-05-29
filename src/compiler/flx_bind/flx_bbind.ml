@@ -599,8 +599,18 @@ let bbind_index syms bbdfns i =
   else let entry = hfind "bbind" syms.dfns i in
   bbind_sym syms bbdfns i entry
 
-let bbind syms =
-  let bbdfns = Hashtbl.create 97 in
+type bbind_state_t = {
+  syms: Flx_mtypes2.sym_state_t;
+  bbdfns: Flx_types.fully_bound_symbol_table_t;
+}
+
+let make_bbind_state syms =
+  {
+    syms = syms;
+    bbdfns = Hashtbl.create 97;
+  }
+
+let bbind bbind_state =
   (* loop through all counter values [HACK]
     to get the indices in sequence, AND,
     to ensure any instantiations will be bound,
@@ -608,10 +618,10 @@ let bbind syms =
     of syms.counter for an index
   *)
   let i = ref 0 in
-  while !i < !(syms.counter) do
+  while !i < !(bbind_state.syms.counter) do
     begin
       let entry =
-        try Some (Hashtbl.find syms.dfns !i)
+        try Some (Hashtbl.find bbind_state.syms.dfns !i)
         with Not_found -> None
       in match entry with
       | Some entry ->
@@ -625,9 +635,9 @@ let bbind syms =
           end
           ;
           *)
-          bbind_sym syms bbdfns !i entry
+          bbind_sym bbind_state.syms bbind_state.bbdfns !i entry
         with Not_found ->
-          try match hfind "bbind" syms.dfns !i with {id=id} ->
+          try match hfind "bbind" bbind_state.syms.dfns !i with {id=id} ->
             failwith ("Binding error, cannot find in table: "^id^" index " ^ si !i)
           with Not_found ->
             failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
@@ -638,20 +648,20 @@ let bbind syms =
     incr i
   done
   ;
-  bbdfns
+  bbind_state.bbdfns
 
-let bind_ifaces syms
+let bind_ifaces bbind_state
   (ifaces:
     (Flx_srcref.t * iface_t * int option) list
   )
 =
-  let luqn env n = lookup_qn_in_env syms env n in
+  let luqn env n = lookup_qn_in_env bbind_state.syms env n in
   let bound_ifaces =
     List.map
     (function
       | sr,`IFACE_export_fun (sn, cpp_name), parent ->
-        let env = build_env syms parent in
-        let index,ts = lookup_sn_in_env syms env sn in
+        let env = build_env bbind_state.syms parent in
+        let index,ts = lookup_sn_in_env bbind_state.syms env sn in
         if length ts = 0 then
           `BIFACE_export_fun (sr,index, cpp_name)
         else clierr sr
@@ -661,8 +671,8 @@ let bind_ifaces syms
         )
 
       | sr,`IFACE_export_python_fun (sn, cpp_name), parent ->
-        let env = build_env syms parent in
-        let index,ts = lookup_sn_in_env syms env sn in
+        let env = build_env bbind_state.syms parent in
+        let index,ts = lookup_sn_in_env bbind_state.syms env sn in
         if length ts = 0 then
           `BIFACE_export_python_fun (sr,index, cpp_name)
         else clierr sr
@@ -672,13 +682,13 @@ let bind_ifaces syms
         )
 
       | sr,`IFACE_export_type (typ, cpp_name), parent ->
-        let env = build_env syms parent in
-        let t = bind_type syms env Flx_srcref.dummy_sr typ in
+        let env = build_env bbind_state.syms parent in
+        let t = bind_type bbind_state.syms env Flx_srcref.dummy_sr typ in
         if try var_occurs t with _ -> true then
         clierr sr
         (
           "Can't export generic- or meta- type " ^
-          string_of_btypecode syms.dfns t
+          string_of_btypecode bbind_state.syms.dfns t
         )
         else
           `BIFACE_export_type (sr, t, cpp_name)

@@ -20,6 +20,7 @@ let parse_args () =
   Arg.parse options anonymous usage
 
 let make_felix_compiler_options () =
+  parse_args ();
   {
     Flx_mtypes2.print_flag = false;
     Flx_mtypes2.debug = false;
