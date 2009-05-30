@@ -827,7 +827,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (*
   print_endline ("Subst or expand: " ^ string_of_statement 0 st);
   *)
-  let recurion_limit = recursion_limit - 1 in
+  let recursion_limit = recursion_limit - 1 in
   let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let meopt e = match e with | None -> None | Some x -> Some (me x) in
@@ -1200,7 +1200,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   *)
   if recursion_limit < 1
   then failwith "Recursion limit exceeded expanding macros";
-  let recurion_limit = recursion_limit - 1 in
+  let recursion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let ms ss = subst_statement recursion_limit local_prefix seq (ref true) macros ss in
   let mss ss = subst_statements recursion_limit local_prefix seq (ref true) macros ss in
@@ -1333,7 +1333,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
   *)
   if recursion_limit < 1
   then failwith "Recursion limit exceeded expanding macros";
-  let recurion_limit = recursion_limit - 1 in
+  let recursion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq (!ref_macros @ macros) e in
   let ms ss = expand_statements recursion_limit local_prefix seq (ref true) (!ref_macros @ macros) ss in
   let mi sr id =
