@@ -263,7 +263,8 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
             | _ -> failwith "Unimplemented curried fun param not var or val"
             in
             if syms.compiler_options.print_flag then
-            print_endline ("New param " ^ s ^ " " ^ si n ^ " <-- " ^ si pi ^ ", parent " ^ si k ^ " <-- " ^ si i);
+              print_endline ("New param " ^ s ^ "_uncurry<" ^ si n ^ ">["^catmap
+              "," (fun (s,i)->s^"<"^si i^">") vs ^"] <-- " ^ si pi ^ ", parent " ^ si k ^ " <-- " ^ si i);
             Hashtbl.add bbdfns n (s ^ "_uncurry",Some k,sr,bbdcl);
             Flx_child.add_child child_map k n
           )

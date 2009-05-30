@@ -39,7 +39,7 @@ let vsplice caller_vars callee_vs_len ts =
     ", len vs/ts= " ^
     si (length ts) ^
     ", length caller_vars = " ^
-    si (length caller_vars)
+    si (length caller_vars) 
   )
   ;
   let rec aux lst n =  (* elide first n elements *)
@@ -56,7 +56,7 @@ let ident x = x
 
 let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
   (*
-  print_endline ("Remapping expression " ^ sbe syms.dfns e);
+  print_endline ("Remapping expression " ^ sbe syms.dfns bbdfns e);
   *)
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bbdfns i ts in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in

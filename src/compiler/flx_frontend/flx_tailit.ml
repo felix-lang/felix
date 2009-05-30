@@ -317,7 +317,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       `BEXE_assign
       (
         sr,
-        (`BEXPR_get_n (j,(`BEXPR_name (i,[]),t)),t'),
+        (`BEXPR_get_n (j,(`BEXPR_name (i,ts'),t)),t'),
         x
       )
     )

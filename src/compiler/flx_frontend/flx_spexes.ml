@@ -157,16 +157,16 @@ let gen_body syms (uses,child_map,bbdfns) id
   print_endline ("Inlining " ^ si callee ^ " into " ^ si caller);
   *)
   if syms.compiler_options.print_flag then
-  begin match inline_method with
+  begin begin match inline_method with
   | `Eager ->
     print_endline ("Eager INLINING " ^ id ^ "<"^si callee^">("^sbe syms.dfns bbdfns argument^") into " ^ si caller ^ " .. INPUT:");
   | `Lazy ->
     print_endline ("Lazy INLINING " ^ id ^ "<"^si callee^">("^sbe syms.dfns bbdfns argument^") into " ^ si caller ^ " .. INPUT:");
   end
   ;
-  (*
   iter (fun x -> print_endline (string_of_bexe syms.dfns bbdfns 0 x)) exes;
-  *)
+  end
+  ;
   let paramtype  =
     let pt =
       let pts = map (fun {ptyp=t} -> t) ps in
