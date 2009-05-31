@@ -21,6 +21,10 @@ type desugar_state_t = {
 
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 
+let block sr body :statement_t =
+  let e = `AST_lambda (sr,(dfltvs,[[],None],`AST_void sr,body)) in
+  `AST_call (sr,e,`AST_tuple(sr,[]))
+
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =
     match ps with
@@ -1141,7 +1145,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       let patsrc = src_of_pat pat in
       let match_checker_id = name ^ "_mc" ^ si n1 in
       let match_checker = `AST_index (patsrc,match_checker_id,n1) in
-      let body = rsts name parent_vs access sts in
       let vars = Hashtbl.create 97 in
       Flx_mbind.get_pattern_vars vars pat [];
           (*
@@ -1155,23 +1158,18 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           ) vars;
           *)
 
-      let new_asms = ref body in
+      let new_sts = ref sts in
       Hashtbl.iter
           (fun vname (sr,extractor) ->
             let component =
               Flx_mbind.gen_extractor extractor
               (`AST_index (sr,match_var_name,match_index))
             in
-            let dcl =
-              `Dcl (sr, vname, None,`Private, Flx_ast.dfltvs,
-                `DCL_val (`TYP_typeof (component))
-              )
-            and instr = `Exe (sr, `EXE_init (vname, component))
-            in
-              new_asms := dcl :: instr :: !new_asms;
+            let dcl = `AST_val_decl (sr,vname,dfltvs,None,Some component) in
+            new_sts := dcl :: !new_sts;
           )
       vars;
-      let body = !new_asms in
+      let body = rsts name parent_vs access [block sr !new_sts] in
       matches := !matches @
         [
           `Dcl (patsrc,match_checker_id,Some n1,`Private,dfltvs,
