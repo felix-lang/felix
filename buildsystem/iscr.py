@@ -47,7 +47,7 @@ class Iscr(fbuild.db.PersistentObject):
         stdout, stderr = fbuild.execute(cmd, 'iscr extracting', src,
             color='green',
             cwd=buildroot,
-            env={'PYTHONPATH': Path.relpath('.', buildroot)},
+            env={'PYTHONPATH': Path('.').relpath(buildroot)},
             **kwargs)
 
         srcs = []
