@@ -225,7 +225,7 @@ module List
   // very slow, adding to end ..
   noinline fun add[T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
 
-  proc pluseq[T] (x:lvalue[list[T]], y:T) { x = x + y; }
+  proc pluseq[T] (x:&list[T], y:T) { x <- *x + y; }
 
   noinline fun cat[T] (x:list[list[T]]):list[T] =
   {

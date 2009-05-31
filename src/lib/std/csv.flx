@@ -1,0 +1,51 @@
+// CSV reader
+module Csv {
+  open List;
+
+  proc get_csv_value(s:string, i:&int,res:&string) {
+    var r = "";
+    proc add(j:int) { r += s.[j]; }
+    n := len s;
+    enum state_t = skip,collect,quote;
+    fun eq(a:state_t, b:state_t)=> caseno a == caseno b;
+
+    var state = skip;
+    var j:int=n; forall j in *i upto n-1 do
+      ch := s.[j];
+      if ch == char "," do 
+        match state with 
+        | quote => add j;
+        | _ => break;
+        endmatch;
+      elif ch == char " " do 
+        match state with
+        | skip => continue;
+        | quote => add j;
+        | collect => state = skip;
+        endmatch;
+      elif ch == char '"' do 
+        match state with
+        | quote => state = skip;
+        | _ => state = quote;
+        endmatch;
+      else 
+        add j;
+      done;
+    done;
+    i <- j+1;
+    res <- r;
+  }
+
+  fun get_csv_values(s:string): list[string] = {
+    var v: list[string] = Empty[string];
+    var res = "";
+    var pos = 0;
+    n := len s;
+    whilst pos < n do
+      get_csv_value (inp, &pos, &res);
+      if len res >0 do v += res; done;
+    done;
+    return v;
+  }
+}
+
