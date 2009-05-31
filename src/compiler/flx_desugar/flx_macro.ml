@@ -1074,7 +1074,12 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     (* note hack, not protecting pattern vars in stmts like ordinary match,
     just laziness 
     *)
-    let pss = map (fun (p,sts) -> p, ms sts) pss in
+    let pss = map (fun (pat,sts) -> 
+      let pvs = get_pattern_vars pat in
+      pat, msp sr pvs sts
+      )
+      pss 
+    in
     tack (`AST_stmt_match (sr, (me e, pss)))
     
   | `AST_instance (sr, vs, qn, sts) ->

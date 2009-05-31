@@ -3,8 +3,6 @@ open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_typing
-open Flx_lookup
-open Flx_typing
 open Flx_exceptions
 open List
 

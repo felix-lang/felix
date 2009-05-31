@@ -1142,6 +1142,36 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       let match_checker_id = name ^ "_mc" ^ si n1 in
       let match_checker = `AST_index (patsrc,match_checker_id,n1) in
       let body = rsts name parent_vs access sts in
+      let vars = Hashtbl.create 97 in
+      Flx_mbind.get_pattern_vars vars pat [];
+          (*
+          print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
+          print_endline "VARIABLES ARE";
+          Hashtbl.iter (fun vname (sr,extractor) ->
+            let component =
+              Flx_mbind.gen_extractor extractor (`AST_index (sr,mvname,match_var_index))
+            in
+            print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
+          ) vars;
+          *)
+
+      let new_asms = ref body in
+      Hashtbl.iter
+          (fun vname (sr,extractor) ->
+            let component =
+              Flx_mbind.gen_extractor extractor
+              (`AST_index (sr,match_var_name,match_index))
+            in
+            let dcl =
+              `Dcl (sr, vname, None,`Private, Flx_ast.dfltvs,
+                `DCL_val (`TYP_typeof (component))
+              )
+            and instr = `Exe (sr, `EXE_init (vname, component))
+            in
+              new_asms := dcl :: instr :: !new_asms;
+          )
+      vars;
+      let body = !new_asms in
       matches := !matches @
         [
           `Dcl (patsrc,match_checker_id,Some n1,`Private,dfltvs,
