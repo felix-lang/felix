@@ -418,7 +418,7 @@ syntax expressions {
 syntax patterns {
   satom := pattern_match =># "_1";
 
-  pattern_match := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
+  sexecutable := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
     "`(ast_stmt_match (,_2 ,_4))";
 
     stmt_matching  := vbar spattern "=>" statement+ =># "`(,_2 ,_4)";
@@ -1202,7 +1202,7 @@ syntax executable {
 
   sifgoto := "if" sexpr "goto" sname ";" =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
   sifgoto := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
-  sifgoto := "if" sexpr "call" sexthenpr ";" =>#
+  sifgoto := "if" sexpr "call" sexpr ";" =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
   sifgoto := "if" sexpr "do" statement* selse_clause "done" ";" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
