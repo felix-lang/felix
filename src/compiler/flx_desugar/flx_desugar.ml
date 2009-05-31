@@ -1209,9 +1209,12 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       [
         `Exe (sr,`EXE_comment "match failure");
         `Exe (sr,`EXE_noreturn_code (`Str ("      FLX_MATCH_FAILURE("^s^");\n")));
-        `Exe (sr,`EXE_label end_match_label) 
       ]
     )
+    @
+    [
+    `Exe (sr,`EXE_label end_match_label) 
+    ]
     in
     match_function_body
 
@@ -1279,3 +1282,4 @@ let desugar_statement desugar_state stmt =
   List.fold_left begin fun asms stmt ->
     asms @ (rst desugar_state.syms desugar_state.name `Public dfltvs stmt)
   end [] stmts
+
