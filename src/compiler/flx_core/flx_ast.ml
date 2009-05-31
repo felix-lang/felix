@@ -482,6 +482,7 @@ and statement_t =
   | `AST_nop of Flx_srcref.t * string
   | `AST_assert of Flx_srcref.t * expr_t
   | `AST_init of Flx_srcref.t * id_t * expr_t
+  | `AST_stmt_match of Flx_srcref.t * (expr_t * (pattern_t * statement_t list) list)
 
   | `AST_newtype of Flx_srcref.t * id_t * vs_list_t * typecode_t
 
@@ -687,6 +688,7 @@ let src_of_stmt (e : statement_t) = match e with
   | `AST_user_statement (s,_,_)
   | `AST_scheme_string (s,_)
   | `AST_comment (s,_)
+  | `AST_stmt_match (s,_)
   -> s
 
 let src_of_pat (e : pattern_t) = match e with

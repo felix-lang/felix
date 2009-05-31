@@ -1070,6 +1070,13 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_untyped_module (sr, id, vs, sts) ->
     tack (`AST_untyped_module (sr, mi sr id, vs, ms sts))
 
+  | `AST_stmt_match (sr, (e, pss)) ->
+    (* note hack, not protecting pattern vars in stmts like ordinary match,
+    just laziness 
+    *)
+    let pss = map (fun (p,sts) -> p, ms sts) pss in
+    tack (`AST_stmt_match (sr, (me e, pss)))
+    
   | `AST_instance (sr, vs, qn, sts) ->
     tack (`AST_instance (sr, vs, mq qn, ms sts))
 

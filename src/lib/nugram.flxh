@@ -418,6 +418,11 @@ syntax expressions {
 syntax patterns {
   satom := pattern_match =># "_1";
 
+  pattern_match := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
+    "`(ast_stmt_match (,_2 ,_4))";
+
+    stmt_matching  := vbar spattern "=>" statement+ =># "`(,_2 ,_4)";
+
   pattern_match := "match" sexpr "with" smatching+ "endmatch" =>#
     "`(ast_match (,_2 ,_4))";
 
@@ -1197,7 +1202,7 @@ syntax executable {
 
   sifgoto := "if" sexpr "goto" sname ";" =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
   sifgoto := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
-  sifgoto := "if" sexpr "call" sexpr ";" =>#
+  sifgoto := "if" sexpr "call" sexthenpr ";" =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
   sifgoto := "if" sexpr "do" statement* selse_clause "done" ";" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
@@ -1438,6 +1443,11 @@ syntax type_decls {
   sunion_decl := senum_decl =># "_1";
 
   senum_decl := "enum" sdeclname lbrace senum_items rbrace =>#
+    """
+    `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+     """;
+
+  senum_decl := "enum" sdeclname = senum_items ";" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;

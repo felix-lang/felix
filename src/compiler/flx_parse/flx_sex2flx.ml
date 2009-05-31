@@ -560,6 +560,7 @@ and xstatement_t sr x : statement_t =
   let xc x = xc_t sr x in
   let xrr x = xraw_req_expr_t sr x in
   let xucmp x = xunion_component sr x in
+  let xp x = xpattern_t sr x in
   let lnot sr x = `AST_apply (sr,(`AST_name (sr,"lnot",[]),x)) in
   match x with
   | Lst [] -> `AST_nop(sr,"null")
@@ -777,5 +778,15 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_export_type"; sr; t; Str s] ->
     `AST_export_type (xsr sr, ti t, ss s)
+
+  
+  | Lst [Id "ast_stmt_match";  Lst [e; Lst pss]]->
+    let pss = map (function
+      | Lst [p;stmts] -> xp p, xsts stmts
+      | x -> err x "ast_stmt_match syntax"
+      )
+     pss
+   in
+   `AST_stmt_match (sr, (ex e,pss))
 
   | x -> err x "statement"

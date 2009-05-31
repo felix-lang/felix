@@ -1104,6 +1104,118 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_code (sr,s) -> [`Exe (sr,`EXE_code s)]
   | `AST_noreturn_code (sr,s) -> [`Exe (sr,`EXE_noreturn_code s)]
 
+  | `AST_stmt_match (sr,(e,pss)) ->
+    if length pss = 0 then clierr sr "Empty Pattern";
+
+    (* step 1: evaluate e *)
+    let d,x = rex e in
+    let match_index : int = seq() in
+
+    let match_var_name = name^ "_mv_"^si match_index in
+    let match_id = name^ "_mf_"^ si match_index in
+    let end_match_label = "_em" ^ si match_index in
+
+    let expr_src = src_of_expr e in
+
+    (* WOE. The expr may contain a lambda, which stuffs up
+       bind_expression which is called by bind_type ..
+    *)
+    let evl =
+      [
+        `Dcl (expr_src,match_var_name,Some match_index,`Private,dfltvs,`DCL_val (`TYP_typeof x));
+        `Exe (expr_src,`EXE_iinit ((match_var_name,match_index),x))
+      ]
+    in
+    let pats,_ = split pss in
+    Flx_pat.validate_patterns pats
+    ;
+    let matches = ref [`Exe (generated,`EXE_comment "begin match")] in
+    let match_caseno = ref 1 in
+    let iswild = ref false in
+    let n2 = ref (seq()) in (* the next case *)
+    iter
+    (fun (pat,sts) ->
+      let n1 = !n2 in (* this case *)
+      n2 := seq(); (* the next case *)
+      iswild := is_universal pat;
+      let patsrc = src_of_pat pat in
+      let match_checker_id = name ^ "_mc" ^ si n1 in
+      let match_checker = `AST_index (patsrc,match_checker_id,n1) in
+      let body = rsts name parent_vs access sts in
+      matches := !matches @
+        [
+          `Dcl (patsrc,match_checker_id,Some n1,`Private,dfltvs,
+          `DCL_match_check (pat,(match_var_name,match_index)));
+        ]
+        @
+        [
+        `Exe (patsrc,`EXE_comment ("match case " ^ si !match_caseno^":" ^ string_of_pattern pat))
+        ]
+        @
+        (if !iswild then [] else
+        [
+          `Exe
+          (
+            patsrc,
+            `EXE_ifgoto
+            (
+              `AST_apply
+              (
+                patsrc,
+                (
+                  `AST_name (patsrc,"lnot",[]),
+                  `AST_apply
+                  (
+                    patsrc,
+                    (
+                      match_checker,
+                      `AST_tuple (patsrc,[])
+                    )
+                  )
+                )
+              ),
+              "_ml" ^ si (!n2)
+            )
+          )
+        ]
+        )
+        @
+        body
+        @
+        [
+        `Exe (patsrc,`EXE_goto end_match_label);
+        `Exe (patsrc,`EXE_label ("_ml" ^ si (!n2)))
+        ]
+
+      ;
+      incr match_caseno
+    )
+    pss
+    ;
+
+    let match_function_body =
+    d
+    @
+    evl
+    @
+    !matches
+    @
+    (if !iswild then [] else
+      let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
+      let s = Flx_print.string_of_string f ^"," ^
+        si sl ^ "," ^ si sc ^ "," ^
+        si el ^ "," ^ si ec
+      in
+      [
+        `Exe (sr,`EXE_comment "match failure");
+        `Exe (sr,`EXE_noreturn_code (`Str ("      FLX_MATCH_FAILURE("^s^");\n")));
+        `Exe (sr,`EXE_label end_match_label) 
+      ]
+    )
+    in
+    match_function_body
+
+
   (* split into multiple declarations *)
 
   | `AST_user_statement _

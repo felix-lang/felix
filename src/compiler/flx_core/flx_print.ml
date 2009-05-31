@@ -1485,20 +1485,6 @@ and string_of_statement level s =
     spaces level ^
     "if("^string_of_expr e^")goto " ^ lab ^ ";"
 
-  (*
-  | `AST_whilst (_,e,sts) ->
-    spaces level ^
-    "whilst "^string_of_expr e^" do\n" ^
-    catmap "\n" (string_of_statement (level+1)) sts ^
-    spaces level ^ "done;"
-
-  | `AST_until (_,e,sts) ->
-    spaces level ^
-    "until "^string_of_expr e^" do\n" ^
-    catmap "\n" (string_of_statement (level+1)) sts ^
-    spaces level ^ "done;"
-   *)
-
   | `AST_ifreturn (_,e) ->
     spaces level ^
     "if("^string_of_expr e^")return;"
@@ -1535,6 +1521,20 @@ and string_of_statement level s =
 
   | `AST_scheme_string (_,s) ->
     spaces level ^ "Scheme string " ^ s ^ ";\n"
+
+  | `AST_stmt_match (_,(e, ps)) ->
+    spaces level ^ "match " ^ se e ^ " with\n" ^
+    catmap "\n"
+    (fun (p,sts)->
+      " | " ^
+      string_of_pattern p ^
+      " => " ^
+       catmap "\n" (string_of_statement (level+1)) sts 
+    )
+    ps
+    ^
+    "\n"^spaces level^"endmatch;"
+
 
 and string_of_compilation_unit stats =
   catmap "\n" (string_of_statement 0) stats
